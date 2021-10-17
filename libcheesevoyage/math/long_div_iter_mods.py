@@ -2,9 +2,6 @@
 
 import math
 
-from misc_util import *
-from general.container_types import *
-
 from nmigen import *
 from nmigen.asserts import Assert, Assume, Cover
 from nmigen.asserts import Past, Rose, Fell, Stable
@@ -12,6 +9,9 @@ from nmigen.asserts import Past, Rose, Fell, Stable
 from nmigen.sim import Simulator, Delay, Tick
 
 from enum import Enum, auto
+
+from libcheesevoyage.misc_util import *
+from libcheesevoyage.general.container_types import *
 #--------
 #dbg_sync_bus = None
 #def dbg_printout(func_name):

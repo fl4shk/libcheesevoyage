@@ -7,8 +7,8 @@ from misc_util import *
 from nmigen import *
 from nmigen.hdl.rec import *
 
-from misc_util import *
-from general.fifo_mods import *
+from libcheesevoyage.misc_util import *
+from libcheesevoyage.general.fifo_mods import *
 #--------
 class SdramParams:
 	def __init__(self, ROW_WIDTH, COL_WIDTH, BANK_WIDTH, DQM_WIDTH,

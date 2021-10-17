@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from general import *
-from math import *
-from misc_util import *
-from misc_util_running import *
+from libcheesevoyage.general import *
+from libcheesevoyage.math import *
+from libcheesevoyage.misc_util import *
+from libcheesevoyage.misc_util_running import *

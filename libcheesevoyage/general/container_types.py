@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+from enum import Enum, auto
+from collections import OrderedDict
+
 from nmigen import *
 import nmigen.tracer as tracer
 from nmigen.hdl.ast import ValueCastable, Slice
@@ -7,10 +10,7 @@ from nmigen.hdl.ast import ValueCastable, Slice
 from nmigen.asserts import Assert, Assume, Cover
 from nmigen.asserts import Past, Rose, Fell, Stable
 
-from enum import Enum, auto
-from collections import OrderedDict
-
-from misc_util import *
+from libcheesevoyage.misc_util import *
 #--------
 #def dbg_printerr(s, obj):
 #	printerr(s, ": ", type(obj), " \"", obj, "\"\n")

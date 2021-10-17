@@ -8,4 +8,4 @@ from nmigen.asserts import Past, Rose, Fell, Stable
 
 from enum import Enum, auto
 
-from misc_util import *
+from libcheesevoyage.misc_util import *

@@ -10,10 +10,10 @@ from nmigen.sim import Simulator, Delay, Tick
 
 from enum import Enum, auto
 
-from misc_util import *
-from general.container_types import *
-from math.long_div_iter_mods import *
-from math.math_types import *
+from libcheesevoyage.misc_util import *
+from libcheesevoyage.general.container_types import *
+from libcheesevoyage.math.long_div_iter_mods import *
+from libcheesevoyage.math.math_types import *
 #--------
 class LongDivBus:
 	#--------

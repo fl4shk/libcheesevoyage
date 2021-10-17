@@ -4,7 +4,7 @@ from nmigen import *
 from nmigen.asserts import Assert, Assume, Cover
 from nmigen.asserts import Past, Rose, Fell, Stable
 
-from misc_util import *
+from libcheesevoyage.misc_util import *
 #--------
 class FifoBus:
 	def __init__(self, ShapeT, SIZE):
