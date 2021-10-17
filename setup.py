@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup \
 (
@@ -9,6 +9,6 @@ setup \
 	author="Andrew Clark (FL4SHK)",
 	author_email="fl4shk@users.noreply.github.com",
 	license="MIT",
-	packages=["libcheesevoyage"],
+	packages=find_packages(exclude=["tests*"]),
 	zip_safe=False,
 )
