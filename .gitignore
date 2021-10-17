@@ -4,6 +4,7 @@ tags
 *.ignore
 __pycache__
 dist
+build
 libcheesevoyage.egg-info
 
 build
