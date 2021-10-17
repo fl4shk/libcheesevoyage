@@ -12,8 +12,6 @@ from nmigen.asserts import Past, Rose, Fell, Stable
 
 from nmigen.back import verilog
 
-from .general.container_types import *
-
 def inner_ports(bus):
 	ret = []
 	for key in bus.__dict__:
