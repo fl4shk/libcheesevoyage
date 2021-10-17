@@ -3,7 +3,6 @@
 from enum import Enum, auto, unique
 import math
 
-from misc_util import *
 from nmigen import *
 from nmigen.hdl.rec import *
 
