@@ -3,6 +3,7 @@ tags
 *.taghl
 *.ignore
 __pycache__
+dist
 
 build
 *_bmc
