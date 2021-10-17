@@ -4,6 +4,7 @@ from nmigen import *
 from nmigen.hdl.rec import *
 
 from ..misc_util import *
+from ..general.container_types import *
 from .vga_ext_types import *
 
 class VideoDithererBus:
@@ -35,7 +36,7 @@ class VideoDithererBus:
 	def CHAN_WIDTH_DELTA(self):
 		return 2
 	def CoordT(self):
-		return Vec2(unsigned(16))
+		return Vec2(16)
 
 # Dither a CHAN_WIDTH color down to CHAN_WIDTH - 2
 class VideoDitherer(Elaboratable):
@@ -133,7 +134,8 @@ class VideoDitherer(Elaboratable):
 			# Perform dithering
 			loc.dicol = RgbColor(CHAN_WIDTH=bus.CHAN_WIDTH())
 			loc.CHAN_DELTA \
-				= self.PATTERN()[bus.frame_cnt][bus.pos.y[0]][bus.pos.x[0]]
+				= self.PATTERN()[bus.frame_cnt][Value.cast(bus.pos.y[0])] \
+					[Value.cast(bus.pos.x[0])]
 			loc.col_in_plus_delta \
 				= RgbColor(CHAN_WIDTH=bus.CHAN_WIDTH() + 1)
 

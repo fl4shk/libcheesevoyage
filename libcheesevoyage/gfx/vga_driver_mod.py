@@ -6,8 +6,8 @@ from nmigen.hdl.rec import *
 from ..misc_util import *
 from .vga_ext_types import *
 from ..general.fifo_mods import *
+from ..general.container_types import *
 #from bram_mod import *
-
 
 VGA_TIMING_INFO_DICT \
 = {
@@ -73,12 +73,12 @@ VGA_TIMING_INFO_DICT \
 #		super().__init__(VgaDriverBusLayout())
 
 class VgaDriverBus:
-	def __init__(self, ColorT):
+	def __init__(self, ColorT=RgbColor):
 		# Global VGA driving enable (white screen when off)
 		self.en = Signal()
 
 		# VGA physical pins
-		self.col = RgbColor()
+		self.col = ColorT()
 		self.hsync = Signal()
 		self.vsync = Signal()
 
@@ -100,12 +100,11 @@ class VgaDriverBus:
 		#self.start_draw = Signal()
 
 	def CoordShapeT(self):
-		return unsigned(16)
+		return 16
 
 class VgaDriver(Elaboratable):
-	def __init__(self, CLK_RATE, TIMING_INFO, FIFO_SIZE,
-		ColorT=RgbColor):
-		self.__bus = VgaDriverBus()
+	def __init__(self, CLK_RATE, TIMING_INFO, FIFO_SIZE, ColorT=RgbColor):
+		self.__bus = VgaDriverBus(ColorT=ColorT)
 
 		self.__CLK_RATE = CLK_RATE
 		self.__TIMING_INFO = TIMING_INFO

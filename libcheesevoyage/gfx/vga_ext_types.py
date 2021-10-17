@@ -6,7 +6,7 @@ from nmigen import *
 from nmigen.hdl.rec import *
 
 from ..misc_util import *
-from ..general.container_types import Packrec
+from ..general.container_types import *
 
 class VgaTiming:
 	def __init__(self, visib, front, sync, back):
@@ -127,17 +127,21 @@ class RgbColor(Packrec):
 	def drive(self, other):
 		self.layout.drive(other)
 
-class VgaDriverBufLayout(Packrec.Layout):
+#class VgaDriverBufLayout(Packrec.Layout):
+#	def __init__(self, CHAN_WIDTH=RgbColor.DEF_CHAN_WIDTH()):
+#		super().__init__ \
+#		([
+#			("can_prep", 1),
+#			("prep", 1),
+#			("col", RgbColorLayout(CHAN_WIDTH=CHAN_WIDTH)),
+#		])
+class VgaDriverBuf(Splitrec):
 	def __init__(self, CHAN_WIDTH=RgbColor.DEF_CHAN_WIDTH()):
-		super().__init__ \
-		([
-			("can_prep", 1),
-			("prep", 1),
-			("col", RgbColorLayout(CHAN_WIDTH=CHAN_WIDTH)),
-		])
-class VgaDriverBuf(Packrec):
-	def __init__(self, CHAN_WIDTH=RgbColor.DEF_CHAN_WIDTH()):
-		super().__init__(VgaDriverBufLayout(CHAN_WIDTH=CHAN_WIDTH))
+		#super().__init__(VgaDriverBufLayout(CHAN_WIDTH=CHAN_WIDTH))
+		self.can_prep = Splitrec.cast_elem(1)
+		self.prep = Splitrec.cast_elem(1)
+		self.col = Splitrec.cast_elem \
+			(RgbColorLayout(CHAN_WIDTH=CHAN_WIDTH))
 
 		self.__CHAN_WIDTH = CHAN_WIDTH
 

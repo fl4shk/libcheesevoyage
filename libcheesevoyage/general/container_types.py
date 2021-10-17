@@ -50,9 +50,14 @@ class ElemRef(ValueCastable):
 		return self.shape().fields()
 
 	def ElemKindT(self):
-		return self.shape().ElemKindT()
+		#return self.shape().ElemKindT()
+		return self.shape().ElemKindT() \
+			if not isinstance(self.shape(), int) \
+			else self.shape()
 	def ELEM_WIDTH(self):
-		return self.shape().ELEM_WIDTH()
+		return self.shape().ELEM_WIDTH() \
+			if not isinstance(self.shape(), int) \
+			else self.shape()
 	def SIZE(self):
 		return self.shape().SIZE()
 	def SIG_WIDTH(self):
@@ -351,9 +356,12 @@ class Packrec(ValueCastable):
 	def __init__(self, layout, *, name=None, reset=0, reset_less=False,
 		attrs=None, decoder=None, src_loc_at=0):
 		if name is None:
-			name = tracer.get_var_name(depth=src_loc_at + 2, default=None)
+			new_name = tracer.get_var_name(depth=src_loc_at + 2,
+				default=None)
+		else:
+			new_name = name
 
-		self.__extra_args_name = name
+		self.__extra_args_name = new_name
 		self.__extra_args_reset = reset
 		self.__extra_args_reset_less = reset_less
 		self.__extra_args_attrs = attrs
@@ -480,6 +488,15 @@ class Packrec(ValueCastable):
 		return bool(self.sig())
 	def __len__(self):
 		return len(self.as_value())
+	def __repr__(self):
+		ret = "Packrec(["
+
+		for name, shape in self.__layout:
+			ret += "({!r}, {!r})".format(name, shape)
+
+		ret += "])"
+
+		return ret
 	def __getattr__(self, key):
 		if key[0] == "_":
 			return self.__dict__[key]
@@ -575,12 +592,18 @@ class Packarr(ValueCastable):
 	#--------
 	def __init__(self, shape, *, name=None, reset=0, reset_less=False,
 		attrs=None, decoder=None, src_loc_at=0):
+
+		if name is None:
+			new_name = tracer.get_var_name(depth=src_loc_at + 2,
+				default=None)
+		else:
+			new_name = name
 		#self.__ElemKindT = ElemKindT
 		#self.__SIZE = SIZE
 
 		self.__shape = shape
 
-		self.__extra_args_name = name
+		self.__extra_args_name = new_name
 		self.__extra_args_reset = reset
 		self.__extra_args_reset_less = reset_less
 		self.__extra_args_attrs = attrs
@@ -737,6 +760,37 @@ class Packarr(ValueCastable):
 # attributes of every signal.
 class Splitrec(ValueCastable):
 	#--------
+	@staticmethod
+	def cast_elem(ElemKindT, signed=False, *, name=None, reset=0x0,
+		reset_less=False, attrs=None, decoder=None, src_loc_at=0):
+		if name is None:
+			new_name = tracer.get_var_name(depth=src_loc_at + 2,
+				default=None)
+		else:
+			new_name = name
+
+		if isinstance(ElemKindT, int):
+			shape = unsigned(ElemKindT) \
+				if not signed \
+				else signed(ElemKindT)
+			return Signal(shape=shape, name=new_name, reset=reset,
+				reset_less=reset_less, attrs=attrs, decoder=decoder,
+				src_loc_at=src_loc_at)
+		elif isinstance(ElemKindT, Packrec.Layout) \
+			or isinstance(ElemKindT, list):
+			return Packrec(ElemKindT, name=new_name, reset=reset,
+				reset_less=reset_less, attrs=attrs, decoder=decoder,
+				src_loc_at=src_loc_at)
+		elif isinstance(ElemKindT, Packarr.Shape):
+			return Packarr(ElemKindT, name=new_name, reset=reset,
+				reset_less=reset_less, attrs=attrs, decoder=decoder,
+				src_loc_at=src_loc_at)
+		else:
+			raise TypeError(psconcat
+				("Need one of the following types for `ElemKindT`, {!r}, "
+					.format(ElemKindT),
+				": `int`, `Packrec.Layout`, `list`, or `Packarr.Shape`"))
+	#--------
 	#@staticmethod
 	#def like(other, name=None, name_suffix=None, src_loc_at=0, **kwargs):
 	#	if name is not None:
@@ -861,29 +915,28 @@ class Splitrec(ValueCastable):
 	#	return eval(psconcat("Cat(" + ",".join(self.flattened()) + ")"))
 	#--------
 #--------
-class Vec2Layout(Packrec.Layout):
+#class Vec2Layout(Packrec.Layout):
+#	def __init__(self, ElemKindT, signed=False):
+#		self.__ElemKindT = ElemKindT
+#		self.__signed = signed
+#		super().__init__ \
+#		(
+#			[
+#				("x", self.ElemKindT()),
+#				("y", self.ElemKindT()),
+#			],
+#			signed=signed
+#		)
+#	def ElemKindT(self):
+#		return self.__ElemKindT
+#	def signed(self):
+#		return self.__signed
+class Vec2(Splitrec):
 	def __init__(self, ElemKindT, signed=False):
-		self.__ElemKindT = ElemKindT
-		self.__signed = signed
-		super().__init__ \
-		(
-			[
-				("x", self.ElemKindT()),
-				("y", self.ElemKindT()),
-			],
-			signed=signed
-		)
-	def ElemKindT(self):
-		return self.__ElemKindT
-	def signed(self):
-		return self.__signed
-class Vec2(Packrec):
-	def __init__(self, ElemKindT, signed):
-		super().__init__(Vec2Layout(ElemKindT=ElemKindT))
-	def ElemKindT(self):
-		return self.layout().ElemKindT()
-	def signed(self):
-		return self.layout().signed()
+		self.x = Splitrec.cast_elem(ElemKindT=ElemKindT, signed=signed,
+			name="Vec2_x")
+		self.y = Splitrec.cast_elem(ElemKindT=ElemKindT, signed=signed,
+			name="Vec2_y")
 #--------
 class PrevCurrPair:
 	def __init__(self, curr=None):
