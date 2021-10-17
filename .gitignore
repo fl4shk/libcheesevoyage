@@ -4,6 +4,7 @@ tags
 *.ignore
 __pycache__
 dist
+libcheesevoyage.egg-info
 
 build
 *_bmc
