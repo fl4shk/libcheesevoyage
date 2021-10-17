@@ -12,7 +12,7 @@ from nmigen.asserts import Past, Rose, Fell, Stable
 
 from nmigen.back import verilog
 
-from libcheesevoyage.general.container_types import *
+from .general.container_types import *
 
 def inner_ports(bus):
 	ret = []

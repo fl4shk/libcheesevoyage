@@ -10,7 +10,7 @@ from nmigen.hdl.ast import ValueCastable, Slice
 from nmigen.asserts import Assert, Assume, Cover
 from nmigen.asserts import Past, Rose, Fell, Stable
 
-from libcheesevoyage.misc_util import *
+from ..misc_util import *
 #--------
 #def dbg_printerr(s, obj):
 #	printerr(s, ": ", type(obj), " \"", obj, "\"\n")

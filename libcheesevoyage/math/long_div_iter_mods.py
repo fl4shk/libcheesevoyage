@@ -10,8 +10,8 @@ from nmigen.sim import Simulator, Delay, Tick
 
 from enum import Enum, auto
 
-from libcheesevoyage.misc_util import *
-from libcheesevoyage.general.container_types import *
+from ..misc_util import *
+from ..general.container_types import *
 #--------
 #dbg_sync_bus = None
 #def dbg_printout(func_name):
