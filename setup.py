@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup \
 (
 	name="libcheesevoyage",
-	version="0.1",
+	version="0.2",
 	description="FL4SHK's personal nMigen library",
 	url="https://github.com/fl4shk/libcheesevoyage",
 	author="Andrew Clark (FL4SHK)",
