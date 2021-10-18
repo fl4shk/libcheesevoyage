@@ -38,7 +38,7 @@ class VideoDithererBus:
 	def CoordT(self):
 		return Vec2(16)
 
-# Dither a CHAN_WIDTH color down to CHAN_WIDTH - 2
+# Temporally and spatially dither a CHAN_WIDTH color down to CHAN_WIDTH - 2
 class VideoDitherer(Elaboratable):
 	def __init__(self, FB_SIZE,
 		CHAN_WIDTH=RgbColor.DEF_CHAN_WIDTH() + 2):
