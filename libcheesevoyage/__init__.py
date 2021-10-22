@@ -1,6 +1,6 @@
-from .misc_util import *
-from .misc_util_running import *
+from libcheesevoyage.misc_util import *
+from libcheesevoyage.misc_util_running import *
 
-from .general import *
-from .math import *
-from .gfx import *
+from libcheesevoyage.general import *
+from libcheesevoyage.math import *
+from libcheesevoyage.gfx import *
