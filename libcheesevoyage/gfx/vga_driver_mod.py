@@ -3,10 +3,10 @@
 from nmigen import *
 from nmigen.hdl.rec import *
 
-from ..misc_util import *
-from .vga_ext_types import *
-from ..general.fifo_mods import *
-from ..general.container_types import *
+from libcheesevoyage.misc_util import *
+from libcheesevoyage.gfx.vga_ext_types import *
+from libcheesevoyage.general.fifo_mods import *
+from libcheesevoyage.general.container_types import *
 #from bram_mod import *
 
 VGA_TIMING_INFO_DICT \

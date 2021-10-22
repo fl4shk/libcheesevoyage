@@ -2,8 +2,8 @@
 #--------
 import math
 
-from ..misc_util import *
-from ..container_types import *
+from libcheesevoyage.misc_util import *
+from libcheesevoyage.general.container_types import *
 #--------
 class AdcBus:
 	def __init__(self, ELEM_WIDTH):

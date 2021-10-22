@@ -9,7 +9,7 @@ from nmigen.asserts import Past, Rose, Fell, Stable
 
 from nmigen.sim import Simulator, Delay, Tick
 
-from ..misc_util import *
+from libcheesevoyage.misc_util import *
 #--------
 class ArithShape(Enum):
 	Unsigned = 0

@@ -3,9 +3,9 @@
 from nmigen import *
 from nmigen.hdl.rec import *
 
-from ..misc_util import *
-from ..general.container_types import *
-from .vga_ext_types import *
+from libcheesevoyage.misc_util import *
+from libcheesevoyage.general.container_types import *
+from libcheesevoyage.gfx.vga_ext_types import *
 
 class VideoDithererBus:
 	def __init__(self, FB_SIZE, CHAN_WIDTH):

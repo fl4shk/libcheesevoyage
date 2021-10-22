@@ -2,7 +2,7 @@
 
 from nmigen import *
 
-from ..misc_util import *
+from libcheesevoyage.misc_util import *
 
 class VgaGradient(Elaboratable):
 	#--------

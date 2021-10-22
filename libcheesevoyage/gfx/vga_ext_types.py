@@ -5,8 +5,8 @@ from enum import Enum, auto, unique
 from nmigen import *
 from nmigen.hdl.rec import *
 
-from ..misc_util import *
-from ..general.container_types import *
+from libcheesevoyage.misc_util import *
+from libcheesevoyage.general.container_types import *
 
 class VgaTiming:
 	def __init__(self, visib, front, sync, back):
