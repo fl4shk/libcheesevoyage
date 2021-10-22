@@ -4,7 +4,6 @@ from enum import Enum, auto, unique
 import math
 
 from nmigen import *
-from nmigen.hdl.rec import *
 
 from libcheesevoyage.misc_util import *
 from libcheesevoyage.general.fifo_mods import *
@@ -148,4 +147,14 @@ class SdramCtrl(Elaboratable):
 		return self.__CLK_RATE
 	def CLK_PERIOD(self):
 		return self.__CLK_PERIOD
+
+	def elaborate(self, platform: str) -> Module
+		#--------
+		m = Module()
+		#--------
+		bus = self.bus()
+		#--------
+		#--------
+		return m
+		#--------
 #--------
