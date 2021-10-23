@@ -17,7 +17,7 @@ VGA_TIMING_INFO_DICT \
 		(
 			PIXEL_CLK=25,
 			HTIMING
-				= VgaTiming
+				=VgaTiming
 				(
 					visib=640,
 					front=16,
@@ -25,7 +25,7 @@ VGA_TIMING_INFO_DICT \
 					back=48
 				),
 			VTIMING
-				= VgaTiming
+				=VgaTiming
 				(
 					visib=480,
 					front=10,
@@ -38,7 +38,7 @@ VGA_TIMING_INFO_DICT \
 		(
 			PIXEL_CLK=40,
 			HTIMING
-				= VgaTiming
+				=VgaTiming
 				(
 					visib=800,
 					front=40,
@@ -46,12 +46,33 @@ VGA_TIMING_INFO_DICT \
 					back=88
 				),
 			VTIMING
-				= VgaTiming
+				=VgaTiming
 				(
 					visib=600,
 					front=1,
 					sync=4,
 					back=23
+				),
+		),
+	"1024x768@60",
+		VgaTimingInfo
+		(
+			PIXEL_CLK=65,
+			HTIMING
+				=VgaTiming
+				(
+					visib=1024,
+					front=24,
+					sync=136,
+					back=160
+				),
+			VTIMING
+				=VgaTiming
+				(
+					visib=768,
+					front=3,
+					sync=6,
+					back=29
 				),
 		),
 }
