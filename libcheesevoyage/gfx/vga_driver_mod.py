@@ -13,26 +13,47 @@ VGA_TIMING_INFO_DICT \
 = {
 	# 640 x 480 @ 60 Hz, taken from http://www.tinyvga.com
 	"640x480@60":
-		VgaTimingInfo \
+		VgaTimingInfo
 		(
 			PIXEL_CLK=25,
-			HTIMING \
-				=VgaTiming
+			HTIMING
+				= VgaTiming
 				(
 					visib=640,
 					front=16,
 					sync=96,
 					back=48
 				),
-			VTIMING \
-				=VgaTiming
+			VTIMING
+				= VgaTiming
 				(
 					visib=480,
 					front=10,
 					sync=2,
 					back=33
 				),
-		)
+		),
+	"800x600@60":
+		VgaTimingInfo
+		(
+			PIXEL_CLK=40,
+			HTIMING
+				= VgaTiming
+				(
+					visib=800,
+					front=40,
+					sync=128,
+					back=88
+				),
+			VTIMING
+				= VgaTiming
+				(
+					visib=600,
+					front=1,
+					sync=4,
+					back=23
+				),
+		),
 }
 
 #class VgaDriverBusLayout(Layout):
