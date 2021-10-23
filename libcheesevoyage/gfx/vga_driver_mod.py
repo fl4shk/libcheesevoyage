@@ -54,7 +54,7 @@ VGA_TIMING_INFO_DICT \
 					back=23
 				),
 		),
-	"1024x768@60",
+	"1024x768@60":
 		VgaTimingInfo
 		(
 			PIXEL_CLK=65,
