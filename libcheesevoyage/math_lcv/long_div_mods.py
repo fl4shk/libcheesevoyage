@@ -12,8 +12,8 @@ from enum import Enum, auto
 
 from libcheesevoyage.misc_util import *
 from libcheesevoyage.general.container_types import *
-from libcheesevoyage.math.long_div_iter_mods import *
-from libcheesevoyage.math.math_types import *
+from libcheesevoyage.math_lcv.long_div_iter_mods import *
+from libcheesevoyage.math_lcv.math_types import *
 #--------
 class LongDivBus:
 	#--------
