@@ -208,7 +208,8 @@ class ElemRef(ValueCastable):
 						.format(self.key())) from None
 				return self.as_value()[self.key()]
 		else: # if isinstance(self.shape(), Packarr.Shape):
-			temp_ret = ElemRef(self, self.ElemKindT(), key)
+			shape = self.ElemKindT()
+			temp_ret = ElemRef(self, shape, key)
 
 			if isinstance(shape, int):
 				return Value.cast(temp_ret)
@@ -782,14 +783,17 @@ class Packarr(ValueCastable):
 		#return repr(self.sig())
 		return "Packarr([{}, {}])".format(self.ElemKindT(), self.SIZE())
 	def __getitem__(self, key):
-		#try:
-		#	Value.cast(key)
-		#except Exception:
-		#	raise TypeError(psconcat
-		#		("Need to be able to `key`, `{!r}`, to ".format(key)
-		#		"`Value`"))
-
-		return ElemRef(self.sig(), self.shape(), key)
+		temp_ret = ElemRef(self.sig(), self.shape(), key)
+		if isinstance(self.shape().ElemKindT(), int):
+			return temp_ret.as_value()
+		else:
+			return temp_ret
+			#try:
+			#	Value.cast(key)
+			#except Exception:
+			#	raise TypeError(psconcat
+			#		("Need to be able to `key`, `{!r}`, to ".format(key)
+			#		"`Value`"))
 	#--------
 #--------
 # A record type is composed of separate signals.  This allows setting the
