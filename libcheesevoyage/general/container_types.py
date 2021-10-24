@@ -608,8 +608,15 @@ class Packarr(ValueCastable):
 	@staticmethod
 	def build(ElemKindT, SIZE, signed=False, *, name=None, reset=0,
 		reset_less=False, attrs=None, decoder=None, src_loc_at=0):
+
+		if name is None:
+			new_name = tracer.get_var_name(depth=src_loc_at + 2,
+				default=None)
+		else:
+			new_name = name
+
 		return Packarr(Packarr.Shape(ElemKindT, SIZE, signed),
-			name=name, reset=reset, reset_less=reset_less, attrs=attrs,
+			name=new_name, reset=reset, reset_less=reset_less, attrs=attrs,
 			decoder=decoder, src_loc_at=src_loc_at)
 	#--------
 	def __init__(self, shape, *, name=None, reset=0, reset_less=False,
