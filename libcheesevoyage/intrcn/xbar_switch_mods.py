@@ -44,10 +44,10 @@ class XbarSwitchSync(Elaboratable):
 		#--------
 		bus = self.bus()
 		#--------
-		for i in range(bus.SEL_SIZE()):
-			with m.Switch(bus.inp.sel[i]):
-				for j in range(bus.SIZE()):
-					with m.Case(i):
+		#for i in range(bus.SEL_SIZE()):
+		#	with m.Switch(bus.inp.sel[i]):
+		#		for j in range(bus.SIZE()):
+		#			with m.Case(i):
 		#--------
 		return m
 		#--------
