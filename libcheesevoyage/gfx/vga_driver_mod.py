@@ -54,25 +54,47 @@ VGA_TIMING_INFO_DICT \
 					back=23
 				),
 		),
-	"1024x768@60":
+	# This is an XGA VGA signal. It didn't work with my monitor.
+	#"1024x768@60":
+	#	VgaTimingInfo
+	#	(
+	#		PIXEL_CLK=65,
+	#		HTIMING
+	#			=VgaTiming
+	#			(
+	#				visib=1024,
+	#				front=24,
+	#				sync=136,
+	#				back=160
+	#			),
+	#		VTIMING
+	#			=VgaTiming
+	#			(
+	#				visib=768,
+	#				front=3,
+	#				sync=6,
+	#				back=29
+	#			),
+	#	),
+	"1280x800@60":
 		VgaTimingInfo
 		(
-			PIXEL_CLK=65,
+			PIXEL_CLK=83.46,
 			HTIMING
 				=VgaTiming
 				(
-					visib=1024,
-					front=24,
+					visib=1280,
+					front=64,
 					sync=136,
-					back=160
+					back=200
 				),
 			VTIMING
 				=VgaTiming
 				(
-					visib=768,
-					front=3,
-					sync=6,
-					back=29
+					visib=800,
+					front=1,
+					sync=3,
+					back=24
 				),
 		),
 }
@@ -161,7 +183,8 @@ class VgaDriver(Elaboratable):
 	def TIMING_INFO(self):
 		return self.__TIMING_INFO
 	def CPP(self):
-		return self.CLK_RATE() // self.TIMING_INFO().PIXEL_CLK()
+		return math.trunc(self.CLK_RATE()
+			// self.TIMING_INFO().PIXEL_CLK())
 	def HTIMING(self):
 		return self.TIMING_INFO().HTIMING()
 	def VTIMING(self):

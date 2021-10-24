@@ -208,8 +208,12 @@ class ElemRef(ValueCastable):
 						.format(self.key())) from None
 				return self.as_value()[self.key()]
 		else: # if isinstance(self.shape(), Packarr.Shape):
-			shape = self.ElemKindT()
-		return ElemRef(self, shape, key)
+			temp_ret = ElemRef(self, self.ElemKindT(), key)
+
+			if isinstance(shape, int):
+				return Value.cast(temp_ret)
+			else: # if not isinstance(shape, int):
+				return temp_ret
 	#--------
 	def __calc_packrec_start_stop_pair(self, shape, key):
 		start = 0
@@ -505,6 +509,17 @@ class Packrec(ValueCastable):
 	def __getitem__(self, key):
 		if isinstance(key, str):
 			return ElemRef(self.sig(), self.layout(), key)
+		elif isinstance(key, slice):
+			return self.sig().__getitem__(key)
+		else:
+			try:
+				Value.cast(key)
+			except Exception:
+				raise TypeError(psconcat
+					("Need to be able to `key`, `{!r}`, to ".format(key)
+					"`Value`, or `Value` must be a `str` or a `slice`"))
+			return ElemRef(self.sig(), self.layout(), key).as_value()
+
 	#--------
 #--------
 class Packarr(ValueCastable):
@@ -589,6 +604,13 @@ class Packarr(ValueCastable):
 		kw.update(kwargs)
 
 		return Packarr(**kw)
+	#--------
+	@staticmethod
+	def build(ElemKindT, SIZE, signed=False, *, name=None, reset=0,
+		reset_less=False, attrs=None, decoder=None, src_loc_at=0)
+		return Packarr(Packarr.Shape(ElemKindT, SIZE, signed),
+			name=name, reset=reset, reset_less=reset_less, attrs=attrs,
+			decoder=decoder, src_loc_at=src_loc_at)
 	#--------
 	def __init__(self, shape, *, name=None, reset=0, reset_less=False,
 		attrs=None, decoder=None, src_loc_at=0):
@@ -753,6 +775,13 @@ class Packarr(ValueCastable):
 		#return repr(self.sig())
 		return "Packarr([{}, {}])".format(self.ElemKindT(), self.SIZE())
 	def __getitem__(self, key):
+		#try:
+		#	Value.cast(key)
+		#except Exception:
+		#	raise TypeError(psconcat
+		#		("Need to be able to `key`, `{!r}`, to ".format(key)
+		#		"`Value`"))
+
 		return ElemRef(self.sig(), self.shape(), key)
 	#--------
 #--------
