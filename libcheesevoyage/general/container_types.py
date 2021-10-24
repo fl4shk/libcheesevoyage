@@ -516,7 +516,7 @@ class Packrec(ValueCastable):
 				Value.cast(key)
 			except Exception:
 				raise TypeError(psconcat
-					("Need to be able to `key`, `{!r}`, to ".format(key)
+					("Need to be able to `key`, `{!r}`, to ".format(key),
 					"`Value`, or `Value` must be a `str` or a `slice`"))
 			return ElemRef(self.sig(), self.layout(), key).as_value()
 
