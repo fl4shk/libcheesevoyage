@@ -607,7 +607,7 @@ class Packarr(ValueCastable):
 	#--------
 	@staticmethod
 	def build(ElemKindT, SIZE, signed=False, *, name=None, reset=0,
-		reset_less=False, attrs=None, decoder=None, src_loc_at=0)
+		reset_less=False, attrs=None, decoder=None, src_loc_at=0):
 		return Packarr(Packarr.Shape(ElemKindT, SIZE, signed),
 			name=name, reset=reset, reset_less=reset_less, attrs=attrs,
 			decoder=decoder, src_loc_at=src_loc_at)
