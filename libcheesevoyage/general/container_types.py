@@ -62,8 +62,8 @@ class ElemRef(ValueCastable):
 		return self.shape().SIZE()
 	def SIG_WIDTH(self):
 		return self.shape().SIG_WIDTH()
-	def signed(self):
-		return self.shape().signed()
+	def SIGNED(self):
+		return self.shape().SIGNED()
 	#--------
 	def eq(self, other):
 		return self.as_value().eq(other)
@@ -138,13 +138,19 @@ class ElemRef(ValueCastable):
 		# I believe that `obj` will always be a `Signal` or `Slice`, though
 		# `self.obj()` could be a `Signal`, `Slice`, `ElemRef`, `Packrec`,
 		# or `Packarr`. That's at least how it's supposed to work.
-		obj = Value.cast(self.obj())
+		#obj = Value.cast(self.obj())
+		if isinstance(self.obj(), ValueCastable):
+			#obj = Value.cast(self.obj())
+			obj = self.obj().as_value()
+		else:
+			obj = self.obj()
 
 		if isinstance(self.shape(), Packrec.Layout):
 			if isinstance(self.key(), str):
 				if self.key() not in self.fields():
-					raise AttributeError(("`self.shape()` `{}` does not "
-						+ "have a field `{}. Did you mean one of `{}`?")
+					raise AttributeError(("`self.shape()` `{!r}` does "
+						+ "not have a field `{!r}`. Did you mean one "
+						+ "of `{!r}`?")
 						.format(self.shape(), self.key(),
 							", ".join(self.fields())))
 
@@ -153,16 +159,13 @@ class ElemRef(ValueCastable):
 				start_stop_pair = self.__calc_packrec_start_stop_pair \
 					(shape, self.key())
 				return obj[start_stop_pair[0]:start_stop_pair[1]]
-			elif isinstance(self.key(), slice):
+			elif isinstance(self.key(), int) \
+				or isinstance(self.key(), slice):
 				return obj[self.key]
 			else:
-				try:
-					Value.cast(self.key())
-				except Exception:
-					raise TypeError(("`self.key()` `{!r}` is not one of "
-						+ "`str`, `slice`, or castable to `Value`")
-						.format(self.key())) from None
-		else: # if isinstance(self.shape(), Packarr.Shape):
+				raise TypeError(("`self.key()` `{!r}` is not one of "
+					+ "`str`, `int`, or `slice`").format(self.key()))
+		elif isinstance(self.shape(), Packarr.Shape):
 			if isinstance(self.key(), slice):
 				return obj[self.key()]
 			else:
@@ -178,11 +181,69 @@ class ElemRef(ValueCastable):
 					shape
 						if isinstance(shape, int)
 						else len(shape))
+		elif isinstance(self.shape(), int):
+			if isinstance(self.key(), int) \
+				or isinstance(self.key(), slice):
+				return obj[self.key()]
+			else:
+				raise TypeError(("`self.key()` `{!r}` must be an "
+					+ "`int` or `slice`.").format(self.key()))
+		else:
+			raise TypeError(("`self.shape()` `{!r}` must be a "
+				+ "`Packrec.Layout`, `Packarr.Shape`, or `int`")
+				.format(self.shape()))
+
 	def __len__(self):
 		return len(self.as_value())
 	def __repr__(self):
-		return "ElemRef([{}, {}, {}])" \
+		return "ElemRef([{!r}, {!r}, {!r}])" \
 			.format(self.obj(), self.shape(), self.key())
+	def __iter__(self):
+		if isinstance(self.obj(), ValueCastable):
+			obj = self.obj().as_value()
+		else:
+			obj = self.obj()
+
+		if isinstance(self.shape(), Packrec.Layout):
+			if isinstance(self.key(), str):
+				if self.key() not in self.fields():
+					raise AttributeError(("`self.shape()` `{!r}` does "
+						+ "not have a field `{!r}`. Did you mean one "
+						+ "of `{!r}`?")
+						.format(self.shape(), self.key(),
+							", ".join(self.fields())))
+				for name, shape in self.shape():
+					yield (ElemRef(self, shape, name), shape)
+			elif isinstance(self.key(), slice):
+				for elem in obj[self.key()]:
+					yield elem
+			else:
+				raise TypeError(("`self.key()` `{!r}` is not one of "
+					+ "`str` or `slice`").format(self.key()))
+		elif isinstance(self.shape(), Packarr.Shape):
+			if isinstance(self.key(), slice):
+				for elem in obj[self.key()]:
+					yield elem
+			else:
+				try:
+					Value.cast(self.key())
+				except Exception:
+					raise TypeError(("`self.key()` `{!r}` is neither a "
+						+ "`slice` nor castable to `Value`")
+						.format(self.key()))
+				for i in range(len(self.shape())):
+					yield ElemRef(self, self.ElemKindT(), i)
+		elif isinstance(self.shape(), int):
+			if isinstance(self.key(), slice):
+				for elem in obj[self.key()]:
+					yield elem
+			else:
+				raise TypeError("`self.key()` `{!r}` must be a `slice`"
+					.format(self.key()))
+		else:
+			raise TypeError(("`self.shape()` `{!r}` must be a "
+				+ "`Packrec.Layout`, `Packarr.Shape`, or `int`")
+				.format(self.shape()))
 	def __getattr__(self, key):
 		if key[0] == "_":
 			return self.__dict__[key]
@@ -192,29 +253,37 @@ class ElemRef(ValueCastable):
 		if isinstance(self.shape(), Packrec.Layout):
 			if isinstance(self.key(), str):
 				if self.key() not in self.fields():
-					raise AttributeError(("`{}` does not have a field `{}. "
-						+ "Did you mean one of `{}`?")
+					raise AttributeError(("`{!r}` does not have a field "
+						+ "`{!r}`. Did you mean one of `{}`?")
 						.format(self.shape(), self.key(),
 							", ".join(self.fields())))
 				shape = self.fields()[self.key()]
-			elif isinstance(self.key(), slice):
-				return self.as_value()[self.key()]
+			elif isinstance(self.key(), int):
+				return self.as_value()[key]
 			else:
-				try:
-					Value.cast(self.key())
-				except Exception:
-					raise TypeError(("`self.key()` {!r} is not one of "
-						+ "`str`, `slice`, or castable to `Value`")
-						.format(self.key())) from None
-				return self.as_value()[self.key()]
+				raise TypeError(("For a `Packrec`, `self.key()` `{!r}` "
+					+ "must be a `str` or an `int`")
+					.format(self.key())) from None
 		else: # if isinstance(self.shape(), Packarr.Shape):
+			try:
+				Value.cast(self.key())
+			except Exception:
+				raise TypeError(("For a `Packarr`, `self.key()` `{!r}` "
+					+ "must be castable to `Value`").format(self.key())) \
+					from None
 			shape = self.ElemKindT()
-			temp_ret = ElemRef(self, shape, key)
+			#printout("shape: {!r}\n".format(shape))
 
-			if isinstance(shape, int):
-				return Value.cast(temp_ret)
-			else: # if not isinstance(shape, int):
-				return temp_ret
+		temp_ret = ElemRef(self, shape, key)
+
+		# If `shape` represents a vector, we return a slice into `obj`
+		#if isinstance(shape, int) or (isinstance(shape, Packarr.Shape) \
+		#	and isinstance(shape.ElemKindT(), int)):
+		if isinstance(shape, Packarr.Shape)  \
+			and isinstance(shape.ElemKindT(), int):
+			return temp_ret.as_value()
+		else:
+			return temp_ret
 	#--------
 	def __calc_packrec_start_stop_pair(self, shape, key):
 		start = 0
@@ -240,17 +309,17 @@ class Packrec(ValueCastable):
 	class Layout:
 		#--------
 		@staticmethod
-		def cast(obj, signed=False, *, src_loc_at=0):
+		def cast(obj, SIGNED=False, *, src_loc_at=0):
 			return obj \
 				if isinstance(obj, Packrec.Layout) \
 				else Packrec.Layout(obj, src_loc_at=src_loc_at + 1)
 			#if isinstance(obj, Packrec.Layout):
 			#	return obj
-			#return Packrec.Layout(obj, signed, src_loc_at=src_loc_at + 1)
+			#return Packrec.Layout(obj, SIGNED, src_loc_at=src_loc_at + 1)
 		#--------
-		def __init__(self, fields, signed=False, *, src_loc_at=0):
+		def __init__(self, fields, SIGNED=False, *, src_loc_at=0):
 			self.__fields = OrderedDict()
-			self.__signed = signed
+			self.__SIGNED = SIGNED
 			self.__SIG_WIDTH = 0
 
 			for field in list(reversed(fields)):
@@ -305,8 +374,8 @@ class Packrec(ValueCastable):
 		#--------
 		def fields(self):
 			return self.__fields
-		def signed(self):
-			return self.__signed
+		def SIGNED(self):
+			return self.__SIGNED
 		def SIG_WIDTH(self):
 			return self.__SIG_WIDTH
 		#--------
@@ -377,8 +446,8 @@ class Packrec(ValueCastable):
 			src_loc_at=src_loc_at + 1)
 
 		sig_shape = unsigned(self.SIG_WIDTH()) \
-			if not self.signed() \
-			else signed(self.SIG_WIDTH())
+			if not self.SIGNED() \
+			else SIGNED(self.SIG_WIDTH())
 
 		self.__sig \
 			= Signal \
@@ -394,8 +463,8 @@ class Packrec(ValueCastable):
 	#--------
 	def layout(self):
 		return self.__layout
-	def signed(self):
-		return self.layout().signed()
+	def SIGNED(self):
+		return self.layout().SIGNED()
 	def SIG_WIDTH(self):
 		return self.layout().SIG_WIDTH()
 	def sig(self):
@@ -494,7 +563,7 @@ class Packrec(ValueCastable):
 	def __len__(self):
 		return len(self.as_value())
 	def __repr__(self):
-		ret = "Packrec(["
+		ret = "Packrec([{!r}, ".format(self.sig())
 
 		for name, shape in self.__layout:
 			ret += "({!r}, {!r})".format(name, shape)
@@ -502,6 +571,9 @@ class Packrec(ValueCastable):
 		ret += "])"
 
 		return ret
+	def __iter__(self):
+		for name, shape in self.layout():
+			yield (self[name], shape)
 	def __getattr__(self, key):
 		if key[0] == "_":
 			return self.__dict__[key]
@@ -520,7 +592,6 @@ class Packrec(ValueCastable):
 					("Need to be able to `key`, `{!r}`, to ".format(key),
 					"`Value`, or `Value` must be a `str` or a `slice`"))
 			return ElemRef(self.sig(), self.layout(), key).as_value()
-
 	#--------
 #--------
 class Packarr(ValueCastable):
@@ -529,17 +600,22 @@ class Packarr(ValueCastable):
 		#--------
 		@staticmethod
 		def cast(obj, *, src_loc_at=0):
-			return obj \
-				if isinstance(obj, Packarr.Shape) \
-				else Packarr.Shape(obj, src_loc_at=src_loc_at + 1)
+			if isinstance(obj, Packarr.Shape):
+				return obj
+			elif isinstance(obj, dict):
+				return Packarr.Shape(obj["ElemKindT"], obj["SIZE"],
+					obj["SIGNED"], src_loc_at=src_loc_at + 1)
+			else:
+				return Packarr.Shape(obj[0], obj[1], obj[2],
+					src_loc_at=src_loc_at + 1)
 		#--------
-		def __init__(self, ElemKindT, SIZE, signed=False, *, src_loc_at=1):
+		def __init__(self, ElemKindT, SIZE, SIGNED=False, *, src_loc_at=1):
 			self.__ElemKindT = ElemKindT
 			self.__SIZE = SIZE
-			self.__signed = signed
+			self.__SIGNED = SIGNED
 			self.__ELEM_WIDTH = self.ElemKindT() \
 				if isinstance(self.ElemKindT(), int) \
-				else len(self.ElemKindT())
+				else self.ElemKindT().SIG_WIDTH()
 			self.__SIG_WIDTH = (self.ELEM_WIDTH() * self.SIZE())
 
 			if (not isinstance(ElemKindT, Packrec.Layout)) \
@@ -559,19 +635,20 @@ class Packarr(ValueCastable):
 		def SIG_WIDTH(self):
 			#return (self.ELEM_WIDTH() * self.SIZE())
 			return self.__SIG_WIDTH
-		def signed(self):
-			return self.__signed
+		def SIGNED(self):
+			return self.__SIGNED
 		#--------
 		def __len__(self):
-			return self.SIG_WIDTH()
+			#return self.SIG_WIDTH()
+			return self.SIZE()
 		def __eq__(self, other):
 			return (isinstance(other, Packarr.Shape)
 				and (self.ElemKindT() == other.ElemKindT())
 				and (self.SIZE() == other.SIZE())
-				and (self.signed() == other.signed()))
+				and (self.SIGNED() == other.SIGNED()))
 		def __repr__(self):
-			return "Packarr.Shape({}, {}, {})" \
-				.format(self.ElemKindT(), self.SIZE(), self.signed())
+			return "Packarr.Shape({!r}, {!r}, {!r})" \
+				.format(self.ElemKindT(), self.SIZE(), self.SIGNED())
 		#--------
 	#--------
 	@staticmethod
@@ -589,7 +666,7 @@ class Packarr(ValueCastable):
 			(
 				#ElemKindT=other.ElemKindT(),
 				#SIZE=len(other),
-				#signed=other.sig().shape.signed,
+				#SIGNED=other.sig().shape.SIGNED,
 				shape=other.shape(),
 				name=new_name,
 				src_loc_at=src_loc_at + 1
@@ -607,7 +684,7 @@ class Packarr(ValueCastable):
 		return Packarr(**kw)
 	#--------
 	@staticmethod
-	def build(ElemKindT, SIZE, signed=False, *, name=None, reset=0,
+	def build(ElemKindT, SIZE, SIGNED=False, *, name=None, reset=0,
 		reset_less=False, attrs=None, decoder=None, src_loc_at=0):
 
 		if name is None:
@@ -616,7 +693,7 @@ class Packarr(ValueCastable):
 		else:
 			new_name = name
 
-		return Packarr(Packarr.Shape(ElemKindT, SIZE, signed),
+		return Packarr(Packarr.Shape(ElemKindT, SIZE, SIGNED),
 			name=new_name, reset=reset, reset_less=reset_less, attrs=attrs,
 			decoder=decoder, src_loc_at=src_loc_at)
 	#--------
@@ -631,7 +708,7 @@ class Packarr(ValueCastable):
 		#self.__ElemKindT = ElemKindT
 		#self.__SIZE = SIZE
 
-		self.__shape = shape
+		self.__shape = Packarr.Shape.cast(shape)
 
 		self.__extra_args_name = new_name
 		self.__extra_args_reset = reset
@@ -641,8 +718,8 @@ class Packarr(ValueCastable):
 		self.__extra_args_src_loc_at = src_loc_at
 
 		sig_shape = unsigned(self.SIG_WIDTH()) \
-			if not self.signed() \
-			else signed(self.SIG_WIDTH())
+			if not self.SIGNED() \
+			else SIGNED(self.SIG_WIDTH())
 
 		self.__sig \
 			= Signal \
@@ -666,8 +743,8 @@ class Packarr(ValueCastable):
 		return self.shape().SIZE()
 	def SIG_WIDTH(self):
 		return self.shape().SIG_WIDTH()
-	def signed(self):
-		return self.shape().signed()
+	def SIGNED(self):
+		return self.shape().SIGNED()
 	def sig(self):
 		return self.__sig
 
@@ -703,7 +780,7 @@ class Packarr(ValueCastable):
 	#		return val.sig()
 	#--------
 	def eq(self, other):
-		return self.as_value().eq(Value.cast(other))
+		return self.sig().eq(Value.cast(other))
 	def word_select(self, index, elem_width):
 		return self.sig().word_select(index, elem_width)
 	#--------
@@ -776,17 +853,27 @@ class Packarr(ValueCastable):
 	def __bool__(self):
 		return bool(self.sig())
 	def __len__(self):
-		return len(self.as_value())
+		#return len(self.as_value())
 		#return len(self.sig())
-		#return self.SIZE()
+		#printout("testificate len(): ", self.SIZE(), "\n")
+		return self.SIZE()
 	def __repr__(self):
 		#return repr(self.sig())
-		return "Packarr([{}, {}])".format(self.ElemKindT(), self.SIZE())
+		return "Packarr({!r}, [{!r}, {!r}])".format(self.sig(),
+			self.ElemKindT(), self.SIZE())
+	def __iter__(self):
+		for i in range(len(self)):
+			yield self[i]
 	def __getitem__(self, key):
 		temp_ret = ElemRef(self.sig(), self.shape(), key)
 		if isinstance(self.shape().ElemKindT(), int):
-			return temp_ret.as_value()
+			#return temp_ret.as_value()
+			return Value.cast(temp_ret)
+			#printout("testificate: ", self, " ", key, "\n")
+			#return self.as_value().word_select(key, self.ELEM_WIDTH())
+			#return self.sig()
 		else:
+			#printout("testificate 2: ", self, " ", key, "\n")
 			return temp_ret
 			#try:
 			#	Value.cast(key)
@@ -801,7 +888,7 @@ class Packarr(ValueCastable):
 class Splitrec(ValueCastable):
 	#--------
 	@staticmethod
-	def cast_elem(ElemKindT, signed=False, *, name=None, reset=0x0,
+	def cast_elem(ElemKindT, SIGNED=False, *, name=None, reset=0x0,
 		reset_less=False, attrs=None, decoder=None, src_loc_at=0):
 		if name is None:
 			new_name = tracer.get_var_name(depth=src_loc_at + 2,
@@ -811,8 +898,8 @@ class Splitrec(ValueCastable):
 
 		if isinstance(ElemKindT, int):
 			shape = unsigned(ElemKindT) \
-				if not signed \
-				else signed(ElemKindT)
+				if not SIGNED \
+				else SIGNED(ElemKindT)
 			return Signal(shape=shape, name=new_name, reset=reset,
 				reset_less=reset_less, attrs=attrs, decoder=decoder,
 				src_loc_at=src_loc_at)
@@ -956,26 +1043,26 @@ class Splitrec(ValueCastable):
 	#--------
 #--------
 #class Vec2Layout(Packrec.Layout):
-#	def __init__(self, ElemKindT, signed=False):
+#	def __init__(self, ElemKindT, SIGNED=False):
 #		self.__ElemKindT = ElemKindT
-#		self.__signed = signed
+#		self.__SIGNED = SIGNED
 #		super().__init__ \
 #		(
 #			[
 #				("x", self.ElemKindT()),
 #				("y", self.ElemKindT()),
 #			],
-#			signed=signed
+#			SIGNED=SIGNED
 #		)
 #	def ElemKindT(self):
 #		return self.__ElemKindT
-#	def signed(self):
-#		return self.__signed
+#	def SIGNED(self):
+#		return self.__SIGNED
 class Vec2(Splitrec):
-	def __init__(self, ElemKindT, signed=False):
-		self.x = Splitrec.cast_elem(ElemKindT=ElemKindT, signed=signed,
+	def __init__(self, ElemKindT, SIGNED=False):
+		self.x = Splitrec.cast_elem(ElemKindT=ElemKindT, SIGNED=SIGNED,
 			name="Vec2_x")
-		self.y = Splitrec.cast_elem(ElemKindT=ElemKindT, signed=signed,
+		self.y = Splitrec.cast_elem(ElemKindT=ElemKindT, SIGNED=SIGNED,
 			name="Vec2_y")
 #--------
 class PrevCurrPair:
