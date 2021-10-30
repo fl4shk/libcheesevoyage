@@ -19,26 +19,36 @@ class XbarSwitchBus:
 		self.__OUTP_SIZE = OUTP_SIZE
 		self.__SIGNED = SIGNED
 		#--------
+		self.inp = Splitrec()
+		self.outp = Splitrec()
+		#--------
 		# Which inputs to forward to which outputs
-		self.sel = [Signal(self.SEL_SIZE()) for i in range(self.SIZE())]
+		self.inp.sel \
+			= Splitlist \
+			([
+				Signal(self.SEL_WIDTH(), name="sel_{i}")
+					for i in range(self.OUTP_SIZE())
+			])
 
 		#self.inp_data = Packarr.build(ElemKindT=self.ElemKindT(),
 		#	SIZE=self.SIZE(), SIGNED=self.SIGNED())
-		self.inp_data \
-			= [
+		self.inp.data \
+			= Splitlist \
+			([
 				Splitrec.cast_elem(self.ElemKindT(), self.SIGNED(),
 					name=psconcat("inp_data_", i))
 					for i in range(self.INP_SIZE())
-			]
+			])
 
 		#self.outp_data = Packarr.build(ElemKindT=self.ElemKindT(),
 		#	SIZE=self.SIZE(), SIGNED=self.SIGNED())
-		self.outp_data \
-			= [
+		self.outp.data \
+			= Splitlist \
+			([
 				Splitrec.cast_elem(self.ElemKindT(), self.SIGNED(),
 					name=psconcat("outp_data_", i))
 					for i in range(self.OUTP_SIZE())
-			]
+			])
 		#--------
 	#--------
 	def ElemKindT(self):
@@ -49,8 +59,8 @@ class XbarSwitchBus:
 		return self.__OUTP_SIZE
 	def SIGNED(self):
 		return self.__SIGNED
-	def SEL_SIZE(self):
-		return math.ceil(math.log2(self.SIZE()))
+	def SEL_WIDTH(self):
+		return math.ceil(math.log2(self.OUTP_SIZE()))
 	#--------
 #--------
 # A crossbar switch (combinational logic)
@@ -100,14 +110,14 @@ class XbarSwitchComb(Elaboratable):
 		m = Module()
 		#--------
 		bus = self.bus()
-		PRIO_LST = self.PRIO_LST()
+		PRIO_LST_2D = self.PRIO_LST_2D()
 
-		loc = Blank()
-		loc.found_arr_2d \
-			= [
-				Signal(bus.INP_SIZE(), name="found_arr_2d_{j}")
-					for j in range(bus.OUTP_SIZE())
-			]
+		#loc = Blank()
+		#loc.found_arr_2d \
+		#	= [
+		#		Signal(bus.INP_SIZE(), name="found_arr_2d_{j}")
+		#			for j in range(bus.OUTP_SIZE())
+		#	]
 		#loc.found_arr_2d = Packarr.build(bus.SIZE(), bus.SIZE())
 		#loc.temp_data_arr_2d \
 		#	= Packarr.build \
@@ -124,20 +134,23 @@ class XbarSwitchComb(Elaboratable):
 		#		for j in range(bus.size())
 		#	]
 		#--------
-		for j in range(len(bus.outp_data)):
-			for i in range(len(bus.inp_data)):
-				m.d.comb \
-				+= [
-					loc.found_arr_2d[j][i].eq(bus.sel[j] == PRIO_LST[i]),
-					loc.temp_data_arr_2d[j][i]
-						.eq(Mux(loc.found_arr_2d[j][i],
-							bus.inp_data[PRIO_LST[i]], 0x0))
-				]
-				#with m.If(bus.sel[j] == PRIO_LST[i]):
-				#	m.d.comb \
-				#	+= [
-				#		bus.outp_data[j].eq(bus.inp_data[PRIO_LST[i]])
-				#	]
+		#for j in range(bus.OUTP_SIZE()):
+		#	with m.Switch(bus.inp.sel[j]):
+		#		for i in range(len(bus.inp_data)):
+		#			with m.Case(i):
+		#				
+		#			#m.d.comb \
+		#			#+= [
+		#			#	loc.found_arr_2d[j][i].eq(bus.sel[j] == PRIO_LST[i]),
+		#			#	loc.temp_data_arr_2d[j][i]
+		#			#		.eq(Mux(loc.found_arr_2d[j][i],
+		#			#			bus.inp_data[PRIO_LST[i]], 0x0))
+		#			#]
+		#			#with m.If(bus.sel[j] == PRIO_LST[i]):
+		#			#	m.d.comb \
+		#			#	+= [
+		#			#		bus.outp_data[j].eq(bus.inp_data[PRIO_LST[i]])
+		#			#	]
 		#--------
 		return m
 		#--------

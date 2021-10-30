@@ -54,12 +54,17 @@ class ReduceTreeBus:
 			])
 
 		self.outp.data = Signal(self.OUTP_DATA_WIDTH(), name="outp_data")
+
+		if self.FORMAL():
+			self.formal = Splitrec()
+			self.formal.oracle_outp_data = Signal(self.OUTP_DATA_WIDTH(),
+				name="oracle_outp_data")
 		#--------
 	#--------
 	def INP_DATA_WIDTH(self):
 		return self.__INP_DATA_WIDTH
 	def INP_SIZE(self):
-		return self.__SIZE
+		return self.__INP_SIZE
 	def BINOP(self):
 		return self.__BINOP
 	def FORMAL(self):
@@ -119,7 +124,7 @@ class ReduceTree(Elaboratable):
 						name=psconcat("data_", j, "_", i))
 						for i in range(bus.INP_SIZE_INT())
 				]
-				for j in range(bus.NUM_STAGES())
+				for j in range(bus.NUM_STAGES() + 1)
 			]
 		#--------
 		for st in range(bus.NUM_STAGES() + 1):
@@ -136,7 +141,7 @@ class ReduceTree(Elaboratable):
 				for op in range(ST_NUM_OUT):
 					if op < bus.INP_SIZE():
 						m.d.comb += loc.data[st][op][:sw] \
-							.eq(bus.inp_data[op][:sw])
+							.eq(bus.inp.data[op][:sw])
 					else: # if op >= bus.INP_SIZE():
 						m.d.comb += loc.data[st][op].eq(0x0)
 			else: # if st > 0:
@@ -155,7 +160,7 @@ class ReduceTree(Elaboratable):
 					else: # if bus.BINOP() == ReduceTreeBinop.XOR:
 						md += out.eq(left ^ right)
 
-		m.d.comb += bus.outp_data.eq(loc.data[bus.NUM_STAGES()][0])
+		m.d.comb += bus.outp.data.eq(loc.data[bus.NUM_STAGES()][0])
 
 		if bus.FORMAL():
 			if self.DOMAIN() != BasicDomain.COMB:
@@ -163,18 +168,21 @@ class ReduceTree(Elaboratable):
 					"`BasicDomain.COMB` when doing formal verification")
 					.format(self.DOMAIN()))
 
+			m.d.comb += Assert(bus.outp.data 
+				== bus.formal.oracle_outp_data)
+
 			if bus.BINOP() == ReduceTreeBinop.ADD:
-				m.d.comb += Assert(bus.outp_data[:bus.INP_DATA_WIDTH()]
-					== functools.reduce(operator.add, bus.inp_data))
+				m.d.comb += bus.formal.oracle_outp_data \
+					.eq(functools.reduce(operator.add, bus.inp.data))
 			elif bus.BINOP() == ReduceTreeBinop.AND:
-				m.d.comb += Assert(bus.outp_data
-					== functools.reduce(operator.and_, bus.inp_data))
+				m.d.comb += bus.formal.oracle_outp_data \
+					.eq(functools.reduce(operator.and_, bus.inp.data))
 			elif bus.BINOP() == ReduceTreeBinop.OR:
-				m.d.comb += Assert(bus.outp_data
-					== functools.reduce(operator.or_, bus.inp_data))
+				m.d.comb += bus.formal.oracle_outp_data \
+					.eq(functools.reduce(operator.or_, bus.inp.data))
 			else: # if bus.BINOP() == ReduceTreeBinop.XOR:
-				m.d.comb += Assert(bus.outp_data
-					== functools.reduce(operator.xor, bus.inp_data))
+				m.d.comb += bus.formal.oracle_outp_data \
+					.eq(functools.reduce(operator.xor, bus.inp.data))
 		#--------
 		return m
 		#--------

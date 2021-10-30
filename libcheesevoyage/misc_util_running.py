@@ -12,6 +12,8 @@ from nmigen.asserts import Past, Rose, Fell, Stable
 
 from nmigen.back import verilog
 
+from libcheesevoyage.general.container_types import *
+
 def inner_ports(bus):
 	ret = []
 	for key in bus.__dict__:
@@ -23,6 +25,8 @@ def inner_ports(bus):
 				ret += [Value.cast(val)]
 			elif isinstance(val, Packarr):
 				ret += [Value.cast(val)]
+			elif isinstance(val, Splitlist):
+				ret += list(val)
 			#elif isinstance(val, Splitrec):
 			#	ret += val.flattened()
 			else:
@@ -37,6 +41,17 @@ def to_verilog(dut_mod, **kw_args):
 	main(dut, ports=ports(dut.bus()))
 	#with open("dut.v.ignore", "w") as f:
 	#	f.write(verilog.convert(dut, ports=ports(dut.bus())))
+
+def formal_non_sync(dut_mod, **kw_args):
+	parser = main_parser()
+	args = parser.parse_args()
+
+	m = Module()
+	m.submodules.dut = dut = dut_mod(**kw_args, FORMAL=True)
+
+	# python3 main.py generate -t il > toplevel.il
+	# sby -f "$1"
+	main_runner(parser, args, m, ports=inner_ports(dut.bus()))
 
 def formal(dut_mod, **kw_args):
 	parser = main_parser()
