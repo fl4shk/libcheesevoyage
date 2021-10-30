@@ -21,28 +21,31 @@ class LongDivBus:
 		#--------
 		self.__constants = constants
 		#--------
+		self.inp = Splitrec()
+		self.outp = Splitrec()
+		#--------
 		# Inputs
 
 		if not constants.PIPELINED():
-			self.ready = Signal()
+			self.inp.ready = Signal(name="inp_ready")
 
-		self.numer = Signal(constants.MAIN_WIDTH())
-		self.denom = Signal(constants.DENOM_WIDTH())
-		self.signed = Signal(reset=signed_reset)
+		self.inp.numer = Signal(constants.MAIN_WIDTH(), name="inp_numer")
+		self.inp.denom = Signal(constants.DENOM_WIDTH(), name="inp_denom")
+		self.inp.signed = Signal(reset=signed_reset, name="inp_signed")
 
 		if constants.PIPELINED():
-			self.tag_in = Signal(constants.TAG_WIDTH())
+			self.inp.tag = Signal(constants.TAG_WIDTH(), name="inp_tag")
 		#--------
 		# Outputs
 
 		if not constants.PIPELINED():
-			self.valid = Signal()
+			self.outp.valid = Signal(name="outp_valid")
 
-		self.quot = Signal(constants.MAIN_WIDTH())
-		self.rema = Signal(constants.MAIN_WIDTH())
+		self.outp.quot = Signal(constants.MAIN_WIDTH(), name="outp_quot")
+		self.outp.rema = Signal(constants.MAIN_WIDTH(), name="outp_rema")
 
 		if constants.PIPELINED():
-			self.tag_out = Signal(constants.TAG_WIDTH())
+			self.outp.tag = Signal(constants.TAG_WIDTH(), name="outp_tag")
 		#--------
 	#--------
 	def constants(self):
@@ -77,8 +80,10 @@ class LongDivMultiCycle(Elaboratable):
 		#--------
 		constants = self.__constants
 		bus = self.bus()
+		inp = bus.inp
+		outp = bus.outp
 
-		zero_d = bus.denom == 0
+		zero_d = inp.denom == 0
 		State = LongDivMultiCycle.State
 
 		loc = Blank()
@@ -127,12 +132,12 @@ class LongDivMultiCycle(Elaboratable):
 		#--------
 		m.d.comb \
 		+= [
-			#loc.temp_numer.eq(Mux(bus.signed & bus.numer[-1],
-			#	(~bus.numer) + 1, bus.numer)),
-			loc.temp_numer.eq(Mux(bus.signed & bus.numer[-1],
-				(~bus.numer) + 1, bus.numer)),
-			loc.temp_denom.eq(Mux(bus.signed & bus.denom[-1],
-				(~bus.denom) + 1, bus.denom)),
+			#loc.temp_numer.eq(Mux(inp.signed & inp.numer[-1],
+			#	(~inp.numer) + 1, inp.numer)),
+			loc.temp_numer.eq(Mux(inp.signed & inp.numer[-1],
+				(~inp.numer) + 1, inp.numer)),
+			loc.temp_denom.eq(Mux(inp.signed & inp.denom[-1],
+				(~inp.denom) + 1, inp.denom)),
 
 			loc.quot_will_be_lez.eq(loc.numer_was_lez
 				!= loc.denom_was_lez),
@@ -157,10 +162,10 @@ class LongDivMultiCycle(Elaboratable):
 					#--------
 					m.d.sync \
 					+= [
-						# Need to check for `bus.signed` so that unsigned
+						# Need to check for `inp.signed` so that unsigned
 						# divides still work properly.
-						loc.numer_was_lez.eq(bus.signed & bus.numer[-1]),
-						loc.denom_was_lez.eq(bus.signed & bus.denom[-1]),
+						loc.numer_was_lez.eq(inp.signed & inp.numer[-1]),
+						loc.denom_was_lez.eq(inp.signed & inp.denom[-1]),
 
 						chunk_start.eq(constants.NUM_CHUNKS() - 1),
 
@@ -174,12 +179,12 @@ class LongDivMultiCycle(Elaboratable):
 							for i in range(constants.DML_SIZE())
 					]
 					#--------
-					with m.If(bus.ready):
+					with m.If(inp.ready):
 						m.d.sync \
 						+= [
 							bus.quot.eq(0x0),
 							bus.rema.eq(0x0),
-							bus.valid.eq(0b0),
+							outp.valid.eq(0b0),
 
 							loc.state.eq(State.RUNNING),
 						]
@@ -196,7 +201,7 @@ class LongDivMultiCycle(Elaboratable):
 						+= [
 							bus.quot.eq(loc.temp_bus_quot),
 							bus.rema.eq(loc.temp_bus_rema),
-							bus.valid.eq(0b1),
+							outp.valid.eq(0b1),
 
 							loc.state.eq(State.IDLE),
 						]
@@ -210,7 +215,7 @@ class LongDivMultiCycle(Elaboratable):
 					m.d.comb \
 					+= [
 						#--------
-						Assume(Stable(bus.signed)),
+						Assume(Stable(inp.signed)),
 						#--------
 						Assume(Stable(loc.temp_numer)),
 						Assume(Stable(loc.temp_denom)),
@@ -243,7 +248,7 @@ class LongDivMultiCycle(Elaboratable):
 								Assert(skip_cond
 									| (bus.rema
 										== Past(loc.temp_bus_rema))),
-								Assert(bus.valid),
+								Assert(outp.valid),
 								#--------
 							]
 						#with m.Elif(past_valid & Stable(loc.state)):
@@ -253,11 +258,11 @@ class LongDivMultiCycle(Elaboratable):
 							+= [
 								#--------
 								Assert(loc.numer_was_lez
-									== (Past(bus.signed) 
-										& Past(bus.numer)[-1])),
+									== (Past(inp.signed) 
+										& Past(inp.numer)[-1])),
 								Assert(loc.denom_was_lez
-									== (Past(bus.signed) 
-										& Past(bus.denom)[-1])),
+									== (Past(inp.signed) 
+										& Past(inp.denom)[-1])),
 								#--------
 								Assert(chunk_start
 									== (constants.NUM_CHUNKS() - 1)),
@@ -357,6 +362,8 @@ class LongDivPipelined(Elaboratable):
 		#--------
 		constants = self.__constants
 		bus = self.bus()
+		inp = bus.inp
+		outp = bus.outp
 
 		#NUM_PSTAGES = constants.NUM_CHUNKS() + 1
 		NUM_PSTAGES = constants.NUM_CHUNKS()
@@ -416,13 +423,13 @@ class LongDivPipelined(Elaboratable):
 		m.d.sync \
 		+= [
 			#--------
-			loc.temp_numer.eq(Mux(bus.signed & bus.numer[-1],
-				(~bus.numer) + 1, bus.numer)),
-			loc.temp_denom.eq(Mux(bus.signed & bus.denom[-1],
-				(~bus.denom) + 1, bus.denom)),
+			loc.temp_numer.eq(Mux(inp.signed & inp.numer[-1],
+				(~inp.numer) + 1, inp.numer)),
+			loc.temp_denom.eq(Mux(inp.signed & inp.denom[-1],
+				(~inp.denom) + 1, inp.denom)),
 			#--------
-			loc.numer_was_lez[0].eq(bus.signed & bus.numer[-1]),
-			loc.denom_was_lez[0].eq(bus.signed & bus.denom[-1]),
+			loc.numer_was_lez[0].eq(inp.signed & inp.numer[-1]),
+			loc.denom_was_lez[0].eq(inp.signed & inp.denom[-1]),
 
 			loc.quot_will_be_lez[0].eq(loc.numer_was_lez[0]
 				!= loc.denom_was_lez[0]),
@@ -474,7 +481,7 @@ class LongDivPipelined(Elaboratable):
 			itd_in[0].temp_quot.eq(0x0),
 			itd_in[0].temp_rema.eq(0x0),
 
-			itd_in[0].tag.eq(bus.tag_in),
+			itd_in[0].tag.eq(inp.tag),
 		]
 		m.d.sync \
 		+= [
@@ -515,16 +522,16 @@ class LongDivPipelined(Elaboratable):
 				+= [
 					#--------
 					Assert(loc.temp_numer
-						== Mux(Past(bus.signed) & Past(bus.numer)[-1],
-							(~Past(bus.numer)) + 1, Past(bus.numer))),
+						== Mux(Past(inp.signed) & Past(inp.numer)[-1],
+							(~Past(inp.numer)) + 1, Past(inp.numer))),
 					Assert(loc.temp_denom
-						== Mux(Past(bus.signed) & Past(bus.denom)[-1],
-							(~Past(bus.denom)) + 1, Past(bus.denom))),
+						== Mux(Past(inp.signed) & Past(inp.denom)[-1],
+							(~Past(inp.denom)) + 1, Past(inp.denom))),
 					#--------
 					Assert(loc.numer_was_lez[0]
-						== (Past(bus.signed) & Past(bus.numer)[-1])),
+						== (Past(inp.signed) & Past(inp.numer)[-1])),
 					Assert(loc.denom_was_lez[0]
-						== (Past(bus.signed) & Past(bus.denom)[-1])),
+						== (Past(inp.signed) & Past(inp.denom)[-1])),
 
 					Assert(loc.quot_will_be_lez[0]
 						== (Past(loc.numer_was_lez)[0]

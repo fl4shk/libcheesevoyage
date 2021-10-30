@@ -42,14 +42,18 @@ class ReduceTreeBus:
 		#		else self.INP_DATA_WIDTH()
 		self.__OUTP_DATA_WIDTH = self.INP_DATA_WIDTH() + self.NUM_STAGES()
 		#--------
-		self.inp_data \
-			= [
+		self.inp = Splitrec()
+		self.outp = Splitrec()
+
+		self.inp.data \
+			= Splitlist \
+			([
 				Signal(self.INP_DATA_WIDTH(),
 					name=psconcat("inp_data_", i))
 					for i in range(self.INP_SIZE())
-			]
+			])
 
-		self.outp_data = Signal(self.OUTP_DATA_WIDTH(), name="outp_data")
+		self.outp.data = Signal(self.OUTP_DATA_WIDTH(), name="outp_data")
 		#--------
 	#--------
 	def INP_DATA_WIDTH(self):
