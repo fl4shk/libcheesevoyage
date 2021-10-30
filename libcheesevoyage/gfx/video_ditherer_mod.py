@@ -159,19 +159,26 @@ class VideoDitherer(Elaboratable):
 			with m.Else():
 				m.d.comb += loc.dicol.r.eq(loc.col_in_plus_delta.r
 					[:len(loc.dicol.r)])
+			#m.d.comb += loc.dicol.r.eq(loc.col_in_plus_delta.r
+			#	[:len(loc.dicol.r)])
+
 			with m.If(loc.col_in_plus_delta.g
 				[len(loc.col_in_plus_delta.g) - 1]):
 				m.d.comb += loc.dicol.g.eq(-1)
 			with m.Else():
 				m.d.comb += loc.dicol.g.eq(loc.col_in_plus_delta.g
 					[:len(loc.dicol.g)])
+			#m.d.comb += loc.dicol.g.eq(loc.col_in_plus_delta.g
+			#	[:len(loc.dicol.g)])
+
 			with m.If(loc.col_in_plus_delta.b
 				[len(loc.col_in_plus_delta.b) - 1]):
 				m.d.comb += loc.dicol.b.eq(-1)
 			with m.Else():
 				m.d.comb += loc.dicol.b.eq(loc.col_in_plus_delta.b
 					[:len(loc.dicol.b)])
-
+			#m.d.comb += loc.dicol.b.eq(loc.col_in_plus_delta.b
+			#	[:len(loc.dicol.b)])
 
 			m.d.comb \
 			+= [
@@ -182,6 +189,9 @@ class VideoDitherer(Elaboratable):
 				outp.col.r.eq(loc.dicol.r[bus.CHAN_WIDTH_DELTA():]),
 				outp.col.g.eq(loc.dicol.g[bus.CHAN_WIDTH_DELTA():]),
 				outp.col.b.eq(loc.dicol.b[bus.CHAN_WIDTH_DELTA():]),
+				#outp.col.r.eq(loc.dicol.r[bus.CHAN_WIDTH_DELTA():]),
+				#outp.col.g.eq(-1),
+				#outp.col.b.eq(loc.dicol.b[bus.CHAN_WIDTH_DELTA():]),
 			]
 
 		with m.Else(): # If(~bus.en):
