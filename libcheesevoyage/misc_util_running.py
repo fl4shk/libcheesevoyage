@@ -25,7 +25,7 @@ def inner_ports(bus):
 				ret += [Value.cast(val)]
 			elif isinstance(val, Packarr):
 				ret += [Value.cast(val)]
-			elif isinstance(val, Splitlist):
+			elif isinstance(val, Splitarr):
 				ret += list(val)
 			#elif isinstance(val, Splitrec):
 			#	ret += val.flattened()

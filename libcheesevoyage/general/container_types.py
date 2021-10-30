@@ -883,65 +883,6 @@ class Packarr(ValueCastable):
 			#		"`Value`"))
 	#--------
 #--------
-class Splitlist(ValueCastable):
-	#--------
-	def __init__(self, lst: list={}, *, name=None, src_loc_at=0):
-		self.__lst = lst
-		self.__extra_args_name = name
-		self.__extra_args_src_loc_at = src_loc_at
-	#--------
-	def lst(self):
-		return self.__lst
-
-	def extra_args_name(self):
-		return self.__extra_args_name
-	def extra_args_src_loc_at(self):
-		return self.__extra_args_src_loc_at
-	#--------
-	def __getitem__(self, key):
-		return self.lst()[key]
-	def __setitem__(self, key, val):
-		self.lst()[key] = val
-	#--------
-	def eq(self, other):
-		try:
-			Value.cast(other)
-		except Exception:
-			raise TypeError(psconcat
-				("Need to be able to cast `other`, {!r}, ".format(other),
-				"to `Value"))
-		return self.as_value().eq(Value.cast(other))
-	#--------
-	@ValueCastable.lowermethod
-	def as_value(self):
-		return Cat(*self.flattened())
-	def __len__(self):
-		return len(self.as_value())
-	def __iter__(self):
-		for item in self.lst():
-			yield item
-	def __list__(self):
-		return self.lst()
-	#--------
-	def flattened(self):
-		ret = []
-
-		for val in self:
-			Splitrec.check_val_type("Splitlist.flattened()", val)
-
-			#if isinstance(val, Signal) or isinstance(val, Packrec) \
-			#	or isinstance(val, Packarr):
-			#	ret.append(val)
-			#else:
-			if isinstance(val, Splitlist) \
-				or isinstance(val, Splitrec):
-				ret.append(val.flattened())
-			else:
-				ret.append(val)
-
-		return ret
-	#--------
-#--------
 # A record type which is composed of separate signals.  This allows setting
 # the attributes of every signal.
 class Splitrec(ValueCastable):
@@ -977,41 +918,45 @@ class Splitrec(ValueCastable):
 					.format(ElemKindT),
 				": `int`, `Packrec.Layout`, `list`, or `Packarr.Shape`"))
 	#--------
-	#@staticmethod
-	#def like(other, name=None, name_suffix=None, src_loc_at=0, **kwargs):
-	#	if name is not None:
-	#		new_name = str(name)
-	#	elif name_suffix is not None:
-	#		new_name = other.name() + str(name_suffix)
-	#	else:
-	#		new_name = tracer.get_var_name(depth=src_loc_at + 2, 
-	#			default=None)
+	@staticmethod
+	def like(other, name=None, name_suffix=None, src_loc_at=0, **kwargs):
+		if name is not None:
+			new_name = str(name)
+		elif name_suffix is not None:
+			new_name = other.name() + str(name_suffix)
+		else:
+			new_name = tracer.get_var_name(depth=src_loc_at + 2, 
+				default=None)
 
-	#	fields = {}
+		fields = {}
 
-	#	for name, field in other.fields():
-	#		if isinstance(field, Signal):
-	#			fields[name] = Signal.like(field, name=)
-	#		elif isinstance(field, Packrec):
-	#			fields[name] = Packrec.like(field)
+		for name, field in other.fields():
+			try:
+				Value.cast(field)
+			except Exception:
+				raise TypeError(("`field` `{!r}` must be castable to "
+					+ "`Value`").format(field)) from None
 
-	#	kw \
-	#		= dict \
-	#		(
-	#			fields=fields
-	#		)
+			fields[name] = type(field).like(field, name=new_name,
+				src_loc_at=src_loc_at)
 
-	#	kw.update(kwargs)
+		kw \
+			= dict \
+			(
+				fields=fields
+			)
 
-	#	return Splitrec(**kw)
+		kw.update(kwargs)
+
+		return Splitrec(**kw)
 	
 	def __init__(self, fields: dict={}, *, name=None, src_loc_at=0):
 		#self.__dict__["__fields"] = fields
 		#self.__dict__["_Splitrec__fields"] = fields
 
 		#self.__fields = fields
-		for name, field in fields:
-			self.__setattr__(name, field)
+		for key, field in fields:
+			self.__setattr__(key, field)
 
 		self.__extra_args_name = name
 		self.__extra_args_src_loc_at = src_loc_at
@@ -1079,10 +1024,10 @@ class Splitrec(ValueCastable):
 		#if (not isinstance(val, Signal)) \
 		#	and (not isinstance(val, Packrec)) \
 		#	and (not isinstance(val, Packarr)) \
-		#	and (not isinstance(val, Splitlist)) \
+		#	and (not isinstance(val, Splitarr)) \
 		#	and (not isinstance(val, Splitrec)):
 		#	raise TypeError(psconcat(prefix_str, " ",
-		#		"Need a `Signal`, `Packrec`, `Packarr`, `Splitlist`, or "
+		#		"Need a `Signal`, `Packrec`, `Packarr`, `Splitarr`, or "
 		#		"`Splitrec` for `val` {!r}".format(val)))
 
 		try:
@@ -1099,10 +1044,10 @@ class Splitrec(ValueCastable):
 			#if isinstance(val, Signal) or isinstance(val, Packrec) \
 			#	or isinstance(val, Packarr):
 			#	ret.append(val)
-			#else: # if isinstance(val, Splitlist) \
+			#else: # if isinstance(val, Splitarr) \
 			#	# or isinstance(val, Splitrec):
 			#	ret.append(val.flattened())
-			if isinstance(val, Splitlist) \
+			if isinstance(val, Splitarr) \
 				or isinstance(val, Splitrec):
 				ret.append(val.flattened())
 			else:
@@ -1111,6 +1056,65 @@ class Splitrec(ValueCastable):
 		return ret
 	#def cat(self):
 	#	return eval(psconcat("Cat(" + ",".join(self.flattened()) + ")"))
+	#--------
+#--------
+class Splitarr(ValueCastable):
+	#--------
+	def __init__(self, lst: list={}, *, name=None, src_loc_at=0):
+		self.__lst = lst
+		self.__extra_args_name = name
+		self.__extra_args_src_loc_at = src_loc_at
+	#--------
+	def lst(self):
+		return self.__lst
+
+	def extra_args_name(self):
+		return self.__extra_args_name
+	def extra_args_src_loc_at(self):
+		return self.__extra_args_src_loc_at
+	#--------
+	def __getitem__(self, key):
+		return self.lst()[key]
+	def __setitem__(self, key, val):
+		self.lst()[key] = val
+	#--------
+	def eq(self, other):
+		try:
+			Value.cast(other)
+		except Exception:
+			raise TypeError(psconcat
+				("Need to be able to cast `other`, {!r}, ".format(other),
+				"to `Value"))
+		return self.as_value().eq(Value.cast(other))
+	#--------
+	@ValueCastable.lowermethod
+	def as_value(self):
+		return Cat(*self.flattened())
+	def __len__(self):
+		return len(self.as_value())
+	def __iter__(self):
+		for item in self.lst():
+			yield item
+	def __list__(self):
+		return self.lst()
+	#--------
+	def flattened(self):
+		ret = []
+
+		for val in self:
+			Splitrec.check_val_type("Splitarr.flattened()", val)
+
+			#if isinstance(val, Signal) or isinstance(val, Packrec) \
+			#	or isinstance(val, Packarr):
+			#	ret.append(val)
+			#else:
+			if isinstance(val, Splitarr) \
+				or isinstance(val, Splitrec):
+				ret.append(val.flattened())
+			else:
+				ret.append(val)
+
+		return ret
 	#--------
 #--------
 #class Vec2Layout(Packrec.Layout):

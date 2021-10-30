@@ -46,7 +46,7 @@ class ReduceTreeBus:
 		self.outp = Splitrec()
 
 		self.inp.data \
-			= Splitlist \
+			= Splitarr \
 			([
 				Signal(self.INP_DATA_WIDTH(),
 					name=psconcat("inp_data_", i))
