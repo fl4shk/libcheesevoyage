@@ -1060,6 +1060,38 @@ class Splitrec(ValueCastable):
 #--------
 class Splitarr(ValueCastable):
 	#--------
+	@staticmethod
+	def like(other, name=None, name_suffix=None, src_loc_at=0, **kwargs):
+		if name is not None:
+			new_name = str(name)
+		elif name_suffix is not None:
+			new_name = other.name() + str(name_suffix)
+		else:
+			new_name = tracer.get_var_name(depth=src_loc_at + 2, 
+				default=None)
+
+		lst = []
+
+		for elem in other.lst():
+			try:
+				Value.cast(elem)
+			except Exception:
+				raise TypeError(("`field` `{!r}` must be castable to "
+					+ "`Value`").format(field)) from None
+
+			lst.append(type(elem).like(field, name=new_name,
+				src_loc_at=src_loc_at))
+
+		kw \
+			= dict \
+			(
+				lst=lst
+			)
+
+		kw.update(kwargs)
+
+		return Splitrec(**kw)
+	#--------
 	def __init__(self, lst: list={}, *, name=None, src_loc_at=0):
 		self.__lst = lst
 		self.__extra_args_name = name
