@@ -11,15 +11,18 @@ class VideoDithererBus:
 	def __init__(self, FB_SIZE, CHAN_WIDTH):
 		self.__FB_SIZE, self.__CHAN_WIDTH = FB_SIZE, CHAN_WIDTH
 
-		self.en = Signal()
+		self.inp = Splitrec()
+		self.outp = Splitrec()
 
-		self.col_out = RgbColor(CHAN_WIDTH=self.OUT_CHAN_WIDTH())
-		self.col_in = RgbColor(CHAN_WIDTH=self.CHAN_WIDTH())
+		self.inp.en = Signal()
 
-		self.frame_cnt = Signal(self.DITHER_DELTA_WIDTH())
-		self.next_pos = self.CoordT()
-		self.pos = self.CoordT()
-		self.past_pos = self.CoordT()
+		self.outp.col = RgbColor(CHAN_WIDTH=self.OUT_CHAN_WIDTH())
+		self.inp.col = RgbColor(CHAN_WIDTH=self.CHAN_WIDTH())
+
+		self.outp.frame_cnt = Signal(self.DITHER_DELTA_WIDTH())
+		self.outp.next_pos = self.CoordT()
+		self.outp.pos = self.CoordT()
+		self.outp.past_pos = self.CoordT()
 
 		# Need a channel width of at least 3 for dithering to work (though
 		# if it *were* 3, it probably wouldn't work very well!)
@@ -94,56 +97,59 @@ class VideoDitherer(Elaboratable):
 		m = Module()
 		#--------
 		bus = self.bus()
+		inp = bus.inp
+		outp = bus.outp
+
 		loc = Blank()
 		#--------
 		loc.past_col_out = RgbColor(CHAN_WIDTH=bus.OUT_CHAN_WIDTH())
-		with m.If(bus.en):
+		with m.If(inp.en):
 			m.d.sync \
 			+= [
-				loc.past_col_out.eq(bus.col_out),
-				bus.past_pos.eq(bus.pos),
+				loc.past_col_out.eq(outp.col),
+				outp.past_pos.eq(outp.pos),
 			]
 
-			# Update `bus.pos` and `bus.frame_cnt`
-			loc.POS_PLUS_1 = {"x": bus.pos.x + 0x1, "y": bus.pos.y + 0x1}
+			# Update `outp.pos` and `outp.frame_cnt`
+			loc.POS_PLUS_1 = {"x": outp.pos.x + 0x1, "y": outp.pos.y + 0x1}
 			with m.If(loc.POS_PLUS_1["x"] < bus.FB_SIZE().x):
-				#m.d.sync += bus.pos.x.eq(loc.POS_PLUS_1["x"])
+				#m.d.sync += outp.pos.x.eq(loc.POS_PLUS_1["x"])
 				m.d.comb \
 				+= [
-					bus.next_pos.x.eq(loc.POS_PLUS_1["x"]),
-					bus.next_pos.y.eq(bus.pos.y),
+					outp.next_pos.x.eq(loc.POS_PLUS_1["x"]),
+					outp.next_pos.y.eq(outp.pos.y),
 				]
 			with m.Else(): # If(loc.POS_PLUS_1["x"] >= bus.FB_SIZE().x):
-				#m.d.sync += bus.pos.x.eq(0x0)
-				m.d.comb += bus.next_pos.x.eq(0x0),
+				#m.d.sync += outp.pos.x.eq(0x0)
+				m.d.comb += outp.next_pos.x.eq(0x0),
 				with m.If(loc.POS_PLUS_1["y"] < bus.FB_SIZE().y):
-					m.d.comb += bus.next_pos.y.eq(loc.POS_PLUS_1["y"])
+					m.d.comb += outp.next_pos.y.eq(loc.POS_PLUS_1["y"])
 				with m.Else():
 					# If(loc.POS_PLUS_1["y"] >= bus.FB_SIZE().y):
-					m.d.comb += bus.next_pos.y.eq(0x0)
+					m.d.comb += outp.next_pos.y.eq(0x0)
 
 					# This wraps around to zero automatically due to
 					# modular arithmetic, so we don't need another mux just
 					# for this.
-					m.d.sync += bus.frame_cnt.eq(bus.frame_cnt + 0x1)
+					m.d.sync += outp.frame_cnt.eq(outp.frame_cnt + 0x1)
 			m.d.sync \
 			+= [
-				bus.pos.eq(bus.next_pos)
+				outp.pos.eq(outp.next_pos)
 			]
 
 			# Perform dithering
 			loc.dicol = RgbColor(CHAN_WIDTH=bus.CHAN_WIDTH())
 			loc.CHAN_DELTA \
-				= self.PATTERN()[bus.frame_cnt][Value.cast(bus.pos.y[0])] \
-					[Value.cast(bus.pos.x[0])]
+				= self.PATTERN()[outp.frame_cnt] \
+					[Value.cast(outp.pos.y[0])][Value.cast(outp.pos.x[0])]
 			loc.col_in_plus_delta \
 				= RgbColor(CHAN_WIDTH=bus.CHAN_WIDTH() + 1)
 
 			m.d.comb \
 			+= [
-				loc.col_in_plus_delta.r.eq(bus.col_in.r + loc.CHAN_DELTA),
-				loc.col_in_plus_delta.g.eq(bus.col_in.g + loc.CHAN_DELTA),
-				loc.col_in_plus_delta.b.eq(bus.col_in.b + loc.CHAN_DELTA),
+				loc.col_in_plus_delta.r.eq(inp.col.r + loc.CHAN_DELTA),
+				loc.col_in_plus_delta.g.eq(inp.col.g + loc.CHAN_DELTA),
+				loc.col_in_plus_delta.b.eq(inp.col.b + loc.CHAN_DELTA),
 			]
 
 			# Saturating arithmetic to prevent an artifact
@@ -173,16 +179,16 @@ class VideoDitherer(Elaboratable):
 				#loc.dicol.g.eq(loc.COL_IN_PLUS_DELTA["g"]),
 				#loc.dicol.b.eq(loc.COL_IN_PLUS_DELTA["b"]),
 
-				bus.col_out.r.eq(loc.dicol.r[bus.CHAN_WIDTH_DELTA():]),
-				bus.col_out.g.eq(loc.dicol.g[bus.CHAN_WIDTH_DELTA():]),
-				bus.col_out.b.eq(loc.dicol.b[bus.CHAN_WIDTH_DELTA():]),
+				outp.col.r.eq(loc.dicol.r[bus.CHAN_WIDTH_DELTA():]),
+				outp.col.g.eq(loc.dicol.g[bus.CHAN_WIDTH_DELTA():]),
+				outp.col.b.eq(loc.dicol.b[bus.CHAN_WIDTH_DELTA():]),
 			]
 
 		with m.Else(): # If(~bus.en):
 			m.d.comb \
 			+= [
-				bus.col_out.eq(loc.past_col_out),
-				bus.next_pos.eq(bus.pos),
+				outp.col.eq(loc.past_col_out),
+				outp.next_pos.eq(outp.pos),
 			]
 		#--------
 		return m

@@ -123,7 +123,7 @@ class RgbColor(Packrec):
 		return 4
 
 	def CHAN_WIDTH(self):
-		return self.layout.CHAN_WIDTH()
+		return self.layout().CHAN_WIDTH()
 	def drive(self, other):
 		self.layout.drive(other)
 
@@ -135,15 +135,27 @@ class RgbColor(Packrec):
 #			("prep", 1),
 #			("col", RgbColorLayout(CHAN_WIDTH=CHAN_WIDTH)),
 #		])
-class VgaDriverBuf(Splitrec):
+
+#class VgaDriverBuf(Splitrec):
+#	def __init__(self, CHAN_WIDTH=RgbColor.DEF_CHAN_WIDTH()):
+#		#super().__init__(VgaDriverBufLayout(CHAN_WIDTH=CHAN_WIDTH))
+#		self.can_prep = Splitrec.cast_elem(1)
+#		self.prep = Splitrec.cast_elem(1)
+#		self.col = Splitrec.cast_elem \
+#			(RgbColorLayout(CHAN_WIDTH=CHAN_WIDTH))
+#
+#		self.__CHAN_WIDTH = CHAN_WIDTH
+#
+#	def CHAN_WIDTH(self):
+#		return self.__CHAN_WIDTH
+class VgaDriverBufInp(Splitrec):
 	def __init__(self, CHAN_WIDTH=RgbColor.DEF_CHAN_WIDTH()):
-		#super().__init__(VgaDriverBufLayout(CHAN_WIDTH=CHAN_WIDTH))
-		self.can_prep = Splitrec.cast_elem(1)
 		self.prep = Splitrec.cast_elem(1)
 		self.col = Splitrec.cast_elem \
 			(RgbColorLayout(CHAN_WIDTH=CHAN_WIDTH))
-
-		self.__CHAN_WIDTH = CHAN_WIDTH
-
+		
 	def CHAN_WIDTH(self):
 		return self.__CHAN_WIDTH
+class VgaDriverBufOutp(Splitrec):
+	def __init__(self):
+		self.can_prep = Splitrec.cast_elem(1)

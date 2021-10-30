@@ -5,24 +5,29 @@ from nmigen.asserts import Assert, Assume, Cover
 from nmigen.asserts import Past, Rose, Fell, Stable
 
 from libcheesevoyage.misc_util import *
+from libcheesevoyage.general.container_types import *
 #--------
 class FifoBus:
 	def __init__(self, ShapeT, SIZE):
 		self.__ShapeT, self.__SIZE = ShapeT, SIZE
 		#--------
+		self.inp = Splitrec()
+		self.outp = Splitrec()
+		#--------
 		#self.clk = Signal()
 		#self.rst = Signal()
 		#--------
 		# Inputs
-		self.wr_en = Signal()
-		self.wr_data = Signal(self.ShapeT())
+		self.inp.wr_en = Signal()
+		self.inp.wr_data = Signal(self.ShapeT())
 
-		self.rd_en = Signal()
-		self.rd_data = Signal(self.ShapeT())
+		self.inp.rd_en = Signal()
 		#--------
 		# Outputs
-		self.empty = Signal()
-		self.full = Signal()
+		self.outp.rd_data = Signal(self.ShapeT())
+
+		self.outp.empty = Signal()
+		self.outp.full = Signal()
 		#--------
 
 	def ShapeT(self):
@@ -55,6 +60,8 @@ class Fifo(Elaboratable):
 		#--------
 		# Local variables
 		bus = self.bus()
+		inp = bus.inp
+		outp = bus.outp
 
 		loc = Blank()
 
@@ -114,15 +121,15 @@ class Fifo(Elaboratable):
 			loc.next_empty.eq(loc.next_head == loc.next_tail),
 			#loc.next_full.eq((loc.next_head + 0x1) == loc.next_tail),
 
-			#loc.curr_en_cat.eq(Cat(bus.rd_en, bus.wr_en)),
+			#loc.curr_en_cat.eq(Cat(inp.rd_en, inp.wr_en)),
 		]
 
-		with m.If(bus.rd_en & (~bus.empty)):
+		with m.If(inp.rd_en & (~outp.empty)):
 			m.d.comb += loc.next_tail.eq(loc.incr_tail)
 		with m.Else():
 			m.d.comb += loc.next_tail.eq(loc.tail)
 
-		with m.If(bus.wr_en & (~bus.full)):
+		with m.If(inp.wr_en & (~outp.full)):
 			m.d.comb \
 			+= [
 				loc.next_head.eq(loc.incr_head),
@@ -138,9 +145,9 @@ class Fifo(Elaboratable):
 		if self.FORMAL():
 			m.d.comb \
 			+= [
-				Cover(bus.empty),
-				Cover(bus.full),
-				Cover((~bus.empty) & (~bus.full)),
+				Cover(outp.empty),
+				Cover(outp.full),
+				Cover((~outp.empty) & (~outp.full)),
 			]
 		#--------
 		# Clocked behavioral code
@@ -156,10 +163,10 @@ class Fifo(Elaboratable):
 				loc.tail.eq(0x0),
 				loc.head.eq(0x0),
 
-				#bus.rd_data.eq(bus.ShapeT()()),
+				#outp.rd_data.eq(bus.ShapeT()()),
 
-				bus.empty.eq(0b1),
-				bus.full.eq(0b0),
+				outp.empty.eq(0b1),
+				outp.full.eq(0b0),
 			]
 			if self.FORMAL():
 				m.d.sync += loc.formal.past_valid.eq(0b1)
@@ -168,52 +175,52 @@ class Fifo(Elaboratable):
 			#--------
 			m.d.sync \
 			+= [
-				bus.empty.eq(loc.next_empty),
-				bus.full.eq(loc.next_full),
+				outp.empty.eq(loc.next_empty),
+				outp.full.eq(loc.next_full),
 				loc.tail.eq(loc.next_tail),
 				loc.head.eq(loc.next_head),
 			]
 
-			with m.If(bus.rd_en & (~bus.empty)):
-				m.d.sync += bus.rd_data.eq(loc.arr[loc.tail])
-			with m.If(bus.wr_en & (~bus.full)):
-				m.d.sync += loc.arr[loc.head].eq(bus.wr_data)
+			with m.If(inp.rd_en & (~outp.empty)):
+				m.d.sync += outp.rd_data.eq(loc.arr[loc.tail])
+			with m.If(inp.wr_en & (~outp.full)):
+				m.d.sync += loc.arr[loc.head].eq(inp.wr_data)
 			#--------
 			if self.FORMAL():
 				with m.If(loc.formal.past_valid):
 					m.d.sync \
 					+= [
-						Assert(bus.empty == Past(loc.next_empty)),
-						Assert(bus.full == Past(loc.next_full)),
+						Assert(outp.empty == Past(loc.next_empty)),
+						Assert(outp.full == Past(loc.next_full)),
 						Assert(loc.tail == Past(loc.next_tail)),
 						Assert(loc.head == Past(loc.next_head)),
 					]
-					with m.If(Past(bus.rd_en)):
-						with m.If(Past(bus.empty)):
+					with m.If(Past(inp.rd_en)):
+						with m.If(Past(outp.empty)):
 							m.d.sync \
 							+= [
-								#Assert(Stable(bus.empty)),
+								#Assert(Stable(outp.empty)),
 								Assert(Stable(loc.tail)),
 							]
-						with m.Else(): # If(~Past(bus.empty)):
-							#with m.If(~Past(bus.wr_en)):
+						with m.Else(): # If(~Past(outp.empty)):
+							#with m.If(~Past(inp.wr_en)):
 							m.d.sync \
 							+= [
-								Assert(bus.rd_data
+								Assert(outp.rd_data
 									== loc.arr[Past(loc.tail)])
 							]
-					with m.If(Past(bus.wr_en)):
-						with m.If(Past(bus.full)):
+					with m.If(Past(inp.wr_en)):
+						with m.If(Past(outp.full)):
 							m.d.sync \
 							+= [
 								Assert(Stable(loc.head)),
 							]
-						#with m.Else(): # If(~Past(bus.full)):
+						#with m.Else(): # If(~Past(outp.full)):
 						#	m.d.sync \
 						#	+= [
-						#		Assert(Past(bus.wr_data))
+						#		Assert(Past(inp.wr_data))
 						#	]
-					with m.Switch(Cat(bus.empty, bus.full)):
+					with m.Switch(Cat(outp.empty, outp.full)):
 						with m.Case(0b00):
 							m.d.sync \
 							+= [
@@ -232,9 +239,9 @@ class Fifo(Elaboratable):
 							]
 					m.d.sync \
 					+= [
-						Assert(~(bus.empty & bus.full)),
-						#Assume(~Stable(bus.wr_data)),
-						#Assume(bus.wr_data == loc.formal.wd_cnt),
+						Assert(~(outp.empty & outp.full)),
+						#Assume(~Stable(inp.wr_data)),
+						#Assume(inp.wr_data == loc.formal.wd_cnt),
 					]
 			#--------
 		#--------
@@ -252,6 +259,8 @@ class AsyncReadFifo(Fifo):
 		#--------
 		# Local variables
 		bus = self.bus()
+		inp = bus.inp
+		outp = bus.outp
 
 		loc = Blank()
 		loc.arr = Array([Signal(bus.ShapeT()) for _ in range(bus.SIZE())])
@@ -280,10 +289,10 @@ class AsyncReadFifo(Fifo):
 		#--------
 		# Combinational logic
 
-		#with m.If((~bus.empty) & bus.rd_en):
-		#	m.d.comb += bus.rd_data.eq(loc.arr[loc.tail])
+		#with m.If((~outp.empty) & inp.rd_en):
+		#	m.d.comb += outp.rd_data.eq(loc.arr[loc.tail])
 
-		m.d.comb += bus.rd_data.eq(loc.arr[loc.tail])
+		m.d.comb += outp.rd_data.eq(loc.arr[loc.tail])
 
 		# Compute `loc.next_head` and write into the FIFO if it's not full
 		loc.HEAD_PLUS_1 = loc.head + 0x1
@@ -294,8 +303,8 @@ class AsyncReadFifo(Fifo):
 				loc.next_tail.eq(0x0),
 			]
 		with m.Else(): # If(~loc.rst):
-			with m.If((~bus.full) & bus.wr_en):
-				#m.d.sync += loc.arr[loc.head].eq(bus.wr_data)
+			with m.If((~outp.full) & inp.wr_en):
+				#m.d.sync += loc.arr[loc.head].eq(inp.wr_data)
 
 				with m.If(loc.HEAD_PLUS_1 >= bus.SIZE()):
 					m.d.comb += loc.next_head.eq(0x0)
@@ -306,7 +315,7 @@ class AsyncReadFifo(Fifo):
 
 			# Compute `loc.next_tail`
 			loc.TAIL_PLUS_1 = loc.tail + 0x1
-			with m.If((~bus.empty) & bus.rd_en):
+			with m.If((~outp.empty) & inp.rd_en):
 				with m.If(loc.TAIL_PLUS_1 >= bus.SIZE()):
 					m.d.comb += loc.next_tail.eq(0x0)
 				with m.Else():
@@ -343,10 +352,10 @@ class AsyncReadFifo(Fifo):
 		#	m.d.comb \
 		#	+= [
 		#		Cover(loc.formal.past_valid)
-		#		#Cover(loc.formal.past_valid & bus.empty),
-		#		#Cover(loc.formal.past_valid & bus.full),
-		#		#Cover(loc.formal.past_valid & (~bus.empty)
-		#		#	& (~bus.full)),
+		#		#Cover(loc.formal.past_valid & outp.empty),
+		#		#Cover(loc.formal.past_valid & outp.full),
+		#		#Cover(loc.formal.past_valid & (~outp.empty)
+		#		#	& (~outp.full)),
 		#	]
 		#--------
 		# Sequential logic
@@ -360,8 +369,8 @@ class AsyncReadFifo(Fifo):
 		+= [
 			loc.head.eq(loc.next_head),
 			loc.tail.eq(loc.next_tail),
-			bus.empty.eq(loc.next_empty),
-			bus.full.eq(loc.next_full),
+			outp.empty.eq(loc.next_empty),
+			outp.full.eq(loc.next_full),
 		]
 		#with m.If(loc.rst):
 		#	#--------
@@ -370,8 +379,8 @@ class AsyncReadFifo(Fifo):
 		#		loc.head.eq(0x0),
 		#		loc.tail.eq(0x0),
 
-		#		bus.empty.eq(0b1),
-		#		bus.full.eq(0b0),
+		#		outp.empty.eq(0b1),
+		#		outp.full.eq(0b0),
 		#	]
 		#	#--------
 		#with m.Else(): # If(~loc.rst):
@@ -379,58 +388,58 @@ class AsyncReadFifo(Fifo):
 			#--------
 
 			# Write into the FIFO
-			with m.If((~bus.full) & bus.wr_en):
-				m.d.sync += loc.arr[loc.head].eq(bus.wr_data)
+			with m.If((~outp.full) & inp.wr_en):
+				m.d.sync += loc.arr[loc.head].eq(inp.wr_data)
 			#--------
 			if self.FORMAL():
 				#m.d.comb += Cover(loc.formal.past_valid)
 				with m.If(loc.formal.past_valid):
 					m.d.sync \
 					+= [
-						Cover(bus.empty),
-						Cover(bus.full),
-						Cover(~(bus.empty & bus.full)),
+						Cover(outp.empty),
+						Cover(outp.full),
+						Cover(~(outp.empty & outp.full)),
 					]
 
 					m.d.sync \
 					+= [
 						#Assert(loc.head == Past(loc.next_head)),
 						#Assert(loc.tail == Past(loc.next_tail)),
-						#Assert(bus.empty == Past(loc.next_empty)),
-						#Assert(bus.full == Past(loc.next_full)),
-						Assert(~(bus.empty & bus.full)),
+						#Assert(outp.empty == Past(loc.next_empty)),
+						#Assert(outp.full == Past(loc.next_full)),
+						Assert(~(outp.empty & outp.full)),
 
-						Assert(bus.rd_data == loc.arr[loc.tail]),
+						Assert(outp.rd_data == loc.arr[loc.tail]),
 					]
 
-					with m.If(Past(bus.rd_en)):
-						with m.If(Past(bus.empty)):
+					with m.If(Past(inp.rd_en)):
+						with m.If(Past(outp.empty)):
 							m.d.sync += Assert(Stable(loc.tail)),
-						with m.Else(): # If(~Past(bus.empty)):
+						with m.Else(): # If(~Past(outp.empty)):
 							m.d.sync += Assert(loc.tail
 								== ((Past(loc.tail) + 1) % bus.SIZE()))
-					with m.Else(): # If(~Past(bus.rd_en)):
+					with m.Else(): # If(~Past(inp.rd_en)):
 						m.d.sync \
 						+= [
-							#Assert(Stable(bus.empty)),
+							#Assert(Stable(outp.empty)),
 							Assert(Stable(loc.tail)),
 						]
 
-					with m.If(Past(bus.wr_en)):
-						with m.If(Past(bus.full)):
+					with m.If(Past(inp.wr_en)):
+						with m.If(Past(outp.full)):
 							m.d.sync += Assert(Stable(loc.head))
-						with m.Else(): # If(~Past(bus.full)):
+						with m.Else(): # If(~Past(outp.full)):
 							m.d.sync += Assert(loc.head
 								== ((Past(loc.head) + 1) % bus.SIZE()))
-					with m.Else(): # If(~Past(bus.wr_en)):
+					with m.Else(): # If(~Past(inp.wr_en)):
 						m.d.sync \
 						+= [
-							#Assert(Stable(bus.full)),
+							#Assert(Stable(outp.full)),
 							Assert(Stable(loc.head)),
 						]
 
 
-					with m.Switch(Cat(bus.empty, bus.full)):
+					with m.Switch(Cat(outp.empty, outp.full)):
 						# neither full nor empty
 						with m.Case(0b00):
 							m.d.sync \
@@ -455,14 +464,14 @@ class AsyncReadFifo(Fifo):
 
 					# empty
 					with m.If(loc.head == loc.tail):
-						m.d.sync += Assert(bus.empty
-							& (~bus.full))
+						m.d.sync += Assert(outp.empty
+							& (~outp.full))
 					with m.Elif(loc.formal.test_head == loc.tail):
-						m.d.sync += Assert((~bus.empty)
-							& bus.full)
+						m.d.sync += Assert((~outp.empty)
+							& outp.full)
 					with m.Else():
-						m.d.sync += Assert((~bus.empty)
-							& (~bus.full))
+						m.d.sync += Assert((~outp.empty)
+							& (~outp.full))
 			#--------
 		#--------
 		return m

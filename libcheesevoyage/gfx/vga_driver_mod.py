@@ -99,71 +99,39 @@ VGA_TIMING_INFO_DICT \
 		),
 }
 
-#class VgaDriverBusLayout(Layout):
-#	def __init__(self):
-#		super().__init__ \
-#		([
-#			# Global VGA driving enable (white screen when off)
-#			("en", unsigned(1)),
-#
-#			# VGA physical pins
-#			("col", RgbColorLayout()),
-#			("hsync", unsigned(1)),
-#			("vsync", unsigned(1)),
-#
-#			# Pixel buffer
-#			("buf", VgaDriverBufLayout()),
-#
-#			# Debug
-#			("dbg_fifo_empty", unsigned(1)),
-#			("dbg_fifo_full", unsigned(1)),
-#
-#			# Misc.
-#			("pixel_en", unsigned(1)),
-#			("next_visib", unsigned(1)),
-#			("visib", unsigned(1)),
-#			("past_visib", unsigned(1)),
-#			("draw_pos", Vec2Layout(self.CoordShapeT())),
-#			("past_draw_pos", Vec2Layout(self.CoordShapeT())),
-#			("size", Vec2Layout(self.CoordShapeT())),
-#			#("start_draw", unsigned(1)),
-#		])
-#
-#	def CoordShapeT(self):
-#		return unsigned(16)
-#
-#class VgaDriverBus(Record):
-#	def __init__(self):
-#		super().__init__(VgaDriverBusLayout())
-
 class VgaDriverBus:
 	def __init__(self, ColorT=RgbColor):
+		#--------
+		self.inp = Splitrec()
+		self.outp = Splitrec()
+		#--------
 		# Global VGA driving enable (white screen when off)
-		self.en = Signal()
+		self.inp.en = Signal()
 
 		# VGA physical pins
-		self.col = ColorT()
-		self.hsync = Signal()
-		self.vsync = Signal()
+		self.outp.col = ColorT()
+		self.outp.hsync = Signal()
+		self.outp.vsync = Signal()
 
 		# Pixel buffer
-		self.buf = VgaDriverBuf()
+		self.inp.buf = VgaDriverBufInp(ColorT().CHAN_WIDTH())
+		self.outp.buf = VgaDriverBufOutp()
 
 		# Debug
-		self.dbg_fifo_empty = Signal()
-		self.dbg_fifo_full = Signal()
+		self.outp.dbg_fifo_empty = Signal()
+		self.outp.dbg_fifo_full = Signal()
 
 		# Misc.
-		self.pixel_en = Signal()
-		self.next_visib = Signal()
-		self.visib = Signal()
-		self.past_visib = Signal()
-		self.draw_pos = Vec2(self.CoordShapeT())
-		self.past_draw_pos = Vec2(self.CoordShapeT())
-		self.size = Vec2(self.CoordShapeT())
+		self.outp.pixel_en = Signal()
+		self.outp.next_visib = Signal()
+		self.outp.visib = Signal()
+		self.outp.past_visib = Signal()
+		self.outp.draw_pos = Vec2(self.CoordElemKindT())
+		self.outp.past_draw_pos = Vec2(self.CoordElemKindT())
+		self.outp.size = Vec2(self.CoordElemKindT())
 		#self.start_draw = Signal()
 
-	def CoordShapeT(self):
+	def CoordElemKindT(self):
 		return 16
 
 class VgaDriver(Elaboratable):
@@ -211,6 +179,8 @@ class VgaDriver(Elaboratable):
 		# Local variables
 		loc = Blank()
 		bus = self.bus()
+		inp = bus.inp
+		outp = bus.outp
 		#--------
 		fifo = m.submodules.fifo \
 			= AsyncReadFifo \
@@ -218,13 +188,15 @@ class VgaDriver(Elaboratable):
 				ShapeT=to_shape(self.ColorT()()),
 				SIZE=self.FIFO_SIZE(),
 			)
+		fifo_inp = fifo.bus().inp
+		fifo_outp = fifo.bus().outp
 
 		##loc.fifo_rst = Signal(reset=0b1)
 
 		##with m.If(loc.fifo_rst):
 		##	m.d.sync += loc.fifo_rst.eq(~loc.fifo_rst)
-		##m.d.comb += loc.fifo.bus().rst.eq(loc.fifo_rst)
-		#m.d.comb += loc.fifo.bus().rst.eq(ResetSignal())
+		##m.d.comb += loc.fifo_inp.rst.eq(loc.fifo_rst)
+		#m.d.comb += loc.fifo_inp.rst.eq(ResetSignal())
 		#--------
 		loc.col = self.ColorT()()
 		#--------
@@ -244,8 +216,8 @@ class VgaDriver(Elaboratable):
 			m.d.sync += loc.clk_cnt.eq(0x0)
 
 		# Since this is an alias, use ALL_CAPS for its name.
-		#bus.pixel_en = (loc.clk_cnt == 0x0)
-		m.d.comb += bus.pixel_en.eq(loc.clk_cnt == 0x0)
+		#outp.pixel_en = (loc.clk_cnt == 0x0)
+		m.d.comb += outp.pixel_en.eq(loc.clk_cnt == 0x0)
 		loc.PIXEL_EN_NEXT_CYCLE = (loc.clk_cnt_p_1 == self.CPP())
 		#--------
 		# Implement the State/Counter stuff
@@ -264,21 +236,21 @@ class VgaDriver(Elaboratable):
 		}
 		#--------
 		## Implement HSYNC and VSYNC logic
-		with m.If(bus.pixel_en): 
+		with m.If(outp.pixel_en): 
 			self.HTIMING().update_state_cnt(m, loc.hsc)
 
 			with m.Switch(loc.hsc["s"]):
 				with m.Case(loc.Tstate.FRONT):
-					m.d.sync += bus.hsync.eq(0b1)
+					m.d.sync += outp.hsync.eq(0b1)
 					self.VTIMING().no_change_update_next_s(m, loc.vsc)
 				with m.Case(loc.Tstate.SYNC):
-					m.d.sync += bus.hsync.eq(0b0)
+					m.d.sync += outp.hsync.eq(0b0)
 					self.VTIMING().no_change_update_next_s(m, loc.vsc)
 				with m.Case(loc.Tstate.BACK):
-					m.d.sync += bus.hsync.eq(0b1)
+					m.d.sync += outp.hsync.eq(0b1)
 					self.VTIMING().no_change_update_next_s(m, loc.vsc)
 				with m.Case(loc.Tstate.VISIB):
-					m.d.sync += bus.hsync.eq(0b1),
+					m.d.sync += outp.hsync.eq(0b1),
 					with m.If((loc.hsc["c"] + 0x1) >= self.FB_SIZE().x):
 						self.VTIMING().update_state_cnt(m, loc.vsc)
 					with m.Else():
@@ -286,68 +258,68 @@ class VgaDriver(Elaboratable):
 
 			with m.Switch(loc.vsc["s"]):
 				with m.Case(loc.Tstate.FRONT):
-					m.d.sync += bus.vsync.eq(0b1)
+					m.d.sync += outp.vsync.eq(0b1)
 				with m.Case(loc.Tstate.SYNC):
-					m.d.sync += bus.vsync.eq(0b0)
+					m.d.sync += outp.vsync.eq(0b0)
 				with m.Case(loc.Tstate.BACK):
-					m.d.sync += bus.vsync.eq(0b1)
+					m.d.sync += outp.vsync.eq(0b1)
 				with m.Case(loc.Tstate.VISIB):
-					m.d.sync += bus.vsync.eq(0b1)
-		with m.Else(): # If(~bus.pixel_en):
+					m.d.sync += outp.vsync.eq(0b1)
+		with m.Else(): # If(~outp.pixel_en):
 			self.HTIMING().no_change_update_next_s(m, loc.hsc)
 			self.VTIMING().no_change_update_next_s(m, loc.vsc)
 		#--------
 		# Implement drawing the picture
 
-		with m.If(bus.pixel_en):
+		with m.If(outp.pixel_en):
 			# Visible area
-			with m.If(bus.visib):
-				with m.If(~bus.en):
+			with m.If(outp.visib):
+				with m.If(~inp.en):
 					m.d.sync \
 					+= [
-						bus.col.r.eq(0xf),
-						bus.col.g.eq(0xf),
-						bus.col.b.eq(0xf),
+						outp.col.r.eq(0xf),
+						outp.col.g.eq(0xf),
+						outp.col.b.eq(0xf),
 					]
-				with m.Else(): # If(bus.en):
+				with m.Else(): # If(inp.en):
 					m.d.sync \
 					+= [
-						bus.col.eq(loc.col)
+						outp.col.eq(loc.col)
 					]
 			# Black border
-			with m.Else(): # If (~bus.visib)
+			with m.Else(): # If (~outp.visib)
 				m.d.sync \
 				+= [
-					bus.col.r.eq(0x0),
-					bus.col.g.eq(0x0),
-					bus.col.b.eq(0x0),
+					outp.col.r.eq(0x0),
+					outp.col.g.eq(0x0),
+					outp.col.b.eq(0x0),
 				]
 		#--------
 		# Implement VgaDriver bus to Fifo bus transaction
 		m.d.comb \
 		+= [
-			bus.buf.can_prep.eq(~fifo.bus().full),
-			fifo.bus().wr_en.eq(bus.buf.prep),
-			fifo.bus().wr_data.eq(bus.buf.col),
+			outp.buf.can_prep.eq(~fifo_outp.full),
+			fifo_inp.wr_en.eq(inp.buf.prep),
+			fifo_inp.wr_data.eq(inp.buf.col),
 		]
 		#--------
 		# Implement grabbing pixels from the FIFO.
 
-		with m.If(bus.pixel_en & bus.visib & (~fifo.bus().empty)):
-			m.d.comb += fifo.bus().rd_en.eq(0b1)
+		with m.If(outp.pixel_en & outp.visib & (~fifo_outp.empty)):
+			m.d.comb += fifo_inp.rd_en.eq(0b1)
 		with m.Else():
-			m.d.comb += fifo.bus().rd_en.eq(0b0)
-		#with m.If(loc.PIXEL_EN_NEXT_CYCLE & bus.next_visib
-		#	& (~fifo.bus().empty)):
-		#	m.d.sync += fifo.bus().rd_en.eq(0b1)
+			m.d.comb += fifo_inp.rd_en.eq(0b0)
+		#with m.If(loc.PIXEL_EN_NEXT_CYCLE & outp.next_visib
+		#	& (~fifo_outp.empty)):
+		#	m.d.sync += fifo_inp.rd_en.eq(0b1)
 		#with m.Else():
-		#	m.d.sync += fifo.bus().rd_en.eq(0b0)
+		#	m.d.sync += fifo_inp.rd_en.eq(0b0)
 
 		m.d.comb \
 		+= [
-			loc.col.eq(fifo.bus().rd_data),
-			bus.dbg_fifo_empty.eq(fifo.bus().empty),
-			bus.dbg_fifo_full.eq(fifo.bus().full),
+			loc.col.eq(fifo_outp.rd_data),
+			outp.dbg_fifo_empty.eq(fifo_outp.empty),
+			outp.dbg_fifo_full.eq(fifo_outp.full),
 		]
 		#m.d.comb \
 		#+= [
@@ -356,20 +328,20 @@ class VgaDriver(Elaboratable):
 		#--------
 		m.d.comb \
 			+= [
-				#bus.visib.eq((loc.hsc["s"] == loc.Tstate.VISIB)
+				#outp.visib.eq((loc.hsc["s"] == loc.Tstate.VISIB)
 				#	& (loc.vsc["s"] == loc.Tstate.VISIB)),
-				bus.draw_pos.x.eq(loc.hsc["c"]),
-				bus.draw_pos.y.eq(loc.vsc["c"]),
-				bus.size.x.eq(self.FB_SIZE().x),
-				bus.size.y.eq(self.FB_SIZE().y),
+				outp.draw_pos.x.eq(loc.hsc["c"]),
+				outp.draw_pos.y.eq(loc.vsc["c"]),
+				outp.size.x.eq(self.FB_SIZE().x),
+				outp.size.y.eq(self.FB_SIZE().y),
 			]
 		m.d.sync \
 			+= [
-				bus.next_visib.eq((loc.hsc["next_s"] == loc.Tstate.VISIB)
+				outp.next_visib.eq((loc.hsc["next_s"] == loc.Tstate.VISIB)
 					& (loc.vsc["next_s"] == loc.Tstate.VISIB)),
-				bus.visib.eq(bus.next_visib),
-				bus.past_visib.eq(bus.visib),
-				bus.past_draw_pos.eq(bus.draw_pos)
+				outp.visib.eq(outp.next_visib),
+				outp.past_visib.eq(outp.visib),
+				outp.past_draw_pos.eq(outp.draw_pos)
 			]
 		#--------
 		return m
