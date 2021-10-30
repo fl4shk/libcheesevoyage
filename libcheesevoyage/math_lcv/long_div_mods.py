@@ -100,13 +100,13 @@ class LongDivMultiCycle(Elaboratable):
 		loc.quot_will_be_lez = Signal()
 		loc.rema_will_be_lez = Signal()
 
-		loc.bus_szd_temp_q = Signal(len(bus.quot))
-		loc.bus_szd_temp_r = Signal(len(bus.rema))
-		loc.lez_bus_szd_temp_q = Signal(len(bus.quot))
-		loc.lez_bus_szd_temp_r = Signal(len(bus.rema))
+		loc.bus_szd_temp_q = Signal(len(outp.quot))
+		loc.bus_szd_temp_r = Signal(len(outp.rema))
+		loc.lez_bus_szd_temp_q = Signal(len(outp.quot))
+		loc.lez_bus_szd_temp_r = Signal(len(outp.rema))
 
-		loc.temp_bus_quot = Signal(len(bus.quot))
-		loc.temp_bus_rema = Signal(len(bus.rema))
+		loc.temp_bus_quot = Signal(len(outp.quot))
+		loc.temp_bus_rema = Signal(len(outp.rema))
 
 		if constants.FORMAL():
 			loc.formal = Blank()
@@ -144,8 +144,8 @@ class LongDivMultiCycle(Elaboratable):
 			# Implement C's rules for modulo's sign
 			loc.rema_will_be_lez.eq(loc.numer_was_lez),
 
-			loc.bus_szd_temp_q.eq(itd_out.temp_quot[:len(bus.quot)]),
-			loc.bus_szd_temp_r.eq(itd_out.temp_rema[:len(bus.rema)]),
+			loc.bus_szd_temp_q.eq(itd_out.temp_quot[:len(outp.quot)]),
+			loc.bus_szd_temp_r.eq(itd_out.temp_rema[:len(outp.rema)]),
 
 			loc.lez_bus_szd_temp_q.eq((~loc.bus_szd_temp_q) + 1),
 			loc.lez_bus_szd_temp_r.eq((~loc.bus_szd_temp_r) + 1),
@@ -182,8 +182,8 @@ class LongDivMultiCycle(Elaboratable):
 					with m.If(inp.ready):
 						m.d.sync \
 						+= [
-							bus.quot.eq(0x0),
-							bus.rema.eq(0x0),
+							outp.quot.eq(0x0),
+							outp.rema.eq(0x0),
 							outp.valid.eq(0b0),
 
 							loc.state.eq(State.RUNNING),
@@ -199,8 +199,8 @@ class LongDivMultiCycle(Elaboratable):
 					with m.Else(): # m.If(chunk_start <= 0):
 						m.d.sync \
 						+= [
-							bus.quot.eq(loc.temp_bus_quot),
-							bus.rema.eq(loc.temp_bus_rema),
+							outp.quot.eq(loc.temp_bus_quot),
+							outp.rema.eq(loc.temp_bus_rema),
 							outp.valid.eq(0b1),
 
 							loc.state.eq(State.IDLE),
@@ -243,10 +243,10 @@ class LongDivMultiCycle(Elaboratable):
 							+= [
 								#--------
 								Assert(skip_cond
-									| (bus.quot
+									| (outp.quot
 										== Past(loc.temp_bus_quot))),
 								Assert(skip_cond
-									| (bus.rema
+									| (outp.rema
 										== Past(loc.temp_bus_rema))),
 								Assert(outp.valid),
 								#--------
@@ -390,13 +390,13 @@ class LongDivPipelined(Elaboratable):
 		loc.quot_will_be_lez = Signal(NUM_PS_ELEMS)
 		loc.rema_will_be_lez = Signal(NUM_PS_ELEMS)
 
-		loc.bus_szd_temp_q = Signal(len(bus.quot))
-		loc.bus_szd_temp_r = Signal(len(bus.rema))
-		loc.lez_bus_szd_temp_q = Signal(len(bus.quot))
-		loc.lez_bus_szd_temp_r = Signal(len(bus.rema))
+		loc.bus_szd_temp_q = Signal(len(outp.quot))
+		loc.bus_szd_temp_r = Signal(len(outp.rema))
+		loc.lez_bus_szd_temp_q = Signal(len(outp.quot))
+		loc.lez_bus_szd_temp_r = Signal(len(outp.rema))
 
-		loc.temp_bus_quot = Signal(len(bus.quot))
-		loc.temp_bus_rema = Signal(len(bus.rema))
+		loc.temp_bus_quot = Signal(len(outp.quot))
+		loc.temp_bus_rema = Signal(len(outp.rema))
 		#--------
 		if constants.FORMAL():
 			loc.formal = Blank()
@@ -440,8 +440,8 @@ class LongDivPipelined(Elaboratable):
 		m.d.comb \
 		+= [
 			#--------
-			loc.bus_szd_temp_q.eq(itd_out[-1].temp_quot[:len(bus.quot)]),
-			loc.bus_szd_temp_r.eq(itd_out[-1].temp_rema[:len(bus.rema)]),
+			loc.bus_szd_temp_q.eq(itd_out[-1].temp_quot[:len(outp.quot)]),
+			loc.bus_szd_temp_r.eq(itd_out[-1].temp_rema[:len(outp.rema)]),
 
 			loc.lez_bus_szd_temp_q.eq((~loc.bus_szd_temp_q) + 1),
 			loc.lez_bus_szd_temp_r.eq((~loc.bus_szd_temp_r) + 1),
@@ -490,10 +490,10 @@ class LongDivPipelined(Elaboratable):
 		]
 		m.d.comb \
 		+= [
-			bus.quot.eq(loc.temp_bus_quot),
-			bus.rema.eq(loc.temp_bus_rema),
+			outp.quot.eq(loc.temp_bus_quot),
+			outp.rema.eq(loc.temp_bus_rema),
 
-			bus.tag_out.eq(itd_out[-1].tag)
+			outp.tag.eq(itd_out[-1].tag)
 		]
 		#--------
 		if constants.FORMAL():
