@@ -883,8 +883,67 @@ class Packarr(ValueCastable):
 			#		"`Value`"))
 	#--------
 #--------
-# A record type is composed of separate signals.  This allows setting the
-# attributes of every signal.
+class Splitlist(ValueCastable):
+	#--------
+	def __init__(self, lst: list={}, *, name=None, src_loc_at=0):
+		self.__lst = lst
+		self.__extra_args_name = name
+		self.__extra_args_src_loc_at = src_loc_at
+	#--------
+	def lst(self):
+		return self.__lst
+
+	def extra_args_name(self):
+		return self.__extra_args_name
+	def extra_args_src_loc_at(self):
+		return self.__extra_args_src_loc_at
+	#--------
+	def __getitem__(self, key):
+		return self.lst()[key]
+	def __setitem__(self, key, val):
+		self.lst()[key] = val
+	#--------
+	def eq(self, other):
+		try:
+			Value.cast(other)
+		except Exception:
+			raise TypeError(psconcat
+				("Need to be able to cast `other`, {!r}, ".format(other),
+				"to `Value"))
+		return self.as_value().eq(Value.cast(other))
+	#--------
+	@ValueCastable.lowermethod
+	def as_value(self):
+		return Cat(*self.flattened())
+	def __len__(self):
+		return len(self.as_value())
+	def __iter__(self):
+		for item in self.lst():
+			yield item
+	def __list__(self):
+		return self.lst()
+	#--------
+	def flattened(self):
+		ret = []
+
+		for val in self:
+			Splitrec.check_val_type("Splitlist.flattened()", val)
+
+			#if isinstance(val, Signal) or isinstance(val, Packrec) \
+			#	or isinstance(val, Packarr):
+			#	ret.append(val)
+			#else:
+			if isinstance(val, Splitlist) \
+				or isinstance(val, Splitrec):
+				ret.append(val.flattened())
+			else:
+				ret.append(val)
+
+		return ret
+	#--------
+#--------
+# A record type which is composed of separate signals.  This allows setting
+# the attributes of every signal.
 class Splitrec(ValueCastable):
 	#--------
 	@staticmethod
@@ -1008,34 +1067,46 @@ class Splitrec(ValueCastable):
 		return Cat(*self.flattened())
 	def __len__(self):
 		return len(self.as_value())
+	def __iter__(self):
+		for name in self.__dict__:
+			if name[0] != "_":
+				#yield (name, self.__dict__[name])
+				yield self.__dict__[name]
 	#def __repr__(self):
 	#--------
-	def __check_val_type(self, prefix_str, val):
-		#assert (isinstance(val, Signal) or isinstance(val, Packarr) 
-		#	or isinstance(val, Packrec) or isinstance(val, Splitrec)), \
-		#	psconcat(prefix_str, " Error:  Need a `Signal`, `Packarr`, ",
-		#		"`Packrec`, or `Splitrec` for `val`, and `val`'s type ",
-		#		"is \"", type(val), "\". Also, `val` is \"", val, "\".")
-		if (not isinstance(val, Signal)) \
-			and (not isinstance(val, Packrec)) \
-			and (not isinstance(val, Packarr)) \
-			and (not isinstance(val, Splitrec)):
-			raise TypeError(psconcat(prefix_str, " ",
-				"Need a `Signal`, `Packrec`, `Packarr`, or `Splitrec` ",
-				"for `val` {!r}".format(val)))
+	@staticmethod
+	def check_val_type(prefix_str, val):
+		#if (not isinstance(val, Signal)) \
+		#	and (not isinstance(val, Packrec)) \
+		#	and (not isinstance(val, Packarr)) \
+		#	and (not isinstance(val, Splitlist)) \
+		#	and (not isinstance(val, Splitrec)):
+		#	raise TypeError(psconcat(prefix_str, " ",
+		#		"Need a `Signal`, `Packrec`, `Packarr`, `Splitlist`, or "
+		#		"`Splitrec` for `val` {!r}".format(val)))
+
+		try:
+			Value.cast(val)
+		except Exception:
+			raise TypeError(psconcat(prefix_str, " `val` `{!r}` must be ",
+				"possible to cast to `Value`").format(val)) from None
+
 	def flattened(self):
 		ret = []
 		for val in self.fields().values():
-			self.__check_val_type("Splitrec.flattened()", val)
+			Splitrec.check_val_type("Splitrec.flattened()", val)
 
-			if isinstance(val, Signal) or isinstance(val, Packrec) \
-				or isinstance(val, Packarr):
-				#ret.append(SigContrBase.get_nmigen_val(val))
-				#printout("Splitrec.flattened(): ",
-				#	Value.cast(val).name, "\n")
-				ret.append(val)
-			else: # if isinstance(val, Splitrec):
+			#if isinstance(val, Signal) or isinstance(val, Packrec) \
+			#	or isinstance(val, Packarr):
+			#	ret.append(val)
+			#else: # if isinstance(val, Splitlist) \
+			#	# or isinstance(val, Splitrec):
+			#	ret.append(val.flattened())
+			if isinstance(val, Splitlist) \
+				or isinstance(val, Splitrec):
 				ret.append(val.flattened())
+			else:
+				ret.append(val)
 		#printout("\n")
 		return ret
 	#def cat(self):
