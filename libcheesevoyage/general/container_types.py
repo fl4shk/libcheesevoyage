@@ -397,8 +397,8 @@ class Packrec(ValueCastable):
 		#--------
 	#--------
 	@staticmethod
-	def like(other, *, name=None, name_suffix=None, src_loc_at=0,
-		**kwargs):
+	def like(other, SIGNED=None, *, name=None, name_suffix=None,
+		src_loc_at=0, **kwargs):
 		if name is not None:
 			new_name = str(name)
 		elif name_suffix is not None:
@@ -408,10 +408,17 @@ class Packrec(ValueCastable):
 				default=None)
 
 		#return Packrec(other.layout(), name=new_name, src_loc_at=1)
+		if SIGNED is not None:
+			fields = list(reversed(other.layout().fields().items()))
+			layout = Packrec.Layout(fields=fields, SIGNED=SIGNED,
+				src_loc_at=src_loc_at)
+		else:
+			layout = other.layout()
+
 		kw \
 			= dict \
 			(
-				layout=other.layout(),
+				layout=layout,
 				name=new_name,
 				src_loc_at=src_loc_at + 1
 			)
@@ -421,7 +428,7 @@ class Packrec(ValueCastable):
 				reset=other.extra_args_reset(),
 				reset_less=other.extra_args_reset_less(),
 				attrs=other.extra_args_attrs(),
-				decode=other.extra_args_decoder(),
+				decoder=other.extra_args_decoder(),
 			)
 		kw.update(kwargs)
 
@@ -447,7 +454,7 @@ class Packrec(ValueCastable):
 
 		sig_shape = unsigned(self.SIG_WIDTH()) \
 			if not self.SIGNED() \
-			else SIGNED(self.SIG_WIDTH())
+			else signed(self.SIG_WIDTH())
 
 		self.__sig \
 			= Signal \
@@ -563,7 +570,8 @@ class Packrec(ValueCastable):
 	def __len__(self):
 		return len(self.as_value())
 	def __repr__(self):
-		ret = "Packrec([{!r}, ".format(self.sig())
+		ret = "Packrec([{!r}, {!r},".format(self.sig(),
+			self.layout().SIGNED())
 
 		for name, shape in self.__layout:
 			ret += "({!r}, {!r})".format(name, shape)
@@ -930,14 +938,17 @@ class Splitrec(ValueCastable):
 
 		fields = {}
 
-		for name, field in other.fields():
+		for key, field in other.fields().items():
 			try:
 				Value.cast(field)
 			except Exception:
 				raise TypeError(("`field` `{!r}` must be castable to "
 					+ "`Value`").format(field)) from None
 
-			fields[name] = type(field).like(field, name=new_name,
+			fields[key] = type(field).like(field, 
+				name=psconcat(new_name, "_", key)
+					if (name is None) or (name_suffix is None)
+					else new_name,
 				src_loc_at=src_loc_at)
 
 		kw \
@@ -955,7 +966,7 @@ class Splitrec(ValueCastable):
 		#self.__dict__["_Splitrec__fields"] = fields
 
 		#self.__fields = fields
-		for key, field in fields:
+		for key, field in fields.items():
 			self.__setattr__(key, field)
 
 		self.__extra_args_name = name

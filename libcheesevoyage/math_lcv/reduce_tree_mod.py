@@ -23,7 +23,7 @@ class ReduceTreeBinop(Enum):
 #--------
 class ReduceTreeBus:
 	#--------
-	def __init__(self, INP_DATA_WIDTH, INP_SIZE, BINOP, FORMAL):
+	def __init__(self, INP_DATA_WIDTH, INP_SIZE, BINOP, *, FORMAL=False):
 		#--------
 		self.__INP_DATA_WIDTH = INP_DATA_WIDTH
 		self.__INP_SIZE = INP_SIZE
@@ -88,7 +88,7 @@ class ReduceTreeBus:
 class ReduceTree(Elaboratable):
 	#--------
 	def __init__(self, INP_DATA_WIDTH, INP_SIZE, BINOP=ReduceTreeBinop.ADD,
-		FORMAL=False, *, DOMAIN=BasicDomain.COMB):
+		*, FORMAL=False, DOMAIN=BasicDomain.COMB):
 		#--------
 		if not isinstance(DOMAIN, BasicDomain):
 			raise TypeError("`DOMAIN` `{!r}` must be a `BasicDomain`"
@@ -165,7 +165,7 @@ class ReduceTree(Elaboratable):
 		if bus.FORMAL():
 			if self.DOMAIN() != BasicDomain.COMB:
 				raise ValueError(("`self.DOMAIN()` `{!r}` must be "
-					"`BasicDomain.COMB` when doing formal verification")
+					+ "`BasicDomain.COMB` when doing formal verification")
 					.format(self.DOMAIN()))
 
 			m.d.comb += Assert(bus.outp.data 

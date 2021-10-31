@@ -54,8 +54,8 @@ class LongDivBus:
 #--------
 class LongDivMultiCycle(Elaboratable):
 	#--------
-	def __init__(self, MAIN_WIDTH, DENOM_WIDTH, CHUNK_WIDTH, FORMAL=False,
-		*, signed_reset=0b0):
+	def __init__(self, MAIN_WIDTH, DENOM_WIDTH, CHUNK_WIDTH,
+		*, FORMAL=False, signed_reset=0b0):
 		self.__constants \
 			= LongDivConstants \
 			(
@@ -337,8 +337,8 @@ class LongDivMultiCycle(Elaboratable):
 #--------
 class LongDivPipelined(Elaboratable):
 	#--------
-	def __init__(self, MAIN_WIDTH, DENOM_WIDTH, CHUNK_WIDTH, FORMAL=False,
-		*, signed_reset=0b0):
+	def __init__(self, MAIN_WIDTH, DENOM_WIDTH, CHUNK_WIDTH,
+		*, FORMAL=False, signed_reset=0b0):
 		self.__constants \
 			= LongDivConstants \
 			(

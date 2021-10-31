@@ -413,8 +413,7 @@ class LongUdivIterSyncBus:
 #--------
 class LongUdivIterSync(Elaboratable):
 	#--------
-	def __init__(self, constants: LongDivConstants,
-		chunk_start_val: int):
+	def __init__(self, constants: LongDivConstants, chunk_start_val: int):
 		self.__constants = constants
 
 		self.__bus = LongUdivIterSyncBus(constants=constants)

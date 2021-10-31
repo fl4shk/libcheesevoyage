@@ -35,6 +35,12 @@ def inner_ports(bus):
 def ports(bus):
 	return ([ClockSignal(), ResetSignal()] + inner_ports(bus))
 
+def to_verilog_non_sync(dut_mod, **kw_args):
+	dut = dut_mod(**kw_args)
+	# ./main.py generate -t v
+	main(dut, ports=inner_ports(dut.bus()))
+	#with open("dut.v.ignore", "w") as f:
+	#	f.write(verilog.convert(dut, ports=ports(dut.bus())))
 def to_verilog(dut_mod, **kw_args):
 	dut = dut_mod(**kw_args)
 	# ./main.py generate -t v
