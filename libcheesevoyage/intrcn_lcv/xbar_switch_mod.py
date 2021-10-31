@@ -49,6 +49,9 @@ class XbarSwitchBus:
 					for i in range(self.INP_SIZE())
 			])
 
+		# Whether or not 
+		self.outp.active = Signal(self.OUTP_SIZE(), name="outp_active")
+
 		#self.outp_data = Packarr.build(ElemKindT=self.ElemKindT(),
 		#	SIZE=self.SIZE(), SIGNED=self.SIGNED())
 		self.outp.data \
@@ -154,13 +157,13 @@ class XbarSwitch(Elaboratable):
 				Signal(bus.INP_SIZE(), name=f"found_arr_{j}")
 					for j in range(bus.OUTP_SIZE())
 			])
-		loc.dbg_sel \
-			= Splitarr \
-			([
-				Signal(signed(bus.INP_SIZE() + 1), attrs=sig_keep(),
-					name=f"dbg_sel_{j}")
-					for j in range(bus.OUTP_SIZE())
-			])
+		#loc.dbg_sel \
+		#	= Splitarr \
+		#	([
+		#		Signal(signed(bus.INP_SIZE() + 1), attrs=sig_keep(),
+		#			name=f"dbg_sel_{j}")
+		#			for j in range(bus.OUTP_SIZE())
+		#	])
 
 		md = basic_domain_to_actual_domain(m, self.DOMAIN())
 		#--------
@@ -191,14 +194,16 @@ class XbarSwitch(Elaboratable):
 					with m.Case("".join(list(reversed(CASE)))):
 						md \
 						+= [
-							loc.dbg_sel.eq(PRIO_LST[i]),
+							#loc.dbg_sel.eq(PRIO_LST[i]),
+							outp.active[j].eq(0b1),
 							outp.data[j].eq(inp.data[PRIO_LST[i]])
 						]
 
 				with m.Default():
 					md \
 					+= [
-						loc.dbg_sel.eq(-1),
+						#loc.dbg_sel.eq(-1),
+						outp.active[j].eq(0b0),
 						outp.data[j].eq(0x0),
 					]
 		#--------
@@ -220,17 +225,20 @@ class XbarSwitch(Elaboratable):
 				with m.If(loc.found_arr[j][PRIO_LST[0]]):
 					m.d.comb \
 					+= [
+						Assert(outp.active[j]),
 						Assert(outp.data[j] == inp.data[PRIO_LST[0]])
 					]
 				for i in range(1, bus.INP_SIZE()):
 					with m.Elif(loc.found_arr[j][PRIO_LST[i]]):
 						m.d.comb \
 						+= [
+							Assert(outp.active[j]),
 							Assert(outp.data[j] == inp.data[PRIO_LST[i]])
 						]
 				with m.Else():
 					m.d.comb \
 					+= [
+						Assert(~outp.active[j]),
 						Assert(outp.data[j] == 0x0)
 					]
 		#--------
