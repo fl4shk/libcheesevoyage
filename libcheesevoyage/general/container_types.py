@@ -910,21 +910,35 @@ class Splitrec(ValueCastable):
 				else SIGNED(ElemKindT)
 			return Signal(shape=shape, name=new_name, reset=reset,
 				reset_less=reset_less, attrs=attrs, decoder=decoder,
-				src_loc_at=src_loc_at)
+				src_loc_at=src_loc_at + 1)
+		elif isinstance(ElemKindT, dict):
+			temp = Splitrec(fields=ElemKindT, name=new_name,
+				src_loc_at=src_loc_at + 1)
+			return Splitrec.like(other=temp, name=None,
+				name_suffix=None, src_loc_at=src_loc_at + 1)
+		elif isinstance(ElemKindT, list) and (len(ElemKindT) > 0) \
+			and (not isinstance(ElemKindT[0], tuple)):
+			temp = Splitarr(lst=ElemKindT, name=new_name,
+				src_loc_at=src_loc_at + 1)
+			return Splitarr.like(other=temp, name=None,
+				name_suffix=None, src_loc_at=src_loc_at + 1)
 		elif isinstance(ElemKindT, Packrec.Layout) \
-			or isinstance(ElemKindT, list):
+			or (isinstance(ElemKindT, list) and (len(ElemKindT) > 0) \
+				and isinstance(ElemKindT[0], tuple)):
 			return Packrec(ElemKindT, name=new_name, reset=reset,
 				reset_less=reset_less, attrs=attrs, decoder=decoder,
-				src_loc_at=src_loc_at)
+				src_loc_at=src_loc_at + 1)
 		elif isinstance(ElemKindT, Packarr.Shape):
 			return Packarr(ElemKindT, name=new_name, reset=reset,
 				reset_less=reset_less, attrs=attrs, decoder=decoder,
-				src_loc_at=src_loc_at)
+				src_loc_at=src_loc_at + 1)
 		else:
+			#raise TypeError(psconcat
+			#	("Need one of the following types for `ElemKindT`, {!r}, "
+			#		.format(ElemKindT),
+			#	": `int`, `Packrec.Layout`, `list`, or `Packarr.Shape`"))
 			raise TypeError(psconcat
-				("Need one of the following types for `ElemKindT`, {!r}, "
-					.format(ElemKindT),
-				": `int`, `Packrec.Layout`, `list`, or `Packarr.Shape`"))
+				("Invaild type for `ElemKindT`, `{!r}`".format(ElemKindT)))
 	#--------
 	@staticmethod
 	def like(other, name=None, name_suffix=None, src_loc_at=0, **kwargs):
@@ -949,7 +963,7 @@ class Splitrec(ValueCastable):
 				name=psconcat(new_name, "_", key)
 					if (name is None) or (name_suffix is None)
 					else new_name,
-				src_loc_at=src_loc_at)
+				src_loc_at=src_loc_at + 1)
 
 		kw \
 			= dict \
@@ -1083,15 +1097,17 @@ class Splitarr(ValueCastable):
 
 		lst = []
 
-		for elem in other.lst():
+		for i in range(len(list(other))):
+			elem = other[i]
 			try:
 				Value.cast(elem)
 			except Exception:
-				raise TypeError(("`field` `{!r}` must be castable to "
+				raise TypeError(("`elem` `{!r}` must be castable to "
 					+ "`Value`").format(field)) from None
 
-			lst.append(type(elem).like(field, name=new_name,
-				src_loc_at=src_loc_at))
+			lst.append(type(elem).like(elem,
+				name=psconcat(new_name, "_", i),
+				src_loc_at=src_loc_at + 1))
 
 		kw \
 			= dict \
@@ -1101,7 +1117,7 @@ class Splitarr(ValueCastable):
 
 		kw.update(kwargs)
 
-		return Splitrec(**kw)
+		return Splitarr(**kw)
 	#--------
 	def __init__(self, lst: list={}, *, name=None, src_loc_at=0):
 		self.__lst = lst

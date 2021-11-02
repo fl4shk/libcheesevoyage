@@ -16,12 +16,16 @@ import operator
 #--------
 class XbarSwitchBus:
 	#--------
-	def __init__(self, ElemKindT, INP_SIZE, OUTP_SIZE, SIGNED=False, *,
-		FORMAL=False):
+	def __init__(self, H2dElemKindT, D2hElemKindT, NUM_HOSTS, 
+		NUM_DEVS, SIGNED=False, *, FORMAL=False):
 		#--------
-		self.__ElemKindT = ElemKindT
-		self.__INP_SIZE = INP_SIZE
-		self.__OUTP_SIZE = OUTP_SIZE
+		#self.__ElemKindT = ElemKindT
+
+		self.__H2dElemKindT = H2dElemKindT
+		self.__D2hElemKindT = D2hElemKindT
+
+		self.__NUM_HOSTS = NUM_HOSTS
+		self.__NUM_DEVS = NUM_DEVS
 		self.__SIGNED = SIGNED
 		self.__FORMAL = FORMAL
 		#--------
@@ -29,52 +33,68 @@ class XbarSwitchBus:
 		self.outp = Splitrec()
 		#--------
 		# Whether or not to enable forwarding the particular input
-		self.inp.sel_conn = Signal(self.INP_SIZE(), name="inp_sel_conn")
+		self.inp.sel_conn = Signal(self.NUM_HOSTS(), name="inp_sel_conn")
 
 		# Which inputs to forward to which outputs
 		self.inp.sel \
 			= Splitarr \
 			([
 				Signal(self.SEL_WIDTH(), name=f"inp_sel_{i}")
-					for i in range(self.INP_SIZE())
+					for i in range(self.NUM_HOSTS())
 			])
 
 		#self.inp_data = Packarr.build(ElemKindT=self.ElemKindT(),
 		#	SIZE=self.SIZE(), SIGNED=self.SIGNED())
-		self.inp.data \
+		self.inp.h2d \
 			= Splitarr \
 			([
-				Splitrec.cast_elem(self.ElemKindT(), self.SIGNED(),
-					name=f"inp_data_{i}")
-					for i in range(self.INP_SIZE())
+				Splitrec.cast_elem(self.H2dElemKindT(), self.SIGNED(),
+					name=f"inp_h2d_{i}")
+					for i in range(self.NUM_HOSTS())
+			])
+		self.inp.d2h \
+			= Splitarr \
+			([
+				Splitrec.cast_elem(self.D2hElemKindT(), self.SIGNED(),
+					name=f"inp_d2h_{i}")
+					for i in range(self.NUM_HOSTS())
 			])
 
 		# Whether or not 
-		self.outp.active = Signal(self.OUTP_SIZE(), name="outp_active")
+		self.outp.active = Signal(self.NUM_DEVS(), name="outp_active")
 
 		#self.outp_data = Packarr.build(ElemKindT=self.ElemKindT(),
 		#	SIZE=self.SIZE(), SIGNED=self.SIGNED())
-		self.outp.data \
+		self.outp.h2d \
 			= Splitarr \
 			([
-				Splitrec.cast_elem(self.ElemKindT(), self.SIGNED(),
-					name=f"outp_data_{j}")
-					for j in range(self.OUTP_SIZE())
+				Splitrec.cast_elem(self.H2dElemKindT(), self.SIGNED(),
+					name=f"outp_h2d_{j}")
+					for j in range(self.NUM_DEVS())
+			])
+		self.outp.d2h \
+			= Splitarr \
+			([
+				Splitrec.cast_elem(self.D2hElemKindT(), self.SIGNED(),
+					name=f"outp_d2h_{j}")
+					for j in range(self.NUM_DEVS())
 			])
 		#--------
 	#--------
-	def ElemKindT(self):
-		return self.__ElemKindT
-	def INP_SIZE(self):
-		return self.__INP_SIZE
-	def OUTP_SIZE(self):
-		return self.__OUTP_SIZE
+	def H2dElemKindT(self):
+		return self.__H2dElemKindT
+	def D2hElemKindT(self):
+		return self.__D2hElemKindT
+	def NUM_HOSTS(self):
+		return self.__NUM_HOSTS
+	def NUM_DEVS(self):
+		return self.__NUM_DEVS
 	def SIGNED(self):
 		return self.__SIGNED
 	def FORMAL(self):
 		return self.__FORMAL
 	def SEL_WIDTH(self):
-		return math.ceil(math.log2(self.OUTP_SIZE()))
+		return math.ceil(math.log2(self.NUM_DEVS()))
 	#--------
 #--------
 # A crossbar switch
@@ -82,9 +102,9 @@ class XbarSwitch(Elaboratable):
 	#--------
 	# For `PRIO_LST_2D`, lower list indices mean higher priority
 
-	#def __init__(self, ElemKindT, INP_SIZE, OUTP_SIZE, SIGNED=False, *,
+	#def __init__(self, ElemKindT, NUM_HOSTS, NUM_DEVS, SIGNED=False, *,
 	#	FORMAL=False):
-	def __init__(self, ElemKindT, INP_SIZE, OUTP_SIZE, SIGNED=False, *,
+	def __init__(self, ElemKindT, NUM_HOSTS, NUM_DEVS, SIGNED=False, *,
 		PRIO_LST_2D=None, DOMAIN=BasicDomain.COMB, FORMAL=False):
 		#--------
 		if (not isinstance(PRIO_LST_2D, list)) \
@@ -94,27 +114,27 @@ class XbarSwitch(Elaboratable):
 				.format(PRIO_LST_2D)))
 
 		if isinstance(PRIO_LST_2D, list):
-			if len(PRIO_LST_2D) != OUTP_SIZE:
+			if len(PRIO_LST_2D) != NUM_DEVS:
 				raise ValueError(psconcat
-					("`PRIO_LST_2D` `{!r}` must be of length `OUTP_SIZE` ",
+					("`PRIO_LST_2D` `{!r}` must be of length `NUM_DEVS` ",
 					"`{!r}`".format(PRIO_LST_2D)))
 
 			for PRIO_LST in PRIO_LST_2D:
 				temp = set(PRIO_LST)
 
 				if (len(PRIO_LST) != len(temp)) \
-					or (temp != set(list(range(INP_SIZE)))):
+					or (temp != set(list(range(NUM_HOSTS)))):
 					raise ValueError(psconcat
 						("`PRIO_LST` `{!r}` must ".format(PRIO_LST),
 						"consist of all unique `int`s that are between 0 ",
-						"and `INP_SIZE` `{!r}`".format(INP_SIZE)))
+						"and `NUM_HOSTS` `{!r}`".format(NUM_HOSTS)))
 
 			self.__PRIO_LST_2D = PRIO_LST_2D
 		else: # if isinstance(PRIO_LST, None):
 			self.__PRIO_LST_2D \
 				= [
-					[i for i in range(INP_SIZE)]
-						for j in range(OUTP_SIZE)
+					[i for i in range(NUM_HOSTS)]
+						for j in range(NUM_DEVS)
 				]
 		#--------
 		#if not isinstance(DOMAIN, BasicDomain):
@@ -126,8 +146,8 @@ class XbarSwitch(Elaboratable):
 			= XbarSwitchBus \
 			(
 				ElemKindT=ElemKindT,
-				INP_SIZE=INP_SIZE,
-				OUTP_SIZE=OUTP_SIZE,
+				NUM_HOSTS=NUM_HOSTS,
+				NUM_DEVS=NUM_DEVS,
 				SIGNED=SIGNED,
 				FORMAL=FORMAL
 			)
@@ -154,25 +174,25 @@ class XbarSwitch(Elaboratable):
 		loc.found_arr \
 			= Splitarr \
 			([
-				Signal(bus.INP_SIZE(), name=f"found_arr_{j}")
-					for j in range(bus.OUTP_SIZE())
+				Signal(bus.NUM_HOSTS(), name=f"found_arr_{j}")
+					for j in range(bus.NUM_DEVS())
 			])
 		#loc.dbg_sel \
 		#	= Splitarr \
 		#	([
-		#		Signal(signed(bus.INP_SIZE() + 1), attrs=sig_keep(),
+		#		Signal(signed(bus.NUM_HOSTS() + 1), attrs=sig_keep(),
 		#			name=f"dbg_sel_{j}")
-		#			for j in range(bus.OUTP_SIZE())
+		#			for j in range(bus.NUM_DEVS())
 		#	])
 
 		md = basic_domain_to_actual_domain(m, self.DOMAIN())
 		#--------
-		for j in range(bus.OUTP_SIZE()):
+		for j in range(bus.NUM_DEVS()):
 			m.d.comb \
 			+= [
 				loc.found_arr[j][i].eq(inp.sel_conn[i]
 					& (inp.sel[i] == j))
-					for i in range(bus.INP_SIZE())
+					for i in range(bus.NUM_HOSTS())
 			]
 
 			with m.Switch(loc.found_arr[j]):
@@ -213,13 +233,13 @@ class XbarSwitch(Elaboratable):
 					+ "`BasicDomain.COMB` when doing formal verification")
 					.format(self.DOMAIN()))
 			#if PRIO_LST_2D \
-			#	!= [[i for i in range(bus.INP_SIZE()]
-			#		for j in range(bus.OUTP_SIZE())]:
+			#	!= [[i for i in range(bus.NUM_HOSTS()]
+			#		for j in range(bus.NUM_DEVS())]:
 			#	raise ValueError(("`PRIO_LST_2D` `{!r}` must be the "
 			#		+ "default when doing formal verification")
 			#		.format(PRIO_LST_2D))
 
-			for j in range(bus.OUTP_SIZE()):
+			for j in range(bus.NUM_DEVS()):
 				PRIO_LST = PRIO_LST_2D[j]
 
 				with m.If(loc.found_arr[j][PRIO_LST[0]]):
@@ -228,7 +248,7 @@ class XbarSwitch(Elaboratable):
 						Assert(outp.active[j]),
 						Assert(outp.data[j] == inp.data[PRIO_LST[0]])
 					]
-				for i in range(1, bus.INP_SIZE()):
+				for i in range(1, bus.NUM_HOSTS()):
 					with m.Elif(loc.found_arr[j][PRIO_LST[i]]):
 						m.d.comb \
 						+= [
