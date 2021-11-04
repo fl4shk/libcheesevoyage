@@ -1105,8 +1105,14 @@ class Splitarr(ValueCastable):
 				raise TypeError(("`elem` `{!r}` must be castable to "
 					+ "`Value`").format(field)) from None
 
+			#lst.append(type(elem).like(elem,
+			#	name=psconcat(new_name, "_", i),
+			#	src_loc_at=src_loc_at + 1))
 			lst.append(type(elem).like(elem,
-				name=psconcat(new_name, "_", i),
+				name=psconcat(new_name, "_",
+					elem.name
+						if hasattr(elem, "name")
+						else elem.extra_args_name()),
 				src_loc_at=src_loc_at + 1))
 
 		kw \
@@ -1120,8 +1126,15 @@ class Splitarr(ValueCastable):
 		return Splitarr(**kw)
 	#--------
 	def __init__(self, lst: list={}, *, name=None, src_loc_at=0):
+		if name is None:
+			new_name = tracer.get_var_name(depth=src_loc_at + 2,
+				default=None)
+		else:
+			new_name = name
+
 		self.__lst = lst
-		self.__extra_args_name = name
+
+		self.__extra_args_name = new_name
 		self.__extra_args_src_loc_at = src_loc_at
 	#--------
 	def lst(self):
@@ -1142,7 +1155,7 @@ class Splitarr(ValueCastable):
 			Value.cast(other)
 		except Exception:
 			raise TypeError(psconcat
-				("Need to be able to cast `other`, {!r}, ".format(other),
+				("Need to be able to cast `other`, `{!r}`, ".format(other),
 				"to `Value"))
 		return self.as_value().eq(Value.cast(other))
 	#--------
