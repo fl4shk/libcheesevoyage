@@ -1040,8 +1040,8 @@ class Splitrec(ValueCastable):
 	def __iter__(self):
 		for name in self.__dict__:
 			if name[0] != "_":
-				#yield (name, self.__dict__[name])
-				yield self.__dict__[name]
+				yield (name, self.__dict__[name])
+				#yield self.__dict__[name]
 	#def __repr__(self):
 	#--------
 	@staticmethod
