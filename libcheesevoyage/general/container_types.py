@@ -1105,15 +1105,16 @@ class Splitarr(ValueCastable):
 				raise TypeError(("`elem` `{!r}` must be castable to "
 					+ "`Value`").format(field)) from None
 
-			#lst.append(type(elem).like(elem,
-			#	name=psconcat(new_name, "_", i),
-			#	src_loc_at=src_loc_at + 1))
+			# The naming is a heuristic
 			lst.append(type(elem).like(elem,
-				name=psconcat(new_name, "_",
-					elem.name
-						if hasattr(elem, "name")
-						else elem.extra_args_name()),
+				name=psconcat(new_name, "_", i),
 				src_loc_at=src_loc_at + 1))
+			#lst.append(type(elem).like(elem,
+			#	name=psconcat(new_name, "_",
+			#		elem.name
+			#			if hasattr(elem, "name")
+			#			else elem.extra_args_name()),
+			#	src_loc_at=src_loc_at + 1))
 
 		kw \
 			= dict \
