@@ -102,8 +102,7 @@ class XbarSwitchBus:
 	def FORMAL(self):
 		return self.__FORMAL
 	def SEL_WIDTH(self):
-		#return math.ceil(math.log2(self.NUM_DEVS()))
-		return math.ceil(math.log2(self.NUM_HOSTS()))
+		return math.ceil(math.log2(self.NUM_DEVS()))
 	#--------
 #--------
 # A crossbar switch
