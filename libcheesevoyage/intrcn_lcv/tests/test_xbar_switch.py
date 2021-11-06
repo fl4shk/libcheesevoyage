@@ -18,10 +18,10 @@ if __name__ == "__main__":
 	formal_non_sync \
 	(
 		dut_mod=XbarSwitch,
-		H2dElemKindT=64,
-		D2hElemKindT=64,
-		NUM_HOSTS=8,
-		NUM_DEVS=16,
+		H2dElemKindT=2,
+		D2hElemKindT=2,
+		NUM_HOSTS=2,
+		NUM_DEVS=8,
 		H2D_SIGNED=False,
 		D2H_SIGNED=False,
 	)

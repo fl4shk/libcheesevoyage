@@ -251,7 +251,7 @@ class XbarSwitch(Elaboratable):
 					+ "`BasicDomain.COMB` when doing formal verification")
 					.format(self.DOMAIN()))
 			#if PRIO_LST_2D \
-			#	!= [[i for i in range(bus.NUM_HOSTS()]
+			#	!= [[i for i in range(bus.NUM_HOSTS())]
 			#		for j in range(bus.NUM_DEVS())]:
 			#	raise ValueError(("`PRIO_LST_2D` `{!r}` must be the "
 			#		+ "default when doing formal verification")
@@ -259,6 +259,15 @@ class XbarSwitch(Elaboratable):
 
 			for j in range(bus.NUM_DEVS()):
 				PRIO_LST = PRIO_LST_2D[j]
+
+				if isinstance(bus.D2hElemKindT(), int):
+					for i in range(bus.NUM_HOSTS()):
+						for k in range(2 ** len(outp.d2h[0])):
+							with m.If(outp.d2h[PRIO_LST[i]] == k):
+								m.d.comb \
+								+= [
+									Cover(inp.d2h[j] == k)
+								]
 
 				with m.If(loc.found_arr[j][PRIO_LST[0]]):
 					m.d.comb \
