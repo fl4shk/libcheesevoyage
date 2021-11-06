@@ -41,6 +41,140 @@ class IntrcnLcvResp(Enum):
 	SLVERR = 0b10
 	DECERR = 0b11
 #--------
+def intrcn_lcv_blen_width():
+	return 8
+
+# Write Splitrec (host output, device input)
+class IntrcnLcvWriteH2d(Splitrec):
+	#--------
+	def __init__(self, ADDR_WIDTH, DATA_WIDTH, *, name_prefix=""):
+		#--------
+		self.__ADDR_WIDTH = ADDR_WIDTH
+		self.__DATA_WIDTH = DATA_WIDTH
+		#--------
+		# Write address (host output, device input)
+		self.addr = Signal(self.ADDR_WIDTH(),
+			name=psconcat(name_prefix, "wh2d_addr"))
+		# Write address handshake request (host output, device input)
+		self.areq = Signal(name=psconcat(name_prefix, "wh2d_areq"))
+
+		# Write data (host output, device input)
+		self.data = Signal(self.DATA_WIDTH(),
+			name=psconcat(name_prefix, "wh2d_data"))
+
+		# Write data handshake request (host output, device input)
+		self.dreq = Signal(name=psconcat(name_prefix, "wh2d_dreq"))
+
+		# Write burst width (host output, device input)
+		self.bwidth = Signal(shape=Shape.cast(IntrcnLcvBstWidth),
+			name=psconcat(name_prefix, "wh2d_bwidth"))
+		# Write burst length (host output, device input)
+		self.blen = Signal(intrcn_lcv_blen_width(),
+			name=psconcat(name_prefix, "wh2d_blen"))
+		# Write burst type (host output, device input)
+		self.btype = Signal(shape=Shape.cast(IntrcnLcvBstType),
+			name=psconcat(name_prefix, "wh2d_btype"))
+
+		# Write response handshake grant (host output, device input)
+		self.rgnt = Signal(name=psconcat(name_prefix, "wh2d_rgnt"))
+		#--------
+	#--------
+	def ADDR_WIDTH(self):
+		return self.__ADDR_WIDTH
+	def DATA_WIDTH(self):
+		return self.__DATA_WIDTH
+	#--------
+# Write Splitrec (host input, device output)
+class IntrcnLcvWriteD2h(Splitrec):
+	#--------
+	def __init__(self, ADDR_WIDTH, DATA_WIDTH, *, name_prefix=""):
+		#--------
+		self.__ADDR_WIDTH = ADDR_WIDTH
+		self.__DATA_WIDTH = DATA_WIDTH
+		#--------
+		# Write address handshake grant (host input, device output)
+		self.agnt = Signal(name=psconcat(name_prefix, "wd2h_agnt"))
+
+		# Write data handshake grant (host input, device output)
+		self.dgnt = Signal(name=psconcat(name_prefix, "wd2h_dgnt"))
+
+		# Write response (host input, device output)
+		self.resp = Signal(shape=Shape.cast(IntrcnLcvResp),
+			name=psconcat(name_prefix, "wd2h_resp"))
+
+		# Write response handshake request (host input, device out)
+		self.rreq = Signal(name=psconcat(name_prefix, "wd2h_rreq"))
+		#--------
+	#--------
+	def ADDR_WIDTH(self):
+		return self.__ADDR_WIDTH
+	def DATA_WIDTH(self):
+		return self.__DATA_WIDTH
+	#--------
+
+# Read Splitrec (host output, device input)
+class IntrcnLcvReadH2d(Splitrec):
+	#--------
+	def __init__(self, ADDR_WIDTH, DATA_WIDTH, *, name_prefix=""):
+		#--------
+		self.__ADDR_WIDTH = ADDR_WIDTH
+		self.__DATA_WIDTH = DATA_WIDTH
+		#--------
+		# Read address (host output, device input)
+		self.addr = Signal(self.ADDR_WIDTH(),
+			name=psconcat(name_prefix, "rh2d_addr"))
+
+		# Read address handshake request (host output, device input)
+		self.areq = Signal(name=psconcat(name_prefix, "rh2d_areq"))
+
+		# Read burst width (host output, device input)
+		self.bwidth = Signal(shape=Shape.cast(IntrcnLcvBstWidth),
+			name=psconcat(name_prefix, "rh2d_bwidth"))
+		# Read burst length (host output, device input)
+		self.blen = Signal(intrcn_lcv_blen_width(),
+			name=psconcat(name_prefix, "rh2d_blen"))
+		# Read burst type (host output, device input)
+		self.btype = Signal(shape=Shape.cast(IntrcnLcvBstType),
+			name=psconcat(name_prefix, "rh2d_btype"))
+
+		# Read data/response handshake request (host output, device input)
+		self.drgnt = Signal(name=psconcat(name_prefix, "rh2d_drgnt"))
+		#--------
+	#--------
+	def ADDR_WIDTH(self):
+		return self.__ADDR_WIDTH
+	def DATA_WIDTH(self):
+		return self.__DATA_WIDTH
+	#--------
+# Read Splitrec (host input, device output)
+class IntrcnLcvReadD2h(Splitrec):
+	#--------
+	def __init__(self, ADDR_WIDTH, DATA_WIDTH, *, name_prefix=""):
+		#--------
+		self.__ADDR_WIDTH = ADDR_WIDTH
+		self.__DATA_WIDTH = DATA_WIDTH
+		#--------
+		# Read address handshake grant (host input, device output)
+		self.agnt = Signal(name=psconcat(name_prefix, "rd2h_agnt"))
+
+		# Read data (host input, device output)
+		self.data = Signal(self.DATA_WIDTH(),
+			name=psconcat(name_prefix, "rd2h_data"))
+
+		# Read data/response handshake request (host input, device output)
+		self.drreq = Signal(name=psconcat(name_prefix, "rd2h_drreq"))
+
+		# Read response (host input, device output)
+		self.resp = Signal(shape=Shape.cast(IntrcnLcvResp),
+			name=psconcat(name_prefix, "rd2h_resp"))
+		#--------
+	#--------
+	def ADDR_WIDTH(self):
+		return self.__ADDR_WIDTH
+	def DATA_WIDTH(self):
+		return self.__DATA_WIDTH
+	#--------
+#--------
 class IntrcnLcvNodeBus:
 	#--------
 	def __init__(self, ADDR_WIDTH, DATA_WIDTH, *, name_prefix=""):
@@ -69,97 +203,24 @@ class IntrcnLcvNodeBus:
 				+ "or 1024").format(DATA_WIDTH))
 		self.__DATA_WIDTH = int(DATA_WIDTH)
 		#--------
-		# Write Splitrec (host output, device input)
-		self.who = self.wdi = Splitrec()
+		self.wh2d = IntrcnLcvWriteH2d(ADDR_WIDTH=ADDR_WIDTH,
+			DATA_WIDTH=DATA_WIDTH, name_prefix=name_prefix)
 
-		# Write Splitrec (host input, device output)
-		self.whi = self.wdo = Splitrec()
+		self.wd2h = IntrcnLcvWriteD2h(ADDR_WIDTH=ADDR_WIDTH,
+			DATA_WIDTH=DATA_WIDTH, name_prefix=name_prefix)
 
-		# Read Splitrec (host output, device input)
-		self.rho = self.rdi = Splitrec()
+		self.rh2d = IntrcnLcvReadH2d(ADDR_WIDTH=ADDR_WIDTH,
+			DATA_WIDTH=DATA_WIDTH, name_prefix=name_prefix)
 
-		# Read Splitrec (host input, device input)
-		self.rhi = self.rdo = Splitrec()
+		self.rd2h = IntrcnLcvReadD2h(ADDR_WIDTH=ADDR_WIDTH,
+			DATA_WIDTH=DATA_WIDTH, name_prefix=name_prefix)
 		#--------
-		# Write address (host output, device input)
-		self.who.addr = Signal(self.ADDR_WIDTH(),
-			name=psconcat(name_prefix, "who_addr"))
-
-		# Write address handshake request (host output, device input)
-		self.who.areq = Signal(name=psconcat(name_prefix, "who_areq"))
-		# Write address handshake grant (host input, device output)
-		self.whi.agnt = Signal(name=psconcat(name_prefix, "whi_agnt"))
-
-
-		# Write data (host output, device input)
-		self.who.data = Signal(self.DATA_WIDTH(),
-			name=psconcat(name_prefix, "who_data"))
-
-		# Write data handshake request (host output, device input)
-		self.who.dreq = Signal(name=psconcat(name_prefix, "who_dreq"))
-		# Write data handshake grant (host input, device output)
-		self.whi.dgnt = Signal(name=psconcat(name_prefix, "whi_dgnt"))
-
-		# Write burst width (host output, device input)
-		self.who.bwidth = Signal(shape=Shape.cast(IntrcnLcvBstWidth),
-			name=psconcat(name_prefix, "who_bwidth"))
-		# Write burst length (host output, device input)
-		self.who.blen = Signal(self.BLEN_WIDTH(),
-			name=psconcat(name_prefix, "who_blen"))
-		# Write burst type (host output, device input)
-		self.who.btype = Signal(shape=Shape.cast(IntrcnLcvBstType),
-			name=psconcat(name_prefix, "who_btype"))
-
-
-		# Write response (host input, device output)
-		self.whi.resp = Signal(shape=Shape.cast(IntrcnLcvResp),
-			name=psconcat(name_prefix, "whi_resp"))
-
-		# Write response handshake request (host input, device out)
-		self.whi.rreq = Signal(name=psconcat(name_prefix, "whi_rreq"))
-		# Write response handshake grant (host output, device input)
-		self.who.rgnt = Signal(name=psconcat(name_prefix, "who_rgnt"))
-		#--------
-		# Read address (host output, device input)
-		self.rho.addr = Signal(self.ADDR_WIDTH(),
-			name=psconcat(name_prefix, "rho_addr"))
-
-		# Read address handshake request (host output, device input)
-		self.rho.areq = Signal(name=psconcat(name_prefix, "rho_areq"))
-		# Read address handshake grant (host input, device output)
-		self.rhi.agnt = Signal(name=psconcat(name_prefix, "rhi_agnt"))
-
-
-		# Read data (host input, device output)
-		self.rhi.data = Signal(self.DATA_WIDTH(),
-			name=psconcat(name_prefix, "rhi_data"))
-
-		# Read burst width (host output, device input)
-		self.rho.bwidth = Signal(shape=Shape.cast(IntrcnLcvBstWidth),
-			name=psconcat(name_prefix, "rho_bwidth"))
-		# Read burst length (host output, device input)
-		self.rho.blen = Signal(self.BLEN_WIDTH(),
-			name=psconcat(name_prefix, "rho_blen"))
-		# Read burst type (host output, device input)
-		self.rho.btype = Signal(shape=Shape.cast(IntrcnLcvBstType),
-			name=psconcat(name_prefix, "rho_btype"))
-
-		# Read data/response handshake request (host input, device output)
-		self.rhi.drreq = Signal(name=psconcat(name_prefix, "rhi_drreq"))
-		# Read data/response handshake request (host output, device input)
-		self.rho.drgnt = Signal(name=psconcat(name_prefix, "rho_drgnt"))
-
-		# Read response (host input, device output)
-		self.rhi.resp = Signal(shape=Shape.cast(IntrcnLcvResp),
-			name=psconcat(name_prefix, "rhi_resp"))
 		#--------
 	#--------
 	def ADDR_WIDTH(self):
 		return self.__ADDR_WIDTH
 	def DATA_WIDTH(self):
 		return self.__DATA_WIDTH
-	def BLEN_WIDTH():
-		return 8
 	#--------
 	def decode_bst_len(self, to_decode):
 		return to_decode + 0x1
