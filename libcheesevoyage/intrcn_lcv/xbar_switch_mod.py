@@ -38,7 +38,7 @@ class XbarSwitchBus:
 		# Whether or not to enable forwarding the particular data
 		self.inp.sel_conn = Signal(self.NUM_HOSTS(), name="inp_sel_conn")
 
-		# Which inputs to forward to which outputs
+		# Which hosts to connect to which devices
 		self.inp.sel \
 			= Splitarr \
 			([
@@ -48,41 +48,41 @@ class XbarSwitchBus:
 
 		#self.inp_data = Packarr.build(ElemKindT=self.ElemKindT(),
 		#	SIZE=self.SIZE(), SIGNED=self.SIGNED())
-		self.inp.h2d \
+		self.inp.h2d_data \
 			= Splitarr \
 			([
 				Splitrec.cast_elem(self.H2dElemKindT(), self.H2D_SIGNED(),
-					name=f"inp_h2d_{i}")
+					name=f"inp_h2d_data_{i}")
 					for i in range(self.NUM_HOSTS())
 			])
-		self.inp.d2h \
+		self.inp.d2h_data \
 			= Splitarr \
 			([
 				Splitrec.cast_elem(self.D2hElemKindT(), self.D2H_SIGNED(),
-					name=f"inp_d2h_{j}")
+					name=f"inp_d2h_data_{j}")
 					for j in range(self.NUM_DEVS())
 			])
 		#--------
 		# Outputs
 
-		# Whether or not to forward the particular data
-		self.outp.active = Signal(self.NUM_DEVS(),
-			name="outp_active")
+		# Which hosts are active
+		self.outp.d2h_active = Signal(self.NUM_DEVS(),
+			name="outp_d2h_active")
 
 		#self.outp_data = Packarr.build(ElemKindT=self.ElemKindT(),
 		#	SIZE=self.SIZE(), SIGNED=self.SIGNED())
-		self.outp.h2d \
+		self.outp.h2d_data \
 			= Splitarr \
 			([
 				Splitrec.cast_elem(self.H2dElemKindT(), self.H2D_SIGNED(),
-					name=f"outp_h2d_{j}")
+					name=f"outp_h2d_data_{j}")
 					for j in range(self.NUM_DEVS())
 			])
-		self.outp.d2h \
+		self.outp.d2h_data \
 			= Splitarr \
 			([
 				Splitrec.cast_elem(self.D2hElemKindT(), self.D2H_SIGNED(),
-					name=f"outp_d2h_{i}")
+					name=f"outp_d2h_data_{i}")
 					for i in range(self.NUM_HOSTS())
 			])
 		#--------
@@ -149,7 +149,7 @@ class XbarSwitch(Elaboratable):
 		#if not isinstance(DOMAIN, BasicDomain):
 		#	raise TypeError("`DOMAIN` `{!r}` must be a `BasicDomain`"
 		#		.format(DOMAIN))
-		self.__DOMAIN = DOMAIN
+		#self.__DOMAIN = DOMAIN
 		#--------
 		self.__bus \
 			= XbarSwitchBus \
@@ -166,8 +166,8 @@ class XbarSwitch(Elaboratable):
 	#--------
 	def PRIO_LST_2D(self):
 		return self.__PRIO_LST_2D
-	def DOMAIN(self):
-		return self.__DOMAIN
+	#def DOMAIN(self):
+	#	return self.__DOMAIN
 	def bus(self):
 		return self.__bus
 	#--------
@@ -188,6 +188,10 @@ class XbarSwitch(Elaboratable):
 				Signal(bus.NUM_HOSTS(), name=f"found_arr_{j}")
 					for j in range(bus.NUM_DEVS())
 			])
+		if bus.FORMAL():
+			loc.formal = Blank()
+			loc.formal.past_valid = Signal(name="formal_past_valid")
+
 		#loc.dbg_sel \
 		#	= Splitarr \
 		#	([
@@ -196,7 +200,7 @@ class XbarSwitch(Elaboratable):
 		#			for j in range(bus.NUM_DEVS())
 		#	])
 
-		md = basic_domain_to_actual_domain(m, self.DOMAIN())
+		#md = basic_domain_to_actual_domain(m, self.DOMAIN())
 		#--------
 		for j in range(bus.NUM_DEVS()):
 			m.d.comb \
@@ -223,72 +227,81 @@ class XbarSwitch(Elaboratable):
 						k += 1
 
 					with m.Case("".join(list(reversed(CASE)))):
-						md \
+						m.d.sync \
 						+= [
 							#loc.dbg_sel.eq(PRIO_LST[i]),
-							outp.active[j].eq(0b1),
-							outp.h2d[j].eq(inp.h2d[PRIO_LST[i]]),
+							outp.d2h_active[j].eq(0b1),
+							#outp.d2h_active.eq(1 << j),
+							outp.h2d_data[j].eq(inp.h2d_data[PRIO_LST[i]]),
 
 							# I'm not sure this is correct.
 							# Here's how I see it.
 							# We are mapping from the selected *master*,
 							# which is what has priority, 
-							outp.d2h[PRIO_LST[i]].eq(inp.d2h[j]),
+							outp.d2h_data[PRIO_LST[i]].eq(inp.d2h_data[j]),
 						]
-
 				with m.Default():
-					md \
+					m.d.sync \
 					+= [
 						#loc.dbg_sel.eq(-1),
-						outp.active[j].eq(0b0),
-						#outp.h2d[j].eq(0x0),
+						outp.d2h_active[j].eq(0b0),
+						#outp.d2h_active.eq(0x0),
+						#outp.h2d_data[j].eq(0x0),
+						outp.h2d_data[j].eq(0x0),
 					]
 		#--------
 		if bus.FORMAL():
-			if self.DOMAIN() != BasicDomain.COMB:
-				raise ValueError(("`self.DOMAIN()` `{!r}` must be "
-					+ "`BasicDomain.COMB` when doing formal verification")
-					.format(self.DOMAIN()))
+			#if self.DOMAIN() != BasicDomain.COMB:
+			#	raise ValueError(("`self.DOMAIN()` `{!r}` must be "
+			#		+ "`BasicDomain.COMB` when doing formal verification")
+			#		.format(self.DOMAIN()))
 			#if PRIO_LST_2D \
 			#	!= [[i for i in range(bus.NUM_HOSTS())]
 			#		for j in range(bus.NUM_DEVS())]:
 			#	raise ValueError(("`PRIO_LST_2D` `{!r}` must be the "
 			#		+ "default when doing formal verification")
 			#		.format(PRIO_LST_2D))
+			m.d.sync += loc.formal.past_valid.eq(0b1)
 
-			for j in range(bus.NUM_DEVS()):
-				PRIO_LST = PRIO_LST_2D[j]
+			with m.If((~ResetSignal()) & loc.formal.past_valid):
+				for j in range(bus.NUM_DEVS()):
+					PRIO_LST = PRIO_LST_2D[j]
 
-				if isinstance(bus.D2hElemKindT(), int):
-					for i in range(bus.NUM_HOSTS()):
-						for k in range(2 ** len(outp.d2h[0])):
-							with m.If(outp.d2h[PRIO_LST[i]] == k):
-								m.d.comb \
-								+= [
-									Cover(inp.d2h[j] == k)
-								]
+					if isinstance(bus.D2hElemKindT(), int):
+						for i in range(bus.NUM_HOSTS()):
+							for k in range(2 ** len(outp.d2h_data[0])):
+								with m.If(outp.d2h_data[PRIO_LST[i]] == k):
+									m.d.comb \
+									+= [
+										Cover(Past(inp.d2h_data[j]) == k)
+									]
 
-				with m.If(loc.found_arr[j][PRIO_LST[0]]):
-					m.d.comb \
-					+= [
-						Assert(outp.active[j]),
-						Assert(outp.h2d[j] == inp.h2d[PRIO_LST[0]]),
-						Assert(outp.d2h[PRIO_LST[0]] == inp.d2h[j]),
-					]
-				for i in range(1, bus.NUM_HOSTS()):
-					with m.Elif(loc.found_arr[j][PRIO_LST[i]]):
+					with m.If(Past(loc.found_arr[j])[PRIO_LST[0]]):
 						m.d.comb \
 						+= [
-							Assert(outp.active[j]),
-							Assert(outp.h2d[j] == inp.h2d[PRIO_LST[i]]),
-							Assert(outp.d2h[PRIO_LST[i]] == inp.d2h[j]),
+							Assert(outp.d2h_active[j]),
+							Assert(outp.h2d_data[j]
+								== Past(inp.h2d_data[PRIO_LST[0]])),
+							Assert(outp.d2h_data[PRIO_LST[0]]
+								== Past(inp.d2h_data[j])),
 						]
-				with m.Else():
-					m.d.comb \
-					+= [
-						Assert(~outp.active[j]),
-						#Assert(outp.h2d[j] == 0x0),
-					]
+					for i in range(1, bus.NUM_HOSTS()):
+						with m.Elif(Past(loc.found_arr[j])[PRIO_LST[i]]):
+							m.d.comb \
+							+= [
+								Assert(outp.d2h_active[j]),
+								Assert(outp.h2d_data[j]
+									== Past(inp.h2d_data[PRIO_LST[i]])),
+								Assert(outp.d2h_data[PRIO_LST[i]]
+									== Past(inp.d2h_data[j])),
+							]
+					with m.Else():
+						m.d.comb \
+						+= [
+							Assert(~outp.d2h_active[j]),
+							#Assert(outp.d2h_active == 0x0)
+							Assert(outp.h2d_data[j] == 0x0),
+						]
 		#--------
 		return m
 		#--------

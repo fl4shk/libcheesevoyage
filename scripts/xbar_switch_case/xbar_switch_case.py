@@ -125,5 +125,6 @@ for j in range(len(PRIO_LST_2D)):
 			k += 1
 
 		printout("".join(list(reversed(CASE_LST[-1]))), "\n")
+		#printout("".join(CASE_LST[-1]), "\n")
 	printout("\n")
 #--------
