@@ -247,7 +247,7 @@ class XbarSwitch(Elaboratable):
 						outp.d2h_active[j].eq(0b0),
 						#outp.d2h_active.eq(0x0),
 						#outp.h2d_data[j].eq(0x0),
-						outp.h2d_data[j].eq(0x0),
+						#outp.h2d_data[j].eq(0x0),
 					]
 		#--------
 		if bus.FORMAL():
@@ -300,7 +300,7 @@ class XbarSwitch(Elaboratable):
 						+= [
 							Assert(~outp.d2h_active[j]),
 							#Assert(outp.d2h_active == 0x0)
-							Assert(outp.h2d_data[j] == 0x0),
+							#Assert(outp.h2d_data[j] == 0x0),
 						]
 		#--------
 		return m

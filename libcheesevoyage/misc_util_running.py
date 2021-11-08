@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 from nmigen import *
-from nmigen import *
 from nmigen.sim import *
 
 from nmigen.cli import main, main_parser, main_runner

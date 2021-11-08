@@ -15,16 +15,28 @@ if __name__ == "__main__":
 	#	OUTP_SIZE=3,
 	#)
 
-	formal_non_sync \
+	#formal_non_sync \
+	formal \
 	(
 		dut_mod=XbarSwitch,
 		H2dElemKindT=2,
 		D2hElemKindT=2,
-		NUM_HOSTS=4,
-		NUM_DEVS=8,
+		NUM_HOSTS=2,
+		NUM_DEVS=2,
 		H2D_SIGNED=False,
 		D2H_SIGNED=False,
 	)
+
+	#to_verilog \
+	#(
+	#	dut_mod=XbarSwitch,
+	#	H2dElemKindT=2,
+	#	D2hElemKindT=2,
+	#	NUM_HOSTS=2,
+	#	NUM_DEVS=2,
+	#	H2D_SIGNED=False,
+	#	D2H_SIGNED=False,
+	#)
 
 	#to_verilog_non_sync \
 	#(
