@@ -110,16 +110,17 @@ class XbarSwitch(Elaboratable):
 	#--------
 	# For `PRIO_LST_2D`, lower list indices mean higher priority
 
-	#def __init__(self, ElemKindT, NUM_HOSTS, NUM_DEVS, SIGNED=False, *,
-	#	FORMAL=False):
 	def __init__(self, H2dElemKindT, D2hElemKindT, NUM_HOSTS, NUM_DEVS,
 		H2D_SIGNED=False, D2H_SIGNED=False, *, PRIO_LST_2D=None,
 		DOMAIN=BasicDomain.COMB, FORMAL=False):
+	#def __init__(self, H2dElemKindT, D2hElemKindT, NUM_HOSTS, NUM_DEVS,
+	#	H2D_SIGNED=False, D2H_SIGNED=False, *, PRIO_LST_2D=None,
+	#	FORMAL=False):
 		#--------
 		if (not isinstance(PRIO_LST_2D, list)) \
 			and (not isinstance(PRIO_LST_2D, type(None))):
 			raise TypeError(psconcat
-				("`PRIO_LST_2d` `{!r}` must be a `list` or `None`"
+				("`PRIO_LST_2D` `{!r}` must be a `list` or `None`"
 				.format(PRIO_LST_2D)))
 
 		if isinstance(PRIO_LST_2D, list):
@@ -127,6 +128,8 @@ class XbarSwitch(Elaboratable):
 				raise ValueError(psconcat
 					("`PRIO_LST_2D` `{!r}` must be of length `NUM_DEVS` ",
 					"`{!r}`".format(PRIO_LST_2D)))
+
+			#self.__PRIO_LST_2D = []
 
 			for PRIO_LST in PRIO_LST_2D:
 				temp = set(PRIO_LST)
@@ -138,18 +141,30 @@ class XbarSwitch(Elaboratable):
 						"consist of all unique `int`s that are between 0 ",
 						"and `NUM_HOSTS` `{!r}`".format(NUM_HOSTS)))
 
+				#self.__PRIO_LST_2D.append(list(reversed(PRIO_LST)))
+
 			self.__PRIO_LST_2D = PRIO_LST_2D
 		else: # if isinstance(PRIO_LST, None):
+			#self.__PRIO_LST_2D \
+			#	= [
+			#		[NUM_HOSTS - (i + 1) for i in range(NUM_HOSTS)]
+			#			for j in range(NUM_DEVS)
+			#	]
+			#self.__PRIO_LST_2D \
+			#	= [
+			#		list(reversed([i for i in range(NUM_HOSTS)]))
+			#			for j in range(NUM_DEVS)
+			#	]
 			self.__PRIO_LST_2D \
 				= [
 					[i for i in range(NUM_HOSTS)]
 						for j in range(NUM_DEVS)
 				]
 		#--------
-		#if not isinstance(DOMAIN, BasicDomain):
-		#	raise TypeError("`DOMAIN` `{!r}` must be a `BasicDomain`"
-		#		.format(DOMAIN))
-		#self.__DOMAIN = DOMAIN
+		if not isinstance(DOMAIN, BasicDomain):
+			raise TypeError("`DOMAIN` `{!r}` must be a `BasicDomain`"
+				.format(DOMAIN))
+		self.__DOMAIN = DOMAIN
 		#--------
 		self.__bus \
 			= XbarSwitchBus \
@@ -166,8 +181,8 @@ class XbarSwitch(Elaboratable):
 	#--------
 	def PRIO_LST_2D(self):
 		return self.__PRIO_LST_2D
-	#def DOMAIN(self):
-	#	return self.__DOMAIN
+	def DOMAIN(self):
+		return self.__DOMAIN
 	def bus(self):
 		return self.__bus
 	#--------
@@ -188,9 +203,9 @@ class XbarSwitch(Elaboratable):
 				Signal(bus.NUM_HOSTS(), name=f"found_arr_{j}")
 					for j in range(bus.NUM_DEVS())
 			])
-		if bus.FORMAL():
-			loc.formal = Blank()
-			loc.formal.past_valid = Signal(name="formal_past_valid")
+		#if bus.FORMAL():
+		#	loc.formal = Blank()
+		#	loc.formal.past_valid = Signal(name="formal_past_valid")
 
 		#loc.dbg_sel \
 		#	= Splitarr \
@@ -200,7 +215,7 @@ class XbarSwitch(Elaboratable):
 		#			for j in range(bus.NUM_DEVS())
 		#	])
 
-		#md = basic_domain_to_actual_domain(m, self.DOMAIN())
+		md = basic_domain_to_actual_domain(m, self.DOMAIN())
 		#--------
 		for j in range(bus.NUM_DEVS()):
 			m.d.comb \
@@ -211,6 +226,7 @@ class XbarSwitch(Elaboratable):
 			]
 
 			with m.Switch(loc.found_arr[j]):
+				#PRIO_LST = list(reversed(PRIO_LST_2D[j]))
 				PRIO_LST = PRIO_LST_2D[j]
 
 				for i in range(len(PRIO_LST)):
@@ -226,12 +242,13 @@ class XbarSwitch(Elaboratable):
 						CASE[PRIO_LST[k]] = "-"
 						k += 1
 
+					# The `"".join(...)` is correct. I tested it by
+					# examining the Verilog output
 					with m.Case("".join(list(reversed(CASE)))):
-						m.d.sync \
+						md \
 						+= [
 							#loc.dbg_sel.eq(PRIO_LST[i]),
 							outp.d2h_active[j].eq(0b1),
-							#outp.d2h_active.eq(1 << j),
 							outp.h2d_data[j].eq(inp.h2d_data[PRIO_LST[i]]),
 
 							# I'm not sure this is correct.
@@ -241,7 +258,7 @@ class XbarSwitch(Elaboratable):
 							outp.d2h_data[PRIO_LST[i]].eq(inp.d2h_data[j]),
 						]
 				with m.Default():
-					m.d.sync \
+					md \
 					+= [
 						#loc.dbg_sel.eq(-1),
 						outp.d2h_active[j].eq(0b0),
@@ -251,57 +268,64 @@ class XbarSwitch(Elaboratable):
 					]
 		#--------
 		if bus.FORMAL():
-			#if self.DOMAIN() != BasicDomain.COMB:
-			#	raise ValueError(("`self.DOMAIN()` `{!r}` must be "
-			#		+ "`BasicDomain.COMB` when doing formal verification")
-			#		.format(self.DOMAIN()))
+			if self.DOMAIN() != BasicDomain.COMB:
+				raise ValueError(("`self.DOMAIN()` `{!r}` must be "
+					+ "`BasicDomain.COMB` when doing formal verification")
+					.format(self.DOMAIN()))
 			#if PRIO_LST_2D \
-			#	!= [[i for i in range(bus.NUM_HOSTS())]
-			#		for j in range(bus.NUM_DEVS())]:
+			#	!= [
+			#		#[
+			#		#	bus.NUM_HOSTS() - (i + 1)
+			#		#	for i in range(bus.NUM_HOSTS())
+			#		#]
+			#		[i for i in range(bus.NUM_HOSTS())]
+			#		for j in range(bus.NUM_DEVS())
+			#	]:
 			#	raise ValueError(("`PRIO_LST_2D` `{!r}` must be the "
 			#		+ "default when doing formal verification")
 			#		.format(PRIO_LST_2D))
-			m.d.sync += loc.formal.past_valid.eq(0b1)
+			#m.d.sync += loc.formal.past_valid.eq(0b1)
 
-			with m.If((~ResetSignal()) & loc.formal.past_valid):
-				for j in range(bus.NUM_DEVS()):
-					PRIO_LST = PRIO_LST_2D[j]
+			#with m.If((~ResetSignal()) & loc.formal.past_valid):
+			for j in range(bus.NUM_DEVS()):
+				PRIO_LST = PRIO_LST_2D[j]
+				#PRIO_LST = list(reversed(PRIO_LST_2D[j]))
 
-					if isinstance(bus.D2hElemKindT(), int):
-						for i in range(bus.NUM_HOSTS()):
-							for k in range(2 ** len(outp.d2h_data[0])):
-								with m.If(outp.d2h_data[PRIO_LST[i]] == k):
-									m.d.comb \
-									+= [
-										Cover(Past(inp.d2h_data[j]) == k)
-									]
+				if isinstance(bus.D2hElemKindT(), int):
+					for i in range(bus.NUM_HOSTS()):
+						for k in range(2 ** len(outp.d2h_data[0])):
+							with m.If(outp.d2h_data[PRIO_LST[i]] == k):
+								m.d.comb \
+								+= [
+									Cover(inp.d2h_data[j] == k)
+								]
 
-					with m.If(Past(loc.found_arr[j])[PRIO_LST[0]]):
+				with m.If(loc.found_arr[j][PRIO_LST[0]]):
+					m.d.comb \
+					+= [
+						Assert(outp.d2h_active[j]),
+						Assert(outp.h2d_data[j]
+							== inp.h2d_data[PRIO_LST[0]]),
+						Assert(outp.d2h_data[PRIO_LST[0]]
+							== inp.d2h_data[j]),
+					]
+				for i in range(1, bus.NUM_HOSTS()):
+					with m.Elif(loc.found_arr[j][PRIO_LST[i]]):
 						m.d.comb \
 						+= [
 							Assert(outp.d2h_active[j]),
 							Assert(outp.h2d_data[j]
-								== Past(inp.h2d_data[PRIO_LST[0]])),
-							Assert(outp.d2h_data[PRIO_LST[0]]
-								== Past(inp.d2h_data[j])),
+								== inp.h2d_data[PRIO_LST[i]]),
+							Assert(outp.d2h_data[PRIO_LST[i]]
+								== inp.d2h_data[j]),
 						]
-					for i in range(1, bus.NUM_HOSTS()):
-						with m.Elif(Past(loc.found_arr[j])[PRIO_LST[i]]):
-							m.d.comb \
-							+= [
-								Assert(outp.d2h_active[j]),
-								Assert(outp.h2d_data[j]
-									== Past(inp.h2d_data[PRIO_LST[i]])),
-								Assert(outp.d2h_data[PRIO_LST[i]]
-									== Past(inp.d2h_data[j])),
-							]
-					with m.Else():
-						m.d.comb \
-						+= [
-							Assert(~outp.d2h_active[j]),
-							#Assert(outp.d2h_active == 0x0)
-							#Assert(outp.h2d_data[j] == 0x0),
-						]
+				with m.Else():
+					m.d.comb \
+					+= [
+						Assert(~outp.d2h_active[j]),
+						#Assert(outp.d2h_active == 0x0)
+						#Assert(outp.h2d_data[j] == 0x0),
+					]
 		#--------
 		return m
 		#--------
