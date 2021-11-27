@@ -1,0 +1,19 @@
+req_in:     0 ... 0 1 1 1 ... 1 1 1 0
+req_ps:     0 ... 0 0 1 1 ... 1 1 1 0
+req_out:    0 ... 0 0 0 1 ... 1 1 1 0
+
+gnt_in:     0 ... 0 0 0 0 ... 1 1 1 0
+gnt_ps:     0 ... 0 0 0 0 ... 0 1 1 0
+gnt_out:    0 ... 0 0 0 0 ... 0 0 1 0
+
+The interconnect must sniff `req_out` and `gnt_out` to determine when to
+clear them and `req_ps`/`gnt_ps`. Due to the pattern, we only need to look
+at `req_out` and `gnt_out` no matter the number of pipeline stages!
+
+What about write bursts?
+We need to have the device accept bursts of data as soon as it sees `dreq`
+become asserted.
+
+What about read bursts?
+We need to have the host accept bursts of data as soon as it sees `drreq`
+become asserted.

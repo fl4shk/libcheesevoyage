@@ -41,9 +41,9 @@ class IntrcnLcvResp(Enum):
 	SLVERR = 0b10
 	DECERR = 0b11
 #--------
-def intrcn_lcv_blen_width():
-	return 8
-
+#def intrcn_lcv_asize_width():
+#	return 8
+#--------
 # Write Splitrec (host output, device input)
 class IntrcnLcvWriteH2d(Splitrec):
 	#--------
@@ -58,6 +58,16 @@ class IntrcnLcvWriteH2d(Splitrec):
 		# Write address handshake request (host output, device input)
 		self.areq = Signal(name=psconcat(name_prefix, "wh2d_areq"))
 
+		# Write burst width (host output, device input)
+		self.awidth = Signal(shape=Shape.cast(IntrcnLcvBstWidth),
+			name=psconcat(name_prefix, "wh2d_awidth"))
+		# Write burst length (host output, device input)
+		self.asize = Signal(shape=Shape.cast(IntrcnLcvBstSize),
+			name=psconcat(name_prefix, "wh2d_asize"))
+		# Write burst type (host output, device input)
+		self.atype = Signal(shape=Shape.cast(IntrcnLcvBstType),
+			name=psconcat(name_prefix, "wh2d_atype"))
+
 		# Write data (host output, device input)
 		self.data = Signal(self.DATA_WIDTH(),
 			name=psconcat(name_prefix, "wh2d_data"))
@@ -65,15 +75,6 @@ class IntrcnLcvWriteH2d(Splitrec):
 		# Write data handshake request (host output, device input)
 		self.dreq = Signal(name=psconcat(name_prefix, "wh2d_dreq"))
 
-		# Write burst width (host output, device input)
-		self.bwidth = Signal(shape=Shape.cast(IntrcnLcvBstWidth),
-			name=psconcat(name_prefix, "wh2d_bwidth"))
-		# Write burst length (host output, device input)
-		self.blen = Signal(intrcn_lcv_blen_width(),
-			name=psconcat(name_prefix, "wh2d_blen"))
-		# Write burst type (host output, device input)
-		self.btype = Signal(shape=Shape.cast(IntrcnLcvBstType),
-			name=psconcat(name_prefix, "wh2d_btype"))
 
 		# Write response handshake grant (host output, device input)
 		self.rgnt = Signal(name=psconcat(name_prefix, "wh2d_rgnt"))
@@ -128,14 +129,14 @@ class IntrcnLcvReadH2d(Splitrec):
 		self.areq = Signal(name=psconcat(name_prefix, "rh2d_areq"))
 
 		# Read burst width (host output, device input)
-		self.bwidth = Signal(shape=Shape.cast(IntrcnLcvBstWidth),
-			name=psconcat(name_prefix, "rh2d_bwidth"))
+		self.awidth = Signal(shape=Shape.cast(IntrcnLcvBstWidth),
+			name=psconcat(name_prefix, "rh2d_awidth"))
 		# Read burst length (host output, device input)
-		self.blen = Signal(intrcn_lcv_blen_width(),
-			name=psconcat(name_prefix, "rh2d_blen"))
+		self.asize = Signal(shape=Shape.cast(IntrcnLcvBstSize),
+			name=psconcat(name_prefix, "rh2d_asize"))
 		# Read burst type (host output, device input)
-		self.btype = Signal(shape=Shape.cast(IntrcnLcvBstType),
-			name=psconcat(name_prefix, "rh2d_btype"))
+		self.atype = Signal(shape=Shape.cast(IntrcnLcvBstType),
+			name=psconcat(name_prefix, "rh2d_atype"))
 
 		# Read data/response handshake request (host output, device input)
 		self.drgnt = Signal(name=psconcat(name_prefix, "rh2d_drgnt"))
