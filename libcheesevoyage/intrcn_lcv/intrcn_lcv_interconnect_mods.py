@@ -8,7 +8,6 @@ from amaranth import *
 from amaranth.sim import *
 
 from amaranth.cli import main, main_parser, main_runner
-from amaranth.de0_cv import *
 
 from amaranth.asserts import Assert, Assume, Cover
 from amaranth.asserts import Past, Rose, Fell, Stable
