@@ -4,55 +4,60 @@ import sys
 import math
 from enum import Enum, auto
 
-from nmigen import *
-from nmigen.sim import *
+from amaranth import *
+from amaranth.sim import *
 
-from nmigen.cli import main, main_parser, main_runner
-from nmigen_boards.de0_cv import *
+from amaranth.cli import main, main_parser, main_runner
+from amaranth.de0_cv import *
 
-from nmigen.asserts import Assert, Assume, Cover
-from nmigen.asserts import Past, Rose, Fell, Stable
+from amaranth.asserts import Assert, Assume, Cover
+from amaranth.asserts import Past, Rose, Fell, Stable
 
-from nmigen.back import verilog
+from amaranth.back import verilog
 
 from libcheesevoyage import *
 #--------
 class IntrcnLcvInterconnectBus:
 	#--------
-	#def __init__(self, host_node_bus_lst, dev_node_cfg_lst):
-	#	#--------
-	#	for host_node_bus in host_node_bus_lst:
-	#		if not isinstance(host_node_bus, IntrcnLcvNodeBus):
-	#			raise TypeError(psconcat
-	#				("`host_node_bus` `{!r}` must be an ",
-	#				"`IntrcnLcvNodeBus`").format(host_node_bus))
-	#	self.host_node_bus_lst = host_node_bus_lst
-
-	#	for dev_node_cfg in dev_node_cfg_lst:
-	#		if (not isinstance(dev_node_cfg, list)) \
-	#			or (len(dev_node_cfg) != 3) \
-	#			or (not isinstance(dev_node_cfg[0], IntrcnLcvNodeBus)) \
-	#			or (not isinstance(dev_node_cfg[1], int)) \
-	#			or (not isinstance(dev_node_cfg[2], int)):
-	#			raise TypeError(psconcat
-	#				("`dev_node_cfg` `{!r}` must be of the following ",
-	#				"format: `[IntrcnLcvNodeBus, int, int]`")
-	#				.format(dev_node_cfg))
-	#		if (dev_node_cfg[1] < 0) \
-	#			or (dev_node_cfg[1] > dev_node_cfg[2]):
-	#			raise ValueError(psconcat
-	#				("`dev_node_cfg[1]` `{!r}` must be >= 0, and ",
-	#				"`dev_node_cfg[2]` `{!r}` must be >= ",
-	#				"`dev_node_cfg[1]`")
-	#				.format(dev_node_cfg[1], dev_node_cfg[2]))
-	#	self.dev_node_cfg_lst = dev_node_cfg_lst
-	#	#--------
+	def __init__(self, host_node_bus_lst, dev_node_cfg_lst):
+		#--------
+		# `host_node_bus` required format: `IntrcnLcvNodeBus`
+		for host_node_bus in host_node_bus_lst:
+			if not isinstance(host_node_bus, IntrcnLcvNodeBus):
+				raise TypeError(psconcat
+					("`host_node_bus` `{!r}` must be an ",
+					"`IntrcnLcvNodeBus`").format(host_node_bus))
+		self.host_node_bus_lst = host_node_bus_lst
+		#--------
+		# `dev_node_cfg` required format: `[IntrcnLcvNodeBus, int, int]`,
+		# `dev_node_cfg[1]` is the device address range's low value, and
+		# `dev_node_cfg[2]` is the device address range's high value
+		for dev_node_cfg in dev_node_cfg_lst:
+			if (not isinstance(dev_node_cfg, list)) \
+				or (len(dev_node_cfg) != 3) \
+				or (not isinstance(dev_node_cfg[0], IntrcnLcvNodeBus)) \
+				or (not isinstance(dev_node_cfg[1], int)) \
+				or (not isinstance(dev_node_cfg[2], int)):
+				raise TypeError(psconcat
+					("`dev_node_cfg` `{!r}` must be of the following ",
+					"format: `[IntrcnLcvNodeBus, int, int]`")
+					.format(dev_node_cfg))
+			if (dev_node_cfg[1] < 0) \
+				or (dev_node_cfg[1] > dev_node_cfg[2]):
+				raise ValueError(psconcat
+					("`dev_node_cfg[1]` `{!r}` must be >= 0, and ",
+					"`dev_node_cfg[2]` `{!r}` must be >= ",
+					"`dev_node_cfg[1]`")
+					.format(dev_node_cfg[1], dev_node_cfg[2]))
+		self.dev_node_cfg_lst = dev_node_cfg_lst
+		#--------
 	#--------
 #--------
 class IntrcnLcvInterconnect:
 	#--------
 	def __init__(self, host_node_cfg_lst, dev_node_cfg_lst, 
 		*, PRIO_LST_2D=None, FORMAL=False):
+		#--------
 		if (not isinstance(PRIO_LST_2D, list)) \
 			and (not isinstance(PRIO_LST_2D, type(None))):
 			raise TypeError(psconcat
@@ -96,5 +101,13 @@ class IntrcnLcvInterconnect:
 					[i for i in range(NUM_HOSTS)]
 						for j in range(NUM_DEVS)
 				]
+		#--------
+		self.__bus \
+			= IntrcnLcvInterconnectBus \
+			(
+				host_node_bus_lst=host_node_bus_lst,
+				dev_node_cfg_lst=dev_node_cfg_lst,
+			)
+		#--------
 	#--------
 #--------

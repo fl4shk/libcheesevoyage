@@ -3,11 +3,11 @@
 import math
 from enum import Enum, auto
 
-from nmigen import *
-from nmigen.asserts import Assert, Assume, Cover
-from nmigen.asserts import Past, Rose, Fell, Stable
+from amaranth import *
+from amaranth.asserts import Assert, Assume, Cover
+from amaranth.asserts import Past, Rose, Fell, Stable
 
-from nmigen.sim import Simulator, Delay, Tick
+from amaranth.sim import Simulator, Delay, Tick
 
 from libcheesevoyage.misc_util import *
 #--------

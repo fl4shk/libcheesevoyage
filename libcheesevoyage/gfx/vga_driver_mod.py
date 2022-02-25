@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-from nmigen import *
-from nmigen.hdl.rec import *
+from amaranth import *
+from amaranth.hdl.rec import *
 
 from libcheesevoyage.misc_util import *
 from libcheesevoyage.gfx.vga_ext_types import *

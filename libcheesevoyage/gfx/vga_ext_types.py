@@ -2,8 +2,8 @@
 
 from enum import Enum, auto, unique
 
-from nmigen import *
-from nmigen.hdl.rec import *
+from amaranth import *
+from amaranth.hdl.rec import *
 
 from libcheesevoyage.misc_util import *
 from libcheesevoyage.general.container_types import *

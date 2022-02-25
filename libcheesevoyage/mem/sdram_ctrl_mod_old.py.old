@@ -3,7 +3,7 @@
 from enum import Enum, auto, unique
 import math
 
-from nmigen import *
+from amaranth import *
 
 from libcheesevoyage.misc_util import *
 from libcheesevoyage.general.fifo_mods import *

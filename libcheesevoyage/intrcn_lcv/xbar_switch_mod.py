@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
-from nmigen import *
-from nmigen_boards import *
+from amaranth import *
+from amaranth import *
 
-from nmigen.asserts import Assert, Assume, Cover
-from nmigen.asserts import Past, Rose, Fell, Stable
+from amaranth.asserts import Assert, Assume, Cover
+from amaranth.asserts import Past, Rose, Fell, Stable
 
 from libcheesevoyage.misc_util import *
 from libcheesevoyage.general.container_types import *

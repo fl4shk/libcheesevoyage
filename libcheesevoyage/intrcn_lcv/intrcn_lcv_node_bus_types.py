@@ -2,7 +2,7 @@
 
 from enum import Enum, auto
 
-from nmigen import *
+from amaranth import *
 
 from libcheesevoyage import *
 #--------

@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 
-from nmigen import *
-from nmigen.sim import *
+from amaranth import *
+from amaranth.sim import *
 
-from nmigen.cli import main, main_parser, main_runner
-from nmigen_boards.de0_cv import *
+from amaranth.cli import main, main_parser, main_runner
+from amaranth.de0_cv import *
 
-from nmigen.asserts import Assert, Assume, Cover
-from nmigen.asserts import Past, Rose, Fell, Stable
+from amaranth.asserts import Assert, Assume, Cover
+from amaranth.asserts import Past, Rose, Fell, Stable
 
-from nmigen.back import verilog
+from amaranth.back import verilog
 
 from libcheesevoyage.general.container_types import *
 

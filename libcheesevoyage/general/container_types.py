@@ -3,12 +3,12 @@
 from enum import Enum, auto
 from collections import OrderedDict
 
-from nmigen import *
-import nmigen.tracer as tracer
-from nmigen.hdl.ast import ValueCastable, Slice
-#from nmigen.hdl.rec import Record, Layout
-from nmigen.asserts import Assert, Assume, Cover
-from nmigen.asserts import Past, Rose, Fell, Stable
+from amaranth import *
+import amaranth.tracer as tracer
+from amaranth.hdl.ast import ValueCastable, Slice
+#from amaranth.hdl.rec import Record, Layout
+from amaranth.asserts import Assert, Assume, Cover
+from amaranth.asserts import Past, Rose, Fell, Stable
 
 from libcheesevoyage.misc_util import *
 #--------

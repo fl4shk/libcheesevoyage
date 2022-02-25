@@ -6,9 +6,9 @@ import math
 import functools 
 import operator
 
-from nmigen import *
-from nmigen.asserts import Assert, Assume, Cover
-from nmigen.asserts import Past, Rose, Fell, Stable
+from amaranth import *
+from amaranth.asserts import Assert, Assume, Cover
+from amaranth.asserts import Past, Rose, Fell, Stable
 
 from libcheesevoyage.misc_util import *
 from libcheesevoyage.general.container_types import *

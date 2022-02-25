@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from nmigen import *
+from amaranth import *
 
 from libcheesevoyage.misc_util import *
 

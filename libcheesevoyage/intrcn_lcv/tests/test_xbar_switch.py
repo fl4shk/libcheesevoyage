@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-from nmigen import *
-from nmigen_boards import *
+from amaranth import *
+from amaranth import *
 
 from libcheesevoyage import *
 from libcheesevoyage.misc_util_running import *
