@@ -61,6 +61,8 @@ class LongDivConstants:
 		#printout("build_temp_t(): ", name, "\n")
 		#return Signal(self.CHUNK_WIDTH() * self.NUM_CHUNKS(), attrs=attrs,
 		#	name=name)
+		#ret = Signal(self.CHUNK_WIDTH() * self.NUM_CHUNKS(), attrs=attrs,
+		#	name=name)
 		#ret = Packarr(
 		#	Packarr.Shape(self.CHUNK_WIDTH(), self.NUM_CHUNKS()),
 		#	attrs=attrs,
@@ -124,13 +126,16 @@ class LongUdivIterData(Splitrec):
 		#	name=f"denom_mult_lut_{io_str}"
 		#)
 		self.denom_mult_lut = View(
-			ArrayLayout(
-				unsigned(constants.DML_ELEM_WIDTH()),
-				constants.DML_SIZE()
-			),
+			ArrayLayout(unsigned(constants.DML_ELEM_WIDTH()),
+				constants.DML_SIZE()),
 			attrs=sig_keep(),
 			name=f"denom_mult_lut_{io_str}"
 		)
+		#self.denom_mult_lut = Signal(
+		#	constants.DML_ELEM_WIDTH() * constants.DML_SIZE(),
+		#	attrs=sig_keep(),
+		#	name=f"denom_mult_lut_{io_str}"
+		#)
 		#--------
 		if self.__PIPELINED:
 			self.tag = Signal(constants.TAG_WIDTH(), attrs=sig_keep(),
@@ -159,11 +164,14 @@ class LongUdivIterData(Splitrec):
 			#	attrs=sig_keep(),
 			#	name=f"formal_denom_mult_lut_{io_str}"
 			#)
+			#self.formal.formal_denom_mult_lut = Signal(
+			#	constants.DML_ELEM_WIDTH() * constants.DML_SIZE(),
+			#	attrs=sig_keep(),
+			#	name=f"formal_denom_mult_lut_{io_str}"
+			#)
 			self.formal.formal_denom_mult_lut = View(
-				ArrayLayout(
-					unsigned(constants.DML_ELEM_WIDTH()),
-					constants.DML_SIZE()
-				),
+				ArrayLayout(unsigned(constants.DML_ELEM_WIDTH()),
+					constants.DML_SIZE()),
 				attrs=sig_keep(),
 				name=f"formal_denom_mult_lut_{io_str}"
 			)
@@ -178,7 +186,11 @@ class LongUdivIterData(Splitrec):
 		assert self.__FORMAL
 		#return self.formal.formal_denom_mult_lut.word_select(index,
 		#	self.__DML_ENTRY_WIDTH)
+		#return Value.cast(self.formal.formal_denom_mult_lut[index])
 		return self.formal.formal_denom_mult_lut[index]
+		#return self.formal.formal_denom_mult_lut.as_value().word_select(
+		#	index, self.__constants.CHUNK_WIDTH()
+		#)
 	#--------
 #--------
 class LongUdivIterBus:
@@ -221,6 +233,8 @@ class LongUdivIterBus:
 	#--------
 	def constants(self):
 		return self.__constants
+	def CHUNK_WIDTH(self):
+		return self.constants().CHUNK_WIDTH()
 	#--------
 #--------
 # The combinational logic for an iteration of `LongUdiv`
@@ -247,10 +261,15 @@ class LongUdivIter(Elaboratable):
 		constants = bus.constants()
 		#--------
 		# Shift in the current chunk of `itd_in.temp_numer`
-		m.d.comb += bus.shift_in_rema.eq(Cat(
+		m.d.comb += bus.shift_in_rema.as_value().eq(Cat(
 			itd_in.temp_numer[bus.chunk_start],
-			itd_in.temp_rema[:constants.TEMP_T_WIDTH()
+			#itd_in.temp_numer.as_value().word_select(
+			#	bus.chunk_start, bus.CHUNK_WIDTH()
+			#),
+			itd_in.temp_rema.as_value()[:constants.TEMP_T_WIDTH() 
 				- constants.CHUNK_WIDTH()]
+			#itd_in.temp_rema[:constants.TEMP_T_WIDTH() 
+			#	- constants.CHUNK_WIDTH()]
 		))
 
 		# Compare every element of the computed `denom * digit` array to
@@ -258,8 +277,9 @@ class LongUdivIter(Elaboratable):
 		# This creates perhaps a single LUT delay for the greater-than
 		# comparisons given the existence of hard carry chains in FPGAs.
 		for i in range(constants.RADIX()):
-			m.d.comb += bus.gt_vec[i].eq(itd_in.denom_mult_lut[i]
-				> bus.shift_in_rema)
+			m.d.comb += bus.gt_vec[i].eq(
+				itd_in.denom_mult_lut[i] > bus.shift_in_rema
+			)
 
 		# Find the current quotient digit with something resembling a
 		# priority encoder.
@@ -288,14 +308,26 @@ class LongUdivIter(Elaboratable):
 		for i in range(constants.NUM_CHUNKS()):
 			with m.If(bus.chunk_start == i):
 				m.d.comb += itd_out.temp_quot[i].eq(bus.quot_digit)
+				#m.d.comb += itd_out.temp_quot.as_value().word_select(
+				#	i, bus.CHUNK_WIDTH()
+				#).eq(bus.quot_digit)
 			with m.Else(): # If(bus.chunk_start != i):
-				m.d.comb += itd_out.temp_quot[i].eq(itd_in.temp_quot[i])
+				m.d.comb += itd_out.temp_quot[i] \
+					.eq(itd_in.temp_quot[i])
+				#m.d.comb += itd_out.temp_quot.as_value().word_select(
+				#	i, bus.CHUNK_WIDTH()
+				#).eq(itd_in.temp_quot.as_value().word_select(
+				#	i, bus.CHUNK_WIDTH()
+				#))
 
 		m.d.comb += [
 			#--------
-			itd_out.temp_numer.eq(itd_in.temp_numer),
-			itd_out.temp_rema.eq(bus.shift_in_rema
-				- itd_in.denom_mult_lut[bus.quot_digit]),
+			itd_out.temp_numer.as_value().eq(itd_in.temp_numer.as_value()),
+			itd_out.temp_rema.as_value().eq(bus.shift_in_rema.as_value()
+				- itd_in.denom_mult_lut[bus.quot_digit]
+				#- itd_in.denom_mult_lut.as_value().word_select
+				#	(bus.quot_digit, bus.CHUNK_WIDTH())
+			),
 			#--------
 			itd_out.denom_mult_lut.eq(itd_in.denom_mult_lut),
 			#--------
@@ -305,13 +337,13 @@ class LongUdivIter(Elaboratable):
 			#--------
 			formal_numer_in = itd_in.formal.formal_numer
 			formal_denom_in = itd_in.formal.formal_denom
-			skip_cond = ((formal_denom_in == 0) | (bus.chunk_start < 0))
+			skip_cond = ((formal_denom_in.as_value() == 0)
+				| (bus.chunk_start < 0))
 
 			oracle_quot_in = itd_in.formal.oracle_quot
 			oracle_rema_in = itd_in.formal.oracle_rema
 
 			formal_denom_mult_lut_in = itd_in.formal.formal_denom_mult_lut
-
 
 			formal_numer_out = itd_out.formal.formal_numer
 			formal_denom_out = itd_out.formal.formal_denom
@@ -324,20 +356,20 @@ class LongUdivIter(Elaboratable):
 			#--------
 			m.d.comb += [
 				#--------
-				Assert(oracle_quot_in
-					== (formal_numer_in // formal_denom_in)),
-				Assert(oracle_rema_in
-					== (formal_numer_in % formal_denom_in)),
+				Assert(oracle_quot_in.as_value()
+					== (formal_numer_in.as_value()
+						// formal_denom_in.as_value())),
+				Assert(oracle_rema_in.as_value()
+					== (formal_numer_in.as_value()
+						% formal_denom_in.as_value())),
 				#--------
 			]
 
-			for i in range(constants.RADIX()):
-				m.d.comb += [
-					#--------
-					Assert(itd_in.formal_dml_elem(i)
-						== (formal_denom_in * i)),
-					#--------
-				]
+			m.d.comb += [
+				Assert(itd_in.formal_dml_elem(i)
+					== (formal_denom_in.as_value() * i))
+				for i in range(constants.RADIX())
+			]
 			with m.If(~ResetSignal()):
 				#--------
 				m.d.comb += [
@@ -353,26 +385,35 @@ class LongUdivIter(Elaboratable):
 					#--------
 				]
 				#--------
-				m.d.comb += [
+				m.d.sync += [
 					#--------
 					Assert(skip_cond
 						| (bus.quot_digit
-							== oracle_quot_in[bus.chunk_start])),
+							== oracle_quot_in[bus.chunk_start]
+							#== oracle_quot_in.as_value().word_select
+							#	(bus.chunk_start, bus.CHUNK_WIDTH())
+						)),
 					#--------
 				]
 
 				# If we are the last pipeline stage (or if we are
 				# multi-cycle and computing the last chunk of quotient and
 				# final remainder), check to see if our answer is correct  
-				with m.If(bus.chunk_start == 0x0):
-					m.d.comb += [
+				with m.If(bus.chunk_start <= 0x0):
+					m.d.sync += [
 						#--------
 						Assert(skip_cond
 							| (itd_out.temp_quot
-								== (formal_numer_in // formal_denom_in))),
+								== (
+									formal_numer_in.as_value()
+									// formal_denom_in.as_value()
+								))),
 						Assert(skip_cond
 							| (itd_out.temp_rema
-								== (formal_numer_in % formal_denom_in))),
+								== (
+									formal_numer_in.as_value()
+									% formal_denom_in.as_value()
+								))),
 						#--------
 					]
 				#--------

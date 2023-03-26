@@ -11,7 +11,8 @@ import operator
 #a = Packarr.build(2, 4)
 #printout(functools.reduce(operator.or_, a), "\n")
 #a = Packarr.build(Packarr.Shape(2, 4), 2)
-a = [View(ArrayLayout(unsigned(2), 4)) for i in range(2)]
+#a = Splitarr([View(ArrayLayout(unsigned(2), 4)) for i in range(2)])
+a = View(ArrayLayout(ArrayLayout(unsigned(2), 4)), 2)
 b = Signal(8)
 #c = Signal.like(b)
 #d = Signal.like(c)

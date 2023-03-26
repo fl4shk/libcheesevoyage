@@ -6,10 +6,13 @@ from libcheesevoyage import *
 from libcheesevoyage.misc_util_running import *
 #--------
 if __name__ == "__main__":
-	formal_non_sync(
-		dut_mod=ReduceTree,
-		INP_DATA_WIDTH=8,
-		INP_SIZE=8,
-		BINOP=ReduceTreeBinop.ADD,
+	formal(
+		dut_mod=LongDivMultiCycle,
+		#dut_mod=LongDivPipelined,
+		MAIN_WIDTH=2,
+		DENOM_WIDTH=2,
+		CHUNK_WIDTH=1,
+		signed_reset=0,
+		#signed_reset=1,
 	)
 #--------

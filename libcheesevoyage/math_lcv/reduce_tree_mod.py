@@ -46,8 +46,7 @@ class ReduceTreeBus:
 		self.outp = Splitrec()
 
 		self.inp.data \
-			= Splitarr \
-			([
+			= Splitarr([
 				Signal(self.INP_DATA_WIDTH(),
 					name=psconcat("inp_data_", i))
 					for i in range(self.INP_SIZE())
@@ -96,8 +95,7 @@ class ReduceTree(Elaboratable):
 		self.__DOMAIN = DOMAIN
 		#--------
 		self.__bus \
-			= ReduceTreeBus \
-			(
+			= ReduceTreeBus(
 				INP_DATA_WIDTH=INP_DATA_WIDTH,
 				INP_SIZE=INP_SIZE,
 				BINOP=BINOP,
