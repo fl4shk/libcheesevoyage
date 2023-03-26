@@ -23,9 +23,11 @@ class IntrcnLcvInterconnectBus:
 		# `host_node_bus` required format: `IntrcnLcvNodeBus`
 		for host_node_bus in host_node_bus_lst:
 			if not isinstance(host_node_bus, IntrcnLcvNodeBus):
-				raise TypeError(psconcat
-					("`host_node_bus` `{!r}` must be an ",
-					"`IntrcnLcvNodeBus`").format(host_node_bus))
+				raise TypeError(psconcat(
+					"`host_node_bus` `{!r}` must be an ",
+					"`IntrcnLcvNodeBus`"
+					).format(host_node_bus)
+				)
 		self.host_node_bus_lst = host_node_bus_lst
 		#--------
 		# `dev_node_cfg` required format: `[IntrcnLcvNodeBus, int, int]`,
@@ -37,17 +39,19 @@ class IntrcnLcvInterconnectBus:
 				or (not isinstance(dev_node_cfg[0], IntrcnLcvNodeBus)) \
 				or (not isinstance(dev_node_cfg[1], int)) \
 				or (not isinstance(dev_node_cfg[2], int)):
-				raise TypeError(psconcat
-					("`dev_node_cfg` `{!r}` must be of the following ",
-					"format: `[IntrcnLcvNodeBus, int, int]`")
-					.format(dev_node_cfg))
+				raise TypeError(psconcat(
+					"`dev_node_cfg` `{!r}` must be of the following ",
+					"format: `[IntrcnLcvNodeBus, int, int]`"
+					).format(dev_node_cfg)
+				)
 			if (dev_node_cfg[1] < 0) \
 				or (dev_node_cfg[1] > dev_node_cfg[2]):
-				raise ValueError(psconcat
-					("`dev_node_cfg[1]` `{!r}` must be >= 0, and ",
+				raise ValueError(psconcat(
+					"`dev_node_cfg[1]` `{!r}` must be >= 0, and ",
 					"`dev_node_cfg[2]` `{!r}` must be >= ",
-					"`dev_node_cfg[1]`")
-					.format(dev_node_cfg[1], dev_node_cfg[2]))
+					"`dev_node_cfg[1]`"
+					).format(dev_node_cfg[1], dev_node_cfg[2])
+				)
 		self.dev_node_cfg_lst = dev_node_cfg_lst
 		#--------
 	#--------
@@ -59,15 +63,17 @@ class IntrcnLcvInterconnect:
 		#--------
 		if (not isinstance(PRIO_LST_2D, list)) \
 			and (not isinstance(PRIO_LST_2D, type(None))):
-			raise TypeError(psconcat
-				("`PRIO_LST_2D` `{!r}` must be a `list` or `None`"
-				.format(PRIO_LST_2D)))
+			raise TypeError(psconcat(
+				"`PRIO_LST_2D` `{!r}` must be a `list` or `None`"
+				.format(PRIO_LST_2D)
+			))
 
 		if isinstance(PRIO_LST_2D, list):
 			if len(PRIO_LST_2D) != NUM_DEVS:
-				raise ValueError(psconcat
-					("`PRIO_LST_2D` `{!r}` must be of length `NUM_DEVS` ",
-					"`{!r}`".format(PRIO_LST_2D)))
+				raise ValueError(psconcat(
+					"`PRIO_LST_2D` `{!r}` must be of length `NUM_DEVS` ",
+					"`{!r}`".format(PRIO_LST_2D)
+				))
 
 			#self.__PRIO_LST_2D = []
 
@@ -76,10 +82,11 @@ class IntrcnLcvInterconnect:
 
 				if (len(PRIO_LST) != len(temp)) \
 					or (temp != set(list(range(NUM_HOSTS)))):
-					raise ValueError(psconcat
-						("`PRIO_LST` `{!r}` must ".format(PRIO_LST),
+					raise ValueError(psconcat(
+						"`PRIO_LST` `{!r}` must ".format(PRIO_LST),
 						"consist of all unique `int`s that are between 0 ",
-						"and `NUM_HOSTS` `{!r}`".format(NUM_HOSTS)))
+						"and `NUM_HOSTS` `{!r}`".format(NUM_HOSTS)
+					))
 
 				#self.__PRIO_LST_2D.append(list(reversed(PRIO_LST)))
 
@@ -95,18 +102,15 @@ class IntrcnLcvInterconnect:
 			#		list(reversed([i for i in range(NUM_HOSTS)]))
 			#			for j in range(NUM_DEVS)
 			#	]
-			self.__PRIO_LST_2D \
-				= [
-					[i for i in range(NUM_HOSTS)]
-						for j in range(NUM_DEVS)
-				]
+			self.__PRIO_LST_2D = [
+				[i for i in range(NUM_HOSTS)]
+					for j in range(NUM_DEVS)
+			]
 		#--------
-		self.__bus \
-			= IntrcnLcvInterconnectBus \
-			(
-				host_node_bus_lst=host_node_bus_lst,
-				dev_node_cfg_lst=dev_node_cfg_lst,
-			)
+		self.__bus = IntrcnLcvInterconnectBus(
+			host_node_bus_lst=host_node_bus_lst,
+			dev_node_cfg_lst=dev_node_cfg_lst,
+		)
 		#--------
 	#--------
 #--------

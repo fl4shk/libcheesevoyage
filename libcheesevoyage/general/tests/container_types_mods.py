@@ -9,19 +9,28 @@ class AdcBus:
 	def __init__(self, ELEM_WIDTH):
 		self.__ELEM_WIDTH = ELEM_WIDTH
 
-		self.inp \
-			= Packrec \
-			([
-				("a", ELEM_WIDTH),
-				("b", ELEM_WIDTH),
-				("carry_in", 1)
-			])
-		self.outp \
-			= Packrec \
-			([
-				("carry", 1),
-				("sum", ELEM_WIDTH),
-			])
+		#self.inp \
+		#	= Packrec \
+		#	([
+		#		("a", ELEM_WIDTH),
+		#		("b", ELEM_WIDTH),
+		#		("carry_in", 1)
+		#	])
+		#self.outp \
+		#	= Packrec \
+		#	([
+		#		("carry", 1),
+		#		("sum", ELEM_WIDTH),
+		#	])
+		self.inp = Struct({
+			"a": ELEM_WIDTH,
+			"b": ELEM_WIDTH,
+			"carry_in": 1,
+		})
+		self.outp = Struct({
+			"carry": 1,
+			"sum": ELEM_WIDTH,
+		})
 		self.clocked_sum = Signal(ELEM_WIDTH)
 		self.clocked_carry_out = Signal(1)
 	def ELEM_WIDTH(self):
@@ -54,46 +63,59 @@ def Adc(Elaboratable):
 		#--------
 	#--------
 #--------
-# Test `Packarr`
 class VectorAddBus:
-	def __init__(self, ElemKindT, SIZE):
-		self.__ElemKindT = ElemKindT
+	def __init__(self, ShapeT, SIZE):
+		self.ShapeT = ShapeT
 		self.__SIZE = SIZE
 
-		#self.a = Packarr(Packarr.Shape(ElemKindT, SIZE, name="a"))
+		#self.a = Packarr(Packarr.Shape(ShapeT, SIZE, name="a"))
 		#self.b = Packarr.like(self.a, name="b")
 		#self.inp \
 		#	= Packrec \
 		#	([
-		#		("a", Packarr.Shape(ElemKindT, SIZE)),
-		#		("b", Packarr.Shape(ElemKindT, SIZE)),
+		#		("a", Packarr.Shape(ShapeT, SIZE)),
+		#		("b", Packarr.Shape(ShapeT, SIZE)),
 		#	])
-		self.inp \
-			= Packarr \
-			(
-				Packarr.Shape
-				(
-					Packrec.Layout
-					([
-						("a", ElemKindT),
-						("b", ElemKindT)
-					]),
-					SIZE
-				),
-				name="inp"
-			)
-		self.sum = Packarr(Packarr.Shape(ElemKindT, SIZE), name="sum")
-		#self.sum = Packarr.like(self.a, name="sum")
-		self.sum_next = Packarr.like(self.sum, name="sum_next")
-	def ElemKindT(self):
-		return self.__ElemKindT
+		#self.inp \
+		#	= Packarr \
+		#	(
+		#		Packarr.Shape
+		#		(
+		#			Packrec.Layout
+		#			([
+		#				("a", ShapeT),
+		#				("b", ShapeT)
+		#			]),
+		#			SIZE
+		#		),
+		#		name="inp"
+		#	)
+		#self.sum = Packarr(Packarr.Shape(ShapeT, SIZE), name="sum")
+		##self.sum = Packarr.like(self.a, name="sum")
+		#self.sum_next = Packarr.like(self.sum, name="sum_next")
+
+		self.inp = View(
+			ArrayLayout(
+				StructLayout({
+					"a": ShapeT,
+					"b", ShapeT,
+				}),
+				SIZE
+			),
+			name="inp"
+		)
+		self.sum = View(ArrayLayout(ShapeT, SIZE), name="sum")
+		self.sum_next = View(ArrayLayout(ShapeT, SIZE), name="sum_next")
+		#self.sum_next = Packarr.like(self.sum, name="sum_next")
+	def ShapeT(self):
+		return self.ShapeT
 	def SIZE(self):
 		return self.__SIZE
 
 class VectorAdd(Elaboratable):
 	#--------
-	def __init__(self, ElemKindT, SIZE):
-		self.__bus = VectorAddBus(ElemKindT, SIZE)
+	def __init__(self, ShapeT, SIZE):
+		self.__bus = VectorAddBus(ShapeT, SIZE)
 	#--------
 	def bus(self):
 		return self.__bus
@@ -123,32 +145,42 @@ class VectorAdd(Elaboratable):
 	#--------
 #--------
 class AddChosenScalarsBus:
-	def __init__(self, ElemKindT, SIZE):
-		self.__ElemKindT = ElemKindT
+	def __init__(self, ShapeT, SIZE):
+		self.ShapeT = ShapeT
 		self.__SIZE = SIZE
 
-		self.inp \
-			= Packrec \
-			([
-				("a", Packarr.Shape(ElemKindT, SIZE)),
-				("b", Packarr.Shape(ElemKindT, SIZE)),
-				("sel", math.ceil(math.log2(ElemKindT))),
-			])
-		self.outp \
-			= Splitrec \
-			([
-				("sum_next", Signal(ElemKindT, name="outp_sum_next")),
-				("sum", Signal(ElemKindT, name="outp_sum")),
-			])
-	def ElemKindT(self):
-		return self.__ElemKindT
+		#self.inp \
+		#	= Packrec([
+		#		("a", Packarr.Shape(ShapeT, SIZE)),
+		#		("b", Packarr.Shape(ShapeT, SIZE)),
+		#		("sel", math.ceil(math.log2(ShapeT))),
+		#	])
+		#self.outp \
+		#	= Splitrec \
+		#	([
+		#		("sum_next", Signal(ShapeT, name="outp_sum_next")),
+		#		("sum", Signal(ShapeT, name="outp_sum")),
+		#	])
+		self.inp = View(
+			StructLayout({
+				"a", ArrayLayout(ShapeT, SIZE),
+				"b", ArrayLayout(ShapeT, SIZE),
+				"sel", math.ceil(math.log2(ShapeT)),
+			})
+		)
+		self.outp = Splitrec({
+			"sum_next": Signal(ShapeT, name="outp_sum_next"),
+			"sum": Signal(ShapeT, name="outp_sum"),
+		})
+	def ShapeT(self):
+		return self.ShapeT
 	def SIZE(self):
 		return self.__SIZE
 
 class AddChosenScalars(Elaboratable):
 	#--------
-	def __init__(self, ElemKindT, SIZE):
-		self.__bus = AddChosenScalarsBus(ElemKindT, SIZE)
+	def __init__(self, ShapeT, SIZE):
+		self.__bus = AddChosenScalarsBus(ShapeT, SIZE)
 	#--------
 	def bus(self):
 		return self.__bus

@@ -2,6 +2,7 @@
 
 from amaranth import *
 from amaranth.sim import *
+from amaranth.lib.data import *
 
 from amaranth.cli import main, main_parser, main_runner
 
@@ -19,9 +20,13 @@ def inner_ports(bus):
 		if key[0] != "_":
 			if isinstance(val, Signal) or isinstance(val, Record):
 				ret += [Value.cast(val)]
-			elif isinstance(val, Packrec):
-				ret += [Value.cast(val)]
-			elif isinstance(val, Packarr):
+			#elif isinstance(val, Packrec):
+			#	ret += [Value.cast(val)]
+			#elif isinstance(val, Packarr):
+			#	ret += [Value.cast(val)]
+			elif isinstance(val, View) \
+				or isinstance(val, Struct) \
+				or isinstance(val, Union):
 				ret += [Value.cast(val)]
 			elif isinstance(val, Splitarr):
 				ret += list(val)

@@ -20,7 +20,8 @@ def psconcat(*args):
 	return str().join([str(arg) for arg in args])
 
 def lsconcat(lst):
-	return str().join([str(elem) for elem in lst])
+	#return str().join([str(elem) for elem in lst])
+	return psconcat(*lst)
 
 def fprintout(file, *args, flush=False):
 	print(psconcat(*args), sep="", end="", file=file, flush=flush)
@@ -65,8 +66,7 @@ def inst_pll(pll_file_name, domain, pll_module_name, freq, platform, m):
 		platform.add_file(pll_file_name, f)
 
 	setattr(m.submodules, domain,
-		Instance \
-		(
+		Instance(
 			pll_module_name,
 
 			i_refclk=ClockSignal(domain="sync"),

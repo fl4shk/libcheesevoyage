@@ -64,29 +64,20 @@ class VideoDitherer(Elaboratable):
 	def __PAT_VAL(self, val):
 		return Const(val, self.bus().DITHER_DELTA_WIDTH())
 	def PATTERN(self):
-		return \
-		Array \
-		([
-			Array
-			([
+		return Array([
+			Array([
 				Array([self.__PAT_VAL(0), self.__PAT_VAL(1)]),
 				Array([self.__PAT_VAL(3), self.__PAT_VAL(2)]),
 			]),
-
-			Array
-			([
+			Array([
 				Array([self.__PAT_VAL(1), self.__PAT_VAL(0)]),
 				Array([self.__PAT_VAL(2), self.__PAT_VAL(3)]),
 			]),
-
-			Array
-			([
+			Array([
 				Array([self.__PAT_VAL(3), self.__PAT_VAL(2)]),
 				Array([self.__PAT_VAL(0), self.__PAT_VAL(1)]),
 			]),
-
-			Array
-			([
+			Array([
 				Array([self.__PAT_VAL(2), self.__PAT_VAL(3)]),
 				Array([self.__PAT_VAL(1), self.__PAT_VAL(0)]),
 			]),
@@ -104,8 +95,7 @@ class VideoDitherer(Elaboratable):
 		#--------
 		loc.past_col_out = RgbColor(CHAN_WIDTH=bus.OUT_CHAN_WIDTH())
 		with m.If(inp.en):
-			m.d.sync \
-			+= [
+			m.d.sync += [
 				loc.past_col_out.eq(outp.col),
 				outp.past_pos.eq(outp.pos),
 			]
@@ -114,8 +104,7 @@ class VideoDitherer(Elaboratable):
 			loc.POS_PLUS_1 = {"x": outp.pos.x + 0x1, "y": outp.pos.y + 0x1}
 			with m.If(loc.POS_PLUS_1["x"] < bus.FB_SIZE().x):
 				#m.d.sync += outp.pos.x.eq(loc.POS_PLUS_1["x"])
-				m.d.comb \
-				+= [
+				m.d.comb += [
 					outp.next_pos.x.eq(loc.POS_PLUS_1["x"]),
 					outp.next_pos.y.eq(outp.pos.y),
 				]
@@ -132,8 +121,7 @@ class VideoDitherer(Elaboratable):
 					# modular arithmetic, so we don't need another mux just
 					# for this.
 					m.d.sync += outp.frame_cnt.eq(outp.frame_cnt + 0x1)
-			m.d.sync \
-			+= [
+			m.d.sync += [
 				outp.pos.eq(outp.next_pos)
 			]
 
@@ -145,8 +133,7 @@ class VideoDitherer(Elaboratable):
 			loc.col_in_plus_delta \
 				= RgbColor(CHAN_WIDTH=bus.CHAN_WIDTH() + 1)
 
-			m.d.comb \
-			+= [
+			m.d.comb += [
 				loc.col_in_plus_delta.r.eq(inp.col.r + loc.CHAN_DELTA),
 				loc.col_in_plus_delta.g.eq(inp.col.g + loc.CHAN_DELTA),
 				loc.col_in_plus_delta.b.eq(inp.col.b + loc.CHAN_DELTA),
@@ -180,8 +167,7 @@ class VideoDitherer(Elaboratable):
 			#m.d.comb += loc.dicol.b.eq(loc.col_in_plus_delta.b
 			#	[:len(loc.dicol.b)])
 
-			m.d.comb \
-			+= [
+			m.d.comb += [
 				#loc.dicol.r.eq(loc.COL_IN_PLUS_DELTA["r"]),
 				#loc.dicol.g.eq(loc.COL_IN_PLUS_DELTA["g"]),
 				#loc.dicol.b.eq(loc.COL_IN_PLUS_DELTA["b"]),
@@ -195,8 +181,7 @@ class VideoDitherer(Elaboratable):
 			]
 
 		with m.Else(): # If(~bus.en):
-			m.d.comb \
-			+= [
+			m.d.comb += [
 				outp.col.eq(loc.past_col_out),
 				outp.next_pos.eq(outp.pos),
 			]

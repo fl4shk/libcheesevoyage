@@ -9,51 +9,38 @@ from libcheesevoyage.general.fifo_mods import *
 from libcheesevoyage.general.container_types import *
 #from bram_mod import *
 
-VGA_TIMING_INFO_DICT \
-= {
+VGA_TIMING_INFO_DICT = {
 	# 640 x 480 @ 60 Hz, taken from http://www.tinyvga.com
-	"640x480@60":
-		VgaTimingInfo
-		(
-			PIXEL_CLK=25,
-			HTIMING
-				=VgaTiming
-				(
-					visib=640,
-					front=16,
-					sync=96,
-					back=48
-				),
-			VTIMING
-				=VgaTiming
-				(
-					visib=480,
-					front=10,
-					sync=2,
-					back=33
-				),
+	"640x480@60": VgaTimingInfo(
+		PIXEL_CLK=25,
+		HTIMING=VgaTiming(
+			visib=640,
+			front=16,
+			sync=96,
+			back=48
 		),
-	"800x600@60":
-		VgaTimingInfo
-		(
-			PIXEL_CLK=40,
-			HTIMING
-				=VgaTiming
-				(
-					visib=800,
-					front=40,
-					sync=128,
-					back=88
-				),
-			VTIMING
-				=VgaTiming
-				(
-					visib=600,
-					front=1,
-					sync=4,
-					back=23
-				),
+		VTIMING=VgaTiming(
+			visib=480,
+			front=10,
+			sync=2,
+			back=33
 		),
+	),
+	"800x600@60": VgaTimingInfo(
+		PIXEL_CLK=40,
+		HTIMING=VgaTiming(
+			visib=800,
+			front=40,
+			sync=128,
+			back=88
+		),
+		VTIMING=VgaTiming(
+			visib=600,
+			front=1,
+			sync=4,
+			back=23
+		),
+	),
 	# This is an XGA VGA signal. It didn't work with my monitor.
 	#"1024x768@60":
 	#	VgaTimingInfo
@@ -76,27 +63,21 @@ VGA_TIMING_INFO_DICT \
 	#				back=29
 	#			),
 	#	),
-	"1280x800@60":
-		VgaTimingInfo
-		(
-			PIXEL_CLK=83.46,
-			HTIMING
-				=VgaTiming
-				(
-					visib=1280,
-					front=64,
-					sync=136,
-					back=200
-				),
-			VTIMING
-				=VgaTiming
-				(
-					visib=800,
-					front=1,
-					sync=3,
-					back=24
-				),
+	"1280x800@60": VgaTimingInfo(
+		PIXEL_CLK=83.46,
+		HTIMING=VgaTiming(
+			visib=1280,
+			front=64,
+			sync=136,
+			back=200
 		),
+		VTIMING=VgaTiming(
+			visib=800,
+			front=1,
+			sync=3,
+			back=24
+		),
+	),
 }
 
 class VgaDriverBus:
@@ -182,12 +163,10 @@ class VgaDriver(Elaboratable):
 		inp = bus.inp
 		outp = bus.outp
 		#--------
-		fifo = m.submodules.fifo \
-			= AsyncReadFifo \
-			(
-				ShapeT=to_shape(self.ColorT()()),
-				SIZE=self.FIFO_SIZE(),
-			)
+		fifo = m.submodules.fifo = AsyncReadFifo(
+			ShapeT=to_shape(self.ColorT()()),
+			SIZE=self.FIFO_SIZE(),
+		)
 		fifo_inp = fifo.bus().inp
 		fifo_outp = fifo.bus().outp
 
@@ -222,14 +201,12 @@ class VgaDriver(Elaboratable):
 		#--------
 		# Implement the State/Counter stuff
 		loc.Tstate = VgaTiming.State
-		loc.hsc \
-		= {
+		loc.hsc = {
 			"s": Signal(width_from_len(loc.Tstate)),
 			"c": Signal(self.HTIMING().COUNTER_WIDTH()),
 			"next_s": Signal(width_from_len(loc.Tstate)),
 		}
-		loc.vsc \
-		= {
+		loc.vsc = {
 			"s": Signal(width_from_len(loc.Tstate)),
 			"c": Signal(self.VTIMING().COUNTER_WIDTH()),
 			"next_s": Signal(width_from_len(loc.Tstate)),
@@ -275,29 +252,25 @@ class VgaDriver(Elaboratable):
 			# Visible area
 			with m.If(outp.visib):
 				with m.If(~inp.en):
-					m.d.sync \
-					+= [
+					m.d.sync += [
 						outp.col.r.eq(0xf),
 						outp.col.g.eq(0xf),
 						outp.col.b.eq(0xf),
 					]
 				with m.Else(): # If(inp.en):
-					m.d.sync \
-					+= [
+					m.d.sync += [
 						outp.col.eq(loc.col)
 					]
 			# Black border
 			with m.Else(): # If (~outp.visib)
-				m.d.sync \
-				+= [
+				m.d.sync += [
 					outp.col.r.eq(0x0),
 					outp.col.g.eq(0x0),
 					outp.col.b.eq(0x0),
 				]
 		#--------
 		# Implement VgaDriver bus to Fifo bus transaction
-		m.d.comb \
-		+= [
+		m.d.comb += [
 			outp.buf.can_prep.eq(~fifo_outp.full),
 			fifo_inp.wr_en.eq(inp.buf.prep),
 			fifo_inp.wr_data.eq(inp.buf.col),
@@ -315,8 +288,7 @@ class VgaDriver(Elaboratable):
 		#with m.Else():
 		#	m.d.sync += fifo_inp.rd_en.eq(0b0)
 
-		m.d.comb \
-		+= [
+		m.d.comb += [
 			loc.col.eq(fifo_outp.rd_data),
 			outp.dbg_fifo_empty.eq(fifo_outp.empty),
 			outp.dbg_fifo_full.eq(fifo_outp.full),
@@ -326,23 +298,21 @@ class VgaDriver(Elaboratable):
 		#	loc.col.eq(bus.buf.col)
 		#]
 		#--------
-		m.d.comb \
-			+= [
-				#outp.visib.eq((loc.hsc["s"] == loc.Tstate.VISIB)
-				#	& (loc.vsc["s"] == loc.Tstate.VISIB)),
-				outp.draw_pos.x.eq(loc.hsc["c"]),
-				outp.draw_pos.y.eq(loc.vsc["c"]),
-				outp.size.x.eq(self.FB_SIZE().x),
-				outp.size.y.eq(self.FB_SIZE().y),
-			]
-		m.d.sync \
-			+= [
-				outp.next_visib.eq((loc.hsc["next_s"] == loc.Tstate.VISIB)
-					& (loc.vsc["next_s"] == loc.Tstate.VISIB)),
-				outp.visib.eq(outp.next_visib),
-				outp.past_visib.eq(outp.visib),
-				outp.past_draw_pos.eq(outp.draw_pos)
-			]
+		m.d.comb += [
+			#outp.visib.eq((loc.hsc["s"] == loc.Tstate.VISIB)
+			#	& (loc.vsc["s"] == loc.Tstate.VISIB)),
+			outp.draw_pos.x.eq(loc.hsc["c"]),
+			outp.draw_pos.y.eq(loc.vsc["c"]),
+			outp.size.x.eq(self.FB_SIZE().x),
+			outp.size.y.eq(self.FB_SIZE().y),
+		]
+		m.d.sync += [
+			outp.next_visib.eq((loc.hsc["next_s"] == loc.Tstate.VISIB)
+				& (loc.vsc["next_s"] == loc.Tstate.VISIB)),
+			outp.visib.eq(outp.next_visib),
+			outp.past_visib.eq(outp.visib),
+			outp.past_draw_pos.eq(outp.draw_pos)
+		]
 		#--------
 		return m
 		#--------

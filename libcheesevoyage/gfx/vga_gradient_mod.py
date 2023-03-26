@@ -18,8 +18,7 @@ class VgaGradient(Elaboratable):
 		#--------
 		# Gradient
 		with m.If(drbus.outp.buf.can_prep):
-			m.d.sync \
-			+= [
+			m.d.sync += [
 				drbus.inp.buf.prep.eq(0b1),
 				dibus.inp.en.eq(0b1),
 			]
@@ -33,8 +32,7 @@ class VgaGradient(Elaboratable):
 			m.d.sync += col.g.eq(0x0)
 			m.d.sync += col.b.eq(0x0)
 		with m.Else(): # If(~drbus.buf.can_prep):
-			m.d.sync \
-			+= [
+			m.d.sync += [
 				#drbus.buf.prep.eq(0b0),
 				dibus.inp.en.eq(0b0),
 			]

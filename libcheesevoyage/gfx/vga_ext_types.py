@@ -3,7 +3,8 @@
 from enum import Enum, auto, unique
 
 from amaranth import *
-from amaranth.hdl.rec import *
+#from amaranth.hdl.rec import *
+from amaranth.lib.data import *
 
 from libcheesevoyage.misc_util import *
 from libcheesevoyage.general.container_types import *
@@ -35,12 +36,11 @@ class VgaTiming:
 	# This is specifically the minimum width instead of like, 32-bit or
 	# something
 	def COUNTER_WIDTH(self):
-		return max \
-			([
-				width_from_arg(arg)
-				for arg in [self.visib(), self.front(), self.sync(),
-					self.back()]
-			])
+		return max([
+			width_from_arg(arg)
+			for arg in [self.visib(), self.front(), self.sync(),
+				self.back()]
+		])
 	#--------
 	def no_change_update_next_s(self, m, state_cnt):
 		m.d.comb += state_cnt["next_s"].eq(state_cnt["s"])
@@ -92,16 +92,15 @@ class VgaTimingInfo:
 		return self.__VTIMING
 
 
-class RgbColorLayout(Packrec.Layout):
+class RgbColorLayout(StructLayout):
 	def __init__(self, CHAN_WIDTH=None):
 		self.__CHAN_WIDTH = CHAN_WIDTH if CHAN_WIDTH != None \
 			else RgbColor.DEF_CHAN_WIDTH()
-		super().__init__ \
-		([
-			("r", self.CHAN_WIDTH()),
-			("g", self.CHAN_WIDTH()),
-			("b", self.CHAN_WIDTH()),
-		])
+		super().__init__({
+			"r": self.CHAN_WIDTH(),
+			"g": self.CHAN_WIDTH(),
+			"b": self.CHAN_WIDTH(),
+		})
 
 	def CHAN_WIDTH(self):
 		return self.__CHAN_WIDTH
@@ -112,7 +111,7 @@ class RgbColorLayout(Packrec.Layout):
 		return Cat(self.r, self.g, self.b) \
 			.eq(Cat(other.r, other.g, other.b))
 
-class RgbColor(Packrec):
+class RgbColor(View):
 	def __init__(self, CHAN_WIDTH=None):
 		REAL_CHAN_WIDTH = CHAN_WIDTH if CHAN_WIDTH != None \
 			else RgbColor.DEF_CHAN_WIDTH()
@@ -127,14 +126,13 @@ class RgbColor(Packrec):
 	def drive(self, other):
 		self.layout.drive(other)
 
-#class VgaDriverBufLayout(Packrec.Layout):
+#class VgaDriverBufLayout(StructLayout):
 #	def __init__(self, CHAN_WIDTH=RgbColor.DEF_CHAN_WIDTH()):
-#		super().__init__ \
-#		([
-#			("can_prep", 1),
-#			("prep", 1),
-#			("col", RgbColorLayout(CHAN_WIDTH=CHAN_WIDTH)),
-#		])
+#		super().__init__({
+#			"can_prep": 1,
+#			"prep": 1,
+#			"col": RgbColorLayout(CHAN_WIDTH=CHAN_WIDTH),
+#		})
 
 #class VgaDriverBuf(Splitrec):
 #	def __init__(self, CHAN_WIDTH=RgbColor.DEF_CHAN_WIDTH()):
@@ -151,8 +149,9 @@ class RgbColor(Packrec):
 class VgaDriverBufInp(Splitrec):
 	def __init__(self, CHAN_WIDTH=RgbColor.DEF_CHAN_WIDTH()):
 		self.prep = Splitrec.cast_elem(1)
-		self.col = Splitrec.cast_elem \
-			(RgbColorLayout(CHAN_WIDTH=CHAN_WIDTH))
+		self.col = Splitrec.cast_elem(RgbColorLayout(
+			CHAN_WIDTH=CHAN_WIDTH
+		))
 		
 	def CHAN_WIDTH(self):
 		return self.__CHAN_WIDTH

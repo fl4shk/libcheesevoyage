@@ -117,15 +117,12 @@ class ReduceTree(Elaboratable):
 		bus = self.bus()
 
 		loc = Blank()
-		loc.data \
-			= [
-				[
-					Signal(bus.OUTP_DATA_WIDTH(),
-						name=psconcat("data_", j, "_", i))
-						for i in range(bus.INP_SIZE_INT())
-				]
-				for j in range(bus.NUM_STAGES() + 1)
-			]
+		loc.data = [
+			[Signal(bus.OUTP_DATA_WIDTH(),
+				name=psconcat("data_", j, "_", i))
+				for i in range(bus.INP_SIZE_INT())]
+			for j in range(bus.NUM_STAGES() + 1)
+		]
 		#--------
 		for st in range(bus.NUM_STAGES() + 1):
 			ST_NUM_OUT = bus.ST_NUM_OUT(st)

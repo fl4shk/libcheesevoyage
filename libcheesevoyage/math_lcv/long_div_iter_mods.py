@@ -3,6 +3,7 @@
 import math
 
 from amaranth import *
+from amaranth.lib.data import *
 from amaranth.asserts import Assert, Assume, Cover
 from amaranth.asserts import Past, Rose, Fell, Stable
 
@@ -60,23 +61,24 @@ class LongDivConstants:
 		#printout("build_temp_t(): ", name, "\n")
 		#return Signal(self.CHUNK_WIDTH() * self.NUM_CHUNKS(), attrs=attrs,
 		#	name=name)
-		ret \
-			= Packarr \
-			(
-				Packarr.Shape(self.CHUNK_WIDTH(), self.NUM_CHUNKS()),
-				attrs=attrs,
-				name=name
-			)
+		#ret = Packarr(
+		#	Packarr.Shape(self.CHUNK_WIDTH(), self.NUM_CHUNKS()),
+		#	attrs=attrs,
+		#	name=name
+		#)
+		ret = View(
+			ArrayLayout(unsigned(self.CHUNK_WIDTH()), self.NUM_CHUNKS()),
+			attrs=attrs,
+			name=name
+		)
 		#printout("build_temp_t(): ", ret.sig().name, "\n")
 		return ret
 	def build_chunk_start_t(self, attrs=sig_keep(), name_suffix=""):
-		return \
-			Signal \
-			(
-				shape=signed(self.CHUNK_WIDTH() + 1),
-				attrs=attrs,
-				name=psconcat("chunk_start", name_suffix)
-			)
+		return Signal(
+			shape=signed(self.CHUNK_WIDTH() + 1),
+			attrs=attrs,
+			name=psconcat("chunk_start", name_suffix)
+		)
 
 	def NUM_CHUNKS(self):
 		return (self.TEMP_T_WIDTH() // self.CHUNK_WIDTH())
@@ -115,14 +117,20 @@ class LongUdivIterData(Splitrec):
 		self.temp_quot = build_temp_t(name=f"temp_quot_{io_str}")
 		self.temp_rema = build_temp_t(name=f"temp_rema_{io_str}")
 		#--------
-		self.denom_mult_lut \
-			= Packarr \
-			(
-				Packarr.Shape(constants.DML_ELEM_WIDTH(),
-					constants.DML_SIZE()),
-				attrs=sig_keep(),
-				name=f"denom_mult_lut_{io_str}"
-			)
+		#self.denom_mult_lut = Packarr(
+		#	Packarr.Shape(constants.DML_ELEM_WIDTH(),
+		#		constants.DML_SIZE()),
+		#	attrs=sig_keep(),
+		#	name=f"denom_mult_lut_{io_str}"
+		#)
+		self.denom_mult_lut = View(
+			ArrayLayout(
+				unsigned(constants.DML_ELEM_WIDTH()),
+				constants.DML_SIZE()
+			),
+			attrs=sig_keep(),
+			name=f"denom_mult_lut_{io_str}"
+		)
 		#--------
 		if self.__PIPELINED:
 			self.tag = Signal(constants.TAG_WIDTH(), attrs=sig_keep(),
@@ -145,14 +153,20 @@ class LongUdivIterData(Splitrec):
 			#self.formal.formal_denom_mult_lut = Signal \
 			#	((bus.DML_ELEM_WIDTH() * bus.DML_SIZE()), attrs=sig_keep(),
 			#		name=f"formal_denom_mult_lut_{io_str}")
-			self.formal.formal_denom_mult_lut \
-				= Packarr \
-				(
-					Packarr.Shape(constants.DML_ELEM_WIDTH(),
-						constants.DML_SIZE()),
-					attrs=sig_keep(),
-					name=f"formal_denom_mult_lut_{io_str}"
-				)
+			#self.formal.formal_denom_mult_lut = Packarr(
+			#	Packarr.Shape(constants.DML_ELEM_WIDTH(),
+			#		constants.DML_SIZE()),
+			#	attrs=sig_keep(),
+			#	name=f"formal_denom_mult_lut_{io_str}"
+			#)
+			self.formal.formal_denom_mult_lut = View(
+				ArrayLayout(
+					unsigned(constants.DML_ELEM_WIDTH()),
+					constants.DML_SIZE()
+				),
+				attrs=sig_keep(),
+				name=f"formal_denom_mult_lut_{io_str}"
+			)
 			#--------
 		#--------
 	#--------
@@ -233,10 +247,11 @@ class LongUdivIter(Elaboratable):
 		constants = bus.constants()
 		#--------
 		# Shift in the current chunk of `itd_in.temp_numer`
-		m.d.comb += bus.shift_in_rema.eq(Cat
-			(itd_in.temp_numer[bus.chunk_start],
+		m.d.comb += bus.shift_in_rema.eq(Cat(
+			itd_in.temp_numer[bus.chunk_start],
 			itd_in.temp_rema[:constants.TEMP_T_WIDTH()
-				- constants.CHUNK_WIDTH()]))
+				- constants.CHUNK_WIDTH()]
+		))
 
 		# Compare every element of the computed `denom * digit` array to
 		# `shift_in_rema`, computing `gt_vec`.
@@ -276,8 +291,7 @@ class LongUdivIter(Elaboratable):
 			with m.Else(): # If(bus.chunk_start != i):
 				m.d.comb += itd_out.temp_quot[i].eq(itd_in.temp_quot[i])
 
-		m.d.comb \
-		+= [
+		m.d.comb += [
 			#--------
 			itd_out.temp_numer.eq(itd_in.temp_numer),
 			itd_out.temp_rema.eq(bus.shift_in_rema
@@ -308,8 +322,7 @@ class LongUdivIter(Elaboratable):
 			formal_denom_mult_lut_out \
 				= itd_out.formal.formal_denom_mult_lut
 			#--------
-			m.d.comb \
-			+= [
+			m.d.comb += [
 				#--------
 				Assert(oracle_quot_in
 					== (formal_numer_in // formal_denom_in)),
@@ -319,8 +332,7 @@ class LongUdivIter(Elaboratable):
 			]
 
 			for i in range(constants.RADIX()):
-				m.d.comb \
-				+= [
+				m.d.comb += [
 					#--------
 					Assert(itd_in.formal_dml_elem(i)
 						== (formal_denom_in * i)),
@@ -328,8 +340,7 @@ class LongUdivIter(Elaboratable):
 				]
 			with m.If(~ResetSignal()):
 				#--------
-				m.d.comb \
-				+= [
+				m.d.comb += [
 					#--------
 					formal_numer_out.eq(formal_numer_in),
 					formal_denom_out.eq(formal_denom_in),
@@ -342,8 +353,7 @@ class LongUdivIter(Elaboratable):
 					#--------
 				]
 				#--------
-				m.d.comb \
-				+= [
+				m.d.comb += [
 					#--------
 					Assert(skip_cond
 						| (bus.quot_digit
@@ -355,8 +365,7 @@ class LongUdivIter(Elaboratable):
 				# multi-cycle and computing the last chunk of quotient and
 				# final remainder), check to see if our answer is correct  
 				with m.If(bus.chunk_start == 0x0):
-					m.d.comb \
-					+= [
+					m.d.comb += [
 						#--------
 						Assert(skip_cond
 							| (itd_out.temp_quot
@@ -380,18 +389,14 @@ class LongUdivIterSyncBus:
 		super().__init__()
 		#--------
 		self.__constants = constants
-		self.itd_in \
-			= LongUdivIterData \
-			(
-				constants=constants,
-				io_str="in_sync",
-			)
-		self.itd_out \
-			= LongUdivIterData \
-			(
-				constants=constants,
-				io_str="out_sync",
-			)
+		self.itd_in = LongUdivIterData(
+			constants=constants,
+			io_str="in_sync",
+		)
+		self.itd_out = LongUdivIterData(
+			constants=constants,
+			io_str="out_sync",
+		)
 		#self.chunk_start \
 		#	= self.__constants.build_chunk_start_t(name_suffix="_sync")
 		#printout("LongUdivIterSyncBus.__init__(): ",
@@ -440,8 +445,7 @@ class LongUdivIterSync(Elaboratable):
 
 		constants = bus.constants()
 		#--------
-		m.d.comb \
-		+= [
+		m.d.comb += [
 			itd_in.eq(itd_in_sync),
 			it_bus.chunk_start.eq(self.__chunk_start_val),
 		]
@@ -456,8 +460,7 @@ class LongUdivIterSync(Elaboratable):
 			#--------
 			with m.If((~ResetSignal()) & past_valid):
 				#--------
-				m.d.comb \
-				+= [
+				m.d.comb += [
 					#--------
 					Assert(itd_in.temp_numer == itd_in_sync.temp_numer),
 
