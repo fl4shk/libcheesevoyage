@@ -7,11 +7,11 @@ from libcheesevoyage.misc_util_running import *
 #--------
 if __name__ == "__main__":
 	formal(
-		dut_mod=LongDivMultiCycle,
-		#dut_mod=LongDivPipelined,
-		MAIN_WIDTH=2,
-		DENOM_WIDTH=2,
-		CHUNK_WIDTH=1,
+		#dut_mod=LongDivMultiCycle,
+		dut_mod=LongDivPipelined,
+		MAIN_WIDTH=8,
+		DENOM_WIDTH=8,
+		CHUNK_WIDTH=2,
 		signed_reset=0,
 		#signed_reset=1,
 	)

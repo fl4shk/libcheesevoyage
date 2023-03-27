@@ -71,7 +71,7 @@ class LongDivConstants:
 		ret = View(
 			ArrayLayout(unsigned(self.CHUNK_WIDTH()), self.NUM_CHUNKS()),
 			attrs=attrs,
-			name=name
+			name=name,
 		)
 		#printout("build_temp_t(): ", ret.sig().name, "\n")
 		return ret
@@ -485,6 +485,29 @@ class LongUdivIterSync(Elaboratable):
 		itd_out_sync = bus.itd_out
 
 		constants = bus.constants()
+		#loc = Blank()
+		#--------
+		#if constants.FORMAL():
+		#	#--------
+		#	loc.formal = Blank()
+		#	#--------
+		#	loc.formal.rst_cnt \
+		#		= Signal(
+		#			signed(constants.CHUNK_WIDTH() + 1),
+		#			reset=self.__chunk_start_val + 1,
+		#			attrs=sig_keep(),
+		#			name=f"formal_rst_cnt_{self.__chunk_start_val}",
+		#		)
+		#	rst_cnt = loc.formal.rst_cnt
+
+		#	loc.formal.rst_cnt_done \
+		#		= Signal(
+		#			attrs=sig_keep(),
+		#			name="formal_rst_cnt_done",
+		#		)
+		#	rst_cnt_done = loc.formal.rst_cnt_done
+		#	#--------
+		#--------
 		#--------
 		m.d.comb += [
 			itd_in.eq(itd_in_sync),
@@ -494,71 +517,160 @@ class LongUdivIterSync(Elaboratable):
 		#--------
 		if constants.FORMAL():
 			#--------
-			skip_cond = itd_in.formal.formal_denom == 0
+			skip_cond = itd_in.formal.formal_denom.as_value() == 0
 			past_valid = bus.formal.past_valid
 			#--------
 			m.d.sync += past_valid.eq(0b1),
 			#--------
+			#m.d.comb += [
+			#	rst_cnt_done.eq(rst_cnt < 0)
+			#]
+			#with m.If((~ResetSignal() & (~rst_cnt_done))):
+			#	m.d.sync += [
+			#		#--------
+			#		rst_cnt.eq(rst_cnt - 1)
+			#		#--------
+			#	]
 			with m.If((~ResetSignal()) & past_valid):
 				#--------
-				m.d.comb += [
+				m.d.sync += [
 					#--------
-					Assert(itd_in.temp_numer == itd_in_sync.temp_numer),
+					Assert(
+						#(~rst_cnt_done)
+						#| 
+						(itd_in.temp_numer.as_value()
+							== itd_in_sync.temp_numer.as_value())),
 
-					Assert(itd_in.temp_quot == itd_in_sync.temp_quot),
-					Assert(itd_in.temp_rema == itd_in_sync.temp_rema),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_in.temp_quot.as_value()
+							== itd_in_sync.temp_quot.as_value())),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_in.temp_rema.as_value()
+							== itd_in_sync.temp_rema.as_value())),
 
-					Assert(itd_in.tag == itd_in_sync.tag),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_in.tag == itd_in_sync.tag)),
 
-					Assert(itd_in.formal.formal_numer
-						== itd_in_sync.formal.formal_numer),
-					Assert(itd_in.formal.formal_denom
-						== itd_in_sync.formal.formal_denom),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_in.formal.formal_numer.as_value()
+							== itd_in_sync.formal.formal_numer
+								.as_value())),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_in.formal.formal_denom.as_value()
+							== itd_in_sync.formal.formal_denom
+								.as_value())),
 
-					Assert(itd_in.formal.oracle_quot
-						== itd_in_sync.formal.oracle_quot),
-					Assert(itd_in.formal.oracle_rema
-						== itd_in_sync.formal.oracle_rema),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						skip_cond
+						| (itd_in.formal.oracle_quot.as_value()
+							== itd_in_sync.formal.oracle_quot.as_value())),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						skip_cond
+						| (itd_in.formal.oracle_rema.as_value()
+							== itd_in_sync.formal.oracle_rema.as_value())),
 					#--------
-					Assert(itd_out_sync.temp_numer
-						== Past(itd_in.temp_numer)),
-					#Assert(itd_out_sync.formal == Past(itd_in.formal)),
-					Assert(itd_out_sync.formal.formal_numer
-						== Past(itd_in.formal.formal_numer)),
-					Assert(itd_out_sync.formal.formal_denom
-						== Past(itd_in.formal.formal_denom)),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_out_sync.temp_numer
+							== Past(itd_in.temp_numer))),
+					#Assert(
+					#	#(~rst_cnt_done)
+					#	#|
+					#	itd_out_sync.formal == Past(itd_in.formal)),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_out_sync.formal.formal_numer
+							== Past(itd_in.formal.formal_numer))),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_out_sync.formal.formal_denom
+							== Past(itd_in.formal.formal_denom))),
 
-					Assert(itd_out_sync.formal.oracle_quot
-						== Past(itd_in.formal.oracle_quot)),
-					Assert(itd_out_sync.formal.oracle_rema
-						== Past(itd_in.formal.oracle_rema)),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_out_sync.formal.oracle_quot
+							== Past(itd_in.formal.oracle_quot))),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_out_sync.formal.oracle_rema
+							== Past(itd_in.formal.oracle_rema))),
 
-					Assert(itd_out_sync.formal.formal_denom_mult_lut
-						== Past(itd_in.formal.formal_denom_mult_lut)),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_out_sync.formal.formal_denom_mult_lut
+							== Past(itd_in.formal.formal_denom_mult_lut))),
 					#--------
-					Assert(itd_out_sync.temp_numer
-						== Past(itd_in_sync.temp_numer)),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_out_sync.temp_numer
+							== Past(itd_in_sync.temp_numer))),
 
-					Assert(itd_out_sync.temp_quot
-						== Past(itd_out.temp_quot)),
-					Assert(itd_out_sync.temp_rema
-						== Past(itd_out.temp_rema)),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_out_sync.temp_quot
+							== Past(itd_out.temp_quot))),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_out_sync.temp_rema
+							== Past(itd_out.temp_rema))),
 					#--------
-					Assert(itd_out_sync.denom_mult_lut
-						== Past(itd_in_sync.denom_mult_lut)),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_out_sync.denom_mult_lut
+							== Past(itd_in_sync.denom_mult_lut))),
 					#--------
-					Assert(itd_out_sync.formal.formal_numer
-						== Past(itd_in_sync.formal.formal_numer)),
-					Assert(itd_out_sync.formal.formal_denom
-						== Past(itd_in_sync.formal.formal_denom)),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_out_sync.formal.formal_numer
+							== Past(itd_in_sync.formal.formal_numer))),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_out_sync.formal.formal_denom
+							== Past(itd_in_sync.formal.formal_denom))),
 
-					Assert(itd_out_sync.formal.oracle_quot
-						== Past(itd_in_sync.formal.oracle_quot)),
-					Assert(itd_out_sync.formal.oracle_rema
-						== Past(itd_in_sync.formal.oracle_rema)),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_out_sync.formal.oracle_quot
+							== Past(itd_in_sync.formal.oracle_quot))),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_out_sync.formal.oracle_rema
+							== Past(itd_in_sync.formal.oracle_rema))),
 					#--------
-					Assert(itd_out_sync.formal.formal_denom_mult_lut
-						== Past(itd_in_sync.formal.formal_denom_mult_lut)),
+					Assert(
+						#(~rst_cnt_done)
+						#|
+						(itd_out_sync.formal.formal_denom_mult_lut
+							== Past(itd_in_sync.formal
+								.formal_denom_mult_lut))),
 					#--------
 				]
 			#--------

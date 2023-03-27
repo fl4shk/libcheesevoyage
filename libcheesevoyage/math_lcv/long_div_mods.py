@@ -570,13 +570,46 @@ class LongDivPipelined(Elaboratable):
 		loc.temp_bus_rema = Signal(len(outp.rema))
 		#--------
 		if constants.FORMAL():
+			#--------
 			loc.formal = Blank()
+			#--------
 			loc.formal.past_valid \
 				= Signal(
 					attrs=sig_keep(),
 					name="formal_past_valid"
 				)
 			past_valid = loc.formal.past_valid
+			#--------
+			#loc.formal.rst_cnt_lst \
+			#	= [
+			#		Signal(
+			#			#signed(math.ceil(math.log2(len(loc.m))) + 1),
+			#			signed(constants.CHUNK_WIDTH() + 1),
+			#			reset=i + 1,
+			#			attrs=sig_keep(),
+			#			name=f"formal_rst_cnt_lst_{i}",
+			#		)
+			#		for i in range(len(loc.m))
+			#	]
+			#	#= View(
+			#	#	ArrayLayout(
+			#	#		unsigned(math.ceil(math.log2(len(loc.m)))),
+			#	#		#math.ceil(math.log2(len(loc.m))),
+			#	#		len(loc.m),
+			#	#	),
+			#	#	attrs=sig_keep(),
+			#	#	name="formal_rst_cnt_arr"
+			#	#)
+			#rst_cnt_lst = loc.formal.rst_cnt_lst
+
+			#loc.formal.rst_cnt_done \
+			#	= Signal(
+			#		len(loc.m),
+			#		attrs=sig_keep(),
+			#		name="formal_rst_cnt_done",
+			#	)
+			#rst_cnt_done = loc.formal.rst_cnt_done
+			#--------
 		#--------
 		its_bus = [loc.m[i].bus() for i in range(len(loc.m))]
 
@@ -621,23 +654,14 @@ class LongDivPipelined(Elaboratable):
 				loc.lez_bus_szd_temp_r, loc.bus_szd_temp_r)),
 			#--------
 		]
-
-		m.d.sync += [
-			loc.numer_was_lez[i + 1].eq(loc.numer_was_lez[i])
-				for i in range(len(loc.m))
-		]
-		m.d.sync += [
-			loc.denom_was_lez[i + 1].eq(loc.denom_was_lez[i])
-				for i in range(len(loc.m))
-		]
-		m.d.sync += [
-			loc.quot_will_be_lez[i + 1].eq(loc.quot_will_be_lez[i])
-				for i in range(len(loc.m))
-		]
-		m.d.sync += [
-			loc.rema_will_be_lez[i + 1].eq(loc.rema_will_be_lez[i])
-				for i in range(len(loc.m))
-		]
+		#--------
+		for i in range(len(loc.m)):
+			m.d.sync += [
+				loc.numer_was_lez[i + 1].eq(loc.numer_was_lez[i]),
+				loc.denom_was_lez[i + 1].eq(loc.denom_was_lez[i]),
+				loc.quot_will_be_lez[i + 1].eq(loc.quot_will_be_lez[i]),
+				loc.rema_will_be_lez[i + 1].eq(loc.rema_will_be_lez[i]),
+			]
 		#--------
 		m.d.sync += [
 			itd_in[0].temp_numer.eq(loc.temp_numer),
@@ -660,10 +684,13 @@ class LongDivPipelined(Elaboratable):
 		#--------
 		if constants.FORMAL():
 			#--------
-			skip_cond = itd_out[-1].formal.formal_denom == 0
+			skip_cond \
+				= itd_out[-1].formal.formal_denom.as_value() == 0
 			#--------
 			m.d.sync += [
+				#--------
 				past_valid.eq(0b1),
+				#--------
 				itd_in[0].formal.formal_numer.eq(loc.temp_numer),
 				itd_in[0].formal.formal_denom.eq(loc.temp_denom),
 
@@ -671,14 +698,28 @@ class LongDivPipelined(Elaboratable):
 					// loc.temp_denom),
 				itd_in[0].formal.oracle_rema.eq(loc.temp_numer
 					% loc.temp_denom),
+				#--------
 			]
 			m.d.sync += [
 				itd_in[0].formal_dml_elem(i).eq(loc.temp_denom * i)
 					for i in range(constants.DML_SIZE())
 			]
+			#m.d.comb += [
+			#	rst_cnt_done[i].eq(rst_cnt_lst[i] < 0)
+			#	for i in range(len(loc.m))
+			#]
+			#with m.If(~ResetSignal()):
+			#	for i in range(len(loc.m)):
+			#		with m.If(~rst_cnt_done[i]):
+			#			m.d.sync += [
+			#				#--------
+			#				rst_cnt_lst[i].eq(rst_cnt_lst[i] - 1),
+			#				#--------
+			#			]
+
 			with m.If((~ResetSignal()) & past_valid):
 				#--------
-				m.d.comb += [
+				m.d.sync += [
 					#--------
 					Assert(loc.temp_numer
 						== Mux(Past(inp.signed) & Past(inp.numer)[-1],
@@ -701,49 +742,90 @@ class LongDivPipelined(Elaboratable):
 					#--------
 				]
 				#--------
-				m.d.comb += [
-					Assert(loc.numer_was_lez[i + 1]
-						== Past(loc.numer_was_lez)[i])
-						for i in range(len(loc.m))
-				]
-				m.d.comb += [
-					Assert(loc.denom_was_lez[i + 1]
-						== Past(loc.denom_was_lez)[i])
-						for i in range(len(loc.m))
-				]
-				m.d.comb += [
-					Assert(loc.quot_will_be_lez[i + 1]
-						== Past(loc.quot_will_be_lez)[i])
-						for i in range(len(loc.m))
-				]
-				m.d.comb += [
-					Assert(loc.rema_will_be_lez[i + 1]
-						== Past(loc.rema_will_be_lez)[i])
-						for i in range(len(loc.m))
-				]
+				for i in range(len(loc.m)):
+					m.d.sync += [
+						Assert(
+							loc.numer_was_lez[i + 1]
+							== Past(loc.numer_was_lez)[i]
+						),
+						Assert(
+							loc.denom_was_lez[i + 1]
+							== Past(loc.denom_was_lez)[i]
+						),
+						Assert(
+							loc.quot_will_be_lez[i + 1]
+							== Past(loc.quot_will_be_lez)[i]
+						),
+						Assert(
+							loc.rema_will_be_lez[i + 1]
+							== Past(loc.rema_will_be_lez)[i]
+						),
+					]
 				#--------
-				m.d.comb += [
+				m.d.sync += [
 					#--------
-					Assert(itd_in[0].temp_numer == Past(loc.temp_numer)),
-					Assert(itd_in[0].temp_quot == 0x0),
-					Assert(itd_in[0].temp_rema == 0x0),
+					Assert(
+						#(~rst_cnt_done[0])
+						#|
+						(itd_in[0].temp_numer == Past(loc.temp_numer))),
+					Assert(
+						#(~rst_cnt_done[0])
+						#|
+						(itd_in[0].temp_quot.as_value() == 0x0)),
+					Assert(
+						#(~rst_cnt_done[0])
+						#|
+						(itd_in[0].temp_rema.as_value() == 0x0)),
 					#--------
-					Assert(itd_in[0].formal.formal_numer
-						== Past(loc.temp_numer)),
-					Assert(itd_in[0].formal.formal_denom
-						== Past(loc.temp_denom)),
+					Assert(
+						#(~rst_cnt_done[0])
+						#|
+						(itd_in[0].formal.formal_numer
+							== Past(loc.temp_numer))),
+					Assert(
+						#(~rst_cnt_done[0])
+						#|
+						(itd_in[0].formal.formal_denom
+							== Past(loc.temp_denom))),
 
-					Assert(itd_in[0].formal.oracle_quot
-						== (Past(loc.temp_numer) // Past(loc.temp_denom))),
-					Assert(itd_in[0].formal.oracle_rema
-						== (Past(loc.temp_numer) % Past(loc.temp_denom))),
+					Assert(
+						#(~rst_cnt_done[0])
+						#|
+						(itd_in[0].formal.oracle_quot.as_value()
+							== (Past(loc.temp_numer)
+								// Past(loc.temp_denom)))),
+					Assert(
+						#(~rst_cnt_done[0])
+						#|
+						(itd_in[0].formal.oracle_rema.as_value()
+							== (Past(loc.temp_numer)
+								% Past(loc.temp_denom)))),
 					#--------
-					Assert(skip_cond
-						| (itd_out[-1].temp_quot
-							== itd_out[-1].formal.oracle_quot)),
-					Assert(skip_cond
-						| (itd_out[-1].temp_rema
-							== itd_out[-1].formal.oracle_rema)),
+					Assert(
+						#(~rst_cnt_done[-1])
+						#|
+						(
+							skip_cond
+							| (itd_out[-1].temp_quot
+								.as_value()[:len(outp.quot)]
+								== itd_out[-1].formal.oracle_quot
+									.as_value()[:len(outp.quot)])
+						)
+					),
+					#Assert((skip_cond)
+					#	| (itd_out[-1].temp_rema.as_value()
+					#		== itd_out[-1].formal.oracle_rema.as_value())),
+					Assert(
+						#(~rst_cnt_done[-1])
+						#|
+						(
+							skip_cond
+							| (itd_out[-1].temp_rema
+								.as_value()[:len(outp.rema)]
+								== itd_out[-1].formal.oracle_rema
+									.as_value()[:len(outp.rema)])
+						)
+					),
 					#--------
 				]
 				#--------
