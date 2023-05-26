@@ -82,3 +82,6 @@ def inst_pll(pll_file_name, domain, pll_module_name, freq, platform, m):
 def sig_keep():
 	return {"keep": 1}
 #--------
+def mk_keep_obj(ObjKind, shape, name):
+	return ObjKind(shape, name=name, attrs=sig_keep())
+#--------
