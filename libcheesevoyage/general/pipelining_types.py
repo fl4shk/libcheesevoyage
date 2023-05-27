@@ -6,7 +6,7 @@ from collections import OrderedDict
 from amaranth import *
 from amaranth.lib.data import *
 #from libcheesevoyage.misc_util import psconcat, mk_keep_obj
-from libcheesevoyage.misc_util import psconcat, sig_keep
+from libcheesevoyage.misc_util import psconcat, sig_keep, Blank
 
 class PsDir(pyenum.Enum):
 	Fwd = 0
@@ -192,6 +192,11 @@ class SkidBufPstageGen:
 		self,
 		parent: Module,
 		#info_dct: OrderedDict,
+
+		# locals (from some `elaborate()` function) for use in
+		#`logic_func()`
+		loc, 
+
 		box: PsBundleBox,
 
 		# `logic_func` takes this `SkidBufPstageGen` (`self`) as its
@@ -208,6 +213,7 @@ class SkidBufPstageGen:
 	):
 		self.__parent = parent
 		#self.__bus = SkidBufPstageBus(info_dct)
+		self.__loc = loc
 		self.__box = box
 		#self.__info_dct = bundle_box.info_dct()
 		#self.__bundle = PsBundle(self.info_dct())
@@ -218,6 +224,8 @@ class SkidBufPstageGen:
 		return self.__parent
 	#def bus(self):
 	#	return self.__bus
+	def loc(self):
+		return self.__loc
 	def box(self):
 		return self.__box
 	def info_dct(self):
