@@ -313,10 +313,14 @@ class SkidBufPstageGen:
 			# input. We'll place it into a temporary location.
 			m.d.sync += [
 				# r_stb <= (i_stb) && (o_stb);
-				box.reg("stb").eq(box.inp("stb") & box.outp("stb")),
+				box.reg("stb").eq(
+					box.inp("stb") & box.outp("stb")
+				),
 
 				# o_busy <= (i_stb) && (o_stb);
-				box.outp("busy").eq(box.inp("stb") & box.outp("stb")),
+				box.outp("busy").eq(
+					box.inp("stb") & box.outp("stb")
+				),
 			]
 		# if (!o_busy)
 		with m.If(~ResetSignal() & ~box.outp("busy")):
