@@ -33,7 +33,7 @@ class PsDir(pyenum.Enum):
 #		"ps_dir": ps_dir,
 #	}
 
-class PsConnSigInfo:
+class PsSigInfo:
 	def __init__(
 		self,
 		#prefix: str,
@@ -87,12 +87,12 @@ class PsConnSigInfo:
 	def attrs(self):
 		return self.__attrs
 
-class PsConnBundle:
+class PsBundle:
 	def __init__(
 		self,
 
-		##stb_info: PsConnSigInfo,
-		##busy_info: PsConnSigInfo
+		##stb_info: PsSigInfo,
+		##busy_info: PsSigInfo
 		#info_dct: OrderedDict,
 		#*,
 		#stb_attrs: str=sig_keep(),
@@ -113,14 +113,14 @@ class PsConnBundle:
 			"\"busy\" must not be in `info_dct`"
 		)
 
-		info_dct["stb"] = PsConnSigInfo(
+		info_dct["stb"] = PsSigInfo(
 			basenm="stb",
 			ps_dir=PsDir.Fwd,
 			shapelayt=1,
 			attrs=stb_attrs,
 			prefix=prefix,
 		)
-		info_dct["busy"] = PsConnSigInfo(
+		info_dct["busy"] = PsSigInfo(
 			basenm="busy",
 			ps_dir=PsDir.Bak,
 			shapelayt=1,
@@ -136,7 +136,7 @@ class PsConnBundle:
 					attrs=sig_info.attrs(),
 				)
 
-class PsConnBundleBox:
+class PsBundleBox:
 	def __init__(
 		self,
 		info_dct: OrderedDict,
@@ -150,7 +150,7 @@ class PsConnBundleBox:
 		self.__busy_attrs = busy_attrs
 		self.__prefix = prefix
 
-		self.__bundle = PsConnBundle(bundle_box=self)
+		self.__bundle = PsBundle(bundle_box=self)
 
 	def info_dct(self):
 		return self.__info_dct
@@ -178,7 +178,7 @@ class PsConnBundleBox:
 #		info_dct: OrderedDict
 #	):
 #		self.__info_dct = info_dct
-#		self.__strc = PsConnBundle(self.info_dct())
+#		self.__strc = PsBundle(self.info_dct())
 #
 #	def info_dct(self):
 #		return self.__info_dct
@@ -192,7 +192,7 @@ class SkidBufPstageGen:
 		self,
 		parent: Module,
 		#info_dct: OrderedDict,
-		box: PsConnBundleBox,
+		box: PsBundleBox,
 
 		# `logic_func` takes this `SkidBufPstageGen` (`self`) as its
 		# first argument.
@@ -210,7 +210,7 @@ class SkidBufPstageGen:
 		#self.__bus = SkidBufPstageBus(info_dct)
 		self.__box = box
 		#self.__info_dct = bundle_box.info_dct()
-		#self.__bundle = PsConnBundle(self.info_dct())
+		#self.__bundle = PsBundle(self.info_dct())
 		#self.__bundle = bundle_box.bundle()
 		self.__logic_func = logic_func
 
