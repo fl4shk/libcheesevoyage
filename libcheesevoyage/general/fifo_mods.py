@@ -42,7 +42,7 @@ class FifoBus:
 	#		self.rd_en, self.rd_data, self.empty, self.full]
 #--------
 class Fifo(Elaboratable):
-	def __init__(self, ShapeT, SIZE, *, FORMAL=False):
+	def __init__(self, ShapeT, SIZE, *, FORMAL: bool=False):
 		self.__bus = FifoBus(ShapeT=ShapeT, SIZE=SIZE)
 		self.__FORMAL = FORMAL
 
@@ -250,7 +250,7 @@ class Fifo(Elaboratable):
 #--------
 # Asynchronous Read FIFO
 class AsyncReadFifo(Fifo):
-	def __init__(self, ShapeT, SIZE, *, FORMAL=False):
+	def __init__(self, ShapeT, SIZE, *, FORMAL: bool=False):
 		super().__init__(ShapeT, SIZE, FORMAL)
 
 	def elaborate(self, platform: str) -> Module:
