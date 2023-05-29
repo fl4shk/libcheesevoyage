@@ -68,7 +68,7 @@ class LongDivConstants:
 		#	attrs=attrs,
 		#	name=name
 		#)
-		ret = View(
+		ret = SplitrecView(
 			ArrayLayout(unsigned(self.CHUNK_WIDTH()), self.NUM_CHUNKS()),
 			attrs=attrs,
 			name=name,
@@ -125,7 +125,7 @@ class LongUdivIterData(Splitrec):
 		#	attrs=sig_keep(),
 		#	name=f"denom_mult_lut_{io_str}"
 		#)
-		self.denom_mult_lut = View(
+		self.denom_mult_lut = SplitrecView(
 			ArrayLayout(unsigned(constants.DML_ELEM_WIDTH()),
 				constants.DML_SIZE()),
 			attrs=sig_keep(),
@@ -169,7 +169,7 @@ class LongUdivIterData(Splitrec):
 			#	attrs=sig_keep(),
 			#	name=f"formal_denom_mult_lut_{io_str}"
 			#)
-			self.formal.formal_denom_mult_lut = View(
+			self.formal.formal_denom_mult_lut = SplitrecView(
 				ArrayLayout(unsigned(constants.DML_ELEM_WIDTH()),
 					constants.DML_SIZE()),
 				attrs=sig_keep(),

@@ -22,12 +22,15 @@ class SigInfo:
 		reset=0,
 		attrs: str=sig_keep(),
 		#prefix: str="",
+		**kwargs
 	):
 		self.__basenm = basenm
 		self.__shapelayt = shapelayt
 		self.__ObjKind = ObjKind
 		self.__reset = reset
 		self.__attrs = attrs
+		self.__kwargs = kwargs
+
 	@staticmethod
 	def like(other, **kwargs):
 		kw = {
@@ -67,20 +70,45 @@ class SigInfo:
 	def attrs(self):
 		return self.__attrs
 
+	def fullnm(
+		self,
+		*,
+		basenm=None,
+		prefix="",
+		suffix="",
+	):
+		temp_basenm = self.basenm() if basenm is None else basenm 
+		return psconcat(prefix, temp_basenm, suffix)
+
 	def mk_sig(
 		self,
 		*,
 		basenm=None,
 		prefix="",
-		suffix=""
+		suffix="",
+		**kwargs,
 	):
-		temp_basenm = self.basenm() if basenm == None else basenm 
-		return self.ObjKind()(
-			self.shapelayt(),
-			name=psconcat(prefix, temp_basenm, suffix),
-			reset=self.reset(),
-			attrs=self.attrs(),
-		)
+		temp_kwargs = self.__kwargs if kwargs is None else kwargs
+		if self.shapelayt() is not None:
+			return self.ObjKind()(
+				self.shapelayt(),
+				name=self.fullnm(
+					basenm=basenm, prefix=prefix, suffix=suffix
+				),
+				reset=self.reset(),
+				attrs=self.attrs(),
+				**temp_kwargs
+			)
+		else:
+			return self.ObjKind()(
+				self.shapelayt(),
+				name=self.fullnm(
+					basenm=basenm, prefix=prefix, suffix=suffix
+				),
+				reset=self.reset(),
+				attrs=self.attrs(),
+				**temp_kwargs
+			)
 
 #class SigCfgDict:
 #	def __init__(

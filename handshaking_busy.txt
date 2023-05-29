@@ -1,0 +1,49 @@
+# To add a busy into AXI
+# handshaking, you AND the upstream READY !BUSY, and AND the
+# downstream valid with !BUSY
+
+>>> ready_prev = []
+>>> for ready in range(2):
+...  for busy in range(2):
+...   ready_prev.append(
+	{"ready_prev": ready & ~busy, "ready": ready, "busy": busy}
+)
+... 
+>>> for item in ready_prev:
+...  print(item)
+...
+{'ready_prev': 0, 'ready': 0, 'busy': 0}
+{'ready_prev': 0, 'ready': 0, 'busy': 1}
+{'ready_prev': 1, 'ready': 1, 'busy': 0}
+{'ready_prev': 0, 'ready': 1, 'busy': 1}
+
+>>> valid_next = []
+>>> for valid in range(2):
+...  for busy in range(2):
+...   valid_next.append(
+	{"valid_next": valid & ~busy, "valid": valid, "busy": busy}
+)
+... 
+>>> for item in valid_next:
+...  print(item)
+...
+{'valid_next': 0, 'valid': 0, 'busy': 0}
+{'valid_next': 0, 'valid': 0, 'busy': 1}
+{'valid_next': 1, 'valid': 1, 'busy': 0}
+{'valid_next': 0, 'valid': 1, 'busy': 1}
+
+# Old stuff, not working:
+#>>> ready_prev = []
+#>>> for ready in range(2):
+#...  for busy in range(2):
+#...   ready_prev.append(
+#	{"ready_prev": ready | busy, "ready": ready, "busy": busy}
+#)
+#... 
+#>>> for item in ready_prev:
+#...  print(item)
+#... 
+#{'ready_prev': 0, 'ready': 0, 'busy': 0}
+#{'ready_prev': 1, 'ready': 0, 'busy': 1}
+#{'ready_prev': 1, 'ready': 1, 'busy': 0}
+#{'ready_prev': 1, 'ready': 1, 'busy': 1}

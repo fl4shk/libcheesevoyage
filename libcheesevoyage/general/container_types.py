@@ -12,6 +12,7 @@ from amaranth.asserts import Assert, Assume, Cover
 from amaranth.asserts import Past, Rose, Fell, Stable
 
 from libcheesevoyage.misc_util import *
+from libcheesevoyage.general.general_types import SigInfo
 #--------
 #def dbg_printerr(s, obj):
 #	printerr(s, ": ", type(obj), " \"", obj, "\"\n")
@@ -892,66 +893,92 @@ from libcheesevoyage.misc_util import *
 #			#		"`Value`"))
 #	#--------
 #--------
+class SplitrecView:
+	def __init__(self, shapelayt, **kwargs):
+		self.view = View(shapelayt, **kwargs)
+		self.shapelayt = shapelayt
 # A record type which is composed of separate signals.  This allows setting
 # the attributes of every signal.
 class Splitrec(ValueCastable):
 	#--------
+	def __init__(self, fields: dict={}, *, name=None, src_loc_at=0):
+		#self.__dict__["__fields"] = fields
+		#self.__dict__["_Splitrec__fields"] = fields
+
+		#self.__fields = fields
+		#self.__fields = dict()
+		for key, field in fields.items():
+			if isinstance(field, View):
+				raise TypeError(psconcat
+					("Need `SplitrecView` for `field` implementing, ",
+					"`{!r}`")
+					.format(field))
+			self.__setattr__(key, field)
+			#self.__fields[key] = field
+
+		self.__extra_args_name = name
+		self.__extra_args_src_loc_at = src_loc_at
 	@staticmethod
 	#def cast_elem(ElemKindT, SIGNED=False, *, name=None, reset=0x0,
 	#	reset_less=False, attrs=None, decoder=None, src_loc_at=0):
-	def cast_elem(ShapeT, *, name=None, reset=0x0,
-		reset_less=False, attrs=None, decoder=None, src_loc_at=0):
+	def cast_elem(shapelayt, *, name=None, reset=0x0,
+		reset_less=False, attrs=None, decoder=None, src_loc_at=0,
+		target=None):
 		if name is None:
 			new_name = tracer.get_var_name(depth=src_loc_at + 2,
 				default=None)
 		else:
 			new_name = name
 
-		if isinstance(ShapeT, Shape):
-			#shape = unsigned(ShapeT) \
+		if isinstance(shapelayt, Shape):
+			#shape = unsigned(shapelayt) \
 			#	if not SIGNED \
-			#	else SIGNED(ShapeT)
-			return Signal(shape=ShapeT, name=new_name, reset=reset,
+			#	else SIGNED(shapelayt)
+			return Signal(shape=shapelayt, name=new_name, reset=reset,
 				reset_less=reset_less, attrs=attrs, decoder=decoder,
 				src_loc_at=src_loc_at + 1)
-		elif isinstance(ShapeT, dict):
-			temp = Splitrec(fields=ShapeT, name=new_name,
+		elif isinstance(shapelayt, dict):
+			temp = Splitrec(fields=shapelayt, name=new_name,
 				src_loc_at=src_loc_at + 1)
 			return Splitrec.like(other=temp, name=None,
 				name_suffix=None, src_loc_at=src_loc_at + 1)
-		elif isinstance(ShapeT, list) and (len(ShapeT) > 0) \
-			and (not isinstance(ShapeT[0], tuple)):
-			temp = Splitarr(lst=ShapeT, name=new_name,
+		elif isinstance(shapelayt, list) and (len(shapelayt) > 0) \
+			and (not isinstance(shapelayt[0], tuple)):
+			temp = Splitarr(lst=shapelayt, name=new_name,
 				src_loc_at=src_loc_at + 1)
 			return Splitarr.like(other=temp, name=None,
 				name_suffix=None, src_loc_at=src_loc_at + 1)
-		#elif isinstance(ShapeT, Packrec.Layout) \
-		#	or (isinstance(ShapeT, list) and (len(ShapeT) > 0) \
-		#		and isinstance(ShapeT[0], tuple)):
-		#	return Packrec(ShapeT, name=new_name, reset=reset,
+		#elif isinstance(shapelayt, Packrec.Layout) \
+		#	or (isinstance(shapelayt, list) and (len(shapelayt) > 0) \
+		#		and isinstance(shapelayt[0], tuple)):
+		#	return Packrec(shapelayt, name=new_name, reset=reset,
 		#		reset_less=reset_less, attrs=attrs, decoder=decoder,
 		#		src_loc_at=src_loc_at + 1)
-		#elif isinstance(ShapeT, Packarr.Shape):
-		#	return Packarr(ShapeT, name=new_name, reset=reset,
+		#elif isinstance(shapelayt, Packarr.Shape):
+		#	return Packarr(shapelayt, name=new_name, reset=reset,
 		#		reset_less=reset_less, attrs=attrs, decoder=decoder,
 		#		src_loc_at=src_loc_at + 1)
-		elif isinstance(ShapeT, ArrayLayout) \
-			or isinstance(ShapeT, StructLayout) \
-			or isinstance(ShapeT, UnionLayout):
-			return View(ShapeT, name=new_name, reset=reset,
-				reset_less=reset_less, attrs=attrs, decoder=decoder,
-				src_loc_at=src_loc_at + 1)
-		#elif isinstance(ShapeT, UnionLayout):
-		#	return View(ShapeT, name=new_name, reset=reset,
+		elif isinstance(shapelayt, ArrayLayout) \
+			or isinstance(shapelayt, StructLayout) \
+			or isinstance(shapelayt, UnionLayout):
+			return SplitrecView(
+				view=View(shapelayt, target=target,
+					name=new_name, reset=reset,
+					reset_less=reset_less, attrs=attrs, decoder=decoder,
+					src_loc_at=src_loc_at + 1),
+				shapelayt=shapelayt
+			)
+		#elif isinstance(shapelayt, UnionLayout):
+		#	return View(shapelayt, name=new_name, reset=reset,
 		#		reset_less=reset_less, attrs=attrs, decoder=decoder,
 		#		src_loc_at=src_loc_at + 1)
 		else:
 			#raise TypeError(psconcat
-			#	("Need one of the following types for `ShapeT`, {!r}, "
-			#		.format(ShapeT),
+			#	("Need one of the following types for `shapelayt`, {!r}, "
+			#		.format(shapelayt),
 			#	": `int`, `Packrec.Layout`, `list`, or `Packarr.Shape`"))
 			raise TypeError(psconcat
-				("Invaild type for `ShapeT`, `{!r}`".format(ShapeT)))
+				("Invaild type for `shapelayt`, `{!r}`".format(shapelayt)))
 	#--------
 	@staticmethod
 	def like(other, name=None, name_suffix=None, src_loc_at=0, **kwargs):
@@ -972,11 +999,60 @@ class Splitrec(ValueCastable):
 				raise TypeError(("`field` `{!r}` must be castable to "
 					+ "`Value`").format(field)) from None
 
-			fields[key] = type(field).like(field, 
-				name=psconcat(new_name, "_", key)
-					if (name is None) or (name_suffix is None)
-					else new_name,
-				src_loc_at=src_loc_at + 1)
+			temp_name = (
+				psconcat(new_name, "_", key)
+				if (name is None) or (name_suffix is None)
+				else new_name
+			)
+			temp_src_loc_at = src_loc_at + 1
+			if not isinstance(field, SplitrecView):
+				if isinstance(field, View):
+					raise TypeError("`field` `{!r}` must not a `View`" 
+						.format(field))
+				fields[key] = type(field).like(field,
+					name=temp_name,
+					src_loc_at=temp_src_loc_at)
+			else:
+				if "target" in kwargs:
+					temp_target = kwargs["target"]
+					del kwargs["target"]
+				else:
+					temp_target = None
+
+				if "reset" in kwargs:
+					temp_reset = kwargs["reset"]
+					del kwargs["reset"]
+				else:
+					temp_reset = None
+
+				if "reset_less" in kwargs:
+					temp_reset_less = kwargs["reset_less"]
+					del kwargs["reset_less"]
+				else:
+					temp_reset_less = None
+
+				if "attrs" in kwargs:
+					temp_attrs = kwargs["attrs"]
+					del kwargs["attrs"]
+				else:
+					temp_attrs = None
+
+				if "decoder" in kwargs:
+					temp_decoder = kwargs["decoder"]
+					del kwargs["decoder"]
+				else:
+					temp_decoder = None
+
+				fields[key] = View(
+					field.shapelayt,
+					target=target,
+					name=temp_name,
+					reset=temp_reset,
+					reset_less=temp_reset_less,
+					attrs=temp_attrs,
+					decoder=temp_decoder,
+					src_loc_at=temp_src_loc_at
+				)
 
 		kw = dict(
 			fields=fields
@@ -986,23 +1062,15 @@ class Splitrec(ValueCastable):
 
 		return Splitrec(**kw)
 	
-	def __init__(self, fields: dict={}, *, name=None, src_loc_at=0):
-		#self.__dict__["__fields"] = fields
-		#self.__dict__["_Splitrec__fields"] = fields
-
-		#self.__fields = fields
-		for key, field in fields.items():
-			self.__setattr__(key, field)
-
-		self.__extra_args_name = name
-		self.__extra_args_src_loc_at = src_loc_at
 	#--------
 	def fields(self):
 		#return self.__fields
 		ret = {}
 		for name in self.__dict__:
+		#for name in self.__fields:
 			if name[0] != "_":
 				ret[name] = self.__dict__[name]
+				#ret[name] = self.__fields[name]
 		return ret
 
 	def extra_args_name(self):
@@ -1010,6 +1078,35 @@ class Splitrec(ValueCastable):
 	def extra_args_src_loc_at(self):
 		return self.__extra_args_src_loc_at
 	#--------
+	#def __getitem__(self, key):
+	#	return self.__fields[key]
+	#def __getattr__(self, key):
+	#	#ret = self.__dict__[key]
+	#	ret = self.__fields[key]
+	#	#ret = self[key]
+	#	if isinstance(ret, SplitrecView):
+	#		print("testificate")
+	#		return ret.view
+	#	else:
+	#		return ret
+	def __getattribute__(self, key):
+		#ret = object.__getattribute__(self, key)
+		ret = super().__getattribute__(key)
+		if isinstance(ret, SplitrecView):
+			return ret.view
+		else:
+			return ret
+	def __setattr__(self, key, val):
+		if isinstance(val, View):
+			raise TypeError(psconcat
+				("Need `SplitrecView` containing the layout when ",
+				"`val` (`{!r}`), is a `View`")
+				.format(val))
+		#if key not in self.__fields:
+		#	self.__fields[key] = val
+		#object.__setattr__(self, key, val)
+		super().__setattr__(key, val)
+
 	#def __getattr__(self, key):
 	#	return self[key]
 	#def __getitem__(self, key):
@@ -1096,6 +1193,18 @@ class Splitrec(ValueCastable):
 #--------
 class Splitarr(ValueCastable):
 	#--------
+	def __init__(self, lst: list={}, *, name=None, src_loc_at=0):
+		if name is None:
+			new_name = tracer.get_var_name(depth=src_loc_at + 2,
+				default=None)
+		else:
+			new_name = name
+
+		self.__lst = lst
+
+		self.__extra_args_name = new_name
+		self.__extra_args_src_loc_at = src_loc_at
+	#--------
 	@staticmethod
 	def like(other, name=None, name_suffix=None, src_loc_at=0, **kwargs):
 		if name is not None:
@@ -1136,18 +1245,6 @@ class Splitarr(ValueCastable):
 		kw.update(kwargs)
 
 		return Splitarr(**kw)
-	#--------
-	def __init__(self, lst: list={}, *, name=None, src_loc_at=0):
-		if name is None:
-			new_name = tracer.get_var_name(depth=src_loc_at + 2,
-				default=None)
-		else:
-			new_name = name
-
-		self.__lst = lst
-
-		self.__extra_args_name = new_name
-		self.__extra_args_src_loc_at = src_loc_at
 	#--------
 	def lst(self):
 		return self.__lst
