@@ -9,6 +9,7 @@ from amaranth.lib import enum
 #from libcheesevoyage.misc_util import psconcat, mk_keep_obj
 from libcheesevoyage.misc_util import psconcat, sig_keep, Blank
 from libcheesevoyage.general.general_types import SigInfo
+from libcheesevoyage.general.container_types import *
 
 class PipeSigDir(pyenum.Enum):
 	Fwd = 0
@@ -418,7 +419,7 @@ class SkidBufReg(Elaboratable):
 		# if (clear == 1'b1)
 		with m.If(inp.clear):
 			# data_out <= RESET_VALUE
-			m.d.sync += outp.data.eq(self.reset())
+			m.d.sync += outp.data.eq(self.data_reset())
 		#--------
 		return m
 		#--------
@@ -553,6 +554,7 @@ class SkidBuf(Elaboratable):
 		#--------
 		bus = self.bus()
 		data_info = bus.data_info()
+		OPT_CIRC_BUF = self.OPT_CIRC_BUF()
 		loc = Blank()
 
 		# Data path
@@ -644,18 +646,18 @@ class SkidBuf(Elaboratable):
 			#data_info=loc.d.data_buffer_out_dct["info"]
 			data_info=data_info
 		)
-		with data_buffer_reg.bus() as reg_bus:
-			m.d.comb += [
-				# 	.clock          (clock),
-				# 	.clock_enable   (data_buffer_wren),
-				# 	.clear          (clear),
-				# 	.data_in        (input_data),
-				# 	.data_out       (data_buffer_out)
-				reg_bus.inp.clock_enable.eq(loc.d.data_buffer_wren),
-				reg_bus.inp.clear.eq(bus.inp.clear),
-				reg_bus.inp.data.eq(bus.inp.data),
-				loc.d.data_buffer_out.eq(reg_bus.outp.data),
-			]
+		reg_bus = data_buffer_reg.bus()
+		m.d.comb += [
+			# 	.clock          (clock),
+			# 	.clock_enable   (data_buffer_wren),
+			# 	.clear          (clear),
+			# 	.data_in        (input_data),
+			# 	.data_out       (data_buffer_out)
+			reg_bus.inp.clock_enable.eq(loc.d.data_buffer_wren),
+			reg_bus.inp.clear.eq(bus.inp.clear),
+			reg_bus.inp.data.eq(bus.inp.data),
+			loc.d.data_buffer_out.eq(reg_bus.outp.data),
+		]
 		# );
 
 		# Register
@@ -670,28 +672,30 @@ class SkidBuf(Elaboratable):
 			#data_info=loc.d.selected_data_dct["info"]
 			data_info=data_info
 		)
-		with data_out_reg.bus() as reg_bus:
-			m.d.comb += [
-				# 	.clock          (clock),
-				# 	.clock_enable   (data_out_wren),
-				# 	.clear          (clear),
-				# 	.data_in        (selected_data),
-				# 	.data_out       (output_data)
-				reg_bus.inp.clock_enable.eq(loc.d.data_out_wren),
-				reg_bus.inp.clear.eq(bus.inp.clear),
-				reg_bus.inp.data.eq(loc.d.selected_data),
-				bus.outp.data.eq(reg_bus.outp.data),
-			]
+		reg_bus = data_out_reg.bus()
+		m.d.comb += [
+			# 	.clock          (clock),
+			# 	.clock_enable   (data_out_wren),
+			# 	.clear          (clear),
+			# 	.data_in        (selected_data),
+			# 	.data_out       (output_data)
+			reg_bus.inp.clock_enable.eq(loc.d.data_out_wren),
+			reg_bus.inp.clear.eq(bus.inp.clear),
+			reg_bus.inp.data.eq(loc.d.selected_data),
+			bus.outp.data.eq(reg_bus.outp.data),
+		]
 		# );
 
 		# Install the data path submodules
 		# (order of installation doesn't matter, I don't think?)
-		m.submodules += [
-			dpath_sm for dpath_sm in loc.d.sm.__dict__.values()
-		]
+		#m.submodules += [
+		#	dpath_sm for dpath_sm in loc.d.sm.__dict__.values()
+		#]
+		for dpath_sm in loc.d.sm.__dict__.items():
+			setattr(m.submodules, dpath_sm[0], dpath_sm[1])
 		#--------
 		# Ctrl path
-		class State(Enum, shape=SkidBuf.STATE_WIDTH()):
+		class State(enum.Enum, shape=SkidBuf.STATE_WIDTH()):
 			# Output and buffer registers empty
 			EMPTY = 0b00
 			# Output register holds data
@@ -753,23 +757,23 @@ class SkidBuf(Elaboratable):
 			#data_info=loc.c.outp_ready_data_info
 			data_info=SigInfo.like_sig(bus.outp.ready, reset=0b1)
 		)
-		with output_ready_reg.bus() as reg_bus:
-			m.d.comb += [
-				# .clock          (clock),
-				# .clock_enable   (1'b1),
-				# .clear          (clear),
-				# .data_in        (
-				#		(state_next != FULL) || (CIRCULAR_BUFFER != 0)
-				#	),
-				# .data_out       (input_ready)
-				reg_bus.inp.clock_enable.eq(0b1),
-				reg_bus.inp.clear.eq(bus.inp.clear),
-				reg_bus.inp.data.eq(
-					(loc.c.state_next != State.FULL)
-					| (OPT_CIRC_BUF != 0)
-				),
-				bus.outp.ready.eq(reg_bus.outp.data),
-			]
+		reg_bus = output_ready_reg.bus()
+		m.d.comb += [
+			# .clock          (clock),
+			# .clock_enable   (1'b1),
+			# .clear          (clear),
+			# .data_in        (
+			#		(state_next != FULL) || (CIRCULAR_BUFFER != 0)
+			#	),
+			# .data_out       (input_ready)
+			reg_bus.inp.clock_enable.eq(0b1),
+			reg_bus.inp.clear.eq(bus.inp.clear),
+			reg_bus.inp.data.eq(
+				(loc.c.state_next != State.FULL)
+				| (OPT_CIRC_BUF != 0)
+			),
+			bus.outp.ready.eq(reg_bus.outp.data),
+		]
 		#);
 
 		#Register
@@ -788,18 +792,18 @@ class SkidBuf(Elaboratable):
 			#data_info=loc.c.outp_valid_data_info
 			data_info=SigInfo.like_sig(bus.outp.valid),
 		)
-		with output_valid_reg.bus() as reg_bus:
-			m.d.comb += [
-				# .clock          (clock),
-				# .clock_enable   (1'b1),
-				# .clear          (clear),
-				# .data_in        (state_next != EMPTY),
-				# .data_out       (output_valid)
-				reg_bus.inp.clock_enable.eq(0b1),
-				reg_bus.inp.clear.eq(bus.inp.clear),
-				reg_bus.inp.data.eq(loc.c.state_next != State.EMPTY),
-				bus.outp.valid.eq(reg_bus.outp.data),
-			]
+		reg_bus = output_valid_reg.bus()
+		m.d.comb += [
+			# .clock          (clock),
+			# .clock_enable   (1'b1),
+			# .clear          (clear),
+			# .data_in        (state_next != EMPTY),
+			# .data_out       (output_valid)
+			reg_bus.inp.clock_enable.eq(0b1),
+			reg_bus.inp.clear.eq(bus.inp.clear),
+			reg_bus.inp.data.eq(loc.c.state_next != State.EMPTY),
+			bus.outp.valid.eq(reg_bus.outp.data),
+		]
 		#);
 
 		loc.c.insert = Signal(1,
@@ -964,18 +968,18 @@ class SkidBuf(Elaboratable):
 			#data_info=loc.c.state_data_info
 			data_info=SigInfo.like_sig(loc.c.state, reset=State.EMPTY),
 		)
-		with state_reg.bus() as reg_bus:
-			m.d.comb += [
-				#	.clock          (clock),
-				#	.clock_enable   (1'b1),
-				#	.clear          (clear),
-				#	.data_in        (state_next),
-				#	.data_out       (state)
-				reg_bus.inp.clock_enable.eq(0b1),
-				reg_bus.inp.clear.eq(bus.inp.clear),
-				reg_bus.inp.data.eq(loc.c.state_next),
-				loc.c.state.eq(reg_bus.outp.data),
-			]
+		reg_bus = state_reg.bus()
+		m.d.comb += [
+			#	.clock          (clock),
+			#	.clock_enable   (1'b1),
+			#	.clear          (clear),
+			#	.data_in        (state_next),
+			#	.data_out       (state)
+			reg_bus.inp.clock_enable.eq(0b1),
+			reg_bus.inp.clear.eq(bus.inp.clear),
+			reg_bus.inp.data.eq(loc.c.state_next),
+			loc.c.state.eq(reg_bus.outp.data),
+		]
 		#);
 
 		# always @(*) begin
@@ -1005,9 +1009,11 @@ class SkidBuf(Elaboratable):
 
 		# Install the ctrl path submodules
 		# (order of installation doesn't matter, I don't think?)
-		m.submodules += [
-			cpath_sm for cpath_sm in loc.c.sm.__dict__.values()
-		]
+		#m.submodules += [
+		#	cpath_sm for cpath_sm in loc.c.sm.__dict__.values()
+		#]
+		for cpath_sm in loc.c.sm.__dict__.items():
+			setattr(m.submodules, cpath_sm[0], cpath_sm[1])
 		#--------
 		#--------
 		return m
