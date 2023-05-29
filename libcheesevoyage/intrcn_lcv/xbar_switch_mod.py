@@ -16,15 +16,15 @@ import operator
 #--------
 class XbarSwitchBus:
 	#--------
-	def __init__(self, H2dShapeT, D2hShapeT, NUM_HOSTS, 
+	def __init__(self, h2d_shapelayt, d2h_shapelayt, NUM_HOSTS, 
 		NUM_DEVS,
 		#H2D_SIGNED=False, D2H_SIGNED=False,
 		*, FORMAL=False):
 		#--------
 		#self.__ElemKindT = ElemKindT
 
-		self.__H2dShapeT = H2dShapeT
-		self.__D2hShapeT = D2hShapeT
+		self.__h2d_shapelayt = h2d_shapelayt
+		self.__d2h_shapelayt = d2h_shapelayt
 
 		self.__NUM_HOSTS = NUM_HOSTS
 		self.__NUM_DEVS = NUM_DEVS
@@ -49,12 +49,12 @@ class XbarSwitchBus:
 		#self.inp_data = Packarr.build(ElemKindT=self.ElemKindT(),
 		#	SIZE=self.SIZE(), SIGNED=self.SIGNED())
 		self.inp.h2d_data = Splitarr([
-			Splitrec.cast_elem(self.H2dShapeT(), #self.H2D_SIGNED(),
+			Splitrec.cast_elem(self.h2d_shapelayt(), #self.H2D_SIGNED(),
 				name=f"inp_h2d_data_{i}")
 				for i in range(self.NUM_HOSTS())
 		])
 		self.inp.d2h_data = Splitarr([
-			Splitrec.cast_elem(self.D2hShapeT(), #self.D2H_SIGNED(),
+			Splitrec.cast_elem(self.d2h_shapelayt(), #self.D2H_SIGNED(),
 				name=f"inp_d2h_data_{j}")
 				for j in range(self.NUM_DEVS())
 		])
@@ -68,21 +68,21 @@ class XbarSwitchBus:
 		#self.outp_data = Packarr.build(ElemKindT=self.ElemKindT(),
 		#	SIZE=self.SIZE(), SIGNED=self.SIGNED())
 		self.outp.h2d_data = Splitarr([
-			Splitrec.cast_elem(self.H2dShapeT(), #self.H2D_SIGNED(),
+			Splitrec.cast_elem(self.h2d_shapelayt(), #self.H2D_SIGNED(),
 				name=f"outp_h2d_data_{j}")
 				for j in range(self.NUM_DEVS())
 		])
 		self.outp.d2h_data = Splitarr([
-			Splitrec.cast_elem(self.D2hShapeT(), #self.D2H_SIGNED(),
+			Splitrec.cast_elem(self.d2h_shapelayt(), #self.D2H_SIGNED(),
 				name=f"outp_d2h_data_{i}")
 				for i in range(self.NUM_HOSTS())
 		])
 		#--------
 	#--------
-	def H2dShapeT(self):
-		return self.__H2dShapeT
-	def D2hShapeT(self):
-		return self.__D2hShapeT
+	def h2d_shapelayt(self):
+		return self.__h2d_shapelayt
+	def d2h_shapelayt(self):
+		return self.__d2h_shapelayt
 	def NUM_HOSTS(self):
 		return self.__NUM_HOSTS
 	def NUM_DEVS(self):
@@ -102,11 +102,11 @@ class XbarSwitch(Elaboratable):
 	#--------
 	# For `PRIO_LST_2D`, lower list indices mean higher priority
 
-	def __init__(self, H2dShapeT, D2hShapeT, NUM_HOSTS, NUM_DEVS,
+	def __init__(self, h2d_shapelayt, d2h_shapelayt, NUM_HOSTS, NUM_DEVS,
 		#H2D_SIGNED=False, D2H_SIGNED=False,
 		*, PRIO_LST_2D=None,
 		DOMAIN=BasicDomain.COMB, FORMAL=False):
-	#def __init__(self, H2dShapeT, D2hShapeT, NUM_HOSTS, NUM_DEVS,
+	#def __init__(self, h2d_shapelayt, d2h_shapelayt, NUM_HOSTS, NUM_DEVS,
 	#	H2D_SIGNED=False, D2H_SIGNED=False, *, PRIO_LST_2D=None,
 	#	FORMAL=False):
 		#--------
@@ -160,8 +160,8 @@ class XbarSwitch(Elaboratable):
 		self.__DOMAIN = DOMAIN
 		#--------
 		self.__bus = XbarSwitchBus(
-			H2dShapeT=H2dShapeT,
-			D2hShapeT=D2hShapeT,
+			h2d_shapelayt=h2d_shapelayt,
+			d2h_shapelayt=d2h_shapelayt,
 			NUM_HOSTS=NUM_HOSTS,
 			NUM_DEVS=NUM_DEVS,
 			#H2D_SIGNED=H2D_SIGNED,
@@ -274,7 +274,7 @@ class XbarSwitch(Elaboratable):
 				PRIO_LST = PRIO_LST_2D[j]
 				#PRIO_LST = list(reversed(PRIO_LST_2D[j]))
 
-				if isinstance(bus.D2hShapeT(), int):
+				if isinstance(bus.d2h_shapelayt(), int):
 					for i in range(bus.NUM_HOSTS()):
 						for k in range(2 ** len(outp.d2h_data[0])):
 							with m.If(outp.d2h_data[PRIO_LST[i]] == k):

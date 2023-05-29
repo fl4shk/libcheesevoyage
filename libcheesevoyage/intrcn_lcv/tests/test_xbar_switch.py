@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from amaranth import *
-from amaranth import *
+#from amaranth import *
 
 from libcheesevoyage import *
 from libcheesevoyage.misc_util_running import *
@@ -16,8 +16,8 @@ if __name__ == "__main__":
 
 	formal_non_sync(
 		dut_mod=XbarSwitch,
-		H2dShapeT=unsigned(2),
-		D2hShapeT=unsigned(2),
+		h2d_shapelayt=unsigned(2),
+		d2h_shapelayt=unsigned(2),
 		NUM_HOSTS=4,
 		NUM_DEVS=4,
 		#H2D_SIGNED=False,

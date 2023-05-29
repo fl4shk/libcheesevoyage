@@ -16,6 +16,7 @@ class PipeSigDir(pyenum.Enum):
 	InpOnly = pyenum.auto()
 	OutpOnly = pyenum.auto()
 	RegOnly = pyenum.auto()
+	NosufOnly = pyenum.auto()
 
 	#EdgeToNext = pyenum.auto()
 	#EdgeToPrev = pyenum.auto()
@@ -55,26 +56,6 @@ class PipeSigDir(pyenum.Enum):
 #		return self.__clear_attrs
 
 class PipeSigInfo:
-	@staticmethod
-	def like(other, **kwargs):
-		kw = {
-			"info": other.info(),
-			"psig_dir": other.psig_dir(),
-			"can_auto_copy": other.can_auto_copy(),
-			"prefix": other.prefix(),
-		}
-		kw.update(kwargs)
-
-		return PipeSigInfo(**kw)
-	@staticmethod
-	def like_w_basenm(other, basenm: str, **kwargs):
-		return PipeSigInfo.like(
-			other,
-			info=SigInfo.like(
-				other.info(), basenm=basenm,
-			),
-			kwargs=kwargs,
-		)
 	def __init__(
 		self,
 		info: SigInfo,
@@ -105,6 +86,26 @@ class PipeSigInfo:
 		self.__can_auto_copy = can_auto_copy
 		self.__prefix = prefix
 		#self.__enable_reg = enable_reg
+	@staticmethod
+	def like(other, **kwargs):
+		kw = {
+			"info": other.info(),
+			"psig_dir": other.psig_dir(),
+			"can_auto_copy": other.can_auto_copy(),
+			"prefix": other.prefix(),
+		}
+		kw.update(kwargs)
+
+		return PipeSigInfo(**kw)
+	@staticmethod
+	def like_w_basenm(other, basenm: str, **kwargs):
+		return PipeSigInfo.like(
+			other,
+			info=SigInfo.like(
+				other.info(), basenm=basenm,
+			),
+			kwargs=kwargs,
+		)
 
 	def info(self):
 		return self.__info
@@ -175,6 +176,15 @@ class PipeSigInfo:
 			prefix=self.prefix,
 			suffix=self.regnm_suffix()
 		)
+	def mk_nosuf_sig(
+		self,
+		#*,
+		#prefix=""
+	):
+		return self.info().mk_sig(
+			prefix=self.prefix,
+			suffix=""
+		)
 	def mk_inp_sig_w_basenm(
 		self,
 		basenm: str,
@@ -230,6 +240,23 @@ class PipeSigInfo:
 		}
 		ret["sig"] = ret["info"].mk_reg_sig()
 		return ret
+	def mk_nosuf_sig_w_basenm(
+		self,
+		basenm: str,
+		#prefix="",
+		**kwargs,
+	):
+		ret = {
+			"info": PipeSigInfo.like_w_basenm(
+				self,
+				basenm=basenm,
+				psig_dir=PipeSigDir.NosufOnly,
+				#prefix=prefix,
+				kwargs=kwargs,
+			)
+		}
+		ret["sig"] = ret["info"].mk_nosuf_sig()
+		return ret
 
 	#def signm_lst(self):
 	#	if self.psig_dir() == PipeSigDir.InpOnly:
@@ -248,6 +275,8 @@ class PipeSigInfo:
 		suffix_lst = self.signm_suffix_lst()
 		return [psconcat(self.basenm(), suffix) for suffix in suffix_lst]
 	def signm_suffix_lst(self):
+		assert self.psig_dir() != PipeSigDir.NosufOnly
+
 		if self.psig_dir() == PipeSigDir.InpOnly:
 			return [self.inpnm_suffix()]
 		elif self.psig_dir() == PipeSigDir.OutpOnly:
@@ -301,7 +330,8 @@ class PipeSigInfo:
 class SkidBufRegBus:
 	def __init__(
 		self,
-		data_info: PipeSigInfo,
+		#data_info: PipeSigInfo,
+		data_info: SigInfo,
 		#shapelayt, # data shape/layout
 		#*,
 		#ObjKind=Signal,
@@ -324,18 +354,20 @@ class SkidBufRegBus:
 		#	self.shapelayt(),
 		#	name="inp_data", attrs=sig_keep()
 		#)
-		self.inp.data = self.data_info().mk_inp_sig_w_basenm(
-			basenm="inp_data"
-		)
+		#self.inp.data = self.data_info().mk_nosuf_sig_w_basenm(
+		#	basenm="inp_data"
+		#)
+		self.inp.data = self.data_info().mk_sig(basenm="inp_data")
 		#--------
 		#self.outp.data = self.ObjKind()(
 		#	self.shapelayt(),
 		#	name="outp_data", attrs=sig_keep(),
 		#	reset=self.reset()
 		#)
-		self.outp.data = self.data_info().mk_outp_sig_w_basenm(
-			basenm="outp_data"
-		)
+		#self.outp.data = self.data_info().mk_nosuf_sig_w_basenm(
+		#	basenm="outp_data"
+		#)
+		self.outp.data = self.data_info().mk_sig(basenm="outp_data")
 		#--------
 
 	def data_info(self):
@@ -356,7 +388,8 @@ class SkidBufRegBus:
 class SkidBufReg(Elaboratable):
 	def __init__(
 		self,
-		data_info: PipeSigInfo,
+		#data_info: PipeSigInfo,
+		data_info: SigInfo,
 	):
 		self.__bus = SkidBufRegBus(data_info=data_info)
 
@@ -395,7 +428,8 @@ class SkidBufBus:
 		self,
 		#shapelayt, # data shape/layout
 
-		data_info: PipeSigInfo,
+		#data_info: PipeSigInfo,
+		data_info: SigInfo,
 		## should be an `OrderedDict` of `SigInfo`, not `PipeSigInfo`
 		#info_dct: OrderedDict, 
 		#*,
@@ -423,9 +457,16 @@ class SkidBufBus:
 		#	name="inp_busy", attrs=sig_keep())
 		#self.inp.data = self.ObjKind()(self.shapelayt(),
 		#	name="inp_data", attrs=data_info.attrs())
-		self.inp.data = self.data_info().mk_inp_sig_w_basenm(
-			basenm="inp_data"
-		)["sig"]
+
+		#self.inp.data = self.data_info().mk_nosuf_sig_w_basenm(
+		#	basenm="inp_data"
+		#)["sig"]
+		#self.inp.data = self.data_info().mk_sig(basenm="inp_data")
+
+		#self.inp.data = SigInfo.like(
+		#	self.data_info(), basenm="inp_data",
+		#).mk_sig()
+		self.inp.data = self.data_info().mk_sig(basenm="inp_data")
 
 		#self.inp.clear = self.ObjKind()(self.shapelayt(),
 		#	name="inp_clear", attrs=sig_keep())
@@ -440,9 +481,16 @@ class SkidBufBus:
 		#	name="outp_busy", attrs=sig_keep())
 		#self.outp.data = self.ObjKind()(self.shapelayt(),
 		#	name="outp_data", attrs=self.data_attrs())
-		self.outp.data = self.data_info().mk_outp_sig_w_basenm(
-			basenm="outp_data"
-		)["sig"]
+		#self.outp.data = self.data_info().mk_outp_sig_w_basenm(
+		#	basenm="outp_data"
+		#)["sig"]
+		#self.outp.data = SigInfo.like(
+		#	self.data_info(), basenm="outp_data",
+		#).mk_sig()
+		#self.outp.data = self.data_info().mk_nosuf_sig_w_basenm(
+		#	basenm="outp_data"
+		#)["sig"]
+		self.outp.data = self.data_info().mk_sig(basenm="outp_data")
 		#--------
 	def data_info(self):
 		return self.__data_info
@@ -474,7 +522,8 @@ class SkidBufBus:
 class SkidBuf(Elaboratable):
 	def __init__(
 		self,
-		data_info: PipeSigInfo,
+		#data_info: PipeSigInfo,
+		data_info: SigInfo,
 		*,
 		OPT_CIRC_BUF: bool=False,
 		#--------
@@ -488,10 +537,10 @@ class SkidBuf(Elaboratable):
 		return self.__bus
 	def OPT_CIRC_BUF(self):
 		return self.__OPT_CIRC_BUF
-	#def data_info(self):
-	#	return self.bus().data_info()
-	#def shapelayt(self):
-	#	return self.bus().shapelayt()
+	def data_info(self):
+		return self.bus().data_info()
+	def data_shapelayt(self):
+		return self.bus().data_shapelayt()
 	#def sig_attrs(self):
 	#	return self.bus().sig_attrs()
 
@@ -506,100 +555,139 @@ class SkidBuf(Elaboratable):
 		data_info = bus.data_info()
 		loc = Blank()
 
-		#FIFO_DEPTH = 2
-
-		#loc.sm = Blank()
-
-		#loc.inp = Blank()
-		#loc.outp = Blank()
-		#loc.reg = Blank()
-
 		# Data path
-		loc.dpath = Blank()
+		loc.d = Blank()
 		# data path submodules
-		loc.dpath.sm = Blank()
+		loc.d.sm = Blank()
 
 		# Ctrl path
-		loc.cpath = Blank()
+		loc.c = Blank()
 		# Ctrl path submodules
-		loc.cpath.sm = Blank()
+		loc.c.sm = Blank()
 		#--------
 		# Data path code
 
 		# EMPTY at start, so don't load
-		loc.dpath.data_buffer_wren = Signal(1,
-			name="loc_dpath_data_buffer_wren", attrs=sig_keep())
-		#loc.dpath.data_buffer_out = bus.ObjKind()(
-		#	bus.shapelayt(),
-		#	name="loc_dpath_data_buffer_out", attrs=sig_keep()
+		# reg data_buffer_wren = 1'b0;
+		loc.d.data_buffer_wren = Signal(1,
+			name="loc_d_data_buffer_wren", attrs=sig_keep())
+
+		# wire [WORD_WIDTH-1:0]   data_buffer_out;
+		#loc.d.data_buffer_out = bus.DataObjKind()(
+		#	bus.data_shapelayt(),
+		#	name="loc_d_data_buffer_out", attrs=sig_keep()
 		#)
-		loc.dpath.data_buffer_out_dct = data_info.mk_reg_sig_w_basenm(
-			basenm="loc_dpath_data_buffer_out"
+
+		#loc.d.data_buffer_out_dct = data_info.mk_nosuf_sig_w_basenm(
+		#	basenm="loc_d_data_buffer_out"
+		#)
+		loc.d.data_buffer_out = data_info.mk_sig(
+			basenm="loc_d_data_buffer_out"
 		)
+		#loc.d.data_buffer_out_dct = data_info.mk_sig(
+		#	basenm="loc_d_data_buffer_out"
+		#)
+		#loc.d.data_buffer_out = data_info.mk_sig(
+		#	basenm="loc_d_data_buffer_out"
+		#)
 
 		# EMPTY at start, so accept data
-		loc.dpath.data_out_wren = Signal(1,
-			name="loc_dpath_data_out_wren", attrs=sig_keep(),
+		# reg data_out_wren = 1'b1;
+		loc.d.data_out_wren = Signal(1,
+			name="loc_d_data_out_wren", attrs=sig_keep(),
 			reset=0b1)
-		loc.dpath.use_buffered_data = Signal(1,
-			name="loc_dpath_use_buffered_data", attrs=sig_keep())
-		#loc.dpath.selected_data = bus.ObjKind()(
-		#	bus.shapelayt(),
-		#	name="loc_dpath_selected_data", attrs=sig_keep()
+
+		# reg use_buffered_data = 1'b0;
+		loc.d.use_buffered_data = Signal(1,
+			name="loc_d_use_buffered_data", attrs=sig_keep())
+
+		# reg [WORD_WIDTH-1:0] selected_data = WORD_ZERO;
+		#loc.d.selected_data = bus.DataObjKind()(
+		#	bus.data_shapelayt(),
+		#	name="loc_d_selected_data", attrs=sig_keep()
 		#)
-		loc.dpath.selected_data_dct = data_info.mk_reg_sig_w_basenm(
-			basenm="loc_dpath_selected_data"
+		#loc.d.selected_data_dct = data_info.mk_reg_sig_w_basenm(
+		#	basenm="loc_d_selected_data"
+		#)
+		#loc.d.selected_data_dct = data_info.mk_nosuf_sig_w_basenm(
+		#	basenm="loc_d_selected_data"
+		#)
+		loc.d.selected_data = data_info.mk_sig(
+			basenm="loc_d_selected_data"
 		)
 
-		# selected_data
-		#	= (use_buffered_data == 1'b1)
-		#	? data_buffer_out
-		#	: input_data;
-		m.d.comb += loc.dpath.selected_data_dct["sig"].eq(
+		# always @(*) begin
+		#	selected_data
+		#		= (use_buffered_data == 1'b1)
+		#		? data_buffer_out
+		#		: input_data;
+
+		m.d.comb += loc.d.selected_data.eq(
 			Mux(
-				loc.dpath.use_buffered_data,
-				loc.dpath.data_buffer_out_dct["sig"],
-				bus.inp.data,
+				loc.d.use_buffered_data, # (use_buffered_data == 1'b1)
+				loc.d.data_buffer_out, # ? data_buffer_out
+				bus.inp.data, # : inp_data
 			)
 		)
+		# end
 
-		data_buffer_reg = loc.dpath.sm.data_buffer_reg = SkidBufReg(
-			#data_info=loc.dpath.selected_data_dct["info"]
-			data_info=loc.dpath.data_buffer_out_dct["info"]
-		)
 		# Connect locals to `data_buffer_reg` ports
+		# Register
+		# #(
+		#	.WORD_WIDTH(WORD_WIDTH),
+		#	.RESET_VALUE(WORD_ZERO)
+		# )
+		# data_buffer_reg
+		# (
+		data_buffer_reg = loc.d.sm.data_buffer_reg = SkidBufReg(
+			#data_info=loc.d.selected_data_dct["info"]
+			#data_info=loc.d.data_buffer_out_dct["info"]
+			data_info=data_info
+		)
 		with data_buffer_reg.bus() as reg_bus:
 			m.d.comb += [
-				# .clock_enable(data_buffer_wren),
-				# .clear(clear),
-				# .data_in(input_data),
-				# .data_out(data_buffer_out)
-				reg_bus.inp.clock_enable.eq(loc.dpath.data_buffer_wren),
+				# 	.clock          (clock),
+				# 	.clock_enable   (data_buffer_wren),
+				# 	.clear          (clear),
+				# 	.data_in        (input_data),
+				# 	.data_out       (data_buffer_out)
+				reg_bus.inp.clock_enable.eq(loc.d.data_buffer_wren),
 				reg_bus.inp.clear.eq(bus.inp.clear),
 				reg_bus.inp.data.eq(bus.inp.data),
-				loc.dpath.data_buffer_out_dct["sig"].eq(reg_bus.outp.data),
+				loc.d.data_buffer_out.eq(reg_bus.outp.data),
 			]
+		# );
 
-		data_out_reg = loc.dpath.sm.data_out_reg = SkidBufReg(
-			#data_info=loc.dpath.selected_data_dct["info"]
-			data_info=loc.dpath.selected_data_dct["info"]
+		# Register
+		# #(
+		# 	.WORD_WIDTH     (WORD_WIDTH),
+		# 	.RESET_VALUE    (WORD_ZERO)
+		# )
+		# data_out_reg
+		# (
+		data_out_reg = loc.d.sm.data_out_reg = SkidBufReg(
+			#data_info=loc.d.selected_data_dct["info"]
+			#data_info=loc.d.selected_data_dct["info"]
+			data_info=data_info
 		)
-
 		with data_out_reg.bus() as reg_bus:
 			m.d.comb += [
-				# .clock_enable(data_out_wren),
-				# .clear(clear),
-				# .data_in(selected_data),
-				# .data_out(output_data)
-				reg_bus.inp.clock_enable.eq(loc.dpath.data_out_wren),
+				# 	.clock          (clock),
+				# 	.clock_enable   (data_out_wren),
+				# 	.clear          (clear),
+				# 	.data_in        (selected_data),
+				# 	.data_out       (output_data)
+				reg_bus.inp.clock_enable.eq(loc.d.data_out_wren),
 				reg_bus.inp.clear.eq(bus.inp.clear),
-				reg_bus.inp.data.eq(loc.dpath.selected_data_dct["sig"]),
+				reg_bus.inp.data.eq(loc.d.selected_data),
 				bus.outp.data.eq(reg_bus.outp.data),
 			]
+		# );
 
 		# Install the data path submodules
+		# (order of installation doesn't matter, I don't think?)
 		m.submodules += [
-			dpath_sm for dpath_sm in loc.dpath.sm.__dict__.values()
+			dpath_sm for dpath_sm in loc.d.sm.__dict__.values()
 		]
 		#--------
 		# Ctrl path
@@ -615,186 +703,210 @@ class SkidBuf(Elaboratable):
 		# No handling of erroneous and unreachable state 0b11.
 		# We could check and raise an error flag.
 
-		loc.cpath.state = Signal(State.as_shape(),
-			name="loc_cpath_state", attrs=sig_keep(),
+		loc.c.state = Signal(State.as_shape(),
+			name="loc_c_state", attrs=sig_keep(),
 			reset=State.EMPTY)
-		loc.cpath.state_next = Signal(State.as_shape(),
-			name="loc_cpath_state_next", attrs=sig_keep(),
-			reset=State.EMPTY)
-		loc.cpath.state_next_load = Signal(State.as_shape(),
-			name="loc_cpath_state_next_load", attrs=sig_keep(),
-			reset=State.EMPTY)
-		loc.cpath.state_next_flow = Signal(State.as_shape(),
-			name="loc_cpath_state_next_flow", attrs=sig_keep(),
-			reset=State.EMPTY)
-		loc.cpath.state_next_fill = Signal(State.as_shape(),
-			name="loc_cpath_state_next_fill", attrs=sig_keep(),
-			reset=State.EMPTY)
-		loc.cpath.state_next_flush = Signal(State.as_shape(),
-			name="loc_cpath_state_next_flush", attrs=sig_keep(),
-			reset=State.EMPTY)
-		loc.cpath.state_next_unload = Signal(State.as_shape(),
-			name="loc_cpath_state_next_unload", attrs=sig_keep(),
-			reset=State.EMPTY)
-		loc.cpath.state_next_dump = Signal(State.as_shape(),
-			name="loc_cpath_state_next_dump", attrs=sig_keep(),
-			reset=State.EMPTY)
-		loc.cpath.state_next_pass = Signal(State.as_shape(),
-			name="loc_cpath_state_next_pass", attrs=sig_keep(),
+		loc.c.state_next = Signal(State.as_shape(),
+			name="loc_c_state_next", attrs=sig_keep(),
 			reset=State.EMPTY)
 
+		#--------
+		# Extra signals to simulate Verilog's blocking assignments, while
+		# also providing better debugging support.
+		loc.c.state_next_load = Signal(State.as_shape(),
+			name="loc_c_state_next_load", attrs=sig_keep(),
+			reset=State.EMPTY)
+		loc.c.state_next_flow = Signal(State.as_shape(),
+			name="loc_c_state_next_flow", attrs=sig_keep(),
+			reset=State.EMPTY)
+		loc.c.state_next_fill = Signal(State.as_shape(),
+			name="loc_c_state_next_fill", attrs=sig_keep(),
+			reset=State.EMPTY)
+		loc.c.state_next_flush = Signal(State.as_shape(),
+			name="loc_c_state_next_flush", attrs=sig_keep(),
+			reset=State.EMPTY)
+		loc.c.state_next_unload = Signal(State.as_shape(),
+			name="loc_c_state_next_unload", attrs=sig_keep(),
+			reset=State.EMPTY)
+		loc.c.state_next_dump = Signal(State.as_shape(),
+			name="loc_c_state_next_dump", attrs=sig_keep(),
+			reset=State.EMPTY)
+		loc.c.state_next_do_pass = Signal(State.as_shape(),
+			name="loc_c_state_next_do_pass", attrs=sig_keep(),
+			reset=State.EMPTY)
+		#--------
+		#Register
+		##(
+		#	.WORD_WIDTH     (1),
+		#	.RESET_VALUE    (1'b1) // EMPTY at start, so accept data
+		#)
+		#output_ready_reg
+		#(
 		# named `input_ready` in the source material
-		loc.cpath.outp_ready_data_info = PipeSigInfo(
-			info=SigInfo.like_sig(bus.outp.ready, reset=0b1),
-			psig_dir=PipeSigDir.RegOnly,
-			can_auto_copy=False
-		)
+		#loc.c.outp_ready_data_info = PipeSigInfo(
+		#	info=SigInfo.like_sig(bus.outp.ready, reset=0b1),
+		#	psig_dir=PipeSigDir.NosufOnly,
+		#	can_auto_copy=False
+		#)
 		# named `input_ready_reg` in the source material
-		output_ready_reg = loc.cpath.sm.output_ready_reg = SkidBufReg(
-			data_info=loc.cpath.outp_ready_data_info
+		output_ready_reg = loc.c.sm.output_ready_reg = SkidBufReg(
+			#data_info=loc.c.outp_ready_data_info
+			data_info=SigInfo.like_sig(bus.outp.ready, reset=0b1)
 		)
 		with output_ready_reg.bus() as reg_bus:
 			m.d.comb += [
-				# .clock_enable(1'b1),
-				# .clear(clear),
-				# .data_in(
-				#	(state_next != FULL) || (CIRCULAR_BUFFER != 0)
-				# ),
-				# .data_out(output_ready)
+				# .clock          (clock),
+				# .clock_enable   (1'b1),
+				# .clear          (clear),
+				# .data_in        (
+				#		(state_next != FULL) || (CIRCULAR_BUFFER != 0)
+				#	),
+				# .data_out       (input_ready)
 				reg_bus.inp.clock_enable.eq(0b1),
 				reg_bus.inp.clear.eq(bus.inp.clear),
 				reg_bus.inp.data.eq(
-					(loc.cpath.state_next != State.FULL) # OR
+					(loc.c.state_next != State.FULL)
 					| (OPT_CIRC_BUF != 0)
 				),
 				bus.outp.ready.eq(reg_bus.outp.data),
 			]
+		#);
 
-		loc.cpath.outp_valid_data_info = PipeSigInfo(
-			info=SigInfo.like_sig(bus.outp.valid),
-			psig_dir=PipeSigDir.RegOnly,
-			can_auto_copy=False
-		)
-		output_valid_reg = loc.cpath.sm.output_valid_reg = SkidBufReg(
-			data_info=loc.cpath.outp_valid_data_info
+		#Register
+		##(
+		#	.WORD_WIDTH     (1),
+		#	.RESET_VALUE    (1'b0)
+		#)
+		#output_valid_reg
+		#(
+		#loc.c.outp_valid_data_info = PipeSigInfo(
+		#	info=SigInfo.like_sig(bus.outp.valid),
+		#	psig_dir=PipeSigDir.NosufOnly,
+		#	can_auto_copy=False
+		#)
+		output_valid_reg = loc.c.sm.output_valid_reg = SkidBufReg(
+			#data_info=loc.c.outp_valid_data_info
+			data_info=SigInfo.like_sig(bus.outp.valid),
 		)
 		with output_valid_reg.bus() as reg_bus:
 			m.d.comb += [
-				# .clock_enable(1'b1),
-				# .clear(clear),
-				# .data_in(state_next != EMPTY),
-				# .data_out(output_valid)
+				# .clock          (clock),
+				# .clock_enable   (1'b1),
+				# .clear          (clear),
+				# .data_in        (state_next != EMPTY),
+				# .data_out       (output_valid)
 				reg_bus.inp.clock_enable.eq(0b1),
 				reg_bus.inp.clear.eq(bus.inp.clear),
-				reg_bus.inp.data.eq(loc.cpath.state_next != State.EMPTY),
+				reg_bus.inp.data.eq(loc.c.state_next != State.EMPTY),
 				bus.outp.valid.eq(reg_bus.outp.data),
 			]
+		#);
 
-		loc.cpath.insert = Signal(1,
-			name="loc_cpath_insert", attrs=sig_keep())
-		loc.cpath.remove = Signal(1,
-			name="loc_cpath_remove", attrs=sig_keep())
+		loc.c.insert = Signal(1,
+			name="loc_c_insert", attrs=sig_keep())
+		loc.c.remove = Signal(1,
+			name="loc_c_remove", attrs=sig_keep())
 
 		#always @(*) begin
 		#	insert = (input_valid  == 1'b1) && (input_ready  == 1'b1);
 		#	remove = (output_valid == 1'b1) && (output_ready == 1'b1);
 		#end
 		# The source material has `input_ready` and `output_ready` swapped
-		# when compared to my code
+		# when compared to this translation to Amaranth 
 		m.d.comb += [
-			loc.cpath.insert.eq(bus.inp.valid & bus.outp.ready),
-			loc.cpath.remove.eq(bus.outp.valid & bus.inp.ready),
+			loc.c.insert.eq(bus.inp.valid & bus.outp.ready),
+			loc.c.remove.eq(bus.outp.valid & bus.inp.ready),
 		]
-		# reg load	  = 1'b0; // Empty datapath inserts data into output register.
-		# reg flow	  = 1'b0; // New inserted data into output register as the old data is removed.
-		# reg fill	  = 1'b0; // New inserted data into buffer register. Data not removed from output register.
-		# reg flush   = 1'b0; // Move data from buffer register into output register. Remove old data. No new data inserted.
-		# reg unload  = 1'b0; // Remove data from output register, leaving the datapath empty.
-		# reg dump	  = 1'b0; // New inserted data into buffer register. Move data from buffer register into output register. Discard old output data. (CBM)
-		# reg pass	  = 1'b0; // New inserted data into buffer register. Move data from buffer register into output register. Remove old output data.  (CBM)
 		# Empty datapath inserts data into output register.
-		loc.cpath.load = Signal(1,
-			name="loc_cpath_load", attrs=sig_keep(),
+		# reg load	  = 1'b0;
+		loc.c.load = Signal(1,
+			name="loc_c_load", attrs=sig_keep(),
 			reset=0b0)
 
 		# New inserted data into output register as the old data is
 		# removed.
-		loc.cpath.flow = Signal(1,
-			name="loc_cpath_flow", attrs=sig_keep(),
+		# reg flow	  = 1'b0;
+		loc.c.flow = Signal(1,
+			name="loc_c_flow", attrs=sig_keep(),
 			reset=0b0)
 
 		# New inserted data into buffer register. Data not removed from
 		# output register.
-		loc.cpath.fill = Signal(1,
-			name="loc_cpath_fill", attrs=sig_keep(),
+		# reg fill	  = 1'b0;
+		loc.c.fill = Signal(1,
+			name="loc_c_fill", attrs=sig_keep(),
 			reset=0b0)
 
 		# Move data from buffer register into output register. Remove old
 		# data. No new data inserted.
-		loc.cpath.flush= Signal(1,
-			name="loc_cpath_flush", attrs=sig_keep(),
+		# reg flush   = 1'b0;
+		loc.c.flush= Signal(1,
+			name="loc_c_flush", attrs=sig_keep(),
 			reset=0b0)
 
 		# Remove data from output register, leaving the datapath empty.
-		loc.cpath.unload = Signal(1,
-			name="loc_cpath_unload", attrs=sig_keep(),
+		# reg unload  = 1'b0;
+		loc.c.unload = Signal(1,
+			name="loc_c_unload", attrs=sig_keep(),
 			reset=0b0)
 
 		# New inserted data into buffer register. Move data from buffer
 		# register into output register. Discard old output data. (CBM)
-		loc.cpath.dump = Signal(1,
-			name="loc_cpath_dump", attrs=sig_keep(),
+		# reg dump	  = 1'b0;
+		loc.c.dump = Signal(1,
+			name="loc_c_dump", attrs=sig_keep(),
 			reset=0b0)
 		# New inserted data into buffer register. Move data from buffer
 		# register into output register. Remove old output data.  (CBM)
-		loc.cpath.do_pass = Signal(1,
-			name="loc_cpath_do_pass", attrs=sig_keep(),
+		# reg pass	  = 1'b0;
+		loc.c.do_pass = Signal(1,
+			name="loc_c_do_pass", attrs=sig_keep(),
 			reset=0b0)
 
 		# always @(*) begin
 		m.d.comb += [
 		#	  load	  = (state == EMPTY) && (insert == 1'b1) && (remove == 1'b0);
-			loc.cpath.load.eq(
-				(loc.cpath.state == State.EMPTY)
-				& (loc.cpath.insert == 0b1)
-				& (loc.cpath.remove == 0b0)
+			loc.c.load.eq(
+				(loc.c.state == State.EMPTY)
+				& (loc.c.insert == 0b1)
+				& (loc.c.remove == 0b0)
 			),
 		#	  flow	  = (state == BUSY)  && (insert == 1'b1) && (remove == 1'b1);
-			loc.cpath.flow.eq(
-				(loc.cpath.state == State.BUSY)
-				& (loc.cpath.insert == 0b1)
-				& (loc.cpath.remove == 0b1)
+			loc.c.flow.eq(
+				(loc.c.state == State.BUSY)
+				& (loc.c.insert == 0b1)
+				& (loc.c.remove == 0b1)
 			),
 		#	  fill	  = (state == BUSY)  && (insert == 1'b1) && (remove == 1'b0);
-			loc.cpath.fill.eq(
-				(loc.cpath.state == State.BUSY)
-				& (loc.cpath.insert == 0b1)
-				& (loc.cpath.remove == 0b0)
+			loc.c.fill.eq(
+				(loc.c.state == State.BUSY)
+				& (loc.c.insert == 0b1)
+				& (loc.c.remove == 0b0)
 			),
 		#	  unload  = (state == BUSY)  && (insert == 1'b0) && (remove == 1'b1);
-			loc.cpath.unload.eq(
-				(loc.cpath.state == State.BUSY)
-				& (loc.cpath.insert == 0b0)
-				& (loc.cpath.remove == 0b1)
+			loc.c.unload.eq(
+				(loc.c.state == State.BUSY)
+				& (loc.c.insert == 0b0)
+				& (loc.c.remove == 0b1)
 			),
 		#	  flush   = (state == FULL)  && (insert == 1'b0) && (remove == 1'b1);
-			loc.cpath.flush.eq(
-				(loc.cpath.state == State.FULL)
-				& (loc.cpath.insert == 0b0)
-				& (loc.cpath.remove == 0b1)
+			loc.c.flush.eq(
+				(loc.c.state == State.FULL)
+				& (loc.c.insert == 0b0)
+				& (loc.c.remove == 0b1)
 			),
 		#	  dump	  = (state == FULL)  && (insert == 1'b1) && (remove == 1'b0) && (CIRCULAR_BUFFER != 0);
-			loc.cpath.dump.eq(
-				(loc.cpath.state == State.FULL)
-				& (loc.cpath.insert == 0b1)
-				& (loc.cpath.remove == 0b0)
+			loc.c.dump.eq(
+				(loc.c.state == State.FULL)
+				& (loc.c.insert == 0b1)
+				& (loc.c.remove == 0b0)
 				& (OPT_CIRC_BUF != 0)
 			),
 		#	  pass	  = (state == FULL)  && (insert == 1'b1) && (remove == 1'b1) && (CIRCULAR_BUFFER != 0);
-			loc.cpath.do_pass.eq(
-				(loc.cpath.state == State.FULL)
-				& (loc.cpath.insert == 0b1)
-				& (loc.cpath.remove == 0b1)
+			loc.c.do_pass.eq(
+				(loc.c.state == State.FULL)
+				& (loc.c.insert == 0b1)
+				& (loc.c.remove == 0b1)
 				& (OPT_CIRC_BUF != 0)
 			),
 		]
@@ -803,115 +915,98 @@ class SkidBuf(Elaboratable):
 		# always @(*) begin
 		m.d.comb += [
 		#	state_next = (load	 == 1'b1) ? BUSY  : state;
-			loc.cpath.state_next_load.eq(
-				Mux(
-					loc.cpath.load,
-					State.BUSY,
-					loc.cpath.state,
-				)
+			loc.c.state_next_load.eq(
+				Mux(loc.c.load, State.BUSY, loc.c.state)
 			),
 		#	state_next = (flow	 == 1'b1) ? BUSY  : state_next;
-			loc.cpath.state_next_flow.eq(
-				Mux(
-					loc.cpath.flow,
-					State.BUSY,
-					loc.cpath.state_next_load,
-				)
+			loc.c.state_next_flow.eq(
+				Mux(loc.c.flow, State.BUSY, loc.c.state_next_load)
 			),
 		#	state_next = (fill	 == 1'b1) ? FULL  : state_next;
-			loc.cpath.state_next_fill.eq(
-				Mux(
-					loc.cpath.fill,
-					State.FULL,
-					loc.cpath.state_next_flow,
-				)
+			loc.c.state_next_fill.eq(
+				Mux(loc.c.fill, State.FULL, loc.c.state_next_flow)
 			),
 		#	state_next = (flush  == 1'b1) ? BUSY  : state_next;
-			loc.cpath.state_next_flush.eq(
-				Mux(
-					loc.cpath.flush,
-					State.BUSY,
-					loc.cpath.state_next_fill,
-				)
+			loc.c.state_next_flush.eq(
+				Mux(loc.c.flush, State.BUSY, loc.c.state_next_fill)
 			),
 		#	state_next = (unload == 1'b1) ? EMPTY : state_next;
-			loc.cpath.state_next_unload.eq(
-				Mux(
-					loc.cpath.unload,
-					State.EMPTY,
-					loc.cpath.state_next_flush,
-				)
+			loc.c.state_next_unload.eq(
+				Mux(loc.c.unload, State.EMPTY, loc.c.state_next_flush)
 			),
 		#	state_next = (dump	 == 1'b1) ? FULL  : state_next;
-			loc.cpath.state_next_dump.eq(
-				Mux(
-					loc.cpath.dump,
-					State.FULL,
-					loc.cpath.state_next_unload,
-				)
+			loc.c.state_next_dump.eq(
+				Mux(loc.c.dump, State.FULL, loc.c.state_next_unload)
 			),
 		#	state_next = (pass	 == 1'b1) ? FULL  : state_next;
-			loc.cpath.state_next_do_pass.eq(
-				Mux(
-					loc.cpath.do_pass,
-					State.FULL,
-					loc.cpath.state_next_dump,
-				)
+			loc.c.state_next_do_pass.eq(
+				Mux(loc.c.do_pass, State.FULL, loc.c.state_next_dump)
 			),
 		#--------
 			# finally past the pain of a lack of blocking assignments
-			loc.cpath.state_next.eq(loc.cpath.state_next_do_pass),
+			loc.c.state_next.eq(loc.c.state_next_do_pass),
 		# end
 		]
-		loc.cpath.state_data_info = PipeSigInfo(
-			info=SigInfo.like_sig(loc.cpath.state, reset=State.EMPTY),
-			psig_dir=PipeSigDir.RegOnly,
-			can_auto_copy=False,
-		)
-		state_reg = loc.cpath.sm.state_reg = SkidBufReg(
-			data_info=loc.cpath.state_data_info
+
+		#Register
+		##(
+		#	.WORD_WIDTH     (STATE_BITS),
+		#	.RESET_VALUE    (EMPTY)         // Initial state
+		#)
+		#state_reg
+		#(
+		#loc.c.state_data_info = PipeSigInfo(
+		#	info=SigInfo.like_sig(loc.c.state, reset=State.EMPTY),
+		#	psig_dir=PipeSigDir.NosufOnly,
+		#	can_auto_copy=False,
+		#)
+		state_reg = loc.c.sm.state_reg = SkidBufReg(
+			#data_info=loc.c.state_data_info
+			data_info=SigInfo.like_sig(loc.c.state, reset=State.EMPTY),
 		)
 		with state_reg.bus() as reg_bus:
 			m.d.comb += [
-				# .clock_enable(1'b1),
-				# .clear(clear),
-				# .data_in(state_next != EMPTY),
-				# .data_out(output_valid)
+				#	.clock          (clock),
+				#	.clock_enable   (1'b1),
+				#	.clear          (clear),
+				#	.data_in        (state_next),
+				#	.data_out       (state)
 				reg_bus.inp.clock_enable.eq(0b1),
 				reg_bus.inp.clear.eq(bus.inp.clear),
-				reg_bus.inp.data.eq(loc.cpath.state_next),
-				loc.cpath.state.eq(reg_bus.outp.data),
+				reg_bus.inp.data.eq(loc.c.state_next),
+				loc.c.state.eq(reg_bus.outp.data),
 			]
-
+		#);
 
 		# always @(*) begin
 		m.d.comb += [
 		#	data_out_wren	  = (load  == 1'b1) || (flow == 1'b1) || (flush == 1'b1) || (dump == 1'b1) || (pass == 1'b1);
-			loc.dpath.data_out_wren.eq(
-				(loc.cpath.load == 0b1) # OR
-				| (loc.cpath.flow == 0b1) # OR
-				| (loc.cpath.flush == 0b1) # OR
-				| (loc.cpath.dump == 0b1) # OR
-				| (loc.cpath.do_pass == 0b1)
+			loc.d.data_out_wren.eq(
+				(loc.c.load == 0b1)
+				| (loc.c.flow == 0b1)
+				| (loc.c.flush == 0b1)
+				| (loc.c.dump == 0b1)
+				| (loc.c.do_pass == 0b1)
 			),
 		# 	data_buffer_wren  = (fill  == 1'b1)                                      || (dump == 1'b1) || (pass == 1'b1);
-			loc.dpath.data_buffer_wren.eq(
-				(loc.cpath.fill  == 0b1) # OR
-				| (loc.cpath.dump == 0b1) # OR
-				| (loc.cpath.do_pass == 0b1)
+			loc.d.data_buffer_wren.eq(
+				(loc.c.fill  == 0b1)
+				| (loc.c.dump == 0b1)
+				| (loc.c.do_pass == 0b1)
 			),
 		# 	use_buffered_data = (flush == 1'b1)                                      || (dump == 1'b1) || (pass == 1'b1);
-			loc.dpath.use_buffered_data.eq(
-				(loc.cpath.flush == 0b1) # OR
-				| (loc.cpath.dump == 0b1) # OR
-				| (loc.cpath.do_pass == 0b1)
+			loc.d.use_buffered_data.eq(
+				(loc.c.flush == 0b1)
+				| (loc.c.dump == 0b1)
+				| (loc.c.do_pass == 0b1)
 			),
-		# end
 		]
+		# end
 
 		# Install the ctrl path submodules
+		# (order of installation doesn't matter, I don't think?)
 		m.submodules += [
-			cpath_sm for cpath_sm in loc.cpath.sm.__dict__.values()
+			cpath_sm for cpath_sm in loc.c.sm.__dict__.values()
 		]
 		#--------
 		#--------

@@ -64,17 +64,17 @@ def Adc(Elaboratable):
 	#--------
 #--------
 class VectorAddBus:
-	def __init__(self, ShapeT, SIZE):
-		self.ShapeT = ShapeT
+	def __init__(self, shapelayt, SIZE):
+		self.shapelayt = shapelayt
 		self.__SIZE = SIZE
 
-		#self.a = Packarr(Packarr.Shape(ShapeT, SIZE, name="a"))
+		#self.a = Packarr(Packarr.Shape(shapelayt, SIZE, name="a"))
 		#self.b = Packarr.like(self.a, name="b")
 		#self.inp \
 		#	= Packrec \
 		#	([
-		#		("a", Packarr.Shape(ShapeT, SIZE)),
-		#		("b", Packarr.Shape(ShapeT, SIZE)),
+		#		("a", Packarr.Shape(shapelayt, SIZE)),
+		#		("b", Packarr.Shape(shapelayt, SIZE)),
 		#	])
 		#self.inp \
 		#	= Packarr \
@@ -83,39 +83,39 @@ class VectorAddBus:
 		#		(
 		#			Packrec.Layout
 		#			([
-		#				("a", ShapeT),
-		#				("b", ShapeT)
+		#				("a", shapelayt),
+		#				("b", shapelayt)
 		#			]),
 		#			SIZE
 		#		),
 		#		name="inp"
 		#	)
-		#self.sum = Packarr(Packarr.Shape(ShapeT, SIZE), name="sum")
+		#self.sum = Packarr(Packarr.Shape(shapelayt, SIZE), name="sum")
 		##self.sum = Packarr.like(self.a, name="sum")
 		#self.sum_next = Packarr.like(self.sum, name="sum_next")
 
 		self.inp = View(
 			ArrayLayout(
 				StructLayout({
-					"a": ShapeT,
-					"b", ShapeT,
+					"a": shapelayt,
+					"b", shapelayt,
 				}),
 				SIZE
 			),
 			name="inp"
 		)
-		self.sum = View(ArrayLayout(ShapeT, SIZE), name="sum")
-		self.sum_next = View(ArrayLayout(ShapeT, SIZE), name="sum_next")
+		self.sum = View(ArrayLayout(shapelayt, SIZE), name="sum")
+		self.sum_next = View(ArrayLayout(shapelayt, SIZE), name="sum_next")
 		#self.sum_next = Packarr.like(self.sum, name="sum_next")
-	def ShapeT(self):
-		return self.ShapeT
+	def shapelayt(self):
+		return self.shapelayt
 	def SIZE(self):
 		return self.__SIZE
 
 class VectorAdd(Elaboratable):
 	#--------
-	def __init__(self, ShapeT, SIZE):
-		self.__bus = VectorAddBus(ShapeT, SIZE)
+	def __init__(self, shapelayt, SIZE):
+		self.__bus = VectorAddBus(shapelayt, SIZE)
 	#--------
 	def bus(self):
 		return self.__bus
@@ -145,42 +145,42 @@ class VectorAdd(Elaboratable):
 	#--------
 #--------
 class AddChosenScalarsBus:
-	def __init__(self, ShapeT, SIZE):
-		self.ShapeT = ShapeT
+	def __init__(self, shapelayt, SIZE):
+		self.shapelayt = shapelayt
 		self.__SIZE = SIZE
 
 		#self.inp \
 		#	= Packrec([
-		#		("a", Packarr.Shape(ShapeT, SIZE)),
-		#		("b", Packarr.Shape(ShapeT, SIZE)),
-		#		("sel", math.ceil(math.log2(ShapeT))),
+		#		("a", Packarr.Shape(shapelayt, SIZE)),
+		#		("b", Packarr.Shape(shapelayt, SIZE)),
+		#		("sel", math.ceil(math.log2(shapelayt))),
 		#	])
 		#self.outp \
 		#	= Splitrec \
 		#	([
-		#		("sum_next", Signal(ShapeT, name="outp_sum_next")),
-		#		("sum", Signal(ShapeT, name="outp_sum")),
+		#		("sum_next", Signal(shapelayt, name="outp_sum_next")),
+		#		("sum", Signal(shapelayt, name="outp_sum")),
 		#	])
 		self.inp = View(
 			StructLayout({
-				"a", ArrayLayout(ShapeT, SIZE),
-				"b", ArrayLayout(ShapeT, SIZE),
-				"sel", math.ceil(math.log2(ShapeT)),
+				"a", ArrayLayout(shapelayt, SIZE),
+				"b", ArrayLayout(shapelayt, SIZE),
+				"sel", math.ceil(math.log2(shapelayt)),
 			})
 		)
 		self.outp = Splitrec({
-			"sum_next": Signal(ShapeT, name="outp_sum_next"),
-			"sum": Signal(ShapeT, name="outp_sum"),
+			"sum_next": Signal(shapelayt, name="outp_sum_next"),
+			"sum": Signal(shapelayt, name="outp_sum"),
 		})
-	def ShapeT(self):
-		return self.ShapeT
+	def shapelayt(self):
+		return self.shapelayt
 	def SIZE(self):
 		return self.__SIZE
 
 class AddChosenScalars(Elaboratable):
 	#--------
-	def __init__(self, ShapeT, SIZE):
-		self.__bus = AddChosenScalarsBus(ShapeT, SIZE)
+	def __init__(self, shapelayt, SIZE):
+		self.__bus = AddChosenScalarsBus(shapelayt, SIZE)
 	#--------
 	def bus(self):
 		return self.__bus

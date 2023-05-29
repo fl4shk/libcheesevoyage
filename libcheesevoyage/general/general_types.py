@@ -13,6 +13,21 @@ from amaranth.asserts import Past, Rose, Fell, Stable
 from libcheesevoyage.misc_util import psconcat, sig_keep, Blank
 
 class SigInfo:
+	def __init__(
+		self,
+		basenm: str,
+		shapelayt,
+		*,
+		ObjKind=Signal,
+		reset=0,
+		attrs: str=sig_keep(),
+		#prefix: str="",
+	):
+		self.__basenm = basenm
+		self.__shapelayt = shapelayt
+		self.__ObjKind = ObjKind
+		self.__reset = reset
+		self.__attrs = attrs
 	@staticmethod
 	def like(other, **kwargs):
 		kw = {
@@ -31,7 +46,7 @@ class SigInfo:
 
 		kw = {
 			"basenm": sig.name,
-			"shapelayt": sig.shape,
+			"shapelayt": sig.shape(),
 			"ObjKind": Signal,
 			"reset": sig.reset,
 			"attrs": sig.attrs,
@@ -40,21 +55,6 @@ class SigInfo:
 
 		return SigInfo(**kw)
 
-	def __init__(
-		self,
-		basenm: str,
-		shapelayt,
-		*,
-		ObjKind=Signal,
-		reset=0,
-		attrs: str=sig_keep(),
-		#prefix: str="",
-	):
-		self.__basenm = basenm
-		self.__shapelayt = shapelayt
-		self.__ObjKind = ObjKind
-		self.__reset = reset
-		self.__attrs = attrs
 
 	def basenm(self):
 		return self.__name
@@ -70,12 +70,14 @@ class SigInfo:
 	def mk_sig(
 		self,
 		*,
+		basenm=None,
 		prefix="",
 		suffix=""
 	):
+		temp_basenm = self.basenm() if basenm == None else basenm 
 		return self.ObjKind()(
 			self.shapelayt(),
-			name=psconcat(prefix, self.basenm(), suffix),
+			name=psconcat(prefix, temp_basenm, suffix),
 			reset=self.reset(),
 			attrs=self.attrs(),
 		)
