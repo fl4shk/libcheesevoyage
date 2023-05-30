@@ -15,8 +15,8 @@ from libcheesevoyage.math_lcv.reduce_tree_mod import *
 class PipeSigDir(pyenum.Enum):
 	Fwd = 0
 	Bak = pyenum.auto()
-	FwdData = pyenum.auto()
-	BakData = pyenum.auto()
+	FwdNodata = pyenum.auto()
+	BakNodata = pyenum.auto()
 	InpOnly = pyenum.auto()
 	OutpOnly = pyenum.auto()
 	RegOnly = pyenum.auto()
@@ -65,39 +65,39 @@ class PipeSigInfo:
 		info: SigInfo,
 		psig_dir: PipeSigDir,
 		*,
-		is_data: bool=True,
+		#is_data: bool=True,
 		prefix: str="",
 		#enable_reg=True
 	):
 		self.__info = info
 		#self.__inpnm: self.basenm() + (
-		#	"_prev" if psig_dir == PipeSigDir.Fwd else "_next"
+		#	"_prev" if psig_dir == PipeSigDir.FwdNodata else "_next"
 		#)
 		#self.__outpnm: self.basenm() + (
-		#	"_next" if psig_dir == PipeSigDir.Fwd else "_prev"
+		#	"_next" if psig_dir == PipeSigDir.FwdNodata else "_prev"
 		#)
 		#self.__inpnm_suffix = (
-		#	"_prev" if psig_dir == PipeSigDir.Fwd else "_next"
+		#	"_prev" if psig_dir == PipeSigDir.FwdNodata else "_next"
 		#)
 		#self.__ouptnm_suffix = (
-		#	"_next" if psig_dir == PipeSigDir.Fwd else "_prev"
+		#	"_next" if psig_dir == PipeSigDir.FwdNodata else "_prev"
 		#)
 		if psig_dir == PipeSigDir.Fwd:
-			self.__inpnm_suffix = "_prev"
-			self.__outpnm_suffix = "_next"
-			#self.__regnm_suffix: "_reg"
-		elif psig_dir == PipeSigDir.FwdData:
 			self.__inpnm_suffix = "_prev"
 			self.__outpnm_suffix = "_next"
 			self.__regnm_suffix: "_reg"
 		elif psig_dir == PipeSigDir.Bak:
 			self.__inpnm_suffix = "_next"
 			self.__outpnm_suffix = "_prev"
+			self.__regnm_suffix: "_reg"
+		elif psig_dir == PipeSigDir.FwdNodata:
+			self.__inpnm_suffix = "_prev"
+			self.__outpnm_suffix = "_next"
 			#self.__regnm_suffix: "_reg"
-		elif psig_dir == PipeSigDir.BakData:
+		elif psig_dir == PipeSigDir.BakNodata:
 			self.__inpnm_suffix = "_next"
 			self.__outpnm_suffix = "_prev"
-			self.__regnm_suffix: "_reg"
+			#self.__regnm_suffix: "_reg"
 		elif psig_dir == PipeSigDir.InpOnly:
 			self.__inpnm_suffix = "_inp"
 		elif psig_dir == PipeSigDir.OutpOnly:
@@ -116,7 +116,7 @@ class PipeSigInfo:
 		#self.__regnm_suffix: "_reg"
 
 		self.__psig_dir: psig_dir
-		self.__is_data = is_data
+		#self.__is_data = is_data
 		self.__prefix = prefix
 		#self.__enable_reg = enable_reg
 	@staticmethod
@@ -124,7 +124,7 @@ class PipeSigInfo:
 		kw = {
 			"info": other.info(),
 			"psig_dir": other.psig_dir(),
-			"is_data": other.is_data(),
+			#"is_data": other.is_data(),
 			"prefix": other.prefix(),
 		}
 		kw.update(kwargs)
@@ -149,8 +149,8 @@ class PipeSigInfo:
 		return (
 			self.psig_dir() == PipeSigDir.Fwd
 			or self.psig_dir() == PipeSigDir.Bak
-			or self.psig_dir() == PipeSigDir.FwdData
-			or self.psig_dir() == PipeSigDir.BakData
+			or self.psig_dir() == PipeSigDir.FwdNodata
+			or self.psig_dir() == PipeSigDir.BakNodata
 		)
 	def have_inp(self):
 		return (
@@ -163,8 +163,8 @@ class PipeSigInfo:
 	def have_reg(self):
 		return (
 			#self.have_both_io() or
-			self.psig_dir() == PipeSigDir.FwdData
-			or self.psig_dir() == PipeSigDir.BakData
+			self.psig_dir() == PipeSigDir.Fwd
+			or self.psig_dir() == PipeSigDir.Bak
 			or self.psig_dir() == PipeSigDir.RegOnly
 		)
 	def inpnm(self):
@@ -232,78 +232,78 @@ class PipeSigInfo:
 			prefix=self.prefix,
 			suffix=""
 		)
-	def mk_inp_sig_w_basenm(
-		self,
-		basenm: str,
-		#prefix="",
-		**kwargs
-	):
-		# Not sure this function is really needed, but I've included it for
-		# consistency
-		ret = {
-			"info": PipeSigInfo.like_w_basenm(
-				self,
-				basenm=basenm,
-				psig_dir=PipeSigDir.InpOnly,
-				#prefix=prefix,
-				kwargs=kwargs
-			)
-		}
-		ret["sig"] = ret["info"].mk_inp_sig()
-		return ret
-	def mk_outp_sig_w_basenm(
-		self,
-		basenm: str,
-		#prefix="",
-		**kwargs
-	):
-		# Not sure this function is really needed, but I've included it for
-		# consistency
-		ret = {
-			"info": PipeSigInfo.like_w_basenm(
-				self,
-				basenm=basenm,
-				psig_dir=PipeSigDir.OutpOnly,
-				#prefix=prefix,
-				kwargs=kwargs,
-			)
-		}
-		ret["sig"] = ret["info"].mk_outp_sig()
-		return ret
-	def mk_reg_sig_w_basenm(
-		self,
-		basenm: str,
-		#prefix="",
-		**kwargs,
-	):
-		ret = {
-			"info": PipeSigInfo.like_w_basenm(
-				self,
-				basenm=basenm,
-				psig_dir=PipeSigDir.RegOnly,
-				#prefix=prefix,
-				kwargs=kwargs,
-			)
-		}
-		ret["sig"] = ret["info"].mk_reg_sig()
-		return ret
-	def mk_nosuf_sig_w_basenm(
-		self,
-		basenm: str,
-		#prefix="",
-		**kwargs,
-	):
-		ret = {
-			"info": PipeSigInfo.like_w_basenm(
-				self,
-				basenm=basenm,
-				psig_dir=PipeSigDir.NosufOnly,
-				#prefix=prefix,
-				kwargs=kwargs,
-			)
-		}
-		ret["sig"] = ret["info"].mk_nosuf_sig()
-		return ret
+	#def mk_inp_sig_w_basenm(
+	#	self,
+	#	basenm: str,
+	#	#prefix="",
+	#	**kwargs
+	#):
+	#	# Not sure this function is really needed, but I've included it for
+	#	# consistency
+	#	ret = {
+	#		"info": PipeSigInfo.like_w_basenm(
+	#			self,
+	#			basenm=basenm,
+	#			psig_dir=PipeSigDir.InpOnly,
+	#			#prefix=prefix,
+	#			kwargs=kwargs
+	#		)
+	#	}
+	#	ret["sig"] = ret["info"].mk_inp_sig()
+	#	return ret
+	#def mk_outp_sig_w_basenm(
+	#	self,
+	#	basenm: str,
+	#	#prefix="",
+	#	**kwargs
+	#):
+	#	# Not sure this function is really needed, but I've included it for
+	#	# consistency
+	#	ret = {
+	#		"info": PipeSigInfo.like_w_basenm(
+	#			self,
+	#			basenm=basenm,
+	#			psig_dir=PipeSigDir.OutpOnly,
+	#			#prefix=prefix,
+	#			kwargs=kwargs,
+	#		)
+	#	}
+	#	ret["sig"] = ret["info"].mk_outp_sig()
+	#	return ret
+	#def mk_reg_sig_w_basenm(
+	#	self,
+	#	basenm: str,
+	#	#prefix="",
+	#	**kwargs,
+	#):
+	#	ret = {
+	#		"info": PipeSigInfo.like_w_basenm(
+	#			self,
+	#			basenm=basenm,
+	#			psig_dir=PipeSigDir.RegOnly,
+	#			#prefix=prefix,
+	#			kwargs=kwargs,
+	#		)
+	#	}
+	#	ret["sig"] = ret["info"].mk_reg_sig()
+	#	return ret
+	#def mk_nosuf_sig_w_basenm(
+	#	self,
+	#	basenm: str,
+	#	#prefix="",
+	#	**kwargs,
+	#):
+	#	ret = {
+	#		"info": PipeSigInfo.like_w_basenm(
+	#			self,
+	#			basenm=basenm,
+	#			psig_dir=PipeSigDir.NosufOnly,
+	#			#prefix=prefix,
+	#			kwargs=kwargs,
+	#		)
+	#	}
+	#	ret["sig"] = ret["info"].mk_nosuf_sig()
+	#	return ret
 
 	#def signm_lst(self):
 	#	if self.psig_dir() == PipeSigDir.InpOnly:
@@ -352,8 +352,14 @@ class PipeSigInfo:
 		return self.__attrs
 		return self.info().attrs()
 
+	# Whether or not `self` represent data to be sent to another pipeline
+	# stage 
 	def is_data(self):
-		return self.__is_data
+		#return self.__is_data
+		return (
+			self.psig_dir() == PipeSigDir.Fwd
+			or self.psig_dir() == PipeSigDir.Bak
+		)
 	@property
 	def prefix(self):
 		return self.__prefix
@@ -470,7 +476,7 @@ class SkidBufReg(Elaboratable):
 		return m
 		#--------
 
-class SkidBufInpNodata(Splitrec):
+class PstageInpNodata(Splitrec):
 	def __init__(
 		self,
 		#data_info: SigInfo,
@@ -500,7 +506,7 @@ class SkidBufInpNodata(Splitrec):
 		#	name="inp_clear", attrs=sig_keep())
 		self.clear = Signal(1,
 			name="inp_clear", attrs=sig_keep())
-class SkidBufOutpNodata(Splitrec):
+class PstageOutpNodata(Splitrec):
 	def __init__(
 		self,
 		#data_info: SigInfo,
@@ -526,7 +532,7 @@ class SkidBufOutpNodata(Splitrec):
 
 		# Use this if uncommenting
 		#self.data = data_info.mk_sig(basenm="outp_data")
-		
+
 class SkidBufBus:
 	def __init__(
 		self,
@@ -558,13 +564,13 @@ class SkidBufBus:
 		self.inp = Splitrec()
 		self.outp = Splitrec()
 
-		self.inp.nodata = SkidBufInpNodata(
+		self.inp.nodata = PstageInpNodata(
 			#data_info=data_info,
 			OPT_INCLUDE_BUSY=OPT_INCLUDE_BUSY
 		)
 		self.inp.data = self.data_info().mk_sig(basenm="inp_data")
 
-		self.outp.nodata = SkidBufOutpNodata(
+		self.outp.nodata = PstageOutpNodata(
 			#data_info=data_info
 		)
 		self.outp.data = self.data_info().mk_sig(basenm="outp_data")
@@ -831,7 +837,7 @@ class SkidBuf(Elaboratable):
 		#loc.c.outp_ready_data_info = PipeSigInfo(
 		#	info=SigInfo.like_sig(bus.outp.nodata.ready, reset=0b1),
 		#	psig_dir=PipeSigDir.NosufOnly,
-		#	is_data=False
+		#	#is_data=False
 		#)
 		# named `input_ready_reg` in the source material
 		output_ready_reg = loc.c.sm.output_ready_reg = SkidBufReg(
@@ -875,7 +881,7 @@ class SkidBuf(Elaboratable):
 		#loc.c.outp_valid_data_info = PipeSigInfo(
 		#	info=SigInfo.like_sig(bus.outp.nodata.valid),
 		#	psig_dir=PipeSigDir.NosufOnly,
-		#	is_data=False
+		#	#is_data=False
 		#)
 		output_valid_reg = loc.c.sm.output_valid_reg = SkidBufReg(
 			#data_info=loc.c.outp_valid_data_info
@@ -1061,7 +1067,7 @@ class SkidBuf(Elaboratable):
 		#loc.c.state_data_info = PipeSigInfo(
 		#	info=SigInfo.like_sig(loc.c.state, reset=State.EMPTY),
 		#	psig_dir=PipeSigDir.NosufOnly,
-		#	is_data=False,
+		#	#is_data=False,
 		#)
 		state_reg = loc.c.sm.state_reg = SkidBufReg(
 			#data_info=loc.c.state_data_info
@@ -1118,6 +1124,16 @@ class SkidBuf(Elaboratable):
 		return m
 		#--------
 
+#class PipeBundleInpNodata(Splitrec):
+#	def __init__(
+#		self,
+#		OPT_INCLUDE_BUSY: bool
+#	):
+#		super().__init__()
+#class PipeBundleOutpNodata(Splitrec):
+#	def __init__(self):
+#		super().__init__():
+
 class PipeBundle:
 	def __init__(
 		self,
@@ -1129,8 +1145,10 @@ class PipeBundle:
 		#busy_attrs = box.busy_attrs()
 		##ce_attrs = box.ce_attrs()
 		#clear_pipe_attrs = box.clear_pipe_attrs()
+
 		prefix = box.prefix()
 		OPT_INCLUDE_BUSY = box.OPT_INCLUDE_BUSY()
+
 		##enable_reg = box.enable_reg()
 		#enable_clear_pipe = box.enable_clear_pipe()
 		##enable_extra_stalled = box.enable_extra_stalled
@@ -1157,78 +1175,78 @@ class PipeBundle:
 		#pipe_outp_layout = {}
 		#box.inp
 
-		assert "valid" not in info_dct, psconcat(
-			"\"valid\" must not be in `info_dct`, ",
-			"as it will be added later in this function"
-		)
-		assert "ready" not in info_dct, psconcat(
-			"\"ready\" must not be in `info_dct`, ",
-			"as it will be added later in this function"
-		)
-		if OPT_INCLUDE_BUSY:
-			assert "busy" not in info_dct, psconcat(
-				"\"busy\" must not be in `info_dct`, ",
-				"as it will be added later in this function"
-			)
-		#if enable_ce:
-		#	assert "ce" not in info_dct, psconcat(
-		#		"\"ce\" must not be in `info_dct`, ",
-		#		"as it will be added later"
-		#	)
-		#if enable_clear_pipe:
-		#	assert "clear_pipe" not in info_dct, psconcat(
-		#		"\"clear_pipe\" must not be in `info_dct`, ",
+		#assert "valid" not in info_dct, psconcat(
+		#	"\"valid\" must not be in `info_dct`, ",
+		#	"as it will be added later in this function"
+		#)
+		#assert "ready" not in info_dct, psconcat(
+		#	"\"ready\" must not be in `info_dct`, ",
+		#	"as it will be added later in this function"
+		#)
+		#if OPT_INCLUDE_BUSY:
+		#	assert "busy" not in info_dct, psconcat(
+		#		"\"busy\" must not be in `info_dct`, ",
 		#		"as it will be added later in this function"
 		#	)
-		assert "clear_pipe" not in info_dct, psconcat(
-			"\"clear_pipe\" must not be in `info_dct`, ",
-			"as it will be added later in this function"
-		)
+		##if enable_ce:
+		##	assert "ce" not in info_dct, psconcat(
+		##		"\"ce\" must not be in `info_dct`, ",
+		##		"as it will be added later"
+		##	)
+		##if enable_clear_pipe:
+		##	assert "clear_pipe" not in info_dct, psconcat(
+		##		"\"clear_pipe\" must not be in `info_dct`, ",
+		##		"as it will be added later in this function"
+		##	)
+		#assert "clear_pipe" not in info_dct, psconcat(
+		#	"\"clear_pipe\" must not be in `info_dct`, ",
+		#	"as it will be added later in this function"
+		#)
 
-		info_dct["valid"] = PipeSigInfo(
-			info=SigInfo(
-				basenm="valid",
-				shapelayt=1,
-				#attrs=valid_attrs,
-			),
-			psig_dir=PipeSigDir.Fwd,
-			is_data=False,
-			prefix=prefix,
-			#enable_reg=enable_reg
-		)
-		info_dct["ready"] = PipeSigInfo(
-			info=SigInfo(
-				basenm="ready",
-				shapelayt=1,
-				#attrs=ready_attrs,
-			),
-			psig_dir=PipeSigDir.Bak,
-			is_data=False,
-			prefix=prefix,
-			#enable_reg=enable_reg
-		)
-		if OPT_INCLUDE_BUSY:
-			info_dct["busy"] = PipeSigInfo(
-				info=SigInfo(
-					basenm="busy",
-					shapelayt=1,
-					#attrs=busy_attrs,
-				),
-				psig_dir=PipeSigDir.RegOnly,
-				#psig_dir=PipeSigDir.NosufOnly,
-				is_data=False,
-				prefix=prefix,
-				#enable_reg=enable_reg
-			)
-		#info_dct["inp"] = 
+		#info_dct["valid"] = PipeSigInfo(
+		#	info=SigInfo(
+		#		basenm="valid",
+		#		shapelayt=1,
+		#		#attrs=valid_attrs,
+		#	),
+		#	psig_dir=PipeSigDir.FwdNodata,
+		#	#is_data=False,
+		#	prefix=prefix,
+		#	#enable_reg=enable_reg
+		#)
+		#info_dct["ready"] = PipeSigInfo(
+		#	info=SigInfo(
+		#		basenm="ready",
+		#		shapelayt=1,
+		#		#attrs=ready_attrs,
+		#	),
+		#	psig_dir=PipeSigDir.BakNodata,
+		#	#is_data=False,
+		#	prefix=prefix,
+		#	#enable_reg=enable_reg
+		#)
+		# maybe uncomment
+		#if OPT_INCLUDE_BUSY:
+		#	info_dct["busy"] = PipeSigInfo(
+		#		info=SigInfo(
+		#			basenm="busy",
+		#			shapelayt=1,
+		#			#attrs=busy_attrs,
+		#		),
+		#		psig_dir=PipeSigDir.RegOnly,
+		#		#psig_dir=PipeSigDir.NosufOnly,
+		#		#is_data=False,
+		#		prefix=prefix,
+		#		#enable_reg=enable_reg
+		#	)
 
 		##if enable_clear_pipe:
 		#	#info_dct["ce"] = PipeSigInfo(
 		#	#	basenm="ce",
-		#	#	psig_dir=PipeSigDir.Fwd,
+		#	#	psig_dir=PipeSigDir.FwdNodata,
 		#	#	shapelayt=1,
 		#	#	#attrs=ce_attrs,
-		#	#	is_data=False,
+		#	#	#is_data=False,
 		#	#	prefix=prefix,
 		#	#	#enable_reg=enable_reg
 		#	#)
@@ -1239,28 +1257,32 @@ class PipeBundle:
 		#	#		#attrs=clear_pipe_attrs,
 		#	#	),
 		#	#	psig_dir=PipeSigDir.InpOnly,
-		#	#	is_data=False,
+		#	#	#is_data=False,
 		#	#	prefix=prefix,
 		#	#	#enable_reg=enable_reg
 		#	#)
-		info_dct["clear_pipe"] = PipeSigInfo(
-			info=SigInfo(
-				basenm="clear_pipe",
-				shapelayt=1,
-				#attrs=clear_pipe_attrs,
-			),
-			psig_dir=PipeSigDir.InpOnly,
-			is_data=False,
-			prefix=prefix,
-			#enable_reg=enable_reg
-		)
+
+
+		# maybe uncomment
+		#info_dct["clear_pipe"] = PipeSigInfo(
+		#	info=SigInfo(
+		#		basenm="clear_pipe",
+		#		shapelayt=1,
+		#		#attrs=clear_pipe_attrs,
+		#	),
+		#	psig_dir=PipeSigDir.InpOnly,
+		#	#is_data=False,
+		#	prefix=prefix,
+		#	#enable_reg=enable_reg
+		#)
+
 
 		#pipe_inp_nodata_info = PipeSigInfo(
 		#	info=SigInfo(
 		#		basenm="pipe_inp_nodata_arr",
 		#		#shapelayt=None,
 		#		shapelayt=[
-		#			SkidBufInpNodata(
+		#			PstageInpNodata(
 		#				OPT_INCLUDE_BUSY=OPT_INCLUDE_BUSY
 		#			)
 		#			for sig_info in info_dct
@@ -1269,19 +1291,19 @@ class PipeBundle:
 		#		#OPT_INCLUDE_BUSY=OPT_INCLUDE_BUSY
 		#	)
 		#	psig_dir=PipeSigDir.InpOnly
-		#	is_data=False,
+		#	#is_data=True,
 		#	prefix=prefix,
 		#)
 		#pipe_outp_nodata_info = PipeSigInfo(
 		#	info=SigInfo(
 		#		basenm="pipe_outp_nodata_arr",
 		#		#shapelayt=None,
-		#		shapelayt=[SkidBufOutpNodata() for sig_info in info_dct]
+		#		shapelayt=[PstageOutpNodata() for sig_info in info_dct]
 		#		ObjKind=Splitarr,
 		#		#OPT_INCLUDE_BUSY=OPT_INCLUDE_BUSY
 		#	)
 		#	psig_dir=PipeSigDir.OutpOnly
-		#	is_data=False,
+		#	#is_data=True,
 		#	prefix=prefix,
 		#)
 
@@ -1306,9 +1328,9 @@ class PipeBundle:
 		self.outp.data_fields = dict()
 		self.reg.data_fields = dict()
 
-		self.inp.nodata_fields = dict()
-		self.outp.nodata_fields = dict()
-		self.reg.nodata_fields = dict()
+		#self.inp.nodata_fields = dict()
+		#self.outp.nodata_fields = dict()
+		#self.reg.nodata_fields = dict()
 
 		for sig_info in info_dct.values():
 			#for signm_suffix in sig_info.signm_suffix_lst():
@@ -1336,45 +1358,47 @@ class PipeBundle:
 			#	#	prefix=prefix,
 			#	#	suffix=signm_suffix,
 			#	#)
-
-			#	#setattr(
-			#	#	self,
-			#	#)
 			if sig_info.have_inp():
-				if sig_info.is_data():
-					self.inp.data_fields[sig_info.basenm()] = (
-						sig_info.mk_inp_sig()
-					)
-				else: # if not sig_info.is_data():
-					self.inp.nodata_fields[sig_info.basenm()] = (
-						sig_info.mk_inp_sig()
-					)
+				#if sig_info.is_data():
+				self.inp.data_fields[sig_info.basenm()] = (
+					sig_info.mk_inp_sig()
+				)
+				#else: # if not sig_info.is_data():
+				#	self.inp.nodata_fields[sig_info.basenm()] = (
+				#		sig_info.mk_inp_sig()
+				#	)
 			if sig_info.have_outp():
-				if sig_info.is_data():
-					self.outp.data_fields[sig_info.basenm()] = (
-						sig_info.mk_outp_sig()
-					)
-				else: # if not sig_info.is_data():
-					self.outp.nodata_fields[sig_info.basenm()] = (
-						sig_info.mk_outp_sig()
-					)
+				#if sig_info.is_data():
+				self.outp.data_fields[sig_info.basenm()] = (
+					sig_info.mk_outp_sig()
+				)
+				#else: # if not sig_info.is_data():
+				#	self.outp.nodata_fields[sig_info.basenm()] = (
+				#		sig_info.mk_outp_sig()
+				#	)
 			if sig_info.have_reg():
-				if sig_info.is_data():
-					self.reg.data_fields[sig_info.basenm()] = (
-						sig_info.mk_reg_sig()
-					)
-				else: # if not sig_info.is_data():
-					self.reg.nodata_fields[sig_info.basenm()] = (
-						sig_info.mk_reg_sig()
-					)
+				#if sig_info.is_data():
+				self.reg.data_fields[sig_info.basenm()] = (
+					sig_info.mk_reg_sig()
+				)
+				#else: # if not sig_info.is_data():
+				#	self.reg.nodata_fields[sig_info.basenm()] = (
+				#		sig_info.mk_reg_sig()
+				#	)
 
 		self.inp.data = Splitrec(
 			fields=inp.data_fields,
 			name="inp_data"
 		)
-		self.inp.nodata = Splitrec(
-			fields=self.inp.nodata_fields,
-			name="inp_nodata"
+		#self.inp.nodata = Splitrec(
+		#	fields=self.inp.nodata_fields,
+		#	name="inp_nodata"
+		#)
+		#self.inp.nodata = PipeBundleInpNodata(
+		#	OPT_INCLUDE_BUSY=OPT_INCLUDE_BUSY
+		#)
+		self.inp.nodata = PstageInpNodata(
+			OPT_INCLUDE_BUSY=OPT_INCLUDE_BUSY
 		)
 		self.inp.data_info = SigInfo(
 			basenm="inp_data_info", # this won't be used
@@ -1388,10 +1412,12 @@ class PipeBundle:
 			fields=outp.data_fields,
 			name="outp_data"
 		)
-		self.outp.nodata = Splitrec(
-			fields=self.outp.nodata_fields,
-			name="outp_nodata"
-		)
+		#self.outp.nodata = Splitrec(
+		#	fields=self.outp.nodata_fields,
+		#	name="outp_nodata"
+		#)
+		#self.outp.nodata = PipeBundleOutpNodata()
+		self.outp.nodata = PstageOutpNodata()
 		self.outp.data_info = SigInfo(
 			basenm="outp_data_info", # this won't be used
 			shapelayt=self.outp.data,
@@ -1403,10 +1429,10 @@ class PipeBundle:
 			fields=reg.data_fields,
 			name="reg_data"
 		)
-		self.reg.nodata = Splitrec(
-			fields=self.reg.nodata_fields,
-			name="reg_nodata"
-		)
+		#self.reg.nodata = Splitrec(
+		#	fields=self.reg.nodata_fields,
+		#	name="reg_nodata"
+		#)
 		self.reg.data_info = SigInfo(
 			basenm="reg_data_info", # this won't be used
 			shapelayt=self.reg.data,
@@ -1554,11 +1580,11 @@ class PipeBox:
 					continue
 
 				# actually do the connection
-				if info.psig_dir() == PipeSigDir.Fwd:
+				if info.psig_dir() == PipeSigDir.FwdNodata:
 					m.d.comb += (
 						box_next.inp(item[0]).eq(box.outp(item[0]))
 					)
-				elif info.psig_dir() == PipeSigDir.Bak:
+				elif info.psig_dir() == PipeSigDir.BakNodata:
 					m.d.comb += (
 						box.inp(item[0]).eq(box_next.outp(item[0]))
 					)
@@ -1626,9 +1652,12 @@ class SkidBufPstageGen:
 
 		parent: Module,
 
-
 		#info_dct: OrderedDict,
 
+		# User code should drive `box.reg().data`,
+		# based on `inp.data` (at least in the general case),
+		# though this pipeline stage might actually just produce its
+		# data itself
 		box: PipeBox,
 		#clear_pipe_sig: Signal,
 
@@ -1698,9 +1727,9 @@ class SkidBufPstageGen:
 
 		#loc = self.loc()
 		box = self.box()
-		inp = box.inp
-		outp = box.outp
-		reg = box.reg
+		inp = box.inp()
+		outp = box.outp()
+		reg = box.reg()
 		OPT_INCLUDE_BUSY = box.OPT_INCLUDE_BUSY()
 
 		#info_dct = self.info_dct()
@@ -1734,41 +1763,34 @@ class SkidBufPstageGen:
 		#			assert submod_name not in m.submodules
 		#			setattr(m.submodules, submod_name, skid_buf)
 
-		#for info in info_dct:
-		#inp_data_set = {key for key in inp.data_fields.keys()}
-		#outp_data_set = {key for key in outp.data_fields.keys()}
-		#reg_data_set = {key for key in reg.data_fields.keys()}
-
-		#io_data_set = inp_data_set.intersection(outp_data_set)
-		#io_data_dct = {}
-		#for key in io_data_set:
-		#	io_data_dct[key] = {
-		#		"inp": inp.data_fields[key],
-		#		"outp": outp.data_fields[key],
-		#	}
 		skid_buf = SkidBuf(
-			data_info=SigInfo.like(self.inp.data_info, basenm="data")
+			data_info=SigInfo.like(self.inp.data_info, basenm="data"),
+			OPT_INCLUDE_BUSY=OPT_INCLUDE_BUSY
 		)
 
 		sb_bus = skid_buf.bus()
-		m.d.comb += [
-			sb_bus.inp.valid.eq(inp.nodata.valid),
-			sb_bus.inp.ready.eq(inp.nodata.ready),
-			#sb_bus.inp.data.eq(inp.data),
-			# `logic_func` works with `reg.data`,
-			# based on `inp.data` (at least in the general case),
-			# but this pipeline stage might actually just produce its data
-			# itself
-			sb_bus.inp.data.eq(reg.data),
-			sb_bus.inp.clear.eq(inp.nodata.clear_pipe),
+		#m.d.comb += [
+		#	sb_bus.inp.nodata.valid.eq(inp.nodata.valid),
+		#	sb_bus.inp.nodata.ready.eq(inp.nodata.ready),
 
-			outp.nodata.ready.eq(sb_bus.outp.ready),
-			outp.nodata.valid.eq(sb_bus.outp.valid),
+		#	#sb_bus.inp.data.eq(inp.data),
+		#	sb_bus.inp.data.eq(reg.data),
+
+		#	sb_bus.inp.nodata.clear.eq(inp.nodata.clear_pipe),
+
+		#	outp.nodata.ready.eq(sb_bus.outp.nodata.ready),
+		#	outp.nodata.valid.eq(sb_bus.outp.nodata.valid),
+		#	outp.data.eq(sb_bus.outp.data),
+		#	#reg.data.eq(sb_bus.outp.data),
+		#]
+		#if OPT_INCLUDE_BUSY:
+		#	m.d.comb += sb_bus.inp.bus.eq(reg.busy)
+		m.d.comb += [
+			sb_bus.inp.nodata.eq(inp.nodata),
+			sb_bus.inp.data.eq(reg.data),
+			outp.nodata.eq(sb_bus.outp.nodata),
 			outp.data.eq(sb_bus.outp.data),
-			#reg.data.eq(sb_bus.outp.data),
 		]
-		if OPT_INCLUDE_BUSY:
-			m.d.comb += sb_bus.inp.bus.eq(reg.busy)
 
 		if submod_prefix is None:
 			m.submodules += skid_buf
@@ -1782,26 +1804,6 @@ class SkidBufPstageGen:
 		#FORMAL = self.FORMAL()
 		#OPT_LOWPOWER = self.OPT_LOWPOWER()
 		#OPT_OUTREG = self.OPT_OUTREG()
-
-		#m.d.comb += [
-		#	# upstream ready
-		#	# OR the upstream READY with the BUSY signal
-		#	outp("ready").eq(inp("ready") | reg("busy")),
-
-		#	# downstream valid
-		#	# AND the downstream valid !BUSY
-		#	outp("valid").eq(inp("valid") & ~reg("busy")),
-		#]
-
-		#with m.If(ResetSignal()):
-		#	pass
-		##with m.Elif(OPT_LOWPOWER & ResetSignal()):
-		##	pass
-		### else if (i_valid && o_ready)
-		## else if (!o_valid || i_ready)
-		#with m.Elif(outp("valid") | inp("ready")):
-		#	logic_func(self, reg)
-		#if submod_prefix is None:
 
 	# Old code below
 	#def gen(self):
