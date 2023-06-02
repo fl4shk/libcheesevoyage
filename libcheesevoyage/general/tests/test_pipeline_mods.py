@@ -9,16 +9,16 @@ from libcheesevoyage.misc_util_running import *
 #--------
 if __name__ == "__main__":
 	to_verilog(
-		dut_mod=SkidBuf,
+		dut_mod=PipeSkidBuf,
 		#data_info=PipeSigInfo(
 		#	info=SigInfo(
 		#		basenm="data",
-		#		shapelayt=unsigned(8),
+		#		shape=unsigned(8),
 		#	)
 		#),
 		#psig_dir=PipeSigDir.
 		data_info=SigInfo(
 			basenm="data",
-			shapelayt=unsigned(8),
+			shape=unsigned(8),
 		)
 	)

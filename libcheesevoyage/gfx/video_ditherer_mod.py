@@ -11,19 +11,25 @@ class VideoDithererBus:
 	def __init__(self, FB_SIZE, CHAN_WIDTH):
 		self.__FB_SIZE, self.__CHAN_WIDTH = FB_SIZE, CHAN_WIDTH
 
-		self.inp = Splitrec()
-		self.outp = Splitrec()
+		inp_shape = {}
+		outp_shape = {}
 
-		self.inp.en = Signal()
+		inp_shape["en"] = 1
 
-		self.outp.col = RgbColor(CHAN_WIDTH=self.OUT_CHAN_WIDTH())
-		self.inp.col = RgbColor(CHAN_WIDTH=self.CHAN_WIDTH())
+		outp_shape["col"] = RgbColorLayt(
+			CHAN_WIDTH=self.OUT_CHAN_WIDTH()
+		)
+		inp_shape["col"] = RgbColorLayt(
+			CHAN_WIDTH=self.CHAN_WIDTH()
+		)
 
-		self.outp.frame_cnt = Signal(self.DITHER_DELTA_WIDTH())
-		self.outp.next_pos = self.CoordT()
-		self.outp.pos = self.CoordT()
-		self.outp.past_pos = self.CoordT()
+		outp_shape["frame_cnt"] = self.DITHER_DELTA_WIDTH()
+		outp_shape["next_pos"] = self.coord_shape()
+		outp_shape["pos"] = self.coord_shape()
+		outp_shape["past_pos"] = self.coord_shape()
 
+		self.inp = Splitrec(inp_shape)
+		self.outp = Splitrec(outp_shape)
 		# Need a channel width of at least 3 for dithering to work (though
 		# if it *were* 3, it probably wouldn't work very well!)
 		assert CHAN_WIDTH > self.CHAN_WIDTH_DELTA()
@@ -38,16 +44,23 @@ class VideoDithererBus:
 		return (self.CHAN_WIDTH() - self.CHAN_WIDTH_DELTA())
 	def CHAN_WIDTH_DELTA(self):
 		return 2
-	def CoordT(self):
-		return Vec2(16)
+	#def CoordT(self):
+	#	return Vec2(16)
+	def coord_shape(self):
+		return Vec2Layt(16)
 
 # Temporally and spatially dither a CHAN_WIDTH color down to CHAN_WIDTH - 2
 class VideoDitherer(Elaboratable):
-	def __init__(self, FB_SIZE,
-		CHAN_WIDTH=RgbColor.DEF_CHAN_WIDTH() + 2):
+	def __init__(
+		self,
+		FB_SIZE,
+		CHAN_WIDTH=RgbColorLayt.DEF_CHAN_WIDTH() + 2
+	):
 
-		self.__bus = VideoDithererBus(FB_SIZE=FB_SIZE,
-			CHAN_WIDTH=CHAN_WIDTH)
+		self.__bus = VideoDithererBus(
+			FB_SIZE=FB_SIZE,
+			CHAN_WIDTH=CHAN_WIDTH
+		)
 
 		#self.__frame = Signal(width_from_arg(4))
 

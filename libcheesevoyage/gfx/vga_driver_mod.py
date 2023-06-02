@@ -81,49 +81,72 @@ VGA_TIMING_INFO_DICT = {
 }
 
 class VgaDriverBus:
-	def __init__(self, ColorT=RgbColor):
+	def __init__(
+		self,
+		#ColorT=RgbColor
+		col_shape=RgbColorLayt,
+		COL_CHAN_WIDTH=RgbColorLayt.DEF_CHAN_WIDTH()
+	):
 		#--------
-		self.inp = Splitrec()
-		self.outp = Splitrec()
+		inp_shape = {}
+		outp_shape = {}
 		#--------
 		# Global VGA driving enable (white screen when off)
-		self.inp.en = Signal()
+		inp_shape["en"] = 1
 
 		# VGA physical pins
-		self.outp.col = ColorT()
-		self.outp.hsync = Signal()
-		self.outp.vsync = Signal()
+		#self.outp_col = ColorT()
+		outp_shape["col"] = col_shape(COL_CHAN_WIDTH)
+		outp_shape["hsync"] = 1
+		outp_shape["vsync"] = 1
 
 		# Pixel buffer
-		self.inp.buf = VgaDriverBufInp(ColorT().CHAN_WIDTH())
-		self.outp.buf = VgaDriverBufOutp()
+		inp_shape["buf"] = VgaDriverBufInpInfo(
+			#ColorT().CHAN_WIDTH()
+			CHAN_WIDTH=COL_CHAN_WIDTH
+		).shape
+		outp_shape["buf"] = VgaDriverBufOutpInfo().shape
 
 		# Debug
-		self.outp.dbg_fifo_empty = Signal()
-		self.outp.dbg_fifo_full = Signal()
+		outp_shape["dbg_fifo_empty"] = 1
+		outp_shape["dbg_fifo_full"] = 1
 
 		# Misc.
-		self.outp.pixel_en = Signal()
-		self.outp.next_visib = Signal()
-		self.outp.visib = Signal()
-		self.outp.past_visib = Signal()
-		self.outp.draw_pos = Vec2(self.CoordElemKindT())
-		self.outp.past_draw_pos = Vec2(self.CoordElemKindT())
-		self.outp.size = Vec2(self.CoordElemKindT())
+		outp_shape["pixel_en"] = 1
+		outp_shape["next_visib"] = 1
+		outp_shape["visib"] = 1
+		outp_shape["past_visib"] = 1
+		outp_shape["draw_pos"] = Vec2Layt(self.CoordElemKindT())
+		outp_shape["past_draw_pos"] = Vec2Layt(self.CoordElemKindT())
+		outp_shape["size"] = Vec2Layt(self.CoordElemKindT())
 		#self.start_draw = Signal()
+		#--------
+		self.inp = Splitrec(inp_shape)
+		self.outp = Splitrec(outp_shape)
+		#--------
 
 	def CoordElemKindT(self):
 		return 16
 
 class VgaDriver(Elaboratable):
-	def __init__(self, CLK_RATE, TIMING_INFO, FIFO_SIZE, ColorT=RgbColor):
+	def __init__(
+		self,
+		CLK_RATE,
+		TIMING_INFO,
+		FIFO_SIZE,
+		#ColorT=RgbColor,
+		col_shape=RgbColorLayt,
+		COL_CHAN_WIDTH=RgbColorLayt.DEF_CHAN_WIDTH(),
+	):
 		self.__bus = VgaDriverBus(ColorT=ColorT)
 
 		self.__CLK_RATE = CLK_RATE
 		self.__TIMING_INFO = TIMING_INFO
 		#self.__NUM_BUF_SCANLINES = NUM_BUF_SCANLINES
 		self.__FIFO_SIZE = FIFO_SIZE
-		self.__ColorT = ColorT
+		#self.__ColorT = ColorT
+		self.__col_shape = col_shape
+		self.__COL_CHAN_WIDTH = COL_CHAN_WIDTH
 
 	def bus(self):
 		return self.__bus
@@ -150,8 +173,12 @@ class VgaDriver(Elaboratable):
 		return ret
 	def CLK_CNT_WIDTH(self):
 		return width_from_arg(self.CPP())
-	def ColorT(self):
-		return self.__ColorT
+	#def ColorT(self):
+	#	return self.__ColorT
+	def col_shape(self):
+		return self.__col_shape
+	def COL_CHAN_WIDTH(self):
+		return self.__COL_CHAN_WIDTH
 
 	def elaborate(self, platform: str):
 		#--------
@@ -164,7 +191,10 @@ class VgaDriver(Elaboratable):
 		outp = bus.outp
 		#--------
 		fifo = m.submodules.fifo = AsyncReadFifo(
-			ShapeT=to_shape(self.ColorT()()),
+			ShapeT=to_shape(
+				#self.ColorT()()
+				View(self.col_shape(self.COL_CHAN_WIDTH()))
+			),
 			SIZE=self.FIFO_SIZE(),
 		)
 		fifo_inp = fifo.bus().inp

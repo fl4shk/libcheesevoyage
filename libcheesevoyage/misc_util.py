@@ -54,7 +54,14 @@ def width_from_len(arg):
 def to_shape(arg):
 	return Value.cast(arg).shape()
 #--------
-def inst_pll(pll_file_name, domain, pll_module_name, freq, platform, m):
+def inst_intel_pll(
+	pll_file_name,
+	domain,
+	pll_module_name,
+	freq,
+	platform: str,
+	m: Module
+):
 	ret = Blank()
 	ret.pll_clk = Signal()
 	ret.locked = Signal()
@@ -65,7 +72,9 @@ def inst_pll(pll_file_name, domain, pll_module_name, freq, platform, m):
 	with open(pll_file_name) as f:
 		platform.add_file(pll_file_name, f)
 
-	setattr(m.submodules, domain,
+	setattr(
+		m.submodules,
+		domain,
 		Instance(
 			pll_module_name,
 
@@ -73,7 +82,8 @@ def inst_pll(pll_file_name, domain, pll_module_name, freq, platform, m):
 			i_rst=ResetSignal(domain="sync"),
 			o_outclk_0=ret.pll_clk,
 			o_locked=ret.locked,
-		))
+		)
+	)
 
 	platform.add_clock_constraint(ret.pll_clk, freq)
 

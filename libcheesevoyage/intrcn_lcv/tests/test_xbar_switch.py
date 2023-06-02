@@ -16,8 +16,8 @@ if __name__ == "__main__":
 
 	formal_non_sync(
 		dut_mod=XbarSwitch,
-		h2d_shapelayt=unsigned(2),
-		d2h_shapelayt=unsigned(2),
+		h2d_shape=unsigned(2),
+		d2h_shape=unsigned(2),
 		NUM_HOSTS=4,
 		NUM_DEVS=4,
 		#H2D_SIGNED=False,

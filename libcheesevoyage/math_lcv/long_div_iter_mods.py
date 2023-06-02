@@ -68,7 +68,12 @@ class LongDivConstants:
 		#	attrs=attrs,
 		#	name=name
 		#)
-		ret = SplitrecView(
+		#ret = Splitrec.View(
+		#	ArrayLayout(unsigned(self.CHUNK_WIDTH()), self.NUM_CHUNKS()),
+		#	attrs=attrs,
+		#	name=name,
+		#)
+		ret = FieldInfo(
 			ArrayLayout(unsigned(self.CHUNK_WIDTH()), self.NUM_CHUNKS()),
 			attrs=attrs,
 			name=name,
@@ -97,13 +102,14 @@ class LongDivConstants:
 	#	return temp_data.word_select(index, self.CHUNK_WIDTH())
 	#--------
 #--------
-class LongUdivIterData(Splitrec):
+#class LongUdivIterData(Splitrec):
+class LongUdivIterDataLayt(dict):
 	#--------
 	def __init__(self, constants: LongDivConstants, io_str: str):
 		#--------
-		super().__init__()
-		#printout("LongUdivIterData.__init__(): ", io_str, "\n")
-		#dbg_printout("LongUdivIterData.__init__()")
+		#super().__init__()
+		#printout("LongUdivIterDataLayt.__init__(): ", io_str, "\n")
+		#dbg_printout("LongUdivIterDataLayt.__init__()")
 		#--------
 		self.__constants = constants
 		self.__DML_ENTRY_WIDTH = constants.DML_ELEM_WIDTH()
@@ -111,13 +117,14 @@ class LongUdivIterData(Splitrec):
 		self.__PIPELINED = constants.PIPELINED()
 		#--------
 		build_temp_t = constants.build_temp_t
+		shape = {}
 		#--------
-		self.temp_numer = build_temp_t(name=f"temp_numer_{io_str}")
+		shape["temp_numer"] = build_temp_t(name=f"temp_numer_{io_str}")
 		#printout("self.temp_numer: ",
 		#	self.temp_numer.extra_args_name(), " ",
 		#	self.temp_numer.sig().name, "\n")
-		self.temp_quot = build_temp_t(name=f"temp_quot_{io_str}")
-		self.temp_rema = build_temp_t(name=f"temp_rema_{io_str}")
+		shape["temp_quot"] = build_temp_t(name=f"temp_quot_{io_str}")
+		shape["temp_rema"] = build_temp_t(name=f"temp_rema_{io_str}")
 		#--------
 		#self.denom_mult_lut = Packarr(
 		#	Packarr.Shape(constants.DML_ELEM_WIDTH(),
@@ -125,7 +132,13 @@ class LongUdivIterData(Splitrec):
 		#	attrs=sig_keep(),
 		#	name=f"denom_mult_lut_{io_str}"
 		#)
-		self.denom_mult_lut = SplitrecView(
+		#self.denom_mult_lut = Splitrec.View(
+		#	ArrayLayout(unsigned(constants.DML_ELEM_WIDTH()),
+		#		constants.DML_SIZE()),
+		#	attrs=sig_keep(),
+		#	name=f"denom_mult_lut_{io_str}"
+		#)
+		shape["denom_mult_lut"] = FieldInfo(
 			ArrayLayout(unsigned(constants.DML_ELEM_WIDTH()),
 				constants.DML_SIZE()),
 			attrs=sig_keep(),
@@ -138,22 +151,31 @@ class LongUdivIterData(Splitrec):
 		#)
 		#--------
 		if self.__PIPELINED:
-			self.tag = Signal(constants.TAG_WIDTH(), attrs=sig_keep(),
-				name=f"tag_{io_str}")
+			shape["tag"] = FieldInfo(
+				constants.TAG_WIDTH(),
+				attrs=sig_keep(),
+				name=f"tag_{io_str}"
+			)
 		#--------
 		if self.__FORMAL:
 			#--------
-			self.formal = Splitrec()
+			#self.formal = Splitrec()
+			shape["formal"] = {}
+			#self.
 			#--------
-			self.formal.formal_numer \
-				= build_temp_t(name=f"formal_numer_{io_str}")
-			self.formal.formal_denom \
-				= build_temp_t(name=f"formal_denom_{io_str}")
+			shape["formal"]["formal_numer"] = (
+				build_temp_t(name=f"formal_numer_{io_str}")
+			)
+			shape["formal"]["formal_denom"] = (
+				build_temp_t(name=f"formal_denom_{io_str}")
+			)
 
-			self.formal.oracle_quot \
-				= build_temp_t(name=f"oracle_quot_{io_str}")
-			self.formal.oracle_rema \
-				= build_temp_t(name=f"oracle_rema_{io_str}")
+			shape["formal"]["oracle_quot"] = (
+				build_temp_t(name=f"oracle_quot_{io_str}")
+			)
+			shape["formal"]["oracle_rema"] = (
+				build_temp_t(name=f"oracle_rema_{io_str}")
+			)
 			#--------
 			#self.formal.formal_denom_mult_lut = Signal \
 			#	((bus.DML_ELEM_WIDTH() * bus.DML_SIZE()), attrs=sig_keep(),
@@ -169,7 +191,13 @@ class LongUdivIterData(Splitrec):
 			#	attrs=sig_keep(),
 			#	name=f"formal_denom_mult_lut_{io_str}"
 			#)
-			self.formal.formal_denom_mult_lut = SplitrecView(
+			#self.formal.formal_denom_mult_lut = Splitrec.View(
+			#	ArrayLayout(unsigned(constants.DML_ELEM_WIDTH()),
+			#		constants.DML_SIZE()),
+			#	attrs=sig_keep(),
+			#	name=f"formal_denom_mult_lut_{io_str}"
+			#)
+			shape["formal"]["formal_denom_mult_lut"] = FieldInfo(
 				ArrayLayout(unsigned(constants.DML_ELEM_WIDTH()),
 					constants.DML_SIZE()),
 				attrs=sig_keep(),
@@ -177,17 +205,30 @@ class LongUdivIterData(Splitrec):
 			)
 			#--------
 		#--------
+		super().__init__(shape)
 	#--------
+	def constants(self):
+		return self.__constants
+	def DML_ENTRY_WIDTH(self):
+		return self.__DML_ENTRY_WIDTH
+	def FORMAL(self):
+		return self.__FORMAL
+	def PIPELINED(self):
+		return self.__PIPELINED
 	#def dml_elem(self, index):
 	#	#return self.denom_mult_lut.word_select(index,
 	#	#	self.__DML_ENTRY_WIDTH)
 	#	return self.denom_mult_lut[index]
-	def formal_dml_elem(self, index):
-		assert self.__FORMAL
+	#def formal_dml_elem(self, index):
+	@staticmethod
+	def formal_dml_elem(splitrec, index):
+		#assert self.__FORMAL
+		assert splitrec.shape().FORMAL()
 		#return self.formal.formal_denom_mult_lut.word_select(index,
 		#	self.__DML_ENTRY_WIDTH)
 		#return Value.cast(self.formal.formal_denom_mult_lut[index])
-		return self.formal.formal_denom_mult_lut[index]
+		#return self.formal.formal_denom_mult_lut[index]
+		return splitrec.formal.formal_denom_mult_lut[index]
 		#return self.formal.formal_denom_mult_lut.as_value().word_select(
 		#	index, self.__constants.CHUNK_WIDTH()
 		#)
@@ -206,7 +247,9 @@ class LongUdivIterBus:
 		# The `io_str` argument is for the Verilog output's signals to have
 		# a suffix in the names of signals that prevents conflicts with
 		# `pst_out`'s signals' names.
-		self.itd_in = LongUdivIterData(constants=constants, io_str="in")
+		self.itd_in = Splitrec(
+			LongUdivIterDataLayt(constants=constants, io_str="in")
+		)
 
 		#printout("testificate: ", dbg_sync_bus, "\n")
 		#dbg_printout("LongUdivIterBus().__init__()")
@@ -218,14 +261,18 @@ class LongUdivIterBus:
 		# The `io_str` argument is for the Verilog output's signals to have
 		# a suffix in the names of signals that prevents conflicts with
 		# `pst_in`'s signals' names.
-		self.itd_out = LongUdivIterData(constants=constants, io_str="out")
+		self.itd_out = Splitrec(
+			LongUdivIterDataLayt(constants=constants, io_str="out")
+		)
 		#--------
 		# Current quotient digit
 		self.quot_digit = Signal(constants.CHUNK_WIDTH(), attrs=sig_keep())
 
 		# Remainder with the current chunk of `self.ps_data_in.temp_numer`
 		# shifted in
-		self.shift_in_rema = constants.build_temp_t(name="shift_in_rema")
+		self.shift_in_rema = Splitrec.cast_shape(
+			constants.build_temp_t(name="shift_in_rema")
+		)
 
 		# The vector of greater than comparison values
 		self.gt_vec = Signal(constants.RADIX(), attrs=sig_keep())
@@ -366,8 +413,10 @@ class LongUdivIter(Elaboratable):
 			]
 
 			m.d.comb += [
-				Assert(itd_in.formal_dml_elem(i)
-					== (formal_denom_in.as_value() * i))
+				Assert(
+					itd_in.shape().formal_dml_elem(itd_in, i)
+					== (formal_denom_in.as_value() * i)
+				)
 				for i in range(constants.RADIX())
 			]
 			with m.If(~ResetSignal()):
@@ -380,19 +429,23 @@ class LongUdivIter(Elaboratable):
 					oracle_quot_out.eq(oracle_quot_in),
 					oracle_rema_out.eq(oracle_rema_in),
 					#--------
-					itd_out.formal.formal_denom_mult_lut
-						.eq(formal_denom_mult_lut_in),
+					itd_out.formal.formal_denom_mult_lut.eq(
+						formal_denom_mult_lut_in
+					),
 					#--------
 				]
 				#--------
 				m.d.sync += [
 					#--------
-					Assert(skip_cond
-						| (bus.quot_digit
+					Assert(
+						skip_cond
+						| (
+							bus.quot_digit
 							== oracle_quot_in[bus.chunk_start]
 							#== oracle_quot_in.as_value().word_select
 							#	(bus.chunk_start, bus.CHUNK_WIDTH())
-						)),
+						)
+					),
 					#--------
 				]
 
@@ -430,13 +483,17 @@ class LongUdivIterSyncBus:
 		super().__init__()
 		#--------
 		self.__constants = constants
-		self.itd_in = LongUdivIterData(
-			constants=constants,
-			io_str="in_sync",
+		self.itd_in = Splitrec(
+			LongUdivIterDataLayt(
+				constants=constants,
+				io_str="in_sync",
+			)
 		)
-		self.itd_out = LongUdivIterData(
-			constants=constants,
-			io_str="out_sync",
+		self.itd_out = Splitrec(
+			LongUdivIterDataLayt(
+				constants=constants,
+				io_str="out_sync",
+			)
 		)
 		#self.chunk_start \
 		#	= self.__constants.build_chunk_start_t(name_suffix="_sync")

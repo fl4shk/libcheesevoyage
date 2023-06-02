@@ -7,31 +7,48 @@ from amaranth.asserts import Past, Rose, Fell, Stable
 from libcheesevoyage.misc_util import *
 from libcheesevoyage.general.container_types import *
 #--------
+class FifoInpLayt(dict):
+	def __init__(self, shape):
+		# Inputs
+		inp_shape = {}
+
+		inp_shape["wr_en"] = 1
+		inp_shape["wr_data"] = self.shape()
+
+		inp_shape["rd_en"] = 1
+
+		super().__init__(inp_shape)
+class FifoOutpLayt(dict):
+	def __init__(self, shape):
+		# Outputs
+		outp_shape = {}
+
+		outp_shape["rd_data"] = self.shape()
+
+		outp_shape["empty"] = 1
+		outp_shape["full"] = 1
+
+		super().__init__(outp_shape)
+
 class FifoBus:
-	def __init__(self, ShapeT, SIZE):
-		self.__ShapeT, self.__SIZE = ShapeT, SIZE
+	def __init__(self, shape, SIZE):
+		self.__shape, self.__SIZE = shape, SIZE
 		#--------
-		self.inp = Splitrec()
-		self.outp = Splitrec()
+		#inp_shape = {}
 		#--------
 		#self.clk = Signal()
 		#self.rst = Signal()
+		#inp_shape = FifoInpLayt(shape)
+		#outp_shape = FifoOutpLayt(shape)
 		#--------
-		# Inputs
-		self.inp.wr_en = Signal()
-		self.inp.wr_data = Signal(self.ShapeT())
-
-		self.inp.rd_en = Signal()
 		#--------
-		# Outputs
-		self.outp.rd_data = Signal(self.ShapeT())
-
-		self.outp.empty = Signal()
-		self.outp.full = Signal()
+		#--------
+		self.inp = Splitrec(FifoInpLayt(shape))
+		self.outp = Splitrec(FifoOutpLayt(shape))
 		#--------
 
-	def ShapeT(self):
-		return self.__ShapeT
+	def shape(self):
+		return self.__shape
 	def SIZE(self):
 		return self.__SIZE
 
@@ -42,8 +59,8 @@ class FifoBus:
 	#		self.rd_en, self.rd_data, self.empty, self.full]
 #--------
 class Fifo(Elaboratable):
-	def __init__(self, ShapeT, SIZE, *, FORMAL: bool=False):
-		self.__bus = FifoBus(ShapeT=ShapeT, SIZE=SIZE)
+	def __init__(self, shape, SIZE, *, FORMAL: bool=False):
+		self.__bus = FifoBus(shape=shape, SIZE=SIZE)
 		self.__FORMAL = FORMAL
 
 	def bus(self):
@@ -65,7 +82,9 @@ class Fifo(Elaboratable):
 
 		loc = Blank()
 
-		loc.arr = Array([Signal(bus.ShapeT()) for _ in range(bus.SIZE())])
+		loc.arr = Array([
+			Signal(bus.shape()) for _ in range(bus.SIZE())
+		])
 
 		loc.PTR_WIDTH = width_from_arg(bus.SIZE())
 
@@ -92,11 +111,11 @@ class Fifo(Elaboratable):
 		if self.FORMAL():
 			loc.formal = Blank()
 
-			loc.formal.last_tail_val = Signal(bus.ShapeT())
+			loc.formal.last_tail_val = Signal(bus.shape())
 			loc.formal.test_head = Signal(loc.PTR_WIDTH)
 			#loc.formal.empty = Signal()
 			#loc.formal.full = Signal()
-			loc.formal.wd_cnt = Signal(bus.ShapeT(), reset=0xa0)
+			loc.formal.wd_cnt = Signal(bus.shape(), reset=0xa0)
 		#--------
 		if self.FORMAL():
 			m.d.sync \
@@ -156,14 +175,14 @@ class Fifo(Elaboratable):
 
 		with m.If(loc.rst):
 			#for elem in loc.arr:
-			#	m.d.sync += elem.eq(bus.ShapeT()())
+			#	m.d.sync += elem.eq(bus.shape()())
 
 			m.d.sync \
 			+= [
 				loc.tail.eq(0x0),
 				loc.head.eq(0x0),
 
-				#outp.rd_data.eq(bus.ShapeT()()),
+				#outp.rd_data.eq(bus.shape()()),
 
 				outp.empty.eq(0b1),
 				outp.full.eq(0b0),
@@ -250,8 +269,8 @@ class Fifo(Elaboratable):
 #--------
 # Asynchronous Read FIFO
 class AsyncReadFifo(Fifo):
-	def __init__(self, ShapeT, SIZE, *, FORMAL: bool=False):
-		super().__init__(ShapeT, SIZE, FORMAL)
+	def __init__(self, shape, SIZE, *, FORMAL: bool=False):
+		super().__init__(shape, SIZE, FORMAL)
 
 	def elaborate(self, platform: str) -> Module:
 		#--------
@@ -263,7 +282,9 @@ class AsyncReadFifo(Fifo):
 		outp = bus.outp
 
 		loc = Blank()
-		loc.arr = Array([Signal(bus.ShapeT()) for _ in range(bus.SIZE())])
+		loc.arr = Array([
+			Signal(bus.shape()) for _ in range(bus.SIZE())
+		])
 
 		loc.PTR_WIDTH = width_from_arg(bus.SIZE())
 

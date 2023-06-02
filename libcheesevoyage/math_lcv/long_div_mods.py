@@ -3,15 +3,18 @@
 import math
 
 from amaranth import *
+from amaranth.lib import enum
 from amaranth.asserts import Assert, Assume, Cover
 from amaranth.asserts import Past, Rose, Fell, Stable
 
 from amaranth.sim import Simulator, Delay, Tick
 
-from enum import Enum, auto
+#from enum import Enum, auto
+import enum as pyenum
 
 from libcheesevoyage.misc_util import *
 from libcheesevoyage.general.container_types import *
+from libcheesevoyage.general.pipeline_mods import *
 from libcheesevoyage.math_lcv.long_div_iter_mods import *
 from libcheesevoyage.math_lcv.math_types import *
 #--------
@@ -21,32 +24,48 @@ class LongDivBus:
 		#--------
 		self.__constants = constants
 		#--------
-		self.inp = Splitrec()
-		self.outp = Splitrec()
+		inp_shape = OrderedDict()
+		outp_shape = OrderedDict()
 		#--------
 		# Inputs
 
 		if not constants.PIPELINED():
-			self.inp.ready = Signal(name="inp_ready")
+			inp["ready"] = FieldInfo(1, name="inp_ready")
 
-		self.inp.numer = Signal(constants.MAIN_WIDTH(), name="inp_numer")
-		self.inp.denom = Signal(constants.DENOM_WIDTH(), name="inp_denom")
-		self.inp.signed = Signal(reset=signed_reset, name="inp_signed")
+		inp_shape["numer"] = FieldInfo(
+			constants.MAIN_WIDTH(), name="inp_numer"
+		)
+		inp_shape["denom"] = FieldInfo(
+			constants.DENOM_WIDTH(), name="inp_denom"
+		)
+		inp_shape["signed"] = FieldInfo(
+			1, reset=signed_reset, name="inp_signed"
+		)
 
 		if constants.PIPELINED():
-			self.inp.tag = Signal(constants.TAG_WIDTH(), name="inp_tag")
+			inp_shape["tag"] = FieldInfo(
+				1, constants.TAG_WIDTH(), name="inp_tag"
+			)
 		#--------
 		# Outputs
 
 		if not constants.PIPELINED():
-			self.outp.valid = Signal(name="outp_valid")
+			outp_shape["valid"] = FieldInfo(1, name="outp_valid")
 
-		self.outp.quot = Signal(constants.MAIN_WIDTH(), name="outp_quot")
-		self.outp.rema = Signal(constants.MAIN_WIDTH(), name="outp_rema")
+		outp_shape["quot"] = FieldInfo(
+			constants.MAIN_WIDTH(), name="outp_quot"
+		)
+		outp_shape["rema"] = FieldInfo(
+			constants.MAIN_WIDTH(), name="outp_rema"
+		)
 
 		if constants.PIPELINED():
-			self.outp.tag = Signal(constants.TAG_WIDTH(), name="outp_tag")
+			outp_shape["tag"] = FieldInfo(
+				constants.TAG_WIDTH(), name="outp_tag"
+			)
 		#--------
+		self.inp = Splitrec(inp_shape)
+		self.outp = Splitrec(outp_shape)
 	#--------
 	def constants(self):
 		return self.__constants
@@ -69,9 +88,9 @@ class LongDivMultiCycle(Elaboratable):
 	def bus(self):
 		return self.__bus
 	#--------
-	class State(Enum):
-		IDLE = 0
-		RUNNING = auto()
+	class State(enum.Enum, shape=1):
+		IDLE = 0b0
+		RUNNING = 0b1
 	#--------
 	def elaborate(self, platform: str) -> Module:
 		#--------
@@ -89,8 +108,12 @@ class LongDivMultiCycle(Elaboratable):
 		# Submodules go here
 		loc.m = [LongUdivIter(constants=constants)]
 		m.submodules += loc.m
-		loc.state = Signal(shape=Shape.cast(State), reset=State.IDLE,
-			attrs=sig_keep())
+		loc.state = Signal(
+			#shape=Shape.cast(State),
+			State.as_shape(),
+			reset=State.IDLE,
+			attrs=sig_keep()
+		)
 		#loc.temp_numer = Signal(constants.MAIN_WIDTH(),
 		#	attrs=sig_keep(), name="loc_temp_numer")
 		loc.temp_numer = Signal(constants.TEMP_T_WIDTH(),
@@ -293,7 +316,9 @@ class LongDivMultiCycle(Elaboratable):
 				#							% loc.temp_denom),
 				#				]
 				#				m.d.sync += [
-				#					itd_in.formal_dml_elem(i)
+				#					itd_in.shape().formal_dml_elem(
+				#						itd_in, i
+				#					)
 				#						.eq(loc.temp_denom * i)
 				#					for i in range(constants.DML_SIZE())
 				#				]
@@ -306,7 +331,7 @@ class LongDivMultiCycle(Elaboratable):
 				#						#itd_in.denom_mult_lut.word_select
 				#						#	(i, CHUNK_WIDTH)
 				#						== (
-				#							itd_in.formal_dml_elem(i)
+				#							itd_in.shape().formal_dml_elem(itd_in, i)
 				#							#itd_in.formal.formal_denom
 				#							#	.as_value()
 				#							#* i
@@ -317,7 +342,7 @@ class LongDivMultiCycle(Elaboratable):
 				#				]
 				#				#m.d.comb += [
 				#				#	Assert(
-				#				#		itd_in.formal_dml_elem(i)
+				#				#		itd_in.shape().formal_dml_elem(itd_in, i)
 				#				#		== (
 				#				#			itd_in.formal.formal_denom
 				#				#				.as_value()
@@ -343,7 +368,7 @@ class LongDivMultiCycle(Elaboratable):
 				#				#		#itd_in.denom_mult_lut.as_value()
 				#				#		#	.word_select(1, CHUNK_WIDTH)
 				#				#		== (
-				#				#			itd_in.formal_dml_elem(1)
+				#				#			itd_in.shape().formal_dml_elem(itd_in, 1)
 				#				#			#itd_in.formal.formal_denom
 				#				#			#	.as_value()
 				#				#			#* 1
@@ -389,8 +414,9 @@ class LongDivMultiCycle(Elaboratable):
 								.eq(loc.temp_numer % loc.temp_denom),
 						]
 						m.d.sync += [
-							itd_in.formal_dml_elem(i).eq
-								(loc.temp_denom * i)
+							itd_in.shape().formal_dml_elem(
+								itd_in, i
+							).eq(loc.temp_denom * i)
 								for i in range(constants.DML_SIZE())
 						]
 						with m.If(past_valid & (~Stable(loc.state))):
@@ -498,8 +524,9 @@ class LongDivMultiCycle(Elaboratable):
 							]
 							m.d.sync += [
 								Assert(
-									itd_in.formal_dml_elem(i)
-									== (
+									itd_in.shape().formal_dml_elem(
+										itd_in, i
+									) == (
 										itd_in.formal.formal_denom
 											.as_value()
 										* i
@@ -513,20 +540,24 @@ class LongDivMultiCycle(Elaboratable):
 #--------
 class LongDivPipelined(Elaboratable):
 	#--------
-	def __init__(self, MAIN_WIDTH, DENOM_WIDTH, CHUNK_WIDTH,
-		*, FORMAL=False, signed_reset=0b0):
+	def __init__(
+		self, MAIN_WIDTH, DENOM_WIDTH, CHUNK_WIDTH,
+		*, FORMAL=False, signed_reset=0b0, #USE_PIPE_SKID_BUF=None,
+	):
 		self.__constants \
 			= LongDivConstants(
 				MAIN_WIDTH=MAIN_WIDTH,
 				DENOM_WIDTH=DENOM_WIDTH,
 				CHUNK_WIDTH=CHUNK_WIDTH,
 				# This `TAG_WIDTH` is just a heuristic
-				TAG_WIDTH=math.ceil(math.log2(MAIN_WIDTH // CHUNK_WIDTH)
-					+ 2),
+				TAG_WIDTH=math.ceil(
+					math.log2(MAIN_WIDTH // CHUNK_WIDTH) + 2
+				),
 				PIPELINED=True,
 				FORMAL=FORMAL
 			)
 		self.__bus = LongDivBus(self.__constants, signed_reset)
+		#self.__USE_PIPE_SKID_BUF = USE_PIPE_SKID_BUF
 	#--------
 	def bus(self):
 		return self.__bus
@@ -536,6 +567,7 @@ class LongDivPipelined(Elaboratable):
 		m = Module()
 		#--------
 		constants = self.__constants
+		#USE_PIPE_SKID_BUF = self.__USE_PIPE_SKID_BUF
 		bus = self.bus()
 		inp = bus.inp
 		outp = bus.outp
@@ -701,8 +733,10 @@ class LongDivPipelined(Elaboratable):
 				#--------
 			]
 			m.d.sync += [
-				itd_in[0].formal_dml_elem(i).eq(loc.temp_denom * i)
-					for i in range(constants.DML_SIZE())
+				itd_in[0].shape().formal_dml_elem(itd_in[0], i).eq(
+					loc.temp_denom * i)
+					for i in range(constants.DML_SIZE()
+				)
 			]
 			#m.d.comb += [
 			#	rst_cnt_done[i].eq(rst_cnt_lst[i] < 0)

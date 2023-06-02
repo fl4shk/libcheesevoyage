@@ -42,22 +42,33 @@ class ReduceTreeBus:
 		#		else self.INP_DATA_WIDTH()
 		self.__OUTP_DATA_WIDTH = self.INP_DATA_WIDTH() + self.NUM_STAGES()
 		#--------
-		self.inp = Splitrec()
-		self.outp = Splitrec()
+		inp_shape = {}
+		outp_shape = {}
 
-		self.inp.data \
-			= Splitarr([
-				Signal(self.INP_DATA_WIDTH(),
-					name=psconcat("inp_data_", i))
-					for i in range(self.INP_SIZE())
-			])
+		inp_shape["data"] = [
+			FieldInfo(
+				self.INP_DATA_WIDTH(),
+				name=psconcat("inp_data_", i)
+			)
+			for i in range(self.INP_SIZE())
+		]
 
-		self.outp.data = Signal(self.OUTP_DATA_WIDTH(), name="outp_data")
+		outp_shape["data"] = FieldInfo(
+			self.OUTP_DATA_WIDTH(), name="outp_data"
+		)
 
 		if self.FORMAL():
-			self.formal = Splitrec()
-			self.formal.oracle_outp_data = Signal(self.OUTP_DATA_WIDTH(),
-				name="oracle_outp_data")
+			self.formal = Splitrec(
+				{
+					"oracle_outp_data": FieldInfo(
+						self.OUTP_DATA_WIDTH(),
+						name="oracle_outp_data"
+					)
+				}
+			)
+		#--------
+		self.inp = Splitrec(inp_shape)
+		self.outp = Splitrec(outp_shape)
 		#--------
 	#--------
 	def INP_DATA_WIDTH(self):
