@@ -13,9 +13,14 @@ from amaranth.sim import Simulator, Delay, Tick
 import enum as pyenum
 
 from libcheesevoyage.misc_util import *
-from libcheesevoyage.general.container_types import *
-from libcheesevoyage.general.pipeline_mods import *
-from libcheesevoyage.math_lcv.long_div_iter_mods import *
+#from libcheesevoyage.general.container_types import *
+from libcheesevoyage.general.general_types import SigInfo
+#from libcheesevoyage.general.pipeline_mods import *
+from libcheesevoyage.math_lcv.long_div_iter_mods import (
+	LongDivConstants, LongUdivIterDataLayt,
+	LongUdivIter, LongUdivIterBus, LongUdivIterSync, LongUdivIterSyncBus,
+	FieldInfo, Splitrec, 
+)
 from libcheesevoyage.math_lcv.math_types import *
 #--------
 class LongDivBus:
@@ -75,14 +80,13 @@ class LongDivMultiCycle(Elaboratable):
 	#--------
 	def __init__(self, MAIN_WIDTH, DENOM_WIDTH, CHUNK_WIDTH,
 		*, FORMAL=False, signed_reset=0b0):
-		self.__constants \
-			= LongDivConstants(
-				MAIN_WIDTH=MAIN_WIDTH,
-				DENOM_WIDTH=DENOM_WIDTH,
-				CHUNK_WIDTH=CHUNK_WIDTH,
-				PIPELINED=False,
-				FORMAL=FORMAL,
-			)
+		self.__constants = LongDivConstants(
+			MAIN_WIDTH=MAIN_WIDTH,
+			DENOM_WIDTH=DENOM_WIDTH,
+			CHUNK_WIDTH=CHUNK_WIDTH,
+			PIPELINED=False,
+			FORMAL=FORMAL,
+		)
 		self.__bus = LongDivBus(self.__constants, signed_reset)
 	#--------
 	def bus(self):
@@ -143,11 +147,10 @@ class LongDivMultiCycle(Elaboratable):
 
 		if constants.FORMAL():
 			loc.formal = Blank()
-			loc.formal.past_valid \
-				= Signal(
-					attrs=sig_keep(),
-					name="formal_past_valid"
-				)
+			loc.formal.past_valid = Signal(
+				attrs=sig_keep(),
+				name="formal_past_valid"
+			)
 			past_valid = loc.formal.past_valid
 		#--------
 		it_bus = loc.m[0].bus()
@@ -542,25 +545,28 @@ class LongDivPipelined(Elaboratable):
 	#--------
 	def __init__(
 		self, MAIN_WIDTH, DENOM_WIDTH, CHUNK_WIDTH,
-		*, FORMAL=False, signed_reset=0b0, #USE_PIPE_SKID_BUF=None,
+		*, FORMAL=False, signed_reset=0b0,
+		USE_PIPE_SKID_BUF=True,
 	):
-		self.__constants \
-			= LongDivConstants(
-				MAIN_WIDTH=MAIN_WIDTH,
-				DENOM_WIDTH=DENOM_WIDTH,
-				CHUNK_WIDTH=CHUNK_WIDTH,
-				# This `TAG_WIDTH` is just a heuristic
-				TAG_WIDTH=math.ceil(
-					math.log2(MAIN_WIDTH // CHUNK_WIDTH) + 2
-				),
-				PIPELINED=True,
-				FORMAL=FORMAL
-			)
+		self.__constants = LongDivConstants(
+			MAIN_WIDTH=MAIN_WIDTH,
+			DENOM_WIDTH=DENOM_WIDTH,
+			CHUNK_WIDTH=CHUNK_WIDTH,
+			# This `TAG_WIDTH` is just a heuristic
+			TAG_WIDTH=math.ceil(
+				math.log2(MAIN_WIDTH // CHUNK_WIDTH) + 2
+			),
+			PIPELINED=True,
+			USE_PIPE_SKID_BUF=USE_PIPE_SKID_BUF,
+			FORMAL=FORMAL
+		)
 		self.__bus = LongDivBus(self.__constants, signed_reset)
 		#self.__USE_PIPE_SKID_BUF = USE_PIPE_SKID_BUF
 	#--------
 	def bus(self):
 		return self.__bus
+	#def USE_PIPE_SKID_BUF(self):
+	#	return self.__USE_PIPE_SKID_BUF
 	#--------
 	def elaborate(self, platform: str) -> Module:
 		#--------
@@ -579,8 +585,11 @@ class LongDivPipelined(Elaboratable):
 		loc = Blank()
 		# Submodules go here
 		loc.m = [
-			LongUdivIterSync(constants=constants,
-				chunk_start_val=(NUM_PSTAGES - 1) - i)
+			LongUdivIterSync(
+				constants=constants,
+				chunk_start_val=(NUM_PSTAGES - 1) - i,
+				#USE_PIPE_SKID_BUF=USE_PIPE_SKID_BUF,
+			)
 			for i in range(NUM_PSTAGES)
 		]
 		m.submodules += loc.m
@@ -605,24 +614,22 @@ class LongDivPipelined(Elaboratable):
 			#--------
 			loc.formal = Blank()
 			#--------
-			loc.formal.past_valid \
-				= Signal(
-					attrs=sig_keep(),
-					name="formal_past_valid"
-				)
+			loc.formal.past_valid  = Signal(
+				attrs=sig_keep(),
+				name="formal_past_valid"
+			)
 			past_valid = loc.formal.past_valid
 			#--------
-			#loc.formal.rst_cnt_lst \
-			#	= [
-			#		Signal(
-			#			#signed(math.ceil(math.log2(len(loc.m))) + 1),
-			#			signed(constants.CHUNK_WIDTH() + 1),
-			#			reset=i + 1,
-			#			attrs=sig_keep(),
-			#			name=f"formal_rst_cnt_lst_{i}",
-			#		)
-			#		for i in range(len(loc.m))
-			#	]
+			#loc.formal.rst_cnt_lst = [
+			#	Signal(
+			#		#signed(math.ceil(math.log2(len(loc.m))) + 1),
+			#		signed(constants.CHUNK_WIDTH() + 1),
+			#		reset=i + 1,
+			#		attrs=sig_keep(),
+			#		name=f"formal_rst_cnt_lst_{i}",
+			#	)
+			#	for i in range(len(loc.m))
+			#]
 			#	#= View(
 			#	#	ArrayLayout(
 			#	#		unsigned(math.ceil(math.log2(len(loc.m)))),
@@ -634,12 +641,11 @@ class LongDivPipelined(Elaboratable):
 			#	#)
 			#rst_cnt_lst = loc.formal.rst_cnt_lst
 
-			#loc.formal.rst_cnt_done \
-			#	= Signal(
-			#		len(loc.m),
-			#		attrs=sig_keep(),
-			#		name="formal_rst_cnt_done",
-			#	)
+			#loc.formal.rst_cnt_done = Signal(
+			#	len(loc.m),
+			#	attrs=sig_keep(),
+			#	name="formal_rst_cnt_done",
+			#)
 			#rst_cnt_done = loc.formal.rst_cnt_done
 			#--------
 		#--------
@@ -649,10 +655,27 @@ class LongDivPipelined(Elaboratable):
 		itd_out = [its_bus[i].itd_out for i in range(len(loc.m))]
 		#--------
 		# Connect the pipeline stages together
-		m.d.comb += [
-			itd_in[i + 1].eq(itd_out[i])
-				for i in range(len(loc.m) - 1)
-		]
+		if not constants.USE_PIPE_SKID_BUF():
+			m.d.comb += [
+				itd_in[i + 1].eq(itd_out[i])
+					for i in range(len(loc.m) - 1)
+			]
+		else: # if constants.USE_PIPE_SKID_BUF():
+			for i in range(len(loc.m) - 1):
+				m.d.comb += [
+					# Forwards connections
+					its_bus[i + 1].sb_bus.inp.fwd.eq(
+						its_bus[i].sb_bus.outp.fwd
+					),
+					# Backwards connections
+					its_bus[i].sb_bus.inp.bak.eq(
+						its_bus[i + 1].sb_bus.outp.bak
+					),
+				]
+			m.d.comb += [
+				its_bus[0].sb_bus.inp.fwd.valid.eq(0b1),
+				its_bus[-1].sb_bus.inp.bak.ready.eq(0b1),
+			]
 		#--------
 		m.d.sync += [
 			#--------
@@ -716,8 +739,7 @@ class LongDivPipelined(Elaboratable):
 		#--------
 		if constants.FORMAL():
 			#--------
-			skip_cond \
-				= itd_out[-1].formal.formal_denom.as_value() == 0
+			skip_cond = itd_out[-1].formal.formal_denom.as_value() == 0
 			#--------
 			m.d.sync += [
 				#--------
@@ -751,7 +773,14 @@ class LongDivPipelined(Elaboratable):
 			#				#--------
 			#			]
 
-			with m.If((~ResetSignal()) & past_valid):
+			with m.If(
+				~ResetSignal() & past_valid
+				& (
+					0b1
+					if not constants.USE_PIPE_SKID_BUF()
+					else its_bus[-1].sb_bus.outp.fwd.valid
+				)
+			):
 				#--------
 				m.d.sync += [
 					#--------

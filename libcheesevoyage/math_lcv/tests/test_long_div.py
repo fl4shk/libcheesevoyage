@@ -2,8 +2,9 @@
 
 from amaranth import *
 
-from libcheesevoyage import *
-from libcheesevoyage.misc_util_running import *
+#from libcheesevoyage import *
+from libcheesevoyage.misc_util_running import formal
+from libcheesevoyage.math_lcv.long_div_mods import LongDivPipelined
 #--------
 if __name__ == "__main__":
 	formal(

@@ -11,8 +11,16 @@ from amaranth.sim import Simulator, Delay, Tick
 
 from enum import Enum, auto
 
-from libcheesevoyage.misc_util import *
-from libcheesevoyage.general.container_types import *
+from libcheesevoyage.misc_util import psconcat, sig_keep, Blank
+from libcheesevoyage.general.container_types import FieldInfo, Splitrec
+from libcheesevoyage.general.general_types import SigInfo
+#from libcheesevoyage.general.pipeline_mods import (
+#	PipeSkidBufBus, PipeSkidBuf
+#)
+import libcheesevoyage.general.pipeline_mods as pipeline_mods
+#from libcheesevoyage.general.container_types import *
+#from libcheesevoyage.general.pipeline_mods import \
+#	PstageBusFwdLayt, PstageBusBakLayt, PipeSkidBuf, PipeSkidBufBus
 #--------
 #dbg_sync_bus = None
 #def dbg_printout(func_name):
@@ -29,13 +37,17 @@ from libcheesevoyage.general.container_types import *
 #--------
 class LongDivConstants:
 	#--------
-	def __init__(self, MAIN_WIDTH, DENOM_WIDTH, CHUNK_WIDTH, *,
-		TAG_WIDTH=1, PIPELINED=False, FORMAL=False):
+	def __init__(
+		self, MAIN_WIDTH, DENOM_WIDTH, CHUNK_WIDTH, *,
+		TAG_WIDTH=1, PIPELINED=False, USE_PIPE_SKID_BUF=True,
+		FORMAL=False
+	):
 		self.__MAIN_WIDTH = MAIN_WIDTH
 		self.__DENOM_WIDTH = DENOM_WIDTH
 		self.__CHUNK_WIDTH = CHUNK_WIDTH
 		self.__TAG_WIDTH = TAG_WIDTH
 		self.__PIPELINED = PIPELINED
+		self.__USE_PIPE_SKID_BUF = USE_PIPE_SKID_BUF
 		self.__FORMAL = FORMAL
 	#--------
 	def MAIN_WIDTH(self):
@@ -48,6 +60,8 @@ class LongDivConstants:
 		return self.__TAG_WIDTH
 	def PIPELINED(self):
 		return self.__PIPELINED
+	def USE_PIPE_SKID_BUF(self):
+		return self.__USE_PIPE_SKID_BUF
 	def FORMAL(self):
 		return self.__FORMAL
 	#--------
@@ -177,9 +191,11 @@ class LongUdivIterDataLayt(dict):
 				build_temp_t(name=f"oracle_rema_{io_str}")
 			)
 			#--------
-			#self.formal.formal_denom_mult_lut = Signal \
-			#	((bus.DML_ELEM_WIDTH() * bus.DML_SIZE()), attrs=sig_keep(),
-			#		name=f"formal_denom_mult_lut_{io_str}")
+			#self.formal.formal_denom_mult_lut = Signal(
+			#	(bus.DML_ELEM_WIDTH() * bus.DML_SIZE()),
+			#	attrs=sig_keep(),
+			#		name=f"formal_denom_mult_lut_{io_str}"
+			#)
 			#self.formal.formal_denom_mult_lut = Packarr(
 			#	Packarr.Shape(constants.DML_ELEM_WIDTH(),
 			#		constants.DML_SIZE()),
@@ -362,8 +378,9 @@ class LongUdivIter(Elaboratable):
 				#	i, bus.CHUNK_WIDTH()
 				#).eq(bus.quot_digit)
 			with m.Else(): # If(bus.chunk_start != i):
-				m.d.comb += itd_out.temp_quot[i] \
-					.eq(itd_in.temp_quot[i])
+				m.d.comb += itd_out.temp_quot[i].eq(
+					itd_in.temp_quot[i]
+				)
 				#m.d.comb += itd_out.temp_quot.as_value().word_select(
 				#	i, bus.CHUNK_WIDTH()
 				#).eq(itd_in.temp_quot.as_value().word_select(
@@ -401,8 +418,9 @@ class LongUdivIter(Elaboratable):
 			oracle_quot_out = itd_out.formal.oracle_quot
 			oracle_rema_out = itd_out.formal.oracle_rema
 
-			formal_denom_mult_lut_out \
-				= itd_out.formal.formal_denom_mult_lut
+			formal_denom_mult_lut_out = (
+				itd_out.formal.formal_denom_mult_lut
+			)
 			#--------
 			m.d.comb += [
 				#--------
@@ -481,27 +499,89 @@ class LongUdivIter(Elaboratable):
 #--------
 class LongUdivIterSyncBus:
 	#--------
-	def __init__(self, constants: LongDivConstants):
+	def __init__(
+		self,
+		constants: LongDivConstants,
+		#USE_PIPE_SKID_BUF=True
+	):
 		#--------
 		super().__init__()
 		#--------
 		self.__constants = constants
-		self.itd_in = Splitrec(
-			LongUdivIterDataLayt(
+		#self.itd_in = Splitrec(
+		#	LongUdivIterDataLayt(
+		#		constants=constants,
+		#		io_str="in_sync",
+		#	),
+		#	use_parent_name=False
+		#)
+		#self.itd_out = Splitrec(
+		#	LongUdivIterDataLayt(
+		#		constants=constants,
+		#		io_str="out_sync",
+		#	),
+		#	use_parent_name=False
+		#) 
+
+		#if constants.USE_PIPE_SKID_BUF():
+		#	self.nodata_in = Splitrec(
+		#		PstageInpNodataLayt(OPT_INCLUDE_BUSY=False),
+		#		use_parent_name=False
+		#	)
+		#self.__itd_in_data_info = SigInfo(
+		#	basenm="itd_in",
+		#	shape=LongUdivIterDataLayt(
+		#		constants=constants,
+		#		io_str="in_sync",
+		#	),
+		#	ObjKind=Splitrec,
+		#	use_parent_name=False
+		#)
+		self.__data_info = SigInfo(
+			basenm="itd",
+			shape=LongUdivIterDataLayt(
 				constants=constants,
 				io_str="in_sync",
 			),
+			ObjKind=Splitrec,
 			use_parent_name=False
 		)
-		self.itd_out = Splitrec(
-			LongUdivIterDataLayt(
-				constants=constants,
-				io_str="out_sync",
-			),
-			use_parent_name=False
+		#self.itd_in = self.__itd_in_data_info.mk_sig()
+		#self.itd_in = self.__data_info.mk_sig(suffix="_in")
+
+		##if constants.USE_PIPE_SKID_BUF():
+		##	self.nodata_out = Splitrec(
+		##		PstageOutpNodataLayt(),
+		##		use_parent_name=False
+		##	)
+		##self.__itd_out_data_info = SigInfo(
+		##	basenm="itd_out",
+		##	shape=LongUdivIterDataLayt(
+		##		constants=constants,
+		##		io_str="out_sync",
+		##	),
+		##	ObjKind=Splitrec,
+		##	use_parent_name=False
+		##)
+		##self.itd_out = self.__itd_out_data_info.mk_sig()
+		#self.itd_out = self.__data_info.mk_sig(suffix="_out")
+		#if constants.USE_PIPE_SKID_BUF():
+		self.sb_bus = pipeline_mods.PipeSkidBufBus(
+			data_info=self.__data_info,
+			OPT_INCLUDE_BUSY=False,
 		)
-		#self.chunk_start \
-		#	= self.__constants.build_chunk_start_t(name_suffix="_sync")
+			#self.inp.valid = Signal(
+			#	1, name="valid_in"
+			#)
+		self.itd_in = self.sb_bus.inp.fwd.data
+		self.itd_out = self.sb_bus.outp.fwd.data
+
+		#self.inp = Blank()
+		#self.outp = Blank()
+
+		#self.chunk_start = self.__constants.build_chunk_start_t(
+		#	name_suffix="_sync"
+		#)
 		#printout("LongUdivIterSyncBus.__init__(): ",
 		#	[Value.cast(val).name for val in self.itd_in_sync.flattened()],
 		#	"\n")
@@ -517,14 +597,26 @@ class LongUdivIterSyncBus:
 	#--------
 	def constants(self):
 		return self.__constants
+	#def itd_in_data_info(self):
+	#	return self.__itd_in_data_info
+	#def itd_out_data_info(self):
+	#	return self.__itd_out_data_info
+	def data_info(self):
+		return self.__data_info
 	#--------
 #--------
 class LongUdivIterSync(Elaboratable):
 	#--------
-	def __init__(self, constants: LongDivConstants, chunk_start_val: int):
+	def __init__(
+		self,
+		constants: LongDivConstants,
+		chunk_start_val: int,
+	):
 		self.__constants = constants
 
-		self.__bus = LongUdivIterSyncBus(constants=constants)
+		self.__bus = LongUdivIterSyncBus(
+			constants=constants,
+		)
 		self.__chunk_start_val = chunk_start_val
 	#--------
 	def bus(self):
@@ -535,9 +627,24 @@ class LongUdivIterSync(Elaboratable):
 		m = Module()
 		#--------
 		bus = self.bus()
+		#USE_PIPE_SKID_BUF = self.__USE_PIPE_SKID_BUF
+		constants = bus.constants()
 		#--------
-		it = LongUdivIter(constants=bus.constants())
+		it = LongUdivIter(constants=constants)
 		m.submodules += it
+
+		if constants.USE_PIPE_SKID_BUF():
+			skid_buf = pipeline_mods.PipeSkidBuf(
+				data_info=bus.data_info(),
+				OPT_INCLUDE_BUSY=False,
+			)
+			m.submodules += skid_buf
+			sb_bus = skid_buf.bus()
+			#loc_itd_out = bus.data_info().mk_sig(
+			#	basenm="loc_itd_out",
+			#	prefix="",
+			#	suffix="",
+			#)
 		#--------
 		it_bus = it.bus()
 		itd_in = it_bus.itd_in
@@ -553,36 +660,52 @@ class LongUdivIterSync(Elaboratable):
 		#	#--------
 		#	loc.formal = Blank()
 		#	#--------
-		#	loc.formal.rst_cnt \
-		#		= Signal(
-		#			signed(constants.CHUNK_WIDTH() + 1),
-		#			reset=self.__chunk_start_val + 1,
-		#			attrs=sig_keep(),
-		#			name=f"formal_rst_cnt_{self.__chunk_start_val}",
-		#		)
+		#	loc.formal.rst_cnt = Signal(
+		#		signed(constants.CHUNK_WIDTH() + 1),
+		#		reset=self.__chunk_start_val + 1,
+		#		attrs=sig_keep(),
+		#		name=f"formal_rst_cnt_{self.__chunk_start_val}",
+		#	)
 		#	rst_cnt = loc.formal.rst_cnt
 
-		#	loc.formal.rst_cnt_done \
-		#		= Signal(
-		#			attrs=sig_keep(),
-		#			name="formal_rst_cnt_done",
-		#		)
+		#	loc.formal.rst_cnt_done = Signal(
+		#		attrs=sig_keep(),
+		#		name="formal_rst_cnt_done",
+		#	)
 		#	rst_cnt_done = loc.formal.rst_cnt_done
 		#	#--------
 		#--------
 		#--------
-		m.d.comb += [
-			itd_in.eq(itd_in_sync),
-			it_bus.chunk_start.eq(self.__chunk_start_val),
-		]
-		m.d.sync += itd_out_sync.eq(itd_out)
+		if not constants.USE_PIPE_SKID_BUF():
+			m.d.comb += [
+				itd_in.eq(itd_in_sync),
+				it_bus.chunk_start.eq(self.__chunk_start_val),
+			]
+			m.d.sync += itd_out_sync.eq(itd_out)
+		else: # constants.USE_PIPE_SKID_BUF():
+			m.d.comb += [
+				sb_bus.inp.clear.eq(0b0),
+				sb_bus.inp.fwd.eq(bus.sb_bus.inp.fwd),
+				sb_bus.inp.bak.eq(bus.sb_bus.inp.bak),
+				#bus.sb_bus.outp.fwd.eq(sb_bus)
+				#bus.sb_bus.outp.fwd.eq(sb_bus.outp.fwd),
+				#bus.sb_bus.outp.bak.eq(sb_bus.outp.bak),
+				bus.sb_bus.outp.fwd.valid.eq(sb_bus.outp.fwd.valid),
+				bus.sb_bus.outp.bak.eq(sb_bus.outp.bak),
+				itd_in.eq(sb_bus.outp.fwd.data),
+				# `itd_out_sync` is set to `bus.sb_bus.outp.fwd.data`
+				bus.sb_bus.outp.fwd.data.eq(itd_out),
+			]
 		#--------
 		if constants.FORMAL():
 			#--------
 			skip_cond = itd_in.formal.formal_denom.as_value() == 0
 			past_valid = bus.formal.past_valid
 			#--------
+			#if not constants.USE_PIPE_SKID_BUF():
 			m.d.sync += past_valid.eq(0b1),
+			#else: # if constants.USE_PIPE_SKID_BUF():
+			#	m.d.sync += 
 			#--------
 			#m.d.comb += [
 			#	rst_cnt_done.eq(rst_cnt < 0)
@@ -591,9 +714,16 @@ class LongUdivIterSync(Elaboratable):
 			#	m.d.sync += [
 			#		#--------
 			#		rst_cnt.eq(rst_cnt - 1)
-			#		#--------
+			#		#-------
 			#	]
-			with m.If((~ResetSignal()) & past_valid):
+			with m.If(
+				~ResetSignal() & past_valid
+				& (
+					0b1
+					if not constants.USE_PIPE_SKID_BUF()
+					else sb_bus.outp.fwd.valid
+				)
+			):
 				#--------
 				m.d.sync += [
 					#--------

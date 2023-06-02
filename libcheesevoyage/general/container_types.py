@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-from enum import Enum, auto
+#from enum import Enum, auto
+import enum as pyenum
 from collections import OrderedDict
 
 from amaranth import *
@@ -1328,7 +1329,7 @@ class Splitrec(ValueCastable):
 					#prefix="",
 					#suffix="",
 					use_parent_name=use_parent_name,
-					parent_name=parent_name,
+					#parent_name=parent_name,
 					#parent=parent,
 					src_loc_at=src_loc_at + 1,
 					in_like=in_like,
@@ -2333,6 +2334,37 @@ class Splitarr(ValueCastable):
 
 		return ret
 	#--------
+#--------
+#class PortDir(pyenum.Enum):
+#	Inp = 0
+#	Outp = pyenum.auto()
+#class Modport:
+#	class Elem:
+#		def __init__(
+#			self,
+#			name=
+#			pdir: PortDir,
+#			shape,
+#		):
+#			pdir
+#	def __init__(
+#		self,
+#		shape: dict,
+#	):
+#		pass
+#
+#class Splitintf:
+#	def __init__
+#class Splitintfarr:
+#	def __init__(
+#		self,
+#		shape,
+#		*,
+#		name=None,
+#		use_parent_name=True,
+#		src_loc_at=0,
+#		in_like: bool=False,
+#	):
 #--------
 #class Vec2Layt(Packrec.Layout):
 #	def __init__(self, ElemKindT, SIGNED=False):
