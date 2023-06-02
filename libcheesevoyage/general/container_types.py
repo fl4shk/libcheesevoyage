@@ -1262,9 +1262,27 @@ class Splitrec(ValueCastable):
 				"Can't have `shape` the same as ",
 				"`shape.field()`: {!r}".format(shape.field()),
 			)
+			#temp_field_info_name = field_name(
+			#	parent_name=parent_name,
+			#	name=(
+			#		shape.extra_args_name()
+			#		if shape.extra_args_name() is not None
+			#		else new_name
+			#	),
+			#	use_parent_name=use_parent_name,
+			#)
 			temp_field_info_name = (
-				shape.extra_args_name()
-				if shape.extra_args_name() is not None
+				field_name(
+					parent_name=parent_name,
+					name=shape.extra_args_name(),
+					#in_like=in_like,
+					use_parent_name=field_name_calc_upn(
+						other=shape,
+						use_parent_name=use_parent_name,
+						in_like=in_like
+					)
+
+				) if shape.extra_args_name() is not None
 				else new_name
 			)
 			temp_use_parent_name = (
@@ -1295,8 +1313,8 @@ class Splitrec(ValueCastable):
 				attrs=shape.extra_args_attrs(),
 				decoder=shape.extra_args_decoder(),
 				#src_loc_at=0,
-				src_loc_at=src_loc_at, # idk if this is correct...
-				#src_loc_at=src_loc_at + 1, # this might be correct?
+				#src_loc_at=src_loc_at, # idk if this is correct...
+				src_loc_at=src_loc_at + 1, # this might be correct?
 				in_like=in_like,
 			)
 		elif isinstance(shape, SigInfo):

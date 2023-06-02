@@ -24,8 +24,8 @@ class LongDivBus:
 		#--------
 		self.__constants = constants
 		#--------
-		inp_shape = OrderedDict()
-		outp_shape = OrderedDict()
+		inp_shape = {}
+		outp_shape = {}
 		#--------
 		# Inputs
 
@@ -64,8 +64,8 @@ class LongDivBus:
 				constants.TAG_WIDTH(), name="outp_tag"
 			)
 		#--------
-		self.inp = Splitrec(inp_shape)
-		self.outp = Splitrec(outp_shape)
+		self.inp = Splitrec(inp_shape, use_parent_name=False)
+		self.outp = Splitrec(outp_shape, use_parent_name=False)
 	#--------
 	def constants(self):
 		return self.__constants
