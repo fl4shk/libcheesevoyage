@@ -46,7 +46,7 @@ class IntrcnLcvResp(enum.Enum, shape=2):
 #def intrcn_lcv_asize_width():
 #	return 8
 #--------
-# Write Splitrec (source (host) output, dest (device) input)
+# Write Splitrec layout (source (host) output, dest (device) input)
 #class IntrcnLcvWriteS2d(Splitrec):
 class IntrcnLcvWriteS2dLayt(dict):
 	#--------
@@ -108,7 +108,7 @@ class IntrcnLcvWriteS2dLayt(dict):
 	def DATA_WIDTH(self):
 		return self.__DATA_WIDTH
 	#--------
-# Write Splitrec (source (host) input, dest (device) output)
+# Write Splitrec layout (source (host) input, dest (device) output)
 #class IntrcnLcvWriteD2s(Splitrec):
 class IntrcnLcvWriteD2sLayt(dict):
 	#--------
@@ -148,7 +148,7 @@ class IntrcnLcvWriteD2sLayt(dict):
 		return self.__DATA_WIDTH
 	#--------
 
-# Read Splitrec (source (host) output, dest (device) input)
+# Read Splitrec layout (source (host) output, dest (device) input)
 #class IntrcnLcvReadS2d(Splitrec):
 class IntrcnLcvReadS2dLayt(dict):
 	#--------
@@ -201,7 +201,7 @@ class IntrcnLcvReadS2dLayt(dict):
 	def DATA_WIDTH(self):
 		return self.__DATA_WIDTH
 	#--------
-# Read Splitrec (source input, dest output)
+# Read Splitrec layout (source input, dest output)
 #class IntrcnLcvReadD2s(Splitrec):
 class IntrcnLcvReadD2sLayt(dict):
 	#--------
@@ -273,28 +273,32 @@ class IntrcnLcvNodeBus:
 			IntrcnLcvWriteS2dLayt(
 				ADDR_WIDTH=ADDR_WIDTH, DATA_WIDTH=DATA_WIDTH,
 				name_prefix=name_prefix
-			)
+			),
+			use_parent_name=False
 		)
 
 		self.wd2s = Splitrec(
 			IntrcnLcvWriteD2sLayt(
 				ADDR_WIDTH=ADDR_WIDTH,
 				DATA_WIDTH=DATA_WIDTH, name_prefix=name_prefix
-			)
+			),
+			use_parent_name=False
 		)
 
 		self.rs2d = Splitrec(
 			IntrcnLcvReadS2dLayt(
 				ADDR_WIDTH=ADDR_WIDTH,
 				DATA_WIDTH=DATA_WIDTH, name_prefix=name_prefix
-			)
+			),
+			use_parent_name=False
 		)
 
 		self.rd2s = Splitrec(
 			IntrcnLcvReadD2sLayt(
 				ADDR_WIDTH=ADDR_WIDTH,
 				DATA_WIDTH=DATA_WIDTH, name_prefix=name_prefix
-			)
+			),
+			use_parent_name=False
 		)
 		#--------
 		#--------

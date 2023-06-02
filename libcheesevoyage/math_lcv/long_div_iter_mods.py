@@ -248,7 +248,8 @@ class LongUdivIterBus:
 		# a suffix in the names of signals that prevents conflicts with
 		# `pst_out`'s signals' names.
 		self.itd_in = Splitrec(
-			LongUdivIterDataLayt(constants=constants, io_str="in")
+			LongUdivIterDataLayt(constants=constants, io_str="in"),
+			use_parent_name=False
 		)
 
 		#printout("testificate: ", dbg_sync_bus, "\n")
@@ -262,7 +263,8 @@ class LongUdivIterBus:
 		# a suffix in the names of signals that prevents conflicts with
 		# `pst_in`'s signals' names.
 		self.itd_out = Splitrec(
-			LongUdivIterDataLayt(constants=constants, io_str="out")
+			LongUdivIterDataLayt(constants=constants, io_str="out"),
+			use_parent_name=False
 		)
 		#--------
 		# Current quotient digit
@@ -271,7 +273,8 @@ class LongUdivIterBus:
 		# Remainder with the current chunk of `self.ps_data_in.temp_numer`
 		# shifted in
 		self.shift_in_rema = Splitrec.cast_shape(
-			constants.build_temp_t(name="shift_in_rema")
+			constants.build_temp_t(name="shift_in_rema"),
+			use_parent_name=False
 		)
 
 		# The vector of greater than comparison values
@@ -487,13 +490,15 @@ class LongUdivIterSyncBus:
 			LongUdivIterDataLayt(
 				constants=constants,
 				io_str="in_sync",
-			)
+			),
+			use_parent_name=False
 		)
 		self.itd_out = Splitrec(
 			LongUdivIterDataLayt(
 				constants=constants,
 				io_str="out_sync",
-			)
+			),
+			use_parent_name=False
 		)
 		#self.chunk_start \
 		#	= self.__constants.build_chunk_start_t(name_suffix="_sync")

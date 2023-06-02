@@ -90,8 +90,8 @@ class XbarSwitchBus:
 			for i in range(self.NUM_HOSTS())
 		]
 		#--------
-		self.inp = Splitrec(inp_shape)
-		self.outp = Splitrec(outp_shape)
+		self.inp = Splitrec(inp_shape, use_parent_name=False)
+		self.outp = Splitrec(outp_shape, use_parent_name=False)
 	#--------
 	def h2d_shape(self):
 		return self.__h2d_shape

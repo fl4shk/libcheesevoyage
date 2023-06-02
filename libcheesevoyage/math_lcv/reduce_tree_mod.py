@@ -57,6 +57,9 @@ class ReduceTreeBus:
 			self.OUTP_DATA_WIDTH(), name="outp_data"
 		)
 
+		self.inp = Splitrec(inp_shape, use_parent_name=False)
+		self.outp = Splitrec(outp_shape, use_parent_name=False)
+		#--------
 		if self.FORMAL():
 			self.formal = Splitrec(
 				{
@@ -64,11 +67,9 @@ class ReduceTreeBus:
 						self.OUTP_DATA_WIDTH(),
 						name="oracle_outp_data"
 					)
-				}
+				},
+				use_parent_name=False
 			)
-		#--------
-		self.inp = Splitrec(inp_shape)
-		self.outp = Splitrec(outp_shape)
 		#--------
 	#--------
 	def INP_DATA_WIDTH(self):

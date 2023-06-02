@@ -121,8 +121,8 @@ class VgaDriverBus:
 		outp_shape["size"] = Vec2Layt(self.CoordElemKindT())
 		#self.start_draw = Signal()
 		#--------
-		self.inp = Splitrec(inp_shape)
-		self.outp = Splitrec(outp_shape)
+		self.inp = Splitrec(inp_shape, use_parent_name=False)
+		self.outp = Splitrec(outp_shape, use_parent_name=False)
 		#--------
 
 	def CoordElemKindT(self):

@@ -28,8 +28,8 @@ class VideoDithererBus:
 		outp_shape["pos"] = self.coord_shape()
 		outp_shape["past_pos"] = self.coord_shape()
 
-		self.inp = Splitrec(inp_shape)
-		self.outp = Splitrec(outp_shape)
+		self.inp = Splitrec(inp_shape, use_parent_name=False)
+		self.outp = Splitrec(outp_shape, use_parent_name=False)
 		# Need a channel width of at least 3 for dithering to work (though
 		# if it *were* 3, it probably wouldn't work very well!)
 		assert CHAN_WIDTH > self.CHAN_WIDTH_DELTA()
