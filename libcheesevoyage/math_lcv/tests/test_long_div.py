@@ -15,5 +15,7 @@ if __name__ == "__main__":
 		CHUNK_WIDTH=2,
 		signed_reset=0,
 		#signed_reset=1,
+		USE_PIPE_SKID_BUF=True,
+		#USE_PIPE_SKID_BUF=False,
 	)
 #--------

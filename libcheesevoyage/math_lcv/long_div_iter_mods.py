@@ -718,11 +718,11 @@ class LongUdivIterSync(Elaboratable):
 			#	]
 			with m.If(
 				~ResetSignal() & past_valid
-				& (
-					0b1
-					if not constants.USE_PIPE_SKID_BUF()
-					else sb_bus.outp.fwd.valid
-				)
+				#& (
+				#	0b1
+				#	if not constants.USE_PIPE_SKID_BUF()
+				#	else sb_bus.outp.fwd.valid
+				#)
 			):
 				#--------
 				m.d.sync += [
