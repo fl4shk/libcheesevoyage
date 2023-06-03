@@ -11,6 +11,7 @@ from amaranth.asserts import Past, Rose, Fell, Stable
 
 #from libcheesevoyage.misc_util import *
 from libcheesevoyage.misc_util import psconcat, sig_keep, Blank
+from libcheesevoyage.general.container_types import Splitrec
 
 class SigInfo:
 	def __init__(
@@ -18,7 +19,7 @@ class SigInfo:
 		basenm: str,
 		shape,
 		*,
-		ObjKind=Signal,
+		ObjKind=Splitrec.cast_shape,
 		reset=0,
 		attrs: str=sig_keep(),
 		#prefix: str="",
@@ -101,16 +102,15 @@ class SigInfo:
 		**kwargs,
 	):
 		temp_kwargs = self.__kwargs if len(kwargs) == 0 else kwargs
+		kw = {}
 		if (
 			issubclass(self.ObjKind(), Signal)
 			or issubclass(self.ObjKind(), View)
 		):
-			kw = {
+			kw.update({
 				"reset": self.reset(),
 				"attrs": self.attrs(),
-			}
-		else:
-			kw = {}
+			})
 		kw.update(temp_kwargs)
 		return self.ObjKind()(
 			self.shape(),
