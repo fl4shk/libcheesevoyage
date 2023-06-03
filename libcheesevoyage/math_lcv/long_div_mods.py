@@ -49,7 +49,7 @@ class LongDivBus:
 
 		if constants.PIPELINED():
 			inp_shape["tag"] = FieldInfo(
-				1, constants.TAG_WIDTH(), name="inp_tag"
+				constants.TAG_WIDTH(), name="inp_tag"
 			)
 		#--------
 		# Outputs
