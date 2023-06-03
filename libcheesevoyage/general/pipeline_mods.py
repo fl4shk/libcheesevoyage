@@ -154,7 +154,6 @@ class PstageBusBakLayt(dict):
 #	):
 
 
-
 class PipeSkidBufBus:
 	def __init__(
 		self,
@@ -403,7 +402,7 @@ class PipeSkidBuf(Elaboratable):
 	):
 		assert len(sb_bus_lst) >= 2
 
-		for i in range(len(pipe_sb_lst) - 1):
+		for i in range(len(sb_bus_lst) - 1):
 			sb_bus = sb_bus_lst[i]
 			sb_bus_next = sb_bus_lst[i + 1]
 			parent.d.comb += [
@@ -418,7 +417,7 @@ class PipeSkidBuf(Elaboratable):
 			]
 		if tie_last_inp_bak_ready:
 			parent.d.comb += [
-				sb_bus_lst[-1].bus().inp.bak.ready.eq(0b1),
+				sb_bus_lst[-1].inp.bak.ready.eq(0b1),
 			]
 
 #class SkidBufPstageGen:

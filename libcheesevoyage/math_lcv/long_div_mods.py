@@ -15,7 +15,7 @@ import enum as pyenum
 from libcheesevoyage.misc_util import *
 #from libcheesevoyage.general.container_types import *
 from libcheesevoyage.general.general_types import SigInfo
-#from libcheesevoyage.general.pipeline_mods import *
+from libcheesevoyage.general.pipeline_mods import PipeSkidBuf
 from libcheesevoyage.math_lcv.long_div_iter_mods import (
 	LongDivConstants, LongUdivIterDataLayt,
 	LongUdivIter, LongUdivIterBus, LongUdivIterSync, LongUdivIterSyncBus,
@@ -681,7 +681,7 @@ class LongDivPipelined(Elaboratable):
 				sb_bus_lst=[
 					its_bus[i].sb_bus
 					for i in range(len(loc.m))
-				]
+				],
 				tie_first_inp_fwd_valid=True,
 				tie_last_inp_bak_ready=True,
 			)
