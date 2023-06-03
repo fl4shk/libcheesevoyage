@@ -46,7 +46,7 @@ from libcheesevoyage.misc_util import *
 #	@name.setter
 #	def name(self, n_name: str):
 #		self.__name = n_name
-@staticmethod
+#@staticmethod
 #def cast_shape(ElemKindT, SIGNED=False, *, name=None, reset=0x0,
 #	reset_less=False, attrs=None, decoder=None, src_loc_at=0):
 def cast_shape(
