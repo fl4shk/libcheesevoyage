@@ -146,9 +146,9 @@ class RgbColorLayt(StructLayout):
 #class VgaDriverBuf(Splitrec):
 #	def __init__(self, CHAN_WIDTH=RgbColor.DEF_CHAN_WIDTH()):
 #		#super().__init__(VgaDriverBufLayout(CHAN_WIDTH=CHAN_WIDTH))
-#		self.can_prep = Splitrec.cast_shape(1)
-#		self.prep = Splitrec.cast_shape(1)
-#		self.col = Splitrec.cast_shape \
+#		self.can_prep = cast_shape(1)
+#		self.prep = cast_shape(1)
+#		self.col = cast_shape \
 #			(RgbColorLayt(CHAN_WIDTH=CHAN_WIDTH))
 #
 #		self.__CHAN_WIDTH = CHAN_WIDTH
@@ -161,7 +161,7 @@ class VgaDriverBufInpInfo:
 	def __init__(self, CHAN_WIDTH=RgbColorLayt.DEF_CHAN_WIDTH()):
 		self.shape = {}
 		self.shape["prep"] = 1
-		#self.shape["col"] = Splitrec.cast_shape(RgbColorLayt(
+		#self.shape["col"] = cast_shape(RgbColorLayt(
 		#	CHAN_WIDTH=CHAN_WIDTH
 		#))
 		self.shape["col"] = RgbColorLayt(

@@ -12,9 +12,9 @@ from amaranth.hdl.ast import ValueCastable, Slice
 from amaranth.asserts import Assert, Assume, Cover
 from amaranth.asserts import Past, Rose, Fell, Stable
 
-#from libcheesevoyage.misc_util import *
+from libcheesevoyage.misc_util import *
 #from libcheesevoyage.general.general_types import SigInfo
-import libcheesevoyage.general.general_types as general_types
+#import libcheesevoyage.general.general_types as general_types
 #--------
 #def dbg_printerr(s, obj):
 #	printerr(s, ": ", type(obj), " \"", obj, "\"\n")
@@ -86,7 +86,7 @@ def cast_shape(
 	#		default=None
 	#	)
 
-	#print("Splitrec.cast_shape(): ", repr(shape), type(shape))
+	#print("cast_shape(): ", repr(shape), type(shape))
 	#temp_name = field_name_w_parent(
 	#)
 	#temp_name = field_name(
@@ -155,7 +155,7 @@ def cast_shape(
 		#print(psconcat(
 		#	"testificate: ", temp_use_parent_name,
 		#))
-		return Splitrec.cast_shape(
+		return cast_shape(
 			shape.field(),
 			#name=new_name,
 			name=temp_field_info_name,
@@ -170,7 +170,7 @@ def cast_shape(
 			src_loc_at=src_loc_at + 1, # this might be correct?
 			in_like=in_like,
 		)
-	elif isinstance(shape, general_types.SigInfo):
+	elif isinstance(shape, SigInfo):
 		if (
 			issubclass(shape.ObjKind(), Splitrec)
 			or issubclass(shape.ObjKind(), Splitarr)
@@ -229,7 +229,7 @@ def cast_shape(
 		#)
 
 		#print(psconcat(
-		#	"Splitrec.cast_shape(): making Splitrec: ",
+		#	"cast_shape(): making Splitrec: ",
 		#	repr(new_name), " ",
 		#	repr(temp_name), " ",
 		#	repr(use_parent_name),
@@ -271,7 +271,7 @@ def cast_shape(
 
 		#for key, field in shape.items():
 		#	#fields[key]
-		#	ret.__fields[key] = Splitrec.cast_shape(
+		#	ret.__fields[key] = cast_shape(
 		#		field,
 		#		#name=psconcat(new_name, "_", key),
 		#		#name=psconcat(new_name, key),
@@ -313,12 +313,12 @@ def cast_shape(
 		)
 	):
 		#print(psconcat(
-		#	"Splitrec.cast_shape(): making Splitarr: ",
+		#	"cast_shape(): making Splitarr: ",
 		#	new_name, " ",
 		#	use_parent_name,
 		#))
 		#print(psconcat(
-		#	"Splitrec.cast_shape(): making Splitarr: ",
+		#	"cast_shape(): making Splitarr: ",
 		#	repr(new_name), " ",
 		#	repr(temp_name), " ",
 		#	repr(use_parent_name),
@@ -399,7 +399,6 @@ class SigInfo:
 		shape,
 		*,
 		ObjKind=cast_shape,
-		#ObjKind=Splitrec.cast_shape,
 		reset=0,
 		attrs: str=sig_keep(),
 		#prefix: str="",
@@ -1117,7 +1116,7 @@ class Splitrec(ValueCastable):
 			##		"val=", val,
 			##	))
 
-			#temp_val = Splitrec.cast_shape(
+			#temp_val = cast_shape(
 			#	val,
 			#	#name=field_name(self, key),
 			#	name=key,
@@ -1297,7 +1296,7 @@ class Splitarr(ValueCastable):
 			#	self.extra_args_use_parent_name(),
 			#))
 			#try:
-			temp_elem = Splitrec.cast_shape(
+			temp_elem = cast_shape(
 				elem,
 				#name=psconcat(self.extra_args_name(), "_", i),
 				#name=temp_name,
@@ -1644,8 +1643,8 @@ class Vec2Layt(dict):
 class Vec2(Splitrec):
 	#def __init__(self, shape, SIGNED=False):
 	def __init__(self, shape):
-		#self.x = Splitrec.cast_shape(shape=shape, name="Vec2_x")
-		#self.y = Splitrec.cast_shape(shape=shape, name="Vec2_y")
+		#self.x = cast_shape(shape=shape, name="Vec2_x")
+		#self.y = cast_shape(shape=shape, name="Vec2_y")
 		#super().__init__({"x": shape, "y": shape})
 		super().__init__(Vec2Layt(shape=shape))
 #--------

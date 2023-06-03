@@ -12,8 +12,10 @@ from amaranth.sim import Simulator, Delay, Tick
 from enum import Enum, auto
 
 from libcheesevoyage.misc_util import psconcat, sig_keep, Blank
-from libcheesevoyage.general.container_types import FieldInfo, Splitrec
-from libcheesevoyage.general.general_types import SigInfo
+from libcheesevoyage.general.container_types import (
+	cast_shape, SigInfo, FieldInfo, Splitrec
+)
+#from libcheesevoyage.general.general_types import SigInfo
 #from libcheesevoyage.general.pipeline_mods import (
 #	PipeSkidBufBus, PipeSkidBuf
 #)
@@ -288,7 +290,7 @@ class LongUdivIterBus:
 
 		# Remainder with the current chunk of `self.ps_data_in.temp_numer`
 		# shifted in
-		self.shift_in_rema = Splitrec.cast_shape(
+		self.shift_in_rema = cast_shape(
 			constants.build_temp_t(name="shift_in_rema"),
 			use_parent_name=False
 		)
