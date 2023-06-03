@@ -77,8 +77,6 @@ class SigInfo:
 		return self.__attrs
 	def prefix(self):
 		return self.__prefix
-	def prefix(self):
-		return self.__prefix
 	def suffix(self):
 		return self.__suffix
 
