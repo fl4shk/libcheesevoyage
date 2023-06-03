@@ -35,7 +35,7 @@ class LongDivBus:
 		# Inputs
 
 		if not constants.PIPELINED():
-			inp["ready"] = FieldInfo(1, name="inp_ready")
+			inp_shape["ready"] = FieldInfo(1, name="inp_ready")
 
 		inp_shape["numer"] = FieldInfo(
 			constants.MAIN_WIDTH(), name="inp_numer"
