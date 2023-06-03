@@ -14,7 +14,7 @@ import enum as pyenum
 
 from libcheesevoyage.misc_util import *
 #from libcheesevoyage.general.container_types import *
-from libcheesevoyage.general.general_types import SigInfo
+#from libcheesevoyage.general.general_types import SigInfo
 from libcheesevoyage.general.pipeline_mods import PipeSkidBuf
 from libcheesevoyage.math_lcv.long_div_iter_mods import (
 	LongDivConstants, LongUdivIterDataLayt,

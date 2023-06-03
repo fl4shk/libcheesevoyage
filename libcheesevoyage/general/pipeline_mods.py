@@ -8,7 +8,9 @@ from amaranth.lib import enum
 #from libcheesevoyage.misc_util import psconcat, mk_keep_obj
 from libcheesevoyage.misc_util import psconcat, sig_keep, Blank
 from libcheesevoyage.general.general_types import SigInfo
-from libcheesevoyage.general.container_types import FieldInfo, Splitrec
+from libcheesevoyage.general.container_types import (
+	FieldInfo, Splitrec,
+)
 #from libcheesevoyage.math_lcv.reduce_tree_mod import *
 
 

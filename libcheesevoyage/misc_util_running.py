@@ -11,7 +11,7 @@ from amaranth.asserts import Past, Rose, Fell, Stable
 
 from amaranth.back import verilog
 
-from libcheesevoyage.general.container_types import *
+from libcheesevoyage.general.container_types import Splitarr
 
 def inner_ports(bus):
 	ret = []
