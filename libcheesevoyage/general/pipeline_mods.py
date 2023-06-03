@@ -151,7 +151,8 @@ class PstageBusBakLayt(dict):
 #	def __init__(
 #		self,
 #		*,
-#		OPT_INCLUDE_BUSY: bool=False,
+#		OPT_INCLUDE_VALID_BUSY: bool=False,
+#		OPT_INCLUDE_READY_BUSY: bool=False,
 #	):
 
 
@@ -160,10 +161,12 @@ class PipeSkidBufBus:
 		self,
 		data_info: SigInfo,
 		*,
-		OPT_INCLUDE_BUSY: bool=False,
+		OPT_INCLUDE_VALID_BUSY: bool=False,
+		OPT_INCLUDE_READY_BUSY: bool=False,
 	):
 		self.__data_info = data_info
-		self.__OPT_INCLUDE_BUSY = OPT_INCLUDE_BUSY
+		self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
+		self.__OPT_INCLUDE_READY_BUSY = OPT_INCLUDE_READY_BUSY
 
 		self.inp = Blank()
 		self.outp = Blank()
@@ -194,8 +197,10 @@ class PipeSkidBufBus:
 			use_parent_name=False,
 			#attrs=sig_keep(),
 		)
-		if OPT_INCLUDE_BUSY:
-			self.inp.busy = Signal(1, name="inp_busy")
+		if OPT_INCLUDE_VALID_BUSY:
+			self.inp.valid_busy = Signal(1, name="inp_valid_busy")
+		if OPT_INCLUDE_READY_BUSY:
+			self.inp.ready_busy = Signal(1, name="inp_ready_busy")
 		self.inp.clear = Signal(1, name="inp_clear")
 
 	def data_info(self):
@@ -207,8 +212,10 @@ class PipeSkidBufBus:
 		return self.data_info().ObjKind()
 	def data_reset(self):
 		return self.data_info().reset()
-	def OPT_INCLUDE_BUSY(self):
-		return self.__OPT_INCLUDE_BUSY
+	def OPT_INCLUDE_VALID_BUSY(self):
+		return self.__OPT_INCLUDE_VALID_BUSY
+	def OPT_INCLUDE_READY_BUSY(self):
+		return self.__OPT_INCLUDE_READY_BUSY
 
 # Based on
 # https://github.com/iammituraj/skid_buffer/blob/main/pipe_skid_buffer.sv
@@ -217,18 +224,23 @@ class PipeSkidBuf(Elaboratable):
 		self,
 		data_info: SigInfo,
 		*,
-		OPT_INCLUDE_BUSY: bool=False
+		OPT_INCLUDE_VALID_BUSY: bool=False,
+		OPT_INCLUDE_READY_BUSY: bool=False,
 	):
 		self.__bus = PipeSkidBufBus(
 			data_info=data_info,
-			OPT_INCLUDE_BUSY=OPT_INCLUDE_BUSY
+			OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
+			OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
 		)
-		self.__OPT_INCLUDE_BUSY = OPT_INCLUDE_BUSY
+		self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
+		self.__OPT_INCLUDE_READY_BUSY = OPT_INCLUDE_READY_BUSY
 
 	def bus(self):
 		return self.__bus
-	def OPT_INCLUDE_BUSY(self):
-		return self.__OPT_INCLUDE_BUSY
+	def OPT_INCLUDE_VALID_BUSY(self):
+		return self.__OPT_INCLUDE_VALID_BUSY
+	def OPT_INCLUDE_READY_BUSY(self):
+		return self.__OPT_INCLUDE_READY_BUSY
 	def data_info(self):
 		return self.bus().data_info()
 	def data_shape(self):
@@ -245,7 +257,8 @@ class PipeSkidBuf(Elaboratable):
 		#--------
 		bus = self.bus()
 		data_info = bus.data_info()
-		OPT_INCLUDE_BUSY = self.OPT_INCLUDE_BUSY()
+		OPT_INCLUDE_VALID_BUSY = self.OPT_INCLUDE_VALID_BUSY()
+		OPT_INCLUDE_READY_BUSY = self.OPT_INCLUDE_READY_BUSY()
 
 		loc = Blank()
 		#--------
@@ -372,20 +385,36 @@ class PipeSkidBuf(Elaboratable):
 		# assign o_valid = valid_rg ;
 		m.d.comb += [
 			loc.c.ready.eq(Mux(
-				~bus.inp.clear,
+				~bus.inp.clear
+				& (
+					# Use a Python "mux" instead of an Amaranth `Mux`
+					# AND the upstream `ready` with ~`ready_busy`
+					0b1
+					if not OPT_INCLUDE_READY_BUSY
+					else ~bus.inp.ready_busy
+				),
 				bus.inp.bak.ready | ~loc.s.valid_rg,
 				0b0,
 			)),
-			bus.outp.bak.ready.eq(loc.s.ready_rg),
+			bus.outp.bak.ready.eq(
+				loc.s.ready_rg
+				& (
+					# Use a Python "mux" instead of an Amaranth `Mux`
+					# AND the upstream `ready` with ~`ready_busy`
+					0b1
+					if not OPT_INCLUDE_READY_BUSY
+					else ~bus.inp.ready_busy
+				)
+			),
 			bus.outp.fwd.data.eq(loc.s.data_rg),
 			bus.outp.fwd.valid.eq(
 				loc.s.valid_rg
 				& (
 					# Use a Python "mux" instead of an Amaranth `Mux`
-					# AND the downstream `valid` with ~`busy`
+					# AND the downstream `valid` with ~`valid_busy`
 					0b1
-					if not OPT_INCLUDE_BUSY
-					else ~bus.inp.busy
+					if not OPT_INCLUDE_VALID_BUSY
+					else ~bus.inp.valid_busy
 				)
 			),
 		]
@@ -428,7 +457,6 @@ class PipeSkidBuf(Elaboratable):
 #		data_info: SigInfo,
 #		*,
 #		#FORMAL: bool=False,
-#		OPT_INCLUDE_BUSY: bool=False,
 #		#OPT_INCLUDE_CLEAR: bool=False,
 #		submod_prefix=None, # submodule prefix (can be a string)
 #	):

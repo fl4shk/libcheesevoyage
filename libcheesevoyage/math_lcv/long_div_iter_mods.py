@@ -570,7 +570,8 @@ class LongUdivIterSyncBus:
 		#if constants.USE_PIPE_SKID_BUF():
 		self.sb_bus = pipeline_mods.PipeSkidBufBus(
 			data_info=self.__data_info,
-			OPT_INCLUDE_BUSY=False,
+			OPT_INCLUDE_VALID_BUSY=False,
+			OPT_INCLUDE_READY_BUSY=False,
 		)
 			#self.inp.valid = Signal(
 			#	1, name="valid_in"
@@ -638,7 +639,8 @@ class LongUdivIterSync(Elaboratable):
 		if constants.USE_PIPE_SKID_BUF():
 			skid_buf = pipeline_mods.PipeSkidBuf(
 				data_info=bus.data_info(),
-				OPT_INCLUDE_BUSY=False,
+				OPT_INCLUDE_VALID_BUSY=False,
+				OPT_INCLUDE_READY_BUSY=False,
 			)
 			m.submodules += skid_buf
 			sb_bus = skid_buf.bus()
