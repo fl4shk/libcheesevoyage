@@ -661,21 +661,30 @@ class LongDivPipelined(Elaboratable):
 					for i in range(len(loc.m) - 1)
 			]
 		else: # if constants.USE_PIPE_SKID_BUF():
-			for i in range(len(loc.m) - 1):
-				m.d.comb += [
-					# Forwards connections
-					its_bus[i + 1].sb_bus.inp.fwd.eq(
-						its_bus[i].sb_bus.outp.fwd
-					),
-					# Backwards connections
-					its_bus[i].sb_bus.inp.bak.eq(
-						its_bus[i + 1].sb_bus.outp.bak
-					),
+			#for i in range(len(loc.m) - 1):
+			#	m.d.comb += [
+			#		# Forwards connections
+			#		its_bus[i + 1].sb_bus.inp.fwd.eq(
+			#			its_bus[i].sb_bus.outp.fwd
+			#		),
+			#		# Backwards connections
+			#		its_bus[i].sb_bus.inp.bak.eq(
+			#			its_bus[i + 1].sb_bus.outp.bak
+			#		),
+			#	]
+			#m.d.comb += [
+			#	its_bus[0].sb_bus.inp.fwd.valid.eq(0b1),
+			#	its_bus[-1].sb_bus.inp.bak.ready.eq(0b1),
+			#]
+			PipeSkidBuf.connect(
+				parent=m,
+				sb_bus_lst=[
+					its_bus[i].sb_bus
+					for i in range(len(loc.m))
 				]
-			m.d.comb += [
-				its_bus[0].sb_bus.inp.fwd.valid.eq(0b1),
-				its_bus[-1].sb_bus.inp.bak.ready.eq(0b1),
-			]
+				tie_first_inp_fwd_valid=True,
+				tie_last_inp_bak_ready=True,
+			)
 		#--------
 		m.d.sync += [
 			#--------

@@ -394,6 +394,32 @@ class PipeSkidBuf(Elaboratable):
 		#--------
 		return m
 		#--------
+	@staticmethod
+	def connect(
+		parent: Module,
+		sb_bus_lst: list,
+		tie_first_inp_fwd_valid: bool=True,
+		tie_last_inp_bak_ready: bool=True,
+	):
+		assert len(sb_bus_lst) >= 2
+
+		for i in range(len(pipe_sb_lst) - 1):
+			sb_bus = sb_bus_lst[i]
+			sb_bus_next = sb_bus_lst[i + 1]
+			parent.d.comb += [
+				# Forwards connections
+				sb_bus_next.inp.fwd.eq(sb_bus.outp.fwd),
+				# Backwards connections
+				sb_bus.inp.bak.eq(sb_bus_next.outp.bak),
+			]
+		if tie_first_inp_fwd_valid:
+			parent.d.comb += [
+				sb_bus_lst[0].inp.fwd.valid.eq(0b1),
+			]
+		if tie_last_inp_bak_ready:
+			parent.d.comb += [
+				sb_bus_lst[-1].bus().inp.bak.ready.eq(0b1),
+			]
 
 #class SkidBufPstageGen:
 #	def __init__(
