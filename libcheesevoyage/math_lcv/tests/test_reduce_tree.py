@@ -2,8 +2,9 @@
 
 from amaranth import *
 
-from libcheesevoyage import *
+#from libcheesevoyage import *
 from libcheesevoyage.misc_util_running import *
+from libcheesevoyage.math_lcv import *
 #--------
 if __name__ == "__main__":
 	formal_non_sync(
