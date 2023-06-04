@@ -463,6 +463,25 @@ class PipeSkidBuf(Elaboratable):
 			child_sb_bus.inp.bak.eq(parent_sb_bus.inp.bak),
 			parent_sb_bus.outp.bak.eq(child_sb_bus.outp.bak),
 		]
+		if (
+			parent_sb_bus.OPT_INCLUDE_VALID_BUSY()
+			and child_sb_bus.OPT_INCLUDE_VALID_BUSY()
+		):
+			m.d.comb += [
+				child_sb_bus.inp.valid_busy.eq(
+					parent_sb_bus.inp.valid_busy
+				)
+			]
+		if (
+			parent_sb_bus.OPT_INCLUDE_READY_BUSY()
+			and child_sb_bus.OPT_INCLUDE_READY_BUSY()
+		):
+			m.d.comb += [
+				child_sb_bus.inp.ready_busy.eq(
+					parent_sb_bus.inp.ready_busy
+				)
+			]
+
 		if parent_data is None:
 			parent.d.comb += [
 				parent_sb_bus.outp.fwd.data.eq(child_sb_bus.outp.fwd.data),
