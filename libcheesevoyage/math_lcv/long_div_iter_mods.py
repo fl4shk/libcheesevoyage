@@ -689,17 +689,27 @@ class LongUdivIterSync(Elaboratable):
 		else: # constants.USE_PIPE_SKID_BUF():
 			m.d.comb += [
 				sb_bus.inp.clear.eq(0b0),
-				sb_bus.inp.fwd.eq(bus.sb_bus.inp.fwd),
-				sb_bus.inp.bak.eq(bus.sb_bus.inp.bak),
-				#bus.sb_bus.outp.fwd.eq(sb_bus)
-				#bus.sb_bus.outp.fwd.eq(sb_bus.outp.fwd),
+
+				#sb_bus.inp.fwd.eq(bus.sb_bus.inp.fwd),
+				#sb_bus.inp.bak.eq(bus.sb_bus.inp.bak),
+				##bus.sb_bus.outp.fwd.eq(sb_bus)
+				##bus.sb_bus.outp.fwd.eq(sb_bus.outp.fwd),
+				##bus.sb_bus.outp.bak.eq(sb_bus.outp.bak),
+				#bus.sb_bus.outp.fwd.valid.eq(sb_bus.outp.fwd.valid),
 				#bus.sb_bus.outp.bak.eq(sb_bus.outp.bak),
-				bus.sb_bus.outp.fwd.valid.eq(sb_bus.outp.fwd.valid),
-				bus.sb_bus.outp.bak.eq(sb_bus.outp.bak),
-				itd_in.eq(sb_bus.outp.fwd.data),
-				# `itd_out_sync` is set to `bus.sb_bus.outp.fwd.data`
-				bus.sb_bus.outp.fwd.data.eq(itd_out),
+				#itd_in.eq(sb_bus.outp.fwd.data),
+				## `itd_out_sync` is set to `bus.sb_bus.outp.fwd.data`
+				#bus.sb_bus.outp.fwd.data.eq(itd_out),
 			]
+			pipeline_mods.PipeSkidBuf.connect_child(
+				parent=m,
+				parent_sb_bus=bus.sb_bus,
+				child_sb_bus=sb_bus,
+				parent_data={
+					"from_child": itd_in,
+					"to_out": itd_out,
+				},
+			)
 		#--------
 		if constants.FORMAL():
 			#--------

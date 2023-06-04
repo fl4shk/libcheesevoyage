@@ -449,6 +449,29 @@ class PipeSkidBuf(Elaboratable):
 			parent.d.comb += [
 				sb_bus_lst[-1].inp.bak.ready.eq(0b1),
 			]
+	@staticmethod
+	def connect_child(
+		parent: Module,
+		parent_sb_bus,
+		child_sb_bus,
+		parent_data=None,
+	):
+		parent.d.comb += [
+			child_sb_bus.inp.fwd.eq(parent_sb_bus.inp.fwd),
+			#parent_sb_bus.outp.fwd.eq(child_sb_bus.outp.fwd),
+			parent_sb_bus.outp.fwd.valid.eq(child_sb_bus.outp.fwd.valid),
+			child_sb_bus.inp.bak.eq(parent_sb_bus.inp.bak),
+			parent_sb_bus.outp.bak.eq(child_sb_bus.outp.bak),
+		]
+		if parent_data is None:
+			parent.d.comb += [
+				parent_sb_bus.outp.fwd.data.eq(child_sb_bus.outp.fwd.data),
+			]
+		else: # if parent_data is not None:
+			parent.d.comb += [
+				parent_data["from_child"].eq(child_sb_bus.outp.fwd.data),
+				parent_sb_bus.outp.fwd.data.eq(parent_data["to_out"]),
+			]
 
 #class SkidBufPstageGen:
 #	def __init__(
