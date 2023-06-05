@@ -172,20 +172,38 @@ def cast_shape(
 		)
 	elif isinstance(shape, SigInfo):
 		if (
-			issubclass(shape.ObjKind(), Splitrec)
-			or issubclass(shape.ObjKind(), Splitarr)
+			(
+				isinstance(shape.ObjKind(), type)
+				and (
+					issubclass(shape.ObjKind(), Splitrec)
+					or issubclass(shape.ObjKind(), Splitarr)
+				)
+			) or (
+				shape.ObjKind() == cast_shape
+			)
 		):
+			temp_kwargs = {
+				#"prefix": "",
+				#"suffix": "",
+				"use_parent_name": use_parent_name,
+				#"parent_name": parent_name,
+				#"parent": parent,
+				"src_loc_at": src_loc_at + 1,
+				"in_like": in_like,
+			}
+			#if shape.ObjKind() != cast_shape:
 			return shape.mk_sig(
 				#basenm=new_name,
 				basenm=temp_name,
-				#prefix="",
-				#suffix="",
-				use_parent_name=use_parent_name,
-				#parent_name=parent_name,
-				#parent=parent,
-				src_loc_at=src_loc_at + 1,
-				in_like=in_like,
+				**temp_kwargs,
 			)
+			#else:
+			#	return shape.ObjKind()(
+			#		#name=new_name,
+			#		name=temp_name,
+			#		shape=shape.shape(),
+			#		**temp_kwargs,
+			#	)
 		else:
 			return shape.mk_sig(
 				#basenm=new_name,
@@ -483,8 +501,11 @@ class SigInfo:
 		temp_kwargs = self.__kwargs if len(kwargs) == 0 else kwargs
 		kw = {}
 		if (
-			issubclass(self.ObjKind(), Signal)
-			or issubclass(self.ObjKind(), View)
+			isinstance(self.ObjKind(), type)
+			and (
+				issubclass(self.ObjKind(), Signal)
+				or issubclass(self.ObjKind(), View)
+			)
 		):
 			kw.update({
 				"reset": self.reset(),
@@ -722,7 +743,8 @@ def do_print_flattened(obj, spaces=0):
 		)
 # A record type which is composed of separate signals.  This allows setting
 # the attributes of every signal.
-class Splitrec(ValueCastable):
+#class Splitrec(ValueCastable):
+class Splitrec:
 	# Temporary class for until `Signal.like()` works with a `View`
 	#class View:
 	#	def __init__(self, shape, **kwargs):
@@ -1164,17 +1186,25 @@ class Splitrec(ValueCastable):
 	#--------
 	def eq(self, other):
 		#printout("Splitrec.eq(): ", type(other), ", ", other, "\n")
-		try:
-			Value.cast(other)
-		except Exception:
-			raise TypeError(
-				psconcat
-				("Need to be able to cast `other`, {!r}, ".format(other),
-				"to `Value")
-			)
-		return self.as_value().eq(Value.cast(other))
+		if not (
+			isinstance(other, Splitrec)
+			or isinstance(other, Splitarr)
+		):
+			try:
+				Value.cast(other)
+			except Exception:
+				raise TypeError(
+					psconcat
+					("Need to be able to cast `other`, {!r}, ".format(
+						other
+					),
+					"to `Value")
+				)
+			return self.as_value().eq(Value.cast(other))
+		else:
+			return self.as_value().eq(other.as_value())
 	#--------
-	@ValueCastable.lowermethod
+	#@ValueCastable.lowermethod
 	def as_value(self):
 		#printout("Splitrec.as_value(): ", self.flattened(), "\n")
 		return Cat(*self.flattened())
@@ -1238,7 +1268,8 @@ class Splitrec(ValueCastable):
 	#	return eval(psconcat("Cat(" + ",".join(self.flattened()) + ")"))
 	#--------
 #--------
-class Splitarr(ValueCastable):
+#class Splitarr(ValueCastable):
+class Splitarr:
 	#--------
 	def __init__(
 		self,
@@ -1541,15 +1572,23 @@ class Splitarr(ValueCastable):
 	#	self.lst()[key] = val
 	#--------
 	def eq(self, other):
-		try:
-			Value.cast(other)
-		except Exception:
-			raise TypeError(psconcat
-				("Need to be able to cast `other`, `{!r}`, ".format(other),
-				"to `Value"))
-		return self.as_value().eq(Value.cast(other))
+		if not (
+			isinstance(other, Splitrec)
+			or isinstance(other, Splitarr)
+		):
+			try:
+				Value.cast(other)
+			except Exception:
+				raise TypeError(psconcat
+					("Need to be able to cast `other`, `{!r}`, ".format(
+						other
+					),
+					"to `Value"))
+			return self.as_value().eq(Value.cast(other))
+		else:
+			return self.as_value().eq(other.as_value())
 	#--------
-	@ValueCastable.lowermethod
+	#@ValueCastable.lowermethod
 	def as_value(self):
 		return Cat(*self.flattened())
 		#return Cat(self.flattened())

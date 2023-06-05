@@ -456,6 +456,17 @@ class PipeSkidBuf(Elaboratable):
 		child_sb_bus,
 		parent_data=None,
 	):
+		# This function is especially intended for when you have a
+		# `<YourModule>Bus` that has its own `PipeSkidBufBus` instance that
+		# you want to connect to the `PipeSkidBufBus` of an internal
+		# `PipeSkidBuf`.
+
+		# `parent_data` not being `None` provides the ability to do
+		# internal processing on the `PipeSkidBuf`'s fwd output.
+		# If you can't do all the needed processing on the `PipeSkidBuf`'s
+		# fwd output, then you'll need to assert
+		# `child_sb_bus.inp.valid_busy` until you're done with your
+		# processing.
 		parent.d.comb += [
 			child_sb_bus.inp.fwd.eq(parent_sb_bus.inp.fwd),
 			#parent_sb_bus.outp.fwd.eq(child_sb_bus.outp.fwd),
