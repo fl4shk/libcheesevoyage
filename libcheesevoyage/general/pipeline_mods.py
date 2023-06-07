@@ -506,10 +506,11 @@ class PipeSkidBuf(Elaboratable):
 		# `child_sb_bus.inp.valid_busy` until you're done with your
 		# processing.
 		parent.d.comb += [
-			child_sb_bus.inp.fwd.eq(parent_sb_bus.inp.fwd),
-			#parent_sb_bus.outp.fwd.eq(child_sb_bus.outp.fwd),
+			#child_sb_bus.inp.fwd.eq(parent_sb_bus.inp.fwd),
+			##parent_sb_bus.outp.fwd.eq(child_sb_bus.outp.fwd),
+			child_sb_bus.inp.eq(parent_sb_bus.inp),
 			parent_sb_bus.outp.fwd.valid.eq(child_sb_bus.outp.fwd.valid),
-			child_sb_bus.inp.bak.eq(parent_sb_bus.inp.bak),
+			#child_sb_bus.inp.bak.eq(parent_sb_bus.inp.bak),
 			parent_sb_bus.outp.bak.eq(child_sb_bus.outp.bak),
 		]
 		if (
