@@ -119,17 +119,20 @@ class PstageBusFwdLayt(dict):
 	def __init__(
 		self,
 		data_info: SigInfo,
-		io_str: str,
+		#io_str: str,
 	):
 		shape = {}
 		shape["valid"] = FieldInfo(
-			1, name=f"fwd_valid_{io_str}",
+			1,
+			#name=f"fwd_valid_{io_str}",
+			name="fwd_valid",
 			#use_parent_name=False,
 			attrs=sig_keep(),
 		)
 		shape["data"] = FieldInfo(
 			data_info,
-			name=f"fwd_data_{io_str}",
+			#name=f"fwd_data_{io_str}",
+			name="fwd_data",
 			#use_parent_name=False,
 			attrs=sig_keep(),
 		)
@@ -137,12 +140,13 @@ class PstageBusFwdLayt(dict):
 class PstageBusBakLayt(dict):
 	def __init__(
 		self,
-		io_str: str,
+		#io_str: str,
 	):
 		shape = {}
 		shape["ready"] = FieldInfo(
 			1,
-			name=f"bak_ready_{io_str}",
+			#name=f"bak_ready_{io_str}",
+			name="bak_ready",
 			#use_parent_name=False,
 			attrs=sig_keep(),
 		)
@@ -156,6 +160,59 @@ class PstageBusBakLayt(dict):
 #	):
 
 
+class PipeSkidBufInpLayt(dict):
+	def __init__(
+		self, 
+		data_info: SigInfo,
+		*,
+		OPT_INCLUDE_VALID_BUSY: bool=False,
+		OPT_INCLUDE_READY_BUSY: bool=False,
+	):
+		shape = {}
+		shape["fwd"] = FieldInfo(
+			PstageBusFwdLayt(
+				data_info=data_info,
+				#io_str="in"
+			),
+			use_parent_name=False,
+			#attrs=sig_keep(),
+		)
+		shape["bak"] = FieldInfo(
+			PstageBusBakLayt(
+				#io_str="in"
+			),
+			use_parent_name=False,
+			#attrs=sig_keep(),
+		)
+		if OPT_INCLUDE_VALID_BUSY:
+			shape["valid_busy"] = FieldInfo(1, name="valid_busy")
+		if OPT_INCLUDE_READY_BUSY:
+			shape["ready_busy"] = FieldInfo(1, name="inp_ready_busy")
+		shape["clear"] = FieldInfo(1, name="inp_clear")
+		super().__init__(shape)
+class PipeSkidBufOutpLayt(dict):
+	def __init__(
+		self,
+		data_info: SigInfo,
+	):
+		shape = {}
+		shape["fwd"] = FieldInfo(
+			PstageBusFwdLayt(
+				data_info=data_info,
+				#io_str="out"
+			),
+			use_parent_name=False,
+			#attrs=sig_keep(),
+		)
+		shape["bak"] = FieldInfo(
+			PstageBusBakLayt(
+				#io_str="out"
+			),
+			use_parent_name=False,
+			#attrs=sig_keep(),
+		)
+		super().__init__(shape)
+		
 class PipeSkidBufBus:
 	def __init__(
 		self,
@@ -167,41 +224,22 @@ class PipeSkidBufBus:
 		self.__data_info = data_info
 		self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
 		self.__OPT_INCLUDE_READY_BUSY = OPT_INCLUDE_READY_BUSY
-
-		self.inp = Blank()
-		self.outp = Blank()
-
-		self.inp.fwd = Splitrec(
-			PstageBusFwdLayt(
+		self.inp = Splitrec(
+			PipeSkidBufInpLayt(
 				data_info=data_info,
-				io_str="in"
+				OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
+				OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
 			),
-			use_parent_name=False,
-			#attrs=sig_keep(),
+			#use_parent_name=False,
 		)
-		self.inp.bak = Splitrec(
-			PstageBusBakLayt(io_str="in"),
-			use_parent_name=False,
-			#attrs=sig_keep(),
+		self.outp = Splitrec(
+			PipeSkidBufOutpLayt(data_info=data_info),
+			#use_parent_name=False,
 		)
-		self.outp.fwd = Splitrec(
-			PstageBusFwdLayt(
-				data_info=data_info,
-				io_str="out"
-			),
-			use_parent_name=False,
-			#attrs=sig_keep(),
-		)
-		self.outp.bak = Splitrec(
-			PstageBusBakLayt(io_str="out"),
-			use_parent_name=False,
-			#attrs=sig_keep(),
-		)
-		if OPT_INCLUDE_VALID_BUSY:
-			self.inp.valid_busy = Signal(1, name="inp_valid_busy")
-		if OPT_INCLUDE_READY_BUSY:
-			self.inp.ready_busy = Signal(1, name="inp_ready_busy")
-		self.inp.clear = Signal(1, name="inp_clear")
+
+		#self.inp = Blank()
+		#self.outp = Blank()
+
 
 	def data_info(self):
 		return self.__data_info

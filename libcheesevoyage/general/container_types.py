@@ -46,6 +46,30 @@ from libcheesevoyage.misc_util import *
 #	@name.setter
 #	def name(self, n_name: str):
 #		self.__name = n_name
+#class ObjConstants:
+#	def __init__(
+#		#shape,
+#		*,
+#		name=None,
+#		use_parent_name=False,
+#		parent_name=None,
+#		reset=None,
+#		reset_less=None,
+#		attrs=None,
+#		decoder=None,
+#		src_loc_at=0,
+#		in_like: bool=False
+#	):
+#		self.__name = name
+#		self.__use_parent_name = use_parent_name
+#		self.__parent_name = parent_name
+#		self.__reset = reset
+#		self.__reset_less = reset_less
+#		self.__attrs = attrs
+#		self.__decoder = decoder
+#		self.__src_loc_at  src_loc_at
+#		self.__in_like :  in_like=Fals
+
 #@staticmethod
 #def cast_shape(ElemKindT, SIGNED=False, *, name=None, reset=0x0,
 #	reset_less=False, attrs=None, decoder=None, src_loc_at=0):
@@ -753,21 +777,13 @@ class Splitrec:
 	#--------
 	def __init__(
 		self,
-		#shape: OrderedDict=OrderedDict(),
 		shape: dict=dict(),
 		*,
 		name=None,
-		#use_parent_name: bool=True,
-		#use_parent_name: bool=False,
-		#use_parent_name=None,
 		use_parent_name=True,
-		#parent_name=None,
-		#parent=None,
 		src_loc_at=0,
 		in_like: bool=False,
 	):
-		#self.__dict__["__fields"] = fields
-		#self.__dict__["_Splitrec__fields"] = fields
 		if name is None:
 			new_name = tracer.get_var_name(
 				depth=src_loc_at + 2,
@@ -776,20 +792,10 @@ class Splitrec:
 		else:
 			new_name = name
 
-		#if parent_name is None:
-		#	new_parent_name = 
-
-		#self.__extra_args_name = name
 		self.__extra_args_name = new_name
 		self.__extra_args_use_parent_name = use_parent_name
-		#self.__extra_args_parent = parent
-		#self.__extra_args_parent_name = parent_name
 		self.__extra_args_src_loc_at = src_loc_at
 
-		#self.__fields = fields
-		#self.__fields = dict()
-		#self.__fields = fields
-		#self.__fields = OrderedDict()
 		self.__fields = dict()
 		for key, field_shape in shape.items():
 			#if isinstance(field, View):
@@ -802,16 +808,8 @@ class Splitrec:
 			self.__fields[key] = cast_shape(
 				field_shape,
 				name=key,
-				#name=field_name(
-				#	parent_name=new_name,
-				#	name=key,
-				#	use_parent_name=use_parent_name
-				#)
 				use_parent_name=use_parent_name,
 				parent_name=new_name,
-				#parent_name=parent_name,
-				#parent=self,
-				#reset=reset
 				src_loc_at=src_loc_at + 1,
 				in_like=in_like,
 			)
@@ -846,75 +844,10 @@ class Splitrec:
 		else:
 			new_name = name
 
-		#new_name = field_name_w_parent(
-		#	parent=parent,
-		#	name=new_name,
-		#	use_parent_name=use_parent_name,
-		#)
-		#new_name = (
-		#	psconcat(parent.extra_args_name(), "_", new_name)
-		#	if (
-		#		field_name_have_parent(parent)
-		#		and field_name_calc_upn(
-		#			parent=parent,
-		#			use_parent_name=use_parent_name,
-		#			in_like=in_like,
-		#		)
-		#	)
-		#	else new_name
-		#)
-		#print(psconcat("Splitrec.like(): ", new_name))
-
-		#fields = OrderedDict()
-
-		#for key, field in other.fields().items():
-		#	try:
-		#		Value.cast(field)
-		#	except Exception:
-		#		raise TypeError(("`field` `{!r}` must be castable to "
-		#			+ "`Value`").format(field)) from None
-
-		#	temp_src_loc_at = src_loc_at + 1
-
-		#	like_func = (
-		#		type(field).like
-		#		if not isinstance(field, View)
-		#		else Signal.like
-		#	)
-		#	if (
-		#		isinstance(field, Splitrec)
-		#		or isinstance(field, Splitarr)
-		#	):
-		#		fields[key] = like_func(
-		#			field,
-		#			#name=temp_name,
-		#			name=new_name,
-		#			use_parent_name=use_parent_name,
-		#			#parent=parent,
-		#			src_loc_at=temp_src_loc_at
-		#		)
-		#	else:
-		#		#temp_name = field_name(
-		#		#)
-
-		#		#temp_name = field_name_w_parent(
-		#		#	parent=parent,
-		#		#	name=temp_name,
-		#		#	use_parent_name=use_parent_name,
-		#		#)
-
-		#		fields[key] = like_func(
-		#			field,
-		#			name=new_name,
-		#			#name=temp_name,
-		#			src_loc_at=temp_src_loc_at
-		#		)
-
 		kw = {
 			#"fields": fields,
 			"shape": other.shape(),
 			"name": new_name,
-			#"name": name,
 			#"name_suffix": name_suffix,
 			#"use_parent_name": use_parent_name,
 			"use_parent_name": field_name_calc_upn(
@@ -922,17 +855,9 @@ class Splitrec:
 				use_parent_name=use_parent_name,
 				in_like=True,
 			),
-			#"use_parent_name":(
-			#	False
-			#	if (
-			#		not isinstance(parent, Splitrec)
-			#		and not isinstance(parent, Splitarr)
-			#	)
-			#	else parent.extra_args_use_parent_name(),
-			#),
 			#"parent": parent,
 			"src_loc_at": src_loc_at,
-			"in_like": True
+			"in_like": True,
 		}
 
 		kw.update(kwargs)
@@ -964,15 +889,6 @@ class Splitrec:
 	#	return self.__extra_args_parent_name
 	def extra_args_src_loc_at(self):
 		return self.__extra_args_src_loc_at
-	#def field_name(self, name: str):
-	#	return (
-	#		name
-	#		if (
-	#			self.extra_args_name() is None
-	#			or not self.extra_args_use_parent_name()
-	#		)
-	#		else psconcat(self.extra_args_name(), "_", name)
-	#	)
 	#--------
 	#def __getitem__(self, key):
 	#	return self.__fields[key]
@@ -986,17 +902,6 @@ class Splitrec:
 	#	else:
 	#		return ret
 	def __getattribute__(self, key):
-		##ret = object.__getattribute__(self, key)
-		#ret = super().__getattribute__(key)
-		##if isinstance(ret, Splitrec.View):
-		##	return ret.view
-		##else:
-		##	return ret
-		#return ret
-		#print(psconcat(
-		#	"Splitrec.__getattribute__(): ",
-		#	key
-		#))
 		if (
 			key[0] == "_"
 			or key in Splitrec.__dict__
@@ -1038,129 +943,6 @@ class Splitrec:
 					"`Splitrec.__init__()`. "
 				)
 			)
-			##print(psconcat(
-			##	"Splitrec.__setattr__(): `try`: ",
-			##	val, " ",
-			##	field_name(self, key), " ",
-			##	self.extra_args_use_parent_name(),
-			##))
-			#parent=self.extra_args_parent()
-			#use_parent_name = self.extra_args_use_parent_name()
-			##temp_name = field_name_w_parent(
-			##)
-
-			##temp_name = field_name(
-			##	self.extra_args_name(),
-			##	key,
-			##	use_parent_name
-			##)
-
-			##print(psconcat(
-			##	"Splitrec.__setattr__(): begin: ",
-			##	val, " ",
-			##	temp_name, " ",
-			##	use_parent_name
-			##))
-			##new_name = field_name_w_parent(
-			##	parent=parent,
-			##	name=self.extra_args_name(),
-			##	#use_parent_name=self.extra_args_use_parent_name(),
-			##	use_parent_name=use_parent_name,
-			##)
-			##temp_name = key
-			##temp_name = field_name_w_new_name(
-			##	parent=parent,
-			##	new_name=new_name,
-			##	name=key,
-			##	use_parent_name=use_parent_name,
-			##)
-			##temp_name = field_name_w_parent(
-			##	parent=parent,
-			##	name=self.extra_args_name(),
-			##	#use_parent_name=self.extra_args_use_parent_name(),
-			##	use_parent_name=use_parent_name,
-			##)
-			##temp_name = field_name_w_new_name(
-			##	parent=parent,
-			##	new_name=new_name,
-			##	name=key,
-			##	use_parent_name=use_parent_name,
-			##)
-
-			##try:
-			#	#super().__setattr__
-			##use_parent_name
-
-			##if (
-			##	#key == "c"
-			##	#temp_name[0] == "c"
-			##	#and
-			##	not isinstance(val, Signal)
-			##	and not isinstance(val, View)
-			##	and not isinstance(val, Splitrec)
-			##	and not isinstance(val, Splitarr)
-			##):
-			##	print(psconcat(
-			##		"testificate: ",
-			##		#"new_name=", new_name, " ",
-			##		"temp_name=", temp_name,
-			##	))
-
-			##if isinstance(val, Splitrec):
-			##	print(psconcat(
-			##		"Splitrec.__setattr__(): val Splitrec: ",
-			##		"name=", val.extra_args_name(), " ",
-			##		#"key=", key, " ",
-			##		#"flattened=", val.flattened,
-			##		"fields=", val.fields(),
-			##	))
-			##elif isinstance(val, Splitarr):
-			##	print(psconcat(
-			##		"Splitrec.__setattr__(): val Splitarr: ",
-			##		"name=", val.extra_args_name(), " ",
-			##		#"key=", key, " ",
-			##		#"flattened=", val.flattened,
-			##		"lst=", val.lst(),
-			##	))
-			##elif (
-			##	isinstance(val, OrderedDict)
-			##	or isinstance(val, dict)
-			##):
-			##	print(psconcat(
-			##		"Splitrec.__setattr__(): val dict: ",
-			##		"key=", key, " ",
-			##		"val=", dict(val),
-			##	))
-			##elif isinstance(val, list):
-			##	print(psconcat(
-			##		"Splitrec.__setattr__(): val list: ",
-			##		"key=", key, " ",
-			##		"val=", val,
-			##	))
-
-			#temp_val = cast_shape(
-			#	val,
-			#	#name=field_name(self, key),
-			#	name=key,
-			#	#name=temp_name,
-			#	#name=self.extra_args_name(),
-			#	#use_parent_name=self.extra_args_use_parent_name(),
-			#	use_parent_name=use_parent_name,
-			#	parent=self,
-			#)
-			#did_cast = True
-			##except Exception as exc:
-			#if temp_val is None:
-			#	#print(str(exc))
-			#	#super().__setattr__(key, val)
-			#	#self.__fields[key] = val
-			#	temp_val = val
-			#	did_cast = False
-			##print(psconcat(
-			##	"Splitrec.__setattr__(): __fields: ",
-			##	key, " ", val, " ", temp_val, " ", did_cast
-			##))
-			#self.__fields[key] = temp_val
 
 	#def __getattr__(self, key):
 	#	return self[key]
@@ -1220,49 +1002,27 @@ class Splitrec:
 			yield (name, self.__fields[name])
 	#def __repr__(self):
 	#--------
-	@staticmethod
-	def check_val_type(prefix_str, val):
-		#if (not isinstance(val, Signal)) \
-		#	and (not isinstance(val, Packrec)) \
-		#	and (not isinstance(val, Packarr)) \
-		#	and (not isinstance(val, Splitarr)) \
-		#	and (not isinstance(val, Splitrec)):
-		#	raise TypeError(psconcat(prefix_str, " ",
-		#		"Need a `Signal`, `Packrec`, `Packarr`, `Splitarr`, or "
-		#		"`Splitrec` for `val` {!r}".format(val)))
-
-		try:
-			Value.cast(val)
-		except Exception:
-			raise TypeError(psconcat(prefix_str, " `val` `{!r}` must be ",
-				"possible to cast to `Value`").format(val)) from None
+	#@staticmethod
+	#def check_val_type(prefix_str, val):
+	#	try:
+	#		Value.cast(val)
+	#	except Exception:
+	#		raise TypeError(psconcat(prefix_str, " `val` `{!r}` must be ",
+	#			"possible to cast to `Value`").format(val)) from None
 
 	def flattened(self):
 		ret = []
 		for val in self.fields().values():
 			#Splitrec.check_val_type("Splitrec.flattened()", val)
-
-			#if isinstance(val, Signal) or isinstance(val, Packrec) \
-			#	or isinstance(val, Packarr):
-			#	ret.append(val)
-			#else: # if isinstance(val, Splitarr) \
-			#	# or isinstance(val, Splitrec):
-			#	ret.append(val.flattened())
 			if (
 				isinstance(val, Splitrec)
 				or isinstance(val, Splitarr)
 			):
-				#ret.append(*val.flattened())
-				#ret.append(val.as_value())
-				#ret += val.flattened()
 				temp = val.flattened()
 				for elem in temp:
 					ret.append(elem)
-				#print(val)
-				#ret += val.flattened()
 			else:
 				ret.append(val)
-		#printout("\n")
 		return ret
 	#def cat(self):
 	#	return eval(psconcat("Cat(" + ",".join(self.flattened()) + ")"))
@@ -1278,11 +1038,7 @@ class Splitarr:
 		*,
 		name=None,
 		#name_suffix=None,
-		#use_parent_name=None,
 		use_parent_name=True,
-		#parent_name=None,
-		#parent=None,
-		#parent_name=None,
 		#reset=0x0, reset_less=False, attrs=None, decoder=None,
 		src_loc_at=0,
 		in_like: bool=False,
@@ -1307,8 +1063,6 @@ class Splitarr:
 
 		self.__extra_args_name = new_name
 		self.__extra_args_use_parent_name = use_parent_name
-		#self.__extra_args_parent = parent
-		#self.__extra_args_parent_name = parent_name
 		self.__extra_args_src_loc_at = src_loc_at
 
 		#self.__lst = lst
@@ -1317,16 +1071,6 @@ class Splitarr:
 		for i in range(len(shape)):
 			#elem = lst[i]
 			elem = shape[i]
-			#temp_name = psconcat(self.extra_args_name(), "_", i)
-			#temp_name = psconcat(new_name, "_", i)
-			#print(psconcat(
-			#	"Splitarr.__init__(): `try`: ",
-			#	elem, " ",
-			#	#psconcat(new_name, "_", i), " ",
-			#	temp_name, " ",
-			#	self.extra_args_use_parent_name(),
-			#))
-			#try:
 			temp_elem = cast_shape(
 				elem,
 				#name=psconcat(self.extra_args_name(), "_", i),
@@ -1347,19 +1091,6 @@ class Splitarr:
 				#src_loc_at=self.extra_args_src_loc_at() + 3,
 				in_like=in_like,
 			)
-			#did_cast = True
-			##except Exception as exc:
-			#if temp_elem is None:
-			#	#print(str(exc))
-			#	temp_elem = elem
-			#	did_cast = False
-
-			#print(psconcat(
-			#	"Splitarr.__init__(): past `try`: ",
-			#	elem, " ",
-			#	temp_elem, " ",
-			#	did_cast,
-			#))
 			self.__lst.append(temp_elem)
 		self.__shape = shape
 	#--------
@@ -1389,144 +1120,16 @@ class Splitarr:
 		##	new_name = tracer.get_var_name(depth=src_loc_at + 2, 
 		##		default=None)
 
-		#new_name = field_name_w_parent(
-		#	parent=parent,
-		#	name=new_name,
-		#	use_parent_name=use_parent_name,
-		#)
-		#print(psconcat("Splitarr.like(): ", new_name))
-
-		#lst = []
-
-		#for i in range(len(list(other))):
-		#	elem = other[i]
-
-		#	try:
-		#		Value.cast(elem)
-		#	except Exception:
-		#		raise TypeError(("`elem` `{!r}` must be castable to "
-		#			+ "`Value`").format(field)) from None
-
-		#	# The naming is a heuristic
-		#	#lst.append(type(elem).like(elem,
-		#	#	name=psconcat(new_name, "_", i),
-		#	#	src_loc_at=src_loc_at + 1))
-		#	temp_src_loc_at = src_loc_at + 1
-		#	#temp_name = field_name(new_name, i)
-
-		#	# this is different from `Splitrec.like()`
-
-		#	temp_name = psconcat(new_name, "_", i)
-
-		#	#temp_name = field_name(
-		#	#	parent_name=new_name,
-		#	#	name=i,
-		#	#	use_parent_name=(
-		#	#		field_name_calc_upn(
-		#	#			parent=parent,
-		#	#			use_parent_name=use_parent_name,
-		#	#			in_like=in_like,
-		#	#		)
-		#	#	)
-		#	#)
-
-		#	#temp_name = field_name_w_new_name(
-		#	#	parent=parent,
-		#	#	new_name=new_name,
-		#	#	name=i,
-		#	#	use_parent_name=use_parent_name,
-		#	#)
-
-		#	#temp_name = field_name_w_new_name(
-		#	#	parent=parent,
-		#	#	new_name=new_name,
-		#	#	name=key,
-		#	#	use_parent_name=use_parent_name,
-		#	#)
-
-		#	#temp_name = new_name
-		#	#if (
-		#	#	use_parent_name
-		#	#	and (
-		#	#		isinstance(parent, Splitrec)
-		#	#		or isinstance(parent, Splitarr)
-		#	#	)
-		#	#):
-		#	#	#temp_name = psconcat(
-		#	#	#	other.extra_args_name(), "_", temp_name
-		#	#	#)
-		#	#	temp_name = field_name(other, temp_name)
-		#	#temp_name = field_name(other, temp_name, use_parent_name)
-		#	#temp_name = field_name(other, temp_name)
-		#	#temp_name = field_name(parent, temp_name, use_parent_name)
-		#	#temp_name = field_name(parent, temp_name)
-		#	like_func = (
-		#		type(elem).like
-		#		if not isinstance(elem, View)
-		#		else Signal.like
-		#	)
-		#	#if (
-		#	#	like_func == Splitrec.like
-		#	#	or like_func == Splitarr.like
-		#	#):
-		#	if (
-		#		isinstance(elem, Splitrec)
-		#		or isinstance(elem, Splitarr)
-		#	):
-		#		lst.append(
-		#			like_func(
-		#				elem,
-		#				name=temp_name,
-		#				use_parent_name=use_parent_name,
-		#				#parent=parent,
-		#				src_loc_at=temp_src_loc_at
-		#			)
-		#		)
-		#	else:
-		#		#temp_name = field_name_w_parent(
-		#		#	parent=parent,
-		#		#	name=temp_name,
-		#		#	use_parent_name=use_parent_name,
-		#		#)
-		#		lst.append(
-		#			like_func(
-		#				elem,
-		#				#name=field_name_w_parent(
-		#				#	parent=parent,
-		#				#	temp_name,
-		#				#	use_parent_name=use_parent_name
-		#				#),
-		#				name=temp_name,
-		#				src_loc_at=temp_src_loc_at
-		#			)
-		#		)
-		#	#lst.append(type(elem).like(elem,
-		#	#	name=psconcat(new_name, "_",
-		#	#		elem.name
-		#	#			if hasattr(elem, "name")
-		#	#			else elem.extra_args_name()),
-		#	#	src_loc_at=src_loc_at + 1))
-
 		kw = {
 			#"lst": lst,
 			"shape": other.shape(),
 			"name": new_name,
 			#"name_suffix": name_suffix,
-			#"use_parent_name": use_parent_name,
 			"use_parent_name": field_name_calc_upn(
 				other=other,
 				use_parent_name=use_parent_name,
 				in_like=True,
 			),
-			#"use_parent_name": (
-			#	False
-			#	if (
-			#		not isinstance(parent, Splitrec)
-			#		and not isinstance(parent, Splitarr)
-			#	)
-			#	else parent.extra_args_use_parent_name(),
-			#),
-			#"parent": parent,
 			"src_loc_at": src_loc_at,
 			"in_like": True
 		}
@@ -1549,20 +1152,6 @@ class Splitarr:
 	#	return self.__extra_args_parent_name
 	def extra_args_src_loc_at(self):
 		return self.__extra_args_src_loc_at
-	#--------
-	#def elem_name(self, index):
-	#	# Idea borrowed from `field_name()`, but I'm not sure how
-	#	# relevant this idea is to `Splitarr`? I think it makes sense to
-	#	# leave out `extra_args_use_parent_name()` for this function.
-	#	#return (
-	#	#	psconcat(index)
-	#	#	if (
-	#	#		self.extra_args_name() is None
-	#	#		or not self.extra_args_use_parent_name()
-	#	#	)
-	#	#	else psconcat(self.extra_args_name(), "_", index)
-	#	#)
-	#	return psconcat(self.extra_args_name(), "_", index)
 	#--------
 	def __getitem__(self, key):
 		return self.lst()[key]
@@ -1632,33 +1221,240 @@ class Splitarr:
 #class PortDir(pyenum.Enum):
 #	Inp = 0
 #	Outp = pyenum.auto()
+#def cast_intf_shape(
+#	shape,
+#	pdir=None, # should be either `PortDir.<Inp or Outp>` or `None`
+#	*,
+#	name=None,
+#	use_parent_name=False,
+#	parent_name=None,
+#	src_loc_at=0,
+#	in_like: bool=False,
+#):
+#	if name is None:
+#		new_name = tracer.get_var_name(
+#			depth=src_loc_at + 2,
+#			default=None
+#		)
+#	else:
+#		new_name = name
+#
+#	temp_name = field_name(
+#		parent_name=parent_name,
+#		name=new_name,
+#		use_parent_name=use_parent_name,
+#	)
+#
+#	#if isinstance(shape, Splitintf):
+#	#elif isinstance(shape, Splitintfarr):
+#	#else:
+#	#	ret_wout_pdir = cast_shape(
+#	#		shape=shape,
+#	#	)
+#	#	#if isinstance(ret_wout_pdir, Splitrec):
+#	#	if not isinstance(ret_wout_pdir, Splitarr):
+#	#		return Splitintf(
+#	#			shape=ret_wout_pdir,
+#	#			pdir=pdir
+#	#		)
+#	#	else: # if isinstance(ret_wout_pdir, Splitarr):
+#	#		return Splitintfarr(
+#	#			shape=ret_wout_pdir,
+#	#			pdir=pdir,
+#	#		)
+#
+##class Modport:
+##	def __init__(
+##		self,
+##		name: str,
+##		shape,
+##		pdir: PortDir,
+##		#*,
+##		#name=None,
+##		#use_parent_name=True,
+##		#src_loc_at=0,
+##		#in_like: bool=False,
+##	):
+##		#if name is None:
+##		#	new_name = tracer.get_var_name(
+##		#		depth=src_loc_at + 2,
+##		#		default=None
+##		#	)
+##		#else:
+##		#	new_name = name
+##
+##		self.__name = name
+##		self.__shape = shape
+##		self.__pdir = pdir
+##
+##		#self.__extra_args_name = new_name
+##		#self.__extra_args_use_parent_name = use_parent_name
+##		#self.__extra_args_src_loc_at = src_loc_at
+##	def name(self):
+##		return self.__name
+##	def shape(self):
+##		return self.__shape
+##	def pdir(self):
+##		return self.__pdir
+##	#def extra_args_name(self):
+##	#	return self.__extra_args_name
+##	#def extra_args_use_parent_name(self):
+##	#	return self.__extra_args_use_parent_name
+##	#def extra_args_src_loc_at(self):
+##	#	return self.__extra_args_src_loc_at
+#
+##class Modport:
+##	def __init__(
+##		self,
+##		pdir: PortDir,
+##		shape,
+##		*,
+##		name=None,
+##		use_parent_name=True,
+##		src_loc_at=0,
+##		in_like: bool=False,
+##	):
+##		if name is None:
+##			new_name = tracer.get_var_name(
+##				depth=src_loc_at + 2,
+##				default=None
+##			)
+##		else:
+##			new_name = name
+##
+##		#self.__pdir = pdir
+##		#self.__name = name
+##		self.__extra_args_name = new_name
+##		self.__extra_args_use_parent_name = use_parent_name
+##		self.__extra_args_src_loc_at = src_loc_at
+##	def name(self):
+##		# Name of the `Elem`
+##		return self.__name
+##	def pdir(self):
+##		return self.__pdir
+#
 #class Modport:
-#	class Elem:
-#		def __init__(
-#			self,
-#			name=
-#			pdir: PortDir,
-#			shape,
-#		):
-#			pdir
+#	def __init__(
+#		self,
+#		name: str,
+#		pdir: PortDir,
+#		shape,
+#	):
+#		self.__name = name
+#		self.__pdir = pdir
+#		self.__shape = shape
+#	def name(self):
+#		return self.__name
+#	def pdir(self):
+#		return self.__pdir
+#	def shape(self):
+#		return self.__shape
+#
+#class Splitintf:
+#	#class Shape:
+#	#	def __init__(
+#	#		self,
+#	#		pdir=None,
+#	#	):
+#	#		pass
 #	def __init__(
 #		self,
 #		shape: dict,
-#	):
-#		pass
-#
-#class Splitintf:
-#	def __init__
-#class Splitintfarr:
-#	def __init__(
-#		self,
-#		shape,
+#		pdir=None, # should be either `PortDir.<Inp or Outp>` or `None`
 #		*,
 #		name=None,
 #		use_parent_name=True,
 #		src_loc_at=0,
 #		in_like: bool=False,
 #	):
+#		if name is None:
+#			new_name = tracer.get_var_name(
+#				depth=src_loc_at + 2,
+#				default=None
+#			)
+#		else:
+#			new_name = name
+#
+#		self.__pdir = pdir
+#
+#		self.__extra_args_name = new_name
+#		self.__extra_args_use_parent_name = use_parent_name
+#		self.__extra_args_src_loc_at = src_loc_at
+#
+#		self.__fields = dict()
+#		for key, field_shape in shape.items():
+#			self.__fields[key] = cast_intf_shape(
+#			)
+#
+#		self.__shape = shape
+#	def extra_args_name(self):
+#		return self.__extra_args_name
+#	def extra_args_use_parent_name(self):
+#		return self.__extra_args_use_parent_name
+#	def extra_args_src_loc_at(self):
+#		return self.__extra_args_src_loc_at
+#
+#	def modport_lst(self):
+#		return self.__modport_lst
+#	def shape(self):
+#		return self.__shape
+#
+##class Splitintf:
+##	def __init__(
+##		self,
+##		shape: dict=dict(),
+##		*
+##		name=None,
+##		use_parent_name=True,
+##		src_loc_at=0,
+##		in_like: bool=False,
+##	):
+##		if name is None:
+##			new_name = tracer.get_var_name(
+##				depth=src_loc_at + 2,
+##				default=None
+##			)
+##		else:
+##			new_name = name
+##
+##		self.__extra_args_name = new_name
+##		self.__extra_args_use_parent_name = use_parent_name
+##		self.__extra_args_src_loc_at = src_loc_at
+##
+##		self.__fields = dict()
+##		for key, field_shape in shape.items():
+##			self.__fields[key] = cast_intf_shape(
+##				field_shape,
+##				name=key,
+##				use_parent_name=use_parent_name,
+##				parent_name=new_name,
+##				src_loc_at=src_loc_at + 1,
+##				in_like=in_like,
+##			)
+##		self.__shape = shape
+##	def extra_args_name(self):
+##		return self.__extra_args_name
+##	def extra_args_use_parent_name(self):
+##		return self.__extra_args_use_parent_name
+##	def extra_args_src_loc_at(self):
+##		return self.__extra_args_src_loc_at
+##	def fields(self):
+##		return self.__fields
+##	def shape(self):
+##		return self.__shape
+#
+#class Splitintfarr:
+#	def __init__(
+#		self,
+#		shape: list,
+#		pdir=None, # should be either `PortDir.<Inp or Outp>` or `None`
+#		*,
+#		name=None,
+#		use_parent_name=True,
+#		src_loc_at=0,
+#		in_like: bool=False,
+#	):
+#		pass
 #--------
 #class Vec2Layt(Packrec.Layout):
 #	def __init__(self, ElemKindT, SIGNED=False):
