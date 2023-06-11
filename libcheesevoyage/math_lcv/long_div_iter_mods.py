@@ -327,6 +327,7 @@ class LongUdivIterBus:
 		#super().__init__(ishape)
 		#self.intf = Splitintf(ishape)
 	#--------
+	@property
 	def bus(self):
 		return self.__bus
 	def constants(self):
@@ -367,7 +368,7 @@ class LongUdivIter(Elaboratable):
 		m = Module()
 		#--------
 		constants = self.constants()
-		bus = self.bus().bus()
+		bus = self.bus().bus
 
 		itd_in = bus.itd_in
 		itd_out = bus.itd_out
@@ -647,13 +648,22 @@ class LongUdivIterSyncIshape(IntfShape):
 	#	return self.__data_info
 	#--------
 class LongUdivIterSyncBus:
-	def __init__(self, constants: LongDivConstants):
+	def __init__(
+		self,
+		constants: LongDivConstants,
+		*,
+		next_intf_tag=None,
+		prev_intf_tag=None,
+	):
 		ishape = LongUdivIterSyncIshape(
 			constants=constants,
+			next_intf_tag=next_intf_tag,
+			prev_intf_tag=prev_intf_tag,
 		)
 		#super().__init__(ishape)
 		self.__constants = constants
 		self.__bus = Splitintf(ishape)
+	@property
 	def bus(self):
 		return self.__bus
 	def constants(self):
@@ -665,11 +675,16 @@ class LongUdivIterSync(Elaboratable):
 		self,
 		constants: LongDivConstants,
 		chunk_start_val: int,
+		*,
+		next_intf_tag=None,
+		prev_intf_tag=None,
 	):
 		self.__constants = constants
 
 		self.__bus = LongUdivIterSyncBus(
 			constants=constants,
+			next_intf_tag=next_intf_tag,
+			prev_intf_tag=prev_intf_tag,
 		)
 		self.__chunk_start_val = chunk_start_val
 	#--------
@@ -693,7 +708,7 @@ class LongUdivIterSync(Elaboratable):
 		#--------
 		m = Module()
 		#--------
-		bus = self.bus().bus()
+		bus = self.bus().bus
 		#USE_PIPE_SKID_BUF = self.__USE_PIPE_SKID_BUF
 		constants = self.constants()
 		#--------
@@ -709,14 +724,14 @@ class LongUdivIterSync(Elaboratable):
 				OPT_INCLUDE_READY_BUSY=False,
 			)
 			m.submodules += skid_buf
-			sb_bus = skid_buf.bus()
+			sb_bus = skid_buf.bus().bus
 			#loc_itd_out = bus.data_info().mk_sig(
 			#	basenm="loc_itd_out",
 			#	prefix="",
 			#	suffix="",
 			#)
 		#--------
-		it_bus = it.bus()
+		it_bus = it.bus().bus
 		itd_in = it_bus.itd_in
 		itd_out = it_bus.itd_out
 

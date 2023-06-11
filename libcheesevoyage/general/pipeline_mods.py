@@ -643,6 +643,18 @@ class PipeSkidBuf(Elaboratable):
 			#	m=parent,
 			#	kind=Splitintf.ConnKind.Parallel
 			#)
+			sb_bus.connect(
+				other=sb_bus_next,
+				m=parent,
+				kind=Splitintf.ConnKind.Parallel,
+				use_tag=True,
+			)
+
+			#sb_bus_next.inp.fwd.connect(
+			#	other=sb_bus.outp.fwd,
+			#	m=parent,
+			#	kind=Splitintf.ConnKind.Parallel
+			#)
 			#sb_bus.inp.bak.connect(
 			#	other=sb_bus_next.outp.bak,
 			#	m=parent,
@@ -657,11 +669,11 @@ class PipeSkidBuf(Elaboratable):
 			#	parent.d.comb += next_fwd_flat[j].eq(fwd_flat[j])
 			#for j in range(len(bak_flat)):
 			#	parent.d.comb += bak_flat[j].eq(next_bak_flat[j])
-			parent.d.comb += [
-				sb_bus_next.inp.fwd.valid.eq(sb_bus.outp.fwd.valid),
-				sb_bus_next.inp.fwd.data.eq(sb_bus.outp.fwd.data),
-				sb_bus.inp.bak.ready.eq(sb_bus_next.outp.bak.ready),
-			]
+			#parent.d.comb += [
+			#	sb_bus_next.inp.fwd.valid.eq(sb_bus.outp.fwd.valid),
+			#	sb_bus_next.inp.fwd.data.eq(sb_bus.outp.fwd.data),
+			#	sb_bus.inp.bak.ready.eq(sb_bus_next.outp.bak.ready),
+			#]
 
 		if tie_first_inp_fwd_valid:
 			parent.d.comb += [
@@ -677,6 +689,8 @@ class PipeSkidBuf(Elaboratable):
 		parent_sb_bus,
 		child_sb_bus,
 		parent_data=None,
+		use_tag: bool=True,
+		reduce_tag: bool=True,
 	):
 		# This function is especially intended for when you have a
 		# `<YourModule>Bus` that has its own `PipeSkidBufBus` instance that
@@ -698,10 +712,13 @@ class PipeSkidBuf(Elaboratable):
 		#	child_sb_bus.inp.bak.eq(parent_sb_bus.inp.bak),
 		#	parent_sb_bus.outp.bak.eq(child_sb_bus.outp.bak),
 		#]
+
 		parent_sb_bus.inp.fwd.connect(
 			other=child_sb_bus.inp.fwd,
 			m=parent,
 			kind=Splitintf.ConnKind.Parent2Child,
+			use_tag=use_tag,
+			reduce_tag=reduce_tag,
 		)
 		parent.d.comb += [
 			#child_sb_bus.inp.fwd.valid.eq(parent_sb_bus.inp.fwd.valid),
@@ -711,11 +728,15 @@ class PipeSkidBuf(Elaboratable):
 			other=child_sb_bus.inp.bak,
 			m=parent,
 			kind=Splitintf.ConnKind.Parent2Child,
+			use_tag=use_tag,
+			reduce_tag=reduce_tag,
 		)
 		parent_sb_bus.outp.bak.connect(
 			other=child_sb_bus.outp.bak,
 			m=parent,
 			kind=Splitintf.ConnKind.Parent2Child,
+			use_tag=use_tag,
+			reduce_tag=reduce_tag,
 		)
 
 		#if (
@@ -741,12 +762,15 @@ class PipeSkidBuf(Elaboratable):
 		#	and "misc" in child_sb_bus.dct()
 		#):
 		# TODO: continue here
-		#parent_sb_bus.misc.connect(
-		#	other=child_sb_bus.misc,
-		#	m=parent,
-		#	#kind=Splitintf.ConnKind.Parallel,
-		#	kind=Splitintf.ConnKind.Parent2Child,
-		#)
+		parent_sb_bus.misc.connect(
+			other=child_sb_bus.misc,
+			m=parent,
+			#kind=Splitintf.ConnKind.Parallel,
+			kind=Splitintf.ConnKind.Parent2Child,
+			#use_tag=True,
+			use_tag=use_tag,
+			reduce_tag=reduce_tag,
+		)
 
 		if parent_data is None:
 			parent.d.comb += [

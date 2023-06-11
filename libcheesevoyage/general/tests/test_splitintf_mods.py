@@ -363,7 +363,7 @@ class BitSerialAdder(Elaboratable):
 				other=ps_bus_next,
 				m=m,
 				kind=Splitintf.ConnKind.Parallel,
-				f=f,
+				#f=f,
 				conn_lst_shrink=-2,
 				use_tag=True,
 			)

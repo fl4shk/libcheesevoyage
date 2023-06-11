@@ -1860,7 +1860,8 @@ class Splitintf:
 		other_conn_lst_shrink=None,
 		self_pdir=None, # `None`, `PortDir.Inp`, or `PortDir.Outp`
 		use_tag: bool=False,
-		reduce_tag: bool=False,
+		#reduce_tag: bool=False,
+		reduce_tag: bool=True,
 	):
 		if not isinstance(kind, Splitintf.ConnKind):
 			raise TypeError(psconcat(

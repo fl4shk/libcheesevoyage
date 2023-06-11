@@ -645,6 +645,8 @@ class LongDivPipelined(Elaboratable):
 				constants=constants,
 				chunk_start_val=(NUM_PSTAGES - 1) - i,
 				#USE_PIPE_SKID_BUF=USE_PIPE_SKID_BUF,
+				next_intf_tag=psconcat(i),
+				prev_intf_tag=psconcat(i + 1),
 			)
 			for i in range(NUM_PSTAGES)
 		]
@@ -705,7 +707,7 @@ class LongDivPipelined(Elaboratable):
 			#rst_cnt_done = loc.formal.rst_cnt_done
 			#--------
 		#--------
-		its_bus = [loc.m[i].bus() for i in range(len(loc.m))]
+		its_bus = [loc.m[i].bus().bus for i in range(len(loc.m))]
 
 		itd_in = [
 			its_bus[i].sb_bus.inp.fwd.data
