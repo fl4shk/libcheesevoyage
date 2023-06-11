@@ -92,6 +92,7 @@ def cast_shape(
 	#target=None
 	src_loc_at=0,
 	in_like: bool=False,
+	do_except: bool=True,
 ):
 	if name is None:
 		new_name = tracer.get_var_name(
@@ -256,13 +257,13 @@ def cast_shape(
 		isinstance(shape, OrderedDict)
 		or isinstance(shape, dict)
 	):
-		#temp = Splitrec(fields=shape, name=new_name,
+		#temp = Splitrec(dct=shape, name=new_name,
 		#	src_loc_at=src_loc_at + 1)
 		#return Splitrec.like(other=temp, name=None,
 		#	name_suffix=None, src_loc_at=src_loc_at + 1)
 
 		#print("testificate 2")
-		#fields = OrderedDict()
+		#dct = OrderedDict()
 
 		#print(
 		#	"testificate 4: ",
@@ -278,8 +279,8 @@ def cast_shape(
 		#))
 
 		ret = Splitrec(
-			#fields=OrderedDict(),
-			#fields=shape,
+			#dct=OrderedDict(),
+			#dct=shape,
 			shape=shape,
 			#name=new_name,
 			name=temp_name,
@@ -312,8 +313,8 @@ def cast_shape(
 		#)
 
 		#for key, field in shape.items():
-		#	#fields[key]
-		#	ret.__fields[key] = cast_shape(
+		#	#dct[key]
+		#	ret.__dct[key] = cast_shape(
 		#		field,
 		#		#name=psconcat(new_name, "_", key),
 		#		#name=psconcat(new_name, key),
@@ -331,13 +332,13 @@ def cast_shape(
 		#		#src_loc_at=ret.extra_args_src_loc_at() + 1,
 		#		#target=target
 		#	)
-		#print(fields)
-		#print("testificate 5: ", ret.fields())
+		#print(dct)
+		#print("testificate 5: ", ret.dct())
 		return ret
 
 		#return Splitrec(
-		#	#fields=fields,
-		#	fields=shape,
+		#	#dct=dct,
+		#	dct=shape,
 		#	name=new_name, reset=reset,
 		#	reset_less=reset_less,
 		#	attrs=attrs, decoder=decoder,
@@ -426,13 +427,15 @@ def cast_shape(
 	#		reset_less=reset_less, attrs=attrs, decoder=decoder,
 	#		src_loc_at=src_loc_at + 1)
 	else:
-		#raise TypeError(psconcat
-		#	("Need one of the following types for `shape`, {!r}, "
-		#		.format(shape),
-		#	": `int`, `Packrec.Layout`, `list`, or `Packarr.Shape`"))
-		raise TypeError(psconcat
-			("Invaild type for `shape`, `{!r}`".format(shape)))
-		#return None
+		if do_except:
+			#raise TypeError(psconcat
+			#	("Need one of the following types for `shape`, {!r}, "
+			#		.format(shape),
+			#	": `int`, `Packrec.Layout`, `list`, or `Packarr.Shape`"))
+			raise TypeError(psconcat
+				("Invaild type for `shape`, `{!r}`".format(shape)))
+		else:
+			return None
 
 class SigInfo:
 	def __init__(
@@ -742,29 +745,110 @@ class FieldInfo:
 	def extra_args_decoder(self):
 		return self.__extra_args_decoder
 
-def do_print_flattened(obj, spaces=0):
-	print(str().join([" " for i in range(spaces)]), end="")
-	if isinstance(obj, Splitrec):
-		print(obj.extra_args_name())
-		for field in obj.fields().values():
-			do_print_flattened(field, spaces=spaces + 1)
+def do_psconcat_flattened(obj, *, use_repr: bool=False, spaces=0):
+	def mk_spaces(spaces):
+		return str().join(["\t" for i in range(spaces)])
+	def inner_psconcat(some_obj, use_repr):
+		if not use_repr:
+			return psconcat(some_obj)
+		else: # if use_repr:
+			return psconcat("{!r}".format(some_obj))
+
+	#ret = mk_spaces(spaces)
+	ret = ""
+
+	if (
+		isinstance(obj, Splitrec)
+		or isinstance(obj, Splitintf)
+	):
+		ret += mk_spaces(spaces)
+		ret += inner_psconcat(obj.extra_args_name(), use_repr=True)
+		ret += "\n"
+		for field in obj.dct().values():
+			ret += do_psconcat_flattened(
+				field, use_repr=use_repr, spaces=spaces + 1
+			)
+		#ret += "\n"
 		#print()
-	elif isinstance(obj, Splitarr):
-		print(obj.extra_args_name())
+	elif (
+		isinstance(obj, Splitarr)
+		or isinstance(obj, Splitintfarr)
+	):
+		ret += mk_spaces(spaces)
+		ret += inner_psconcat(obj.extra_args_name(), use_repr=True)
+		ret += "\n"
 		for i in range(len(list(obj))):
-			do_print_flattened(obj[i], spaces=spaces + 1)
+			ret += do_print_flattened(
+				obj[i], use_repr=use_repr, spaces=spaces + 1
+			)
+		#ret += "\n"
 		#print()
-	else:
-		print(
+	elif (
+		isinstance(obj, Signal)
+		or isinstance(obj, View)
+	):
+		ret += mk_spaces(spaces)
+		ret += inner_psconcat(
 			#obj.name,
 			obj,
+			use_repr=True,
+		)
+		ret += " "
+		ret += inner_psconcat(
 			(
 				obj.shape()
 				if isinstance(obj, Signal)
 				#else "\"other shape\""
-				else obj._View__layout
-			)
+				#else obj._View__layout
+				else Layout.of(obj)
+			),
+			use_repr=use_repr,
 		)
+		ret += "\n"
+	elif isinstance(obj, dict):
+		for key in obj:
+			ret += mk_spaces(spaces)
+			ret += inner_psconcat(
+				key, use_repr=True
+			)
+			#ret += ":"
+			ret += "\n"
+			ret += do_psconcat_flattened(
+				obj[key], use_repr=use_repr, spaces=spaces + 1
+			)
+		#ret += "\n"
+	elif (
+		#hasattr(obj, "__dict__")
+		hasattr(obj, "extra_args_conn_name")
+	):
+		ret += mk_spaces(spaces)
+		#for key in obj.__dict__:
+		#	ret += inner_psconcat(
+		#		key, use_repr=True
+		#	)
+		#	#ret += ":"
+		#	ret += "\n"
+		#	ret += do_psconcat_flattened(
+		#		getattr(obj, key), use_repr=use_repr, spaces=spaces + 1
+		#	)
+		ret += inner_psconcat(
+			obj.extra_args_conn_name(), use_repr=True
+		)
+		ret += "\n"
+		for field in obj.__dict__.values():
+			ret += do_psconcat_flattened(
+				field, use_repr=use_repr, spaces=spaces + 1
+			)
+		#ret += "\n"
+	else:
+		ret += mk_spaces(spaces)
+		ret += inner_psconcat(obj, use_repr=use_repr)
+		ret += "\n"
+	#ret += "\n"
+	return ret
+def do_print_flattened(obj, *, use_repr: bool=False):
+	print(do_psconcat_flattened(obj, use_repr=use_repr))
+
 # A record type which is composed of separate signals.  This allows setting
 # the attributes of every signal.
 #class Splitrec(ValueCastable):
@@ -777,7 +861,7 @@ class Splitrec:
 	#--------
 	def __init__(
 		self,
-		shape: dict=dict(),
+		shape: dict,
 		*,
 		name=None,
 		use_parent_name=True,
@@ -796,7 +880,7 @@ class Splitrec:
 		self.__extra_args_use_parent_name = use_parent_name
 		self.__extra_args_src_loc_at = src_loc_at
 
-		self.__fields = dict()
+		self.__dct = {}
 		for key, field_shape in shape.items():
 			#if isinstance(field, View):
 			#	raise TypeError(psconcat
@@ -804,8 +888,8 @@ class Splitrec:
 			#		"`{!r}`")
 			#		.format(field))
 			#self.__setattr__(key, field)
-			#self.__fields[key] = field
-			self.__fields[key] = cast_shape(
+			#self.__dct[key] = field
+			self.__dct[key] = cast_shape(
 				field_shape,
 				name=key,
 				use_parent_name=use_parent_name,
@@ -845,7 +929,7 @@ class Splitrec:
 			new_name = name
 
 		kw = {
-			#"fields": fields,
+			#"dct": dct,
 			"shape": other.shape(),
 			"name": new_name,
 			#"name_suffix": name_suffix,
@@ -865,16 +949,16 @@ class Splitrec:
 		return Splitrec(**kw)
 	
 	#--------
-	def fields(self):
-		return self.__fields
+	def dct(self):
+		return self.__dct
 		##ret = OrderedDict()
 		#ret = dict()
 		##for name in self.__dict__:
-		#for name in self.__fields:
+		#for name in self.__dct:
 		#	if name[0] != "_":
 		#		#ret[name] = self.__dict__[name]
-		#		#ret[name] = self.__fields[name]
-		#		ret[name] = self.__fields[name]
+		#		#ret[name] = self.__dct[name]
+		#		ret[name] = self.__dct[name]
 		#return ret
 	def shape(self):
 		return self.__shape
@@ -891,10 +975,10 @@ class Splitrec:
 		return self.__extra_args_src_loc_at
 	#--------
 	#def __getitem__(self, key):
-	#	return self.__fields[key]
+	#	return self.__dct[key]
 	#def __getattr__(self, key):
 	#	#ret = self.__dict__[key]
-	#	ret = self.__fields[key]
+	#	ret = self.__dct[key]
 	#	#ret = self[key]
 	#	if isinstance(ret, Splitrec.View):
 	#		print("testificate")
@@ -908,7 +992,7 @@ class Splitrec:
 		):
 			return super().__getattribute__(key)
 		else:
-			return self.__fields[key]
+			return self.__dct[key]
 	def __setattr__(self, key, val):
 		#if isinstance(val, View):
 		#	raise TypeError(psconcat
@@ -916,8 +1000,8 @@ class Splitrec:
 		#		"`val` (`{!r}`), is a `View`")
 		#		.format(val))
 
-		#if key not in self.__fields:
-		#	self.__fields[key] = val
+		#if key not in self.__dct:
+		#	self.__dct[key] = val
 		#object.__setattr__(self, key, val)
 
 		if (
@@ -925,7 +1009,7 @@ class Splitrec:
 			or key in Splitrec.__dict__
 		):
 			#print(psconcat(
-			#	"Splitrec.__setattr__(): not __fields: ", key, " ", val
+			#	"Splitrec.__setattr__(): not __dct: ", key, " ", val
 			#))
 			super().__setattr__(key, val)
 			#return
@@ -939,7 +1023,7 @@ class Splitrec:
 					"libcheesevoyage that has not been updated for the ",
 					"new (and now only) way to use `Splitrec`, ",
 					"where it is intended that the user of `Splitrec` ",
-					"add in members only with the `fields` argument to ",
+					"add in members only with the `dct` argument to ",
 					"`Splitrec.__init__()`. "
 				)
 			)
@@ -950,7 +1034,7 @@ class Splitrec:
 	#	if key[0] == "_":
 	#		return self.__dict__[temp_key]
 	#	else: # if key[0] != "_":
-	#		val = self.fields()[key]
+	#		val = self.dct()[key]
 	#		#printout("Splitrec.__getitem__(): ",
 	#		#	key, " ", val, " ", Value.cast(val).name, "\n")
 	#		return val
@@ -964,7 +1048,7 @@ class Splitrec:
 	#		self.__check_val_type("Splitrec.__setitem___()", val)
 	#		#printout("Splitrec.__setitem__(): ",
 	#		#	key, " ", val, " ", Value.cast(val).name, "\n")
-	#		self.fields()[key] = val
+	#		self.dct()[key] = val
 	#--------
 	def eq(self, other):
 		#printout("Splitrec.eq(): ", type(other), ", ", other, "\n")
@@ -998,8 +1082,12 @@ class Splitrec:
 		#	if name[0] != "_":
 		#		yield (name, self.__dict__[name])
 		#		#yield self.__dict__[name]
-		for name in self.__fields:
-			yield (name, self.__fields[name])
+		for name in self.__dct:
+			yield (name, self.__dct[name])
+		#for item in self.__dct:
+		#	yield item
+		#for value in self.__dct.values():
+		#	yield value
 	#def __repr__(self):
 	#--------
 	#@staticmethod
@@ -1012,7 +1100,7 @@ class Splitrec:
 
 	def flattened(self):
 		ret = []
-		for val in self.fields().values():
+		for val in self.dct().values():
 			#Splitrec.check_val_type("Splitrec.flattened()", val)
 			if (
 				isinstance(val, Splitrec)
@@ -1034,7 +1122,7 @@ class Splitarr:
 	def __init__(
 		self,
 		#lst: list=[],
-		shape: list=[],
+		shape: list,
 		*,
 		name=None,
 		#name_suffix=None,
@@ -1085,8 +1173,8 @@ class Splitarr:
 				#reset_less=reset_less,
 				#attrs=attrs,
 				#decoder=decoder,
-				src_loc_at=self.extra_args_src_loc_at(),
-				#src_loc_at=self.extra_args_src_loc_at() + 1,
+				#src_loc_at=self.extra_args_src_loc_at(),
+				src_loc_at=self.extra_args_src_loc_at() + 1,
 				#src_loc_at=self.extra_args_src_loc_at() + 3,
 				#src_loc_at=self.extra_args_src_loc_at() + 3,
 				in_like=in_like,
@@ -1218,18 +1306,25 @@ class Splitarr:
 		return ret
 	#--------
 #--------
-#class PortDir(pyenum.Enum):
-#	Inp = 0
-#	Outp = pyenum.auto()
-#def cast_intf_shape(
-#	shape,
-#	pdir=None, # should be either `PortDir.<Inp or Outp>` or `None`
+class PortDir(pyenum.Enum):
+	Inp = 0
+	Outp = pyenum.auto()
+	Noconn = pyenum.auto()
+#def cast_intf_mbr_shape(
+#	shape: dict,
 #	*,
 #	name=None,
 #	use_parent_name=False,
 #	parent_name=None,
+#
+#	reset=None,
+#	reset_less=None,
+#	attrs=None,
+#	decoder=None,
+#
 #	src_loc_at=0,
 #	in_like: bool=False,
+#	in_intfarr: bool=False,
 #):
 #	if name is None:
 #		new_name = tracer.get_var_name(
@@ -1244,217 +1339,1102 @@ class Splitarr:
 #		name=new_name,
 #		use_parent_name=use_parent_name,
 #	)
-#
-#	#if isinstance(shape, Splitintf):
-#	#elif isinstance(shape, Splitintfarr):
-#	#else:
-#	#	ret_wout_pdir = cast_shape(
-#	#		shape=shape,
-#	#	)
-#	#	#if isinstance(ret_wout_pdir, Splitrec):
-#	#	if not isinstance(ret_wout_pdir, Splitarr):
-#	#		return Splitintf(
-#	#			shape=ret_wout_pdir,
-#	#			pdir=pdir
-#	#		)
-#	#	else: # if isinstance(ret_wout_pdir, Splitarr):
-#	#		return Splitintfarr(
-#	#			shape=ret_wout_pdir,
-#	#			pdir=pdir,
-#	#		)
-#
-##class Modport:
-##	def __init__(
-##		self,
-##		name: str,
-##		shape,
-##		pdir: PortDir,
-##		#*,
-##		#name=None,
-##		#use_parent_name=True,
-##		#src_loc_at=0,
-##		#in_like: bool=False,
-##	):
-##		#if name is None:
-##		#	new_name = tracer.get_var_name(
-##		#		depth=src_loc_at + 2,
-##		#		default=None
-##		#	)
-##		#else:
-##		#	new_name = name
-##
-##		self.__name = name
-##		self.__shape = shape
-##		self.__pdir = pdir
-##
-##		#self.__extra_args_name = new_name
-##		#self.__extra_args_use_parent_name = use_parent_name
-##		#self.__extra_args_src_loc_at = src_loc_at
-##	def name(self):
-##		return self.__name
-##	def shape(self):
-##		return self.__shape
-##	def pdir(self):
-##		return self.__pdir
-##	#def extra_args_name(self):
-##	#	return self.__extra_args_name
-##	#def extra_args_use_parent_name(self):
-##	#	return self.__extra_args_use_parent_name
-##	#def extra_args_src_loc_at(self):
-##	#	return self.__extra_args_src_loc_at
-#
-##class Modport:
-##	def __init__(
-##		self,
-##		pdir: PortDir,
-##		shape,
-##		*,
-##		name=None,
-##		use_parent_name=True,
-##		src_loc_at=0,
-##		in_like: bool=False,
-##	):
-##		if name is None:
-##			new_name = tracer.get_var_name(
-##				depth=src_loc_at + 2,
-##				default=None
-##			)
-##		else:
-##			new_name = name
-##
-##		#self.__pdir = pdir
-##		#self.__name = name
-##		self.__extra_args_name = new_name
-##		self.__extra_args_use_parent_name = use_parent_name
-##		self.__extra_args_src_loc_at = src_loc_at
-##	def name(self):
-##		# Name of the `Elem`
-##		return self.__name
-##	def pdir(self):
-##		return self.__pdir
-#
-#class Modport:
-#	def __init__(
-#		self,
-#		name: str,
-#		pdir: PortDir,
-#		shape,
-#	):
-#		self.__name = name
-#		self.__pdir = pdir
-#		self.__shape = shape
-#	def name(self):
-#		return self.__name
-#	def pdir(self):
-#		return self.__pdir
-#	def shape(self):
-#		return self.__shape
-#
-#class Splitintf:
-#	#class Shape:
-#	#	def __init__(
-#	#		self,
-#	#		pdir=None,
-#	#	):
-#	#		pass
-#	def __init__(
-#		self,
-#		shape: dict,
-#		pdir=None, # should be either `PortDir.<Inp or Outp>` or `None`
-#		*,
-#		name=None,
-#		use_parent_name=True,
-#		src_loc_at=0,
-#		in_like: bool=False,
-#	):
-#		if name is None:
-#			new_name = tracer.get_var_name(
-#				depth=src_loc_at + 2,
-#				default=None
-#			)
-#		else:
-#			new_name = name
-#
-#		self.__pdir = pdir
-#
-#		self.__extra_args_name = new_name
-#		self.__extra_args_use_parent_name = use_parent_name
-#		self.__extra_args_src_loc_at = src_loc_at
-#
-#		self.__fields = dict()
-#		for key, field_shape in shape.items():
-#			self.__fields[key] = cast_intf_shape(
-#			)
-#
-#		self.__shape = shape
-#	def extra_args_name(self):
-#		return self.__extra_args_name
-#	def extra_args_use_parent_name(self):
-#		return self.__extra_args_use_parent_name
-#	def extra_args_src_loc_at(self):
-#		return self.__extra_args_src_loc_at
-#
-#	def modport_lst(self):
-#		return self.__modport_lst
-#	def shape(self):
-#		return self.__shape
-#
-##class Splitintf:
-##	def __init__(
-##		self,
-##		shape: dict=dict(),
-##		*
-##		name=None,
-##		use_parent_name=True,
-##		src_loc_at=0,
-##		in_like: bool=False,
-##	):
-##		if name is None:
-##			new_name = tracer.get_var_name(
-##				depth=src_loc_at + 2,
-##				default=None
-##			)
-##		else:
-##			new_name = name
-##
-##		self.__extra_args_name = new_name
-##		self.__extra_args_use_parent_name = use_parent_name
-##		self.__extra_args_src_loc_at = src_loc_at
-##
-##		self.__fields = dict()
-##		for key, field_shape in shape.items():
-##			self.__fields[key] = cast_intf_shape(
-##				field_shape,
-##				name=key,
-##				use_parent_name=use_parent_name,
-##				parent_name=new_name,
-##				src_loc_at=src_loc_at + 1,
-##				in_like=in_like,
-##			)
-##		self.__shape = shape
-##	def extra_args_name(self):
-##		return self.__extra_args_name
-##	def extra_args_use_parent_name(self):
-##		return self.__extra_args_use_parent_name
-##	def extra_args_src_loc_at(self):
-##		return self.__extra_args_src_loc_at
-##	def fields(self):
-##		return self.__fields
-##	def shape(self):
-##		return self.__shape
-#
-#class Splitintfarr:
-#	def __init__(
-#		self,
-#		shape: list,
-#		pdir=None, # should be either `PortDir.<Inp or Outp>` or `None`
-#		*,
-#		name=None,
-#		use_parent_name=True,
-#		src_loc_at=0,
-#		in_like: bool=False,
-#	):
-#		pass
+#	#temp_shape = IntfShape.cast(shape, do_except=False)
+#	#if temp_shape is not None:
+#	if isinstance(shape, IntfShape):
+#		return Splitintf(
+#			#shape=temp_shape,
+#			shape=shape,
+#			name=temp_name,
+#			use_parent_name=use_parent_name,
+#			src_loc_at=src_loc_at + 1,
+#			in_like=in_like,
+#		)
+#	#temp_shape = IntfarrShape.cast(shape, do_except=False)
+#	#if temp_shape is not None:
+#	if isinstance(shape, IntfarrShape):
+#		return Splitintfarr(
+#			shape=temp_shape,
+#			name=temp_name,
+#			use_parent_name=use_parent_name,
+#			src_loc_at=src_loc_at + 1,
+#			in_like=in_like,
+#		)
+#	if not in_intfarr:
+#		return cast_shape(
+#			#--------
+#			shape=shape,
+#			name=temp_name,
+#			use_parent_name=use_parent_name,
+#			# NOTE: I'm pretty sure there's no need for `parent_name` to be
+#			# set to anything here.
+#			#--------
+#			reset=reset,
+#			reset_less=reset_less,
+#			attrs=attrs,
+#			decoder=decoder,
+#			#--------
+#			src_loc_at=src_loc_at + 1,
+#			in_like=in_like,
+#			#--------
+#		)
+#	else: # if in_intfarr:
+#		raise TypeError(psconcat(
+#			"Invalid `shape` `{!r}`".format(shape)
+#		))
+
+class Modport:
+	def __init__(
+		self,
+		#name2pdir_dct: dict, # expected form: [str, PortDir]
+		dct: dict, # expected form: [str, PortDir];
+					# this should map port names to `PortDir`s
+	):
+		#self.__name2pdir_dct = name2pdir_dct
+		for item in dct.items():
+			if not (
+				isinstance(item[1], PortDir)
+				#and item[1] != PortDir.Noconn
+				#or item[1] is None
+			):
+				raise TypeError(psconcat(
+					"Invalid type for value in `item`: {!r}".format(item)
+				))
+		self.__dct = dct
+	#def name2pdir_dct(self):
+	#	return self.__name2pdir_dct
+	def dct(self):
+		return self.__dct
+
+	#def mk_mp_dct(self, name: str, mp_dct=None):
+	#	temp = {
+	#		name: self,
+	#	}
+	#	if mp_dct is None:
+	#		return temp
+	#	else:
+	#		mp_dct.update(temp)
+	#		return mp_dct
+	#def mk_mp_dct_w_rev(self, name: str, rev_name: str, mp_dct=None):
+	#	#temp = {
+	#	#	name: self,
+	#	#	rev_name: reversed(self),
+	#	#}
+	#	#if mp_dct is not None:
+	#	#	return temp
+	#	#else:
+	#	#	mp_dct.update(temp)
+	#	#	return mp_dct
+	#	temp = self.mk_mp_dct(name, mp_dct)
+	#	return reversed(self).mk_mp_dct(rev_name, temp)
+	def __reversed__(self):
+		#temp_dct = {
+		#	name: (
+		#		PortDir.Inp
+		#		if getattr(self, name) == PortDir.Outp
+		#		else PortDir.Outp
+		#	)
+		#	#for name in self.name2pdir_dct()
+		#	for name in self.dct()
+		#}
+		temp_dct = {}
+		#for name in self.dct():
+		for item in self.dct().items():
+			if not (
+				isinstance(item[1], PortDir)
+				#or item[1] is None
+			):
+				raise TypeError(psconcat(
+					"Invalid type for `item`: {!r}".format(item)
+				))
+			#temp_attr = getattr(self, item[0])
+			#if temp_attr is None:
+			#	temp_dct[name] = temp_attr
+			#el
+			if item[1] == PortDir.Inp:
+				temp_dct[item[0]] = PortDir.Outp
+			elif item[1] == PortDir.Outp:
+				temp_dct[item[0]] = PortDir.Inp
+			else:
+				temp_dct[item[0]] = PortDir.Noconn
+			#else:
+			#	assert False
+		return Modport(temp_dct)
+	def __getattribute__(self, key: str):
+		if (
+			key[0] == "_"
+			or key in Modport.__dict__
+		):
+			return super().__getattribute__(key)
+		else:
+			#return self.__name2pdir_dct[key]
+			return self.__dct[key]
+class IntfShape:
+	def __init__(
+		self,
+		#mp_dct: dict, # expected form: [str, Splitintf.Modport]
+		shape: dict,
+		modport=None, # make this a `Modport` instance for non-`IntfShape`,
+					# non-`IntfarrShape` values of `shape`
+		tag=None, # tag for `Splitintf.connect()`
+	):
+		#self.__name2mp_dct = name2mp_dct
+		#assert set(modport.dct().keys()) == set(shape.keys())
+		#with open("IntfShape.txt.ignore", "w") as f:
+		#	f.writelines([
+		#		psconcat("modport.dct(): ", modport.dct(), "\n"),
+		#		psconcat("shape: ", shape, "\n"),
+		#		psconcat(
+		#			"modport.dct().keys(): ", modport.dct().keys(), "\n"
+		#		),
+		#		psconcat("shape.keys(): ", shape.keys(), "\n"),
+		#	])
+		if modport is not None:
+			for key in modport.dct():
+				if key not in shape:
+					if (
+						not isinstance(shape[key], IntfShape)
+						and not isinstance(shape[key], IntfarrShape)
+					):
+						raise AttributeError(psconcat(
+							"Name mismatch between ",
+							"`modport` and `shape` found: ",
+							"{!r} in `modport` but not `shape`".format(
+								key
+							),
+						))
+				else:
+					if (
+						isinstance(shape[key], IntfShape)
+						or isinstance(shape[key], IntfarrShape)
+					):
+						raise AttributeError(psconcat(
+							"Can't have `shape[key]` {!r} ".format(
+								shape[key]
+							),
+							"of type `IntfShape` or `IntfarrShape` if ",
+							"`key` {!r} is in `modport.dct()`; ".format(
+								key
+							),
+							"`shape`: {!r}; `modport.dct()`: {!r}".format(
+								shape, modport.dct(),
+							),
+						))
+			for key in shape:
+				if key not in modport.dct():
+					if (
+						not isinstance(shape[key], IntfShape)
+						and not isinstance(shape[key], IntfarrShape)
+					):
+						raise AttributeError(psconcat(
+							"Name mismatch between ",
+							"`shape` and `modport` found: ",
+							"{!r} in `shape` but not `modport`".format(
+								key
+							),
+						))
+				else: # if key in modport.dct():
+					if (
+						isinstance(shape[key], IntfShape)
+						or isinstance(shape[key], IntfarrShape)
+					):
+						raise AttributeError(psconcat(
+							"Can't have `shape[key]` {!r}".format(
+								shape[key]
+							),
+							"of type `IntfShape` or `IntfarrShape` if ",
+							"`key` {!r} is in `modport.dct()`".format(
+								key
+							),
+						))
+		else: # if modport is None:
+			for key in shape:
+				if (
+					not isinstance(shape[key], IntfShape)
+					and not isinstance(shape[key], IntfarrShape)
+				):
+					raise AttributeError(psconcat(
+						"Invalid `shape[key]` {!}. ".format(shape[key]),
+						"With `modport=None`, all elements of `shape` ",
+						"must be of type `IntfShape` or `IntfarrShape`"
+					))
+		self.__shape = shape
+		self.__modport = modport
+		self.__tag = tag
+	@staticmethod
+	def mk_io_ishape(
+		inp_shape, outp_shape,
+		*,
+		inp_tag=None, outp_tag=None,
+	):
+		return {
+			"inp": IntfShape(
+				shape=inp_shape,
+				modport=Modport({
+					inp_key: PortDir.Inp
+					for inp_key in inp_shape
+				}),
+				tag=inp_tag
+			),
+			"outp": IntfShape(
+				shape=outp_shape,
+				modport=Modport({
+					outp_key: PortDir.Outp
+					for outp_key in outp_shape
+				}),
+				tag=outp_tag
+			),
+		}
+	@staticmethod
+	def cast(other, do_except: bool=True):
+		if isinstance(other, IntfShape):
+			return other
+		elif isinstance(other, dict):
+			return IntfShape(**other)
+		elif (
+			(
+				isinstance(other, list)
+				or isinstance(other, tuple)
+			) and (
+				len(other) == 2
+				or len(other) == 3
+			)
+		):
+			kw = {
+				"shape": other[0],
+				"modport": other[1],
+			}
+			if len(other) == 3:
+				kw["tag"] = other[2]
+			return IntfShape(**kw)
+		else:
+			if do_except:
+				raise TypeError(psconcat(
+					"Invalid type for `other`: {!r}".format(other)
+				))
+			else:
+				return None
+	#def name2mp_dct(self):
+	#	return self.__name2mp_dct
+	def shape(self):
+		return self.__shape
+	def modport(self):
+		return self.__modport
+	def tag(self):
+		return self.__tag
+class Splitintf:
+	def __init__(
+		self,
+		#shape: dict[str, Splitintf.Modport],
+		#shape: Modport,
+		#modport_db: dict, # expected form: [str, Splitintf.Modport]
+		#shape: dict, 
+		shape,
+		*,
+		name=None,
+		conn_name=None,
+		use_parent_name=True,
+		#parent_name=None,
+		parent=None,
+		src_loc_at=0,
+		in_like: bool=False,
+	):
+		if name is None:
+			new_name = tracer.get_var_name(
+				depth=src_loc_at + 2,
+				default=None
+			)
+		else:
+			new_name = name
+
+		if conn_name is None:
+			temp_conn_name = new_name
+		else:
+			temp_conn_name = conn_name
+
+		temp_shape = IntfShape.cast(shape)
+
+		self.__extra_args_name = new_name
+		self.__extra_args_conn_name = temp_conn_name
+		self.__extra_args_use_parent_name = use_parent_name
+		#self.__extra_args_parent_name = parent_name
+		self.__extra_args_parent = parent
+		self.__extra_args_src_loc_at = src_loc_at
+
+		self.__dct = {}
+		for key, field_shape in temp_shape.shape().items():
+			self.__dct[key] = Splitintf.cast_mbr_shape(
+				field_shape,
+				name=key,
+				conn_name=key,
+				use_parent_name=use_parent_name,
+				parent_name=new_name,
+				parent=self,
+				src_loc_at=src_loc_at + 1,
+				in_like=in_like,
+			)
+
+		self.__shape = temp_shape
+		#self.__shape = shape
+	#--------
+	def dct(self):
+		return self.__dct
+	def shape(self):
+		return self.__shape
+	def extra_args_name(self):
+		return self.__extra_args_name
+	def extra_args_conn_name(self):
+		return self.__extra_args_conn_name
+	def extra_args_use_parent_name(self):
+		return self.__extra_args_use_parent_name
+	#def extra_args_parent_name(self):
+	#	return self.__extra_args_parent_name
+	def extra_args_parent(self):
+		return self.__extra_args_parent
+	def extra_args_src_loc_at(self):
+		return self.__extra_args_src_loc_at
+	#--------
+	@staticmethod
+	def cast_mbr_shape(
+		shape,
+		**kwargs
+	):
+		return Splitintf._inner_cast_mbr_shape(shape, **kwargs)
+	@staticmethod
+	def _inner_cast_mbr_shape(
+		shape,
+		*,
+		name=None,
+		conn_name=None,
+		use_parent_name=False,
+		parent_name=None,
+		parent=None,
+	
+		reset=None,
+		reset_less=None,
+		attrs=None,
+		decoder=None,
+	
+		src_loc_at=0,
+		in_like: bool=False,
+		in_intfarr: bool=False,
+	):
+		if name is None:
+			new_name = tracer.get_var_name(
+				depth=src_loc_at + 2,
+				default=None
+			)
+		else:
+			new_name = name
+
+		if conn_name is None:
+			temp_conn_name = new_name
+		else:
+			temp_conn_name = conn_name
+	
+		temp_name = field_name(
+			parent_name=parent_name,
+			name=new_name,
+			use_parent_name=use_parent_name,
+		)
+		#temp_shape = IntfShape.cast(shape, do_except=False)
+		#if temp_shape is not None:
+		if isinstance(shape, IntfShape):
+			return Splitintf(
+				#shape=temp_shape,
+				shape=shape,
+				name=temp_name,
+				conn_name=temp_conn_name,
+				use_parent_name=use_parent_name,
+				parent=parent,
+				src_loc_at=src_loc_at + 1,
+				in_like=in_like,
+			)
+		#temp_shape = IntfarrShape.cast(shape, do_except=False)
+		#if temp_shape is not None:
+		if isinstance(shape, IntfarrShape):
+			return Splitintfarr(
+				shape=temp_shape,
+				name=temp_name,
+				conn_name=temp_conn_name,
+				use_parent_name=use_parent_name,
+				parent=parent,
+				src_loc_at=src_loc_at + 1,
+				in_like=in_like,
+			)
+		if not in_intfarr:
+			return cast_shape(
+				#--------
+				shape=shape,
+				name=temp_name,
+				use_parent_name=use_parent_name,
+				# NOTE: I'm pretty sure there's no need to set
+				# `parent_name` to anything here.
+				#--------
+				reset=reset,
+				reset_less=reset_less,
+				attrs=attrs,
+				decoder=decoder,
+				#--------
+				src_loc_at=src_loc_at + 1,
+				in_like=in_like,
+				#--------
+			)
+		else: # if in_intfarr:
+			raise TypeError(psconcat(
+				"Invalid `shape` `{!r}`".format(shape)
+			))
+	@staticmethod
+	def like(
+		other,
+		name=None,
+		use_parent_name=None,
+		src_loc_at=0,
+		**kwargs
+	):
+		if name is None:
+			new_name = tracer.get_var_name(
+				depth=src_loc_at + 2,
+				default=None
+			)
+		else:
+			new_name = name
+
+		kw = {
+			"shape": other.shape(),
+			"name": new_name,
+			"use_parent_name": field_name_calc_upn(
+				other=other,
+				use_parent_name=use_parent_name,
+				in_like=True,
+			),
+			"src_loc_at": src_loc_at,
+			"in_like": True,
+		}
+
+		kw.update(kwargs)
+
+		return Splitintf(**kw)
+	#--------
+	def __getattribute__(self, key):
+		if (
+			key[0] == "_"
+			or key in Splitintf.__dict__
+		):
+			return super().__getattribute__(key)
+		else:
+			return self.__dct[key]
+	#--------
+	def __iter__(self):
+		#for name in self.__dict__:
+		#	if name[0] != "_":
+		#		yield (name, self.__dict__[name])
+		#		#yield self.__dict__[name]
+		#for name in self.__dct:
+		#	yield (name, self.__dct[name])
+		for name in self.__dct:
+			yield (name, self.__dct[name])
+		#for item in self.__dct:
+		#	yield item
+		#for value in self.__dct.values():
+		#	yield value
+	#--------
+	class ConnKind(pyenum.Enum):
+		# `Module` to one of its `submodule`s
+		Parent2Child = 0
+
+		# Two child `submodules` being connected in parallel
+		Parallel = pyenum.auto()
+
+		#Ident = pyenum.auto()
+
+	def connect(
+		#self, mp_name_dct: dict, parent_m: Module,
+		#other, other_mp_name_dct: dict, child_m=None,
+		self, other,
+		m: Module,
+		kind, #: Splitintf.ConnKind,
+		*,
+		#f=None,
+		conn_lst_shrink: int=-1,
+		other_conn_lst_shrink=None,
+		self_pdir=None, # `None`, `PortDir.Inp`, or `PortDir.Outp`
+		use_tag: bool=False,
+		reduce_tag: bool=False,
+	):
+		if not isinstance(kind, Splitintf.ConnKind):
+			raise TypeError(psconcat(
+				"Invalid type for `kind` {!r}".format(kind)
+			))
+		# This matches by shared object names
+		lst = self.flattened(w_pdir=True)
+		other_lst = other.flattened(w_pdir=True)
+		if other_conn_lst_shrink is not None:
+			temp_other_conn_lst_shrink = other_conn_lst_shrink
+		else:
+			temp_other_conn_lst_shrink = conn_lst_shrink
+
+		dct = {}
+		for elem in lst:
+			temp = {
+				"elem": elem,
+				"conn_name_lst": [],
+				"tag_lst": [],
+			}
+			for inner_elem in (
+				elem.conn_lst()[:conn_lst_shrink]
+			):
+				temp["conn_name_lst"].append(
+					inner_elem.extra_args_conn_name()
+				)
+			#if f is not None:
+			#	f.writelines([
+			#		psconcat("debug: ",
+			#			[
+			#				[
+			#					conn.extra_args_conn_name(),
+			#					type(conn),
+			#				]
+			#				for conn in elem.conn_lst()[1:]
+			#			]
+			#		),
+			#		"\n"
+			#	])
+			# We are (nearly 100%) guaranteed to have at least two
+			# elements in `elem.conn_list()` due `Splitintf` and
+			# `Splitintfarr` being composed of real Amaranth objects at
+			# the end of the day
+			#for inner_elem in elem.conn_lst()[:-1]:
+			#for i in range(len(elem.conn_lst()[:-1])):
+			for i in range(len(elem.conn_lst()[1:])):
+				#if i > 0:
+				inner_elem = elem.conn_lst()[i + 1]
+				#if f is not None:
+				#	f.writelines([
+				#		psconcat(
+				#			"debug inner_elem: ",
+				#			do_psconcat_flattened(inner_elem)
+				#		)
+				#	])
+				#if len(temp["conn_name_lst"]) > 1:
+				temp["tag_lst"].append(
+					inner_elem.shape().tag()
+				)
+			#dct["_".join(list(reversed(temp["conn_name_lst"])))] = temp
+			temp_lst = list(reversed(temp["conn_name_lst"]))
+			dct[(
+				(
+					temp["elem"].pdir()
+					#if kind == Splitintf.ConnKind.Parent2Child
+					#else (
+					#	#"inp"
+					#	PortDir.Inp
+					#	if temp["elem"].pdir() == PortDir.Inp
+					#	else PortDir.Outp #"outp"
+					#)
+				),
+				("_".join(temp_lst))
+			)] = temp
+			#dct["_".join(list(reversed(elem.conn_lst()[:-1])))] = temp
+		other_dct = {}
+		for other_elem in other_lst:
+			other_temp = {
+				"elem": other_elem,
+				"conn_name_lst": [],
+				"tag_lst": [],
+			}
+			for other_inner_elem in (
+				other_elem.conn_lst()[:temp_other_conn_lst_shrink]
+			):
+				other_temp["conn_name_lst"].append(
+					other_inner_elem.extra_args_conn_name()
+				)
+			#for other_inner_elem in other_elem.conn_lst()[:-1]:
+			for i in range(len(other_elem.conn_lst()[:-1])):
+			#for i in range(len(other_elem.conn_lst()[1:])):
+				#if i > 0:
+				other_inner_elem = other_elem.conn_lst()[i + 1]
+				#if len(other_temp["conn_name_lst"]) > 1:
+				other_temp["tag_lst"].append(
+					other_inner_elem.shape().tag()
+				)
+			other_temp_lst = list(reversed(other_temp["conn_name_lst"]))
+			other_dct[(
+				(
+					other_temp["elem"].pdir()
+					#if kind == Splitintf.ConnKind.Parent2Child
+					#else (
+					#	#"inp"
+					#	PortDir.Inp
+					#	if other_temp["elem"].pdir() == PortDir.Inp
+					#	else PortDir.Outp #"outp"
+					#)
+				), ("_".join(other_temp_lst))
+			)] = other_temp
+			#other_dct["_".join(
+			#	list(reversed(other.conn_lst()[:-1]))
+			#)] = other_temp
+
+		#f = open("test_tag.txt.ignore", "w")
+		#if f is not None:
+		#	f.writelines([
+		#		#"dct:{!r}\n".format(dct),
+		#		#"other_dct:{!r}\n".format(other_dct),
+		#		do_psconcat_flattened({
+		#			"dct": dct,
+		#			"other_dct": other_dct,
+		#		})
+		#	])
+		for key in dct:
+			other_key = (
+				key 
+				if kind == Splitintf.ConnKind.Parent2Child
+				else (
+					(
+						PortDir.Inp
+						if key[0] == PortDir.Outp
+						else PortDir.Outp
+					),
+					key[1]
+				)
+			)
+			#if f is not None:
+			#	f.writelines([
+			#		do_psconcat_flattened(
+			#			{
+			#				"key": key,
+			#				"other_key": other_key,
+			#				"in-other": other_key in other_dct,
+			#			},
+			#			use_repr=True,
+			#		),
+			#		#"\n",
+			#	])
+			#if kind == Splitintf.ConnKind.Parent2Child:
+			if other_key in other_dct:
+				outer_elem = dct[key]
+				other_outer_elem = other_dct[other_key]
+
+				test_tag = (
+					not use_tag
+					or (
+						(
+							not reduce_tag
+							#and (
+							#	elem.extra_args_parent().shape().tag()
+							#	== other_elem.extra_args_parent().shape()
+							#		.tag()
+							#)
+							and (
+								outer_elem["tag_lst"][0]
+								== other_outer_elem["tag_lst"][0]
+							)
+						) or (
+							reduce_tag
+							and (
+								outer_elem["tag_lst"]
+								== other_outer_elem["tag_lst"]
+							)
+						)
+					)
+				)
+				#if f is not None:
+				#	f.writelines([
+				#		do_psconcat_flattened(
+				#			{
+				#				(key, other_key): {
+				#					"pdir": outer_elem["elem"].pdir(),
+				#					"other-pdir": (
+				#						other_outer_elem["elem"].pdir()
+				#					),
+				#					"conn_name_lst": 
+				#						outer_elem["conn_name_lst"],
+				#					"other-conn_name_lst":
+				#						other_outer_elem["conn_name_lst"],
+				#					"cmp": (
+				#						outer_elem["conn_name_lst"]
+				#						!= other_outer_elem
+				#							["conn_name_lst"]
+				#					),
+				#					"test_tag": test_tag,
+				#					"key": key,
+				#					"other_key": other_key,
+				#					"tag": (
+				#						elem.extra_args_parent().shape()
+				#							.tag()
+				#					),
+				#					"other-tag": (
+				#						other_elem.extra_args_parent()
+				#							.shape().tag()
+				#					),
+				#				}
+				#			},
+				#			use_repr=True,
+				#		),
+				#		#"\n",
+				#	])
+
+				if (
+					(
+						outer_elem["conn_name_lst"]
+						!= other_outer_elem["conn_name_lst"]
+					) or (
+						not test_tag
+					)
+				):
+					#if f is not None:
+					#	f.writelines([
+					#		psconcat("continuing\n")
+					#	])
+					continue
+
+				elem = outer_elem["elem"]
+				other_elem = other_outer_elem["elem"]
+
+				err_msg = psconcat(
+					"With `kind` {!r}, invalid combination of ",
+					"`elem.pdir()` {!r} and `other_elem.pdir()` {!r}"
+				).format(kind, elem.pdir(), other_elem.pdir())
+
+				if kind == Splitintf.ConnKind.Parent2Child:
+					if (
+						elem.pdir() == other_elem.pdir()
+						and elem.pdir() != PortDir.Noconn
+						#and other_elem.pdir() != PortDir.Noconn
+						and (
+							self_pdir is None
+							or elem.pdir() == self_pdir
+						)
+					):
+						if elem.pdir() == PortDir.Inp:
+							m.d.comb += other.obj().eq(elem.obj())
+						else: # if elem.pdir() == PortDir.Outp:
+							m.d.comb += elem.obj().eq(other.obj())
+					else:
+						raise ValueError(err_msg)
+				else: # if kind == Splitintf.ConnKind.Parallel:
+					if (
+						elem.pdir() != other_elem.pdir()
+						and elem.pdir() != PortDir.Noconn
+						and other_elem.pdir() != PortDir.Noconn
+						and (
+							self_pdir is None
+							or elem.pdir() == self_pdir
+							or other_elem.pdir() == self_pdir
+						)
+					):
+						if elem.pdir() == PortDir.Inp:
+							m.d.comb += elem.obj().eq(other_elem.obj())
+						else: # if other_elem.pdir() == PortDir.Inp:
+							m.d.comb += other_elem.obj().eq(elem.obj())
+					else:
+						raise ValueError(err_msg)
+		#f.close()
+
+	# Flattened With `PortDir`
+	class FlatWPdir:
+		def __init__(
+			self,
+			key,
+			parent,
+			obj,
+			pdir: PortDir,
+		):
+			#self.__key = key
+			self.__extra_args_conn_name = key
+			self.__extra_args_parent = parent
+			self.__obj = obj
+			self.__pdir = pdir
+		#def key(self):
+		#	return self.__key
+		def extra_args_conn_name(self):
+			return self.__extra_args_conn_name
+			#return self.__key
+		def extra_args_parent(self):
+			return self.__extra_args_parent
+		def obj(self):
+			return self.__obj
+		def pdir(self):
+			return self.__pdir
+		#def cmp_other_name(self, other):
+		#	pass
+		def __repr__(self):
+			#return " ".join([
+			#	psconcat(
+			#		key, ":", repr(self.__dict__[key])
+			#	)
+			#	for key in self.__dict__
+			#])
+			return do_psconcat_flattened(self, use_repr=True)
+		def conn_lst(self):
+			def get_conn(ret: list):
+				parent = ret[-1].extra_args_parent()
+				if parent is None:
+					#return list(reversed(ret))
+					return ret
+				else: # if parent is not None:
+					#temp = ret[-1].extra_args_parent()
+					#ret += get_conn(ret, temp)
+					#ret.append(temp)
+					#temp = ret[-1].extra_args_parent()
+					#ret.append(parent.extra_args_parent())
+					#return get_conn(ret, ret[-1])
+					ret.append(parent)
+					return get_conn(ret)
+			return get_conn([self])
+	def flattened(
+		self,
+		*,
+		#conn_dct: dict,
+		w_pdir: bool=False # with `PortDir`
+	):
+		ret = []
+
+		for item in self.dct().items():
+			key, val = item
+			if isinstance(val, Splitintf):
+				#temp = val.flattened()
+				temp = val.flattened(w_pdir=w_pdir)
+				for elem in temp:
+					ret.append(elem)
+			elif isinstance(val, Splitintfarr):
+				#temp = val.flattened()
+				temp = val.flattened(w_pdir=w_pdir)
+				for elem in temp:
+					ret.append(elem)
+			else:
+				def one_iter(
+					self,
+					ret: list,
+					w_pdir: bool,
+					key, obj,
+				):
+					if not w_pdir:
+						ret.append(obj)
+					else: # if w_pdir:
+						ret.append(Splitintf.FlatWPdir(
+							key=key,
+							parent=self,
+							obj=obj,
+							pdir=getattr(self.shape().modport(), key),
+						))
+
+				if (
+					isinstance(val, Splitrec)
+					or isinstance(val, Splitarr)
+				):
+					temp = val.flattened()
+					for elem in temp:
+						#ret.append(elem)
+						one_iter(
+							self=self,
+							ret=ret,
+							w_pdir=w_pdir,
+							key=key,
+							obj=elem,
+						)
+				else:
+					#print(val)
+					#temp = val
+					#ret.append(temp)
+					one_iter(
+						self=self,
+						ret=ret,
+						w_pdir=w_pdir,
+						key=key, obj=val
+					)
+
+		return ret
+	#--------
+class IntfarrShape:
+	def __init__(
+		self,
+		shape: list,
+		tag=None,
+	):
+		self.__shape = shape
+		self.__tag = tag
+	def shape(self):
+		return self.__shape
+	def tag(self):
+		return self.__tag
+	#def __getattribute__(self, key):
+	#	if (
+	#		key[0] == "_"
+	#		or key in IntfarrShape.__dict__
+	#	):
+	#		return super().__getattribute__(key)
+	#	else:
+	#		return self.__dct[key]
+	@staticmethod
+	def cast(other, do_except: bool=True):
+		if isinstance(other, IntfarrShape):
+			return other
+		#elif isinstance(other, list):
+		#	return IntfarrShape(other)
+		elif (
+			(
+				isinstance(other, list)
+				or isinstance(other, tuple)
+			) and (
+				len(other) == 1
+				or len(other) == 2
+			)
+		):
+			kw = {
+				"shape": other[0]
+			}
+			if len(other) == 2:
+				kw["tag"] = other[2]
+			return IntfarrShape(**kw)
+		else:
+			if do_except:
+				raise TypeError(psconcat(
+					"Invalid type for `other`: {!r}".format(other)
+				))
+			else:
+				return None
+	#def __getitem__(self, key):
+	#	return self.shape()[key]
+class Splitintfarr:
+	def __init__(
+		self,
+		shape,
+		*,
+		name=None,
+		conn_name=None,
+		use_parent_name=True,
+		parent=None,
+		src_loc_at=0,
+		in_like: bool=False,
+	):
+		if name is None:
+			new_name = tracer.get_var_name(
+				depth=src_loc_at + 2,
+				default=None
+			)
+		else:
+			new_name = name
+
+		if conn_name is None:
+			temp_conn_name = new_name
+		else:
+			temp_conn_name = conn_name
+
+		temp_shape = IntfarrShape.cast(shape)
+
+		self.__extra_args_name = new_name
+		self.__extra_args_conn_name = temp_conn_name
+		self.__extra_args_use_parent_name = use_parent_name
+		self.__extra_args_parent = parent
+		self.__extra_args_src_loc_at = src_loc_at
+
+		self.__lst = []
+		for i in range(len(temp_shape.shape())):
+			elem = temp_shape.shape()[i]
+			temp_elem = Splitintf.cast_mbr_shape(
+				elem,
+				name=psconcat(i),
+				conn_name=psconcat(i),
+				use_parent_name=use_parent_name,
+				parent_name=new_name,
+				parent=self,
+				#src_loc_at=self.extra_args_src_loc_at(),
+				src_loc_at=src_loc_at + 1,
+				#src_loc_at=self.extra_args_src_loc_at() + 3,
+				#src_loc_at=self.extra_args_src_loc_at() + 3,
+				in_like=in_like,
+				in_intfarr=True,
+			)
+			self.__lst.append(temp_elem)
+		self.__shape = temp_shape
+	#--------
+	@staticmethod
+	def cast_mbr_shape(
+		shape,
+		**kwargs
+	):
+		return Splitintf._inner_cast_mbr_shape(shape, **kwargs)
+	@staticmethod
+	def like(
+		other,
+		name=None,
+		use_parent_name=None,
+		src_loc_at=0,
+		**kwargs
+	):
+		# `Splitarr.like()`
+		if name is None:
+			new_name = tracer.get_var_name(depth=src_loc_at + 2,
+				default=None)
+		else:
+			new_name = name
+
+		kw = {
+			"shape": other.shape(),
+			"name": new_name,
+			"use_parent_name": field_name_calc_upn(
+				other=other,
+				use_parent_name=use_parent_name,
+				in_like=True,
+			),
+			"src_loc_at": src_loc_at,
+			"in_like": True
+		}
+
+		kw.update(kwargs)
+
+		return Splitintfarr(**kw)
+	#--------
+	def lst(self):
+		return self.__lst
+	def shape(self):
+		return self.__shape
+	def extra_args_name(self):
+		return self.__extra_args_name
+	def extra_args_use_parent_name(self):
+		return self.__extra_args_use_parent_name
+	def extra_args_src_loc_at(self):
+		return self.__extra_args_src_loc_at
+	#--------
+	def __getitem__(self, key):
+		return self.lst()[key]
+	#--------
+	#def __len__(self):
+	#	return len(self.as_value())
+	def __iter__(self):
+		for item in self.lst():
+			yield item
+	def __list__(self):
+		return self.lst()
+	#--------
+	def flattened(
+		self,
+		*,
+		w_pdir: bool=False, # with `PortDir`
+	):
+		ret = []
+
+		for val in self:
+			if (
+				# Elements of `Splitintfarr` can only be a
+				# `Splitintf` or `Splitintfarr`, but not regular
+				# `Value`/`ValueCastable` objects
+				isinstance(val, Splitintf)
+				or isinstance(val, Splitintfarr)
+			):
+				temp = val.flattened(w_pdir=w_pdir)
+				for elem in temp:
+					ret.append(elem)
+			else:
+				#ret.append(val)
+				# NOTE: Hopefully this won't happen!
+				raise TypeError(psconcat(
+					"Invalid `val` `{!r}`".format(val)
+				))
+
+		return ret
+	#--------
 #--------
 #class Vec2Layt(Packrec.Layout):
 #	def __init__(self, ElemKindT, SIGNED=False):

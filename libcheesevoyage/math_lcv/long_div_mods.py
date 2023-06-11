@@ -19,18 +19,33 @@ from libcheesevoyage.general.pipeline_mods import PipeSkidBuf
 from libcheesevoyage.math_lcv.long_div_iter_mods import (
 	LongDivConstants, LongUdivIterDataLayt,
 	LongUdivIter, LongUdivIterBus, LongUdivIterSync, LongUdivIterSyncBus,
-	FieldInfo, Splitrec, 
+	FieldInfo, Splitrec,
+	PortDir, Modport, IntfShape, Splitintf, IntfarrShape, Splitintfarr
 )
 from libcheesevoyage.math_lcv.math_types import *
 #--------
-class LongDivBus:
+#class LongDivBusIshape(IntfShape):
+#class LongDivBus:
+class LongDivBusIshape(IntfShape):
 	#--------
-	def __init__(self, constants, signed_reset=0b0):
+	def __init__(
+		self,
+		constants,
+		signed_reset=0b0,
+		*,
+		is_child: bool=True,
+	):
 		#--------
-		self.__constants = constants
+		#self.__constants = constants
 		#--------
-		inp_shape = {}
-		outp_shape = {}
+		shape = {
+			"inp": {},
+			"outp": {},
+		}
+		inp_shape = shape["inp"]
+		outp_shape = shape["outp"]
+		#inp_shape = {}
+		#outp_shape = {}
 		#--------
 		# Inputs
 
@@ -69,9 +84,50 @@ class LongDivBus:
 				constants.TAG_WIDTH(), name="outp_tag"
 			)
 		#--------
-		self.inp = Splitrec(inp_shape, use_parent_name=False)
-		self.outp = Splitrec(outp_shape, use_parent_name=False)
+		#self.inp = Splitrec(inp_shape, use_parent_name=False)
+		#self.outp = Splitrec(outp_shape, use_parent_name=False)
+		#temp_mp_dct = {}
+		#for inp_key in inp_shape.keys():
+		#	temp_mp_dct["_".join(["inp", inp_key]
+		temp_modport = Modport({
+			"inp": PortDir.Inp,
+			"outp": PortDir.Outp,
+		})
+		temp_modport = (
+			temp_modport
+			if is_child
+			else reversed(temp_modport) 
+		)
+		#with open("testificate.txt.ignore", "w") as f:
+		#	f.writelines([
+		#		psconcat("temp_modport.dct(): ", temp_modport.dct(), "\n"),
+		#		psconcat("shape: ", shape, "\n"),
+		#	])
+		super().__init__(
+			shape=shape,
+			modport=temp_modport,
+		)
 	#--------
+class LongDivBus:
+	def __init__(
+		self,
+		constants,
+		signed_reset=0b0,
+		*,
+		is_child: bool=True
+	):
+		self.__constants = constants
+		ishape = LongDivBusIshape(
+			constants=constants,
+			signed_reset=signed_reset,
+			is_child=is_child,
+		)
+		self.__bus = Splitintf(ishape)
+		#super().__init__(ishape)
+	#--------
+	@property
+	def bus(self):
+		return self.__bus
 	def constants(self):
 		return self.__constants
 	#--------
@@ -101,7 +157,7 @@ class LongDivMultiCycle(Elaboratable):
 		m = Module()
 		#--------
 		constants = self.__constants
-		bus = self.bus()
+		bus = self.bus().bus
 		inp = bus.inp
 		outp = bus.outp
 
@@ -574,7 +630,7 @@ class LongDivPipelined(Elaboratable):
 		#--------
 		constants = self.__constants
 		#USE_PIPE_SKID_BUF = self.__USE_PIPE_SKID_BUF
-		bus = self.bus()
+		bus = self.bus().bus
 		inp = bus.inp
 		outp = bus.outp
 
@@ -651,8 +707,14 @@ class LongDivPipelined(Elaboratable):
 		#--------
 		its_bus = [loc.m[i].bus() for i in range(len(loc.m))]
 
-		itd_in = [its_bus[i].itd_in for i in range(len(loc.m))]
-		itd_out = [its_bus[i].itd_out for i in range(len(loc.m))]
+		itd_in = [
+			its_bus[i].sb_bus.inp.fwd.data
+			for i in range(len(loc.m))
+		]
+		itd_out = [
+			its_bus[i].sb_bus.outp.fwd.data
+			for i in range(len(loc.m))
+		]
 		#--------
 		# Connect the pipeline stages together
 		if not constants.USE_PIPE_SKID_BUF():

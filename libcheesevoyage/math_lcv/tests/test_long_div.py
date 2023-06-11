@@ -3,11 +3,14 @@
 from amaranth import *
 
 #from libcheesevoyage import *
-from libcheesevoyage.misc_util_running import formal
+from libcheesevoyage.misc_util_running import (
+	to_verilog, formal,
+)
 from libcheesevoyage.math_lcv.long_div_mods import LongDivPipelined
 #--------
 if __name__ == "__main__":
 	formal(
+	#to_verilog
 		#dut_mod=LongDivMultiCycle,
 		dut_mod=LongDivPipelined,
 		MAIN_WIDTH=8,

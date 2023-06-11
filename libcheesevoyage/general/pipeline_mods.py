@@ -9,6 +9,7 @@ from amaranth.lib import enum
 from libcheesevoyage.misc_util import psconcat, sig_keep, Blank
 from libcheesevoyage.general.container_types import (
 	cast_shape, SigInfo, FieldInfo, Splitrec,
+	PortDir, Modport, IntfShape, Splitintf,
 )
 #from libcheesevoyage.math_lcv.reduce_tree_mod import *
 
@@ -115,104 +116,238 @@ from libcheesevoyage.general.container_types import (
 #		)
 #		super().__init__(shape)
 
-class PstageBusFwdLayt(dict):
+class PstageBusFwdIshape(IntfShape):
 	def __init__(
 		self,
 		data_info: SigInfo,
+		pdir: PortDir,
 		#io_str: str,
+		*,
+		intf_tag=None,
 	):
 		shape = {}
 		shape["valid"] = FieldInfo(
 			1,
 			#name=f"fwd_valid_{io_str}",
-			name="fwd_valid",
-			#use_parent_name=False,
+			name=(
+				"inp_"
+				if pdir == PortDir.Inp
+				else "outp_"
+			) + "fwd_valid",
+			use_parent_name=False,
 			attrs=sig_keep(),
 		)
 		shape["data"] = FieldInfo(
 			data_info,
 			#name=f"fwd_data_{io_str}",
-			name="fwd_data",
-			#use_parent_name=False,
+			name=(
+				"inp_"
+				if pdir == PortDir.Inp
+				else "outp_"
+			) + "fwd_data",
+			use_parent_name=False,
 			attrs=sig_keep(),
 		)
-		super().__init__(shape)
-class PstageBusBakLayt(dict):
+		mp_dct = {
+			key: pdir
+			for key in shape
+		}
+		super().__init__(
+			shape=shape,
+			modport=Modport(mp_dct),
+			tag=intf_tag,
+		)
+class PstageBusBakIshape(IntfShape):
 	def __init__(
 		self,
+		pdir: PortDir,
 		#io_str: str,
+		*,
+		intf_tag=None,
 	):
 		shape = {}
 		shape["ready"] = FieldInfo(
 			1,
 			#name=f"bak_ready_{io_str}",
-			name="bak_ready",
-			#use_parent_name=False,
+			name=(
+				"inp_"
+				if pdir == PortDir.Inp
+				else "outp_"
+			) + "bak_ready",
+			use_parent_name=False,
 			attrs=sig_keep(),
 		)
-		super().__init__(shape)
-#class PstageBusInpNodataLayt(dict):
-#	def __init__(
-#		self,
-#		*,
-#		OPT_INCLUDE_VALID_BUSY: bool=False,
-#		OPT_INCLUDE_READY_BUSY: bool=False,
-#	):
+		mp_dct = {
+			key: pdir
+			for key in shape
+		}
+		super().__init__(
+			shape=shape,
+			modport=Modport(mp_dct),
+			tag=intf_tag,
+		)
 
-
-class PipeSkidBufInpLayt(dict):
+class PipeSkidBufInpSideIshape(IntfShape):
 	def __init__(
 		self, 
 		data_info: SigInfo,
 		*,
-		OPT_INCLUDE_VALID_BUSY: bool=False,
-		OPT_INCLUDE_READY_BUSY: bool=False,
+		#OPT_INCLUDE_VALID_BUSY: bool=False,
+		#OPT_INCLUDE_READY_BUSY: bool=False,
+		fwd_intf_tag=None,
+		bak_intf_tag=None,
+		#misc_intf_tag=None,
 	):
 		shape = {}
-		shape["fwd"] = FieldInfo(
-			PstageBusFwdLayt(
-				data_info=data_info,
-				#io_str="in"
-			),
-			use_parent_name=False,
-			#attrs=sig_keep(),
+		#shape["fwd"] = FieldInfo(
+		#	PstageBusFwdLayt(
+		#		data_info=data_info,
+		#		#io_str="in"
+		#	),
+		#	use_parent_name=False,
+		#	#attrs=sig_keep(),
+		#)
+		#shape["bak"] = FieldInfo(
+		#	PstageBusBakLayt(
+		#		#io_str="in"
+		#	),
+		#	use_parent_name=False,
+		#	#attrs=sig_keep(),
+		#)
+		shape["fwd"] = PstageBusFwdIshape(
+			data_info=data_info,
+			pdir=PortDir.Inp,
+			intf_tag=fwd_intf_tag,
 		)
-		shape["bak"] = FieldInfo(
-			PstageBusBakLayt(
-				#io_str="in"
-			),
-			use_parent_name=False,
-			#attrs=sig_keep(),
+		shape["bak"] = PstageBusBakIshape(
+			pdir=PortDir.Inp,
+			intf_tag=bak_intf_tag,
 		)
+		#if OPT_INCLUDE_VALID_BUSY:
+		#	shape["valid_busy"] = FieldInfo(1, name="valid_busy")
+		#if OPT_INCLUDE_READY_BUSY:
+		#	shape["ready_busy"] = FieldInfo(1, name="inp_ready_busy")
+		#shape["clear"] = FieldInfo(1, name="inp_clear")
+		#super().__init__(shape)
+		#mp_dct = {
+		#	key: PortDir.Inp
+		#	for key in shape
+		#}
+		super().__init__(shape=shape)
+class PipeSkidBufOutpSideIshape(IntfShape):
+	def __init__(
+		self,
+		data_info: SigInfo,
+		*,
+		fwd_intf_tag=None,
+		bak_intf_tag=None,
+	):
+		shape = {}
+		#shape["fwd"] = FieldInfo(
+		#	PstageBusFwdLayt(
+		#		data_info=data_info,
+		#		#io_str="out"
+		#	),
+		#	use_parent_name=False,
+		#	#attrs=sig_keep(),
+		#)
+		#shape["bak"] = FieldInfo(
+		#	PstageBusBakLayt(
+		#		#io_str="out"
+		#	),
+		#	use_parent_name=False,
+		#	#attrs=sig_keep(),
+		#)
+		shape["fwd"] = PstageBusFwdIshape(
+			data_info=data_info,
+			pdir=PortDir.Outp,
+			intf_tag=fwd_intf_tag,
+		)
+		shape["bak"] = PstageBusBakIshape(
+			pdir=PortDir.Outp,
+			intf_tag=bak_intf_tag,
+		)
+		#mp_dct = {
+		#	key: PortDir.Outp
+		#	for key in shape
+		#}
+		super().__init__(shape=shape)
+class PipeSkidBufMiscIshape(IntfShape):
+	def __init__(
+		self,
+		*,
+		OPT_INCLUDE_VALID_BUSY: bool,
+		OPT_INCLUDE_READY_BUSY: bool,
+		intf_tag=None,
+	):
+		shape = {}
 		if OPT_INCLUDE_VALID_BUSY:
 			shape["valid_busy"] = FieldInfo(1, name="valid_busy")
 		if OPT_INCLUDE_READY_BUSY:
 			shape["ready_busy"] = FieldInfo(1, name="inp_ready_busy")
 		shape["clear"] = FieldInfo(1, name="inp_clear")
-		super().__init__(shape)
-class PipeSkidBufOutpLayt(dict):
+
+		mp_dct = {
+			key: PortDir.Inp
+			for key in shape
+		}
+		super().__init__(
+			shape=shape,
+			modport=Modport(mp_dct),
+			tag=intf_tag,
+		)
+class PipeSkidBufIshape(IntfShape):
 	def __init__(
 		self,
 		data_info: SigInfo,
+		*,
+		OPT_INCLUDE_VALID_BUSY: bool,
+		OPT_INCLUDE_READY_BUSY: bool,
+		next_intf_tag=None,
+		prev_intf_tag=None,
+		misc_intf_tag=None,
 	):
-		shape = {}
-		shape["fwd"] = FieldInfo(
-			PstageBusFwdLayt(
+		shape = {
+			"inp": PipeSkidBufInpSideIshape(
 				data_info=data_info,
-				#io_str="out"
+				fwd_intf_tag=prev_intf_tag,
+				bak_intf_tag=next_intf_tag,
+				#misc_intf_tag=
 			),
-			use_parent_name=False,
-			#attrs=sig_keep(),
-		)
-		shape["bak"] = FieldInfo(
-			PstageBusBakLayt(
-				#io_str="out"
+			"outp": PipeSkidBufOutpSideIshape(
+				data_info=data_info,
+				fwd_intf_tag=next_intf_tag,
+				bak_intf_tag=prev_intf_tag,
 			),
-			use_parent_name=False,
-			#attrs=sig_keep(),
+			"misc": PipeSkidBufMiscIshape(
+				OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
+				OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
+				intf_tag=misc_intf_tag,
+			)
+		}
+		#shape = {
+		#	"fwd": PipeSkidBufSideIshape(
+		#		data_info=data_info, tag=fwd_tag,
+		#	),
+		#	"bak": PipeSkidBufSideIshape(
+		#		data_info=data_info, tag=bak_tag,
+		#	),
+		#	"misc": PipeSkidBufMiscIshape(
+		#		data_info=data_info, tag=misc_tag,
+		#		OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
+		#		OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
+		#	)
+		#}
+		#mp_dct = {
+		#	#"inp": PortDir.Inp,
+		#	#"outp": PortDir.Outp,
+		#	"misc": PortDir.Inp,
+		#}
+		super().__init__(
+			shape=shape,
+			#modport=Modport(mp_dct),
+			#tag=tag,
 		)
-		super().__init__(shape)
-		
 class PipeSkidBufBus:
 	def __init__(
 		self,
@@ -220,36 +355,57 @@ class PipeSkidBufBus:
 		*,
 		OPT_INCLUDE_VALID_BUSY: bool=False,
 		OPT_INCLUDE_READY_BUSY: bool=False,
+		#tag=None,
+		next_intf_tag=None,
+		prev_intf_tag=None,
+		misc_intf_tag=None,
 	):
+		#self.__data_info = data_info
+		#self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
+		#self.__OPT_INCLUDE_READY_BUSY = OPT_INCLUDE_READY_BUSY
+		ishape = PipeSkidBufIshape(
+			data_info=data_info,
+			OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
+			OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
+			#tag=tag,
+			next_intf_tag=next_intf_tag,
+			prev_intf_tag=prev_intf_tag,
+			misc_intf_tag=misc_intf_tag,
+		)
+		#super().__init__(ishape)
+		self.__bus = Splitintf(ishape)
 		self.__data_info = data_info
-		self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
-		self.__OPT_INCLUDE_READY_BUSY = OPT_INCLUDE_READY_BUSY
-		self.inp = Splitrec(
-			PipeSkidBufInpLayt(
-				data_info=data_info,
-				OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
-				OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
-			),
-			#use_parent_name=False,
-		)
-		self.outp = Splitrec(
-			PipeSkidBufOutpLayt(data_info=data_info),
-			#use_parent_name=False,
-		)
+		self.__OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY
+		self.__OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY
+		#self.inp = Splitrec(
+		#	PipeSkidBufInpLayt(
+		#		data_info=data_info,
+		#		OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
+		#		OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
+		#	),
+		#	#use_parent_name=False,
+		#)
+		#self.outp = Splitrec(
+		#	PipeSkidBufOutpLayt(data_info=data_info),
+		#	#use_parent_name=False,
+		#)
 
 		#self.inp = Blank()
 		#self.outp = Blank()
 
 
+	@property
+	def bus(self):
+		return self.__bus
 	def data_info(self):
 		return self.__data_info
-	def data_shape(self):
-		#return self.__shape
-		return self.data_info().shape()
-	def DataObjKind(self):
-		return self.data_info().ObjKind()
-	def data_reset(self):
-		return self.data_info().reset()
+	#def data_shape(self):
+	#	#return self.__shape
+	#	return self.data_info().shape()
+	#def DataObjKind(self):
+	#	return self.data_info().ObjKind()
+	#def data_reset(self):
+	#	return self.data_info().reset()
 	def OPT_INCLUDE_VALID_BUSY(self):
 		return self.__OPT_INCLUDE_VALID_BUSY
 	def OPT_INCLUDE_READY_BUSY(self):
@@ -270,6 +426,7 @@ class PipeSkidBuf(Elaboratable):
 			OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
 			OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
 		)
+		self.__data_info = data_info
 		self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
 		self.__OPT_INCLUDE_READY_BUSY = OPT_INCLUDE_READY_BUSY
 
@@ -280,9 +437,9 @@ class PipeSkidBuf(Elaboratable):
 	def OPT_INCLUDE_READY_BUSY(self):
 		return self.__OPT_INCLUDE_READY_BUSY
 	def data_info(self):
-		return self.bus().data_info()
-	def data_shape(self):
-		return self.bus().data_shape()
+		return self.__data_info
+	#def data_shape(self):
+	#	return self.data_info().shape()
 	#def sig_attrs(self):
 	#	return self.bus().sig_attrs()
 
@@ -293,8 +450,8 @@ class PipeSkidBuf(Elaboratable):
 		#--------
 		m = Module()
 		#--------
-		bus = self.bus()
-		data_info = bus.data_info()
+		bus = self.bus().bus
+		data_info = self.data_info()
 		OPT_INCLUDE_VALID_BUSY = self.OPT_INCLUDE_VALID_BUSY()
 		OPT_INCLUDE_READY_BUSY = self.OPT_INCLUDE_READY_BUSY()
 
@@ -364,7 +521,7 @@ class PipeSkidBuf(Elaboratable):
 		loc.c = Splitrec(comb_shape)
 
 		# Synchronous logic
-		with m.If(bus.inp.clear):
+		with m.If(bus.misc.clear):
 			m.d.sync += loc.s.eq(0x0)
 		with m.Else(): # If(~bus.inp.clear):
 			with m.Switch(loc.s.state_rg):
@@ -423,7 +580,7 @@ class PipeSkidBuf(Elaboratable):
 		# assign o_valid = valid_rg ;
 		m.d.comb += [
 			loc.c.ready.eq(Mux(
-				~bus.inp.clear
+				~bus.misc.clear
 				& (
 					# Use a Python "mux" instead of an Amaranth `Mux`
 					# AND the upstream `ready` with ~`ready_busy`
@@ -441,7 +598,7 @@ class PipeSkidBuf(Elaboratable):
 					# AND the upstream `ready` with ~`ready_busy`
 					0b1
 					if not OPT_INCLUDE_READY_BUSY
-					else ~bus.inp.ready_busy
+					else ~bus.misc.ready_busy
 				)
 			),
 			bus.outp.fwd.data.eq(loc.s.data_rg),
@@ -452,7 +609,7 @@ class PipeSkidBuf(Elaboratable):
 					# AND the downstream `valid` with ~`valid_busy`
 					0b1
 					if not OPT_INCLUDE_VALID_BUSY
-					else ~bus.inp.valid_busy
+					else ~bus.misc.valid_busy
 				)
 			),
 		]
@@ -469,16 +626,43 @@ class PipeSkidBuf(Elaboratable):
 		tie_last_inp_bak_ready: bool=True,
 	):
 		assert len(sb_bus_lst) >= 2
+		#print("testificate")
 
 		for i in range(len(sb_bus_lst) - 1):
 			sb_bus = sb_bus_lst[i]
 			sb_bus_next = sb_bus_lst[i + 1]
+			#parent.d.comb += [
+			#	# Forwards connections
+			#	sb_bus_next.inp.fwd.eq(sb_bus.outp.fwd),
+			#	# Backwards connections
+			#	sb_bus.inp.bak.eq(sb_bus_next.outp.bak),
+			#]
+
+			#sb_bus_next.inp.fwd.connect(
+			#	other=sb_bus.outp.fwd,
+			#	m=parent,
+			#	kind=Splitintf.ConnKind.Parallel
+			#)
+			#sb_bus.inp.bak.connect(
+			#	other=sb_bus_next.outp.bak,
+			#	m=parent,
+			#	kind=Splitintf.ConnKind.Parallel
+			#)
+
+			#fwd_flat = sb_bus.outp.fwd.flattened()
+			#next_fwd_flat = sb_bus_next.inp.fwd.flattened()
+			#bak_flat = sb_bus.inp.bak.flattened()
+			#next_bak_flat = sb_bus_next.outp.bak.flattened()
+			#for j in range(len(fwd_flat)):
+			#	parent.d.comb += next_fwd_flat[j].eq(fwd_flat[j])
+			#for j in range(len(bak_flat)):
+			#	parent.d.comb += bak_flat[j].eq(next_bak_flat[j])
 			parent.d.comb += [
-				# Forwards connections
-				sb_bus_next.inp.fwd.eq(sb_bus.outp.fwd),
-				# Backwards connections
-				sb_bus.inp.bak.eq(sb_bus_next.outp.bak),
+				sb_bus_next.inp.fwd.valid.eq(sb_bus.outp.fwd.valid),
+				sb_bus_next.inp.fwd.data.eq(sb_bus.outp.fwd.data),
+				sb_bus.inp.bak.ready.eq(sb_bus_next.outp.bak.ready),
 			]
+
 		if tie_first_inp_fwd_valid:
 			parent.d.comb += [
 				sb_bus_lst[0].inp.fwd.valid.eq(0b1),
@@ -505,33 +689,64 @@ class PipeSkidBuf(Elaboratable):
 		# fwd output, then you'll need to assert
 		# `child_sb_bus.inp.valid_busy` until you're done with your
 		# processing.
-		parent.d.comb += [
-			child_sb_bus.inp.fwd.eq(parent_sb_bus.inp.fwd),
-			##parent_sb_bus.outp.fwd.eq(child_sb_bus.outp.fwd),
-			#child_sb_bus.inp.eq(parent_sb_bus.inp),
-			parent_sb_bus.outp.fwd.valid.eq(child_sb_bus.outp.fwd.valid),
-			child_sb_bus.inp.bak.eq(parent_sb_bus.inp.bak),
-			parent_sb_bus.outp.bak.eq(child_sb_bus.outp.bak),
-		]
 
-		if (
-			parent_sb_bus.OPT_INCLUDE_VALID_BUSY()
-			and child_sb_bus.OPT_INCLUDE_VALID_BUSY()
-		):
-			m.d.comb += [
-				child_sb_bus.inp.valid_busy.eq(
-					parent_sb_bus.inp.valid_busy
-				)
-			]
-		if (
-			parent_sb_bus.OPT_INCLUDE_READY_BUSY()
-			and child_sb_bus.OPT_INCLUDE_READY_BUSY()
-		):
-			m.d.comb += [
-				child_sb_bus.inp.ready_busy.eq(
-					parent_sb_bus.inp.ready_busy
-				)
-			]
+		#parent.d.comb += [
+		#	child_sb_bus.inp.fwd.eq(parent_sb_bus.inp.fwd),
+		#	##parent_sb_bus.outp.fwd.eq(child_sb_bus.outp.fwd),
+		#	#child_sb_bus.inp.eq(parent_sb_bus.inp),
+		#	parent_sb_bus.outp.fwd.valid.eq(child_sb_bus.outp.fwd.valid),
+		#	child_sb_bus.inp.bak.eq(parent_sb_bus.inp.bak),
+		#	parent_sb_bus.outp.bak.eq(child_sb_bus.outp.bak),
+		#]
+		parent_sb_bus.inp.fwd.connect(
+			other=child_sb_bus.inp.fwd,
+			m=parent,
+			kind=Splitintf.ConnKind.Parent2Child,
+		)
+		parent.d.comb += [
+			#child_sb_bus.inp.fwd.valid.eq(parent_sb_bus.inp.fwd.valid),
+			parent_sb_bus.outp.fwd.valid.eq(child_sb_bus.outp.fwd.valid),
+		]
+		parent_sb_bus.inp.bak.connect(
+			other=child_sb_bus.inp.bak,
+			m=parent,
+			kind=Splitintf.ConnKind.Parent2Child,
+		)
+		parent_sb_bus.outp.bak.connect(
+			other=child_sb_bus.outp.bak,
+			m=parent,
+			kind=Splitintf.ConnKind.Parent2Child,
+		)
+
+		#if (
+		#	parent_sb_bus.OPT_INCLUDE_VALID_BUSY()
+		#	and child_sb_bus.OPT_INCLUDE_VALID_BUSY()
+		#):
+		#	m.d.comb += [
+		#		child_sb_bus.misc.valid_busy.eq(
+		#			parent_sb_bus.misc.valid_busy
+		#		)
+		#	]
+		#if (
+		#	parent_sb_bus.OPT_INCLUDE_READY_BUSY()
+		#	and child_sb_bus.OPT_INCLUDE_READY_BUSY()
+		#):
+		#	m.d.comb += [
+		#		child_sb_bus.misc.ready_busy.eq(
+		#			parent_sb_bus.misc.ready_busy
+		#		)
+		#	]
+		#if (
+		#	"misc" in parent_sb_bus.dct()
+		#	and "misc" in child_sb_bus.dct()
+		#):
+		# TODO: continue here
+		#parent_sb_bus.misc.connect(
+		#	other=child_sb_bus.misc,
+		#	m=parent,
+		#	#kind=Splitintf.ConnKind.Parallel,
+		#	kind=Splitintf.ConnKind.Parent2Child,
+		#)
 
 		if parent_data is None:
 			parent.d.comb += [

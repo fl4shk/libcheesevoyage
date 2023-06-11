@@ -11,13 +11,21 @@ from amaranth.asserts import Past, Rose, Fell, Stable
 
 from amaranth.back import verilog
 
-from libcheesevoyage.general.container_types import Splitarr
+from libcheesevoyage.general.container_types import (
+	Splitrec, Splitarr, Splitintf, Splitintfarr
+)
 
 def inner_ports(bus):
 	ret = []
 	for key in bus.__dict__:
 		val = bus.__dict__[key]
-		if key[0] != "_":
+		if (
+			(
+				key[0] != "_"
+			) and (
+				key[0] not in type(bus).__dict__
+			)
+		):
 			if isinstance(val, Signal) or isinstance(val, Record):
 				ret += [Value.cast(val)]
 			#elif isinstance(val, Packrec):
@@ -28,7 +36,10 @@ def inner_ports(bus):
 				or isinstance(val, Struct) \
 				or isinstance(val, Union):
 				ret += [Value.cast(val)]
-			elif isinstance(val, Splitarr):
+			elif (
+				isinstance(val, Splitarr)
+				or isinstance(val, Splitintfarr)
+			):
 				ret += list(val)
 			#elif isinstance(val, Splitrec):
 			#	ret += val.flattened()
