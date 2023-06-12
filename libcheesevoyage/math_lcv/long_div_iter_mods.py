@@ -593,8 +593,8 @@ class LongUdivIterSyncIshape(IntfShape):
 			data_info=LongUdivIterSync.mk_data_info(constants=constants),
 			OPT_INCLUDE_VALID_BUSY=False,
 			OPT_INCLUDE_READY_BUSY=False,
-			next_intf_tag=next_intf_tag,
-			prev_intf_tag=prev_intf_tag,
+			next_tag=next_intf_tag,
+			prev_tag=prev_intf_tag,
 		)
 			#self.inp.valid = Signal(
 			#	1, name="valid_in"

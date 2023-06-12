@@ -209,7 +209,7 @@ class LongDivMultiCycle(Elaboratable):
 			)
 			past_valid = loc.formal.past_valid
 		#--------
-		it_bus = loc.m[0].bus()
+		it_bus = loc.m[0].bus().bus
 		CHUNK_WIDTH = constants.CHUNK_WIDTH()
 		chunk_start = it_bus.chunk_start
 		itd_in = it_bus.itd_in

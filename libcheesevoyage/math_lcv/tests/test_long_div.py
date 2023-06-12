@@ -6,7 +6,9 @@ from amaranth import *
 from libcheesevoyage.misc_util_running import (
 	to_verilog, formal,
 )
-from libcheesevoyage.math_lcv.long_div_mods import LongDivPipelined
+from libcheesevoyage.math_lcv.long_div_mods import (
+	LongDivMultiCycle, LongDivPipelined,
+)
 #--------
 if __name__ == "__main__":
 	formal(
