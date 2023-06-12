@@ -54,39 +54,46 @@ class ReduceTreeBus:
 		inp_shape = {}
 		outp_shape = {}
 
-		inp_shape["arr"] = IntfarrShape(
-			[
-				IntfShape(
-					#name=psconcat("inp_data_", i),
-					#name="data",
-					shape={
-						"data": FieldInfo(
-							self.INP_DATA_WIDTH(),
-							name=psconcat("inp_arr_data_", i)
-						)
-					},
-					modport=Modport({
-						#psconcat("inp_data_", i):
-						"data": PortDir.Inp,
-					}),
-					#pdir=PortDir.Inp,
-					tag=inp_tag,
-				)
-				#IntfShape.mk_single_pdir_ishape(
-				#	#name=psconcat("inp_arr_", i),
-				#	name="data",
-				#	shape={
-				#		"data": FieldInfo(
-				#			self.INP_DATA_WIDTH(),
-				#			name=psconcat("inp_data_", i),
-				#		)
-				#	},
-				#	pdir=PortDir.Inp,
-				#	tag=inp_tag,
-				#)
-				for i in range(self.INP_SIZE())
-			],
-		)
+		#inp_shape["arr"] = IntfarrShape(
+		#	[
+		#		IntfShape(
+		#			#name=psconcat("inp_data_", i),
+		#			#name="data",
+		#			shape={
+		#				"data": FieldInfo(
+		#					self.INP_DATA_WIDTH(),
+		#					name=psconcat("inp_arr_data_", i)
+		#				)
+		#			},
+		#			modport=Modport({
+		#				#psconcat("inp_data_", i):
+		#				"data": PortDir.Inp,
+		#			}),
+		#			#pdir=PortDir.Inp,
+		#			tag=inp_tag,
+		#		)
+		#		#IntfShape.mk_single_pdir_shape(
+		#		#	#name=psconcat("inp_arr_", i),
+		#		#	name="data",
+		#		#	shape={
+		#		#		"data": FieldInfo(
+		#		#			self.INP_DATA_WIDTH(),
+		#		#			name=psconcat("inp_data_", i),
+		#		#		)
+		#		#	},
+		#		#	pdir=PortDir.Inp,
+		#		#	tag=inp_tag,
+		#		#)
+		#		for i in range(self.INP_SIZE())
+		#	],
+		#)
+		inp_shape["data"] = [
+			FieldInfo(
+				self.INP_DATA_WIDTH(),
+				name=psconcat("inp_data_", i)
+			)
+			for i in range(self.INP_SIZE())
+		]
 
 		outp_shape["data"] = FieldInfo(
 			self.OUTP_DATA_WIDTH(),
@@ -98,13 +105,13 @@ class ReduceTreeBus:
 
 		#self.inp = Splitrec(inp_shape, use_parent_name=False)
 		#self.outp = Splitrec(outp_shape, use_parent_name=False)
-		ishape = IntfShape.mk_io_ishape(
+		ishape = IntfShape.mk_io_shape(
 			inp_shape=inp_shape,
 			outp_shape=outp_shape,
-			#inp_tag=inp_tag,
-			inp_tag=None,
+			inp_tag=inp_tag,
+			#inp_tag=None,
 			outp_tag=outp_tag,
-			mk_inp_modport=False,
+			mk_inp_modport=True,
 			mk_outp_modport=True,
 		)
 		#ishape = {
@@ -124,7 +131,7 @@ class ReduceTreeBus:
 		if self.FORMAL():
 			#self.formal = 
 			ishape.update(
-				IntfShape.mk_single_pdir_ishape(
+				IntfShape.mk_single_pdir_shape(
 					name="formal",
 					shape={
 						"oracle_outp_data": FieldInfo(
@@ -222,7 +229,7 @@ class ReduceTree(Elaboratable):
 				for op in range(ST_NUM_OUT):
 					if op < self.bus().INP_SIZE():
 						m.d.comb += loc.data[st][op][:sw] \
-							.eq(bus.inp.arr[op].data[:sw])
+							.eq(bus.inp.data[op][:sw])
 					else: # if op >= self.bus().INP_SIZE():
 						m.d.comb += loc.data[st][op].eq(0x0)
 			else: # if st > 0:
@@ -253,10 +260,11 @@ class ReduceTree(Elaboratable):
 				bus.outp.data == bus.formal.oracle_outp_data
 			)
 
-			temp_inp_data = [
-				elem.data
-				for elem in bus.inp.arr
-			]
+			#temp_inp_data = [
+			#	elem.data
+			#	for elem in bus.inp.arr
+			#]
+			temp_inp_data = bus.inp.data
 			if self.bus().BINOP() == ReduceTreeBinop.ADD:
 				m.d.comb += bus.formal.oracle_outp_data \
 					.eq(functools.reduce(operator.add, temp_inp_data))

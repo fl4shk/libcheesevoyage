@@ -1605,7 +1605,7 @@ class IntfShape:
 					and not isinstance(shape[key], IntfarrShape)
 				):
 					raise AttributeError(psconcat(
-						"Invalid `shape[key]` {!}. ".format(shape[key]),
+						"Invalid `shape[key]` {!r} ".format(shape[key]),
 						"With `modport=None`, all elements of `shape` ",
 						"must be of type `IntfShape` or `IntfarrShape`"
 					))
@@ -1613,7 +1613,7 @@ class IntfShape:
 		self.__modport = modport
 		self.__tag = tag
 	@staticmethod
-	def mk_single_pdir_ishape(
+	def mk_single_pdir_shape(
 		name: str,
 		shape,
 		pdir: PortDir,
@@ -1636,7 +1636,7 @@ class IntfShape:
 		}
 
 	@staticmethod
-	def mk_io_ishape(
+	def mk_io_shape(
 		inp_shape, outp_shape,
 		*,
 		inp_tag=None, outp_tag=None,
@@ -1663,7 +1663,7 @@ class IntfShape:
 		#}
 		ret = {}
 		ret.update(
-			IntfShape.mk_single_pdir_ishape(
+			IntfShape.mk_single_pdir_shape(
 				name="inp",
 				shape=inp_shape,
 				pdir=PortDir.Inp,
@@ -1672,7 +1672,7 @@ class IntfShape:
 			)
 		)
 		ret.update(
-			IntfShape.mk_single_pdir_ishape(
+			IntfShape.mk_single_pdir_shape(
 				name="outp",
 				shape=outp_shape,
 				pdir=PortDir.Outp,

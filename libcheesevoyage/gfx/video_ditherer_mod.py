@@ -8,8 +8,16 @@ from libcheesevoyage.general.container_types import *
 from libcheesevoyage.gfx.vga_ext_types import *
 
 class VideoDithererBus:
-	def __init__(self, FB_SIZE, CHAN_WIDTH):
+	def __init__(
+		self,
+		FB_SIZE, CHAN_WIDTH,
+		*,
+		inp_tag=None,
+		outp_tag=None,
+	):
 		self.__FB_SIZE, self.__CHAN_WIDTH = FB_SIZE, CHAN_WIDTH
+		self.__inp_tag = inp_tag
+		self.__outp_tag = outp_tag
 
 		inp_shape = {}
 		outp_shape = {}
@@ -28,12 +36,24 @@ class VideoDithererBus:
 		outp_shape["pos"] = self.coord_shape()
 		outp_shape["past_pos"] = self.coord_shape()
 
-		self.inp = Splitrec(inp_shape, use_parent_name=False)
-		self.outp = Splitrec(outp_shape, use_parent_name=False)
+		#self.inp = Splitrec(inp_shape, use_parent_name=False)
+		#self.outp = Splitrec(outp_shape, use_parent_name=False)
+		shape = IntfShape.mk_io_shape(
+			inp_shape=inp_shape,
+			outp_shape=outp_shape,
+			inp_tag=inp_tag,
+			outp_tag=outp_tag,
+			mk_inp_modport=True,
+			mk_outp_modport=True,
+		)
+		self.__bus = Splitintf(IntfShape(shape))
 		# Need a channel width of at least 3 for dithering to work (though
 		# if it *were* 3, it probably wouldn't work very well!)
 		assert CHAN_WIDTH > self.CHAN_WIDTH_DELTA()
 
+	@property
+	def bus(self):
+		return self.__bus
 	def DITHER_DELTA_WIDTH(self):
 		return width_from_arg(4)
 	def FB_SIZE(self):
@@ -48,18 +68,27 @@ class VideoDithererBus:
 	#	return Vec2(16)
 	def coord_shape(self):
 		return Vec2Layt(16)
+	def inp_tag(self):
+		return self.__inp_tag
+	def outp_tag(self):
+		return self.__outp_tag
 
 # Temporally and spatially dither a CHAN_WIDTH color down to CHAN_WIDTH - 2
 class VideoDitherer(Elaboratable):
 	def __init__(
 		self,
 		FB_SIZE,
-		CHAN_WIDTH=RgbColorLayt.DEF_CHAN_WIDTH() + 2
+		CHAN_WIDTH=RgbColorLayt.DEF_CHAN_WIDTH() + 2,
+		*,
+		inp_tag=None,
+		outp_tag=None,
 	):
 
 		self.__bus = VideoDithererBus(
 			FB_SIZE=FB_SIZE,
-			CHAN_WIDTH=CHAN_WIDTH
+			CHAN_WIDTH=CHAN_WIDTH,
+			inp_tag=inp_tag,
+			outp_tag=outp_tag,
 		)
 
 		#self.__frame = Signal(width_from_arg(4))
@@ -101,8 +130,8 @@ class VideoDitherer(Elaboratable):
 		m = Module()
 		#--------
 		bus = self.bus()
-		inp = bus.inp
-		outp = bus.outp
+		inp = bus.bus.inp
+		outp = bus.bus.outp
 
 		loc = Blank()
 		#--------

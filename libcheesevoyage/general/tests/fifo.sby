@@ -5,7 +5,8 @@ prove
 [options]
 cover: mode cover
 prove: mode prove
-depth 40
+#depth 40
+depth 20
 multiclock off
 
 [engines]

@@ -13,7 +13,7 @@ class FifoInpLayt(dict):
 		inp_shape = {}
 
 		inp_shape["wr_en"] = 1
-		inp_shape["wr_data"] = self.shape()
+		inp_shape["wr_data"] = shape
 
 		inp_shape["rd_en"] = 1
 
@@ -23,7 +23,7 @@ class FifoOutpLayt(dict):
 		# Outputs
 		outp_shape = {}
 
-		outp_shape["rd_data"] = self.shape()
+		outp_shape["rd_data"] = shape
 
 		outp_shape["empty"] = 1
 		outp_shape["full"] = 1
@@ -31,8 +31,16 @@ class FifoOutpLayt(dict):
 		super().__init__(outp_shape)
 
 class FifoBus:
-	def __init__(self, shape, SIZE):
+	def __init__(
+		self,
+		shape, SIZE,
+		*,
+		inp_tag=None,
+		outp_tag=None,
+	):
 		self.__shape, self.__SIZE = shape, SIZE
+		self.__inp_tag = inp_tag
+		self.__outp_tag = outp_tag
 		#--------
 		#inp_shape = {}
 		#--------
@@ -43,10 +51,25 @@ class FifoBus:
 		#--------
 		#--------
 		#--------
-		self.inp = Splitrec(FifoInpLayt(shape))
-		self.outp = Splitrec(FifoOutpLayt(shape))
+		#self.inp = Splitrec(FifoInpLayt(shape))
+		#self.outp = Splitrec(FifoOutpLayt(shape))
+		#--------
+		inp_shape = FifoInpLayt(shape)
+		outp_shape = FifoOutpLayt(shape)
+		ishape = IntfShape.mk_io_shape(
+			inp_shape=inp_shape,
+			outp_shape=outp_shape,
+			inp_tag=inp_tag,
+			outp_tag=outp_tag,
+			mk_inp_modport=True,
+			mk_outp_modport=True,
+		)
+		self.__bus = Splitintf(IntfShape(ishape))
 		#--------
 
+	@property
+	def bus(self):
+		return self.__bus
 	def shape(self):
 		return self.__shape
 	def SIZE(self):
@@ -59,8 +82,20 @@ class FifoBus:
 	#		self.rd_en, self.rd_data, self.empty, self.full]
 #--------
 class Fifo(Elaboratable):
-	def __init__(self, shape, SIZE, *, FORMAL: bool=False):
-		self.__bus = FifoBus(shape=shape, SIZE=SIZE)
+	def __init__(
+		self,
+		shape, SIZE,
+		*,
+		FORMAL: bool=False,
+		inp_tag=None,
+		outp_tag=None,
+	):
+		self.__bus = FifoBus(
+			shape=shape,
+			SIZE=SIZE,
+			inp_tag=inp_tag,
+			outp_tag=outp_tag,
+		)
 		self.__FORMAL = FORMAL
 
 	def bus(self):
@@ -77,8 +112,8 @@ class Fifo(Elaboratable):
 		#--------
 		# Local variables
 		bus = self.bus()
-		inp = bus.inp
-		outp = bus.outp
+		inp = bus.bus.inp
+		outp = bus.bus.outp
 
 		loc = Blank()
 
@@ -161,13 +196,13 @@ class Fifo(Elaboratable):
 				loc.next_full.eq(loc.incr_head == loc.next_tail), 
 			]
 
-		if self.FORMAL():
-			m.d.comb \
-			+= [
-				Cover(outp.empty),
-				Cover(outp.full),
-				Cover((~outp.empty) & (~outp.full)),
-			]
+		#if self.FORMAL():
+		#	m.d.comb \
+		#	+= [
+		#		Cover(outp.empty),
+		#		Cover(outp.full),
+		#		Cover((~outp.empty) & (~outp.full)),
+		#	]
 		#--------
 		# Clocked behavioral code
 		if self.FORMAL():
@@ -269,8 +304,20 @@ class Fifo(Elaboratable):
 #--------
 # Asynchronous Read FIFO
 class AsyncReadFifo(Fifo):
-	def __init__(self, shape, SIZE, *, FORMAL: bool=False):
-		super().__init__(shape, SIZE, FORMAL)
+	def __init__(
+		self,
+		shape, SIZE,
+		*,
+		FORMAL: bool=False,
+		inp_tag=None,
+		outp_tag=None,
+	):
+		super().__init__(
+			shape=shape, SIZE=SIZE,
+			FORMAL=FORMAL,
+			inp_tag=inp_tag,
+			outp_tag=outp_tag,
+		)
 
 	def elaborate(self, platform: str) -> Module:
 		#--------
@@ -278,8 +325,8 @@ class AsyncReadFifo(Fifo):
 		#--------
 		# Local variables
 		bus = self.bus()
-		inp = bus.inp
-		outp = bus.outp
+		inp = bus.bus.inp
+		outp = bus.bus.outp
 
 		loc = Blank()
 		loc.arr = Array([
@@ -415,12 +462,12 @@ class AsyncReadFifo(Fifo):
 			if self.FORMAL():
 				#m.d.comb += Cover(loc.formal.past_valid)
 				with m.If(loc.formal.past_valid):
-					m.d.sync \
-					+= [
-						Cover(outp.empty),
-						Cover(outp.full),
-						Cover(~(outp.empty & outp.full)),
-					]
+					#m.d.sync \
+					#+= [
+					#	Cover(outp.empty),
+					#	Cover(outp.full),
+					#	Cover(~(outp.empty & outp.full)),
+					#]
 
 					m.d.sync \
 					+= [

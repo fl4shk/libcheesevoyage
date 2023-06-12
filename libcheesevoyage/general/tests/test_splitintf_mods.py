@@ -24,7 +24,7 @@ class FullAdderIshape(IntfShape):
 		outp_shape["sum"] = 1
 		outp_shape["carry"] = 1
 
-		shape = IntfShape.mk_io_ishape(
+		shape = IntfShape.mk_io_shape(
 			inp_shape=inp_shape,
 			outp_shape=outp_shape,
 			inp_tag=inp_tag,
@@ -120,7 +120,7 @@ class BitSerialAdderPstageIshape(IntfShape):
 		inp_shape = BitSerialAdderPstageIoLayt(WIDTH=WIDTH)
 		outp_shape = BitSerialAdderPstageIoLayt(WIDTH=WIDTH)
 
-		shape = IntfShape.mk_io_ishape(
+		shape = IntfShape.mk_io_shape(
 			inp_shape=inp_shape,
 			outp_shape=outp_shape,
 			inp_tag=inp_tag,
@@ -229,7 +229,7 @@ class BitSerialAdderIshape(IntfShape):
 		outp_shape["sum"] = WIDTH
 		outp_shape["carry"] = 1
 
-		shape = IntfShape.mk_io_ishape(
+		shape = IntfShape.mk_io_shape(
 			inp_shape=inp_shape,
 			outp_shape=outp_shape,
 			inp_tag=inp_tag,

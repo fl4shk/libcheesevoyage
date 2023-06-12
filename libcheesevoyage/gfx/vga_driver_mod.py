@@ -85,7 +85,10 @@ class VgaDriverBus:
 		self,
 		#ColorT=RgbColor
 		col_shape=RgbColorLayt,
-		COL_CHAN_WIDTH=RgbColorLayt.DEF_CHAN_WIDTH()
+		COL_CHAN_WIDTH=RgbColorLayt.DEF_CHAN_WIDTH(),
+		*,
+		inp_tag=None,
+		outp_tag=None,
 	):
 		#--------
 		inp_shape = {}
@@ -121,10 +124,23 @@ class VgaDriverBus:
 		outp_shape["size"] = Vec2Layt(self.CoordElemKindT())
 		#self.start_draw = Signal()
 		#--------
-		self.inp = Splitrec(inp_shape, use_parent_name=False)
-		self.outp = Splitrec(outp_shape, use_parent_name=False)
+		#self.inp = Splitrec(inp_shape, use_parent_name=False)
+		#self.outp = Splitrec(outp_shape, use_parent_name=False)
+		ishape = IntfShape.mk_io_shape(
+			inp_shape=inp_shape,
+			outp_shape=outp_shape,
+			inp_tag=inp_tag,
+			outp_tag=outp_tag,
+			mk_inp_modport=True,
+			mk_outp_modport=True,
+		)
+		#--------
+		self.__bus = Splitintf(IntfShape(ishape))
 		#--------
 
+	@property
+	def bus(self):
+		return self.__bus
 	def CoordElemKindT(self):
 		return 16
 
@@ -137,8 +153,16 @@ class VgaDriver(Elaboratable):
 		#ColorT=RgbColor,
 		col_shape=RgbColorLayt,
 		COL_CHAN_WIDTH=RgbColorLayt.DEF_CHAN_WIDTH(),
+		*,
+		inp_tag=None,
+		outp_tag=None,
 	):
-		self.__bus = VgaDriverBus(ColorT=ColorT)
+		self.__bus = VgaDriverBus(
+			#ColorT=ColorT,
+			col_shape=col_shape,
+			inp_tag=inp_tag,
+			outp_tag=outp_tag,
+		)
 
 		self.__CLK_RATE = CLK_RATE
 		self.__TIMING_INFO = TIMING_INFO
@@ -147,6 +171,8 @@ class VgaDriver(Elaboratable):
 		#self.__ColorT = ColorT
 		self.__col_shape = col_shape
 		self.__COL_CHAN_WIDTH = COL_CHAN_WIDTH
+		self.__inp_tag = inp_tag
+		self.__outp_tag = outp_tag
 
 	def bus(self):
 		return self.__bus
@@ -187,8 +213,8 @@ class VgaDriver(Elaboratable):
 		# Local variables
 		loc = Blank()
 		bus = self.bus()
-		inp = bus.inp
-		outp = bus.outp
+		inp = bus.bus.inp
+		outp = bus.bus.outp
 		#--------
 		fifo = m.submodules.fifo = AsyncReadFifo(
 			ShapeT=to_shape(
@@ -196,9 +222,11 @@ class VgaDriver(Elaboratable):
 				View(self.col_shape(self.COL_CHAN_WIDTH()))
 			),
 			SIZE=self.FIFO_SIZE(),
+			inp_tag=self.__inp_tag,
+			outp_tag=self.__outp_tag,
 		)
-		fifo_inp = fifo.bus().inp
-		fifo_outp = fifo.bus().outp
+		fifo_inp = fifo.bus().bus.inp
+		fifo_outp = fifo.bus().bus.outp
 
 		##loc.fifo_rst = Signal(reset=0b1)
 

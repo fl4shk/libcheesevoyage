@@ -16,10 +16,15 @@ import operator
 #--------
 class XbarSwitchBus:
 	#--------
-	def __init__(self, h2d_shape, d2h_shape, NUM_HOSTS, 
+	def __init__(
+		self, h2d_shape, d2h_shape, NUM_HOSTS, 
 		NUM_DEVS,
 		#H2D_SIGNED=False, D2H_SIGNED=False,
-		*, FORMAL=False):
+		*,
+		FORMAL=False,
+		inp_tag=None,
+		outp_tag=None,
+	):
 		#--------
 		#self.__ElemKindT = ElemKindT
 
@@ -31,6 +36,9 @@ class XbarSwitchBus:
 		#self.__H2D_SIGNED = H2D_SIGNED
 		#self.__D2H_SIGNED = D2H_SIGNED
 		self.__FORMAL = FORMAL
+
+		self.__inp_tag = inp_tag
+		self.__outp_tag = outp_tag
 		#--------
 		inp_shape = {}
 		outp_shape = {}
@@ -90,9 +98,22 @@ class XbarSwitchBus:
 			for i in range(self.NUM_HOSTS())
 		]
 		#--------
-		self.inp = Splitrec(inp_shape, use_parent_name=False)
-		self.outp = Splitrec(outp_shape, use_parent_name=False)
+		#self.inp = Splitrec(inp_shape, use_parent_name=False)
+		#self.outp = Splitrec(outp_shape, use_parent_name=False)
+		shape = IntfShape.mk_io_shape(
+			inp_shape=inp_shape,
+			outp_shape=outp_shape,
+			inp_tag=inp_tag,
+			outp_tag=outp_tag,
+			mk_inp_modport=True,
+			mk_outp_modport=True,
+		)
+		self.__bus = Splitintf(IntfShape(shape))
+		#--------
 	#--------
+	@property
+	def bus(self):
+		return self.__bus
 	def h2d_shape(self):
 		return self.__h2d_shape
 	def d2h_shape(self):
@@ -109,6 +130,10 @@ class XbarSwitchBus:
 		return self.__FORMAL
 	def SEL_WIDTH(self):
 		return math.ceil(math.log2(self.NUM_DEVS()))
+	def inp_tag(self):
+		return self.__inp_tag
+	def outp_tag(self):
+		return self.__outp_tag
 	#--------
 #--------
 # A crossbar switch
@@ -116,10 +141,16 @@ class XbarSwitch(Elaboratable):
 	#--------
 	# For `PRIO_LST_2D`, lower list indices mean higher priority
 
-	def __init__(self, h2d_shape, d2h_shape, NUM_HOSTS, NUM_DEVS,
+	def __init__(
+		self,
+		h2d_shape, d2h_shape, NUM_HOSTS, NUM_DEVS,
 		#H2D_SIGNED=False, D2H_SIGNED=False,
-		*, PRIO_LST_2D=None,
-		DOMAIN=BasicDomain.COMB, FORMAL=False):
+		*,
+		PRIO_LST_2D=None,
+		DOMAIN=BasicDomain.COMB, FORMAL=False,
+		inp_tag=None,
+		outp_tag=None,
+	):
 	#def __init__(self, h2d_shape, d2h_shape, NUM_HOSTS, NUM_DEVS,
 	#	H2D_SIGNED=False, D2H_SIGNED=False, *, PRIO_LST_2D=None,
 	#	FORMAL=False):
@@ -165,7 +196,7 @@ class XbarSwitch(Elaboratable):
 			#]
 			self.__PRIO_LST_2D = [
 				[i for i in range(NUM_HOSTS)]
-					for j in range(NUM_DEVS)
+				for j in range(NUM_DEVS)
 			]
 		#--------
 		if not isinstance(DOMAIN, BasicDomain):
@@ -180,7 +211,9 @@ class XbarSwitch(Elaboratable):
 			NUM_DEVS=NUM_DEVS,
 			#H2D_SIGNED=H2D_SIGNED,
 			#D2H_SIGNED=D2H_SIGNED,
-			FORMAL=FORMAL
+			FORMAL=FORMAL,
+			inp_tag=inp_tag,
+			outp_tag=outp_tag,
 		)
 		#--------
 	#--------
@@ -196,8 +229,8 @@ class XbarSwitch(Elaboratable):
 		m = Module()
 		#--------
 		bus = self.bus()
-		inp = bus.inp
-		outp = bus.outp
+		inp = bus.bus.inp
+		outp = bus.bus.outp
 
 		PRIO_LST_2D = self.PRIO_LST_2D()
 
