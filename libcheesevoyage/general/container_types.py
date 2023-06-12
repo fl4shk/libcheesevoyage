@@ -1640,7 +1640,7 @@ class IntfShape:
 		from_name: str, to_name: str,
 		from_shape, to_shape,
 		*,
-		is_from: bool, # same idea as whether we're
+		is_src: bool, # same idea as whether we're
 						# host (True) or device (False)
 		from_tag=None, to_tag=None,
 		mk_from_modport: bool=True, mk_to_modport: bool=True,
@@ -1656,7 +1656,7 @@ class IntfShape:
 					shape=from_shape,
 					pdir=(
 						PortDir.Outp
-						if is_from
+						if is_src
 						else PortDir.Inp
 					),
 					tag=from_tag,
@@ -1673,7 +1673,7 @@ class IntfShape:
 					shape=to_shape,
 					pdir=(
 						PortDir.Inp
-						if is_from
+						if is_src
 						else PortDir.Outp
 					),
 					tag=to_tag,
