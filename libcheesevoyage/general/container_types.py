@@ -1636,6 +1636,44 @@ class IntfShape:
 		}
 
 	@staticmethod
+	def mk_fromto_shape(
+		from_name: str, to_name: str,
+		from_shape, to_shape,
+		*,
+		is_from: bool, # same idea as whether we're
+						# host (True) or device (False)
+		from_tag=None, to_tag=None,
+		mk_from_modport: bool=True, mk_to_modport: bool=True,
+	):
+		ret = {}
+		ret.update(
+			IntfShape.mk_single_pdir_shape(
+				name=from_name,
+				shape=from_shape,
+				pdir=(
+					PortDir.Outp
+					if is_from
+					else PortDir.Inp
+				),
+				tag=from_tag,
+				mk_modport=mk_from_modport,
+			)
+		)
+		ret.update(
+			IntfShape.mk_single_pdir_shape(
+				name=to_name,
+				shape=to_shape,
+				pdir=(
+					PortDir.Inp
+					if is_from
+					else PortDir.Outp
+				),
+				tag=to_tag,
+				mk_modport=mk_to_modport,
+			)
+		)
+		return ret
+	@staticmethod
 	def mk_io_shape(
 		inp_shape, outp_shape,
 		*,
