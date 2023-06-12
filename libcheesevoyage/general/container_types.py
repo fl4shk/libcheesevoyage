@@ -180,6 +180,10 @@ def cast_shape(
 		#print(psconcat(
 		#	"testificate: ", temp_use_parent_name,
 		#))
+		#with open("cast_shape-FieldInfo.txt.ignore", "w") as f:
+		#	f.writelines([
+		#		"shape, field: {!r} {!r}\n".format(shape, shape.field())
+		#	])
 		return cast_shape(
 			shape.field(),
 			#name=new_name,
@@ -432,8 +436,16 @@ def cast_shape(
 			#	("Need one of the following types for `shape`, {!r}, "
 			#		.format(shape),
 			#	": `int`, `Packrec.Layout`, `list`, or `Packarr.Shape`"))
-			raise TypeError(psconcat
-				("Invaild type for `shape`, `{!r}`".format(shape)))
+			#with open("cast_shape-exception.txt.ignore", "w") as f:
+			#	f.writelines([
+			#		"shape: {!r} {!r}\n".format(shape, type(shape)),
+			#		"isinstance: {!r}\n".format(
+			#			isinstance(shape, FieldInfo)
+			#		),
+			#	])
+			raise TypeError(psconcat(
+				"Invaild type for `shape`, `{!r}`".format(shape)
+			))
 		else:
 			return None
 
@@ -745,7 +757,7 @@ class FieldInfo:
 	def extra_args_decoder(self):
 		return self.__extra_args_decoder
 
-def do_psconcat_flattened(obj, *, use_repr: bool=False, spaces=0):
+def do_psconcat_flattened(obj, *, use_repr: bool=True, spaces=0):
 	def mk_spaces(spaces):
 		return str().join(["\t" for i in range(spaces)])
 	def inner_psconcat(some_obj, use_repr):
@@ -778,11 +790,47 @@ def do_psconcat_flattened(obj, *, use_repr: bool=False, spaces=0):
 		ret += inner_psconcat(obj.extra_args_name(), use_repr=True)
 		ret += "\n"
 		for i in range(len(list(obj))):
-			ret += do_print_flattened(
+			ret += do_psconcat_flattened(
 				obj[i], use_repr=use_repr, spaces=spaces + 1
 			)
 		#ret += "\n"
 		#print()
+	elif isinstance(obj, IntfShape):
+		ret += mk_spaces(spaces)
+		ret += inner_psconcat("shape", use_repr=True)
+		ret += "\n"
+		ret += do_psconcat_flattened(
+			obj.shape(), use_repr=use_repr, spaces=spaces + 1
+		)
+		ret += mk_spaces(spaces)
+		if obj.modport() is not None:
+			ret += inner_psconcat("modport.dct()", use_repr=True)
+			ret += "\n"
+			ret += do_psconcat_flattened(
+				obj.modport().dct(), use_repr=use_repr, spaces=spaces + 1
+			)
+		else:
+			ret += inner_psconcat("modport is None", use_repr=True)
+			ret += "\n"
+		ret += mk_spaces(spaces)
+		ret += inner_psconcat("tag", use_repr=True)
+		ret += "\n"
+		ret += do_psconcat_flattened(
+			obj.tag(), use_repr=use_repr, spaces=spaces + 1
+		)
+	elif isinstance(obj, IntfarrShape):
+		ret += mk_spaces(spaces)
+		ret += inner_psconcat("shape", use_repr=True)
+		ret += "\n"
+		ret += do_psconcat_flattened(
+			obj.shape(), use_repr=use_repr, spaces=spaces + 1
+		)
+		ret += mk_spaces(spaces)
+		ret += inner_psconcat("tag", use_repr=True)
+		ret += "\n"
+		ret += do_psconcat_flattened(
+			obj.tag(), use_repr=use_repr, spaces=spaces + 1
+		)
 	elif (
 		isinstance(obj, Signal)
 		or isinstance(obj, View)
@@ -805,12 +853,15 @@ def do_psconcat_flattened(obj, *, use_repr: bool=False, spaces=0):
 			use_repr=use_repr,
 		)
 		ret += "\n"
+	elif isinstance(obj, list) or isinstance(obj, tuple):
+		for i in range(len(obj)):
+			ret += do_psconcat_flattened(
+				obj[i], use_repr=use_repr, spaces=spaces + 1
+			)
 	elif isinstance(obj, dict):
 		for key in obj:
 			ret += mk_spaces(spaces)
-			ret += inner_psconcat(
-				key, use_repr=True
-			)
+			ret += inner_psconcat(key, use_repr=True)
 			#ret += ":"
 			ret += "\n"
 			ret += do_psconcat_flattened(
@@ -846,7 +897,7 @@ def do_psconcat_flattened(obj, *, use_repr: bool=False, spaces=0):
 		ret += "\n"
 	#ret += "\n"
 	return ret
-def do_print_flattened(obj, *, use_repr: bool=False):
+def do_print_flattened(obj, *, use_repr: bool=True):
 	print(do_psconcat_flattened(obj, use_repr=use_repr))
 
 # A record type which is composed of separate signals.  This allows setting
@@ -1562,29 +1613,79 @@ class IntfShape:
 		self.__modport = modport
 		self.__tag = tag
 	@staticmethod
+	def mk_single_pdir_ishape(
+		name: str,
+		shape,
+		pdir: PortDir,
+		*,
+		tag=None,
+		mk_modport: bool=True,
+	):
+		return {
+			name: IntfShape(
+				shape=shape,
+				modport=(
+					Modport({
+						key: pdir
+						for key in shape
+					}) if mk_modport
+					else None
+				),
+				tag=tag,
+			)
+		}
+
+	@staticmethod
 	def mk_io_ishape(
 		inp_shape, outp_shape,
 		*,
 		inp_tag=None, outp_tag=None,
+		mk_inp_modport: bool=True, mk_outp_modport: bool=True,
+		#formal_shape=None, formal_tag=None
 	):
-		return {
-			"inp": IntfShape(
+		#ret = {
+		#	"inp": IntfShape(
+		#		shape=inp_shape,
+		#		modport=Modport({
+		#			inp_key: PortDir.Inp
+		#			for inp_key in inp_shape
+		#		}),
+		#		tag=inp_tag
+		#	),
+		#	"outp": IntfShape(
+		#		shape=outp_shape,
+		#		modport=Modport({
+		#			outp_key: PortDir.Outp
+		#			for outp_key in outp_shape
+		#		}),
+		#		tag=outp_tag
+		#	),
+		#}
+		ret = {}
+		ret.update(
+			IntfShape.mk_single_pdir_ishape(
+				name="inp",
 				shape=inp_shape,
-				modport=Modport({
-					inp_key: PortDir.Inp
-					for inp_key in inp_shape
-				}),
-				tag=inp_tag
-			),
-			"outp": IntfShape(
+				pdir=PortDir.Inp,
+				tag=inp_tag,
+				mk_modport=mk_inp_modport,
+			)
+		)
+		ret.update(
+			IntfShape.mk_single_pdir_ishape(
+				name="outp",
 				shape=outp_shape,
-				modport=Modport({
-					outp_key: PortDir.Outp
-					for outp_key in outp_shape
-				}),
-				tag=outp_tag
-			),
-		}
+				pdir=PortDir.Outp,
+				tag=outp_tag,
+				mk_modport=mk_outp_modport,
+			)
+		)
+		#if (
+		#	formal_shape is not None
+		#	and formal_tag is not None
+		#):
+		#	ret["formal"] 
+		return ret
 	@staticmethod
 	def cast(other, do_except: bool=True):
 		if isinstance(other, IntfShape):
@@ -1663,6 +1764,10 @@ class Splitintf:
 
 		self.__dct = {}
 		for key, field_shape in temp_shape.shape().items():
+			#with open("key-field_shape.txt.ignore", "w") as f:
+			#	f.writelines([
+			#		"key, field_shape: {!r} {!r}".format(key, field_shape)
+			#	])
 			self.__dct[key] = Splitintf.cast_mbr_shape(
 				field_shape,
 				name=key,
@@ -1752,9 +1857,10 @@ class Splitintf:
 			)
 		#temp_shape = IntfarrShape.cast(shape, do_except=False)
 		#if temp_shape is not None:
-		if isinstance(shape, IntfarrShape):
+		elif isinstance(shape, IntfarrShape):
 			return Splitintfarr(
-				shape=temp_shape,
+				#shape=temp_shape,
+				shape=shape,
 				name=temp_name,
 				conn_name=temp_conn_name,
 				use_parent_name=use_parent_name,
@@ -1763,6 +1869,10 @@ class Splitintf:
 				in_like=in_like,
 			)
 		if not in_intfarr:
+			#with open("not-in_intfarr.txt.ignore", "w") as f:
+			#	f.writelines([
+			#		"shape: {!r}\n".format(shape)
+			#	])
 			return cast_shape(
 				#--------
 				shape=shape,
@@ -2333,7 +2443,7 @@ class Splitintfarr:
 		self.__lst = []
 		for i in range(len(temp_shape.shape())):
 			elem = temp_shape.shape()[i]
-			temp_elem = Splitintf.cast_mbr_shape(
+			temp_elem = Splitintfarr.cast_mbr_shape(
 				elem,
 				name=psconcat(i),
 				conn_name=psconcat(i),
@@ -2355,7 +2465,11 @@ class Splitintfarr:
 		shape,
 		**kwargs
 	):
-		return Splitintf._inner_cast_mbr_shape(shape, **kwargs)
+		return Splitintf._inner_cast_mbr_shape(
+			shape,
+			#in_intfarr=True,
+			**kwargs
+		)
 	@staticmethod
 	def like(
 		other,

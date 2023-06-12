@@ -23,7 +23,16 @@ class ReduceTreeBinop(Enum):
 #--------
 class ReduceTreeBus:
 	#--------
-	def __init__(self, INP_DATA_WIDTH, INP_SIZE, BINOP, *, FORMAL=False):
+	def __init__(
+		self,
+		INP_DATA_WIDTH,
+		INP_SIZE,
+		BINOP,
+		*,
+		FORMAL=False,
+		inp_tag=None,
+		outp_tag=None,
+	):
 		#--------
 		self.__INP_DATA_WIDTH = INP_DATA_WIDTH
 		self.__INP_SIZE = INP_SIZE
@@ -45,33 +54,98 @@ class ReduceTreeBus:
 		inp_shape = {}
 		outp_shape = {}
 
-		inp_shape["data"] = [
-			FieldInfo(
-				self.INP_DATA_WIDTH(),
-				name=psconcat("inp_data_", i)
-			)
-			for i in range(self.INP_SIZE())
-		]
-
-		outp_shape["data"] = FieldInfo(
-			self.OUTP_DATA_WIDTH(), name="outp_data"
+		inp_shape["arr"] = IntfarrShape(
+			[
+				IntfShape(
+					#name=psconcat("inp_data_", i),
+					#name="data",
+					shape={
+						"data": FieldInfo(
+							self.INP_DATA_WIDTH(),
+							name=psconcat("inp_arr_data_", i)
+						)
+					},
+					modport=Modport({
+						#psconcat("inp_data_", i):
+						"data": PortDir.Inp,
+					}),
+					#pdir=PortDir.Inp,
+					tag=inp_tag,
+				)
+				#IntfShape.mk_single_pdir_ishape(
+				#	#name=psconcat("inp_arr_", i),
+				#	name="data",
+				#	shape={
+				#		"data": FieldInfo(
+				#			self.INP_DATA_WIDTH(),
+				#			name=psconcat("inp_data_", i),
+				#		)
+				#	},
+				#	pdir=PortDir.Inp,
+				#	tag=inp_tag,
+				#)
+				for i in range(self.INP_SIZE())
+			],
 		)
 
-		self.inp = Splitrec(inp_shape, use_parent_name=False)
-		self.outp = Splitrec(outp_shape, use_parent_name=False)
+		outp_shape["data"] = FieldInfo(
+			self.OUTP_DATA_WIDTH(),
+			name="outp_data"
+		)
+		#modport=Modport({
+		#	"data": PortDir.Outp
+		#})
+
+		#self.inp = Splitrec(inp_shape, use_parent_name=False)
+		#self.outp = Splitrec(outp_shape, use_parent_name=False)
+		ishape = IntfShape.mk_io_ishape(
+			inp_shape=inp_shape,
+			outp_shape=outp_shape,
+			#inp_tag=inp_tag,
+			inp_tag=None,
+			outp_tag=outp_tag,
+			mk_inp_modport=False,
+			mk_outp_modport=True,
+		)
+		#ishape = {
+		#	"inp": IntfShape(
+		#		shape=inp_shape,
+		#	)
+		#	"outp": IntfShape(
+		#		shape=outp_shape,
+		#		modport=Modport({
+		#			key: PortDir.Outp
+		#			for key in outp_shape
+		#		}),
+		#		tag=outp_tag
+		#	),
+		#}
 		#--------
 		if self.FORMAL():
-			self.formal = Splitrec(
-				{
-					"oracle_outp_data": FieldInfo(
-						self.OUTP_DATA_WIDTH(),
-						name="oracle_outp_data"
-					)
-				},
-				use_parent_name=False
+			#self.formal = 
+			ishape.update(
+				IntfShape.mk_single_pdir_ishape(
+					name="formal",
+					shape={
+						"oracle_outp_data": FieldInfo(
+							self.OUTP_DATA_WIDTH(),
+							name="oracle_outp_data"
+						)
+					},
+					pdir=PortDir.Outp,
+					tag=None,
+				)
 			)
+		#with open("reduce_tree-show_ishape.txt.ignore", "w") as f:
+		#	f.writelines([
+		#		do_psconcat_flattened(ishape)
+		#	])
 		#--------
+		self.__bus = Splitintf(IntfShape(shape=ishape))
 	#--------
+	@property
+	def bus(self):
+		return self.__bus
 	def INP_DATA_WIDTH(self):
 		return self.__INP_DATA_WIDTH
 	def INP_SIZE(self):
@@ -124,19 +198,19 @@ class ReduceTree(Elaboratable):
 		#--------
 		m = Module()
 		#--------
-		bus = self.bus()
+		bus = self.bus().bus
 
 		loc = Blank()
 		loc.data = [
-			[Signal(bus.OUTP_DATA_WIDTH(),
+			[Signal(self.bus().OUTP_DATA_WIDTH(),
 				name=psconcat("data_", j, "_", i))
-				for i in range(bus.INP_SIZE_INT())]
-			for j in range(bus.NUM_STAGES() + 1)
+				for i in range(self.bus().INP_SIZE_INT())]
+			for j in range(self.bus().NUM_STAGES() + 1)
 		]
 		#--------
-		for st in range(bus.NUM_STAGES() + 1):
-			ST_NUM_OUT = bus.ST_NUM_OUT(st)
-			sw = bus.ST_WIDTH(st)
+		for st in range(self.bus().NUM_STAGES() + 1):
+			ST_NUM_OUT = self.bus().ST_NUM_OUT(st)
+			sw = self.bus().ST_WIDTH(st)
 
 			#md = m.d.comb \
 			#	if self.DOMAIN() == BasicDomain.COMB \
@@ -146,10 +220,10 @@ class ReduceTree(Elaboratable):
 			if st == 0:
 				# st 0 is actually the module inputs
 				for op in range(ST_NUM_OUT):
-					if op < bus.INP_SIZE():
+					if op < self.bus().INP_SIZE():
 						m.d.comb += loc.data[st][op][:sw] \
-							.eq(bus.inp.data[op][:sw])
-					else: # if op >= bus.INP_SIZE():
+							.eq(bus.inp.arr[op].data[:sw])
+					else: # if op >= self.bus().INP_SIZE():
 						m.d.comb += loc.data[st][op].eq(0x0)
 			else: # if st > 0:
 				# All other stages hold operator instance outputs
@@ -158,38 +232,43 @@ class ReduceTree(Elaboratable):
 					left = loc.data[st - 1][op * 2][:sw - 1]
 					right = loc.data[st - 1][(op * 2) + 1][:sw - 1]
 
-					if bus.BINOP() == ReduceTreeBinop.ADD:
+					if self.bus().BINOP() == ReduceTreeBinop.ADD:
 						md += out.eq(left + right)
-					elif bus.BINOP() == ReduceTreeBinop.AND:
+					elif self.bus().BINOP() == ReduceTreeBinop.AND:
 						md += out.eq(left & right)
-					elif bus.BINOP() == ReduceTreeBinop.OR:
+					elif self.bus().BINOP() == ReduceTreeBinop.OR:
 						md += out.eq(left | right)
-					else: # if bus.BINOP() == ReduceTreeBinop.XOR:
+					else: # if self.bus().BINOP() == ReduceTreeBinop.XOR:
 						md += out.eq(left ^ right)
 
-		m.d.comb += bus.outp.data.eq(loc.data[bus.NUM_STAGES()][0])
+		m.d.comb += bus.outp.data.eq(loc.data[self.bus().NUM_STAGES()][0])
 
-		if bus.FORMAL():
+		if self.bus().FORMAL():
 			if self.DOMAIN() != BasicDomain.COMB:
 				raise ValueError(("`self.DOMAIN()` `{!r}` must be "
 					+ "`BasicDomain.COMB` when doing formal verification")
 					.format(self.DOMAIN()))
 
-			m.d.comb += Assert(bus.outp.data 
-				== bus.formal.oracle_outp_data)
+			m.d.comb += Assert(
+				bus.outp.data == bus.formal.oracle_outp_data
+			)
 
-			if bus.BINOP() == ReduceTreeBinop.ADD:
+			temp_inp_data = [
+				elem.data
+				for elem in bus.inp.arr
+			]
+			if self.bus().BINOP() == ReduceTreeBinop.ADD:
 				m.d.comb += bus.formal.oracle_outp_data \
-					.eq(functools.reduce(operator.add, bus.inp.data))
-			elif bus.BINOP() == ReduceTreeBinop.AND:
+					.eq(functools.reduce(operator.add, temp_inp_data))
+			elif self.bus().BINOP() == ReduceTreeBinop.AND:
 				m.d.comb += bus.formal.oracle_outp_data \
-					.eq(functools.reduce(operator.and_, bus.inp.data))
-			elif bus.BINOP() == ReduceTreeBinop.OR:
+					.eq(functools.reduce(operator.and_, temp_inp_datadata))
+			elif self.bus().BINOP() == ReduceTreeBinop.OR:
 				m.d.comb += bus.formal.oracle_outp_data \
-					.eq(functools.reduce(operator.or_, bus.inp.data))
-			else: # if bus.BINOP() == ReduceTreeBinop.XOR:
+					.eq(functools.reduce(operator.or_, temp_inp_data))
+			else: # if self.bus().BINOP() == ReduceTreeBinop.XOR:
 				m.d.comb += bus.formal.oracle_outp_data \
-					.eq(functools.reduce(operator.xor, bus.inp.data))
+					.eq(functools.reduce(operator.xor, temp_inp_data))
 		#--------
 		return m
 		#--------

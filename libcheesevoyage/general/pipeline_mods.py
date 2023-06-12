@@ -713,8 +713,15 @@ class PipeSkidBuf(Elaboratable):
 		#	parent_sb_bus.outp.bak.eq(child_sb_bus.outp.bak),
 		#]
 
-		parent_sb_bus.inp.fwd.connect(
-			other=child_sb_bus.inp.fwd,
+		#parent_sb_bus.inp.fwd.connect(
+		#	other=child_sb_bus.inp.fwd,
+		#	m=parent,
+		#	kind=Splitintf.ConnKind.Parent2Child,
+		#	use_tag=use_tag,
+		#	reduce_tag=reduce_tag,
+		#)
+		parent_sb_bus.inp.connect(
+			other=child_sb_bus.inp,
 			m=parent,
 			kind=Splitintf.ConnKind.Parent2Child,
 			use_tag=use_tag,
@@ -724,13 +731,13 @@ class PipeSkidBuf(Elaboratable):
 			#child_sb_bus.inp.fwd.valid.eq(parent_sb_bus.inp.fwd.valid),
 			parent_sb_bus.outp.fwd.valid.eq(child_sb_bus.outp.fwd.valid),
 		]
-		parent_sb_bus.inp.bak.connect(
-			other=child_sb_bus.inp.bak,
-			m=parent,
-			kind=Splitintf.ConnKind.Parent2Child,
-			use_tag=use_tag,
-			reduce_tag=reduce_tag,
-		)
+		#parent_sb_bus.inp.bak.connect(
+		#	other=child_sb_bus.inp.bak,
+		#	m=parent,
+		#	kind=Splitintf.ConnKind.Parent2Child,
+		#	use_tag=use_tag,
+		#	reduce_tag=reduce_tag,
+		#)
 		parent_sb_bus.outp.bak.connect(
 			other=child_sb_bus.outp.bak,
 			m=parent,
