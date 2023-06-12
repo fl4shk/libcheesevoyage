@@ -1646,32 +1646,40 @@ class IntfShape:
 		mk_from_modport: bool=True, mk_to_modport: bool=True,
 	):
 		ret = {}
-		ret.update(
-			IntfShape.mk_single_pdir_shape(
-				name=from_name,
-				shape=from_shape,
-				pdir=(
-					PortDir.Outp
-					if is_from
-					else PortDir.Inp
-				),
-				tag=from_tag,
-				mk_modport=mk_from_modport,
+		if (
+			from_name is not None
+			and from_shape is not None
+		):
+			ret.update(
+				IntfShape.mk_single_pdir_shape(
+					name=from_name,
+					shape=from_shape,
+					pdir=(
+						PortDir.Outp
+						if is_from
+						else PortDir.Inp
+					),
+					tag=from_tag,
+					mk_modport=mk_from_modport,
+				)
 			)
-		)
-		ret.update(
-			IntfShape.mk_single_pdir_shape(
-				name=to_name,
-				shape=to_shape,
-				pdir=(
-					PortDir.Inp
-					if is_from
-					else PortDir.Outp
-				),
-				tag=to_tag,
-				mk_modport=mk_to_modport,
+		if (
+			to_name is not None
+			and to_shape is not None
+		):
+			ret.update(
+				IntfShape.mk_single_pdir_shape(
+					name=to_name,
+					shape=to_shape,
+					pdir=(
+						PortDir.Inp
+						if is_from
+						else PortDir.Outp
+					),
+					tag=to_tag,
+					mk_modport=mk_to_modport,
+				)
 			)
-		)
 		return ret
 	@staticmethod
 	def mk_io_shape(
@@ -1700,24 +1708,26 @@ class IntfShape:
 		#	),
 		#}
 		ret = {}
-		ret.update(
-			IntfShape.mk_single_pdir_shape(
-				name="inp",
-				shape=inp_shape,
-				pdir=PortDir.Inp,
-				tag=inp_tag,
-				mk_modport=mk_inp_modport,
+		if inp_shape is not None:
+			ret.update(
+				IntfShape.mk_single_pdir_shape(
+					name="inp",
+					shape=inp_shape,
+					pdir=PortDir.Inp,
+					tag=inp_tag,
+					mk_modport=mk_inp_modport,
+				)
 			)
-		)
-		ret.update(
-			IntfShape.mk_single_pdir_shape(
-				name="outp",
-				shape=outp_shape,
-				pdir=PortDir.Outp,
-				tag=outp_tag,
-				mk_modport=mk_outp_modport,
+		if outp_shape is not None:
+			ret.update(
+				IntfShape.mk_single_pdir_shape(
+					name="outp",
+					shape=outp_shape,
+					pdir=PortDir.Outp,
+					tag=outp_tag,
+					mk_modport=mk_outp_modport,
+				)
 			)
-		)
 		#if (
 		#	formal_shape is not None
 		#	and formal_tag is not None
