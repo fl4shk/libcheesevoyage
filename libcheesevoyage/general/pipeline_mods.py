@@ -194,9 +194,9 @@ class PipeSkidBufInpSideIshape(IntfShape):
 		*,
 		#OPT_INCLUDE_VALID_BUSY: bool=False,
 		#OPT_INCLUDE_READY_BUSY: bool=False,
-		fwd_intf_tag=None,
-		bak_intf_tag=None,
-		#misc_intf_tag=None,
+		fwd_tag=None,
+		bak_tag=None,
+		#misc_tag=None,
 	):
 		shape = {}
 		#shape["fwd"] = FieldInfo(
@@ -217,11 +217,11 @@ class PipeSkidBufInpSideIshape(IntfShape):
 		shape["fwd"] = PstageBusFwdIshape(
 			data_info=data_info,
 			pdir=PortDir.Inp,
-			intf_tag=fwd_intf_tag,
+			intf_tag=fwd_tag,
 		)
 		shape["bak"] = PstageBusBakIshape(
 			pdir=PortDir.Inp,
-			intf_tag=bak_intf_tag,
+			intf_tag=bak_tag,
 		)
 		#if OPT_INCLUDE_VALID_BUSY:
 		#	shape["valid_busy"] = FieldInfo(1, name="valid_busy")
@@ -239,8 +239,8 @@ class PipeSkidBufOutpSideIshape(IntfShape):
 		self,
 		data_info: SigInfo,
 		*,
-		fwd_intf_tag=None,
-		bak_intf_tag=None,
+		fwd_tag=None,
+		bak_tag=None,
 	):
 		shape = {}
 		#shape["fwd"] = FieldInfo(
@@ -261,11 +261,11 @@ class PipeSkidBufOutpSideIshape(IntfShape):
 		shape["fwd"] = PstageBusFwdIshape(
 			data_info=data_info,
 			pdir=PortDir.Outp,
-			intf_tag=fwd_intf_tag,
+			intf_tag=fwd_tag,
 		)
 		shape["bak"] = PstageBusBakIshape(
 			pdir=PortDir.Outp,
-			intf_tag=bak_intf_tag,
+			intf_tag=bak_tag,
 		)
 		#mp_dct = {
 		#	key: PortDir.Outp
@@ -303,26 +303,26 @@ class PipeSkidBufIshape(IntfShape):
 		*,
 		OPT_INCLUDE_VALID_BUSY: bool,
 		OPT_INCLUDE_READY_BUSY: bool,
-		next_intf_tag=None,
-		prev_intf_tag=None,
-		misc_intf_tag=None,
+		next_tag=None,
+		prev_tag=None,
+		misc_tag=None,
 	):
 		shape = {
 			"inp": PipeSkidBufInpSideIshape(
 				data_info=data_info,
-				fwd_intf_tag=prev_intf_tag,
-				bak_intf_tag=next_intf_tag,
-				#misc_intf_tag=
+				fwd_tag=prev_tag,
+				bak_tag=next_tag,
+				#misc_tag=
 			),
 			"outp": PipeSkidBufOutpSideIshape(
 				data_info=data_info,
-				fwd_intf_tag=next_intf_tag,
-				bak_intf_tag=prev_intf_tag,
+				fwd_tag=next_tag,
+				bak_tag=prev_tag,
 			),
 			"misc": PipeSkidBufMiscIshape(
 				OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
 				OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
-				intf_tag=misc_intf_tag,
+				intf_tag=misc_tag,
 			)
 		}
 		#shape = {
@@ -356,9 +356,9 @@ class PipeSkidBufBus:
 		OPT_INCLUDE_VALID_BUSY: bool=False,
 		OPT_INCLUDE_READY_BUSY: bool=False,
 		#tag=None,
-		next_intf_tag=None,
-		prev_intf_tag=None,
-		misc_intf_tag=None,
+		next_tag=None,
+		prev_tag=None,
+		misc_tag=None,
 	):
 		#self.__data_info = data_info
 		#self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
@@ -368,15 +368,18 @@ class PipeSkidBufBus:
 			OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
 			OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
 			#tag=tag,
-			next_intf_tag=next_intf_tag,
-			prev_intf_tag=prev_intf_tag,
-			misc_intf_tag=misc_intf_tag,
+			next_tag=next_tag,
+			prev_tag=prev_tag,
+			misc_tag=misc_tag,
 		)
 		#super().__init__(ishape)
 		self.__bus = Splitintf(ishape)
 		self.__data_info = data_info
 		self.__OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY
 		self.__OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY
+		self.__next_tag = next_tag
+		self.__prev_tag = prev_tag
+		self.__misc_tag = misc_tag
 		#self.inp = Splitrec(
 		#	PipeSkidBufInpLayt(
 		#		data_info=data_info,
@@ -410,6 +413,12 @@ class PipeSkidBufBus:
 		return self.__OPT_INCLUDE_VALID_BUSY
 	def OPT_INCLUDE_READY_BUSY(self):
 		return self.__OPT_INCLUDE_READY_BUSY
+	def next_tag(self):
+		return self.__next_tag
+	def prev_tag(self):
+		return self.__prev_tag
+	def misc_tag(self):
+		return self.__misc_tag
 
 # Based on
 # https://github.com/iammituraj/skid_buffer/blob/main/pipe_skid_buffer.sv
@@ -420,11 +429,17 @@ class PipeSkidBuf(Elaboratable):
 		*,
 		OPT_INCLUDE_VALID_BUSY: bool=False,
 		OPT_INCLUDE_READY_BUSY: bool=False,
+		next_tag=None,
+		prev_tag=None,
+		misc_tag=None,
 	):
 		self.__bus = PipeSkidBufBus(
 			data_info=data_info,
 			OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
 			OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
+			next_tag=next_tag,
+			prev_tag=prev_tag,
+			misc_tag=misc_tag,
 		)
 		self.__data_info = data_info
 		self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
