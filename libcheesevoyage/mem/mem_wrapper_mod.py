@@ -16,7 +16,7 @@ from libcheesevoyage.general import *
 #		data_width: int,
 #		addr_width: int,
 #		*,
-#		is_owner: bool,
+#		is_from: bool,
 #		from_mwrap_rd_tag=None,
 #		to_mwrap_rd_tag=None,
 #	):
@@ -32,7 +32,7 @@ class MemWrapperIshape(IntfShape):
 		width: int, # data width
 		depth: int,
 		*,
-		is_owner: bool,
+		is_from: bool,
 		from_mrap_tag=None,
 		to_mwrap_tag=None,
 	):
@@ -66,7 +66,7 @@ class MemWrapperIshape(IntfShape):
 		shape = IntfShape.mk_fromto_shape(
 			from_name=from_mwrap_name, to_name=to_mwrap_name,
 			from_shape=from_mwrap_shape, 
-			is_owner=is_owner,
+			is_from=is_from,
 			from_tag=from_mwrap_tag, to_tag=to_mwrap_tag,
 		)
 		super().__init__(shape)
@@ -80,20 +80,20 @@ class MemWrapperBus:
 		width: int,
 		depth: int,
 		*,
-		is_owner: bool,
+		is_from: bool,
 		from_mwrap_tag=None,
 		to_mwrap_tag=None,
 	):
 		self.__width = width
 		self.__depth = depth
-		self.__is_owner = is_owner
+		self.__is_from = is_from
 		self.__from_mwrap_tag = from_mwrap_tag
 		self.__to_mwrap_tag = to_mwrap_tag
 
 		ishape = MemWrapperIshape(
 			width=width,
 			depth=depth,
-			is_owner=is_owner,
+			is_from=is_from,
 			from_mwrap_tag=from_mwrap_tag,
 			to_mwrap_tag=to_mwrap_tag,
 		)
@@ -107,8 +107,8 @@ class MemWrapperBus:
 		return self.__depth
 	def addr_width(self):
 		return MemWrapperIshape.calc_addr_width(self.depth())
-	def is_owner(self):
-		return self.__is_owner
+	def is_from(self):
+		return self.__is_from
 	def from_mwrap_tag(self):
 		return self.__from_mwrap_tag
 	def to_mwrap_tag(self):
@@ -133,7 +133,7 @@ class MemWrapper(Elaboratable):
 		self.__bus = MemWrapperBus(
 			width=width,
 			depth=depth,
-			is_owner=True,
+			is_from=True,
 			from_mwrap_tag=None,
 			to_mwrap_tag=None,
 		)
