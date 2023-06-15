@@ -128,10 +128,10 @@ class LongUdivIterDataLayt(dict):
 		#printout("LongUdivIterDataLayt.__init__(): ", io_str, "\n")
 		#dbg_printout("LongUdivIterDataLayt.__init__()")
 		#--------
-		self.__constants = constants
-		self.__DML_ENTRY_WIDTH = constants.DML_ELEM_WIDTH()
-		self.__FORMAL = constants.FORMAL()
-		self.__PIPELINED = constants.PIPELINED()
+		#self.__constants = constants
+		#self.__DML_ENTRY_WIDTH = constants.DML_ELEM_WIDTH()
+		#self.__FORMAL = constants.FORMAL()
+		#self.__PIPELINED = constants.PIPELINED()
 		#--------
 		build_temp_shape = constants.build_temp_shape
 		shape = {}
@@ -169,14 +169,14 @@ class LongUdivIterDataLayt(dict):
 		#	name=f"denom_mult_lut_{io_str}"
 		#)
 		#--------
-		if self.__PIPELINED:
+		if constants.PIPELINED():
 			shape["tag"] = FieldInfo(
 				constants.TAG_WIDTH(),
 				attrs=sig_keep(),
 				name=f"tag_{io_str}"
 			)
 		#--------
-		if self.__FORMAL:
+		if constants.FORMAL():
 			#--------
 			#self.formal = Splitrec()
 			shape["formal"] = {}
@@ -228,31 +228,32 @@ class LongUdivIterDataLayt(dict):
 		#--------
 		super().__init__(shape)
 	#--------
-	def constants(self):
-		return self.__constants
-	def DML_ENTRY_WIDTH(self):
-		return self.__DML_ENTRY_WIDTH
-	def FORMAL(self):
-		return self.__FORMAL
-	def PIPELINED(self):
-		return self.__PIPELINED
+	#def constants(self):
+	#	return self.__constants
+	#def DML_ENTRY_WIDTH(self):
+	#	return self.__DML_ENTRY_WIDTH
+	#def FORMAL(self):
+	#	return self.__FORMAL
+	#def PIPELINED(self):
+	#	return self.__PIPELINED
 	#def dml_elem(self, index):
 	#	#return self.denom_mult_lut.word_select(index,
 	#	#	self.__DML_ENTRY_WIDTH)
 	#	return self.denom_mult_lut[index]
 	#def formal_dml_elem(self, index):
 	@staticmethod
-	def formal_dml_elem(splitrec, index):
-		#assert self.__FORMAL
-		assert splitrec.shape().FORMAL()
-		#return self.formal.formal_denom_mult_lut.word_select(index,
-		#	self.__DML_ENTRY_WIDTH)
-		#return Value.cast(self.formal.formal_denom_mult_lut[index])
-		#return self.formal.formal_denom_mult_lut[index]
+	def formal_dml_elem(splitrec, index, FORMAL: bool):
+		##assert self.__FORMAL
+		#assert splitrec.shape().FORMAL()
+		assert FORMAL
+		##return self.formal.formal_denom_mult_lut.word_select(index,
+		##	self.__DML_ENTRY_WIDTH)
+		##return Value.cast(self.formal.formal_denom_mult_lut[index])
+		##return self.formal.formal_denom_mult_lut[index]
 		return splitrec.formal.formal_denom_mult_lut[index]
-		#return self.formal.formal_denom_mult_lut.as_value().word_select(
-		#	index, self.__constants.CHUNK_WIDTH()
-		#)
+		##return self.formal.formal_denom_mult_lut.as_value().word_select(
+		##	index, self.__constants.CHUNK_WIDTH()
+		##)
 	#--------
 #--------
 class LongUdivIterIshape(IntfShape):
@@ -368,6 +369,7 @@ class LongUdivIter(Elaboratable):
 		m = Module()
 		#--------
 		constants = self.constants()
+		FORMAL = constants.FORMAL()
 		bus = self.bus().bus
 
 		itd_in = bus.itd_in
@@ -447,7 +449,7 @@ class LongUdivIter(Elaboratable):
 			#--------
 		]
 		#--------
-		if constants.FORMAL():
+		if FORMAL:
 			#--------
 			formal_numer_in = itd_in.formal.formal_numer
 			formal_denom_in = itd_in.formal.formal_denom
@@ -482,7 +484,7 @@ class LongUdivIter(Elaboratable):
 
 			m.d.comb += [
 				Assert(
-					itd_in.shape().formal_dml_elem(itd_in, i)
+					itd_in.shape().formal_dml_elem(itd_in, i, FORMAL)
 					== (formal_denom_in.as_value() * i)
 				)
 				for i in range(constants.RADIX())

@@ -187,90 +187,110 @@ class PstageBusBakIshape(IntfShape):
 			tag=tag,
 		)
 
-class PipeSkidBufInpSideIshape(IntfShape):
-	def __init__(
-		self, 
-		data_info: SigInfo,
-		*,
-		#OPT_INCLUDE_VALID_BUSY: bool=False,
-		#OPT_INCLUDE_READY_BUSY: bool=False,
-		fwd_tag=None,
-		bak_tag=None,
-		#misc_tag=None,
-	):
-		shape = {}
-		#shape["fwd"] = FieldInfo(
-		#	PstageBusFwdLayt(
-		#		data_info=data_info,
-		#		#io_str="in"
-		#	),
-		#	use_parent_name=False,
-		#	#attrs=sig_keep(),
-		#)
-		#shape["bak"] = FieldInfo(
-		#	PstageBusBakLayt(
-		#		#io_str="in"
-		#	),
-		#	use_parent_name=False,
-		#	#attrs=sig_keep(),
-		#)
-		shape["fwd"] = PstageBusFwdIshape(
-			data_info=data_info,
-			pdir=PortDir.Inp,
-			tag=fwd_tag,
-		)
-		shape["bak"] = PstageBusBakIshape(
-			pdir=PortDir.Inp,
-			tag=bak_tag,
-		)
-		#if OPT_INCLUDE_VALID_BUSY:
-		#	shape["valid_busy"] = FieldInfo(1, name="valid_busy")
-		#if OPT_INCLUDE_READY_BUSY:
-		#	shape["ready_busy"] = FieldInfo(1, name="inp_ready_busy")
-		#shape["clear"] = FieldInfo(1, name="inp_clear")
-		#super().__init__(shape)
-		#mp_dct = {
-		#	key: PortDir.Inp
-		#	for key in shape
-		#}
-		super().__init__(shape=shape)
-class PipeSkidBufOutpSideIshape(IntfShape):
+#class PipeSkidBufInpSideIshape(IntfShape):
+#	def __init__(
+#		self, 
+#		data_info: SigInfo,
+#		*,
+#		#OPT_INCLUDE_VALID_BUSY: bool=False,
+#		#OPT_INCLUDE_READY_BUSY: bool=False,
+#		fwd_tag=None,
+#		bak_tag=None,
+#		#misc_tag=None,
+#	):
+#		shape = {}
+#		#shape["fwd"] = FieldInfo(
+#		#	PstageBusFwdLayt(
+#		#		data_info=data_info,
+#		#		#io_str="in"
+#		#	),
+#		#	use_parent_name=False,
+#		#	#attrs=sig_keep(),
+#		#)
+#		#shape["bak"] = FieldInfo(
+#		#	PstageBusBakLayt(
+#		#		#io_str="in"
+#		#	),
+#		#	use_parent_name=False,
+#		#	#attrs=sig_keep(),
+#		#)
+#		shape["fwd"] = PstageBusFwdIshape(
+#			data_info=data_info,
+#			pdir=PortDir.Inp,
+#			tag=fwd_tag,
+#		)
+#		shape["bak"] = PstageBusBakIshape(
+#			pdir=PortDir.Inp,
+#			tag=bak_tag,
+#		)
+#		#if OPT_INCLUDE_VALID_BUSY:
+#		#	shape["valid_busy"] = FieldInfo(1, name="valid_busy")
+#		#if OPT_INCLUDE_READY_BUSY:
+#		#	shape["ready_busy"] = FieldInfo(1, name="inp_ready_busy")
+#		#shape["clear"] = FieldInfo(1, name="inp_clear")
+#		#super().__init__(shape)
+#		#mp_dct = {
+#		#	key: PortDir.Inp
+#		#	for key in shape
+#		#}
+#		super().__init__(shape=shape)
+#class PipeSkidBufOutpSideIshape(IntfShape):
+#	def __init__(
+#		self,
+#		data_info: SigInfo,
+#		*,
+#		fwd_tag=None,
+#		bak_tag=None,
+#	):
+#		shape = {}
+#		#shape["fwd"] = FieldInfo(
+#		#	PstageBusFwdLayt(
+#		#		data_info=data_info,
+#		#		#io_str="out"
+#		#	),
+#		#	use_parent_name=False,
+#		#	#attrs=sig_keep(),
+#		#)
+#		#shape["bak"] = FieldInfo(
+#		#	PstageBusBakLayt(
+#		#		#io_str="out"
+#		#	),
+#		#	use_parent_name=False,
+#		#	#attrs=sig_keep(),
+#		#)
+#		shape["fwd"] = PstageBusFwdIshape(
+#			data_info=data_info,
+#			pdir=PortDir.Outp,
+#			tag=fwd_tag,
+#		)
+#		shape["bak"] = PstageBusBakIshape(
+#			pdir=PortDir.Outp,
+#			tag=bak_tag,
+#		)
+#		#mp_dct = {
+#		#	key: PortDir.Outp
+#		#	for key in shape
+#		#}
+#		super().__init__(shape=shape)
+class PipeSkidBufSideIshape(IntfShape):
 	def __init__(
 		self,
 		data_info: SigInfo,
+		pdir: PortDir,
 		*,
 		fwd_tag=None,
 		bak_tag=None,
 	):
 		shape = {}
-		#shape["fwd"] = FieldInfo(
-		#	PstageBusFwdLayt(
-		#		data_info=data_info,
-		#		#io_str="out"
-		#	),
-		#	use_parent_name=False,
-		#	#attrs=sig_keep(),
-		#)
-		#shape["bak"] = FieldInfo(
-		#	PstageBusBakLayt(
-		#		#io_str="out"
-		#	),
-		#	use_parent_name=False,
-		#	#attrs=sig_keep(),
-		#)
 		shape["fwd"] = PstageBusFwdIshape(
 			data_info=data_info,
-			pdir=PortDir.Outp,
+			pdir=pdir,
 			tag=fwd_tag,
 		)
 		shape["bak"] = PstageBusBakIshape(
-			pdir=PortDir.Outp,
+			pdir=pdir,
 			tag=bak_tag,
 		)
-		#mp_dct = {
-		#	key: PortDir.Outp
-		#	for key in shape
-		#}
 		super().__init__(shape=shape)
 class PipeSkidBufMiscIshape(IntfShape):
 	def __init__(
@@ -308,14 +328,16 @@ class PipeSkidBufIshape(IntfShape):
 		misc_tag=None,
 	):
 		shape = {
-			"inp": PipeSkidBufInpSideIshape(
+			"inp": PipeSkidBufSideIshape(
 				data_info=data_info,
+				pdir=PortDir.Inp,
 				fwd_tag=prev_tag,
 				bak_tag=next_tag,
 				#misc_tag=
 			),
-			"outp": PipeSkidBufOutpSideIshape(
+			"outp": PipeSkidBufSideIshape(
 				data_info=data_info,
+				pdir=PortDir.Outp,
 				fwd_tag=next_tag,
 				bak_tag=prev_tag,
 			),

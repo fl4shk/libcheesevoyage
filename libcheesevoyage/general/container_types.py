@@ -1640,8 +1640,8 @@ class IntfShape:
 		from_name: str, to_name: str,
 		from_shape, to_shape,
 		*,
-		is_src: bool, # same idea as whether we're
-						# host (True) or device (False)
+		is_owner: bool, # whether we are (True) or aren't (False)
+						# the "owner" module of this specific `Splitintf`
 		from_tag=None, to_tag=None,
 		mk_from_modport: bool=True, mk_to_modport: bool=True,
 	):

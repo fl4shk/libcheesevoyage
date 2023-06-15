@@ -157,6 +157,7 @@ class LongDivMultiCycle(Elaboratable):
 		m = Module()
 		#--------
 		constants = self.__constants
+		FORMAL = constants.FORMAL()
 		bus = self.bus().bus
 		inp = bus.inp
 		outp = bus.outp
@@ -201,7 +202,7 @@ class LongDivMultiCycle(Elaboratable):
 			attrs=sig_keep(), name="loc_chunk_start_begin")
 		loc.temp_dbg = Signal(attrs=sig_keep(), name="loc_temp_dbg")
 
-		if constants.FORMAL():
+		if FORMAL:
 			loc.formal = Blank()
 			loc.formal.past_valid = Signal(
 				attrs=sig_keep(),
@@ -215,7 +216,7 @@ class LongDivMultiCycle(Elaboratable):
 		itd_in = it_bus.itd_in
 		itd_out = it_bus.itd_out
 		#--------
-		if constants.FORMAL():
+		if FORMAL:
 			#--------
 			m.d.sync += past_valid.eq(0b1)
 			#--------
@@ -309,7 +310,7 @@ class LongDivMultiCycle(Elaboratable):
 					with m.If(chunk_start > 0):
 						# Since `itd_in` and `itd_out` are `Splitrec`s, we
 						# can do a simple `.eq()` regardless of whether or
-						# not `constants.FORMAL()` is true.
+						# not `FORMAL` is true.
 						m.d.sync += itd_in.eq(itd_out)
 					with m.Else(): # m.If(chunk_start <= 0):
 						m.d.sync += [
@@ -324,7 +325,7 @@ class LongDivMultiCycle(Elaboratable):
 					]
 					#--------
 			#--------
-			if constants.FORMAL():
+			if FORMAL:
 				#--------
 				m.d.comb += [
 					#--------
@@ -376,7 +377,7 @@ class LongDivMultiCycle(Elaboratable):
 				#				]
 				#				m.d.sync += [
 				#					itd_in.shape().formal_dml_elem(
-				#						itd_in, i
+				#						itd_in, i, FORMAL,
 				#					)
 				#						.eq(loc.temp_denom * i)
 				#					for i in range(constants.DML_SIZE())
@@ -390,7 +391,9 @@ class LongDivMultiCycle(Elaboratable):
 				#						#itd_in.denom_mult_lut.word_select
 				#						#	(i, CHUNK_WIDTH)
 				#						== (
-				#							itd_in.shape().formal_dml_elem(itd_in, i)
+				#							itd_in.shape().formal_dml_elem(
+				#								itd_in, i, FORMAL
+				#							)
 				#							#itd_in.formal.formal_denom
 				#							#	.as_value()
 				#							#* i
@@ -427,7 +430,9 @@ class LongDivMultiCycle(Elaboratable):
 				#				#		#itd_in.denom_mult_lut.as_value()
 				#				#		#	.word_select(1, CHUNK_WIDTH)
 				#				#		== (
-				#				#			itd_in.shape().formal_dml_elem(itd_in, 1)
+				#				#			itd_in.shape().formal_dml_elem(
+				#				#				itd_in, 1, FORMAL,
+				#				#			)
 				#				#			#itd_in.formal.formal_denom
 				#				#			#	.as_value()
 				#				#			#* 1
@@ -474,7 +479,7 @@ class LongDivMultiCycle(Elaboratable):
 						]
 						m.d.sync += [
 							itd_in.shape().formal_dml_elem(
-								itd_in, i
+								itd_in, i, FORMAL
 							).eq(loc.temp_denom * i)
 								for i in range(constants.DML_SIZE())
 						]
@@ -584,7 +589,7 @@ class LongDivMultiCycle(Elaboratable):
 							m.d.sync += [
 								Assert(
 									itd_in.shape().formal_dml_elem(
-										itd_in, i
+										itd_in, i, FORMAL
 									) == (
 										itd_in.formal.formal_denom
 											.as_value()
@@ -707,16 +712,16 @@ class LongDivPipelined(Elaboratable):
 			#rst_cnt_done = loc.formal.rst_cnt_done
 			#--------
 		#--------
-		its_bus = [loc.m[i].bus().bus for i in range(len(loc.m))]
+		its_bus = []
 
-		itd_in = [
-			its_bus[i].sb_bus.inp.fwd.data
-			for i in range(len(loc.m))
-		]
-		itd_out = [
-			its_bus[i].sb_bus.outp.fwd.data
-			for i in range(len(loc.m))
-		]
+		itd_in = []
+		itd_out = []
+		#its_formal = []
+		for i in range(len(loc.m)):
+			its_bus.append(loc.m[i].bus().bus)
+			itd_in.append(its_bus[i].sb_bus.inp.fwd.data)
+			itd_out.append(its_bus[i].sb_bus.outp.fwd.data)
+			#its_formal.append(its_bus[i].formal)
 		#--------
 		# Connect the pipeline stages together
 		if not constants.USE_PIPE_SKID_BUF():
@@ -828,7 +833,9 @@ class LongDivPipelined(Elaboratable):
 				#--------
 			]
 			m.d.sync += [
-				itd_in[0].shape().formal_dml_elem(itd_in[0], i).eq(
+				itd_in[0].shape().formal_dml_elem(
+					itd_in[0], i, constants.FORMAL(),
+				).eq(
 					loc.temp_denom * i)
 					for i in range(constants.DML_SIZE()
 				)
@@ -880,6 +887,7 @@ class LongDivPipelined(Elaboratable):
 				#--------
 				for i in range(len(loc.m)):
 					m.d.sync += [
+						#--------
 						Assert(
 							loc.numer_was_lez[i + 1]
 							== Past(loc.numer_was_lez)[i]
@@ -895,6 +903,31 @@ class LongDivPipelined(Elaboratable):
 						Assert(
 							loc.rema_will_be_lez[i + 1]
 							== Past(loc.rema_will_be_lez)[i]
+						),
+						#--------
+					]
+				for i in range(len(loc.m) - 1):
+					itd_in_formal_flat = (
+						itd_in[i].formal.flattened()
+					)
+					itd_in_next_formal_flat = (
+						itd_in[i + 1].formal.flattened()
+					)
+					m.d.sync += [
+						Assert(
+							itd_in_next_formal_flat[i]
+							== Past(itd_in_formal_flat[i])
+						)
+						for i in range(len(itd_in_formal_flat))
+					]
+					m.d.sync += [
+						#Assert(
+						#	itd_in[i + 1].formal.as_value()
+						#		== Past(itd_in[i].formal.as_value())
+						#),
+						Assert(
+							itd_in[i + 1].tag
+								== Past(itd_in[i].tag)
 						),
 					]
 				#--------
@@ -916,36 +949,53 @@ class LongDivPipelined(Elaboratable):
 					Assert(
 						#(~rst_cnt_done[0])
 						#|
-						(itd_in[0].formal.formal_numer
-							== Past(loc.temp_numer))),
+						(
+							itd_in[0].formal.formal_numer
+								== Past(loc.temp_numer)
+						)
+					),
 					Assert(
 						#(~rst_cnt_done[0])
 						#|
-						(itd_in[0].formal.formal_denom
-							== Past(loc.temp_denom))),
+						(
+							itd_in[0].formal.formal_denom
+							== Past(loc.temp_denom)
+						)
+					),
 
 					Assert(
 						#(~rst_cnt_done[0])
 						#|
-						(itd_in[0].formal.oracle_quot.as_value()
-							== (Past(loc.temp_numer)
-								// Past(loc.temp_denom)))),
+						(
+							itd_in[0].formal.oracle_quot.as_value()
+							== (
+								Past(loc.temp_numer)
+								// Past(loc.temp_denom)
+							)
+						)
+					),
 					Assert(
 						#(~rst_cnt_done[0])
 						#|
-						(itd_in[0].formal.oracle_rema.as_value()
-							== (Past(loc.temp_numer)
-								% Past(loc.temp_denom)))),
+						(
+							itd_in[0].formal.oracle_rema.as_value()
+							== (
+								Past(loc.temp_numer) % Past(loc.temp_denom)
+							)
+						)
+					),
 					#--------
 					Assert(
 						#(~rst_cnt_done[-1])
 						#|
 						(
 							skip_cond
-							| (itd_out[-1].temp_quot
-								.as_value()[:len(outp.quot)]
+							| (
+								itd_out[-1].temp_quot
+									.as_value()[:len(outp.quot)]
 								== itd_out[-1].formal.oracle_quot
-									.as_value()[:len(outp.quot)])
+									.as_value()[:len(outp.quot)]
+								)
 						)
 					),
 					#Assert((skip_cond)
@@ -956,10 +1006,12 @@ class LongDivPipelined(Elaboratable):
 						#|
 						(
 							skip_cond
-							| (itd_out[-1].temp_rema
-								.as_value()[:len(outp.rema)]
+							| (
+								itd_out[-1].temp_rema
+									.as_value()[:len(outp.rema)]
 								== itd_out[-1].formal.oracle_rema
-									.as_value()[:len(outp.rema)])
+									.as_value()[:len(outp.rema)]
+							)
 						)
 					),
 					#--------
