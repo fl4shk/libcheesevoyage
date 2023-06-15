@@ -8,6 +8,6 @@ setup(
 	author="Andrew Clark (FL4SHK)",
 	author_email="fl4shk@users.noreply.github.com",
 	license="MIT",
-	packages=find_packages(exclude=["tests*"]),
+	packages=find_packages(exclude=["other_tests*", "tests*"]),
 	zip_safe=False,
 )
