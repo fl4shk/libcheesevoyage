@@ -29,11 +29,12 @@ class MemWrapperIshape(IntfShape):
 		self,
 		#data_width: int,
 		#addr_width: int,
-		width: int, # data width
+		#width: int, # data width
+		shape,
 		depth: int,
 		*,
 		is_from: bool,
-		from_mrap_tag=None,
+		from_mwrap_tag=None,
 		to_mwrap_tag=None,
 	):
 		from_mwrap_name = "from_mwrap"
@@ -43,29 +44,33 @@ class MemWrapperIshape(IntfShape):
 		to_mwrap_shape = {}
 
 		from_mwrap_shape["rd_data"] = FieldInfo(
-			width, attrs=sig_keep(), name="memwrap_from_rd_data",
+			#width,
+			shape,
+			attrs=sig_keep(), name="mwrap_from_rd_data",
 		)
 		to_mwrap_shape["rd_addr"] = FieldInfo(
 			MemWrapperIshape.calc_addr_width(depth),
 			attrs=sig_keep(),
-			name="memwrap_to_rd_data",
+			name="mwrap_to_rd_data",
 		)
 
 		to_mwrap_shape["wr_addr"] = FieldInfo(
 			MemWrapperIshape.calc_addr_width(depth),
 			attrs=sig_keep(),
-			name="memwrap_to_wr_addr",
+			name="mwrap_to_wr_addr",
 		)
 		to_mwrap_shape["wr_data"] = FieldInfo(
-			width, attrs=sig_keep(), name="memwrap_to_rd_data",
+			#width,
+			shape,
+			attrs=sig_keep(), name="mwrap_to_rd_data",
 		)
 		to_mwrap_shape["wr_en"] = FieldInfo(
-			1, attrs=sig_keep(), name="memwrap_to_wr_en",
+			1, attrs=sig_keep(), name="mwrap_to_wr_en",
 		)
 
 		shape = IntfShape.mk_fromto_shape(
 			from_name=from_mwrap_name, to_name=to_mwrap_name,
-			from_shape=from_mwrap_shape, 
+			from_shape=from_mwrap_shape, to_shape=to_mwrap_shape,
 			is_from=is_from,
 			from_tag=from_mwrap_tag, to_tag=to_mwrap_tag,
 		)
@@ -77,32 +82,38 @@ class MemWrapperIshape(IntfShape):
 class MemWrapperBus:
 	def __init__(
 		self,
-		width: int,
+		#width: int,
+		shape,
 		depth: int,
 		*,
 		is_from: bool,
 		from_mwrap_tag=None,
 		to_mwrap_tag=None,
 	):
-		self.__width = width
+		#self.__width = width
+		self.__shape = shape
 		self.__depth = depth
 		self.__is_from = is_from
 		self.__from_mwrap_tag = from_mwrap_tag
 		self.__to_mwrap_tag = to_mwrap_tag
 
 		ishape = MemWrapperIshape(
-			width=width,
+			#width=width,
+			shape=shape,
 			depth=depth,
 			is_from=is_from,
 			from_mwrap_tag=from_mwrap_tag,
 			to_mwrap_tag=to_mwrap_tag,
 		)
 		self.__bus = Splitintf(ishape)
+		self.__width = len(self.__bus.from_mwrap.rd_data)
 	@property
 	def bus(self):
 		return self.__bus
 	def width(self):
 		return self.__width
+	def shape(self):
+		return self.__shape
 	def depth(self):
 		return self.__depth
 	def addr_width(self):
@@ -117,7 +128,8 @@ class MemWrapperBus:
 class MemWrapper(Elaboratable):
 	def __init__(
 		self,
-		width: int,
+		#width: int,
+		shape,
 		depth: int,
 		init: list,
 		*,
@@ -131,14 +143,16 @@ class MemWrapper(Elaboratable):
 		to_mwrap_tag=None,
 	):
 		self.__bus = MemWrapperBus(
-			width=width,
+			#width=width,
+			shape=shape,
 			depth=depth,
 			is_from=True,
 			from_mwrap_tag=None,
 			to_mwrap_tag=None,
 		)
 		self.__mem = Memory(
-			width=width,
+			#width=width,
+			width=self.bus().width(),
 			depth=depth,
 			init=init,
 			attrs=attrs,

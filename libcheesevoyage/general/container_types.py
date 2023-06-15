@@ -1656,7 +1656,7 @@ class IntfShape:
 					shape=from_shape,
 					pdir=(
 						PortDir.Outp
-						if is_src
+						if is_from
 						else PortDir.Inp
 					),
 					tag=from_tag,
@@ -1673,7 +1673,7 @@ class IntfShape:
 					shape=to_shape,
 					pdir=(
 						PortDir.Inp
-						if is_src
+						if is_from
 						else PortDir.Outp
 					),
 					tag=to_tag,
