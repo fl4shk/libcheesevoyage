@@ -1637,14 +1637,34 @@ class IntfShape:
 
 	@staticmethod
 	def mk_fromto_shape(
-		from_name: str, to_name: str,
-		from_shape, to_shape,
+		#from_name: str, to_name: str,
+		name_dct: dict,
+		#from_shape, to_shape,
+		shape_dct: dict,
 		*,
 		in_from: bool, # whether we are (True) or aren't (False)
 						# the "owner" module of this specific `Splitintf`
-		from_tag=None, to_tag=None,
-		mk_from_modport: bool=True, mk_to_modport: bool=True,
+		#from_tag=None, to_tag=None,
+		tag_dct={
+			"from": None,
+			"to": None,
+		},
+		#mk_from_modport: bool=True, mk_to_modport: bool=True,
+		mk_modport_dct={
+			"from": True,
+			"to": True,
+		},
 	):
+		#--------
+		from_name = name_dct["from"]
+		to_name = name_dct["to"]
+		from_shape = shape_dct["from"]
+		to_shape = shape_dct["to"]
+		from_tag = tag_dct["from"]
+		to_tag = tag_dct["to"]
+		mk_from_modport = mk_modport_dct["from"]
+		mk_from_modport = mk_modport_dct["to"]
+		#--------
 		ret = {}
 		if (
 			from_name is not None
@@ -1681,14 +1701,30 @@ class IntfShape:
 				)
 			)
 		return ret
+		#--------
 	@staticmethod
 	def mk_io_shape(
-		inp_shape, outp_shape,
+		#inp_shape, outp_shape,
+		shape_dct: dict,
 		*,
-		inp_tag=None, outp_tag=None,
-		mk_inp_modport: bool=True, mk_outp_modport: bool=True,
-		#formal_shape=None, formal_tag=None
+		#inp_tag=None, outp_tag=None,
+		tag_dct={
+			"inp": None,
+			"outp": None,
+		},
+		#mk_inp_modport: bool=True, mk_outp_modport: bool=True,
+		##formal_shape=None, formal_tag=None
+		mk_modport_dct={
+			"inp": True,
+			"outp": True,
+		}
 	):
+		inp_shape = shape_dct["inp"]
+		outp_shape = shape_dct["outp"]
+		inp_tag = tag_dct["inp"]
+		outp_tag = tag_dct["outp"]
+		mk_inp_modport = mk_modport_dct["inp"]
+		mk_outp_modport = mk_modport_dct["outp"]
 		#ret = {
 		#	"inp": IntfShape(
 		#		shape=inp_shape,

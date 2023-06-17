@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+#build-backend = "setuptools.setup"
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "libcheesevoyage"
+version = "0.2"
+description = "FL4SHK's personal Amaranth library"
+#url = "https://github.com/fl4shk/libcheesevoyage"
+#author = "Andrew Clark (FL4SHK)"
+#author_email = "fl4shk@users.noreply.github.com"
+license = {text = "MIT"}
+#packages = find_packages(exclude=["other_tests*", "tests*"])
+#zip_safe = false
+dependencies = [
+	"amaranth"
+]
+
+[tool.setuptools.packages.find]
+#include = ["sepal_ui*"]
+#exclude = ["docs*", "tests*"]
+exclude = ["other_tests", "tests*"]

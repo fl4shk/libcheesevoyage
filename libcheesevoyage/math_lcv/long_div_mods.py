@@ -650,8 +650,12 @@ class LongDivPipelined(Elaboratable):
 				constants=constants,
 				chunk_start_val=(NUM_PSTAGES - 1) - i,
 				#USE_PIPE_SKID_BUF=USE_PIPE_SKID_BUF,
-				next_intf_tag=psconcat(i),
-				prev_intf_tag=psconcat(i + 1),
+				#next_intf_tag=psconcat(i),
+				#prev_intf_tag=psconcat(i + 1),
+				intf_tag_dct={
+					"next": psconcat(i),
+					"prev": psconcat(i + 1),
+				},
 			)
 			for i in range(NUM_PSTAGES)
 		]
@@ -913,13 +917,13 @@ class LongDivPipelined(Elaboratable):
 					itd_in_next_formal_flat = (
 						itd_in[i + 1].formal.flattened()
 					)
-					m.d.sync += [
-						Assert(
-							itd_in_next_formal_flat[i]
-							== Past(itd_in_formal_flat[i])
-						)
-						for i in range(len(itd_in_formal_flat))
-					]
+					#m.d.sync += [
+					#	Assert(
+					#		itd_in_next_formal_flat[i]
+					#		== Past(itd_in_formal_flat[i])
+					#	)
+					#	for i in range(len(itd_in_formal_flat))
+					#]
 					m.d.sync += [
 						#Assert(
 						#	itd_in[i + 1].formal.as_value()

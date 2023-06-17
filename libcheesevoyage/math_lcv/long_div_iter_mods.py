@@ -554,9 +554,16 @@ class LongUdivIterSyncIshape(IntfShape):
 		#data_info: SigInfo,
 		#USE_PIPE_SKID_BUF=True,
 		*,
-		next_intf_tag=None,
-		prev_intf_tag=None,
+		#next_intf_tag=None,
+		#prev_intf_tag=None,
+		intf_tag_dct={
+			"next": None,
+			"prev": None,
+		}
 	):
+		#--------
+		temp_tag_dct = intf_tag_dct.copy()
+		temp_tag_dct["misc"] = None
 		#--------
 		#super().__init__()
 		shape = {}
@@ -595,8 +602,11 @@ class LongUdivIterSyncIshape(IntfShape):
 			data_info=LongUdivIterSync.mk_data_info(constants=constants),
 			OPT_INCLUDE_VALID_BUSY=False,
 			OPT_INCLUDE_READY_BUSY=False,
-			next_tag=next_intf_tag,
-			prev_tag=prev_intf_tag,
+			#OPT_INCLUDE_BUSY=False,
+			#OPT_INCLUDE_BUSY=True,
+			#next_tag=next_intf_tag,
+			#prev_tag=prev_intf_tag,
+			tag_dct=temp_tag_dct,
 		)
 			#self.inp.valid = Signal(
 			#	1, name="valid_in"
@@ -654,13 +664,18 @@ class LongUdivIterSyncBus:
 		self,
 		constants: LongDivConstants,
 		*,
-		next_intf_tag=None,
-		prev_intf_tag=None,
+		#next_intf_tag=None,
+		#prev_intf_tag=None,
+		intf_tag_dct={
+			"next": None,
+			"prev": None,
+		}
 	):
 		ishape = LongUdivIterSyncIshape(
 			constants=constants,
-			next_intf_tag=next_intf_tag,
-			prev_intf_tag=prev_intf_tag,
+			#next_intf_tag=next_intf_tag,
+			#prev_intf_tag=prev_intf_tag,
+			intf_tag_dct=intf_tag_dct,
 		)
 		#super().__init__(ishape)
 		self.__constants = constants
@@ -678,15 +693,20 @@ class LongUdivIterSync(Elaboratable):
 		constants: LongDivConstants,
 		chunk_start_val: int,
 		*,
-		next_intf_tag=None,
-		prev_intf_tag=None,
+		#next_intf_tag=None,
+		#prev_intf_tag=None,
+		intf_tag_dct={
+			"next": None,
+			"prev": None,
+		},
 	):
 		self.__constants = constants
 
 		self.__bus = LongUdivIterSyncBus(
 			constants=constants,
-			next_intf_tag=next_intf_tag,
-			prev_intf_tag=prev_intf_tag,
+			#next_intf_tag=next_intf_tag,
+			#prev_intf_tag=prev_intf_tag,
+			intf_tag_dct=intf_tag_dct,
 		)
 		self.__chunk_start_val = chunk_start_val
 	#--------
@@ -722,8 +742,10 @@ class LongUdivIterSync(Elaboratable):
 				data_info=LongUdivIterSync.mk_data_info(
 					constants=constants
 				),
+				FORMAL=constants.FORMAL(),
 				OPT_INCLUDE_VALID_BUSY=False,
 				OPT_INCLUDE_READY_BUSY=False,
+				#OPT_INCLUDE_BUSY=False,
 			)
 			m.submodules += skid_buf
 			sb_bus = skid_buf.bus().bus
@@ -772,20 +794,20 @@ class LongUdivIterSync(Elaboratable):
 			]
 			m.d.sync += itd_out_sync.eq(itd_out)
 		else: # constants.USE_PIPE_SKID_BUF():
-			#m.d.comb += [
-			#	sb_bus.misc.clear.eq(0b0),
+			m.d.comb += [
+				sb_bus.misc.clear.eq(0b0),
 
-			#	#sb_bus.inp.fwd.eq(bus.sb_bus.inp.fwd),
-			#	#sb_bus.inp.bak.eq(bus.sb_bus.inp.bak),
-			#	##bus.sb_bus.outp.fwd.eq(sb_bus)
-			#	##bus.sb_bus.outp.fwd.eq(sb_bus.outp.fwd),
-			#	##bus.sb_bus.outp.bak.eq(sb_bus.outp.bak),
-			#	#bus.sb_bus.outp.fwd.valid.eq(sb_bus.outp.fwd.valid),
-			#	#bus.sb_bus.outp.bak.eq(sb_bus.outp.bak),
-			#	#itd_in.eq(sb_bus.outp.fwd.data),
-			#	## `itd_out_sync` is set to `bus.sb_bus.outp.fwd.data`
-			#	#bus.sb_bus.outp.fwd.data.eq(itd_out),
-			#]
+				#sb_bus.inp.fwd.eq(bus.sb_bus.inp.fwd),
+				#sb_bus.inp.bak.eq(bus.sb_bus.inp.bak),
+				##bus.sb_bus.outp.fwd.eq(sb_bus)
+				##bus.sb_bus.outp.fwd.eq(sb_bus.outp.fwd),
+				##bus.sb_bus.outp.bak.eq(sb_bus.outp.bak),
+				#bus.sb_bus.outp.fwd.valid.eq(sb_bus.outp.fwd.valid),
+				#bus.sb_bus.outp.bak.eq(sb_bus.outp.bak),
+				#itd_in.eq(sb_bus.outp.fwd.data),
+				## `itd_out_sync` is set to `bus.sb_bus.outp.fwd.data`
+				#bus.sb_bus.outp.fwd.data.eq(itd_out),
+			]
 			pipeline_mods.PipeSkidBuf.connect_child(
 				parent=m,
 				parent_sb_bus=bus.sb_bus,

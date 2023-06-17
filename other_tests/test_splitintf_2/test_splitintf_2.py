@@ -19,7 +19,7 @@ class IcacheOutpLayt(dict):
 	def __init__(self):
 		shape = {}
 		shape["data"] = CACHE_LINE_WIDTH()
-		shape["metadata"] = IcacheMetadataLayt()
+		shape["metadt"] = IcacheMetadataLayt()
 		super().__init__(shape)
 class IcacheFromIfLayt(dict):
 	def __init__(self):
@@ -101,4 +101,5 @@ print(
 	repr(intf.id_bus.to_id), "\n",
 	type(intf.id_bus.to_id), "\n",
 	do_psconcat_flattened(intf.id_bus.to_id),
+	do_psconcat_flattened(intf.id_bus.to_id.metadt),
 )

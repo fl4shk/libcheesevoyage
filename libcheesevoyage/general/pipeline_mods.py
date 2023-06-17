@@ -5,10 +5,13 @@ import enum as pyenum
 from amaranth import *
 from amaranth.lib.data import *
 from amaranth.lib import enum
+from amaranth.asserts import Assert, Assume, Cover
+from amaranth.asserts import Past, Rose, Fell, Stable
+
 #from libcheesevoyage.misc_util import psconcat, mk_keep_obj
 from libcheesevoyage.misc_util import psconcat, sig_keep, Blank
 from libcheesevoyage.general.container_types import (
-	cast_shape, SigInfo, FieldInfo, Splitrec,
+	cast_shape, SigInfo, FieldInfo, Splitrec, Splitarr,
 	PortDir, Modport, IntfShape, Splitintf,
 )
 #from libcheesevoyage.math_lcv.reduce_tree_mod import *
@@ -137,17 +140,18 @@ class PstageBusFwdIshape(IntfShape):
 			use_parent_name=False,
 			attrs=sig_keep(),
 		)
-		shape["data"] = FieldInfo(
-			data_info,
-			#name=f"fwd_data_{io_str}",
-			name=(
-				"inp_"
-				if pdir == PortDir.Inp
-				else "outp_"
-			) + "fwd_data",
-			use_parent_name=False,
-			attrs=sig_keep(),
-		)
+		if data_info is not None:
+			shape["data"] = FieldInfo(
+				data_info,
+				#name=f"fwd_data_{io_str}",
+				name=(
+					"inp_"
+					if pdir == PortDir.Inp
+					else "outp_"
+				) + "fwd_data",
+				use_parent_name=False,
+				attrs=sig_keep(),
+			)
 		mp_dct = {
 			key: pdir
 			for key in shape
@@ -298,6 +302,7 @@ class PipeSkidBufMiscIshape(IntfShape):
 		*,
 		OPT_INCLUDE_VALID_BUSY: bool,
 		OPT_INCLUDE_READY_BUSY: bool,
+		#OPT_INCLUDE_BUSY: bool,
 		tag=None,
 	):
 		shape = {}
@@ -305,6 +310,8 @@ class PipeSkidBufMiscIshape(IntfShape):
 			shape["valid_busy"] = FieldInfo(1, name="valid_busy")
 		if OPT_INCLUDE_READY_BUSY:
 			shape["ready_busy"] = FieldInfo(1, name="inp_ready_busy")
+		#if OPT_INCLUDE_BUSY:
+		#	shape["busy"] = FieldInfo(1, name="busy")
 		shape["clear"] = FieldInfo(1, name="inp_clear")
 
 		mp_dct = {
@@ -323,53 +330,37 @@ class PipeSkidBufIshape(IntfShape):
 		*,
 		OPT_INCLUDE_VALID_BUSY: bool,
 		OPT_INCLUDE_READY_BUSY: bool,
-		next_tag=None,
-		prev_tag=None,
-		misc_tag=None,
+		#OPT_INCLUDE_BUSY: bool=False,
+		#next_tag=None,
+		#prev_tag=None,
+		#misc_tag=None,
+		tag_dct={
+			"next": None,
+			"prev": None,
+			"misc": None,
+		},
 	):
 		shape = {
 			"inp": PipeSkidBufSideIshape(
 				data_info=data_info,
 				pdir=PortDir.Inp,
-				fwd_tag=prev_tag,
-				bak_tag=next_tag,
-				#misc_tag=
+				fwd_tag=tag_dct["prev"],
+				bak_tag=tag_dct["next"],
 			),
 			"outp": PipeSkidBufSideIshape(
 				data_info=data_info,
 				pdir=PortDir.Outp,
-				fwd_tag=next_tag,
-				bak_tag=prev_tag,
+				fwd_tag=tag_dct["next"],
+				bak_tag=tag_dct["prev"],
 			),
 			"misc": PipeSkidBufMiscIshape(
 				OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
 				OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
-				tag=misc_tag,
+				#OPT_INCLUDE_BUSY=OPT_INCLUDE_BUSY,
+				tag=tag_dct["misc"],
 			)
 		}
-		#shape = {
-		#	"fwd": PipeSkidBufSideIshape(
-		#		data_info=data_info, tag=fwd_tag,
-		#	),
-		#	"bak": PipeSkidBufSideIshape(
-		#		data_info=data_info, tag=bak_tag,
-		#	),
-		#	"misc": PipeSkidBufMiscIshape(
-		#		data_info=data_info, tag=misc_tag,
-		#		OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
-		#		OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
-		#	)
-		#}
-		#mp_dct = {
-		#	#"inp": PortDir.Inp,
-		#	#"outp": PortDir.Outp,
-		#	"misc": PortDir.Inp,
-		#}
-		super().__init__(
-			shape=shape,
-			#modport=Modport(mp_dct),
-			#tag=tag,
-		)
+		super().__init__(shape=shape)
 class PipeSkidBufBus:
 	def __init__(
 		self,
@@ -377,10 +368,12 @@ class PipeSkidBufBus:
 		*,
 		OPT_INCLUDE_VALID_BUSY: bool=False,
 		OPT_INCLUDE_READY_BUSY: bool=False,
-		#tag=None,
-		next_tag=None,
-		prev_tag=None,
-		misc_tag=None,
+		#OPT_INCLUDE_BUSY: bool=False,
+		tag_dct={
+			"next": None,
+			"prev": None,
+			"misc": None,
+		}
 	):
 		#self.__data_info = data_info
 		#self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
@@ -389,19 +382,22 @@ class PipeSkidBufBus:
 			data_info=data_info,
 			OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
 			OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
-			#tag=tag,
-			next_tag=next_tag,
-			prev_tag=prev_tag,
-			misc_tag=misc_tag,
+			#OPT_INCLUDE_BUSY=OPT_INCLUDE_BUSY,
+			tag_dct=tag_dct,
 		)
 		#super().__init__(ishape)
 		self.__bus = Splitintf(ishape)
 		self.__data_info = data_info
-		self.__OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY
-		self.__OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY
-		self.__next_tag = next_tag
-		self.__prev_tag = prev_tag
-		self.__misc_tag = misc_tag
+		self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
+		self.__OPT_INCLUDE_READY_BUSY = OPT_INCLUDE_READY_BUSY
+		#self.__OPT_INCLUDE_BUSY = OPT_INCLUDE_BUSY
+		#self.__next_tag = next_tag
+		#self.__prev_tag = prev_tag
+		#self.__misc_tag = misc_tag
+		#self.__next_tag = tag_dct["next"]
+		#self.__prev_tag = tag_dct["prev"]
+		#self.__misc_tag = tag_dct["misc"]
+		self.__tag_dct = tag_dct
 		#self.inp = Splitrec(
 		#	PipeSkidBufInpLayt(
 		#		data_info=data_info,
@@ -435,226 +431,501 @@ class PipeSkidBufBus:
 		return self.__OPT_INCLUDE_VALID_BUSY
 	def OPT_INCLUDE_READY_BUSY(self):
 		return self.__OPT_INCLUDE_READY_BUSY
+	#def OPT_INCLUDE_BUSY(self):
+	#	return self.__OPT_INCLUDE_BUSY
+	def tag_dct(self):
+		return self.__tag_dct
 	def next_tag(self):
-		return self.__next_tag
+		#return self.__next_tag
+		return self.__tag_dct["next"]
 	def prev_tag(self):
-		return self.__prev_tag
+		#return self.__prev_tag
+		self.__tag_dct["prev"]
 	def misc_tag(self):
-		return self.__misc_tag
+		#return self.__misc_tag
+		self.__tag_dct["misc"]
 
-# Based on
-# https://github.com/iammituraj/skid_buffer/blob/main/pipe_skid_buffer.sv
 class PipeSkidBuf(Elaboratable):
 	def __init__(
 		self,
-		data_info: SigInfo,
+		# `data_info` can be `None` if for some reason all you want from
+		# `PipeSkidBuf` is the valid-ready handshaking it does
+		data_info: SigInfo, 
 		*,
+		FORMAL: bool=False,
 		OPT_INCLUDE_VALID_BUSY: bool=False,
 		OPT_INCLUDE_READY_BUSY: bool=False,
-		next_tag=None,
-		prev_tag=None,
-		misc_tag=None,
+		#OPT_INCLUDE_BUSY: bool=False,
+		tag_dct={
+			"next": None,
+			"prev": None,
+			"misc": None,
+		},
+		#next_tag=None,
+		#prev_tag=None,
+		#misc_tag=None,
 	):
 		self.__bus = PipeSkidBufBus(
 			data_info=data_info,
 			OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
 			OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
-			next_tag=next_tag,
-			prev_tag=prev_tag,
-			misc_tag=misc_tag,
+			#OPT_INCLUDE_BUSY=OPT_INCLUDE_BUSY,
+			#next_tag=tag_dct["next"],
+			#prev_tag=tag_dct["prev"],
+			#misc_tag=tag_dct["misc"],
+			tag_dct=tag_dct,
 		)
 		self.__data_info = data_info
+		self.__FORMAL = FORMAL
 		self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
 		self.__OPT_INCLUDE_READY_BUSY = OPT_INCLUDE_READY_BUSY
+		#self.__OPT_INCLUDE_BUSY = OPT_INCLUDE_BUSY
 
 	def bus(self):
 		return self.__bus
+	def FORMAL(self):
+		return self.__FORMAL
 	def OPT_INCLUDE_VALID_BUSY(self):
 		return self.__OPT_INCLUDE_VALID_BUSY
 	def OPT_INCLUDE_READY_BUSY(self):
 		return self.__OPT_INCLUDE_READY_BUSY
+	#def OPT_INCLUDE_BUSY(self):
+	#	return self.__OPT_INCLUDE_BUSY
 	def data_info(self):
 		return self.__data_info
 	#def data_shape(self):
 	#	return self.data_info().shape()
 	#def sig_attrs(self):
 	#	return self.bus().sig_attrs()
-
-	@staticmethod
-	def STATE_WIDTH():
-		return 1
+	# Adapted from
+	# https://zipcpu.com/blog/2019/05/22/skidbuffer.html
 	def elaborate(self, platform: str) -> Module:
 		#--------
 		m = Module()
 		#--------
 		bus = self.bus().bus
+
+		ifwd = bus.inp.fwd
+		ibak = bus.inp.bak
+		ofwd = bus.outp.fwd
+		obak = bus.outp.bak
+		misc = bus.misc
+
 		data_info = self.data_info()
+		FORMAL = self.FORMAL()
 		OPT_INCLUDE_VALID_BUSY = self.OPT_INCLUDE_VALID_BUSY()
 		OPT_INCLUDE_READY_BUSY = self.OPT_INCLUDE_READY_BUSY()
+		#OPT_INCLUDE_BUSY = self.OPT_INCLUDE_BUSY()
 
 		loc = Blank()
 		#--------
-		# // State encoding
-		# localparam PIPE  = 1'b0 ;
-		# localparam SKID = 1'b1 ;
-		class State(enum.Enum, shape=PipeSkidBuf.STATE_WIDTH()):
-			PIPE = 0b0
-			SKID = 0b1
+		# Individual `Splitrec` members can be driven by different clock
+		# domains
+		loc.r_shape = {
+			"valid_next": 1,
+			"valid": 1,
+			"ready": 1,
+		}
+		if data_info is not None:
+			loc.r_shape["data"] = data_info
 
-		# // State register
-		# logic state_rg;
+		loc.r = Splitrec(loc.r_shape, name="loc_r")
+		#--------
+		if FORMAL:
+			loc.formal = Blank()
+			loc.formal.past_valid = Signal(
+				1, name="formal_past_valid", reset=0b0,
+			)
+		#--------
+		with m.If(
+			ResetSignal()
+			| misc.clear
 
-		# // Data buffer, Spare buffer
-		# logic [DWIDTH-1 : 0] data_rg, sparebuff_rg; 
+			# TODO: not sure if the below is going to work, so might need
+			# to comment it out
+			#| (
+			#	# Use a Python "mux" instead of an Amaranth `Mux`
+			#	0b0
+			#	#if not OPT_INCLUDE_VALID_BUSY
+			#	#else misc.valid_busy
+			#	if not OPT_INCLUDE_BUSY
+			#	else misc.busy
+			#)
+		):
+			#m.d.sync += loc.r.valid.eq(0b0)
+			m.d.comb += loc.r.valid_next.eq(0b0)
+		with m.Elif(
+			(ifwd.valid & obak.ready)
+			& (ofwd.valid & ~ibak.ready)
+		):
+			#m.d.sync += loc.r.valid.eq(0b1)
+			m.d.comb += loc.r.valid_next.eq(0b1)
+		with m.Elif(ibak.ready):
+			#m.d.sync += loc.r.valid.eq(0b0)
+			m.d.comb += loc.r.valid_next.eq(0b0)
+		with m.Else():
+			m.d.comb += loc.r.valid_next.eq(loc.r.valid)
 
-		# // Valid and Ready signals 
-		# logic valid_rg, sparebuff_valid_rg, ready_rg;
-
-		# // Pipeline ready signal
-		# logic ready;
-		sync_shape = {}
-		comb_shape = {}
-
-		sync_shape["state_rg"] = FieldInfo(
-			State.as_shape(),
-			#name="loc_state_rg", use_parent_name=False,
-			attrs=sig_keep(),
-			reset=State.PIPE
-		)
-		sync_shape["data_rg"] = FieldInfo(
-			data_info,
-			#name="loc_data_rg", use_parent_name=False,
-			attrs=sig_keep(),
-		)
-		sync_shape["sparebuff_rg"] = FieldInfo(
-			data_info,
-			#name="loc_sparebuff_rg", use_parent_name=False,
-			attrs=sig_keep(),
-			use_parent_name=False,
-		)
-
-		sync_shape["valid_rg"] = FieldInfo(
-			1,
-			#name="loc_valid_rg", use_parent_name=False,
-			attrs=sig_keep(),
-		)
-		sync_shape["sparebuff_valid_rg"] = FieldInfo(
-			1,
-			#name="loc_sparebuff_valid_rg", use_parent_name=False,
-			attrs=sig_keep(),
-		)
-		sync_shape["ready_rg"] = FieldInfo(
-			1,
-			#name="loc_ready_rg", use_parent_name=False,
-			attrs=sig_keep(),
-		)
-		loc.s = Splitrec(sync_shape)
-
-		comb_shape["ready"] = FieldInfo(
-			1,
-			#name="loc_ready", use_parent_name=False,
-			attrs=sig_keep(),
-		)
-		loc.c = Splitrec(comb_shape)
-
-		# Synchronous logic
-		with m.If(bus.misc.clear):
-			m.d.sync += loc.s.eq(0x0)
-		with m.Else(): # If(~bus.inp.clear):
-			with m.Switch(loc.s.state_rg):
-				# Stage where data is piped out or stored to spare buffer
-				with m.Case(State.PIPE):
-					# Pipe data out             
-					# if (ready) begin
-					# 	data_rg				<= i_data  ;
-					# 	valid_rg			<= i_valid ;
-					# 	ready_rg			<= 1'b1	 ;
-					# end
-					with m.If(loc.c.ready):
-						m.d.sync += [
-							loc.s.data_rg.eq(bus.inp.fwd.data),
-							loc.s.valid_rg.eq(bus.inp.fwd.valid),
-							loc.s.ready_rg.eq(0b1),
-						]
-
-					# Pipeline stall, store input data to spare buffer
-					# (skid happened)
-					# else begin
-					# 	sparebuff_rg		  <= i_data  ;
-					# 	sparebuff_valid_rg <= i_valid ;
-					# 	ready_rg			  <= 1'b0	 ;
-					# 	state_rg			  <= SKID	 ;
-					# end
-					with m.Else():
-						m.d.sync += [
-							loc.s.sparebuff_rg.eq(bus.inp.fwd.data),
-							loc.s.sparebuff_valid_rg.eq(bus.inp.fwd.valid),
-							loc.s.ready_rg.eq(0b0),
-							loc.s.state_rg.eq(State.SKID),
-						]
-				# Stage to wait after data skid happened
-				with m.Case(State.SKID):
-					# Copy data from spare buffer to data buffer, resume
-					# pipeline           
-					# if (ready) begin
-					# 	data_rg	<= sparebuff_rg		  ;
-					# 	valid_rg <= sparebuff_valid_rg ;
-					# 	ready_rg <= 1'b1				  ;
-					# 	state_rg <= PIPE				  ;
-					# end
-					with m.If(loc.c.ready):
-						m.d.sync += [
-							loc.s.data_rg.eq(loc.s.sparebuff_rg),
-							loc.s.valid_rg.eq(loc.s.sparebuff_valid_rg),
-							loc.s.ready_rg.eq(0b1),
-							loc.s.state_rg.eq(State.PIPE),
-						]
-
-		# Continuous assignments
-		# assign ready   = i_ready || ~valid_rg ;
-		# assign o_ready = ready_rg             ;
-		# assign o_data  = data_rg              ;
-		# assign o_valid = valid_rg ;
-		m.d.comb += [
-			loc.c.ready.eq(Mux(
-				~bus.misc.clear
+		m.d.sync += [
+			loc.r.valid.eq(
+				loc.r.valid_next
 				& (
-					# Use a Python "mux" instead of an Amaranth `Mux`
-					# AND the upstream `ready` with ~`ready_busy`
-					0b1
-					if not OPT_INCLUDE_READY_BUSY
-					else ~bus.inp.ready_busy
-				),
-				bus.inp.bak.ready | ~loc.s.valid_rg,
-				0b0,
-			)),
-			bus.outp.bak.ready.eq(
-				loc.s.ready_rg
-				& (
-					# Use a Python "mux" instead of an Amaranth `Mux`
-					# AND the upstream `ready` with ~`ready_busy`
-					0b1
-					if not OPT_INCLUDE_READY_BUSY
-					else ~bus.misc.ready_busy
-				)
-			),
-			bus.outp.fwd.data.eq(loc.s.data_rg),
-			bus.outp.fwd.valid.eq(
-				loc.s.valid_rg
-				& (
-					# Use a Python "mux" instead of an Amaranth `Mux`
-					# AND the downstream `valid` with ~`valid_busy`
 					0b1
 					if not OPT_INCLUDE_VALID_BUSY
-					else ~bus.misc.valid_busy
+					else ~misc.valid_busy
 				)
 			),
+			loc.r.ready.eq(
+				~loc.r.valid_next
+				& (
+					0b1
+					if not OPT_INCLUDE_READY_BUSY
+					else ~misc.ready_busy
+				)
+			)
 		]
 
+		if data_info is not None:
+			with m.If(
+				ResetSignal()
+				| misc.clear
+				#| (
+				#	# Use a Python "mux" instead of an Amaranth `Mux`
+				#	0b0
+				#	if not OPT_INCLUDE_BUSY
+				#	else misc.busy
+				#)
+			):
+				m.d.sync += loc.r.data.eq(0x0)
+			with m.If(obak.ready):
+				m.d.sync += loc.r.data.eq(ifwd.data)
+
+		with m.If(
+			ResetSignal()
+			| misc.clear
+		):
+			m.d.comb += [
+				obak.ready.eq(0b0),
+				ofwd.valid.eq(0b0),
+			]
+		with m.Else():
+			m.d.comb += [
+				obak.ready.eq(
+					#~loc.r.valid
+					loc.r.ready
+					#& (
+					#	0b1
+					#	if not OPT_INCLUDE_READY_BUSY
+					#	# Use a Python "mux" instead of an Amaranth `Mux`
+					#	# AND the upstream `ready` with ~`ready_busy`
+					#	else ~misc.ready_busy
+					#)
+					##& (
+					##	# Use a Python "mux" instead of an Amaranth `Mux`
+					##	0b1
+					##	if not OPT_INCLUDE_BUSY
+					##	else ~misc.busy
+					##)
+				),
+				ofwd.valid.eq(
+					# `ifwd.valid` will be registered in the general case
+					(ifwd.valid | loc.r.valid)
+					#& (
+					#	0b1
+					#	if not OPT_INCLUDE_VALID_BUSY
+					#	# Use a Python "mux" instead of an Amaranth `Mux`
+					#	# AND the downstream `valid` with ~`valid_busy`
+					#	else ~misc.valid_busy
+					#)
+					##& (
+					##	# Use a Python "mux" instead of an Amaranth `Mux`
+					##	0b1
+					##	if not OPT_INCLUDE_BUSY
+					##	else ~misc.busy
+					##)
+				),
+			]
+
+		if data_info is not None:
+			with m.If(loc.r.valid):
+				m.d.comb += ofwd.data.eq(loc.r.data)
+			with m.Else(): # If(~loc.r.valid):
+				m.d.comb += ofwd.data.eq(ifwd.data)
 		#--------
+		if FORMAL:
+			with m.If(
+				loc.formal.past_valid
+				& ~misc.clear
+				#& (
+				#	0b1
+				#	if not OPT_INCLUDE_BUSY
+				#	else ~misc.busy
+				#)
+				& (
+					0b1
+					if not OPT_INCLUDE_VALID_BUSY
+					else ~misc.valid_busy
+				) & (
+					0b1
+					if not OPT_INCLUDE_READY_BUSY
+					else ~misc.ready_busy
+				)
+			):
+				with m.If(
+					ResetSignal()
+					#| misc.clear
+				):
+					m.d.sync += [
+						Assert(~ifwd.valid),
+						Assert(~loc.r.valid & ~ofwd.valid),
+					]
+				#with m.Elif(~misc.clear):
+				with m.Else():
+					with m.If(ifwd.valid & ~obak.ready):
+						m.d.sync += [
+							Assert(ifwd.valid),
+							#Assert(Stable(ifwd.data)),
+						]
+						if (
+							not isinstance(loc.r.data, Splitrec)
+							and not isinstance(loc.r.data, Splitarr)
+						):
+							m.d.sync += [
+								Assert(Stable(ifwd.data)),
+							]
+						else:
+							m.d.sync += [
+								Assert(Stable(flat_elem))
+								for flat_elem in ifwd.data.flattened()
+							]
+					with m.If(ofwd.valid & ~ibak.ready):
+						m.d.sync += [
+							Assert(obak.ready),
+							#Assert(Stable(ofwd.data)),
+						]
+						if (
+							not isinstance(loc.r.data, Splitrec)
+							and not isinstance(loc.r.data, Splitarr)
+						):
+							m.d.sync += [
+								Assert(Stable(ofwd.data)),
+							]
+						else:
+							m.d.sync += [
+								Assert(Stable(flat_elem))
+								for flat_elem in ofwd.data.flattened()
+							]
+					with m.If(
+						ifwd.valid & obak.ready & ofwd.valid & ~ibak.ready
+					):
+						m.d.sync += [
+							Assert(loc.r.valid),
+							#Assert(loc.r.data == Past(ifwd.data)),
+						]
+						if (
+							not isinstance(loc.r.data, Splitrec)
+							and not isinstance(loc.r.data, Splitarr)
+						):
+							m.d.sync += [
+								Assert(loc.r.data == Past(ifwd.data))
+							]
+						else:
+							r_data_flat = loc.r.data.flattened()
+							i_data_flat = ifwd.data.flattened()
+							m.d.sync += [
+								Assert(r_data_flat[i]
+									== Past(i_data_flat[i]))
+								for i in range(len(r_data_flat))
+							]
+					with m.If(~ifwd.valid & ~loc.r.valid & ibak.ready):
+						m.d.sync += [
+							Assert(ofwd.valid),
+						]
+					with m.If(loc.r.valid & ibak.ready):
+						m.d.sync += [
+							Assert(~loc.r.valid)
+						]
 		#--------
 		return m
 		#--------
+
+	## Based on
+	## https://github.com/iammituraj/skid_buffer/blob/main/pipe_skid_buffer.sv
+	#@staticmethod
+	#def STATE_WIDTH():
+	#	return 1
+	#def elaborate(self, platform: str) -> Module:
+	#	#--------
+	#	m = Module()
+	#	#--------
+	#	bus = self.bus().bus
+	#	data_info = self.data_info()
+	#	OPT_INCLUDE_VALID_BUSY = self.OPT_INCLUDE_VALID_BUSY()
+	#	OPT_INCLUDE_READY_BUSY = self.OPT_INCLUDE_READY_BUSY()
+
+	#	loc = Blank()
+	#	#--------
+	#	# // State encoding
+	#	# localparam PIPE  = 1'b0 ;
+	#	# localparam SKID = 1'b1 ;
+	#	class State(enum.Enum, shape=PipeSkidBuf.STATE_WIDTH()):
+	#		PIPE = 0b0
+	#		SKID = 0b1
+
+	#	# // State register
+	#	# logic state_rg;
+
+	#	# // Data buffer, Spare buffer
+	#	# logic [DWIDTH-1 : 0] data_rg, sparebuff_rg; 
+
+	#	# // Valid and Ready signals 
+	#	# logic valid_rg, sparebuff_valid_rg, ready_rg;
+
+	#	# // Pipeline ready signal
+	#	# logic ready;
+	#	sync_shape = {}
+	#	comb_shape = {}
+
+	#	sync_shape["state_rg"] = FieldInfo(
+	#		State.as_shape(),
+	#		#name="loc_state_rg", use_parent_name=False,
+	#		attrs=sig_keep(),
+	#		reset=State.PIPE
+	#	)
+	#	sync_shape["data_rg"] = FieldInfo(
+	#		data_info,
+	#		#name="loc_data_rg", use_parent_name=False,
+	#		attrs=sig_keep(),
+	#	)
+	#	sync_shape["sparebuff_rg"] = FieldInfo(
+	#		data_info,
+	#		#name="loc_sparebuff_rg", use_parent_name=False,
+	#		attrs=sig_keep(),
+	#		use_parent_name=False,
+	#	)
+
+	#	sync_shape["valid_rg"] = FieldInfo(
+	#		1,
+	#		#name="loc_valid_rg", use_parent_name=False,
+	#		attrs=sig_keep(),
+	#	)
+	#	sync_shape["sparebuff_valid_rg"] = FieldInfo(
+	#		1,
+	#		#name="loc_sparebuff_valid_rg", use_parent_name=False,
+	#		attrs=sig_keep(),
+	#	)
+	#	sync_shape["ready_rg"] = FieldInfo(
+	#		1,
+	#		#name="loc_ready_rg", use_parent_name=False,
+	#		attrs=sig_keep(),
+	#	)
+	#	loc.s = Splitrec(sync_shape)
+
+	#	comb_shape["ready"] = FieldInfo(
+	#		1,
+	#		#name="loc_ready", use_parent_name=False,
+	#		attrs=sig_keep(),
+	#	)
+	#	loc.c = Splitrec(comb_shape)
+
+	#	# Synchronous logic
+	#	with m.If(bus.misc.clear):
+	#		m.d.sync += loc.s.eq(0x0)
+	#	with m.Else(): # If(~bus.inp.clear):
+	#		with m.Switch(loc.s.state_rg):
+	#			# Stage where data is piped out or stored to spare buffer
+	#			with m.Case(State.PIPE):
+	#				# Pipe data out             
+	#				# if (ready) begin
+	#				# 	data_rg				<= i_data  ;
+	#				# 	valid_rg			<= i_valid ;
+	#				# 	ready_rg			<= 1'b1	 ;
+	#				# end
+	#				with m.If(loc.c.ready):
+	#					m.d.sync += [
+	#						loc.s.data_rg.eq(bus.inp.fwd.data),
+	#						loc.s.valid_rg.eq(bus.inp.fwd.valid),
+	#						loc.s.ready_rg.eq(0b1),
+	#					]
+
+	#				# Pipeline stall, store input data to spare buffer
+	#				# (skid happened)
+	#				# else begin
+	#				# 	sparebuff_rg		  <= i_data  ;
+	#				# 	sparebuff_valid_rg <= i_valid ;
+	#				# 	ready_rg			  <= 1'b0	 ;
+	#				# 	state_rg			  <= SKID	 ;
+	#				# end
+	#				with m.Else():
+	#					m.d.sync += [
+	#						loc.s.sparebuff_rg.eq(bus.inp.fwd.data),
+	#						loc.s.sparebuff_valid_rg.eq(bus.inp.fwd.valid),
+	#						loc.s.ready_rg.eq(0b0),
+	#						loc.s.state_rg.eq(State.SKID),
+	#					]
+	#			# Stage to wait after data skid happened
+	#			with m.Case(State.SKID):
+	#				# Copy data from spare buffer to data buffer, resume
+	#				# pipeline           
+	#				# if (ready) begin
+	#				# 	data_rg	<= sparebuff_rg		  ;
+	#				# 	valid_rg <= sparebuff_valid_rg ;
+	#				# 	ready_rg <= 1'b1				  ;
+	#				# 	state_rg <= PIPE				  ;
+	#				# end
+	#				with m.If(loc.c.ready):
+	#					m.d.sync += [
+	#						loc.s.data_rg.eq(loc.s.sparebuff_rg),
+	#						loc.s.valid_rg.eq(loc.s.sparebuff_valid_rg),
+	#						loc.s.ready_rg.eq(0b1),
+	#						loc.s.state_rg.eq(State.PIPE),
+	#					]
+
+	#	# Continuous assignments
+	#	# assign ready   = i_ready || ~valid_rg ;
+	#	# assign o_ready = ready_rg             ;
+	#	# assign o_data  = data_rg              ;
+	#	# assign o_valid = valid_rg ;
+	#	m.d.comb += [
+	#		loc.c.ready.eq(Mux(
+	#			~bus.misc.clear
+	#			& (
+	#				# Use a Python "mux" instead of an Amaranth `Mux`
+	#				# AND the upstream `ready` with ~`ready_busy`
+	#				0b1
+	#				if not OPT_INCLUDE_READY_BUSY
+	#				else ~bus.inp.ready_busy
+	#			),
+	#			bus.inp.bak.ready | ~loc.s.valid_rg,
+	#			0b0,
+	#		)),
+	#		bus.outp.bak.ready.eq(
+	#			loc.s.ready_rg
+	#			& (
+	#				# Use a Python "mux" instead of an Amaranth `Mux`
+	#				# AND the upstream `ready` with ~`ready_busy`
+	#				0b1
+	#				if not OPT_INCLUDE_READY_BUSY
+	#				else ~bus.misc.ready_busy
+	#			)
+	#		),
+	#		bus.outp.fwd.data.eq(loc.s.data_rg),
+	#		bus.outp.fwd.valid.eq(
+	#			loc.s.valid_rg
+	#			& (
+	#				# Use a Python "mux" instead of an Amaranth `Mux`
+	#				# AND the downstream `valid` with ~`valid_busy`
+	#				0b1
+	#				if not OPT_INCLUDE_VALID_BUSY
+	#				else ~bus.misc.valid_busy
+	#			)
+	#		),
+	#	]
+
+	#	#--------
+	#	#--------
+	#	return m
+	#	#--------
 	@staticmethod
 	def connect(
 		parent: Module,

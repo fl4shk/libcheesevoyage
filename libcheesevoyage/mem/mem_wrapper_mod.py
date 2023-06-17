@@ -34,45 +34,57 @@ class MemWrapperIshape(IntfShape):
 		depth: int,
 		*,
 		in_from: bool,
-		from_mwrap_tag=None,
-		to_mwrap_tag=None,
+		#from_mwrap_tag=None,
+		#to_mwrap_tag=None,
+		tag_dct={
+			"from": None,
+			"to": None,
+		},
 	):
-		from_mwrap_name = "from_mwrap"
-		to_mwrap_name = "to_mwrap"
+		name_dct = {
+			"from": "from_mwrap",
+			"to": "to_mwrap",
+		}
+		tag_dct = {
+			"from": tag_dct["from"],
+			"to": tag_dct["to"],
+		}
 
-		from_mwrap_shape = {}
-		to_mwrap_shape = {}
+		shape_dct = {
+			"from": {},
+			"to": {},
+		}
 
-		from_mwrap_shape["rd_data"] = FieldInfo(
+		shape_dct["from"]["rd_data"] = FieldInfo(
 			#width,
 			shape,
 			attrs=sig_keep(), name="mwrap_from_rd_data",
 		)
-		to_mwrap_shape["rd_addr"] = FieldInfo(
+		shape_dct["to"]["rd_addr"] = FieldInfo(
 			MemWrapperIshape.calc_addr_width(depth),
 			attrs=sig_keep(),
 			name="mwrap_to_rd_data",
 		)
 
-		to_mwrap_shape["wr_addr"] = FieldInfo(
+		shape_dct["to"]["wr_addr"] = FieldInfo(
 			MemWrapperIshape.calc_addr_width(depth),
 			attrs=sig_keep(),
 			name="mwrap_to_wr_addr",
 		)
-		to_mwrap_shape["wr_data"] = FieldInfo(
+		shape_dct["to"]["wr_data"] = FieldInfo(
 			#width,
 			shape,
 			attrs=sig_keep(), name="mwrap_to_rd_data",
 		)
-		to_mwrap_shape["wr_en"] = FieldInfo(
+		shape_dct["to"]["wr_en"] = FieldInfo(
 			1, attrs=sig_keep(), name="mwrap_to_wr_en",
 		)
 
 		shape = IntfShape.mk_fromto_shape(
-			from_name=from_mwrap_name, to_name=to_mwrap_name,
-			from_shape=from_mwrap_shape, to_shape=to_mwrap_shape,
+			name_dct=name_dct,
+			shape_dct=shape_dct,
 			in_from=in_from,
-			from_tag=from_mwrap_tag, to_tag=to_mwrap_tag,
+			tag_dct=tag_dct,
 		)
 		super().__init__(shape)
 	@staticmethod
@@ -87,23 +99,29 @@ class MemWrapperBus:
 		depth: int,
 		*,
 		in_from: bool,
-		from_mwrap_tag=None,
-		to_mwrap_tag=None,
+		#from_mwrap_tag=None,
+		#to_mwrap_tag=None,
+		tag_dct={
+			"from": None,
+			"to": None,
+		},
 	):
 		#self.__width = width
 		self.__shape = shape
 		self.__depth = depth
 		self.__in_from = in_from
-		self.__from_mwrap_tag = from_mwrap_tag
-		self.__to_mwrap_tag = to_mwrap_tag
+		#self.__from_mwrap_tag = from_mwrap_tag
+		#self.__to_mwrap_tag = to_mwrap_tag
+		self.__tag_dct = tag_dct
 
 		ishape = MemWrapperIshape(
 			#width=width,
 			shape=shape,
 			depth=depth,
-			in_from=in_from,
-			from_mwrap_tag=from_mwrap_tag,
-			to_mwrap_tag=to_mwrap_tag,
+			in_from=True,
+			#from_mwrap_tag=from_mwrap_tag,
+			#to_mwrap_tag=to_mwrap_tag,
+			tag_dct=tag_dct
 		)
 		self.__bus = Splitintf(ishape)
 		self.__width = len(self.__bus.from_mwrap.rd_data)
@@ -139,16 +157,21 @@ class MemWrapper(Elaboratable):
 					# {"ram_style": "registers"}
 					# {"ram_style": "ultra"}
 					# {"ram_style": "mixed"}
-		from_mwrap_tag=None,
-		to_mwrap_tag=None,
+		#from_mwrap_tag=None,
+		#to_mwrap_tag=None,
+		tag_dct={
+			"from": None,
+			"to": None,
+		},
 	):
 		self.__bus = MemWrapperBus(
 			#width=width,
 			shape=shape,
 			depth=depth,
 			in_from=True,
-			from_mwrap_tag=None,
-			to_mwrap_tag=None,
+			#from_mwrap_tag=None,
+			#to_mwrap_tag=None,
+			tag_dct=tag_dct
 		)
 		self.__mem = Memory(
 			#width=width,
