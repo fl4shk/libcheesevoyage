@@ -251,11 +251,7 @@ class PipeSkidBufBus:
 		#self.__next_tag = tag_dct["next"]
 		#self.__prev_tag = tag_dct["prev"]
 		#self.__misc_tag = tag_dct["misc"]
-		#self.__tag_dct = tag_dct
-		#with open("debug-pipeline_mods-tag_dct.txt.ignore", "w") as f:
-		#	f.writelines([
-		#		psconcat(tag_dct)
-		#	])
+		self.__tag_dct = tag_dct
 		#self.inp = Splitrec(
 		#	PipeSkidBufInpLayt(
 		#		data_info=data_info,
@@ -797,9 +793,6 @@ class PipeSkidBuf(Elaboratable):
 		sb_bus_lst: list, # should be [Splitintf(PipeSkidBufIshape)]
 		tie_first_inp_fwd_valid: bool=True,
 		tie_last_inp_bak_ready: bool=True,
-		*,
-		lst_shrink=-1,
-		other_lst_shrink=None,
 	):
 		assert len(sb_bus_lst) >= 2
 		#print("testificate")
@@ -812,8 +805,6 @@ class PipeSkidBuf(Elaboratable):
 				m=parent,
 				kind=Splitintf.ConnKind.Parallel,
 				use_tag=True,
-				lst_shrink=lst_shrink,
-				other_lst_shrink=other_lst_shrink,
 			)
 		if tie_first_inp_fwd_valid:
 			parent.d.comb += [
@@ -831,9 +822,6 @@ class PipeSkidBuf(Elaboratable):
 		parent_data=None,
 		use_tag: bool=True,
 		reduce_tag: bool=True,
-		*,
-		lst_shrink=-1,
-		other_lst_shrink=None,
 	):
 		# This function is especially intended for when you have a
 		# `<YourModule>Bus` that has its own `PipeSkidBufBus` instance that
@@ -869,8 +857,6 @@ class PipeSkidBuf(Elaboratable):
 			kind=Splitintf.ConnKind.Parent2Child,
 			use_tag=use_tag,
 			reduce_tag=reduce_tag,
-			lst_shrink=lst_shrink,
-			other_lst_shrink=other_lst_shrink,
 		)
 		parent.d.comb += [
 			#child_sb_bus.inp.fwd.valid.eq(parent_sb_bus.inp.fwd.valid),
@@ -889,8 +875,6 @@ class PipeSkidBuf(Elaboratable):
 			kind=Splitintf.ConnKind.Parent2Child,
 			use_tag=use_tag,
 			reduce_tag=reduce_tag,
-			lst_shrink=lst_shrink,
-			other_lst_shrink=other_lst_shrink,
 		)
 
 		#if (
@@ -924,8 +908,6 @@ class PipeSkidBuf(Elaboratable):
 			#use_tag=True,
 			use_tag=use_tag,
 			reduce_tag=reduce_tag,
-			lst_shrink=lst_shrink,
-			other_lst_shrink=other_lst_shrink,
 		)
 
 		if parent_data is None:

@@ -25,10 +25,14 @@ class FullAdderIshape(IntfShape):
 		outp_shape["carry"] = 1
 
 		shape = IntfShape.mk_io_shape(
-			inp_shape=inp_shape,
-			outp_shape=outp_shape,
-			inp_tag=inp_tag,
-			outp_tag=outp_tag,
+			shape_dct={
+				"inp": inp_shape,
+				"outp": outp_shape,
+			},
+			tag_dct={
+				"inp": inp_tag,
+				"outp": outp_tag,
+			},
 		)
 
 		super().__init__(shape=shape)
@@ -36,12 +40,13 @@ class FullAdderBus:
 	def __init__(
 		self,
 		*,
+		name=None,
 		inp_tag=None,
 		outp_tag=None,
 	):
 		ishape = FullAdderIshape(inp_tag=inp_tag, outp_tag=outp_tag)
 		#super().__init__(ishape)
-		self.bus = Splitintf(ishape)
+		self.bus = Splitintf(ishape, name=name)
 	#@property
 	#def bus(self):
 	#	return self.__bus
@@ -121,10 +126,14 @@ class BitSerialAdderPstageIshape(IntfShape):
 		outp_shape = BitSerialAdderPstageIoLayt(WIDTH=WIDTH)
 
 		shape = IntfShape.mk_io_shape(
-			inp_shape=inp_shape,
-			outp_shape=outp_shape,
-			inp_tag=inp_tag,
-			outp_tag=outp_tag,
+			shape_dct={
+				"inp": inp_shape,
+				"outp": outp_shape,
+			},
+			tag_dct={
+				"inp": inp_tag,
+				"outp": outp_tag,
+			},
 		)
 
 		super().__init__(shape=shape)
@@ -184,24 +193,41 @@ class BitSerialAdderPstage(Elaboratable):
 
 		loc.m = Blank()
 		m.submodules.fa = loc.m.fa = fa = FullAdder(
-			inp_tag=self.bus().inp_tag(),
-			outp_tag=self.bus().outp_tag(),
+			#inp_tag=self.bus().inp_tag(),
+			#outp_tag=self.bus().outp_tag(),
+			inp_tag="fa_inp",
+			outp_tag="fa_outp",
 		)
 		fa_bus = fa.bus().bus
+		temp_fa_parent_bus = FullAdderBus(
+			name="temp",
+			#inp_tag=self.bus().inp_tag(),
+			#outp_tag=self.bus().outp_tag(),
+			inp_tag="fa_inp",
+			outp_tag="fa_outp",
+		)
+		temp_fa_bus = temp_fa_parent_bus.bus
+		temp_fa_bus.connect(
+			other=fa_bus,
+			m=m,
+			kind=Splitintf.ConnKind.Parent2Child,
+			use_tag=True,
+			reduce_tag=False,
+		)
 
 		m.d.comb += [
-			fa_bus.inp.a.eq(bus.inp.a[INDEX]),
-			fa_bus.inp.b.eq(bus.inp.b[INDEX]),
-			fa_bus.inp.carry.eq(bus.inp.carry),
+			temp_fa_bus.inp.a.eq(bus.inp.a[INDEX]),
+			temp_fa_bus.inp.b.eq(bus.inp.b[INDEX]),
+			temp_fa_bus.inp.carry.eq(bus.inp.carry),
 		]
 		m.d.sync += [
 			bus.outp.a.eq(bus.inp.a),
 			bus.outp.b.eq(bus.inp.b),
-			bus.outp.carry.eq(fa_bus.outp.carry),
+			bus.outp.carry.eq(temp_fa_bus.outp.carry),
 		]
 		for i in range(WIDTH):
 			if i == INDEX:
-				m.d.sync += bus.outp.sum[i].eq(fa_bus.outp.sum),
+				m.d.sync += bus.outp.sum[i].eq(temp_fa_bus.outp.sum),
 			else:
 				m.d.sync += bus.outp.sum[i].eq(bus.inp.sum[i])
 
@@ -230,10 +256,14 @@ class BitSerialAdderIshape(IntfShape):
 		outp_shape["carry"] = 1
 
 		shape = IntfShape.mk_io_shape(
-			inp_shape=inp_shape,
-			outp_shape=outp_shape,
-			inp_tag=inp_tag,
-			outp_tag=outp_tag,
+			shape_dct={
+				"inp": inp_shape,
+				"outp": outp_shape,
+			},
+			tag_dct={
+				"inp": inp_tag,
+				"outp": outp_tag,
+			},
 		)
 
 		super().__init__(shape=shape)

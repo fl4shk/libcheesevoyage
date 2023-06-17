@@ -87,8 +87,12 @@ class VgaDriverBus:
 		col_shape=RgbColorLayt,
 		COL_CHAN_WIDTH=RgbColorLayt.DEF_CHAN_WIDTH(),
 		*,
-		inp_tag=None,
-		outp_tag=None,
+		#inp_tag=None,
+		#outp_tag=None,
+		tag_dct={
+			"inp": None,
+			"outp": None,
+		},
 	):
 		#--------
 		inp_shape = {}
@@ -104,11 +108,11 @@ class VgaDriverBus:
 		outp_shape["vsync"] = 1
 
 		# Pixel buffer
-		inp_shape["buf"] = VgaDriverBufInpInfo(
+		inp_shape["buf"] = VgaDriverBufInpLayt(
 			#ColorT().CHAN_WIDTH()
 			CHAN_WIDTH=COL_CHAN_WIDTH
-		).shape
-		outp_shape["buf"] = VgaDriverBufOutpInfo().shape
+		)#.shape
+		outp_shape["buf"] = VgaDriverBufOutpLayt()#.shape
 
 		# Debug
 		outp_shape["dbg_fifo_empty"] = 1
@@ -127,15 +131,22 @@ class VgaDriverBus:
 		#self.inp = Splitrec(inp_shape, use_parent_name=False)
 		#self.outp = Splitrec(outp_shape, use_parent_name=False)
 		ishape = IntfShape.mk_io_shape(
-			inp_shape=inp_shape,
-			outp_shape=outp_shape,
-			inp_tag=inp_tag,
-			outp_tag=outp_tag,
-			mk_inp_modport=True,
-			mk_outp_modport=True,
+			shape_dct={
+				"inp": inp_shape,
+				"outp": outp_shape,
+			},
+			#tag_dct={
+			#	"inp": inp_tag,
+			#	"outp": outp_tag,
+			#},
+			tag_dct=tag_dct,
+			mk_modport_dct={
+				"inp": True,
+				"outp": True,
+			},
 		)
 		#--------
-		self.__bus = Splitintf(IntfShape(ishape))
+		self.__bus = Splitintf(IntfShape(ishape), name="bus")
 		#--------
 
 	@property
@@ -154,14 +165,18 @@ class VgaDriver(Elaboratable):
 		col_shape=RgbColorLayt,
 		COL_CHAN_WIDTH=RgbColorLayt.DEF_CHAN_WIDTH(),
 		*,
-		inp_tag=None,
-		outp_tag=None,
+		tag_dct={
+			"inp": None,
+			"outp": None,
+		},
 	):
 		self.__bus = VgaDriverBus(
 			#ColorT=ColorT,
 			col_shape=col_shape,
-			inp_tag=inp_tag,
-			outp_tag=outp_tag,
+			COL_CHAN_WIDTH=COL_CHAN_WIDTH,
+			#inp_tag=inp_tag,
+			#outp_tag=outp_tag,
+			tag_dct=tag_dct,
 		)
 
 		self.__CLK_RATE = CLK_RATE
@@ -171,8 +186,9 @@ class VgaDriver(Elaboratable):
 		#self.__ColorT = ColorT
 		self.__col_shape = col_shape
 		self.__COL_CHAN_WIDTH = COL_CHAN_WIDTH
-		self.__inp_tag = inp_tag
-		self.__outp_tag = outp_tag
+		#self.__inp_tag = inp_tag
+		#self.__outp_tag = outp_tag
+		self.__tag_dct = tag_dct
 
 	def bus(self):
 		return self.__bus
@@ -205,6 +221,12 @@ class VgaDriver(Elaboratable):
 		return self.__col_shape
 	def COL_CHAN_WIDTH(self):
 		return self.__COL_CHAN_WIDTH
+	def tag_dct(self):
+		return self.__tag_dct
+	def inp_tag(self):
+		return self.tag_dct()["inp"]
+	def outp_tag(self):
+		return self.tag_dct()["outp"]
 
 	def elaborate(self, platform: str):
 		#--------
@@ -217,13 +239,16 @@ class VgaDriver(Elaboratable):
 		outp = bus.bus.outp
 		#--------
 		fifo = m.submodules.fifo = AsyncReadFifo(
-			ShapeT=to_shape(
-				#self.ColorT()()
-				View(self.col_shape(self.COL_CHAN_WIDTH()))
-			),
+			#ShapeT=to_shape(
+			#	#self.ColorT()()
+			#	View(self.col_shape()(self.COL_CHAN_WIDTH()))
+			#),
+			#shape=self.col_shape()(self.COL_CHAN_WIDTH()),
+			shape=len(cast_shape(self.col_shape()(self.COL_CHAN_WIDTH()))),
 			SIZE=self.FIFO_SIZE(),
-			inp_tag=self.__inp_tag,
-			outp_tag=self.__outp_tag,
+			#inp_tag=self.inp_tag(),
+			#outp_tag=self.outp_tag(),
+			tag_dct=self.tag_dct(),
 		)
 		fifo_inp = fifo.bus().bus.inp
 		fifo_outp = fifo.bus().bus.outp
@@ -235,7 +260,8 @@ class VgaDriver(Elaboratable):
 		##m.d.comb += loc.fifo_inp.rst.eq(loc.fifo_rst)
 		#m.d.comb += loc.fifo_inp.rst.eq(ResetSignal())
 		#--------
-		loc.col = self.ColorT()()
+		#loc.col = self.ColorT()()
+		loc.col = cast_shape(self.col_shape()(self.COL_CHAN_WIDTH()))
 		#--------
 		# Implement the clock enable
 		loc.CLK_CNT_WIDTH = self.CLK_CNT_WIDTH()
@@ -331,7 +357,7 @@ class VgaDriver(Elaboratable):
 		m.d.comb += [
 			outp.buf.can_prep.eq(~fifo_outp.full),
 			fifo_inp.wr_en.eq(inp.buf.prep),
-			fifo_inp.wr_data.eq(inp.buf.col),
+			fifo_inp.wr_data.eq(inp.buf.col.as_value()),
 		]
 		#--------
 		# Implement grabbing pixels from the FIFO.

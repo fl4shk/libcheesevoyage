@@ -917,13 +917,13 @@ class LongDivPipelined(Elaboratable):
 					itd_in_next_formal_flat = (
 						itd_in[i + 1].formal.flattened()
 					)
-					#m.d.sync += [
-					#	Assert(
-					#		itd_in_next_formal_flat[i]
-					#		== Past(itd_in_formal_flat[i])
-					#	)
-					#	for i in range(len(itd_in_formal_flat))
-					#]
+					m.d.sync += [
+						Assert(
+							itd_in_next_formal_flat[i]
+							== Past(itd_in_formal_flat[i])
+						)
+						for i in range(len(itd_in_formal_flat))
+					]
 					m.d.sync += [
 						#Assert(
 						#	itd_in[i + 1].formal.as_value()

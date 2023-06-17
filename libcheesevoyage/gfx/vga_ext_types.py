@@ -95,22 +95,23 @@ class VgaTimingInfo:
 def RGB_COLOR_DEF_CHAN_WIDTH():
 	return 4
 
-class RgbColorLayt(StructLayout):
+#class RgbColorLayt(StructLayout):
+class RgbColorLayt(dict):
 	#def __init__(self, CHAN_WIDTH=RgbColorLayt.DEF_CHAN_WIDTH):
 	def __init__(self, CHAN_WIDTH=RGB_COLOR_DEF_CHAN_WIDTH()):
 		#self.__CHAN_WIDTH = CHAN_WIDTH if CHAN_WIDTH != None \
 		#	else RgbColor.DEF_CHAN_WIDTH()
-		self.__CHAN_WIDTH = CHAN_WIDTH
+		#self.__CHAN_WIDTH = CHAN_WIDTH
 		super().__init__({
-			"r": self.CHAN_WIDTH(),
-			"g": self.CHAN_WIDTH(),
-			"b": self.CHAN_WIDTH(),
+			"r": CHAN_WIDTH,
+			"g": CHAN_WIDTH,
+			"b": CHAN_WIDTH,
 		})
 
-	def CHAN_WIDTH(self):
-		return self.__CHAN_WIDTH
-	def __unsgn_chan(self):
-		return unsigned(self.CHAN_WIDTH())
+	#def CHAN_WIDTH(self):
+	#	return self.__CHAN_WIDTH
+	#def __unsgn_chan(self):
+	#	return unsigned(self.CHAN_WIDTH())
 
 	@staticmethod
 	def DEF_CHAN_WIDTH():
@@ -156,22 +157,24 @@ class RgbColorLayt(StructLayout):
 #	def CHAN_WIDTH(self):
 #		return self.__CHAN_WIDTH
 #class VgaDriverBufInp(Splitrec):
-class VgaDriverBufInpInfo:
+class VgaDriverBufInpLayt(dict):
 	#def __init__(self, CHAN_WIDTH=RgbColor.DEF_CHAN_WIDTH()):
 	def __init__(self, CHAN_WIDTH=RgbColorLayt.DEF_CHAN_WIDTH()):
-		self.shape = {}
-		self.shape["prep"] = 1
+		shape = {}
+		shape["prep"] = 1
 		#self.shape["col"] = cast_shape(RgbColorLayt(
 		#	CHAN_WIDTH=CHAN_WIDTH
 		#))
-		self.shape["col"] = RgbColorLayt(
+		shape["col"] = RgbColorLayt(
 			CHAN_WIDTH=CHAN_WIDTH
 		)
+		super().__init__(shape)
 		
-	def CHAN_WIDTH(self):
-		return self.__CHAN_WIDTH
+	#def CHAN_WIDTH(self):
+	#	return self.__CHAN_WIDTH
 #class VgaDriverBufOutp(Splitrec):
-class VgaDriverBufOutpInfo:
+class VgaDriverBufOutpLayt(dict):
 	def __init__(self):
-		self.shape = {}
-		self.shape["can_prep"] = 1
+		shape = {}
+		shape["can_prep"] = 1
+		super().__init__(shape)

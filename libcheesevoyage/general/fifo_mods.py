@@ -6,6 +6,7 @@ from amaranth.asserts import Past, Rose, Fell, Stable
 
 from libcheesevoyage.misc_util import *
 from libcheesevoyage.general.container_types import *
+#from libcheesevoyage.mem.mem_wrapper_mod import *
 #--------
 class FifoInpLayt(dict):
 	def __init__(self, shape):
@@ -35,12 +36,13 @@ class FifoBus:
 		self,
 		shape, SIZE,
 		*,
-		inp_tag=None,
-		outp_tag=None,
+		tag_dct={
+			"inp": None,
+			"outp": None,
+		},
 	):
 		self.__shape, self.__SIZE = shape, SIZE
-		self.__inp_tag = inp_tag
-		self.__outp_tag = outp_tag
+		self.__tag_dct = tag_dct
 		#--------
 		#inp_shape = {}
 		#--------
@@ -57,14 +59,23 @@ class FifoBus:
 		inp_shape = FifoInpLayt(shape)
 		outp_shape = FifoOutpLayt(shape)
 		ishape = IntfShape.mk_io_shape(
-			inp_shape=inp_shape,
-			outp_shape=outp_shape,
-			inp_tag=inp_tag,
-			outp_tag=outp_tag,
-			mk_inp_modport=True,
-			mk_outp_modport=True,
+			shape_dct={
+				"inp": inp_shape,
+				"outp": outp_shape,
+			},
+			#tag_dct={
+			#	"inp": inp_tag,
+			#	"outp": outp_tag,
+			#},
+			tag_dct=tag_dct,
+			#mk_inp_modport=True,
+			#mk_outp_modport=True,
+			mk_modport_dct={
+				"inp": True,
+				"outp": True,
+			},
 		)
-		self.__bus = Splitintf(IntfShape(ishape))
+		self.__bus = Splitintf(IntfShape(ishape), name="bus")
 		#--------
 
 	@property
@@ -87,14 +98,15 @@ class Fifo(Elaboratable):
 		shape, SIZE,
 		*,
 		FORMAL: bool=False,
-		inp_tag=None,
-		outp_tag=None,
+		tag_dct={
+			"inp": None,
+			"outp": None,
+		},
 	):
 		self.__bus = FifoBus(
 			shape=shape,
 			SIZE=SIZE,
-			inp_tag=inp_tag,
-			outp_tag=outp_tag,
+			tag_dct=tag_dct,
 		)
 		self.__FORMAL = FORMAL
 
@@ -120,6 +132,12 @@ class Fifo(Elaboratable):
 		loc.arr = Array([
 			Signal(bus.shape()) for _ in range(bus.SIZE())
 		])
+		#loc.arr = Array(
+		#	[
+		#		Signal(bus.shape()) for _ in range(bus.SIZE())
+		#	],
+		#	attrs={"ram_style": "ultra"}
+		#)
 
 		loc.PTR_WIDTH = width_from_arg(bus.SIZE())
 
@@ -167,10 +185,12 @@ class Fifo(Elaboratable):
 
 		m.d.comb \
 		+= [
-			loc.incr_tail.eq(Mux(loc.TAIL_PLUS_1 < bus.SIZE(),
-				(loc.tail + 0x1), 0x0)),
-			loc.incr_head.eq(Mux(loc.HEAD_PLUS_1 < bus.SIZE(),
-				(loc.head + 0x1), 0x0)),
+			loc.incr_tail.eq(Mux(
+				loc.TAIL_PLUS_1 < bus.SIZE(), (loc.tail + 0x1), 0x0
+			)),
+			loc.incr_head.eq(Mux(
+				loc.HEAD_PLUS_1 < bus.SIZE(), (loc.head + 0x1), 0x0
+			)),
 
 			loc.next_empty.eq(loc.next_head == loc.next_tail),
 			#loc.next_full.eq((loc.next_head + 0x1) == loc.next_tail),
@@ -178,12 +198,12 @@ class Fifo(Elaboratable):
 			#loc.curr_en_cat.eq(Cat(inp.rd_en, inp.wr_en)),
 		]
 
-		with m.If(inp.rd_en & (~outp.empty)):
+		with m.If(inp.rd_en & ~outp.empty):
 			m.d.comb += loc.next_tail.eq(loc.incr_tail)
 		with m.Else():
 			m.d.comb += loc.next_tail.eq(loc.tail)
 
-		with m.If(inp.wr_en & (~outp.full)):
+		with m.If(inp.wr_en & ~outp.full):
 			m.d.comb \
 			+= [
 				loc.next_head.eq(loc.incr_head),
@@ -309,14 +329,16 @@ class AsyncReadFifo(Fifo):
 		shape, SIZE,
 		*,
 		FORMAL: bool=False,
-		inp_tag=None,
-		outp_tag=None,
+		mem_attrs=None,
+		tag_dct={
+			"inp": None,
+			"outp": None,
+		},
 	):
 		super().__init__(
 			shape=shape, SIZE=SIZE,
 			FORMAL=FORMAL,
-			inp_tag=inp_tag,
-			outp_tag=outp_tag,
+			tag_dct=tag_dct,
 		)
 
 	def elaborate(self, platform: str) -> Module:
@@ -332,6 +354,19 @@ class AsyncReadFifo(Fifo):
 		loc.arr = Array([
 			Signal(bus.shape()) for _ in range(bus.SIZE())
 		])
+		#loc.arr = Array(
+		#	[
+		#		Signal(bus.shape()) for _ in range(bus.SIZE())
+		#	],
+		#	attrs={"ram_style": "ultra"}
+		#)
+		#loc.m = Blank()
+		#m.submodules.mwrap = loc.m.mwrap = MemWrapper(
+		#	shape=bus.shape(),
+		#	depth=bus.SIZE(),
+		#	init=[0x0 for _ in range(bus.SIZE())],
+		#	attrs=mem_attrs,
+		#)
 
 		loc.PTR_WIDTH = width_from_arg(bus.SIZE())
 

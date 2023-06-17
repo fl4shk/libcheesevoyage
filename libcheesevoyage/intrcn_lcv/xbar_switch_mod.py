@@ -17,13 +17,16 @@ import operator
 class XbarSwitchBus:
 	#--------
 	def __init__(
-		self, h2d_shape, d2h_shape, NUM_HOSTS, 
-		NUM_DEVS,
+		self,
+		h2d_shape, d2h_shape,
+		NUM_HOSTS, NUM_DEVS,
 		#H2D_SIGNED=False, D2H_SIGNED=False,
 		*,
 		FORMAL=False,
-		inp_tag=None,
-		outp_tag=None,
+		tag_dct={
+			"inp": None,
+			"outp": None,
+		},
 	):
 		#--------
 		#self.__ElemKindT = ElemKindT
@@ -37,8 +40,9 @@ class XbarSwitchBus:
 		#self.__D2H_SIGNED = D2H_SIGNED
 		self.__FORMAL = FORMAL
 
-		self.__inp_tag = inp_tag
-		self.__outp_tag = outp_tag
+		#self.__inp_tag = inp_tag
+		#self.__outp_tag = outp_tag
+		self.__tag_dct = tag_dct
 		#--------
 		inp_shape = {}
 		outp_shape = {}
@@ -101,12 +105,15 @@ class XbarSwitchBus:
 		#self.inp = Splitrec(inp_shape, use_parent_name=False)
 		#self.outp = Splitrec(outp_shape, use_parent_name=False)
 		shape = IntfShape.mk_io_shape(
-			inp_shape=inp_shape,
-			outp_shape=outp_shape,
-			inp_tag=inp_tag,
-			outp_tag=outp_tag,
-			mk_inp_modport=True,
-			mk_outp_modport=True,
+			shape_dct={
+				"inp": inp_shape,
+				"outp": outp_shape,
+			},
+			tag_dct=tag_dct,
+			modport_dct={
+				"inp": True,
+				"outp": True,
+			},
 		)
 		self.__bus = Splitintf(IntfShape(shape))
 		#--------
@@ -130,10 +137,14 @@ class XbarSwitchBus:
 		return self.__FORMAL
 	def SEL_WIDTH(self):
 		return math.ceil(math.log2(self.NUM_DEVS()))
+	def tag_dct(self):
+		return self.__tag_dct
 	def inp_tag(self):
-		return self.__inp_tag
+		#return self.__inp_tag
+		return self.tag_dct()["inp"]
 	def outp_tag(self):
-		return self.__outp_tag
+		#return self.__outp_tag
+		return self.tag_dct()["outp"]
 	#--------
 #--------
 # A crossbar switch
@@ -148,8 +159,10 @@ class XbarSwitch(Elaboratable):
 		*,
 		PRIO_LST_2D=None,
 		DOMAIN=BasicDomain.COMB, FORMAL=False,
-		inp_tag=None,
-		outp_tag=None,
+		tag_dct={
+			"inp": None,
+			"outp": None,
+		},
 	):
 	#def __init__(self, h2d_shape, d2h_shape, NUM_HOSTS, NUM_DEVS,
 	#	H2D_SIGNED=False, D2H_SIGNED=False, *, PRIO_LST_2D=None,
@@ -212,8 +225,9 @@ class XbarSwitch(Elaboratable):
 			#H2D_SIGNED=H2D_SIGNED,
 			#D2H_SIGNED=D2H_SIGNED,
 			FORMAL=FORMAL,
-			inp_tag=inp_tag,
-			outp_tag=outp_tag,
+			#inp_tag=inp_tag,
+			#outp_tag=outp_tag,
+			tag_dct=tag_dct,
 		)
 		#--------
 	#--------

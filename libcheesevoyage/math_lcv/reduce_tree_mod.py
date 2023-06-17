@@ -30,8 +30,10 @@ class ReduceTreeBus:
 		BINOP,
 		*,
 		FORMAL=False,
-		inp_tag=None,
-		outp_tag=None,
+		tag_dct={
+			"inp": None,
+			"outp": None,
+		},
 	):
 		#--------
 		self.__INP_DATA_WIDTH = INP_DATA_WIDTH
@@ -106,13 +108,20 @@ class ReduceTreeBus:
 		#self.inp = Splitrec(inp_shape, use_parent_name=False)
 		#self.outp = Splitrec(outp_shape, use_parent_name=False)
 		ishape = IntfShape.mk_io_shape(
-			inp_shape=inp_shape,
-			outp_shape=outp_shape,
-			inp_tag=inp_tag,
+			shape_dct={
+				"inp": inp_shape,
+				"outp": outp_shape,
+			},
 			#inp_tag=None,
-			outp_tag=outp_tag,
-			mk_inp_modport=True,
-			mk_outp_modport=True,
+			#tag_dct={
+			#	"inp": inp_tag,
+			#	"outp": outp_tag,
+			#},
+			tag_dct=tag_dct,
+			mk_modport_dct={
+				"inp": True,
+				"outp": True,
+			},
 		)
 		#ishape = {
 		#	"inp": IntfShape(
@@ -139,7 +148,8 @@ class ReduceTreeBus:
 							name="oracle_outp_data"
 						)
 					},
-					pdir=PortDir.Outp,
+					#pdir=PortDir.Outp,
+					pdir=PortDir.Noconn,
 					tag=None,
 				)
 			)

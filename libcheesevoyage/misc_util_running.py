@@ -17,48 +17,86 @@ from libcheesevoyage.general.container_types import (
 
 def inner_ports(bus):
 	ret = []
-	for key in bus.__dict__:
-		val = bus.__dict__[key]
+	if (
+		not isinstance(bus, Splitrec)
+		and not isinstance(bus, Splitarr)
+		and not isinstance(bus, Splitintf)
+		and not isinstance(bus, Splitintfarr)
+	):
 		if (
-			(
-				key[0] != "_"
-			) and (
-				key[0] not in type(bus).__dict__
+			hasattr(bus, "bus")
+			and (
+				isinstance(bus.bus, Splitrec)
+				or isinstance(bus.bus, Splitarr)
+				or isinstance(bus.bus, Splitintf)
+				or isinstance(bus.bus, Splitintfarr)
 			)
 		):
-			if isinstance(val, Signal) or isinstance(val, Record):
-				ret += [Value.cast(val)]
-			#elif isinstance(val, Packrec):
-			#	ret += [Value.cast(val)]
-			#elif isinstance(val, Packarr):
-			#	ret += [Value.cast(val)]
-			elif isinstance(val, View) \
-				or isinstance(val, Struct) \
-				or isinstance(val, Union):
-				ret += [Value.cast(val)]
-			elif (
-				isinstance(val, Splitarr)
-				or isinstance(val, Splitintfarr)
+			#print("testificate")
+			return inner_ports(bus.bus)
+		for key in bus.__dict__:
+			val = bus.__dict__[key]
+			if (
+				(
+					key[0] != "_"
+				) and (
+					key[0] not in type(bus).__dict__
+				)
 			):
-				ret += list(val)
-			#elif isinstance(val, Splitrec):
-			#	ret += val.flattened()
-			else:
-				ret += inner_ports(val)
+				#if isinstance(val, Signal) or isinstance(val, Record):
+				ret += [Value.cast(val)]
+				##elif isinstance(val, Packrec):
+				##	ret += [Value.cast(val)]
+				##elif isinstance(val, Packarr):
+				##	ret += [Value.cast(val)]
+				#elif isinstance(val, View) \
+				#	or isinstance(val, Struct) \
+				#	or isinstance(val, Union):
+				#	ret += [Value.cast(val)]
+				##elif (
+				##	isinstance(val, Splitarr)
+				##	#or isinstance(val, Splitintfarr)
+				##):
+				##	ret += list(val)
+
+				##elif isinstance(val, Splitrec):
+				##	ret += val.flattened()
+				#else:
+				#	ret += inner_ports(val)
+	else:
+		ret += bus.flattened()
+		
 	return ret
 def ports(bus):
 	return ([ClockSignal(), ResetSignal()] + inner_ports(bus))
 
-def to_verilog_non_sync(dut_mod, **kw_args):
+def to_verilog_non_sync(
+	dut_mod,
+	#*,
+	#busbus: bool=True,
+	**kw_args
+):
 	dut = dut_mod(**kw_args)
 	# ./main.py generate -t v
+	#main(dut, ports=inner_ports(dut.bus()))
+	#if not busbus:
 	main(dut, ports=inner_ports(dut.bus()))
+	#else: # if busbus:
+	#	main(dut, ports=inner_ports(dut.bus().bus))
 	#with open("dut.v.ignore", "w") as f:
 	#	f.write(verilog.convert(dut, ports=ports(dut.bus())))
-def to_verilog(dut_mod, **kw_args):
+def to_verilog(
+	dut_mod,
+	#*,
+	#busbus: bool=True,
+	**kw_args
+):
 	dut = dut_mod(**kw_args)
 	# ./main.py generate -t v
+	#if not busbus:
 	main(dut, ports=ports(dut.bus()))
+	#else: # if busbus:
+	#	main(dut, ports=ports(dut.bus().bus))
 	#with open("dut.v.ignore", "w") as f:
 	#	f.write(verilog.convert(dut, ports=ports(dut.bus())))
 

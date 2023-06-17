@@ -164,9 +164,7 @@ class PipeSkidBufMiscIshape(IntfShape):
 class PipeSkidBufIshape(IntfShape):
 	def __init__(
 		self,
-		#data_info,
-		inp_data_info,
-		outp_data_info,
+		data_info,
 		*,
 		OPT_INCLUDE_VALID_BUSY: bool,
 		OPT_INCLUDE_READY_BUSY: bool,
@@ -182,8 +180,7 @@ class PipeSkidBufIshape(IntfShape):
 	):
 		shape = {
 			"inp": PipeSkidBufSideIshape(
-				#data_info=data_info,
-				data_info=inp_data_info,
+				data_info=data_info,
 				pdir=PortDir.Inp,
 				#fwd_tag=tag_dct["prev"],
 				#bak_tag=tag_dct["next"],
@@ -193,8 +190,7 @@ class PipeSkidBufIshape(IntfShape):
 				},
 			),
 			"outp": PipeSkidBufSideIshape(
-				#data_info=data_info,
-				data_info=outp_data_info,
+				data_info=data_info,
 				pdir=PortDir.Outp,
 				#fwd_tag=tag_dct["next"],
 				#bak_tag=tag_dct["prev"],
@@ -214,9 +210,7 @@ class PipeSkidBufIshape(IntfShape):
 class PipeSkidBufBus:
 	def __init__(
 		self,
-		#data_info,
-		inp_data_info,
-		outp_data_info,
+		data_info,
 		*,
 		OPT_INCLUDE_VALID_BUSY: bool=False,
 		OPT_INCLUDE_READY_BUSY: bool=False,
@@ -231,9 +225,7 @@ class PipeSkidBufBus:
 		#self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
 		#self.__OPT_INCLUDE_READY_BUSY = OPT_INCLUDE_READY_BUSY
 		ishape = PipeSkidBufIshape(
-			#data_info=data_info,
-			inp_data_info=inp_data_info,
-			outp_data_info=outp_data_info,
+			data_info=data_info,
 			OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
 			OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
 			#OPT_INCLUDE_BUSY=OPT_INCLUDE_BUSY,
@@ -241,7 +233,7 @@ class PipeSkidBufBus:
 		)
 		#super().__init__(ishape)
 		self.__bus = Splitintf(ishape)
-		self.__data_info = inp_data_info
+		self.__data_info = data_info
 		self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
 		self.__OPT_INCLUDE_READY_BUSY = OPT_INCLUDE_READY_BUSY
 		#self.__OPT_INCLUDE_BUSY = OPT_INCLUDE_BUSY
@@ -251,11 +243,7 @@ class PipeSkidBufBus:
 		#self.__next_tag = tag_dct["next"]
 		#self.__prev_tag = tag_dct["prev"]
 		#self.__misc_tag = tag_dct["misc"]
-		#self.__tag_dct = tag_dct
-		#with open("debug-pipeline_mods-tag_dct.txt.ignore", "w") as f:
-		#	f.writelines([
-		#		psconcat(tag_dct)
-		#	])
+		self.__tag_dct = tag_dct
 		#self.inp = Splitrec(
 		#	PipeSkidBufInpLayt(
 		#		data_info=data_info,
@@ -306,12 +294,11 @@ class PipeSkidBufBus:
 class PipeSkidBuf(Elaboratable):
 	def __init__(
 		self,
-		# `...data_info` can be `None` if for some reason all you want from
+		# `data_info` can be `None` if for some reason all you want from
 		# `PipeSkidBuf` is the valid-ready handshaking it does.
-		# Otherwise, it is recommended that `...data_info` be of the
-		# `SigInfo` type.
-		inp_data_info, 
-		outp_data_info, 
+		# Otherwise, it is recommended that `data_info` be of the `SigInfo`
+		# type.
+		data_info, 
 		*,
 		FORMAL: bool=False,
 		OPT_INCLUDE_VALID_BUSY: bool=False,
@@ -327,9 +314,7 @@ class PipeSkidBuf(Elaboratable):
 		#misc_tag=None,
 	):
 		self.__bus = PipeSkidBufBus(
-			#data_info=data_info,
-			inp_data_info=inp_data_info,
-			outp_data_info=outp_data_info,
+			data_info=data_info,
 			OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
 			OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
 			#OPT_INCLUDE_BUSY=OPT_INCLUDE_BUSY,
@@ -338,7 +323,7 @@ class PipeSkidBuf(Elaboratable):
 			#misc_tag=tag_dct["misc"],
 			tag_dct=tag_dct,
 		)
-		self.__data_info = inp_data_info
+		self.__data_info = data_info
 		self.__FORMAL = FORMAL
 		self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
 		self.__OPT_INCLUDE_READY_BUSY = OPT_INCLUDE_READY_BUSY
@@ -797,9 +782,6 @@ class PipeSkidBuf(Elaboratable):
 		sb_bus_lst: list, # should be [Splitintf(PipeSkidBufIshape)]
 		tie_first_inp_fwd_valid: bool=True,
 		tie_last_inp_bak_ready: bool=True,
-		*,
-		lst_shrink=-1,
-		other_lst_shrink=None,
 	):
 		assert len(sb_bus_lst) >= 2
 		#print("testificate")
@@ -812,8 +794,6 @@ class PipeSkidBuf(Elaboratable):
 				m=parent,
 				kind=Splitintf.ConnKind.Parallel,
 				use_tag=True,
-				lst_shrink=lst_shrink,
-				other_lst_shrink=other_lst_shrink,
 			)
 		if tie_first_inp_fwd_valid:
 			parent.d.comb += [
@@ -831,9 +811,6 @@ class PipeSkidBuf(Elaboratable):
 		parent_data=None,
 		use_tag: bool=True,
 		reduce_tag: bool=True,
-		*,
-		lst_shrink=-1,
-		other_lst_shrink=None,
 	):
 		# This function is especially intended for when you have a
 		# `<YourModule>Bus` that has its own `PipeSkidBufBus` instance that
@@ -869,8 +846,6 @@ class PipeSkidBuf(Elaboratable):
 			kind=Splitintf.ConnKind.Parent2Child,
 			use_tag=use_tag,
 			reduce_tag=reduce_tag,
-			lst_shrink=lst_shrink,
-			other_lst_shrink=other_lst_shrink,
 		)
 		parent.d.comb += [
 			#child_sb_bus.inp.fwd.valid.eq(parent_sb_bus.inp.fwd.valid),
@@ -889,8 +864,6 @@ class PipeSkidBuf(Elaboratable):
 			kind=Splitintf.ConnKind.Parent2Child,
 			use_tag=use_tag,
 			reduce_tag=reduce_tag,
-			lst_shrink=lst_shrink,
-			other_lst_shrink=other_lst_shrink,
 		)
 
 		#if (
@@ -924,8 +897,6 @@ class PipeSkidBuf(Elaboratable):
 			#use_tag=True,
 			use_tag=use_tag,
 			reduce_tag=reduce_tag,
-			lst_shrink=lst_shrink,
-			other_lst_shrink=other_lst_shrink,
 		)
 
 		if parent_data is None:

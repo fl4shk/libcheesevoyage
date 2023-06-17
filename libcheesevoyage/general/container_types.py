@@ -2049,9 +2049,9 @@ class Splitintf:
 		m: Module,
 		kind, #: Splitintf.ConnKind,
 		*,
-		#f=None,
-		conn_lst_shrink: int=-1,
-		other_conn_lst_shrink=None,
+		f=None,
+		lst_shrink: int=-1,
+		other_lst_shrink=None,
 		self_pdir=None, # `None`, `PortDir.Inp`, or `PortDir.Outp`
 		use_tag: bool=False,
 		#reduce_tag: bool=False,
@@ -2062,12 +2062,35 @@ class Splitintf:
 				"Invalid type for `kind` {!r}".format(kind)
 			))
 		# This matches by shared object names
-		lst = self.flattened(w_pdir=True)
-		other_lst = other.flattened(w_pdir=True)
-		if other_conn_lst_shrink is not None:
-			temp_other_conn_lst_shrink = other_conn_lst_shrink
+		lst = self.flattened(
+			#f=f,
+			w_pdir=True,
+			#srec_sarr_no_flat=True,
+		)
+		other_lst = other.flattened(
+			#f=f,
+			w_pdir=True,
+			#srec_sarr_no_flat=True,
+		)
+		if other_lst_shrink is not None:
+			temp_other_lst_shrink = other_lst_shrink
 		else:
-			temp_other_conn_lst_shrink = conn_lst_shrink
+			temp_other_lst_shrink = lst_shrink
+		if f is not None:
+			f.writelines([
+				"lst\n"
+			])
+			for elem in lst:
+				f.writelines([
+					do_psconcat_flattened(elem, spaces=1)
+				])
+			f.writelines([
+				"other_lst\n"
+			])
+			for other_elem in other_lst:
+				f.writelines([
+					do_psconcat_flattened(other_elem, spaces=1)
+				])
 
 		dct = {}
 		for elem in lst:
@@ -2077,44 +2100,52 @@ class Splitintf:
 				"tag_lst": [],
 			}
 			for inner_elem in (
-				elem.conn_lst()[:conn_lst_shrink]
+				elem.conn_lst()[:lst_shrink]
 			):
 				temp["conn_name_lst"].append(
 					inner_elem.extra_args_conn_name()
 				)
-			#if f is not None:
-			#	f.writelines([
-			#		psconcat("debug: ",
-			#			[
-			#				[
-			#					conn.extra_args_conn_name(),
-			#					type(conn),
-			#				]
-			#				for conn in elem.conn_lst()[1:]
-			#			]
-			#		),
-			#		"\n"
-			#	])
+			if f is not None:
+				f.writelines([
+					psconcat("debug conn_name_lst: ",
+						[
+							[
+								conn.extra_args_conn_name(),
+								type(conn),
+							]
+							for conn in elem.conn_lst()[1:]
+						]
+					),
+					"\n"
+				])
 			# We are (nearly 100%) guaranteed to have at least two
 			# elements in `elem.conn_list()` due `Splitintf` and
 			# `Splitintfarr` being composed of real Amaranth objects at
 			# the end of the day
 			#for inner_elem in elem.conn_lst()[:-1]:
 			#for i in range(len(elem.conn_lst()[:-1])):
-			for i in range(len(elem.conn_lst()[1:])):
-				#if i > 0:
-				inner_elem = elem.conn_lst()[i + 1]
-				#if f is not None:
-				#	f.writelines([
-				#		psconcat(
-				#			"debug inner_elem: ",
-				#			do_psconcat_flattened(inner_elem)
-				#		)
-				#	])
-				#if len(temp["conn_name_lst"]) > 1:
-				temp["tag_lst"].append(
-					inner_elem.shape().tag()
-				)
+			#for i in range(len(elem.conn_lst()[1:])):
+			if not reduce_tag:
+				for i in range(len(elem.conn_lst()[1:])):
+					#if i > 0:
+					inner_elem = elem.conn_lst()[i + 1]
+					#if f is not None:
+					#	f.writelines([
+					#		psconcat(
+					#			"debug inner_elem: ",
+					#			do_psconcat_flattened(inner_elem)
+					#		)
+					#	])
+					#if len(temp["conn_name_lst"]) > 1:
+					temp["tag_lst"].append(
+						inner_elem.shape().tag()
+					)
+			else: # if reduce_tag:
+				for i in range(len(elem.conn_lst()[:lst_shrink])):
+					inner_elem = elem.conn_lst()[i + 1]
+					temp["tag_lst"].append(
+						inner_elem.shape().tag()
+					)
 			#dct["_".join(list(reversed(temp["conn_name_lst"])))] = temp
 			temp_lst = list(reversed(temp["conn_name_lst"]))
 			dct[(
@@ -2139,20 +2170,29 @@ class Splitintf:
 				"tag_lst": [],
 			}
 			for other_inner_elem in (
-				other_elem.conn_lst()[:temp_other_conn_lst_shrink]
+				other_elem.conn_lst()[:temp_other_lst_shrink]
 			):
 				other_temp["conn_name_lst"].append(
 					other_inner_elem.extra_args_conn_name()
 				)
 			#for other_inner_elem in other_elem.conn_lst()[:-1]:
-			for i in range(len(other_elem.conn_lst()[:-1])):
-			#for i in range(len(other_elem.conn_lst()[1:])):
-				#if i > 0:
-				other_inner_elem = other_elem.conn_lst()[i + 1]
-				#if len(other_temp["conn_name_lst"]) > 1:
-				other_temp["tag_lst"].append(
-					other_inner_elem.shape().tag()
-				)
+			#for i in range(len(other_elem.conn_lst()[:-1])):
+			if not reduce_tag:
+				for i in range(len(other_elem.conn_lst()[1:])):
+					#if i > 0:
+					other_inner_elem = other_elem.conn_lst()[i + 1]
+					#if len(other_temp["conn_name_lst"]) > 1:
+					other_temp["tag_lst"].append(
+						other_inner_elem.shape().tag()
+					)
+			else: # if reduce_tag:
+				for i in range(len(
+					other_elem.conn_lst()[:temp_other_lst_shrink]
+				)):
+					other_inner_elem = other_elem.conn_lst()[i + 1]
+					other_temp["tag_lst"].append(
+						other_inner_elem.shape().tag()
+					)
 			other_temp_lst = list(reversed(other_temp["conn_name_lst"]))
 			other_dct[(
 				(
@@ -2171,15 +2211,16 @@ class Splitintf:
 			#)] = other_temp
 
 		#f = open("test_tag.txt.ignore", "w")
-		#if f is not None:
-		#	f.writelines([
-		#		#"dct:{!r}\n".format(dct),
-		#		#"other_dct:{!r}\n".format(other_dct),
-		#		do_psconcat_flattened({
-		#			"dct": dct,
-		#			"other_dct": other_dct,
-		#		})
-		#	])
+		if f is not None:
+			f.writelines([
+				#"dct:{!r}\n".format(dct),
+				#"other_dct:{!r}\n".format(other_dct),
+				do_psconcat_flattened({
+					"dct": dct,
+					"other_dct": other_dct,
+				}),
+				"first write done\n",
+			])
 		for key in dct:
 			other_key = (
 				key 
@@ -2193,18 +2234,18 @@ class Splitintf:
 					key[1]
 				)
 			)
-			#if f is not None:
-			#	f.writelines([
-			#		do_psconcat_flattened(
-			#			{
-			#				"key": key,
-			#				"other_key": other_key,
-			#				"in-other": other_key in other_dct,
-			#			},
-			#			use_repr=True,
-			#		),
-			#		#"\n",
-			#	])
+			if f is not None:
+				f.writelines([
+					do_psconcat_flattened(
+						{
+							"key": key,
+							"other_key": other_key,
+							"in-other": other_key in other_dct,
+						},
+						use_repr=True,
+					),
+					#"\n",
+				])
 			#if kind == Splitintf.ConnKind.Parent2Child:
 			if other_key in other_dct:
 				outer_elem = dct[key]
@@ -2233,41 +2274,42 @@ class Splitintf:
 						)
 					)
 				)
-				#if f is not None:
-				#	f.writelines([
-				#		do_psconcat_flattened(
-				#			{
-				#				(key, other_key): {
-				#					"pdir": outer_elem["elem"].pdir(),
-				#					"other-pdir": (
-				#						other_outer_elem["elem"].pdir()
-				#					),
-				#					"conn_name_lst": 
-				#						outer_elem["conn_name_lst"],
-				#					"other-conn_name_lst":
-				#						other_outer_elem["conn_name_lst"],
-				#					"cmp": (
-				#						outer_elem["conn_name_lst"]
-				#						!= other_outer_elem
-				#							["conn_name_lst"]
-				#					),
-				#					"test_tag": test_tag,
-				#					"key": key,
-				#					"other_key": other_key,
-				#					"tag": (
-				#						elem.extra_args_parent().shape()
-				#							.tag()
-				#					),
-				#					"other-tag": (
-				#						other_elem.extra_args_parent()
-				#							.shape().tag()
-				#					),
-				#				}
-				#			},
-				#			use_repr=True,
-				#		),
-				#		#"\n",
-				#	])
+				if f is not None:
+					f.writelines([
+						psconcat("debug test_tag stuff:\n"),
+						do_psconcat_flattened(
+							{
+								(key, other_key): {
+									"pdir": outer_elem["elem"].pdir(),
+									"other-pdir": (
+										other_outer_elem["elem"].pdir()
+									),
+									"conn_name_lst": 
+										outer_elem["conn_name_lst"],
+									"other-conn_name_lst":
+										other_outer_elem["conn_name_lst"],
+									"cmp": (
+										outer_elem["conn_name_lst"]
+										!= other_outer_elem
+											["conn_name_lst"]
+									),
+									"test_tag": test_tag,
+									"key": key,
+									"other_key": other_key,
+									"tag": (
+										elem.extra_args_parent().shape()
+											.tag()
+									),
+									"other-tag": (
+										other_elem.extra_args_parent()
+											.shape().tag()
+									),
+								}
+							},
+							use_repr=True,
+						),
+						#"\n",
+					])
 
 				if (
 					(
@@ -2277,10 +2319,10 @@ class Splitintf:
 						not test_tag
 					)
 				):
-					#if f is not None:
-					#	f.writelines([
-					#		psconcat("continuing\n")
-					#	])
+					if f is not None:
+						f.writelines([
+							psconcat("continuing\n")
+						])
 					continue
 
 				elem = outer_elem["elem"]
@@ -2302,9 +2344,9 @@ class Splitintf:
 						)
 					):
 						if elem.pdir() == PortDir.Inp:
-							m.d.comb += other.obj().eq(elem.obj())
+							m.d.comb += other_elem.obj().eq(elem.obj())
 						else: # if elem.pdir() == PortDir.Outp:
-							m.d.comb += elem.obj().eq(other.obj())
+							m.d.comb += elem.obj().eq(other_elem.obj())
 					else:
 						raise ValueError(err_msg)
 				else: # if kind == Splitintf.ConnKind.Parallel:
@@ -2380,29 +2422,44 @@ class Splitintf:
 	def flattened(
 		self,
 		*,
+		#f=None,
 		#conn_dct: dict,
-		w_pdir: bool=False # with `PortDir`
+		w_pdir: bool=False, # with `PortDir`
+		#srec_sarr_no_flat: bool=False,
 	):
 		ret = []
 
 		for item in self.dct().items():
 			key, val = item
-			if isinstance(val, Splitintf):
+			if (
+				isinstance(val, Splitintf)
+				or isinstance(val, Splitintfarr)
+			):
 				#temp = val.flattened()
-				temp = val.flattened(w_pdir=w_pdir)
+				temp = val.flattened(
+					#f=f,
+					w_pdir=w_pdir,
+					#srec_sarr_no_flat=srec_sarr_no_flat,
+				)
 				for elem in temp:
 					ret.append(elem)
-			elif isinstance(val, Splitintfarr):
-				#temp = val.flattened()
-				temp = val.flattened(w_pdir=w_pdir)
-				for elem in temp:
-					ret.append(elem)
+			#elif isinstance(val, Splitintfarr):
+			#	#temp = val.flattened()
+			#	#temp = val.flattened(w_pdir=w_pdir)
+			#	temp = val.flattened(
+			#		#f=f,
+			#		w_pdir=w_pdir,
+			#		#srec_sarr_no_flat=srec_sarr_no_flat,
+			#	)
+			#	for elem in temp:
+			#		ret.append(elem)
 			else:
 				def one_iter(
 					self,
 					ret: list,
 					w_pdir: bool,
-					key, obj,
+					key,
+					obj,
 				):
 					if not w_pdir:
 						ret.append(obj)
@@ -2413,20 +2470,33 @@ class Splitintf:
 							obj=obj,
 							pdir=getattr(self.shape().modport(), key),
 						))
-
 				if (
 					isinstance(val, Splitrec)
 					or isinstance(val, Splitarr)
 				):
-					temp = val.flattened()
-					for elem in temp:
-						#ret.append(elem)
+					#if not srec_sarr_no_flat:
+					if not w_pdir:
+						temp = val.flattened()
+						for elem in temp:
+							#ret.append(elem)
+							one_iter(
+								self=self,
+								ret=ret,
+								w_pdir=w_pdir,
+								key=key,
+								#flat_name=Value.cast(elem).name,
+								#key=Value.cast(elem).name,
+								#key=elem.name,
+								obj=elem,
+							)
+					#else: # if srec_sarr_no_flat:
+					else: # if w_pdir:
 						one_iter(
 							self=self,
 							ret=ret,
 							w_pdir=w_pdir,
 							key=key,
-							obj=elem,
+							obj=val,
 						)
 				else:
 					#print(val)
@@ -2436,7 +2506,10 @@ class Splitintf:
 						self=self,
 						ret=ret,
 						w_pdir=w_pdir,
-						key=key, obj=val
+						key=key,
+						#key=Value.cast(val).name,
+						#flat_name=Value.cast(val).name,
+						obj=val
 					)
 
 		return ret
@@ -2661,6 +2734,10 @@ class Vec2(Splitrec):
 		#self.y = cast_shape(shape=shape, name="Vec2_y")
 		#super().__init__({"x": shape, "y": shape})
 		super().__init__(Vec2Layt(shape=shape))
+class ElabVec2:
+	def __init__(self, x, y):
+		self.x = x
+		self.y = y
 #--------
 class PrevCurrPair:
 	def __init__(self, curr=None):

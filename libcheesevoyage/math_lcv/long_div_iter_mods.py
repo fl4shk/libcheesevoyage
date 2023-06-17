@@ -74,7 +74,13 @@ class LongDivConstants:
 		#add_amount = 1 if not self.PIPELINED() else 2
 		#return (self.CHUNK_WIDTH() 
 		#	* ((self.MAIN_WIDTH() // self.CHUNK_WIDTH()) + add_amount))
-	def build_temp_shape(self, *, attrs=sig_keep(), name=""):
+	def build_temp_shape(
+		self,
+		*,
+		attrs=sig_keep(),
+		name="",
+		in_wrapper: bool=False,
+	):
 		#printout("build_temp_shape(): ", name, "\n")
 		#return Signal(self.CHUNK_WIDTH() * self.NUM_CHUNKS(), attrs=attrs,
 		#	name=name)
@@ -91,7 +97,13 @@ class LongDivConstants:
 		#	name=name,
 		#)
 		ret = FieldInfo(
-			ArrayLayout(unsigned(self.CHUNK_WIDTH()), self.NUM_CHUNKS()),
+			(
+				ArrayLayout(
+					unsigned(self.CHUNK_WIDTH()),
+					self.NUM_CHUNKS()
+				) if not in_wrapper
+				else unsigned(self.CHUNK_WIDTH() * self.NUM_CHUNKS())
+			),
 			attrs=attrs,
 			name=name,
 		)
@@ -122,7 +134,12 @@ class LongDivConstants:
 #class LongUdivIterData(Splitrec):
 class LongUdivIterDataLayt(dict):
 	#--------
-	def __init__(self, constants: LongDivConstants, io_str: str):
+	def __init__(
+		self,
+		constants: LongDivConstants,
+		io_str: str,
+		in_wrapper: bool=False,
+	):
 		#--------
 		#super().__init__()
 		#printout("LongUdivIterDataLayt.__init__(): ", io_str, "\n")
@@ -137,13 +154,20 @@ class LongUdivIterDataLayt(dict):
 		shape = {}
 		#--------
 		shape["temp_numer"] = build_temp_shape(
-			name=f"temp_numer_{io_str}"
+			name=f"temp_numer_{io_str}",
+			in_wrapper=in_wrapper,
 		)
 		#printout("self.temp_numer: ",
 		#	self.temp_numer.extra_args_name(), " ",
 		#	self.temp_numer.sig().name, "\n")
-		shape["temp_quot"] = build_temp_shape(name=f"temp_quot_{io_str}")
-		shape["temp_rema"] = build_temp_shape(name=f"temp_rema_{io_str}")
+		shape["temp_quot"] = build_temp_shape(
+			name=f"temp_quot_{io_str}",
+			in_wrapper=in_wrapper,
+		)
+		shape["temp_rema"] = build_temp_shape(
+			name=f"temp_rema_{io_str}",
+			in_wrapper=in_wrapper,
+		)
 		#--------
 		#self.denom_mult_lut = Packarr(
 		#	Packarr.Shape(constants.DML_ELEM_WIDTH(),
@@ -158,8 +182,16 @@ class LongUdivIterDataLayt(dict):
 		#	name=f"denom_mult_lut_{io_str}"
 		#)
 		shape["denom_mult_lut"] = FieldInfo(
-			ArrayLayout(unsigned(constants.DML_ELEM_WIDTH()),
-				constants.DML_SIZE()),
+			(
+				ArrayLayout(
+					unsigned(constants.DML_ELEM_WIDTH()),
+					constants.DML_SIZE()
+				) if not in_wrapper
+				else unsigned(
+					constants.DML_ELEM_WIDTH()
+					* constants.DML_SIZE()
+				)
+			),
 			attrs=sig_keep(),
 			name=f"denom_mult_lut_{io_str}"
 		)
@@ -183,17 +215,29 @@ class LongUdivIterDataLayt(dict):
 			#self.
 			#--------
 			shape["formal"]["formal_numer"] = (
-				build_temp_shape(name=f"formal_numer_{io_str}")
+				build_temp_shape(
+					name=f"formal_numer_{io_str}",
+					in_wrapper=in_wrapper,
+				)
 			)
 			shape["formal"]["formal_denom"] = (
-				build_temp_shape(name=f"formal_denom_{io_str}")
+				build_temp_shape(
+					name=f"formal_denom_{io_str}",
+					in_wrapper=in_wrapper,
+				)
 			)
 
 			shape["formal"]["oracle_quot"] = (
-				build_temp_shape(name=f"oracle_quot_{io_str}")
+				build_temp_shape(
+					name=f"oracle_quot_{io_str}",
+					in_wrapper=in_wrapper,
+				)
 			)
 			shape["formal"]["oracle_rema"] = (
-				build_temp_shape(name=f"oracle_rema_{io_str}")
+				build_temp_shape(
+					name=f"oracle_rema_{io_str}",
+					in_wrapper=in_wrapper,
+				)
 			)
 			#--------
 			#self.formal.formal_denom_mult_lut = Signal(
@@ -219,8 +263,16 @@ class LongUdivIterDataLayt(dict):
 			#	name=f"formal_denom_mult_lut_{io_str}"
 			#)
 			shape["formal"]["formal_denom_mult_lut"] = FieldInfo(
-				ArrayLayout(unsigned(constants.DML_ELEM_WIDTH()),
-					constants.DML_SIZE()),
+				(
+					ArrayLayout(
+						unsigned(constants.DML_ELEM_WIDTH()),
+						constants.DML_SIZE()
+					) if not in_wrapper
+					else unsigned(
+						constants.DML_ELEM_WIDTH()
+						* constants.DML_SIZE()
+					)
+				),
 				attrs=sig_keep(),
 				name=f"formal_denom_mult_lut_{io_str}"
 			)
@@ -559,10 +611,12 @@ class LongUdivIterSyncIshape(IntfShape):
 		intf_tag_dct={
 			"next": None,
 			"prev": None,
-		}
+		},
+		in_wrapper: bool=False,
 	):
 		#--------
-		temp_tag_dct = intf_tag_dct.copy()
+		#temp_tag_dct = intf_tag_dct.copy()
+		temp_tag_dct = intf_tag_dct
 		temp_tag_dct["misc"] = None
 		#--------
 		#super().__init__()
@@ -599,7 +653,21 @@ class LongUdivIterSyncIshape(IntfShape):
 		##self.itd_out = self.__data_info.mk_sig(suffix="_out")
 		##if constants.USE_PIPE_SKID_BUF():
 		shape["sb_bus"] = pipeline_mods.PipeSkidBufIshape(
-			data_info=LongUdivIterSync.mk_data_info(constants=constants),
+			#data_info=LongUdivIterSync.mk_data_info(
+			#	constants=constants,
+			#	pdir=PortDir.Inp,
+			#	in_wrapper=in_wrapper,
+			#),
+			inp_data_info=LongUdivIterSync.mk_data_info(
+				constants=constants,
+				pdir=PortDir.Inp,
+				in_wrapper=in_wrapper,
+			),
+			outp_data_info=LongUdivIterSync.mk_data_info(
+				constants=constants,
+				pdir=PortDir.Outp,
+				in_wrapper=in_wrapper,
+			),
 			OPT_INCLUDE_VALID_BUSY=False,
 			OPT_INCLUDE_READY_BUSY=False,
 			#OPT_INCLUDE_BUSY=False,
@@ -643,7 +711,7 @@ class LongUdivIterSyncIshape(IntfShape):
 					)
 				},
 				modport=Modport({
-					"past_valid": PortDir.Noconn
+					"past_valid": PortDir.Outp
 				}),
 			)
 			#--------
@@ -701,29 +769,41 @@ class LongUdivIterSync(Elaboratable):
 		},
 	):
 		self.__constants = constants
+		self.__intf_tag_dct = intf_tag_dct
 
+		self.__chunk_start_val = chunk_start_val
 		self.__bus = LongUdivIterSyncBus(
 			constants=constants,
 			#next_intf_tag=next_intf_tag,
 			#prev_intf_tag=prev_intf_tag,
 			intf_tag_dct=intf_tag_dct,
 		)
-		self.__chunk_start_val = chunk_start_val
 	#--------
 	def bus(self):
 		return self.__bus
 	def constants(self):
 		return self.__constants
 	@staticmethod
-	def mk_data_info(constants: LongDivConstants):
+	def mk_data_info(
+		constants: LongDivConstants,
+		pdir: PortDir,
+		*,
+		in_wrapper: bool=False,
+	):
 		return SigInfo(
 			basenm="itd",
 			shape=LongUdivIterDataLayt(
 				constants=constants,
-				io_str="in_sync",
+				io_str=(
+					"in_sync"
+					if pdir == PortDir.Inp
+					else "out_sync"
+				),
+				in_wrapper=in_wrapper,
 			),
 			ObjKind=Splitrec,
-			use_parent_name=False
+			#use_parent_name=False,
+			use_parent_name=True,
 		)
 	#--------
 	def elaborate(self, platform: str) -> Module:
@@ -735,25 +815,41 @@ class LongUdivIterSync(Elaboratable):
 		constants = self.constants()
 		#--------
 		it = LongUdivIter(constants=constants)
-		m.submodules += it
+		m.submodules.udiv_it = it
 
 		if constants.USE_PIPE_SKID_BUF():
 			skid_buf = pipeline_mods.PipeSkidBuf(
-				data_info=LongUdivIterSync.mk_data_info(
-					constants=constants
+				#data_info=LongUdivIterSync.mk_data_info(
+				#	constants=constants,
+				#	pdir=PortDir.Inp,
+				#),
+				inp_data_info=LongUdivIterSync.mk_data_info(
+					constants=constants,
+					pdir=PortDir.Inp,
 				),
-				FORMAL=constants.FORMAL(),
+				outp_data_info=LongUdivIterSync.mk_data_info(
+					constants=constants,
+					pdir=PortDir.Outp,
+				),
+				#FORMAL=constants.FORMAL(),
 				OPT_INCLUDE_VALID_BUSY=False,
 				OPT_INCLUDE_READY_BUSY=False,
 				#OPT_INCLUDE_BUSY=False,
+				tag_dct=self.__intf_tag_dct,
 			)
-			m.submodules += skid_buf
+			m.submodules.skid_buf = skid_buf
 			sb_bus = skid_buf.bus().bus
 			#loc_itd_out = bus.data_info().mk_sig(
 			#	basenm="loc_itd_out",
 			#	prefix="",
 			#	suffix="",
 			#)
+			#with open(
+			#	"debug-long_div_iter_mods-psb.txt.ignore", "w"
+			#) as f:
+			#	f.writelines([
+			#		psconcat(self.__intf_tag_dct)
+			#	])
 		#--------
 		it_bus = it.bus().bus
 		itd_in = it_bus.itd_in
@@ -787,13 +883,21 @@ class LongUdivIterSync(Elaboratable):
 		#	#--------
 		#--------
 		#--------
+		#m.d.comb += [
+		#	itd_in.eq(itd_in_sync),
+		#	#it_bus.chunk_start.eq(self.__chunk_start_val),
+		#]
+		#m.d.comb += [
+		#	itd_in.eq(itd_in_sync),
+		#	it_bus.chunk_start.eq(self.__chunk_start_val),
+		#]
 		if not constants.USE_PIPE_SKID_BUF():
 			m.d.comb += [
 				itd_in.eq(itd_in_sync),
 				it_bus.chunk_start.eq(self.__chunk_start_val),
 			]
 			m.d.sync += itd_out_sync.eq(itd_out)
-		else: # constants.USE_PIPE_SKID_BUF():
+		else: # if constants.USE_PIPE_SKID_BUF():
 			m.d.comb += [
 				sb_bus.misc.clear.eq(0b0),
 
@@ -808,6 +912,33 @@ class LongUdivIterSync(Elaboratable):
 				## `itd_out_sync` is set to `bus.sb_bus.outp.fwd.data`
 				#bus.sb_bus.outp.fwd.data.eq(itd_out),
 			]
+			#m.d.comb += [
+			#	sb_bus.inp.fwd.flattened()[i].eq(
+			#		bus.sb_bus.inp.fwd.flattened()[i]
+			#	)
+			#	for i in range(len(sb_bus.inp.fwd.flattened()))
+			#]
+			#m.d.comb += [
+			#	sb_bus.inp.bak.flattened()[i].eq(
+			#		bus.sb_bus.inp.bak.flattened()[i]
+			#	)
+			#	for i in range(len(sb_bus.inp.bak.flattened()))
+			#]
+			#m.d.comb += [
+			#	bus.sb_bus.outp.fwd.flattened()[i].eq(
+			#		sb_bus.outp.fwd.flattened()[i]
+			#	)
+			#	for i in range(len(sb_bus.outp.fwd.flattened()))
+			#]
+			#m.d.comb += [
+			#	bus.sb_bus.outp.bak.flattened()[i].eq(
+			#		sb_bus.outp.bak.flattened()[i]
+			#	)
+			#	for i in range(len(sb_bus.outp.bak.flattened()))
+			#]
+
+			temp_lst_shrink = -2
+			other_temp_lst_shrink = -1
 			pipeline_mods.PipeSkidBuf.connect_child(
 				parent=m,
 				parent_sb_bus=bus.sb_bus,
@@ -816,7 +947,76 @@ class LongUdivIterSync(Elaboratable):
 					"from_child": itd_in,
 					"to_out": itd_out,
 				},
+				use_tag=True,
+				reduce_tag=True,
+				#reduce_tag=False,
+				lst_shrink=temp_lst_shrink,
+				other_lst_shrink=other_temp_lst_shrink,
 			)
+
+			##f = open("debug-long_div_iter_mods-inp.txt.ignore", "w")
+			#bus.sb_bus.inp.connect(
+			#	other=sb_bus.inp,
+			#	m=m,
+			#	kind=Splitintf.ConnKind.Parent2Child,
+			#	#f=f,
+			#	#lst_shrink=-2,
+			#	#other_lst_shrink=-1,
+			#	#lst_shrink=-1,
+			#	#other_lst_shrink=0,
+			#	lst_shrink=temp_lst_shrink,
+			#	other_lst_shrink=other_temp_lst_shrink,
+			#	use_tag=True,
+			#	reduce_tag=True,
+			#)
+			##f.close()
+			##for i in range(len(bus.sb_bus.inp.flattened()))
+			##m.d.comb += [
+			##	#Cat(sb_bus.inp.flattened()).eq(
+			##	#	bus.sb_bus.inp.flattened()
+			##	#)
+			##	sb_bus.inp.flattened()[i].eq(
+			##		bus.sb_bus.inp.flattened()[i]
+			##	)
+			##	for i in range(len(bus.sb_bus.inp.flattened()))
+			##]
+			#m.d.comb += [
+			#	bus.sb_bus.outp.fwd.valid.eq(sb_bus.outp.fwd.valid),
+			#	itd_in.eq(sb_bus.outp.fwd.data),
+			#	bus.sb_bus.outp.fwd.data.eq(itd_out),
+			#]
+			##f = open("debug-long_div_iter_mods-outp-bak.txt.ignore", "w")
+			#bus.sb_bus.outp.bak.connect(
+			#	other=sb_bus.outp.bak,
+			#	m=m,
+			#	kind=Splitintf.ConnKind.Parent2Child,
+			#	#f=f,
+			#	#lst_shrink=-2,
+			#	#other_lst_shrink=-1,
+			#	#lst_shrink=-1,
+			#	#other_lst_shrink=0,
+			#	lst_shrink=temp_lst_shrink,
+			#	other_lst_shrink=other_temp_lst_shrink,
+			#	use_tag=True,
+			#	reduce_tag=True,
+			#)
+			##f.close()
+			##f = open("debug-long_div_iter_mods-misc.txt.ignore", "w")
+			#bus.sb_bus.misc.connect(
+			#	other=sb_bus.misc,
+			#	m=m,
+			#	kind=Splitintf.ConnKind.Parent2Child,
+			#	#f=f,
+			#	#lst_shrink=-2,
+			#	#other_lst_shrink=-1,
+			#	#lst_shrink=-1,
+			#	#other_lst_shrink=0,
+			#	lst_shrink=temp_lst_shrink,
+			#	other_lst_shrink=other_temp_lst_shrink,
+			#	use_tag=True,
+			#	reduce_tag=True,
+			#)
+			##f.close()
 		#--------
 		if constants.FORMAL():
 			#--------
@@ -849,138 +1049,90 @@ class LongUdivIterSync(Elaboratable):
 				m.d.sync += [
 					#--------
 					Assert(
-						#(~rst_cnt_done)
-						#| 
 						(itd_in.temp_numer.as_value()
 							== itd_in_sync.temp_numer.as_value())),
 
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_in.temp_quot.as_value()
 							== itd_in_sync.temp_quot.as_value())),
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_in.temp_rema.as_value()
 							== itd_in_sync.temp_rema.as_value())),
 
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_in.tag == itd_in_sync.tag)),
 
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_in.formal.formal_numer.as_value()
 							== itd_in_sync.formal.formal_numer
 								.as_value())),
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_in.formal.formal_denom.as_value()
 							== itd_in_sync.formal.formal_denom
 								.as_value())),
 
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						skip_cond
 						| (itd_in.formal.oracle_quot.as_value()
 							== itd_in_sync.formal.oracle_quot.as_value())),
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						skip_cond
 						| (itd_in.formal.oracle_rema.as_value()
 							== itd_in_sync.formal.oracle_rema.as_value())),
 					#--------
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_out_sync.temp_numer
 							== Past(itd_in.temp_numer))),
 					#Assert(
-					#	#(~rst_cnt_done)
-					#	#|
 					#	itd_out_sync.formal == Past(itd_in.formal)),
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_out_sync.formal.formal_numer
 							== Past(itd_in.formal.formal_numer))),
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_out_sync.formal.formal_denom
 							== Past(itd_in.formal.formal_denom))),
 
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_out_sync.formal.oracle_quot
 							== Past(itd_in.formal.oracle_quot))),
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_out_sync.formal.oracle_rema
 							== Past(itd_in.formal.oracle_rema))),
 
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_out_sync.formal.formal_denom_mult_lut
 							== Past(itd_in.formal.formal_denom_mult_lut))),
 					#--------
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_out_sync.temp_numer
 							== Past(itd_in_sync.temp_numer))),
 
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_out_sync.temp_quot
 							== Past(itd_out.temp_quot))),
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_out_sync.temp_rema
 							== Past(itd_out.temp_rema))),
 					#--------
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_out_sync.denom_mult_lut
 							== Past(itd_in_sync.denom_mult_lut))),
 					#--------
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_out_sync.formal.formal_numer
 							== Past(itd_in_sync.formal.formal_numer))),
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_out_sync.formal.formal_denom
 							== Past(itd_in_sync.formal.formal_denom))),
 
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_out_sync.formal.oracle_quot
 							== Past(itd_in_sync.formal.oracle_quot))),
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_out_sync.formal.oracle_rema
 							== Past(itd_in_sync.formal.oracle_rema))),
 					#--------
 					Assert(
-						#(~rst_cnt_done)
-						#|
 						(itd_out_sync.formal.formal_denom_mult_lut
 							== Past(itd_in_sync.formal
 								.formal_denom_mult_lut))),
