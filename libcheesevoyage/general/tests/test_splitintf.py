@@ -10,6 +10,6 @@ if __name__ == "__main__":
 	#formal
 	to_verilog(
 		dut_mod=BitSerialAdder,
-		WIDTH=2,
+		WIDTH=4,
 	)
 #--------

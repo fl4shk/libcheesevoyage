@@ -122,7 +122,10 @@ class LongDivBus:
 			signed_reset=signed_reset,
 			is_child=is_child,
 		)
-		self.__bus = Splitintf(ishape)
+		self.__bus = Splitintf(
+			ishape,
+			name="bus", use_parent_name=False,
+		)
 		#super().__init__(ishape)
 	#--------
 	@property
@@ -614,8 +617,12 @@ class LongDivPipelined(Elaboratable):
 			DENOM_WIDTH=DENOM_WIDTH,
 			CHUNK_WIDTH=CHUNK_WIDTH,
 			# This `TAG_WIDTH` is just a heuristic
-			TAG_WIDTH=math.ceil(
-				math.log2(MAIN_WIDTH // CHUNK_WIDTH) + 2
+			#TAG_WIDTH=math.ceil(
+			#	math.log2(MAIN_WIDTH // CHUNK_WIDTH) + 2
+			#	#math.log2(MAIN_WIDTH // CHUNK_WIDTH)
+			#),
+			TAG_WIDTH=(
+				CHUNK_WIDTH * ((MAIN_WIDTH // CHUNK_WIDTH) + 1)
 			),
 			PIPELINED=True,
 			USE_PIPE_SKID_BUF=USE_PIPE_SKID_BUF,
@@ -635,6 +642,7 @@ class LongDivPipelined(Elaboratable):
 		#--------
 		constants = self.__constants
 		#USE_PIPE_SKID_BUF = self.__USE_PIPE_SKID_BUF
+		USE_PIPE_SKID_BUF = constants.USE_PIPE_SKID_BUF()
 		bus = self.bus().bus
 		inp = bus.inp
 		outp = bus.outp
@@ -653,39 +661,56 @@ class LongDivPipelined(Elaboratable):
 				#next_intf_tag=psconcat(i),
 				#prev_intf_tag=psconcat(i + 1),
 				intf_tag_dct={
-					"next": psconcat(i),
-					"prev": psconcat(i + 1),
+					"next": psconcat(i + 1),
+					"prev": psconcat(i),
+					#"prev": psconcat(i - 1),
 				},
 			)
 			for i in range(NUM_PSTAGES)
 		]
-		m.submodules += loc.m
-		loc.temp_numer = Signal(constants.MAIN_WIDTH())
-		loc.temp_denom = Signal(constants.DENOM_WIDTH())
+		#with open("tag_dct-LongDivPipelined.txt.ignore", "w") as f:
+		#	for i in range(len(loc.m)):
+		#		intf_tag_dct = loc.m[i].intf_tag_dct()
+		#		f.writelines([
+		#			psconcat(i, " ", intf_tag_dct, "\n"),
+		#		])
+		#m.submodules += loc.m
+		for i in range(len(loc.m)):
+			setattr(m.submodules, psconcat("udiv_its_", i), loc.m[i])
+		temp_shape = {}
+		temp_shape["temp_numer"] = constants.MAIN_WIDTH()
+		temp_shape["temp_denom"] = constants.DENOM_WIDTH()
 
-		loc.numer_was_lez = Signal(NUM_PS_ELEMS)
-		loc.denom_was_lez = Signal(NUM_PS_ELEMS)
+		temp_shape["numer_was_lez"] = NUM_PS_ELEMS
+		temp_shape["denom_was_lez"] = NUM_PS_ELEMS
 
-		loc.quot_will_be_lez = Signal(NUM_PS_ELEMS)
-		loc.rema_will_be_lez = Signal(NUM_PS_ELEMS)
+		temp_shape["quot_will_be_lez"] = NUM_PS_ELEMS
+		temp_shape["rema_will_be_lez"] = NUM_PS_ELEMS
 
-		loc.bus_szd_temp_q = Signal(len(outp.quot))
-		loc.bus_szd_temp_r = Signal(len(outp.rema))
-		loc.lez_bus_szd_temp_q = Signal(len(outp.quot))
-		loc.lez_bus_szd_temp_r = Signal(len(outp.rema))
+		temp_shape["bus_szd_temp_q"] = len(outp.quot)
+		temp_shape["bus_szd_temp_r"] = len(outp.rema)
+		temp_shape["lez_bus_szd_temp_q"] = len(outp.quot)
+		temp_shape["lez_bus_szd_temp_r"] = len(outp.rema)
 
-		loc.temp_bus_quot = Signal(len(outp.quot))
-		loc.temp_bus_rema = Signal(len(outp.rema))
+		temp_shape["temp_bus_quot"] = len(outp.quot)
+		temp_shape["temp_bus_rema"] = len(outp.rema)
+		loc.t = Splitrec(temp_shape)
+		loc.t_prev = Splitrec(temp_shape)
 		#--------
 		if constants.FORMAL():
 			#--------
 			loc.formal = Blank()
 			#--------
-			loc.formal.past_valid  = Signal(
+			loc.formal.past_valid = Signal(
 				attrs=sig_keep(),
 				name="formal_past_valid"
 			)
 			past_valid = loc.formal.past_valid
+			loc.formal.past_valid_2 = Signal(
+				attrs=sig_keep(),
+				name="formal_past_valid_2"
+			)
+			past_valid_2 = loc.formal.past_valid_2
 			#--------
 			#loc.formal.rst_cnt_lst = [
 			#	Signal(
@@ -718,38 +743,89 @@ class LongDivPipelined(Elaboratable):
 		#--------
 		its_bus = []
 
+		ifwd = []
+		ibak = []
+		ofwd = []
+		obak = []
+		ifwd_move = []
+		ofwd_move = []
+		ifwd_mvp = []
+		ofwd_mvp = []
 		itd_in = []
 		itd_out = []
 		#its_formal = []
 		for i in range(len(loc.m)):
 			its_bus.append(loc.m[i].bus().bus)
-			itd_in.append(its_bus[i].sb_bus.inp.fwd.data)
-			itd_out.append(its_bus[i].sb_bus.outp.fwd.data)
 			#its_formal.append(its_bus[i].formal)
+			ifwd.append(its_bus[i].sb_bus.inp.fwd)
+			ibak.append(its_bus[i].sb_bus.inp.bak)
+			ofwd.append(its_bus[i].sb_bus.outp.fwd)
+			obak.append(its_bus[i].sb_bus.outp.bak)
+			ifwd_move.append(
+				#(1 if not USE_PIPE_SKID_BUF else 0)
+				not USE_PIPE_SKID_BUF
+				or (ifwd[i].valid & obak[i].ready)
+			)
+			ofwd_move.append(
+				not USE_PIPE_SKID_BUF
+				or (ofwd[i].valid & ibak[i].ready)
+			)
+			ifwd_mvp.append(
+				#(1 if not USE_PIPE_SKID_BUF else 0)
+				not USE_PIPE_SKID_BUF
+				or (Past(ifwd[i].valid) & Past(obak[i].ready))
+			)
+			ofwd_mvp.append(
+				not USE_PIPE_SKID_BUF
+				or (Past(ofwd[i].valid) & Past(ibak[i].ready))
+			)
+			itd_in.append(ifwd[i].data)
+			itd_out.append(ofwd[i].data)
 		#--------
 		# Connect the pipeline stages together
-		if not constants.USE_PIPE_SKID_BUF():
+		if not USE_PIPE_SKID_BUF:
 			m.d.comb += [
 				itd_in[i + 1].eq(itd_out[i])
 					for i in range(len(loc.m) - 1)
 			]
-		else: # if constants.USE_PIPE_SKID_BUF():
+		else: # if USE_PIPE_SKID_BUF:
 			#for i in range(len(loc.m) - 1):
-			#	m.d.comb += [
+			#	#m.d.comb += [
+			#	#	# Forwards connections
+			#	#	its_bus[i + 1].sb_bus.inp.fwd.eq(
+			#	#		its_bus[i].sb_bus.outp.fwd
+			#	#	),
+			#	#	# Backwards connections
+			#	#	its_bus[i].sb_bus.inp.bak.eq(
+			#	#		its_bus[i + 1].sb_bus.outp.bak
+			#	#	),
+			#	#]
+			#	sb_bus = its_bus[i].sb_bus
+			#	sb_bus_next = its_bus[i + 1].sb_bus
+			#	for j in range(len(
+			#		sb_bus.outp.fwd.flattened()
+			#	)):
 			#		# Forwards connections
-			#		its_bus[i + 1].sb_bus.inp.fwd.eq(
-			#			its_bus[i].sb_bus.outp.fwd
-			#		),
+			#		m.d.comb += [
+			#			sb_bus_next.inp.fwd.flattened()[j].eq(
+			#				sb_bus.outp.fwd.flattened()[j]
+			#			)
+			#		]
+			#	for j in range(len(
+			#		sb_bus.inp.bak.flattened()
+			#	)):
 			#		# Backwards connections
-			#		its_bus[i].sb_bus.inp.bak.eq(
-			#			its_bus[i + 1].sb_bus.outp.bak
-			#		),
-			#	]
+			#		m.d.comb += [
+			#			sb_bus.inp.bak.flattened()[j].eq(
+			#				sb_bus_next.outp.bak.flattened()[j]
+			#			)
+			#		]
 			#m.d.comb += [
 			#	its_bus[0].sb_bus.inp.fwd.valid.eq(0b1),
 			#	its_bus[-1].sb_bus.inp.bak.ready.eq(0b1),
 			#]
-			PipeSkidBuf.connect(
+			#--------
+			PipeSkidBuf.connect_parallel(
 				parent=m,
 				sb_bus_lst=[
 					its_bus[i].sb_bus
@@ -757,64 +833,190 @@ class LongDivPipelined(Elaboratable):
 				],
 				tie_first_inp_fwd_valid=True,
 				tie_last_inp_bak_ready=True,
+				##lst_shrink=-2,
+				#lst_shrink=-1,
+				#lst_shrink=-2,
+				lst_shrink=-3,
+				##other_lst_shrink=-1,
+				##other_lst_shrink=0,
+				#other_lst_shrink=-1,
+				#lst_shrink=-3,
+				#other_lst_shrink=-2,
+				#lst_shrink=0,
 			)
-		#--------
-		m.d.sync += [
 			#--------
-			loc.temp_numer.eq(Mux(inp.signed & inp.numer[-1],
-				(~inp.numer) + 1, inp.numer)),
-			loc.temp_denom.eq(Mux(inp.signed & inp.denom[-1],
-				(~inp.denom) + 1, inp.denom)),
-			#--------
-			loc.numer_was_lez[0].eq(inp.signed & inp.numer[-1]),
-			loc.denom_was_lez[0].eq(inp.signed & inp.denom[-1]),
+			#for i in range(len(loc.m) - 1):
+			#	sb_bus = its_bus[i].sb_bus
+			#	sb_bus_next = its_bus[i + 1].sb_bus
+			#	f = open(
+			#		psconcat("debug-LongDivPipelined-", i, ".txt.ignore"),
+			#		"w"
+			#	)
+			#	#its_bus[i].connect(
+			#	#	other=its_bus[i + 1],
+			#	#	m=m,
+			#	#	kind=Splitintf.ConnKind.Parallel,
+			#	#	f=f,
+			#	#	use_tag=True,
+			#	#	reduce_tag=False,
+			#	#	lst_shrink=-1,
+			#	#)
+			#	sb_bus_next.inp.fwd.connect(
+			#		other=sb_bus.outp.fwd,
+			#		m=m,
+			#		kind=Splitintf.ConnKind.Parallel,
+			#		f=f,
+			#		use_tag=True,
+			#		reduce_tag=False,
+			#		lst_shrink=-3,
+			#	)
+			#	sb_bus.inp.bak.connect(
+			#		other=sb_bus_next.outp.bak,
+			#		m=m,
+			#		kind=Splitintf.ConnKind.Parallel,
+			#		f=f,
+			#		use_tag=True,
+			#		reduce_tag=False,
+			#		lst_shrink=-3,
+			#	)
+			#	f.close()
 
-			loc.quot_will_be_lez[0].eq(loc.numer_was_lez[0]
-				!= loc.denom_was_lez[0]),
-			# Implement C's rules for modulo's sign
-			loc.rema_will_be_lez[0].eq(loc.numer_was_lez[0]),
-			#--------
-		]
+			#	###lst_shrink = -3
+			#	##lst_shrink = -1
+			#	##other_lst_shrink = None
+			#	#lst_shrink = -3
+			#	#other_lst_shrink = -3
+			#	if i == 0:
+			#		#lst_shrink = -1
+			#		#other_lst_shrink = -1
+			#		m.d.comb += sb_bus.inp.fwd.valid.eq(0b1)
+			#	elif i + 1 == len(loc.m) - 1:
+			#		#lst_shrink = -1
+			#		#other_lst_shrink = None
+			#		m.d.comb += sb_bus_next.inp.bak.ready.eq(0b1)
+			#	#else:
+			#	#	lst_shrink = -1
+			#	#	other_lst_shrink = None
+
+			#	#f = open(
+			#	#	psconcat("debug-LongDivPipelined-", i, ".txt.ignore"),
+			#	#	"w"
+			#	#)
+			#	#sb_bus.connect(
+			#	#	other=sb_bus_next,
+			#	#	m=m,
+			#	#	kind=Splitintf.ConnKind.Parallel,
+			#	#	f=f,
+			#	#	use_tag=False,
+			#	#	lst_shrink=lst_shrink,
+			#	#	other_lst_shrink=other_lst_shrink,
+			#	#)
+			#	#f.close()
+		#--------
+		with m.If(
+			#(not USE_PIPE_SKID_BUF)
+			#|
+			ifwd_move[0]
+		):
+			m.d.sync += [
+				#--------
+				loc.t.temp_numer.eq(Mux(inp.signed & inp.numer[-1],
+					(~inp.numer) + 1, inp.numer)),
+				loc.t.temp_denom.eq(Mux(inp.signed & inp.denom[-1],
+					(~inp.denom) + 1, inp.denom)),
+				#--------
+				loc.t.numer_was_lez[0].eq(inp.signed & inp.numer[-1]),
+				loc.t.denom_was_lez[0].eq(inp.signed & inp.denom[-1]),
+
+				loc.t.quot_will_be_lez[0].eq(loc.t.numer_was_lez[0]
+					!= loc.t.denom_was_lez[0]),
+				# Implement C's rules for modulo's sign
+				loc.t.rema_will_be_lez[0].eq(loc.t.numer_was_lez[0]),
+				#--------
+			]
+		m.d.sync += loc.t_prev.eq(loc.t)
 		m.d.comb += [
 			#--------
-			loc.bus_szd_temp_q.eq(itd_out[-1].temp_quot.as_value()
-				[:len(outp.quot)]),
-			loc.bus_szd_temp_r.eq(itd_out[-1].temp_rema.as_value()
-				[:len(outp.rema)]),
+			loc.t.bus_szd_temp_q.eq(Mux(
+				ofwd_move[-1],
+				itd_out[-1].temp_quot.as_value()[:len(outp.quot)],
+				loc.t_prev.bus_szd_temp_q,
+			)),
+			loc.t.bus_szd_temp_r.eq(Mux(
+				ofwd_move[-1],
+				itd_out[-1].temp_rema.as_value()[:len(outp.rema)],
+				loc.t_prev.bus_szd_temp_r,
+			)),
 
-			loc.lez_bus_szd_temp_q.eq((~loc.bus_szd_temp_q) + 1),
-			loc.lez_bus_szd_temp_r.eq((~loc.bus_szd_temp_r) + 1),
+			loc.t.lez_bus_szd_temp_q.eq(Mux(
+				ofwd_move[-1],
+				(~loc.t.bus_szd_temp_q) + 1,
+				loc.t_prev.lez_bus_szd_temp_q,
+			)),
+			loc.t.lez_bus_szd_temp_r.eq(Mux(
+				ofwd_move[-1],
+				(~loc.t.bus_szd_temp_r) + 1,
+				loc.t_prev.lez_bus_szd_temp_r,
+			)),
 
-			loc.temp_bus_quot.eq(Mux(loc.quot_will_be_lez,
-				loc.lez_bus_szd_temp_q, loc.bus_szd_temp_q)),
-			loc.temp_bus_rema.eq(Mux(loc.rema_will_be_lez,
-				loc.lez_bus_szd_temp_r, loc.bus_szd_temp_r)),
+			loc.t.temp_bus_quot.eq(Mux(
+				ofwd_move[-1],
+				Mux(
+					loc.t.quot_will_be_lez,
+					loc.t.lez_bus_szd_temp_q, loc.t.bus_szd_temp_q
+				),
+				loc.t_prev.temp_bus_quot,
+			)),
+			loc.t.temp_bus_rema.eq(Mux(
+				ofwd_move[-1],
+				Mux(
+					loc.t.rema_will_be_lez,
+					loc.t.lez_bus_szd_temp_r, loc.t.bus_szd_temp_r
+				),
+				loc.t_prev.temp_bus_rema,
+			)),
 			#--------
 		]
 		#--------
 		for i in range(len(loc.m)):
-			m.d.sync += [
-				loc.numer_was_lez[i + 1].eq(loc.numer_was_lez[i]),
-				loc.denom_was_lez[i + 1].eq(loc.denom_was_lez[i]),
-				loc.quot_will_be_lez[i + 1].eq(loc.quot_will_be_lez[i]),
-				loc.rema_will_be_lez[i + 1].eq(loc.rema_will_be_lez[i]),
-			]
+			#with m.If(
+			#	not USE_PIPE_SKID_BUF
+			#	| i == 0
+			#):
+			#with m.If(
+			#	not USE_PIPE_SKID_BUF
+			#)
+			#with m.If(ofwd_move[i + 1]):
+			#with m.If(ofwd_move[i] & ifwd_move[i + 1]):
+			#with m.If(ifwd_move[i + 1]):
+			with m.If(ofwd_move[i]):
+				m.d.sync += [
+					loc.t.numer_was_lez[i + 1].eq(loc.t.numer_was_lez[i]),
+					loc.t.denom_was_lez[i + 1].eq(loc.t.denom_was_lez[i]),
+					loc.t.quot_will_be_lez[i + 1].eq(
+						loc.t.quot_will_be_lez[i]
+					),
+					loc.t.rema_will_be_lez[i + 1].eq(
+						loc.t.rema_will_be_lez[i]
+					),
+				]
 		#--------
-		m.d.sync += [
-			itd_in[0].temp_numer.eq(loc.temp_numer),
+		with m.If(ifwd_move[0]):
+			m.d.sync += [
+				itd_in[0].temp_numer.eq(loc.t.temp_numer),
 
-			itd_in[0].temp_quot.eq(0x0),
-			itd_in[0].temp_rema.eq(0x0),
+				itd_in[0].temp_quot.eq(0x0),
+				itd_in[0].temp_rema.eq(0x0),
 
-			itd_in[0].tag.eq(inp.tag),
-		]
-		m.d.sync += [
-			itd_in[0].denom_mult_lut[i].eq(loc.temp_denom * i)
-				for i in range(constants.DML_SIZE())
-		]
+				itd_in[0].tag.eq(inp.tag),
+			]
+			m.d.sync += [
+				itd_in[0].denom_mult_lut[i].eq(loc.t.temp_denom * i)
+					for i in range(constants.DML_SIZE())
+			]
 		m.d.comb += [
-			outp.quot.eq(loc.temp_bus_quot),
-			outp.rema.eq(loc.temp_bus_rema),
+			outp.quot.eq(loc.t.temp_bus_quot),
+			outp.rema.eq(loc.t.temp_bus_rema),
 
 			outp.tag.eq(itd_out[-1].tag)
 		]
@@ -826,24 +1028,29 @@ class LongDivPipelined(Elaboratable):
 			m.d.sync += [
 				#--------
 				past_valid.eq(0b1),
+				past_valid_2.eq(past_valid),
 				#--------
-				itd_in[0].formal.formal_numer.eq(loc.temp_numer),
-				itd_in[0].formal.formal_denom.eq(loc.temp_denom),
+			]
+			with m.If(ifwd_move[0]):
+				m.d.sync += [
+					#--------
+					itd_in[0].formal.formal_numer.eq(loc.t.temp_numer),
+					itd_in[0].formal.formal_denom.eq(loc.t.temp_denom),
 
-				itd_in[0].formal.oracle_quot.eq(loc.temp_numer
-					// loc.temp_denom),
-				itd_in[0].formal.oracle_rema.eq(loc.temp_numer
-					% loc.temp_denom),
-				#--------
-			]
-			m.d.sync += [
-				itd_in[0].shape().formal_dml_elem(
-					itd_in[0], i, constants.FORMAL(),
-				).eq(
-					loc.temp_denom * i)
-					for i in range(constants.DML_SIZE()
-				)
-			]
+					itd_in[0].formal.oracle_quot.eq(loc.t.temp_numer
+						// loc.t.temp_denom),
+					itd_in[0].formal.oracle_rema.eq(loc.t.temp_numer
+						% loc.t.temp_denom),
+					#--------
+				]
+				m.d.sync += [
+					itd_in[0].shape().formal_dml_elem(
+						itd_in[0], i, constants.FORMAL(),
+					).eq(
+						loc.t.temp_denom * i)
+						for i in range(constants.DML_SIZE()
+					)
+				]
 			#m.d.comb += [
 			#	rst_cnt_done[i].eq(rst_cnt_lst[i] < 0)
 			#	for i in range(len(loc.m))
@@ -866,149 +1073,135 @@ class LongDivPipelined(Elaboratable):
 				#)
 			):
 				#--------
-				m.d.sync += [
-					#--------
-					Assert(loc.temp_numer
-						== Mux(Past(inp.signed) & Past(inp.numer)[-1],
-							(~Past(inp.numer)) + 1, Past(inp.numer))),
-					Assert(loc.temp_denom
-						== Mux(Past(inp.signed) & Past(inp.denom)[-1],
-							(~Past(inp.denom)) + 1, Past(inp.denom))),
-					#--------
-					Assert(loc.numer_was_lez[0]
-						== (Past(inp.signed) & Past(inp.numer)[-1])),
-					Assert(loc.denom_was_lez[0]
-						== (Past(inp.signed) & Past(inp.denom)[-1])),
+				#with m.If(ifwd_move[0]):
+				with m.If(ifwd_mvp[0]):
+					m.d.sync += [
+						#--------
+						Assert(loc.t.temp_numer
+							== Mux(Past(inp.signed) & Past(inp.numer)[-1],
+								(~Past(inp.numer)) + 1, Past(inp.numer))),
+						Assert(loc.t.temp_denom
+							== Mux(Past(inp.signed) & Past(inp.denom)[-1],
+								(~Past(inp.denom)) + 1, Past(inp.denom))),
+						#--------
+						Assert(loc.t.numer_was_lez[0]
+							== (Past(inp.signed) & Past(inp.numer)[-1])),
+						Assert(loc.t.denom_was_lez[0]
+							== (Past(inp.signed) & Past(inp.denom)[-1])),
 
-					Assert(loc.quot_will_be_lez[0]
-						== (Past(loc.numer_was_lez)[0]
-							!= Past(loc.denom_was_lez)[0])),
-					# Implement C's rules for modulo's sign
-					Assert(loc.rema_will_be_lez[0]
-						== Past(loc.numer_was_lez)[0]),
-					#--------
-				]
+						Assert(loc.t.quot_will_be_lez[0]
+							== (Past(loc.t.numer_was_lez)[0]
+								!= Past(loc.t.denom_was_lez)[0])),
+						# Implement C's rules for modulo's sign
+						Assert(loc.t.rema_will_be_lez[0]
+							== Past(loc.t.numer_was_lez)[0]),
+						#--------
+					]
 				#--------
 				for i in range(len(loc.m)):
-					m.d.sync += [
-						#--------
-						Assert(
-							loc.numer_was_lez[i + 1]
-							== Past(loc.numer_was_lez)[i]
-						),
-						Assert(
-							loc.denom_was_lez[i + 1]
-							== Past(loc.denom_was_lez)[i]
-						),
-						Assert(
-							loc.quot_will_be_lez[i + 1]
-							== Past(loc.quot_will_be_lez)[i]
-						),
-						Assert(
-							loc.rema_will_be_lez[i + 1]
-							== Past(loc.rema_will_be_lez)[i]
-						),
-						#--------
-					]
-				for i in range(len(loc.m) - 1):
-					itd_in_formal_flat = (
-						itd_in[i].formal.flattened()
-					)
-					itd_in_next_formal_flat = (
-						itd_in[i + 1].formal.flattened()
-					)
-					m.d.sync += [
-						Assert(
-							itd_in_next_formal_flat[i]
-							== Past(itd_in_formal_flat[i])
-						)
-						for i in range(len(itd_in_formal_flat))
-					]
-					m.d.sync += [
-						#Assert(
-						#	itd_in[i + 1].formal.as_value()
-						#		== Past(itd_in[i].formal.as_value())
-						#),
-						Assert(
-							itd_in[i + 1].tag
-								== Past(itd_in[i].tag)
-						),
-					]
+					#with m.If(ofwd_move[i + 1]):
+					#with m.If(ifwd_move[i + 1]):
+					with m.If(ofwd_move[i]):
+					#with m.If(ifwd_move[i]):
+						m.d.sync += [
+							#--------
+							Assert(
+								loc.t.numer_was_lez[i + 1]
+								== Past(loc.t.numer_was_lez)[i]
+							),
+							Assert(
+								loc.t.denom_was_lez[i + 1]
+								== Past(loc.t.denom_was_lez)[i]
+							),
+							Assert(
+								loc.t.quot_will_be_lez[i + 1]
+								== Past(loc.t.quot_will_be_lez)[i]
+							),
+							Assert(
+								loc.t.rema_will_be_lez[i + 1]
+								== Past(loc.t.rema_will_be_lez)[i]
+							),
+							#--------
+						]
+				#with m.If(past_valid_2):
+				#	for i in range(len(loc.m) - 1):
+				#		itd_in_formal_flat = (
+				#			itd_in[i].formal.flattened()
+				#		)
+				#		itd_in_next_formal_flat = (
+				#			itd_in[i + 1].formal.flattened()
+				#		)
+				#		m.d.sync += [
+				#			Assert(
+				#				itd_in_next_formal_flat[i]
+				#				== Past(itd_in_formal_flat[i])
+				#			)
+				#			for i in range(len(itd_in_formal_flat))
+				#		]
+				#		m.d.sync += [
+				#			#Assert(
+				#			#	itd_in[i + 1].formal.as_value()
+				#			#		== Past(itd_in[i].formal.as_value())
+				#			#),
+				#			Assert(
+				#				itd_in[i + 1].tag
+				#					== Past(itd_in[i].tag)
+				#			),
+				#		]
 				#--------
-				m.d.sync += [
-					#--------
-					Assert(
-						#(~rst_cnt_done[0])
-						#|
-						(itd_in[0].temp_numer == Past(loc.temp_numer))),
-					Assert(
-						#(~rst_cnt_done[0])
-						#|
-						(itd_in[0].temp_quot.as_value() == 0x0)),
-					Assert(
-						#(~rst_cnt_done[0])
-						#|
-						(itd_in[0].temp_rema.as_value() == 0x0)),
-					#--------
-					Assert(
-						#(~rst_cnt_done[0])
-						#|
-						(
+				with m.If(ifwd_move[0]):
+					m.d.sync += [
+						#--------
+						Assert(
+							itd_in[0].temp_numer == Past(loc.t.temp_numer)
+						),
+						Assert(
+							itd_in[0].temp_quot.as_value() == 0x0
+						),
+						Assert(
+							itd_in[0].temp_rema.as_value() == 0x0
+						),
+						#--------
+						Assert(
 							itd_in[0].formal.formal_numer
-								== Past(loc.temp_numer)
-						)
-					),
-					Assert(
-						#(~rst_cnt_done[0])
-						#|
-						(
+								== Past(loc.t.temp_numer)
+						),
+						Assert(
 							itd_in[0].formal.formal_denom
-							== Past(loc.temp_denom)
-						)
-					),
+								== Past(loc.t.temp_denom)
+						),
 
-					Assert(
-						#(~rst_cnt_done[0])
-						#|
-						(
+						Assert(
 							itd_in[0].formal.oracle_quot.as_value()
 							== (
-								Past(loc.temp_numer)
-								// Past(loc.temp_denom)
+								Past(loc.t.temp_numer)
+								// Past(loc.t.temp_denom)
 							)
-						)
-					),
-					Assert(
-						#(~rst_cnt_done[0])
-						#|
-						(
+						),
+						Assert(
 							itd_in[0].formal.oracle_rema.as_value()
 							== (
-								Past(loc.temp_numer) % Past(loc.temp_denom)
+								Past(loc.t.temp_numer)
+								% Past(loc.t.temp_denom)
 							)
-						)
-					),
-					#--------
-					Assert(
-						#(~rst_cnt_done[-1])
-						#|
-						(
+						),
+					]
+				with m.If(ofwd_move[-1]):
+					m.d.sync += [
+						#--------
+						Assert(
 							skip_cond
 							| (
 								itd_out[-1].temp_quot
 									.as_value()[:len(outp.quot)]
 								== itd_out[-1].formal.oracle_quot
 									.as_value()[:len(outp.quot)]
-								)
-						)
-					),
-					#Assert((skip_cond)
-					#	| (itd_out[-1].temp_rema.as_value()
-					#		== itd_out[-1].formal.oracle_rema.as_value())),
-					Assert(
-						#(~rst_cnt_done[-1])
-						#|
-						(
+							)
+						),
+						#Assert((skip_cond)
+						#	| (itd_out[-1].temp_rema.as_value()
+						#		== itd_out[-1].formal.oracle_rema.as_value())),
+						Assert(
 							skip_cond
 							| (
 								itd_out[-1].temp_rema
@@ -1016,10 +1209,9 @@ class LongDivPipelined(Elaboratable):
 								== itd_out[-1].formal.oracle_rema
 									.as_value()[:len(outp.rema)]
 							)
-						)
-					),
-					#--------
-				]
+						),
+						#--------
+					]
 				#--------
 		#--------
 		return m

@@ -2042,6 +2042,534 @@ class Splitintf:
 
 		#Ident = pyenum.auto()
 
+	#def connect(
+	#	self, other,
+	#	m: Module,
+	#	kind, #: Splitintf.ConnKind,
+	#	*,
+	#	f=None,
+	#	lst_shrink: int=-1,
+	#	other_lst_shrink=None,
+	#	self_pdir=None, # `None`, `PortDir.Inp`, or `PortDir.Outp`
+	#	use_tag: bool=False,
+	#	#reduce_tag: bool=False,
+	#	reduce_tag: bool=True,
+	#):
+	#	if not isinstance(kind, Splitintf.ConnKind):
+	#		raise TypeError(psconcat(
+	#			"Invalid type for `kind` {!r}".format(kind)
+	#		))
+	#def connect(
+	#	#self, mp_name_dct: dict, parent_m: Module,
+	#	#other, other_mp_name_dct: dict, child_m=None,
+	#	self, other,
+	#	m: Module,
+	#	kind, #: Splitintf.ConnKind,
+	#	*,
+	#	f=None,
+	#	#lst_shrink: int=-1,
+	#	#other_lst_shrink=None,
+	#	self_pdir=None, # `None`, `PortDir.Inp`, or `PortDir.Outp`
+	#	use_tag: bool=False,
+	#	#reduce_tag: bool=False,
+	#	reduce_tag: bool=True,
+	#):
+	#	if not isinstance(kind, Splitintf.ConnKind):
+	#		raise TypeError(psconcat(
+	#			"Invalid type for `kind` {!r}".format(kind)
+	#		))
+	#@staticmethod
+	#def __connect_one(
+	#	self, other,
+	#	m: Module,
+	#	kind, #: Splitintf.ConnKind,
+	#	*,
+	#	f=None,
+	#	#lst_shrink: int=-1,
+	#	#other_lst_shrink=None,
+	#	self_pdir=None, # `None`, `PortDir.Inp`, or `PortDir.Outp`
+	#	use_tag: bool=False,
+	#	#reduce_tag: bool=False,
+	#	reduce_tag: bool=True,
+	#):
+
+	#def connect(
+	#	#self, mp_name_dct: dict, parent_m: Module,
+	#	#other, other_mp_name_dct: dict, child_m=None,
+	#	self, other,
+	#	#dct: dict,
+	#	#other_dct: dict,
+	#	m: Module,
+	#	kind, #: Splitintf.ConnKind,
+	#	*,
+	#	f=None,
+	#	#lst_shrink: int=-1,
+	#	#lst_shrink: int=-1,
+	#	#other_lst_shrink=None,
+	#	self_pdir=None, # `None`, `PortDir.Inp`, or `PortDir.Outp`
+	#	use_tag: bool=False,
+	#	##reduce_tag: bool=False,
+	#	#reduce_tag: bool=True,
+	#):
+	#	if not isinstance(kind, Splitintf.ConnKind):
+	#		raise TypeError(psconcat(
+	#			"Invalid type for `kind` {!r}".format(kind)
+	#		))
+	#	# This matches by shared object names
+	#	lst = self.flattened(
+	#		#f=f,
+	#		w_pdir=True,
+	#		#srec_sarr_no_flat=True,
+	#	)
+	#	other_lst = other.flattened(
+	#		#f=f,
+	#		w_pdir=True,
+	#		#srec_sarr_no_flat=True,
+	#	)
+	#	#if other_lst_shrink is not None:
+	#	#	temp_other_lst_shrink = other_lst_shrink
+	#	#else:
+	#	#	temp_other_lst_shrink = lst_shrink
+	#	if f is not None:
+	#		f.writelines([
+	#			"lst\n"
+	#		])
+	#		for elem in lst:
+	#			f.writelines([
+	#				do_psconcat_flattened(elem, spaces=1)
+	#			])
+	#		f.writelines([
+	#			"other_lst\n"
+	#		])
+	#		for other_elem in other_lst:
+	#			f.writelines([
+	#				do_psconcat_flattened(other_elem, spaces=1)
+	#			])
+	#	#def mk_some_dct(
+	#	#	some_lst: list,
+	#	#	#temp_some_lst_shrink: int,
+	#	#):
+	#	#	some_dct = {}
+	#	#	for some_elem in some_lst:
+	#	#		some_temp = {
+	#	#			"elem": some_elem,
+	#	#			#"conn_name_lst": [],
+	#	#			"tag_lst": [],
+	#	#		}
+	#	#		#for some_inner_elem in (
+	#	#		#	#some_elem.conn_lst()[:temp_some_lst_shrink]
+	#	#		#	#some_elem.conn_lst()[:-1]
+	#	#		#	some_elem.conn_lst()
+	#	#		#):
+
+	#	#		#for i in range(len(some_elem.conn_lst())):
+	#	#		#	some_inner_elem = some_elem.conn_lst()[i]
+	#	#		#	some_temp["conn_name_lst"].append(
+	#	#		#		some_inner_elem.extra_args_conn_name()
+	#	#		#	)
+
+	#	#		#for some_inner_elem in some_elem.conn_lst()[:-1]:
+	#	#		#for i in range(len(some_elem.conn_lst()[:-1])):
+	#	#		if not reduce_tag:
+	#	#			for i in range(len(some_elem.conn_lst()[1:])):
+	#	#				#if i > 0:
+	#	#				some_inner_elem = some_elem.conn_lst()[i + 1]
+	#	#				#if len(some_temp["conn_name_lst"]) > 1:
+	#	#				some_temp["tag_lst"].append(
+	#	#					some_inner_elem.shape().tag()
+	#	#				)
+	#	#		else: # if reduce_tag:
+	#	#			for i in range(len(
+	#	#				some_elem.conn_lst()[:temp_some_lst_shrink]
+	#	#			)):
+	#	#				some_inner_elem = some_elem.conn_lst()[i + 1]
+	#	#				some_temp["tag_lst"].append(
+	#	#					some_inner_elem.shape().tag()
+	#	#				)
+	#	#		some_temp_lst = list(reversed(some_temp["conn_name_lst"]))
+	#	#		some_dct[(
+	#	#			(
+	#	#				some_temp["elem"].pdir()
+	#	#				#if kind == Splitintf.ConnKind.Parent2Child
+	#	#				#else (
+	#	#				#	#"inp"
+	#	#				#	PortDir.Inp
+	#	#				#	if some_temp["elem"].pdir() == PortDir.Inp
+	#	#				#	else PortDir.Outp #"outp"
+	#	#				#)
+	#	#			), ("_".join(some_temp_lst))
+	#	#		)] = some_temp
+	#	#		#some_dct["_".join(
+	#	#		#	list(reversed(other.conn_lst()[:-1]))
+	#	#		#)] = some_temp
+	#	#	return some_dct
+	#	def mk_some_dct(
+	#		some_lst: list,
+	#		#some_tag,
+	#		#reduce_tag: bool,
+	#	):
+	#		some_dct = {}
+	#		for some_elem in some_lst:
+	#			some_temp = {
+	#				"elem": some_elem,
+	#				"pdir": some_elem.pdir(),
+	#				"conn_name": some_elem.extra_args_conn_name(),
+	#				#"conn_name_lst": [],
+	#				#"conn_lst": some_elem.conn_lst(),
+	#				#"tag_lst": [],
+	#				"tag": some_elem.extra_args_parent().tag(),
+	#				#"tag": ,
+	#			}
+	#			#if (
+	#			#	isinstance(some_elem.obj(), Splitintf)
+	#			#	or isinstance(some_elem.obj(), Splitintfarr)
+	#			#):
+	#			#	#some_temp["tag"] = some_temp["conn_lst"]
+	#			#	#some_temp["tag"] = some_temp["elem"]
+	#			#else:
+	#			#	some_temp["tag"] = 
+	#			#some_temp["tag_lst"] = []
+	#			#some_temp_lst = list(reversed(some_temp["conn_name_lst"]))
+	#			#for some_conn in some_temp["conn_lst"][1:]:
+	#			some_dct[(
+	#				some_temp["elem"].pdir(), some_temp["conn_name"]
+	#			)] = some_temp
+	#		return some_dct
+
+	#	dct = mk_some_dct(
+	#		some_lst=lst,
+	#		#some_tag=self.tag(),
+	#		#temp_some_lst_shrink=lst_shrink,
+	#		#reduce_tag=reduce_tag,
+	#	)
+	#	other_dct = mk_some_dct(
+	#		some_lst=other_lst,
+	#		#some_tag=other.tag(),
+	#		#temp_some_lst_shrink=temp_other_lst_shrink,
+	#		#reduce_tag=reduce_tag,
+	#	)
+	#	#for elem in lst:
+	#	#	temp = {
+	#	#		"elem": elem,
+	#	#		"conn_name_lst": [],
+	#	#		"tag_lst": [],
+	#	#	}
+	#	#	for inner_elem in (
+	#	#		elem.conn_lst()[:lst_shrink]
+	#	#	):
+	#	#		temp["conn_name_lst"].append(
+	#	#			inner_elem.extra_args_conn_name()
+	#	#		)
+	#	#	if f is not None:
+	#	#		f.writelines([
+	#	#			psconcat("debug conn_name_lst: ",
+	#	#				[
+	#	#					[
+	#	#						conn.extra_args_conn_name(),
+	#	#						type(conn),
+	#	#					]
+	#	#					for conn in elem.conn_lst()[1:]
+	#	#				]
+	#	#			),
+	#	#			"\n"
+	#	#		])
+	#	#	# We are (nearly 100%) guaranteed to have at least two
+	#	#	# elements in `elem.conn_list()` due `Splitintf` and
+	#	#	# `Splitintfarr` being composed of real Amaranth objects at
+	#	#	# the end of the day
+	#	#	#for inner_elem in elem.conn_lst()[:-1]:
+	#	#	#for i in range(len(elem.conn_lst()[:-1])):
+	#	#	#for i in range(len(elem.conn_lst()[1:])):
+	#	#	if not reduce_tag:
+	#	#		for i in range(len(elem.conn_lst()[1:])):
+	#	#			#if i > 0:
+	#	#			inner_elem = elem.conn_lst()[i + 1]
+	#	#			#if f is not None:
+	#	#			#	f.writelines([
+	#	#			#		psconcat(
+	#	#			#			"debug inner_elem: ",
+	#	#			#			do_psconcat_flattened(inner_elem)
+	#	#			#		)
+	#	#			#	])
+	#	#			#if len(temp["conn_name_lst"]) > 1:
+	#	#			temp["tag_lst"].append(
+	#	#				inner_elem.shape().tag()
+	#	#			)
+	#	#	else: # if reduce_tag:
+	#	#		for i in range(len(elem.conn_lst()[:lst_shrink])):
+	#	#			inner_elem = elem.conn_lst()[i + 1]
+	#	#			temp["tag_lst"].append(
+	#	#				inner_elem.shape().tag()
+	#	#			)
+	#	#	#dct["_".join(list(reversed(temp["conn_name_lst"])))] = temp
+	#	#	temp_lst = list(reversed(temp["conn_name_lst"]))
+	#	#	dct[(
+	#	#		(
+	#	#			temp["elem"].pdir()
+	#	#			#if kind == Splitintf.ConnKind.Parent2Child
+	#	#			#else (
+	#	#			#	#"inp"
+	#	#			#	PortDir.Inp
+	#	#			#	if temp["elem"].pdir() == PortDir.Inp
+	#	#			#	else PortDir.Outp #"outp"
+	#	#			#)
+	#	#		),
+	#	#		("_".join(temp_lst))
+	#	#	)] = temp
+	#	#	#dct["_".join(list(reversed(elem.conn_lst()[:-1])))] = temp
+
+	#	#f = open("test_tag.txt.ignore", "w")
+	#	if f is not None:
+	#		f.writelines([
+	#			#"dct:{!r}\n".format(dct),
+	#			#"other_dct:{!r}\n".format(other_dct),
+	#			do_psconcat_flattened({
+	#				"dct": dct,
+	#				"other_dct": other_dct,
+	#			}),
+	#			"first write done\n",
+	#		])
+	#	for key in dct:
+	#		outer_elem = dct[key]
+	#		#other_key = (
+	#		#	key 
+	#		#	if kind == Splitintf.ConnKind.Parent2Child
+	#		#	else (
+	#		#		(
+	#		#			PortDir.Inp
+	#		#			if key[0] == PortDir.Outp
+	#		#			else PortDir.Outp
+	#		#		),
+	#		#		key[1]
+	#		#	)
+	#		#)
+	#		if kind == Splitintf.ConnKind.Parent2Child:
+	#			other_key = key
+	#		else:
+	#			if key[0] == PortDir.Inp:
+	#				other_key = (
+	#					PortDir.Outp,
+	#					key[1],
+	#				)
+	#			elif (
+	#				key[0] == PortDir.Outp
+	#				or key[0] == PortDir.Noconn
+	#			):
+	#				other_key = (
+	#					PortDir.Inp,
+	#					key[1],
+	#				)
+	#			else:
+	#				# indicates that we have a
+	#				# `Splitintf` or `Splitintfarr`
+	#				assert key[0] is None, psconcat(
+	#					type(key[0]), " ", repr(key[0])
+	#				)
+	#				other_key = key
+	#				
+	#		if f is not None:
+	#			f.writelines([
+	#				do_psconcat_flattened(
+	#					{
+	#						"key": key,
+	#						"other_key": other_key,
+	#						"in-other": other_key in other_dct,
+	#					},
+	#					use_repr=True,
+	#				),
+	#				#"\n",
+	#			])
+	#		#if kind == Splitintf.ConnKind.Parent2Child:
+	#		if other_key in other_dct:
+	#			#outer_elem = dct[key]
+	#			other_outer_elem = other_dct[other_key]
+
+	#			test_tag = (
+	#				not use_tag
+	#				or (
+	#					#(
+	#					#	not reduce_tag
+	#					#	#and (
+	#					#	#	elem.extra_args_parent().shape().tag()
+	#					#	#	== other_elem.extra_args_parent().shape()
+	#					#	#		.tag()
+	#					#	#)
+	#						#and
+	#						(
+	#							#outer_elem["tag_lst"][0]
+	#							#== other_outer_elem["tag_lst"][0]
+	#							outer_elem["tag"] = other_outer_elem["tag"]
+	#						)
+	#					#) or (
+	#					#	reduce_tag
+	#					#	and (
+	#					#		outer_elem["tag_lst"]
+	#					#		== other_outer_elem["tag_lst"]
+	#					#	)
+	#					#)
+	#				)
+	#			)
+	#			if f is not None:
+	#				f.writelines([
+	#					psconcat("debug test_tag stuff:\n"),
+	#					do_psconcat_flattened(
+	#						{
+	#							(key, other_key): {
+	#								"pdir": outer_elem["elem"].pdir(),
+	#								"other-pdir": (
+	#									other_outer_elem["elem"].pdir()
+	#								),
+	#								"conn_name_lst": 
+	#									outer_elem["conn_name_lst"],
+	#								"other-conn_name_lst":
+	#									other_outer_elem["conn_name_lst"],
+	#								"cmp": (
+	#									outer_elem["conn_name_lst"]
+	#									!= other_outer_elem
+	#										["conn_name_lst"]
+	#								),
+	#								"test_tag": test_tag,
+	#								"key": key,
+	#								"other_key": other_key,
+	#								"tag": (
+	#									elem.extra_args_parent().shape()
+	#										.tag()
+	#								),
+	#								"other-tag": (
+	#									other_elem.extra_args_parent()
+	#										.shape().tag()
+	#								),
+	#							}
+	#						},
+	#						use_repr=True,
+	#					),
+	#					#"\n",
+	#				])
+
+	#			if (
+	#				(
+	#					outer_elem["conn_name_lst"]
+	#					!= other_outer_elem["conn_name_lst"]
+	#				) or (
+	#					not test_tag
+	#				)
+	#			):
+	#				if f is not None:
+	#					f.writelines([
+	#						psconcat("continuing\n")
+	#					])
+	#				continue
+
+	#			def handle_intf(
+	#				some_elem, other_some_elem,
+	#				m: Module,
+	#				kind,
+	#				*,
+	#				f,
+	#				just_check: bool,
+	#				self_pdir=None,
+	#			):
+	#				if (
+	#					isinstance(some_elem, Splitintf)
+	#					or isinstance(other_some_elem, Splitintf)
+	#				):
+	#					if not just_check:
+	#						some_elem.connect(
+	#							other=other_some_elem,
+	#							m=m,
+	#							kind=kind,
+	#							f=f,
+	#							#lst_shrink=lst_shrink,
+	#							#other_lst_shrink=other_lst_shrink,
+	#							self_pdir=self_pdir,
+	#						)
+	#					return True
+	#				elif (
+	#					isinstance(some_elem, Splitintfarr)
+	#					or isinstance(other_some_elem, Splitintfarr)
+	#				):
+	#					if (
+	#						len(some_elem.lst())
+	#						!= len(other_some_elem.lst())
+	#					):
+	#						return False
+	#					for i in range(len(some_elem.lst())):
+	#						if not handle_intf(
+	#							some_elem=some_elem.lst()[i],
+	#							other_some_elem=other_some_elem.lst()[i],
+	#							kind=kind,
+	#							f=f,
+	#							just_check=just_check,
+	#							self_pdir=self_pdir,
+	#						):
+	#							return False
+	#					return True
+	#				else:
+	#					return False
+	#			#if (
+	#			#	(
+	#			#		isinstance(outer_elem, Splitintf)
+	#			#		and isinstance(other_outer_elem, Splitintf)
+	#			#	) or (
+	#			#		isinstance(outer_elem, Splitintfarr)
+	#			#		and isinstance(other_outer_elem, Splitintfarr)
+	#			#	)
+	#			#):
+	#			kw = {
+	#				"some_elem": outer_elem["elem"].obj(),
+	#				"other_some_elem": other_outer_elem["elem"].obj(),
+	#				"m": m,
+	#				"kind": kind,
+	#				"f": f,
+	#				"just_check": True,
+	#				"self_pdir": self_pdir,
+	#			}
+	#			if handle_intf(**kw):
+	#				kw["just_check"] = False
+	#				handle_intf(**kw)
+	#			else:
+	#				elem = outer_elem["elem"]
+	#				other_elem = other_outer_elem["elem"]
+
+	#				err_msg = psconcat(
+	#					"With `kind` {!r}, invalid combination of ",
+	#					"`elem.pdir()` {!r} and `other_elem.pdir()` {!r}"
+	#				).format(kind, elem.pdir(), other_elem.pdir())
+
+	#				if kind == Splitintf.ConnKind.Parent2Child:
+	#					if (
+	#						elem.pdir() == other_elem.pdir()
+	#						and elem.pdir() != PortDir.Noconn
+	#						#and other_elem.pdir() != PortDir.Noconn
+	#						and (
+	#							self_pdir is None
+	#							or elem.pdir() == self_pdir
+	#						)
+	#					):
+	#						if elem.pdir() == PortDir.Inp:
+	#							m.d.comb += other_elem.obj().eq(elem.obj())
+	#						else: # if elem.pdir() == PortDir.Outp:
+	#							m.d.comb += elem.obj().eq(other_elem.obj())
+	#					else:
+	#						raise ValueError(err_msg)
+	#				else: # if kind == Splitintf.ConnKind.Parallel:
+	#					if (
+	#						elem.pdir() != other_elem.pdir()
+	#						and elem.pdir() != PortDir.Noconn
+	#						and other_elem.pdir() != PortDir.Noconn
+	#						and (
+	#							self_pdir is None
+	#							or elem.pdir() == self_pdir
+	#							or other_elem.pdir() == self_pdir
+	#						)
+	#					):
+	#						if elem.pdir() == PortDir.Inp:
+	#							m.d.comb += elem.obj().eq(other_elem.obj())
+	#						else: # if other_elem.pdir() == PortDir.Inp:
+	#							m.d.comb += other_elem.obj().eq(elem.obj())
+	#					else:
+	#						raise ValueError(err_msg)
+	#	#f.close()
 	def connect(
 		#self, mp_name_dct: dict, parent_m: Module,
 		#other, other_mp_name_dct: dict, child_m=None,
@@ -2419,6 +2947,61 @@ class Splitintf:
 					ret.append(parent)
 					return get_conn(ret)
 			return get_conn([self])
+		#def conn_lst(self):
+		#	#def get_conn(ret: list):
+		#	#	parent = ret[-1].extra_args_parent()
+		#	return [self, self.extra_args_parent()]
+	@staticmethod
+	def _flattened_one_iter(
+		self,
+		ret: list,
+		w_pdir: bool,
+		key,
+		obj,
+		set_pdir: bool=True,
+	):
+		if not w_pdir:
+			ret.append(obj)
+		else: # if w_pdir:
+			ret.append(Splitintf.FlatWPdir(
+				key=key,
+				parent=self,
+				obj=obj,
+				pdir=(
+					getattr(self.shape().modport(), key)
+					if set_pdir
+					else None
+				),
+			))
+	@staticmethod
+	def _flattened_intf_one_iter(
+		self,
+		ret: list,
+		w_pdir: bool,
+		key,
+		val,
+	):
+		if (
+			not w_pdir
+			#or isinstance(val, Splitintfarr)
+		):
+			temp = val.flattened(
+				#f=f,
+				w_pdir=w_pdir,
+				#srec_sarr_no_flat=srec_sarr_no_flat,
+			)
+			for elem in temp:
+				ret.append(elem)
+		else:
+			#ret.append(val)
+			Splitintf._flattened_one_iter(
+				self=self,
+				ret=ret,
+				w_pdir=w_pdir,
+				key=key,
+				obj=val,
+				set_pdir=False,
+			)
 	def flattened(
 		self,
 		*,
@@ -2435,7 +3018,6 @@ class Splitintf:
 				isinstance(val, Splitintf)
 				or isinstance(val, Splitintfarr)
 			):
-				#temp = val.flattened()
 				temp = val.flattened(
 					#f=f,
 					w_pdir=w_pdir,
@@ -2443,6 +3025,17 @@ class Splitintf:
 				)
 				for elem in temp:
 					ret.append(elem)
+				#temp = val.flattened()
+				## NOTE: the below is used similarly in
+				## `Splitintfarr.flattened()`, so make sure to update both
+				# if one changes.
+				#Splitintf._flattened_intf_one_iter(
+				#	self=self,
+				#	ret=ret,
+				#	w_pdir=w_pdir,
+				#	key=key,
+				#	val=val,
+				#)
 			#elif isinstance(val, Splitintfarr):
 			#	#temp = val.flattened()
 			#	#temp = val.flattened(w_pdir=w_pdir)
@@ -2454,22 +3047,6 @@ class Splitintf:
 			#	for elem in temp:
 			#		ret.append(elem)
 			else:
-				def one_iter(
-					self,
-					ret: list,
-					w_pdir: bool,
-					key,
-					obj,
-				):
-					if not w_pdir:
-						ret.append(obj)
-					else: # if w_pdir:
-						ret.append(Splitintf.FlatWPdir(
-							key=key,
-							parent=self,
-							obj=obj,
-							pdir=getattr(self.shape().modport(), key),
-						))
 				if (
 					isinstance(val, Splitrec)
 					or isinstance(val, Splitarr)
@@ -2479,7 +3056,7 @@ class Splitintf:
 						temp = val.flattened()
 						for elem in temp:
 							#ret.append(elem)
-							one_iter(
+							Splitintf._flattened_one_iter(
 								self=self,
 								ret=ret,
 								w_pdir=w_pdir,
@@ -2491,7 +3068,7 @@ class Splitintf:
 							)
 					#else: # if srec_sarr_no_flat:
 					else: # if w_pdir:
-						one_iter(
+						Splitintf._flattened_one_iter(
 							self=self,
 							ret=ret,
 							w_pdir=w_pdir,
@@ -2502,7 +3079,7 @@ class Splitintf:
 					#print(val)
 					#temp = val
 					#ret.append(temp)
-					one_iter(
+					Splitintf._flattened_one_iter(
 						self=self,
 						ret=ret,
 						w_pdir=w_pdir,
@@ -2513,6 +3090,100 @@ class Splitintf:
 					)
 
 		return ret
+	#def flattened(
+	#	self,
+	#	*,
+	#	#f=None,
+	#	#conn_dct: dict,
+	#	w_pdir: bool=False, # with `PortDir`
+	#	#srec_sarr_no_flat: bool=False,
+	#):
+	#	ret = []
+
+	#	for item in self.dct().items():
+	#		key, val = item
+	#		if (
+	#			isinstance(val, Splitintf)
+	#			or isinstance(val, Splitintfarr)
+	#		):
+	#			#temp = val.flattened()
+	#			temp = val.flattened(
+	#				#f=f,
+	#				w_pdir=w_pdir,
+	#				#srec_sarr_no_flat=srec_sarr_no_flat,
+	#			)
+	#			for elem in temp:
+	#				ret.append(elem)
+	#		#elif isinstance(val, Splitintfarr):
+	#		#	#temp = val.flattened()
+	#		#	#temp = val.flattened(w_pdir=w_pdir)
+	#		#	temp = val.flattened(
+	#		#		#f=f,
+	#		#		w_pdir=w_pdir,
+	#		#		#srec_sarr_no_flat=srec_sarr_no_flat,
+	#		#	)
+	#		#	for elem in temp:
+	#		#		ret.append(elem)
+	#		else:
+	#			def one_iter(
+	#				self,
+	#				ret: list,
+	#				w_pdir: bool,
+	#				key,
+	#				obj,
+	#			):
+	#				if not w_pdir:
+	#					ret.append(obj)
+	#				else: # if w_pdir:
+	#					ret.append(Splitintf.FlatWPdir(
+	#						key=key,
+	#						parent=self,
+	#						obj=obj,
+	#						pdir=getattr(self.shape().modport(), key),
+	#					))
+	#			if (
+	#				isinstance(val, Splitrec)
+	#				or isinstance(val, Splitarr)
+	#			):
+	#				#if not srec_sarr_no_flat:
+	#				if not w_pdir:
+	#					temp = val.flattened()
+	#					for elem in temp:
+	#						#ret.append(elem)
+	#						one_iter(
+	#							self=self,
+	#							ret=ret,
+	#							w_pdir=w_pdir,
+	#							key=key,
+	#							#flat_name=Value.cast(elem).name,
+	#							#key=Value.cast(elem).name,
+	#							#key=elem.name,
+	#							obj=elem,
+	#						)
+	#				#else: # if srec_sarr_no_flat:
+	#				else: # if w_pdir:
+	#					one_iter(
+	#						self=self,
+	#						ret=ret,
+	#						w_pdir=w_pdir,
+	#						key=key,
+	#						obj=val,
+	#					)
+	#			else:
+	#				#print(val)
+	#				#temp = val
+	#				#ret.append(temp)
+	#				one_iter(
+	#					self=self,
+	#					ret=ret,
+	#					w_pdir=w_pdir,
+	#					key=key,
+	#					#key=Value.cast(val).name,
+	#					#flat_name=Value.cast(val).name,
+	#					obj=val
+	#				)
+
+	#	return ret
 	#--------
 class IntfarrShape:
 	def __init__(
@@ -2704,8 +3375,66 @@ class Splitintfarr:
 				raise TypeError(psconcat(
 					"Invalid `val` `{!r}`".format(val)
 				))
+	#def flattened(
+	#	self,
+	#	*,
+	#	w_pdir: bool=False, # with `PortDir`
+	#):
+	#	ret = []
 
-		return ret
+	#	#for val in self:
+	#	for i in range(len(self.lst())):
+	#		val = self.lst()[i]
+	#		if (
+	#			# Elements of `Splitintfarr` can only be a
+	#			# `Splitintf` or `Splitintfarr`, but not regular
+	#			# `Value`/`ValueCastable` objects
+	#			isinstance(val, Splitintf)
+	#			or isinstance(val, Splitintfarr)
+	#		):
+	#			temp = val.flattened(w_pdir=w_pdir)
+	#			for elem in temp:
+	#				ret.append(elem)
+
+	#			## NOTE: the below is used similarly in
+	#			## `Splitintf.flattened()`, so make sure to update both if
+	#			## one changes.
+	#			#Splitintf._flattened_intf_one_iter(
+	#			#	self=self,
+	#			#	ret=ret,
+	#			#	w_pdir=w_pdir,
+	#			#	key=psconcat(self.extra_args_name(), "_", i),
+	#			#	val=val,
+	#			#)
+	#			#if (
+	#			#	not w_pdir
+	#			#	#or isinstance(val, Splitintfarr)
+	#			#):
+	#			#	temp = val.flattened(
+	#			#		#f=f,
+	#			#		w_pdir=w_pdir,
+	#			#		#srec_sarr_no_flat=srec_sarr_no_flat,
+	#			#	)
+	#			#	for elem in temp:
+	#			#		ret.append(elem)
+	#			#else:
+	#			#	#ret.append(val)
+	#			#	Splitintf._flattened_one_iter(
+	#			#		self=self,
+	#			#		ret=ret,
+	#			#		w_pdir=w_pdir,
+	#			#		#key=key,
+	#			#		obj=val,
+	#			#		set_pdir=False,
+	#			#	)
+	#		else:
+	#			#ret.append(val)
+	#			# NOTE: Hopefully this won't happen!
+	#			raise TypeError(psconcat(
+	#				"Invalid `val` `{!r}`".format(val)
+	#			))
+
+	#	return ret
 	#--------
 #--------
 #class Vec2Layt(Packrec.Layout):

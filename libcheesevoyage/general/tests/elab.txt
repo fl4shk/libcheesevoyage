@@ -1,3 +1,5 @@
-WIDTH:2
+WIDTH:4
 i:0 inp_tag:'0' outp_tag:'1'
 i:1 inp_tag:'1' outp_tag:'2'
+i:2 inp_tag:'2' outp_tag:'3'
+i:3 inp_tag:'3' outp_tag:'4'

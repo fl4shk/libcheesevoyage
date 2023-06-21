@@ -394,7 +394,7 @@ class BitSerialAdder(Elaboratable):
 				m=m,
 				kind=Splitintf.ConnKind.Parallel,
 				#f=f,
-				conn_lst_shrink=-2,
+				lst_shrink=-2,
 				use_tag=True,
 			)
 			#m.d.comb += Cat(ps_bus_next.inp.flattened()).eq(

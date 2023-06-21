@@ -316,6 +316,9 @@ class PipeSkidBuf(Elaboratable):
 		FORMAL: bool=False,
 		OPT_INCLUDE_VALID_BUSY: bool=False,
 		OPT_INCLUDE_READY_BUSY: bool=False,
+		#OPT_PASSTHROUGH: bool=False,
+		#OPT_TIE_IFWD_VALID: bool=False,
+		#OPT_TIE_IBAK_READY: bool=False,
 		#OPT_INCLUDE_BUSY: bool=False,
 		tag_dct={
 			"next": None,
@@ -343,6 +346,9 @@ class PipeSkidBuf(Elaboratable):
 		self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
 		self.__OPT_INCLUDE_READY_BUSY = OPT_INCLUDE_READY_BUSY
 		#self.__OPT_INCLUDE_BUSY = OPT_INCLUDE_BUSY
+		#self.__OPT_PASSTHROUGH = OPT_PASSTHROUGH
+		#self.__OPT_TIE_IFWD_VALID = OPT_TIE_IFWD_VALID
+		#self.__OPT_TIE_IBAK_READY = OPT_TIE_IBAK_READY
 
 	def bus(self):
 		return self.__bus
@@ -354,6 +360,12 @@ class PipeSkidBuf(Elaboratable):
 		return self.__OPT_INCLUDE_READY_BUSY
 	#def OPT_INCLUDE_BUSY(self):
 	#	return self.__OPT_INCLUDE_BUSY
+	#def OPT_TIE_IFWD_VALID(self):
+	#	return self.__OPT_TIE_IFWD_VALID
+	#def OPT_TIE_IBAK_READY(self):
+	#	return self.__OPT_TIE_IBAK_READY
+	#def OPT_PASSTHROUGH(self):
+	#	return self.__OPT_PASSTHROUGH
 	def data_info(self):
 		return self.__data_info
 	#def data_shape(self):
@@ -379,237 +391,263 @@ class PipeSkidBuf(Elaboratable):
 		OPT_INCLUDE_VALID_BUSY = self.OPT_INCLUDE_VALID_BUSY()
 		OPT_INCLUDE_READY_BUSY = self.OPT_INCLUDE_READY_BUSY()
 		#OPT_INCLUDE_BUSY = self.OPT_INCLUDE_BUSY()
-
-		loc = Blank()
+		#OPT_TIE_IFWD_VALID = self.OPT_TIE_IFWD_VALID()
+		#OPT_TIE_IBAK_READY = self.OPT_TIE_IBAK_READY()
+		#OPT_PASSTHROUGH = self.OPT_PASSTHROUGH()
 		#--------
-		# Individual `Splitrec` members can be driven by different clock
-		# domains
-		loc.r_shape = {
-			#"valid_next": 1,
-			"valid": 1,
-			"ready": 1,
-		}
-		if data_info is not None:
-			loc.r_shape["data"] = data_info
+		#if OPT_PASSTHROUGH:
+		#	#m.d.comb += 
+		#	m.d.sync += [
+		#		ofwd.valid.eq(ifwd.valid),
+		#		ofwd.data.eq(ifwd.data),
+		#		obak.ready.eq(ibak.ready),
+		#	]
+		#	#m.d.comb += ofwd.valid.eq(ifwd.valid)
+		#	##m.d.comb += 
+		#	#with m.If(ifwd.valid & ibak.ready):
+		#	#	m.d.sync += ofwd.data.eq(ifwd.data)
+		#	#m.d.comb += obak.ready.eq(ibak.ready)
+		#else: # if not OPT_PASSTHROUGH:
+		if True:
+			loc = Blank()
+			# Individual `Splitrec` members can be driven by different
+			# clock domains
+			loc.r_shape = {
+				#"valid_next": 1,
+				"valid": 1,
+				"ready": 1,
+			}
+			if data_info is not None:
+				loc.r_shape["data"] = data_info
 
-		loc.r = Splitrec(loc.r_shape, name="loc_r")
-		#--------
-		if FORMAL:
-			loc.formal = Blank()
-			loc.formal.past_valid = Signal(
-				1, name="formal_past_valid", reset=0b0,
-			)
-		#--------
-		with m.If(
-			ResetSignal()
-			| misc.clear
-
-			# TODO: not sure if the below is going to work, so might need
-			# to comment it out
-			#| (
-			#	# Use a Python "mux" instead of an Amaranth `Mux`
-			#	0b0
-			#	#if not OPT_INCLUDE_VALID_BUSY
-			#	#else misc.valid_busy
-			#	if not OPT_INCLUDE_BUSY
-			#	else misc.busy
-			#)
-		):
-			m.d.sync += loc.r.valid.eq(0b0)
-			#m.d.comb += loc.r.valid_next.eq(0b0)
-		with m.Elif(
-			(ifwd.valid & obak.ready)
-			& (ofwd.valid & ~ibak.ready)
-		):
-			m.d.sync += loc.r.valid.eq(0b1)
-			#m.d.comb += loc.r.valid_next.eq(0b1)
-		with m.Elif(ibak.ready):
-			m.d.sync += loc.r.valid.eq(0b0)
-			#m.d.comb += loc.r.valid_next.eq(0b0)
-		#with m.Else():
-		#	m.d.comb += loc.r.valid_next.eq(loc.r.valid)
-
-		#m.d.sync += [
-		#	loc.r.valid.eq(
-		#		loc.r.valid_next
-		#		#& (
-		#		#	0b1
-		#		#	if not OPT_INCLUDE_VALID_BUSY
-		#		#	else ~misc.valid_busy
-		#		#)
-		#	),
-		#	loc.r.ready.eq(
-		#		~loc.r.valid_next
-		#		#& (
-		#		#	0b1
-		#		#	if not OPT_INCLUDE_READY_BUSY
-		#		#	else ~misc.ready_busy
-		#		#)
-		#	)
-		#]
-
-		if data_info is not None:
+			loc.r = Splitrec(loc.r_shape, name="loc_r")
+			#--------
+			if FORMAL:
+				loc.formal = Blank()
+				loc.formal.past_valid = Signal(
+					1, name="formal_past_valid", reset=0b0,
+				)
+			#--------
 			with m.If(
 				ResetSignal()
 				| misc.clear
+
+				# TODO: not sure if the below is going to work, so might
+				# need to comment it out
 				#| (
 				#	# Use a Python "mux" instead of an Amaranth `Mux`
 				#	0b0
+				#	#if not OPT_INCLUDE_VALID_BUSY
+				#	#else misc.valid_busy
 				#	if not OPT_INCLUDE_BUSY
 				#	else misc.busy
 				#)
 			):
-				m.d.sync += loc.r.data.eq(0x0)
-			with m.If(obak.ready):
-				m.d.sync += loc.r.data.eq(ifwd.data)
-
-		with m.If(
-			ResetSignal()
-			| misc.clear
-		):
-			m.d.comb += [
-				obak.ready.eq(0b0),
-				ofwd.valid.eq(0b0),
-			]
-		with m.Else():
-			m.d.comb += [
-				obak.ready.eq(
-					~loc.r.valid
-					#loc.r.ready
-					#& (
-					#	0b1
-					#	if not OPT_INCLUDE_READY_BUSY
-					#	# Use a Python "mux" instead of an Amaranth `Mux`
-					#	# AND the upstream `ready` with ~`ready_busy`
-					#	else ~misc.ready_busy
-					#)
-					##& (
-					##	# Use a Python "mux" instead of an Amaranth `Mux`
-					##	0b1
-					##	if not OPT_INCLUDE_BUSY
-					##	else ~misc.busy
-					##)
-				),
-				ofwd.valid.eq(
-					# `ifwd.valid` will be registered in the general case
-					(ifwd.valid | loc.r.valid)
-					#& (
-					#	0b1
-					#	if not OPT_INCLUDE_VALID_BUSY
-					#	# Use a Python "mux" instead of an Amaranth `Mux`
-					#	# AND the downstream `valid` with ~`valid_busy`
-					#	else ~misc.valid_busy
-					#)
-					##& (
-					##	# Use a Python "mux" instead of an Amaranth `Mux`
-					##	0b1
-					##	if not OPT_INCLUDE_BUSY
-					##	else ~misc.busy
-					##)
-				),
-			]
-
-		if data_info is not None:
-			with m.If(loc.r.valid):
-				m.d.comb += ofwd.data.eq(loc.r.data)
-			with m.Else(): # If(~loc.r.valid):
-				m.d.comb += ofwd.data.eq(ifwd.data)
-		#--------
-		if FORMAL:
-			#m.d.sync += loc.formal.past_valid.eq(0b1)
-			with m.If(
-				#loc.formal.past_valid
-				#&
-				~misc.clear
-				#& (
-				#	0b1
-				#	if not OPT_INCLUDE_BUSY
-				#	else ~misc.busy
-				#)
-				#& (
-				#	0b1
-				#	if not OPT_INCLUDE_VALID_BUSY
-				#	else ~misc.valid_busy
-				#) & (
-				#	0b1
-				#	if not OPT_INCLUDE_READY_BUSY
-				#	else ~misc.ready_busy
-				#)
+				m.d.sync += loc.r.valid.eq(0b0)
+				#m.d.comb += loc.r.valid_next.eq(0b0)
+			with m.Elif(
+				(ifwd.valid & obak.ready)
+				& (ofwd.valid & ~ibak.ready)
 			):
+				m.d.sync += loc.r.valid.eq(0b1)
+				#m.d.comb += loc.r.valid_next.eq(0b1)
+			with m.Elif(ibak.ready):
+				m.d.sync += loc.r.valid.eq(0b0)
+				#m.d.comb += loc.r.valid_next.eq(0b0)
+			#with m.Else():
+			#	m.d.comb += loc.r.valid_next.eq(loc.r.valid)
+
+			#m.d.sync += [
+			#	loc.r.valid.eq(
+			#		loc.r.valid_next
+			#		#& (
+			#		#	0b1
+			#		#	if not OPT_INCLUDE_VALID_BUSY
+			#		#	else ~misc.valid_busy
+			#		#)
+			#	),
+			#	loc.r.ready.eq(
+			#		~loc.r.valid_next
+			#		#& (
+			#		#	0b1
+			#		#	if not OPT_INCLUDE_READY_BUSY
+			#		#	else ~misc.ready_busy
+			#		#)
+			#	)
+			#]
+
+			if data_info is not None:
 				with m.If(
 					ResetSignal()
-					#| misc.clear
+					| misc.clear
+					#| (
+					#	# Use a Python "mux" instead of an Amaranth `Mux`
+					#	0b0
+					#	if not OPT_INCLUDE_BUSY
+					#	else misc.busy
+					#)
 				):
-					m.d.sync += [
-						Assert(~ifwd.valid),
-						Assert(~loc.r.valid & ~ofwd.valid),
-					]
-				#with m.Elif(~misc.clear):
-				with m.Else():
-					with m.If(ifwd.valid & ~obak.ready):
-						m.d.sync += [
-							Assert(ifwd.valid),
-							#Assert(Stable(ifwd.data)),
-						]
-						if (
-							not isinstance(loc.r.data, Splitrec)
-							and not isinstance(loc.r.data, Splitarr)
-						):
-							m.d.sync += [
-								Assert(Stable(ifwd.data)),
-							]
-						else:
-							m.d.sync += [
-								Assert(Stable(flat_elem))
-								for flat_elem in ifwd.data.flattened()
-							]
-					with m.If(ofwd.valid & ~ibak.ready):
-						m.d.sync += [
-							Assert(obak.ready),
-							#Assert(Stable(ofwd.data)),
-						]
-						if (
-							not isinstance(loc.r.data, Splitrec)
-							and not isinstance(loc.r.data, Splitarr)
-						):
-							m.d.sync += [
-								Assert(Stable(ofwd.data)),
-							]
-						else:
-							m.d.sync += [
-								Assert(Stable(flat_elem))
-								for flat_elem in ofwd.data.flattened()
-							]
+					m.d.sync += loc.r.data.eq(0x0)
+				with m.If(obak.ready):
+					m.d.sync += loc.r.data.eq(ifwd.data)
+
+			with m.If(
+				ResetSignal()
+				| misc.clear
+			):
+				m.d.comb += [
+					obak.ready.eq(0b0),
+					ofwd.valid.eq(0b0),
+				]
+			with m.Else():
+				m.d.comb += [
+					obak.ready.eq(
+						~loc.r.valid
+						#loc.r.ready
+						#& (
+						#	0b1
+						#	if not OPT_INCLUDE_READY_BUSY
+						#	# Use a Python "mux" instead of an Amaranth
+						#	# `Mux` AND the upstream `ready` with
+						#	# ~`ready_busy`
+						#	else ~misc.ready_busy
+						#)
+						##& (
+						##	# Use a Python "mux" instead of an Amaranth
+						##	# `Mux`
+						##	0b1
+						##	if not OPT_INCLUDE_BUSY
+						##	else ~misc.busy
+						##)
+					),
+					ofwd.valid.eq(
+						# `ifwd.valid` will be registered in the general
+						# case
+						(ifwd.valid | loc.r.valid)
+						#& (
+						#	0b1
+						#	if not OPT_INCLUDE_VALID_BUSY
+						#	# Use a Python "mux" instead of an Amaranth
+						#	# `Mux` AND the downstream `valid` with
+						#	# ~`valid_busy`
+						#	else ~misc.valid_busy
+						#)
+						##& (
+						##	# Use a Python "mux" instead of an Amaranth
+						##	# `Mux`
+						##	0b1
+						##	if not OPT_INCLUDE_BUSY
+						##	else ~misc.busy
+						##)
+					),
+				]
+
+			if data_info is not None:
+				with m.If(loc.r.valid):
+					m.d.comb += ofwd.data.eq(loc.r.data)
+				with m.Else(): # If(~loc.r.valid):
+					m.d.comb += ofwd.data.eq(ifwd.data)
+			#--------
+			if FORMAL:
+				m.d.sync += loc.formal.past_valid.eq(0b1)
+				with m.If(
+					loc.formal.past_valid
+					&
+					~misc.clear
+					#& (
+					#	0b1
+					#	if not OPT_INCLUDE_BUSY
+					#	else ~misc.busy
+					#)
+					& (
+						0b1
+						if not OPT_INCLUDE_VALID_BUSY
+						else ~misc.valid_busy
+					) & (
+						0b1
+						if not OPT_INCLUDE_READY_BUSY
+						else ~misc.ready_busy
+					)
+				):
 					with m.If(
-						ifwd.valid & obak.ready & ofwd.valid & ~ibak.ready
+						ResetSignal()
+						#| misc.clear
 					):
+						#if not OPT_TIE_IFWD_VALID:
 						m.d.sync += [
-							Assert(loc.r.valid),
-							#Assert(loc.r.data == Past(ifwd.data)),
+							Assert(~ifwd.valid),
 						]
-						if (
-							not isinstance(loc.r.data, Splitrec)
-							and not isinstance(loc.r.data, Splitarr)
+						m.d.sync += [
+							#Assert(~ifwd.valid),
+							Assert(~loc.r.valid & ~ofwd.valid),
+						]
+					#with m.Elif(~misc.clear):
+					with m.Else():
+						with m.If(ifwd.valid & ~obak.ready):
+							m.d.sync += [
+								Assert(ifwd.valid),
+								#Assert(Stable(ifwd.data)),
+							]
+							if (
+								not isinstance(loc.r.data, Splitrec)
+								and not isinstance(loc.r.data, Splitarr)
+							):
+								m.d.sync += [
+									Assert(Stable(ifwd.data)),
+								]
+							else:
+								m.d.sync += [
+									Assert(Stable(flat_elem))
+									for flat_elem in ifwd.data.flattened()
+								]
+						with m.If(ofwd.valid & ~ibak.ready):
+							m.d.sync += [
+								Assert(obak.ready),
+								#Assert(Stable(ofwd.data)),
+							]
+							if (
+								not isinstance(loc.r.data, Splitrec)
+								and not isinstance(loc.r.data, Splitarr)
+							):
+								m.d.sync += [
+									Assert(Stable(ofwd.data)),
+								]
+							else:
+								m.d.sync += [
+									Assert(Stable(flat_elem))
+									for flat_elem in ofwd.data.flattened()
+								]
+						with m.If(
+							ifwd.valid & obak.ready
+							& ofwd.valid & ~ibak.ready
 						):
 							m.d.sync += [
-								Assert(loc.r.data == Past(ifwd.data))
+								Assert(loc.r.valid),
+								#Assert(loc.r.data == Past(ifwd.data)),
 							]
-						else:
-							r_data_flat = loc.r.data.flattened()
-							i_data_flat = ifwd.data.flattened()
+							if (
+								not isinstance(loc.r.data, Splitrec)
+								and not isinstance(loc.r.data, Splitarr)
+							):
+								m.d.sync += [
+									Assert(loc.r.data == Past(ifwd.data))
+								]
+							else:
+								r_data_flat = loc.r.data.flattened()
+								i_data_flat = ifwd.data.flattened()
+								m.d.sync += [
+									Assert(r_data_flat[i]
+										== Past(i_data_flat[i]))
+									for i in range(len(r_data_flat))
+								]
+						with m.If(~ifwd.valid & ~loc.r.valid & ibak.ready):
 							m.d.sync += [
-								Assert(r_data_flat[i]
-									== Past(i_data_flat[i]))
-								for i in range(len(r_data_flat))
+								Assert(ofwd.valid),
 							]
-					with m.If(~ifwd.valid & ~loc.r.valid & ibak.ready):
-						m.d.sync += [
-							Assert(ofwd.valid),
-						]
-					with m.If(loc.r.valid & ibak.ready):
-						m.d.sync += [
-							Assert(~loc.r.valid)
-						]
+						with m.If(loc.r.valid & ibak.ready):
+							m.d.sync += [
+								Assert(~loc.r.valid)
+							]
 		#--------
 		return m
 		#--------
@@ -791,8 +829,9 @@ class PipeSkidBuf(Elaboratable):
 	#	#--------
 	#	return m
 	#	#--------
+
 	@staticmethod
-	def connect(
+	def connect_parallel(
 		parent: Module,
 		sb_bus_lst: list, # should be [Splitintf(PipeSkidBufIshape)]
 		tie_first_inp_fwd_valid: bool=True,
@@ -812,9 +851,32 @@ class PipeSkidBuf(Elaboratable):
 				m=parent,
 				kind=Splitintf.ConnKind.Parallel,
 				use_tag=True,
+				reduce_tag=False,
 				lst_shrink=lst_shrink,
 				other_lst_shrink=other_lst_shrink,
 			)
+			#sb_bus_next.inp.fwd.connect(
+			#	other=sb_bus.outp.fwd,
+			#	m=parent,
+			#	kind=Splitintf.ConnKind.Parallel,
+			#	#f=f,
+			#	use_tag=True,
+			#	reduce_tag=False,
+			#	#lst_shrink=-3,
+			#	lst_shrink=lst_shrink,
+			#	other_lst_shrink=other_lst_shrink,
+			#)
+			#sb_bus.inp.bak.connect(
+			#	other=sb_bus_next.outp.bak,
+			#	m=parent,
+			#	kind=Splitintf.ConnKind.Parallel,
+			#	#f=f,
+			#	use_tag=True,
+			#	reduce_tag=False,
+			#	#lst_shrink=-3,
+			#	lst_shrink=lst_shrink,
+			#	other_lst_shrink=other_lst_shrink,
+			#)
 		if tie_first_inp_fwd_valid:
 			parent.d.comb += [
 				sb_bus_lst[0].inp.fwd.valid.eq(0b1),
@@ -823,6 +885,7 @@ class PipeSkidBuf(Elaboratable):
 			parent.d.comb += [
 				sb_bus_lst[-1].inp.bak.ready.eq(0b1),
 			]
+
 	@staticmethod
 	def connect_child(
 		parent: Module,
