@@ -316,7 +316,7 @@ class PipeSkidBuf(Elaboratable):
 		FORMAL: bool=False,
 		OPT_INCLUDE_VALID_BUSY: bool=False,
 		OPT_INCLUDE_READY_BUSY: bool=False,
-		#OPT_PASSTHROUGH: bool=False,
+		OPT_PASSTHROUGH: bool=False,
 		OPT_TIE_IFWD_VALID: bool=False,
 		#OPT_TIE_IBAK_READY: bool=False,
 		#OPT_INCLUDE_BUSY: bool=False,
@@ -346,7 +346,7 @@ class PipeSkidBuf(Elaboratable):
 		self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
 		self.__OPT_INCLUDE_READY_BUSY = OPT_INCLUDE_READY_BUSY
 		#self.__OPT_INCLUDE_BUSY = OPT_INCLUDE_BUSY
-		#self.__OPT_PASSTHROUGH = OPT_PASSTHROUGH
+		self.__OPT_PASSTHROUGH = OPT_PASSTHROUGH
 		self.__OPT_TIE_IFWD_VALID = OPT_TIE_IFWD_VALID
 		#self.__OPT_TIE_IBAK_READY = OPT_TIE_IBAK_READY
 
@@ -364,8 +364,8 @@ class PipeSkidBuf(Elaboratable):
 		return self.__OPT_TIE_IFWD_VALID
 	#def OPT_TIE_IBAK_READY(self):
 	#	return self.__OPT_TIE_IBAK_READY
-	#def OPT_PASSTHROUGH(self):
-	#	return self.__OPT_PASSTHROUGH
+	def OPT_PASSTHROUGH(self):
+		return self.__OPT_PASSTHROUGH
 	def data_info(self):
 		return self.__data_info
 	#def data_shape(self):
@@ -393,22 +393,25 @@ class PipeSkidBuf(Elaboratable):
 		#OPT_INCLUDE_BUSY = self.OPT_INCLUDE_BUSY()
 		OPT_TIE_IFWD_VALID = self.OPT_TIE_IFWD_VALID()
 		#OPT_TIE_IBAK_READY = self.OPT_TIE_IBAK_READY()
-		#OPT_PASSTHROUGH = self.OPT_PASSTHROUGH()
+		#OPT_PASSTHROUGH = False
+		OPT_PASSTHROUGH = self.OPT_PASSTHROUGH()
+		#OPT_PASSTHROUGH = True
 		#--------
-		#if OPT_PASSTHROUGH:
-		#	#m.d.comb += 
-		#	m.d.sync += [
-		#		ofwd.valid.eq(ifwd.valid),
-		#		ofwd.data.eq(ifwd.data),
-		#		obak.ready.eq(ibak.ready),
-		#	]
-		#	#m.d.comb += ofwd.valid.eq(ifwd.valid)
-		#	##m.d.comb += 
-		#	#with m.If(ifwd.valid & ibak.ready):
-		#	#	m.d.sync += ofwd.data.eq(ifwd.data)
-		#	#m.d.comb += obak.ready.eq(ibak.ready)
-		#else: # if not OPT_PASSTHROUGH:
-		if True:
+		if OPT_PASSTHROUGH:
+			#m.d.comb += 
+			#m.d.sync += [
+			#	ofwd.valid.eq(ifwd.valid),
+			#	ofwd.data.eq(ifwd.data),
+			#	obak.ready.eq(ibak.ready),
+			#]
+			m.d.comb += ofwd.valid.eq(ifwd.valid)
+			#m.d.comb += [
+			with m.If(ifwd.valid & ibak.ready):
+				m.d.sync += ofwd.data.eq(ifwd.data)
+			#]
+			m.d.comb += obak.ready.eq(ibak.ready)
+		else: # if not OPT_PASSTHROUGH:
+		#if True:
 			loc = Blank()
 			# Individual `Splitrec` members can be driven by different
 			# clock domains

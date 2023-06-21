@@ -789,61 +789,63 @@ class LongDivPipelined(Elaboratable):
 					for i in range(len(loc.m) - 1)
 			]
 		else: # if USE_PIPE_SKID_BUF:
-			#for i in range(len(loc.m) - 1):
-			#	#m.d.comb += [
-			#	#	# Forwards connections
-			#	#	its_bus[i + 1].sb_bus.inp.fwd.eq(
-			#	#		its_bus[i].sb_bus.outp.fwd
-			#	#	),
-			#	#	# Backwards connections
-			#	#	its_bus[i].sb_bus.inp.bak.eq(
-			#	#		its_bus[i + 1].sb_bus.outp.bak
-			#	#	),
-			#	#]
-			#	sb_bus = its_bus[i].sb_bus
-			#	sb_bus_next = its_bus[i + 1].sb_bus
-			#	for j in range(len(
-			#		sb_bus.outp.fwd.flattened()
-			#	)):
-			#		# Forwards connections
-			#		m.d.comb += [
-			#			sb_bus_next.inp.fwd.flattened()[j].eq(
-			#				sb_bus.outp.fwd.flattened()[j]
-			#			)
-			#		]
-			#	for j in range(len(
-			#		sb_bus.inp.bak.flattened()
-			#	)):
-			#		# Backwards connections
-			#		m.d.comb += [
-			#			sb_bus.inp.bak.flattened()[j].eq(
-			#				sb_bus_next.outp.bak.flattened()[j]
-			#			)
-			#		]
-			#m.d.comb += [
-			#	its_bus[0].sb_bus.inp.fwd.valid.eq(0b1),
-			#	its_bus[-1].sb_bus.inp.bak.ready.eq(0b1),
-			#]
+			for i in range(len(loc.m) - 1):
+				#m.d.comb += [
+				#	# Forwards connections
+				#	its_bus[i + 1].sb_bus.inp.fwd.eq(
+				#		its_bus[i].sb_bus.outp.fwd
+				#	),
+				#	# Backwards connections
+				#	its_bus[i].sb_bus.inp.bak.eq(
+				#		its_bus[i + 1].sb_bus.outp.bak
+				#	),
+				#]
+				sb_bus = its_bus[i].sb_bus
+				sb_bus_next = its_bus[i + 1].sb_bus
+				for j in range(len(
+					sb_bus.outp.fwd.flattened()
+				)):
+					# Forwards connections
+					m.d.comb += [
+						sb_bus_next.inp.fwd.flattened()[j].eq(
+							sb_bus.outp.fwd.flattened()[j]
+						)
+					]
+				for j in range(len(
+					sb_bus.inp.bak.flattened()
+				)):
+					# Backwards connections
+					m.d.comb += [
+						sb_bus.inp.bak.flattened()[j].eq(
+							sb_bus_next.outp.bak.flattened()[j]
+						)
+					]
+			m.d.comb += [
+				its_bus[0].sb_bus.inp.fwd.valid.eq(0b1),
+				its_bus[-1].sb_bus.inp.bak.ready.eq(0b1),
+			]
 			#--------
-			PipeSkidBuf.connect_parallel(
-				parent=m,
-				sb_bus_lst=[
-					its_bus[i].sb_bus
-					for i in range(len(loc.m))
-				],
-				tie_first_inp_fwd_valid=True,
-				tie_last_inp_bak_ready=True,
-				##lst_shrink=-2,
-				#lst_shrink=-1,
-				#lst_shrink=-2,
-				lst_shrink=-3,
-				##other_lst_shrink=-1,
-				##other_lst_shrink=0,
-				#other_lst_shrink=-1,
-				#lst_shrink=-3,
-				#other_lst_shrink=-2,
-				#lst_shrink=0,
-			)
+			#PipeSkidBuf.connect_parallel(
+			#	parent=m,
+			#	sb_bus_lst=[
+			#		its_bus[i].sb_bus
+			#		for i in range(len(loc.m))
+			#	],
+			#	tie_first_inp_fwd_valid=True,
+			#	tie_last_inp_bak_ready=True,
+			#	##lst_shrink=-2,
+			#	#lst_shrink=-1,
+			#	#lst_shrink=-2,
+			#	#other_lst_shrink=-2,
+			#	#lst_shrink=-3,
+			#	lst_shrink=-3,
+			#	#other_lst_shrink=-1,
+			#	##other_lst_shrink=0,
+			#	#other_lst_shrink=-1,
+			#	#lst_shrink=-3,
+			#	#other_lst_shrink=-2,
+			#	#lst_shrink=0,
+			#)
 			#--------
 			#for i in range(len(loc.m) - 1):
 			#	sb_bus = its_bus[i].sb_bus
@@ -1075,7 +1077,7 @@ class LongDivPipelined(Elaboratable):
 				#--------
 				#with m.If(ifwd_move[0]):
 				with m.If(ifwd_mvp[0]):
-					m.d.sync += [
+					m.d.comb += [
 						#--------
 						Assert(loc.t.temp_numer
 							== Mux(Past(inp.signed) & Past(inp.numer)[-1],
@@ -1149,7 +1151,8 @@ class LongDivPipelined(Elaboratable):
 				#			),
 				#		]
 				#--------
-				with m.If(ifwd_move[0]):
+				#with m.If(ifwd_move[0]):
+				with m.If(ifwd_mvp[0]):
 					m.d.sync += [
 						#--------
 						Assert(
@@ -1186,8 +1189,9 @@ class LongDivPipelined(Elaboratable):
 							)
 						),
 					]
-				with m.If(ofwd_move[-1]):
-					m.d.sync += [
+				#with m.If(ofwd_move[-1]):
+				with m.If(ofwd_mvp[-1]):
+					m.d.comb += [
 						#--------
 						Assert(
 							skip_cond
