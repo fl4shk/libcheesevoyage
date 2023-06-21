@@ -317,7 +317,7 @@ class PipeSkidBuf(Elaboratable):
 		OPT_INCLUDE_VALID_BUSY: bool=False,
 		OPT_INCLUDE_READY_BUSY: bool=False,
 		#OPT_PASSTHROUGH: bool=False,
-		#OPT_TIE_IFWD_VALID: bool=False,
+		OPT_TIE_IFWD_VALID: bool=False,
 		#OPT_TIE_IBAK_READY: bool=False,
 		#OPT_INCLUDE_BUSY: bool=False,
 		tag_dct={
@@ -347,7 +347,7 @@ class PipeSkidBuf(Elaboratable):
 		self.__OPT_INCLUDE_READY_BUSY = OPT_INCLUDE_READY_BUSY
 		#self.__OPT_INCLUDE_BUSY = OPT_INCLUDE_BUSY
 		#self.__OPT_PASSTHROUGH = OPT_PASSTHROUGH
-		#self.__OPT_TIE_IFWD_VALID = OPT_TIE_IFWD_VALID
+		self.__OPT_TIE_IFWD_VALID = OPT_TIE_IFWD_VALID
 		#self.__OPT_TIE_IBAK_READY = OPT_TIE_IBAK_READY
 
 	def bus(self):
@@ -360,8 +360,8 @@ class PipeSkidBuf(Elaboratable):
 		return self.__OPT_INCLUDE_READY_BUSY
 	#def OPT_INCLUDE_BUSY(self):
 	#	return self.__OPT_INCLUDE_BUSY
-	#def OPT_TIE_IFWD_VALID(self):
-	#	return self.__OPT_TIE_IFWD_VALID
+	def OPT_TIE_IFWD_VALID(self):
+		return self.__OPT_TIE_IFWD_VALID
 	#def OPT_TIE_IBAK_READY(self):
 	#	return self.__OPT_TIE_IBAK_READY
 	#def OPT_PASSTHROUGH(self):
@@ -391,7 +391,7 @@ class PipeSkidBuf(Elaboratable):
 		OPT_INCLUDE_VALID_BUSY = self.OPT_INCLUDE_VALID_BUSY()
 		OPT_INCLUDE_READY_BUSY = self.OPT_INCLUDE_READY_BUSY()
 		#OPT_INCLUDE_BUSY = self.OPT_INCLUDE_BUSY()
-		#OPT_TIE_IFWD_VALID = self.OPT_TIE_IFWD_VALID()
+		OPT_TIE_IFWD_VALID = self.OPT_TIE_IFWD_VALID()
 		#OPT_TIE_IBAK_READY = self.OPT_TIE_IBAK_READY()
 		#OPT_PASSTHROUGH = self.OPT_PASSTHROUGH()
 		#--------
@@ -573,10 +573,10 @@ class PipeSkidBuf(Elaboratable):
 						ResetSignal()
 						#| misc.clear
 					):
-						#if not OPT_TIE_IFWD_VALID:
-						m.d.sync += [
-							Assert(~ifwd.valid),
-						]
+						if not OPT_TIE_IFWD_VALID:
+							m.d.sync += [
+								Assert(~ifwd.valid),
+							]
 						m.d.sync += [
 							#Assert(~ifwd.valid),
 							Assert(~loc.r.valid & ~ofwd.valid),

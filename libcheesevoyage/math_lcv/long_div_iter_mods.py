@@ -820,7 +820,7 @@ class LongUdivIterSync(Elaboratable):
 		#--------
 		bus = self.bus().bus
 		constants = self.constants()
-		#chunk_start_val = self.chunk_start_val()
+		chunk_start_val = self.chunk_start_val()
 		FORMAL = constants.FORMAL()
 		NUM_CHUNKS = constants.NUM_CHUNKS()
 		USE_PIPE_SKID_BUF = constants.USE_PIPE_SKID_BUF()
@@ -843,10 +843,11 @@ class LongUdivIterSync(Elaboratable):
 					pdir=PortDir.Outp,
 				),
 				#FORMAL=constants.FORMAL(),
-				FORMAL=False,
+				#FORMAL=False,
+				FORMAL=FORMAL,
 				OPT_INCLUDE_VALID_BUSY=False,
 				OPT_INCLUDE_READY_BUSY=False,
-				#OPT_TIE_IFWD_VALID=(chunk_start_val == NUM_CHUNKS - 1),
+				OPT_TIE_IFWD_VALID=(chunk_start_val == NUM_CHUNKS - 1),
 				#OPT_TIE_IBAK_READY=(chunk_start_val == 0),
 				#OPT_INCLUDE_BUSY=False,
 				#OPT_PASSTHROUGH=FORMAL,
