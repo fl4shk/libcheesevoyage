@@ -515,9 +515,16 @@ class LongUdivIter(Elaboratable):
 			itd_out.denom_mult_lut.eq(itd_in.denom_mult_lut),
 			#--------
 		]
+		if constants.PIPELINED():
+			m.d.comb += [
+				itd_out.tag.eq(itd_in.tag)
+			]
 		#--------
 		if FORMAL:
 			#--------
+			m.d.comb += [
+				itd_out.formal.eq(itd_in.formal)
+			]
 			formal_numer_in = itd_in.formal.formal_numer
 			formal_denom_in = itd_in.formal.formal_denom
 			skip_cond = (
@@ -892,7 +899,7 @@ class LongUdivIterSync(Elaboratable):
 		it = LongUdivIter(constants=constants)
 		m.submodules.udiv_it = it
 
-		if constants.USE_PIPE_SKID_BUF():
+		if USE_PIPE_SKID_BUF:
 			skid_buf = pipeline_mods.PipeSkidBuf(
 				#data_info=LongUdivIterSync.mk_data_info(
 				#	constants=constants,
@@ -914,8 +921,8 @@ class LongUdivIterSync(Elaboratable):
 				OPT_TIE_IFWD_VALID=(chunk_start_val == NUM_CHUNKS - 1),
 				#OPT_TIE_IBAK_READY=(chunk_start_val == 0),
 				#OPT_INCLUDE_BUSY=False,
-				OPT_PASSTHROUGH=FORMAL,
-				#OPT_PASSTHROUGH=False,
+				#OPT_PASSTHROUGH=FORMAL,
+				OPT_PASSTHROUGH=False,
 				#OPT_PASSTHROUGH=True,
 				tag_dct=self.__intf_tag_dct,
 			)
@@ -991,7 +998,7 @@ class LongUdivIterSync(Elaboratable):
 			loc.formal = Blank()
 			loc.formal.eq_quot = Signal(
 				1,
-				name="formal_eq_quot", attrs=sig_keep(),
+				name="loc_formal_eq_quot", attrs=sig_keep(),
 			)
 			loc.formal.temp_quot_out_sync = Signal(
 				len(Value.cast(itd_out_sync.temp_quot)),
@@ -1011,7 +1018,7 @@ class LongUdivIterSync(Elaboratable):
 			]
 			loc.formal.eq_rema = Signal(
 				1,
-				name="formal_eq_rema", attrs=sig_keep(),
+				name="loc_formal_eq_rema", attrs=sig_keep(),
 			)
 			loc.formal.temp_rema_out_sync = Signal(
 				len(Value.cast(itd_out_sync.temp_rema)),
@@ -1028,6 +1035,26 @@ class LongUdivIterSync(Elaboratable):
 					loc.formal.temp_rema_out_sync
 					== loc.formal.temp_rema_out
 				)
+			]
+
+			loc.formal.tag_in = Signal(
+				len(Value.cast(itd_in.tag)),
+				name="loc_formal_tag_in", attrs=sig_keep()
+			)
+			loc.formal.tag_out_sync = Signal(
+				len(Value.cast(itd_out_sync.tag)),
+				name="loc_formal_tag_out_sync", attrs=sig_keep()
+			)
+			loc.formal.eq_tag = Signal(
+				1,
+				name="loc_formal_eq_tag", attrs=sig_keep()
+			)
+			m.d.comb += [
+				loc.formal.tag_in.eq(itd_in.tag),
+				loc.formal.tag_out_sync.eq(itd_out_sync.tag),
+				loc.formal.eq_tag.eq(
+					loc.formal.tag_in == loc.formal.tag_out_sync
+				),
 			]
 			if USE_PIPE_SKID_BUF:
 				m.d.comb += [
@@ -1322,167 +1349,74 @@ class LongUdivIterSync(Elaboratable):
 				#--------
 				domain += [
 					#--------
-					Assert(Mux(
-						#ifwd_mvp,
-						#Mux(
-						#	not USE_PIPE_SKID_BUF,
-						#	(itd_in.temp_numer.as_value()
-						#		== itd_in_sync.temp_numer.as_value()),
-						#	#(itd_in.temp_numer.as_value()
-						#	#	== itd_in_sync.temp_numer.as_value()),
-						#	(itd_in.temp_numer.as_value()
-						#		== Past(itd_in_sync.temp_numer.as_value())),
-						#),
-						(1 if not USE_PIPE_SKID_BUF else 0),
+					Assert(
 						(itd_in.temp_numer.as_value()
-							== itd_in_sync.temp_numer.as_value()),
-						#Mux(
-						#	#ifwd_mvp & ofwd_mvp,
-						#	iofwd_mvp,
-						#	#itd_out_sync.temp_numer.as_value()
-						#	#	== Past(itd_out.temp_numer.as_value()),
-							(itd_in.temp_numer.as_value()
-								== Past(itd_in_sync.temp_numer
-									.as_value())),
-						#	1,
-						#),
-					)),
+							== itd_in_sync.temp_numer.as_value())
+						if not USE_PIPE_SKID_BUF
+						else (itd_in.temp_numer.as_value()
+							== itd_in_sync.temp_numer.as_value())
+					),
 
-					Assert(Mux(
-						#ifwd_mvp,
-						#Mux(
-						#	not USE_PIPE_SKID_BUF,
-						#	(itd_in.temp_quot.as_value()
-						#		== itd_in_sync.temp_quot.as_value()),
-						#	(itd_in.temp_quot.as_value()
-						#		== Past(itd_in_sync.temp_quot.as_value())),
-						#),
-						#1,
-						(1 if not USE_PIPE_SKID_BUF else 0),
+					Assert(
 						(itd_in.temp_quot.as_value()
-							== itd_in_sync.temp_quot.as_value()),
-						#Mux(
-						#	iofwd_mvp,
-						#	#(itd_in.temp_quot.as_value()
-						#	#	== Past(itd_in_sync.temp_quot.as_value())),
-							(itd_in.temp_quot.as_value()
-								== Past(itd_in_sync.temp_quot.as_value())),
-						#	1,
-						#),
-						#1,
-					)),
-					Assert(Mux(
-						#ifwd_mvp,
-						#Mux(
-						#	not USE_PIPE_SKID_BUF,
-						#	(itd_in.temp_rema.as_value()
-						#		== itd_in_sync.temp_rema.as_value()),
-						#	(itd_in.temp_rema.as_value()
-						#		== Past(itd_in_sync.temp_rema.as_value())),
-						#),
-						#1,
-						(1 if not USE_PIPE_SKID_BUF else 0),
+							== itd_in_sync.temp_quot.as_value())
+						if not USE_PIPE_SKID_BUF
+						else (
+							#(itd_in.temp_quot.as_value()
+							#== itd_in_sync.temp_quot.as_value())
+							1
+						)
+					),
+					Assert(
 						(itd_in.temp_rema.as_value()
-							== itd_in_sync.temp_rema.as_value()),
-						#Mux(
-						#	iofwd_mvp,
-							(itd_in.temp_rema.as_value()
-								== Past(itd_in_sync.temp_rema.as_value())),
-						#	1,
-						#),
-					)),
+							== itd_in_sync.temp_rema.as_value())
+						if not USE_PIPE_SKID_BUF
+						else (
+							#itd_in.temp_rema.as_value()
+							#	== Past(itd_in_sync.temp_rema.as_value())
+							#itd_in.temp_rema.as_value()
+							#	== itd_out_sync.temp_rema.as_value()
+							1
+						)
+					),
 
-					Assert(Mux(
-						#ifwd_mvp,
-						#Mux(
-						#	not USE_PIPE_SKID_BUF,
-						#	(itd_in.tag == itd_in_sync.tag),
-						#	(itd_in.tag == Past(itd_in_sync.tag)),
-						#),
-						#1,
-						(1 if not USE_PIPE_SKID_BUF else 0),
-						(itd_in.tag == itd_in_sync.tag),
-						#Mux(
-						#	iofwd_mvp,
-							(itd_in.tag == Past(itd_in_sync.tag)),
-						#	1,
-						#),
-						#1,
-					)),
+					Assert(
+						(itd_in.tag == itd_in_sync.tag)
+						if not USE_PIPE_SKID_BUF
+						else (
+							#(itd_in.tag == Past(itd_in_sync.tag)),
+							#(itd_in.tag == itd_out_sync.tag)
+							loc.formal.eq_tag
+						)
+					),
 
-					Assert(Mux(
-						#ifwd_mvp,
-						#Mux(
-						#	not USE_PIPE_SKID_BUF,
-						#	(itd_in.formal.formal_numer.as_value()
-						#		== itd_in_sync.formal.formal_numer
-						#		.as_value()),
-						#	(itd_in.formal.formal_numer.as_value()
-						#		== Past(itd_in_sync.formal.formal_numer
-						#			.as_value())),
-						#),
-						#1,
-						(1 if not USE_PIPE_SKID_BUF else 0),
+					Assert(
 						(itd_in.formal.formal_numer.as_value()
 							== itd_in_sync.formal.formal_numer
-							.as_value()),
-						#Mux(
-						#	iofwd_mvp,
-							(itd_in.formal.formal_numer.as_value()
-								== Past(itd_in_sync.formal.formal_numer
-									.as_value())),
-						#	1,
-						#)
-						#1,
-					)),
-					Assert(Mux(
-						#ifwd_mvp,
-						#Mux(
-						#	not USE_PIPE_SKID_BUF,
-						#	(itd_in.formal.formal_denom.as_value()
-						#		== itd_in_sync.formal.formal_denom
-						#		.as_value()),
-						#	(itd_in.formal.formal_denom.as_value()
-						#		== Past(itd_in_sync.formal.formal_denom
-						#			.as_value())),
-						#),
-						#1,
-						(1 if not USE_PIPE_SKID_BUF else 0),
+							.as_value())
+						if not USE_PIPE_SKID_BUF
+						else (
+							#itd_in.formal.formal_numer.as_value()
+							#== Past(itd_in_sync.formal.formal_numer
+							#	.as_value())
+							itd_in.formal.formal_numer.as_value()
+							== itd_out_sync.formal.formal_numer.as_value()
+						)
+					),
+					Assert(
 						(itd_in.formal.formal_denom.as_value()
 							== itd_in_sync.formal.formal_denom
-							.as_value()),
-						#Mux(
-						#	iofwd_mvp,
-							(itd_in.formal.formal_denom
-								== Past(itd_in_sync.formal.formal_denom)),
-						#	1,
-						#),
-					)),
+							.as_value())
+						if not USE_PIPE_SKID_BUF
+						else (
+							#itd_in.formal.formal_denom
+							#== Past(itd_in_sync.formal.formal_denom)
+							itd_in.formal.formal_denom.as_value()
+							== itd_out_sync.formal.formal_denom.as_value()
+						)
+					),
 
-					Assert(Mux(
-						#ifwd_mvp,
-						#Mux(
-						#	not USE_PIPE_SKID_BUF,
-						#	(
-						#		skip_cond
-						#		| (
-						#			itd_in.formal.oracle_quot.as_value()
-						#			== itd_in_sync.formal.oracle_quot
-						#				.as_value()
-						#		)
-						#	),
-						#	(
-						#		skip_cond
-						#		| (
-						#			itd_in.formal.oracle_quot.as_value()
-						#			== Past(itd_in_sync.formal
-						#				.oracle_quot.as_value())
-						#				
-						#		)
-						#	),
-						#),
-						#1,
-						(1 if not USE_PIPE_SKID_BUF else 0),
+					Assert(
 						(
 							skip_cond
 							| (
@@ -1490,60 +1424,38 @@ class LongUdivIterSync(Elaboratable):
 								== itd_in_sync.formal.oracle_quot
 									.as_value()
 							)
-						),
-						#Mux(
-						#	iofwd_mvp,
-							(
-								skip_cond
-								| (
-									itd_in.formal.oracle_quot.as_value()
-									== Past(itd_in_sync.formal.oracle_quot
-										.as_value())
-										
-								)
-							),
-						#	1,
-						#),
-					)),
-					Assert(Mux(
-						#ifwd_mvp,
-						#Mux(
-						#	not USE_PIPE_SKID_BUF,
-						#	(
-						#		skip_cond
-						#		| (itd_in.formal.oracle_rema.as_value()
-						#			== itd_in_sync.formal.oracle_rema
-						#				.as_value())
-						#	),
-						#	(
-						#		skip_cond
-						#		| (
-						#			itd_in.formal.oracle_rema.as_value()
-						#			== Past(itd_in_sync.formal.oracle_rema
-						#				.as_value())
-						#		)
-						#	),
-						#),
-						#1
-						(1 if not USE_PIPE_SKID_BUF else 0),
+						)
+						if not USE_PIPE_SKID_BUF
+						else (
+							skip_cond
+							| (
+								itd_in.formal.oracle_quot.as_value()
+								#== Past(itd_in_sync.formal.oracle_quot
+								#	.as_value())
+								== itd_out_sync.formal.oracle_quot
+									.as_value()
+							)
+						)
+					),
+					Assert(
 						(
 							skip_cond
 							| (itd_in.formal.oracle_rema.as_value()
 								== itd_in_sync.formal.oracle_rema
 									.as_value())
-						),
-						#Mux(
-						#	iofwd_mvp,
-							(
-								skip_cond
-								| (
-									itd_in.formal.oracle_rema
-									== Past(itd_in_sync.formal.oracle_rema)
-								)
-							),
-						#	1,
-						#),
-					)),
+						)
+						if not USE_PIPE_SKID_BUF
+						else (
+							skip_cond
+							| (
+								#itd_in.formal.oracle_rema
+								#== Past(itd_in_sync.formal.oracle_rema)
+								itd_in.formal.oracle_rema.as_value()
+								== itd_out_sync.formal.oracle_rema
+									.as_value()
+							)
+						)
+					),
 				]
 				with m.If(ofwd_mvp):
 					domain += [
@@ -1553,6 +1465,9 @@ class LongUdivIterSync(Elaboratable):
 							#ofwd_mvp,
 							(itd_out_sync.temp_numer
 								== Past(itd_in_sync.temp_numer))
+							if not USE_PIPE_SKID_BUF
+							else (itd_out_sync.temp_numer.as_value()
+								== itd_in.temp_numer.as_value())
 							#1,
 							#)
 						),
@@ -1563,6 +1478,11 @@ class LongUdivIterSync(Elaboratable):
 							#ofwd_mvp,
 							(itd_out_sync.formal.formal_numer
 								== Past(itd_in_sync.formal.formal_numer))
+							if not USE_PIPE_SKID_BUF
+							else (itd_out_sync.formal.formal_numer
+								.as_value()
+								== itd_in.formal.formal_numer
+									.as_value())
 							#1,
 							#)
 						),
@@ -1571,6 +1491,11 @@ class LongUdivIterSync(Elaboratable):
 							#ofwd_mvp,
 							(itd_out_sync.formal.formal_denom
 								== Past(itd_in_sync.formal.formal_denom))
+							if not USE_PIPE_SKID_BUF
+							else (itd_out_sync.formal.formal_denom
+								.as_value()
+								== itd_in.formal.formal_denom
+									.as_value())
 							#1,
 							#)
 						),
@@ -1580,6 +1505,11 @@ class LongUdivIterSync(Elaboratable):
 							#ofwd_mvp,
 							(itd_out_sync.formal.oracle_quot
 								== Past(itd_in_sync.formal.oracle_quot))
+							if not USE_PIPE_SKID_BUF
+							else (itd_out_sync.formal.oracle_quot
+								.as_value()
+								== itd_in.formal.oracle_quot
+									.as_value())
 							#1,
 							#)
 						),
@@ -1588,6 +1518,11 @@ class LongUdivIterSync(Elaboratable):
 							#ofwd_mvp,
 							(itd_out_sync.formal.oracle_rema
 								== Past(itd_in_sync.formal.oracle_rema))
+							if not USE_PIPE_SKID_BUF
+							else (itd_out_sync.formal.oracle_rema
+								.as_value()
+								== itd_in.formal.oracle_rema
+								.as_value())
 							#1,
 							#)
 						),
@@ -1598,6 +1533,11 @@ class LongUdivIterSync(Elaboratable):
 							(itd_out_sync.formal.formal_denom_mult_lut
 								== Past(itd_in_sync.formal
 									.formal_denom_mult_lut))
+							if not USE_PIPE_SKID_BUF
+							else (itd_out_sync.formal
+								.formal_denom_mult_lut.as_value()
+								== itd_in.formal
+									.formal_denom_mult_lut.as_value())
 							#1,
 							#)
 						),
@@ -1607,8 +1547,11 @@ class LongUdivIterSync(Elaboratable):
 							#ofwd_mvp,
 							##Mux(
 							##	not USE_PIPE_SKID_BUF,
-								(itd_out_sync.temp_numer
-									== Past(itd_in_sync.temp_numer)),
+							(itd_out_sync.temp_numer
+								== Past(itd_in_sync.temp_numer))
+							if not USE_PIPE_SKID_BUF
+							else (itd_out_sync.temp_numer.as_value()
+								== itd_in.temp_numer.as_value())
 							##	##(itd_out_sync.temp_numer
 							##	##	== Past(itd_out.temp_numer)),
 							##	#(itd_out_sync.temp_numer
@@ -1685,7 +1628,10 @@ class LongUdivIterSync(Elaboratable):
 						#Mux(
 						#	not USE_PIPE_SKID_BUF,
 							(itd_out_sync.denom_mult_lut
-								== Past(itd_in_sync.denom_mult_lut)),
+								== Past(itd_in_sync.denom_mult_lut))
+							if not USE_PIPE_SKID_BUF
+							else (itd_out_sync.denom_mult_lut.as_value()
+								== itd_in_sync.denom_mult_lut.as_value())
 						#	##(itd_out_sync.denom_mult_lut
 						#	##	== Past(itd_out.denom_mult_lut)),
 						#	#(itd_out_sync.denom_mult_lut
@@ -1699,105 +1645,66 @@ class LongUdivIterSync(Elaboratable):
 					#--------
 				domain += [
 					Assert(
-						#Mux(
-						#ofwd_mvp,
-						#iofwd_mvp,
-						#Mux(
-						#	not USE_PIPE_SKID_BUF,
-							(itd_out_sync.formal.formal_numer
-								== Past(itd_in_sync.formal
-									.formal_numer)),
-						#	##(itd_out_sync.formal.formal_numer
-						#	##	== Past(itd_out.formal.formal_numer)),
-						#	#(itd_out_sync.formal.formal_numer
-						#	#	== Past(itd_in.formal.formal_numer)),
-						#	1,
-						#),
-						#1,
-						#)
+						(itd_out_sync.formal.formal_numer
+							== Past(itd_in_sync.formal
+								.formal_numer))
+						if not USE_PIPE_SKID_BUF
+						else (
+							itd_out_sync.formal.formal_numer.as_value()
+							== itd_in.formal.formal_numer.as_value()
+						)
 					),
 				]
 				domain += [
 					Assert(
-						#Mux(
-						#ofwd_mvp,
-						#iofwd_mvp,
-						#Mux(
-						#	not USE_PIPE_SKID_BUF,
-							(itd_out_sync.formal.formal_denom
-								== Past(itd_in_sync.formal
-									.formal_denom)),
-						#	##(itd_out_sync.formal.formal_denom
-						#	##	== Past(itd_out.formal.formal_denom)),
-						#	#(itd_out_sync.formal.formal_denom
-						#	#	== Past(itd_in.formal.formal_denom)),
-						#	1,
-						#),
-						#1,
-						#)
+						(itd_out_sync.formal.formal_denom
+							== Past(itd_in_sync.formal
+								.formal_denom))
+						if not USE_PIPE_SKID_BUF
+						else (
+							itd_out_sync.formal.formal_denom.as_value()
+							== itd_in.formal.formal_denom.as_value()
+						)
 					),
 				]
 
 				domain += [
 					Assert(
-						#Mux(
-						#ofwd_mvp,
-						#iofwd_mvp,
-						#Mux(
-						#	not USE_PIPE_SKID_BUF,
-							(itd_out_sync.formal.oracle_quot
-								== Past(itd_in_sync.formal
-									.oracle_quot)),
-						#	##(itd_out_sync.formal.oracle_quot
-						#	##	== Past(itd_out.formal.oracle_quot)),
-						#	#(itd_out_sync.formal.oracle_quot
-						#	#	== Past(itd_in.formal.oracle_quot)),
-						#	1,
-						#),
-						#1,
-						#)
+						(itd_out_sync.formal.oracle_quot
+							== Past(itd_in_sync.formal
+								.oracle_quot))
+						if not USE_PIPE_SKID_BUF
+						else (
+							itd_out_sync.formal.oracle_quot.as_value()
+							== itd_in.formal.oracle_quot.as_value()
+						)
 					),
 				]
 				domain += [
 					Assert(
-						#Mux(
-						#ofwd_mvp,
-						#iofwd_mvp,
-						#Mux(
-						#	not USE_PIPE_SKID_BUF,
-							(itd_out_sync.formal.oracle_rema
-								== Past(itd_in_sync.formal
-									.oracle_rema)),
-							##(itd_out_sync.formal.oracle_rema
-							##	== Past(itd_out.formal.oracle_rema)),
-							#(itd_out_sync.formal.oracle_rema
-						#	#	== Past(itd_in.formal.oracle_rema)),
-						#	1,
-						#),
-						#1,
-						#)
+						(itd_out_sync.formal.oracle_rema
+							== Past(itd_in_sync.formal
+								.oracle_rema))
+						if not USE_PIPE_SKID_BUF
+						else (
+							itd_out_sync.formal.oracle_rema.as_value()
+							== itd_in.formal.oracle_rema.as_value()
+						)
 					),
 				]
 				#--------
 				domain += [
 					Assert(
-						#Mux(
-						#ofwd_mvp,
-						#iofwd_mvp,
-						#Mux(
-						#	not USE_PIPE_SKID_BUF,
-							(itd_out_sync.formal.formal_denom_mult_lut
-								== Past(itd_in_sync.formal
-									.formal_denom_mult_lut)),
-							#(itd_out_sync.formal.formal_denom_mult_lut
-							#	== Past(itd_out.formal
-							#		.formal_denom_mult_lut)),
-						#	(itd_out_sync.formal.formal_denom_mult_lut
-						#		== Past(itd_in.formal
-						#			.formal_denom_mult_lut)),
-						#),
-						#1,
-						#)
+						(itd_out_sync.formal.formal_denom_mult_lut
+							== Past(itd_in_sync.formal
+								.formal_denom_mult_lut))
+						if not USE_PIPE_SKID_BUF
+						else (
+							itd_out_sync.formal.formal_denom_mult_lut
+								.as_value()
+							== itd_in.formal.formal_denom_mult_lut
+								.as_value()
+						)
 					),
 				]
 				#--------
