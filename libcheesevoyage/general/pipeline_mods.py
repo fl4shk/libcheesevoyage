@@ -405,10 +405,11 @@ class PipeSkidBuf(Elaboratable):
 			#	obak.ready.eq(ibak.ready),
 			#]
 			m.d.comb += ofwd.valid.eq(ifwd.valid)
-			#m.d.comb += [
-			with m.If(ifwd.valid & ibak.ready):
-				m.d.sync += ofwd.data.eq(ifwd.data)
-			#]
+			if data_info is not None:
+				#m.d.comb += [
+				with m.If(ifwd.valid & ibak.ready):
+					m.d.sync += ofwd.data.eq(ifwd.data)
+				#]
 			m.d.comb += obak.ready.eq(ibak.ready)
 		else: # if not OPT_PASSTHROUGH:
 		#if True:
