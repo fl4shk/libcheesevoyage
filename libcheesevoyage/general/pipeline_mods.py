@@ -93,7 +93,8 @@ class PstageBusBakIshape(IntfShape):
 #	def __init__(
 #		self,
 #	):
-#class ValidReadyHsIshape(IntfShape):
+# may not need the below since a `PipeSkidBuf` can already handle this!
+#class ValidReadyRegdHandshakeIshape(IntfShape):
 #	def __init__(
 #		self,
 #		data_info,
@@ -107,6 +108,11 @@ class PstageBusBakIshape(IntfShape):
 #	):
 #		shape = {}
 #		super().__init__
+#class ValidReadyRegdHandshakeBus:
+#	def __init__(
+#		self,
+#		data_info
+#	):
 
 class PipeSkidBufSideIshape(IntfShape):
 	def __init__(
@@ -114,6 +120,8 @@ class PipeSkidBufSideIshape(IntfShape):
 		data_info,
 		pdir: PortDir,
 		*,
+		#OPT_INCLUDE_FWD: bool=True,
+		#OPT_INCLUDE_BAK: bool=True,
 		#fwd_tag=None,
 		#bak_tag=None,
 		tag_dct={
@@ -122,12 +130,14 @@ class PipeSkidBufSideIshape(IntfShape):
 		},
 	):
 		shape = {}
+		#if OPT_INCLUDE_FWD:
 		shape["fwd"] = PstageBusFwdIshape(
 			data_info=data_info,
 			pdir=pdir,
 			#tag=fwd_tag,
 			tag=tag_dct["fwd"],
 		)
+		#if OPT_INCLUDE_BAK:
 		shape["bak"] = PstageBusBakIshape(
 			pdir=pdir,
 			#tag=bak_tag,
@@ -171,6 +181,8 @@ class PipeSkidBufIshape(IntfShape):
 		OPT_INCLUDE_VALID_BUSY: bool,
 		OPT_INCLUDE_READY_BUSY: bool,
 		#OPT_INCLUDE_BUSY: bool=False,
+		#OPT_INCLUDE_FWD: bool=True,
+		#OPT_INCLUDE_BAK: bool=True,
 		#next_tag=None,
 		#prev_tag=None,
 		#misc_tag=None,
@@ -185,6 +197,8 @@ class PipeSkidBufIshape(IntfShape):
 				#data_info=data_info,
 				data_info=inp_data_info,
 				pdir=PortDir.Inp,
+				#OPT_INCLUDE_FWD=OPT_INCLUDE_FWD,
+				#OPT_INCLUDE_BAK=OPT_INCLUDE_BAK,
 				#fwd_tag=tag_dct["prev"],
 				#bak_tag=tag_dct["next"],
 				tag_dct={
@@ -196,6 +210,8 @@ class PipeSkidBufIshape(IntfShape):
 				#data_info=data_info,
 				data_info=outp_data_info,
 				pdir=PortDir.Outp,
+				#OPT_INCLUDE_FWD=OPT_INCLUDE_FWD,
+				#OPT_INCLUDE_BAK=OPT_INCLUDE_BAK,
 				#fwd_tag=tag_dct["next"],
 				#bak_tag=tag_dct["prev"],
 				tag_dct={
@@ -224,10 +240,42 @@ class PipeSkidBufIshape(IntfShape):
 			"prev": "sb_prev_tag",
 			"misc": "sb_misc_tag",
 		},
+
 		OPT_IN_FROM_INCLUDE_VALID_BUSY: bool=True,
 		OPT_IN_FROM_INCLUDE_READY_BUSY: bool=True,
 		OPT_NOT_IN_FROM_INCLUDE_VALID_BUSY: bool=True,
 		OPT_NOT_IN_FROM_INCLUDE_READY_BUSY: bool=True,
+		#OPT_INCLUDE_BUSY_DCT={
+		#	"in_from": {
+		#		"valid": True,
+		#		"ready": True,
+		#	},
+		#	"not_in_from": {
+		#		"valid": True,
+		#		"ready": True,
+		#	},
+		#},
+
+		## Regarding the below four options, typically there would not be
+		## other connections when using
+		## `PipeSkidBufIshape.mk_fromto_shape()`, as this `staticmethod` is
+		## generally intended to be used for heterogeneous pipelines (like
+		## with strict in order CPUs) rather than homogeneous pipelines
+		## (like with libcheesevoyage's own `LongDivPipelined`)
+		#OPT_IN_FROM_INCLUDE_FWD: bool=False,
+		#OPT_IN_FROM_INCLUDE_BAK: bool=False,
+		#OPT_NOT_IN_FROM_INCLUDE_FWD: bool=False,
+		#OPT_NOT_IN_FROM_INCLUDE_BAK: bool=False,
+		##OPT_INCLUDE_SIDE_DCT={
+		##	"in_from": {
+		##		"fwd": False,
+		##		"bak": False,
+		##	},
+		##	"not_in_from": {
+		##		"fwd": False,
+		##		"bak": False,
+		##	},
+		##},
 	):
 		shape = IntfShape.mk_fromto_shape(
 			name_dct=name_dct,
@@ -244,6 +292,12 @@ class PipeSkidBufIshape(IntfShape):
 					OPT_INCLUDE_READY_BUSY=(
 						OPT_IN_FROM_INCLUDE_READY_BUSY and in_from
 					),
+					#OPT_INCLUDE_FWD=(
+					#	OPT_NOT_IN_FROM_INCLUDE_FWD and not in_from
+					#),
+					#OPT_INCLUDE_BAK=(
+					#	OPT_IN_FROM_INCLUDE_BAK and in_from
+					#),
 					tag_dct=inner_tag_dct,
 				),
 				"to": PipeSkidBufIshape(
@@ -258,6 +312,12 @@ class PipeSkidBufIshape(IntfShape):
 					OPT_INCLUDE_READY_BUSY=(
 						OPT_NOT_IN_FROM_INCLUDE_READY_BUSY and not in_from
 					),
+					#OPT_INCLUDE_FWD=(
+					#	OPT_IN_FROM_INCLUDE_FWD and in_from
+					#),
+					#OPT_INCLUDE_BAK=(
+					#	OPT_NOT_IN_FROM_INCLUDE_BAK and not in_from
+					#),
 					tag_dct=inner_tag_dct,
 				),
 			},
@@ -277,6 +337,8 @@ class PipeSkidBufBus:
 		OPT_INCLUDE_VALID_BUSY: bool=False,
 		OPT_INCLUDE_READY_BUSY: bool=False,
 		#OPT_INCLUDE_BUSY: bool=False,
+		#OPT_INCLUDE_FWD: bool=True,
+		#OPT_INCLUDE_BAK: bool=True,
 		tag_dct={
 			"next": None,
 			"prev": None,
@@ -293,6 +355,8 @@ class PipeSkidBufBus:
 			OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
 			OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
 			#OPT_INCLUDE_BUSY=OPT_INCLUDE_BUSY,
+			#OPT_INCLUDE_FWD=OPT_INCLUDE_FWD,
+			#OPT_INCLUDE_BAK=OPT_INCLUDE_BAK,
 			tag_dct=tag_dct,
 		)
 		#super().__init__(ishape)
@@ -301,6 +365,8 @@ class PipeSkidBufBus:
 		self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
 		self.__OPT_INCLUDE_READY_BUSY = OPT_INCLUDE_READY_BUSY
 		#self.__OPT_INCLUDE_BUSY = OPT_INCLUDE_BUSY
+		#self.__OPT_INCLUDE_FWD = OPT_INCLUDE_FWD,
+		#self.__OPT_INCLUDE_BAK = OPT_INCLUDE_BAK,
 		#self.__next_tag = next_tag
 		#self.__prev_tag = prev_tag
 		#self.__misc_tag = misc_tag
@@ -328,7 +394,6 @@ class PipeSkidBufBus:
 		#self.inp = Blank()
 		#self.outp = Blank()
 
-
 	@property
 	def bus(self):
 		return self.__bus
@@ -347,6 +412,10 @@ class PipeSkidBufBus:
 		return self.__OPT_INCLUDE_READY_BUSY
 	#def OPT_INCLUDE_BUSY(self):
 	#	return self.__OPT_INCLUDE_BUSY
+	#def OPT_INCLUDE_FWD(self):
+	#	return self.__OPT_INCLUDE_FWD
+	#def OPT_INCLUDE_BAK(self):
+	#	return self.__OPT_INCLUDE_BAK
 	def tag_dct(self):
 		return self.__tag_dct
 	def next_tag(self):
@@ -372,6 +441,8 @@ class PipeSkidBuf(Elaboratable):
 		FORMAL: bool=False,
 		OPT_INCLUDE_VALID_BUSY: bool=False,
 		OPT_INCLUDE_READY_BUSY: bool=False,
+		#OPT_INCLUDE_FWD: bool=True,
+		#OPT_INCLUDE_BAK: bool=True,
 		OPT_PASSTHROUGH: bool=False,
 		OPT_TIE_IFWD_VALID: bool=False,
 		#OPT_TIE_IBAK_READY: bool=False,
@@ -392,6 +463,8 @@ class PipeSkidBuf(Elaboratable):
 			OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
 			OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
 			#OPT_INCLUDE_BUSY=OPT_INCLUDE_BUSY,
+			#OPT_INCLUDE_FWD=OPT_INCLUDE_FWD,
+			#OPT_INCLUDE_BAK=OPT_INCLUDE_BAK,
 			#next_tag=tag_dct["next"],
 			#prev_tag=tag_dct["prev"],
 			#misc_tag=tag_dct["misc"],
@@ -402,6 +475,8 @@ class PipeSkidBuf(Elaboratable):
 		self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
 		self.__OPT_INCLUDE_READY_BUSY = OPT_INCLUDE_READY_BUSY
 		#self.__OPT_INCLUDE_BUSY = OPT_INCLUDE_BUSY
+		#self.__OPT_INCLUDE_FWD = OPT_INCLUDE_FWD
+		#self.__OPT_INCLUDE_BAK = OPT_INCLUDE_BAK
 		self.__OPT_PASSTHROUGH = OPT_PASSTHROUGH
 		self.__OPT_TIE_IFWD_VALID = OPT_TIE_IFWD_VALID
 		#self.__OPT_TIE_IBAK_READY = OPT_TIE_IBAK_READY
@@ -416,6 +491,10 @@ class PipeSkidBuf(Elaboratable):
 		return self.__OPT_INCLUDE_READY_BUSY
 	#def OPT_INCLUDE_BUSY(self):
 	#	return self.__OPT_INCLUDE_BUSY
+	#def OPT_INCLUDE_FWD(self):
+	#	return self.__OPT_INCLUDE_FWD
+	#def OPT_INCLUDE_BAK(self):
+	#	return self.__OPT_INCLUDE_BAK
 	def OPT_TIE_IFWD_VALID(self):
 		return self.__OPT_TIE_IFWD_VALID
 	#def OPT_TIE_IBAK_READY(self):
@@ -447,6 +526,8 @@ class PipeSkidBuf(Elaboratable):
 		OPT_INCLUDE_VALID_BUSY = self.OPT_INCLUDE_VALID_BUSY()
 		OPT_INCLUDE_READY_BUSY = self.OPT_INCLUDE_READY_BUSY()
 		#OPT_INCLUDE_BUSY = self.OPT_INCLUDE_BUSY()
+		#OPT_INCLUDE_FWD = self.OPT_INCLUDE_FWD()
+		#OPT_INCLUDE_BAK = self.OPT_INCLUDE_BAK()
 		OPT_TIE_IFWD_VALID = self.OPT_TIE_IFWD_VALID()
 		#OPT_TIE_IBAK_READY = self.OPT_TIE_IBAK_READY()
 		#OPT_PASSTHROUGH = False
