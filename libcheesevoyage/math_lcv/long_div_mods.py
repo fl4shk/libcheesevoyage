@@ -610,7 +610,7 @@ class LongDivPipelined(Elaboratable):
 	def __init__(
 		self, MAIN_WIDTH, DENOM_WIDTH, CHUNK_WIDTH,
 		*, FORMAL=False, signed_reset=0b0,
-		USE_PIPE_SKID_BUF=True,
+		USE_PIPE_SKID_BUF=False,
 	):
 		self.__constants = LongDivConstants(
 			MAIN_WIDTH=MAIN_WIDTH,
