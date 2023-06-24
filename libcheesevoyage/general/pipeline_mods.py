@@ -277,48 +277,81 @@ class PipeSkidBufIshape(IntfShape):
 		##	},
 		##},
 	):
-		shape = IntfShape.mk_fromto_shape(
+		ret = {
+			"from": {
+				"data_info": SigInfo(
+					#basenm="from_mctrl_data",
+					basenm="data",
+					shape=FromDataLayt,
+				),
+				"OPT_INCLUDE_VALID_BUSY": (
+					OPT_NOT_IN_FROM_INCLUDE_VALID_BUSY and not in_from
+				),
+				"OPT_INCLUDE_READY_BUSY": (
+					OPT_IN_FROM_INCLUDE_READY_BUSY and in_from
+				),
+				#"OPT_INCLUDE_FWD": (
+				#	OPT_NOT_IN_FROM_INCLUDE_FWD and not in_from
+				#),
+				#"OPT_INCLUDE_BAK": (
+				#	OPT_IN_FROM_INCLUDE_BAK and in_from
+				#),
+			},
+			"to": {
+				"data_info": SigInfo(
+					#basenm="from_mctrl_data",
+					basenm="data",
+					shape=ToDataLayt,
+				),
+				"OPT_INCLUDE_VALID_BUSY": (
+					OPT_IN_FROM_INCLUDE_VALID_BUSY and in_from
+				),
+				"OPT_INCLUDE_READY_BUSY": (
+					OPT_NOT_IN_FROM_INCLUDE_READY_BUSY and not in_from
+				),
+				#"OPT_INCLUDE_FWD": (
+				#	OPT_IN_FROM_INCLUDE_FWD and in_from
+				#),
+				#"OPT_INCLUDE_BAK": (
+				#	OPT_NOT_IN_FROM_INCLUDE_BAK and not in_from
+				#),
+			},
+			"inner_tag_dct": inner_tag_dct,
+		}
+		ret["shape"] = IntfShape.mk_fromto_shape(
 			name_dct=name_dct,
 			shape_dct={
 				"from": PipeSkidBufIshape(
-					data_info=SigInfo(
-						#basenm="from_mctrl_data",
-						basenm="data",
-						shape=FromDataLayt,
-					),
+					data_info=ret["from"]["data_info"],
 					OPT_INCLUDE_VALID_BUSY=(
-						OPT_NOT_IN_FROM_INCLUDE_VALID_BUSY and not in_from
+						ret["from"]["OPT_INCLUDE_VALID_BUSY"]
 					),
 					OPT_INCLUDE_READY_BUSY=(
-						OPT_IN_FROM_INCLUDE_READY_BUSY and in_from
+						ret["from"]["OPT_INCLUDE_READY_BUSY"]
 					),
 					#OPT_INCLUDE_FWD=(
-					#	OPT_NOT_IN_FROM_INCLUDE_FWD and not in_from
+					#	ret["from"]["OPT_INCLUDE_FWD"]
 					#),
 					#OPT_INCLUDE_BAK=(
-					#	OPT_IN_FROM_INCLUDE_BAK and in_from
+					#	ret["from"]["OPT_INCLUDE_BAK"]
 					#),
-					tag_dct=inner_tag_dct,
+					tag_dct=ret["inner_tag_dct"],
 				),
 				"to": PipeSkidBufIshape(
-					data_info=SigInfo(
-						#basenm="to_mctrl_data",
-						basenm="data",
-						shape=ToDataLayt,
-					),
+					data_info=ret["to"]["data_info"],
 					OPT_INCLUDE_VALID_BUSY=(
-						OPT_IN_FROM_INCLUDE_VALID_BUSY and in_from
+						ret["to"]["OPT_INCLUDE_VALID_BUSY"]
 					),
 					OPT_INCLUDE_READY_BUSY=(
-						OPT_NOT_IN_FROM_INCLUDE_READY_BUSY and not in_from
+						ret["to"]["OPT_INCLUDE_READY_BUSY"]
 					),
 					#OPT_INCLUDE_FWD=(
-					#	OPT_IN_FROM_INCLUDE_FWD and in_from
+					#	ret["to"]["OPT_INCLUDE_FWD"]
 					#),
 					#OPT_INCLUDE_BAK=(
-					#	OPT_NOT_IN_FROM_INCLUDE_BAK and not in_from
+					#	ret["to"]["OPT_INCLUDE_BAK"]
 					#),
-					tag_dct=inner_tag_dct,
+					tag_dct=ret["inner_tag_dct"],
 				),
 			},
 			in_from=in_from,
@@ -326,7 +359,8 @@ class PipeSkidBufIshape(IntfShape):
 			mk_modport_dct={key: False for key in ["from", "to"]},
 		)
 		#return IntfShape(shape)
-		return shape
+		#return shape
+		return ret
 class PipeSkidBufBus:
 	def __init__(
 		self,
