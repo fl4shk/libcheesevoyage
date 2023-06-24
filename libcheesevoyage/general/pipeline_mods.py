@@ -211,6 +211,51 @@ class PipeSkidBufIshape(IntfShape):
 			)
 		}
 		super().__init__(shape=shape)
+	@staticmethod
+	def mk_fromto_shape(
+		in_from: bool,
+		OPT_INCLUDE_VALID_BUSY: bool,
+		OPT_INCLUDE_READY_BUSY: bool,
+		FromDataLayt,
+		ToDataLayt,
+		name_dct: dict,
+		tag_dct: dict,
+		inner_tag_dct: dict={
+			"next": "sb_next_tag",
+			"prev": "sb_prev_tag",
+			"misc": "sb_misc_tag",
+		},
+	):
+		shape = IntfShape.mk_fromto_shape(
+			name_dct=name_dct,
+			shape_dct={
+				"from": PipeSkidBufIshape(
+					data_info=SigInfo(
+						#basenm="from_mctrl_data",
+						basenm="data",
+						shape=FromDataLayt,
+					),
+					OPT_INCLUDE_VALID_BUSY=in_mctrl,
+					OPT_INCLUDE_READY_BUSY=in_cpu,
+					tag_dct=inner_tag_dct,
+				),
+				"to": PipeSkidBufIshape(
+					data_info=SigInfo(
+						#basenm="to_mctrl_data",
+						basenm="data",
+						shape=ToDataLayt,
+					),
+					OPT_INCLUDE_VALID_BUSY=in_cpu,
+					OPT_INCLUDE_READY_BUSY=in_mctrl,
+					tag_dct=inner_tag_dct,
+				),
+			},
+			in_from=in_from,
+			tag_dct=tag_dct,
+			mk_modport_dct={key: False for key in ["from", "to"]},
+		)
+		#return IntfShape(shape)
+		return shape
 class PipeSkidBufBus:
 	def __init__(
 		self,
