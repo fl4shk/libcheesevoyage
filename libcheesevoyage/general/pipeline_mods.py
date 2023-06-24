@@ -213,11 +213,10 @@ class PipeSkidBufIshape(IntfShape):
 		super().__init__(shape=shape)
 	@staticmethod
 	def mk_fromto_shape(
-		in_from: bool,
-		OPT_INCLUDE_VALID_BUSY: bool,
-		OPT_INCLUDE_READY_BUSY: bool,
 		FromDataLayt,
 		ToDataLayt,
+		*,
+		in_from: bool,
 		name_dct: dict,
 		tag_dct: dict,
 		inner_tag_dct: dict={
@@ -225,6 +224,10 @@ class PipeSkidBufIshape(IntfShape):
 			"prev": "sb_prev_tag",
 			"misc": "sb_misc_tag",
 		},
+		OPT_IN_FROM_INCLUDE_VALID_BUSY: bool=True,
+		OPT_IN_FROM_INCLUDE_READY_BUSY: bool=True,
+		OPT_NOT_IN_FROM_INCLUDE_VALID_BUSY: bool=True,
+		OPT_NOT_IN_FROM_INCLUDE_READY_BUSY: bool=True,
 	):
 		shape = IntfShape.mk_fromto_shape(
 			name_dct=name_dct,
@@ -235,8 +238,12 @@ class PipeSkidBufIshape(IntfShape):
 						basenm="data",
 						shape=FromDataLayt,
 					),
-					OPT_INCLUDE_VALID_BUSY=in_mctrl,
-					OPT_INCLUDE_READY_BUSY=in_cpu,
+					OPT_INCLUDE_VALID_BUSY=(
+						OPT_NOT_IN_FROM_INCLUDE_VALID_BUSY and not in_from
+					),
+					OPT_INCLUDE_READY_BUSY=(
+						OPT_IN_FROM_INCLUDE_READY_BUSY and in_from
+					),
 					tag_dct=inner_tag_dct,
 				),
 				"to": PipeSkidBufIshape(
@@ -245,8 +252,12 @@ class PipeSkidBufIshape(IntfShape):
 						basenm="data",
 						shape=ToDataLayt,
 					),
-					OPT_INCLUDE_VALID_BUSY=in_cpu,
-					OPT_INCLUDE_READY_BUSY=in_mctrl,
+					OPT_INCLUDE_VALID_BUSY=(
+						OPT_IN_FROM_INCLUDE_VALID_BUSY and in_from
+					),
+					OPT_INCLUDE_READY_BUSY=(
+						OPT_NOT_IN_FROM_INCLUDE_READY_BUSY and not in_from
+					),
 					tag_dct=inner_tag_dct,
 				),
 			},
