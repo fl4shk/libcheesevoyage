@@ -14,29 +14,19 @@ if __name__ == "__main__":
 	#	OUTP_SIZE=3,
 	#)
 
-	formal_non_sync(
 	#formal(
-	#to_verilog_non_sync(
-		dut_mod=XbarSwitch,
-		#h2d_shape=unsigned(2),
-		#d2h_shape=unsigned(2),
-		#h2d_shape=2,
-		#d2h_shape=2,
+	to_verilog(
+		dut_mod=PsbXbarSwitch,
+		h2d_data_shape={"h2d_data": 2},
+		d2h_data_shape={"d2h_data": 2},
 		#NUM_HOSTS=4,
 		#NUM_DEVS=4,
-		NUM_HOSTS=3,
-		#NUM_HOSTS=2,
-		#NUM_DEVS=2,
+		NUM_HOSTS=2,
 		NUM_DEVS=2,
 		#H2D_SIGNED=False,
 		#D2H_SIGNED=False,
-		#H2D_PRIO_LST_2D=[[2, 1, 0], [2, 1, 0]]
-		#H2D_PRIO_LST_2D=[[1, 0], [1, 0]]
-		h2d_shape=4,
-		d2h_shape=4,
+	#)
 	)
-	#)
-	#)
 
 	#to_verilog_non_sync(
 	#	dut_mod=XbarSwitch,

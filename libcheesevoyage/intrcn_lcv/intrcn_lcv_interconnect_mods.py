@@ -14,7 +14,11 @@ from amaranth.asserts import Past, Rose, Fell, Stable
 
 from amaranth.back import verilog
 
-from libcheesevoyage import *
+#from libcheesevoyage import *
+from libcheesevoyage.general.container_types import *
+from libcheesevoyage.general.pipeline_mods import *
+from libcheesevoyage.intrcn_lcv.xbar_switch_mods import *
+from libcheesevoyage.intrcn_lcv.intrcn_lcv_node_bus_types import *
 #--------
 class IntrcnLcvInterconnectBus:
 	#--------
@@ -34,18 +38,22 @@ class IntrcnLcvInterconnectBus:
 		# `dev_node_cfg[1]` is the device address range's low value, and
 		# `dev_node_cfg[2]` is the device address range's high value
 		for dev_node_cfg in dev_node_cfg_lst:
-			if (not isinstance(dev_node_cfg, list)) \
-				or (len(dev_node_cfg) != 3) \
-				or (not isinstance(dev_node_cfg[0], IntrcnLcvNodeBus)) \
-				or (not isinstance(dev_node_cfg[1], int)) \
-				or (not isinstance(dev_node_cfg[2], int)):
+			if (
+				not isinstance(dev_node_cfg, list)
+				or len(dev_node_cfg) != 3
+				or not isinstance(dev_node_cfg[0], IntrcnLcvNodeBus)
+				or not isinstance(dev_node_cfg[1], int)
+				or not isinstance(dev_node_cfg[2], int)
+			):
 				raise TypeError(psconcat(
 					"`dev_node_cfg` `{!r}` must be of the following ",
 					"format: `[IntrcnLcvNodeBus, int, int]`"
 					).format(dev_node_cfg)
 				)
-			if (dev_node_cfg[1] < 0) \
-				or (dev_node_cfg[1] > dev_node_cfg[2]):
+			if (
+				dev_node_cfg[1] < 0
+				or dev_node_cfg[1] > dev_node_cfg[2]
+			):
 				raise ValueError(psconcat(
 					"`dev_node_cfg[1]` `{!r}` must be >= 0, and ",
 					"`dev_node_cfg[2]` `{!r}` must be >= ",
@@ -58,11 +66,16 @@ class IntrcnLcvInterconnectBus:
 #--------
 class IntrcnLcvInterconnect:
 	#--------
-	def __init__(self, host_node_cfg_lst, dev_node_cfg_lst, 
-		*, PRIO_LST_2D=None, FORMAL=False):
+	def __init__(
+		self,
+		host_node_cfg_lst, dev_node_cfg_lst, 
+		*, PRIO_LST_2D=None, FORMAL=False
+	):
 		#--------
-		if (not isinstance(PRIO_LST_2D, list)) \
-			and (not isinstance(PRIO_LST_2D, type(None))):
+		if (
+			not isinstance(PRIO_LST_2D, list)
+			and not isinstance(PRIO_LST_2D, type(None))
+		):
 			raise TypeError(psconcat(
 				"`PRIO_LST_2D` `{!r}` must be a `list` or `None`"
 				.format(PRIO_LST_2D)
@@ -80,8 +93,10 @@ class IntrcnLcvInterconnect:
 			for PRIO_LST in PRIO_LST_2D:
 				temp = set(PRIO_LST)
 
-				if (len(PRIO_LST) != len(temp)) \
-					or (temp != set(list(range(NUM_HOSTS)))):
+				if (
+					len(PRIO_LST) != len(temp)
+					or temp != set(list(range(NUM_HOSTS)))
+				):
 					raise ValueError(psconcat(
 						"`PRIO_LST` `{!r}` must ".format(PRIO_LST),
 						"consist of all unique `int`s that are between 0 ",

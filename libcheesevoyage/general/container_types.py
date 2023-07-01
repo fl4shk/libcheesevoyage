@@ -1663,7 +1663,7 @@ class IntfShape:
 		from_tag = tag_dct["from"]
 		to_tag = tag_dct["to"]
 		mk_from_modport = mk_modport_dct["from"]
-		mk_from_modport = mk_modport_dct["to"]
+		mk_to_modport = mk_modport_dct["to"]
 		#--------
 		ret = {}
 		if (
