@@ -183,7 +183,6 @@ class XbarSwitchBus:
 
 		self.__tag_dct = tag_dct
 		#--------
-		#--------
 		shape = XbarSwitchIshape(
 			#h2d_shape=h2d_shape, d2h_shape=d2h_shape,
 			NUM_HOSTS=NUM_HOSTS, NUM_DEVS=NUM_DEVS,
@@ -207,10 +206,6 @@ class XbarSwitchBus:
 		return self.__h2d_shape
 	def d2h_shape(self):
 		return self.__d2h_shape
-	#def OPT_INCLUDE_H2D_DATA(self):
-	#	return self.__OPT_INCLUDE_H2D_DATA
-	#def OPT_INCLUDE_D2H_DATA(self):
-	#	return self.__OPT_INCLUDE_D2H_DATA
 	def SEL_WIDTH(self):
 		#return math.ceil(math.log2(self.NUM_DEVS()))
 		return XbarSwitchIshape.SEL_WIDTH(self.NUM_DEVS())
@@ -230,15 +225,11 @@ class XbarSwitch(Elaboratable):
 	# For `H2D_PRIO_LST_2D`, lower list indices mean higher priority
 	def __init__(
 		self,
-		#h2d_shape, d2h_shape,
 		NUM_HOSTS, NUM_DEVS,
-		#H2D_SIGNED=False, D2H_SIGNED=False,
 		*,
 		FORMAL: bool=False,
 		h2d_shape=None,
 		d2h_shape=None,
-		#OPT_INCLUDE_H2D_DATA: bool=True,
-		#OPT_INCLUDE_D2H_DATA: bool=True,
 		H2D_PRIO_LST_2D=None,
 		DOMAIN=BasicDomain.COMB,
 		tag_dct: dict={
@@ -268,8 +259,8 @@ class XbarSwitch(Elaboratable):
 		#self.__D2H_CASE_LST_2D = XbarSwitch.mk_d2h_case_lst_2d(
 		#	NUM_HOSTS=NUM_HOSTS,
 		#	#NUM_DEVS=NUM_DEVS,
-		#	SOME_D2H_PRIO_LST_2D=self.D2H_PRIO_LST_2D(),
 		#	#SOME_H2D_CASE_LST_2D=self.H2D_CASE_LST_2D()
+		#	SOME_D2H_PRIO_LST_2D=self.D2H_PRIO_LST_2D(),
 		#)
 		#--------
 		if not isinstance(DOMAIN, BasicDomain):
@@ -279,19 +270,11 @@ class XbarSwitch(Elaboratable):
 		self.__DOMAIN = DOMAIN
 		#--------
 		self.__bus = XbarSwitchBus(
-			#h2d_shape=h2d_shape,
-			#d2h_shape=d2h_shape,
 			NUM_HOSTS=NUM_HOSTS,
 			NUM_DEVS=NUM_DEVS,
-			#H2D_SIGNED=H2D_SIGNED,
-			#D2H_SIGNED=D2H_SIGNED,
 			FORMAL=FORMAL,
 			h2d_shape=h2d_shape,
 			d2h_shape=d2h_shape,
-			#OPT_INCLUDE_H2D_DATA=OPT_INCLUDE_H2D_DATA,
-			#OPT_INCLUDE_D2H_DATA=OPT_INCLUDE_D2H_DATA,
-			#inp_tag=inp_tag,
-			#outp_tag=outp_tag,
 			tag_dct=tag_dct,
 		)
 		#--------
@@ -414,8 +397,8 @@ class XbarSwitch(Elaboratable):
 	#def mk_d2h_case_lst_2d(
 	#	NUM_HOSTS,
 	#	#NUM_DEVS,
-	#	SOME_H2D_CASE_LST_2D,
-	#	#SOME_D2H_PRIO_LST_2D,
+	#	#SOME_H2D_CASE_LST_2D,
+	#	SOME_D2H_PRIO_LST_2D,
 	#):
 	#	#return [
 	#	#	[SOME_H2D_CASE_LST_2D[j][i] for j in range(NUM_DEVS)]
@@ -465,9 +448,6 @@ class XbarSwitch(Elaboratable):
 		#		for CASE in H2D_CASE_LST:
 		#			temp += psconcat(CASE, " ")
 		#		temp += "\n"
-		#	#f.writelines([
-		#	#	temp
-		#	#])
 		#	f.writelines([
 		#		temp, "\n"
 		#	])
@@ -519,31 +499,9 @@ class XbarSwitch(Elaboratable):
 			)
 			for j in range(bus.NUM_DEVS())
 		])
-		#loc.d2h_conn_arr = View(
-		#	ArrayLayout(
-		#		XbarSwitchIshape.SEL_WIDTH(NUM_DEVS), NUM_HOSTS,
-		#	),
-		#	name="loc_d2h_conn_arr",
-		#)
-		#loc.h2d_conn_arr = View(
-		#	ArrayLayout(
-		#		XbarSwitchIshape.SEL_WIDTH(NUM_HOSTS), NUM_DEVS,
-		#	),
-		#	name="loc_d2h_conn_arr",
-		#)
 
 		md = basic_domain_to_actual_domain(m, self.DOMAIN())
 		#--------
-		#for i in range(len(H2D_PRIO_LST)):
-		#	#with m.Else():
-		#	with m.If(loc.match_arr_z[i].any()):
-		#		md += [
-		#			outp.d2h_data[H2D_PRIO_LST[i]].eq(0x0)
-		#		]
-		#for i in range(bus.NUM_HOSTS()):
-		#	m.d.sync += [
-		#		loc.saved_h2d_data[i].eq(outp.h2d_data[i]),
-		#	]
 		for j in range(bus.NUM_DEVS()):
 			for i in range(bus.NUM_HOSTS()):
 				m.d.comb += [
@@ -553,43 +511,37 @@ class XbarSwitch(Elaboratable):
 					loc.h2d_found_arr[i][j].eq(loc.d2h_found_arr[j][i]),
 					#outp.hosts_active[i][j].eq(out.devs_active[j][i]),
 				]
-				#with m.If(d2h_found_arr[j][i]):
-				#	md += [
-				#		outp.d2h_conn_arr[i].eq(j)
-				#	]
-			#H2D_PRIO_LST = list(reversed(H2D_PRIO_LST_2D[j]))
-
-			#m.d.sync += [
-			#	loc.saved_d2h_data[j].eq(outp.d2h_data[j]),
-			#]
 
 			H2D_PRIO_LST = H2D_PRIO_LST_2D[j]
 			H2D_CASE_LST = H2D_CASE_LST_2D[j]
 
 			with m.Switch(loc.d2h_found_arr[j]):
-				for i in range(len(H2D_PRIO_LST)):
-					PRIO = H2D_PRIO_LST[i]
+				#for i in range(len(H2D_PRIO_LST)):
+				for i in range(bus.NUM_HOSTS()):
+					#HOST = H2D_PRIO_LST[i]
+					HOST = i
 					#CASE = "".join(list(reversed(H2D_CASE_LST[i])))
 					#CASE = H2D_CASE_LST[i]
-					CASE = list(reversed(H2D_CASE_LST[i]))
+					CASE_STR = "".join(list(reversed(H2D_CASE_LST[i])))
 
-					with m.Case("".join(CASE)):
+					#with m.Case("".join(CASE)):
+					with m.Case(CASE_STR):
 						md += [
-							outp.d2h_conn_arr[PRIO].eq(j),
-							outp.h2d_conn_arr[j].eq(PRIO),
+							outp.d2h_conn_arr[HOST].eq(j),
+							outp.h2d_conn_arr[j].eq(HOST),
 							#outp.d2h_conn_arr[i].eq(j),
 							#outp.h2d_conn_arr[j].eq(i),
 						]
 						if bus.h2d_shape() is not None:
 							md += [
 								outp.h2d_data[j].eq(
-									inp.h2d_data[PRIO]
+									inp.h2d_data[HOST]
 									#inp.h2d_data[i]
 								),
 							]
 						if bus.d2h_shape() is not None:
 							md += [
-								outp.d2h_data[PRIO].eq(
+								outp.d2h_data[HOST].eq(
 									inp.d2h_data[j]
 								),
 								#outp.d2h_data[i].eq(inp.d2h_data[j]),
@@ -606,8 +558,9 @@ class XbarSwitch(Elaboratable):
 				outp.devs_active[j].eq(loc.d2h_found_arr[j].any()),
 			]
 		for i in range(bus.NUM_HOSTS()):
+			HOST = i
 			md += [
-				outp.hosts_active[i].eq(loc.h2d_found_arr[i].any()),
+				outp.hosts_active[HOST].eq(loc.h2d_found_arr[HOST].any()),
 			]
 		#--------
 		if bus.FORMAL():
@@ -632,6 +585,7 @@ class XbarSwitch(Elaboratable):
 			#with m.If((~ResetSignal()) & loc.formal.past_valid):
 			for j in range(bus.NUM_DEVS()):
 				H2D_PRIO_LST = H2D_PRIO_LST_2D[j]
+				H2D_CASE_LST = H2D_CASE_LST_2D[j]
 				#H2D_PRIO_LST = list(reversed(H2D_PRIO_LST_2D[j]))
 
 				if (
@@ -641,14 +595,15 @@ class XbarSwitch(Elaboratable):
 					#d2h_shape = Shape.cast(bus.d2h_shape())
 					#value_out_0 = Value.cast(outp.d2h_data[0])
 					for i in range(bus.NUM_HOSTS()):
-						PRIO = H2D_PRIO_LST[i]
+						#HOST = H2D_PRIO_LST[i]
+						HOST = i
 						value_out = Value.cast(
-							outp.d2h_data[PRIO]
+							outp.d2h_data[HOST]
 							#outp.d2h_data[i]
 						)
 						value_in = Value.cast(inp.d2h_data[j])
-						#temp_d2h_found = loc.d2h_found_arr[j][PRIO]
-						temp_d2h_found = loc.d2h_found_arr[j][i]
+						temp_d2h_found = loc.d2h_found_arr[j][HOST]
+						#temp_d2h_found = loc.d2h_found_arr[j][i]
 						temp_eq_found = (
 							(value_in == value_out)
 							& temp_d2h_found
@@ -698,7 +653,7 @@ class XbarSwitch(Elaboratable):
 							#	& temp_d2h_found
 							#),
 							#Cover(
-							#	outp.hosts_active[PRIO]
+							#	outp.hosts_active[HOST]
 							#	& temp_d2h_found
 							#),
 							#Cover(
@@ -722,30 +677,27 @@ class XbarSwitch(Elaboratable):
 							),
 						]
 
-				PRIO = H2D_PRIO_LST[0]
-				with m.If(loc.d2h_found_arr[j][PRIO]):
+				#HOST = H2D_PRIO_LST[0]
+				HOST = 0
+				CASE_STR = "".join(list(reversed(H2D_CASE_LST[HOST])))
+				#with m.If(loc.d2h_found_arr[j][HOST]):
 				#with m.If(loc.d2h_found_arr[j][0]):
+				with m.If(loc.d2h_found_arr[j].matches(CASE_STR)):
 					m.d.comb += [
 						Assert(outp.devs_active[j]),
-						Assert(outp.hosts_active[PRIO]),
+						Assert(outp.hosts_active[H2D_PRIO_LST[HOST]]),
 					]
 					m.d.comb += [
-						#Assert(outp.h2d_conn_arr[PRIO] == j),
-						#Assert(outp.h2d_conn_arr[PRIO] == j),
-						Assert(outp.h2d_conn_arr[j] == PRIO),
-						#Assert(outp.h2d_conn_arr[j] == 0),
+						Assert(outp.h2d_conn_arr[j] == HOST),
 					]
 					m.d.comb += [
-						#Assert(outp.d2h_conn_arr[j] == PRIO),
-						#Assert(outp.d2h_conn_arr[0] == H2D_PRIO_LST[j]),
-						Assert(outp.d2h_conn_arr[PRIO] == j),
-						#Assert(outp.d2h_conn_arr[0] == j),
+						Assert(outp.d2h_conn_arr[HOST] == j),
 					]
 					if bus.h2d_shape() is not None:
 						m.d.comb += [
 							Assert(
 								outp.h2d_data[j]
-								== inp.h2d_data[PRIO]
+								== inp.h2d_data[HOST]
 								#outp.h2d_data[j]
 								#== inp.h2d_data[0]
 							)
@@ -753,7 +705,7 @@ class XbarSwitch(Elaboratable):
 					if bus.d2h_shape() is not None:
 						m.d.comb += [
 							Assert(
-								outp.d2h_data[PRIO]
+								outp.d2h_data[HOST]
 									== inp.d2h_data[j]
 								#outp.d2h_data[0]
 								#	== inp.d2h_data[j]
@@ -761,36 +713,40 @@ class XbarSwitch(Elaboratable):
 						]
 				#for i in range(1, bus.NUM_HOSTS()):
 				for i in range(1, len(H2D_PRIO_LST)):
-					PRIO = H2D_PRIO_LST[i]
-					with m.Elif(loc.d2h_found_arr[j][PRIO]):
+					#HOST = H2D_PRIO_LST[i]
+					HOST = i
+					CASE_STR = "".join(list(reversed(H2D_CASE_LST[HOST])))
+					#with m.Elif(loc.d2h_found_arr[j][HOST]):
 					#with m.Elif(loc.d2h_found_arr[j][i]):
+					with m.Elif(loc.d2h_found_arr[j].matches(CASE_STR)):
 						m.d.comb += [
 							Assert(outp.devs_active[j]),
-							Assert(outp.hosts_active[PRIO]),
+							#Assert(outp.hosts_active[HOST]),
+							Assert(outp.hosts_active[H2D_PRIO_LST[HOST]]),
 						]
 						m.d.comb += [
 							Assert(
-								outp.h2d_conn_arr[j] == PRIO
+								outp.h2d_conn_arr[j] == HOST
 								#outp.h2d_conn_arr[j] == i
 							),
 						]
 						m.d.comb += [
 							Assert(
-								outp.d2h_conn_arr[PRIO] == j
+								outp.d2h_conn_arr[HOST] == j
 								#outp.d2h_conn_arr[i] == j
 							),
 						]
 						if bus.h2d_shape() is not None:
 							m.d.comb += [
 								Assert(
-									outp.h2d_data[j] == inp.h2d_data[PRIO]
+									outp.h2d_data[j] == inp.h2d_data[HOST]
 									#outp.h2d_data[j] == inp.h2d_data[i]
 								)
 							]
 						if bus.d2h_shape() is not None:
 							m.d.comb += [
 								Assert(
-									outp.d2h_data[PRIO] == inp.d2h_data[j]
+									outp.d2h_data[HOST] == inp.d2h_data[j]
 									#outp.d2h_data[i] == inp.d2h_data[j]
 								)
 							]
@@ -800,13 +756,15 @@ class XbarSwitch(Elaboratable):
 						#Assert(outp.devs_active == 0x0)
 						#Assert(outp.h2d_conn_arr[j] == 0x0),
 					]
-			for i in range(len(H2D_PRIO_LST)):
-				#PRIO = H2D_PRIO_LST[i]
-				#with m.If(outp.hosts_active[PRIO])
-				with m.If(~loc.h2d_found_arr[i].any()):
+			#for i in range(len(H2D_PRIO_LST)):
+			for i in range(bus.NUM_HOSTS()):
+				#HOST = H2D_PRIO_LST[i]
+				HOST = i
+				#with m.If(outp.hosts_active[HOST])
+				with m.If(~loc.h2d_found_arr[HOST].any()):
 					#with m.If(~loc.d2h_found_arr[j][i]):
 					m.d.comb += [
-						Assert(~outp.hosts_active[i])
+						Assert(~outp.hosts_active[HOST])
 					]
 		#--------
 		return m
