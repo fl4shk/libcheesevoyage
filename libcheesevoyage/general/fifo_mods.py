@@ -35,14 +35,14 @@ class FifoBus:
 	def __init__(
 		self,
 		shape, SIZE,
-		*,
-		tag_dct={
-			"inp": None,
-			"outp": None,
-		},
+		#*,
+		#tag_dct={
+		#	"inp": None,
+		#	"outp": None,
+		#},
 	):
 		self.__shape, self.__SIZE = shape, SIZE
-		self.__tag_dct = tag_dct
+		#self.__tag_dct = tag_dct
 		#--------
 		#inp_shape = {}
 		#--------
@@ -67,7 +67,7 @@ class FifoBus:
 			#	"inp": inp_tag,
 			#	"outp": outp_tag,
 			#},
-			tag_dct=tag_dct,
+			#tag_dct=tag_dct,
 			#mk_inp_modport=True,
 			#mk_outp_modport=True,
 			mk_modport_dct={
@@ -98,15 +98,15 @@ class Fifo(Elaboratable):
 		shape, SIZE,
 		*,
 		FORMAL: bool=False,
-		tag_dct={
-			"inp": None,
-			"outp": None,
-		},
+		#tag_dct={
+		#	"inp": None,
+		#	"outp": None,
+		#},
 	):
 		self.__bus = FifoBus(
 			shape=shape,
 			SIZE=SIZE,
-			tag_dct=tag_dct,
+			#tag_dct=tag_dct,
 		)
 		self.__FORMAL = FORMAL
 
@@ -330,15 +330,15 @@ class AsyncReadFifo(Fifo):
 		*,
 		FORMAL: bool=False,
 		mem_attrs=None,
-		tag_dct={
-			"inp": None,
-			"outp": None,
-		},
+		#tag_dct={
+		#	"inp": None,
+		#	"outp": None,
+		#},
 	):
 		super().__init__(
 			shape=shape, SIZE=SIZE,
 			FORMAL=FORMAL,
-			tag_dct=tag_dct,
+			#tag_dct=tag_dct,
 		)
 
 	def elaborate(self, platform: str) -> Module:

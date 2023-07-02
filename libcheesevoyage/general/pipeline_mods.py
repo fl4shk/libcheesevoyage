@@ -23,8 +23,8 @@ class PstageBusFwdIshape(IntfShape):
 		data_info,
 		pdir: PortDir,
 		#io_str: str,
-		*,
-		tag=None,
+		#*,
+		#tag=None,
 	):
 		shape = {}
 		shape["valid"] = FieldInfo(
@@ -57,15 +57,15 @@ class PstageBusFwdIshape(IntfShape):
 		super().__init__(
 			shape=shape,
 			modport=Modport(mp_dct),
-			tag=tag,
+			#tag=tag,
 		)
 class PstageBusBakIshape(IntfShape):
 	def __init__(
 		self,
 		pdir: PortDir,
 		#io_str: str,
-		*,
-		tag=None,
+		#*,
+		#tag=None,
 	):
 		shape = {}
 		shape["ready"] = FieldInfo(
@@ -86,7 +86,7 @@ class PstageBusBakIshape(IntfShape):
 		super().__init__(
 			shape=shape,
 			modport=Modport(mp_dct),
-			tag=tag,
+			#tag=tag,
 		)
 
 #class PstageHandshakeIshape(IntfShape):
@@ -104,7 +104,7 @@ class PstageBusBakIshape(IntfShape):
 #		#	"host": None,
 #		#	"dev": None,
 #		#},
-#		tag=None,
+#		#tag=None,
 #	):
 #		shape = {}
 #		super().__init__
@@ -119,15 +119,15 @@ class PipeSkidBufSideIshape(IntfShape):
 		self,
 		data_info,
 		pdir: PortDir,
-		*,
+		#*,
 		#OPT_INCLUDE_NEXT: bool=True,
 		#OPT_INCLUDE_PREV: bool=True,
 		#fwd_tag=None,
 		#bak_tag=None,
-		tag_dct={
-			"fwd": None,
-			"bak": None,
-		},
+		#tag_dct={
+		#	"fwd": None,
+		#	"bak": None,
+		#},
 	):
 		shape = {}
 		#if OPT_INCLUDE_NEXT:
@@ -135,13 +135,13 @@ class PipeSkidBufSideIshape(IntfShape):
 			data_info=data_info,
 			pdir=pdir,
 			#tag=fwd_tag,
-			tag=tag_dct["fwd"],
+			#tag=tag_dct["fwd"],
 		)
 		#if OPT_INCLUDE_PREV:
 		shape["bak"] = PstageBusBakIshape(
 			pdir=pdir,
 			#tag=bak_tag,
-			tag=tag_dct["bak"],
+			#tag=tag_dct["bak"],
 		)
 		super().__init__(shape=shape)
 class PipeSkidBufMiscIshape(IntfShape):
@@ -151,7 +151,7 @@ class PipeSkidBufMiscIshape(IntfShape):
 		OPT_INCLUDE_VALID_BUSY: bool,
 		OPT_INCLUDE_READY_BUSY: bool,
 		#OPT_INCLUDE_BUSY: bool,
-		tag=None,
+		#tag=None,
 	):
 		shape = {}
 		if OPT_INCLUDE_VALID_BUSY:
@@ -169,7 +169,7 @@ class PipeSkidBufMiscIshape(IntfShape):
 		super().__init__(
 			shape=shape,
 			modport=Modport(mp_dct),
-			tag=tag,
+			#tag=tag,
 		)
 class PipeSkidBufIshape(IntfShape):
 	def __init__(
@@ -183,14 +183,11 @@ class PipeSkidBufIshape(IntfShape):
 		#OPT_INCLUDE_BUSY: bool=False,
 		#OPT_INCLUDE_NEXT: bool=True,
 		#OPT_INCLUDE_PREV: bool=True,
-		#next_tag=None,
-		#prev_tag=None,
-		#misc_tag=None,
-		tag_dct={
-			"next": None,
-			"prev": None,
-			"misc": None,
-		},
+		#tag_dct={
+		#	"next": None,
+		#	"prev": None,
+		#	"misc": None,
+		#},
 	):
 		shape = {
 			"inp": PipeSkidBufSideIshape(
@@ -201,10 +198,10 @@ class PipeSkidBufIshape(IntfShape):
 				#OPT_INCLUDE_PREV=OPT_INCLUDE_PREV,
 				#fwd_tag=tag_dct["prev"],
 				#bak_tag=tag_dct["next"],
-				tag_dct={
-					"fwd": tag_dct["prev"],
-					"bak": tag_dct["next"],
-				},
+				#tag_dct={
+				#	"fwd": tag_dct["prev"],
+				#	"bak": tag_dct["next"],
+				#},
 			),
 			"outp": PipeSkidBufSideIshape(
 				#data_info=data_info,
@@ -214,16 +211,16 @@ class PipeSkidBufIshape(IntfShape):
 				#OPT_INCLUDE_PREV=OPT_INCLUDE_PREV,
 				#fwd_tag=tag_dct["next"],
 				#bak_tag=tag_dct["prev"],
-				tag_dct={
-					"fwd": tag_dct["next"],
-					"bak": tag_dct["prev"],
-				},
+				#tag_dct={
+				#	"fwd": tag_dct["next"],
+				#	"bak": tag_dct["prev"],
+				#},
 			),
 			"misc": PipeSkidBufMiscIshape(
 				OPT_INCLUDE_VALID_BUSY=OPT_INCLUDE_VALID_BUSY,
 				OPT_INCLUDE_READY_BUSY=OPT_INCLUDE_READY_BUSY,
 				#OPT_INCLUDE_BUSY=OPT_INCLUDE_BUSY,
-				tag=tag_dct["misc"],
+				#tag=tag_dct["misc"],
 			)
 		}
 		super().__init__(shape=shape)
@@ -235,12 +232,12 @@ class PipeSkidBufIshape(IntfShape):
 		*,
 		in_from: bool,
 		name_dct: dict,
-		tag_dct: dict,
-		inner_tag_dct: dict={
-			"next": "sb_next_tag",
-			"prev": "sb_prev_tag",
-			"misc": "sb_misc_tag",
-		},
+		#tag_dct: dict,
+		#inner_tag_dct: dict={
+		#	"next": "sb_next_tag",
+		#	"prev": "sb_prev_tag",
+		#	"misc": "sb_misc_tag",
+		#},
 
 		OPT_IN_FROM_INCLUDE_VALID_BUSY: bool=True,
 		OPT_IN_FROM_INCLUDE_READY_BUSY: bool=True,
@@ -309,7 +306,7 @@ class PipeSkidBufIshape(IntfShape):
 				"OPT_INCLUDE_READY_BUSY": (
 					OPT_IN_FROM_INCLUDE_READY_BUSY and in_from
 				),
-				"tag_dct": inner_tag_dct,
+				#"tag_dct": inner_tag_dct,
 			}
 			shape_dct["from"] = PipeSkidBufIshape(**ret["from"])
 		if (
@@ -333,10 +330,10 @@ class PipeSkidBufIshape(IntfShape):
 				"OPT_INCLUDE_READY_BUSY": (
 					OPT_NOT_IN_FROM_INCLUDE_READY_BUSY and not in_from
 				),
-				"tag_dct": inner_tag_dct,
+				#"tag_dct": inner_tag_dct,
 			}
 			shape_dct["to"] = PipeSkidBufIshape(**ret["to"])
-		ret["inner_tag_dct"] = inner_tag_dct,
+		#ret["inner_tag_dct"] = inner_tag_dct,
 		ret["shape"] = IntfShape.mk_fromto_shape(
 			name_dct=name_dct,
 			#shape_dct={
@@ -345,7 +342,7 @@ class PipeSkidBufIshape(IntfShape):
 			#},
 			shape_dct=shape_dct,
 			in_from=in_from,
-			tag_dct=tag_dct,
+			#tag_dct=tag_dct,
 			mk_modport_dct={key: False for key in ["from", "to"]},
 		)
 		#return IntfShape(shape)
@@ -363,11 +360,11 @@ class PipeSkidBufBus:
 		#OPT_INCLUDE_BUSY: bool=False,
 		#OPT_INCLUDE_NEXT: bool=True,
 		#OPT_INCLUDE_PREV: bool=True,
-		tag_dct={
-			"next": None,
-			"prev": None,
-			"misc": None,
-		}
+		#tag_dct={
+		#	"next": None,
+		#	"prev": None,
+		#	"misc": None,
+		#}
 	):
 		#self.__data_info = data_info
 		#self.__OPT_INCLUDE_VALID_BUSY = OPT_INCLUDE_VALID_BUSY
@@ -381,7 +378,7 @@ class PipeSkidBufBus:
 			#OPT_INCLUDE_BUSY=OPT_INCLUDE_BUSY,
 			#OPT_INCLUDE_NEXT=OPT_INCLUDE_NEXT,
 			#OPT_INCLUDE_PREV=OPT_INCLUDE_PREV,
-			tag_dct=tag_dct,
+			#tag_dct=tag_dct,
 		)
 		#super().__init__(ishape)
 		self.__bus = Splitintf(ishape)
@@ -440,17 +437,17 @@ class PipeSkidBufBus:
 	#	return self.__OPT_INCLUDE_NEXT
 	#def OPT_INCLUDE_PREV(self):
 	#	return self.__OPT_INCLUDE_PREV
-	def tag_dct(self):
-		return self.__tag_dct
-	def next_tag(self):
-		#return self.__next_tag
-		return self.__tag_dct["next"]
-	def prev_tag(self):
-		#return self.__prev_tag
-		self.__tag_dct["prev"]
-	def misc_tag(self):
-		#return self.__misc_tag
-		self.__tag_dct["misc"]
+	#def tag_dct(self):
+	#	return self.__tag_dct
+	#def next_tag(self):
+	#	#return self.__next_tag
+	#	return self.__tag_dct["next"]
+	#def prev_tag(self):
+	#	#return self.__prev_tag
+	#	self.__tag_dct["prev"]
+	#def misc_tag(self):
+	#	#return self.__misc_tag
+	#	self.__tag_dct["misc"]
 
 class PipeSkidBuf(Elaboratable):
 	def __init__(
@@ -471,11 +468,11 @@ class PipeSkidBuf(Elaboratable):
 		OPT_TIE_IFWD_VALID: bool=False,
 		#OPT_TIE_IBAK_READY: bool=False,
 		#OPT_INCLUDE_BUSY: bool=False,
-		tag_dct={
-			"next": None,
-			"prev": None,
-			"misc": None,
-		},
+		#tag_dct={
+		#	"next": None,
+		#	"prev": None,
+		#	"misc": None,
+		#},
 		#next_tag=None,
 		#prev_tag=None,
 		#misc_tag=None,
@@ -492,7 +489,7 @@ class PipeSkidBuf(Elaboratable):
 			#next_tag=tag_dct["next"],
 			#prev_tag=tag_dct["prev"],
 			#misc_tag=tag_dct["misc"],
-			tag_dct=tag_dct,
+			#tag_dct=tag_dct,
 		)
 		self.__data_info = inp_data_info
 		self.__FORMAL = FORMAL
@@ -1011,15 +1008,30 @@ class PipeSkidBuf(Elaboratable):
 		for i in range(len(sb_bus_lst) - 1):
 			sb_bus = sb_bus_lst[i]
 			sb_bus_next = sb_bus_lst[i + 1]
-			sb_bus.connect(
-				other=sb_bus_next,
+			#sb_bus.connect(
+			#	other=sb_bus_next,
+			#	m=parent,
+			#	kind=Splitintf.ConnKind.Parallel,
+			#	#use_tag=True,
+			#	#reduce_tag=False,
+			#	lst_shrink=lst_shrink,
+			#	other_lst_shrink=other_lst_shrink,
+			#)
+			sb_bus_next.inp.fwd.connect(
+				other=sb_bus.outp.fwd,
 				m=parent,
 				kind=Splitintf.ConnKind.Parallel,
-				use_tag=True,
-				reduce_tag=False,
 				lst_shrink=lst_shrink,
 				other_lst_shrink=other_lst_shrink,
 			)
+			sb_bus.inp.bak.connect(
+				other=sb_bus_next.outp.bak,
+				m=parent,
+				kind=Splitintf.ConnKind.Parallel,
+				lst_shrink=lst_shrink,
+				other_lst_shrink=other_lst_shrink,
+			)
+
 			#sb_bus_next.inp.fwd.connect(
 			#	other=sb_bus.outp.fwd,
 			#	m=parent,
@@ -1057,23 +1069,25 @@ class PipeSkidBuf(Elaboratable):
 		parent_sb_bus,
 		child_sb_bus,
 		parent_data=None,
-		use_tag: bool=True,
-		reduce_tag: bool=True,
+		#use_tag: bool=True,
+		#reduce_tag: bool=True,
 		*,
 		lst_shrink=-1,
 		other_lst_shrink=None,
 	):
-		# This function is especially intended for when you have a
-		# `<YourModule>Bus` that has its own `PipeSkidBufBus` instance that
-		# you want to connect to the `PipeSkidBufBus` of an internal
-		# `PipeSkidBuf`.
+		"""
+		This function is especially intended for when you have a
+		`<YourModule>Bus` that has its own `PipeSkidBufBus` instance that
+		you want to connect to the `PipeSkidBufBus` of an internal
+		`PipeSkidBuf`.
 
-		# `parent_data` not being `None` provides the ability to do
-		# internal processing on the `PipeSkidBuf`'s fwd output.
-		# If you can't do all the needed processing on the `PipeSkidBuf`'s
-		# fwd output, then you'll need to assert
-		# `child_sb_bus.inp.valid_busy` until you're done with your
-		# processing.
+		`parent_data` not being `None` provides the ability to do
+		internal processing on the `PipeSkidBuf`'s fwd output.
+		If you can't do all the needed processing on the `PipeSkidBuf`'s
+		fwd output, then you'll need to assert
+		`child_sb_bus.inp.valid_busy` until you're done with your
+		processing.
+		"""
 
 		#parent.d.comb += [
 		#	child_sb_bus.inp.fwd.eq(parent_sb_bus.inp.fwd),
@@ -1095,8 +1109,8 @@ class PipeSkidBuf(Elaboratable):
 			other=child_sb_bus.inp,
 			m=parent,
 			kind=Splitintf.ConnKind.Parent2Child,
-			use_tag=use_tag,
-			reduce_tag=reduce_tag,
+			#use_tag=use_tag,
+			#reduce_tag=reduce_tag,
 			lst_shrink=lst_shrink,
 			other_lst_shrink=other_lst_shrink,
 		)
@@ -1115,8 +1129,8 @@ class PipeSkidBuf(Elaboratable):
 			other=child_sb_bus.outp.bak,
 			m=parent,
 			kind=Splitintf.ConnKind.Parent2Child,
-			use_tag=use_tag,
-			reduce_tag=reduce_tag,
+			#use_tag=use_tag,
+			#reduce_tag=reduce_tag,
 			lst_shrink=lst_shrink,
 			other_lst_shrink=other_lst_shrink,
 		)
@@ -1150,8 +1164,8 @@ class PipeSkidBuf(Elaboratable):
 			#kind=Splitintf.ConnKind.Parallel,
 			kind=Splitintf.ConnKind.Parent2Child,
 			#use_tag=True,
-			use_tag=use_tag,
-			reduce_tag=reduce_tag,
+			#use_tag=use_tag,
+			#reduce_tag=reduce_tag,
 			lst_shrink=lst_shrink,
 			other_lst_shrink=other_lst_shrink,
 		)

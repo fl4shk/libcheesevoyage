@@ -313,14 +313,14 @@ class IntrcnLcvWriteIshape(IntfShape):
 		*,
 		in_device: bool, # `True` is considered `in_from`
 		#name_dct: dict,
-		tag_dct: dict,
+		#tag_dct: dict,
 	):
 		#--------
 		return IntrcnLcvWriteIshape.mk_fromto_shape(
 			ADDR_WIDTH=ADDR_WIDTH, DATA_WIDTH=DATA_WIDTH,
 			in_device=in_device,
 			#name_dct=name_dct,
-			tag_dct=tag_dct
+			#tag_dct=tag_dct
 		)
 		#--------
 	@staticmethod
@@ -329,7 +329,7 @@ class IntrcnLcvWriteIshape(IntfShape):
 		*,
 		in_device: bool,
 		#name_dct: dict,
-		tag_dct: dict
+		#tag_dct: dict
 	):
 		_intrcn_lcv_check_widths(
 			ADDR_WIDTH=ADDR_WIDTH,
@@ -347,7 +347,7 @@ class IntrcnLcvWriteIshape(IntfShape):
 				"from": "d2h",
 				"to": "h2d",
 			},
-			tag_dct=tag_dct,
+			#tag_dct=tag_dct,
 		)
 	#@staticmethod
 	#def def_tag_dct():
@@ -404,14 +404,14 @@ class IntrcnLcvReadIshape(IntfShape):
 		*,
 		in_device: bool, # `True` is considered `in_from`
 		#name_dct: dict,
-		tag_dct: dict,
+		#tag_dct: dict,
 	):
 		#--------
 		return IntrcnLcvReadIshape.mk_fromto_shape(
 			ADDR_WIDTH=ADDR_WIDTH, DATA_WIDTH=DATA_WIDTH,
 			in_device=in_device,
 			#name_dct=name_dct,
-			tag_dct=tag_dct
+			#tag_dct=tag_dct
 		)
 		#--------
 	@staticmethod
@@ -420,7 +420,7 @@ class IntrcnLcvReadIshape(IntfShape):
 		*,
 		in_device: bool,
 		#name_dct: dict,
-		tag_dct: dict
+		#tag_dct: dict
 	):
 		_intrcn_lcv_check_widths(
 			ADDR_WIDTH=ADDR_WIDTH,
@@ -439,7 +439,7 @@ class IntrcnLcvReadIshape(IntfShape):
 				"from": "d2h",
 				"to": "h2d",
 			},
-			tag_dct=tag_dct,
+			#tag_dct=tag_dct,
 		)
 	#@staticmethod
 	#def def_tag_dct():
@@ -462,9 +462,9 @@ class IntrcnLcvNodeIshape(IntfShape):
 		#	"wr": None,
 		#	"rd": None,
 		#},
-		tag,
-		wr_tag_dct: dict,
-		rd_tag_dct: dict,
+		#tag,
+		#wr_tag_dct: dict,
+		#rd_tag_dct: dict,
 	):
 		#--------
 		#if len(name_prefix) != 0:
@@ -535,19 +535,19 @@ class IntrcnLcvNodeIshape(IntfShape):
 				ADDR_WIDTH=ADDR_WIDTH,
 				DATA_WIDTH=DATA_WIDTH,
 				in_device=in_device,
-				tag_dct=wr_tag_dct,
+				#tag_dct=wr_tag_dct,
 			),
 			"rd": IntrcnLcvReadIshape(
 				ADDR_WIDTH=ADDR_WIDTH,
 				DATA_WIDTH=DATA_WIDTH,
 				in_device=in_device,
-				tag_dct=rd_tag_dct,
+				#tag_dct=rd_tag_dct,
 			),
 		}
 		super().__init__(
 			shape=shape,
 			modport=None,
-			tag=tag,
+			#tag=tag,
 		)
 		#--------
 	#--------

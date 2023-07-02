@@ -1,9 +1,7 @@
 [tasks]
-cover
 prove
 
 [options]
-cover: mode cover
 prove: mode prove
 depth 5
 multiclock off

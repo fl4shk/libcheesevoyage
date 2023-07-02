@@ -660,11 +660,11 @@ class LongDivPipelined(Elaboratable):
 				#USE_PIPE_SKID_BUF=USE_PIPE_SKID_BUF,
 				#next_intf_tag=psconcat(i),
 				#prev_intf_tag=psconcat(i + 1),
-				intf_tag_dct={
-					"next": psconcat(i + 1),
-					"prev": psconcat(i),
-					#"prev": psconcat(i - 1),
-				},
+				#intf_tag_dct={
+				#	"next": psconcat(i + 1),
+				#	"prev": psconcat(i),
+				#	#"prev": psconcat(i - 1),
+				#},
 			)
 			for i in range(NUM_PSTAGES)
 		]
@@ -789,131 +789,18 @@ class LongDivPipelined(Elaboratable):
 					for i in range(len(loc.m) - 1)
 			]
 		else: # if USE_PIPE_SKID_BUF:
-			for i in range(len(loc.m) - 1):
-				#m.d.comb += [
-				#	# Forwards connections
-				#	its_bus[i + 1].sb_bus.inp.fwd.eq(
-				#		its_bus[i].sb_bus.outp.fwd
-				#	),
-				#	# Backwards connections
-				#	its_bus[i].sb_bus.inp.bak.eq(
-				#		its_bus[i + 1].sb_bus.outp.bak
-				#	),
-				#]
-				sb_bus = its_bus[i].sb_bus
-				sb_bus_next = its_bus[i + 1].sb_bus
-				for j in range(len(
-					sb_bus.outp.fwd.flattened()
-				)):
-					# Forwards connections
-					m.d.comb += [
-						sb_bus_next.inp.fwd.flattened()[j].eq(
-							sb_bus.outp.fwd.flattened()[j]
-						)
-					]
-				for j in range(len(
-					sb_bus.inp.bak.flattened()
-				)):
-					# Backwards connections
-					m.d.comb += [
-						sb_bus.inp.bak.flattened()[j].eq(
-							sb_bus_next.outp.bak.flattened()[j]
-						)
-					]
-			m.d.comb += [
-				its_bus[0].sb_bus.inp.fwd.valid.eq(0b1),
-				its_bus[-1].sb_bus.inp.bak.ready.eq(0b1),
-			]
 			#--------
-			#PipeSkidBuf.connect_parallel(
-			#	parent=m,
-			#	sb_bus_lst=[
-			#		its_bus[i].sb_bus
-			#		for i in range(len(loc.m))
-			#	],
-			#	tie_first_inp_fwd_valid=True,
-			#	tie_last_inp_bak_ready=True,
-			#	##lst_shrink=-2,
-			#	#lst_shrink=-1,
-			#	#lst_shrink=-2,
-			#	#other_lst_shrink=-2,
-			#	#lst_shrink=-3,
-			#	lst_shrink=-3,
-			#	#other_lst_shrink=-1,
-			#	##other_lst_shrink=0,
-			#	#other_lst_shrink=-1,
-			#	#lst_shrink=-3,
-			#	#other_lst_shrink=-2,
-			#	#lst_shrink=0,
-			#)
+			PipeSkidBuf.connect_parallel(
+				parent=m,
+				sb_bus_lst=[
+					its_bus[i].sb_bus
+					for i in range(len(loc.m))
+				],
+				tie_first_inp_fwd_valid=True,
+				tie_last_inp_bak_ready=True,
+				lst_shrink=-3,
+			)
 			#--------
-			#for i in range(len(loc.m) - 1):
-			#	sb_bus = its_bus[i].sb_bus
-			#	sb_bus_next = its_bus[i + 1].sb_bus
-			#	f = open(
-			#		psconcat("debug-LongDivPipelined-", i, ".txt.ignore"),
-			#		"w"
-			#	)
-			#	#its_bus[i].connect(
-			#	#	other=its_bus[i + 1],
-			#	#	m=m,
-			#	#	kind=Splitintf.ConnKind.Parallel,
-			#	#	f=f,
-			#	#	use_tag=True,
-			#	#	reduce_tag=False,
-			#	#	lst_shrink=-1,
-			#	#)
-			#	sb_bus_next.inp.fwd.connect(
-			#		other=sb_bus.outp.fwd,
-			#		m=m,
-			#		kind=Splitintf.ConnKind.Parallel,
-			#		f=f,
-			#		use_tag=True,
-			#		reduce_tag=False,
-			#		lst_shrink=-3,
-			#	)
-			#	sb_bus.inp.bak.connect(
-			#		other=sb_bus_next.outp.bak,
-			#		m=m,
-			#		kind=Splitintf.ConnKind.Parallel,
-			#		f=f,
-			#		use_tag=True,
-			#		reduce_tag=False,
-			#		lst_shrink=-3,
-			#	)
-			#	f.close()
-
-			#	###lst_shrink = -3
-			#	##lst_shrink = -1
-			#	##other_lst_shrink = None
-			#	#lst_shrink = -3
-			#	#other_lst_shrink = -3
-			#	if i == 0:
-			#		#lst_shrink = -1
-			#		#other_lst_shrink = -1
-			#		m.d.comb += sb_bus.inp.fwd.valid.eq(0b1)
-			#	elif i + 1 == len(loc.m) - 1:
-			#		#lst_shrink = -1
-			#		#other_lst_shrink = None
-			#		m.d.comb += sb_bus_next.inp.bak.ready.eq(0b1)
-			#	#else:
-			#	#	lst_shrink = -1
-			#	#	other_lst_shrink = None
-
-			#	#f = open(
-			#	#	psconcat("debug-LongDivPipelined-", i, ".txt.ignore"),
-			#	#	"w"
-			#	#)
-			#	#sb_bus.connect(
-			#	#	other=sb_bus_next,
-			#	#	m=m,
-			#	#	kind=Splitintf.ConnKind.Parallel,
-			#	#	f=f,
-			#	#	use_tag=False,
-			#	#	lst_shrink=lst_shrink,
-			#	#	other_lst_shrink=other_lst_shrink,
-			#	#)
-			#	#f.close()
 		#--------
 		with m.If(
 			#(not USE_PIPE_SKID_BUF)

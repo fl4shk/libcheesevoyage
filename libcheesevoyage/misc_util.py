@@ -51,8 +51,6 @@ def width_from_len(arg):
 #def add_clk_domain(m, clk, domain="dom"):
 #	m.domains += ClockDomain(domain)
 #	m.d.comb += ClockSignal(domain=domain).eq(clk)
-def to_shape(arg):
-	return Value.cast(arg).shape()
 #--------
 def inst_intel_pll(
 	pll_file_name,

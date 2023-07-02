@@ -24,10 +24,10 @@ class XbarSwitchIshape(IntfShape):
 		*,
 		h2d_shape=None,
 		d2h_shape=None,
-		tag_dct={
-			"inp": None,
-			"outp": None,
-		},
+		#tag_dct={
+		#	"inp": None,
+		#	"outp": None,
+		#},
 	):
 		#--------
 		inp_shape = {}
@@ -148,7 +148,7 @@ class XbarSwitchIshape(IntfShape):
 				"inp": inp_shape,
 				"outp": outp_shape,
 			},
-			tag_dct=tag_dct,
+			#tag_dct=tag_dct,
 			mk_modport_dct={
 				"inp": True,
 				"outp": True,
@@ -168,10 +168,10 @@ class XbarSwitchBus:
 		FORMAL=False,
 		h2d_shape=None,
 		d2h_shape=None,
-		tag_dct={
-			"inp": None,
-			"outp": None,
-		},
+		#tag_dct={
+		#	"inp": None,
+		#	"outp": None,
+		#},
 	):
 		#--------
 		self.__NUM_HOSTS = NUM_HOSTS
@@ -181,14 +181,14 @@ class XbarSwitchBus:
 		self.__h2d_shape = h2d_shape
 		self.__d2h_shape = d2h_shape
 
-		self.__tag_dct = tag_dct
+		#self.__tag_dct = tag_dct
 		#--------
 		shape = XbarSwitchIshape(
 			#h2d_shape=h2d_shape, d2h_shape=d2h_shape,
 			NUM_HOSTS=NUM_HOSTS, NUM_DEVS=NUM_DEVS,
 			h2d_shape=h2d_shape, d2h_shape=d2h_shape,
 			#H2D_SIGNED=H2D_SIGNED, D2H_SIGNED=D2H_SIGNED,
-			tag_dct=tag_dct,
+			#tag_dct=tag_dct,
 		)
 		self.__bus = Splitintf(shape, name="bus", use_parent_name=False)
 		#--------
@@ -209,14 +209,14 @@ class XbarSwitchBus:
 	def SEL_WIDTH(self):
 		#return math.ceil(math.log2(self.NUM_DEVS()))
 		return XbarSwitchIshape.SEL_WIDTH(self.NUM_DEVS())
-	def tag_dct(self):
-		return self.__tag_dct
-	def inp_tag(self):
-		#return self.__inp_tag
-		return self.tag_dct()["inp"]
-	def outp_tag(self):
-		#return self.__outp_tag
-		return self.tag_dct()["outp"]
+	#def tag_dct(self):
+	#	return self.__tag_dct
+	#def inp_tag(self):
+	#	#return self.__inp_tag
+	#	return self.tag_dct()["inp"]
+	#def outp_tag(self):
+	#	#return self.__outp_tag
+	#	return self.tag_dct()["outp"]
 	#--------
 #--------
 # A crossbar switch
@@ -232,10 +232,10 @@ class XbarSwitch(Elaboratable):
 		d2h_shape=None,
 		H2D_PRIO_LST_2D=None,
 		DOMAIN=BasicDomain.COMB,
-		tag_dct: dict={
-			"inp": None,
-			"outp": None,
-		},
+		#tag_dct: dict={
+		#	"inp": None,
+		#	"outp": None,
+		#},
 	):
 	#def __init__(self, h2d_shape, d2h_shape, NUM_HOSTS, NUM_DEVS,
 	#	H2D_SIGNED=False, D2H_SIGNED=False, *, H2D_PRIO_LST_2D=None,
@@ -275,7 +275,7 @@ class XbarSwitch(Elaboratable):
 			FORMAL=FORMAL,
 			h2d_shape=h2d_shape,
 			d2h_shape=d2h_shape,
-			tag_dct=tag_dct,
+			#tag_dct=tag_dct,
 		)
 		#--------
 	#--------
@@ -597,11 +597,11 @@ class XbarSwitch(Elaboratable):
 					for i in range(bus.NUM_HOSTS()):
 						#HOST = H2D_PRIO_LST[i]
 						HOST = i
-						value_out = Value.cast(
+						value_out = as_value(
 							outp.d2h_data[HOST]
 							#outp.d2h_data[i]
 						)
-						value_in = Value.cast(inp.d2h_data[j])
+						value_in = as_value(inp.d2h_data[j])
 						temp_d2h_found = loc.d2h_found_arr[j][HOST]
 						#temp_d2h_found = loc.d2h_found_arr[j][i]
 						temp_eq_found = (
@@ -696,8 +696,8 @@ class XbarSwitch(Elaboratable):
 					if bus.h2d_shape() is not None:
 						m.d.comb += [
 							Assert(
-								outp.h2d_data[j]
-								== inp.h2d_data[HOST]
+								as_value(outp.h2d_data[j])
+								== as_value(inp.h2d_data[HOST])
 								#outp.h2d_data[j]
 								#== inp.h2d_data[0]
 							)
@@ -705,8 +705,8 @@ class XbarSwitch(Elaboratable):
 					if bus.d2h_shape() is not None:
 						m.d.comb += [
 							Assert(
-								outp.d2h_data[HOST]
-									== inp.d2h_data[j]
+								as_value(outp.d2h_data[HOST])
+									== as_value(inp.d2h_data[j])
 								#outp.d2h_data[0]
 								#	== inp.d2h_data[j]
 							)
@@ -739,14 +739,16 @@ class XbarSwitch(Elaboratable):
 						if bus.h2d_shape() is not None:
 							m.d.comb += [
 								Assert(
-									outp.h2d_data[j] == inp.h2d_data[HOST]
+									as_value(outp.h2d_data[j])
+									== as_value(inp.h2d_data[HOST])
 									#outp.h2d_data[j] == inp.h2d_data[i]
 								)
 							]
 						if bus.d2h_shape() is not None:
 							m.d.comb += [
 								Assert(
-									outp.d2h_data[HOST] == inp.d2h_data[j]
+									as_value(outp.d2h_data[HOST])
+									== as_value(inp.d2h_data[j])
 									#outp.d2h_data[i] == inp.d2h_data[j]
 								)
 							]
@@ -781,16 +783,16 @@ class XbarSwitch(Elaboratable):
 #		"h2d": "h2d",
 #		"d2h": "d2h",
 #	}
-## "Psb" is short for `PipeSkidBuf`
+# "Psb" is short for `PipeSkidBuf`
 #class PsbXbarSwitchIshape(IntfShape):
 #	def __init__(
 #		self,
 #		h2d_data_shape, d2h_data_shape,
 #		NUM_HOSTS, NUM_DEVS,
-#		*,
+#		#*,
 #		#in_from: bool,
-#		tag=None,
-#		tag_dct: dict=PSB_XBAR_SWITCH_DEF_TAG_DCT(),
+#		#tag=None,
+#		#tag_dct: dict=PSB_XBAR_SWITCH_DEF_TAG_DCT(),
 #		#tag_prefix_dct: dict={
 #		#	"h2d": "h2d",
 #		#	"d2h": "d2h",

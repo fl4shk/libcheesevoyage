@@ -32,12 +32,14 @@ if __name__ == "__main__":
 		#D2H_SIGNED=False,
 		#H2D_PRIO_LST_2D=[[2, 1, 0], [2, 1, 0]],
 		H2D_PRIO_LST_2D=[[1, 0], [1, 0]],
-		h2d_shape=1,
-		d2h_shape=1,
+		#h2d_shape=1,
+		#d2h_shape=1,
+		h2d_shape={key: 2 for key in ["r", "g", "b"]},
+		d2h_shape={key: 2 for key in ["r", "g", "b"]},
 		#h2d_shape=4,
 		#d2h_shape=4,
-		#h2d_shape=StructLayout({"a": 2, "b": 2}),
-		#d2h_shape=StructLayout({"a": 2, "b": 2}),
+		#h2d_shape={"r": 2, "g": 2, "b": 2},
+		#d2h_shape={"r": 2, "g": 2, "b": 2},
 	)
 	#)
 	#)

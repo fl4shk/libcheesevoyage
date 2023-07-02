@@ -30,10 +30,10 @@ class ReduceTreeBus:
 		BINOP,
 		*,
 		FORMAL=False,
-		tag_dct={
-			"inp": None,
-			"outp": None,
-		},
+		#tag_dct={
+		#	"inp": None,
+		#	"outp": None,
+		#},
 	):
 		#--------
 		self.__INP_DATA_WIDTH = INP_DATA_WIDTH
@@ -72,7 +72,7 @@ class ReduceTreeBus:
 		#				"data": PortDir.Inp,
 		#			}),
 		#			#pdir=PortDir.Inp,
-		#			tag=inp_tag,
+		#			#tag=inp_tag,
 		#		)
 		#		#IntfShape.mk_single_pdir_shape(
 		#		#	#name=psconcat("inp_arr_", i),
@@ -84,7 +84,7 @@ class ReduceTreeBus:
 		#		#		)
 		#		#	},
 		#		#	pdir=PortDir.Inp,
-		#		#	tag=inp_tag,
+		#		#	#tag=inp_tag,
 		#		#)
 		#		for i in range(self.INP_SIZE())
 		#	],
@@ -117,7 +117,7 @@ class ReduceTreeBus:
 			#	"inp": inp_tag,
 			#	"outp": outp_tag,
 			#},
-			tag_dct=tag_dct,
+			#tag_dct=tag_dct,
 			mk_modport_dct={
 				"inp": True,
 				"outp": True,
@@ -133,7 +133,7 @@ class ReduceTreeBus:
 		#			key: PortDir.Outp
 		#			for key in outp_shape
 		#		}),
-		#		tag=outp_tag
+		#		#tag=outp_tag
 		#	),
 		#}
 		#--------
@@ -150,7 +150,7 @@ class ReduceTreeBus:
 					},
 					#pdir=PortDir.Outp,
 					pdir=PortDir.Noconn,
-					tag=None,
+					#tag=None,
 				)
 			)
 		#with open("reduce_tree-show_ishape.txt.ignore", "w") as f:

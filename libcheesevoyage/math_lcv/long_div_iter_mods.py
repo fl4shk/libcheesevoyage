@@ -683,16 +683,16 @@ class LongUdivIterSyncIshape(IntfShape):
 		*,
 		#next_intf_tag=None,
 		#prev_intf_tag=None,
-		intf_tag_dct={
-			"next": None,
-			"prev": None,
-		},
+		#intf_tag_dct={
+		#	"next": None,
+		#	"prev": None,
+		#},
 		in_wrapper: bool=False,
 	):
 		#--------
 		#temp_tag_dct = intf_tag_dct.copy()
-		temp_tag_dct = intf_tag_dct
-		temp_tag_dct["misc"] = None
+		#temp_tag_dct = intf_tag_dct
+		#temp_tag_dct["misc"] = None
 		#--------
 		#super().__init__()
 		shape = {}
@@ -749,7 +749,7 @@ class LongUdivIterSyncIshape(IntfShape):
 			#OPT_INCLUDE_BUSY=True,
 			#next_tag=next_intf_tag,
 			#prev_tag=prev_intf_tag,
-			tag_dct=temp_tag_dct,
+			#tag_dct=temp_tag_dct,
 		)
 			#self.inp.valid = Signal(
 			#	1, name="valid_in"
@@ -806,19 +806,19 @@ class LongUdivIterSyncBus:
 	def __init__(
 		self,
 		constants: LongDivConstants,
-		*,
+		#*,
 		#next_intf_tag=None,
 		#prev_intf_tag=None,
-		intf_tag_dct={
-			"next": None,
-			"prev": None,
-		}
+		#intf_tag_dct={
+		#	"next": None,
+		#	"prev": None,
+		#}
 	):
 		ishape = LongUdivIterSyncIshape(
 			constants=constants,
 			#next_intf_tag=next_intf_tag,
 			#prev_intf_tag=prev_intf_tag,
-			intf_tag_dct=intf_tag_dct,
+			#intf_tag_dct=intf_tag_dct,
 		)
 		#super().__init__(ishape)
 		self.__constants = constants
@@ -835,31 +835,31 @@ class LongUdivIterSync(Elaboratable):
 		self,
 		constants: LongDivConstants,
 		chunk_start_val: int,
-		*,
+		#*,
 		#next_intf_tag=None,
 		#prev_intf_tag=None,
-		intf_tag_dct={
-			"next": None,
-			"prev": None,
-		},
+		#intf_tag_dct={
+		#	"next": None,
+		#	"prev": None,
+		#},
 	):
 		self.__constants = constants
-		self.__intf_tag_dct = intf_tag_dct
+		#self.__intf_tag_dct = intf_tag_dct
 
 		self.__chunk_start_val = chunk_start_val
 		self.__bus = LongUdivIterSyncBus(
 			constants=constants,
 			#next_intf_tag=next_intf_tag,
 			#prev_intf_tag=prev_intf_tag,
-			intf_tag_dct=intf_tag_dct,
+			#intf_tag_dct=intf_tag_dct,
 		)
 	#--------
 	def bus(self):
 		return self.__bus
 	def constants(self):
 		return self.__constants
-	def intf_tag_dct(self):
-		return self.__intf_tag_dct
+	#def intf_tag_dct(self):
+	#	return self.__intf_tag_dct
 	def chunk_start_val(self):
 		return self.__chunk_start_val
 	@staticmethod
@@ -924,7 +924,7 @@ class LongUdivIterSync(Elaboratable):
 				#OPT_PASSTHROUGH=FORMAL,
 				OPT_PASSTHROUGH=False,
 				#OPT_PASSTHROUGH=True,
-				tag_dct=self.__intf_tag_dct,
+				#tag_dct=self.__intf_tag_dct,
 			)
 			m.submodules.skid_buf = skid_buf
 			sb_bus = skid_buf.bus().bus
@@ -1103,42 +1103,7 @@ class LongUdivIterSync(Elaboratable):
 		else: # if USE_PIPE_SKID_BUF:
 			m.d.comb += [
 				sb_bus.misc.clear.eq(0b0),
-
-				#sb_bus.inp.fwd.eq(bus.sb_bus.inp.fwd),
-				#sb_bus.inp.bak.eq(bus.sb_bus.inp.bak),
-				##bus.sb_bus.outp.fwd.eq(sb_bus)
-				##bus.sb_bus.outp.fwd.eq(sb_bus.outp.fwd),
-				##bus.sb_bus.outp.bak.eq(sb_bus.outp.bak),
-				#bus.sb_bus.outp.fwd.valid.eq(sb_bus.outp.fwd.valid),
-				#bus.sb_bus.outp.bak.eq(sb_bus.outp.bak),
-				#itd_in.eq(sb_bus.outp.fwd.data),
-				## `itd_out_sync` is set to `bus.sb_bus.outp.fwd.data`
-				#bus.sb_bus.outp.fwd.data.eq(itd_out),
 			]
-			#m.d.comb += [
-			#	sb_bus.inp.fwd.flattened()[i].eq(
-			#		bus.sb_bus.inp.fwd.flattened()[i]
-			#	)
-			#	for i in range(len(sb_bus.inp.fwd.flattened()))
-			#]
-			#m.d.comb += [
-			#	sb_bus.inp.bak.flattened()[i].eq(
-			#		bus.sb_bus.inp.bak.flattened()[i]
-			#	)
-			#	for i in range(len(sb_bus.inp.bak.flattened()))
-			#]
-			#m.d.comb += [
-			#	bus.sb_bus.outp.fwd.flattened()[i].eq(
-			#		sb_bus.outp.fwd.flattened()[i]
-			#	)
-			#	for i in range(len(sb_bus.outp.fwd.flattened()))
-			#]
-			#m.d.comb += [
-			#	bus.sb_bus.outp.bak.flattened()[i].eq(
-			#		sb_bus.outp.bak.flattened()[i]
-			#	)
-			#	for i in range(len(sb_bus.outp.bak.flattened()))
-			#]
 
 			##temp_lst_shrink = -2
 			temp_lst_shrink = -2
@@ -1149,9 +1114,6 @@ class LongUdivIterSync(Elaboratable):
 			other_temp_lst_shrink = -1
 			#other_temp_lst_shrink = None
 
-			#temp_lst_shrink = -3
-			#other_temp_lst_shrink = -2
-			
 			pipeline_mods.PipeSkidBuf.connect_child(
 				parent=m,
 				parent_sb_bus=bus.sb_bus,
@@ -1160,86 +1122,14 @@ class LongUdivIterSync(Elaboratable):
 					"from_child": itd_in,
 					"to_out": itd_out,
 				},
-				use_tag=True,
-				reduce_tag=True,
-				#use_tag=False,
-				#reduce_tag=False,
-				#reduce_tag=False,
+				#use_tag=True,
+				#reduce_tag=True,
+				##use_tag=False,
+				##reduce_tag=False,
+				##reduce_tag=False,
 				lst_shrink=temp_lst_shrink,
 				other_lst_shrink=other_temp_lst_shrink,
 			)
-			#if FORMAL:
-			#	#m.d.comb += [
-			#	#	itd_in.eq(itd_in_sync),
-			#	#	it_bus.chunk_start.eq(self.__chunk_start_val),
-			#	#]
-			#	m.d.sync += itd_out_sync.eq(itd_out)
-
-
-			#f = open("debug-long_div_iter_mods-inp.txt.ignore", "w")
-			#bus.sb_bus.inp.connect(
-			#	other=sb_bus.inp,
-			#	m=m,
-			#	kind=Splitintf.ConnKind.Parent2Child,
-			#	f=f,
-			#	#lst_shrink=-2,
-			#	#other_lst_shrink=-1,
-			#	#lst_shrink=-1,
-			#	#other_lst_shrink=0,
-			#	lst_shrink=temp_lst_shrink,
-			#	other_lst_shrink=other_temp_lst_shrink,
-			#	use_tag=True,
-			#	reduce_tag=True,
-			#	#reduce_tag=False,
-			#)
-			#f.close()
-			##for i in range(len(bus.sb_bus.inp.flattened()))
-			##m.d.comb += [
-			##	#Cat(sb_bus.inp.flattened()).eq(
-			##	#	bus.sb_bus.inp.flattened()
-			##	#)
-			##	sb_bus.inp.flattened()[i].eq(
-			##		bus.sb_bus.inp.flattened()[i]
-			##	)
-			##	for i in range(len(bus.sb_bus.inp.flattened()))
-			##]
-			#m.d.comb += [
-			#	bus.sb_bus.outp.fwd.valid.eq(sb_bus.outp.fwd.valid),
-			#	itd_in.eq(sb_bus.outp.fwd.data),
-			#	bus.sb_bus.outp.fwd.data.eq(itd_out),
-			#]
-			#f = open("debug-long_div_iter_mods-outp-bak.txt.ignore", "w")
-			#bus.sb_bus.outp.bak.connect(
-			#	other=sb_bus.outp.bak,
-			#	m=m,
-			#	kind=Splitintf.ConnKind.Parent2Child,
-			#	f=f,
-			#	#lst_shrink=-2,
-			#	#other_lst_shrink=-1,
-			#	#lst_shrink=-1,
-			#	#other_lst_shrink=0,
-			#	lst_shrink=temp_lst_shrink,
-			#	other_lst_shrink=other_temp_lst_shrink,
-			#	use_tag=True,
-			#	reduce_tag=True,
-			#)
-			#f.close()
-			#f = open("debug-long_div_iter_mods-misc.txt.ignore", "w")
-			#bus.sb_bus.misc.connect(
-			#	other=sb_bus.misc,
-			#	m=m,
-			#	kind=Splitintf.ConnKind.Parent2Child,
-			#	f=f,
-			#	#lst_shrink=-2,
-			#	#other_lst_shrink=-1,
-			#	#lst_shrink=-1,
-			#	#other_lst_shrink=0,
-			#	lst_shrink=temp_lst_shrink,
-			#	other_lst_shrink=other_temp_lst_shrink,
-			#	use_tag=True,
-			#	reduce_tag=True,
-			#)
-			#f.close()
 		#--------
 		if constants.FORMAL():
 			#--------
@@ -1260,66 +1150,6 @@ class LongUdivIterSync(Elaboratable):
 			#		rst_cnt.eq(rst_cnt - 1)
 			#		#-------
 			#	]
-			#def mk_mux_ifwd(
-			#	USE_PIPE_SKID_BUF,
-			#	bus,
-			#	test_true,
-			#	test_false,
-			#):
-			#	ifwd = bus.sb_bus.inp.fwd
-			#	ibak = bus.sb_bus.inp.bak
-			#	ofwd = bus.sb_bus.outp.fwd
-			#	obak = bus.sb_bus.outp.bak
-			#	#return Mux(
-			#	#	#not USE_PIPE_SKID_BUF or (
-			#	#	#	Past(ofwd.valid) & Past(ibak.ready)
-			#	#	#) | (
-			#	#	#	ofwd.valid & ibak.ready
-			#	#	#),
-			#	#	not USE_PIPE_SKID_BUF or (
-			#	#		ifwd.valid & obak.ready
-			#	#	),
-			#	#	test,
-			#	#	1,
-			#	#)
-			#	#return (
-			#	#	test
-			#	#	if not USE_PIPE_SKID_BUF
-			#	#	else 1
-			#	#)
-			#	return Mux(
-			#		not USE_PIPE_SKID_BUF or (
-			#			Past(ifwd.valid) & Past(obak.ready)
-			#		),
-			#		test_true,
-			#		test_false,
-			#	)
-			#def mk_mux_ofwd(
-			#	USE_PIPE_SKID_BUF,
-			#	bus,
-			#	test,
-			#):
-			#	ifwd = bus.sb_bus.inp.fwd
-			#	ibak = bus.sb_bus.inp.bak
-			#	ofwd = bus.sb_bus.outp.fwd
-			#	obak = bus.sb_bus.outp.bak
-			#	return Mux(
-			#		#not USE_PIPE_SKID_BUF or (
-			#		#	Past(ofwd.valid) & Past(ibak.ready)
-			#		#) | (
-			#		#	ofwd.valid & ibak.ready
-			#		#),
-			#		#not USE_PIPE_SKID_BUF or (
-			#		#	ofwd.valid & ibak.ready
-			#		#),
-			#		not USE_PIPE_SKID_BUF or (
-			#			#ofwd.valid & ibak.ready
-			#			#&
-			#			Past(ofwd.valid) & Past(ibak.ready)
-			#		),
-			#		test,
-			#		1,
-			#	)
 			#if USE_PIPE_SKID_BUF:
 			#	m.d.sync += [
 			#		#Cover(ifwd_move),

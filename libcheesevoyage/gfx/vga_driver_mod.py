@@ -86,13 +86,13 @@ class VgaDriverBus:
 		#ColorT=RgbColor
 		col_shape=RgbColorLayt,
 		COL_CHAN_WIDTH=RgbColorLayt.DEF_CHAN_WIDTH(),
-		*,
+		#*,
 		#inp_tag=None,
 		#outp_tag=None,
-		tag_dct={
-			"inp": None,
-			"outp": None,
-		},
+		#tag_dct={
+		#	"inp": None,
+		#	"outp": None,
+		#},
 	):
 		#--------
 		inp_shape = {}
@@ -139,7 +139,7 @@ class VgaDriverBus:
 			#	"inp": inp_tag,
 			#	"outp": outp_tag,
 			#},
-			tag_dct=tag_dct,
+			#tag_dct=tag_dct,
 			mk_modport_dct={
 				"inp": True,
 				"outp": True,
@@ -164,11 +164,11 @@ class VgaDriver(Elaboratable):
 		#ColorT=RgbColor,
 		col_shape=RgbColorLayt,
 		COL_CHAN_WIDTH=RgbColorLayt.DEF_CHAN_WIDTH(),
-		*,
-		tag_dct={
-			"inp": None,
-			"outp": None,
-		},
+		#*,
+		#tag_dct={
+		#	"inp": None,
+		#	"outp": None,
+		#},
 	):
 		self.__bus = VgaDriverBus(
 			#ColorT=ColorT,
@@ -176,7 +176,7 @@ class VgaDriver(Elaboratable):
 			COL_CHAN_WIDTH=COL_CHAN_WIDTH,
 			#inp_tag=inp_tag,
 			#outp_tag=outp_tag,
-			tag_dct=tag_dct,
+			#tag_dct=tag_dct,
 		)
 
 		self.__CLK_RATE = CLK_RATE
@@ -188,7 +188,7 @@ class VgaDriver(Elaboratable):
 		self.__COL_CHAN_WIDTH = COL_CHAN_WIDTH
 		#self.__inp_tag = inp_tag
 		#self.__outp_tag = outp_tag
-		self.__tag_dct = tag_dct
+		#self.__tag_dct = tag_dct
 
 	def bus(self):
 		return self.__bus
@@ -221,12 +221,12 @@ class VgaDriver(Elaboratable):
 		return self.__col_shape
 	def COL_CHAN_WIDTH(self):
 		return self.__COL_CHAN_WIDTH
-	def tag_dct(self):
-		return self.__tag_dct
-	def inp_tag(self):
-		return self.tag_dct()["inp"]
-	def outp_tag(self):
-		return self.tag_dct()["outp"]
+	#def tag_dct(self):
+	#	return self.__tag_dct
+	#def inp_tag(self):
+	#	return self.tag_dct()["inp"]
+	#def outp_tag(self):
+	#	return self.tag_dct()["outp"]
 
 	def elaborate(self, platform: str):
 		#--------
@@ -248,7 +248,7 @@ class VgaDriver(Elaboratable):
 			SIZE=self.FIFO_SIZE(),
 			#inp_tag=self.inp_tag(),
 			#outp_tag=self.outp_tag(),
-			tag_dct=self.tag_dct(),
+			#tag_dct=self.tag_dct(),
 		)
 		fifo_inp = fifo.bus().bus.inp
 		fifo_outp = fifo.bus().bus.outp

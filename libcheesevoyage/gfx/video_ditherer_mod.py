@@ -11,11 +11,11 @@ class VideoDithererIshape(IntfShape):
 	def __init__(
 		self,
 		FB_SIZE_2D, CHAN_WIDTH,
-		*,
-		tag_dct={
-			"inp": None,
-			"outp": None,
-		},
+		#*,
+		#tag_dct={
+		#	"inp": None,
+		#	"outp": None,
+		#},
 	):
 		inp_shape = {}
 		outp_shape = {}
@@ -45,7 +45,7 @@ class VideoDithererIshape(IntfShape):
 			#	"inp": inp_tag,
 			#	"outp": outp_tag,
 			#},
-			tag_dct=tag_dct,
+			#tag_dct=tag_dct,
 			mk_modport_dct={
 				"inp": True,
 				"outp": True,
@@ -56,22 +56,22 @@ class VideoDithererBus:
 	def __init__(
 		self,
 		FB_SIZE_2D, CHAN_WIDTH,
-		*,
-		tag_dct={
-			"inp": None,
-			"outp": None,
-		},
+		#*,
+		#tag_dct={
+		#	"inp": None,
+		#	"outp": None,
+		#},
 	):
 		self.__FB_SIZE_2D, self.__CHAN_WIDTH = FB_SIZE_2D, CHAN_WIDTH
 		#self.__inp_tag = inp_tag
 		#self.__outp_tag = outp_tag
-		self.__tag_dct = tag_dct
+		#self.__tag_dct = tag_dct
 
 		#self.__bus = Splitintf(IntfShape(shape))
 		ishape = VideoDithererIshape(
 			FB_SIZE_2D=FB_SIZE_2D,
 			CHAN_WIDTH=CHAN_WIDTH,
-			tag_dct=tag_dct,
+			#tag_dct=tag_dct,
 		)
 		self.__bus = Splitintf(ishape, name="bus")
 		# Need a channel width of at least 3 for dithering to work (though
@@ -99,14 +99,14 @@ class VideoDithererBus:
 	@staticmethod
 	def coord_shape():
 		return Vec2Layt(16)
-	def tag_dct(self):
-		return self.__tag_dct
-	def inp_tag(self):
-		#return self.__inp_tag
-		return self.tag_dct()["inp"]
-	def outp_tag(self):
-		#return self.__outp_tag
-		return self.tag_dct()["outp"]
+	#def tag_dct(self):
+	#	return self.__tag_dct
+	#def inp_tag(self):
+	#	#return self.__inp_tag
+	#	return self.tag_dct()["inp"]
+	#def outp_tag(self):
+	#	#return self.__outp_tag
+	#	return self.tag_dct()["outp"]
 
 # Temporally and spatially dither a CHAN_WIDTH color down to CHAN_WIDTH - 2
 class VideoDitherer(Elaboratable):
@@ -114,18 +114,18 @@ class VideoDitherer(Elaboratable):
 		self,
 		FB_SIZE_2D,
 		CHAN_WIDTH=RgbColorLayt.DEF_CHAN_WIDTH() + 2,
-		*,
-		tag_dct={
-			"inp": None,
-			"outp": None,
-		},
+		#*,
+		#tag_dct={
+		#	"inp": None,
+		#	"outp": None,
+		#},
 	):
 		self.__bus = VideoDithererBus(
 			FB_SIZE_2D=FB_SIZE_2D,
 			CHAN_WIDTH=CHAN_WIDTH,
 			#inp_tag=inp_tag,
 			#outp_tag=outp_tag,
-			tag_dct=tag_dct,
+			#tag_dct=tag_dct,
 		)
 
 		#self.__frame = Signal(width_from_arg(4))
