@@ -70,6 +70,20 @@ from libcheesevoyage.misc_util import *
 #		self.__src_loc_at  src_loc_at
 #		self.__in_like :  in_like=Fals
 
+def is_builtin_shape(
+	shape
+):
+	return (
+		shape is not None
+		and (
+			isinstance(shape, int)
+			or isinstance(shape, Shape)
+			or isinstance(shape, ArrayLayout)
+			or isinstance(shape, StructLayout)
+			or isinstance(shape, UnionLayout)
+			or isinstance(shape, ShapeCastable)
+		)
+	)
 #@staticmethod
 #def cast_shape(ElemKindT, SIGNED=False, *, name=None, reset=0x0,
 #	reset_less=False, attrs=None, decoder=None, src_loc_at=0):

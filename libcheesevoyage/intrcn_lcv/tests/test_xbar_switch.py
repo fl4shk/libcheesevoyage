@@ -24,16 +24,20 @@ if __name__ == "__main__":
 		#d2h_shape=2,
 		#NUM_HOSTS=4,
 		#NUM_DEVS=4,
-		NUM_HOSTS=3,
-		#NUM_HOSTS=2,
+		#NUM_HOSTS=3,
+		NUM_HOSTS=2,
 		#NUM_DEVS=2,
 		NUM_DEVS=2,
 		#H2D_SIGNED=False,
 		#D2H_SIGNED=False,
-		#H2D_PRIO_LST_2D=[[2, 1, 0], [2, 1, 0]]
-		#H2D_PRIO_LST_2D=[[1, 0], [1, 0]]
-		h2d_shape=4,
-		d2h_shape=4,
+		#H2D_PRIO_LST_2D=[[2, 1, 0], [2, 1, 0]],
+		H2D_PRIO_LST_2D=[[1, 0], [1, 0]],
+		h2d_shape=1,
+		d2h_shape=1,
+		#h2d_shape=4,
+		#d2h_shape=4,
+		#h2d_shape=StructLayout({"a": 2, "b": 2}),
+		#d2h_shape=StructLayout({"a": 2, "b": 2}),
 	)
 	#)
 	#)

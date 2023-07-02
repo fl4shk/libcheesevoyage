@@ -20,15 +20,10 @@ import math
 class XbarSwitchIshape(IntfShape):
 	def __init__(
 		self,
-		#h2d_shape, d2h_shape,
 		NUM_HOSTS, NUM_DEVS,
-		#H2D_SIGNED=False, D2H_SIGNED=False,
 		*,
 		h2d_shape=None,
 		d2h_shape=None,
-		#OPT_INCLUDE_DATA: bool=True,
-		#OPT_INCLUDE_H2D_DATA: bool=True,
-		#OPT_INCLUDE_D2H_DATA: bool=True,
 		tag_dct={
 			"inp": None,
 			"outp": None,
@@ -53,23 +48,29 @@ class XbarSwitchIshape(IntfShape):
 			for i in range(NUM_HOSTS)
 		]
 
-		#if OPT_INCLUDE_DATA:
-		#self.inp_data = Packarr.build(ElemKindT=ElemKindT,
-		#	SIZE=SIZE, SIGNED=SIGNED)
-		#if OPT_INCLUDE_H2D_DATA:
 		if h2d_shape is not None:
+			try:
+				temp_h2d_shape = Shape.cast(h2d_shape)
+			except Exception:
+				temp_h2d_shape = h2d_shape
+
 			inp_shape["h2d_data"] = [
 				FieldInfo(
-					h2d_shape, #H2D_SIGNED,
+					temp_h2d_shape, #H2D_SIGNED,
 					name=f"inp_h2d_data_{i}"
 				)
 				for i in range(NUM_HOSTS)
 			]
 		#if OPT_INCLUDE_D2H_DATA:
 		if d2h_shape is not None:
+			try:
+				temp_d2h_shape = Shape.cast(d2h_shape)
+			except Exception:
+				temp_d2h_shape = d2h_shape
+
 			inp_shape["d2h_data"] = [
 				FieldInfo(
-					d2h_shape, #D2H_SIGNED,
+					temp_d2h_shape, #D2H_SIGNED,
 					name=f"inp_d2h_data_{j}"
 				)
 				for j in range(NUM_DEVS)
@@ -90,23 +91,18 @@ class XbarSwitchIshape(IntfShape):
 			name="outp_devs_active",
 		)
 
-		#if OPT_INCLUDE_DATA:
-		#self.outp_data = Packarr.build(ElemKindT=ElemKindT,
-		#	SIZE=SIZE, SIGNED=SIGNED)
-		#if OPT_INCLUDE_H2D_DATA:
 		if h2d_shape is not None:
 			outp_shape["h2d_data"] = [
 				FieldInfo(
-					h2d_shape, #H2D_SIGNED,
+					temp_h2d_shape, #H2D_SIGNED,
 					name=f"outp_h2d_data_{j}"
 				)
 				for j in range(NUM_DEVS)
 			]
-		#if OPT_INCLUDE_D2H_DATA:
 		if d2h_shape is not None:
 			outp_shape["d2h_data"] = [
 				FieldInfo(
-					d2h_shape, #D2H_SIGNED,
+					temp_d2h_shape, #D2H_SIGNED,
 					name=f"outp_d2h_data_{i}"
 				)
 				for i in range(NUM_HOSTS)
@@ -136,9 +132,6 @@ class XbarSwitchIshape(IntfShape):
 			)
 			for j in range(NUM_DEVS)
 		]
-		#outp_shape["h2d_conn_arr_raw"] = ArrayLayout(
-		#	XbarSwitchIshape.SEL_WIDTH(NUM_HOSTS), NUM_DEVS,
-		#)
 
 		# Which devices are connected to which hosts
 		outp_shape["d2h_conn_arr"] = [
@@ -149,9 +142,6 @@ class XbarSwitchIshape(IntfShape):
 			)
 			for i in range(NUM_HOSTS)
 		]
-		#outp_shape["d2h_conn_arr_raw"] = ArrayLayout(
-		#	XbarSwitchIshape.SEL_WIDTH(NUM_DEVS), NUM_HOSTS,
-		#)
 		#--------
 		shape = IntfShape.mk_io_shape(
 			shape_dct={
@@ -174,11 +164,8 @@ class XbarSwitchBus:
 	def __init__(
 		self,
 		NUM_HOSTS, NUM_DEVS,
-		#H2D_SIGNED=False, D2H_SIGNED=False,
 		*,
 		FORMAL=False,
-		#OPT_INCLUDE_H2D_DATA: bool=True,
-		#OPT_INCLUDE_D2H_DATA: bool=True,
 		h2d_shape=None,
 		d2h_shape=None,
 		tag_dct={
@@ -187,27 +174,16 @@ class XbarSwitchBus:
 		},
 	):
 		#--------
-		#self.__ElemKindT = ElemKindT
-
 		self.__NUM_HOSTS = NUM_HOSTS
 		self.__NUM_DEVS = NUM_DEVS
-		#self.__H2D_SIGNED = H2D_SIGNED
-		#self.__D2H_SIGNED = D2H_SIGNED
 		self.__FORMAL = FORMAL
 
-		#self.__OPT_INCLUDE_H2D_DATA = OPT_INCLUDE_H2D_DATA
-		#self.__OPT_INCLUDE_D2H_DATA = OPT_INCLUDE_D2H_DATA
 		self.__h2d_shape = h2d_shape
 		self.__d2h_shape = d2h_shape
 
-		#self.__inp_tag = inp_tag
-		#self.__outp_tag = outp_tag
 		self.__tag_dct = tag_dct
 		#--------
 		#--------
-		#self.inp = Splitrec(inp_shape, use_parent_name=False)
-		#self.outp = Splitrec(outp_shape, use_parent_name=False)
-		#self.__bus = Splitintf(IntfShape(shape))
 		shape = XbarSwitchIshape(
 			#h2d_shape=h2d_shape, d2h_shape=d2h_shape,
 			NUM_HOSTS=NUM_HOSTS, NUM_DEVS=NUM_DEVS,
@@ -225,10 +201,6 @@ class XbarSwitchBus:
 		return self.__NUM_HOSTS
 	def NUM_DEVS(self):
 		return self.__NUM_DEVS
-	#def H2D_SIGNED(self):
-	#	return self.__H2D_SIGNED
-	#def D2H_SIGNED(self):
-	#	return self.__D2H_SIGNED
 	def FORMAL(self):
 		return self.__FORMAL
 	def h2d_shape(self):
@@ -289,11 +261,6 @@ class XbarSwitch(Elaboratable):
 			SOME_H2D_PRIO_LST_2D=self.H2D_PRIO_LST_2D(),
 			#SOME_H2D_PRIOCASE_LST_2D=self.H2D_PRIO_LST_2D(),
 		)
-		#self.__D2H_PRIO_LST_2D = XbarSwitch.mk_d2h_priocase_lst_2d(
-		#	NUM_HOSTS=NUM_HOSTS,
-		#	NUM_DEVS=NUM_DEVS,
-		#	SOME_H2D_PRIOCASE_LST_2D=self.H2D_PRIO_LST_2D(),
-		#)
 		self.__H2D_CASE_LST_2D = XbarSwitch.mk_h2d_case_lst_2d(
 			NUM_DEVS=NUM_DEVS,
 			SOME_H2D_PRIO_LST_2D=self.H2D_PRIO_LST_2D(),
@@ -303,11 +270,6 @@ class XbarSwitch(Elaboratable):
 		#	#NUM_DEVS=NUM_DEVS,
 		#	SOME_D2H_PRIO_LST_2D=self.D2H_PRIO_LST_2D(),
 		#	#SOME_H2D_CASE_LST_2D=self.H2D_CASE_LST_2D()
-		#)
-		#self.__D2H_CASE_LST_2D = XbarSwitch.mk_d2h_priocase_lst_2d(
-		#	NUM_HOSTS=NUM_HOSTS,
-		#	NUM_DEVS=NUM_DEVS,
-		#	SOME_H2D_PRIOCASE_LST_2D=self.H2D_CASE_LST_2D(),
 		#)
 		#--------
 		if not isinstance(DOMAIN, BasicDomain):
@@ -478,64 +440,64 @@ class XbarSwitch(Elaboratable):
 		H2D_CASE_LST_2D = self.H2D_CASE_LST_2D()
 		D2H_PRIO_LST_2D = self.D2H_PRIO_LST_2D()
 		#D2H_CASE_LST_2D = self.D2H_CASE_LST_2D()
-		with open("test-XbarSwitch-PRIO_CASE.txt.ignore", "w") as f:
-			f.writelines([
-				"H2D_PRIO_LST_2D\n",
-				#do_psconcat_flattened(H2D_PRIO_LST_2D),
-			])
-			temp = ""
-			for H2D_PRIO_LST in H2D_PRIO_LST_2D:
-				#temp += "".join(H2D_PRIO_LST)
-				for PRIO in H2D_PRIO_LST:
-					temp += psconcat(PRIO, " ")
-				temp += "\n"
-			f.writelines([
-				temp, "\n"
-			])
-			f.writelines([
-				"H2D_CASE_LST_2D\n",
-				#do_psconcat_flattened("".join(H2D_CASE_LST_2D)),
-				#"".join(H2D_CASE_LST_2D),
-			])
-			temp = ""
-			for H2D_CASE_LST in H2D_CASE_LST_2D:
-				#temp += "".join(H2D_CASE_LST)
-				for CASE in H2D_CASE_LST:
-					temp += psconcat(CASE, " ")
-				temp += "\n"
-			#f.writelines([
-			#	temp
-			#])
-			f.writelines([
-				temp, "\n"
-			])
-			f.writelines([
-				"D2H_PRIO_LST_2D\n",
-				#do_psconcat_flattened(D2H_PRIO_LST_2D),
-			])
-			temp = ""
-			for D2H_PRIO_LST in D2H_PRIO_LST_2D:
-				#temp += "".join(D2H_PRIO_LST)
-				for PRIO in D2H_PRIO_LST:
-					temp += psconcat(PRIO, " ")
-				temp += "\n"
-			f.writelines([
-				temp, "\n"
-			])
-			#f.writelines([
-			#	"D2H_CASE_LST_2D\n",
-			#	#do_psconcat_flattened("".join(D2H_CASE_LST_2D)),
-			#	#"".join(D2H_CASE_LST_2D),
-			#])
-			#temp = ""
-			#for D2H_CASE_LST in D2H_CASE_LST_2D:
-			#	#temp += "".join(D2H_CASE_LST)
-			#	for CASE in D2H_CASE_LST:
-			#		temp += psconcat(CASE, " ")
-			#	temp += "\n"
-			#f.writelines([
-			#	temp
-			#])
+		#with open("test-XbarSwitch-PRIO_CASE.txt.ignore", "w") as f:
+		#	f.writelines([
+		#		"H2D_PRIO_LST_2D\n",
+		#		#do_psconcat_flattened(H2D_PRIO_LST_2D),
+		#	])
+		#	temp = ""
+		#	for H2D_PRIO_LST in H2D_PRIO_LST_2D:
+		#		#temp += "".join(H2D_PRIO_LST)
+		#		for PRIO in H2D_PRIO_LST:
+		#			temp += psconcat(PRIO, " ")
+		#		temp += "\n"
+		#	f.writelines([
+		#		temp, "\n"
+		#	])
+		#	f.writelines([
+		#		"H2D_CASE_LST_2D\n",
+		#		#do_psconcat_flattened("".join(H2D_CASE_LST_2D)),
+		#		#"".join(H2D_CASE_LST_2D),
+		#	])
+		#	temp = ""
+		#	for H2D_CASE_LST in H2D_CASE_LST_2D:
+		#		#temp += "".join(H2D_CASE_LST)
+		#		for CASE in H2D_CASE_LST:
+		#			temp += psconcat(CASE, " ")
+		#		temp += "\n"
+		#	#f.writelines([
+		#	#	temp
+		#	#])
+		#	f.writelines([
+		#		temp, "\n"
+		#	])
+		#	f.writelines([
+		#		"D2H_PRIO_LST_2D\n",
+		#		#do_psconcat_flattened(D2H_PRIO_LST_2D),
+		#	])
+		#	temp = ""
+		#	for D2H_PRIO_LST in D2H_PRIO_LST_2D:
+		#		#temp += "".join(D2H_PRIO_LST)
+		#		for PRIO in D2H_PRIO_LST:
+		#			temp += psconcat(PRIO, " ")
+		#		temp += "\n"
+		#	f.writelines([
+		#		temp, "\n"
+		#	])
+		#	#f.writelines([
+		#	#	"D2H_CASE_LST_2D\n",
+		#	#	#do_psconcat_flattened("".join(D2H_CASE_LST_2D)),
+		#	#	#"".join(D2H_CASE_LST_2D),
+		#	#])
+		#	#temp = ""
+		#	#for D2H_CASE_LST in D2H_CASE_LST_2D:
+		#	#	#temp += "".join(D2H_CASE_LST)
+		#	#	for CASE in D2H_CASE_LST:
+		#	#		temp += psconcat(CASE, " ")
+		#	#	temp += "\n"
+		#	#f.writelines([
+		#	#	temp
+		#	#])
 
 		loc = Blank()
 		#loc.found_arr = Splitarr([
@@ -569,15 +531,6 @@ class XbarSwitch(Elaboratable):
 		#	),
 		#	name="loc_d2h_conn_arr",
 		#)
-		##if bus.FORMAL():
-		##	loc.formal = Blank()
-		##	loc.formal.past_valid = Signal(name="formal_past_valid")
-
-		##loc.dbg_sel = Splitarr([
-		##	FieldInfo(signed(bus.NUM_HOSTS() + 1), attrs=sig_keep(),
-		##		name=f"dbg_sel_{j}")
-		##		for j in range(bus.NUM_DEVS())
-		##])
 
 		md = basic_domain_to_actual_domain(m, self.DOMAIN())
 		#--------
@@ -613,35 +566,33 @@ class XbarSwitch(Elaboratable):
 			H2D_PRIO_LST = H2D_PRIO_LST_2D[j]
 			H2D_CASE_LST = H2D_CASE_LST_2D[j]
 
-			#if bus.OPT_INCLUDE_H2D_DATA():
-			#md += [
-			#	outp.d2h_conn_arr[j].eq(0),
-			#]
-			#for i in range(len(H2D_PRIO_LST)):
-			#	md += [
-			#		outp.h2d_conn_arr[H2D_PRIO_LST[i]].eq(0),
-			#	]
 			with m.Switch(loc.d2h_found_arr[j]):
 				for i in range(len(H2D_PRIO_LST)):
+					PRIO = H2D_PRIO_LST[i]
 					#CASE = "".join(list(reversed(H2D_CASE_LST[i])))
 					#CASE = H2D_CASE_LST[i]
 					CASE = list(reversed(H2D_CASE_LST[i]))
 
 					with m.Case("".join(CASE)):
 						md += [
-							outp.d2h_conn_arr[i].eq(j),
-							outp.h2d_conn_arr[j].eq(i),
+							outp.d2h_conn_arr[PRIO].eq(j),
+							outp.h2d_conn_arr[j].eq(PRIO),
+							#outp.d2h_conn_arr[i].eq(j),
+							#outp.h2d_conn_arr[j].eq(i),
 						]
 						if bus.h2d_shape() is not None:
 							md += [
 								outp.h2d_data[j].eq(
-									#inp.h2d_data[H2D_PRIO_LST[i]]
-									inp.h2d_data[i]
+									inp.h2d_data[PRIO]
+									#inp.h2d_data[i]
 								),
 							]
 						if bus.d2h_shape() is not None:
 							md += [
-								outp.d2h_data[i].eq(inp.d2h_data[j]),
+								outp.d2h_data[PRIO].eq(
+									inp.d2h_data[j]
+								),
+								#outp.d2h_data[i].eq(inp.d2h_data[j]),
 							]
 				#with m.Default():
 				#	for i in range(len(H2D_PRIO_LST)):
@@ -680,112 +631,183 @@ class XbarSwitch(Elaboratable):
 
 			#with m.If((~ResetSignal()) & loc.formal.past_valid):
 			for j in range(bus.NUM_DEVS()):
-				#H2D_PRIO_LST = H2D_PRIO_LST_2D[j]
+				H2D_PRIO_LST = H2D_PRIO_LST_2D[j]
 				#H2D_PRIO_LST = list(reversed(H2D_PRIO_LST_2D[j]))
 
 				if (
 					#bus.OPT_INCLUDE_D2H_DATA()
-					bus.d2h_shape() is not None
-					and (
-						isinstance(bus.d2h_shape(), int)
-						or isinstance(bus.d2h_shape(), Shape)
-					)
+					is_builtin_shape(bus.d2h_shape())
 				):
+					#d2h_shape = Shape.cast(bus.d2h_shape())
+					#value_out_0 = Value.cast(outp.d2h_data[0])
 					for i in range(bus.NUM_HOSTS()):
-						for k in range(2 ** len(outp.d2h_data[0])):
-							with m.If(outp.d2h_data[H2D_PRIO_LST[i]] == k):
-								m.d.comb += [
-									Cover(inp.d2h_data[j] == k)
-								]
+						PRIO = H2D_PRIO_LST[i]
+						value_out = Value.cast(
+							outp.d2h_data[PRIO]
+							#outp.d2h_data[i]
+						)
+						value_in = Value.cast(inp.d2h_data[j])
+						#temp_d2h_found = loc.d2h_found_arr[j][PRIO]
+						temp_d2h_found = loc.d2h_found_arr[j][i]
+						temp_eq_found = (
+							(value_in == value_out)
+							& temp_d2h_found
+						)
+						temp_ne_found = (
+							(value_in != value_out)
+							& temp_d2h_found
+						)
+						temp_eq_not_found = (
+							(value_in == value_out)
+							& ~temp_d2h_found
+						)
+						temp_ne_not_found = (
+							(value_in != value_out)
+							& ~temp_d2h_found
+						)
 
-				with m.If(loc.d2h_found_arr[j][0]):
+						for k in range(2 ** len(value_out)):
+							#with m.If(value_out == k):
+							temp_eq_k = (
+								(value_out == k)
+								& (value_in == k)
+							)
+							m.d.comb += [
+								Cover(
+									temp_eq_k
+									& temp_eq_found
+								),
+								Cover(
+									temp_eq_k
+									#& temp_eq_not_found
+									& ~temp_d2h_found
+								),
+							]
+
+						m.d.comb += [
+							Cover(temp_eq_found),
+							Cover(temp_ne_found),
+							Cover(temp_eq_not_found),
+							Cover(temp_ne_not_found),
+							#Cover(
+							#	(value_in != value_out)
+							#	^ temp_d2h_found
+							#),
+							#Cover(
+							#	outp.devs_active[j]
+							#	& temp_d2h_found
+							#),
+							#Cover(
+							#	outp.hosts_active[PRIO]
+							#	& temp_d2h_found
+							#),
+							#Cover(
+							#	(value_in == value_out)
+							#	& temp_d2h_found
+							#),
+							Cover(
+								temp_eq_found
+								& outp.devs_active[j]
+								& outp.hosts_active[i]
+							),
+							Cover(
+								temp_ne_found
+								& outp.devs_active[j]
+								& outp.hosts_active[i]
+							),
+							Cover(
+								temp_ne_not_found
+								& ~outp.devs_active[j]
+								& ~outp.hosts_active[i]
+							),
+						]
+
+				PRIO = H2D_PRIO_LST[0]
+				with m.If(loc.d2h_found_arr[j][PRIO]):
+				#with m.If(loc.d2h_found_arr[j][0]):
 					m.d.comb += [
 						Assert(outp.devs_active[j]),
+						Assert(outp.hosts_active[PRIO]),
 					]
 					m.d.comb += [
-						#Assert(outp.h2d_conn_arr[H2D_PRIO_LST[0]] == j),
-						#Assert(outp.h2d_conn_arr[H2D_PRIO_LST[0]] == j),
+						#Assert(outp.h2d_conn_arr[PRIO] == j),
+						#Assert(outp.h2d_conn_arr[PRIO] == j),
+						Assert(outp.h2d_conn_arr[j] == PRIO),
 						#Assert(outp.h2d_conn_arr[j] == 0),
-						Assert(outp.h2d_conn_arr[j] == 0),
 					]
 					m.d.comb += [
-						#Assert(outp.d2h_conn_arr[j] == H2D_PRIO_LST[0]),
+						#Assert(outp.d2h_conn_arr[j] == PRIO),
 						#Assert(outp.d2h_conn_arr[0] == H2D_PRIO_LST[j]),
-						Assert(outp.d2h_conn_arr[0] == j),
+						Assert(outp.d2h_conn_arr[PRIO] == j),
+						#Assert(outp.d2h_conn_arr[0] == j),
 					]
 					if bus.h2d_shape() is not None:
 						m.d.comb += [
-							Assert(outp.h2d_data[j] == inp.h2d_data[0])
+							Assert(
+								outp.h2d_data[j]
+								== inp.h2d_data[PRIO]
+								#outp.h2d_data[j]
+								#== inp.h2d_data[0]
+							)
 						]
 					if bus.d2h_shape() is not None:
 						m.d.comb += [
-							Assert(outp.d2h_data[0] == inp.d2h_data[j])
+							Assert(
+								outp.d2h_data[PRIO]
+									== inp.d2h_data[j]
+								#outp.d2h_data[0]
+								#	== inp.d2h_data[j]
+							)
 						]
-					##if bus.OPT_INCLUDE_H2D_DATA():
-					##	m.d.comb += [
-					##		Assert(outp.h2d_data[j]
-					##			== inp.h2d_data[H2D_PRIO_LST[0]]),
-					##	]
-					##if bus.OPT_INCLUDE_D2H_DATA():
-					##	m.d.comb += [
-					##		Assert(outp.d2h_data[H2D_PRIO_LST[0]]
-					##			== inp.d2h_data[j]),
-					##	]
-				for i in range(1, bus.NUM_HOSTS()):
-				#for i in range(1, len(H2D_PRIO_LST)):
-					with m.Elif(loc.d2h_found_arr[j][i]):
+				#for i in range(1, bus.NUM_HOSTS()):
+				for i in range(1, len(H2D_PRIO_LST)):
+					PRIO = H2D_PRIO_LST[i]
+					with m.Elif(loc.d2h_found_arr[j][PRIO]):
+					#with m.Elif(loc.d2h_found_arr[j][i]):
 						m.d.comb += [
 							Assert(outp.devs_active[j]),
+							Assert(outp.hosts_active[PRIO]),
 						]
 						m.d.comb += [
-							#Assert(
-							#	outp.h2d_conn_arr[H2D_PRIO_LST[i]] == j
-							#),
 							Assert(
-								outp.h2d_conn_arr[j] == i
+								outp.h2d_conn_arr[j] == PRIO
+								#outp.h2d_conn_arr[j] == i
 							),
 						]
 						m.d.comb += [
-							#Assert(
-							#	outp.d2h_conn_arr[j] == H2D_PRIO_LST[i]
-							#),
-							Assert(outp.d2h_conn_arr[i] == j),
+							Assert(
+								outp.d2h_conn_arr[PRIO] == j
+								#outp.d2h_conn_arr[i] == j
+							),
 						]
 						if bus.h2d_shape() is not None:
 							m.d.comb += [
-								Assert(outp.h2d_data[j] == inp.h2d_data[i])
+								Assert(
+									outp.h2d_data[j] == inp.h2d_data[PRIO]
+									#outp.h2d_data[j] == inp.h2d_data[i]
+								)
 							]
 						if bus.d2h_shape() is not None:
 							m.d.comb += [
-								Assert(outp.d2h_data[i] == inp.d2h_data[j])
+								Assert(
+									outp.d2h_data[PRIO] == inp.d2h_data[j]
+									#outp.d2h_data[i] == inp.d2h_data[j]
+								)
 							]
-						##if bus.OPT_INCLUDE_H2D_DATA():
-						##	m.d.comb += [
-						##		Assert(outp.h2d_data[j]
-						##			== inp.h2d_data[H2D_PRIO_LST[i]]),
-						##	]
-						##if bus.OPT_INCLUDE_D2H_DATA():
-						##	m.d.comb += [
-						##		Assert(outp.d2h_data[H2D_PRIO_LST[i]]
-						##			== inp.d2h_data[j]),
-						##	]
 				with m.Else():
 					m.d.comb += [
 						Assert(~outp.devs_active[j]),
 						#Assert(outp.devs_active == 0x0)
 						#Assert(outp.h2d_conn_arr[j] == 0x0),
 					]
-					#if bus.OPT_INCLUDE_H2D_DATA():
-					#	m.d.comb += [
-					#		Assert(outp.h2d_data[j] == 0x0),
-					#	]
-					#if bus.OPT_INCLUDE_D2H_DATA():
-					#	for i in range(len(H2D_PRIO_LST)):
-					#		m.d.comb += [
-					#			Assert(
-					#				outp.d2h_data[H2D_PRIO_LST[i]] == 0x0
-					#			),
-					#		]
+			for i in range(len(H2D_PRIO_LST)):
+				#PRIO = H2D_PRIO_LST[i]
+				#with m.If(outp.hosts_active[PRIO])
+				with m.If(~loc.h2d_found_arr[i].any()):
+					#with m.If(~loc.d2h_found_arr[j][i]):
+					m.d.comb += [
+						Assert(~outp.hosts_active[i])
+					]
 		#--------
 		return m
 		#--------
