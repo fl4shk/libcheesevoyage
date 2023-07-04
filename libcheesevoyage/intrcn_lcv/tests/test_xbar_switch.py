@@ -35,7 +35,7 @@ if __name__ == "__main__":
 		#h2d_shape=1,
 		#d2h_shape=1,
 		h2d_shape={key: 2 for key in ["r", "g", "b"]},
-		d2h_shape={key: 2 for key in ["r", "g", "b"]},
+		d2h_shape=StructLayout({key: 5 for key in ["r", "g", "b"]}),
 		#h2d_shape=4,
 		#d2h_shape=4,
 		#h2d_shape={"r": 2, "g": 2, "b": 2},

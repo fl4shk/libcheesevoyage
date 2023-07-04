@@ -590,7 +590,9 @@ class XbarSwitch(Elaboratable):
 
 				if (
 					#bus.OPT_INCLUDE_D2H_DATA()
-					is_builtin_shape(bus.d2h_shape())
+					is_builtin_shapelayt(bus.d2h_shape())
+					or isinstance(bus.d2h_shape(), dict)
+					or isinstance(bus.d2h_shape(), list)
 				):
 					#d2h_shape = Shape.cast(bus.d2h_shape())
 					#value_out_0 = Value.cast(outp.d2h_data[0])
@@ -627,17 +629,17 @@ class XbarSwitch(Elaboratable):
 								(value_out == k)
 								& (value_in == k)
 							)
-							m.d.comb += [
-								Cover(
-									temp_eq_k
-									& temp_eq_found
-								),
-								Cover(
-									temp_eq_k
-									#& temp_eq_not_found
-									& ~temp_d2h_found
-								),
-							]
+							#m.d.comb += [
+							#	Cover(
+							#		temp_eq_k
+							#		& temp_eq_found
+							#	),
+							#	Cover(
+							#		temp_eq_k
+							#		#& temp_eq_not_found
+							#		& ~temp_d2h_found
+							#	),
+							#]
 
 						m.d.comb += [
 							Cover(temp_eq_found),
@@ -773,16 +775,16 @@ class XbarSwitch(Elaboratable):
 		#--------
 	#--------
 #--------
-#def PSB_XBAR_SWITCH_DEF_TAG_DCT():
-#	return {
-#		#"xbar": {
-#		#	"inp": "xbar_inp",
-#		#	"outp": "xbar_outp",
-#		#},
-#		"misc": "misc",
-#		"h2d": "h2d",
-#		"d2h": "d2h",
-#	}
+##def PSB_XBAR_SWITCH_DEF_TAG_DCT():
+##	return {
+##		#"xbar": {
+##		#	"inp": "xbar_inp",
+##		#	"outp": "xbar_outp",
+##		#},
+##		"misc": "misc",
+##		"h2d": "h2d",
+##		"d2h": "d2h",
+##	}
 # "Psb" is short for `PipeSkidBuf`
 #class PsbXbarSwitchIshape(IntfShape):
 #	def __init__(

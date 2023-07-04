@@ -78,9 +78,7 @@ def to_shape(arg):
 	#return Value.cast(arg).shape()
 	return as_value(arg).shape()
 
-def is_builtin_shape(
-	shape
-):
+def is_builtin_shapelayt(shape):
 	return (
 		shape is not None
 		and (
@@ -422,7 +420,6 @@ class FieldInfo:
 		attrs=None,
 		decoder=None,
 	):
-
 		self.__field = field
 		self.__extra_args_name = name
 		self.__extra_args_use_parent_name = use_parent_name
@@ -522,6 +519,8 @@ def do_psconcat_flattened(obj, *, use_repr: bool=True, spaces=0):
 	elif (
 		isinstance(obj, Signal)
 		or isinstance(obj, View)
+		or isinstance(obj, Struct)
+		or isinstance(obj, Union)
 	):
 		ret += mk_spaces(spaces)
 		ret += inner_psconcat(
