@@ -87,7 +87,8 @@ def dbg_tofrom_ubits(width: int):
 # og =0, next lg = 0000 | 0000 | 1 = 0001
 
 def leading_one(lst: list):
-	for i in reversed(range(len(lst))):
+	#for i in reversed(range(len(lst))):
+	for i in range(len(lst)):
 		if lst[i] == 1:
 			return i
 	else:
@@ -179,4 +180,4 @@ def dbg_calc_next_gnt(width: int):
 			)
 		print()
 
-dbg_calc_next_gnt(3)
+dbg_calc_next_gnt(4)
