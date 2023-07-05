@@ -94,74 +94,51 @@ def leading_one(lst: list):
 	else:
 		return None
 
-def is_one_hot(lg: list):
-	found = False
-	#for i in reversed(range(len(lg))):
-	#for gnt in reversed(lg):
-	for gnt in lg:
-		if gnt == 1:
-			if found:
-				return False
-			found = True
-
-	return True
-
 def calc_next_gnt(req: list, last_gnt: list):
 	if len(req) != len(last_gnt):
 		raise TypeError(psconcat(
 			"len(req):", len(req), " ",
 			"len(last_gnt):", len(last_gnt),
 		))
-	#x = from_ubits(req + req)
 	#x = list(reversed(req)) + list(reversed(req))
 	x = req + req
 	last_gnt_uint = from_ubits(last_gnt)
-	#if last_gnt_uint == 0:
-	#	#temp_last_gnt = last_gnt[:-1] + [1]
-	#	#x = [1] + x + x
-	#	#x = [1] + x
-	#	#print(psconcat("testificate: ", x, " ", x + [1]))
-	#	x = x + [1]
-	#	#x = [1] + x
+	if last_gnt_uint == 0:
+		#print(psconcat("testificate: ", x, " ", x + [1]))
+		#x = x + [1]
+		last_gnt_uint = 1 # set a default
+		#x = [1] + x
 	x_uint = from_ubits(x)
 	x1h_uint = x_uint & ((~x_uint) + last_gnt_uint) # bitscan
-	#x2h_uint = x_uint & ((~from_ubits(x[:-1])) + last_gnt_uint) # bitscan
+	#x1h_uint = x_uint & (~(x_uint - last_gnt_uint)) # bitscan
 	x1h = to_ubits(x1h_uint, len(x))
-	#x2h = to_ubits(x2h_uint, len(x))
-	if last_gnt_uint != 0:
-		outp_gnt_uint = (
-			from_ubits(x1h[len(req):2 * len(req)])
-			| from_ubits(x1h[:len(req)])
-		)
-	elif x_uint != 0:
-		outp_gnt_uint = 2 ** leading_one(req)
-	else:
-		outp_gnt_uint = 0x0
+	outp_gnt_uint = (
+		from_ubits(x1h[len(req):2 * len(req)])
+		| from_ubits(x1h[:len(req)])
+	)
 	outp_gnt = to_ubits(outp_gnt_uint, len(req))
 
-	#next_gnt_uint = (
-	#	from_ubits(x2h[len(req):2 * len(req)])
-	#	| from_ubits(x2h[:len(req)])
-	#	| x2h[-1]
-	#)
-	#next_gnt_uint = outp_gnt_uint | x1h[-1]
-	#if last_gnt_uint == 0:
-	#	print(psconcat(
-	#		"x_uint:", bin(x_uint), " ",
-	#		"x1h", x1h, " ",
-	#		"x2h", x2h
-	#	))
-	#next_gnt = to_ubits(next_gnt_uint, len(req))
 	return " ".join([
 		psconcat(key, value)
 		for key, value in {
-			"og": outp_gnt,
-			#"ng": next_gnt,
+			"output_gnt": outp_gnt,
 		}.items()
 	])
 	#return {"x": x, "x_uint": x_uint, "ng": next_gnt}
 
 def dbg_calc_next_gnt(width: int):
+	def is_one_hot(lg: list):
+		found = False
+		#for i in reversed(range(len(lg))):
+		#for gnt in reversed(lg):
+		for gnt in lg:
+			if gnt == 1:
+				if found:
+					return False
+				found = True
+
+		return True
+
 	for last_gnt_uint in range(2 ** width):
 		last_gnt = to_ubits(last_gnt_uint, width)
 		if not is_one_hot(last_gnt):
@@ -170,7 +147,7 @@ def dbg_calc_next_gnt(width: int):
 			req = to_ubits(req_uint, width)
 			print(
 				psconcat(
-					"lg{} rq{} {}".format(
+					"last_gnt{} request_vec{} {}".format(
 						last_gnt, req, calc_next_gnt(
 							req=req, last_gnt=last_gnt
 						),
