@@ -1,2 +1,2 @@
 # libcheesevoyage
-My Amaranth-HDL library intended to be reused across multiple HDL projects
+My SystemVerilog library intended to be reused across multiple HDL projects
