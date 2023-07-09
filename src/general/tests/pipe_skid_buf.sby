@@ -1,0 +1,21 @@
+[tasks]
+cover
+prove
+
+[options]
+cover: mode cover
+prove: mode prove
+#depth 40
+depth 20
+multiclock off
+
+[engines]
+smtbmc
+#abc pdr
+
+[script]
+read_ilang toplevel.il
+prep -top Top
+
+[files]
+toplevel.il
