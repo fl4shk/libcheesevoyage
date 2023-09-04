@@ -21,3 +21,6 @@ build
 
 *.o
 *.a
+simWorkspace
+project
+target

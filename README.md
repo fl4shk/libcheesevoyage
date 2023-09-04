@@ -1,2 +1,2 @@
 # libcheesevoyage
-My SystemVerilog library intended to be reused across multiple HDL projects
+My SpinalHDL library intended to be reused across multiple HDL projects
