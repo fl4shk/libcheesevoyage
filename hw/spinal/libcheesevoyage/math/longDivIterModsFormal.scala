@@ -1,4 +1,4 @@
-//package libcheesevoyage
+//package libcheesevoyage.math
 //
 //import spinal.core._
 //import spinal.core.formal._

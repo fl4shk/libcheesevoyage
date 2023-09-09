@@ -1,4 +1,4 @@
-package libcheesevoyage
+package libcheesevoyage.math.trySpinal
 
 import spinal.core._
 import spinal.lib._

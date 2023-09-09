@@ -1,6 +1,7 @@
-package libcheesevoyage
+package libcheesevoyage.math
+import libcheesevoyage.general._
 
-import scala.math
+import scala.math._
 import spinal.core._
 import spinal.lib._
 import spinal.core.formal._
@@ -407,7 +408,7 @@ case class LongDivPipelined(
     //)){ 
     //}
     val m = new ArrayBuffer[LongUdivIterSync]()
-    for (idx <- 0 to numPstages - 1)  {
+    for (idx <- 0 to numPstages - 1) {
       m += new LongUdivIterSync(
         params=params,
         chunkStartVal=(numPstages - 1) - idx
@@ -518,51 +519,59 @@ case class LongDivPipelined(
   itdIn(0) := loc.itdIn0Reg
   //--------
   // Connect the pipeline stages together
-  for (idx <- 0 to loc.m.size - 2) {
-    if (!usePipeSkidBuf) {
+  if (!usePipeSkidBuf) {
+    for (idx <- 0 to loc.m.size - 2) {
       itdIn(idx + 1) := itdOut(idx)
-    } else { // if (usePipeSkidBuf)
-      //itsIo(idx + 1) :
-      //itdIn(idx + 1) := itdOut(idx)
-      //itsIo(idx + 1).sbIo.prev <> itsIo(idx).sbIo.next
-      //itsIo(idx + 1).sbIo.prev := itsIo(idx).sbIo.next
-      //itsIo(idx + 1).sbIo.prev.ready := itsIo(idx).sbIo.next.ready
-      //itsIo(idx + 1).sbIo.prev.payload := 
+    } 
+  } else { // if (usePipeSkidBuf)
+    PipeSkidBufIo.connectParallel(
+      sbIoList=(
+        for (idx <- 0 to itsIo.size - 1)
+          yield itsIo(idx).sbIo
+      ).toList,
+      tieFirstIfwdValid=true,
+      tieLastIbakReady=true,
+    )
+    ////itsIo(idx + 1) :
+    ////itdIn(idx + 1) := itdOut(idx)
+    ////itsIo(idx + 1).sbIo.prev <> itsIo(idx).sbIo.next
+    ////itsIo(idx + 1).sbIo.prev := itsIo(idx).sbIo.next
+    ////itsIo(idx + 1).sbIo.prev.ready := itsIo(idx).sbIo.next.ready
+    ////itsIo(idx + 1).sbIo.prev.payload := 
 
-      //itdIn(idx + 1) := itdOut(idx)
-      //ifwdValid(idx + 1) := ofwdValid(idx)
-      //ibakReady(idx) := obakReady(idx + 1)
-      //itsIo(idx + 1).sbIo.prev <-/< itsIo(idx).sbIo.next
-      //itsIo(idx + 1).sbIo.prev << itsIo(idx).sbIo.next
-      //itsIo(idx + 1).sbIo.prev >/-> itsIo(idx).sbIo.next
-      val nextIdx = idx + 1
-      //println(f"idx $idx; nextIdx $nextIdx")
-      //itsIo(nextIdx).sbIo.prev <-/< itsIo(prevIdx).sbIo.next
-      //itsIo(prevIdx).sbIo.next <-/< itsIo(nextIdx).sbIo.prev
-      val prevSbIo = itsIo(idx).sbIo
-      val nextSbIo = itsIo(nextIdx).sbIo
-      //prevSbIo.next.connectFrom(nextSbIo.prev)
-      nextSbIo.prev.connectFrom(prevSbIo.next)
-      //val prevThatSbIo = itsIo(prevIdx).thatSbIo
-      //val nextThatSbIo = itsIo(nextIdx).thatSbIo
-      //if (prevIdx == 0) {
-      //  //prevThatSbIo.next.connectFrom()
-      //  //prevSbIo
-      //} else { // if (prevIdx > 0)
-      //}
-      //if (nextIdx == loc.m.size - 1) {
-      //} else { // if (nextIdx < loc.m.size - 1)
-      //}
+    ////itdIn(idx + 1) := itdOut(idx)
+    ////ifwdValid(idx + 1) := ofwdValid(idx)
+    ////ibakReady(idx) := obakReady(idx + 1)
+    ////itsIo(idx + 1).sbIo.prev <-/< itsIo(idx).sbIo.next
+    ////itsIo(idx + 1).sbIo.prev << itsIo(idx).sbIo.next
+    ////itsIo(idx + 1).sbIo.prev >/-> itsIo(idx).sbIo.next
+    //val nextIdx = idx + 1
+    ////println(f"idx $idx; nextIdx $nextIdx")
+    ////itsIo(nextIdx).sbIo.prev <-/< itsIo(prevIdx).sbIo.next
+    ////itsIo(prevIdx).sbIo.next <-/< itsIo(nextIdx).sbIo.prev
+    //val currSbIo = itsIo(idx).sbIo
+    //val nextSbIo = itsIo(nextIdx).sbIo
+    ////prevSbIo.next.connectFrom(nextSbIo.prev)
+    //nextSbIo.prev.connectFrom(currSbIo.next)
+    ////val prevThatSbIo = itsIo(prevIdx).thatSbIo
+    ////val nextThatSbIo = itsIo(nextIdx).thatSbIo
+    ////if (prevIdx == 0) {
+    ////  //prevThatSbIo.next.connectFrom()
+    ////  //prevSbIo
+    ////} else { // if (prevIdx > 0)
+    ////}
+    ////if (nextIdx == loc.m.size - 1) {
+    ////} else { // if (nextIdx < loc.m.size - 1)
+    ////}
 
-      //if (prevSbIo.thatNext != null) {
-      //}
-      //if (nextSbIo.thatPrev != null) {
-      //}
-      //itsIo(1).sbIo.prev <-/< itsIo(0).sbIo.next
-      //itsIo(2).sbIo.prev <-/< itsIo(1).sbIo.next
-      //itsIo(3).sbIo.prev <-/< itsIo(2).sbIo.next
-      //itsIo(4).sbIo.prev <-/< itsIo(3).sbIo.next
-    }
+    ////if (prevSbIo.thatNext != null) {
+    ////}
+    ////if (nextSbIo.thatPrev != null) {
+    ////}
+    ////itsIo(1).sbIo.prev <-/< itsIo(0).sbIo.next
+    ////itsIo(2).sbIo.prev <-/< itsIo(1).sbIo.next
+    ////itsIo(3).sbIo.prev <-/< itsIo(2).sbIo.next
+    ////itsIo(4).sbIo.prev <-/< itsIo(3).sbIo.next
   }
   //--------
   when (

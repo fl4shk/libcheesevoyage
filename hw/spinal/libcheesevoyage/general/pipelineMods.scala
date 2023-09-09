@@ -1,8 +1,10 @@
-package libcheesevoyage
+package libcheesevoyage.general
+import libcheesevoyage._
 
 import spinal.core._
 import spinal.lib._
 import spinal.core.formal._
+import scala.collection.mutable.ArrayBuffer
 
 //case class PstageFwdIoOneDir[
 //  T <: Data
@@ -53,6 +55,32 @@ case class PsbIoParentData[
 ) {
 }
 
+object PipeSkidBufIo {
+  def connectParallel[
+    T <: Data,
+  ](
+    //dataType: HardType[T],
+    sbIoList: List[PipeSkidBufIo[T]],
+    tieFirstIfwdValid: Boolean=true,
+    tieLastIbakReady: Boolean=true,
+  ): Unit = {
+    //assert len(sbBusLst) >= 2
+
+    for (idx <- 0 to sbIoList.size - 2) {
+      val sbIo = sbIoList(idx)
+      val sbIoNext = sbIoList(idx + 1)
+      sbIoNext.prev.connectFrom(sbIo.next)
+    }
+    if (tieFirstIfwdValid) {
+      //sbBusLst(0).inp.fwd.valid := 0b1
+      sbIoList(0).prev.valid := True
+    }
+    if (tieLastIbakReady) {
+      //sbBusLst[-1].inp.bak.ready := 0b1
+      sbIoList.last.next.ready := True
+    }
+  }
+}
 case class PipeSkidBufIo[
   T <: Data
 ](
@@ -71,6 +99,7 @@ case class PipeSkidBufIo[
     optIncludeBusy=optIncludeBusy,
   ))
   //val busy = (optIncludeBusy) generate in port Bool()
+
   def connectChild(
     //childSbIo: //this.type,
     childSbIo: PipeSkidBufIo[T],
@@ -231,12 +260,12 @@ case class PipeSkidBuf[
     ////  // TODO: not sure if the below is going to work, so might
     ////  // need to comment it out
     ////  //| (
-    ////  //	// Use a Scala "mux" instead of an SpinalHDL `Mux`
-    ////  //	0b0
-    ////  //	//if not optIncludeValidBusy
-    ////  //	//else misc.validBusy
-    ////  //	if not optIncludeBusy
-    ////  //	else misc.busy
+    ////  //  // Use a Scala "mux" instead of an SpinalHDL `Mux`
+    ////  //  0b0
+    ////  //  //if not optIncludeValidBusy
+    ////  //  //else misc.validBusy
+    ////  //  if not optIncludeBusy
+    ////  //  else misc.busy
     ////  //)
     ////  //| (
     ////  //  if (!optIncludeValidBusy) {
@@ -258,18 +287,18 @@ case class PipeSkidBuf[
     ////  locC.valid := False
     ////  //locC.validNext := False
     ////} otherwise {
-    ////	//locC.validNext := locS.valid
-    ////	locC.valid := locS.valid
+    ////  //locC.validNext := locS.valid
+    ////  locC.valid := locS.valid
     ////}
 
     ////when (
     ////  clockDomain.isResetActive
     ////  | misc.clear
     ////  //| (
-    ////  //	// Use a Scala "mux" instead of a SpinalHDL `Mux`
-    ////  //	0b0
-    ////  //	if not optIncludeBusy
-    ////  //	else misc.busy
+    ////  //  // Use a Scala "mux" instead of a SpinalHDL `Mux`
+    ////  //  0b0
+    ////  //  if not optIncludeBusy
+    ////  //  else misc.busy
     ////  //)
     ////) {
     ////  locC.payload := locS.payload.getZero
@@ -311,19 +340,19 @@ case class PipeSkidBuf[
     ////    & ~tempReadyBusy
     ////    //locS.ready
     ////    //& (
-    ////    //	0b1
-    ////    //	if not optIncludeReadyBusy
-    ////    //	// Use a Scala "mux" instead of a SpinalHDL
-    ////    //	// `Mux` AND the upstream `ready` with
-    ////    //	// ~`readyBusy`
-    ////    //	else ~misc.readyBusy
+    ////    //  0b1
+    ////    //  if not optIncludeReadyBusy
+    ////    //  // Use a Scala "mux" instead of a SpinalHDL
+    ////    //  // `Mux` AND the upstream `ready` with
+    ////    //  // ~`readyBusy`
+    ////    //  else ~misc.readyBusy
     ////    //)
     ////    ////& (
-    ////    ////	// Use a Scala "mux" instead of a SpinalHDL
-    ////    ////	// `Mux`
-    ////    ////	0b1
-    ////    ////	if not optIncludeBusy
-    ////    ////	else ~misc.busy
+    ////    ////  // Use a Scala "mux" instead of a SpinalHDL
+    ////    ////  // `Mux`
+    ////    ////  0b1
+    ////    ////  if not optIncludeBusy
+    ////    ////  else ~misc.busy
     ////    ////)
     ////  )
     ////  ofwdValid := (
@@ -331,19 +360,19 @@ case class PipeSkidBuf[
     ////    (ifwdValid | locS.valid)
     ////    & ~tempValidBusy
     ////    //& (
-    ////    //	0b1
-    ////    //	if not optIncludeValidBusy
-    ////    //	// Use a Scala "mux" instead of a SpinalHDL
-    ////    //	// `Mux` AND the downstream `valid` with
-    ////    //	// ~`validBusy`
-    ////    //	else ~misc.validBusy
+    ////    //  0b1
+    ////    //  if not optIncludeValidBusy
+    ////    //  // Use a Scala "mux" instead of a SpinalHDL
+    ////    //  // `Mux` AND the downstream `valid` with
+    ////    //  // ~`validBusy`
+    ////    //  else ~misc.validBusy
     ////    //)
     ////    ////& (
-    ////    ////	// Use a Scala "mux" instead of a SpinalHDL
-    ////    ////	// `Mux`
-    ////    ////	0b1
-    ////    ////	if not optIncludeBusy
-    ////    ////	else ~misc.busy
+    ////    ////  // Use a Scala "mux" instead of a SpinalHDL
+    ////    ////  // `Mux`
+    ////    ////  0b1
+    ////    ////  if not optIncludeBusy
+    ////    ////  else ~misc.busy
     ////    ////)
     ////  )
     ////}

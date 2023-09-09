@@ -1,4 +1,5 @@
-package libcheesevoyage
+package libcheesevoyage.general
+import libcheesevoyage._
 
 import spinal.core._
 import spinal.core.formal._
@@ -14,13 +15,23 @@ object FifoFormal extends App {
         depth=depth,
       ))
 
-      val inp = dut.io.inp
-      val outp = dut.io.outp
+      //val inp = dut.io.inp
+      //val outp = dut.io.outp
+      val push = dut.io.push
+      val pop = dut.io.pop
 
       assumeInitial(clockDomain.isResetActive)
       //assumeInitial(~pastValid)
-      assumeInitial(inp === inp.getZero)
-      anyseq(inp)
+      //assumeInitial(inp === inp.getZero)
+
+      assumeInitial(push.payload === push.payload.getZero)
+      assumeInitial(push.valid === push.valid.getZero)
+      anyseq(push.payload)
+      anyseq(push.valid)
+      assumeInitial(pop.ready === pop.ready.getZero)
+      anyseq(pop.ready)
+
+      //anyseq(inp)
     })
 }
 object AsyncReadFifoFormal extends App {
@@ -34,12 +45,20 @@ object AsyncReadFifoFormal extends App {
         depth=depth,
       ))
 
-      val inp = dut.io.inp
-      val outp = dut.io.outp
+      //val inp = dut.io.inp
+      //val outp = dut.io.outp
+      val push = dut.io.push
+      val pop = dut.io.pop
 
       assumeInitial(clockDomain.isResetActive)
       //assumeInitial(~pastValid)
-      assumeInitial(inp === inp.getZero)
-      anyseq(inp)
+      //assumeInitial(inp === inp.getZero)
+
+      assumeInitial(push.payload === push.payload.getZero)
+      assumeInitial(push.valid === push.valid.getZero)
+      anyseq(push.payload)
+      anyseq(push.valid)
+      assumeInitial(pop.ready === pop.ready.getZero)
+      anyseq(pop.ready)
     })
 }

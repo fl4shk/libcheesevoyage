@@ -1,6 +1,9 @@
-package libcheesevoyage
+package libcheesevoyage.math
+import libcheesevoyage.general.PsbIoParentData
+import libcheesevoyage.general.PipeSkidBufIo
+import libcheesevoyage.general.PipeSkidBuf
 
-import scala.math
+import scala.math._
 import spinal.core._
 import spinal.lib._
 import spinal.core.formal._

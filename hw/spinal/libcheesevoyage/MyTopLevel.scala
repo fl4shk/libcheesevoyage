@@ -2,6 +2,7 @@ package libcheesevoyage
 
 import spinal.core._
 import spinal.lib._
+import libcheesevoyage.math.trySpinal._
 
 // Hardware definition
 //case class MyTopLevel() extends Component {

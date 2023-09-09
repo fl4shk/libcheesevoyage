@@ -1,7 +1,8 @@
-package libcheesevoyage
+package libcheesevoyage.math.trySpinal
 
 import spinal.core._
 import spinal.lib._
+import libcheesevoyage.math._
 
 case class FullAdderInp() extends Bundle {
   val a = in port UInt(1 bit)
