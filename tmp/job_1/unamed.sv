@@ -96,13 +96,13 @@ module Fifo (
   reg        [3:0]    locFormal_lastTailVal;
   wire       [1:0]    locFormal_testHead;
   reg        [31:0]   locFormal_wdCnt;
-  wire                when_fifoMods_l217;
-  wire                when_fifoMods_l223;
-  wire                when_fifoMods_l237;
-  wire                when_fifoMods_l245;
-  wire                when_fifoMods_l308;
+  wire                when_fifoMods_l229;
+  wire                when_fifoMods_l235;
+  wire                when_fifoMods_l249;
+  wire                when_fifoMods_l257;
+  wire                when_fifoMods_l320;
   wire       [1:0]    _zz_io_prev_payload;
-  wire                when_fifoMods_l318;
+  wire                when_fifoMods_l330;
   reg                 formal_with_past_after_reset;
   reg                 loc_nextEmpty_past_1;
   reg                 loc_nextFull_past_1;
@@ -114,7 +114,7 @@ module Fifo (
   reg                 wrEn_past_1;
   reg                 io_misc_full_past_1;
   reg        [1:0]    loc_head_regNext;
-  wire       [1:0]    switch_fifoMods_l366;
+  wire       [1:0]    switch_fifoMods_l378;
   (* ram_style = "ultra" , keep *) reg [3:0] loc_arr [0:3];
 
   assign _zz_loc_tailPlus1 = (loc_tail + _zz_loc_tailPlus1_1);
@@ -159,7 +159,7 @@ module Fifo (
   always @(*) begin
     _zz_1 = 1'b0;
     if(!reset) begin
-      if(when_fifoMods_l318) begin
+      if(when_fifoMods_l330) begin
         _zz_1 = 1'b1;
       end
     end
@@ -173,18 +173,18 @@ module Fifo (
   assign loc_tailPlus1 = {1'd0, _zz_loc_tailPlus1};
   assign loc_headPlus1 = {1'd0, _zz_loc_headPlus1};
   assign locFormal_testHead = (_zz_locFormal_testHead % 3'b100);
-  assign when_fifoMods_l217 = (loc_tailPlus1 < 3'b100);
+  assign when_fifoMods_l229 = (loc_tailPlus1 < 3'b100);
   always @(*) begin
-    if(when_fifoMods_l217) begin
+    if(when_fifoMods_l229) begin
       loc_incrTail = (loc_tail + 2'b01);
     end else begin
       loc_incrTail = 2'b00;
     end
   end
 
-  assign when_fifoMods_l223 = (loc_headPlus1 < 3'b100);
+  assign when_fifoMods_l235 = (loc_headPlus1 < 3'b100);
   always @(*) begin
-    if(when_fifoMods_l223) begin
+    if(when_fifoMods_l235) begin
       loc_incrHead = (loc_head + 2'b01);
     end else begin
       loc_incrHead = 2'b00;
@@ -192,18 +192,18 @@ module Fifo (
   end
 
   assign loc_nextEmpty = (loc_nextHead == loc_nextTail);
-  assign when_fifoMods_l237 = (rdEn && (! io_misc_empty));
+  assign when_fifoMods_l249 = (rdEn && (! io_misc_empty));
   always @(*) begin
-    if(when_fifoMods_l237) begin
+    if(when_fifoMods_l249) begin
       loc_nextTail = loc_incrTail;
     end else begin
       loc_nextTail = loc_tail;
     end
   end
 
-  assign when_fifoMods_l245 = (wrEn && (! io_misc_full));
+  assign when_fifoMods_l257 = (wrEn && (! io_misc_full));
   always @(*) begin
-    if(when_fifoMods_l245) begin
+    if(when_fifoMods_l257) begin
       loc_nextHead = loc_incrHead;
     end else begin
       loc_nextHead = loc_head;
@@ -211,7 +211,7 @@ module Fifo (
   end
 
   always @(*) begin
-    if(when_fifoMods_l245) begin
+    if(when_fifoMods_l257) begin
       loc_nextFull = (_zz_loc_nextFull == loc_nextTail);
     end else begin
       loc_nextFull = (loc_incrHead == loc_nextTail);
@@ -224,7 +224,7 @@ module Fifo (
     if(reset) begin
       sbPop_io_prev_payload = 4'b0000;
     end else begin
-      if(when_fifoMods_l308) begin
+      if(when_fifoMods_l320) begin
         sbPop_io_prev_payload = _zz_loc_arr_port1;
       end else begin
         sbPop_io_prev_payload = rdDataPrev;
@@ -236,7 +236,7 @@ module Fifo (
     if(reset) begin
       rdValid = 1'b0;
     end else begin
-      if(when_fifoMods_l308) begin
+      if(when_fifoMods_l320) begin
         rdValid = 1'b1;
       end else begin
         rdValid = 1'b0;
@@ -244,10 +244,10 @@ module Fifo (
     end
   end
 
-  assign when_fifoMods_l308 = (rdEn && (! io_misc_empty));
+  assign when_fifoMods_l320 = (rdEn && (! io_misc_empty));
   assign _zz_io_prev_payload = loc_tail;
-  assign when_fifoMods_l318 = (wrEn && (! io_misc_full));
-  assign switch_fifoMods_l366 = {io_misc_full,io_misc_empty};
+  assign when_fifoMods_l330 = (wrEn && (! io_misc_full));
+  assign switch_fifoMods_l378 = {io_misc_full,io_misc_empty};
   always @(posedge clk or posedge reset) begin
     if(reset) begin
       rdDataPrev <= 4'b0000;
@@ -270,37 +270,37 @@ module Fifo (
         loc_tail <= loc_nextTail;
         loc_head <= loc_nextHead;
         if(formal_with_past_after_reset) begin
-          assert((io_misc_empty == loc_nextEmpty_past_1)); // fifoMods.scala:L328
-          assert((io_misc_full == loc_nextFull_past_1)); // fifoMods.scala:L329
-          assert((loc_tail == loc_nextTail_past_1)); // fifoMods.scala:L330
-          assert((loc_head == loc_nextHead_past_1)); // fifoMods.scala:L331
+          assert((io_misc_empty == loc_nextEmpty_past_1)); // fifoMods.scala:L340
+          assert((io_misc_full == loc_nextFull_past_1)); // fifoMods.scala:L341
+          assert((loc_tail == loc_nextTail_past_1)); // fifoMods.scala:L342
+          assert((loc_head == loc_nextHead_past_1)); // fifoMods.scala:L343
           if(rdEn_past_1) begin
             if(io_misc_empty_past_1) begin
-              assert((loc_tail_regNext == loc_tail)); // fifoMods.scala:L337
+              assert((loc_tail_regNext == loc_tail)); // fifoMods.scala:L349
             end else begin
-              assert((rdDataPrev == locFormal_lastTailVal)); // fifoMods.scala:L345
+              assert((rdDataPrev == locFormal_lastTailVal)); // fifoMods.scala:L357
             end
           end
           if(wrEn_past_1) begin
             if(io_misc_full_past_1) begin
-              assert((loc_head_regNext == loc_head)); // fifoMods.scala:L352
+              assert((loc_head_regNext == loc_head)); // fifoMods.scala:L364
             end
           end
-          case(switch_fifoMods_l366)
+          case(switch_fifoMods_l378)
             2'b00 : begin
-              assume((loc_head != loc_tail)); // fifoMods.scala:L370
-              assume((locFormal_testHead != loc_tail)); // fifoMods.scala:L371
+              assume((loc_head != loc_tail)); // fifoMods.scala:L382
+              assume((locFormal_testHead != loc_tail)); // fifoMods.scala:L383
             end
             2'b01 : begin
-              assert((loc_head == loc_tail)); // fifoMods.scala:L377
+              assert((loc_head == loc_tail)); // fifoMods.scala:L389
             end
             2'b10 : begin
-              assert((locFormal_testHead == loc_tail)); // fifoMods.scala:L383
+              assert((locFormal_testHead == loc_tail)); // fifoMods.scala:L395
             end
             default : begin
             end
           endcase
-          assert((! (io_misc_empty && io_misc_full))); // fifoMods.scala:L388
+          assert((! (io_misc_empty && io_misc_full))); // fifoMods.scala:L400
         end
       end
     end
@@ -427,13 +427,13 @@ module PipeSkidBuf (
       end
       _zz_1 <= (_zz_io_next_valid && (! _zz_io_prev_s2mPipe_m2sPipe_ready));
       if(_zz_1) begin
-        assert(_zz_io_next_valid); // pipelineMods.scala:L226
-        assert((_zz_2 == _zz_io_next_payload)); // pipelineMods.scala:L226
+        assert(_zz_io_next_valid); // pipelineMods.scala:L236
+        assert((_zz_2 == _zz_io_next_payload)); // pipelineMods.scala:L236
       end
       io_next_isStall_past_1 <= io_next_isStall;
       if(io_next_isStall_past_1) begin
-        assume(io_next_valid); // pipelineMods.scala:L228
-        assume((io_next_payload_regNext == io_next_payload)); // pipelineMods.scala:L228
+        assume(io_next_valid); // pipelineMods.scala:L238
+        assume((io_next_payload_regNext == io_next_payload)); // pipelineMods.scala:L238
       end
     end
   end

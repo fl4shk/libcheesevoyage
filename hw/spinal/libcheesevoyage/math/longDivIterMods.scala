@@ -167,7 +167,7 @@ case class LongUdivIter(params: LongDivParams) extends Component {
       //io.chunkStart.asUInt(log2Up(params.numChunks()) - 1 downto 0)
       chunkStartSliceInd
     ),
-  )//(io.shiftInRema.range)
+  )//(io.shiftInRema.bitsRange)
   )
   // Compare every element of the computed `denom * digit` array to
   // `shiftInRema`, computing `gtVec`.
@@ -245,7 +245,7 @@ case class LongUdivIter(params: LongDivParams) extends Component {
     - itdIn.denomMultLut(io.quotDigit)
     //- itdIn.denomMultLut.as_value().word_select
     //	(io.quotDigit, io.chunkWidth())
-  )(itdOut.tempRema.range)
+  )(itdOut.tempRema.bitsRange)
   //--------
   itdOut.denomMultLut := itdIn.denomMultLut
   //--------

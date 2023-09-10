@@ -37,7 +37,8 @@ case class FifoIo[
   T <: Data
 ](
   dataType: HardType[T],
-) extends Bundle {
+) extends Bundle //with IMasterSlave 
+{
   //--------
   //val inp = in(FifoInp(dataType()))
   //val outp = out(FifoOutp(dataType()))
@@ -52,6 +53,17 @@ case class FifoIo[
   //val push = sbIo.prev
   //val pop = sbIo.next
   val misc = out(FifoMiscIo())
+  //--------
+  //def asMaster(): Unit = {
+  //  master(push)
+  //  slave(pop)
+  //  out(misc)
+  //}
+  //def asSlave(): Unit = {
+  //  slave(push)
+  //  master(pop)
+  //  in(misc)
+  //}
   //--------
 }
 

@@ -144,10 +144,10 @@ case class LongDivMultiCycle(
   // Implement C's rules for modulo's sign
   loc.remaWillBeLez := loc.numerWasLez
 
-  //loc.ioSzdTempQ := itdOut.tempQuot(outp.quot.range)
-  //loc.ioSzdTempR := itdOut.tempRema(outp.rema.range)
-  loc.ioSzdTempQ := loc.tempQuotReg(outp.quot.range)
-  loc.ioSzdTempR := loc.tempRemaReg(outp.rema.range)
+  //loc.ioSzdTempQ := itdOut.tempQuot(outp.quot.bitsRange)
+  //loc.ioSzdTempR := itdOut.tempRema(outp.rema.bitsRange)
+  loc.ioSzdTempQ := loc.tempQuotReg(outp.quot.bitsRange)
+  loc.ioSzdTempR := loc.tempRemaReg(outp.rema.bitsRange)
 
   loc.lezIoSzdTempQ := (~loc.ioSzdTempQ) + 1
   loc.lezIoSzdTempR := (~loc.ioSzdTempR) + 1
@@ -307,7 +307,7 @@ case class LongDivMultiCycle(
             //  [:len(loc.chunkStartBegin)]
             //  === loc.chunkStartBegin)
             assert(U(chunkStart)
-              === loc.chunkStartBegin(chunkStart.range))
+              === loc.chunkStartBegin(chunkStart.bitsRange))
             //assert(loc.chunkStartBegin)
             //--------
             //assert(itdIn.tempNumer
@@ -605,12 +605,12 @@ case class LongDivPipelined(
   //--------
   loc.tComb.busSzdTempQ := Mux(
     ofwdMove.last,
-    itdOut.last.tempQuot(outp.quot.range),
+    itdOut.last.tempQuot(outp.quot.bitsRange),
     loc.tCombPrev.busSzdTempQ,
   )
   loc.tComb.busSzdTempR := Mux(
     ofwdMove.last,
-    itdOut.last.tempRema(outp.rema.range),
+    itdOut.last.tempRema(outp.rema.bitsRange),
     loc.tCombPrev.busSzdTempR,
   )
 
@@ -834,9 +834,9 @@ case class LongDivPipelined(
             skipCond
             | (
               itdOut.last.tempQuot
-                (outp.quot.range)
+                (outp.quot.bitsRange)
               === itdOut.last.formal.oracleQuot
-                (outp.quot.range)
+                (outp.quot.bitsRange)
             )
           )
           //assert((skipCond)
@@ -845,8 +845,8 @@ case class LongDivPipelined(
           assert(
             skipCond
             | (
-              itdOut.last.tempRema(outp.rema.range)
-              === itdOut.last.formal.oracleRema(outp.rema.range)
+              itdOut.last.tempRema(outp.rema.bitsRange)
+              === itdOut.last.formal.oracleRema(outp.rema.bitsRange)
             )
           )
           //--------

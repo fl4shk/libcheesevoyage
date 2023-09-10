@@ -99,6 +99,16 @@ case class PipeSkidBufIo[
     optIncludeBusy=optIncludeBusy,
   ))
   //val busy = (optIncludeBusy) generate in port Bool()
+  //def asMaster(): Unit = {
+  //  slave(next)
+  //  master(prev)
+  //  out(misc)
+  //}
+  //def asSlave(): Unit = {
+  //  master(next)
+  //  slave(prev)
+  //  in(misc)
+  //}
 
   def connectChild(
     //childSbIo: //this.type,

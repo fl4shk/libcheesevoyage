@@ -13,7 +13,6 @@ import spinal.lib.graphic.Rgb
 import spinal.lib.graphic.RgbConfig
 import spinal.core.formal._
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.Map
 import scala.math._
 
 object LcvVgaState extends SpinalEnum(defaultEncoding=binarySequential) {
@@ -79,86 +78,6 @@ case class LcvVgaStateCnt(
   }
 }
 
-case class LcvVgaTimingHv(
-  visib: Int,
-  front: Int,
-  sync: Int,
-  back: Int,
-) {
-  //--------
-  // This is specifically the minimum width instead of like, 32-bit or
-  // something
-  def cntWidth(): Int = {
-    return List[Int](
-      log2Up(visib),
-      log2Up(front),
-      log2Up(sync),
-      log2Up(back),
-    ).zipWithIndex.maxBy(_._1)._2
-  }
-  //--------
-
-  //--------
-}
-case class LcvVgaTimingInfo(
-  pixelClk: Double,
-  htiming: LcvVgaTimingHv,
-  vtiming: LcvVgaTimingHv,
-) {
-}
-object LcvVgaTimingInfoMap {
-  //val map = Map[String, LcvVgaTimingInfo]()
-  val map = Map[String, LcvVgaTimingInfo](
-    // 640 x 480 @ 60 Hz, taken from http://www.tinyvga.com
-    "640x480@60" -> LcvVgaTimingInfo(
-      pixelClk=25.0,
-      htiming=LcvVgaTimingHv(
-        visib=640,
-        front=16,
-        sync=96,
-        back=48
-      ),
-      vtiming=LcvVgaTimingHv(
-        visib=480,
-        front=10,
-        sync=2,
-        back=33
-      ),
-    ),
-    // This is an XGA VGA signal. It didn't work with my monitor.
-    "1024x768@60" -> LcvVgaTimingInfo(
-      pixelClk=65.0,
-      htiming
-        =LcvVgaTimingHv (
-        visib=1024,
-        front=24,
-        sync=136,
-        back=160
-      ),
-      vtiming=LcvVgaTimingHv(
-        visib=768,
-        front=3,
-        sync=6,
-        back=29
-      ),
-    ),
-    "1280x800@60" -> LcvVgaTimingInfo(
-      pixelClk=83.46,
-      htiming=LcvVgaTimingHv(
-        visib=1280,
-        front=64,
-        sync=136,
-        back=200
-      ),
-      vtiming=LcvVgaTimingHv(
-        visib=800,
-        front=1,
-        sync=3,
-        back=24
-      ),
-    ),
-  )
-}
 //case class LcvVgaCtrlBufInp(rgbConfig: RgbConfig) extends Bundle {
 //  //val prep = Bool()
 //  //val col = Rgb(rgbConfig)
@@ -212,13 +131,28 @@ case class LcvVgaCtrlMiscIo() extends Bundle {
   //--------
   //--------
 }
-case class LcvVgaCtrlIo(rgbConfig: RgbConfig) extends Bundle {
-  val en = in port Bool()
+case class LcvVgaCtrlIo(
+  rgbConfig: RgbConfig
+) extends Bundle with IMasterSlave {
+  //--------
+  val en = in Bool()
   //val inp = in(LcvVgaCtrlInp(rgbConfig=rgbConfig))
   //val outp = out(LcvVgaCtrlOutp(rgbConfig=rgbConfig))
   val push = slave Stream(Rgb(rgbConfig))
   val phys = out(LcvVgaPhys(rgbConfig=rgbConfig))
   val misc = out(LcvVgaCtrlMiscIo())
+  //--------
+  def asMaster(): Unit = {
+    out(en)
+    master(push)
+    in(phys, misc)
+  }
+  //def asSlave(): Unit = {
+  //  in(en)
+  //  slave(push)
+  //  out(phys, misc)
+  //}
+  //--------
 }
 //--------
 case class LcvVgaCtrl(
@@ -348,7 +282,7 @@ case class LcvVgaCtrl(
         //  self.VTIMING().noChangeUpdateNextS(m, loc.vsc)
         //}
         rPhys.hsync := True
-        when ((hsc.c + 0x1) >= fbSize().x) {
+        when (hsc.c + 0x1 >= fbSize().x) {
           //self.VTIMING().updateStateCnt(m, loc.vsc)
           vsc.updateStateCnt(vgaTimingHv=vtiming)
         } otherwise {
