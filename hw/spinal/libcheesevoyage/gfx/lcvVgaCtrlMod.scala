@@ -156,7 +156,7 @@ case class LcvVgaCtrlIo(
 }
 //--------
 case class LcvVgaCtrl(
-  clkRate: Int,
+  clkRate: Double,
   timingInfo: LcvVgaTimingInfo,
   fifoDepth: Int,
   rgbConfig: RgbConfig,
