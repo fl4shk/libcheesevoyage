@@ -43,13 +43,13 @@ case class LcvVgaStateCnt(
       nextState: LcvVgaState.C,
     ): Unit = {
       //val counterP1 = c.resized + U("1").resized
-      val tempSSWidth = BigInt(stateSize).bitLength
+      val tempSSWidth = log2Up(stateSize + 1)
       println(f"in mkCase(): $tempSSWidth, $stateSize")
       val tempStateSize = U(f"$tempSSWidth'd$stateSize")
 
       //val tempWidth1 = max(c.getWidth + 1, tempSSWidth)
       val tempWidth1 = max(
-        BigInt((1 << c.getWidth) - 1 + 1).bitLength,
+        log2Up((1 << c.getWidth) + 1),
         tempSSWidth
       )
       val counterP1 = UInt(tempWidth1 bits)
@@ -57,7 +57,7 @@ case class LcvVgaStateCnt(
       //val tempSSWidth1 = max(cWidthP1, tempSSWidth)
       val tempStateSize1 = UInt(tempWidth1 bits)
       if (tempSSWidth == tempWidth1) {
-        tempStateSize1 := stateSize
+        tempStateSize1 := tempStateSize
       } else {
         //tempStateSize1 := (
         //  tempSSWidth - 1 downto 0 -> tempStateSize,
@@ -74,8 +74,11 @@ case class LcvVgaStateCnt(
       //val tempStateSize2 = UInt(cWidthP2 bits)
       //tempStateSize2 := stateSize.resized
       //val counterP2 = c.resized + U("1").resized
+      // based upon my calculations, `tempWidth2` will be the same as
+      // `tempWidth1` even in the case of `c.getWidth == 1`
       val tempWidth2 = max(
-        BigInt((1 << c.getWidth) - 1 + 2).bitLength,
+        //BigInt((1 << c.getWidth) + 2).bitLength,
+        log2Up((1 << c.getWidth) + 2),
         tempSSWidth
       )
       val counterP2 = UInt(tempWidth2 bits)
