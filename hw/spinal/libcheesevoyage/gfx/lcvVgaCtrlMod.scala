@@ -48,7 +48,14 @@ case class LcvVgaStateCnt(
       counterP1 := c.resized + U(f"$tempWidthP1'd1")
       //val tempSSWidth1 = max(cWidthP1, log2Up(stateSize))
       val tempStateSize1 = UInt(tempWidth1 bits)
-      tempStateSize1 := stateSize.resized
+      if (log2Up(stateSize) == tempWidth1) {
+        tempStateSize1 := stateSize
+      } else {
+        tempStateSize1 := (
+          log2Up(stateSize) - 1 downto 0 -> stateSize,
+          default -> False,
+        )
+      }
 
       //val cWidthP2 = c.getWidth + 2
       //val counterP2 = UInt(cWidthP2 bits)
@@ -62,7 +69,15 @@ case class LcvVgaStateCnt(
       counterP2 := c.resized + U(f"$tempWidthP2'd2")
       //val tempSSWidth2 = max(cWidthP2, log2Up(stateSize))
       val tempStateSize2 = UInt(tempWidth2 bits)
-      tempStateSize2 := stateSize.resized
+      //tempStateSize2 := stateSize
+      if (log2Up(stateSize) == tempWidth2) {
+        tempStateSize2 := stateSize
+      } else {
+        tempStateSize2 := (
+          log2Up(stateSize) - 1 downto 0 -> stateSize,
+          default -> False,
+        )
+      }
 
       //val tempStateSize = U(stateSize)
       //val tempStateSize = U(f"$tempWidth'd$stateSize")
