@@ -43,12 +43,12 @@ case class LcvVgaStateCnt(
       nextState: LcvVgaState.C,
     ): Unit = {
       val counterP1 = c + 0x1
-      when (counterP1 >= stateSize) {
+      when (counterP1.resized >= stateSize) {
         s := nextState
         c := 0x0
         //m.d.comb += nextS.eq(nextState)
       } otherwise {
-        c := counterP1
+        c := counterP1.resized
         //self.noChangeUpdateNextS(m, stateCnt)
       }
 
@@ -223,11 +223,11 @@ case class LcvVgaCtrl(
   // Force this addition to be of width `CLK_CNT_WIDTH + 1` to
   // prevent wrap-around
   val clkCntP1 = UInt((clkCntWidth() + 1) bits)
-  clkCntP1 := clkCnt + 0x1
+  clkCntP1 := Cat(clkCnt, False) + 0x1
 
   // Implement wrap-around for the clock counter
   when (clkCntP1 < cpp()) {
-    clkCnt := clkCntP1
+    clkCnt := clkCntP1(clkCnt.bitsRange)
   } otherwise {
     clkCnt := 0x0
   }
