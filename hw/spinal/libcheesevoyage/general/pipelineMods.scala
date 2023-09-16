@@ -153,7 +153,7 @@ case class PipeSkidBuf[
   //optIncludeReadyBusy: Boolean=false,
   optIncludeBusy: Boolean=false,
   optPassthrough: Boolean=false,
-  optTieIfwdValid: Boolean=false,
+  //optTieIfwdValid: Boolean=false,
   //optFormal: Boolean=false,
 ) extends Component {
   //--------

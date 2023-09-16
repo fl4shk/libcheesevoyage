@@ -48,10 +48,11 @@ case class LcvVgaGradient(
     dataType=Rgb(rgbConfig),
     optIncludeBusy=false,
     optPassthrough=false,
-    optTieIfwdValid=true,
+    //optTieIfwdValid=true,
   )
   val sbIo = skidBuf.io
   val sbPrevFire = sbIo.prev.fire
+  sbIo.prev.valid := True
   val col = sbIo.prev.payload
   //--------
   dithio.push << sbIo.next
