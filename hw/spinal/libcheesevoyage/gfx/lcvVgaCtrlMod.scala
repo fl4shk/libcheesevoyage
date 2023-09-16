@@ -67,19 +67,23 @@ case class LcvVgaStateCnt(
     //State = VgaTiming.State
     switch (s) {
       is (LcvVgaState.front) {
-        mkCase(stateSize=vgaTimingHv.front, nextState=LcvVgaState.sync)
+        val stateSize = vgaTimingHv.front
+        mkCase(stateSize=stateSize, nextState=LcvVgaState.sync)
         println(f"front, sync: $stateSize")
       }
       is (LcvVgaState.sync) {
-        mkCase(stateSize=vgaTimingHv.sync, nextState=LcvVgaState.back)
+        val stateSize = vgaTimingHv.sync
+        mkCase(stateSize=stateSize, nextState=LcvVgaState.back)
         println(f"sync, back: $stateSize")
       }
       is (LcvVgaState.back) {
-        mkCase(stateSize=vgaTimingHv.back, nextState=LcvVgaState.visib)
+        val stateSize = vgaTimingHv.back
+        mkCase(stateSize=stateSize, nextState=LcvVgaState.visib)
         println(f"back, visib: $stateSize")
       }
       is (LcvVgaState.visib) {
-        mkCase(stateSize=vgaTimingHv.visib, nextState=LcvVgaState.front)
+        val stateSize = vgaTimingHv.visib
+        mkCase(stateSize=stateSize, nextState=LcvVgaState.front)
         println(f"visib, front: $stateSize")
       }
     }
