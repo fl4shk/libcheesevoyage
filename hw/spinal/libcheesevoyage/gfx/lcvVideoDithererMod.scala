@@ -310,7 +310,8 @@ case class LcvVideoDitherer(
       //[len(loc.colInPlusDelta.r) - 1]
     ) {
       //m.d.comb += loc.dicol.r := (-1)
-      loc.dicol.r := -1
+      //loc.dicol.r := -1
+      loc.dicol.r := (default -> True)
     } otherwise {
       //m.d.comb += loc.dicol.r := (loc.colInPlusDelta.r
       //  [:len(loc.dicol.r)])
@@ -323,7 +324,8 @@ case class LcvVideoDitherer(
       //[len(loc.colInPlusDelta.g) - 1]):
     ) {
       //m.d.comb += loc.dicol.g := (-1)
-      loc.dicol.g := -1
+      //loc.dicol.g := -1
+      loc.dicol.g := (default -> True)
     } otherwise {
       //m.d.comb += loc.dicol.g := (loc.colInPlusDelta.g
       //  [:len(loc.dicol.g)])
@@ -336,7 +338,8 @@ case class LcvVideoDitherer(
       //[len(loc.colInPlusDelta.b) - 1]):
     ) {
       //m.d.comb += loc.dicol.b := (-1)
-      loc.dicol.b := -1
+      //loc.dicol.b := -1
+      loc.dicol.b := (default -> True)
     } otherwise {
       //m.d.comb += loc.dicol.b := (loc.colInPlusDelta.b
       //  [:len(loc.dicol.b)])
