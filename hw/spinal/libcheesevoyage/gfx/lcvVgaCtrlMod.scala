@@ -43,7 +43,10 @@ case class LcvVgaStateCnt(
       nextState: LcvVgaState.C,
     ): Unit = {
       val counterP1 = c.resized + U("1").resized
-      when (counterP1.resized >= stateSize) {
+      //val tempStateSize = U(stateSize)
+      val tempStateSizeWidth = log2Up(stateSize)
+      val tempStateSize = U(f"$tempStateSizeWidth'd$stateSize").resized
+      when (counterP1.resized >= tempStateSize) {
         s := nextState
         c := 0x0
         //m.d.comb += nextS.eq(nextState)
