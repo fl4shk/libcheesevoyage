@@ -43,16 +43,19 @@ case class LcvVgaStateCnt(
       nextState: LcvVgaState.C,
     ): Unit = {
       //val counterP1 = c.resized + U("1").resized
-      val tempWidth1 = max(c.getWidth + 1, log2Up(stateSize))
+      val tempSSWidth = log2Up(stateSize)
+      val tempStateSize = U(f"$tempSSWidth'd$stateSize")
+
+      val tempWidth1 = max(c.getWidth + 1, tempSSWidth)
       val counterP1 = UInt(tempWidth1 bits)
       counterP1 := c.resized + U(f"$tempWidth1'd1")
-      //val tempSSWidth1 = max(cWidthP1, log2Up(stateSize))
+      //val tempSSWidth1 = max(cWidthP1, tempSSWidth)
       val tempStateSize1 = UInt(tempWidth1 bits)
-      if (log2Up(stateSize) == tempWidth1) {
+      if (tempSSWidth == tempWidth1) {
         tempStateSize1 := stateSize
       } else {
         tempStateSize1 := (
-          log2Up(stateSize) - 1 downto 0 -> stateSize,
+          tempSSWidth - 1 downto 0 -> tempStateSize,
           default -> False,
         )
       }
@@ -60,21 +63,21 @@ case class LcvVgaStateCnt(
       //val cWidthP2 = c.getWidth + 2
       //val counterP2 = UInt(cWidthP2 bits)
       //counterP2 := c.resized + U(f"$cWidthP2'd1")
-      ////val tempSSWidth2 = max(cWidthP2, log2Up(stateSize))
+      ////val tempSSWidth2 = max(cWidthP2, tempSSWidth)
       //val tempStateSize2 = UInt(cWidthP2 bits)
       //tempStateSize2 := stateSize.resized
       //val counterP2 = c.resized + U("1").resized
-      val tempWidth2 = max(c.getWidth + 2, log2Up(stateSize))
+      val tempWidth2 = max(c.getWidth + 2, tempSSWidth)
       val counterP2 = UInt(tempWidth2 bits)
       counterP2 := c.resized + U(f"$tempWidth2'd2")
-      //val tempSSWidth2 = max(cWidthP2, log2Up(stateSize))
+      //val tempSSWidth2 = max(cWidthP2, tempSSWidth)
       val tempStateSize2 = UInt(tempWidth2 bits)
       //tempStateSize2 := stateSize
-      if (log2Up(stateSize) == tempWidth2) {
-        tempStateSize2 := stateSize
+      if (tempSSWidth == tempWidth2) {
+        tempStateSize2 := tempStateSize
       } else {
         tempStateSize2 := (
-          log2Up(stateSize) - 1 downto 0 -> stateSize,
+          tempSSWidth - 1 downto 0 -> tempStateSize,
           default -> False,
         )
       }
