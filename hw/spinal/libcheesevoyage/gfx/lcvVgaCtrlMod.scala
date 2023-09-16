@@ -330,9 +330,9 @@ case class LcvVgaCtrl(
         //rPhys.col.r := -1
         //rPhys.col.g := -1
         //rPhys.col.b := -1
-        rPhys.col.r := (default -> 1)
-        rPhys.col.g := (default -> 1)
-        rPhys.col.b := (default -> 1)
+        rPhys.col.r := (default -> True)
+        rPhys.col.g := (default -> True)
+        rPhys.col.b := (default -> True)
         //]
       } otherwise { // when (io.en)
         //m.d.sync += [
