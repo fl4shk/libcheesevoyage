@@ -223,7 +223,8 @@ case class LcvVgaCtrl(
   // Force this addition to be of width `CLK_CNT_WIDTH + 1` to
   // prevent wrap-around
   val clkCntP1 = UInt((clkCntWidth() + 1) bits)
-  clkCntP1 := U(Cat(clkCnt, False)) + 0x1
+  //clkCntP1 := Cat(False, clkCnt).asUInt + 0x1
+  clkCntP1 := (clkCnt.resized + 0x1).resized
 
   // Implement wrap-around for the clock counter
   when (clkCntP1.resized < cpp()) {
