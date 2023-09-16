@@ -467,7 +467,7 @@ case class LongUdivIterSync(
     //optIncludeReadyBusy=false,
     optIncludeBusy=false,
     //optPassthrough=false,
-    optTieIfwdValid=(chunkStartVal == params.numChunks() - 1),
+    //optTieIfwdValid=(chunkStartVal == params.numChunks() - 1),
   )
   val sbIo = (params.usePipeSkidBuf) generate skidBuf.io 
   //if (sbIo != null) {
