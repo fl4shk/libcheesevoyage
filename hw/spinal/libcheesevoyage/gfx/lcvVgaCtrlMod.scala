@@ -44,6 +44,7 @@ case class LcvVgaStateCnt(
     ): Unit = {
       //val counterP1 = c.resized + U("1").resized
       val tempSSWidth = log2Up(stateSize)
+      println(f"in mkCase(): $tempSSWidth, $stateSize")
       val tempStateSize = U(f"$tempSSWidth'd$stateSize")
 
       //val tempWidth1 = max(c.getWidth + 1, tempSSWidth)
