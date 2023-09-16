@@ -599,6 +599,7 @@ case class AsyncReadFifo[
 
   //m.d.comb += [
   rdData := loc.arr.readAsync(loc.tail)
+  rdValid := True
   misc.empty := loc.empty
   misc.full := loc.full
   //]

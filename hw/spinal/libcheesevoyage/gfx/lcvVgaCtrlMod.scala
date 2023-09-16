@@ -44,7 +44,7 @@ case class LcvVgaStateCnt(
     ): Unit = {
       //val counterP1 = c.resized + U("1").resized
       val tempSSWidth = log2Up(stateSize + 1)
-      println(f"in mkCase(): $tempSSWidth, $stateSize")
+      //println(f"in mkCase(): $tempSSWidth, $stateSize")
       val tempStateSize = U(f"$tempSSWidth'd$stateSize")
 
       //val tempWidth1 = max(c.getWidth + 1, tempSSWidth)
@@ -121,22 +121,22 @@ case class LcvVgaStateCnt(
       is (LcvVgaState.front) {
         val stateSize = vgaTimingHv.front
         mkCase(stateSize=stateSize, nextState=LcvVgaState.sync)
-        println(f"front, sync: $stateSize")
+        //println(f"front, sync: $stateSize")
       }
       is (LcvVgaState.sync) {
         val stateSize = vgaTimingHv.sync
         mkCase(stateSize=stateSize, nextState=LcvVgaState.back)
-        println(f"sync, back: $stateSize")
+        //println(f"sync, back: $stateSize")
       }
       is (LcvVgaState.back) {
         val stateSize = vgaTimingHv.back
         mkCase(stateSize=stateSize, nextState=LcvVgaState.visib)
-        println(f"back, visib: $stateSize")
+        //println(f"back, visib: $stateSize")
       }
       is (LcvVgaState.visib) {
         val stateSize = vgaTimingHv.visib
         mkCase(stateSize=stateSize, nextState=LcvVgaState.front)
-        println(f"visib, front: $stateSize")
+        //println(f"visib, front: $stateSize")
       }
     }
     
