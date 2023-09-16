@@ -13,12 +13,16 @@ case class LcvVgaTimingHv(
   // This is specifically the minimum width instead of like, 32-bit or
   // something
   def cntWidth(): Int = {
-    return List[Int](
+    val tmpList = List[Int](
       log2Up(visib),
       log2Up(front),
       log2Up(sync),
       log2Up(back),
-    ).zipWithIndex.maxBy(_._1)._2
+    ) 
+    val tmp = tmpList.zipWithIndex.maxBy(_._1)._2
+    println(f"cntWidth(): $tmp")
+    //return tmpList()
+    return tmp
   }
   //--------
 
