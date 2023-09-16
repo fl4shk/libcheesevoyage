@@ -47,8 +47,8 @@ case class LcvVgaStateCnt(
       val counterP1 = UInt((c.getWidth + 1) bits)
       counterP1 := c.resized + U("1").resized
       //val tempStateSize = U(stateSize)
-      val tempStateSize = U(f"$tempWidth'd$stateSize")
-      when (counterP1.resized >= tempStateSize) {
+      //val tempStateSize = U(f"$tempWidth'd$stateSize")
+      when (counterP1.resized >= stateSize) {
         s := nextState
         c := 0x0
         //m.d.comb += nextS.eq(nextState)
