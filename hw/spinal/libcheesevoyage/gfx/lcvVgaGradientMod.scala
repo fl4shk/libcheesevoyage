@@ -75,10 +75,11 @@ case class LcvVgaGradient(
     //  dibus.inp.en.eq(0b1),
     //]
 
-    when (dithio.outpPayload.nextPos.x === 0x0) {
+    //when (dithio.outpPayload.nextPos.x === 0x0) 
+    when (dithio.outpPayload.pos.x === 0x0) {
       //m.d.sync += col.r.eq(0x0)
       col.r := 0x0
-    } otherwise { // If(dibus.outp.next_pos.x > 0x0)
+    } otherwise { // when (dithio.outpPayload..pos.x > 0x0)
       //m.d.sync += col.r.eq(col.r + 0x1)
       col.r := col.r + 0x1
     }
