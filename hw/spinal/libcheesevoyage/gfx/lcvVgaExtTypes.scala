@@ -14,15 +14,15 @@ case class LcvVgaTimingHv(
   // something
   def cntWidth(): Int = {
     val tmpList = List[Int](
-      log2Up(visib),
       log2Up(front),
+      log2Up(visib),
       log2Up(sync),
       log2Up(back),
     ) 
-    val tmp = tmpList.zipWithIndex.maxBy(_._1)._2
-    println(f"cntWidth(): $tmp")
+    val tmpIdx = tmpList.zipWithIndex.maxBy(_._1)._2
+    println(f"cntWidth(): $tmpIdx")
     //return tmpList()
-    return tmp
+    return tmpList(tmpIdx)
   }
   //--------
 
