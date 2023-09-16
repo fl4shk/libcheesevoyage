@@ -15,7 +15,7 @@ object PipelineModsFormal extends App {
   //val optIncludeValidBusy = false
   //val optIncludeReadyBusy = false
   val optIncludeBusy = false
-  val optTieIfwdValid = false
+  //val optTieIfwdValid = false
   val optPassthrough = false
   val optFormal = true
   //FormalConfig
@@ -25,7 +25,7 @@ object PipelineModsFormal extends App {
     .doVerify(new Component {
       //val optIncludeValidBusy = false
       //val optIncludeReadyBusy = false
-      //val optTieIfwdValid = false
+      ////val optTieIfwdValid = false
       //val optPassthrough = true
       val dut = FormalDut(PipeSkidBuf(
         //dataType=Vec(RgbColor(width=5), 8),
@@ -35,7 +35,7 @@ object PipelineModsFormal extends App {
         //optIncludeValidBusy=optIncludeValidBusy,
         //optIncludeReadyBusy=optIncludeReadyBusy,
         optIncludeBusy=optIncludeBusy,
-        optTieIfwdValid=optTieIfwdValid,
+        //optTieIfwdValid=optTieIfwdValid,
         optPassthrough=optPassthrough,
       ))
       val ifwdPayload = dut.io.prev.payload
@@ -87,7 +87,7 @@ object PipelineModsFormal extends App {
     //    //optIncludeValidBusy=true,
     //    optIncludeValidBusy=optIncludeValidBusy,
     //    optIncludeReadyBusy=optIncludeReadyBusy,
-    //    optTieIfwdValid=optTieIfwdValid,
+    //    //optTieIfwdValid=optTieIfwdValid,
     //    optPassthrough=optPassthrough,
     //    //optFormal=optFormal,
     //  )
