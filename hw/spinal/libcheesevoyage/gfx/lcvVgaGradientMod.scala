@@ -54,6 +54,8 @@ case class LcvVgaGradient(
   val sbPrevFire = sbIo.prev.fire
   sbIo.prev.valid := True
   val col = sbIo.prev.payload
+  val prevCol = Reg(Rgb(rgbConfig))
+  prevCol.init(prevCol.getZero)
   //--------
   dithio.push << sbIo.next
   val dithOutpCol = dithio.outpCol
@@ -70,6 +72,7 @@ case class LcvVgaGradient(
   // Enable VGA signal output
   ctrlio.en := True
   //--------
+  prevCol := col
   when (sbPrevFire) {
     //m.d.sync += [
     //  drbus.inp.buf.prep.eq(0b1),
@@ -82,7 +85,7 @@ case class LcvVgaGradient(
       col.r := 0x0
     } otherwise { // when (dithio.outpPayload..pos.x > 0x0)
       //m.d.sync += col.r.eq(col.r + 0x1)
-      col.r := col.r + 0x1
+      col.r := prevCol.r + 0x1
     }
     //m.d.sync += col.r.eq(col.r + 0x1)
 
@@ -90,8 +93,8 @@ case class LcvVgaGradient(
     //m.d.sync += col.b.eq(0x0)
     col.g := 0x0
     col.b := 0x0
+  } otherwise { // when (~sbPrevFire)
+    col := prevCol
   }
-  //otherwise { // when (~sbPrevFire)
-  //}
   //--------
 }
