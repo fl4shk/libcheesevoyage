@@ -300,9 +300,9 @@ case class LcvVideoDitherer(
     //]
 
     //m.d.comb += [
-    loc.colInPlusDelta.r := io.inpCol.r + loc.chanDelta
-    loc.colInPlusDelta.g := io.inpCol.g + loc.chanDelta
-    loc.colInPlusDelta.b := io.inpCol.b + loc.chanDelta
+    loc.colInPlusDelta.r := (io.inpCol.r + loc.chanDelta).resized
+    loc.colInPlusDelta.g := (io.inpCol.g + loc.chanDelta).resized
+    loc.colInPlusDelta.b := (io.inpCol.b + loc.chanDelta).resized
     //]
 
     // Saturating arithmetic to prevent an artifact
@@ -358,13 +358,13 @@ case class LcvVideoDitherer(
     //io.misc.col.b := (loc.dicol.b[bus.CHAN_WIDTH_DELTA():]),
     tempPayload.col.r := loc.dicol.r(
       loc.dicol.r.high downto io.chanWidthDelta
-    )
+    ).resized
     tempPayload.col.g := loc.dicol.g(
       loc.dicol.g.high downto io.chanWidthDelta
-    )
+    ).resized
     tempPayload.col.b := loc.dicol.b(
       loc.dicol.b.high downto io.chanWidthDelta
-    )
+    ).resized
     ////io.misc.col.r := (loc.dicol.r[bus.CHAN_WIDTH_DELTA():]),
     ////io.misc.col.g := (-1),
     ////io.misc.col.b := (loc.dicol.b[bus.CHAN_WIDTH_DELTA():]),

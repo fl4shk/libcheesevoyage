@@ -448,8 +448,8 @@ case class LcvVgaCtrl(
   //m.d.comb += [
   //outp.visib := ((hsc.s == Tstate.VISIB)
   // & (vsc.s == Tstate.VISIB)),
-  misc.drawPos.x := hsc.c
-  misc.drawPos.y := vsc.c
+  misc.drawPos.x := hsc.c.resized
+  misc.drawPos.y := vsc.c.resized
   misc.size.x := fbSize().x
   misc.size.y := fbSize().y
   //]
