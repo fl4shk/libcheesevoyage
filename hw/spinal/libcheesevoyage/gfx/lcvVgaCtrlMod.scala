@@ -42,7 +42,7 @@ case class LcvVgaStateCnt(
       stateSize: Int,
       nextState: LcvVgaState.C,
     ): Unit = {
-      val counterP1 = c.resized + 0x1
+      val counterP1 = c.resized + U("1").resized
       when (counterP1.resized >= stateSize) {
         s := nextState
         c := 0x0
