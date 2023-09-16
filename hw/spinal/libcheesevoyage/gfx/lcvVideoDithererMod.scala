@@ -24,7 +24,7 @@ class LcvVideoDithererPopPayloadNoCol(
 
   //val col = Rgb(rgbConfig)
   val frameCnt = UInt(ditherDeltaWidth bits)
-  val nextPos = coordT()
+  //val nextPos = coordT()
   val pos = coordT()
   val pastPos = coordT()
   //--------
@@ -250,54 +250,63 @@ case class LcvVideoDitherer(
     //io.outpPayload.pastPos := rPastPos
   }
 
-  when (~push.fire) {
-    tempPayload := loc.pastTempPayload
-  }
+  //when (~push.fire) {
+  //  tempPayload := loc.pastTempPayload
+  //}
+  //tempPayload := loc.pastTempPayload
 
   when (loc.posPlus1.x < fbSize2d.x) {
     //m.d.sync += io.misc.pos.x := (loc.posPlus1.x)
     //m.d.comb += [
-    tempPayload.nextPos.x := loc.posPlus1.x
-    tempPayload.nextPos.y := loc.pastTempPayload.pos.y
+    //tempPayload.nextPos.x := loc.posPlus1.x
+    //tempPayload.nextPos.y := loc.pastTempPayload.pos.y
+    tempPayload.pos.x := loc.posPlus1.x
+    tempPayload.pos.y := loc.pastTempPayload.pos.y
     //]
   } otherwise { // when (loc.posPlus1.x >= fbSize2d.x):
     //m.d.sync += io.misc.pos.x := (0x0)
     //m.d.comb +=
-    tempPayload.nextPos.x := 0x0
+    //tempPayload.nextPos.x := 0x0
+    tempPayload.pos.x := 0x0
     when (loc.posPlus1.y < fbSize2d.y) {
       //m.d.comb +=
-      tempPayload.nextPos.y := loc.posPlus1.y
+      //tempPayload.nextPos.y := loc.posPlus1.y
+      tempPayload.pos.y := loc.posPlus1.y
     } otherwise {
       // when (loc.posPlus1.y >= fbSize2d.y):
       //m.d.comb += 
-      tempPayload.nextPos.y := 0x0
+      //tempPayload.nextPos.y := 0x0
+      tempPayload.pos.y := 0x0
 
       // This wraps around to zero automatically due to
       // modular arithmetic, so we don't need another mux just
       // for this.
-      //when (io.en) 
-      when (push.fire) {
-        //m.d.sync += io.misc.frameCnt := (io.misc.frameCnt + 0x1)
-        //loc.rFrameCnt := loc.rFrameCnt + 0x1
-        tempPayload.frameCnt := loc.pastTempPayload.frameCnt + 0x1
-      }
+      //when (io.en)
+      //when (push.fire) {
+      //  //m.d.sync += io.misc.frameCnt := (io.misc.frameCnt + 0x1)
+      //  //loc.rFrameCnt := loc.rFrameCnt + 0x1
+      //  tempPayload.frameCnt := loc.pastTempPayload.frameCnt + 0x1
+      //}
     }
   }
 
+  tempPayload.frameCnt := loc.pastTempPayload.frameCnt + 0x1
+  tempPayload.pastPos := loc.pastTempPayload.pos
+  //tempPayload.pos := tempPayload.nextPos
   //when (io.en)
   when (push.fire) {
-    //m.d.sync += [
-    //loc.pastColOut := io.outpCol
-    //io.misc.pastPos := (io.misc.pos)
-    //loc.rPastPos := io.misc.pos
-    tempPayload.pastPos := loc.pastTempPayload.pos
-    //]
+    ////m.d.sync += [
+    ////loc.pastColOut := io.outpCol
+    ////io.misc.pastPos := (io.misc.pos)
+    ////loc.rPastPos := io.misc.pos
+    //tempPayload.pastPos := loc.pastTempPayload.pos
+    ////]
 
-    //m.d.sync += [
-    //io.misc.pos := (io.misc.nextPos)
-    //loc.rPos := io.misc.nextPos
-    tempPayload.pos := tempPayload.nextPos
-    //]
+    ////m.d.sync += [
+    ////io.misc.pos := (io.misc.nextPos)
+    ////loc.rPos := io.misc.nextPos
+    //tempPayload.pos := tempPayload.nextPos
+    ////]
 
     //m.d.comb += [
     loc.colInPlusDelta.r := (io.inpCol.r + loc.chanDelta).resized
@@ -380,7 +389,7 @@ case class LcvVideoDitherer(
     //tempPayload.col := loc.pastColOut
     tempPayload.col := loc.pastTempPayload.col
     //io.misc.nextPos := io.misc.pos
-    tempPayload.nextPos := loc.pastTempPayload.nextPos
+    //tempPayload.nextPos := loc.pastTempPayload.nextPos
     //]
   }
 
