@@ -46,7 +46,8 @@ case class LcvVgaStateCnt(
       val tempSSWidth = log2Up(stateSize)
       val tempStateSize = U(f"$tempSSWidth'd$stateSize")
 
-      val tempWidth1 = max(c.getWidth + 1, tempSSWidth)
+      //val tempWidth1 = max(c.getWidth + 1, tempSSWidth)
+      val tempWidth1 = max(log2Up((1 << c.getWidth) - 1 + 1), tempSSWidth)
       val counterP1 = UInt(tempWidth1 bits)
       counterP1 := c.resized + U(f"$tempWidth1'd1")
       //val tempSSWidth1 = max(cWidthP1, tempSSWidth)
@@ -54,10 +55,12 @@ case class LcvVgaStateCnt(
       if (tempSSWidth == tempWidth1) {
         tempStateSize1 := stateSize
       } else {
-        tempStateSize1 := (
-          tempSSWidth - 1 downto 0 -> tempStateSize,
-          default -> False,
-        )
+        //tempStateSize1 := (
+        //  tempSSWidth - 1 downto 0 -> tempStateSize,
+        //  default -> False,
+        //)
+        tempStateSize1(tempStateSize1.high downto tempSSWidth) := 0x0 
+        tempStateSize1(tempSSWidth - 1 downto 0) := tempStateSize
       }
 
       //val cWidthP2 = c.getWidth + 2
@@ -67,7 +70,7 @@ case class LcvVgaStateCnt(
       //val tempStateSize2 = UInt(cWidthP2 bits)
       //tempStateSize2 := stateSize.resized
       //val counterP2 = c.resized + U("1").resized
-      val tempWidth2 = max(c.getWidth + 2, tempSSWidth)
+      val tempWidth2 = max(log2Up((1 << c.getWidth) - 1 + 2), tempSSWidth)
       val counterP2 = UInt(tempWidth2 bits)
       counterP2 := c.resized + U(f"$tempWidth2'd2")
       //val tempSSWidth2 = max(cWidthP2, tempSSWidth)
@@ -76,10 +79,12 @@ case class LcvVgaStateCnt(
       if (tempSSWidth == tempWidth2) {
         tempStateSize2 := tempStateSize
       } else {
-        tempStateSize2 := (
-          tempSSWidth - 1 downto 0 -> tempStateSize,
-          default -> False,
-        )
+        //tempStateSize2 := (
+        //  tempSSWidth - 1 downto 0 -> tempStateSize,
+        //  default -> False,
+        //)
+        tempStateSize2(tempStateSize2.high downto tempSSWidth) := 0x0 
+        tempStateSize2(tempSSWidth - 1 downto 0) := tempStateSize
       }
 
       //val tempStateSize = U(stateSize)
