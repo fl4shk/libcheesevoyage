@@ -710,7 +710,7 @@ case class LcvVgaCtrlNoFifo(
     rPastVisib := misc.visib
     misc.pastVisib := rPastVisib
 
-    val rPastDrawPos = Vec2(LcvVgaCtrlMiscIo.coordElemKindT())
+    val rPastDrawPos = Reg(Vec2(LcvVgaCtrlMiscIo.coordElemKindT()))
     rPastDrawPos.init(rPastDrawPos.getZero)
     rPastDrawPos := misc.drawPos
     misc.pastDrawPos := rPastDrawPos
