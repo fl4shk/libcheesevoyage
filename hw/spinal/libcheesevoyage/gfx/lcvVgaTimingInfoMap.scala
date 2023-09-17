@@ -6,7 +6,8 @@ object LcvVgaTimingInfoMap {
   val map = Map[String, LcvVgaTimingInfo](
     // 640 x 480 @ 60 Hz, taken from http://www.tinyvga.com
     "640x480@60" -> LcvVgaTimingInfo(
-      pixelClk=25.0,
+      //pixelClk=25.0,
+      pixelClk=25.175,
       htiming=LcvVgaTimingHv(
         visib=640,
         front=16,
