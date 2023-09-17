@@ -465,12 +465,10 @@ case class LcvVgaCtrl(
   //}
   val rPastFifoPopReady = Reg(Bool()) init(False)
   rPastFifoPopReady := fifoPop.ready
-  when (misc.pixelEn & misc.visib) {
-    when (~rPastFifoPopReady) {
-      fifoPop.ready := True
-    } otherwise {
-      fifoPop.ready := False
-    }
+  when (misc.pixelEn & misc.visib & ~rPastFifoPopReady) {
+    fifoPop.ready := True
+  } otherwise {
+    fifoPop.ready := False
   }
 
   //when (PIXEL_EN_NEXT_CYCLE & outp.nextVisib
