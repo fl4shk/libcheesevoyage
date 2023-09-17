@@ -432,7 +432,7 @@ case class LcvVgaCtrl(
       } otherwise { // when (io.en)
         //m.d.sync += [
           //rPhys.col := inpCol
-          rPhys.col = fifoPop.payload
+          rPhys.col := fifoPop.payload
         //]
       }
     // Black border
