@@ -282,29 +282,29 @@ case class LcvVgaCtrl(
   val rPhys = Reg(LcvVgaPhys(rgbConfig=rgbConfig))
   rPhys.init(rPhys.getZero)
   phys := rPhys
-  //--------
-  //val loc = new Area {
-  val col = Rgb(rgbConfig)
-  // Implement the clock enable
-  //val clkCntWidth = self.clkCntWidth()
-  val clkCnt = Reg(UInt(clkCntWidth() bits)) init(0x0)
 
+  // Implement the clock enable
+  val clkCnt = Reg(UInt(clkCntWidth() bits)) init(0x0)
   // Force this addition to be of width `CLK_CNT_WIDTH + 1` to
   // prevent wrap-around
-  val clkCntP1 = UInt((clkCntWidth() + 1) bits)
-  //clkCntP1 := Cat(False, clkCnt).asUInt + 0x1
-  clkCntP1 := (clkCnt.resized + 0x1).resized
+  val clkCntP1Width = clkCntWidth() + 1
+  val clkCntP1 = UInt(clkCntP1Width bits)
+  clkCntP1 := clkCnt.resized + U(f"$clkCntP1Width'd1")
 
   // Implement wrap-around for the clock counter
-  when (clkCntP1.resized < cpp()) {
-    clkCnt := clkCntP1.resized
+  when (clkCntP1 < cpp()) {
+    //m.d.sync += 
+    clkCnt := clkCntP1(clkCnt.bitsRange)
   } otherwise {
+    //m.d.sync +=
     clkCnt := 0x0
   }
-
-  // outp.pixelEn = (clkCnt === 0x0)
-  misc.pixelEn := clkCnt.resized === 0x0
-  val pixelEnNextCycle = clkCntP1.resized === cpp()
+  // Since this is an alias, use ALL_CAPS for its name.
+  // outp.pixelEn = (clkCnt == 0x0)
+  //m.d.comb += 
+  misc.pixelEn := clkCnt === 0x0
+  val pixelEnNextCycle = Bool()
+  pixelEnNextCycle := clkCntP1.resized === cpp()
   //--------
   //type Tstate = LcvVgaState.type;
   //loc.hsc = {
@@ -322,41 +322,38 @@ case class LcvVgaCtrl(
   //--------
   // Implement HSYNC and VSYNC logic
   when (misc.pixelEn) {
-    //self.HTIMING().updateStateCnt(m, loc.hsc)
-    hsc.updateStateCnt(vgaTimingHv=htiming())
+    //htiming().updateStateCnt(m, hsc)
+    hsc.updateStateCnt(htiming)
 
     switch (hsc.s) {
       is (LcvVgaState.front) {
-        //m.d.sync += outp.hsync.eq(0b1)
-        //self.VTIMING().noChangeUpdateNextS(m, loc.vsc)
+        //m.d.sync += outp.hsync := (0b1)
         rPhys.hsync := True
+        //vtiming().noChangeUpdateNextS(m, vsc)
         vsc.noChangeUpdateNextS()
       }
       is (LcvVgaState.sync) {
-        //m.d.sync += outp.hsync.eq(0b0)
-        //self.VTIMING().noChangeUpdateNextS(m, loc.vsc)
+        //m.d.sync += outp.hsync := (0b0)
         rPhys.hsync := False
+        //vtiming().noChangeUpdateNextS(m, vsc)
         vsc.noChangeUpdateNextS()
       }
       is (LcvVgaState.back) {
-        //m.d.sync += outp.hsync.eq(0b1)
-        //self.VTIMING().noChangeUpdateNextS(m, loc.vsc)
+        //m.d.sync += outp.hsync := (0b1)
         rPhys.hsync := True
+        //vtiming().noChangeUpdateNextS(m, vsc)
         vsc.noChangeUpdateNextS()
       }
       is (LcvVgaState.visib) {
-        //m.d.sync += outp.hsync.eq(0b1),
-        //when ((hsc.c + 0x1) >= self.FB_SIZE().x) {
-        //  self.VTIMING().updateStateCnt(m, loc.vsc)
-        //} otherwise {
-        //  self.VTIMING().noChangeUpdateNextS(m, loc.vsc)
-        //}
+        //m.d.sync += outp.hsync := (0b1)
         rPhys.hsync := True
-        when (hsc.c + 0x1 >= fbSize().x) {
-          //self.VTIMING().updateStateCnt(m, loc.vsc)
-          vsc.updateStateCnt(vgaTimingHv=vtiming())
+        //when ((hsc["c"] + 0x1) >= FB_SIZE().x) 
+        //when ((hsc.c + 0x1) >= fbSize().x)
+        when (hsc.cP1 >= fbSize().x) {
+          //vtiming().updateStateCnt(m, vsc)
+          vsc.updateStateCnt(vtiming)
         } otherwise {
-          //self.VTIMING().noChangeUpdateNextS(m, loc.vsc)
+          //vtiming().noChangeUpdateNextS(m, vsc)
           vsc.noChangeUpdateNextS()
         }
       }
@@ -364,25 +361,25 @@ case class LcvVgaCtrl(
 
     switch (vsc.s) {
       is (LcvVgaState.front) {
-        //m.d.sync += outp.vsync.eq(0b1)
+        //m.d.sync += outp.vsync := (0b1)
         rPhys.vsync := True
       }
       is (LcvVgaState.sync) {
-        //m.d.sync += outp.vsync.eq(0b0)
+        //m.d.sync += outp.vsync := (0b0)
         rPhys.vsync := False
       }
       is (LcvVgaState.back) {
-        //m.d.sync += outp.vsync.eq(0b1)
+        //m.d.sync += outp.vsync := (0b1)
         rPhys.vsync := True
       }
       is (LcvVgaState.visib) {
-        //m.d.sync += outp.vsync.eq(0b1)
+        //m.d.sync += outp.vsync := (0b1)
         rPhys.vsync := True
       }
     }
-  } otherwise { // when (~outp.pixelEn)
-    //htiming().noChangeUpdateNextS(m, loc.hsc)
-    //vtiming().noChangeUpdateNextS(m, loc.vsc)
+  } otherwise { // when (~misc.pixelEn)
+    //htiming().noChangeUpdateNextS(m, hsc)
+    //vtiming().noChangeUpdateNextS(m, vsc)
     hsc.noChangeUpdateNextS()
     vsc.noChangeUpdateNextS()
   }
@@ -390,31 +387,60 @@ case class LcvVgaCtrl(
   //--------
   // Implement drawing the picture
 
+  //when (misc.pixelEn) {
+  //  // Visible area
+  //  when (misc.visib) {
+  //    when (~io.en) {
+  //    //when (~push.fire) 
+  //      //m.d.sync += [
+  //      // white
+  //      //rPhys.col.r := -1
+  //      //rPhys.col.g := -1
+  //      //rPhys.col.b := -1
+  //      rPhys.col.r := (default -> True)
+  //      rPhys.col.g := (default -> True)
+  //      rPhys.col.b := (default -> True)
+  //      //]
+  //    } otherwise { // when (io.en)
+  //      //m.d.sync += [
+  //      rPhys.col := col
+  //      //]
+  //    }
+  //  // Black border
+  //  } otherwise { // when (~outp.visib)
+  //    //m.d.sync += [
+  //    rPhys.col.r := 0x0
+  //    rPhys.col.g := 0x0
+  //    rPhys.col.b := 0x0
+  //    //]
+  //  }
+  //}
+  // Implement drawing the picture
+
   when (misc.pixelEn) {
     // Visible area
     when (misc.visib) {
       when (~io.en) {
-      //when (~push.fire) 
         //m.d.sync += [
-        // white
-        //rPhys.col.r := -1
-        //rPhys.col.g := -1
-        //rPhys.col.b := -1
+          //rPhys.col.r := (0xf),
+          //rPhys.col.g := (0xf),
+          //rPhys.col.b := (0xf),
+        //]
         rPhys.col.r := (default -> True)
         rPhys.col.g := (default -> True)
         rPhys.col.b := (default -> True)
-        //]
       } otherwise { // when (io.en)
         //m.d.sync += [
-        rPhys.col := col
+          //rPhys.col := inpCol
+          rPhys.col = fifoPop.payload
         //]
       }
     // Black border
-    } otherwise { // when (~outp.visib)
+    } otherwise { // when (~misc.visib)
       //m.d.sync += [
-      rPhys.col.r := 0x0
-      rPhys.col.g := 0x0
-      rPhys.col.b := 0x0
+        rPhys.col.r := 0x0
+        rPhys.col.g := 0x0
+        rPhys.col.b := 0x0
       //]
     }
   }
@@ -444,40 +470,70 @@ case class LcvVgaCtrl(
   // m.d.sync += fifoInp.rdEn.eq(0b0)
 
   //m.d.comb += [
-  col := fifoPop.payload
+  //col := fifoPop.payload
   misc.dbgFifoEmpty := fifoEmpty
   misc.dbgFifoFull := fifoFull
   //]
   //--------
-  //m.d.comb += [
-  //outp.visib := ((hsc.s == Tstate.VISIB)
-  // & (vsc.s == Tstate.VISIB)),
-  misc.drawPos.x := hsc.c.resized
-  misc.drawPos.y := vsc.c.resized
-  misc.size.x := fbSize().x
-  misc.size.y := fbSize().y
-  //]
-  //m.d.sync += [
-  val rNextVisib = Reg(Bool()) init(False)
-  rNextVisib := (
-    (hsc.nextS === LcvVgaState.visib)
-    & (vsc.nextS === LcvVgaState.visib)
-  )
-  misc.nextVisib := rNextVisib
+  ////m.d.comb += [
+  ////outp.visib := ((hsc.s == Tstate.VISIB)
+  //// & (vsc.s == Tstate.VISIB)),
+  //misc.drawPos.x := hsc.c.resized
+  //misc.drawPos.y := vsc.c.resized
+  //misc.size.x := fbSize().x
+  //misc.size.y := fbSize().y
+  ////]
+  ////m.d.sync += [
+  //val rNextVisib = Reg(Bool()) init(False)
+  //rNextVisib := (
+  //  (hsc.nextS === LcvVgaState.visib)
+  //  & (vsc.nextS === LcvVgaState.visib)
+  //)
+  //misc.nextVisib := rNextVisib
 
-  val rVisib = Reg(Bool()) init(False)
-  rVisib := misc.nextVisib
-  misc.visib := rVisib
+  //val rVisib = Reg(Bool()) init(False)
+  //rVisib := misc.nextVisib
+  //misc.visib := rVisib
 
-  val rPastVisib = Reg(Bool()) init(False)
-  rPastVisib := misc.visib
-  misc.pastVisib := rPastVisib
+  //val rPastVisib = Reg(Bool()) init(False)
+  //rPastVisib := misc.visib
+  //misc.pastVisib := rPastVisib
 
-  val rPastDrawPos = Reg(Vec2(LcvVgaCtrlMiscIo.coordElemKindT()))
-  rPastDrawPos.init(rPastDrawPos.getZero)
-  rPastDrawPos := misc.drawPos
-  misc.pastDrawPos := rPastDrawPos
-  //]
+  //val rPastDrawPos = Reg(Vec2(LcvVgaCtrlMiscIo.coordElemKindT()))
+  //rPastDrawPos.init(rPastDrawPos.getZero)
+  //rPastDrawPos := misc.drawPos
+  //misc.pastDrawPos := rPastDrawPos
+  ////]
+  //val rMisc = Reg(LcvVgaCtrlMiscIo())
+  //rMisc.init(rMisc.getZero)
+  //misc := rMisc
+    //m.d.comb += [
+      //misc.visib := ((hsc.s == Tstate.VISIB)
+      // & (vsc.s == Tstate.VISIB)),
+    misc.drawPos.x := hsc.c.resized
+    misc.drawPos.y := vsc.c.resized
+    misc.size.x := fbSize().x
+    misc.size.y := fbSize().y
+    //]
+    //m.d.sync += [
+    val rNextVisib = Reg(Bool()) init(False)
+    rNextVisib := ((hsc.nextS === LcvVgaState.visib)
+      & (vsc.nextS === LcvVgaState.visib))
+    misc.nextVisib := rNextVisib
+
+    val rVisib = Reg(Bool()) init(False)
+    rVisib := misc.nextVisib
+    misc.visib := rVisib
+
+    val rPastVisib = Reg(Bool()) init(False)
+    rPastVisib := misc.visib
+    misc.pastVisib := rPastVisib
+
+    val rPastDrawPos = Reg(Vec2(LcvVgaCtrlMiscIo.coordElemKindT()))
+    rPastDrawPos.init(rPastDrawPos.getZero)
+    rPastDrawPos := misc.drawPos
+    misc.pastDrawPos := rPastDrawPos
+    //]
   //--------
 
   //}
@@ -592,7 +648,7 @@ case class LcvVgaCtrlNoFifo(
   val hsc = LcvVgaStateCnt(htiming)
   val vsc = LcvVgaStateCnt(vtiming)
   //--------
-  //// Implement HSYNC and VSYNC logic
+  // Implement HSYNC and VSYNC logic
   when (misc.pixelEn) {
     //htiming().updateStateCnt(m, hsc)
     hsc.updateStateCnt(htiming)
