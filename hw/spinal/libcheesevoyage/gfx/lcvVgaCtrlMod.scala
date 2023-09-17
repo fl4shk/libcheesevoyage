@@ -514,7 +514,7 @@ case class LcvVgaCtrlNoFifo(
   //--------
   val io = LcvVgaCtrlNoFifoIo(rgbConfig=rgbConfig)
   //val push = io.push
-  val inpCol = io.col
+  val inpCol = io.inpCol
   val phys = io.phys
   val misc = io.misc
   //--------
@@ -688,7 +688,7 @@ case class LcvVgaCtrlNoFifo(
         //]
       } otherwise { // when (io.en)
         //m.d.sync += [
-        rPhys.col := col
+        rPhys.col := inpCol
         //]
       }
     // Black border
@@ -729,8 +729,8 @@ case class LcvVgaCtrlNoFifo(
   //m.d.comb += [
   //col := fifoPop.payload
   //col := inpCol
-  misc.dbgFifoEmpty := fifoEmpty
-  misc.dbgFifoFull := fifoFull
+  misc.dbgFifoEmpty := False
+  misc.dbgFifoFull := False
   //]
   //--------
   //m.d.comb += [
