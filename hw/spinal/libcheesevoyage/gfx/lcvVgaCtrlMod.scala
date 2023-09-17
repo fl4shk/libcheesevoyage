@@ -26,10 +26,14 @@ object LcvVgaState extends SpinalEnum(defaultEncoding=binarySequential) {
 
 case class LcvVgaStateCnt(
   vgaTimingHv: LcvVgaTimingHv
-) extends Bundle {
+) //extends Bundle
+{
   //--------
-  val s = Reg(LcvVgaState())
-  val c = Reg(UInt(vgaTimingHv.cntWidth() bits))
+  val s = Reg(LcvVgaState()) init(LcvVgaState.front)
+  val c = Reg(UInt(vgaTimingHv.cntWidth() bits)) init(0x0)
+  val cP1Width = vgaTimingHv.cntWidth() + 1
+  val cP1 = UInt(cP1Width bits)
+  cP1 := c.resized + U(f"$cP1Width'd1")
   val nextS = LcvVgaState()
   //--------
   def noChangeUpdateNextS(): Unit = {
@@ -313,8 +317,8 @@ case class LcvVgaCtrl(
   //  "c": Signal(self.VTIMING().COUNTER_WIDTH()),
   //  "next_s": Signal(width_from_len(loc.Tstate)),
   //}
-  val hsc = LcvVgaStateCnt(htiming)
-  val vsc = LcvVgaStateCnt(vtiming)
+  val hsc = LcvVgaStateCnt(vgaTimingHv=htiming())
+  val vsc = LcvVgaStateCnt(vgaTimingHv=vtiming())
   //--------
   // Implement HSYNC and VSYNC logic
   when (misc.pixelEn) {
@@ -350,7 +354,7 @@ case class LcvVgaCtrl(
         rPhys.hsync := True
         when (hsc.c + 0x1 >= fbSize().x) {
           //self.VTIMING().updateStateCnt(m, loc.vsc)
-          vsc.updateStateCnt(vgaTimingHv=vtiming)
+          vsc.updateStateCnt(vgaTimingHv=vtiming())
         } otherwise {
           //self.VTIMING().noChangeUpdateNextS(m, loc.vsc)
           vsc.noChangeUpdateNextS()
@@ -493,9 +497,9 @@ case class LcvVgaCtrlNoFifoIo(
   val misc = out(LcvVgaCtrlMiscIo())
   //--------
   def asMaster(): Unit = {
-    out(en)
+    out(en, inpCol)
     //master(push)
-    in(inpCol, phys, misc)
+    in(phys, misc)
   }
   //def asSlave(): Unit = {
   //  in(en)
@@ -554,13 +558,14 @@ case class LcvVgaCtrlNoFifo(
   val clkCnt = Reg(UInt(clkCntWidth() bits)) init(0x0)
   // Force this addition to be of width `CLK_CNT_WIDTH + 1` to
   // prevent wrap-around
-  val clkCntP1 = UInt((clkCntWidth() + 1) bits)
-  clkCntP1 := clkCnt + 0x1
+  val clkCntP1Width = clkCntWidth() + 1
+  val clkCntP1 = UInt(clkCntP1Width bits)
+  clkCntP1 := clkCnt.resized + U(f"$clkCntP1Width'd1")
 
   // Implement wrap-around for the clock counter
   when (clkCntP1 < cpp()) {
     //m.d.sync += 
-    clkCnt := clkCntP1
+    clkCnt := clkCntP1(clkCnt.bitsRange)
   } otherwise {
     //m.d.sync +=
     clkCnt := 0x0
@@ -568,9 +573,9 @@ case class LcvVgaCtrlNoFifo(
   // Since this is an alias, use ALL_CAPS for its name.
   // outp.pixelEn = (clkCnt == 0x0)
   //m.d.comb += 
-  misc.pixelEn := clkCnt == 0x0
+  misc.pixelEn := clkCnt === 0x0
   val pixelEnNextCycle = Bool()
-  pixelEnNextCycle := clkCntP1 === cpp()
+  pixelEnNextCycle := clkCntP1.resized === cpp()
   //--------
   // Implement the State/Counter stuff
   //loc.Tstate = VgaTiming.State
@@ -615,7 +620,8 @@ case class LcvVgaCtrlNoFifo(
         //m.d.sync += outp.hsync := (0b1)
         rPhys.hsync := True
         //when ((hsc["c"] + 0x1) >= FB_SIZE().x) 
-        when ((hsc.c + 0x1) >= fbSize().x) {
+        //when ((hsc.c + 0x1) >= fbSize().x)
+        when (hsc.cP1 >= fbSize().x) {
           //vtiming().updateStateCnt(m, vsc)
           vsc.updateStateCnt(vtiming)
         } otherwise {
@@ -655,7 +661,7 @@ case class LcvVgaCtrlNoFifo(
   when (misc.pixelEn) {
     // Visible area
     when (misc.visib) {
-      when (~inp.en) {
+      when (~io.en) {
         //m.d.sync += [
           //rPhys.col.r := (0xf),
           //rPhys.col.g := (0xf),
@@ -664,7 +670,7 @@ case class LcvVgaCtrlNoFifo(
         rPhys.col.r := (default -> True)
         rPhys.col.g := (default -> True)
         rPhys.col.b := (default -> True)
-      } otherwise { // when (inp.en)
+      } otherwise { // when (io.en)
         //m.d.sync += [
           rPhys.col := inpCol
         //]
