@@ -552,7 +552,7 @@ case class LcvVgaCtrlNoFifo(
   //--------
   val rPhys = Reg(LcvVgaPhys(rgbConfig=rgbConfig))
   rPhys.init(rPhys.getZero)
-  //phys := rPhys
+  phys := rPhys
 
   // Implement the clock enable
   val clkCnt = Reg(UInt(clkCntWidth() bits)) init(0x0)
