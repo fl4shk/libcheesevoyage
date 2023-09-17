@@ -456,13 +456,23 @@ case class LcvVgaCtrl(
   //--------
   // Implement grabbing pixels from the FIFO.
 
-  when (misc.pixelEn & misc.visib & ~fifoEmpty) {
-    //m.d.comb += fifoInp.rdEn.eq(0b1)
-    fifoPop.ready := True
-  } otherwise {
-    //m.d.comb += fifoInp.rdEn.eq(0b0)
-    fifoPop.ready := False
+  //when (misc.pixelEn & misc.visib & ~fifoEmpty) {
+  //  //m.d.comb += fifoInp.rdEn.eq(0b1)
+  //  fifoPop.ready := True
+  //} otherwise {
+  //  //m.d.comb += fifoInp.rdEn.eq(0b0)
+  //  fifoPop.ready := False
+  //}
+  val rPastFifoPopReady = Reg(Bool()) init(False)
+  rPastFifoPopReady := fifoPop.ready
+  when (misc.pixelEn & misc.visib) {
+    when (~rPastFifoPopReady) {
+      fifoPop.ready := True
+    } otherwise {
+      fifoPop.ready := False
+    }
   }
+
   //when (PIXEL_EN_NEXT_CYCLE & outp.nextVisib
   // & (~fifoOutp.empty)):
   // m.d.sync += fifoInp.rdEn.eq(0b1)
