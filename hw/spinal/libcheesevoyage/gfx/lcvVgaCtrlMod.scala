@@ -494,8 +494,8 @@ case class LcvVgaCtrlNoFifoIo(
   //--------
   def asMaster(): Unit = {
     out(en)
-    master(push)
-    in(phys, misc)
+    //master(push)
+    in(inpCol, phys, misc)
   }
   //def asSlave(): Unit = {
   //  in(en)
