@@ -416,6 +416,11 @@ case class LcvVgaCtrl(
   //  }
   //}
   // Implement drawing the picture
+  val rCol = Reg(Rgb(rgbConfig))
+  rCol.init(rCol.getZero)
+  when (fifoPop.fire) {
+    rCol := fifoPop.payload
+  }
 
   when (misc.pixelEn) {
     // Visible area
@@ -432,7 +437,8 @@ case class LcvVgaCtrl(
       } otherwise { // when (io.en)
         //m.d.sync += [
           //rPhys.col := inpCol
-          rPhys.col := fifoPop.payload
+          //rPhys.col := fifoPop.payload
+          rPhys.col := rCol
         //]
       }
     // Black border
