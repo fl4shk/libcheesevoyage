@@ -202,24 +202,39 @@ case class PipeSkidBuf[
     val tempValidBusy = Bool()
     val tempReadyBusy = Bool()
 
-    val psbStm = (
+    //val psbStm = (
+    //  if (!optIncludeBusy) {
+    //    new Stream(dataType())
+    //  } else { // if (optIncludeBusy)
+    //    new Stream(dataType()).haltWhen(
+    //      //io.busy
+    //      io.misc.busy
+    //    )
+    //  }
+    //) addAttribute("keep")
+    val tempIoPrev = (
       if (!optIncludeBusy) {
-        new Stream(dataType())
+        //new Stream(dataType())
+        io.prev
       } else { // if (optIncludeBusy)
-        new Stream(dataType()).haltWhen(
+        io.prev.haltWhen(
           //io.busy
           io.misc.busy
         )
       }
     ) addAttribute("keep")
+    val psbStm = new Stream(dataType()) addAttribute("keep")
+
     //io.prev >/-> psbStm
     //val s2mPipe = psbStm.s2mPipe()
     //val s2mM2sPipe = s2mPipe.m2sPipe()
     //io.prev << s2mM2sPipe
     //io.prev >/-> psbStm
-    val s2mPipe = io.prev.s2mPipe()
+    //val s2mPipe = io.prev.s2mPipe()
+    val s2mPipe = tempIoPrev.s2mPipe()
     val s2mM2sPipe = s2mPipe.m2sPipe()
     psbStm << s2mM2sPipe
+    //psbStm <-/< io.prev
     psbStm.translateInto(io.next){
       //(oPayload, psbPayload) => oPayload := psbPayload
       //o.payload := psb.payload; 
