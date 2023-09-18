@@ -305,7 +305,7 @@ case class LcvVgaCtrl(
   //m.d.comb += 
   misc.pixelEn := clkCnt === 0x0
   val nextPixelEn = Bool()
-  nextPixelEn = clkCntNext === 0x0
+  nextPixelEn := clkCntNext === 0x0
 
   val pixelEnNextCycle = Bool()
   pixelEnNextCycle := clkCntP1.resized === cpp()
