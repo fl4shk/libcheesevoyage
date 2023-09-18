@@ -91,18 +91,21 @@ case class Fifo[
 
   val sbPush = PipeSkidBuf(
     dataType=dataType(),
-    optIncludeBusy=false,
+    optIncludeBusy=true,
     //optIncludeBusy=true,
   )
   val sbPop = PipeSkidBuf(
     dataType=dataType(),
-    optIncludeBusy=false,
+    optIncludeBusy=true,
     //optIncludeBusy=true,
   )
   //val sbPushIo = sbPush.io
   //val sbPopIo = sbPop.io
   //sbPush.io.prev <> push
   //sbPush.io.prev >> push
+
+  sbPush.io.busy := misc.full
+  sbPop.io.busy := misc.empty
 
   push >> sbPush.io.prev
   //sbPush.io.prev.payload := push.payload
@@ -427,18 +430,22 @@ case class AsyncReadFifo[
 
   val sbPush = PipeSkidBuf(
     dataType=dataType(),
-    optIncludeBusy=false,
+    optIncludeBusy=true,
     //optIncludeBusy=true,
   )
   val sbPop = PipeSkidBuf(
     dataType=dataType(),
-    optIncludeBusy=false,
+    optIncludeBusy=true,
     //optIncludeBusy=true,
   )
   //val sbPushIo = sbPush.io
   //val sbPopIo = sbPop.io
   //sbPush.io.prev <> push
   //sbPush.io.prev >> push
+  //val sbPushBusy = sbPush.io.busy
+  //val sbPopBusy = sbPop.io.busy
+  sbPush.io.busy := misc.full
+  sbPop.io.busy := misc.empty
 
   push >> sbPush.io.prev
   //sbPush.io.prev.payload := push.payload
