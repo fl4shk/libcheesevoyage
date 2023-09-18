@@ -14,11 +14,12 @@ lazy val libcheesevoyage = (project in file("."))
   .settings(
     Compile / scalaSource := baseDirectory.value / "hw" / "spinal",
     libraryDependencies ++= Seq(spinalCore, spinalLib, spinalIdslPlugin),
-	//scalacOptions += "-Ybackend-parallelism 4"
-	scalacOptions ++= Seq(
-		"-Ybackend-parallelism", "4",
-		"-Ybackend-worker-queue", "4"
-	)
+    //scalacOptions += "-Ybackend-parallelism 4"
+    scalacOptions ++= Seq(
+      "-Ybackend-parallelism", "4",
+      "-Ybackend-worker-queue", "4",
+      "-P:semanticdb:sourceroot:."
+    )
   )
 
 fork := true
