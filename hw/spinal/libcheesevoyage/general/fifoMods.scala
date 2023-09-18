@@ -104,8 +104,8 @@ case class Fifo[
   //sbPush.io.prev <> push
   //sbPush.io.prev >> push
 
-  sbPush.io.busy := misc.full
-  sbPop.io.busy := misc.empty
+  sbPush.io.misc.busy := misc.full
+  sbPop.io.misc.busy := misc.empty
 
   push >> sbPush.io.prev
   //sbPush.io.prev.payload := push.payload
@@ -444,8 +444,8 @@ case class AsyncReadFifo[
   //sbPush.io.prev >> push
   //val sbPushBusy = sbPush.io.busy
   //val sbPopBusy = sbPop.io.busy
-  sbPush.io.busy := misc.full
-  sbPop.io.busy := misc.empty
+  sbPush.io.misc.busy := misc.full
+  sbPop.io.misc.busy := misc.empty
 
   push >> sbPush.io.prev
   //sbPush.io.prev.payload := push.payload
