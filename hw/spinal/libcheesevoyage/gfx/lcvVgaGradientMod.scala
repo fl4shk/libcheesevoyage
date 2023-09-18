@@ -36,10 +36,10 @@ case class LcvVgaGradient(
   //--------
   //val io = slave(LcvVgaGradientIo(rgbConfig=rgbConfig))
   val io = LcvVgaGradientIo(rgbConfig=rgbConfig)
-  val ctrlio = io.vgaCtrlIo
-  val dithio = io.vidDitherIo
+  val ctrlIo = io.vgaCtrlIo
+  val dithIo = io.vidDitherIo
   //--------
-  //val col = dithio.inpCol
+  //val col = dithIo.inpCol
   //val tempSbIo = PipeSkidBufIo(
   //  dataType=Rgb(rgbConfig),
   //  optIncludeBusy=false,
@@ -54,38 +54,38 @@ case class LcvVgaGradient(
   val sbPrevFire = sbIo.prev.fire
   sbIo.prev.valid := True
   val col = sbIo.prev.payload
-  val prevCol = Reg(Rgb(rgbConfig))
-  prevCol.init(prevCol.getZero)
+  val rPastCol = Reg(Rgb(rgbConfig))
+  rPastCol.init(rPastCol.getZero)
   //--------
-  dithio.push << sbIo.next
-  val dithOutpCol = dithio.outpCol
+  dithIo.push << sbIo.next
+  val dithOutpCol = dithIo.outpCol
 
   //val dithToCtrlStm = master Stream(Rgb(rgbConfig))
-  //dithToCtrlStm.valid := dithio.pop.valid
+  //dithToCtrlStm.valid := dithIo.pop.valid
   //dithToCtrlStm.payload := dithOutpCol
-  //dithio.pop.ready := dithToCtrlStm.ready
+  //dithIo.pop.ready := dithToCtrlStm.ready
 
-  ctrlio.push.valid := dithio.pop.valid
-  ctrlio.push.payload := dithOutpCol
-  dithio.pop.ready := ctrlio.push.ready
+  ctrlIo.push.valid := dithIo.pop.valid
+  ctrlIo.push.payload := dithOutpCol
+  dithIo.pop.ready := ctrlIo.push.ready
   //--------
   // Enable VGA signal output
-  ctrlio.en := True
+  ctrlIo.en := True
   //--------
-  prevCol := col
+  rPastCol := col
   when (sbPrevFire) {
     //m.d.sync += [
     //  drbus.inp.buf.prep.eq(0b1),
     //  dibus.inp.en.eq(0b1),
     //]
 
-    //when (dithio.outpPayload.nextPos.x === 0x0) 
-    when (dithio.outpPayload.pos.x === 0x0) {
+    //when (dithIo.outpPayload.nextPos.x === 0x0) 
+    when (dithIo.outpPayload.pos.x === 0x0) {
       //m.d.sync += col.r.eq(0x0)
       col.r := 0x0
-    } otherwise { // when (dithio.outpPayload..pos.x > 0x0)
+    } otherwise { // when (dithIo.outpPayload..pos.x > 0x0)
       //m.d.sync += col.r.eq(col.r + 0x1)
-      col.r := prevCol.r + 0x1
+      col.r := rPastCol.r + 0x1
     }
     //m.d.sync += col.r.eq(col.r + 0x1)
 
@@ -94,7 +94,7 @@ case class LcvVgaGradient(
     col.g := 0x0
     col.b := 0x0
   } otherwise { // when (~sbPrevFire)
-    col := prevCol
+    col := rPastCol
   }
   //--------
 }
