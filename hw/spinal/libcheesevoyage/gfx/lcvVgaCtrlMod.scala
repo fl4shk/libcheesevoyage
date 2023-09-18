@@ -285,6 +285,7 @@ case class LcvVgaCtrl(
 
   // Implement the clock enable
   val clkCnt = Reg(UInt(clkCntWidth() bits)) init(0x0)
+  val clkCntNext = clkCnt.wrapNext()
   // Force this addition to be of width `CLK_CNT_WIDTH + 1` to
   // prevent wrap-around
   val clkCntP1Width = clkCntWidth() + 1
@@ -294,15 +295,18 @@ case class LcvVgaCtrl(
   // Implement wrap-around for the clock counter
   when (clkCntP1 < cpp()) {
     //m.d.sync += 
-    clkCnt := clkCntP1(clkCnt.bitsRange)
+    clkCntNext := clkCntP1(clkCnt.bitsRange)
   } otherwise {
     //m.d.sync +=
-    clkCnt := 0x0
+    clkCntNext := 0x0
   }
   // Since this is an alias, use ALL_CAPS for its name.
   // outp.pixelEn = (clkCnt == 0x0)
   //m.d.comb += 
   misc.pixelEn := clkCnt === 0x0
+  val nextPixelEn = Bool()
+  nextPixelEn = clkCntNext === 0x0
+
   val pixelEnNextCycle = Bool()
   pixelEnNextCycle := clkCntP1.resized === cpp()
   //--------
@@ -416,11 +420,11 @@ case class LcvVgaCtrl(
   //  }
   //}
   // Implement drawing the picture
-  val rCol = Reg(Rgb(rgbConfig))
-  rCol.init(rCol.getZero)
-  when (fifoPop.fire) {
-    rCol := fifoPop.payload
-  }
+  //val rCol = Reg(Rgb(rgbConfig))
+  //rCol.init(rCol.getZero)
+  //when (fifoPop.fire) {
+  //  rCol := fifoPop.payload
+  //}
 
   when (misc.pixelEn) {
     // Visible area
@@ -437,8 +441,8 @@ case class LcvVgaCtrl(
       } otherwise { // when (io.en)
         //m.d.sync += [
           //rPhys.col := inpCol
-          //rPhys.col := fifoPop.payload
-          rPhys.col := rCol
+          rPhys.col := fifoPop.payload
+          //rPhys.col := rCol
         //]
       }
     // Black border
@@ -471,11 +475,12 @@ case class LcvVgaCtrl(
   //}
   val rPastFifoPopReady = Reg(Bool()) init(False)
   rPastFifoPopReady := fifoPop.ready
-  when (misc.pixelEn & misc.visib & ~rPastFifoPopReady) {
-    fifoPop.ready := True
-  } otherwise {
-    fifoPop.ready := False
-  }
+  //when (misc.pixelEn & misc.visib & ~rPastFifoPopReady) {
+  //  fifoPop.ready := True
+  //} otherwise {
+  //  fifoPop.ready := False
+  //}
+  fifoPop.ready := nextPixelEn & misc.nextVisib & ~rPastFifoPopReady
 
   //when (PIXEL_EN_NEXT_CYCLE & outp.nextVisib
   // & (~fifoOutp.empty)):
