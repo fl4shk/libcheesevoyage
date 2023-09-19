@@ -113,7 +113,7 @@ case class LcvVideoDitherer(
   val push = io.push
   val pop = io.pop
   //--------
-  val fifoDepth = 1
+  val fifoDepth = 4
   val fifo = AsyncReadFifo(
     //dataType=Rgb(rgbConfig),
     dataType=LcvVideoDithererPopPayload(rgbConfig=rgbConfig),
@@ -121,6 +121,15 @@ case class LcvVideoDitherer(
   )
   val fifoPush = fifo.io.push
   val fifoPop = fifo.io.pop
+  //val sbPush = PipeSkidBuf(
+  //  dataType=LcvVideoDithererPopPayload(rgbConfig=rgbConfig),
+  //  optIncludeBusy=false,
+  //)
+  //val sbPop = PipeSkidBuf(
+  //  dataType=LcvVideoDithererPopPayload(rgbConfig=rgbConfig),
+  //  optIncludeBusy=false,
+  //)
+
   //val fifoPushPayload = fifoPush.payload
   //val rPopPayload = Reg(LcvVideoDithererPopPayload(rgbConfig=rgbConfig))
   //rPopPayload.init(rPopPayload.getZero)
