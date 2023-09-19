@@ -484,7 +484,7 @@ case class LcvVideoDitherer(
   //  CHAN_WIDTH=bus.OUT_CHAN_WIDTH(self.CHAN_WIDTH())
   //))
   val rPastTempPayload = Reg(LcvVideoDithererPopPayload(
-    rgbConfig=rgbConfig
+    rgbConfig=outRgbConfig
   ))
   rPastTempPayload.init(rPastTempPayload.getZero)
   when (push.fire) {
