@@ -13,8 +13,12 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math._
 
 object LcvVideoDithererPopPayloadNoCol {
-  def ditherDeltaWidth: Int = log2Up(4)
-  def coordT(): Vec2[UInt] = Vec2(UInt(16 bits))
+  def ditherDeltaWidth: Int = {
+    return log2Up(4)
+  }
+  def coordT() {
+    return Vec2(UInt(16 bits))
+  }
 }
 class LcvVideoDithererPopPayloadNoCol(
   //rgbConfig: RgbConfig
@@ -29,7 +33,9 @@ class LcvVideoDithererPopPayloadNoCol(
   val pastPos = coordT()
   //--------
   def ditherDeltaWidth = LcvVideoDithererPopPayloadNoCol.ditherDeltaWidth
-  def coordT() = LcvVideoDithererPopPayloadNoCol.coordT()
+  def coordT() = {
+    return LcvVideoDithererPopPayloadNoCol.coordT()
+  }
   //--------
 }
 case class LcvVideoDithererPopPayload(
