@@ -16,7 +16,7 @@ object LcvVideoDithererPopPayloadNoCol {
   def ditherDeltaWidth: Int = {
     return log2Up(4)
   }
-  def coordT() {
+  def coordT(): Vec2[UInt] = {
     return Vec2(UInt(16 bits))
   }
 }
@@ -32,8 +32,10 @@ class LcvVideoDithererPopPayloadNoCol(
   val pos = coordT()
   val pastPos = coordT()
   //--------
-  def ditherDeltaWidth = LcvVideoDithererPopPayloadNoCol.ditherDeltaWidth
-  def coordT() = {
+  def ditherDeltaWidth: Int = {
+    return LcvVideoDithererPopPayloadNoCol.ditherDeltaWidth
+  }
+  def coordT(): Vec2[UInt] = {
     return LcvVideoDithererPopPayloadNoCol.coordT()
   }
   //--------
@@ -102,7 +104,9 @@ case class LcvVideoDithererIo(
 
   def chanWidthDelta: Int = 2
   //def coordT(): Vec2[UInt] = Vec2(UInt(16 bits))
-  def coordT() = outpPayload.coordT()
+  def coordT(): Vec2[UInt] = {
+    return outpPayload.coordT()
+  }
   ////def tagDct(self):
   //// return self._TagDct
   ////def inpTag(self):
