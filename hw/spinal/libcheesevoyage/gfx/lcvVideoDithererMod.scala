@@ -546,6 +546,7 @@ case class LcvVideoDitherer(
       //}
     }
   }
+  tempPayload.pos := io.outpNextPos
   // This wraps around to zero automatically due to
   // modular arithmetic, so we don't need another mux just
   // for this.
