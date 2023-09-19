@@ -13,13 +13,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math._
 
 object LcvVideoDithererPopPayloadNoCol {
-  def ditherDeltaWidth: Int = {
-    return log2Up(4)
-  }
-  //def coordT(): Vec2[UInt] = {
-  //  return Vec2(UInt(16 bits))
-  //}
-  def coordElemWidth: Int = 16
+  def ditherDeltaWidth: Int = log2Up(4)
+  def coordT(): Vec2[UInt] = Vec2(UInt(16 bits))
 }
 class LcvVideoDithererPopPayloadNoCol(
   //rgbConfig: RgbConfig
@@ -29,16 +24,12 @@ class LcvVideoDithererPopPayloadNoCol(
 
   //val col = Rgb(rgbConfig)
   val frameCnt = UInt(ditherDeltaWidth bits)
-  //val nextPos = Vec2(UInt(coordElemWidth bits))
-  val pos = Vec2(UInt(coordElemWidth bits))
-  val pastPos = Vec2(UInt(coordElemWidth bits))
+  //val nextPos = coordT()
+  val pos = coordT()
+  val pastPos = coordT()
   //--------
-  def ditherDeltaWidth: Int = {
-    return LcvVideoDithererPopPayloadNoCol.ditherDeltaWidth
-  }
-  def coordElemWidth(): Int = {
-    return LcvVideoDithererPopPayloadNoCol.coordElemWidth
-  }
+  def ditherDeltaWidth = LcvVideoDithererPopPayloadNoCol.ditherDeltaWidth
+  def coordT() = LcvVideoDithererPopPayloadNoCol.coordT()
   //--------
 }
 case class LcvVideoDithererPopPayload(
@@ -67,7 +58,7 @@ case class LcvVideoDithererIo(
   val inpCol = push.payload
   val outpPayload = pop.payload
   val outpCol = outpPayload.col
-  val outpNextPos = out(Vec2(UInt(coordElemWidth bits)))
+  val outpNextPos = out(LcvVideoDithererPopPayloadNoCol.coordT())
   //val outpCol = misc.col
   //val pop = master Stream(Rgb(rgbConfig))
   //val misc = out(LcvVideoDithererMiscIo(rgbConfig=rgbConfig))
@@ -84,6 +75,7 @@ case class LcvVideoDithererIo(
   def asMaster(): Unit = {
     master(push)
     slave(pop)
+    in(outpNextPos)
   }
   //def asSlave(): Unit = {
   //  slave(push)
@@ -105,10 +97,7 @@ case class LcvVideoDithererIo(
 
   def chanWidthDelta: Int = 2
   //def coordT(): Vec2[UInt] = Vec2(UInt(16 bits))
-  //def coordT(): Vec2[UInt] = {
-  //  return outpPayload.coordT()
-  //}
-  def coordElemWidth: Int = LcvVideoDithererPopPayloadNoCol.coordElemWidth
+  def coordT() = outpPayload.coordT()
   ////def tagDct(self):
   //// return self._TagDct
   ////def inpTag(self):
@@ -207,9 +196,7 @@ case class LcvVideoDitherer(
   //  x=io.outpPayload.pos.x + 0x1,
   //  y=io.outpPayload.pos.y + 0x1
   //)
-  val posPlus1 = Vec2(UInt(
-    LcvVideoDithererPopPayloadNoCol.coordElemWidth bits
-  ))
+  val posPlus1 = LcvVideoDithererPopPayloadNoCol.coordT()
   posPlus1.x := io.outpPayload.pos.x + 0x1
   posPlus1.y := io.outpPayload.pos.y + 0x1
 
