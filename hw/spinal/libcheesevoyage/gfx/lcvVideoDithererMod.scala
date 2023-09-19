@@ -445,7 +445,7 @@ case class LcvVideoDitherer(
   val fifoDepth = 4
   val fifo = AsyncReadFifo(
     //dataType=Rgb(rgbConfig),
-    dataType=LcvVideoDithererPopPayload(rgbConfig=rgbConfig),
+    dataType=LcvVideoDithererPopPayload(rgbConfig=outRgbConfig),
     depth=fifoDepth,
   )
   val fifoPush = fifo.io.push
