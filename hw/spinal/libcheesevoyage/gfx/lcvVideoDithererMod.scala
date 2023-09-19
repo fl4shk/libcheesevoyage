@@ -196,8 +196,8 @@ case class LcvVideoDitherer(
   //  y=io.outpPayload.pos.y + 0x1
   //)
   val posPlus1 = LcvVideoDithererPopPayloadNoCol.coordT()
-  posPlus1.x := io.outpPayload.pos.x.resized + 0x1
-  posPlus1.y := io.outpPayload.pos.y.resized + 0x1
+  posPlus1.x := io.outpPayload.pos.x + 0x1
+  posPlus1.y := io.outpPayload.pos.y + 0x1
 
   // Perform dithering
   //dicol = Splitrec(RgbColorLayt(CHAN_WIDTH=bus.CHAN_WIDTH()))
