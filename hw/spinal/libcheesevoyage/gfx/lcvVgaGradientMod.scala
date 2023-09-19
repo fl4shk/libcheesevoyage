@@ -17,7 +17,11 @@ case class LcvVgaGradientIo(
 ) extends Bundle //with IMasterSlave
 {
   //--------
-  val vgaCtrlIo = master(LcvVgaCtrlIo(rgbConfig=rgbConfig))
+ // val vgaCtrlIo = master(LcvVgaCtrlIo(rgbConfig=rgbConfig))
+ // val vidDitherIo = master(LcvVideoDithererIo(rgbConfig=rgbConfig))
+  val vgaCtrlIo = master(
+    LcvVgaCtrlIo(rgbConfig=LcvVideoDithererIo.outRgbConfig)
+  )
   val vidDitherIo = master(LcvVideoDithererIo(rgbConfig=rgbConfig))
   //--------
   //def asMaster(): Unit = {
@@ -30,6 +34,7 @@ case class LcvVgaGradientIo(
   //}
   //--------
 }
+
 case class LcvVgaGradient(
   rgbConfig: RgbConfig
 ) extends Component {
