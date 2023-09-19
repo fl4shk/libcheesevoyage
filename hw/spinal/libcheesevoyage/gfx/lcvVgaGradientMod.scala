@@ -20,7 +20,9 @@ case class LcvVgaGradientIo(
  // val vgaCtrlIo = master(LcvVgaCtrlIo(rgbConfig=rgbConfig))
  // val vidDitherIo = master(LcvVideoDithererIo(rgbConfig=rgbConfig))
   val vgaCtrlIo = master(
-    LcvVgaCtrlIo(rgbConfig=LcvVideoDithererIo.outRgbConfig)
+    LcvVgaCtrlIo(
+      rgbConfig=LcvVideoDithererIo(rgbConfig=rgbConfig).outRgbConfig
+    )
   )
   val vidDitherIo = master(LcvVideoDithererIo(rgbConfig=rgbConfig))
   //--------
