@@ -39,8 +39,8 @@ class LcvVgaStateCnt(
   //cP2 := c.resized + U(f"$cPWidth'd2")
   //val cP1 = c.resized + U(f"$cPWidth'd1")
   //val cP2 = c.resized + U(f"$cPWidth'd2")
-  val nextS = LcvVgaState()
-  //val nextS = s.wrapNext()
+  //val nextS = LcvVgaState()
+  val nextS = s.wrapNext()
   //--------
   def noChangeUpdateNextS(): Unit = {
     nextS := s
@@ -52,103 +52,14 @@ class LcvVgaStateCnt(
       stateSize: Int,
       nextState: LcvVgaState.C,
     ): Unit = {
-      ////val counterP1 = c.resized + U("1").resized
-      //val tempSSWidth = log2Up(stateSize + 1)
-      ////println(f"in mkCase(): $tempSSWidth, $stateSize")
-      //val tempStateSize = U(f"$tempSSWidth'd$stateSize")
-
-      ////val tempWidth1 = max(c.getWidth + 1, tempSSWidth)
-      //val tempWidth1 = max(
-      //  log2Up((1 << c.getWidth) + 1),
-      //  tempSSWidth
-      //)
-      //val counterP1 = UInt(tempWidth1 bits)
-      //counterP1 := c.resized + U(f"$tempWidth1'd1")
-      ////val tempSSWidth1 = max(cWidthP1, tempSSWidth)
-      //val tempStateSize1 = UInt(tempWidth1 bits)
-      //if (tempSSWidth == tempWidth1) {
-      //  tempStateSize1 := tempStateSize
-      //} else {
-      //  //tempStateSize1 := (
-      //  //  tempSSWidth - 1 downto 0 -> tempStateSize,
-      //  //  default -> False,
-      //  //)
-      //  tempStateSize1(tempStateSize1.high downto tempSSWidth) := 0x0 
-      //  tempStateSize1(tempSSWidth - 1 downto 0) := tempStateSize
-      //}
-
-      ////val cWidthP2 = c.getWidth + 2
-      ////val counterP2 = UInt(cWidthP2 bits)
-      ////counterP2 := c.resized + U(f"$cWidthP2'd1")
-      //////val tempSSWidth2 = max(cWidthP2, tempSSWidth)
-      ////val tempStateSize2 = UInt(cWidthP2 bits)
-      ////tempStateSize2 := stateSize.resized
-      ////val counterP2 = c.resized + U("1").resized
-      //// based upon my calculations, `tempWidth2` will be the same as
-      //// `tempWidth1` even in the case of `c.getWidth == 1`
-      //val tempWidth2 = max(
-      //  //BigInt((1 << c.getWidth) + 2).bitLength,
-      //  log2Up((1 << c.getWidth) + 2),
-      //  tempSSWidth
-      //)
-      //val counterP2 = UInt(tempWidth2 bits)
-      //counterP2 := c.resized + U(f"$tempWidth2'd2")
-      ////val tempSSWidth2 = max(cWidthP2, tempSSWidth)
-      //val tempStateSize2 = UInt(tempWidth2 bits)
-      ////tempStateSize2 := stateSize
-      //if (tempSSWidth == tempWidth2) {
-      //  tempStateSize2 := tempStateSize
-      //} else {
-      //  //tempStateSize2 := (
-      //  //  tempSSWidth - 1 downto 0 -> tempStateSize,
-      //  //  default -> False,
-      //  //)
-      //  tempStateSize2(tempStateSize2.high downto tempSSWidth) := 0x0 
-      //  tempStateSize2(tempSSWidth - 1 downto 0) := tempStateSize
-      //}
-
-      ////val tempStateSize = U(stateSize)
-      ////val tempStateSize = U(f"$tempWidth'd$stateSize")
-      //when (counterP1 >= tempStateSize1) {
-      //  s := nextState
-      //  c := 0x0
-      //  //m.d.comb += nextS.eq(nextState)
-      //} otherwise {
-      //  c := counterP1.resized
-      //  //self.noChangeUpdateNextS(m, stateCnt)
-      //}
-
-      ////when ((c + 0x2).resized >= stateSize) {
-      //when (counterP2 >= tempStateSize2) {
-      //  nextS := nextState
-      //} otherwise {
-      //  nextS := s
-      //}
-      //val counterP1 = UInt(cP1Width bits)
-      //counterP1 := 
-      //val cP1 = c.resized + U(f"$cPWidth'd1")
-      //when (cP1 > U(f"$cPWidth'd$stateSize")) {
-      //  s := nextState
-      //  //nextS := nextState
-      //  c := 0x0
-      //} otherwise {
-      //  c := cP1.resized
-      //}
-
-      //val cP2 = c.resized + U(f"$cPWidth'd2")
-      //when (cP2 > U(f"$cPWidth'd$stateSize")) {
-      ////when (cP1 > U(f"$cPWidth'd$stateSize"))
-      //  nextS := nextState
-      //} otherwise {
-      //  nextS := s
-      //}
       val counterP1 = c + 0x1
 			when (counterP1 >= stateSize) {
 				//m.d.sync += stateCnt.s := (nextState)
 				//m.d.sync += stateCnt.c := (0x0)
 				////m.d.comb += stateCnt.nextS := (nextState)
 				//sWrapNext := nextState
-				s := nextState
+				//s := nextState
+				nextS := nextState
 				c := c.getZero
 			} otherwise {
 				//m.d.sync += stateCnt.c := (counterP1)
@@ -156,13 +67,13 @@ class LcvVgaStateCnt(
 				c := counterP1
 			}
 
-			when ((c + 0x2) >= stateSize) {
-				//m.d.comb += stateCnt.nextS := (nextState)
-				nextS := nextState
-			} otherwise {
-				//m.d.comb += stateCnt.nextS := (stateCnt.s)
-				nextS := s
-			}
+			//when ((c + 0x2) >= stateSize) {
+			//	//m.d.comb += stateCnt.nextS := (nextState)
+			//	nextS := nextState
+			//} otherwise {
+			//	//m.d.comb += stateCnt.nextS := (stateCnt.s)
+			//	nextS := s
+			//}
 
     }
 
@@ -385,16 +296,29 @@ case class LcvVgaCtrl(
   //val nextPixelEn = Bool()
   misc.nextPixelEn := clkCntNext === 0x0
 
-  val rPastFifoPopReady = Reg(Bool()) init(False)
-  rPastFifoPopReady := fifoPop.ready
+  //val rPastFifoPopReady = Reg(Bool()) init(False)
+  //rPastFifoPopReady := fifoPop.ready
   //fifoPop.ready := misc.nextPixelEn & misc.nextVisib & ~rPastFifoPopReady
   //fifoPop.ready := misc.nextPixelEn & misc.nextVisib & ~rPastFifoPopReady
-  fifoPop.ready := misc.nextPixelEn & misc.nextVisib
+  //fifoPop.ready := misc.nextPixelEn & misc.nextVisib
+  val rFifoPopReady = Reg(Bool()) init(False)
+  //fifoPop.ready := (
+  //  pixelEnNextCycle
+  //  //&& (misc.nextDrawPos.x === 0)
+  //)
+  fifoPop.ready := rFifoPopReady
+  rFifoPopReady := False
+  when (fifoPop.valid) {
+    when (misc.nextPixelEn) {
+      rFifoPopReady := True
+    }
+  }
+  //& misc.nextV
   misc.fifoEmpty := fifoEmpty
   misc.fifoFull := fifoFull
   //--------
   // Implement the State/Counter stuff
-  //loc.Tstate = VgaTiming.State
+  //loc.Tstate = VgaTiming.jkState
   //loc.hsc = {
   //  "s": Signal(width_from_len(loc.Tstate)),
   //  "c": Signal(self.HTIMING().COUNTER_WIDTH()),
@@ -523,9 +447,9 @@ case class LcvVgaCtrl(
     misc.size.y := fbSize2d.y
     //]
     //m.d.sync += [
-    val rNextVisib = Reg(Bool()) init(False)
-    rNextVisib := ((hsc.nextS === LcvVgaState.visib)
-      & (vsc.nextS === LcvVgaState.visib))
+    //val rNextVisib = Reg(Bool()) init(False)
+    //rNextVisib := ((hsc.nextS === LcvVgaState.visib)
+    //  & (vsc.nextS === LcvVgaState.visib))
     //misc.nextVisib := rNextVisib
     misc.nextVisib := ((hsc.nextS === LcvVgaState.visib)
       & (vsc.nextS === LcvVgaState.visib))
@@ -796,10 +720,12 @@ case class LcvVgaCtrlNoFifo(
     misc.size.y := fbSize2d.y
     //]
     //m.d.sync += [
-    val rNextVisib = Reg(Bool()) init(False)
-    rNextVisib := ((hsc.nextS === LcvVgaState.visib)
+    //val rNextVisib = Reg(Bool()) init(False)
+    //rNextVisib := ((hsc.nextS === LcvVgaState.visib)
+    //  & (vsc.nextS === LcvVgaState.visib))
+    //misc.nextVisib := rNextVisib
+    misc.nextVisib := ((hsc.nextS === LcvVgaState.visib)
       & (vsc.nextS === LcvVgaState.visib))
-    misc.nextVisib := rNextVisib
     //cover(hsc.nextS === LcvVgaState.sync)
 
     val rVisib = Reg(Bool()) init(False)
