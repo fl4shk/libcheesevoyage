@@ -70,40 +70,48 @@ case class LcvVgaGradient(
   //ctrlIo.push << sbIo.next
   //val tempPush = new Stream(Rgb(io.outRgbConfig))
   //ctrlIo.push << tempPush
-  val rCtrlPushValid = Reg(Bool()) init(True)
+  //val rCtrlPushValid = Reg(Bool()) init(True)
   //val rDidFirstAssertValid = Reg(Bool()) init(False)
-  ctrlIo.push.valid := rCtrlPushValid
+  //ctrlIo.push.valid := rCtrlPushValid
+  ctrlIo.push.valid := True
 
   val rDithPushValid = Reg(Bool()) init(False)
   dithIo.push.valid := rDithPushValid
   //--------
   //val col = dithIo.inpCol
-  val rPastDithCol = Reg(Rgb(rgbConfig))
-  rPastDithCol.init(rPastDithCol.getZero)
-  //dithIo.inpCol := rDithCol
-  val dithCol = dithIo.inpCol
-  rPastDithCol := dithCol
+  val rDithCol = Reg(Rgb(rgbConfig))
+  val initDithColR = UInt(rgbConfig.rWidth bits)
+  initDithColR := (default -> True)
+  rDithCol.r.init(initDithColR)
+  rDithCol.g.init(rDithCol.g.getZero)
+  rDithCol.b.init(rDithCol.b.getZero)
+  dithIo.inpCol := rDithCol
+  //val rDithCol = dithIo.inpCol
+  //rDithCol := rDithCol
 
   ctrlIo.push.payload := dithIo.outp.col
   //--------
   // Gradient
   //when (ctrlIo.push.fire || !rDidFirstAssertValid) 
   //when (ctrlIo.push.fire) 
-  when (!ctrlIo.misc.fifoFull) {
+  //when (!ctrlIo.misc.fifoFull) 
+  when (ctrlIo.push.fire) {
     //rDidFirstAssertValid := True
     //rCtrlPushValid := True
     rDithPushValid := True
-    dithCol.r := (default -> True)
+    rDithCol.r := (default -> True)
+    //rDithCol.r := 0
     when (dithIo.outp.nextPos.x === 0x0) {
-      dithCol.g := 0x0
+      rDithCol.g := 0x0
     } otherwise { // when (dithIo.outp.nextPos > 0x0)
-      dithCol.g := rPastDithCol.g + 1
+      rDithCol.g := rDithCol.g + 1
+      //rDithCol.g := 0x3
     }
-    dithCol.b := 0x0
+    rDithCol.b := 0x0
   } otherwise {
     //rCtrlPushValid := False
     rDithPushValid := False
-    dithCol := rPastDithCol
+    //rDithCol := rDithCol
   }
   //when (tempPush.fire) {
   //}
