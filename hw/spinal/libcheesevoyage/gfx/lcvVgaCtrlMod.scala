@@ -127,20 +127,20 @@ class LcvVgaStateCnt(
       //counterP1 := 
       //val cP1 = c.resized + U(f"$cPWidth'd1")
       when (cP1 > U(f"$cPWidth'd$stateSize")) {
-        //s := nextState
-        nextS := nextState
+        s := nextState
+        //nextS := nextState
         c := 0x0
       } otherwise {
         c := cP1.resized
       }
 
-      //val cP2 = c.resized + U(f"$cPWidth'd2")
-      //when (cP2 > U(f"$cPWidth'd$stateSize")) 
-      //when (cP1 > U(f"$cPWidth'd$stateSize")) {
-      //  nextS := nextState
-      //} otherwise {
-      //  nextS := s
-      //}
+      val cP2 = c.resized + U(f"$cPWidth'd2")
+      when (cP2 > U(f"$cPWidth'd$stateSize")) {
+      //when (cP1 > U(f"$cPWidth'd$stateSize"))
+        nextS := nextState
+      } otherwise {
+        nextS := s
+      }
     }
 
     //State = VgaTiming.State
