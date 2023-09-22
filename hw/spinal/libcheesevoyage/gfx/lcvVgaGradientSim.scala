@@ -19,7 +19,7 @@ object LcvVgaGradientSim extends App {
   //val ctrlFifoDepth = 100
   //val fbSize2d = ElabVec2[Int](640, 480)
   //val fbSize2d = ElabVec2[Int](1, 1)
-  val fbSize2d = ElabVec2[Int](20, 20)
+  //val fbSize2d = ElabVec2[Int](20, 20)
   val rgbConfig = RgbConfig(rWidth=6, gWidth=6, bWidth=6)
   val physRgbConfig = LcvVideoDithererIo.outRgbConfig(rgbConfig=rgbConfig)
   //val vgaTimingInfo = LcvVgaTimingInfoMap.map("640x480@60")
@@ -47,6 +47,7 @@ object LcvVgaGradientSim extends App {
       back=1,
     ),
   )
+  val fbSize2d = vgaTimingInfo.fbSize2d
   case class Dut() extends Component {
     val io = new Bundle {
       //val phys = out(LcvVgaPhys(rgbConfig=physRgbConfig))

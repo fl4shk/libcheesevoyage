@@ -1,6 +1,6 @@
 // Generator : SpinalHDL v1.9.3    git head : 029104c77a54c53f1edda327a3bea333f7d65fd9
 // Component : Dut
-// Git hash  : d3ce9b4f6f5fd2c803aa1a046614546d6232f49f
+// Git hash  : c66ae8b0b1577fa5d7e58cb5857709fd798c8b48
 
 `timescale 1ns/1ps
 
@@ -564,7 +564,7 @@ module LcvVideoDitherer (
   assign io_outp_frameCnt = rOutpFrameCnt;
   assign _zz_chanDelta = io_outp_pos_y[0 : 0];
   assign chanDelta = _zz_chanDelta_1;
-  assign when_lcvVideoDithererMod_l250 = (_zz_io_outp_nextPos_x < 16'h0014);
+  assign when_lcvVideoDithererMod_l250 = (_zz_io_outp_nextPos_x < 16'h0008);
   always @(*) begin
     if(when_lcvVideoDithererMod_l250) begin
       io_outp_nextPos_x = _zz_io_outp_nextPos_x;
@@ -585,7 +585,7 @@ module LcvVideoDitherer (
     end
   end
 
-  assign when_lcvVideoDithererMod_l260 = (_zz_io_outp_nextPos_y < 16'h0014);
+  assign when_lcvVideoDithererMod_l260 = (_zz_io_outp_nextPos_y < 16'h0008);
   always @(*) begin
     if(io_push_valid) begin
       colInPlusDelta_r = {1'd0, _zz_colInPlusDelta_r};
