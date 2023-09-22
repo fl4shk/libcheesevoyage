@@ -36,7 +36,7 @@ class LcvVgaStateCnt(
   //cP1 := c.resized + U(f"$cPWidth'd1")
   //val cP2 = UInt(cPWidth bits)
   //cP2 := c.resized + U(f"$cPWidth'd2")
-  val cP1 = c.resized + U(f"$cPWidth'd1")
+  //val cP1 = c.resized + U(f"$cPWidth'd1")
   //val cP2 = c.resized + U(f"$cPWidth'd2")
   val nextS = LcvVgaState()
   //val nextS = s.wrapNext()
@@ -126,21 +126,42 @@ class LcvVgaStateCnt(
       //val counterP1 = UInt(cP1Width bits)
       //counterP1 := 
       //val cP1 = c.resized + U(f"$cPWidth'd1")
-      when (cP1 > U(f"$cPWidth'd$stateSize")) {
-        s := nextState
-        //nextS := nextState
-        c := 0x0
-      } otherwise {
-        c := cP1.resized
-      }
+      //when (cP1 > U(f"$cPWidth'd$stateSize")) {
+      //  s := nextState
+      //  //nextS := nextState
+      //  c := 0x0
+      //} otherwise {
+      //  c := cP1.resized
+      //}
 
-      val cP2 = c.resized + U(f"$cPWidth'd2")
-      when (cP2 > U(f"$cPWidth'd$stateSize")) {
-      //when (cP1 > U(f"$cPWidth'd$stateSize"))
-        nextS := nextState
-      } otherwise {
-        nextS := s
-      }
+      //val cP2 = c.resized + U(f"$cPWidth'd2")
+      //when (cP2 > U(f"$cPWidth'd$stateSize")) {
+      ////when (cP1 > U(f"$cPWidth'd$stateSize"))
+      //  nextS := nextState
+      //} otherwise {
+      //  nextS := s
+      //}
+      val counterP1 = c + 0x1
+			when (counterP1 >= stateSize) {
+				//m.d.sync += stateCnt.s := (nextState)
+				//m.d.sync += stateCnt.c := (0x0)
+				////m.d.comb += stateCnt.nextS := (nextState)
+				s := nextState
+				c := c.getZero
+			} otherwise {
+				//m.d.sync += stateCnt.c := (counterP1)
+				////self.noChangeUpdateNextS(m, stateCnt)
+				c := counterP1
+			}
+
+			when ((c + 0x2) >= stateSize) {
+				//m.d.comb += stateCnt.nextS := (nextState)
+				nextS := nextState
+			} otherwise {
+				//m.d.comb += stateCnt.nextS := (stateCnt.s)
+				nextS := s
+			}
+
     }
 
     //State = VgaTiming.State
@@ -421,7 +442,7 @@ case class LcvVgaCtrl(
         rHsync := True
         //when ((hsc["c"] + 0x1) >= FB_SIZE().x) 
         //when ((hsc.c + 0x1) >= fbSize2d.x)
-        when (hsc.cP1 >= fbSize2d.x) {
+        when ((hsc.c + 0x1) >= fbSize2d.x) {
           //vtiming.updateStateCnt(m, vsc)
           vsc.updateStateCnt(vtiming)
         } otherwise {
@@ -691,7 +712,7 @@ case class LcvVgaCtrlNoFifo(
         rPhys.hsync := True
         //when ((hsc["c"] + 0x1) >= FB_SIZE().x) 
         //when ((hsc.c + 0x1) >= fbSize2d.x)
-        when (hsc.cP1 >= fbSize2d.x) {
+        when ((hsc.c + 0x1) >= fbSize2d.x) {
           //vtiming.updateStateCnt(m, vsc)
           vsc.updateStateCnt(vtiming)
         } otherwise {
