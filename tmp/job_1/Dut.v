@@ -1,6 +1,6 @@
 // Generator : SpinalHDL v1.9.3    git head : 029104c77a54c53f1edda327a3bea333f7d65fd9
 // Component : Dut
-// Git hash  : 328a55a0b26a40fcc8987e0eb2cdd711a3923a32
+// Git hash  : d15c3f86cdba36810fe572ef10f621acdcbc23ed
 
 `timescale 1ns/1ps
 
@@ -292,9 +292,9 @@ module LcvVgaGradient (
   input      [15:0]   io_vgaCtrlIo_misc_size_x,
   input      [15:0]   io_vgaCtrlIo_misc_size_y,
   output              io_vidDithIo_push_valid,
-  output     [5:0]    io_vidDithIo_push_payload_r,
-  output     [5:0]    io_vidDithIo_push_payload_g,
-  output     [5:0]    io_vidDithIo_push_payload_b,
+  output reg [5:0]    io_vidDithIo_push_payload_r,
+  output reg [5:0]    io_vidDithIo_push_payload_g,
+  output reg [5:0]    io_vidDithIo_push_payload_b,
   input      [1:0]    io_vidDithIo_outp_frameCnt,
   input      [15:0]   io_vidDithIo_outp_nextPos_x,
   input      [15:0]   io_vidDithIo_outp_nextPos_y,
@@ -313,15 +313,13 @@ module LcvVgaGradient (
   localparam LcvVgaState_back = 2'd2;
   localparam LcvVgaState_visib = 2'd3;
 
-  reg                 rCtrlPushValid;
-  reg                 rDidFirstAssertValid;
+  wire                rCtrlPushValid;
   reg                 rDithPushValid;
-  reg        [5:0]    rDithCol_r;
-  reg        [5:0]    rDithCol_g;
-  reg        [5:0]    rDithCol_b;
-  wire                io_vgaCtrlIo_push_fire;
-  wire                when_lcvVgaGradientMod_l88;
+  reg        [5:0]    rPastDithCol_r;
+  reg        [5:0]    rPastDithCol_g;
+  reg        [5:0]    rPastDithCol_b;
   wire                when_lcvVgaGradientMod_l92;
+  wire                when_lcvVgaGradientMod_l97;
   `ifndef SYNTHESIS
   reg [39:0] io_vgaCtrlIo_misc_hscS_string;
   reg [39:0] io_vgaCtrlIo_misc_hscNextS_string;
@@ -370,37 +368,54 @@ module LcvVgaGradient (
   `endif
 
   assign io_vgaCtrlIo_en = 1'b1;
+  assign rCtrlPushValid = 1'b1;
   assign io_vgaCtrlIo_push_valid = rCtrlPushValid;
   assign io_vidDithIo_push_valid = rDithPushValid;
-  assign io_vidDithIo_push_payload_r = rDithCol_r;
-  assign io_vidDithIo_push_payload_g = rDithCol_g;
-  assign io_vidDithIo_push_payload_b = rDithCol_b;
   assign io_vgaCtrlIo_push_payload_r = io_vidDithIo_outp_col_r;
   assign io_vgaCtrlIo_push_payload_g = io_vidDithIo_outp_col_g;
   assign io_vgaCtrlIo_push_payload_b = io_vidDithIo_outp_col_b;
-  assign io_vgaCtrlIo_push_fire = (io_vgaCtrlIo_push_valid && io_vgaCtrlIo_push_ready);
-  assign when_lcvVgaGradientMod_l88 = (io_vgaCtrlIo_push_fire || (! rDidFirstAssertValid));
-  assign when_lcvVgaGradientMod_l92 = (io_vidDithIo_outp_pos_x == 16'h0000);
+  assign when_lcvVgaGradientMod_l92 = (! io_vgaCtrlIo_misc_fifoFull);
+  always @(*) begin
+    if(when_lcvVgaGradientMod_l92) begin
+      io_vidDithIo_push_payload_r = 6'h3f;
+    end else begin
+      io_vidDithIo_push_payload_r = rPastDithCol_r;
+    end
+  end
+
+  assign when_lcvVgaGradientMod_l97 = (io_vidDithIo_outp_nextPos_x == 16'h0000);
+  always @(*) begin
+    if(when_lcvVgaGradientMod_l92) begin
+      if(when_lcvVgaGradientMod_l97) begin
+        io_vidDithIo_push_payload_g = 6'h00;
+      end else begin
+        io_vidDithIo_push_payload_g = (rPastDithCol_g + 6'h01);
+      end
+    end else begin
+      io_vidDithIo_push_payload_g = rPastDithCol_g;
+    end
+  end
+
+  always @(*) begin
+    if(when_lcvVgaGradientMod_l92) begin
+      io_vidDithIo_push_payload_b = 6'h00;
+    end else begin
+      io_vidDithIo_push_payload_b = rPastDithCol_b;
+    end
+  end
+
   always @(posedge clk or posedge reset) begin
     if(reset) begin
-      rCtrlPushValid <= 1'b0;
-      rDidFirstAssertValid <= 1'b0;
-      rDithPushValid <= 1'b1;
-      rDithCol_r <= 6'h00;
-      rDithCol_g <= 6'h00;
-      rDithCol_b <= 6'h00;
+      rDithPushValid <= 1'b0;
+      rPastDithCol_r <= 6'h00;
+      rPastDithCol_g <= 6'h00;
+      rPastDithCol_b <= 6'h00;
     end else begin
-      if(when_lcvVgaGradientMod_l88) begin
-        rDidFirstAssertValid <= 1'b1;
-        rCtrlPushValid <= 1'b1;
+      rPastDithCol_r <= io_vidDithIo_push_payload_r;
+      rPastDithCol_g <= io_vidDithIo_push_payload_g;
+      rPastDithCol_b <= io_vidDithIo_push_payload_b;
+      if(when_lcvVgaGradientMod_l92) begin
         rDithPushValid <= 1'b1;
-        if(when_lcvVgaGradientMod_l92) begin
-          rDithCol_r <= 6'h00;
-        end else begin
-          rDithCol_r <= (rDithCol_r + 6'h01);
-        end
-        rDithCol_g <= 6'h00;
-        rDithCol_b <= 6'h00;
       end else begin
         rDithPushValid <= 1'b0;
       end
