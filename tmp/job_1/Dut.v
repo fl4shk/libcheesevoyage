@@ -1,6 +1,6 @@
 // Generator : SpinalHDL v1.9.3    git head : 029104c77a54c53f1edda327a3bea333f7d65fd9
 // Component : Dut
-// Git hash  : 2e3ff6dda10773976b799a0001161f4c39ac6845
+// Git hash  : dbd5f4f88424ac7dec639aad82734e6a3ed0a17c
 
 `timescale 1ns/1ps
 
@@ -313,13 +313,13 @@ module LcvVgaGradient (
   localparam LcvVgaState_back = 2'd2;
   localparam LcvVgaState_visib = 2'd3;
 
-  reg                 rDithPushValid;
-  reg        [5:0]    rDithCol_r;
-  reg        [5:0]    rDithCol_g;
-  reg        [5:0]    rDithCol_b;
-  wire       [5:0]    initDithColR;
+  wire                rDithPushValid;
+  wire       [3:0]    rDbgPhysCol_r;
+  reg        [3:0]    rDbgPhysCol_g;
+  wire       [3:0]    rDbgPhysCol_b;
+  wire       [3:0]    initDbgPhysColR;
   wire                io_vgaCtrlIo_push_fire;
-  wire                when_lcvVgaGradientMod_l104;
+  wire                when_lcvVgaGradientMod_l106;
   `ifndef SYNTHESIS
   reg [39:0] io_vgaCtrlIo_misc_hscS_string;
   reg [39:0] io_vgaCtrlIo_misc_hscNextS_string;
@@ -369,34 +369,26 @@ module LcvVgaGradient (
 
   assign io_vgaCtrlIo_en = 1'b1;
   assign io_vgaCtrlIo_push_valid = 1'b1;
+  assign rDithPushValid = 1'b0;
   assign io_vidDithIo_push_valid = rDithPushValid;
-  assign initDithColR = 6'h3f;
-  assign io_vidDithIo_push_payload_r = rDithCol_r;
-  assign io_vidDithIo_push_payload_g = rDithCol_g;
-  assign io_vidDithIo_push_payload_b = rDithCol_b;
-  assign io_vgaCtrlIo_push_payload_r = io_vidDithIo_outp_col_r;
-  assign io_vgaCtrlIo_push_payload_g = io_vidDithIo_outp_col_g;
-  assign io_vgaCtrlIo_push_payload_b = io_vidDithIo_outp_col_b;
+  assign initDbgPhysColR = 4'b1111;
+  assign rDbgPhysCol_r = initDbgPhysColR;
+  assign rDbgPhysCol_b = 4'b0000;
+  assign io_vgaCtrlIo_push_payload_r = rDbgPhysCol_r;
+  assign io_vgaCtrlIo_push_payload_g = rDbgPhysCol_g;
+  assign io_vgaCtrlIo_push_payload_b = rDbgPhysCol_b;
   assign io_vgaCtrlIo_push_fire = (io_vgaCtrlIo_push_valid && io_vgaCtrlIo_push_ready);
-  assign when_lcvVgaGradientMod_l104 = (io_vidDithIo_outp_nextPos_x == 16'h0000);
+  assign when_lcvVgaGradientMod_l106 = (io_vgaCtrlIo_misc_hscS != LcvVgaState_visib);
   always @(posedge clk or posedge reset) begin
     if(reset) begin
-      rDithPushValid <= 1'b0;
-      rDithCol_r <= initDithColR;
-      rDithCol_g <= 6'h00;
-      rDithCol_b <= 6'h00;
+      rDbgPhysCol_g <= 4'b0000;
     end else begin
       if(io_vgaCtrlIo_push_fire) begin
-        rDithPushValid <= 1'b1;
-        rDithCol_r <= 6'h3f;
-        if(when_lcvVgaGradientMod_l104) begin
-          rDithCol_g <= 6'h00;
+        if(when_lcvVgaGradientMod_l106) begin
+          rDbgPhysCol_g <= 4'b0000;
         end else begin
-          rDithCol_g <= (rDithCol_g + 6'h01);
+          rDbgPhysCol_g <= (rDbgPhysCol_g + 4'b0001);
         end
-        rDithCol_b <= 6'h00;
-      end else begin
-        rDithPushValid <= 1'b0;
       end
     end
   end
