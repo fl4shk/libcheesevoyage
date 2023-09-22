@@ -5,6 +5,7 @@ import scala.math
 import spinal.core._
 import spinal.lib._
 import spinal.core.formal._
+import scala.collection.mutable.ArrayBuffer
 
 //case class FifoInp[
 //  T <: Data
@@ -112,7 +113,9 @@ case class Fifo[
   //sbPush.io.prev.valid := push.valid
   //push.ready := sbPush.io.prev.ready
 
-  sbPush.io.next.ready := True
+  //sbPush.io.next.ready := True
+  val sbPushNextReady = Reg(Bool()) init(True)
+  sbPush.io.next.ready := sbPushNextReady
   val wrData = sbPush.io.prev.payload
   val wrEn = sbPush.io.prev.fire
   //val pushBusy = sbPush.io.misc.busy
@@ -339,6 +342,19 @@ case class Fifo[
     //if self.FORMAL():
     GenerationFlags.formal {
       when (pastValidAfterReset) {
+        //assert(loc.tail < depth)
+        //assert(loc.head < depth)
+        val tempTailWidth = loc.tail.getWidth + 1
+        val tempHeadWidth = loc.head.getWidth + 1
+        val tempTailVec = Vec(UInt(tempTailWidth bits), 2)
+        val tempHeadVec = Vec(UInt(tempHeadWidth bits), 2)
+        tempTailVec(0) := loc.tail.resized
+        tempTailVec(1) := U(f"$tempTailWidth'd$depth")
+        assert(tempTailVec(0) < tempTailVec(1))
+        tempHeadVec(0) := loc.head.resized
+        tempHeadVec(1) := U(f"$tempHeadWidth'd$depth")
+        assert(tempHeadVec(0) < tempHeadVec(1))
+
         //m.d.sync += [
           assert(misc.empty === past(loc.nextEmpty))
           assert(misc.full === past(loc.nextFull))
@@ -471,7 +487,9 @@ case class AsyncReadFifo[
   //rdData \= rdData.getZero
   //val rdData = sbPop.io.next.payload
   //val popBusy = sbPop.io.misc.busy
-  val rdEn = sbPop.io.next.fire
+  //val rdEn = sbPop.io.next.fire
+  val rdEn = Bool() addAttribute("keep")
+  rdEn := sbPop.io.next.fire
 
   val loc = new Area {
     val empty = Reg(Bool()) init(True)
@@ -726,6 +744,19 @@ case class AsyncReadFifo[
     GenerationFlags.formal {
       //m.d.comb += cover(pastValid)
       when (pastValidAfterReset) {
+        val tempTailWidth = loc.tail.getWidth + 1
+        val tempHeadWidth = loc.head.getWidth + 1
+        val tempTailVec = Vec(UInt(tempTailWidth bits), 2)
+        val tempHeadVec = Vec(UInt(tempHeadWidth bits), 2)
+        tempTailVec(0) := loc.tail.resized
+        tempTailVec(1) := U(f"$tempTailWidth'd$depth")
+        assert(tempTailVec(0) < tempTailVec(1))
+        tempHeadVec(0) := loc.head.resized
+        tempHeadVec(1) := U(f"$tempHeadWidth'd$depth")
+        assert(tempHeadVec(0) < tempHeadVec(1))
+        //assert(loc.tail < depth)
+        //assert(loc.head < depth)
+
         //m.d.sync += [
         // cover(misc.empty)
         // cover(misc.full)
@@ -747,8 +778,22 @@ case class AsyncReadFifo[
           when (past(misc.empty)) {
             //m.d.sync +=
             assert(stable(loc.tail))
+            //assert(stable(loc.nextTail))
           } otherwise { // when (~past(misc.empty))
             //m.d.sync += 
+            //val tempTailPlus1Width = loc.tail.getWidth + 1
+            //val tempTailPlus1 = Vec(UInt(tempTailPlus1Width bits), 4)
+            //tempTailPlus1(0) := past(loc.tail).resized
+            //tempTailPlus1(1) := U(f"$tempTailPlus1Width'd1")
+            //tempTailPlus1(2) := tempTailPlus1(0) + tempTailPlus1(1)
+            //tempTailPlus1(3) := U(f"$tempTailPlus1Width'd$depth")
+            //when (tempTailPlus1(2) >= tempTailPlus1(3)) {
+            //  assert(loc.tail === 0)
+            //} otherwise {
+            //  assert(loc.tail === tempTailPlus1(2))
+            //}
+            //when ((past(loc.tail) + 1) === depth) {
+            //}
             assert(loc.tail
               === ((past(loc.tail) + 1) % depth))
           }
@@ -766,6 +811,17 @@ case class AsyncReadFifo[
           } otherwise { // when (~past(misc.full))
             //m.d.sync +=
             assert(loc.head === ((past(loc.head) + 1) % depth))
+            //val tempHeadPlus1Width = loc.head.getWidth + 1
+            //val tempHeadPlus1 = Vec(UInt(tempHeadPlus1Width bits), 4)
+            //tempHeadPlus1(0) := past(loc.head).resized
+            //tempHeadPlus1(1) := U(f"$tempHeadPlus1Width'd1")
+            //tempHeadPlus1(2) := tempHeadPlus1(0) + tempHeadPlus1(1)
+            //tempHeadPlus1(3) := U(f"$tempHeadPlus1Width'd$depth")
+            //when (tempHeadPlus1(2) >= tempHeadPlus1(3)) {
+            //  assert(loc.head === 0)
+            //} otherwise {
+            //  assert(loc.head === tempHeadPlus1(2))
+            //}
           }
         } otherwise { // when (~past(wrEn))
           //m.d.sync += [

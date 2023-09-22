@@ -248,17 +248,23 @@ case class PipeSkidBuf[
         }
       }
     }
-    psbStm.formalAssertsMaster()
-    //psbStm.formalAssumesSlave()
-    io.next.formalAssumesSlave()
+    GenerationFlags.formal {
+      when (pastValidAfterReset) {
+        psbStm.formalAssertsMaster()
+        //psbStm.formalAssumesSlave()
+        io.next.formalAssumesSlave()
+        //psbStm.formalAssumesSlave()
+        //io.next.formalAssertsMaster()
+      }
+    }
     //--------
-    //////val loc = Reg(Flow(dataType())) init(Flow(dataType()).getZero)
-    //////val loc = Reg(Flow(dataType())) init(Flow(dataType()).clearAll())
-    ////val locS = Reg(Flow(dataType()))
-    ////locS.init(locS.getZero)
-    ////locS.addAttribute("keep")
-    //////val locC = locS.wrapNext()
-    ////val locC = Flow(dataType())
+    ////val loc = Reg(Flow(dataType())) init(Flow(dataType()).getZero)
+    ////val loc = Reg(Flow(dataType())) init(Flow(dataType()).clearAll())
+    //val locS = Reg(Flow(dataType()))
+    //locS.init(locS.getZero)
+    //locS.addAttribute("keep")
+    ////val locC = locS.wrapNext()
+    //val locC = Flow(dataType())
     //tempValidBusy := (
     //  //if (!optIncludeValidBusy)
     //  if (!optIncludeBusy) {
@@ -278,81 +284,64 @@ case class PipeSkidBuf[
     //  }
     //)
 
-    ////when (
-    ////  clockDomain.isResetActive
-    ////  | misc.clear
+    //when (
+    //  clockDomain.isResetActive
+    //  | misc.clear
 
-    ////  // TODO: not sure if the below is going to work, so might
-    ////  // need to comment it out
-    ////  //| (
-    ////  //  // Use a Scala "mux" instead of an SpinalHDL `Mux`
-    ////  //  0b0
-    ////  //  //if not optIncludeValidBusy
-    ////  //  //else misc.validBusy
-    ////  //  if not optIncludeBusy
-    ////  //  else misc.busy
-    ////  //)
-    ////  //| (
-    ////  //  if (!optIncludeValidBusy) {
-    ////  //    True
-    ////  //  } else { // if (optIncludeValidBusy)
-    ////  //    misc.validBusy
-    ////  //  }
-    ////  //)
-    ////) {
-    ////  locC.valid := False
-    ////  //locC.validNext := False
-    ////} elsewhen (
-    ////  (ifwdValid & obakReady)
-    ////  & (ofwdValid & ~ibakReady)
-    ////) {
-    ////  locC.valid := True
-    ////  //locC.validNext := True
-    ////} elsewhen (ibakReady) {
-    ////  locC.valid := False
-    ////  //locC.validNext := False
-    ////} otherwise {
-    ////  //locC.validNext := locS.valid
-    ////  locC.valid := locS.valid
-    ////}
+    //  // TODO: not sure if the below is going to work, so might
+    //  // need to comment it out
+    //  //| (
+    //  //  // Use a Scala "mux" instead of an SpinalHDL `Mux`
+    //  //  0b0
+    //  //  //if not optIncludeValidBusy
+    //  //  //else misc.validBusy
+    //  //  if not optIncludeBusy
+    //  //  else misc.busy
+    //  //)
+    //  //| (
+    //  //  if (!optIncludeValidBusy) {
+    //  //    True
+    //  //  } else { // if (optIncludeValidBusy)
+    //  //    misc.validBusy
+    //  //  }
+    //  //)
+    //) {
+    //  locC.valid := False
+    //  //locC.validNext := False
+    //} elsewhen (
+    //  (ifwdValid & obakReady)
+    //  & (ofwdValid & ~ibakReady)
+    //) {
+    //  locC.valid := True
+    //  //locC.validNext := True
+    //} elsewhen (ibakReady) {
+    //  locC.valid := False
+    //  //locC.validNext := False
+    //} otherwise {
+    //  //locC.validNext := locS.valid
+    //  locC.valid := locS.valid
+    //}
 
-    ////when (
-    ////  clockDomain.isResetActive
-    ////  | misc.clear
-    ////  //| (
-    ////  //  // Use a Scala "mux" instead of a SpinalHDL `Mux`
-    ////  //  0b0
-    ////  //  if not optIncludeBusy
-    ////  //  else misc.busy
-    ////  //)
-    ////) {
-    ////  locC.payload := locS.payload.getZero
-    ////} elsewhen (obakReady) {
-    ////  locC.payload := ifwdPayload
-    ////} otherwise {
-    ////  locC.payload := locS.payload
-    ////}
+    //when (
+    //  clockDomain.isResetActive
+    //  | misc.clear
+    //  //| (
+    //  //  // Use a Scala "mux" instead of a SpinalHDL `Mux`
+    //  //  0b0
+    //  //  if not optIncludeBusy
+    //  //  else misc.busy
+    //  //)
+    //) {
+    //  locC.payload := locS.payload.getZero
+    //} elsewhen (obakReady) {
+    //  locC.payload := ifwdPayload
+    //} otherwise {
+    //  locC.payload := locS.payload
+    //}
 
-    ////locS := locC
+    //locS := locC
 
 
-    //////when (
-    //////  clockDomain.isResetActive
-    //////  | misc.clear
-    //////) {
-    //////  obakReady := False
-    //////  ofwdValid := False
-    //////} otherwise {
-    //////  obakReady := (
-    //////    ~locS.valid
-    //////    //& tempInvReadyBusy
-    //////  )
-    //////  // `ifwdValid` will be registered in the general case
-    //////  ofwdValid := (
-    //////    (ifwdValid | locS.valid)
-    //////    //& tempInvValidBusy
-    //////  )
-    //////}
     ////when (
     ////  clockDomain.isResetActive
     ////  | misc.clear
@@ -362,57 +351,74 @@ case class PipeSkidBuf[
     ////} otherwise {
     ////  obakReady := (
     ////    ~locS.valid
-    ////    & ~tempReadyBusy
-    ////    //locS.ready
-    ////    //& (
-    ////    //  0b1
-    ////    //  if not optIncludeReadyBusy
-    ////    //  // Use a Scala "mux" instead of a SpinalHDL
-    ////    //  // `Mux` AND the upstream `ready` with
-    ////    //  // ~`readyBusy`
-    ////    //  else ~misc.readyBusy
-    ////    //)
-    ////    ////& (
-    ////    ////  // Use a Scala "mux" instead of a SpinalHDL
-    ////    ////  // `Mux`
-    ////    ////  0b1
-    ////    ////  if not optIncludeBusy
-    ////    ////  else ~misc.busy
-    ////    ////)
+    ////    //& tempInvReadyBusy
     ////  )
+    ////  // `ifwdValid` will be registered in the general case
     ////  ofwdValid := (
-    ////    // `ifwdValid` will be registered in the general case
     ////    (ifwdValid | locS.valid)
-    ////    & ~tempValidBusy
-    ////    //& (
-    ////    //  0b1
-    ////    //  if not optIncludeValidBusy
-    ////    //  // Use a Scala "mux" instead of a SpinalHDL
-    ////    //  // `Mux` AND the downstream `valid` with
-    ////    //  // ~`validBusy`
-    ////    //  else ~misc.validBusy
-    ////    //)
-    ////    ////& (
-    ////    ////  // Use a Scala "mux" instead of a SpinalHDL
-    ////    ////  // `Mux`
-    ////    ////  0b1
-    ////    ////  if not optIncludeBusy
-    ////    ////  else ~misc.busy
-    ////    ////)
+    ////    //& tempInvValidBusy
     ////  )
     ////}
+    //when (
+    //  clockDomain.isResetActive
+    //  | misc.clear
+    //) {
+    //  obakReady := False
+    //  ofwdValid := False
+    //} otherwise {
+    //  obakReady := (
+    //    ~locS.valid
+    //    & ~tempReadyBusy
+    //    //locS.ready
+    //    //& (
+    //    //  0b1
+    //    //  if not optIncludeReadyBusy
+    //    //  // Use a Scala "mux" instead of a SpinalHDL
+    //    //  // `Mux` AND the upstream `ready` with
+    //    //  // ~`readyBusy`
+    //    //  else ~misc.readyBusy
+    //    //)
+    //    ////& (
+    //    ////  // Use a Scala "mux" instead of a SpinalHDL
+    //    ////  // `Mux`
+    //    ////  0b1
+    //    ////  if not optIncludeBusy
+    //    ////  else ~misc.busy
+    //    ////)
+    //  )
+    //  ofwdValid := (
+    //    // `ifwdValid` will be registered in the general case
+    //    (ifwdValid | locS.valid)
+    //    & ~tempValidBusy
+    //    //& (
+    //    //  0b1
+    //    //  if not optIncludeValidBusy
+    //    //  // Use a Scala "mux" instead of a SpinalHDL
+    //    //  // `Mux` AND the downstream `valid` with
+    //    //  // ~`validBusy`
+    //    //  else ~misc.validBusy
+    //    //)
+    //    ////& (
+    //    ////  // Use a Scala "mux" instead of a SpinalHDL
+    //    ////  // `Mux`
+    //    ////  0b1
+    //    ////  if not optIncludeBusy
+    //    ////  else ~misc.busy
+    //    ////)
+    //  )
+    //}
 
-    //////when(locS.valid) {
-    //////  ofwdPayload := locS.payload
-    //////} otherwise { // when (~locS.valid)
-    //////  ofwdPayload := ifwdPayload
-    //////}
-
-    ////when (locS.valid) {
+    ////when(locS.valid) {
     ////  ofwdPayload := locS.payload
-    ////} otherwise { // when (locS.valid)
+    ////} otherwise { // when (~locS.valid)
     ////  ofwdPayload := ifwdPayload
     ////}
+
+    //when (locS.valid) {
+    //  ofwdPayload := locS.payload
+    //} otherwise { // when (locS.valid)
+    //  ofwdPayload := ifwdPayload
+    //}
 
     //GenerationFlags.formal {
     ////if (optFormal) 

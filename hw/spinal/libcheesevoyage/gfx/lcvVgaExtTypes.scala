@@ -1,4 +1,5 @@
 package libcheesevoyage.gfx
+import libcheesevoyage.general.ElabVec2
 
 import spinal.core._
 import spinal.lib._
@@ -39,4 +40,5 @@ case class LcvVgaTimingInfo(
   htiming: LcvVgaTimingHv,
   vtiming: LcvVgaTimingHv,
 ) {
+  def fbSize2d: ElabVec2[Int] = ElabVec2(x=htiming.visib, y=vtiming.visib)
 }
