@@ -30,6 +30,7 @@ class LcvVgaStateCnt(
 {
   //--------
   val s = Reg(LcvVgaState()) init(LcvVgaState.front)
+  //val sWrapNext = s.wrapNext()
   val c = Reg(UInt(vgaTimingHv.cntWidth() bits)) init(0x0)
   val cPWidth = vgaTimingHv.cntWidth() + 1
   //val cP1 = UInt(cPWidth bits)
@@ -146,6 +147,7 @@ class LcvVgaStateCnt(
 				//m.d.sync += stateCnt.s := (nextState)
 				//m.d.sync += stateCnt.c := (0x0)
 				////m.d.comb += stateCnt.nextS := (nextState)
+				//sWrapNext := nextState
 				s := nextState
 				c := c.getZero
 			} otherwise {
@@ -524,7 +526,13 @@ case class LcvVgaCtrl(
     val rNextVisib = Reg(Bool()) init(False)
     rNextVisib := ((hsc.nextS === LcvVgaState.visib)
       & (vsc.nextS === LcvVgaState.visib))
-    misc.nextVisib := rNextVisib
+    //misc.nextVisib := rNextVisib
+    misc.nextVisib := ((hsc.nextS === LcvVgaState.visib)
+      & (vsc.nextS === LcvVgaState.visib))
+    //misc.nextVisib := (
+    //  hsc.nextS === LcvVgaState.visib
+    //  && vsc.nextS === LcvVgaState.visib
+    //)
     //cover(hsc.nextS === LcvVgaState.sync)
 
     val rVisib = Reg(Bool()) init(False)

@@ -79,60 +79,59 @@ case class LcvVgaGradient(
   dithIo.push.valid := rDithPushValid
   //--------
   //val col = dithIo.inpCol
-  //val rDithCol = Reg(Rgb(rgbConfig))
-  //val initDithColR = UInt(rgbConfig.rWidth bits)
-  //initDithColR := (default -> True)
-  //rDithCol.r.init(initDithColR)
-  //rDithCol.g.init(rDithCol.g.getZero)
-  //rDithCol.b.init(rDithCol.b.getZero)
+  val rDithCol = Reg(Rgb(rgbConfig))
+  val initDithColR = UInt(rgbConfig.rWidth bits)
+  initDithColR := (default -> True)
+  rDithCol.r.init(initDithColR)
+  rDithCol.g.init(rDithCol.g.getZero)
+  rDithCol.b.init(rDithCol.b.getZero)
 
-  //dithIo.inpCol := rDithCol
-  ////val rDithCol = dithIo.inpCol
-  ////rDithCol := rDithCol
+  dithIo.inpCol := rDithCol
+  //val rDithCol = dithIo.inpCol
+  //rDithCol := rDithCol
 
-  //ctrlIo.push.payload := dithIo.outp.col
-  def physRgbConfig = LcvVideoDithererIo.outRgbConfig(rgbConfig=rgbConfig)
+  ctrlIo.push.payload := dithIo.outp.col
 
-  val rDbgPhysCol = Reg(Rgb(physRgbConfig))
-  //rDbgPhysCol.init(rDbgPhysCol.getZero)
+  //val rDbgPhysCol = Reg(Rgb(physRgbConfig))
+  ////rDbgPhysCol.init(rDbgPhysCol.getZero)
 
-  val initDbgPhysColR = UInt(physRgbConfig.rWidth bits)
-  initDbgPhysColR := (default -> True)
-  rDbgPhysCol.r.init(initDbgPhysColR)
-  rDbgPhysCol.g.init(rDbgPhysCol.g.getZero)
-  rDbgPhysCol.b.init(rDbgPhysCol.b.getZero)
-  ctrlIo.push.payload := rDbgPhysCol
-  when (ctrlIo.push.fire) {
-    when (ctrlIo.misc.hscS !== LcvVgaState.visib) {
-      rDbgPhysCol.g := 0x0
-    } otherwise {
-      rDbgPhysCol.g := rDbgPhysCol.g + 1
-    }
-  }
+  //val initDbgPhysColR = UInt(physRgbConfig.rWidth bits)
+  //initDbgPhysColR := (default -> True)
+  //rDbgPhysCol.r.init(initDbgPhysColR)
+  //rDbgPhysCol.g.init(rDbgPhysCol.g.getZero)
+  //rDbgPhysCol.b.init(rDbgPhysCol.b.getZero)
+  //ctrlIo.push.payload := rDbgPhysCol
+  //when (ctrlIo.push.fire) {
+  //  when (ctrlIo.misc.hscS !== LcvVgaState.visib) {
+  //    rDbgPhysCol.g := 0x0
+  //  } otherwise {
+  //    rDbgPhysCol.g := rDbgPhysCol.g + 1
+  //  }
+  //}
   //--------
   // Gradient
   //when (ctrlIo.push.fire || !rDidFirstAssertValid) 
   //when (ctrlIo.push.fire)
   //when (!ctrlIo.misc.fifoFull) 
 
-  //when (ctrlIo.push.fire) {
-  //  //rDidFirstAssertValid := True
-  //  //rCtrlPushValid := True
-  //  rDithPushValid := True
-  //  rDithCol.r := (default -> True)
-  //  //rDithCol.r := 0
-  //  when (dithIo.outp.nextPos.x === 0x0) {
-  //    rDithCol.g := 0x0
-  //  } otherwise { // when (dithIo.outp.nextPos > 0x0)
-  //    rDithCol.g := rDithCol.g + 1
-  //    //rDithCol.g := 0x3
-  //  }
-  //  rDithCol.b := 0x0
-  //} otherwise {
-  //  //rCtrlPushValid := False
-  //  rDithPushValid := False
-  //  //rDithCol := rDithCol
-  //}
+  when (ctrlIo.push.fire) {
+    //rDidFirstAssertValid := True
+    //rCtrlPushValid := True
+    rDithPushValid := True
+    rDithCol.r := (default -> True)
+    //rDithCol.r := 0
+    when (dithIo.outp.nextPos.x === 0x0) {
+      rDithCol.g := 0x0
+    } otherwise { // when (dithIo.outp.nextPos > 0x0)
+      rDithCol.g := rDithCol.g + 1
+      //rDithCol.g := 0x3
+    }
+    rDithCol.b := 0x0
+  } otherwise {
+    //rCtrlPushValid := False
+    rDithPushValid := False
+    //rDithCol := rDithCol
+  }
 
   //when (tempPush.fire) {
   //}

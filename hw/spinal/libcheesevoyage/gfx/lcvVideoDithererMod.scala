@@ -241,11 +241,16 @@ case class LcvVideoDitherer(
   )
 	//colInPlusDelta
 	//	= Splitrec(RgbColorLayt(CHAN_WIDTH=bus.CHAN_WIDTH() + 1))
-	val colInPlusDelta = Rgb(RgbConfig(
+	val plusDeltaRgbConfig = RgbConfig(
     rWidth=rgbConfig.rWidth + 1,
     gWidth=rgbConfig.gWidth + 1,
     bWidth=rgbConfig.bWidth + 1,
-  ))
+  )
+	val colInPlusDelta = Rgb(plusDeltaRgbConfig)
+	val tempColInPlusDelta = Rgb(plusDeltaRgbConfig)
+	tempColInPlusDelta.r := inpCol.r.resized
+	tempColInPlusDelta.g := inpCol.g.resized
+	tempColInPlusDelta.b := inpCol.b.resized
 
 	when (posPlus1.x < fbSize2d.x) {
 		//m.d.sync += outp.pos.x := (posPlus1.x)
@@ -288,9 +293,12 @@ case class LcvVideoDitherer(
 		//]
 
 		//m.d.comb += [
-    colInPlusDelta.r := (inpCol.r + chanDelta).resized
-    colInPlusDelta.g := (inpCol.g + chanDelta).resized
-    colInPlusDelta.b := (inpCol.b + chanDelta).resized
+    //colInPlusDelta.r := (inpCol.r + chanDelta).resized
+    //colInPlusDelta.g := (inpCol.g + chanDelta).resized
+    //colInPlusDelta.b := (inpCol.b + chanDelta).resized
+    colInPlusDelta.r := tempColInPlusDelta.r + chanDelta.resized
+    colInPlusDelta.g := tempColInPlusDelta.g + chanDelta.resized
+    colInPlusDelta.b := tempColInPlusDelta.b + chanDelta.resized
 		//]
 
 		// Saturating arithmetic to prevent an artifact

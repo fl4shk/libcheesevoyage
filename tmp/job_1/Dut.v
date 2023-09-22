@@ -1,6 +1,6 @@
 // Generator : SpinalHDL v1.9.3    git head : 029104c77a54c53f1edda327a3bea333f7d65fd9
 // Component : Dut
-// Git hash  : dbd5f4f88424ac7dec639aad82734e6a3ed0a17c
+// Git hash  : 86aae2c9d3bb54030ff1e1f9d09a673f7bdbdf22
 
 `timescale 1ns/1ps
 
@@ -11,10 +11,10 @@ module Dut (
   output              io_phys_hsync,
   output              io_phys_vsync,
   output     [1:0]    io_misc_hscS,
-  output     [3:0]    io_misc_hscC,
+  output     [4:0]    io_misc_hscC,
   output     [1:0]    io_misc_hscNextS,
   output     [1:0]    io_misc_vscS,
-  output     [3:0]    io_misc_vscC,
+  output     [4:0]    io_misc_vscC,
   output     [1:0]    io_misc_vscNextS,
   output              io_misc_fifoEmpty,
   output              io_misc_fifoFull,
@@ -49,10 +49,10 @@ module Dut (
   wire                vgaCtrl_io_phys_hsync;
   wire                vgaCtrl_io_phys_vsync;
   wire       [1:0]    vgaCtrl_io_misc_hscS;
-  wire       [3:0]    vgaCtrl_io_misc_hscC;
+  wire       [4:0]    vgaCtrl_io_misc_hscC;
   wire       [1:0]    vgaCtrl_io_misc_hscNextS;
   wire       [1:0]    vgaCtrl_io_misc_vscS;
-  wire       [3:0]    vgaCtrl_io_misc_vscC;
+  wire       [4:0]    vgaCtrl_io_misc_vscC;
   wire       [1:0]    vgaCtrl_io_misc_vscNextS;
   wire                vgaCtrl_io_misc_fifoEmpty;
   wire                vgaCtrl_io_misc_fifoFull;
@@ -107,10 +107,10 @@ module Dut (
     .io_phys_hsync         (vgaCtrl_io_phys_hsync                   ), //o
     .io_phys_vsync         (vgaCtrl_io_phys_vsync                   ), //o
     .io_misc_hscS          (vgaCtrl_io_misc_hscS[1:0]               ), //o
-    .io_misc_hscC          (vgaCtrl_io_misc_hscC[3:0]               ), //o
+    .io_misc_hscC          (vgaCtrl_io_misc_hscC[4:0]               ), //o
     .io_misc_hscNextS      (vgaCtrl_io_misc_hscNextS[1:0]           ), //o
     .io_misc_vscS          (vgaCtrl_io_misc_vscS[1:0]               ), //o
-    .io_misc_vscC          (vgaCtrl_io_misc_vscC[3:0]               ), //o
+    .io_misc_vscC          (vgaCtrl_io_misc_vscC[4:0]               ), //o
     .io_misc_vscNextS      (vgaCtrl_io_misc_vscNextS[1:0]           ), //o
     .io_misc_fifoEmpty     (vgaCtrl_io_misc_fifoEmpty               ), //o
     .io_misc_fifoFull      (vgaCtrl_io_misc_fifoFull                ), //o
@@ -159,10 +159,10 @@ module Dut (
     .io_vgaCtrlIo_phys_hsync         (vgaGrad_io_vgaCtrlIo_phys_hsync         ), //i
     .io_vgaCtrlIo_phys_vsync         (vgaGrad_io_vgaCtrlIo_phys_vsync         ), //i
     .io_vgaCtrlIo_misc_hscS          (vgaCtrl_io_misc_hscS[1:0]               ), //i
-    .io_vgaCtrlIo_misc_hscC          (vgaCtrl_io_misc_hscC[3:0]               ), //i
+    .io_vgaCtrlIo_misc_hscC          (vgaCtrl_io_misc_hscC[4:0]               ), //i
     .io_vgaCtrlIo_misc_hscNextS      (vgaCtrl_io_misc_hscNextS[1:0]           ), //i
     .io_vgaCtrlIo_misc_vscS          (vgaCtrl_io_misc_vscS[1:0]               ), //i
-    .io_vgaCtrlIo_misc_vscC          (vgaCtrl_io_misc_vscC[3:0]               ), //i
+    .io_vgaCtrlIo_misc_vscC          (vgaCtrl_io_misc_vscC[4:0]               ), //i
     .io_vgaCtrlIo_misc_vscNextS      (vgaCtrl_io_misc_vscNextS[1:0]           ), //i
     .io_vgaCtrlIo_misc_fifoEmpty     (vgaCtrl_io_misc_fifoEmpty               ), //i
     .io_vgaCtrlIo_misc_fifoFull      (vgaCtrl_io_misc_fifoFull                ), //i
@@ -273,10 +273,10 @@ module LcvVgaGradient (
   input               io_vgaCtrlIo_phys_hsync,
   input               io_vgaCtrlIo_phys_vsync,
   input      [1:0]    io_vgaCtrlIo_misc_hscS,
-  input      [3:0]    io_vgaCtrlIo_misc_hscC,
+  input      [4:0]    io_vgaCtrlIo_misc_hscC,
   input      [1:0]    io_vgaCtrlIo_misc_hscNextS,
   input      [1:0]    io_vgaCtrlIo_misc_vscS,
-  input      [3:0]    io_vgaCtrlIo_misc_vscC,
+  input      [4:0]    io_vgaCtrlIo_misc_vscC,
   input      [1:0]    io_vgaCtrlIo_misc_vscNextS,
   input               io_vgaCtrlIo_misc_fifoEmpty,
   input               io_vgaCtrlIo_misc_fifoFull,
@@ -313,13 +313,13 @@ module LcvVgaGradient (
   localparam LcvVgaState_back = 2'd2;
   localparam LcvVgaState_visib = 2'd3;
 
-  wire                rDithPushValid;
-  wire       [3:0]    rDbgPhysCol_r;
-  reg        [3:0]    rDbgPhysCol_g;
-  wire       [3:0]    rDbgPhysCol_b;
-  wire       [3:0]    initDbgPhysColR;
+  reg                 rDithPushValid;
+  reg        [5:0]    rDithCol_r;
+  reg        [5:0]    rDithCol_g;
+  reg        [5:0]    rDithCol_b;
+  wire       [5:0]    initDithColR;
   wire                io_vgaCtrlIo_push_fire;
-  wire                when_lcvVgaGradientMod_l106;
+  wire                when_lcvVgaGradientMod_l123;
   `ifndef SYNTHESIS
   reg [39:0] io_vgaCtrlIo_misc_hscS_string;
   reg [39:0] io_vgaCtrlIo_misc_hscNextS_string;
@@ -369,26 +369,34 @@ module LcvVgaGradient (
 
   assign io_vgaCtrlIo_en = 1'b1;
   assign io_vgaCtrlIo_push_valid = 1'b1;
-  assign rDithPushValid = 1'b0;
   assign io_vidDithIo_push_valid = rDithPushValid;
-  assign initDbgPhysColR = 4'b1111;
-  assign rDbgPhysCol_r = initDbgPhysColR;
-  assign rDbgPhysCol_b = 4'b0000;
-  assign io_vgaCtrlIo_push_payload_r = rDbgPhysCol_r;
-  assign io_vgaCtrlIo_push_payload_g = rDbgPhysCol_g;
-  assign io_vgaCtrlIo_push_payload_b = rDbgPhysCol_b;
+  assign initDithColR = 6'h3f;
+  assign io_vidDithIo_push_payload_r = rDithCol_r;
+  assign io_vidDithIo_push_payload_g = rDithCol_g;
+  assign io_vidDithIo_push_payload_b = rDithCol_b;
+  assign io_vgaCtrlIo_push_payload_r = io_vidDithIo_outp_col_r;
+  assign io_vgaCtrlIo_push_payload_g = io_vidDithIo_outp_col_g;
+  assign io_vgaCtrlIo_push_payload_b = io_vidDithIo_outp_col_b;
   assign io_vgaCtrlIo_push_fire = (io_vgaCtrlIo_push_valid && io_vgaCtrlIo_push_ready);
-  assign when_lcvVgaGradientMod_l106 = (io_vgaCtrlIo_misc_hscS != LcvVgaState_visib);
+  assign when_lcvVgaGradientMod_l123 = (io_vidDithIo_outp_nextPos_x == 16'h0000);
   always @(posedge clk or posedge reset) begin
     if(reset) begin
-      rDbgPhysCol_g <= 4'b0000;
+      rDithPushValid <= 1'b0;
+      rDithCol_r <= initDithColR;
+      rDithCol_g <= 6'h00;
+      rDithCol_b <= 6'h00;
     end else begin
       if(io_vgaCtrlIo_push_fire) begin
-        if(when_lcvVgaGradientMod_l106) begin
-          rDbgPhysCol_g <= 4'b0000;
+        rDithPushValid <= 1'b1;
+        rDithCol_r <= 6'h3f;
+        if(when_lcvVgaGradientMod_l123) begin
+          rDithCol_g <= 6'h00;
         end else begin
-          rDbgPhysCol_g <= (rDbgPhysCol_g + 4'b0001);
+          rDithCol_g <= (rDithCol_g + 6'h01);
         end
+        rDithCol_b <= 6'h00;
+      end else begin
+        rDithPushValid <= 1'b0;
       end
     end
   end
@@ -423,12 +431,9 @@ module LcvVideoDitherer (
   reg        [1:0]    _zz_chanDelta_6;
   reg        [1:0]    _zz_chanDelta_7;
   reg        [1:0]    _zz_chanDelta_8;
-  wire       [5:0]    _zz_colInPlusDelta_r;
-  wire       [5:0]    _zz_colInPlusDelta_r_1;
-  wire       [5:0]    _zz_colInPlusDelta_g;
-  wire       [5:0]    _zz_colInPlusDelta_g_1;
-  wire       [5:0]    _zz_colInPlusDelta_b;
-  wire       [5:0]    _zz_colInPlusDelta_b_1;
+  wire       [6:0]    _zz_colInPlusDelta_r;
+  wire       [6:0]    _zz_colInPlusDelta_g;
+  wire       [6:0]    _zz_colInPlusDelta_b;
   wire       [1:0]    pattern_0_0_0;
   wire       [1:0]    pattern_0_0_1;
   wire       [1:0]    pattern_0_1_0;
@@ -463,18 +468,18 @@ module LcvVideoDitherer (
   reg        [6:0]    colInPlusDelta_r;
   reg        [6:0]    colInPlusDelta_g;
   reg        [6:0]    colInPlusDelta_b;
-  wire                when_lcvVideoDithererMod_l250;
-  wire                when_lcvVideoDithererMod_l260;
-  wire                when_lcvVideoDithererMod_l299;
-  wire                when_lcvVideoDithererMod_l310;
-  wire                when_lcvVideoDithererMod_l321;
+  wire       [6:0]    tempColInPlusDelta_r;
+  wire       [6:0]    tempColInPlusDelta_g;
+  wire       [6:0]    tempColInPlusDelta_b;
+  wire                when_lcvVideoDithererMod_l255;
+  wire                when_lcvVideoDithererMod_l265;
+  wire                when_lcvVideoDithererMod_l307;
+  wire                when_lcvVideoDithererMod_l318;
+  wire                when_lcvVideoDithererMod_l329;
 
-  assign _zz_colInPlusDelta_r = (io_push_payload_r + _zz_colInPlusDelta_r_1);
-  assign _zz_colInPlusDelta_r_1 = {4'd0, chanDelta};
-  assign _zz_colInPlusDelta_g = (io_push_payload_g + _zz_colInPlusDelta_g_1);
-  assign _zz_colInPlusDelta_g_1 = {4'd0, chanDelta};
-  assign _zz_colInPlusDelta_b = (io_push_payload_b + _zz_colInPlusDelta_b_1);
-  assign _zz_colInPlusDelta_b_1 = {4'd0, chanDelta};
+  assign _zz_colInPlusDelta_r = {5'd0, chanDelta};
+  assign _zz_colInPlusDelta_g = {5'd0, chanDelta};
+  assign _zz_colInPlusDelta_b = {5'd0, chanDelta};
   assign _zz_chanDelta_2 = io_outp_pos_x[0 : 0];
   always @(*) begin
     case(_zz_chanDelta_2)
@@ -550,9 +555,12 @@ module LcvVideoDitherer (
   assign io_outp_frameCnt = rOutpFrameCnt;
   assign _zz_chanDelta = io_outp_pos_y[0 : 0];
   assign chanDelta = _zz_chanDelta_1;
-  assign when_lcvVideoDithererMod_l250 = (_zz_io_outp_nextPos_x < 16'h0008);
+  assign tempColInPlusDelta_r = {1'd0, io_push_payload_r};
+  assign tempColInPlusDelta_g = {1'd0, io_push_payload_g};
+  assign tempColInPlusDelta_b = {1'd0, io_push_payload_b};
+  assign when_lcvVideoDithererMod_l255 = (_zz_io_outp_nextPos_x < 16'h0012);
   always @(*) begin
-    if(when_lcvVideoDithererMod_l250) begin
+    if(when_lcvVideoDithererMod_l255) begin
       io_outp_nextPos_x = _zz_io_outp_nextPos_x;
     end else begin
       io_outp_nextPos_x = 16'h0000;
@@ -560,10 +568,10 @@ module LcvVideoDitherer (
   end
 
   always @(*) begin
-    if(when_lcvVideoDithererMod_l250) begin
+    if(when_lcvVideoDithererMod_l255) begin
       io_outp_nextPos_y = io_outp_pos_y;
     end else begin
-      if(when_lcvVideoDithererMod_l260) begin
+      if(when_lcvVideoDithererMod_l265) begin
         io_outp_nextPos_y = _zz_io_outp_nextPos_y;
       end else begin
         io_outp_nextPos_y = 16'h0000;
@@ -571,10 +579,10 @@ module LcvVideoDitherer (
     end
   end
 
-  assign when_lcvVideoDithererMod_l260 = (_zz_io_outp_nextPos_y < 16'h0008);
+  assign when_lcvVideoDithererMod_l265 = (_zz_io_outp_nextPos_y < 16'h0012);
   always @(*) begin
     if(io_push_valid) begin
-      colInPlusDelta_r = {1'd0, _zz_colInPlusDelta_r};
+      colInPlusDelta_r = (tempColInPlusDelta_r + _zz_colInPlusDelta_r);
     end else begin
       colInPlusDelta_r = 7'h00;
     end
@@ -582,7 +590,7 @@ module LcvVideoDitherer (
 
   always @(*) begin
     if(io_push_valid) begin
-      colInPlusDelta_g = {1'd0, _zz_colInPlusDelta_g};
+      colInPlusDelta_g = (tempColInPlusDelta_g + _zz_colInPlusDelta_g);
     end else begin
       colInPlusDelta_g = 7'h00;
     end
@@ -590,16 +598,16 @@ module LcvVideoDitherer (
 
   always @(*) begin
     if(io_push_valid) begin
-      colInPlusDelta_b = {1'd0, _zz_colInPlusDelta_b};
+      colInPlusDelta_b = (tempColInPlusDelta_b + _zz_colInPlusDelta_b);
     end else begin
       colInPlusDelta_b = 7'h00;
     end
   end
 
-  assign when_lcvVideoDithererMod_l299 = colInPlusDelta_r[6];
+  assign when_lcvVideoDithererMod_l307 = colInPlusDelta_r[6];
   always @(*) begin
     if(io_push_valid) begin
-      if(when_lcvVideoDithererMod_l299) begin
+      if(when_lcvVideoDithererMod_l307) begin
         dicol_r = 6'h3f;
       end else begin
         dicol_r = colInPlusDelta_r[5 : 0];
@@ -609,10 +617,10 @@ module LcvVideoDitherer (
     end
   end
 
-  assign when_lcvVideoDithererMod_l310 = colInPlusDelta_g[6];
+  assign when_lcvVideoDithererMod_l318 = colInPlusDelta_g[6];
   always @(*) begin
     if(io_push_valid) begin
-      if(when_lcvVideoDithererMod_l310) begin
+      if(when_lcvVideoDithererMod_l318) begin
         dicol_g = 6'h3f;
       end else begin
         dicol_g = colInPlusDelta_g[5 : 0];
@@ -622,10 +630,10 @@ module LcvVideoDitherer (
     end
   end
 
-  assign when_lcvVideoDithererMod_l321 = colInPlusDelta_b[6];
+  assign when_lcvVideoDithererMod_l329 = colInPlusDelta_b[6];
   always @(*) begin
     if(io_push_valid) begin
-      if(when_lcvVideoDithererMod_l321) begin
+      if(when_lcvVideoDithererMod_l329) begin
         dicol_b = 6'h3f;
       end else begin
         dicol_b = colInPlusDelta_b[5 : 0];
@@ -667,8 +675,8 @@ module LcvVideoDitherer (
       rOutpPastPos_x <= 16'h0000;
       rOutpPastPos_y <= 16'h0000;
     end else begin
-      if(!when_lcvVideoDithererMod_l250) begin
-        if(!when_lcvVideoDithererMod_l260) begin
+      if(!when_lcvVideoDithererMod_l255) begin
+        if(!when_lcvVideoDithererMod_l265) begin
           if(io_push_valid) begin
             rOutpFrameCnt <= (io_outp_frameCnt + 2'b01);
           end
@@ -707,10 +715,10 @@ module LcvVgaCtrl (
   output              io_phys_hsync,
   output              io_phys_vsync,
   output     [1:0]    io_misc_hscS,
-  output     [3:0]    io_misc_hscC,
+  output     [4:0]    io_misc_hscC,
   output     [1:0]    io_misc_hscNextS,
   output     [1:0]    io_misc_vscS,
-  output     [3:0]    io_misc_vscC,
+  output     [4:0]    io_misc_vscC,
   output     [1:0]    io_misc_vscNextS,
   output              io_misc_fifoEmpty,
   output              io_misc_fifoFull,
@@ -742,15 +750,15 @@ module LcvVgaCtrl (
   wire                fifo_io_misc_empty;
   wire                fifo_io_misc_full;
   wire       [2:0]    _zz_clkCntP1;
-  wire       [3:0]    _zz_when_lcvVgaCtrlMod_l157;
-  wire       [3:0]    _zz_when_lcvVgaCtrlMod_l157_1;
-  wire       [3:0]    _zz_when_lcvVgaCtrlMod_l157_2;
-  wire       [3:0]    _zz_when_lcvVgaCtrlMod_l157_3;
-  wire       [3:0]    _zz_when_lcvVgaCtrlMod_l445;
-  wire       [3:0]    _zz_when_lcvVgaCtrlMod_l157_4;
-  wire       [3:0]    _zz_when_lcvVgaCtrlMod_l157_5;
-  wire       [3:0]    _zz_when_lcvVgaCtrlMod_l157_6;
-  wire       [3:0]    _zz_when_lcvVgaCtrlMod_l157_7;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l159;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l159_1;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l159_2;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l159_3;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l447;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l159_4;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l159_5;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l159_6;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l159_7;
   (* keep *) wire       [3:0]    tempCol_r;
   (* keep *) wire       [3:0]    tempCol_g;
   (* keep *) wire       [3:0]    tempCol_b;
@@ -762,41 +770,41 @@ module LcvVgaCtrl (
   reg        [1:0]    clkCnt;
   reg        [1:0]    clkCntNext;
   wire       [2:0]    clkCntP1;
-  wire                when_lcvVgaCtrlMod_l369;
+  wire                when_lcvVgaCtrlMod_l371;
   wire                pixelEnNextCycle;
   reg                 rPastFifoPopReady;
-  reg        [1:0]    switch_lcvVgaCtrlMod_l168;
-  reg        [3:0]    _zz_io_misc_hscC;
+  reg        [1:0]    switch_lcvVgaCtrlMod_l170;
+  reg        [4:0]    _zz_io_misc_hscC;
   reg        [1:0]    _zz_io_misc_hscNextS;
-  reg        [1:0]    switch_lcvVgaCtrlMod_l168_1;
-  reg        [3:0]    _zz_io_misc_vscC;
+  reg        [1:0]    switch_lcvVgaCtrlMod_l170_1;
+  reg        [4:0]    _zz_io_misc_vscC;
   reg        [1:0]    _zz_io_misc_vscNextS;
-  wire       [3:0]    _zz_when_lcvVgaCtrlMod_l145;
-  wire                when_lcvVgaCtrlMod_l145;
-  wire                when_lcvVgaCtrlMod_l157;
-  wire       [3:0]    _zz_when_lcvVgaCtrlMod_l145_1;
-  wire                when_lcvVgaCtrlMod_l145_1;
-  wire                when_lcvVgaCtrlMod_l157_1;
-  wire       [3:0]    _zz_when_lcvVgaCtrlMod_l145_2;
-  wire                when_lcvVgaCtrlMod_l145_2;
-  wire                when_lcvVgaCtrlMod_l157_2;
-  wire       [3:0]    _zz_when_lcvVgaCtrlMod_l145_3;
-  wire                when_lcvVgaCtrlMod_l145_3;
-  wire                when_lcvVgaCtrlMod_l157_3;
-  wire                when_lcvVgaCtrlMod_l445;
-  wire       [3:0]    _zz_when_lcvVgaCtrlMod_l145_4;
-  wire                when_lcvVgaCtrlMod_l145_4;
-  wire                when_lcvVgaCtrlMod_l157_4;
-  wire       [3:0]    _zz_when_lcvVgaCtrlMod_l145_5;
-  wire                when_lcvVgaCtrlMod_l145_5;
-  wire                when_lcvVgaCtrlMod_l157_5;
-  wire       [3:0]    _zz_when_lcvVgaCtrlMod_l145_6;
-  wire                when_lcvVgaCtrlMod_l145_6;
-  wire                when_lcvVgaCtrlMod_l157_6;
-  wire       [3:0]    _zz_when_lcvVgaCtrlMod_l145_7;
-  wire                when_lcvVgaCtrlMod_l145_7;
-  wire                when_lcvVgaCtrlMod_l157_7;
-  wire                when_lcvVgaCtrlMod_l485;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l146;
+  wire                when_lcvVgaCtrlMod_l146;
+  wire                when_lcvVgaCtrlMod_l159;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l146_1;
+  wire                when_lcvVgaCtrlMod_l146_1;
+  wire                when_lcvVgaCtrlMod_l159_1;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l146_2;
+  wire                when_lcvVgaCtrlMod_l146_2;
+  wire                when_lcvVgaCtrlMod_l159_2;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l146_3;
+  wire                when_lcvVgaCtrlMod_l146_3;
+  wire                when_lcvVgaCtrlMod_l159_3;
+  wire                when_lcvVgaCtrlMod_l447;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l146_4;
+  wire                when_lcvVgaCtrlMod_l146_4;
+  wire                when_lcvVgaCtrlMod_l159_4;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l146_5;
+  wire                when_lcvVgaCtrlMod_l146_5;
+  wire                when_lcvVgaCtrlMod_l159_5;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l146_6;
+  wire                when_lcvVgaCtrlMod_l146_6;
+  wire                when_lcvVgaCtrlMod_l159_6;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l146_7;
+  wire                when_lcvVgaCtrlMod_l146_7;
+  wire                when_lcvVgaCtrlMod_l159_7;
+  wire                when_lcvVgaCtrlMod_l487;
   reg                 rNextVisib;
   reg                 rVisib;
   reg                 rPastVisib;
@@ -807,23 +815,23 @@ module LcvVgaCtrl (
   reg [39:0] io_misc_hscNextS_string;
   reg [39:0] io_misc_vscS_string;
   reg [39:0] io_misc_vscNextS_string;
-  reg [39:0] switch_lcvVgaCtrlMod_l168_string;
+  reg [39:0] switch_lcvVgaCtrlMod_l170_string;
   reg [39:0] _zz_io_misc_hscNextS_string;
-  reg [39:0] switch_lcvVgaCtrlMod_l168_1_string;
+  reg [39:0] switch_lcvVgaCtrlMod_l170_1_string;
   reg [39:0] _zz_io_misc_vscNextS_string;
   `endif
 
 
   assign _zz_clkCntP1 = {1'd0, clkCnt};
-  assign _zz_when_lcvVgaCtrlMod_l157 = (_zz_io_misc_hscC + 4'b0010);
-  assign _zz_when_lcvVgaCtrlMod_l157_1 = (_zz_io_misc_hscC + 4'b0010);
-  assign _zz_when_lcvVgaCtrlMod_l157_2 = (_zz_io_misc_hscC + 4'b0010);
-  assign _zz_when_lcvVgaCtrlMod_l157_3 = (_zz_io_misc_hscC + 4'b0010);
-  assign _zz_when_lcvVgaCtrlMod_l445 = (_zz_io_misc_hscC + 4'b0001);
-  assign _zz_when_lcvVgaCtrlMod_l157_4 = (_zz_io_misc_vscC + 4'b0010);
-  assign _zz_when_lcvVgaCtrlMod_l157_5 = (_zz_io_misc_vscC + 4'b0010);
-  assign _zz_when_lcvVgaCtrlMod_l157_6 = (_zz_io_misc_vscC + 4'b0010);
-  assign _zz_when_lcvVgaCtrlMod_l157_7 = (_zz_io_misc_vscC + 4'b0010);
+  assign _zz_when_lcvVgaCtrlMod_l159 = (_zz_io_misc_hscC + 5'h02);
+  assign _zz_when_lcvVgaCtrlMod_l159_1 = (_zz_io_misc_hscC + 5'h02);
+  assign _zz_when_lcvVgaCtrlMod_l159_2 = (_zz_io_misc_hscC + 5'h02);
+  assign _zz_when_lcvVgaCtrlMod_l159_3 = (_zz_io_misc_hscC + 5'h02);
+  assign _zz_when_lcvVgaCtrlMod_l447 = (_zz_io_misc_hscC + 5'h01);
+  assign _zz_when_lcvVgaCtrlMod_l159_4 = (_zz_io_misc_vscC + 5'h02);
+  assign _zz_when_lcvVgaCtrlMod_l159_5 = (_zz_io_misc_vscC + 5'h02);
+  assign _zz_when_lcvVgaCtrlMod_l159_6 = (_zz_io_misc_vscC + 5'h02);
+  assign _zz_when_lcvVgaCtrlMod_l159_7 = (_zz_io_misc_vscC + 5'h02);
   AsyncReadFifo fifo (
     .io_push_valid     (io_push_valid             ), //i
     .io_push_ready     (fifo_io_push_ready        ), //o
@@ -878,12 +886,12 @@ module LcvVgaCtrl (
     endcase
   end
   always @(*) begin
-    case(switch_lcvVgaCtrlMod_l168)
-      LcvVgaState_front : switch_lcvVgaCtrlMod_l168_string = "front";
-      LcvVgaState_sync : switch_lcvVgaCtrlMod_l168_string = "sync ";
-      LcvVgaState_back : switch_lcvVgaCtrlMod_l168_string = "back ";
-      LcvVgaState_visib : switch_lcvVgaCtrlMod_l168_string = "visib";
-      default : switch_lcvVgaCtrlMod_l168_string = "?????";
+    case(switch_lcvVgaCtrlMod_l170)
+      LcvVgaState_front : switch_lcvVgaCtrlMod_l170_string = "front";
+      LcvVgaState_sync : switch_lcvVgaCtrlMod_l170_string = "sync ";
+      LcvVgaState_back : switch_lcvVgaCtrlMod_l170_string = "back ";
+      LcvVgaState_visib : switch_lcvVgaCtrlMod_l170_string = "visib";
+      default : switch_lcvVgaCtrlMod_l170_string = "?????";
     endcase
   end
   always @(*) begin
@@ -896,12 +904,12 @@ module LcvVgaCtrl (
     endcase
   end
   always @(*) begin
-    case(switch_lcvVgaCtrlMod_l168_1)
-      LcvVgaState_front : switch_lcvVgaCtrlMod_l168_1_string = "front";
-      LcvVgaState_sync : switch_lcvVgaCtrlMod_l168_1_string = "sync ";
-      LcvVgaState_back : switch_lcvVgaCtrlMod_l168_1_string = "back ";
-      LcvVgaState_visib : switch_lcvVgaCtrlMod_l168_1_string = "visib";
-      default : switch_lcvVgaCtrlMod_l168_1_string = "?????";
+    case(switch_lcvVgaCtrlMod_l170_1)
+      LcvVgaState_front : switch_lcvVgaCtrlMod_l170_1_string = "front";
+      LcvVgaState_sync : switch_lcvVgaCtrlMod_l170_1_string = "sync ";
+      LcvVgaState_back : switch_lcvVgaCtrlMod_l170_1_string = "back ";
+      LcvVgaState_visib : switch_lcvVgaCtrlMod_l170_1_string = "visib";
+      default : switch_lcvVgaCtrlMod_l170_1_string = "?????";
     endcase
   end
   always @(*) begin
@@ -926,7 +934,7 @@ module LcvVgaCtrl (
   assign io_phys_vsync = rPhys_vsync;
   always @(*) begin
     clkCntNext = clkCnt;
-    if(when_lcvVgaCtrlMod_l369) begin
+    if(when_lcvVgaCtrlMod_l371) begin
       clkCntNext = clkCntP1[1 : 0];
     end else begin
       clkCntNext = 2'b00;
@@ -934,141 +942,141 @@ module LcvVgaCtrl (
   end
 
   assign clkCntP1 = (_zz_clkCntP1 + 3'b001);
-  assign when_lcvVgaCtrlMod_l369 = (clkCntP1 < 3'b100);
+  assign when_lcvVgaCtrlMod_l371 = (clkCntP1 < 3'b100);
   assign io_misc_pixelEn = (clkCnt == 2'b00);
   assign pixelEnNextCycle = (clkCntP1 == 3'b100);
   assign io_misc_nextPixelEn = (clkCntNext == 2'b00);
   assign fifo_io_pop_ready = (io_misc_nextPixelEn && io_misc_nextVisib);
   assign io_misc_fifoEmpty = fifo_io_misc_empty;
   assign io_misc_fifoFull = fifo_io_misc_full;
-  assign io_misc_hscS = switch_lcvVgaCtrlMod_l168;
+  assign io_misc_hscS = switch_lcvVgaCtrlMod_l170;
   assign io_misc_hscC = _zz_io_misc_hscC;
   assign io_misc_hscNextS = _zz_io_misc_hscNextS;
-  assign io_misc_vscS = switch_lcvVgaCtrlMod_l168_1;
+  assign io_misc_vscS = switch_lcvVgaCtrlMod_l170_1;
   assign io_misc_vscC = _zz_io_misc_vscC;
   assign io_misc_vscNextS = _zz_io_misc_vscNextS;
-  assign _zz_when_lcvVgaCtrlMod_l145 = (_zz_io_misc_hscC + 4'b0001);
-  assign when_lcvVgaCtrlMod_l145 = (4'b0001 <= _zz_when_lcvVgaCtrlMod_l145);
-  assign when_lcvVgaCtrlMod_l157 = (4'b0001 <= _zz_when_lcvVgaCtrlMod_l157);
+  assign _zz_when_lcvVgaCtrlMod_l146 = (_zz_io_misc_hscC + 5'h01);
+  assign when_lcvVgaCtrlMod_l146 = (5'h01 <= _zz_when_lcvVgaCtrlMod_l146);
+  assign when_lcvVgaCtrlMod_l159 = (5'h01 <= _zz_when_lcvVgaCtrlMod_l159);
   always @(*) begin
     if(io_misc_pixelEn) begin
-      case(switch_lcvVgaCtrlMod_l168)
+      case(switch_lcvVgaCtrlMod_l170)
         LcvVgaState_front : begin
-          if(when_lcvVgaCtrlMod_l157) begin
+          if(when_lcvVgaCtrlMod_l159) begin
             _zz_io_misc_hscNextS = LcvVgaState_sync;
           end else begin
-            _zz_io_misc_hscNextS = switch_lcvVgaCtrlMod_l168;
+            _zz_io_misc_hscNextS = switch_lcvVgaCtrlMod_l170;
           end
         end
         LcvVgaState_sync : begin
-          if(when_lcvVgaCtrlMod_l157_1) begin
+          if(when_lcvVgaCtrlMod_l159_1) begin
             _zz_io_misc_hscNextS = LcvVgaState_back;
           end else begin
-            _zz_io_misc_hscNextS = switch_lcvVgaCtrlMod_l168;
+            _zz_io_misc_hscNextS = switch_lcvVgaCtrlMod_l170;
           end
         end
         LcvVgaState_back : begin
-          if(when_lcvVgaCtrlMod_l157_2) begin
+          if(when_lcvVgaCtrlMod_l159_2) begin
             _zz_io_misc_hscNextS = LcvVgaState_visib;
           end else begin
-            _zz_io_misc_hscNextS = switch_lcvVgaCtrlMod_l168;
+            _zz_io_misc_hscNextS = switch_lcvVgaCtrlMod_l170;
           end
         end
         default : begin
-          if(when_lcvVgaCtrlMod_l157_3) begin
+          if(when_lcvVgaCtrlMod_l159_3) begin
             _zz_io_misc_hscNextS = LcvVgaState_front;
           end else begin
-            _zz_io_misc_hscNextS = switch_lcvVgaCtrlMod_l168;
+            _zz_io_misc_hscNextS = switch_lcvVgaCtrlMod_l170;
           end
         end
       endcase
     end else begin
-      _zz_io_misc_hscNextS = switch_lcvVgaCtrlMod_l168;
+      _zz_io_misc_hscNextS = switch_lcvVgaCtrlMod_l170;
     end
   end
 
-  assign _zz_when_lcvVgaCtrlMod_l145_1 = (_zz_io_misc_hscC + 4'b0001);
-  assign when_lcvVgaCtrlMod_l145_1 = (4'b0001 <= _zz_when_lcvVgaCtrlMod_l145_1);
-  assign when_lcvVgaCtrlMod_l157_1 = (4'b0001 <= _zz_when_lcvVgaCtrlMod_l157_1);
-  assign _zz_when_lcvVgaCtrlMod_l145_2 = (_zz_io_misc_hscC + 4'b0001);
-  assign when_lcvVgaCtrlMod_l145_2 = (4'b0001 <= _zz_when_lcvVgaCtrlMod_l145_2);
-  assign when_lcvVgaCtrlMod_l157_2 = (4'b0001 <= _zz_when_lcvVgaCtrlMod_l157_2);
-  assign _zz_when_lcvVgaCtrlMod_l145_3 = (_zz_io_misc_hscC + 4'b0001);
-  assign when_lcvVgaCtrlMod_l145_3 = (4'b1000 <= _zz_when_lcvVgaCtrlMod_l145_3);
-  assign when_lcvVgaCtrlMod_l157_3 = (4'b1000 <= _zz_when_lcvVgaCtrlMod_l157_3);
+  assign _zz_when_lcvVgaCtrlMod_l146_1 = (_zz_io_misc_hscC + 5'h01);
+  assign when_lcvVgaCtrlMod_l146_1 = (5'h01 <= _zz_when_lcvVgaCtrlMod_l146_1);
+  assign when_lcvVgaCtrlMod_l159_1 = (5'h01 <= _zz_when_lcvVgaCtrlMod_l159_1);
+  assign _zz_when_lcvVgaCtrlMod_l146_2 = (_zz_io_misc_hscC + 5'h01);
+  assign when_lcvVgaCtrlMod_l146_2 = (5'h01 <= _zz_when_lcvVgaCtrlMod_l146_2);
+  assign when_lcvVgaCtrlMod_l159_2 = (5'h01 <= _zz_when_lcvVgaCtrlMod_l159_2);
+  assign _zz_when_lcvVgaCtrlMod_l146_3 = (_zz_io_misc_hscC + 5'h01);
+  assign when_lcvVgaCtrlMod_l146_3 = (5'h12 <= _zz_when_lcvVgaCtrlMod_l146_3);
+  assign when_lcvVgaCtrlMod_l159_3 = (5'h12 <= _zz_when_lcvVgaCtrlMod_l159_3);
   always @(*) begin
     if(io_misc_pixelEn) begin
-      case(switch_lcvVgaCtrlMod_l168)
+      case(switch_lcvVgaCtrlMod_l170)
         LcvVgaState_front : begin
-          _zz_io_misc_vscNextS = switch_lcvVgaCtrlMod_l168_1;
+          _zz_io_misc_vscNextS = switch_lcvVgaCtrlMod_l170_1;
         end
         LcvVgaState_sync : begin
-          _zz_io_misc_vscNextS = switch_lcvVgaCtrlMod_l168_1;
+          _zz_io_misc_vscNextS = switch_lcvVgaCtrlMod_l170_1;
         end
         LcvVgaState_back : begin
-          _zz_io_misc_vscNextS = switch_lcvVgaCtrlMod_l168_1;
+          _zz_io_misc_vscNextS = switch_lcvVgaCtrlMod_l170_1;
         end
         default : begin
-          if(when_lcvVgaCtrlMod_l445) begin
-            case(switch_lcvVgaCtrlMod_l168_1)
+          if(when_lcvVgaCtrlMod_l447) begin
+            case(switch_lcvVgaCtrlMod_l170_1)
               LcvVgaState_front : begin
-                if(when_lcvVgaCtrlMod_l157_4) begin
+                if(when_lcvVgaCtrlMod_l159_4) begin
                   _zz_io_misc_vscNextS = LcvVgaState_sync;
                 end else begin
-                  _zz_io_misc_vscNextS = switch_lcvVgaCtrlMod_l168_1;
+                  _zz_io_misc_vscNextS = switch_lcvVgaCtrlMod_l170_1;
                 end
               end
               LcvVgaState_sync : begin
-                if(when_lcvVgaCtrlMod_l157_5) begin
+                if(when_lcvVgaCtrlMod_l159_5) begin
                   _zz_io_misc_vscNextS = LcvVgaState_back;
                 end else begin
-                  _zz_io_misc_vscNextS = switch_lcvVgaCtrlMod_l168_1;
+                  _zz_io_misc_vscNextS = switch_lcvVgaCtrlMod_l170_1;
                 end
               end
               LcvVgaState_back : begin
-                if(when_lcvVgaCtrlMod_l157_6) begin
+                if(when_lcvVgaCtrlMod_l159_6) begin
                   _zz_io_misc_vscNextS = LcvVgaState_visib;
                 end else begin
-                  _zz_io_misc_vscNextS = switch_lcvVgaCtrlMod_l168_1;
+                  _zz_io_misc_vscNextS = switch_lcvVgaCtrlMod_l170_1;
                 end
               end
               default : begin
-                if(when_lcvVgaCtrlMod_l157_7) begin
+                if(when_lcvVgaCtrlMod_l159_7) begin
                   _zz_io_misc_vscNextS = LcvVgaState_front;
                 end else begin
-                  _zz_io_misc_vscNextS = switch_lcvVgaCtrlMod_l168_1;
+                  _zz_io_misc_vscNextS = switch_lcvVgaCtrlMod_l170_1;
                 end
               end
             endcase
           end else begin
-            _zz_io_misc_vscNextS = switch_lcvVgaCtrlMod_l168_1;
+            _zz_io_misc_vscNextS = switch_lcvVgaCtrlMod_l170_1;
           end
         end
       endcase
     end else begin
-      _zz_io_misc_vscNextS = switch_lcvVgaCtrlMod_l168_1;
+      _zz_io_misc_vscNextS = switch_lcvVgaCtrlMod_l170_1;
     end
   end
 
-  assign when_lcvVgaCtrlMod_l445 = (4'b1000 <= _zz_when_lcvVgaCtrlMod_l445);
-  assign _zz_when_lcvVgaCtrlMod_l145_4 = (_zz_io_misc_vscC + 4'b0001);
-  assign when_lcvVgaCtrlMod_l145_4 = (4'b0001 <= _zz_when_lcvVgaCtrlMod_l145_4);
-  assign when_lcvVgaCtrlMod_l157_4 = (4'b0001 <= _zz_when_lcvVgaCtrlMod_l157_4);
-  assign _zz_when_lcvVgaCtrlMod_l145_5 = (_zz_io_misc_vscC + 4'b0001);
-  assign when_lcvVgaCtrlMod_l145_5 = (4'b0001 <= _zz_when_lcvVgaCtrlMod_l145_5);
-  assign when_lcvVgaCtrlMod_l157_5 = (4'b0001 <= _zz_when_lcvVgaCtrlMod_l157_5);
-  assign _zz_when_lcvVgaCtrlMod_l145_6 = (_zz_io_misc_vscC + 4'b0001);
-  assign when_lcvVgaCtrlMod_l145_6 = (4'b0001 <= _zz_when_lcvVgaCtrlMod_l145_6);
-  assign when_lcvVgaCtrlMod_l157_6 = (4'b0001 <= _zz_when_lcvVgaCtrlMod_l157_6);
-  assign _zz_when_lcvVgaCtrlMod_l145_7 = (_zz_io_misc_vscC + 4'b0001);
-  assign when_lcvVgaCtrlMod_l145_7 = (4'b1000 <= _zz_when_lcvVgaCtrlMod_l145_7);
-  assign when_lcvVgaCtrlMod_l157_7 = (4'b1000 <= _zz_when_lcvVgaCtrlMod_l157_7);
-  assign when_lcvVgaCtrlMod_l485 = (! io_en);
-  assign io_misc_drawPos_x = {12'd0, _zz_io_misc_hscC};
-  assign io_misc_drawPos_y = {12'd0, _zz_io_misc_vscC};
-  assign io_misc_size_x = 16'h0008;
-  assign io_misc_size_y = 16'h0008;
-  assign io_misc_nextVisib = rNextVisib;
+  assign when_lcvVgaCtrlMod_l447 = (5'h12 <= _zz_when_lcvVgaCtrlMod_l447);
+  assign _zz_when_lcvVgaCtrlMod_l146_4 = (_zz_io_misc_vscC + 5'h01);
+  assign when_lcvVgaCtrlMod_l146_4 = (5'h01 <= _zz_when_lcvVgaCtrlMod_l146_4);
+  assign when_lcvVgaCtrlMod_l159_4 = (5'h01 <= _zz_when_lcvVgaCtrlMod_l159_4);
+  assign _zz_when_lcvVgaCtrlMod_l146_5 = (_zz_io_misc_vscC + 5'h01);
+  assign when_lcvVgaCtrlMod_l146_5 = (5'h01 <= _zz_when_lcvVgaCtrlMod_l146_5);
+  assign when_lcvVgaCtrlMod_l159_5 = (5'h01 <= _zz_when_lcvVgaCtrlMod_l159_5);
+  assign _zz_when_lcvVgaCtrlMod_l146_6 = (_zz_io_misc_vscC + 5'h01);
+  assign when_lcvVgaCtrlMod_l146_6 = (5'h01 <= _zz_when_lcvVgaCtrlMod_l146_6);
+  assign when_lcvVgaCtrlMod_l159_6 = (5'h01 <= _zz_when_lcvVgaCtrlMod_l159_6);
+  assign _zz_when_lcvVgaCtrlMod_l146_7 = (_zz_io_misc_vscC + 5'h01);
+  assign when_lcvVgaCtrlMod_l146_7 = (5'h12 <= _zz_when_lcvVgaCtrlMod_l146_7);
+  assign when_lcvVgaCtrlMod_l159_7 = (5'h12 <= _zz_when_lcvVgaCtrlMod_l159_7);
+  assign when_lcvVgaCtrlMod_l487 = (! io_en);
+  assign io_misc_drawPos_x = {11'd0, _zz_io_misc_hscC};
+  assign io_misc_drawPos_y = {11'd0, _zz_io_misc_vscC};
+  assign io_misc_size_x = 16'h0012;
+  assign io_misc_size_y = 16'h0012;
+  assign io_misc_nextVisib = ((_zz_io_misc_hscNextS == LcvVgaState_visib) && (_zz_io_misc_vscNextS == LcvVgaState_visib));
   assign io_misc_visib = rVisib;
   assign io_misc_pastVisib = rPastVisib;
   assign io_misc_pastDrawPos_x = rPastDrawPos_x;
@@ -1082,10 +1090,10 @@ module LcvVgaCtrl (
       rPhys_vsync <= 1'b0;
       clkCnt <= 2'b00;
       rPastFifoPopReady <= 1'b0;
-      switch_lcvVgaCtrlMod_l168 <= LcvVgaState_front;
-      _zz_io_misc_hscC <= 4'b0000;
-      switch_lcvVgaCtrlMod_l168_1 <= LcvVgaState_front;
-      _zz_io_misc_vscC <= 4'b0000;
+      switch_lcvVgaCtrlMod_l170 <= LcvVgaState_front;
+      _zz_io_misc_hscC <= 5'h00;
+      switch_lcvVgaCtrlMod_l170_1 <= LcvVgaState_front;
+      _zz_io_misc_vscC <= 5'h00;
       rNextVisib <= 1'b0;
       rVisib <= 1'b0;
       rPastVisib <= 1'b0;
@@ -1095,41 +1103,41 @@ module LcvVgaCtrl (
       clkCnt <= clkCntNext;
       rPastFifoPopReady <= fifo_io_pop_ready;
       if(io_misc_pixelEn) begin
-        case(switch_lcvVgaCtrlMod_l168)
+        case(switch_lcvVgaCtrlMod_l170)
           LcvVgaState_front : begin
-            if(when_lcvVgaCtrlMod_l145) begin
-              switch_lcvVgaCtrlMod_l168 <= LcvVgaState_sync;
-              _zz_io_misc_hscC <= 4'b0000;
+            if(when_lcvVgaCtrlMod_l146) begin
+              switch_lcvVgaCtrlMod_l170 <= LcvVgaState_sync;
+              _zz_io_misc_hscC <= 5'h00;
             end else begin
-              _zz_io_misc_hscC <= _zz_when_lcvVgaCtrlMod_l145;
+              _zz_io_misc_hscC <= _zz_when_lcvVgaCtrlMod_l146;
             end
           end
           LcvVgaState_sync : begin
-            if(when_lcvVgaCtrlMod_l145_1) begin
-              switch_lcvVgaCtrlMod_l168 <= LcvVgaState_back;
-              _zz_io_misc_hscC <= 4'b0000;
+            if(when_lcvVgaCtrlMod_l146_1) begin
+              switch_lcvVgaCtrlMod_l170 <= LcvVgaState_back;
+              _zz_io_misc_hscC <= 5'h00;
             end else begin
-              _zz_io_misc_hscC <= _zz_when_lcvVgaCtrlMod_l145_1;
+              _zz_io_misc_hscC <= _zz_when_lcvVgaCtrlMod_l146_1;
             end
           end
           LcvVgaState_back : begin
-            if(when_lcvVgaCtrlMod_l145_2) begin
-              switch_lcvVgaCtrlMod_l168 <= LcvVgaState_visib;
-              _zz_io_misc_hscC <= 4'b0000;
+            if(when_lcvVgaCtrlMod_l146_2) begin
+              switch_lcvVgaCtrlMod_l170 <= LcvVgaState_visib;
+              _zz_io_misc_hscC <= 5'h00;
             end else begin
-              _zz_io_misc_hscC <= _zz_when_lcvVgaCtrlMod_l145_2;
+              _zz_io_misc_hscC <= _zz_when_lcvVgaCtrlMod_l146_2;
             end
           end
           default : begin
-            if(when_lcvVgaCtrlMod_l145_3) begin
-              switch_lcvVgaCtrlMod_l168 <= LcvVgaState_front;
-              _zz_io_misc_hscC <= 4'b0000;
+            if(when_lcvVgaCtrlMod_l146_3) begin
+              switch_lcvVgaCtrlMod_l170 <= LcvVgaState_front;
+              _zz_io_misc_hscC <= 5'h00;
             end else begin
-              _zz_io_misc_hscC <= _zz_when_lcvVgaCtrlMod_l145_3;
+              _zz_io_misc_hscC <= _zz_when_lcvVgaCtrlMod_l146_3;
             end
           end
         endcase
-        case(switch_lcvVgaCtrlMod_l168)
+        case(switch_lcvVgaCtrlMod_l170)
           LcvVgaState_front : begin
             rPhys_hsync <= 1'b1;
           end
@@ -1141,45 +1149,45 @@ module LcvVgaCtrl (
           end
           default : begin
             rPhys_hsync <= 1'b1;
-            if(when_lcvVgaCtrlMod_l445) begin
-              case(switch_lcvVgaCtrlMod_l168_1)
+            if(when_lcvVgaCtrlMod_l447) begin
+              case(switch_lcvVgaCtrlMod_l170_1)
                 LcvVgaState_front : begin
-                  if(when_lcvVgaCtrlMod_l145_4) begin
-                    switch_lcvVgaCtrlMod_l168_1 <= LcvVgaState_sync;
-                    _zz_io_misc_vscC <= 4'b0000;
+                  if(when_lcvVgaCtrlMod_l146_4) begin
+                    switch_lcvVgaCtrlMod_l170_1 <= LcvVgaState_sync;
+                    _zz_io_misc_vscC <= 5'h00;
                   end else begin
-                    _zz_io_misc_vscC <= _zz_when_lcvVgaCtrlMod_l145_4;
+                    _zz_io_misc_vscC <= _zz_when_lcvVgaCtrlMod_l146_4;
                   end
                 end
                 LcvVgaState_sync : begin
-                  if(when_lcvVgaCtrlMod_l145_5) begin
-                    switch_lcvVgaCtrlMod_l168_1 <= LcvVgaState_back;
-                    _zz_io_misc_vscC <= 4'b0000;
+                  if(when_lcvVgaCtrlMod_l146_5) begin
+                    switch_lcvVgaCtrlMod_l170_1 <= LcvVgaState_back;
+                    _zz_io_misc_vscC <= 5'h00;
                   end else begin
-                    _zz_io_misc_vscC <= _zz_when_lcvVgaCtrlMod_l145_5;
+                    _zz_io_misc_vscC <= _zz_when_lcvVgaCtrlMod_l146_5;
                   end
                 end
                 LcvVgaState_back : begin
-                  if(when_lcvVgaCtrlMod_l145_6) begin
-                    switch_lcvVgaCtrlMod_l168_1 <= LcvVgaState_visib;
-                    _zz_io_misc_vscC <= 4'b0000;
+                  if(when_lcvVgaCtrlMod_l146_6) begin
+                    switch_lcvVgaCtrlMod_l170_1 <= LcvVgaState_visib;
+                    _zz_io_misc_vscC <= 5'h00;
                   end else begin
-                    _zz_io_misc_vscC <= _zz_when_lcvVgaCtrlMod_l145_6;
+                    _zz_io_misc_vscC <= _zz_when_lcvVgaCtrlMod_l146_6;
                   end
                 end
                 default : begin
-                  if(when_lcvVgaCtrlMod_l145_7) begin
-                    switch_lcvVgaCtrlMod_l168_1 <= LcvVgaState_front;
-                    _zz_io_misc_vscC <= 4'b0000;
+                  if(when_lcvVgaCtrlMod_l146_7) begin
+                    switch_lcvVgaCtrlMod_l170_1 <= LcvVgaState_front;
+                    _zz_io_misc_vscC <= 5'h00;
                   end else begin
-                    _zz_io_misc_vscC <= _zz_when_lcvVgaCtrlMod_l145_7;
+                    _zz_io_misc_vscC <= _zz_when_lcvVgaCtrlMod_l146_7;
                   end
                 end
               endcase
             end
           end
         endcase
-        case(switch_lcvVgaCtrlMod_l168_1)
+        case(switch_lcvVgaCtrlMod_l170_1)
           LcvVgaState_front : begin
             rPhys_vsync <= 1'b1;
           end
@@ -1196,7 +1204,7 @@ module LcvVgaCtrl (
       end
       if(io_misc_pixelEn) begin
         if(io_misc_visib) begin
-          if(when_lcvVgaCtrlMod_l485) begin
+          if(when_lcvVgaCtrlMod_l487) begin
             rPhys_col_r <= 4'b1111;
             rPhys_col_g <= 4'b1111;
             rPhys_col_b <= 4'b1111;

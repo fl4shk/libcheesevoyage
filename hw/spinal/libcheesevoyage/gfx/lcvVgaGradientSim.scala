@@ -31,7 +31,8 @@ object LcvVgaGradientSim extends App {
       //front=16,
       //sync=96,
       //back=48
-      visib=8,
+      //visib=8,
+      visib=18,
       front=1,
       sync=1,
       back=1,
@@ -41,7 +42,8 @@ object LcvVgaGradientSim extends App {
       //front=10,
       //sync=2,
       //back=33
-      visib=8,
+      //visib=8,
+      visib=18,
       front=1,
       sync=1,
       back=1,
