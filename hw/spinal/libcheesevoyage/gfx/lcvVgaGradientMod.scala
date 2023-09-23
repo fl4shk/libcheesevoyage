@@ -80,8 +80,8 @@ case class LcvVgaGradient(
   //ctrlIo.push.valid := True
 
   val rCtrlPushValid = Reg(Bool()) init(False)
-  ctrlIo.push.valid := rCtrlPushValid
-  //ctrlIo.push.valid := True
+  //ctrlIo.push.valid := rCtrlPushValid
+  ctrlIo.push.valid := True
 
   //val rDithPushValid = Reg(Bool()) init(False)
   //dithIo.push.valid := rDithPushValid
@@ -144,7 +144,7 @@ case class LcvVgaGradient(
     //rCtrlPushValid := True
     //dithPushValid := True
     //rDithPushValid := True
-    rCtrlPushValid := True
+    //rCtrlPushValid := True
     dithCol.r := (default -> True)
     //dithCol.r := 0
     when (dithIo.outp.pos.x === 0x0) {
