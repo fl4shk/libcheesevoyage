@@ -74,6 +74,7 @@ object LcvVgaGradientSim extends App {
       //))
       val phys = out(LcvVgaPhys(rgbConfig=physRgbConfig))
       val misc = out(LcvVgaCtrlMiscIo(
+        clkRate=clkRate,
         vgaTimingInfo=vgaTimingInfo,
         fifoDepth=ctrlFifoDepth,
       ))

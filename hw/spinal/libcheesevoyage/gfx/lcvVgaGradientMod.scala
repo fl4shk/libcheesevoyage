@@ -13,6 +13,7 @@ import scala.math._
 
 
 case class LcvVgaGradientIo(
+  clkRate: Double,
   rgbConfig: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
   ctrlFifoDepth: Int,
@@ -23,6 +24,7 @@ case class LcvVgaGradientIo(
  // val vidDithIo = master(LcvVideoDithererIo(rgbConfig=rgbConfig))
   val vgaCtrlIo = master(
     LcvVgaCtrlIo(
+      clkRate=clkRate,
       rgbConfig=outRgbConfig,
       vgaTimingInfo=vgaTimingInfo,
       fifoDepth=ctrlFifoDepth,
@@ -51,6 +53,7 @@ case class LcvVgaGradient(
   //--------
   //val io = slave(LcvVgaGradientIo(rgbConfig=rgbConfig))
   val io = LcvVgaGradientIo(
+    clkRate=clkRate,
     rgbConfig=rgbConfig,
     vgaTimingInfo=vgaTimingInfo,
     ctrlFifoDepth=ctrlFifoDepth,
@@ -102,6 +105,9 @@ case class LcvVgaGradient(
   rDithCol.g.init(rDithCol.g.getZero)
   rDithCol.b.init(rDithCol.b.getZero)
   dithIo.inpCol := rDithCol
+  rDithCol.r := initDithColR
+  rDithCol.g := 0x0
+  rDithCol.b := 0x0
 
   //val dithCol = dithIo.inpCol
   ////rPastDithCol := dithCol
@@ -114,8 +120,9 @@ case class LcvVgaGradient(
 
   //ctrlIo.push.payload := dithIo.outp.col
   //--------
-  //val rCtrlPushValid = Reg(Bool()) init(False)
-  ctrlIo.push.valid := True
+  val rCtrlPushValid = Reg(Bool()) init(False)
+  ctrlIo.push.valid := rCtrlPushValid
+  //ctrlIo.push.valid := True
   val rDbgPhysCol = Reg(Rgb(io.outRgbConfig))
   rDbgPhysCol.init(rDbgPhysCol.getZero)
   ctrlIo.push.payload := rDbgPhysCol
@@ -127,16 +134,37 @@ case class LcvVgaGradient(
     clkRate=clkRate,
     vgaTimingInfo=vgaTimingInfo,
   )
-  def initDbgPhysCol = {
+  def resetDbgPhysCol(): Unit = {
     rDbgPhysCol.r := (default -> True)
     rDbgPhysCol.g := 0x0
     rDbgPhysCol.b := 0x0
   }
-  def setDbgPhysCol = {
+  def incrDbgPhysCol(): Unit = {
     rDbgPhysCol.r := (default -> True)
     rDbgPhysCol.g := rDbgPhysCol.g + 1
     rDbgPhysCol.b := 0x0
   }
+  when (!rCtrlPushValid) {
+    rCtrlPushValid := True
+    //when (!ctrlIo.push.fire) {
+    //} otherwise { // when (ctrlIo.push.fire)
+    //}
+    //when () {
+    //}
+    when (ctrlIo.misc.nextVisib && !ctrlIo.misc.visib) {
+      resetDbgPhysCol()
+    } otherwise {
+      incrDbgPhysCol()
+    }
+  } otherwise {
+    when (ctrlIo.push.fire) {
+      rCtrlPushValid := False
+    }
+  }
+  //when (ctrlIo.push.fire) {
+  //}
+  //when (ctrlIo.push.fire) {
+  //}
   //when (ctrlIo.misc.nextVisib) {
   //  when (!ctrlIo.misc.visib) {
   //    //rDbgPhysCol := rDbgPhysCol.getZero

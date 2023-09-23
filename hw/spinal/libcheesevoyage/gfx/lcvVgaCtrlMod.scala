@@ -133,9 +133,26 @@ case class LcvVgaPhys(rgbConfig: RgbConfig) extends Bundle {
 object LcvVgaCtrlMiscIo {
   //--------
   def coordElemT(): UInt = UInt(16 bits)
+  def cpp(
+    clkRate: Double,
+    vgaTimingInfo: LcvVgaTimingInfo,
+  ): Int = {
+    return scala.math.floor(
+      clkRate / vgaTimingInfo.pixelClk
+    ).toInt
+  }
+  def clkCntWidth(
+    clkRate: Double,
+    vgaTimingInfo: LcvVgaTimingInfo,
+  ): Int = {
+    return log2Up(cpp(
+      clkRate=clkRate, vgaTimingInfo=vgaTimingInfo
+    ))
+  }
   //--------
 }
 case class LcvVgaCtrlMiscIo(
+  clkRate: Double,
   vgaTimingInfo: LcvVgaTimingInfo,
   fifoDepth: Int,
 ) extends Bundle {
@@ -166,6 +183,14 @@ case class LcvVgaCtrlMiscIo(
   val fifoAmountCanPop = UInt(FifoMiscIo.amountWidth(depth=fifoDepth) bits)
 
   // Misc.
+  val clkCnt = UInt(LcvVgaCtrlMiscIo.clkCntWidth(
+    clkRate=clkRate,
+    vgaTimingInfo=vgaTimingInfo,
+  ) bits)
+  val nextClkCnt = UInt(LcvVgaCtrlMiscIo.clkCntWidth(
+    clkRate=clkRate,
+    vgaTimingInfo=vgaTimingInfo,
+  ) bits)
   val nextPixelEn = Bool()
   val pixelEn = Bool()
   val nextVisib = Bool()
@@ -179,6 +204,7 @@ case class LcvVgaCtrlMiscIo(
   //--------
 }
 case class LcvVgaCtrlIo(
+  clkRate: Double,
   rgbConfig: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
   fifoDepth: Int,
@@ -190,6 +216,7 @@ case class LcvVgaCtrlIo(
   val push = slave Stream(Rgb(rgbConfig))
   val phys = out(LcvVgaPhys(rgbConfig=rgbConfig))
   val misc = out(LcvVgaCtrlMiscIo(
+    clkRate=clkRate,
     vgaTimingInfo=vgaTimingInfo,
     fifoDepth=fifoDepth,
   ))
@@ -214,9 +241,25 @@ object LcvVgaCtrl {
     clkRate: Double,
     vgaTimingInfo: LcvVgaTimingInfo,
   ): Int = {
-    return scala.math.floor(
-      clkRate / vgaTimingInfo.pixelClk
-    ).toInt
+    //return scala.math.floor(
+    //  clkRate / vgaTimingInfo.pixelClk
+    //).toInt
+    return LcvVgaCtrlMiscIo.cpp(
+      clkRate=clkRate,
+      vgaTimingInfo=vgaTimingInfo,
+    )
+  }
+  def clkCntWidth(
+    clkRate: Double,
+    vgaTimingInfo: LcvVgaTimingInfo,
+  ): Int = {
+    //return log2Up(cpp(
+    //  clkRate=clkRate, vgaTimingInfo=vgaTimingInfo
+    //))
+    return LcvVgaCtrlMiscIo.clkCntWidth(
+      clkRate=clkRate,
+      vgaTimingInfo=vgaTimingInfo,
+    )
   }
 }
 case class LcvVgaCtrl(
@@ -227,6 +270,7 @@ case class LcvVgaCtrl(
 ) extends Component {
   //--------
   val io = LcvVgaCtrlIo(
+    clkRate=clkRate,
     rgbConfig=rgbConfig,
     vgaTimingInfo=vgaTimingInfo,
     fifoDepth=fifoDepth,
@@ -262,9 +306,13 @@ case class LcvVgaCtrl(
   //  return ElabVec2(htiming.visib, vtiming.visib)
   //}
   def fbSize2d: ElabVec2[Int] = vgaTimingInfo.fbSize2d
-  def clkCntWidth: Int = {
-    return log2Up(cpp)
-  }
+  //def clkCntWidth: Int = {
+  //  return log2Up(cpp)
+  //}
+  def clkCntWidth = LcvVgaCtrl.clkCntWidth(
+    clkRate=clkRate,
+    vgaTimingInfo=vgaTimingInfo
+  )
   //--------
   //val fifo = AsyncReadFifo(
   //  dataType=Rgb(rgbConfig),
@@ -313,6 +361,8 @@ case class LcvVgaCtrl(
   val clkCntP1Width = clkCntWidth + 1
   val clkCntP1 = UInt(clkCntP1Width bits)
   clkCntP1 := clkCnt.resized + U(f"$clkCntP1Width'd1")
+  misc.clkCnt := clkCnt
+  misc.nextClkCnt := nextClkCnt
 
   // Implement wrap-around for the clock counter
   when (clkCntP1 < cpp) {
@@ -548,6 +598,7 @@ case class LcvVgaCtrl(
 //--------
 
 case class LcvVgaCtrlNoFifoIo(
+  clkRate: Double,
   rgbConfig: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
 ) extends Bundle with IMasterSlave {
@@ -559,6 +610,7 @@ case class LcvVgaCtrlNoFifoIo(
   val inpCol = in(Rgb(rgbConfig))
   val phys = out(LcvVgaPhys(rgbConfig=rgbConfig))
   val misc = out(LcvVgaCtrlMiscIo(
+    clkRate=clkRate,
     vgaTimingInfo=vgaTimingInfo,
     fifoDepth=1,
   ))
@@ -584,6 +636,7 @@ case class LcvVgaCtrlNoFifo(
 ) extends Component {
   //--------
   val io = LcvVgaCtrlNoFifoIo(
+    clkRate=clkRate,
     rgbConfig=rgbConfig,
     vgaTimingInfo=vgaTimingInfo,
   )
