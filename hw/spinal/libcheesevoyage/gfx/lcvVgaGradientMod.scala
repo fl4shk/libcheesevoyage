@@ -133,7 +133,10 @@ case class LcvVgaGradient(
     vgaTimingInfo=vgaTimingInfo,
   )
   //when (ctrlIo.misc.fifoAmountCanPop < cpp) 
-  when (ctrlIo.misc.fifoAmountCanPush > (ctrlFifoDepth - cpp)) {
+  when (
+    ctrlIo.push.fire
+    && ctrlIo.misc.fifoAmountCanPush > (ctrlFifoDepth - cpp)
+  ) {
     //rDidFirstAssertValid := True
     //rCtrlPushValid := True
     //dithPushValid := True
