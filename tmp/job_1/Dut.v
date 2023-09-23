@@ -1,6 +1,6 @@
 // Generator : SpinalHDL v1.9.3    git head : 029104c77a54c53f1edda327a3bea333f7d65fd9
 // Component : Dut
-// Git hash  : 362013a33592715f2e304985be27aaa7a2ef094e
+// Git hash  : 29be9f520eb9aa0340e2c1f052b56a3296525839
 
 `timescale 1ns/1ps
 
@@ -313,11 +313,13 @@ module LcvVgaGradient (
   localparam LcvVgaState_back = 2'd2;
   localparam LcvVgaState_visib = 2'd3;
 
+  reg                 rDidFirstAssertValid;
   reg                 rCtrlPushValid;
   reg        [3:0]    rPastDithCol_r;
   reg        [3:0]    rPastDithCol_g;
   reg        [3:0]    rPastDithCol_b;
   wire                io_vgaCtrlIo_push_fire;
+  wire                when_lcvVgaGradientMod_l123;
   wire                when_lcvVgaGradientMod_l129;
   `ifndef SYNTHESIS
   reg [39:0] io_vgaCtrlIo_misc_hscS_string;
@@ -372,8 +374,9 @@ module LcvVgaGradient (
   assign io_vgaCtrlIo_push_payload_g = io_vidDithIo_outp_col_g;
   assign io_vgaCtrlIo_push_payload_b = io_vidDithIo_outp_col_b;
   assign io_vgaCtrlIo_push_fire = (io_vgaCtrlIo_push_valid && io_vgaCtrlIo_push_ready);
+  assign when_lcvVgaGradientMod_l123 = (io_vgaCtrlIo_push_fire || (! rDidFirstAssertValid));
   always @(*) begin
-    if(io_vgaCtrlIo_push_fire) begin
+    if(when_lcvVgaGradientMod_l123) begin
       io_vidDithIo_push_valid = 1'b1;
     end else begin
       io_vidDithIo_push_valid = 1'b0;
@@ -381,7 +384,7 @@ module LcvVgaGradient (
   end
 
   always @(*) begin
-    if(io_vgaCtrlIo_push_fire) begin
+    if(when_lcvVgaGradientMod_l123) begin
       io_vidDithIo_push_payload_r = 4'b1111;
     end else begin
       io_vidDithIo_push_payload_r = rPastDithCol_r;
@@ -390,7 +393,7 @@ module LcvVgaGradient (
 
   assign when_lcvVgaGradientMod_l129 = (io_vidDithIo_outp_pos_x == 16'h0000);
   always @(*) begin
-    if(io_vgaCtrlIo_push_fire) begin
+    if(when_lcvVgaGradientMod_l123) begin
       if(when_lcvVgaGradientMod_l129) begin
         io_vidDithIo_push_payload_g = 4'b0000;
       end else begin
@@ -402,7 +405,7 @@ module LcvVgaGradient (
   end
 
   always @(*) begin
-    if(io_vgaCtrlIo_push_fire) begin
+    if(when_lcvVgaGradientMod_l123) begin
       io_vidDithIo_push_payload_b = 4'b0000;
     end else begin
       io_vidDithIo_push_payload_b = rPastDithCol_b;
@@ -411,6 +414,7 @@ module LcvVgaGradient (
 
   always @(posedge clk or posedge reset) begin
     if(reset) begin
+      rDidFirstAssertValid <= 1'b0;
       rCtrlPushValid <= 1'b0;
       rPastDithCol_r <= 4'b0000;
       rPastDithCol_g <= 4'b0000;
@@ -420,6 +424,9 @@ module LcvVgaGradient (
       rPastDithCol_r <= io_vidDithIo_push_payload_r;
       rPastDithCol_g <= io_vidDithIo_push_payload_g;
       rPastDithCol_b <= io_vidDithIo_push_payload_b;
+      if(when_lcvVgaGradientMod_l123) begin
+        rDidFirstAssertValid <= 1'b1;
+      end
     end
   end
 

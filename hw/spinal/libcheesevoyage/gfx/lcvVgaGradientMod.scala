@@ -71,7 +71,7 @@ case class LcvVgaGradient(
   //val tempPush = new Stream(Rgb(io.outRgbConfig))
   //ctrlIo.push << tempPush
   //val rCtrlPushValid = Reg(Bool()) init(True)
-  //val rDidFirstAssertValid = Reg(Bool()) init(False)
+  val rDidFirstAssertValid = Reg(Bool()) init(False)
   //ctrlIo.push.valid := rCtrlPushValid
   //ctrlIo.push.valid := True
 
@@ -120,8 +120,8 @@ case class LcvVgaGradient(
   //--------
   // Gradient
   //when (!ctrlIo.misc.fifoFull) 
-  when (ctrlIo.push.fire) {
-    //rDidFirstAssertValid := True
+  when (ctrlIo.push.fire || !rDidFirstAssertValid) {
+    rDidFirstAssertValid := True
     //rCtrlPushValid := True
     dithPushValid := True
     dithCol.r := (default -> True)
