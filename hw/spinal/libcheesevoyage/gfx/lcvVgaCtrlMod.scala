@@ -40,8 +40,8 @@ class LcvVgaStateCnt(
   //cP2 := c.resized + U(f"$cPWidth'd2")
   //val cP1 = c.resized + U(f"$cPWidth'd1")
   //val cP2 = c.resized + U(f"$cPWidth'd2")
-  //val nextS = LcvVgaState()
-  val nextS = s.wrapNext()
+  val nextS = LcvVgaState()
+  //val nextS = s.wrapNext()
   //--------
   def noChangeUpdateNextS(): Unit = {
     nextS := s
@@ -61,11 +61,12 @@ class LcvVgaStateCnt(
 				//sWrapNext := nextState
 				//s := nextState
 				nextS := nextState
+				s := nextState
 				c := c.getZero
 			} otherwise {
 				//m.d.sync += stateCnt.c := (counterP1)
 				////self.noChangeUpdateNextS(m, stateCnt)
-				//nextS := s
+				nextS := s
 				c := counterP1
 			}
 			//s := nextS
@@ -346,7 +347,6 @@ case class LcvVgaCtrl(
   //    rFifoPopReady := True
   //  }
   //}
-  //& misc.nextV
   misc.fifoEmpty := fifoEmpty
   misc.fifoFull := fifoFull
   misc.fifoAmountCanPush := fifoAmountCanPush

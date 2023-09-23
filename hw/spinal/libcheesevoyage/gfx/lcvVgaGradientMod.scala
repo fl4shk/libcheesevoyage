@@ -79,7 +79,7 @@ case class LcvVgaGradient(
   //ctrlIo.push.valid := rCtrlPushValid
   //ctrlIo.push.valid := True
 
-  val rCtrlPushValid = Reg(Bool()) init(False)
+  //val rCtrlPushValid = Reg(Bool()) init(False)
   //ctrlIo.push.valid := rCtrlPushValid
   ctrlIo.push.valid := True
 
@@ -87,12 +87,14 @@ case class LcvVgaGradient(
   //dithIo.push.valid := rDithPushValid
   //rCtrlPushValid := rDithPushValid
   val dithPushValid = dithIo.push.valid
-  dithPushValid := True
+  val rDithPushValid = Reg(Bool()) init(True)
+  dithPushValid := rDithPushValid
+  //dithPushValid := True
   //rCtrlPushValid := dithPushValid
   //--------
   //val col = dithIo.inpCol
-  val rPastDithCol = Reg(Rgb(rgbConfig))
-  rPastDithCol.init(rPastDithCol.getZero)
+  //val rPastDithCol = Reg(Rgb(rgbConfig))
+  //rPastDithCol.init(rPastDithCol.getZero)
   //val initDithColR = UInt(rgbConfig.rWidth bits)
   //initDithColR := (default -> True)
   //rDithCol.r.init(initDithColR)
@@ -100,29 +102,15 @@ case class LcvVgaGradient(
   //rDithCol.b.init(rDithCol.b.getZero)
 
   val dithCol = dithIo.inpCol
-  rPastDithCol := dithCol
+  //rPastDithCol := dithCol
+  val rDithCol = Reg(Rgb(rgbConfig))
+  rDithCol.init(rDithCol.getZero)
+  dithCol := rDithCol
   //dithIo.inpCol := rDithCol
   //val rDithCol = dithIo.inpCol
   //rDithCol := rDithCol
 
   ctrlIo.push.payload := dithIo.outp.col
-
-  //val rDbgPhysCol = Reg(Rgb(physRgbConfig))
-  ////rDbgPhysCol.init(rDbgPhysCol.getZero)
-
-  //val initDbgPhysColR = UInt(physRgbConfig.rWidth bits)
-  //initDbgPhysColR := (default -> True)
-  //rDbgPhysCol.r.init(initDbgPhysColR)
-  //rDbgPhysCol.g.init(rDbgPhysCol.g.getZero)
-  //rDbgPhysCol.b.init(rDbgPhysCol.b.getZero)
-  //ctrlIo.push.payload := rDbgPhysCol
-  //when (ctrlIo.push.fire) {
-  //  when (ctrlIo.misc.hscS !== LcvVgaState.visib) {
-  //    rDbgPhysCol.g := 0x0
-  //  } otherwise {
-  //    rDbgPhysCol.g := rDbgPhysCol.g + 1
-  //  }
-  //}
   //--------
   // Gradient
   //when (!ctrlIo.misc.fifoFull) 
@@ -138,30 +126,36 @@ case class LcvVgaGradient(
     //&& ctrlIo.misc.fifoAmountCanPush > (ctrlFifoDepth - cpp)
     //ctrlIo.misc.nextPixelEn
     //!rCtrlPushValid
+    //!ctrlIo.misc.fifoFull
+    //ctrlIo.misc.pixelEn
+    //&& (ctrlIo.misc.fifoAmountCanPop < 10)
     ctrlIo.push.fire
+    //&& (ctrlIo.misc.fifoAmountCanPop < cpp)
   ) {
     //rDidFirstAssertCtrlValid := True
     //rCtrlPushValid := True
     //dithPushValid := True
-    //rDithPushValid := True
+    rDithPushValid := True
     //rCtrlPushValid := True
-    dithCol.r := (default -> True)
-    //dithCol.r := 0
+    rDithCol.r := (default -> True)
+    //rDithCol.r := 0
     when (dithIo.outp.pos.x === 0x0) {
-      dithCol.g := 0x0
+      rDithCol.g := 0x0
     } otherwise { // when (dithIo.outp.pos > 0x0)
-      dithCol.g := rPastDithCol.g + 1
-      //dithCol.g := 0x3
+      //rDithCol.g := rPastDithCol.g + 1
+      //rDithCol.g := 0x3
+      rDithCol.g := rDithCol.g + 1
     }
-    dithCol.b := 0x0
+    rDithCol.b := 0x0
   } otherwise {
+    rDithPushValid := False
     //when (rCtrlPushValid && ctrlIo.push.fire) {
     //  rCtrlPushValid := False
     //}
     //rCtrlPushValid := False
     //dithPushValid := False
     //rDithPushValid := True
-    dithCol := rPastDithCol
+    //dithCol := rPastDithCol
     //dithCol := dithCol
   }
 
