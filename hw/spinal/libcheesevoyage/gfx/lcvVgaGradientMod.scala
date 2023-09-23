@@ -137,7 +137,8 @@ case class LcvVgaGradient(
     //ctrlIo.push.fire || !rDidFirstAssertCtrlValid
     //&& ctrlIo.misc.fifoAmountCanPush > (ctrlFifoDepth - cpp)
     //ctrlIo.misc.nextPixelEn
-    !rCtrlPushValid
+    //!rCtrlPushValid
+    ctrlIo.push.fire
   ) {
     //rDidFirstAssertCtrlValid := True
     //rCtrlPushValid := True
@@ -154,9 +155,9 @@ case class LcvVgaGradient(
     }
     dithCol.b := 0x0
   } otherwise {
-    when (rCtrlPushValid && ctrlIo.push.fire) {
-      rCtrlPushValid := False
-    }
+    //when (rCtrlPushValid && ctrlIo.push.fire) {
+    //  rCtrlPushValid := False
+    //}
     //rCtrlPushValid := False
     //dithPushValid := False
     //rDithPushValid := True
