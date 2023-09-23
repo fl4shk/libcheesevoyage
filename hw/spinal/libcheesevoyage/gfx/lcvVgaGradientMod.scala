@@ -144,24 +144,38 @@ case class LcvVgaGradient(
     rDbgPhysCol.g := rDbgPhysCol.g + 1
     rDbgPhysCol.b := 0x0
   }
+  //when (!rCtrlPushValid) {
+  //  rCtrlPushValid := True
+  //  //when (!ctrlIo.push.fire) {
+  //  //} otherwise { // when (ctrlIo.push.fire)
+  //  //}
+  //  //when () {
+  //  //}
+  //  //when (ctrlIo.misc.nextVisib && !ctrlIo.misc.visib)
+  //  //when (ctrlIo.misc.nextNextVisib && !ctrlIo.misc.nextVisib) 
+  //  when (ctrlIo.misc.visib && !ctrlIo.misc.pastVisib){
+  //    resetDbgPhysCol()
+  //  } otherwise {
+  //    incrDbgPhysCol()
+  //  }
+  //} otherwise {
+  //  when (ctrlIo.push.fire) {
+  //    rCtrlPushValid := False
+  //  }
+  //}
   when (!rCtrlPushValid) {
     rCtrlPushValid := True
-    //when (!ctrlIo.push.fire) {
-    //} otherwise { // when (ctrlIo.push.fire)
-    //}
-    //when () {
-    //}
-    //when (ctrlIo.misc.nextVisib && !ctrlIo.misc.visib)
-    when (ctrlIo.misc.nextNextVisib && !ctrlIo.misc.nextVisib) {
-      resetDbgPhysCol()
-    } otherwise {
-      incrDbgPhysCol()
-    }
   } otherwise {
     when (ctrlIo.push.fire) {
       rCtrlPushValid := False
     }
   }
+  when (ctrlIo.misc.visib && !ctrlIo.misc.pastVisib) {
+    resetDbgPhysCol()
+  } elsewhen (ctrlIo.push.fire) {
+    incrDbgPhysCol()
+  }
+
   //when (ctrlIo.push.fire) {
   //}
   //when (ctrlIo.push.fire) {
