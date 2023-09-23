@@ -134,8 +134,9 @@ case class LcvVgaGradient(
   )
   //when (ctrlIo.misc.fifoAmountCanPop < cpp) 
   when (
-    ctrlIo.push.fire
+    //ctrlIo.push.fire
     //&& ctrlIo.misc.fifoAmountCanPush > (ctrlFifoDepth - cpp)
+    ctrlIo.misc.nextPixelEn
   ) {
     //rDidFirstAssertValid := True
     //rCtrlPushValid := True

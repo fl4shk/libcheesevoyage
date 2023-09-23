@@ -40,8 +40,8 @@ class LcvVgaStateCnt(
   //cP2 := c.resized + U(f"$cPWidth'd2")
   //val cP1 = c.resized + U(f"$cPWidth'd1")
   //val cP2 = c.resized + U(f"$cPWidth'd2")
-  //val nextS = LcvVgaState()
-  val nextS = s.wrapNext()
+  val nextS = LcvVgaState()
+  //val nextS = s.wrapNext()
   //--------
   def noChangeUpdateNextS(): Unit = {
     nextS := s
@@ -65,8 +65,10 @@ class LcvVgaStateCnt(
 			} otherwise {
 				//m.d.sync += stateCnt.c := (counterP1)
 				////self.noChangeUpdateNextS(m, stateCnt)
+				nextS := s
 				c := counterP1
 			}
+			s := nextS
 
 			//when ((c + 0x2) >= stateSize) {
 			//	//m.d.comb += stateCnt.nextS := (nextState)
@@ -293,7 +295,8 @@ case class LcvVgaCtrl(
 
   // Implement the clock enable
   val clkCnt = Reg(UInt(clkCntWidth bits)) init(0x0)
-  val clkCntNext = clkCnt.wrapNext()
+  //val clkCntNext = clkCnt.wrapNext()
+  val clkCntNext = UInt(clkCntWidth bits)
   // Force this addition to be of width `CLK_CNT_WIDTH + 1` to
   // prevent wrap-around
   val clkCntP1Width = clkCntWidth + 1
@@ -308,6 +311,7 @@ case class LcvVgaCtrl(
     //m.d.sync +=
     clkCntNext := 0x0
   }
+  clkCnt := clkCntNext
   // Since this is an alias, use ALL_CAPS for its name.
   // outp.pixelEn = (clkCnt == 0x0)
   //m.d.comb += 
@@ -323,12 +327,18 @@ case class LcvVgaCtrl(
   //fifoPop.ready := misc.nextPixelEn & misc.nextVisib & ~rPastFifoPopReady
   //fifoPop.ready := misc.nextPixelEn & misc.nextVisib & ~rPastFifoPopReady
   //fifoPop.ready := misc.nextPixelEn & misc.nextVisib
-  //val rFifoPopReady = Reg(Bool()) init(False)
-  fifoPop.ready := (
-    //pixelEnNextCycle
-    //&& (misc.nextDrawPos.x === 0)
-    misc.nextPixelEn & misc.nextVisib
+  val rFifoPopReady = Reg(Bool()) init(False)
+
+  //fifoPop.ready := (
+  //  //pixelEnNextCycle
+  //  //&& (misc.nextDrawPos.x === 0)
+  //  misc.nextPixelEn & misc.nextVisib
+  //)
+  rFifoPopReady := (
+    misc.nextPixelEn && misc.nextVisib
   )
+  fifoPop.ready := rFifoPopReady
+
   //fifoPop.ready := rFifoPopReady
   //rFifoPopReady := False
   //when (fifoPop.valid) {
