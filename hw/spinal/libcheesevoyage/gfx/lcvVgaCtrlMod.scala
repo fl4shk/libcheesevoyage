@@ -306,8 +306,8 @@ case class LcvVgaCtrl(
 
   // Implement the clock enable
   val clkCnt = Reg(UInt(clkCntWidth bits)) init(0x0)
-  //val clkCntNext = clkCnt.wrapNext()
-  val clkCntNext = UInt(clkCntWidth bits)
+  //val nextClkCnt = clkCnt.wrapNext()
+  val nextClkCnt = UInt(clkCntWidth bits)
   // Force this addition to be of width `CLK_CNT_WIDTH + 1` to
   // prevent wrap-around
   val clkCntP1Width = clkCntWidth + 1
@@ -317,12 +317,12 @@ case class LcvVgaCtrl(
   // Implement wrap-around for the clock counter
   when (clkCntP1 < cpp) {
     //m.d.sync += 
-    clkCntNext := clkCntP1(clkCnt.bitsRange)
+    nextClkCnt := clkCntP1(clkCnt.bitsRange)
   } otherwise {
     //m.d.sync +=
-    clkCntNext := 0x0
+    nextClkCnt := 0x0
   }
-  clkCnt := clkCntNext
+  clkCnt := nextClkCnt
   // Since this is an alias, use ALL_CAPS for its name.
   // outp.pixelEn = (clkCnt == 0x0)
   //m.d.comb += 
@@ -331,7 +331,7 @@ case class LcvVgaCtrl(
   pixelEnNextCycle := clkCntP1.resized === cpp
 
   //val nextPixelEn = Bool()
-  misc.nextPixelEn := clkCntNext === 0x0
+  misc.nextPixelEn := nextClkCnt === 0x0
 
   //val rPastFifoPopReady = Reg(Bool()) init(False)
   //rPastFifoPopReady := fifoPop.ready
@@ -340,11 +340,18 @@ case class LcvVgaCtrl(
   //fifoPop.ready := misc.nextPixelEn & misc.nextVisib
   val rFifoPopReady = Reg(Bool()) init(False)
 
+  //fifoPop.ready := (
+  //  //pixelEnNextCycle
+  //  //&& (misc.nextDrawPos.x === 0)
+  //  misc.nextPixelEn && misc.nextVisib
+  //  && !misc.fifoEmpty
+  //)
   fifoPop.ready := (
-    //pixelEnNextCycle
-    //&& (misc.nextDrawPos.x === 0)
-    misc.nextPixelEn && misc.nextVisib
-    && !misc.fifoEmpty
+    //misc.nextPixelEn
+    //misc.nextNextPixelEn && misc.nextNextVisib
+    fifoPop.valid 
+    && (clkCnt === (cpp - 2))
+    && misc.visib
   )
   //rFifoPopReady := (
   //  misc.nextPixelEn && misc.nextVisib

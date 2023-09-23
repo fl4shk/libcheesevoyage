@@ -127,18 +127,28 @@ case class LcvVgaGradient(
     clkRate=clkRate,
     vgaTimingInfo=vgaTimingInfo,
   )
-  when (ctrlIo.misc.nextVisib) {
-    when (!ctrlIo.misc.visib) {
-      //rDbgPhysCol := rDbgPhysCol.getZero
-      rDbgPhysCol.r := (default -> True)
-      rDbgPhysCol.g := 0x0
-      rDbgPhysCol.b := 0x0
-    } elsewhen (ctrlIo.push.fire) {
-      rDbgPhysCol.r := (default -> True)
-      rDbgPhysCol.g := rDbgPhysCol.g + 1
-      rDbgPhysCol.b := 0x0
-    }
+  def initDbgPhysCol = {
+    rDbgPhysCol.r := (default -> True)
+    rDbgPhysCol.g := 0x0
+    rDbgPhysCol.b := 0x0
   }
+  def setDbgPhysCol = {
+    rDbgPhysCol.r := (default -> True)
+    rDbgPhysCol.g := rDbgPhysCol.g + 1
+    rDbgPhysCol.b := 0x0
+  }
+  //when (ctrlIo.misc.nextVisib) {
+  //  when (!ctrlIo.misc.visib) {
+  //    //rDbgPhysCol := rDbgPhysCol.getZero
+  //    rDbgPhysCol.r := (default -> True)
+  //    rDbgPhysCol.g := 0x0
+  //    rDbgPhysCol.b := 0x0
+  //  } elsewhen (ctrlIo.push.fire) {
+  //    rDbgPhysCol.r := (default -> True)
+  //    rDbgPhysCol.g := rDbgPhysCol.g + 1
+  //    rDbgPhysCol.b := 0x0
+  //  }
+  //}
 
   //when (ctrlIo.misc.fifoAmountCanPop < cpp) 
   //val rDidFirstAssertCtrlValid = Reg(Bool()) init(False)
