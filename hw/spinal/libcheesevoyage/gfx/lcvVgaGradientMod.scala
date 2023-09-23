@@ -15,6 +15,7 @@ import scala.math._
 case class LcvVgaGradientIo(
   rgbConfig: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
+  ctrlFifoDepth: Int,
 ) extends Bundle //with IMasterSlave
 {
   //--------
@@ -24,6 +25,7 @@ case class LcvVgaGradientIo(
     LcvVgaCtrlIo(
       rgbConfig=outRgbConfig,
       vgaTimingInfo=vgaTimingInfo,
+      fifoDepth=ctrlFifoDepth,
     )
   )
   val vidDithIo = master(LcvVideoDithererIo(rgbConfig=rgbConfig))
@@ -41,14 +43,17 @@ case class LcvVgaGradientIo(
   //--------
 }
 case class LcvVgaGradient(
+  clkRate: Double,
   rgbConfig: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
+  ctrlFifoDepth: Int,
 ) extends Component {
   //--------
   //val io = slave(LcvVgaGradientIo(rgbConfig=rgbConfig))
   val io = LcvVgaGradientIo(
     rgbConfig=rgbConfig,
     vgaTimingInfo=vgaTimingInfo,
+    ctrlFifoDepth=ctrlFifoDepth,
   )
   val ctrlIo = io.vgaCtrlIo
   val dithIo = io.vidDithIo
@@ -71,18 +76,19 @@ case class LcvVgaGradient(
   //val tempPush = new Stream(Rgb(io.outRgbConfig))
   //ctrlIo.push << tempPush
   //val rCtrlPushValid = Reg(Bool()) init(True)
-  val rDidFirstAssertValid = Reg(Bool()) init(False)
+  //val rDidFirstAssertValid = Reg(Bool()) init(False)
   //ctrlIo.push.valid := rCtrlPushValid
   //ctrlIo.push.valid := True
 
-  val rCtrlPushValid = Reg(Bool()) init(False)
-  ctrlIo.push.valid := rCtrlPushValid
+  //val rCtrlPushValid = Reg(Bool()) init(False)
+  //ctrlIo.push.valid := rCtrlPushValid
+  ctrlIo.push.valid := True
 
   //val rDithPushValid = Reg(Bool()) init(False)
   //dithIo.push.valid := rDithPushValid
   //rCtrlPushValid := rDithPushValid
   val dithPushValid = dithIo.push.valid
-  rCtrlPushValid := dithPushValid
+  //rCtrlPushValid := dithPushValid
   //--------
   //val col = dithIo.inpCol
   val rPastDithCol = Reg(Rgb(rgbConfig))
@@ -120,8 +126,13 @@ case class LcvVgaGradient(
   //--------
   // Gradient
   //when (!ctrlIo.misc.fifoFull) 
-  when (ctrlIo.push.fire || !rDidFirstAssertValid) {
-    rDidFirstAssertValid := True
+  //when (ctrlIo.push.fire) 
+  def cpp = LcvVgaCtrl.cpp(
+    clkRate=clkRate,
+    vgaTimingInfo=vgaTimingInfo,
+  )
+  when (ctrlIo.misc.fifoAmountCanPush > cpp) {
+    //rDidFirstAssertValid := True
     //rCtrlPushValid := True
     dithPushValid := True
     dithCol.r := (default -> True)

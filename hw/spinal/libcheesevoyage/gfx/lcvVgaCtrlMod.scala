@@ -1,4 +1,5 @@
 package libcheesevoyage.gfx
+import libcheesevoyage.general.FifoMiscIo
 import libcheesevoyage.general.AsyncReadFifo
 import libcheesevoyage.general.FifoIo
 import libcheesevoyage.general.Vec2
@@ -132,7 +133,8 @@ object LcvVgaCtrlMiscIo {
   //--------
 }
 case class LcvVgaCtrlMiscIo(
-  vgaTimingInfo: LcvVgaTimingInfo
+  vgaTimingInfo: LcvVgaTimingInfo,
+  fifoDepth: Int,
 ) extends Bundle {
   // VGA physical pins
   //self.outpCol = ColorT()
@@ -157,6 +159,8 @@ case class LcvVgaCtrlMiscIo(
 
   val fifoEmpty = Bool()
   val fifoFull = Bool()
+  val fifoAmountCanPush = UInt(FifoMiscIo.amountWidth(depth=fifoDepth) bits)
+  val fifoAmountCanPop = UInt(FifoMiscIo.amountWidth(depth=fifoDepth) bits)
 
   // Misc.
   val nextPixelEn = Bool()
@@ -174,6 +178,7 @@ case class LcvVgaCtrlMiscIo(
 case class LcvVgaCtrlIo(
   rgbConfig: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
+  fifoDepth: Int,
 ) extends Bundle with IMasterSlave {
   //--------
   val en = in Bool()
@@ -181,7 +186,10 @@ case class LcvVgaCtrlIo(
   //val outp = out(LcvVgaCtrlOutp(rgbConfig=rgbConfig))
   val push = slave Stream(Rgb(rgbConfig))
   val phys = out(LcvVgaPhys(rgbConfig=rgbConfig))
-  val misc = out(LcvVgaCtrlMiscIo(vgaTimingInfo=vgaTimingInfo))
+  val misc = out(LcvVgaCtrlMiscIo(
+    vgaTimingInfo=vgaTimingInfo,
+    fifoDepth=fifoDepth,
+  ))
   //--------
   def asMaster(): Unit = {
     out(en)
@@ -198,6 +206,16 @@ case class LcvVgaCtrlIo(
 //--------
 //  //--------
 //}
+object LcvVgaCtrl {
+  def cpp(
+    clkRate: Double,
+    vgaTimingInfo: LcvVgaTimingInfo,
+  ): Int = {
+    return scala.math.floor(
+      clkRate / vgaTimingInfo.pixelClk
+    ).toInt
+  }
+}
 case class LcvVgaCtrl(
   clkRate: Double,
   rgbConfig: RgbConfig,
@@ -208,6 +226,7 @@ case class LcvVgaCtrl(
   val io = LcvVgaCtrlIo(
     rgbConfig=rgbConfig,
     vgaTimingInfo=vgaTimingInfo,
+    fifoDepth=fifoDepth,
   )
   val push = io.push
   //val inpCol = io.inpCol
@@ -215,11 +234,12 @@ case class LcvVgaCtrl(
   val misc = io.misc
   //--------
   // Clocks per pixel
-  def cpp: Int = {
-    return scala.math.floor(
-      clkRate / vgaTimingInfo.pixelClk
-    ).toInt
-  }
+  //def cpp: Int = {
+  //  return scala.math.floor(
+  //    clkRate / vgaTimingInfo.pixelClk
+  //  ).toInt
+  //}
+  def cpp = LcvVgaCtrl.cpp(clkRate=clkRate, vgaTimingInfo=vgaTimingInfo)
   def htiming: LcvVgaTimingHv = {
     return vgaTimingInfo.htiming
   }
@@ -251,6 +271,8 @@ case class LcvVgaCtrl(
   val fifoPop = fifo.io.pop
   val fifoEmpty = fifo.io.misc.empty
   val fifoFull = fifo.io.misc.full
+  val fifoAmountCanPush = fifo.io.misc.amountCanPush
+  val fifoAmountCanPop = fifo.io.misc.amountCanPop
   fifoPush << push
   //--------
   val tempCol = Rgb(rgbConfig) addAttribute("keep")
@@ -317,6 +339,8 @@ case class LcvVgaCtrl(
   //& misc.nextV
   misc.fifoEmpty := fifoEmpty
   misc.fifoFull := fifoFull
+  misc.fifoAmountCanPush := fifoAmountCanPush
+  misc.fifoAmountCanPop := fifoAmountCanPop
   //--------
   // Implement the State/Counter stuff
   //loc.Tstate = VgaTiming.jkState
@@ -506,7 +530,10 @@ case class LcvVgaCtrlNoFifoIo(
   //val push = slave Stream(Rgb(rgbConfig))
   val inpCol = in(Rgb(rgbConfig))
   val phys = out(LcvVgaPhys(rgbConfig=rgbConfig))
-  val misc = out(LcvVgaCtrlMiscIo(vgaTimingInfo=vgaTimingInfo))
+  val misc = out(LcvVgaCtrlMiscIo(
+    vgaTimingInfo=vgaTimingInfo,
+    fifoDepth=1,
+  ))
   //--------
   def asMaster(): Unit = {
     out(en, inpCol)

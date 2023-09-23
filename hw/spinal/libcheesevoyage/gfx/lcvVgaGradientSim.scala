@@ -14,18 +14,23 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math._
 
 object LcvVgaGradientSim extends App {
-  //val ctrlFifoDepth = 20
-  val ctrlFifoDepth = 16
-  //val ctrlFifoDepth = 100
-  //val fbSize2d = ElabVec2[Int](640, 480)
-  //val fbSize2d = ElabVec2[Int](1, 1)
-  //val fbSize2d = ElabVec2[Int](20, 20)
-  //val rgbConfig = RgbConfig(rWidth=6, gWidth=6, bWidth=6)
-  val rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
-  val physRgbConfig = LcvVideoDithererIo.outRgbConfig(rgbConfig=rgbConfig)
-  //val vgaTimingInfo = LcvVgaTimingInfoMap.map("640x480@60")
-  val vgaTimingInfo=LcvVgaTimingInfo(
-    pixelClk=25.0,
+
+  def clkRate = 100.0
+  //def clkRate = 50.0
+  //def clkRate = 100.7
+  def pixelClk = 25.0
+  //def ctrlFifoDepth = 20
+  def ctrlFifoDepth = 16
+  //def ctrlFifoDepth = 100
+  //def fbSize2d = ElabVec2[Int](640, 480)
+  //def fbSize2d = ElabVec2[Int](1, 1)
+  //def fbSize2d = ElabVec2[Int](20, 20)
+  //def rgbConfig = RgbConfig(rWidth=6, gWidth=6, bWidth=6)
+  def rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
+  def physRgbConfig = LcvVideoDithererIo.outRgbConfig(rgbConfig=rgbConfig)
+  //def vgaTimingInfo = LcvVgaTimingInfoMap.map("640x480@60")
+  def vgaTimingInfo=LcvVgaTimingInfo(
+    pixelClk=pixelClk,
     //pixelClk=25.175,
     htiming=LcvVgaTimingHv(
       //visib=640,
@@ -67,12 +72,13 @@ object LcvVgaGradientSim extends App {
       //  vgaTimingInfo=vgaTimingInfo,
       //))
       val phys = out(LcvVgaPhys(rgbConfig=physRgbConfig))
-      val misc = out(LcvVgaCtrlMiscIo(vgaTimingInfo=vgaTimingInfo))
+      val misc = out(LcvVgaCtrlMiscIo(
+        vgaTimingInfo=vgaTimingInfo,
+        fifoDepth=ctrlFifoDepth,
+      ))
     }
     val vgaCtrl = LcvVgaCtrl(
-      clkRate=100.0,
-      //clkRate=50.0,
-      //clkRate=100.7,
+      clkRate=clkRate,
       rgbConfig=physRgbConfig,
       vgaTimingInfo=vgaTimingInfo,
       //vgaTimingInfo=LcvVgaTimingInfoMap.map("640x480@60"),
@@ -102,8 +108,10 @@ object LcvVgaGradientSim extends App {
       fbSize2d=fbSize2d,
     )
     val vgaGrad = LcvVgaGradient(
+      clkRate=clkRate,
       rgbConfig=rgbConfig,
       vgaTimingInfo=vgaTimingInfo,
+      ctrlFifoDepth=ctrlFifoDepth,
     )
     //val vgaGrad = LcvVgaGradientNoDith(
     //  rgbConfig=physRgbConfig,
