@@ -121,6 +121,7 @@ case class LcvVgaGradient(
   )
   //when (ctrlIo.misc.fifoAmountCanPop < cpp) 
   //val rDidFirstAssertCtrlValid = Reg(Bool()) init(False)
+  val didInit = Reg(Bool()) init(False)
   when (
     //ctrlIo.push.fire || !rDidFirstAssertCtrlValid
     //&& ctrlIo.misc.fifoAmountCanPush > (ctrlFifoDepth - cpp)
@@ -130,9 +131,9 @@ case class LcvVgaGradient(
     //ctrlIo.misc.pixelEn
     //&& (ctrlIo.misc.fifoAmountCanPop < 10)
     ctrlIo.push.fire
-    && (
-      ctrlIo.misc.fifoAmountCanPush < (ctrlFifoDepth - 4)
-    )
+    //&& (
+    //  ctrlIo.misc.fifoAmountCanPush > (ctrlFifoDepth - 4)
+    //)
     //&& (ctrlIo.misc.fifoAmountCanPop < cpp)
   ) {
     //rDidFirstAssertCtrlValid := True
@@ -142,7 +143,11 @@ case class LcvVgaGradient(
     //rCtrlPushValid := True
     rDithCol.r := (default -> True)
     //rDithCol.r := 0
-    when (dithIo.outp.pos.x === 0x0) {
+    when (
+      (dithIo.outp.pos.x === 0x0)
+      || !didInit
+    ) {
+      didInit := True
       rDithCol.g := 0x0
     } otherwise { // when (dithIo.outp.pos > 0x0)
       //rDithCol.g := rPastDithCol.g + 1
