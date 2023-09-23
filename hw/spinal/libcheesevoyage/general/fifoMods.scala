@@ -232,7 +232,7 @@ case class Fifo[
     //tempNextHead := nextHead.resized
     //nextAmountCanPop := tempNextHead - tempNextTail
     nextAmountCanPop := Mux(
-      rHead > rTail,
+      rHead >= rTail,
       rHead - rTail,
       U(f"$amountWidth'd$depth") + (rHead - rTail),
     )
@@ -691,7 +691,7 @@ case class AsyncReadFifo[
     //  U(f"$amountWidth'd$depth") + (tempNextHead - tempNextTail),
     //)
     nextAmountCanPop := Mux(
-      rHead > rTail,
+      rHead >= rTail,
       rHead - rTail,
       U(f"$amountWidth'd$depth") + (rHead - rTail),
     )
