@@ -391,7 +391,7 @@ case class LcvVgaCtrl(
   //fifoPop.ready := misc.nextPixelEn & misc.nextVisib & ~rPastFifoPopReady
   //fifoPop.ready := misc.nextPixelEn & misc.nextVisib & ~rPastFifoPopReady
   //fifoPop.ready := misc.nextPixelEn & misc.nextVisib
-  val rFifoPopReady = Reg(Bool()) init(False)
+  //val rFifoPopReady = Reg(Bool()) init(False)
 
   //fifoPop.ready := (
   //  //pixelEnNextCycle
@@ -400,8 +400,12 @@ case class LcvVgaCtrl(
   //  && !misc.fifoEmpty
   //)
   //fifoPop.ready 
-  fifoPop.ready := rFifoPopReady
-  misc.fifoPopReady := rFifoPopReady
+  //fifoPop.ready := rFifoPopReady
+  //misc.fifoPopReady := rFifoPopReady
+  fifoPop.ready := (
+    misc.pixelEn && misc.visib && !fifoEmpty
+  )
+  misc.fifoPopReady := fifoPop.ready
   misc.nextNextPixelEn := clkCntP1 === cpp - 2
   misc.nextNextVisib := (
     (
@@ -421,18 +425,18 @@ case class LcvVgaCtrl(
     )
     //|| misc.visib
   )
-  rFifoPopReady := (
-  //fifoPop.ready 
-    //misc.nextPixelEn
-    //misc.nextNextPixelEn && misc.nextNextVisib
-    //fifoPop.valid 
-    //(clkCnt === (cpp - 3))
-    //(nextClkCnt === (cpp - 3))
-    //(nextClkCnt === cpp - 1)
-    //(clkCntP1 === cpp)
-    misc.nextNextPixelEn
-    && misc.nextNextVisib
-  )
+  //rFifoPopReady := (
+  ////fifoPop.ready 
+  //  //misc.nextPixelEn
+  //  //misc.nextNextPixelEn && misc.nextNextVisib
+  //  //fifoPop.valid 
+  //  //(clkCnt === (cpp - 3))
+  //  //(nextClkCnt === (cpp - 3))
+  //  //(nextClkCnt === cpp - 1)
+  //  //(clkCntP1 === cpp)
+  //  misc.nextNextPixelEn
+  //  && misc.nextNextVisib
+  //)
   //rFifoPopReady := (
   //  misc.nextPixelEn && misc.nextVisib
   //)
