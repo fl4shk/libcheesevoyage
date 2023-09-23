@@ -226,15 +226,20 @@ case class Fifo[
     nextAmountCanPush := (
       U(f"$amountWidth'd$depth") - nextAmountCanPop
     )
-    //val tempNextTail = UInt(amountWidth bits)
-    //tempNextTail := nextTail.resized
-    //val tempNextHead = UInt(amountWidth bits)
-    //tempNextHead := nextHead.resized
+    val tempNextTail = UInt(amountWidth bits)
+    tempNextTail := nextTail.resized
+    val tempNextHead = UInt(amountWidth bits)
+    tempNextHead := nextHead.resized
     //nextAmountCanPop := tempNextHead - tempNextTail
+    //nextAmountCanPop := Mux(
+    //  rHead >= rTail,
+    //  rHead - rTail,
+    //  U(f"$amountWidth'd$depth") + (rHead - rTail),
+    //)
     nextAmountCanPop := Mux(
       rHead >= rTail,
       rHead - rTail,
-      U(f"$amountWidth'd$depth") + (rHead - rTail),
+      U(f"$amountWidth'd$depth") - (rTail - rHead),
     )
     //misc.amountCanPush := rAmountCanPush
     //misc.amountCanPop := rAmountCanPop
@@ -693,7 +698,7 @@ case class AsyncReadFifo[
     nextAmountCanPop := Mux(
       rHead >= rTail,
       rHead - rTail,
-      U(f"$amountWidth'd$depth") + (rHead - rTail),
+      U(f"$amountWidth'd$depth") - (rTail - rHead),
     )
     //misc.amountCanPush := rAmountCanPush
     //misc.amountCanPop := rAmountCanPop
