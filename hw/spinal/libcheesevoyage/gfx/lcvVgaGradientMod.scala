@@ -78,19 +78,24 @@ case class LcvVgaGradient(
   val rCtrlPushValid = Reg(Bool()) init(False)
   ctrlIo.push.valid := rCtrlPushValid
 
-  val rDithPushValid = Reg(Bool()) init(False)
-  dithIo.push.valid := rDithPushValid
-  rCtrlPushValid := rDithPushValid
+  //val rDithPushValid = Reg(Bool()) init(False)
+  //dithIo.push.valid := rDithPushValid
+  //rCtrlPushValid := rDithPushValid
+  val dithPushValid = dithIo.push.valid
+  rCtrlPushValid := dithPushValid
   //--------
   //val col = dithIo.inpCol
-  val rDithCol = Reg(Rgb(rgbConfig))
-  val initDithColR = UInt(rgbConfig.rWidth bits)
-  initDithColR := (default -> True)
-  rDithCol.r.init(initDithColR)
-  rDithCol.g.init(rDithCol.g.getZero)
-  rDithCol.b.init(rDithCol.b.getZero)
+  val rPastDithCol = Reg(Rgb(rgbConfig))
+  rPastDithCol.init(rPastDithCol.getZero)
+  //val initDithColR = UInt(rgbConfig.rWidth bits)
+  //initDithColR := (default -> True)
+  //rDithCol.r.init(initDithColR)
+  //rDithCol.g.init(rDithCol.g.getZero)
+  //rDithCol.b.init(rDithCol.b.getZero)
 
-  dithIo.inpCol := rDithCol
+  val dithCol = dithIo.inpCol
+  rPastDithCol := dithCol
+  //dithIo.inpCol := rDithCol
   //val rDithCol = dithIo.inpCol
   //rDithCol := rDithCol
 
@@ -114,28 +119,25 @@ case class LcvVgaGradient(
   //}
   //--------
   // Gradient
-  //when (ctrlIo.push.fire || !rDidFirstAssertValid) 
-  //when (ctrlIo.push.fire)
   //when (!ctrlIo.misc.fifoFull) 
-
-  //when (ctrlIo.push.fire)
-  when (!ctrlIo.misc.fifoFull) {
+  when (ctrlIo.push.fire) {
     //rDidFirstAssertValid := True
     //rCtrlPushValid := True
-    rDithPushValid := True
-    rDithCol.r := (default -> True)
-    //rDithCol.r := 0
+    dithPushValid := True
+    dithCol.r := (default -> True)
+    //dithCol.r := 0
     when (dithIo.outp.pos.x === 0x0) {
-      rDithCol.g := 0x0
+      dithCol.g := 0x0
     } otherwise { // when (dithIo.outp.pos > 0x0)
-      rDithCol.g := rDithCol.g + 1
-      //rDithCol.g := 0x3
+      dithCol.g := rPastDithCol.g + 1
+      //dithCol.g := 0x3
     }
-    rDithCol.b := 0x0
+    dithCol.b := 0x0
   } otherwise {
     //rCtrlPushValid := False
-    rDithPushValid := False
-    //rDithCol := rDithCol
+    dithPushValid := False
+    dithCol := rPastDithCol
+    //dithCol := dithCol
   }
 
   //when (tempPush.fire) {
