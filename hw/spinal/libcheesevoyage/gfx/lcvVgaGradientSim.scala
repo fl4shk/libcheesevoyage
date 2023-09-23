@@ -42,7 +42,7 @@ object LcvVgaGradientSim extends App {
       //visib=1 << 4,
       front=1,
       sync=1,
-      back=1,
+      back=8,
     ),
     vtiming=LcvVgaTimingHv(
       //visib=480,
@@ -54,7 +54,7 @@ object LcvVgaGradientSim extends App {
       //visib=1 << 4,
       front=1,
       sync=1,
-      back=1,
+      back=8,
     ),
   )
   val fbSize2d = vgaTimingInfo.fbSize2d

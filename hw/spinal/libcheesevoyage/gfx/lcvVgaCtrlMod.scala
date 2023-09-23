@@ -399,18 +399,34 @@ case class LcvVgaCtrl(
   //fifoPop.ready 
   fifoPop.ready := rFifoPopReady
   rFifoPopReady := (
+  //fifoPop.ready 
     //misc.nextPixelEn
     //misc.nextNextPixelEn && misc.nextNextVisib
     //fifoPop.valid 
     //(clkCnt === (cpp - 3))
-    //&& 
-    (
+    //(nextClkCnt === (cpp - 3))
+    //(nextClkCnt === cpp - 1)
+    //(clkCntP1 === cpp)
+    clkCntP1 === cpp - 2
+    && (
       (
-        ((misc.hscC + 3) === vgaTimingInfo.htiming.sync)
-        && (misc.hscS === LcvVgaState.sync)
-        && ((misc.vscC + 3) === vgaTimingInfo.vtiming.sync)
-        && (misc.vscS === LcvVgaState.sync)
-      ) || misc.visib
+        (
+          (
+            (misc.hscC + 1 === vgaTimingInfo.htiming.back)
+            && (misc.hscS === LcvVgaState.back)
+          ) || (
+            misc.hscS === LcvVgaState.visib
+          )
+        ) && (
+          //(
+          //  ((misc.vscC + 2) >= vgaTimingInfo.vtiming.back)
+          //  && (misc.vscS === LcvVgaState.back)
+          //)
+          //||
+          misc.vscS === LcvVgaState.visib
+        )
+      )
+      //|| misc.visib
     )
   )
   //rFifoPopReady := (
