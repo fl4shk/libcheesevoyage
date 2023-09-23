@@ -120,9 +120,9 @@ case class LcvVgaGradient(
     rDithPushValid := True
     rDithCol.r := (default -> True)
     //rDithCol.r := 0
-    when (dithIo.outp.nextPos.x === 0x0) {
+    when (dithIo.outp.pos.x === 0x0) {
       rDithCol.g := 0x0
-    } otherwise { // when (dithIo.outp.nextPos > 0x0)
+    } otherwise { // when (dithIo.outp.pos > 0x0)
       rDithCol.g := rDithCol.g + 1
       //rDithCol.g := 0x3
     }

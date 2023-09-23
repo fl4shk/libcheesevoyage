@@ -27,26 +27,26 @@ object LcvVgaGradientSim extends App {
     pixelClk=25.0,
     //pixelClk=25.175,
     htiming=LcvVgaTimingHv(
-      //visib=640,
-      //front=16,
-      //sync=96,
-      //back=48
-      //visib=8,
-      visib=1 << 6,
-      front=3,
-      sync=3,
-      back=3,
+      visib=640,
+      front=16,
+      sync=96,
+      back=48
+      ////visib=8,
+      //visib=1 << 6,
+      //front=3,
+      //sync=3,
+      //back=3,
     ),
     vtiming=LcvVgaTimingHv(
-      //visib=480,
-      //front=10,
-      //sync=2,
-      //back=33
-      //visib=8,
-      visib=1 << 6,
-      front=3,
-      sync=3,
-      back=3,
+      visib=480,
+      front=10,
+      sync=2,
+      back=33
+      ////visib=8,
+      //visib=1 << 6,
+      //front=3,
+      //sync=3,
+      //back=3,
     ),
   )
   val fbSize2d = vgaTimingInfo.fbSize2d
