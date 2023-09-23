@@ -95,11 +95,13 @@ case class LcvVgaGradient(
   //val col = dithIo.inpCol
   //val rPastDithCol = Reg(Rgb(rgbConfig))
   //rPastDithCol.init(rPastDithCol.getZero)
-  //val initDithColR = UInt(rgbConfig.rWidth bits)
-  //initDithColR := (default -> True)
-  //rDithCol.r.init(initDithColR)
-  //rDithCol.g.init(rDithCol.g.getZero)
-  //rDithCol.b.init(rDithCol.b.getZero)
+  val rDithCol = Reg(Rgb(rgbConfig))
+  val initDithColR = UInt(rgbConfig.rWidth bits)
+  initDithColR := (default -> True)
+  rDithCol.r.init(initDithColR)
+  rDithCol.g.init(rDithCol.g.getZero)
+  rDithCol.b.init(rDithCol.b.getZero)
+  dithIo.inpCol := rDithCol
 
   //val dithCol = dithIo.inpCol
   ////rPastDithCol := dithCol
