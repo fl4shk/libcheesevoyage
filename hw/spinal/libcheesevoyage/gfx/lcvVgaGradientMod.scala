@@ -120,9 +120,9 @@ case class LcvVgaGradient(
 
   //ctrlIo.push.payload := dithIo.outp.col
   //--------
-  //val rCtrlPushValid = Reg(Bool()) init(False)
-  //ctrlIo.push.valid := rCtrlPushValid
-  ctrlIo.push.valid := True
+  val rCtrlPushValid = Reg(Bool()) init(False)
+  ctrlIo.push.valid := rCtrlPushValid
+  //ctrlIo.push.valid := True
   val rDbgPhysCol = Reg(Rgb(io.outRgbConfig))
   rDbgPhysCol.init(rDbgPhysCol.getZero)
   ctrlIo.push.payload := rDbgPhysCol
@@ -186,9 +186,17 @@ case class LcvVgaGradient(
     (ctrlIo.misc.pastVisib && !pastPastVisib)
     || !ctrlIo.misc.pastVisib
   ) {
+    rCtrlPushValid := False
     resetDbgPhysCol()
   } otherwise {
-    when (ctrlIo.push.fire) {
+    //when (!rCtrlPushValid) {
+    //  rCtrlPushValid
+    //} otherwise {
+    //}
+    when (!ctrlIo.push.fire) {
+      rCtrlPushValid := True
+    } otherwise { // when (ctrlIo.push.fire)
+      rCtrlPushValid := False
       incrDbgPhysCol()
     }
   }
