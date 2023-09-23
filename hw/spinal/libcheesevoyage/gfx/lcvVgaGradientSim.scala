@@ -20,33 +20,35 @@ object LcvVgaGradientSim extends App {
   //val fbSize2d = ElabVec2[Int](640, 480)
   //val fbSize2d = ElabVec2[Int](1, 1)
   //val fbSize2d = ElabVec2[Int](20, 20)
-  val rgbConfig = RgbConfig(rWidth=6, gWidth=6, bWidth=6)
+  //val rgbConfig = RgbConfig(rWidth=6, gWidth=6, bWidth=6)
+  val rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
   val physRgbConfig = LcvVideoDithererIo.outRgbConfig(rgbConfig=rgbConfig)
   //val vgaTimingInfo = LcvVgaTimingInfoMap.map("640x480@60")
   val vgaTimingInfo=LcvVgaTimingInfo(
     pixelClk=25.0,
     //pixelClk=25.175,
     htiming=LcvVgaTimingHv(
-      visib=640,
-      front=16,
-      sync=96,
-      back=48
-      ////visib=8,
+      //visib=640,
+      //front=16,
+      //sync=96,
+      //back=48
+      //visib=8,
       //visib=1 << 6,
-      //front=3,
-      //sync=3,
-      //back=3,
+      visib=1 << 4,
+      front=1,
+      sync=1,
+      back=1,
     ),
     vtiming=LcvVgaTimingHv(
-      visib=480,
-      front=10,
-      sync=2,
-      back=33
-      ////visib=8,
-      //visib=1 << 6,
-      //front=3,
-      //sync=3,
-      //back=3,
+      //visib=480,
+      //front=10,
+      //sync=2,
+      //back=33
+      //visib=8,
+      visib=1 << 4,
+      front=1,
+      sync=1,
+      back=1,
     ),
   )
   val fbSize2d = vgaTimingInfo.fbSize2d

@@ -1,20 +1,20 @@
 // Generator : SpinalHDL v1.9.3    git head : 029104c77a54c53f1edda327a3bea333f7d65fd9
 // Component : Dut
-// Git hash  : d2bfc91a07601e009fce32e9426d906ae429585b
+// Git hash  : 02fbc3e9e3e31f74d965f36b48ebcc9642e27c39
 
 `timescale 1ns/1ps
 
 module Dut (
-  output     [3:0]    io_phys_col_r,
-  output     [3:0]    io_phys_col_g,
-  output     [3:0]    io_phys_col_b,
+  output     [1:0]    io_phys_col_r,
+  output     [1:0]    io_phys_col_g,
+  output     [1:0]    io_phys_col_b,
   output              io_phys_hsync,
   output              io_phys_vsync,
   output     [1:0]    io_misc_hscS,
-  output     [9:0]    io_misc_hscC,
+  output     [4:0]    io_misc_hscC,
   output     [1:0]    io_misc_hscNextS,
   output     [1:0]    io_misc_vscS,
-  output     [8:0]    io_misc_vscC,
+  output     [4:0]    io_misc_vscC,
   output     [1:0]    io_misc_vscNextS,
   output              io_misc_fifoEmpty,
   output              io_misc_fifoFull,
@@ -37,22 +37,22 @@ module Dut (
   localparam LcvVgaState_back = 2'd2;
   localparam LcvVgaState_visib = 2'd3;
 
-  wire       [3:0]    vgaGrad_io_vgaCtrlIo_phys_col_r;
-  wire       [3:0]    vgaGrad_io_vgaCtrlIo_phys_col_g;
-  wire       [3:0]    vgaGrad_io_vgaCtrlIo_phys_col_b;
+  wire       [1:0]    vgaGrad_io_vgaCtrlIo_phys_col_r;
+  wire       [1:0]    vgaGrad_io_vgaCtrlIo_phys_col_g;
+  wire       [1:0]    vgaGrad_io_vgaCtrlIo_phys_col_b;
   wire                vgaGrad_io_vgaCtrlIo_phys_hsync;
   wire                vgaGrad_io_vgaCtrlIo_phys_vsync;
   wire                vgaCtrl_io_push_ready;
-  wire       [3:0]    vgaCtrl_io_phys_col_r;
-  wire       [3:0]    vgaCtrl_io_phys_col_g;
-  wire       [3:0]    vgaCtrl_io_phys_col_b;
+  wire       [1:0]    vgaCtrl_io_phys_col_r;
+  wire       [1:0]    vgaCtrl_io_phys_col_g;
+  wire       [1:0]    vgaCtrl_io_phys_col_b;
   wire                vgaCtrl_io_phys_hsync;
   wire                vgaCtrl_io_phys_vsync;
   wire       [1:0]    vgaCtrl_io_misc_hscS;
-  wire       [9:0]    vgaCtrl_io_misc_hscC;
+  wire       [4:0]    vgaCtrl_io_misc_hscC;
   wire       [1:0]    vgaCtrl_io_misc_hscNextS;
   wire       [1:0]    vgaCtrl_io_misc_vscS;
-  wire       [8:0]    vgaCtrl_io_misc_vscC;
+  wire       [4:0]    vgaCtrl_io_misc_vscC;
   wire       [1:0]    vgaCtrl_io_misc_vscNextS;
   wire                vgaCtrl_io_misc_fifoEmpty;
   wire                vgaCtrl_io_misc_fifoFull;
@@ -74,18 +74,18 @@ module Dut (
   wire       [15:0]   vidDith_io_outp_pos_y;
   wire       [15:0]   vidDith_io_outp_pastPos_x;
   wire       [15:0]   vidDith_io_outp_pastPos_y;
-  wire       [3:0]    vidDith_io_outp_col_r;
-  wire       [3:0]    vidDith_io_outp_col_g;
-  wire       [3:0]    vidDith_io_outp_col_b;
+  wire       [1:0]    vidDith_io_outp_col_r;
+  wire       [1:0]    vidDith_io_outp_col_g;
+  wire       [1:0]    vidDith_io_outp_col_b;
   wire                vgaGrad_io_vgaCtrlIo_en;
   wire                vgaGrad_io_vgaCtrlIo_push_valid;
-  wire       [3:0]    vgaGrad_io_vgaCtrlIo_push_payload_r;
-  wire       [3:0]    vgaGrad_io_vgaCtrlIo_push_payload_g;
-  wire       [3:0]    vgaGrad_io_vgaCtrlIo_push_payload_b;
+  wire       [1:0]    vgaGrad_io_vgaCtrlIo_push_payload_r;
+  wire       [1:0]    vgaGrad_io_vgaCtrlIo_push_payload_g;
+  wire       [1:0]    vgaGrad_io_vgaCtrlIo_push_payload_b;
   wire                vgaGrad_io_vidDithIo_push_valid;
-  wire       [5:0]    vgaGrad_io_vidDithIo_push_payload_r;
-  wire       [5:0]    vgaGrad_io_vidDithIo_push_payload_g;
-  wire       [5:0]    vgaGrad_io_vidDithIo_push_payload_b;
+  wire       [3:0]    vgaGrad_io_vidDithIo_push_payload_r;
+  wire       [3:0]    vgaGrad_io_vidDithIo_push_payload_g;
+  wire       [3:0]    vgaGrad_io_vidDithIo_push_payload_b;
   `ifndef SYNTHESIS
   reg [39:0] io_misc_hscS_string;
   reg [39:0] io_misc_hscNextS_string;
@@ -98,19 +98,19 @@ module Dut (
     .io_en                 (vgaGrad_io_vgaCtrlIo_en                 ), //i
     .io_push_valid         (vgaGrad_io_vgaCtrlIo_push_valid         ), //i
     .io_push_ready         (vgaCtrl_io_push_ready                   ), //o
-    .io_push_payload_r     (vgaGrad_io_vgaCtrlIo_push_payload_r[3:0]), //i
-    .io_push_payload_g     (vgaGrad_io_vgaCtrlIo_push_payload_g[3:0]), //i
-    .io_push_payload_b     (vgaGrad_io_vgaCtrlIo_push_payload_b[3:0]), //i
-    .io_phys_col_r         (vgaCtrl_io_phys_col_r[3:0]              ), //o
-    .io_phys_col_g         (vgaCtrl_io_phys_col_g[3:0]              ), //o
-    .io_phys_col_b         (vgaCtrl_io_phys_col_b[3:0]              ), //o
+    .io_push_payload_r     (vgaGrad_io_vgaCtrlIo_push_payload_r[1:0]), //i
+    .io_push_payload_g     (vgaGrad_io_vgaCtrlIo_push_payload_g[1:0]), //i
+    .io_push_payload_b     (vgaGrad_io_vgaCtrlIo_push_payload_b[1:0]), //i
+    .io_phys_col_r         (vgaCtrl_io_phys_col_r[1:0]              ), //o
+    .io_phys_col_g         (vgaCtrl_io_phys_col_g[1:0]              ), //o
+    .io_phys_col_b         (vgaCtrl_io_phys_col_b[1:0]              ), //o
     .io_phys_hsync         (vgaCtrl_io_phys_hsync                   ), //o
     .io_phys_vsync         (vgaCtrl_io_phys_vsync                   ), //o
     .io_misc_hscS          (vgaCtrl_io_misc_hscS[1:0]               ), //o
-    .io_misc_hscC          (vgaCtrl_io_misc_hscC[9:0]               ), //o
+    .io_misc_hscC          (vgaCtrl_io_misc_hscC[4:0]               ), //o
     .io_misc_hscNextS      (vgaCtrl_io_misc_hscNextS[1:0]           ), //o
     .io_misc_vscS          (vgaCtrl_io_misc_vscS[1:0]               ), //o
-    .io_misc_vscC          (vgaCtrl_io_misc_vscC[8:0]               ), //o
+    .io_misc_vscC          (vgaCtrl_io_misc_vscC[4:0]               ), //o
     .io_misc_vscNextS      (vgaCtrl_io_misc_vscNextS[1:0]           ), //o
     .io_misc_fifoEmpty     (vgaCtrl_io_misc_fifoEmpty               ), //o
     .io_misc_fifoFull      (vgaCtrl_io_misc_fifoFull                ), //o
@@ -130,9 +130,9 @@ module Dut (
   );
   LcvVideoDitherer vidDith (
     .io_push_valid     (vgaGrad_io_vidDithIo_push_valid         ), //i
-    .io_push_payload_r (vgaGrad_io_vidDithIo_push_payload_r[5:0]), //i
-    .io_push_payload_g (vgaGrad_io_vidDithIo_push_payload_g[5:0]), //i
-    .io_push_payload_b (vgaGrad_io_vidDithIo_push_payload_b[5:0]), //i
+    .io_push_payload_r (vgaGrad_io_vidDithIo_push_payload_r[3:0]), //i
+    .io_push_payload_g (vgaGrad_io_vidDithIo_push_payload_g[3:0]), //i
+    .io_push_payload_b (vgaGrad_io_vidDithIo_push_payload_b[3:0]), //i
     .io_outp_frameCnt  (vidDith_io_outp_frameCnt[1:0]           ), //o
     .io_outp_nextPos_x (vidDith_io_outp_nextPos_x[15:0]         ), //o
     .io_outp_nextPos_y (vidDith_io_outp_nextPos_y[15:0]         ), //o
@@ -140,9 +140,9 @@ module Dut (
     .io_outp_pos_y     (vidDith_io_outp_pos_y[15:0]             ), //o
     .io_outp_pastPos_x (vidDith_io_outp_pastPos_x[15:0]         ), //o
     .io_outp_pastPos_y (vidDith_io_outp_pastPos_y[15:0]         ), //o
-    .io_outp_col_r     (vidDith_io_outp_col_r[3:0]              ), //o
-    .io_outp_col_g     (vidDith_io_outp_col_g[3:0]              ), //o
-    .io_outp_col_b     (vidDith_io_outp_col_b[3:0]              ), //o
+    .io_outp_col_r     (vidDith_io_outp_col_r[1:0]              ), //o
+    .io_outp_col_g     (vidDith_io_outp_col_g[1:0]              ), //o
+    .io_outp_col_b     (vidDith_io_outp_col_b[1:0]              ), //o
     .clk               (clk                                     ), //i
     .reset             (reset                                   )  //i
   );
@@ -150,19 +150,19 @@ module Dut (
     .io_vgaCtrlIo_en                 (vgaGrad_io_vgaCtrlIo_en                 ), //o
     .io_vgaCtrlIo_push_valid         (vgaGrad_io_vgaCtrlIo_push_valid         ), //o
     .io_vgaCtrlIo_push_ready         (vgaCtrl_io_push_ready                   ), //i
-    .io_vgaCtrlIo_push_payload_r     (vgaGrad_io_vgaCtrlIo_push_payload_r[3:0]), //o
-    .io_vgaCtrlIo_push_payload_g     (vgaGrad_io_vgaCtrlIo_push_payload_g[3:0]), //o
-    .io_vgaCtrlIo_push_payload_b     (vgaGrad_io_vgaCtrlIo_push_payload_b[3:0]), //o
-    .io_vgaCtrlIo_phys_col_r         (vgaGrad_io_vgaCtrlIo_phys_col_r[3:0]    ), //i
-    .io_vgaCtrlIo_phys_col_g         (vgaGrad_io_vgaCtrlIo_phys_col_g[3:0]    ), //i
-    .io_vgaCtrlIo_phys_col_b         (vgaGrad_io_vgaCtrlIo_phys_col_b[3:0]    ), //i
+    .io_vgaCtrlIo_push_payload_r     (vgaGrad_io_vgaCtrlIo_push_payload_r[1:0]), //o
+    .io_vgaCtrlIo_push_payload_g     (vgaGrad_io_vgaCtrlIo_push_payload_g[1:0]), //o
+    .io_vgaCtrlIo_push_payload_b     (vgaGrad_io_vgaCtrlIo_push_payload_b[1:0]), //o
+    .io_vgaCtrlIo_phys_col_r         (vgaGrad_io_vgaCtrlIo_phys_col_r[1:0]    ), //i
+    .io_vgaCtrlIo_phys_col_g         (vgaGrad_io_vgaCtrlIo_phys_col_g[1:0]    ), //i
+    .io_vgaCtrlIo_phys_col_b         (vgaGrad_io_vgaCtrlIo_phys_col_b[1:0]    ), //i
     .io_vgaCtrlIo_phys_hsync         (vgaGrad_io_vgaCtrlIo_phys_hsync         ), //i
     .io_vgaCtrlIo_phys_vsync         (vgaGrad_io_vgaCtrlIo_phys_vsync         ), //i
     .io_vgaCtrlIo_misc_hscS          (vgaCtrl_io_misc_hscS[1:0]               ), //i
-    .io_vgaCtrlIo_misc_hscC          (vgaCtrl_io_misc_hscC[9:0]               ), //i
+    .io_vgaCtrlIo_misc_hscC          (vgaCtrl_io_misc_hscC[4:0]               ), //i
     .io_vgaCtrlIo_misc_hscNextS      (vgaCtrl_io_misc_hscNextS[1:0]           ), //i
     .io_vgaCtrlIo_misc_vscS          (vgaCtrl_io_misc_vscS[1:0]               ), //i
-    .io_vgaCtrlIo_misc_vscC          (vgaCtrl_io_misc_vscC[8:0]               ), //i
+    .io_vgaCtrlIo_misc_vscC          (vgaCtrl_io_misc_vscC[4:0]               ), //i
     .io_vgaCtrlIo_misc_vscNextS      (vgaCtrl_io_misc_vscNextS[1:0]           ), //i
     .io_vgaCtrlIo_misc_fifoEmpty     (vgaCtrl_io_misc_fifoEmpty               ), //i
     .io_vgaCtrlIo_misc_fifoFull      (vgaCtrl_io_misc_fifoFull                ), //i
@@ -178,9 +178,9 @@ module Dut (
     .io_vgaCtrlIo_misc_size_x        (vgaCtrl_io_misc_size_x[15:0]            ), //i
     .io_vgaCtrlIo_misc_size_y        (vgaCtrl_io_misc_size_y[15:0]            ), //i
     .io_vidDithIo_push_valid         (vgaGrad_io_vidDithIo_push_valid         ), //o
-    .io_vidDithIo_push_payload_r     (vgaGrad_io_vidDithIo_push_payload_r[5:0]), //o
-    .io_vidDithIo_push_payload_g     (vgaGrad_io_vidDithIo_push_payload_g[5:0]), //o
-    .io_vidDithIo_push_payload_b     (vgaGrad_io_vidDithIo_push_payload_b[5:0]), //o
+    .io_vidDithIo_push_payload_r     (vgaGrad_io_vidDithIo_push_payload_r[3:0]), //o
+    .io_vidDithIo_push_payload_g     (vgaGrad_io_vidDithIo_push_payload_g[3:0]), //o
+    .io_vidDithIo_push_payload_b     (vgaGrad_io_vidDithIo_push_payload_b[3:0]), //o
     .io_vidDithIo_outp_frameCnt      (vidDith_io_outp_frameCnt[1:0]           ), //i
     .io_vidDithIo_outp_nextPos_x     (vidDith_io_outp_nextPos_x[15:0]         ), //i
     .io_vidDithIo_outp_nextPos_y     (vidDith_io_outp_nextPos_y[15:0]         ), //i
@@ -188,9 +188,9 @@ module Dut (
     .io_vidDithIo_outp_pos_y         (vidDith_io_outp_pos_y[15:0]             ), //i
     .io_vidDithIo_outp_pastPos_x     (vidDith_io_outp_pastPos_x[15:0]         ), //i
     .io_vidDithIo_outp_pastPos_y     (vidDith_io_outp_pastPos_y[15:0]         ), //i
-    .io_vidDithIo_outp_col_r         (vidDith_io_outp_col_r[3:0]              ), //i
-    .io_vidDithIo_outp_col_g         (vidDith_io_outp_col_g[3:0]              ), //i
-    .io_vidDithIo_outp_col_b         (vidDith_io_outp_col_b[3:0]              ), //i
+    .io_vidDithIo_outp_col_r         (vidDith_io_outp_col_r[1:0]              ), //i
+    .io_vidDithIo_outp_col_g         (vidDith_io_outp_col_g[1:0]              ), //i
+    .io_vidDithIo_outp_col_b         (vidDith_io_outp_col_b[1:0]              ), //i
     .clk                             (clk                                     ), //i
     .reset                           (reset                                   )  //i
   );
@@ -264,19 +264,19 @@ module LcvVgaGradient (
   output              io_vgaCtrlIo_en,
   output              io_vgaCtrlIo_push_valid,
   input               io_vgaCtrlIo_push_ready,
-  output     [3:0]    io_vgaCtrlIo_push_payload_r,
-  output     [3:0]    io_vgaCtrlIo_push_payload_g,
-  output     [3:0]    io_vgaCtrlIo_push_payload_b,
-  input      [3:0]    io_vgaCtrlIo_phys_col_r,
-  input      [3:0]    io_vgaCtrlIo_phys_col_g,
-  input      [3:0]    io_vgaCtrlIo_phys_col_b,
+  output     [1:0]    io_vgaCtrlIo_push_payload_r,
+  output     [1:0]    io_vgaCtrlIo_push_payload_g,
+  output     [1:0]    io_vgaCtrlIo_push_payload_b,
+  input      [1:0]    io_vgaCtrlIo_phys_col_r,
+  input      [1:0]    io_vgaCtrlIo_phys_col_g,
+  input      [1:0]    io_vgaCtrlIo_phys_col_b,
   input               io_vgaCtrlIo_phys_hsync,
   input               io_vgaCtrlIo_phys_vsync,
   input      [1:0]    io_vgaCtrlIo_misc_hscS,
-  input      [9:0]    io_vgaCtrlIo_misc_hscC,
+  input      [4:0]    io_vgaCtrlIo_misc_hscC,
   input      [1:0]    io_vgaCtrlIo_misc_hscNextS,
   input      [1:0]    io_vgaCtrlIo_misc_vscS,
-  input      [8:0]    io_vgaCtrlIo_misc_vscC,
+  input      [4:0]    io_vgaCtrlIo_misc_vscC,
   input      [1:0]    io_vgaCtrlIo_misc_vscNextS,
   input               io_vgaCtrlIo_misc_fifoEmpty,
   input               io_vgaCtrlIo_misc_fifoFull,
@@ -292,9 +292,9 @@ module LcvVgaGradient (
   input      [15:0]   io_vgaCtrlIo_misc_size_x,
   input      [15:0]   io_vgaCtrlIo_misc_size_y,
   output              io_vidDithIo_push_valid,
-  output     [5:0]    io_vidDithIo_push_payload_r,
-  output     [5:0]    io_vidDithIo_push_payload_g,
-  output     [5:0]    io_vidDithIo_push_payload_b,
+  output     [3:0]    io_vidDithIo_push_payload_r,
+  output     [3:0]    io_vidDithIo_push_payload_g,
+  output     [3:0]    io_vidDithIo_push_payload_b,
   input      [1:0]    io_vidDithIo_outp_frameCnt,
   input      [15:0]   io_vidDithIo_outp_nextPos_x,
   input      [15:0]   io_vidDithIo_outp_nextPos_y,
@@ -302,9 +302,9 @@ module LcvVgaGradient (
   input      [15:0]   io_vidDithIo_outp_pos_y,
   input      [15:0]   io_vidDithIo_outp_pastPos_x,
   input      [15:0]   io_vidDithIo_outp_pastPos_y,
-  input      [3:0]    io_vidDithIo_outp_col_r,
-  input      [3:0]    io_vidDithIo_outp_col_g,
-  input      [3:0]    io_vidDithIo_outp_col_b,
+  input      [1:0]    io_vidDithIo_outp_col_r,
+  input      [1:0]    io_vidDithIo_outp_col_g,
+  input      [1:0]    io_vidDithIo_outp_col_b,
   input               clk,
   input               reset
 );
@@ -313,13 +313,14 @@ module LcvVgaGradient (
   localparam LcvVgaState_back = 2'd2;
   localparam LcvVgaState_visib = 2'd3;
 
+  reg                 rCtrlPushValid;
   reg                 rDithPushValid;
-  reg        [5:0]    rDithCol_r;
-  reg        [5:0]    rDithCol_g;
-  reg        [5:0]    rDithCol_b;
-  wire       [5:0]    initDithColR;
-  wire                io_vgaCtrlIo_push_fire;
-  wire                when_lcvVgaGradientMod_l123;
+  reg        [3:0]    rDithCol_r;
+  reg        [3:0]    rDithCol_g;
+  reg        [3:0]    rDithCol_b;
+  wire       [3:0]    initDithColR;
+  wire                when_lcvVgaGradientMod_l122;
+  wire                when_lcvVgaGradientMod_l128;
   `ifndef SYNTHESIS
   reg [39:0] io_vgaCtrlIo_misc_hscS_string;
   reg [39:0] io_vgaCtrlIo_misc_hscNextS_string;
@@ -368,33 +369,35 @@ module LcvVgaGradient (
   `endif
 
   assign io_vgaCtrlIo_en = 1'b1;
-  assign io_vgaCtrlIo_push_valid = 1'b1;
+  assign io_vgaCtrlIo_push_valid = rCtrlPushValid;
   assign io_vidDithIo_push_valid = rDithPushValid;
-  assign initDithColR = 6'h3f;
+  assign initDithColR = 4'b1111;
   assign io_vidDithIo_push_payload_r = rDithCol_r;
   assign io_vidDithIo_push_payload_g = rDithCol_g;
   assign io_vidDithIo_push_payload_b = rDithCol_b;
   assign io_vgaCtrlIo_push_payload_r = io_vidDithIo_outp_col_r;
   assign io_vgaCtrlIo_push_payload_g = io_vidDithIo_outp_col_g;
   assign io_vgaCtrlIo_push_payload_b = io_vidDithIo_outp_col_b;
-  assign io_vgaCtrlIo_push_fire = (io_vgaCtrlIo_push_valid && io_vgaCtrlIo_push_ready);
-  assign when_lcvVgaGradientMod_l123 = (io_vidDithIo_outp_pos_x == 16'h0000);
+  assign when_lcvVgaGradientMod_l122 = (! io_vgaCtrlIo_misc_fifoFull);
+  assign when_lcvVgaGradientMod_l128 = (io_vidDithIo_outp_pos_x == 16'h0000);
   always @(posedge clk or posedge reset) begin
     if(reset) begin
+      rCtrlPushValid <= 1'b0;
       rDithPushValid <= 1'b0;
       rDithCol_r <= initDithColR;
-      rDithCol_g <= 6'h00;
-      rDithCol_b <= 6'h00;
+      rDithCol_g <= 4'b0000;
+      rDithCol_b <= 4'b0000;
     end else begin
-      if(io_vgaCtrlIo_push_fire) begin
+      rCtrlPushValid <= rDithPushValid;
+      if(when_lcvVgaGradientMod_l122) begin
         rDithPushValid <= 1'b1;
-        rDithCol_r <= 6'h3f;
-        if(when_lcvVgaGradientMod_l123) begin
-          rDithCol_g <= 6'h00;
+        rDithCol_r <= 4'b1111;
+        if(when_lcvVgaGradientMod_l128) begin
+          rDithCol_g <= 4'b0000;
         end else begin
-          rDithCol_g <= (rDithCol_g + 6'h01);
+          rDithCol_g <= (rDithCol_g + 4'b0001);
         end
-        rDithCol_b <= 6'h00;
+        rDithCol_b <= 4'b0000;
       end else begin
         rDithPushValid <= 1'b0;
       end
@@ -406,9 +409,9 @@ endmodule
 
 module LcvVideoDitherer (
   input               io_push_valid,
-  input      [5:0]    io_push_payload_r,
-  input      [5:0]    io_push_payload_g,
-  input      [5:0]    io_push_payload_b,
+  input      [3:0]    io_push_payload_r,
+  input      [3:0]    io_push_payload_g,
+  input      [3:0]    io_push_payload_b,
   output     [1:0]    io_outp_frameCnt,
   output reg [15:0]   io_outp_nextPos_x,
   output reg [15:0]   io_outp_nextPos_y,
@@ -416,9 +419,9 @@ module LcvVideoDitherer (
   output     [15:0]   io_outp_pos_y,
   output     [15:0]   io_outp_pastPos_x,
   output     [15:0]   io_outp_pastPos_y,
-  output reg [3:0]    io_outp_col_r,
-  output reg [3:0]    io_outp_col_g,
-  output reg [3:0]    io_outp_col_b,
+  output reg [1:0]    io_outp_col_r,
+  output reg [1:0]    io_outp_col_g,
+  output reg [1:0]    io_outp_col_b,
   input               clk,
   input               reset
 );
@@ -431,9 +434,9 @@ module LcvVideoDitherer (
   reg        [1:0]    _zz_chanDelta_6;
   reg        [1:0]    _zz_chanDelta_7;
   reg        [1:0]    _zz_chanDelta_8;
-  wire       [6:0]    _zz_colInPlusDelta_r;
-  wire       [6:0]    _zz_colInPlusDelta_g;
-  wire       [6:0]    _zz_colInPlusDelta_b;
+  wire       [4:0]    _zz_colInPlusDelta_r;
+  wire       [4:0]    _zz_colInPlusDelta_g;
+  wire       [4:0]    _zz_colInPlusDelta_b;
   wire       [1:0]    pattern_0_0_0;
   wire       [1:0]    pattern_0_0_1;
   wire       [1:0]    pattern_0_1_0;
@@ -450,14 +453,14 @@ module LcvVideoDitherer (
   wire       [1:0]    pattern_3_0_1;
   wire       [1:0]    pattern_3_1_0;
   wire       [1:0]    pattern_3_1_1;
-  reg        [3:0]    rPastColOut_r;
-  reg        [3:0]    rPastColOut_g;
-  reg        [3:0]    rPastColOut_b;
+  reg        [1:0]    rPastColOut_r;
+  reg        [1:0]    rPastColOut_g;
+  reg        [1:0]    rPastColOut_b;
   wire       [15:0]   _zz_io_outp_nextPos_x;
   wire       [15:0]   _zz_io_outp_nextPos_y;
-  reg        [5:0]    dicol_r;
-  reg        [5:0]    dicol_g;
-  reg        [5:0]    dicol_b;
+  reg        [3:0]    dicol_r;
+  reg        [3:0]    dicol_g;
+  reg        [3:0]    dicol_b;
   reg        [1:0]    rOutpFrameCnt;
   reg        [15:0]   rOutpPos_x;
   reg        [15:0]   rOutpPos_y;
@@ -465,21 +468,21 @@ module LcvVideoDitherer (
   reg        [15:0]   rOutpPastPos_y;
   wire       [0:0]    _zz_chanDelta;
   wire       [1:0]    chanDelta;
-  reg        [6:0]    colInPlusDelta_r;
-  reg        [6:0]    colInPlusDelta_g;
-  reg        [6:0]    colInPlusDelta_b;
-  wire       [6:0]    tempColInPlusDelta_r;
-  wire       [6:0]    tempColInPlusDelta_g;
-  wire       [6:0]    tempColInPlusDelta_b;
+  reg        [4:0]    colInPlusDelta_r;
+  reg        [4:0]    colInPlusDelta_g;
+  reg        [4:0]    colInPlusDelta_b;
+  wire       [4:0]    tempColInPlusDelta_r;
+  wire       [4:0]    tempColInPlusDelta_g;
+  wire       [4:0]    tempColInPlusDelta_b;
   wire                when_lcvVideoDithererMod_l255;
   wire                when_lcvVideoDithererMod_l265;
   wire                when_lcvVideoDithererMod_l307;
   wire                when_lcvVideoDithererMod_l318;
   wire                when_lcvVideoDithererMod_l329;
 
-  assign _zz_colInPlusDelta_r = {5'd0, chanDelta};
-  assign _zz_colInPlusDelta_g = {5'd0, chanDelta};
-  assign _zz_colInPlusDelta_b = {5'd0, chanDelta};
+  assign _zz_colInPlusDelta_r = {3'd0, chanDelta};
+  assign _zz_colInPlusDelta_g = {3'd0, chanDelta};
+  assign _zz_colInPlusDelta_b = {3'd0, chanDelta};
   assign _zz_chanDelta_2 = io_outp_pos_x[0 : 0];
   always @(*) begin
     case(_zz_chanDelta_2)
@@ -558,7 +561,7 @@ module LcvVideoDitherer (
   assign tempColInPlusDelta_r = {1'd0, io_push_payload_r};
   assign tempColInPlusDelta_g = {1'd0, io_push_payload_g};
   assign tempColInPlusDelta_b = {1'd0, io_push_payload_b};
-  assign when_lcvVideoDithererMod_l255 = (_zz_io_outp_nextPos_x < 16'h0280);
+  assign when_lcvVideoDithererMod_l255 = (_zz_io_outp_nextPos_x < 16'h0010);
   always @(*) begin
     if(when_lcvVideoDithererMod_l255) begin
       io_outp_nextPos_x = _zz_io_outp_nextPos_x;
@@ -579,12 +582,12 @@ module LcvVideoDitherer (
     end
   end
 
-  assign when_lcvVideoDithererMod_l265 = (_zz_io_outp_nextPos_y < 16'h01e0);
+  assign when_lcvVideoDithererMod_l265 = (_zz_io_outp_nextPos_y < 16'h0010);
   always @(*) begin
     if(io_push_valid) begin
       colInPlusDelta_r = (tempColInPlusDelta_r + _zz_colInPlusDelta_r);
     end else begin
-      colInPlusDelta_r = 7'h00;
+      colInPlusDelta_r = 5'h00;
     end
   end
 
@@ -592,7 +595,7 @@ module LcvVideoDitherer (
     if(io_push_valid) begin
       colInPlusDelta_g = (tempColInPlusDelta_g + _zz_colInPlusDelta_g);
     end else begin
-      colInPlusDelta_g = 7'h00;
+      colInPlusDelta_g = 5'h00;
     end
   end
 
@@ -600,52 +603,52 @@ module LcvVideoDitherer (
     if(io_push_valid) begin
       colInPlusDelta_b = (tempColInPlusDelta_b + _zz_colInPlusDelta_b);
     end else begin
-      colInPlusDelta_b = 7'h00;
+      colInPlusDelta_b = 5'h00;
     end
   end
 
-  assign when_lcvVideoDithererMod_l307 = colInPlusDelta_r[6];
+  assign when_lcvVideoDithererMod_l307 = colInPlusDelta_r[4];
   always @(*) begin
     if(io_push_valid) begin
       if(when_lcvVideoDithererMod_l307) begin
-        dicol_r = 6'h3f;
+        dicol_r = 4'b1111;
       end else begin
-        dicol_r = colInPlusDelta_r[5 : 0];
+        dicol_r = colInPlusDelta_r[3 : 0];
       end
     end else begin
-      dicol_r = 6'h00;
+      dicol_r = 4'b0000;
     end
   end
 
-  assign when_lcvVideoDithererMod_l318 = colInPlusDelta_g[6];
+  assign when_lcvVideoDithererMod_l318 = colInPlusDelta_g[4];
   always @(*) begin
     if(io_push_valid) begin
       if(when_lcvVideoDithererMod_l318) begin
-        dicol_g = 6'h3f;
+        dicol_g = 4'b1111;
       end else begin
-        dicol_g = colInPlusDelta_g[5 : 0];
+        dicol_g = colInPlusDelta_g[3 : 0];
       end
     end else begin
-      dicol_g = 6'h00;
+      dicol_g = 4'b0000;
     end
   end
 
-  assign when_lcvVideoDithererMod_l329 = colInPlusDelta_b[6];
+  assign when_lcvVideoDithererMod_l329 = colInPlusDelta_b[4];
   always @(*) begin
     if(io_push_valid) begin
       if(when_lcvVideoDithererMod_l329) begin
-        dicol_b = 6'h3f;
+        dicol_b = 4'b1111;
       end else begin
-        dicol_b = colInPlusDelta_b[5 : 0];
+        dicol_b = colInPlusDelta_b[3 : 0];
       end
     end else begin
-      dicol_b = 6'h00;
+      dicol_b = 4'b0000;
     end
   end
 
   always @(*) begin
     if(io_push_valid) begin
-      io_outp_col_r = dicol_r[5 : 2];
+      io_outp_col_r = dicol_r[3 : 2];
     end else begin
       io_outp_col_r = rPastColOut_r;
     end
@@ -653,7 +656,7 @@ module LcvVideoDitherer (
 
   always @(*) begin
     if(io_push_valid) begin
-      io_outp_col_g = dicol_g[5 : 2];
+      io_outp_col_g = dicol_g[3 : 2];
     end else begin
       io_outp_col_g = rPastColOut_g;
     end
@@ -661,7 +664,7 @@ module LcvVideoDitherer (
 
   always @(*) begin
     if(io_push_valid) begin
-      io_outp_col_b = dicol_b[5 : 2];
+      io_outp_col_b = dicol_b[3 : 2];
     end else begin
       io_outp_col_b = rPastColOut_b;
     end
@@ -706,19 +709,19 @@ module LcvVgaCtrl (
   input               io_en,
   input               io_push_valid,
   output              io_push_ready,
-  input      [3:0]    io_push_payload_r,
-  input      [3:0]    io_push_payload_g,
-  input      [3:0]    io_push_payload_b,
-  output     [3:0]    io_phys_col_r,
-  output     [3:0]    io_phys_col_g,
-  output     [3:0]    io_phys_col_b,
+  input      [1:0]    io_push_payload_r,
+  input      [1:0]    io_push_payload_g,
+  input      [1:0]    io_push_payload_b,
+  output     [1:0]    io_phys_col_r,
+  output     [1:0]    io_phys_col_g,
+  output     [1:0]    io_phys_col_b,
   output              io_phys_hsync,
   output              io_phys_vsync,
   output     [1:0]    io_misc_hscS,
-  output     [9:0]    io_misc_hscC,
+  output     [4:0]    io_misc_hscC,
   output     [1:0]    io_misc_hscNextS,
   output     [1:0]    io_misc_vscS,
-  output     [8:0]    io_misc_vscC,
+  output     [4:0]    io_misc_vscC,
   output     [1:0]    io_misc_vscNextS,
   output              io_misc_fifoEmpty,
   output              io_misc_fifoFull,
@@ -744,19 +747,19 @@ module LcvVgaCtrl (
   wire                fifo_io_pop_ready;
   wire                fifo_io_push_ready;
   wire                fifo_io_pop_valid;
-  wire       [3:0]    fifo_io_pop_payload_r;
-  wire       [3:0]    fifo_io_pop_payload_g;
-  wire       [3:0]    fifo_io_pop_payload_b;
+  wire       [1:0]    fifo_io_pop_payload_r;
+  wire       [1:0]    fifo_io_pop_payload_g;
+  wire       [1:0]    fifo_io_pop_payload_b;
   wire                fifo_io_misc_empty;
   wire                fifo_io_misc_full;
   wire       [2:0]    _zz_clkCntP1;
-  wire       [9:0]    _zz_when_lcvVgaCtrlMod_l372;
-  (* keep *) wire       [3:0]    tempCol_r;
-  (* keep *) wire       [3:0]    tempCol_g;
-  (* keep *) wire       [3:0]    tempCol_b;
-  reg        [3:0]    rPhys_col_r;
-  reg        [3:0]    rPhys_col_g;
-  reg        [3:0]    rPhys_col_b;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l372;
+  (* keep *) wire       [1:0]    tempCol_r;
+  (* keep *) wire       [1:0]    tempCol_g;
+  (* keep *) wire       [1:0]    tempCol_b;
+  reg        [1:0]    rPhys_col_r;
+  reg        [1:0]    rPhys_col_g;
+  reg        [1:0]    rPhys_col_b;
   reg                 rPhys_hsync;
   reg                 rPhys_vsync;
   reg        [1:0]    clkCnt;
@@ -765,27 +768,27 @@ module LcvVgaCtrl (
   wire                when_lcvVgaCtrlMod_l282;
   wire                pixelEnNextCycle;
   reg        [1:0]    switch_lcvVgaCtrlMod_l81;
-  reg        [9:0]    _zz_io_misc_hscC;
+  reg        [4:0]    _zz_io_misc_hscC;
   reg        [1:0]    _zz_io_misc_hscNextS;
   reg        [1:0]    switch_lcvVgaCtrlMod_l81_1;
-  reg        [8:0]    _zz_io_misc_vscC;
+  reg        [4:0]    _zz_io_misc_vscC;
   reg        [1:0]    _zz_io_misc_vscNextS;
-  wire       [9:0]    _zz_when_lcvVgaCtrlMod_l56;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l56;
   wire                when_lcvVgaCtrlMod_l56;
-  wire       [9:0]    _zz_when_lcvVgaCtrlMod_l56_1;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l56_1;
   wire                when_lcvVgaCtrlMod_l56_1;
-  wire       [9:0]    _zz_when_lcvVgaCtrlMod_l56_2;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l56_2;
   wire                when_lcvVgaCtrlMod_l56_2;
-  wire       [9:0]    _zz_when_lcvVgaCtrlMod_l56_3;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l56_3;
   wire                when_lcvVgaCtrlMod_l56_3;
   wire                when_lcvVgaCtrlMod_l372;
-  wire       [8:0]    _zz_when_lcvVgaCtrlMod_l56_4;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l56_4;
   wire                when_lcvVgaCtrlMod_l56_4;
-  wire       [8:0]    _zz_when_lcvVgaCtrlMod_l56_5;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l56_5;
   wire                when_lcvVgaCtrlMod_l56_5;
-  wire       [8:0]    _zz_when_lcvVgaCtrlMod_l56_6;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l56_6;
   wire                when_lcvVgaCtrlMod_l56_6;
-  wire       [8:0]    _zz_when_lcvVgaCtrlMod_l56_7;
+  wire       [4:0]    _zz_when_lcvVgaCtrlMod_l56_7;
   wire                when_lcvVgaCtrlMod_l56_7;
   wire                when_lcvVgaCtrlMod_l412;
   reg                 rVisib;
@@ -805,18 +808,18 @@ module LcvVgaCtrl (
 
 
   assign _zz_clkCntP1 = {1'd0, clkCnt};
-  assign _zz_when_lcvVgaCtrlMod_l372 = (_zz_io_misc_hscC + 10'h001);
+  assign _zz_when_lcvVgaCtrlMod_l372 = (_zz_io_misc_hscC + 5'h01);
   AsyncReadFifo fifo (
     .io_push_valid     (io_push_valid             ), //i
     .io_push_ready     (fifo_io_push_ready        ), //o
-    .io_push_payload_r (io_push_payload_r[3:0]    ), //i
-    .io_push_payload_g (io_push_payload_g[3:0]    ), //i
-    .io_push_payload_b (io_push_payload_b[3:0]    ), //i
+    .io_push_payload_r (io_push_payload_r[1:0]    ), //i
+    .io_push_payload_g (io_push_payload_g[1:0]    ), //i
+    .io_push_payload_b (io_push_payload_b[1:0]    ), //i
     .io_pop_valid      (fifo_io_pop_valid         ), //o
     .io_pop_ready      (fifo_io_pop_ready         ), //i
-    .io_pop_payload_r  (fifo_io_pop_payload_r[3:0]), //o
-    .io_pop_payload_g  (fifo_io_pop_payload_g[3:0]), //o
-    .io_pop_payload_b  (fifo_io_pop_payload_b[3:0]), //o
+    .io_pop_payload_r  (fifo_io_pop_payload_r[1:0]), //o
+    .io_pop_payload_g  (fifo_io_pop_payload_g[1:0]), //o
+    .io_pop_payload_b  (fifo_io_pop_payload_b[1:0]), //o
     .io_misc_empty     (fifo_io_misc_empty        ), //o
     .io_misc_full      (fifo_io_misc_full         ), //o
     .reset             (reset                     ), //i
@@ -1006,28 +1009,28 @@ module LcvVgaCtrl (
   assign io_misc_vscS = switch_lcvVgaCtrlMod_l81_1;
   assign io_misc_vscC = _zz_io_misc_vscC;
   assign io_misc_vscNextS = _zz_io_misc_vscNextS;
-  assign _zz_when_lcvVgaCtrlMod_l56 = (_zz_io_misc_hscC + 10'h001);
-  assign when_lcvVgaCtrlMod_l56 = (10'h010 <= _zz_when_lcvVgaCtrlMod_l56);
-  assign _zz_when_lcvVgaCtrlMod_l56_1 = (_zz_io_misc_hscC + 10'h001);
-  assign when_lcvVgaCtrlMod_l56_1 = (10'h060 <= _zz_when_lcvVgaCtrlMod_l56_1);
-  assign _zz_when_lcvVgaCtrlMod_l56_2 = (_zz_io_misc_hscC + 10'h001);
-  assign when_lcvVgaCtrlMod_l56_2 = (10'h030 <= _zz_when_lcvVgaCtrlMod_l56_2);
-  assign _zz_when_lcvVgaCtrlMod_l56_3 = (_zz_io_misc_hscC + 10'h001);
-  assign when_lcvVgaCtrlMod_l56_3 = (10'h280 <= _zz_when_lcvVgaCtrlMod_l56_3);
-  assign when_lcvVgaCtrlMod_l372 = (10'h280 <= _zz_when_lcvVgaCtrlMod_l372);
-  assign _zz_when_lcvVgaCtrlMod_l56_4 = (_zz_io_misc_vscC + 9'h001);
-  assign when_lcvVgaCtrlMod_l56_4 = (9'h00a <= _zz_when_lcvVgaCtrlMod_l56_4);
-  assign _zz_when_lcvVgaCtrlMod_l56_5 = (_zz_io_misc_vscC + 9'h001);
-  assign when_lcvVgaCtrlMod_l56_5 = (9'h002 <= _zz_when_lcvVgaCtrlMod_l56_5);
-  assign _zz_when_lcvVgaCtrlMod_l56_6 = (_zz_io_misc_vscC + 9'h001);
-  assign when_lcvVgaCtrlMod_l56_6 = (9'h021 <= _zz_when_lcvVgaCtrlMod_l56_6);
-  assign _zz_when_lcvVgaCtrlMod_l56_7 = (_zz_io_misc_vscC + 9'h001);
-  assign when_lcvVgaCtrlMod_l56_7 = (9'h1e0 <= _zz_when_lcvVgaCtrlMod_l56_7);
+  assign _zz_when_lcvVgaCtrlMod_l56 = (_zz_io_misc_hscC + 5'h01);
+  assign when_lcvVgaCtrlMod_l56 = (5'h01 <= _zz_when_lcvVgaCtrlMod_l56);
+  assign _zz_when_lcvVgaCtrlMod_l56_1 = (_zz_io_misc_hscC + 5'h01);
+  assign when_lcvVgaCtrlMod_l56_1 = (5'h01 <= _zz_when_lcvVgaCtrlMod_l56_1);
+  assign _zz_when_lcvVgaCtrlMod_l56_2 = (_zz_io_misc_hscC + 5'h01);
+  assign when_lcvVgaCtrlMod_l56_2 = (5'h01 <= _zz_when_lcvVgaCtrlMod_l56_2);
+  assign _zz_when_lcvVgaCtrlMod_l56_3 = (_zz_io_misc_hscC + 5'h01);
+  assign when_lcvVgaCtrlMod_l56_3 = (5'h10 <= _zz_when_lcvVgaCtrlMod_l56_3);
+  assign when_lcvVgaCtrlMod_l372 = (5'h10 <= _zz_when_lcvVgaCtrlMod_l372);
+  assign _zz_when_lcvVgaCtrlMod_l56_4 = (_zz_io_misc_vscC + 5'h01);
+  assign when_lcvVgaCtrlMod_l56_4 = (5'h01 <= _zz_when_lcvVgaCtrlMod_l56_4);
+  assign _zz_when_lcvVgaCtrlMod_l56_5 = (_zz_io_misc_vscC + 5'h01);
+  assign when_lcvVgaCtrlMod_l56_5 = (5'h01 <= _zz_when_lcvVgaCtrlMod_l56_5);
+  assign _zz_when_lcvVgaCtrlMod_l56_6 = (_zz_io_misc_vscC + 5'h01);
+  assign when_lcvVgaCtrlMod_l56_6 = (5'h01 <= _zz_when_lcvVgaCtrlMod_l56_6);
+  assign _zz_when_lcvVgaCtrlMod_l56_7 = (_zz_io_misc_vscC + 5'h01);
+  assign when_lcvVgaCtrlMod_l56_7 = (5'h10 <= _zz_when_lcvVgaCtrlMod_l56_7);
   assign when_lcvVgaCtrlMod_l412 = (! io_en);
-  assign io_misc_drawPos_x = {6'd0, _zz_io_misc_hscC};
-  assign io_misc_drawPos_y = {7'd0, _zz_io_misc_vscC};
-  assign io_misc_size_x = 16'h0280;
-  assign io_misc_size_y = 16'h01e0;
+  assign io_misc_drawPos_x = {11'd0, _zz_io_misc_hscC};
+  assign io_misc_drawPos_y = {11'd0, _zz_io_misc_vscC};
+  assign io_misc_size_x = 16'h0010;
+  assign io_misc_size_y = 16'h0010;
   assign io_misc_nextVisib = ((_zz_io_misc_hscNextS == LcvVgaState_visib) && (_zz_io_misc_vscNextS == LcvVgaState_visib));
   assign io_misc_visib = rVisib;
   assign io_misc_pastVisib = rPastVisib;
@@ -1035,16 +1038,16 @@ module LcvVgaCtrl (
   assign io_misc_pastDrawPos_y = rPastDrawPos_y;
   always @(posedge clk or posedge reset) begin
     if(reset) begin
-      rPhys_col_r <= 4'b0000;
-      rPhys_col_g <= 4'b0000;
-      rPhys_col_b <= 4'b0000;
+      rPhys_col_r <= 2'b00;
+      rPhys_col_g <= 2'b00;
+      rPhys_col_b <= 2'b00;
       rPhys_hsync <= 1'b0;
       rPhys_vsync <= 1'b0;
       clkCnt <= 2'b00;
       switch_lcvVgaCtrlMod_l81 <= LcvVgaState_front;
-      _zz_io_misc_hscC <= 10'h000;
+      _zz_io_misc_hscC <= 5'h00;
       switch_lcvVgaCtrlMod_l81_1 <= LcvVgaState_front;
-      _zz_io_misc_vscC <= 9'h000;
+      _zz_io_misc_vscC <= 5'h00;
       rVisib <= 1'b0;
       rPastVisib <= 1'b0;
       rPastDrawPos_x <= 16'h0000;
@@ -1057,28 +1060,28 @@ module LcvVgaCtrl (
         case(switch_lcvVgaCtrlMod_l81)
           LcvVgaState_front : begin
             if(when_lcvVgaCtrlMod_l56) begin
-              _zz_io_misc_hscC <= 10'h000;
+              _zz_io_misc_hscC <= 5'h00;
             end else begin
               _zz_io_misc_hscC <= _zz_when_lcvVgaCtrlMod_l56;
             end
           end
           LcvVgaState_sync : begin
             if(when_lcvVgaCtrlMod_l56_1) begin
-              _zz_io_misc_hscC <= 10'h000;
+              _zz_io_misc_hscC <= 5'h00;
             end else begin
               _zz_io_misc_hscC <= _zz_when_lcvVgaCtrlMod_l56_1;
             end
           end
           LcvVgaState_back : begin
             if(when_lcvVgaCtrlMod_l56_2) begin
-              _zz_io_misc_hscC <= 10'h000;
+              _zz_io_misc_hscC <= 5'h00;
             end else begin
               _zz_io_misc_hscC <= _zz_when_lcvVgaCtrlMod_l56_2;
             end
           end
           default : begin
             if(when_lcvVgaCtrlMod_l56_3) begin
-              _zz_io_misc_hscC <= 10'h000;
+              _zz_io_misc_hscC <= 5'h00;
             end else begin
               _zz_io_misc_hscC <= _zz_when_lcvVgaCtrlMod_l56_3;
             end
@@ -1100,28 +1103,28 @@ module LcvVgaCtrl (
               case(switch_lcvVgaCtrlMod_l81_1)
                 LcvVgaState_front : begin
                   if(when_lcvVgaCtrlMod_l56_4) begin
-                    _zz_io_misc_vscC <= 9'h000;
+                    _zz_io_misc_vscC <= 5'h00;
                   end else begin
                     _zz_io_misc_vscC <= _zz_when_lcvVgaCtrlMod_l56_4;
                   end
                 end
                 LcvVgaState_sync : begin
                   if(when_lcvVgaCtrlMod_l56_5) begin
-                    _zz_io_misc_vscC <= 9'h000;
+                    _zz_io_misc_vscC <= 5'h00;
                   end else begin
                     _zz_io_misc_vscC <= _zz_when_lcvVgaCtrlMod_l56_5;
                   end
                 end
                 LcvVgaState_back : begin
                   if(when_lcvVgaCtrlMod_l56_6) begin
-                    _zz_io_misc_vscC <= 9'h000;
+                    _zz_io_misc_vscC <= 5'h00;
                   end else begin
                     _zz_io_misc_vscC <= _zz_when_lcvVgaCtrlMod_l56_6;
                   end
                 end
                 default : begin
                   if(when_lcvVgaCtrlMod_l56_7) begin
-                    _zz_io_misc_vscC <= 9'h000;
+                    _zz_io_misc_vscC <= 5'h00;
                   end else begin
                     _zz_io_misc_vscC <= _zz_when_lcvVgaCtrlMod_l56_7;
                   end
@@ -1148,18 +1151,18 @@ module LcvVgaCtrl (
       if(io_misc_pixelEn) begin
         if(io_misc_visib) begin
           if(when_lcvVgaCtrlMod_l412) begin
-            rPhys_col_r <= 4'b1111;
-            rPhys_col_g <= 4'b1111;
-            rPhys_col_b <= 4'b1111;
+            rPhys_col_r <= 2'b11;
+            rPhys_col_g <= 2'b11;
+            rPhys_col_b <= 2'b11;
           end else begin
             rPhys_col_r <= tempCol_r;
             rPhys_col_g <= tempCol_g;
             rPhys_col_b <= tempCol_b;
           end
         end else begin
-          rPhys_col_r <= 4'b0000;
-          rPhys_col_g <= 4'b0000;
-          rPhys_col_b <= 4'b0000;
+          rPhys_col_r <= 2'b00;
+          rPhys_col_g <= 2'b00;
+          rPhys_col_b <= 2'b00;
         end
       end
       rVisib <= io_misc_nextVisib;
@@ -1175,14 +1178,14 @@ endmodule
 module AsyncReadFifo (
   input               io_push_valid,
   output              io_push_ready,
-  input      [3:0]    io_push_payload_r,
-  input      [3:0]    io_push_payload_g,
-  input      [3:0]    io_push_payload_b,
+  input      [1:0]    io_push_payload_r,
+  input      [1:0]    io_push_payload_g,
+  input      [1:0]    io_push_payload_b,
   output              io_pop_valid,
   input               io_pop_ready,
-  output     [3:0]    io_pop_payload_r,
-  output     [3:0]    io_pop_payload_g,
-  output     [3:0]    io_pop_payload_b,
+  output     [1:0]    io_pop_payload_r,
+  output     [1:0]    io_pop_payload_g,
+  output     [1:0]    io_pop_payload_b,
   output              io_misc_empty,
   output              io_misc_full,
   input               reset,
@@ -1190,20 +1193,20 @@ module AsyncReadFifo (
 );
 
   wire                sbPush_io_misc_clear;
-  wire       [3:0]    sbPop_io_prev_payload_r;
-  wire       [3:0]    sbPop_io_prev_payload_g;
-  wire       [3:0]    sbPop_io_prev_payload_b;
+  wire       [1:0]    sbPop_io_prev_payload_r;
+  wire       [1:0]    sbPop_io_prev_payload_g;
+  wire       [1:0]    sbPop_io_prev_payload_b;
   wire                sbPop_io_misc_clear;
-  wire       [11:0]   _zz_loc_arr_port0;
+  wire       [5:0]    _zz_loc_arr_port0;
   wire                sbPush_io_next_valid;
-  wire       [3:0]    sbPush_io_next_payload_r;
-  wire       [3:0]    sbPush_io_next_payload_g;
-  wire       [3:0]    sbPush_io_next_payload_b;
+  wire       [1:0]    sbPush_io_next_payload_r;
+  wire       [1:0]    sbPush_io_next_payload_g;
+  wire       [1:0]    sbPush_io_next_payload_b;
   wire                sbPush_io_prev_ready;
   wire                sbPop_io_next_valid;
-  wire       [3:0]    sbPop_io_next_payload_r;
-  wire       [3:0]    sbPop_io_next_payload_g;
-  wire       [3:0]    sbPop_io_next_payload_b;
+  wire       [1:0]    sbPop_io_next_payload_r;
+  wire       [1:0]    sbPop_io_next_payload_g;
+  wire       [1:0]    sbPop_io_next_payload_b;
   wire                sbPop_io_prev_ready;
   wire       [4:0]    _zz_loc_tailPlus1;
   wire       [4:0]    _zz_loc_headPlus1;
@@ -1211,13 +1214,13 @@ module AsyncReadFifo (
   wire       [4:0]    _zz_loc_nextEmpty;
   wire       [4:0]    _zz_loc_nextFull;
   wire       [3:0]    _zz_locFormal_testHead;
-  wire       [11:0]   _zz_loc_arr_port;
+  wire       [5:0]    _zz_loc_arr_port;
   reg                 _zz_1;
   wire                wrEn;
   wire                rdValid;
-  wire       [3:0]    rdDataPrev_r;
-  wire       [3:0]    rdDataPrev_g;
-  wire       [3:0]    rdDataPrev_b;
+  wire       [1:0]    rdDataPrev_r;
+  wire       [1:0]    rdDataPrev_g;
+  wire       [1:0]    rdDataPrev_b;
   (* keep *) wire                rdEn;
   wire                fifo_sbPop_io_next_fire;
   reg                 loc_empty;
@@ -1238,18 +1241,18 @@ module AsyncReadFifo (
   (* keep *) reg        [4:0]    loc_tempIncrNextHead;
   wire                loc_nextEmpty;
   wire                loc_nextFull;
-  (* keep *) wire       [3:0]    locFormal_lastTailVal_r;
-  (* keep *) wire       [3:0]    locFormal_lastTailVal_g;
-  (* keep *) wire       [3:0]    locFormal_lastTailVal_b;
+  (* keep *) wire       [1:0]    locFormal_lastTailVal_r;
+  (* keep *) wire       [1:0]    locFormal_lastTailVal_g;
+  (* keep *) wire       [1:0]    locFormal_lastTailVal_b;
   wire       [3:0]    locFormal_testHead;
-  wire       [11:0]   _zz_io_prev_payload_r;
+  wire       [5:0]    _zz_io_prev_payload_r;
   wire                when_fifoMods_l640;
   wire                when_fifoMods_l643;
   wire                when_fifoMods_l657;
   wire                when_fifoMods_l658;
   wire                when_fifoMods_l734;
   wire                when_fifoMods_l738;
-  (* ram_style = "ultra" , keep *) reg [11:0] loc_arr [0:15];
+  (* ram_style = "ultra" , keep *) reg [5:0] loc_arr [0:15];
 
   assign _zz_loc_tailPlus1 = {1'd0, loc_tail};
   assign _zz_loc_headPlus1 = {1'd0, loc_head};
@@ -1268,14 +1271,14 @@ module AsyncReadFifo (
   PipeSkidBuf sbPush (
     .io_next_valid     (sbPush_io_next_valid         ), //o
     .io_next_ready     (1'b1                         ), //i
-    .io_next_payload_r (sbPush_io_next_payload_r[3:0]), //o
-    .io_next_payload_g (sbPush_io_next_payload_g[3:0]), //o
-    .io_next_payload_b (sbPush_io_next_payload_b[3:0]), //o
+    .io_next_payload_r (sbPush_io_next_payload_r[1:0]), //o
+    .io_next_payload_g (sbPush_io_next_payload_g[1:0]), //o
+    .io_next_payload_b (sbPush_io_next_payload_b[1:0]), //o
     .io_prev_valid     (io_push_valid                ), //i
     .io_prev_ready     (sbPush_io_prev_ready         ), //o
-    .io_prev_payload_r (io_push_payload_r[3:0]       ), //i
-    .io_prev_payload_g (io_push_payload_g[3:0]       ), //i
-    .io_prev_payload_b (io_push_payload_b[3:0]       ), //i
+    .io_prev_payload_r (io_push_payload_r[1:0]       ), //i
+    .io_prev_payload_g (io_push_payload_g[1:0]       ), //i
+    .io_prev_payload_b (io_push_payload_b[1:0]       ), //i
     .io_misc_busy      (io_misc_full                 ), //i
     .io_misc_clear     (sbPush_io_misc_clear         ), //i
     .reset             (reset                        ), //i
@@ -1284,14 +1287,14 @@ module AsyncReadFifo (
   PipeSkidBuf sbPop (
     .io_next_valid     (sbPop_io_next_valid         ), //o
     .io_next_ready     (io_pop_ready                ), //i
-    .io_next_payload_r (sbPop_io_next_payload_r[3:0]), //o
-    .io_next_payload_g (sbPop_io_next_payload_g[3:0]), //o
-    .io_next_payload_b (sbPop_io_next_payload_b[3:0]), //o
+    .io_next_payload_r (sbPop_io_next_payload_r[1:0]), //o
+    .io_next_payload_g (sbPop_io_next_payload_g[1:0]), //o
+    .io_next_payload_b (sbPop_io_next_payload_b[1:0]), //o
     .io_prev_valid     (rdValid                     ), //i
     .io_prev_ready     (sbPop_io_prev_ready         ), //o
-    .io_prev_payload_r (sbPop_io_prev_payload_r[3:0]), //i
-    .io_prev_payload_g (sbPop_io_prev_payload_g[3:0]), //i
-    .io_prev_payload_b (sbPop_io_prev_payload_b[3:0]), //i
+    .io_prev_payload_r (sbPop_io_prev_payload_r[1:0]), //i
+    .io_prev_payload_g (sbPop_io_prev_payload_g[1:0]), //i
+    .io_prev_payload_b (sbPop_io_prev_payload_b[1:0]), //i
     .io_misc_busy      (io_misc_empty               ), //i
     .io_misc_clear     (sbPop_io_misc_clear         ), //i
     .reset             (reset                       ), //i
@@ -1312,9 +1315,9 @@ module AsyncReadFifo (
   assign io_pop_payload_r = sbPop_io_next_payload_r;
   assign io_pop_payload_g = sbPop_io_next_payload_g;
   assign io_pop_payload_b = sbPop_io_next_payload_b;
-  assign rdDataPrev_r = 4'b0000;
-  assign rdDataPrev_g = 4'b0000;
-  assign rdDataPrev_b = 4'b0000;
+  assign rdDataPrev_r = 2'b00;
+  assign rdDataPrev_g = 2'b00;
+  assign rdDataPrev_b = 2'b00;
   assign fifo_sbPop_io_next_fire = (sbPop_io_next_valid && io_pop_ready);
   assign rdEn = fifo_sbPop_io_next_fire;
   assign loc_uintDepth = 5'h10;
@@ -1336,14 +1339,14 @@ module AsyncReadFifo (
 
   assign loc_nextEmpty = ((loc_tempIncrNextHead != _zz_loc_nextEmpty) && (loc_nextHead == loc_nextTail));
   assign loc_nextFull = (loc_tempIncrNextHead == _zz_loc_nextFull);
-  assign locFormal_lastTailVal_r = 4'b0000;
-  assign locFormal_lastTailVal_g = 4'b0000;
-  assign locFormal_lastTailVal_b = 4'b0000;
+  assign locFormal_lastTailVal_r = 2'b00;
+  assign locFormal_lastTailVal_g = 2'b00;
+  assign locFormal_lastTailVal_b = 2'b00;
   assign locFormal_testHead = (_zz_locFormal_testHead % 5'h10);
   assign _zz_io_prev_payload_r = _zz_loc_arr_port0;
-  assign sbPop_io_prev_payload_r = _zz_io_prev_payload_r[3 : 0];
-  assign sbPop_io_prev_payload_g = _zz_io_prev_payload_r[7 : 4];
-  assign sbPop_io_prev_payload_b = _zz_io_prev_payload_r[11 : 8];
+  assign sbPop_io_prev_payload_r = _zz_io_prev_payload_r[1 : 0];
+  assign sbPop_io_prev_payload_g = _zz_io_prev_payload_r[3 : 2];
+  assign sbPop_io_prev_payload_b = _zz_io_prev_payload_r[5 : 4];
   assign rdValid = 1'b1;
   assign io_misc_empty = loc_empty;
   assign io_misc_full = loc_full;
@@ -1407,14 +1410,14 @@ endmodule
 module PipeSkidBuf (
   (* keep *) output              io_next_valid,
   (* keep *) input               io_next_ready,
-  (* keep *) output reg [3:0]    io_next_payload_r,
-  (* keep *) output reg [3:0]    io_next_payload_g,
-  (* keep *) output reg [3:0]    io_next_payload_b,
+  (* keep *) output reg [1:0]    io_next_payload_r,
+  (* keep *) output reg [1:0]    io_next_payload_g,
+  (* keep *) output reg [1:0]    io_next_payload_b,
   (* keep *) input               io_prev_valid,
   (* keep *) output              io_prev_ready,
-  (* keep *) input      [3:0]    io_prev_payload_r,
-  (* keep *) input      [3:0]    io_prev_payload_g,
-  (* keep *) input      [3:0]    io_prev_payload_b,
+  (* keep *) input      [1:0]    io_prev_payload_r,
+  (* keep *) input      [1:0]    io_prev_payload_g,
+  (* keep *) input      [1:0]    io_prev_payload_b,
   (* keep *) input               io_misc_busy,
   (* keep *) input               io_misc_clear,
   input               reset,
@@ -1424,24 +1427,24 @@ module PipeSkidBuf (
   wire                _zz_io_prev_ready;
   (* keep *) wire                _zz_when_Stream_l369;
   (* keep *) wire                _zz_io_prev_ready_1;
-  (* keep *) wire       [3:0]    _zz_io_next_payload_r;
-  (* keep *) wire       [3:0]    _zz_io_next_payload_g;
-  (* keep *) wire       [3:0]    _zz_io_next_payload_b;
+  (* keep *) wire       [1:0]    _zz_io_next_payload_r;
+  (* keep *) wire       [1:0]    _zz_io_next_payload_g;
+  (* keep *) wire       [1:0]    _zz_io_next_payload_b;
   (* keep *) wire                _zz_io_next_valid;
   (* keep *) wire                _zz_1;
-  (* keep *) wire       [3:0]    _zz_io_next_payload_r_1;
-  (* keep *) wire       [3:0]    _zz_io_next_payload_g_1;
-  (* keep *) wire       [3:0]    _zz_io_next_payload_b_1;
+  (* keep *) wire       [1:0]    _zz_io_next_payload_r_1;
+  (* keep *) wire       [1:0]    _zz_io_next_payload_g_1;
+  (* keep *) wire       [1:0]    _zz_io_next_payload_b_1;
   reg                 _zz_2;
   reg                 _zz_io_prev_ready_2;
-  reg        [3:0]    _zz_io_next_payload_r_2;
-  reg        [3:0]    _zz_io_next_payload_g_2;
-  reg        [3:0]    _zz_io_next_payload_b_2;
+  reg        [1:0]    _zz_io_next_payload_r_2;
+  reg        [1:0]    _zz_io_next_payload_g_2;
+  reg        [1:0]    _zz_io_next_payload_b_2;
   wire                _zz_when_Stream_l369_1;
   reg                 _zz_when_Stream_l369_2;
-  reg        [3:0]    _zz_io_next_payload_r_3;
-  reg        [3:0]    _zz_io_next_payload_g_3;
-  reg        [3:0]    _zz_io_next_payload_b_3;
+  reg        [1:0]    _zz_io_next_payload_r_3;
+  reg        [1:0]    _zz_io_next_payload_g_3;
+  reg        [1:0]    _zz_io_next_payload_b_3;
   wire                when_Stream_l369;
   wire                io_prev_fire;
 
@@ -1469,36 +1472,36 @@ module PipeSkidBuf (
   assign _zz_1 = io_next_ready;
   always @(*) begin
     if(reset) begin
-      io_next_payload_r = 4'b0000;
+      io_next_payload_r = 2'b00;
     end else begin
       if(io_prev_fire) begin
         io_next_payload_r = _zz_io_next_payload_r_1;
       end else begin
-        io_next_payload_r = 4'b0000;
+        io_next_payload_r = 2'b00;
       end
     end
   end
 
   always @(*) begin
     if(reset) begin
-      io_next_payload_g = 4'b0000;
+      io_next_payload_g = 2'b00;
     end else begin
       if(io_prev_fire) begin
         io_next_payload_g = _zz_io_next_payload_g_1;
       end else begin
-        io_next_payload_g = 4'b0000;
+        io_next_payload_g = 2'b00;
       end
     end
   end
 
   always @(*) begin
     if(reset) begin
-      io_next_payload_b = 4'b0000;
+      io_next_payload_b = 2'b00;
     end else begin
       if(io_prev_fire) begin
         io_next_payload_b = _zz_io_next_payload_b_1;
       end else begin
-        io_next_payload_b = 4'b0000;
+        io_next_payload_b = 2'b00;
       end
     end
   end
