@@ -181,6 +181,7 @@ case class LcvVgaCtrlMiscIo(
   val fifoFull = Bool()
   val fifoAmountCanPush = UInt(FifoMiscIo.amountWidth(depth=fifoDepth) bits)
   val fifoAmountCanPop = UInt(FifoMiscIo.amountWidth(depth=fifoDepth) bits)
+  val fifoPopReady = Bool()
 
   // Misc.
   val clkCnt = UInt(LcvVgaCtrlMiscIo.clkCntWidth(
@@ -191,8 +192,10 @@ case class LcvVgaCtrlMiscIo(
     clkRate=clkRate,
     vgaTimingInfo=vgaTimingInfo,
   ) bits)
+  val nextNextPixelEn = Bool()
   val nextPixelEn = Bool()
   val pixelEn = Bool()
+  val nextNextVisib = Bool()
   val nextVisib = Bool()
   val visib = Bool()
   val pastVisib = Bool()
@@ -398,6 +401,26 @@ case class LcvVgaCtrl(
   //)
   //fifoPop.ready 
   fifoPop.ready := rFifoPopReady
+  misc.fifoPopReady := rFifoPopReady
+  misc.nextNextPixelEn := clkCntP1 === cpp - 2
+  misc.nextNextVisib := (
+    (
+      (
+        (misc.hscC + 1 === vgaTimingInfo.htiming.back)
+        && (misc.hscS === LcvVgaState.back)
+      ) || (
+        misc.hscS === LcvVgaState.visib
+      )
+    ) && (
+      //(
+      //  ((misc.vscC + 2) >= vgaTimingInfo.vtiming.back)
+      //  && (misc.vscS === LcvVgaState.back)
+      //)
+      //||
+      misc.vscS === LcvVgaState.visib
+    )
+    //|| misc.visib
+  )
   rFifoPopReady := (
   //fifoPop.ready 
     //misc.nextPixelEn
@@ -407,27 +430,8 @@ case class LcvVgaCtrl(
     //(nextClkCnt === (cpp - 3))
     //(nextClkCnt === cpp - 1)
     //(clkCntP1 === cpp)
-    clkCntP1 === cpp - 2
-    && (
-      (
-        (
-          (
-            (misc.hscC + 1 === vgaTimingInfo.htiming.back)
-            && (misc.hscS === LcvVgaState.back)
-          ) || (
-            misc.hscS === LcvVgaState.visib
-          )
-        ) && (
-          //(
-          //  ((misc.vscC + 2) >= vgaTimingInfo.vtiming.back)
-          //  && (misc.vscS === LcvVgaState.back)
-          //)
-          //||
-          misc.vscS === LcvVgaState.visib
-        )
-      )
-      //|| misc.visib
-    )
+    misc.nextNextPixelEn
+    && misc.nextNextVisib
   )
   //rFifoPopReady := (
   //  misc.nextPixelEn && misc.nextVisib
