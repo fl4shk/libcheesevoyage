@@ -402,13 +402,13 @@ case class LcvVgaCtrl(
     //misc.nextPixelEn
     //misc.nextNextPixelEn && misc.nextNextVisib
     //fifoPop.valid 
-    && (clkCnt === (cpp - 3))
+    (clkCnt === (cpp - 3))
     && (
       (
-        ((hsc.c + 3) >= vgaTimingInfo.htiming.sync)
-        && (hsc.s === LcvVgaState.sync)
-        && ((vsc.c + 3) >= vgaTimingInfo.vtiming.sync)
-        && (vsc.s === LcvVgaState.sync)
+        ((misc.hscC + 3) >= vgaTimingInfo.htiming.sync)
+        && (misc.hscS === LcvVgaState.sync)
+        && ((misc.vscC + 3) >= vgaTimingInfo.vtiming.sync)
+        && (misc.vscS === LcvVgaState.sync)
       ) || misc.visib
     )
   )
