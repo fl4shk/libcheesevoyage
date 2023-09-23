@@ -76,13 +76,12 @@ case class LcvVgaGradient(
   //val tempPush = new Stream(Rgb(io.outRgbConfig))
   //ctrlIo.push << tempPush
   //val rCtrlPushValid = Reg(Bool()) init(True)
-  //val rDidFirstAssertValid = Reg(Bool()) init(False)
   //ctrlIo.push.valid := rCtrlPushValid
   //ctrlIo.push.valid := True
 
-  //val rCtrlPushValid = Reg(Bool()) init(False)
-  //ctrlIo.push.valid := rCtrlPushValid
-  ctrlIo.push.valid := True
+  val rCtrlPushValid = Reg(Bool()) init(False)
+  ctrlIo.push.valid := rCtrlPushValid
+  //ctrlIo.push.valid := True
 
   //val rDithPushValid = Reg(Bool()) init(False)
   //dithIo.push.valid := rDithPushValid
@@ -133,15 +132,18 @@ case class LcvVgaGradient(
     vgaTimingInfo=vgaTimingInfo,
   )
   //when (ctrlIo.misc.fifoAmountCanPop < cpp) 
+  //val rDidFirstAssertCtrlValid = Reg(Bool()) init(False)
   when (
-    ctrlIo.push.fire
+    //ctrlIo.push.fire || !rDidFirstAssertCtrlValid
     //&& ctrlIo.misc.fifoAmountCanPush > (ctrlFifoDepth - cpp)
     //ctrlIo.misc.nextPixelEn
+    !rCtrlPushValid
   ) {
-    //rDidFirstAssertValid := True
+    //rDidFirstAssertCtrlValid := True
     //rCtrlPushValid := True
     //dithPushValid := True
     //rDithPushValid := True
+    rCtrlPushValid := True
     dithCol.r := (default -> True)
     //dithCol.r := 0
     when (dithIo.outp.pos.x === 0x0) {
@@ -152,6 +154,9 @@ case class LcvVgaGradient(
     }
     dithCol.b := 0x0
   } otherwise {
+    when (rCtrlPushValid && ctrlIo.push.fire) {
+      rCtrlPushValid := False
+    }
     //rCtrlPushValid := False
     //dithPushValid := False
     //rDithPushValid := True
