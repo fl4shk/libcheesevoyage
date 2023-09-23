@@ -120,9 +120,9 @@ case class LcvVgaGradient(
 
   //ctrlIo.push.payload := dithIo.outp.col
   //--------
-  val rCtrlPushValid = Reg(Bool()) init(False)
-  ctrlIo.push.valid := rCtrlPushValid
-  //ctrlIo.push.valid := True
+  //val rCtrlPushValid = Reg(Bool()) init(False)
+  //ctrlIo.push.valid := rCtrlPushValid
+  ctrlIo.push.valid := True
   val rDbgPhysCol = Reg(Rgb(io.outRgbConfig))
   rDbgPhysCol.init(rDbgPhysCol.getZero)
   ctrlIo.push.payload := rDbgPhysCol
@@ -163,21 +163,37 @@ case class LcvVgaGradient(
   //    rCtrlPushValid := False
   //  }
   //}
-  when (!rCtrlPushValid) {
-    rCtrlPushValid := True
+  //when (!rCtrlPushValid) {
+  //  rCtrlPushValid := True
+  //} otherwise {
+  //  when (ctrlIo.push.fire) {
+  //    rCtrlPushValid := False
+  //  }
+  //}
+  //val pastPastVisib = Reg(Bool()) init(False)
+  //pastPastVisib := ctrlIo.misc.pastVisib
+  ////when (ctrlIo.misc.visib && !ctrlIo.misc.pastVisib) 
+  //when (ctrlIo.misc.pastVisib && !pastPastVisib) {
+  //  resetDbgPhysCol()
+  //} elsewhen (ctrlIo.push.fire) {
+  //  incrDbgPhysCol()
+  //}
+  //val pastPixelEn = Reg(Bool()) init(False)
+  //pastPixelEn := ctrlIo.misc.pixelEn
+  //val visibToggle = Reg(Bool()) init(False)
+  when (ctrlIo.misc.visib && !ctrlIo.misc.pastVisib) {
+    resetDbgPhysCol()
   } otherwise {
     when (ctrlIo.push.fire) {
-      rCtrlPushValid := False
+      incrDbgPhysCol()
     }
   }
-  val pastPastVisib = Reg(Bool()) init(False)
-  pastPastVisib := ctrlIo.misc.pastVisib
-  //when (ctrlIo.misc.visib && !ctrlIo.misc.pastVisib) 
-  when (ctrlIo.misc.pastVisib && !pastPastVisib) {
-    resetDbgPhysCol()
-  } elsewhen (ctrlIo.push.fire) {
-    incrDbgPhysCol()
-  }
+  //when (ctrlIo.push.fire) {
+  //}
+  //when (ctrlIo.misc.nextNextVisib && !ctrlIo.misc.nextVisib) {
+  //}
+  //when (ctrlIo.misc.visib && !ctrlIo.misc.pastVisib) {
+  //}
 
   //when (ctrlIo.push.fire) {
   //}

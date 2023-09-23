@@ -324,7 +324,8 @@ case class LcvVgaCtrl(
   val fifo = StreamFifo(
     dataType=Rgb(rgbConfig),
     depth=fifoDepth,
-    latency=1,
+    //latency=1,
+    latency=0,
   )
   val fifoPush = fifo.io.push
   val fifoPop = fifo.io.pop
@@ -402,7 +403,10 @@ case class LcvVgaCtrl(
   //fifoPop.ready 
   //fifoPop.ready := rFifoPopReady
   //misc.fifoPopReady := rFifoPopReady
+  //val pastPixelEn = Reg(Bool()) init(False)
+  //pastPixelEn := misc.pixelEn
   fifoPop.ready := (
+    //pastPixelEn && misc.pastVisib && !fifoEmpty
     misc.pixelEn && misc.visib && !fifoEmpty
   )
   misc.fifoPopReady := fifoPop.ready
@@ -584,12 +588,12 @@ case class LcvVgaCtrl(
     misc.size.y := fbSize2d.y
     //]
     //m.d.sync += [
-    //val rNextVisib = Reg(Bool()) init(False)
-    //rNextVisib := ((hsc.nextS === LcvVgaState.visib)
-    //  & (vsc.nextS === LcvVgaState.visib))
-    //misc.nextVisib := rNextVisib
-    misc.nextVisib := ((hsc.nextS === LcvVgaState.visib)
+    val rNextVisib = Reg(Bool()) init(False)
+    rNextVisib := ((hsc.nextS === LcvVgaState.visib)
       & (vsc.nextS === LcvVgaState.visib))
+    misc.nextVisib := rNextVisib
+    //misc.nextVisib := ((hsc.nextS === LcvVgaState.visib)
+    //  & (vsc.nextS === LcvVgaState.visib))
     //misc.nextVisib := (
     //  hsc.nextS === LcvVgaState.visib
     //  && vsc.nextS === LcvVgaState.visib
