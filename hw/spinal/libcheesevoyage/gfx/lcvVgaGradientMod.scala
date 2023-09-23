@@ -88,6 +88,7 @@ case class LcvVgaGradient(
   //dithIo.push.valid := rDithPushValid
   //rCtrlPushValid := rDithPushValid
   val dithPushValid = dithIo.push.valid
+  dithPushValid := True
   //rCtrlPushValid := dithPushValid
   //--------
   //val col = dithIo.inpCol
@@ -131,10 +132,11 @@ case class LcvVgaGradient(
     clkRate=clkRate,
     vgaTimingInfo=vgaTimingInfo,
   )
-  when (ctrlIo.misc.fifoAmountCanPush > cpp) {
+  when (ctrlIo.misc.fifoAmountCanPop < cpp) {
     //rDidFirstAssertValid := True
     //rCtrlPushValid := True
-    dithPushValid := True
+    //dithPushValid := True
+    //rDithPushValid := True
     dithCol.r := (default -> True)
     //dithCol.r := 0
     when (dithIo.outp.pos.x === 0x0) {
@@ -146,7 +148,8 @@ case class LcvVgaGradient(
     dithCol.b := 0x0
   } otherwise {
     //rCtrlPushValid := False
-    dithPushValid := False
+    //dithPushValid := False
+    //rDithPushValid := True
     dithCol := rPastDithCol
     //dithCol := dithCol
   }
