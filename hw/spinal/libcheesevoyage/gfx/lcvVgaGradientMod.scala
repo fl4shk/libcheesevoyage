@@ -130,6 +130,9 @@ case class LcvVgaGradient(
     //ctrlIo.misc.pixelEn
     //&& (ctrlIo.misc.fifoAmountCanPop < 10)
     ctrlIo.push.fire
+    && (
+      ctrlIo.misc.fifoAmountCanPush < (ctrlFifoDepth - 4)
+    )
     //&& (ctrlIo.misc.fifoAmountCanPop < cpp)
   ) {
     //rDidFirstAssertCtrlValid := True
