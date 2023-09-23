@@ -182,24 +182,45 @@ case class LcvVgaGradient(
   //pastPixelEn := ctrlIo.misc.pixelEn
   //val visibToggle = Reg(Bool()) init(False)
   //when (ctrlIo.misc.visib && !ctrlIo.misc.pastVisib)
+
   when (
-    (ctrlIo.misc.pastVisib && !pastPastVisib)
-    || !ctrlIo.misc.pastVisib
+    //(ctrlIo.misc.pastVisib && !pastPastVisib)
+    //|| !ctrlIo.misc.pastVisib
+    (ctrlIo.misc.visib && !ctrlIo.misc.pastVisib)
+    || (!ctrlIo.misc.visib)
   ) {
     rCtrlPushValid := False
     resetDbgPhysCol()
   } otherwise {
     //when (!rCtrlPushValid) {
+    //  rCtrlPushValid := True
+    //  //when (
+    //  //  ctrlIo.misc.fifoPopReady
+    //  //) {
+    //  //  incrDbgPhysCol
+    //  //}
+    //} otherwise { // when (rCtrlPushValid)
+    //}
+    when (!rCtrlPushValid) {
+      rCtrlPushValid := True
+      incrDbgPhysCol()
+    }
+    when (ctrlIo.push.fire) {
+      rCtrlPushValid := False
+    }
+    //when (!rCtrlPushValid) {
     //  rCtrlPushValid
     //} otherwise {
     //}
-    when (!ctrlIo.push.fire) {
-      rCtrlPushValid := True
-    } otherwise { // when (ctrlIo.push.fire)
-      rCtrlPushValid := False
-      incrDbgPhysCol()
-    }
+    //when (!ctrlIo.push.fire) {
+    //  rCtrlPushValid := True
+    //} otherwise { // when (ctrlIo.push.fire)
+    //  rCtrlPushValid := False
+    //  //incrDbgPhysCol()
+    //}
+    //rCtrlPushValid := True
   }
+
   //when (ctrlIo.push.fire) {
   //}
   //when (ctrlIo.misc.nextNextVisib && !ctrlIo.misc.nextVisib) {
