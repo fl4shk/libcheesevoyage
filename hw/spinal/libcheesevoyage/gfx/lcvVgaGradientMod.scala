@@ -81,7 +81,7 @@ case class LcvVgaGradient(
 
   //val rCtrlPushValid = Reg(Bool()) init(False)
   //ctrlIo.push.valid := rCtrlPushValid
-  ctrlIo.push.valid := True
+  //ctrlIo.push.valid := True
 
   //val rDithPushValid = Reg(Bool()) init(False)
   //dithIo.push.valid := rDithPushValid
@@ -101,16 +101,22 @@ case class LcvVgaGradient(
   //rDithCol.g.init(rDithCol.g.getZero)
   //rDithCol.b.init(rDithCol.b.getZero)
 
-  val dithCol = dithIo.inpCol
-  //rPastDithCol := dithCol
-  val rDithCol = Reg(Rgb(rgbConfig))
-  rDithCol.init(rDithCol.getZero)
-  dithCol := rDithCol
-  //dithIo.inpCol := rDithCol
-  //val rDithCol = dithIo.inpCol
-  //rDithCol := rDithCol
+  //val dithCol = dithIo.inpCol
+  ////rPastDithCol := dithCol
+  //val rDithCol = Reg(Rgb(rgbConfig))
+  //rDithCol.init(rDithCol.getZero)
+  //dithCol := rDithCol
+  ////dithIo.inpCol := rDithCol
+  ////val rDithCol = dithIo.inpCol
+  ////rDithCol := rDithCol
 
-  ctrlIo.push.payload := dithIo.outp.col
+  //ctrlIo.push.payload := dithIo.outp.col
+  //--------
+  //val rCtrlPushValid = Reg(Bool()) init(False)
+  ctrlIo.push.valid := True
+  val rDbgPhysCol = Reg(Rgb(io.outRgbConfig))
+  rDbgPhysCol.init(rDbgPhysCol.getZero)
+  ctrlIo.push.payload := rDbgPhysCol
   //--------
   // Gradient
   //when (!ctrlIo.misc.fifoFull) 
@@ -119,70 +125,66 @@ case class LcvVgaGradient(
     clkRate=clkRate,
     vgaTimingInfo=vgaTimingInfo,
   )
-  //when (ctrlIo.misc.fifoAmountCanPop < cpp) 
-  //val rDidFirstAssertCtrlValid = Reg(Bool()) init(False)
-  val didInit = Reg(Bool()) init(False)
-  when (
-    //ctrlIo.push.fire || !rDidFirstAssertCtrlValid
-    //&& ctrlIo.misc.fifoAmountCanPush > (ctrlFifoDepth - cpp)
-    //ctrlIo.misc.nextPixelEn
-    //!rCtrlPushValid
-    //!ctrlIo.misc.fifoFull
-    //ctrlIo.misc.pixelEn
-    //&& (ctrlIo.misc.fifoAmountCanPop < 10)
-    ctrlIo.push.fire
-    //&& (
-    //  ctrlIo.misc.fifoAmountCanPush > (ctrlFifoDepth - 4)
-    //)
-    //&& (ctrlIo.misc.fifoAmountCanPop < cpp)
-  ) {
-    //rDidFirstAssertCtrlValid := True
-    //rCtrlPushValid := True
-    //dithPushValid := True
-    rDithPushValid := True
-    //rCtrlPushValid := True
-    rDithCol.r := (default -> True)
-    //rDithCol.r := 0
-    when (
-      (dithIo.outp.pos.x === 0x0)
-      || !didInit
-    ) {
-      didInit := True
-      rDithCol.g := 0x0
-    } otherwise { // when (dithIo.outp.pos > 0x0)
-      //rDithCol.g := rPastDithCol.g + 1
-      //rDithCol.g := 0x3
-      rDithCol.g := rDithCol.g + 1
+  when (ctrlIo.misc.nextVisib) {
+    when (!ctrlIo.misc.visib) {
+      //rDbgPhysCol := rDbgPhysCol.getZero
+      rDbgPhysCol.r := (default -> True)
+      rDbgPhysCol.g := 0x0
+      rDbgPhysCol.b := 0x0
+    } elsewhen (ctrlIo.push.fire) {
+      rDbgPhysCol.r := (default -> True)
+      rDbgPhysCol.g := rDbgPhysCol.g + 1
+      rDbgPhysCol.b := 0x0
     }
-    rDithCol.b := 0x0
-  } otherwise {
-    rDithPushValid := False
-    //when (rCtrlPushValid && ctrlIo.push.fire) {
-    //  rCtrlPushValid := False
-    //}
-    //rCtrlPushValid := False
-    //dithPushValid := False
-    //rDithPushValid := True
-    //dithCol := rPastDithCol
-    //dithCol := dithCol
   }
 
-  //when (tempPush.fire) {
+  //when (ctrlIo.misc.fifoAmountCanPop < cpp) 
+  //val rDidFirstAssertCtrlValid = Reg(Bool()) init(False)
+  //val didInit = Reg(Bool()) init(False)
+  //when (
+  //  //ctrlIo.push.fire || !rDidFirstAssertCtrlValid
+  //  //&& ctrlIo.misc.fifoAmountCanPush > (ctrlFifoDepth - cpp)
+  //  //ctrlIo.misc.nextPixelEn
+  //  //!rCtrlPushValid
+  //  //!ctrlIo.misc.fifoFull
+  //  //ctrlIo.misc.pixelEn
+  //  //&& (ctrlIo.misc.fifoAmountCanPop < 10)
+  //  ctrlIo.push.fire
+  //  //&& (
+  //  //  ctrlIo.misc.fifoAmountCanPush > (ctrlFifoDepth - 4)
+  //  //)
+  //  //&& (ctrlIo.misc.fifoAmountCanPop < cpp)
+  //) {
+  //  //rDidFirstAssertCtrlValid := True
+  //  //rCtrlPushValid := True
+  //  //dithPushValid := True
+  //  rDithPushValid := True
+  //  //rCtrlPushValid := True
+  //  rDithCol.r := (default -> True)
+  //  //rDithCol.r := 0
+  //  when (
+  //    (dithIo.outp.pos.x === 0x0)
+  //    || !didInit
+  //  ) {
+  //    didInit := True
+  //    rDithCol.g := 0x0
+  //  } otherwise { // when (dithIo.outp.pos > 0x0)
+  //    //rDithCol.g := rPastDithCol.g + 1
+  //    //rDithCol.g := 0x3
+  //    rDithCol.g := rDithCol.g + 1
+  //  }
+  //  rDithCol.b := 0x0
+  //} otherwise {
+  //  rDithPushValid := False
+  //  //when (rCtrlPushValid && ctrlIo.push.fire) {
+  //  //  rCtrlPushValid := False
+  //  //}
+  //  //rCtrlPushValid := False
+  //  //dithPushValid := False
+  //  //rDithPushValid := True
+  //  //dithCol := rPastDithCol
+  //  //dithCol := dithCol
   //}
-
-  // Gradient
-  //when (sbIo.prev.fire) {
-  //}
-  //when (!ctrlIo.misc.fifoFull) {
-  //} otherwise { // when (ctrlIo.misc.fifoFull)
-  //  
-  //}
-  //when (ctrlIo.push.ready)
-  //when (!ctrlIo.misc.fifoFull) {
-  //  
-  //} otherwise { // when (ctrlIo.misc.fifoFull)
-  //}
-  //when (ctrlIo.misc.fifoFull)
   //--------
 }
 
