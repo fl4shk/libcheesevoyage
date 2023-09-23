@@ -226,18 +226,20 @@ case class Fifo[
     nextAmountCanPush := (
       U(f"$amountWidth'd$depth") - nextAmountCanPop
     )
-    val tempNextTail = UInt(amountWidth bits)
-    tempNextTail := nextTail.resized
-    val tempNextHead = UInt(amountWidth bits)
-    tempNextHead := nextHead.resized
+    //val tempNextTail = UInt(amountWidth bits)
+    //tempNextTail := nextTail.resized
+    //val tempNextHead = UInt(amountWidth bits)
+    //tempNextHead := nextHead.resized
     //nextAmountCanPop := tempNextHead - tempNextTail
     nextAmountCanPop := Mux(
-      tempNextHead > tempNextTail,
-      tempNextHead - tempNextTail,
-      U(f"$amountWidth'd$depth") + (tempNextHead - tempNextTail),
+      rHead > rTail,
+      rHead - rTail,
+      U(f"$amountWidth'd$depth") + (rHead - rTail),
     )
-    misc.amountCanPush := rAmountCanPush
-    misc.amountCanPop := rAmountCanPop
+    //misc.amountCanPush := rAmountCanPush
+    //misc.amountCanPop := rAmountCanPop
+    misc.amountCanPush := nextAmountCanPush
+    misc.amountCanPop := nextAmountCanPop
   }
 
   //GenerationFlags.formal {
@@ -683,13 +685,20 @@ case class AsyncReadFifo[
     tempNextTail := nextTail.resized
     val tempNextHead = UInt(amountWidth bits)
     tempNextHead := nextHead.resized
+    //nextAmountCanPop := Mux(
+    //  tempNextHead > tempNextTail,
+    //  tempNextHead - tempNextTail,
+    //  U(f"$amountWidth'd$depth") + (tempNextHead - tempNextTail),
+    //)
     nextAmountCanPop := Mux(
-      tempNextHead > tempNextTail,
-      tempNextHead - tempNextTail,
-      U(f"$amountWidth'd$depth") + (tempNextHead - tempNextTail),
+      rHead > rTail,
+      rHead - rTail,
+      U(f"$amountWidth'd$depth") + (rHead - rTail),
     )
-    misc.amountCanPush := rAmountCanPush
-    misc.amountCanPop := rAmountCanPop
+    //misc.amountCanPush := rAmountCanPush
+    //misc.amountCanPop := rAmountCanPop
+    misc.amountCanPush := nextAmountCanPush
+    misc.amountCanPop := nextAmountCanPop
   }
   val locFormal = new Area {
     val lastTailVal = Reg(dataType()) init(dataType().getZero)
