@@ -152,7 +152,7 @@ case class LcvVgaGradient(
     //when () {
     //}
     //when (ctrlIo.misc.nextVisib && !ctrlIo.misc.visib)
-    when (ctrlIo.misc.nextNextVisib) {
+    when (ctrlIo.misc.nextNextVisib && !ctrlIo.misc.nextVisib) {
       resetDbgPhysCol()
     } otherwise {
       incrDbgPhysCol()
