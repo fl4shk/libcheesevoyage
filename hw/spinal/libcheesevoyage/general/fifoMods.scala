@@ -100,7 +100,7 @@ case class Fifo[
   dataType: HardType[T],
   depth: Int,
   //arrRamStyle: String="ultra",
-  arrRamStyle: String="bram",
+  arrRamStyle: String="block",
 ) extends Component {
   //--------
   val io = FifoIo(
@@ -502,7 +502,7 @@ case class AsyncReadFifo[
   dataType: HardType[T],
   depth: Int,
   //arrRamStyle: String="ultra",
-  arrRamStyle: String="bram",
+  arrRamStyle: String="block",
 ) extends Component {
   //val test = StreamFifo(dataType())
   //--------
