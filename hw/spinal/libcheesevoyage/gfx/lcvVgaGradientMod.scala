@@ -154,51 +154,60 @@ case class LcvVgaGradient(
   //pastPixelEn := ctrlIo.misc.pixelEn
   //val visibToggle = Reg(Bool()) init(False)
   //when (ctrlIo.misc.visib && !ctrlIo.misc.pastVisib)
+  //when (ctrlIo.push.fire) {
+  //}
+  val rPosX = Reg(UInt(ctrlIo.misc.drawPos.x.getWidth bits)) init(0x0)
   when (ctrlIo.push.fire) {
-  }
-
-  when (
-    //(ctrlIo.misc.pastVisib && !pastPastVisib)
-    //|| !ctrlIo.misc.pastVisib
-    (ctrlIo.misc.visib && !ctrlIo.misc.pastVisib)
-    || (!ctrlIo.misc.visib)
-  ) {
-    //rCtrlPushValid := False
-    resetDbgPhysCol()
-  } otherwise {
-    //when (!rCtrlPushValid) {
-    //  rCtrlPushValid := True
-    //  //when (
-    //  //  ctrlIo.misc.fifoPopReady
-    //  //) {
-    //  //  incrDbgPhysCol
-    //  //}
-    //} otherwise { // when (rCtrlPushValid)
-    //}
-    //when (!rCtrlPushValid) {
-    //  rCtrlPushValid := True
-    //  incrDbgPhysCol()
-    //} otherwise {
-    //  when (ctrlIo.push.fire) {
-    //    rCtrlPushValid := False
-    //  }
-    //}
-    when (ctrlIo.push.fire) {
+    when (rPosX === 0x0) {
+      resetDbgPhysCol()
+    } otherwise {
       incrDbgPhysCol()
     }
-
-    //when (!rCtrlPushValid) {
-    //  rCtrlPushValid
-    //} otherwise {
-    //}
-    //when (!ctrlIo.push.fire) {
-    //  rCtrlPushValid := True
-    //} otherwise { // when (ctrlIo.push.fire)
-    //  rCtrlPushValid := False
-    //  //incrDbgPhysCol()
-    //}
-    //rCtrlPushValid := True
+    rPosX := rPosX + 1
   }
+
+  //when (
+  //  //(ctrlIo.misc.pastVisib && !pastPastVisib)
+  //  //|| !ctrlIo.misc.pastVisib
+  //  (ctrlIo.misc.visib && !ctrlIo.misc.pastVisib)
+  //  || (!ctrlIo.misc.visib)
+  //) {
+  //  //rCtrlPushValid := False
+  //  resetDbgPhysCol()
+  //} otherwise {
+  //  //when (!rCtrlPushValid) {
+  //  //  rCtrlPushValid := True
+  //  //  //when (
+  //  //  //  ctrlIo.misc.fifoPopReady
+  //  //  //) {
+  //  //  //  incrDbgPhysCol
+  //  //  //}
+  //  //} otherwise { // when (rCtrlPushValid)
+  //  //}
+  //  //when (!rCtrlPushValid) {
+  //  //  rCtrlPushValid := True
+  //  //  incrDbgPhysCol()
+  //  //} otherwise {
+  //  //  when (ctrlIo.push.fire) {
+  //  //    rCtrlPushValid := False
+  //  //  }
+  //  //}
+  //  when (ctrlIo.push.fire) {
+  //    incrDbgPhysCol()
+  //  }
+
+  //  //when (!rCtrlPushValid) {
+  //  //  rCtrlPushValid
+  //  //} otherwise {
+  //  //}
+  //  //when (!ctrlIo.push.fire) {
+  //  //  rCtrlPushValid := True
+  //  //} otherwise { // when (ctrlIo.push.fire)
+  //  //  rCtrlPushValid := False
+  //  //  //incrDbgPhysCol()
+  //  //}
+  //  //rCtrlPushValid := True
+  //}
 
   //when (ctrlIo.push.fire) {
   //}
