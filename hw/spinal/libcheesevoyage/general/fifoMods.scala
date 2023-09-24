@@ -185,7 +185,7 @@ case class Fifo[
     //	],
     //	attrs={"ram_style": "ultra"}
     //)
-    val arr = new Mem(dataType(), depth)
+    val arr = new Mem(dataType(), tempDepth)
       .addAttribute("ram_style", arrRamStyle)
       .addAttribute("keep")
 
@@ -575,7 +575,7 @@ case class AsyncReadFifo[
     //arr = Array([
     //  Signal(bus.shape()) for _ in range(bus.SIZE())
     //])
-    val arr = Mem(dataType(), depth)
+    val arr = Mem(dataType(), tempDepth)
       .addAttribute("ram_style", arrRamStyle)
       .addAttribute("keep")
     //arr = Array(
