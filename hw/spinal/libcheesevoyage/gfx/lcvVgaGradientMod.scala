@@ -128,8 +128,6 @@ case class LcvVgaGradient(
   ctrlIo.push.payload := rDbgPhysCol
   //--------
   // Gradient
-  //when (!ctrlIo.misc.fifoFull) 
-  //when (ctrlIo.push.fire) 
   def cpp = LcvVgaCtrl.cpp(
     clkRate=clkRate,
     vgaTimingInfo=vgaTimingInfo,
@@ -144,32 +142,6 @@ case class LcvVgaGradient(
     rDbgPhysCol.g := rDbgPhysCol.g + 1
     rDbgPhysCol.b := 0x0
   }
-  //when (!rCtrlPushValid) {
-  //  rCtrlPushValid := True
-  //  //when (!ctrlIo.push.fire) {
-  //  //} otherwise { // when (ctrlIo.push.fire)
-  //  //}
-  //  //when () {
-  //  //}
-  //  //when (ctrlIo.misc.nextVisib && !ctrlIo.misc.visib)
-  //  //when (ctrlIo.misc.nextNextVisib && !ctrlIo.misc.nextVisib) 
-  //  when (ctrlIo.misc.visib && !ctrlIo.misc.pastVisib){
-  //    resetDbgPhysCol()
-  //  } otherwise {
-  //    incrDbgPhysCol()
-  //  }
-  //} otherwise {
-  //  when (ctrlIo.push.fire) {
-  //    rCtrlPushValid := False
-  //  }
-  //}
-  //when (!rCtrlPushValid) {
-  //  rCtrlPushValid := True
-  //} otherwise {
-  //  when (ctrlIo.push.fire) {
-  //    rCtrlPushValid := False
-  //  }
-  //}
   val pastPastVisib = Reg(Bool()) init(False)
   pastPastVisib := ctrlIo.misc.pastVisib
   ////when (ctrlIo.misc.visib && !ctrlIo.misc.pastVisib) 
