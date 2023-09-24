@@ -142,20 +142,9 @@ case class LcvVgaGradient(
     rDbgPhysCol.g := rDbgPhysCol.g + 1
     rDbgPhysCol.b := 0x0
   }
-  val pastPastVisib = Reg(Bool()) init(False)
-  pastPastVisib := ctrlIo.misc.pastVisib
-  ////when (ctrlIo.misc.visib && !ctrlIo.misc.pastVisib) 
-  //when (ctrlIo.misc.pastVisib && !pastPastVisib) {
-  //  resetDbgPhysCol()
-  //} elsewhen (ctrlIo.push.fire) {
-  //  incrDbgPhysCol()
-  //}
-  //val pastPixelEn = Reg(Bool()) init(False)
-  //pastPixelEn := ctrlIo.misc.pixelEn
-  //val visibToggle = Reg(Bool()) init(False)
-  //when (ctrlIo.misc.visib && !ctrlIo.misc.pastVisib)
-  //when (ctrlIo.push.fire) {
-  //}
+  //val pastPastVisib = Reg(Bool()) init(False)
+  //pastPastVisib := ctrlIo.misc.pastVisib
+
   val rPosX = Reg(UInt(ctrlIo.misc.drawPos.x.getWidth bits)) init(0x0)
   when (ctrlIo.push.fire) {
     when (rPosX === 0x0) {

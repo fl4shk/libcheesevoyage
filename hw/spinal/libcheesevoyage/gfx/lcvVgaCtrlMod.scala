@@ -324,8 +324,8 @@ case class LcvVgaCtrl(
   val fifo = StreamFifo(
     dataType=Rgb(rgbConfig),
     depth=fifoDepth,
-    //latency=1,
-    latency=0,
+    latency=1,
+    //latency=0,
   )
   val fifoPush = fifo.io.push
   val fifoPop = fifo.io.pop
