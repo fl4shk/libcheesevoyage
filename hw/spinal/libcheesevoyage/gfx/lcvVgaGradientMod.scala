@@ -120,9 +120,9 @@ case class LcvVgaGradient(
 
   //ctrlIo.push.payload := dithIo.outp.col
   //--------
-  //val rCtrlPushValid = Reg(Bool()) init(False)
-  //ctrlIo.push.valid := rCtrlPushValid
-  ctrlIo.push.valid := True
+  val rCtrlPushValid = Reg(Bool()) init(False)
+  ctrlIo.push.valid := rCtrlPushValid
+  //ctrlIo.push.valid := True
   val rDbgPhysCol = Reg(Rgb(io.outRgbConfig))
   rDbgPhysCol.init(rDbgPhysCol.getZero)
   ctrlIo.push.payload := rDbgPhysCol
@@ -134,6 +134,7 @@ case class LcvVgaGradient(
   )
   def resetDbgPhysCol(): Unit = {
     rDbgPhysCol.r := (default -> True)
+    //rDbgPhysCol.r := 0x0
     rDbgPhysCol.g := 0x0
     rDbgPhysCol.b := 0x0
   }
@@ -145,14 +146,27 @@ case class LcvVgaGradient(
   //val pastPastVisib = Reg(Bool()) init(False)
   //pastPastVisib := ctrlIo.misc.pastVisib
 
-  val rPosX = Reg(UInt(ctrlIo.misc.drawPos.x.getWidth bits)) init(0x0)
-  when (ctrlIo.push.fire) {
+  val rPosX = Reg(UInt(ctrlIo.misc.drawPos.x.getWidth bits))
+    .init(vgaTimingInfo.htiming.visib)
+  //val initPosX = UInt(rPosX.getWidth bits)
+  //initPosX := (default -> True)
+  val nextPosX = UInt(rPosX.getWidth bits)
+  
+  when (rPosX + 1 < vgaTimingInfo.htiming.visib) {
+    nextPosX := rPosX + 1
+  } otherwise {
+    nextPosX := 0x0
+  }
+  //when (ctrlIo.push.fire) 
+  when (!rCtrlPushValid) {
     //when (rPosX === 0x0) {
     //  resetDbgPhysCol()
     //} otherwise {
     //  incrDbgPhysCol()
     //}
-    switch (rPosX) {
+    rCtrlPushValid := True
+    rPosX := nextPosX
+    switch (nextPosX) {
       is (0) {
         rDbgPhysCol.r := (default -> True)
         rDbgPhysCol.g := 0x0
@@ -179,13 +193,18 @@ case class LcvVgaGradient(
         rDbgPhysCol.b := (default -> True)
       }
       default {
-        resetDbgPhysCol()
+        //resetDbgPhysCol()
+        rDbgPhysCol := rDbgPhysCol.getZero
       }
     }
-    when (rPosX + 1 < vgaTimingInfo.htiming.visib) {
-      rPosX := rPosX + 1
-    } otherwise {
-      rPosX := 0x0
+    //when (rPosX + 1 < vgaTimingInfo.htiming.visib) {
+    //  rPosX := rPosX + 1
+    //} otherwise {
+    //  rPosX := 0x0
+    //}
+  } otherwise {
+    when (ctrlIo.push.fire) {
+      rCtrlPushValid := False
     }
   }
 
