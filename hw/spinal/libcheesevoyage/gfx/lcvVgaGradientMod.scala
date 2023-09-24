@@ -147,10 +147,40 @@ case class LcvVgaGradient(
 
   val rPosX = Reg(UInt(ctrlIo.misc.drawPos.x.getWidth bits)) init(0x0)
   when (ctrlIo.push.fire) {
-    when (rPosX === 0x0) {
-      resetDbgPhysCol()
-    } otherwise {
-      incrDbgPhysCol()
+    //when (rPosX === 0x0) {
+    //  resetDbgPhysCol()
+    //} otherwise {
+    //  incrDbgPhysCol()
+    //}
+    switch (rPosX) {
+      is (0) {
+        rDbgPhysCol.r := (default -> True)
+        rDbgPhysCol.g := 0x0
+        rDbgPhysCol.b := 0x0
+      }
+      is (1) {
+        rDbgPhysCol.r := (default -> True)
+        rDbgPhysCol.g := (rDbgPhysCol.g.high -> True, default -> False)
+        rDbgPhysCol.b := 0x0
+      }
+      is (2) {
+        rDbgPhysCol.r := (default -> True)
+        rDbgPhysCol.g := (default -> True)
+        rDbgPhysCol.b := 0x0
+      }
+      is (3) {
+        rDbgPhysCol.r := 0x0
+        rDbgPhysCol.g := (default -> True)
+        rDbgPhysCol.b := 0x0
+      }
+      is (4) {
+        rDbgPhysCol.r := 0x0
+        rDbgPhysCol.g := 0x0
+        rDbgPhysCol.b := (default -> True)
+      }
+      default {
+        resetDbgPhysCol()
+      }
     }
     rPosX := rPosX + 1
   }
