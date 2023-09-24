@@ -147,8 +147,9 @@ case class Fifo[
   //push.ready := sbPush.io.prev.ready
 
   //sbPush.io.next.ready := True
-  val sbPushNextReady = Reg(Bool()) init(True)
-  sbPush.io.next.ready := sbPushNextReady
+  //val sbPushNextReady = Reg(Bool()) init(True)
+  //sbPush.io.next.ready := sbPushNextReady
+  sbPush.io.next.ready := True
   val wrData = sbPush.io.prev.payload
   val wrEn = sbPush.io.prev.fire
   //val pushBusy = sbPush.io.misc.busy
@@ -721,7 +722,7 @@ case class AsyncReadFifo[
     val testHead = ((loc.rHead + 0x1) % tempDepth)
   }
   GenerationFlags.formal {
-    locFormal.lastTailVal := loc.arr.readAsync(loc.rTail)
+    locFormal.lastTailVal := loc.arr.readAsync(address=loc.rTail.resized)
   }
   //--------
   // Combinational logic
@@ -730,7 +731,7 @@ case class AsyncReadFifo[
   // m.d.comb += rdData := (loc.arr(loc.rTail))
 
   //m.d.comb += [
-  rdData := loc.arr.readAsync(loc.rTail)
+  rdData := loc.arr.readAsync(address=loc.rTail.resized)
   rdValid := True
   misc.empty := loc.empty
   misc.full := loc.full
@@ -877,7 +878,7 @@ case class AsyncReadFifo[
         //assert(misc.full === past(loc.nextFull)),
         assert(~(misc.empty & misc.full))
 
-        assert(rdData === loc.arr(loc.rTail))
+        assert(rdData === loc.arr(loc.rTail.resized))
         //assert(past(rdData) === locFormal.lastTailVal)
         //]
 

@@ -35,7 +35,7 @@ object FifoFormal extends App {
     })
 }
 object AsyncReadFifoFormal extends App {
-  val depth = 5
+  val depth = 4
   new SpinalFormalConfig(_keepDebugInfo=true) 
     .withBMC(20)
     .withProve(20)
