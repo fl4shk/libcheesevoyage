@@ -171,57 +171,90 @@ case class LcvVgaGradient(
   //when (!rDithPushValid) {
   //} otherwise {
   //}
-  when (!rDithPushValid) {
-    //rCtrlPushValid := True
-    rCtrlPushValid := False
-    rDithPushValid := True
-    when (dithIo.outp.nextPos.x === 0x0) {
-      resetDithCol()
-    } otherwise {
-      incrDithCol()
+  object State extends SpinalEnum(defaultEncoding=binarySequential) {
+    val
+      updateDithCol,
+      otherState
+      = newElement();
+  }
+  val state = Reg(State) init(State.updateDithCol)
+
+  switch (state) {
+    is (State.updateDithCol) {
+      rCtrlPushValid := False
+      rDithPushValid := True
+      when (dithIo.outp.nextPos.x === 0x0) {
+        resetDithCol()
+      } otherwise {
+        incrDithCol()
+      }
+      state := State.otherState
     }
-    //rPosX := nextPosX
-    //switch (nextPosX) {
-    //  is (0) {
-    //    rDbgPhysCol.r := (default -> True)
-    //    rDbgPhysCol.g := 0x0
-    //    rDbgPhysCol.b := 0x0
-    //  }
-    //  is (1) {
-    //    rDbgPhysCol.r := (default -> True)
-    //    rDbgPhysCol.g := (rDbgPhysCol.g.high -> True, default -> False)
-    //    rDbgPhysCol.b := 0x0
-    //  }
-    //  is (2) {
-    //    rDbgPhysCol.r := (default -> True)
-    //    rDbgPhysCol.g := (default -> True)
-    //    rDbgPhysCol.b := 0x0
-    //  }
-    //  is (3) {
-    //    rDbgPhysCol.r := 0x0
-    //    rDbgPhysCol.g := (default -> True)
-    //    rDbgPhysCol.b := 0x0
-    //  }
-    //  is (4) {
-    //    rDbgPhysCol.r := 0x0
-    //    rDbgPhysCol.g := 0x0
-    //    rDbgPhysCol.b := (default -> True)
-    //  }
-    //  default {
-    //    //resetDbgPhysCol()
-    //    //rDbgPhysCol := rDbgPhysCol.getZero
-    //  }
-    //}
-  } otherwise {
-    when (!rCtrlPushValid) {
-      rCtrlPushValid := True
-    } otherwise {
-      when (ctrlIo.push.fire) {
-        rCtrlPushValid := False
-        rDithPushValid := False
+    is (State.otherState) {
+      rDithPushValid := False
+      when (!rCtrlPushValid) {
+        rCtrlPushValid := True
+      } otherwise {
+        when (ctrlIo.push.fire) {
+          rCtrlPushValid := False
+          //rDithPushValid := False
+          state := State.updateDithCol
+        }
       }
     }
   }
+
+  //when (!rDithPushValid) {
+  //  //rCtrlPushValid := True
+  //  rCtrlPushValid := False
+  //  rDithPushValid := True
+  //  when (dithIo.outp.nextPos.x === 0x0) {
+  //    resetDithCol()
+  //  } otherwise {
+  //    incrDithCol()
+  //  }
+  //  //rPosX := nextPosX
+  //  //switch (nextPosX) {
+  //  //  is (0) {
+  //  //    rDbgPhysCol.r := (default -> True)
+  //  //    rDbgPhysCol.g := 0x0
+  //  //    rDbgPhysCol.b := 0x0
+  //  //  }
+  //  //  is (1) {
+  //  //    rDbgPhysCol.r := (default -> True)
+  //  //    rDbgPhysCol.g := (rDbgPhysCol.g.high -> True, default -> False)
+  //  //    rDbgPhysCol.b := 0x0
+  //  //  }
+  //  //  is (2) {
+  //  //    rDbgPhysCol.r := (default -> True)
+  //  //    rDbgPhysCol.g := (default -> True)
+  //  //    rDbgPhysCol.b := 0x0
+  //  //  }
+  //  //  is (3) {
+  //  //    rDbgPhysCol.r := 0x0
+  //  //    rDbgPhysCol.g := (default -> True)
+  //  //    rDbgPhysCol.b := 0x0
+  //  //  }
+  //  //  is (4) {
+  //  //    rDbgPhysCol.r := 0x0
+  //  //    rDbgPhysCol.g := 0x0
+  //  //    rDbgPhysCol.b := (default -> True)
+  //  //  }
+  //  //  default {
+  //  //    //resetDbgPhysCol()
+  //  //    //rDbgPhysCol := rDbgPhysCol.getZero
+  //  //  }
+  //  //}
+  //} otherwise {
+  //  when (!rCtrlPushValid) {
+  //    rCtrlPushValid := True
+  //  } otherwise {
+  //    when (ctrlIo.push.fire) {
+  //      rCtrlPushValid := False
+  //      rDithPushValid := False
+  //    }
+  //  }
+  //}
 
   //--------
 }
