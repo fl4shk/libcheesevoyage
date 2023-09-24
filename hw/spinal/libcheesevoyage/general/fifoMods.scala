@@ -31,8 +31,11 @@ import scala.collection.mutable.ArrayBuffer
 //  //--------
 //}
 object FifoMiscIo {
-  def ptrWidth(depth: Int) = log2Up(depth)
-  def amountWidth(depth: Int) = log2Up(depth + 1)
+  //def ptrWidth(depth: Int) = log2Up(depth)
+  //def amountWidth(depth: Int) = log2Up(depth + 1)
+  def tempDepth(depth: Int) = depth + 1
+  def ptrWidth(depth: Int) = log2Up(tempDepth(depth) + 1)
+  def amountWidth(depth: Int) = ptrWidth(depth=depth + 1)
 }
 case class FifoMiscIo(
   depth: Int,
@@ -43,6 +46,7 @@ case class FifoMiscIo(
 
   //def ptrWidth = log2Up(depth)
   //def amountWidth = log2Up(depth + 1)
+  def tempDepth = FifoMiscIo.tempDepth(depth=depth)
   def ptrWidth = FifoMiscIo.ptrWidth(depth=depth)
   def amountWidth = FifoMiscIo.amountWidth(depth=depth)
 
@@ -73,6 +77,7 @@ case class FifoIo[
   //val pop = sbIo.next
   //val misc = out(FifoMiscIo(depth=depth))
   val misc = FifoMiscIo(depth=depth)
+  def tempDepth = misc.tempDepth
   def ptrWidth = misc.ptrWidth
   def amountWidth = misc.amountWidth
   //--------
@@ -114,6 +119,7 @@ case class Fifo[
   val pop = io.pop
   val misc = io.misc
   //--------
+  def tempDepth = io.tempDepth
   def ptrWidth = io.ptrWidth
   def amountWidth = io.amountWidth
   //--------
@@ -171,7 +177,7 @@ case class Fifo[
     //loc.arr = Array([
     //  Signal(io.shape()) for _ in range(io.SIZE())
     //])
-    //val arr = Vec(dataType(), depth)
+    //val arr = Vec(dataType(), tempDepth)
     //loc.arr = Array(
     //	[
     //		Signal(io.shape()) for _ in range(io.SIZE())
@@ -183,8 +189,8 @@ case class Fifo[
       .addAttribute("keep")
 
     //ptrWidth = width_from_arg(io.SIZE())
-    //val ptrWidth = log2Up(depth)
-    //val ptrWidth = depth
+    //val ptrWidth = log2Up(tempDepth)
+    //val ptrWidth = tempDepth
 
     val rTail = Reg(UInt(ptrWidth bits)) init(0x0)
     val rHead = Reg(UInt(ptrWidth bits)) init(0x0)
@@ -224,7 +230,7 @@ case class Fifo[
     rAmountCanPush := nextAmountCanPush
     rAmountCanPop := nextAmountCanPop
     nextAmountCanPush := (
-      U(f"$amountWidth'd$depth") - nextAmountCanPop
+      U(f"$amountWidth'd$tempDepth") - nextAmountCanPop
     )
     val tempNextTail = UInt(amountWidth bits)
     tempNextTail := nextTail.resized
@@ -234,12 +240,12 @@ case class Fifo[
     //nextAmountCanPop := Mux(
     //  rHead >= rTail,
     //  rHead - rTail,
-    //  U(f"$amountWidth'd$depth") + (rHead - rTail),
+    //  U(f"$amountWidth'd$tempDepth") + (rHead - rTail),
     //)
     nextAmountCanPop := Mux(
       rHead >= rTail,
       rHead - rTail,
-      U(f"$amountWidth'd$depth") - (rTail - rHead),
+      U(f"$amountWidth'd$tempDepth") - (rTail - rHead),
     )
     //misc.amountCanPush := rAmountCanPush
     //misc.amountCanPop := rAmountCanPop
@@ -270,12 +276,12 @@ case class Fifo[
   GenerationFlags.formal {
     //m.d.sync
     //+= [
-      locFormal.lastTailVal := loc.arr.readAsync(loc.rTail)
+      locFormal.lastTailVal := loc.arr.readAsync(address=loc.rTail.resized)
       locFormal.wdCnt := locFormal.wdCnt - 0x10
     //]
     //m.d.comb
     //+= [
-      locFormal.testHead := (loc.rHead + 0x1) % depth
+      locFormal.testHead := (loc.rHead + 0x1) % tempDepth
     //]
   }
   //--------
@@ -284,22 +290,22 @@ case class Fifo[
   //m.d.comb 
   //+= [
     //loc.incrTail := Mux[UInt](
-    //  loc.tailPlus1 < depth, (loc.rTail + 0x1), 0x0
+    //  loc.tailPlus1 < tempDepth, (loc.rTail + 0x1), 0x0
     //)
     //loc.incrHead := Mux[UInt](
-    //  loc.headPlus1 < depth, (loc.rHead + 0x1), 0x0
+    //  loc.headPlus1 < tempDepth, (loc.rHead + 0x1), 0x0
     //)
     //val tempDepth = UInt((ptrWidth + 1) bits) 
     //val tempDe
-    //tempDepth := depth & ((1 << (ptrWidth + 1)) - 1)
+    //tempDepth := tempDepth & ((1 << (ptrWidth + 1)) - 1)
     //when (loc.tailPlus1 < tempDepth) 
-    when (loc.tailPlus1 < depth) {
+    when (loc.tailPlus1 < tempDepth) {
       loc.incrTail := loc.rTail + 0x1
     } otherwise {
       loc.incrTail := 0x0
     }
     //when (loc.headPlus1.resized < tempDepth.resized) 
-    when (loc.headPlus1 < depth) {
+    when (loc.headPlus1 < tempDepth) {
       loc.incrHead := loc.rHead + 0x1
     } otherwise {
       loc.incrHead := 0x0
@@ -386,7 +392,7 @@ case class Fifo[
 
     when (rdEn & ~misc.empty) {
       //m.d.sync += 
-      rdData := loc.arr.readAsync(loc.rTail.resized)
+      rdData := loc.arr.readAsync(address=loc.rTail.resized)
       //rdValid := True
       rdValid := True
     } otherwise {
@@ -397,23 +403,23 @@ case class Fifo[
     when (wrEn & ~misc.full) {
       //m.d.sync += 
       //loc.arr(loc.rHead) := wrData
-      loc.arr.write(loc.rHead, wrData)
+      loc.arr.write(address=loc.rHead.resized, data=wrData)
     }
     //--------
     //if self.FORMAL():
     GenerationFlags.formal {
       when (pastValidAfterReset) {
-        //assert(loc.rTail < depth)
-        //assert(loc.rHead < depth)
+        //assert(loc.rTail < tempDepth)
+        //assert(loc.rHead < tempDepth)
         val tempTailWidth = loc.rTail.getWidth + 1
         val tempHeadWidth = loc.rHead.getWidth + 1
         val tempTailVec = Vec(UInt(tempTailWidth bits), 2)
         val tempHeadVec = Vec(UInt(tempHeadWidth bits), 2)
         tempTailVec(0) := loc.rTail.resized
-        tempTailVec(1) := U(f"$tempTailWidth'd$depth")
+        tempTailVec(1) := U(f"$tempTailWidth'd$tempDepth")
         assert(tempTailVec(0) < tempTailVec(1))
         tempHeadVec(0) := loc.rHead.resized
-        tempHeadVec(1) := U(f"$tempHeadWidth'd$depth")
+        tempHeadVec(1) := U(f"$tempHeadWidth'd$tempDepth")
         assert(tempHeadVec(0) < tempHeadVec(1))
 
         //m.d.sync += [
@@ -493,9 +499,11 @@ case class AsyncReadFifo[
 ](
   dataType: HardType[T],
   depth: Int,
+  arrRamStyle: String="ultra",
 ) extends Component {
   //val test = StreamFifo(dataType())
   //--------
+  //def tempDepth = depth + 1
   val io = FifoIo(
     dataType=dataType(),
     depth=depth,
@@ -509,6 +517,7 @@ case class AsyncReadFifo[
   val pop = io.pop
   val misc = io.misc
   //--------
+  def tempDepth = io.tempDepth
   def ptrWidth = io.ptrWidth
   def amountWidth = io.amountWidth
   //--------
@@ -565,8 +574,9 @@ case class AsyncReadFifo[
     //arr = Array([
     //  Signal(bus.shape()) for _ in range(bus.SIZE())
     //])
-    val arr = Mem(dataType(), depth) addAttribute("ram_style", "ultra")
-    arr.addAttribute("keep")
+    val arr = Mem(dataType(), depth)
+      .addAttribute("ram_style", arrRamStyle)
+      .addAttribute("keep")
     //arr = Array(
     //  [
     //    Signal(bus.shape()) for _ in range(bus.SIZE())
@@ -576,15 +586,15 @@ case class AsyncReadFifo[
     //m = Blank()
     //m.submodules.mwrap = m.mwrap = MemWrapper(
     //  shape=bus.shape(),
-    //  depth=bus.SIZE(),
+    //  tempDepth=bus.SIZE(),
     //  init=[0x0 for _ in range(bus.SIZE())],
     //  attrs=mem_attrs,
     //)
 
-    //val ptrWidth = log2Up(depth)
+    //val ptrWidth = log2Up(tempDepth)
     def ptrWidthPlus1 = ptrWidth + 1
     //val ptrWidthPlus1 = ptrWidthPlus1
-    def uintDepth = U(f"$ptrWidthPlus1'd$depth")
+    def uintDepth = U(f"$ptrWidthPlus1'd$tempDepth")
 
     val rHead = Reg(UInt(ptrWidth bits)) init(0x0)
     val rTail = Reg(UInt(ptrWidth bits)) init(0x0)
@@ -684,7 +694,7 @@ case class AsyncReadFifo[
     rAmountCanPush := nextAmountCanPush
     rAmountCanPop := nextAmountCanPop
     nextAmountCanPush := (
-      U(f"$amountWidth'd$depth") - nextAmountCanPop
+      U(f"$amountWidth'd$tempDepth") - nextAmountCanPop
     )
     val tempNextTail = UInt(amountWidth bits)
     tempNextTail := nextTail.resized
@@ -693,12 +703,12 @@ case class AsyncReadFifo[
     //nextAmountCanPop := Mux(
     //  tempNextHead > tempNextTail,
     //  tempNextHead - tempNextTail,
-    //  U(f"$amountWidth'd$depth") + (tempNextHead - tempNextTail),
+    //  U(f"$amountWidth'd$tempDepth") + (tempNextHead - tempNextTail),
     //)
     nextAmountCanPop := Mux(
       rHead >= rTail,
       rHead - rTail,
-      U(f"$amountWidth'd$depth") - (rTail - rHead),
+      U(f"$amountWidth'd$tempDepth") - (rTail - rHead),
     )
     //misc.amountCanPush := rAmountCanPush
     //misc.amountCanPop := rAmountCanPop
@@ -708,7 +718,7 @@ case class AsyncReadFifo[
   val locFormal = new Area {
     val lastTailVal = Reg(dataType()) init(dataType().getZero)
     lastTailVal.addAttribute("keep")
-    val testHead = ((loc.rHead + 0x1) % depth)
+    val testHead = ((loc.rHead + 0x1) % tempDepth)
   }
   GenerationFlags.formal {
     locFormal.lastTailVal := loc.arr.readAsync(loc.rTail)
@@ -834,7 +844,7 @@ case class AsyncReadFifo[
     // Write into the FIFO
     when ((~misc.full) & wrEn) {
       //m.d.sync += 
-      loc.arr.write(loc.rHead, wrData)
+      loc.arr.write(address=loc.rHead.resized, data=wrData)
     }
     //--------
     //if self.FORMAL():
@@ -846,13 +856,13 @@ case class AsyncReadFifo[
         val tempTailVec = Vec(UInt(tempTailWidth bits), 2)
         val tempHeadVec = Vec(UInt(tempHeadWidth bits), 2)
         tempTailVec(0) := loc.rTail.resized
-        tempTailVec(1) := U(f"$tempTailWidth'd$depth")
+        tempTailVec(1) := U(f"$tempTailWidth'd$tempDepth")
         assert(tempTailVec(0) < tempTailVec(1))
         tempHeadVec(0) := loc.rHead.resized
-        tempHeadVec(1) := U(f"$tempHeadWidth'd$depth")
+        tempHeadVec(1) := U(f"$tempHeadWidth'd$tempDepth")
         assert(tempHeadVec(0) < tempHeadVec(1))
-        //assert(loc.rTail < depth)
-        //assert(loc.rHead < depth)
+        //assert(loc.rTail < tempDepth)
+        //assert(loc.rHead < tempDepth)
 
         //m.d.sync += [
         // cover(misc.empty)
@@ -883,16 +893,16 @@ case class AsyncReadFifo[
             //tempTailPlus1(0) := past(loc.rTail).resized
             //tempTailPlus1(1) := U(f"$tempTailPlus1Width'd1")
             //tempTailPlus1(2) := tempTailPlus1(0) + tempTailPlus1(1)
-            //tempTailPlus1(3) := U(f"$tempTailPlus1Width'd$depth")
+            //tempTailPlus1(3) := U(f"$tempTailPlus1Width'd$tempDepth")
             //when (tempTailPlus1(2) >= tempTailPlus1(3)) {
             //  assert(loc.rTail === 0)
             //} otherwise {
             //  assert(loc.rTail === tempTailPlus1(2))
             //}
-            //when ((past(loc.rTail) + 1) === depth) {
+            //when ((past(loc.rTail) + 1) === tempDepth) {
             //}
             assert(loc.rTail
-              === ((past(loc.rTail) + 1) % depth))
+              === ((past(loc.rTail) + 1) % tempDepth))
           }
         } otherwise { // when (~past(rdEn))
           //m.d.sync += [
@@ -907,13 +917,13 @@ case class AsyncReadFifo[
             assert(stable(loc.rHead))
           } otherwise { // when (~past(misc.full))
             //m.d.sync +=
-            assert(loc.rHead === ((past(loc.rHead) + 1) % depth))
+            assert(loc.rHead === ((past(loc.rHead) + 1) % tempDepth))
             //val tempHeadPlus1Width = loc.rHead.getWidth + 1
             //val tempHeadPlus1 = Vec(UInt(tempHeadPlus1Width bits), 4)
             //tempHeadPlus1(0) := past(loc.rHead).resized
             //tempHeadPlus1(1) := U(f"$tempHeadPlus1Width'd1")
             //tempHeadPlus1(2) := tempHeadPlus1(0) + tempHeadPlus1(1)
-            //tempHeadPlus1(3) := U(f"$tempHeadPlus1Width'd$depth")
+            //tempHeadPlus1(3) := U(f"$tempHeadPlus1Width'd$tempDepth")
             //when (tempHeadPlus1(2) >= tempHeadPlus1(3)) {
             //  assert(loc.rHead === 0)
             //} otherwise {
