@@ -120,9 +120,9 @@ case class LcvVgaGradient(
 
   //ctrlIo.push.payload := dithIo.outp.col
   //--------
-  val rCtrlPushValid = Reg(Bool()) init(False)
-  ctrlIo.push.valid := rCtrlPushValid
-  //ctrlIo.push.valid := True
+  //val rCtrlPushValid = Reg(Bool()) init(False)
+  //ctrlIo.push.valid := rCtrlPushValid
+  ctrlIo.push.valid := True
   val rDbgPhysCol = Reg(Rgb(io.outRgbConfig))
   rDbgPhysCol.init(rDbgPhysCol.getZero)
   ctrlIo.push.payload := rDbgPhysCol
@@ -154,6 +154,8 @@ case class LcvVgaGradient(
   //pastPixelEn := ctrlIo.misc.pixelEn
   //val visibToggle = Reg(Bool()) init(False)
   //when (ctrlIo.misc.visib && !ctrlIo.misc.pastVisib)
+  when (ctrlIo.push.fire) {
+  }
 
   when (
     //(ctrlIo.misc.pastVisib && !pastPastVisib)
@@ -161,7 +163,7 @@ case class LcvVgaGradient(
     (ctrlIo.misc.visib && !ctrlIo.misc.pastVisib)
     || (!ctrlIo.misc.visib)
   ) {
-    rCtrlPushValid := False
+    //rCtrlPushValid := False
     resetDbgPhysCol()
   } otherwise {
     //when (!rCtrlPushValid) {
@@ -173,13 +175,18 @@ case class LcvVgaGradient(
     //  //}
     //} otherwise { // when (rCtrlPushValid)
     //}
-    when (!rCtrlPushValid) {
-      rCtrlPushValid := True
+    //when (!rCtrlPushValid) {
+    //  rCtrlPushValid := True
+    //  incrDbgPhysCol()
+    //} otherwise {
+    //  when (ctrlIo.push.fire) {
+    //    rCtrlPushValid := False
+    //  }
+    //}
+    when (ctrlIo.push.fire) {
       incrDbgPhysCol()
     }
-    when (ctrlIo.push.fire) {
-      rCtrlPushValid := False
-    }
+
     //when (!rCtrlPushValid) {
     //  rCtrlPushValid
     //} otherwise {
