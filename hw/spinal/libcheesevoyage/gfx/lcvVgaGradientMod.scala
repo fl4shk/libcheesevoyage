@@ -182,7 +182,11 @@ case class LcvVgaGradient(
         resetDbgPhysCol()
       }
     }
-    rPosX := rPosX + 1
+    when (rPosX < vgaTimingInfo.htiming.visib) {
+      rPosX := rPosX + 1
+    } otherwise {
+      rPosX := 0x0
+    }
   }
 
   //when (
