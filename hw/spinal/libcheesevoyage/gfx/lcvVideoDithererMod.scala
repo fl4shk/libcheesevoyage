@@ -221,7 +221,9 @@ case class LcvVideoDitherer(
 
   val rOutpFrameCnt = Reg(UInt(ditherDeltaWidth bits)) init(0x0)
   val rOutpPos = Reg(coordT())
-  rOutpPos.init(rOutpPos.getZero)
+  //rOutpPos.init(rOutpPos.getZero)
+  rOutpPos.x.init(fbSize2d.x)
+  rOutpPos.y.init(fbSize2d.y)
   val rOutpPastPos = Reg(coordT())
   rOutpPastPos.init(rOutpPastPos.getZero)
   outp.pos := rOutpPos
