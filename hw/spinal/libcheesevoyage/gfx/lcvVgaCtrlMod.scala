@@ -462,7 +462,8 @@ case class LcvVgaCtrl(
     rNextNextPixelEnArr(idx).setName(f"rNextPixelEnArr_$idx")
     if (idx == 0) {
       rInvFifoEmptyArr(idx) := !fifoEmpty
-      rNextNextPixelEnArr(idx) := clkCntP1 === cpp - 2 - fifoPopDelay
+      //rNextNextPixelEnArr(idx) := clkCntP1 === cpp - 2 - fifoPopDelay
+      rNextNextPixelEnArr(idx) := clkCntP1 === cpp - fifoPopDelay
     } else {
       rInvFifoEmptyArr(idx) := rInvFifoEmptyArr(idx - 1)
       rNextNextPixelEnArr(idx) := rNextNextPixelEnArr(idx - 1)
