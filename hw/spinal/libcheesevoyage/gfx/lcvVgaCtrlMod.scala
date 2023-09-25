@@ -420,29 +420,66 @@ case class LcvVgaCtrl(
   val rFifoPopReady = Reg(Bool()) init(False)
   val rNextNextPixelEn = Reg(Bool()) init(False)
   //val rNextNextVisib = Reg(Bool()) init(False)
-  val rInvFifoEmpty = Reg(Bool()) init(False)
+  //val rInvFifoEmpty = Reg(Bool()) init(False)
   rNextNextPixelEn := misc.nextNextPixelEn
   //rNextNextVisib := misc.nextNextVisib
-  rInvFifoEmpty := !fifoEmpty
+  //rInvFifoEmpty := !fifoEmpty
 
   // `hscCOffs` pipeline stage delays
-  val hscCOffs = 7
-  val hscCPlusOffsWidth = log2Up(vgaTimingInfo.htiming.back + hscCOffs)
-  val rHscCPlusOffs = Reg(UInt(hscCPlusOffsWidth bits)) init(0x0)
-  val rWillBeHscCVisib = Reg(Bool()) init(False)
-  val rWillBeHscSVisib = Reg(UInt(2 bits)) init(0x0)
-  val rWillBeVscSVisib = Reg(Bool()) init(False)
+  //val hscCOffs = 7
+  //val hscCPlusOffsWidth = log2Up(vgaTimingInfo.htiming.back + hscCOffs)
+  //val rHscCPlusOffs = Reg(UInt(hscCPlusOffsWidth bits)) init(0x0)
+  //val rWillBeHscCVisib = Reg(Bool()) init(False)
+  //val rWillBeHscSVisib = Reg(UInt(2 bits)) init(0x0)
+  //val rWillBeVscSVisib = Reg(Bool()) init(False)
+  //val rNextNextVisib = Reg(Bool()) init(False)
+  ////rWillBeHscCVisib := misc.hscC + 3 === vgaTimingInfo.htiming.back
+  //rHscCPlusOffs := misc.hscC.resized + U(f"$hscCPlusOffsWidth'd$hscCOffs")
+  //rWillBeHscCVisib := rHscCPlusOffs === vgaTimingInfo.htiming.back
+  //rWillBeHscSVisib(0) := misc.hscS === LcvVgaState.back 
+  //rWillBeHscSVisib(1) := misc.hscS === LcvVgaState.visib
+  //rWillBeVscSVisib := misc.vscS === LcvVgaState.visib
+  //rNextNextVisib := (
+  //  (rWillBeHscCVisib && rWillBeHscSVisib(0))
+  //  || rWillBeHscSVisib(1)
+  //  && rWillBeVscSVisib
+  //)
+  val rHscCIsLastBack = Reg(Bool()) init(False)
+  val rHscSIsBack = Reg(Bool()) init(False)
+  val rHscSIsVisib = Reg(Bool()) init(False)
+  val rVscSIsVisib = Reg(Bool()) init(False)
+  val fifoPopDelay = 3
+  rHscCIsLastBack := (
+    misc.hscC === (vgaTimingInfo.htiming.back - fifoPopDelay)
+  )
+  val rInvFifoEmptyArr = ArrayBuffer[Bool]()
+  val rNextNextPixelEnArr = ArrayBuffer[Bool]()
+
+  for (idx <- 0 to fifoPopDelay - 1) {
+    rInvFifoEmptyArr += Reg(Bool()) init(False)
+    rInvFifoEmptyArr(idx).setName(f"rInvFifoEmptyArr_$idx")
+    rNextNextPixelEnArr += Reg(Bool()) init(False)
+    rNextNextPixelEnArr(idx).setName(f"rNextPixelEnArr_$idx")
+    if (idx == 0) {
+      rInvFifoEmptyArr(idx) := !fifoEmpty
+      rNextNextPixelEnArr(idx) := clkCntP1 === cpp - 2 - fifoPopDelay
+    } else {
+      rInvFifoEmptyArr(idx) := rInvFifoEmptyArr(idx - 1)
+      rNextNextPixelEnArr(idx) := rNextNextPixelEnArr(idx - 1)
+    }
+  }
+
+  rHscSIsBack := misc.hscS === LcvVgaState.back
+  rHscSIsVisib := misc.hscS === LcvVgaState.visib
+  rVscSIsVisib := misc.vscS === LcvVgaState.visib
+
+  //val rNextNextPixelEn = Reg(Bool()) init(False)
   val rNextNextVisib = Reg(Bool()) init(False)
-  //rWillBeHscCVisib := misc.hscC + 3 === vgaTimingInfo.htiming.back
-  rHscCPlusOffs := misc.hscC.resized + U(f"$hscCPlusOffsWidth'd$hscCOffs")
-  rWillBeHscCVisib := rHscCPlusOffs === vgaTimingInfo.htiming.back
-  rWillBeHscSVisib(0) := misc.hscS === LcvVgaState.back 
-  rWillBeHscSVisib(1) := misc.hscS === LcvVgaState.visib
-  rWillBeVscSVisib := misc.vscS === LcvVgaState.visib
   rNextNextVisib := (
-    (rWillBeHscCVisib && rWillBeHscSVisib(0))
-    || rWillBeHscSVisib(1)
-    && rWillBeVscSVisib
+    (
+      (rHscCIsLastBack && rHscSIsBack)
+      || rHscSIsVisib
+    ) && rVscSIsVisib
   )
 
   //rFifoPopReady := 
@@ -452,7 +489,7 @@ case class LcvVgaCtrl(
     //misc.pixelEn && misc.visib && !fifoEmpty
     //misc.nextPixelEn && misc.nextVisib && !fifoEmpty
     //misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
-    rNextNextPixelEn && rNextNextVisib && rInvFifoEmpty
+    rNextNextPixelEnArr.last && rNextNextVisib && rInvFifoEmptyArr.last
   )
   fifoPop.ready := rFifoPopReady
   misc.fifoPopReady := fifoPop.ready
