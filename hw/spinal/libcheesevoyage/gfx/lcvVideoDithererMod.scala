@@ -209,17 +209,27 @@ case class LcvVideoDitherer(
 	  x=outp.pos.x + 0x1,
 	  y=outp.pos.y + 0x1,
 	)
-	val rPosXPlus2 = Reg(LcvVideoDithererPopPayloadNoCol.coordElemT())
-	  .init(0x0)
-	rPosXPlus2 := outp.pos.x + 0x2
+	val rPosPlus2 = Reg(coordT())
+	rPosPlus2.init(rPosPlus2.getZero)
+	rPosPlus2.x := outp.pos.x + 0x2
+	rPosPlus2.y := outp.pos.y + 0x2
 	val rChangingScanline = Reg(Bool()) init(False)
-	rChangingScanline := rPosXPlus2 === fbSize2d.x
+	rChangingScanline := rPosPlus2.x === fbSize2d.x
 	outp.changingScanline := rChangingScanline
+	val rPosYPlus2IsHeight = Reg(Bool()) init(False)
+	rPosYPlus2IsHeight := rPosPlus2.y === fbSize2d.y
+	//val rChangingFrameCnt = Reg(Bool()) init(False)
+	//rChangingFrameCnt := rPosPlus2.y === fbSize2d.y
+
 	//val dbgPosPlus1ElemWidth = outp.pos.x.getWidth + 1
 	//val dbgPosPlus1 = Vec2(UInt(dbgPosPlus1ElemWidth bits))
 	//dbgPosPlus1.addAttribute("keep")
 	//dbgPosPlus1.x := (Cat(outp.pos.x, U"1'b0") + 0x1).resized
 	//dbgPosPlus1.y := (Cat(outp.pos.y, U"1'b0") + 0x1).resized
+	//val rPosPlus3 = Reg(coordT())
+	//rPosPlus3.init(rPosPlus3.getZero)
+	//rPosPlus3.x := outp.pos.x + 0x3
+	//rPosPlus3.y := outp.pos.y + 0x3
 
 	// Perform dithering
 	//dicol = Splitrec(RgbColorLayt(CHAN_WIDTH=bus.CHAN_WIDTH()))
@@ -263,34 +273,48 @@ case class LcvVideoDitherer(
 	tempColInPlusDelta.g := inpCol.g.resized
 	tempColInPlusDelta.b := inpCol.b.resized
 
+	//when (posPlus1.x < fbSize2d.x) {
+	//	//m.d.sync += outp.pos.x := (posPlus1.x)
+	//	//m.d.comb += [
+  //  outp.nextPos.x := posPlus1.x
+  //  outp.nextPos.y := outp.pos.y
+	//	//]
+	//} otherwise { // when (posPlus1.x >= fbSize2d.x):
+	//	////m.d.sync += outp.pos.x := (0x0)
+	//	//m.d.comb +=
+	//	outp.nextPos.x := 0x0
+	//	when (posPlus1.y < fbSize2d.y) {
+	//		//m.d.comb +=
+	//		outp.nextPos.y := posPlus1.y
+	//	} otherwise {
+	//		//// when (posPlus1.y >= fbSize2d.y):
+	//		//m.d.comb +=
+	//		outp.nextPos.y := (0x0)
 
-	when (posPlus1.x < fbSize2d.x) {
-		//m.d.sync += outp.pos.x := (posPlus1.x)
-		//m.d.comb += [
-    outp.nextPos.x := posPlus1.x
-    outp.nextPos.y := outp.pos.y
-		//]
-	} otherwise { // when (posPlus1.x >= fbSize2d.x):
-		////m.d.sync += outp.pos.x := (0x0)
-		//m.d.comb +=
-		outp.nextPos.x := 0x0
-		when (posPlus1.y < fbSize2d.y) {
-			//m.d.comb +=
-			outp.nextPos.y := posPlus1.y
-		} otherwise {
-			//// when (posPlus1.y >= fbSize2d.y):
-			//m.d.comb +=
-			outp.nextPos.y := (0x0)
-
-			// This wraps around to zero automatically due to
-			// modular arithmetic, so we don't need another mux just
-			// for this.
-			//when (push.valid) 
-			when (inpEn) {
-				//m.d.sync += outp.frameCnt := (outp.frameCnt + 0x1)
-				rOutpFrameCnt := outp.frameCnt + 0x1
-			}
-		}
+	//		// This wraps around to zero automatically due to
+	//		// modular arithmetic, so we don't need another mux just
+	//		// for this.
+	//		//when (push.valid) 
+	//		when (inpEn) {
+	//			//m.d.sync += outp.frameCnt := (outp.frameCnt + 0x1)
+	//			rOutpFrameCnt := outp.frameCnt + 0x1
+	//		}
+	//	}
+	//}
+	when (!rChangingScanline) {
+	  //outp.nextPos.x := posPlus1.x
+	  outp.nextPos.x := rPosPlus2.x
+	  outp.nextPos.y := outp.pos.y
+	} otherwise { // when (rChangingScanline)
+	  outp.nextPos.x := 0
+	  when (!rPosYPlus2IsHeight) {
+	    outp.nextPos.y := rPosPlus2.y
+	  } otherwise { // when (rPosYPlus2IsHeight)
+	    outp.nextPos.y := 0x0
+	    when (inpEn) {
+	      rOutpFrameCnt := outp.frameCnt + 0x1
+	    }
+	  }
 	}
 
 	//when (push.valid) 
