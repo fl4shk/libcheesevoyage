@@ -1,7 +1,8 @@
 package libcheesevoyage.gfx
 import libcheesevoyage.general.FifoMiscIo
-import libcheesevoyage.general.AsyncReadFifo
 import libcheesevoyage.general.FifoIo
+import libcheesevoyage.general.Fifo
+import libcheesevoyage.general.AsyncReadFifo
 import libcheesevoyage.general.Vec2
 import libcheesevoyage.general.ElabVec2
 import libcheesevoyage.general.PipeSkidBuf
@@ -317,7 +318,8 @@ case class LcvVgaCtrl(
     vgaTimingInfo=vgaTimingInfo
   )
   //--------
-  val fifo = AsyncReadFifo(
+  //val fifo = AsyncReadFifo
+  val fifo = Fifo(
     dataType=Rgb(rgbConfig),
     depth=fifoDepth,
   )
