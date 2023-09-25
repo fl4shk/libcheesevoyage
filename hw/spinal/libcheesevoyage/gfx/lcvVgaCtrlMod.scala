@@ -319,26 +319,27 @@ case class LcvVgaCtrl(
   )
   //--------
   //val fifo = AsyncReadFifo
-  val fifo = Fifo(
-    dataType=Rgb(rgbConfig),
-    depth=fifoDepth,
-  )
-  //val fifo = StreamFifo(
+  //val fifo = Fifo(
   //  dataType=Rgb(rgbConfig),
   //  depth=fifoDepth,
-  //  latency=1,
-  //  //latency=0,
   //)
+  val fifo = StreamFifo(
+    dataType=Rgb(rgbConfig),
+    depth=fifoDepth,
+    latency=2,
+    //latency=0,
+    forFMax=true,
+  )
   val fifoPush = fifo.io.push
   val fifoPop = fifo.io.pop
-  val fifoEmpty = fifo.io.misc.empty
-  val fifoFull = fifo.io.misc.full
-  val fifoAmountCanPush = fifo.io.misc.amountCanPush
-  val fifoAmountCanPop = fifo.io.misc.amountCanPop
-  //val fifoEmpty = fifo.io.availability === fifoDepth
-  //val fifoFull = fifo.io.occupancy === fifoDepth
-  //val fifoAmountCanPush = fifo.io.availability
-  //val fifoAmountCanPop = fifo.io.occupancy
+  //val fifoEmpty = fifo.io.misc.empty
+  //val fifoFull = fifo.io.misc.full
+  //val fifoAmountCanPush = fifo.io.misc.amountCanPush
+  //val fifoAmountCanPop = fifo.io.misc.amountCanPop
+  val fifoEmpty = fifo.io.availability === fifoDepth
+  val fifoFull = fifo.io.occupancy === fifoDepth
+  val fifoAmountCanPush = fifo.io.availability
+  val fifoAmountCanPop = fifo.io.occupancy
   
   fifoPush << push
   //--------
