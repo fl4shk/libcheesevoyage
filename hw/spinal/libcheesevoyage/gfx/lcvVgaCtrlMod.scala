@@ -318,10 +318,11 @@ case class LcvVgaCtrl(
     vgaTimingInfo=vgaTimingInfo
   )
   //--------
-  //val fifo = AsyncReadFifo
-  //val fifo = Fifo(
+  //val fifo = Fifo
+  //val fifo = AsyncReadFifo(
   //  dataType=Rgb(rgbConfig),
   //  depth=fifoDepth,
+  //  arrRamStyle="auto"
   //)
   val fifo = StreamFifo(
     dataType=Rgb(rgbConfig),
@@ -425,7 +426,7 @@ case class LcvVgaCtrl(
   rInvFifoEmpty := !fifoEmpty
 
   // `hscCOffs` pipeline stage delays
-  val hscCOffs = 7
+  val hscCOffs = 6
   val hscCPlusOffsWidth = log2Up(vgaTimingInfo.htiming.back + hscCOffs)
   val rHscCPlusOffs = Reg(UInt(hscCPlusOffsWidth bits)) init(0x0)
   val rWillBeHscCVisib = Reg(Bool()) init(False)
