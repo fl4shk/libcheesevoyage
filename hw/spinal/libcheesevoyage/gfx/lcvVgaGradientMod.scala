@@ -156,7 +156,8 @@ case class LcvVgaGradient(
   //val pastPastVisib = Reg(Bool()) init(False)
   //pastPastVisib := ctrlIo.misc.pastVisib
 
-  val rPosX = Reg(UInt(ctrlIo.misc.drawPos.x.getWidth bits))
+  //val rPosX = Reg(UInt(ctrlIo.misc.drawPos.x.getWidth bits))
+  val rPosX = Reg(UInt(log2Up(vgaTimingInfo.htiming.visib + 1) bits))
     .init(vgaTimingInfo.htiming.visib)
   //val initPosX = UInt(rPosX.getWidth bits)
   //initPosX := (default -> True)
