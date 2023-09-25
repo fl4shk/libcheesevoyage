@@ -535,15 +535,15 @@ case class LcvVgaCtrl(
   rTempNextVisib := (
     (
       (
-        (hsc.c >= vgaTimingInfo.htiming.back - 2)
-        && (hsc.s === LcvVgaState.back)
+        (misc.hscC >= vgaTimingInfo.htiming.back - 2)
+        && (misc.hscS === LcvVgaState.back)
       ) || (
-        (hsc.c < fbSize2d.x - 2)
-        && (hsc.s === LcvVgaState.visib)
+        (misc.hscC < fbSize2d.x - 2)
+        && (misc.hscS === LcvVgaState.visib)
       )
     ) && (
       //misc.vscS === LcvVgaState.visib
-      vsc.s === LcvVgaState.visib
+      misc.vscS === LcvVgaState.visib
     )
   )
   //tempNextPixelEn := clkCntP1 === cpp - nextRegDelay + 1
