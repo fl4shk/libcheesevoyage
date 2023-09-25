@@ -417,40 +417,65 @@ case class LcvVgaCtrl(
   //)
   val rFifoPopReady = Reg(Bool()) init(False)
   val rNextNextPixelEn = Reg(Bool()) init(False)
-  val rNextNextVisib = Reg(Bool()) init(False)
+  //val rNextNextVisib = Reg(Bool()) init(False)
   val rInvFifoEmpty = Reg(Bool()) init(False)
   rNextNextPixelEn := misc.nextNextPixelEn
-  rNextNextVisib := misc.nextNextVisib
+  //rNextNextVisib := misc.nextNextVisib
   rInvFifoEmpty := !fifoEmpty
+
+  // `hscCOffs` pipeline stage delays
+  val hscCOffs = 7
+  val hscCPlusOffsWidth = log2Up(vgaTimingInfo.htiming.back + hscCOffs)
+  val rHscCPlusOffs = Reg(UInt(hscCPlusOffsWidth bits)) init(0x0)
+  val rWillBeHscCVisib = Reg(Bool()) init(False)
+  val rWillBeHscSVisib = Reg(UInt(2 bits)) init(0x0)
+  val rWillBeVscSVisib = Reg(Bool()) init(False)
+  val rNextNextVisib = Reg(Bool()) init(False)
+  //rWillBeHscCVisib := misc.hscC + 3 === vgaTimingInfo.htiming.back
+  rHscCPlusOffs := misc.hscC.resized + U(f"$hscCPlusOffsWidth'd$hscCOffs")
+  rWillBeHscCVisib := rHscCPlusOffs === vgaTimingInfo.htiming.back
+  rWillBeHscSVisib(0) := misc.hscS === LcvVgaState.back 
+  rWillBeHscSVisib(1) := misc.hscS === LcvVgaState.visib
+  rWillBeVscSVisib := misc.vscS === LcvVgaState.visib
+  rNextNextVisib := (
+    (rWillBeHscCVisib && rWillBeHscSVisib(0))
+    || rWillBeHscSVisib(1)
+    && rWillBeVscSVisib
+  )
+
   //rFifoPopReady := 
-  fifoPop.ready := (
+  //fifoPop.ready := 
+  rFifoPopReady := (
     //pastPixelEn && misc.pastVisib && !fifoEmpty
     //misc.pixelEn && misc.visib && !fifoEmpty
     //misc.nextPixelEn && misc.nextVisib && !fifoEmpty
     //misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
     rNextNextPixelEn && rNextNextVisib && rInvFifoEmpty
   )
-  //fifoPop.ready := rFifoPopReady
+  fifoPop.ready := rFifoPopReady
   misc.fifoPopReady := fifoPop.ready
   misc.nextNextPixelEn := clkCntP1 === cpp - 2
-  misc.nextNextVisib := (
-    (
-      (
-        (misc.hscC + 1 === vgaTimingInfo.htiming.back)
-        && (misc.hscS === LcvVgaState.back)
-      ) || (
-        misc.hscS === LcvVgaState.visib
-      )
-    ) && (
-      //(
-      //  ((misc.vscC + 2) >= vgaTimingInfo.vtiming.back)
-      //  && (misc.vscS === LcvVgaState.back)
-      //)
-      //||
-      misc.vscS === LcvVgaState.visib
-    )
-    //|| misc.visib
-  )
+  misc.nextNextVisib := rNextNextVisib
+
+  //misc.nextNextVisib := (
+  //  (
+  //    (
+  //      (misc.hscC + 1 === vgaTimingInfo.htiming.back)
+  //      && (misc.hscS === LcvVgaState.back)
+  //    ) || (
+  //      misc.hscS === LcvVgaState.visib
+  //    )
+  //  ) && (
+  //    //(
+  //    //  ((misc.vscC + 2) >= vgaTimingInfo.vtiming.back)
+  //    //  && (misc.vscS === LcvVgaState.back)
+  //    //)
+  //    //||
+  //    misc.vscS === LcvVgaState.visib
+  //  )
+  //  //|| misc.visib
+  //)
+
   //rFifoPopReady := (
   ////fifoPop.ready 
   //  //misc.nextPixelEn
