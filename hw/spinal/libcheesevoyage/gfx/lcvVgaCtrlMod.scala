@@ -538,12 +538,17 @@ case class LcvVgaCtrl(
   rTempNextPixelEn := nextClkCnt === (cpp - 1)
   //rFifoPopReady :=
   // BEGIN: working
-  fifoPop.ready := (
-    //misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
-    misc.nextPixelEn && misc.nextVisib && !fifoEmpty
-    //rTempNextVisib && rTempNextPixelEn && !fifoEmpty
-  )
+  //fifoPop.ready := (
+  //  misc.nextPixelEn && misc.nextVisib && !fifoEmpty
+  //)
   // END: working
+  fifoPop.ready := (
+    rTempNextPixelEn && misc.nextVisib && !fifoEmpty
+  )
+  //rFifoPopReady := (
+  //  //misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
+  //  //rTempNextVisib && rTempNextPixelEn && !fifoEmpty
+  //)
   //fifoPop.ready := rFifoPopReady
   misc.fifoPopReady := fifoPop.ready
   misc.nextNextPixelEn := clkCntP1 === cpp - 2
