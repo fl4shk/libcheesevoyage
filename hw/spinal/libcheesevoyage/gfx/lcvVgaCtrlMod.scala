@@ -409,12 +409,20 @@ case class LcvVgaCtrl(
   //misc.fifoPopReady := rFifoPopReady
   val pastPixelEn = Reg(Bool()) init(False)
   pastPixelEn := misc.pixelEn
-  fifoPop.ready := (
+  //fifoPop.ready := (
+  //  //pastPixelEn && misc.pastVisib && !fifoEmpty
+  //  //misc.pixelEn && misc.visib && !fifoEmpty
+  //  misc.nextPixelEn && misc.nextVisib && !fifoEmpty
+  //  //misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
+  //)
+  val rFifoPopReady = Reg(Bool()) init(False)
+  rFifoPopReady := (
     //pastPixelEn && misc.pastVisib && !fifoEmpty
     //misc.pixelEn && misc.visib && !fifoEmpty
-    misc.nextPixelEn && misc.nextVisib && !fifoEmpty
-    //misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
+    //misc.nextPixelEn && misc.nextVisib && !fifoEmpty
+    misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
   )
+  fifoPop.ready := rFifoPopReady
   misc.fifoPopReady := fifoPop.ready
   misc.nextNextPixelEn := clkCntP1 === cpp - 2
   misc.nextNextVisib := (
