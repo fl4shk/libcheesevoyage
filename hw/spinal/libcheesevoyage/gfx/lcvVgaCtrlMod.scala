@@ -505,8 +505,32 @@ case class LcvVgaCtrl(
   //  misc.nextPixelEn && misc.nextVisib && !fifoEmpty
   //)
   //val rFifoPopReady = Reg(Bool()) init(False)
+  val nextNextRegDelay = 3
+  val tempNextNextVisib = Bool()
+  val tempNextNextPixelEn = Bool()
+  tempNextNextVisib := (
+    (
+      (
+        //(misc.hscC + 1 === vgaTimingInfo.htiming.back)
+        (misc.hscC === vgaTimingInfo.htiming.back - nextNextRegDelay)
+        && (misc.hscS === LcvVgaState.back)
+      ) || (
+        misc.hscS === LcvVgaState.visib
+      )
+    ) && (
+      //(
+      //  ((misc.vscC + 2) >= vgaTimingInfo.vtiming.back)
+      //  && (misc.vscS === LcvVgaState.back)
+      //)
+      //||
+      misc.vscS === LcvVgaState.visib
+    )
+    //|| misc.visib
+  )
+  tempNextNextPixelEn := clkCntP1 === cpp - nextNextRegDelay
   rFifoPopReady := (
-    misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
+    //misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
+    tempNextNextVisib && tempNextNextPixelEn && !fifoEmpty
   )
   fifoPop.ready := rFifoPopReady
   misc.fifoPopReady := fifoPop.ready
