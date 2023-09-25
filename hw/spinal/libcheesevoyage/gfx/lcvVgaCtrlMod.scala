@@ -504,7 +504,7 @@ case class LcvVgaCtrl(
   //  //misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
   //  misc.nextPixelEn && misc.nextVisib && !fifoEmpty
   //)
-  val rFifoPopReady = Reg(Bool()) init(False)
+  //val rFifoPopReady = Reg(Bool()) init(False)
   rFifoPopReady := (
     misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
   )
