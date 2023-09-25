@@ -448,7 +448,7 @@ case class LcvVgaCtrl(
   val rHscSIsBack = Reg(Bool()) init(False)
   val rHscSIsVisib = Reg(Bool()) init(False)
   val rVscSIsVisib = Reg(Bool()) init(False)
-  val fifoPopDelay = 3
+  val fifoPopDelay = 4
   rHscCIsLastBack := (
     misc.hscC === (vgaTimingInfo.htiming.back - fifoPopDelay)
   )
