@@ -14,7 +14,8 @@ import scala.math._
 
 object LcvVideoDithererPopPayloadNoCol {
   def ditherDeltaWidth: Int = log2Up(4)
-  def coordElemT(): UInt = UInt(16 bits)
+  //def coordElemT(): UInt = UInt(16 bits)
+  def coordElemT(): UInt = LcvVgaCtrlMiscIo.coordElemT()
   def coordT(): Vec2[UInt] = Vec2(coordElemT())
 }
 class LcvVideoDithererPopPayloadNoCol(
@@ -25,9 +26,11 @@ class LcvVideoDithererPopPayloadNoCol(
 
   //val col = Rgb(rgbConfig)
   val frameCnt = UInt(ditherDeltaWidth bits)
+  //val changedFrameCnt = Bool()
   val nextPos = coordT()
   val pos = coordT()
   val pastPos = coordT()
+  val changingScanline = Bool()
   //--------
   def ditherDeltaWidth = LcvVideoDithererPopPayloadNoCol.ditherDeltaWidth
   def coordT() = LcvVideoDithererPopPayloadNoCol.coordT()
@@ -206,6 +209,12 @@ case class LcvVideoDitherer(
 	  x=outp.pos.x + 0x1,
 	  y=outp.pos.y + 0x1,
 	)
+	val rPosXPlus2 = Reg(LcvVideoDithererPopPayloadNoCol.coordElemT())
+	  .init(0x0)
+	rPosXPlus2 := outp.pos.x + 0x2
+	val rChangingScanline = Reg(Bool()) init(False)
+	rChangingScanline := rPosXPlus2 === fbSize2d.x
+	outp.changingScanline := rChangingScanline
 	//val dbgPosPlus1ElemWidth = outp.pos.x.getWidth + 1
 	//val dbgPosPlus1 = Vec2(UInt(dbgPosPlus1ElemWidth bits))
 	//dbgPosPlus1.addAttribute("keep")
@@ -253,6 +262,7 @@ case class LcvVideoDitherer(
 	tempColInPlusDelta.r := inpCol.r.resized
 	tempColInPlusDelta.g := inpCol.g.resized
 	tempColInPlusDelta.b := inpCol.b.resized
+
 
 	when (posPlus1.x < fbSize2d.x) {
 		//m.d.sync += outp.pos.x := (posPlus1.x)
