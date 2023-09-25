@@ -527,7 +527,8 @@ case class LcvVgaCtrl(
     )
     //|| misc.visib
   )
-  tempNextPixelEn := clkCntP1 === cpp - nextRegDelay + 1
+  //tempNextPixelEn := clkCntP1 === cpp - nextRegDelay + 1
+  tempNextPixelEn := nextClkCnt === (cpp - nextRegDelay - 1)
   rFifoPopReady := (
     //misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
     tempNextVisib && tempNextPixelEn && !fifoEmpty
