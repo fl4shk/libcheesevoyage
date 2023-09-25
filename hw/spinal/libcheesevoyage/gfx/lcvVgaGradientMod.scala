@@ -162,11 +162,17 @@ case class LcvVgaGradient(
   //initPosX := (default -> True)
   val nextPosX = UInt(rPosX.getWidth bits)
   
-  when (rPosX + 1 < vgaTimingInfo.htiming.visib) {
+  //when (rPosX + 1 < vgaTimingInfo.htiming.visib) {
+  //  nextPosX := rPosX + 1
+  //} otherwise {
+  //  nextPosX := 0x0
+  //}
+  when (rPosX =/= vgaTimingInfo.htiming.visib - 1) {
     nextPosX := rPosX + 1
   } otherwise {
     nextPosX := 0x0
   }
+
   //when (ctrlIo.push.fire) 
   //object State extends SpinalEnum(defaultEncoding=binarySequential) {
   //  val
