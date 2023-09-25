@@ -513,12 +513,12 @@ case class LcvVgaCtrl(
       (
         //(misc.hscC + 1 === vgaTimingInfo.htiming.back)
         (misc.hscC >= vgaTimingInfo.htiming.back - 2)
-        && (misc.hscNextS === LcvVgaState.back)
+        && (misc.hscS === LcvVgaState.back)
       ) || (
         //(misc.hscC < vgaTiming.htiming.visib - 2)
         //&& 
         (misc.hscC <= vgaTimingInfo.htiming.visib - 2)
-        (misc.hscNextS === LcvVgaState.visib)
+        (misc.hscS === LcvVgaState.visib)
       )
     ) && (
       //(
