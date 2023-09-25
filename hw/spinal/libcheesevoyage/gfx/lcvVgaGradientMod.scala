@@ -205,7 +205,7 @@ case class LcvVgaGradient(
 
   //when (!rDithPushValid) 
   when (!rCtrlPushValid) {
-    //rCtrlPushValid := True
+    rCtrlPushValid := True
     //rCtrlPushValid := False
     //rDithPushValid := True
     //when (dithIo.outp.nextPos.x === 0x0) {
@@ -244,6 +244,10 @@ case class LcvVgaGradient(
         //resetDbgPhysCol()
         rDbgPhysCol := rDbgPhysCol.getZero
       }
+    }
+  } otherwise {
+    when (ctrlIo.push.fire) {
+      rCtrlPushValid := False
     }
   }
   //.otherwise {
