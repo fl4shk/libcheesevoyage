@@ -508,29 +508,43 @@ case class LcvVgaCtrl(
   //val nextRegDelay = 2
   val rTempNextVisib = Reg(Bool()) init(False)
   val rTempNextPixelEn = Reg(Bool()) init(False)
+  //rTempNextVisib := (
+  //  (
+  //    (
+  //      //(misc.hscC + 1 === vgaTimingInfo.htiming.back)
+  //      (misc.hscC >= vgaTimingInfo.htiming.back - 2)
+  //      && (misc.hscS === LcvVgaState.back)
+  //    ) || (
+  //      //(misc.hscC < vgaTiming.htiming.visib - 2)
+  //      //&& 
+  //      (misc.hscC <= vgaTimingInfo.htiming.visib - 2)
+  //      && (misc.hscS === LcvVgaState.visib)
+  //    )
+  //  ) && (
+  //    //(
+  //    //  ((misc.vscC + 2) >= vgaTimingInfo.vtiming.back)
+  //    //  && (misc.vscS === LcvVgaState.back)
+  //    //)
+  //    //||
+  //    //(misc.vscC < vgaTimingInfo.vtiming.visib - 2)
+  //    //&& (misc.vscNextS === LcvVgaState.visib)
+  //    misc.vscS === LcvVgaState.visib
+  //  )
+  //  //|| misc.visib
+  //)
   rTempNextVisib := (
     (
       (
-        //(misc.hscC + 1 === vgaTimingInfo.htiming.back)
-        (misc.hscC >= vgaTimingInfo.htiming.back - 2)
-        && (misc.hscS === LcvVgaState.back)
+        (hsc.c >= vgaTiming.htiming.back - 2)
+        && (hsc.s === LcvVgaState.back)
       ) || (
-        //(misc.hscC < vgaTiming.htiming.visib - 2)
-        //&& 
-        (misc.hscC <= vgaTimingInfo.htiming.visib - 2)
-        && (misc.hscS === LcvVgaState.visib)
+        (hsc.c < fbSize2d.x - 2)
+        && (hsc.s === LcvVgaState.visib)
       )
     ) && (
-      //(
-      //  ((misc.vscC + 2) >= vgaTimingInfo.vtiming.back)
-      //  && (misc.vscS === LcvVgaState.back)
-      //)
-      //||
-      //(misc.vscC < vgaTimingInfo.vtiming.visib - 2)
-      //&& (misc.vscNextS === LcvVgaState.visib)
-      misc.vscS === LcvVgaState.visib
+      //misc.vscS === LcvVgaState.visib
+      vsc.s === LcvVgaState.visib
     )
-    //|| misc.visib
   )
   //tempNextPixelEn := clkCntP1 === cpp - nextRegDelay + 1
   //jtempNextPixelEn := nextClkCnt === (cpp - nextRegDelay - 1)
@@ -541,9 +555,12 @@ case class LcvVgaCtrl(
   //fifoPop.ready := (
   //  misc.nextPixelEn && misc.nextVisib && !fifoEmpty
   //)
+  //fifoPop.ready := (
+  //  rTempNextPixelEn && misc.nextVisib && !fifoEmpty
+  //)
   // END: working
   fifoPop.ready := (
-    rTempNextPixelEn && misc.nextVisib && !fifoEmpty
+    rTempNextPixelEn && rTempNextVisib && !fifoEmpty
   )
   //rFifoPopReady := (
   //  //misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
