@@ -539,7 +539,7 @@ case class LcvVgaCtrl(
   //rFifoPopReady :=
   fifoPop.ready := (
     //misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
-    tempNextVisib && rTempNextPixelEn && !fifoEmpty
+    rTempNextVisib && rTempNextPixelEn && !fifoEmpty
   )
   //fifoPop.ready := rFifoPopReady
   misc.fifoPopReady := fifoPop.ready
