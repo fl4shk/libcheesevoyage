@@ -342,7 +342,8 @@ case class LcvVgaCtrl(
   val fifoAmountCanPush = fifo.io.availability
   val fifoAmountCanPop = fifo.io.occupancy
   
-  fifoPush << push
+  //fifoPush << push
+  fifoPush <-/< push
   //--------
   val tempCol = Rgb(rgbConfig) addAttribute("keep")
   tempCol := fifoPop.payload
@@ -424,7 +425,7 @@ case class LcvVgaCtrl(
   rInvFifoEmpty := !fifoEmpty
 
   // `hscCOffs` pipeline stage delays
-  val hscCOffs = 7
+  val hscCOffs = 8
   val hscCPlusOffsWidth = log2Up(vgaTimingInfo.htiming.back + hscCOffs)
   val rHscCPlusOffs = Reg(UInt(hscCPlusOffsWidth bits)) init(0x0)
   val rWillBeHscCVisib = Reg(Bool()) init(False)
