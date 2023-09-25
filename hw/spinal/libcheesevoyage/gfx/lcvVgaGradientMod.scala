@@ -183,7 +183,8 @@ case class LcvVgaGradient(
     is (State.updateDithCol) {
       rCtrlPushValid := False
       rDithPushValid := True
-      when (dithIo.outp.nextPos.x === 0x0) {
+      //when (dithIo.outp.nextPos.x === 0x0) 
+      when (dithIo.outp.pos.x === vgaTimingInfo.htiming.visib) {
         resetDithCol()
       } otherwise {
         incrDithCol()
