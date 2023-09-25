@@ -426,7 +426,7 @@ case class LcvVgaCtrl(
   rInvFifoEmpty := !fifoEmpty
 
   // `hscCOffs` pipeline stage delays
-  val hscCOffs = 6
+  val hscCOffs = 7
   val hscCPlusOffsWidth = log2Up(vgaTimingInfo.htiming.back + hscCOffs)
   val rHscCPlusOffs = Reg(UInt(hscCPlusOffsWidth bits)) init(0x0)
   val rWillBeHscCVisib = Reg(Bool()) init(False)
