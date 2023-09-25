@@ -535,7 +535,7 @@ case class LcvVgaCtrl(
   rTempNextVisib := (
     (
       (
-        (hsc.c >= vgaTiming.htiming.back - 2)
+        (hsc.c >= vgaTimingInfo.htiming.back - 2)
         && (hsc.s === LcvVgaState.back)
       ) || (
         (hsc.c < fbSize2d.x - 2)
