@@ -551,7 +551,7 @@ case class LcvVgaCtrl(
   //  )
   //)
   //rTempNextPixelEn := nextClkCnt === (cpp - 1)
-  // END: Mostly workign
+  // END: Mostly working
 
   //tempNextPixelEn := clkCntP1 === cpp - nextRegDelay + 1
   //jtempNextPixelEn := nextClkCnt === (cpp - nextRegDelay - 1)
