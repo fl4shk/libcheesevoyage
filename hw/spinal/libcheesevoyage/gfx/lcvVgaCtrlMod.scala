@@ -570,6 +570,7 @@ case class LcvVgaCtrlMiscIo(
   val nextNextPixelEn = Bool()
   val nextPixelEn = Bool()
   val pixelEn = Bool()
+  val nextNextNextVisib = Bool()
   val nextNextVisib = Bool()
   val nextVisib = Bool()
   val visib = Bool()
@@ -1037,10 +1038,14 @@ case class LcvVgaCtrl(
   //val rTempNextPixelEn = Reg(Bool()) init(False)
   //rTempNextPixelEn := nextClkCnt === (cpp - 1)
   //rFifoPopReady :=
-  rFifoPopReady := (
-    misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
+  // BEGIN: pipelined working (?)
+  fifoPop.ready := (
+    //misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
+    misc.nextNextNextPixelEn && misc.nextNextNextVisib && !fifoEmpty
+    //hpipe.visibToDrive
   )
-  fifoPop.ready := rFifoPopReady
+  // END: pipelined working (?)
+  //fifoPop.ready := rFifoPopReady
   //fifoPop.ready := (
   //  misc.nextPixelEn && misc.nextVisib && !fifoEmpty
   //)
@@ -1153,6 +1158,10 @@ case class LcvVgaCtrl(
   misc.vpipeC := vpipe.c
   misc.vpipeNextS := vpipe.rNextS
   misc.vpipeNextNextS := vpipe.rNextNextS
+
+  misc.nextNextNextVisib := (
+    hpipe.rNextNextNextVisib && vpipe.rNextNextNextVisib
+  )
   //--------
   // Implement HSYNC and VSYNC logic
   //when (misc.nextNextPixelEn) {
@@ -1620,6 +1629,27 @@ case class LcvVgaCtrlNoFifo(
   //  hpipe.noChangeUpdateToDrive()
   //  vpipe.noChangeUpdateToDrive()
   //}
+  //when (
+  //  misc.nextNextNextPixelEn
+  //  //misc.nextNextPixelEn
+  //) {
+  //  hpipe.updateStateCnt(vgaTimingHv=htiming)
+  //  when (
+  //    //hpipe.rNextNextS === LcvVgaState.visib
+  //    //hpipe.rNextNextNextVisib
+  //    //&& !hpipe.visibToDrive
+  //    //hpipe.rNextVisib
+  //    //&& !hpipe.rNextNextVisib
+  //    hpipe.rNextNextNextVisib
+  //  ) {
+  //    vpipe.updateStateCnt(vgaTimingHv=vtiming)
+  //  } otherwise {
+  //    vpipe.noChangeUpdateToDrive()
+  //  }
+  //} otherwise {
+  //  hpipe.noChangeUpdateToDrive()
+  //  vpipe.noChangeUpdateToDrive()
+  //}
   when (
     misc.nextNextNextPixelEn
     //misc.nextNextPixelEn
@@ -1631,16 +1661,26 @@ case class LcvVgaCtrlNoFifo(
       //&& !hpipe.visibToDrive
       //hpipe.rNextVisib
       //&& !hpipe.rNextNextVisib
-      hpipe.rNextNextNextVisib
+      //hpipe.rNextNextNextVisib
+      // BEGIN: first guess
+      //hpipe.rSArr.last === LcvVgaState.visib
+      //&& hpipe.sToDrive =/= LcvVgaState.visib
+      // END: first guess
+      // BEGIN: more optimized version
+      hpipe.rVisibArr.last
+      && !hpipe.visibToDrive
+      // END: more optimized version
+
+      // BEGIN: also try this one 
+      //hpipe.rSArr.last =/= LcvVgaState.visib
+      //&& hpipe.rSArr(hpipe.rSArr.size - 2) == LcvVgaState.visib
+      // END: also try this one 
     ) {
       vpipe.updateStateCnt(vgaTimingHv=vtiming)
     } otherwise {
       vpipe.noChangeUpdateToDrive()
     }
   } otherwise {
-    hpipe.noChangeUpdateToDrive()
-    vpipe.noChangeUpdateToDrive()
-  }
   when (misc.pixelEn) {
     //htiming.updateStateCnt(m, hpipe)
     //hpipe.updateStateCnt(vgaTimingHv=htiming)

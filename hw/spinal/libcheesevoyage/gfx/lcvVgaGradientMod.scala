@@ -223,8 +223,8 @@ case class LcvVgaGradient(
     //  incrDithCol()
     //}
     rPosX := nextPosX
-    switch (nextPosX) 
-    //switch (rPosX) 
+    //switch (nextPosX) 
+    switch (rPosX) 
     {
       is (0) {
         rDbgPhysCol.r := (default -> True)
