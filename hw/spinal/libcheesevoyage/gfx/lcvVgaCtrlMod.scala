@@ -28,6 +28,7 @@ object LcvVgaState extends SpinalEnum(defaultEncoding=binarySequential) {
 
 class LcvVgaStateCnt(
   vgaTimingHv: LcvVgaTimingHv,
+  isVert: Boolean,
   vivadoDebug: Boolean=false,
 ) //extends Bundle
 {
@@ -72,6 +73,15 @@ class LcvVgaStateCnt(
     //nextVisibArr += rVisibArr.last.wrapNext()
     //nextVisibArr += Bool()
     if (vivadoDebug) {
+      if (!isVert) {
+        rCArr.last.setName(f"hsc_rCArr_$idx")
+        rSArr.last.setName(f"hsc_rSArr_$idx")
+        rVisibArr.last.setName(f"hsc_rVisibArr_$idx")
+      } else { // if (isVert)
+        rCArr.last.setName(f"vsc_rCArr_$idx")
+        rSArr.last.setName(f"vsc_rSArr_$idx")
+        rVisibArr.last.setName(f"vsc_rVisibArr_$idx")
+      }
       rCArr.last.addAttribute("MARK_DEBUG", "TRUE")
       rSArr.last.addAttribute("MARK_DEBUG", "TRUE")
       rVisibArr.last.addAttribute("MARK_DEBUG", "TRUE")
@@ -1039,10 +1049,12 @@ case class LcvVgaCtrl(
   //}
   val hsc = new LcvVgaStateCnt(
     vgaTimingHv=htiming,
+    isVert=false,
     vivadoDebug=vivadoDebug,
   )
   val vsc = new LcvVgaStateCnt(
     vgaTimingHv=vtiming,
+    isVert=true,
     vivadoDebug=vivadoDebug,
   )
 
@@ -1445,8 +1457,14 @@ case class LcvVgaCtrlNoFifo(
   //  "c": Signal(self.VTIMING().COUNTER_WIDTH()),
   //  "next_s": Signal(width_from_len(loc.Tstate)),
   //}
-  val hsc = new LcvVgaStateCnt(vgaTimingHv=htiming)
-  val vsc = new LcvVgaStateCnt(vgaTimingHv=vtiming)
+  val hsc = new LcvVgaStateCnt(
+    vgaTimingHv=htiming,
+    isVert=false,
+  )
+  val vsc = new LcvVgaStateCnt(
+    vgaTimingHv=vtiming,
+    isVert=true,
+  )
   misc.hscS := hsc.s
   misc.hscC := hsc.c
   misc.hscNextS := hsc.rNextS
