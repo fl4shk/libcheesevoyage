@@ -48,42 +48,53 @@ class LcvVgaStateCnt(
 
   val cntWidth = vgaTimingHv.cntWidth(offs=maxAhead) 
   val rCArr = new ArrayBuffer[UInt]()
-  val nextCArr = new ArrayBuffer[UInt]()
+  val cToDrive = UInt(cntWidth bits)
+  //val nextCArr = new ArrayBuffer[UInt]()
   val rSArr = new ArrayBuffer[LcvVgaState.C]()
-  val nextSArr = new ArrayBuffer[LcvVgaState.C]()
+  val sToDrive = LcvVgaState()
+  //val nextSArr = new ArrayBuffer[LcvVgaState.C]()
   val rVisibArr = new ArrayBuffer[Bool]()
+  val visibToDrive = Bool()
   //val rVisibArr = Reg(UInt(pipeSize bits)) init(0x0)
-  val nextVisibArr = new ArrayBuffer[Bool]()
+  //val nextVisibArr = new ArrayBuffer[Bool]()
 
   for (idx <- 0 to pipeSize - 1) {
     //rCArr += Reg(UInt(cntWidth bits)) init(pipeSize - 1 - idx)
     rCArr += Reg(UInt(cntWidth bits)) init(idx)
     //nextCArr += rCArr.last.wrapNext()
-    nextCArr += UInt(cntWidth bits)
+    //nextCArr += UInt(cntWidth bits)
 
     rSArr += Reg(LcvVgaState()) init(LcvVgaState.front)
     //nextSArr += rSArr.last.wrapNext()
-    nextSArr += LcvVgaState()
+    //nextSArr += LcvVgaState()
 
     rVisibArr += Reg(Bool()) init(False)
     //nextVisibArr += rVisibArr.last.wrapNext()
-    nextVisibArr += Bool()
+    //nextVisibArr += Bool()
   }
   for (idx <- currIdx to maxAhead - 1) {
-    nextCArr(idx) := rCArr(idx + 1)
-    rCArr(idx) := nextCArr(idx)
-    nextSArr(idx) := rSArr(idx + 1)
-    rSArr(idx) := nextSArr(idx)
-    nextVisibArr(idx) := rVisibArr(idx + 1)
-    rVisibArr(idx) := nextVisibArr(idx)
+    //nextCArr(idx) := rCArr(idx + 1)
+    //rCArr(idx) := nextCArr(idx)
+    rCArr(idx) := rCArr(idx)
+
+    //nextSArr(idx) := rSArr(idx + 1)
+    //rSArr(idx) := nextSArr(idx)
+    rSArr(idx) := rSArr(idx + 1)
+
+    //nextVisibArr(idx) := rVisibArr(idx + 1)
+    //rVisibArr(idx) := nextVisibArr(idx)
+    rVisibArr(idx) := rVisibArr(idx + 1)
   }
+  rCArr.last := cToDrive
+  rSArr.last := sToDrive
+  rVisibArr.last := visibToDrive
 
   // `<whatever>ToDrive` are the inputs to the pipeline
   val c = rCArr(currIdx)
   val counterP1 = rCArr(1 - minAhead)
   val counterP2 = rCArr(2 - minAhead)
   val counterP3 = rCArr(3 - minAhead)
-  val cToDrive = nextCArr(3 - minAhead)
+  //val cToDrive = nextCArr(3 - minAhead)
 
   //val rNextS = rSArr(1 - minAhead)
   //val rNextNextS = rSArr(2 - minAhead)
@@ -93,7 +104,7 @@ class LcvVgaStateCnt(
   val rNextS = rSArr(nextIdx)
   val rNextNextS = rSArr(nextNextIdx)
   val rNextNextNextS = rSArr(nextNextNextIdx)
-  val sToDrive = nextSArr(nextNextNextIdx)
+  //val sToDrive = nextSArr(nextNextNextIdx)
 
   //val rVisib = rAheadVisibArr(1 - minAhead)
   //val rNextVisib = rAheadVisibArr(2 - minAhead)
@@ -103,7 +114,7 @@ class LcvVgaStateCnt(
   val rNextVisib = rVisibArr(nextIdx)
   val rNextNextVisib = rVisibArr(nextNextIdx)
   val rNextNextNextVisib = rVisibArr(nextNextNextIdx)
-  val visibToDrive = nextVisibArr(nextNextNextIdx)
+  //val visibToDrive = nextVisibArr(nextNextNextIdx)
 
   //val cP1Width = vgaTimingHv.cntWidth(offs=1)
   //val cP2Width = vgaTimingHv.cntWidth(offs=2)
