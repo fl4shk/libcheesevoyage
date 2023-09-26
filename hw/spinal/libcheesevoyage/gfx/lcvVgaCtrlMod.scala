@@ -537,12 +537,12 @@ case class LcvVgaCtrl(
   rTempNextVisib := (
     (
       (
-        //(misc.hscC >= vgaTimingInfo.htiming.back - 2)
-        (misc.hscC >= vgaTimingInfo.htiming.back - 1)
+        (misc.hscC >= vgaTimingInfo.htiming.back - 2)
+        //(misc.hscC >= vgaTimingInfo.htiming.back - 1)
         && (misc.hscS === LcvVgaState.back)
       ) || (
-        //(misc.hscC < fbSize2d.x - 2)
-        (misc.hscC < fbSize2d.x - 1)
+        (misc.hscC < fbSize2d.x - 2)
+        //(misc.hscC < fbSize2d.x - 1)
         && (misc.hscS === LcvVgaState.visib)
       )
     ) && (
@@ -562,13 +562,15 @@ case class LcvVgaCtrl(
   //fifoPop.ready := (
   //  misc.nextPixelEn && misc.nextVisib && !fifoEmpty
   //)
-  fifoPop.ready := (
-    rTempNextPixelEn && misc.nextVisib && !fifoEmpty
-  )
-  // END: working
   //fifoPop.ready := (
-  //  rTempNextPixelEn && rTempNextVisib && !fifoEmpty
+  //  rTempNextPixelEn && misc.nextVisib && !fifoEmpty
   //)
+  // END: working
+  // BEGIN: test
+  fifoPop.ready := (
+    rTempNextPixelEn && rTempNextVisib && !fifoEmpty
+  )
+  // END: test
   //rFifoPopReady := (
   //  //misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
   //  //rTempNextVisib && rTempNextPixelEn && !fifoEmpty
