@@ -920,120 +920,7 @@ case class LcvVgaCtrl(
   //)
   //val rFifoPopReady = Reg(Bool()) init(False)
   //val nextRegDelay = 2
-  //val rTempNextVisib = Reg(Bool()) init(False)
-  //val rTempNextPixelEn = Reg(Bool()) init(False)
-  //if (vivadoDebug) {
-  //  rTempNextVisib.addAttribute("MARK_DEBUG", "TRUE")
-  //  rTempNextPixelEn.addAttribute("MARK_DEBUG", "TRUE")
-  //}
-  //rTempNextVisib := (
-  //  (
-  //    (
-  //      //(misc.hpipeC + 1 === vgaTimingInfo.htiming.back)
-  //      (misc.hpipeC >= vgaTimingInfo.htiming.back - 2)
-  //      && (misc.hpipeS === LcvVgaState.back)
-  //    ) || (
-  //      //(misc.hpipeC < vgaTiming.htiming.visib - 2)
-  //      //&& 
-  //      (misc.hpipeC <= vgaTimingInfo.htiming.visib - 2)
-  //      && (misc.hpipeS === LcvVgaState.visib)
-  //    )
-  //  ) && (
-  //    //(
-  //    //  ((misc.vpipeC + 2) >= vgaTimingInfo.vtiming.back)
-  //    //  && (misc.vpipeS === LcvVgaState.back)
-  //    //)
-  //    //||
-  //    //(misc.vpipeC < vgaTimingInfo.vtiming.visib - 2)
-  //    //&& (misc.vpipeNextS === LcvVgaState.visib)
-  //    misc.vpipeS === LcvVgaState.visib
-  //  )
-  //  //|| misc.visib
-  //)
 
-  // BEGIN: Mostly working
-  //val tempNextVisib = Bool()
-  //rTempNextVisib := 
-  //tempNextVisib := (
-  //  (
-  //    (
-  //      (misc.hpipeC < vgaTimingInfo.htiming.back)
-  //      &&
-  //      //(misc.hpipeC >= vgaTimingInfo.htiming.back - 2)
-  //      //(misc.hpipeC >= vgaTimingInfo.htiming.back - 3)
-  //      //(misc.hpipeC >= vgaTimingInfo.htiming.back - 2)
-  //      (misc.hpipeC >= vgaTimingInfo.htiming.back - 1)
-  //      && (misc.hpipeS === LcvVgaState.back)
-  //    ) || (
-  //      //(misc.hpipeC < fbSize2d.x - 2)
-  //      //(misc.hpipeC < fbSize2d.x - 2)
-  //      //(misc.hpipeC < fbSize2d.x - 1)
-  //      (misc.hpipeC < fbSize2d.x - 1)
-  //      && (misc.hpipeS === LcvVgaState.visib)
-  //    )
-  //  ) && (
-  //    //misc.vpipeS === LcvVgaState.visib
-  //    misc.vpipeS === LcvVgaState.visib
-  //  )
-  //)
-  //val tempHscNextNextVisib = Bool()
-  //val tempVscNextNextVisib = Bool()
-  //if (vivadoDebug) {
-  //  tempHscNextNextVisib.addAttribute("MARK_DEBUG", "TRUE")
-  //  tempVscNextNextVisib.addAttribute("MARK_DEBUG", "TRUE")
-  //}
-  //switch (misc.hpipeS) {
-  //  is (LcvVgaState.front) {
-  //    tempHscNextNextVisib := False
-  //  }
-  //  is (LcvVgaState.sync) {
-  //    tempHscNextNextVisib := False
-  //  }
-  //  is (LcvVgaState.back) {
-  //    tempHscNextNextVisib := (
-  //      (misc.hpipeC === vgaTimingInfo.htiming.back - 2)
-  //      || (misc.hpipeC === vgaTimingInfo.htiming.back - 1)
-  //    )
-  //  }
-  //  is (LcvVgaState.visib) {
-  //    tempHscNextNextVisib := (
-  //      //misc.hpipeC + 0x2 < fbSize2d.x
-  //      (misc.hpipeC =/= fbSize2d.x - 2)
-  //      && (misc.hpipeC =/= fbSize2d.x - 1)
-  //    )
-  //  }
-  //}
-  //switch (misc.vpipeS) {
-  //  is (LcvVgaState.front) {
-  //    tempVscNextNextVisib := False
-  //  }
-  //  is (LcvVgaState.sync) {
-  //    tempVscNextNextVisib := False
-  //  }
-  //  is (LcvVgaState.back) {
-  //    //tempVscNextNextVisib := (
-  //    //  (misc.hpipeC === vgaTimingInfo.htiming.back - 2)
-  //    //  || (misc.hpipeC === vgaTimingInfo.htiming.back - 1)
-  //    //)
-  //    tempVscNextNextVisib := False
-  //  }
-  //  is (LcvVgaState.visib) {
-  //    //tempHscNextNextVisib := (
-  //    //  //misc.hpipeC + 0x2 < fbSize2d.x
-  //    //  (misc.hpipeC === fbSize2d.x - 2)
-  //    //  || (misc.hpipeC === fbSize2d.x - 1)
-  //    //)
-  //    tempVscNextNextVisib := True
-  //  }
-  //}
-
-  ////val rTempNextVisib = Reg(Bool()) init(False)
-  //rTempNextVisib := tempHscNextNextVisib && tempVscNextNextVisib
-  //rTempNextPixelEn := nextClkCnt === cpp - 1
-
-  // END: Mostly working
-
-  //tempNextPixelEn := clkCntP1 === cpp - nextRegDelay + 1
   //jtempNextPixelEn := nextClkCnt === (cpp - nextRegDelay - 1)
   //val rTempNextPixelEn = Reg(Bool()) init(False)
   //rTempNextPixelEn := nextClkCnt === (cpp - 1)
@@ -1041,8 +928,9 @@ case class LcvVgaCtrl(
   // BEGIN: pipelined working (?)
   fifoPop.ready := (
     //misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
-    misc.nextNextNextPixelEn && misc.nextNextNextVisib && !fifoEmpty
+    //misc.nextNextNextPixelEn && misc.nextNextNextVisib && !fifoEmpty
     //hpipe.visibToDrive
+    misc.nextPixelEn && misc.nextVisib && !fifoEmpty
   )
   // END: pipelined working (?)
   //fifoPop.ready := rFifoPopReady
