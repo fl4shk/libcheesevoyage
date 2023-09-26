@@ -617,7 +617,7 @@ case class LcvVgaCtrl(
     }
   }
 
-  val rTempNextVisib = Reg(Bool()) init(False)
+  //val rTempNextVisib = Reg(Bool()) init(False)
   rTempNextVisib := tempHscNextNextVisib && tempVscNextNextVisib
   rTempNextPixelEn := nextClkCnt === (cpp - 1)
   // END: Mostly working
