@@ -925,15 +925,16 @@ case class LcvVgaCtrl(
   //val rTempNextPixelEn = Reg(Bool()) init(False)
   //rTempNextPixelEn := nextClkCnt === (cpp - 1)
   // BEGIN: pipelined working (?)
-  //fifoPop.ready :=
-  rFifoPopReady := (
+  //rFifoPopReady := 
+  fifoPop.ready := (
     //misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
     //misc.nextNextNextPixelEn && misc.nextNextNextVisib && !fifoEmpty
     //hpipe.visibToDrive
-    misc.nextPixelEn && misc.nextVisib && !fifoEmpty
+    //misc.nextPixelEn && misc.nextVisib && !fifoEmpty
+    misc.pixelEn && misc.visib && !fifoEmpty
   )
   // END: pipelined working (?)
-  fifoPop.ready := rFifoPopReady
+  //fifoPop.ready := rFifoPopReady
   //fifoPop.ready := (
   //  misc.nextPixelEn && misc.nextVisib && !fifoEmpty
   //)
