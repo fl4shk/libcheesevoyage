@@ -58,18 +58,24 @@ class LcvVgaStateCnt(
   for (idx <- 0 to pipeSize - 1) {
     //rCArr += Reg(UInt(cntWidth bits)) init(pipeSize - 1 - idx)
     rCArr += Reg(UInt(cntWidth bits)) init(idx)
-    nextCArr += rCArr.last.wrapNext()
+    //nextCArr += rCArr.last.wrapNext()
+    nextCArr += UInt(cntWidth bits)
 
     rSArr += Reg(LcvVgaState()) init(LcvVgaState.front)
-    nextSArr += rSArr.last.wrapNext()
+    //nextSArr += rSArr.last.wrapNext()
+    nextSArr += LcvVgaState()
 
     rVisibArr += Reg(Bool()) init(False)
-    nextVisibArr += rVisibArr.last.wrapNext()
+    //nextVisibArr += rVisibArr.last.wrapNext()
+    nextVisibArr += Bool()
   }
   for (idx <- currIdx to maxAhead - 1) {
     nextCArr(idx) := rCArr(idx + 1)
+    rCArr(idx) := nextCArr(idx)
     nextSArr(idx) := rSArr(idx + 1)
+    rSArr(idx) := nextSArr(idx)
     nextVisibArr(idx) := rVisibArr(idx + 1)
+    rVisibArr(idx) := nextVisibArr(idx)
   }
 
   // `<whatever>ToDrive` are the inputs to the pipeline
