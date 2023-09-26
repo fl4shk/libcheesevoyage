@@ -532,6 +532,7 @@ case class LcvVgaCtrl(
   //  )
   //  //|| misc.visib
   //)
+
   rTempNextVisib := (
     (
       (
@@ -546,6 +547,7 @@ case class LcvVgaCtrl(
       misc.vscS === LcvVgaState.visib
     )
   )
+
   //tempNextPixelEn := clkCntP1 === cpp - nextRegDelay + 1
   //jtempNextPixelEn := nextClkCnt === (cpp - nextRegDelay - 1)
   //val rTempNextPixelEn = Reg(Bool()) init(False)
