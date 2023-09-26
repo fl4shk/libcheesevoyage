@@ -271,9 +271,9 @@ class LcvVgaPipe(
   ): Unit = {
     def mkCase(
       //s: LcvVgaState.C,
-      currState: LcvVgaState.E,
+      currState: LcvVgaState.C,
       stateSize: Int,
-      nextState: LcvVgaState.E,
+      nextState: LcvVgaState.C,
     ): Unit = {
       ////val counterP1 = c + 0x1
 			//when (counterP1 >= stateSize) {
