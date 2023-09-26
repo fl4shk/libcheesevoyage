@@ -53,6 +53,7 @@ class LcvVgaStateCnt(
   val rNextNextS = Reg(LcvVgaState()) init(LcvVgaState.front)
   //rNextNextS.init(rNextNextS.getZero) // this didn't compile!
   rNextNextS := nextNextS
+  val rNextNextVisib = Reg(Bool()) init(False)
 
   if (vivadoDebug) {
     s.addAttribute("MARK_DEBUG", "TRUE")
@@ -212,8 +213,15 @@ class LcvVgaStateCnt(
       //}
       when (counterP2 >= stateSize) {
         nextNextS := nextNextState
+        
+        rNextNextVisib := (
+          if (nextNextState == LcvVgaState.visib) {True} else {False}
+        )
       } otherwise {
         nextNextS := s
+        rNextNextVisib := (
+          if (nextNextState == LcvVgaState.front) {True} else {False}
+        )
       }
     }
     //runMkCaseFunc(vgaTimingHv=vgaTimingHv)(mkCaseFunc=mkCase)
@@ -1035,9 +1043,13 @@ case class LcvVgaCtrl(
     val rNextVisib = Reg(Bool()) init(False)
     //rNextVisib := ((hsc.nextS === LcvVgaState.visib)
     //  & (vsc.nextS === LcvVgaState.visib))
-    rNextVisib := ((hsc.rNextNextS === LcvVgaState.visib)
-      && (vsc.rNextNextS === LcvVgaState.visib))
+    //rNextVisib := ((hsc.rNextNextS === LcvVgaState.visib)
+    //  && (vsc.rNextNextS === LcvVgaState.visib))
+    rNextVisib := ((hsc.nextNextS === LcvVgaState.visib)
+      && (vsc.nextNextS === LcvVgaState.visib))
     misc.nextVisib := rNextVisib
+    //misc.nextVisib := ((hsc.rNextNextS === LcvVgaState.visib)
+    //  && (vsc.rNextNextS === LcvVgaState.visib))
     //misc.nextVisib := ((hsc.nextS === LcvVgaState.visib)
     //  & (vsc.nextS === LcvVgaState.visib))
     //misc.nextVisib := ((hsc.rNextNextS === LcvVgaState.visib)
