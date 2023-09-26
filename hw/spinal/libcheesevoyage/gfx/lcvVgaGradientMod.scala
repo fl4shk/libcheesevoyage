@@ -158,8 +158,8 @@ case class LcvVgaGradient(
 
   //val rPosX = Reg(UInt(ctrlIo.misc.drawPos.x.getWidth bits))
   val rPosX = Reg(UInt(log2Up(vgaTimingInfo.htiming.visib + 1) bits))
-    .init(vgaTimingInfo.htiming.visib - 1)
-    //.init(0x0)
+    //.init(vgaTimingInfo.htiming.visib - 1)
+    .init(0x0)
   //val initPosX = UInt(rPosX.getWidth bits)
   //initPosX := (default -> True)
   val nextPosX = UInt(rPosX.getWidth bits)
@@ -229,26 +229,26 @@ case class LcvVgaGradient(
         rDbgPhysCol.g := 0x0
         rDbgPhysCol.b := 0x0
       }
-      is (1) {
-        rDbgPhysCol.r := (default -> True)
-        rDbgPhysCol.g := (rDbgPhysCol.g.high -> True, default -> False)
-        rDbgPhysCol.b := 0x0
-      }
-      is (2) {
-        rDbgPhysCol.r := (default -> True)
-        rDbgPhysCol.g := (default -> True)
-        rDbgPhysCol.b := 0x0
-      }
-      is (3) {
-        rDbgPhysCol.r := 0x0
-        rDbgPhysCol.g := (default -> True)
-        rDbgPhysCol.b := 0x0
-      }
-      is (4) {
-        rDbgPhysCol.r := 0x0
-        rDbgPhysCol.g := 0x0
-        rDbgPhysCol.b := (default -> True)
-      }
+      //is (1) {
+      //  rDbgPhysCol.r := (default -> True)
+      //  rDbgPhysCol.g := (rDbgPhysCol.g.high -> True, default -> False)
+      //  rDbgPhysCol.b := 0x0
+      //}
+      //is (2) {
+      //  rDbgPhysCol.r := (default -> True)
+      //  rDbgPhysCol.g := (default -> True)
+      //  rDbgPhysCol.b := 0x0
+      //}
+      //is (3) {
+      //  rDbgPhysCol.r := 0x0
+      //  rDbgPhysCol.g := (default -> True)
+      //  rDbgPhysCol.b := 0x0
+      //}
+      //is (4) {
+      //  rDbgPhysCol.r := 0x0
+      //  rDbgPhysCol.g := 0x0
+      //  rDbgPhysCol.b := (default -> True)
+      //}
       default {
         //resetDbgPhysCol()
         rDbgPhysCol := rDbgPhysCol.getZero
