@@ -1604,52 +1604,6 @@ case class LcvVgaCtrlNoFifo(
   misc.vpipeNextNextS := vpipe.rNextNextS
   //--------
   // Implement HSYNC and VSYNC logic
-  //when (misc.nextNextNextPixelEn) {
-  //  hpipe.updateStateCnt(vgaTimingHv=htiming)
-  //  when (
-  //    //hpipe.rNextNextS === LcvVgaState.visib
-  //    hpipe.rNextNextNextVisib
-  //    && !hpipe.visibToDrive
-  //  ) {
-  //    vpipe.updateStateCnt(vgaTimingHv=vtiming)
-  //  }
-  //}
-  //when (misc.nextNextNextPixelEn) {
-  //  hpipe.updateStateCnt(vgaTimingHv=htiming)
-  //  when (
-  //    //hpipe.rNextNextS === LcvVgaState.visib
-  //    hpipe.rNextNextNextVisib
-  //    && !hpipe.visibToDrive
-  //  ) {
-  //    vpipe.updateStateCnt(vgaTimingHv=vtiming)
-  //  } otherwise {
-  //    vpipe.noChangeUpdateToDrive()
-  //  }
-  //} otherwise {
-  //  hpipe.noChangeUpdateToDrive()
-  //  vpipe.noChangeUpdateToDrive()
-  //}
-  //when (
-  //  misc.nextNextNextPixelEn
-  //  //misc.nextNextPixelEn
-  //) {
-  //  hpipe.updateStateCnt(vgaTimingHv=htiming)
-  //  when (
-  //    //hpipe.rNextNextS === LcvVgaState.visib
-  //    //hpipe.rNextNextNextVisib
-  //    //&& !hpipe.visibToDrive
-  //    //hpipe.rNextVisib
-  //    //&& !hpipe.rNextNextVisib
-  //    hpipe.rNextNextNextVisib
-  //  ) {
-  //    vpipe.updateStateCnt(vgaTimingHv=vtiming)
-  //  } otherwise {
-  //    vpipe.noChangeUpdateToDrive()
-  //  }
-  //} otherwise {
-  //  hpipe.noChangeUpdateToDrive()
-  //  vpipe.noChangeUpdateToDrive()
-  //}
   when (
     misc.nextNextNextPixelEn
     //misc.nextNextPixelEn
@@ -1681,6 +1635,9 @@ case class LcvVgaCtrlNoFifo(
       vpipe.noChangeUpdateToDrive()
     }
   } otherwise {
+    hpipe.noChangeUpdateToDrive()
+    vpipe.noChangeUpdateToDrive()
+  }
   when (misc.pixelEn) {
     //htiming.updateStateCnt(m, hpipe)
     //hpipe.updateStateCnt(vgaTimingHv=htiming)
