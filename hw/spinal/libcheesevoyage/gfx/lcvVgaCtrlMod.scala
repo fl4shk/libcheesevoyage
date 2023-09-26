@@ -1527,12 +1527,12 @@ case class LcvVgaCtrlNoFifo(
     vgaTimingHv=vtiming,
     isVert=true,
   )
-  hpipe.sendDownPipe(
-    activePixelEn=misc.nextNextNextPixelEn
-  )
-  vpipe.sendDownPipe(
-    activePixelEn=misc.nextNextNextPixelEn
-  )
+  //hpipe.sendDownPipe(
+  //  activePixelEn=misc.nextNextNextPixelEn
+  //)
+  //vpipe.sendDownPipe(
+  //  activePixelEn=misc.nextNextNextPixelEn
+  //)
   misc.hpipeS := hpipe.s
   misc.hpipeC := hpipe.c
   misc.hpipeNextS := hpipe.rNextS
