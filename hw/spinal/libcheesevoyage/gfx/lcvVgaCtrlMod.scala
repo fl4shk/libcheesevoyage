@@ -49,9 +49,10 @@ class LcvVgaStateCnt(
   //val cP2 = c.resized + U(f"$cPWidth'd2")
   val nextS = LcvVgaState()
   //val nextS = s.wrapNext()
+
   val nextNextS = LcvVgaState()
   val rNextNextS = Reg(LcvVgaState())
-  rNextNextS.init(rNextNextS.getZero)
+  rNextNextS.init(LcvVgaState.front)
   rNextNextS := nextNextS
 
   if (vivadoDebug) {
