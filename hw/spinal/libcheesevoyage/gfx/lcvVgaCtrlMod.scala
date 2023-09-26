@@ -461,12 +461,12 @@ case class LcvVgaCtrl(
   //  //misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
   //)
   val rFifoPopReady = Reg(Bool()) init(False)
-  val rNextNextPixelEn = Reg(Bool()) init(False)
-  //val rNextNextVisib = Reg(Bool()) init(False)
-  //val rInvFifoEmpty = Reg(Bool()) init(False)
-  rNextNextPixelEn := misc.nextNextPixelEn
-  //rNextNextVisib := misc.nextNextVisib
-  //rInvFifoEmpty := !fifoEmpty
+  //val rNextNextPixelEn = Reg(Bool()) init(False)
+  ////val rNextNextVisib = Reg(Bool()) init(False)
+  ////val rInvFifoEmpty = Reg(Bool()) init(False)
+  //rNextNextPixelEn := misc.nextNextPixelEn
+  ////rNextNextVisib := misc.nextNextVisib
+  ////rInvFifoEmpty := !fifoEmpty
 
   // `hscCOffs` pipeline stage delays
   //val hscCOffs = 7
