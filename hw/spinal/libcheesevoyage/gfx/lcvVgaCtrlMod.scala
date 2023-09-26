@@ -73,7 +73,7 @@ class LcvVgaStateCnt(
 				//m.d.sync += stateCnt.c := (counterP1)
 				////self.noChangeUpdateNextS(m, stateCnt)
 				nextS := s
-				c := counterP1
+				c := counterP1(c.bitsRange)
 			}
 			//s := nextS
 
