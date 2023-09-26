@@ -208,55 +208,55 @@ class LcvVgaPipe(
   //    //rPixelEnArr(idx - 1) := rPixelEnArr(idx)
   //  }
   //}
-  //def runMkCaseFunc(
-  //  vgaTimingHv: LcvVgaTimingHv,
-  //  someState: LcvVgaState.C,
-  //)(
-  //  mkCaseFunc: (
-  //    LcvVgaState.E, // `someState` (`is (someState)`)
-  //    Int, // `stateSize`
-  //    LcvVgaState.E, // `nextState`
-  //  ) => Unit
-  //): Unit = {
-  //  switch (someState) {
-  //    is (LcvVgaState.front) {
-  //      val stateSize = vgaTimingHv.front
-  //      mkCaseFunc(
-  //        LcvVgaState.front,
-  //        stateSize,
-  //        LcvVgaState.sync
-  //      )
-  //      //println(f"front, sync: $stateSize")
-  //    }
-  //    is (LcvVgaState.sync) {
-  //      val stateSize = vgaTimingHv.sync
-  //      mkCaseFunc(
-  //        LcvVgaState.sync,
-  //        stateSize,
-  //        LcvVgaState.back
-  //      )
-  //      //println(f"sync, back: $stateSize")
-  //    }
-  //    is (LcvVgaState.back) {
-  //      val stateSize = vgaTimingHv.back
-  //      mkCaseFunc(
-  //        LcvVgaState.back,
-  //        stateSize,
-  //        LcvVgaState.visib
-  //      )
-  //      //println(f"back, visib: $stateSize")
-  //    }
-  //    is (LcvVgaState.visib) {
-  //      val stateSize = vgaTimingHv.visib
-  //      mkCaseFunc(
-  //        LcvVgaState.visib,
-  //        stateSize,
-  //        LcvVgaState.front
-  //      )
-  //      //println(f"visib, front: $stateSize")
-  //    }
-  //  }
-  //}
+  def runMkCaseFunc(
+    vgaTimingHv: LcvVgaTimingHv,
+    someState: LcvVgaState.C,
+  )(
+    mkCaseFunc: (
+      LcvVgaState.E, // `someState` (`is (someState)`)
+      Int, // `stateSize`
+      LcvVgaState.E, // `nextState`
+    ) => Unit
+  ): Unit = {
+    switch (someState) {
+      is (LcvVgaState.front) {
+        val stateSize = vgaTimingHv.front
+        mkCaseFunc(
+          LcvVgaState.front,
+          stateSize,
+          LcvVgaState.sync
+        )
+        //println(f"front, sync: $stateSize")
+      }
+      is (LcvVgaState.sync) {
+        val stateSize = vgaTimingHv.sync
+        mkCaseFunc(
+          LcvVgaState.sync,
+          stateSize,
+          LcvVgaState.back
+        )
+        //println(f"sync, back: $stateSize")
+      }
+      is (LcvVgaState.back) {
+        val stateSize = vgaTimingHv.back
+        mkCaseFunc(
+          LcvVgaState.back,
+          stateSize,
+          LcvVgaState.visib
+        )
+        //println(f"back, visib: $stateSize")
+      }
+      is (LcvVgaState.visib) {
+        val stateSize = vgaTimingHv.visib
+        mkCaseFunc(
+          LcvVgaState.visib,
+          stateSize,
+          LcvVgaState.front
+        )
+        //println(f"visib, front: $stateSize")
+      }
+    }
+  }
   //def noChangeUpdateNextS(): Unit = {
   //  nextS := s
   //  //nextNextS := s
@@ -342,51 +342,51 @@ class LcvVgaPipe(
 			}
     }
 
-    //runMkCaseFunc(
-    //  vgaTimingHv=vgaTimingHv,
-    //  //someState=s,
-    //  someState=rSArr.last
-    //)(
-    //  mkCaseFunc=mkCase
-    //)
-    switch (rSArr.last) {
-      is (LcvVgaState.front) {
-        val stateSize = vgaTimingHv.front
-        mkCase(
-          currState=LcvVgaState.front,
-          stateSize=stateSize,
-          nextState=LcvVgaState.sync
-        )
-        //println(f"front, sync: $stateSize")
-      }
-      is (LcvVgaState.sync) {
-        val stateSize = vgaTimingHv.sync
-        mkCase(
-          currState=LcvVgaState.sync,
-          stateSize=stateSize,
-          nextState=LcvVgaState.back
-        )
-        //println(f"sync, back: $stateSize")
-      }
-      is (LcvVgaState.back) {
-        val stateSize = vgaTimingHv.back
-        mkCase(
-          currState=LcvVgaState.back,
-          stateSize=stateSize,
-          nextState=LcvVgaState.visib
-        )
-        //println(f"back, visib: $stateSize")
-      }
-      is (LcvVgaState.visib) {
-        val stateSize = vgaTimingHv.visib
-        mkCase(
-          currState=LcvVgaState.visib,
-          stateSize=stateSize,
-          nextState=LcvVgaState.front
-        )
-        //println(f"visib, front: $stateSize")
-      }
-    }
+    runMkCaseFunc(
+      vgaTimingHv=vgaTimingHv,
+      //someState=s,
+      someState=rSArr.last
+    )(
+      mkCaseFunc=mkCase
+    )
+    //switch (rSArr.last) {
+    //  is (LcvVgaState.front) {
+    //    val stateSize = vgaTimingHv.front
+    //    mkCase(
+    //      currState=LcvVgaState.front,
+    //      stateSize=stateSize,
+    //      nextState=LcvVgaState.sync
+    //    )
+    //    //println(f"front, sync: $stateSize")
+    //  }
+    //  is (LcvVgaState.sync) {
+    //    val stateSize = vgaTimingHv.sync
+    //    mkCase(
+    //      currState=LcvVgaState.sync,
+    //      stateSize=stateSize,
+    //      nextState=LcvVgaState.back
+    //    )
+    //    //println(f"sync, back: $stateSize")
+    //  }
+    //  is (LcvVgaState.back) {
+    //    val stateSize = vgaTimingHv.back
+    //    mkCase(
+    //      currState=LcvVgaState.back,
+    //      stateSize=stateSize,
+    //      nextState=LcvVgaState.visib
+    //    )
+    //    //println(f"back, visib: $stateSize")
+    //  }
+    //  is (LcvVgaState.visib) {
+    //    val stateSize = vgaTimingHv.visib
+    //    mkCase(
+    //      currState=LcvVgaState.visib,
+    //      stateSize=stateSize,
+    //      nextState=LcvVgaState.front
+    //    )
+    //    //println(f"visib, front: $stateSize")
+    //  }
+    //}
 
     //State = VgaTiming.State
     //switch (s) {
