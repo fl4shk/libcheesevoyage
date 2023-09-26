@@ -201,7 +201,7 @@ class LcvVgaStateCnt(
   ): Unit = {
     def mkCase(
       stateSize: Int,
-      nextNextState: LcvVgaState.C,
+      nextNextState: LcvVgaState.E,
     ): Unit = {
       //when (counterP2 >= stateSize) {
       //  nextNextS := nextNextState
