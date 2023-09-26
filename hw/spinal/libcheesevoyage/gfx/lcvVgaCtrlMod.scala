@@ -648,7 +648,7 @@ case class LcvVgaCtrl(
     //m.d.sync +=
     nextClkCnt := 0x0
   }
-  clkCnt := nextClkCnt
+  //clkCnt := nextClkCnt
   // Since this is an alias, use ALL_CAPS for its name.
   // outp.pixelEn = (clkCnt == 0x0)
   //m.d.comb += 
