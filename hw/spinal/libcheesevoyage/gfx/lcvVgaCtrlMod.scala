@@ -32,52 +32,125 @@ class LcvVgaStateCnt(
 ) //extends Bundle
 {
   //--------
-  val s = Reg(LcvVgaState()) init(LcvVgaState.front)
-  //val sWrapNext = s.wrapNext()
-  val c = Reg(UInt(vgaTimingHv.cntWidth() bits)) init(0x0)
-  val cPWidth = vgaTimingHv.cntWidth() + 1
-  val counterP1 = UInt(cPWidth bits)
-  //val counterP1 = c.resized + U(f"$cPWidth'd1")
-  counterP1 := c.resized + U(f"$cPWidth'd1")
-  val counterP2 = UInt(cPWidth bits)
-  counterP2 := c.resized + U(f"$cPWidth'd2")
+  //val s = Reg(LcvVgaState()) init(LcvVgaState.front)
+  ////val sWrapNext = s.wrapNext()
+  //val c = Reg(UInt(vgaTimingHv.cntWidth() bits)) init(0x0)
+
+  val minAhead = 1
+  val maxAhead = 3 
+  val numAhead = maxAhead - minAhead + 1
+  val pipeSize = numAhead + 1
+
+  val currIdx = 0
+  val nextIdx = 1
+  val nextNextIdx = 2
+  val nextNextNextIdx = 3
+
+  val cntWidth = vgaTimingHv.cntWidth(offs=maxAhead) 
+  val rCArr = new ArrayBuffer[UInt]()
+  val nextCArr = new ArrayBuffer[UInt]()
+  val rSArr = new ArrayBuffer[LcvVgaState.C]()
+  val nextSArr = new ArrayBuffer[LcvVgaState.C]()
+  val rVisibArr = new ArrayBuffer[Bool]()
+  //val rVisibArr = Reg(UInt(pipeSize bits)) init(0x0)
+  val nextVisibArr = new ArrayBuffer[Bool]()
+
+  for (idx <- 0 to pipeSize - 1) {
+    //rCArr += Reg(UInt(cntWidth bits)) init(pipeSize - 1 - idx)
+    rCArr += Reg(UInt(cntWidth bits)) init(idx)
+    nextCArr += rCArr.last.wrapNext()
+
+    rSArr += Reg(LcvVgaState()) init(LcvVgaState.front)
+    nextSArr += rSArr.last.wrapNext()
+
+    rVisibArr += Reg(Bool()) init(False)
+    nextVisibArr += rVisibArr.last.wrapNext()
+  }
+  for (idx <- currIdx to maxAhead - 1) {
+    rCArr(idx) := rCArr(idx + 1)
+    rSArr(idx) := rSArr(idx + 1)
+    rVisibArr(idx) := rVisibArr(idx + 1)
+  }
+
+  // `<whatever>ToDrive` are the inputs to the pipeline
+  val c = rCArr(currIdx)
+  val counterP1 = rCArr(1 - minAhead)
+  val counterP2 = rCArr(2 - minAhead)
+  val counterP3 = rCArr(3 - minAhead)
+  val cToDrive = nextCArr(3 - minAhead)
+
+  //val rNextS = rSArr(1 - minAhead)
+  //val rNextNextS = rSArr(2 - minAhead)
+  //val rNextNextNextS = rSArr(3 - minAhead)
+
+  val s = rSArr(currIdx)
+  val rNextS = rSArr(nextIdx)
+  val rNextNextS = rSArr(nextNextIdx)
+  val rNextNextNextS = rSArr(nextNextNextIdx)
+  val sToDrive = nextSArr(nextNextNextIdx)
+
+  //val rVisib = rAheadVisibArr(1 - minAhead)
+  //val rNextVisib = rAheadVisibArr(2 - minAhead)
+  //val rNextNextVisib = rAheadVisibArr(3 - minAhead)
+
+  val rVisib = rVisibArr(currIdx)
+  val rNextVisib = rVisibArr(nextIdx)
+  val rNextNextVisib = rVisibArr(nextNextIdx)
+  val rNextNextNextVisib = rVisibArr(nextNextNextIdx)
+  val visibToDrive = nextVisibArr(nextNextNextIdx)
+
+  //val cP1Width = vgaTimingHv.cntWidth(offs=1)
+  //val cP2Width = vgaTimingHv.cntWidth(offs=2)
+  //val cP3Width = vgaTimingHv.cntWidth(offs=3)
+
+  //val counterP1 = UInt(cP1Width bits)
+  //counterP1 := c.resized + U(f"$cP1Width'd1")
+  //val counterP2 = UInt(cP2Width bits)
+  //counterP2 := c.resized + U(f"$cP2Width'd2")
+  //val counterP3 = UInt(cP3Width bits)
+  //counterP3 := c.resized + U(f"$cP3Width'd3")
+
   //val cP1 = UInt(cPWidth bits)
   //cP1 := c.resized + U(f"$cPWidth'd1")
   //val cP2 = UInt(cPWidth bits)
   //cP2 := c.resized + U(f"$cPWidth'd2")
   //val cP1 = c.resized + U(f"$cPWidth'd1")
   //val cP2 = c.resized + U(f"$cPWidth'd2")
-  val nextS = LcvVgaState()
-  //val nextS = s.wrapNext()
-  val nextNextS = LcvVgaState()
-  val rNextNextS = Reg(LcvVgaState()) init(LcvVgaState.front)
-  //rNextNextS.init(rNextNextS.getZero) // this didn't compile!
-  rNextNextS := nextNextS
-  val rNextNextVisib = Reg(Bool()) init(False)
 
-  if (vivadoDebug) {
-    s.addAttribute("MARK_DEBUG", "TRUE")
-    c.addAttribute("MARK_DEBUG", "TRUE")
-    counterP1.addAttribute("MARK_DEBUG", "TRUE")
-    counterP2.addAttribute("MARK_DEBUG", "TRUE")
-    nextS.addAttribute("MARK_DEBUG", "TRUE")
-    nextNextS.addAttribute("MARK_DEBUG", "TRUE")
-    rNextNextS.addAttribute("MARK_DEBUG", "TRUE")
-  }
+  //val nextS = LcvVgaState()
+  ////val nextS = s.wrapNext()
+  //val nextNextS = LcvVgaState()
+  //val rNextNextS = Reg(LcvVgaState()) init(LcvVgaState.front)
+  ////rNextNextS.init(rNextNextS.getZero) // this didn't compile!
+  //rNextNextS := nextNextS
+  //val rNextVisib = Reg(Bool()) init(False)
+  //val nextNextVisib = rNextVisib.wrapNext()
+
+  //if (vivadoDebug) {
+  //  s.addAttribute("MARK_DEBUG", "TRUE")
+  //  c.addAttribute("MARK_DEBUG", "TRUE")
+  //  counterP1.addAttribute("MARK_DEBUG", "TRUE")
+  //  counterP2.addAttribute("MARK_DEBUG", "TRUE")
+  //  nextS.addAttribute("MARK_DEBUG", "TRUE")
+  //  nextNextS.addAttribute("MARK_DEBUG", "TRUE")
+  //  rNextNextS.addAttribute("MARK_DEBUG", "TRUE")
+  //}
   //--------
   def runMkCaseFunc(
     vgaTimingHv: LcvVgaTimingHv,
     someState: LcvVgaState.C,
   )(
     mkCaseFunc: (
+      LcvVgaState.C, // `someState` (`is (someState)`)
       Int, // `stateSize`
-      LcvVgaState.C, // `nextState` or `nextNextState`
+      LcvVgaState.C, // `nextState`
     ) => Unit
   ): Unit = {
     switch (someState) {
       is (LcvVgaState.front) {
         val stateSize = vgaTimingHv.front
         mkCaseFunc(
+          LcvVgaState.front,
           stateSize,
           LcvVgaState.sync
         )
@@ -86,6 +159,7 @@ class LcvVgaStateCnt(
       is (LcvVgaState.sync) {
         val stateSize = vgaTimingHv.sync
         mkCaseFunc(
+          LcvVgaState.sync,
           stateSize,
           LcvVgaState.back
         )
@@ -94,6 +168,7 @@ class LcvVgaStateCnt(
       is (LcvVgaState.back) {
         val stateSize = vgaTimingHv.back
         mkCaseFunc(
+          LcvVgaState.back,
           stateSize,
           LcvVgaState.visib
         )
@@ -102,6 +177,7 @@ class LcvVgaStateCnt(
       is (LcvVgaState.visib) {
         val stateSize = vgaTimingHv.visib
         mkCaseFunc(
+          LcvVgaState.visib,
           stateSize,
           LcvVgaState.front
         )
@@ -109,62 +185,80 @@ class LcvVgaStateCnt(
       }
     }
   }
-  def noChangeUpdateNextS(): Unit = {
-    nextS := s
-    //nextNextS := s
-  }
+  //def noChangeUpdateNextS(): Unit = {
+  //  nextS := s
+  //  //nextNextS := s
+  //}
   def updateStateCnt(
     vgaTimingHv: LcvVgaTimingHv,
   ): Unit = {
     def mkCase(
       //s: LcvVgaState.C,
+      currState: LcvVgaState.C,
       stateSize: Int,
       nextState: LcvVgaState.C,
     ): Unit = {
-      //val counterP1 = c + 0x1
-			when (counterP1 >= stateSize) {
-				//m.d.sync += stateCnt.s := (nextState)
-				//m.d.sync += stateCnt.c := (0x0)
-				////m.d.comb += stateCnt.nextS := (nextState)
-				//sWrapNext := nextState
-				//s := nextState
-				nextS := nextState
-				s := nextState
-				c := c.getZero
-				//when (counterP2 >= stateSize) {
-				//  nextNextS := 
-				//} otherwise {
-				//}
-			} otherwise {
-				//m.d.sync += stateCnt.c := (counterP1)
-				////self.noChangeUpdateNextS(m, stateCnt)
-				nextS := s
-				//nextNextS := s
-				c := counterP1(c.bitsRange)
-			}
-			//s := nextS
-
-			//val counteP2 = c + 0x2
-			//when (counterP2 >= stateSize) {
-			//  nextNextS := nextState
-			//} otherwise {
-			//  nextNextS := s
-			//}
-
-			//when ((c + 0x2) >= stateSize) {
-			//  // `m.d.comb` may have only worked here becaue of `nextVisib`
-			//  // being originally registered.
-			//	//m.d.comb += stateCnt.nextS := (nextState)
+      ////val counterP1 = c + 0x1
+			//when (counterP1 >= stateSize) {
+			//	//m.d.sync += stateCnt.s := (nextState)
+			//	//m.d.sync += stateCnt.c := (0x0)
+			//	////m.d.comb += stateCnt.nextS := (nextState)
+			//	//sWrapNext := nextState
+			//	//s := nextState
 			//	nextS := nextState
+			//	s := nextState
+			//	c := c.getZero
+			//	//when (counterP2 >= stateSize) {
+			//	//  nextNextS := 
+			//	//} otherwise {
+			//	//}
 			//} otherwise {
-			//	//m.d.comb += stateCnt.nextS := (stateCnt.s)
+			//	//m.d.sync += stateCnt.c := (counterP1)
+			//	////self.noChangeUpdateNextS(m, stateCnt)
 			//	nextS := s
+			//	//nextNextS := s
+			//	c := counterP1(c.bitsRange)
 			//}
+			////s := nextS
+
+			////val counteP2 = c + 0x2
+			////when (counterP2 >= stateSize) {
+			////  nextNextS := nextState
+			////} otherwise {
+			////  nextNextS := s
+			////}
+
+			////when ((c + 0x2) >= stateSize) {
+			////  // `m.d.comb` may have only worked here becaue of `nextVisib`
+			////  // being originally registered.
+			////	//m.d.comb += stateCnt.nextS := (nextState)
+			////	nextS := nextState
+			////} otherwise {
+			////	//m.d.comb += stateCnt.nextS := (stateCnt.s)
+			////	nextS := s
+			////}
+
+			// We might have some off-by-one errors here
+			when (counterP3 + 1 >= stateSize) {
+			  sToDrive := nextState
+			  cToDrive := cToDrive.getZero
+        visibToDrive := (
+          //if (nextState == LcvVgaState.visib) {True} else {False}
+          if (currState == LcvVgaState.back) {True} else {False}
+        )
+			} otherwise {
+			  cToDrive := counterP3 + 1
+        visibToDrive := (
+          //if (nextState == LcvVgaState.front) {True} else {False}
+          if (currState == LcvVgaState.visib) {True} else {False}
+        )
+			}
     }
 
     runMkCaseFunc(
       vgaTimingHv=vgaTimingHv,
-      someState=s,
+      //someState=s,
+      someState=rSArr.last
     )(
       mkCaseFunc=mkCase
     )
@@ -193,72 +287,72 @@ class LcvVgaStateCnt(
     //  }
     //}
   }
-  def noChangeUpdateNextNextS(): Unit = {
-    //nextS := s
-    nextNextS := s
-  }
-  def updateNextNextS(
-    vgaTimingHv: LcvVgaTimingHv,
-  ): Unit = {
-    def mkCase(
-      stateSize: Int,
-      nextNextState: LcvVgaState.C,
-    ): Unit = {
-      //when (counterP2 >= stateSize) {
-      //  nextNextS := nextNextState
-      //} elsewhen (counterP1 >= stateSize) {
-      //  nextNextS := nextS
-      //} otherwise {
-      //  nextNextS := s
-      //}
-      when (counterP2 >= stateSize) {
-        nextNextS := nextNextState
-        
-        rNextNextVisib := (
-          if (nextNextState == LcvVgaState.visib) {True} else {False}
-        )
-      } otherwise {
-        nextNextS := s
-        rNextNextVisib := (
-          if (nextNextState == LcvVgaState.front) {True} else {False}
-        )
-      }
-    }
-    //runMkCaseFunc(vgaTimingHv=vgaTimingHv)(mkCaseFunc=mkCase)
-    runMkCaseFunc(
-      vgaTimingHv=vgaTimingHv,
-      //someState=nextS,
-      // I think this will work? 
-      // Here's my thinking behind why I think this will work.
-      // As long as `vgaTimingHv`'s members are larger than 2, which is
-      // almost certainly true for any real VGA signal, then `s` will 
-      someState=s, 
-    )(
-      mkCaseFunc=mkCase
-    )
-    //switch (s) {
-    //  is (LcvVgaState.front) {
-    //    val stateSize = vgaTimingHv.front
-    //    mkCase(stateSize=stateSize, nextNextState=LcvVgaState.sync)
-    //    //println(f"front, sync: $stateSize")
-    //  }
-    //  is (LcvVgaState.sync) {
-    //    val stateSize = vgaTimingHv.sync
-    //    mkCase(stateSize=stateSize, nextNextState=LcvVgaState.back)
-    //    //println(f"sync, back: $stateSize")
-    //  }
-    //  is (LcvVgaState.back) {
-    //    val stateSize = vgaTimingHv.back
-    //    mkCase(stateSize=stateSize, nextNextState=LcvVgaState.visib)
-    //    //println(f"back, visib: $stateSize")
-    //  }
-    //  is (LcvVgaState.visib) {
-    //    val stateSize = vgaTimingHv.visib
-    //    mkCase(stateSize=stateSize, nextNextState=LcvVgaState.front)
-    //    //println(f"visib, front: $stateSize")
-    //  }
-    //}
-  }
+  //def noChangeUpdateNextNextS(): Unit = {
+  //  //nextS := s
+  //  nextNextS := s
+  //}
+  //def updateNextNextS(
+  //  vgaTimingHv: LcvVgaTimingHv,
+  //): Unit = {
+  //  def mkCase(
+  //    stateSize: Int,
+  //    nextNextState: LcvVgaState.C,
+  //  ): Unit = {
+  //    //when (counterP2 >= stateSize) {
+  //    //  nextNextS := nextNextState
+  //    //} elsewhen (counterP1 >= stateSize) {
+  //    //  nextNextS := nextS
+  //    //} otherwise {
+  //    //  nextNextS := s
+  //    //}
+  //    when (counterP2 >= stateSize) {
+  //      nextNextS := nextNextState
+  //      
+  //      nextNextVisib := (
+  //        if (nextNextState == LcvVgaState.visib) {True} else {False}
+  //      )
+  //    } otherwise {
+  //      nextNextS := s
+  //      nextNextVisib := (
+  //        if (nextNextState == LcvVgaState.front) {True} else {False}
+  //      )
+  //    }
+  //  }
+  //  //runMkCaseFunc(vgaTimingHv=vgaTimingHv)(mkCaseFunc=mkCase)
+  //  runMkCaseFunc(
+  //    vgaTimingHv=vgaTimingHv,
+  //    //someState=nextS,
+  //    // I think this will work? 
+  //    // Here's my thinking behind why I think this will work.
+  //    // As long as `vgaTimingHv`'s members are larger than 2, which is
+  //    // almost certainly true for any real VGA signal, then `s` will 
+  //    someState=s, 
+  //  )(
+  //    mkCaseFunc=mkCase
+  //  )
+  //  //switch (s) {
+  //  //  is (LcvVgaState.front) {
+  //  //    val stateSize = vgaTimingHv.front
+  //  //    mkCase(stateSize=stateSize, nextNextState=LcvVgaState.sync)
+  //  //    //println(f"front, sync: $stateSize")
+  //  //  }
+  //  //  is (LcvVgaState.sync) {
+  //  //    val stateSize = vgaTimingHv.sync
+  //  //    mkCase(stateSize=stateSize, nextNextState=LcvVgaState.back)
+  //  //    //println(f"sync, back: $stateSize")
+  //  //  }
+  //  //  is (LcvVgaState.back) {
+  //  //    val stateSize = vgaTimingHv.back
+  //  //    mkCase(stateSize=stateSize, nextNextState=LcvVgaState.visib)
+  //  //    //println(f"back, visib: $stateSize")
+  //  //  }
+  //  //  is (LcvVgaState.visib) {
+  //  //    val stateSize = vgaTimingHv.visib
+  //  //    mkCase(stateSize=stateSize, nextNextState=LcvVgaState.front)
+  //  //    //println(f"visib, front: $stateSize")
+  //  //  }
+  //  //}
+  //}
 }
 
 //case class LcvVgaCtrlBufInp(rgbConfig: RgbConfig) extends Bundle {
@@ -347,6 +441,7 @@ case class LcvVgaCtrlMiscIo(
     clkRate=clkRate,
     vgaTimingInfo=vgaTimingInfo,
   ) bits)
+  val nextNextNextPixelEn = Bool()
   val nextNextPixelEn = Bool()
   val nextPixelEn = Bool()
   val pixelEn = Bool()
@@ -531,7 +626,8 @@ case class LcvVgaCtrl(
   // Implement the clock enable
   val clkCnt = Reg(UInt(clkCntWidth bits)) init(0x0)
   //val nextClkCnt = clkCnt.wrapNext()
-  val nextClkCnt = UInt(clkCntWidth bits)
+  //val nextClkCnt = UInt(clkCntWidth bits)
+  val nextClkCnt = clkCnt.wrapNext()
   if (vivadoDebug) {
     clkCnt.addAttribute("MARK_DEBUG", "TRUE")
     nextClkCnt.addAttribute("MARK_DEBUG", "TRUE")
@@ -568,6 +664,16 @@ case class LcvVgaCtrl(
   val rNextPixelEn = Reg(Bool()) init(False)
   rNextPixelEn := nextClkCnt === cpp - 1
   misc.nextPixelEn := rNextPixelEn
+
+  val rNextNextPixelEn = Reg(Bool()) init(False)
+  rNextNextPixelEn := nextClkCnt === cpp - 2
+  misc.nextNextPixelEn := rNextNextPixelEn
+
+  val rNextNextNextPixelEn = Reg(Bool()) init(False)
+  // "- 3": with this basic solution, this means there will be a minimum of
+  // a 100 MHz `clk` rate for a 25 MHz pixel clock  
+  rNextNextNextPixelEn := nextClkCnt === cpp - 3 
+  misc.nextNextNextPixelEn := rNextNextNextPixelEn
 
   //val rPastFifoPopReady = Reg(Bool()) init(False)
   //rPastFifoPopReady := fifoPop.ready
@@ -627,8 +733,8 @@ case class LcvVgaCtrl(
   //val fifoPopDelay = 3
   //// 3 delay cycles
   //// delay 3
-  //val rInvFifoEmptyArr = ArrayBuffer[Bool]()
-  //val rNextNextPixelEnArr = ArrayBuffer[Bool]()
+  //val rInvFifoEmptyArr = new ArrayBuffer[Bool]()
+  //val rNextNextPixelEnArr = new ArrayBuffer[Bool]()
 
   //for (idx <- 0 to fifoPopDelay - 1) {
   //  rInvFifoEmptyArr += Reg(Bool()) init(False)
@@ -682,12 +788,12 @@ case class LcvVgaCtrl(
   //)
   //val rFifoPopReady = Reg(Bool()) init(False)
   //val nextRegDelay = 2
-  val rTempNextVisib = Reg(Bool()) init(False)
-  val rTempNextPixelEn = Reg(Bool()) init(False)
-  if (vivadoDebug) {
-    rTempNextVisib.addAttribute("MARK_DEBUG", "TRUE")
-    rTempNextPixelEn.addAttribute("MARK_DEBUG", "TRUE")
-  }
+  //val rTempNextVisib = Reg(Bool()) init(False)
+  //val rTempNextPixelEn = Reg(Bool()) init(False)
+  //if (vivadoDebug) {
+  //  rTempNextVisib.addAttribute("MARK_DEBUG", "TRUE")
+  //  rTempNextPixelEn.addAttribute("MARK_DEBUG", "TRUE")
+  //}
   //rTempNextVisib := (
   //  (
   //    (
@@ -800,6 +906,10 @@ case class LcvVgaCtrl(
   //val rTempNextPixelEn = Reg(Bool()) init(False)
   //rTempNextPixelEn := nextClkCnt === (cpp - 1)
   //rFifoPopReady :=
+  rFifoPopReady := (
+    misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
+  )
+  fifoPop.ready := rFifoPopReady
   // BEGIN: working
   //fifoPop.ready := (
   //  misc.nextPixelEn && misc.nextVisib && !fifoEmpty
@@ -809,11 +919,13 @@ case class LcvVgaCtrl(
   //)
   // END: working
   // BEGIN: test
-  fifoPop.ready := (
-    //rTempNextPixelEn && rTempNextVisib && !fifoEmpty
-    //rNextPixelEn && rNextVisib && !fifoEmpty
-    rNextPixelEn && misc.nextVisib && !fifoEmpty
-  )
+
+  //fifoPop.ready := (
+  //  //rTempNextPixelEn && rTempNextVisib && !fifoEmpty
+  //  //rNextPixelEn && rNextVisib && !fifoEmpty
+  //  rNextPixelEn && misc.nextVisib && !fifoEmpty
+  //)
+
   // END: test
   //rFifoPopReady := (
   //  //misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
@@ -822,9 +934,9 @@ case class LcvVgaCtrl(
   //fifoPop.ready := rFifoPopReady
   misc.fifoPopReady := fifoPop.ready
   //misc.nextNextPixelEn := clkCntP1 === cpp - 2
-  val rNextNextPixelEn = Reg(Bool()) init(False)
-  rNextNextPixelEn := nextClkCnt === cpp - 2
-  misc.nextNextPixelEn := rNextNextPixelEn
+  //val rNextNextPixelEn = Reg(Bool()) init(False)
+  //rNextNextPixelEn := nextClkCnt === cpp - 2
+  //misc.nextNextPixelEn := rNextNextPixelEn
   //misc.nextNextVisib := rNextNextVisib
 
   //misc.nextNextVisib := (
@@ -899,61 +1011,107 @@ case class LcvVgaCtrl(
 
   misc.hscS := hsc.s
   misc.hscC := hsc.c
-  misc.hscNextS := hsc.nextS
-  misc.hscNextNextS := hsc.nextNextS
+  misc.hscNextS := hsc.rNextS
+  misc.hscNextNextS := hsc.rNextNextS
   misc.vscS := vsc.s
   misc.vscC := vsc.c
-  misc.vscNextS := vsc.nextS
-  misc.vscNextNextS := vsc.nextNextS
+  misc.vscNextS := vsc.rNextS
+  misc.vscNextNextS := vsc.rNextNextS
   //--------
   // Implement HSYNC and VSYNC logic
-  when (misc.nextPixelEn) {
-    hsc.updateNextNextS(vgaTimingHv=htiming)
-    switch (hsc.rNextNextS) {
-      is (LcvVgaState.front) {
-        vsc.noChangeUpdateNextNextS()
-      }
-      is (LcvVgaState.sync) {
-        vsc.noChangeUpdateNextNextS()
-      }
-      is (LcvVgaState.back) {
-        vsc.noChangeUpdateNextNextS()
-      }
-      is (LcvVgaState.visib) {
-        when (hsc.counterP2 >= fbSize2d.x) {
-          vsc.updateNextNextS(vgaTimingHv=vtiming)
-        } otherwise {
-          vsc.noChangeUpdateNextNextS()
-        }
-      }
+  //when (misc.nextNextPixelEn) {
+  //  hsc.updateNextNextNextS(vgaTimingHv=htiming)
+  //  //when (vsc.rNextNextNextS 
+  //  //switch (hsc.rNextNextNextS) {
+  //  //  is (LcvVgaState.front) {
+  //  //    vsc.noChangeUpdateNextNextNextS()
+  //  //  }
+  //  //  is (LcvVgaState.sync) {
+  //  //    vsc.noChangeUpdateNextNextNextS()
+  //  //  }
+  //  //  is (LcvVgaState.back) {
+  //  //    vsc.noChangeUpdateNextNextNextS()
+  //  //  }
+  //  //  is (LcvVgaState.visib) {
+  //  //    when (hsc.counterP3 >= fbSize2d.x) {
+  //  //      vsc.updateNextNextNextS(vgaTimingHv=vtiming)
+  //  //    }
+  //  //    //otherwise {
+  //  //    //  vsc.noChangeUpdateNextNextNextS()
+  //  //    //}
+  //  //  }
+  //  //}
+  //}
+  ////otherwise {
+  ////  hsc.noChangeUpdateNextNextNextS()
+  ////  vsc.noChangeUpdateNextNextNextS()
+  ////}
+  //when (misc.nextPixelEn) {
+  //  hsc.updateNextNextS(vgaTimingHv=htiming)
+  //  switch (hsc.rNextNextS) {
+  //    is (LcvVgaState.front) {
+  //      vsc.noChangeUpdateNextNextS()
+  //    }
+  //    is (LcvVgaState.sync) {
+  //      vsc.noChangeUpdateNextNextS()
+  //    }
+  //    is (LcvVgaState.back) {
+  //      vsc.noChangeUpdateNextNextS()
+  //    }
+  //    is (LcvVgaState.visib) {
+  //      when (hsc.counterP2 >= fbSize2d.x) {
+  //        vsc.updateNextNextS(vgaTimingHv=vtiming)
+  //      } otherwise {
+  //        vsc.noChangeUpdateNextNextS()
+  //      }
+  //    }
+  //  }
+  //} otherwise {
+  //  hsc.noChangeUpdateNextNextS()
+  //  vsc.noChangeUpdateNextNextS()
+  //}
+  //when (hsc.nextNextPixelEn) {
+  //  hsc.updateStateCnt(vgaTimingHv=htiming)
+  //  when (hsc.rNextNextNextS === LcvVgaState.visib) {
+  //  }
+  //}
+  // Implement HSYNC and VSYNC logic
+  when (misc.nextNextNextPixelEn) {
+    hsc.updateStateCnt(vgaTimingHv=htiming)
+    when (
+      //hsc.rNextNextS === LcvVgaState.visib
+      hsc.rNextNextNextVisib
+      && !hsc.visibToDrive
+    ) {
+      vsc.updateStateCnt(vgaTimingHv=vtiming)
     }
-  } otherwise {
-    hsc.noChangeUpdateNextNextS()
-    vsc.noChangeUpdateNextNextS()
   }
   when (misc.pixelEn) {
     //hsc.updateNextNextS(vgaTimingHv=htiming)
     //htiming.updateStateCnt(m, hsc)
-    hsc.updateStateCnt(vgaTimingHv=htiming)
+    //hsc.updateStateCnt(vgaTimingHv=htiming)
+
+    // BEGIN: need this
+    //hsc.updateStateCnt(vgaTimingHv=htiming)
 
     switch (hsc.s) {
       is (LcvVgaState.front) {
         //m.d.sync += outp.hsync := (0b1)
         rHsync := True
-        //vtiming.noChangeUpdateNextS(m, vsc)
-        vsc.noChangeUpdateNextS()
+        ////vtiming.noChangeUpdateNextS(m, vsc)
+        //vsc.noChangeUpdateNextS()
       }
       is (LcvVgaState.sync) {
         //m.d.sync += outp.hsync := (0b0)
         rHsync := False
-        //vtiming.noChangeUpdateNextS(m, vsc)
-        vsc.noChangeUpdateNextS()
+        ////vtiming.noChangeUpdateNextS(m, vsc)
+        //vsc.noChangeUpdateNextS()
       }
       is (LcvVgaState.back) {
         //m.d.sync += outp.hsync := (0b1)
         rHsync := True
-        //vtiming.noChangeUpdateNextS(m, vsc)
-        vsc.noChangeUpdateNextS()
+        ////vtiming.noChangeUpdateNextS(m, vsc)
+        //vsc.noChangeUpdateNextS()
       }
       is (LcvVgaState.visib) {
         //m.d.sync += outp.hsync := (0b1)
@@ -961,13 +1119,18 @@ case class LcvVgaCtrl(
         //when ((hsc["c"] + 0x1) >= FB_SIZE().x) 
         //when ((hsc.c + 0x1) >= fbSize2d.x)
         //when ((hsc.c + 0x1) >= fbSize2d.x) 
-        when (hsc.counterP1 >= fbSize2d.x) {
-          //vtiming.updateStateCnt(m, vsc)
-          vsc.updateStateCnt(vgaTimingHv=vtiming)
-        } otherwise {
-          //vtiming.noChangeUpdateNextS(m, vsc)
-          vsc.noChangeUpdateNextS()
-        }
+        //when (hsc.counterP1 >= fbSize2d.x) 
+        // BEGIN: old, non-pipelined version
+        //when (hsc.counterP1 >= fbSize2d.x) {
+        //  //vtiming.updateStateCnt(m, vsc)
+        //  vsc.updateStateCnt(vgaTimingHv=vtiming)
+        //}
+        // END: old, non-pipelined version
+        //otherwise {
+        //  //vtiming.noChangeUpdateNextS(m, vsc)
+        //  //vsc.noChangeUpdateNextS()
+        //  vsc.noChange
+        //}
       }
     }
 
@@ -989,12 +1152,16 @@ case class LcvVgaCtrl(
         rVsync := True
       }
     }
-  } otherwise { // when (~misc.pixelEn)
-    //htiming.noChangeUpdateNextS(m, hsc)
-    //vtiming.noChangeUpdateNextS(m, vsc)
-    hsc.noChangeUpdateNextS()
-    vsc.noChangeUpdateNextS()
+    // END: need this
   }
+  //.otherwise { // when (~misc.pixelEn)
+  //  // BEGIN: need this
+  //  //htiming.noChangeUpdateNextS(m, hsc)
+  //  //vtiming.noChangeUpdateNextS(m, vsc)
+  //  //hsc.noChangeUpdateNextS()
+  //  //vsc.noChangeUpdateNextS()
+  //  // END: need this
+  //}
   //--------
   // Implement drawing the picture
 
@@ -1040,14 +1207,28 @@ case class LcvVgaCtrl(
     misc.size.y := fbSize2d.y
     //]
     //m.d.sync += [
-    val rNextVisib = Reg(Bool()) init(False)
+    //val rNextVisib = Reg(Bool()) init(False)
     //rNextVisib := ((hsc.nextS === LcvVgaState.visib)
     //  & (vsc.nextS === LcvVgaState.visib))
     //rNextVisib := ((hsc.rNextNextS === LcvVgaState.visib)
     //  && (vsc.rNextNextS === LcvVgaState.visib))
-    rNextVisib := ((hsc.nextNextS === LcvVgaState.visib)
-      && (vsc.nextNextS === LcvVgaState.visib))
-    misc.nextVisib := rNextVisib
+    //rNextVisib := ((hsc.nextNextS === LcvVgaState.visib)
+    //  && (vsc.nextNextS === LcvVgaState.visib))
+    //rNextVisib := hsc.rNextNextVisib && vsc.rNextNextVisib
+    //rNextVisib := hsc.rNextVisib && vsc.rNextVisib
+
+    //misc.nextVisib := rNextVisib
+    // BEGIN: stuff
+    //misc.nextVisib := hsc.rNextVisib && vsc.rNextVisib
+    //misc.nextNextVisib := hsc.rNextNextVisib && vsc.rNextNextVisib
+    misc.nextVisib := hsc.rNextVisib && vsc.rNextVisib
+    misc.nextNextVisib := hsc.rNextNextVisib && vsc.rNextNextVisib
+    // END: stuff
+
+    //val rNextVisib = Reg(Bool()) init(False)
+    //rNextVisib := hsc.nextNextVisib && vsc.nextNextVisib
+    //misc.nextVisib := rNextVisib
+
     //misc.nextVisib := ((hsc.rNextNextS === LcvVgaState.visib)
     //  && (vsc.rNextNextS === LcvVgaState.visib))
     //misc.nextVisib := ((hsc.nextS === LcvVgaState.visib)
@@ -1180,6 +1361,7 @@ case class LcvVgaCtrlNoFifo(
 
   // Implement the clock enable
   val clkCnt = Reg(UInt(clkCntWidth bits)) init(0x0)
+  val nextClkCnt = clkCnt.wrapNext()
   // Force this addition to be of width `CLK_CNT_WIDTH + 1` to
   // prevent wrap-around
   val clkCntP1Width = clkCntWidth + 1
@@ -1189,10 +1371,10 @@ case class LcvVgaCtrlNoFifo(
   // Implement wrap-around for the clock counter
   when (clkCntP1 < cpp) {
     //m.d.sync += 
-    clkCnt := clkCntP1(clkCnt.bitsRange)
+    nextClkCnt := clkCntP1(clkCnt.bitsRange)
   } otherwise {
     //m.d.sync +=
-    clkCnt := 0x0
+    nextClkCnt := 0x0
   }
   // Since this is an alias, use ALL_CAPS for its name.
   // outp.pixelEn = (clkCnt == 0x0)
@@ -1200,6 +1382,14 @@ case class LcvVgaCtrlNoFifo(
   misc.pixelEn := clkCnt === 0x0
   val pixelEnNextCycle = Bool()
   pixelEnNextCycle := clkCntP1.resized === cpp
+
+  val rNextNextPixelEn = Reg(Bool()) init(False)
+  rNextNextPixelEn := nextClkCnt === cpp - 2
+  misc.nextNextPixelEn := rNextNextPixelEn
+
+  val rNextNextNextPixelEn = Reg(Bool()) init(False)
+  rNextNextNextPixelEn := nextClkCnt === cpp - 3
+  misc.nextNextNextPixelEn := rNextNextNextPixelEn
   //--------
   // Implement the State/Counter stuff
   //loc.Tstate = VgaTiming.State
@@ -1217,49 +1407,59 @@ case class LcvVgaCtrlNoFifo(
   val vsc = new LcvVgaStateCnt(vgaTimingHv=vtiming)
   misc.hscS := hsc.s
   misc.hscC := hsc.c
-  misc.hscNextS := hsc.nextS
-  misc.hscNextNextS := hsc.nextNextS
+  misc.hscNextS := hsc.rNextS
+  misc.hscNextNextS := hsc.rNextNextS
   misc.vscS := vsc.s
   misc.vscC := vsc.c
-  misc.vscNextS := vsc.nextS
-  misc.vscNextNextS := vsc.nextNextS
+  misc.vscNextS := vsc.rNextS
+  misc.vscNextNextS := vsc.rNextNextS
   //--------
   // Implement HSYNC and VSYNC logic
+  when (misc.nextNextNextPixelEn) {
+    hsc.updateStateCnt(vgaTimingHv=htiming)
+    when (
+      //hsc.rNextNextS === LcvVgaState.visib
+      hsc.rNextNextNextVisib
+      && !hsc.visibToDrive
+    ) {
+      vsc.updateStateCnt(vgaTimingHv=vtiming)
+    }
+  }
   when (misc.pixelEn) {
     //htiming.updateStateCnt(m, hsc)
-    hsc.updateStateCnt(htiming)
+    //hsc.updateStateCnt(vgaTimingHv=htiming)
 
     switch (hsc.s) {
       is (LcvVgaState.front) {
         //m.d.sync += outp.hsync := (0b1)
         rPhys.hsync := True
         //vtiming.noChangeUpdateNextS(m, vsc)
-        vsc.noChangeUpdateNextS()
+        //vsc.noChangeUpdateNextS()
       }
       is (LcvVgaState.sync) {
         //m.d.sync += outp.hsync := (0b0)
         rPhys.hsync := False
         //vtiming.noChangeUpdateNextS(m, vsc)
-        vsc.noChangeUpdateNextS()
+        //vsc.noChangeUpdateNextS()
       }
       is (LcvVgaState.back) {
         //m.d.sync += outp.hsync := (0b1)
         rPhys.hsync := True
         //vtiming.noChangeUpdateNextS(m, vsc)
-        vsc.noChangeUpdateNextS()
+        //vsc.noChangeUpdateNextS()
       }
       is (LcvVgaState.visib) {
         //m.d.sync += outp.hsync := (0b1)
         rPhys.hsync := True
         //when ((hsc["c"] + 0x1) >= FB_SIZE().x) 
         //when ((hsc.c + 0x1) >= fbSize2d.x)
-        when ((hsc.c + 0x1) >= fbSize2d.x) {
-          //vtiming.updateStateCnt(m, vsc)
-          vsc.updateStateCnt(vtiming)
-        } otherwise {
-          //vtiming.noChangeUpdateNextS(m, vsc)
-          vsc.noChangeUpdateNextS()
-        }
+        //when ((hsc.c + 0x1) >= fbSize2d.x) {
+        //  //vtiming.updateStateCnt(m, vsc)
+        //  vsc.updateStateCnt(vtiming)
+        //} otherwise {
+        //  //vtiming.noChangeUpdateNextS(m, vsc)
+        //  vsc.noChangeUpdateNextS()
+        //}
       }
     }
 
@@ -1281,12 +1481,13 @@ case class LcvVgaCtrlNoFifo(
         rPhys.vsync := True
       }
     }
-  } otherwise { // when (~misc.pixelEn)
-    //htiming.noChangeUpdateNextS(m, hsc)
-    //vtiming.noChangeUpdateNextS(m, vsc)
-    hsc.noChangeUpdateNextS()
-    vsc.noChangeUpdateNextS()
   }
+  //.otherwise { // when (~misc.pixelEn)
+  //  //htiming.noChangeUpdateNextS(m, hsc)
+  //  //vtiming.noChangeUpdateNextS(m, vsc)
+  //  hsc.noChangeUpdateNextS()
+  //  vsc.noChangeUpdateNextS()
+  //}
   //--------
   // Implement drawing the picture
 
@@ -1333,8 +1534,10 @@ case class LcvVgaCtrlNoFifo(
     //rNextVisib := ((hsc.nextS === LcvVgaState.visib)
     //  & (vsc.nextS === LcvVgaState.visib))
     //misc.nextVisib := rNextVisib
-    misc.nextVisib := ((hsc.nextS === LcvVgaState.visib)
-      & (vsc.nextS === LcvVgaState.visib))
+    //misc.nextVisib := ((hsc.nextS === LcvVgaState.visib)
+    //  & (vsc.nextS === LcvVgaState.visib))
+    misc.nextVisib := ((hsc.rNextS === LcvVgaState.visib)
+      & (vsc.rNextS === LcvVgaState.visib))
     //cover(hsc.nextS === LcvVgaState.sync)
 
     val rVisib = Reg(Bool()) init(False)
