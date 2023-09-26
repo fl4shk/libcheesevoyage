@@ -35,6 +35,7 @@ class LcvVgaStateCnt(
   //val sWrapNext = s.wrapNext()
   val c = Reg(UInt(vgaTimingHv.cntWidth() bits)) init(0x0)
   val cPWidth = vgaTimingHv.cntWidth() + 1
+  val counterP1 = c.resized + U(f"$cPWidth'd1")
   //val cP1 = UInt(cPWidth bits)
   //cP1 := c.resized + U(f"$cPWidth'd1")
   //val cP2 = UInt(cPWidth bits)
@@ -43,9 +44,13 @@ class LcvVgaStateCnt(
   //val cP2 = c.resized + U(f"$cPWidth'd2")
   val nextS = LcvVgaState()
   //val nextS = s.wrapNext()
+  //val nextNextS = LcvVgaState()
   //--------
   def noChangeUpdateNextS(): Unit = {
     nextS := s
+    //nextNextS := s
+  }
+  def updateNextNextS(): Unit = {
   }
   def updateStateCnt(
     vgaTimingHv: LcvVgaTimingHv,
@@ -54,7 +59,7 @@ class LcvVgaStateCnt(
       stateSize: Int,
       nextState: LcvVgaState.C,
     ): Unit = {
-      val counterP1 = c + 0x1
+      //val counterP1 = c + 0x1
 			when (counterP1 >= stateSize) {
 				//m.d.sync += stateCnt.s := (nextState)
 				//m.d.sync += stateCnt.c := (0x0)
@@ -71,6 +76,13 @@ class LcvVgaStateCnt(
 				c := counterP1
 			}
 			//s := nextS
+
+			//val counteP2 = c + 0x2
+			//when (counterP2 >= stateSize) {
+			//  nextNextS := nextState
+			//} otherwise {
+			//  nextNextS := s
+			//}
 
 			//when ((c + 0x2) >= stateSize) {
 			//	//m.d.comb += stateCnt.nextS := (nextState)
@@ -534,27 +546,79 @@ case class LcvVgaCtrl(
   //)
 
   // BEGIN: Mostly working
-  rTempNextVisib := (
-    (
-      (
-        (misc.hscC < vgaTimingInfo.htiming.back)
-        && 
-        //(misc.hscC >= vgaTimingInfo.htiming.back - 2)
-        //(misc.hscC >= vgaTimingInfo.htiming.back - 3)
-        //(misc.hscC >= vgaTimingInfo.htiming.back - 2)
-        (misc.hscC >= vgaTimingInfo.htiming.back - 1)
-        && (misc.hscS === LcvVgaState.back)
-      ) || (
-        //(misc.hscC < fbSize2d.x - 2)
-        //(misc.hscC < fbSize2d.x - 2)
-        (misc.hscC < fbSize2d.x - 1)
-        && (misc.hscS === LcvVgaState.visib)
+  //val tempNextVisib = Bool()
+  //rTempNextVisib := 
+  //tempNextVisib := (
+  //  (
+  //    (
+  //      (misc.hscC < vgaTimingInfo.htiming.back)
+  //      &&
+  //      //(misc.hscC >= vgaTimingInfo.htiming.back - 2)
+  //      //(misc.hscC >= vgaTimingInfo.htiming.back - 3)
+  //      //(misc.hscC >= vgaTimingInfo.htiming.back - 2)
+  //      (misc.hscC >= vgaTimingInfo.htiming.back - 1)
+  //      && (misc.hscS === LcvVgaState.back)
+  //    ) || (
+  //      //(misc.hscC < fbSize2d.x - 2)
+  //      //(misc.hscC < fbSize2d.x - 2)
+  //      //(misc.hscC < fbSize2d.x - 1)
+  //      (misc.hscC < fbSize2d.x - 1)
+  //      && (misc.hscS === LcvVgaState.visib)
+  //    )
+  //  ) && (
+  //    //misc.vscS === LcvVgaState.visib
+  //    misc.vscS === LcvVgaState.visib
+  //  )
+  //)
+  val tempHscNextNextVisib = Bool()
+  val tempVscNextNextVisib = Bool()
+  switch (misc.hscS) {
+    is (LcvVgaState.front) {
+      tempHscNextNextVisib := False
+    }
+    is (LcvVgaState.sync) {
+      tempHscNextNextVisib := False
+    }
+    is (LcvVgaState.back) {
+      tempHscNextNextVisib := (
+        (misc.hscC === vgaTimingInfo.htiming.back - 2)
+        || (misc.hscC === vgaTimingInfo.htiming.back - 1)
       )
-    ) && (
-      //misc.vscS === LcvVgaState.visib
-      misc.vscS === LcvVgaState.visib
-    )
-  )
+    }
+    is (LcvVgaState.visib) {
+      tempHscNextNextVisib := (
+        //misc.hscC + 0x2 < fbSize2d.x
+        (misc.hscC === fbSize2d.x - 2)
+        || (misc.hscC === fbSize2d.x - 1)
+      )
+    }
+  }
+  switch (misc.vscS) {
+    is (LcvVgaState.front) {
+      tempVscNextNextVisib := False
+    }
+    is (LcvVgaState.sync) {
+      tempVscNextNextVisib := False
+    }
+    is (LcvVgaState.back) {
+      //tempVscNextNextVisib := (
+      //  (misc.hscC === vgaTimingInfo.htiming.back - 2)
+      //  || (misc.hscC === vgaTimingInfo.htiming.back - 1)
+      //)
+      tempVscNextNextVisib := False
+    }
+    is (LcvVgaState.visib) {
+      //tempHscNextNextVisib := (
+      //  //misc.hscC + 0x2 < fbSize2d.x
+      //  (misc.hscC === fbSize2d.x - 2)
+      //  || (misc.hscC === fbSize2d.x - 1)
+      //)
+      tempVscNextNextVisib := True
+    }
+  }
+
+  val rTempNextVisib = Reg(Bool()) init(False)
+  rTempNextVisib := tempHscNextNextVisib && tempVscNextNextVisib
   rTempNextPixelEn := nextClkCnt === (cpp - 1)
   // END: Mostly working
 
