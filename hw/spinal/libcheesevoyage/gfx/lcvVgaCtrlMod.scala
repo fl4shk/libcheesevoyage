@@ -1191,8 +1191,9 @@ case class LcvVgaCtrl(
       //hpipe.rNextNextS === LcvVgaState.visib
       //hpipe.rNextNextNextVisib
       //&& !hpipe.visibToDrive
-      hpipe.rNextVisib
-      && !hpipe.rNextNextVisib
+      //hpipe.rNextVisib
+      //&& !hpipe.rNextNextVisib
+      hipe.rNextNextNextVisib
     ) {
       vpipe.updateStateCnt(vgaTimingHv=vtiming)
     } otherwise {
