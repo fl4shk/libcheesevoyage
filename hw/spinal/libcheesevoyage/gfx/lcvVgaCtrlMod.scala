@@ -1164,17 +1164,24 @@ case class LcvVgaCtrl(
   //}
   // Implement HSYNC and VSYNC logic
   hpipe.sendDownPipe(
-    activePixelEn=misc.nextNextNextPixelEn
+    //activePixelEn=misc.nextNextNextPixelEn
+    activePixelEn=misc.nextNextPixelEn
   )
   vpipe.sendDownPipe(
-    activePixelEn=misc.nextNextNextPixelEn
+    //activePixelEn=misc.nextNextNextPixelEn
+    activePixelEn=misc.nextNextPixelEn
   )
-  when (misc.nextNextNextPixelEn) {
+  when (
+    //misc.nextNextNextPixelEn
+    misc.nextNextPixelEn
+  ) {
     hpipe.updateStateCnt(vgaTimingHv=htiming)
     when (
       //hpipe.rNextNextS === LcvVgaState.visib
-      hpipe.rNextNextNextVisib
-      && !hpipe.visibToDrive
+      //hpipe.rNextNextNextVisib
+      //&& !hpipe.visibToDrive
+      hpipe.rNextVisib
+      && !hpipe.rNextNextVisib
     ) {
       vpipe.updateStateCnt(vgaTimingHv=vtiming)
     } otherwise {
