@@ -39,6 +39,8 @@ class LcvVgaStateCnt(
   val counterP1 = UInt(cPWidth bits)
   //val counterP1 = c.resized + U(f"$cPWidth'd1")
   counterP1 := c.resized + U(f"$cPWidth'd1")
+  val counterP2 = UInt(cPWidth bits)
+  counterP2 := c.resized + U(f"$cPWidth'd2")
   //val cP1 = UInt(cPWidth bits)
   //cP1 := c.resized + U(f"$cPWidth'd1")
   //val cP2 = UInt(cPWidth bits)
@@ -47,24 +49,74 @@ class LcvVgaStateCnt(
   //val cP2 = c.resized + U(f"$cPWidth'd2")
   val nextS = LcvVgaState()
   //val nextS = s.wrapNext()
-  //val nextNextS = LcvVgaState()
+  val nextNextS = LcvVgaState()
+  val rNextNextS = Reg(LcvVgaState())
+  rNextNextS.init(rNextNextS.getZero)
+  rNextNextS := nextNextS
+
   if (vivadoDebug) {
     s.addAttribute("MARK_DEBUG", "TRUE")
     c.addAttribute("MARK_DEBUG", "TRUE")
     counterP1.addAttribute("MARK_DEBUG", "TRUE")
+    counterP2.addAttribute("MARK_DEBUG", "TRUE")
     nextS.addAttribute("MARK_DEBUG", "TRUE")
+    nextNextS.addAttribute("MARK_DEBUG", "TRUE")
+    rNextNextS.addAttribute("MARK_DEBUG", "TRUE")
   }
   //--------
+  def runMkCaseFunc(
+    vgaTimingHv: LcvVgaTimingHv,
+    someState: LcvVgaState.C,
+  )(
+    mkCaseFunc: (
+      Int, // `stateSize`
+      LcvVgaState.C, // `nextState` or `nextNextState`
+    ) => Unit
+  ): Unit = {
+    switch (someState) {
+      is (LcvVgaState.front) {
+        val stateSize = vgaTimingHv.front
+        mkCaseFunc(
+          stateSize,
+          LcvVgaState.sync
+        )
+        //println(f"front, sync: $stateSize")
+      }
+      is (LcvVgaState.sync) {
+        val stateSize = vgaTimingHv.sync
+        mkCaseFunc(
+          stateSize,
+          LcvVgaState.back
+        )
+        //println(f"sync, back: $stateSize")
+      }
+      is (LcvVgaState.back) {
+        val stateSize = vgaTimingHv.back
+        mkCaseFunc(
+          stateSize,
+          LcvVgaState.visib
+        )
+        //println(f"back, visib: $stateSize")
+      }
+      is (LcvVgaState.visib) {
+        val stateSize = vgaTimingHv.visib
+        mkCaseFunc(
+          stateSize,
+          LcvVgaState.front
+        )
+        //println(f"visib, front: $stateSize")
+      }
+    }
+  }
   def noChangeUpdateNextS(): Unit = {
     nextS := s
     //nextNextS := s
   }
-  //def updateNextNextS(): Unit = {
-  //}
   def updateStateCnt(
     vgaTimingHv: LcvVgaTimingHv,
   ): Unit = {
     def mkCase(
+      s: LcvVgaState.C,
       stateSize: Int,
       nextState: LcvVgaState.C,
     ): Unit = {
@@ -78,10 +130,15 @@ class LcvVgaStateCnt(
 				nextS := nextState
 				s := nextState
 				c := c.getZero
+				//when (counterP2 >= stateSize) {
+				//  nextNextS := 
+				//} otherwise {
+				//}
 			} otherwise {
 				//m.d.sync += stateCnt.c := (counterP1)
 				////self.noChangeUpdateNextS(m, stateCnt)
 				nextS := s
+				//nextNextS := s
 				c := counterP1(c.bitsRange)
 			}
 			//s := nextS
@@ -94,39 +151,83 @@ class LcvVgaStateCnt(
 			//}
 
 			//when ((c + 0x2) >= stateSize) {
+			//  // `m.d.comb` may have only worked here becaue of `nextVisib`
+			//  // being originally registered.
 			//	//m.d.comb += stateCnt.nextS := (nextState)
 			//	nextS := nextState
 			//} otherwise {
 			//	//m.d.comb += stateCnt.nextS := (stateCnt.s)
 			//	nextS := s
 			//}
-
     }
+
+    runMkCaseFunc(
+      vgaTimingHv=vgaTimingHv,
+      someState=s,
+    )(
+      mkCaseFunc=mkCase
+    )
 
     //State = VgaTiming.State
-    switch (s) {
-      is (LcvVgaState.front) {
-        val stateSize = vgaTimingHv.front
-        mkCase(stateSize=stateSize, nextState=LcvVgaState.sync)
-        //println(f"front, sync: $stateSize")
-      }
-      is (LcvVgaState.sync) {
-        val stateSize = vgaTimingHv.sync
-        mkCase(stateSize=stateSize, nextState=LcvVgaState.back)
-        //println(f"sync, back: $stateSize")
-      }
-      is (LcvVgaState.back) {
-        val stateSize = vgaTimingHv.back
-        mkCase(stateSize=stateSize, nextState=LcvVgaState.visib)
-        //println(f"back, visib: $stateSize")
-      }
-      is (LcvVgaState.visib) {
-        val stateSize = vgaTimingHv.visib
-        mkCase(stateSize=stateSize, nextState=LcvVgaState.front)
-        //println(f"visib, front: $stateSize")
+    //switch (s) {
+    //  is (LcvVgaState.front) {
+    //    val stateSize = vgaTimingHv.front
+    //    mkCase(stateSize=stateSize, nextState=LcvVgaState.sync)
+    //    //println(f"front, sync: $stateSize")
+    //  }
+    //  is (LcvVgaState.sync) {
+    //    val stateSize = vgaTimingHv.sync
+    //    mkCase(stateSize=stateSize, nextState=LcvVgaState.back)
+    //    //println(f"sync, back: $stateSize")
+    //  }
+    //  is (LcvVgaState.back) {
+    //    val stateSize = vgaTimingHv.back
+    //    mkCase(stateSize=stateSize, nextState=LcvVgaState.visib)
+    //    //println(f"back, visib: $stateSize")
+    //  }
+    //  is (LcvVgaState.visib) {
+    //    val stateSize = vgaTimingHv.visib
+    //    mkCase(stateSize=stateSize, nextState=LcvVgaState.front)
+    //    //println(f"visib, front: $stateSize")
+    //  }
+    //}
+  }
+  def noChangeUpdateNextNextS(): Unit = {
+    //nextS := s
+    nextNextS := s
+  }
+  def updateNextNextS(
+    vgaTimingHv: LcvVgaTimingHv,
+  ): Unit = {
+    def mkCase(
+      stateSize: Int,
+      nextNextState: LcvVgaState.C,
+    ): Unit = {
+      //when (counterP2 >= stateSize) {
+      //  nextNextS := nextNextState
+      //} elsewhen (counterP1 >= stateSize) {
+      //  nextNextS := nextS
+      //} otherwise {
+      //  nextNextS := s
+      //}
+      when (counterP2 >= stateSize) {
+        nextNextS := nextNextState
+      } otherwise {
+        nextNextS := s
       }
     }
-    
+    //runMkCaseFunc(vgaTimingHv=vgaTimingHv)(mkCaseFunc=mkCase)
+    runMkCaseFunc(
+      vgaTimingHv=vgaTimingHv,
+      //someState=nextS,
+      // I think this will work? 
+      // Here's my thinking behind why I think this will work.
+      // As long as `vgaTimingHv`'s members are larger than 2, which is
+      // almost certainly true for any real VGA signal, then `s` will 
+      someState=s, 
+    )(
+      mkCaseFunc=mkCase
+    )
   }
 }
 
@@ -192,12 +293,14 @@ case class LcvVgaCtrlMiscIo(
   //val hscCP1 = hscC.resized + U(f"$cPWidth'd1")
   //val hscCP2 = hscC.resized + U(f"$cPWidth'd2")
   val hscNextS = LcvVgaState()
+  val hscNextNextS = LcvVgaState()
 
   val vscS = LcvVgaState()
   val vscC = UInt(vgaTimingInfo.vtiming.cntWidth() bits)
   //val vscCP1 = vscC.resized + U(f"$cPWidth'd1")
   //val vscCP2 = vscC.resized + U(f"$cPWidth'd2")
   val vscNextS = LcvVgaState()
+  val vscNextNextS = LcvVgaState()
 
   val fifoEmpty = Bool()
   val fifoFull = Bool()
@@ -767,14 +870,41 @@ case class LcvVgaCtrl(
   misc.hscS := hsc.s
   misc.hscC := hsc.c
   misc.hscNextS := hsc.nextS
+  misc.hscNextNextS := hsc.nextNextS
   misc.vscS := vsc.s
   misc.vscC := vsc.c
   misc.vscNextS := vsc.nextS
+  misc.vscNextNextS := vsc.nextNextS
   //--------
   // Implement HSYNC and VSYNC logic
+  when (misc.nextPixelEn) {
+    hsc.updateNextNextS(vgaTimingHv=htiming)
+    switch (hsc.rNextNextS) {
+      is (LcvVgaState.front) {
+        vsc.noChangeUpdateNextNextS()
+      }
+      is (LcvVgaState.sync) {
+        vsc.noChangeUpdateNextNextS()
+      }
+      is (LcvVgaState.back) {
+        vsc.noChangeUpdateNextNextS()
+      }
+      is (LcvVgaState.visib) {
+        when (hsc.counterP2 >= fbSize2d.x) {
+          vsc.updateNextNextS(vgaTimingHv=vtiming)
+        } otherwise {
+          vsc.noChangeUpdateNextNextS()
+        }
+      }
+    }
+  } otherwise {
+    hsc.noChangeUpdateNextNextS()
+    vsc.noChangeUpdateNextNextS()
+  }
   when (misc.pixelEn) {
+    //hsc.updateNextNextS(vgaTimingHv=htiming)
     //htiming.updateStateCnt(m, hsc)
-    hsc.updateStateCnt(htiming)
+    hsc.updateStateCnt(vgaTimingHv=htiming)
 
     switch (hsc.s) {
       is (LcvVgaState.front) {
@@ -800,9 +930,10 @@ case class LcvVgaCtrl(
         rHsync := True
         //when ((hsc["c"] + 0x1) >= FB_SIZE().x) 
         //when ((hsc.c + 0x1) >= fbSize2d.x)
-        when ((hsc.c + 0x1) >= fbSize2d.x) {
+        //when ((hsc.c + 0x1) >= fbSize2d.x) 
+        when (hsc.counterP1 >= fbSize2d.x) {
           //vtiming.updateStateCnt(m, vsc)
-          vsc.updateStateCnt(vtiming)
+          vsc.updateStateCnt(vgaTimingHv=vtiming)
         } otherwise {
           //vtiming.noChangeUpdateNextS(m, vsc)
           vsc.noChangeUpdateNextS()
@@ -880,11 +1011,15 @@ case class LcvVgaCtrl(
     //]
     //m.d.sync += [
     val rNextVisib = Reg(Bool()) init(False)
-    rNextVisib := ((hsc.nextS === LcvVgaState.visib)
-      & (vsc.nextS === LcvVgaState.visib))
+    //rNextVisib := ((hsc.nextS === LcvVgaState.visib)
+    //  & (vsc.nextS === LcvVgaState.visib))
+    rNextVisib := ((hsc.rNextNextS === LcvVgaState.visib)
+      && (vsc.rNextNextS === LcvVgaState.visib))
     misc.nextVisib := rNextVisib
     //misc.nextVisib := ((hsc.nextS === LcvVgaState.visib)
     //  & (vsc.nextS === LcvVgaState.visib))
+    //misc.nextVisib := ((hsc.rNextNextS === LcvVgaState.visib)
+    //  && (vsc.rNextNextS === LcvVgaState.visib))
     //misc.nextVisib := (
     //  hsc.nextS === LcvVgaState.visib
     //  && vsc.nextS === LcvVgaState.visib
@@ -1049,9 +1184,11 @@ case class LcvVgaCtrlNoFifo(
   misc.hscS := hsc.s
   misc.hscC := hsc.c
   misc.hscNextS := hsc.nextS
+  misc.hscNextNextS := hsc.nextNextS
   misc.vscS := vsc.s
   misc.vscC := vsc.c
   misc.vscNextS := vsc.nextS
+  misc.vscNextNextS := vsc.nextNextS
   //--------
   // Implement HSYNC and VSYNC logic
   when (misc.pixelEn) {
