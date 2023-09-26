@@ -229,11 +229,13 @@ case class LcvVgaGradient(
         rDbgPhysCol.g := 0x0
         rDbgPhysCol.b := 0x0
       }
-      //is (1) {
-      //  rDbgPhysCol.r := (default -> True)
-      //  rDbgPhysCol.g := (rDbgPhysCol.g.high -> True, default -> False)
-      //  rDbgPhysCol.b := 0x0
-      //}
+      is (1) {
+        //rDbgPhysCol.r := (default -> True)
+        rDbgPhysCol.r := 0x0
+        //rDbgPhysCol.g := (rDbgPhysCol.g.high -> True, default -> False)
+        rDbgPhysCol.r := (default -> True)
+        rDbgPhysCol.b := 0x0
+      }
       //is (2) {
       //  rDbgPhysCol.r := (default -> True)
       //  rDbgPhysCol.g := (default -> True)
