@@ -269,6 +269,7 @@ class LcvVgaStateCnt(
           if (currState == LcvVgaState.back) {True} else {False}
         )
 			} otherwise {
+			  sToDrive := rSArr.last
 			  cToDrive := counterP3 + 1
         visibToDrive := (
           //if (nextState == LcvVgaState.front) {True} else {False}
