@@ -897,6 +897,8 @@ case class LcvVgaCtrl(
   misc.vscC := vsc.c
   misc.vscNextS := vsc.nextS
   misc.vscNextNextS := vsc.nextNextS
+  hsc.nextNextS := LcvVgaState.visib
+  vsc.nextNextS := LcvVgaState.visib
   //--------
   // Implement HSYNC and VSYNC logic
   //when (misc.nextPixelEn) {
