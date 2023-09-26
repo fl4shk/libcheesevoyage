@@ -330,7 +330,7 @@ class LcvVgaPipe(
 			  cToDrive := cToDrive.getZero
         visibToDrive := (
           //if (nextState == LcvVgaState.visib) {True} else {False}
-          if (currState === LcvVgaState.back) {True} else {False}
+          if (currState == LcvVgaState.back) {True} else {False}
         )
 			} otherwise {
 			  sToDrive := rSArr.last
