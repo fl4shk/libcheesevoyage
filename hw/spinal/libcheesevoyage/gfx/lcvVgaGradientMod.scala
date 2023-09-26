@@ -169,7 +169,7 @@ case class LcvVgaGradient(
   //} otherwise {
   //  nextPosX := 0x0
   //}
-  when (rPosX < vgaTimingInfo.htiming.visib - 1) {
+  when (rPosX != vgaTimingInfo.htiming.visib - 1) {
     nextPosX := rPosX + 1
   } otherwise {
     nextPosX := 0x0
@@ -223,7 +223,7 @@ case class LcvVgaGradient(
     //}
     rPosX := nextPosX
     //switch (nextPosX) 
-    switch (rPosX) {
+    switch (nextPosX) {
       is (0) {
         rDbgPhysCol.r := (default -> True)
         rDbgPhysCol.g := 0x0
