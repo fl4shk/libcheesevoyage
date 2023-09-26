@@ -87,10 +87,10 @@ class LcvVgaStateCnt(
       rVisibArr.last.addAttribute("MARK_DEBUG", "TRUE")
     }
   }
-  for (idx <- currIdx to maxAhead - 1) {
+  for (idx <- currIdx to maxAhead - 1 + 1) {
     //nextCArr(idx) := rCArr(idx + 1)
     //rCArr(idx) := nextCArr(idx)
-    rCArr(idx) := rCArr(idx)
+    rCArr(idx) := rCArr(idx + 1)
 
     //nextSArr(idx) := rSArr(idx + 1)
     //rSArr(idx) := nextSArr(idx)
