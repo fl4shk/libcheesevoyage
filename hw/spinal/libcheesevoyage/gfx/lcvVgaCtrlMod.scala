@@ -314,7 +314,8 @@ class LcvVgaPipe(
 			////}
 
 			// We might have some off-by-one errors here
-			when (counterP3 + 1 >= stateSize) {
+			//when (counterP3 + 1 >= stateSize) 
+			when (counterP3 >= stateSize) {
 			  sToDrive := nextState
 			  cToDrive := cToDrive.getZero
         visibToDrive := (
