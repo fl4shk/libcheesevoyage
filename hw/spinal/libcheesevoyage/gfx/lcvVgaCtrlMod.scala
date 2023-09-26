@@ -116,7 +116,7 @@ class LcvVgaStateCnt(
     vgaTimingHv: LcvVgaTimingHv,
   ): Unit = {
     def mkCase(
-      s: LcvVgaState.C,
+      //s: LcvVgaState.C,
       stateSize: Int,
       nextState: LcvVgaState.C,
     ): Unit = {
