@@ -349,7 +349,7 @@ class LcvVgaPipe(
     //)(
     //  mkCaseFunc=mkCase
     //)
-    switch (someState) {
+    switch (rSArr.last) {
       is (LcvVgaState.front) {
         val stateSize = vgaTimingHv.front
         mkCase(
