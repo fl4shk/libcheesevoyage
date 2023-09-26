@@ -67,9 +67,9 @@ class LcvVgaStateCnt(
     nextVisibArr += rVisibArr.last.wrapNext()
   }
   for (idx <- currIdx to maxAhead - 1) {
-    rCArr(idx) := rCArr(idx + 1)
-    rSArr(idx) := rSArr(idx + 1)
-    rVisibArr(idx) := rVisibArr(idx + 1)
+    nextCArr(idx) := rCArr(idx + 1)
+    nextSArr(idx) := rSArr(idx + 1)
+    nextVisibArr(idx) := rVisibArr(idx + 1)
   }
 
   // `<whatever>ToDrive` are the inputs to the pipeline
