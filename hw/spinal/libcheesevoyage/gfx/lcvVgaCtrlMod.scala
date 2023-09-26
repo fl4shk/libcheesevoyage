@@ -588,8 +588,8 @@ case class LcvVgaCtrl(
     is (LcvVgaState.visib) {
       tempHscNextNextVisib := (
         //misc.hscC + 0x2 < fbSize2d.x
-        (misc.hscC !== fbSize2d.x - 2)
-        && (misc.hscC !== fbSize2d.x - 1)
+        (misc.hscC =/= fbSize2d.x - 2)
+        && (misc.hscC =/= fbSize2d.x - 1)
       )
     }
   }
