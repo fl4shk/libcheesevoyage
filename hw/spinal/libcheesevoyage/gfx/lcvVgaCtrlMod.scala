@@ -1172,8 +1172,8 @@ case class LcvVgaCtrl(
     activePixelEn=misc.nextNextPixelEn
   )
   when (
-    //misc.nextNextNextPixelEn
-    misc.nextNextPixelEn
+    misc.nextNextNextPixelEn
+    //misc.nextNextPixelEn
   ) {
     hpipe.updateStateCnt(vgaTimingHv=htiming)
     when (
@@ -1273,7 +1273,7 @@ case class LcvVgaCtrl(
   when (misc.pixelEn) {
     // Visible area
     when (misc.visib) {
-      when (~io.en) {
+      //when (~io.en) {
         //m.d.sync += [
           //phys.col.r := (0xf),
           //phys.col.g := (0xf),
@@ -1282,11 +1282,11 @@ case class LcvVgaCtrl(
         rPhys.col.r := (default -> True)
         rPhys.col.g := (default -> True)
         rPhys.col.b := (default -> True)
-      } otherwise { // when (io.en)
-        //m.d.sync += [
-          rPhys.col := tempCol
-        //]
-      }
+      //} otherwise { // when (io.en)
+      //  //m.d.sync += [
+      //    rPhys.col := tempCol
+      //  //]
+      //}
     // Black border
     } otherwise { // when (~misc.visib)
       //m.d.sync += [
