@@ -1287,6 +1287,7 @@ case class LcvVgaCtrl(
     // BEGIN: stuff
     //misc.nextVisib := hpipe.rNextVisib && vpipe.rNextVisib
     //misc.nextNextVisib := hpipe.rNextNextVisib && vpipe.rNextNextVisib
+    misc.visib := hpipe.rVisib && vpipe.rVisib
     misc.nextVisib := hpipe.rNextVisib && vpipe.rNextVisib
     misc.nextNextVisib := hpipe.rNextNextVisib && vpipe.rNextNextVisib
     // END: stuff
@@ -1307,9 +1308,9 @@ case class LcvVgaCtrl(
     //)
     //cover(hpipe.nextS === LcvVgaState.sync)
 
-    val rVisib = Reg(Bool()) init(False)
-    rVisib := misc.nextVisib
-    misc.visib := rVisib
+    //val rVisib = Reg(Bool()) init(False)
+    //rVisib := misc.nextVisib
+    //misc.visib := rVisib
 
     val rPastVisib = Reg(Bool()) init(False)
     rPastVisib := misc.visib
