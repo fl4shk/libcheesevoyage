@@ -114,7 +114,7 @@ class LcvVgaPipe(
   rCArr.last := cToDrive
   rSArr.last := sToDrive
   rVisibArr.last := visibToDrive
-  rPixelEnArr.last := pixelEnToDrive
+  //rPixelEnArr.last := pixelEnToDrive
 
   // `<whatever>ToDrive` are the inputs to the pipeline
   val c = rCArr(currIdx)
