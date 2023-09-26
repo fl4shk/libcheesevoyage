@@ -71,6 +71,11 @@ class LcvVgaStateCnt(
     rVisibArr += Reg(Bool()) init(False)
     //nextVisibArr += rVisibArr.last.wrapNext()
     //nextVisibArr += Bool()
+    if (vivadoDebug) {
+      rCArr.last.addAttribute("MARK_DEBUG", "TRUE")
+      rSArr.last.addAttribute("MARK_DEBUG", "TRUE")
+      rVisibArr.last.addAttribute("MARK_DEBUG", "TRUE")
+    }
   }
   for (idx <- currIdx to maxAhead - 1) {
     //nextCArr(idx) := rCArr(idx + 1)
@@ -697,6 +702,12 @@ case class LcvVgaCtrl(
   // a 100 MHz `clk` rate for a 25 MHz pixel clock  
   rNextNextNextPixelEn := nextClkCnt === cpp - 3 
   misc.nextNextNextPixelEn := rNextNextNextPixelEn
+  if (vivadoDebug) {
+    rPixelEn.addAttribute("MARK_DEBUG", "TRUE")
+    rNextPixelEn.addAttribute("MARK_DEBUG", "TRUE")
+    rNextNextPixelEn.addAttribute("MARK_DEBUG", "TRUE")
+    rNextNextNextPixelEn.addAttribute("MARK_DEBUG", "TRUE")
+  }
 
   //val rPastFifoPopReady = Reg(Bool()) init(False)
   //rPastFifoPopReady := fifoPop.ready
@@ -933,6 +944,9 @@ case class LcvVgaCtrl(
     misc.nextNextPixelEn && misc.nextNextVisib && !fifoEmpty
   )
   fifoPop.ready := rFifoPopReady
+  //fifoPop.ready := (
+  //  misc.nextPixelEn && misc.nextVisib && !fifoEmpty
+  //)
   // BEGIN: working
   //fifoPop.ready := (
   //  misc.nextPixelEn && misc.nextVisib && !fifoEmpty
