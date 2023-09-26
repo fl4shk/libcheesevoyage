@@ -49,6 +49,7 @@ case class LcvVgaGradient(
   rgbConfig: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
   ctrlFifoDepth: Int,
+  vivadoDebug: Boolean=false,
 ) extends Component {
   //--------
   //val io = slave(LcvVgaGradientIo(rgbConfig=rgbConfig))

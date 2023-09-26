@@ -224,6 +224,7 @@ case class LcvVgaCtrlIo(
   rgbConfig: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
   fifoDepth: Int,
+  vivadoDebug: Boolean=false,
 ) extends Bundle with IMasterSlave {
   //--------
   val en = in Bool()
@@ -236,6 +237,12 @@ case class LcvVgaCtrlIo(
     vgaTimingInfo=vgaTimingInfo,
     fifoDepth=fifoDepth,
   ))
+  if (vivadoDebug) {
+    en.addAttribute("MARK_DEBUG", "TRUE")
+    push.addAttribute("MARK_DEBUG", "TRUE")
+    phys.addAttribute("MARK_DEBUG", "TRUE")
+    misc.addAttribute("MARK_DEBUG", "TRUE")
+  }
   //--------
   def asMaster(): Unit = {
     out(en)
@@ -283,6 +290,7 @@ case class LcvVgaCtrl(
   rgbConfig: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
   fifoDepth: Int,
+  vivadoDebug: Boolean=false,
 ) extends Component {
   //--------
   val io = LcvVgaCtrlIo(
@@ -290,6 +298,7 @@ case class LcvVgaCtrl(
     rgbConfig=rgbConfig,
     vgaTimingInfo=vgaTimingInfo,
     fifoDepth=fifoDepth,
+    vivadoDebug=vivadoDebug,
   )
   val push = io.push
   //val inpCol = io.inpCol
@@ -520,6 +529,10 @@ case class LcvVgaCtrl(
   //val nextRegDelay = 2
   val rTempNextVisib = Reg(Bool()) init(False)
   val rTempNextPixelEn = Reg(Bool()) init(False)
+  if (vivadoDebug) {
+    rTempNextVisib.addAttribute("MARK_DEBUG", "TRUE")
+    rTempNextPixelEn.addAttribute("MARK_DEBUG", "TRUE")
+  }
   //rTempNextVisib := (
   //  (
   //    (
@@ -572,6 +585,10 @@ case class LcvVgaCtrl(
   //)
   val tempHscNextNextVisib = Bool()
   val tempVscNextNextVisib = Bool()
+  if (vivadoDebug) {
+    tempHscNextNextVisib.addAttribute("MARK_DEBUG", "TRUE")
+    tempVscNextNextVisib.addAttribute("MARK_DEBUG", "TRUE")
+  }
   switch (misc.hscS) {
     is (LcvVgaState.front) {
       tempHscNextNextVisib := False
