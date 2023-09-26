@@ -185,27 +185,29 @@ class LcvVgaPipe(
   //  rNextNextS.addAttribute("MARK_DEBUG", "TRUE")
   //}
   //--------
-  def sendDownPipe(
-    activePixelEn: Bool
-  ): Unit = {
-    for (idx <- 1 to pipeSize - 1) {
-      //nextCArr(idx) := rCArr(idx + 1)
-      //rCArr(idx) := nextCArr(idx)
-      when (activePixelEn) {
-        rCArr(idx - 1) := rCArr(idx)
+  //def sendDownPipe(
+  //  //activePixelEn: Bool
+  //): Unit = {
+  //  for (idx <- 1 to pipeSize - 1) {
+  //    //nextCArr(idx) := rCArr(idx + 1)
+  //    //rCArr(idx) := nextCArr(idx)
+  //    //when (activePixelEn) {
+  //      rCArr(idx - 1) := rCArr(idx)
 
-        //nextSArr(idx) := rSArr(idx + 1)
-        //rSArr(idx) := nextSArr(idx)
-        rSArr(idx - 1) := rSArr(idx)
-      }
+  //      //nextSArr(idx) := rSArr(idx + 1)
+  //      //rSArr(idx) := nextSArr(idx)
+  //      rSArr(idx - 1) := rSArr(idx)
 
-      //nextVisibArr(idx) := rVisibArr(idx + 1)
-      //rVisibArr(idx) := nextVisibArr(idx)
-      rVisibArr(idx - 1) := rVisibArr(idx)
+  //      rVisibArr(idx - 1) := rVisibArr(idx)
+  //    //}
 
-      //rPixelEnArr(idx - 1) := rPixelEnArr(idx)
-    }
-  }
+  //    //nextVisibArr(idx) := rVisibArr(idx + 1)
+  //    //rVisibArr(idx) := nextVisibArr(idx)
+  //    //rVisibArr(idx - 1) := rVisibArr(idx)
+
+  //    //rPixelEnArr(idx - 1) := rPixelEnArr(idx)
+  //  }
+  //}
   def runMkCaseFunc(
     vgaTimingHv: LcvVgaTimingHv,
     someState: LcvVgaState.C,
@@ -312,10 +314,18 @@ class LcvVgaPipe(
 			////	//m.d.comb += stateCnt.nextS := (stateCnt.s)
 			////	nextS := s
 			////}
+      for (idx <- 1 to pipeSize - 1) {
+        rCArr(idx - 1) := rCArr(idx)
+
+        //nextSArr(idx) := rSArr(idx + 1)
+        //rSArr(idx) := nextSArr(idx)
+        rSArr(idx - 1) := rSArr(idx)
+
+        rVisibArr(idx - 1) := rVisibArr(idx)
+      }
 
 			// We might have some off-by-one errors here
-			//when (counterP3 + 1 >= stateSize) 
-			when (counterP3 >= stateSize) {
+			when (counterP3 + 1 >= stateSize) {
 			  sToDrive := nextState
 			  cToDrive := cToDrive.getZero
         visibToDrive := (
@@ -1164,14 +1174,14 @@ case class LcvVgaCtrl(
   //  }
   //}
   // Implement HSYNC and VSYNC logic
-  hpipe.sendDownPipe(
-    //activePixelEn=misc.nextNextNextPixelEn
-    activePixelEn=misc.nextNextPixelEn
-  )
-  vpipe.sendDownPipe(
-    //activePixelEn=misc.nextNextNextPixelEn
-    activePixelEn=misc.nextNextPixelEn
-  )
+  //hpipe.sendDownPipe(
+  //  //activePixelEn=misc.nextNextNextPixelEn
+  //  activePixelEn=misc.nextNextPixelEn
+  //)
+  //vpipe.sendDownPipe(
+  //  //activePixelEn=misc.nextNextNextPixelEn
+  //  activePixelEn=misc.nextNextPixelEn
+  //)
   when (
     misc.nextNextNextPixelEn
     //misc.nextNextPixelEn
