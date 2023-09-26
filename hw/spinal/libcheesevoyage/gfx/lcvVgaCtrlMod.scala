@@ -213,9 +213,9 @@ class LcvVgaPipe(
     someState: LcvVgaState.C,
   )(
     mkCaseFunc: (
-      LcvVgaState.E, // `someState` (`is (someState)`)
+      LcvVgaState, // `someState` (`is (someState)`)
       Int, // `stateSize`
-      LcvVgaState.E, // `nextState`
+      LcvVgaState, // `nextState`
     ) => Unit
   ): Unit = {
     switch (someState) {
@@ -271,9 +271,9 @@ class LcvVgaPipe(
   ): Unit = {
     def mkCase(
       //s: LcvVgaState.C,
-      currState: LcvVgaState.E,
+      currState: LcvVgaState,
       stateSize: Int,
-      nextState: LcvVgaState.E,
+      nextState: LcvVgaState,
     ): Unit = {
       ////val counterP1 = c + 0x1
 			//when (counterP1 >= stateSize) {
