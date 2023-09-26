@@ -206,6 +206,11 @@ class LcvVgaStateCnt(
   //  nextS := s
   //  //nextNextS := s
   //}
+  def noChangeUpdateToDrive(): Unit = {
+    cToDrive := rCArr.last
+    sToDrive := rSArr.last
+    visibToDrive := rVisibArr.last
+  }
   def updateStateCnt(
     vgaTimingHv: LcvVgaTimingHv,
   ): Unit = {
@@ -1101,7 +1106,12 @@ case class LcvVgaCtrl(
       && !hsc.visibToDrive
     ) {
       vsc.updateStateCnt(vgaTimingHv=vtiming)
+    } otherwise {
+      vsc.noChangeUpdateToDrive()
     }
+  } otherwise {
+    hsc.noChangeUpdateToDrive()
+    vsc.noChangeUpdateToDrive()
   }
   when (misc.pixelEn) {
     //hsc.updateNextNextS(vgaTimingHv=htiming)
@@ -1432,6 +1442,16 @@ case class LcvVgaCtrlNoFifo(
   misc.vscNextNextS := vsc.rNextNextS
   //--------
   // Implement HSYNC and VSYNC logic
+  //when (misc.nextNextNextPixelEn) {
+  //  hsc.updateStateCnt(vgaTimingHv=htiming)
+  //  when (
+  //    //hsc.rNextNextS === LcvVgaState.visib
+  //    hsc.rNextNextNextVisib
+  //    && !hsc.visibToDrive
+  //  ) {
+  //    vsc.updateStateCnt(vgaTimingHv=vtiming)
+  //  }
+  //}
   when (misc.nextNextNextPixelEn) {
     hsc.updateStateCnt(vgaTimingHv=htiming)
     when (
@@ -1440,7 +1460,12 @@ case class LcvVgaCtrlNoFifo(
       && !hsc.visibToDrive
     ) {
       vsc.updateStateCnt(vgaTimingHv=vtiming)
+    } otherwise {
+      vsc.noChangeUpdateToDrive()
     }
+  } otherwise {
+    hsc.noChangeUpdateToDrive()
+    vsc.noChangeUpdateToDrive()
   }
   when (misc.pixelEn) {
     //htiming.updateStateCnt(m, hsc)
