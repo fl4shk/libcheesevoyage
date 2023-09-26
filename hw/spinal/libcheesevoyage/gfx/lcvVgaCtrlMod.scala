@@ -213,9 +213,9 @@ class LcvVgaPipe(
     someState: LcvVgaState.C,
   )(
     mkCaseFunc: (
-      LcvVgaState.C, // `someState` (`is (someState)`)
+      LcvVgaState.E, // `someState` (`is (someState)`)
       Int, // `stateSize`
-      LcvVgaState.C, // `nextState`
+      LcvVgaState.E, // `nextState`
     ) => Unit
   ): Unit = {
     switch (someState) {
@@ -271,9 +271,9 @@ class LcvVgaPipe(
   ): Unit = {
     def mkCase(
       //s: LcvVgaState.C,
-      currState: LcvVgaState.C,
+      currState: LcvVgaState.E,
       stateSize: Int,
-      nextState: LcvVgaState.C,
+      nextState: LcvVgaState.E,
     ): Unit = {
       ////val counterP1 = c + 0x1
 			//when (counterP1 >= stateSize) {
@@ -330,7 +330,7 @@ class LcvVgaPipe(
 			  cToDrive := cToDrive.getZero
         visibToDrive := (
           //if (nextState == LcvVgaState.visib) {True} else {False}
-          if (currState == LcvVgaState.back) {True} else {False}
+          if (currState === LcvVgaState.back) {True} else {False}
         )
 			} otherwise {
 			  sToDrive := rSArr.last
@@ -1554,12 +1554,33 @@ case class LcvVgaCtrlNoFifo(
   //    vpipe.updateStateCnt(vgaTimingHv=vtiming)
   //  }
   //}
-  when (misc.nextNextNextPixelEn) {
+  //when (misc.nextNextNextPixelEn) {
+  //  hpipe.updateStateCnt(vgaTimingHv=htiming)
+  //  when (
+  //    //hpipe.rNextNextS === LcvVgaState.visib
+  //    hpipe.rNextNextNextVisib
+  //    && !hpipe.visibToDrive
+  //  ) {
+  //    vpipe.updateStateCnt(vgaTimingHv=vtiming)
+  //  } otherwise {
+  //    vpipe.noChangeUpdateToDrive()
+  //  }
+  //} otherwise {
+  //  hpipe.noChangeUpdateToDrive()
+  //  vpipe.noChangeUpdateToDrive()
+  //}
+  when (
+    misc.nextNextNextPixelEn
+    //misc.nextNextPixelEn
+  ) {
     hpipe.updateStateCnt(vgaTimingHv=htiming)
     when (
       //hpipe.rNextNextS === LcvVgaState.visib
+      //hpipe.rNextNextNextVisib
+      //&& !hpipe.visibToDrive
+      //hpipe.rNextVisib
+      //&& !hpipe.rNextNextVisib
       hpipe.rNextNextNextVisib
-      && !hpipe.visibToDrive
     ) {
       vpipe.updateStateCnt(vgaTimingHv=vtiming)
     } otherwise {
