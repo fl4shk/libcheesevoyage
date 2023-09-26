@@ -1232,8 +1232,19 @@ case class LcvVgaCtrl(
       //hpipe.rNextVisib
       //&& !hpipe.rNextNextVisib
       //hpipe.rNextNextNextVisib
-      hpipe.rSArr.last === LcvVgaState.visib
-      && hpipe.sToDrive =/= LcvVgaState.visib
+      // BEGIN: first guess
+      //hpipe.rSArr.last === LcvVgaState.visib
+      //&& hpipe.sToDrive =/= LcvVgaState.visib
+      // END: first guess
+      // BEGIN: more optimized version
+      hpipe.rVisibArr.last
+      && !hpipe.visibToDrive
+      // END: more optimized version
+
+      // BEGIN: also try this one 
+      //hpipe.rSArr.last =/= LcvVgaState.visib
+      //&& hpipe.rSArr(hpipe.rSArr.size - 2) == LcvVgaState.visib
+      // END: also try this one 
     ) {
       vpipe.updateStateCnt(vgaTimingHv=vtiming)
     } otherwise {
@@ -1325,7 +1336,7 @@ case class LcvVgaCtrl(
   when (misc.pixelEn) {
     // Visible area
     when (misc.visib) {
-      //when (~io.en) {
+      when (~io.en) {
         //m.d.sync += [
           //phys.col.r := (0xf),
           //phys.col.g := (0xf),
@@ -1334,11 +1345,11 @@ case class LcvVgaCtrl(
         rPhys.col.r := (default -> True)
         rPhys.col.g := (default -> True)
         rPhys.col.b := (default -> True)
-      //} otherwise { // when (io.en)
-      //  //m.d.sync += [
-      //    rPhys.col := tempCol
-      //  //]
-      //}
+      } otherwise { // when (io.en)
+        //m.d.sync += [
+          rPhys.col := tempCol
+        //]
+      }
     // Black border
     } otherwise { // when (~misc.visib)
       //m.d.sync += [
