@@ -15,7 +15,7 @@ import scala.math._
 
 object LcvVgaGradientSim extends App {
 
-  def clkRate = 100.0
+  def clkRate = 125.0
   //def clkRate = 50.0
   //def clkRate = 100.7
   def pixelClk = 25.0
@@ -38,11 +38,15 @@ object LcvVgaGradientSim extends App {
       //sync=96,
       //back=48
       //visib=8,
-      visib=1 << 6,
-      //visib=1 << 4,
-      front=1,
-      sync=1,
-      back=8,
+      //visib=1 << 6,
+      ////visib=1 << 4,
+      //front=1,
+      //sync=1,
+      //back=8,
+      visib=1 << 3,
+      front=5,
+      sync=5,
+      back=5,
     ),
     vtiming=LcvVgaTimingHv(
       //visib=480,
@@ -50,11 +54,15 @@ object LcvVgaGradientSim extends App {
       //sync=2,
       //back=33
       //visib=8,
-      visib=1 << 6,
-      //visib=1 << 4,
-      front=1,
-      sync=1,
-      back=8,
+      //visib=1 << 6,
+      ////visib=1 << 4,
+      //front=1,
+      //sync=1,
+      //back=8,
+      visib=1 << 3,
+      front=5,
+      sync=5,
+      back=5,
     ),
   )
   val fbSize2d = vgaTimingInfo.fbSize2d
@@ -236,7 +244,7 @@ object LcvVgaGradientSim extends App {
       //  //sleep(1)
       //  dut.clockDomain.waitRisingEdge()
       //}
-      for (idx <- 0 to 4000 - 1) {
+      for (idx <- 0 to 8000 - 1) {
         dut.clockDomain.waitRisingEdge()
         //when (dut.io.misc.visib) {
         //  foundVisib := True

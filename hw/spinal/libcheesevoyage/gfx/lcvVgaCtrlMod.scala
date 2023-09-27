@@ -77,19 +77,19 @@ class LcvVgaPipe(
     //nextVisibArr += Bool()
 
     //rPixelEnArr += Reg(Bool()) init(False)
+    if (!isVert) {
+      rCArr.last.setName(f"hpipe_rCArr_$idx")
+      rSArr.last.setName(f"hpipe_rSArr_$idx")
+      rVisibArr.last.setName(f"hpipe_rVisibArr_$idx")
+      //rPixelEnArr.last.setName(f"hpipe_rPixelEnArr_$idx")
+    } else { // if (isVert)
+      rCArr.last.setName(f"vpipe_rCArr_$idx")
+      rSArr.last.setName(f"vpipe_rSArr_$idx")
+      rVisibArr.last.setName(f"vpipe_rVisibArr_$idx")
+      //rPixelEnArr.last.setName(f"vpipe_rPixelEnArr_$idx")
+    }
 
     if (vivadoDebug) {
-      if (!isVert) {
-        rCArr.last.setName(f"hpipe_rCArr_$idx")
-        rSArr.last.setName(f"hpipe_rSArr_$idx")
-        rVisibArr.last.setName(f"hpipe_rVisibArr_$idx")
-        //rPixelEnArr.last.setName(f"hpipe_rPixelEnArr_$idx")
-      } else { // if (isVert)
-        rCArr.last.setName(f"vpipe_rCArr_$idx")
-        rSArr.last.setName(f"vpipe_rSArr_$idx")
-        rVisibArr.last.setName(f"vpipe_rVisibArr_$idx")
-        //rPixelEnArr.last.setName(f"vpipe_rPixelEnArr_$idx")
-      }
       rCArr.last.addAttribute("MARK_DEBUG", "TRUE")
       rSArr.last.addAttribute("MARK_DEBUG", "TRUE")
       rVisibArr.last.addAttribute("MARK_DEBUG", "TRUE")
@@ -1135,9 +1135,13 @@ case class LcvVgaCtrl(
       //&& hpipe.sToDrive =/= LcvVgaState.visib
       // END: first guess
       // BEGIN: more optimized version
-      hpipe.rVisibArr.last
-      && !hpipe.visibToDrive
+      //hpipe.rVisibArr.last
+      //&& !hpipe.visibToDrive
       // END: more optimized version
+      // BEGIN: possibly correct? 
+      hpipe.rVisibArr(hpipe.currIdx)
+      && !hpipe.rVisibArr(hpipe.nextIdx)
+      // ENG: possibly correct? 
 
       // BEGIN: also try this one 
       //hpipe.rSArr.last =/= LcvVgaState.visib
