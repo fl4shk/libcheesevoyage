@@ -69,9 +69,9 @@ class LcvVgaPipe(
 
   for (idx <- 0 to pipeSize - 1) {
     //rCPipe += Reg(UInt(cntWidth bits)) init(pipeSize - 1 - idx)
-    // old code used `init(idx)`, but I now believe that was incorrect
-    //rCPipe += Reg(UInt(cntWidth bits)) init(idx)
-    rCPipe += Reg(UInt(cntWidth bits)) init(0x0)
+    rCPipe += Reg(UInt(cntWidth bits)) init(idx)
+    // old code used `init(0x0)`, but I now believe that was incorrect
+    //rCPipe += Reg(UInt(cntWidth bits)) init(0x0)
     //cPipe1 += rCPipe.last.wrapNext()
     //cPipe1 += UInt(cntWidth bits)
 
