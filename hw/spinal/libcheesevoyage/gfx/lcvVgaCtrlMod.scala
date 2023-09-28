@@ -892,6 +892,16 @@ case class LcvVgaCtrl(
   //--------
   // Implement drawing the picture
 
+  //val rHpipeCWillBe0 = Reg(Bool()) init(False)
+  //rHpipeCWillBe0 := hpipe.rCPipe1 === 0x0
+  val rPhysColGPipe1 = Reg(UInt(rgbConfig.gWidth bits)) init(0x0)
+  when (rPastPixelEn) {
+    when (hpipe.rCPipe1 === 0x0) {
+      rPhysColGPipe1 := 0x0
+    } otherwise {
+      rPhysColGPipe1 := rPhys.col.g + 1
+    }
+  }
   when (misc.pixelEn) {
     // Visible area
     when (misc.visib) {
@@ -909,11 +919,12 @@ case class LcvVgaCtrl(
           //rPhys.col := tempCol
           //rPhys.col := rTempColBuf
           rPhys.col.r := (default -> True)
-          when (hpipe.c === 0x0) {
-            rPhys.col.g := 0x0
-          } otherwise {
-            rPhys.col.g := rPhys.col.g + 1
-          }
+          //when (hpipe.c === 0x0) {
+          //  rPhys.col.g := 0x0
+          //} otherwise {
+          //  rPhys.col.g := rPhys.col.g + 1
+          //}
+          rPhys.col.g := rPhysColGPipe1
           rPhys.col.b := 0x0
         //]
       //}
