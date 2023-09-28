@@ -66,6 +66,36 @@ object LcvVgaTimingInfoMap {
         sync=3,
         back=28,
       )
+    ),
+    "1600x900@60" -> LcvVgaTimingInfo(
+      pixelClk=118.25,
+      htiming=LcvVgaTimingHv(
+        visib=1600,
+        front=88,
+        sync=168,
+        back=256,
+      ),
+      vtiming=LcvVgaTimingHv(
+        visib=900,
+        front=3,
+        sync=5,
+        back=26,
+      ),
+    ),
+    "1920x1080p@60" -> LcvVgaTimingInfo(
+      pixelClk=148.5,
+      htiming=LcvVgaTimingHv(
+        visib=1920,
+        front=88,
+        sync=44,
+        back=148,
+      ),
+      vtiming=LcvVgaTimingHv(
+        visib=1080,
+        front=4,
+        sync=5,
+        back=36,
+      ),
     )
   )
 }
