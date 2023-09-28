@@ -131,6 +131,8 @@ class LcvVgaPipe(
   val c = rCPipe(currIdx)
   val rCPipe1 = rCPipe(1)
   val rCPipe2 = rCPipe(2)
+  val rCPipe2Plus1GeStateSize = Reg(Bool()) init(False)
+  val rCPipe2Plus1 = Reg(UInt(cntWidth bits)) init(0x0)
   //val rCPipe3 = rCPipe(3)
 
   //val rCPlus1 = Reg(UInt(c.getWidth bits)) init(0x1)
@@ -233,6 +235,7 @@ class LcvVgaPipe(
   )(
     mkCaseFunc: (
       //Bool, // `somePixelEn`
+      LcvVgaTimingHv, // vgaTimingHv
       LcvVgaState.E, // `someState` (`is (someState)`)
       Int, // `stateSize`
       LcvVgaState.E, // `nextState`
@@ -243,6 +246,7 @@ class LcvVgaPipe(
         val stateSize = vgaTimingHv.front
         mkCaseFunc(
           //somePixelEn,
+          vgaTimingHv,
           LcvVgaState.front,
           stateSize,
           LcvVgaState.sync
@@ -253,6 +257,7 @@ class LcvVgaPipe(
         val stateSize = vgaTimingHv.sync
         mkCaseFunc(
           //somePixelEn,
+          vgaTimingHv,
           LcvVgaState.sync,
           stateSize,
           LcvVgaState.back
@@ -263,6 +268,7 @@ class LcvVgaPipe(
         val stateSize = vgaTimingHv.back
         mkCaseFunc(
           //somePixelEn,
+          vgaTimingHv,
           LcvVgaState.back,
           stateSize,
           LcvVgaState.visib
@@ -273,6 +279,7 @@ class LcvVgaPipe(
         val stateSize = vgaTimingHv.visib
         mkCaseFunc(
           //somePixelEn,
+          vgaTimingHv,
           LcvVgaState.visib,
           stateSize,
           LcvVgaState.front
@@ -290,6 +297,42 @@ class LcvVgaPipe(
     sToDrive := rSPipe.last
     visibToDrive := rVisibPipe.last
   }
+  def updateCPipe2Plus1Etc(
+    vgaTimingHv: LcvVgaTimingHv,
+  ): Unit = {
+    def mkCase(
+      vgaTimingHv: LcvVgaTimingHv,
+      currState: LcvVgaState.E,
+      stateSize: Int,
+      nextState: LcvVgaState.E,
+    ): Unit = {
+      rCPipe2Plus1 := rCPipe2 + 1
+      rCPipe2Plus1GeStateSize := rCPipe2Plus1 >= stateSize
+      //currState match {
+      //  case LcvVgaState.front => {
+      //    //if (vgaTimingHv.front < max) {
+      //    //} else {
+      //    //}
+      //    rCPipe2Plus1 := rCPipe2 + 1
+      //    rCPipe2Plus1GeStateSize := rCPipe2Plus1 >= stateSize
+      //  }
+      //  case LcvVgaState.sync => {
+      //  }
+      //  case LcvVgaState.back => {
+      //  }
+      //  case LcvVgaState.visib => {
+      //  }
+      //}
+    }
+    runMkCaseFunc(
+      vgaTimingHv=vgaTimingHv,
+      //somePixelEn=somePixelEn,
+      //someState=s,
+      someState=rSPipe.last
+    )(
+      mkCaseFunc=mkCase
+    )
+  }
   def updateStateCnt(
     vgaTimingHv: LcvVgaTimingHv,
     //somePixelEn: Bool,
@@ -297,6 +340,7 @@ class LcvVgaPipe(
     def mkCase(
       //s: LcvVgaState.C,
       //somePixelEn: Bool,
+      vgaTimingHv: LcvVgaTimingHv,
       currState: LcvVgaState.E,
       stateSize: Int,
       nextState: LcvVgaState.E,
@@ -375,22 +419,30 @@ class LcvVgaPipe(
         //  >= U(f"$cntWidth'd$stateSize")
         //)
         //visibToDrive := sToDrive === LcvVgaState.visib
+        //rCPipe2Plus1 := rCPipe2Plus1 + 1
+        //rCPipe2Plus1 := cTo
         when (
           //rCPipe3.resized + U(f"$cntWidth'd1")
           //>= U(f"$cntWidth'd$stateSize")
-          rCPipe2.resized + U(f"$cntWidth'd1")
-          >= U(f"$cntWidth'd$stateSize")
+
+          //rCPipe2.resized + U(f"$cntWidth'd1")
+          //>= U(f"$cntWidth'd$stateSize")
+
           //rCPipe3Plus1GeStateSize
+          rCPipe2Plus1GeStateSize
         ) {
           sToDrive := nextState
           cToDrive := cToDrive.getZero
+          //rCPipe2Plus1 := 1
           visibToDrive := (
             //if (nextState == LcvVgaState.visib) {True} else {False}
             if (currState == LcvVgaState.back) {True} else {False}
           )
         } otherwise {
           sToDrive := rSPipe.last
-          cToDrive := rCPipe.last + 1
+          //cToDrive := rCPipe.last + 1
+          cToDrive := rCPipe2Plus1
+          //rCPipe2Plus1 := rCPipe2Plus1 + 1
           visibToDrive := (
             //if (nextState == LcvVgaState.front) {True} else {False}
             if (currState == LcvVgaState.visib) {True} else {False}
@@ -933,6 +985,8 @@ case class LcvVgaCtrl(
   misc.fifoAmountCanPop := fifoAmountCanPop
   //--------
   // Implement HSYNC and VSYNC logic
+  hpipe.updateCPipe2Plus1Etc(vgaTimingHv=htiming)
+  vpipe.updateCPipe2Plus1Etc(vgaTimingHv=vtiming)
 
   // This assumes the FPGA is running at a higher clock rate than the pixel
   // clock, but that is required anyway.
@@ -1362,6 +1416,8 @@ case class LcvVgaCtrlNoFifo(
   // Implement HSYNC and VSYNC logic
   // This assumes the FPGA is running at a higher clock rate than the pixel
   // clock, but that is required anyway.
+  hpipe.updateCPipe2Plus1Etc(vgaTimingHv=htiming)
+  vpipe.updateCPipe2Plus1Etc(vgaTimingHv=vtiming)
   val rUpdateVpipe = Reg(Bool()) init(False)
   rUpdateVpipe := (
     misc.pixelEnPipe1
