@@ -1052,14 +1052,14 @@ case class LcvVgaCtrl(
       } otherwise { // when (io.en)
         //m.d.sync += [
           //rPhys.col := tempCol
-          rPhys.col := rTempColBuf
-          //rPhys.col.r := (default -> True)
-          //when (hpipe.c === 0x0) {
-          //  rPhys.col.g := 0x0
-          //} otherwise {
-          //  rPhys.col.g := rPhys.col.g + 1
-          //}
-          //rPhys.col.b := 0x0
+          //rPhys.col := rTempColBuf
+          rPhys.col.r := (default -> True)
+          when (hpipe.c === 0x0) {
+            rPhys.col.g := 0x0
+          } otherwise {
+            rPhys.col.g := rPhys.col.g + 1
+          }
+          rPhys.col.b := 0x0
         //]
       }
     // Black border

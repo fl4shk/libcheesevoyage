@@ -183,10 +183,10 @@ case class FifoIo[
 //    //])
 //    //val arr = Vec(dataType(), tempDepth)
 //    //loc.arr = Array(
-//    //	[
-//    //		Signal(io.shape()) for _ in range(io.SIZE())
-//    //	],
-//    //	attrs={"ram_style": "ultra"}
+//    //  [
+//    //    Signal(io.shape()) for _ in range(io.SIZE())
+//    //  ],
+//    //  attrs={"ram_style": "ultra"}
 //    //)
 //    val arr = new Mem(dataType(), tempDepth)
 //      .addAttribute("ram_style", arrRamStyle)
@@ -344,11 +344,11 @@ case class FifoIo[
 //  }
 //
 //  //GenerationFlags.formal {
-//  //	//m.d.comb += [
-//  //		cover(misc.empty)
-//  //		cover(misc.full)
-//  //		cover((~misc.empty) & (~misc.full))
-//  //	//]
+//  //  //m.d.comb += [
+//  //    cover(misc.empty)
+//  //    cover(misc.full)
+//  //    cover((~misc.empty) & (~misc.full))
+//  //  //]
 //  //}
 //  //--------
 //  // Clocked behavioral code
@@ -363,7 +363,7 @@ case class FifoIo[
 //  //when (loc.rst):
 //  when (clockDomain.isResetActive) {
 //    //for elem in loc.arr:
-//    //	m.d.sync += elem := (io.shape()())
+//    //  m.d.sync += elem := (io.shape()())
 //
 //    //m.d.sync += [
 //      loc.rTail := 0x0
@@ -378,7 +378,6 @@ case class FifoIo[
 //      //m.d.sync += locFormal.pastValid := (0b1)
 //      rdData := rdData.getZero
 //      rdValid := rdValid.getZero
-//
 //  } otherwise { // when (~clockDomain.isResetActive)
 //    //--------
 //    //m.d.sync += [
@@ -394,7 +393,9 @@ case class FifoIo[
 //
 //    //rdValid := False
 //
-//    //rdValid := True
+//    rdValid := True
+//    //rdValid := ~misc.empty
+//    //rdValid := rdEn || ~misc.empty
 //
 //    when (rdEn & ~misc.empty) {
 //      //m.d.sync += 
@@ -457,9 +458,9 @@ case class FifoIo[
 //            //]
 //          }
 //          //otherwise {// when (~past(misc.full)):
-//          //	//m.d.sync += [
-//          //		assert(past(wrData))
-//          //	//]
+//          //  //m.d.sync += [
+//          //    assert(past(wrData))
+//          //  //]
 //          //}
 //        }
 //        //val catVal = Bits(2 bits)
@@ -508,17 +509,11 @@ case class Fifo[
   //arrRamStyle: String="ultra",
   arrRamStyle: String="block",
 ) extends Component {
-  //val test = StreamFifo(dataType())
   //--------
-  //def tempDepth = depth + 1
   val io = FifoIo(
     dataType=dataType(),
     depth=depth,
   )
-  //--------
-  // Local variables
-  //val inp = io.inp
-  //val outp = io.outp
   //--------
   val push = io.push
   val pop = io.pop
@@ -526,6 +521,7 @@ case class Fifo[
   //--------
   def tempDepth = io.tempDepth
   def ptrWidth = io.ptrWidth
+  def ptrWidthPlus1 = ptrWidth + 1
   def amountWidth = io.amountWidth
   //--------
   val sbPush = PipeSkidBuf(
@@ -574,124 +570,35 @@ case class Fifo[
   //val rdEn = sbPop.io.next.fire
   val rdEn = Bool() addAttribute("keep")
   rdEn := sbPop.io.next.fire
-
+  //--------
   val loc = new Area {
-    val empty = Reg(Bool()) init(True)
-    val full = Reg(Bool()) init(False)
-    //arr = Array([
-    //  Signal(bus.shape()) for _ in range(bus.SIZE())
-    //])
     val arr = Mem(dataType(), tempDepth)
-      .addAttribute("ram_style", arrRamStyle)
-      .addAttribute("keep")
-    //arr = Array(
-    //  [
-    //    Signal(bus.shape()) for _ in range(bus.SIZE())
-    //  ],
-    //  attrs={"ram_style": "ultra"}
-    //)
-    //m = Blank()
-    //m.submodules.mwrap = m.mwrap = MemWrapper(
-    //  shape=bus.shape(),
-    //  tempDepth=bus.SIZE(),
-    //  init=[0x0 for _ in range(bus.SIZE())],
-    //  attrs=mem_attrs,
-    //)
 
-    //val ptrWidth = log2Up(tempDepth)
-    def ptrWidthPlus1 = ptrWidth + 1
-    //val ptrWidthPlus1 = ptrWidthPlus1
-    def uintDepth = U(f"$ptrWidthPlus1'd$tempDepth")
-
-    val rHead = Reg(UInt(ptrWidth bits)) init(0x0)
     val rTail = Reg(UInt(ptrWidth bits)) init(0x0)
+    val rHead = Reg(UInt(ptrWidth bits)) init(0x0)
 
-    val nextHead = UInt(ptrWidth bits)
+    //val tailPlus1 = rTail + 0x1
+    //val headPlus1 = rHead + 0x1
+    val tailPlus1 = UInt(ptrWidthPlus1 bits)
+    tailPlus1 := rTail.resized + U(f"$ptrWidthPlus1'd1")
+    val headPlus1 = UInt(ptrWidthPlus1 bits)
+    headPlus1 := rHead.resized + U(f"$ptrWidthPlus1'd1")
+
+    val incrTail = UInt(ptrWidth bits)
+    val incrHead = UInt(ptrWidth bits)
+
+    val nextEmpty = Bool()
+    val nextFull = Bool()
+    val rEmpty = Reg(Bool()) init(False)
+    val rFull = Reg(Bool()) init(False)
+
     val nextTail = UInt(ptrWidth bits)
+    val nextHead = UInt(ptrWidth bits)
 
-    val tempTailPlus1 = UInt(ptrWidthPlus1 bits) addAttribute("keep")
-    val tailPlus1 = (rTail.resized + U(f"$ptrWidthPlus1'b1")).resized
-    tempTailPlus1 := tailPlus1
-
-    val tempHeadPlus1 = UInt(ptrWidthPlus1 bits) addAttribute("keep")
-    val headPlus1 = (rHead.resized + U(f"$ptrWidthPlus1'b1")).resized
-    tempHeadPlus1 := headPlus1 
-
-    val tempNextHeadPlus1 = UInt(ptrWidthPlus1 bits) addAttribute("keep")
-    val nextHeadPlus1 = (nextHead.resized + U(f"$ptrWidthPlus1'b1")).resized
-    tempNextHeadPlus1 := nextHeadPlus1
-
-    val tempOorNextHeadPlus1 = Bool() addAttribute("keep")
-    val oorNextHeadPlus1 = nextHeadPlus1 >= uintDepth
-    tempOorNextHeadPlus1 := oorNextHeadPlus1
-
-    //val incrNextHead = UInt(ptrWidth bits)
-    val tempIncrNextHead = UInt(ptrWidthPlus1 bits) addAttribute("keep")
-    //val incrNextHead = Mux[UInt](
-    //  oorNextHeadPlus1,
-    //  0x0, nextHeadPlus1.resized
-    //).resized
-    //tempIncrNextHead := incrNextHead
-    when (oorNextHeadPlus1) {
-      tempIncrNextHead := 0x0
-    } otherwise {
-      tempIncrNextHead := nextHeadPlus1
-    }
-    val incrNextHead = tempIncrNextHead
-
-    //val nextEmpty = Bool()
-    //val nextFull = Bool()
-    case class NextEmptyFull(
-      tempNextEmpty: Bool,
-      tempNextFull: Bool,
-    ) {
-    }
-    val nextEmptyFull = NextEmptyFull(
-      //tempNextEmpty=Mux[Bool](
-      //  incrNextHead === nextTail,
-      //  False,
-      //  Mux(
-      //    nextHead === nextTail,
-      //    True,
-      //    False,
-      //  )
-      //),
-      //tempNextFull=Mux[Bool](
-      //  incrNextHead === nextTail,
-      //  True,
-      //  Mux(
-      //    nextHead === nextTail,
-      //    False,
-      //    False,
-      //  )
-      //)
-      tempNextEmpty=(
-        (incrNextHead =/= nextTail)
-        & (nextHead === nextTail)
-      ),
-      tempNextFull=(
-        (incrNextHead === nextTail)
-      )
-    )
-    val nextEmpty = nextEmptyFull.tempNextEmpty
-    val nextFull = nextEmptyFull.tempNextFull
-    //when (loc.incrNextHead === loc.nextTail) {
-    //  //m.d.comb += [
-    //  loc.nextEmpty := False
-    //  loc.nextFull := True
-    //  //]
-    //} elsewhen (loc.nextHead === loc.nextTail) {
-    //  //m.d.comb += [
-    //  loc.nextEmpty := True
-    //  loc.nextFull := False
-    //  //]
-    //} otherwise {
-    //  //m.d.comb += [
-    //  loc.nextEmpty := False
-    //  loc.nextFull := False
-    //  //]
-    //}
-
+    val rRdData = Reg(dataType())
+    rRdData.init(rRdData.getZero)
+    rdData := rRdData
+    //--------
     val rAmountCanPush = Reg(UInt(amountWidth bits)) init(0x0)
     val rAmountCanPop = Reg(UInt(amountWidth bits)) init(0x0)
     //val nextAmountCanPush = rAmountCanPush.wrapNext()
@@ -721,276 +628,176 @@ case class Fifo[
     //misc.amountCanPop := rAmountCanPop
     misc.amountCanPush := nextAmountCanPush
     misc.amountCanPop := nextAmountCanPop
+    //--------
+    val formal = new Area {
+      val lastTailVal = Reg(dataType())
+      lastTailVal.init(lastTailVal.getZero)
+
+      val testHead = UInt(ptrWidth bits)
+      //val empty = Bool()
+      //val full = Bool()
+      val wdCnt = Reg(UInt(amountWidth bits)) init(0x0)
+    }
+    //--------
   }
-  val locFormal = new Area {
-    val lastTailVal = Reg(dataType()) init(dataType().getZero)
-    lastTailVal.addAttribute("keep")
-    val testHead = ((loc.rHead + 0x1) % tempDepth)
-  }
+  //--------
   GenerationFlags.formal {
-    //locFormal.lastTailVal := loc.arr.readAsync(address=loc.rTail.resized)
-    locFormal.lastTailVal := loc.arr.readSync(address=loc.rTail.resized)
+    //m.d.sync += [
+    loc.formal.lastTailVal := loc.arr.readAsync(loc.rTail)
+    loc.formal.wdCnt := loc.formal.wdCnt - 0x10
+    //]
+    //m.d.comb += [
+    loc.formal.testHead := (loc.rHead + 0x1) % tempDepth
+    //]
   }
   //--------
   // Combinational logic
-
-  //when((~loc.empty) & rdEn):
-  // m.d.comb += rdData := (loc.arr(loc.rTail))
+  misc.empty := loc.rEmpty
+  misc.full := loc.rFull
+  rdValid := True
 
   //m.d.comb += [
-  //rdData := loc.arr.readAsync(address=loc.rTail.resized)
-  rdData := loc.arr.readSync(address=loc.rTail.resized)
-  rdValid := True
-  misc.empty := loc.empty
-  misc.full := loc.full
+  loc.incrTail := Mux[UInt](
+    loc.tailPlus1 < tempDepth,
+    (loc.rTail + 0x1),
+    0x0
+  )
+  loc.incrHead := Mux[UInt](
+    loc.headPlus1 < tempDepth, (loc.rHead + 0x1), 0x0
+  )
+
+  loc.nextEmpty := loc.nextHead === loc.nextTail
+  //loc.nextFull := (loc.nextHead + 0x1) === loc.nextTail
+
+  // the below is based on an old nMigen `Cat`, so it might not be correct
+  // now!
+  //loc.currEnCat := Cat(inp.rdEn, inp.wrEn)
   //]
-
-  // Compute `loc.nextHead` and write into the FIFO if it's not full
-  //loc.headPlus1 = loc.rHead + 0x1
-  when (clockDomain.isResetActive) {
-    //m.d.comb += [
-    loc.nextHead := 0x0
-    loc.nextTail := 0x0
-    //]
-  } otherwise { // when (~loc.rst)
-    when (~misc.full & wrEn) {
-      //m.d.sync += loc.arr(loc.rHead) := wrData
-
-      when (loc.headPlus1 >= loc.uintDepth) {
-        //m.d.comb += 
-        loc.nextHead := 0x0
-      } otherwise {
-        //m.d.comb += 
-        loc.nextHead := loc.headPlus1.resized
-      }
-    } otherwise {
-      //m.d.comb += 
-      loc.nextHead := loc.rHead
-    }
-
-    // Compute `loc.nextTail`
-    //loc.tailPlus1 = loc.rTail + 0x1
-    when (~misc.empty & rdEn) {
-      when (loc.tailPlus1 >= loc.uintDepth) {
-        //m.d.comb +=
-        loc.nextTail := 0x0
-      } otherwise {
-        //m.d.comb += 
-        loc.nextTail := loc.tailPlus1.resized
-      }
-    } otherwise {
-      //m.d.comb += 
-      loc.nextTail := loc.rTail
-    }
-
-    // Compute `loc.nextEmpty` and `loc.nextFull`
-    //loc.nextHeadPlus1 = loc.nextHead + 0x1
-    //when (loc.nextHeadPlus1 >= loc.uintDepth) {
-    //  //m.d.comb += 
-    //  loc.incrNextHead := 0x0
-    //} otherwise {
-    //  //m.d.comb += 
-    //  loc.incrNextHead := loc.nextHeadPlus1.resized
-    //}
-
-    //when (loc.incrNextHead === loc.nextTail) {
-    //  //m.d.comb += [
-    //  loc.nextEmpty := False
-    //  loc.nextFull := True
-    //  //]
-    //} elsewhen (loc.nextHead === loc.nextTail) {
-    //  //m.d.comb += [
-    //  loc.nextEmpty := True
-    //  loc.nextFull := False
-    //  //]
-    //} otherwise {
-    //  //m.d.comb += [
-    //  loc.nextEmpty := False
-    //  loc.nextFull := False
-    //  //]
-    //}
+  when (rdEn & ~misc.empty) {
+    //m.d.comb +=
+    loc.nextTail := loc.incrTail
+  } otherwise {
+    //m.d.comb += 
+    loc.nextTail := loc.rTail
   }
-  ////if self.FORMAL():
-  //// m.d.comb \
-  //// += [
-  ////   cover(pastValid)
-  ////   //cover(pastValid & misc.empty),
-  ////   //cover(pastValid & misc.full),
-  ////   //cover(pastValid & (~misc.empty)
-  ////   // & (~misc.full)),
-  //// )
-  ////--------
-  //// Sequential logic
-  ////when (loc.rst):
-  //// if self.FORMAL():
-  ////   m.d.sync += pastValid := (0b1)
-  ////if self.FORMAL():
-  ////GenerationFlags.formal {
-  ////  m.d.sync += pastValid := (0b1)
-  ////}
 
-  //m.d.sync += [
-  loc.rHead := loc.nextHead
-  loc.rTail := loc.nextTail
-  loc.empty := loc.nextEmpty
-  loc.full := loc.nextFull
-  //]
-  //when (clockDomain.isResetActive) {
-  // //--------
-  // //m.d.sync += [
-  //   loc.rHead := 0x0
-  //   loc.rTail := 0x0
-
-  //   misc.empty := True
-  //   misc.full := False
-  // //]
+  when (wrEn & ~misc.full) {
+    //m.d.comb += [
+    loc.nextHead := loc.incrHead
+    loc.nextFull := (loc.incrHead + 0x1) === loc.nextTail
+    //]
+  } otherwise {
+    //m.d.comb += [
+    loc.nextHead := loc.rHead
+    loc.nextFull := loc.incrHead === loc.nextTail
+    //]
+  }
+  //--------
+  // Clocked behavioral code
+  //GenerationFlags.formal {
+  //  //loc.formal.pastValid = Signal()
   //}
-  // //--------
-  //otherwise // when(~clockDomain.isResetActive):
-  when (~clockDomain.isResetActive) {
-    //--------
 
-    // Write into the FIFO
-    when ((~misc.full) & wrEn) {
+  when (clockDomain.isResetActive) {
+    //for elem in loc.arr:
+    //	m.d.sync += elem := (bus.shape()())
+
+    //m.d.sync += [
+    loc.rTail := (0x0)
+    loc.rHead := (0x0)
+
+    //outp.rdData := (bus.shape()())
+
+    //misc.empty := True
+    //misc.full := False
+    loc.rEmpty := True
+    loc.rFull := False
+
+    loc.rRdData := loc.rRdData.getZero
+    //]
+    //GenerationFlags.formal {
+    //  m.d.sync +=
+    //  loc.formal.pastValid := (0b1)
+    //}
+
+  } otherwise { // when (~clockDomain.isResetActive)
+    //--------
+    //m.d.sync += [
+    loc.rEmpty := loc.nextEmpty
+    loc.rFull := loc.nextFull
+    loc.rTail := loc.nextTail
+    loc.rHead := loc.nextHead
+    //]
+
+    when (rdEn & ~misc.empty) {
+      //m.d.sync +=
+      loc.rRdData := loc.arr.readSync(address=loc.rTail)
+    }
+    when (wrEn & ~misc.full) {
       //m.d.sync += 
       loc.arr.write(address=loc.rHead.resized, data=wrData)
     }
     //--------
-    //if self.FORMAL():
-    GenerationFlags.formal {
-      //m.d.comb += cover(pastValid)
-      when (pastValidAfterReset) {
-        val tempTailWidth = loc.rTail.getWidth + 1
-        val tempHeadWidth = loc.rHead.getWidth + 1
-        val tempTailVec = Vec(UInt(tempTailWidth bits), 2)
-        val tempHeadVec = Vec(UInt(tempHeadWidth bits), 2)
-        tempTailVec(0) := loc.rTail.resized
-        tempTailVec(1) := U(f"$tempTailWidth'd$tempDepth")
-        assert(tempTailVec(0) < tempTailVec(1))
-        tempHeadVec(0) := loc.rHead.resized
-        tempHeadVec(1) := U(f"$tempHeadWidth'd$tempDepth")
-        assert(tempHeadVec(0) < tempHeadVec(1))
-        //assert(loc.rTail < tempDepth)
-        //assert(loc.rHead < tempDepth)
-
-        //m.d.sync += [
-        // cover(misc.empty)
-        // cover(misc.full)
-        // cover(~(misc.empty & misc.full))
-        //)
-
-        //m.d.sync += [
-        //assert(loc.rHead === past(loc.nextHead)),
-        //assert(loc.rTail === past(loc.nextTail)),
-        //assert(misc.empty === past(loc.nextEmpty)),
-        //assert(misc.full === past(loc.nextFull)),
-        assert(~(misc.empty & misc.full))
-
-        assert(rdData === loc.arr(loc.rTail.resized))
-        //assert(past(rdData) === locFormal.lastTailVal)
-        //]
-
-        when (past(rdEn)) {
-          when (past(misc.empty)) {
-            //m.d.sync +=
-            assert(stable(loc.rTail))
-            //assert(stable(loc.nextTail))
-          } otherwise { // when (~past(misc.empty))
-            //m.d.sync += 
-            //val tempTailPlus1Width = loc.rTail.getWidth + 1
-            //val tempTailPlus1 = Vec(UInt(tempTailPlus1Width bits), 4)
-            //tempTailPlus1(0) := past(loc.rTail).resized
-            //tempTailPlus1(1) := U(f"$tempTailPlus1Width'd1")
-            //tempTailPlus1(2) := tempTailPlus1(0) + tempTailPlus1(1)
-            //tempTailPlus1(3) := U(f"$tempTailPlus1Width'd$tempDepth")
-            //when (tempTailPlus1(2) >= tempTailPlus1(3)) {
-            //  assert(loc.rTail === 0)
-            //} otherwise {
-            //  assert(loc.rTail === tempTailPlus1(2))
-            //}
-            //when ((past(loc.rTail) + 1) === tempDepth) {
-            //}
-            assert(loc.rTail
-              === ((past(loc.rTail) + 1) % tempDepth))
-          }
-        } otherwise { // when (~past(rdEn))
-          //m.d.sync += [
-          //assert(stable(misc.empty))
-          assert(stable(loc.rTail))
-          //]
-        }
-
-        when (past(wrEn)) {
-          when (past(misc.full)) {
-            //m.d.sync +=
-            assert(stable(loc.rHead))
-          } otherwise { // when (~past(misc.full))
-            //m.d.sync +=
-            assert(loc.rHead === ((past(loc.rHead) + 1) % tempDepth))
-            //val tempHeadPlus1Width = loc.rHead.getWidth + 1
-            //val tempHeadPlus1 = Vec(UInt(tempHeadPlus1Width bits), 4)
-            //tempHeadPlus1(0) := past(loc.rHead).resized
-            //tempHeadPlus1(1) := U(f"$tempHeadPlus1Width'd1")
-            //tempHeadPlus1(2) := tempHeadPlus1(0) + tempHeadPlus1(1)
-            //tempHeadPlus1(3) := U(f"$tempHeadPlus1Width'd$tempDepth")
-            //when (tempHeadPlus1(2) >= tempHeadPlus1(3)) {
-            //  assert(loc.rHead === 0)
-            //} otherwise {
-            //  assert(loc.rHead === tempHeadPlus1(2))
-            //}
-          }
-        } otherwise { // when (~past(wrEn))
-          //m.d.sync += [
-          //assert(stable(misc.full))
-          assert(stable(loc.rHead))
-          //]
-        }
-
-
-        switch (Cat(misc.full, misc.empty)) {
-          // neither full nor empty
-          is (B"00") {
-            //m.d.sync += [
-            assert(loc.rHead =/= loc.rTail)
-            assert(locFormal.testHead =/= loc.rTail)
-            //]
-          }
-          // empty
-          is (B"01") {
-            //m.d.sync += [
-            assert(loc.rHead === loc.rTail)
-            //]
-          }
-          // full
-          is (B"10") {
-            //m.d.sync += [
-            assert(locFormal.testHead === loc.rTail)
-            //]
-          }
-        }
-
-        // empty
-        when (loc.rHead === loc.rTail) {
-          //m.d.sync += 
-          //assert(misc.empty & (~misc.full))
-          assert(misc.empty)
-          assert(~misc.full)
-        } elsewhen (locFormal.testHead === loc.rTail) {
-          //m.d.sync += 
-          //assert((~misc.empty) & misc.full)
-          assert(~misc.empty)
-          assert(misc.full)
-        } otherwise {
-          //m.d.sync += 
-          //assert((~misc.empty) & (~misc.full))
-          assert(~misc.empty)
-          assert(~misc.full)
-        }
-      }
-    //--------
-    }
+    //GenerationFlags.formal:
+    //  when (loc.formal.pastValid):
+    //    m.d.sync \
+    //    += [
+    //      assert(outp.empty == past(loc.nextEmpty)),
+    //      assert(outp.full == past(loc.nextFull)),
+    //      assert(loc.rTail == past(loc.nextTail)),
+    //      assert(loc.rHead == past(loc.nextHead)),
+    //    ]
+    //    when (past(inp.rdEn)):
+    //      when (past(outp.empty)):
+    //        m.d.sync \
+    //        += [
+    //          //assert(stable(outp.empty)),
+    //          assert(stable(loc.rTail)),
+    //        ]
+    //      otherwise: // If(~past(outp.empty)):
+    //        //when (~past(inp.wrEn)):
+    //        m.d.sync \
+    //        += [
+    //          assert(outp.rdData
+    //            == loc.arr[past(loc.rTail)])
+    //        ]
+    //    when (past(inp.wrEn)):
+    //      when (past(outp.full)):
+    //        m.d.sync \
+    //        += [
+    //          assert(stable(loc.rHead)),
+    //        ]
+    //      //otherwise: // If(~past(outp.full)):
+    //      //	m.d.sync \
+    //      //	+= [
+    //      //		assert(past(inp.wrData))
+    //      //	]
+    //    switch (Cat(outp.empty, outp.full)):
+    //      is (0b00):
+    //        m.d.sync \
+    //        += [
+    //          assume(loc.rHead != loc.rTail),
+    //          assume(loc.formal.testHead != loc.rTail),
+    //        ]
+    //      is (0b01):
+    //        m.d.sync \
+    //        += [
+    //          assert(loc.rHead == loc.rTail)
+    //        ]
+    //      is (0b10):
+    //        m.d.sync \
+    //        += [
+    //          assert(loc.formal.testHead == loc.rTail),
+    //        ]
+    //    m.d.sync \
+    //    += [
+    //      assert(~(outp.empty & outp.full)),
+    //      //assume(~stable(inp.wrData)),
+    //      //assume(inp.wrData == loc.formal.wdCnt),
+    //    ]
   }
-  //--------
+
+
 
   //--------
 }
@@ -1071,8 +878,8 @@ case class AsyncReadFifo[
   rdEn := sbPop.io.next.fire
 
   val loc = new Area {
-    val empty = Reg(Bool()) init(True)
-    val full = Reg(Bool()) init(False)
+    val rEmpty = Reg(Bool()) init(True)
+    val rFull = Reg(Bool()) init(False)
     //arr = Array([
     //  Signal(bus.shape()) for _ in range(bus.SIZE())
     //])
@@ -1228,14 +1035,14 @@ case class AsyncReadFifo[
   //--------
   // Combinational logic
 
-  //when((~loc.empty) & rdEn):
+  //when((~loc.rEmpty) & rdEn):
   // m.d.comb += rdData := (loc.arr(loc.rTail))
 
   //m.d.comb += [
   rdData := loc.arr.readAsync(address=loc.rTail.resized)
   rdValid := True
-  misc.empty := loc.empty
-  misc.full := loc.full
+  misc.empty := loc.rEmpty
+  misc.full := loc.rFull
   //]
 
   // Compute `loc.nextHead` and write into the FIFO if it's not full
@@ -1325,8 +1132,8 @@ case class AsyncReadFifo[
   //m.d.sync += [
   loc.rHead := loc.nextHead
   loc.rTail := loc.nextTail
-  loc.empty := loc.nextEmpty
-  loc.full := loc.nextFull
+  loc.rEmpty := loc.nextEmpty
+  loc.rFull := loc.nextFull
   //]
   //when (clockDomain.isResetActive) {
   // //--------
