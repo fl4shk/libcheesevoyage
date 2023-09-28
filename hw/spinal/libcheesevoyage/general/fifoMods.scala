@@ -169,7 +169,9 @@ case class Fifo[
   //rdData \= rdData.getZero
   //val rdData = sbPop.io.next.payload
   //val popBusy = sbPop.io.misc.busy
-  val rdEn = sbPop.io.next.fire
+  //val rdEn = sbPop.io.next.fire
+  val rdEn = KeepAttribute(Bool())
+  rdEn := sbPop.io.next.fire
 
   //val sbIo = skidBuf.io
 
@@ -392,14 +394,16 @@ case class Fifo[
 
     //rdValid := False
 
+    rdValid := True
+
     when (rdEn & ~misc.empty) {
       //m.d.sync += 
       rdData := loc.arr.readAsync(address=loc.rTail.resized)
       //rdValid := True
-      rdValid := True
+      //rdValid := True
     } otherwise {
       rdData := rdDataPrev
-      rdValid := False
+      //rdValid := False
     }
 
     when (wrEn & ~misc.full) {
