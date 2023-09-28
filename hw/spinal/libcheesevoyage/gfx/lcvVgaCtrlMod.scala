@@ -831,24 +831,24 @@ case class LcvVgaCtrl(
   //)
   fifoPop.ready := rFifoPopReady
   //fifoPop.ready := 
-  rFifoPopReady := (
-    misc.pixelEnPipe2
-    //misc.pixelEn
-    //&& misc.visibPipe2
-    //&& misc.visibPipe1
-    //&& misc.visib
-    //&& hpipe.rSPipe1 === LcvVgaState.visib
-    //&& vpipe.s === LcvVgaState.visib
-    && (
-      //hpipe.rVisib
-      //|| 
-      //hpipe.rVisibPipe1
-      //hpipe.rVisib
-      hpipe.rVisibPipe1
-    )
-    && vpipe.rVisib
-    && !fifoEmpty
-  )
+  //rFifoPopReady := (
+  //  misc.pixelEnPipe2
+  //  //misc.pixelEn
+  //  //&& misc.visibPipe2
+  //  //&& misc.visibPipe1
+  //  //&& misc.visib
+  //  //&& hpipe.rSPipe1 === LcvVgaState.visib
+  //  //&& vpipe.s === LcvVgaState.visib
+  //  && (
+  //    //hpipe.rVisib
+  //    //|| 
+  //    //hpipe.rVisibPipe1
+  //    //hpipe.rVisib
+  //    hpipe.rVisibPipe1
+  //  )
+  //  && vpipe.rVisib
+  //  && !fifoEmpty
+  //)
   // END: pipelined working (?)
   //fifoPop.ready := rFifoPopReady
   //fifoPop.ready := (
