@@ -1040,28 +1040,28 @@ case class LcvVgaCtrl(
   when (misc.pixelEn) {
     // Visible area
     when (misc.visib) {
-      when (~io.en) {
-        //m.d.sync += [
-          //phys.col.r := (0xf),
-          //phys.col.g := (0xf),
-          //phys.col.b := (0xf),
-        //]
-        rPhys.col.r := (default -> True)
-        rPhys.col.g := (default -> True)
-        rPhys.col.b := (default -> True)
-      } otherwise { // when (io.en)
+      //when (~io.en) {
+      //  //m.d.sync += [
+      //    //phys.col.r := (0xf),
+      //    //phys.col.g := (0xf),
+      //    //phys.col.b := (0xf),
+      //  //]
+      //  rPhys.col.r := (default -> True)
+      //  rPhys.col.g := (default -> True)
+      //  rPhys.col.b := (default -> True)
+      //} otherwise { // when (io.en)
         //m.d.sync += [
           //rPhys.col := tempCol
           //rPhys.col := rTempColBuf
           rPhys.col.r := (default -> True)
-          when (hpipe.c === 0x0) {
-            rPhys.col.g := 0x0
-          } otherwise {
+          //when (hpipe.c === 0x0) {
+          //  rPhys.col.g := 0x0
+          //} otherwise {
             rPhys.col.g := rPhys.col.g + 1
-          }
+          //}
           rPhys.col.b := 0x0
         //]
-      }
+      //}
     // Black border
     } otherwise { // when (~misc.visib)
       //m.d.sync += [
