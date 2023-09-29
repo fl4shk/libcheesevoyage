@@ -205,9 +205,11 @@ class LcvVgaPipe(
       nextState: LcvVgaState.E,
     ): Unit = {
       rCPipe2Plus1 := rCPipe2 + 1
-      // delayed by two, so this code requires at least 3x the pixel clock
-      // for `clockDomain`
-      rCPipe2Plus1GeStateSize := rCPipe2Plus1 >= stateSize
+      // 
+      rCPipe2Plus1GeStateSize := rCPipe2 + 1 >= stateSize
+      //// delayed by two, so this code requires at least 3x the pixel clock
+      //// for `clockDomain`
+      //rCPipe2Plus1GeStateSize := rCPipe2Plus1 >= stateSize
     }
     runMkCaseFunc(
       vgaTimingHv=vgaTimingHv,
@@ -329,15 +331,15 @@ case class LcvVgaCtrlMiscIo(
   val hpipeC = UInt(vgaTimingInfo.htiming.cntWidth() bits)
   //val hpipeCP1 = hpipeC.resized + U(f"$cPWidth'd1")
   //val hpipeCP2 = hpipeC.resized + U(f"$cPWidth'd2")
-  val hpipeNextS = LcvVgaState()
-  val hpipeNextNextS = LcvVgaState()
+  val hpipeSPipe1 = LcvVgaState()
+  val hpipeSPipe2 = LcvVgaState()
 
   val vpipeS = LcvVgaState()
   val vpipeC = UInt(vgaTimingInfo.vtiming.cntWidth() bits)
   //val vpipeCP1 = vpipeC.resized + U(f"$cPWidth'd1")
   //val vpipeCP2 = vpipeC.resized + U(f"$cPWidth'd2")
-  val vpipeNextS = LcvVgaState()
-  val vpipeNextNextS = LcvVgaState()
+  val vpipeSPipe1 = LcvVgaState()
+  val vpipeSPipe2 = LcvVgaState()
 
   val fifoEmpty = Bool()
   val fifoFull = Bool()
@@ -355,11 +357,11 @@ case class LcvVgaCtrlMiscIo(
     vgaTimingInfo=vgaTimingInfo,
   ) bits)
   //val pixelEnPipe3 = Bool()
-  val pixelEnPipe2 = Bool()
+  //val pixelEnPipe2 = Bool()
   val pixelEnPipe1 = Bool()
   val pixelEn = Bool()
   //val visibPipe3 = Bool()
-  val visibPipe2 = Bool()
+  //val visibPipe2 = Bool()
   val visibPipe1 = Bool()
   val visib = Bool()
   val pastVisib = Bool()
@@ -591,11 +593,11 @@ case class LcvVgaCtrl(
   rPixelEnPipe1 := nextClkCnt === cpp - 1
   misc.pixelEnPipe1 := rPixelEnPipe1
 
-  val rPixelEnPipe2 = Reg(Bool()) init(False)
-  val nextPixelEnPipe2 = Bool()
-  nextPixelEnPipe2 := nextClkCnt === cpp - 2
-  rPixelEnPipe2 := nextPixelEnPipe2
-  misc.pixelEnPipe2 := rPixelEnPipe2
+  //val rPixelEnPipe2 = Reg(Bool()) init(False)
+  //val nextPixelEnPipe2 = Bool()
+  //nextPixelEnPipe2 := nextClkCnt === cpp - 2
+  //rPixelEnPipe2 := nextPixelEnPipe2
+  //misc.pixelEnPipe2 := rPixelEnPipe2
 
   //val rPixelEnPipe3 = Reg(Bool()) init(False)
   // "- 3": with this basic solution, this means there will be a minimum of
@@ -607,7 +609,7 @@ case class LcvVgaCtrl(
   if (vivadoDebug) {
     rPixelEn.addAttribute("MARK_DEBUG", "TRUE")
     rPixelEnPipe1.addAttribute("MARK_DEBUG", "TRUE")
-    rPixelEnPipe2.addAttribute("MARK_DEBUG", "TRUE")
+    //rPixelEnPipe2.addAttribute("MARK_DEBUG", "TRUE")
     //rPixelEnPipe3.addAttribute("MARK_DEBUG", "TRUE")
   }
   //--------
@@ -636,12 +638,12 @@ case class LcvVgaCtrl(
 
   misc.hpipeS := hpipe.s
   misc.hpipeC := hpipe.c
-  misc.hpipeNextS := hpipe.rSPipe1
-  misc.hpipeNextNextS := hpipe.rSPipe2
+  misc.hpipeSPipe1 := hpipe.rSPipe1
+  misc.hpipeSPipe2 := hpipe.rSPipe2
   misc.vpipeS := vpipe.s
   misc.vpipeC := vpipe.c
-  misc.vpipeNextS := vpipe.rSPipe1
-  misc.vpipeNextNextS := vpipe.rSPipe2
+  misc.vpipeSPipe1 := vpipe.rSPipe1
+  misc.vpipeSPipe2 := vpipe.rSPipe2
 
   //misc.visibPipe3 := (
   //  hpipe.rVisibPipe3 && vpipe.rVisibPipe3
@@ -996,7 +998,7 @@ case class LcvVgaCtrl(
     misc.visib := hpipe.rVisib && vpipe.rVisib
     misc.visibPipe1 := hpipe.rVisibPipe1 && vpipe.rVisibPipe1
     //misc.visibPipe2 := False
-    misc.visibPipe2 := hpipe.rVisibPipe2 && vpipe.rVisibPipe2
+    //misc.visibPipe2 := hpipe.rVisibPipe2 && vpipe.rVisibPipe2
     //misc.visibPipe3 := False
     //val rVisib = Reg(Bool()) init(False)
     //rVisib := hpipe.rVisib && 
@@ -1188,9 +1190,9 @@ case class LcvVgaCtrlNoFifo(
   val pixelEnNextCycle = Bool()
   pixelEnNextCycle := clkCntP1.resized === cpp
 
-  val rPixelEnPipe2 = Reg(Bool()) init(False)
-  rPixelEnPipe2 := nextClkCnt === cpp - 2
-  misc.pixelEnPipe2 := rPixelEnPipe2
+  //val rPixelEnPipe2 = Reg(Bool()) init(False)
+  //rPixelEnPipe2 := nextClkCnt === cpp - 2
+  //misc.pixelEnPipe2 := rPixelEnPipe2
 
   //val rPixelEnPipe3 = Reg(Bool()) init(False)
   //rPixelEnPipe3 := nextClkCnt === cpp - 3
@@ -1218,12 +1220,12 @@ case class LcvVgaCtrlNoFifo(
   )
   misc.hpipeS := hpipe.s
   misc.hpipeC := hpipe.c
-  misc.hpipeNextS := hpipe.rSPipe1
-  misc.hpipeNextNextS := hpipe.rSPipe2
+  misc.hpipeSPipe1 := hpipe.rSPipe1
+  misc.hpipeSPipe2 := hpipe.rSPipe2
   misc.vpipeS := vpipe.s
   misc.vpipeC := vpipe.c
-  misc.vpipeNextS := vpipe.rSPipe1
-  misc.vpipeNextNextS := vpipe.rSPipe2
+  misc.vpipeSPipe1 := vpipe.rSPipe1
+  misc.vpipeSPipe2 := vpipe.rSPipe2
   //--------
   // Implement HSYNC and VSYNC logic
   // This assumes the FPGA is running at a higher clock rate than the pixel
@@ -1367,19 +1369,21 @@ case class LcvVgaCtrlNoFifo(
     //misc.visibPipe1 := rVisibPipe1
     //misc.visibPipe1 := ((hpipe.sPipe1 === LcvVgaState.visib)
     //  & (vpipe.sPipe1 === LcvVgaState.visib))
-    misc.visibPipe1 := (
-      (hpipe.rSPipe1 === LcvVgaState.visib)
-      && (vpipe.rSPipe1 === LcvVgaState.visib)
-    )
-    misc.visibPipe2 := (
-      (hpipe.rSPipe2 === LcvVgaState.visib)
-      && (vpipe.rSPipe2 === LcvVgaState.visib)
-    )
+    misc.visib := hpipe.rVisib && vpipe.rVisib
+    misc.visibPipe1 := hpipe.rVisibPipe1 && vpipe.rVisibPipe1
+    //misc.visibPipe1 := (
+    //  (hpipe.rSPipe1 === LcvVgaState.visib)
+    //  && (vpipe.rSPipe1 === LcvVgaState.visib)
+    //)
+    //misc.visibPipe2 := (
+    //  (hpipe.rSPipe2 === LcvVgaState.visib)
+    //  && (vpipe.rSPipe2 === LcvVgaState.visib)
+    //)
     //cover(hpipe.sPipe1 === LcvVgaState.sync)
 
-    val rVisib = Reg(Bool()) init(False)
-    rVisib := misc.visibPipe1
-    misc.visib := rVisib
+    //val rVisib = Reg(Bool()) init(False)
+    //rVisib := misc.visibPipe1
+    //misc.visib := rVisib
 
     val rPastVisib = Reg(Bool()) init(False)
     rPastVisib := misc.visib

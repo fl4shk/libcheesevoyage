@@ -15,8 +15,8 @@ import scala.math._
 
 object LcvVgaGradientSim extends App {
 
-  def clkRate = 125.0
-  //def clkRate = 50.0
+  //def clkRate = 125.0
+  def clkRate = 50.0
   //def clkRate = 100.7
   def pixelClk = 25.0
   //def ctrlFifoDepth = 20
