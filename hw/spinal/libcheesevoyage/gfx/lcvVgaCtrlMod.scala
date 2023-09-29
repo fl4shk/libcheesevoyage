@@ -17,7 +17,10 @@ import spinal.core.formal._
 import scala.collection.mutable.ArrayBuffer
 import scala.math._
 
-object LcvVgaState extends SpinalEnum(defaultEncoding=binarySequential) {
+object LcvVgaState extends SpinalEnum(
+  //defaultEncoding=binarySequential
+  defaultEncoding=binaryOneHot
+) {
   val
     front,
     sync,
@@ -297,15 +300,15 @@ object LcvVgaCtrlMiscIo {
   //--------
   def coordElemT(): UInt = UInt(16 bits)
   def cpp(
-    clkRate: Double,
+    clkRate: HertzNumber,
     vgaTimingInfo: LcvVgaTimingInfo,
   ): Int = {
     return scala.math.floor(
-      clkRate / vgaTimingInfo.pixelClk
+      (clkRate / vgaTimingInfo.pixelClk).toDouble
     ).toInt
   }
   def clkCntWidth(
-    clkRate: Double,
+    clkRate: HertzNumber,
     vgaTimingInfo: LcvVgaTimingInfo,
   ): Int = {
     return log2Up(cpp(
@@ -315,7 +318,7 @@ object LcvVgaCtrlMiscIo {
   //--------
 }
 case class LcvVgaCtrlMiscIo(
-  clkRate: Double,
+  clkRate: HertzNumber,
   vgaTimingInfo: LcvVgaTimingInfo,
   fifoDepth: Int,
 ) extends Bundle {
@@ -374,7 +377,7 @@ case class LcvVgaCtrlMiscIo(
   //--------
 }
 case class LcvVgaCtrlIo(
-  clkRate: Double,
+  clkRate: HertzNumber,
   rgbConfig: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
   fifoDepth: Int,
@@ -415,7 +418,7 @@ case class LcvVgaCtrlIo(
 //}
 object LcvVgaCtrl {
   def cpp(
-    clkRate: Double,
+    clkRate: HertzNumber,
     vgaTimingInfo: LcvVgaTimingInfo,
   ): Int = {
     //return scala.math.floor(
@@ -427,7 +430,7 @@ object LcvVgaCtrl {
     )
   }
   def clkCntWidth(
-    clkRate: Double,
+    clkRate: HertzNumber,
     vgaTimingInfo: LcvVgaTimingInfo,
   ): Int = {
     //return log2Up(cpp(
@@ -440,7 +443,7 @@ object LcvVgaCtrl {
   }
 }
 case class LcvVgaCtrl(
-  clkRate: Double,
+  clkRate: HertzNumber,
   rgbConfig: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
   fifoDepth: Int,
@@ -1085,7 +1088,7 @@ case class LcvVgaCtrl(
 //--------
 
 case class LcvVgaCtrlNoFifoIo(
-  clkRate: Double,
+  clkRate: HertzNumber,
   rgbConfig: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
 ) extends Bundle with IMasterSlave {
@@ -1116,7 +1119,7 @@ case class LcvVgaCtrlNoFifoIo(
 }
 //--------
 case class LcvVgaCtrlNoFifo(
-  clkRate: Double,
+  clkRate: HertzNumber,
   rgbConfig: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
   //fifoDepth: Int,
@@ -1135,7 +1138,7 @@ case class LcvVgaCtrlNoFifo(
   // Clocks per pixel
   def cpp: Int = {
     return scala.math.floor(
-      clkRate / vgaTimingInfo.pixelClk
+      (clkRate / vgaTimingInfo.pixelClk).toDouble
     ).toInt
   }
   def htiming: LcvVgaTimingHv = {

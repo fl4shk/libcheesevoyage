@@ -13,7 +13,7 @@ import scala.math._
 
 
 case class LcvVgaGradientIo(
-  clkRate: Double,
+  clkRate: HertzNumber,
   rgbConfig: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
   ctrlFifoDepth: Int,
@@ -45,7 +45,7 @@ case class LcvVgaGradientIo(
   //--------
 }
 case class LcvVgaGradient(
-  clkRate: Double,
+  clkRate: HertzNumber,
   rgbConfig: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
   ctrlFifoDepth: Int,

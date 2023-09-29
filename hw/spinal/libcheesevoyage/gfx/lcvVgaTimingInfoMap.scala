@@ -1,13 +1,14 @@
 package libcheesevoyage.gfx
 import scala.collection.mutable.Map
+import spinal.core._
 
 object LcvVgaTimingInfoMap {
   //val map = Map[String, LcvVgaTimingInfo]()
   val map = Map[String, LcvVgaTimingInfo](
     // 640 x 480 @ 60 Hz, taken from http://www.tinyvga.com
     "640x480@60" -> LcvVgaTimingInfo(
-      pixelClk=25.0,
-      //pixelClk=25.175,
+      pixelClk=25.0 MHz,
+      //pixelClk=25.175 MHz,
       htiming=LcvVgaTimingHv(
         visib=640,
         front=16,
@@ -23,7 +24,7 @@ object LcvVgaTimingInfoMap {
     ),
     // This is an XGA VGA signal. It didn't work with my monitor.
     "1024x768@60" -> LcvVgaTimingInfo(
-      pixelClk=65.0,
+      pixelClk=65.0 MHz,
       htiming=LcvVgaTimingHv(
         visib=1024,
         front=24,
@@ -38,7 +39,7 @@ object LcvVgaTimingInfoMap {
       ),
     ),
     "1280x800@60" -> LcvVgaTimingInfo(
-      pixelClk=83.46,
+      pixelClk=83.46 MHz,
       htiming=LcvVgaTimingHv(
         visib=1280,
         front=64,
@@ -53,7 +54,7 @@ object LcvVgaTimingInfoMap {
       ),
     ),
     "1440x900@60" -> LcvVgaTimingInfo(
-      pixelClk=106.47,
+      pixelClk=106.47 MHz,
       htiming=LcvVgaTimingHv(
         visib=1440,
         front=80,
@@ -68,7 +69,7 @@ object LcvVgaTimingInfoMap {
       )
     ),
     "1600x900@60" -> LcvVgaTimingInfo(
-      pixelClk=118.25,
+      pixelClk=118.25 MHz,
       htiming=LcvVgaTimingHv(
         visib=1600,
         front=88,
@@ -83,7 +84,7 @@ object LcvVgaTimingInfoMap {
       ),
     ),
     "1920x1080@60" -> LcvVgaTimingInfo(
-      pixelClk=148.5,
+      pixelClk=148.5 MHz,
       htiming=LcvVgaTimingHv(
         visib=1920,
         front=88,

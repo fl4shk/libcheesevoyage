@@ -67,7 +67,7 @@ case class LcvVgaTimingHv(
   //--------
 }
 case class LcvVgaTimingInfo(
-  pixelClk: Double,
+  pixelClk: HertzNumber,
   htiming: LcvVgaTimingHv,
   vtiming: LcvVgaTimingHv,
 ) {
