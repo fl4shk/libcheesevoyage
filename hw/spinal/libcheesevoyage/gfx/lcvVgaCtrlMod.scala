@@ -205,8 +205,9 @@ class LcvVgaPipe(
       nextState: LcvVgaState.E,
     ): Unit = {
       rCPipe2Plus1 := rCPipe2 + 1
-      // 
-      rCPipe2Plus1GeStateSize := rCPipe2 + 1 >= stateSize
+      // delayed by one, so this code requires at least 2x the pixel clock
+      // for `clockDomain`
+      rCPipe2Plus1GeStateSize := rCPipe2 >= stateSize - 1
       //// delayed by two, so this code requires at least 3x the pixel clock
       //// for `clockDomain`
       //rCPipe2Plus1GeStateSize := rCPipe2Plus1 >= stateSize
