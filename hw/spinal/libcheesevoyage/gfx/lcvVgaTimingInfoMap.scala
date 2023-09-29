@@ -82,7 +82,7 @@ object LcvVgaTimingInfoMap {
         back=26,
       ),
     ),
-    "1920x1080p@60" -> LcvVgaTimingInfo(
+    "1920x1080@60" -> LcvVgaTimingInfo(
       pixelClk=148.5,
       htiming=LcvVgaTimingHv(
         visib=1920,
