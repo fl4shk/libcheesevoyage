@@ -501,306 +501,306 @@ case class FifoIo[
 //  ////--------
 //}
 
-case class Fifo[
-  T <: Data
-](
-  dataType: HardType[T],
-  depth: Int,
-  //arrRamStyle: String="ultra",
-  arrRamStyle: String="block",
-) extends Component {
-  //--------
-  val io = FifoIo(
-    dataType=dataType(),
-    depth=depth,
-  )
-  //--------
-  val push = io.push
-  val pop = io.pop
-  val misc = io.misc
-  //--------
-  def tempDepth = io.tempDepth
-  def ptrWidth = io.ptrWidth
-  def ptrWidthPlus1 = ptrWidth + 1
-  def amountWidth = io.amountWidth
-  //--------
-  val sbPush = PipeSkidBuf(
-    dataType=dataType(),
-    optIncludeBusy=true,
-    //optIncludeBusy=true,
-  )
-  val sbPop = PipeSkidBuf(
-    dataType=dataType(),
-    optIncludeBusy=true,
-    //optIncludeBusy=true,
-  )
-  //val sbPushIo = sbPush.io
-  //val sbPopIo = sbPop.io
-  //sbPush.io.prev <> push
-  //sbPush.io.prev >> push
-  //val sbPushBusy = sbPush.io.busy
-  //val sbPopBusy = sbPop.io.busy
-  sbPush.io.misc.busy := misc.full
-  sbPop.io.misc.busy := misc.empty
-
-  push >> sbPush.io.prev
-  //sbPush.io.prev.payload := push.payload
-  //sbPush.io.prev.valid := push.valid
-  //push.ready := sbPush.io.prev.ready
-
-  sbPush.io.next.ready := True
-  val wrData = sbPush.io.prev.payload
-  val wrEn = sbPush.io.prev.fire
-  //val pushBusy = sbPush.io.misc.busy
-
-  //sbPop.io.next << pop
-  pop << sbPop.io.next
-  //pop.payload := sbPop.io.next.payload
-  //pop.valid := sbPop.io.next.valid
-  //sbPop.io.next.ready := pop.ready
-
-  //sbPop.io.prev.valid := True
-  val rdValid = Bool()
-  sbPop.io.prev.valid := rdValid
-  val rdData = sbPop.io.prev.payload
-  val rdDataPrev = Reg(dataType()) init(dataType().getZero)
-  //rdData \= rdData.getZero
-  //val rdData = sbPop.io.next.payload
-  //val popBusy = sbPop.io.misc.busy
-  //val rdEn = sbPop.io.next.fire
-  val rdEn = Bool() addAttribute("keep")
-  rdEn := sbPop.io.next.fire
-  //--------
-  val loc = new Area {
-    val arr = Mem(dataType(), tempDepth)
-
-    val rTail = Reg(UInt(ptrWidth bits)) init(0x0)
-    val rHead = Reg(UInt(ptrWidth bits)) init(0x0)
-
-    //val tailPlus1 = rTail + 0x1
-    //val headPlus1 = rHead + 0x1
-    val tailPlus1 = UInt(ptrWidthPlus1 bits)
-    tailPlus1 := rTail.resized + U(f"$ptrWidthPlus1'd1")
-    val headPlus1 = UInt(ptrWidthPlus1 bits)
-    headPlus1 := rHead.resized + U(f"$ptrWidthPlus1'd1")
-
-    val incrTail = UInt(ptrWidth bits)
-    val incrHead = UInt(ptrWidth bits)
-
-    val nextEmpty = Bool()
-    val nextFull = Bool()
-    val rEmpty = Reg(Bool()) init(False)
-    val rFull = Reg(Bool()) init(False)
-
-    val nextTail = UInt(ptrWidth bits)
-    val nextHead = UInt(ptrWidth bits)
-
-    val rRdData = Reg(dataType())
-    rRdData.init(rRdData.getZero)
-    rdData := rRdData
-    //--------
-    val rAmountCanPush = Reg(UInt(amountWidth bits)) init(0x0)
-    val rAmountCanPop = Reg(UInt(amountWidth bits)) init(0x0)
-    //val nextAmountCanPush = rAmountCanPush.wrapNext()
-    //val nextAmountCanPop = rAmountCanPop.wrapNext()
-    val nextAmountCanPush = UInt(amountWidth bits)
-    val nextAmountCanPop = UInt(amountWidth bits)
-    rAmountCanPush := nextAmountCanPush
-    rAmountCanPop := nextAmountCanPop
-    nextAmountCanPush := (
-      U(f"$amountWidth'd$tempDepth") - nextAmountCanPop
-    )
-    val tempNextTail = UInt(amountWidth bits)
-    tempNextTail := nextTail.resized
-    val tempNextHead = UInt(amountWidth bits)
-    tempNextHead := nextHead.resized
-    //nextAmountCanPop := Mux(
-    //  tempNextHead > tempNextTail,
-    //  tempNextHead - tempNextTail,
-    //  U(f"$amountWidth'd$tempDepth") + (tempNextHead - tempNextTail),
-    //)
-    nextAmountCanPop := Mux(
-      rHead >= rTail,
-      rHead - rTail,
-      U(f"$amountWidth'd$tempDepth") - (rTail - rHead),
-    )
-    //misc.amountCanPush := rAmountCanPush
-    //misc.amountCanPop := rAmountCanPop
-    misc.amountCanPush := nextAmountCanPush
-    misc.amountCanPop := nextAmountCanPop
-    //--------
-    val formal = new Area {
-      val lastTailVal = Reg(dataType())
-      lastTailVal.init(lastTailVal.getZero)
-
-      val testHead = UInt(ptrWidth bits)
-      //val empty = Bool()
-      //val full = Bool()
-      val wdCnt = Reg(UInt(amountWidth bits)) init(0x0)
-    }
-    //--------
-  }
-  //--------
-  GenerationFlags.formal {
-    //m.d.sync += [
-    loc.formal.lastTailVal := loc.arr.readAsync(loc.rTail)
-    loc.formal.wdCnt := loc.formal.wdCnt - 0x10
-    //]
-    //m.d.comb += [
-    loc.formal.testHead := (loc.rHead + 0x1) % tempDepth
-    //]
-  }
-  //--------
-  // Combinational logic
-  misc.empty := loc.rEmpty
-  misc.full := loc.rFull
-  rdValid := True
-
-  //m.d.comb += [
-  loc.incrTail := Mux[UInt](
-    loc.tailPlus1 < tempDepth,
-    (loc.rTail + 0x1),
-    0x0
-  )
-  loc.incrHead := Mux[UInt](
-    loc.headPlus1 < tempDepth, (loc.rHead + 0x1), 0x0
-  )
-
-  loc.nextEmpty := loc.nextHead === loc.nextTail
-  //loc.nextFull := (loc.nextHead + 0x1) === loc.nextTail
-
-  // the below is based on an old nMigen `Cat`, so it might not be correct
-  // now!
-  //loc.currEnCat := Cat(inp.rdEn, inp.wrEn)
-  //]
-  when (rdEn & ~misc.empty) {
-    //m.d.comb +=
-    loc.nextTail := loc.incrTail
-  } otherwise {
-    //m.d.comb += 
-    loc.nextTail := loc.rTail
-  }
-
-  when (wrEn & ~misc.full) {
-    //m.d.comb += [
-    loc.nextHead := loc.incrHead
-    loc.nextFull := (loc.incrHead + 0x1) === loc.nextTail
-    //]
-  } otherwise {
-    //m.d.comb += [
-    loc.nextHead := loc.rHead
-    loc.nextFull := loc.incrHead === loc.nextTail
-    //]
-  }
-  //--------
-  // Clocked behavioral code
-  //GenerationFlags.formal {
-  //  //loc.formal.pastValid = Signal()
-  //}
-
-  when (clockDomain.isResetActive) {
-    //for elem in loc.arr:
-    //	m.d.sync += elem := (bus.shape()())
-
-    //m.d.sync += [
-    loc.rTail := (0x0)
-    loc.rHead := (0x0)
-
-    //outp.rdData := (bus.shape()())
-
-    //misc.empty := True
-    //misc.full := False
-    loc.rEmpty := True
-    loc.rFull := False
-
-    loc.rRdData := loc.rRdData.getZero
-    //]
-    //GenerationFlags.formal {
-    //  m.d.sync +=
-    //  loc.formal.pastValid := (0b1)
-    //}
-
-  } otherwise { // when (~clockDomain.isResetActive)
-    //--------
-    //m.d.sync += [
-    loc.rEmpty := loc.nextEmpty
-    loc.rFull := loc.nextFull
-    loc.rTail := loc.nextTail
-    loc.rHead := loc.nextHead
-    //]
-
-    when (rdEn & ~misc.empty) {
-      //m.d.sync +=
-      loc.rRdData := loc.arr.readSync(address=loc.rTail)
-    }
-    when (wrEn & ~misc.full) {
-      //m.d.sync += 
-      loc.arr.write(address=loc.rHead.resized, data=wrData)
-    }
-    //--------
-    //GenerationFlags.formal:
-    //  when (loc.formal.pastValid):
-    //    m.d.sync \
-    //    += [
-    //      assert(outp.empty == past(loc.nextEmpty)),
-    //      assert(outp.full == past(loc.nextFull)),
-    //      assert(loc.rTail == past(loc.nextTail)),
-    //      assert(loc.rHead == past(loc.nextHead)),
-    //    ]
-    //    when (past(inp.rdEn)):
-    //      when (past(outp.empty)):
-    //        m.d.sync \
-    //        += [
-    //          //assert(stable(outp.empty)),
-    //          assert(stable(loc.rTail)),
-    //        ]
-    //      otherwise: // If(~past(outp.empty)):
-    //        //when (~past(inp.wrEn)):
-    //        m.d.sync \
-    //        += [
-    //          assert(outp.rdData
-    //            == loc.arr[past(loc.rTail)])
-    //        ]
-    //    when (past(inp.wrEn)):
-    //      when (past(outp.full)):
-    //        m.d.sync \
-    //        += [
-    //          assert(stable(loc.rHead)),
-    //        ]
-    //      //otherwise: // If(~past(outp.full)):
-    //      //	m.d.sync \
-    //      //	+= [
-    //      //		assert(past(inp.wrData))
-    //      //	]
-    //    switch (Cat(outp.empty, outp.full)):
-    //      is (0b00):
-    //        m.d.sync \
-    //        += [
-    //          assume(loc.rHead != loc.rTail),
-    //          assume(loc.formal.testHead != loc.rTail),
-    //        ]
-    //      is (0b01):
-    //        m.d.sync \
-    //        += [
-    //          assert(loc.rHead == loc.rTail)
-    //        ]
-    //      is (0b10):
-    //        m.d.sync \
-    //        += [
-    //          assert(loc.formal.testHead == loc.rTail),
-    //        ]
-    //    m.d.sync \
-    //    += [
-    //      assert(~(outp.empty & outp.full)),
-    //      //assume(~stable(inp.wrData)),
-    //      //assume(inp.wrData == loc.formal.wdCnt),
-    //    ]
-  }
-
-
-
-  //--------
-}
+//case class Fifo[
+//  T <: Data
+//](
+//  dataType: HardType[T],
+//  depth: Int,
+//  //arrRamStyle: String="ultra",
+//  arrRamStyle: String="block",
+//) extends Component {
+//  //--------
+//  val io = FifoIo(
+//    dataType=dataType(),
+//    depth=depth,
+//  )
+//  //--------
+//  val push = io.push
+//  val pop = io.pop
+//  val misc = io.misc
+//  //--------
+//  def tempDepth = io.tempDepth
+//  def ptrWidth = io.ptrWidth
+//  def ptrWidthPlus1 = ptrWidth + 1
+//  def amountWidth = io.amountWidth
+//  //--------
+//  val sbPush = PipeSkidBuf(
+//    dataType=dataType(),
+//    optIncludeBusy=true,
+//    //optIncludeBusy=true,
+//  )
+//  val sbPop = PipeSkidBuf(
+//    dataType=dataType(),
+//    optIncludeBusy=true,
+//    //optIncludeBusy=true,
+//  )
+//  //val sbPushIo = sbPush.io
+//  //val sbPopIo = sbPop.io
+//  //sbPush.io.prev <> push
+//  //sbPush.io.prev >> push
+//  //val sbPushBusy = sbPush.io.busy
+//  //val sbPopBusy = sbPop.io.busy
+//  sbPush.io.misc.busy := misc.full
+//  sbPop.io.misc.busy := misc.empty
+//
+//  push >> sbPush.io.prev
+//  //sbPush.io.prev.payload := push.payload
+//  //sbPush.io.prev.valid := push.valid
+//  //push.ready := sbPush.io.prev.ready
+//
+//  sbPush.io.next.ready := True
+//  val wrData = sbPush.io.prev.payload
+//  val wrEn = sbPush.io.prev.fire
+//  //val pushBusy = sbPush.io.misc.busy
+//
+//  //sbPop.io.next << pop
+//  pop << sbPop.io.next
+//  //pop.payload := sbPop.io.next.payload
+//  //pop.valid := sbPop.io.next.valid
+//  //sbPop.io.next.ready := pop.ready
+//
+//  //sbPop.io.prev.valid := True
+//  val rdValid = Bool()
+//  sbPop.io.prev.valid := rdValid
+//  val rdData = sbPop.io.prev.payload
+//  val rdDataPrev = Reg(dataType()) init(dataType().getZero)
+//  //rdData \= rdData.getZero
+//  //val rdData = sbPop.io.next.payload
+//  //val popBusy = sbPop.io.misc.busy
+//  //val rdEn = sbPop.io.next.fire
+//  val rdEn = Bool() addAttribute("keep")
+//  rdEn := sbPop.io.next.fire
+//  //--------
+//  val loc = new Area {
+//    val arr = Mem(dataType(), tempDepth)
+//
+//    val rTail = Reg(UInt(ptrWidth bits)) init(0x0)
+//    val rHead = Reg(UInt(ptrWidth bits)) init(0x0)
+//
+//    //val tailPlus1 = rTail + 0x1
+//    //val headPlus1 = rHead + 0x1
+//    val tailPlus1 = UInt(ptrWidthPlus1 bits)
+//    tailPlus1 := rTail.resized + U(f"$ptrWidthPlus1'd1")
+//    val headPlus1 = UInt(ptrWidthPlus1 bits)
+//    headPlus1 := rHead.resized + U(f"$ptrWidthPlus1'd1")
+//
+//    val incrTail = UInt(ptrWidth bits)
+//    val incrHead = UInt(ptrWidth bits)
+//
+//    val nextEmpty = Bool()
+//    val nextFull = Bool()
+//    val rEmpty = Reg(Bool()) init(False)
+//    val rFull = Reg(Bool()) init(False)
+//
+//    val nextTail = UInt(ptrWidth bits)
+//    val nextHead = UInt(ptrWidth bits)
+//
+//    val rRdData = Reg(dataType())
+//    rRdData.init(rRdData.getZero)
+//    rdData := rRdData
+//    //--------
+//    val rAmountCanPush = Reg(UInt(amountWidth bits)) init(0x0)
+//    val rAmountCanPop = Reg(UInt(amountWidth bits)) init(0x0)
+//    //val nextAmountCanPush = rAmountCanPush.wrapNext()
+//    //val nextAmountCanPop = rAmountCanPop.wrapNext()
+//    val nextAmountCanPush = UInt(amountWidth bits)
+//    val nextAmountCanPop = UInt(amountWidth bits)
+//    rAmountCanPush := nextAmountCanPush
+//    rAmountCanPop := nextAmountCanPop
+//    nextAmountCanPush := (
+//      U(f"$amountWidth'd$tempDepth") - nextAmountCanPop
+//    )
+//    val tempNextTail = UInt(amountWidth bits)
+//    tempNextTail := nextTail.resized
+//    val tempNextHead = UInt(amountWidth bits)
+//    tempNextHead := nextHead.resized
+//    //nextAmountCanPop := Mux(
+//    //  tempNextHead > tempNextTail,
+//    //  tempNextHead - tempNextTail,
+//    //  U(f"$amountWidth'd$tempDepth") + (tempNextHead - tempNextTail),
+//    //)
+//    nextAmountCanPop := Mux(
+//      rHead >= rTail,
+//      rHead - rTail,
+//      U(f"$amountWidth'd$tempDepth") - (rTail - rHead),
+//    )
+//    //misc.amountCanPush := rAmountCanPush
+//    //misc.amountCanPop := rAmountCanPop
+//    misc.amountCanPush := nextAmountCanPush
+//    misc.amountCanPop := nextAmountCanPop
+//    //--------
+//    val formal = new Area {
+//      val lastTailVal = Reg(dataType())
+//      lastTailVal.init(lastTailVal.getZero)
+//
+//      val testHead = UInt(ptrWidth bits)
+//      //val empty = Bool()
+//      //val full = Bool()
+//      val wdCnt = Reg(UInt(amountWidth bits)) init(0x0)
+//    }
+//    //--------
+//  }
+//  //--------
+//  GenerationFlags.formal {
+//    //m.d.sync += [
+//    loc.formal.lastTailVal := loc.arr.readAsync(loc.rTail)
+//    loc.formal.wdCnt := loc.formal.wdCnt - 0x10
+//    //]
+//    //m.d.comb += [
+//    loc.formal.testHead := (loc.rHead + 0x1) % tempDepth
+//    //]
+//  }
+//  //--------
+//  // Combinational logic
+//  misc.empty := loc.rEmpty
+//  misc.full := loc.rFull
+//  rdValid := True
+//
+//  //m.d.comb += [
+//  loc.incrTail := Mux[UInt](
+//    loc.tailPlus1 < tempDepth,
+//    (loc.rTail + 0x1),
+//    0x0
+//  )
+//  loc.incrHead := Mux[UInt](
+//    loc.headPlus1 < tempDepth, (loc.rHead + 0x1), 0x0
+//  )
+//
+//  loc.nextEmpty := loc.nextHead === loc.nextTail
+//  //loc.nextFull := (loc.nextHead + 0x1) === loc.nextTail
+//
+//  // the below is based on an old nMigen `Cat`, so it might not be correct
+//  // now!
+//  //loc.currEnCat := Cat(inp.rdEn, inp.wrEn)
+//  //]
+//  when (rdEn & ~misc.empty) {
+//    //m.d.comb +=
+//    loc.nextTail := loc.incrTail
+//  } otherwise {
+//    //m.d.comb += 
+//    loc.nextTail := loc.rTail
+//  }
+//
+//  when (wrEn & ~misc.full) {
+//    //m.d.comb += [
+//    loc.nextHead := loc.incrHead
+//    loc.nextFull := (loc.incrHead + 0x1) === loc.nextTail
+//    //]
+//  } otherwise {
+//    //m.d.comb += [
+//    loc.nextHead := loc.rHead
+//    loc.nextFull := loc.incrHead === loc.nextTail
+//    //]
+//  }
+//  //--------
+//  // Clocked behavioral code
+//  //GenerationFlags.formal {
+//  //  //loc.formal.pastValid = Signal()
+//  //}
+//
+//  when (clockDomain.isResetActive) {
+//    //for elem in loc.arr:
+//    //	m.d.sync += elem := (bus.shape()())
+//
+//    //m.d.sync += [
+//    loc.rTail := (0x0)
+//    loc.rHead := (0x0)
+//
+//    //outp.rdData := (bus.shape()())
+//
+//    //misc.empty := True
+//    //misc.full := False
+//    loc.rEmpty := True
+//    loc.rFull := False
+//
+//    loc.rRdData := loc.rRdData.getZero
+//    //]
+//    //GenerationFlags.formal {
+//    //  m.d.sync +=
+//    //  loc.formal.pastValid := (0b1)
+//    //}
+//
+//  } otherwise { // when (~clockDomain.isResetActive)
+//    //--------
+//    //m.d.sync += [
+//    loc.rEmpty := loc.nextEmpty
+//    loc.rFull := loc.nextFull
+//    loc.rTail := loc.nextTail
+//    loc.rHead := loc.nextHead
+//    //]
+//
+//    when (rdEn & ~misc.empty) {
+//      //m.d.sync +=
+//      loc.rRdData := loc.arr.readSync(address=loc.rTail)
+//    }
+//    when (wrEn & ~misc.full) {
+//      //m.d.sync += 
+//      loc.arr.write(address=loc.rHead.resized, data=wrData)
+//    }
+//    //--------
+//    //GenerationFlags.formal:
+//    //  when (loc.formal.pastValid):
+//    //    m.d.sync \
+//    //    += [
+//    //      assert(outp.empty == past(loc.nextEmpty)),
+//    //      assert(outp.full == past(loc.nextFull)),
+//    //      assert(loc.rTail == past(loc.nextTail)),
+//    //      assert(loc.rHead == past(loc.nextHead)),
+//    //    ]
+//    //    when (past(inp.rdEn)):
+//    //      when (past(outp.empty)):
+//    //        m.d.sync \
+//    //        += [
+//    //          //assert(stable(outp.empty)),
+//    //          assert(stable(loc.rTail)),
+//    //        ]
+//    //      otherwise: // If(~past(outp.empty)):
+//    //        //when (~past(inp.wrEn)):
+//    //        m.d.sync \
+//    //        += [
+//    //          assert(outp.rdData
+//    //            == loc.arr[past(loc.rTail)])
+//    //        ]
+//    //    when (past(inp.wrEn)):
+//    //      when (past(outp.full)):
+//    //        m.d.sync \
+//    //        += [
+//    //          assert(stable(loc.rHead)),
+//    //        ]
+//    //      //otherwise: // If(~past(outp.full)):
+//    //      //	m.d.sync \
+//    //      //	+= [
+//    //      //		assert(past(inp.wrData))
+//    //      //	]
+//    //    switch (Cat(outp.empty, outp.full)):
+//    //      is (0b00):
+//    //        m.d.sync \
+//    //        += [
+//    //          assume(loc.rHead != loc.rTail),
+//    //          assume(loc.formal.testHead != loc.rTail),
+//    //        ]
+//    //      is (0b01):
+//    //        m.d.sync \
+//    //        += [
+//    //          assert(loc.rHead == loc.rTail)
+//    //        ]
+//    //      is (0b10):
+//    //        m.d.sync \
+//    //        += [
+//    //          assert(loc.formal.testHead == loc.rTail),
+//    //        ]
+//    //    m.d.sync \
+//    //    += [
+//    //      assert(~(outp.empty & outp.full)),
+//    //      //assume(~stable(inp.wrData)),
+//    //      //assume(inp.wrData == loc.formal.wdCnt),
+//    //    ]
+//  }
+//
+//
+//
+//  //--------
+//}
 
 case class AsyncReadFifo[
   T <: Data

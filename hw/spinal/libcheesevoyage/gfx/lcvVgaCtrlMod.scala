@@ -1,7 +1,7 @@
 package libcheesevoyage.gfx
 import libcheesevoyage.general.FifoMiscIo
 import libcheesevoyage.general.FifoIo
-import libcheesevoyage.general.Fifo
+//import libcheesevoyage.general.Fifo
 import libcheesevoyage.general.AsyncReadFifo
 import libcheesevoyage.general.Vec2
 import libcheesevoyage.general.ElabVec2
@@ -497,38 +497,40 @@ case class LcvVgaCtrl(
   )
   //--------
   //val fifo = AsyncReadFifo
-  val fifo = Fifo(
-    dataType=Rgb(rgbConfig),
-    depth=fifoDepth,
-    arrRamStyle="auto"
-  )
-  //val fifo = StreamFifo(
+  //val fifo = Fifo(
   //  dataType=Rgb(rgbConfig),
   //  depth=fifoDepth,
-  //  latency=2,
-  //  //latency=1,
-  //  //latency=0,
-  //  forFMax=true,
+  //  arrRamStyle="auto"
   //)
+  val fifo = StreamFifo(
+    dataType=Rgb(rgbConfig),
+    depth=fifoDepth,
+    latency=2,
+    //latency=1,
+    //latency=0,
+    forFMax=true,
+  )
   val fifoPush = fifo.io.push
   val fifoPop = fifo.io.pop
-  val fifoEmpty = fifo.io.misc.empty
-  val fifoFull = fifo.io.misc.full
-  val fifoAmountCanPush = fifo.io.misc.amountCanPush
-  val fifoAmountCanPop = fifo.io.misc.amountCanPop
-  //val fifoEmpty = fifo.io.availability === fifoDepth
-  //val fifoFull = fifo.io.occupancy === fifoDepth
-  //val fifoAmountCanPush = fifo.io.availability
-  //val fifoAmountCanPop = fifo.io.occupancy
+  //val fifoEmpty = fifo.io.misc.empty
+  //val fifoFull = fifo.io.misc.full
+  //val fifoAmountCanPush = fifo.io.misc.amountCanPush
+  //val fifoAmountCanPop = fifo.io.misc.amountCanPop
+  val fifoEmpty = fifo.io.availability === fifoDepth
+  val fifoFull = fifo.io.occupancy === fifoDepth
+  val fifoAmountCanPush = fifo.io.availability
+  val fifoAmountCanPop = fifo.io.occupancy
   
   //fifoPush << push
   fifoPush <-/< push
   //--------
-  val tempCol = Rgb(rgbConfig) addAttribute("keep")
+  //val tempCol = Rgb(rgbConfig) addAttribute("keep")
+  val tempCol = cloneOf(fifoPop.payload) addAttribute("keep")
   tempCol := fifoPop.payload
   val rPastFifoPopReady = Reg(Bool()) init(False)
   rPastFifoPopReady := fifoPop.ready
-  val rTempColBuf = Reg(Rgb(rgbConfig))
+  //val rTempColBuf = Reg(Rgb(rgbConfig))
+  val rTempColBuf = Reg(cloneOf(tempCol))
   rTempColBuf.init(rTempColBuf.getZero)
   //when (rPastFifoPopReady) 
   //when (misc.pixelEn)
@@ -603,9 +605,9 @@ case class LcvVgaCtrl(
   //rPixelEnPipe2 := nextPixelEnPipe2
   //misc.pixelEnPipe2 := rPixelEnPipe2
 
-  //val rPixelEnPipe3 = Reg(Bool()) init(False)
-  // "- 3": with this basic solution, this means there will be a minimum of
-  // a 100 MHz `clk` rate for a 25 MHz pixel clock  
+  ////val rPixelEnPipe3 = Reg(Bool()) init(False)
+  //// "- 3": with this basic solution, this means there will be a minimum of
+  //// a 100 MHz `clk` rate for a 25 MHz pixel clock  
   //val nextPixelEnPipe3 = nextClkCnt === cpp - 3
   //rPixelEnPipe3 := nextClkCnt === cpp - 3 
   //rPixelEnPipe3 := nextPixelEnPipe3
@@ -679,6 +681,11 @@ case class LcvVgaCtrl(
   //  //misc.pixelEnPipe2 && misc.visibPipe2 && !fifoEmpty
   //)
   val rFifoPopReady = Reg(Bool()) init(False)
+  rFifoPopReady := (
+    //misc.pixelEn
+    misc.pixelEnPipe1
+    && misc.visib
+  )
   // BEGIN: pipelined working (?)
   //rFifoPopReady := 
   //fifoPop.ready := (
@@ -911,29 +918,29 @@ case class LcvVgaCtrl(
   when (misc.pixelEn) {
     // Visible area
     when (misc.visib) {
-      //when (~io.en) {
-      //  //m.d.sync += [
-      //    //phys.col.r := (0xf),
-      //    //phys.col.g := (0xf),
-      //    //phys.col.b := (0xf),
-      //  //]
-      //  rPhys.col.r := (default -> True)
-      //  rPhys.col.g := (default -> True)
-      //  rPhys.col.b := (default -> True)
-      //} otherwise { // when (io.en)
+      when (~io.en) {
         //m.d.sync += [
-          //rPhys.col := tempCol
-          //rPhys.col := rTempColBuf
-          rPhys.col.r := (default -> True)
-          //when (hpipe.c === 0x0) {
-          //  rPhys.col.g := 0x0
-          //} otherwise {
-          //  rPhys.col.g := rPhys.col.g + 1
-          //}
-          rPhys.col.g := rPhysColGPipe1
-          rPhys.col.b := 0x0
+          //phys.col.r := (0xf),
+          //phys.col.g := (0xf),
+          //phys.col.b := (0xf),
         //]
-      //}
+        rPhys.col.r := (default -> True)
+        rPhys.col.g := (default -> True)
+        rPhys.col.b := (default -> True)
+      } otherwise { // when (io.en)
+        //m.d.sync += [
+          rPhys.col := tempCol
+          //rPhys.col := rTempColBuf
+          //rPhys.col.r := (default -> True)
+          ////when (hpipe.c === 0x0) {
+          ////  rPhys.col.g := 0x0
+          ////} otherwise {
+          ////  rPhys.col.g := rPhys.col.g + 1
+          ////}
+          //rPhys.col.g := rPhysColGPipe1
+          //rPhys.col.b := 0x0
+        //]
+      }
     // Black border
     } otherwise { // when (~misc.visib)
       //m.d.sync += [
