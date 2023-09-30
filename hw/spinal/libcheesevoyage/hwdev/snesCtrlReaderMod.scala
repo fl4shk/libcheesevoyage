@@ -18,7 +18,7 @@ case class ClkCnt(
   def numClksDouble = scala.math.ceil((clkRate * time).toDouble)
   def numClks = numClksDouble.toInt
   def width = log2Up(numClks + 1)
-  println(f"ClkCnt: $numClksDouble $width")
+  //println(f"ClkCnt: $numClksDouble $width")
 
   val cnt = UInt(width bits)
   val overflowPipe = Bits(overflowPipeSize bits)
