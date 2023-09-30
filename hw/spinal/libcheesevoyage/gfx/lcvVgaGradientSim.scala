@@ -16,7 +16,8 @@ import scala.math._
 object LcvVgaGradientSim extends App {
 
   //def clkRate = 125.0 MHz
-  def clkRate = 50.0 MHz
+  //def clkRate = 50.0 MHz
+  def clkRate = 100.0 MHz
   //def clkRate = 100.7 MHz
   def pixelClk = 25.0 MHz
   //def ctrlFifoDepth = 20
@@ -25,8 +26,8 @@ object LcvVgaGradientSim extends App {
   //def fbSize2d = ElabVec2[Int](640, 480)
   //def fbSize2d = ElabVec2[Int](1, 1)
   //def fbSize2d = ElabVec2[Int](20, 20)
-  //def rgbConfig = RgbConfig(rWidth=6, gWidth=6, bWidth=6)
-  def rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
+  def rgbConfig = RgbConfig(rWidth=6, gWidth=6, bWidth=6)
+  //def rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
   def physRgbConfig = LcvVideoDithererIo.outRgbConfig(rgbConfig=rgbConfig)
   //def vgaTimingInfo = LcvVgaTimingInfoMap.map("640x480@60")
   def vgaTimingInfo=LcvVgaTimingInfo(
@@ -43,7 +44,8 @@ object LcvVgaGradientSim extends App {
       //front=1,
       //sync=1,
       //back=8,
-      visib=1 << 3,
+      //visib=1 << 3,
+      visib=1 << 6,
       front=5,
       sync=5,
       back=5,
