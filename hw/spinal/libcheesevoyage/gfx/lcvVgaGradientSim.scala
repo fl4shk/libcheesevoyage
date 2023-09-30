@@ -231,7 +231,8 @@ object LcvVgaGradientSim extends App {
     //}
   }
   val simSpinalConfig = SpinalConfig(
-    defaultClockDomainFrequency=FixedFrequency(100 MHz)
+    //defaultClockDomainFrequency=FixedFrequency(100 MHz)
+    defaultClockDomainFrequency=FixedFrequency(clkRate)
   )
   SimConfig
     .withConfig(config=simSpinalConfig)
