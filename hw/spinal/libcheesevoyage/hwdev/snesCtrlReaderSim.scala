@@ -15,8 +15,9 @@ object SnesCtrlReaderSim extends App {
   //def clkRate = clkPeriod.toHertz
   val unitTime = 12.0 us
   val unitClkRateDouble = unitTime.toHertz.toDouble
-  val clkRateHz: BigDecimal = 8 / (12.0e-6)
+  val clkRateHz: BigDecimal = 4 / (12.0e-6)
   val clkRate = HertzNumber(clkRateHz)
+  println(clkRate.toDouble)
   //println(clkRate.value)
   case class Dut() extends Component {
     val io = SnesCtrlIo()

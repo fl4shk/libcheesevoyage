@@ -18,7 +18,7 @@ case class ClkCnt(
   def numClksDouble = scala.math.ceil((clkRate * time).toDouble)
   def numClks = numClksDouble.toInt
   def width = log2Up(numClks + 1)
-  //println(f"ClkCnt: $numClksDouble $width")
+  println(f"ClkCnt: $numClksDouble $width")
 
   val cnt = UInt(width bits)
   val overflowPipe = Bits(overflowPipeSize bits)
@@ -200,8 +200,9 @@ case class SnesCtrlReader(
     def clkGenCntNumClks = SnesButtons.rawButtonsWidth * 2
     def clkGenCntWidth = log2Up(clkGenCntNumClks)
     val rClkGenCnt = Reg(UInt(clkGenCntWidth bits)) init(0x0)
-    val rClkGenCntAndUnitCntOverflowPipe1 = Reg(Bool()) init(False)
-    val rClkGenCntOverflowPipe2 = Reg(Bool()) init(False)
+    //val rClkGenCntAndUnitCntOverflowPipe1 = Reg(Bool()) init(False)
+    val rClkGenCntOverflowPipe1 = Reg(Bool()) init(False)
+    //val rClkGenCntOverflowPipe2 = Reg(Bool()) init(False)
 
     // `rClk` is held high outside of generating the clock 
     val rClk = Reg(Bool()) init(True)
@@ -228,8 +229,9 @@ case class SnesCtrlReader(
 
       //rUnitCntOverflowPipe1.addAttribute("MARK_DEBUG", "TRUE")
       rClkGenCnt.addAttribute("MARK_DEBUG", "TRUE")
-      rClkGenCntAndUnitCntOverflowPipe1.addAttribute("MARK_DEBUG", "TRUE")
-      rClkGenCntOverflowPipe2.addAttribute("MARK_DEBUG", "TRUE")
+      //rClkGenCntAndUnitCntOverflowPipe1.addAttribute("MARK_DEBUG", "TRUE")
+      rClkGenCntOverflowPipe1.addAttribute("MARK_DEBUG", "TRUE")
+      //rClkGenCntOverflowPipe2.addAttribute("MARK_DEBUG", "TRUE")
       rClk.addAttribute("MARK_DEBUG", "TRUE")
       rLatch.addAttribute("MARK_DEBUG", "TRUE")
       data.addAttribute("MARK_DEBUG", "TRUE")
@@ -312,34 +314,40 @@ case class SnesCtrlReader(
         //  rUnitCntDoClkGen.overflowPipe(1)
         //  && rClkGenCntOverflowPipe2
         //)
-        when (
-          //rClkGenCntAndUnitCntOverflowPipe1
+        rClkGenCntOverflowPipe1 := (
           rClkGenCnt === (1 << rClkGenCnt.getWidth) - 1
-        ) {
-          //rState := SnesCtrlReaderState.waitPopReady
-          //rState := SnesCtrlReaderState.beforeWaitPopReady
-          rState := SnesCtrlReaderState.waitPopReady
-          rClk := True
-          rPopValid := True
-          rClkGenCnt := 0
-        } otherwise {
-          //when (!rClkGenCnt(0)) {
-          //}
-          rClk := !rClk
-          when (!rClk)
-          //when (rClk)
-          {
-            //rButtons(rClkGenCnt) := data
-            rButtons(rClkGenCnt(rClkGenCnt.high downto 1)) := data
+        )
+        when (rUnitCntDoClkGen.overflowPipe(0)) {
+          when (
+            //rClkGenCntAndUnitCntOverflowPipe1
+            //rClkGenCnt === (1 << rClkGenCnt.getWidth) - 1
+            rClkGenCntOverflowPipe1
+          ) {
+            //rState := SnesCtrlReaderState.waitPopReady
+            //rState := SnesCtrlReaderState.beforeWaitPopReady
+            rState := SnesCtrlReaderState.waitPopReady
+            rClk := True
+            rPopValid := True
+            rClkGenCnt := 0
+          } otherwise {
+            //when (!rClkGenCnt(0)) {
+            //}
+            rClk := !rClk
+            when (!rClk)
+            //when (rClk)
+            {
+              //rButtons(rClkGenCnt) := data
+              rButtons(rClkGenCnt(rClkGenCnt.high downto 1)) := data
+            }
+            rClkGenCnt := rClkGenCnt + 1
+            //incrCnt(
+            //  someCnt=rClkGenCnt,
+            //  someCntOverflowPipe1=rClkGenCntOverflowPipe1,
+            //  someCntNumClks=SnesButtons.rawButtonsWidth
+            //)
+            //rState := SnesCtrlReaderState.waitPopReady
+            //rPopValid := True
           }
-          rClkGenCnt := rClkGenCnt + 1
-          //incrCnt(
-          //  someCnt=rClkGenCnt,
-          //  someCntOverflowPipe1=rClkGenCntOverflowPipe1,
-          //  someCntNumClks=SnesButtons.rawButtonsWidth
-          //)
-          //rState := SnesCtrlReaderState.waitPopReady
-          //rPopValid := True
         }
       }
     }
