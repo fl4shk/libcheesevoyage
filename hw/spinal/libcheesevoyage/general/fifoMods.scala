@@ -847,7 +847,9 @@ case class AsyncReadFifo[
   //val sbPushBusy = sbPush.io.busy
   //val sbPopBusy = sbPop.io.busy
   sbPush.io.misc.busy := misc.full
+  sbPush.io.misc.clear := False
   sbPop.io.misc.busy := misc.empty
+  sbPop.io.misc.clear := False
 
   push >> sbPush.io.prev
   //sbPush.io.prev.payload := push.payload

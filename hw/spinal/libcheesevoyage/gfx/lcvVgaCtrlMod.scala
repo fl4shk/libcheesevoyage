@@ -496,37 +496,42 @@ case class LcvVgaCtrl(
     vgaTimingInfo=vgaTimingInfo
   )
   //--------
-  //val fifo = AsyncReadFifo
-  //val fifo = Fifo(
-  //  dataType=Rgb(rgbConfig),
-  //  depth=fifoDepth,
-  //  arrRamStyle="auto"
-  //)
-  val fifo = StreamFifo(
+  //val fifo = Fifo
+  val fifo = AsyncReadFifo(
     dataType=Rgb(rgbConfig),
     depth=fifoDepth,
-    latency=2,
-    //latency=1,
-    //latency=0,
-    forFMax=true,
+    arrRamStyle="auto"
   )
+  //val fifo = StreamFifo(
+  //  dataType=Rgb(rgbConfig),
+  //  depth=fifoDepth,
+  //  latency=2,
+  //  //latency=1,
+  //  //latency=0,
+  //  forFMax=true,
+  //)
   val fifoPush = fifo.io.push
   val fifoPop = fifo.io.pop
-  //val fifoEmpty = fifo.io.misc.empty
-  //val fifoFull = fifo.io.misc.full
-  //val fifoAmountCanPush = fifo.io.misc.amountCanPush
-  //val fifoAmountCanPop = fifo.io.misc.amountCanPop
-  val fifoEmpty = fifo.io.availability === fifoDepth
-  val fifoFull = fifo.io.occupancy === fifoDepth
-  val fifoAmountCanPush = fifo.io.availability
-  val fifoAmountCanPop = fifo.io.occupancy
+  val fifoEmpty = fifo.io.misc.empty
+  val fifoFull = fifo.io.misc.full
+  val fifoAmountCanPush = fifo.io.misc.amountCanPush
+  val fifoAmountCanPop = fifo.io.misc.amountCanPop
+  //val fifoEmpty = fifo.io.availability === fifoDepth
+  //val fifoFull = fifo.io.occupancy === fifoDepth
+  //val fifoAmountCanPush = fifo.io.availability
+  //val fifoAmountCanPop = fifo.io.occupancy
   
-  //fifoPush << push
-  fifoPush <-/< push
+  //val tempFifoPush = fifoPush.haltWhen(fifoAmountCanPush <= 1)
+  //tempFifoPush << push
+  //val tempPush = push.haltWhen(fifoAmountCanPush <= 1)
+  //fifoPush << tempPush
+  fifoPush << push
+  //fifoPush <-/< push
   //--------
   //val tempCol = Rgb(rgbConfig) addAttribute("keep")
-  val tempCol = cloneOf(fifoPop.payload) addAttribute("keep")
-  tempCol := fifoPop.payload
+  ////val tempCol = cloneOf(fifoPop.payload) addAttribute("keep")
+  //tempCol := fifoPop.payload
+  val tempCol = fifoPop.payload
   val rPastFifoPopReady = Reg(Bool()) init(False)
   rPastFifoPopReady := fifoPop.ready
   //val rTempColBuf = Reg(Rgb(rgbConfig))
@@ -537,7 +542,8 @@ case class LcvVgaCtrl(
   //when (misc.pixelEnPipe1) 
   //when (fifoPop.fire) 
   //when (misc.pixelEnPipe1)
-  when (misc.pixelEn) {
+  //when (misc.pixelEn) 
+  when (fifoPop.ready) {
     rTempColBuf := tempCol
   }
   //--------
@@ -661,7 +667,8 @@ case class LcvVgaCtrl(
   //fifoPop.ready := misc.pixelEnPipe1 & misc.visibPipe1 & ~rPastFifoPopReady
   //fifoPop.ready := misc.pixelEnPipe1 & misc.visibPipe1 & ~rPastFifoPopReady
   //fifoPop.ready := misc.pixelEnPipe1 & misc.visibPipe1
-  //val rFifoPopReady = Reg(Bool()) init(False)
+  val rFifoPopReady = Reg(Bool()) init(False)
+  //val rFifoPopReady = Reg(Bool()) init(True)
 
   //fifoPop.ready := (
   //  //pixelEnNextCycle
@@ -680,21 +687,60 @@ case class LcvVgaCtrl(
   //  misc.pixelEnPipe1 && misc.visibPipe1 && !fifoEmpty
   //  //misc.pixelEnPipe2 && misc.visibPipe2 && !fifoEmpty
   //)
-  val rFifoPopReady = Reg(Bool()) init(False)
-  rFifoPopReady := (
-    //misc.pixelEn
-    misc.pixelEnPipe1
-    && misc.visib
-  )
+  //val rFifoPopReady = Reg(Bool()) init(False)
+  //rFifoPopReady := (
+  //  //misc.pixelEn
+  //  misc.pixelEnPipe1
+  //  && misc.visib
+  //  && !fifoEmpty
+  //)
   // BEGIN: pipelined working (?)
   //rFifoPopReady := 
+
+  //fifoPop.ready :=
+
   //fifoPop.ready := (
   //  //misc.pixelEnPipe2 && misc.visibPipe2 && !fifoEmpty
   //  //misc.pixelEnPipe3 && misc.visibPipe3 && !fifoEmpty
   //  //hpipe.visibToDrive
   //  //misc.pixelEnPipe1 && misc.visibPipe1 && !fifoEmpty
-  //  misc.pixelEn && misc.visib && !fifoEmpty
+  //  //misc.pixelEn && misc.visib && !fifoEmpty
+  //  //misc.pixelEnPipe1 && misc.visib && !fifoEmpty
+  //  //misc.pixelEnPipe1
+  //  //(nextClkCnt === cpp - 3) && misc.visib && !fifoEmpty
+  //  //rPastPixelEn &&
+  //  misc.visib && !fifoEmpty
   //)
+
+  //when (misc.pixelEnPipe1 && misc.visib && !fifoEmpty) {
+  //  rFifoPopReady := True
+  //}
+  //when (fifoPop.fire) {
+  //  //fifoPop.ready := 
+  //  rFifoPopReady := False
+  //}
+
+  when (
+    fifoPop.valid
+    && misc.pixelEnPipe1
+    //&& rPastPixelEn
+    //&& misc.pixelEn
+    && misc.visib
+    //&& !fifoEmpty
+  ) {
+    rFifoPopReady := True
+  } otherwise {
+    rFifoPopReady := False
+  }
+  //fifoPop.ready := rFifoPopReady
+  //fifoPop.ready := (
+  //  //misc.pixelEnPipe1
+  //  misc.pixelEn
+  //  && misc.visib
+  //  && !fifoEmpty
+  //)
+
+  //fifoPop.ready := True
   fifoPop.ready := rFifoPopReady
   //fifoPop.ready := 
   //rFifoPopReady := (
@@ -929,8 +975,8 @@ case class LcvVgaCtrl(
         rPhys.col.b := (default -> True)
       } otherwise { // when (io.en)
         //m.d.sync += [
-          rPhys.col := tempCol
-          //rPhys.col := rTempColBuf
+          //rPhys.col := tempCol
+          rPhys.col := rTempColBuf
           //rPhys.col.r := (default -> True)
           ////when (hpipe.c === 0x0) {
           ////  rPhys.col.g := 0x0
