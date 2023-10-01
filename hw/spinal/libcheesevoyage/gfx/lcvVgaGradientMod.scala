@@ -173,13 +173,13 @@ case class LcvVgaGradient(
   when (clockDomain.isResetActive) {
     resetDithCol()
   } otherwise {
-    //when (dithIo.pop.fire)
+    when (dithIo.push.fire) {
       when (dithIo.info.changingScanline) {
         resetDithCol()
       } otherwise {
         incrDithCol()
       }
-    //}
+    }
   }
   //when (ctrlIo.push.fire) {
   //  incrDbgPhysCol()
