@@ -525,8 +525,8 @@ case class LcvVgaCtrl(
   //tempFifoPush << push
   //val tempPush = push.haltWhen(fifoAmountCanPush <= 1)
   //fifoPush << tempPush
-  fifoPush << push
-  //fifoPush <-/< push
+  //fifoPush << push
+  fifoPush <-/< push
   //--------
   //val tempCol = Rgb(rgbConfig) addAttribute("keep")
   ////val tempCol = cloneOf(fifoPop.payload) addAttribute("keep")

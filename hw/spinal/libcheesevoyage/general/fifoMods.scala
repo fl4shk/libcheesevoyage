@@ -830,6 +830,9 @@ case class AsyncReadFifo[
   def ptrWidth = io.ptrWidth
   def amountWidth = io.amountWidth
   //--------
+  //val dbgPushBusy = KeepAttribute(Bool())
+  //val dbgPopBusy = KeepAttribute(Bool())
+
   val sbPush = PipeSkidBuf(
     dataType=dataType(),
     optIncludeBusy=true,
@@ -847,8 +850,10 @@ case class AsyncReadFifo[
   //val sbPushBusy = sbPush.io.busy
   //val sbPopBusy = sbPop.io.busy
   sbPush.io.misc.busy := misc.full
+  //sbPush.io.misc.busy := dbgPushBusy
   sbPush.io.misc.clear := False
   sbPop.io.misc.busy := misc.empty
+  //sbPop.io.misc.busy := dbgPopBusy
   sbPop.io.misc.clear := False
 
   push >> sbPush.io.prev
@@ -945,40 +950,43 @@ case class AsyncReadFifo[
 
     //val nextEmpty = Bool()
     //val nextFull = Bool()
-    case class NextEmptyFull(
-      tempNextEmpty: Bool,
-      tempNextFull: Bool,
-    ) {
-    }
-    val nextEmptyFull = NextEmptyFull(
-      //tempNextEmpty=Mux[Bool](
-      //  incrNextHead === nextTail,
-      //  False,
-      //  Mux(
-      //    nextHead === nextTail,
-      //    True,
-      //    False,
-      //  )
-      //),
-      //tempNextFull=Mux[Bool](
-      //  incrNextHead === nextTail,
-      //  True,
-      //  Mux(
-      //    nextHead === nextTail,
-      //    False,
-      //    False,
-      //  )
-      //)
-      tempNextEmpty=(
-        (incrNextHead =/= nextTail)
-        & (nextHead === nextTail)
-      ),
-      tempNextFull=(
-        (incrNextHead === nextTail)
-      )
-    )
-    val nextEmpty = nextEmptyFull.tempNextEmpty
-    val nextFull = nextEmptyFull.tempNextFull
+    //case class NextEmptyFull(
+    //  tempNextEmpty: Bool,
+    //  tempNextFull: Bool,
+    //) {
+    //}
+    //val nextEmptyFull = NextEmptyFull(
+    //  //tempNextEmpty=Mux[Bool](
+    //  //  incrNextHead === nextTail,
+    //  //  False,
+    //  //  Mux(
+    //  //    nextHead === nextTail,
+    //  //    True,
+    //  //    False,
+    //  //  )
+    //  //),
+    //  //tempNextFull=Mux[Bool](
+    //  //  incrNextHead === nextTail,
+    //  //  True,
+    //  //  Mux(
+    //  //    nextHead === nextTail,
+    //  //    False,
+    //  //    False,
+    //  //  )
+    //  //)
+    //  tempNextEmpty=(
+    //    (incrNextHead =/= nextTail)
+    //    & (nextHead === nextTail)
+    //  ),
+    //  tempNextFull=(
+    //    (incrNextHead === nextTail)
+    //  )
+    //)
+    //val nextEmpty = nextEmptyFull.tempNextEmpty
+    //val nextFull = nextEmptyFull.tempNextFull
+
+    //dbgPushBusy := nextFull
+    //dbgPopBusy := nextEmpty
     //when (loc.incrNextHead === loc.nextTail) {
     //  //m.d.comb += [
     //  loc.nextEmpty := False
@@ -1025,6 +1033,10 @@ case class AsyncReadFifo[
     //misc.amountCanPop := rAmountCanPop
     misc.amountCanPush := nextAmountCanPush
     misc.amountCanPop := nextAmountCanPop
+    val nextEmpty = Bool()
+    val nextFull = Bool()
+    nextEmpty := nextAmountCanPop === 0
+    nextFull := nextAmountCanPush === 0
   }
   val locFormal = new Area {
     val lastTailVal = Reg(dataType()) init(dataType().getZero)
