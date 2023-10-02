@@ -721,11 +721,13 @@ case class LcvVgaCtrl(
   //}
 
   when (
-    fifoPop.valid
-    && misc.pixelEnPipe1
+    //fifoPop.valid
+    //&& 
+    misc.pixelEnPipe1
     //&& rPastPixelEn
     //&& misc.pixelEn
-    && misc.visib
+    //&& misc.visib
+    && hpipe.rVisibPipe1 && vpipe.rVisib
     //&& !fifoEmpty
   ) {
     rFifoPopReady := True

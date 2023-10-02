@@ -170,10 +170,15 @@ case class LcvVgaGradient(
     rDithCol.g := rDithCol.g + 1
     rDithCol.b := 0x0
   }
+  val rPastDithPopFire = Reg(Bool())
+  rPastDithPopFire := dithIo.pop.fire
   when (clockDomain.isResetActive) {
     resetDithCol()
   } otherwise {
-    when (dithIo.push.fire) {
+    when (
+      //dithIo.push.fire
+      rPastDithPopFire
+    ) {
       when (dithIo.info.changingScanline) {
         resetDithCol()
       } otherwise {
