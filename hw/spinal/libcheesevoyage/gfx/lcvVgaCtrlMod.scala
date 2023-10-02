@@ -500,7 +500,8 @@ case class LcvVgaCtrl(
   val fifo = AsyncReadFifo(
     dataType=Rgb(rgbConfig),
     depth=fifoDepth,
-    arrRamStyle="auto"
+    //arrRamStyle="auto"
+    arrRamStyle="block",
   )
   //val fifo = StreamFifo(
   //  dataType=Rgb(rgbConfig),

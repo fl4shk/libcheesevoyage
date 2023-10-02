@@ -1163,7 +1163,6 @@ case class AsyncReadFifo[
   //otherwise // when(~clockDomain.isResetActive):
   when (~clockDomain.isResetActive) {
     //--------
-
     // Write into the FIFO
     when ((~misc.full) & wrEn) {
       //m.d.sync += 
