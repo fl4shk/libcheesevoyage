@@ -176,10 +176,14 @@ case class LcvVgaGradient(
     resetDithCol()
   } otherwise {
     when (
-      //dithIo.push.fire
-      rPastDithPopFire
+      dithIo.push.fire
+      //rPastDithPopFire
     ) {
-      when (dithIo.info.changingScanline) {
+      when (
+        //dithIo.info.changingScanline
+        //dithIo.info.pos === fbSize2d.x - 1
+        dithIo.info.posPlus1Overflow.x
+      ) {
         resetDithCol()
       } otherwise {
         incrDithCol()
