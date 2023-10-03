@@ -15,6 +15,8 @@ object PipelineModsFormal extends App {
   //val optIncludeValidBusy = false
   //val optIncludeReadyBusy = false
   val optIncludeBusy = false
+  //val optIncludeNextBusy = false
+  //val optIncludePrevBusy = false
   //val optTieIfwdValid = false
   val optPassthrough = false
   val optFormal = true
@@ -35,6 +37,8 @@ object PipelineModsFormal extends App {
         //optIncludeValidBusy=optIncludeValidBusy,
         //optIncludeReadyBusy=optIncludeReadyBusy,
         optIncludeBusy=optIncludeBusy,
+        //optIncludeNextBusy=optIncludeNextBusy,
+        //optIncludePrevBusy=optIncludePrevBusy,
         //optTieIfwdValid=optTieIfwdValid,
         optPassthrough=optPassthrough,
       ))

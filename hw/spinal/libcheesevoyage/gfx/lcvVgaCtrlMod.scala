@@ -526,25 +526,37 @@ case class LcvVgaCtrl(
   //tempFifoPush << push
   //val tempPush = push.haltWhen(fifoAmountCanPush <= 1)
   //fifoPush << tempPush
-  //fifoPush << push
-  fifoPush <-/< push
+
+  fifoPush << push
+
+  //fifoPush <-/< push
+
+  //fifoPush.valid := push.valid
+  //push.ready := fifoPush.ready
+  //push.ready := fifo.amountCanPush > 0
   //--------
   //val tempCol = Rgb(rgbConfig) addAttribute("keep")
   ////val tempCol = cloneOf(fifoPop.payload) addAttribute("keep")
   //tempCol := fifoPop.payload
   val tempCol = fifoPop.payload
+  //val rPastFifoPopFire = Reg(Bool()) init(False)
+  //rPastFifoPopFire := fifoPop.fire
   val rPastFifoPopReady = Reg(Bool()) init(False)
   rPastFifoPopReady := fifoPop.ready
   //val rTempColBuf = Reg(Rgb(rgbConfig))
   val rTempColBuf = Reg(cloneOf(tempCol))
   rTempColBuf.init(rTempColBuf.getZero)
-  //when (rPastFifoPopReady) 
+  when (
+    //rPastFifoPopFire
+    //fifoPop.valid
+    rPastFifoPopReady
+  ) {
   //when (misc.pixelEn)
   //when (misc.pixelEnPipe1) 
   //when (fifoPop.fire) 
   //when (misc.pixelEnPipe1)
   //when (misc.pixelEn) 
-  when (fifoPop.ready) {
+  //when (fifoPop.fire)
     rTempColBuf := tempCol
   }
   //--------
@@ -731,9 +743,11 @@ case class LcvVgaCtrl(
     && hpipe.rVisibPipe1 && vpipe.rVisib
     //&& !fifoEmpty
   ) {
-    rFifoPopReady := True
+    //rFifoPopReady := True
+    fifoPop.ready := True
   } otherwise {
-    rFifoPopReady := False
+    //rFifoPopReady := False
+    fifoPop.ready := False
   }
   //fifoPop.ready := rFifoPopReady
   //fifoPop.ready := (
@@ -744,7 +758,7 @@ case class LcvVgaCtrl(
   //)
 
   //fifoPop.ready := True
-  fifoPop.ready := rFifoPopReady
+  //fifoPop.ready := rFifoPopReady
   //fifoPop.ready := 
   //rFifoPopReady := (
   //  misc.pixelEnPipe2
@@ -978,8 +992,8 @@ case class LcvVgaCtrl(
         rPhys.col.b := (default -> True)
       } otherwise { // when (io.en)
         //m.d.sync += [
-          //rPhys.col := tempCol
-          rPhys.col := rTempColBuf
+          rPhys.col := tempCol
+          //rPhys.col := rTempColBuf
           //rPhys.col.r := (default -> True)
           ////when (hpipe.c === 0x0) {
           ////  rPhys.col.g := 0x0

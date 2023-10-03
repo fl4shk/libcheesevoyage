@@ -133,16 +133,20 @@ case class LcvVgaGradient(
 
   //ctrlIo.push.payload := dithIo.outp.col
 
+  // BEGIN: final form
   ctrlIo.push.valid := dithIo.pop.valid
   ctrlIo.push.payload := dithIo.pop.payload.col
   dithIo.pop.ready := ctrlIo.push.ready
+  // END: final form
   ////--------
+  // BEGIN: debug
   //val rCtrlPushValid = Reg(Bool()) init(False)
   //ctrlIo.push.valid := rCtrlPushValid
-  //ctrlIo.push.valid := True
+  ////ctrlIo.push.valid := True
   //val rDbgPhysCol = Reg(Rgb(io.outRgbConfig))
   //rDbgPhysCol.init(rDbgPhysCol.getZero)
   //ctrlIo.push.payload := rDbgPhysCol
+  //// END: debug
   ////--------
   // Gradient
   def cpp = LcvVgaCtrl.cpp(
@@ -172,27 +176,46 @@ case class LcvVgaGradient(
   }
   val rPastDithPopFire = Reg(Bool())
   rPastDithPopFire := dithIo.pop.fire
+  //when (clockDomain.isResetActive) {
+  //  resetDithCol()
+  //} otherwise {
+  //  when (
+  //    dithIo.push.fire
+  //    //rPastDithPopFire
+  //  ) {
+  //    when (
+  //      //dithIo.info.changingScanline
+  //      //dithIo.info.pos.x === fbSize2d.x - 1
+  //      dithIo.info.posPlus1Overflow.x
+  //    ) {
+  //      resetDithCol()
+  //    } otherwise {
+  //      incrDithCol()
+  //    }
+  //  }
+  //}
   when (clockDomain.isResetActive) {
     resetDithCol()
   } otherwise {
-    when (
-      dithIo.push.fire
-      //rPastDithPopFire
-    ) {
-      when (
-        //dithIo.info.changingScanline
-        //dithIo.info.pos === fbSize2d.x - 1
-        dithIo.info.posPlus1Overflow.x
-      ) {
+    when (dithIo.push.fire) {
+      when (dithIo.info.posPlus1Overflow.x) {
         resetDithCol()
       } otherwise {
         incrDithCol()
       }
     }
   }
-  //when (ctrlIo.push.fire) {
-  //  incrDbgPhysCol()
+
+  // BEGIN: debug
+  //when (clockDomain.isResetActive) {
+  //  resetDbgPhysCol()
+  //} otherwise {
+  //  rCtrlPushValid := True
+  //  when (ctrlIo.push.fire) {
+  //    incrDbgPhysCol()
+  //  }
   //}
+  // END: debug
   //val rPos = Reg(dithIo.pop.payload.coordT())
   //val rNextPos = dithIo.pop.payload.coordT())
   //when (dithIo.push.fire) 

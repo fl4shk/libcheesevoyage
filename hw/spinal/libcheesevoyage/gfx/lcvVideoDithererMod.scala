@@ -274,8 +274,12 @@ case class LcvVideoDitherer(
   //--------
   val skidBuf = PipeSkidBuf(
     dataType=LcvVideoDithererPopPayload(rgbConfig=rgbConfig),
-    optIncludeBusy=true,
+    optIncludeBusy=false,
+    //optIncludeNextBusy=false,
+    //optIncludePrevBusy=false,
     optPassthrough=false,
+    //optUseOldCode=false,
+    optUseOldCode=true,
   )
   val sbIo = skidBuf.io
   //val sbIoPrev = sbIo.prev
@@ -447,21 +451,30 @@ case class LcvVideoDitherer(
       //rInfo.posPlus1 := rInfo.posPlus2
       //rInfo.posPlus1.x := tempOutp.pos.x + 1
       //rInfo.posPlus1.y := tempOutp.pos.y + 1
-      rPosPlus1Overflow.x := info.nextPos.x === fbSize2d.x - 1
-      rPosPlus1Overflow.y := info.nextPos.y === fbSize2d.y - 1
+
+      //rPosPlus1Overflow.x := info.nextPos.x === fbSize2d.x - 1
+      //rPosPlus1Overflow.y := info.nextPos.y === fbSize2d.y - 1
+      //rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
+      //rPosPlus
+
       //when (info.pos.x =/= fbSize2d.x - 1) 
       when (!rPosPlus1Overflow.x) {
         info.nextPos.x := info.pos.x + 1
         info.nextPos.y := info.pos.y
+        rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
+        rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
         rChangingScanline := False
       } otherwise {
         info.nextPos.x := 0
+        rPosPlus1Overflow.x := False
         rChangingScanline := True
         //when (info.pos.y =/= fbSize2d.y - 1)
         when (!rPosPlus1Overflow.y) {
           info.nextPos.y := info.pos.y + 1
+          rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
         } otherwise {
           info.nextPos.y := 0x0
+          rPosPlus1Overflow.y := False
         }
       }
       rFrameCnt := rFrameCnt + 0x1

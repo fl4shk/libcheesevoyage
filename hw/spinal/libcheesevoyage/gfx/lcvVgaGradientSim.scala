@@ -21,9 +21,9 @@ object LcvVgaGradientSim extends App {
   //def clkRate = 100.7 MHz
   def pixelClk = 25.0 MHz
   //def ctrlFifoDepth = 20
-  //def ctrlFifoDepth = 16
+  def ctrlFifoDepth = 16
   //def ctrlFifoDepth = 100
-  def ctrlFifoDepth = 128
+  //def ctrlFifoDepth = 128
   //def fbSize2d = ElabVec2[Int](640, 480)
   //def fbSize2d = ElabVec2[Int](1, 1)
   //def fbSize2d = ElabVec2[Int](20, 20)
