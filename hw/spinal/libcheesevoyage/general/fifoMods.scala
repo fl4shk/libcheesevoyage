@@ -1028,6 +1028,8 @@ case class AsyncReadFifo[
       //headEqPastPlus1ModDepth := (
       //  loc.rHead === (pastHeadPlus1 % uintDepthAmtW).resized
       //)
+      assert(loc.rHead < uintDepthAmtW)
+      assert(loc.rTail < uintDepthAmtW)
 
       val rFormalPastRdData = Reg(dataType())
       rFormalPastRdData.init(rFormalPastRdData.getZero)
