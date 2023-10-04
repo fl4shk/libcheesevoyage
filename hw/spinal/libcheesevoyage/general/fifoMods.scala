@@ -935,10 +935,10 @@ case class AsyncReadFifo[
     val rEmpty = KeepAttribute(RegNext(nextEmpty)) init(True)
     val nextFull = KeepAttribute(Bool())
     val rFull = KeepAttribute(RegNext(nextFull)) init(False)
-    val nextNotEmpty = KeepAttribute(Bool())
-    val rNotEmpty = KeepAttribute(RegNext(nextNotEmpty)) init(False)
-    val nextNotFull = KeepAttribute(Bool())
-    val rNotFull = KeepAttribute(RegNext(nextNotFull)) init(True)
+    //val nextNotEmpty = KeepAttribute(Bool())
+    //val rNotEmpty = KeepAttribute(RegNext(nextNotEmpty)) init(False)
+    //val nextNotFull = KeepAttribute(Bool())
+    //val rNotFull = KeepAttribute(RegNext(nextNotFull)) init(True)
 
     val nextAmountCanPush = UInt(amountWidth bits)
     val rAmountCanPush = KeepAttribute(RegNext(nextAmountCanPush))
@@ -954,15 +954,19 @@ case class AsyncReadFifo[
       someAmountCanPop=nextAmountCanPop,
     )
 
+    ////val rHead2 = KeepAttribute(RegNext(nextHead)) init(0x0)
+    ////val rTail2 = KeepAttribute(RegNext(nextTail)) init(0x0)
+
     nextEmpty := nextHead === nextTail
     //nextFull := nextAmountCanPop === 0
     //nextFull := nextAmountCanPop === uintDepthMinus1AmtW
 
     nextFull := nextAmountCanPush === 0
+
     //nextFull := rAmountCanPush === 0
 
-    nextNotEmpty := !nextEmpty
-    nextNotFull := !nextFull
+    //nextNotEmpty := !nextEmpty
+    //nextNotFull := !nextFull
     //nextNotEmpty := nextHead =/= nextTail
     //nextNotFull := nextAmountCanPush =/= 0
     //nextNotEmpty := rHead =/= rTail
@@ -970,12 +974,13 @@ case class AsyncReadFifo[
   }
   //--------
   //push.ready := !misc.full
-  //push.ready := !loc.nextFull
+  push.ready := !loc.nextFull
   //pop.valid := !misc.empty
+  pop.valid := !loc.nextEmpty
   //push.ready := loc.rNotFull
   //pop.valid := loc.rNotEmpty
-  push.ready := loc.nextNotFull
-  pop.valid := loc.nextNotEmpty
+  //push.ready := loc.nextNotFull
+  //pop.valid := loc.nextNotEmpty
   misc.empty := loc.rEmpty
   misc.full := loc.rFull
   misc.amountCanPush := loc.rAmountCanPush
