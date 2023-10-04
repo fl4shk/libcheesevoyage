@@ -19,8 +19,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math._
 
 object LcvVgaState extends SpinalEnum(
-  //defaultEncoding=binarySequential
-  defaultEncoding=binaryOneHot
+  defaultEncoding=binarySequential
+  //defaultEncoding=binaryOneHot
 ) {
   val
     front,

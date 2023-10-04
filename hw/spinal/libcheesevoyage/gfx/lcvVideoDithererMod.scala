@@ -454,7 +454,8 @@ case class LcvVideoDitherer(
   info.changingScanline := rChangingScanline
 
   object State extends SpinalEnum(
-    defaultEncoding=binaryOneHot
+    defaultEncoding=binarySequential
+    //defaultEncoding=binaryOneHot
   ) {
     val 
       //waitForPsbNextFire,
@@ -561,27 +562,57 @@ case class LcvVideoDitherer(
       //  //  rState := State.posXPlus1OverflowCheck
       //  //}
       //}
-
-      // BEGIN: working code with lower FMax
-      when (!rPosPlus1Overflow.x) {
-        info.nextPos.x := info.pos.x + 1
-        info.nextPos.y := info.pos.y
-        rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
-        //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
-        rChangingScanline := False
-      } otherwise {
-        info.nextPos.x := 0
-        rPosPlus1Overflow.x := False
-        rChangingScanline := True
-        //when (info.pos.y =/= fbSize2d.y - 1)
-        when (!rPosPlus1Overflow.y) {
+      val concatPosPlus1Overflow = Bits(2 bits)
+      concatPosPlus1Overflow(0) := rPosPlus1Overflow.x
+      concatPosPlus1Overflow(1) := rPosPlus1Overflow.y
+      switch (concatPosPlus1Overflow) {
+        // overflowX=0, overflowY=don't care
+        //is (B"-0") 
+        is(B"00", B"10") {
+          info.nextPos.x := info.pos.x + 1
+          info.nextPos.y := info.pos.y
+          rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
+          //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
+          rChangingScanline := False
+        }
+        // overflowX=1, overflowY=0
+        is (B"01") {
+          info.nextPos.x := 0
+          rPosPlus1Overflow.x := False
+          rChangingScanline := True
           info.nextPos.y := info.pos.y + 1
           rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
-        } otherwise {
+        }
+        // overflowX=1, overflowY=1
+        is (B"11") {
+          info.nextPos.x := 0
+          rPosPlus1Overflow.x := False
+          rChangingScanline := True
           info.nextPos.y := 0x0
           rPosPlus1Overflow.y := False
         }
       }
+
+      // BEGIN: working code with lower FMax
+      //when (!rPosPlus1Overflow.x) {
+      //  info.nextPos.x := info.pos.x + 1
+      //  info.nextPos.y := info.pos.y
+      //  rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
+      //  //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
+      //  rChangingScanline := False
+      //} otherwise {
+      //  info.nextPos.x := 0
+      //  rPosPlus1Overflow.x := False
+      //  rChangingScanline := True
+      //  //when (info.pos.y =/= fbSize2d.y - 1)
+      //  when (!rPosPlus1Overflow.y) {
+      //    info.nextPos.y := info.pos.y + 1
+      //    rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
+      //  } otherwise {
+      //    info.nextPos.y := 0x0
+      //    rPosPlus1Overflow.y := False
+      //  }
+      //}
       // END: working code with lower FMax 
       //--------
       rFrameCnt := rFrameCnt + 0x1
