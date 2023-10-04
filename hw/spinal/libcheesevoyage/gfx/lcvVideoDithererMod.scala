@@ -500,10 +500,10 @@ case class LcvVideoDitherer(
     //rPosPlus1.x := info.pos.x + 1
     //rPosPlus1.y := info.pos.y + 1
 
-    //rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
-    ////rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
+    rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
+    //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
+    rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
     //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
-    ////rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
     when (sbIo.next.fire) {
       //rInfo.posPlus1 := rInfo.posPlus2
       //rInfo.posPlus1.x := tempOutp.pos.x + 1
@@ -515,73 +515,73 @@ case class LcvVideoDitherer(
       //rPosPlus
 
       //when (info.pos.x =/= fbSize2d.x - 1) 
-      //switch (rState) {
-      //  is (State.posXPlus1OverflowCheck) {
-      //    info.nextPos.x := info.pos.x + 1
-      //    //info.nextPos.x := rPosPlus1.x
-      //    info.nextPos.y := info.pos.y
-      //    rChangingScanline := False
-      //    when (
-      //      //info.pos.x === fbSize2d.x - 1
-      //      //rPosPlus1Overflow.x && rPosPlus1Overflow.y
-      //      rPosPlus1Overflow.x
-      //    ) {
-      //      rState := State.posYPlus1OverflowCheck
-      //      //when (!rPosPlus1Overflow.y) {
-      //      //  rState := State.notPosXPlus1Overflow
-      //      //} otherwise {
-      //      //  rState := State.posYPlus1Overflow
-      //      //}
-      //    }
-      //  }
-      //  is (State.posYPlus1OverflowCheck) {
-      //    info.nextPos.x := 0
-      //    //info.nextPos.y := info.pos.y
-      //    rChangingScanline := True
-      //    when (!rPosPlus1Overflow.y) {
-      //      //rState := State.notPosYPlus1Overflow
-      //      info.nextPos.y := info.pos.y + 1
-      //      //info.nextPos.y := rPosPlus1.y
-      //    } otherwise {
-      //      //rState := State.posYPlus1Overflow
-      //      info.nextPos.y := 0
-      //    }
-      //    rState := State.posXPlus1OverflowCheck
-      //  }
-      //  //is (State.notPosYPlus1Overflow) {
-      //  //  //rChangingScanline := True
-      //  //  info.nextPos.x := info.pos.x
-      //  //  info.nextPos.y := info.pos.y + 1
-      //  //  rState := State.posXPlus1OverflowCheck
-      //  //}
-      //  //is (State.posYPlus1Overflow) {
-      //  //  //rChangingScanline := True
-      //  //  info.nextPos.x := info.pos.x
-      //  //  info.nextPos.y := 0
-      //  //  rState := State.posXPlus1OverflowCheck
-      //  //}
-      //}
+      switch (rState) {
+        is (State.posXPlus1OverflowCheck) {
+          info.nextPos.x := info.pos.x + 1
+          //info.nextPos.x := rPosPlus1.x
+          info.nextPos.y := info.pos.y
+          rChangingScanline := False
+          when (
+            //info.pos.x === fbSize2d.x - 1
+            //rPosPlus1Overflow.x && rPosPlus1Overflow.y
+            rPosPlus1Overflow.x
+          ) {
+            rState := State.posYPlus1OverflowCheck
+            //when (!rPosPlus1Overflow.y) {
+            //  rState := State.notPosXPlus1Overflow
+            //} otherwise {
+            //  rState := State.posYPlus1Overflow
+            //}
+          }
+        }
+        is (State.posYPlus1OverflowCheck) {
+          info.nextPos.x := 0
+          //info.nextPos.y := info.pos.y
+          rChangingScanline := True
+          when (!rPosPlus1Overflow.y) {
+            //rState := State.notPosYPlus1Overflow
+            info.nextPos.y := info.pos.y + 1
+            //info.nextPos.y := rPosPlus1.y
+          } otherwise {
+            //rState := State.posYPlus1Overflow
+            info.nextPos.y := 0
+          }
+          rState := State.posXPlus1OverflowCheck
+        }
+        //is (State.notPosYPlus1Overflow) {
+        //  //rChangingScanline := True
+        //  info.nextPos.x := info.pos.x
+        //  info.nextPos.y := info.pos.y + 1
+        //  rState := State.posXPlus1OverflowCheck
+        //}
+        //is (State.posYPlus1Overflow) {
+        //  //rChangingScanline := True
+        //  info.nextPos.x := info.pos.x
+        //  info.nextPos.y := 0
+        //  rState := State.posXPlus1OverflowCheck
+        //}
+      }
 
       // BEGIN: working code with lower FMax
-      when (!rPosPlus1Overflow.x) {
-        info.nextPos.x := info.pos.x + 1
-        info.nextPos.y := info.pos.y
-        rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
-        //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
-        rChangingScanline := False
-      } otherwise {
-        info.nextPos.x := 0
-        rPosPlus1Overflow.x := False
-        rChangingScanline := True
-        //when (info.pos.y =/= fbSize2d.y - 1)
-        when (!rPosPlus1Overflow.y) {
-          info.nextPos.y := info.pos.y + 1
-          rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
-        } otherwise {
-          info.nextPos.y := 0x0
-          rPosPlus1Overflow.y := False
-        }
-      }
+      //when (!rPosPlus1Overflow.x) {
+      //  info.nextPos.x := info.pos.x + 1
+      //  info.nextPos.y := info.pos.y
+      //  rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
+      //  //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
+      //  rChangingScanline := False
+      //} otherwise {
+      //  info.nextPos.x := 0
+      //  rPosPlus1Overflow.x := False
+      //  rChangingScanline := True
+      //  //when (info.pos.y =/= fbSize2d.y - 1)
+      //  when (!rPosPlus1Overflow.y) {
+      //    info.nextPos.y := info.pos.y + 1
+      //    rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
+      //  } otherwise {
+      //    info.nextPos.y := 0x0
+      //    rPosPlus1Overflow.y := False
+      //  }
+      //}
       // END: working code with lower FMax 
       //--------
       rFrameCnt := rFrameCnt + 0x1
