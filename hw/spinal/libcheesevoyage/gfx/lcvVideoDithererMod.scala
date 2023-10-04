@@ -432,6 +432,10 @@ case class LcvVideoDitherer(
 	rFrameCnt.init(rFrameCnt.getZero)
 	info.frameCnt := rFrameCnt
 
+  //val rPosPlus1 = Reg(cloneOf(info.pos))
+  //rPosPlus1.x.init(1)
+  //rPosPlus1.y.init(1)
+
   val rPos = Reg(cloneOf(info.pos))
   rPos.init(rPos.getZero)
   info.pos := rPos
@@ -448,6 +452,24 @@ case class LcvVideoDitherer(
   val rChangingScanline = Reg(cloneOf(info.changingScanline))
   rChangingScanline.init(rChangingScanline.getZero)
   info.changingScanline := rChangingScanline
+
+  object State extends SpinalEnum(
+    defaultEncoding=binaryOneHot
+  ) {
+    val 
+      //waitForPsbNextFire,
+      //notPosXPlus1Overflow,
+      posXPlus1OverflowCheck,
+      posYPlus1OverflowCheck
+      //notPosYPlus1Overflow,
+      //posYPlus1Overflow
+      = newElement();
+  }
+  val rState = Reg(State) init(
+    //State.waitForPsbNextFire
+    //State.notPosXPlus1Overflow,
+    State.posXPlus1OverflowCheck,
+  )
 
   //when (sbIo.next.valid) {
   //rInfo := info
@@ -471,10 +493,17 @@ case class LcvVideoDitherer(
     //info.changingScanline
     outp := outp.getZero
   } otherwise {
-    rPosPlus1OverflowDual := (
-      info.pos.x === fbSize2d.x - 2
-      && info.pos.y === fbSize2d.y - 1
-    )
+    //rPosPlus1OverflowDual := (
+    //  info.pos.x === fbSize2d.x - 2
+    //  && info.pos.y === fbSize2d.y - 1
+    //)
+    //rPosPlus1.x := info.pos.x + 1
+    //rPosPlus1.y := info.pos.y + 1
+
+    rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
+    //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
+    rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
+    //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
     when (sbIo.next.fire) {
       //rInfo.posPlus1 := rInfo.posPlus2
       //rInfo.posPlus1.x := tempOutp.pos.x + 1
@@ -486,25 +515,75 @@ case class LcvVideoDitherer(
       //rPosPlus
 
       //when (info.pos.x =/= fbSize2d.x - 1) 
-      when (!rPosPlus1Overflow.x) {
-        info.nextPos.x := info.pos.x + 1
-        info.nextPos.y := info.pos.y
-        rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
-        //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
-        rChangingScanline := False
-      } otherwise {
-        info.nextPos.x := 0
-        rPosPlus1Overflow.x := False
-        rChangingScanline := True
-        //when (info.pos.y =/= fbSize2d.y - 1)
-        when (!rPosPlus1Overflow.y) {
-          info.nextPos.y := info.pos.y + 1
-          rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
-        } otherwise {
-          info.nextPos.y := 0x0
-          rPosPlus1Overflow.y := False
+      switch (rState) {
+        is (State.posXPlus1OverflowCheck) {
+          info.nextPos.x := info.pos.x + 1
+          //info.nextPos.x := rPosPlus1.x
+          info.nextPos.y := info.pos.y
+          rChangingScanline := False
+          when (
+            //info.pos.x === fbSize2d.x - 1
+            //rPosPlus1Overflow.x && rPosPlus1Overflow.y
+            rPosPlus1Overflow.x
+          ) {
+            rState := State.posYPlus1OverflowCheck
+            //when (!rPosPlus1Overflow.y) {
+            //  rState := State.notPosXPlus1Overflow
+            //} otherwise {
+            //  rState := State.posYPlus1Overflow
+            //}
+          }
         }
+        is (State.posYPlus1OverflowCheck) {
+          info.nextPos.x := 0
+          //info.nextPos.y := info.pos.y
+          rChangingScanline := True
+          when (!rPosPlus1Overflow.y) {
+            //rState := State.notPosYPlus1Overflow
+            info.nextPos.y := info.pos.y + 1
+            //info.nextPos.y := rPosPlus1.y
+          } otherwise {
+            //rState := State.posYPlus1Overflow
+            info.nextPos.y := 0
+          }
+          rState := State.posXPlus1OverflowCheck
+        }
+        //is (State.notPosYPlus1Overflow) {
+        //  //rChangingScanline := True
+        //  info.nextPos.x := info.pos.x
+        //  info.nextPos.y := info.pos.y + 1
+        //  rState := State.posXPlus1OverflowCheck
+        //}
+        //is (State.posYPlus1Overflow) {
+        //  //rChangingScanline := True
+        //  info.nextPos.x := info.pos.x
+        //  info.nextPos.y := 0
+        //  rState := State.posXPlus1OverflowCheck
+        //}
       }
+
+      // BEGIN: working code with lower FMax
+      //when (!rPosPlus1Overflow.x) {
+      //  info.nextPos.x := info.pos.x + 1
+      //  info.nextPos.y := info.pos.y
+      //  rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
+      //  //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
+      //  rChangingScanline := False
+      //} otherwise {
+      //  info.nextPos.x := 0
+      //  rPosPlus1Overflow.x := False
+      //  rChangingScanline := True
+      //  //when (info.pos.y =/= fbSize2d.y - 1)
+      //  when (!rPosPlus1Overflow.y) {
+      //    info.nextPos.y := info.pos.y + 1
+      //    rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
+      //  } otherwise {
+      //    info.nextPos.y := 0x0
+      //    rPosPlus1Overflow.y := False
+      //  }
+      //}
+      // END: working code with lower FMax 
+      //--------
       rFrameCnt := rFrameCnt + 0x1
       rPos := info.nextPos
       rPastPos := rPos
