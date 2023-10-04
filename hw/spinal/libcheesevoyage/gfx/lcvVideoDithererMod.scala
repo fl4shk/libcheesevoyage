@@ -539,6 +539,9 @@ case class LcvVideoDitherer(
       is (M"0--") {
         info.nextPos := info.pos
       }
+      default {
+        info.nextPos := info.pos
+      }
     }
     when (sbIo.next.fire) {
       //rInfo.posPlus1 := rInfo.posPlus2
