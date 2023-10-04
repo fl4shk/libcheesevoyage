@@ -939,6 +939,8 @@ case class AsyncReadFifo[
     //val rNotEmpty = KeepAttribute(RegNext(nextNotEmpty)) init(False)
     //val nextNotFull = KeepAttribute(Bool())
     //val rNotFull = KeepAttribute(RegNext(nextNotFull)) init(True)
+    val rTempEmpty = KeepAttribute(RegNext(nextEmpty)) init(True)
+    val rTempFull = KeepAttribute(RegNext(nextFull)) init(False)
 
     val nextAmountCanPush = UInt(amountWidth bits)
     val rAmountCanPush = KeepAttribute(RegNext(nextAmountCanPush))
@@ -975,9 +977,11 @@ case class AsyncReadFifo[
   //--------
   //push.ready := !misc.full
 
-  push.ready := !loc.nextFull
-  pop.valid := !misc.empty
-  //pop.valid := !loc.nextEmpty
+  ////push.ready := !loc.nextFull
+  //pop.valid := !misc.empty
+  ////pop.valid := !loc.nextEmpty
+  push.ready := !loc.rTempFull
+  pop.valid := !loc.rTempEmpty
 
   //push.ready := loc.rNotFull
   //pop.valid := loc.rNotEmpty
