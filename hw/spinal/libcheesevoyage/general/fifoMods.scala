@@ -948,13 +948,13 @@ case class AsyncReadFifo[
     val nextAmountCanPop = UInt(amountWidth bits)
     val rAmountCanPop = KeepAttribute(RegNext(nextAmountCanPop)) init(0x0)
 
-    FifoIo.calcNextAmountCanPushPop(
-      depth=depth,
-      someHead=nextHead,
-      someTail=nextTail,
-      someAmountCanPush=nextAmountCanPush,
-      someAmountCanPop=nextAmountCanPop,
-    )
+    //FifoIo.calcNextAmountCanPushPop(
+    //  depth=depth,
+    //  someHead=nextHead,
+    //  someTail=nextTail,
+    //  someAmountCanPush=nextAmountCanPush,
+    //  someAmountCanPop=nextAmountCanPop,
+    //)
 
     ////val rHead2 = KeepAttribute(RegNext(nextHead)) init(0x0)
     ////val rTail2 = KeepAttribute(RegNext(nextTail)) init(0x0)
@@ -1000,6 +1000,34 @@ case class AsyncReadFifo[
   //  loc.nextAmountCanPush := uintDepthMinus1AmtW
   //  loc.nextAmountCanPop := 0x0
   //} otherwise { // when (!clockDomain.isResetActive)
+    //val concatWrEnRdEn = Bits(2 bits)
+    //concatWrEnRdEn(0) := loc.wrEn
+    //concatWrEnRdEn(1) := loc.rdEn
+    switch (
+      Cat(loc.rdEn, loc.wrEn)
+      //concatWrEnRdEn
+    ) {
+      // !loc.wrEn, !loc.rdEn
+      is (B"00") {
+        loc.nextAmountCanPush := loc.rAmountCanPush
+        loc.nextAmountCanPop := loc.rAmountCanPop
+      }
+      // loc.wrEn, !loc.rdEn
+      is (B"01") {
+        loc.nextAmountCanPush := loc.rAmountCanPush - 1
+        loc.nextAmountCanPop := loc.rAmountCanPop + 1
+      }
+      // !loc.wrEn, loc.rdEn
+      is (B"10") {
+        loc.nextAmountCanPush := loc.rAmountCanPush + 1
+        loc.nextAmountCanPop := loc.rAmountCanPop - 1
+      }
+      // loc.wrEn, loc.rdEn
+      is (B"11") {
+        loc.nextAmountCanPush := loc.rAmountCanPush
+        loc.nextAmountCanPop := loc.rAmountCanPop
+      }
+    }
     when (loc.wrEn) {
       loc.arr.write(
         address=loc.rHead.resized,
