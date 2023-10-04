@@ -280,19 +280,23 @@ case class PipeSkidBuf[
       psbStm <-/< tempIoPrev
 
       //psbStm <-/< io.prev
-      psbStm.translateInto(io.next){
-        //(oPayload, psbPayload) => oPayload := psbPayload
-        //o.payload := psb.payload; 
-        (o, i) => {
-          when (clockDomain.isResetActive) {
-            o := o.getZero
-          } elsewhen (io.prev.fire) {
-            o := i
-          } otherwise {
-            o := o.getZero
-          }
-        }
-      }
+      //psbStm.translateInto(io.next){
+      //  //(oPayload, psbPayload) => oPayload := psbPayload
+      //  //o.payload := psb.payload; 
+      //  (o, i) => {
+      //    when (clockDomain.isResetActive) {
+      //      o := o.getZero
+      //    } elsewhen (
+      //      //io.prev.fire
+      //      tempIoPrev.fire
+      //    ) {
+      //      o := i
+      //    } otherwise {
+      //      o := o.getZero
+      //    }
+      //  }
+      //}
+      psbStm >> io.next
       GenerationFlags.formal {
         when (pastValidAfterReset) {
           psbStm.formalAssertsMaster()
