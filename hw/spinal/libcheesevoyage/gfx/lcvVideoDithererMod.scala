@@ -278,8 +278,8 @@ case class LcvVideoDitherer(
     //optIncludeNextBusy=false,
     //optIncludePrevBusy=false,
     optPassthrough=false,
-    //optUseOldCode=false,
-    optUseOldCode=true,
+    optUseOldCode=false,
+    //optUseOldCode=true,
   )
   val sbIo = skidBuf.io
   //val sbIoPrev = sbIo.prev
