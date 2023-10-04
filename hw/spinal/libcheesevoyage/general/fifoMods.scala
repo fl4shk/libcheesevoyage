@@ -974,9 +974,11 @@ case class AsyncReadFifo[
   }
   //--------
   //push.ready := !misc.full
+
   push.ready := !loc.nextFull
-  //pop.valid := !misc.empty
-  pop.valid := !loc.nextEmpty
+  pop.valid := !misc.empty
+  //pop.valid := !loc.nextEmpty
+
   //push.ready := loc.rNotFull
   //pop.valid := loc.rNotEmpty
   //push.ready := loc.nextNotFull
