@@ -527,9 +527,9 @@ case class LcvVgaCtrl(
   //val tempPush = push.haltWhen(fifoAmountCanPush <= 1)
   //fifoPush << tempPush
 
-  fifoPush << push
+  //fifoPush << push
 
-  //fifoPush <-/< push
+  fifoPush <-/< push
 
   //fifoPush.valid := push.valid
   //push.ready := fifoPush.ready
