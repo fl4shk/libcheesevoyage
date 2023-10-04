@@ -961,12 +961,12 @@ case class AsyncReadFifo[
     nextFull := nextAmountCanPush === 0
     //nextFull := rAmountCanPush === 0
 
-    //nextNotEmpty := !nextEmpty
-    //nextNotFull := !nextFull
+    nextNotEmpty := !nextEmpty
+    nextNotFull := !nextFull
     //nextNotEmpty := nextHead =/= nextTail
     //nextNotFull := nextAmountCanPush =/= 0
-    nextNotEmpty := rHead =/= rTail
-    nextNotFull := rAmountCanPush =/= 0
+    //nextNotEmpty := rHead =/= rTail
+    //nextNotFull := rAmountCanPush =/= 0
   }
   //--------
   //push.ready := !misc.full
