@@ -884,8 +884,21 @@ case class AsyncReadFifo[
   val loc = new Area {
     val wrEn = KeepAttribute(Bool())
     wrEn := push.fire
+    //val nextWrEn = KeepAttribute(Bool())
+    //val wrEn = KeepAttribute(RegNext(nextWrEn)) init(False)
+    //nextWrEn := push.fire
+
+    //val nextWrData = KeepAttribute(dataType())
     val wrData = KeepAttribute(dataType())
     wrData := push.payload
+    //val wrData = KeepAttribute(RegNext(nextWrData))
+    //wrData.init(wrData.getZero)
+    ////nextWrData := push.payload
+    //when (nextWrEn) {
+    //  nextWrData := push.payload
+    //} otherwise {
+    //  nextWrData := wrData
+    //}
 
     val rdEn = KeepAttribute(Bool())
     rdEn := pop.fire
@@ -959,7 +972,8 @@ case class AsyncReadFifo[
     ////val rHead2 = KeepAttribute(RegNext(nextHead)) init(0x0)
     ////val rTail2 = KeepAttribute(RegNext(nextTail)) init(0x0)
 
-    nextEmpty := nextHead === nextTail
+    //nextEmpty := nextHead === nextTail
+    nextEmpty := nextAmountCanPop === 0
     //nextFull := nextAmountCanPop === 0
     //nextFull := nextAmountCanPop === uintDepthMinus1AmtW
 

@@ -443,6 +443,7 @@ case class LcvVideoDitherer(
   val rPosPlus1Overflow = Reg(cloneOf(info.posPlus1Overflow))
   rPosPlus1Overflow.init(rPosPlus1Overflow.getZero)
   info.posPlus1Overflow := rPosPlus1Overflow
+  val rPosPlus1OverflowDual = Reg(Bool())
 
   val rChangingScanline = Reg(cloneOf(info.changingScanline))
   rChangingScanline.init(rChangingScanline.getZero)
@@ -470,6 +471,10 @@ case class LcvVideoDitherer(
     //info.changingScanline
     outp := outp.getZero
   } otherwise {
+    rPosPlus1OverflowDual := (
+      info.pos.x === fbSize2d.x - 2
+      && info.pos.y === fbSize2d.y - 1
+    )
     when (sbIo.next.fire) {
       //rInfo.posPlus1 := rInfo.posPlus2
       //rInfo.posPlus1.x := tempOutp.pos.x + 1
@@ -485,7 +490,7 @@ case class LcvVideoDitherer(
         info.nextPos.x := info.pos.x + 1
         info.nextPos.y := info.pos.y
         rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
-        rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
+        //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
         rChangingScanline := False
       } otherwise {
         info.nextPos.x := 0
