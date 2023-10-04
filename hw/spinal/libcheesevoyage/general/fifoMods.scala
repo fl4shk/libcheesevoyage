@@ -890,8 +890,8 @@ case class AsyncReadFifo[
     val rdEn = KeepAttribute(Bool())
     rdEn := pop.fire
     val rdData = KeepAttribute(dataType())
-    val rPastRdData = KeepAttribute(RegNext(rdData))
-    rPastRdData.init(rPastRdData.getZero)
+    //val rPastRdData = KeepAttribute(RegNext(rdData))
+    //rPastRdData.init(rPastRdData.getZero)
     //rdData := pop.payload
     pop.payload := rdData
 
@@ -1013,15 +1013,16 @@ case class AsyncReadFifo[
     } otherwise {
       loc.nextHead := loc.rHead
     }
+    loc.rdData := loc.arr.readAsync(address=loc.rTail.resized)
     when (loc.rdEn) {
-      loc.rdData := loc.arr.readAsync(address=loc.rTail.resized)
+      //loc.rdData := loc.arr.readAsync(address=loc.rTail.resized)
       when (loc.tailPlus1 === uintDepthAmtW) {
         loc.nextTail := 0x0
       } otherwise {
         loc.nextTail := loc.tailPlus1
       }
     } otherwise {
-      loc.rdData := loc.rPastRdData
+      //loc.rdData := loc.rPastRdData
       loc.nextTail := loc.rTail
     }
   //}
@@ -1088,7 +1089,7 @@ case class AsyncReadFifo[
         } otherwise {
           assert(loc.rTail === past(loc.rTail) + uintOneAmtW)
         }
-        assert(loc.rPastRdData === rFormalPastRdData)
+        //assert(loc.rPastRdData === rFormalPastRdData)
         //assert(
         //  loc.rPastRdData
         //  === past(loc.arr.readAsync(address=past(loc.rTail).resized))
@@ -1098,7 +1099,7 @@ case class AsyncReadFifo[
         //assert(stable(misc.empty)),
         assert(stable(loc.rTail))
         //assert(stable(loc.rdData))
-        assert(stable(loc.rPastRdData))
+        //assert(stable(loc.rPastRdData))
         //]
       }
 
