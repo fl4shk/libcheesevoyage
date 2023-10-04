@@ -3,7 +3,8 @@ import libcheesevoyage.general.FifoMiscIo
 import libcheesevoyage.general.FifoIo
 //import libcheesevoyage.general.Fifo
 import libcheesevoyage.general.AsyncReadFifo
-import libcheesevoyage.general.Vec2
+//import libcheesevoyage.general.Vec2
+import libcheesevoyage.general.DualTypeVec2
 import libcheesevoyage.general.ElabVec2
 import libcheesevoyage.general.PipeSkidBuf
 import libcheesevoyage.general.PipeSkidBufIo
@@ -298,7 +299,25 @@ case class LcvVgaPhys(rgbConfig: RgbConfig) extends Bundle {
 //}
 object LcvVgaCtrlMiscIo {
   //--------
-  def coordElemT(): UInt = UInt(16 bits)
+  //def coordElemT(
+  //  //vgaTimingInfo: LcvVgaTimingInfo
+  //  fbWidthOrHeight: Int
+  //): UInt = UInt(
+  //  //16 bits
+  //  (
+  //    //(log2Up(vgaTimingInfo.fbSize2d.x))
+  //    //.max(log2Up(vgaTimingInfo.fbSize2d.y))
+  //    log2Up(fbWidthOrHeight)
+  //  ) bits
+  //)
+  def coordT(
+    //vgaTimingInfo: LcvVgaTimingInfo,
+    fbSize2d: ElabVec2[Int]
+  ): DualTypeVec2[UInt, UInt] = DualTypeVec2(
+    dataTypeX=UInt(fbSize2d.x bits),
+    dataTypeY=UInt(fbSize2d.y bits),
+  )
+  // clocks per pixel
   def cpp(
     clkRate: HertzNumber,
     vgaTimingInfo: LcvVgaTimingInfo,
@@ -369,10 +388,16 @@ case class LcvVgaCtrlMiscIo(
   val visibPipe1 = Bool()
   val visib = Bool()
   val pastVisib = Bool()
-  val drawPos = Vec2(LcvVgaCtrlMiscIo.coordElemT())
+  //val drawPos = Vec2(LcvVgaCtrlMiscIo.coordElemT(
+  //))
+  val drawPos = LcvVgaCtrlMiscIo.coordT(fbSize2d=vgaTimingInfo.fbSize2d)
   //val drawPosPipe1 = Vec2(LcvVgaCtrlMiscIo.coordElemT())
-  val pastDrawPos = Vec2(LcvVgaCtrlMiscIo.coordElemT())
-  val size = Vec2(LcvVgaCtrlMiscIo.coordElemT())
+  val pastDrawPos = LcvVgaCtrlMiscIo.coordT(
+    fbSize2d=vgaTimingInfo.fbSize2d
+  )
+  val size = LcvVgaCtrlMiscIo.coordT(
+    fbSize2d=vgaTimingInfo.fbSize2d,
+  )
   //--------
   //--------
 }
@@ -1130,7 +1155,9 @@ case class LcvVgaCtrl(
     rPastVisib := misc.visib
     misc.pastVisib := rPastVisib
 
-    val rPastDrawPos = Reg(Vec2(LcvVgaCtrlMiscIo.coordElemT()))
+    val rPastDrawPos = Reg(LcvVgaCtrlMiscIo.coordT(
+      fbSize2d=vgaTimingInfo.fbSize2d
+    ))
     rPastDrawPos.init(rPastDrawPos.getZero)
     rPastDrawPos := misc.drawPos
     misc.pastDrawPos := rPastDrawPos
@@ -1463,7 +1490,9 @@ case class LcvVgaCtrlNoFifo(
     rPastVisib := misc.visib
     misc.pastVisib := rPastVisib
 
-    val rPastDrawPos = Reg(Vec2(LcvVgaCtrlMiscIo.coordElemT()))
+    val rPastDrawPos = Reg(LcvVgaCtrlMiscIo.coordT(
+      fbSize2d=vgaTimingInfo.fbSize2d,
+    ))
     rPastDrawPos.init(rPastDrawPos.getZero)
     rPastDrawPos := misc.drawPos
     misc.pastDrawPos := rPastDrawPos

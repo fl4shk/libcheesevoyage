@@ -30,7 +30,10 @@ case class LcvVgaGradientIo(
       fifoDepth=ctrlFifoDepth,
     )
   )
-  val vidDithIo = master(LcvVideoDithererIo(rgbConfig=rgbConfig))
+  val vidDithIo = master(LcvVideoDithererIo(
+    rgbConfig=rgbConfig,
+    fbSize2d=vgaTimingInfo.fbSize2d,
+  ))
 
   //val vidDithIo = LcvVideoDithererIo(rgbConfig=rgbConfig)
   //val vidDithSbIo = PipeSkidBufIo(

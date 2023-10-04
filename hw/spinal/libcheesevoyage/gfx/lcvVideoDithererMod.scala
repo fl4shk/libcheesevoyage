@@ -1,4 +1,5 @@
 package libcheesevoyage.gfx
+import libcheesevoyage.general.DualTypeVec2
 import libcheesevoyage.general.Vec2
 import libcheesevoyage.general.ElabVec2
 import libcheesevoyage.general.FifoIo
@@ -18,8 +19,21 @@ import scala.math._
 object LcvVideoDithererInfo {
   def ditherDeltaWidth: Int = log2Up(4)
   //def coordElemT(): UInt = UInt(16 bits)
-  def coordElemT(): UInt = LcvVgaCtrlMiscIo.coordElemT()
-  def coordT(): Vec2[UInt] = Vec2(coordElemT())
+  //def coordElemT(
+  //  vgaTimingInfo: LcvVgaTimingInfo,
+  //): UInt = LcvVgaCtrlMiscIo.coordElemT(
+  //  vgaTimingInfo.
+  //)
+  def coordT(
+    //vgaTimingInfo: LcvVgaTimingInfo,
+    fbSize2d: ElabVec2[Int]
+  ): DualTypeVec2[UInt, UInt] = LcvVgaCtrlMiscIo.coordT(
+    //vgaTimingInfo=vgaTimingInfo
+    fbSize2d=fbSize2d,
+  )
+  //DualTypeVec2(
+  //  //coordElemT(vgaTimingInfo=vgaTimingInfo)
+  //)
 
   def outChanWidth(
     //rgbConfig: RgbConfig,
@@ -47,6 +61,8 @@ object LcvVideoDithererInfo {
 }
 case class LcvVideoDithererInfo(
   //rgbConfig: RgbConfig
+  //vgaTimingInfo: LcvVgaTimingInfo,
+  fbSize2d: ElabVec2[Int]
 ) extends Bundle {
   //--------
   //val outpCol = out(Rgb(rgbConfig))
@@ -63,7 +79,9 @@ case class LcvVideoDithererInfo(
   val changingScanline = Bool()
   //--------
   def ditherDeltaWidth = LcvVideoDithererInfo.ditherDeltaWidth
-  def coordT() = LcvVideoDithererInfo.coordT()
+  def coordT() = LcvVideoDithererInfo.coordT(
+    fbSize2d=fbSize2d,
+  )
   //--------
 }
 case class LcvVideoDithererPopPayload(
@@ -114,8 +132,8 @@ object LcvVideoDithererIo {
 }
 
 case class LcvVideoDithererIo(
-  //fbSize2d: ElabVec2[Int],
   rgbConfig: RgbConfig,
+  fbSize2d: ElabVec2[Int],
   //vgaTimingInfo: LcvVgaTimingInfo,
 ) extends Bundle with IMasterSlave
 {
@@ -127,7 +145,7 @@ case class LcvVideoDithererIo(
   ////val push = slave Flow(Rgb(rgbConfig))
   //val pop = master Stream(LcvVideoDithererPopPayload(rgbConfig=rgbConfig))
   val pop = master Stream(LcvVideoDithererPopPayload(rgbConfig=rgbConfig))
-  val info = out(LcvVideoDithererInfo())
+  val info = out(LcvVideoDithererInfo(fbSize2d=fbSize2d))
   //val pop = master Stream(LcvVideoDithererPopPayload(
   //  //outRgbConfig=outRgbConfig
   //  rgbConfig=rgbConfig
@@ -219,7 +237,10 @@ case class LcvVideoDitherer(
   fbSize2d: ElabVec2[Int],
 ) extends Component {
   //--------
-  val io = LcvVideoDithererIo(rgbConfig=rgbConfig)
+  val io = LcvVideoDithererIo(
+    rgbConfig=rgbConfig,
+    fbSize2d=fbSize2d,
+  )
   val push = io.push
   val pop = io.pop
   //val inpEn = io.inpEn
@@ -240,7 +261,9 @@ case class LcvVideoDitherer(
     return U(f"$ditherDeltaWidth'd$value")
   }
   def chanWidthDelta: Int = LcvVideoDithererIo.chanWidthDelta
-  def coordT() = LcvVideoDithererInfo.coordT()
+  def coordT() = LcvVideoDithererInfo.coordT(
+    fbSize2d=fbSize2d
+  )
   //def htiming: LcvVgaTimingHv = {
   //  return vgaTimingInfo.htiming
   //}
