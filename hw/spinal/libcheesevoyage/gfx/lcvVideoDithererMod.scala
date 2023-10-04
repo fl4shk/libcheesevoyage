@@ -505,6 +505,41 @@ case class LcvVideoDitherer(
     ////rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
     //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
     ////rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
+    val mySwitchConcat = Bits(3 bits)
+    mySwitchConcat(0) := rPosPlus1Overflow.x
+    mySwitchConcat(1) := rPosPlus1Overflow.y
+    mySwitchConcat(2) := sbIo.next.fire
+    
+    switch (mySwitchConcat) {
+      // overflowX=0, overflowY=don't care
+      //is (B"-0") 
+      is(B"100", B"110") {
+        info.nextPos.x := info.pos.x + 1
+        info.nextPos.y := info.pos.y
+        rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
+        //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
+        rChangingScanline := False
+      }
+      // overflowX=1, overflowY=0
+      is (B"101") {
+        info.nextPos.x := 0
+        rPosPlus1Overflow.x := False
+        rChangingScanline := True
+        info.nextPos.y := info.pos.y + 1
+        rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
+      }
+      // overflowX=1, overflowY=1
+      is (B"111") {
+        info.nextPos.x := 0
+        rPosPlus1Overflow.x := False
+        rChangingScanline := True
+        info.nextPos.y := 0x0
+        rPosPlus1Overflow.y := False
+      }
+      default {
+        info.nextPos := info.pos
+      }
+    }
     when (sbIo.next.fire) {
       //rInfo.posPlus1 := rInfo.posPlus2
       //rInfo.posPlus1.x := tempOutp.pos.x + 1
@@ -562,36 +597,6 @@ case class LcvVideoDitherer(
       //  //  rState := State.posXPlus1OverflowCheck
       //  //}
       //}
-      val concatPosPlus1Overflow = Bits(2 bits)
-      concatPosPlus1Overflow(0) := rPosPlus1Overflow.x
-      concatPosPlus1Overflow(1) := rPosPlus1Overflow.y
-      switch (concatPosPlus1Overflow) {
-        // overflowX=0, overflowY=don't care
-        //is (B"-0") 
-        is(B"00", B"10") {
-          info.nextPos.x := info.pos.x + 1
-          info.nextPos.y := info.pos.y
-          rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
-          //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
-          rChangingScanline := False
-        }
-        // overflowX=1, overflowY=0
-        is (B"01") {
-          info.nextPos.x := 0
-          rPosPlus1Overflow.x := False
-          rChangingScanline := True
-          info.nextPos.y := info.pos.y + 1
-          rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
-        }
-        // overflowX=1, overflowY=1
-        is (B"11") {
-          info.nextPos.x := 0
-          rPosPlus1Overflow.x := False
-          rChangingScanline := True
-          info.nextPos.y := 0x0
-          rPosPlus1Overflow.y := False
-        }
-      }
 
       // BEGIN: working code with lower FMax
       //when (!rPosPlus1Overflow.x) {
