@@ -953,10 +953,13 @@ case class AsyncReadFifo[
     nextEmpty := nextHead === nextTail
     //nextFull := nextAmountCanPop === 0
     //nextFull := nextAmountCanPop === uintDepthMinus1AmtW
-    nextFull := nextAmountCanPush === 0
+
+    //nextFull := nextAmountCanPush === 0
+    nextFull := rAmountCanPush === 0
   }
   //--------
-  push.ready := !misc.full
+  //push.ready := !misc.full
+  push.ready := !loc.nextFull
   pop.valid := !misc.empty
   misc.empty := loc.rEmpty
   misc.full := loc.rFull
