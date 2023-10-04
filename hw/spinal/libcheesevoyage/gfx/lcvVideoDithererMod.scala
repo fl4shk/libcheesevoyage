@@ -513,7 +513,7 @@ case class LcvVideoDitherer(
     switch (mySwitchConcat) {
       // overflowX=0, overflowY=don't care
       //is (B"-0") 
-      is(B"100", B"110") {
+      is(M"1-0") {
         info.nextPos.x := info.pos.x + 1
         info.nextPos.y := info.pos.y
         rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
@@ -536,7 +536,7 @@ case class LcvVideoDitherer(
         info.nextPos.y := 0x0
         rPosPlus1Overflow.y := False
       }
-      default {
+      is (M"0--") {
         info.nextPos := info.pos
       }
     }
