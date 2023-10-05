@@ -203,28 +203,29 @@ case class LcvVgaGradient(
   when (clockDomain.isResetActive) {
     resetDithCol()
   } otherwise {
-    //when (dithIo.push.fire) {
-    //  when (dithIo.info.posPlus1Overflow.x) {
-    //    resetDithCol()
-    //  } otherwise {
-    //    incrDithCol()
-    //  }
-    //}
-    switch (gradConcat) {
-      // dithIo.push.fire=0, dithIo.info.posPlus1Overflow.x=0
-      is (M"0-") {
-      }
-      // dithIo.push.fire=1, dithIo.info.posPlus1Overflow.x=0
-      is (B"10") {
+    when (dithIo.push.fire) {
+      when (dithIo.info.posPlus1Overflow.x) {
         resetDithCol()
-      }
-      // dithIo.push.fire=1, dithIo.info.posPlus1Overflow.x=1
-      is (B"11") {
+      } otherwise {
         incrDithCol()
       }
-      default {
-      }
     }
+    // this was slower:
+    //switch (gradConcat) {
+    //  // dithIo.push.fire=0, dithIo.info.posPlus1Overflow.x=0
+    //  is (M"0-") {
+    //  }
+    //  // dithIo.push.fire=1, dithIo.info.posPlus1Overflow.x=0
+    //  is (B"10") {
+    //    resetDithCol()
+    //  }
+    //  // dithIo.push.fire=1, dithIo.info.posPlus1Overflow.x=1
+    //  is (B"11") {
+    //    incrDithCol()
+    //  }
+    //  default {
+    //  }
+    //}
   }
 
   // BEGIN: debug
