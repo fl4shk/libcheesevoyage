@@ -18,15 +18,47 @@ import scala.math._
 
 case class LcvGpu2dParams(
   //vgaTimingInfo: LcvVgaTimingInfo,
-  rgbConfig: RgbConfig,
-  numSprites: Int,
-  numBackgrounds: Int,
-  numTiles: Int,
-  bgSize2d: ElabVec2[Int],
-  fbSize2d: ElabVec2[Int],
-  tileSize2d: ElabVec2[Int],
-  numSpritesPerScanline: ElabVec2[Int],
+  rgbConfig: RgbConfig,       // Bits per RGB channel
+                              // (from the GPU's perspective. This may
+                              // differ from the physical video signal if
+                              // `LcvVideoDitherer` is used.)
+  internalFbSize2d: ElabVec2[Int],  // size of the internal resolution used 
+                              // by the 2D GPU
+                              // (in PIXELS, NOT tiles, though it is
+                              // perhaps a good idea to ensure `fbSize2d`
+                              // is integer multiples of `numTiles`, as
+                              // that is how I'm used to 2D GPUs working)
+  physFbSize2dMult: ElabVec2[Int],  // the integer multiple of 
+                              // `internalFbSize2d` to obtain the physical
+                              // resolution of the video signal.
+                              // This is used to duplicate generated pixels 
+                              // so that the generated video signal can 
+                              // fill the screen.
+  tileSize2d: ElabVec2[Int],  // width/height of a tile (in pixels)
+  numTiles: Int,              // total number of tiles
+                              // (how much memory to reserve for tiles)
+  bgSizeInTiles2d: ElabVec2[Int],    // width/height of a background
+                              // (in number of tiles)
+  numBgs: Int,                // number of backgrounds
+  numObjs: Int,               // number of sprites
+  numObjsPerScanline: Int,    // how many sprites to process in one
+                              // scanline
 ) {
+  //--------
+  def numPixelsPerTile = tileSize2d.x * tileSize2d.y
+  def numPixelsForAllTiles = numTiles * numPixelsPerTile
+  //--------
+  def numPixelsPerBg = (
+    bgSizeInTiles2d.x * bgSizeInTiles2d.y * numPixelsPerTile
+  )
+  def numPixelsForAllBgs = numBgs * numPixelsPerBg
+  //--------
+  // widths of indexes into the internal `Mem`s that contain
+  def objMemIdxWidth = log2Up(numObjs)
+  def bgMemIdxWidth = log2Up(numBgs)
+  def tileIdxWidth = log2Up(numTiles)
+  //def tilePixelIdxWidth = log2Up(numPixelsForAllTiles)
+  //--------
 }
 
 //case class LcvGpu2dTile(
@@ -64,7 +96,14 @@ case class LcvGpu2dTilePushPayload(
 
   // `Mem` index
   //val idx = Vec2(LcvVgaCtrlMiscIo.coordElemT())
-  val idx = UInt(16 bits)
+  //val idx = UInt(16 bits)
+  val idx = UInt(params.tileIdxWidth bits)
+  //--------
+}
+case class LcvGpu2dObjPushPayload(
+  params: LcvGpu2dParams,
+) extends Bundle {
+  //--------
   //--------
 }
 
@@ -74,6 +113,7 @@ case class LcvGpu2dIo(
   //--------
   //val tilePush = slave Stream()
   //val tilePush = slave Stream()
+  val tilePush = slave Stream(LcvGpu2dTilePushPayload(params=params))
   //val tilePush = slave Stream(LcvGpu2dTilePushPayload(params=params))
   //--------
 }
