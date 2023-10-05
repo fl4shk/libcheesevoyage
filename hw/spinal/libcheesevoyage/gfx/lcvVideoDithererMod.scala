@@ -454,8 +454,8 @@ case class LcvVideoDitherer(
   info.changingScanline := rChangingScanline
 
   //object State extends SpinalEnum(
-  //  //defaultEncoding=binarySequential
-  //  defaultEncoding=binaryOneHot
+  //  defaultEncoding=binarySequential
+  //  //defaultEncoding=binaryOneHot
   //) {
   //  val 
   //    //waitForPsbNextFire,
