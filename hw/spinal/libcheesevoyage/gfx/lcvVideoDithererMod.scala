@@ -512,43 +512,42 @@ case class LcvVideoDitherer(
     //dithConcat(2) := sbIo.next.fire
     
     when (sbIo.next.fire) {
-      //switch (dithConcat) {
-      //  // overflowX=0, overflowY=don't care
-      //  //is (B"-0") 
-      //  //is(M"1-0") 
-      //  is(M"-0") {
-      //    info.nextPos.x := info.pos.x + 1
-      //    info.nextPos.y := info.pos.y
-      //    rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
-      //    //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
-      //    rChangingScanline := False
-      //  }
-      //  // overflowX=1, overflowY=0
-      //  //is (B"101")
-      //  is (B"01") {
-      //    info.nextPos.x := 0
-      //    rPosPlus1Overflow.x := False
-      //    rChangingScanline := True
-      //    info.nextPos.y := info.pos.y + 1
-      //    rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
-      //  }
-      //  // overflowX=1, overflowY=1
-      //  //is (B"111")
-      //  is (B"11") {
-      //    info.nextPos.x := 0
-      //    rPosPlus1Overflow.x := False
-      //    rChangingScanline := True
-      //    info.nextPos.y := 0x0
-      //    rPosPlus1Overflow.y := False
-      //  }
-      //  //is (M"0--") {
-      //  //  info.nextPos := info.pos
-      //  //}
-      //  default {
-      //    info.nextPos := info.pos
-      //  }
-      //}
-
+      switch (dithConcat) {
+        // overflowX=0, overflowY=don't care
+        //is (B"-0") 
+        //is(M"1-0") 
+        is(M"-0") {
+          info.nextPos.x := info.pos.x + 1
+          info.nextPos.y := info.pos.y
+          rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
+          //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
+          rChangingScanline := False
+        }
+        // overflowX=1, overflowY=0
+        //is (B"101")
+        is (B"01") {
+          info.nextPos.x := 0
+          rPosPlus1Overflow.x := False
+          rChangingScanline := True
+          info.nextPos.y := info.pos.y + 1
+          rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
+        }
+        // overflowX=1, overflowY=1
+        //is (B"111")
+        is (B"11") {
+          info.nextPos.x := 0
+          rPosPlus1Overflow.x := False
+          rChangingScanline := True
+          info.nextPos.y := 0x0
+          rPosPlus1Overflow.y := False
+        }
+        //is (M"0--") {
+        //  info.nextPos := info.pos
+        //}
+        default {
+          info.nextPos := info.pos
+        }
+      }
       //rInfo.posPlus1 := rInfo.posPlus2
       //rInfo.posPlus1.x := tempOutp.pos.x + 1
       //rInfo.posPlus1.y := tempOutp.pos.y + 1
@@ -607,25 +606,25 @@ case class LcvVideoDitherer(
       //}
 
       // BEGIN: working code with lower FMax
-      when (!rPosPlus1Overflow.x) {
-        info.nextPos.x := info.pos.x + 1
-        info.nextPos.y := info.pos.y
-        rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
-        //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
-        rChangingScanline := False
-      } otherwise {
-        info.nextPos.x := 0
-        rPosPlus1Overflow.x := False
-        rChangingScanline := True
-        //when (info.pos.y =/= fbSize2d.y - 1)
-        when (!rPosPlus1Overflow.y) {
-          info.nextPos.y := info.pos.y + 1
-          rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
-        } otherwise {
-          info.nextPos.y := 0x0
-          rPosPlus1Overflow.y := False
-        }
-      }
+      //when (!rPosPlus1Overflow.x) {
+      //  info.nextPos.x := info.pos.x + 1
+      //  info.nextPos.y := info.pos.y
+      //  rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
+      //  //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
+      //  rChangingScanline := False
+      //} otherwise {
+      //  info.nextPos.x := 0
+      //  rPosPlus1Overflow.x := False
+      //  rChangingScanline := True
+      //  //when (info.pos.y =/= fbSize2d.y - 1)
+      //  when (!rPosPlus1Overflow.y) {
+      //    info.nextPos.y := info.pos.y + 1
+      //    rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
+      //  } otherwise {
+      //    info.nextPos.y := 0x0
+      //    rPosPlus1Overflow.y := False
+      //  }
+      //}
       // END: working code with lower FMax 
       //--------
       rFrameCnt := rFrameCnt + 0x1
