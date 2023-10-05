@@ -197,14 +197,32 @@ case class LcvVgaGradient(
   //    }
   //  }
   //}
+  val gradConcat = Bits(2 bits)
+  gradConcat(1) := dithIo.push.fire
+  gradConcat(0) := dithIo.info.posPlus1Overflow.x
   when (clockDomain.isResetActive) {
     resetDithCol()
   } otherwise {
-    when (dithIo.push.fire) {
-      when (dithIo.info.posPlus1Overflow.x) {
+    //when (dithIo.push.fire) {
+    //  when (dithIo.info.posPlus1Overflow.x) {
+    //    resetDithCol()
+    //  } otherwise {
+    //    incrDithCol()
+    //  }
+    //}
+    switch (gradConcat) {
+      // dithIo.push.fire=0, dithIo.info.posPlus1Overflow.x=0
+      is (M"0-") {
+      }
+      // dithIo.push.fire=1, dithIo.info.posPlus1Overflow.x=0
+      is (B"10") {
         resetDithCol()
-      } otherwise {
+      }
+      // dithIo.push.fire=1, dithIo.info.posPlus1Overflow.x=1
+      is (B"11") {
         incrDithCol()
+      }
+      default {
       }
     }
   }
@@ -254,7 +272,10 @@ case class LcvVgaGradient(
   ////}
 
   ////when (ctrlIo.push.fire) 
-  ////object State extends SpinalEnum(defaultEncoding=binarySequential) {
+  ////object State extends SpinalEnum(
+  ////  //defaultEncoding=binarySequential
+  ////  defaultEncoding=binaryOneHot
+  ////) {
   ////  val
   ////    updateDithCol,
   ////    otherState

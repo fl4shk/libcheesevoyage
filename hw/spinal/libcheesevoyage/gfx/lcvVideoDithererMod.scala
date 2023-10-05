@@ -453,24 +453,24 @@ case class LcvVideoDitherer(
   rChangingScanline.init(rChangingScanline.getZero)
   info.changingScanline := rChangingScanline
 
-  object State extends SpinalEnum(
-    defaultEncoding=binarySequential
-    //defaultEncoding=binaryOneHot
-  ) {
-    val 
-      //waitForPsbNextFire,
-      //notPosXPlus1Overflow,
-      posXPlus1OverflowCheck,
-      posYPlus1OverflowCheck
-      //notPosYPlus1Overflow,
-      //posYPlus1Overflow
-      = newElement();
-  }
-  val rState = Reg(State) init(
-    //State.waitForPsbNextFire
-    //State.notPosXPlus1Overflow,
-    State.posXPlus1OverflowCheck,
-  )
+  //object State extends SpinalEnum(
+  //  //defaultEncoding=binarySequential
+  //  defaultEncoding=binaryOneHot
+  //) {
+  //  val 
+  //    //waitForPsbNextFire,
+  //    //notPosXPlus1Overflow,
+  //    posXPlus1OverflowCheck,
+  //    posYPlus1OverflowCheck
+  //    //notPosYPlus1Overflow,
+  //    //posYPlus1Overflow
+  //    = newElement();
+  //}
+  //val rState = Reg(State) init(
+  //  //State.waitForPsbNextFire
+  //  //State.notPosXPlus1Overflow,
+  //  State.posXPlus1OverflowCheck,
+  //)
 
   //when (sbIo.next.valid) {
   //rInfo := info
@@ -505,12 +505,12 @@ case class LcvVideoDitherer(
     ////rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
     //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
     ////rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
-    val mySwitchConcat = Bits(3 bits)
-    mySwitchConcat(0) := rPosPlus1Overflow.x
-    mySwitchConcat(1) := rPosPlus1Overflow.y
-    mySwitchConcat(2) := sbIo.next.fire
+    val dithConcat = Bits(3 bits)
+    dithConcat(0) := rPosPlus1Overflow.x
+    dithConcat(1) := rPosPlus1Overflow.y
+    dithConcat(2) := sbIo.next.fire
     
-    switch (mySwitchConcat) {
+    switch (dithConcat) {
       // overflowX=0, overflowY=don't care
       //is (B"-0") 
       is(M"1-0") {

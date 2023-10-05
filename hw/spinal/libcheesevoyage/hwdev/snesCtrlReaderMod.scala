@@ -112,8 +112,8 @@ case class SnesCtrlReaderIo(
 }
 
 object SnesCtrlReaderState extends SpinalEnum(
-  //defaultEncoding=binaryOneHot
-  defaultEncoding=binarySequential // for debugging
+  defaultEncoding=binaryOneHot
+  //defaultEncoding=binarySequential // for debugging
 ) {
   val
     latch,

@@ -44,7 +44,8 @@ case class LongDivMultiCycle(
   val io = LongDivIo(params=params)
 
   object LocState extends SpinalEnum(
-    defaultEncoding=binarySequential
+    //defaultEncoding=binarySequential
+    defaultEncoding=binaryOneHot
   ) {
     val
       idle,

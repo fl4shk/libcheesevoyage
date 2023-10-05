@@ -3,7 +3,10 @@ package libcheesevoyage.math.trySpinal
 import spinal.core._
 import spinal.lib._
 
-object AluOp extends SpinalEnum(defaultEncoding=binarySequential) {
+object AluOp extends SpinalEnum(
+  defaultEncoding=binarySequential
+  //defaultEncoding=binaryOneHot
+) {
   val
     add,
     adc,
