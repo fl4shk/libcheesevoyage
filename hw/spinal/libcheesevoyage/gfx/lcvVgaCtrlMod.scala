@@ -314,8 +314,8 @@ object LcvVgaCtrlMiscIo {
     //vgaTimingInfo: LcvVgaTimingInfo,
     fbSize2d: ElabVec2[Int]
   ): DualTypeVec2[UInt, UInt] = DualTypeVec2(
-    dataTypeX=UInt(log2Up(fbSize2d.x + 1) bits),
-    dataTypeY=UInt(log2Up(fbSize2d.y + 1) bits),
+    dataTypeX=UInt(log2Up(fbSize2d.x) bits),
+    dataTypeY=UInt(log2Up(fbSize2d.y) bits),
   )
   // clocks per pixel
   def cpp(
@@ -396,7 +396,10 @@ case class LcvVgaCtrlMiscIo(
     fbSize2d=vgaTimingInfo.fbSize2d
   )
   val size = LcvVgaCtrlMiscIo.coordT(
-    fbSize2d=vgaTimingInfo.fbSize2d,
+    fbSize2d=ElabVec2[Int](
+      x=vgaTimingInfo.fbSize2d.x + 1,
+      y=vgaTimingInfo.fbSize2d.y + 1,
+    )
   )
   //--------
   //--------
