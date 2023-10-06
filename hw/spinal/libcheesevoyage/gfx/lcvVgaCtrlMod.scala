@@ -5,6 +5,7 @@ import libcheesevoyage.general.FifoIo
 import libcheesevoyage.general.AsyncReadFifo
 //import libcheesevoyage.general.Vec2
 import libcheesevoyage.general.DualTypeVec2
+import libcheesevoyage.general.DualTypeNumVec2
 import libcheesevoyage.general.ElabVec2
 import libcheesevoyage.general.PipeSkidBuf
 import libcheesevoyage.general.PipeSkidBufIo
@@ -313,7 +314,7 @@ object LcvVgaCtrlMiscIo {
   def coordT(
     //vgaTimingInfo: LcvVgaTimingInfo,
     fbSize2d: ElabVec2[Int]
-  ): DualTypeVec2[UInt, UInt] = DualTypeVec2(
+  ): DualTypeNumVec2[UInt, UInt] = DualTypeNumVec2(
     dataTypeX=UInt(log2Up(fbSize2d.x) bits),
     dataTypeY=UInt(log2Up(fbSize2d.y) bits),
   )

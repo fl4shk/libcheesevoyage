@@ -1,5 +1,5 @@
 package libcheesevoyage.gfx
-import libcheesevoyage.general.DualTypeVec2
+import libcheesevoyage.general.DualTypeNumVec2
 import libcheesevoyage.general.Vec2
 import libcheesevoyage.general.ElabVec2
 import libcheesevoyage.general.FifoIo
@@ -27,7 +27,7 @@ object LcvVideoDithererInfo {
   def coordT(
     //vgaTimingInfo: LcvVgaTimingInfo,
     fbSize2d: ElabVec2[Int]
-  ): DualTypeVec2[UInt, UInt] = LcvVgaCtrlMiscIo.coordT(
+  ): DualTypeNumVec2[UInt, UInt] = LcvVgaCtrlMiscIo.coordT(
     //vgaTimingInfo=vgaTimingInfo
     fbSize2d=fbSize2d,
   )
@@ -445,6 +445,7 @@ case class LcvVideoDitherer(
   info.pastPos := rPastPos
 
   val rPosPlus1Overflow = Reg(cloneOf(info.posPlus1Overflow))
+  //val rPosPlus1Overflow = Reg(Vec2(Bool()))
   rPosPlus1Overflow.init(rPosPlus1Overflow.getZero)
   info.posPlus1Overflow := rPosPlus1Overflow
   val rPosPlus1OverflowDual = Reg(Bool())

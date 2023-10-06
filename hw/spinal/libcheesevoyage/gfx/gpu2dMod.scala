@@ -3,6 +3,8 @@ import libcheesevoyage.general.FifoMiscIo
 import libcheesevoyage.general.AsyncReadFifo
 import libcheesevoyage.general.FifoIo
 import libcheesevoyage.general.Vec2
+import libcheesevoyage.general.MkVec2
+//import libcheesevoyage.general.MkVec2
 import libcheesevoyage.general.ElabVec2
 import libcheesevoyage.general.PipeSkidBuf
 import libcheesevoyage.general.PipeSkidBufIo
@@ -35,27 +37,39 @@ case class Gpu2dParams(
                               // so that the generated video signal can 
                               // fill the screen.
   tileSize2d: ElabVec2[Int],  // width/height of a tile (in pixels)
-  numTiles: Int,              // total number of tiles
+  numTilesPow: Int,           // power of two for total number of tiles
                               // (how much memory to reserve for tiles)
   bgSize2dInTiles: ElabVec2[Int], // width/height of a background
                               // (in number of tiles)
-  numBgs: Int,                // total number of backgrounds
-  numObjs: Int,               // total number of sprites
-  //numObjsPerScanline: Int,    // how many sprites to process in one
-  //                            // scanline (possibly one per cycle?)
-  numColsInPal: Int,          // how many colors in the palette
+  numBgsPow: Int,             // power of two for the total number of
+                              // backgrounds
+  numObjsPow: Int,            // power of two for the total number of 
+                              // sprites
+  //numObjsPerScanline: Int,  // how many sprites to process in one
+  //                          // scanline (possibly one per cycle?)
+  numColsInPalPow: Int,       // power of two for how many colors in the palette
   //--------
   tileColArrRamStyle: String="block",
   bgEntryArrRamStyle: String="block",
   bgAttrsArrRamStyle: String="block",
   objAttrsArrRamStyle: String="block",
   palEntryArrRamStyle: String="block",
+  lineArrRamStyle: String="block",
 ) {
+  //--------
+  def numTiles = 1 << numTilesPow
+  def numBgs = 1 << numBgsPow
+  def numObjs = 1 << numObjsPow
+  def numColsInPal = 1 << numColsInPalPow
   //--------
   def physFbSize2d = ElabVec2[Int](
     x=intnlFbSize2d.x * physFbSize2dScale.x,
     y=intnlFbSize2d.y * physFbSize2dScale.y,
   )
+  //def lineMemSize = physFbSize2dScale.y * params.physFbSize2d.x
+
+  //def halfLineMemSize = intnlFbSize2d.x
+  //def lineMemSize = intnlFbSize2d.x * 2
   //--------
   def numPxsPerTile = tileSize2d.x * tileSize2d.y
   def numPxsForAllTiles = numTiles * numPxsPerTile
@@ -109,16 +123,17 @@ object DefaultGpu2dParams {
       y=4, // 1080 / 4 = 270
     ),
     tileSize2d: ElabVec2[Int]=ElabVec2[Int](x=8, y=8),
-    numBgs: Int=4,
-    numObjs: Int=256,
+    numBgsPow: Int=log2Up(4),
+    numObjsPow: Int=log2Up(256),
     //numObjsPerScanline: Int=64,
-    numColsInPal: Int=256,
+    numColsInPalPow: Int=log2Up(256),
     //--------
     tileColArrRamStyle: String="block",
     bgEntryArrRamStyle: String="block",
     bgAttrsArrRamStyle: String="block",
     objAttrsArrRamStyle: String="block",
     palEntryArrRamStyle: String="block",
+    lineArrRamStyle: String="block",
     //--------
   ) = Gpu2dParams(
     //rgbConfig=RgbConfig(rWidth=6, gWidth=6, bWidth=6),
@@ -139,10 +154,11 @@ object DefaultGpu2dParams {
     intnlFbSize2d=intnlFbSize2d,
     physFbSize2dScale=physFbSize2dScale,
     tileSize2d=tileSize2d,
-    numTiles=(
+    numTilesPow=(
       //1024
       //2048 // (480 * 270) / (8 * 8) = 2025
-      1 << log2Up(
+      //1 <<
+      log2Up(
         (intnlFbSize2d.x * intnlFbSize2d.y)
         / (tileSize2d.x * tileSize2d.y)
       )
@@ -156,16 +172,17 @@ object DefaultGpu2dParams {
     //numObjs=256,
     ////numObjsPerScanline=64,
     //numColsInPal=256,
-    numBgs=numBgs,
-    numObjs=numObjs,
+    numBgsPow=numBgsPow,
+    numObjsPow=numObjsPow,
     //numObjsPerScanline=numObjsPerScanline,
-    numColsInPal=numColsInPal,
+    numColsInPalPow=numColsInPalPow,
     //--------
     tileColArrRamStyle=tileColArrRamStyle,
     bgEntryArrRamStyle=bgEntryArrRamStyle,
     bgAttrsArrRamStyle=bgAttrsArrRamStyle,
     objAttrsArrRamStyle=objAttrsArrRamStyle,
     palEntryArrRamStyle=palEntryArrRamStyle,
+    lineArrRamStyle=lineArrRamStyle,
     //--------
   )
 }
@@ -308,7 +325,45 @@ case class Gpu2d(
   //--------
   val io = Gpu2dIo(params=params)
   //--------
+  val tileColPush = io.tileColPush
+  val bgEntryPush = io.bgEntryPush
+  val bgAttrsPush = io.bgAttrsPush
+  val objAttrsPush = io.objAttrsPush
+  val palEntryPush = io.palEntryPush
+  //--------
+  val pop = io.pop
+  val col = pop.payload.col
+  val physPxPos = pop.payload.physPxPos
+  val intnlPxPos = pop.payload.intnlPxPos
+  val tilePos = pop.payload.tilePos
+  //--------
   val loc = new Area {
+    //--------
+    //val nextCol = KeepAttribute(cloneOf(.payload.col))
+    val rPastCol = KeepAttribute(RegNext(col))
+    rPastCol.init(rPastCol.getZero)
+    //--------
+    //val nextPhysPxPos = KeepAttribute(cloneOf(.payload.physPxPos))
+    val rPastPhysPxPos = KeepAttribute(RegNext(physPxPos))
+    rPastPhysPxPos.init(rPastPhysPxPos.getZero)
+    //--------
+    //val nextIntnlPxPos = KeepAttribute(cloneOf(IntnlPxPos))
+    val rPastIntnlPxPos = KeepAttribute(RegNext(intnlPxPos))
+    rPastIntnlPxPos.init(rPastIntnlPxPos.getZero)
+    //--------
+    //val nextTilePos = KeepAttribute(cloneOf(.payload.tilePos))
+    val rPastTilePos = KeepAttribute(RegNext(tilePos))
+    rPastTilePos.init(rPastTilePos.getZero)
+
+    val nextTilePosPlus1Overflow = Vec2(Bool())
+    val rTilePosPlus1Overflow = RegNext(nextTilePosPlus1Overflow).init( 
+      MkVec2(
+        dataType=Bool(),
+        x=False,
+        y=False,
+      )
+    )
+
     //--------
     val tileColMem = Mem(
       //wordType=UInt(params.palEntryMemIdxWidth bits),
@@ -317,20 +372,22 @@ case class Gpu2d(
     )
       .initBigInt(Array.fill(params.numPxsForAllTiles)(BigInt(0)).toSeq)
       .addAttribute("ram_style", params.tileColArrRamStyle)
+    //--------
     //val bgEntryMem = Mem(
     //  wordType=Gpu2dBgEntry(params=params),
     //  wordCount=params.numColsInPal,
     //)
     //  .addAttribute("ram_style", params.palEntryArrRamStyle)
+    //--------
     val bgEntryMemArr = new ArrayBuffer[Mem[Gpu2dBgEntry]]()
     for (idx <- 0 to params.numBgs - 1) {
-      val initSeq = Array.fill(params.numTilesPerBg)(BigInt(0)).toSeq
       bgEntryMemArr += Mem(
         wordType=Gpu2dBgEntry(params=params),
         wordCount=params.numTilesPerBg,
       )
-        .initBigInt(initSeq)
+        .initBigInt(Array.fill(params.numTilesPerBg)(BigInt(0)).toSeq)
         .addAttribute("ram_style", params.palEntryArrRamStyle)
+        .setName(f"bgEntryMemArr_$idx")
     }
     val bgAttrsMem = Mem(
       wordType=Gpu2dBgAttrs(params=params),
@@ -338,13 +395,14 @@ case class Gpu2d(
     )
       .initBigInt(Array.fill(params.numBgs)(BigInt(0)).toSeq)
       .addAttribute("ram_style", params.bgAttrsArrRamStyle)
+    //--------
     val objAttrsMem = Mem(
       wordType=Gpu2dObjAttrs(params=params),
       wordCount=params.numObjs,
     )
       .initBigInt(Array.fill(params.numObjs)(BigInt(0)).toSeq)
       .addAttribute("ram_style", params.objAttrsArrRamStyle)
-
+    //--------
     val palEntryMem = Mem(
       wordType=Gpu2dPalEntry(params=params),
       wordCount=params.numColsInPal,
@@ -352,6 +410,18 @@ case class Gpu2d(
       .initBigInt(Array.fill(params.numColsInPal)(BigInt(0)).toSeq)
       .addAttribute("ram_style", params.palEntryArrRamStyle)
     //--------
+    //val lineMem = Mem(
+    //  wordType=Rgb(params.rgbConfig),
+    //  wordCount=params.lineMemSize,
+    //)
+    //  .initBigInt(Array.fill(params.lineMemSize)(BigInt(0)).toSeq)
+    //  .addAttribute("ram_style", params.lineArrRamStyle)
+    //val nextLineIdx = KeepAttribute(UInt(1 bits))
+    //val rLineIdx = KeepAttribute(RegNext(nextLineIdx)) init(0x0)
+    //--------
+    //--------
   }
+  //--------
+  // Handle backgrounds
   //--------
 }
