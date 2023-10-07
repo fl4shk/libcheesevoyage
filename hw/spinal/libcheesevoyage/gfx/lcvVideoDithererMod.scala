@@ -27,7 +27,7 @@ object LcvVideoDithererInfo {
   def coordT(
     //vgaTimingInfo: LcvVgaTimingInfo,
     fbSize2d: ElabVec2[Int]
-  ): DualTypeNumVec2[UInt, UInt] = LcvVgaCtrlMiscIo.coordT(
+  ): DualTypeNumVec2[UInt, UInt] = LcvVideoCalcPosInfo.coordT(
     //vgaTimingInfo=vgaTimingInfo
     fbSize2d=fbSize2d,
   )
@@ -67,16 +67,26 @@ case class LcvVideoDithererInfo(
   //--------
   //val outpCol = out(Rgb(rgbConfig))
 
-  //val col = Rgb(rgbConfig)
+  val calcPosInfo = LcvVideoCalcPosInfo(
+    fbSize2d=fbSize2d,
+  )
+
+  ////val col = Rgb(rgbConfig)
   val frameCnt = UInt(ditherDeltaWidth bits)
-  //val changedFrameCnt = Bool()
-  //val posPlus1 = coordT()
-  //val posPlus2 = coordT()
-  val posPlus1Overflow = Vec2(Bool())
-  val nextPos = coordT()
-  val pos = coordT()
-  val pastPos = coordT()
-  val changingScanline = Bool()
+  ////val changedFrameCnt = Bool()
+  ////val posPlus1 = coordT()
+  ////val posPlus2 = coordT()
+  //val posWillOverflow = Vec2(Bool())
+  //val nextPos = coordT()
+  //val pos = coordT()
+  //val pastPos = coordT()
+  //val changingScanline = Bool()
+
+  def posWillOverflow = calcPosInfo.posWillOverflow
+  def nextPos = calcPosInfo.nextPos
+  def pos = calcPosInfo.pos
+  def pastPos = calcPosInfo.pastPos
+  def changingScanline = calcPosInfo.changingScanline
   //--------
   def ditherDeltaWidth = LcvVideoDithererInfo.ditherDeltaWidth
   def coordT() = LcvVideoDithererInfo.coordT(
@@ -342,72 +352,9 @@ case class LcvVideoDitherer(
     }
   )
   //--------
-  //val rPopValid = Reg(Bool()) init(False)
-  //rPopValid := push.valid
-  //pop.valid := rPopValid
-
-	//rPastColOut = Splitrec(RgbColorLayt(
-	//	CHAN_WIDTH=bus.OUT_CHAN_WIDTH(self.CHAN_WIDTH())
-	//))
-	//val rPastColOut = Reg(Rgb(outRgbConfig))
-	// Update `outp.pos` and `outp.frameCnt`
-	//posPlus1 = {"x": outp.pos.x + 0x1, "y": outp.pos.y + 0x1}
-
-	//val posPlus1 = ElabVec2(
-	//  x=tempOutp.pos.x + 0x1,
-	//  y=tempOutp.pos.y + 0x1,
-	//)
-
-	//val rPosPlus2 = Reg(coordT())
-	//rPosPlus2.init(rPosPlus2.getZero)
-	//rPosPlus2.x := outp.pos.x + 0x2
-	//rPosPlus2.y := outp.pos.y + 0x2
-	//val rChangingScanline = Reg(Bool()) init(False)
-	//rChangingScanline := rPosPlus2.x === fbSize2d.x
-	//outp.changingScanline := rChangingScanline
-	//val rPosYPlus2IsHeight = Reg(Bool()) init(False)
-	//rPosYPlus2IsHeight := rPosPlus2.y === fbSize2d.y
-
-	//val posPlus2 = ElabVec2(
-	//  x=tempOutp.pos.x + 0x2,
-	//  y=tempOutp.pos.y + 0x2,
-	//)
-
-	////val rChangingFrameCnt = Reg(Bool()) init(False)
-	////rChangingFrameCnt := rPosPlus2.y === fbSize2d.y
-
-	//val dbgPosPlus1ElemWidth = outp.pos.x.getWidth + 1
-	//val dbgPosPlus1 = Vec2(UInt(dbgPosPlus1ElemWidth bits))
-	//dbgPosPlus1.addAttribute("keep")
-	//dbgPosPlus1.x := (Cat(outp.pos.x, U"1'b0") + 0x1).resized
-	//dbgPosPlus1.y := (Cat(outp.pos.y, U"1'b0") + 0x1).resized
-	//val rPosPlus3 = Reg(coordT())
-	//rPosPlus3.init(rPosPlus3.getZero)
-	//rPosPlus3.x := outp.pos.x + 0x3
-	//rPosPlus3.y := outp.pos.y + 0x3
-
-	// Perform dithering
-	//dicol = Splitrec(RgbColorLayt(CHAN_WIDTH=bus.CHAN_WIDTH()))
-	val dicol = Rgb(rgbConfig)
-	//chanDelta
-	//	= PATTERN()[outp.frameCnt]
-	//		[Value.cast(outp.pos.y[0])][Value.cast(outp.pos.x[0])]
-
-  //val rOutpFrameCnt = Reg(UInt(ditherDeltaWidth bits)) init(0x0)
-  //val rOutpPos = Reg(coordT())
-  ////rOutpPos.init(rOutpPos.getZero)
-  //rOutpPos.x.init(fbSize2d.x)
-  //rOutpPos.y.init(fbSize2d.y)
-  //val rOutpPastPos = Reg(coordT())
-  //rOutpPastPos.init(rOutpPastPos.getZero)
-  //outp.pos := rOutpPos
-  //outp.pastPos := rOutpPastPos
-  ////val rOutpPayload = Reg(LcvVideoDithererPopPayload(
-  ////  rgbConfig=outRgbConfig
-  ////))
-  ////rOutpPayload.init(rOutpPayload.getZero)
-  ////outp := outp
-  //outp.frameCnt := rOutpFrameCnt
+  // Perform dithering
+  //dicol = Splitrec(RgbColorLayt(CHAN_WIDTH=bus.CHAN_WIDTH()))
+  val dicol = Rgb(rgbConfig)
 
   val chanDelta = (
     pattern
@@ -415,63 +362,51 @@ case class LcvVideoDitherer(
       (info.pos.y(0 downto 0))
       (info.pos.x(0 downto 0))
   )
-	//colInPlusDelta
-	//	= Splitrec(RgbColorLayt(CHAN_WIDTH=bus.CHAN_WIDTH() + 1))
-	val plusDeltaRgbConfig = RgbConfig(
+  //colInPlusDelta
+  //  = Splitrec(RgbColorLayt(CHAN_WIDTH=bus.CHAN_WIDTH() + 1))
+  val plusDeltaRgbConfig = RgbConfig(
     rWidth=rgbConfig.rWidth + 1,
     gWidth=rgbConfig.gWidth + 1,
     bWidth=rgbConfig.bWidth + 1,
   )
-	val colInPlusDelta = Rgb(plusDeltaRgbConfig)
-	val tempColInPlusDelta = Rgb(plusDeltaRgbConfig)
-	tempColInPlusDelta.r := inpCol.r.resized
-	tempColInPlusDelta.g := inpCol.g.resized
-	tempColInPlusDelta.b := inpCol.b.resized
+  val colInPlusDelta = Rgb(plusDeltaRgbConfig)
+  val tempColInPlusDelta = Rgb(plusDeltaRgbConfig)
+  tempColInPlusDelta.r := inpCol.r.resized
+  tempColInPlusDelta.g := inpCol.g.resized
+  tempColInPlusDelta.b := inpCol.b.resized
 
-	val rFrameCnt = Reg(cloneOf(info.frameCnt))
-	rFrameCnt.init(rFrameCnt.getZero)
-	info.frameCnt := rFrameCnt
+  val rFrameCnt = Reg(cloneOf(info.frameCnt))
+  rFrameCnt.init(rFrameCnt.getZero)
+  info.frameCnt := rFrameCnt
 
+  // BEGIN: moved to `LcvVideoCalcPos`
   //val rPosPlus1 = Reg(cloneOf(info.pos))
   //rPosPlus1.x.init(1)
   //rPosPlus1.y.init(1)
 
-  val rPos = Reg(cloneOf(info.pos))
-  rPos.init(rPos.getZero)
-  info.pos := rPos
+  //val rPos = Reg(cloneOf(info.pos))
+  //rPos.init(rPos.getZero)
+  //info.pos := rPos
 
-  val rPastPos = Reg(cloneOf(info.pastPos))
-  rPastPos.init(rPastPos.getZero)
-  info.pastPos := rPastPos
+  //val rPastPos = Reg(cloneOf(info.pastPos))
+  //rPastPos.init(rPastPos.getZero)
+  //info.pastPos := rPastPos
 
-  val rPosPlus1Overflow = Reg(cloneOf(info.posPlus1Overflow))
-  //val rPosPlus1Overflow = Reg(Vec2(Bool()))
-  rPosPlus1Overflow.init(rPosPlus1Overflow.getZero)
-  info.posPlus1Overflow := rPosPlus1Overflow
-  val rPosPlus1OverflowDual = Reg(Bool())
+  //val rPosWillOverflow = Reg(cloneOf(info.posWillOverflow))
+  ////val rPosWillOverflow = Reg(Vec2(Bool()))
+  //rPosWillOverflow.init(rPosWillOverflow.getZero)
+  //info.posWillOverflow := rPosWillOverflow
+  //val rPosWillOverflowDual = Reg(Bool())
 
-  val rChangingScanline = Reg(cloneOf(info.changingScanline))
-  rChangingScanline.init(rChangingScanline.getZero)
-  info.changingScanline := rChangingScanline
+  //val rChangingScanline = Reg(cloneOf(info.changingScanline))
+  //rChangingScanline.init(rChangingScanline.getZero)
+  //info.changingScanline := rChangingScanline
+  // END: moved to `LcvVideoCalcPos`
 
-  //object State extends SpinalEnum(
-  //  defaultEncoding=binarySequential
-  //  //defaultEncoding=binaryOneHot
-  //) {
-  //  val 
-  //    //waitForPsbNextFire,
-  //    //notPosXPlus1Overflow,
-  //    posXPlus1OverflowCheck,
-  //    posYPlus1OverflowCheck
-  //    //notPosYPlus1Overflow,
-  //    //posYPlus1Overflow
-  //    = newElement();
-  //}
-  //val rState = Reg(State) init(
-  //  //State.waitForPsbNextFire
-  //  //State.notPosXPlus1Overflow,
-  //  State.posXPlus1OverflowCheck,
-  //)
+  val calcPos = LcvVideoCalcPos(fbSize2d=fbSize2d)
+  calcPos.io.en := sbIo.next.fire
+  info.calcPosInfo := calcPos.io.info
+
 
   //when (sbIo.next.valid) {
   //rInfo := info
@@ -480,164 +415,22 @@ case class LcvVideoDitherer(
   //}
   when (clockDomain.isResetActive) {
     //info.nextPos := info.nextPos.getZero
-    ////info.pos := info.pos.getZero
-    //info.posPlus1Overflow := info.posPlus1Overflow.getZero
-    //info.frameCnt := info.frameCnt.getZero
-    //info.changingScanline := info.changingScanline.getZero
-    //info.pos := info.pos.getZero
-    //info.pastPos := info.pastPos.getZero
-    ////info.posPlus1.x := 1
-    ////info.posPlus1.y := 0
-    ////info.posPlus2.x := 2
-    ////info.posPlus2.y := 0
-    //info := info.getZero
-    info.nextPos := info.nextPos.getZero
-    //info.changingScanline
     outp := outp.getZero
   } otherwise {
-    //rPosPlus1OverflowDual := (
-    //  info.pos.x === fbSize2d.x - 2
-    //  && info.pos.y === fbSize2d.y - 1
-    //)
-    //rPosPlus1.x := info.pos.x + 1
-    //rPosPlus1.y := info.pos.y + 1
-
-    //rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
-    ////rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
-    //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
-    ////rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
-    //val dithConcat = Bits(3 bits)
-    val dithConcat = Bits(2 bits)
-    dithConcat(0) := rPosPlus1Overflow.x
-    dithConcat(1) := rPosPlus1Overflow.y
-    //dithConcat(2) := sbIo.next.fire
     
     when (sbIo.next.fire) {
-      switch (dithConcat) {
-        // overflowX=0, overflowY=don't care
-        //is (B"-0") 
-        //is(M"1-0") 
-        is(M"-0") {
-          info.nextPos.x := info.pos.x + 1
-          info.nextPos.y := info.pos.y
-          rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
-          //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
-          rChangingScanline := False
-        }
-        // overflowX=1, overflowY=0
-        //is (B"101")
-        is (B"01") {
-          info.nextPos.x := 0
-          rPosPlus1Overflow.x := False
-          rChangingScanline := True
-          info.nextPos.y := info.pos.y + 1
-          rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
-        }
-        // overflowX=1, overflowY=1
-        //is (B"111")
-        is (B"11") {
-          info.nextPos.x := 0
-          rPosPlus1Overflow.x := False
-          rChangingScanline := True
-          info.nextPos.y := 0x0
-          rPosPlus1Overflow.y := False
-        }
-        //is (M"0--") {
-        //  info.nextPos := info.pos
-        //}
-        default {
-          info.nextPos := info.pos
-        }
-      }
-      //rInfo.posPlus1 := rInfo.posPlus2
-      //rInfo.posPlus1.x := tempOutp.pos.x + 1
-      //rInfo.posPlus1.y := tempOutp.pos.y + 1
-
-      //rPosPlus1Overflow.x := info.nextPos.x === fbSize2d.x - 1
-      //rPosPlus1Overflow.y := info.nextPos.y === fbSize2d.y - 1
-      //rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
-      //rPosPlus
-
-      //when (info.pos.x =/= fbSize2d.x - 1) 
-      //switch (rState) {
-      //  is (State.posXPlus1OverflowCheck) {
-      //    info.nextPos.x := info.pos.x + 1
-      //    //info.nextPos.x := rPosPlus1.x
-      //    info.nextPos.y := info.pos.y
-      //    rChangingScanline := False
-      //    when (
-      //      //info.pos.x === fbSize2d.x - 1
-      //      //rPosPlus1Overflow.x && rPosPlus1Overflow.y
-      //      rPosPlus1Overflow.x
-      //    ) {
-      //      rState := State.posYPlus1OverflowCheck
-      //      //when (!rPosPlus1Overflow.y) {
-      //      //  rState := State.notPosXPlus1Overflow
-      //      //} otherwise {
-      //      //  rState := State.posYPlus1Overflow
-      //      //}
-      //    }
-      //  }
-      //  is (State.posYPlus1OverflowCheck) {
-      //    info.nextPos.x := 0
-      //    //info.nextPos.y := info.pos.y
-      //    rChangingScanline := True
-      //    when (!rPosPlus1Overflow.y) {
-      //      //rState := State.notPosYPlus1Overflow
-      //      info.nextPos.y := info.pos.y + 1
-      //      //info.nextPos.y := rPosPlus1.y
-      //    } otherwise {
-      //      //rState := State.posYPlus1Overflow
-      //      info.nextPos.y := 0
-      //    }
-      //    rState := State.posXPlus1OverflowCheck
-      //  }
-      //  //is (State.notPosYPlus1Overflow) {
-      //  //  //rChangingScanline := True
-      //  //  info.nextPos.x := info.pos.x
-      //  //  info.nextPos.y := info.pos.y + 1
-      //  //  rState := State.posXPlus1OverflowCheck
-      //  //}
-      //  //is (State.posYPlus1Overflow) {
-      //  //  //rChangingScanline := True
-      //  //  info.nextPos.x := info.pos.x
-      //  //  info.nextPos.y := 0
-      //  //  rState := State.posXPlus1OverflowCheck
-      //  //}
-      //}
-
-      // BEGIN: working code with lower FMax
-      //when (!rPosPlus1Overflow.x) {
-      //  info.nextPos.x := info.pos.x + 1
-      //  info.nextPos.y := info.pos.y
-      //  rPosPlus1Overflow.x := info.pos.x === fbSize2d.x - 2
-      //  //rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 1
-      //  rChangingScanline := False
-      //} otherwise {
-      //  info.nextPos.x := 0
-      //  rPosPlus1Overflow.x := False
-      //  rChangingScanline := True
-      //  //when (info.pos.y =/= fbSize2d.y - 1)
-      //  when (!rPosPlus1Overflow.y) {
-      //    info.nextPos.y := info.pos.y + 1
-      //    rPosPlus1Overflow.y := info.pos.y === fbSize2d.y - 2
-      //  } otherwise {
-      //    info.nextPos.y := 0x0
-      //    rPosPlus1Overflow.y := False
-      //  }
-      //}
-      // END: working code with lower FMax 
       //--------
       rFrameCnt := rFrameCnt + 0x1
-      rPos := info.nextPos
-      rPastPos := rPos
+      //rPos := info.nextPos
+      //rPastPos := rPos
+
       outp.col.r := dicol.r(dicol.r.high downto chanWidthDelta)
       outp.col.g := dicol.g(dicol.g.high downto chanWidthDelta)
       outp.col.b := dicol.b(dicol.b.high downto chanWidthDelta)
     } otherwise { // when (!sbIo.next.fire)
-      //info.posPlus1Overflow := rPastOutp.
+      //info.posWillOverflow := rPastOutp.
       //info := rInfo
-      info.nextPos := info.pos
+      //info.nextPos := info.pos
       outp := rOutp
     }
 
@@ -673,94 +466,94 @@ case class LcvVideoDitherer(
     //    // for this.
     //    //when (push.valid) 
     //    //when (inpEn) {
-    //    //	//m.d.sync += outp.frameCnt := (outp.frameCnt + 0x1)
-    //    //	rOutpFrameCnt := outp.frameCnt + 0x1
+    //    //  //m.d.sync += outp.frameCnt := (outp.frameCnt + 0x1)
+    //    //  rOutpFrameCnt := outp.frameCnt + 0x1
     //    //}
     //  }
     //}
   }
 
-	//when (!tempOutp.changingScanline) {
-	//  //outp.nextPos.x := posPlus1.x
-	//  outp.nextPos.x := tempOutp.posPlus1.x
-	//  outp.nextPos.y := tempOutp.pos.y
-	//} otherwise { // when (tempOutp.changingScanline)
-	//  outp.nextPos.x := 0
-	//  when (!rPosYPlus2IsHeight) {
-	//    outp.nextPos.y := rPosPlus2.y
-	//  } otherwise { // when (rPosYPlus2IsHeight)
-	//    outp.nextPos.y := 0x0
-	//    when (inpEn) {
-	//      rOutpFrameCnt := outp.frameCnt + 0x1
-	//    }
-	//  }
-	//}
+  //when (!tempOutp.changingScanline) {
+  //  //outp.nextPos.x := posPlus1.x
+  //  outp.nextPos.x := tempOutp.posPlus1.x
+  //  outp.nextPos.y := tempOutp.pos.y
+  //} otherwise { // when (tempOutp.changingScanline)
+  //  outp.nextPos.x := 0
+  //  when (!rPosYPlus2IsHeight) {
+  //    outp.nextPos.y := rPosPlus2.y
+  //  } otherwise { // when (rPosYPlus2IsHeight)
+  //    outp.nextPos.y := 0x0
+  //    when (inpEn) {
+  //      rOutpFrameCnt := outp.frameCnt + 0x1
+  //    }
+  //  }
+  //}
 
-	//val rPushReady = Reg(Bool()) init(False)
-	//io.push.ready := True
-	//when (io.push.valid) {
-	//  rPushReady := True
-	//}
-	//when (push.valid) 
-	//when (inpEn) 
-	//when (push.valid) {
-		////m.d.sync += [
+  //val rPushReady = Reg(Bool()) init(False)
+  //io.push.ready := True
+  //when (io.push.valid) {
+  //  rPushReady := True
+  //}
+  //when (push.valid) 
+  //when (inpEn) 
+  //when (push.valid) {
+    ////m.d.sync += [
     ////rPastColOut := outp.col
     ////rOutpPastPos := rOutpPos
     //outp.pastPos := tempOutp.pos
-		////]
+    ////]
 
-		////m.d.sync += [
+    ////m.d.sync += [
     ////rOutpPos := outp.nextPos
     //outp.pos := tempOutp.nextPos
-		////]
+    ////]
 
-		//m.d.comb += [
+    //m.d.comb += [
     //colInPlusDelta.r := (inpCol.r + chanDelta).resized
     //colInPlusDelta.g := (inpCol.g + chanDelta).resized
     //colInPlusDelta.b := (inpCol.b + chanDelta).resized
     colInPlusDelta.r := tempColInPlusDelta.r + chanDelta.resized
     colInPlusDelta.g := tempColInPlusDelta.g + chanDelta.resized
     colInPlusDelta.b := tempColInPlusDelta.b + chanDelta.resized
-		//]
+    //]
 
-		// Saturating arithmetic to prevent an artifact
-		//when (colInPlusDelta.r
-		//	[len(colInPlusDelta.r) - 1]):
-		when (colInPlusDelta.r.msb) {
-			//m.d.comb += dicol.r := (-1)
-			dicol.r := (default -> True)
-		} otherwise {
-			//m.d.comb += dicol.r := (colInPlusDelta.r
-			//	[:len(dicol.r)])
-			dicol.r := colInPlusDelta.r(dicol.r.bitsRange)
-		}
-		//m.d.comb += dicol.r := (colInPlusDelta.r
-		//	[:len(dicol.r)])
+    // Saturating arithmetic to prevent an artifact
+    //when (colInPlusDelta.r
+    //  [len(colInPlusDelta.r) - 1]):
+    when (colInPlusDelta.r.msb) {
+      //m.d.comb += dicol.r := (-1)
+      dicol.r := (default -> True)
+    } otherwise {
+      //m.d.comb += dicol.r := (colInPlusDelta.r
+      //  [:len(dicol.r)])
+      dicol.r := colInPlusDelta.r(dicol.r.bitsRange)
+    }
+    //m.d.comb += dicol.r := (colInPlusDelta.r
+    //  [:len(dicol.r)])
 
-		when (colInPlusDelta.g.msb) {
-			//m.d.comb += dicol.g := (-1)
-			dicol.g := (default -> True)
-		} otherwise {
-			//m.d.comb += dicol.g := (colInPlusDelta.g
-			//	[:len(dicol.g)])
-			dicol.g := colInPlusDelta.g(dicol.g.bitsRange)
-		}
-		//m.d.comb += dicol.g := (colInPlusDelta.g
-		//	[:len(dicol.g)])
+    when (colInPlusDelta.g.msb) {
+      //m.d.comb += dicol.g := (-1)
+      dicol.g := (default -> True)
+    } otherwise {
+      //m.d.comb += dicol.g := (colInPlusDelta.g
+      //  [:len(dicol.g)])
+      dicol.g := colInPlusDelta.g(dicol.g.bitsRange)
+    }
+    //m.d.comb += dicol.g := (colInPlusDelta.g
+    //  [:len(dicol.g)])
 
-		when (colInPlusDelta.b.msb) {
-			//m.d.comb += dicol.b := (-1)
-			dicol.b := (default -> True)
-		} otherwise {
-			//m.d.comb += dicol.b := (colInPlusDelta.b
-			//	[:len(dicol.b)])
-			dicol.b := colInPlusDelta.b(dicol.b.bitsRange)
-		}
-		//m.d.comb += dicol.b := (colInPlusDelta.b
-		//	[:len(dicol.b)])
+    when (colInPlusDelta.b.msb) {
+      //m.d.comb += dicol.b := (-1)
+      dicol.b := (default -> True)
+    } otherwise {
+      //m.d.comb += dicol.b := (colInPlusDelta.b
+      //  [:len(dicol.b)])
+      dicol.b := colInPlusDelta.b(dicol.b.bitsRange)
+    }
+    //m.d.comb += dicol.b := (colInPlusDelta.b
+    //  [:len(dicol.b)])
 
-		//m.d.comb += [
+    //m.d.comb += [
     //dicol.r := (COL_IN_PLUS_DELTA["r"]),
     //dicol.g := (COL_IN_PLUS_DELTA["g"]),
     //dicol.b := (COL_IN_PLUS_DELTA["b"]),
@@ -774,16 +567,16 @@ case class LcvVideoDitherer(
     ////outp.col.r := (dicol.r[bus.CHAN_WIDTH_DELTA():]),
     ////outp.col.g := (-1),
     ////outp.col.b := (dicol.b[bus.CHAN_WIDTH_DELTA():]),
-		////]
-	//} otherwise { // when (~push.valid):
-	//	//m.d.comb += [
+    ////]
+  //} otherwise { // when (~push.valid):
+  //  //m.d.comb += [
   //  //colInPlusDelta := 0x0
   //  colInPlusDelta := colInPlusDelta.getZero
   //  //dicol := 0x0
   //  dicol := dicol.getZero
   //  outp.col := rPastColOut
   //  //outp.nextPos := rOutpPos
-	//	//]
-	//}
+  //  //]
+  //}
   //--------
 }

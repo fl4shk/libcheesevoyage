@@ -189,7 +189,7 @@ case class LcvVgaGradient(
   //    when (
   //      //dithIo.info.changingScanline
   //      //dithIo.info.pos.x === fbSize2d.x - 1
-  //      dithIo.info.posPlus1Overflow.x
+  //      dithIo.info.posWillOverflow.x
   //    ) {
   //      resetDithCol()
   //    } otherwise {
@@ -199,12 +199,12 @@ case class LcvVgaGradient(
   //}
   val gradConcat = Bits(2 bits)
   gradConcat(1) := dithIo.push.fire
-  gradConcat(0) := dithIo.info.posPlus1Overflow.x
+  gradConcat(0) := dithIo.info.posWillOverflow.x
   when (clockDomain.isResetActive) {
     resetDithCol()
   } otherwise {
     when (dithIo.push.fire) {
-      when (dithIo.info.posPlus1Overflow.x) {
+      when (dithIo.info.posWillOverflow.x) {
         resetDithCol()
       } otherwise {
         incrDithCol()
@@ -212,14 +212,14 @@ case class LcvVgaGradient(
     }
     // this was slower:
     //switch (gradConcat) {
-    //  // dithIo.push.fire=0, dithIo.info.posPlus1Overflow.x=0
+    //  // dithIo.push.fire=0, dithIo.info.posWillOverflow.x=0
     //  is (M"0-") {
     //  }
-    //  // dithIo.push.fire=1, dithIo.info.posPlus1Overflow.x=0
+    //  // dithIo.push.fire=1, dithIo.info.posWillOverflow.x=0
     //  is (B"10") {
     //    resetDithCol()
     //  }
-    //  // dithIo.push.fire=1, dithIo.info.posPlus1Overflow.x=1
+    //  // dithIo.push.fire=1, dithIo.info.posWillOverflow.x=1
     //  is (B"11") {
     //    incrDithCol()
     //  }
