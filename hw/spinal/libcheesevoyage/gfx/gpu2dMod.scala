@@ -32,7 +32,7 @@ case class Gpu2dParams(
                               // perhaps a good idea to ensure `fbSize2d`
                               // is integer multiples of `numTiles`, as
                               // that is how I'm used to 2D GPUs working)
-  physFbSize2dLslScale: ElabVec2[Int],  // the integer value to logical
+  physFbSize2dScalePow: ElabVec2[Int],  // the integer value to logical
                               // left shift `intnlFbSize2d` by to obtain
                               // the physical resolution of the video
                               // signal.
@@ -72,12 +72,34 @@ case class Gpu2dParams(
   def numObjs = 1 << numObjsPow
   def numColsInPal = 1 << numColsInPalPow
   //--------
+  //def physToIntnlScalePow = ElabVec2[Int](
+  //  x=physFbSize2dScalePow.x,
+  //  y=physFbSize2dScalePow.y,
+  //)
+  def physToIntnlScalePow = physFbSize2dScalePow
   def physFbSize2d = ElabVec2[Int](
     //x=intnlFbSize2d.x * physFbSize2dScale.x,
     //y=intnlFbSize2d.y * physFbSize2dScale.y,
-    x=intnlFbSize2d.x << physFbSize2dLslScale.x,
-    y=intnlFbSize2d.y << physFbSize2dLslScale.y,
+    //x=intnlFbSize2d.x << physFbSize2dScalePow.x,
+    //y=intnlFbSize2d.y << physFbSize2dScalePow.y,
+    x=intnlFbSize2d.x << physFbSize2dScalePow.x,
+    y=intnlFbSize2d.y << physFbSize2dScalePow.y,
   )
+  //def fbSize2dInPxs = ElabVec2[Int](
+  //  x=intnlFbSize2d.x,
+  //  y=intnlFbSize2d.y,
+  //)
+  def fbSize2dInPxs = intnlFbSize2d
+  def physToTilesScalePow = ElabVec2[Int](
+    x=physToIntnlScalePow.x + tileSize2dPow.x,
+    y=physToIntnlScalePow.y + tileSize2dPow.y,
+  )
+
+  def fbSize2dInTiles = ElabVec2[Int](
+    x=intnlFbSize2d.x >> tileSize2dPow.x,
+    y=intnlFbSize2d.y >> tileSize2dPow.y,
+  )
+
   //def lineMemSize = physFbSize2dScale.y * params.physFbSize2d.x
 
   //def halfLineMemSize = intnlFbSize2d.x
@@ -98,9 +120,7 @@ case class Gpu2dParams(
   def numPxsForAllTiles = numTiles * numPxsPerTile
   //--------
   def numTilesPerBg = bgSize2dInTiles.x * bgSize2dInTiles.y
-  def numPxsPerBg = (
-    numTilesPerBg * numPxsPerTile
-  )
+  def numPxsPerBg = numTilesPerBg * numPxsPerTile
   def numPxsForAllBgs = numBgs * numPxsPerBg
   //--------
   //def objAttrsMemIdxWidth = log2Up(numObjs)
@@ -172,7 +192,7 @@ object DefaultGpu2dParams {
     //  x=4, // 1920 / 4 = 480
     //  y=4, // 1080 / 4 = 270
     //),
-    physFbSize2dLslScale: ElabVec2[Int]=ElabVec2[Int](
+    physFbSize2dScalePow: ElabVec2[Int]=ElabVec2[Int](
       x=log2Up(4), // 1920 / 4 = 480
       y=log2Up(4), // 1080 / 4 = 270
     ),
@@ -213,7 +233,7 @@ object DefaultGpu2dParams {
       rgbConfig=rgbConfig,
       intnlFbSize2d=intnlFbSize2d,
       //physFbSize2dScale=physFbSize2dScale,
-      physFbSize2dLslScale=physFbSize2dLslScale,
+      physFbSize2dScalePow=physFbSize2dScalePow,
       tileSize2dPow=tileSize2dPow,
       numTilesPow=(
         //1024
@@ -433,7 +453,7 @@ case class Gpu2d(
   palEntryPush.ready := True
   //--------
   val pop = io.pop
-  val rPopValid = Reg(Bool()) init(False)
+  val rPopValid = Reg(Bool()) init(True) //init(False)
   //rPopValid := True
   pop.valid := rPopValid
   //val rOutp = Reg(cloneOf(pop.payload))
@@ -443,6 +463,7 @@ case class Gpu2d(
   ////rOutp.init(rOutp.getZero)
   //pop.payload := rOutp
   val outp = cloneOf(pop.payload)
+  val rPastOutp = RegNext(outp) init(outp.getZero)
   pop.payload := outp
 
 
@@ -599,56 +620,20 @@ case class Gpu2d(
     val physCalcPos = LcvVideoCalcPos(
       someSize2d=params.physFbSize2d
     )
-    physCalcPos.io.en := pop.fire
+    //physCalcPos.io.en := pop.fire
+    //physCalcPos.io.en := True
+    val rPhysCalcPosEn = Reg(Bool()) init(True) //init(False)
+    physCalcPos.io.en := rPhysCalcPosEn
     outp.physPosInfo := physCalcPos.io.info
     outp.bgPxsPosSlice := outp.physPosInfo.posSlice(
-      thisSize2dPow=ElabVec2[Int](
-        x=log2Up(params.physFbSize2d.x),
-        y=log2Up(params.physFbSize2d.y),
-      ),
-      thatSize2dPow=ElabVec2[Int](
-        x=log2Up(params.bgSize2dInPxs.x),
-        y=log2Up(params.bgSize2dInPxs.y),
-      ),
+      someSize2d=params.fbSize2dInPxs,
+      someScalePow=params.physToIntnlScalePow,
       //thatSomeSize2d=params.bg
     )
     outp.bgTilesPosSlice := outp.physPosInfo.posSlice(
-      thisSize2dPow=ElabVec2[Int](
-        x=log2Up(params.physFbSize2d.x),
-        y=log2Up(params.physFbSize2d.y),
-      ),
-      thatSize2dPow=ElabVec2[Int](
-        x=log2Up(params.bgSize2dInTiles.x),
-        y=log2Up(params.bgSize2dInTiles.y),
-      ),
-      //thatSomeSize2d=params.bg
+      someSize2d=params.fbSize2dInTiles,
+      someScalePow=params.physToTilesScalePow,
     )
-
-    //val bgPxsCalcPos = LcvVideoCalcPos(
-    //  someSize2d=params.bgSize2dInPxs
-    //)
-    //val rChangingIntnlPxs = Reg(Bool()) init(False)
-
-    // This should be fine because there's no output from
-    // `LcvVideoCalcPos` for the valid/ready transaction 
-
-    //when (pop.fire) {
-    //  rChangingIntnlPxs := (
-    //    outp.physPosInfo.pos.x(
-    //      params.physToBgPxsSliceWidth - 1 downto 0
-    //    ).asBits === B(default -> True)
-    //  )
-    //} otherwise {
-    //}
-    //bgPxsCalcPos.io.en := (
-    //  pop.fire && rChangingIntnlPxs
-    //)
-
-    //bgPxsCalcPos.io.en := pop.fire && outp.physPosInfo
-    //val bgTilesCalcPos = LcvVideoCalcPos(
-    //  someSize2d=params.bgSize2dInTiles
-    //)
-    //outp.bgTilesPosInfo := bgTilesCalcPos.io.info
 
     val lineMemArr = new ArrayBuffer[Mem[Rgb]]()
     for (idx <- 0 to params.numLineMems - 1) {
@@ -666,33 +651,55 @@ case class Gpu2d(
     //val nextCol = Rgb(params.rgbConfig)
     //val rCol = RegNext(nextCol)
     //rCol.init(rCol.getZero)
+
     //--------
-    //val nextPhysPosCnt = params.physPxCoordT()
-    //val rPhysPosCnt = RegNext(nextPhysPosCnt) init(nextPhysPosCnt.getZero)
-
-    //val rPhysPosCntPlus1Overflow = Reg(Vec2(Bool()))
-    //rPhysPosCntPlus1Overflow.init(rPhysPosCntPlus1Overflow.getZero)
-    ////val physPosCntPlus1OverflowAsBits = rPhysPosCntPlus1Overflow.asBits
-    //when (pop.fire) {
-    //  //rPhysPosCntPlus1Overflow := rPhysPosCnt.x === params.physFbSize2d.x - 2
-    //  switch (rPhysPosCntPlus1Overflow.asBits.reversed) {
-    //    is (M"-0") {
-    //    }
-    //    is (B"01") {
-    //    }
-    //    is (B"11") {
-    //    }
-    //    default {
-    //    }
-    //  }
-    //  //when (rPhysPosCnt.x + 2 === params.physFbSize2d.x) {
-    //  //} otherwise {
-    //  //}
+    val rBgColVec = Vec.fill(params.numBgs)(Reg(Rgb(params.rgbConfig)))
+    for (idx <- 0 to params.numBgs - 1) {
+      rBgColVec(idx).init(rBgColVec(idx).getZero)
+    }
+    val rBgColIdxVec = Vec.fill(params.numBgs)(
+      Reg(UInt(params.palEntryMemIdxWidth bits)) init(0x0)
+    )
+    val rBgColReadCnt = Reg(UInt(log2Up(params.numBgs) + 1 bits)).init(0x0)
+    val rPastCrossingGridX = Reg(Bool()) init(False)
+    rPastCrossingGridX := rPastOutp.bgPxsPosSlice.crossingGridX
+    when (pop.fire) {
+      //rPopValid := False
+      rBgColReadCnt := 0x0
+      rPhysCalcPosEn := True
+    } otherwise { // when (!pop.fire)
+      //when (outp.bgPxsPosSlice.pos.x + 1 === outp.bgPxsPosSlice.nextPos.x)
+      when (rPastCrossingGridX) {
+        // when changing to another internal pixel
+        //for (idx <- 0 to params.numBgs - 1) {
+        //  //--------
+          //when (pop.fire) {
+          //  bgColIdxVec(idx) := 
+          //}
+          //rBgColIdxVec(idx) := bgEntryMemArr(idx).readAsync(
+          //  address=U(3)
+          //)
+        //  //--------
+        //}
+        rBgColReadCnt := 0
+      } otherwise {
+        when (!rBgColReadCnt.msb) {
+          rBgColReadCnt := rBgColReadCnt + 1
+          //rBgColVec(rBgColReadCnt) := palEntryMem.readSync(
+          //  address=rBgColIdxVec
+          //)
+        } otherwise { // when (rBgColReadCnt.msb)
+          // disable `physCalcPos` until next `pop.fire` occurrence
+          rPhysCalcPosEn := False
+        }
+      }
+    }
+    //--------
+    //for (idx <- 0 to params.numBgs - 1) {
+    //  //bgColVec(idx) := palEntryMem.readAsync(
+    //  //  address=
     //}
-
+    //--------
     //--------
   }
-  //--------
-  // Handle backgrounds
-  //--------
 }
