@@ -42,19 +42,19 @@ class LcvVgaPipe(
   ////val sWrapNext = s.wrapNext()
   //val c = Reg(UInt(vgaTimingHv.cntWidth() bits)) init(0x0)
 
-  val minAhead = 1
-  //val maxAhead = 3 
-  val maxAhead = 2
-  val numAhead = maxAhead - minAhead + 1
-  val pipeSize = numAhead + 1
+  def minAhead = 1
+  //def maxAhead = 3 
+  def maxAhead = 2
+  def numAhead = maxAhead - minAhead + 1
+  def pipeSize = numAhead + 1
 
-  val currIdx = 0
-  val pipe1Idx = 1
-  val pipe2Idx = 2
-  //val pipe3Idx = 3
+  def currIdx = 0
+  def pipe1Idx = 1
+  def pipe2Idx = 2
+  //def pipe3Idx = 3
 
-  //val cntWidth = vgaTimingHv.cntWidth(offs=maxAhead) 
-  val cntWidth = vgaTimingHv.cntWidth(offs=2)
+  //def cntWidth = vgaTimingHv.cntWidth(offs=maxAhead) 
+  def cntWidth = vgaTimingHv.cntWidth(offs=2)
   val rCPipe = new ArrayBuffer[UInt]()
   val cToDrive = UInt(cntWidth bits) // next value of `rCPipe.last`
   val rSPipe = new ArrayBuffer[LcvVgaState.C]()
@@ -113,21 +113,21 @@ class LcvVgaPipe(
   //rPixelEnArr.last := pixelEnToDrive
 
   // `<whatever>ToDrive` are the inputs to the pipeline
-  val c = rCPipe(currIdx)
-  val rCPipe1 = rCPipe(1)
-  val rCPipe2 = rCPipe(2)
+  def c = rCPipe(currIdx)
+  def rCPipe1 = rCPipe(1)
+  def rCPipe2 = rCPipe(2)
   val rCPipe2Plus1GeStateSize = Reg(Bool()) init(False)
   val rCPipe2Plus1 = Reg(UInt(cntWidth bits)) init(0x0)
   //val rCPipe3 = rCPipe(3)
 
-  val s = rSPipe(currIdx)
-  val rSPipe1 = rSPipe(pipe1Idx)
-  val rSPipe2 = rSPipe(pipe2Idx)
+  def s = rSPipe(currIdx)
+  def rSPipe1 = rSPipe(pipe1Idx)
+  def rSPipe2 = rSPipe(pipe2Idx)
   //val rSPipe3 = rSPipe(pipe3Idx)
 
-  val rVisib = rVisibPipe(currIdx)
-  val rVisibPipe1 = rVisibPipe(pipe1Idx)
-  val rVisibPipe2 = rVisibPipe(pipe2Idx)
+  def rVisib = rVisibPipe(currIdx)
+  def rVisibPipe1 = rVisibPipe(pipe1Idx)
+  def rVisibPipe2 = rVisibPipe(pipe2Idx)
   //val rVisibPipe3 = rVisibPipe(pipe3Idx)
 
   //val rPixelEn = rPixelEnArr(currIdx)
@@ -311,12 +311,17 @@ object LcvVgaCtrlMiscIo {
   //    log2Up(fbWidthOrHeight)
   //  ) bits
   //)
+  def coordElemT(
+    fbWidthOrHeight: Int
+  ): UInt = UInt(log2Up(fbWidthOrHeight) bits)
   def coordT(
     //vgaTimingInfo: LcvVgaTimingInfo,
     fbSize2d: ElabVec2[Int]
   ): DualTypeNumVec2[UInt, UInt] = DualTypeNumVec2(
-    dataTypeX=UInt(log2Up(fbSize2d.x) bits),
-    dataTypeY=UInt(log2Up(fbSize2d.y) bits),
+    //dataTypeX=UInt(log2Up(fbSize2d.x) bits),
+    //dataTypeY=UInt(log2Up(fbSize2d.y) bits),
+    dataTypeX=coordElemT(fbWidthOrHeight=fbSize2d.x),
+    dataTypeY=coordElemT(fbWidthOrHeight=fbSize2d.y),
   )
   // clocks per pixel
   def cpp(

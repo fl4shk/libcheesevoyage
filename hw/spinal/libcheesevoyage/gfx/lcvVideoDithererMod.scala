@@ -27,9 +27,9 @@ object LcvVideoDithererInfo {
   def coordT(
     //vgaTimingInfo: LcvVgaTimingInfo,
     fbSize2d: ElabVec2[Int]
-  ): DualTypeNumVec2[UInt, UInt] = LcvVideoCalcPosInfo.coordT(
+  ): DualTypeNumVec2[UInt, UInt] = LcvVideoPosInfo.coordT(
     //vgaTimingInfo=vgaTimingInfo
-    fbSize2d=fbSize2d,
+    someSize2d=fbSize2d,
   )
   //DualTypeVec2(
   //  //coordElemT(vgaTimingInfo=vgaTimingInfo)
@@ -67,8 +67,8 @@ case class LcvVideoDithererInfo(
   //--------
   //val outpCol = out(Rgb(rgbConfig))
 
-  val calcPosInfo = LcvVideoCalcPosInfo(
-    fbSize2d=fbSize2d,
+  val posInfo = LcvVideoPosInfo(
+    someSize2d=fbSize2d,
   )
 
   ////val col = Rgb(rgbConfig)
@@ -80,13 +80,13 @@ case class LcvVideoDithererInfo(
   //val nextPos = coordT()
   //val pos = coordT()
   //val pastPos = coordT()
-  //val changingScanline = Bool()
+  //val changingRow = Bool()
 
-  def posWillOverflow = calcPosInfo.posWillOverflow
-  def nextPos = calcPosInfo.nextPos
-  def pos = calcPosInfo.pos
-  def pastPos = calcPosInfo.pastPos
-  def changingScanline = calcPosInfo.changingScanline
+  def posWillOverflow = posInfo.posWillOverflow
+  def nextPos = posInfo.nextPos
+  def pos = posInfo.pos
+  def pastPos = posInfo.pastPos
+  def changingRow = posInfo.changingRow
   //--------
   def ditherDeltaWidth = LcvVideoDithererInfo.ditherDeltaWidth
   def coordT() = LcvVideoDithererInfo.coordT(
@@ -379,33 +379,9 @@ case class LcvVideoDitherer(
   rFrameCnt.init(rFrameCnt.getZero)
   info.frameCnt := rFrameCnt
 
-  // BEGIN: moved to `LcvVideoCalcPos`
-  //val rPosPlus1 = Reg(cloneOf(info.pos))
-  //rPosPlus1.x.init(1)
-  //rPosPlus1.y.init(1)
-
-  //val rPos = Reg(cloneOf(info.pos))
-  //rPos.init(rPos.getZero)
-  //info.pos := rPos
-
-  //val rPastPos = Reg(cloneOf(info.pastPos))
-  //rPastPos.init(rPastPos.getZero)
-  //info.pastPos := rPastPos
-
-  //val rPosWillOverflow = Reg(cloneOf(info.posWillOverflow))
-  ////val rPosWillOverflow = Reg(Vec2(Bool()))
-  //rPosWillOverflow.init(rPosWillOverflow.getZero)
-  //info.posWillOverflow := rPosWillOverflow
-  //val rPosWillOverflowDual = Reg(Bool())
-
-  //val rChangingScanline = Reg(cloneOf(info.changingScanline))
-  //rChangingScanline.init(rChangingScanline.getZero)
-  //info.changingScanline := rChangingScanline
-  // END: moved to `LcvVideoCalcPos`
-
-  val calcPos = LcvVideoCalcPos(fbSize2d=fbSize2d)
-  calcPos.io.en := sbIo.next.fire
-  info.calcPosInfo := calcPos.io.info
+  val vidCalcPos = LcvVideoCalcPos(someSize2d=fbSize2d)
+  vidCalcPos.io.en := sbIo.next.fire
+  info.posInfo := vidCalcPos.io.info
 
 
   //when (sbIo.next.valid) {
@@ -473,11 +449,11 @@ case class LcvVideoDitherer(
     //}
   }
 
-  //when (!tempOutp.changingScanline) {
+  //when (!tempOutp.changingRow) {
   //  //outp.nextPos.x := posPlus1.x
   //  outp.nextPos.x := tempOutp.posPlus1.x
   //  outp.nextPos.y := tempOutp.pos.y
-  //} otherwise { // when (tempOutp.changingScanline)
+  //} otherwise { // when (tempOutp.changingRow)
   //  outp.nextPos.x := 0
   //  when (!rPosYPlus2IsHeight) {
   //    outp.nextPos.y := rPosPlus2.y

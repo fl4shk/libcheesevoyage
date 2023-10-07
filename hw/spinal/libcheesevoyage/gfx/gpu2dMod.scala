@@ -125,9 +125,34 @@ case class Gpu2dParams(
   def coordT(
     someSize2d: ElabVec2[Int],
   ) = LcvVgaCtrlMiscIo.coordT(fbSize2d=someSize2d)
-  def physPxCoordT() = coordT(someSize2d=physFbSize2d)
-  def bgPxCoordT() = coordT(someSize2d=bgSize2dInPxs)
+  def physCoordT() = coordT(someSize2d=physFbSize2d)
+  def physPosInfoT() = LcvVideoPosInfo(someSize2d=physFbSize2d)
+  def bgPxsCoordT() = coordT(someSize2d=bgSize2dInPxs)
+  def bgPxsPosSliceT() = LcvVideoPosSlice(
+    //someWidthOrHeight=bgSize2dInPxs.x
+    someSize2d=bgSize2dInPxs
+  )
+  //def bgPxsPosInfoT() = LcvVideoPosInfo(someSize2d=bgSize2dInPxs)
   def bgTilesCoordT() = coordT(someSize2d=bgSize2dInTiles)
+  def bgTilesPosSliceT() = LcvVideoPosSlice(
+    //someWidthOrHeight=bgSize2dInTiles.x
+    someSize2d=bgSize2dInTiles
+  )
+  //def bgTilesPosInfoT() = LcvVideoPosInfo(someSize2d=bgSize2dInTiles)
+
+  //def physToBgPxsSliceWidth = (
+  //  log2Up(physFbSize2d.x / bgSize2dInPxs.x)
+  //)
+
+  //def bgPxsToBgTilesSliceHi = (
+  //  log2Up(bgSize2dInPxs.x / bgSize2dInTiles.x) - 1
+  //)
+  //def physToBgPxsSliceHi = (
+  //  log2Up(physFbSize2d.x / bgSize2dInPxs.x) - 1
+  //)
+  //def physToBgTilesSliceWidth = log2Up(
+  //  physFbSize2d.x / bgSize2dInTiles.x
+  //)
   //def bgScrollCoordT() = coordT(someSize2d=)
   //--------
 }
@@ -287,7 +312,7 @@ case class Gpu2dBgAttrs(
   params: Gpu2dParams,
 ) extends Bundle {
   //--------
-  val scroll = params.bgPxCoordT()
+  val scroll = params.bgPxsCoordT()
   //--------
 }
 case class Gpu2dBgAttrsStmPayload(
@@ -309,7 +334,7 @@ case class Gpu2dObjAttrs(
   //val pos = params.coordT(fbSize2d=params.bgSize2dInPxs)
 
   // position within the tilemap, in pixels
-  val pos = params.bgPxCoordT()
+  val pos = params.bgPxsCoordT()
 
   // whether or not to flip x/y 
   val visibFlip = Vec2(dataType=Bool())
@@ -346,9 +371,16 @@ case class Gpu2dPopPayload(
 ) extends Bundle {
   //--------
   val col = Rgb(params.rgbConfig)
-  val physPxPos = params.physPxCoordT()
-  val intnlPxPos = params.bgPxCoordT()
-  val tilePos = params.bgTilesCoordT()
+  //val physPxPos = params.physPxCoordT()
+  //val intnlPxPos = params.bgPxsCoordT()
+  //val tilePos = params.bgTilesCoordT()
+  val physPosInfo = params.physPosInfoT()
+  //val bgPxsPos = params.bgPxsCoordT()
+  //val bgPxsPosInfo = params.bgPxsPosInfoT()
+  val bgPxsPosSlice = params.bgPxsPosSliceT()
+  //val bgTilesPos = params.bgTilesCoordT()
+  val bgTilesPosSlice = params.bgTilesPosSliceT()
+  //val bgTilesPosInfo = params.bgTilesPosInfoT()
   //--------
 }
 
@@ -402,11 +434,18 @@ case class Gpu2d(
   //--------
   val pop = io.pop
   val rPopValid = Reg(Bool()) init(False)
+  //rPopValid := True
+  pop.valid := rPopValid
   //val rOutp = Reg(cloneOf(pop.payload))
-  val nextOutp = cloneOf(pop.payload)
-  val rOutp = RegNext(nextOutp) init(nextOutp.getZero)
-  //rOutp.init(rOutp.getZero)
-  pop.payload := rOutp
+
+  //val nextOutp = cloneOf(pop.payload)
+  //val rOutp = RegNext(nextOutp) init(nextOutp.getZero)
+  ////rOutp.init(rOutp.getZero)
+  //pop.payload := rOutp
+  val outp = cloneOf(pop.payload)
+  pop.payload := outp
+
+
   //pop.valid := True
   //val col = pop.payload.col
   //val physPxPos = pop.payload.physPxPos
@@ -447,7 +486,7 @@ case class Gpu2d(
     //    y=False,
     //  ))
     //--------
-    //val nextBgPxPosCnt = params.bgPxCoordT()
+    //val nextBgPxPosCnt = params.bgPxsCoordT()
     //val rBgPxPosCnt = RegNext(nextBgPxPosCnt)
     //rBgPxPosCnt.init(rBgPxPosCnt.getZero)
     //val nextPhysPosCnt = DualTypeNumVec2(
@@ -557,8 +596,61 @@ case class Gpu2d(
       )
     }
     //--------
-    val lineMemArr = new ArrayBuffer[Mem[Rgb]]()
+    val physCalcPos = LcvVideoCalcPos(
+      someSize2d=params.physFbSize2d
+    )
+    physCalcPos.io.en := pop.fire
+    outp.physPosInfo := physCalcPos.io.info
+    outp.bgPxsPosSlice := outp.physPosInfo.posSlice(
+      thisSize2dPow=ElabVec2[Int](
+        x=log2Up(params.physFbSize2d.x),
+        y=log2Up(params.physFbSize2d.y),
+      ),
+      thatSize2dPow=ElabVec2[Int](
+        x=log2Up(params.bgSize2dInPxs.x),
+        y=log2Up(params.bgSize2dInPxs.y),
+      ),
+      //thatSomeSize2d=params.bg
+    )
+    outp.bgTilesPosSlice := outp.physPosInfo.posSlice(
+      thisSize2dPow=ElabVec2[Int](
+        x=log2Up(params.physFbSize2d.x),
+        y=log2Up(params.physFbSize2d.y),
+      ),
+      thatSize2dPow=ElabVec2[Int](
+        x=log2Up(params.bgSize2dInTiles.x),
+        y=log2Up(params.bgSize2dInTiles.y),
+      ),
+      //thatSomeSize2d=params.bg
+    )
 
+    //val bgPxsCalcPos = LcvVideoCalcPos(
+    //  someSize2d=params.bgSize2dInPxs
+    //)
+    //val rChangingIntnlPxs = Reg(Bool()) init(False)
+
+    // This should be fine because there's no output from
+    // `LcvVideoCalcPos` for the valid/ready transaction 
+
+    //when (pop.fire) {
+    //  rChangingIntnlPxs := (
+    //    outp.physPosInfo.pos.x(
+    //      params.physToBgPxsSliceWidth - 1 downto 0
+    //    ).asBits === B(default -> True)
+    //  )
+    //} otherwise {
+    //}
+    //bgPxsCalcPos.io.en := (
+    //  pop.fire && rChangingIntnlPxs
+    //)
+
+    //bgPxsCalcPos.io.en := pop.fire && outp.physPosInfo
+    //val bgTilesCalcPos = LcvVideoCalcPos(
+    //  someSize2d=params.bgSize2dInTiles
+    //)
+    //outp.bgTilesPosInfo := bgTilesCalcPos.io.info
+
+    val lineMemArr = new ArrayBuffer[Mem[Rgb]]()
     for (idx <- 0 to params.numLineMems - 1) {
       lineMemArr += Mem(
         wordType=Rgb(params.rgbConfig),
@@ -567,34 +659,36 @@ case class Gpu2d(
         .initBigInt(Array.fill(params.lineMemSize)(BigInt(0)).toSeq)
         .addAttribute("ram_style", params.lineArrRamStyle)
     }
-    val nextLineIdx = KeepAttribute(UInt(log2Up(params.numLineMems) bits))
-    val rLineIdx = KeepAttribute(RegNext(nextLineIdx)) init(0x0)
+
+    //val nextLineIdx = KeepAttribute(UInt(log2Up(params.numLineMems) bits))
+    //val rLineIdx = KeepAttribute(RegNext(nextLineIdx)) init(0x0)
+
     //val nextCol = Rgb(params.rgbConfig)
     //val rCol = RegNext(nextCol)
     //rCol.init(rCol.getZero)
     //--------
-    val nextPhysPosCnt = params.physPxCoordT()
-    val rPhysPosCnt = RegNext(nextPhysPosCnt) init(nextPhysPosCnt.getZero)
+    //val nextPhysPosCnt = params.physPxCoordT()
+    //val rPhysPosCnt = RegNext(nextPhysPosCnt) init(nextPhysPosCnt.getZero)
 
-    val rPhysPosCntPlus1Overflow = Reg(Vec2(Bool()))
-    rPhysPosCntPlus1Overflow.init(rPhysPosCntPlus1Overflow.getZero)
-    //val physPosCntPlus1OverflowAsBits = rPhysPosCntPlus1Overflow.asBits
-    when (pop.fire) {
-      //rPhysPosCntPlus1Overflow := rPhysPosCnt.x === params.physFbSize2d.x - 2
-      switch (rPhysPosCntPlus1Overflow.asBits.reversed) {
-        is (M"-0") {
-        }
-        is (B"01") {
-        }
-        is (B"11") {
-        }
-        default {
-        }
-      }
-      //when (rPhysPosCnt.x + 2 === params.physFbSize2d.x) {
-      //} otherwise {
-      //}
-    }
+    //val rPhysPosCntPlus1Overflow = Reg(Vec2(Bool()))
+    //rPhysPosCntPlus1Overflow.init(rPhysPosCntPlus1Overflow.getZero)
+    ////val physPosCntPlus1OverflowAsBits = rPhysPosCntPlus1Overflow.asBits
+    //when (pop.fire) {
+    //  //rPhysPosCntPlus1Overflow := rPhysPosCnt.x === params.physFbSize2d.x - 2
+    //  switch (rPhysPosCntPlus1Overflow.asBits.reversed) {
+    //    is (M"-0") {
+    //    }
+    //    is (B"01") {
+    //    }
+    //    is (B"11") {
+    //    }
+    //    default {
+    //    }
+    //  }
+    //  //when (rPhysPosCnt.x + 2 === params.physFbSize2d.x) {
+    //  //} otherwise {
+    //  //}
+    //}
 
     //--------
   }

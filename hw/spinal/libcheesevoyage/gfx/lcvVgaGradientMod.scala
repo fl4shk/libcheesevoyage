@@ -187,7 +187,7 @@ case class LcvVgaGradient(
   //    //rPastDithPopFire
   //  ) {
   //    when (
-  //      //dithIo.info.changingScanline
+  //      //dithIo.info.changingRow
   //      //dithIo.info.pos.x === fbSize2d.x - 1
   //      dithIo.info.posWillOverflow.x
   //    ) {
@@ -243,7 +243,7 @@ case class LcvVgaGradient(
   //when (dithIo.push.fire) 
   //when (dithIo.pop.fire) {
   //  //when (dithIo.pop.payload.nextPos.x === 0x0) 
-  //  //when (dithIo.pop.payload.changingScanline) {
+  //  //when (dithIo.pop.payload.changingRow) {
   //  //  resetDithCol()
   //  //} otherwise {
   //    incrDithCol()
@@ -290,7 +290,7 @@ case class LcvVgaGradient(
   ////    rDithPushValid := True
   ////    //when (dithIo.outp.nextPos.x === 0x0)
   ////    //when (dithIo.outp.pos.x === vgaTimingInfo.htiming.visib)
-  ////    when (dithIo.outp.changingScanline) {
+  ////    when (dithIo.outp.changingRow) {
   ////      resetDithCol()
   ////    } otherwise {
   ////      incrDithCol()
