@@ -323,6 +323,18 @@ object LcvVgaCtrlMiscIo {
     dataTypeX=coordElemT(fbWidthOrHeight=fbSize2d.x),
     dataTypeY=coordElemT(fbWidthOrHeight=fbSize2d.y),
   )
+  def sCoordElemT(
+    fbWidthOrHeight: Int
+  ): SInt = SInt(log2Up(fbWidthOrHeight) bits)
+  def sCoordT(
+    //vgaTimingInfo: LcvVgaTimingInfo,
+    fbSize2d: ElabVec2[Int]
+  ): DualTypeNumVec2[SInt, SInt] = DualTypeNumVec2(
+    //dataTypeX=UInt(log2Up(fbSize2d.x) bits),
+    //dataTypeY=UInt(log2Up(fbSize2d.y) bits),
+    dataTypeX=sCoordElemT(fbWidthOrHeight=fbSize2d.x),
+    dataTypeY=sCoordElemT(fbWidthOrHeight=fbSize2d.y),
+  )
   // clocks per pixel
   def cpp(
     clkRate: HertzNumber,
