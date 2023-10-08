@@ -71,9 +71,11 @@ case class Gpu2dParams(
   objAttrsArrRamStyle: String="block",
   bgPalEntryArrRamStyle: String="block",
   objPalEntryArrRamStyle: String="block",
-  bgLineArrRamStyle: String="block",
-  objLineArrRamStyle: String="block",
-  combinedLineArrRamStyle: String="block",
+
+  //bgLineArrRamStyle: String="block",
+  //objLineArrRamStyle: String="block",
+  //combinedLineArrRamStyle: String="block",
+  lineArrRamStyle: String="block"
 ) {
   //--------
   def tileSize2d = ElabVec2[Int](
@@ -241,6 +243,7 @@ object DefaultGpu2dParams {
     ),
     numBgsPow: Int=log2Up(4), // 4 BGs
     numObjsPow: Int=log2Up(256), // 256 OBJs
+    //numObjsPow: Int=log2Up(128), // 128 OBJs
     //numObjsPerScanline: Int=64,
     numColsInBgPalPow: Int=log2Up(256), // 256 colors per BG palette
     numColsInObjPalPow: Int=log2Up(256), // 256 colors per OBJ palette
@@ -252,9 +255,10 @@ object DefaultGpu2dParams {
     objAttrsArrRamStyle: String="block",
     bgPalEntryArrRamStyle: String="block",
     objPalEntryArrRamStyle: String="block",
-    bgLineArrRamStyle: String="block",
-    objLineArrRamStyle: String="block",
-    combinedLineArrRamStyle: String="block",
+    //bgLineArrRamStyle: String="block",
+    //objLineArrRamStyle: String="block",
+    //combinedLineArrRamStyle: String="block",
+    lineArrRamStyle: String="block",
     //--------
   ) = {
     def tileSize2d = ElabVec2[Int](
@@ -320,9 +324,10 @@ object DefaultGpu2dParams {
       objAttrsArrRamStyle=objAttrsArrRamStyle,
       bgPalEntryArrRamStyle=bgPalEntryArrRamStyle,
       objPalEntryArrRamStyle=objPalEntryArrRamStyle,
-      bgLineArrRamStyle=bgLineArrRamStyle,
-      objLineArrRamStyle=objLineArrRamStyle,
-      combinedLineArrRamStyle=combinedLineArrRamStyle,
+      //bgLineArrRamStyle=bgLineArrRamStyle,
+      //objLineArrRamStyle=objLineArrRamStyle,
+      //combinedLineArrRamStyle=combinedLineArrRamStyle,
+      lineArrRamStyle=lineArrRamStyle,
       //--------
     )
   }
@@ -457,8 +462,10 @@ case class Gpu2dObjAttrsStmPayload(
 ) extends Bundle {
   //--------
   val objAttrs = Gpu2dObjAttrs(params=params)
-  // `Mem` index
-  val memIdx = UInt(params.objAttrsMemIdxWidth bits)
+  //// `Mem` index
+  //val memIdx = UInt(params.objAttrsMemIdxWidth bits)
+  // `Vec` index
+  val vecIdx = UInt(params.objAttrsMemIdxWidth bits)
   //--------
 }
 case class Gpu2dObjPalEntry(
@@ -729,29 +736,29 @@ case class Gpu2d(
     //  .initBigInt(Array.fill(params.numBgs)(BigInt(0)).toSeq)
     //  .addAttribute("ram_style", params.bgAttrsArrRamStyle)
     //--------
-    val objAttrsMem = Mem(
-      wordType=Gpu2dObjAttrs(params=params),
-      wordCount=params.numObjs,
-    )
-      .initBigInt(Array.fill(params.numObjs)(BigInt(0)).toSeq)
-      .addAttribute("ram_style", params.objAttrsArrRamStyle)
-    when (objAttrsPush.fire) {
-      objAttrsMem.write(
-        address=objAttrsPush.payload.memIdx,
-        data=objAttrsPush.payload.objAttrs,
-      )
-    }
-    //val objAttrsMem = Vec.fill(params.numObjs)(
-    //  Reg(Gpu2dObjAttrs(params=params))
+    //val objAttrsMem = Mem(
+    //  wordType=Gpu2dObjAttrs(params=params),
+    //  wordCount=params.numObjs,
     //)
-    //for (idx <- 0 to objAttrsVec.size - 1) {
-    //  objAttrsVec(idx).init(objAttrsVec(idx).getZero)
-    //}
+    //  .initBigInt(Array.fill(params.numObjs)(BigInt(0)).toSeq)
+    //  .addAttribute("ram_style", params.objAttrsArrRamStyle)
     //when (objAttrsPush.fire) {
-    //  objAttrsVec(objAttrsPush.payload.vecIdx) := (
-    //    objAttrsPush.payload.objAttrs
+    //  objAttrsMem.write(
+    //    address=objAttrsPush.payload.memIdx,
+    //    data=objAttrsPush.payload.objAttrs,
     //  )
     //}
+    val objAttrsVec = Vec.fill(params.numObjs)(
+      Reg(Gpu2dObjAttrs(params=params))
+    )
+    for (idx <- 0 to objAttrsVec.size - 1) {
+      objAttrsVec(idx).init(objAttrsVec(idx).getZero)
+    }
+    when (objAttrsPush.fire) {
+      objAttrsVec(objAttrsPush.payload.vecIdx) := (
+        objAttrsPush.payload.objAttrs
+      )
+    }
     //--------
     val bgPalEntryMem = Mem(
       wordType=Gpu2dBgPalEntry(params=params),
@@ -803,33 +810,16 @@ case class Gpu2d(
     //  val objColVec = Vec(Gpu2dRgba(params=params), params.numBgs)
     //}
     def LineMemEntry() = Gpu2dRgba(params=params)
+    val lineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
 
-    val bgLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
-    val objLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
-    val combinedLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
     for (idx <- 0 to params.numLineMems - 1) {
-      bgLineMemArr += Mem(
+      lineMemArr += Mem(
         //wordType=Rgb(params.rgbConfig),
         wordType=LineMemEntry(),
         wordCount=params.lineMemSize,
       )
         .initBigInt(Array.fill(params.lineMemSize)(BigInt(0)).toSeq)
-        .addAttribute("ram_style", params.bgLineArrRamStyle)
-
-      objLineMemArr += Mem(
-        //wordType=Rgb(params.rgbConfig),
-        wordType=LineMemEntry(),
-        wordCount=params.lineMemSize,
-      )
-        .initBigInt(Array.fill(params.lineMemSize)(BigInt(0)).toSeq)
-        .addAttribute("ram_style", params.objLineArrRamStyle)
-      combinedLineMemArr += Mem(
-        //wordType=Rgb(params.rgbConfig),
-        wordType=LineMemEntry(),
-        wordCount=params.lineMemSize,
-      )
-        .initBigInt(Array.fill(params.lineMemSize)(BigInt(0)).toSeq)
-        .addAttribute("ram_style", params.combinedLineArrRamStyle)
+        .addAttribute("ram_style", params.lineArrRamStyle)
     }
 
     //val nextLineIdx = KeepAttribute(UInt(log2Up(params.numLineMems) bits))
@@ -847,10 +837,11 @@ case class Gpu2d(
     //val wrLineMemEntry = KeepAttribute(LineMemEntry())
     //val rPastWrLineMemEntry = RegNext(wrLineMemEntry)
     //  .init(wrLineMemEntry.getZero)
-    val rWrBgLineMemEntry = KeepAttribute(Reg(LineMemEntry()))
-    rWrBgLineMemEntry.init(rWrBgLineMemEntry.getZero)
-    val rWrObjLineMemEntry = KeepAttribute(Reg(LineMemEntry()))
-    rWrObjLineMemEntry.init(rWrObjLineMemEntry.getZero)
+
+    //val rWrBgLineMemEntry = KeepAttribute(Reg(LineMemEntry()))
+    //rWrBgLineMemEntry.init(rWrBgLineMemEntry.getZero)
+    //val rWrObjLineMemEntry = KeepAttribute(Reg(LineMemEntry()))
+    //rWrObjLineMemEntry.init(rWrObjLineMemEntry.getZero)
     //val wrBgLineMemEn
 
     val wrLineMemArrIdx = KeepAttribute(UInt(1 bits))
@@ -872,28 +863,147 @@ case class Gpu2d(
     case class WrPipeElem(
       //idx: Int
     ) extends Bundle {
-      val bgEntryVec = Vec.fill(params.numBgs)(Gpu2dBgEntry(params=params))
-      val bgScrollVec = Vec.fill(params.numBgs)(
-        cloneOf(bgAttrsArr(0).scroll)
-      )
-      val bgAddrVec = Vec.fill(params.numBgs)(
-        UInt(params.bgEntryMemIdxWidth bits)
-      )
+      val bg = new Bundle {
+        val entryVec = Vec.fill(params.numBgs)(Gpu2dBgEntry(params=params))
+        val scrollVec = Vec.fill(params.numBgs)(
+          // any `idx` works for this use case
+          cloneOf(bgAttrsArr(0).scroll)
+        )
+        val addrVec = Vec.fill(params.numBgs)(
+          UInt(params.bgEntryMemIdxWidth bits)
+        )
+        val tileVec = Vec.fill(params.numBgs)(
+          Gpu2dTile(params=params, isObj=false)
+        )
+        val palEntryVec = Vec.fill(params.numBgs)(
+          Gpu2dBgPalEntry(params=params)
+        )
+      }
+      val obj = new Bundle {
+        //val attrVec
+        //val attrsVec = Gpu2dObjAttrs
+        //val pos = cloneOf
+        val attrsVec = Vec.fill(params.numObjsPow)(
+          Gpu2dObjAttrs(params=params)
+        )
+        val tileVec = Vec.fill(params.numObjsPow)(
+          Gpu2dTile(params=params, isObj=true)
+        )
+        val palEntryVec = Vec.fill(params.numObjsPow)(
+          Gpu2dObjPalEntry(params=params)
+        )
+      }
     }
-    def wrPipeSize = 3
+    def wrPipeBgEntryVecIdx = 0
+    def wrPipeBgScrollVecIdx = 1
+    def wrPipeBgAddrVecIdx = 2
+    def wrPipeBgTileVecIdx = 3
+    def wrPipeBgPalEntryVecIdx = 4
+    def wrPipeBgNumElems = 5
+    //def wrPipeBgSize = (wrPipeBgNumElems * params.numBgs)
+    //def wrPipeBgSize = wrPipeBgNumElems + 1
+
+    //def wrPipeBgSize = max(wrPipeBgNumElems, params.numBgs) + 1 
+    def wrPipeBgSize = wrPipeBgNumElems + params.numBgs
+    def wrPipeBgNumElemsGtNumBgs = wrPipeBgNumElems > params.numBgs
+
+
+    def wrPipeObjAttrsVecIdx = 0
+    def wrPipeObjTileVecIdx = 1
+    def wrPipeObjPalEntryVecIdx = 2
+    def wrPipeObjNumElems = 3
+
+    //def wrPipeObjSize = wrPipeObjNumElems * params.numObjsPow
+    //def wrPipeObjSize = max(wrPipeObjNumElems, params.numObjsPow) + 1 
+    def wrPipeObjSize = wrPipeObjNumElems + params.numObjsPow
+    def wrPipeObjNumElemsGtNumObjsPow = (
+      wrPipeObjNumElems > params.numObjsPow
+    )
+
+    def wrPipeSize = wrPipeBgSize + wrPipeObjSize
     val rWrPipe = KeepAttribute(
       Vec.fill(wrPipeSize)(Reg(WrPipeElem()))
     )
     for (idx <- 0 to wrPipeSize - 1) {
       rWrPipe(idx).init(rWrPipe(idx).getZero)
+      //if (idx > 0) {
+      //  rWrPipe(idx) := rWrPipe(idx - 1)
+      //}
+
+      if (idx < wrPipeBgSize) {
+        val bgEntryVecIdx = idx - wrPipeBgEntryVecIdx
+        if (bgEntryVecIdx >= 0 && bgEntryVecIdx < params.numBgs) {
+          for (jdx <- 0 to bgEntryVecIdx) {
+            if (jdx == bgEntryVecIdx) {
+            } else { // if (jdx < bgEntryVecIdx)
+            }
+          }
+        }
+        val bgScrollVecIdx = idx - wrPipeBgScrollVecIdx
+        if (bgScrollVecIdx >= 0 && bgScrollVecIdx < params.numBgs) {
+          for (jdx <- 0 to bgScrollVecIdx) {
+            if (jdx == bgScrollVecIdx) {
+            } else { // if (jdx < bgScrollVecIdx)
+            }
+          }
+        }
+        val bgAddrVecIdx = idx - wrPipeBgAddrVecIdx
+        if (bgAddrVecIdx >= 0 && bgAddrVecIdx < params.numBgs) {
+          for (jdx <- 0 to bgAddrVecIdx) {
+            if (jdx == bgAddrVecIdx) {
+            } else { // if (jdx < bgAddrVecIdx)
+            }
+          }
+        }
+        val bgTileVecIdx = idx - wrPipeBgTileVecIdx
+        if (bgTileVecIdx >= 0 && bgTileVecIdx < params.numBgs) {
+          for (jdx <- 0 to bgTileVecIdx) {
+            if (jdx == bgTileVecIdx) {
+            } else { // if (jdx < bgTileVecIdx)
+            }
+          }
+        }
+        val bgPalEntryVecIdx = idx - wrPipeBgPalEntryVecIdx
+        if (bgPalEntryVecIdx >= 0 && bgPalEntryVecIdx < params.numBgs) {
+          for (jdx <- 0 to bgPalEntryVecIdx) {
+            if (jdx == bgPalEntryVecIdx) {
+            } else { // if (jdx < bgPalEntryVecIdx)
+            }
+          }
+        }
+      } else //if (
+        ////idx >= wrPipeBgSize
+        //idx < wrPipeBgSize + wrPipeObjSize
+      //)
+      {
+        val objAttrsVecIdx = idx - wrPipeObjAttrsVecIdx
+        if (objAttrsVecIdx >= 0 && objAttrsVecIdx < params.numObjsPow) {
+        }
+        val objTileVecIdx = idx - wrPipeObjTileVecIdx
+        if (objTileVecIdx >= 0 && objTileVecIdx < params.numObjsPow) {
+        }
+        val objPalEntryVecIdx = idx - wrPipeObjPalEntryVecIdx
+        if (
+          objPalEntryVecIdx >= 0 && objPalEntryVecIdx < params.numObjsPow
+        ) {
+        }
+      }
     }
-    //val rWrBgAddrArr = new ArrayBuffer[
+
+    //if (!wrPipeBgNumElemsGtNumBgs) {
+    //} else { // if (wrPipeBgNumElemsGtNumBgs)
+    //}
+    //if (!wrPipeObjNumElemsGtNumObjsPow) {
+    //} else { // if (wrPipeObjNumElemsGtNumObjsPow)
+    //}
       
     def writeLineMemEntries(
       someWrLineMemArrIdx: Int,
     ): Unit = {
-      val bgLineMem = bgLineMemArr(someWrLineMemArrIdx)
-      val objLineMem = objLineMemArr(someWrLineMemArrIdx)
+      //val bgLineMem = bgLineMemArr(someWrLineMemArrIdx)
+      //val objLineMem = objLineMemArr(someWrLineMemArrIdx)
+      //val combinedLineMem = combinedLineMemArr(someWrLineMemArrIdx)
+
       //switch (rWrState) {
       //  //is (WrState.readBgAttrs) {
       //  //}
@@ -936,26 +1046,31 @@ case class Gpu2d(
       //}
     }
     //--------
-    val rdBgLineMemEntry = KeepAttribute(LineMemEntry())
-    val rPastRdBgLineMemEntry = RegNext(rdBgLineMemEntry)
-      .init(rdBgLineMemEntry.getZero)
-    val rdObjLineMemEntry = KeepAttribute(LineMemEntry())
-    val rPastRdObjLineMemEntry = RegNext(rdObjLineMemEntry)
-      .init(rdObjLineMemEntry.getZero)
+    //val rdBgLineMemEntry = KeepAttribute(LineMemEntry())
+    //val rPastRdBgLineMemEntry = RegNext(rdBgLineMemEntry)
+    //  .init(rdBgLineMemEntry.getZero)
+    //val rdObjLineMemEntry = KeepAttribute(LineMemEntry())
+    //val rPastRdObjLineMemEntry = RegNext(rdObjLineMemEntry)
+    //  .init(rdObjLineMemEntry.getZero)
 
     val rdLineMemArrIdx = KeepAttribute(UInt(1 bits))
     rdLineMemArrIdx(0) := !outp.bgPxsPosSlice.pos.y(0)
-    val rdLineMemIdx = KeepAttribute(cloneOf(outp.bgPxsPosSlice.pos.x))
-    rdLineMemIdx := outp.bgPxsPosSlice.pos.x
+    //val rdLineMemIdx = KeepAttribute(cloneOf(outp.bgPxsPosSlice.pos.x))
+    //rdLineMemIdx := outp.bgPxsPosSlice.pos.x
 
     def readLineMemEntries(
       someRdLineMemArrIdx: Int,
     ): Unit = {
-      val bgLineMem = bgLineMemArr(someRdLineMemArrIdx)
-      rdBgLineMemEntry := bgLineMem.readAsync(address=rdLineMemIdx)
+      //val bgLineMem = bgLineMemArr(someRdLineMemArrIdx)
+      //rdBgLineMemEntry := bgLineMem.readAsync(address=rdLineMemIdx)
 
-      val objLineMem = objLineMemArr(someRdLineMemArrIdx)
-      rdObjLineMemEntry := objLineMem.readAsync(address=rdLineMemIdx)
+      //val objLineMem = objLineMemArr(someRdLineMemArrIdx)
+      //rdObjLineMemEntry := objLineMem.readAsync(address=rdLineMemIdx)
+
+      //val combinedLineMem = combinedLineMemArr(someRdLineMemArrIdx)
+      //rdCombinedLineMemEntry := combinedLineMem.readAsync(
+      //  address=rdLineMemIdx
+      //)
     }
 
     switch (wrLineMemArrIdx) {
@@ -976,7 +1091,7 @@ case class Gpu2d(
         }
       }
       default {
-        rdBgLineMemEntry := rPastRdBgLineMemEntry
+        //rdBgLineMemEntry := rPastRdBgLineMemEntry
         outp.col := rPastOutp.col
       }
     }
