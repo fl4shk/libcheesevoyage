@@ -394,8 +394,8 @@ case class Gpu2dBgEntry(
   // The index, in tiles, of the tile represented by this tilemap entry
   val tileIdx = UInt(params.bgTileMemIdxWidth bits)
 
-  // The priority for this tilemap entry
-  val prio = UInt(log2Up(params.numBgs) bits)
+  //// The priority for this tilemap entry
+  //val prio = UInt(log2Up(params.numBgs) bits)
 
   //val dispFlip = Vec2(dataType=Bool())
   //--------
@@ -462,10 +462,10 @@ case class Gpu2dObjAttrsStmPayload(
 ) extends Bundle {
   //--------
   val objAttrs = Gpu2dObjAttrs(params=params)
-  //// `Mem` index
-  //val memIdx = UInt(params.objAttrsMemIdxWidth bits)
+  // `Mem` index
+  val memIdx = UInt(params.objAttrsMemIdxWidth bits)
   // `Vec` index
-  val vecIdx = UInt(params.objAttrsMemIdxWidth bits)
+  //val vecIdx = UInt(params.objAttrsMemIdxWidth bits)
   //--------
 }
 case class Gpu2dObjPalEntry(
@@ -736,29 +736,29 @@ case class Gpu2d(
     //  .initBigInt(Array.fill(params.numBgs)(BigInt(0)).toSeq)
     //  .addAttribute("ram_style", params.bgAttrsArrRamStyle)
     //--------
-    //val objAttrsMem = Mem(
-    //  wordType=Gpu2dObjAttrs(params=params),
-    //  wordCount=params.numObjs,
-    //)
-    //  .initBigInt(Array.fill(params.numObjs)(BigInt(0)).toSeq)
-    //  .addAttribute("ram_style", params.objAttrsArrRamStyle)
-    //when (objAttrsPush.fire) {
-    //  objAttrsMem.write(
-    //    address=objAttrsPush.payload.memIdx,
-    //    data=objAttrsPush.payload.objAttrs,
-    //  )
-    //}
-    val objAttrsVec = Vec.fill(params.numObjs)(
-      Reg(Gpu2dObjAttrs(params=params))
+    val objAttrsMem = Mem(
+      wordType=Gpu2dObjAttrs(params=params),
+      wordCount=params.numObjs,
     )
-    for (idx <- 0 to objAttrsVec.size - 1) {
-      objAttrsVec(idx).init(objAttrsVec(idx).getZero)
-    }
+      .initBigInt(Array.fill(params.numObjs)(BigInt(0)).toSeq)
+      .addAttribute("ram_style", params.objAttrsArrRamStyle)
     when (objAttrsPush.fire) {
-      objAttrsVec(objAttrsPush.payload.vecIdx) := (
-        objAttrsPush.payload.objAttrs
+      objAttrsMem.write(
+        address=objAttrsPush.payload.memIdx,
+        data=objAttrsPush.payload.objAttrs,
       )
     }
+    //val objAttrsVec = Vec.fill(params.numObjs)(
+    //  Reg(Gpu2dObjAttrs(params=params))
+    //)
+    //for (idx <- 0 to objAttrsVec.size - 1) {
+    //  objAttrsVec(idx).init(objAttrsVec(idx).getZero)
+    //}
+    //when (objAttrsPush.fire) {
+    //  objAttrsVec(objAttrsPush.payload.vecIdx) := (
+    //    objAttrsPush.payload.objAttrs
+    //  )
+    //}
     //--------
     val bgPalEntryMem = Mem(
       wordType=Gpu2dBgPalEntry(params=params),
@@ -810,10 +810,28 @@ case class Gpu2d(
     //  val objColVec = Vec(Gpu2dRgba(params=params), params.numBgs)
     //}
     def LineMemEntry() = Gpu2dRgba(params=params)
-    val lineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
+    //val lineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
+    val bgLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
+    val objLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
+    //val combinedLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
 
     for (idx <- 0 to params.numLineMems - 1) {
-      lineMemArr += Mem(
+      //lineMemArr += Mem(
+      //  //wordType=Rgb(params.rgbConfig),
+      //  wordType=LineMemEntry(),
+      //  wordCount=params.lineMemSize,
+      //)
+      //  .initBigInt(Array.fill(params.lineMemSize)(BigInt(0)).toSeq)
+      //  .addAttribute("ram_style", params.lineArrRamStyle)
+
+      bgLineMemArr += Mem(
+        //wordType=Rgb(params.rgbConfig),
+        wordType=LineMemEntry(),
+        wordCount=params.lineMemSize,
+      )
+        .initBigInt(Array.fill(params.lineMemSize)(BigInt(0)).toSeq)
+        .addAttribute("ram_style", params.lineArrRamStyle)
+      objLineMemArr += Mem(
         //wordType=Rgb(params.rgbConfig),
         wordType=LineMemEntry(),
         wordCount=params.lineMemSize,
@@ -851,8 +869,8 @@ case class Gpu2d(
     )
     rPastWrLineMemArrIdx := wrLineMemArrIdx
 
-    val rWrBgCnt = Reg(UInt(log2Up(params.numBgs) + 1 bits)) init(0x0)
-    val rWrObjCnt = Reg(UInt(log2Up(params.numObjs) + 1 bits)) init(0x0)
+    //val rWrBgCnt = Reg(UInt(log2Up(params.numBgs) + 1 bits)) init(0x0)
+    //val rWrObjCnt = Reg(UInt(log2Up(params.numObjs) + 1 bits)) init(0x0)
 
     //val wrLineMemIdx = outp.bgPxsPosSlice.pos.x
     val wrLineMemIdx = KeepAttribute(
@@ -860,134 +878,73 @@ case class Gpu2d(
     )
     //val rWrState = KeepAttribute(Reg(WrState())) init(WrState.readBgTiles)
 
-    case class WrPipeElem(
+    case class WrBgPipeElem(
       //idx: Int
     ) extends Bundle {
-      val bg = new Bundle {
-        val entryVec = Vec.fill(params.numBgs)(Gpu2dBgEntry(params=params))
-        val scrollVec = Vec.fill(params.numBgs)(
-          // any `idx` works for this use case
-          cloneOf(bgAttrsArr(0).scroll)
-        )
-        val addrVec = Vec.fill(params.numBgs)(
-          UInt(params.bgEntryMemIdxWidth bits)
-        )
-        val tileVec = Vec.fill(params.numBgs)(
-          Gpu2dTile(params=params, isObj=false)
-        )
-        val palEntryVec = Vec.fill(params.numBgs)(
-          Gpu2dBgPalEntry(params=params)
-        )
-      }
-      val obj = new Bundle {
-        //val attrVec
-        //val attrsVec = Gpu2dObjAttrs
-        //val pos = cloneOf
-        val attrsVec = Vec.fill(params.numObjsPow)(
-          Gpu2dObjAttrs(params=params)
-        )
-        val tileVec = Vec.fill(params.numObjsPow)(
-          Gpu2dTile(params=params, isObj=true)
-        )
-        val palEntryVec = Vec.fill(params.numObjsPow)(
-          Gpu2dObjPalEntry(params=params)
-        )
-      }
+      val pxCntVec = Vec.fill(params.numBgs)(
+        UInt(params.intnlFbSize2d.x bits)
+      )
+      val scrollVec = Vec.fill(params.numBgs)(
+        // any `idx` works for this use case
+        cloneOf(bgAttrsArr(0).scroll)
+      )
+      val addrVec = Vec.fill(params.numBgs)(
+        UInt(params.bgEntryMemIdxWidth bits)
+      )
+      val entryVec = Vec.fill(params.numBgs)(Gpu2dBgEntry(params=params))
+      val tileVec = Vec.fill(params.numBgs)(
+        Gpu2dTile(params=params, isObj=false)
+      )
+      val palEntryVec = Vec.fill(params.numBgs)(
+        Gpu2dBgPalEntry(params=params)
+      )
     }
-    def wrPipeBgEntryVecIdx = 0
-    def wrPipeBgScrollVecIdx = 1
-    def wrPipeBgAddrVecIdx = 2
-    def wrPipeBgTileVecIdx = 3
-    def wrPipeBgPalEntryVecIdx = 4
-    def wrPipeBgNumElems = 5
-    //def wrPipeBgSize = (wrPipeBgNumElems * params.numBgs)
-    //def wrPipeBgSize = wrPipeBgNumElems + 1
+    case class WrObjPipeElem() extends Bundle {
+      val memIdx = UInt(params.numObjsPow bits)
+      val attrs = Gpu2dObjAttrs(params=params)
+      val posInScanline = Bool()
+      val tile = Gpu2dTile(params=params, isObj=true)
+      val palEntry = Gpu2dObjPalEntry(params=params)
+    }
+    def wrBgPipeScrollVecIdx = 0
+    def wrBgPipeAddrVecIdx = 1
+    def wrBgPipeEntryVecIdx = 2
+    def wrBgPipeTileVecIdx = 3
+    def wrBgPipePalEntryVecIdx = 4
+    def wrBgPipeNumStages = 5
+    //def wrBgPipeSize = (wrBgPipeNumElems * params.numBgs)
+    //def wrBgPipeSize = wrBgPipeNumElems + 1
 
-    //def wrPipeBgSize = max(wrPipeBgNumElems, params.numBgs) + 1 
-    def wrPipeBgSize = wrPipeBgNumElems + params.numBgs
-    def wrPipeBgNumElemsGtNumBgs = wrPipeBgNumElems > params.numBgs
+    //def wrBgPipeSize = max(wrBgPipeNumElems, params.numBgs) + 1 
+    def wrBgPipeSize = wrBgPipeNumStages + params.numBgs
+    //def wrBgPipeNumElemsGtNumBgs = wrBgPipeNumElems > params.numBgs
 
 
-    def wrPipeObjAttrsVecIdx = 0
-    def wrPipeObjTileVecIdx = 1
-    def wrPipeObjPalEntryVecIdx = 2
-    def wrPipeObjNumElems = 3
+    def wrObjPipeAttrsIdx = 0
+    def wrObjPipeTileIdx = 1
+    def wrObjPipePalEntryIdx = 2
+    def wrObjPipeNumStages = 3
 
-    //def wrPipeObjSize = wrPipeObjNumElems * params.numObjsPow
-    //def wrPipeObjSize = max(wrPipeObjNumElems, params.numObjsPow) + 1 
-    def wrPipeObjSize = wrPipeObjNumElems + params.numObjsPow
-    def wrPipeObjNumElemsGtNumObjsPow = (
-      wrPipeObjNumElems > params.numObjsPow
+    //def wrObjPipeSize = wrObjPipeNumElems * params.numObjsPow
+    //def wrObjPipeSize = max(wrObjPipeNumElems, params.numObjsPow) + 1 
+    def wrObjPipeSize = wrObjPipeNumStages + params.numObjsPow
+    //def wrObjPipeNumElemsGtNumObjsPow = (
+    //  wrObjPipeNumElems > params.numObjsPow
+    //)
+
+    //def wrPipeSize = wrBgPipeSize + wrObjPipeSize
+    val rWrBgPipe = KeepAttribute(
+      Vec.fill(wrBgPipeSize)(Reg(WrBgPipeElem()))
     )
+    for (idx <- 0 to wrBgPipeSize - 1) {
+      rWrBgPipe(idx).init(rWrBgPipe(idx).getZero)
+    }
 
-    def wrPipeSize = wrPipeBgSize + wrPipeObjSize
-    val rWrPipe = KeepAttribute(
-      Vec.fill(wrPipeSize)(Reg(WrPipeElem()))
+    val rWrObjPipe = KeepAttribute(
+      Vec.fill(wrObjPipeSize)(Reg(WrObjPipeElem()))
     )
-    for (idx <- 0 to wrPipeSize - 1) {
-      rWrPipe(idx).init(rWrPipe(idx).getZero)
-      //if (idx > 0) {
-      //  rWrPipe(idx) := rWrPipe(idx - 1)
-      //}
-
-      if (idx < wrPipeBgSize) {
-        val bgEntryVecIdx = idx - wrPipeBgEntryVecIdx
-        if (bgEntryVecIdx >= 0 && bgEntryVecIdx < params.numBgs) {
-          for (jdx <- 0 to bgEntryVecIdx) {
-            if (jdx == bgEntryVecIdx) {
-            } else { // if (jdx < bgEntryVecIdx)
-            }
-          }
-        }
-        val bgScrollVecIdx = idx - wrPipeBgScrollVecIdx
-        if (bgScrollVecIdx >= 0 && bgScrollVecIdx < params.numBgs) {
-          for (jdx <- 0 to bgScrollVecIdx) {
-            if (jdx == bgScrollVecIdx) {
-            } else { // if (jdx < bgScrollVecIdx)
-            }
-          }
-        }
-        val bgAddrVecIdx = idx - wrPipeBgAddrVecIdx
-        if (bgAddrVecIdx >= 0 && bgAddrVecIdx < params.numBgs) {
-          for (jdx <- 0 to bgAddrVecIdx) {
-            if (jdx == bgAddrVecIdx) {
-            } else { // if (jdx < bgAddrVecIdx)
-            }
-          }
-        }
-        val bgTileVecIdx = idx - wrPipeBgTileVecIdx
-        if (bgTileVecIdx >= 0 && bgTileVecIdx < params.numBgs) {
-          for (jdx <- 0 to bgTileVecIdx) {
-            if (jdx == bgTileVecIdx) {
-            } else { // if (jdx < bgTileVecIdx)
-            }
-          }
-        }
-        val bgPalEntryVecIdx = idx - wrPipeBgPalEntryVecIdx
-        if (bgPalEntryVecIdx >= 0 && bgPalEntryVecIdx < params.numBgs) {
-          for (jdx <- 0 to bgPalEntryVecIdx) {
-            if (jdx == bgPalEntryVecIdx) {
-            } else { // if (jdx < bgPalEntryVecIdx)
-            }
-          }
-        }
-      } else //if (
-        ////idx >= wrPipeBgSize
-        //idx < wrPipeBgSize + wrPipeObjSize
-      //)
-      {
-        val objAttrsVecIdx = idx - wrPipeObjAttrsVecIdx
-        if (objAttrsVecIdx >= 0 && objAttrsVecIdx < params.numObjsPow) {
-        }
-        val objTileVecIdx = idx - wrPipeObjTileVecIdx
-        if (objTileVecIdx >= 0 && objTileVecIdx < params.numObjsPow) {
-        }
-        val objPalEntryVecIdx = idx - wrPipeObjPalEntryVecIdx
-        if (
-          objPalEntryVecIdx >= 0 && objPalEntryVecIdx < params.numObjsPow
-        ) {
-        }
-      }
+    for (idx <- 0 to wrObjPipeSize - 1) {
+      rWrObjPipe(idx).init(rWrObjPipe(idx).getZero)
     }
 
     //if (!wrPipeBgNumElemsGtNumBgs) {
@@ -1000,8 +957,91 @@ case class Gpu2d(
     def writeLineMemEntries(
       someWrLineMemArrIdx: Int,
     ): Unit = {
-      //val bgLineMem = bgLineMemArr(someWrLineMemArrIdx)
-      //val objLineMem = objLineMemArr(someWrLineMemArrIdx)
+      // Handle BGs
+      val bgLineMem = bgLineMemArr(someWrLineMemArrIdx)
+      for (idx <- 0 to wrBgPipeSize - 1) {
+        //if (idx > 0) {
+        //  rWrPipe(idx) := rWrPipe(idx - 1)
+        //}
+
+        val bgScrollVecIdx = idx - wrBgPipeScrollVecIdx
+        if (bgScrollVecIdx >= 0 && bgScrollVecIdx < params.numBgs) {
+          for (jdx <- 0 to bgScrollVecIdx) {
+            if (jdx == bgScrollVecIdx) {
+            } else { // if (jdx < bgScrollVecIdx)
+              //rWrPipe(idx).scrollVec
+            }
+          }
+        }
+        val bgAddrVecIdx = idx - wrBgPipeAddrVecIdx
+        if (bgAddrVecIdx >= 0 && bgAddrVecIdx < params.numBgs) {
+          for (jdx <- 0 to bgAddrVecIdx) {
+            if (jdx == bgAddrVecIdx) {
+            } else { // if (jdx < bgAddrVecIdx)
+              //if (jdx == bgAddrVecIdx - 1) {
+              //}
+            }
+          }
+        }
+        val bgEntryVecIdx = idx - wrBgPipeEntryVecIdx
+        if (bgEntryVecIdx >= 0 && bgEntryVecIdx < params.numBgs) {
+          for (jdx <- 0 to bgEntryVecIdx) {
+            if (jdx == bgEntryVecIdx) {
+            } else { // if (jdx < bgEntryVecIdx)
+              //rWrPipe(idx).bg.
+            }
+          }
+        }
+        val bgTileVecIdx = idx - wrBgPipeTileVecIdx
+        if (bgTileVecIdx >= 0 && bgTileVecIdx < params.numBgs) {
+          for (jdx <- 0 to bgTileVecIdx) {
+            if (jdx == bgTileVecIdx) {
+            } else { // if (jdx < bgTileVecIdx)
+            }
+          }
+        }
+        val bgPalEntryVecIdx = idx - wrBgPipePalEntryVecIdx
+        if (bgPalEntryVecIdx >= 0 && bgPalEntryVecIdx < params.numBgs) {
+          for (jdx <- 0 to bgPalEntryVecIdx) {
+            if (jdx == bgPalEntryVecIdx) {
+            } else { // if (jdx < bgPalEntryVecIdx)
+            }
+          }
+        }
+      }
+      //--------
+      // Handle OBJs
+      val objLineMem = objLineMemArr(someWrLineMemArrIdx)
+      for (idx <- 0 to wrObjPipeSize - 1) {
+        {
+          val objAttrsVecIdx = idx - wrObjPipeAttrsIdx
+          if (objAttrsVecIdx >= 0 && objAttrsVecIdx < params.numObjsPow) {
+            for (jdx <- 0 to objAttrsVecIdx) {
+              if (jdx == objAttrsVecIdx) {
+              } else { // if (jdx < objAttrsVecIdx)
+              }
+            }
+          }
+          val objTileVecIdx = idx - wrObjPipeTileIdx
+          if (objTileVecIdx >= 0 && objTileVecIdx < params.numObjsPow) {
+            for (jdx <- 0 to objTileVecIdx) {
+              if (jdx == objTileVecIdx) {
+              } else { // if (jdx < objTileVecIdx)
+              }
+            }
+          }
+          val objPalEntryVecIdx = idx - wrObjPipePalEntryIdx
+          if (
+            objPalEntryVecIdx >= 0 && objPalEntryVecIdx < params.numObjsPow
+          ) {
+            for (jdx <- 0 to objPalEntryVecIdx) {
+              if (jdx == objPalEntryVecIdx) {
+              } else { // if (jdx < objPalEntryVecIdx)
+              }
+            }
+          }
+        }
+      }
       //val combinedLineMem = combinedLineMemArr(someWrLineMemArrIdx)
 
       //switch (rWrState) {
