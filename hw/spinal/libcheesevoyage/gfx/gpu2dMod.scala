@@ -10,8 +10,9 @@ import libcheesevoyage.general.MkDualTypeNumVec2
 import libcheesevoyage.general.ElabVec2
 import libcheesevoyage.general.PipeSkidBuf
 import libcheesevoyage.general.PipeSkidBufIo
-import libcheesevoyage.general.GenericHandlePipe
+//import libcheesevoyage.general.GenericHandlePipe
 //import libcheesevoyage.general.HandleStmPipe
+import libcheesevoyage.general.HandleFlowPipe
 
 //import scala.math._
 import spinal.core._
@@ -1141,6 +1142,11 @@ case class Gpu2d(
       //Vec.fill(wrMaxBgObjPipeNumStages)(Reg(WrBgPipePayload()))
       Vec.fill(wrMaxBgObjPipeNumStages)(Flow(WrBgPipePayload()))
     )
+    val rWrBgPipePayloadVec = KeepAttribute(
+      Vec.fill(wrMaxBgObjPipeNumStages)(
+        Reg(WrBgPipePayload()) init(wrBgPipe(0).payload.getZero)
+      )
+    )
     //for (idx <- 0 to wrMaxBgObjPipeNumStages - 1) {
     //  //rWrBgPipe(idx).init(
     //  //  //rWrBgPipe(idx).getZero
@@ -1161,6 +1167,7 @@ case class Gpu2d(
     for (idx <- 1 to wrBgPipe.size - 1) {
       //wrBgPipe(idx) <-/< wrBgPipe(idx - 1)
       wrBgPipe(idx) <-< wrBgPipe(idx - 1)
+      //wrBgPipe(idx).payload := wrBgPipe(idx).payload.getZero
     }
     //val rWrBgPipeLastReady = Reg(Bool()) init(False)
     //rWrBgPipeLastReady := 
@@ -1193,6 +1200,11 @@ case class Gpu2d(
     val wrObjPipe = KeepAttribute(
       //Vec.fill(wrMaxBgObjPipeNumStages)(Reg(WrObjPipePayload()))
       Vec.fill(wrMaxBgObjPipeNumStages)(Flow(WrObjPipePayload()))
+    )
+    val rWrObjPipePayloadVec = KeepAttribute(
+      Vec.fill(wrMaxBgObjPipeNumStages)(
+        Reg(WrObjPipePayload()) init(wrObjPipe(0).payload.getZero)
+      )
     )
     //for (idx <- 0 to wrMaxBgObjPipeNumStages - 1) {
     //  //rWrObjPipe(idx).init(rWrObjPipe(idx).getZero)
