@@ -10,6 +10,8 @@ import libcheesevoyage.general.MkDualTypeNumVec2
 import libcheesevoyage.general.ElabVec2
 import libcheesevoyage.general.PipeSkidBuf
 import libcheesevoyage.general.PipeSkidBufIo
+//import libcheesevoyage.general.GenericHandlePipe
+import libcheesevoyage.general.HandleStmPipe
 
 //import scala.math._
 import spinal.core._
@@ -134,7 +136,8 @@ case class Gpu2dParams(
   //def numLineMems = 2
   //def numLineMems = 1 << physFbSize2dScalePow.y
   //def numLineMems = 4
-  def numLineMems = 2
+  //def numLineMems = 2
+  def numLineMemsPerBgObjRenderer = 4
   //def numLineMems = numBgs
   //--------
   def bgSize2dInTiles = ElabVec2[Int](
@@ -170,7 +173,7 @@ case class Gpu2dParams(
 
   //def bgEntryMemIdxWidth = log2Up(numTilesPerBg)
   //def bgAttrsMemIdxWidth = log2Up(numBgs)
-  def bgEntryMemIdxWidth = bgSize2dInTiles.x + bgSize2dInTiles.y
+  def bgEntryMemIdxWidth = bgSize2dInTilesPow.x + bgSize2dInTilesPow.y
 
   //def palEntryMemIdxWidth = log2Up(numColsInPal)
   //def palEntryMemIdxWidth = numColsInPalPow
@@ -842,9 +845,11 @@ case class Gpu2d(
     //val lineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
     val bgLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
     val objLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
+    def combinedLineMemArr = bgLineMemArr
     //val combinedLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
+    //val wrLineMemIdx
 
-    for (idx <- 0 to params.numLineMems - 1) {
+    for (idx <- 0 to params.numLineMemsPerBgObjRenderer - 1) {
       //lineMemArr += Mem(
       //  //wordType=Rgb(params.rgbConfig),
       //  wordType=LineMemEntry(),
@@ -876,117 +881,225 @@ case class Gpu2d(
     //val rCol = RegNext(nextCol)
     //rCol.init(rCol.getZero)
     //--------
-    // This code switches between two scanline buffers
-    // (i.e. the two elements of `lineMemArr`),
-    // performing rendering into one scanline buffer while reading colors
-    // from the other
+    // round-robin indexing into the `ArrayBuffer`s
 
-    //val wrLineMemEntry = KeepAttribute(LineMemEntry())
-    //val rPastWrLineMemEntry = RegNext(wrLineMemEntry)
-    //  .init(wrLineMemEntry.getZero)
-
-    //val rWrBgLineMemEntry = KeepAttribute(Reg(LineMemEntry()))
-    //rWrBgLineMemEntry.init(rWrBgLineMemEntry.getZero)
-    //val rWrObjLineMemEntry = KeepAttribute(Reg(LineMemEntry()))
-    //rWrObjLineMemEntry.init(rWrObjLineMemEntry.getZero)
-    //val wrBgLineMemEn
-
-    val wrLineMemArrIdx = KeepAttribute(UInt(1 bits))
-    wrLineMemArrIdx(0) := outp.bgPxsPosSlice.pos.y(0)
-    val rPastWrLineMemArrIdx = KeepAttribute(
-      RegNext(wrLineMemArrIdx) init(wrLineMemArrIdx.getZero)
+    //val rPastWrLineMemArrIdx = KeepAttribute(
+    //  Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x1)
+    //)
+    val rWrLineMemArrIdx = KeepAttribute(
+      Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x2)
     )
-    rPastWrLineMemArrIdx := wrLineMemArrIdx
+
+    //val rPastCombinedLineMemArrIdx = KeepAttribute(
+    //  Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x0)
+    //)
+    val rCombinedLineMemArrIdx = KeepAttribute(
+      Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x1)
+    )
+
+    //val rPastRdLineMemArrIdx = KeepAttribute(
+    //  Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x3)
+    //)
+    val rRdLineMemArrIdx = KeepAttribute(
+      Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x0)
+    )
+    //wrLineMemArrIdx := outp.bgPxsPosSlice.pos.y(wrLineMemArrIdx.bitsRange)
+    ////rdLineMemArrIdx(0) := !outp.bgPxsPosSlice.pos.y(0)
+    //combinedLineMemArrIdx := wrLineMemArrIdx + 1
+    //rdLineMemArrIdx := wrLineMemArrIdx + 
+    when (rIntnlChangingRow) {
+      //rPastWrLineMemArrIdx := rPastWrLineMemArrIdx + 1
+
+      //rPastWrLineMemArrIdx := rPastWrLineMemArrIdx + 1
+      rWrLineMemArrIdx := rWrLineMemArrIdx + 1
+
+      //rPastCombinedLineMemArrIdx := rPastCombinedLineMemArrIdx + 1
+      rCombinedLineMemArrIdx := rCombinedLineMemArrIdx + 1
+
+      //rPastRdLineMemArrIdx := rPastRdLineMemArrIdx + 1
+      rRdLineMemArrIdx := rRdLineMemArrIdx + 1
+    }
 
     //val rWrBgCnt = Reg(UInt(log2Up(params.numBgs) + 1 bits)) init(0x0)
     //val rWrObjCnt = Reg(UInt(log2Up(params.numObjs) + 1 bits)) init(0x0)
 
     //val wrLineMemIdx = outp.bgPxsPosSlice.pos.x
-    val wrLineMemIdx = KeepAttribute(
-      Reg(UInt(log2Up(params.intnlFbSize2d.x) bits)) init(0x0)
-    )
+    //val wrLineMemIdx = KeepAttribute(
+    //  Reg(UInt(log2Up(params.intnlFbSize2d.x) bits)) init(0x0)
+    //)
 
-    // The background writing pipeline iterates through the `params.numBgs`
+    // BEGIN: OLD NOTES
+    // The background-writing pipeline iterates through the `params.numBgs`
     // backgrounds, and increments counters for the pixel x-position
-    // (`WrBgPipeElem.pxPosXVec`). This pipeline also writes the pixels
+    // (`WrBgPipePayload.pxPosXVec`). This pipeline also writes the pixels
     // into `bgLineMemArr(someWrLineMemArrIdx)`
-    case class WrBgPipeElem(
+    // END: OLD NOTES
+
+    // The background-writing pipeline iterates through the
+    // `params.numBgs` backgrounds, and draws them into `bgLineMem`
+    def wrBgPipeCntWidth = (
+      log2Up(params.intnlFbSize2d.x + 1) + params.numBgsPow
+    )
+    //def wrBgPipeBgIdxWidth = params.numBgsPow + 1
+    def wrBgPipeBgIdxWidth = params.numBgsPow
+    //val rWrBgPipeFrontCntWidth = KeepAttribute(
+    //  Reg(UInt(wrBgPipeFrontCntWidth bits)) init(0x0)
+    //)
+    case class WrBgPipePayload(
       //idx: Int
     ) extends Bundle {
       // pixel x-position
-      val pxPosXVec = Vec.fill(params.numBgs)(
-        UInt(log2Up(params.intnlFbSize2d.x) bits)
-      )
-      // scroll
-      val scrollVec = Vec.fill(params.numBgs)(
-        // any `idx` works for this use case
-        cloneOf(bgAttrsArr(0).scroll)
-      )
-      // indices into `bgEntryMem`
-      val bgEntryMemIdxVec = Vec.fill(params.numBgs)(
-        UInt(params.bgEntryMemIdxWidth bits)
-      )
-      // `Gpu2dBgEntry`s that have been read
-      val bgEntryVec = Vec.fill(params.numBgs)(Gpu2dBgEntry(params=params))
+      //val pxPosXVec = Vec.fill(params.numBgs)(
+      //  UInt(log2Up(params.intnlFbSize2d.x) bits)
+      //)
+      val stage0 = new Bundle {
+        //val cnt = UInt(wrBgPipeFrontCntWidth bits)
+        val cnt = UInt(wrBgPipeCntWidth bits)
+        //val cnt = cloneOf(rWrBgPipeFrontCntWidth)
+        // which background are we processing?
+        // NOTE: we process backgrounds in reverse order
+        //val bgIdx = SInt(wrBgPipeCntWidth bits)
+        def bgIdx = UInt(wrBgPipeBgIdxWidth bits)
+        //def bgIdx = cnt(params.numBgsPow - 1 downto 0)
 
-      // `Gpu2dTile`s that have been read
-      val tileVec = Vec.fill(params.numBgs)(
-        Gpu2dTile(params=params, isObj=false)
-      )
-      val palEntryMemIdxVec = Vec.fill(params.numBgs)(
-        UInt(params.objPalEntryMemIdxWidth bits)
-      )
-      // Whether `palEntryMemIdxVec(someBgIdx)` is non-zero
-      val palEntryNzMemIdxVec = Vec.fill(params.numBgs)(Bool())
+        //def cntWillBeDone() = (
+        //  // With more than one background, this should work
+        //  //cnt(cnt.high downto params.numBgsPow)
+        //  getCntPxPosX() >= params.intnlFbSize2d.x - 1
+        //)
 
-      // The following BG pipeline stages are only performed when
-      // `palEntryNzMemIdxVec(someBgIdx)` is `True`
-      // `Gpu2dBgPalEntry`s that have been read
-      val palEntryVec = Vec.fill(params.numBgs)(
-        Gpu2dBgPalEntry(params=params)
-      )
+        //def cntWillBeDone() = (
+        //  cnt === params.intnlFbSize2d.x * params.numBgs - 1
+        //)
+        def cntDone() = (
+          //cnt === params.intnlFbSize2d.x * params.numBgs
+          cnt.msb
+        )
+
+        // pixel x-position
+        def getCntPxPosX() = cnt(cnt.high downto params.numBgsPow)
+
+        //def getCntBgIdx() = (
+        //  params.numBgs - 1 - cnt(params.numBgsPow - 1 downto 0)
+        //)
+      }
+      def cnt = stage0.cnt
+      def bgIdx = stage0.bgIdx
+      //def cntWillBeDone() = stage0.cntWillBeDone()
+      def cntDone() = stage0.cntDone()
+      def getCntPxPosX() = stage0.getCntPxPosX()
+
+      // Stages after stage 0
+      // NOTE: these pipeline stages are still separate
+      val postStage0 = new Bundle {
+        // scroll
+        val scroll = cloneOf(bgAttrsArr(0).scroll)
+        // indices into `bgEntryMem`
+        val bgEntryMemIdx = UInt(params.bgEntryMemIdxWidth bits)
+        // `Gpu2dBgEntry`s that have been read
+        val bgEntry = Gpu2dBgEntry(params=params)
+
+        // `Gpu2dTile`s that have been read
+        val tile = Gpu2dTile(params=params, isObj=false)
+        val palEntryMemIdx = UInt(params.objPalEntryMemIdxWidth bits)
+        // Whether `palEntryMemIdx(someBgIdx)` is non-zero
+        val palEntryNzMemIdx = Bool()
+
+        // The following BG pipeline stages are only performed when
+        // `palEntryNzMemIdx(someBgIdx)` is `True`
+        // `Gpu2dBgPalEntry`s that have been read
+        val palEntry = Gpu2dBgPalEntry(params=params)
+      }
+
+      def scroll = postStage0.scroll
+      def bgEntryMemIdx = postStage0.bgEntryMemIdx
+      def bgEntry = postStage0.bgEntry
+      def tile = postStage0.tile
+      def palEntryMemIdx = postStage0.palEntryMemIdx
+      def palEntryNzMemIdx = postStage0.palEntryNzMemIdx
+      def palEntry = postStage0.palEntry
     }
-    def wrBgPipePxPosXVecStageIdx = 0
-    def wrBgPipeScrollVecStageIdx = 1
-    def wrBgPipeBgEntryMemIdxVecStageIdx = 2
-    def wrBgPipeBgEntryVecStageIdx = 3
-    def wrBgPipeTileVecStageIdx = 4
-    def wrBgPipePalEntryMemIdxVecStageIdx = 5
-    def wrBgPipePalEntryNzMemIdxVecStageIdx = 6
-    def wrBgPipePalEntryVecStageIdx = 7
-    def wrBgPipeNumStagesPerBg = 8
+
+    def mkInitWrBgPipeElem(): WrBgPipePayload = {
+      val ret = WrBgPipePayload()
+      ret.stage0.cnt := 0
+      ret.stage0.bgIdx := (default -> True)
+      ret.postStage0 := ret.postStage0.getZero
+      ret
+    }
+
+    def wrBgPipeCntStageIdx = 0
+    def wrBgPipeBgIdxStageIdx = 0
+
+    def wrBgPipeScrollStageIdx = 1
+    def wrBgPipeBgEntryMemIdxStageIdx = 2
+    def wrBgPipeBgEntryStageIdx = 3
+    def wrBgPipeTileStageIdx = 4
+    def wrBgPipePalEntryMemIdxStageIdx = 5
+    def wrBgPipePalEntryNzMemIdxStageIdx = 6
+    def wrBgPipePalEntryStageIdx = 7
+
+    def wrBgPipeNumStages = 8 
+
+    //def wrBgPipeNumStagesPerBg = 8
 
     //def wrBgPipeSize = (wrBgPipeNumElems * params.numBgs)
     //def wrBgPipeSize = wrBgPipeNumElems + 1
 
     //def wrBgPipeSize = max(wrBgPipeNumElems, params.numBgs) + 1 
-    def wrBgPipeNumStages = wrBgPipeNumStagesPerBg + params.numBgs
+    //def wrBgPipeNumStages = wrBgPipeNumStagesPerBg + params.numBgs
+
+
     //def wrBgPipeNumElemsGtNumBgs = wrBgPipeNumElems > params.numBgs
     // The sprite-drawing pipeline iterates through the `params.numObjs`
     // sprites, and draws them into `objLineMem` if they're on the current
     // scanline 
-    case class WrObjPipeElem() extends Bundle {
+    def wrObjPipeObjAttrsMemIdxWidth = params.objAttrsMemIdxWidth + 1
+    //val rWrObjPipeFrontObjAttrsMemIdx = KeepAttribute(
+    //  Reg(SInt(wrObjPipeObjAttrsMemIdxWidth bits)) init(0x0)
+    //)
+    case class WrObjPipePayload() extends Bundle {
       // Which sprite are we processing?
-      val objAttrsMemIdx = UInt(params.objAttrsMemIdxWidth bits)
-      // What are the `Gpu2dObjAttrs` of our sprite? 
-      val objAttrs = Gpu2dObjAttrs(params=params)
-      val stage2 = new Bundle {
-        // Are the X and Y positions of this sprite within the current
-        // line?
-        // NOTE: the x-pos could be out of range if it's negative
-        val posInLine = Bool()
-        // What's the tile this sprite represents? We read it 
-        val tileMemIdx = UInt(params.objTileMemIdxWidth bits)
+      //val objAttrsMemIdx = SInt(params.objAttrsMemIdxWidth + 1 bits)
+      //val objAttrsMemIdx = cloneOf(rWrObjPipeFrontObjAttrsMemIdx)
+      val objAttrsMemIdx = SInt(wrObjPipeObjAttrsMemIdxWidth bits)
+      def objAttrsMemIdxDidUnderflow() = (
+        //objAttrsMemIdx === 0
+        objAttrsMemIdx.msb
+      )
+      val postStage0 = new Bundle {
+        // What are the `Gpu2dObjAttrs` of our sprite? 
+        val objAttrs = Gpu2dObjAttrs(params=params)
+        val stage2 = new Bundle {
+          // Are the X and Y positions of this sprite within the current
+          // line?
+          // NOTE: the x-pos could be out of range if it's negative
+          val posInLine = Bool()
+          // What's the tile this sprite represents? We read it 
+          val tileMemIdx = UInt(params.objTileMemIdxWidth bits)
+        }
+        // The following OBJ pipeline stages are only performed (besides
+        // just copying data around) when `stage2.posIsInLine` is `True`
+        val tile = Gpu2dTile(params=params, isObj=true)
+        val palEntryMemIdx = UInt(params.objPalEntryMemIdxWidth bits)
+        // Whether `palEntryMemIdx` is non-zero
+        val palEntryNzMemIdx = Bool()
+        // The following OBJ pipeline stages are only performed when
+        // `palEntryNzMemIdx` is `True`
+        val palEntry = Gpu2dObjPalEntry(params=params)
       }
-      // The following OBJ pipeline stages are only performed (besides
-      // just copying data around) when `stage2.posIsInLine` is `True`
-      val tile = Gpu2dTile(params=params, isObj=true)
-      val palEntryMemIdx = UInt(params.objPalEntryMemIdxWidth bits)
-      // Whether `palEntryMemIdx` is non-zero
-      val palEntryNzMemIdx = Bool()
-      // The following OBJ pipeline stages are only performed when
-      // `palEntryNzMemIdx` is `True`
-      val palEntry = Gpu2dObjPalEntry(params=params)
+      def objAttrs = postStage0.objAttrs
+      def stage2 = postStage0.stage2
+      def tile = postStage0.tile
+      def palEntryMemIdx = postStage0.palEntryMemIdx
+      def palEntryNzMemIdx = postStage0.palEntryNzMemIdx
+      def palEntry = postStage0.palEntry
+    }
+    def mkInitWrObjPipeElem(): WrObjPipePayload = {
+      val ret = WrObjPipePayload()
+      ret.objAttrsMemIdx := (1 << (ret.objAttrsMemIdx.getWidth - 1)) - 1
+      ret.postStage0 := ret.postStage0.getZero
+      ret
     }
 
     def wrObjPipeObjAttrsMemIdxStageIdx = 0
@@ -1011,20 +1124,122 @@ case class Gpu2d(
     //  wrObjPipeNumElems > params.numObjsPow
     //)
 
-    //def wrPipeSize = wrBgPipeSize + wrObjPipeSize
-    val rWrBgPipe = KeepAttribute(
-      Vec.fill(wrMaxBgObjPipeNumStages)(Reg(WrBgPipeElem()))
+    //case class WrCombinedPipeElem() extends Bundle {
+    //  //--------
+    //  //val bg = WrBgPipePayload()
+    //  //val obj = WrObjPipePayload()
+    //  //--------
+    //}
+    def rIntnlChangingRow = Reg(Bool()) init(False)
+    rIntnlChangingRow := (
+      rPastOutp.bgPxsPosSlice.pos.y
+      === rPastOutp.bgPxsPosSlice.pastPos.y + 1
     )
-    for (idx <- 0 to wrMaxBgObjPipeNumStages - 1) {
-      rWrBgPipe(idx).init(rWrBgPipe(idx).getZero)
+
+    //def wrPipeSize = wrBgPipeSize + wrObjPipeSize
+    val wrBgPipe = KeepAttribute(
+      //Vec.fill(wrMaxBgObjPipeNumStages)(Reg(WrBgPipePayload()))
+      Vec.fill(wrMaxBgObjPipeNumStages)(Flow(WrBgPipePayload()))
+    )
+    //for (idx <- 0 to wrMaxBgObjPipeNumStages - 1) {
+    //  //rWrBgPipe(idx).init(
+    //  //  //rWrBgPipe(idx).getZero
+    //  //  mkInitWrBgPipeElem()
+    //  //)
+    //}
+    //wrBgPipe(0).valid := True
+    val rWrBgPipeFrontValid = Reg(Bool()) init(False)
+    //when (wrBgPipe(0).cntWillBeDone()) {
+    //  //rWrBgPipeFrontValid := wrBgPipe(0).payload.stage0.cntDone()
+    //  rWrBgPipeFrontValid := False
+    //}
+    val rWrBgPipeFrontPayload = Reg(WrBgPipePayload())
+    rWrBgPipeFrontPayload.init(rWrBgPipeFrontPayload.getZero)
+
+    wrBgPipe(0).valid := rWrBgPipeFrontValid
+    wrBgPipe(0).payload := rWrBgPipeFrontPayload
+    for (idx <- 1 to wrBgPipe.size - 1) {
+      //wrBgPipe(idx) <-/< wrBgPipe(idx - 1)
+      wrBgPipe(idx) <-< wrBgPipe(idx - 1)
+    }
+    //val rWrBgPipeLastReady = Reg(Bool()) init(False)
+    //rWrBgPipeLastReady := 
+    //wrBgPipe.last.ready := True
+    //wrBgPipe.last.ready := rWrBgPipeLastReady
+
+    // Control the background pipeline
+    when (
+      //rPastOutp.bgPxsPosSlice.pos.y =/= rPastOutp.bgPxsPosSlice.nextPos.y 
+      //rPastOutp.bgPxsPosSlice.pastPos.x === 0x0
+      //&& (
+      //  rPastOutp.bgPxsPosSlice.pos.y
+      //  === rPastOutp.bgPxsPosSlice.pastPos.y + 1
+      //)
+      rIntnlChangingRow
+    ) {
+      rWrBgPipeFrontValid := True
+      rWrBgPipeFrontPayload := mkInitWrBgPipeElem()
+    } otherwise { // when (!rIntnlChangingRow)
+      when (wrBgPipe(0).fire) {
+        //rWrBgPipeFrontPayload := 
+        rWrBgPipeFrontPayload.cnt := rWrBgPipeFrontPayload.cnt + 1
+        rWrBgPipeFrontPayload.bgIdx := rWrBgPipeFrontPayload.bgIdx - 1
+      }
+      when (!rWrBgPipeFrontPayload.cntDone()) {
+        rWrBgPipeFrontValid := False
+      }
     }
 
-    val rWrObjPipe = KeepAttribute(
-      Vec.fill(wrMaxBgObjPipeNumStages)(Reg(WrObjPipeElem()))
+    val wrObjPipe = KeepAttribute(
+      //Vec.fill(wrMaxBgObjPipeNumStages)(Reg(WrObjPipePayload()))
+      Vec.fill(wrMaxBgObjPipeNumStages)(Flow(WrObjPipePayload()))
     )
-    for (idx <- 0 to wrMaxBgObjPipeNumStages - 1) {
-      rWrObjPipe(idx).init(rWrObjPipe(idx).getZero)
+    //for (idx <- 0 to wrMaxBgObjPipeNumStages - 1) {
+    //  //rWrObjPipe(idx).init(rWrObjPipe(idx).getZero)
+    //}
+    //wrObjPipe(0).valid := True
+    val rWrObjPipeFrontValid = Reg(Bool()) init(True)
+    //when (wrObjPipe(0).objAttrsMemIdxWillUnderflow()) {
+    //  rWrObjPipeFrontValid := False
+    //}
+    val rWrObjPipeFrontPayload = Reg(WrObjPipePayload())
+    rWrObjPipeFrontPayload.init(rWrObjPipeFrontPayload.getZero)
+
+    wrObjPipe(0).valid := rWrObjPipeFrontValid
+    wrObjPipe(0).payload := rWrObjPipeFrontPayload
+    for (idx <- 1 to wrObjPipe.size - 1) {
+      //wrObjPipe(idx) <-/< wrObjPipe(idx - 1)
+      wrObjPipe(idx) <-< wrObjPipe(idx - 1)
     }
+    //wrObjPipe.last.ready := True
+
+    // Control the sprite pipeline
+    when (
+      //rPastOutp.bgPxsPosSlice.pos.y =/= rPastOutp.bgPxsPosSlice.nextPos.y 
+      //rPastOutp.bgPxsPosSlice.pastPos.x === 0x0
+      //&& (
+      //  rPastOutp.bgPxsPosSlice.pos.y
+      //  === rPastOutp.bgPxsPosSlice.pastPos.y + 1
+      //)
+      rIntnlChangingRow
+    ) {
+      rWrObjPipeFrontValid := True
+      rWrObjPipeFrontPayload := mkInitWrObjPipeElem()
+    } otherwise { // when (!rIntnlChangingRow)
+      when (wrBgPipe(0).fire) {
+        //rWrObjPipeFrontPayload := 
+        rWrObjPipeFrontPayload.objAttrsMemIdx := (
+          rWrObjPipeFrontPayload.objAttrsMemIdx - 1
+        )
+      }
+      when (!rWrObjPipeFrontPayload.objAttrsMemIdxDidUnderflow()) {
+        rWrObjPipeFrontValid := False
+      }
+    }
+
+    //val wrCombinedPipe = KeepAttribute(
+    //  Vec.fill()(Stream(WrCombinedPipeElem()))
+    //)
 
     //if (!wrPipeBgNumElemsGtNumBgs) {
     //} else { // if (wrPipeBgNumElemsGtNumBgs)
@@ -1032,62 +1247,110 @@ case class Gpu2d(
     //if (!wrPipeObjNumElemsGtNumObjsPow) {
     //} else { // if (wrPipeObjNumElemsGtNumObjsPow)
     //}
-      
+
+    //def writeHandleBgObjPipeElem[
+    //  WrPipeElemT <: Bundle
+    //](
+    //  someWrPipe: Vec[WrPipeElemT],     // `rWrBgPipe` or `rWrObjPipe`
+    //  someWrPipeStageIdx: Int,
+    //  someWrPipeNumMainStages: Int,     // `wrBgPipeNumStages`
+    //                                    // or `wrObjPipeNumStages`
+    //  someLineMem: Mem[Gpu2dRgba],      // `bgLineMem` or `objLineMem`
+    //)(
+    //  idxEqStageIdxFunc: (
+    //    Vec[WrPipeElemT], // `someWrPipe`
+    //    Int,              // `someWrPipeStageIdx`
+    //    Int,              // `someWrPipeNumMainStages`
+    //    Int,              // `idx`
+    //    Mem[Gpu2dRgba],   // `someLineMem`: 
+    //  ) => Unit,
+    //  idxLtStageIdxFunc: (
+    //    Vec[WrPipeElemT], // `someWrPipe`
+    //    Int,              // `someWrPipeStageIdx`
+    //    Int,              // `someWrPipeNumMainStages`
+    //    Int,              // `idx`
+    //    Mem[Gpu2dRgba],   // `someLineMem`: 
+    //  ) => Unit,
+    //  postMainFunc: (
+    //    Vec[WrPipeElemT], // `someWrPipe`
+    //    Int,              // `someWrPipeStageIdx`
+    //    Int,              // `someWrPipeNumMainStages`
+    //    Int,              // `idx`
+    //    Mem[Gpu2dRgba],   // `someLineMem`: 
+    //  ) => Unit,
+    //): Unit = {
+    //  GenericHandlePipeElem(
+    //    somePipe=someWrPipe,
+    //    somePipeStageIdx=someWrPipeStageIdx,
+    //    somePipeNumMainStages=someWrPipeNumMainStages,
+    //    someExtData=someLineMem,
+    //  )(
+    //    idxEqStageIdxFunc=idxEqStageIdxFunc,
+    //    idxLtStageIdxFunc=idxLtStageIdxFunc,
+    //    postMainFunc=postMainFunc,
+    //  )
+    //}
+
     def writeBgLineMemEntries(
       someWrLineMemArrIdx: Int,
     ): Unit = {
       // Handle backgrounds
       val bgLineMem = bgLineMemArr(someWrLineMemArrIdx)
-      for (idx <- 0 to wrMaxBgObjPipeNumStages - 1) {
-        //if (idx > 0) {
-        //  rWrPipe(idx) := rWrPipe(idx - 1)
-        //}
+      //writeHandleBgObjPipeElem(
+      //  someWrPipe=
+      //)
+      //for (idx <- 0 to rWrBgPipe.size - 1) {
+      //}
+      //for (idx <- 0 to wrMaxBgObjPipeNumStages - 1) {
+      //  //if (idx > 0) {
+      //  //  rWrPipe(idx) := rWrPipe(idx - 1)
+      //  //}
 
-        //val bgScrollVecIdx = idx - wrBgPipeScrollVecIdx
-        //if (bgScrollVecIdx >= 0 && bgScrollVecIdx < params.numBgs) {
-        //  for (jdx <- 0 to bgScrollVecIdx) {
-        //    if (jdx == bgScrollVecIdx) {
-        //    } else { // if (jdx < bgScrollVecIdx)
-        //      //rWrPipe(idx).scrollVec
-        //    }
-        //  }
-        //}
-        //val bgAddrVecIdx = idx - wrBgPipeAddrVecIdx
-        //if (bgAddrVecIdx >= 0 && bgAddrVecIdx < params.numBgs) {
-        //  for (jdx <- 0 to bgAddrVecIdx) {
-        //    if (jdx == bgAddrVecIdx) {
-        //    } else { // if (jdx < bgAddrVecIdx)
-        //      //if (jdx == bgAddrVecIdx - 1) {
-        //      //}
-        //    }
-        //  }
-        //}
-        //val bgEntryVecIdx = idx - wrBgPipeEntryVecIdx
-        //if (bgEntryVecIdx >= 0 && bgEntryVecIdx < params.numBgs) {
-        //  for (jdx <- 0 to bgEntryVecIdx) {
-        //    if (jdx == bgEntryVecIdx) {
-        //    } else { // if (jdx < bgEntryVecIdx)
-        //      //rWrPipe(idx).bg.
-        //    }
-        //  }
-        //}
-        //val bgTileVecIdx = idx - wrBgPipeTileVecIdx
-        //if (bgTileVecIdx >= 0 && bgTileVecIdx < params.numBgs) {
-        //  for (jdx <- 0 to bgTileVecIdx) {
-        //    if (jdx == bgTileVecIdx) {
-        //    } else { // if (jdx < bgTileVecIdx)
-        //    }
-        //  }
-        //}
-        //val bgPalEntryVecIdx = idx - wrBgPipePalEntryVecIdx
-        //if (bgPalEntryVecIdx >= 0 && bgPalEntryVecIdx < params.numBgs) {
-        //  for (jdx <- 0 to bgPalEntryVecIdx) {
-        //    if (jdx == bgPalEntryVecIdx) {
-        //    } else { // if (jdx < bgPalEntryVecIdx)
-        //    }
-        //  }
-        //}
-      }
+      //  //val bgScrollVecIdx = idx - wrBgPipeScrollVecIdx
+      //  //if (bgScrollVecIdx >= 0 && bgScrollVecIdx < params.numBgs) {
+      //  //  for (jdx <- 0 to bgScrollVecIdx) {
+      //  //    if (jdx == bgScrollVecIdx) {
+      //  //    } else { // if (jdx < bgScrollVecIdx)
+      //  //      //rWrPipe(idx).scrollVec
+      //  //    }
+      //  //  }
+      //  //}
+      //  //val bgAddrVecIdx = idx - wrBgPipeAddrVecIdx
+      //  //if (bgAddrVecIdx >= 0 && bgAddrVecIdx < params.numBgs) {
+      //  //  for (jdx <- 0 to bgAddrVecIdx) {
+      //  //    if (jdx == bgAddrVecIdx) {
+      //  //    } else { // if (jdx < bgAddrVecIdx)
+      //  //      //if (jdx == bgAddrVecIdx - 1) {
+      //  //      //}
+      //  //    }
+      //  //  }
+      //  //}
+      //  //val bgEntryVecIdx = idx - wrBgPipeEntryVecIdx
+      //  //if (bgEntryVecIdx >= 0 && bgEntryVecIdx < params.numBgs) {
+      //  //  for (jdx <- 0 to bgEntryVecIdx) {
+      //  //    if (jdx == bgEntryVecIdx) {
+      //  //    } else { // if (jdx < bgEntryVecIdx)
+      //  //      //rWrPipe(idx).bg.
+      //  //    }
+      //  //  }
+      //  //}
+      //  //val bgTileVecIdx = idx - wrBgPipeTileVecIdx
+      //  //if (bgTileVecIdx >= 0 && bgTileVecIdx < params.numBgs) {
+      //  //  for (jdx <- 0 to bgTileVecIdx) {
+      //  //    if (jdx == bgTileVecIdx) {
+      //  //    } else { // if (jdx < bgTileVecIdx)
+      //  //    }
+      //  //  }
+      //  //}
+      //  //val bgPalEntryVecIdx = idx - wrBgPipePalEntryVecIdx
+      //  //if (bgPalEntryVecIdx >= 0 && bgPalEntryVecIdx < params.numBgs) {
+      //  //  for (jdx <- 0 to bgPalEntryVecIdx) {
+      //  //    if (jdx == bgPalEntryVecIdx) {
+      //  //    } else { // if (jdx < bgPalEntryVecIdx)
+      //  //    }
+      //  //  }
+      //  //}
+      //}
       //--------
       //--------
     }
@@ -1138,6 +1401,11 @@ case class Gpu2d(
       }
     }
     //--------
+    def combineLineMemEntries(
+      someCombinedLineMemArrIdx: Int
+    ): Unit = {
+    }
+    //--------
     //val rdBgLineMemEntry = KeepAttribute(LineMemEntry())
     //val rPastRdBgLineMemEntry = RegNext(rdBgLineMemEntry)
     //  .init(rdBgLineMemEntry.getZero)
@@ -1145,8 +1413,8 @@ case class Gpu2d(
     //val rPastRdObjLineMemEntry = RegNext(rdObjLineMemEntry)
     //  .init(rdObjLineMemEntry.getZero)
 
-    val rdLineMemArrIdx = KeepAttribute(UInt(1 bits))
-    rdLineMemArrIdx(0) := !outp.bgPxsPosSlice.pos.y(0)
+    //val rdLineMemArrIdx = KeepAttribute(UInt(1 bits))
+    //rdLineMemArrIdx(0) := !outp.bgPxsPosSlice.pos.y(0)
     //val rdLineMemIdx = KeepAttribute(cloneOf(outp.bgPxsPosSlice.pos.x))
     //rdLineMemIdx := outp.bgPxsPosSlice.pos.x
 
@@ -1165,8 +1433,8 @@ case class Gpu2d(
       //)
     }
 
-    switch (wrLineMemArrIdx) {
-      for (idx <- 0 to (1 << wrLineMemArrIdx.getWidth) - 1) {
+    switch (rWrLineMemArrIdx) {
+      for (idx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1) {
         is (idx) {
           writeBgLineMemEntries(someWrLineMemArrIdx=idx)
           writeObjLineMemEntries(someWrLineMemArrIdx=idx)
@@ -1176,9 +1444,19 @@ case class Gpu2d(
       //  wrLineMemEntry := rPastWrLineMemEntry
       //}
     }
+    switch (rCombinedLineMemArrIdx) {
+      for (idx <- 0 to (1 << rCombinedLineMemArrIdx.getWidth) - 1) {
+        is (idx) {
+          combineLineMemEntries(someCombinedLineMemArrIdx=idx)
+        }
+      }
+      //default {
+      //  wrLineMemEntry := rPastWrLineMemEntry
+      //}
+    }
     //when (pop.fire) {
-    switch (rdLineMemArrIdx) {
-      for (idx <- 0 to (1 << rdLineMemArrIdx.getWidth) - 1) {
+    switch (rRdLineMemArrIdx) {
+      for (idx <- 0 to (1 << rRdLineMemArrIdx.getWidth) - 1) {
         is (idx) {
           readLineMemEntries(someRdLineMemArrIdx=idx)
         }

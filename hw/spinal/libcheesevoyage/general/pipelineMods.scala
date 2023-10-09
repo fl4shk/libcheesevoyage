@@ -6,6 +6,253 @@ import spinal.lib._
 import spinal.core.formal._
 import scala.collection.mutable.ArrayBuffer
 
+object GenericHandlePipe {
+  def apply[
+    PipeElemT <: Data,
+    //ExtDataT,
+  ](
+    somePipe: Vec[PipeElemT],
+    somePipeStageIdx: Int,
+    somePipeNumMainStages: Int,
+    //someExtData: ExtDataT,
+  )(
+    idxEqStageIdxFunc: (
+      Vec[PipeElemT],   // `somePipe`
+      Int,              // `somePipeStageIdx`
+      Int,              // `somePipeNumMainStages`
+      Int,              // `idx`
+      //ExtDataT,         // `someExtData`
+    ) => Unit,
+    idxLtStageIdxFunc: (
+      Vec[PipeElemT],   // `somePipe`
+      Int,              // `somePipeStageIdx`
+      Int,              // `somePipeNumMainStages`
+      Int,              // `idx`
+      //ExtDataT,         // `someExtData`
+    ) => Unit,
+    postMainFunc: (
+      Vec[PipeElemT],   // `somePipe`
+      Int,              // `somePipeStageIdx`
+      Int,              // `somePipeNumMainStages`
+      Int,              // `idx`
+      //ExtDataT,         // `someExtData`
+    ) => Unit,
+  ): Unit = {
+    for (idx <- 0 to somePipe.size - 1) {
+      //val mbrIdx = idx - someNumMembers
+      //if (mbrIdx >= 0 && mbrIdx < someNumMembers) {
+      //}
+      //val stageIdx = idx - someWrPipeNumStages
+      if (idx < somePipeNumMainStages) {
+        if (idx == somePipeStageIdx) {
+          idxEqStageIdxFunc(
+            somePipe,
+            somePipeStageIdx,
+            somePipeNumMainStages,
+            idx,
+            //someExtData
+          )
+        } else if (idx < somePipeStageIdx) {
+          idxLtStageIdxFunc(
+            somePipe,
+            somePipeStageIdx,
+            somePipeNumMainStages,
+            idx,
+            //someExtData
+          )
+        } else {
+          postMainFunc(
+            somePipe,
+            somePipeStageIdx,
+            somePipeNumMainStages,
+            idx,
+            //someExtData
+          )
+        }
+      } else { // if (idx >= somePipeNumMainStages)
+        //somePipe(idx) := somePipe(idx - 1)
+        postMainFunc(
+          somePipe,
+          somePipeStageIdx,
+          somePipeNumMainStages,
+          idx,
+          //someExtData
+        )
+      }
+    }
+  }
+}
+object HandleStmPipe {
+  def apply[
+    PipeElemT <: Data,
+  ](
+    somePipe: Vec[Stream[PipeElemT]],
+    somePipeStageIdx: Int,
+    somePipeNumMainStages: Int,
+  )(
+    idxEqStageIdxFunc: (
+      Vec[Stream[PipeElemT]],   // `somePipe`
+      Int,                      // `somePipeStageIdx`
+      Int,                      // `somePipeNumMainStages`
+      Int,                      // `idx`
+    ) => Unit,
+    idxLtStageIdxFunc: (
+      Vec[Stream[PipeElemT]],   // `somePipe`
+      Int,                      // `somePipeStageIdx`
+      Int,                      // `somePipeNumMainStages`
+      Int,                      // `idx`
+    ) => Unit,
+    postMainFunc: (
+      Vec[Stream[PipeElemT]],   // `somePipe`
+      Int,                      // `somePipeStageIdx`
+      Int,                      // `somePipeNumMainStages`
+      Int,                      // `idx`
+    ) => Unit,
+  ): Unit = {
+    //--------
+    def genericIdxEqStageIdxFunc(
+      genericSomePipe: Vec[Stream[PipeElemT]],  // `somePipe`
+      genericSomePipeStageIdx: Int,             // `somePipeStageIdx`
+      genericSomePipeNuMainStages: Int,         // `somePipeNumMainStages`
+      genericIdx: Int,                          // `idx`
+    ): Unit = {
+      when (genericSomePipe(genericIdx).fire) {
+        idxEqStageIdxFunc(
+          genericSomePipe,              // `somePipe`
+          genericSomePipeStageIdx,      // `somePipeStageIdx`
+          genericSomePipeNuMainStages,  // `somePipeNumMainStages`
+          genericIdx,                   // `idx`
+        )
+      }
+    }
+    def genericIdxLtStageIdxFunc(
+      genericSomePipe: Vec[Stream[PipeElemT]],  // `somePipe`
+      genericSomePipeStageIdx: Int,             // `somePipeStageIdx`
+      genericSomePipeNuMainStages: Int,         // `somePipeNumMainStages`
+      genericIdx: Int,                          // `idx`
+    ): Unit = {
+      when (genericSomePipe(genericIdx).fire) {
+        idxLtStageIdxFunc(
+          genericSomePipe,              // `somePipe`
+          genericSomePipeStageIdx,      // `somePipeStageIdx`
+          genericSomePipeNuMainStages,  // `somePipeNumMainStages`
+          genericIdx,                   // `idx`
+        )
+      }
+    }
+    def genericPostMainFunc(
+      genericSomePipe: Vec[Stream[PipeElemT]],  // `somePipe`
+      genericSomePipeStageIdx: Int,             // `somePipeStageIdx`
+      genericSomePipeNuMainStages: Int,         // `somePipeNumMainStages`
+      genericIdx: Int,                          // `idx`
+    ): Unit = {
+      when (genericSomePipe(genericIdx).fire) {
+        postMainFunc(
+          genericSomePipe,              // `somePipe`
+          genericSomePipeStageIdx,      // `somePipeStageIdx`
+          genericSomePipeNuMainStages,  // `somePipeNumMainStages`
+          genericIdx,                   // `idx`
+        )
+      }
+    }
+    //--------
+    GenericHandlePipe(
+      somePipe=somePipe,
+      somePipeStageIdx=somePipeStageIdx,
+      somePipeNumMainStages=somePipeNumMainStages
+    )(
+      idxEqStageIdxFunc=genericIdxEqStageIdxFunc,
+      idxLtStageIdxFunc=genericIdxLtStageIdxFunc,
+      postMainFunc=genericPostMainFunc,
+    )
+  }
+}
+object HandleFlowPipe {
+  def apply[
+    PipeElemT <: Data,
+  ](
+    somePipe: Vec[Flow[PipeElemT]],
+    somePipeStageIdx: Int,
+    somePipeNumMainStages: Int,
+  )(
+    idxEqStageIdxFunc: (
+      Vec[Flow[PipeElemT]],   // `somePipe`
+      Int,                      // `somePipeStageIdx`
+      Int,                      // `somePipeNumMainStages`
+      Int,                      // `idx`
+    ) => Unit,
+    idxLtStageIdxFunc: (
+      Vec[Flow[PipeElemT]],   // `somePipe`
+      Int,                      // `somePipeStageIdx`
+      Int,                      // `somePipeNumMainStages`
+      Int,                      // `idx`
+    ) => Unit,
+    postMainFunc: (
+      Vec[Flow[PipeElemT]],   // `somePipe`
+      Int,                      // `somePipeStageIdx`
+      Int,                      // `somePipeNumMainStages`
+      Int,                      // `idx`
+    ) => Unit,
+  ): Unit = {
+    //--------
+    def genericIdxEqStageIdxFunc(
+      genericSomePipe: Vec[Flow[PipeElemT]],  // `somePipe`
+      genericSomePipeStageIdx: Int,             // `somePipeStageIdx`
+      genericSomePipeNuMainStages: Int,         // `somePipeNumMainStages`
+      genericIdx: Int,                          // `idx`
+    ): Unit = {
+      when (genericSomePipe(genericIdx).fire) {
+        idxEqStageIdxFunc(
+          genericSomePipe,              // `somePipe`
+          genericSomePipeStageIdx,      // `somePipeStageIdx`
+          genericSomePipeNuMainStages,  // `somePipeNumMainStages`
+          genericIdx,                   // `idx`
+        )
+      }
+    }
+    def genericIdxLtStageIdxFunc(
+      genericSomePipe: Vec[Flow[PipeElemT]],  // `somePipe`
+      genericSomePipeStageIdx: Int,             // `somePipeStageIdx`
+      genericSomePipeNuMainStages: Int,         // `somePipeNumMainStages`
+      genericIdx: Int,                          // `idx`
+    ): Unit = {
+      when (genericSomePipe(genericIdx).fire) {
+        idxLtStageIdxFunc(
+          genericSomePipe,              // `somePipe`
+          genericSomePipeStageIdx,      // `somePipeStageIdx`
+          genericSomePipeNuMainStages,  // `somePipeNumMainStages`
+          genericIdx,                   // `idx`
+        )
+      }
+    }
+    def genericPostMainFunc(
+      genericSomePipe: Vec[Flow[PipeElemT]],  // `somePipe`
+      genericSomePipeStageIdx: Int,             // `somePipeStageIdx`
+      genericSomePipeNuMainStages: Int,         // `somePipeNumMainStages`
+      genericIdx: Int,                          // `idx`
+    ): Unit = {
+      when (genericSomePipe(genericIdx).fire) {
+        postMainFunc(
+          genericSomePipe,              // `somePipe`
+          genericSomePipeStageIdx,      // `somePipeStageIdx`
+          genericSomePipeNuMainStages,  // `somePipeNumMainStages`
+          genericIdx,                   // `idx`
+        )
+      }
+    }
+    //--------
+    GenericHandlePipe(
+      somePipe=somePipe,
+      somePipeStageIdx=somePipeStageIdx,
+      somePipeNumMainStages=somePipeNumMainStages
+    )(
+      idxEqStageIdxFunc=genericIdxEqStageIdxFunc,
+      idxLtStageIdxFunc=genericIdxLtStageIdxFunc,
+      postMainFunc=genericPostMainFunc,
+    )
+  }
+}
+
 //case class PstageFwdIoOneDir[
 //  T <: Data
 //](
