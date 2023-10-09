@@ -10,8 +10,8 @@ import libcheesevoyage.general.MkDualTypeNumVec2
 import libcheesevoyage.general.ElabVec2
 import libcheesevoyage.general.PipeSkidBuf
 import libcheesevoyage.general.PipeSkidBufIo
-//import libcheesevoyage.general.GenericHandlePipe
-import libcheesevoyage.general.HandleStmPipe
+import libcheesevoyage.general.GenericHandlePipe
+//import libcheesevoyage.general.HandleStmPipe
 
 //import scala.math._
 import spinal.core._
@@ -1209,7 +1209,11 @@ case class Gpu2d(
     wrObjPipe(0).payload := rWrObjPipeFrontPayload
     for (idx <- 1 to wrObjPipe.size - 1) {
       //wrObjPipe(idx) <-/< wrObjPipe(idx - 1)
-      wrObjPipe(idx) <-< wrObjPipe(idx - 1)
+      wrObjPipe(idx) 
+      when (wrObjPipe(idx - 1).fire) {
+        wrObjPipe(idx).valid := True
+      }
+      //wrObjPipe(idx) <-< wrObjPipe(idx - 1)
     }
     //wrObjPipe.last.ready := True
 

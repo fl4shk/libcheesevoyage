@@ -87,23 +87,24 @@ object HandleStmPipe {
     PipeElemT <: Data,
   ](
     somePipe: Vec[Stream[PipeElemT]],
+    somePipePayloadRegs: Vec[PipeElemT],
     somePipeStageIdx: Int,
     somePipeNumMainStages: Int,
   )(
     idxEqStageIdxFunc: (
-      Vec[Stream[PipeElemT]],   // `somePipe`
+      Vec[PipeElemT],           // `somePipePayloadRegs`
       Int,                      // `somePipeStageIdx`
       Int,                      // `somePipeNumMainStages`
       Int,                      // `idx`
     ) => Unit,
     idxLtStageIdxFunc: (
-      Vec[Stream[PipeElemT]],   // `somePipe`
+      Vec[PipeElemT],           // `somePipePayloadRegs`
       Int,                      // `somePipeStageIdx`
       Int,                      // `somePipeNumMainStages`
       Int,                      // `idx`
     ) => Unit,
     postMainFunc: (
-      Vec[Stream[PipeElemT]],   // `somePipe`
+      Vec[PipeElemT],           // `somePipePayloadRegs`
       Int,                      // `somePipeStageIdx`
       Int,                      // `somePipeNumMainStages`
       Int,                      // `idx`
@@ -118,7 +119,8 @@ object HandleStmPipe {
     ): Unit = {
       when (genericSomePipe(genericIdx).fire) {
         idxEqStageIdxFunc(
-          genericSomePipe,              // `somePipe`
+          //genericSomePipe,              // `somePipe`
+          somePipePayloadRegs,          // `somePipePayloadRegs`
           genericSomePipeStageIdx,      // `somePipeStageIdx`
           genericSomePipeNuMainStages,  // `somePipeNumMainStages`
           genericIdx,                   // `idx`
@@ -133,7 +135,8 @@ object HandleStmPipe {
     ): Unit = {
       when (genericSomePipe(genericIdx).fire) {
         idxLtStageIdxFunc(
-          genericSomePipe,              // `somePipe`
+          //genericSomePipe,              // `somePipe`
+          somePipePayloadRegs,          // `somePipePayloadRegs`
           genericSomePipeStageIdx,      // `somePipeStageIdx`
           genericSomePipeNuMainStages,  // `somePipeNumMainStages`
           genericIdx,                   // `idx`
@@ -148,7 +151,8 @@ object HandleStmPipe {
     ): Unit = {
       when (genericSomePipe(genericIdx).fire) {
         postMainFunc(
-          genericSomePipe,              // `somePipe`
+          //genericSomePipe,              // `somePipe`
+          somePipePayloadRegs,          // `somePipePayloadRegs`
           genericSomePipeStageIdx,      // `somePipeStageIdx`
           genericSomePipeNuMainStages,  // `somePipeNumMainStages`
           genericIdx,                   // `idx`
@@ -172,23 +176,24 @@ object HandleFlowPipe {
     PipeElemT <: Data,
   ](
     somePipe: Vec[Flow[PipeElemT]],
+    somePipePayloadRegs: Vec[PipeElemT],
     somePipeStageIdx: Int,
     somePipeNumMainStages: Int,
   )(
     idxEqStageIdxFunc: (
-      Vec[Flow[PipeElemT]],   // `somePipe`
+      Vec[PipeElemT],           // `somePipePayloadRegs`
       Int,                      // `somePipeStageIdx`
       Int,                      // `somePipeNumMainStages`
       Int,                      // `idx`
     ) => Unit,
     idxLtStageIdxFunc: (
-      Vec[Flow[PipeElemT]],   // `somePipe`
+      Vec[PipeElemT],           // `somePipePayloadRegs`
       Int,                      // `somePipeStageIdx`
       Int,                      // `somePipeNumMainStages`
       Int,                      // `idx`
     ) => Unit,
     postMainFunc: (
-      Vec[Flow[PipeElemT]],   // `somePipe`
+      Vec[PipeElemT],           // `somePipePayloadRegs`
       Int,                      // `somePipeStageIdx`
       Int,                      // `somePipeNumMainStages`
       Int,                      // `idx`
@@ -203,7 +208,8 @@ object HandleFlowPipe {
     ): Unit = {
       when (genericSomePipe(genericIdx).fire) {
         idxEqStageIdxFunc(
-          genericSomePipe,              // `somePipe`
+          //genericSomePipe,            // `somePipe`
+          somePipePayloadRegs,          // `somePipePayloadRegs`
           genericSomePipeStageIdx,      // `somePipeStageIdx`
           genericSomePipeNuMainStages,  // `somePipeNumMainStages`
           genericIdx,                   // `idx`
@@ -218,7 +224,8 @@ object HandleFlowPipe {
     ): Unit = {
       when (genericSomePipe(genericIdx).fire) {
         idxLtStageIdxFunc(
-          genericSomePipe,              // `somePipe`
+          //genericSomePipe,              // `somePipe`
+          somePipePayloadRegs,          // `somePipePayloadRegs`
           genericSomePipeStageIdx,      // `somePipeStageIdx`
           genericSomePipeNuMainStages,  // `somePipeNumMainStages`
           genericIdx,                   // `idx`
@@ -233,7 +240,8 @@ object HandleFlowPipe {
     ): Unit = {
       when (genericSomePipe(genericIdx).fire) {
         postMainFunc(
-          genericSomePipe,              // `somePipe`
+          //genericSomePipe,              // `somePipe`
+          somePipePayloadRegs,          // `somePipePayloadRegs`
           genericSomePipeStageIdx,      // `somePipeStageIdx`
           genericSomePipeNuMainStages,  // `somePipeNumMainStages`
           genericIdx,                   // `idx`
