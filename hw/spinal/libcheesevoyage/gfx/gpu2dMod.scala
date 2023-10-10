@@ -10,6 +10,8 @@ import libcheesevoyage.general.MkDualTypeNumVec2
 import libcheesevoyage.general.ElabVec2
 import libcheesevoyage.general.PipeSkidBuf
 import libcheesevoyage.general.PipeSkidBufIo
+import libcheesevoyage.general.DualPipeFuncMostArgs
+import libcheesevoyage.general.GenericHandleDualPipe
 //import libcheesevoyage.general.GenericHandlePipe
 //import libcheesevoyage.general.HandleStmPipe
 import libcheesevoyage.general.HandleFlowPipe
@@ -1316,37 +1318,30 @@ case class Gpu2d(
       // Handle backgrounds
       val bgLineMem = bgLineMemArr(someWrLineMemArrIdx)
 
-      HandleFlowPipe(
-        somePipeIn=wrBgPipeIn,
-        somePipeOut=wrBgPipeOut,
-        somePipeStageIdx=wrBgPipeCntStageIdx,
-        somePipeNumMainStages=wrBgPipeNumStages,
-      )(
-        idxEqStageIdxFunc=(
-          someWrBgPipeIn: Vec[Flow[WrBgPipePayload]],
-          someWrBgPipeOut: Vec[Flow[WrBgPipePayload]],
-          someWrBgPipeStageIdx: Int,
-          someWrBgPipeNumMainStages: Int,
-          idx: Int,
-        ) => {
-        },
-        idxLtStageIdxFunc=(
-          someWrBgPipeIn: Vec[Flow[WrBgPipePayload]],
-          someWrBgPipeOut: Vec[Flow[WrBgPipePayload]],
-          someWrBgPipeStageIdx: Int,
-          someWrBgPipeNumMainStages: Int,
-          idx: Int,
-        ) => {
-        },
-        postMainFunc=(
-          someWrBgPipeIn: Vec[Flow[WrBgPipePayload]],
-          someWrBgPipeOut: Vec[Flow[WrBgPipePayload]],
-          someWrBgPipeStageIdx: Int,
-          someWrBgPipeNumMainStages: Int,
-          idx: Int,
-        ) => {
-        },
-      )
+      {
+        HandleFlowPipe(
+          pipeIn=wrBgPipeIn,
+          pipeOut=wrBgPipeOut,
+          pipeStageIdx=wrBgPipeCntStageIdx,
+          pipeNumMainStages=wrBgPipeNumStages,
+        )(
+          idxEqStageIdxFunc=(
+            mostArgs: DualPipeFuncMostArgs[Flow[WrBgPipePayload]],
+            idx: Int,
+          ) => {
+          },
+          idxLtStageIdxFunc=(
+            mostArgs: DualPipeFuncMostArgs[Flow[WrBgPipePayload]],
+            idx: Int,
+          ) => {
+          },
+          postMainFunc=(
+            mostArgs: DualPipeFuncMostArgs[Flow[WrBgPipePayload]],
+            idx: Int,
+          ) => {
+          },
+        )
+      }
 
       //writeHandleBgObjPipeElem(
       //  someWrPipe=
