@@ -84,13 +84,13 @@ import scala.collection.mutable.ArrayBuffer
 //    }
 //  }
 //}
-case class DualPipeFuncMostArgs[
+case class DualPipeStageData[
   PipeElemT <: Data,
 ](
   pipeIn: Vec[PipeElemT],
   pipeOut: Vec[PipeElemT],
-  pipeStageIdx: Int,
   pipeNumMainStages: Int,
+  pipeStageIdx: Int,
   //pipeFieldName: String,
   ////idx: Int,
   ////setOutToPast: Option[Boolean],
@@ -112,22 +112,30 @@ case class DualPipeFuncMostArgs[
   //  }
   //  c.Expr[String](result)
   //}
+  def craft(
+    nPipeStageIdx: Int,
+  ) = DualPipeStageData[PipeElemT](
+    pipeIn=this.pipeIn,
+    pipeOut=this.pipeOut,
+    pipeNumMainStages=this.pipeNumMainStages,
+    pipeStageIdx=nPipeStageIdx,
+  )
 }
 
-//object DualPipeFuncMostArgs {
+//object DualPipeStageData {
 //  //def craftStmFlowArgs[
 //  //  PipeElemT <: Data
 //  //](
-//  //  mostArgs: DualPipeFuncMostArgs[PipeElemT],
+//  //  stageData: DualPipeStageData[PipeElemT],
 //  //  //idx: Int,
 //  //  setOutToPast: Boolean,
-//  //): DualPipeFuncMostArgs[PipeElemT] = (
-//  //  DualPipeFuncMostArgs[PipeElemT](
-//  //    pipeIn=mostArgs.pipeIn,
-//  //    pipeOut=mostArgs.pipeOut,
-//  //    pipeStageIdx=mostArgs.pipeStageIdx,
-//  //    pipeNumMainStages=mostArgs.pipeNumMainStages,
-//  //    //idx=mostArgs.idx,
+//  //): DualPipeStageData[PipeElemT] = (
+//  //  DualPipeStageData[PipeElemT](
+//  //    pipeIn=stageData.pipeIn,
+//  //    pipeOut=stageData.pipeOut,
+//  //    pipeStageIdx=stageData.pipeStageIdx,
+//  //    pipeNumMainStages=stageData.pipeNumMainStages,
+//  //    //idx=stageData.idx,
 //  //    //idx=idx,
 //  //    //setOutToPast=setOutToPast,
 //  //  )
@@ -142,13 +150,13 @@ case class DualPipeFuncMostArgs[
 //  //  c: blackbox.Context,
 //  //)(
 //  //  //self: c.Val[PipeElemT],
-//  //  self: c.Expr[DualPipeFuncMostArgs[PipeElemT]],
+//  //  self: c.Expr[DualPipeStageData[PipeElemT]],
 //  //  pipeFieldName: c.Expr[String],
 //  //  idx: c.Expr[Int],
 //  //): c.Expr[Unit] = {
 //  //  import c.universe._
 //
-//  //  //val Literal(Constant(s_self: DualPipeFuncMostArgs[PipeElemT])) = (
+//  //  //val Literal(Constant(s_self: DualPipeStageData[PipeElemT])) = (
 //  //  //  self.tree
 //  //  //)
 //
@@ -170,7 +178,7 @@ case class DualPipeFuncMostArgs[
 //  //def nonWorkStageFunc[
 //  //  PipeElemT
 //  //](
-//  //  self: DualPipeFuncMostArgs[PipeElemT],
+//  //  self: DualPipeStageData[PipeElemT],
 //  //  pipeFieldName: String,
 //  //  idx: Int,
 //  //): Unit = macro nonWorkStageImpl[PipeElemT]
@@ -182,13 +190,13 @@ case class DualPipeFuncMostArgs[
 //    c: blackbox.Context,
 //  )(
 //    //self: c.Val[PipeElemT],
-//    self: c.Expr[DualPipeFuncMostArgs[PipeElemT]],
+//    self: c.Expr[DualPipeStageData[PipeElemT]],
 //    pipeFieldName: c.Expr[String],
 //    idx: c.Expr[Int],
 //  ): c.Expr[Unit] = {
 //    import c.universe._
 //
-//    //val Literal(Constant(s_self: DualPipeFuncMostArgs[PipeElemT])) = (
+//    //val Literal(Constant(s_self: DualPipeStageData[PipeElemT])) = (
 //    //  self.tree
 //    //)
 //
@@ -209,54 +217,54 @@ case class DualPipeFuncMostArgs[
 //  def nonWorkStageFunc[
 //    PipeElemT <: Data
 //  ](
-//    self: DualPipeFuncMostArgs[PipeElemT],
+//    self: DualPipeStageData[PipeElemT],
 //    pipeFieldName: String,
 //    idx: Int,
 //  ): Unit = macro nonWorkStageImpl[PipeElemT]
 //}
-object GenericHandleDualPipe {
+object HandleDualPipe {
   def apply[
     PipeElemT <: Data,
     //ExtDataT,
   ](
-    funcMostArgs: DualPipeFuncMostArgs[PipeElemT],
+    stageData: DualPipeStageData[PipeElemT],
   )(
     pipeStageMainFunc: (
-      DualPipeFuncMostArgs[PipeElemT],  // `funcMostArgs`
+      DualPipeStageData[PipeElemT],  // `stageData`
       Int,                              // `idx`
     ) => Unit,
     copyOnlyFunc: (
-      DualPipeFuncMostArgs[PipeElemT],  // `funcMostArgs`
+      DualPipeStageData[PipeElemT],  // `stageData`
       Int,                              // `idx`
     ) => Unit,
   ): Unit = {
-    assert(funcMostArgs.pipeIn.size == funcMostArgs.pipeOut.size)
-    for (idx <- 0 to funcMostArgs.pipeIn.size - 1) {
-      if (idx < funcMostArgs.pipeNumMainStages) {
-        if (idx == funcMostArgs.pipeStageIdx) {
+    assert(stageData.pipeIn.size == stageData.pipeOut.size)
+    for (idx <- 0 to stageData.pipeIn.size - 1) {
+      if (idx < stageData.pipeNumMainStages) {
+        if (idx == stageData.pipeStageIdx) {
           pipeStageMainFunc(
-            funcMostArgs,
+            stageData,
             idx,
           )
         } else {
-          //DualPipeFuncMostArgs.nonWorkStageFunc[PipeElemT](
-          //  funcMostArgs,
-          //  funcMostArgs.pipeFieldName,
+          //DualPipeStageData.nonWorkStageFunc[PipeElemT](
+          //  stageData,
+          //  stageData.pipeFieldName,
           //  idx,
           //)
           copyOnlyFunc(
-            funcMostArgs,
+            stageData,
             idx,
           )
         }
-      } else { // if (idx >= funcMostArgs.pipeNumMainStages)
-        //DualPipeFuncMostArgs.nonWorkStageFunc[PipeElemT](
-        //  funcMostArgs,
-        //  funcMostArgs.pipeFieldName,
+      } else { // if (idx >= stageData.pipeNumMainStages)
+        //DualPipeStageData.nonWorkStageFunc[PipeElemT](
+        //  stageData,
+        //  stageData.pipeFieldName,
         //  idx,
         //)
         copyOnlyFunc(
-          funcMostArgs,
+          stageData,
           idx,
         )
       }
@@ -267,7 +275,7 @@ object GenericHandleDualPipe {
 //  def apply[
 //    PipeElemT <: Data,
 //  ](
-//    funcMostArgs: DualPipeFuncMostArgs[PipeElemT],
+//    stageData: DualPipeStageData[PipeElemT],
 //  )
 //}
 //object HandleStmPipe {
@@ -280,19 +288,19 @@ object GenericHandleDualPipe {
 //    pipeNumMainStages: Int,
 //  )(
 //    idxEqStageIdxFunc: (
-//      DualPipeFuncMostArgs[Stream[PipeElemT]],    // `mostArgs`
+//      DualPipeStageData[Stream[PipeElemT]],    // `stageData`
 //      Int,                                        // `idx`
 //    ) => Unit,
 //    idxLtStageIdxFunc: (
-//      DualPipeFuncMostArgs[Stream[PipeElemT]],    // `mostArgs`
+//      DualPipeStageData[Stream[PipeElemT]],    // `stageData`
 //      Int,                                        // `idx`
 //    ) => Unit,
 //    postMainFunc: (
-//      DualPipeFuncMostArgs[Stream[PipeElemT]],    // `mostArgs`
+//      DualPipeStageData[Stream[PipeElemT]],    // `stageData`
 //      Int,                                        // `idx`
 //    ) => Unit,
 //  ): Unit = {
-//    val tempDualPipeFuncMostArgs = DualPipeFuncMostArgs[Stream[PipeElemT]](
+//    val tempDualPipeFuncStageData = DualPipeStageData[Stream[PipeElemT]](
 //      pipeIn=pipeIn,
 //      pipeOut=pipeOut,
 //      pipeStageIdx=pipeStageIdx,
@@ -302,23 +310,23 @@ object GenericHandleDualPipe {
 //    )
 //    //--------
 //    def genericIdxEqStageIdxFunc(
-//      genericMostArgs: DualPipeFuncMostArgs[Stream[PipeElemT]],
+//      genericStageData: DualPipeStageData[Stream[PipeElemT]],
 //      genericIdx: Int,
 //    ): Unit = {
-//      when (genericMostArgs.pipeIn(genericIdx).fire) {
+//      when (genericStageData.pipeIn(genericIdx).fire) {
 //        idxEqStageIdxFunc(
-//          DualPipeFuncMostArgs.craftStmFlowArgs(
-//            //mostArgs=tempDualPipeFuncMostArgs,
-//            mostArgs=genericMostArgs,
+//          DualPipeStageData.craftStmFlowArgs(
+//            //stageData=tempDualPipeFuncStageData,
+//            stageData=genericStageData,
 //            setOutToPast=false,
 //          ),
 //          genericIdx,
 //        )
 //      } otherwise {
 //        idxEqStageIdxFunc(
-//          DualPipeFuncMostArgs.craftStmFlowArgs(
-//            //mostArgs=tempDualPipeFuncMostArgs,
-//            mostArgs=genericMostArgs,
+//          DualPipeStageData.craftStmFlowArgs(
+//            //stageData=tempDualPipeFuncStageData,
+//            stageData=genericStageData,
 //            setOutToPast=true,
 //          ),
 //          genericIdx,
@@ -326,23 +334,23 @@ object GenericHandleDualPipe {
 //      }
 //    }
 //    def genericIdxLtStageIdxFunc(
-//      genericMostArgs: DualPipeFuncMostArgs[Stream[PipeElemT]],
+//      genericStageData: DualPipeStageData[Stream[PipeElemT]],
 //      genericIdx: Int,
 //    ): Unit = {
-//      when (genericMostArgs.pipeIn(genericIdx).fire) {
+//      when (genericStageData.pipeIn(genericIdx).fire) {
 //        idxLtStageIdxFunc(
-//          DualPipeFuncMostArgs.craftStmFlowArgs(
-//            //mostArgs=tempDualPipeFuncMostArgs,
-//            mostArgs=genericMostArgs,
+//          DualPipeStageData.craftStmFlowArgs(
+//            //stageData=tempDualPipeFuncStageData,
+//            stageData=genericStageData,
 //            setOutToPast=false,
 //          ),
 //          genericIdx,
 //        )
 //      } otherwise {
 //        idxLtStageIdxFunc(
-//          DualPipeFuncMostArgs.craftStmFlowArgs(
-//            //mostArgs=tempDualPipeFuncMostArgs,
-//            mostArgs=genericMostArgs,
+//          DualPipeStageData.craftStmFlowArgs(
+//            //stageData=tempDualPipeFuncStageData,
+//            stageData=genericStageData,
 //            setOutToPast=true,
 //          ),
 //          genericIdx,
@@ -350,23 +358,23 @@ object GenericHandleDualPipe {
 //      }
 //    }
 //    def genericPostMainFunc(
-//      genericMostArgs: DualPipeFuncMostArgs[Stream[PipeElemT]],
+//      genericStageData: DualPipeStageData[Stream[PipeElemT]],
 //      genericIdx: Int,
 //    ): Unit = {
-//      when (genericMostArgs.pipeIn(genericIdx).fire) {
+//      when (genericStageData.pipeIn(genericIdx).fire) {
 //        postMainFunc(
-//          DualPipeFuncMostArgs.craftStmFlowArgs(
-//            //mostArgs=tempDualPipeFuncMostArgs,
-//            mostArgs=genericMostArgs,
+//          DualPipeStageData.craftStmFlowArgs(
+//            //stageData=tempDualPipeFuncStageData,
+//            stageData=genericStageData,
 //            setOutToPast=false,
 //          ),
 //          genericIdx,
 //        )
 //      } otherwise {
 //        postMainFunc(
-//          DualPipeFuncMostArgs.craftStmFlowArgs(
-//            //mostArgs=tempDualPipeFuncMostArgs,
-//            mostArgs=genericMostArgs,
+//          DualPipeStageData.craftStmFlowArgs(
+//            //stageData=tempDualPipeFuncStageData,
+//            stageData=genericStageData,
 //            setOutToPast=true,
 //          ),
 //          genericIdx,
@@ -375,7 +383,7 @@ object GenericHandleDualPipe {
 //    }
 //    //--------
 //    GenericHandleDualPipe(
-//      funcMostArgs=tempDualPipeFuncMostArgs
+//      stageData=tempDualPipeFuncStageData
 //    )(
 //      idxEqStageIdxFunc=genericIdxEqStageIdxFunc,
 //      idxLtStageIdxFunc=genericIdxLtStageIdxFunc,
@@ -393,22 +401,22 @@ object GenericHandleDualPipe {
 //    pipeNumMainStages: Int,
 //  )(
 //    idxEqStageIdxFunc: (
-//      DualPipeFuncMostArgs[Flow[PipeElemT]],      // `mostArgs`
+//      DualPipeStageData[Flow[PipeElemT]],      // `stageData`
 //      Int,                                        // `idx`
 //    ) => Unit,
 //    //idxLtStageIdxFunc: (
-//    //  DualPipeFuncMostArgs[Flow[PipeElemT]],      // `mostArgs`
+//    //  DualPipeStageData[Flow[PipeElemT]],      // `stageData`
 //    //  Int,                                        // `idx`
 //    //) => Unit,
 //    //postMainFunc: (
-//    //  DualPipeFuncMostArgs[Flow[PipeElemT]],      // `mostArgs`
+//    //  DualPipeStageData[Flow[PipeElemT]],      // `stageData`
 //    //  Int,                                        // `idx`
 //    //) => Unit,
 //    //doSetOutToPast: (
-//    //  DualPipeFuncMostArgs
+//    //  DualPipeStageData
 //    //)
 //  ): Unit = {
-//    val tempDualPipeFuncMostArgs = DualPipeFuncMostArgs[Flow[PipeElemT]](
+//    val tempDualPipeFuncStageData = DualPipeStageData[Flow[PipeElemT]](
 //      pipeIn=pipeIn,
 //      pipeOut=pipeOut,
 //      pipeStageIdx=pipeStageIdx,
@@ -418,23 +426,23 @@ object GenericHandleDualPipe {
 //    )
 //    //--------
 //    def genericIdxEqStageIdxFunc(
-//      genericMostArgs: DualPipeFuncMostArgs[Flow[PipeElemT]],
+//      genericStageData: DualPipeStageData[Flow[PipeElemT]],
 //      genericIdx: Int,
 //    ): Unit = {
-//      when (genericMostArgs.pipeIn(genericIdx).fire) {
+//      when (genericStageData.pipeIn(genericIdx).fire) {
 //        idxEqStageIdxFunc(
-//          //DualPipeFuncMostArgs.craftStmFlowArgs(
-//          //  //mostArgs=tempDualPipeFuncMostArgs,
-//          //  mostArgs=genericMostArgs,
+//          //DualPipeStageData.craftStmFlowArgs(
+//          //  //stageData=tempDualPipeFuncStageData,
+//          //  stageData=genericStageData,
 //          //  setOutToPast=false,
 //          //),
 //          genericIdx,
 //        )
 //      } otherwise {
 //        idxEqStageIdxFunc(
-//          //DualPipeFuncMostArgs.craftStmFlowArgs(
-//          //  //mostArgs=tempDualPipeFuncMostArgs,
-//          //  mostArgs=genericMostArgs,
+//          //DualPipeStageData.craftStmFlowArgs(
+//          //  //stageData=tempDualPipeFuncStageData,
+//          //  stageData=genericStageData,
 //          //  setOutToPast=true,
 //          //),
 //          genericIdx,
@@ -442,23 +450,23 @@ object GenericHandleDualPipe {
 //      }
 //    }
 //    //def genericIdxLtStageIdxFunc(
-//    //  genericMostArgs: DualPipeFuncMostArgs[Flow[PipeElemT]],
+//    //  genericStageData: DualPipeStageData[Flow[PipeElemT]],
 //    //  genericIdx: Int,
 //    //): Unit = {
-//    //  when (genericMostArgs.pipeIn(genericIdx).fire) {
+//    //  when (genericStageData.pipeIn(genericIdx).fire) {
 //    //    idxLtStageIdxFunc(
-//    //      DualPipeFuncMostArgs.craftStmFlowArgs(
-//    //        //mostArgs=tempDualPipeFuncMostArgs,
-//    //        mostArgs=genericMostArgs,
+//    //      DualPipeStageData.craftStmFlowArgs(
+//    //        //stageData=tempDualPipeFuncStageData,
+//    //        stageData=genericStageData,
 //    //        setOutToPast=false,
 //    //      ),
 //    //      genericIdx,
 //    //    )
 //    //  } otherwise {
 //    //    idxLtStageIdxFunc(
-//    //      DualPipeFuncMostArgs.craftStmFlowArgs(
-//    //        //mostArgs=tempDualPipeFuncMostArgs,
-//    //        mostArgs=genericMostArgs,
+//    //      DualPipeStageData.craftStmFlowArgs(
+//    //        //stageData=tempDualPipeFuncStageData,
+//    //        stageData=genericStageData,
 //    //        setOutToPast=true,
 //    //      ),
 //    //      genericIdx,
@@ -466,23 +474,23 @@ object GenericHandleDualPipe {
 //    //  }
 //    //}
 //    //def genericPostMainFunc(
-//    //  genericMostArgs: DualPipeFuncMostArgs[Flow[PipeElemT]],
+//    //  genericStageData: DualPipeStageData[Flow[PipeElemT]],
 //    //  genericIdx: Int,
 //    //): Unit = {
-//    //  when (genericMostArgs.pipeIn(genericIdx).fire) {
+//    //  when (genericStageData.pipeIn(genericIdx).fire) {
 //    //    postMainFunc(
-//    //      DualPipeFuncMostArgs.craftStmFlowArgs(
-//    //        //mostArgs=tempDualPipeFuncMostArgs,
-//    //        mostArgs=genericMostArgs,
+//    //      DualPipeStageData.craftStmFlowArgs(
+//    //        //stageData=tempDualPipeFuncStageData,
+//    //        stageData=genericStageData,
 //    //        setOutToPast=false,
 //    //      ),
 //    //      genericIdx,
 //    //    )
 //    //  } otherwise {
 //    //    postMainFunc(
-//    //      DualPipeFuncMostArgs.craftStmFlowArgs(
-//    //        //mostArgs=tempDualPipeFuncMostArgs,
-//    //        mostArgs=genericMostArgs,
+//    //      DualPipeStageData.craftStmFlowArgs(
+//    //        //stageData=tempDualPipeFuncStageData,
+//    //        stageData=genericStageData,
 //    //        setOutToPast=true,
 //    //      ),
 //    //      genericIdx,
@@ -491,7 +499,7 @@ object GenericHandleDualPipe {
 //    //}
 //    //--------
 //    //GenericHandleDualPipe(
-//    //  funcMostArgs=tempDualPipeFuncMostArgs
+//    //  stageData=tempDualPipeFuncStageData
 //    //)(
 //    //  idxEqStageIdxFunc=genericIdxEqStageIdxFunc,
 //    //  idxLtStageIdxFunc=genericIdxLtStageIdxFunc,
