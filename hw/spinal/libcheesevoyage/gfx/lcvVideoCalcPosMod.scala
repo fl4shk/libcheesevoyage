@@ -90,14 +90,15 @@ case class LcvVideoPosInfo(
     //assert(thisSize2dScalePow.y >= thatSize2dScalePow.y)
 
     //def sliceLo = thisWidthPow - thatWidthPow
-    def sliceLo = ElabVec2[Int](
-      //x=1 << (thisSize2dPow.x - thatSize2dPow.x),
-      //y=1 << (thisSize2dPow.y - thatSize2dPow.y),
-      //x=1 << (thisSize2dScalePow.x - thatSize2dScalePow.x),
-      //y=1 << (thisSize2dScalePow.y - thatSize2dScalePow.y),
-      x=1 << someScalePow.x,
-      y=1 << someScalePow.y,
-    )
+    //def sliceLo = ElabVec2[Int](
+    //  //x=1 << (thisSize2dPow.x - thatSize2dPow.x),
+    //  //y=1 << (thisSize2dPow.y - thatSize2dPow.y),
+    //  //x=1 << (thisSize2dScalePow.x - thatSize2dScalePow.x),
+    //  //y=1 << (thisSize2dScalePow.y - thatSize2dScalePow.y),
+    //  x=1 << someScalePow.x,
+    //  y=1 << someScalePow.y,
+    //)
+    def sliceLo = someScalePow
 
     val that = LcvVideoPosSlice(
       //someWidthOrHeight=1 << thatWidthPow

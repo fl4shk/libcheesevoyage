@@ -207,6 +207,8 @@ case class Gpu2dParams(
     x=intnlFbSize2d.x + 1,
     y=intnlFbSize2d.y,
   ))
+  def bgTilePxsCoordT() = coordT(someSize2d=bgTileSize2d)
+  def objTilePxsCoordT() = coordT(someSize2d=objTileSize2d)
   //def bgTilesPosInfoT() = LcvVideoPosInfo(someSize2d=bgSize2dInTiles)
 
   //def physToBgPxsSliceWidth = (
@@ -425,7 +427,7 @@ case class Gpu2dBgEntry(
 ) extends Bundle {
   //--------
   // The index, in tiles, of the tile represented by this tilemap entry
-  val tileIdx = UInt(params.bgTileMemIdxWidth bits)
+  val tileMemIdx = UInt(params.bgTileMemIdxWidth bits)
 
   //// The priority for this tilemap entry
   //val prio = UInt(log2Up(params.numBgs) bits)
@@ -475,7 +477,7 @@ case class Gpu2dObjAttrs(
   //val visib = Bool()
 
   // The index, in tiles, of the tile represented by this sprite
-  val tileIdx = UInt(params.objTileMemIdxWidth bits)
+  val tileMemIdx = UInt(params.objTileMemIdxWidth bits)
   //val pos = params.coordT(fbSize2d=params.bgSize2dInPxs)
 
   //// position within the tilemap, in pixels
@@ -707,9 +709,11 @@ case class Gpu2d(
     val bgTileMem = Mem(
       //wordType=UInt(params.palEntryMemIdxWidth bits),
       wordType=Gpu2dTile(params=params, isObj=false),
-      wordCount=params.numPxsForAllBgTiles,
+      //wordCount=params.numPxsForAllBgTiles,
+      //wordCount=params.numTilesPerBg,
+      wordCount=params.numBgTiles,
     )
-      .initBigInt(Array.fill(params.numPxsForAllBgTiles)(BigInt(0)).toSeq)
+      .initBigInt(Array.fill(params.numBgTiles)(BigInt(0)).toSeq)
       .addAttribute("ram_style", params.bgTileArrRamStyle)
     when (bgTilePush.fire) {
       bgTileMem.write(
@@ -720,9 +724,10 @@ case class Gpu2d(
     val objTileMem = Mem(
       //wordType=UInt(params.palEntryMemIdxWidth bits),
       wordType=Gpu2dTile(params=params, isObj=false),
-      wordCount=params.numPxsForAllObjTiles,
+      //wordCount=params.numPxsForAllObjTiles,
+      wordCount=params.numObjTiles,
     )
-      .initBigInt(Array.fill(params.numPxsForAllObjTiles)(BigInt(0)).toSeq)
+      .initBigInt(Array.fill(params.numObjTiles)(BigInt(0)).toSeq)
       .addAttribute("ram_style", params.objTileArrRamStyle)
     when (objTilePush.fire) {
       objTileMem.write(
@@ -755,7 +760,7 @@ case class Gpu2d(
         )
       }
       //--------
-      bgAttrsArr += Gpu2dBgAttrs(params=params)
+      bgAttrsArr += Reg(Gpu2dBgAttrs(params=params))
       bgAttrsArr(idx).init(bgAttrsArr(idx).getZero)
         .setName(f"bgAttrsArr_$idx")
       when (bgAttrsPushArr(idx).fire) {
@@ -1000,14 +1005,17 @@ case class Gpu2d(
 
       // Stages after stage 0
       // NOTE: these pipeline stages are still separate
-      val postStage0 = new Bundle {
+      case class PostStage0() extends Bundle {
         //// scroll
         //val scroll = cloneOf(bgAttrsArr(0).scroll)
         // indices into `bgEntryMem`
-        val bgEntryMemIdxPart0 = Vec2(UInt(params.bgEntryMemIdxWidth bits))
-        val bgEntryMemIdxPart1 = UInt(params.bgEntryMemIdxWidth bits)
+        //val bgEntryMemIdxPart0 = Vec2(UInt(params.bgEntryMemIdxWidth bits))
+        //val bgEntryMemIdxPart1 = UInt(params.bgEntryMemIdxWidth bits)
+        val bgEntryMemIdx = UInt(params.bgEntryMemIdxWidth bits)
         // `Gpu2dBgEntry`s that have been read
         val bgEntry = Gpu2dBgEntry(params=params)
+        //val tileMemIdx = UInt(params.bgTileMemIdxWidth bits)
+        //val tilePxsCoord = params.bgTilePxsCoordT()
 
         // `Gpu2dTile`s that have been read
         val tile = Gpu2dTile(params=params, isObj=false)
@@ -1020,13 +1028,15 @@ case class Gpu2d(
         // `Gpu2dBgPalEntry`s that have been read
         val palEntry = Gpu2dBgPalEntry(params=params)
       }
+      val postStage0 = PostStage0()
 
       //def scroll = postStage0.scroll
-      //def bgEntryMemIdx = postStage0.bgEntryMemIdx
-      def bgEntryMemIdxPart0 = postStage0.bgEntryMemIdxPart0
-      def bgEntryMemIdxPart1 = postStage0.bgEntryMemIdxPart1
+      def bgEntryMemIdx = postStage0.bgEntryMemIdx
+      //def bgEntryMemIdxPart0 = postStage0.bgEntryMemIdxPart0
+      //def bgEntryMemIdxPart1 = postStage0.bgEntryMemIdxPart1
 
       def bgEntry = postStage0.bgEntry
+      //def tilePxsCoord = postStage0.tilePxsCoord
       def tile = postStage0.tile
       def palEntryMemIdx = postStage0.palEntryMemIdx
       def palEntryNzMemIdx = postStage0.palEntryNzMemIdx
@@ -1048,15 +1058,17 @@ case class Gpu2d(
     def wrBgPipeBgIdxStageIdx = 0
     def wrBgPipeScrollStageIdx = 0
 
-    def wrBgPipeBgEntryMemIdxPart0StageIdx = 1
-    def wrBgPipeBgEntryMemIdxPart1StageIdx = 2
-    def wrBgPipeBgEntryStageIdx = 3
-    def wrBgPipeTileStageIdx = 4
-    def wrBgPipePalEntryMemIdxStageIdx = 5
-    def wrBgPipePalEntryNzMemIdxStageIdx = 6
-    def wrBgPipePalEntryStageIdx = 7
+    //def wrBgPipeBgEntryMemIdxPart0StageIdx = 1
+    //def wrBgPipeBgEntryMemIdxPart1StageIdx = 2
+    def wrBgPipeBgEntryMemIdxStageIdx = 1
+    def wrBgPipeBgEntryStageIdx = 2
+    //def wrBgPipeBgEntryTilePxsCoord = 3
+    def wrBgPipeTileStageIdx = 3
+    def wrBgPipePalEntryMemIdxStageIdx = 4
+    def wrBgPipePalEntryNzMemIdxStageIdx = 5
+    def wrBgPipePalEntryStageIdx = 6
 
-    def wrBgPipeNumMainStages = 8
+    def wrBgPipeNumMainStages = 7
 
     //def wrBgPipeNumStagesPerBg = 8
 
@@ -1091,7 +1103,7 @@ case class Gpu2d(
       val postStage0 = new Bundle {
         // What are the `Gpu2dObjAttrs` of our sprite? 
         val objAttrs = Gpu2dObjAttrs(params=params)
-        val stage2 = new Bundle {
+        case class Stage2() extends Bundle {
           // Are the X and Y positions of this sprite within the current
           // line?
           // NOTE: the x-pos could be out of range if it's negative
@@ -1099,6 +1111,8 @@ case class Gpu2d(
           // What's the tile this sprite represents? We read it 
           val tileMemIdx = UInt(params.objTileMemIdxWidth bits)
         }
+        val stage2 = Stage2()
+
         // The following OBJ pipeline stages are only performed (besides
         // just copying data around) when `stage2.posIsInLine` is `True`
         val tile = Gpu2dTile(params=params, isObj=true)
@@ -1136,7 +1150,7 @@ case class Gpu2d(
     def wrObjPipePalEntryStageIdx = 6
     def wrObjPipeNumMainStages = 7
 
-    def wrMaxBgObjPipeNumStages = max(
+    def wrBgObjPipeNumStages = max(
       wrBgPipeNumMainStages,
       wrObjPipeNumMainStages
     )
@@ -1162,19 +1176,20 @@ case class Gpu2d(
 
     //def wrPipeSize = wrBgPipeSize + wrObjPipeSize
     val wrBgPipeIn = KeepAttribute(
-      //Vec.fill(wrMaxBgObjPipeNumStages)(Reg(WrBgPipePayload()))
-      Vec.fill(wrMaxBgObjPipeNumStages)(Flow(WrBgPipePayload()))
+      //Vec.fill(wrBgObjPipeNumStages)(Reg(WrBgPipePayload()))
+      Vec.fill(wrBgObjPipeNumStages)(Flow(WrBgPipePayload()))
     )
     val wrBgPipeOut = KeepAttribute(
-      //Vec.fill(wrMaxBgObjPipeNumStages)(Reg(WrBgPipePayload()))
-      Vec.fill(wrMaxBgObjPipeNumStages)(Flow(WrBgPipePayload()))
+      //Vec.fill(wrBgObjPipeNumStages)(Reg(WrBgPipePayload()))
+      Vec.fill(wrBgObjPipeNumStages)(Flow(WrBgPipePayload()))
     )
+    val wrBgPipeLast = KeepAttribute(Flow(WrBgPipePayload()))
     //val rWrBgPipePayloadVec = KeepAttribute(
-    //  Vec.fill(wrMaxBgObjPipeNumStages)(
+    //  Vec.fill(wrBgObjPipeNumStages)(
     //    Reg(WrBgPipePayload()) init(wrBgPipe(0).payload.getZero)
     //  )
     //)
-    //for (idx <- 0 to wrMaxBgObjPipeNumStages - 1) {
+    //for (idx <- 0 to wrBgObjPipeNumStages - 1) {
     //  //rWrBgPipe(idx).init(
     //  //  //rWrBgPipe(idx).getZero
     //  //  doInitWrBgPipeElem()
@@ -1195,6 +1210,8 @@ case class Gpu2d(
       // Connect output `valid` to input `valid`
       wrBgPipeOut(idx).valid := wrBgPipeIn(idx).valid
     }
+    // add one final register
+    wrBgPipeLast <-< wrBgPipeOut.last
 
     // Control the background pipeline
     when (rIntnlChangingRow) {
@@ -1211,19 +1228,19 @@ case class Gpu2d(
     }
 
     val wrObjPipeOut = KeepAttribute(
-      //Vec.fill(wrMaxBgObjPipeNumStages)(Reg(WrObjPipePayload()))
-      Vec.fill(wrMaxBgObjPipeNumStages)(Flow(WrObjPipePayload()))
+      //Vec.fill(wrBgObjPipeNumStages)(Reg(WrObjPipePayload()))
+      Vec.fill(wrBgObjPipeNumStages)(Flow(WrObjPipePayload()))
     )
     val wrObjPipeIn = KeepAttribute(
-      //Vec.fill(wrMaxBgObjPipeNumStages)(Reg(WrObjPipePayload()))
-      Vec.fill(wrMaxBgObjPipeNumStages)(Flow(WrObjPipePayload()))
+      //Vec.fill(wrBgObjPipeNumStages)(Reg(WrObjPipePayload()))
+      Vec.fill(wrBgObjPipeNumStages)(Flow(WrObjPipePayload()))
     )
     //val rWrObjPipePayloadVec = KeepAttribute(
-    //  Vec.fill(wrMaxBgObjPipeNumStages)(
+    //  Vec.fill(wrBgObjPipeNumStages)(
     //    Reg(WrObjPipePayload()) init(wrObjPipe(0).payload.getZero)
     //  )
     //)
-    //for (idx <- 0 to wrMaxBgObjPipeNumStages - 1) {
+    //for (idx <- 0 to wrBgObjPipeNumStages - 1) {
     //  //rWrObjPipe(idx).init(rWrObjPipe(idx).getZero)
     //}
     //wrObjPipe(0).valid := True
@@ -1408,9 +1425,9 @@ case class Gpu2d(
                 tempOutp.scroll := bgAttrsArr(tempBgIdx).scroll
               }
             }
-            default {
-              tempOutp.scroll := tempInp.scroll
-            }
+            //default {
+            //  tempOutp.scroll := tempInp.scroll
+            //}
           }
         },
         copyOnlyFunc=(
@@ -1426,7 +1443,7 @@ case class Gpu2d(
 
       // BEGIN: post stage 0
       HandleDualPipe(
-        stageData=stageData.craft(wrBgPipeBgEntryMemIdxPart0StageIdx)
+        stageData=stageData.craft(wrBgPipeBgEntryMemIdxStageIdx)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
@@ -1439,86 +1456,156 @@ case class Gpu2d(
             for (tempBgIdx <- 0 to params.numBgs - 1) {
               is (tempBgIdx) {
                 //tempOutp.scroll := bgAttrsArr(tempBgIdx).scroll
-                tempOutp.bgEntryMemIdxPart0.x := (
-                  tempInp.scroll.x
+                //tempOutp.bgEntryMemIdxPart0.x := (
+                //  //tempInp.scroll.x >> params.bgTileSize2dPow.x
+                //  tempInp.scroll.x
+                //  //(params.bgTileSize2dPow.x - 1 downto 0)
+                //)
+                //tempOutp.bgEntryMemIdxPart0.y := (
+                //  (tempInp.scroll.y << log2Up(params.bgSize2dInPxs.y))
+                //  //(params.bgTileSize2dPow.y - 1 downto 0)
+                //)
+                def scrollSliceRange = ElabVec2(
+                  x=tempInp.scroll.x.high downto params.bgTileSize2dPow.x,
+                  y=tempInp.scroll.y.high downto params.bgTileSize2dPow.y,
                 )
-                tempOutp.bgEntryMemIdxPart0.y := (
-                  tempInp.scroll.y << log2Up(params.bgSize2dInPxs.y)
-                )
+                tempOutp.bgEntryMemIdx := Cat(
+                  tempInp.scroll.y(scrollSliceRange.y),
+                  tempInp.scroll.x(scrollSliceRange.x),
+                ).asUInt
               }
             }
-            default {
-              //tempOutp.scroll := tempInp.scroll
-              tempOutp.bgEntryMemIdxPart0 := tempInp.bgEntryMemIdxPart0
-            }
+            //default {
+            //  //tempOutp.scroll := tempInp.scroll
+            //  //tempOutp.bgEntryMemIdxPart0 := tempInp.bgEntryMemIdxPart0
+            //  tempOutp.bgEntryMemIdx := tempInp.bgEntryMemIdx
+            //}
           }
         },
         copyOnlyFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).bgEntryMemIdxPart0 := (
-            stageData.pipeIn(idx).bgEntryMemIdxPart0
+          //stageData.pipeOut(idx).bgEntryMemIdxPart0 := (
+          //  stageData.pipeIn(idx).bgEntryMemIdxPart0
+          //)
+          stageData.pipeOut(idx).bgEntryMemIdx := (
+            stageData.pipeIn(idx).bgEntryMemIdx
+          )
+        },
+      )
+
+      HandleDualPipe(
+        stageData=stageData.craft(wrBgPipeBgEntryStageIdx)
+      )(
+        pipeStageMainFunc=(
+          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+          idx: Int,
+        ) => {
+          val tempInp = stageData.pipeIn(idx)
+          val tempOutp = stageData.pipeOut(idx)
+
+          switch (tempInp.bgIdx) {
+            for (tempBgIdx <- 0 to params.numBgs - 1) {
+              is (tempBgIdx) {
+                tempOutp.bgEntry := (
+                  bgEntryMemArr(tempBgIdx).readAsync(
+                    address=tempInp.bgEntryMemIdx
+                  )
+                )
+              }
+            }
+            //default {
+            //  tempOutp.bgEntry := tempInp.bgEntry
+            //}
+          }
+        },
+        copyOnlyFunc=(
+          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+          idx: Int,
+        ) => {
+          stageData.pipeOut(idx).bgEntry := (
+            stageData.pipeIn(idx).bgEntry
+          )
+        },
+      )
+      HandleDualPipe(
+        stageData=stageData.craft(wrBgPipeTileStageIdx)
+      )(
+        pipeStageMainFunc=(
+          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+          idx: Int,
+        ) => {
+          val tempInp = stageData.pipeIn(idx)
+          val tempOutp = stageData.pipeOut(idx)
+
+          tempOutp.tile := (
+            bgTileMem.readAsync(address=tempInp.bgEntry.tileMemIdx)
+          )
+        },
+        copyOnlyFunc=(
+          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+          idx: Int,
+        ) => {
+          stageData.pipeOut(idx).tile := (
+            stageData.pipeIn(idx).tile
+          )
+        },
+      )
+      HandleDualPipe(
+        stageData=stageData.craft(wrBgPipePalEntryMemIdxStageIdx)
+      )(
+        pipeStageMainFunc=(
+          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+          idx: Int,
+        ) => {
+          val tempInp = stageData.pipeIn(idx)
+          val tempOutp = stageData.pipeOut(idx)
+
+          tempOutp.palEntryMemIdx := (
+            tempInp.tile.colIdxV2d(
+              tempInp.scroll.y(params.bgTileSize2dPow.y - 1 downto 0)
+            )(
+              tempInp.scroll.x(params.bgTileSize2dPow.x - 1 downto 0)
+            )
+          )
+        },
+        copyOnlyFunc=(
+          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+          idx: Int,
+        ) => {
+          stageData.pipeOut(idx).palEntryMemIdx := (
+            stageData.pipeIn(idx).palEntryMemIdx
+          )
+        },
+      )
+      HandleDualPipe(
+        stageData=stageData.craft(wrBgPipePalEntryStageIdx)
+      )(
+        pipeStageMainFunc=(
+          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+          idx: Int,
+        ) => {
+          val tempInp = stageData.pipeIn(idx)
+          val tempOutp = stageData.pipeOut(idx)
+
+          tempOutp.palEntry := bgPalEntryMem.readAsync(
+            address=tempInp.palEntryMemIdx
+          )
+        },
+        copyOnlyFunc=(
+          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+          idx: Int,
+        ) => {
+          stageData.pipeOut(idx).palEntry := (
+            stageData.pipeIn(idx).palEntry
           )
         },
       )
       // END: post stage 0
-
-      //writeHandleBgObjPipeElem(
-      //  someWrPipe=
-      //)
-      //for (idx <- 0 to rWrBgPipe.size - 1) {
+      //when (wrBgPipeOut.last.fire) {
       //}
-      //for (idx <- 0 to wrMaxBgObjPipeNumStages - 1) {
-      //  //if (idx > 0) {
-      //  //  rWrPipe(idx) := rWrPipe(idx - 1)
-      //  //}
 
-      //  //val bgScrollVecIdx = idx - wrBgPipeScrollVecIdx
-      //  //if (bgScrollVecIdx >= 0 && bgScrollVecIdx < params.numBgs) {
-      //  //  for (jdx <- 0 to bgScrollVecIdx) {
-      //  //    if (jdx == bgScrollVecIdx) {
-      //  //    } else { // if (jdx < bgScrollVecIdx)
-      //  //      //rWrPipe(idx).scrollVec
-      //  //    }
-      //  //  }
-      //  //}
-      //  //val bgAddrVecIdx = idx - wrBgPipeAddrVecIdx
-      //  //if (bgAddrVecIdx >= 0 && bgAddrVecIdx < params.numBgs) {
-      //  //  for (jdx <- 0 to bgAddrVecIdx) {
-      //  //    if (jdx == bgAddrVecIdx) {
-      //  //    } else { // if (jdx < bgAddrVecIdx)
-      //  //      //if (jdx == bgAddrVecIdx - 1) {
-      //  //      //}
-      //  //    }
-      //  //  }
-      //  //}
-      //  //val bgEntryVecIdx = idx - wrBgPipeEntryVecIdx
-      //  //if (bgEntryVecIdx >= 0 && bgEntryVecIdx < params.numBgs) {
-      //  //  for (jdx <- 0 to bgEntryVecIdx) {
-      //  //    if (jdx == bgEntryVecIdx) {
-      //  //    } else { // if (jdx < bgEntryVecIdx)
-      //  //      //rWrPipe(idx).bg.
-      //  //    }
-      //  //  }
-      //  //}
-      //  //val bgTileVecIdx = idx - wrBgPipeTileVecIdx
-      //  //if (bgTileVecIdx >= 0 && bgTileVecIdx < params.numBgs) {
-      //  //  for (jdx <- 0 to bgTileVecIdx) {
-      //  //    if (jdx == bgTileVecIdx) {
-      //  //    } else { // if (jdx < bgTileVecIdx)
-      //  //    }
-      //  //  }
-      //  //}
-      //  //val bgPalEntryVecIdx = idx - wrBgPipePalEntryVecIdx
-      //  //if (bgPalEntryVecIdx >= 0 && bgPalEntryVecIdx < params.numBgs) {
-      //  //  for (jdx <- 0 to bgPalEntryVecIdx) {
-      //  //    if (jdx == bgPalEntryVecIdx) {
-      //  //    } else { // if (jdx < bgPalEntryVecIdx)
-      //  //    }
-      //  //  }
-      //  //}
-      //}
       //--------
       //--------
     }
@@ -1527,7 +1614,7 @@ case class Gpu2d(
     ): Unit = {
       // Handle sprites
       val objLineMem = objLineMemArr(someWrLineMemArrIdx)
-      for (idx <- 0 to wrMaxBgObjPipeNumStages - 1) {
+      for (idx <- 0 to wrBgObjPipeNumStages - 1) {
         {
           //val objAttrsVecIdx = idx - wrObjPipeAttrsIdx
           //if (objAttrsVecIdx >= 0 && objAttrsVecIdx < params.numObjsPow) {
@@ -1622,19 +1709,24 @@ case class Gpu2d(
       //  wrLineMemEntry := rPastWrLineMemEntry
       //}
     }
-    //when (pop.fire) {
-    switch (rRdLineMemArrIdx) {
-      for (idx <- 0 to (1 << rRdLineMemArrIdx.getWidth) - 1) {
-        is (idx) {
-          readLineMemEntries(someRdLineMemArrIdx=idx)
-        }
-      }
-      default {
-        //rdBgLineMemEntry := rPastRdBgLineMemEntry
-        outp.col := rPastOutp.col
-      }
-    }
+    ////when (pop.fire) {
+
+    // BEGIN: add this back later
+    //switch (rRdLineMemArrIdx) {
+    //  for (idx <- 0 to (1 << rRdLineMemArrIdx.getWidth) - 1) {
+    //    is (idx) {
+    //      readLineMemEntries(someRdLineMemArrIdx=idx)
+    //    }
+    //  }
+    //  //default {
+    //  //  //rdBgLineMemEntry := rPastRdBgLineMemEntry
+    //  //  outp.col := rPastOutp.col
+    //  //}
     //}
+    // END: add this back later
+    outp.col := rPastOutp.col
+
+    ////}
     //--------
     //for (idx <- 0 to params.numBgs - 1) {
     //  //bgColVec(idx) := palEntryMem.readAsync(
