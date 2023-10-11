@@ -429,10 +429,11 @@ case class Gpu2dBgEntry(
   // The index, in tiles, of the tile represented by this tilemap entry
   val tileMemIdx = UInt(params.bgTileMemIdxWidth bits)
 
-  //// The priority for this tilemap entry
-  //val prio = UInt(log2Up(params.numBgs) bits)
+  // The priority for this tilemap entry
+  val prio = UInt(log2Up(params.numBgs) bits)
 
-  //val dispFlip = Vec2(dataType=Bool())
+  // whether or not to visibly flip x/y 
+  val dispFlip = Vec2(dataType=Bool())
   //--------
 }
 case class Gpu2dBgEntryStmPayload(
@@ -489,7 +490,7 @@ case class Gpu2dObjAttrs(
   val prio = UInt(log2Up(params.numBgs) bits)
 
   // whether or not to visibly flip x/y 
-  //val dispFlip = Vec2(dataType=Bool())
+  val dispFlip = Vec2(dataType=Bool())
   //--------
 }
 
@@ -848,11 +849,17 @@ case class Gpu2d(
     //  val bgColVec = Vec(Gpu2dRgba(params=params), params.numBgs)
     //  val objColVec = Vec(Gpu2dRgba(params=params), params.numBgs)
     //}
+    case class LineMemEntry() extends Bundle {
+      val col = Vec.fill(params.numBgs)(Gpu2dRgba(params=params))
+      //val prio = Vec.fill(params.numBgs)(UInt(params.numBgsPow bits))
+      //val bgIdx = 
+      val prio = Vec.fill(params.numBgs)(UInt(params.numBgsPow bits))
+    }
     //def LineMemEntry() = Vec.fill(params.numBgs)(Gpu2dRgba(params=params))
-    def LineMemEntry() = Gpu2dRgba(params=params)
-    //val lineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
-    val bgLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
-    val objLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
+    //def LineMemEntry() = Gpu2dRgba(params=params)
+    //val lineMemArr = new ArrayBuffer[Mem[LineMemEntry]]()
+    val bgLineMemArr = new ArrayBuffer[Mem[LineMemEntry]]()
+    val objLineMemArr = new ArrayBuffer[Mem[LineMemEntry]]()
     def combinedLineMemArr = bgLineMemArr
     //val combinedLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
     //val wrLineMemIdx
@@ -1206,7 +1213,7 @@ case class Gpu2d(
       // Create pipeline registering
       wrBgPipeIn(idx) <-< wrBgPipeOut(idx - 1)
     }
-    for (idx <- 0 to wrBgPipeIn.size - 1) {
+    for (idx <- 0 to wrBgPipeOut.size - 1) {
       // Connect output `valid` to input `valid`
       wrBgPipeOut(idx).valid := wrBgPipeIn(idx).valid
     }
@@ -1235,6 +1242,7 @@ case class Gpu2d(
       //Vec.fill(wrBgObjPipeNumStages)(Reg(WrObjPipePayload()))
       Vec.fill(wrBgObjPipeNumStages)(Flow(WrObjPipePayload()))
     )
+    val wrObjPipeLast = KeepAttribute(Flow(WrObjPipePayload()))
     //val rWrObjPipePayloadVec = KeepAttribute(
     //  Vec.fill(wrBgObjPipeNumStages)(
     //    Reg(WrObjPipePayload()) init(wrObjPipe(0).payload.getZero)
@@ -1260,10 +1268,12 @@ case class Gpu2d(
       // Create pipeline registering
       wrObjPipeIn(idx) <-< wrObjPipeOut(idx - 1)
     }
-    for (idx <- 0 to wrObjPipeIn.size - 1) {
+    for (idx <- 0 to wrObjPipeOut.size - 1) {
       // Connect output `valid` to input `valid`
       wrObjPipeOut(idx).valid := wrObjPipeIn(idx).valid
     }
+    // add one final register
+    wrObjPipeLast <-< wrObjPipeOut.last
     //wrObjPipe.last.ready := True
 
     // Control the sprite pipeline
@@ -1293,49 +1303,6 @@ case class Gpu2d(
     //}
     //if (!wrPipeObjNumElemsGtNumObjsPow) {
     //} else { // if (wrPipeObjNumElemsGtNumObjsPow)
-    //}
-
-    //def writeHandleBgObjPipeElem[
-    //  WrPipeElemT <: Bundle
-    //](
-    //  someWrPipe: Vec[WrPipeElemT],     // `rWrBgPipe` or `rWrObjPipe`
-    //  someWrPipeStageIdx: Int,
-    //  someWrPipeNumMainStages: Int,     // `wrBgPipeNumMainStages`
-    //                                    // or `wrObjPipeNumMainStages`
-    //  someLineMem: Mem[Gpu2dRgba],      // `bgLineMem` or `objLineMem`
-    //)(
-    //  idxEqStageIdxFunc: (
-    //    Vec[WrPipeElemT], // `someWrPipe`
-    //    Int,              // `someWrPipeStageIdx`
-    //    Int,              // `someWrPipeNumMainStages`
-    //    Int,              // `idx`
-    //    Mem[Gpu2dRgba],   // `someLineMem`: 
-    //  ) => Unit,
-    //  idxLtStageIdxFunc: (
-    //    Vec[WrPipeElemT], // `someWrPipe`
-    //    Int,              // `someWrPipeStageIdx`
-    //    Int,              // `someWrPipeNumMainStages`
-    //    Int,              // `idx`
-    //    Mem[Gpu2dRgba],   // `someLineMem`: 
-    //  ) => Unit,
-    //  postMainFunc: (
-    //    Vec[WrPipeElemT], // `someWrPipe`
-    //    Int,              // `someWrPipeStageIdx`
-    //    Int,              // `someWrPipeNumMainStages`
-    //    Int,              // `idx`
-    //    Mem[Gpu2dRgba],   // `someLineMem`: 
-    //  ) => Unit,
-    //): Unit = {
-    //  GenericHandlePipeElem(
-    //    somePipe=someWrPipe,
-    //    somePipeStageIdx=someWrPipeStageIdx,
-    //    somePipeNumMainStages=someWrPipeNumMainStages,
-    //    someExtData=someLineMem,
-    //  )(
-    //    idxEqStageIdxFunc=idxEqStageIdxFunc,
-    //    idxLtStageIdxFunc=idxLtStageIdxFunc,
-    //    postMainFunc=postMainFunc,
-    //  )
     //}
 
     def writeBgLineMemEntries(
@@ -1580,6 +1547,30 @@ case class Gpu2d(
         },
       )
       HandleDualPipe(
+        stageData=stageData.craft(wrBgPipePalEntryNzMemIdxStageIdx)
+      )(
+        pipeStageMainFunc=(
+          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+          idx: Int,
+        ) => {
+          val tempInp = stageData.pipeIn(idx)
+          val tempOutp = stageData.pipeOut(idx)
+
+          //tempOutp.palEntry := bgPalEntryMem.readAsync(
+          //  address=tempInp.palEntryMemIdx
+          //)
+          tempOutp.palEntryNzMemIdx := tempInp.palEntryMemIdx =/= 0
+        },
+        copyOnlyFunc=(
+          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+          idx: Int,
+        ) => {
+          stageData.pipeOut(idx).palEntryNzMemIdx := (
+            stageData.pipeIn(idx).palEntryNzMemIdx
+          )
+        },
+      )
+      HandleDualPipe(
         stageData=stageData.craft(wrBgPipePalEntryStageIdx)
       )(
         pipeStageMainFunc=(
@@ -1589,6 +1580,7 @@ case class Gpu2d(
           val tempInp = stageData.pipeIn(idx)
           val tempOutp = stageData.pipeOut(idx)
 
+          // we can read from `bgPalEntryMem` even when
           tempOutp.palEntry := bgPalEntryMem.readAsync(
             address=tempInp.palEntryMemIdx
           )
@@ -1603,8 +1595,18 @@ case class Gpu2d(
         },
       )
       // END: post stage 0
-      //when (wrBgPipeOut.last.fire) {
-      //}
+      when (wrBgPipeLast.fire) {
+        val tempLineMemEntry = LineMemEntry()
+        val bgIdx = wrBgPipeLast.bgIdx
+        tempLineMemEntry.col(bgIdx).rgb := wrBgPipeLast.palEntry.col
+        tempLineMemEntry.col(bgIdx).a := !wrBgPipeLast.palEntryNzMemIdx
+        tempLineMemEntry.prio(bgIdx) := wrBgPipeLast.bgEntry.prio
+
+        bgLineMem.write(
+          address=wrBgPipeLast.getCntPxPosX(),
+          data=tempLineMemEntry
+        )
+      }
 
       //--------
       //--------
