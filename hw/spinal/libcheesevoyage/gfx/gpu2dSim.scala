@@ -69,8 +69,13 @@ object Gpu2dSim extends App {
       x=log2Up(8),
       y=log2Up(8),
     ),
-    numBgsPow=log2Up(4),
+    //numBgsPow=log2Up(4),
+    numBgsPow=log2Up(2),
     numObjsPow=log2Up(64),
+    numBgTilesPow=Some(log2Up(256)),
+    numObjTilesPow=None,
+    numColsInBgPalPow=log2Up(64),
+    numColsInObjPalPow=log2Up(64),
   )
 
   case class Dut() extends Component {
