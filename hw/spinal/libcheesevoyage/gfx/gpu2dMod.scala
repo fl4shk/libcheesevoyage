@@ -1042,6 +1042,12 @@ case class Gpu2d(
     //val rCol = RegNext(nextCol)
     //rCol.init(rCol.getZero)
     //--------
+    val rIntnlChangingRow = Reg(Bool()) init(False)
+    rIntnlChangingRow := (
+      rPastOutp.bgPxsPosSlice.pos.y
+      === rPastOutp.bgPxsPosSlice.pastPos.y + 1
+    )
+
     // round-robin indexing into the `ArrayBuffer`s
 
     //val rPastWrLineMemArrIdx = KeepAttribute(
@@ -1346,11 +1352,6 @@ case class Gpu2d(
     //  //val obj = WrObjPipePayload()
     //  //--------
     //}
-    def rIntnlChangingRow = Reg(Bool()) init(False)
-    rIntnlChangingRow := (
-      rPastOutp.bgPxsPosSlice.pos.y
-      === rPastOutp.bgPxsPosSlice.pastPos.y + 1
-    )
 
     //def wrPipeSize = wrBgPipeSize + wrObjPipeSize
     val wrBgPipeIn = KeepAttribute(

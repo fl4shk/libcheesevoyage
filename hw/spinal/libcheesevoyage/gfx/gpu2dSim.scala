@@ -149,7 +149,8 @@ object Gpu2dSim extends App {
 
     val tempBgPalEntry = Gpu2dBgPalEntry(params=gpu2dParams)
     tempBgPalEntry.col.r := (default -> True)
-    tempBgPalEntry.col.g := (default -> True)
+    tempBgPalEntry.col.g.msb := True
+    tempBgPalEntry.col.g(tempBgPalEntry.col.g.high - 1 downto 0) := 0x0
     tempBgPalEntry.col.b := (default -> False)
     gpuIo.bgPalEntryPush.valid := True
     gpuIo.bgPalEntryPush.payload.bgPalEntry := tempBgPalEntry
