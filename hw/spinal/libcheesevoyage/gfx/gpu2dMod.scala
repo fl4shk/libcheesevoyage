@@ -888,28 +888,33 @@ case class Gpu2d(
     //  //val col = Gpu2dRgba(params=params)
     //  //val prio = UInt(params.numBgsPow bits)
     //}
-    case class LineMemEntry() extends Bundle {
+    case class BgLineMemEntry() extends Bundle {
       val col = Gpu2dRgba(params=params)
       val prio = UInt(params.numBgsPow bits)
     }
-    // Which sprite X positions have we drawn this scanline?
+    case class ObjLineMemEntry() extends Bundle {
+      val col = Gpu2dRgba(params=params)
+      val prio = UInt(params.numBgsPow bits)
+      val objIdx = UInt(params.numObjsPow bits)
+    }
+    // Which sprites have we drawn this scanline?
     // This needs to be reset to 0x0 upon upon starting rendering the next 
     // scanline. 
     // Note that this may not scale well to very large numbers of sprites,
     // but at that point you may be better off with a GPU for 3D graphics.
-    //val rObjDrawnXVec = Reg(Bits(params.numObjs bits)) init(0x0)
-    val rObjDrawnPosXVec = Reg(
-      Vec(UInt(log2Up(params.intnlFbSize2d.x) bits), params.numObjs)
-    )
-    for (idx <- 0 to rObjDrawnPosXVec.size - 1) {
-      rObjDrawnPosXVec(idx).init(rObjDrawnPosXVec(idx).getZero)
-    }
+    val rObjsDrawnThisLine = Reg(Bits(params.numObjs bits)) init(0x0)
+    //val rObjDrawnPosXVec = Reg(
+    //  //Vec(UInt(log2Up(params.intnlFbSize2d.x) bits), params.numObjs)
+    //)
+    //for (idx <- 0 to rObjDrawnPosXVec.size - 1) {
+    //  rObjDrawnPosXVec(idx).init(rObjDrawnPosXVec(idx).getZero)
+    //}
 
     //def LineMemEntry() = Vec.fill(params.numBgs)(Gpu2dRgba(params=params))
     //def LineMemEntry() = Gpu2dRgba(params=params)
-    //val lineMemArr = new ArrayBuffer[Mem[LineMemEntry]]()
-    val bgLineMemArr = new ArrayBuffer[Mem[LineMemEntry]]()
-    val objLineMemArr = new ArrayBuffer[Mem[LineMemEntry]]()
+    //val lineMemArr = new ArrayBuffer[Mem[BgLineMemEntry]]()
+    val bgLineMemArr = new ArrayBuffer[Mem[BgLineMemEntry]]()
+    val objLineMemArr = new ArrayBuffer[Mem[ObjLineMemEntry]]()
     def combinedLineMemArr = bgLineMemArr
     //val combinedLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
     //val wrLineMemIdx
@@ -925,14 +930,14 @@ case class Gpu2d(
 
       bgLineMemArr += Mem(
         //wordType=Rgb(params.rgbConfig),
-        wordType=LineMemEntry(),
+        wordType=BgLineMemEntry(),
         wordCount=params.lineMemSize,
       )
         .initBigInt(Array.fill(params.lineMemSize)(BigInt(0)).toSeq)
         .addAttribute("ram_style", params.lineArrRamStyle)
       objLineMemArr += Mem(
         //wordType=Rgb(params.rgbConfig),
-        wordType=LineMemEntry(),
+        wordType=ObjLineMemEntry(),
         wordCount=params.lineMemSize,
       )
         .initBigInt(Array.fill(params.lineMemSize)(BigInt(0)).toSeq)
@@ -1086,7 +1091,7 @@ case class Gpu2d(
         // `palEntryNzMemIdx(someBgIdx)` is `True`
         // `Gpu2dBgPalEntry`s that have been read
         val palEntry = Gpu2dBgPalEntry(params=params)
-        val lineMemEntry = LineMemEntry()
+        val lineMemEntry = BgLineMemEntry()
       }
       val postStage0 = PostStage0()
 
@@ -1188,7 +1193,7 @@ case class Gpu2d(
         // The following OBJ pipeline stages are only performed when
         // `palEntryNzMemIdx` is `True`
         val palEntry = Gpu2dObjPalEntry(params=params)
-        val lineMemEntry = LineMemEntry()
+        val lineMemEntry = ObjLineMemEntry()
       }
       val postStage0 = PostStage0()
 
@@ -1780,14 +1785,6 @@ case class Gpu2d(
         switch (rWrLineMemArrIdx) {
           for (idx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1) {
             is (idx) {
-              //writeBgLineMemEntries(someWrLineMemArrIdx=idx)
-              //writeObjLineMemEntries(someWrLineMemArrIdx=idx)
-              //wrLineMemEntry
-
-              //tempLineMemEntry.col(bgIdx).rgb := wrBgPipeLast.palEntry.col
-              //tempLineMemEntry.col(bgIdx).a := !wrBgPipeLast.palEntryNzMemIdx
-              //tempLineMemEntry.prio(bgIdx) := wrBgPipeLast.bgEntry.prio
-
               bgLineMemArr(idx).write(
                 address=wrBgPipeLast.getCntPxPosX(),
                 data=wrBgPipeLast.lineMemEntry,
@@ -1798,7 +1795,6 @@ case class Gpu2d(
           //  wrLineMemEntry := rPastWrLineMemEntry
           //}
         }
-
       }
       // END: post stage 0
 
@@ -1815,6 +1811,23 @@ case class Gpu2d(
     ): Unit = {
       // Handle sprites
       //val objLineMem = objLineMemArr(someWrLineMemArrIdx)
+      when (wrObjPipeLast.fire) {
+        //val tempLineMemEntry = LineMemEntry()
+        //val objIdx = wrObjPipeLast.objIdx
+        switch (rWrLineMemArrIdx) {
+          for (idx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1) {
+            is (idx) {
+              //objLineMemArr(idx).write(
+              //  address=wrObjPipeLast.getCntPxPosX(),
+              //  data=wrObjPipeLast.lineMemEntry,
+              //)
+            }
+          }
+          //default {
+          //  wrLineMemEntry := rPastWrLineMemEntry
+          //}
+        }
+      }
     }
     //--------
     def combineLineMemEntries(
