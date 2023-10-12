@@ -979,6 +979,7 @@ case class Gpu2d(
         //def bgIdx = cnt(params.numBgsPow - 1 downto 0)
         // background scroll
         val scroll = cloneOf(bgAttrsArr(0).scroll)
+        //val tilePxsCoord = params.bgTilePxsCoordT()
 
         //def cntWillBeDone() = (
         //  // With more than one background, this should work
@@ -1009,6 +1010,7 @@ case class Gpu2d(
       //def cntDone() = stage0.cntDone()
       def getCntPxPosX() = stage0.getCntPxPosX()
       def scroll = stage0.scroll
+      //def tilePxsCoord = stage0.tilePxsCoord
 
       // Stages after stage 0
       // NOTE: these pipeline stages are still separate
@@ -1022,7 +1024,7 @@ case class Gpu2d(
         // `Gpu2dBgEntry`s that have been read
         val bgEntry = Gpu2dBgEntry(params=params)
         //val tileMemIdx = UInt(params.bgTileMemIdxWidth bits)
-        //val tilePxsCoord = params.bgTilePxsCoordT()
+        val tilePxsCoord = params.bgTilePxsCoordT()
 
         // `Gpu2dTile`s that have been read
         val tile = Gpu2dTile(params=params, isObj=false)
@@ -1043,7 +1045,7 @@ case class Gpu2d(
       //def bgEntryMemIdxPart1 = postStage0.bgEntryMemIdxPart1
 
       def bgEntry = postStage0.bgEntry
-      //def tilePxsCoord = postStage0.tilePxsCoord
+      def tilePxsCoord = postStage0.tilePxsCoord
       def tile = postStage0.tile
       def palEntryMemIdx = postStage0.palEntryMemIdx
       def palEntryNzMemIdx = postStage0.palEntryNzMemIdx
@@ -1056,6 +1058,7 @@ case class Gpu2d(
       ret.cntPlus1 := 1
       ret.bgIdx := (default -> True)
       ret.scroll := ret.scroll.getZero
+      //ret.tilePxsCoord := ret.tilePxsCoord.getZero
       ret.postStage0 := ret.postStage0.getZero
       ret
     }
@@ -1064,12 +1067,13 @@ case class Gpu2d(
     def wrBgPipeCntPlus1StageIdx = 0
     def wrBgPipeBgIdxStageIdx = 0
     def wrBgPipeScrollStageIdx = 0
+    //def wrBgPipeTilePxsCoordStageIdx = 0
 
     //def wrBgPipeBgEntryMemIdxPart0StageIdx = 1
     //def wrBgPipeBgEntryMemIdxPart1StageIdx = 2
     def wrBgPipeBgEntryMemIdxStageIdx = 1
     def wrBgPipeBgEntryStageIdx = 2
-    //def wrBgPipeBgEntryTilePxsCoord = 3
+    def wrBgPipeTilePxsCoordStageIdx = 3
     def wrBgPipeTileStageIdx = 3
     def wrBgPipePalEntryMemIdxStageIdx = 4
     def wrBgPipePalEntryNzMemIdxStageIdx = 5
@@ -1120,6 +1124,8 @@ case class Gpu2d(
         }
         val stage2 = Stage2()
 
+        val tilePxsCoord = params.objTilePxsCoordT()
+
         // The following OBJ pipeline stages are only performed (besides
         // just copying data around) when `stage2.posIsInLine` is `True`
         val tile = Gpu2dTile(params=params, isObj=true)
@@ -1151,6 +1157,7 @@ case class Gpu2d(
     def wrObjPipeObjAttrsStageIdx = 1
     def wrObjPipeTileMemIdxStageIdx = 2
     def wrObjPipePosInLineStageIdx = 2
+    def wrObjPipeTilePxsCoordStageIdx = 3
     def wrObjPipeTileStageIdx = 3
     def wrObjPipePalEntryMemIdxStageIdx = 4
     def wrObjPipePalEntryNzMemIdxStageIdx = 5
@@ -1392,9 +1399,6 @@ case class Gpu2d(
                 tempOutp.scroll := bgAttrsArr(tempBgIdx).scroll
               }
             }
-            //default {
-            //  tempOutp.scroll := tempInp.scroll
-            //}
           }
         },
         copyOnlyFunc=(
@@ -1442,11 +1446,6 @@ case class Gpu2d(
                 ).asUInt
               }
             }
-            //default {
-            //  //tempOutp.scroll := tempInp.scroll
-            //  //tempOutp.bgEntryMemIdxPart0 := tempInp.bgEntryMemIdxPart0
-            //  tempOutp.bgEntryMemIdx := tempInp.bgEntryMemIdx
-            //}
           }
         },
         copyOnlyFunc=(
@@ -1482,9 +1481,6 @@ case class Gpu2d(
                 )
               }
             }
-            //default {
-            //  tempOutp.bgEntry := tempInp.bgEntry
-            //}
           }
         },
         copyOnlyFunc=(
@@ -1493,6 +1489,58 @@ case class Gpu2d(
         ) => {
           stageData.pipeOut(idx).bgEntry := (
             stageData.pipeIn(idx).bgEntry
+          )
+        },
+      )
+
+      HandleDualPipe(
+        stageData=stageData.craft(wrBgPipeTilePxsCoordStageIdx)
+      )(
+        pipeStageMainFunc=(
+          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+          idx: Int,
+        ) => {
+          val tempInp = stageData.pipeIn(idx)
+          val tempOutp = stageData.pipeOut(idx)
+
+          switch (tempInp.bgIdx) {
+            for (tempBgIdx <- 0 to params.numBgs - 1) {
+              is (tempBgIdx) {
+                val scrollSlice = params.bgTilePxsCoordT()
+                scrollSlice.x := (
+                  bgAttrsArr(tempBgIdx).scroll.x(
+                    params.bgTileSize2dPow.x - 1 downto 0
+                  )
+                )
+                scrollSlice.y := (
+                  bgAttrsArr(tempBgIdx).scroll.y(
+                    params.bgTileSize2dPow.y - 1 downto 0
+                  )
+                )
+                when (!tempInp.bgEntry.dispFlip.x) {
+                  tempOutp.tilePxsCoord.x := scrollSlice.x
+                } otherwise {
+                  tempOutp.tilePxsCoord.x := (
+                    params.bgTileSize2d.x - 1 - scrollSlice.x
+                  )
+                }
+                when (!tempInp.bgEntry.dispFlip.y) {
+                  tempOutp.tilePxsCoord.y := scrollSlice.y
+                } otherwise {
+                  tempOutp.tilePxsCoord.y := (
+                    params.bgTileSize2d.y - 1 - scrollSlice.y
+                  )
+                }
+              }
+            }
+          }
+        },
+        copyOnlyFunc=(
+          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+          idx: Int,
+        ) => {
+          stageData.pipeOut(idx).tilePxsCoord := (
+            stageData.pipeIn(idx).tilePxsCoord
           )
         },
       )
@@ -1531,9 +1579,11 @@ case class Gpu2d(
 
           tempOutp.palEntryMemIdx := (
             tempInp.tile.colIdxV2d(
-              tempInp.scroll.y(params.bgTileSize2dPow.y - 1 downto 0)
+              //tempInp.scroll.y(params.bgTileSize2dPow.y - 1 downto 0)
+              tempInp.tilePxsCoord.y
             )(
-              tempInp.scroll.x(params.bgTileSize2dPow.x - 1 downto 0)
+              //tempInp.scroll.x(params.bgTileSize2dPow.x - 1 downto 0)
+              tempInp.tilePxsCoord.x
             )
           )
         },
