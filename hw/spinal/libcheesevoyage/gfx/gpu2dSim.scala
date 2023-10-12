@@ -26,10 +26,11 @@ object Gpu2dSim extends App {
   //def fbSize2d = ElabVec2[Int](640, 480)
   //def fbSize2d = ElabVec2[Int](1, 1)
   //def fbSize2d = ElabVec2[Int](20, 20)
-  def rgbConfig = RgbConfig(rWidth=6, gWidth=6, bWidth=6)
-  //def rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
-  def physRgbConfig = LcvVideoDithererIo.outRgbConfig(rgbConfig=rgbConfig)
-  //def vgaTimingInfo = LcvVgaTimingInfoMap.map("640x480@60")
+  //def rgbConfig = RgbConfig(rWidth=6, gWidth=6, bWidth=6)
+  def rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
+  ////def rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
+  //def physRgbConfig = LcvVideoDithererIo.outRgbConfig(rgbConfig=rgbConfig)
+  ////def vgaTimingInfo = LcvVgaTimingInfoMap.map("640x480@60")
   def vgaTimingInfo=LcvVgaTimingInfo(
     pixelClk=pixelClk,
     //pixelClk=25.175 MHz,
@@ -80,7 +81,8 @@ object Gpu2dSim extends App {
 
   case class Dut() extends Component {
     val io = new Bundle {
-      val phys = out(LcvVgaPhys(rgbConfig=physRgbConfig))
+      //val phys = out(LcvVgaPhys(rgbConfig=physRgbConfig))
+      val phys = out(LcvVgaPhys(rgbConfig=rgbConfig))
       val misc = out(LcvVgaCtrlMiscIo(
         clkRate=clkRate,
         vgaTimingInfo=vgaTimingInfo,
@@ -89,33 +91,83 @@ object Gpu2dSim extends App {
     }
     val vgaCtrl = LcvVgaCtrl(
       clkRate=clkRate,
-      rgbConfig=physRgbConfig,
+      //rgbConfig=physRgbConfig,
+      rgbConfig=rgbConfig,
       vgaTimingInfo=vgaTimingInfo,
       fifoDepth=ctrlFifoDepth,
     )
-    val vidDith = LcvVideoDitherer(
-      //fbSize2d=fbSize2d,
-      rgbConfig=rgbConfig,
-      //vgaTimingInfo=vgaTimingInfo,
-      //fbSize2d=vgaTimingInfo.fbSize2d,
-      fbSize2d=fbSize2d,
-    )
+    //val vidDith = LcvVideoDitherer(
+    //  //fbSize2d=fbSize2d,
+    //  rgbConfig=rgbConfig,
+    //  //vgaTimingInfo=vgaTimingInfo,
+    //  //fbSize2d=vgaTimingInfo.fbSize2d,
+    //  fbSize2d=fbSize2d,
+    //)
     val gpu2d = Gpu2d(
       params=gpu2dParams,
     )
 
     val ctrlIo = vgaCtrl.io
-    val dithIo = vidDith.io
+    //val dithIo = vidDith.io
     val gpuIo = gpu2d.io
 
-    ctrlIo.en := True
-    ctrlIo.push.valid := dithIo.pop.valid
-    ctrlIo.push.payload := dithIo.pop.payload.col
-    dithIo.pop.ready := ctrlIo.push.ready
+    val tempBgTile = Gpu2dTile(params=gpu2dParams, isObj=false)
+    //val tempBgTileRow0Vec = (
+    //  tempBgTile.colIdxRowVec(0).subdivideIn(
+    //    gpu2dParams.bgTileSize2d.x slices
+    //  )
+    //)
+    //tempBgTileRow0Vec(0) := 1
+    //for (idx <- 0 to tempBgTile.colIdxRowVec.size - 1) {
+    //  tempBgTile.colIdxRowVec(0)(
+    //    gpu2dParams.bgPalEntryMemIdxWidth - 1 downto 0
+    //  ) := 1
+    //  tempBgTile
+    //}
+    for (jdx <- 0 to tempBgTile.pxsSize2d.y - 1) {
+      for (idx <- 0 to tempBgTile.pxsSize2d.x - 1) {
+        if (jdx == 0 && idx == 0) {
+          tempBgTile.setPx(
+            pxsCoord=ElabVec2[Int](idx, jdx),
+            colIdx=1,
+          )
+        } else {
+          tempBgTile.setPx(
+            pxsCoord=ElabVec2[Int](idx, jdx),
+            colIdx=0,
+          )
+        }
+      }
+    }
+    //tempBgTile.colIdxRowVec.assignFromBits(
+    //  //tempBgTile.colIdxRowVec.getZero.asBits
+    //)
 
-    dithIo.push.valid := gpuIo.pop.valid
-    dithIo.push.payload := gpuIo.pop.payload.col 
-    gpuIo.pop.ready := dithIo.push.ready
+    gpuIo.bgTilePush.valid := True
+    gpuIo.bgTilePush.payload.tile := tempBgTile
+    gpuIo.bgTilePush.payload.memIdx := 0
+
+    val tempBgPalEntry = Gpu2dBgPalEntry(params=gpu2dParams)
+    tempBgPalEntry.col.r := (default -> True)
+    tempBgPalEntry.col.g := (default -> True)
+    tempBgPalEntry.col.b := (default -> False)
+    gpuIo.bgPalEntryPush.valid := True
+    gpuIo.bgPalEntryPush.payload.bgPalEntry := tempBgPalEntry
+    gpuIo.bgPalEntryPush.payload.memIdx := 1
+
+    //ctrlIo.en := True
+    //ctrlIo.push.valid := dithIo.pop.valid
+    //ctrlIo.push.payload := dithIo.pop.payload.col
+    //dithIo.pop.ready := ctrlIo.push.ready
+
+    //dithIo.push.valid := gpuIo.pop.valid
+    //dithIo.push.payload := gpuIo.pop.payload.col 
+    //gpuIo.pop.ready := dithIo.push.ready
+    ctrlIo.en := True
+
+    ctrlIo.push.valid := gpuIo.pop.valid
+    ctrlIo.push.payload := gpuIo.pop.payload.col
+    gpuIo.pop.ready := ctrlIo.push.ready
 
     io.phys := ctrlIo.phys
     io.misc := ctrlIo.misc

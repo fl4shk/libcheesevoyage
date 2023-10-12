@@ -391,39 +391,130 @@ case class Gpu2dTile(
     }
   )
 
-  // indices into `Gpu2d.loc.palEntryMem`
-  val colIdxRowVec = (
+  def pxsSize2d = (
     if (!isObj) {
-      //Vec.fill(params.bgTileSize2d.y)(
-      //  Vec.fill(params.bgTileSize2d.x)(UInt(colIdxWidth bits))
-      //)
-      //UInt(
-      //  (
-      //    params.bgTileSize2dPow.y + params.bgTileSize2dPow.x
-      //    + colIdxWidth
-      //  )
-      //  bits
-      //)
-      Vec.fill(params.bgTileSize2d.y)(
-        UInt((params.bgTileSize2d.x * colIdxWidth) bits)
-        //UInt((params.bgTileSize2d.x + (1 << colIdxWidth)) bits)
-      )
+      params.bgTileSize2d
     } else { // if (isObj)
-      //Vec.fill(params.objTileSize2d.y)(
-      //  Vec.fill(params.objTileSize2d.x)(UInt(colIdxWidth bits))
-      //)
-      //UInt(
-      //  (
-      //    params.objTileSize2dPow.y + params.objTileSize2dPow.x
-      //    + colIdxWidth
-      //  ) bits
-      //)
-      Vec.fill(params.objTileSize2d.y)(
-        //UInt((params.objTileSize2dPow.x + colIdxWidth) bits)
-        UInt((params.objTileSize2d.x * colIdxWidth) bits)
-      )
+      params.objTileSize2d
     }
   )
+
+  // indices into `Gpu2d.loc.palEntryMem`
+  val colIdxRowVec = (
+    Vec.fill(pxsSize2d.y)(
+      UInt((pxsSize2d.x * colIdxWidth) bits)
+    )
+    //if (!isObj) {
+    //  //Vec.fill(params.bgTileSize2d.y)(
+    //  //  Vec.fill(params.bgTileSize2d.x)(UInt(colIdxWidth bits))
+    //  //)
+    //  //UInt(
+    //  //  (
+    //  //    params.bgTileSize2dPow.y + params.bgTileSize2dPow.x
+    //  //    + colIdxWidth
+    //  //  )
+    //  //  bits
+    //  //)
+    //  Vec.fill(params.bgTileSize2d.y)(
+    //    UInt((params.bgTileSize2d.x * colIdxWidth) bits)
+    //    //UInt((params.bgTileSize2d.x + (1 << colIdxWidth)) bits)
+    //  )
+    //} else { // if (isObj)
+    //  //Vec.fill(params.objTileSize2d.y)(
+    //  //  Vec.fill(params.objTileSize2d.x)(UInt(colIdxWidth bits))
+    //  //)
+    //  //UInt(
+    //  //  (
+    //  //    params.objTileSize2dPow.y + params.objTileSize2dPow.x
+    //  //    + colIdxWidth
+    //  //  ) bits
+    //  //)
+    //  Vec.fill(params.objTileSize2d.y)(
+    //    //UInt((params.objTileSize2dPow.x + colIdxWidth) bits)
+    //    UInt((params.objTileSize2d.x * colIdxWidth) bits)
+    //  )
+    //}
+  )
+
+  def getRowAsVec(
+    idx: Int,
+  ) = colIdxRowVec(idx).subdivideIn(
+    //colIdxWidth slices
+    pxsSize2d.x slices
+  )
+
+  def setPx(
+    pxsCoord: ElabVec2[Int],
+    colIdx: UInt,
+  ): Unit = {
+    assert(pxsCoord.x >= 0 && pxsCoord.x < pxsSize2d.x)
+    assert(pxsCoord.y >= 0 && pxsCoord.y < pxsSize2d.y)
+    //val rowVec = getRowAsVec(pxsCoord.y)
+    //rowVec(pxsCoord.x) := colIdx
+    colIdxRowVec(pxsCoord.y)(
+      pxsCoord.x * colIdxWidth - 1
+      downto pxsCoord.x * colIdxWidth
+    ) := colIdx
+    //colIdxRowVec(pxsCoord.y).assignFromBits(rowVec.asBits)
+  }
+  //def setPx(
+  //  pxsCoord: DualTypeNumVec2[UInt, UInt],
+  //  colIdx: UInt,
+  //): Unit = {
+  //  //val row = colIdxRowVec(pxsCoord.y)
+  //  //val colIdxVec = row.subdivideIn(pxsSize2d.x slices)
+  //  //colIdxVec(pxsCoord.x) := colIdx
+  //  //row.assignFromBits(colIdxVec.asBits)
+
+  //  switch (pxsCoord.y) {
+  //    for (jdx <- 0 to pxsSize2d.y - 1) {
+  //      is (jdx) {
+  //        switch (pxsCoord.x) {
+  //          for (idx <- 0 to pxsSize2d.x - 1) {
+  //            is (idx) {
+  //              setPx(
+  //                pxsCoord=ElabVec2[Int](x=idx, y=jdx),
+  //                colIdx=colIdx
+  //              )
+  //            }
+  //          }
+  //        }
+  //      }
+  //    }
+  //  }
+  //}
+  def setPxsRow(
+    pxsCoordY: UInt,
+    colIdxRow: UInt,
+  ): Unit = {
+    colIdxRowVec(pxsCoordY) := colIdxRow
+  }
+
+  //def setRow(
+  //  pxsCoordY: Int,
+  //  row: UInt,
+  //): Unit = {
+  //  assert(pxsCoordY >= 0 && pxsCoordY < pxsSize2d.y)
+  //}
+  def getPx(
+    pxsCoord: ElabVec2[Int],
+  ) = {
+    assert(pxsCoord.x >= 0 && pxsCoord.x < pxsSize2d.x)
+    assert(pxsCoord.y >= 0 && pxsCoord.y < pxsSize2d.y)
+    val rowVec = getRowAsVec(pxsCoord.y)
+    //rowVec(pxsCoord.x) := colIdx
+    //colIdxRowVec(pxsCoord.y).assignFromBits(rowVec.asBits)
+    rowVec(pxsCoord.x)
+  }
+  def getPx(
+    pxsCoord: DualTypeNumVec2[UInt, UInt]
+  ) = {
+    val row = colIdxRowVec(pxsCoord.y)
+    val colIdxVec = row.subdivideIn(pxsSize2d.x slices)
+    //colIdxVec(pxsCoord.x) := colIdx
+    //row.assignFromBits(colIdxVec.asBits)
+    colIdxVec(pxsCoord.x)
+  }
   //--------
 }
 case class Gpu2dBgTileStmPayload(
@@ -897,12 +988,12 @@ case class Gpu2d(
       val prio = UInt(params.numBgsPow bits)
       val objIdx = UInt(params.numObjsPow bits)
     }
-    // Which sprites have we drawn this scanline?
-    // This needs to be reset to 0x0 upon upon starting rendering the next 
-    // scanline. 
-    // Note that this may not scale well to very large numbers of sprites,
-    // but at that point you may be better off with a GPU for 3D graphics.
-    val rObjsDrawnThisLine = Reg(Bits(params.numObjs bits)) init(0x0)
+    //// Which sprites have we drawn this scanline?
+    //// This needs to be reset to 0x0 upon upon starting rendering the next 
+    //// scanline. 
+    //// Note that this may not scale well to very large numbers of sprites,
+    //// but at that point you may be better off with a GPU for 3D graphics.
+    //val rObjsDrawnThisLine = Reg(Bits(params.numObjs bits)) init(0x0)
     //val rObjDrawnPosXVec = Reg(
     //  //Vec(UInt(log2Up(params.intnlFbSize2d.x) bits), params.numObjs)
     //)
@@ -956,6 +1047,14 @@ case class Gpu2d(
     //val rPastWrLineMemArrIdx = KeepAttribute(
     //  Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x1)
     //)
+    // Used to clear the written OBJ pixels
+    val rObjClearLineMemArrIdx = KeepAttribute(
+      Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x3)
+    )
+    val rObjClearCnt = Reg(
+      UInt(log2Up(params.intnlFbSize2d.x) bits)
+    ) init(0x0)
+
     val rWrLineMemArrIdx = KeepAttribute(
       Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x2)
     )
@@ -979,6 +1078,8 @@ case class Gpu2d(
     //rdLineMemArrIdx := wrLineMemArrIdx + 
     when (rIntnlChangingRow) {
       //rPastWrLineMemArrIdx := rPastWrLineMemArrIdx + 1
+      rObjClearLineMemArrIdx := rObjClearLineMemArrIdx + 1
+      rObjClearCnt := 0x0
 
       //rPastWrLineMemArrIdx := rPastWrLineMemArrIdx + 1
       rWrLineMemArrIdx := rWrLineMemArrIdx + 1
@@ -1379,6 +1480,21 @@ case class Gpu2d(
     //val rPastWrBgLineMemEntry = Reg(LineMemEntry())
     //rPastWrBgLineMemEntry.init(rPastWrBgLineMemEntry.getZero)
 
+    def clearObjBgLineMemEntries(): Unit = {
+      val tempObjLineMemEntry = ObjLineMemEntry()
+      tempObjLineMemEntry := tempObjLineMemEntry.getZero
+      switch (rObjClearLineMemArrIdx) {
+        for (idx <- 0 to (1 << rObjClearLineMemArrIdx.getWidth) - 1) {
+          is (idx) {
+            objLineMemArr(idx).write(
+              address=rObjClearCnt,
+              data=tempObjLineMemEntry,
+            )
+          }
+        }
+      }
+    }
+
     def writeBgLineMemEntries(
       //someWrLineMemArrIdx: Int,
     ): Unit = {
@@ -1664,9 +1780,12 @@ case class Gpu2d(
           //    tempInp.tilePxsCoord.x
           //  )
           //)
-          val row = tempInp.tile.colIdxRowVec(tempInp.tilePxsCoord.y)
-          val colIdxVec = row.subdivideIn(params.bgTileSize2d.x slices)
-          tempOutp.palEntryMemIdx := colIdxVec(tempInp.tilePxsCoord.x)
+          //val row = tempInp.tile.colIdxRowVec(tempInp.tilePxsCoord.y)
+          //val colIdxVec = row.subdivideIn(tempInp.tile.pxsSize2d.x slices)
+          //tempOutp.palEntryMemIdx := colIdxVec(tempInp.tilePxsCoord.x)
+          tempOutp.palEntryMemIdx := tempInp.payload.tile.getPx(
+            tempInp.payload.tilePxsCoord
+          )
         },
         copyOnlyFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
@@ -1861,6 +1980,7 @@ case class Gpu2d(
       //  address=rdLineMemIdx
       //)
     }
+    clearObjBgLineMemEntries()
 
     //switch (rWrLineMemArrIdx) {
     //  for (idx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1) {
