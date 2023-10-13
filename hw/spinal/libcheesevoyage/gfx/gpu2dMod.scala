@@ -83,7 +83,7 @@ case class Gpu2dParams(
 
   //bgLineArrRamStyle: String="block",
   //objLineArrRamStyle: String="block",
-  //combinedLineArrRamStyle: String="block",
+  //combineLineArrRamStyle: String="block",
   lineArrRamStyle: String="block"
 ) {
   //--------
@@ -294,7 +294,7 @@ object DefaultGpu2dParams {
     objPalEntryArrRamStyle: String="block",
     //bgLineArrRamStyle: String="block",
     //objLineArrRamStyle: String="block",
-    //combinedLineArrRamStyle: String="block",
+    //combineLineArrRamStyle: String="block",
     lineArrRamStyle: String="block",
     //--------
   ) = {
@@ -377,7 +377,7 @@ object DefaultGpu2dParams {
       objPalEntryArrRamStyle=objPalEntryArrRamStyle,
       //bgLineArrRamStyle=bgLineArrRamStyle,
       //objLineArrRamStyle=objLineArrRamStyle,
-      //combinedLineArrRamStyle=combinedLineArrRamStyle,
+      //combineLineArrRamStyle=combineLineArrRamStyle,
       lineArrRamStyle=lineArrRamStyle,
       //--------
     )
@@ -1021,8 +1021,8 @@ case class Gpu2d(
     //val lineMemArr = new ArrayBuffer[Mem[BgLineMemEntry]]()
     val bgLineMemArr = new ArrayBuffer[Mem[BgLineMemEntry]]()
     val objLineMemArr = new ArrayBuffer[Mem[ObjLineMemEntry]]()
-    def combinedLineMemArr = bgLineMemArr
-    //val combinedLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
+    //def combineLineMemArr = bgLineMemArr
+    //val combineLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
     //val wrLineMemIdx
 
     for (idx <- 0 to params.numLineMemsPerBgObjRenderer - 1) {
@@ -1093,21 +1093,26 @@ case class Gpu2d(
       Reg(UInt(log2Up(params.intnlFbSize2d.y) bits)) init(0x3)
     )
 
-    val rCombinedRdLineMemArrIdx = KeepAttribute(
+    val rCombineRdLineMemArrIdx = KeepAttribute(
       Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x2)
     )
-    val rCombinedWrLineMemArrIdx = KeepAttribute(
+    val rCombineWrLineMemArrIdx = KeepAttribute(
       Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x1)
     )
+
+    //val rCombineLineMemCnt = KeepAttribute(
+    //  Reg(UInt(log2Up(params.intnlFbSize2d.x + 1) bits)) init(0x0)
+    //)
 
     val rRdLineMemArrIdx = KeepAttribute(
       Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x0)
     )
-    val rRdLineMemCnt = Reg(UInt(log2Up(params.intnlFbSize2d.x) bits))
-      .init(0x0)
+    //val rRdLineMemCnt = KeepAttribute(
+    //  Reg(cloneOf(rCombineLineMemCnt)) init(0x0)
+    //)
     //wrLineMemArrIdx := outp.bgPxsPosSlice.pos.y(wrLineMemArrIdx.bitsRange)
     ////rdLineMemArrIdx(0) := !outp.bgPxsPosSlice.pos.y(0)
-    //combinedLineMemArrIdx := wrLineMemArrIdx + 1
+    //combineLineMemArrIdx := wrLineMemArrIdx + 1
     //rdLineMemArrIdx := wrLineMemArrIdx + 
     when (rIntnlChangingRow) {
       //rPastWrLineMemArrIdx := rPastWrLineMemArrIdx + 1
@@ -1119,13 +1124,14 @@ case class Gpu2d(
       rWrLineMemArrIdx := rWrLineMemArrIdx + 1
       rWrLineNum := rWrLineNum + 1
 
-      //rPastCombinedLineMemArrIdx := rPastCombinedLineMemArrIdx + 1
-      rCombinedRdLineMemArrIdx := rCombinedRdLineMemArrIdx + 1
-      rCombinedWrLineMemArrIdx := rCombinedWrLineMemArrIdx + 1
+      //rPastCombineLineMemArrIdx := rPastCombineLineMemArrIdx + 1
+      rCombineRdLineMemArrIdx := rCombineRdLineMemArrIdx + 1
+      rCombineWrLineMemArrIdx := rCombineWrLineMemArrIdx + 1
+      //rCombineLineMemCnt := 0
 
       //rPastRdLineMemArrIdx := rPastRdLineMemArrIdx + 1
       rRdLineMemArrIdx := rRdLineMemArrIdx + 1
-      rRdLineMemCnt := 0
+      //rRdLineMemCnt := 0
     }
 
     //val rWrBgCnt = Reg(UInt(log2Up(params.numBgs) + 1 bits)) init(0x0)
@@ -1589,13 +1595,78 @@ case class Gpu2d(
     //  wrObjPipeNumElems > params.numObjsPow
     //)
 
-    //case class WrCombinedPipeElem() extends Bundle {
-    //  //--------
-    //  //val bg = WrBgPipePayload()
-    //  //val obj = WrObjPipePayload()
-    //  //--------
-    //}
+    def combinePipeCntWidth = (
+      log2Up(params.intnlFbSize2d.x + 1) + 2
+    )
+    def combinePipeCntStart = (
+      params.intnlFbSize2d.x
+    )
+    case class CombinePipePayload() extends Bundle {
+      //--------
+      //val bg = WrBgPipePayload()
+      //val obj = WrObjPipePayload()
+      case class Stage0() extends Bundle {
+        //--------
+        // combining can be done backwards
+        val cnt = UInt(combinePipeCntWidth bits)
+        val cntMinus1 = UInt(combinePipeCntWidth bits)
+        //--------
+        def cntWillBeDone() = (
+          cntMinus1.msb
+        )
+        //--------
+      }
+      val stage0 = Stage0()
+      def cnt = stage0.cnt
+      def cntMinus1 = stage0.cntMinus1
+      def cntWillBeDone() = stage0.cntWillBeDone()
 
+      case class Stage1() extends Bundle {
+        val bgRdLineMemEntry = BgLineMemEntry()
+        val objRdLineMemEntry = ObjLineMemEntry()
+      }
+      case class Stage2() extends Bundle {
+        val objHiPrio = Bool()
+      }
+      case class Stage3() extends Bundle {
+        //val isObj = Bool()
+        val col = Rgb(params.rgbConfig)
+      }
+      case class Stage4() extends Bundle {
+        val combineWrLineMemEntry = BgLineMemEntry()
+        //val objWrLineMemEntry = ObjLineMemEntry()
+      }
+      case class PostStage0() extends Bundle {
+        val stage1 = Stage1()
+        val stage2 = Stage2()
+        val stage3 = Stage3()
+        val stage4 = Stage4()
+      }
+      val postStage0 = PostStage0()
+
+      def stage1 = postStage0.stage1
+      def bgRdLineMemEntry = stage1.bgRdLineMemEntry
+      def objRdLineMemEntry = stage1.objRdLineMemEntry
+
+      def stage2 = postStage0.stage2
+      def objHiPrio = stage2.objHiPrio
+
+      def stage3 = postStage0.stage3
+      def col = stage3.col
+
+      def stage4 = postStage0.stage4
+      def combineWrLineMemEntry = stage4.combineWrLineMemEntry
+      //--------
+    }
+    def doInitCombinePipeElem(): CombinePipePayload = {
+      val ret = CombinePipePayload()
+      ret.cnt := combinePipeCntStart
+      ret.cntMinus1 := combinePipeCntStart
+      ret.postStage0 := ret.postStage0.getZero
+      ret
+    }
+    def combinePipeNumMainStages = 5
+    //--------
     //def wrPipeSize = wrBgPipeSize + wrObjPipeSize
     val wrBgPipeIn = KeepAttribute(
       //Vec.fill(wrBgObjPipeNumStages)(Reg(WrBgPipePayload()))
@@ -1729,8 +1800,8 @@ case class Gpu2d(
       }
     }
 
-    //val wrCombinedPipe = KeepAttribute(
-    //  Vec.fill()(Stream(WrCombinedPipeElem()))
+    //val wrCombinePipe = KeepAttribute(
+    //  Vec.fill()(Stream(WrCombinePipeElem()))
     //)
 
     //if (!wrPipeBgNumElemsGtNumBgs) {
@@ -1744,20 +1815,70 @@ case class Gpu2d(
     //val rPastWrBgLineMemEntry = Reg(LineMemEntry())
     //rPastWrBgLineMemEntry.init(rPastWrBgLineMemEntry.getZero)
 
-    def clearObjLineMemEntries(): Unit = {
-      val tempObjLineMemEntry = ObjLineMemEntry()
-      tempObjLineMemEntry := tempObjLineMemEntry.getZero
-      switch (rRdLineMemArrIdx) {
-        for (idx <- 0 to (1 << rRdLineMemArrIdx.getWidth) - 1) {
-          is (idx) {
-            objLineMemArr(idx).write(
-              address=rRdLineMemCnt,
-              data=tempObjLineMemEntry,
-            )
-          }
-        }
+    val combinePipeIn = KeepAttribute(
+      Vec.fill(combinePipeNumMainStages)(Flow(CombinePipePayload()))
+    )
+    val combinePipeOut = KeepAttribute(
+      Vec.fill(combinePipeNumMainStages)(Flow(CombinePipePayload()))
+    )
+    val combinePipeLast = KeepAttribute(Flow(CombinePipePayload()))
+
+    val rCombinePipeFrontValid = Reg(Bool()) init(True)
+    val rCombinePipeFrontPayload = Reg(CombinePipePayload())
+    //rCombinePipeFrontPayload.init(rCombinePipeFrontPayload.getZero)
+    rCombinePipeFrontPayload.init(doInitCombinePipeElem())
+
+    combinePipeIn(0).valid := rCombinePipeFrontValid
+    combinePipeIn(0).payload := rCombinePipeFrontPayload
+
+    for (idx <- 1 to combinePipeIn.size - 1) {
+      // Create pipeline registering
+      combinePipeIn(idx) <-< combinePipeOut(idx - 1)
+    }
+    for (idx <- 0 to combinePipeOut.size - 1) {
+      // Connect output `valid` to input `valid`
+      combinePipeOut(idx).valid := combinePipeIn(idx).valid
+    }
+    // add one final register
+    combinePipeLast <-< combinePipeOut.last
+
+    when (rIntnlChangingRow) {
+      rCombinePipeFrontValid := True
+      rCombinePipeFrontPayload := doInitCombinePipeElem()
+    } otherwise { // when (!rIntnlChangingRow)
+      when (wrBgPipeIn(0).fire) {
+        //rCombinePipeFrontPayload.cnt := rCombinePipeFrontPayload.cnt + 1
+        rCombinePipeFrontPayload.cnt := rCombinePipeFrontPayload.cnt - 1
+        rCombinePipeFrontPayload.cntMinus1 := (
+          rCombinePipeFrontPayload.cntMinus1 - 1
+        )
+        //rCombinePipeFrontPayload.bgIdx := rCombinePipeFrontPayload.bgIdx - 1
+        //rCombinePipeFrontPayload.bgIdx := (
+        //  rCombinePipeFrontPayload.cntMinus1(
+        //    rCombinePipeFrontPayload.cnt.high
+        //    downto rCombinePipeFrontPayload.cnt.high - wrBgPipeBgIdxWidth + 1
+        //  )
+        //)
+      }
+      when (rCombinePipeFrontPayload.cntWillBeDone()) {
+        rCombinePipeFrontValid := False
       }
     }
+    //--------
+    //def clearObjLineMemEntries(): Unit = {
+    //  val tempObjLineMemEntry = ObjLineMemEntry()
+    //  tempObjLineMemEntry := tempObjLineMemEntry.getZero
+    //  switch (rRdLineMemArrIdx) {
+    //    for (idx <- 0 to (1 << rRdLineMemArrIdx.getWidth) - 1) {
+    //      is (idx) {
+    //        objLineMemArr(idx).write(
+    //          address=rRdLineMemCnt,
+    //          data=tempObjLineMemEntry,
+    //        )
+    //      }
+    //    }
+    //  }
+    //}
 
     def writeBgLineMemEntries(
       //someWrLineMemArrIdx: Int,
@@ -2195,7 +2316,9 @@ case class Gpu2d(
           for (idx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1) {
             is (idx) {
               bgLineMemArr(idx).write(
-                address=wrBgPipeLast.getCntPxPosX(),
+                address=wrBgPipeLast.getCntPxPosX()(
+                  log2Up(params.lineMemSize) - 1 downto 0
+                ),
                 data=wrBgPipeLast.lineMemEntry,
               )
             }
@@ -2487,7 +2610,10 @@ case class Gpu2d(
             for (jdx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1) {
               is (jdx) {
                 tempOutp.rdLineMemEntry := objLineMemArr(jdx).readAsync(
-                  address=tempInp.pxPos.x.asUInt.resized,
+                  //address=tempInp.pxPos.x.asUInt.resized,
+                  address=tempInp.pxPos.x.asUInt(
+                    log2Up(params.lineMemSize) - 1 downto 0
+                  ),
                   //readUnderWrite=writeFirst,
                   readUnderWrite=writeFirst,
                 )
@@ -2745,7 +2871,10 @@ case class Gpu2d(
             is (idx) {
               objLineMemArr(idx).write(
                 //address=wrObjPipeLast.getCntTilePxsCoordX(),
-                address=wrObjPipeLast.pxPos.x.asUInt.resized,
+                //address=wrObjPipeLast.pxPos.x.asUInt.resized,
+                address=wrObjPipeLast.pxPos.x.asUInt(
+                  log2Up(params.lineMemSize) - 1 downto 0
+                ),
                 data=wrObjPipeLast.wrLineMemEntry,
               )
             }
@@ -2758,8 +2887,206 @@ case class Gpu2d(
     }
     //--------
     def combineLineMemEntries(
-      //someCombinedLineMemArrIdx: Int
+      //someCombineLineMemArrIdx: Int
     ): Unit = {
+      val stageData = DualPipeStageData[Flow[CombinePipePayload]](
+        pipeIn=combinePipeIn,
+        pipeOut=combinePipeOut,
+        pipeNumMainStages=combinePipeNumMainStages,
+        pipeStageIdx=0,
+      )
+      HandleDualPipe(
+        stageData=stageData.craft(0)
+      )(
+        pipeStageMainFunc=(
+          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          idx: Int,
+        ) => {
+          //val tempInp = stageData.pipeIn(idx)
+          //val tempOutp = stageData.pipeOut(idx)
+
+          //tempOut.stage0 := tempInp.stage0
+          stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
+        },
+        copyOnlyFunc=(
+          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          idx: Int,
+        ) => {
+          //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
+          stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
+        },
+      )
+      HandleDualPipe(
+        stageData=stageData.craft(1)
+      )(
+        pipeStageMainFunc=(
+          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          idx: Int,
+        ) => {
+          val tempInp = stageData.pipeIn(idx)
+          val tempOutp = stageData.pipeOut(idx)
+
+          switch (rCombineRdLineMemArrIdx) {
+            for (
+              jdx <- 0 to (1 << rCombineRdLineMemArrIdx.getWidth) - 1
+            ) {
+              is (jdx) {
+                tempOutp.bgRdLineMemEntry := bgLineMemArr(jdx).readAsync(
+                  address=tempInp.cnt(
+                    log2Up(params.lineMemSize) - 1 downto 0
+                  )
+                )
+                tempOutp.objRdLineMemEntry := objLineMemArr(jdx).readAsync(
+                  address=tempInp.cnt(
+                    log2Up(params.lineMemSize) - 1 downto 0
+                  )
+                )
+              }
+            }
+          }
+
+          //tempOut.stage0 := tempInp.stage0
+          //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
+        },
+        copyOnlyFunc=(
+          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          idx: Int,
+        ) => {
+          //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
+          stageData.pipeOut(idx).stage1 := stageData.pipeIn(idx).stage1
+        },
+      )
+      HandleDualPipe(
+        stageData=stageData.craft(2)
+      )(
+        pipeStageMainFunc=(
+          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          idx: Int,
+        ) => {
+          val tempInp = stageData.pipeIn(idx)
+          val tempOutp = stageData.pipeOut(idx)
+
+          //when (
+          //  tempInp.bgRdLineMemEntry.col.a
+          //  && tempInp.objRdLineMemEntry.col.a
+          //) {
+          //  when (
+          //    // sprites take priority upon a tie, hence `<=`
+          //    tempInp.objRdLineMemEntry.prio
+          //    <= tempInp.bgRdLineMemEntry.prio
+          //  ) {
+          //    tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
+          //  } otherwise {
+          //    tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
+          //  }
+          //} elsewhen (
+          //  tempInp.bgRdLineMemEntry.col.a
+          //) {
+          //  tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
+          //} elsewhen (
+          //  tempInp.objRdLineMemEntry.col.a
+          //) {
+          //  tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
+          //} otherwise {
+          //  tempOutp.col := tempOutp.col.getZero
+          //}
+          tempOutp.objHiPrio := (
+            // sprites take priority upon a tie, hence `<=`
+            tempInp.objRdLineMemEntry.prio
+            <= tempInp.bgRdLineMemEntry.prio
+          )
+
+          //tempOut.stage0 := tempInp.stage0
+          //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
+        },
+        copyOnlyFunc=(
+          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          idx: Int,
+        ) => {
+          //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
+          stageData.pipeOut(idx).stage2 := stageData.pipeIn(idx).stage2
+        },
+      )
+      HandleDualPipe(
+        stageData=stageData.craft(3)
+      )(
+        pipeStageMainFunc=(
+          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          idx: Int,
+        ) => {
+          val tempInp = stageData.pipeIn(idx)
+          val tempOutp = stageData.pipeOut(idx)
+
+          switch (Cat(
+            tempInp.bgRdLineMemEntry.col.a,
+            tempInp.objRdLineMemEntry.col.a,
+            tempInp.objHiPrio
+          )) {
+            is (B"111") {
+              tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
+            }
+            is (B"110") {
+              tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
+            }
+            is (M"10-") {
+              tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
+            }
+            is (M"01-") {
+              tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
+            }
+            //is (M"00-")
+            default {
+              tempOutp.col := tempOutp.col.getZero
+            }
+          }
+        },
+        copyOnlyFunc=(
+          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          idx: Int,
+        ) => {
+          stageData.pipeOut(idx).stage3 := stageData.pipeIn(idx).stage3
+        },
+      )
+      HandleDualPipe(
+        stageData=stageData.craft(4)
+      )(
+        pipeStageMainFunc=(
+          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          idx: Int,
+        ) => {
+          val tempInp = stageData.pipeIn(idx)
+          val tempOutp = stageData.pipeOut(idx)
+
+          tempOutp.combineWrLineMemEntry.col.rgb := tempInp.col
+
+          // not really necessary, but doing it anyway
+          tempOutp.combineWrLineMemEntry.col.a := True
+
+          tempOutp.combineWrLineMemEntry.prio := 0x0
+        },
+        copyOnlyFunc=(
+          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          idx: Int,
+        ) => {
+          //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
+          stageData.pipeOut(idx).stage4 := stageData.pipeIn(idx).stage4
+        },
+      )
+
+      when (combinePipeLast.fire) {
+        switch (rCombineWrLineMemArrIdx) {
+          for (idx <- 0 to (1 << rCombineWrLineMemArrIdx.getWidth) - 1) {
+            is (idx) {
+              bgLineMemArr(idx).write(
+                address=combinePipeLast.cnt(
+                  log2Up(params.lineMemSize) - 1 downto 0
+                ),
+                data=combinePipeLast.combineWrLineMemEntry,
+              )
+            }
+          }
+        }
+      }
     }
     //--------
     //val rdBgLineMemEntry = KeepAttribute(LineMemEntry())
@@ -2783,12 +3110,27 @@ case class Gpu2d(
       //val objLineMem = objLineMemArr(someRdLineMemArrIdx)
       //rdObjLineMemEntry := objLineMem.readAsync(address=rdLineMemIdx)
 
-      //val combinedLineMem = combinedLineMemArr(someRdLineMemArrIdx)
-      //rdCombinedLineMemEntry := combinedLineMem.readAsync(
+      //val combineLineMem = combineLineMemArr(someRdLineMemArrIdx)
+      //rdCombineLineMemEntry := combineLineMem.readAsync(
       //  address=rdLineMemIdx
       //)
+
+      //when (rRdLineMemCnt < params.intnlFbSize2d.x) {
+      //  val tempObjLineMemEntry = ObjLineMemEntry()
+      //  tempObjLineMemEntry := tempObjLineMemEntry.getZero
+      //  switch (rRdLineMemArrIdx) {
+      //    for (idx <- 0 to (1 << rRdLineMemArrIdx.getWidth) - 1) {
+      //      is (idx) {
+      //        objLineMemArr(idx).write(
+      //          address=rRdLineMemCnt,
+      //          data=tempObjLineMemEntry,
+      //        )
+      //      }
+      //    }
+      //  }
+      //}
     }
-    clearObjLineMemEntries()
+    //clearObjLineMemEntries()
 
     //switch (rWrLineMemArrIdx) {
     //  for (idx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1) {
@@ -2804,10 +3146,10 @@ case class Gpu2d(
     writeBgLineMemEntries()
     writeObjLineMemEntries()
 
-    //switch (rCombinedLineMemArrIdx) {
-    //  for (idx <- 0 to (1 << rCombinedLineMemArrIdx.getWidth) - 1) {
+    //switch (rCombineLineMemArrIdx) {
+    //  for (idx <- 0 to (1 << rCombineLineMemArrIdx.getWidth) - 1) {
     //    is (idx) {
-    //      combineLineMemEntries(someCombinedLineMemArrIdx=idx)
+    //      combineLineMemEntries(someCombineLineMemArrIdx=idx)
     //    }
     //  }
     //  //default {
