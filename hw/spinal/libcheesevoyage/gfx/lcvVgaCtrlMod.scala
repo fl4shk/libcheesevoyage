@@ -312,28 +312,50 @@ object LcvVgaCtrlMiscIo {
   //  ) bits
   //)
   def coordElemT(
-    fbWidthOrHeight: Int
-  ): UInt = UInt(log2Up(fbWidthOrHeight) bits)
+    fbWidthOrHeight: Int,
+    plus: Int=0,
+  ): UInt = UInt(log2Up(fbWidthOrHeight) + plus bits)
   def coordT(
     //vgaTimingInfo: LcvVgaTimingInfo,
-    fbSize2d: ElabVec2[Int]
+    fbSize2d: ElabVec2[Int],
+    plus: ElabVec2[Int]=ElabVec2[Int](
+      x=0,
+      y=0,
+    )
   ): DualTypeNumVec2[UInt, UInt] = DualTypeNumVec2(
     //dataTypeX=UInt(log2Up(fbSize2d.x) bits),
     //dataTypeY=UInt(log2Up(fbSize2d.y) bits),
-    dataTypeX=coordElemT(fbWidthOrHeight=fbSize2d.x),
-    dataTypeY=coordElemT(fbWidthOrHeight=fbSize2d.y),
+    dataTypeX=coordElemT(fbWidthOrHeight=fbSize2d.x, plus=plus.x),
+    dataTypeY=coordElemT(fbWidthOrHeight=fbSize2d.y, plus=plus.y),
   )
+  //def sCoordElemT(
+  //  fbWidthOrHeight: Int
+  //): SInt = SInt(log2Up(fbWidthOrHeight) bits)
+  //def sCoordT(
+  //  //vgaTimingInfo: LcvVgaTimingInfo,
+  //  fbSize2d: ElabVec2[Int]
+  //): DualTypeNumVec2[SInt, SInt] = DualTypeNumVec2(
+  //  //dataTypeX=UInt(log2Up(fbSize2d.x) bits),
+  //  //dataTypeY=UInt(log2Up(fbSize2d.y) bits),
+  //  dataTypeX=sCoordElemT(fbWidthOrHeight=fbSize2d.x),
+  //  dataTypeY=sCoordElemT(fbWidthOrHeight=fbSize2d.y),
+  //)
   def sCoordElemT(
-    fbWidthOrHeight: Int
-  ): SInt = SInt(log2Up(fbWidthOrHeight) bits)
+    fbWidthOrHeight: Int,
+    plus: Int=0,
+  ): SInt = SInt(log2Up(fbWidthOrHeight) + plus bits)
   def sCoordT(
     //vgaTimingInfo: LcvVgaTimingInfo,
-    fbSize2d: ElabVec2[Int]
+    fbSize2d: ElabVec2[Int],
+    plus: ElabVec2[Int]=ElabVec2[Int](
+      x=0,
+      y=0,
+    )
   ): DualTypeNumVec2[SInt, SInt] = DualTypeNumVec2(
-    //dataTypeX=UInt(log2Up(fbSize2d.x) bits),
-    //dataTypeY=UInt(log2Up(fbSize2d.y) bits),
-    dataTypeX=sCoordElemT(fbWidthOrHeight=fbSize2d.x),
-    dataTypeY=sCoordElemT(fbWidthOrHeight=fbSize2d.y),
+    //dataTypeX=SInt(log2Up(fbSize2d.x) bits),
+    //dataTypeY=SInt(log2Up(fbSize2d.y) bits),
+    dataTypeX=sCoordElemT(fbWidthOrHeight=fbSize2d.x, plus=plus.x),
+    dataTypeY=sCoordElemT(fbWidthOrHeight=fbSize2d.y, plus=plus.y),
   )
   // clocks per pixel
   def cpp(

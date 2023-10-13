@@ -38,16 +38,16 @@ object Gpu2dSim extends App {
       //visib=1 << 6,
       //visib=64,
       visib=1 << 7,
-      front=5,
-      sync=5,
-      back=5,
+      front=3,
+      sync=3,
+      back=3,
     ),
     vtiming=LcvVgaTimingHv(
       //visib=1 << 3,
       visib=1 << 7,
-      front=5,
-      sync=5,
-      back=5,
+      front=3,
+      sync=3,
+      back=3,
     ),
   )
 
@@ -126,7 +126,7 @@ object Gpu2dSim extends App {
     //}
     for (jdx <- 0 to tempBgTile.pxsSize2d.y - 1) {
       for (idx <- 0 to tempBgTile.pxsSize2d.x - 1) {
-        if (jdx == 0 && idx == 0) {
+        if (jdx == 3 && idx == 0) {
           tempBgTile.setPx(
             pxsCoord=ElabVec2[Int](idx, jdx),
             colIdx=1,
@@ -145,7 +145,39 @@ object Gpu2dSim extends App {
 
     gpuIo.bgTilePush.valid := True
     gpuIo.bgTilePush.payload.tile := tempBgTile
-    gpuIo.bgTilePush.payload.memIdx := 0
+    gpuIo.bgTilePush.payload.memIdx := 1
+
+    val tempBgAttrs = Gpu2dBgAttrs(params=gpu2dParams)
+    tempBgAttrs.scroll := tempBgAttrs.scroll.getZero
+    for (idx <- 0 to gpuIo.bgAttrsPushArr.size - 1) {
+      val tempBgAttrsPush = gpuIo.bgAttrsPushArr(idx)
+      if (idx == 0) {
+        tempBgAttrsPush.valid := True
+        tempBgAttrsPush.payload.bgAttrs := tempBgAttrs
+      } else {
+        tempBgAttrsPush.valid := False
+        tempBgAttrsPush.payload.bgAttrs := tempBgAttrs.getZero
+      }
+    }
+
+    val tempBgEntry = Gpu2dBgEntry(params=gpu2dParams)
+    // we're only changing one tile
+    tempBgEntry.tileMemIdx := 1
+    tempBgEntry.dispFlip.x := False
+    tempBgEntry.dispFlip.y := False
+
+    for (idx <- 0 to gpuIo.bgEntryPushArr.size - 1) {
+      val tempBgEntryPush = gpuIo.bgEntryPushArr(idx)
+      if (idx == 0) {
+        tempBgEntryPush.valid := True
+        tempBgEntryPush.payload.bgEntry := tempBgEntry
+        tempBgEntryPush.payload.memIdx := 0x0
+      } else {
+        tempBgEntryPush.valid := False
+        tempBgEntryPush.payload.bgEntry := tempBgEntry.getZero
+        tempBgEntryPush.payload.memIdx := 0x0
+      }
+    }
 
     val tempBgPalEntry = Gpu2dBgPalEntry(params=gpu2dParams)
     tempBgPalEntry.col.r := (default -> True)
@@ -155,6 +187,13 @@ object Gpu2dSim extends App {
     gpuIo.bgPalEntryPush.valid := True
     gpuIo.bgPalEntryPush.payload.bgPalEntry := tempBgPalEntry
     gpuIo.bgPalEntryPush.payload.memIdx := 1
+
+    gpuIo.objTilePush.valid := False
+    gpuIo.objTilePush.payload := gpuIo.objTilePush.payload.getZero
+    gpuIo.objAttrsPush.valid := False
+    gpuIo.objAttrsPush.payload := gpuIo.objAttrsPush.payload.getZero
+    gpuIo.objPalEntryPush.valid := False
+    gpuIo.objPalEntryPush.payload := gpuIo.objPalEntryPush.payload.getZero
 
     //ctrlIo.en := True
     //ctrlIo.push.valid := dithIo.pop.valid
@@ -188,7 +227,8 @@ object Gpu2dSim extends App {
       //  //sleep(1)
       //  dut.clockDomain.waitRisingEdge()
       //}
-      for (idx <- 0 to 8000 - 1) {
+      def simNumClks = 16000
+      for (idx <- 0 to simNumClks - 1) {
         dut.clockDomain.waitRisingEdge()
         //when (dut.io.misc.visib) {
         //  foundVisib := True

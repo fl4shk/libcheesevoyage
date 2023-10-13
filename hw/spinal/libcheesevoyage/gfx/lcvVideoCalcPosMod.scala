@@ -9,16 +9,23 @@ import spinal.lib._
 
 object LcvVideoPosInfo {
   def coordElemT(
-    someWidthOrHeight: Int
+    someWidthOrHeight: Int,
+    plus: Int=0,
   ): UInt = LcvVgaCtrlMiscIo.coordElemT(
     fbWidthOrHeight=someWidthOrHeight,
+    plus=plus,
   )
   def coordT(
     //vgaTimingInfo: LcvVgaTimingInfo,
-    someSize2d: ElabVec2[Int]
+    someSize2d: ElabVec2[Int],
+    plus: ElabVec2[Int]=ElabVec2[Int](
+      x=0,
+      y=0,
+    )
   ): DualTypeNumVec2[UInt, UInt] = LcvVgaCtrlMiscIo.coordT(
     //vgaTimingInfo=vgaTimingInfo
     fbSize2d=someSize2d,
+    plus=plus
   )
 }
 
@@ -43,6 +50,7 @@ case class LcvVideoPosSlice(
   //)
   def coordT() = LcvVideoPosInfo.coordT(
     someSize2d=someSize2d,
+    plus=ElabVec2[Int](x=1, y=1)
   )
   // crossing the grid 
   def crossingGridX = Mux[Bool](
@@ -73,6 +81,10 @@ case class LcvVideoPosInfo(
   //--------
   def coordT() = LcvVideoPosInfo.coordT(
     someSize2d=someSize2d,
+    plus=ElabVec2[Int](
+      x=1,
+      y=1,
+    )
   )
   //--------
   def posSlice(
@@ -224,23 +236,27 @@ case class LcvVideoCalcPos(
       }
     }
     // BEGIN: working code with lower FMax
-    //when (!rPosWillOverflow.x) {
+    //when (!rPosWillOverflow.x) 
+    //when (info.pos.x + 1 < someSize2d.x) {
     //  info.nextPos.x := info.pos.x + 1
     //  info.nextPos.y := info.pos.y
-    //  rPosWillOverflow.x := info.pos.x === someSize2d.x - 2
-    //  //rPosWillOverflow.y := info.pos.y === someSize2d.y - 1
+    //  //rPosWillOverflow.x := info.pos.x === someSize2d.x - 2
+    //  ////rPosWillOverflow.y := info.pos.y === someSize2d.y - 1
     //  rChangingRow := False
     //} otherwise {
     //  info.nextPos.x := 0
-    //  rPosWillOverflow.x := False
+    //  //rPosWillOverflow.x := False
     //  rChangingRow := True
     //  //when (info.pos.y =/= someSize2d.y - 1)
-    //  when (!rPosWillOverflow.y) {
+    //  when (
+    //    //!rPosWillOverflow.y
+    //    info.pos.y + 1 < someSize2d.y
+    //  ) {
     //    info.nextPos.y := info.pos.y + 1
-    //    rPosWillOverflow.y := info.pos.y === someSize2d.y - 2
+    //    //rPosWillOverflow.y := info.pos.y === someSize2d.y - 2
     //  } otherwise {
     //    info.nextPos.y := 0x0
-    //    rPosWillOverflow.y := False
+    //    //rPosWillOverflow.y := False
     //  }
     //}
     rPos := info.nextPos
