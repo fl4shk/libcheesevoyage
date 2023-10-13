@@ -1,0 +1,19 @@
+scanline 0:
+write: writes to `bgLineMemArr[3]` and `objLineMemArr[3]`
+combined: reads from `(bg|obj)LineMemArr[2]`, writes to `bgLineMemArr[1]`
+read: reads from `bgLineMemArr[0]`; erases `objLineMemArr[0]`
+
+scanline 1:
+write: writes to `bgLineMemArr[0]` and `objLineMemArr[0]`
+combined: reads from `(bg|obj)LineMemArr[3]`, writes to `bgLineMemArr[2]`
+read: reads from `bgLineMemArr[1]`; erases `objLineMemArr[1]`
+
+scanline 2:
+write: writes to `bgLineMemArr[1]` and `objLineMemArr[1]`
+combined: reads from `(bg|obj)LineMemArr[0]`, writes to `bgLineMemArr[3]`
+read: reads from `bgLineMemArr[2]`; erases `objLineMemArr[2]`
+
+scanline 3:
+write: writes to `bgLineMemArr[2]` and `objLineMemArr[2]`
+combined: reads from `(bg|obj)LineMemArr[1]`, writes to `bgLineMemArr[0]`
+read: reads from `bgLineMemArr[3]`; erases `objLineMemArr[3]`

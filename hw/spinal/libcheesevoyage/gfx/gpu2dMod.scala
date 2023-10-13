@@ -207,14 +207,19 @@ case class Gpu2dParams(
   //  //x=intnlFbSize2d.x + 1,
   //  //y=intnlFbSize2d.y,
   //))
-  def objPxsCoordSize2d = ElabVec2[Int](
-    x=log2Up(intnlFbSize2d.x + 1) + 1,
-    y=log2Up(intnlFbSize2d.y + 1) + 1,
+
+  // intnlFbSizeXOrY + 2 for on-current-line range checks
+  // I think this still works?
+  def objPxsCoordSize2dPow = ElabVec2[Int](
+    x=log2Up(intnlFbSize2d.x + 1) + 2,
+    y=log2Up(intnlFbSize2d.y + 1) + 2,
   )
+  // `sCoordT()` is not used because the `log2Up()` calls are in
+  // `objPxsCoordSize2d`
   //def objPxsCoordT() = sCoordT(someSize2d=objPxsCoordSize2d)
   def objPxsCoordT() = DualTypeNumVec2[SInt, SInt](
-    dataTypeX=SInt(objPxsCoordSize2d.x bits),
-    dataTypeY=SInt(objPxsCoordSize2d.y bits),
+    dataTypeX=SInt(objPxsCoordSize2dPow.x bits),
+    dataTypeY=SInt(objPxsCoordSize2dPow.y bits),
   )
   def bgTilePxsCoordT() = coordT(someSize2d=bgTileSize2d)
   def objTilePxsCoordT() = coordT(someSize2d=objTileSize2d)
@@ -583,8 +588,8 @@ case class Gpu2dBgAttrs(
   params: Gpu2dParams,
 ) extends Bundle {
   //--------
-  // Whether or not to display this BG
-  val visib = Bool()
+  //// Whether or not to display this BG
+  //val visib = Bool()
 
   // How much to scroll this background
   val scroll = params.bgPxsCoordT()
@@ -994,7 +999,9 @@ case class Gpu2d(
     case class ObjLineMemEntry() extends Bundle {
       val col = Gpu2dRgba(params=params)
       val prio = UInt(params.numBgsPow bits)
-      val objIdx = UInt(params.numObjsPow bits)
+      //val written = Bool() // only used for prio
+      //val prio = UInt((params.numBgsPow + 1) bits)
+      //val objIdx = UInt(params.numObjsPow bits)
     }
     //// Which sprites have we drawn this scanline?
     //// This needs to be reset to 0x0 upon upon starting rendering the next 
@@ -1052,8 +1059,18 @@ case class Gpu2d(
     //--------
     val rIntnlChangingRow = Reg(Bool()) init(False)
     rIntnlChangingRow := (
-      rPastOutp.bgPxsPosSlice.pos.y
-      === rPastOutp.bgPxsPosSlice.pastPos.y + 1
+      (
+        // since we're using `rPastOutp`, `nextPos` is registered, and thus
+        // there is higher FMax
+        rPastOutp.bgPxsPosSlice.nextPos.y
+        =/= rPastOutp.bgPxsPosSlice.pos.y
+        //rPastOutp.bgPxsPosSlice.pos.y
+        //=/= rPastOutp.bgPxsPosSlice.pastPos.y
+        //=== rPastOutp.bgPxsPosSlice.pastPos.y + 1
+      )
+      //|| (
+      //  rPastOutp.bgPxs
+      //)
     )
 
     // round-robin indexing into the `ArrayBuffer`s
@@ -1062,47 +1079,53 @@ case class Gpu2d(
     //  Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x1)
     //)
     // Used to clear the written OBJ pixels
-    val rObjClearLineMemArrIdx = KeepAttribute(
-      Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x3)
-    )
-    val rObjClearCnt = Reg(
-      UInt(log2Up(params.intnlFbSize2d.x) bits)
-    ) init(0x0)
+    //val rObjClearLineMemArrIdx = KeepAttribute(
+    //  Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x1)
+    //)
+    //val rObjClearCnt = Reg(
+    //  UInt(log2Up(params.intnlFbSize2d.x) bits)
+    //) init(0x0)
 
     val rWrLineMemArrIdx = KeepAttribute(
-      Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x2)
+      Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x3)
+    )
+    val rWrLineNum = KeepAttribute(
+      Reg(UInt(log2Up(params.intnlFbSize2d.y) bits)) init(0x3)
     )
 
-    //val rPastCombinedLineMemArrIdx = KeepAttribute(
-    //  Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x0)
-    //)
-    val rCombinedLineMemArrIdx = KeepAttribute(
+    val rCombinedRdLineMemArrIdx = KeepAttribute(
+      Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x2)
+    )
+    val rCombinedWrLineMemArrIdx = KeepAttribute(
       Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x1)
     )
 
-    //val rPastRdLineMemArrIdx = KeepAttribute(
-    //  Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x3)
-    //)
     val rRdLineMemArrIdx = KeepAttribute(
       Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits)) init(0x0)
     )
+    val rRdLineMemCnt = Reg(UInt(log2Up(params.intnlFbSize2d.x) bits))
+      .init(0x0)
     //wrLineMemArrIdx := outp.bgPxsPosSlice.pos.y(wrLineMemArrIdx.bitsRange)
     ////rdLineMemArrIdx(0) := !outp.bgPxsPosSlice.pos.y(0)
     //combinedLineMemArrIdx := wrLineMemArrIdx + 1
     //rdLineMemArrIdx := wrLineMemArrIdx + 
     when (rIntnlChangingRow) {
       //rPastWrLineMemArrIdx := rPastWrLineMemArrIdx + 1
-      rObjClearLineMemArrIdx := rObjClearLineMemArrIdx + 1
-      rObjClearCnt := 0x0
+      //rObjClearLineMemArrIdx := rObjClearLineMemArrIdx + 1
+
+      //rObjLineMemClearCnt := 0x0
 
       //rPastWrLineMemArrIdx := rPastWrLineMemArrIdx + 1
       rWrLineMemArrIdx := rWrLineMemArrIdx + 1
+      rWrLineNum := rWrLineNum + 1
 
       //rPastCombinedLineMemArrIdx := rPastCombinedLineMemArrIdx + 1
-      rCombinedLineMemArrIdx := rCombinedLineMemArrIdx + 1
+      rCombinedRdLineMemArrIdx := rCombinedRdLineMemArrIdx + 1
+      rCombinedWrLineMemArrIdx := rCombinedWrLineMemArrIdx + 1
 
       //rPastRdLineMemArrIdx := rPastRdLineMemArrIdx + 1
       rRdLineMemArrIdx := rRdLineMemArrIdx + 1
+      rRdLineMemCnt := 0
     }
 
     //val rWrBgCnt = Reg(UInt(log2Up(params.numBgs) + 1 bits)) init(0x0)
@@ -1161,7 +1184,8 @@ case class Gpu2d(
             wrBgPipeBgIdxWidth -1 downto 0
           )
         )
-        val scroll = cloneOf(bgAttrsArr(0).scroll)
+        //val scroll = cloneOf(bgAttrsArr(0).scroll)
+        val bgAttrs = cloneOf(bgAttrsArr(0))
         //val tilePxsCoord = params.bgTilePxsCoordT()
 
         //def cntWillBeDone() = (
@@ -1196,49 +1220,84 @@ case class Gpu2d(
       def cntWillBeDone() = stage0.cntWillBeDone()
       //def cntDone() = stage0.cntDone()
       def getCntPxPosX() = stage0.getCntPxPosX()
-      def scroll = stage0.scroll
+      def bgAttrs = stage0.bgAttrs
+      //def scroll = bgAttrs.scroll
+      //def visib = stage0.bgAttrs.visib
       //def tilePxsCoord = stage0.tilePxsCoord
 
       // Stages after stage 0
       // NOTE: these pipeline stages are still separate
+      case class Stage1() extends Bundle {
+        val bgEntryMemIdx = UInt(params.bgEntryMemIdxWidth bits)
+      }
+      case class Stage2() extends Bundle {
+        // `Gpu2dBgEntry`s that have been read
+        val bgEntry = Gpu2dBgEntry(params=params)
+      }
+      case class Stage3() extends Bundle {
+        val tilePxsCoord = params.bgTilePxsCoordT()
+        // `Gpu2dTile`s that have been read
+        val tile = Gpu2dTile(params=params, isObj=false)
+      }
+      case class Stage4() extends Bundle {
+        val palEntryMemIdx = UInt(params.objPalEntryMemIdxWidth bits)
+      }
+      case class Stage5() extends Bundle {
+        // Whether `palEntryMemIdx(someBgIdx)` is non-zero
+        val palEntryNzMemIdx = Bool()
+      }
+      // The following BG pipeline stages are only performed when
+      // `palEntryNzMemIdx(someBgIdx)` is `True`
+      // `Gpu2dBgPalEntry`s that have been read
+      case class Stage6() extends Bundle {
+        val palEntry = Gpu2dBgPalEntry(params=params)
+      }
+      case class Stage7() extends Bundle {
+        val lineMemEntry = BgLineMemEntry()
+      }
       case class PostStage0() extends Bundle {
         //// scroll
         //val scroll = cloneOf(bgAttrsArr(0).scroll)
         // indices into `bgEntryMem`
         //val bgEntryMemIdxPart0 = Vec2(UInt(params.bgEntryMemIdxWidth bits))
         //val bgEntryMemIdxPart1 = UInt(params.bgEntryMemIdxWidth bits)
-        val bgEntryMemIdx = UInt(params.bgEntryMemIdxWidth bits)
-        // `Gpu2dBgEntry`s that have been read
-        val bgEntry = Gpu2dBgEntry(params=params)
+        val stage1 = Stage1()
+        val stage2 = Stage2()
         //val tileMemIdx = UInt(params.bgTileMemIdxWidth bits)
-        val tilePxsCoord = params.bgTilePxsCoordT()
-
-        // `Gpu2dTile`s that have been read
-        val tile = Gpu2dTile(params=params, isObj=false)
-        val palEntryMemIdx = UInt(params.objPalEntryMemIdxWidth bits)
-        // Whether `palEntryMemIdx(someBgIdx)` is non-zero
-        val palEntryNzMemIdx = Bool()
-
-        // The following BG pipeline stages are only performed when
-        // `palEntryNzMemIdx(someBgIdx)` is `True`
-        // `Gpu2dBgPalEntry`s that have been read
-        val palEntry = Gpu2dBgPalEntry(params=params)
-        val lineMemEntry = BgLineMemEntry()
+        val stage3 = Stage3()
+        val stage4 = Stage4()
+        val stage5 = Stage5()
+        val stage6 = Stage6()
+        val stage7 = Stage7()
       }
       val postStage0 = PostStage0()
 
       //def scroll = postStage0.scroll
-      def bgEntryMemIdx = postStage0.bgEntryMemIdx
+      def stage1 = postStage0.stage1
+      def bgEntryMemIdx = stage1.bgEntryMemIdx
       //def bgEntryMemIdxPart0 = postStage0.bgEntryMemIdxPart0
       //def bgEntryMemIdxPart1 = postStage0.bgEntryMemIdxPart1
 
-      def bgEntry = postStage0.bgEntry
-      def tilePxsCoord = postStage0.tilePxsCoord
-      def tile = postStage0.tile
-      def palEntryMemIdx = postStage0.palEntryMemIdx
-      def palEntryNzMemIdx = postStage0.palEntryNzMemIdx
-      def palEntry = postStage0.palEntry
-      def lineMemEntry = postStage0.lineMemEntry
+      def stage2 = postStage0.stage2
+      def bgEntry = stage2.bgEntry
+
+      def stage3 = postStage0.stage3
+      def tilePxsCoord = stage3.tilePxsCoord
+      def tile = stage3.tile
+
+      //def stage4 = postStage0.stage4
+
+      def stage4 = postStage0.stage4
+      def palEntryMemIdx = stage4.palEntryMemIdx
+
+      def stage5 = postStage0.stage5
+      def palEntryNzMemIdx = stage5.palEntryNzMemIdx
+
+      def stage6 = postStage0.stage6
+      def palEntry = stage6.palEntry
+
+      def stage7 = postStage0.stage7
+      def lineMemEntry = stage7.lineMemEntry
     }
 
     def doInitWrBgPipeElem(): WrBgPipePayload = {
@@ -1246,28 +1305,29 @@ case class Gpu2d(
       ret.cnt := wrBgPipeCntStart
       ret.cntMinus1 := wrBgPipeCntStart - 1
       //ret.bgIdx := (default -> True)
-      ret.scroll := ret.scroll.getZero
+      //ret.scroll := ret.scroll.getZero
+      ret.bgAttrs := ret.bgAttrs.getZero
       //ret.tilePxsCoord := ret.tilePxsCoord.getZero
       ret.postStage0 := ret.postStage0.getZero
       ret
     }
 
-    def wrBgPipeCntStageIdx = 0
-    def wrBgPipeCntMinus1StageIdx = 0
-    //def wrBgPipeBgIdxStageIdx = 0
-    def wrBgPipeScrollStageIdx = 0
-    //def wrBgPipeTilePxsCoordStageIdx = 0
+    //def wrBgPipeCntStageIdx = 0
+    //def wrBgPipeCntMinus1StageIdx = 0
+    ////def wrBgPipeBgIdxStageIdx = 0
+    //def wrBgPipeBgAttrsStageIdx = 0
+    ////def wrBgPipeTilePxsCoordStageIdx = 0
 
     //def wrBgPipeBgEntryMemIdxPart0StageIdx = 1
     //def wrBgPipeBgEntryMemIdxPart1StageIdx = 2
-    def wrBgPipeBgEntryMemIdxStageIdx = 1
-    def wrBgPipeBgEntryStageIdx = 2
-    def wrBgPipeTilePxsCoordStageIdx = 3
-    def wrBgPipeTileStageIdx = 3
-    def wrBgPipePalEntryMemIdxStageIdx = 4
-    def wrBgPipePalEntryNzMemIdxStageIdx = 5
-    def wrBgPipePalEntryStageIdx = 6
-    def wrBgPipeLineMemEntryStageIdx = 7
+    //def wrBgPipeBgEntryMemIdxStageIdx = 1
+    //def wrBgPipeBgEntryStageIdx = 2
+    //def wrBgPipeTilePxsCoordStageIdx = 3
+    //def wrBgPipeTileStageIdx = 3
+    //def wrBgPipePalEntryMemIdxStageIdx = 4
+    //def wrBgPipePalEntryNzMemIdxStageIdx = 5
+    //def wrBgPipePalEntryStageIdx = 6
+    //def wrBgPipeLineMemEntryStageIdx = 7
 
     def wrBgPipeNumMainStages = 8
 
@@ -1313,91 +1373,145 @@ case class Gpu2d(
         //val objAttrsMemIdx = cloneOf(rWrObjPipeFrontObjAttrsMemIdx)
         //val objAttrsMemIdx = UInt(params.objAttrsMemIdxWidth bits)
 
-        def objAttrsMemIdx = cnt(
-          cnt.high
-          downto (
-            cnt.high - params.objAttrsMemIdxWidth + 1
-          )
+        def objAttrsMemIdx() = cnt(
+          cnt.high - 1
+          downto (cnt.high - 1 - params.objAttrsMemIdxWidth + 1)
+        )
+        def getCntTilePxsCoordX() = cnt(
+          (cnt.high - 1 - params.objAttrsMemIdxWidth)
+          downto 0
         )
 
         def cntWillBeDone() = (
           cntMinus1.msb
         )
-
-        //val objAttrsMemIdxMinus1 = UInt(
-        //  (params.objAttrsMemIdxWidth + 1) bits
-        //)
-        //def objAttrsMemIdxDidUnderflow() = (
-        //  //objAttrsMemIdx === 0
-        //  objAttrsMemIdx.msb
-        //)
-        //def objAttrsMemIdxWillUnderflow() = (
-        //  objAttrsMemIdxMinus1.msb
-        //)
       }
-      val stage0 = Stage0()
-      def cnt = stage0.cnt
-      def cntMinus1 = stage0.cntMinus1
-      def objAttrsMemIdx = stage0.objAttrsMemIdx
-      def cntWillBeDone() = stage0.cntWillBeDone()
+
       //def objAttrsMemIdxMinus1 = stage0.objAttrsMemIdxMinus1
       //def objAttrsMemIdxWillUnderflow() = (
       //  stage0.objAttrsMemIdxWillUnderflow()
       //)
-      case class PostStage0() extends Bundle {
+      case class Stage1() extends Bundle {
         // What are the `Gpu2dObjAttrs` of our sprite? 
         val objAttrs = Gpu2dObjAttrs(params=params)
-        case class Stage2() extends Bundle {
-          val posInLineCheckGePipe1 = Vec2(Bool())
-          val posInLineCheckLtPipe1 = Vec2(Bool())
-        }
-        val stage2 = Stage2()
-        def posInLineCheckGePipe1 = stage2.posInLineCheckGePipe1
-        def posInLineCheckLtPipe1 = stage2.posInLineCheckLtPipe1
-        val posInLineCheck = Vec2(Bool())
-        //case class Stage4() extends Bundle {
-        //  // Are the X and Y coordinates of this sprite within the current
-        //  // line?
-        //  // NOTE: the position could be out of range if either one is
-        //  // negative/too large
-        //  val posInLine = Bool()
-        //  // What's the tile this sprite represents? We read it 
-        //  //val tileMemIdx = UInt(params.objTileMemIdxWidth bits)
-        //}
-        //val stage4 = Stage4()
-        //def posInLine = stage4.posInLine
-        //def tileMemIdx = stage4.tileMemIdx
-        val posInLine = Bool()
-
-        //val tilePxsCoord = params.objTilePxsCoordT()
-
-        // The following OBJ pipeline stages are only performed (besides
-        // just copying data around) when `stage3.posIsInLine` is `True`
+      }
+      case class Stage2() extends Bundle {
+        //val tilePxsCoordYPipe1 = UInt(params.objTileSize2dPow.y bits)
+        val tilePxsCoord = params.objTilePxsCoordT()
+        //val pxsCoordYRangeCheckPipe1 = SInt(
+        //  log2Up(params.objPxsCoordSize2dPow.y) bits
+        //)
+        //val pxPosRangeCheckPipe1 = params.objPxsCoordT()
+        val pxPos = params.objPxsCoordT()
+        //val pxPosYMinusTileHeightMinus1 = SInt(
+        //  log2Up(params.objPxsCoordSize2dPow.y) bits
+        //)
+        val objPosYShift = SInt(params.objPxsCoordSize2dPow.y bits)
+        //val pxPosShiftTopLeft = params.objPxsCoordT()
         val tile = Gpu2dTile(params=params, isObj=true)
+      }
+      case class Stage3() extends Bundle {
+        //val tilePxsCoord = params.objTilePxsCoordT()
+        //val pxsCoordYRangeCheck = Bool()
+        //val pxPosRangeCheck = Vec2(Bool())
+        val pxPosRangeCheckGePipe1 = Vec2(Bool())
+        val pxPosRangeCheckLtPipe1 = Vec2(Bool())
         val palEntryMemIdx = UInt(params.objPalEntryMemIdxWidth bits)
+      }
+      case class Stage4() extends Bundle {
+        //val oldPxPosInLineCheckGePipe1 = Vec2(Bool())
+        //val oldPxPosInLineCheckLtPipe1 = Vec2(Bool())
+
         // Whether `palEntryMemIdx` is non-zero
         val palEntryNzMemIdx = Bool()
-        // The following OBJ pipeline stages are only performed when
-        // `palEntryNzMemIdx` is `True`
-        val palEntry = Gpu2dObjPalEntry(params=params)
-        val lineMemEntry = ObjLineMemEntry()
+        val pxPosRangeCheck = Vec2(Bool())
+
+        //val oldPxPosInLineCheck = Vec2(Bool())
       }
+      case class Stage5() extends Bundle {
+        val palEntry = Gpu2dObjPalEntry(params=params)
+        val pxPosInLine = Bool()
+
+        // "rd..." here means it's been read from `objLineMemArr`
+        val rdLineMemEntry = ObjLineMemEntry()
+      }
+      case class Stage6() extends Bundle {
+        val overwriteLineMemEntry = Bool()
+      }
+      case class Stage7() extends Bundle {
+        val wrLineMemEntry = ObjLineMemEntry()
+      }
+      //case class Stage7() extends Bundle {
+      //}
+      case class PostStage0() extends Bundle {
+        val stage1 = Stage1()
+        val stage2 = Stage2()
+        val stage3 = Stage3()
+        val stage4 = Stage4()
+        val stage5 = Stage5()
+        val stage6 = Stage6()
+        val stage7 = Stage7()
+        //val stage7 = Stage7()
+      }
+
+      val stage0 = Stage0()
+      def cnt = stage0.cnt
+      def cntMinus1 = stage0.cntMinus1
+      def objAttrsMemIdx() = stage0.objAttrsMemIdx()
+      def getCntTilePxsCoordX() = stage0.getCntTilePxsCoordX()
+      def cntWillBeDone() = stage0.cntWillBeDone()
+
       val postStage0 = PostStage0()
 
-      def objAttrs = postStage0.objAttrs
-      //def stage2 = postStage0.stage2
-      def posInLineCheckGePipe1 = postStage0.posInLineCheckGePipe1
-      def posInLineCheckLtPipe1 = postStage0.posInLineCheckLtPipe1
-      def posInLineCheck = postStage0.posInLineCheck
-      //def stage4 = postStage0.stage4
-      def posInLine = postStage0.posInLine
-      //def tileMemIdx = postStage0.tileMemIdx
-      //def tilePxsCoord = postStage0.tilePxsCoord
-      def tile = postStage0.tile
-      def palEntryMemIdx = postStage0.palEntryMemIdx
-      def palEntryNzMemIdx = postStage0.palEntryNzMemIdx
-      def palEntry = postStage0.palEntry
-      def lineMemEntry = postStage0.lineMemEntry
+      def stage1 = postStage0.stage1
+      def objAttrs = stage1.objAttrs
+
+      def stage2 = postStage0.stage2
+      //def tilePxsCoordYPipe1 = stage2.tilePxsCoordYPipe1
+      //def pxsCoordYRangeCheckPipe1 = stage2.pxsCoordYRangeCheckPipe1
+      def tilePxsCoord = stage2.tilePxsCoord
+      //def pxPosRangeCheckPipe1 = stage2.pxPosRangeCheckPipe1
+      def pxPos = stage2.pxPos
+      //def pxPosYMinusTileHeightMinus1 = stage2.pxPosYMinusTileHeightMinus1
+      //def pxPosShiftTopLeft = stage2.pxPosShiftTopLeft
+      def objPosYShift = stage2.objPosYShift
+      def tile = stage2.tile
+
+      def stage3 = postStage0.stage3
+      //def pxPosRangeCheck = stage3.pxPosRangeCheck
+      //def tilePxsCoord = stage3.tilePxsCoord
+      def pxPosRangeCheckGePipe1 = stage3.pxPosRangeCheckGePipe1
+      def pxPosRangeCheckLtPipe1 = stage3.pxPosRangeCheckLtPipe1
+      def palEntryMemIdx = stage3.palEntryMemIdx
+
+      def stage4 = postStage0.stage4
+      //def oldPxPosInLineCheckGePipe1 = stage4.oldPxPosInLineCheckGePipe1
+      //def oldPxPosInLineCheckLtPipe1 = stage4.oldPxPosInLineCheckLtPipe1
+      //def palEntryMemIdx = stage4.palEntryMemIdx
+      def palEntryNzMemIdx = stage4.palEntryNzMemIdx
+      def pxPosRangeCheck = stage4.pxPosRangeCheck
+
+      def stage5 = postStage0.stage5
+      //def palEntryNzMemIdx = stage5.palEntryNzMemIdx
+      //def oldPxPosInLineCheck = stage5.oldPxPosInLineCheck
+      def palEntry = stage5.palEntry
+      def pxPosInLine = stage5.pxPosInLine
+      def rdLineMemEntry = stage5.rdLineMemEntry
+
+      def stage6 = postStage0.stage6
+      def overwriteLineMemEntry = stage6.overwriteLineMemEntry
+
+      def stage7 = postStage0.stage7
+      def wrLineMemEntry = stage7.wrLineMemEntry
+      //def palEntry = stage6.palEntry
+      //def pxPosInLine = stage6.pxPosInLine
+      //def rdLineMemEntry = stage6.rdLineMemEntry
+
+      //def stage7 = postStage0.stage7
+      //def wrLineMemEntry = stage7.wrLineMemEntry
+
+      //def rdLineMemEntry = postStage0.rdLineMemEntry
+      //def wrLineMemEntry = postStage0.wrLineMemEntry
     }
     def doInitWrObjPipeElem(): WrObjPipePayload = {
       val ret = WrObjPipePayload()
@@ -1417,24 +1531,51 @@ case class Gpu2d(
       ret
     }
 
-    def wrObjPipeCntStageIdx = 0
-    def wrObjPipeCntMinus1StageIdx = 0
-    def wrObjPipeObjAttrsMemIdxStageIdx = 0
-    //def wrObjPipeObjAttrsMemIdxMinus1StageIdx = 0
-    def wrObjPipeObjAttrsStageIdx = 1
-    def wrObjPipePosInLineCheckGtPipe1StageIdx = 2
-    def wrObjPipePosInLineCheckLtPipe1StageIdx = 2
-    def wrObjPipePosInLineCheckStageIdx = 3
-    def wrObjPipePosInLineStageIdx = 4
-    //def wrObjPipeTileMemIdxStageIdx = 4
-    def wrObjPipeTilePxsCoordStageIdx = 5
-    def wrObjPipeTileStageIdx = 5
-    def wrObjPipePalEntryMemIdxStageIdx = 6
-    def wrObjPipePalEntryNzMemIdxStageIdx = 7
-    def wrObjPipePalEntryStageIdx = 8
-    def wrObjPipeLineMemEntryStageIdx = 9
-    //def wrObjPipeNumMainStages = 10
-    def wrObjPipeNumMainStages = 10
+    ////def wrObjPipeCntStageIdx = 0
+    ////def wrObjPipeCntMinus1StageIdx = 0
+
+    ////def wrObjPipeObjAttrsStageIdx = 1
+
+    ////def wrObjPipeTilePxsCoordStageIdx = 2
+    ////def wrObjPipeTileStageIdx = 2
+    ////def wrObjPipePalEntryMemIdxStageIdx = 2
+
+    ////def wrObjPipePxPosInLineCheckGePipe1StageIdx = 3
+    ////def wrObjPipePxPosInLineCheckLtPipe1StageIdx = 3
+    ////def wrObjPipePalEntryNzMemIdxStageIdx = 3
+
+    ////def wrObjPipePxPosInLineCheckStageIdx = 4
+    ////def wrObjPipePalEntryStageIdx = 4
+
+    ////def wrObjPipePxPosInLineStageIdx = 5
+    ////def wrObjPipeRdLineMemEntryStageIdx = 5
+
+    ////def wrObjPipeWrLineMemEntryStageIdx = 6
+
+    //def wrObjPipeCntStageIdx = 0
+    //def wrObjPipeCntMinus1StageIdx = 0
+
+    //def wrObjPipeObjAttrsStageIdx = 1
+
+    //def wrObjPipeTilePxsCoordYPipe1StageIdx = 2
+    //def wrObjPipeTileStageIdx = 2
+
+    //def wrObjPipeTilePxsCoordStageIdx = 3
+
+    //def wrObjPipePxPosInLineCheckGePipe1StageIdx = 4
+    //def wrObjPipePxPosInLineCheckLtPipe1StageIdx = 4
+    //def wrObjPipePalEntryMemIdxStageIdx = 4
+
+    //def wrObjPipePalEntryNzMemIdxStageIdx = 5
+    //def wrObjPipePxPosInLineCheckStageIdx = 5
+
+    //def wrObjPipePalEntryStageIdx = 6
+    //def wrObjPipePxPosInLineStageIdx = 6
+    //def wrObjPipeRdLineMemEntryStageIdx = 6
+
+    //def wrObjPipeWrLineMemEntryStageIdx = 7
+
+    def wrObjPipeNumMainStages = 8
 
     def wrBgObjPipeNumStages = max(
       wrBgPipeNumMainStages,
@@ -1477,9 +1618,11 @@ case class Gpu2d(
     //  //)
     //}
     //wrBgPipe(0).valid := True
-    val rWrBgPipeFrontValid = Reg(Bool()) init(False)
+    //val rWrBgPipeFrontValid = Reg(Bool()) init(False)
+    val rWrBgPipeFrontValid = Reg(Bool()) init(True)
     val rWrBgPipeFrontPayload = Reg(WrBgPipePayload())
-    rWrBgPipeFrontPayload.init(rWrBgPipeFrontPayload.getZero)
+    //rWrBgPipeFrontPayload.init(rWrBgPipeFrontPayload.getZero)
+    rWrBgPipeFrontPayload.init(doInitWrBgPipeElem())
 
     wrBgPipeIn(0).valid := rWrBgPipeFrontValid
     wrBgPipeIn(0).payload := rWrBgPipeFrontPayload
@@ -1541,7 +1684,8 @@ case class Gpu2d(
     //  rWrObjPipeFrontValid := False
     //}
     val rWrObjPipeFrontPayload = Reg(WrObjPipePayload())
-    rWrObjPipeFrontPayload.init(rWrObjPipeFrontPayload.getZero)
+    //rWrObjPipeFrontPayload.init(rWrObjPipeFrontPayload.getZero)
+    rWrObjPipeFrontPayload.init(doInitWrObjPipeElem())
 
     wrObjPipeIn(0).valid := rWrObjPipeFrontValid
     wrObjPipeIn(0).payload := rWrObjPipeFrontPayload
@@ -1603,11 +1747,11 @@ case class Gpu2d(
     def clearObjLineMemEntries(): Unit = {
       val tempObjLineMemEntry = ObjLineMemEntry()
       tempObjLineMemEntry := tempObjLineMemEntry.getZero
-      switch (rObjClearLineMemArrIdx) {
-        for (idx <- 0 to (1 << rObjClearLineMemArrIdx.getWidth) - 1) {
+      switch (rRdLineMemArrIdx) {
+        for (idx <- 0 to (1 << rRdLineMemArrIdx.getWidth) - 1) {
           is (idx) {
             objLineMemArr(idx).write(
-              address=rObjClearCnt,
+              address=rRdLineMemCnt,
               data=tempObjLineMemEntry,
             )
           }
@@ -1641,41 +1785,56 @@ case class Gpu2d(
 
       // BEGIN: stage 0
       HandleDualPipe(
-        stageData=stageData.craft(wrBgPipeCntStageIdx)
+        stageData=stageData.craft(0)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
+          val tempInp = stageData.pipeIn(idx)
+          val tempOutp = stageData.pipeOut(idx)
+
+          switch (tempInp.bgIdx) {
+            for (tempBgIdx <- 0 to params.numBgs - 1) {
+              is (tempBgIdx) {
+                //tempOutp.scroll := bgAttrsArr(tempBgIdx).scroll
+                tempOutp.bgAttrs := bgAttrsArr(tempBgIdx)
+              }
+            }
+          }
+          tempOutp.cnt := tempInp.cnt
+          tempOutp.cntMinus1 := tempInp.cntMinus1
+          tempOutp.bgIdx := tempInp.bgIdx
+          //tempOut.stage0 := tempInp.stage0
         },
         copyOnlyFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
+          //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
+          stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
         },
       )
-      HandleDualPipe(
-        stageData=stageData.craft(wrBgPipeCntMinus1StageIdx)
-      )(
-        pipeStageMainFunc=(
-          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
-          idx: Int,
-        ) => {
-          stageData.pipeOut(idx).cntMinus1 := (
-            stageData.pipeIn(idx).cntMinus1
-          )
-        },
-        copyOnlyFunc=(
-          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
-          idx: Int,
-        ) => {
-          stageData.pipeOut(idx).cntMinus1 := (
-            stageData.pipeIn(idx).cntMinus1
-          )
-        },
-      )
+      //HandleDualPipe(
+      //  stageData=stageData.craft(wrBgPipeCntMinus1StageIdx)
+      //)(
+      //  pipeStageMainFunc=(
+      //    stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    stageData.pipeOut(idx).cntMinus1 := (
+      //      stageData.pipeIn(idx).cntMinus1
+      //    )
+      //  },
+      //  copyOnlyFunc=(
+      //    stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    stageData.pipeOut(idx).cntMinus1 := (
+      //      stageData.pipeIn(idx).cntMinus1
+      //    )
+      //  },
+      //)
       //HandleDualPipe(
       //  stageData=stageData.craft(wrBgPipeBgIdxStageIdx)
       //)(
@@ -1697,38 +1856,39 @@ case class Gpu2d(
       //  },
       //)
 
-      HandleDualPipe(
-        stageData=stageData.craft(wrBgPipeScrollStageIdx)
-      )(
-        pipeStageMainFunc=(
-          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
-          idx: Int,
-        ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
+      //HandleDualPipe(
+      //  stageData=stageData.craft(wrBgPipeBgAttrsStageIdx)
+      //)(
+      //  pipeStageMainFunc=(
+      //    stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
 
-          switch (tempInp.bgIdx) {
-            for (tempBgIdx <- 0 to params.numBgs - 1) {
-              is (tempBgIdx) {
-                tempOutp.scroll := bgAttrsArr(tempBgIdx).scroll
-              }
-            }
-          }
-        },
-        copyOnlyFunc=(
-          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
-          idx: Int,
-        ) => {
-          stageData.pipeOut(idx).scroll := (
-            stageData.pipeIn(idx).scroll
-          )
-        },
-      )
+      //    switch (tempInp.bgIdx) {
+      //      for (tempBgIdx <- 0 to params.numBgs - 1) {
+      //        is (tempBgIdx) {
+      //          //tempOutp.scroll := bgAttrsArr(tempBgIdx).scroll
+      //          tempOutp.bgAttrs := bgAttrsArr(tempBgIdx)
+      //        }
+      //      }
+      //    }
+      //  },
+      //  copyOnlyFunc=(
+      //    stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    stageData.pipeOut(idx).bgAttrs := (
+      //      stageData.pipeIn(idx).bgAttrs
+      //    )
+      //  },
+      //)
       // END: stage 0
 
       // BEGIN: post stage 0
       HandleDualPipe(
-        stageData=stageData.craft(wrBgPipeBgEntryMemIdxStageIdx)
+        stageData=stageData.craft(1)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
@@ -1750,13 +1910,14 @@ case class Gpu2d(
                 //  (tempInp.scroll.y << log2Up(params.bgSize2dInPxs.y))
                 //  //(params.bgTileSize2dPow.y - 1 downto 0)
                 //)
+                def inpScroll = tempInp.bgAttrs.scroll
                 def scrollSliceRange = ElabVec2(
-                  x=tempInp.scroll.x.high downto params.bgTileSize2dPow.x,
-                  y=tempInp.scroll.y.high downto params.bgTileSize2dPow.y,
+                  x=inpScroll.x.high downto params.bgTileSize2dPow.x,
+                  y=inpScroll.y.high downto params.bgTileSize2dPow.y,
                 )
                 tempOutp.bgEntryMemIdx := Cat(
-                  tempInp.scroll.y(scrollSliceRange.y),
-                  tempInp.scroll.x(scrollSliceRange.x),
+                  inpScroll.y(scrollSliceRange.y),
+                  inpScroll.x(scrollSliceRange.x),
                 ).asUInt
               }
             }
@@ -1776,7 +1937,7 @@ case class Gpu2d(
       )
 
       HandleDualPipe(
-        stageData=stageData.craft(wrBgPipeBgEntryStageIdx)
+        stageData=stageData.craft(2)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
@@ -1808,7 +1969,7 @@ case class Gpu2d(
       )
 
       HandleDualPipe(
-        stageData=stageData.craft(wrBgPipeTilePxsCoordStageIdx)
+        stageData=stageData.craft(3)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
@@ -1848,26 +2009,6 @@ case class Gpu2d(
               }
             }
           }
-        },
-        copyOnlyFunc=(
-          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
-          idx: Int,
-        ) => {
-          stageData.pipeOut(idx).tilePxsCoord := (
-            stageData.pipeIn(idx).tilePxsCoord
-          )
-        },
-      )
-      HandleDualPipe(
-        stageData=stageData.craft(wrBgPipeTileStageIdx)
-      )(
-        pipeStageMainFunc=(
-          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
-          idx: Int,
-        ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
-
           tempOutp.tile := (
             bgTileMem.readAsync(address=tempInp.bgEntry.tileMemIdx)
           )
@@ -1876,13 +2017,37 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).tile := (
-            stageData.pipeIn(idx).tile
-          )
+          //stageData.pipeOut(idx).tilePxsCoord := (
+          //  stageData.pipeIn(idx).tilePxsCoord
+          //)
+          stageData.pipeOut(idx).stage3 := stageData.pipeIn(idx).stage3
         },
       )
+      //HandleDualPipe(
+      //  stageData=stageData.craft(3)
+      //)(
+      //  pipeStageMainFunc=(
+      //    stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+
+      //    tempOutp.tile := (
+      //      bgTileMem.readAsync(address=tempInp.bgEntry.tileMemIdx)
+      //    )
+      //  },
+      //  copyOnlyFunc=(
+      //    stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    stageData.pipeOut(idx).tile := (
+      //      stageData.pipeIn(idx).tile
+      //    )
+      //  },
+      //)
       HandleDualPipe(
-        stageData=stageData.craft(wrBgPipePalEntryMemIdxStageIdx)
+        stageData=stageData.craft(4)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
@@ -1911,13 +2076,13 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).palEntryMemIdx := (
-            stageData.pipeIn(idx).palEntryMemIdx
+          stageData.pipeOut(idx).stage4 := (
+            stageData.pipeIn(idx).stage4
           )
         },
       )
       HandleDualPipe(
-        stageData=stageData.craft(wrBgPipePalEntryNzMemIdxStageIdx)
+        stageData=stageData.craft(5)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
@@ -1935,13 +2100,13 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).palEntryNzMemIdx := (
-            stageData.pipeIn(idx).palEntryNzMemIdx
+          stageData.pipeOut(idx).stage5 := (
+            stageData.pipeIn(idx).stage5
           )
         },
       )
       HandleDualPipe(
-        stageData=stageData.craft(wrBgPipePalEntryStageIdx)
+        stageData=stageData.craft(6)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
@@ -1959,13 +2124,13 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).palEntry := (
-            stageData.pipeIn(idx).palEntry
+          stageData.pipeOut(idx).stage6 := (
+            stageData.pipeIn(idx).stage6
           )
         },
       )
       HandleDualPipe(
-        stageData=stageData.craft(wrBgPipeLineMemEntryStageIdx)
+        stageData=stageData.craft(7)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
@@ -1994,16 +2159,21 @@ case class Gpu2d(
           rPastLineMemEntry.init(rPastLineMemEntry.getZero)
           rPastLineMemEntry := tempLineMemEntry
           when (
-            (bgIdx === (1 << bgIdx.getWidth) - 1)
-            || (
-              rPastLineMemEntry.col.a === False
-              //&& pastLineMemEntry.prio === 
-            )
+            // This could be split into more pipeline stages, but it might
+            // not be necessary with 4 or fewer backgrounds
+            (
+              (bgIdx === (1 << bgIdx.getWidth) - 1)
+              || (
+                //rPastLineMemEntry.col.a === False
+                !rPastLineMemEntry.col.a
+                //&& pastLineMemEntry.prio === 
+              )
+            ) //&& tempInp.bgAttrs.visib
           ) {
             // Starting rendering a new pixel or overwrite the existing
             // pixel
             tempLineMemEntry.col.rgb := tempInp.palEntry.col
-            tempLineMemEntry.col.a := !tempInp.palEntryNzMemIdx
+            tempLineMemEntry.col.a := tempInp.palEntryNzMemIdx
             tempLineMemEntry.prio := bgIdx
           } otherwise {
             tempLineMemEntry := rPastLineMemEntry
@@ -2013,8 +2183,8 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).lineMemEntry := (
-            stageData.pipeIn(idx).lineMemEntry
+          stageData.pipeOut(idx).stage7 := (
+            stageData.pipeIn(idx).stage7
           )
         },
       )
@@ -2057,90 +2227,53 @@ case class Gpu2d(
       )
       // BEGIN: stage 0
       HandleDualPipe(
-        stageData=stageData.craft(wrObjPipeCntStageIdx)
+        stageData=stageData.craft(0)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).cnt := (
-            stageData.pipeIn(idx).cnt
-          )
+          //stageData.pipeOut(idx).cnt := (
+          //  stageData.pipeIn(idx).cnt
+          //)
+          stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
         },
         copyOnlyFunc=(
           stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).cnt := (
-            stageData.pipeIn(idx).cnt
-          )
-        },
-      )
-      HandleDualPipe(
-        stageData=stageData.craft(wrObjPipeCntMinus1StageIdx)
-      )(
-        pipeStageMainFunc=(
-          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-          idx: Int,
-        ) => {
-          stageData.pipeOut(idx).cntMinus1 := (
-            stageData.pipeIn(idx).cntMinus1
-          )
-        },
-        copyOnlyFunc=(
-          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-          idx: Int,
-        ) => {
-          stageData.pipeOut(idx).cntMinus1 := (
-            stageData.pipeIn(idx).cntMinus1
-          )
-        },
-      )
-      HandleDualPipe(
-        stageData=stageData.craft(wrObjPipeObjAttrsMemIdxStageIdx)
-      )(
-        pipeStageMainFunc=(
-          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-          idx: Int,
-        ) => {
-          stageData.pipeOut(idx).objAttrsMemIdx := (
-            stageData.pipeIn(idx).objAttrsMemIdx
-          )
-        },
-        copyOnlyFunc=(
-          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-          idx: Int,
-        ) => {
-          stageData.pipeOut(idx).objAttrsMemIdx := (
-            stageData.pipeIn(idx).objAttrsMemIdx
-          )
+          //stageData.pipeOut(idx).cnt := (
+          //  stageData.pipeIn(idx).cnt
+          //)
+          stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
         },
       )
       //HandleDualPipe(
-      //  stageData=stageData.craft(wrObjPipeObjAttrsMemIdxMinus1StageIdx)
+      //  stageData=stageData.craft(0)
       //)(
       //  pipeStageMainFunc=(
       //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
       //    idx: Int,
       //  ) => {
-      //    stageData.pipeOut(idx).objAttrsMemIdxMinus1 := (
-      //      stageData.pipeIn(idx).objAttrsMemIdxMinus1
+      //    stageData.pipeOut(idx).cntMinus1 := (
+      //      stageData.pipeIn(idx).cntMinus1
       //    )
       //  },
       //  copyOnlyFunc=(
       //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
       //    idx: Int,
       //  ) => {
-      //    stageData.pipeOut(idx).objAttrsMemIdxMinus1 := (
-      //      stageData.pipeIn(idx).objAttrsMemIdxMinus1
+      //    stageData.pipeOut(idx).cntMinus1 := (
+      //      stageData.pipeIn(idx).cntMinus1
       //    )
       //  },
       //)
       // END: Stage 0
 
       // BEGIN: Post stage 0
+      // BEGIN: Stage 1
       HandleDualPipe(
-        stageData=stageData.craft(wrObjPipeObjAttrsStageIdx)
+        stageData=stageData.craft(1)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrObjPipePayload]],
@@ -2150,20 +2283,24 @@ case class Gpu2d(
           val tempOutp = stageData.pipeOut(idx)
           //val objAttrsMemIdxIn = tempInp.objAttrsMemIdx
           tempOutp.objAttrs := objAttrsMem.readAsync(
-            address=tempInp.objAttrsMemIdx,
+            address=tempInp.objAttrsMemIdx(),
           )
         },
         copyOnlyFunc=(
           stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).objAttrs := (
-            stageData.pipeIn(idx).objAttrs
-          )
+          //stageData.pipeOut(idx).objAttrs := (
+          //  stageData.pipeIn(idx).objAttrs
+          //)
+          stageData.pipeOut(idx).stage1 := stageData.pipeIn(idx).stage1
         },
       )
+      // END: Stage 1
+
+      // BEGIN: Stage 2
       HandleDualPipe(
-        stageData=stageData.craft(wrObjPipePosInLineCheckGtPipe1StageIdx)
+        stageData=stageData.craft(2)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrObjPipePayload]],
@@ -2172,25 +2309,69 @@ case class Gpu2d(
           val tempInp = stageData.pipeIn(idx)
           val tempOutp = stageData.pipeOut(idx)
 
-          tempOutp.posInLineCheckGePipe1.x := (
-            tempInp.objAttrs.pos.x + params.objTileSize2d.x - 1 >= 0
+          //tempOutp.tilePxsCoord.x := tempInp.getCntTilePxsCoordX()
+          //tempOutp.tilePxsCoord.y := tempInp.objAttrs.pos
+          //when (tempInp.pxPosInLine) {
+          //  //tempOutp.tilePxsCoord.x 
+          //} otherwise {
+          //  tempOutp.tilePxsCoord := tempInp.tilePxsCoord
+          //}
+          tempOutp.tilePxsCoord.x := (
+            tempInp.getCntTilePxsCoordX()
           )
-          tempOutp.posInLineCheckGePipe1.y := (
-            outp.bgPxsPosSlice.pos.y.asSInt.resized
-            >= tempInp.objAttrs.pos.y
+          tempOutp.tilePxsCoord.y := (
+            //rWrLineNum - tempInp.objAttrs.pos.y.asUInt
+            (rWrLineNum.asSInt.resized - tempInp.objAttrs.pos.y).asUInt
+          )(
+            tempOutp.tilePxsCoord.y.bitsRange
+          )
+
+          tempOutp.pxPos.x := (
+            tempInp.objAttrs.pos.x
+            + tempInp.getCntTilePxsCoordX().asSInt.resized
+          )
+          tempOutp.pxPos.y(rWrLineNum.bitsRange) := (
+            //outp.bgPxsPosSlice.pos.y - tempInp.objAttrs.pos
+            //rWrLineNum.asSInt.resized - tempInp.objAttrs.pos.y
+            //tempInp.objAttrs.pos.y 
+            //rWrLineNum.asSInt.resized
+            rWrLineNum.asSInt
+          )
+          tempOutp.pxPos.y(
+            tempOutp.pxPos.y.high downto rWrLineNum.high
+          ) := 0x0
+
+          //def tempPxsCoordSizeYPow = params.objPxsCoordSize2dPow.y
+          //def tempMinusAmountY = params.objTileSize2d.y
+          ////tempOutp.pxPosShiftTopLeft.y := (
+          ////  rWrLineNum.asSInt.resized
+          ////  - S(f"$tempMinusSizeYPow'd$tempPlusAmountY")
+          ////)
+          tempOutp.objPosYShift := (
+            //rWrLineNum.asSInt.resized
+            //+ S(f"$tempPxsCoordSizeYPow'd$tempMinusAmountY")
+            tempInp.objAttrs.pos.y + params.objTileSize2d.y
+          )
+        
+          tempOutp.tile := objTileMem.readAsync(
+            address=tempInp.objAttrs.tileMemIdx
           )
         },
         copyOnlyFunc=(
           stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).posInLineCheckGePipe1 := (
-            stageData.pipeIn(idx).posInLineCheckGePipe1
-          )
+          stageData.pipeOut(idx).stage2 := stageData.pipeIn(idx).stage2
+          //stageData.pipeOut(idx).tilePxsCoordYPipe1 := (
+          //  stageData.pipeIn(idx).tilePxsCoordYPipe1
+          //)
         },
       )
+      // END: Stage 2
+
+      // BEGIN: Stage 3
       HandleDualPipe(
-        stageData=stageData.craft(wrObjPipePosInLineCheckLtPipe1StageIdx)
+        stageData=stageData.craft(3)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrObjPipePayload]],
@@ -2199,25 +2380,56 @@ case class Gpu2d(
           val tempInp = stageData.pipeIn(idx)
           val tempOutp = stageData.pipeOut(idx)
 
-          tempOutp.posInLineCheckLtPipe1.x := (
-            tempInp.objAttrs.pos.x < params.intnlFbSize2d.x
+          //tempOutp.oldPxPosInLineCheckGePipe1.x := (
+          //  tempInp.objAttrs.pos.x + params.objTileSize2d.x - 1 >= 0
+          //)
+          //tempOutp.oldPxPosInLineCheckGePipe1.y := (
+          //  outp.bgPxsPosSlice.pos.y.asSInt.resized
+          //  >= tempInp.objAttrs.pos.y
+          //)
+          //tempOutp.tilePxs
+          //tempOutp.tilePxsCoord.y := tempInp.tilePxsCoordYPipe1
+          //tempOutp.pxPosRangeCheck.y := 
+
+          tempOutp.pxPosRangeCheckGePipe1.x := (
+            //tempInp.objAttrs.pos.x + params.objTileSize2d.x - 1 >= 0
+            tempInp.pxPos.x >= 0
           )
-          tempOutp.posInLineCheckLtPipe1.y := (
-            outp.bgPxsPosSlice.pos.y.asSInt.resized
-            < tempInp.objAttrs.pos.y + params.objTileSize2d.y
+          tempOutp.pxPosRangeCheckGePipe1.y := (
+            ////outp.bgPxsPosSlice.pos.y.asSInt.resized
+            ////>= tempInp.objAttrs.pos.y
+            //tempInp.pxPos.y >= 0
+            ////tempInp.pxPos.y >= tempInp.objAttrs.pos.y
+            tempInp.pxPos.y >= tempInp.objAttrs.pos.y
+          )
+
+          tempOutp.pxPosRangeCheckLtPipe1.x := (
+            tempInp.pxPos.x < params.intnlFbSize2d.x
+          )
+          tempOutp.pxPosRangeCheckLtPipe1.y := (
+            ////tempInp.pxPos.y >= 0
+            //tempInp.pxPos.y < params.intnlFbSize2d.y
+            ////tempInp.pxPosMinusTileSize2d
+            ////< params.intnlFbSize2d.y.resized
+            //tempInp.pxPos.y <= 
+
+            //tempInp.objPosYShift < params.intnlFbSize2d.y
+            tempInp.pxPos.y < tempInp.objPosYShift
+          )
+          tempOutp.palEntryMemIdx := tempInp.tile.getPx(
+            tempInp.tilePxsCoord
           )
         },
         copyOnlyFunc=(
           stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).posInLineCheckLtPipe1 := (
-            stageData.pipeIn(idx).posInLineCheckLtPipe1
-          )
+          stageData.pipeOut(idx).stage3 := stageData.pipeIn(idx).stage3
         },
       )
+      // BEGIN: Stage 4
       HandleDualPipe(
-        stageData=stageData.craft(wrObjPipePosInLineCheckStageIdx)
+        stageData=stageData.craft(4)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrObjPipePayload]],
@@ -2226,13 +2438,14 @@ case class Gpu2d(
           val tempInp = stageData.pipeIn(idx)
           val tempOutp = stageData.pipeOut(idx)
 
-          tempOutp.posInLineCheck.x := (
+          tempOutp.palEntryNzMemIdx := tempInp.palEntryMemIdx =/= 0
+          tempOutp.pxPosRangeCheck.x := (
             //(tempInp.objAttrs.pos.x + params.objTileSize2d.x - 1 >= 0)
             //&& (tempInp.objAttrs.pos.x < params.intnlFbSize2d.x)
-            tempInp.posInLineCheckGePipe1.x
-            && tempInp.posInLineCheckLtPipe1.x
+            tempInp.pxPosRangeCheckGePipe1.x
+            && tempInp.pxPosRangeCheckLtPipe1.x
           )
-          tempOutp.posInLineCheck.y := (
+          tempOutp.pxPosRangeCheck.y := (
             //(
             //  outp.bgPxsPosSlice.pos.y.asSInt.resized
             //  >= tempInp.objAttrs.pos.y
@@ -2240,21 +2453,22 @@ case class Gpu2d(
             //  outp.bgPxsPosSlice.pos.y.asSInt.resized
             //  < tempInp.objAttrs.pos.y + params.objTileSize2d.y
             //)
-            tempInp.posInLineCheckGePipe1.y
-            && tempInp.posInLineCheckLtPipe1.y
+            tempInp.pxPosRangeCheckGePipe1.y
+            && tempInp.pxPosRangeCheckLtPipe1.y
           )
         },
         copyOnlyFunc=(
           stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).posInLineCheck := (
-            stageData.pipeIn(idx).posInLineCheck
-          )
+          stageData.pipeOut(idx).stage4 := stageData.pipeIn(idx).stage4
         },
       )
+      // END: Stage 4
+
+      // BEGIN: Stage 5
       HandleDualPipe(
-        stageData=stageData.craft(wrObjPipePosInLineStageIdx)
+        stageData=stageData.craft(5)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrObjPipePayload]],
@@ -2262,44 +2476,99 @@ case class Gpu2d(
         ) => {
           val tempInp = stageData.pipeIn(idx)
           val tempOutp = stageData.pipeOut(idx)
-          tempOutp.posInLine := (
-            tempInp.posInLineCheck.x && tempInp.posInLineCheck.y
+
+          tempOutp.palEntry := objPalEntryMem.readAsync(
+            address=tempInp.palEntryMemIdx
+          )
+          tempOutp.pxPosInLine := (
+            tempInp.pxPosRangeCheck.x && tempInp.pxPosRangeCheck.y
+          )
+          switch (rWrLineMemArrIdx) {
+            for (jdx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1) {
+              is (jdx) {
+                tempOutp.rdLineMemEntry := objLineMemArr(jdx).readAsync(
+                  address=tempInp.pxPos.x.asUInt.resized,
+                  //readUnderWrite=writeFirst,
+                  readUnderWrite=writeFirst,
+                )
+              }
+            }
+          }
+        },
+        copyOnlyFunc=(
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+          idx: Int,
+        ) => {
+          stageData.pipeOut(idx).stage5 := stageData.pipeIn(idx).stage5
+        },
+      )
+      // END: Stage 5
+
+      // BEGIN: Stage 6
+      HandleDualPipe(
+        stageData=stageData.craft(6)
+      )(
+        pipeStageMainFunc=(
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+          idx: Int,
+        ) => {
+          val tempInp = stageData.pipeIn(idx)
+          val tempOutp = stageData.pipeOut(idx)
+
+          //switch (rWrLineMemArrIdx) {
+          //  for (jdx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1) {
+          //    is (jdx) {
+          //      
+          //    }
+          //  }
+          //}
+          
+          tempOutp.overwriteLineMemEntry := (
+            //!tempInp.rdLineMemEntry.prio.msb
+            //tempInp.rdLineMemEntry.written
+            !tempInp.rdLineMemEntry.col.a
+            || (tempInp.rdLineMemEntry.prio < tempInp.objAttrs.prio)
           )
         },
         copyOnlyFunc=(
           stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).posInLine := (
-            stageData.pipeIn(idx).posInLine
-          )
+          stageData.pipeOut(idx).stage6 := stageData.pipeIn(idx).stage6
         },
       )
+      // END: Stage 6
+
+      // BEGIN: Stage 7
+      HandleDualPipe(
+        stageData=stageData.craft(6)
+      )(
+        pipeStageMainFunc=(
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+          idx: Int,
+        ) => {
+          val tempInp = stageData.pipeIn(idx)
+          val tempOutp = stageData.pipeOut(idx)
+
+          when (tempInp.overwriteLineMemEntry) {
+            tempOutp.wrLineMemEntry.col.rgb := tempInp.palEntry.col
+            tempOutp.wrLineMemEntry.col.a := True
+            tempOutp.wrLineMemEntry.prio := tempInp.objAttrs.prio
+          } otherwise {
+            tempOutp.wrLineMemEntry := tempInp.rdLineMemEntry
+          }
+        },
+        copyOnlyFunc=(
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+          idx: Int,
+        ) => {
+          stageData.pipeOut(idx).stage7 := stageData.pipeIn(idx).stage7
+        },
+      )
+      // END: Stage 7
+
       //HandleDualPipe(
-      //  stageData=stageData.craft(wrObjPipeTileMemIdxStageIdx)
-      //)(
-      //  pipeStageMainFunc=(
-      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-      //    idx: Int,
-      //  ) => {
-      //    val tempInp = stageData.pipeIn(idx)
-      //    val tempOutp = stageData.pipeOut(idx)
-      //    //tempOutp.tileMemIdx := objTileMem.readAsync(
-      //    //  address=tempInp.objAttrs.tileMemIdx
-      //    //)
-      //    tempOutp.tileMemIdx := tempInp.objAttrs.tileMemIdx
-      //  },
-      //  copyOnlyFunc=(
-      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-      //    idx: Int,
-      //  ) => {
-      //    stageData.pipeOut(idx).tileMemIdx := (
-      //      stageData.pipeIn(idx).tileMemIdx
-      //    )
-      //  },
-      //)
-      //HandleDualPipe(
-      //  stageData=stageData.craft(wrObjPipeTilePxsCoordStageIdx)
+      //  stageData=stageData.craft(wrObjPipePxPosInLineCheckGePipe1StageIdx)
       //)(
       //  pipeStageMainFunc=(
       //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
@@ -2308,19 +2577,163 @@ case class Gpu2d(
       //    val tempInp = stageData.pipeIn(idx)
       //    val tempOutp = stageData.pipeOut(idx)
 
-      //    //tempOutp.tilePxsCoord.x := outp.bgPxsPosSlice
-      //    tempOutp.tilePxsCoord.x
+      //    tempOutp.oldPxPosInLineCheckGePipe1.x := (
+      //      tempInp.objAttrs.pos.x + params.objTileSize2d.x - 1 >= 0
+      //    )
+      //    tempOutp.oldPxPosInLineCheckGePipe1.y := (
+      //      outp.bgPxsPosSlice.pos.y.asSInt.resized
+      //      >= tempInp.objAttrs.pos.y
+      //    )
       //  },
       //  copyOnlyFunc=(
       //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
       //    idx: Int,
       //  ) => {
-      //    stageData.pipeOut(idx).tilePxsCoord := (
-      //      stageData.pipeIn(idx).tilePxsCoord
+      //    stageData.pipeOut(idx).oldPxPosInLineCheckGePipe1 := (
+      //      stageData.pipeIn(idx).oldPxPosInLineCheckGePipe1
       //    )
       //  },
       //)
-      // END: Post stage 0
+      //HandleDualPipe(
+      //  stageData=stageData.craft(wrObjPipePxPosInLineCheckLtPipe1StageIdx)
+      //)(
+      //  pipeStageMainFunc=(
+      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+
+      //    tempOutp.oldPxPosInLineCheckLtPipe1.x := (
+      //      tempInp.objAttrs.pos.x < params.intnlFbSize2d.x
+      //    )
+      //    tempOutp.oldPxPosInLineCheckLtPipe1.y := (
+      //      outp.bgPxsPosSlice.pos.y.asSInt.resized
+      //      < tempInp.objAttrs.pos.y + params.objTileSize2d.y
+      //    )
+      //  },
+      //  copyOnlyFunc=(
+      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    stageData.pipeOut(idx).oldPxPosInLineCheckLtPipe1 := (
+      //      stageData.pipeIn(idx).oldPxPosInLineCheckLtPipe1
+      //    )
+      //  },
+      //)
+      //// END: Stage 3
+
+      //// BEGIN: Stage 4
+      //HandleDualPipe(
+      //  stageData=stageData.craft(wrObjPipePxPosInLineCheckStageIdx)
+      //)(
+      //  pipeStageMainFunc=(
+      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+
+      //    tempOutp.oldPxPosInLineCheck.x := (
+      //      //(tempInp.objAttrs.pos.x + params.objTileSize2d.x - 1 >= 0)
+      //      //&& (tempInp.objAttrs.pos.x < params.intnlFbSize2d.x)
+      //      tempInp.oldPxPosInLineCheckGePipe1.x
+      //      && tempInp.oldPxPosInLineCheckLtPipe1.x
+      //    )
+      //    tempOutp.oldPxPosInLineCheck.y := (
+      //      //(
+      //      //  outp.bgPxsPosSlice.pos.y.asSInt.resized
+      //      //  >= tempInp.objAttrs.pos.y
+      //      //) && (
+      //      //  outp.bgPxsPosSlice.pos.y.asSInt.resized
+      //      //  < tempInp.objAttrs.pos.y + params.objTileSize2d.y
+      //      //)
+      //      tempInp.oldPxPosInLineCheckGePipe1.y
+      //      && tempInp.oldPxPosInLineCheckLtPipe1.y
+      //    )
+      //  },
+      //  copyOnlyFunc=(
+      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    stageData.pipeOut(idx).oldPxPosInLineCheck := (
+      //      stageData.pipeIn(idx).oldPxPosInLineCheck
+      //    )
+      //  },
+      //)
+      //// END: Stage 4
+
+      //// BEGIN: Stage 5
+      //HandleDualPipe(
+      //  stageData=stageData.craft(wrObjPipePxPosInLineStageIdx)
+      //)(
+      //  pipeStageMainFunc=(
+      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+      //    tempOutp.pxPosInLine := (
+      //      tempInp.oldPxPosInLineCheck.x && tempInp.oldPxPosInLineCheck.y
+      //    )
+      //  },
+      //  copyOnlyFunc=(
+      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    stageData.pipeOut(idx).pxPosInLine := (
+      //      stageData.pipeIn(idx).pxPosInLine
+      //    )
+      //  },
+      //)
+      //// END: Stage 5
+
+      ////HandleDualPipe(
+      ////  stageData=stageData.craft(wrObjPipeTileMemIdxStageIdx)
+      ////)(
+      ////  pipeStageMainFunc=(
+      ////    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+      ////    idx: Int,
+      ////  ) => {
+      ////    val tempInp = stageData.pipeIn(idx)
+      ////    val tempOutp = stageData.pipeOut(idx)
+      ////    //tempOutp.tileMemIdx := objTileMem.readAsync(
+      ////    //  address=tempInp.objAttrs.tileMemIdx
+      ////    //)
+      ////    tempOutp.tileMemIdx := tempInp.objAttrs.tileMemIdx
+      ////  },
+      ////  copyOnlyFunc=(
+      ////    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+      ////    idx: Int,
+      ////  ) => {
+      ////    stageData.pipeOut(idx).tileMemIdx := (
+      ////      stageData.pipeIn(idx).tileMemIdx
+      ////    )
+      ////  },
+      ////)
+      ////HandleDualPipe(
+      ////  stageData=stageData.craft(wrObjPipeTilePxsCoordStageIdx)
+      ////)(
+      ////  pipeStageMainFunc=(
+      ////    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+      ////    idx: Int,
+      ////  ) => {
+      ////    val tempInp = stageData.pipeIn(idx)
+      ////    val tempOutp = stageData.pipeOut(idx)
+
+      ////    //tempOutp.tilePxsCoord.x := outp.bgPxsPosSlice
+      ////    tempOutp.tilePxsCoord.x
+      ////  },
+      ////  copyOnlyFunc=(
+      ////    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+      ////    idx: Int,
+      ////  ) => {
+      ////    stageData.pipeOut(idx).tilePxsCoord := (
+      ////      stageData.pipeIn(idx).tilePxsCoord
+      ////    )
+      ////  },
+      ////)
+      //// END: Post stage 0
       //--------
 
       //val objLineMem = objLineMemArr(someWrLineMemArrIdx)
@@ -2330,10 +2743,11 @@ case class Gpu2d(
         switch (rWrLineMemArrIdx) {
           for (idx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1) {
             is (idx) {
-              //objLineMemArr(idx).write(
-              //  address=wrObjPipeLast.getCntPxPosX(),
-              //  data=wrObjPipeLast.lineMemEntry,
-              //)
+              objLineMemArr(idx).write(
+                //address=wrObjPipeLast.getCntTilePxsCoordX(),
+                address=wrObjPipeLast.pxPos.x.asUInt.resized,
+                data=wrObjPipeLast.wrLineMemEntry,
+              )
             }
           }
           //default {
