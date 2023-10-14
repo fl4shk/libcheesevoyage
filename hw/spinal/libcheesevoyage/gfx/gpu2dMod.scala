@@ -1223,7 +1223,10 @@ case class Gpu2d(
         //)
 
         // pixel x-position
-        def getCntPxPosX() = cnt(cnt.high downto params.numBgsPow)
+        def getCntPxPosX() = cnt(
+          (log2Up(params.bgSize2dInPxs.x) + params.numBgsPow - 1)
+          downto params.numBgsPow
+        )
 
         //def getCntBgIdx() = (
         //  params.numBgs - 1 - cnt(params.numBgsPow - 1 downto 0)
@@ -2138,8 +2141,34 @@ case class Gpu2d(
                 //  (tempInp.scroll.y << log2Up(params.bgSize2dInPxs.y))
                 //  //(params.bgTileSize2dPow.y - 1 downto 0)
                 //)
-                def inpScroll = tempInp.bgAttrs.scroll
-                def scrollSliceRange = ElabVec2(
+
+                val tempPxsPos = params.bgPxsCoordT()
+                //val tempPxsPos = params.coordT(params.intnlFbSize2d)
+                tempPxsPos.x := (
+                  (
+                    tempInp.getCntPxPosX()
+                    //+ bgAttrsArr(tempBgIdx).scroll.x
+                    - tempInp.bgAttrs.scroll.x
+                  )
+                  //(
+                  //  params.bgTileSize2dPow.x - 1 downto 0
+                  //)
+                )
+                tempPxsPos.y := (
+                  (
+                    //rWrLineNum.resized
+                    //- bgAttrsArr(tempBgIdx).scroll.y
+                    //bgAttrsArr(tempBgIdx).scroll.y
+                    //- 
+                    rWrLineNum.resized
+                    - tempInp.bgAttrs.scroll.y
+                  )
+                  //(
+                  //  params.bgTileSize2dPow.y - 1 downto 0
+                  //)
+                )
+                //def inpScroll = tempInp.bgAttrs.scroll
+                def tempSliceRange = ElabVec2(
                   //x=inpScroll.x.high downto params.bgTileSize2dPow.x,
                   //y=inpScroll.y.high downto params.bgTileSize2dPow.y,
                   x=(
@@ -2152,11 +2181,14 @@ case class Gpu2d(
                     //downto params.bgTileSize2dPow.x
 
                     //inpScroll.x.high 
+
                     (
                       params.bgSize2dInTilesPow.x
                       + params.bgTileSize2dPow.x - 1
                     )
                     downto params.bgTileSize2dPow.x
+                    //tempPxsPos.x.high
+                    //downto params.bgTileSize2dPow.x
                   )
                   //(
                   //  params.bgTileSize2dPow.x - 1 downto 0
@@ -2172,11 +2204,14 @@ case class Gpu2d(
                     //downto params.bgTileSize2dPow.y
 
                     //inpScroll.y.high downto params.bgTileSize2dPow.y
+
                     (
                       params.bgSize2dInTilesPow.y
                       + params.bgTileSize2dPow.y - 1
                     )
                     downto params.bgTileSize2dPow.y
+                    //tempPxsPos.y.high
+                    //downto params.bgTileSize2dPow.y
                   )
                   //(
                   //  params.bgTileSize2dPow.y - 1 downto 0
@@ -2184,8 +2219,10 @@ case class Gpu2d(
                   ,
                 )
                 tempOutp.bgEntryMemIdx := Cat(
-                  inpScroll.y(scrollSliceRange.y),
-                  inpScroll.x(scrollSliceRange.x),
+                  //inpScroll.y(scrollSliceRange.y),
+                  //inpScroll.x(scrollSliceRange.x),
+                  tempPxsPos.y(tempSliceRange.y),
+                  tempPxsPos.x(tempSliceRange.x),
                 ).asUInt
               }
             }
