@@ -39,7 +39,7 @@ case class LcvVideoPosSlice(
   //val crossingGridX = Bool()
   //val pastCrossingGrid = Vec2(Bool())
   val nextPos = coordT()
-  val posPlus1 = coordT()
+  //val posPlus1 = coordT()
   val pos = coordT()
   val pastPos = coordT()
   val nonSliceChangingRow = Bool()

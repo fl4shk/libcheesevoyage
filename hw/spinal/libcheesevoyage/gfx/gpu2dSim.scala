@@ -20,7 +20,7 @@ object Gpu2dSim extends App {
   //def clkRate = 100.7 MHz
   def pixelClk = 25.0 MHz
   //def ctrlFifoDepth = 20
-  def ctrlFifoDepth = 16
+  def ctrlFifoDepth = 256
   //def ctrlFifoDepth = 100
   //def ctrlFifoDepth = 128
   //def fbSize2d = ElabVec2[Int](640, 480)
@@ -126,12 +126,36 @@ object Gpu2dSim extends App {
     //}
     for (jdx <- 0 to tempBgTile.pxsSize2d.y - 1) {
       for (idx <- 0 to tempBgTile.pxsSize2d.x - 1) {
-        if (jdx == 3 && idx == 0) {
+        if (jdx == 3) {
+          if (idx == 0) {
+            tempBgTile.setPx(
+              pxsCoord=ElabVec2[Int](idx, jdx),
+              //colIdx=1,
+              colIdx=1,
+            )
+          }
+          else if (idx == 1) {
+            tempBgTile.setPx(
+              pxsCoord=ElabVec2[Int](idx, jdx),
+              colIdx=2,
+            )
+          }
+          else {
+            tempBgTile.setPx(
+              pxsCoord=ElabVec2[Int](idx, jdx),
+              //colIdx=3,
+              colIdx=3,
+            )
+          }
+        }
+        else if (jdx == 4) {
           tempBgTile.setPx(
-            pxsCoord=ElabVec2[Int](idx, jdx),
-            colIdx=1,
+            pxsCoord=ElabVec2(idx, jdx),
+            colIdx=4,
           )
-        } else {
+        }
+
+        else {
           tempBgTile.setPx(
             pxsCoord=ElabVec2[Int](idx, jdx),
             colIdx=0,
@@ -173,20 +197,63 @@ object Gpu2dSim extends App {
         tempBgEntryPush.payload.bgEntry := tempBgEntry
         tempBgEntryPush.payload.memIdx := 0x0
       } else {
-        tempBgEntryPush.valid := False
+        //tempBgEntryPush.valid := False
+        tempBgEntryPush.valid := True
         tempBgEntryPush.payload.bgEntry := tempBgEntry.getZero
         tempBgEntryPush.payload.memIdx := 0x0
       }
     }
 
-    val tempBgPalEntry = Gpu2dBgPalEntry(params=gpu2dParams)
-    tempBgPalEntry.col.r := (default -> True)
-    tempBgPalEntry.col.g.msb := True
-    tempBgPalEntry.col.g(tempBgPalEntry.col.g.high - 1 downto 0) := 0x0
-    tempBgPalEntry.col.b := (default -> False)
-    gpuIo.bgPalEntryPush.valid := True
-    gpuIo.bgPalEntryPush.payload.bgPalEntry := tempBgPalEntry
-    gpuIo.bgPalEntryPush.payload.memIdx := 1
+    val bgPalCntWidth = gpu2dParams.numColsInBgPalPow + 1
+    val rBgPalCnt = Reg(UInt(bgPalCntWidth bits)) init(0x0)
+    val rBgPalEntry = Reg(Gpu2dBgPalEntry(params=gpu2dParams))
+    rBgPalEntry.init(rBgPalEntry.getZero)
+    val rBgPalEntryPushValid = Reg(Bool()) init(True)
+
+    when (rBgPalCnt < gpu2dParams.numColsInBgPal) {
+      when (gpuIo.bgPalEntryPush.fire) {
+        when (rBgPalCnt + 1 === 1) {
+          rBgPalEntry.col.r := 0
+          rBgPalEntry.col.g := 2
+          rBgPalEntry.col.b := 4
+        } elsewhen (rBgPalCnt + 1 === 2) {
+          rBgPalEntry.col.r := (default -> True)
+          rBgPalEntry.col.g.msb := True
+          rBgPalEntry.col.g(rBgPalEntry.col.g.high - 1 downto 0) := 0x0
+          rBgPalEntry.col.b := (default -> False)
+        } elsewhen (rBgPalCnt + 1 === 3) {
+          rBgPalEntry.col.r := 0x0
+          rBgPalEntry.col.g := (default -> True)
+          rBgPalEntry.col.b := 0x0
+        } elsewhen (rBgPalCnt + 1 === 4) {
+          rBgPalEntry.col.r := 0x0
+          rBgPalEntry.col.g := 0x0
+          rBgPalEntry.col.b := (default -> True)
+        } elsewhen (rBgPalCnt + 1 === 5) {
+          rBgPalEntry.col.r.msb := True
+          rBgPalEntry.col.r(rBgPalEntry.col.r.high - 1 downto 0) := 0x0
+          rBgPalEntry.col.g := 0x0
+          rBgPalEntry.col.b := (default -> True)
+        } elsewhen (rBgPalCnt + 1 === 6) {
+          rBgPalEntry.col.r := 0x0
+          rBgPalEntry.col.g.msb := True
+          rBgPalEntry.col.g(rBgPalEntry.col.g.high - 1 downto 0) := 0x0
+          rBgPalEntry.col.b := 5
+        } otherwise {
+          rBgPalEntryPushValid := False
+        }
+        rBgPalCnt := rBgPalCnt + 1
+      }
+    }
+    //otherwise {
+    //}
+
+
+    //gpuIo.bgPalEntryPush.valid := True
+    gpuIo.bgPalEntryPush.valid := rBgPalEntryPushValid
+    gpuIo.bgPalEntryPush.payload.bgPalEntry := rBgPalEntry
+    //gpuIo.bgPalEntryPush.payload.memIdx := 1
+    gpuIo.bgPalEntryPush.payload.memIdx := rBgPalCnt.resized
 
     gpuIo.objTilePush.valid := False
     gpuIo.objTilePush.payload := gpuIo.objTilePush.payload.getZero
