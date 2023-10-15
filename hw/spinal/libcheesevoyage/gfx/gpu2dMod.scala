@@ -1001,9 +1001,10 @@ case class Gpu2d(
     )
     //physCalcPos.io.en := pop.fire
     //physCalcPos.io.en := True
-    val rRdPhysCalcPosEn = Reg(Bool()) init(False) //init(True)
-    //physCalcPos.io.en := rPhysCalcPosEn
+    //val rRdPhysCalcPosEn = Reg(Bool()) init(False) //init(True)
+    //rdPhysCalcPos.io.en := rRdPhysCalcPosEn
     rdPhysCalcPos.io.en := pop.fire
+    //rdPhysCalcPos.io.en := 
 
     //rdPhysCalcPos.io.en := !rRdChangingRow
 
@@ -2101,6 +2102,7 @@ case class Gpu2d(
     //)
 
     val sbRdNextFire = Bool()
+    val sbRdNextBakCnt = cloneOf(rdPipeLastOut.bakCnt)
 
     //when (nextIntnlChangingRow)
     when (rIntnlChangingRow)
@@ -2114,7 +2116,10 @@ case class Gpu2d(
       //rdPipeLastOut.bakCntWillBeDone()
       //rdPipeLastOut.bakCnt.msb && pop.fire
       //(rdPipeLastOut.bakCnt === 0) && sbRd.io.next.fire
-      (rdPipeLastOut.bakCnt === 0) && sbRdNextFire
+      //(rdPipeLastOut.bakCnt === 0) && sbRdNextFire
+      rdPhysCalcPos.io.info.nextPos.x === 0
+      //rdPhysCalcPos.io.info.pos.x === 0
+      //rdPhysCalcPos.io.info.changingRow
     ) {
       nextRdChangingRow := True
     } otherwise {
@@ -2197,16 +2202,17 @@ case class Gpu2d(
 
     val sbRd = PipeSkidBuf(
       dataType=RdPipePayload(),
-      optIncludeBusy=true
+      //optIncludeBusy=true
     )
     sbRdNextFire := sbRd.io.next.fire
+    sbRdNextBakCnt := sbRd.io.next.payload.bakCnt
     //sbRd.io.prev << rdPipeLastOut
     sbRd.io.prev.payload := rdPipeLastOut
     sbRd.io.prev.valid := rdPipeLastOut.valid
 
     val sbPop = PipeSkidBuf(
       dataType=Gpu2dPopPayload(params=params),
-      optIncludeBusy=true,
+      //optIncludeBusy=true,
     )
     //pop << sbPop.io.next
 
@@ -2227,12 +2233,16 @@ case class Gpu2d(
     )
     //sbPop.io.misc.clear := False
     sbPop.io.misc.clear := clockDomain.isResetActive
-    sbPop.io.misc.busy := rRdChangingRow
+    //sbPop.io.misc.busy := rRdChangingRow
+
+    //sbPop.io.misc.busy := nextRdChangingRow
 
     sbRd.io.misc.clear := clockDomain.isResetActive
-    sbRd.io.misc.busy := rRdChangingRow
+    //sbRd.io.misc.busy := rRdChangingRow
+    //sbRd.io.misc.busy := nextRdChangingRow
 
     sbRd.io.next.ready := sbPop.io.next.ready
+
     //sbPop.io.misc.busy := nextRdChangingRow || rRdChangingRow
     //sbPop.io.misc.busy := nextRdChangingRow
     //rdPipeLastOut.ready := sbPop.io.prev.ready
@@ -2295,11 +2305,19 @@ case class Gpu2d(
       //when (rdPipeLastOut.fire) 
       //when (rdPipeOut.last.fire) 
       //when (pop.fire)
-      //when (rdPipeLastIn.fire) 
+      //when (rdPipeLastIn.fire)
       //when (rdPipeLastOut.fire)
       //when (rdPipeLastIn.fire) 
       //when (pop.fire)
-      when (sbRd.io.next.fire) {
+      //when (sbRd.io.next.fire) 
+      //val rTempCnt = Reg(
+      //  UInt(log2Up(params.lineMemSize) bits)
+      //) init(0x0)
+      ////rTempCnt := (default -> True)
+      //rTempCnt := params.lineMemSize - 1
+      //when (rdPipeIn(0).fire)
+      when (pop.fire)
+      {
         //outp.col := rdPipeLastOut.payload.bgLineMemEntry.col.rgb
         switch (rRdLineMemArrIdx) {
           for (idx <- 0 to (1 << rRdLineMemArrIdx.getWidth) - 1) {
@@ -2322,11 +2340,16 @@ case class Gpu2d(
                 //  log2Up(params.lineMemSize) - 1 downto 0
                 //),
                 //address=rdPipeLastIn.payload.getCntPxPosX(),
-                address=rdPipeLastOut.payload.getCntPxPosX(),
+                //address=rdPipeLastOut.payload.getCntPxPosX(),
+                //address=sbRd.io.next.payload.getCntPxPosX(),
+                //address=rTempCnt,
                 //address=outp.bgPxsPosSlice.pos.x(
                 //  log2Up(params.lineMemSize) - 1 downto 0
                 //),
                 //address=rdPipeLastOut.payload.getCntPxPosX(),
+                address=outp.physPosInfo.pos.x(
+                  log2Up(params.lineMemSize) - 1 downto 0
+                ),
                 data=ObjLineMemEntry().getZero,
               )
             }
@@ -3321,7 +3344,8 @@ case class Gpu2d(
 
           when (tempInp.overwriteLineMemEntry) {
             tempOutp.wrLineMemEntry.col.rgb := tempInp.palEntry.col
-            tempOutp.wrLineMemEntry.col.a := True
+            //tempOutp.wrLineMemEntry.col.a := True
+            tempOutp.wrLineMemEntry.col.a := tempInp.palEntryNzMemIdx
             tempOutp.wrLineMemEntry.prio := tempInp.objAttrs.prio
           } otherwise {
             tempOutp.wrLineMemEntry := tempInp.rdLineMemEntry
