@@ -645,10 +645,12 @@ case class LcvVgaCtrl(
   val rVsync = rPhys.vsync
 
   // Implement the clock enable
-  val clkCnt = Reg(UInt(clkCntWidth bits)) init(0x0)
+  //val clkCnt = Reg(UInt(clkCntWidth bits)) init(0x0)
+  val nextClkCnt = UInt(clkCntWidth bits)
+  val clkCnt = RegNext(nextClkCnt) init(0x0)
   //val nextClkCnt = clkCnt.wrapNext()
   //val nextClkCnt = UInt(clkCntWidth bits)
-  val nextClkCnt = clkCnt.wrapNext()
+  //val nextClkCnt = clkCnt.wrapNext()
   if (vivadoDebug) {
     clkCnt.addAttribute("MARK_DEBUG", "TRUE")
     nextClkCnt.addAttribute("MARK_DEBUG", "TRUE")
@@ -662,12 +664,16 @@ case class LcvVgaCtrl(
   misc.nextClkCnt := nextClkCnt
 
   // Implement wrap-around for the clock counter
-  when (clkCntP1 < cpp) {
-    //m.d.sync += 
-    nextClkCnt := clkCntP1(clkCnt.bitsRange)
-  } otherwise {
-    //m.d.sync +=
-    nextClkCnt := 0x0
+  when (io.en) {
+    when (clkCntP1 < cpp) {
+      //m.d.sync += 
+      nextClkCnt := clkCntP1(clkCnt.bitsRange)
+    } otherwise {
+      //m.d.sync +=
+      nextClkCnt := 0x0
+    }
+  } otherwise { // when (!io.en)
+    nextClkCnt := clkCnt
   }
   //clkCnt := nextClkCnt
   // Since this is an alias, use ALL_CAPS for its name.
@@ -1049,16 +1055,16 @@ case class LcvVgaCtrl(
   when (misc.pixelEn) {
     // Visible area
     when (misc.visib) {
-      when (~io.en) {
-        //m.d.sync += [
-          //phys.col.r := (0xf),
-          //phys.col.g := (0xf),
-          //phys.col.b := (0xf),
-        //]
-        rPhys.col.r := (default -> True)
-        rPhys.col.g := (default -> True)
-        rPhys.col.b := (default -> True)
-      } otherwise { // when (io.en)
+      //when (~io.en) {
+      //  //m.d.sync += [
+      //    //phys.col.r := (0xf),
+      //    //phys.col.g := (0xf),
+      //    //phys.col.b := (0xf),
+      //  //]
+      //  rPhys.col.r := (default -> True)
+      //  rPhys.col.g := (default -> True)
+      //  rPhys.col.b := (default -> True)
+      //} otherwise { // when (io.en)
         //m.d.sync += [
           rPhys.col := tempCol
           //rPhys.col := rTempColBuf
@@ -1071,7 +1077,7 @@ case class LcvVgaCtrl(
           //rPhys.col.g := rPhysColGPipe1
           //rPhys.col.b := 0x0
         //]
-      }
+      //}
     // Black border
     } otherwise { // when (~misc.visib)
       //m.d.sync += [
@@ -1311,8 +1317,9 @@ case class LcvVgaCtrlNoFifo(
   phys := rPhys
 
   // Implement the clock enable
-  val clkCnt = Reg(UInt(clkCntWidth bits)) init(0x0)
-  val nextClkCnt = clkCnt.wrapNext()
+  val nextClkCnt = UInt(clkCntWidth bits)
+  val clkCnt = RegNext(nextClkCnt) init(0x0)
+  //val nextClkCnt = clkCnt.wrapNext()
   // Force this addition to be of width `CLK_CNT_WIDTH + 1` to
   // prevent wrap-around
   val clkCntP1Width = clkCntWidth + 1
@@ -1320,12 +1327,16 @@ case class LcvVgaCtrlNoFifo(
   clkCntP1 := clkCnt.resized + U(f"$clkCntP1Width'd1")
 
   // Implement wrap-around for the clock counter
-  when (clkCntP1 < cpp) {
-    //m.d.sync += 
-    nextClkCnt := clkCntP1(clkCnt.bitsRange)
-  } otherwise {
-    //m.d.sync +=
-    nextClkCnt := 0x0
+  when (io.en) {
+    when (clkCntP1 < cpp) {
+      //m.d.sync += 
+      nextClkCnt := clkCntP1(clkCnt.bitsRange)
+    } otherwise {
+      //m.d.sync +=
+      nextClkCnt := 0x0
+    }
+  } otherwise { // when (!io.en)
+    nextClkCnt := clkCnt
   }
   // Since this is an alias, use ALL_CAPS for its name.
   // outp.pixelEn = (clkCnt == 0x0)
@@ -1471,20 +1482,20 @@ case class LcvVgaCtrlNoFifo(
   when (misc.pixelEn) {
     // Visible area
     when (misc.visib) {
-      when (~io.en) {
-        //m.d.sync += [
-          //rPhys.col.r := (0xf),
-          //rPhys.col.g := (0xf),
-          //rPhys.col.b := (0xf),
-        //]
-        rPhys.col.r := (default -> True)
-        rPhys.col.g := (default -> True)
-        rPhys.col.b := (default -> True)
-      } otherwise { // when (io.en)
+      //when (~io.en) {
+      //  //m.d.sync += [
+      //    //rPhys.col.r := (0xf),
+      //    //rPhys.col.g := (0xf),
+      //    //rPhys.col.b := (0xf),
+      //  //]
+      //  rPhys.col.r := (default -> True)
+      //  rPhys.col.g := (default -> True)
+      //  rPhys.col.b := (default -> True)
+      //} otherwise { // when (io.en)
         //m.d.sync += [
           rPhys.col := inpCol
         //]
-      }
+      //}
     // Black border
     } otherwise { // when (~misc.visib)
       //m.d.sync += [
