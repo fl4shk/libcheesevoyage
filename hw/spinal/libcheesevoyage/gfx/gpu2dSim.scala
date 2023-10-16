@@ -62,6 +62,7 @@ object Gpu2dSim extends App {
       x=log2Up(1),
       y=log2Up(1),
       //x=log2Up(2),
+      ////y=log2Up(2),
       //y=log2Up(2),
     ),
     bgTileSize2dPow=ElabVec2[Int](
@@ -76,7 +77,8 @@ object Gpu2dSim extends App {
     numBgsPow=log2Up(2),
     //numObjsPow=log2Up(64),
     numObjsPow=log2Up(32),
-    numBgTilesPow=Some(log2Up(256)),
+    //numBgTilesPow=Some(log2Up(256)),
+    numBgTilesPow=Some(log2Up(2)),
     numObjTilesPow=None,
     numColsInBgPalPow=log2Up(64),
     numColsInObjPalPow=log2Up(64),
@@ -196,10 +198,17 @@ object Gpu2dSim extends App {
         //} else if (jdx % 4 == 1) {
         //} else if (jdx % 4 == 2) {
         //}
-        tempBgTile.setPx(
-          pxsCoord=pxsCoord,
-          colIdx=(jdx % 4) + 1,
-        )
+        if (idx > 0) {
+          tempBgTile.setPx(
+            pxsCoord=pxsCoord,
+            colIdx=(jdx % 4) + 1,
+          )
+        } else {
+          tempBgTile.setPx(
+            pxsCoord=pxsCoord,
+            colIdx=jdx % 2,
+          )
+        }
 
         //tempBgTile.setPx(
         //  pxsCoord=pxsCoord,
@@ -212,9 +221,29 @@ object Gpu2dSim extends App {
     //  //tempBgTile.colIdxRowVec.getZero.asBits
     //)
 
+    val rBgTileCnt = Reg(UInt(gpu2dParams.numBgTilesPow + 1 bits)) init(0)
+    val rBgTile = Reg(cloneOf(tempBgTile)) init(tempBgTile.getZero)
+    //val rBgTilePushValid = Reg(Bool()) init(True)
+
+    when (!rBgTileCnt.msb) {
+      when (gpuIo.bgTilePush.fire) {
+        when (rBgTileCnt + 1 === 1) {
+          //gpuIo.bgTilePush.payload.tile := tempBgTile.getZero
+          rBgTile := tempBgTile
+        } otherwise {
+          //gpuIo.bgTilePush.payload.tile := tempBgTile.getZero
+          rBgTile := rBgTile.getZero
+        }
+        rBgTileCnt := rBgTileCnt + 1
+      }
+    }
+    //gpuIo.bgTilePush.payload.memIdx := 1
+    //gpuIo.bgTilePush.valid := rBgTilePushValid
     gpuIo.bgTilePush.valid := True
-    gpuIo.bgTilePush.payload.tile := tempBgTile
-    gpuIo.bgTilePush.payload.memIdx := 1
+    gpuIo.bgTilePush.payload.tile := rBgTile
+    gpuIo.bgTilePush.payload.memIdx := (
+      rBgTileCnt(gpu2dParams.numBgTilesPow - 1 downto 0)
+    )
     //gpuIo.bgTilePush.payload.memIdx := gpu2dParams.intnlFbSize2d.x
     //--------
     val tempBgAttrs = Gpu2dBgAttrs(params=gpu2dParams)
