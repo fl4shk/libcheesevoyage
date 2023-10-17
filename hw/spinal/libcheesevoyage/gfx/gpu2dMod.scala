@@ -145,7 +145,9 @@ case class Gpu2dParams(
   //def numLineMemsPerBgObjRenderer = 4
   def numLineMemsPerBgObjRenderer = 2
   //def numLineMems = numBgs
-  def wrBgObjStallFifoAmountCanPush = 8
+  //def wrBgObjStallFifoAmountCanPush = 8
+  def combinePipeOverflowFifoSize = lineMemSize
+  def combinePipeOverflowOccupancyAt = combinePipeOverflowFifoSize - 8
   //--------
   def bgSize2dInTiles = ElabVec2[Int](
     x=1 << bgSize2dInTilesPow.x,
@@ -1206,11 +1208,11 @@ case class Gpu2d(
     //  init(sendIntoFifoLineMemArrIdxInit)
     //)
 
-    val rCombineLineMemArrIdx = KeepAttribute(
-      Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits))
-      //init(0x3)
-      init(combineLineMemArrIdxInit)
-    )
+    //val rCombineLineMemArrIdx = KeepAttribute(
+    //  Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits))
+    //  //init(0x3)
+    //  init(combineLineMemArrIdxInit)
+    //)
     val rWrLineMemArrIdx = KeepAttribute(
       Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits))
       //init(0x3)
@@ -1334,7 +1336,7 @@ case class Gpu2d(
       //rWrLineNum := rWrLineNum + 1
 
       rWrLineMemArrIdx := rWrLineMemArrIdx + 1
-      rCombineLineMemArrIdx := rCombineLineMemArrIdx + 1
+      //rCombineLineMemArrIdx := rCombineLineMemArrIdx + 1
       // BEGIN: old logic, may not be working properly
       //rPastCombineLineMemArrIdx := rPastCombineLineMemArrIdx + 1
       //rCombineRdLineMemArrIdx := rCombineRdLineMemArrIdx + 1
@@ -1848,10 +1850,10 @@ case class Gpu2d(
     def wrObjPipeNumMainStages = 8
     //def wrObjPipeNumMainStages = 9
 
-    def wrBgObjPipeNumStages = max(
-      wrBgPipeNumMainStages,
-      wrObjPipeNumMainStages
-    ) + 1
+    //def wrBgObjPipeNumStages = max(
+    //  wrBgPipeNumMainStages,
+    //  wrObjPipeNumMainStages
+    //) + 1
 
     //def wrObjPipeSize = wrObjPipeNumElems * params.numObjsPow
     //def wrObjPipeSize = max(wrObjPipeNumElems, params.numObjsPow) + 1 
@@ -1985,7 +1987,8 @@ case class Gpu2d(
         //)
         //val wrLineMemArrIdx = cloneOf(rdLineMemArrIdx)
         // combining can be done backwards
-        //val lineMemArrIdx = UInt(lineMemArrIdxWidth bits)
+        val changingRow = Bool()
+        val lineMemArrIdx = UInt(lineMemArrIdxWidth bits)
         val cnt = UInt(combinePipeCntWidth bits)
         val bakCnt = UInt(combinePipeCntWidth bits)
         val bakCntMinus1 = UInt(combinePipeCntWidth bits)
@@ -1999,9 +2002,10 @@ case class Gpu2d(
         //--------
       }
       val stage0 = Stage0()
+      def changingRow = stage0.changingRow
       //def rdLineMemArrIdx = stage0.rdLineMemArrIdx
       //def wrLineMemArrIdx = stage0.wrLineMemArrIdx
-      //def lineMemArrIdx = stage0.lineMemArrIdx
+      def lineMemArrIdx = stage0.lineMemArrIdx
       def cnt = stage0.cnt
       def bakCnt = stage0.bakCnt
       def bakCntMinus1 = stage0.bakCntMinus1
@@ -2045,16 +2049,18 @@ case class Gpu2d(
       //--------
     }
     def doInitCombinePipePayload(
+      changingRow: Bool,
       //prevRdLineMemArrIdx: UInt,
       //prevWrLineMemArrIdx: UInt,
-      //prevLineMemArrIdx: UInt,
+      prevLineMemArrIdx: UInt,
     ): CombinePipePayload = {
       val ret = CombinePipePayload()
+      ret.changingRow := changingRow
       ////ret.rdLineMemArrIdx := rCombineRdLineMemArrIdx
       ////ret.wrLineMemArrIdx := rCombineWrLineMemArrIdx
       //ret.rdLineMemArrIdx := prevRdLineMemArrIdx + 1
       //ret.wrLineMemArrIdx := prevWrLineMemArrIdx + 1
-      //ret.lineMemArrIdx := prevLineMemArrIdx + 1
+      ret.lineMemArrIdx := prevLineMemArrIdx + 1
       ret.cnt := 0
       ret.bakCnt := combinePipeBakCntStart
       ret.bakCntMinus1 := combinePipeBakCntStart - 1
@@ -2062,6 +2068,12 @@ case class Gpu2d(
       ret
     }
     def combinePipeNumMainStages = 5
+
+    def anyPipeNumStages = (
+      wrBgPipeNumMainStages
+      .max(wrObjPipeNumMainStages)
+      .max(combinePipeNumMainStages)
+    ) + 1
 
 
     //def rdPipeCntWidth = (
@@ -2156,19 +2168,30 @@ case class Gpu2d(
     //}
     //def rdPipeNumMainStages = 2
     //--------
+    val combinePipeOverflow = Bool()
+    //val rPastCombinePipeOverflow = RegNext(combinePipeOverflow)
+    //  .init(False)
+    //val combinePipeOverflowState = Reg(Bool()) init(False)
+
     //def wrPipeSize = wrBgPipeSize + wrObjPipeSize
     val wrBgPipeIn = KeepAttribute(
       //Vec.fill(wrBgObjPipeNumStages)(Reg(WrBgPipePayload()))
-      Vec.fill(wrBgObjPipeNumStages)(
+      Vec.fill(
+        //wrBgObjPipeNumStages
+        anyPipeNumStages
+      )(
+        //Flow(WrBgPipePayload())
         Flow(WrBgPipePayload())
-        //Stream(WrBgPipePayload())
       )
     )
     val wrBgPipeOut = KeepAttribute(
       //Vec.fill(wrBgObjPipeNumStages)(Reg(WrBgPipePayload()))
-      Vec.fill(wrBgObjPipeNumStages)(
+      Vec.fill(
+        //wrBgObjPipeNumStages
+        anyPipeNumStages
+      )(
+        //Flow(WrBgPipePayload())
         Flow(WrBgPipePayload())
-        //Stream(WrBgPipePayload())
       )
     )
     //wrBgPipeOut.last.ready := (
@@ -2179,12 +2202,13 @@ case class Gpu2d(
     //)
 
     val wrBgPipeLast = KeepAttribute(
+      //Flow(WrBgPipePayload())
       Flow(WrBgPipePayload())
-      //Stream(WrBgPipePayload())
     )
 
     //when (nextIntnlChangingRow)
     //when (rIntnlChangingRow)
+
     when (intnlChangingRowRe)
     {
       nextWrBgChangingRow := False
@@ -2197,6 +2221,7 @@ case class Gpu2d(
     } otherwise {
       nextWrBgChangingRow := rWrBgChangingRow
     }
+
     //elsewhen (
     //  wrBgPipeLast.bakCntWillBeDone()
     //  //wrBgPipeLast.bakCnt.msb
@@ -2219,7 +2244,11 @@ case class Gpu2d(
     //}
     //wrBgPipe(0).valid := True
     //val rWrBgPipeFrontValid = Reg(Bool()) init(False)
-    val rWrBgPipeFrontValid = Reg(Bool()) init(True)
+    //val rWrBgPipeFrontValid = Reg(Bool()) init(True)
+    val nextWrBgPipeFrontValid = Bool()
+    val rWrBgPipeFrontValid = RegNext(nextWrBgPipeFrontValid)
+      .init(True)
+    val rSavedWrBgPipeFrontValid = Reg(Bool()) init(False)
     val rWrBgPipeFrontPayload = Reg(WrBgPipePayload())
     //rWrBgPipeFrontPayload.init(rWrBgPipeFrontPayload.getZero)
     rWrBgPipeFrontPayload.init(doInitWrBgPipePayload(
@@ -2280,112 +2309,100 @@ case class Gpu2d(
     //)
     // add one final register
     wrBgPipeLast <-< wrBgPipeOut.last
+    //wrBgPipeLast <-/< wrBgPipeOut.last
 
     // Send data into the background pipeline
     //when (nextIntnlChangingRow) {
     //  rWrBgChangingRow := False
     //}
-    when (!rWrBgPipeFrontValid) {
-      when (
-        //rIntnlChangingRow
-        intnlChangingRowRe
-
-
-        //nextIntnlChangingRowRe
-        //nextWrBgChangingRow && !rWrBgChangingRow
-        //outp.physPosInfo.changingRow
-        //changingRowRe
-      ) {
-        rWrBgPipeFrontValid := True
-        rWrBgPipeFrontPayload := doInitWrBgPipePayload(
-          //prevLineMemArrIdx=rWrBgPipeFrontPayload.lineMemArrIdx
-          //prevLineMemArrIdx=0
-        )
-        //rWrBgChangingRow := False
-      }
-    } otherwise { // when (rWrBgPipeFrontValid)
-      when (wrBgPipeIn(0).fire) {
-        ////rWrBgPipeFrontPayload.cnt := rWrBgPipeFrontPayload.cnt + 1
-        //rWrBgPipeFrontPayload.cnt := rWrBgPipeFrontPayload.cnt + 1
-        //rWrBgPipeFrontPayload.bakCnt := rWrBgPipeFrontPayload.bakCnt - 1
-        //rWrBgPipeFrontPayload.bakCntMinus1 := (
-        //  rWrBgPipeFrontPayload.bakCntMinus1 - 1
-        //)
-        ////rWrBgPipeFrontPayload.bgIdx := rWrBgPipeFrontPayload.bgIdx - 1
-        ////rWrBgPipeFrontPayload.bgIdx := (
-        ////  rWrBgPipeFrontPayload.cntMinus1(
-        ////    rWrBgPipeFrontPayload.cnt.high
-        ////    downto rWrBgPipeFrontPayload.cnt.high - wrBgPipeBgIdxWidth + 1
-        ////  )
-        ////)
-        // BEGIN: test logic
+    //when (combinePipeOverflow) {
+    //} 
+    //val rSavedWrBgPipeFrontPayload = Reg(WrBgPipePayload())
+    //rSavedWrBgPipeFrontPayload.init(rSavedWrBgPipeFrontPayload.getZero)
+    //when (combinePipeOverflow) {
+    //  nextWrBgPipeFrontValid := False
+    //} otherwise {
+      rSavedWrBgPipeFrontValid := nextWrBgPipeFrontValid
+      //nextWrBgPipeFrontValid := True
+      when (!rSavedWrBgPipeFrontValid) {
         when (
-          rWrBgPipeFrontPayload.bakCntWillBeDone()
-          //rWrBgPipeFrontPayload.cnt + 1 === params.lineMemSize
+          //rIntnlChangingRow
+          intnlChangingRowRe
+
+
+          //nextIntnlChangingRowRe
+          //nextWrBgChangingRow && !rWrBgChangingRow
+          //outp.physPosInfo.changingRow
+          //changingRowRe
         ) {
-          rWrBgPipeFrontValid := False
-          //rWrBgChangingRow := wrBgPipeLast.bakCntWillBeDone()
-          //rWrBgChangingRow := True
-          //rWrBgPipeFrontPayload := doInitWrBgPipePayload(
-          //  prevLineMemArrIdx=rWrBgPipeFrontPayload.lineMemArrIdx,
-          //)
-          rWrBgLineNum := rWrBgLineNumPipe1(rWrBgLineNum.bitsRange)
-        } otherwise {
-          rWrBgPipeFrontPayload.cnt := rWrBgPipeFrontPayload.cnt + 1
-          rWrBgPipeFrontPayload.bakCnt := rWrBgPipeFrontPayload.bakCnt - 1
-          rWrBgPipeFrontPayload.bakCntMinus1 := (
-            rWrBgPipeFrontPayload.bakCntMinus1 - 1
+          nextWrBgPipeFrontValid := True
+          rWrBgPipeFrontPayload := doInitWrBgPipePayload(
+            //prevLineMemArrIdx=rWrBgPipeFrontPayload.lineMemArrIdx
+            //prevLineMemArrIdx=0
           )
+          //rWrBgChangingRow := False
+        } otherwise {
+          nextWrBgPipeFrontValid := rWrBgPipeFrontValid
         }
-        // END: test logic
+      } otherwise { // when (rSavedWrBgPipeFrontValid)
+        when (wrBgPipeIn(0).fire) {
+          // BEGIN: test logic
+          when (
+            rWrBgPipeFrontPayload.bakCntWillBeDone()
+            //rWrBgPipeFrontPayload.cnt + 1 === params.lineMemSize
+          ) {
+            nextWrBgPipeFrontValid := False
+            ////rWrBgChangingRow := wrBgPipeLast.bakCntWillBeDone()
+            ////rWrBgChangingRow := True
+            //rWrBgPipeFrontPayload := doInitWrBgPipePayload(
+            //  //prevLineMemArrIdx=rWrBgPipeFrontPayload.lineMemArrIdx,
+            //)
+            rWrBgLineNum := rWrBgLineNumPipe1(rWrBgLineNum.bitsRange)
+          } otherwise {
+            nextWrBgPipeFrontValid := rWrBgPipeFrontValid
+            rWrBgPipeFrontPayload.cnt := rWrBgPipeFrontPayload.cnt + 1
+            rWrBgPipeFrontPayload.bakCnt := (
+              rWrBgPipeFrontPayload.bakCnt - 1
+            )
+            rWrBgPipeFrontPayload.bakCntMinus1 := (
+              rWrBgPipeFrontPayload.bakCntMinus1 - 1
+            )
+
+            //rSavedWrBgPipeFrontPayload.cnt := (
+            //  rWrBgPipeFrontPayload.cnt + 1
+            //)
+            //rSavedWrBgPipeFrontPayload.bakCnt := (
+            //  rWrBgPipeFrontPayload.bakCnt - 1
+            //)
+            //rSavedWrBgPipeFrontPayload.bakCntMinus1 := (
+            //  rWrBgPipeFrontPayload.bakCntMinus1 - 1
+            //)
+          }
+          // END: test logic
+        } otherwise { // when (!wrBgPipeIn(0).fire)
+          nextWrBgPipeFrontValid := rWrBgPipeFrontValid
+        }
       }
-      // BEGIN: old logic
-      //when (rWrBgPipeFrontPayload.bakCntWillBeDone()) {
-      //  rWrBgPipeFrontValid := False
-      //  //rWrBgChangingRow := wrBgPipeLast.bakCntWillBeDone()
-      //  //rWrBgChangingRow := True
-      //}
-      // END: old logic
-      //when (wrBgPipeIn(0).fire) {
-      //  ////rWrBgPipeFrontPayload.cnt := rWrBgPipeFrontPayload.cnt + 1
-      //  //rWrBgPipeFrontPayload.cnt := rWrBgPipeFrontPayload.cnt + 1
-      //  //rWrBgPipeFrontPayload.bakCnt := rWrBgPipeFrontPayload.bakCnt - 1
-      //  //rWrBgPipeFrontPayload.bakCntMinus1 := (
-      //  //  rWrBgPipeFrontPayload.bakCntMinus1 - 1
-      //  //)
-      //  ////rWrBgPipeFrontPayload.bgIdx := rWrBgPipeFrontPayload.bgIdx - 1
-      //  ////rWrBgPipeFrontPayload.bgIdx := (
-      //  ////  rWrBgPipeFrontPayload.cntMinus1(
-      //  ////    rWrBgPipeFrontPayload.cnt.high
-      //  ////    downto rWrBgPipeFrontPayload.cnt.high - wrBgPipeBgIdxWidth + 1
-      //  ////  )
-      //  //)
-      //  when (rWrBgPipeFrontPayload.bakCntWillBeDone()) {
-      //    rWrBgPipeFrontValid := False
-      //    //rWrBgChangingRow := wrBgPipeLast.bakCntWillBeDone()
-      //    //rWrBgChangingRow := True
-      //  } otherwise {
-      //    rWrBgPipeFrontPayload.cnt := rWrBgPipeFrontPayload.cnt + 1
-      //    rWrBgPipeFrontPayload.bakCnt := rWrBgPipeFrontPayload.bakCnt - 1
-      //    rWrBgPipeFrontPayload.bakCntMinus1 := (
-      //      rWrBgPipeFrontPayload.bakCntMinus1 - 1
-      //    )
-      //  }
-      //}
-    }
+    //}
 
     val wrObjPipeIn = KeepAttribute(
       //Vec.fill(wrBgObjPipeNumStages)(Reg(WrObjPipePayload()))
-      Vec.fill(wrBgObjPipeNumStages)(
+      Vec.fill(
+        //wrBgObjPipeNumStages
+        anyPipeNumStages
+      )(
+        //Flow(WrObjPipePayload())
         Flow(WrObjPipePayload())
-        //Stream(WrObjPipePayload())
       )
     )
     val wrObjPipeOut = KeepAttribute(
       //Vec.fill(wrBgObjPipeNumStages)(Reg(WrObjPipePayload()))
-      Vec.fill(wrBgObjPipeNumStages)(
+      Vec.fill(
+        //wrBgObjPipeNumStages
+        anyPipeNumStages
+      )(
+        //Flow(WrObjPipePayload())
         Flow(WrObjPipePayload())
-        //Stream(WrObjPipePayload())
       )
     )
     //wrObjPipeOut.last.ready := (
@@ -2396,8 +2413,8 @@ case class Gpu2d(
 
 
     val wrObjPipeLast = KeepAttribute(
+      //Flow(WrObjPipePayload())
       Flow(WrObjPipePayload())
-      //Stream(WrObjPipePayload())
     )
     //when (nextIntnlChangingRow && rWrObjChangingRow) 
     //when (rIntnlChangingRow)
@@ -2424,7 +2441,11 @@ case class Gpu2d(
     //  //rWrObjPipe(idx).init(rWrObjPipe(idx).getZero)
     //}
     //wrObjPipe(0).valid := True
-    val rWrObjPipeFrontValid = Reg(Bool()) init(True)
+    //val rWrObjPipeFrontValid = Reg(Bool()) init(True)
+    val nextWrObjPipeFrontValid = Bool()
+    val rWrObjPipeFrontValid = RegNext(nextWrObjPipeFrontValid)
+      .init(True)
+    val rSavedWrObjPipeFrontValid = Reg(Bool()) init(False)
     //when (wrObjPipe(0).objAttrsMemIdxWillUnderflow()) {
     //  rWrObjPipeFrontValid := False
     //}
@@ -2458,57 +2479,68 @@ case class Gpu2d(
     //when (nextIntnlChangingRow) {
     //  rWrObjChangingRow := False
     //}
-    when (!rWrObjPipeFrontValid) {
-      when (
-        //rIntnlChangingRow
-        intnlChangingRowRe
-        //outp.physPosInfo.changingRow
-        //changingRowRe
-        //nextIntnlChangingRowRe
-        //nextWrObjChangingRow && !rWrObjChangingRow
-      ) {
-        rWrObjPipeFrontValid := True
-        rWrObjPipeFrontPayload := doInitWrObjPipePayload(
-          //prevLineMemArrIdx=rWrObjPipeFrontPayload.lineMemArrIdx
-          //prevLineMemArrIdx=0
-        )
-        //rWrObjChangingRow := False
-      }
-    } otherwise { // when (rWrObjPipeFrontValid)
-      when (
-        wrObjPipeIn(0).fire
-      ) {
-        //rWrObjPipeFrontPayload.cnt := rWrObjPipeFrontPayload.cnt + 1
-        //rWrObjPipeFrontPayload.bakCnt := (
-        //  rWrObjPipeFrontPayload.bakCnt - 1
-        //)
-        //rWrObjPipeFrontPayload.bakCntMinus1 := (
-        //  rWrObjPipeFrontPayload.bakCntMinus1 - 1
-        //)
+    //when (combinePipeOverflow) {
+    //  nextWrObjPipeFrontValid := False
+    //} otherwise {
+      rSavedWrObjPipeFrontValid := nextWrObjPipeFrontValid
+      //nextWrObjPipeFrontValid := True
+      when (!rSavedWrObjPipeFrontValid) {
         when (
-          rWrObjPipeFrontPayload.bakCntWillBeDone()
-          //rWrObjPipeFrontPayload.cnt + 1 === params.lineMemSize
+          //rIntnlChangingRow
+          intnlChangingRowRe
+          //outp.physPosInfo.changingRow
+          //changingRowRe
+          //nextIntnlChangingRowRe
+          //nextWrObjChangingRow && !rWrObjChangingRow
         ) {
-          rWrObjPipeFrontValid := False
-          //rWrObjChangingRow := True
-          //rWrObjPipeFrontPayload := doInitWrObjPipePayload(
-          //  prevLineMemArrIdx=rWrObjPipeFrontPayload.lineMemArrIdx
-          //)
-          rWrObjLineNum := rWrObjLineNumPipe1(rWrObjLineNum.bitsRange)
+          nextWrObjPipeFrontValid := True
+          rWrObjPipeFrontPayload := doInitWrObjPipePayload(
+            //prevLineMemArrIdx=rWrObjPipeFrontPayload.lineMemArrIdx
+            //prevLineMemArrIdx=0
+          )
+          //rWrObjChangingRow := False
         } otherwise {
-          rWrObjPipeFrontPayload.cnt := rWrObjPipeFrontPayload.cnt + 1
-          rWrObjPipeFrontPayload.bakCnt := (
-            rWrObjPipeFrontPayload.bakCnt - 1
-          )
-          rWrObjPipeFrontPayload.bakCntMinus1 := (
-            rWrObjPipeFrontPayload.bakCntMinus1 - 1
-          )
+          nextWrObjPipeFrontValid := rWrObjPipeFrontValid
         }
-      }
+      } otherwise { // when (rSavedWrObjPipeFrontValid)
+        when (
+          wrObjPipeIn(0).fire
+        ) {
+          //rWrObjPipeFrontPayload.cnt := rWrObjPipeFrontPayload.cnt + 1
+          //rWrObjPipeFrontPayload.bakCnt := (
+          //  rWrObjPipeFrontPayload.bakCnt - 1
+          //)
+          //rWrObjPipeFrontPayload.bakCntMinus1 := (
+          //  rWrObjPipeFrontPayload.bakCntMinus1 - 1
+          //)
+          when (
+            rWrObjPipeFrontPayload.bakCntWillBeDone()
+            //rWrObjPipeFrontPayload.cnt + 1 === params.lineMemSize
+          ) {
+            nextWrObjPipeFrontValid := False
+            //rWrObjChangingRow := True
+            //rWrObjPipeFrontPayload := doInitWrObjPipePayload(
+            //  //prevLineMemArrIdx=rWrObjPipeFrontPayload.lineMemArrIdx
+            //)
+            rWrObjLineNum := rWrObjLineNumPipe1(rWrObjLineNum.bitsRange)
+          } otherwise {
+            nextWrObjPipeFrontValid := rWrObjPipeFrontValid
+            rWrObjPipeFrontPayload.cnt := rWrObjPipeFrontPayload.cnt + 1
+            rWrObjPipeFrontPayload.bakCnt := (
+              rWrObjPipeFrontPayload.bakCnt - 1
+            )
+            rWrObjPipeFrontPayload.bakCntMinus1 := (
+              rWrObjPipeFrontPayload.bakCntMinus1 - 1
+            )
+          }
+        } otherwise { // when (!wrObjPipeIn(0).fire)
+          nextWrObjPipeFrontValid := rWrObjPipeFrontValid
+        }
       //when (rWrObjPipeFrontPayload.objAttrsMemIdxWillUnderflow()) {
       //  rWrObjPipeFrontValid := False
       //}
-    }
+      }
+    //}
 
     //val sendIntoFifoPipeIn = KeepAttribute(
     //  Vec.fill(sendIntoFifoPipeNumMainStages)(
@@ -2682,53 +2714,82 @@ case class Gpu2d(
     ////rPastWrBgLineMemEntry.init(rPastWrBgLineMemEntry.getZero)
 
     val combinePipeIn = KeepAttribute(
-      Vec.fill(combinePipeNumMainStages)(
-        Flow(CombinePipePayload())
+      Vec.fill(
+        //combinePipeNumMainStages
+        anyPipeNumStages
+      )(
         //Stream(CombinePipePayload())
+        Stream(CombinePipePayload())
       )
     )
     val combinePipeOut = KeepAttribute(
-      Vec.fill(combinePipeNumMainStages)(
-        Flow(CombinePipePayload())
+      Vec.fill(
+        //combinePipeNumMainStages
+        anyPipeNumStages
+      )(
         //Stream(CombinePipePayload())
+        Stream(CombinePipePayload())
       )
     )
     val combinePipeLast = KeepAttribute(
-      Flow(CombinePipePayload())
       //Stream(CombinePipePayload())
+      Stream(CombinePipePayload())
     )
     //rCombineChangingRow := combinePipeLast.bakCntWillBeDone()
     ////when (nextIntnlChangingRow)
     //when (rIntnlChangingRow) 
+    val rPastPopFire = RegNext(pop.fire)
 
-    when (
-      intnlChangingRowRe
-      //rIntnlChangingRow
-      //outp.physPosInfo.changingRow
-    )
-    {
-      nextCombineChangingRow := False
-    } elsewhen (
-      //combinePipeLast.bakCntWillBeDone() && combinePipeLast.fire
-      //combinePipeLast.bakCntWillBeDone() && !rCombineChangingRow
-      combinePipeLast.bakCntWillBeDone()
-      //(combinePipeLast.cnt + 1 === params.lineMemSize)
-      //&& combinePipeLast.fire
-      //combinePipeLast.bakCnt.msb && combinePipeLast.fire
-      //combinePipeLast.bakCnt.msb
-    ) {
-      nextCombineChangingRow := True
-    } otherwise {
-      nextCombineChangingRow := rCombineChangingRow
-    }
+    //when (
+    //  intnlChangingRowRe
+    //  //rIntnlChangingRow
+    //  //outp.physPosInfo.changingRow
+    //)
+    //{
+    //  nextCombineChangingRow := False
+    //} elsewhen (
+    //  //combinePipeLast.bakCntWillBeDone() && combinePipeLast.fire
+    //  //combinePipeLast.bakCntWillBeDone() && !rCombineChangingRow
+    //  //combinePipeLast.bakCntWillBeDone() && pop.fire
+    //  //combinePipeLast.bakCntWillBeDone() && pop.fire
+    //  combinePipeLast.bakCntWillBeDone() && pop.fire
+    //  //&& !combinePipeOverflow
 
-    val rCombinePipeFrontValid = Reg(Bool()) init(True)
+    //  //(combinePipeLast.bakCnt === 0) && rPastPopFire
+    //  //(combinePipeLast.cnt + 1 === params.lineMemSize)
+    //  //&& combinePipeLast.fire
+    //  //combinePipeLast.bakCnt.msb && combinePipeLast.fire
+    //  //combinePipeLast.bakCnt.msb
+    //) {
+    //  nextCombineChangingRow := True
+    //} otherwise {
+    //  nextCombineChangingRow := rCombineChangingRow
+    //}
+
+    //when (
+    //  intnlChangingRowRe
+    //) {
+    //  nextCombineChangingRow := False
+    //} elsewhen (combinePipeLast.fire) {
+    //  nextCombineChangingRow := combinePipeLast.changingRow
+    //} otherwise {
+    //  nextCombineChangingRow := rCombineChangingRow
+    //}
+    nextCombineChangingRow := combinePipeLast.changingRow
+
+    //val rCombinePipeFrontValid = Reg(Bool()) init(True)
+    val nextCombinePipeFrontValid = Bool()
+    val rCombinePipeFrontValid = RegNext(nextCombinePipeFrontValid)
+      .init(True)
+    val rSavedCombinePipeFrontValid = Reg(Bool()) init(False)
     val rCombinePipeFrontPayload = Reg(CombinePipePayload())
     //rCombinePipeFrontPayload.init(rCombinePipeFrontPayload.getZero)
     rCombinePipeFrontPayload.init(doInitCombinePipePayload(
+      //changingRow=False,
+      changingRow=True,
       //prevRdLineMemArrIdx=combineRdLineMemArrIdxInit,
       //prevWrLineMemArrIdx=combineWrLineMemArrIdxInit,
-      //prevLineMemArrIdx=combineLineMemArrIdxInit
+      prevLineMemArrIdx=combineLineMemArrIdxInit
     ))
 
     combinePipeIn(0).valid := rCombinePipeFrontValid
@@ -2791,22 +2852,22 @@ case class Gpu2d(
 
     for (idx <- 1 to combinePipeIn.size - 1) {
       // Create pipeline registering
-      combinePipeIn(idx) <-< combinePipeOut(idx - 1)
-      //combinePipeIn(idx) <-/< combinePipeOut(idx - 1)
+      //combinePipeIn(idx) <-< combinePipeOut(idx - 1)
+      combinePipeIn(idx) <-/< combinePipeOut(idx - 1)
     }
     for (idx <- 0 to combinePipeOut.size - 1) {
       // Connect output `valid` to input `valid`
       combinePipeOut(idx).valid := combinePipeIn(idx).valid
       //if (idx != 1) {
-        //combinePipeIn(idx).ready := combinePipeOut(idx).ready
+        combinePipeIn(idx).ready := combinePipeOut(idx).ready
       //} otherwise {
       //  combinePipeIn(idx).ready := 
       //}
     }
 
     // add one final register
-    combinePipeLast <-< combinePipeOut.last
-    //combinePipeLast <-/< combinePipeOut.last
+    //combinePipeLast <-< combinePipeOut.last
+    combinePipeLast <-/< combinePipeOut.last
     //val rPastCombinePipeLastFire = RegNext(combinePipeLast.fire)
     //  .init(False)
     //val rCombinePipeOutLastDidFire = Reg(Bool()) init(False)
@@ -2845,8 +2906,41 @@ case class Gpu2d(
     //    //}
     //  }
     //)
-    pop.valid := False
-    pop.payload := outp
+    //pop.valid := False
+    //pop.payload := outp
+
+    
+    //combinePipeLast.toStream(
+    //  overflow=combinePipeOverflow,
+    //  fifoSize=params.combinePipeOverflowFifoSize,
+    //  overflowOccupancyAt=params.combinePipeOverflowOccupancyAt,
+    //).translateInto(
+    //  pop
+    //)(
+    //  dataAssignment=(
+    //    popPayload,
+    //    combinePipeLastPayload,
+    //  ) => {
+    //    popPayload := outp
+    //  }
+    //)
+    combinePipeLast.translateInto(
+      pop
+    )(
+      dataAssignment=(
+        popPayload,
+        combinePipeLastPayload,
+      ) => {
+        popPayload := outp
+      }
+    )
+
+    //pop.valid := (
+    //  wrBgPipeLast.valid && wrObjPipeLast.valid && combinePipeLast.valid
+    //)
+    //wrBgPipeLast.ready := pop.ready
+    //wrObjPipeLast.ready := pop.ready
+    //combinePipeLast.ready := pop.ready
 
     // Send data into the combine pipeline
     //when (nextIntnlChangingRow) {
@@ -2855,76 +2949,100 @@ case class Gpu2d(
     //  rCombineChangingRow := True
     //}
 
-    when (!rCombinePipeFrontValid) {
-      when (
-        //rIntnlChangingRow
-        intnlChangingRowRe
-        //outp.physPosInfo.changingRow
-        //changingRowRe
-        //nextIntnlChangingRowRe
-        //nextCombineChangingRow && !rCombineChangingRow
-      ) {
-        rCombinePipeFrontValid := True
-        //rCombinePipeFrontValid := False
-        rCombinePipeFrontPayload := doInitCombinePipePayload(
-          //prevRdLineMemArrIdx=rCombinePipeFrontPayload.rdLineMemArrIdx,
-          //prevWrLineMemArrIdx=rCombinePipeFrontPayload.wrLineMemArrIdx,
-          //prevRdLineMemArrIdx=0,
-          //prevWrLineMemArrIdx=0,
-          //prevLineMemArrIdx=rCombinePipeFrontPayload.lineMemArrIdx,
-        )
-        //rCombineChangingRow := False
-      }
-    } otherwise {
-      //when (combinePipeIn(0).fire) {
-      //  //rCombinePipeFrontPayload.cnt := rCombinePipeFrontPayload.cnt + 1
-      //  when (rCombinePipeFrontPayload.bakCntWillBeDone()) {
-      //    rCombinePipeFrontValid := False
-      //    //rCombineChangingRow := True
-      //  } otherwise {
-      //    rCombinePipeFrontPayload.bakCnt := (
-      //      rCombinePipeFrontPayload.bakCnt - 1
+    //when (combinePipeOverflow) {
+    //  nextCombinePipeFrontValid := False
+    //} otherwise {
+      rSavedCombinePipeFrontValid := nextCombinePipeFrontValid
+      nextCombinePipeFrontValid := True
+      //when (!rSavedCombinePipeFrontValid) {
+      //  when (
+      //    //rIntnlChangingRow
+      //    intnlChangingRowRe
+      //    //outp.physPosInfo.changingRow
+      //    //changingRowRe
+      //    //nextIntnlChangingRowRe
+      //    //nextCombineChangingRow && !rCombineChangingRow
+      //  ) {
+      //    //rCombinePipeFrontValid := True
+      //    //nextCombinePipeFrontValid := True
+      //    //rCombinePipeFrontValid := False
+      //    rCombinePipeFrontPayload := doInitCombinePipePayload(
+      //      //prevRdLineMemArrIdx=rCombinePipeFrontPayload.rdLineMemArrIdx,
+      //      //prevWrLineMemArrIdx=rCombinePipeFrontPayload.wrLineMemArrIdx,
+      //      //prevRdLineMemArrIdx=0,
+      //      //prevWrLineMemArrIdx=0,
+      //      //prevLineMemArrIdx=rCombinePipeFrontPayload.lineMemArrIdx,
       //    )
-      //    rCombinePipeFrontPayload.bakCntMinus1 := (
-      //      rCombinePipeFrontPayload.bakCntMinus1 - 1
-      //    )
+      //    //rCombineChangingRow := False
       //  }
-      //}
-      when (combinePipeIn(0).fire) {
-        //rCombinePipeFrontPayload.cnt := rCombinePipeFrontPayload.cnt + 1
-        //rCombinePipeFrontPayload.bakCnt := (
-        //  rCombinePipeFrontPayload.bakCnt - 1
-        //)
-        //rCombinePipeFrontPayload.bakCntMinus1 := (
-        //  rCombinePipeFrontPayload.bakCntMinus1 - 1
-        //)
-        // BEGIN: test logic
-
-        when (
-          rCombinePipeFrontPayload.bakCntWillBeDone()
-          //rCombinePipeFrontPayload.cnt + 1 === params.lineMemSize
-        ) {
-          rCombinePipeFrontValid := False
-          //rCombineChangingRow := True
-          //rCombinePipeFrontPayload := doInitCombinePipePayload(
-          //  //prevLineMemArrIdx=0
+      //  //otherwise {
+      //  //  //nextCombinePipeFrontValid := rCombinePipeFrontValid
+      //  //}
+      //} otherwise { // when (rSavedCombinePipeFrontValid)
+        //when (combinePipeIn(0).fire) {
+        //  //rCombinePipeFrontPayload.cnt := rCombinePipeFrontPayload.cnt + 1
+        //  when (rCombinePipeFrontPayload.bakCntWillBeDone()) {
+        //    rCombinePipeFrontValid := False
+        //    //rCombineChangingRow := True
+        //  } otherwise {
+        //    rCombinePipeFrontPayload.bakCnt := (
+        //      rCombinePipeFrontPayload.bakCnt - 1
+        //    )
+        //    rCombinePipeFrontPayload.bakCntMinus1 := (
+        //      rCombinePipeFrontPayload.bakCntMinus1 - 1
+        //    )
+        //  }
+        //}
+        when (combinePipeIn(0).fire) {
+          //rCombinePipeFrontPayload.cnt := rCombinePipeFrontPayload.cnt + 1
+          //rCombinePipeFrontPayload.bakCnt := (
+          //  rCombinePipeFrontPayload.bakCnt - 1
           //)
+          //rCombinePipeFrontPayload.bakCntMinus1 := (
+          //  rCombinePipeFrontPayload.bakCntMinus1 - 1
+          //)
+          // BEGIN: test logic
+
+          when (
+            rCombinePipeFrontPayload.bakCntWillBeDone()
+            //rCombinePipeFrontPayload.cnt + 1 === params.lineMemSize
+          ) {
+            ////rCombinePipeFrontValid := False
+            //nextCombinePipeFrontValid := False
+            ////rCombineChangingRow := True
+            //nextCombineChangingRow := True
+            rCombinePipeFrontPayload := doInitCombinePipePayload(
+              //prevLineMemArrIdx=0
+              changingRow=True,
+              prevLineMemArrIdx=rCombinePipeFrontPayload.lineMemArrIdx
+            )
+          } otherwise {
+            //nextCombineChangingRow := False
+            //nextCombinePipeFrontValid := rCombinePipeFrontValid
+            rCombinePipeFrontPayload.changingRow := False
+            rCombinePipeFrontPayload.cnt := (
+              rCombinePipeFrontPayload.cnt + 1
+            )
+            rCombinePipeFrontPayload.bakCnt := (
+              rCombinePipeFrontPayload.bakCnt - 1
+            )
+            rCombinePipeFrontPayload.bakCntMinus1 := (
+              rCombinePipeFrontPayload.bakCntMinus1 - 1
+            )
+          }
+          // END: test logic
         } otherwise {
-          rCombinePipeFrontPayload.cnt := rCombinePipeFrontPayload.cnt + 1
-          rCombinePipeFrontPayload.bakCnt := (
-            rCombinePipeFrontPayload.bakCnt - 1
-          )
-          rCombinePipeFrontPayload.bakCntMinus1 := (
-            rCombinePipeFrontPayload.bakCntMinus1 - 1
-          )
+          //nextCombineChangingRow := rCombineChangingRow
         }
-        // END: test logic
-      }
-      //when (rCombinePipeFrontPayload.bakCntWillBeDone()) {
-      //  rCombinePipeFrontValid := False
-      //  //rCombineChangingRow := True
+        //.otherwise {
+        //  nextCombinePipeFrontValid := rCombinePipeFrontValid
+        //}
+        //when (rCombinePipeFrontPayload.bakCntWillBeDone()) {
+        //  rCombinePipeFrontValid := False
+        //  //rCombineChangingRow := True
+        //}
       //}
-    }
+    //}
 
 
     //val rdPipeIn = KeepAttribute(
@@ -4963,7 +5081,7 @@ case class Gpu2d(
     def combineLineMemEntries(
       //someCombineLineMemArrIdx: Int
     ): Unit = {
-      val stageData = DualPipeStageData[Flow[CombinePipePayload]](
+      val stageData = DualPipeStageData[Stream[CombinePipePayload]](
         pipeIn=combinePipeIn,
         pipeOut=combinePipeOut,
         pipeNumMainStages=combinePipeNumMainStages,
@@ -4973,7 +5091,7 @@ case class Gpu2d(
         stageData=stageData.craft(0)
       )(
         pipeStageMainFunc=(
-          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          stageData: DualPipeStageData[Stream[CombinePipePayload]],
           idx: Int,
         ) => {
           val tempInp = stageData.pipeIn(idx)
@@ -4988,7 +5106,7 @@ case class Gpu2d(
           //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
         },
         copyOnlyFunc=(
-          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          stageData: DualPipeStageData[Stream[CombinePipePayload]],
           idx: Int,
         ) => {
           //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
@@ -5007,7 +5125,7 @@ case class Gpu2d(
         stageData=stageData.craft(1)
       )(
         pipeStageMainFunc=(
-          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          stageData: DualPipeStageData[Stream[CombinePipePayload]],
           idx: Int,
         ) => {
           val tempInp = stageData.pipeIn(idx)
@@ -5101,15 +5219,15 @@ case class Gpu2d(
 
             switch (
               //rCombineRdLineMemArrIdx
-              rCombineLineMemArrIdx
+              //rCombineLineMemArrIdx
               //tempInp.rdLineMemArrIdx
-              //tempInp.lineMemArrIdx
+              tempInp.lineMemArrIdx
             ) {
               for (
                 //jdx <- 0 to (1 << rCombineRdLineMemArrIdx.getWidth) - 1
-                jdx <- 0 to (1 << rCombineLineMemArrIdx.getWidth) - 1
+                //jdx <- 0 to (1 << rCombineLineMemArrIdx.getWidth) - 1
                 //jdx <- 0 to (1 << tempInp.rdLineMemArrIdx.getWidth) - 1
-                //jdx <- 0 to (1 << tempInp.lineMemArrIdx.getWidth) - 1
+                jdx <- 0 to (1 << tempInp.lineMemArrIdx.getWidth) - 1
               ) {
                 //tempCombineLineMemIdxArr += (
                 //  UInt(log2Up(params.lineMemSize) bits)
@@ -5164,7 +5282,7 @@ case class Gpu2d(
           //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
         },
         copyOnlyFunc=(
-          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          stageData: DualPipeStageData[Stream[CombinePipePayload]],
           idx: Int,
         ) => {
           //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
@@ -5184,7 +5302,7 @@ case class Gpu2d(
         stageData=stageData.craft(2)
       )(
         pipeStageMainFunc=(
-          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          stageData: DualPipeStageData[Stream[CombinePipePayload]],
           idx: Int,
         ) => {
           val tempInp = stageData.pipeIn(idx)
@@ -5235,7 +5353,7 @@ case class Gpu2d(
           //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
         },
         copyOnlyFunc=(
-          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          stageData: DualPipeStageData[Stream[CombinePipePayload]],
           idx: Int,
         ) => {
           //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
@@ -5254,7 +5372,7 @@ case class Gpu2d(
         stageData=stageData.craft(3)
       )(
         pipeStageMainFunc=(
-          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          stageData: DualPipeStageData[Stream[CombinePipePayload]],
           idx: Int,
         ) => {
           val tempInp = stageData.pipeIn(idx)
@@ -5292,7 +5410,7 @@ case class Gpu2d(
           }
         },
         copyOnlyFunc=(
-          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          stageData: DualPipeStageData[Stream[CombinePipePayload]],
           idx: Int,
         ) => {
           //stageData.pipeOut(idx).stage3 := stageData.pipeIn(idx).stage3
@@ -5310,7 +5428,7 @@ case class Gpu2d(
         stageData=stageData.craft(4)
       )(
         pipeStageMainFunc=(
-          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          stageData: DualPipeStageData[Stream[CombinePipePayload]],
           idx: Int,
         ) => {
           val tempInp = stageData.pipeIn(idx)
@@ -5328,7 +5446,7 @@ case class Gpu2d(
           }
         },
         copyOnlyFunc=(
-          stageData: DualPipeStageData[Flow[CombinePipePayload]],
+          stageData: DualPipeStageData[Stream[CombinePipePayload]],
           idx: Int,
         ) => {
           //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
