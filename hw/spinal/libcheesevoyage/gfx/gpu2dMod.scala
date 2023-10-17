@@ -777,10 +777,10 @@ case class Gpu2d(
   objPalEntryPush.ready := True
   //--------
   val ctrlEn = io.ctrlEn
-  val rPastCtrlEn = RegNext(ctrlEn) init(False)
+  //val rPastCtrlEn = RegNext(ctrlEn) init(False)
   //val rCtrlEn = Reg(Bool()) init(False)
   //ctrlEn := rCtrlEn
-  //ctrlEn := True
+  ctrlEn := True
 
   val pop = io.pop
   //val rPopValid = Reg(Bool()) init(True) //init(False)
@@ -805,12 +805,12 @@ case class Gpu2d(
 
   //val fifoPop = popFifo.io.pop
   //pop << fifoPop
-  when (pop.fire) {
-    ctrlEn := True
-    //rCtrlEn := True
-  } otherwise {
-    ctrlEn := rPastCtrlEn
-  }
+  //when (pop.fire) {
+  //  ctrlEn := True
+  //  //rCtrlEn := True
+  //} otherwise {
+  //  ctrlEn := rPastCtrlEn
+  //}
 
   //pop.payload := outp
   //val popPsb = PipeSkidBuf(
@@ -843,7 +843,7 @@ case class Gpu2d(
     }
     val objTileMem = Mem(
       //wordType=UInt(params.palEntryMemIdxWidth bits),
-      wordType=Gpu2dTile(params=params, isObj=false),
+      wordType=Gpu2dTile(params=params, isObj=true),
       //wordCount=params.numPxsForAllObjTiles,
       wordCount=params.numObjTiles,
     )

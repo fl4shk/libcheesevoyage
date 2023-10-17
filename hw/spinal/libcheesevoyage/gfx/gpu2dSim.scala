@@ -73,8 +73,10 @@ object Gpu2dSim extends App {
     bgTileSize2dPow=ElabVec2[Int](
       //x=log2Up(8),
       //y=log2Up(8),
-      x=log2Up(2),
-      y=log2Up(2),
+      x=log2Up(4),
+      y=log2Up(4),
+      //x=log2Up(2),
+      //y=log2Up(2),
     ),
     objTileSize2dPow=ElabVec2[Int](
       //x=log2Up(8),
@@ -92,7 +94,8 @@ object Gpu2dSim extends App {
     //numObjsPow=log2Up(2),
     numObjsPow=log2Up(4),
     //numBgTilesPow=Some(log2Up(256)),
-    numBgTilesPow=Some(log2Up(2)),
+    //numBgTilesPow=Some(log2Up(2)),
+    numBgTilesPow=Some(log2Up(16)),
     //numObjTilesPow=None,
     numObjTilesPow=Some(log2Up(8)),
     numColsInBgPalPow=log2Up(64),
@@ -213,15 +216,20 @@ object Gpu2dSim extends App {
         //} else if (jdx % 4 == 1) {
         //} else if (jdx % 4 == 2) {
         //}
-        if (idx > 0) {
+        if (idx == 0) {
           tempBgTile.setPx(
             pxsCoord=pxsCoord,
             colIdx=(jdx % 4) + 1,
           )
-        } else {
+        } else if (idx + 1 < tempBgTile.pxsSize2d.x) {
           tempBgTile.setPx(
             pxsCoord=pxsCoord,
             colIdx=jdx % 2,
+          )
+        } else {
+          tempBgTile.setPx(
+            pxsCoord=pxsCoord,
+            colIdx=(jdx % 4) + 2
           )
         }
 
@@ -236,33 +244,49 @@ object Gpu2dSim extends App {
     //  //tempBgTile.colIdxRowVec.getZero.asBits
     //)
 
-    val rBgTileCnt = Reg(UInt(gpu2dParams.numBgTilesPow + 2 bits)) init(0)
-    val rBgTile = Reg(cloneOf(tempBgTile)) init(tempBgTile.getZero)
+    //val rBgTileCnt = Reg(UInt(gpu2dParams.numBgTilesPow + 2 bits)) init(-1)
+    val nextBgTileCnt = SInt(gpu2dParams.numBgTilesPow + 2 bits)
+    val rBgTileCnt = RegNext(nextBgTileCnt) init(-1)
+    //val rBgTile = Reg(cloneOf(tempBgTile)) init(tempBgTile.getZero)
     val rBgTilePushValid = Reg(Bool()) init(True)
+    val tempBgTileToPush = cloneOf(tempBgTile)
 
-    //when (!rBgTileCnt.msb) 
+    //when (!rBgTileCnt.msb)
     when (rBgTileCnt < gpu2dParams.numBgTiles) {
-      when (gpuIo.bgTilePush.fire) {
-        when (rBgTileCnt + 1 === 1) {
-          //gpuIo.bgTilePush.payload.tile := tempBgTile.getZero
-          rBgTile := tempBgTile
-        } otherwise {
-          //gpuIo.bgTilePush.payload.tile := tempBgTile.getZero
-          rBgTile := rBgTile.getZero
+      //when (rBgTileCnt + 1 === 1) {
+      //  //gpuIo.bgTilePush.payload.tile := tempBgTile.getZero
+      //  tempBgTile := tempBgTile
+      //} otherwise {
+      //  //gpuIo.bgTilePush.payload.tile := tempBgTile.getZero
+      //  rBgTile := rBgTile.getZero
+      //}
+      when (rBgTileCnt === 1) {
+        tempBgTileToPush := tempBgTile
+      } otherwise {
+        tempBgTileToPush := tempBgTileToPush.getZero
+        when (nextBgTileCnt >= gpu2dParams.numBgTiles) {
+          rBgTilePushValid := False
         }
-        rBgTileCnt := rBgTileCnt + 1
       }
+      when (gpuIo.bgTilePush.fire) {
+        nextBgTileCnt := rBgTileCnt + 1
+      } otherwise {
+        nextBgTileCnt := rBgTileCnt
+      }
+    } otherwise {
+      tempBgTileToPush := tempBgTileToPush.getZero
+      nextBgTileCnt := rBgTileCnt
     }
-    when (rBgTileCnt + 1 >= gpu2dParams.numBgTiles) {
-      rBgTilePushValid := False
-    }
+    //when (rBgTileCnt + 1 >= gpu2dParams.numBgTiles) {
+    //  rBgTilePushValid := False
+    //}
     //gpuIo.bgTilePush.payload.memIdx := 1
     gpuIo.bgTilePush.valid := rBgTilePushValid
     //gpuIo.bgTilePush.valid := True
    // when (!rBgTileCnt.msb) {
-      gpuIo.bgTilePush.payload.tile := rBgTile
+      gpuIo.bgTilePush.payload.tile := tempBgTileToPush
       gpuIo.bgTilePush.payload.memIdx := (
-        rBgTileCnt(gpu2dParams.numBgTilesPow - 1 downto 0)
+        rBgTileCnt.asUInt(gpu2dParams.numBgTilesPow - 1 downto 0)
       )
     //} otherwise {
     //  gpuIo.bgTilePush.payload.tile := rBgTile
@@ -273,9 +297,11 @@ object Gpu2dSim extends App {
     //gpuIo.bgTilePush.payload.memIdx := gpu2dParams.intnlFbSize2d.x
     //--------
     val tempBgAttrs = Gpu2dBgAttrs(params=gpu2dParams)
-    tempBgAttrs.scroll := tempBgAttrs.scroll.getZero
+    //tempBgAttrs.scroll := tempBgAttrs.scroll.getZero
     //tempBgAttrs.scroll.x := 1
     //tempBgAttrs.scroll.y := 1
+    tempBgAttrs.scroll.x := 0
+    tempBgAttrs.scroll.y := 2
     tempBgAttrs.visib := True
     //tempBgAttrs.visib := False
     for (idx <- 0 to gpuIo.bgAttrsPushArr.size - 1) {
@@ -415,21 +441,20 @@ object Gpu2dSim extends App {
 
     when (rObjTileCnt < gpu2dParams.numObjTiles) {
       when (gpuIo.objTilePush.fire) {
-        ////when (nextObjTileCnt === 0) {
-        ////  mkObjTile(0, 1)
-        ////} //else
-        when (nextObjTileCnt === 2) {
-          //mkObjTile(1, 2)
+        when (rObjTileCnt === 0) {
+          //mkObjTile(0, 1)
+          mkObjTile(0, 0)
+        } elsewhen (rObjTileCnt === 1) {
+          mkObjTile(1, 2)
           //mkObjTile(3, 3)
+          //mkObjTile(2, 3)
+        } elsewhen (rObjTileCnt === 2) {
           mkObjTile(2, 3)
-        } //elsewhen (nextObjTileCnt === 2) {
-        ////  mkObjTile(2, 3)
-        ////} elsewhen (nextObjTileCnt === 3) {
-        ////  mkObjTile(3, 4)
-        ////} elsewhen (nextObjTileCnt === 4) {
-        ////  mkObjTile(4, 5)
-        ////} 
-        .otherwise {
+        } elsewhen (rObjTileCnt === 3) {
+          mkObjTile(3, 4)
+        } elsewhen (rObjTileCnt === 4) {
+          mkObjTile(4, 5)
+        } otherwise {
           tempObjTile := tempObjTile.getZero
           //when (rObjTileCnt >= gpu2dParams.numObjTiles) {
           //  rObjTilePushValid := False
@@ -493,72 +518,65 @@ object Gpu2dSim extends App {
     //val nextObjAttrsCnt = UInt(objAttrsCntWidth bits)
     //val rObjAttrsCnt = RegNext(nextObjAttrsCnt) init(0x0)
     val nextObjAttrsCnt = SInt(objAttrsCntWidth bits)
-    val rObjAttrsCnt = RegNext(nextObjAttrsCnt) init(0)
+    val rObjAttrsCnt = RegNext(nextObjAttrsCnt) init(-1)
     //val rObjAttrs = Reg(Gpu2dObjAttrs(params=gpu2dParams))
     //rObjAttrs.init(rObjAttrs.getZero)
     val rObjAttrsEntryPushValid = Reg(Bool()) init(True)
 
     when (rObjAttrsCnt < gpu2dParams.numObjs) {
+      when (rObjAttrsCnt === 0) {
+        tempObjAttrs.tileMemIdx := 1
+        tempObjAttrs.pos.x := 16
+        tempObjAttrs.pos.y := 3
+        tempObjAttrs.prio := 0
+        tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+      } elsewhen (rObjAttrsCnt === 1) {
+        tempObjAttrs.tileMemIdx := 2
+        //tempObjAttrs.tileMemIdx := 2
+        //tempObjAttrs.tileMemIdx := 0
+        //tempObjAttrs.pos.x := 1
+        //tempObjAttrs.pos.x := 16
+        //tempObjAttrs.pos.x := 2
+        tempObjAttrs.pos.x := 6
+        //tempObjAttrs.pos.y := -1
+        tempObjAttrs.pos.y := 6
+        tempObjAttrs.prio := 0
+        tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+      //} elsewhen (rObjAttrsCnt === 2) {
+      //  //tempObjAttrs.tileMemIdx := 1
+      //  //tempObjAttrs.pos.x := 8
+      //  //tempObjAttrs.pos.y := 0
+      //  //tempObjAttrs.prio := 1
+      //  //tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+      //  tempObjAttrs := tempObjAttrs.getZero
+      //} elsewhen (rObjAttrsCnt === 3) {
+      //  //tempObjAttrs.tileMemIdx := 0
+      //  //tempObjAttrs.pos.x := 8
+      //  //tempObjAttrs.pos.y := 0 //+ gpu2dParams.objTileSize2d.y - 1
+      //  //tempObjAttrs.prio := 0
+      //  //tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+      //  tempObjAttrs := tempObjAttrs.getZero
+      } otherwise {
+        //tempObjAttrs := tempObjAttrs.getZero
+        tempObjAttrs.tileMemIdx := 0
+        tempObjAttrs.pos.x := -gpu2dParams.objTileSize2d.x
+        tempObjAttrs.pos.y := 0
+        tempObjAttrs.prio := 1
+        tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+        when (nextObjAttrsCnt >= gpu2dParams.numObjs) {
+          rObjAttrsEntryPushValid := False
+        }
+        //rObjAttrsEntryPushValid := False
+      }
       when (gpuIo.objAttrsPush.fire) {
-        when (nextObjAttrsCnt === 1) {
-          tempObjAttrs.tileMemIdx := 1
-          //tempObjAttrs.tileMemIdx := 2
-          //tempObjAttrs.tileMemIdx := 0
-          //tempObjAttrs.pos.x := 1
-          //tempObjAttrs.pos.x := 16
-          //tempObjAttrs.pos.x := 2
-          tempObjAttrs.pos.x := 6
-          //tempObjAttrs.pos.y := -1
-          tempObjAttrs.pos.y := 6
-          tempObjAttrs.prio := 0
-          tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-        }
-        //elsewhen (nextObjAttrsCnt === 1) {
-        //  //tempObjAttrs.tileMemIdx := 1
-        //  //tempObjAttrs.pos.x := 8
-        //  //tempObjAttrs.pos.y := 0
-        //  //tempObjAttrs.prio := 1
-        //  //tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-        //  tempObjAttrs := tempObjAttrs.getZero
-        //} elsewhen (nextObjAttrsCnt === 2) {
-        //  //tempObjAttrs.tileMemIdx := 0
-        //  //tempObjAttrs.pos.x := 8
-        //  //tempObjAttrs.pos.y := 0 //+ gpu2dParams.objTileSize2d.y - 1
-        //  //tempObjAttrs.prio := 0
-        //  //tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-        //  tempObjAttrs := tempObjAttrs.getZero
-        //} elsewhen (nextObjAttrsCnt === 3) {
-        //  //tempObjAttrs.tileMemIdx := 3
-        //  //tempObjAttrs.pos.x := 10
-        //  //tempObjAttrs.pos.y := 0
-        //  //tempObjAttrs.prio := 0
-        //  //tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-        //  tempObjAttrs := tempObjAttrs.getZero
-        //} elsewhen (nextObjAttrsCnt === 4) {
-        //  //tempObjAttrs.tileMemIdx := 4
-        //  //tempObjAttrs.pos.x := 10
-        //  //tempObjAttrs.pos.y := 0
-        //  //tempObjAttrs.prio := 0
-        //  //tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-        //  tempObjAttrs := tempObjAttrs.getZero
-        //} 
-        .otherwise {
-          //tempObjAttrs := tempObjAttrs.getZero
-          tempObjAttrs.tileMemIdx := 0
-          tempObjAttrs.pos.x := -gpu2dParams.objTileSize2d.x
-          tempObjAttrs.pos.y := 0
-          tempObjAttrs.prio := 1
-          tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-          when (nextObjAttrsCnt >= gpu2dParams.numObjs) {
-            rObjAttrsEntryPushValid := False
-          }
-          //rObjAttrsEntryPushValid := False
-        }
         nextObjAttrsCnt := rObjAttrsCnt + 1
       } otherwise {
-        tempObjAttrs := tempObjAttrs.getZero
         nextObjAttrsCnt := rObjAttrsCnt
       }
+      //} otherwise {
+      //  tempObjAttrs := tempObjAttrs.getZero
+      //  nextObjAttrsCnt := rObjAttrsCnt
+      //}
     } otherwise {
       tempObjAttrs := tempObjAttrs.getZero
       nextObjAttrsCnt := rObjAttrsCnt
