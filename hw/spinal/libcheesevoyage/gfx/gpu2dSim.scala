@@ -250,6 +250,8 @@ object Gpu2dSim extends App {
     tempBgAttrs.scroll := tempBgAttrs.scroll.getZero
     //tempBgAttrs.scroll.x := 1
     //tempBgAttrs.scroll.y := 1
+    tempBgAttrs.visib := True
+    //tempBgAttrs.visib := False
     for (idx <- 0 to gpuIo.bgAttrsPushArr.size - 1) {
       val tempBgAttrsPush = gpuIo.bgAttrsPushArr(idx)
       if (idx == 0) {
@@ -386,20 +388,22 @@ object Gpu2dSim extends App {
       when (gpuIo.objTilePush.fire) {
         //when (nextObjTileCnt === 0) {
         //  mkObjTile(0, 1)
-        //} elsewhen (nextObjTileCnt === 1) {
-        //  mkObjTile(1, 2)
-        //} elsewhen (nextObjTileCnt === 2) {
+        //} //else
+        when (nextObjTileCnt === 2) {
+          mkObjTile(1, 2)
+        } //elsewhen (nextObjTileCnt === 2) {
         //  mkObjTile(2, 3)
         //} elsewhen (nextObjTileCnt === 3) {
         //  mkObjTile(3, 4)
         //} elsewhen (nextObjTileCnt === 4) {
         //  mkObjTile(4, 5)
-        //} otherwise {
+        //} 
+        .otherwise {
           tempObjTile := tempObjTile.getZero
           when (rObjTileCnt >= gpu2dParams.numObjTiles) {
             rObjTilePushValid := False
           }
-        //}
+        }
         nextObjTileCnt := rObjTileCnt + 1
       } otherwise {
         tempObjTile := tempObjTile.getZero
@@ -455,18 +459,18 @@ object Gpu2dSim extends App {
     //val nextObjAttrsCnt = UInt(objAttrsCntWidth bits)
     //val rObjAttrsCnt = RegNext(nextObjAttrsCnt) init(0x0)
     val nextObjAttrsCnt = SInt(objAttrsCntWidth bits)
-    val rObjAttrsCnt = RegNext(nextObjAttrsCnt) init(-1)
+    val rObjAttrsCnt = RegNext(nextObjAttrsCnt) init(0)
     //val rObjAttrs = Reg(Gpu2dObjAttrs(params=gpu2dParams))
     //rObjAttrs.init(rObjAttrs.getZero)
     val rObjAttrsEntryPushValid = Reg(Bool()) init(True)
 
     when (rObjAttrsCnt < gpu2dParams.numObjs) {
       when (gpuIo.objAttrsPush.fire) {
-        when (nextObjAttrsCnt === 0) {
+        when (nextObjAttrsCnt === 1) {
           tempObjAttrs.tileMemIdx := 1
           //tempObjAttrs.tileMemIdx := 0
           //tempObjAttrs.pos.x := 1
-          tempObjAttrs.pos.x := 0
+          tempObjAttrs.pos.x := 16
           //tempObjAttrs.pos.y := -1
           tempObjAttrs.pos.y := 0
           tempObjAttrs.prio := 0
