@@ -47,7 +47,8 @@ object Gpu2dSim extends App {
     ),
     vtiming=LcvVgaTimingHv(
       //visib=1 << 3,
-      visib=1 << 7,
+      visib=1 << 4,
+      //visib=1 << 7,
       //visib=4,
       //visib=8,
       front=1,
@@ -216,28 +217,28 @@ object Gpu2dSim extends App {
         //} else if (jdx % 4 == 1) {
         //} else if (jdx % 4 == 2) {
         //}
-        if (idx == 0) {
-          tempBgTile.setPx(
-            pxsCoord=pxsCoord,
-            colIdx=(jdx % 4) + 1,
-          )
-        } else if (idx + 1 < tempBgTile.pxsSize2d.x) {
-          tempBgTile.setPx(
-            pxsCoord=pxsCoord,
-            colIdx=jdx % 2,
-          )
-        } else {
-          tempBgTile.setPx(
-            pxsCoord=pxsCoord,
-            colIdx=(jdx % 4) + 2
-          )
-        }
+        //if (idx == 0) {
+        //  tempBgTile.setPx(
+        //    pxsCoord=pxsCoord,
+        //    colIdx=(jdx % 4) + 1,
+        //  )
+        //} else if (idx + 1 < tempBgTile.pxsSize2d.x) {
+        //  tempBgTile.setPx(
+        //    pxsCoord=pxsCoord,
+        //    colIdx=jdx % 2,
+        //  )
+        //} else {
+        //  tempBgTile.setPx(
+        //    pxsCoord=pxsCoord,
+        //    colIdx=(jdx % 4) + 2
+        //  )
+        //}
 
-        //tempBgTile.setPx(
-        //  pxsCoord=pxsCoord,
-        //  //colIdx=1,
-        //  colIdx=0,
-        //)
+        tempBgTile.setPx(
+          pxsCoord=pxsCoord,
+          colIdx=1,
+          //colIdx=0,
+        )
       }
     }
     //tempBgTile.colIdxRowVec.assignFromBits(
@@ -301,7 +302,10 @@ object Gpu2dSim extends App {
     //tempBgAttrs.scroll.x := 1
     //tempBgAttrs.scroll.y := 1
     tempBgAttrs.scroll.x := 0
-    tempBgAttrs.scroll.y := 2
+    //tempBgAttrs.scroll.y := 2
+    tempBgAttrs.scroll.y := 0
+    //tempBgAttrs.scroll.x := 6
+    //tempBgAttrs.scroll.y := 5
     tempBgAttrs.visib := True
     //tempBgAttrs.visib := False
     for (idx <- 0 to gpuIo.bgAttrsPushArr.size - 1) {
@@ -450,6 +454,7 @@ object Gpu2dSim extends App {
           //mkObjTile(2, 3)
         } elsewhen (rObjTileCnt === 2) {
           mkObjTile(2, 3)
+          //mkObjTile(2, 2)
         } elsewhen (rObjTileCnt === 3) {
           mkObjTile(3, 4)
         } elsewhen (rObjTileCnt === 4) {
@@ -530,32 +535,32 @@ object Gpu2dSim extends App {
         tempObjAttrs.pos.y := 3
         tempObjAttrs.prio := 0
         tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-      } elsewhen (rObjAttrsCnt === 1) {
-        tempObjAttrs.tileMemIdx := 2
-        //tempObjAttrs.tileMemIdx := 2
-        //tempObjAttrs.tileMemIdx := 0
-        //tempObjAttrs.pos.x := 1
-        //tempObjAttrs.pos.x := 16
-        //tempObjAttrs.pos.x := 2
-        tempObjAttrs.pos.x := 6
-        //tempObjAttrs.pos.y := -1
-        tempObjAttrs.pos.y := 6
-        tempObjAttrs.prio := 0
-        tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-      //} elsewhen (rObjAttrsCnt === 2) {
-      //  //tempObjAttrs.tileMemIdx := 1
-      //  //tempObjAttrs.pos.x := 8
-      //  //tempObjAttrs.pos.y := 0
-      //  //tempObjAttrs.prio := 1
-      //  //tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-      //  tempObjAttrs := tempObjAttrs.getZero
-      //} elsewhen (rObjAttrsCnt === 3) {
+      //} elsewhen (rObjAttrsCnt === 1) {
+      //  tempObjAttrs.tileMemIdx := 2
+      //  //tempObjAttrs.tileMemIdx := 2
       //  //tempObjAttrs.tileMemIdx := 0
-      //  //tempObjAttrs.pos.x := 8
-      //  //tempObjAttrs.pos.y := 0 //+ gpu2dParams.objTileSize2d.y - 1
-      //  //tempObjAttrs.prio := 0
-      //  //tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-      //  tempObjAttrs := tempObjAttrs.getZero
+      //  //tempObjAttrs.pos.x := 1
+      //  //tempObjAttrs.pos.x := 16
+      //  //tempObjAttrs.pos.x := 2
+      //  tempObjAttrs.pos.x := 6
+      //  //tempObjAttrs.pos.y := -1
+      //  tempObjAttrs.pos.y := 6
+      //  tempObjAttrs.prio := 0
+      //  tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+      ////} elsewhen (rObjAttrsCnt === 2) {
+      ////  //tempObjAttrs.tileMemIdx := 1
+      ////  //tempObjAttrs.pos.x := 8
+      ////  //tempObjAttrs.pos.y := 0
+      ////  //tempObjAttrs.prio := 1
+      ////  //tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+      ////  tempObjAttrs := tempObjAttrs.getZero
+      ////} elsewhen (rObjAttrsCnt === 3) {
+      ////  //tempObjAttrs.tileMemIdx := 0
+      ////  //tempObjAttrs.pos.x := 8
+      ////  //tempObjAttrs.pos.y := 0 //+ gpu2dParams.objTileSize2d.y - 1
+      ////  //tempObjAttrs.prio := 0
+      ////  //tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+      ////  tempObjAttrs := tempObjAttrs.getZero
       } otherwise {
         //tempObjAttrs := tempObjAttrs.getZero
         tempObjAttrs.tileMemIdx := 0
