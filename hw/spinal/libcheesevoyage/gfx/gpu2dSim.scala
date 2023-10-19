@@ -449,16 +449,20 @@ object Gpu2dSim extends App {
           //mkObjTile(0, 1)
           mkObjTile(0, 0)
         } elsewhen (rObjTileCnt === 1) {
-          mkObjTile(1, 2)
+          //mkObjTile(1, 2)
+          mkObjTile(1, 1)
           //mkObjTile(3, 3)
           //mkObjTile(2, 3)
         } elsewhen (rObjTileCnt === 2) {
-          mkObjTile(2, 3)
+          //mkObjTile(2, 3)
+          mkObjTile(2, 2)
           //mkObjTile(2, 2)
         } elsewhen (rObjTileCnt === 3) {
-          mkObjTile(3, 4)
+          //mkObjTile(3, 4)
+          mkObjTile(3, 3)
         } elsewhen (rObjTileCnt === 4) {
-          mkObjTile(4, 5)
+          //mkObjTile(4, 5)
+          mkObjTile(4, 4)
         } otherwise {
           tempObjTile := tempObjTile.getZero
           //when (rObjTileCnt >= gpu2dParams.numObjTiles) {
@@ -477,7 +481,6 @@ object Gpu2dSim extends App {
     when (rObjTileCnt + 1 >= gpu2dParams.numObjTiles) {
       rObjTilePushValid := False
     }
-
 
     gpuIo.objTilePush.valid := rObjTilePushValid
     gpuIo.objTilePush.payload.tile := tempObjTile
@@ -532,28 +535,32 @@ object Gpu2dSim extends App {
       when (rObjAttrsCnt === 0) {
         tempObjAttrs.tileMemIdx := 1
         tempObjAttrs.pos.x := 16
-        tempObjAttrs.pos.y := 3
+        tempObjAttrs.pos.y := 8
+        //tempObjAttrs.prio := 0
+        tempObjAttrs.prio := 1
+        tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+        //tempObjAttrs := tempObjAttrs.getZero
+      } elsewhen (rObjAttrsCnt === 1) {
+        //tempObjAttrs.tileMemIdx := 1
+        tempObjAttrs.tileMemIdx := 2
+        //tempObjAttrs.tileMemIdx := 0
+        //tempObjAttrs.pos.x := 1
+        //tempObjAttrs.pos.x := 16
+        //tempObjAttrs.pos.x := 2
+        tempObjAttrs.pos.x := 16
+        //tempObjAttrs.pos.y := -1
+        //tempObjAttrs.pos.y := 8
+        tempObjAttrs.pos.y := 9
         tempObjAttrs.prio := 0
         tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-      //} elsewhen (rObjAttrsCnt === 1) {
-      //  tempObjAttrs.tileMemIdx := 2
-      //  //tempObjAttrs.tileMemIdx := 2
-      //  //tempObjAttrs.tileMemIdx := 0
-      //  //tempObjAttrs.pos.x := 1
-      //  //tempObjAttrs.pos.x := 16
-      //  //tempObjAttrs.pos.x := 2
-      //  tempObjAttrs.pos.x := 6
-      //  //tempObjAttrs.pos.y := -1
-      //  tempObjAttrs.pos.y := 6
-      //  tempObjAttrs.prio := 0
-      //  tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-      ////} elsewhen (rObjAttrsCnt === 2) {
-      ////  //tempObjAttrs.tileMemIdx := 1
-      ////  //tempObjAttrs.pos.x := 8
-      ////  //tempObjAttrs.pos.y := 0
-      ////  //tempObjAttrs.prio := 1
-      ////  //tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-      ////  tempObjAttrs := tempObjAttrs.getZero
+        //tempObjAttrs := tempObjAttrs.getZero
+      } elsewhen (rObjAttrsCnt === 2) {
+        tempObjAttrs.tileMemIdx := 3
+        tempObjAttrs.pos.x := 8
+        tempObjAttrs.pos.y := 8
+        tempObjAttrs.prio := 0
+        tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+        //tempObjAttrs := tempObjAttrs.getZero
       ////} elsewhen (rObjAttrsCnt === 3) {
       ////  //tempObjAttrs.tileMemIdx := 0
       ////  //tempObjAttrs.pos.x := 8

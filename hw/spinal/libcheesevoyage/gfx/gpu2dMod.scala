@@ -142,8 +142,8 @@ case class Gpu2dParams(
   //def numLineMems = 1 << physFbSize2dScalePow.y
   //def numLineMems = 4
   //def numLineMems = 2
-  //def numLineMemsPerBgObjRenderer = 4
-  def numLineMemsPerBgObjRenderer = 2
+  def numLineMemsPerBgObjRenderer = 4
+  //def numLineMemsPerBgObjRenderer = 2
   //def numLineMems = numBgs
   //def wrBgObjStallFifoAmountCanPush = 8
   def combinePipeOverflowFifoSize = lineMemSize
@@ -1094,7 +1094,8 @@ case class Gpu2d(
     }
     case class ObjLineMemEntry() extends Bundle {
       val col = Gpu2dRgba(params=params)
-      val prio = UInt(params.numBgsPow bits)
+      val prio = UInt((params.numBgsPow + 1) bits)
+      val addr = UInt(log2Up(params.lineMemSize) bits)
       //val written = Bool() // only used for prio
       //val prio = UInt((params.numBgsPow + 1) bits)
       //val objIdx = UInt(params.numObjsPow bits)
@@ -1136,8 +1137,10 @@ case class Gpu2d(
     //  depth=params.lineFifoDepth,
     //)
 
+
     val bgLineMemArr = new ArrayBuffer[Mem[BgLineMemEntry]]()
     val objLineMemArr = new ArrayBuffer[Mem[ObjLineMemEntry]]()
+
     //def combineLineMemArr = bgLineMemArr
     //val combineLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
     //val wrLineMemIdx
@@ -1158,6 +1161,7 @@ case class Gpu2d(
       )
         .initBigInt(Array.fill(params.lineMemSize)(BigInt(0)).toSeq)
         .addAttribute("ram_style", params.lineArrRamStyle)
+        .setName(f"bgLineMemArr_$idx")
       objLineMemArr += Mem(
         //wordType=Rgb(params.rgbConfig),
         wordType=ObjLineMemEntry(),
@@ -1165,7 +1169,20 @@ case class Gpu2d(
       )
         .initBigInt(Array.fill(params.lineMemSize)(BigInt(0)).toSeq)
         .addAttribute("ram_style", params.lineArrRamStyle)
+        .setName(f"objLineMemArr_$idx")
     }
+    //val dbgObjLineMemVec = Reg(
+    //  Vec.fill(params.numLineMemsPerBgObjRenderer)(
+    //    Vec.fill(params.lineMemSize)(
+    //      ObjLineMemEntry()
+    //    )
+    //  )
+    //)
+    //for (vecIdx <- 0 to dbgObjLineMemVec.size - 1) {
+    //  for (memIdx <- 0 to dbgObjLineMemVec(vecIdx).size - 1) {
+    //    dbgObjLineMemVec(vecIdx)(memIdx).init(ObjLineMemEntry().getZero)
+    //  }
+    //}
 
     //val nextLineIdx = KeepAttribute(UInt(log2Up(params.numLineMems) bits))
     //val rLineIdx = KeepAttribute(RegNext(nextLineIdx)) init(0x0)
@@ -1217,6 +1234,10 @@ case class Gpu2d(
       //init(0x3)
       init(wrLineMemArrIdxInit)
     )
+    val rCombineLineMemArrIdx = KeepAttribute(
+      Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits))
+      init(combineLineMemArrIdxInit)
+    )
     //def wrLineNumInit = 0x3
     //def wrLineNumInit = 0x2
     def wrLineNumWidth = log2Up(params.intnlFbSize2d.y)
@@ -1224,9 +1245,11 @@ case class Gpu2d(
     //def wrLineNumInit = U(f"$wrLineNumWidth'd1")
     //def wrLineNumInit = U(f"$wrLineNumWidth'd0")
     //def wrLineNumInit = U(f"$wrLineNumWidth'd2")
-    def wrBgLineNumInit = U(f"$wrLineNumWidth'd2")
+    //def wrBgLineNumInit = U(f"$wrLineNumWidth'd2")
+    def wrBgLineNumInit = U(f"$wrLineNumWidth'd0")
     //def wrObjLineNumInit = U(f"$wrLineNumWidth'd1")
-    def wrObjLineNumInit = U(f"$wrLineNumWidth'd2")
+    //def wrObjLineNumInit = U(f"$wrLineNumWidth'd2")
+    def wrObjLineNumInit = U(f"$wrLineNumWidth'd0")
     val rGlobWrBgLineNum = KeepAttribute(
       Reg(UInt(wrLineNumWidth bits))
       //init(0x2)
@@ -1353,6 +1376,7 @@ case class Gpu2d(
       //rWrLineNum := rWrLineNum + 1
 
       rWrLineMemArrIdx := rWrLineMemArrIdx + 1
+      rCombineLineMemArrIdx := rCombineLineMemArrIdx + 1
       rGlobWrBgLineNum := (
         rGlobWrBgLineNumPipe1(rGlobWrBgLineNum.bitsRange)
       )
@@ -1613,6 +1637,7 @@ case class Gpu2d(
     //def wrBgPipePalEntryStageIdx = 6
     //def wrBgPipeLineMemEntryStageIdx = 7
 
+    //def wrBgPipeNumMainStages = 7
     def wrBgPipeNumMainStages = 8
     //def wrBgPipeNumMainStages = 9
 
@@ -1637,8 +1662,9 @@ case class Gpu2d(
     //def wrObjPipeCntWidth = (
     //  params.objTileSize2dPow.x + params.numObjsPow + 1
     //)
-    def wrObjPipeBakCntWidth = (
+    def wrObjPipeCntWidth = (
       params.objTileSize2dPow.x + params.objAttrsMemIdxWidth + 1
+      //params.objTileSize2dPow.x + params.objAttrsMemIdxWidth
       //params.objAttrsMemIdxWidth + 1
     )
     def wrObjPipeBakCntStart = (
@@ -1647,6 +1673,52 @@ case class Gpu2d(
       //(1 << params.objAttrsMemIdxWidth)
       //- 1
     )
+    //println(f"testificate: $wrObjPipeCntWidth $wrObjPipeBakCntStart")
+
+    //def wrObjPipeStage5NumFwd = 5
+    ////def wrObjPipeStage5NumFwd = 4
+    ////def wrObjPipeStage5NumFwd = 3
+    ////def wrObjPipeStage5NumFwd = 3
+    ////def wrObjPipeStage5NumFwd = 2
+    //case class WrObjPipeStage5Fwd() extends Bundle {
+    //  //val pxPosX = SInt(params.objPxsCoordSize2dPow.x bits)
+    //  //val pxPosX = SInt(params.objPxsCoordSize2dPow.x bits)
+    //  val pxPos = params.objPxsCoordT()
+    //  //val overwriteLineMemEntry = Bool()
+    //}
+    //def wrObjPipeStage6NumFwd = 3
+    ////def wrObjPipeStage6NumFwd = 2
+    //case class WrObjPipeStage6Fwd() extends Bundle {
+    //  //val pxPosX = SInt(params.objPxsCoordSize2dPow.x bits)
+    //  val pxPosX = SInt(params.objPxsCoordSize2dPow.x bits)
+    //  //val overwriteLineMemEntry = Bool()
+    //}
+    def wrObjPipeStage6NumFwd = 3
+    //def wrObjPipeStage6NumFwd = 2
+    //def wrObjPipeStage6NumFwd = 1
+    case class WrObjPipeStage6Fwd() extends Bundle {
+      //val pxPosX = SInt(params.objPxsCoordSize2dPow.x bits)
+      //val pxPosInLine = Bool()
+      //val palEntry = Gpu2dPalEntry(params=params)
+      //val stage6 = Stage6()
+      //val pxPosXIsSame = Bool()
+      //val pxPosXIsSame = Bool()
+      //val prio = UInt(params.numBgsPow bits)
+      val objAttrsMemIdx = UInt(
+        //(wrObjPipeCntWidth - params.objAttrsMemIdxWidth.x) bits
+        params.objAttrsMemIdxWidth bits
+      )
+      val pxPos = params.objPxsCoordT()
+      val prio = UInt(params.numBgsPow bits)
+      val overwriteLineMemEntry = Bool()
+      val wrLineMemEntry = ObjLineMemEntry()
+    }
+    case class WrObjPipeStage0JustCopy() extends Bundle {
+      val lineNum = UInt(wrLineNumWidth bits)
+      val cnt = UInt(wrObjPipeCntWidth bits)
+      val bakCnt = UInt(wrObjPipeCntWidth bits)
+      val bakCntMinus1 = UInt(wrObjPipeCntWidth bits)
+    }
     case class WrObjPipePayload() extends Bundle {
       // Which sprite are we processing?
       case class Stage0() extends Bundle {
@@ -1659,22 +1731,37 @@ case class Gpu2d(
         //  //log2Up(params.numLineMemsPerBgObjRenderer) bits
         //  lineMemArrIdxWidth bits
         //)
-        val lineNum = UInt(wrLineNumWidth bits)
-        val cnt = UInt(wrObjPipeBakCntWidth bits)
-        val bakCnt = UInt(wrObjPipeBakCntWidth bits)
-        val bakCntMinus1 = UInt(wrObjPipeBakCntWidth bits)
+        //val justCopy = new Bundle {
+        //}
+        val justCopy = WrObjPipeStage0JustCopy()
+        def lineNum = justCopy.lineNum
+        def cnt = justCopy.cnt
+        def bakCnt = justCopy.bakCnt
+        def bakCntMinus1 = justCopy.bakCntMinus1
 
         //val objAttrsMemIdx = SInt(params.objAttrsMemIdxWidth + 1 bits)
         //val objAttrsMemIdx = cloneOf(rWrObjPipeFrontObjAttrsMemIdx)
         //val objAttrsMemIdx = UInt(params.objAttrsMemIdxWidth bits)
 
-        def objAttrsMemIdx() = bakCnt(
-          bakCnt.high - 1
-          downto (bakCnt.high - 1 - params.objAttrsMemIdxWidth + 1)
-        )
+        val innerObjAttrsMemIdx = UInt(params.objAttrsMemIdxWidth bits)
+        //innerObjAttrsMemIdx := bakCnt(
+        //  //bakCnt.high - 1
+        //  //downto (bakCnt.high - 1 - params.objAttrsMemIdxWidth + 1)
+        //  //bakCnt.high
+        //  //downto (bakCnt.high - (params.objAttrsMemIdxWidth - 1))
+        //  //(params.objAttrsMemIdxWidth + params.objTileSize2dPow.x - 1)
+        //  //downto params.objTileSize2dPow.x
+
+        //  params.objAttrsMemIdxWidth + params.objTileSize2dPow.x - 1
+        //  downto params.objTileSize2dPow.x
+        //)
+        def objAttrsMemIdx() = innerObjAttrsMemIdx
         //def getBakCntTilePxsCoordX() = bakCnt(
         //  (bakCnt.high - 1 - params.objAttrsMemIdxWidth)
         //  downto 0
+        //)
+        //def getCntObjIdx() = cnt(
+        //  cnt.high downto params.objTileSize2dPow.x
         //)
         def getCntTilePxsCoordX() = cnt(
           //(cnt.high - 1 - params.objAttrsMemIdxWidth)
@@ -1733,10 +1820,22 @@ case class Gpu2d(
 
         //val oldPxPosInLineCheck = Vec2(Bool())
       }
+
       case class Stage5() extends Bundle {
         val palEntry = Gpu2dPalEntry(params=params)
         val pxPosInLine = Bool()
 
+        //def numFwd = wrObjPipeStage5NumFwd
+        //val fwdVec = Vec.fill(numFwd)(WrObjPipeStage5Fwd())
+
+        //val pxPosXConcat = Bits(
+        //  //numFwd bits
+        //  numFwd - 1 bits
+        //)
+        //val pxPosConcat = Vec2(Bits(
+        //  (numFwd - 1) bits
+        //))
+        //val pxPosConcat = Vec.fill(numFwd - 1)(Vec2(Bool()))
         // "rd..." here means it's been read from `objLineMemArr`
         val rdLineMemEntry = ObjLineMemEntry()
       }
@@ -1744,15 +1843,37 @@ case class Gpu2d(
       //  val pastStage2 = Stage2()
       //  val pastRdLineMemEntry = ObjLineMemEntry()
       //}
-      case class Stage6() extends Bundle {
-        //val rdLineMemEntry = ObjLineMemEntry()
-        val overwriteLineMemEntry = Bool()
-      }
-      case class Stage7() extends Bundle {
-        val wrLineMemEntry = ObjLineMemEntry()
-      }
-      //case class Stage7() extends Bundle {
+      //case class Stage6() extends Bundle {
+      //  //val rdLineMemEntry = ObjLineMemEntry()
+      //  val overwriteLineMemEntry = Bool()
+      //  //val pxPosXIsSame = Bool()
+      //  //val pxPosIsSame = Bool()
+      //  //val pxPosIsSame = Vec2(Bool())
+
+
+      //  //def numFwd = wrObjPipeStage6NumFwd
+      //  //val fwdVec = Vec.fill(numFwd)(WrObjPipeStage6Fwd())
+
+      //  //val pxPosXSameAsPrevious = Bool()
+      //  //val prevPxPosX = SInt(params.objPxsCoordSize2dPow.x bits)
       //}
+
+      // This is similar to a strictly in-order CPU pipeline's
+      // ALU operand forwarding
+      //def wrObjPipeStage5NumFwd
+      //def stage7NumFwd = 2
+      case class Stage6() extends Bundle {
+        val overwriteLineMemEntry = Bool()
+        //def numFwd = stage6NumFwd
+        val wrLineMemEntry = ObjLineMemEntry()
+
+        def numFwd = wrObjPipeStage6NumFwd
+        val fwdVec = Vec.fill(numFwd)(WrObjPipeStage6Fwd())
+        //val savedWrLineMemEntryVec = Vec.fill(numFwd)(ObjLineMemEntry())
+
+        //def numSaved = 3
+        //val savedWrLineMemEntryVec = Vec.fill(numSaved)(ObjLineMemEntry())
+      }
       case class PostStage0() extends Bundle {
         val stage1 = Stage1()
         val stage2 = Stage2()
@@ -1760,7 +1881,7 @@ case class Gpu2d(
         val stage4 = Stage4()
         val stage5 = Stage5()
         val stage6 = Stage6()
-        val stage7 = Stage7()
+        //val stage7 = Stage7()
         //val stage7 = Stage7()
       }
 
@@ -1809,15 +1930,25 @@ case class Gpu2d(
       //def palEntryNzMemIdx = stage5.palEntryNzMemIdx
       //def oldPxPosInLineCheck = stage5.oldPxPosInLineCheck
       def palEntry = stage5.palEntry
+      //def pxPosXConcat = stage5.pxPosXConcat
+      //def pxPosConcat = stage5.pxPosConcat
       def pxPosInLine = stage5.pxPosInLine
       def rdLineMemEntry = stage5.rdLineMemEntry
 
       def stage6 = postStage0.stage6
       def overwriteLineMemEntry = stage6.overwriteLineMemEntry
+      //def pxPosXIsSame = stage6.pxPosXIsSame
+      //def pxPosIsSame = stage6.pxPosIsSame
       //def rdLineMemEntry = stage6.rdLineMemEntry
 
-      def stage7 = postStage0.stage7
-      def wrLineMemEntry = stage7.wrLineMemEntry
+      //def stage7 = postStage0.stage7
+      //def fwdPxPosXVec = stage7.fwdPxPosXVec
+      //def fwdPxPosInLineVec = stage7.fwdPxPosInLineVec
+      //def fwdOverwriteLineMemEntryVec = stage7.fwdOverwriteLineMemEntryVec
+      //def fwdLineMemEntryVec = stage7.fwdLineMemEntryVec
+      //def numFwd = stage7.numFwd
+      //def fwdVec = stage7.fwdVec
+      def wrLineMemEntry = stage6.wrLineMemEntry
       //def palEntry = stage6.palEntry
       //def pxPosInLine = stage6.pxPosInLine
       //def rdLineMemEntry = stage6.rdLineMemEntry
@@ -1908,7 +2039,9 @@ case class Gpu2d(
 
     //def wrObjPipeWrLineMemEntryStageIdx = 7
 
-    def wrObjPipeNumMainStages = 8
+    //def wrObjPipeNumMainStages = 6
+    def wrObjPipeNumMainStages = 7
+    //def wrObjPipeNumMainStages = 8
     //def wrObjPipeNumMainStages = 9
 
     //def wrBgObjPipeNumStages = max(
@@ -2049,7 +2182,7 @@ case class Gpu2d(
         //val wrLineMemArrIdx = cloneOf(rdLineMemArrIdx)
         // combining can be done backwards
         val changingRow = Bool()
-        val lineMemArrIdx = UInt(lineMemArrIdxWidth bits)
+        //val lineMemArrIdx = UInt(lineMemArrIdxWidth bits)
         val cnt = UInt(combinePipeCntWidth bits)
         val bakCnt = UInt(combinePipeCntWidth bits)
         val bakCntMinus1 = UInt(combinePipeCntWidth bits)
@@ -2066,7 +2199,7 @@ case class Gpu2d(
       def changingRow = stage0.changingRow
       //def rdLineMemArrIdx = stage0.rdLineMemArrIdx
       //def wrLineMemArrIdx = stage0.wrLineMemArrIdx
-      def lineMemArrIdx = stage0.lineMemArrIdx
+      //def lineMemArrIdx = stage0.lineMemArrIdx
       def cnt = stage0.cnt
       def bakCnt = stage0.bakCnt
       def bakCntMinus1 = stage0.bakCntMinus1
@@ -2113,7 +2246,7 @@ case class Gpu2d(
       changingRow: Bool,
       //prevRdLineMemArrIdx: UInt,
       //prevWrLineMemArrIdx: UInt,
-      prevLineMemArrIdx: UInt,
+      //prevLineMemArrIdx: UInt,
     ): CombinePipePayload = {
       val ret = CombinePipePayload()
       ret.changingRow := changingRow
@@ -2121,7 +2254,7 @@ case class Gpu2d(
       ////ret.wrLineMemArrIdx := rCombineWrLineMemArrIdx
       //ret.rdLineMemArrIdx := prevRdLineMemArrIdx + 1
       //ret.wrLineMemArrIdx := prevWrLineMemArrIdx + 1
-      ret.lineMemArrIdx := prevLineMemArrIdx + 1
+      //ret.lineMemArrIdx := prevLineMemArrIdx + 1
       ret.cnt := 0
       ret.bakCnt := combinePipeBakCntStart
       ret.bakCntMinus1 := combinePipeBakCntStart - 1
@@ -2864,11 +2997,20 @@ case class Gpu2d(
       changingRow=True,
       //prevRdLineMemArrIdx=combineRdLineMemArrIdxInit,
       //prevWrLineMemArrIdx=combineWrLineMemArrIdxInit,
-      prevLineMemArrIdx=combineLineMemArrIdxInit
+      //prevLineMemArrIdx=combineLineMemArrIdxInit
     ))
 
-    combinePipeIn(0).valid := rCombinePipeFrontValid
-    combinePipeIn(0).payload := rCombinePipeFrontPayload
+    val haltCombinePipe = Bool()
+    val combinePipeInVeryFront = Stream(CombinePipePayload())
+    val combinePipeInVeryFrontHaltWhen = combinePipeInVeryFront.haltWhen(
+      haltCombinePipe
+    )
+    //combinePipeIn(0) << combinePipeInVeryFrontHaltWhen
+    combinePipeIn(0) <-/< combinePipeInVeryFrontHaltWhen
+    //combinePipeIn(0).valid := rCombinePipeFrontValid
+    //combinePipeIn(0).payload := rCombinePipeFrontPayload
+    combinePipeInVeryFront.valid := rCombinePipeFrontValid
+    combinePipeInVeryFront.payload := rCombinePipeFrontPayload
 
     //val combinePipeStage1Busy = Reg(Bool()) init(False)
     //val combinePipeStage1Busy = Bool()
@@ -3068,7 +3210,29 @@ case class Gpu2d(
         //    )
         //  }
         //}
-        when (combinePipeIn(0).fire) {
+
+        val rPastHaltCombinePipe = RegNext(haltCombinePipe) init(False)
+        when (intnlChangingRowRe) {
+          haltCombinePipe := False
+        } elsewhen (
+          //combinePipeIn(0).fire
+          //&& combinePipeIn(0).changingRow
+          //combinePipeInVeryFront.fire
+          //&& combinePipeInVeryFront.changingRow
+          //combinePipeInVeryFront.changingRow
+          //combinePipeIn(0).changingRow
+          //combinePipeInVeryFront.changingRow
+          combinePipeInVeryFrontHaltWhen.changingRow
+        ) {
+          haltCombinePipe := True
+        } otherwise {
+          //haltCombinePipe := False
+          haltCombinePipe := rPastHaltCombinePipe
+        }
+        when (
+          //combinePipeIn(0).fire
+          combinePipeInVeryFrontHaltWhen.fire
+        ) {
           //rCombinePipeFrontPayload.cnt := rCombinePipeFrontPayload.cnt + 1
           //rCombinePipeFrontPayload.bakCnt := (
           //  rCombinePipeFrontPayload.bakCnt - 1
@@ -3089,7 +3253,9 @@ case class Gpu2d(
             rCombinePipeFrontPayload := doInitCombinePipePayload(
               //prevLineMemArrIdx=0
               changingRow=True,
-              prevLineMemArrIdx=rCombinePipeFrontPayload.lineMemArrIdx
+              //prevLineMemArrIdx=rCombinePipeFrontPayload.lineMemArrIdx
+              //prevLineMemArrIdx=rCombinePipeFrontPayload.lineMemArrIdx
+              //prevLineMemArrIdx=0
             )
           } otherwise {
             //nextCombineChangingRow := False
@@ -4354,6 +4520,18 @@ case class Gpu2d(
         pipeNumMainStages=wrObjPipeNumMainStages,
         pipeStageIdx=0,
       )
+      //val rStage5FwdVec = Vec.fill(wrObjPipeStage5NumFwd)(
+      //  Reg(WrObjPipeStage5Fwd())
+      //)
+      //for (fwdIdx <- 0 to rStage5FwdVec.size - 1) {
+      //  rStage5FwdVec(fwdIdx).setName(f"rWrObjPipeStage5FwdVec_$fwdIdx")
+      //}
+      val rStage6FwdVec = Vec.fill(wrObjPipeStage6NumFwd)(
+        Reg(WrObjPipeStage6Fwd())
+      )
+      for (fwdIdx <- 0 to rStage6FwdVec.size - 1) {
+        rStage6FwdVec(fwdIdx).setName(f"rWrObjPipeStage6FwdVec_$fwdIdx")
+      }
       // BEGIN: stage 0
       HandleDualPipe(
         stageData=stageData.craft(0)
@@ -4365,7 +4543,21 @@ case class Gpu2d(
           //stageData.pipeOut(idx).cnt := (
           //  stageData.pipeIn(idx).cnt
           //)
-          stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
+          //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
+          def tempInp = stageData.pipeIn(0).stage0
+          def tempOutp = stageData.pipeOut(0).stage0
+          tempOutp.justCopy := tempInp.justCopy
+          tempOutp.innerObjAttrsMemIdx := tempInp.bakCnt(
+            //bakCnt.high - 1
+            //downto (bakCnt.high - 1 - params.objAttrsMemIdxWidth + 1)
+            //bakCnt.high
+            //downto (bakCnt.high - (params.objAttrsMemIdxWidth - 1))
+            //(params.objAttrsMemIdxWidth + params.objTileSize2dPow.x - 1)
+            //downto params.objTileSize2dPow.x
+
+            params.objAttrsMemIdxWidth + params.objTileSize2dPow.x - 1
+            downto params.objTileSize2dPow.x
+          )
         },
         copyOnlyFunc=(
           stageData: DualPipeStageData[Flow[WrObjPipePayload]],
@@ -4632,28 +4824,67 @@ case class Gpu2d(
             tempOutp.pxPosInLine := (
               tempInp.pxPosRangeCheck.x && tempInp.pxPosRangeCheck.y
             )
-            switch (
-              rWrLineMemArrIdx
-              //tempInp.lineMemArrIdx
-            ) {
-              for (
-                jdx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1
-                //jdx <- 0 to (1 << tempInp.lineMemArrIdx.getWidth) - 1
+            //def fwdVec = tempOutp.stage5.fwdVec
+            //def rFwdVec = rStage5FwdVec
+
+            //for (fwdIdx <- 0 to rFwdVec.size - 1) {
+            //  rFwdVec(fwdIdx).init(rFwdVec(fwdIdx).getZero)
+            //  when (tempInp.fire) {
+            //    rFwdVec(fwdIdx) := fwdVec(fwdIdx)
+            //  }
+            //  if (fwdIdx > 0) {
+            //    fwdVec(fwdIdx) := rFwdVec(fwdIdx - 1)
+            //  }
+            //}
+            ////val tempConcat = Bits(fwdVec.size bits)
+            //for (fwdIdx <- 0 to fwdVec.size - 1) {
+            //  if (fwdIdx == 0) {
+            //    //fwdVec(fwdIdx).pxPosXIsSame := (
+            //    //  tempInp.pxPos.x === tempInp.objAttrs.pos
+            //    //)
+            //    //fwdVec(fwdIdx).pxPosX := tempInp.pxPos.x
+            //    fwdVec(fwdIdx).pxPos := tempInp.pxPos
+            //  } else {
+            //    //fwdVec(fwdIdx) := fwdVec(fwdIdx - 1)
+            //    tempOutp.pxPosConcat.x(fwdIdx - 1) := (
+            //      //tempInp.pxPos.x === fwdVec(fwdIdx).pxPosX
+            //      tempInp.pxPos.x === fwdVec(fwdIdx).pxPos.x
+            //    )
+            //    tempOutp.pxPosConcat.y(fwdIdx - 1) := (
+            //      //tempInp.pxPos.x === fwdVec(fwdIdx).pxPosX
+            //      tempInp.pxPos.y === fwdVec(fwdIdx).pxPos.y
+            //    )
+            //  }
+            //}
+            //val rPastRdLineMemEntry = Reg(cloneOf(tempOutp.rdLineMemEntry))
+            //rPastRdLineMemEntry.init(rPastRdLineMemEntry.getZero)
+            //rPastRdLineMemEntry := tempOutp.rdLineMemEntry
+            //when (tempOutp.fire) {
+              switch (
+                rWrLineMemArrIdx
+                //tempInp.lineMemArrIdx
               ) {
-                is (jdx) {
-                  tempOutp.rdLineMemEntry := (
-                    objLineMemArr(jdx).readAsync(
-                      //address=tempInp.pxPos.x.asUInt.resized,
-                      address=tempInp.pxPos.x.asUInt(
-                        log2Up(params.lineMemSize) - 1 downto 0
-                      ),
-                      //readUnderWrite=writeFirst,
-                      //readUnderWrite=writeFirst,
+                for (
+                  jdx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1
+                  //jdx <- 0 to (1 << tempInp.lineMemArrIdx.getWidth) - 1
+                ) {
+                  is (jdx) {
+                    tempOutp.rdLineMemEntry := (
+                      objLineMemArr(jdx).readAsync(
+                        //address=tempInp.pxPos.x.asUInt.resized,
+                        address=tempInp.pxPos.x.asUInt(
+                          log2Up(params.lineMemSize) - 1 downto 0
+                        ),
+                        //readUnderWrite=writeFirst,
+                        //readUnderWrite=writeFirst,
+                      )
                     )
-                  )
+                  }
                 }
               }
-            }
+            //} otherwise {
+            //  tempOutp.rdLineMemEntry := rPastRdLineMemEntry
+            //}
           //}
         },
         copyOnlyFunc=(
@@ -4666,6 +4897,109 @@ case class Gpu2d(
       // END: Stage 5
 
       // BEGIN: Stage 6
+      //HandleDualPipe(
+      //  stageData=stageData.craft(6)
+      //)(
+      //  pipeStageMainFunc=(
+      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+
+      //    //switch (rWrLineMemArrIdx) {
+      //    //  for (jdx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1) {
+      //    //    is (jdx) {
+      //    //      
+      //    //    }
+      //    //  }
+      //    //}
+
+      //    //when (tempInp.rdLineMemEntry.col.a) {
+      //    //when (tempInp.rdLineMemEntry.prio === 0) {
+      //    //}
+      //    //for (x <- 0 to params.objTileSize2d.x - 1) {
+      //      //switch (
+      //      //  rWrLineMemArrIdx
+      //      //  //tempInp.lineMemArrIdx
+      //      //) {
+      //      //  for (
+      //      //    jdx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1
+      //      //    //jdx <- 0 to (1 << tempInp.lineMemArrIdx.getWidth) - 1
+      //      //  ) {
+      //      //    is (jdx) {
+      //      //      tempOutp.rdLineMemEntry := (
+      //      //        objLineMemArr(jdx).readAsync(
+      //      //          //address=tempInp.pxPos.x.asUInt.resized,
+      //      //          address=tempInp.pxPos.x.asUInt(
+      //      //            log2Up(params.lineMemSize) - 1 downto 0
+      //      //          ),
+      //      //          readUnderWrite=writeFirst,
+      //      //          //readUnderWrite=writeFirst,
+      //      //        )
+      //      //      )
+      //      //    }
+      //      //  }
+      //      //}
+      //      //tempOutp.pxPosXIsSame := tempConcat =/= 0
+
+      //      //tempOutp.pxPosIsSame.x := (
+      //      //  //tempInp.pxPosXConcat(tempInp.pxPosXConcat.high downto 1)
+      //      //  tempInp.pxPosConcat.x =/= 0
+      //      //)
+      //      //tempOutp.pxPosIsSame.y := (
+      //      //  //tempInp.pxPosXConcat(tempInp.pxPosXConcat.high downto 1)
+      //      //  tempInp.pxPosConcat.y =/= 0
+      //      //)
+      //      when (tempInp.pxPosInLine) {
+      //        // BEGIN: debug comment this out
+      //        when (
+      //          tempInp.rdLineMemEntry.prio < tempInp.objAttrs.prio
+      //          //tempOutp.rdLineMemEntry.prio < tempInp.objAttrs.prio
+      //        ) {
+      //          tempOutp.overwriteLineMemEntry := True
+      //        } otherwise {
+      //          tempOutp.overwriteLineMemEntry := (
+      //            !tempInp.rdLineMemEntry.col.a
+      //            //!tempOutp.rdLineMemEntry.col.a
+      //          )
+      //        }
+      //        // END: debug comment this out
+      //        //tempOutp.overwriteLineMemEntry := True
+      //      } otherwise {
+      //        tempOutp.overwriteLineMemEntry := False
+      //      }
+      //    //}
+      //    
+      //    //tempOutp.overwriteLineMemEntry := (
+      //    //  //!tempInp.rdLineMemEntry.prio.msb
+      //    //  //tempInp.rdLineMemEntry.written
+      //    //  //(
+      //    //  //  !tempInp.rdLineMemEntry.col.a
+      //    //  //  //tempInp.objAttrs.prio
+      //    //  //  //|| (tempInp.rdLineMemEntry.prio < tempInp.objAttrs.prio)
+
+      //    //  //  //&& tempInp.objAttrs.prio <= tempInp.rdLineMemEntry.prio
+      //    //  //  //&& tempInp.pxPosInLine
+      //    //  //)
+      //    //  (
+      //    //    tempInp.rdLineMemEntry.col.a
+      //    //  )
+      //    //  //|| (tempInp.pxPos.x < 0)
+      //    //  //|| (tempInp.pxPos.x >= params.lineMemSize)
+      //    //)
+      //    //tempOutp.overwriteLineMemEntry := True
+      //  },
+      //  copyOnlyFunc=(
+      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    stageData.pipeOut(idx).stage6 := stageData.pipeIn(idx).stage6
+      //  },
+      //)
+      // END: Stage 6
+
+      // BEGIN: Stage 6
       HandleDualPipe(
         stageData=stageData.craft(6)
       )(
@@ -4676,78 +5010,487 @@ case class Gpu2d(
           val tempInp = stageData.pipeIn(idx)
           val tempOutp = stageData.pipeOut(idx)
 
-          //switch (rWrLineMemArrIdx) {
-          //  for (jdx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1) {
-          //    is (jdx) {
-          //      
-          //    }
+          ////val tempOverwriteLineMemEntry = Bool()
+          ////val tempConcat = Bits(tempInp.numFwd + 1 bits)
+          //def fwdVec = tempOutp.stage6.fwdVec
+          ////val rFwdVec = Reg(cloneOf(fwdVec)) //init(fwdVec.getZero)
+          //def rFwdVec = rStage6FwdVec
+
+          //for (fwdIdx <- 0 to rFwdVec.size - 1) {
+          //  rFwdVec(fwdIdx).init(rFwdVec(fwdIdx).getZero)
+          //  when (tempOutp.fire) {
+          //    rFwdVec(fwdIdx) := fwdVec(fwdIdx)
+          //  }
+          //  //rFwdVec(fwdIdx) := fwdVec(fwdIdx)
+          //  if (fwdIdx > 0) {
+          //    fwdVec(fwdIdx) := rFwdVec(fwdIdx - 1)
           //  }
           //}
 
-          //when (tempInp.rdLineMemEntry.col.a) {
-          //when (tempInp.rdLineMemEntry.prio === 0) {
+          ////val tempConcat = Bits(fwdVec.size bits)
+          //val tempConcat = Bits((fwdVec.size - 1) bits)
+          //  .setName("wrObjPipeStage6TempConcat")
+          //val tempConcatPxPos = cloneOf(tempConcat)
+          //  .setName("wrObjPipeStage6TempConcatPxPos")
+          ////val tempConcatPxPosInLine = cloneOf(tempConcat)
+          ////  .setName("wrObjPipeStage6TempConcatPxPosInLine")
+          //val tempConcatPrio = cloneOf(tempConcat)
+          //  .setName("wrObjPipeStage6TempConcatPrio")
+          //val tempConcatOverwriteLineMemEntry = cloneOf(tempConcat)
+          //  .setName("wrObjPipeStage6TempConcatOverwriteLineMemEntry")
+          ////val dbgFwdVec0PxPos = cloneOf(tempInp.pxPos)
+          ////  .setName("wrObjPipeStage6DbgFwdVec0PxPos")
+          ////dbgFwdVec0PxPos := fwdVec(0).pxPos
+
+          ////val tempConcat = Bits((tempInp.numFwd) * 2 bits)
+          //////for (x <- 0 to params.objTileSize2d.x - 1) {
+          ////val rFwdVec = 
+          ////tempOutp.fwdVec(0).pxPosX := tempInp.pxPos.x
+          ////tempOutp.fwdVec(0).pxPosInLine := tempInp.pxPosInLine
+
+          //val tempWrLineMemEntry = cloneOf(tempOutp.wrLineMemEntry)
+          //  .setName("wrObjPipeStage6TempWrLineMemEntry")
+          ////val tempWrLineMemEntryToWrite = cloneOf(tempOutp.wrLineMemEntry)
+          ////  .setName("wrObjPipeStage6TempWrLineMemEntryToWrite")
+          //val tempOverwriteLineMemEntry = Bool()
+          //  .setName("wrObjPipeStage6_tempOverwriteLineMemEntry")
+          //for (fwdIdx <- 0 to fwdVec.size - 1) {
+          //  //tempConcat(fwdIdx) := (
+          //  //  //tempOutp.fwdVec(fwdIdx).pxPosX === tempInp.pxPos.x
+          //  //  //tempOutp.fwdVec(fwdIdx).pxPosXIsSame
+          //  //  //tempInp.stage6.fwdVec(
+          //  //  //  // is `fwdIdx + 1` actually correct?
+          //  //  //  //fwdIdx + 1
+          //  //  //  fwdIdx
+          //  //  //)pxPosXIsSame
+          //  //  //tempInp.pxPosXIsSame
+          //  //  //tempInp.pxPosIsSame.x && tempInp.pxPosIsSame.y
+          //  //  //&& fwdVec(fwdIdx).overwriteLineMemEntry
+          //  //  fwdVec(fwdIdx).pxPos === tempInp.pxPos
+          //  //  //&& fwdVec(fwdIdx).overwriteLineMemEntry
+          //  //  && fwdVec(fwdIdx).wrLineMemEntry.prio < tempInp.objAttrs.prio
+          //  //)
+          //  if (fwdIdx == 0) {
+          //    fwdVec(fwdIdx).pxPos := tempInp.pxPos
+          //    //fwdVec(fwdIdx).overwriteLineMemEntry := (
+          //    //  tempOutp.overwriteLineMemEntry
+          //    //)
+          //    //fwdVec(fwdIdx).wrLineMemEntry := tempOutp.wrLineMemEntry
+          //    //fwdVec(fwdIdx).wrLineMemEntry := tempOutp.wrLineMemEntry
+          //    //fwdVec(fwdIdx).wrLineMemEntry := tempWrLineMemEntry
+          //    fwdVec(fwdIdx).objAttrsMemIdx := tempInp.objAttrsMemIdx
+          //    fwdVec(fwdIdx).overwriteLineMemEntry := (
+          //      tempOutp.overwriteLineMemEntry
+          //    )
+          //    fwdVec(fwdIdx).wrLineMemEntry := tempWrLineMemEntry
+          //    fwdVec(fwdIdx).prio := tempInp.objAttrs.prio
+          //    //fwdVec(fwdIdx).wrLineMemEntry := tempOutp.wrLineMemEntry
+          //  }
+          //  //else {
+          //  //  //tempOutp.fwdVec(fwdIdx).pxPosX := tempOutp
+          //  //  fwdVec(fwdIdx) := rFwdVec(fwdIdx - 1)
+          //  //}
+          //  else {
+          //    //tempConcat(fwdIdx - 1) := (
+          //    //  //tempOutp.fwdVec(fwdIdx).pxPosX === tempInp.pxPos.x
+          //    //  //tempOutp.fwdVec(fwdIdx).pxPosXIsSame
+          //    //  //tempInp.stage6.fwdVec(
+          //    //  //  // is `fwdIdx + 1` actually correct?
+          //    //  //  //fwdIdx + 1
+          //    //  //  fwdIdx
+          //    //  //).pxPosXIsSame
+          //    //  //tempInp.pxPosXIsSame
+          //    //  //tempInp.pxPosIsSame.x && tempInp.pxPosIsSame.y
+          //    //  //&& fwdVec(fwdIdx).overwriteLineMemEntry
+          //    //  fwdVec(fwdIdx).pxPos === tempInp.pxPos
+          //    //  //&& fwdVec(fwdIdx).overwriteLineMemEntry
+          //    //  && (
+          //    //    fwdVec(fwdIdx).wrLineMemEntry.prio
+          //    //    //fwdVec(fwdIdx).prio
+          //    //    < tempInp.objAttrs.prio
+          //    //  )
+          //    //)
+          //    tempConcatPxPos(fwdIdx - 1) := (
+          //      fwdVec(fwdIdx).pxPos === tempInp.pxPos
+          //      //fwdVec(fwdIdx).pxPos.x === tempInp.pxPos.x
+          //    )
+          //    //tempConcatPxPosInLine(fwdIdx - 1) := (
+          //    //  tempInp.pxPosInLine
+          //    //)
+          //    tempConcatPrio(fwdIdx - 1) := (
+          //      //fwdVec(fwdIdx).wrLineMemEntry.prio
+          //      fwdVec(fwdIdx).prio
+          //      < tempInp.objAttrs.prio
+          //      //>= tempInp.objAttrs.prio
+          //    )
+          //    tempConcatOverwriteLineMemEntry(fwdIdx - 1) := (
+          //      //tempOutp.overwriteLineMemEntry
+          //      fwdVec(fwdIdx).overwriteLineMemEntry
+          //    )
+          //    tempConcat(fwdIdx - 1) := (
+          //      tempConcatPxPos(fwdIdx - 1)
+          //      //&& tempConcatPxPosInLine(fwdIdx - 1)
+          //      && tempConcatPrio(fwdIdx - 1)
+          //      && tempConcatOverwriteLineMemEntry(fwdIdx - 1)
+          //    )
+          //  }
           //}
-          //for (x <- 0 to params.objTileSize2d.x - 1) {
-            //switch (
-            //  rWrLineMemArrIdx
-            //  //tempInp.lineMemArrIdx
-            //) {
-            //  for (
-            //    jdx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1
-            //    //jdx <- 0 to (1 << tempInp.lineMemArrIdx.getWidth) - 1
-            //  ) {
-            //    is (jdx) {
-            //      tempOutp.rdLineMemEntry := (
-            //        objLineMemArr(jdx).readAsync(
-            //          //address=tempInp.pxPos.x.asUInt.resized,
-            //          address=tempInp.pxPos.x.asUInt(
-            //            log2Up(params.lineMemSize) - 1 downto 0
-            //          ),
-            //          readUnderWrite=writeFirst,
-            //          //readUnderWrite=writeFirst,
-            //        )
-            //      )
-            //    }
-            //  }
-            //}
-            when (tempInp.pxPosInLine) {
+
+          val dbgTestificate = UInt(4 bits)
+            .setName("wrObjPipeStage6_dbgTestificate")
+          def calcTempOverwiteLineMemEntry(
+            somePxPosCmp: Bool,
+            someLineMemEntry: ObjLineMemEntry,
+            someOverwriteLineMemEntry: Bool,
+          ): Unit = {
+            when (somePxPosCmp) {
               // BEGIN: debug comment this out
-              when (
-                tempInp.rdLineMemEntry.prio < tempInp.objAttrs.prio
-                //tempOutp.rdLineMemEntry.prio < tempInp.objAttrs.prio
-              ) {
-                tempOutp.overwriteLineMemEntry := True
+              when (!someLineMemEntry.prio.msb) {
+                dbgTestificate := 0
+                someOverwriteLineMemEntry := True
               } otherwise {
-                tempOutp.overwriteLineMemEntry := (
-                  !tempInp.rdLineMemEntry.col.a
-                  //!tempOutp.rdLineMemEntry.col.a
-                )
+                when (
+                  //tempInp.rdLineMemEntry.prio < tempInp.objAttrs.prio
+                  //tempOutp.rdLineMemEntry.prio < tempInp.objAttrs.prio
+                  someLineMemEntry.prio(
+                    tempInp.objAttrs.prio.bitsRange
+                  ) < tempInp.objAttrs.prio
+                ) {
+                  dbgTestificate := 1
+                  //tempOutp.overwriteLineMemEntry := True
+                  //someOverwriteLineMemEntry := True
+                  someOverwriteLineMemEntry := False
+                } elsewhen (
+                  someLineMemEntry.prio(
+                    tempInp.objAttrs.prio.bitsRange
+                  ) === tempInp.objAttrs.prio
+                ) {
+                  dbgTestificate := 2
+                  //tempOutp.overwriteLineMemEntry
+                  someOverwriteLineMemEntry := (
+                    //!tempInp.rdLineMemEntry.col.a
+                    !someLineMemEntry.col.a
+                    && tempInp.palEntryNzMemIdx
+                    //!tempOutp.rdLineMemEntry.col.a
+                  )
+                } otherwise {
+                  dbgTestificate := 3
+                  someOverwriteLineMemEntry := True
+                }
               }
               // END: debug comment this out
               //tempOutp.overwriteLineMemEntry := True
             } otherwise {
-              tempOutp.overwriteLineMemEntry := False
+              dbgTestificate := 4
+              //tempOutp.overwriteLineMemEntry
+              someOverwriteLineMemEntry := False
             }
+          }
+          //when (tempInp.pxPosInLine) {
+          //  // BEGIN: debug comment this out
+          //  when (
+          //    //tempInp.rdLineMemEntry.prio < tempInp.objAttrs.prio
+          //    //tempOutp.rdLineMemEntry.prio < tempInp.objAttrs.prio
+          //    tempWrLineMemEntry.prio < tempInp.objAttrs.prio
+          //  ) {
+          //    //tempOutp.overwriteLineMemEntry := True
+          //    tempOverwriteLineMemEntry := True
+          //  } otherwise {
+          //    //tempOutp.overwriteLineMemEntry
+          //    tempOverwriteLineMemEntry := (
+          //      //!tempInp.rdLineMemEntry.col.a
+          //      !tempWrLineMemEntry.col.a
+          //      //!tempOutp.rdLineMemEntry.col.a
+          //    )
+          //  }
+          //  // END: debug comment this out
+          //  //tempOutp.overwriteLineMemEntry := True
+          //} otherwise {
+          //  //tempOutp.overwriteLineMemEntry
+          // tempOverwriteLineMemEntry := False
           //}
-          
-          //tempOutp.overwriteLineMemEntry := (
-          //  //!tempInp.rdLineMemEntry.prio.msb
-          //  //tempInp.rdLineMemEntry.written
-          //  //(
-          //  //  !tempInp.rdLineMemEntry.col.a
-          //  //  //tempInp.objAttrs.prio
-          //  //  //|| (tempInp.rdLineMemEntry.prio < tempInp.objAttrs.prio)
 
-          //  //  //&& tempInp.objAttrs.prio <= tempInp.rdLineMemEntry.prio
-          //  //  //&& tempInp.pxPosInLine
-          //  //)
-          //  (
-          //    tempInp.rdLineMemEntry.col.a
+          //val testificate = UInt(log2Up(fwdVec.size) bits) //Bool()
+          //  .setName("testificate")
+          //for (fwdIdx <- 1 to fwdVec.size - 1) {
+          //  //when (tempConcat(fwdIdx)) {
+          //  //}
+          //  when (
+          //    fwdVec(fwdIdx).pxPos === tempInp.pxPos
+          //    && fwdVec(fwdIdx).prio < tempInp.objAttrs.prio
+          //    && fwdVec(fwdIdx).temp
+          //  ) {
+          //  }
+          //}
+          //switch (
+          //  tempConcat
+          //  //(tempConcat.high downto 1)
+          //) {
+          //  for (
+          //    //fwdIdx <- 0 to fwdVec.size - 1
+          //    fwdIdx <- 0 to fwdVec.size - 2
+          //    //fwdIdx <- 1 to fwdVec.size - 1
+          //  ) {
+          //    // We want to forward the most recent results
+          //    //def myMask = M(
+          //    //  ("0" * (tempInp.numFwd - fwdIdx))
+          //    //  + "1"
+          //    //  + ("-" * fwdIdx)
+          //    //)
+          //    def careAbout = (
+          //      ((1 << ((fwdVec.size - 1) - fwdIdx)) - 1) << fwdIdx
+          //    )
+          //    //def careAbout = (-1) << fwdIdx
+          //    def value = (
+          //      1 << fwdIdx
+          //    )
+          //    //def careAbout = 1 << 
+          //    //println(myCase)
+          //    val tempCase = new MaskedLiteral(
+          //      //myCase
+          //      //value=tempConcat,
+          //      //value=(1 << tempConcat.getWidth) - 1,
+          //      value=value,
+          //      careAbout=careAbout,
+          //      width=tempConcat.getWidth,
+          //      //width=tempConcat.getWidth - 1,
+          //    )
+          //    println(tempCase)
+          //    is (tempCase) {
+          //    //when (tempConcat(0)) 
+          //      //if (fwdIdx == 0) {
+          //      //  tempOutp.wrLineMemEntry := tempWrLineMemEntry
+          //      //} else {
+          //        //tempOutp.wrLineMemEntry 
+          //        //testificate := True
+          //        //testificate := fwdIdx + 1
+          //        //tempWrLineMemEntry := (
+          //        //  fwdVec(fwdIdx + 1).wrLineMemEntry
+          //        //)
+          //        //tempWrLineMemEntry := (
+          //        //  fwdVec(1).wrLineMemEntry
+          //        //)
+          //        //tempWrLineMemEntry := fwdVec(fwdIdx).wrLineMemEntry
+
+          //        //when (tempOverwriteLineMemEntry) {
+          //          //tempWrLineMemEntry.addr := tempInp.pxPos.x.asUInt(
+          //          //  tempWrLineMemEntry.addr.bitsRange
+          //          //)
+          //          //tempWrLineMemEntry.col.rgb := tempInp.palEntry.col
+          //          ////tempOutp.wrLineMemEntry.col.a := True
+          //          //tempWrLineMemEntry.col.a := (
+          //          //  tempInp.palEntryNzMemIdx
+          //          //)
+          //          //tempWrLineMemEntry.prio := tempInp.objAttrs.prio
+          //        //} otherwise {
+          //        //  tempWrLineMemEntry := tempInp.rdLineMemEntry
+          //        //}
+          //        tempWrLineMemEntry := fwdVec(fwdIdx + 1).wrLineMemEntry
+          //        //tempWrLineMemEntryToWrite := (
+          //        //  fwdVec(fwdIdx + 1).wrLineMemEntry
+          //        //)
+          //        calcTempOverwiteLineMemEntry(
+          //          somePxPosCmp=tempConcatPxPos(fwdIdx),
+          //          someLineMemEntry=fwdVec(fwdIdx + 1).wrLineMemEntry,
+          //          someOverwriteLineMemEntry=tempOverwriteLineMemEntry
+          //        )
+          //      //}
+          //    }
+          //  }
+          //  default 
+          //  //.otherwise 
+          //  {
+          //    //testificate := False
+          //    //testificate := 0
+
+          //    when (tempOutp.overwriteLineMemEntry) {
+          //      tempWrLineMemEntry.addr := tempInp.pxPos.x.asUInt(
+          //        tempWrLineMemEntry.addr.bitsRange
+          //      )
+          //      tempWrLineMemEntry.col.rgb := tempInp.palEntry.col
+          //      //tempOutp.wrLineMemEntry.col.a := True
+          //      tempWrLineMemEntry.col.a := (
+          //        tempInp.palEntryNzMemIdx
+          //      )
+          //      tempWrLineMemEntry.prio := tempInp.objAttrs.prio
+          //    } otherwise {
+          //      tempWrLineMemEntry := tempInp.rdLineMemEntry
+          //    }
+          //    calcTempOverwiteLineMemEntry(
+          //      somePxPosCmp=tempInp.pxPosInLine,
+          //      someLineMemEntry=tempInp.rdLineMemEntry,
+          //      someOverwriteLineMemEntry=tempOverwriteLineMemEntry
+          //    )
+          //    //when (tempOverwriteLineMemEntry) {
+          //    //  tempWrLineMemEntryToWrite.addr := tempInp.pxPos.x.asUInt(
+          //    //    tempWrLineMemEntryToWrite.addr.bitsRange
+          //    //  )
+          //    //  tempWrLineMemEntryToWrite.col.rgb := tempInp.palEntry.col
+          //    //  //tempOutp.wrLineMemEntry.col.a := True
+          //    //  tempWrLineMemEntryToWrite.col.a := (
+          //    //    tempInp.palEntryNzMemIdx
+          //    //  )
+          //    //  tempWrLineMemEntryToWrite.prio := tempInp.objAttrs.prio
+          //    //} otherwise {
+          //    //  tempWrLineMemEntryToWrite := tempInp.rdLineMemEntry
+          //    //}
+
+          //    //tempOutp.wrLineMemEntry := tempWrLineMemEntry
+          //    //tempWrLineMemEntry := tempInp.rdLineMemEntry
+          //  }
+          //}
+          val tempRdLineMemEntry = ObjLineMemEntry()
+            .setName("wrObjPipeStage6_tempRdLineMemEntry")
+          val tempAddr = UInt(log2Up(params.lineMemSize) bits)
+            .setName("wrObjPipeStage6_tempAddr")
+          tempAddr := tempOutp.pxPos.x.asUInt(
+            //log2Up(params.lineMemSize) - 1 downto 0
+            tempAddr.bitsRange
+          )
+          switch (
+            rWrLineMemArrIdx
+            //tempInp.lineMemArrIdx
+          ) {
+            for (
+              jdx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1
+              //jdx <- 0 to (1 << tempInp.lineMemArrIdx.getWidth) - 1
+            ) {
+              is (jdx) {
+                when (tempOutp.fire) {
+                  tempRdLineMemEntry := (
+                    objLineMemArr(jdx).readAsync(
+                      //address=tempInp.pxPos.x.asUInt.resized,
+                      //address=tempInp.pxPos.x.asUInt(
+                      //  log2Up(params.lineMemSize) - 1 downto 0
+                      //),
+                      address=tempAddr,
+                      readUnderWrite=writeFirst,
+                      //readUnderWrite=readFirst,
+                      //readUnderWrite=writeFirst,
+                    )
+                  )
+                  when (tempOutp.overwriteLineMemEntry) {
+                    objLineMemArr(jdx).write(
+                      //address=tempOutp.getCntTilePxsCoordX(),
+                      //address=tempOutp.pxPos.x.asUInt.resized,
+                      address=tempAddr,
+                      data=tempOutp.wrLineMemEntry,
+                    )
+                    //dbgObjLineMemVec(jdx)(tempAddr) := (
+                    //  tempOutp.wrLineMemEntry
+                    //)
+                  }
+                } otherwise { // when (!tempOutp.fire)
+                  tempRdLineMemEntry := RegNext(tempRdLineMemEntry)
+                }
+              }
+            }
+          }
+          when (tempOutp.fire) {
+            when (tempOutp.overwriteLineMemEntry) {
+              tempOutp.wrLineMemEntry.addr := tempInp.pxPos.x.asUInt(
+                tempOutp.wrLineMemEntry.addr.bitsRange
+              )
+              tempOutp.wrLineMemEntry.col.rgb := tempInp.palEntry.col
+              //tempOutp.wrLineMemEntry.col.a := True
+              tempOutp.wrLineMemEntry.col.a := (
+                tempInp.palEntryNzMemIdx
+              )
+              tempOutp.wrLineMemEntry.prio(
+                tempInp.objAttrs.prio.bitsRange
+              ) := tempInp.objAttrs.prio
+              tempOutp.wrLineMemEntry.prio.msb := True
+            } otherwise {
+              //tempOutp.wrLineMemEntry := tempInp.rdLineMemEntry
+              tempOutp.wrLineMemEntry := tempRdLineMemEntry
+            }
+          } otherwise {
+            tempOutp.wrLineMemEntry := RegNext(tempOutp.wrLineMemEntry)
+          }
+          calcTempOverwiteLineMemEntry(
+            somePxPosCmp=(
+              tempInp.pxPosInLine
+              //&& (
+              //  tempRdLineMemEntry.addr === (
+              //    tempInp.pxPos.x.asUInt(
+              //      tempRdLineMemEntry.addr.bitsRange
+              //    )
+              //  )
+              //)
+            ),
+            //someLineMemEntry=tempInp.rdLineMemEntry,
+            someLineMemEntry=tempRdLineMemEntry,
+            someOverwriteLineMemEntry=tempOutp.overwriteLineMemEntry
+          )
+          //tempOutp.overwriteLineMemEntry := tempOverwriteLineMemEntry
+          //tempOutp.wrLineMemEntry := tempWrLineMemEntryToWrite
+          //tempOutp.wrLineMemEntry := tempWrLineMemEntry
+          //}
+          //when (tempOutp.overwriteLineMemEntry) {
+          //  tempWrLineMemEntry.col.rgb := tempInp.palEntry.col
+          //  //tempOutp.wrLineMemEntry.col.a := True
+          //  tempWrLineMemEntry.col.a := (
+          //    tempInp.palEntryNzMemIdx
           //  )
-          //  //|| (tempInp.pxPos.x < 0)
-          //  //|| (tempInp.pxPos.x >= params.lineMemSize)
+          //  tempWrLineMemEntry.prio := tempInp.objAttrs.prio
+          //} otherwise {
+          //  tempWrLineMemEntry := tempInp.rdLineMemEntry
+          //}
+          //tempOutp.wrLineMemEntry := tempWrLineMemEntry
+          //val tempAddr = UInt(log2Up(params.lineMemSize) bits)
+          //  .setName("wrObjPipeLast_tempAddr")
+          //tempAddr := tempOutp.pxPos.x.asUInt(
+          //  //log2Up(params.lineMemSize) - 1 downto 0
+          //  tempAddr.bitsRange
           //)
-          //tempOutp.overwriteLineMemEntry := True
+          //switch (
+          //  rWrLineMemArrIdx
+          //  //wrObjPipeLast.lineMemArrIdx
+          //) {
+          //  for (
+          //    jdx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1
+          //    //idx <- 0 to (1 << wrObjPipeLast.lineMemArrIdx.getWidth) - 1
+          //  ) {
+          //    is (jdx) {
+          //      //when (
+          //      //  wrObjPipeLast.pxPos.x >= 0 
+          //      //  && wrObjPipeLast.pxPos.x < params.lineMemSize
+          //      //) 
+          //      //for (x <- 0 to params.objTileSize2d.x - 1) {
+          //        //when (
+          //        //  //tempAddr.resized === wrObjPipeLast.pxPos.x.asUInt
+          //        //  !wrObjPipeLast.pxPos.x.msb
+          //        //) {
+          //        //when (wrObjPipeLast.overwriteLineMemEntry) {
+          //        //  objLineMemArr(idx).write(
+          //        //    //address=wrObjPipeLast.getCntTilePxsCoordX(),
+          //        //    //address=wrObjPipeLast.pxPos.x.asUInt.resized,
+          //        //    address=tempAddr,
+          //        //    data=wrObjPipeLast.wrLineMemEntry,
+          //        //  )
+          //        //  dbgObjLineMemVec(idx)(tempAddr) := (
+          //        //    wrObjPipeLast.wrLineMemEntry
+          //        //  )
+          //        //}
+          //        when (tempOutp.overwriteLineMemEntry) {
+          //          objLineMemArr(jdx).write(
+          //            //address=tempOutp.getCntTilePxsCoordX(),
+          //            //address=tempOutp.pxPos.x.asUInt.resized,
+          //            address=tempAddr,
+          //            data=tempOutp.wrLineMemEntry,
+          //          )
+          //          dbgObjLineMemVec(jdx)(tempAddr) := (
+          //            tempOutp.wrLineMemEntry
+          //          )
+          //        }
+          //        //}
+          //      //}
+          //    }
+          //  }
+          //  //default {
+          //  //  wrLineMemEntry := rPastWrLineMemEntry
+          //  //}
+          //}
         },
         copyOnlyFunc=(
           stageData: DualPipeStageData[Flow[WrObjPipePayload]],
@@ -4757,243 +5500,57 @@ case class Gpu2d(
         },
       )
       // END: Stage 6
-
-      // BEGIN: Stage 7
-      HandleDualPipe(
-        stageData=stageData.craft(7)
-      )(
-        pipeStageMainFunc=(
-          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-          idx: Int,
-        ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
-
-          //for (x <- 0 to params.objTileSize2d.x - 1) {
-            when (tempInp.overwriteLineMemEntry) {
-              tempOutp.wrLineMemEntry.col.rgb := tempInp.palEntry.col
-              //tempOutp.wrLineMemEntry.col.a := True
-              tempOutp.wrLineMemEntry.col.a := (
-                tempInp.palEntryNzMemIdx
-              )
-              tempOutp.wrLineMemEntry.prio := tempInp.objAttrs.prio
-            } otherwise {
-              tempOutp.wrLineMemEntry := tempInp.rdLineMemEntry
-            }
-          //}
-        },
-        copyOnlyFunc=(
-          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-          idx: Int,
-        ) => {
-          stageData.pipeOut(idx).stage7 := stageData.pipeIn(idx).stage7
-        },
-      )
-      // END: Stage 7
-
-      //HandleDualPipe(
-      //  stageData=stageData.craft(wrObjPipePxPosInLineCheckGePipe1StageIdx)
-      //)(
-      //  pipeStageMainFunc=(
-      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-      //    idx: Int,
-      //  ) => {
-      //    val tempInp = stageData.pipeIn(idx)
-      //    val tempOutp = stageData.pipeOut(idx)
-
-      //    tempOutp.oldPxPosInLineCheckGePipe1.x := (
-      //      tempInp.objAttrs.pos.x + params.objTileSize2d.x - 1 >= 0
-      //    )
-      //    tempOutp.oldPxPosInLineCheckGePipe1.y := (
-      //      outp.bgPxsPosSlice.pos.y.asSInt.resized
-      //      >= tempInp.objAttrs.pos.y
-      //    )
-      //  },
-      //  copyOnlyFunc=(
-      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-      //    idx: Int,
-      //  ) => {
-      //    stageData.pipeOut(idx).oldPxPosInLineCheckGePipe1 := (
-      //      stageData.pipeIn(idx).oldPxPosInLineCheckGePipe1
-      //    )
-      //  },
-      //)
-      //HandleDualPipe(
-      //  stageData=stageData.craft(wrObjPipePxPosInLineCheckLtPipe1StageIdx)
-      //)(
-      //  pipeStageMainFunc=(
-      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-      //    idx: Int,
-      //  ) => {
-      //    val tempInp = stageData.pipeIn(idx)
-      //    val tempOutp = stageData.pipeOut(idx)
-
-      //    tempOutp.oldPxPosInLineCheckLtPipe1.x := (
-      //      tempInp.objAttrs.pos.x < params.intnlFbSize2d.x
-      //    )
-      //    tempOutp.oldPxPosInLineCheckLtPipe1.y := (
-      //      outp.bgPxsPosSlice.pos.y.asSInt.resized
-      //      < tempInp.objAttrs.pos.y + params.objTileSize2d.y
-      //    )
-      //  },
-      //  copyOnlyFunc=(
-      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-      //    idx: Int,
-      //  ) => {
-      //    stageData.pipeOut(idx).oldPxPosInLineCheckLtPipe1 := (
-      //      stageData.pipeIn(idx).oldPxPosInLineCheckLtPipe1
-      //    )
-      //  },
-      //)
-      //// END: Stage 3
-
-      //// BEGIN: Stage 4
-      //HandleDualPipe(
-      //  stageData=stageData.craft(wrObjPipePxPosInLineCheckStageIdx)
-      //)(
-      //  pipeStageMainFunc=(
-      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-      //    idx: Int,
-      //  ) => {
-      //    val tempInp = stageData.pipeIn(idx)
-      //    val tempOutp = stageData.pipeOut(idx)
-
-      //    tempOutp.oldPxPosInLineCheck.x := (
-      //      //(tempInp.objAttrs.pos.x + params.objTileSize2d.x - 1 >= 0)
-      //      //&& (tempInp.objAttrs.pos.x < params.intnlFbSize2d.x)
-      //      tempInp.oldPxPosInLineCheckGePipe1.x
-      //      && tempInp.oldPxPosInLineCheckLtPipe1.x
-      //    )
-      //    tempOutp.oldPxPosInLineCheck.y := (
-      //      //(
-      //      //  outp.bgPxsPosSlice.pos.y.asSInt.resized
-      //      //  >= tempInp.objAttrs.pos.y
-      //      //) && (
-      //      //  outp.bgPxsPosSlice.pos.y.asSInt.resized
-      //      //  < tempInp.objAttrs.pos.y + params.objTileSize2d.y
-      //      //)
-      //      tempInp.oldPxPosInLineCheckGePipe1.y
-      //      && tempInp.oldPxPosInLineCheckLtPipe1.y
-      //    )
-      //  },
-      //  copyOnlyFunc=(
-      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-      //    idx: Int,
-      //  ) => {
-      //    stageData.pipeOut(idx).oldPxPosInLineCheck := (
-      //      stageData.pipeIn(idx).oldPxPosInLineCheck
-      //    )
-      //  },
-      //)
-      //// END: Stage 4
-
-      //// BEGIN: Stage 5
-      //HandleDualPipe(
-      //  stageData=stageData.craft(wrObjPipePxPosInLineStageIdx)
-      //)(
-      //  pipeStageMainFunc=(
-      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-      //    idx: Int,
-      //  ) => {
-      //    val tempInp = stageData.pipeIn(idx)
-      //    val tempOutp = stageData.pipeOut(idx)
-      //    tempOutp.pxPosInLine := (
-      //      tempInp.oldPxPosInLineCheck.x && tempInp.oldPxPosInLineCheck.y
-      //    )
-      //  },
-      //  copyOnlyFunc=(
-      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-      //    idx: Int,
-      //  ) => {
-      //    stageData.pipeOut(idx).pxPosInLine := (
-      //      stageData.pipeIn(idx).pxPosInLine
-      //    )
-      //  },
-      //)
-      //// END: Stage 5
-
-      ////HandleDualPipe(
-      ////  stageData=stageData.craft(wrObjPipeTileMemIdxStageIdx)
-      ////)(
-      ////  pipeStageMainFunc=(
-      ////    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-      ////    idx: Int,
-      ////  ) => {
-      ////    val tempInp = stageData.pipeIn(idx)
-      ////    val tempOutp = stageData.pipeOut(idx)
-      ////    //tempOutp.tileMemIdx := objTileMem.readAsync(
-      ////    //  address=tempInp.objAttrs.tileMemIdx
-      ////    //)
-      ////    tempOutp.tileMemIdx := tempInp.objAttrs.tileMemIdx
-      ////  },
-      ////  copyOnlyFunc=(
-      ////    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-      ////    idx: Int,
-      ////  ) => {
-      ////    stageData.pipeOut(idx).tileMemIdx := (
-      ////      stageData.pipeIn(idx).tileMemIdx
-      ////    )
-      ////  },
-      ////)
-      ////HandleDualPipe(
-      ////  stageData=stageData.craft(wrObjPipeTilePxsCoordStageIdx)
-      ////)(
-      ////  pipeStageMainFunc=(
-      ////    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-      ////    idx: Int,
-      ////  ) => {
-      ////    val tempInp = stageData.pipeIn(idx)
-      ////    val tempOutp = stageData.pipeOut(idx)
-
-      ////    //tempOutp.tilePxsCoord.x := outp.bgPxsPosSlice
-      ////    tempOutp.tilePxsCoord.x
-      ////  },
-      ////  copyOnlyFunc=(
-      ////    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-      ////    idx: Int,
-      ////  ) => {
-      ////    stageData.pipeOut(idx).tilePxsCoord := (
-      ////      stageData.pipeIn(idx).tilePxsCoord
-      ////    )
-      ////  },
-      ////)
-      //// END: Post stage 0
       //--------
 
       //val objLineMem = objLineMemArr(someWrLineMemArrIdx)
-      when (wrObjPipeLast.fire) {
-        //val tempLineMemEntry = LineMemEntry()
-        //val objIdx = wrObjPipeLast.objIdx
-        switch (
-          rWrLineMemArrIdx
-          //wrObjPipeLast.lineMemArrIdx
-        ) {
-          for (
-            idx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1
-            //idx <- 0 to (1 << wrObjPipeLast.lineMemArrIdx.getWidth) - 1
-          ) {
-            is (idx) {
-              //when (
-              //  wrObjPipeLast.pxPos.x >= 0 
-              //  && wrObjPipeLast.pxPos.x < params.lineMemSize
-              //) 
-              //for (x <- 0 to params.objTileSize2d.x - 1) {
-                objLineMemArr(idx).write(
-                  //address=wrObjPipeLast.getCntTilePxsCoordX(),
-                  //address=wrObjPipeLast.pxPos.x.asUInt.resized,
-                  address=wrObjPipeLast.pxPos.x.asUInt(
-                    log2Up(params.lineMemSize) - 1 downto 0
-                  ),
-                  data=wrObjPipeLast.wrLineMemEntry,
-                )
-              //}
-            }
-          }
-          //default {
-          //  wrLineMemEntry := rPastWrLineMemEntry
-          //}
-        }
-      }
+      //when (wrObjPipeLast.fire) {
+      //  //val tempLineMemEntry = LineMemEntry()
+      //  //val objIdx = wrObjPipeLast.objIdx
+
+      //  val tempAddr = UInt(log2Up(params.lineMemSize) bits)
+      //    .setName("wrObjPipeLast_tempAddr")
+      //  tempAddr := wrObjPipeLast.pxPos.x.asUInt(
+      //    //log2Up(params.lineMemSize) - 1 downto 0
+      //    tempAddr.bitsRange
+      //  )
+      //  switch (
+      //    rWrLineMemArrIdx
+      //    //wrObjPipeLast.lineMemArrIdx
+      //  ) {
+      //    for (
+      //      idx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1
+      //      //idx <- 0 to (1 << wrObjPipeLast.lineMemArrIdx.getWidth) - 1
+      //    ) {
+      //      is (idx) {
+      //        //when (
+      //        //  wrObjPipeLast.pxPos.x >= 0 
+      //        //  && wrObjPipeLast.pxPos.x < params.lineMemSize
+      //        //) 
+      //        //for (x <- 0 to params.objTileSize2d.x - 1) {
+      //          //when (
+      //          //  //tempAddr.resized === wrObjPipeLast.pxPos.x.asUInt
+      //          //  !wrObjPipeLast.pxPos.x.msb
+      //          //) {
+      //          //when (wrObjPipeLast.overwriteLineMemEntry) {
+      //            objLineMemArr(idx).write(
+      //              //address=wrObjPipeLast.getCntTilePxsCoordX(),
+      //              //address=wrObjPipeLast.pxPos.x.asUInt.resized,
+      //              address=tempAddr,
+      //              data=wrObjPipeLast.wrLineMemEntry,
+      //            )
+      //            dbgObjLineMemVec(idx)(tempAddr) := (
+      //              wrObjPipeLast.wrLineMemEntry
+      //            )
+      //          //}
+      //          //}
+      //        //}
+      //      }
+      //    }
+      //    //default {
+      //    //  wrLineMemEntry := rPastWrLineMemEntry
+      //    //}
+      //  }
+      //}
     }
     //--------
     //def doSendIntoFifo(): Unit = {
@@ -5340,17 +5897,20 @@ case class Gpu2d(
             //} otherwise {
             //}
 
+            val combineTestificate = Bool()
+              .setName("combineTestificate")
+
             switch (
               //rCombineRdLineMemArrIdx
-              //rCombineLineMemArrIdx
+              rCombineLineMemArrIdx
               //tempInp.rdLineMemArrIdx
-              tempInp.lineMemArrIdx
+              //tempInp.lineMemArrIdx
             ) {
               for (
                 //jdx <- 0 to (1 << rCombineRdLineMemArrIdx.getWidth) - 1
-                //jdx <- 0 to (1 << rCombineLineMemArrIdx.getWidth) - 1
+                jdx <- 0 to (1 << rCombineLineMemArrIdx.getWidth) - 1
                 //jdx <- 0 to (1 << tempInp.rdLineMemArrIdx.getWidth) - 1
-                jdx <- 0 to (1 << tempInp.lineMemArrIdx.getWidth) - 1
+                //jdx <- 0 to (1 << tempInp.lineMemArrIdx.getWidth) - 1
               ) {
                 //tempCombineLineMemIdxArr += (
                 //  UInt(log2Up(params.lineMemSize) bits)
@@ -5378,6 +5938,18 @@ case class Gpu2d(
                       //readUnderWrite=writeFirst,
                     )
                   )
+                  when (
+                    (
+                      if (jdx == 3) True else False 
+                    ) && (
+                      tempCombineLineMemIdx === 8
+                      || tempCombineLineMemIdx === 16
+                    )
+                  ) {
+                    combineTestificate := tempCombineLineMemIdx === 8
+                  } otherwise {
+                    combineTestificate := False
+                  }
                   tempOutp.objRdLineMemEntry := (
                     objLineMemArr(jdx).readAsync(
                       address=tempCombineLineMemIdx
@@ -5395,6 +5967,7 @@ case class Gpu2d(
                       //),
                       //readUnderWrite=writeFirst,
                     )
+                    //dbgObjLineMemVec(jdx)(tempCombineLineMemIdx)
                   )
                 }
               }
@@ -5505,31 +6078,31 @@ case class Gpu2d(
           when (clockDomain.isResetActive) {
             tempOutp.stage3 := tempOutp.stage3.getZero
           } otherwise {
-            switch (Cat(
-              tempInp.bgRdLineMemEntry.col.a,
-              tempInp.objRdLineMemEntry.col.a,
-              tempInp.objHiPrio
-            )) {
-              is (B"111") {
-                tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
-              }
-              is (B"110") {
-                tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
-              }
-              is (M"10-") {
-                tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
-              }
-              is (M"01-") {
-                tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
-              }
-              //is (M"00-")
-              default {
-                tempOutp.col := tempOutp.col.getZero
-              }
-            }
+            //switch (Cat(
+            //  tempInp.bgRdLineMemEntry.col.a,
+            //  tempInp.objRdLineMemEntry.col.a,
+            //  tempInp.objHiPrio
+            //)) {
+            //  is (B"111") {
+            //    tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
+            //  }
+            //  is (B"110") {
+            //    tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
+            //  }
+            //  is (M"10-") {
+            //    tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
+            //  }
+            //  is (M"01-") {
+            //    tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
+            //  }
+            //  //is (M"00-")
+            //  default {
+            //    tempOutp.col := tempOutp.col.getZero
+            //  }
+            //}
             // END: Debug comment this out
             //tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
-            //tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
+            tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
           }
         },
         copyOnlyFunc=(
@@ -5592,25 +6165,36 @@ case class Gpu2d(
         switch (
           //rCombineWrLineMemArrIdx
           //rCombineWrLineMemArrIdx
-          combinePipeLast.lineMemArrIdx
+          rCombineLineMemArrIdx
+          //combinePipeLast.lineMemArrIdx
         ) {
           for (
             //idx <- 0 to (1 << rCombineWrLineMemArrIdx.getWidth) - 1
-            idx <- 0 
-            to (1 << combinePipeLast.lineMemArrIdx.getWidth) - 1
+            idx <- 0 to (1 << rCombineLineMemArrIdx.getWidth) - 1
+            //idx <- 0 
+            //to (1 << combinePipeLast.lineMemArrIdx.getWidth) - 1
           ) {
             val tempObjLineMemEntry = ObjLineMemEntry().getZero
+            def tempAddr = combinePipeLast.cnt(
+              log2Up(params.lineMemSize) - 1 downto 0
+            )
             is (idx) {
-              objLineMemArr(idx).write(
+              val tempIdx = (
+                if (idx == 0) {
+                  params.numLineMemsPerBgObjRenderer - 1
+                } else {
+                  idx - 1
+                }
+              )
+              objLineMemArr(tempIdx).write(
                 //address=combinePipeLast.bakCnt(
                 //  log2Up(params.lineMemSize) - 1 downto 0
                 //),
                 //data=combinePipeLast.combineWrLineMemEntry,
-                address=combinePipeLast.cnt(
-                  log2Up(params.lineMemSize) - 1 downto 0
-                ),
+                address=tempAddr,
                 data=tempObjLineMemEntry
               )
+              //dbgObjLineMemVec(tempIdx)(tempAddr) := tempObjLineMemEntry
             }
           }
         }
