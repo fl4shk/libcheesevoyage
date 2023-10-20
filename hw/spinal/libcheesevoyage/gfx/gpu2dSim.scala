@@ -537,11 +537,13 @@ object Gpu2dSim extends App {
         //tempObjAttrs.tileMemIdx := 2
         //tempObjAttrs.pos.x := 16
         tempObjAttrs.pos.x := -1
+        //tempObjAttrs.pos.x := 0
+        //tempObjAttrs.pos.x := 1
         //tempObjAttrs.pos.x := 3
         tempObjAttrs.pos.y := 8
         //tempObjAttrs.pos.y := 0
         //tempObjAttrs.prio := 0
-        tempObjAttrs.prio := 1
+        tempObjAttrs.prio := 0
         tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
         //tempObjAttrs := tempObjAttrs.getZero
       } elsewhen (rObjAttrsCnt === 1) {
