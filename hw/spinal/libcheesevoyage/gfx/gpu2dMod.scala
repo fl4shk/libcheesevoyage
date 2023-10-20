@@ -6129,8 +6129,9 @@ case class Gpu2d(
           } otherwise {
             tempOutp.objHiPrio := (
               // sprites take priority upon a tie, hence `<=`
-              tempInp.objRdLineMemEntry.prio
-              <= tempInp.bgRdLineMemEntry.prio
+              tempInp.objRdLineMemEntry.prio(
+                tempInp.bgRdLineMemEntry.prio.bitsRange
+              ) <= tempInp.bgRdLineMemEntry.prio
             )
           }
           // END: Debug comment this out
@@ -6172,31 +6173,31 @@ case class Gpu2d(
           when (clockDomain.isResetActive) {
             tempOutp.stage3 := tempOutp.stage3.getZero
           } otherwise {
-            //switch (Cat(
-            //  tempInp.bgRdLineMemEntry.col.a,
-            //  tempInp.objRdLineMemEntry.col.a,
-            //  tempInp.objHiPrio
-            //)) {
-            //  is (B"111") {
-            //    tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
-            //  }
-            //  is (B"110") {
-            //    tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
-            //  }
-            //  is (M"10-") {
-            //    tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
-            //  }
-            //  is (M"01-") {
-            //    tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
-            //  }
-            //  //is (M"00-")
-            //  default {
-            //    tempOutp.col := tempOutp.col.getZero
-            //  }
-            //}
+            switch (Cat(
+              tempInp.bgRdLineMemEntry.col.a,
+              tempInp.objRdLineMemEntry.col.a,
+              tempInp.objHiPrio
+            )) {
+              is (B"111") {
+                tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
+              }
+              is (B"110") {
+                tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
+              }
+              is (M"10-") {
+                tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
+              }
+              is (M"01-") {
+                tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
+              }
+              //is (M"00-")
+              default {
+                tempOutp.col := tempOutp.col.getZero
+              }
+            }
             // END: Debug comment this out
             //tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
-            tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
+            //tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
           }
         },
         copyOnlyFunc=(
