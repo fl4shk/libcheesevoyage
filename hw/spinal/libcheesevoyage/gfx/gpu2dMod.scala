@@ -809,16 +809,10 @@ case class Gpu2dPopPayload(
   //--------
 }
 
-case class Gpu2dIo(
-  params: Gpu2dParams=DefaultGpu2dParams(),
-) extends Bundle {
+case class Gpu2dPushInp(
+  params: Gpu2dParams=DefaultGpu2dParams()
+) extends Bundle with IMasterSlave {
   //--------
-  //val en = in Bool()
-  //val blank = in(Vec2(Bool()))
-  //val en = in Bool()
-  //--------
-  //val bgTilePush = slave Stream()
-  //val bgTilePush = slave Stream()
   val bgTilePush = slave Stream(Gpu2dBgTileStmPayload(params=params))
   val bgEntryPushArr = new ArrayBuffer[Stream[Gpu2dBgEntryStmPayload]]()
   val bgAttrsPushArr = new ArrayBuffer[Stream[Gpu2dBgAttrsStmPayload]]()
@@ -841,9 +835,70 @@ case class Gpu2dIo(
     params=params
   ))
   //--------
+  def asMaster(): Unit = {
+    master(
+      bgTilePush,
+      //bgEntryPushArr,
+      //bgAttrsPushArr,
+      bgPalEntryPush,
+      objTilePush,
+      objAttrsPush,
+      objPalEntryPush,
+    )
+    for (idx <- 0 to params.numBgs - 1) {
+      master(
+        bgEntryPushArr(idx),
+        bgAttrsPushArr(idx),
+      )
+    }
+  }
+}
+case class Gpu2dIo(
+  params: Gpu2dParams=DefaultGpu2dParams(),
+) extends Bundle {
+  //--------
+  //val en = in Bool()
+  //val blank = in(Vec2(Bool()))
+  //val en = in Bool()
+  //--------
+  //val bgTilePush = slave Stream()
+  //val bgTilePush = slave Stream()
+  val push = Gpu2dPushInp(params=params)
+  def bgTilePush = push.bgTilePush
+  def bgEntryPushArr = push.bgEntryPushArr
+  def bgAttrsPushArr = push.bgAttrsPushArr
+  def bgPalEntryPush = push.bgPalEntryPush
+  def objTilePush = push.objTilePush
+  def objAttrsPush = push.objAttrsPush
+  def objPalEntryPush = push.objPalEntryPush
+  //--------
   val ctrlEn = out Bool()
   val pop = master Stream(Gpu2dPopPayload(params=params))
   //--------
+  //def asMaster(): Unit = {
+  //  master(
+  //    bgTilePush,
+  //    //bgEntryPushArr,
+  //    //bgAttrsPushArr,
+  //    bgPalEntryPush,
+  //    objTilePush,
+  //    objAttrsPush,
+  //    objPalEntryPush,
+  //  )
+  //  for (idx <- 0 to params.numBgs - 1) {
+  //    master(
+  //      bgEntryPushArr(idx),
+  //      bgAttrsPushArr(idx),
+  //    )
+  //  }
+  //  //in
+  //  out(
+  //    ctrlEn,
+  //  )
+  //  slave(
+  //    pop
+  //  )
+  //}
 }
 case class Gpu2d(
   params: Gpu2dParams=DefaultGpu2dParams(),
@@ -2511,8 +2566,8 @@ case class Gpu2d(
         def bakCntWillBeDone() = (
           //bakCntMinus1.msb
           //bakCntMinus1 === 0
-          //bakCnt === 0
-          bakCnt.msb
+          bakCnt === 0
+          //bakCnt.msb
           //cnt + 1 === params.wholeLineMemSize
         )
         //--------
@@ -3792,20 +3847,23 @@ case class Gpu2d(
 
                   //val tempWrBgPxsPos = params.coordT(params.intnlFbSize2d)
                   def tempBgTileWidthPow = params.bgTileSize2dPow.x
-                  tempOutp.pxPos(x).x := Cat(
-                    tempInp.cnt(
-                      (
-                        log2Up(params.intnlFbSize2d.x)
-                        + params.numBgsPow
-                        - params.bgTileSize2dPow.x
-                        - 1
-                      ) downto (
-                        params.numBgsPow
-                        //+ params.bgTileSize2dPow.x
-                      )
-                    ),
-                    U(f"$tempBgTileWidthPow'd$x")
-                  ).asUInt
+                  tempOutp.pxPos(x).x := (
+                    Cat(
+                      tempInp.cnt(
+                        (
+                          log2Up(params.intnlFbSize2d.x)
+                          + params.numBgsPow
+                          - params.bgTileSize2dPow.x
+                          - 1
+                        ) downto (
+                          params.numBgsPow
+                          //+ params.bgTileSize2dPow.x
+                        )
+                      ),
+                      U(f"$tempBgTileWidthPow'd$x")
+                    ).asUInt
+                    - tempInp.bgAttrs.scroll.x
+                  )
                   //tempOutp.pxPos(x).x := (
                   //  //--------
                   //  // BEGIN: old, possibly not working
@@ -4179,6 +4237,14 @@ case class Gpu2d(
             def tempLineMemEntry = tempOutp.lineMemEntry(x)
             rPastLineMemEntry(x).init(rPastLineMemEntry(x).getZero)
             when (
+              (bgIdx === (1 << bgIdx.getWidth) - 1)
+              //&& !tempInp.bakCnt.msb
+            ) {
+              rPastLineMemEntry(x) := rPastLineMemEntry(x).getZero
+            } otherwise {
+              rPastLineMemEntry(x) := tempLineMemEntry
+            }
+            when (
               // This could be split into more pipeline stages, but it
               // might not be necessary with 4 or fewer backgrounds
               (
@@ -4201,7 +4267,7 @@ case class Gpu2d(
               tempLineMemEntry.col.a := tempInp.palEntryNzMemIdx(x)
               tempLineMemEntry.prio := bgIdx
               tempLineMemEntry.addr := tempInp.pxPos(x).x
-              rPastLineMemEntry(x) := tempLineMemEntry
+              //rPastLineMemEntry(x) := tempLineMemEntry
             } otherwise {
               tempLineMemEntry := rPastLineMemEntry(x)
             }

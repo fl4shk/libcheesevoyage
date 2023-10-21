@@ -132,75 +132,74 @@ object Gpu2dSim extends App {
     val gpu2d = Gpu2d(
       params=gpu2dParams,
     )
+    //val gpu2dTest = Gpu2dTest(
+    //  params=gpu2dParams,
+    //)
 
     val ctrlIo = vgaCtrl.io
     //val dithIo = vidDith.io
     val gpuIo = gpu2d.io
 
-    val tempBgTile = Gpu2dTile(params=gpu2dParams, isObj=false)
-    //val tempBgTileRow0Vec = (
-    //  tempBgTile.colIdxRowVec(0).subdivideIn(
-    //    gpu2dParams.bgTileSize2d.x slices
+    //gpuIo <> gpu2dTest.io.gpuIo
+    //gpuIo.push <> gpu2dTest.io.pop
+    //gpuIo.push.bgTilePush << gpu2dTest.io.pop.bgTilePush
+    //for (idx <- 0 to gpu2dParams.numBgs - 1) {
+    //  gpuIo.push.bgEntryPushArr(idx) << (
+    //    gpu2dTest.io.pop.bgEntryPushArr(idx)
     //  )
-    //)
-    //tempBgTileRow0Vec(0) := 1
-    //for (idx <- 0 to tempBgTile.colIdxRowVec.size - 1) {
-    //  tempBgTile.colIdxRowVec(0)(
-    //    gpu2dParams.bgPalEntryMemIdxWidth - 1 downto 0
-    //  ) := 1
-    //  tempBgTile
+    //  gpuIo.push.bgAttrsPushArr(idx) << (
+    //    gpu2dTest.io.pop.bgAttrsPushArr(idx)
+    //  )
     //}
-    //for (jdx <- 0 to tempBgTile.pxsSize2d.y - 1) {
-    //  for (idx <- 0 to tempBgTile.pxsSize2d.x - 1) {
-    //    def pxsCoord = ElabVec2[Int](idx, jdx)
-    //    if (jdx == 3) {
-    //      if (idx == 0) {
-    //        tempBgTile.setPx(
-    //          pxsCoord=pxsCoord,
-    //          //colIdx=1,
-    //          colIdx=1,
-    //        )
-    //      }
-    //      else if (idx == 1) {
-    //        tempBgTile.setPx(
-    //          pxsCoord=pxsCoord,
-    //          colIdx=2,
-    //        )
-    //      }
-    //      else {
-    //        tempBgTile.setPx(
-    //          pxsCoord=pxsCoord,
-    //          //colIdx=3,
-    //          colIdx=3,
-    //        )
-    //      }
-    //    } else if (jdx == 4) {
-    //      tempBgTile.setPx(
-    //        pxsCoord=pxsCoord,
-    //        colIdx=4,
-    //      )
-    //    } else if (jdx == 5) {
-    //      if (idx == 0) {
-    //        tempBgTile.setPx(
-    //          pxsCoord=pxsCoord,
-    //          colIdx=5,
-    //        )
-    //      } else {
-    //        tempBgTile.setPx(
-    //          pxsCoord=pxsCoord,
-    //          colIdx=0,
-    //        )
-    //      }
-    //    } else {
-    //      tempBgTile.setPx(
-    //        pxsCoord=pxsCoord,
-    //        colIdx=0,
-    //      )
-    //    }
+    //gpuIo.push.bgPalEntryPush << gpu2dTest.io.pop.bgPalEntryPush
+    //gpuIo.push.objTilePush << gpu2dTest.io.pop.objTilePush
+    //gpuIo.push.objAttrsPush << gpu2dTest.io.pop.objAttrsPush
+    //gpuIo.push.objPalEntryPush << gpu2dTest.io.pop.objPalEntryPush
+    //gpuIo << gpu2dT
+
+    //when (rObjPalCnt < gpu2dParams.numColsInBgPal) {
+    //  rObjPalCnt := rObjPalCnt + 1
+    //}
+
+    //ctrlIo.en := True
+    //ctrlIo.push.valid := dithIo.pop.valid
+    //ctrlIo.push.payload := dithIo.pop.payload.col
+    //dithIo.pop.ready := ctrlIo.push.ready
+
+    //dithIo.push.valid := gpuIo.pop.valid
+    //dithIo.push.payload := gpuIo.pop.payload.col 
+    //gpuIo.pop.ready := dithIo.push.ready
+    //ctrlIo.en := True
+
+    ctrlIo.en := gpuIo.ctrlEn
+    //ctrlIo.en := False
+
+    ctrlIo.push.valid := gpuIo.pop.valid
+    ctrlIo.push.payload := gpuIo.pop.payload.col
+    gpuIo.pop.ready := ctrlIo.push.ready
+    //ctrlIo.push.valid := gpu2dTest.io.pop.valid
+    //ctrlIo.push.payload := gpu2dTest.io.pop.payload.col
+    //gpu2dTest.io.pop.ready := ctrlIo.push.ready
+    //ctrlIo.push.valid := False
+    //ctrlIo.push.payload := ctrlIo.push.payload.getZero
+    //gpuIo.pop.ready := True
+
+    io.phys := ctrlIo.phys
+    io.misc := ctrlIo.misc
+
+    val tempBgTile = Gpu2dTile(params=gpu2dParams, isObj=false)
+    //println(
+    //  f"tempBgTile.pxsSize2d "
+    //  + {
+    //    def pxsWidth = tempBgTile.pxsSize2d.x
+    //    f"$pxsWidth "
+    //  } + {
+    //    def pxsHeight = tempBgTile.pxsSize2d.y
+    //    f"$pxsHeight "
     //  }
-    //}
+    //)
     for (jdx <- 0 to tempBgTile.pxsSize2d.y - 1) {
-      for (idx <- 0 to tempBgTile.pxsSize2d.y - 1) {
+      for (idx <- 0 to tempBgTile.pxsSize2d.x - 1) {
         def pxsCoord = ElabVec2[Int](idx, jdx)
         //// checkerboard pattern
         //if (jdx % 2 == 0) {
@@ -214,6 +213,10 @@ object Gpu2dSim extends App {
         //    colIdx=((idx + 1) % 2) + 1,
         //  )
         //}
+        tempBgTile.setPx(
+          pxsCoord=pxsCoord,
+          colIdx=(jdx % 2) + 1,
+        )
 
         //if (jdx % 4 == 0) {
         //} else if (jdx % 4 == 1) {
@@ -236,11 +239,11 @@ object Gpu2dSim extends App {
         //  )
         //}
 
-        tempBgTile.setPx(
-          pxsCoord=pxsCoord,
-          colIdx=1,
-          //colIdx=0,
-        )
+        //tempBgTile.setPx(
+        //  pxsCoord=pxsCoord,
+        //  colIdx=1,
+        //  //colIdx=0,
+        //)
       }
     }
     //tempBgTile.colIdxRowVec.assignFromBits(
@@ -286,7 +289,7 @@ object Gpu2dSim extends App {
     //gpuIo.bgTilePush.payload.memIdx := 1
     gpuIo.bgTilePush.valid := rBgTilePushValid
     //gpuIo.bgTilePush.valid := True
-   // when (!rBgTileCnt.msb) {
+    // when (!rBgTileCnt.msb) {
       gpuIo.bgTilePush.payload.tile := tempBgTileToPush
       gpuIo.bgTilePush.payload.memIdx := (
         rBgTileCnt.asUInt(gpu2dParams.numBgTilesPow - 1 downto 0)
@@ -343,7 +346,6 @@ object Gpu2dSim extends App {
       }
     }
     //--------
-
     def palPush(
       numColsInPal: Int,
       rPalCnt: UInt,
@@ -447,30 +449,30 @@ object Gpu2dSim extends App {
 
     when (rObjTileCnt < gpu2dParams.numObjTiles) {
       when (gpuIo.objTilePush.fire) {
-        when (rObjTileCnt === 0) {
-          //mkObjTile(0, 1)
-          mkObjTile(0, 0)
-        } elsewhen (rObjTileCnt === 1) {
-          //mkObjTile(1, 2)
-          mkObjTile(1, 1)
-          //mkObjTile(3, 3)
-          //mkObjTile(2, 3)
-        } elsewhen (rObjTileCnt === 2) {
-          //mkObjTile(2, 3)
-          mkObjTile(2, 2)
-          //mkObjTile(2, 2)
-        } elsewhen (rObjTileCnt === 3) {
-          //mkObjTile(3, 4)
-          mkObjTile(3, 3)
-        } elsewhen (rObjTileCnt === 4) {
-          //mkObjTile(4, 5)
-          mkObjTile(4, 4)
-        } otherwise {
+        //when (rObjTileCnt === 0) {
+        //  //mkObjTile(0, 1)
+        //  mkObjTile(0, 0)
+        //} elsewhen (rObjTileCnt === 1) {
+        //  //mkObjTile(1, 2)
+        //  mkObjTile(1, 1)
+        //  //mkObjTile(3, 3)
+        //  //mkObjTile(2, 3)
+        //} elsewhen (rObjTileCnt === 2) {
+        //  //mkObjTile(2, 3)
+        //  mkObjTile(2, 2)
+        //  //mkObjTile(2, 2)
+        //} elsewhen (rObjTileCnt === 3) {
+        //  //mkObjTile(3, 4)
+        //  mkObjTile(3, 3)
+        //} elsewhen (rObjTileCnt === 4) {
+        //  //mkObjTile(4, 5)
+        //  mkObjTile(4, 4)
+        //} otherwise {
           tempObjTile := tempObjTile.getZero
           //when (rObjTileCnt >= gpu2dParams.numObjTiles) {
           //  rObjTilePushValid := False
           //}
-        }
+        //}
         nextObjTileCnt := rObjTileCnt + 1
       } otherwise {
         tempObjTile := tempObjTile.getZero
@@ -584,14 +586,14 @@ object Gpu2dSim extends App {
       //  //tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
       //  tempObjAttrs := tempObjAttrs.getZero
       } otherwise {
-        //tempObjAttrs := tempObjAttrs.getZero
-        tempObjAttrs.tileMemIdx := 0
-        tempObjAttrs.pos.x := -gpu2dParams.objTileSize2d.x
-        tempObjAttrs.pos.y := 0
-        tempObjAttrs.prio := 1
-        tempObjAttrs.size2d.x := gpu2dParams.objTileSize2d.x
-        tempObjAttrs.size2d.y := gpu2dParams.objTileSize2d.y
-        tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+        tempObjAttrs := tempObjAttrs.getZero
+        //tempObjAttrs.tileMemIdx := 0
+        //tempObjAttrs.pos.x := -gpu2dParams.objTileSize2d.x
+        //tempObjAttrs.pos.y := 0
+        //tempObjAttrs.prio := 1
+        //tempObjAttrs.size2d.x := gpu2dParams.objTileSize2d.x
+        //tempObjAttrs.size2d.y := gpu2dParams.objTileSize2d.y
+        //tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
         when (nextObjAttrsCnt >= gpu2dParams.numObjs) {
           rObjAttrsEntryPushValid := False
         }
@@ -619,33 +621,6 @@ object Gpu2dSim extends App {
     gpuIo.objAttrsPush.payload.memIdx := (
       rObjAttrsCnt.asUInt(gpu2dParams.objAttrsMemIdxWidth - 1 downto 0)
     )
-
-    //when (rObjPalCnt < gpu2dParams.numColsInBgPal) {
-    //  rObjPalCnt := rObjPalCnt + 1
-    //}
-
-    //ctrlIo.en := True
-    //ctrlIo.push.valid := dithIo.pop.valid
-    //ctrlIo.push.payload := dithIo.pop.payload.col
-    //dithIo.pop.ready := ctrlIo.push.ready
-
-    //dithIo.push.valid := gpuIo.pop.valid
-    //dithIo.push.payload := gpuIo.pop.payload.col 
-    //gpuIo.pop.ready := dithIo.push.ready
-    //ctrlIo.en := True
-
-    ctrlIo.en := gpuIo.ctrlEn
-    //ctrlIo.en := False
-
-    ctrlIo.push.valid := gpuIo.pop.valid
-    ctrlIo.push.payload := gpuIo.pop.payload.col
-    gpuIo.pop.ready := ctrlIo.push.ready
-    //ctrlIo.push.valid := False
-    //ctrlIo.push.payload := ctrlIo.push.payload.getZero
-    //gpuIo.pop.ready := True
-
-    io.phys := ctrlIo.phys
-    io.misc := ctrlIo.misc
   }
   val simSpinalConfig = SpinalConfig(
     //defaultClockDomainFrequency=FixedFrequency(100 MHz)
