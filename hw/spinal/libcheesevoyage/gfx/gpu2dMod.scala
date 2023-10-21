@@ -2566,8 +2566,8 @@ case class Gpu2d(
         def bakCntWillBeDone() = (
           //bakCntMinus1.msb
           //bakCntMinus1 === 0
-          bakCnt === 0
-          //bakCnt.msb
+          //bakCnt === 0
+          bakCnt.msb
           //cnt + 1 === params.wholeLineMemSize
         )
         //--------
@@ -5640,11 +5640,17 @@ case class Gpu2d(
                   switch (bgTempArrIdx) {
                     for (kdx <- 0 to (1 << bgTempArrIdx.getWidth) - 1) {
                       is (kdx) {
-                        tempOutp.bgRdLineMemEntry := (
-                          bgSubLineMemA2d(jdx)(kdx).readAsync(
-                            address=bgTempAddr
+                        when (!tempInp.bakCnt.msb) {
+                          tempOutp.bgRdLineMemEntry := (
+                            bgSubLineMemA2d(jdx)(kdx).readAsync(
+                              address=bgTempAddr
+                            )
                           )
-                        )
+                        } otherwise {
+                          tempOutp.bgRdLineMemEntry := (
+                            tempOutp.bgRdLineMemEntry.getZero
+                          )
+                        }
                       }
                     }
                   }
@@ -5694,11 +5700,17 @@ case class Gpu2d(
                   switch (objTempArrIdx) {
                     for (kdx <- 0 to (1 << objTempArrIdx.getWidth) - 1) {
                       is (kdx) {
-                        tempOutp.objRdLineMemEntry := (
-                          objSubLineMemA2d(jdx)(kdx).readAsync(
-                            address=objTempAddr
+                        when (!tempInp.bakCnt.msb) {
+                          tempOutp.objRdLineMemEntry := (
+                            objSubLineMemA2d(jdx)(kdx).readAsync(
+                              address=objTempAddr
+                            )
                           )
-                        )
+                        } otherwise {
+                          tempOutp.objRdLineMemEntry := (
+                            tempOutp.objRdLineMemEntry.getZero
+                          )
+                        }
                       }
                     }
                   }
