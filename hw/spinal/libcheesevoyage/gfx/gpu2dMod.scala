@@ -1427,18 +1427,18 @@ case class Gpu2d(
       //def size3 = params.wholeLineMemSize
       //println(f"objSubLineMemA2d: $jdx $size0 $size1 $size2 $size3")
     }
-    val dbgBgLineMemVec = Reg(
-      Vec.fill(params.numLineMemsPerBgObjRenderer)(
-        Vec.fill(params.wholeLineMemSize)(
-          BgSubLineMemEntry()
-        )
-      )
-    )
-    for (vecIdx <- 0 to dbgBgLineMemVec.size - 1) {
-      for (memIdx <- 0 to dbgBgLineMemVec(vecIdx).size - 1) {
-        dbgBgLineMemVec(vecIdx)(memIdx).init(BgSubLineMemEntry().getZero)
-      }
-    }
+    //val dbgBgLineMemVec = Reg(
+    //  Vec.fill(params.numLineMemsPerBgObjRenderer)(
+    //    Vec.fill(params.wholeLineMemSize)(
+    //      BgSubLineMemEntry()
+    //    )
+    //  )
+    //)
+    //for (vecIdx <- 0 to dbgBgLineMemVec.size - 1) {
+    //  for (memIdx <- 0 to dbgBgLineMemVec(vecIdx).size - 1) {
+    //    dbgBgLineMemVec(vecIdx)(memIdx).init(BgSubLineMemEntry().getZero)
+    //  }
+    //}
     //val dbgObjLineMemVec = Reg(
     //  Vec.fill(params.numLineMemsPerBgObjRenderer)(
     //    Vec.fill(params.wholeLineMemSize)(
@@ -4384,25 +4384,25 @@ case class Gpu2d(
         //val tempLineMemEntry = LineMemEntry()
         //val bgIdx = wrBgPipeLast.bgIdx
         for (x <- 0 to params.bgTileSize2d.x - 1) {
-          when (!wrBgPipeLast.bakCnt.msb) {
-            dbgBgLineMemVec(
-              //(
-                rWrLineMemArrIdx
-              //  + wrBgPipeLast.bgAttrs.scroll.y
-              //)(rWrLineMemArrIdx.bitsRange)
-            )(
-              //wrBgPipeLast.pxPos(x).x
-              //wrBgPipeLast.lineMemEntry(x).addr
-              //(
-                //wrBgPipeLast.pxPos(x).x
-                //+ wrBgPipeLast.bgAttrs.scroll.x
-                //- wrBgPipeLast.bgAttrs.scroll.x
-              //)(wrBgPipeLast.pxPos(x).x.bitsRange)
-              wrBgPipeLast.lineMemEntry(x).addr
-            ) := (
-              wrBgPipeLast.lineMemEntry(x)
-            )
-          }
+          //when (!wrBgPipeLast.bakCnt.msb) {
+          //  dbgBgLineMemVec(
+          //    //(
+          //      rWrLineMemArrIdx
+          //    //  + wrBgPipeLast.bgAttrs.scroll.y
+          //    //)(rWrLineMemArrIdx.bitsRange)
+          //  )(
+          //    //wrBgPipeLast.pxPos(x).x
+          //    //wrBgPipeLast.lineMemEntry(x).addr
+          //    //(
+          //      //wrBgPipeLast.pxPos(x).x
+          //      //+ wrBgPipeLast.bgAttrs.scroll.x
+          //      //- wrBgPipeLast.bgAttrs.scroll.x
+          //    //)(wrBgPipeLast.pxPos(x).x.bitsRange)
+          //    wrBgPipeLast.lineMemEntry(x).addr
+          //  ) := (
+          //    wrBgPipeLast.lineMemEntry(x)
+          //  )
+          //}
 
           def dbgTestWrBgPipeLast_tempArrIdx = (
             params.getBgSubLineMemTempArrIdx(
@@ -5708,29 +5708,29 @@ case class Gpu2d(
                   //  )
                   //)
                   // BEGIN: debug comment this out; return later
-                  //switch (bgTempArrIdx) {
-                  //  for (kdx <- 0 to (1 << bgTempArrIdx.getWidth) - 1) {
-                  //    is (kdx) {
-                  //      when (!tempInp.bakCnt.msb) {
-                  //        tempOutp.bgRdLineMemEntry := (
-                  //          bgSubLineMemA2d(jdx)(kdx).readAsync(
-                  //            address=bgTempAddr
-                  //          )
-                  //        )
-                  //      } otherwise {
-                  //        tempOutp.bgRdLineMemEntry := (
-                  //          tempOutp.bgRdLineMemEntry.getZero
-                  //        )
-                  //      }
-                  //    }
-                  //  }
-                  //}
+                  switch (bgTempArrIdx) {
+                    for (kdx <- 0 to (1 << bgTempArrIdx.getWidth) - 1) {
+                      is (kdx) {
+                        when (!tempInp.bakCnt.msb) {
+                          tempOutp.bgRdLineMemEntry := (
+                            bgSubLineMemA2d(jdx)(kdx).readAsync(
+                              address=bgTempAddr
+                            )
+                          )
+                        } otherwise {
+                          tempOutp.bgRdLineMemEntry := (
+                            tempOutp.bgRdLineMemEntry.getZero
+                          )
+                        }
+                      }
+                    }
+                  }
                   // END: debug comment this out; return later
-                  tempOutp.bgRdLineMemEntry := (
-                    dbgBgLineMemVec(jdx)(
-                      tempCombineLineMemIdx
-                    )
-                  )
+                  //tempOutp.bgRdLineMemEntry := (
+                  //  dbgBgLineMemVec(jdx)(
+                  //    tempCombineLineMemIdx
+                  //  )
+                  //)
                   //when (
                   //  (
                   //    if (jdx == 3) True else False 
