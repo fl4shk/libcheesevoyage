@@ -142,19 +142,23 @@ object Gpu2dSim extends App {
 
     //gpuIo <> gpu2dTest.io.gpuIo
     //gpuIo.push <> gpu2dTest.io.pop
-    gpuIo.push.bgTilePush << gpu2dTest.io.pop.bgTilePush
-    for (idx <- 0 to gpu2dParams.numBgs - 1) {
-      gpuIo.push.bgEntryPushArr(idx) << (
-        gpu2dTest.io.pop.bgEntryPushArr(idx)
-      )
-      gpuIo.push.bgAttrsPushArr(idx) << (
-        gpu2dTest.io.pop.bgAttrsPushArr(idx)
-      )
-    }
-    gpuIo.push.bgPalEntryPush << gpu2dTest.io.pop.bgPalEntryPush
-    gpuIo.push.objTilePush << gpu2dTest.io.pop.objTilePush
-    gpuIo.push.objAttrsPush << gpu2dTest.io.pop.objAttrsPush
-    gpuIo.push.objPalEntryPush << gpu2dTest.io.pop.objPalEntryPush
+    //gpu2dTest.io.pop <> gpuIo.push
+    gpuIo.push << gpu2dTest.io.pop
+
+    //gpuIo.push.bgTilePush << gpu2dTest.io.pop.bgTilePush
+    //for (idx <- 0 to gpu2dParams.numBgs - 1) {
+    //  gpuIo.push.bgEntryPushArr(idx) << (
+    //    gpu2dTest.io.pop.bgEntryPushArr(idx)
+    //  )
+    //  gpuIo.push.bgAttrsPushArr(idx) << (
+    //    gpu2dTest.io.pop.bgAttrsPushArr(idx)
+    //  )
+    //}
+    //gpuIo.push.bgPalEntryPush << gpu2dTest.io.pop.bgPalEntryPush
+    //gpuIo.push.objTilePush << gpu2dTest.io.pop.objTilePush
+    //gpuIo.push.objAttrsPush << gpu2dTest.io.pop.objAttrsPush
+    //gpuIo.push.objPalEntryPush << gpu2dTest.io.pop.objPalEntryPush
+
     //gpuIo << gpu2dT
 
     //when (rObjPalCnt < gpu2dParams.numColsInBgPal) {

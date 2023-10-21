@@ -53,80 +53,80 @@ case class Gpu2dTest(
   //}
   //for (jdx <- 0 to tempBgTile.pxsSize2d.y - 1) {
   //  for (idx <- 0 to tempBgTile.pxsSize2d.x - 1) {
-  //    def pxsCoord = ElabVec2[Int](idx, jdx)
+  //    def pxCoord = ElabVec2[Int](idx, jdx)
   //    if (jdx == 3) {
   //      if (idx == 0) {
   //        tempBgTile.setPx(
-  //          pxsCoord=pxsCoord,
+  //          pxCoord=pxCoord,
   //          //colIdx=1,
   //          colIdx=1,
   //        )
   //      }
   //      else if (idx == 1) {
   //        tempBgTile.setPx(
-  //          pxsCoord=pxsCoord,
+  //          pxCoord=pxCoord,
   //          colIdx=2,
   //        )
   //      }
   //      else {
   //        tempBgTile.setPx(
-  //          pxsCoord=pxsCoord,
+  //          pxCoord=pxCoord,
   //          //colIdx=3,
   //          colIdx=3,
   //        )
   //      }
   //    } else if (jdx == 4) {
   //      tempBgTile.setPx(
-  //        pxsCoord=pxsCoord,
+  //        pxCoord=pxCoord,
   //        colIdx=4,
   //      )
   //    } else if (jdx == 5) {
   //      if (idx == 0) {
   //        tempBgTile.setPx(
-  //          pxsCoord=pxsCoord,
+  //          pxCoord=pxCoord,
   //          colIdx=5,
   //        )
   //      } else {
   //        tempBgTile.setPx(
-  //          pxsCoord=pxsCoord,
+  //          pxCoord=pxCoord,
   //          colIdx=0,
   //        )
   //      }
   //    } else {
   //      tempBgTile.setPx(
-  //        pxsCoord=pxsCoord,
+  //        pxCoord=pxCoord,
   //        colIdx=0,
   //      )
   //    }
   //  }
   //}
-  println(
-    f"tempBgTile.pxsSize2d "
-    + {
-      def pxsWidth = tempBgTile.pxsSize2d.x
-      f"$pxsWidth "
-    } + {
-      def pxsHeight = tempBgTile.pxsSize2d.y
-      f"$pxsHeight "
-    }
-  )
+  //println(
+  //  f"tempBgTile.pxsSize2d "
+  //  + {
+  //    def pxsWidth = tempBgTile.pxsSize2d.x
+  //    f"$pxsWidth "
+  //  } + {
+  //    def pxsHeight = tempBgTile.pxsSize2d.y
+  //    f"$pxsHeight "
+  //  }
+  //)
   for (jdx <- 0 to tempBgTile.pxsSize2d.y - 1) {
     for (idx <- 0 to tempBgTile.pxsSize2d.x - 1) {
-      def pxsCoord = ElabVec2[Int](idx, jdx)
+      def pxCoord = ElabVec2[Int](idx, jdx)
       //// checkerboard pattern
       //if (jdx % 2 == 0) {
       //  tempBgTile.setPx(
-      //    pxsCoord=pxsCoord,
+      //    pxCoord=pxCoord,
       //    colIdx=(idx % 2) + 1,
       //  )
       //} else { // if (jdx % 2 == 1)
       //  tempBgTile.setPx(
-      //    pxsCoord=pxsCoord,
+      //    pxCoord=pxCoord,
       //    colIdx=((idx + 1) % 2) + 1,
       //  )
       //}
       tempBgTile.setPx(
-        pxsCoord=pxsCoord,
+        pxCoord=pxCoord,
         colIdx=(jdx % 2) + 1,
       )
 
@@ -136,23 +136,23 @@ case class Gpu2dTest(
       //}
       //if (idx == 0) {
       //  tempBgTile.setPx(
-      //    pxsCoord=pxsCoord,
+      //    pxCoord=pxCoord,
       //    colIdx=(jdx % 4) + 1,
       //  )
       //} else if (idx + 1 < tempBgTile.pxsSize2d.x) {
       //  tempBgTile.setPx(
-      //    pxsCoord=pxsCoord,
+      //    pxCoord=pxCoord,
       //    colIdx=jdx % 2,
       //  )
       //} else {
       //  tempBgTile.setPx(
-      //    pxsCoord=pxsCoord,
+      //    pxCoord=pxCoord,
       //    colIdx=(jdx % 4) + 2
       //  )
       //}
 
       //tempBgTile.setPx(
-      //  pxsCoord=pxsCoord,
+      //  pxCoord=pxCoord,
       //  colIdx=1,
       //  //colIdx=0,
       //)
@@ -216,11 +216,13 @@ case class Gpu2dTest(
   //--------
   val tempBgAttrs = Gpu2dBgAttrs(params=params)
   //tempBgAttrs.scroll := tempBgAttrs.scroll.getZero
-  //tempBgAttrs.scroll.x := 1
-  //tempBgAttrs.scroll.y := 1
-  tempBgAttrs.scroll.x := 0
+  //tempBgAttrs.scroll.x := 0
+  tempBgAttrs.scroll.x := 1
+  //tempBgAttrs.scroll.x := 0
+  //tempBgAttrs.scroll.x := (default -> True)
   //tempBgAttrs.scroll.y := 2
-  tempBgAttrs.scroll.y := 0
+  //tempBgAttrs.scroll.y := 0
+  tempBgAttrs.scroll.y := 1
   //tempBgAttrs.scroll.x := 6
   //tempBgAttrs.scroll.y := 5
   tempBgAttrs.visib := True
@@ -336,17 +338,17 @@ case class Gpu2dTest(
   ): Unit = {
     for (jdx <- 0 to tempObjTile.pxsSize2d.y - 1) {
       for (idx <- 0 to tempObjTile.pxsSize2d.y - 1) {
-        def pxsCoord = ElabVec2[Int](idx, jdx)
+        def pxCoord = ElabVec2[Int](idx, jdx)
         if (jdx % 2 == 0) {
           tempObjTile.setPx(
-            pxsCoord=pxsCoord,
+            pxCoord=pxCoord,
             //colIdx=(idx % 2) + 1,
             //colIdx=3,
             colIdx=colIdx0,
           )
         } else { // if (jdx % 2 == 1)
           tempObjTile.setPx(
-            pxsCoord=pxsCoord,
+            pxCoord=pxCoord,
             //colIdx=((idx + 1) % 2) + 1,
             //colIdx=4,
             colIdx=colIdx1,

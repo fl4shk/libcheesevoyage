@@ -561,48 +561,48 @@ case class Gpu2dTile(
   }
 
   def setPx(
-    pxsCoord: ElabVec2[Int],
+    pxCoord: ElabVec2[Int],
     colIdx: UInt,
   ): Unit = {
-    assert(pxsCoord.x >= 0 && pxsCoord.x < pxsSize2d.x)
-    assert(pxsCoord.y >= 0 && pxsCoord.y < pxsSize2d.y)
-    //val rowVec = getRowAsVec(pxsCoord.y)
-    //rowVec(pxsCoord.x) := colIdx
-    colIdxRowVec(pxsCoord.y)(pxsCoord.x) := colIdx
-    def pxsCoordX = pxsCoord.x
-    def pxsCoordY = pxsCoord.y
+    assert(pxCoord.x >= 0 && pxCoord.x < pxsSize2d.x)
+    assert(pxCoord.y >= 0 && pxCoord.y < pxsSize2d.y)
+    //val rowVec = getRowAsVec(pxCoord.y)
+    //rowVec(pxCoord.x) := colIdx
+    colIdxRowVec(pxCoord.y)(pxCoord.x) := colIdx
+    def pxsCoordX = pxCoord.x
+    def pxsCoordY = pxCoord.y
     //println(f"$pxsCoordX $pxsCoordY $colIdx")
 
-    //colIdxRowVec(pxsCoord.y)(
-    //  ((pxsCoord.x + 1) * colIdxWidth - 1)
-    //  downto (pxsCoord.x * colIdxWidth)
+    //colIdxRowVec(pxCoord.y)(
+    //  ((pxCoord.x + 1) * colIdxWidth - 1)
+    //  downto (pxCoord.x * colIdxWidth)
     //) := colIdx
 
-    //colIdxRowVec(pxsCoord.y)(
-    //  pxsCoord.x,
+    //colIdxRowVec(pxCoord.y)(
+    //  pxCoord.x,
     //  //colIdxWidth bits
     //  log2Up(pxsSize2d.x) bits
     //) := colIdx
 
-    //colIdxRowVec(pxsCoord.y).assignFromBits(rowVec.asBits)
+    //colIdxRowVec(pxCoord.y).assignFromBits(rowVec.asBits)
   }
   //def setPx(
-  //  pxsCoord: DualTypeNumVec2[UInt, UInt],
+  //  pxCoord: DualTypeNumVec2[UInt, UInt],
   //  colIdx: UInt,
   //): Unit = {
-  //  //val row = colIdxRowVec(pxsCoord.y)
+  //  //val row = colIdxRowVec(pxCoord.y)
   //  //val colIdxVec = row.subdivideIn(pxsSize2d.x slices)
-  //  //colIdxVec(pxsCoord.x) := colIdx
+  //  //colIdxVec(pxCoord.x) := colIdx
   //  //row.assignFromBits(colIdxVec.asBits)
 
-  //  switch (pxsCoord.y) {
+  //  switch (pxCoord.y) {
   //    for (jdx <- 0 to pxsSize2d.y - 1) {
   //      is (jdx) {
-  //        switch (pxsCoord.x) {
+  //        switch (pxCoord.x) {
   //          for (idx <- 0 to pxsSize2d.x - 1) {
   //            is (idx) {
   //              setPx(
-  //                pxsCoord=ElabVec2[Int](x=idx, y=jdx),
+  //                pxCoord=ElabVec2[Int](x=idx, y=jdx),
   //                colIdx=colIdx
   //              )
   //            }
@@ -627,24 +627,24 @@ case class Gpu2dTile(
   //  assert(pxsCoordY >= 0 && pxsCoordY < pxsSize2d.y)
   //}
   def getPx(
-    pxsCoord: ElabVec2[Int],
+    pxCoord: ElabVec2[Int],
   ) = {
-    assert(pxsCoord.x >= 0 && pxsCoord.x < pxsSize2d.x)
-    assert(pxsCoord.y >= 0 && pxsCoord.y < pxsSize2d.y)
-    val rowVec = getRowAsVec(pxsCoord.y)
-    //rowVec(pxsCoord.x) := colIdx
-    //colIdxRowVec(pxsCoord.y).assignFromBits(rowVec.asBits)
-    rowVec(pxsCoord.x)
+    assert(pxCoord.x >= 0 && pxCoord.x < pxsSize2d.x)
+    assert(pxCoord.y >= 0 && pxCoord.y < pxsSize2d.y)
+    val rowVec = getRowAsVec(pxCoord.y)
+    //rowVec(pxCoord.x) := colIdx
+    //colIdxRowVec(pxCoord.y).assignFromBits(rowVec.asBits)
+    rowVec(pxCoord.x)
   }
   def getPx(
-    pxsCoord: DualTypeNumVec2[UInt, UInt]
+    pxCoord: DualTypeNumVec2[UInt, UInt]
   ) = {
-    //val row = colIdxRowVec(pxsCoord.y.resized)
+    //val row = colIdxRowVec(pxCoord.y.resized)
     //val colIdxVec = row.subdivideIn(pxsSize2d.x slices)
-    ////colIdxVec(pxsCoord.x) := colIdx
+    ////colIdxVec(pxCoord.x) := colIdx
     ////row.assignFromBits(colIdxVec.asBits)
-    //colIdxVec(pxsCoord.x.resized)
-    colIdxRowVec(pxsCoord.y)(pxsCoord.x)
+    //colIdxVec(pxCoord.x.resized)
+    colIdxRowVec(pxCoord.y)(pxCoord.x)
   }
   //--------
 }
@@ -852,6 +852,26 @@ case class Gpu2dPushInp(
       )
     }
   }
+  //--------
+  def <<(
+    that: Gpu2dPushInp
+  ): Unit = {
+    this.bgTilePush << that.bgTilePush
+    for (idx <- 0 to params.numBgs - 1) {
+      this.bgEntryPushArr(idx) << that.bgEntryPushArr(idx)
+      this.bgAttrsPushArr(idx) << that.bgAttrsPushArr(idx)
+    }
+    this.bgPalEntryPush << that.bgPalEntryPush
+    this.objTilePush << that.objTilePush
+    this.objAttrsPush << that.objAttrsPush
+    this.objPalEntryPush << that.objPalEntryPush
+  }
+  def >>(
+    that: Gpu2dPushInp
+  ): Unit = {
+    that << this 
+  }
+  //--------
 }
 case class Gpu2dIo(
   params: Gpu2dParams=DefaultGpu2dParams(),
@@ -1407,18 +1427,18 @@ case class Gpu2d(
       //def size3 = params.wholeLineMemSize
       //println(f"objSubLineMemA2d: $jdx $size0 $size1 $size2 $size3")
     }
-    //val dbgBgLineMemVec = Reg(
-    //  Vec.fill(params.numLineMemsPerBgObjRenderer)(
-    //    Vec.fill(params.wholeLineMemSize)(
-    //      BgSubLineMemEntry()
-    //    )
-    //  )
-    //)
-    //for (vecIdx <- 0 to dbgBgLineMemVec.size - 1) {
-    //  for (memIdx <- 0 to dbgBgLineMemVec(vecIdx).size - 1) {
-    //    dbgBgLineMemVec(vecIdx)(memIdx).init(BgSubLineMemEntry().getZero)
-    //  }
-    //}
+    val dbgBgLineMemVec = Reg(
+      Vec.fill(params.numLineMemsPerBgObjRenderer)(
+        Vec.fill(params.wholeLineMemSize)(
+          BgSubLineMemEntry()
+        )
+      )
+    )
+    for (vecIdx <- 0 to dbgBgLineMemVec.size - 1) {
+      for (memIdx <- 0 to dbgBgLineMemVec(vecIdx).size - 1) {
+        dbgBgLineMemVec(vecIdx)(memIdx).init(BgSubLineMemEntry().getZero)
+      }
+    }
     //val dbgObjLineMemVec = Reg(
     //  Vec.fill(params.numLineMemsPerBgObjRenderer)(
     //    Vec.fill(params.wholeLineMemSize)(
@@ -2566,8 +2586,8 @@ case class Gpu2d(
         def bakCntWillBeDone() = (
           //bakCntMinus1.msb
           //bakCntMinus1 === 0
-          //bakCnt === 0
-          bakCnt.msb
+          bakCnt === 0
+          //bakCnt.msb
           //cnt + 1 === params.wholeLineMemSize
         )
         //--------
@@ -3863,6 +3883,8 @@ case class Gpu2d(
                       U(f"$tempBgTileWidthPow'd$x")
                     ).asUInt
                     - tempInp.bgAttrs.scroll.x
+
+                    //+ tempInp.bgAttrs.scroll.x
                   )
                   //tempOutp.pxPos(x).x := (
                   //  //--------
@@ -3901,8 +3923,11 @@ case class Gpu2d(
                       //- bgAttrsArr(tempBgIdx).scroll.y
                       //bgAttrsArr(tempBgIdx).scroll.y
                       //- 
-                      tempInp.lineNum.resized
+                      //tempInp.lineNum.resized
+                      //- tempInp.bgAttrs.scroll.y
+                      tempInp.lineNum
                       - tempInp.bgAttrs.scroll.y
+                      //+ tempInp.bgAttrs.scroll.y
                     )
                     //(
                     //  params.bgTileSize2dPow.y - 1 downto 0
@@ -4034,10 +4059,16 @@ case class Gpu2d(
                     //  //+ bgAttrsArr(tempBgIdx).scroll.x
                     //  - tempInp.bgAttrs.scroll.x
                     //)
-                    tempInp.pxPos(x).x
+                    //tempInp.pxPos(x).x
+                    //(
+                    //  params.bgTileSize2dPow.x - 1 downto 0
+                    //)
                     (
-                      params.bgTileSize2dPow.x - 1 downto 0
-                    )
+                      {
+                        def tempTileWidth = params.bgTileSize2dPow.x
+                        U(f"$tempTileWidth'd$x")
+                      } - tempInp.bgAttrs.scroll.x
+                    )(tempTilePxsPos(x).x.bitsRange)
                   )
                   tempTilePxsPos(x).y := (
                     //(
@@ -4048,10 +4079,15 @@ case class Gpu2d(
                     //  rWrLineNum.resized
                     //  - tempInp.bgAttrs.scroll.y
                     //)
-                    tempInp.pxPos(x).y
                     (
-                      params.bgTileSize2dPow.y - 1 downto 0
-                    )
+                      tempInp.lineNum
+                      //+ tempInp.bgAttrs.scroll.y
+                      - tempInp.bgAttrs.scroll.y
+                    ).resized
+                    //tempInp.pxPos(x).y
+                    //(
+                    //  params.bgTileSize2dPow.y - 1 downto 0
+                    //)
                   )
                   when (!tempInp.bgEntry(x).dispFlip.x) {
                     tempOutp.tilePxsCoord(x).x := tempTilePxsPos(x).x
@@ -4266,7 +4302,10 @@ case class Gpu2d(
               tempLineMemEntry.col.rgb := tempInp.palEntry(x).col
               tempLineMemEntry.col.a := tempInp.palEntryNzMemIdx(x)
               tempLineMemEntry.prio := bgIdx
-              tempLineMemEntry.addr := tempInp.pxPos(x).x
+              tempLineMemEntry.addr := (
+                tempInp.pxPos(x).x
+                + tempInp.bgAttrs.scroll.x
+              )
               //rPastLineMemEntry(x) := tempLineMemEntry
             } otherwise {
               tempLineMemEntry := rPastLineMemEntry(x)
@@ -4345,16 +4384,40 @@ case class Gpu2d(
         //val tempLineMemEntry = LineMemEntry()
         //val bgIdx = wrBgPipeLast.bgIdx
         for (x <- 0 to params.bgTileSize2d.x - 1) {
-          //when (!wrBgPipeLast.bakCnt.msb) {
-          //  dbgBgLineMemVec(rWrLineMemArrIdx)(wrBgPipeLast.pxPos(x).x) := (
-          //    wrBgPipeLast.lineMemEntry(x)
-          //  )
-          //}
+          when (!wrBgPipeLast.bakCnt.msb) {
+            dbgBgLineMemVec(
+              //(
+                rWrLineMemArrIdx
+              //  + wrBgPipeLast.bgAttrs.scroll.y
+              //)(rWrLineMemArrIdx.bitsRange)
+            )(
+              //wrBgPipeLast.pxPos(x).x
+              //wrBgPipeLast.lineMemEntry(x).addr
+              //(
+                //wrBgPipeLast.pxPos(x).x
+                //+ wrBgPipeLast.bgAttrs.scroll.x
+                //- wrBgPipeLast.bgAttrs.scroll.x
+              //)(wrBgPipeLast.pxPos(x).x.bitsRange)
+              wrBgPipeLast.lineMemEntry(x).addr
+            ) := (
+              wrBgPipeLast.lineMemEntry(x)
+            )
+          }
 
           def dbgTestWrBgPipeLast_tempArrIdx = (
             params.getBgSubLineMemTempArrIdx(
               //pxPosX=tempWrBgPipeLineMemAddr,
-              pxPosX=wrBgPipeLast.pxPos(x).x,
+
+              //pxPosX=wrBgPipeLast.pxPos(x).x,
+              //pxPosX=wrBgPipeLast.lineMemEntry(x).addr
+              pxPosX=(
+                //(
+                //  wrBgPipeLast.pxPos(x).x
+                //  //+ wrBgPipeLast.bgAttrs.scroll.x
+                //  //- wrBgPipeLast.bgAttrs.scroll.x
+                //)//(wrBgPipeLast.pxPos(x).x.bitsRange)
+                wrBgPipeLast.lineMemEntry(x).addr
+              ),
             )
           )
           val tempArrIdx = UInt(
@@ -4368,7 +4431,15 @@ case class Gpu2d(
           def dbgTestWrBgPipeLast_tempAddr = (
             params.getBgSubLineMemTempAddr(
               //pxPosX=tempWrBgPipeLineMemAddr,
-              pxPosX=wrBgPipeLast.pxPos(x).x,
+              //pxPosX=(
+              //  wrBgPipeLast.pxPos(x).x
+              //  //+ wrBgPipeLast.bgAttrs.scroll.x
+              //  //- wrBgPipeLast.bgAttrs.scroll.x
+              //)//(wrBgPipeLast.pxPos(x).x.bitsRange),
+              ////pxPosX=wrBgPipeLast.lineMemEntry(x).addr
+              pxPosX=(
+                wrBgPipeLast.lineMemEntry(x).addr
+              ),
             )
           )
           val tempAddr = UInt(
@@ -5637,29 +5708,29 @@ case class Gpu2d(
                   //  )
                   //)
                   // BEGIN: debug comment this out; return later
-                  switch (bgTempArrIdx) {
-                    for (kdx <- 0 to (1 << bgTempArrIdx.getWidth) - 1) {
-                      is (kdx) {
-                        when (!tempInp.bakCnt.msb) {
-                          tempOutp.bgRdLineMemEntry := (
-                            bgSubLineMemA2d(jdx)(kdx).readAsync(
-                              address=bgTempAddr
-                            )
-                          )
-                        } otherwise {
-                          tempOutp.bgRdLineMemEntry := (
-                            tempOutp.bgRdLineMemEntry.getZero
-                          )
-                        }
-                      }
-                    }
-                  }
+                  //switch (bgTempArrIdx) {
+                  //  for (kdx <- 0 to (1 << bgTempArrIdx.getWidth) - 1) {
+                  //    is (kdx) {
+                  //      when (!tempInp.bakCnt.msb) {
+                  //        tempOutp.bgRdLineMemEntry := (
+                  //          bgSubLineMemA2d(jdx)(kdx).readAsync(
+                  //            address=bgTempAddr
+                  //          )
+                  //        )
+                  //      } otherwise {
+                  //        tempOutp.bgRdLineMemEntry := (
+                  //          tempOutp.bgRdLineMemEntry.getZero
+                  //        )
+                  //      }
+                  //    }
+                  //  }
+                  //}
                   // END: debug comment this out; return later
-                  //tempOutp.bgRdLineMemEntry := (
-                  //  dbgBgLineMemVec(jdx)(
-                  //    tempCombineLineMemIdx
-                  //  )
-                  //)
+                  tempOutp.bgRdLineMemEntry := (
+                    dbgBgLineMemVec(jdx)(
+                      tempCombineLineMemIdx
+                    )
+                  )
                   //when (
                   //  (
                   //    if (jdx == 3) True else False 
