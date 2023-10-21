@@ -138,7 +138,7 @@ case class Gpu2dParams(
   //def oneLineMemSize = intnlFbSize2d.x
   //def oneLineMemSize = intnlFbSize2d.x
   def oneLineMemSize = intnlFbSize2d.x
-  def wholeLineMemSize = 1 << log2Up(intnlFbSize2d.x)
+  //def wholeLineMemSize = 1 << log2Up(intnlFbSize2d.x)
 
   def bgSubLineMemArrSizePow = bgTileSize2dPow.x
   def bgSubLineMemArrSize = 1 << bgSubLineMemArrSizePow
@@ -1325,21 +1325,21 @@ case class Gpu2d(
     //)
 
 
-    val bgLineMem = Mem(
-      wordType=BgSubLineMemEntry(),
-      wordCount=(
-        params.oneLineMemSize
-      )
-    )
+    //val bgLineMem = Mem(
+    //  wordType=BgSubLineMemEntry(),
+    //  wordCount=(
+    //    params.oneLineMemSize
+    //  )
+    //)
     //val bgLineMemArr = new ArrayBuffer[Mem[BgSubLineMemEntry]]()
     //val objLineMemArr = new ArrayBuffer[Mem[ObjSubLineMemEntry]]()
 
-    ////val bgSubLineMemA2d = (
-    ////  new ArrayBuffer[ArrayBuffer[Mem[BgSubLineMemEntry]]]()
-    ////)
-    ////val objSubLineMemA2d = (
-    ////  new ArrayBuffer[ArrayBuffer[Mem[ObjSubLineMemEntry]]]()
-    ////)
+    val bgSubLineMemA2d = (
+      new ArrayBuffer[ArrayBuffer[Mem[BgSubLineMemEntry]]]()
+    )
+    val objSubLineMemA2d = (
+      new ArrayBuffer[ArrayBuffer[Mem[ObjSubLineMemEntry]]]()
+    )
 
     ////def combineLineMemArr = bgLineMemArr
     ////val combineLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
@@ -1375,66 +1375,66 @@ case class Gpu2d(
     //    .addAttribute("ram_style", params.lineArrRamStyle)
     //    .setName(f"objLineMemArr_$idx")
     //}
-    //for (
-    //  //jdx <- 0 to params.objSubLineMemArrSize - 1
-    //  jdx <- 0 to params.numLineMemsPerBgObjRenderer - 1
-    //) {
-    //  //bgSubLineMemA2d += ArrayBuffer[Mem[BgSubLineMemEntry]]()
+    for (
+      //jdx <- 0 to params.objSubLineMemArrSize - 1
+      jdx <- 0 to params.numLineMemsPerBgObjRenderer - 1
+    ) {
+      //bgSubLineMemA2d += ArrayBuffer[Mem[BgSubLineMemEntry]]()
 
-    //  //for (idx <- 0 to params.bgSubLineMemSize - 1) {
-    //  //  bgSubLineMemA2d.last += Mem(
-    //  //    //wordType=Rgb(params.rgbConfig),
-    //  //    wordType=BgSubLineMemEntry(),
-    //  //    wordCount=params.bgSubLineMemSize,
-    //  //  )
-    //  //    .initBigInt(
-    //  //      Array.fill(params.bgSubLineMemSize)(BigInt(0)).toSeq
-    //  //    )
-    //  //    .addAttribute("ram_style", params.lineArrRamStyle)
-    //  //    .setName(f"bgSubLineMemA2d_$jdx" + "_" + f"$idx")
-    //  //}
-    //  bgSubLineMemA2d += ArrayBuffer[Mem[BgSubLineMemEntry]]()
+      //for (idx <- 0 to params.bgSubLineMemSize - 1) {
+      //  bgSubLineMemA2d.last += Mem(
+      //    //wordType=Rgb(params.rgbConfig),
+      //    wordType=BgSubLineMemEntry(),
+      //    wordCount=params.bgSubLineMemSize,
+      //  )
+      //    .initBigInt(
+      //      Array.fill(params.bgSubLineMemSize)(BigInt(0)).toSeq
+      //    )
+      //    .addAttribute("ram_style", params.lineArrRamStyle)
+      //    .setName(f"bgSubLineMemA2d_$jdx" + "_" + f"$idx")
+      //}
+      bgSubLineMemA2d += ArrayBuffer[Mem[BgSubLineMemEntry]]()
 
-    //  for (
-    //    //idx <- 0 to params.bgSubLineMemSize - 1
-    //    idx <- 0 to params.bgSubLineMemArrSize - 1
-    //  ) {
-    //    bgSubLineMemA2d.last += Mem(
-    //      //wordType=Rgb(params.rgbConfig),
-    //      wordType=BgSubLineMemEntry(),
-    //      wordCount=params.bgSubLineMemSize,
-    //    )
-    //      .initBigInt(
-    //        Array.fill(params.bgSubLineMemSize)(BigInt(0)).toSeq
-    //      )
-    //      .addAttribute("ram_style", params.lineArrRamStyle)
-    //      .setName(f"bgSubLineMemA2d_$jdx" + "_" + f"$idx")
-    //  }
+      for (
+        //idx <- 0 to params.bgSubLineMemSize - 1
+        idx <- 0 to params.bgSubLineMemArrSize - 1
+      ) {
+        bgSubLineMemA2d.last += Mem(
+          //wordType=Rgb(params.rgbConfig),
+          wordType=BgSubLineMemEntry(),
+          wordCount=params.bgSubLineMemSize,
+        )
+          .initBigInt(
+            Array.fill(params.bgSubLineMemSize)(BigInt(0)).toSeq
+          )
+          .addAttribute("ram_style", params.lineArrRamStyle)
+          .setName(f"bgSubLineMemA2d_$jdx" + "_" + f"$idx")
+      }
 
-    //  objSubLineMemA2d += ArrayBuffer[Mem[ObjSubLineMemEntry]]()
-    //  for (
-    //    //idx <- 0 to params.objSubLineMemSize - 1
-    //    idx <- 0 to params.objSubLineMemArrSize - 1
-    //  ) {
-    //    objSubLineMemA2d.last += Mem(
-    //      //wordType=Rgb(params.rgbConfig),
-    //      wordType=ObjSubLineMemEntry(),
-    //      wordCount=params.objSubLineMemSize,
-    //    )
-    //      .initBigInt(
-    //        Array.fill(params.objSubLineMemSize)(BigInt(0)).toSeq
-    //      )
-    //      .addAttribute("ram_style", params.lineArrRamStyle)
-    //      .setName(f"objSubLineMemA2d_$jdx" + "_" + f"$idx")
-    //  }
-    //  //def tempSize1 = objSubLineMemA2d.last.size
+      objSubLineMemA2d += ArrayBuffer[Mem[ObjSubLineMemEntry]]()
+      for (
+        //idx <- 0 to params.objSubLineMemSize - 1
+        idx <- 0 to params.objSubLineMemArrSize - 1
+      ) {
+        objSubLineMemA2d.last += Mem(
+          //wordType=Rgb(params.rgbConfig),
+          wordType=ObjSubLineMemEntry(),
+          wordCount=params.objSubLineMemSize,
+        )
+          .initBigInt(
+            Array.fill(params.objSubLineMemSize)(BigInt(0)).toSeq
+          )
+          .addAttribute("ram_style", params.lineArrRamStyle)
+          .setName(f"objSubLineMemA2d_$jdx" + "_" + f"$idx")
+      }
+      //def tempSize1 = objSubLineMemA2d.last.size
 
-    //  //def size0 = log2Up(params.oneLineMemSize)
-    //  //def size1 = params.objSubLineMemSizePow
-    //  //def size2 = params.objSubLineMemArrSizePow
-    //  //def size3 = params.oneLineMemSize
-    //  //println(f"objSubLineMemA2d: $jdx $size0 $size1 $size2 $size3")
-    //}
+      //def size0 = log2Up(params.oneLineMemSize)
+      //def size1 = params.objSubLineMemSizePow
+      //def size2 = params.objSubLineMemArrSizePow
+      //def size3 = params.oneLineMemSize
+      //println(f"objSubLineMemA2d: $jdx $size0 $size1 $size2 $size3")
+    }
     //val dbgBgLineMemVec = Reg(
     //  Vec.fill(params.numLineMemsPerBgObjRenderer)(
     //    Vec.fill(params.oneLineMemSize)(
