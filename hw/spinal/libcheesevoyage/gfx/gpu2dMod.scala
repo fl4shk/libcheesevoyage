@@ -289,6 +289,16 @@ case class Gpu2dParams(
   )
   def bgTilePxsCoordT() = coordT(someSize2d=bgTileSize2d)
   def objTilePxsCoordT() = coordT(someSize2d=objTileSize2d)
+
+  def objSize2dForAttrs = ElabVec2[Int](
+    x=objTileSize2d.x + 1,
+    y=objTileSize2d.y + 1,
+  )
+  def objSize2dForAttrsPow = ElabVec2[Int](
+    x=log2Up(objSize2dForAttrs.x),
+    y=log2Up(objSize2dForAttrs.y),
+  )
+  def objSize2dForAttrsT() = coordT(someSize2d=objSize2dForAttrs)
   //def bgTilesPosInfoT() = LcvVideoPosInfo(someSize2d=bgSize2dInTiles)
 
   //def physToBgPxsSliceWidth = (
@@ -711,6 +721,9 @@ case class Gpu2dObjAttrs(
 
   // the priority for the OBJ
   val prio = UInt(log2Up(params.numBgs) bits)
+
+  //val size2dMinus1x1 = params.objTilePxsCoordT()
+  val size2d = params.objSize2dForAttrsT()
 
   // whether or not to visibly flip x/y during rendering
   val dispFlip = Vec2(dataType=Bool())
@@ -4088,7 +4101,7 @@ case class Gpu2d(
         )
       )
       for (x <- 0 to params.objTileSize2d.x - 1) {
-        for (fwdIdx <- 0 to rStage6FwdVec.size - 1) {
+        for (fwdIdx <- 0 to rStage6FwdVec(x).size - 1) {
           rStage6FwdVec(x)(fwdIdx).setName(
             f"rWrObjPipeStage6FwdVec_$fwdIdx" + f"_$x"
           )
@@ -4314,10 +4327,17 @@ case class Gpu2d(
               //tempInp.objPosYShift < params.intnlFbSize2d.y
               tempInp.pxPos(x).y < tempInp.objPosYShift
             )
-            tempOutp.palEntryMemIdx(x) := tempInp.tile.getPx(
-              tempInp.tilePxsCoord(x)
-              //x
-            )
+            when (
+              tempInp.tilePxsCoord(x).x < tempInp.objAttrs.size2d.x
+              && tempInp.tilePxsCoord(x).y < tempInp.objAttrs.size2d.y
+            ) {
+              tempOutp.palEntryMemIdx(x) := tempInp.tile.getPx(
+                tempInp.tilePxsCoord(x)
+                //x
+              )
+            } otherwise {
+              tempOutp.palEntryMemIdx(x) := 0
+            }
           }
         },
         copyOnlyFunc=(
@@ -5053,211 +5073,6 @@ case class Gpu2d(
         }
       }
     }
-    //--------
-    //def doSendIntoFifo(): Unit = {
-    //  val stageData = DualPipeStageData[Stream[SendIntoFifoPipePayload]](
-    //    pipeIn=sendIntoFifoPipeIn,
-    //    pipeOut=sendIntoFifoPipeOut,
-    //    pipeNumMainStages=sendIntoFifoPipeNumMainStages,
-    //    pipeStageIdx=0,
-    //  )
-    //  HandleDualPipe(
-    //    stageData=stageData.craft(0)
-    //  )(
-    //    pipeStageMainFunc=(
-    //      stageData: DualPipeStageData[Stream[SendIntoFifoPipePayload]],
-    //      idx: Int,
-    //    ) => {
-    //      val tempInp = stageData.pipeIn(idx)
-    //      val tempOutp = stageData.pipeOut(idx)
-
-    //      when (clockDomain.isResetActive) {
-    //        tempOutp.stage0 := tempOutp.stage0.getZero
-    //      } otherwise {
-    //        //tempOutp.stage0 := tempInp.stage0
-    //        tempOutp.lineMemArrIdx := tempInp.lineMemArrIdx
-    //        tempOutp.cnt := tempInp.cnt
-    //        tempOutp.bakCnt := tempInp.bakCnt
-    //        switch (
-    //          //rWrLineMemArrIdx
-    //          //sendIntoFifoLineMemArrIdx
-    //          tempInp.lineMemArrIdx
-    //        ) {
-    //          for (
-    //            jdx <- 0 to (1 << tempInp.lineMemArrIdx.getWidth) - 1
-    //          ) {
-    //            is (jdx) {
-    //              tempOutp.bgLineMemEntry := bgLineMemArr(jdx).readAsync(
-    //                address=tempInp.cnt(
-    //                  log2Up(params.wholeLineMemSize) - 1 downto 0
-    //                )
-    //              )
-    //              //tempOutp.objLineMemEntry := objLineMemArr(jdx).readAsync(
-    //              //  address=tempInp.cnt(
-    //              //    log2Up(params.wholeLineMemSize) - 1 downto 0
-    //              //  )
-    //              //)
-    //            }
-    //          }
-    //        }
-    //      }
-    //      //tempOut.stage0 := tempInp.stage0
-    //      //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
-    //    },
-    //    copyOnlyFunc=(
-    //      stageData: DualPipeStageData[Stream[SendIntoFifoPipePayload]],
-    //      idx: Int,
-    //    ) => {
-    //      //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
-    //      //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
-    //      val tempInp = stageData.pipeIn(idx)
-    //      val tempOutp = stageData.pipeOut(idx)
-
-    //      when (clockDomain.isResetActive) {
-    //        tempOutp.stage0 := tempOutp.stage0.getZero
-    //      } otherwise {
-    //        tempOutp.stage0 := tempInp.stage0
-    //      }
-    //    },
-    //  )
-    //  //HandleDualPipe(
-    //  //  stageData=stageData.craft(1)
-    //  //)(
-    //  //  pipeStageMainFunc=(
-    //  //    stageData: DualPipeStageData[Stream[SendIntoFifoPipePayload]],
-    //  //    idx: Int,
-    //  //  ) => {
-    //  //    val tempInp = stageData.pipeIn(idx)
-    //  //    val tempOutp = stageData.pipeOut(idx)
-
-    //  //    //when (clockDomain.isResetActive) {
-    //  //    //} otherwise {
-    //  //    //  //bgLineFifoPushPayload
-    //  //    //  lineFifo
-    //  //    //}
-    //  //    //tempOut.stage0 := tempInp.stage0
-    //  //    //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
-    //  //  },
-    //  //  copyOnlyFunc=(
-    //  //    stageData: DualPipeStageData[Stream[SendIntoFifoPipePayload]],
-    //  //    idx: Int,
-    //  //  ) => {
-    //  //    //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
-    //  //    //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
-    //  //    //val tempInp = stageData.pipeIn(idx)
-    //  //    //val tempOutp = stageData.pipeOut(idx)
-
-    //  //    //when (clockDomain.isResetActive) {
-    //  //    //  tempOutp.stage0 := tempOutp.stage0.getZero
-    //  //    //} otherwise {
-    //  //    //  tempOutp.stage0 := tempInp.stage0
-    //  //    //}
-    //  //  },
-    //  //)
-    //}
-    //def doSendIntoObjFifo(): Unit = {
-    //  val stageData = (
-    //    DualPipeStageData[Stream[SendIntoObjFifoPipePayload]](
-    //      pipeIn=sendIntoObjFifoPipeIn,
-    //      pipeOut=sendIntoObjFifoPipeOut,
-    //      pipeNumMainStages=sendIntoFifoPipeNumMainStages,
-    //      pipeStageIdx=0,
-    //    )
-    //  )
-    //  HandleDualPipe(
-    //    stageData=stageData.craft(0)
-    //  )(
-    //    pipeStageMainFunc=(
-    //      stageData: DualPipeStageData[Stream[SendIntoObjFifoPipePayload]],
-    //      idx: Int,
-    //    ) => {
-    //      val tempInp = stageData.pipeIn(idx)
-    //      val tempOutp = stageData.pipeOut(idx)
-
-    //      when (clockDomain.isResetActive) {
-    //        tempOutp.stage0 := tempOutp.stage0.getZero
-    //      } otherwise {
-    //        //tempOutp.stage0 := tempInp.stage0
-    //        tempOutp.lineMemArrIdx := tempInp.lineMemArrIdx
-    //        tempOutp.cnt := tempInp.cnt
-    //        tempOutp.bakCnt := tempInp.bakCnt
-    //        switch (
-    //          //rWrLineMemArrIdx
-    //          //sendIntoFifoLineMemArrIdx
-    //          tempInp.lineMemArrIdx
-    //        ) {
-    //          for (
-    //            jdx <- 0 to (1 << tempInp.lineMemArrIdx.getWidth) - 1
-    //          ) {
-    //            is (jdx) {
-    //              //tempOutp.bgLineMemEntry := bgLineMemArr(jdx).readAsync(
-    //              //  address=tempInp.cnt(
-    //              //    log2Up(params.wholeLineMemSize) - 1 downto 0
-    //              //  )
-    //              //)
-    //              tempOutp.objLineMemEntry := objLineMemArr(jdx).readAsync(
-    //                address=tempInp.cnt(
-    //                  log2Up(params.wholeLineMemSize) - 1 downto 0
-    //                )
-    //              )
-    //            }
-    //          }
-    //        }
-    //      }
-    //      //tempOut.stage0 := tempInp.stage0
-    //      //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
-    //    },
-    //    copyOnlyFunc=(
-    //      stageData: DualPipeStageData[Stream[SendIntoObjFifoPipePayload]],
-    //      idx: Int,
-    //    ) => {
-    //      //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
-    //      //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
-    //      val tempInp = stageData.pipeIn(idx)
-    //      val tempOutp = stageData.pipeOut(idx)
-
-    //      when (clockDomain.isResetActive) {
-    //        tempOutp.stage0 := tempOutp.stage0.getZero
-    //      } otherwise {
-    //        tempOutp.stage0 := tempInp.stage0
-    //      }
-    //    },
-    //  )
-    //  //HandleDualPipe(
-    //  //  stageData=stageData.craft(1)
-    //  //)(
-    //  //  pipeStageMainFunc=(
-    //  //    stageData: DualPipeStageData[Stream[SendIntoFifoPipePayload]],
-    //  //    idx: Int,
-    //  //  ) => {
-    //  //    val tempInp = stageData.pipeIn(idx)
-    //  //    val tempOutp = stageData.pipeOut(idx)
-
-    //  //    //when (clockDomain.isResetActive) {
-    //  //    //} otherwise {
-    //  //    //  //bgLineFifoPushPayload
-    //  //    //  lineFifo
-    //  //    //}
-    //  //    //tempOut.stage0 := tempInp.stage0
-    //  //    //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
-    //  //  },
-    //  //  copyOnlyFunc=(
-    //  //    stageData: DualPipeStageData[Stream[SendIntoFifoPipePayload]],
-    //  //    idx: Int,
-    //  //  ) => {
-    //  //    //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
-    //  //    //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
-    //  //    //val tempInp = stageData.pipeIn(idx)
-    //  //    //val tempOutp = stageData.pipeOut(idx)
-
-    //  //    //when (clockDomain.isResetActive) {
-    //  //    //  tempOutp.stage0 := tempOutp.stage0.getZero
-    //  //    //} otherwise {
-    //  //    //  tempOutp.stage0 := tempInp.stage0
-    //  //    //}
-    //  //  },
-    //  //)
-    //}
     //--------
     def combineLineMemEntries(
       //someCombineLineMemArrIdx: Int
