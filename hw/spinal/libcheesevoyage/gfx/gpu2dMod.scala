@@ -73,18 +73,18 @@ case class Gpu2dParams(
   numColsInObjPalPow: Int,    // power of two for how many colors in the
                               // sprite palette
   //--------
-  bgTileArrRamStyle: String="auto",
-  objTileArrRamStyle: String="auto",
-  bgEntryArrRamStyle: String="auto",
-  //bgAttrsArrRamStyle: String="auto",
-  objAttrsArrRamStyle: String="auto",
-  bgPalEntryArrRamStyle: String="auto",
-  objPalEntryArrRamStyle: String="auto",
+  bgTileArrRamStyle: String="block",
+  objTileArrRamStyle: String="block",
+  bgEntryArrRamStyle: String="block",
+  //bgAttrsArrRamStyle: String="block",
+  objAttrsArrRamStyle: String="block",
+  bgPalEntryArrRamStyle: String="block",
+  objPalEntryArrRamStyle: String="block",
 
-  //bgLineArrRamStyle: String="auto",
-  //objLineArrRamStyle: String="auto",
-  //combineLineArrRamStyle: String="auto",
-  lineArrRamStyle: String="auto"
+  //bgLineArrRamStyle: String="block",
+  //objLineArrRamStyle: String="block",
+  //combineLineArrRamStyle: String="block",
+  lineArrRamStyle: String="block"
 ) {
   //--------
   def bgTileSize2d = ElabVec2[Int](
@@ -381,17 +381,17 @@ object DefaultGpu2dParams {
     numColsInBgPalPow: Int=log2Up(256), // 256 colors per BG palette
     numColsInObjPalPow: Int=log2Up(256), // 256 colors per OBJ palette
     //--------
-    bgTileArrRamStyle: String="auto",
-    objTileArrRamStyle: String="auto",
-    bgEntryArrRamStyle: String="auto",
-    //bgAttrsArrRamStyle: String="auto",
-    objAttrsArrRamStyle: String="auto",
-    bgPalEntryArrRamStyle: String="auto",
-    objPalEntryArrRamStyle: String="auto",
-    //bgLineArrRamStyle: String="auto",
-    //objLineArrRamStyle: String="auto",
-    //combineLineArrRamStyle: String="auto",
-    lineArrRamStyle: String="auto",
+    bgTileArrRamStyle: String="block",
+    objTileArrRamStyle: String="block",
+    bgEntryArrRamStyle: String="block",
+    //bgAttrsArrRamStyle: String="block",
+    objAttrsArrRamStyle: String="block",
+    bgPalEntryArrRamStyle: String="block",
+    objPalEntryArrRamStyle: String="block",
+    //bgLineArrRamStyle: String="block",
+    //objLineArrRamStyle: String="block",
+    //combineLineArrRamStyle: String="block",
+    lineArrRamStyle: String="block",
     //--------
   ) = {
     def bgTileSize2d = ElabVec2[Int](
