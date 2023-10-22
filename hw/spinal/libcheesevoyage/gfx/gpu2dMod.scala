@@ -140,14 +140,16 @@ case class Gpu2dParams(
   def oneLineMemSize = intnlFbSize2d.x
   //def wholeLineMemSize = 1 << log2Up(intnlFbSize2d.x)
 
-  def bgSubLineMemArrSizePow = bgTileSize2dPow.x
-  def bgSubLineMemArrSize = 1 << bgSubLineMemArrSizePow
-  def bgSubLineMemSizePow = (
-    log2Up(oneLineMemSize) - bgSubLineMemArrSizePow
-  )
-  //def bgSubLineMemSize = oneLineMemSize >> bgSubLineMemArrSizePow
-  def bgSubLineMemSize = 1 << bgSubLineMemSizePow
+  // BEGIN: old, working but non-synthesizable code
+  //def bgSubLineMemArrSizePow = bgTileSize2dPow.x
+  //def bgSubLineMemArrSize = 1 << bgSubLineMemArrSizePow
+  //def bgSubLineMemSizePow = (
+  //  log2Up(oneLineMemSize) - bgSubLineMemArrSizePow
+  //)
+  ////def bgSubLineMemSize = oneLineMemSize >> bgSubLineMemArrSizePow
+  //def bgSubLineMemSize = 1 << bgSubLineMemSizePow
 
+  // BEGIN: old, working but non-synthesizable code; comment out later
   def objSubLineMemArrSizePow = objTileSize2dPow.x
   def objSubLineMemArrSize = 1 << objSubLineMemArrSizePow
   def objSubLineMemSizePow = (
@@ -164,44 +166,49 @@ case class Gpu2dParams(
 
   def getEitherSubLineMemTempArrIdx(
     pxPosX: UInt,
-    //someSubLineMemArrSizePow: Int
-    isObj: Boolean,
+    ////someSubLineMemArrSizePow: Int
+    //isObj: Boolean,
   ) = {
     assert(pxPosX.getWidth >= log2Up(oneLineMemSize))
     //pxPosX(objTileSize2dPow.x - 1 downto 0)
     //pxPosX(objSubLineMemArrSizePow - 1 downto 0)
-    pxPosX(
-      (
-        //objSubLineMemArrSizePow
-        //if (!isObj) bgSubLineMemArrSizePow else objSubLineMemArrSizePow
-        if (!isObj) bgSubLineMemArrSizePow else objSubLineMemArrSizePow
-      ) - 1 downto 0
-      //0 downto 0
-      //log2Up(oneLineMemSize) - 1
-      //downto (
-      //  if (!isObj) bgSubLineMemArrSizePow else objSubLineMemArrSizePow
-      //)
-    )
+    //if (!isObj) {
+    //} else {
+      pxPosX(
+        (
+          //if (!isObj) bgSubLineMemArrSizePow else objSubLineMemArrSizePow
+          objSubLineMemArrSizePow
+        ) - 1 downto 0
+      )
+    //}
   }
 
-  def getBgSubLineMemTempArrIdx(
-    pxPosX: UInt
-  ) = getEitherSubLineMemTempArrIdx(pxPosX=pxPosX, isObj=false)
+  //def getBgSubLineMemTempArrIdx(
+  //  pxPosX: UInt
+  //) = getEitherSubLineMemTempArrIdx(pxPosX=pxPosX, isObj=false)
   def getObjSubLineMemTempArrIdx(
     pxPosX: UInt
-  ) = getEitherSubLineMemTempArrIdx(pxPosX=pxPosX, isObj=true)
+  ) = getEitherSubLineMemTempArrIdx(
+    pxPosX=pxPosX,
+    //isObj=true
+  )
 
 
   def getEitherSubLineMemTempAddr(
     pxPosX: UInt,
-    isObj: Boolean,
+    //isObj: Boolean,
   ) = {
     assert(pxPosX.getWidth >= log2Up(oneLineMemSize))
 
     pxPosX(
       log2Up(oneLineMemSize) - 1
       downto (
-        if (!isObj) bgSubLineMemArrSizePow else objSubLineMemArrSizePow
+        //if (!isObj) {
+        //  bgSubLineMemArrSizePow
+        //} else 
+        {
+          objSubLineMemArrSizePow
+        }
       )
       //(
       //  //objSubLineMemArrSizePow
@@ -209,12 +216,43 @@ case class Gpu2dParams(
       //) - 1 downto 0
     )
   }
-  def getBgSubLineMemTempAddr(
-    pxPosX: UInt
-  ) = getEitherSubLineMemTempAddr(pxPosX, isObj=false)
+  //def getBgSubLineMemTempAddr(
+  //  pxPosX: UInt
+  //) = getEitherSubLineMemTempAddr(pxPosX, isObj=false)
   def getObjSubLineMemTempAddr(
     pxPosX: UInt
-  ) = getEitherSubLineMemTempAddr(pxPosX, isObj=true)
+  ) = getEitherSubLineMemTempAddr(
+    pxPosX=pxPosX,
+    //isObj=true
+  )
+  // END: old, working but non-synthesizable code; comment out later
+  //--------
+  // BEGIN: new code, for implementing purely dual-port RAM for synthesis
+  def bgSubLineMemArrSizePow = (
+    log2Up(oneLineMemSize) - bgTileSize2dPow.x
+  )
+  def bgSubLineMemArrSize = 1 << bgSubLineMemArrSizePow
+  def getBgSubLineMemArrIdx(
+    addr: UInt
+  ) = {
+    assert(addr.getWidth >= log2Up(oneLineMemSize))
+    addr(log2Up(oneLineMemSize) - 1 downto bgTileSize2dPow.x)
+  }
+  def getBgSubLineMemArrElemIdx(
+    addr: UInt
+  ) = {
+    assert(addr.getWidth >= log2Up(oneLineMemSize))
+    addr(bgTileSize2dPow.x - 1 downto 0)
+  }
+
+    // BEGIN: debug comment this out; return later
+    //def objSubLineMemArrSizePow = (
+    //  log2Up(oneLineMemSize) - objTileSize2dPow.x
+    //)
+    //def objSubLineMemArrSize = 1 << objSubLineMemArrSizePow
+    // END: debug comment this out; return later
+  // END: new code, for implementing purely dual-port RAM for synthesis
+  //--------
   //def lineFifoDepth = oneLineMemSize * 2 + 1
   //def lineFifoDepth = oneLineMemSize + 1
   //def numLineMems = 2
@@ -1263,13 +1301,18 @@ case class Gpu2d(
     case class BgSubLineMemEntry() extends Bundle {
       val col = Gpu2dRgba(params=params)
       val prio = UInt(params.numBgsPow bits)
+      //val addr = UInt(params.bgSubLineMemArrSizePow bits)
       val addr = UInt(log2Up(params.oneLineMemSize) bits)
-      def getSubLineMemTempArrIdx() = params.getBgSubLineMemTempArrIdx(
-        pxPosX=addr
+      def getSubLineMemTempArrIdx() = (
+        params.getBgSubLineMemArrIdx(addr=addr)
       )
-      def getSubLineMemTempAddr() = params.getBgSubLineMemTempAddr(
-        pxPosX=addr
-      )
+      //val addr = UInt(log2Up(params.oneLineMemSize) bits)
+      //def getSubLineMemTempArrIdx() = params.getBgSubLineMemTempArrIdx(
+      //  pxPosX=addr
+      //)
+      //def getSubLineMemTempAddr() = params.getBgSubLineMemTempAddr(
+      //  pxPosX=addr
+      //)
     }
     case class ObjSubLineMemEntry() extends Bundle {
       val col = Gpu2dRgba(params=params)
@@ -1331,50 +1374,66 @@ case class Gpu2d(
     //    params.oneLineMemSize
     //  )
     //)
-    //val bgLineMemArr = new ArrayBuffer[Mem[BgSubLineMemEntry]]()
-    //val objLineMemArr = new ArrayBuffer[Mem[ObjSubLineMemEntry]]()
+    val bgSubLineMemArr = new ArrayBuffer[Mem[Vec[BgSubLineMemEntry]]]()
+    val objSubLineMemArr = new ArrayBuffer[Mem[Vec[ObjSubLineMemEntry]]]()
 
-    val bgSubLineMemA2d = (
-      new ArrayBuffer[ArrayBuffer[Mem[BgSubLineMemEntry]]]()
-    )
+    //val bgSubLineMemA2d = (
+    //  new ArrayBuffer[ArrayBuffer[Mem[BgSubLineMemEntry]]]()
+    //)
     val objSubLineMemA2d = (
       new ArrayBuffer[ArrayBuffer[Mem[ObjSubLineMemEntry]]]()
     )
 
-    ////def combineLineMemArr = bgLineMemArr
+    ////def combineLineMemArr = bgSubLineMemArr
     ////val combineLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
     ////val wrLineMemIdx
 
-    //for (
-    //  idx <- 0 to params.numLineMemsPerBgObjRenderer - 1
-    //  //idx <- 0 to params.numLineMemsPerBgRenderer - 1
-    //) {
-    //  //lineMemArr += Mem(
-    //  //  //wordType=Rgb(params.rgbConfig),
-    //  //  wordType=LineMemEntry(),
-    //  //  wordCount=params.oneLineMemSize,
-    //  //)
-    //  //  .initBigInt(Array.fill(params.oneLineMemSize)(BigInt(0)).toSeq)
-    //  //  .addAttribute("ram_style", params.lineArrRamStyle)
+    for (
+      idx <- 0 to params.numLineMemsPerBgObjRenderer - 1
+      //idx <- 0 to params.numLineMemsPerBgRenderer - 1
+    ) {
+      //lineMemArr += Mem(
+      //  //wordType=Rgb(params.rgbConfig),
+      //  wordType=LineMemEntry(),
+      //  wordCount=params.oneLineMemSize,
+      //)
+      //  .initBigInt(Array.fill(params.oneLineMemSize)(BigInt(0)).toSeq)
+      //  .addAttribute("ram_style", params.lineArrRamStyle)
 
-    //  bgLineMemArr += Mem(
-    //    //wordType=Rgb(params.rgbConfig),
-    //    wordType=BgSubLineMemEntry(),
-    //    wordCount=params.oneLineMemSize,
-    //  )
-    //    .initBigInt(Array.fill(params.oneLineMemSize)(BigInt(0)).toSeq)
-    //    .addAttribute("ram_style", params.lineArrRamStyle)
-    //    .setName(f"bgLineMemArr_$idx")
+      bgSubLineMemArr += Mem(
+        //wordType=Rgb(params.rgbConfig),
+        //wordType=BgSubLineMemEntry(),
+        //wordCount=params.oneLineMemSize,
+        wordType=Vec.fill(params.bgTileSize2d.x)(BgSubLineMemEntry()),
+        wordCount=params.bgSubLineMemArrSize,
+      )
+        .initBigInt(
+          //Array.fill(params.oneLineMemSize)(BigInt(0)).toSeq
+          Array.fill(params.bgSubLineMemArrSize)(BigInt(0)).toSeq
+        )
+        .addAttribute("ram_style", params.lineArrRamStyle)
+        //.addAttribute("ram_mode", "tdp") // true dual-port
+        .setName(f"bgLineMemArr_$idx")
 
-    //  objLineMemArr += Mem(
-    //    //wordType=Rgb(params.rgbConfig),
-    //    wordType=ObjSubLineMemEntry(),
-    //    wordCount=params.oneLineMemSize,
-    //  )
-    //    .initBigInt(Array.fill(params.oneLineMemSize)(BigInt(0)).toSeq)
-    //    .addAttribute("ram_style", params.lineArrRamStyle)
-    //    .setName(f"objLineMemArr_$idx")
-    //}
+      //objSubLineMemArr += Mem(
+      //  //wordType=Rgb(params.rgbConfig),
+      //  wordType=ObjSubLineMemEntry(),
+      //  wordCount=params.oneLineMemSize,
+      //)
+      //  .initBigInt(Array.fill(params.oneLineMemSize)(BigInt(0)).toSeq)
+      //  .addAttribute("ram_style", params.lineArrRamStyle)
+      //
+      //  // true dual-port RAM;
+      //  // needed because of clearing one of the non-active RAMs during
+      //  // the combine pipeline
+      //  // while also writing actual data to another RAM during the OBJ
+      //  // writing pipeline (though the OBJ writing pipeline will
+      //  // do two writes per sprite because of the grid structure)
+      //  .addAttribute("ram_mode", "tdp")
+      //
+      //  .setName(f"objLineMemArr_$idx")
+    }
+    // BEGIN: old, non synthesizable code (too many write ports...)
     for (
       //jdx <- 0 to params.objSubLineMemArrSize - 1
       jdx <- 0 to params.numLineMemsPerBgObjRenderer - 1
@@ -1393,23 +1452,24 @@ case class Gpu2d(
       //    .addAttribute("ram_style", params.lineArrRamStyle)
       //    .setName(f"bgSubLineMemA2d_$jdx" + "_" + f"$idx")
       //}
-      bgSubLineMemA2d += ArrayBuffer[Mem[BgSubLineMemEntry]]()
 
-      for (
-        //idx <- 0 to params.bgSubLineMemSize - 1
-        idx <- 0 to params.bgSubLineMemArrSize - 1
-      ) {
-        bgSubLineMemA2d.last += Mem(
-          //wordType=Rgb(params.rgbConfig),
-          wordType=BgSubLineMemEntry(),
-          wordCount=params.bgSubLineMemSize,
-        )
-          .initBigInt(
-            Array.fill(params.bgSubLineMemSize)(BigInt(0)).toSeq
-          )
-          .addAttribute("ram_style", params.lineArrRamStyle)
-          .setName(f"bgSubLineMemA2d_$jdx" + "_" + f"$idx")
-      }
+      //bgSubLineMemA2d += ArrayBuffer[Mem[BgSubLineMemEntry]]()
+
+      //for (
+      //  //idx <- 0 to params.bgSubLineMemSize - 1
+      //  idx <- 0 to params.bgSubLineMemArrSize - 1
+      //) {
+      //  bgSubLineMemA2d.last += Mem(
+      //    //wordType=Rgb(params.rgbConfig),
+      //    wordType=BgSubLineMemEntry(),
+      //    wordCount=params.bgSubLineMemSize,
+      //  )
+      //    .initBigInt(
+      //      Array.fill(params.bgSubLineMemSize)(BigInt(0)).toSeq
+      //    )
+      //    .addAttribute("ram_style", params.lineArrRamStyle)
+      //    .setName(f"bgSubLineMemA2d_$jdx" + "_" + f"$idx")
+      //}
 
       objSubLineMemA2d += ArrayBuffer[Mem[ObjSubLineMemEntry]]()
       for (
@@ -1435,6 +1495,8 @@ case class Gpu2d(
       //def size3 = params.oneLineMemSize
       //println(f"objSubLineMemA2d: $jdx $size0 $size1 $size2 $size3")
     }
+    // END: old, non synthesizable code (too many write ports...)
+
     //val dbgBgLineMemVec = Reg(
     //  Vec.fill(params.numLineMemsPerBgObjRenderer)(
     //    Vec.fill(params.oneLineMemSize)(
@@ -1687,7 +1749,7 @@ case class Gpu2d(
     // The background-writing pipeline iterates through the `params.numBgs`
     // backgrounds, and increments counters for the pixel x-position
     // (`WrBgPipePayload.pxPosXVec`). This pipeline also writes the pixels
-    // into `bgLineMemArr(someWrLineMemArrIdx)`
+    // into `bgSubLineMemArr(someWrLineMemArrIdx)`
     // END: OLD NOTES
 
     // The background-writing pipeline iterates through the
@@ -2230,7 +2292,7 @@ case class Gpu2d(
         //  (numFwd - 1) bits
         //))
         //val pxPosConcat = Vec.fill(numFwd - 1)(Vec2(Bool()))
-        // "rd..." here means it's been read from `objLineMemArr`
+        // "rd..." here means it's been read from `objSubLineMemArr`
         val rdLineMemEntry = Vec.fill(params.objTileSize2d.x)(
           ObjSubLineMemEntry()
         )
@@ -3697,7 +3759,7 @@ case class Gpu2d(
     //  switch (rRdLineMemArrIdx) {
     //    for (idx <- 0 to (1 << rRdLineMemArrIdx.getWidth) - 1) {
     //      is (idx) {
-    //        objLineMemArr(idx).write(
+    //        objSubLineMemArr(idx).write(
     //          address=rRdLineMemCnt,
     //          data=tempObjLineMemEntry,
     //        )
@@ -3730,7 +3792,7 @@ case class Gpu2d(
       //  //}
       //}
       // Handle backgrounds
-      //val bgLineMem = bgLineMemArr(someWrLineMemArrIdx)
+      //val bgLineMem = bgSubLineMemArr(someWrLineMemArrIdx)
 
       val stageData = DualPipeStageData[Flow[WrBgPipePayload]](
         pipeIn=wrBgPipeIn,
@@ -4354,7 +4416,7 @@ case class Gpu2d(
       //        //idx <- 0 to (1 << wrBgPipeLast.lineMemArrIdx.getWidth) - 1
       //      ) {
       //        is (idx) {
-      //          bgLineMemArr(idx).write(
+      //          bgSubLineMemArr(idx).write(
       //            //address=wrBgPipeLast.getCntPxPosX()(
       //            //  log2Up(params.oneLineMemSize) - 1 downto 0
       //            //),
@@ -4391,127 +4453,143 @@ case class Gpu2d(
       when (wrBgPipeLast.fire) {
         //val tempLineMemEntry = LineMemEntry()
         //val bgIdx = wrBgPipeLast.bgIdx
-        for (x <- 0 to params.bgTileSize2d.x - 1) {
-          //when (!wrBgPipeLast.bakCnt.msb) {
-          //  dbgBgLineMemVec(
-          //    //(
-          //      rWrLineMemArrIdx
-          //    //  + wrBgPipeLast.bgAttrs.scroll.y
-          //    //)(rWrLineMemArrIdx.bitsRange)
-          //  )(
-          //    //wrBgPipeLast.pxPos(x).x
-          //    //wrBgPipeLast.lineMemEntry(x).addr
-          //    //(
-          //      //wrBgPipeLast.pxPos(x).x
-          //      //+ wrBgPipeLast.bgAttrs.scroll.x
-          //      //- wrBgPipeLast.bgAttrs.scroll.x
-          //    //)(wrBgPipeLast.pxPos(x).x.bitsRange)
-          //    wrBgPipeLast.lineMemEntry(x).addr
-          //  ) := (
-          //    wrBgPipeLast.lineMemEntry(x)
-          //  )
-          //}
+        def tempArrIdx = (
+          wrBgPipeLast.lineMemEntry(0).getSubLineMemTempArrIdx()
+        )
 
-          def dbgTestWrBgPipeLast_tempArrIdx = (
-            params.getBgSubLineMemTempArrIdx(
-              //pxPosX=tempWrBgPipeLineMemAddr,
-
-              //pxPosX=wrBgPipeLast.pxPos(x).x,
-              //pxPosX=wrBgPipeLast.lineMemEntry(x).addr
-              pxPosX=(
-                //(
-                //  wrBgPipeLast.pxPos(x).x
-                //  //+ wrBgPipeLast.bgAttrs.scroll.x
-                //  //- wrBgPipeLast.bgAttrs.scroll.x
-                //)//(wrBgPipeLast.pxPos(x).x.bitsRange)
-                wrBgPipeLast.lineMemEntry(x).addr
-              ),
-            )
-          )
-          val tempArrIdx = UInt(
-            //log2Up(params.oneLineMemSize) bits
-            //params.bgTempAddr
-            dbgTestWrBgPipeLast_tempArrIdx.getWidth bits
-          )
-            .setName(f"dbgTestWrBgPipeLast_tempArrIdx_$x")
-          tempArrIdx := dbgTestWrBgPipeLast_tempArrIdx
-
-          def dbgTestWrBgPipeLast_tempAddr = (
-            params.getBgSubLineMemTempAddr(
-              //pxPosX=tempWrBgPipeLineMemAddr,
-              //pxPosX=(
-              //  wrBgPipeLast.pxPos(x).x
-              //  //+ wrBgPipeLast.bgAttrs.scroll.x
-              //  //- wrBgPipeLast.bgAttrs.scroll.x
-              //)//(wrBgPipeLast.pxPos(x).x.bitsRange),
-              ////pxPosX=wrBgPipeLast.lineMemEntry(x).addr
-              pxPosX=(
-                wrBgPipeLast.lineMemEntry(x).addr
-              ),
-            )
-          )
-          val tempAddr = UInt(
-            //log2Up(params.oneLineMemSize) bits
-            //params.bgTempAddr
-            dbgTestWrBgPipeLast_tempAddr.getWidth bits
-          )
-            .setName(f"dbgTestWrBgPipeLast_tempAddr_$x")
-          tempAddr := dbgTestWrBgPipeLast_tempAddr
-
-          switch (
-            rWrLineMemArrIdx
-            //wrBgPipeLast.lineMemArrIdx
-          ) {
-            for (
-              jdx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1
-              //jdx <- 0 to (1 << wrBgPipeLast.lineMemArrIdx.getWidth) - 1
-            ) {
-              is (jdx) {
-                //bgLineMemArr(jdx).write(
-                //  //address=wrBgPipeLast.getCntPxPosX()(
-                //  //  log2Up(params.oneLineMemSize) - 1 downto 0
-                //  //),
-                //  address=tempWrBgPipeLineMemAddr,
-                //  data=wrBgPipeLast.lineMemEntry,
-                //)
-                switch (
-                  //params.getBgSubLineMemTempArrIdx(
-                  //  //pxPosX=wrBgPipeLast.pxPos.x
-                  //  //pxPosX=tempWrBgPipeLineMemAddr
-                  //  pxPosX=wrBgPipeLast.pxPos(x).x
-                  //)
-                  tempArrIdx
-                ) {
-                  for (
-                    //kdx <- 0 to params.bgSubLineMemArrSize - 1
-                    kdx <- 0 to (1 << tempArrIdx.getWidth) - 1
-                  ) {
-                    is (kdx) {
-                      when (!wrBgPipeLast.bakCnt.msb) {
-                        bgSubLineMemA2d(jdx)(kdx).write(
-                          //address=wrBgPipeLast.getCntPxPosX()(
-                          //  log2Up(params.oneLineMemSize) - 1 downto 0
-                          //),
-                          //address=tempWrBgPipeLineMemAddr,
-
-                          //address=params.getBgSubLineMemTempAddr(
-                          //  //pxPosX=tempWrBgPipeLineMemAddr,
-                          //  pxPosX=wrBgPipeLast.pxPos(x).x,
-                          //),
-                          address=tempAddr,
-                          data=wrBgPipeLast.lineMemEntry(x),
-                        )
-                      }
-                    }
-                  }
-                }
-              }
+        switch (rWrLineMemArrIdx) {
+          for (jdx <- 0 until (1 << rWrLineMemArrIdx.getWidth)) {
+            is (jdx) {
+              bgSubLineMemArr(jdx).write(
+                address=tempArrIdx,
+                data=wrBgPipeLast.lineMemEntry,
+              )
             }
-            //default {
-            //  wrLineMemEntry := rPastWrLineMemEntry
-            //}
           }
         }
+        // BEGIN: old, non-synthesizable code
+        //for (x <- 0 to params.bgTileSize2d.x - 1) {
+        //  //when (!wrBgPipeLast.bakCnt.msb) {
+        //  //  dbgBgLineMemVec(
+        //  //    //(
+        //  //      rWrLineMemArrIdx
+        //  //    //  + wrBgPipeLast.bgAttrs.scroll.y
+        //  //    //)(rWrLineMemArrIdx.bitsRange)
+        //  //  )(
+        //  //    //wrBgPipeLast.pxPos(x).x
+        //  //    //wrBgPipeLast.lineMemEntry(x).addr
+        //  //    //(
+        //  //      //wrBgPipeLast.pxPos(x).x
+        //  //      //+ wrBgPipeLast.bgAttrs.scroll.x
+        //  //      //- wrBgPipeLast.bgAttrs.scroll.x
+        //  //    //)(wrBgPipeLast.pxPos(x).x.bitsRange)
+        //  //    wrBgPipeLast.lineMemEntry(x).addr
+        //  //  ) := (
+        //  //    wrBgPipeLast.lineMemEntry(x)
+        //  //  )
+        //  //}
+
+        //  def dbgTestWrBgPipeLast_tempArrIdx = (
+        //    params.getBgSubLineMemTempArrIdx(
+        //      //pxPosX=tempWrBgPipeLineMemAddr,
+
+        //      //pxPosX=wrBgPipeLast.pxPos(x).x,
+        //      //pxPosX=wrBgPipeLast.lineMemEntry(x).addr
+        //      pxPosX=(
+        //        //(
+        //        //  wrBgPipeLast.pxPos(x).x
+        //        //  //+ wrBgPipeLast.bgAttrs.scroll.x
+        //        //  //- wrBgPipeLast.bgAttrs.scroll.x
+        //        //)//(wrBgPipeLast.pxPos(x).x.bitsRange)
+        //        wrBgPipeLast.lineMemEntry(x).addr
+        //      ),
+        //    )
+        //  )
+        //  val tempArrIdx = UInt(
+        //    //log2Up(params.oneLineMemSize) bits
+        //    //params.bgTempAddr
+        //    dbgTestWrBgPipeLast_tempArrIdx.getWidth bits
+        //  )
+        //    .setName(f"dbgTestWrBgPipeLast_tempArrIdx_$x")
+        //  tempArrIdx := dbgTestWrBgPipeLast_tempArrIdx
+
+        //  def dbgTestWrBgPipeLast_tempAddr = (
+        //    params.getBgSubLineMemTempAddr(
+        //      //pxPosX=tempWrBgPipeLineMemAddr,
+        //      //pxPosX=(
+        //      //  wrBgPipeLast.pxPos(x).x
+        //      //  //+ wrBgPipeLast.bgAttrs.scroll.x
+        //      //  //- wrBgPipeLast.bgAttrs.scroll.x
+        //      //)//(wrBgPipeLast.pxPos(x).x.bitsRange),
+        //      ////pxPosX=wrBgPipeLast.lineMemEntry(x).addr
+        //      pxPosX=(
+        //        wrBgPipeLast.lineMemEntry(x).addr
+        //      ),
+        //    )
+        //  )
+        //  val tempAddr = UInt(
+        //    //log2Up(params.oneLineMemSize) bits
+        //    //params.bgTempAddr
+        //    dbgTestWrBgPipeLast_tempAddr.getWidth bits
+        //  )
+        //    .setName(f"dbgTestWrBgPipeLast_tempAddr_$x")
+        //  tempAddr := dbgTestWrBgPipeLast_tempAddr
+
+        //  switch (
+        //    rWrLineMemArrIdx
+        //    //wrBgPipeLast.lineMemArrIdx
+        //  ) {
+        //    for (
+        //      jdx <- 0 to (1 << rWrLineMemArrIdx.getWidth) - 1
+        //      //jdx <- 0 to (1 << wrBgPipeLast.lineMemArrIdx.getWidth) - 1
+        //    ) {
+        //      is (jdx) {
+        //        //bgSubLineMemArr(jdx).write(
+        //        //  //address=wrBgPipeLast.getCntPxPosX()(
+        //        //  //  log2Up(params.oneLineMemSize) - 1 downto 0
+        //        //  //),
+        //        //  address=tempWrBgPipeLineMemAddr,
+        //        //  data=wrBgPipeLast.lineMemEntry,
+        //        //)
+        //        switch (
+        //          //params.getBgSubLineMemTempArrIdx(
+        //          //  //pxPosX=wrBgPipeLast.pxPos.x
+        //          //  //pxPosX=tempWrBgPipeLineMemAddr
+        //          //  pxPosX=wrBgPipeLast.pxPos(x).x
+        //          //)
+        //          tempArrIdx
+        //        ) {
+        //          for (
+        //            //kdx <- 0 to params.bgSubLineMemArrSize - 1
+        //            kdx <- 0 to (1 << tempArrIdx.getWidth) - 1
+        //          ) {
+        //            is (kdx) {
+        //              when (!wrBgPipeLast.bakCnt.msb) {
+        //                bgSubLineMemA2d(jdx)(kdx).write(
+        //                  //address=wrBgPipeLast.getCntPxPosX()(
+        //                  //  log2Up(params.oneLineMemSize) - 1 downto 0
+        //                  //),
+        //                  //address=tempWrBgPipeLineMemAddr,
+
+        //                  //address=params.getBgSubLineMemTempAddr(
+        //                  //  //pxPosX=tempWrBgPipeLineMemAddr,
+        //                  //  pxPosX=wrBgPipeLast.pxPos(x).x,
+        //                  //),
+        //                  address=tempAddr,
+        //                  data=wrBgPipeLast.lineMemEntry(x),
+        //                )
+        //              }
+        //            }
+        //          }
+        //        }
+        //      }
+        //    }
+        //    //default {
+        //    //  wrLineMemEntry := rPastWrLineMemEntry
+        //    //}
+        //  }
+        //}
+        // END: old, non-synthesizable code
       }
       // END: post stage 0
 
@@ -4912,7 +4990,7 @@ case class Gpu2d(
                 ) {
                   is (jdx) {
                     //tempOutp.rdLineMemEntry := (
-                    //  objLineMemArr(jdx).readAsync(
+                    //  objSubLineMemArr(jdx).readAsync(
                     //    //address=tempInp.pxPos.x.asUInt.resized,
                     //    address=tempInp.pxPos.x.asUInt(
                     //      log2Up(params.oneLineMemSize) - 1 downto 0
@@ -5015,7 +5093,7 @@ case class Gpu2d(
       //      //  ) {
       //      //    is (jdx) {
       //      //      tempOutp.rdLineMemEntry := (
-      //      //        objLineMemArr(jdx).readAsync(
+      //      //        objSubLineMemArr(jdx).readAsync(
       //      //          //address=tempInp.pxPos.x.asUInt.resized,
       //      //          address=tempInp.pxPos.x.asUInt(
       //      //            log2Up(params.oneLineMemSize) - 1 downto 0
@@ -5310,7 +5388,7 @@ case class Gpu2d(
             //    is (jdx) {
             //      when (tempOutp.fire) {
             //        //tempRdLineMemEntry := (
-            //        //  objLineMemArr(jdx).readAsync(
+            //        //  objSubLineMemArr(jdx).readAsync(
             //        //    //address=tempInp.pxPos.x.asUInt.resized,
             //        //    //address=tempInp.pxPos.x.asUInt(
             //        //    //  log2Up(params.oneLineMemSize) - 1 downto 0
@@ -5322,7 +5400,7 @@ case class Gpu2d(
             //        //  )
             //        //)
             //        when (tempOutp.overwriteLineMemEntry) {
-            //          objLineMemArr(jdx).write(
+            //          objSubLineMemArr(jdx).write(
             //            //address=tempOutp.getCntTilePxsCoordX(),
             //            //address=tempOutp.pxPos.x.asUInt.resized,
             //            address=tempAddr,
@@ -5395,7 +5473,7 @@ case class Gpu2d(
       // END: Stage 6
       //--------
 
-      //val objLineMem = objLineMemArr(someWrLineMemArrIdx)
+      //val objLineMem = objSubLineMemArr(someWrLineMemArrIdx)
       when (wrObjPipeLast.fire) {
         //val tempLineMemEntry = LineMemEntry()
         //val objIdx = wrObjPipeLast.objIdx
@@ -5468,7 +5546,7 @@ case class Gpu2d(
                   //) {
                   //when (wrObjPipeLast.overwriteLineMemEntry) {
                     // BEGIN: come back to this later
-                    //objLineMemArr(jdx).write(
+                    //objSubLineMemArr(jdx).write(
                     //  //address=wrObjPipeLast.getCntTilePxsCoordX(),
                     //  address=wrObjPipeLast.pxPos.x.asUInt.resized,
                     //  //address=tempAddr,
@@ -5620,34 +5698,56 @@ case class Gpu2d(
           } otherwise {
             //val combineTestificate = Bool()
             //  .setName("combineTestificate")
-            def bgTempArrIdx = params.getBgSubLineMemTempArrIdx(
-              //pxPosX=tempInp.cnt(
-              //  log2Up(params.oneLineMemSize) - 1 downto 0
-              //)
-              pxPosX=tempCombineLineMemIdx
-            )
-            val dbgTestCombinePipe1_bgTempArrIdx = UInt(
-              bgTempArrIdx.getWidth bits
-            )
-              .setName("dbgTestCombinePipe1_bgTempArrIdx")
-            dbgTestCombinePipe1_bgTempArrIdx := bgTempArrIdx
-            def bgTempAddr = params.getBgSubLineMemTempAddr(
-              //pxPosX=tempInp.cnt
-              //pxPosX=tempInp.cnt(
-              //  log2Up(params.oneLineMemSize) - 1 downto 0
-              //)
-              pxPosX=tempCombineLineMemIdx
-            )
-            val dbgTestCombinePipe1_bgTempAddr = UInt(
-              bgTempAddr.getWidth bits
-            )
-              .setName("dbgTestCombinePipe1_bgTempAddr")
-            dbgTestCombinePipe1_bgTempAddr := bgTempAddr
 
-            val dbgTestCombinePipe1_bgRdLineMemEntry = BgSubLineMemEntry()
-              .setName("dbgTestCombinePipe1_bgRdLineMemEntry")
-            dbgTestCombinePipe1_bgRdLineMemEntry := (
-              tempOutp.bgRdLineMemEntry
+            //def bgTempArrIdx = params.getBgSubLineMemTempArrIdx(
+            //  //pxPosX=tempInp.cnt(
+            //  //  log2Up(params.oneLineMemSize) - 1 downto 0
+            //  //)
+            //  pxPosX=tempCombineLineMemIdx
+            //)
+            //val dbgTestCombinePipe1_bgTempArrIdx = UInt(
+            //  bgTempArrIdx.getWidth bits
+            //)
+            //  .setName("dbgTestCombinePipe1_bgTempArrIdx")
+            //dbgTestCombinePipe1_bgTempArrIdx := bgTempArrIdx
+            //def bgTempAddr = params.getBgSubLineMemTempAddr(
+            //  //pxPosX=tempInp.cnt
+            //  //pxPosX=tempInp.cnt(
+            //  //  log2Up(params.oneLineMemSize) - 1 downto 0
+            //  //)
+            //  pxPosX=tempCombineLineMemIdx
+            //)
+            //val dbgTestCombinePipe1_bgTempAddr = UInt(
+            //  bgTempAddr.getWidth bits
+            //)
+            //  .setName("dbgTestCombinePipe1_bgTempAddr")
+            //dbgTestCombinePipe1_bgTempAddr := bgTempAddr
+
+            //val dbgTestCombinePipe1_bgRdLineMemEntry = BgSubLineMemEntry()
+            //  .setName("dbgTestCombinePipe1_bgRdLineMemEntry")
+            //dbgTestCombinePipe1_bgRdLineMemEntry := (
+            //  tempOutp.bgRdLineMemEntry
+            //)
+            def bgSubLineMemArrIdx = params.getBgSubLineMemArrIdx(
+              addr=tempCombineLineMemIdx
+            )
+            val dbgTestCombinePipe1_bgSubLineMemArrIdx = UInt(
+              bgSubLineMemArrIdx.getWidth bits
+            )
+              .setName("dbgTestCombinePipe1_bgSubLineMemArrIdx")
+            dbgTestCombinePipe1_bgSubLineMemArrIdx := (
+              bgSubLineMemArrIdx
+            )
+
+            def bgSubLineMemArrElemIdx = params.getBgSubLineMemArrElemIdx(
+              addr=tempCombineLineMemIdx
+            )
+            val dbgTestCombinePipe1_bgSubLineMemArrElemIdx = UInt(
+              bgSubLineMemArrElemIdx.getWidth bits
+            )
+              .setName("dbgTestCombinePipe1_bgSubLineMemArrElemIdx")
+            dbgTestCombinePipe1_bgSubLineMemArrElemIdx := (
+              bgSubLineMemArrElemIdx
             )
 
 
@@ -5698,7 +5798,7 @@ case class Gpu2d(
                 //)
                 is (jdx) {
                   //tempOutp.bgRdLineMemEntry := (
-                  //  bgLineMemArr(jdx).readAsync(
+                  //  bgSubLineMemArr(jdx).readAsync(
                   //    address=tempCombineLineMemIdx
                   //    //address=tempInp.bakCnt(
                   //    //  log2Up(params.oneLineMemSize) - 1 downto 0
@@ -5715,25 +5815,39 @@ case class Gpu2d(
                   //    //readUnderWrite=writeFirst,
                   //  )
                   //)
-                  // BEGIN: debug comment this out; return later
-                  switch (bgTempArrIdx) {
-                    for (kdx <- 0 to (1 << bgTempArrIdx.getWidth) - 1) {
-                      is (kdx) {
-                        when (!tempInp.bakCnt.msb) {
-                          tempOutp.bgRdLineMemEntry := (
-                            bgSubLineMemA2d(jdx)(kdx).readAsync(
-                              address=bgTempAddr
-                            )
-                          )
-                        } otherwise {
-                          tempOutp.bgRdLineMemEntry := (
-                            tempOutp.bgRdLineMemEntry.getZero
-                          )
-                        }
-                      }
-                    }
+                  // BEGIN: old, non-synthesizable code
+                  //switch (bgTempArrIdx) {
+                  //  for (kdx <- 0 to (1 << bgTempArrIdx.getWidth) - 1) {
+                  //    is (kdx) {
+                  //      when (!tempInp.bakCnt.msb) {
+                  //        tempOutp.bgRdLineMemEntry := (
+                  //          bgSubLineMemA2d(jdx)(kdx).readAsync(
+                  //            address=bgTempAddr
+                  //          )
+                  //        )
+                  //      } otherwise {
+                  //        tempOutp.bgRdLineMemEntry := (
+                  //          tempOutp.bgRdLineMemEntry.getZero
+                  //        )
+                  //      }
+                  //    }
+                  //  }
+                  //}
+                  when (!tempInp.bakCnt.msb) {
+                    tempOutp.bgRdLineMemEntry := (
+                      //bgSubLineMemA2d(jdx)(kdx).readAsync(
+                      //  address=bgTempAddr
+                      //)
+                      bgSubLineMemArr(jdx).readAsync(
+                        address=bgSubLineMemArrIdx
+                      )(bgSubLineMemArrElemIdx)
+                    )
+                  } otherwise {
+                    tempOutp.bgRdLineMemEntry := (
+                      tempOutp.bgRdLineMemEntry.getZero
+                    )
                   }
-                  // END: debug comment this out; return later
+                  // END: old, non-synthesizable code
                   //tempOutp.bgRdLineMemEntry := (
                   //  dbgBgLineMemVec(jdx)(
                   //    tempCombineLineMemIdx
@@ -5758,7 +5872,7 @@ case class Gpu2d(
                   // END: debug, remove later
                   // BEGIN: come back to this later
                   //tempOutp.objRdLineMemEntry := (
-                  //  objLineMemArr(jdx).readAsync(
+                  //  objSubLineMemArr(jdx).readAsync(
                   //    address=tempCombineLineMemIdx
                   //    //address=tempInp.bakCnt(
                   //    //  log2Up(params.oneLineMemSize) - 1 downto 0
@@ -6053,7 +6167,7 @@ case class Gpu2d(
                 }
               )
               // BEGIN: come back to this later
-              //objLineMemArr(tempIdx).write(
+              //objSubLineMemArr(tempIdx).write(
               //  //address=combinePipeLast.bakCnt(
               //  //  log2Up(params.oneLineMemSize) - 1 downto 0
               //  //),
