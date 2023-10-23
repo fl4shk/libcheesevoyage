@@ -2256,15 +2256,6 @@ case class Gpu2d(
         )
         // which iteration are we on for
         val gridIdxLsb = Bool()
-        def calcGridIdxLsb() = (
-          //cnt
-          cnt(
-            // support needing to do two writes into `objSubLineMemArr`
-            //0
-            params.objAttrsMemIdxWidth + 1 - 1
-            //downto params.objAttrsMemIdxWidth + 1 - 1
-          )
-        )
 
         //def getBakCntTilePxsCoordX() = bakCnt(
         //  (bakCnt.high - 1 - params.objAttrsMemIdxWidth)
@@ -2289,7 +2280,6 @@ case class Gpu2d(
           //bakCnt.msb
         )
       }
-
       //def objAttrsMemIdxMinus1 = stage0.objAttrsMemIdxMinus1
       //def objAttrsMemIdxWillUnderflow() = (
       //  stage0.objAttrsMemIdxWillUnderflow()
@@ -2458,6 +2448,16 @@ case class Gpu2d(
       }
 
       val stage0 = Stage0()
+      def calcGridIdxLsb() = (
+        //cnt
+        stage0.cnt(
+          // support needing to do two writes into `objSubLineMemArr`
+          //0
+          params.objAttrsMemIdxWidth + 1 - 1
+          //downto params.objAttrsMemIdxWidth + 1 - 1
+        )
+      )
+
       //def lineMemArrIdx = stage0.lineMemArrIdx
       def lineNum = stage0.lineNum
       def cnt = stage0.cnt
@@ -4892,7 +4892,7 @@ case class Gpu2d(
           def tempInp = stageData.pipeIn(0).stage0
           def tempOutp = stageData.pipeOut(0).stage0
           tempOutp.justCopy := tempInp.justCopy
-          tempOutp.gridIdxLsb := tempInp.calcGridIdxLsb()
+          tempOutp.gridIdxLsb := stageData.pipeIn(0).calcGridIdxLsb()
           //tempOutp.innerObjAttrsMemIdx := tempInp.bakCnt(
           //  //bakCnt.high - 1
           //  //downto (bakCnt.high - 1 - params.objAttrsMemIdxWidth + 1)
@@ -5097,7 +5097,7 @@ case class Gpu2d(
             tempOutp.pxPosXGridIdx.sFindFirst(
               //condition=(
                 //myBool => //(
-                  _(0) === tempInp.gridIdxLsb 
+                  _(0) === tempInp.stage0.gridIdxLsb 
                   //(
                   //  //Mux[UInt](
                   //  //  tempInp.stage0.gridIdxLsb === 1,
@@ -5119,7 +5119,7 @@ case class Gpu2d(
             tempOutp.pxPosXGridIdx.sFindFirst(
               //condition=(
                 //myBool => //(
-                  _(0) =/= tempInp.gridIdxLsb 
+                  _(0) =/= tempInp.stage0.gridIdxLsb 
                   //(
                   //  //Mux[UInt](
                   //  //  tempInp.stage0.gridIdxLsb === 1,
