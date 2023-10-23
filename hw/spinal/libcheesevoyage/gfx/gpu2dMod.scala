@@ -1904,11 +1904,11 @@ case class Gpu2d(
           def tempBotRange = (
             params.bgTileSize2dPow.x - 1 downto 0
           )
-          println(
-            f"BG getCntPxPos(): "
-            + f"top:$tempTopRange bot:$tempBotRange cnt:$tempCntRange "
-            + f"x:$x"
-          )
+          //println(
+          //  f"BG getCntPxPos(): "
+          //  + f"top:$tempTopRange bot:$tempBotRange cnt:$tempCntRange "
+          //  + f"x:$x"
+          //)
 
           tempGetCntPxPosX(tempTopRange) := cnt(tempCntRange)
           tempGetCntPxPosX(tempBotRange) := x
@@ -2220,7 +2220,7 @@ case class Gpu2d(
         def gridIdx = cnt(
           // support needing to do two writes into `objSubLineMemArr`
           params.objAttrsMemIdxWidth + 1 - 1
-          downto params.objAttrsMemIdxWidth + 1 - 1
+          //downto params.objAttrsMemIdxWidth + 1 - 1
         )
 
         //def getBakCntTilePxsCoordX() = bakCnt(
@@ -2279,8 +2279,25 @@ case class Gpu2d(
         //val tilePxsCoord = params.objTilePxsCoordT()
         //val pxsCoordYRangeCheck = Bool()
         //val pxPosRangeCheck = Vec2(Bool())
+        //val pxPosXGridStraddleVec = Vec.fill(
+        //  params.objTileSize2d
+        //)
+        val pxPosXGridIdx = (
+          Vec.fill(params.objTileSize2d.x)(
+            UInt(
+              (params.objPxsCoordSize2dPow.x - params.objTileSize2dPow.x)
+              bits
+            )
+          )
+        )
         val pxPosXGridIdxLsb = (
-          Vec.fill(params.objTileSize2d.x)(UInt(1 bits))
+          Vec.fill(params.objTileSize2d.x)(
+            //UInt(1 bits)
+            Bool()
+          )
+        )
+        val pxPosXGridIdxFindFirstSameAs = UInt(
+          params.objTileSize2dPow.x bits
         )
         val pxPosRangeCheckGePipe1 = Vec.fill(params.objTileSize2d.x)(
           Vec2(Bool())
@@ -2410,19 +2427,96 @@ case class Gpu2d(
       def tilePxsCoord = stage2.tilePxsCoord
       //def pxPosRangeCheckPipe1 = stage2.pxPosRangeCheckPipe1
       def pxPos = stage2.pxPos
-      def getObjSubLineMemArrIdxAddr() = (
-        Cat(
-          pxPos(0).x.asUInt(pxPos(0).x.high downto gridIdx.getWidth),
-          gridIdx,
-        ).asUInt
+
+      def getObjSubLineMemArrIdx_tempRange() = (
+        //pxPos(0).x.high
+        //log2Up(params.oneLineMemSize) - 1
+        //downto params.objTileSize2dPow.x + 1 //gridIdx.getWidth
+        log2Up(params.oneLineMemSize) - 1
+        //downto params.objTileSize2dPow.x + 1
+        downto params.objTileSize2dPow.x
       )
+      //def getObjSubLineMemArrIdx_tempRange() = (
+      //  //pxPosXGridIdx(0).high - 2 downto 1
+      //  //pxPosXGridIdx(0).high - 2 downto 1
+      //  pxPosXGridIdx(0).high - 3 downto 0
+      //)
+      def getObjSubLineMemArrIdx(
+        x: UInt
+      ) = {
+        //pxPosXGridIdx(pxPosXGridIdxFindFirstSameAs)
+        //(
+        //  //pxPosXGridIdx(0).high - 2 downto 1
+        //  //pxPosXGridIdx(0).high - 2 downto 1
+        //  pxPosXGridIdx(0).high - 3 downto 0
+        //)
+        ////Cat(
+        ////  pxPos(0).x.asUInt(pxPos(0).x.high downto gridIdx.getWidth),
+        ////  gridIdx,
+        ////).asUInt
+        ////println(
+        ////  f"getObjSubLineMemArrIdx(): $tempRange;  "
+        ////  + {
+        ////    def tempHigh = log2Up(params.oneLineMemSize) - 1
+        ////    def tempTileWidth = params.objTileSize2dPow.x
+        ////    def tempGridIdxWidth = gridIdx.getWidth
+        ////    f"$tempHigh $tempTileWidth $tempGridIdxWidth"
+        ////  }
+        ////)
+        def tempRange = getObjSubLineMemArrIdx_tempRange()
+        //pxPos(0).x.asUInt(tempRange)
+        pxPos(x).x.asUInt(tempRange)
+        // BEGIN: not quite working?
+        //Cat(
+        //  pxPos(0).x.asUInt(tempRange),
+        //  gridIdx,
+        //  //{
+        //  //  def myWidthForZero = params.objTileSize2dPow.x + 1
+        //  //  U(f"$myWidthForZero'd0")
+        //  //},
+        //).asUInt
+        // END: not quite working?
+        ////Cat(
+        ////)
+        //def tempRange = (
+        //  //log2Up(params.oneLineMemSize) - 1
+        //  //pxPosXGridIdx(0).high
+        //  //log2Up(params.oneLineMemSize) - 1
+        //  //pxPosXGridIdx(0).high
+
+        //  //log2Up(params.oneLineMemSize) - 1 //- params.objTileSize2dPow.x - 1 
+        //  //downto gridIdx.getWidth + params.objTileSize2dPow.x
+        //  //log2Up(params.oneLineMemSize) - 1
+        //  //downto 0
+        //  pxPosXGridIdx(0).high - 3
+        //  downto gridIdx.getWidth
+        //)
+        //println(f"tempRange: $tempRange")
+        ////Cat(
+        ////  pxPosXGridIdx(0)
+        ////  (
+        ////    //pxPosXGridIdx(0).high
+        ////    //downto gridIdx.getWidth //+ params.objTileSize2dPow.x
+        ////    tempRange
+        ////  )
+        ////  ,
+        ////  gridIdx
+        ////).asUInt
+        //pxPosXGridIdx(0)(
+        //  3 downto 3
+        //)
+      }
       //def pxPosYMinusTileHeightMinus1 = stage2.pxPosYMinusTileHeightMinus1
       //def pxPosShiftTopLeft = stage2.pxPosShiftTopLeft
       def objPosYShift = stage2.objPosYShift
       def tile = stage2.tile
 
       def stage3 = postStage0.stage3
+      def pxPosXGridIdx = stage3.pxPosXGridIdx
       def pxPosXGridIdxLsb = stage3.pxPosXGridIdxLsb
+      def pxPosXGridIdxFindFirstSameAs = (
+        stage3.pxPosXGridIdxFindFirstSameAs
+      )
       //def pxPosRangeCheck = stage3.pxPosRangeCheck
       //def tilePxsCoord = stage3.tilePxsCoord
       def pxPosRangeCheckGePipe1 = stage3.pxPosRangeCheckGePipe1
@@ -4869,13 +4963,57 @@ case class Gpu2d(
           //tempOutp.tilePxs
           //tempOutp.tilePxsCoord.y := tempInp.tilePxsCoordYPipe1
           //tempOutp.pxPosRangeCheck.y := 
+          //val dbgTestWrObjPipe3_pxPosXGridIdx = (
+          //  Vec.fill(params.objTileSize2d.x)(
+          //    UInt(
+          //      (tempInp.pxPos(0).x.getWidth - params.objTileSize2dPow.x)
+          //      bits
+          //    )
+          //  )
+          //)
 
+          //tempOutp.pxPosXGridIdxFindFirstSameAs :=
+          val dbgPxPosXGridIdxFindFirstSameAs: (Bool, UInt) = (
+            tempOutp.pxPosXGridIdx.sFindFirst(
+              //condition=(
+                //myBool => //(
+                  _(0) === tempInp.stage0.gridIdx 
+                  //(
+                  //  //Mux[UInt](
+                  //  //  tempInp.stage0.gridIdx === 1,
+                  //  //  U("1'd1"),
+                  //  //  U("1'd0"),
+                  //  //)
+                  //)
+                //)
+              //)
+            )
+          )
+          tempOutp.stage3.pxPosXGridIdxFindFirstSameAs := (
+            dbgPxPosXGridIdxFindFirstSameAs._2.resized
+          )
+          //tempOutp.pxPosXGridIdxFindFirstSameAs(
+          //  dbgPxPosXGridIdxFindFirstSameAs.bitsRange
+          //  //tempOutp.pxPosXGridIdxFindFirstSameAs.bitsRange
+          //) := dbgPxPosXGridIdxFindFirstSameAs
+          //tempOutp.pxPosXGridIdxFindFirstSameAs(
+          //  tempOutp.pxPosXGridIdxFindFirstSameAs.high
+          //  downto dbgPxPosXGridIdxFindFirstSameAs.getWidth
+          //) := 0
           for (x <- 0 to params.objTileSize2d.x - 1) {
+            tempOutp.pxPosXGridIdx(x) := tempInp.pxPos(x).x.asUInt(
+              tempInp.pxPos(x).x.asUInt.high
+              downto params.objTileSize2dPow.x
+            )
+            val dbgTestWrObjPipe3_pxPosXGridIdx = UInt(
+              tempOutp.pxPosXGridIdx(x).getWidth bits
+            )
+              .setName(f"dbgTestWrObjPipe3_pxPosXGridIdx_$x")
+            dbgTestWrObjPipe3_pxPosXGridIdx := tempOutp.pxPosXGridIdx(x)
+
             tempOutp.pxPosXGridIdxLsb(x) := (
-              tempInp.pxPos(x).x.asUInt(
-                tempInp.pxPos(x).x.asUInt.high
-                downto params.objTileSize2dPow.x
-              )(0 downto 0)
+              //tempOutp.pxPosXGridIdx(x)(0 downto 0)
+              tempOutp.pxPosXGridIdx(x)(0)
             )
             tempOutp.pxPosRangeCheckGePipe1(x).x := (
               //tempInp.objAttrs.pos.x + params.objTileSize2d.x - 1 >= 0
@@ -4937,7 +5075,8 @@ case class Gpu2d(
             tempOutp.pxPosXGridIdxMatches(x) := (
               tempInp.pxPosXGridIdxLsb(x)
               === (
-                Mux[UInt](tempInp.gridIdx(0), U"1'd1", U"1'd0")
+                //Mux[UInt](tempInp.gridIdx(0), U"1'd1", U"1'd0")
+                tempInp.gridIdx
               )
             )
             tempOutp.palEntryNzMemIdx(x) := tempInp.palEntryMemIdx(x) =/= 0
@@ -5056,6 +5195,9 @@ case class Gpu2d(
               //)
               //def tempArr
               // BEGIN: debug comment this out; later
+              //val dbgTestWrObjPipe5_myDbgTempObjArrIdx = UInt(
+              //)
+              //  .setName("dbgTestWrObjPipe5_myDbgTempObjArrIdx")
               switch (
                 rWrLineMemArrIdx
                 //tempInp.lineMemArrIdx
@@ -5065,17 +5207,34 @@ case class Gpu2d(
                   //jdx <- 0 to (1 << tempInp.lineMemArrIdx.getWidth) - 1
                 ) {
                   is (jdx) {
-                    def tempObjArrIdx = params.getObjSubLineMemArrIdx(
-                      //addr=combinePipeLast.cnt
-                      //addr=tempInp.pxPos(x).x.asUInt
-                      //addr=Cat(
-                      //  wrObjPipeLast.pxPos(0).x.asUInt(
-                      //    wrObjPipeLast.pxPos(0).x.high downto 1
-                      //  ),
-                      //  wrObjPipeLast.gridIdx
-                      //).asUInt
-                      addr=tempInp.getObjSubLineMemArrIdxAddr(),
+                    //def tempObjArrIdx = params.getObjSubLineMemArrIdx(
+                    //  //addr=combinePipeLast.cnt
+                    //  //addr=tempInp.pxPos(x).x.asUInt
+                    //  //addr=Cat(
+                    //  //  wrObjPipeLast.pxPos(0).x.asUInt(
+                    //  //    wrObjPipeLast.pxPos(0).x.high downto 1
+                    //  //  ),
+                    //  //  wrObjPipeLast.gridIdx
+                    //  //).asUInt
+                    //  //addr=tempInp.getObjSubLineMemArrIdxAddr(),
+                    //  addr=Cat(
+                    //    wrObjPipeLast.pxPos(0).x.asUInt
+                    //  ).asUInt
+                    //)
+                    def tempObjArrIdx = tempInp.getObjSubLineMemArrIdx(
+                      x=wrObjPipeLast.pxPosXGridIdxFindFirstSameAs
                     )
+                    //def tempObjArrIdx = tempInp.pxPosXGridIdx(0).x
+                    //def tempObjArrIdx = tempInp.pxPosXGridIdx(0)
+
+                    //def tempObjArrIdx = (
+                    //  tempOutp.pxPosXGridIdx(
+                    //    tempInp.pxPosXGridIdxFindFirstSameAs
+                    //  )(
+                    //    tempOutp.pxPosXGridIdx(0).bitsRange
+                    //  )
+                    //)
+
                     val dbgTestWrObjPipe5_tempObjArrIdx = UInt(
                       tempObjArrIdx.getWidth bits
                     )
@@ -5101,9 +5260,13 @@ case class Gpu2d(
                     //dbgTestWrObjPipe5_tempObjArrElemIdx := (
                     //  tempObjArrElemIdx
                     //)
+
                     tempOutp.rdLineMemEntry := (
                       objSubLineMemArr(jdx).readAsync(
                         address=tempObjArrIdx
+                        //(
+                        //  tempInp.getObjSubLineMemArrIdx_tempRange()
+                        //)
                       )
                     )
 
@@ -5316,11 +5479,16 @@ case class Gpu2d(
           val tempOutp = stageData.pipeOut(idx)
 
           for (x <- 0 to params.objTileSize2d.x - 1) {
+            //val x = UInt(params.objTileSize2dPow.x bits)
+            //  .setName(f"wrObjPipe6_x_$x")
+            //x := (tempInp.pxPos(0).x.asUInt + x)(x.bitsRange)
+
             //val tempOverwriteLineMemEntry = Bool()
             //val tempConcat = Bits(tempInp.numFwd + 1 bits)
             def fwdVec = tempOutp.stage6.fwdVec(x)
             //val rFwdVec = Reg(cloneOf(fwdVec)) //init(fwdVec.getZero)
             def rFwdVec = rStage6FwdVec(x)
+            //rFwdVec(x).init(rFwdVec(x).getZero)
 
             for (fwdIdx <- 0 to rFwdVec.size - 1) {
               rFwdVec(fwdIdx).init(rFwdVec(fwdIdx).getZero)
@@ -5560,6 +5728,9 @@ case class Gpu2d(
             //    }
             //  }
             //}
+            //val tempX = UInt(params.objTileSize2dPow.x bits)
+            //  .setName(f"wrObjPipe6_tempX_$x")
+            //tempX := (tempInp.pxPos(0).x.asUInt + x)(tempX.bitsRange)
             when (tempOutp.fire) {
               when (tempOutp.overwriteLineMemEntry(x)) {
                 tempOutp.wrLineMemEntry(x).addr := (
@@ -5577,7 +5748,9 @@ case class Gpu2d(
                 //tempOutp.wrLineMemEntry.prio(
                 //  tempInp.objAttrs.prio.bitsRange
                 //) := tempInp.objAttrs.prio
-                tempOutp.wrLineMemEntry(x).prio := tempInp.objAttrs.prio
+                tempOutp.wrLineMemEntry(x).prio := (
+                  tempInp.objAttrs.prio
+                )
                 //tempOutp.wrLineMemEntry.prio.msb := True
                 tempOutp.wrLineMemEntry(x).written := True
               } otherwise {
@@ -5671,6 +5844,10 @@ case class Gpu2d(
           //dbgTestWrObjPipeLastTempAddr := (
           //  tempWrLineMemEntry.getSubLineMemTempAddr()
           //)
+          //val tempGridIdx = UInt(wrObjPipeLast.gridIdx.getWidth bits)
+          //  .setName("dbgTestWrObjPipeLast_tempGridIdx")
+          //tempGridIdx := wrObjPipeLast.gridIdx
+          //def tempObjSubLineMemArrIdx = wrBgPipeLast.get
           switch (
             rWrLineMemArrIdx
             //wrObjPipeLast.lineMemArrIdx
@@ -5680,16 +5857,26 @@ case class Gpu2d(
               //jdx <- 0 to (1 << wrObjPipeLast.lineMemArrIdx.getWidth) - 1
             ) {
               is (jdx) {
-                def tempObjArrIdx = params.getObjSubLineMemArrIdx(
-                  //addr=combinePipeLast.cnt
-                  //addr=Cat(
-                  //  wrObjPipeLast.pxPos(0).x.asUInt(
-                  //    wrObjPipeLast.pxPos(0).x.high downto 1
-                  //  ),
-                  //  wrObjPipeLast.gridIdx
-                  //).asUInt
-                  addr=wrObjPipeLast.getObjSubLineMemArrIdxAddr(),
+                //def tempObjArrIdx = params.getObjSubLineMemArrIdx(
+                //  //addr=combinePipeLast.cnt
+                //  //addr=Cat(
+                //  //  wrObjPipeLast.pxPos(0).x.asUInt(
+                //  //    wrObjPipeLast.pxPos(0).x.high downto 1
+                //  //  ),
+                //  //  wrObjPipeLast.gridIdx
+                //  //).asUInt
+                //  addr=wrObjPipeLast.getObjSubLineMemArrIdxAddr(),
+                //)
+
+                def tempObjArrIdx = wrObjPipeLast.getObjSubLineMemArrIdx(
+                  x=wrObjPipeLast.pxPosXGridIdxFindFirstSameAs
                 )
+                //def tempObjArrIdx = (
+                //  wrObjPipeLast.pxPosXGridIdx(
+                //    wrObjPipeLast.pxPosXGridIdxFindFirstSameAs
+                //  )(
+                //  )
+                //)
                 val dbgTestWrObjPipeLast_tempObjArrIdx = UInt(
                   tempObjArrIdx.getWidth bits
                 )
@@ -5715,7 +5902,11 @@ case class Gpu2d(
                 //  tempObjArrElemIdx
                 //)
                 objSubLineMemArr(jdx).write(
-                  address=tempObjArrIdx,
+                  address=tempObjArrIdx
+                  //(
+                  //  wrObjPipeLast.getObjSubLineMemArrIdx_tempRange()
+                  //)
+                  ,
                   data=wrObjPipeLast.wrLineMemEntry,
                 )
 
@@ -5965,11 +6156,11 @@ case class Gpu2d(
                 addr=tempCombineLineMemIdx
               )
             )
-            val dobjTestCombinePipe1_objSubLineMemArrIdx = UInt(
+            val dbgTestCombinePipe1_objSubLineMemArrIdx = UInt(
               objSubLineMemArrIdx.getWidth bits
             )
-              .setName("dobjTestCombinePipe1_objSubLineMemArrIdx")
-            dobjTestCombinePipe1_objSubLineMemArrIdx := (
+              .setName("dbgTestCombinePipe1_objSubLineMemArrIdx")
+            dbgTestCombinePipe1_objSubLineMemArrIdx := (
               objSubLineMemArrIdx
             )
 
@@ -5978,11 +6169,11 @@ case class Gpu2d(
                 addr=tempCombineLineMemIdx
               )
             )
-            val dobjTestCombinePipe1_objSubLineMemArrElemIdx = UInt(
+            val dbgTestCombinePipe1_objSubLineMemArrElemIdx = UInt(
               objSubLineMemArrElemIdx.getWidth bits
             )
-              .setName("dobjTestCombinePipe1_objSubLineMemArrElemIdx")
-            dobjTestCombinePipe1_objSubLineMemArrElemIdx := (
+              .setName("dbgTestCombinePipe1_objSubLineMemArrElemIdx")
+            dbgTestCombinePipe1_objSubLineMemArrElemIdx := (
               objSubLineMemArrElemIdx
             )
 
@@ -6359,9 +6550,18 @@ case class Gpu2d(
         //)
         //  .setName("dbgTestCombinePipeLast_tempAddr")
         //dbgTestCombinePipeLastTempAddr := tempAddr
+
         def tempObjArrIdx = params.getObjSubLineMemArrIdx(
           addr=combinePipeLast.cnt
         )
+        //def tempObjArrIdx = combinePipeLast.cnt(
+        //  log2Up(params.oneLineMemSize) - 1
+        //  downto (
+        //    log2Up(params.oneLineMemSize)
+        //    //- log2Up(params.objSubLineMemArrSize)
+        //    - params.objTileSize2d.x
+        //  )
+        //)
         val dbgTestCombinePipeLast_tempObjArrIdx = UInt(
           tempObjArrIdx.getWidth bits
         )
