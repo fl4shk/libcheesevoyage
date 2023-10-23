@@ -71,7 +71,7 @@ gridIdxShift = tilePxShift + tilePxWidth
 gridIdxMask = (1 << gridIdxWidth) - 1
 gridIdxShiftedMask = gridIdxMask << gridIdxShift
 
-subLineMemAddrShift = gridIdxShift + gridIdxWidth
+subLineMemAddrShift = gridIdxShift + gridIdxWidth - 1
 subLineMemAddrMask = (lineMemSize - 1) >> subLineMemAddrShift
 subLineMemAddrShiftedMask = subLineMemAddrMask << subLineMemAddrShift
 

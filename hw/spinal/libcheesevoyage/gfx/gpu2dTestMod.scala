@@ -337,12 +337,13 @@ case class Gpu2dTest(
     colIdx1: Int,
   ): Unit = {
     for (jdx <- 0 to tempObjTile.pxsSize2d.y - 1) {
-      for (idx <- 0 to tempObjTile.pxsSize2d.y - 1) {
+      for (idx <- 0 to tempObjTile.pxsSize2d.x - 1) {
         def pxCoord = ElabVec2[Int](idx, jdx)
         if (jdx % 2 == 0) {
           tempObjTile.setPx(
             pxCoord=pxCoord,
             //colIdx=(idx % 2) + 1,
+            //colIdx=(idx % 2) + colIdx0,
             //colIdx=3,
             colIdx=colIdx0,
           )
@@ -351,6 +352,7 @@ case class Gpu2dTest(
             pxCoord=pxCoord,
             //colIdx=((idx + 1) % 2) + 1,
             //colIdx=4,
+            //colIdx=(idx % 2) + colIdx1,
             colIdx=colIdx1,
           )
         }
@@ -470,38 +472,38 @@ case class Gpu2dTest(
       //tempObjAttrs.size2d.y := params.objTileSize2d.y - 1
       tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
       //tempObjAttrs := tempObjAttrs.getZero
-    //} elsewhen (rObjAttrsCnt === 1) {
-    //  //tempObjAttrs.tileMemIdx := 1
-    //  tempObjAttrs.tileMemIdx := 2
+    } elsewhen (rObjAttrsCnt === 1) {
+      //tempObjAttrs.tileMemIdx := 1
+      tempObjAttrs.tileMemIdx := 2
+      //tempObjAttrs.tileMemIdx := 0
+      //tempObjAttrs.pos.x := 1
+      //tempObjAttrs.pos.x := 16
+      //tempObjAttrs.pos.x := 2
+      tempObjAttrs.pos.x := 16
+      //tempObjAttrs.pos.y := -1
+      //tempObjAttrs.pos.y := 8
+      tempObjAttrs.pos.y := 9
+      tempObjAttrs.prio := 0
+      tempObjAttrs.size2d.x := params.objTileSize2d.x
+      tempObjAttrs.size2d.y := params.objTileSize2d.y
+      tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+      //tempObjAttrs := tempObjAttrs.getZero
+    } elsewhen (rObjAttrsCnt === 2) {
+      tempObjAttrs.tileMemIdx := 3
+      tempObjAttrs.pos.x := 8
+      tempObjAttrs.pos.y := 8
+      tempObjAttrs.prio := 0
+      tempObjAttrs.size2d.x := params.objTileSize2d.x
+      tempObjAttrs.size2d.y := params.objTileSize2d.y
+      tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+      //tempObjAttrs := tempObjAttrs.getZero
+    //} elsewhen (rObjAttrsCnt === 3) {
     //  //tempObjAttrs.tileMemIdx := 0
-    //  //tempObjAttrs.pos.x := 1
-    //  //tempObjAttrs.pos.x := 16
-    //  //tempObjAttrs.pos.x := 2
-    //  tempObjAttrs.pos.x := 16
-    //  //tempObjAttrs.pos.y := -1
-    //  //tempObjAttrs.pos.y := 8
-    //  tempObjAttrs.pos.y := 9
-    //  tempObjAttrs.prio := 0
-    //  tempObjAttrs.size2d.x := params.objTileSize2d.x
-    //  tempObjAttrs.size2d.y := params.objTileSize2d.y
-    //  tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-    //  //tempObjAttrs := tempObjAttrs.getZero
-    //} elsewhen (rObjAttrsCnt === 2) {
-    //  tempObjAttrs.tileMemIdx := 3
-    //  tempObjAttrs.pos.x := 8
-    //  tempObjAttrs.pos.y := 8
-    //  tempObjAttrs.prio := 0
-    //  tempObjAttrs.size2d.x := params.objTileSize2d.x
-    //  tempObjAttrs.size2d.y := params.objTileSize2d.y
-    //  tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-    //  //tempObjAttrs := tempObjAttrs.getZero
-    ////} elsewhen (rObjAttrsCnt === 3) {
-    ////  //tempObjAttrs.tileMemIdx := 0
-    ////  //tempObjAttrs.pos.x := 8
-    ////  //tempObjAttrs.pos.y := 0 //+ params.objTileSize2d.y - 1
-    ////  //tempObjAttrs.prio := 0
-    ////  //tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-    ////  tempObjAttrs := tempObjAttrs.getZero
+    //  //tempObjAttrs.pos.x := 8
+    //  //tempObjAttrs.pos.y := 0 //+ params.objTileSize2d.y - 1
+    //  //tempObjAttrs.prio := 0
+    //  //tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+    //  tempObjAttrs := tempObjAttrs.getZero
     } otherwise {
       //tempObjAttrs := tempObjAttrs.getZero
       tempObjAttrs.tileMemIdx := 0
