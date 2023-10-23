@@ -96,6 +96,7 @@ object Gpu2dSim extends App {
     //numObjsPow=log2Up(16),
     //numObjsPow=log2Up(2),
     numObjsPow=log2Up(4),
+    //numObjsPow=log2Up(8),
     //numBgTilesPow=Some(log2Up(256)),
     //numBgTilesPow=Some(log2Up(2)),
     numBgTilesPow=Some(log2Up(16)),

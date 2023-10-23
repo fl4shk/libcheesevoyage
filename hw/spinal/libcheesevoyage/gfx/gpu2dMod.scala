@@ -1336,6 +1336,7 @@ case class Gpu2d(
       //val rawPrio = UInt((params.numBgsPow + 1) bits)
       val written = Bool()
       val prio = UInt(params.numBgsPow bits)
+      //def objAttrsMemIdx
       val addr = UInt(log2Up(params.oneLineMemSize) bits)
       def getSubLineMemTempArrIdx() = (
         params.getObjSubLineMemArrIdx(addr=addr)
@@ -1870,8 +1871,8 @@ case class Gpu2d(
           //bakCntMinus1.msb
           //cnt + 1 === params.oneLineMemSize
           //bakCntMinus1 === 0
-          //bakCnt === 0
-          bakCnt.msb
+          bakCnt === 0
+          //bakCnt.msb
           //bakCnt === 0
         )
 
@@ -2182,6 +2183,11 @@ case class Gpu2d(
       val cnt = UInt(wrObjPipeCntWidth bits)
       val bakCnt = UInt(wrObjPipeCntWidth bits)
       val bakCntMinus1 = UInt(wrObjPipeCntWidth bits)
+      //val objAttrsMemIdx = UInt(
+      //  //params.objAttrsMemIdxWidth bits
+      //  (params.objAttrsMemIdxWidth + 1) bits
+      //)
+      val dbgTestObjAttrsMemIdx = UInt(params.objAttrsMemIdxWidth bits)
     }
     case class WrObjPipePayload() extends Bundle {
       // Which sprite are we processing?
@@ -2202,6 +2208,9 @@ case class Gpu2d(
         def cnt = justCopy.cnt
         def bakCnt = justCopy.bakCnt
         def bakCntMinus1 = justCopy.bakCntMinus1
+        //def objAttrsMemIdx = justCopy.objAttrsMemIdx
+
+        //val objAttrsMemIdx
 
         //val objAttrsMemIdx = SInt(params.objAttrsMemIdxWidth + 1 bits)
         //val objAttrsMemIdx = cloneOf(rWrObjPipeFrontObjAttrsMemIdx)
@@ -2220,19 +2229,34 @@ case class Gpu2d(
         ////  params.objAttrsMemIdxWidth + params.objTileSize2dPow.x - 1
         ////  downto params.objTileSize2dPow.x
         ////)
+        def objAttrsMemIdx() = (
+          justCopy.dbgTestObjAttrsMemIdx(
+            params.objAttrsMemIdxWidth - 1 downto 0
+          )
+        )
 
         //def objAttrsMemIdx() = innerObjAttrsMemIdx
-        def objAttrsMemIdx() = cnt(
-          // support needing to do two writes into `objSubLineMemArr`
-          params.objAttrsMemIdxWidth - 1 downto 0
-
+        def invObjAttrsMemIdx() = (
+          //cnt
+          //(
+          //  (1 << params.objAttrsMemIdxWidth) - 1
+          //) - 
+          cnt(
+            // support needing to do two writes into `objSubLineMemArr`
+            params.objAttrsMemIdxWidth - 1 downto 0
+            //params.objAttrsMemIdxWidth downto 1
+          )
         )
         // which iteration are we on for
         val gridIdxLsb = Bool()
-        def calcGridIdxLsb() = cnt(
-          // support needing to do two writes into `objSubLineMemArr`
-          params.objAttrsMemIdxWidth + 1 - 1
-          //downto params.objAttrsMemIdxWidth + 1 - 1
+        def calcGridIdxLsb() = (
+          //cnt
+          cnt(
+            // support needing to do two writes into `objSubLineMemArr`
+            //0
+            params.objAttrsMemIdxWidth + 1 - 1
+            //downto params.objAttrsMemIdxWidth + 1 - 1
+          )
         )
 
         //def getBakCntTilePxsCoordX() = bakCnt(
@@ -2254,8 +2278,8 @@ case class Gpu2d(
           //bakCntMinus1.msb
           //cnt + 1 === params.oneLineMemSize
           //bakCntMinus1 === 0
-          //bakCnt === 0
-          bakCnt.msb
+          bakCnt === 0
+          //bakCnt.msb
         )
       }
 
@@ -2639,6 +2663,10 @@ case class Gpu2d(
       ret.cnt := 0
       ret.bakCnt := wrObjPipeBakCntStart
       ret.bakCntMinus1 := wrObjPipeBakCntStart - 1
+      ret.stage0.justCopy.dbgTestObjAttrsMemIdx := (
+        (1 << params.objAttrsMemIdxWidth) - 1
+      )
+      //ret.objAttrsMemIdx := wrObjPipeBakCntStart
       //ret.objAttrsMemIdx := ret.cnt(
       //  ret.cnt.high
       //  downto (
@@ -3415,6 +3443,9 @@ case class Gpu2d(
             )
             rWrObjPipeFrontPayload.bakCntMinus1 := (
               rWrObjPipeFrontPayload.bakCntMinus1 - 1
+            )
+            rWrObjPipeFrontPayload.stage0.objAttrsMemIdx() := (
+              rWrObjPipeFrontPayload.stage0.objAttrsMemIdx() - 1
             )
           }
         } otherwise { // when (!wrObjPipeIn(0).fire)
@@ -5647,10 +5678,10 @@ case class Gpu2d(
               Bool()
             )
               .setName(f"wrObjPipe6_tempOverwriteLineMemEntry_$x")
-            val outOverwriteLineMemEntry = (
+            def outOverwriteLineMemEntry = (
               rWrObjPipeOut6ExtData.overwriteLineMemEntry(
-                //myIdx
-                x
+                myIdx
+                //x
               )
             )
             //val rotatedWrLineMemEntry = Vec(
@@ -5660,7 +5691,10 @@ case class Gpu2d(
             //    tempOutp.wrLineMemEntry.take(x)
             //  )
             //)//.addTag(noLatchCheck)
-            def tempWrLineMemEntry = (
+            val tempWrLineMemEntry = (
+              cloneOf(rWrObjPipeOut6ExtData.wrLineMemEntry(myIdx))
+            )
+            def outWrLineMemEntry = (
               //rotatedWrLineMemEntry(
               //  //myIdx(tempMyIdxRange)
               //  myIdx
@@ -5711,7 +5745,14 @@ case class Gpu2d(
               }
             }
             // END: debug comment this out; later
-            //--------
+            //val dbgTestWrObjPipeOut6_sameAsFound = cloneOf(
+            //  tempInp.pxPosXGridIdxFindFirstSameAsFound
+            //)
+            //  .setName(f"dbgTestWrObjPipeOut6_sameAsFound_$x")
+            //dbgTestWrObjPipeOut6_sameAsFound := (
+            //  tempInp.pxPosXGridIdxFindFirstSameAsFound
+            //)
+            ////--------
             def calcTempOverwiteLineMemEntry(
               somePxPosCmp: Bool,
               someLineMemEntry: ObjSubLineMemEntry,
@@ -5734,6 +5775,8 @@ case class Gpu2d(
               //  input.drop(x).appendedAll(input.take(x))
               //)//.addTag(noLatchCheck)
               when (
+                //--------
+                // BEGIN: move this to prior pipeline stage; later
                 somePxPosCmp
                 && tempInp.pxPosXGridIdxFindFirstSameAsFound
                 && 
@@ -5749,6 +5792,7 @@ case class Gpu2d(
                     x
                   )
                 )
+                // END: move this to prior pipeline stage; later
                 //--------
                 // BEGIN: debug comment this out; later
                 //&& myIdx.msb
@@ -5785,6 +5829,18 @@ case class Gpu2d(
                     //tempLineMemEntryPrio === tempInp.objAttrs.prio
                     someLineMemEntry.prio === tempInp.objAttrs.prio
                   ) {
+                    someOverwriteLineMemEntry := True
+                    //someOverwriteLineMemEntry := (
+                    //  !someLineMemEntry.col.a
+                    //  && tempInp.palEntryNzMemIdx(
+                    //    x
+                    //    //myIdx
+                    //    //myIdx(tempMyIdxRange)
+                    //  )
+                    //)
+                  } otherwise {
+                    //dbgTestificate := 3
+                    //someOverwriteLineMemEntry := True
                     someOverwriteLineMemEntry := (
                       !someLineMemEntry.col.a
                       && tempInp.palEntryNzMemIdx(
@@ -5793,9 +5849,6 @@ case class Gpu2d(
                         //myIdx(tempMyIdxRange)
                       )
                     )
-                  } otherwise {
-                    //dbgTestificate := 3
-                    someOverwriteLineMemEntry := True
                   }
                 }
               } otherwise {
@@ -5817,7 +5870,7 @@ case class Gpu2d(
               if (fwdIdx == 0) {
                 when (
                   !tempInp.bakCnt.msb
-                  && tempInp.pxPosXGridIdxMatches(x)
+                  //&& tempInp.pxPosXGridIdxMatches(x)
                 ){
                   fwdVec(fwdIdx).pxPos := tempInp.pxPos(
                     x
@@ -5854,12 +5907,12 @@ case class Gpu2d(
               //  fwdVec(fwdIdx) := rFwdVec(fwdIdx - 1)
               //}
               else {
-                def tempPrio = (
-                  //fwdVec(fwdIdx).wrLineMemEntry.prio(
-                  //  tempInp.objAttrs.prio.bitsRange
-                  //)
-                  fwdVec(fwdIdx).wrLineMemEntry.prio
-                )
+                //def tempPrio = (
+                //  //fwdVec(fwdIdx).wrLineMemEntry.prio(
+                //  //  tempInp.objAttrs.prio.bitsRange
+                //  //)
+                //  fwdVec(fwdIdx).wrLineMemEntry.prio
+                //)
                 tempConcat(fwdIdx - 1) := (
                   fwdVec(fwdIdx).pxPos === tempInp.pxPos(
                     x
@@ -5871,44 +5924,6 @@ case class Gpu2d(
               }
             }
 
-            //val dbgTestificate = UInt(4 bits)
-            //  .setName("wrObjPipeStage6_dbgTestificate")
-            //when (tempInp.pxPosInLine) {
-            //  // BEGIN: debug comment this out
-            //  when (
-            //    //tempInp.rdLineMemEntry.prio < tempInp.objAttrs.prio
-            //    //tempOutp.rdLineMemEntry.prio < tempInp.objAttrs.prio
-            //    tempWrLineMemEntry.prio < tempInp.objAttrs.prio
-            //  ) {
-            //    //tempOutp.overwriteLineMemEntry := True
-            //    tempOverwriteLineMemEntry := True
-            //  } otherwise {
-            //    //tempOutp.overwriteLineMemEntry
-            //    tempOverwriteLineMemEntry := (
-            //      //!tempInp.rdLineMemEntry.col.a
-            //      !tempWrLineMemEntry.col.a
-            //      //!tempOutp.rdLineMemEntry.col.a
-            //    )
-            //  }
-            //  // END: debug comment this out
-            //  //tempOutp.overwriteLineMemEntry := True
-            //} otherwise {
-            //  //tempOutp.overwriteLineMemEntry
-            // tempOverwriteLineMemEntry := False
-            //}
-
-            //val testificate = UInt(log2Up(fwdVec.size) bits) //Bool()
-            //  .setName("testificate")
-            //for (fwdIdx <- 1 to fwdVec.size - 1) {
-            //  //when (tempConcat(fwdIdx)) {
-            //  //}
-            //  when (
-            //    fwdVec(fwdIdx).pxPos === tempInp.pxPos
-            //    && fwdVec(fwdIdx).prio < tempInp.objAttrs.prio
-            //    && fwdVec(fwdIdx).temp
-            //  ) {
-            //  }
-            //}
             switch (
               tempConcat
               //(tempConcat.high downto 1)
@@ -5972,12 +5987,13 @@ case class Gpu2d(
             //val rotatedGridIdxMatches = (
             //  input.drop(x).appendedAll(input.take(x))
             //)
-            when (
-              //tempOutp.fire
-              tempInp.fire
-            ) {
+            outOverwriteLineMemEntry := tempOverwriteLineMemEntry
+            outWrLineMemEntry := tempWrLineMemEntry
+            //when (
+            //  tempOutp.fire
+            //  //tempInp.fire
+            //) {
               //--------
-              outOverwriteLineMemEntry := tempOverwriteLineMemEntry
               //--------
               // BEGIN: debug comment this out; later
               when (tempOverwriteLineMemEntry) {
@@ -6029,12 +6045,15 @@ case class Gpu2d(
               }
               // END: debug comment this out; later
               //--------
-            } otherwise {
-              //tempWrLineMemEntry := (
-              //  RegNext(tempWrLineMemEntry)
-              //)
-              //rotatedWrLineMemEntry := rotatedWrLineMemEntry.getZero
-            }
+            //} otherwise {
+            //  //tempWrLineMemEntry := (
+            //  //  RegNext(tempWrLineMemEntry)
+            //  //)
+            //  tempWrLineMemEntry := (
+            //    outWrLineMemEntry
+            //  )
+            //  //rotatedWrLineMemEntry := rotatedWrLineMemEntry.getZero
+            //}
             calcTempOverwiteLineMemEntry(
               somePxPosCmp=(
                 tempInp.pxPosInLine(
@@ -6158,6 +6177,9 @@ case class Gpu2d(
           //  .setName("dbgTestWrObjPipeLast_tempGridIdx")
           //tempGridIdx := wrObjPipeLast.gridIdxLsb
           //def tempObjSubLineMemArrIdx = wrBgPipeLast.get
+          //val tempRdLineMemEntry = Vec.fill(params.objTileSize2d.x)(
+          //  ObjSubLineMemEntry()
+          //)
           switch (
             rWrLineMemArrIdx
             //wrObjPipeLast.lineMemArrIdx
@@ -6211,16 +6233,19 @@ case class Gpu2d(
                 //dbgTestWrObjPipeLast_tempObjArrElemIdx := (
                 //  tempObjArrElemIdx
                 //)
-                when (wrObjPipeLast.pxPosXGridIdxFindFirstSameAsFound) {
+                //when (
+                //  wrObjPipeLast.pxPosXGridIdxFindFirstSameAsFound
+                //) {
                   objSubLineMemArr(jdx).write(
                     address=tempObjArrIdx
                     //(
                     //  wrObjPipeLast.getObjSubLineMemArrIdx_tempRange()
                     //)
                     ,
-                    data=wrObjPipeLast.wrLineMemEntry,
+                    //data=wrObjPipeLast.wrLineMemEntry,
+                    data=tempWrLineMemEntry
                   )
-                }
+                //}
 
                 //when (
                 //  wrObjPipeLast.pxPos.x >= 0 
