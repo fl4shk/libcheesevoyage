@@ -13,7 +13,7 @@ import spinal.lib.graphic.RgbConfig
 import scala.collection.mutable.ArrayBuffer
 import scala.math._
 
-object Gpu2dConfig {
+object Gpu2dSimDutConfig {
   def spinal = SpinalConfig(
     targetDirectory="hw/gen",
     defaultConfigForClockDomains=ClockDomainConfig(
@@ -23,13 +23,119 @@ object Gpu2dConfig {
     onlyStdLogicVectorAtTopLevelIo=true,
   )
 }
+object Gpu2dSimDutParams {
+  //def clkRate = 125.0 MHz
+  //def clkRate = 50.0 MHz
+  def clkRate = 100.0 MHz
+  //def clkRate = 100.7 MHz
+  def pixelClk = 25.0 MHz
+  //def ctrlFifoDepth = 20
+  def ctrlFifoDepth = 256
+  //def ctrlFifoDepth = 100
+  //def ctrlFifoDepth = 128
+  //def fbSize2d = ElabVec2[Int](640, 480)
+  //def fbSize2d = ElabVec2[Int](1, 1)
+  //def fbSize2d = ElabVec2[Int](20, 20)
+  //def rgbConfig = RgbConfig(rWidth=6, gWidth=6, bWidth=6)
+  def rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
+  ////def rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
+  //def physRgbConfig = LcvVideoDithererIo.outRgbConfig(rgbConfig=rgbConfig)
+  ////def vgaTimingInfo = LcvVgaTimingInfoMap.map("640x480@60")
+  def vgaTimingInfo=LcvVgaTimingInfo(
+    pixelClk=pixelClk,
+    //pixelClk=25.175 MHz,
+    htiming=LcvVgaTimingHv(
+      //visib=1 << 6,
+      //visib=64,
+      visib=1 << 7,
+      //visib=1 << 8,
+      //visib=4,
+      //visib=8,
+      front=1,
+      sync=1,
+      back=1,
+    ),
+    vtiming=LcvVgaTimingHv(
+      //visib=1 << 3,
+      visib=1 << 4,
+      //visib=1 << 7,
+      //visib=4,
+      //visib=8,
+      front=1,
+      sync=1,
+      back=1,
+    ),
+  )
 
-object Gpu2dToVerilog extends App {
-  Gpu2dConfig.spinal.generateVerilog(Gpu2d())
+  def fbSize2d = vgaTimingInfo.fbSize2d
+  def gpu2dParams = DefaultGpu2dParams(
+    rgbConfig=rgbConfig,
+    intnlFbSize2d=ElabVec2[Int](
+      x=vgaTimingInfo.fbSize2d.x,
+      y=vgaTimingInfo.fbSize2d.y,
+    ),
+    physFbSize2dScalePow=ElabVec2[Int](
+      x=log2Up(1),
+      y=log2Up(1),
+      //x=log2Up(2),
+      ////y=log2Up(2),
+      //y=log2Up(2),
+    ),
+    bgTileSize2dPow=ElabVec2[Int](
+      //x=log2Up(8),
+      //y=log2Up(8),
+      x=log2Up(4),
+      y=log2Up(4),
+      //x=log2Up(2),
+      //y=log2Up(2),
+    ),
+    objTileSize2dPow=ElabVec2[Int](
+      //x=log2Up(8),
+      //y=log2Up(8),
+      //x=log2Up(4),
+      //y=log2Up(4),
+      x=log2Up(2),
+      y=log2Up(2),
+    ),
+    //numBgsPow=log2Up(4),
+    numBgsPow=log2Up(2),
+    //numObjsPow=log2Up(64),
+    //numObjsPow=log2Up(32),
+    //numObjsPow=log2Up(2),
+    //numObjsPow=log2Up(32),
+    //numObjsPow=log2Up(16),
+    //numObjsPow=log2Up(2),
+    //numObjsPow=log2Up(4),
+    //numObjsPow=log2Up(8),
+    numObjsPow=log2Up(16),
+    //numBgTilesPow=Some(log2Up(256)),
+    //numBgTilesPow=Some(log2Up(2)),
+    numBgTilesPow=Some(log2Up(16)),
+    //numObjTilesPow=None,
+    numObjTilesPow=Some(log2Up(8)),
+    numColsInBgPalPow=log2Up(64),
+    numColsInObjPalPow=log2Up(64),
+  )
 }
 
-object Gpu2dToVhdl extends App {
-  Gpu2dConfig.spinal.generateVhdl(Gpu2d())
+object Gpu2dSimDutToVerilog extends App {
+  Gpu2dSimDutConfig.spinal.generateVerilog(Gpu2dSimDut(
+    clkRate=Gpu2dSimDutParams.clkRate,
+    rgbConfig=Gpu2dSimDutParams.rgbConfig,
+    vgaTimingInfo=Gpu2dSimDutParams.vgaTimingInfo,
+    gpu2dParams=Gpu2dSimDutParams.gpu2dParams,
+    ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
+  ))
+}
+
+object Gpu2dSimDutToVhdl extends App {
+  Gpu2dSimDutConfig.spinal.generateVhdl(Gpu2dSimDut(
+    clkRate=Gpu2dSimDutParams.clkRate,
+    rgbConfig=Gpu2dSimDutParams.rgbConfig,
+    vgaTimingInfo=Gpu2dSimDutParams.vgaTimingInfo,
+    gpu2dParams=Gpu2dSimDutParams.gpu2dParams,
+    ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
+  ))
   //val report = SpinalVhdl(new Gpu2dTo())
   //report.printPruned()
   //val test = PipeSkidBuf(UInt(3 bits))
