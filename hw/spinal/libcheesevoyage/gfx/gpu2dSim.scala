@@ -13,6 +13,99 @@ import spinal.lib.graphic.RgbConfig
 import scala.collection.mutable.ArrayBuffer
 import scala.math._
 
+case class Gpu2dSimDut(
+  clkRate: HertzNumber,
+  rgbConfig: RgbConfig,
+  vgaTimingInfo: LcvVgaTimingInfo,
+  gpu2dParams: Gpu2dParams,
+  ctrlFifoDepth: Int,
+) extends Component {
+  val io = new Bundle {
+    //val phys = out(LcvVgaPhys(rgbConfig=physRgbConfig))
+    val phys = out(LcvVgaPhys(rgbConfig=rgbConfig))
+    val misc = out(LcvVgaCtrlMiscIo(
+      clkRate=clkRate,
+      vgaTimingInfo=vgaTimingInfo,
+      fifoDepth=ctrlFifoDepth,
+    ))
+  }
+  val vgaCtrl = LcvVgaCtrl(
+    clkRate=clkRate,
+    //rgbConfig=physRgbConfig,
+    rgbConfig=rgbConfig,
+    vgaTimingInfo=vgaTimingInfo,
+    fifoDepth=ctrlFifoDepth,
+  )
+  //val vidDith = LcvVideoDitherer(
+  //  //fbSize2d=fbSize2d,
+  //  rgbConfig=rgbConfig,
+  //  //vgaTimingInfo=vgaTimingInfo,
+  //  //fbSize2d=vgaTimingInfo.fbSize2d,
+  //  fbSize2d=fbSize2d,
+  //)
+  val gpu2d = Gpu2d(
+    params=gpu2dParams,
+  )
+  val gpu2dTest = Gpu2dTest(
+    params=gpu2dParams,
+  )
+
+  val ctrlIo = vgaCtrl.io
+  //val dithIo = vidDith.io
+  val gpuIo = gpu2d.io
+
+  //gpuIo <> gpu2dTest.io.gpuIo
+  //gpuIo.push <> gpu2dTest.io.pop
+  //gpu2dTest.io.pop <> gpuIo.push
+  gpuIo.push << gpu2dTest.io.pop
+
+  //gpuIo.push.bgTilePush << gpu2dTest.io.pop.bgTilePush
+  //for (idx <- 0 to gpu2dParams.numBgs - 1) {
+  //  gpuIo.push.bgEntryPushArr(idx) << (
+  //    gpu2dTest.io.pop.bgEntryPushArr(idx)
+  //  )
+  //  gpuIo.push.bgAttrsPushArr(idx) << (
+  //    gpu2dTest.io.pop.bgAttrsPushArr(idx)
+  //  )
+  //}
+  //gpuIo.push.bgPalEntryPush << gpu2dTest.io.pop.bgPalEntryPush
+  //gpuIo.push.objTilePush << gpu2dTest.io.pop.objTilePush
+  //gpuIo.push.objAttrsPush << gpu2dTest.io.pop.objAttrsPush
+  //gpuIo.push.objPalEntryPush << gpu2dTest.io.pop.objPalEntryPush
+
+  //gpuIo << gpu2dT
+
+  //when (rObjPalCnt < gpu2dParams.numColsInBgPal) {
+  //  rObjPalCnt := rObjPalCnt + 1
+  //}
+
+  //ctrlIo.en := True
+  //ctrlIo.push.valid := dithIo.pop.valid
+  //ctrlIo.push.payload := dithIo.pop.payload.col
+  //dithIo.pop.ready := ctrlIo.push.ready
+
+  //dithIo.push.valid := gpuIo.pop.valid
+  //dithIo.push.payload := gpuIo.pop.payload.col 
+  //gpuIo.pop.ready := dithIo.push.ready
+  //ctrlIo.en := True
+
+  ctrlIo.en := gpuIo.ctrlEn
+  //ctrlIo.en := False
+
+  ctrlIo.push.valid := gpuIo.pop.valid
+  ctrlIo.push.payload := gpuIo.pop.payload.col
+  gpuIo.pop.ready := ctrlIo.push.ready
+  //ctrlIo.push.valid := gpu2dTest.io.pop.valid
+  //ctrlIo.push.payload := gpu2dTest.io.pop.payload.col
+  //gpu2dTest.io.pop.ready := ctrlIo.push.ready
+  //ctrlIo.push.valid := False
+  //ctrlIo.push.payload := ctrlIo.push.payload.getZero
+  //gpuIo.pop.ready := True
+
+  io.phys := ctrlIo.phys
+  io.misc := ctrlIo.misc
+}
+
 object Gpu2dSim extends App {
   //def clkRate = 125.0 MHz
   //def clkRate = 50.0 MHz
@@ -107,92 +200,6 @@ object Gpu2dSim extends App {
     numColsInObjPalPow=log2Up(64),
   )
 
-  case class Dut() extends Component {
-    val io = new Bundle {
-      //val phys = out(LcvVgaPhys(rgbConfig=physRgbConfig))
-      val phys = out(LcvVgaPhys(rgbConfig=rgbConfig))
-      val misc = out(LcvVgaCtrlMiscIo(
-        clkRate=clkRate,
-        vgaTimingInfo=vgaTimingInfo,
-        fifoDepth=ctrlFifoDepth,
-      ))
-    }
-    val vgaCtrl = LcvVgaCtrl(
-      clkRate=clkRate,
-      //rgbConfig=physRgbConfig,
-      rgbConfig=rgbConfig,
-      vgaTimingInfo=vgaTimingInfo,
-      fifoDepth=ctrlFifoDepth,
-    )
-    //val vidDith = LcvVideoDitherer(
-    //  //fbSize2d=fbSize2d,
-    //  rgbConfig=rgbConfig,
-    //  //vgaTimingInfo=vgaTimingInfo,
-    //  //fbSize2d=vgaTimingInfo.fbSize2d,
-    //  fbSize2d=fbSize2d,
-    //)
-    val gpu2d = Gpu2d(
-      params=gpu2dParams,
-    )
-    val gpu2dTest = Gpu2dTest(
-      params=gpu2dParams,
-    )
-
-    val ctrlIo = vgaCtrl.io
-    //val dithIo = vidDith.io
-    val gpuIo = gpu2d.io
-
-    //gpuIo <> gpu2dTest.io.gpuIo
-    //gpuIo.push <> gpu2dTest.io.pop
-    //gpu2dTest.io.pop <> gpuIo.push
-    gpuIo.push << gpu2dTest.io.pop
-
-    //gpuIo.push.bgTilePush << gpu2dTest.io.pop.bgTilePush
-    //for (idx <- 0 to gpu2dParams.numBgs - 1) {
-    //  gpuIo.push.bgEntryPushArr(idx) << (
-    //    gpu2dTest.io.pop.bgEntryPushArr(idx)
-    //  )
-    //  gpuIo.push.bgAttrsPushArr(idx) << (
-    //    gpu2dTest.io.pop.bgAttrsPushArr(idx)
-    //  )
-    //}
-    //gpuIo.push.bgPalEntryPush << gpu2dTest.io.pop.bgPalEntryPush
-    //gpuIo.push.objTilePush << gpu2dTest.io.pop.objTilePush
-    //gpuIo.push.objAttrsPush << gpu2dTest.io.pop.objAttrsPush
-    //gpuIo.push.objPalEntryPush << gpu2dTest.io.pop.objPalEntryPush
-
-    //gpuIo << gpu2dT
-
-    //when (rObjPalCnt < gpu2dParams.numColsInBgPal) {
-    //  rObjPalCnt := rObjPalCnt + 1
-    //}
-
-    //ctrlIo.en := True
-    //ctrlIo.push.valid := dithIo.pop.valid
-    //ctrlIo.push.payload := dithIo.pop.payload.col
-    //dithIo.pop.ready := ctrlIo.push.ready
-
-    //dithIo.push.valid := gpuIo.pop.valid
-    //dithIo.push.payload := gpuIo.pop.payload.col 
-    //gpuIo.pop.ready := dithIo.push.ready
-    //ctrlIo.en := True
-
-    ctrlIo.en := gpuIo.ctrlEn
-    //ctrlIo.en := False
-
-    ctrlIo.push.valid := gpuIo.pop.valid
-    ctrlIo.push.payload := gpuIo.pop.payload.col
-    gpuIo.pop.ready := ctrlIo.push.ready
-    //ctrlIo.push.valid := gpu2dTest.io.pop.valid
-    //ctrlIo.push.payload := gpu2dTest.io.pop.payload.col
-    //gpu2dTest.io.pop.ready := ctrlIo.push.ready
-    //ctrlIo.push.valid := False
-    //ctrlIo.push.payload := ctrlIo.push.payload.getZero
-    //gpuIo.pop.ready := True
-
-    io.phys := ctrlIo.phys
-    io.misc := ctrlIo.misc
-  }
   val simSpinalConfig = SpinalConfig(
     //defaultClockDomainFrequency=FixedFrequency(100 MHz)
     defaultClockDomainFrequency=FixedFrequency(clkRate)
@@ -200,7 +207,13 @@ object Gpu2dSim extends App {
   SimConfig
     .withConfig(config=simSpinalConfig)
     .withVcdWave
-    .compile(Dut())
+    .compile(Gpu2dSimDut(
+      clkRate=clkRate,
+      rgbConfig=rgbConfig,
+      vgaTimingInfo=vgaTimingInfo,
+      gpu2dParams=gpu2dParams,
+      ctrlFifoDepth=ctrlFifoDepth,
+    ))
     .doSim { dut =>
       dut.clockDomain.forkStimulus(period=10)
       //SimTimeout(1000)
