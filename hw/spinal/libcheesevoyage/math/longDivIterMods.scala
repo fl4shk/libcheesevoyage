@@ -885,7 +885,7 @@ case class LongUdivIterSync(
         ////iofwdMvp,
         //(1 if (!params.usePipeSkidBuf) else 0),
         (itdOutSync.tempQuot
-          === past(itdOut.tempQuot)),
+          === past(itdOut.tempQuot))
         ////(itdOutSync.tempQuot
         ////	=== past(itdInSync.tempQuot)),
         //itdOutSync.tempQuot === itdOut.tempQuot,

@@ -23,6 +23,7 @@ import spinal.lib.graphic.Rgb
 import spinal.lib.graphic.RgbConfig
 import spinal.core.formal._
 import scala.collection.mutable.ArrayBuffer
+//import scala.collection.immutable._
 import scala.math._
 
 case class Gpu2dParams(
@@ -5080,6 +5081,7 @@ case class Gpu2d(
               )
             )
             tempOutp.palEntryNzMemIdx(x) := tempInp.palEntryMemIdx(x) =/= 0
+
             tempOutp.pxPosRangeCheck(x).x := (
               //(tempInp.objAttrs.pos.x + params.objTileSize2d.x - 1 >= 0)
               //&& (tempInp.objAttrs.pos.x < params.intnlFbSize2d.x)
@@ -5478,10 +5480,19 @@ case class Gpu2d(
           val tempInp = stageData.pipeIn(idx)
           val tempOutp = stageData.pipeOut(idx)
 
-          for (x <- 0 to params.objTileSize2d.x - 1) {
-            //val x = UInt(params.objTileSize2dPow.x bits)
-            //  .setName(f"wrObjPipe6_x_$x")
-            //x := (tempInp.pxPos(0).x.asUInt + x)(x.bitsRange)
+          for (x <- 0 until params.objTileSize2d.x) {
+            val myIdx = UInt(params.objTileSize2dPow.x bits)
+              .setName(f"wrObjPipe6_myIdx_$x")
+            //println(
+            //  "testificate: "
+            //  + {
+            //    def tempWidth = myIdx.getWidth
+            //    def tempSize = tempOutp.wrLineMemEntry.size
+            //    f"$tempWidth $tempSize"
+            //  }
+            //)
+            //myIdx := (tempInp.pxPos(0).x.asUInt + x)(myIdx.bitsRange)
+            myIdx := (tempInp.pxPos(x).x.asUInt)(myIdx.bitsRange)
 
             //val tempOverwriteLineMemEntry = Bool()
             //val tempConcat = Bits(tempInp.numFwd + 1 bits)
@@ -5510,8 +5521,20 @@ case class Gpu2d(
               //  //someLineMemEntry.rawPrio
               //  someLineMemEntry.prio
               //)
+              val input = tempInp.postStage0.stage4.pxPosXGridIdxMatches
+              //val rotatedGridIdxMatches = Vec(
+              //  //tempInp.pxPosXGridIdxMatches.toList.drop(x).appendedAll(
+              //  //  tempInp.pxPosXGridIdxMatches.toList.take(x)
+              //  //)
+              //  input.toList.drop(x).appendedAll(input.toList.take(x))
+              //)
+              val rotatedGridIdxMatches = (
+                input.toList.drop(x).appendedAll(input.toList.take(x))
+              )
               when (
-                somePxPosCmp && tempInp.pxPosXGridIdxMatches(x)
+                somePxPosCmp
+                //&& tempInp.pxPosXGridIdxMatches(x)
+                && rotatedGridIdxMatches(myIdx)
               ) {
                 // BEGIN: debug comment this out
                 when (
@@ -5731,36 +5754,41 @@ case class Gpu2d(
             //val tempX = UInt(params.objTileSize2dPow.x bits)
             //  .setName(f"wrObjPipe6_tempX_$x")
             //tempX := (tempInp.pxPos(0).x.asUInt + x)(tempX.bitsRange)
+            def tempWrLineMemEntry = (
+              tempOutp.wrLineMemEntry(x)
+              //tempOutp.wrLineMemEntry(myIdx)
+            )
             when (tempOutp.fire) {
               when (tempOutp.overwriteLineMemEntry(x)) {
-                tempOutp.wrLineMemEntry(x).addr := (
+                tempWrLineMemEntry.addr := (
                   tempInp.pxPos(x).x.asUInt(
-                    tempOutp.wrLineMemEntry(x).addr.bitsRange
+                    tempWrLineMemEntry.addr.bitsRange
                   )
                 )
-                tempOutp.wrLineMemEntry(x).col.rgb := (
+                tempWrLineMemEntry.col.rgb := (
                   tempInp.palEntry(x).col
                 )
                 //tempOutp.wrLineMemEntry.col.a := True
-                tempOutp.wrLineMemEntry(x).col.a := (
+                tempWrLineMemEntry.col.a := (
                   tempInp.palEntryNzMemIdx(x)
                 )
                 //tempOutp.wrLineMemEntry.prio(
                 //  tempInp.objAttrs.prio.bitsRange
                 //) := tempInp.objAttrs.prio
-                tempOutp.wrLineMemEntry(x).prio := (
+                tempWrLineMemEntry.prio := (
                   tempInp.objAttrs.prio
                 )
                 //tempOutp.wrLineMemEntry.prio.msb := True
-                tempOutp.wrLineMemEntry(x).written := True
+                tempWrLineMemEntry.written := True
               } otherwise {
                 //tempOutp.wrLineMemEntry := tempInp.rdLineMemEntry
-                tempOutp.wrLineMemEntry(x) := tempRdLineMemEntry
+                tempWrLineMemEntry := tempRdLineMemEntry
               }
             } otherwise {
-              tempOutp.wrLineMemEntry(x) := (
-                RegNext(tempOutp.wrLineMemEntry(x))
-              )
+              //tempWrLineMemEntry := (
+              //  RegNext(tempWrLineMemEntry)
+              //)
+              tempWrLineMemEntry := tempWrLineMemEntry.getZero
             }
             calcTempOverwiteLineMemEntry(
               somePxPosCmp=(
