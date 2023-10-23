@@ -2255,7 +2255,7 @@ case class Gpu2d(
           )
         )
         // which iteration are we on for
-        //val gridIdxLsb = Bool()
+        val gridIdxLsb = Bool()
         def calcGridIdxLsb() = (
           //cnt
           cnt(
@@ -2467,8 +2467,7 @@ case class Gpu2d(
       //def getBakCntTilePxsCoordX() = stage0.getBakCntTilePxsCoordX()
       //def getCntTilePxsCoordX() = stage0.getCntTilePxsCoordX()
       def bakCntWillBeDone() = stage0.bakCntWillBeDone()
-      //def gridIdxLsb = stage0.gridIdxLsb
-      def gridIdxLsb = stage0.calcGridIdxLsb()
+      def gridIdxLsb = stage0.gridIdxLsb
 
       val postStage0 = PostStage0()
 
@@ -4893,7 +4892,7 @@ case class Gpu2d(
           def tempInp = stageData.pipeIn(0).stage0
           def tempOutp = stageData.pipeOut(0).stage0
           tempOutp.justCopy := tempInp.justCopy
-          //tempOutp.gridIdxLsb := tempInp.calcGridIdxLsb()
+          tempOutp.gridIdxLsb := tempInp.calcGridIdxLsb()
           //tempOutp.innerObjAttrsMemIdx := tempInp.bakCnt(
           //  //bakCnt.high - 1
           //  //downto (bakCnt.high - 1 - params.objAttrsMemIdxWidth + 1)
@@ -5098,7 +5097,7 @@ case class Gpu2d(
             tempOutp.pxPosXGridIdx.sFindFirst(
               //condition=(
                 //myBool => //(
-                  _(0) === tempInp.stage0.gridIdxLsb 
+                  _(0) === tempInp.gridIdxLsb 
                   //(
                   //  //Mux[UInt](
                   //  //  tempInp.stage0.gridIdxLsb === 1,
@@ -5120,7 +5119,7 @@ case class Gpu2d(
             tempOutp.pxPosXGridIdx.sFindFirst(
               //condition=(
                 //myBool => //(
-                  _(0) =/= tempInp.stage0.gridIdxLsb 
+                  _(0) =/= tempInp.gridIdxLsb 
                   //(
                   //  //Mux[UInt](
                   //  //  tempInp.stage0.gridIdxLsb === 1,
