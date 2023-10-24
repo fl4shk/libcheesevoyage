@@ -2255,7 +2255,7 @@ case class Gpu2d(
           )
         )
         // which iteration are we on for
-        val gridIdxLsb = Bool()
+        //val gridIdxLsb = Bool()
 
         //def getBakCntTilePxsCoordX() = bakCnt(
         //  (bakCnt.high - 1 - params.objAttrsMemIdxWidth)
@@ -2467,7 +2467,7 @@ case class Gpu2d(
       //def getBakCntTilePxsCoordX() = stage0.getBakCntTilePxsCoordX()
       //def getCntTilePxsCoordX() = stage0.getCntTilePxsCoordX()
       def bakCntWillBeDone() = stage0.bakCntWillBeDone()
-      def gridIdxLsb = stage0.gridIdxLsb
+      //def gridIdxLsb = stage0.gridIdxLsb
 
       val postStage0 = PostStage0()
 
@@ -4892,7 +4892,7 @@ case class Gpu2d(
           def tempInp = stageData.pipeIn(0).stage0
           def tempOutp = stageData.pipeOut(0).stage0
           tempOutp.justCopy := tempInp.justCopy
-          tempOutp.gridIdxLsb := stageData.pipeIn(0).calcGridIdxLsb()
+          //tempOutp.gridIdxLsb := stageData.pipeIn(0).calcGridIdxLsb()
           //tempOutp.innerObjAttrsMemIdx := tempInp.bakCnt(
           //  //bakCnt.high - 1
           //  //downto (bakCnt.high - 1 - params.objAttrsMemIdxWidth + 1)
@@ -5097,7 +5097,7 @@ case class Gpu2d(
             tempOutp.pxPosXGridIdx.sFindFirst(
               //condition=(
                 //myBool => //(
-                  _(0) === tempInp.stage0.gridIdxLsb 
+                  _(0) === tempInp.calcGridIdxLsb()
                   //(
                   //  //Mux[UInt](
                   //  //  tempInp.stage0.gridIdxLsb === 1,
@@ -5119,7 +5119,7 @@ case class Gpu2d(
             tempOutp.pxPosXGridIdx.sFindFirst(
               //condition=(
                 //myBool => //(
-                  _(0) =/= tempInp.stage0.gridIdxLsb 
+                  _(0) =/= tempInp.calcGridIdxLsb()
                   //(
                   //  //Mux[UInt](
                   //  //  tempInp.stage0.gridIdxLsb === 1,
@@ -5223,7 +5223,7 @@ case class Gpu2d(
               tempInp.pxPosXGridIdxLsb(x)
               === (
                 //Mux[UInt](tempInp.gridIdxLsb(0), U"1'd1", U"1'd0")
-                tempInp.gridIdxLsb
+                tempInp.calcGridIdxLsb()
               )
             )
             tempOutp.palEntryNzMemIdx(x) := tempInp.palEntryMemIdx(x) =/= 0
