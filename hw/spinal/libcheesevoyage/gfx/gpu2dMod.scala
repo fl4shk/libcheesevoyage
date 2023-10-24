@@ -7000,10 +7000,14 @@ case class Gpu2d(
               //  address=tempAddrSingle,
               //  data=tempObjLineMemEntry
               //)
-              objSubLineMemArr(jdx).write(
-                address=tempObjArrIdx,
-                data=tempObjLineMemEntry,
-              )
+              //--------
+              // BEGIN: synth debug comment this out; later 
+              //objSubLineMemArr(jdx).write(
+              //  address=tempObjArrIdx,
+              //  data=tempObjLineMemEntry,
+              //)
+              // END: synth debug comment this out; later 
+              //--------
               //switch (tempArrIdx) {
               //  for (kdx <- 0 to (1 << tempArrIdx.getWidth) - 1) {
               //    is (kdx) {
