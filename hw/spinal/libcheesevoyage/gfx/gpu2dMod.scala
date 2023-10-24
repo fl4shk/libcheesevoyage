@@ -1058,7 +1058,7 @@ case class Gpu2d(
     )
       .initBigInt(Array.fill(params.numBgTiles)(BigInt(0)).toSeq)
       .addAttribute("ram_style", params.bgTileArrRamStyle)
-      .addAttribute("ram_mode", "tdp")
+      //.addAttribute("ram_mode", "tdp")
     when (bgTilePush.fire) {
       bgTileMem.write(
         address=bgTilePush.payload.memIdx,
@@ -1073,7 +1073,7 @@ case class Gpu2d(
     )
       .initBigInt(Array.fill(params.numObjTiles)(BigInt(0)).toSeq)
       .addAttribute("ram_style", params.objTileArrRamStyle)
-      .addAttribute("ram_mode", "tdp")
+      //.addAttribute("ram_mode", "tdp")
     when (objTilePush.fire) {
       objTileMem.write(
         address=objTilePush.payload.memIdx,
@@ -1097,7 +1097,7 @@ case class Gpu2d(
       )
         .initBigInt(Array.fill(params.numTilesPerBg)(BigInt(0)).toSeq)
         .addAttribute("ram_style", params.bgEntryArrRamStyle)
-        .addAttribute("ram_mode", "tdp")
+        //.addAttribute("ram_mode", "tdp")
         .setName(f"bgEntryMemArr_$idx")
       when (bgEntryPushArr(idx).fire) {
         bgEntryMemArr(idx).write(
@@ -1127,7 +1127,7 @@ case class Gpu2d(
     )
       .initBigInt(Array.fill(params.numObjs)(BigInt(0)).toSeq)
       .addAttribute("ram_style", params.objAttrsArrRamStyle)
-      .addAttribute("ram_mode", "tdp")
+      //.addAttribute("ram_mode", "tdp")
     when (objAttrsPush.fire) {
       objAttrsMem.write(
         address=objAttrsPush.payload.memIdx,
@@ -1152,7 +1152,7 @@ case class Gpu2d(
     )
       .initBigInt(Array.fill(params.numColsInBgPal)(BigInt(0)).toSeq)
       .addAttribute("ram_style", params.bgPalEntryArrRamStyle)
-      .addAttribute("ram_mode", "tdp")
+      //.addAttribute("ram_mode", "tdp")
       .addAttribute("keep")
     when (bgPalEntryPush.fire) {
       bgPalEntryMem.write(
@@ -1167,7 +1167,7 @@ case class Gpu2d(
     )
       .initBigInt(Array.fill(params.numColsInObjPal)(BigInt(0)).toSeq)
       .addAttribute("ram_style", params.objPalEntryArrRamStyle)
-      .addAttribute("ram_mode", "tdp")
+      //.addAttribute("ram_mode", "tdp")
     when (objPalEntryPush.fire) {
       objPalEntryMem.write(
         address=objPalEntryPush.payload.memIdx,
@@ -1440,7 +1440,7 @@ case class Gpu2d(
           Array.fill(params.bgSubLineMemArrSize)(BigInt(0)).toSeq
         )
         .addAttribute("ram_style", params.lineArrRamStyle)
-        .addAttribute("ram_mode", "tdp") // true dual-port
+        //.addAttribute("ram_mode", "tdp") // true dual-port
         .setName(f"bgLineMemArr_$idx")
 
       objSubLineMemArr += Mem(
@@ -7110,10 +7110,10 @@ case class Gpu2d(
               //)
               //--------
               // BEGIN: synth debug comment this out; later 
-              //objSubLineMemArr(jdx).write(
-              //  address=tempObjArrIdx,
-              //  data=tempObjLineMemEntry,
-              //)
+              objSubLineMemArr(jdx).write(
+                address=tempObjArrIdx,
+                data=tempObjLineMemEntry,
+              )
               // END: synth debug comment this out; later 
               //--------
               //switch (tempArrIdx) {
