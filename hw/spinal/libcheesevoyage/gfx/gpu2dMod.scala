@@ -1454,7 +1454,7 @@ case class Gpu2d(
         // while also writing actual data to another RAM during the OBJ
         // writing pipeline (though the OBJ writing pipeline will
         // do two writes per sprite because of the grid structure)
-        .addAttribute("ram_mode", "tdp")
+        //.addAttribute("ram_mode", "tdp")
       
         .setName(f"objLineMemArr_$idx")
     }
