@@ -1446,7 +1446,7 @@ case class Gpu2d(
           //Array.fill(params.oneLineMemSize)(BigInt(0)).toSeq
           Array.fill(params.objSubLineMemArrSize)(BigInt(0)).toSeq
         )
-        .addAttribute("ram_style", params.lineArrRamStyle)
+        //.addAttribute("ram_style", params.lineArrRamStyle)
       
         // true dual-port RAM;
         // needed because of clearing one of the non-active RAMs during
