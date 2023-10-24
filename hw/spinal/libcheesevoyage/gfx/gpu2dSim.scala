@@ -221,7 +221,10 @@ object Gpu2dSim extends App {
       //  //sleep(1)
       //  dut.clockDomain.waitRisingEdge()
       //}
-      def simNumClks = 16000
+      def simNumClks = (
+        //16000
+        32000
+      )
       for (idx <- 0 to simNumClks - 1) {
         dut.clockDomain.waitRisingEdge()
         //when (dut.io.misc.visib) {

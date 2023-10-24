@@ -276,9 +276,8 @@ case class Gpu2dParams(
   //def numLineMems = 1 << physFbSize2dScalePow.y
   //def numLineMems = 4
   //def numLineMems = 2
-  def numLineMemsPerBgObjRenderer = 4
-  //def numLineMemsPerBgRenderer = 4
-  //def numLineMemsPerBgObjRenderer = 2
+  //def numLineMemsPerBgObjRenderer = 4
+  def numLineMemsPerBgObjRenderer = 2
   //def numLineMems = numBgs
   //def wrBgObjStallFifoAmountCanPush = 8
   //def combinePipeOverflowFifoSize = oneLineMemSize
@@ -1418,7 +1417,6 @@ case class Gpu2d(
 
     for (
       idx <- 0 to params.numLineMemsPerBgObjRenderer - 1
-      //idx <- 0 to params.numLineMemsPerBgRenderer - 1
     ) {
       //lineMemArr += Mem(
       //  //wordType=Rgb(params.rgbConfig),
@@ -1464,17 +1462,6 @@ case class Gpu2d(
       
         .setName(f"objLineMemArr_$idx")
     }
-
-    //--------
-    // BEGIN: for muxing writes into `objSubLineMemArr`; later 
-    //for(i <- memArr.indices) {
-    //  val select = arrayOfInputs.map(input.fpgaXXXIndex === i))
-    //  val selected = MuxOH(select, arrayOfInputs)
-    //  memArr.write(selected.address, selected.data, select.orR)
-    //}
-    // END: for muxing writes into `objSubLineMemArr`; later 
-    //--------
-
     // BEGIN: old, non synthesizable code (too many write ports...)
     //for (
     //  //jdx <- 0 to params.objSubLineMemArrSize - 1
@@ -1594,11 +1581,27 @@ case class Gpu2d(
     ////def combineRdLineMemArrIdxInit = U(f"$lineMemArrIdxWidth'd2")
     ////def wrLineMemArrIdxInit = U(f"$lineMemArrIdxWidth'd3")
     //def combineRdLineMemArrIdxInit = U(f"$lineMemArrIdxWidth'd0")
-    def combineLineMemArrIdxInit = U(f"$lineMemArrIdxWidth'd0")
+    //def rawClearObjLineMemArrIdxInit = 0
+    //def clearObjLineMemArrIdxInit = U(
+    //  f"$lineMemArrIdxWidth'd$rawClearObjLineMemArrIdxInit"
+    //)
+    def rawCombineLineMemArrIdxInit = (
+      //1
+      0
+    )
+    def combineLineMemArrIdxInit = U(
+      f"$lineMemArrIdxWidth'd$rawCombineLineMemArrIdxInit"
+    )
     //def combineLineMemArrIdxInit = U(f"$lineMemArrIdxWidth'd3")
     //def wrLineMemArrIdxInit = U(f"$lineMemArrIdxWidth'd1")
     //def sendIntoFifoLineMemArrIdxInit = U(f"$lineMemArrIdxWidth'd0")
-    def wrLineMemArrIdxInit = U(f"$lineMemArrIdxWidth'd1")
+    def rawWrLineMemArrIdxInit = (
+      //2
+      1
+    )
+    def wrLineMemArrIdxInit = U(
+      f"$lineMemArrIdxWidth'd$rawWrLineMemArrIdxInit"
+    )
     //def wrLineMemArrIdxInit = U(f"$lineMemArrIdxWidth'd0")
 
     //val rSendIntoFifoLineMemArrIdx = KeepAttribute(
@@ -1829,6 +1832,51 @@ case class Gpu2d(
         }
       ) - 1
     )
+    //--------
+    // BEGIN: for muxing writes into `objSubLineMemArr`; later 
+    case class ObjSubLineMemWriter() extends Bundle {
+      val idxVec = Vec.fill(params.numLineMemsPerBgObjRenderer)(
+        UInt(log2Up(params.objSubLineMemArrSize) bits)
+      )
+      val dataVec = Vec.fill(params.numLineMemsPerBgObjRenderer)(
+        Vec.fill(params.objTileSize2d.x)(ObjSubLineMemEntry())
+      )
+    }
+    val objWriter = ObjSubLineMemWriter()
+    //objWriter.idxVec(
+    //for (idx <- objSubLineMemArr.indices) {
+    //  val select = objWriter.dataVec.map(
+    //    objWriter.idxVec(idx)
+    //    === idx
+    //  )
+    //}
+    for (jdx <- 0 until objSubLineMemArr.size) {
+      //val select = objWriter.dataVec.map(
+      //  objWriter.idxVec(jdx) === jdx
+      //)
+      val select = objWriter.idxVec.map(
+        _ === jdx
+      )
+      val selected = MuxOH(select, objWriter.dataVec)
+      println({
+        def tempSelectSize = select.size
+        def tempSelectedSize = selected.size
+        f"sel sizes: select:$tempSelectSize selected:$tempSelectedSize"
+      })
+      //objSubLineMemArr(jdx).write(
+      //  address=selected(jdx).addr,
+      //  data=selected,
+      //  enable=select.orR,
+      //)
+    }
+
+    //for(i <- memArr.indices) {
+    //  val select = arrayOfInputs.map(input.fpgaXXXIndex === i))
+    //  val selected = MuxOH(select, arrayOfInputs)
+    //  memArr.write(selected.address, selected.data, select.orR)
+    //}
+    // END: for muxing writes into `objSubLineMemArr`; later 
+    //--------
     //def wrBgPipeBgIdxWidth = params.numBgsPow + 1
     def wrBgPipeBgIdxWidth = params.numBgsPow
     //val rWrBgPipeFrontCntWidth = KeepAttribute(
