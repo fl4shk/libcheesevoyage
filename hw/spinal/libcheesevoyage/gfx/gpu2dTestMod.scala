@@ -369,17 +369,19 @@ case class Gpu2dTest(
         //mkObjTile(0, 1)
         mkObjTile(0, 0)
       } elsewhen (rObjTileCnt === 1) {
-        //mkObjTile(1, 2)
-        mkObjTile(1, 1)
+        mkObjTile(1, 2)
+        //mkObjTile(1, 1)
         //mkObjTile(3, 3)
         //mkObjTile(2, 3)
       } elsewhen (rObjTileCnt === 2) {
         //mkObjTile(2, 3)
-        mkObjTile(2, 2)
+        mkObjTile(3, 4)
+        //mkObjTile(2, 2)
         //mkObjTile(2, 2)
       } elsewhen (rObjTileCnt === 3) {
-        //mkObjTile(3, 4)
-        mkObjTile(3, 3)
+        mkObjTile(3, 4)
+        //mkObjTile(3, 3)
+        //mkObjTile(0, 1)
       } elsewhen (rObjTileCnt === 4) {
         //mkObjTile(4, 5)
         mkObjTile(4, 4)
