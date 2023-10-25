@@ -2612,7 +2612,7 @@ case class Gpu2d(
       //def getBakCntTilePxsCoordX() = stage0.getBakCntTilePxsCoordX()
       //def getCntTilePxsCoordX() = stage0.getCntTilePxsCoordX()
       def bakCntWillBeDone() = stage0.bakCntWillBeDone()
-      def gridIdxLsb = stage0.gridIdxLsb
+      //def gridIdxLsb = stage0.gridIdxLsb
 
       val postStage0 = PostStage0()
 
