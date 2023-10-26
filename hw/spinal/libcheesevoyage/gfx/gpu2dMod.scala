@@ -1395,16 +1395,16 @@ case class Gpu2d(
     //    params.oneLineMemSize
     //  )
     //)
-    def combineRdSubLineFifoDepth = 16
-    def combineRdSubLineFifoAmountCanPushStall = 8
-    val combineBgRdSubLineFifo = new AsyncReadFifo(
-      dataType=Vec.fill(params.bgTileSize2d.x)(BgSubLineMemEntry()),
-      depth=combineRdSubLineFifoDepth,
-    )
-    val combineObjRdSubLineFifo = new AsyncReadFifo(
-      dataType=Vec.fill(params.bgTileSize2d.x)(ObjSubLineMemEntry()),
-      depth=combineRdSubLineFifoDepth,
-    )
+    //def combineRdSubLineFifoDepth = 16
+    //def combineRdSubLineFifoAmountCanPushStall = 8
+    //val combineBgRdSubLineFifo = new AsyncReadFifo(
+    //  dataType=Vec.fill(params.bgTileSize2d.x)(BgSubLineMemEntry()),
+    //  depth=combineRdSubLineFifoDepth,
+    //)
+    //val combineObjRdSubLineFifo = new AsyncReadFifo(
+    //  dataType=Vec.fill(params.bgTileSize2d.x)(ObjSubLineMemEntry()),
+    //  depth=combineRdSubLineFifoDepth,
+    //)
     val bgSubLineMemArr = new ArrayBuffer[Mem[Vec[BgSubLineMemEntry]]]()
     val objSubLineMemArr = new ArrayBuffer[Mem[Vec[ObjSubLineMemEntry]]]()
 
