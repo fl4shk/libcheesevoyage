@@ -515,6 +515,8 @@ case class LcvVgaCtrl(
   rgbConfig: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
   fifoDepth: Int,
+  fifoArrRamStyle="auto"
+  //fifoArrRamStyle="block",
   vivadoDebug: Boolean=false,
 ) extends Component {
   //--------
@@ -568,8 +570,7 @@ case class LcvVgaCtrl(
   val fifo = AsyncReadFifo(
     dataType=Rgb(rgbConfig),
     depth=fifoDepth,
-    //arrRamStyle="auto"
-    arrRamStyle="block",
+    arrRamStyle=fifoArrRamStyle,
   )
   //val fifo = StreamFifo(
   //  dataType=Rgb(rgbConfig),
