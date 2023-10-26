@@ -515,8 +515,8 @@ case class LcvVgaCtrl(
   rgbConfig: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
   fifoDepth: Int,
-  fifoArrRamStyle="auto"
-  //fifoArrRamStyle="block",
+  fifoArrRamStyle: String="auto",
+  //fifoArrRamStyle: String="block",
   vivadoDebug: Boolean=false,
 ) extends Component {
   //--------
