@@ -7318,11 +7318,11 @@ case class Gpu2d(
                 is (jdx) {
                   //--------
                   // BEGIN: new code, for reading synchronously
-                  tempOutp.stage2.ext.bgRdLineMemEntry := (
-                    rdBgSubLineMemArr(jdx).dataVec(
-                      RdBgSubLineMemArrInfo.combineIdx
-                    )(bgSubLineMemArrElemIdx)
-                  )
+                  //tempOutp.stage2.ext.bgRdLineMemEntry := (
+                  //  rdBgSubLineMemArr(jdx).dataVec(
+                  //    RdBgSubLineMemArrInfo.combineIdx
+                  //  )(bgSubLineMemArrElemIdx)
+                  //)
                   tempOutp.stage2.ext.objRdLineMemEntry := (
                     rdObjSubLineMemArr(jdx).dataVec(
                       RdObjSubLineMemArrInfo.combineIdx
@@ -7331,11 +7331,11 @@ case class Gpu2d(
                   // END: new code, for reading synchronously
                   //--------
                   // BEGIN: old-style code, for reading asynchronously
-                  //tempOutp.stage2.ext.bgRdLineMemEntry := (
-                  //  bgSubLineMemArr(jdx).readAsync(
-                  //    bgSubLineMemArrIdx
-                  //  )(bgSubLineMemArrElemIdx)
-                  //)
+                  tempOutp.stage2.ext.bgRdLineMemEntry := (
+                    bgSubLineMemArr(jdx).readAsync(
+                      bgSubLineMemArrIdx
+                    )(bgSubLineMemArrElemIdx)
+                  )
                   //tempOutp.stage2.ext.objRdLineMemEntry := (
                   //  objSubLineMemArr(jdx).readAsync(
                   //    objSubLineMemArrIdx

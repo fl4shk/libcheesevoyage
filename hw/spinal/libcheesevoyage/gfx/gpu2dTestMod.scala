@@ -369,18 +369,18 @@ case class Gpu2dTest(
         //mkObjTile(0, 1)
         mkObjTile(0, 0)
       } elsewhen (rObjTileCnt === 1) {
-        mkObjTile(1, 2)
-        //mkObjTile(1, 1)
+        //mkObjTile(1, 2)
+        mkObjTile(1, 1)
         //mkObjTile(3, 3)
         //mkObjTile(2, 3)
       } elsewhen (rObjTileCnt === 2) {
         //mkObjTile(2, 3)
-        mkObjTile(3, 4)
-        //mkObjTile(2, 2)
+        //mkObjTile(3, 4)
+        mkObjTile(2, 2)
         //mkObjTile(2, 2)
       } elsewhen (rObjTileCnt === 3) {
-        mkObjTile(3, 4)
-        //mkObjTile(3, 3)
+        //mkObjTile(3, 4)
+        mkObjTile(3, 3)
         //mkObjTile(0, 1)
       } elsewhen (rObjTileCnt === 4) {
         //mkObjTile(4, 5)
@@ -474,22 +474,23 @@ case class Gpu2dTest(
       //tempObjAttrs.size2d.y := params.objTileSize2d.y - 1
       tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
       //tempObjAttrs := tempObjAttrs.getZero
-    //} elsewhen (rObjAttrsCnt === 1) {
-    //  //tempObjAttrs.tileMemIdx := 1
-    //  tempObjAttrs.tileMemIdx := 2
-    //  //tempObjAttrs.tileMemIdx := 0
-    //  //tempObjAttrs.pos.x := 1
-    //  //tempObjAttrs.pos.x := 16
-    //  //tempObjAttrs.pos.x := 2
-    //  tempObjAttrs.pos.x := 16
-    //  //tempObjAttrs.pos.y := -1
-    //  //tempObjAttrs.pos.y := 8
-    //  tempObjAttrs.pos.y := 9
-    //  tempObjAttrs.prio := 0
-    //  tempObjAttrs.size2d.x := params.objTileSize2d.x
-    //  tempObjAttrs.size2d.y := params.objTileSize2d.y
-    //  tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-    //  //tempObjAttrs := tempObjAttrs.getZero
+    } elsewhen (rObjAttrsCnt === 1) {
+      //tempObjAttrs.tileMemIdx := 1
+      tempObjAttrs.tileMemIdx := 2
+      //tempObjAttrs.tileMemIdx := 0
+      //tempObjAttrs.pos.x := 1
+      //tempObjAttrs.pos.x := 16
+      //tempObjAttrs.pos.x := 2
+      //tempObjAttrs.pos.x := 16
+      tempObjAttrs.pos.x := 9
+      //tempObjAttrs.pos.y := -1
+      //tempObjAttrs.pos.y := 8
+      tempObjAttrs.pos.y := 9
+      tempObjAttrs.prio := 0
+      tempObjAttrs.size2d.x := params.objTileSize2d.x
+      tempObjAttrs.size2d.y := params.objTileSize2d.y
+      tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+      //tempObjAttrs := tempObjAttrs.getZero
     } elsewhen (rObjAttrsCnt === 2) {
       tempObjAttrs.tileMemIdx := 3
       tempObjAttrs.pos.x := 8
