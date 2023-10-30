@@ -3,6 +3,7 @@ import libcheesevoyage._
 
 import libcheesevoyage.general.Vec2
 import libcheesevoyage.general.ElabVec2
+import libcheesevoyage.general.DualTypeNumVec2
 
 import spinal.core._
 //import spinal.core.formal._
@@ -51,65 +52,6 @@ case class Gpu2dTest(
   //  ) := 1
   //  tempBgTile
   //}
-  //for (jdx <- 0 to tempBgTile.pxsSize2d.y - 1) {
-  //  for (idx <- 0 to tempBgTile.pxsSize2d.x - 1) {
-  //    def pxCoord = ElabVec2[Int](idx, jdx)
-  //    if (jdx == 3) {
-  //      if (idx == 0) {
-  //        tempBgTile.setPx(
-  //          pxCoord=pxCoord,
-  //          //colIdx=1,
-  //          colIdx=1,
-  //        )
-  //      }
-  //      else if (idx == 1) {
-  //        tempBgTile.setPx(
-  //          pxCoord=pxCoord,
-  //          colIdx=2,
-  //        )
-  //      }
-  //      else {
-  //        tempBgTile.setPx(
-  //          pxCoord=pxCoord,
-  //          //colIdx=3,
-  //          colIdx=3,
-  //        )
-  //      }
-  //    } else if (jdx == 4) {
-  //      tempBgTile.setPx(
-  //        pxCoord=pxCoord,
-  //        colIdx=4,
-  //      )
-  //    } else if (jdx == 5) {
-  //      if (idx == 0) {
-  //        tempBgTile.setPx(
-  //          pxCoord=pxCoord,
-  //          colIdx=5,
-  //        )
-  //      } else {
-  //        tempBgTile.setPx(
-  //          pxCoord=pxCoord,
-  //          colIdx=0,
-  //        )
-  //      }
-  //    } else {
-  //      tempBgTile.setPx(
-  //        pxCoord=pxCoord,
-  //        colIdx=0,
-  //      )
-  //    }
-  //  }
-  //}
-  //println(
-  //  f"tempBgTile.pxsSize2d "
-  //  + {
-  //    def pxsWidth = tempBgTile.pxsSize2d.x
-  //    f"$pxsWidth "
-  //  } + {
-  //    def pxsHeight = tempBgTile.pxsSize2d.y
-  //    f"$pxsHeight "
-  //  }
-  //)
   for (jdx <- 0 to tempBgTile.pxsSize2d.y - 1) {
     for (idx <- 0 to tempBgTile.pxsSize2d.x - 1) {
       def pxCoord = ElabVec2[Int](idx, jdx)
@@ -127,7 +69,12 @@ case class Gpu2dTest(
       //}
       tempBgTile.setPx(
         pxCoord=pxCoord,
-        colIdx=(jdx % 2) + 1,
+        //colIdx=(jdx % 2) + 1,
+        //colIdx=(idx % 2) + 1,
+        //colIdx=(idx % 4) + 1,
+        colIdx=(
+          (idx % 4) >> log2Up(2),
+        )
       )
 
       //if (jdx % 4 == 0) {
@@ -199,7 +146,9 @@ case class Gpu2dTest(
   //  rBgTilePushValid := False
   //}
   //pop.bgTilePush.payload.memIdx := 1
+  //--------
   pop.bgTilePush.valid := rBgTilePushValid
+  //--------
   //pop.bgTilePush.valid := True
   // when (!rBgTileCnt.msb) {
     pop.bgTilePush.payload.tile := tempBgTileToPush
@@ -215,9 +164,16 @@ case class Gpu2dTest(
   //pop.bgTilePush.payload.memIdx := params.intnlFbSize2d.x
   //--------
   val tempBgAttrs = Gpu2dBgAttrs(params=params)
+  val tempBgScroll = DualTypeNumVec2(
+    dataTypeX=SInt(tempBgAttrs.scroll.x.getWidth bits),
+    dataTypeY=SInt(tempBgAttrs.scroll.y.getWidth bits),
+  )
   //tempBgAttrs.scroll := tempBgAttrs.scroll.getZero
   //tempBgAttrs.scroll.x := 0
-  tempBgAttrs.scroll.x := 1
+  //tempBgAttrs.scroll.x := 1
+  //tempBgScroll.x := (-params.bgTileSize2d.x) + 1
+  tempBgScroll.x := 0
+  tempBgAttrs.scroll.x := tempBgScroll.x.asUInt
   //tempBgAttrs.scroll.x := 0
   //tempBgAttrs.scroll.x := (default -> True)
   //tempBgAttrs.scroll.y := 2
@@ -245,13 +201,30 @@ case class Gpu2dTest(
   tempBgEntry.dispFlip.x := False
   tempBgEntry.dispFlip.y := False
 
+  val rBgEntryMemIdx = Reg(SInt((params.bgEntryMemIdxWidth + 1) bits))
+    .init((1 << params.bgEntryMemIdxWidth) - 1)
+
   for (idx <- 0 to pop.bgEntryPushArr.size - 1) {
     val tempBgEntryPush = pop.bgEntryPushArr(idx)
     if (idx == 0) {
-      tempBgEntryPush.valid := True
-      tempBgEntryPush.payload.bgEntry := tempBgEntry
+      when (rBgEntryMemIdx === 0) {
+        tempBgEntryPush.payload.bgEntry := tempBgEntry
+      } otherwise {
+        tempBgEntryPush.payload.bgEntry := (
+          tempBgEntryPush.payload.bgEntry.getZero
+        )
+      }
       //tempBgEntryPush.payload.memIdx := 0x1
-      tempBgEntryPush.payload.memIdx := 0x0
+      //tempBgEntryPush.payload.memIdx := 0x0
+      tempBgEntryPush.payload.memIdx := rBgEntryMemIdx.asUInt.resized
+      when (!rBgEntryMemIdx.msb) {
+        tempBgEntryPush.valid := True
+        when (tempBgEntryPush.fire) {
+          rBgEntryMemIdx := rBgEntryMemIdx  - 1
+        }
+      } otherwise {
+        tempBgEntryPush.valid := False
+      }
     } else {
       //tempBgEntryPush.valid := False
       tempBgEntryPush.valid := True
@@ -462,45 +435,63 @@ case class Gpu2dTest(
       //tempObjAttrs.pos.x := 0
       //tempObjAttrs.pos.x := 1
       //tempObjAttrs.pos.x := 6
-      tempObjAttrs.pos.x := 7
+      //tempObjAttrs.pos.x := 7
+      tempObjAttrs.pos.x := (
+        //params.intnlFbSize2d.x - params.objTileSize2d.x //- 1
+        //params.intnlFbSize2d.x - params.objTileSize2d.x - 5
+        //params.intnlFbSize2d.x >> 1
+        //0x3e
+        0
+      )
+      //tempObjAttrs.pos.x := -1
       //tempObjAttrs.pos.x := 8
       //tempObjAttrs.pos.x := 3
       tempObjAttrs.pos.y := 8
       //tempObjAttrs.pos.y := 0
       //tempObjAttrs.prio := 0
-      tempObjAttrs.prio := 0
+      tempObjAttrs.prio := (
+        0
+        //1
+      )
       tempObjAttrs.size2d.x := params.objTileSize2d.x
       tempObjAttrs.size2d.y := params.objTileSize2d.y
       //tempObjAttrs.size2d.y := params.objTileSize2d.y - 1
       tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
       //tempObjAttrs := tempObjAttrs.getZero
-    } elsewhen (rObjAttrsCnt === 1) {
-      //tempObjAttrs.tileMemIdx := 1
-      tempObjAttrs.tileMemIdx := 2
-      //tempObjAttrs.tileMemIdx := 0
-      //tempObjAttrs.pos.x := 1
-      //tempObjAttrs.pos.x := 16
-      //tempObjAttrs.pos.x := 2
-      //tempObjAttrs.pos.x := 16
-      tempObjAttrs.pos.x := 9
-      //tempObjAttrs.pos.y := -1
-      //tempObjAttrs.pos.y := 8
-      tempObjAttrs.pos.y := 9
-      tempObjAttrs.prio := 0
-      tempObjAttrs.size2d.x := params.objTileSize2d.x
-      tempObjAttrs.size2d.y := params.objTileSize2d.y
-      tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-      //tempObjAttrs := tempObjAttrs.getZero
-    } elsewhen (rObjAttrsCnt === 2) {
-      tempObjAttrs.tileMemIdx := 3
-      tempObjAttrs.pos.x := 8
-      //tempObjAttrs.pos.x := 7
-      tempObjAttrs.pos.y := 8
-      tempObjAttrs.prio := 0
-      tempObjAttrs.size2d.x := params.objTileSize2d.x
-      tempObjAttrs.size2d.y := params.objTileSize2d.y
-      tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-      //tempObjAttrs := tempObjAttrs.getZero
+    //} elsewhen (rObjAttrsCnt === 1) {
+    //  //tempObjAttrs.tileMemIdx := 1
+    //  tempObjAttrs.tileMemIdx := 2
+    //  //tempObjAttrs.tileMemIdx := 0
+    //  //tempObjAttrs.pos.x := 1
+    //  //tempObjAttrs.pos.x := 16
+    //  //tempObjAttrs.pos.x := 2
+    //  //tempObjAttrs.pos.x := 16
+    //  tempObjAttrs.pos.x := 9
+    //  //tempObjAttrs.pos.x := 9
+    //  //tempObjAttrs.pos.y := -1
+    //  //tempObjAttrs.pos.y := 8
+    //  tempObjAttrs.pos.y := 9
+    //  tempObjAttrs.prio := (
+    //    //0
+    //    1
+    //  )
+    //  tempObjAttrs.size2d.x := params.objTileSize2d.x
+    //  tempObjAttrs.size2d.y := params.objTileSize2d.y
+    //  tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+    //  //tempObjAttrs := tempObjAttrs.getZero
+    //} elsewhen (rObjAttrsCnt === 2) {
+    //  tempObjAttrs.tileMemIdx := 3
+    //  tempObjAttrs.pos.x := 8
+    //  //tempObjAttrs.pos.x := 7
+    //  tempObjAttrs.pos.y := 8
+    //  tempObjAttrs.prio := (
+    //    0
+    //    //1
+    //  )
+    //  tempObjAttrs.size2d.x := params.objTileSize2d.x
+    //  tempObjAttrs.size2d.y := params.objTileSize2d.y
+    //  tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+    //  //tempObjAttrs := tempObjAttrs.getZero
     //} elsewhen (rObjAttrsCnt === 3) {
     //  //tempObjAttrs.tileMemIdx := 0
     //  //tempObjAttrs.pos.x := 8
@@ -513,7 +504,10 @@ case class Gpu2dTest(
       tempObjAttrs.tileMemIdx := 0
       tempObjAttrs.pos.x := -params.objTileSize2d.x
       tempObjAttrs.pos.y := 0
-      tempObjAttrs.prio := 1
+      tempObjAttrs.prio := (
+        0
+        //1
+      )
       tempObjAttrs.size2d.x := params.objTileSize2d.x
       tempObjAttrs.size2d.y := params.objTileSize2d.y
       tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero

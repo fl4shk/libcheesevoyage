@@ -861,7 +861,8 @@ case class AsyncReadFifo[
   dataType: HardType[T],
   depth: Int,
   //arrRamStyle: String="ultra",
-  arrRamStyle: String="block",
+  ///arrRamStyle: String="block",
+  arrRamStyle: String="auto",
 ) extends Component {
   val io = FifoIo(
     dataType=dataType(),
@@ -1050,7 +1051,7 @@ case class AsyncReadFifo[
       when (loc.headPlus1 === uintDepthAmtW) {
         loc.nextHead := 0x0
       } otherwise {
-        loc.nextHead := loc.headPlus1
+        loc.nextHead := loc.headPlus1(loc.nextHead.bitsRange)
       }
     } otherwise {
       loc.nextHead := loc.rHead
@@ -1061,7 +1062,7 @@ case class AsyncReadFifo[
       when (loc.tailPlus1 === uintDepthAmtW) {
         loc.nextTail := 0x0
       } otherwise {
-        loc.nextTail := loc.tailPlus1
+        loc.nextTail := loc.tailPlus1(loc.nextTail.bitsRange)
       }
     } otherwise {
       //loc.rdData := loc.rPastRdData

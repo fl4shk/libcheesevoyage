@@ -6,7 +6,131 @@ import spinal.lib._
 import spinal.core.formal._
 import scala.collection.mutable.ArrayBuffer
 //import scala.language.experimental.macros
+
 //import scala.reflect.macros.blackbox
+//object StmExtractPayloadField {
+//  def fromHost[
+//    FieldT <: Data,
+//
+//  ](
+//  ) = {
+//  }
+//}
+object StreamOptHsh {
+  def craftFromHostStream[
+    FieldT <: Data,
+    HostStmPayloadT <: Data,
+  ](
+    fieldType: HardType[FieldT],
+    optIncludeHsh: Boolean,
+    hostStm: Stream[HostStmPayloadT],
+  )(
+    getHostStmFieldFunc: (
+      Stream[HostStmPayloadT]
+    ) => FieldT
+  ): StreamOptHsh[FieldT] = {
+    val ret = StreamOptHsh(
+      fieldType=fieldType(),
+      optIncludeHsh=optIncludeHsh
+    )
+    if (optIncludeHsh) {
+      ret.valid := hostStm.valid
+      hostStm.ready := ret.ready
+    }
+    ret.field := getHostStmFieldFunc(hostStm)
+
+    ret
+  }
+  def craftFromDeviceStream[
+    FieldT <: Data,
+    DeviceStmPayloadT <: Data,
+  ](
+    fieldType: HardType[FieldT],
+    optIncludeHsh: Boolean,
+    deviceStm: Stream[DeviceStmPayloadT],
+  )(
+    getDeviceStmFieldFunc: (
+      Stream[DeviceStmPayloadT]
+    ) => FieldT
+  ): StreamOptHsh[FieldT] = {
+    val ret = StreamOptHsh(
+      fieldType=fieldType(),
+      optIncludeHsh=optIncludeHsh
+    )
+    if (optIncludeHsh) {
+      deviceStm.valid := ret.valid
+      ret.ready := deviceStm.ready
+    }
+    getDeviceStmFieldFunc(deviceStm) := ret.field
+
+    ret
+  }
+}
+
+case class StreamOptHsh[
+  FieldT <: Data
+](
+  fieldType: HardType[FieldT],
+
+  // whether to include `valid`/`ready`, which are handshaking signals
+  optIncludeHsh: Boolean,
+) extends Bundle with IMasterSlave {
+  val valid = (optIncludeHsh) generate Bool()
+  val ready = (optIncludeHsh) generate Bool()
+  val field = fieldType()
+
+  def asMaster(): Unit = {
+    out(
+      valid,
+      field
+    )
+    in(ready)
+  }
+
+  def toHostTranslateInto[
+    HostStmPayloadT <: Data,
+  ](
+    //hostStmPayload
+    hostStm: Stream[HostStmPayloadT]
+  )(
+    hostStmPayloadFieldDriveFunc: (
+      FieldT,
+      //Stream[HostStmPayloadT],
+      HostStmPayloadT,
+    ) => FieldT
+  ): Unit = {
+    if (optIncludeHsh) {
+      hostStm.valid := this.valid
+      this.ready := hostStm.ready
+    }
+    hostStmPayloadFieldDriveFunc(
+      this.field,
+      hostStm.payload,
+    )
+  }
+  def toDeviceTranslateInto[
+    DeviceStmPayloadT <: Data,
+  ](
+    //deviceStmPayload
+    deviceStm: Stream[DeviceStmPayloadT]
+  )(
+    deviceStmPayloadFieldDriveFunc: (
+      //StreamOptHsh[FieldT],
+      FieldT,
+      //Stream[DeviceStmPayloadT],
+      DeviceStmPayloadT,
+    ) => FieldT
+  ): Unit = {
+    if (optIncludeHsh) {
+      this.valid := deviceStm.valid
+      deviceStm.ready := this.ready
+    }
+    deviceStmPayloadFieldDriveFunc(
+      this.field,
+      deviceStm.payload,
+    )
+  }
+}
 
 //object GenericHandlePipe {
 //  def apply[
@@ -694,8 +818,8 @@ case class PipeSkidBuf[
   //optIncludeReadyBusy: Boolean=false,
   optIncludeBusy: Boolean=false,
   optPassthrough: Boolean=false,
-  //optUseOldCode: Boolean=false,
-  optUseOldCode: Boolean=true,
+  optUseOldCode: Boolean=false,
+  //optUseOldCode: Boolean=true,
   //optTieIfwdValid: Boolean=false,
   //optFormal: Boolean=false,
 ) extends Component {
