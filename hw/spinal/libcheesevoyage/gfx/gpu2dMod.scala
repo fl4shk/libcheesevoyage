@@ -1477,22 +1477,23 @@ case class Gpu2d(
     //  depth=combineRdSubLineFifoDepth,
     //)
     val bgSubLineMemArr = new ArrayBuffer[Mem[Vec[BgSubLineMemEntry]]]()
-    val rdBgSubLineMemArr = (
-      new ArrayBuffer[MultiMemReadSync[Vec[BgSubLineMemEntry]]]()
-    )
-    object RdBgSubLineMemArrInfo {
-      //def wrBgIdx = 0
-      def combineIdx = 0
-      def numReaders = 1
-    }
+    //val rdBgSubLineMemArr = (
+    //  new ArrayBuffer[MultiMemReadSync[Vec[BgSubLineMemEntry]]]()
+    //)
+    //object RdBgSubLineMemArrInfo {
+    //  //def wrBgIdx = 0
+    //  def combineIdx = 0
+    //  def numReaders = 1
+    //}
     val objSubLineMemArr = new ArrayBuffer[Mem[Vec[ObjSubLineMemEntry]]]()
     val rdObjSubLineMemArr = (
       new ArrayBuffer[MultiMemReadSync[Vec[ObjSubLineMemEntry]]]()
     )
     object RdObjSubLineMemArrInfo {
       def wrObjIdx = 0
-      def combineIdx = 1
-      def numReaders = 2
+      def numReaders = 1
+      //def combineIdx = 1
+      //def numReaders = 2
     }
 
     //val bgSubLineMemA2d = (
@@ -1531,19 +1532,18 @@ case class Gpu2d(
         .addAttribute("ram_style", params.lineArrRamStyle)
         //.addAttribute("ram_mode", "tdp") // true dual-port
         .setName(f"bgLineMemArr_$idx")
-      rdBgSubLineMemArr += MultiMemReadSync(
-        someMem=bgSubLineMemArr(idx),
-        numReaders=RdBgSubLineMemArrInfo.numReaders,
-      )
-
-        .setName(f"rdBgSubLineMemArr_$idx")
-      for (rdIdx <- 0 until rdBgSubLineMemArr(idx).numReaders) {
-        if (rdIdx != RdBgSubLineMemArrInfo.combineIdx) {
-          rdBgSubLineMemArr(idx).readSync(idx=rdIdx)
-          rdBgSubLineMemArr(idx).rdAllowedVec(rdIdx) := True
-          rdBgSubLineMemArr(idx).enVec(rdIdx) := True
-        }
-      }
+      //rdBgSubLineMemArr += MultiMemReadSync(
+      //  someMem=bgSubLineMemArr(idx),
+      //  numReaders=RdBgSubLineMemArrInfo.numReaders,
+      //)
+      //  .setName(f"rdBgSubLineMemArr_$idx")
+      //for (rdIdx <- 0 until rdBgSubLineMemArr(idx).numReaders) {
+      //  if (rdIdx != RdBgSubLineMemArrInfo.combineIdx) {
+      //    rdBgSubLineMemArr(idx).readSync(idx=rdIdx)
+      //    rdBgSubLineMemArr(idx).rdAllowedVec(rdIdx) := True
+      //    rdBgSubLineMemArr(idx).enVec(rdIdx) := True
+      //  }
+      //}
 
       objSubLineMemArr += Mem(
         //wordType=Rgb(params.rgbConfig),
@@ -1571,11 +1571,11 @@ case class Gpu2d(
       )
         .setName(f"rdObjSubLineMemArr_$idx")
       for (rdIdx <- 0 until rdObjSubLineMemArr(idx).numReaders) {
-        if (rdIdx != RdObjSubLineMemArrInfo.combineIdx) {
+        //if (rdIdx != RdObjSubLineMemArrInfo.combineIdx) {
           rdObjSubLineMemArr(idx).readSync(idx=rdIdx)
-          rdObjSubLineMemArr(idx).rdAllowedVec(rdIdx) := True
+          //rdObjSubLineMemArr(idx).rdAllowedVec(rdIdx) := True
           rdObjSubLineMemArr(idx).enVec(rdIdx) := True
-        }
+        //}
       }
     }
     // BEGIN: old, non synthesizable code (too many write ports...)
@@ -3206,7 +3206,7 @@ case class Gpu2d(
       def bakCntMinus1 = stage0.bakCntMinus1
       def bakCntWillBeDone() = stage0.bakCntWillBeDone()
 
-      case class Stage1() extends Bundle {
+      case class Stage2() extends Bundle {
         //val bgRdLineMemEntry = BgSubLineMemEntry()
         //val objRdLineMemEntry = ObjSubLineMemEntry()
         //val ext = CombinePipeOut1Ext()
@@ -3217,7 +3217,7 @@ case class Gpu2d(
           ObjSubLineMemEntry()
         )
       }
-      case class Stage2() extends Bundle {
+      case class Stage3() extends Bundle {
         val ext = CombinePipeOut2Ext()
       }
       //case class Stage3() extends Bundle {
@@ -3235,8 +3235,8 @@ case class Gpu2d(
         //val objWrLineMemEntry = ObjSubLineMemEntry()
       }
       case class PostStage0() extends Bundle {
-        val stage1 = Stage1()
         val stage2 = Stage2()
+        val stage3 = Stage3()
         //val stage3 = Stage3()
         val stage5 = Stage5()
         val stage6 = Stage6()
@@ -3244,11 +3244,11 @@ case class Gpu2d(
       }
       val postStage0 = PostStage0()
 
-      def stage1 = postStage0.stage1
+      def stage2 = postStage0.stage2
       //def lineMemIdx = stage1.lineMemIdx
       //def bgRdLineMemEntry = stage1.bgRdLineMemEntry
       //def objRdLineMemEntry = stage1.objRdLineMemEntry
-      def stage2 = postStage0.stage2
+      def stage3 = postStage0.stage3
       //def stage3 = postStage0.stage3
 
       def stage5 = postStage0.stage5
@@ -4042,8 +4042,12 @@ case class Gpu2d(
 
     // The logic is identical, so we only need one `valid` or `ready`
     // signal for the below two assignments
-    combinePipeIn(1).ready := combinePipeIn1BgVec(0).ready
-    combinePipeOut(1).valid := combinePipeOut1BgVec(0).valid
+    combinePipeIn(1).ready := combinePipeIn1BgVec(
+      rCombineLineMemArrIdx
+    ).ready
+    combinePipeOut(1).valid := combinePipeOut1BgVec(
+      rCombineLineMemArrIdx
+    ).valid
 
     combinePipeOut(1).payload := combinePipeIn(1).payload
     combinePipeOut(1).payload.allowOverride
@@ -4066,41 +4070,86 @@ case class Gpu2d(
       combinePipeIn1BgMemReadSyncArr += MemReadSyncIntoPipe(
         //pipeIn=combinePipeIn(1),
         pipeIn=combinePipeIn1BgVec(jdx),
-        inpAddr=(
-          params.getBgSubLineMemArrIdx(
-            addr=(
-              //combinePipeIn1BgVec(jdx).cnt
-              combinePipeIn(1).cnt,
+        //inpAddr=(
+        //  params.getBgSubLineMemArrIdx(
+        //    addr=(
+        //      combinePipeIn1BgVec(jdx).cnt
+        //      //combinePipeIn(1)
+        //      //combinePipeIn1BgVec(jdx).cnt
+        //      (
+        //        log2Up(params.oneLineMemSize) - 1 downto 0
+        //      ),
+        //    )
+        //  )
+        //),
+        pipeOut=combinePipeOut1BgVec(jdx),
+        //outpRdData=combinePipeOut1BgVec(jdx).stage2.rdBg,
+        //multiRd=rdBgSubLineMemArr(jdx),
+        //rdIdx=RdBgSubLineMemArrInfo.combineIdx,
+        someMem=bgSubLineMemArr(jdx)
+      )(
+        getInpAddrFunc=(
+          payload => params.getBgSubLineMemArrIdx(
+            addr=payload.cnt(
+              log2Up(params.oneLineMemSize) - 1 downto 0
             )
           )
         ),
-        pipeOut=combinePipeOut1BgVec(jdx),
-        outpRdData=combinePipeOut1BgVec(jdx).stage1.rdBg,
-        multiRd=rdBgSubLineMemArr(jdx),
-        rdIdx=RdBgSubLineMemArrInfo.combineIdx,
+        getOutpRdDataFunc=(
+          payload => payload.stage2.rdBg
+        )
       )
-      rdBgSubLineMemArr(jdx).rdAllowedVec(
-        RdBgSubLineMemArrInfo.combineIdx,
-      ) := True
+        .setName(f"combinePipeIn1BgMemReadSyncArr_$jdx")
+      //rdBgSubLineMemArr(jdx).rdAllowedVec(
+      //  RdBgSubLineMemArrInfo.combineIdx,
+      //) := True
 
       combinePipeIn1ObjMemReadSyncArr += MemReadSyncIntoPipe(
         //pipeIn=combinePipeIn(1),
         pipeIn=combinePipeIn1ObjVec(jdx),
         //inpAddr=combinePipeIn1Obj.lineMemIdx,
-        inpAddr=params.getObjSubLineMemArrIdx(
-          addr=(
-            //combinePipeIn1ObjVec(jdx).cnt
-            combinePipeIn(1).cnt,
+        //inpAddr=params.getObjSubLineMemArrIdx(
+        //  addr=(
+        //    //combinePipeIn1ObjVec(jdx).cnt
+        //    combinePipeIn(1).cnt
+        //    (
+        //      log2Up(params.oneLineMemSize) - 1 downto 0
+        //    ),
+        //  )
+        //),
+        pipeOut=combinePipeOut1ObjVec(jdx),
+        //outpRdData=combinePipeOut1ObjVec(jdx).stage2.rdObj,
+        //multiRd=rdObjSubLineMemArr(jdx),
+        //rdIdx=RdObjSubLineMemArrInfo.combineIdx,
+        someMem=objSubLineMemArr(jdx),
+      )(
+        getInpAddrFunc=(
+          payload => params.getObjSubLineMemArrIdx(
+            addr=payload.cnt(
+              log2Up(params.oneLineMemSize) - 1 downto 0
+            )
           )
         ),
-        pipeOut=combinePipeOut1ObjVec(jdx),
-        outpRdData=combinePipeOut1ObjVec(jdx).stage1.rdObj,
-        multiRd=rdObjSubLineMemArr(jdx),
-        rdIdx=RdObjSubLineMemArrInfo.combineIdx,
+        getOutpRdDataFunc=(
+          payload => payload.stage2.rdObj
+        )
       )
-      rdObjSubLineMemArr(jdx).rdAllowedVec(
-        RdObjSubLineMemArrInfo.combineIdx,
-      ) := True
+        .setName(f"combinePipeIn1ObjMemReadSyncArr_$jdx")
+      //rdObjSubLineMemArr(jdx).rdAllowedVec(
+      //  RdObjSubLineMemArrInfo.combineIdx,
+      //) := True
+    }
+    switch (rCombineLineMemArrIdx) {
+      for (jdx <- 0 until combinePipe1BgObjVecSize) {
+        is (jdx) {
+          combinePipeOut(1).stage2.rdBg := (
+            combinePipeOut1BgVec(jdx).stage2.rdBg
+          )
+          combinePipeOut(1).stage2.rdObj := (
+            combinePipeOut1ObjVec(jdx).stage2.rdObj
+          )
+        }
+      }
     }
     //rCombineChangingRow := combinePipeLast.bakCntWillBeDone()
     ////when (nextIntnlChangingRow)
@@ -4483,9 +4532,18 @@ case class Gpu2d(
         //  //combinePipeIn(idx) <-/< combinePipeOut(idx - 1).haltWhen(
         //  //  haltCombinePipeIn2
         //  //)
-        //} else {
-          combinePipeIn(idx) <-/< combinePipeOut(idx - 1)
         //}
+        if (
+          (
+            idx == 1
+          ) || (
+            idx - 1 == 1
+          )
+        ) {
+          combinePipeIn(idx) << combinePipeOut(idx - 1)
+        } else {
+          combinePipeIn(idx) <-/< combinePipeOut(idx - 1)
+        }
         //--------
       }
       if (
@@ -7059,6 +7117,7 @@ case class Gpu2d(
       HandleDualPipe(
         stageData=stageData.craft(
           1
+          //2
           //wrBgObjPipeNumStages + 1
         )
       )(
@@ -7066,227 +7125,227 @@ case class Gpu2d(
           stageData: DualPipeStageData[Stream[CombinePipePayload]],
           idx: Int,
         ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
+          //val tempInp = stageData.pipeIn(idx)
+          //val tempOutp = stageData.pipeOut(idx)
 
-          //val tempCombineLineMemIdx = createTempCnt(
-          //  tempOutp=tempOutp,
-          //  pipeStageIdx=1
+          ////val tempCombineLineMemIdx = createTempCnt(
+          ////  tempOutp=tempOutp,
+          ////  pipeStageIdx=1
+          ////)
+
+          ////def outpExt = (
+          ////  tempOutp.stage1.ext
+          ////  //rCombinePipeOut1Ext
+          ////)
+          ////def cntFifoDepth = 3
+          ////def cntFifoStallGeAmountCanPop = 1
+          ////val cntFifo = AsyncReadFifo(
+          ////  dataType=UInt(tempInp.cnt.getWidth bits),
+          ////  depth=cntFifoDepth,
+          ////)
+          ////when (tempInp.cnt + 1 >= params.oneLineMemSize) {
+          ////}
+          ////val rTempCombineLineMemIdx = KeepAttribute(
+          ////  Reg(
+          ////    UInt(
+          ////      log2Up(
+          ////        //params.oneLineMemSize
+          ////        params.oneLineMemSize
+          ////      ) bits
+          ////    )
+          ////  )
+          ////    .init(S"2'd-1".resized.asUInt)
+          ////    .setName("dbgTestCombinePipe1_tempCombineLineMemIdx")
+          ////    //.setName("tempCombineLineMemIdx")
+          ////)
+          //val tempCombineLineMemIdx = UInt(
+          //  log2Up(params.oneLineMemSize) bits
+          //)
+          //  .setName("dbgTestCombinePipe1_tempCombineLineMemIdx")
+          //tempCombineLineMemIdx := tempInp.cnt(
+          //  tempCombineLineMemIdx.bitsRange
+          //)
+          ////val rTempCombineLineMemIdx = Reg(cloneOf(tempOutp.lineMemIdx))
+          ////  .init(0x0)
+          ////--------
+          ////val nextTempCombineLineMemIdx = cloneOf(tempOutp.lineMemIdx)
+          ////val rTempCombineLineMemIdx = RegNext(nextTempCombineLineMemIdx)
+          ////  .init(0x0)
+          ////--------
+          ////when (intnlChangingRowRe) {
+          ////  tempCombineLineMemIdx := 0
+          ////} elsewhen (tempOutp.fire) {
+          ////  tempCombineLineMemIdx := tempCombineLineMemIdx + 1
+          ////}
+
+          ////when (!(tempOutp.valid && !tempOutp.ready)) {
+          ////  tempCombineLineMemIdx := tempInp.cnt(
+          ////    tempCombineLineMemIdx.bitsRange
+          ////  )
+          ////} otherwise {
+          ////  tempCombineLineMemIdx := RegNext(tempCombineLineMemIdx)
+          ////}
+
+          ////when (
+          ////  tempInp.fire
+          ////  &&
+          ////  tempInp.bakCntWillBeDone()
+          ////) {
+          ////  //tempCombineLineMemIdx := 0
+          ////  rTempCombineLineMemIdx := 0
+          ////} elsewhen (tempOutp.fire) {
+          ////  rTempCombineLineMemIdx := rTempCombineLineMemIdx + 1
+          ////}
+          ////--------
+          ////when (tempOutp.fire) {
+          ////  when (tempInp.bakCntWillBeDone()) {
+          ////    nextTempCombineLineMemIdx := 0x0
+          ////  } otherwise {
+          ////    nextTempCombineLineMemIdx := rTempCombineLineMemIdx + 1
+          ////  }
+          ////}
+          ////--------
+
+          ////when (
+          ////  //tempOutp.fire
+          ////  //tempOutp.ready
+          ////  //tempOutp.ready
+          ////  !(tempOutp.valid && !tempOutp.ready)
+          ////) {
+          ////  tempCombineLineMemIdx := (
+          ////    tempOutp.cnt(
+          ////      //log2Up(
+          ////      //  //params.oneLineMemSize
+          ////      //  params.oneLineMemSize
+          ////      //) - 1
+          ////      //downto 0
+          ////      tempCombineLineMemIdx.bitsRange
+          ////    )
+          ////  )
+          ////} otherwise {
+          ////  tempCombineLineMemIdx := RegNext(tempCombineLineMemIdx)
+          ////}
+          //def bgSubLineMemArrIdx = params.getBgSubLineMemArrIdx(
+          //  addr=(
+          //    //rTempCombineLineMemIdx
+          //    tempCombineLineMemIdx
+          //  )
+          //)
+          //val dbgTestCombinePipe1_bgSubLineMemArrIdx = UInt(
+          //  bgSubLineMemArrIdx.getWidth bits
+          //)
+          //  .setName("dbgTestCombinePipe1_bgSubLineMemArrIdx")
+          //dbgTestCombinePipe1_bgSubLineMemArrIdx := (
+          //  bgSubLineMemArrIdx
           //)
 
-          //def outpExt = (
-          //  tempOutp.stage1.ext
-          //  //rCombinePipeOut1Ext
-          //)
-          //def cntFifoDepth = 3
-          //def cntFifoStallGeAmountCanPop = 1
-          //val cntFifo = AsyncReadFifo(
-          //  dataType=UInt(tempInp.cnt.getWidth bits),
-          //  depth=cntFifoDepth,
-          //)
-          //when (tempInp.cnt + 1 >= params.oneLineMemSize) {
-          //}
-          //val rTempCombineLineMemIdx = KeepAttribute(
-          //  Reg(
-          //    UInt(
-          //      log2Up(
-          //        //params.oneLineMemSize
-          //        params.oneLineMemSize
-          //      ) bits
+          //def objSubLineMemArrIdx = (
+          //  params.getObjSubLineMemArrIdx(
+          //    addr=(
+          //      //rTempCombineLineMemIdx
+          //      tempCombineLineMemIdx
           //    )
           //  )
-          //    .init(S"2'd-1".resized.asUInt)
-          //    .setName("dbgTestCombinePipe1_tempCombineLineMemIdx")
-          //    //.setName("tempCombineLineMemIdx")
           //)
-          val tempCombineLineMemIdx = UInt(
-            log2Up(params.oneLineMemSize) bits
-          )
-            .setName("dbgTestCombinePipe1_tempCombineLineMemIdx")
-          tempCombineLineMemIdx := tempInp.cnt(
-            tempCombineLineMemIdx.bitsRange
-          )
-          //val rTempCombineLineMemIdx = Reg(cloneOf(tempOutp.lineMemIdx))
-          //  .init(0x0)
-          //--------
-          //val nextTempCombineLineMemIdx = cloneOf(tempOutp.lineMemIdx)
-          //val rTempCombineLineMemIdx = RegNext(nextTempCombineLineMemIdx)
-          //  .init(0x0)
-          //--------
-          //when (intnlChangingRowRe) {
-          //  tempCombineLineMemIdx := 0
-          //} elsewhen (tempOutp.fire) {
-          //  tempCombineLineMemIdx := tempCombineLineMemIdx + 1
-          //}
+          //val dbgTestCombinePipe1_objSubLineMemArrIdx = UInt(
+          //  objSubLineMemArrIdx.getWidth bits
+          //)
+          //  .setName("dbgTestCombinePipe1_objSubLineMemArrIdx")
+          //dbgTestCombinePipe1_objSubLineMemArrIdx := (
+          //  objSubLineMemArrIdx
+          //)
 
-          //when (!(tempOutp.valid && !tempOutp.ready)) {
-          //  tempCombineLineMemIdx := tempInp.cnt(
-          //    tempCombineLineMemIdx.bitsRange
-          //  )
-          //} otherwise {
-          //  tempCombineLineMemIdx := RegNext(tempCombineLineMemIdx)
-          //}
-
-          //when (
-          //  tempInp.fire
-          //  &&
-          //  tempInp.bakCntWillBeDone()
-          //) {
-          //  //tempCombineLineMemIdx := 0
-          //  rTempCombineLineMemIdx := 0
-          //} elsewhen (tempOutp.fire) {
-          //  rTempCombineLineMemIdx := rTempCombineLineMemIdx + 1
-          //}
-          //--------
-          //when (tempOutp.fire) {
-          //  when (tempInp.bakCntWillBeDone()) {
-          //    nextTempCombineLineMemIdx := 0x0
-          //  } otherwise {
-          //    nextTempCombineLineMemIdx := rTempCombineLineMemIdx + 1
+          //when (clockDomain.isResetActive) {
+          //  tempOutp.stage2 := tempOutp.stage2.getZero
+          //  ////combinePipeStage1Busy := False
+          //  ////lineFifo.io.pop.ready := True
+          //  ////lineFifo.io.pop.ready := False
+          //  ////objLineFifo.io.pop.ready := False
+          //  //tempOutp.lineMemIdx := 0
+          //  for (jdx <- 0 until 1 << rCombineLineMemArrIdx.getWidth) {
+          //    rdBgSubLineMemArr(jdx).addrVec(
+          //      RdBgSubLineMemArrInfo.combineIdx
+          //    ) := 0x0
+          //    rdObjSubLineMemArr(jdx).addrVec(
+          //      RdObjSubLineMemArrInfo.combineIdx
+          //    ) := 0x0
           //  }
-          //}
-          //--------
-
-          //when (
-          //  //tempOutp.fire
-          //  //tempOutp.ready
-          //  //tempOutp.ready
-          //  !(tempOutp.valid && !tempOutp.ready)
-          //) {
-          //  tempCombineLineMemIdx := (
-          //    tempOutp.cnt(
-          //      //log2Up(
-          //      //  //params.oneLineMemSize
-          //      //  params.oneLineMemSize
-          //      //) - 1
-          //      //downto 0
-          //      tempCombineLineMemIdx.bitsRange
-          //    )
-          //  )
           //} otherwise {
-          //  tempCombineLineMemIdx := RegNext(tempCombineLineMemIdx)
+          //  //tempOutp.lineMemIdx := (
+          //  //  //rTempCombineLineMemIdx
+          //  //  tempCombineLineMemIdx
+          //  //  //tempOutp.cnt(
+          //  //  //  tempOutp.lineMemIdx.bitsRange
+          //  //  //)
+          //  //)
+          //  //tempOutp.stage1.lineMemIdx := 0
+          //  //when (
+          //  //  //tempOutp.fire
+          //  //  //tempOutp.valid
+          //  //  tempInp.fire
+          //  //) {
+          //  //--------
+          //  // BEGIN: new code, with `readSync`
+          //  switch (rCombineLineMemArrIdx) {
+          //    for (jdx <- 0 until rdBgSubLineMemArr.size) {
+          //      is (jdx) {
+          //        tempOutp.stage2.rdBg := (
+          //          combinePipeOut1BgVec(jdx).stage2.rdBg
+          //        )
+          //        tempOutp.stage2.rdObj := (
+          //          combinePipeOut1ObjVec(jdx).stage2.rdObj
+          //        )
+          //      }
+          //    }
+          //  }
+          //  // END: new code, with `readSync`
+          //  //for (jdx <- 0 until 1 << rCombineLineMemArrIdx.getWidth) {
+          //  ////haltCombinePipe2FifoPush := 
+          //  //  //when (!haltCombinePipe2) {
+          //  //  //  haltCombinePipe2FifoPush 
+          //  //  //}
+
+          //  //  //when (
+          //  //  //  //True
+          //  //  //  //tempOutp.fire
+          //  //  //  //tempInp.fire
+          //  //  //  //!haltCombinePipe2
+          //  //  //  //&& combinePipe2Fifo.push.fire
+          //  //  //  //tempOutp.ready
+          //  //  //  //tempInp.fire
+          //  //  //  tempOutp.fire
+          //  //  //) {
+          //  //    //--------
+          //  //    // We no longer need the `switch` statement here since we
+          //  //    // are just reading
+          //  //    //rdBgSubLineMemArr(jdx).addrVec(
+          //  //    //  RdBgSubLineMemArrInfo.combineIdx
+          //  //    //) := bgSubLineMemArrIdx
+          //  //    //rdObjSubLineMemArr(jdx).addrVec(
+          //  //    //  RdObjSubLineMemArrInfo.combineIdx
+          //  //    //) := objSubLineMemArrIdx
+          //  //    //--------
+          //  //  //} otherwise {
+          //  //  //  rdBgSubLineMemArr(jdx).addrVec(
+          //  //  //    RdBgSubLineMemArrInfo.combineIdx
+          //  //  //  ) := RegNext(
+          //  //  //    rdBgSubLineMemArr(jdx).addrVec(
+          //  //  //      RdBgSubLineMemArrInfo.combineIdx
+          //  //  //    )
+          //  //  //  )
+          //  //  //  rdObjSubLineMemArr(jdx).addrVec(
+          //  //  //    RdObjSubLineMemArrInfo.combineIdx
+          //  //  //  ) := RegNext(
+          //  //  //    rdObjSubLineMemArr(jdx).addrVec(
+          //  //  //      RdObjSubLineMemArrInfo.combineIdx
+          //  //  //    )
+          //  //  //  )
+          //  //  //}
+          //  //}
+          //  //--------
           //}
-          def bgSubLineMemArrIdx = params.getBgSubLineMemArrIdx(
-            addr=(
-              //rTempCombineLineMemIdx
-              tempCombineLineMemIdx
-            )
-          )
-          val dbgTestCombinePipe1_bgSubLineMemArrIdx = UInt(
-            bgSubLineMemArrIdx.getWidth bits
-          )
-            .setName("dbgTestCombinePipe1_bgSubLineMemArrIdx")
-          dbgTestCombinePipe1_bgSubLineMemArrIdx := (
-            bgSubLineMemArrIdx
-          )
-
-          def objSubLineMemArrIdx = (
-            params.getObjSubLineMemArrIdx(
-              addr=(
-                //rTempCombineLineMemIdx
-                tempCombineLineMemIdx
-              )
-            )
-          )
-          val dbgTestCombinePipe1_objSubLineMemArrIdx = UInt(
-            objSubLineMemArrIdx.getWidth bits
-          )
-            .setName("dbgTestCombinePipe1_objSubLineMemArrIdx")
-          dbgTestCombinePipe1_objSubLineMemArrIdx := (
-            objSubLineMemArrIdx
-          )
-
-          when (clockDomain.isResetActive) {
-            tempOutp.stage1 := tempOutp.stage1.getZero
-            ////combinePipeStage1Busy := False
-            ////lineFifo.io.pop.ready := True
-            ////lineFifo.io.pop.ready := False
-            ////objLineFifo.io.pop.ready := False
-            //tempOutp.lineMemIdx := 0
-            for (jdx <- 0 until 1 << rCombineLineMemArrIdx.getWidth) {
-              rdBgSubLineMemArr(jdx).addrVec(
-                RdBgSubLineMemArrInfo.combineIdx
-              ) := 0x0
-              rdObjSubLineMemArr(jdx).addrVec(
-                RdObjSubLineMemArrInfo.combineIdx
-              ) := 0x0
-            }
-          } otherwise {
-            //tempOutp.lineMemIdx := (
-            //  //rTempCombineLineMemIdx
-            //  tempCombineLineMemIdx
-            //  //tempOutp.cnt(
-            //  //  tempOutp.lineMemIdx.bitsRange
-            //  //)
-            //)
-            //tempOutp.stage1.lineMemIdx := 0
-            //when (
-            //  //tempOutp.fire
-            //  //tempOutp.valid
-            //  tempInp.fire
-            //) {
-            //--------
-            // BEGIN: new code, with `readSync`
-            switch (rCombineLineMemArrIdx) {
-              for (jdx <- 0 until rdBgSubLineMemArr.size) {
-                is (jdx) {
-                  tempOutp.stage1.rdBg := (
-                    combinePipeOut1BgVec(jdx).stage1.rdBg
-                  )
-                  tempOutp.stage1.rdObj := (
-                    combinePipeOut1ObjVec(jdx).stage1.rdObj
-                  )
-                }
-              }
-            }
-            // END: new code, with `readSync`
-            //for (jdx <- 0 until 1 << rCombineLineMemArrIdx.getWidth) {
-            ////haltCombinePipe2FifoPush := 
-            //  //when (!haltCombinePipe2) {
-            //  //  haltCombinePipe2FifoPush 
-            //  //}
-
-            //  //when (
-            //  //  //True
-            //  //  //tempOutp.fire
-            //  //  //tempInp.fire
-            //  //  //!haltCombinePipe2
-            //  //  //&& combinePipe2Fifo.push.fire
-            //  //  //tempOutp.ready
-            //  //  //tempInp.fire
-            //  //  tempOutp.fire
-            //  //) {
-            //    //--------
-            //    // We no longer need the `switch` statement here since we
-            //    // are just reading
-            //    //rdBgSubLineMemArr(jdx).addrVec(
-            //    //  RdBgSubLineMemArrInfo.combineIdx
-            //    //) := bgSubLineMemArrIdx
-            //    //rdObjSubLineMemArr(jdx).addrVec(
-            //    //  RdObjSubLineMemArrInfo.combineIdx
-            //    //) := objSubLineMemArrIdx
-            //    //--------
-            //  //} otherwise {
-            //  //  rdBgSubLineMemArr(jdx).addrVec(
-            //  //    RdBgSubLineMemArrInfo.combineIdx
-            //  //  ) := RegNext(
-            //  //    rdBgSubLineMemArr(jdx).addrVec(
-            //  //      RdBgSubLineMemArrInfo.combineIdx
-            //  //    )
-            //  //  )
-            //  //  rdObjSubLineMemArr(jdx).addrVec(
-            //  //    RdObjSubLineMemArrInfo.combineIdx
-            //  //  ) := RegNext(
-            //  //    rdObjSubLineMemArr(jdx).addrVec(
-            //  //      RdObjSubLineMemArrInfo.combineIdx
-            //  //    )
-            //  //  )
-            //  //}
-            //}
-            //--------
-          }
-          //tempOut.stage0 := tempInp.stage0
-          //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
+          ////tempOut.stage0 := tempInp.stage0
+          ////stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
         },
         copyOnlyFunc=(
           stageData: DualPipeStageData[Stream[CombinePipePayload]],
@@ -7299,15 +7358,15 @@ case class Gpu2d(
           val tempOutp = stageData.pipeOut(idx)
 
           when (clockDomain.isResetActive) {
-            tempOutp.stage1 := tempOutp.stage1.getZero
+            tempOutp.stage2 := tempOutp.stage2.getZero
           } otherwise {
-            tempOutp.stage1 := tempInp.stage1
+            tempOutp.stage2 := tempInp.stage2
           }
         },
       )
       HandleDualPipe(
         stageData=stageData.craft(
-          2
+          3
           //4
         )
       )(
@@ -7410,7 +7469,8 @@ case class Gpu2d(
           //}
           def myLineMemIdx = (
             //combinePipeIn2PxReadFifo.io.pop.lineMemIdx
-            tempInp.lineMemIdx
+            //tempInp.lineMemIdx
+            tempInp.cnt
           )
           def bgSubLineMemArrIdx = params.getBgSubLineMemArrIdx(
             addr=(
@@ -7482,7 +7542,7 @@ case class Gpu2d(
             ////lineFifo.io.pop.ready := True
             ////lineFifo.io.pop.ready := False
             ////objLineFifo.io.pop.ready := False
-            tempOutp.stage2 := tempOutp.stage2.getZero
+            tempOutp.stage3 := tempOutp.stage3.getZero
           } otherwise {
             switch (rCombineLineMemArrIdx) {
               for (jdx <- 0 until 1 << rCombineLineMemArrIdx.getWidth) {
@@ -7525,7 +7585,7 @@ case class Gpu2d(
                       //  RdBgSubLineMemArrInfo.combineIdx
                       //)
                       ////combinePipeIn2PxReadFifo.io.pop.rdBg
-                      tempInp.stage1.rdBg
+                      tempInp.stage2.rdBg
                     )
                     def tempRdObj = (
                       //rdObjSubLineMemArr(jdx).dataVec(
@@ -7533,12 +7593,12 @@ case class Gpu2d(
                       //)
                       ////combinePipeIn2PxReadFifo.io.pop.rdObj
                       //combinePipeIn1ObjMemReadSyncArr
-                      tempInp.stage1.rdObj
+                      tempInp.stage2.rdObj
                     )
-                    tempOutp.stage2.ext.bgRdSubLineMemEntry := (
+                    tempOutp.stage3.ext.bgRdSubLineMemEntry := (
                       tempRdBg(bgSubLineMemArrElemIdx)
                     )
-                    tempOutp.stage2.ext.objRdSubLineMemEntry := (
+                    tempOutp.stage3.ext.objRdSubLineMemEntry := (
                       tempRdObj(objSubLineMemArrElemIdx)
                     )
                   //} otherwise {
@@ -7554,12 +7614,12 @@ case class Gpu2d(
                   // END: new code, for reading synchronously
                   //--------
                   // BEGIN: old-style code, for reading asynchronously
-                  //tempOutp.stage2.ext.bgRdSubLineMemEntry := (
+                  //tempOutp.stage3.ext.bgRdSubLineMemEntry := (
                   //  bgSubLineMemArr(jdx).readAsync(
                   //    bgSubLineMemArrIdx
                   //  )(bgSubLineMemArrElemIdx)
                   //)
-                  //tempOutp.stage2.ext.objRdSubLineMemEntry := (
+                  //tempOutp.stage3.ext.objRdSubLineMemEntry := (
                   //  objSubLineMemArr(jdx).readAsync(
                   //    objSubLineMemArrIdx
                   //  )(objSubLineMemArrElemIdx)
@@ -7584,9 +7644,9 @@ case class Gpu2d(
           val tempOutp = stageData.pipeOut(idx)
 
           when (clockDomain.isResetActive) {
-            tempOutp.stage2 := tempOutp.stage2.getZero
+            tempOutp.stage3 := tempOutp.stage3.getZero
           } otherwise {
-            tempOutp.stage2 := tempInp.stage2
+            tempOutp.stage3 := tempInp.stage3
           }
         },
       )
@@ -7607,7 +7667,7 @@ case class Gpu2d(
 
           def inpExt = (
             //tempInp.stage1.ext
-            tempInp.stage2.ext
+            tempInp.stage3.ext
           )
 
 
@@ -7705,7 +7765,7 @@ case class Gpu2d(
 
           def inpExt = (
             //tempInp.stage1.ext
-            tempInp.stage2.ext
+            tempInp.stage3.ext
           )
 
           // BEGIN: Debug comment this out

@@ -24,19 +24,12 @@ case class MultiMemReadSync[
   val addrVec = Vec.fill(numReaders)(UInt(addrWidth bits))
   val dataVec = Vec.fill(numReaders)(dataType())
   val enVec = (!alwaysEn) generate Vec.fill(numReaders)(Bool())
-  val rdAllowedVec = Vec.fill(numReaders)(Bool())
-
-  def checkIdx(
-    idx: Int,
-  ): Unit = {
-    assert(idx >= 0 && idx < numReaders)
-  }
+  //val rdAllowedVec = Vec.fill(numReaders)(Bool())
 
   def readSync(
     //addr: UInt,
     idx: Int,
   ): T = {
-    checkIdx(idx=idx)
     //addrVec(idx) := addr
     dataVec(idx) := (
       if (!alwaysEn) {
@@ -93,41 +86,37 @@ case class MemReadSyncIntoPipe[
   PipeOutPayloadT <: Data,
   MemWordT <: Data,
 ](
-  //--------
-  // possibly converted from a `StreamOptHsh[UInt]`
   pipeIn: Stream[PipeInPayloadT],
-  inpAddr: UInt,
-  //--------
-  // possibly converted from a `StreamOptHsh[MemWordT]`
   pipeOut: Stream[PipeOutPayloadT],
-  outpRdData: MemWordT,
-  //--------
-  multiRd: MultiMemReadSync[MemWordT],
-  rdIdx: Int,
-  //--------
+  someMem: Mem[MemWordT],
+)(
+  getInpAddrFunc: (
+    PipeInPayloadT
+  ) => UInt,
+  getOutpRdDataFunc: (
+    PipeOutPayloadT
+  ) => MemWordT,
 ) extends Area {
-  multiRd.checkIdx(
-    idx=rdIdx,
-  )
-  def rdAddr = multiRd.addrVec(rdIdx)
-  def rdData = multiRd.dataVec(rdIdx)
-  def rdEn = multiRd.enVec(rdIdx)
-  def rdAllowed = multiRd.rdAllowedVec(rdIdx)
+
+  def inpAddr = getInpAddrFunc(pipeIn.payload)
+  def outpRdData = getOutpRdDataFunc(pipeOut.payload)
+
   val tempRdEn = Bool()
 
   // (!pipeOutRdData.valid || pipeOutRdData.ready)
   // same as `!isStall` (through DeMorgan's Theorem)
   //tempRdEn := pipeIn.valid && rdAllowed && !pipeOut.isStall 
+  tempRdEn := pipeIn.valid && !pipeOut.isStall 
 
   // If the address comes from a stream then you have to stall that
   // stream until you can update the output buffer. When you can
   // (no data on the output or receiver ready,... (!isStall))
   // do the read and signal ready (if the address stream is valid)
-  tempRdEn := rdAllowed && !pipeOut.isStall 
-
-  def doReadSync() = multiRd.readSync(idx=rdIdx)
-  //pipeOut.payload := doReadSync()
-  outpRdData := doReadSync()
+  //tempRdEn := rdAllowed && !pipeOut.isStall 
+  outpRdData := someMem.readSync(
+    address=inpAddr,
+    enable=tempRdEn,
+  )
   pipeOut.valid
     .setAsReg()
     .clearWhen(pipeOut.fire)
@@ -135,51 +124,20 @@ case class MemReadSyncIntoPipe[
       //En
       tempRdEn
     )
-  //pipeIn.ready
-  //  .setAsReg()
-  //  .clearWhen(pipeIn.fire)
-  //  .setWhen(
-  //    //pipeIn.valid
-  //    //&& !pipeOut.isStall
-  //    //&&
-  //    tempRdEn
-  //    //rdEn
-  //  )
-  pipeIn.ready := pipeIn.valid && tempRdEn
-  //when (pipeIn.fire) {
-  //}
-  ////val rPipeInReady = Reg(Bool()) init(False)
-  ////val pipeInReady = Bool()
-  //val rPastPipeInReady = RegNext(pipeIn.ready) init(False)
-  //val rTempPipeInReady = Reg(Bool()) init(False)
-  ////pipeIn.ready := rPipeInReady
-  //when (pipeIn.valid && tempRdEn) {
-  //  //pipeIn.ready := True
-  //  //rPipeInReady := True
-  //  pipeIn.ready := True
-  //} otherwise {
-  //  pipeIn.ready := rTempPipeInReady
-  //}
+  pipeIn.ready := (
+    //pipeIn.valid
+    //&&
+    tempRdEn
+  )
 
-  //when (pipeIn.fire) {
-  //  //pipeIn.ready := False
-  //  //rPipeInReady := False
-  //  //pipeIn.ready := 
-  //  rTempPipeInReady := False
-  //} otherwise {
-  //  //pipeIn.ready := rPastPipeInReady
-  //  rTempPipeInReady := pipeIn.ready
-  //}
+  //rdEn := tempRdEn
 
-  rdEn := tempRdEn
-
-  rdAddr := inpAddr
-
+  //rdAddr := inpAddr
 }
 case class MemReadSyncIntoPipeTestDutIo(
   memSize: Int=128,
 ) extends Bundle {
-  val rdAllowed = in Bool()
+  //val rdAllowed = in Bool()
   val addr = slave Stream(UInt(log2Up(memSize) bits))
   val data = master Stream(UInt(dataWidth bits))
   def dataWidth = log2Up(memSize)
@@ -194,24 +152,34 @@ case class MemReadSyncIntoPipeTestDut(
     memSize=memSize,
   )
   val mem = Mem(UInt(io.dataWidth bits), memSize)
-  val multiRd = MultiMemReadSync(
-    someMem=mem,
-    numReaders=1,
-    alwaysEn=false,
-  )
-  multiRd.rdAllowedVec(0) := io.rdAllowed
+  //val multiRd = MultiMemReadSync(
+  //  someMem=mem,
+  //  numReaders=1,
+  //  alwaysEn=false,
+  //)
+  //multiRd.rdAllowedVec(0) := io.rdAllowed
   val rdIntoPipe = MemReadSyncIntoPipe(
     //--------
     pipeIn=io.addr,
-    inpAddr=io.addr.payload,
-    //--------
     pipeOut=io.data,
-    outpRdData=io.data.payload,
+    someMem=mem,
     //--------
-    multiRd=multiRd,
-    rdIdx=0,
-    //--------
+  )(
+    getInpAddrFunc=(payload => payload),
+    getOutpRdDataFunc=(payload => payload),
   )
+  //val rdIntoPipe = MemReadSyncIntoPipe(
+  //  //--------
+  //  pipeIn=io.addr,
+  //  inpAddr=io.addr.payload,
+  //  //--------
+  //  pipeOut=io.data,
+  //  outpRdData=io.data.payload,
+  //  //--------
+  //  multiRd=multiRd,
+  //  rdIdx=0,
+  //  //--------
+  //)
 }
 object MemReadSyncIntoPipeSim extends App {
   val simSpinalConfig = SpinalConfig(
@@ -235,13 +203,17 @@ object MemReadSyncIntoPipeSim extends App {
         dut.mem.setBigInt(i, i)
       }
 
+      val scoreboard = ScoreboardInOrder[Int]()
+
       //StreamValidRandomizer(dut.io.data, dut.clockDomain)
       StreamDriver(
         stream=dut.io.addr,
         clockDomain=dut.clockDomain
       )(
         driver={ payload =>
-          payload.randomize()
+          //if (dut.io.addr.valid.toBoolean && dut.io.addr.ready.toBoolean) {
+          //  payload.randomize()
+          //}
           //payload := RegNext(payload) + 1
           //if (
           //  //dut.io.addr.valid.toBoolean && dut.io.addr.ready.toBoolean
@@ -250,18 +222,22 @@ object MemReadSyncIntoPipeSim extends App {
           //) {
           //  payload #= payload.toInt + 1
           //}
+          payload.randomize
           true
         }
       )
       StreamReadyRandomizer(dut.io.data, dut.clockDomain)
+      StreamMonitor(dut.io.data, dut.clockDomain){payload =>
+        scoreboard.pushRef(payload.toInt)
+      }
       dut.clockDomain.forkStimulus(10)
       for (
-        i <- 0 until memSize //10
+        i <- 0 until 2048 //memSize * 5 //10
       ) {
         //dut.clockDomain.waitSampling(scala.util.Random.nextInt(10))
         //dut.io.rdAllowed #= !dut.io.rdAllowed.toBoolean
         dut.clockDomain.waitRisingEdge()
-        dut.io.rdAllowed #= true
+        //dut.io.rdAllowed #= true
       }
       simSuccess()
     }
