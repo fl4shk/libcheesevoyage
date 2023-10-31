@@ -89,6 +89,7 @@ case class MemReadSyncIntoPipe[
   pipeIn: Stream[PipeInPayloadT],
   pipeOut: Stream[PipeOutPayloadT],
   someMem: Mem[MemWordT],
+  //jdx: Int,
 )(
   getInpAddrFunc: (
     PipeInPayloadT
@@ -98,8 +99,17 @@ case class MemReadSyncIntoPipe[
   ) => MemWordT,
 ) extends Area {
 
-  def inpAddr = getInpAddrFunc(pipeIn.payload)
-  def outpRdData = getOutpRdDataFunc(pipeOut.payload)
+  val inpAddr = KeepAttribute(
+    cloneOf(getInpAddrFunc(pipeIn.payload))
+  )
+    //.setName("inpAddr")
+  val outpRdData = KeepAttribute(
+    cloneOf(getOutpRdDataFunc(pipeOut.payload))
+  )
+    //.setName("outpRdData")
+
+  inpAddr := getInpAddrFunc(pipeIn.payload)
+  getOutpRdDataFunc(pipeOut.payload) := outpRdData
 
   val tempRdEn = Bool()
 
