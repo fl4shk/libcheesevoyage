@@ -913,6 +913,7 @@ case class AsyncReadFifo[
       dataType(),
       depth,
     )
+      .addAttribute("ramstyle", arrRamStyle)
       .addAttribute("ram_style", arrRamStyle)
       .addAttribute("keep")
 

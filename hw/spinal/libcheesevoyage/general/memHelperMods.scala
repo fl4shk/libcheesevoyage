@@ -7,45 +7,189 @@ import spinal.lib.sim._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
-case class MultiMemReadSync[
+case class PipeSimpleDualPortMemDrivePayload[
+  //WordT <: Data
   T <: Data
 ](
-  someMem: Mem[T],
-  //dataType: HardType[T],
-  //addrWidth: Int,
-  numReaders: Int=1,
-  alwaysEn: Boolean=false,
-) extends Area {
-  assert(numReaders > 0)
-
-  def addrWidth = log2Up(someMem.wordCount)
-  def dataType() = someMem.wordType()
-
-  val addrVec = Vec.fill(numReaders)(UInt(addrWidth bits))
-  val dataVec = Vec.fill(numReaders)(dataType())
-  val enVec = (!alwaysEn) generate Vec.fill(numReaders)(Bool())
-  //val rdAllowedVec = Vec.fill(numReaders)(Bool())
-
-  def readSync(
-    //addr: UInt,
-    idx: Int,
-  ): T = {
-    //addrVec(idx) := addr
-    dataVec(idx) := (
-      if (!alwaysEn) {
-        someMem.readSync(
-          address=addrVec(idx),
-          enable=enVec(idx),
-        )
-      } else { // if (alwaysEn)
-        someMem.readSync(
-          address=addrVec(idx),
-        )
-      }
-    )
-    dataVec(idx)
-  }
+  //wordType: HardType[WordT],
+  dataType: HardType[T],
+  depth: Int,
+) extends Bundle {
+  def addrWidth = log2Up(depth)
+  val addr = UInt(addrWidth bits)
+  val data = dataType()
 }
+case class PipeSimpleDualPortMemIo[
+  //WordT <: Data
+  T <: Data
+](
+  //wordType: HardType[WordT],
+  dataType: HardType[T],
+  depth: Int,
+) extends Bundle {
+  //--------
+  def addrWidth = log2Up(depth)
+  val wrPipe = slave Stream(
+    PipeSimpleDualPortMemDrivePayload(
+      //wordType=wordType(),
+      dataType=dataType,
+      depth=depth,
+    )
+  )
+  //val rdAddrPipe = Stream(UInt(addrWidth bits))
+  def rdAddrPipe = slave Stream(
+    PipeSimpleDualPortMemDrivePayload(
+      //wordType=wordType(),
+      dataType=dataType,
+      depth=depth,
+    )
+  )
+  val rdDataPipe = master Stream(
+    //wordType()
+    dataType()
+  )
+  //--------
+}
+case class PipeSimpleDualPortMem[
+  T <: Data,
+  WordT <: Data
+](
+  dataType: HardType[T],
+  wordType: HardType[WordT],
+  depth: Int,
+  initBigInt: Option[ArrayBuffer[BigInt]]=None,
+  latency: Int=1,
+  arrRamStyle: String="block",
+  arrRwAddrCollision: String="",
+)(
+  getWordFunc: (
+    T           // input pipeline payload
+  ) => WordT,   // 
+  setWordFunc: (
+    T,      // pass through pipeline payload (output)
+    T,      // pass through pipeline payload (input)
+    WordT,  // data read from the RAM
+  ) => Unit,
+) extends Component {
+  //--------
+  assert(latency >= 1)
+  //--------
+  val io = PipeSimpleDualPortMemIo(
+    //wordType=wordType(),
+    dataType=dataType(),
+    depth=depth,
+  )
+  def addrWidth = io.addrWidth
+  //--------
+  val wrPipeToPulse = FpgacpuPipeToPulse(
+    dataType=PipeSimpleDualPortMemDrivePayload(
+      //wordType=wordType(),
+      dataType=dataType(),
+      depth=depth,
+    )
+  )
+  val rdAddrPipeToPulse = FpgacpuPipeToPulse(
+    //dataType=UInt(addrWidth bits)
+    dataType=PipeSimpleDualPortMemDrivePayload(
+      //wordType=wordType(),
+      dataType=dataType(),
+      depth=depth,
+    )
+  )
+  val rdDataPulseToPipe = FpgacpuPulseToPipe(
+    //dataType=wordType()
+    dataType=dataType()
+  )
+  //--------
+  val arr = FpgacpuRamSimpleDualPort(
+    wordType=wordType(),
+    depth=depth,
+    initBigInt=initBigInt,
+    arrRamStyle=arrRamStyle,
+    arrRwAddrCollision=arrRwAddrCollision,
+  )
+
+  arr.io.wrEn := wrPipeToPulse.io.pulse.valid
+  arr.io.wrAddr := wrPipeToPulse.io.pulse.addr
+  arr.io.wrData := getWordFunc(wrPipeToPulse.io.pulse.data)
+
+  arr.io.rdEn := rdAddrPipeToPulse.io.pulse.valid
+  arr.io.rdAddr := rdAddrPipeToPulse.io.pulse.payload.addr
+  //rdDataPulseToPipe.io.pulse.payload := arr.io.rdData
+  //--------
+  wrPipeToPulse.io.pipe << io.wrPipe
+  wrPipeToPulse.io.moduleReady := True
+  rdAddrPipeToPulse.io.pipe << io.rdAddrPipe
+
+  io.rdDataPipe << rdDataPulseToPipe.io.pipe
+  //--------
+  val rRdPulseValidVec = Vec.fill(latency)(Reg(Bool()) init(False))
+  val rRdPulsePipePayloadVec = Vec.fill(latency)(
+    Reg(dataType()) init(dataType().getZero)
+  )
+  setWordFunc(
+    rdDataPulseToPipe.io.pulse.payload,
+    rRdPulsePipePayloadVec(latency - 1),
+    arr.io.rdData
+  )
+  rdDataPulseToPipe.io.pulse.valid := (
+    rRdPulseValidVec(latency - 1)
+  )
+  for (idx <- 0 until latency) {
+    if (idx == 0) {
+      rRdPulsePipePayloadVec(idx) := rdAddrPipeToPulse.io.pulse.data
+      rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.moduleReady
+    } else {
+      rRdPulsePipePayloadVec(idx) := rRdPulsePipePayloadVec(idx - 1)
+      rRdPulseValidVec(idx) := rRdPulseValidVec(idx - 1)
+    }
+  }
+  //--------
+  //--------
+}
+
+//object PipeSimpleDualPortMemSim extends App {
+//}
+
+//case class MultiMemReadSync[
+//  T <: Data
+//](
+//  someMem: Mem[T],
+//  //dataType: HardType[T],
+//  //addrWidth: Int,
+//  numReaders: Int=1,
+//  alwaysEn: Boolean=false,
+//) extends Area {
+//  assert(numReaders > 0)
+//
+//  def addrWidth = log2Up(someMem.wordCount)
+//  def dataType() = someMem.wordType()
+//
+//  val addrVec = Vec.fill(numReaders)(UInt(addrWidth bits))
+//  val dataVec = Vec.fill(numReaders)(dataType())
+//  val enVec = (!alwaysEn) generate Vec.fill(numReaders)(Bool())
+//  //val rdAllowedVec = Vec.fill(numReaders)(Bool())
+//
+//  def readSync(
+//    //addr: UInt,
+//    idx: Int,
+//  ): T = {
+//    //addrVec(idx) := addr
+//    dataVec(idx) := (
+//      if (!alwaysEn) {
+//        someMem.readSync(
+//          address=addrVec(idx),
+//          enable=enVec(idx),
+//        )
+//      } else { // if (alwaysEn)
+//        someMem.readSync(
+//          address=addrVec(idx),
+//        )
+//      }
+//    )
+//    dataVec(idx)
+//  }
+//}
 //case class MultiMemReadSync() extends Component {
 //  val io = new Bundle {
 //    val readAllowed = in port Bool()
@@ -81,69 +225,76 @@ case class MultiMemReadSync[
 
 // For when `multiRd.addrVec(rdIdx)` is driven non-synchronously but
 // `multiRd.readSync()` is still used
-case class MemReadSyncIntoPipe[
-  PipeInPayloadT <: Data,
-  PipeOutPayloadT <: Data,
-  MemWordT <: Data,
-](
-  pipeIn: Stream[PipeInPayloadT],
-  pipeOut: Stream[PipeOutPayloadT],
-  someMem: Mem[MemWordT],
-  //jdx: Int,
-)(
-  getInpAddrFunc: (
-    PipeInPayloadT
-  ) => UInt,
-  getOutpRdDataFunc: (
-    PipeOutPayloadT
-  ) => MemWordT,
-) extends Area {
-
-  val inpAddr = KeepAttribute(
-    cloneOf(getInpAddrFunc(pipeIn.payload))
-  )
-    //.setName("inpAddr")
-  val outpRdData = KeepAttribute(
-    cloneOf(getOutpRdDataFunc(pipeOut.payload))
-  )
-    //.setName("outpRdData")
-
-  inpAddr := getInpAddrFunc(pipeIn.payload)
-  getOutpRdDataFunc(pipeOut.payload) := outpRdData
-
-  val tempRdEn = Bool()
-
-  // (!pipeOutRdData.valid || pipeOutRdData.ready)
-  // same as `!isStall` (through DeMorgan's Theorem)
-  //tempRdEn := pipeIn.valid && rdAllowed && !pipeOut.isStall 
-  tempRdEn := pipeIn.valid && !pipeOut.isStall 
-
-  // If the address comes from a stream then you have to stall that
-  // stream until you can update the output buffer. When you can
-  // (no data on the output or receiver ready,... (!isStall))
-  // do the read and signal ready (if the address stream is valid)
-  //tempRdEn := rdAllowed && !pipeOut.isStall 
-  outpRdData := someMem.readSync(
-    address=inpAddr,
-    enable=tempRdEn,
-  )
-  pipeOut.valid
-    .setAsReg()
-    .clearWhen(pipeOut.fire)
-    .setWhen(
-      //En
-      tempRdEn
-    )
-  pipeIn.ready := (
-    //pipeIn.valid
-    //&&
-    tempRdEn
-  )
-
-  //rdEn := tempRdEn
-
-  //rdAddr := inpAddr
-}
+//case class MemReadSyncIntoPipe[
+//  PipeInPayloadT <: Data,
+//  PipeOutPayloadT <: Data,
+//  MemWordT <: Data,
+//](
+//  pipeIn: Stream[PipeInPayloadT],
+//  pipeOut: Stream[PipeOutPayloadT],
+//  someMem: Mem[MemWordT],
+//  //jdx: Int,
+//)(
+//  getInpAddrFunc: (
+//    PipeInPayloadT
+//  ) => UInt,
+//  getOutpRdDataFunc: (
+//    PipeOutPayloadT
+//  ) => MemWordT,
+//  //getOutpAddrFunc: (
+//  //  PipeOutPayloadT
+//  //) => UInt,
+//) extends Area {
+//
+//  val inpAddr = KeepAttribute(
+//    cloneOf(getInpAddrFunc(pipeIn.payload))
+//  )
+//    //.setName("inpAddr")
+//  val outpRdData = KeepAttribute(
+//    cloneOf(getOutpRdDataFunc(pipeOut.payload))
+//  )
+//    //.setName("outpRdData")
+//  //val outpAddr = KeepAttribute(
+//  //  cloneOf(getOutpAddrFunc(pipeOut.payload))
+//  //)
+//
+//  inpAddr := getInpAddrFunc(pipeIn.payload)
+//  getOutpRdDataFunc(pipeOut.payload) := outpRdData
+//  //getOutpAddrFunc(pipeOut.payload) := inpAddr
+//
+//  val tempRdEn = Bool()
+//
+//  // (!pipeOutRdData.valid || pipeOutRdData.ready)
+//  // same as `!isStall` (through DeMorgan's Theorem)
+//  //tempRdEn := pipeIn.valid && rdAllowed && !pipeOut.isStall 
+//  tempRdEn := pipeIn.valid && !pipeOut.isStall 
+//
+//  // If the address comes from a stream then you have to stall that
+//  // stream until you can update the output buffer. When you can
+//  // (no data on the output or receiver ready,... (!isStall))
+//  // do the read and signal ready (if the address stream is valid)
+//  //tempRdEn := rdAllowed && !pipeOut.isStall 
+//  outpRdData := someMem.readSync(
+//    address=inpAddr,
+//    enable=tempRdEn,
+//  )
+//  pipeOut.valid
+//    .setAsReg()
+//    .clearWhen(pipeOut.fire)
+//    .setWhen(
+//      //En
+//      tempRdEn
+//    )
+//  pipeIn.ready := (
+//    //pipeIn.valid
+//    //&&
+//    tempRdEn
+//  )
+//
+//  //rdEn := tempRdEn
+//
+//  //rdAddr := inpAddr
+//}
 case class MemReadSyncIntoPipeTestDutIo(
   memSize: Int=128,
 ) extends Bundle {
