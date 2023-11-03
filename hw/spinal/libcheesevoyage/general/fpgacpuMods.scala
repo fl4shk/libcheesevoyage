@@ -25,21 +25,21 @@ case class FpgacpuRegister[
 ](
   dataType: HardType[T],
   //resetVal: HardType[T],
-  initVal: T,
+  //initVal: T,
 ) extends Component {
   //--------
   val io = FpgacpuRegisterIo(
     dataType=dataType()
   )
   val rOutpData = Reg(cloneOf(io.outpData))
-  rOutpData.init(initVal)
+  rOutpData.init(rOutpData.getZero)
   io.outpData := rOutpData
 
   when (io.clkEn) {
     rOutpData := io.inpData
   }
   when (io.clear) {
-    rOutpData := initVal
+    rOutpData := rOutpData.getZero
   }
 }
 //--------
@@ -52,14 +52,14 @@ case class FpgacpuPulseLatchIo() extends Bundle {
   //--------
 }
 case class FpgacpuPulseLatch(
-  initVal: Bool=False,
+  //initVal: Bool=False,
 ) extends Component {
   //--------
   val io = FpgacpuPulseLatchIo()
   //--------
   val latch = FpgacpuRegister(
     dataType=Bool(),
-    initVal=initVal,
+    //initVal=initVal,
   )
   latch.io.clkEn := io.inpPulse
   latch.io.clear := io.clear
@@ -113,7 +113,7 @@ case class FpgacpuPipeToPulse[
   //--------
   val initialReadyIn = Bool()
   val generateInitialReadyIn = FpgacpuPulseLatch(
-    initVal=False
+    //initVal=False
   )
   generateInitialReadyIn.io.inpPulse := inputHandshakeDone
   initialReadyIn := generateInitialReadyIn.io.outpLevel
@@ -123,7 +123,7 @@ case class FpgacpuPipeToPulse[
 
   val readyInLatched = Bool()
   val generateReadyInLatched = FpgacpuPulseLatch(
-    initVal=False
+    //initVal=False
   )
   generateReadyInLatched.io.clear := clearReadyInLatched
   generateReadyInLatched.io.inpPulse := moduleReady
@@ -163,8 +163,8 @@ case class FpgacpuPulseToPipe[
 ](
   //--------
   dataType: HardType[T],
-  fifoDepth: Int=0, // positive to use the FIFO
-  fifoArrRamStyle: String="auto",
+  //fifoDepth: Int=0, // positive to use the FIFO
+  //fifoArrRamStyle: String="auto",
   //--------
 ) extends Component {
   //--------
@@ -196,7 +196,7 @@ case class FpgacpuPulseToPipe[
   val validOutLatched = Bool()
 
   val generateValidOutLatched = FpgacpuPulseLatch(
-    initVal=False
+    //initVal=False
   )
   generateValidOutLatched.io.clear := outputHandshakeDone
   generateValidOutLatched.io.inpPulse := pulseValid
@@ -204,36 +204,44 @@ case class FpgacpuPulseToPipe[
   //--------
   validOutInternal := validOutLatched || pulseValid
   //--------
-  val prevOrPush = Stream(dataType())
-  val nextOrPop = Stream(dataType())
+  //val prevOrPush = Stream(dataType())
+  //val nextOrPop = Stream(dataType())
 
-  prevOrPush.valid := validOutInternal
-  readyOutInternal := prevOrPush.ready
-  prevOrPush.payload := pulseData
+  //prevOrPush.valid := validOutInternal
+  //readyOutInternal := prevOrPush.ready
+  //prevOrPush.payload := pulseData
 
-  nextOrPop.valid := pipeValid
-  pipeReady := nextOrPop.ready
-  nextOrPop.payload := pipeData
+  //nextOrPop.valid := pipeValid
+  //pipeReady := nextOrPop.ready
+  //nextOrPop.payload := pipeData
 
   val buf = (
-    if (fifoDepth <= 0) {
-      val skidBuf = PipeSkidBuf(
+    //if (fifoDepth <= 0) {
+      PipeSkidBuf(
         dataType=dataType()
       )
-      skidBuf.io.prev << prevOrPush
-      nextOrPop << skidBuf.io.next
-      skidBuf
-    } else { // if (fifoDepth > 0)
-      val fifo = AsyncReadFifo(
-        dataType=dataType(),
-        depth=fifoDepth,
-        arrRamStyle=fifoArrRamStyle,
-      )
-      fifo.io.push << prevOrPush
-      nextOrPop << fifo.io.pop
-      fifo
-    }
+    //} else { // if (fifoDepth > 0)
+    //  AsyncReadFifo(
+    //    dataType=dataType(),
+    //    depth=fifoDepth,
+    //    arrRamStyle=fifoArrRamStyle,
+    //  )
+    //}
   )
+  buf.io.prev.valid := validOutInternal
+  readyOutInternal := buf.io.prev.ready
+  buf.io.prev.payload := pulseData
+
+  pipeValid := buf.io.next.valid
+  buf.io.next.ready := pipeReady
+  pipeData := buf.io.next.payload
+  //if (fifoDepth <= 0) {
+    //buf.io.prev << prevOrPush
+    //nextOrPop << buf.io.next
+  //} else {
+  //  buf.io.push << prevOrPush
+  //  nextOrPop << buf.io.pop
+  //}
   //--------
 }
 //--------
