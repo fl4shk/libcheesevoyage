@@ -287,13 +287,14 @@ case class FpgacpuRamSimpleDualPort[
     wordType=wordType(),
     wordCount=depth,
   )
+    //.initBigInt(Array.fill(depth)(BigInt(0)).toSeq)
     .addAttribute("ramstyle", arrRamStyle)
     .addAttribute("ram_style", arrRamStyle)
     .addAttribute("rw_addr_collision", arrRwAddrCollision)
 
   initBigInt match {
     case Some(myInitBigInt) => {
-      arr.initBigInt(myInitBigInt)
+      arr.initBigInt(myInitBigInt.toSeq)
     }
     case None => {
     }

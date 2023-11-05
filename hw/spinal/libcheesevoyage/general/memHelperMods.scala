@@ -294,10 +294,15 @@ extends Component
   //arr.io.wrEn := wrPipeToPulse.io.pulse.valid
   //arr.io.wrAddr := wrPipeToPulse.io.pulse.addr
   //arr.io.wrData := getWordFunc(wrPipeToPulse.io.pulse.data)
+  //--------
+  // BEGIN: debug comment this out; later
   arr.io.wrEn := io.wrPulse.valid
+  // END: debug comment this out; later
+  //arr.io.wrEn := False
   arr.io.wrAddr := io.wrPulse.addr
   //arr.io.wrData := getWordFunc(io.wrPulse.data)
   arr.io.wrData := io.wrPulse.data
+  //--------
 
   arr.io.rdEn := rdAddrPipeToPulse.io.pulse.valid
   arr.io.rdAddr := rdAddrPipeToPulse.io.pulse.payload.addr
@@ -369,6 +374,16 @@ object WrPulseRdPipeSimpleDualPortMemSim extends App {
       }
 
       val scoreboard = ScoreboardInOrder[Int]()
+      //dut.io.wrPulse.valid #= false
+      //StreamDriver(
+      //  stream
+      //)(
+      //  driver={payload =>
+      //    payload.addr=0,
+      //    payload.data=0,
+      //    true
+      //  }
+      //)
 
       //StreamValidRandomizer(dut.io.data, dut.clockDomain)
       StreamDriver(
@@ -396,6 +411,178 @@ object WrPulseRdPipeSimpleDualPortMemSim extends App {
       simSuccess()
     }
 }
+//case class DualMem_WrPulseRdPipeSimpleDualPortMemIo[
+//  T <: Data,
+//  WordT0 <: Data,
+//  WordT1 <: Data,
+//](
+//  dataType: HardType[T],
+//  wordType0: HardType[WordT0],
+//  wordType1: HardType[WordT1],
+//  depth: Int,
+//  unionIdxWidth: Int=1
+//) extends Bundle {
+//  //--------
+//  val unionIdx = in UInt(unionIdxWidth bits)
+//  val wrPulse0 = slave Flow(
+//    PipeSimpleDualPortMemDrivePayload(
+//      dataType=wordType0(),
+//      depth=depth,
+//    )
+//  )
+//  val wrPulse1 = slave Flow(
+//    PipeSimpleDualPortMemDrivePayload(
+//      dataType=wordType1(),
+//      depth=depth,
+//    )
+//  )
+//  val rdAddrPipe = slave Stream(
+//    PipeSimpleDualPortMemDrivePayload(
+//      dataType=dataType(),
+//      depth=depth,
+//    )
+//  )
+//  val rdDataPipe = master Stream(dataType())
+//  //--------
+//}
+//case class DualMem_WrPulseRdPipeSimpleDualPortMem[
+//  T <: Data,
+//  WordT0 <: Data,
+//  WordT1 <: Data,
+//](
+//  dataType: HardType[T],
+//  wordType0: HardType[WordT0],
+//  wordType1: HardType[WordT1],
+//  depth: Int,
+//  unionIdxWidth: Int=1
+//) extends Bundle {
+//  //--------
+//  val unionIdx = in UInt(unionIdxWidth bits)
+//  val wrPulse0 = slave Flow(
+//    PipeSimpleDualPortMemDrivePayload(
+//      dataType=wordType0(),
+//      depth=depth,
+//    )
+//  )
+//  val wrPulse1 = slave Flow(
+//    PipeSimpleDualPortMemDrivePayload(
+//      dataType=wordType1(),
+//      depth=depth,
+//    )
+//  )
+//  val rdAddrPipe = slave Stream(
+//    PipeSimpleDualPortMemDrivePayload(
+//      dataType=dataType(),
+//      depth=depth,
+//    )
+//  )
+//  val rdDataPipe = master Stream(dataType())
+//  //--------
+//}
+//case class MultiRdForkBlockingJoin_WrPulseRdPipeSimpleDualPortMemIo[
+//  T <: Data,
+//  WordT <: Data,
+//](
+//  dataType: HardType[T],
+//  wordType: HardType[WordT],
+//  depth: Int,
+//  numRd: Int,
+//  unionIdxWidth: Int=1
+//) extends Bundle {
+//  //--------
+//  assert(numRd >= 1)
+//  //--------
+//  val unionIdx = in(Vec.fill(numRd)(UInt(unionIdxWidth bits)))
+//  //--------
+//  def addrWidth = log2Up(depth)
+//  // All ports besides `wrPulse` are vectorized 
+//  val wrPulse = slave Flow(
+//    PipeSimpleDualPortMemDrivePayload(
+//      //wordType=wordType(),
+//      //dataType=dataType,
+//      dataType=wordType(),
+//      depth=depth,
+//    )
+//  )
+//  //--------
+//  val rdAddrPipeVec = Vec.fill(numRd)(
+//    slave Stream(
+//      PipeSimpleDualPortMemDrivePayload(
+//        //wordType=wordType(),
+//        dataType=dataType(),
+//        depth=depth,
+//      )
+//    )
+//  )
+//  val rdDataPipeVec = Vec.fill(numRd)(master Stream(dataType()))
+//  //--------
+//}
+//case class MultiRdForkBlockingJoin_WrPulseRdPipeSimpleDualPortMem[
+//  T <: Data,
+//  WordT <: Data,
+//](
+//  dataType: HardType[T],
+//  wordType: HardType[WordT],
+//  depth: Int,
+//  numRd: Int,
+//  initBigInt: Option[ArrayBuffer[BigInt]]=None,
+//  latency: Int=1,
+//  arrRamStyle: String="block",
+//  arrRwAddrCollision: String="",
+//  unionIdxWidth: Int=1,
+//)(
+//  //--------
+//  setWordFunc: (
+//    UInt,   // union type indicator
+//    T,      // pass through pipeline payload (output)
+//    T,      // pass through pipeline payload (input)
+//    WordT,  // data read from the RAM
+//  ) => Unit,
+//  //--------
+//) extends Component {
+//  //--------
+//  assert(latency >= 1)
+//  assert(numRd >= 1)
+//  //--------
+//  val io = MultiRdForkBlockingJoin_WrPulseRdPipeSimpleDualPortMemIo(
+//    dataType=dataType(),
+//    wordType=wordType(),
+//    depth=depth,
+//    numRd=numRd,
+//    unionIdxWidth=unionIdxWidth,
+//  )
+//  def addrWidth = io.addrWidth
+//  //--------
+//  val arr = Array.fill(numRd)(
+//    WrPulseRdPipeSimpleDualPortMem(
+//      dataType=dataType(),
+//      wordType=wordType(),
+//      depth=depth,
+//      initBigInt=initBigInt,
+//      latency=latency,
+//      arrRamStyle=arrRamStyle,
+//      arrRwAddrCollision=arrRwAddrCollision,
+//      unionIdxWidth=unionIdxWidth,
+//    )(
+//      setWordFunc=setWordFunc,
+//    )
+//  )
+//
+//  val rdAddrFork = FpgacpuPipeForkBlocking(
+//    dataType=dataType(),
+//    oSize=numRd,
+//  )
+//
+//  val rdDataJoin = FpgacpuPipeJoin(
+//    dataType=dataType(),
+//    size=numRd,
+//  )
+//
+//  for (idx <- 0 until numRd) {
+//    rdAddrFork.io.pipeIn
+//  }
+//  //--------
+//}
 //--------
 
 //case class MultiRdPipeSimpleDualPortMem[
