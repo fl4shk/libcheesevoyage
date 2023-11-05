@@ -305,7 +305,6 @@ extends Component
   //arr.io.wrData := getWordFunc(io.wrPulse.data)
   arr.io.wrData := io.wrPulse.data
   //--------
-
   arr.io.rdEn := rdAddrPipeToPulse.io.pulse.valid
   arr.io.rdAddr := rdAddrPipeToPulse.io.pulse.payload.addr
   //rdDataPulseToPipe.io.pulse.payload := arr.io.rdData

@@ -443,9 +443,9 @@ case class Gpu2dTest(
         //params.intnlFbSize2d.x - params.objTileSize2d.x - 5
         //params.intnlFbSize2d.x >> 1
         //0x3e
-        //2
+        3
         //1
-        0
+        //0
       )
       //tempObjAttrs.pos.x := -1
       //tempObjAttrs.pos.x := 8
@@ -470,7 +470,10 @@ case class Gpu2dTest(
       //tempObjAttrs.pos.x := 16
       //tempObjAttrs.pos.x := 2
       //tempObjAttrs.pos.x := 16
-      tempObjAttrs.pos.x := 1
+      tempObjAttrs.pos.x := (
+        //1
+        2
+      )
       //tempObjAttrs.pos.x := 9
       //tempObjAttrs.pos.x := 9
       //tempObjAttrs.pos.y := -1

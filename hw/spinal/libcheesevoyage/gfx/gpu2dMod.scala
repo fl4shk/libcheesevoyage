@@ -18,7 +18,9 @@ import libcheesevoyage.general.WrPulseRdPipeSimpleDualPortMem
 import libcheesevoyage.general.WrPulseRdPipeSimpleDualPortMemIo
 //import libcheesevoyage.general.MemReadSyncIntoStreamHaltVecs
 //import libcheesevoyage.general.MemReadSyncIntoStream
+//import libcheesevoyage.general.FpgacpuPipeForkLazy
 import libcheesevoyage.general.FpgacpuPipeForkBlocking
+//import libcheesevoyage.general.FpgacpuPipeForkEager
 import libcheesevoyage.general.FpgacpuPipeJoin
 
 //import scala.math._
@@ -2158,7 +2160,9 @@ case class Gpu2d(
         //)
         for (jdx <- 0 until params.numLineMemsPerBgObjRenderer) {
           //def vecIdx0 = (rWrLineMemArrIdx + jdx)(0 downto 0)
-          def vecIdx = (
+          val vecIdx = UInt(1 bits)
+            .setName(f"rObjWriter_doWrite_vecIdx_$jdx")
+          vecIdx := (
             (rWrLineMemArrIdx + jdx)(0 downto 0)
             //(rWrLineMemArrIdx + jdx + 1)(0 downto 0)
           )
@@ -2175,7 +2179,8 @@ case class Gpu2d(
             //  //addrVec(vecIdx0),
             //  //addrVec(vecIdx1),
             //)
-            addrVec(vecIdx)
+            //addrVec(vecIdx)
+            addrVec(jdx)
             //addrVec(wrIdx)
             //addrVec(rWrLineMemArrIdx)
           )
@@ -2185,7 +2190,8 @@ case class Gpu2d(
             //  dataVec(vecIdx0),
             //  dataVec(vecIdx1),
             //)
-            dataVec(vecIdx)
+            //dataVec(vecIdx)
+            dataVec(jdx)
             //dataVec(wrIdx)
             //dataVec(rWrLineMemArrIdx)
           )
@@ -2195,7 +2201,8 @@ case class Gpu2d(
             //  enVec(vecIdx0),
             //  enVec(vecIdx1),
             //)
-            enVec(vecIdx)
+            //enVec(vecIdx)
+            enVec(jdx)
           )
           combineObjSubLineMemArr(jdx).io.unionIdx := rWrLineMemArrIdx
           combineObjSubLineMemArr(jdx).io.wrPulse.valid := (
@@ -4302,6 +4309,7 @@ case class Gpu2d(
       ,
       // END: add in BGs; later
     )
+
     //def combinePipe1BgObjVecSize = (
     //  params.numLineMemsPerBgObjRenderer
     //)
@@ -4828,6 +4836,27 @@ case class Gpu2d(
             }
           }
         }
+        //for (lineMemIdx <- 0 until combineObjSubLineMemArr.size) {
+        //  def myLineMem = combineObjSubLineMemArr(lineMemIdx)
+        //  myLineMem.io.rdAddrPipe.valid := combinePipeIn(idx).valid
+        //  myLineMem.io.rdAddrPipe.data := combinePipeIn(idx)
+        //  myLineMem.io.rdAddrPipe.addr := params.getObjSubLineMemArrIdx(
+        //    addr=combinePipeIn(idx).cnt,
+        //  )
+        //  myLineMem.io.rdDataPipe.ready := combinePipeOut(idx).ready
+        //}
+        //switch (rCombineLineMemArrIdx) {
+        //  for (combineIdx <- 0 until params.numLineMemsPerBgObjRenderer) {
+        //    def myLineMem = combineObjSubLineMemArr(combineIdx)
+        //    is (combineIdx) {
+        //      combinePipeIn(idx).ready := myLineMem.io.rdAddrPipe.ready
+        //      combinePipeOut(idx).valid := myLineMem.io.rdDataPipe.valid
+        //      combinePipeOut(idx).payload := (
+        //        myLineMem.io.rdDataPipe.payload
+        //      )
+        //    }
+        //  }
+        //}
       }
     }
 
