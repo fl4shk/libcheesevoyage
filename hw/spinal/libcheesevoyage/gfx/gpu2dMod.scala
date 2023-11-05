@@ -18,6 +18,8 @@ import libcheesevoyage.general.WrPulseRdPipeSimpleDualPortMem
 import libcheesevoyage.general.WrPulseRdPipeSimpleDualPortMemIo
 //import libcheesevoyage.general.MemReadSyncIntoStreamHaltVecs
 //import libcheesevoyage.general.MemReadSyncIntoStream
+import libcheesevoyage.general.FpgacpuPipeForkBlocking
+import libcheesevoyage.general.FpgacpuPipeJoin
 
 //import scala.math._
 import spinal.core._
@@ -1493,31 +1495,35 @@ case class Gpu2d(
     //val objSubLineMemA2d = new ArrayBuffer[ArrayBuffer[
     //  PipeSimpleDualPortMem[Vec[ObjSubLineMemEntry]]
     //]]()
-    val objSubLineMemArr = new ArrayBuffer[
+    val wrObjSubLineMemArr = new ArrayBuffer[
+      Mem[Vec[ObjSubLineMemEntry]]
+    ]()
+    val combineObjSubLineMemArr = new ArrayBuffer[
       WrPulseRdPipeSimpleDualPortMem[
-        Bits,
+        //Bits,
+        CombinePipePayload,
         Vec[ObjSubLineMemEntry]
       ]
     ]()
-    object RdObjSubLineMemArrInfo {
-      def wrObjIdx = 0
-      //def numReaders = 1
-      def combineIdx = 1
-      def numReaders = 2
-    }
+    //object RdObjSubLineMemArrInfo {
+    //  def wrObjIdx = 0
+    //  //def numReaders = 1
+    //  def combineIdx = 1
+    //  def numReaders = 2
+    //}
 
-    val objSubLineMemIoV2d = Vec.fill(params.numLineMemsPerBgObjRenderer)(
-      Vec.fill(RdObjSubLineMemArrInfo.numReaders)(
-        WrPulseRdPipeSimpleDualPortMemIo(
-          dataType=HardType.union(
-            WrObjPipePayload(),
-            CombinePipePayload(),
-          ),
-          wordType=Vec.fill(params.objTileSize2d.x)(ObjSubLineMemEntry()),
-          depth=params.objSubLineMemArrSize,
-        )
-      )
-    )
+    //val objSubLineMemIoV2d = Vec.fill(params.numLineMemsPerBgObjRenderer)(
+    //  Vec.fill(RdObjSubLineMemArrInfo.numReaders)(
+    //    WrPulseRdPipeSimpleDualPortMemIo(
+    //      dataType=HardType.union(
+    //        WrObjPipePayload(),
+    //        CombinePipePayload(),
+    //      ),
+    //      wordType=Vec.fill(params.objTileSize2d.x)(ObjSubLineMemEntry()),
+    //      depth=params.objSubLineMemArrSize,
+    //    )
+    //  )
+    //)
 
     // END: new `objSubLineMemA2d`
     //--------
@@ -1783,6 +1789,13 @@ case class Gpu2d(
       //objSubLineMemA2d += new ArrayBuffer[
       //  PipeSimpleDualPortMem[Vec[ObjSubLineMemEntry]]
       //]()
+      wrObjSubLineMemArr += Mem(
+        wordType=Vec.fill(params.objTileSize2d.x)(ObjSubLineMemEntry()),
+        wordCount=params.objSubLineMemArrSize,
+      )
+        .initBigInt(objSubLineMemInitBigInt)
+        .addAttribute("ram_style", params.lineArrRamStyle)
+        .setName(f"wrObjSubLineMemArr_$idx")
 
       //for (rdIdx <- 0 until RdObjSubLineMemArrInfo.numReaders) {
       //  objSubLineMemA2d.last += PipeSimpleDualPortMem(
@@ -1793,11 +1806,12 @@ case class Gpu2d(
       //    arrRamStyle=params.lineArrRamStyle,
       //  )
       //}
-      objSubLineMemArr += WrPulseRdPipeSimpleDualPortMem(
-        dataType=HardType.union(
-          WrObjPipePayload(),
-          CombinePipePayload(),
-        ),
+      combineObjSubLineMemArr += WrPulseRdPipeSimpleDualPortMem(
+        //dataType=HardType.union(
+        //  WrObjPipePayload(),
+        //  CombinePipePayload(),
+        //),
+        dataType=CombinePipePayload(),
         wordType=Vec.fill(params.objTileSize2d.x)(ObjSubLineMemEntry()),
         depth=params.objSubLineMemArrSize,
       )(
@@ -1845,47 +1859,47 @@ case class Gpu2d(
           //  Vec[ObjSubLineMemEntry],
           //],
           unionIdx: UInt,
-          outpPayload: Bits,
-          inpPayload: Bits,
+          outpPayload: CombinePipePayload,
+          inpPayload: CombinePipePayload,
           objTileRow: Vec[ObjSubLineMemEntry],
         ) => {
-          switch (
-            //rWrLineMemArrIdx
-            unionIdx
-          ) {
-            for (jdx <- 0 until params.numLineMemsPerBgObjRenderer) {
-              is (jdx) {
-                if (idx == jdx) {
-                  val tempOutpData = (
-                    outpPayload.aliasAs(WrObjPipePayload())
-                  )
-                  val tempInpData = (
-                    inpPayload.aliasAs(WrObjPipePayload())
-                  )
-                  //ret := tempInpData.stage7.ext.wrLineMemEntry
-                  tempOutpData := tempInpData
-                  //tempOutpData.allowOverride
-                  tempOutpData.stage5.rdSubLineMemEntry.removeAssignments()
-                  tempOutpData.stage5.rdSubLineMemEntry := objTileRow
-                } else {
-                  val tempOutpData = (
-                    outpPayload.aliasAs(CombinePipePayload())
-                  )
-                  val tempInpData = (
-                    inpPayload.aliasAs(CombinePipePayload())
-                  )
+          //switch (
+          //  //rWrLineMemArrIdx
+          //  unionIdx
+          //) {
+            //for (jdx <- 0 until params.numLineMemsPerBgObjRenderer) {
+              //is (jdx) {
+              //  if (idx == jdx) {
+              //    val tempOutpData = (
+              //      outpPayload.aliasAs(WrObjPipePayload())
+              //    )
+              //    val tempInpData = (
+              //      inpPayload.aliasAs(WrObjPipePayload())
+              //    )
+              //    //ret := tempInpData.stage7.ext.wrLineMemEntry
+              //    tempOutpData := tempInpData
+              //    //tempOutpData.allowOverride
+              //    tempOutpData.stage5.rdSubLineMemEntry.removeAssignments()
+              //    tempOutpData.stage5.rdSubLineMemEntry := objTileRow
+              //  } else {
+                  //val tempOutpData = (
+                  //  outpPayload.aliasAs(CombinePipePayload())
+                  //)
+                  //val tempInpData = (
+                  //  inpPayload.aliasAs(CombinePipePayload())
+                  //)
                   //ret := ret.getZero
-                  tempOutpData := tempInpData
+                  outpPayload := inpPayload
                   //tempOutpData.allowOverride
-                  tempOutpData.stage2.rdObj.removeAssignments()
-                  tempOutpData.stage2.rdObj := objTileRow
-                }
-              }
-            }
-          }
+                  outpPayload.stage2.rdObj.removeAssignments()
+                  outpPayload.stage2.rdObj := objTileRow
+                //}
+              //}
+            //}
+          //}
         }
       )
-        .setName(f"objSubLineMemArr_$idx")
+        .setName(f"combineObjSubLineMemArr_$idx")
 
       //objSubLineMemArr += Mem(
       //  //wordType=Rgb(params.rgbConfig),
@@ -2119,198 +2133,216 @@ case class Gpu2d(
       )
       //val combineErase = Bool()
 
-      //def doWrite(
-      //  //wrIdx: Int
-      //): Unit = {
+      def doWrite(
+        //wrIdx: Int
+      ): Unit = {
 
-      //  //def tempWrLineMemArrIdx = wrIdx % 2
-      //  //def tempCombineLineMemArrIdx = (wrIdx + 1) % 2
+        //def tempWrLineMemArrIdx = wrIdx % 2
+        //def tempCombineLineMemArrIdx = (wrIdx + 1) % 2
 
-      //  //objSubLineMemArr(wrIdx) {
-      //  //}
-      //  //when (objWriter.enVec(tempWrLineMemArrIdx)) {
+        //objSubLineMemArr(wrIdx) {
+        //}
+        //when (objWriter.enVec(tempWrLineMemArrIdx)) {
 
-      //  //objSubLineMemArr(tempWrLineMemArrIdx).write(
-      //  //  address=objWriter.addrVec(tempWrLineMemArrIdx),
-      //  //  data=objWriter.dataVec(tempWrLineMemArrIdx),
-      //  //  enable=objWriter.enVec(tempWrLineMemArrIdx),
-      //  //)
-      //  //objSubLineMemArr(tempCombineLineMemArrIdx).write(
-      //  //  address=objWriter.addrVec(tempCombineLineMemArrIdx),
-      //  //  data=objWriter.dataVec(tempCombineLineMemArrIdx),
-      //  //  enable=objWriter.enVec(tempCombineLineMemArrIdx),
-      //  //)
-      //  for (jdx <- 0 until objSubLineMemArr.size) {
-      //    //def vecIdx0 = (rWrLineMemArrIdx + jdx)(0 downto 0)
-      //    def vecIdx = (
-      //      (rWrLineMemArrIdx + jdx)(0 downto 0)
-      //      //(rWrLineMemArrIdx + jdx + 1)(0 downto 0)
-      //    )
-      //    val tempAddr = cloneOf(addrVec(jdx))
-      //      .setName(f"rObjWriter_doWrite_tempAddr_$jdx")
-      //    val tempData = cloneOf(dataVec(jdx))
-      //      .setName(f"rObjWriter_doWrite_tempData_$jdx")
-      //    val tempEn = cloneOf(enVec(jdx))
-      //      .setName(f"rObjWriter_doWrite_tempEn_$jdx")
-      //    tempAddr := (
-      //      //Mux[UInt](
-      //      //  rWrLineMemArrIdx === jdx,
-      //      //  addrVec(jdx)
-      //      //  //addrVec(vecIdx0),
-      //      //  //addrVec(vecIdx1),
-      //      //)
-      //      addrVec(vecIdx)
-      //      //addrVec(wrIdx)
-      //      //addrVec(rWrLineMemArrIdx)
-      //    )
-      //    tempData := (
-      //      //Mux[Vec[ObjSubLineMemEntry]](
-      //      //  rWrLineMemArrIdx === jdx,
-      //      //  dataVec(vecIdx0),
-      //      //  dataVec(vecIdx1),
-      //      //)
-      //      dataVec(vecIdx)
-      //      //dataVec(wrIdx)
-      //      //dataVec(rWrLineMemArrIdx)
-      //    )
-      //    tempEn := (
-      //      //Mux[Bool](
-      //      //  rWrLineMemArrIdx === jdx,
-      //      //  enVec(vecIdx0),
-      //      //  enVec(vecIdx1),
-      //      //)
-      //      enVec(vecIdx)
-      //    )
+        //objSubLineMemArr(tempWrLineMemArrIdx).write(
+        //  address=objWriter.addrVec(tempWrLineMemArrIdx),
+        //  data=objWriter.dataVec(tempWrLineMemArrIdx),
+        //  enable=objWriter.enVec(tempWrLineMemArrIdx),
+        //)
+        //objSubLineMemArr(tempCombineLineMemArrIdx).write(
+        //  address=objWriter.addrVec(tempCombineLineMemArrIdx),
+        //  data=objWriter.dataVec(tempCombineLineMemArrIdx),
+        //  enable=objWriter.enVec(tempCombineLineMemArrIdx),
+        //)
+        for (jdx <- 0 until params.numLineMemsPerBgObjRenderer) {
+          //def vecIdx0 = (rWrLineMemArrIdx + jdx)(0 downto 0)
+          def vecIdx = (
+            (rWrLineMemArrIdx + jdx)(0 downto 0)
+            //(rWrLineMemArrIdx + jdx + 1)(0 downto 0)
+          )
+          val tempAddr = cloneOf(addrVec(jdx))
+            .setName(f"rObjWriter_doWrite_tempAddr_$jdx")
+          val tempData = cloneOf(dataVec(jdx))
+            .setName(f"rObjWriter_doWrite_tempData_$jdx")
+          val tempEn = cloneOf(enVec(jdx))
+            .setName(f"rObjWriter_doWrite_tempEn_$jdx")
+          tempAddr := (
+            //Mux[UInt](
+            //  rWrLineMemArrIdx === jdx,
+            //  addrVec(jdx)
+            //  //addrVec(vecIdx0),
+            //  //addrVec(vecIdx1),
+            //)
+            addrVec(vecIdx)
+            //addrVec(wrIdx)
+            //addrVec(rWrLineMemArrIdx)
+          )
+          tempData := (
+            //Mux[Vec[ObjSubLineMemEntry]](
+            //  rWrLineMemArrIdx === jdx,
+            //  dataVec(vecIdx0),
+            //  dataVec(vecIdx1),
+            //)
+            dataVec(vecIdx)
+            //dataVec(wrIdx)
+            //dataVec(rWrLineMemArrIdx)
+          )
+          tempEn := (
+            //Mux[Bool](
+            //  rWrLineMemArrIdx === jdx,
+            //  enVec(vecIdx0),
+            //  enVec(vecIdx1),
+            //)
+            enVec(vecIdx)
+          )
+          combineObjSubLineMemArr(jdx).io.unionIdx := rWrLineMemArrIdx
+          combineObjSubLineMemArr(jdx).io.wrPulse.valid := (
+            //objWriter.enVec(vecIdx)
+            tempEn
+          )
+          combineObjSubLineMemArr(jdx).io.wrPulse.addr := (
+            //objWriter.addrVec(vecIdx)
+            tempAddr
+          )
+          combineObjSubLineMemArr(jdx).io.wrPulse.data := (
+            //objWriter.dataVec(vecIdx)
+            tempData
+          )
+          wrObjSubLineMemArr(jdx).write(
+            address=tempAddr,
+            data=tempData,
+            enable=tempEn,
+          )
 
-      //    //objSubLineMemArr(jdx).io.wrPulse.valid := tempEn
-      //    //objSubLineMemArr(jdx).io.wrPulse.addr := tempAddr
-      //    //objSubLineMemArr(jdx).io.wrPulse.data := tempData
+          //objSubLineMemArr(jdx).io.wrPulse.valid := tempEn
+          //objSubLineMemArr(jdx).io.wrPulse.addr := tempAddr
+          //objSubLineMemArr(jdx).io.wrPulse.data := tempData
 
-      //    //when (rWrLineMemArrIdx === 0) {
-      //    //  def tempIdx = jdx
-      //    //  //if (jdx == 0) {
-      //    //  //  tempAddr := addrVec(0)
-      //    //  //} else { // if (jdx == 1)
-      //    //  //  tempAddr := addrVec(1)
-      //    //  //}
-      //    //  tempAddr := addrVec(tempIdx)
-      //    //  tempData := dataVec(tempIdx)
-      //    //  tempEn := enVec(tempIdx)
-      //    //} otherwise { // when (rWrLineMemArrIdx === 1)
-      //    //  def tempIdx = jdx
-      //    //  //def tempIdx = (
-      //    //  //  if (jdx == 0) {
-      //    //  //    //tempAddr := addrVec(1)
-      //    //  //    1
-      //    //  //  } else { // if (jdx == 1)
-      //    //  //    //tempAddr := addrVec(0)
-      //    //  //    0
-      //    //  //  }
-      //    //  //)
-      //    //  tempAddr := addrVec(tempIdx)
-      //    //  tempData := dataVec(tempIdx)
-      //    //  tempEn := enVec(tempIdx)
-      //    //}
-      //    //when (rWrLineMemArrIdx === jdx) {
-      //      //objSubLineMemArr(jdx).write(
-      //      //  address=tempAddr,
-      //      //  data=tempData,
-      //      //)
-      //      //--------
-      //      //objSubLineMemArr(jdx).write(
-      //      //  address=addrVec(jdx),
-      //      //  data=dataVec(jdx),
-      //      //  enable=enVec(jdx),
-      //      //)
-      //      //--------
+          //when (rWrLineMemArrIdx === 0) {
+          //  def tempIdx = jdx
+          //  //if (jdx == 0) {
+          //  //  tempAddr := addrVec(0)
+          //  //} else { // if (jdx == 1)
+          //  //  tempAddr := addrVec(1)
+          //  //}
+          //  tempAddr := addrVec(tempIdx)
+          //  tempData := dataVec(tempIdx)
+          //  tempEn := enVec(tempIdx)
+          //} otherwise { // when (rWrLineMemArrIdx === 1)
+          //  def tempIdx = jdx
+          //  //def tempIdx = (
+          //  //  if (jdx == 0) {
+          //  //    //tempAddr := addrVec(1)
+          //  //    1
+          //  //  } else { // if (jdx == 1)
+          //  //    //tempAddr := addrVec(0)
+          //  //    0
+          //  //  }
+          //  //)
+          //  tempAddr := addrVec(tempIdx)
+          //  tempData := dataVec(tempIdx)
+          //  tempEn := enVec(tempIdx)
+          //}
+          //when (rWrLineMemArrIdx === jdx) {
+            //objSubLineMemArr(jdx).write(
+            //  address=tempAddr,
+            //  data=tempData,
+            //)
+            //--------
+            //objSubLineMemArr(jdx).write(
+            //  address=addrVec(jdx),
+            //  data=dataVec(jdx),
+            //  enable=enVec(jdx),
+            //)
+            //--------
 
-      //      //--------
-      //      //when (enVec(jdx)) {
-      //      //  dbgObjSubLineMemVec(jdx)(addrVec(jdx)) := dataVec(jdx)
-      //      //}
-      //      //--------
-      //    //}
-      //    //when (rWrLineMemArrIdx === jdx) {
-      //      //objSubLineMemArr(jdx).write(
-      //      //  address=tempAddr,
-      //      //  //Mux[UInt](
-      //      //  //  rWrLineMemArrIdx === jdx,
-      //      //  //  addrVec(jdx),
-      //      //  //  addrVec((jdx + 1) % 2),
-      //      //  //)
-      //      //  data=tempData,
-      //      //  //Mux[Vec[ObjSubLineMemEntry]](
-      //      //  //  rWrLineMemArrIdx === jdx,
-      //      //  //  dataVec(jdx),
-      //      //  //  dataVec((jdx + 1) % 2),
-      //      //  //)
-      //      //  //enable=tempEn
-      //      //  //enable=True
-      //      //  //Mux[Bool](
-      //      //  //  rWrLineMemArrIdx === jdx,
-      //      //  //  enVec(jdx),
-      //      //  //  enVec((jdx + 1) % 2),
-      //      //  //),
-      //      //  //,
-      //      //)
-      //    //}
-      //  }
+            //--------
+            //when (enVec(jdx)) {
+            //  dbgObjSubLineMemVec(jdx)(addrVec(jdx)) := dataVec(jdx)
+            //}
+            //--------
+          //}
+          //when (rWrLineMemArrIdx === jdx) {
+            //objSubLineMemArr(jdx).write(
+            //  address=tempAddr,
+            //  //Mux[UInt](
+            //  //  rWrLineMemArrIdx === jdx,
+            //  //  addrVec(jdx),
+            //  //  addrVec((jdx + 1) % 2),
+            //  //)
+            //  data=tempData,
+            //  //Mux[Vec[ObjSubLineMemEntry]](
+            //  //  rWrLineMemArrIdx === jdx,
+            //  //  dataVec(jdx),
+            //  //  dataVec((jdx + 1) % 2),
+            //  //)
+            //  //enable=tempEn
+            //  //enable=True
+            //  //Mux[Bool](
+            //  //  rWrLineMemArrIdx === jdx,
+            //  //  enVec(jdx),
+            //  //  enVec((jdx + 1) % 2),
+            //  //),
+            //  //,
+            //)
+          //}
+        }
 
-      //  //}
-      //  //when (objWriter.enVec(tempCombineLineMemArrIdx)) {
-      //  //}
-      //}
+        //}
+        //when (objWriter.enVec(tempCombineLineMemArrIdx)) {
+        //}
+      }
     }
     val objWriter = ObjSubLineMemWriter()
-    for (jdx <- 0 until objSubLineMemArr.size) {
-      //def vecIdx0 = (rWrLineMemArrIdx + jdx)(0 downto 0)
-      def vecIdx = (
-        (rWrLineMemArrIdx + jdx)(0 downto 0)
-        //(rWrLineMemArrIdx + jdx + 1)(0 downto 0)
-      )
-      //val tempAddr = cloneOf(objWriter.addrVec(jdx))
-      //  .setName(f"rObjWriter_doWrite_tempAddr_$jdx")
-      //val tempData = cloneOf(objWriter.dataVec(jdx))
-      //  .setName(f"rObjWriter_doWrite_tempData_$jdx")
-      //val tempEn = cloneOf(objWriter.enVec(jdx))
-      //  .setName(f"rObjWriter_doWrite_tempEn_$jdx")
-      //tempAddr := (
-      //  //Mux[UInt](
-      //  //  rWrLineMemArrIdx === jdx,
-      //  //  addrVec(jdx)
-      //  //  //addrVec(vecIdx0),
-      //  //  //addrVec(vecIdx1),
-      //  //)
-      //  objWriter.addrVec(vecIdx)
-      //  //addrVec(wrIdx)
-      //  //addrVec(rWrLineMemArrIdx)
-      //)
-      //tempData := (
-      //  //Mux[Vec[ObjSubLineMemEntry]](
-      //  //  rWrLineMemArrIdx === jdx,
-      //  //  dataVec(vecIdx0),
-      //  //  dataVec(vecIdx1),
-      //  //)
-      //  objWriter.dataVec(vecIdx)
-      //  //dataVec(wrIdx)
-      //  //dataVec(rWrLineMemArrIdx)
-      //)
-      //tempEn := (
-      //  //Mux[Bool](
-      //  //  rWrLineMemArrIdx === jdx,
-      //  //  enVec(vecIdx0),
-      //  //  enVec(vecIdx1),
-      //  //)
-      //  objWriter.enVec(vecIdx)
-      //)
+    //for (jdx <- 0 until objSubLineMemArr.size) {
+    //  //def vecIdx0 = (rWrLineMemArrIdx + jdx)(0 downto 0)
+    //  def vecIdx = (
+    //    (rWrLineMemArrIdx + jdx)(0 downto 0)
+    //    //(rWrLineMemArrIdx + jdx + 1)(0 downto 0)
+    //  )
+    //  //val tempAddr = cloneOf(objWriter.addrVec(jdx))
+    //  //  .setName(f"rObjWriter_doWrite_tempAddr_$jdx")
+    //  //val tempData = cloneOf(objWriter.dataVec(jdx))
+    //  //  .setName(f"rObjWriter_doWrite_tempData_$jdx")
+    //  //val tempEn = cloneOf(objWriter.enVec(jdx))
+    //  //  .setName(f"rObjWriter_doWrite_tempEn_$jdx")
+    //  //tempAddr := (
+    //  //  //Mux[UInt](
+    //  //  //  rWrLineMemArrIdx === jdx,
+    //  //  //  addrVec(jdx)
+    //  //  //  //addrVec(vecIdx0),
+    //  //  //  //addrVec(vecIdx1),
+    //  //  //)
+    //  //  objWriter.addrVec(vecIdx)
+    //  //  //addrVec(wrIdx)
+    //  //  //addrVec(rWrLineMemArrIdx)
+    //  //)
+    //  //tempData := (
+    //  //  //Mux[Vec[ObjSubLineMemEntry]](
+    //  //  //  rWrLineMemArrIdx === jdx,
+    //  //  //  dataVec(vecIdx0),
+    //  //  //  dataVec(vecIdx1),
+    //  //  //)
+    //  //  objWriter.dataVec(vecIdx)
+    //  //  //dataVec(wrIdx)
+    //  //  //dataVec(rWrLineMemArrIdx)
+    //  //)
+    //  //tempEn := (
+    //  //  //Mux[Bool](
+    //  //  //  rWrLineMemArrIdx === jdx,
+    //  //  //  enVec(vecIdx0),
+    //  //  //  enVec(vecIdx1),
+    //  //  //)
+    //  //  objWriter.enVec(vecIdx)
+    //  //)
 
-      objSubLineMemArr(jdx).io.unionIdx := rWrLineMemArrIdx
-      objSubLineMemArr(jdx).io.wrPulse.valid := objWriter.enVec(vecIdx)
-      objSubLineMemArr(jdx).io.wrPulse.addr := objWriter.addrVec(vecIdx)
-      objSubLineMemArr(jdx).io.wrPulse.data := objWriter.dataVec(vecIdx)
-    }
+    //  objSubLineMemArr(jdx).io.unionIdx := rWrLineMemArrIdx
+    //  objSubLineMemArr(jdx).io.wrPulse.valid := objWriter.enVec(vecIdx)
+    //  objSubLineMemArr(jdx).io.wrPulse.addr := objWriter.addrVec(vecIdx)
+    //  objSubLineMemArr(jdx).io.wrPulse.data := objWriter.dataVec(vecIdx)
+    //}
     //objWriter.init(objWriter.getZero)
-    //objWriter.doWrite()
+    objWriter.doWrite()
     //--------
     //def wrBgPipeBgIdxWidth = params.numBgsPow + 1
     def wrBgPipeBgIdxWidth = params.numBgsPow
@@ -3846,7 +3878,7 @@ case class Gpu2d(
         //anyPipeNumStages
       )(
         //Flow(WrObjPipePayload())
-        Stream(WrObjPipePayload())
+        Flow(WrObjPipePayload())
       )
     )
     val wrObjPipeOut = KeepAttribute(
@@ -3856,7 +3888,7 @@ case class Gpu2d(
         //anyPipeNumStages
       )(
         //Flow(WrObjPipePayload())
-        Stream(WrObjPipePayload())
+        Flow(WrObjPipePayload())
       )
     )
     //case class WrObjPipe6ExtSingle() extends Bundle {
@@ -3906,12 +3938,12 @@ case class Gpu2d(
 
     val wrObjPipeLast = KeepAttribute(
       //Flow(WrObjPipePayload())
-      Stream(WrObjPipePayload())
+      Flow(WrObjPipePayload())
     )
+    //wrObjPipeLast.ready := True
     //when (nextIntnlChangingRow && rWrObjChangingRow) 
     //when (rIntnlChangingRow)
-    when (intnlChangingRowRe) 
-    {
+    when (intnlChangingRowRe) {
       nextWrObjChangingRow := False
     } elsewhen (
       wrObjPipeLast.bakCntWillBeDone() && wrObjPipeLast.fire
@@ -3960,8 +3992,8 @@ case class Gpu2d(
     for (idx <- 1 to wrObjPipeIn.size - 1) {
       // Create pipeline registering
       //when (idx - 1 != 6) {
-        //wrObjPipeIn(idx) <-< wrObjPipeOut(idx - 1)
-        wrObjPipeIn(idx) <-/< wrObjPipeOut(idx - 1)
+        wrObjPipeIn(idx) <-< wrObjPipeOut(idx - 1)
+        //wrObjPipeIn(idx) <-/< wrObjPipeOut(idx - 1)
       //} otherwise {
       //}
       //wrObjPipeIn(idx) <-/< wrObjPipeOut(idx - 1)
@@ -3969,12 +4001,12 @@ case class Gpu2d(
     for (idx <- 0 to wrObjPipeOut.size - 1) {
       // Connect output `valid` to input `valid`
       wrObjPipeOut(idx).valid := wrObjPipeIn(idx).valid
-      wrObjPipeIn(idx).ready := wrObjPipeOut(idx).ready
+      //wrObjPipeIn(idx).ready := wrObjPipeOut(idx).ready
     }
     //wrObjPipeOut(6).payload.setAsReg()
     // add one final register
-    //wrObjPipeLast <-< wrObjPipeOut.last
-    wrObjPipeLast <-/< wrObjPipeOut.last
+    wrObjPipeLast <-< wrObjPipeOut.last
+    //wrObjPipeLast <-/< wrObjPipeOut.last
     //wrObjPipeLast <-/< wrObjPipeOut.last
     //wrObjPipe.last.ready := True
 
@@ -4245,21 +4277,36 @@ case class Gpu2d(
       //Stream(CombinePipePayload())
       Stream(CombinePipePayload())
     )
-    def combinePipe1BgObjVecSize = (
-      params.numLineMemsPerBgObjRenderer
+    val combineBgObjRdPipeFork = FpgacpuPipeForkBlocking(
+      dataType=CombinePipePayload(),
+      // BEGIN: add in BGs; later
+      oSize=params.numLineMemsPerBgObjRenderer // * 2
+      ,
+      // END: add in BGs; later
     )
-    val combinePipeIn1BgVec = Vec.fill(combinePipe1BgObjVecSize)(
-      cloneOf(combinePipeIn(1))
+    val combineBgObjRdPipeJoin = FpgacpuPipeJoin(
+      dataType=CombinePipePayload(),
+      // BEGIN: add in BGs; later
+      size=params.numLineMemsPerBgObjRenderer // * 2
+      ,
+      // END: add in BGs; later
     )
-    val combinePipeIn1ObjVec = Vec.fill(combinePipe1BgObjVecSize)(
-      cloneOf(combinePipeIn(1))
-    )
-    val combinePipeOut1BgVec = Vec.fill(combinePipe1BgObjVecSize)(
-      cloneOf(combinePipeOut(1))
-    )
-    val combinePipeOut1ObjVec = Vec.fill(combinePipe1BgObjVecSize)(
-      cloneOf(combinePipeOut(1))
-    )
+    //def combinePipe1BgObjVecSize = (
+    //  params.numLineMemsPerBgObjRenderer
+    //)
+    //val combinePipeIn1BgVec = Vec.fill(combinePipe1BgObjVecSize)(
+    //  cloneOf(combinePipeIn(1))
+    //)
+    //val combinePipeIn1ObjVec = Vec.fill(combinePipe1BgObjVecSize)(
+    //  cloneOf(combinePipeIn(1))
+    //)
+    //val combinePipeOut1BgVec = Vec.fill(combinePipe1BgObjVecSize)(
+    //  cloneOf(combinePipeOut(1))
+    //)
+    //val combinePipeOut1ObjVec = Vec.fill(combinePipe1BgObjVecSize)(
+    //  cloneOf(combinePipeOut(1))
+    //)
+
     //val combinePipeIn1BgMemReadSyncArr = new ArrayBuffer[
     //  MemReadSyncIntoPipe[
     //    CombinePipePayload,
@@ -4278,117 +4325,117 @@ case class Gpu2d(
     //--------
     // The logic is identical, so we only need one `valid` or `ready`
     // signal for the below two assignments
-    combinePipeIn(1).ready := combinePipeIn1BgVec(
-      rCombineLineMemArrIdx
-    ).ready
-    combinePipeOut(1).valid := combinePipeOut1BgVec(
-      rCombineLineMemArrIdx
-    ).valid
+    //combinePipeIn(1).ready := combinePipeIn1BgVec(
+    //  rCombineLineMemArrIdx
+    //).ready
+    //combinePipeOut(1).valid := combinePipeOut1BgVec(
+    //  rCombineLineMemArrIdx
+    //).valid
     //--------
 
-    combinePipeOut(1).payload := combinePipeIn(1).payload
-    combinePipeOut(1).payload.allowOverride
+    //combinePipeOut(1).payload := combinePipeIn(1).payload
+    //combinePipeOut(1).payload.allowOverride
 
-    for (jdx <- 0 until combinePipe1BgObjVecSize) {
-      combinePipeIn1BgVec(jdx).valid := combinePipeIn(1).valid
-      combinePipeIn1ObjVec(jdx).valid := combinePipeIn(1).valid
+    //for (jdx <- 0 until combinePipe1BgObjVecSize) {
+    //  combinePipeIn1BgVec(jdx).valid := combinePipeIn(1).valid
+    //  combinePipeIn1ObjVec(jdx).valid := combinePipeIn(1).valid
 
-      combinePipeIn1BgVec(jdx).payload := combinePipeIn(1).payload
-      combinePipeIn1ObjVec(jdx).payload := combinePipeIn(1).payload
+    //  combinePipeIn1BgVec(jdx).payload := combinePipeIn(1).payload
+    //  combinePipeIn1ObjVec(jdx).payload := combinePipeIn(1).payload
 
-      combinePipeOut1BgVec(jdx).payload := combinePipeIn(1).payload
-      combinePipeOut1BgVec(jdx).payload.allowOverride
-      combinePipeOut1ObjVec(jdx).payload := combinePipeIn(1).payload
-      combinePipeOut1ObjVec(jdx).payload.allowOverride
+    //  combinePipeOut1BgVec(jdx).payload := combinePipeIn(1).payload
+    //  combinePipeOut1BgVec(jdx).payload.allowOverride
+    //  combinePipeOut1ObjVec(jdx).payload := combinePipeIn(1).payload
+    //  combinePipeOut1ObjVec(jdx).payload.allowOverride
 
-      combinePipeOut1BgVec(jdx).ready := combinePipeOut(1).ready
-      combinePipeOut1ObjVec(jdx).ready := combinePipeOut(1).ready
+    //  combinePipeOut1BgVec(jdx).ready := combinePipeOut(1).ready
+    //  combinePipeOut1ObjVec(jdx).ready := combinePipeOut(1).ready
 
-      //combinePipeIn1BgMemReadSyncArr += MemReadSyncIntoPipe(
-      //  //pipeIn=combinePipeIn(1),
-      //  pipeIn=combinePipeIn1BgVec(jdx),
-      //  //inpAddr=(
-      //  //  params.getBgSubLineMemArrIdx(
-      //  //    addr=(
-      //  //      combinePipeIn1BgVec(jdx).cnt
-      //  //      //combinePipeIn(1)
-      //  //      //combinePipeIn1BgVec(jdx).cnt
-      //  //      (
-      //  //        log2Up(params.oneLineMemSize) - 1 downto 0
-      //  //      ),
-      //  //    )
-      //  //  )
-      //  //),
-      //  pipeOut=combinePipeOut1BgVec(jdx),
-      //  //outpRdData=combinePipeOut1BgVec(jdx).stage2.rdBg,
-      //  //multiRd=rdBgSubLineMemArr(jdx),
-      //  //rdIdx=RdBgSubLineMemArrInfo.combineIdx,
-      //  someMem=bgSubLineMemArr(jdx),
-      //)(
-      //  getInpAddrFunc=(
-      //    payload => params.getBgSubLineMemArrIdx(
-      //      addr=payload.cnt(
-      //        log2Up(params.oneLineMemSize) - 1 downto 0
-      //      )
-      //    )
-      //  ),
-      //  getOutpRdDataFunc=(
-      //    payload => payload.stage2.rdBg
-      //  )
-      //)
-      //  .setName(f"combinePipeIn1BgMemReadSyncArr_$jdx")
-      //rdBgSubLineMemArr(jdx).rdAllowedVec(
-      //  RdBgSubLineMemArrInfo.combineIdx,
-      //) := True
+    //  //combinePipeIn1BgMemReadSyncArr += MemReadSyncIntoPipe(
+    //  //  //pipeIn=combinePipeIn(1),
+    //  //  pipeIn=combinePipeIn1BgVec(jdx),
+    //  //  //inpAddr=(
+    //  //  //  params.getBgSubLineMemArrIdx(
+    //  //  //    addr=(
+    //  //  //      combinePipeIn1BgVec(jdx).cnt
+    //  //  //      //combinePipeIn(1)
+    //  //  //      //combinePipeIn1BgVec(jdx).cnt
+    //  //  //      (
+    //  //  //        log2Up(params.oneLineMemSize) - 1 downto 0
+    //  //  //      ),
+    //  //  //    )
+    //  //  //  )
+    //  //  //),
+    //  //  pipeOut=combinePipeOut1BgVec(jdx),
+    //  //  //outpRdData=combinePipeOut1BgVec(jdx).stage2.rdBg,
+    //  //  //multiRd=rdBgSubLineMemArr(jdx),
+    //  //  //rdIdx=RdBgSubLineMemArrInfo.combineIdx,
+    //  //  someMem=bgSubLineMemArr(jdx),
+    //  //)(
+    //  //  getInpAddrFunc=(
+    //  //    payload => params.getBgSubLineMemArrIdx(
+    //  //      addr=payload.cnt(
+    //  //        log2Up(params.oneLineMemSize) - 1 downto 0
+    //  //      )
+    //  //    )
+    //  //  ),
+    //  //  getOutpRdDataFunc=(
+    //  //    payload => payload.stage2.rdBg
+    //  //  )
+    //  //)
+    //  //  .setName(f"combinePipeIn1BgMemReadSyncArr_$jdx")
+    //  //rdBgSubLineMemArr(jdx).rdAllowedVec(
+    //  //  RdBgSubLineMemArrInfo.combineIdx,
+    //  //) := True
 
-      //combinePipeIn1ObjMemReadSyncArr += MemReadSyncIntoPipe(
-      //  //pipeIn=combinePipeIn(1),
-      //  pipeIn=combinePipeIn1ObjVec(jdx),
-      //  //inpAddr=combinePipeIn1Obj.lineMemIdx,
-      //  //inpAddr=params.getObjSubLineMemArrIdx(
-      //  //  addr=(
-      //  //    //combinePipeIn1ObjVec(jdx).cnt
-      //  //    combinePipeIn(1).cnt
-      //  //    (
-      //  //      log2Up(params.oneLineMemSize) - 1 downto 0
-      //  //    ),
-      //  //  )
-      //  //),
-      //  pipeOut=combinePipeOut1ObjVec(jdx),
-      //  //outpRdData=combinePipeOut1ObjVec(jdx).stage2.rdObj,
-      //  //multiRd=rdObjSubLineMemArr(jdx),
-      //  //rdIdx=RdObjSubLineMemArrInfo.combineIdx,
-      //  someMem=objSubLineMemArr(jdx),
-      //)(
-      //  getInpAddrFunc=(
-      //    payload => params.getObjSubLineMemArrIdx(
-      //      addr=payload.cnt(
-      //        log2Up(params.oneLineMemSize) - 1 downto 0
-      //      )
-      //    )
-      //  ),
-      //  getOutpRdDataFunc=(
-      //    payload => payload.stage2.rdObj
-      //  )
-      //)
-      //  .setName(f"combinePipeIn1ObjMemReadSyncArr_$jdx")
+    //  //combinePipeIn1ObjMemReadSyncArr += MemReadSyncIntoPipe(
+    //  //  //pipeIn=combinePipeIn(1),
+    //  //  pipeIn=combinePipeIn1ObjVec(jdx),
+    //  //  //inpAddr=combinePipeIn1Obj.lineMemIdx,
+    //  //  //inpAddr=params.getObjSubLineMemArrIdx(
+    //  //  //  addr=(
+    //  //  //    //combinePipeIn1ObjVec(jdx).cnt
+    //  //  //    combinePipeIn(1).cnt
+    //  //  //    (
+    //  //  //      log2Up(params.oneLineMemSize) - 1 downto 0
+    //  //  //    ),
+    //  //  //  )
+    //  //  //),
+    //  //  pipeOut=combinePipeOut1ObjVec(jdx),
+    //  //  //outpRdData=combinePipeOut1ObjVec(jdx).stage2.rdObj,
+    //  //  //multiRd=rdObjSubLineMemArr(jdx),
+    //  //  //rdIdx=RdObjSubLineMemArrInfo.combineIdx,
+    //  //  someMem=objSubLineMemArr(jdx),
+    //  //)(
+    //  //  getInpAddrFunc=(
+    //  //    payload => params.getObjSubLineMemArrIdx(
+    //  //      addr=payload.cnt(
+    //  //        log2Up(params.oneLineMemSize) - 1 downto 0
+    //  //      )
+    //  //    )
+    //  //  ),
+    //  //  getOutpRdDataFunc=(
+    //  //    payload => payload.stage2.rdObj
+    //  //  )
+    //  //)
+    //  //  .setName(f"combinePipeIn1ObjMemReadSyncArr_$jdx")
 
-      //rdObjSubLineMemArr(jdx).rdAllowedVec(
-      //  RdObjSubLineMemArrInfo.combineIdx,
-      //) := True
-    }
-    switch (rCombineLineMemArrIdx) {
-      for (jdx <- 0 until combinePipe1BgObjVecSize) {
-        is (jdx) {
-          combinePipeOut(1).stage2.rdBg := (
-            combinePipeOut1BgVec(jdx).stage2.rdBg
-          )
-          combinePipeOut(1).stage2.rdObj := (
-            combinePipeOut1ObjVec(jdx).stage2.rdObj
-          )
-        }
-      }
-    }
+    //  //rdObjSubLineMemArr(jdx).rdAllowedVec(
+    //  //  RdObjSubLineMemArrInfo.combineIdx,
+    //  //) := True
+    //}
+    //switch (rCombineLineMemArrIdx) {
+    //  for (jdx <- 0 until combinePipe1BgObjVecSize) {
+    //    is (jdx) {
+    //      combinePipeOut(1).stage2.rdBg := (
+    //        combinePipeOut1BgVec(jdx).stage2.rdBg
+    //      )
+    //      combinePipeOut(1).stage2.rdObj := (
+    //        combinePipeOut1ObjVec(jdx).stage2.rdObj
+    //      )
+    //    }
+    //  }
+    //}
     nextCombineChangingRow := combinePipeLast.changingRow
 
     //val rCombinePipeFrontValid = Reg(Bool()) init(True)
@@ -4682,23 +4729,24 @@ case class Gpu2d(
         //  )
         //) 
 
-        if (idx == 1) {
-          // `valid` and `payload` are cut by a register stage
-          //combinePipeIn(idx) <-< combinePipeOut(idx - 1)
-          //combinePipeIn(idx) <-/< combinePipeOut(idx - 1)
-          combinePipeIn(idx) <-/< combinePipeOut(idx - 1)
-          //combinePipeIn(idx) << combinePipeOut(idx - 1)
-
-        } else if (idx - 1 == 1) {
-          // `ready` is cut by a register stage
-          //combinePipeIn(idx) </< combinePipeOut(idx - 1)
-          //combinePipeIn(idx) <-/< combinePipeOut(idx - 1)
-          combinePipeIn(idx) << combinePipeOut(idx - 1)
-        } else {
+        //if (idx == 1) {
+        //  // `valid` and `payload` are cut by a register stage
+        //  //combinePipeIn(idx) <-< combinePipeOut(idx - 1)
+        //  ////combinePipeIn(idx) <-/< combinePipeOut(idx - 1)
+        //  ////combinePipeIn(idx) <-/< combinePipeOut(idx - 1)
+        //  ////combinePipeIn(idx) << combinePipeOut(idx - 1)
+        //  //combinePipeIn(idx) << combineBgObjRdPipe
+        //  //combinePipeIn(idx) <-/< 
+        //} else if (idx - 1 == 1) {
+        //  // `ready` is cut by a register stage
+        //  //combinePipeIn(idx) </< combinePipeOut(idx - 1)
+        //  ////combinePipeIn(idx) <-/< combinePipeOut(idx - 1)
+        //  ////combinePipeIn(idx) << combinePipeOut(idx - 1)
+        //} else {
           // `valid`, `payload`, and `ready` are all cut by a register
           // stage
           combinePipeIn(idx) <-/< combinePipeOut(idx - 1)
-        }
+        //}
         //--------
       }
       if (
@@ -4708,6 +4756,67 @@ case class Gpu2d(
       ) {
         combinePipeOut(idx).valid := combinePipeIn(idx).valid
         combinePipeIn(idx).ready := combinePipeOut(idx).ready
+      } else {
+        //combinePipeOut(idx)
+        combineBgObjRdPipeFork.io.pipeIn << combinePipeIn(idx)
+        for (combineIdx <- 0 until params.numLineMemsPerBgObjRenderer) {
+          //combineObjSubLineMemArr(combineIdx).io.rdAddrPipe << (
+          //  combineBgObjRdPipeFork.io.pipeOutVec//(combineIdx)
+          //);
+          def myLineMem = combineObjSubLineMemArr(combineIdx)
+          def myForkPipeOut = (
+            combineBgObjRdPipeFork.io.pipeOutVec(combineIdx)
+          )
+          def myJoinPipeIn = (
+            combineBgObjRdPipeJoin.io.pipeInVec(combineIdx)
+          )
+          myForkPipeOut.translateInto(
+            myLineMem.io.rdAddrPipe
+          )(
+            dataAssignment=(
+              o,
+              i,
+            ) => {
+              //o.addr := i.cnt(
+              //  log2Up(params.objSubLineMemArrSize) - 1 downto 0
+              //)
+              o.addr := params.getObjSubLineMemArrIdx(
+                addr=i.cnt,
+              )
+              o.data := i
+            }
+          )
+          myJoinPipeIn << myLineMem.io.rdDataPipe
+          //myLineMem.io.rdDataPipe.translateInto(
+          //  myJoinPipeIn
+          //)(
+          //  dataAssignment=(
+          //    o,
+          //    i,
+          //  ) => {
+          //    //o := i.data
+          //    o := i
+          //  }
+          //)
+          //combineObjSubLineMemArr(combineIdx)
+        }
+        combinePipeOut(idx).valid := (
+          combineBgObjRdPipeJoin.io.pipeOut.valid
+        )
+        combineBgObjRdPipeJoin.io.pipeOut.ready := (
+          combinePipeOut(idx).ready
+        )
+        switch (rCombineLineMemArrIdx) {
+          for (combineIdx <- 0 until params.numLineMemsPerBgObjRenderer) {
+            is (combineIdx) {
+              // BEGIN: add in BGs; later
+              combinePipeOut(idx).payload := (
+                combineBgObjRdPipeJoin.io.pipeOut.payload(combineIdx)
+              )
+              // END: add in BGs; later
+            }
+          }
+        }
       }
     }
 
@@ -5795,7 +5904,7 @@ case class Gpu2d(
       //someWrLineMemArrIdx: Int,
     ): Unit = {
       // Handle sprites
-      val stageData = DualPipeStageData[Stream[WrObjPipePayload]](
+      val stageData = DualPipeStageData[Flow[WrObjPipePayload]](
         pipeIn=wrObjPipeIn,
         pipeOut=wrObjPipeOut,
         pipeNumMainStages=wrObjPipeNumMainStages,
@@ -5824,7 +5933,7 @@ case class Gpu2d(
         stageData=stageData.craft(0)
       )(
         pipeStageMainFunc=(
-          stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
           //stageData.pipeOut(idx).cnt := (
@@ -5849,7 +5958,7 @@ case class Gpu2d(
           //)
         },
         copyOnlyFunc=(
-          stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
           //stageData.pipeOut(idx).cnt := (
@@ -5862,7 +5971,7 @@ case class Gpu2d(
       //  stageData=stageData.craft(0)
       //)(
       //  pipeStageMainFunc=(
-      //    stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
       //    idx: Int,
       //  ) => {
       //    stageData.pipeOut(idx).cntMinus1 := (
@@ -5870,7 +5979,7 @@ case class Gpu2d(
       //    )
       //  },
       //  copyOnlyFunc=(
-      //    stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
       //    idx: Int,
       //  ) => {
       //    stageData.pipeOut(idx).cntMinus1 := (
@@ -5886,7 +5995,7 @@ case class Gpu2d(
         stageData=stageData.craft(1)
       )(
         pipeStageMainFunc=(
-          stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
           val tempInp = stageData.pipeIn(idx)
@@ -5897,7 +6006,7 @@ case class Gpu2d(
           )
         },
         copyOnlyFunc=(
-          stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
           //stageData.pipeOut(idx).objAttrs := (
@@ -5913,7 +6022,7 @@ case class Gpu2d(
         stageData=stageData.craft(2)
       )(
         pipeStageMainFunc=(
-          stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
           val tempInp = stageData.pipeIn(idx)
@@ -5994,7 +6103,7 @@ case class Gpu2d(
           )
         },
         copyOnlyFunc=(
-          stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
           stageData.pipeOut(idx).stage2 := stageData.pipeIn(idx).stage2
@@ -6010,7 +6119,7 @@ case class Gpu2d(
         stageData=stageData.craft(3)
       )(
         pipeStageMainFunc=(
-          stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
           val tempInp = stageData.pipeIn(idx)
@@ -6134,7 +6243,7 @@ case class Gpu2d(
           }
         },
         copyOnlyFunc=(
-          stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
           stageData.pipeOut(idx).stage3 := stageData.pipeIn(idx).stage3
@@ -6145,7 +6254,7 @@ case class Gpu2d(
         stageData=stageData.craft(4)
       )(
         pipeStageMainFunc=(
-          stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
           val tempInp = stageData.pipeIn(idx)
@@ -6191,7 +6300,7 @@ case class Gpu2d(
           }
         },
         copyOnlyFunc=(
-          stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
           stageData.pipeOut(idx).stage4 := stageData.pipeIn(idx).stage4
@@ -6206,7 +6315,7 @@ case class Gpu2d(
         )
       )(
         pipeStageMainFunc=(
-          stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
           val tempInp = stageData.pipeIn(idx)
@@ -6254,7 +6363,7 @@ case class Gpu2d(
           }
         },
         copyOnlyFunc=(
-          stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
           stageData.pipeOut(idx).stage5 := stageData.pipeIn(idx).stage5
@@ -6267,7 +6376,7 @@ case class Gpu2d(
       //  stageData=stageData.craft(6)
       //)(
       //  pipeStageMainFunc=(
-      //    stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
       //    idx: Int,
       //  ) => {
       //    val tempInp = stageData.pipeIn(idx)
@@ -6357,7 +6466,7 @@ case class Gpu2d(
       //    //tempOutp.overwriteLineMemEntry := True
       //  },
       //  copyOnlyFunc=(
-      //    stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
       //    idx: Int,
       //  ) => {
       //    stageData.pipeOut(idx).stage6 := stageData.pipeIn(idx).stage6
@@ -6370,7 +6479,7 @@ case class Gpu2d(
         stageData=stageData.craft(6)
       )(
         pipeStageMainFunc=(
-          stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
           val tempInp = stageData.pipeIn(idx)
@@ -6382,9 +6491,33 @@ case class Gpu2d(
           ) {
             for (jdx <- 0 until (1 << rWrLineMemArrIdx.getWidth)) {
               is (jdx) {
+                //println(f"testificate: $jdx")
+                //println({
+                //  def size = wrObjSubLineMemArr.size
+                //  f"$size"
+                //})
+                //val temp = wrObjSubLineMemArr(jdx).readAsync(
+                //  params.getObjSubLineMemArrIdx(
+                //    addr=tempInp.cnt
+                //  )
+                //)
+                val temp = wrObjSubLineMemArr(jdx)
+                tempOutp.stage6.rdSubLineMemEntry := (
+                  temp.readAsync(
+                    address=params.getObjSubLineMemArrIdx(
+                      //tempInp.cnt
+                      tempInp.pxPos(0).x.asUInt
+                    )
+                  )
+                )
                 //tempOutp.stage6.rdSubLineMemEntry := (
-                //  rdObjSubLineMemArr(jdx).dataVec(
-                //    RdObjSubLineMemArrInfo.wrObjIdx
+                //  //rdObjSubLineMemArr(jdx).dataVec(
+                //  //  RdObjSubLineMemArrInfo.wrObjIdx
+                //  //)
+                //  wrObjSubLineMemArr(jdx).readAsync(
+                //    params.getObjSubLineMemArrIdx(
+                //      addr=tempInp.cnt
+                //    )
                 //  )
                 //)
               }
@@ -6392,7 +6525,7 @@ case class Gpu2d(
           }
         },
         copyOnlyFunc=(
-          stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
           stageData.pipeOut(idx).stage6 := stageData.pipeIn(idx).stage6
@@ -6404,7 +6537,7 @@ case class Gpu2d(
         stageData=stageData.craft(7)
       )(
         pipeStageMainFunc=(
-          stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
           val tempInp = stageData.pipeIn(idx)
@@ -6927,7 +7060,7 @@ case class Gpu2d(
           //myMainFunc()
         },
         copyOnlyFunc=(
-          stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
           stageData.pipeOut(idx).stage7 := stageData.pipeIn(idx).stage7
@@ -6940,7 +7073,7 @@ case class Gpu2d(
       //  stageData=stageData.craft(7)
       //)(
       //  pipeStageMainFunc=(
-      //    stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
       //    idx: Int,
       //  ) => {
       //    val tempInp = stageData.pipeIn(idx)
@@ -6953,7 +7086,7 @@ case class Gpu2d(
       //    //}
       //  },
       //  copyOnlyFunc=(
-      //    stageData: DualPipeStageData[Stream[WrObjPipePayload]],
+      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
       //    idx: Int,
       //  ) => {
       //    stageData.pipeOut(idx).stage7 := stageData.pipeIn(idx).stage7

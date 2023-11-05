@@ -40,7 +40,7 @@ case class PipeSimpleDualPortMemIo[
     )
   )
   //val rdAddrPipe = Stream(UInt(addrWidth bits))
-  def rdAddrPipe = slave Stream(
+  val rdAddrPipe = slave Stream(
     PipeSimpleDualPortMemDrivePayload(
       //wordType=wordType(),
       dataType=dataType,
@@ -101,6 +101,7 @@ case class PipeSimpleDualPortMem[
       depth=depth,
     )
   )
+  wrPipeToPulse.io.clear := False
   val rdAddrPipeToPulse = FpgacpuPipeToPulse(
     //dataType=UInt(addrWidth bits)
     dataType=PipeSimpleDualPortMemDrivePayload(
@@ -109,10 +110,14 @@ case class PipeSimpleDualPortMem[
       depth=depth,
     )
   )
+  rdAddrPipeToPulse.io.pipe << io.rdAddrPipe
+  rdAddrPipeToPulse.io.clear := False
   val rdDataPulseToPipe = FpgacpuPulseToPipe(
     //dataType=wordType()
     dataType=dataType()
   )
+  rdDataPulseToPipe.io.clear := False
+  rdAddrPipeToPulse.io.moduleReady := rdDataPulseToPipe.io.moduleReady
   //--------
   val arr = FpgacpuRamSimpleDualPort(
     wordType=wordType(),
@@ -152,7 +157,8 @@ case class PipeSimpleDualPortMem[
   for (idx <- 0 until latency) {
     if (idx == 0) {
       rRdPulsePipePayloadVec(idx) := rdAddrPipeToPulse.io.pulse.data
-      rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.moduleReady
+      //rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.moduleReady
+      rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.pulse.valid
     } else {
       rRdPulsePipePayloadVec(idx) := rRdPulsePipePayloadVec(idx - 1)
       rRdPulseValidVec(idx) := rRdPulseValidVec(idx - 1)
@@ -196,7 +202,7 @@ case class WrPulseRdPipeSimpleDualPortMemIo[
     )
   )
   //val rdAddrPipe = Stream(UInt(addrWidth bits))
-  def rdAddrPipe = slave Stream(
+  val rdAddrPipe = slave Stream(
     PipeSimpleDualPortMemDrivePayload(
       //wordType=wordType(),
       dataType=dataType(),
@@ -268,10 +274,14 @@ extends Component
       depth=depth,
     )
   )
+  rdAddrPipeToPulse.io.pipe << io.rdAddrPipe
+  rdAddrPipeToPulse.io.clear := False
   val rdDataPulseToPipe = FpgacpuPulseToPipe(
     //dataType=wordType()
     dataType=dataType()
   )
+  rdDataPulseToPipe.io.clear := False
+  rdAddrPipeToPulse.io.moduleReady := rdDataPulseToPipe.io.moduleReady
   //--------
   val arr = FpgacpuRamSimpleDualPort(
     wordType=wordType(),
@@ -315,7 +325,8 @@ extends Component
   for (idx <- 0 until latency) {
     if (idx == 0) {
       rRdPulsePipePayloadVec(idx) := rdAddrPipeToPulse.io.pulse.data
-      rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.moduleReady
+      //rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.moduleReady
+      rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.pulse.valid
     } else {
       rRdPulsePipePayloadVec(idx) := rRdPulsePipePayloadVec(idx - 1)
       rRdPulseValidVec(idx) := rRdPulseValidVec(idx - 1)
@@ -323,6 +334,67 @@ extends Component
   }
   //--------
   //--------
+}
+object WrPulseRdPipeSimpleDualPortMemSim extends App {
+  def wordWidth = 8
+  val dataType = HardType(UInt(wordWidth bits))
+  def depth = 8
+  SimConfig
+    //.withConfig(config=simSpinalConfig)
+    .withVcdWave
+    .compile {
+      val dutInitBigInt = new ArrayBuffer
+      val dut = WrPulseRdPipeSimpleDualPortMem(
+        dataType=dataType(),
+        wordType=dataType(),
+        depth=depth,
+      )(
+        setWordFunc=(
+          unionIdx,
+          oPayload,
+          iPayload,
+          iWord,
+        ) => {
+          oPayload := iWord
+        }
+      )
+      dut.arr.arr.simPublic()
+      //dut.testDut.mem.simPublic()
+      //dut.testDut.io.data.simPublic()
+      dut
+    }
+    .doSim("blub") { dut =>
+      for (i <- 0 until depth) {
+        dut.arr.arr.setBigInt(i, i)
+      }
+
+      val scoreboard = ScoreboardInOrder[Int]()
+
+      //StreamValidRandomizer(dut.io.data, dut.clockDomain)
+      StreamDriver(
+        stream=dut.io.rdAddrPipe,
+        clockDomain=dut.clockDomain
+      )(
+        driver={payload =>
+          payload.randomize
+          true
+        }
+      )
+      StreamReadyRandomizer(dut.io.rdDataPipe, dut.clockDomain)
+      StreamMonitor(dut.io.rdDataPipe, dut.clockDomain){payload =>
+        scoreboard.pushRef(payload.toInt)
+      }
+      dut.clockDomain.forkStimulus(10)
+      for (
+        i <- 0 until 2048 //memSize * 5 //10
+      ) {
+        dut.clockDomain.waitSampling(scala.util.Random.nextInt(10))
+        //dut.io.rdAllowed #= !dut.io.rdAllowed.toBoolean
+        //dut.clockDomain.waitRisingEdge()
+        //dut.io.rdAllowed #= true
+      }
+      simSuccess()
+    }
 }
 //--------
 

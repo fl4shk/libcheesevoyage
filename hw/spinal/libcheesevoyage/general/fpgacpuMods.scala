@@ -115,6 +115,7 @@ case class FpgacpuPipeToPulse[
   val generateInitialReadyIn = FpgacpuPulseLatch(
     //initVal=False
   )
+  generateInitialReadyIn.io.clear := io.clear
   generateInitialReadyIn.io.inpPulse := inputHandshakeDone
   initialReadyIn := generateInitialReadyIn.io.outpLevel
   //--------
@@ -309,94 +310,211 @@ case class FpgacpuRamSimpleDualPort[
   )
 }
 //--------
-case class FpgacpuPipeForkJoinCombinedPayload(
-  typeArr: ArrayBuffer[HardType[Data]],
+// http://fpgacpu.ca/fpga/Pipeline_Fork_Lazy.html
+case class FpgacpuPipeForkIo[
+  T <: Data
+](
+  dataType: HardType[T],
+  oSize: Int,
 ) extends Bundle {
-  val data = typeArr.map(ht => ht.craft())
+  val pipeIn = slave Stream(dataType())
+  val pipeOutVec = Vec.fill(oSize)(master Stream(dataType()))
 }
-// http://fpgacpu.ca/fpga/Pipe_Fork_Lazy.html
-case class FpgacpuPipeForkLazyIo(
-  typeArr: ArrayBuffer[HardType[Data]],
-) extends Bundle {
-  //--------
-  val clear = in Bool()
-  //--------
-  val pipeIn = slave Stream(FpgacpuPipeForkJoinCombinedPayload(
-    typeArr=typeArr
-  ))
-  val pipeOutArr = typeArr.map(ht => master Stream(ht.craft()))
-  //--------
+case class FpgacpuPipeForkLazy[
+  T <: Data
+](
+  dataType: HardType[T],
+  oSize: Int,
+) extends Component {
+ //--------
+ val io = FpgacpuPipeForkIo(
+  dataType=dataType(),
+  oSize=oSize,
+ )
+ //--------
+ val outputValidGated = Bool()
+ outputValidGated := io.pipeIn.fire
+
+ val outputReadyVec = SInt(oSize bits)
+ io.pipeIn.ready := outputReadyVec === S(oSize bits, default -> True)
+
+ for (idx <- 0 until oSize) {
+  outputReadyVec(idx) := io.pipeOutVec(idx).ready
+  io.pipeOutVec(idx).valid := outputValidGated
+  io.pipeOutVec(idx).payload := io.pipeIn.payload
+ }
+ //--------
 }
-case class FpgacpuPipeForkLazy(
-  typeArr: ArrayBuffer[HardType[Data]],
+
+// http://fpgacpu.ca/fpga/Pipeline_Fork_Blocking.html
+case class FpgacpuPipeForkBlocking[
+  T <: Data,
+](
+  dataType: HardType[T],
+  oSize: Int,
 ) extends Component {
   //--------
-  val io = FpgacpuPipeForkLazyIo(
-    typeArr=typeArr
+  val io = FpgacpuPipeForkIo(
+    dataType=dataType(),
+    oSize=oSize,
   )
   //--------
-  def inputValid = io.pipeIn.valid
-  def inputReady = io.pipeIn.ready
-  def inputData = io.pipeIn.payload
+  //val input_valid_buffered = Bool()
+  //val input_ready_buffered = Bool()
+  //val input_data_buffered = dataType()
+  val pipeInBuffered = Stream(dataType())
 
-  def outputArr = io.pipeOutArr
+  val skidBuf = PipeSkidBuf(
+    dataType=dataType()
+  )
+  skidBuf.io.prev << io.pipeIn
+  pipeInBuffered << skidBuf.io.next
   //--------
-  val outputValidGated = Bool()
-  outputValidGated := inputValid && inputReady
-  //--------
-  val outputReadyVec = SInt(typeArr.size bits)
-  for (idx <- 0 until typeArr.size) {
-    outputReadyVec(idx) := outputArr(idx).ready
-    outputArr(idx).valid := outputValidGated
-    outputArr(idx).payload := inputData
+  val outputFork = FpgacpuPipeForkLazy(
+    dataType=dataType(),
+    oSize=oSize,
+  )
+  outputFork.io.pipeIn << pipeInBuffered
+
+  for (idx <- 0 until oSize) {
+    io.pipeOutVec(idx) << outputFork.io.pipeOutVec(idx)
   }
-  inputReady := outputReadyVec === S(default -> True)
   //--------
 }
 //--------
-// http://fpgacpu.ca/fpga/Pipe_Join.html
-case class FpgacpuPipeJoinIo(
-  typeArr: ArrayBuffer[HardType[Data]],
+case class FpgacpuPipeJoinIo[
+  T <: Data,
+](
+  dataType: HardType[T],
+  size: Int,
 ) extends Bundle {
   //--------
-  val clear = in Bool()
-  //--------
-  val pipeInArr = typeArr.map(ht => slave Stream(ht.craft()))
-
-  val pipeOut = master Stream(FpgacpuPipeForkJoinCombinedPayload(
-    typeArr=typeArr
-  ))
+  val pipeInVec = Vec.fill(size)(slave Stream(dataType()))
+  val pipeOut = master Stream(Vec.fill(size)(dataType()))
   //--------
 }
-case class FpgacpuPipeJoin(
-  typeArr: ArrayBuffer[HardType[Data]],
+
+case class FpgacpuPipeJoin[
+  T <: Data,
+](
+  dataType: HardType[T],
+  size: Int,
 ) extends Component {
   //--------
   val io = FpgacpuPipeJoinIo(
-    typeArr=typeArr
+    dataType=dataType(),
+    size=size,
   )
   //--------
-  val skidBufArr = typeArr.map(ht => PipeSkidBuf(
-    dataType=ht.craft(),
-  ))
-  val inputValidBuffered = SInt(typeArr.size bits)
-  val inputReadyBuffered = Bits(typeArr.size bits)
-  for (idx <- 0 until typeArr.size) {
-    def skidBuf = skidBufArr(idx)
-    //skidBuf.io.prev.valid := io.pipeIn.valid
-    //:= skidBuf.io.prev.ready
-    skidBuf.io.prev << io.pipeInArr(idx)
-    //outpValidVec(idx) := skidBuf.io.next.valid
-    inputValidBuffered(idx) := skidBuf.io.next.valid
-    skidBuf.io.next.ready := inputReadyBuffered(idx)
-    io.pipeOut.payload.data(idx) := skidBuf.io.next.payload
+  val tempValidVec = SInt(size bits)
+  val inputBuffered = Vec.fill(size)(Stream(dataType()))
+  val inputBufArr = Array.fill(size)(PipeSkidBuf(dataType=dataType()))
+
+  for (idx <- 0 until size) {
+    inputBufArr(idx).io.prev << io.pipeInVec(idx)
+    inputBuffered(idx) << inputBufArr(idx).io.next
+    tempValidVec(idx) := inputBuffered(idx).valid
+    io.pipeOut.payload(idx) := inputBuffered(idx).payload
+
+    when (io.pipeOut.valid) {
+      inputBuffered(idx).ready := io.pipeOut.ready 
+    } otherwise { // when (!io.pipeOut.valid)
+      inputBuffered(idx).ready := False
+    }
   }
-  io.pipeOut.valid := inputValidBuffered === S(default -> True)
-  inputReadyBuffered := Mux[Bits](
-    io.pipeOut.valid ,
-    B(default -> io.pipeOut.ready),
-    B(default -> False)
-  )
+  io.pipeOut.valid := tempValidVec === S(size bits, default -> True)
   //--------
 }
+
+//--------
+//case class FpgacpuPipeForkJoinCombinedPayload(
+//  typeArr: ArrayBuffer[HardType[Data]],
+//) extends Bundle {
+//  val data = typeArr.map(ht => ht.craft())
+//}
+//// http://fpgacpu.ca/fpga/Pipe_Fork_Lazy.html
+//case class FpgacpuPipeForkLazyIo(
+//  typeArr: ArrayBuffer[HardType[Data]],
+//) extends Bundle {
+//  //--------
+//  val clear = in Bool()
+//  //--------
+//  val pipeIn = slave Stream(FpgacpuPipeForkJoinCombinedPayload(
+//    typeArr=typeArr
+//  ))
+//  val pipeOutArr = typeArr.map(ht => master Stream(ht.craft()))
+//  //--------
+//}
+//case class FpgacpuPipeForkLazy(
+//  typeArr: ArrayBuffer[HardType[Data]],
+//) extends Component {
+//  //--------
+//  val io = FpgacpuPipeForkLazyIo(
+//    typeArr=typeArr
+//  )
+//  //--------
+//  def inputValid = io.pipeIn.valid
+//  def inputReady = io.pipeIn.ready
+//  def inputData = io.pipeIn.payload
+//
+//  def outputArr = io.pipeOutArr
+//  //--------
+//  val outputValidGated = Bool()
+//  outputValidGated := inputValid && inputReady
+//  //--------
+//  val outputReadyVec = SInt(typeArr.size bits)
+//  for (idx <- 0 until typeArr.size) {
+//    outputReadyVec(idx) := outputArr(idx).ready
+//    outputArr(idx).valid := outputValidGated
+//    outputArr(idx).payload := inputData
+//  }
+//  inputReady := outputReadyVec === S(default -> True)
+//  //--------
+//}
+////--------
+//// http://fpgacpu.ca/fpga/Pipe_Join.html
+//case class FpgacpuPipeJoinIo(
+//  typeArr: ArrayBuffer[HardType[Data]],
+//) extends Bundle {
+//  //--------
+//  val clear = in Bool()
+//  //--------
+//  val pipeInArr = typeArr.map(ht => slave Stream(ht.craft()))
+//
+//  val pipeOut = master Stream(FpgacpuPipeForkJoinCombinedPayload(
+//    typeArr=typeArr
+//  ))
+//  //--------
+//}
+//case class FpgacpuPipeJoin(
+//  typeArr: ArrayBuffer[HardType[Data]],
+//) extends Component {
+//  //--------
+//  val io = FpgacpuPipeJoinIo(
+//    typeArr=typeArr
+//  )
+//  //--------
+//  val skidBufArr = typeArr.map(ht => PipeSkidBuf(
+//    dataType=ht.craft(),
+//  ))
+//  val inputValidBuffered = SInt(typeArr.size bits)
+//  val inputReadyBuffered = Bits(typeArr.size bits)
+//  for (idx <- 0 until typeArr.size) {
+//    def skidBuf = skidBufArr(idx)
+//    //skidBuf.io.prev.valid := io.pipeIn.valid
+//    //:= skidBuf.io.prev.ready
+//    skidBuf.io.prev << io.pipeInArr(idx)
+//    //outpValidVec(idx) := skidBuf.io.next.valid
+//    inputValidBuffered(idx) := skidBuf.io.next.valid
+//    skidBuf.io.next.ready := inputReadyBuffered(idx)
+//    io.pipeOut.payload.data(idx) := skidBuf.io.next.payload
+//  }
+//  io.pipeOut.valid := inputValidBuffered === S(default -> True)
+//  inputReadyBuffered := Mux[Bits](
+//    io.pipeOut.valid ,
+//    B(default -> io.pipeOut.ready),
+//    B(default -> False)
+//  )
+//  //--------
+//}
 //--------
