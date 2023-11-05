@@ -314,29 +314,31 @@ extends Component
 
   io.rdDataPipe << rdDataPulseToPipe.io.pipe
   //--------
-  val rRdPulseValidVec = Vec.fill(latency)(Reg(Bool()) init(False))
-  val rRdPulsePipePayloadVec = Vec.fill(latency)(
-    Reg(dataType()) init(dataType().getZero)
-  )
+  //val rRdPulseValidVec = Vec.fill(latency)(Reg(Bool()) init(False))
+  //val rRdPulsePipePayloadVec = Vec.fill(latency)(
+  //  Reg(dataType()) init(dataType().getZero)
+  //)
   setWordFunc(
     io.unionIdx,
     rdDataPulseToPipe.io.pulse.payload,
-    rRdPulsePipePayloadVec(latency - 1),
+    //rRdPulsePipePayloadVec(latency - 1),
+    rdAddrPipeToPulse.io.pulse.payload.data,
     arr.io.rdData
   )
   rdDataPulseToPipe.io.pulse.valid := (
-    rRdPulseValidVec(latency - 1)
+    //rRdPulseValidVec(latency - 1)
+    rdAddrPipeToPulse.io.pulse.valid
   )
-  for (idx <- 0 until latency) {
-    if (idx == 0) {
-      rRdPulsePipePayloadVec(idx) := rdAddrPipeToPulse.io.pulse.data
-      //rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.moduleReady
-      rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.pulse.valid
-    } else {
-      rRdPulsePipePayloadVec(idx) := rRdPulsePipePayloadVec(idx - 1)
-      rRdPulseValidVec(idx) := rRdPulseValidVec(idx - 1)
-    }
-  }
+  //for (idx <- 0 until latency) {
+  //  if (idx == 0) {
+  //    rRdPulsePipePayloadVec(idx) := rdAddrPipeToPulse.io.pulse.data
+  //    //rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.moduleReady
+  //    rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.pulse.valid
+  //  } else {
+  //    rRdPulsePipePayloadVec(idx) := rRdPulsePipePayloadVec(idx - 1)
+  //    rRdPulseValidVec(idx) := rRdPulseValidVec(idx - 1)
+  //  }
+  //}
   //--------
   //--------
 }
