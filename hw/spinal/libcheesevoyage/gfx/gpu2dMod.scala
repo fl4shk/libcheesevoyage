@@ -1910,7 +1910,7 @@ case class Gpu2d(
         wordCount=params.objSubLineMemArrSize,
       )
         .initBigInt(objSubLineMemInitBigInt.toSeq)
-        .addAttribute("ram_style", params.lineArrRamStyle)
+        //.addAttribute("ram_style", params.lineArrRamStyle)
         .setName(f"wrObjSubLineMemArr_$idx")
 
       //for (rdIdx <- 0 until RdObjSubLineMemArrInfo.numReaders) {
