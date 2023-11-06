@@ -1864,10 +1864,18 @@ case class Gpu2d(
                   //  inpPayload.aliasAs(CombinePipePayload())
                   //)
                   //ret := ret.getZero
-                  outpPayload := inpPayload
-                  //tempOutpData.allowOverride
-                  //outpPayload.stage2.rdBg.removeAssignments()
-                  outpPayload.allowOverride
+                  //outpPayload := inpPayload
+                  outpPayload.stage0.changingRow := (
+                    inpPayload.stage0.changingRow
+                  )
+                  outpPayload.stage0.cnt := inpPayload.stage0.cnt
+                  outpPayload.stage0.bakCnt := inpPayload.stage0.bakCnt
+                  outpPayload.stage0.bakCntMinus1 := (
+                    inpPayload.stage0.bakCntMinus1
+                  )
+                  ////tempOutpData.allowOverride
+                  ////outpPayload.stage2.rdBg.removeAssignments()
+                  //outpPayload.allowOverride
                   outpPayload.stage2.rdBg := bgTileRow
                 //}
               //}
@@ -1998,10 +2006,10 @@ case class Gpu2d(
                   //  inpPayload.aliasAs(CombinePipePayload())
                   //)
                   //ret := ret.getZero
-                  outpPayload := inpPayload
-                  //tempOutpData.allowOverride
-                  //outpPayload.stage2.rdObj.removeAssignments()
-                  outpPayload.allowOverride
+                  //outpPayload := inpPayload
+                  ////tempOutpData.allowOverride
+                  ////outpPayload.stage2.rdObj.removeAssignments()
+                  //outpPayload.allowOverride
                   outpPayload.stage2.rdObj := objTileRow
                 //}
               //}
@@ -4939,10 +4947,14 @@ case class Gpu2d(
           ) {
             is (combineIdx) {
               // BEGIN: add in BGs; later
-              combinePipeOut(idx).payload := (
+              //combinePipeOut(idx).payload := (
+              //  combineBgObjRdPipeJoin.io.pipeOut.payload(combineIdx * 2)
+              //)
+              combinePipeOut(idx).payload.stage2.rdBg := (
                 combineBgObjRdPipeJoin.io.pipeOut.payload(combineIdx * 2)
+                  .stage2.rdBg
               )
-              combinePipeOut(idx).payload.stage2.rdObj.allowOverride
+              //combinePipeOut(idx).payload.stage2.rdObj.allowOverride
               combinePipeOut(idx).payload.stage2.rdObj := (
                 combineBgObjRdPipeJoin.io.pipeOut.payload(
                   combineIdx * 2 + 1
@@ -5064,7 +5076,18 @@ case class Gpu2d(
     //    popPayload := outp
     //  }
     //)
-    combinePipeLast.translateInto(
+    //val rPrevCombinePipeLast = Reg(cloneOf(combinePipeLast))
+    //rPrevCombinePipeLast.init(rPrevCombinePipeLast.getZero)
+    val rPrevCombinePipeLastCnt = Reg(SInt(combinePipeCntWidth bits))
+      .init(S(combinePipeCntWidth bits, default -> True))
+    val combinePipeLastThrown = Stream(CombinePipePayload())
+    combinePipeLastThrown << combinePipeLast.throwWhen(
+      rPrevCombinePipeLastCnt.asUInt === combinePipeLastThrown.cnt
+    )
+    when (combinePipeLastThrown.fire) {
+      rPrevCombinePipeLastCnt := combinePipeLastThrown.cnt.asSInt
+    }
+    combinePipeLastThrown.translateInto(
       pop
     )(
       dataAssignment=(
@@ -7605,7 +7628,21 @@ case class Gpu2d(
           when (clockDomain.isResetActive) {
             tempOutp.stage0 := tempOutp.stage0.getZero
           } otherwise {
-            tempOutp.stage0 := tempInp.stage0
+            if (idx != 1) {
+              tempOutp.stage0 := tempInp.stage0
+            } else {
+              //switch (rCombineLineMemArrIdx) {
+              //  for (
+              //    combineIdx <- 0 until params.numLineMemsPerBgObjRenderer
+              //  ) {
+              //    is (combineIdx) {
+                    tempOutp.stage0 := (
+                      combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage0
+                    )
+              //    }
+              //  }
+              //}
+            }
           }
         },
       )
@@ -7622,6 +7659,9 @@ case class Gpu2d(
         ) => {
           //val tempInp = stageData.pipeIn(idx)
           //val tempOutp = stageData.pipeOut(idx)
+          //tempOutp.stage2 := (
+          //  combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage2
+          //)
 
           ////val tempCombineLineMemIdx = createTempCnt(
           ////  tempOutp=tempOutp,
@@ -7855,7 +7895,14 @@ case class Gpu2d(
           when (clockDomain.isResetActive) {
             tempOutp.stage2 := tempOutp.stage2.getZero
           } otherwise {
-            tempOutp.stage2 := tempInp.stage2
+            if (idx != 1) {
+              tempOutp.stage2 := tempInp.stage2
+            } 
+            //else {
+            //  tempOutp.stage2 := (
+            //    combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage2
+            //  )
+            //}
           }
         },
       )
@@ -8144,7 +8191,14 @@ case class Gpu2d(
           when (clockDomain.isResetActive) {
             tempOutp.stage3 := tempOutp.stage3.getZero
           } otherwise {
-            tempOutp.stage3 := tempInp.stage3
+            //tempOutp.stage3 := tempInp.stage3
+            if (idx != 1) {
+              tempOutp.stage3 := tempInp.stage3
+            } else {
+              tempOutp.stage3 := (
+                combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage3
+              )
+            }
           }
         },
       )
@@ -8242,7 +8296,14 @@ case class Gpu2d(
           when (clockDomain.isResetActive) {
             tempOutp.stage5 := tempOutp.stage5.getZero
           } otherwise {
-            tempOutp.stage5 := tempInp.stage5
+            //tempOutp.stage5 := tempInp.stage5
+            if (idx != 1) {
+              tempOutp.stage5 := tempInp.stage5
+            } else {
+              tempOutp.stage5 := (
+                combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage5
+              )
+            }
           }
         },
       )
@@ -8308,7 +8369,14 @@ case class Gpu2d(
           when (clockDomain.isResetActive) {
             tempOutp.stage6 := tempOutp.stage6.getZero
           } otherwise {
-            tempOutp.stage6 := tempInp.stage6
+            //tempOutp.stage6 := tempInp.stage6
+            if (idx != 1) {
+              tempOutp.stage6 := tempInp.stage6
+            } else {
+              tempOutp.stage6 := (
+                combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage6
+              )
+            }
           }
         },
       )
@@ -8358,7 +8426,14 @@ case class Gpu2d(
           when (clockDomain.isResetActive) {
             tempOutp.stage7 := tempOutp.stage7.getZero
           } otherwise {
-            tempOutp.stage7 := tempInp.stage7
+            //tempOutp.stage7 := tempInp.stage7
+            if (idx != 1) {
+              tempOutp.stage7 := tempInp.stage7
+            } else {
+              tempOutp.stage7 := (
+                combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage7
+              )
+            }
           }
         },
       )
@@ -8495,11 +8570,16 @@ case class Gpu2d(
         //--------
         outp.col := combinePipeLast.combineWrLineMemEntry.col.rgb
         //outp.col := combinePipeOut.last.combineWrLineMemEntry.col.rgb
-        rdPhysCalcPosEn := True
+        //rdPhysCalcPosEn := True
         //--------
       } otherwise {
         objWriter.enVec(rCombineLineMemArrIdx) := False
         outp.col := rPastOutp.col
+        //rdPhysCalcPosEn := False
+      }
+      when (combinePipeLastThrown.fire) {
+        rdPhysCalcPosEn := True
+      } otherwise {
         rdPhysCalcPosEn := False
       }
     }

@@ -219,7 +219,8 @@ case class FpgacpuPulseToPipe[
   val buf = (
     //if (fifoDepth <= 0) {
       PipeSkidBuf(
-        dataType=dataType()
+        dataType=dataType(),
+        optUseOldCode=false,
       )
     //} else { // if (fifoDepth > 0)
     //  AsyncReadFifo(
@@ -305,9 +306,12 @@ case class FpgacpuRamSimpleDualPort[
     data=io.wrData,
     enable=io.wrEn,
   )
-  io.rdData := arr.readSync(
-    address=io.rdAddr,
-    enable=io.rdEn,
+  io.rdData := (
+    arr.readSync
+    (
+      address=io.rdAddr,
+      enable=io.rdEn,
+    )
   )
 }
 //--------
