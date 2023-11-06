@@ -2820,7 +2820,8 @@ case class Gpu2d(
       //7
       //8
       //9
-      11
+      10
+      //11
     )
     def wrBgObjPipeNumStages = max(
       wrBgPipeNumMainStages,
@@ -2832,6 +2833,8 @@ case class Gpu2d(
     //def wrObjPipeStage6NumFwd = wrBgObjPipeNumStages - 6 + 1
     //def wrObjPipeStage6NumFwd = wrBgObjPipeNumStages - 6 + 1 + 1
     //def wrObjPipeStage6NumFwd = wrBgObjPipeNumStages - 6 + 1 + 1
+    //def wrObjPipeStage9NumFwd = wrBgObjPipeNumStages - 9 + 1 + 1
+    //def wrObjPipeStage9NumFwd = wrBgObjPipeNumStages - 9 + 1 + 1
     def wrObjPipeStage9NumFwd = wrBgObjPipeNumStages - 9 + 1 + 1
     //def wrObjPipeStage6NumFwd = 2
     //def wrObjPipeStage6NumFwd = 1
