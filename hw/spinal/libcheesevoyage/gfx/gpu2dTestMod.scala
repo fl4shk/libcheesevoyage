@@ -171,7 +171,10 @@ case class Gpu2dTest(
   //tempBgAttrs.scroll := tempBgAttrs.scroll.getZero
   //tempBgAttrs.scroll.x := 0
   //tempBgAttrs.scroll.x := 1
-  tempBgAttrs.scroll.x := 2
+  tempBgAttrs.scroll.x := (
+    0
+    //2
+  )
   //tempBgAttrs.scroll.x := 3
   //tempBgScroll.x := (-params.bgTileSize2d.x) + 1
   //tempBgScroll.x := 1
@@ -444,6 +447,7 @@ case class Gpu2dTest(
         //params.intnlFbSize2d.x >> 1
         //0x3e
         3
+        //2
         //1
         //0
       )
@@ -472,7 +476,7 @@ case class Gpu2dTest(
       //tempObjAttrs.pos.x := 16
       tempObjAttrs.pos.x := (
         //1
-        2
+        1
       )
       //tempObjAttrs.pos.x := 9
       //tempObjAttrs.pos.x := 9
