@@ -2274,12 +2274,12 @@ case class Gpu2d(
         //)
         for (jdx <- 0 until params.numLineMemsPerBgObjRenderer) {
           //def vecIdx0 = (rWrLineMemArrIdx + jdx)(0 downto 0)
-          //val vecIdx = UInt(1 bits)
-          //  .setName(f"rObjWriter_doWrite_vecIdx_$jdx")
-          //vecIdx := (
-          //  (rWrLineMemArrIdx + jdx)(0 downto 0)
-          //  //(rWrLineMemArrIdx + jdx + 1)(0 downto 0)
-          //)
+          val vecIdx = UInt(1 bits)
+            .setName(f"rObjWriter_doWrite_vecIdx_$jdx")
+          vecIdx := (
+            (rWrLineMemArrIdx + jdx)(0 downto 0)
+            //(rWrLineMemArrIdx + jdx + 1)(0 downto 0)
+          )
           val tempAddr = cloneOf(addrVec(jdx))
             .setName(f"rObjWriter_doWrite_tempAddr_$jdx")
           val tempData = cloneOf(dataVec(jdx))
@@ -2293,8 +2293,8 @@ case class Gpu2d(
             //  //addrVec(vecIdx0),
             //  //addrVec(vecIdx1),
             //)
-            //addrVec(vecIdx)
-            addrVec(jdx)
+            addrVec(vecIdx)
+            //addrVec(jdx)
             //addrVec(wrIdx)
             //addrVec(rWrLineMemArrIdx)
           )
@@ -2304,8 +2304,8 @@ case class Gpu2d(
             //  dataVec(vecIdx0),
             //  dataVec(vecIdx1),
             //)
-            //dataVec(vecIdx)
-            dataVec(jdx)
+            dataVec(vecIdx)
+            //dataVec(jdx)
             //dataVec(wrIdx)
             //dataVec(rWrLineMemArrIdx)
           )
@@ -2315,8 +2315,8 @@ case class Gpu2d(
             //  enVec(vecIdx0),
             //  enVec(vecIdx1),
             //)
-            //enVec(vecIdx)
-            enVec(jdx)
+            enVec(vecIdx)
+            //enVec(jdx)
           )
           combineObjSubLineMemArr(jdx).io.unionIdx := rWrLineMemArrIdx
           combineObjSubLineMemArr(jdx).io.wrPulse.valid := (
@@ -7391,11 +7391,20 @@ case class Gpu2d(
           //--------
           // BEGIN: new code, with muxing for single `.write()` call
           dbgTestWrObjPipeLast_tempObjArrIdx := tempObjArrIdx
-          objWriter.addrVec(rWrLineMemArrIdx) := tempObjArrIdx
-          objWriter.dataVec(rWrLineMemArrIdx) := (
+          //objWriter.addrVec(rWrLineMemArrIdx) := tempObjArrIdx
+          //objWriter.dataVec(rWrLineMemArrIdx) := (
+          //  wrObjPipeLast.wrLineMemEntry
+          //)
+          //objWriter.enVec(rWrLineMemArrIdx) := (
+          //  True
+          //  //wrObjPipeLast.stage7.ext.overwriteLineMemEntry
+          //  //  .reduceBalancedTree(_ || _)
+          //)
+          objWriter.addrVec(0) := tempObjArrIdx
+          objWriter.dataVec(0) := (
             wrObjPipeLast.wrLineMemEntry
           )
-          objWriter.enVec(rWrLineMemArrIdx) := (
+          objWriter.enVec(0) := (
             True
             //wrObjPipeLast.stage7.ext.overwriteLineMemEntry
             //  .reduceBalancedTree(_ || _)
@@ -7552,7 +7561,8 @@ case class Gpu2d(
           //--------
         //}
       } otherwise { // when (!wrObjPipeLast.fire)
-        objWriter.enVec(rWrLineMemArrIdx) := False
+        //objWriter.enVec(rWrLineMemArrIdx) := False
+        objWriter.enVec(0) := False
       }
     }
     //--------
@@ -8493,9 +8503,12 @@ case class Gpu2d(
         val tempObjLineMemEntry = Vec.fill(params.objTileSize2d.x)(
           ObjSubLineMemEntry()
         ).getZero
-        objWriter.addrVec(rCombineLineMemArrIdx) := tempObjArrIdx
-        objWriter.dataVec(rCombineLineMemArrIdx) := tempObjLineMemEntry
-        objWriter.enVec(rCombineLineMemArrIdx) := True
+        //objWriter.addrVec(rCombineLineMemArrIdx) := tempObjArrIdx
+        //objWriter.dataVec(rCombineLineMemArrIdx) := tempObjLineMemEntry
+        //objWriter.enVec(rCombineLineMemArrIdx) := True
+        objWriter.addrVec(1) := tempObjArrIdx
+        objWriter.dataVec(1) := tempObjLineMemEntry
+        objWriter.enVec(1) := True
         // END: new code, with muxing for single `.write()` call
         //--------
         // BEGIN: old code, no muxing for single `.write()` call
@@ -8573,7 +8586,8 @@ case class Gpu2d(
         //rdPhysCalcPosEn := True
         //--------
       } otherwise {
-        objWriter.enVec(rCombineLineMemArrIdx) := False
+        //objWriter.enVec(rCombineLineMemArrIdx) := False
+        objWriter.enVec(1) := False
         outp.col := rPastOutp.col
         //rdPhysCalcPosEn := False
       }
