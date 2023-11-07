@@ -1234,7 +1234,7 @@ case class Gpu2d(
       depth=params.numObjs,
       initBigInt={
         val temp = new ArrayBuffer[BigInt]()
-        for (idx <- 0 until params.numBgTiles) {
+        for (idx <- 0 until params.numObjs) {
           temp += BigInt(0)
         }
         Some(temp)
