@@ -2952,7 +2952,7 @@ case class Gpu2d(
     //def wrObjPipeStage6NumFwd = wrBgObjPipeNumStages - 6 + 1 + 1
     //def wrObjPipeStage9NumFwd = wrBgObjPipeNumStages - 9 + 1 + 1
     //def wrObjPipeStage9NumFwd = wrBgObjPipeNumStages - 9 + 1 + 1
-    def wrObjPipeStage9NumFwd = wrBgObjPipeNumStages - 9 + 1 + 1
+    def wrObjPipeStage11NumFwd = wrBgObjPipeNumStages - 11 + 1 + 1
     //def wrObjPipeStage6NumFwd = 2
     //def wrObjPipeStage6NumFwd = 1
     case class WrObjPipeStage11Fwd() extends Bundle {
@@ -3245,7 +3245,7 @@ case class Gpu2d(
         //)
         val ext = WrObjPipe11Ext(useVec=true)
 
-        def numFwd = wrObjPipeStage9NumFwd
+        def numFwd = wrObjPipeStage11NumFwd
         val fwdV2d = Vec.fill(params.objTileSize2d.x)(
           Vec.fill(numFwd)(WrObjPipeStage11Fwd())
         )
@@ -6321,7 +6321,7 @@ case class Gpu2d(
       //  rStage5FwdVec(fwdIdx).setName(f"rWrObjPipeStage5FwdVec_$fwdIdx")
       //}
       val rStage11FwdV2d = Vec.fill(params.objTileSize2d.x)(
-        Vec.fill(wrObjPipeStage9NumFwd)(
+        Vec.fill(wrObjPipeStage11NumFwd)(
           Reg(WrObjPipeStage11Fwd())
         )
       )

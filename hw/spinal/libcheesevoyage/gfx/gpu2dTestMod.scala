@@ -446,8 +446,8 @@ case class Gpu2dTest(
         //params.intnlFbSize2d.x - params.objTileSize2d.x - 5
         //params.intnlFbSize2d.x >> 1
         //0x3e
-        3
-        //2
+        //3
+        2
         //1
         //0
       )
