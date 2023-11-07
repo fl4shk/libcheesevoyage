@@ -6328,7 +6328,7 @@ case class Gpu2d(
       for (x <- 0 to params.objTileSize2d.x - 1) {
         for (fwdIdx <- 0 to rStage11FwdV2d(x).size - 1) {
           rStage11FwdV2d(x)(fwdIdx).setName(
-            f"rWrObjPipeStage11FwdVec_$fwdIdx" + f"_$x"
+            f"rWrObjPipeStage11FwdV2d_$x" + f"_$fwdIdx"
           )
         }
       }
