@@ -45,6 +45,7 @@ case class Gpu2dSimDut(
   //)
   val gpu2d = Gpu2d(
     params=gpu2dParams,
+    inSim=true,
   )
   val gpu2dTest = Gpu2dTest(
     params=gpu2dParams,

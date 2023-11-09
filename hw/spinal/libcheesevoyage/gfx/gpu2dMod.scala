@@ -985,6 +985,7 @@ case class Gpu2dIo(
 }
 case class Gpu2d(
   params: Gpu2dParams=DefaultGpu2dParams(),
+  inSim: Boolean=false,
 ) extends Component {
   //--------
   val io = Gpu2dIo(params=params)
@@ -1530,7 +1531,7 @@ case class Gpu2d(
       val written = Bool()
       val prio = UInt(params.numBgsPow bits)
       //def objAttrsMemIdx
-      val addr = UInt(log2Up(params.oneLineMemSize) bits)
+      val addr = (inSim) generate UInt(log2Up(params.oneLineMemSize) bits)
       def getSubLineMemTempArrIdx() = (
         params.getObjSubLineMemArrIdx(addr=addr)
       )
@@ -7952,7 +7953,8 @@ case class Gpu2d(
             //  .setName(f"wrObjPipe11_myIdx_$x")
             val myIdxFull = cloneOf(tempInp.pxPos(x).x)
               .setName(f"wrObjPipe11_myIdxFull_$x")
-            myIdxFull := tempInp.pxPos(x).x
+            //myIdxFull := tempInp.pxPos(x).x
+            myIdxFull := tempInp.pxPos(0).x + x
             val myIdx = UInt(params.objTileSize2dPow.x bits)
               .setName(f"wrObjPipe11_myIdx_$x")
             myIdx := myIdxFull.asUInt(myIdx.bitsRange)
@@ -8354,16 +8356,18 @@ case class Gpu2d(
                 // Here it should be `x` (not `myIdx`) here because `myIdx`
                 // is just an index into `ObjSubLineMemEntry`s, rather than
                 // an index into sprite tiles themselves
-                tempWrLineMemEntry.addr := (
-                  tempInp.pxPos(
-                    x
-                    //myIdx
-                    //myIdx(tempMyIdxRange)
-                  ).x.asUInt(
-                    tempWrLineMemEntry.addr.bitsRange
+                if (inSim) {
+                  tempWrLineMemEntry.addr := (
+                    tempInp.pxPos(
+                      x
+                      //myIdx
+                      //myIdx(tempMyIdxRange)
+                    ).x.asUInt(
+                      tempWrLineMemEntry.addr.bitsRange
+                    )
+                    //default -> False
                   )
-                  //default -> False
-                )
+                }
                 tempWrLineMemEntry.col.rgb := (
                   tempInp.palEntry(
                     x
@@ -9578,14 +9582,16 @@ case class Gpu2d(
           when (clockDomain.isResetActive) {
             tempOutp.stage7 := tempOutp.stage7.getZero
           } otherwise {
-            tempOutp.combineWrLineMemEntry.addr := (
-              //tempInp.cnt
-              //tempInp.stage1.lineMemIdx
-              tempInp.cnt
-              (
-                tempOutp.combineWrLineMemEntry.addr.bitsRange
+            //if (inSim) {
+              tempOutp.combineWrLineMemEntry.addr := (
+                //tempInp.cnt
+                //tempInp.stage1.lineMemIdx
+                tempInp.cnt
+                (
+                  tempOutp.combineWrLineMemEntry.addr.bitsRange
+                )
               )
-            )
+            //}
             tempOutp.combineWrLineMemEntry.col.rgb := tempInp.col
 
             // not really necessary, but doing it anyway
