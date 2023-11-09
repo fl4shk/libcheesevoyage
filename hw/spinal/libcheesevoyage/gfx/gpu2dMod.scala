@@ -7826,43 +7826,6 @@ case class Gpu2d(
                   !tempInp.bakCntWillBeDone()
                   //&& tempInp.pxPosXGridIdxMatches(x)
                 ){
-                  //fwdVec(fwdIdx).pxPosY := (
-                  //  tempInp.pxPos(
-                  //    //tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                  //    0
-                  //  ).y
-                  //)
-
-                  //--------
-                  // BEGIN: comment this out; move to stage 10
-                  //fwdVec(fwdIdx).pxPosYLsb := (
-                  //  //tempInp.pxPos(
-                  //  //  //tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                  //  //  0
-                  //  //).y(0)
-                  //  tempInp.stage10.pxPosYLsb
-                  //)
-                  //fwdVec(fwdIdx).pxPosXGridIdx := (
-                  //  tempInp.stage10.pxPosXGridIdx
-                  //)
-                  // END: comment this out; move to stage 10
-                  //--------
-                  //fwdVec(fwdIdx).pxPosXGridIdx := (
-                  //  tempInp.pxPosXGridIdx(
-                  //    //myIdx
-                  //    tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                  //  )
-                  //)
-                  //fwdVec(fwdIdx).pxPosXGridIdxLsb := (
-                  //  tempInp.stage10.pxPosXGridIdxLsb
-                  //)
-
-                  //fwdVec(fwdIdx).objAttrsMemIdx := (
-                  //  tempInp.objAttrsMemIdx()
-                  //)
-                  //fwdVec(fwdIdx).stage10Fwd := (
-                  //  tempInp.stage10.fwdV2d(x)(fwdIdx).
-                  //)
                   fwdVec(fwdIdx).overwriteLineMemEntry(0) := (
                     //tempOutp.overwriteLineMemEntry(x)
                     tempOverwriteLineMemEntry
@@ -7873,8 +7836,6 @@ case class Gpu2d(
                     tempWrLineMemEntry
                     //toFwdWrLineMemEntry
                   )
-                  //fwdVec(fwdIdx).prio := tempInp.objAttrs.prio
-                  //fwdVec(fwdIdx).wrLineMemEntry := tempOutp.wrLineMemEntry
                 } otherwise {
                   fwdVec(fwdIdx) := fwdVec(fwdIdx).getZero
                 }
@@ -7904,31 +7865,8 @@ case class Gpu2d(
                 //  && fwdVec(fwdIdx).wrLineMemEntry.prio
                 //)
                 tempConcat(fwdIdx - 1) := (
-                  //fwdVec(fwdIdx).pxPos === tempInp.pxPos(
-                  //  x
-                  //  //myIdx
-                  //  //myIdx(tempMyIdxRange)
-                  //)
-                  //fwdVec(fwdIdx).pxPosY === tempInp.pxPos(0).y
-                  //--------
-                  // BEGIN: move to stage10
-                  //(
-                  //  fwdVec(fwdIdx).pxPosXGridIdx
-                  //  === tempInp.stage10.pxPosXGridIdx
-                  //) //&& tempInp.pxPosXGridIdxFindFirstSameAsFound
-                  //&& fwdVec(fwdIdx).pxPosYLsb === tempInp.stage10.pxPosYLsb
-                  // END: move to stage10
-                  //--------
-                  //tempInp.stage10.fwdV2d(x)(fwdIdx).doFwd
                   tempInp.stage10.doFwd(x)(fwdIdx - 1)
-                  //&& (
-                  //  fwdVec(fwdIdx).pxPosXGridIdxLsb
-                  //  === tempInp.stage10.pxPosXGridIdxLsb
-                  //)
                   && fwdVec(fwdIdx).overwriteLineMemEntry(0)
-                  //&& fwdCheckOverwriteLineMemEntry
-                  //&& !tempOverwriteLineMemEntry
-                  //&& fwdVec
                 )
               }
             }
