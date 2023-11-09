@@ -7595,75 +7595,75 @@ case class Gpu2d(
               someLineMemEntry: ObjSubLineMemEntry,
               someOverwriteLineMemEntry: Bool,
             ): Unit = {
-              //val tempLineMemEntryPrio = (
-              //  //someLineMemEntry.prio(tempInp.objAttrs.prio.bitsRange)
-              //  //someLineMemEntry.rawPrio
-              //  someLineMemEntry.prio
-              //)
-
-              //val input = tempInp.postStage0.stage4.pxPosXGridIdxMatches
-              ////val rotatedGridIdxMatches = Vec(
-              ////  //tempInp.pxPosXGridIdxMatches.toList.drop(x).appendedAll(
-              ////  //  tempInp.pxPosXGridIdxMatches.toList.take(x)
-              ////  //)
-              ////  input.toList.drop(x).appendedAll(input.toList.take(x))
-              ////)
-              //val rotatedGridIdxMatches = Vec(
-              //  input.drop(x).appendedAll(input.take(x))
-              //)//.addTag(noLatchCheck)
-              when (
-                //--------
-                // BEGIN: move this to prior pipeline stage; later
-                somePxPosCmp
-                // END: move this to prior pipeline stage; later
-                //--------
-              ) {
-                // BEGIN: debug comment this out
-                when (
-                  //!someLineMemEntry.rawPrio.msb
-                  !someLineMemEntry.written
-                ) {
-                  //dbgTestificate := 0
-                  someOverwriteLineMemEntry := True
-                } otherwise {
-                  when (
-                    //tempInp.rdSubLineMemEntry.prio < tempInp.objAttrs.prio
-                    //tempOutp.rdSubLineMemEntry.prio < tempInp.objAttrs.prio
-                    someLineMemEntry.prio < tempInp.objAttrs.prio
-                    //tempLineMemEntryPrio < tempInp.objAttrs.prio
-                  ) {
-                    someOverwriteLineMemEntry := False
-                  } elsewhen (
-                    //tempLineMemEntryPrio === tempInp.objAttrs.prio
-                    someLineMemEntry.prio === tempInp.objAttrs.prio
-                  ) {
-                    someOverwriteLineMemEntry := True
-                    //someOverwriteLineMemEntry := (
-                    //  !someLineMemEntry.col.a
-                    //  && tempInp.palEntryNzMemIdx(
-                    //    x
-                    //    //myIdx
-                    //    //myIdx(tempMyIdxRange)
-                    //  )
-                    //)
-                  } otherwise {
-                    //dbgTestificate := 3
-                    //someOverwriteLineMemEntry := True
-                    someOverwriteLineMemEntry := (
-                      !someLineMemEntry.col.a
-                      && tempInp.palEntryNzMemIdx(
-                        x
-                        //myIdx
-                        //myIdx(tempMyIdxRange)
-                      )
-                    )
-                  }
+              switch (Cat(
+                somePxPosCmp,
+                !someLineMemEntry.written,
+                someLineMemEntry.prio < tempInp.objAttrs.prio,
+                someLineMemEntry.prio === tempInp.objAttrs.prio,
+                someLineMemEntry.prio > tempInp.objAttrs.prio,
+              )) {
+                is (M"0----") {
+                  someOverwriteLineMemEntry := False
                 }
-              } otherwise {
-                // END: debug comment this out
-                //tempOutp.overwriteLineMemEntry := True } otherwise {
-                someOverwriteLineMemEntry := False
+                is (M"11---") {
+                  someOverwriteLineMemEntry := True
+                }
+                is (M"101--") {
+                  someOverwriteLineMemEntry := False
+                }
+                is (M"1001-") {
+                  someOverwriteLineMemEntry := True
+                }
+                default {
+                  someOverwriteLineMemEntry := (
+                    !someLineMemEntry.col.a
+                    && tempInp.palEntryNzMemIdx(
+                      x
+                      //myIdx
+                      //myIdx(tempMyIdxRange)
+                    )
+                  )
+                }
               }
+              //when (
+              //  //--------
+              //  // BEGIN: move this to prior pipeline stage; later
+              //  somePxPosCmp
+              //  // END: move this to prior pipeline stage; later
+              //  //--------
+              //) {
+              //  // BEGIN: debug comment this out
+              //  when (
+              //    !someLineMemEntry.written
+              //  ) {
+              //    //dbgTestificate := 0
+              //    someOverwriteLineMemEntry := True
+              //  } otherwise {
+              //    when (
+              //      someLineMemEntry.prio < tempInp.objAttrs.prio
+              //    ) {
+              //      someOverwriteLineMemEntry := False
+              //    } elsewhen (
+              //      //tempLineMemEntryPrio === tempInp.objAttrs.prio
+              //      someLineMemEntry.prio === tempInp.objAttrs.prio
+              //    ) {
+              //      someOverwriteLineMemEntry := True
+              //    } otherwise {
+              //      someOverwriteLineMemEntry := (
+              //        !someLineMemEntry.col.a
+              //        && tempInp.palEntryNzMemIdx(
+              //          x
+              //          //myIdx
+              //          //myIdx(tempMyIdxRange)
+              //        )
+              //      )
+              //    }
+              //  }
+              //} otherwise {
+              //  // END: debug comment this out
+              //  //tempOutp.overwriteLineMemEntry := True } otherwise {
+              //  someOverwriteLineMemEntry := False
+              //}
             }
             //--------
             val tempRdLineMemEntry = ObjSubLineMemEntry()
