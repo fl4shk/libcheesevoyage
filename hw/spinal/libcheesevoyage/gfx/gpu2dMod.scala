@@ -7595,35 +7595,108 @@ case class Gpu2d(
               someLineMemEntry: ObjSubLineMemEntry,
               someOverwriteLineMemEntry: Bool,
             ): Unit = {
-              switch (Cat(
-                somePxPosCmp,
-                !someLineMemEntry.written,
-                someLineMemEntry.prio < tempInp.objAttrs.prio,
-                someLineMemEntry.prio === tempInp.objAttrs.prio,
-                someLineMemEntry.prio > tempInp.objAttrs.prio,
-              )) {
-                is (M"0----") {
-                  someOverwriteLineMemEntry := False
-                }
-                is (M"11---") {
-                  someOverwriteLineMemEntry := True
-                }
-                is (M"101--") {
-                  someOverwriteLineMemEntry := False
-                }
-                is (M"1001-") {
-                  someOverwriteLineMemEntry := True
-                }
-                default {
-                  someOverwriteLineMemEntry := (
-                    !someLineMemEntry.col.a
-                    && tempInp.palEntryNzMemIdx(
-                      x
-                      //myIdx
-                      //myIdx(tempMyIdxRange)
+              if (params.numBgsPow == log2Up(2)) {
+                def width = 4
+                switch (Cat(
+                  somePxPosCmp,
+                  !someLineMemEntry.written,
+                  someLineMemEntry.prio,
+                  tempInp.objAttrs.prio,
+                )) {
+                  is (
+                    new MaskedLiteral(
+                      value=0,
+                      //careAbout=(1 << width) - 1,
+                      careAbout=1 << (width - 1),
+                      width=width,
                     )
-                  )
+                  ) {
+                    someOverwriteLineMemEntry := False
+                  }
+                  is (
+                    new MaskedLiteral(
+                      value=(
+                        (1 << (width - 1))
+                        | (1 << (width - 2))
+                      ),
+                      careAbout=(
+                        (1 << (width - 1))
+                        | (1 << (width - 2))
+                      ),
+                      width=width,
+                    ),
+                  ) {
+                    someOverwriteLineMemEntry := True
+                  }
+                  //is (
+                  //  new MaskedLiteral(
+                  //    value=(
+                  //      (1 << (width - 1))
+                  //      //| (1 << (width - 2))
+                  //    ),
+                  //    careAbout=(
+                  //      (1 << (width - 1))
+                  //      | (1 << (width - 2))
+                  //    ),
+                  //    width=width,
+                  //  ),
+                  //) {
+                  //}
+                  is (M"1000") {
+                    someOverwriteLineMemEntry := True
+                  }
+                  is (M"1011") {
+                    someOverwriteLineMemEntry := True
+                  }
+                  is (M"1001") {
+                    someOverwriteLineMemEntry := False
+                  }
+                  default {
+                    someOverwriteLineMemEntry := (
+                      !someLineMemEntry.col.a
+                      && tempInp.palEntryNzMemIdx(
+                        x
+                        //myIdx
+                        //myIdx(tempMyIdxRange)
+                      )
+                    )
+                  }
                 }
+              } //else if (params.numBgsPow == log2Up(4)) {
+              //}
+              else {
+                  switch (Cat(
+                    somePxPosCmp,
+                    !someLineMemEntry.written,
+                    //someLineMemEntry.prio,
+                    //tempInp.objAttrs.prio,
+                    someLineMemEntry.prio < tempInp.objAttrs.prio,
+                    someLineMemEntry.prio === tempInp.objAttrs.prio,
+                    someLineMemEntry.prio > tempInp.objAttrs.prio,
+                  )) {
+                    is (M"0----") {
+                      someOverwriteLineMemEntry := False
+                    }
+                    is (M"11---") {
+                      someOverwriteLineMemEntry := True
+                    }
+                    is (M"101--") {
+                      someOverwriteLineMemEntry := False
+                    }
+                    is (M"1001-") {
+                      someOverwriteLineMemEntry := True
+                    }
+                    default {
+                      someOverwriteLineMemEntry := (
+                        !someLineMemEntry.col.a
+                        && tempInp.palEntryNzMemIdx(
+                          x
+                          //myIdx
+                          //myIdx(tempMyIdxRange)
+                        )
+                      )
+                    }
+                  }
               }
               //when (
               //  //--------
