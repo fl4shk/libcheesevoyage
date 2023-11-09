@@ -199,6 +199,7 @@ object Gpu2dSim extends App {
     numObjTilesPow=Some(log2Up(8)),
     numColsInBgPalPow=log2Up(64),
     numColsInObjPalPow=log2Up(64),
+    fancyObjPrio=false,
   )
 
   val simSpinalConfig = SpinalConfig(
