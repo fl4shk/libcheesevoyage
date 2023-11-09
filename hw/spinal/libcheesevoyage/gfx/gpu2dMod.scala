@@ -2939,7 +2939,8 @@ case class Gpu2d(
       //9
       //10
       //11
-      12
+      //12
+      13
     )
     def wrBgObjPipeNumStages = max(
       wrBgPipeNumMainStages,
@@ -2961,11 +2962,11 @@ case class Gpu2d(
     //def wrObjPipeStage9NumFwd = wrBgObjPipeNumStages - 9 + 1 + 1
     //def wrObjPipeStage9NumFwd = wrBgObjPipeNumStages - 9 + 1 + 1
     //def wrObjPipeStage11NumFwd = wrBgObjPipeNumStages - 11 + 1 + 1
-    def wrObjPipeStage11NumFwd = wrBgObjPipeNumStages - 11 - 1 + 1 + 1
+    def wrObjPipeStage12NumFwd = wrBgObjPipeNumStages - 12 - 1 + 1 + 1
     //def wrObjPipeStage6NumFwd = 2
     //def wrObjPipeStage6NumFwd = 1
-    def wrObjPipeStage10NumFwd = wrObjPipeStage11NumFwd //+ 1
-    case class WrObjPipeStage11Fwd() extends Bundle {
+    def wrObjPipeStage10NumFwd = wrObjPipeStage12NumFwd //+ 1
+    case class WrObjPipeStage12Fwd() extends Bundle {
       //val pxPosX = SInt(params.objPxsCoordSize2dPow.x bits)
       //val pxPosInLine = Bool()
       //val palEntry = Gpu2dPalEntry(params=params)
@@ -2995,7 +2996,7 @@ case class Gpu2d(
       //val wrLineMemEntry = ObjSubLineMemEntry()
       //val extSingle = WrObjPipe6ExtSingle()
       //val ext = WrObjPipe9Ext(useVec=false)
-      val ext = WrObjPipe11Ext(useVec=false)
+      val ext = WrObjPipe12Ext(useVec=false)
       //val wholeWrLineMemEntry = Vec.fill(params.objTileSize2d.x)(
       //  ObjSubLineMemEntry()
       //)
@@ -3270,7 +3271,7 @@ case class Gpu2d(
       // ALU operand forwarding
       //def wrObjPipeStage5NumFwd
       //def stage7NumFwd = 2
-      case class Stage11() extends Bundle {
+      case class Stage12() extends Bundle {
         //val overwriteLineMemEntry = Vec.fill(params.objTileSize2d.x)(
         //  Bool()
         //)
@@ -3278,11 +3279,11 @@ case class Gpu2d(
         //val wrLineMemEntry = Vec.fill(params.objTileSize2d.x)(
         //  ObjSubLineMemEntry()
         //)
-        val ext = WrObjPipe11Ext(useVec=true)
+        val ext = WrObjPipe12Ext(useVec=true)
 
-        def numFwd = wrObjPipeStage11NumFwd
+        def numFwd = wrObjPipeStage12NumFwd
         val fwdV2d = Vec.fill(params.objTileSize2d.x)(
-          Vec.fill(numFwd)(WrObjPipeStage11Fwd())
+          Vec.fill(numFwd)(WrObjPipeStage12Fwd())
         )
         //val fwdWrLineMemEntryV2d = Vec.fill(numFwd)(
         //  Vec.fill(params.objTileSize2d.x)(
@@ -3308,7 +3309,7 @@ case class Gpu2d(
         //val stage7 = Stage7()
         val stage9 = Stage9()
         val stage10 = Stage10()
-        val stage11 = Stage11()
+        val stage12 = Stage12()
         //val stage7 = Stage7()
       }
 
@@ -3425,9 +3426,9 @@ case class Gpu2d(
       def stage10 = postStage0.stage10
       def rdSubLineMemEntry = stage10.rdSubLineMemEntry
 
-      def stage11 = postStage0.stage11
-      def overwriteLineMemEntry = stage11.ext.overwriteLineMemEntry
-      def wrLineMemEntry = stage11.ext.wrLineMemEntry
+      def stage12 = postStage0.stage12
+      def overwriteLineMemEntry = stage12.ext.overwriteLineMemEntry
+      def wrLineMemEntry = stage12.ext.wrLineMemEntry
       //def overwriteLineMemEntry = stage6.overwriteLineMemEntry
       ////def pxPosXIsSame = stage6.pxPosXIsSame
       ////def pxPosIsSame = stage6.pxPosIsSame
@@ -4144,7 +4145,7 @@ case class Gpu2d(
     //  val wrLineMemEntry = ObjSubLineMemEntry()
     //  val overwriteLineMemEntry = Bool()
     //}
-    case class WrObjPipe11Ext(
+    case class WrObjPipe12Ext(
       useVec: Boolean//=true
     ) extends Bundle {
       def vecSize = (
@@ -5991,8 +5992,8 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          //stageData.pipeOut(idx).stage11 := (
-          //  stageData.pipeIn(idx).stage11
+          //stageData.pipeOut(idx).stage12 := (
+          //  stageData.pipeIn(idx).stage12
           //)
         },
       )
@@ -6369,15 +6370,15 @@ case class Gpu2d(
           )
         }
       }
-      val rStage11FwdV2d = Vec.fill(params.objTileSize2d.x)(
-        Vec.fill(wrObjPipeStage11NumFwd)(
-          Reg(WrObjPipeStage11Fwd())
+      val rStage12FwdV2d = Vec.fill(params.objTileSize2d.x)(
+        Vec.fill(wrObjPipeStage12NumFwd)(
+          Reg(WrObjPipeStage12Fwd())
         )
       )
       for (x <- 0 until params.objTileSize2d.x) {
-        for (fwdIdx <- 0 to rStage11FwdV2d(x).size - 1) {
-          rStage11FwdV2d(x)(fwdIdx).setName(
-            f"rWrObjPipeStage11FwdV2d_$x" + f"_$fwdIdx"
+        for (fwdIdx <- 0 to rStage12FwdV2d(x).size - 1) {
+          rStage12FwdV2d(x)(fwdIdx).setName(
+            f"rWrObjPipeStage12FwdV2d_$x" + f"_$fwdIdx"
           )
         }
       }
@@ -7428,9 +7429,9 @@ case class Gpu2d(
       )
       // END: Stage 10
 
-      // BEGIN: Stage 11
+      // BEGIN: Stage 12
       HandleDualPipe(
-        stageData=stageData.craft(11)
+        stageData=stageData.craft(12)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrObjPipePayload]],
@@ -7441,16 +7442,16 @@ case class Gpu2d(
 
           def outpExt = (
             //rWrObjPipeOut6Ext
-            tempOutp.stage11.ext
-            //cloneOf(tempOutp.stage11.ext)
+            tempOutp.stage12.ext
+            //cloneOf(tempOutp.stage12.ext)
           )
-          val nonRotatedOutpExt = cloneOf(tempOutp.stage11.ext)
-            .setName("wrObjPipe11_nonRotatedOutpExt")
+          val nonRotatedOutpExt = cloneOf(tempOutp.stage12.ext)
+            .setName("wrObjPipe12_nonRotatedOutpExt")
           def myIdxVec = tempInp.stage9.myIdxVec
           //val myIdxVec = Vec.fill(params.objTileSize2d.x)(
           //  UInt(params.objTileSize2dPow.x bits)
           //)
-          //  .setName("wrObjPipe11_myIdxVec")
+          //  .setName("wrObjPipe12_myIdxVec")
 
           def myMainFunc(
             x: Int
@@ -7491,11 +7492,11 @@ case class Gpu2d(
               //tempOutp.overwriteLineMemEntry(myIdx)
               Bool()
             )
-              .setName(f"wrObjPipe11_tempOverwriteLineMemEntry_$x")
+              .setName(f"wrObjPipe12_tempOverwriteLineMemEntry_$x")
             //--------
             // BEGIN: later
             def nonRotatedOverwriteLineMemEntry = (
-              //rWrObjPipeOut11ExtData
+              //rWrObjPipeOut12ExtData
               //outpExt
               nonRotatedOutpExt
               .overwriteLineMemEntry(
@@ -7514,12 +7515,12 @@ case class Gpu2d(
             //)//.addTag(noLatchCheck)
             val tempWrLineMemEntry = (
               cloneOf(
-                //rWrObjPipeOut11ExtData
+                //rWrObjPipeOut12ExtData
                 nonRotatedOutpExt
                 .wrLineMemEntry(myIdx)
               )
             )
-              .setName("dbgTempWrObjPipe11_tempWrLineMemEntry")
+              .setName("dbgTempWrObjPipe12_tempWrLineMemEntry")
             //--------
             // BEGIN: later
             def nonRotatedWrLineMemEntry = (
@@ -7527,7 +7528,7 @@ case class Gpu2d(
               //  //myIdx(tempMyIdxRange)
               //  myIdx
               //)
-              //rWrObjPipeOut11ExtData
+              //rWrObjPipeOut12ExtData
               //outpExt
               nonRotatedOutpExt
               .wrLineMemEntry(
@@ -7545,26 +7546,26 @@ case class Gpu2d(
             // END: later
             //--------
             //def toFwdWrLineMemEntry = (
-            //  rWrObjPipeOut11ExtData.wrLineMemEntry(x)
+            //  rWrObjPipeOut12ExtData.wrLineMemEntry(x)
             //)
 
             //val tempOverwriteLineMemEntry = Bool()
             //val tempConcat = Bits(tempInp.numFwd + 1 bits)
             //--------
             // BEGIN: debug comment this out; later
-            def fwdVec = tempOutp.stage11.fwdV2d(
+            def fwdVec = tempOutp.stage12.fwdV2d(
               x
               //myIdx
             )
             //val rFwdVec = Reg(cloneOf(fwdVec)) //init(fwdVec.getZero)
-            def rFwdVec = rStage11FwdV2d(
+            def rFwdVec = rStage12FwdV2d(
               //x
-              myIdx
+              myIdx // this was the correct behavior
             )
             //rFwdVec(x).init(rFwdVec(x).getZero)
             for (fwdIdx <- 0 until rFwdVec.size) {
-              rStage11FwdV2d(x)(fwdIdx).init(
-                rStage11FwdV2d(x)(fwdIdx).getZero
+              rStage12FwdV2d(x)(fwdIdx).init(
+                rStage12FwdV2d(x)(fwdIdx).getZero
               )
             }
 
@@ -7582,11 +7583,11 @@ case class Gpu2d(
               }
             }
             // END: debug comment this out; later
-            //val dbgTestWrObjPipeOut11_sameAsFound = cloneOf(
+            //val dbgTestWrObjPipeOut12_sameAsFound = cloneOf(
             //  tempInp.pxPosXGridIdxFindFirstSameAsFound
             //)
-            //  .setName(f"dbgTestWrObjPipeOut11_sameAsFound_$x")
-            //dbgTestWrObjPipeOut11_sameAsFound := (
+            //  .setName(f"dbgTestWrObjPipeOut12_sameAsFound_$x")
+            //dbgTestWrObjPipeOut12_sameAsFound := (
             //  tempInp.pxPosXGridIdxFindFirstSameAsFound
             //)
             ////--------
@@ -7665,38 +7666,38 @@ case class Gpu2d(
               } //else if (params.numBgsPow == log2Up(4)) {
               //}
               else {
-                  switch (Cat(
-                    somePxPosCmp,
-                    !someLineMemEntry.written,
-                    //someLineMemEntry.prio,
-                    //tempInp.objAttrs.prio,
-                    someLineMemEntry.prio < tempInp.objAttrs.prio,
-                    someLineMemEntry.prio === tempInp.objAttrs.prio,
-                    someLineMemEntry.prio > tempInp.objAttrs.prio,
-                  )) {
-                    is (M"0----") {
-                      someOverwriteLineMemEntry := False
-                    }
-                    is (M"11---") {
-                      someOverwriteLineMemEntry := True
-                    }
-                    is (M"101--") {
-                      someOverwriteLineMemEntry := False
-                    }
-                    is (M"1001-") {
-                      someOverwriteLineMemEntry := True
-                    }
-                    default {
-                      someOverwriteLineMemEntry := (
-                        !someLineMemEntry.col.a
-                        && tempInp.palEntryNzMemIdx(
-                          x
-                          //myIdx
-                          //myIdx(tempMyIdxRange)
-                        )
-                      )
-                    }
+                switch (Cat(
+                  somePxPosCmp,
+                  !someLineMemEntry.written,
+                  //someLineMemEntry.prio,
+                  //tempInp.objAttrs.prio,
+                  someLineMemEntry.prio < tempInp.objAttrs.prio,
+                  someLineMemEntry.prio === tempInp.objAttrs.prio,
+                  someLineMemEntry.prio > tempInp.objAttrs.prio,
+                )) {
+                  is (M"0----") {
+                    someOverwriteLineMemEntry := False
                   }
+                  is (M"11---") {
+                    someOverwriteLineMemEntry := True
+                  }
+                  is (M"101--") {
+                    someOverwriteLineMemEntry := False
+                  }
+                  is (M"1001-") {
+                    someOverwriteLineMemEntry := True
+                  }
+                  default {
+                    someOverwriteLineMemEntry := (
+                      !someLineMemEntry.col.a
+                      && tempInp.palEntryNzMemIdx(
+                        x
+                        //myIdx
+                        //myIdx(tempMyIdxRange)
+                      )
+                    )
+                  }
+                }
               }
               //when (
               //  //--------
@@ -7740,12 +7741,12 @@ case class Gpu2d(
             }
             //--------
             val tempRdLineMemEntry = ObjSubLineMemEntry()
-              .setName(f"wrObjPipeStage11_tempRdLineMemEntry_$x")
+              .setName(f"wrObjPipeStage12_tempRdLineMemEntry_$x")
             //--------
             // BEGIN: debug comment this out; later
             //val tempConcat = Bits(fwdVec.size bits)
             val tempConcat = Bits((fwdVec.size - 1) bits)
-              .setName(f"wrObjPipeStage11TempConcat_$x")
+              .setName(f"wrObjPipeStage12TempConcat_$x")
 
             for (fwdIdx <- 0 to fwdVec.size - 1) {
               if (fwdIdx == 0) {
@@ -8049,10 +8050,10 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrObjPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).stage11 := stageData.pipeIn(idx).stage11
+          stageData.pipeOut(idx).stage12 := stageData.pipeIn(idx).stage12
         },
       )
-      // END: Stage 11
+      // END: Stage 12
       //--------
       // BEGIN: Stage 7
       //HandleDualPipe(
