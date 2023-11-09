@@ -2960,7 +2960,8 @@ case class Gpu2d(
     //def wrObjPipeStage6NumFwd = wrBgObjPipeNumStages - 6 + 1 + 1
     //def wrObjPipeStage9NumFwd = wrBgObjPipeNumStages - 9 + 1 + 1
     //def wrObjPipeStage9NumFwd = wrBgObjPipeNumStages - 9 + 1 + 1
-    def wrObjPipeStage11NumFwd = wrBgObjPipeNumStages - 11 + 1 + 1
+    //def wrObjPipeStage11NumFwd = wrBgObjPipeNumStages - 11 + 1 + 1
+    def wrObjPipeStage11NumFwd = wrBgObjPipeNumStages - 11 - 1 + 1 + 1
     //def wrObjPipeStage6NumFwd = 2
     //def wrObjPipeStage6NumFwd = 1
     def wrObjPipeStage10NumFwd = wrObjPipeStage11NumFwd //+ 1

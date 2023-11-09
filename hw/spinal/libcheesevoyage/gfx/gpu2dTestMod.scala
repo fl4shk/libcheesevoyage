@@ -447,8 +447,8 @@ case class Gpu2dTest(
         //params.intnlFbSize2d.x >> 1
         //0x3e
         //3
-        2
-        //1
+        //2
+        1
         //0
       )
       //tempObjAttrs.pos.x := -1
@@ -476,7 +476,7 @@ case class Gpu2dTest(
       //tempObjAttrs.pos.x := 16
       tempObjAttrs.pos.x := (
         //1
-        1
+        2
       )
       //tempObjAttrs.pos.x := 9
       //tempObjAttrs.pos.x := 9
