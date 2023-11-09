@@ -3232,6 +3232,9 @@ case class Gpu2d(
         val rdSubLineMemEntry = Vec.fill(params.objTileSize2d.x)(
           ObjSubLineMemEntry()
         )
+        val myIdxVec = Vec.fill(params.objTileSize2d.x)(
+          UInt(params.objTileSize2dPow.x bits)
+        )
         val pxPosYLsb = Bool()
         //val pxPosXGridIdxLsb = Bool()
         val pxPosXGridIdx = UInt(
@@ -7082,6 +7085,19 @@ case class Gpu2d(
               tempInp.pxPosXGridIdxFindFirstSameAsIdx
             )
           )
+          for (x <- 0 until params.objTileSize2d.x) {
+            def myIdxVec = tempOutp.stage10.myIdxVec
+            //val myIdx = UInt((params.objTileSize2dPow.x + 1) bits)
+            //  .setName(f"wrObjPipe10_myIdx_$x")
+            val myIdxFull = cloneOf(tempInp.pxPos(x).x)
+              .setName(f"wrObjPipe10_myIdxFull_$x")
+            myIdxFull := tempInp.pxPos(x).x
+            //myIdxFull := tempInp.pxPos(0).x + x
+            val myIdx = UInt(params.objTileSize2dPow.x bits)
+              .setName(f"wrObjPipe10_myIdx_$x")
+            myIdx := myIdxFull.asUInt(myIdx.bitsRange)
+            myIdxVec(x) := myIdx
+          }
           //tempOutp.stage10.pxPosXGridIdxLsb := (
           //  tempInp.pxPosXGridIdx(
           //    //myIdx
@@ -7937,10 +7953,11 @@ case class Gpu2d(
           )
           val nonRotatedOutpExt = cloneOf(tempOutp.stage11.ext)
             .setName("wrObjPipe11_nonRotatedOutpExt")
-          val myIdxVec = Vec.fill(params.objTileSize2d.x)(
-            UInt(params.objTileSize2dPow.x bits)
-          )
-            .setName("wrObjPipe11_myIdxVec")
+          def myIdxVec = tempInp.stage10.myIdxVec
+          //val myIdxVec = Vec.fill(params.objTileSize2d.x)(
+          //  UInt(params.objTileSize2dPow.x bits)
+          //)
+          //  .setName("wrObjPipe11_myIdxVec")
 
           def myMainFunc(
             x: Int
@@ -7948,17 +7965,9 @@ case class Gpu2d(
             //myIdx: Int
           ): Unit = {
             //--------
+            def myIdx = myIdxVec(x)
+            //--------
             // BEGIN: debug comment this out; later
-            //val myIdx = UInt((params.objTileSize2dPow.x + 1) bits)
-            //  .setName(f"wrObjPipe11_myIdx_$x")
-            val myIdxFull = cloneOf(tempInp.pxPos(x).x)
-              .setName(f"wrObjPipe11_myIdxFull_$x")
-            //myIdxFull := tempInp.pxPos(x).x
-            myIdxFull := tempInp.pxPos(0).x + x
-            val myIdx = UInt(params.objTileSize2dPow.x bits)
-              .setName(f"wrObjPipe11_myIdx_$x")
-            myIdx := myIdxFull.asUInt(myIdx.bitsRange)
-            myIdxVec(x) := myIdx
 
             //outpExt.overwriteLineMemEntry(myIdx) := False
             //outpExt.overwriteLineMemEntry(myIdx).allowOverride
