@@ -7629,20 +7629,6 @@ case class Gpu2d(
                   ) {
                     someOverwriteLineMemEntry := True
                   }
-                  //is (
-                  //  new MaskedLiteral(
-                  //    value=(
-                  //      (1 << (width - 1))
-                  //      //| (1 << (width - 2))
-                  //    ),
-                  //    careAbout=(
-                  //      (1 << (width - 1))
-                  //      | (1 << (width - 2))
-                  //    ),
-                  //    width=width,
-                  //  ),
-                  //) {
-                  //}
                   is (M"1000") {
                     someOverwriteLineMemEntry := True
                   }
@@ -7663,8 +7649,93 @@ case class Gpu2d(
                     )
                   }
                 }
-              } //else if (params.numBgsPow == log2Up(4)) {
-              //}
+              } else if (params.numBgsPow == log2Up(4)) {
+                def width = 6
+                switch (Cat(
+                  somePxPosCmp,
+                  !someLineMemEntry.written,
+                  someLineMemEntry.prio,
+                  tempInp.objAttrs.prio,
+                )) {
+                  is (
+                    new MaskedLiteral(
+                      value=0,
+                      //careAbout=(1 << width) - 1,
+                      careAbout=1 << (width - 1),
+                      width=width,
+                    )
+                  ) {
+                    someOverwriteLineMemEntry := False
+                  }
+                  is (
+                    new MaskedLiteral(
+                      value=(
+                        (1 << (width - 1))
+                        | (1 << (width - 2))
+                      ),
+                      careAbout=(
+                        (1 << (width - 1))
+                        | (1 << (width - 2))
+                      ),
+                      width=width,
+                    ),
+                  ) {
+                    someOverwriteLineMemEntry := True
+                  }
+                  //is (
+                  //  new MaskedLiteral(
+                  //    value=(
+                  //      (1 << (width - 1))
+                  //      //| (1 << (width - 2))
+                  //    ),
+                  //    careAbout=(
+                  //      (1 << (width - 1))
+                  //      | (1 << (width - 2))
+                  //    ),
+                  //    width=width,
+                  //  ),
+                  //) {
+                  //}
+                  is (M"100001") { // 0 < 1
+                    someOverwriteLineMemEntry := False
+                  }
+                  is (M"100-1-") { // 0 < 2, 0 < 3; 1 < 2, 1 < 3
+                    someOverwriteLineMemEntry := False
+                  }
+                  //is (M"10001-") { // 0 < 2, 0 < 3
+                  //  someOverwriteLineMemEntry := False
+                  //}
+                  //is (M"10011-") { // 1 < 2, 1 < 3
+                  //  someOverwriteLineMemEntry := False
+                  //}
+                  is (M"101011") { // 2 < 3
+                    someOverwriteLineMemEntry := False
+                  }
+
+                  is (M"100000") { // 0 === 0
+                    someOverwriteLineMemEntry := True
+                  }
+                  is (M"100101") { // 1 === 1
+                    someOverwriteLineMemEntry := True
+                  }
+                  is (M"101010") { // 2 === 2
+                    someOverwriteLineMemEntry := True
+                  }
+                  is (M"101111") { // 3 === 3
+                    someOverwriteLineMemEntry := True
+                  }
+                  default {
+                    someOverwriteLineMemEntry := (
+                      !someLineMemEntry.col.a
+                      && tempInp.palEntryNzMemIdx(
+                        x
+                        //myIdx
+                        //myIdx(tempMyIdxRange)
+                      )
+                    )
+                  }
+                }
+              }
               else {
                 switch (Cat(
                   somePxPosCmp,
