@@ -7529,14 +7529,14 @@ case class Gpu2d(
             //    tempOutp.wrLineMemEntry.take(x)
             //  )
             //)//.addTag(noLatchCheck)
-            val tempWrLineMemEntry = (
-              cloneOf(
-                //rWrObjPipeOut12ExtData
-                nonRotatedOutpExt
-                .wrLineMemEntry(myIdx)
-              )
-            )
-              .setName("dbgTempWrObjPipe12_tempWrLineMemEntry")
+            //val tempWrLineMemEntry = (
+            //  cloneOf(
+            //    //rWrObjPipeOut12ExtData
+            //    nonRotatedOutpExt
+            //    .wrLineMemEntry(myIdx)
+            //  )
+            //)
+            //  .setName("dbgTempWrObjPipe12_tempWrLineMemEntry")
             //--------
             // BEGIN: later
             def nonRotatedWrLineMemEntry = (
@@ -7607,6 +7607,62 @@ case class Gpu2d(
             //  tempInp.pxPosXGridIdxFindFirstSameAsFound
             //)
             ////--------
+            def calcTempWrLineMemEntry(
+              someOverwriteLineMemEntry: Bool,
+              someWrLineMemEntry: ObjSubLineMemEntry,
+              someRdLineMemEntry: ObjSubLineMemEntry,
+            ): Unit = {
+              // BEGIN: debug comment this out; later
+              when (someOverwriteLineMemEntry) {
+              // END: debug comment this out; later
+              //--------
+                // Here it should be `x` (not `myIdx`) here because `myIdx`
+                // is just an index into `ObjSubLineMemEntry`s, rather than
+                // an index into sprite tiles themselves
+                if (inSim) {
+                  someWrLineMemEntry.addr := (
+                    tempInp.pxPos(
+                      x
+                      //myIdx
+                      //myIdx(tempMyIdxRange)
+                    ).x.asUInt(
+                      someWrLineMemEntry.addr.bitsRange
+                    )
+                    //default -> False
+                  )
+                }
+                someWrLineMemEntry.col.rgb := (
+                  tempInp.palEntry(
+                    x
+                    //myIdx
+                    //myIdx(tempMyIdxRange)
+                  ).col
+                  //tempWrLineMemEntry.col.rgb.getZero
+                )
+                //tempOutp.wrLineMemEntry.col.a := True
+                someWrLineMemEntry.col.a := (
+                  tempInp.palEntryNzMemIdx(
+                    x
+                    //myIdx
+                    //myIdx(tempMyIdxRange)
+                  )
+                  //False
+                )
+                //tempOutp.wrLineMemEntry.prio(
+                //  tempInp.objAttrs.prio.bitsRange
+                //) := tempInp.objAttrs.prio
+                someWrLineMemEntry.prio := (
+                  tempInp.objAttrs.prio
+                )
+                //tempOutp.wrLineMemEntry.prio.msb := True
+                someWrLineMemEntry.written := True
+              //--------
+              // BEGIN: debug comment this out; later
+              } otherwise {
+                //tempOutp.wrLineMemEntry := tempInp.rdSubLineMemEntry
+                someWrLineMemEntry := someRdLineMemEntry
+              }
+            }
             def calcTempOverwiteLineMemEntry(
               somePxPosCmp: Bool,
               someLineMemEntry: ObjSubLineMemEntry,
@@ -7850,34 +7906,59 @@ case class Gpu2d(
               }
             }
             //--------
-            val tempRdLineMemEntry = ObjSubLineMemEntry()
-              .setName(f"wrObjPipeStage12_tempRdLineMemEntry_$x")
+            //val tempRdLineMemEntry = ObjSubLineMemEntry()
+            //  .setName(f"wrObjPipeStage12_tempRdLineMemEntry_$x")
             //--------
             // BEGIN: debug comment this out; later
             //val tempConcat = Bits(fwdVec.size bits)
             val tempConcat = Bits((fwdVec.size - 1) bits)
               .setName(f"wrObjPipeStage12TempConcat_$x")
 
+            def setFwdVec0(
+              someOverwriteLineMemEntry: Bool,
+              someWrLineMemEntry: ObjSubLineMemEntry,
+            ): Unit = {
+              def fwdIdx = 0
+              when (
+                //!tempInp.bakCnt.msb
+                !tempInp.bakCntWillBeDone()
+                //&& tempInp.pxPosXGridIdxMatches(x)
+              ){
+                fwdVec(fwdIdx).overwriteLineMemEntry(0) := (
+                  //tempOutp.overwriteLineMemEntry(x)
+                  someOverwriteLineMemEntry
+                )
+                //fwdVec(fwdIdx).wrLineMemEntry := tempWrLineMemEntry
+                fwdVec(fwdIdx).wrLineMemEntry(0) := (
+                  //tempOutp.wrLineMemEntry(x)
+                  someWrLineMemEntry
+                  //toFwdWrLineMemEntry
+                )
+              } otherwise {
+                fwdVec(fwdIdx) := fwdVec(fwdIdx).getZero
+              }
+            }
+
             for (fwdIdx <- 0 to fwdVec.size - 1) {
               if (fwdIdx == 0) {
-                when (
-                  //!tempInp.bakCnt.msb
-                  !tempInp.bakCntWillBeDone()
-                  //&& tempInp.pxPosXGridIdxMatches(x)
-                ){
-                  fwdVec(fwdIdx).overwriteLineMemEntry(0) := (
-                    //tempOutp.overwriteLineMemEntry(x)
-                    tempOverwriteLineMemEntry
-                  )
-                  //fwdVec(fwdIdx).wrLineMemEntry := tempWrLineMemEntry
-                  fwdVec(fwdIdx).wrLineMemEntry(0) := (
-                    //tempOutp.wrLineMemEntry(x)
-                    tempWrLineMemEntry
-                    //toFwdWrLineMemEntry
-                  )
-                } otherwise {
-                  fwdVec(fwdIdx) := fwdVec(fwdIdx).getZero
-                }
+                //when (
+                //  //!tempInp.bakCnt.msb
+                //  !tempInp.bakCntWillBeDone()
+                //  //&& tempInp.pxPosXGridIdxMatches(x)
+                //){
+                //  fwdVec(fwdIdx).overwriteLineMemEntry(0) := (
+                //    //tempOutp.overwriteLineMemEntry(x)
+                //    tempOverwriteLineMemEntry
+                //  )
+                //  //fwdVec(fwdIdx).wrLineMemEntry := tempWrLineMemEntry
+                //  fwdVec(fwdIdx).wrLineMemEntry(0) := (
+                //    //tempOutp.wrLineMemEntry(x)
+                //    tempWrLineMemEntry
+                //    //toFwdWrLineMemEntry
+                //  )
+                //} otherwise {
+                //  fwdVec(fwdIdx) := fwdVec(fwdIdx).getZero
+                //}
               }
               //else {
               //  //tempOutp.fwdVec(fwdIdx).pxPosX := tempOutp
@@ -7944,22 +8025,101 @@ case class Gpu2d(
                 )
                 //println(tempCase)
                 is (tempCase) {
+                  val tempOverwriteLineMemEntry = Bool()
+                  val tempWrLineMemEntry = (
+                    cloneOf(
+                      //rWrObjPipeOut12ExtData
+                      nonRotatedOutpExt
+                      .wrLineMemEntry(myIdx)
+                    )
+                  )
+                  val tempRdLineMemEntry = ObjSubLineMemEntry()
+                    //.setName(f"wrObjPipeStage12_tempRdLineMemEntry_$x")
                   tempRdLineMemEntry := (
                     fwdVec(fwdIdx + 1).wrLineMemEntry(
                       0
                       //x
                     )
                   )
+                  setFwdVec0(
+                    someOverwriteLineMemEntry=tempOverwriteLineMemEntry,
+                    someWrLineMemEntry=tempWrLineMemEntry,
+                  )
+                  calcTempOverwiteLineMemEntry(
+                    somePxPosCmp=(
+                      tempInp.pxPosCmpForOverwrite(
+                        // this should be `x` because it's an index from
+                        // the sprite's perspective
+                        x
+                      )
+                    ),
+                    //someLineMemEntry=tempInp.rdSubLineMemEntry,
+                    someLineMemEntry=tempRdLineMemEntry,
+                    someOverwriteLineMemEntry=(
+                      //tempOutp.overwriteLineMemEntry(x)
+                      tempOverwriteLineMemEntry
+                    )
+                  )
+                  calcTempWrLineMemEntry(
+                    someOverwriteLineMemEntry=tempOverwriteLineMemEntry,
+                    someWrLineMemEntry=tempWrLineMemEntry,
+                    someRdLineMemEntry=tempRdLineMemEntry,
+                  )
+                  nonRotatedOverwriteLineMemEntry := (
+                    tempOverwriteLineMemEntry
+                  )
+                  nonRotatedWrLineMemEntry := (
+                    tempWrLineMemEntry
+                  )
                 }
               }
               default 
               //.otherwise 
               {
+                val tempOverwriteLineMemEntry = Bool()
+                val tempWrLineMemEntry = (
+                  cloneOf(
+                    //rWrObjPipeOut12ExtData
+                    nonRotatedOutpExt
+                    .wrLineMemEntry(myIdx)
+                  )
+                )
+                val tempRdLineMemEntry = ObjSubLineMemEntry()
                 tempRdLineMemEntry := tempInp.rdSubLineMemEntry(
                   //x
                   // `myIdx` should be used here since it's an index into
                   // `objSubLineMemArr(jdx)`
                   myIdx
+                )
+                setFwdVec0(
+                  someOverwriteLineMemEntry=tempOverwriteLineMemEntry,
+                  someWrLineMemEntry=tempWrLineMemEntry,
+                )
+                calcTempOverwiteLineMemEntry(
+                  somePxPosCmp=(
+                    tempInp.pxPosCmpForOverwrite(
+                      // this should be `x` because it's an index from the
+                      // sprite's perspective
+                      x
+                    )
+                  ),
+                  //someLineMemEntry=tempInp.rdSubLineMemEntry,
+                  someLineMemEntry=tempRdLineMemEntry,
+                  someOverwriteLineMemEntry=(
+                    //tempOutp.overwriteLineMemEntry(x)
+                    tempOverwriteLineMemEntry
+                  )
+                )
+                calcTempWrLineMemEntry(
+                  someOverwriteLineMemEntry=tempOverwriteLineMemEntry,
+                  someWrLineMemEntry=tempWrLineMemEntry,
+                  someRdLineMemEntry=tempRdLineMemEntry,
+                )
+                nonRotatedOverwriteLineMemEntry := (
+                  tempOverwriteLineMemEntry
+                )
+                nonRotatedWrLineMemEntry := (
+                  tempWrLineMemEntry
                 )
               }
             }
@@ -7979,8 +8139,8 @@ case class Gpu2d(
             //  input.drop(x).appendedAll(input.take(x))
             //)
 
-            nonRotatedOverwriteLineMemEntry := tempOverwriteLineMemEntry
-            nonRotatedWrLineMemEntry := tempWrLineMemEntry
+            //nonRotatedOverwriteLineMemEntry := tempOverwriteLineMemEntry
+            //nonRotatedWrLineMemEntry := tempWrLineMemEntry
 
             //when (
             //  tempOutp.fire
@@ -7988,56 +8148,56 @@ case class Gpu2d(
             //) {
               //--------
               //--------
-              // BEGIN: debug comment this out; later
-              when (tempOverwriteLineMemEntry) {
-              // END: debug comment this out; later
-              //--------
-                // Here it should be `x` (not `myIdx`) here because `myIdx`
-                // is just an index into `ObjSubLineMemEntry`s, rather than
-                // an index into sprite tiles themselves
-                if (inSim) {
-                  tempWrLineMemEntry.addr := (
-                    tempInp.pxPos(
-                      x
-                      //myIdx
-                      //myIdx(tempMyIdxRange)
-                    ).x.asUInt(
-                      tempWrLineMemEntry.addr.bitsRange
-                    )
-                    //default -> False
-                  )
-                }
-                tempWrLineMemEntry.col.rgb := (
-                  tempInp.palEntry(
-                    x
-                    //myIdx
-                    //myIdx(tempMyIdxRange)
-                  ).col
-                  //tempWrLineMemEntry.col.rgb.getZero
-                )
-                //tempOutp.wrLineMemEntry.col.a := True
-                tempWrLineMemEntry.col.a := (
-                  tempInp.palEntryNzMemIdx(
-                    x
-                    //myIdx
-                    //myIdx(tempMyIdxRange)
-                  )
-                  //False
-                )
-                //tempOutp.wrLineMemEntry.prio(
-                //  tempInp.objAttrs.prio.bitsRange
-                //) := tempInp.objAttrs.prio
-                tempWrLineMemEntry.prio := (
-                  tempInp.objAttrs.prio
-                )
-                //tempOutp.wrLineMemEntry.prio.msb := True
-                tempWrLineMemEntry.written := True
-              //--------
-              // BEGIN: debug comment this out; later
-              } otherwise {
-                //tempOutp.wrLineMemEntry := tempInp.rdSubLineMemEntry
-                tempWrLineMemEntry := tempRdLineMemEntry
-              }
+              //// BEGIN: debug comment this out; later
+              //when (tempOverwriteLineMemEntry) {
+              //// END: debug comment this out; later
+              ////--------
+              //  // Here it should be `x` (not `myIdx`) here because `myIdx`
+              //  // is just an index into `ObjSubLineMemEntry`s, rather than
+              //  // an index into sprite tiles themselves
+              //  if (inSim) {
+              //    tempWrLineMemEntry.addr := (
+              //      tempInp.pxPos(
+              //        x
+              //        //myIdx
+              //        //myIdx(tempMyIdxRange)
+              //      ).x.asUInt(
+              //        tempWrLineMemEntry.addr.bitsRange
+              //      )
+              //      //default -> False
+              //    )
+              //  }
+              //  tempWrLineMemEntry.col.rgb := (
+              //    tempInp.palEntry(
+              //      x
+              //      //myIdx
+              //      //myIdx(tempMyIdxRange)
+              //    ).col
+              //    //tempWrLineMemEntry.col.rgb.getZero
+              //  )
+              //  //tempOutp.wrLineMemEntry.col.a := True
+              //  tempWrLineMemEntry.col.a := (
+              //    tempInp.palEntryNzMemIdx(
+              //      x
+              //      //myIdx
+              //      //myIdx(tempMyIdxRange)
+              //    )
+              //    //False
+              //  )
+              //  //tempOutp.wrLineMemEntry.prio(
+              //  //  tempInp.objAttrs.prio.bitsRange
+              //  //) := tempInp.objAttrs.prio
+              //  tempWrLineMemEntry.prio := (
+              //    tempInp.objAttrs.prio
+              //  )
+              //  //tempOutp.wrLineMemEntry.prio.msb := True
+              //  tempWrLineMemEntry.written := True
+              ////--------
+              //// BEGIN: debug comment this out; later
+              //} otherwise {
+              //  //tempOutp.wrLineMemEntry := tempInp.rdSubLineMemEntry
+              //  tempWrLineMemEntry := tempRdLineMemEntry
+              //}
               // END: debug comment this out; later
               //--------
             //} otherwise {
@@ -8049,32 +8209,32 @@ case class Gpu2d(
             //  )
             //  //rotatedWrLineMemEntry := rotatedWrLineMemEntry.getZero
             //}
-            calcTempOverwiteLineMemEntry(
-              somePxPosCmp=(
-                //tempInp.pxPosInLine(
-                //  // this should be `x` because it's an index into the 
-                //  x
-                //)
-                tempInp.pxPosCmpForOverwrite(
-                  // this should be `x` because it's an index from sprite's
-                  // perspective
-                  x
-                )
-                //&& (
-                //  tempRdLineMemEntry.addr === (
-                //    tempInp.pxPos.x.asUInt(
-                //      tempRdLineMemEntry.addr.bitsRange
-                //    )
-                //  )
-                //)
-              ),
-              //someLineMemEntry=tempInp.rdSubLineMemEntry,
-              someLineMemEntry=tempRdLineMemEntry,
-              someOverwriteLineMemEntry=(
-                //tempOutp.overwriteLineMemEntry(x)
-                tempOverwriteLineMemEntry
-              )
-            )
+            //calcTempOverwiteLineMemEntry(
+            //  somePxPosCmp=(
+            //    //tempInp.pxPosInLine(
+            //    //  // this should be `x` because it's an index into the 
+            //    //  x
+            //    //)
+            //    tempInp.pxPosCmpForOverwrite(
+            //      // this should be `x` because it's an index from sprite's
+            //      // perspective
+            //      x
+            //    )
+            //    //&& (
+            //    //  tempRdLineMemEntry.addr === (
+            //    //    tempInp.pxPos.x.asUInt(
+            //    //      tempRdLineMemEntry.addr.bitsRange
+            //    //    )
+            //    //  )
+            //    //)
+            //  ),
+            //  //someLineMemEntry=tempInp.rdSubLineMemEntry,
+            //  someLineMemEntry=tempRdLineMemEntry,
+            //  someOverwriteLineMemEntry=(
+            //    //tempOutp.overwriteLineMemEntry(x)
+            //    tempOverwriteLineMemEntry
+            //  )
+            //)
           }
 
           for (x <- 0 until params.objTileSize2d.x) {
