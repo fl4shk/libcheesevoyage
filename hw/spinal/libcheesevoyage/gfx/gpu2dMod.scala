@@ -1082,11 +1082,11 @@ case class Gpu2d(
     ]()
     for (
       //--------
-      // BEGIN: debug comment this out
-      //jdx <- 0 until params.numBgMemsPerNonPalKind
-      // END: debug comment this out
+      // BEGIN: debug comment this out; later
+      jdx <- 0 until params.numBgMemsPerNonPalKind
+      // END: debug comment this out; later
       //--------
-      jdx <- 0 until params.bgTileSize2d.x
+      //jdx <- 0 until params.bgTileSize2d.x
       //--------
     ) {
       bgTileMemArr += FpgacpuRamSimpleDualPort(
@@ -1195,7 +1195,15 @@ case class Gpu2d(
       bgEntryMemA2d += new ArrayBuffer[
         FpgacpuRamSimpleDualPort[Gpu2dBgEntry]
       ]()
-      for (jdx <- 0 until params.numBgMemsPerNonPalKind) {
+      for (
+        //--------
+        // BEGIN: debug comment this out; later
+        jdx <- 0 until params.numBgMemsPerNonPalKind
+        // END: debug comment this out; later
+        //--------
+        //jdx <- 0 until params.bgTileSize2d.x
+        //--------
+      ) {
         def bgEntryMemArr = bgEntryMemA2d(idx)
         bgEntryMemArr += FpgacpuRamSimpleDualPort(
           wordType=Gpu2dBgEntry(params=params),
@@ -1209,6 +1217,7 @@ case class Gpu2d(
           },
           arrRamStyle=params.bgEntryArrRamStyle,
         )
+          .setName(f"bgEntryMemA2d_$idx" + f"_$jdx")
         bgEntryMemArr(jdx).io.wrEn := bgEntryPushArr(idx).fire
         bgEntryMemArr(jdx).io.wrAddr := bgEntryPushArr(idx).payload.memIdx
         bgEntryMemArr(jdx).io.wrData := bgEntryPushArr(idx).payload.bgEntry
@@ -2770,7 +2779,10 @@ case class Gpu2d(
         val pxPosXGridIdx = (
           Vec.fill(params.bgTileSize2d.x)(
             UInt(
-              (log2Up(params.oneLineMemSize) - params.bgTileSize2dPow.x)
+              (
+                log2Up(params.oneLineMemSize) - params.bgTileSize2dPow.x
+                + 1
+              )
               bits
             )
           )
@@ -2798,39 +2810,39 @@ case class Gpu2d(
         //)
         //--------
       }
-      //case class Stage2() extends Bundle {
-      //  //--------
-      //  //val pxPosXGridIdx = (
-      //  //  Vec.fill(params.bgTileSize2d.x)(
-      //  //    UInt(
-      //  //      (log2Up(params.oneLineMemSize) - params.bgTileSize2dPow.x)
-      //  //      bits
-      //  //    )
-      //  //  )
-      //  //)
-      //  //val pxPosXGridIdxLsb = (
-      //  //  Vec.fill(params.bgTileSize2d.x)(
-      //  //    //UInt(1 bits)
-      //  //    Bool()
-      //  //  )
-      //  //)
-      //  //val pxPosXGridIdxFindFirstSameAsFound = Bool()
-      //  //val pxPosXGridIdxFindFirstSameAsIdx = UInt(
-      //  //  params.objTileSize2dPow.x bits
-      //  //)
-      //  //val pxPosXGridIdxFindFirstDiffFound = Bool()
-      //  //val pxPosXGridIdxFindFirstDiffIdx = UInt(
-      //  //  params.objTileSize2dPow.x bits
-      //  //)
-      //  def numMyIdxVecs = 4 + params.bgTileSize2d.x
-      //  val myIdxV2d = Vec.fill(params.bgTileSize2d.x)(
-      //    Vec.fill(numMyIdxVecs)(
-      //      UInt(params.bgTileSize2dPow.x bits)
-      //    )
-      //  )
-      //  //--------
-      //  //--------
-      //}
+      case class Stage2() extends Bundle {
+        //--------
+        //val pxPosXGridIdx = (
+        //  Vec.fill(params.bgTileSize2d.x)(
+        //    UInt(
+        //      (log2Up(params.oneLineMemSize) - params.bgTileSize2dPow.x)
+        //      bits
+        //    )
+        //  )
+        //)
+        //val pxPosXGridIdxLsb = (
+        //  Vec.fill(params.bgTileSize2d.x)(
+        //    //UInt(1 bits)
+        //    Bool()
+        //  )
+        //)
+        //val pxPosXGridIdxFindFirstSameAsFound = Bool()
+        //val pxPosXGridIdxFindFirstSameAsIdx = UInt(
+        //  params.objTileSize2dPow.x bits
+        //)
+        //val pxPosXGridIdxFindFirstDiffFound = Bool()
+        //val pxPosXGridIdxFindFirstDiffIdx = UInt(
+        //  params.objTileSize2dPow.x bits
+        //)
+        def numMyIdxVecs = 4 + params.bgTileSize2d.x
+        val myIdxV2d = Vec.fill(params.bgTileSize2d.x)(
+          Vec.fill(numMyIdxVecs)(
+            UInt(params.bgTileSize2dPow.x bits)
+          )
+        )
+        //--------
+        //--------
+      }
       case class Stage3() extends Bundle {
         // `Gpu2dBgEntry`s that have been read
         val bgEntry = Vec.fill(params.bgTileSize2d.x)(
@@ -2878,7 +2890,7 @@ case class Gpu2d(
         //val bgEntryMemIdxPart0 = Vec2(UInt(params.bgEntryMemIdxWidth bits))
         //val bgEntryMemIdxPart1 = UInt(params.bgEntryMemIdxWidth bits)
         val stage1 = Stage1()
-        //val stage2 = Stage2()
+        val stage2 = Stage2()
         val stage3 = Stage3()
         //val tileMemIdx = UInt(params.bgTileMemIdxWidth bits)
         val stage5 = Stage5()
@@ -2910,8 +2922,8 @@ case class Gpu2d(
         stage1.pxPosXGridIdxFindFirstDiffIdx 
       )
 
-      //def stage2 = postStage0.stage2
-      //def myIdxV2d = stage2.myIdxV2d
+      def stage2 = postStage0.stage2
+      def myIdxV2d = stage2.myIdxV2d
 
       def stage3 = postStage0.stage3
       def bgEntry = stage3.bgEntry
@@ -5537,10 +5549,13 @@ case class Gpu2d(
               is (tempBgIdx) {
                 val dbgPxPosXGridIdxFindFirstSameAs: (Bool, UInt) = (
                   tempOutp.pxPosXGridIdx.sFindFirst(
+                    //_(0) === tempInp.bgAttrs.scroll.x(
+                    //  params.bgTileSize2dPow.x + 1
+                    //  downto params.bgTileSize2dPow.x
+                    //)(0)
                     _(0) === tempInp.bgAttrs.scroll.x(
-                      params.bgTileSize2dPow.x + 1
-                      downto params.bgTileSize2dPow.x
-                    )(0)
+                      params.bgTileSize2dPow.x - 1
+                    )
                   )
                 )
                 tempOutp.pxPosXGridIdxFindFirstSameAsFound := (
@@ -5551,10 +5566,13 @@ case class Gpu2d(
                 )
                 val dbgPxPosXGridIdxFindFirstDiff: (Bool, UInt) = (
                   tempOutp.pxPosXGridIdx.sFindFirst(
+                    //_(0) =/= tempInp.bgAttrs.scroll.x(
+                    //  params.bgTileSize2dPow.x + 1
+                    //  downto params.bgTileSize2dPow.x
+                    //)(0)
                     _(0) =/= tempInp.bgAttrs.scroll.x(
-                      params.bgTileSize2dPow.x + 1
-                      downto params.bgTileSize2dPow.x
-                    )(0)
+                      params.bgTileSize2dPow.x - 1
+                    )
                   )
                 )
                 tempOutp.pxPosXGridIdxFindFirstDiffFound := (
@@ -5569,7 +5587,7 @@ case class Gpu2d(
           for (x <- 0 until params.bgTileSize2d.x) {
             tempOutp.pxPosXGridIdx(x) := tempOutp.pxPos(x).x(
               tempOutp.pxPos(x).x.high
-              downto params.bgTileSize2dPow.x
+              downto params.bgTileSize2dPow.x - 1
             )
             switch (tempInp.bgIdx) {
               for (tempBgIdx <- 0 until params.numBgs) {
@@ -5710,13 +5728,42 @@ case class Gpu2d(
             arrIdx <- 0 until params.numBgMemsPerNonPalKind
           ) {
             for (tempBgIdx <- 0 until params.numBgs) {
-              def arr = bgEntryMemA2d(tempBgIdx)(arrIdx)
+              def arr = bgEntryMemA2d(tempBgIdx)(
+                arrIdx
+                //x
+              )
               arr.io.rdEn := True
               arr.io.rdAddr := 0
               arr.io.rdAddr.allowOverride
             }
           }
           for (tempBgIdx <- 0 until params.numBgs) {
+            //for (x <- 0 until params.bgTileSize2d.x) {
+            //  bgEntryMemA2d(tempBgIdx)(x).io.rdAddr := (
+            //    tempInp.bgEntryMemIdx(x)
+            //  )
+            //}
+            //def tempPxPosIdx = 0
+            //bgEntryMemA2d(tempBgIdx)(
+            //  tempPxPosIdx % 2
+            //).io.rdAddr := (
+            //  tempInp.bgEntryMemIdx(
+            //    tempInp.pxPosXGridIdxFindFirstSameAsIdx
+            //  )
+            //)
+            //when (tempInp.pxPosXGridIdxFindFirstDiffFound) {
+            //  bgEntryMemA2d(tempBgIdx)(
+            //    (tempPxPosIdx + 1) % 2
+            //  ).io.rdAddr := (
+            //    tempInp.bgEntryMemIdx(
+            //      tempInp.pxPosXGridIdxFindFirstDiffIdx
+            //    )
+            //  )
+            //}
+            //switch (Cat(
+            //  tempInp.pxPosXGridIdx
+            //)) {
+            //}
             switch (
               tempInp.pxPosXGridIdx(
                 tempInp.pxPosXGridIdxFindFirstSameAsIdx
@@ -5743,82 +5790,7 @@ case class Gpu2d(
                 }
               }
             }
-            //switch (
-            //  tempInp.pxPosXGridIdxFindFirstSameAsIdx
-            //) {
-            //  for (tempPxPosIdx <- 0 until 2) {
-            //    is (tempPxPosIdx) {
-            //      bgEntryMemA2d(tempBgIdx)(
-            //        tempPxPosIdx % 2
-            //      ).io.rdAddr := (
-            //        tempInp.bgEntryMemIdx(
-            //          tempInp.pxPosXGridIdxFindFirstSameAsIdx
-            //        )
-            //      )
-            //      when (tempInp.pxPosXGridIdxFindFirstDiffFound) {
-            //        bgEntryMemA2d(tempBgIdx)(
-            //          (tempPxPosIdx + 1) % 2
-            //        ).io.rdAddr := (
-            //          tempInp.bgEntryMemIdx(
-            //            tempInp.pxPosXGridIdxFindFirstDiffIdx
-            //          )
-            //        )
-            //      }
-            //    }
-            //  }
-            //}
           }
-          //switch (tempInp.bgIdx) {
-          //  for (tempBgIdx <- 0 until params.numBgs) {
-          //    is (tempBgIdx) {
-          //      //tempOutp.bgEntry(x) := (
-          //      //  bgEntryMemArr(tempBgIdx).readAsync(
-          //      //    address=tempInp.bgEntryMemIdx(x)
-          //      //  )
-          //      //)
-          //      //when (tempInp.pxPosXGridIdxFindFirstDiffFound) {
-          //      //  switch (
-          //      //    tempInp.pxPosXGridIdxFindFirstSameAsIdx
-          //      //  ) {
-          //      //    for (tempPxPosIdx <- 0 until 2) {
-          //      //      is (tempPxPosIdx) {
-          //      //        bgEntryMemA2d(tempBgIdx)(
-          //      //          tempPxPosIdx % 2
-          //      //        ).io.rdAddr := (
-          //      //          tempInp.bgEntryMemIdx(
-          //      //            tempInp.pxPosXGridIdxFindFirstSameAsIdx
-          //      //          )
-          //      //        )
-          //      //        bgEntryMemA2d(tempBgIdx)(
-          //      //          (tempPxPosIdx + 1) % 2
-          //      //        ).io.rdAddr := (
-          //      //          tempInp.bgEntryMemIdx(
-          //      //            tempInp.pxPosXGridIdxFindFirstDiffIdx
-          //      //          )
-          //      //        )
-          //      //      }
-          //      //    }
-          //      //  }
-          //      //}
-          //      bgEntryMemA2d(tempBgIdx)(
-          //        //tempPxPosIdx % 2
-          //        0
-          //      ).io.rdAddr := (
-          //        tempInp.bgEntryMemIdx(
-          //          tempInp.pxPosXGridIdxFindFirstSameAsIdx
-          //        )
-          //      )
-          //      bgEntryMemA2d(tempBgIdx)(
-          //        //(tempPxPosIdx + 1) % 2
-          //        1
-          //      ).io.rdAddr := (
-          //        tempInp.bgEntryMemIdx(
-          //          tempInp.pxPosXGridIdxFindFirstDiffIdx
-          //        )
-          //      )
-          //    }
-          //  }
-          //}
           //for (x <- 0 until params.bgTileSize2d.x) {
           //  for (jdx <- 0 until tempOutp.stage2.numMyIdxVecs) {
           //    def myIdxVec = tempOutp.myIdxV2d(x)
@@ -5841,7 +5813,7 @@ case class Gpu2d(
           //stageData.pipeOut(idx).bgEntry := (
           //  stageData.pipeIn(idx).bgEntry
           //)
-          //stageData.pipeOut(idx).stage2 := stageData.pipeIn(idx).stage2
+          stageData.pipeOut(idx).stage2 := stageData.pipeIn(idx).stage2
         },
       )
       HandleDualPipe(
@@ -5862,8 +5834,48 @@ case class Gpu2d(
                 is (tempBgIdx) {
                   //--------
                   def myBgEntryMemArr = bgEntryMemA2d(tempBgIdx)
+                  //def myIdx = tempInp.myIdxV2d(x)(x)
+                  //def setBgEntry(
+                  //  //plusAmount: Int,
+                  //  tempPxPosIdx: Int,
+                  //): Unit = {
+                  //  tempOutp.bgEntry(
+                  //    //x
+                  //    myIdx
+                  //  ) := (
+                  //    myBgEntryMemArr(
+                  //      //(tempPxPosIdx + plusAmount) % 2
+                  //      tempPxPosIdx
+                  //    ).io.rdData
+                  //  )
+                  //}
                   //when (!tempInp.pxPosXGridIdxFindFirstDiffFound) {
+                  //  setBgEntry(0)
                   //} otherwise {
+                  //  def sameAsIdx = (
+                  //    tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                  //  )
+                  //  def diffIdx = (
+                  //    tempInp.pxPosXGridIdxFindFirstDiffIdx
+                  //  )
+                  //  when (tempInp.pxPosXGridIdxFindFirstSameAsFound) {
+                  //  }
+                  //  //when (myIdx < diffIdx) {
+                  //  //  setBgEntry
+                  //  //}
+                  //  //if (tempPxPosIdx == 0) {
+                  //  //  when (x < diffIdx) {
+                  //  //    setBgEntry(1)
+                  //  //  } otherwise {
+                  //  //    setBgEntry(0)
+                  //  //  }
+                  //  //} else {
+                  //  //  when (x < sameAsIdx) {
+                  //  //    setBgEntry(0)
+                  //  //  } otherwise {
+                  //  //    setBgEntry(1)
+                  //  //  }
+                  //  //}
                   //}
                   switch (
                     tempInp.pxPosXGridIdx(
@@ -5910,7 +5922,7 @@ case class Gpu2d(
                   //--------
                   //tempOutp.bgEntry(x) := (
                   //  bgEntryMemA2d(tempBgIdx)(
-                  //    //x
+                  //    x
                   //  ).io.rdData
                   //)
                   //--------
@@ -5939,21 +5951,61 @@ case class Gpu2d(
           val tempInp = stageData.pipeIn(idx)
           val tempOutp = stageData.pipeOut(idx)
 
-          val tempTilePxsPos = Vec.fill(params.bgTileSize2d.x)(
-            params.bgTilePxsCoordT()
-          )
-          for (x <- 0 until params.bgTileSize2d.x) {
-            //switch (tempInp.bgIdx) {
-            //  for (tempBgIdx <- 0 to params.numBgs - 1) {
-            //    is (tempBgIdx) {
-            //    }
-            //  }
-            //}
-            bgTileMemArr(x).io.rdEn := True
-            bgTileMemArr(x).io.rdAddr := tempInp.bgEntry(x).tileMemIdx
-            //tempOutp.tile(x) := (
-            //  bgTileMemArr.readAsync(address=tempInp.bgEntry(x).tileMemIdx)
-            //)
+          //val tempTilePxsPos = Vec.fill(params.bgTileSize2d.x)(
+          //  params.bgTilePxsCoordT()
+          //)
+          //for (x <- 0 until params.bgTileSize2d.x) {
+          //  //switch (tempInp.bgIdx) {
+          //  //  for (tempBgIdx <- 0 to params.numBgs - 1) {
+          //  //    is (tempBgIdx) {
+          //  //    }
+          //  //  }
+          //  //}
+          //  bgTileMemArr(x).io.rdEn := True
+          //  bgTileMemArr(x).io.rdAddr := tempInp.bgEntry(x).tileMemIdx
+          //  //tempOutp.tile(x) := (
+          //  //  bgTileMemArr.readAsync(address=tempInp.bgEntry(x).tileMemIdx)
+          //  //)
+          //}
+          for (
+            //x <- 0 until params.bgTileSize2d.x
+            arrIdx <- 0 until params.numBgMemsPerNonPalKind
+          ) {
+            def arr = bgTileMemArr(arrIdx)
+            arr.io.rdEn := True
+            arr.io.rdAddr := 0
+            arr.io.rdAddr.allowOverride
+          }
+          switch (
+            tempInp.pxPosXGridIdx(
+              tempInp.pxPosXGridIdxFindFirstSameAsIdx
+            )(0 downto 0)
+          ) {
+            for (tempPxPosIdx <- 0 until 2) {
+              is (tempPxPosIdx) {
+                bgTileMemArr(
+                  tempPxPosIdx % 2
+                ).io.rdAddr := (
+                  //tempInp.bgEntryMemIdx(
+                  //  tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                  //)
+                  tempInp.bgEntry(
+                    //x
+                    tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                  ).tileMemIdx
+                )
+                when (tempInp.pxPosXGridIdxFindFirstDiffFound) {
+                  bgTileMemArr(
+                    (tempPxPosIdx + 1) % 2
+                  ).io.rdAddr := (
+                    tempInp.bgEntry(
+                      //x
+                      tempInp.pxPosXGridIdxFindFirstDiffIdx
+                    ).tileMemIdx
+                  )
+                }
+              }
+            }
           }
         },
         copyOnlyFunc=(
@@ -6037,7 +6089,58 @@ case class Gpu2d(
                 }
               }
             }
-            tempOutp.tile(x) := bgTileMemArr(x).io.rdData
+            //tempOutp.tile(x) := bgTileMemArr(x).io.rdData
+            //--------
+            //def myBgEntryMemArr = bgEntryMemA2d(tempBgIdx)
+            //when (!tempInp.pxPosXGridIdxFindFirstDiffFound) {
+            //} otherwise {
+            //}
+            switch (
+              tempInp.pxPosXGridIdx(
+                tempInp.pxPosXGridIdxFindFirstSameAsIdx
+              )(0 downto 0)
+            ) {
+              for (tempPxPosIdx <- 0 until 2) {
+                def setBgTile(
+                  plusAmount: Int
+                ): Unit = {
+                  //tempOutp.bgEntry(x) := (
+                  //  myBgEntryMemArr(
+                  //    (tempPxPosIdx + plusAmount) % 2
+                  //  ).io.rdData
+                  //)
+                  tempOutp.tile(x) := bgTileMemArr(
+                    //x
+                    (tempPxPosIdx + plusAmount) % 2
+                  ).io.rdData
+                }
+                is (tempPxPosIdx) {
+                  when (!tempInp.pxPosXGridIdxFindFirstDiffFound) {
+                    setBgTile(0)
+                  } otherwise {
+                    def sameAsIdx = (
+                      tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                    )
+                    def diffIdx = (
+                      tempInp.pxPosXGridIdxFindFirstDiffIdx
+                    )
+                    if (tempPxPosIdx == 0) {
+                      when (x < diffIdx) {
+                        setBgTile(1)
+                      } otherwise {
+                        setBgTile(0)
+                      }
+                    } else {
+                      when (x < sameAsIdx) {
+                        setBgTile(0)
+                      } otherwise {
+                        setBgTile(1)
+                      }
+                    }
+                  }
+                }
+              }
+            }
             //tempOutp.tile(x) := (
             //  bgTileMemArr.readAsync(address=tempInp.bgEntry(x).tileMemIdx)
             //)
