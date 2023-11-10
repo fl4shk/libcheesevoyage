@@ -172,8 +172,8 @@ case class Gpu2dTest(
   //tempBgAttrs.scroll.x := 0
   //tempBgAttrs.scroll.x := 1
   tempBgAttrs.scroll.x := (
-    0
-    //2
+    //0
+    2
   )
   //tempBgAttrs.scroll.x := 3
   //tempBgScroll.x := (-params.bgTileSize2d.x) + 1
