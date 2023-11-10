@@ -3251,8 +3251,11 @@ case class Gpu2d(
       //case class Stage6() extends Bundle {
       //}
       case class Stage9() extends Bundle {
-        val myIdxVec = Vec.fill(params.objTileSize2d.x)(
-          UInt(params.objTileSize2dPow.x bits)
+        def numMyIdxVecs = 4
+        val myIdxV2d = Vec.fill(params.objTileSize2d.x)(
+          Vec.fill(numMyIdxVecs)(
+            UInt(params.objTileSize2dPow.x bits)
+          )
         )
         val pxPosYLsb = Bool()
         //val pxPosXGridIdxLsb = Bool()
@@ -7045,17 +7048,20 @@ case class Gpu2d(
             )
           )
           for (x <- 0 until params.objTileSize2d.x) {
-            def myIdxVec = tempOutp.stage9.myIdxVec
-            //val myIdx = UInt((params.objTileSize2dPow.x + 1) bits)
-            //  .setName(f"wrObjPipe9_myIdx_$x")
-            val myIdxFull = cloneOf(tempInp.pxPos(x).x)
-              .setName(f"wrObjPipe9_myIdxFull_$x")
-            myIdxFull := tempInp.pxPos(x).x
-            //myIdxFull := tempInp.pxPos(0).x + x
-            val myIdx = UInt(params.objTileSize2dPow.x bits)
-              .setName(f"wrObjPipe9_myIdx_$x")
-            myIdx := myIdxFull.asUInt(myIdx.bitsRange)
-            myIdxVec(x) := myIdx
+            for (jdx <- 0 until tempOutp.stage9.myIdxV2d(x).size) {
+              def myIdxVec = tempOutp.stage9.myIdxV2d(x)
+              //val myIdx = UInt((params.objTileSize2dPow.x + 1) bits)
+              //  .setName(f"wrObjPipe9_myIdx_$x")
+              val myIdxFull = cloneOf(tempInp.pxPos(x).x)
+                .setName(f"wrObjPipe9_myIdxFull_$x" + f"_$jdx")
+              myIdxFull := tempInp.pxPos(x).x
+              //myIdxFull := tempInp.pxPos(0).x + x
+              val myIdx = UInt(params.objTileSize2dPow.x bits)
+                .setName(f"wrObjPipe9_myIdx_$x" + f"_$jdx")
+              myIdx := myIdxFull.asUInt(myIdx.bitsRange)
+              //myIdxVec(x) := myIdx
+              myIdxVec(jdx) := myIdx
+            }
           }
 
           switch (
@@ -7176,7 +7182,7 @@ case class Gpu2d(
             //  .setName(f"wrObjPipe10_myIdx_$x")
             //myIdx := myIdxFull.asUInt(myIdx.bitsRange)
             //myIdxVec(x) := myIdx
-            def myIdx = tempInp.stage9.myIdxVec(x)
+            def myIdxVec = tempInp.stage9.myIdxV2d(x)
 
             // BEGIN: debug comment this out; later
             def fwdVec = tempOutp.stage10.fwdV2d(
@@ -7186,7 +7192,8 @@ case class Gpu2d(
             //val rFwdVec = Reg(cloneOf(fwdVec)) //init(fwdVec.getZero)
             def rFwdVec = rStage10FwdV2d(
               //x
-              myIdx
+              //myIdx
+              myIdxVec(0)
             )
             //rFwdVec(x).init(rFwdVec(x).getZero)
             for (fwdIdx <- 0 until rFwdVec.size) {
@@ -7463,7 +7470,7 @@ case class Gpu2d(
           )
           val nonRotatedOutpExt = cloneOf(tempOutp.stage12.ext)
             .setName("wrObjPipe12_nonRotatedOutpExt")
-          def myIdxVec = tempInp.stage9.myIdxVec
+          def myIdxV2d = tempInp.stage9.myIdxV2d
           //val myIdxVec = Vec.fill(params.objTileSize2d.x)(
           //  UInt(params.objTileSize2dPow.x bits)
           //)
@@ -7475,7 +7482,7 @@ case class Gpu2d(
             //myIdx: Int
           ): Unit = {
             //--------
-            def myIdx = myIdxVec(x)
+            def myIdxVec = myIdxV2d(x)
             //--------
             // BEGIN: debug comment this out; later
 
@@ -7576,7 +7583,8 @@ case class Gpu2d(
             //val rFwdVec = Reg(cloneOf(fwdVec)) //init(fwdVec.getZero)
             def rFwdVec = rStage12FwdV2d(
               //x
-              myIdx // this was the correct behavior
+              //myIdx // this was the correct behavior
+              myIdxVec(0)
             )
             //rFwdVec(x).init(rFwdVec(x).getZero)
             for (fwdIdx <- 0 until rFwdVec.size) {
@@ -8030,7 +8038,9 @@ case class Gpu2d(
                     cloneOf(
                       //rWrObjPipeOut12ExtData
                       nonRotatedOutpExt
-                      .wrLineMemEntry(myIdx)
+                      .wrLineMemEntry(
+                        myIdxVec(0)
+                      )
                     )
                   )
                   val tempRdLineMemEntry = ObjSubLineMemEntry()
@@ -8081,7 +8091,7 @@ case class Gpu2d(
                   cloneOf(
                     //rWrObjPipeOut12ExtData
                     nonRotatedOutpExt
-                    .wrLineMemEntry(myIdx)
+                    .wrLineMemEntry(myIdxVec(0))
                   )
                 )
                 val tempRdLineMemEntry = ObjSubLineMemEntry()
@@ -8089,7 +8099,8 @@ case class Gpu2d(
                   //x
                   // `myIdx` should be used here since it's an index into
                   // `objSubLineMemArr(jdx)`
-                  myIdx
+                  //myIdx
+                  myIdxVec(1)
                 )
                 setFwdVec0(
                   someOverwriteLineMemEntry=tempOverwriteLineMemEntry,
@@ -8246,10 +8257,10 @@ case class Gpu2d(
             //  )
             //)//.addTag(noLatchCheck)
             outpExt.wrLineMemEntry(x) := (
-              nonRotatedOutpExt.wrLineMemEntry(myIdxVec(x))
+              nonRotatedOutpExt.wrLineMemEntry(myIdxV2d(x)(2))
             )
             outpExt.overwriteLineMemEntry(x) := (
-              nonRotatedOutpExt.overwriteLineMemEntry(myIdxVec(x))
+              nonRotatedOutpExt.overwriteLineMemEntry(myIdxV2d(x)(3))
             )
           }
           //myMainFunc()
