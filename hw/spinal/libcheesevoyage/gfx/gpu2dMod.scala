@@ -3363,7 +3363,7 @@ case class Gpu2d(
       //case class Stage6() extends Bundle {
       //}
       case class Stage9() extends Bundle {
-        def numMyIdxVecs = 4
+        def numMyIdxVecs = 4 + params.objTileSize2d.x * 2
         val myIdxV2d = Vec.fill(params.objTileSize2d.x)(
           Vec.fill(numMyIdxVecs)(
             UInt(params.objTileSize2dPow.x bits)
@@ -4288,6 +4288,14 @@ case class Gpu2d(
       val overwriteLineMemEntry = Vec.fill(vecSize)(
         Bool()
       )
+      //val wrLineMemEntry = new ArrayBuffer[ObjSubLineMemEntry]()
+      //val overwriteLineMemEntry = new ArrayBuffer[Bool]()
+      //for (idx <- 0 until vecSize) {
+      //  wrLineMemEntry += ObjSubLineMemEntry()
+      //    .setName(f"wrLineMemEntry_$idx")
+      //  overwriteLineMemEntry += Bool()
+      //    .setName(f"overwriteLineMemEntry_$idx")
+      //}
       //def wrLineMemEntry = (
       //  if (useVec) {
       //    rawWrLineMemEntryVec
@@ -8175,7 +8183,7 @@ case class Gpu2d(
             //--------
             // BEGIN: debug comment this out; later
             //val tempConcat = Bits(fwdVec.size bits)
-            val tempConcat = Bits((fwdVec.size - 1) bits)
+            val tempConcat = Bits(((fwdVec.size - 1) * 2) bits)
               .setName(f"wrObjPipeStage12TempConcat_$x")
 
             def setFwdVec0(
@@ -8187,7 +8195,7 @@ case class Gpu2d(
                 //!tempInp.bakCnt.msb
                 !tempInp.bakCntWillBeDone()
                 //&& tempInp.pxPosXGridIdxMatches(x)
-              ){
+              ) {
                 fwdVec(fwdIdx).overwriteLineMemEntry(0) := (
                   //tempOutp.overwriteLineMemEntry(x)
                   someOverwriteLineMemEntry
@@ -8248,9 +8256,19 @@ case class Gpu2d(
                 //  fwdVec(fwdIdx).overwriteLineMemEntry
                 //  && fwdVec(fwdIdx).wrLineMemEntry.prio
                 //)
+                //tempConcat(fwdIdx - 1) := (
+                //  tempInp.stage10.doFwd(x)(fwdIdx - 1)
+                //  && fwdVec(fwdIdx).overwriteLineMemEntry(0)
+                //)
+                //tempConcat((fwdIdx - 1)
+
+                //tempConcat((fwdIdx - 1) * 2)
                 tempConcat(fwdIdx - 1) := (
                   tempInp.stage10.doFwd(x)(fwdIdx - 1)
-                  && fwdVec(fwdIdx).overwriteLineMemEntry(0)
+                )
+                //tempConcat((fwdIdx - 1) * 2 + 1)
+                tempConcat(fwdIdx + fwdVec.size - 1 - 1) := (
+                  fwdVec(fwdIdx).overwriteLineMemEntry(0)
                 )
               }
             }
@@ -8271,11 +8289,25 @@ case class Gpu2d(
                 //  + ("-" * fwdIdx)
                 //)
                 def careAbout = (
-                  ((1 << ((fwdVec.size - 1) - fwdIdx)) - 1) << fwdIdx
+                  (((1 << ((fwdVec.size - 1) - fwdIdx)) - 1) << fwdIdx)
+                  | (
+                    ((1 << ((fwdVec.size - 1) - fwdIdx)) - 1)
+                    << (fwdIdx + fwdVec.size - 1)
+                  )
+                  //| (
+                  //  ((1 << ((fwdVec.size - 1) - fwdIdx)) - 1) 
+                  //  << (fwdIdx * 2)
+                  //)
+                  //| ((1 << (2 * ((fwdVec.size - 1) - fwdIdx))) - 1) << fwdIdx
+
+                  //((0x3 << (2 * ((fwdVec.size - 1) - fwdIdx))) - 1)
+                  //<< (2 * fwdIdx)
                 )
                 //def careAbout = (-1) << fwdIdx
                 def value = (
-                  1 << fwdIdx
+                  //1 << fwdIdx
+                  (1 << fwdIdx) | (1 << (fwdIdx + fwdVec.size - 1))
+                  //3 << (fwdIdx * 2)
                 )
                 //println(myCase)
                 val tempCase = new MaskedLiteral(
@@ -8287,7 +8319,7 @@ case class Gpu2d(
                   width=tempConcat.getWidth,
                   //width=tempConcat.getWidth - 1,
                 )
-                //println(tempCase)
+                println(tempCase)
                 is (tempCase) {
                   val tempOverwriteLineMemEntry = Bool()
                   val tempWrLineMemEntry = (
@@ -8512,12 +8544,16 @@ case class Gpu2d(
             //    tempOutp.overwriteLineMemEntry.take(x)
             //  )
             //)//.addTag(noLatchCheck)
+
+            // BEGIN: correct, possibly slower code
             outpExt.wrLineMemEntry(x) := (
-              nonRotatedOutpExt.wrLineMemEntry(myIdxV2d(x)(2))
+              nonRotatedOutpExt.wrLineMemEntry(myIdxV2d(x)(x))
             )
             outpExt.overwriteLineMemEntry(x) := (
-              nonRotatedOutpExt.overwriteLineMemEntry(myIdxV2d(x)(3))
+              nonRotatedOutpExt.overwriteLineMemEntry(myIdxV2d(x)(x * 2))
             )
+            // END correct, possibly slower code
+            //--------
           }
           //myMainFunc()
         },
