@@ -447,6 +447,7 @@ case class Gpu2dTest(
   tempBgAttrs.colorMathInfo.kind := (
     //Gpu2dColorMathKind.add
     //Gpu2dColorMathKind.sub
+    //Gpu2dColorMathKind.avg
     Gpu2dColorMathKind.avg
   )
   //val tempBgScroll = DualTypeNumVec2(
@@ -474,7 +475,7 @@ case class Gpu2dTest(
   //tempBgAttrs.visib := True
   ////tempBgAttrs.visib := False
   for (idx <- 0 to pop.bgAttrsPushArr.size - 1) {
-    val tempBgAttrsPush = pop.bgAttrsPushArr(idx)
+    def tempBgAttrsPush = pop.bgAttrsPushArr(idx)
     if (idx == 0) {
       tempBgAttrsPush.valid := True
       tempBgAttrsPush.payload.bgAttrs := tempBgAttrs
