@@ -829,9 +829,9 @@ object Gpu2dColorMathKind extends SpinalEnum(
 ) {
   //--------
   val
-    avg,  // average
     add,
-    sub   // subtract
+    sub,  // subtract
+    avg   // average
     = newElement();
   //--------
 }
@@ -868,12 +868,15 @@ case class Gpu2dAffine(
 // Attributes for a whole background
 case class Gpu2dBgAttrs(
   params: Gpu2dParams,
+  isColorMath: Boolean,
 ) extends Bundle {
   //--------
   // Whether or not to display this BG
   //val visib = Bool()
 
-  val colorMathInfo = Gpu2dColorMathInfo(params=params)
+  val colorMathInfo = (
+    (!isColorMath) generate Gpu2dColorMathInfo(params=params)
+  )
   //val affine = Gpu2dAffine(params=params)
 
   // How much to scroll this background
@@ -882,9 +885,13 @@ case class Gpu2dBgAttrs(
 }
 case class Gpu2dBgAttrsStmPayload(
   params: Gpu2dParams,
+  isColorMath: Boolean,
 ) extends Bundle {
   //--------
-  val bgAttrs = Gpu2dBgAttrs(params=params)
+  val bgAttrs = Gpu2dBgAttrs(
+    params=params,
+    isColorMath=isColorMath,
+  )
 
   //val memIdx = UInt(params.bgAttrsMemIdxWidth bits)
   //--------
@@ -997,7 +1004,10 @@ case class Gpu2dPushInp(
     )
   )
   val colorMathAttrsPush = slave Flow(
-    Gpu2dBgAttrsStmPayload(params=params)
+    Gpu2dBgAttrsStmPayload(
+      params=params,
+      isColorMath=true,
+    )
   )
   val colorMathPalEntryPush = slave Flow(
     Gpu2dBgPalEntryStmPayload(params=params)
@@ -1020,7 +1030,10 @@ case class Gpu2dPushInp(
         .setName(f"bgEntryPushArr_$idx")
     )
     bgAttrsPushArr += (
-      slave Flow(Gpu2dBgAttrsStmPayload(params=params))
+      slave Flow(Gpu2dBgAttrsStmPayload(
+        params=params,
+        isColorMath=false,
+      ))
         .setName(f"bgAttrsPushArr_$idx")
     )
   }
@@ -1443,7 +1456,10 @@ case class Gpu2d(
       //  colorMathEntryPush.bgEntry
       //)
     }
-    val colorMathAttrs = Reg(Gpu2dBgAttrs(params=params))
+    val colorMathAttrs = Reg(Gpu2dBgAttrs(
+      params=params,
+      isColorMath=true,
+    ))
     colorMathAttrs.init(colorMathAttrs.getZero)
     when (colorMathAttrsPush.fire) {
       colorMathAttrs := colorMathAttrsPush.bgAttrs
@@ -1522,7 +1538,10 @@ case class Gpu2d(
       //  rdBgEntryMemArr(idx).readSync(rdIdx)
       //}
       //--------
-      bgAttrsArr += Reg(Gpu2dBgAttrs(params=params))
+      bgAttrsArr += Reg(Gpu2dBgAttrs(
+        params=params,
+        isColorMath=false,
+      ))
       bgAttrsArr(idx).init(bgAttrsArr(idx).getZero)
         .setName(f"bgAttrsArr_$idx")
       when (bgAttrsPushArr(idx).fire) {
@@ -2960,7 +2979,10 @@ case class Gpu2d(
         //  cloneOf(bgAttrsArr(0))
         //)
         val bgAttrs = cloneOf(bgAttrsArr(0))
-        val colorMathAttrs = Gpu2dBgAttrs(params=params)
+        val colorMathAttrs = Gpu2dBgAttrs(
+          params=params,
+          isColorMath=true,
+        )
         //val tilePxsCoord = params.bgTilePxsCoordT()
 
         //def cntWillBeDone() = (
@@ -3159,7 +3181,7 @@ case class Gpu2d(
       }
       case class Stage6() extends Bundle {
         val palEntryMemIdx = Vec.fill(params.bgTileSize2d.x)(
-          UInt(params.objPalEntryMemIdxWidth bits)
+          UInt(params.bgPalEntryMemIdxWidth bits)
         )
       }
       case class Stage7() extends Bundle {
@@ -4127,7 +4149,8 @@ case class Gpu2d(
       //5
       //6
       //7
-      8
+      //8
+      9
     )
     //def combinePipeNumMainStages = wrBgObjPipeNumStages + 5
     case class CombinePipePayload() extends Bundle {
@@ -4208,6 +4231,7 @@ case class Gpu2d(
         val stage5 = Stage5()
         val stage6 = Stage6()
         val stage7 = Stage7()
+        val stage8 = Stage7()
       }
       val postStage0 = PostStage0()
 
@@ -4229,7 +4253,10 @@ case class Gpu2d(
       def colorMathCol = stage6.colorMathCol
 
       def stage7 = postStage0.stage7
-      def combineWrLineMemEntry = stage7.combineWrLineMemEntry
+      //def combineWrLineMemEntry = stage7.combineWrLineMemEntry
+
+      def stage8 = postStage0.stage8
+      def combineWrLineMemEntry = stage8.combineWrLineMemEntry
       //--------
     }
     def doInitCombinePipePayload(
@@ -6032,17 +6059,21 @@ case class Gpu2d(
               ) {
                 for (tempPxPosIdx <- 0 until 2) {
                   is (tempPxPosIdx) {
-                    bgEntryMemA2d(tempBgIdx)(
-                      tempPxPosIdx % 2
-                    ).io.rdAddr := (
+                    //bgEntryMemA2d(tempBgIdx)
+                    def arr = (
+                      if (kind == 0) {
+                        bgEntryMemA2d(tempBgIdx)
+                      } else {
+                        colorMathEntryMemArr
+                      }
+                    )
+                    arr(tempPxPosIdx % 2).io.rdAddr := (
                       tempInp.bgEntryMemIdx(
                         tempInp.pxPosXGridIdxFindFirstSameAsIdx
                       )
                     )
                     when (tempInp.pxPosXGridIdxFindFirstDiffFound) {
-                      bgEntryMemA2d(tempBgIdx)(
-                        (tempPxPosIdx + 1) % 2
-                      ).io.rdAddr := (
+                      arr((tempPxPosIdx + 1) % 2).io.rdAddr := (
                         tempInp.bgEntryMemIdx(
                           tempInp.pxPosXGridIdxFindFirstDiffIdx
                         )
@@ -10111,26 +10142,26 @@ case class Gpu2d(
             tempOutp.stage7 := tempOutp.stage7.getZero
           } otherwise {
             //if (inSim) {
-              tempOutp.combineWrLineMemEntry.addr := (
+              tempOutp.stage7.combineWrLineMemEntry.addr := (
                 //tempInp.cnt
                 //tempInp.stage1.lineMemIdx
                 tempInp.cnt
                 (
-                  tempOutp.combineWrLineMemEntry.addr.bitsRange
+                  tempOutp.stage7.combineWrLineMemEntry.addr.bitsRange
                 )
               )
             //}
-            tempOutp.combineWrLineMemEntry.col := tempInp.col
+            tempOutp.stage7.combineWrLineMemEntry.col := tempInp.col
 
             //// not really necessary, but doing it anyway
-            //tempOutp.combineWrLineMemEntry.col.a := True
-            //tempOutp.combineWrLineMemEntry.col.a := 
+            //tempOutp.stage7.combineWrLineMemEntry.col.a := True
+            //tempOutp.stage7.combineWrLineMemEntry.col.a := 
 
-            tempOutp.combineWrLineMemEntry.prio := 0x0
-            tempOutp.combineWrLineMemEntry.colorMathInfo := (
+            tempOutp.stage7.combineWrLineMemEntry.prio := 0x0
+            tempOutp.stage7.combineWrLineMemEntry.colorMathInfo := (
               tempInp.colorMathInfo
             )
-            tempOutp.combineWrLineMemEntry.colorMathCol := (
+            tempOutp.stage7.combineWrLineMemEntry.colorMathCol := (
               tempInp.colorMathCol
             )
           }
@@ -10153,6 +10184,183 @@ case class Gpu2d(
             } else {
               tempOutp.stage7 := (
                 combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage7
+              )
+            }
+          }
+        },
+      )
+      HandleDualPipe(
+        stageData=stageData.craft(
+          //4
+          //5
+          8
+          //wrBgObjPipeNumStages + 4
+        )
+      )(
+        pipeStageMainFunc=(
+          stageData: DualPipeStageData[Stream[CombinePipePayload]],
+          idx: Int,
+        ) => {
+          val tempInp = stageData.pipeIn(idx)
+          val tempOutp = stageData.pipeOut(idx)
+
+          when (clockDomain.isResetActive) {
+            tempOutp.stage8 := tempOutp.stage8.getZero
+          } otherwise {
+            ////if (inSim) {
+            //  tempOutp.stage8.combineWrLineMemEntry.addr := (
+            //    //tempInp.cnt
+            //    //tempInp.stage1.lineMemIdx
+            //    tempInp.cnt
+            //    (
+            //      tempOutp.stage8.combineWrLineMemEntry.addr.bitsRange
+            //    )
+            //  )
+            ////}
+            //tempOutp.stage8.combineWrLineMemEntry.col := tempInp.col
+
+            ////// not really necessary, but doing it anyway
+            ////tempOutp.stage8.combineWrLineMemEntry.col.a := True
+            ////tempOutp.stage8.combineWrLineMemEntry.col.a := 
+
+            //tempOutp.stage8.combineWrLineMemEntry.prio := 0x0
+            //tempOutp.stage8.combineWrLineMemEntry.colorMathInfo := (
+            //  tempInp.colorMathInfo
+            //)
+            //tempOutp.stage8.combineWrLineMemEntry.colorMathCol := (
+            //  tempInp.colorMathCol
+            //)
+            def tempCmathInfo = (
+              tempInp.stage7.combineWrLineMemEntry.colorMathInfo
+            )
+            def tempCmathCol = (
+              tempInp.stage7.combineWrLineMemEntry.colorMathCol
+            )
+            def inpWrLineMemEntry = tempInp.stage7.combineWrLineMemEntry
+            def outpWrLineMemEntry = tempOutp.combineWrLineMemEntry
+            outpWrLineMemEntry := outpWrLineMemEntry.getZero
+            outpWrLineMemEntry.col.rgb.allowOverride
+            def extraWidth = 4
+            def tempRgbConfig = RgbConfig(
+              rWidth=params.rgbConfig.rWidth + extraWidth,
+              gWidth=params.rgbConfig.gWidth + extraWidth,
+              bWidth=params.rgbConfig.bWidth + extraWidth,
+            )
+            val tempCol = Rgb(tempRgbConfig)
+            tempCol := tempCol.getZero
+            tempCol.allowOverride
+            when (tempCmathInfo.doIt) {
+              switch (tempCmathInfo.kind) {
+                is (Gpu2dColorMathKind.add) {
+                  tempCol.r := (
+                    inpWrLineMemEntry.col.rgb.r + tempCmathCol.rgb.r
+                  ).resized
+                  tempCol.g := (
+                    inpWrLineMemEntry.col.rgb.g + tempCmathCol.rgb.g
+                  ).resized
+                  tempCol.b := (
+                    inpWrLineMemEntry.col.rgb.b + tempCmathCol.rgb.b
+                  ).resized
+                }
+                is (Gpu2dColorMathKind.sub) {
+                  tempCol.r := (
+                    inpWrLineMemEntry.col.rgb.r - tempCmathCol.rgb.r
+                  ).resized
+                  tempCol.g := (
+                    inpWrLineMemEntry.col.rgb.g - tempCmathCol.rgb.g
+                  ).resized
+                  tempCol.b := (
+                    inpWrLineMemEntry.col.rgb.b - tempCmathCol.rgb.b
+                  ).resized
+                }
+                is (Gpu2dColorMathKind.avg) {
+                  tempCol.r := (
+                    (
+                      inpWrLineMemEntry.col.rgb.r + tempCmathCol.rgb.r
+                    ) >> 1
+                  ).resized
+                  tempCol.g := (
+                    (
+                      inpWrLineMemEntry.col.rgb.g + tempCmathCol.rgb.g
+                    ) >> 1
+                  ).resized
+                  tempCol.b := (
+                    (
+                      inpWrLineMemEntry.col.rgb.b + tempCmathCol.rgb.b
+                    ) >> 1
+                  ).resized
+                }
+              }
+
+              when (
+                tempCol.r(
+                  tempCol.r.high - 1
+                  downto tempCol.r.high - (extraWidth - 1)
+                )
+                =/= 0
+              ) {
+                outpWrLineMemEntry.col.rgb.r := (default -> True)
+              } elsewhen (tempCol.r(tempCol.r.high)) {
+                outpWrLineMemEntry.col.rgb.r := (default -> False)
+              } otherwise {
+                outpWrLineMemEntry.col.rgb.r := tempCol.r(
+                  outpWrLineMemEntry.col.rgb.r.bitsRange
+                )
+              }
+              when (
+                tempCol.g(
+                  tempCol.g.high - 1
+                  downto tempCol.g.high - (extraWidth - 1)
+                )
+                =/= 0
+              ) {
+                outpWrLineMemEntry.col.rgb.g := (default -> True)
+              } elsewhen (tempCol.g(tempCol.g.high)) {
+                outpWrLineMemEntry.col.rgb.g := (default -> False)
+              } otherwise {
+                outpWrLineMemEntry.col.rgb.g := tempCol.g(
+                  outpWrLineMemEntry.col.rgb.g.bitsRange
+                )
+              }
+              when (
+                tempCol.b(
+                  tempCol.b.high - 1
+                  downto tempCol.b.high - (extraWidth - 1)
+                )
+                =/= 0
+              ) {
+                outpWrLineMemEntry.col.rgb.b := (default -> True)
+              } elsewhen (tempCol.b(tempCol.b.high)) {
+                outpWrLineMemEntry.col.rgb.b := (default -> False)
+              } otherwise {
+                outpWrLineMemEntry.col.rgb.b := tempCol.b(
+                  outpWrLineMemEntry.col.rgb.b.bitsRange
+                )
+              }
+            } otherwise {
+              //tempCol := tempCol.getZero
+              outpWrLineMemEntry := inpWrLineMemEntry
+            }
+          }
+        },
+        copyOnlyFunc=(
+          stageData: DualPipeStageData[Stream[CombinePipePayload]],
+          idx: Int,
+        ) => {
+          //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
+          //stageData.pipeOut(idx).stage4 := stageData.pipeIn(idx).stage4
+          val tempInp = stageData.pipeIn(idx)
+          val tempOutp = stageData.pipeOut(idx)
+
+          when (clockDomain.isResetActive) {
+            tempOutp.stage8 := tempOutp.stage8.getZero
+          } otherwise {
+            //tempOutp.stage8 := tempInp.stage8
+            if (idx != 1) {
+              tempOutp.stage8 := tempInp.stage8
+            } else {
+              tempOutp.stage8 := (
+                combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage8
               )
             }
           }
