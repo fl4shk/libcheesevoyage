@@ -59,13 +59,16 @@ case class Gpu2dParams(
   objTileSize2dPow: ElabVec2[Int],  // power of two for width/height of a
                               // sprite tile 
                               // (in pixels)
-  numBgTilesPow: Int,         // power of two for total number of
-                              // background tiles
-                              // (how much memory to reserve for BG tiles)
-  numObjTilesPow: Int,        // power of two for total number of
-                              // sprite tiles
-                              // (how much memory to reserve for sprite
-                              // tiles)
+  //numBgTilesPow: Int,         // power of two for total number of
+  //                            // background tiles
+  //                            // (how much memory to reserve for BG tiles)
+  //numObjTilesPow: Int,        // power of two for total number of
+  //                            // sprite tiles
+  //                            // (how much memory to reserve for sprite
+  //                            // tiles)
+  numBgTiles: Int,
+  numColorMathTiles: Int,
+  numObjTiles: Int,
   bgSize2dInTilesPow: ElabVec2[Int], // power of two for width/height of a
                               // background
                               // (in number of tiles)
@@ -100,7 +103,11 @@ case class Gpu2dParams(
   lineArrRamStyle: String="block"
 ) {
   //--------
+  //def numBgTileMems = 3
+  //def colorMathBgTileMemIdx = numBgTileMems - 1
+  //def numBgEntryMems = 2
   def numBgMemsPerNonPalKind = 2
+  //def numColorMathMemsPerNonPalKind = 2
   //--------
   def bgTileSize2d = ElabVec2[Int](
     x=1 << bgTileSize2dPow.x,
@@ -111,11 +118,14 @@ case class Gpu2dParams(
     y=1 << objTileSize2dPow.y,
   )
   def numBgs = 1 << numBgsPow
-  //def numTiles = 1 << numTilesPow
-  def numBgTiles = 1 << numBgTilesPow
+  ////def numTiles = 1 << numTilesPow
+  //def numBgTiles = 1 << numBgTilesPow
+  def numBgTilesPow = log2Up(numBgTiles)
   def numColsInBgPal = 1 << numColsInBgPalPow
+  def numColorMathTilesPow = log2Up(numColorMathTiles)
   def numObjs = 1 << numObjsPow
-  def numObjTiles = 1 << numObjTilesPow
+  //def numObjTiles = 1 << numObjTilesPow
+  def numObjTilesPow = log2Up(numObjTiles)
   def numColsInObjPal = 1 << numColsInObjPalPow
   //--------
   //def physToIntnlScalePow = ElabVec2[Int](
@@ -308,8 +318,8 @@ case class Gpu2dParams(
   //--------
   def numPxsPerBgTile = bgTileSize2d.x * bgTileSize2d.y
   def numPxsPerObjTile = objTileSize2d.x * objTileSize2d.y
-  def numPxsForAllBgTiles = numBgTiles * numPxsPerBgTile
-  def numPxsForAllObjTiles = numObjTiles * numPxsPerObjTile
+  //def numPxsForAllBgTiles = numBgTiles * numPxsPerBgTile
+  //def numPxsForAllObjTiles = numObjTiles * numPxsPerObjTile
   //--------
   def numTilesPerBg = bgSize2dInTiles.x * bgSize2dInTiles.y
   def numPxsPerBg = numTilesPerBg * numPxsPerBgTile
@@ -322,7 +332,9 @@ case class Gpu2dParams(
   //def tileIdxWidth = log2Up(numTiles)
   //def tileMemIdxWidth = log2Up(numTiles)
   //def tileMemIdxWidth = numTilesPow
+
   def bgTileMemIdxWidth = numBgTilesPow
+  def colorMathTileMemIdxWidth = numColorMathTilesPow
   def objTileMemIdxWidth = numObjTilesPow
 
   //def tileMemIdxWidth = log2Up(numPxsForAllTiles)
@@ -442,8 +454,11 @@ object DefaultGpu2dParams {
     ),
     numBgsPow: Int=log2Up(4), // 4 BGs
     numObjsPow: Int=log2Up(256), // 256 OBJs
-    numBgTilesPow: Option[Int]=None,
-    numObjTilesPow: Option[Int]=None,
+    //numBgTilesPow: Option[Int]=None,
+    //numObjTilesPow: Option[Int]=None,
+    numBgTiles: Option[Int]=None,
+    numColorMathTiles: Option[Int]=None,
+    numObjTiles: Option[Int]=None,
     //numObjsPow: Int=log2Up(128), // 128 OBJs
     //numObjsPerScanline: Int=64,
     numColsInBgPalPow: Int=log2Up(256), // 256 colors per BG palette
@@ -472,20 +487,27 @@ object DefaultGpu2dParams {
       x=1 << objTileSize2dPow.x,
       y=1 << objTileSize2dPow.y,
     )
-    val tempNumBgTilesPow = numBgTilesPow match {
-      case Some(myTempNumBgTilesPow) => myTempNumBgTilesPow
+    val tempNumBgTiles = numBgTiles match {
+      case Some(myTempNumBgTiles) => myTempNumBgTiles
       case None => (
         //1024
         //2048 // (480 * 270) / (8 * 8) = 2025
         //1 <<
-        log2Up(
+        //log2Up(
           (intnlFbSize2d.x * intnlFbSize2d.y)
           / (bgTileSize2d.x * bgTileSize2d.y)
-        )
+        //)
       )
     }
-    val tempNumObjTilesPow = numObjTilesPow match {
-      case Some(myTempNumObjTilesPow) => myTempNumObjTilesPow
+    val tempNumColorMathTiles = numColorMathTiles match {
+      case Some(myTempNumColorMathTiles) => myTempNumColorMathTiles
+      case None => (
+        (intnlFbSize2d.x * intnlFbSize2d.y)
+        / (bgTileSize2d.x * bgTileSize2d.y)
+      )
+    }
+    val tempNumObjTiles = numObjTiles match {
+      case Some(myTempNumObjTiles) => myTempNumObjTiles
       case None => (
         //log2Up(1024)
         numObjsPow
@@ -512,8 +534,11 @@ object DefaultGpu2dParams {
       physFbSize2dScalePow=physFbSize2dScalePow,
       bgTileSize2dPow=bgTileSize2dPow,
       objTileSize2dPow=objTileSize2dPow,
-      numBgTilesPow=tempNumBgTilesPow,
-      numObjTilesPow=tempNumObjTilesPow,
+      //numBgTilesPow=tempNumBgTilesPow,
+      //numObjTilesPow=tempNumObjTilesPow,
+      numBgTiles=tempNumBgTiles,
+      numColorMathTiles=tempNumColorMathTiles,
+      numObjTiles=tempNumObjTiles,
       //bgSize2dInTiles=ElabVec2[Int](x=128, y=128),
       //bgSize2dInTiles=ElabVec2[Int](
       //  x=1 << log2Up(intnlFbSize2d.x / tileSize2d.x),
@@ -723,6 +748,7 @@ case class Gpu2dTile(
 }
 case class Gpu2dBgTileStmPayload(
   params: Gpu2dParams,
+  isColorMath: Boolean,
 ) extends Bundle {
   //--------
   //val rgb = Rgb(params.rgbConfig)
@@ -731,7 +757,15 @@ case class Gpu2dBgTileStmPayload(
   // `Mem` index, so in units of pixels
   //val idx = Vec2(LcvVgaCtrlMiscIo.coordElemT())
   //val idx = UInt(16 bits)
-  val memIdx = UInt(params.bgTileMemIdxWidth bits)
+  val memIdx = UInt(
+    (
+      if (!isColorMath) {
+        params.bgTileMemIdxWidth
+      } else {
+        params.colorMathTileMemIdxWidth
+      }
+    ) bits
+  )
   //--------
 }
 case class Gpu2dObjTileStmPayload(
@@ -750,10 +784,19 @@ case class Gpu2dObjTileStmPayload(
 
 case class Gpu2dBgEntry(
   params: Gpu2dParams,
+  isColorMath: Boolean,
 ) extends Bundle {
   //--------
   // The index, in tiles, of the tile represented by this tilemap entry
-  val tileMemIdx = UInt(params.bgTileMemIdxWidth bits)
+  val tileMemIdx = UInt(
+    (
+      if (!isColorMath) {
+        params.bgTileMemIdxWidth
+      } else {
+        params.colorMathTileMemIdxWidth
+      }
+    ) bits
+  )
 
   // The priority for this tilemap entry
   //val prio = UInt(log2Up(params.numBgs) bits)
@@ -764,22 +807,74 @@ case class Gpu2dBgEntry(
 }
 case class Gpu2dBgEntryStmPayload(
   params: Gpu2dParams,
+  isColorMath: Boolean,
 ) extends Bundle {
   //--------
-  val bgEntry = Gpu2dBgEntry(params=params)
+  val bgEntry = Gpu2dBgEntry(
+    params=params,
+    isColorMath=isColorMath,
+  )
 
   // `Mem` index
   val memIdx = UInt(params.bgEntryMemIdxWidth bits)
   //--------
 }
 
+//case class Gpu2dColorMathAttrs(
+//  params: Gpu2dParams
+//) extends Bundle {
+//}
+object Gpu2dColorMathKind extends SpinalEnum(
+  defaultEncoding=binarySequential
+) {
+  //--------
+  val
+    avg,  // average
+    add,
+    sub   // subtract
+    = newElement();
+  //--------
+}
+case class Gpu2dColorMathInfo(
+  params: Gpu2dParams
+) extends Bundle {
+  //--------
+  val doIt = Bool()
+  //--------
+  val kind = Gpu2dColorMathKind()
+  //--------
+}
+case class Gpu2dAffine(
+  params: Gpu2dParams,
+) extends Bundle {
+  //--------
+  val doIt = Bool()
+  //--------
+  def wholeWidth = log2Up(
+    params.intnlFbSize2d.x
+    .max(params.intnlFbSize2d.y)
+  )
+  def fracWidth = 8
+  def fullWidth = wholeWidth + fracWidth
+  def vecSize = 2
+  // Column major 
+  val mat = Vec.fill(vecSize)(
+    Vec.fill(vecSize)(
+      SInt(fullWidth bits)
+    )
+  )
+  //--------
+}
 // Attributes for a whole background
 case class Gpu2dBgAttrs(
   params: Gpu2dParams,
 ) extends Bundle {
   //--------
   // Whether or not to display this BG
-  val visib = Bool()
+  //val visib = Bool()
+
+  val colorMathInfo = Gpu2dColorMathInfo(params=params)
+  //val affine = Gpu2dAffine(params=params)
 
   // How much to scroll this background
   val scroll = params.bgPxsCoordT()
@@ -813,6 +908,9 @@ case class Gpu2dObjAttrs(
 
   // the priority for the OBJ
   val prio = UInt(log2Up(params.numBgs) bits)
+
+  val colorMathInfo = Gpu2dColorMathInfo(params=params)
+  //val affine = Gpu2dAffine(params=params)
 
   //val size2dMinus1x1 = params.objTilePxsCoordT()
   val size2d = params.objSize2dForAttrsT()
@@ -886,30 +984,61 @@ case class Gpu2dPushInp(
   params: Gpu2dParams=DefaultGpu2dParams()
 ) extends Bundle with IMasterSlave {
   //--------
-  val bgTilePush = slave Stream(Gpu2dBgTileStmPayload(params=params))
-  val bgEntryPushArr = new ArrayBuffer[Stream[Gpu2dBgEntryStmPayload]]()
-  val bgAttrsPushArr = new ArrayBuffer[Stream[Gpu2dBgAttrsStmPayload]]()
+  val colorMathTilePush = slave Flow(
+    Gpu2dBgTileStmPayload(
+      params=params,
+      isColorMath=true,
+    )
+  )
+  val colorMathEntryPush = slave Flow(
+    Gpu2dBgEntryStmPayload(
+      params=params,
+      isColorMath=true,
+    )
+  )
+  val colorMathAttrsPush = slave Flow(
+    Gpu2dBgAttrsStmPayload(params=params)
+  )
+  val colorMathPalEntryPush = slave Flow(
+    Gpu2dBgPalEntryStmPayload(params=params)
+  )
+  //--------
+  val bgTilePush = slave Flow(
+    Gpu2dBgTileStmPayload(
+      params=params,
+      isColorMath=false,
+    )
+  )
+  val bgEntryPushArr = new ArrayBuffer[Flow[Gpu2dBgEntryStmPayload]]()
+  val bgAttrsPushArr = new ArrayBuffer[Flow[Gpu2dBgAttrsStmPayload]]()
   for (idx <- 0 to params.numBgs - 1) {
     bgEntryPushArr += (
-      slave Stream(Gpu2dBgEntryStmPayload(params=params))
+      slave Flow(Gpu2dBgEntryStmPayload(
+        params=params,
+        isColorMath=false,
+      ))
         .setName(f"bgEntryPushArr_$idx")
     )
     bgAttrsPushArr += (
-      slave Stream(Gpu2dBgAttrsStmPayload(params=params))
+      slave Flow(Gpu2dBgAttrsStmPayload(params=params))
         .setName(f"bgAttrsPushArr_$idx")
     )
   }
-  val bgPalEntryPush = slave Stream(Gpu2dBgPalEntryStmPayload(
+  val bgPalEntryPush = slave Flow(Gpu2dBgPalEntryStmPayload(
     params=params
   ))
-  val objTilePush = slave Stream(Gpu2dObjTileStmPayload(params=params))
-  val objAttrsPush = slave Stream(Gpu2dObjAttrsStmPayload(params=params))
-  val objPalEntryPush = slave Stream(Gpu2dObjPalEntryStmPayload(
+  val objTilePush = slave Flow(Gpu2dObjTileStmPayload(params=params))
+  val objAttrsPush = slave Flow(Gpu2dObjAttrsStmPayload(params=params))
+  val objPalEntryPush = slave Flow(Gpu2dObjPalEntryStmPayload(
     params=params
   ))
   //--------
   def asMaster(): Unit = {
     master(
+      colorMathTilePush,
+      colorMathEntryPush,
+      colorMathAttrsPush,
+      colorMathPalEntryPush,
       bgTilePush,
       //bgEntryPushArr,
       //bgAttrsPushArr,
@@ -929,6 +1058,10 @@ case class Gpu2dPushInp(
   def <<(
     that: Gpu2dPushInp
   ): Unit = {
+    this.colorMathTilePush << that.colorMathTilePush
+    this.colorMathEntryPush << that.colorMathEntryPush
+    this.colorMathAttrsPush << that.colorMathAttrsPush
+    this.colorMathPalEntryPush << that.colorMathPalEntryPush
     this.bgTilePush << that.bgTilePush
     for (idx <- 0 to params.numBgs - 1) {
       this.bgEntryPushArr(idx) << that.bgEntryPushArr(idx)
@@ -957,6 +1090,10 @@ case class Gpu2dIo(
   //val bgTilePush = slave Stream()
   //val bgTilePush = slave Stream()
   val push = Gpu2dPushInp(params=params)
+  def colorMathTilePush = push.colorMathTilePush
+  def colorMathEntryPush = push.colorMathEntryPush 
+  def colorMathAttrsPush = push.colorMathAttrsPush 
+  def colorMathPalEntryPush = push.colorMathPalEntryPush 
   def bgTilePush = push.bgTilePush
   def bgEntryPushArr = push.bgEntryPushArr
   def bgAttrsPushArr = push.bgAttrsPushArr
@@ -1000,22 +1137,18 @@ case class Gpu2d(
   //--------
   val io = Gpu2dIo(params=params)
   //--------
-  val bgTilePush = io.bgTilePush
-  bgTilePush.ready := True
-  val bgEntryPushArr = io.bgEntryPushArr
-  val bgAttrsPushArr = io.bgAttrsPushArr
-  for (idx <- 0 to params.numBgs - 1) {
-    bgEntryPushArr(idx).ready := True
-    bgAttrsPushArr(idx).ready := True
-  }
-  val objTilePush = io.objTilePush
-  objTilePush.ready := True
-  val objAttrsPush = io.objAttrsPush
-  objAttrsPush.ready := True
-  val bgPalEntryPush = io.bgPalEntryPush
-  bgPalEntryPush.ready := True
-  val objPalEntryPush = io.objPalEntryPush
-  objPalEntryPush.ready := True
+  def colorMathTilePush = io.colorMathTilePush
+  def colorMathEntryPush = io.colorMathEntryPush 
+  def colorMathAttrsPush = io.colorMathAttrsPush 
+  def colorMathPalEntryPush = io.colorMathPalEntryPush
+  //--------
+  def bgTilePush = io.bgTilePush
+  def bgEntryPushArr = io.bgEntryPushArr
+  def bgAttrsPushArr = io.bgAttrsPushArr
+  def objTilePush = io.objTilePush
+  def objAttrsPush = io.objAttrsPush
+  def bgPalEntryPush = io.bgPalEntryPush
+  def objPalEntryPush = io.objPalEntryPush
   //--------
   val ctrlEn = io.ctrlEn
   //val rPastCtrlEn = RegNext(ctrlEn) init(False)
@@ -1076,6 +1209,9 @@ case class Gpu2d(
     //)
     //  .initBigInt(Array.fill(params.numBgTiles)(BigInt(0)))
     //  .addAttribute("ram_style", params.bgTileArrRamStyle)
+    //val colorMathTileMemArr = new ArrayBuffer[
+    //  FpgacpuRamSimpleDualPort[Gpu2dTile]
+    //]()
 
     val bgTileMemArr = new ArrayBuffer[
       FpgacpuRamSimpleDualPort[Gpu2dTile]
@@ -1084,6 +1220,7 @@ case class Gpu2d(
       //--------
       // BEGIN: debug comment this out; later
       jdx <- 0 until params.numBgMemsPerNonPalKind
+      //jdx <- 0 until params.numBgTileMems
       // END: debug comment this out; later
       //--------
       //jdx <- 0 until params.bgTileSize2d.x
@@ -1167,6 +1304,151 @@ case class Gpu2d(
     //)
     //  .addAttribute("ram_style", params.palEntryArrRamStyle)
     //--------
+    val colorMathTileMemArr = new ArrayBuffer[
+      FpgacpuRamSimpleDualPort[Gpu2dTile]
+    ]()
+    for (
+      jdx <- 0 until params.numBgMemsPerNonPalKind
+    ) {
+      colorMathTileMemArr += FpgacpuRamSimpleDualPort(
+        //dataType=CombinePipePayload(),
+        wordType=Gpu2dTile(params=params, isObj=false),
+        depth=params.numColorMathTiles,
+        initBigInt={
+          val temp = new ArrayBuffer[BigInt]()
+          for (idx <- 0 until params.numColorMathTiles) {
+            temp += BigInt(0)
+          }
+          Some(temp)
+        },
+        arrRamStyle=params.bgTileArrRamStyle,
+      )
+      //(
+      //  setWordFunc=(
+      //    unionIdx: UInt,
+      //    o: CombinePipePayload,
+      //    i: CombinePipePayload,
+      //    memWord: Gpu2dTile,
+      //  ) => {
+      //  },
+      //)
+      def colorMathTileMem = colorMathTileMemArr(jdx)
+      colorMathTileMem.io.wrEn := colorMathTilePush.fire
+      colorMathTileMem.io.wrAddr := colorMathTilePush.memIdx
+      colorMathTileMem.io.wrData := colorMathTilePush.tile
+      //colorMathTileMem.io.wrPulse.valid := colorMathTilePush.fire
+      //colorMathTileMem.io.wrPulse.addr := colorMathTilePush.memIdx
+      //colorMathTileMem.io.wrPulse.data := colorMathTilePush.tile
+    }
+
+    val colorMathPalEntryMemArr = new ArrayBuffer[
+      FpgacpuRamSimpleDualPort[Gpu2dPalEntry]
+    ]()
+    for (jdx <- 0 until params.bgTileSize2d.x) {
+      colorMathPalEntryMemArr += FpgacpuRamSimpleDualPort(
+        //dataType=CombinePipePayload(),
+        wordType=Gpu2dPalEntry(params=params),
+        depth=params.numColsInBgPal,
+        initBigInt={
+          val temp = new ArrayBuffer[BigInt]()
+          for (idx <- 0 until params.numColsInBgPal) {
+            temp += BigInt(0)
+          }
+          Some(temp)
+        },
+        arrRamStyle=params.bgPalEntryArrRamStyle,
+      )
+        .setName(f"colorMathPalEntryMemArr_$jdx")
+      //(
+      //  setWordFunc=(
+      //    unionIdx: UInt,
+      //    o: CombinePipePayload,
+      //    i: CombinePipePayload,
+      //    memWord: Gpu2dPalEntry,
+      //  ) => {
+      //  },
+      //)
+      colorMathPalEntryMemArr(jdx).io.wrEn := (
+        colorMathPalEntryPush.fire
+      )
+      colorMathPalEntryMemArr(jdx).io.wrAddr := (
+        colorMathPalEntryPush.memIdx
+      )
+      colorMathPalEntryMemArr(jdx).io.wrData := (
+        colorMathPalEntryPush.bgPalEntry
+      )
+      //colorMathPalEntryMem.io.wrPulse.valid := (
+      //  colorMathPalEntryPush.fire
+      //)
+      //colorMathPalEntryMem.io.wrPulse.addr := (
+      //  colorMathPalEntryPush.memIdx
+      //)
+      //colorMathPalEntryMem.io.wrPulse.data := (
+      //  colorMathPalEntryPush.bgPalEntry
+      //)
+    }
+    val colorMathEntryMemArr = new ArrayBuffer[
+      FpgacpuRamSimpleDualPort[Gpu2dBgEntry]
+      //WrPulseRdPipeSimpleDualPortMem[
+      //  CombinePipePayload,
+      //  Gpu2dBgEntry,
+      //]
+    ]()
+    for (
+      //jdx <- 0 until params.numColorMathMemsPerNonPalKind
+      jdx <- 0 until params.numBgMemsPerNonPalKind
+    ) {
+      colorMathEntryMemArr += FpgacpuRamSimpleDualPort(
+        //dataType=CombinePipePayload(),
+        wordType=Gpu2dBgEntry(
+          params=params,
+          isColorMath=true,
+        ),
+        depth=params.numTilesPerBg,
+        initBigInt={
+          val temp = new ArrayBuffer[BigInt]()
+          for (_ <- 0 until params.numTilesPerBg) {
+            temp += BigInt(0)
+          }
+          Some(temp)
+        },
+        arrRamStyle=params.bgEntryArrRamStyle,
+      )
+      //(
+      //  setWordFunc=(
+      //    unionIdx: UInt,
+      //    o: CombinePipePayload,
+      //    i: CombinePipePayload,
+      //    memWord: Gpu2dBgEntry,
+      //  ) => {
+      //  },
+      //)
+        .setName(f"colorMathEntryMemArr_$jdx")
+      colorMathEntryMemArr(jdx).io.wrEn := (
+        colorMathEntryPush.fire
+      )
+      colorMathEntryMemArr(jdx).io.wrAddr := (
+        colorMathEntryPush.memIdx
+      )
+      colorMathEntryMemArr(jdx).io.wrData := (
+        colorMathEntryPush.bgEntry
+      )
+      //colorMathEntryMem.io.wrPulse.valid := (
+      //  colorMathEntryPush.fire
+      //)
+      //colorMathEntryMem.io.wrPulse.addr := (
+      //  colorMathEntryPush.memIdx
+      //)
+      //colorMathEntryMem.io.wrPulse.data := (
+      //  colorMathEntryPush.bgEntry
+      //)
+    }
+    val colorMathAttrs = Reg(Gpu2dBgAttrs(params=params))
+    colorMathAttrs.init(colorMathAttrs.getZero)
+    when (colorMathAttrsPush.fire) {
+      colorMathAttrs := colorMathAttrsPush.bgAttrs
+    }
+    //--------
     //val bgEntryMemArr = new ArrayBuffer[Mem[Gpu2dBgEntry]]()
     val bgEntryMemA2d = new ArrayBuffer[ArrayBuffer[
       FpgacpuRamSimpleDualPort[Gpu2dBgEntry]
@@ -1199,6 +1481,7 @@ case class Gpu2d(
         //--------
         // BEGIN: debug comment this out; later
         jdx <- 0 until params.numBgMemsPerNonPalKind
+        //jdx <- 0 until params.numBgEntryMems
         // END: debug comment this out; later
         //--------
         //jdx <- 0 until params.bgTileSize2d.x
@@ -1206,7 +1489,10 @@ case class Gpu2d(
       ) {
         def bgEntryMemArr = bgEntryMemA2d(idx)
         bgEntryMemArr += FpgacpuRamSimpleDualPort(
-          wordType=Gpu2dBgEntry(params=params),
+          wordType=Gpu2dBgEntry(
+            params=params,
+            isColorMath=false,
+          ),
           depth=params.numTilesPerBg,
           initBigInt={
             val temp = new ArrayBuffer[BigInt]()
@@ -1536,6 +1822,11 @@ case class Gpu2d(
     //  val col = Gpu2dRgba(params=params)
     //  val prio = UInt(params.numBgsPow bits)
     //}
+
+    //case class ColorMathLineMemEntry() extends Bundle {
+    //  val col = Gpu2dRgba(params=params)
+    //}
+    def ColorMathSubLineMemEntry() = Gpu2dRgba(params=params)
     case class BgSubLineMemEntry() extends Bundle {
       val col = Gpu2dRgba(params=params)
       val prio = UInt(params.numBgsPow bits)
@@ -1544,6 +1835,8 @@ case class Gpu2d(
       def getSubLineMemTempArrIdx() = (
         params.getBgSubLineMemArrIdx(addr=addr)
       )
+      val colorMathInfo = Gpu2dColorMathInfo(params=params)
+      val colorMathCol = Gpu2dRgba(params=params)
       //val addr = UInt(log2Up(params.oneLineMemSize) bits)
       //def getSubLineMemTempArrIdx() = params.getBgSubLineMemTempArrIdx(
       //  pxPosX=addr
@@ -1562,6 +1855,7 @@ case class Gpu2d(
       def getSubLineMemTempArrIdx() = (
         params.getObjSubLineMemArrIdx(addr=addr)
       )
+      val colorMathInfo = Gpu2dColorMathInfo(params=params)
       //val addr = UInt(log2Up(params.oneLineMemSize) bits)
       //def getSubLineMemTempArrIdx() = params.getObjSubLineMemTempArrIdx(
       //  pxPosX=addr
@@ -2630,9 +2924,7 @@ case class Gpu2d(
     //val rWrBgPipeFrontCntWidth = KeepAttribute(
     //  Reg(UInt(wrBgPipeFrontCntWidth bits)) init(0x0)
     //)
-    case class WrBgPipePayload(
-      //idx: Int
-    ) extends Bundle {
+    case class WrBgPipePayload() extends Bundle {
       // pixel x-position
       //val pxPosXVec = Vec.fill(params.numBgs)(
       //  UInt(log2Up(params.intnlFbSize2d.x) bits)
@@ -2668,6 +2960,7 @@ case class Gpu2d(
         //  cloneOf(bgAttrsArr(0))
         //)
         val bgAttrs = cloneOf(bgAttrsArr(0))
+        val colorMathAttrs = Gpu2dBgAttrs(params=params)
         //val tilePxsCoord = params.bgTilePxsCoordT()
 
         //def cntWillBeDone() = (
@@ -2754,6 +3047,7 @@ case class Gpu2d(
       //def cntDone() = stage0.cntDone()
       //def getCntPxPosX() = stage0.getCntPxPosX()
       def bgAttrs = stage0.bgAttrs
+      def colorMathAttrs = stage0.colorMathAttrs
       //def scroll = bgAttrs.scroll
       //def visib = stage0.bgAttrs.visib
       //def tilePxsCoord = stage0.tilePxsCoord
@@ -2843,10 +3137,15 @@ case class Gpu2d(
         //--------
         //--------
       }
-      case class Stage3() extends Bundle {
+      case class Stage3(
+        isColorMath: Boolean
+      ) extends Bundle {
         // `Gpu2dBgEntry`s that have been read
         val bgEntry = Vec.fill(params.bgTileSize2d.x)(
-          Gpu2dBgEntry(params=params)
+          Gpu2dBgEntry(
+            params=params,
+            isColorMath=isColorMath,
+          )
         )
       }
       case class Stage5() extends Bundle {
@@ -2883,7 +3182,9 @@ case class Gpu2d(
           BgSubLineMemEntry()
         )
       }
-      case class PostStage0() extends Bundle {
+      case class PostStage0(
+        isColorMath: Boolean
+      ) extends Bundle {
         //// scroll
         //val scroll = cloneOf(bgAttrsArr(0).scroll)
         // indices into `bgEntryMem`
@@ -2891,61 +3192,81 @@ case class Gpu2d(
         //val bgEntryMemIdxPart1 = UInt(params.bgEntryMemIdxWidth bits)
         val stage1 = Stage1()
         val stage2 = Stage2()
-        val stage3 = Stage3()
+        val stage3 = Stage3(
+          isColorMath=isColorMath
+        )
         //val tileMemIdx = UInt(params.bgTileMemIdxWidth bits)
         val stage5 = Stage5()
         val stage6 = Stage6()
         val stage7 = Stage7()
         val stage9 = Stage9()
         val stage10 = Stage10()
+        //--------
+        def bgEntryMemIdx = stage1.bgEntryMemIdx
+        def pxPos = stage1.pxPos
+        //def bgEntryMemIdxPart0 = postStage0.bgEntryMemIdxPart0
+        //def bgEntryMemIdxPart1 = postStage0.bgEntryMemIdxPart1
+
+        def pxPosXGridIdx = stage1.pxPosXGridIdx
+        def pxPosXGridIdxFindFirstSameAsFound = (
+          stage1.pxPosXGridIdxFindFirstSameAsFound 
+        )
+        def pxPosXGridIdxFindFirstSameAsIdx = (
+          stage1.pxPosXGridIdxFindFirstSameAsIdx
+        )
+        def pxPosXGridIdxFindFirstDiffFound = (
+          stage1.pxPosXGridIdxFindFirstDiffFound
+        )
+        def pxPosXGridIdxFindFirstDiffIdx = (
+          stage1.pxPosXGridIdxFindFirstDiffIdx 
+        )
+        //--------
+        def myIdxV2d = stage2.myIdxV2d
+        //--------
+        def bgEntry = stage3.bgEntry
+        //--------
+        def tilePxsCoord = stage5.tilePxsCoord
+        def tile = stage5.tile
+        //--------
+        def palEntryMemIdx = stage6.palEntryMemIdx
+        //--------
+        def palEntryNzMemIdx = stage7.palEntryNzMemIdx
+        //--------
+        def palEntry = stage9.palEntry
+        //--------
+        def subLineMemEntry = stage10.subLineMemEntry
+        //--------
       }
-      val postStage0 = PostStage0()
+      val postStage0 = PostStage0(isColorMath=false)
+      val colorMath = PostStage0(isColorMath=true)
 
       //def scroll = postStage0.scroll
+      def cmath1 = colorMath.stage1
       def stage1 = postStage0.stage1
-      def bgEntryMemIdx = stage1.bgEntryMemIdx
-      def pxPos = stage1.pxPos
-      //def bgEntryMemIdxPart0 = postStage0.bgEntryMemIdxPart0
-      //def bgEntryMemIdxPart1 = postStage0.bgEntryMemIdxPart1
 
-      def pxPosXGridIdx = stage1.pxPosXGridIdx
-      def pxPosXGridIdxFindFirstSameAsFound = (
-        stage1.pxPosXGridIdxFindFirstSameAsFound 
-      )
-      def pxPosXGridIdxFindFirstSameAsIdx = (
-        stage1.pxPosXGridIdxFindFirstSameAsIdx
-      )
-      def pxPosXGridIdxFindFirstDiffFound = (
-        stage1.pxPosXGridIdxFindFirstDiffFound
-      )
-      def pxPosXGridIdxFindFirstDiffIdx = (
-        stage1.pxPosXGridIdxFindFirstDiffIdx 
-      )
-
+      def cmath2 = colorMath.stage2
       def stage2 = postStage0.stage2
-      def myIdxV2d = stage2.myIdxV2d
 
+      def cmath3 = colorMath.stage3
       def stage3 = postStage0.stage3
-      def bgEntry = stage3.bgEntry
 
+      def cmath5 = colorMath.stage5
       def stage5 = postStage0.stage5
-      def tilePxsCoord = stage5.tilePxsCoord
-      def tile = stage5.tile
 
       //def stage4 = postStage0.stage4
 
+      def cmath6 = colorMath.stage6
       def stage6 = postStage0.stage6
-      def palEntryMemIdx = stage6.palEntryMemIdx
 
+      def cmath7 = colorMath.stage7
       def stage7 = postStage0.stage7
-      def palEntryNzMemIdx = stage7.palEntryNzMemIdx
 
+      def cmath9 = colorMath.stage9
       def stage9 = postStage0.stage9
-      def palEntry = stage9.palEntry
 
+      def cmath10 = colorMath.stage10
       def stage10 = postStage0.stage10
       //def doWrite = stage7.doWrite
-      def subLineMemEntry = stage10.subLineMemEntry
     }
 
     def doInitWrBgPipePayload(
@@ -3852,6 +4173,7 @@ case class Gpu2d(
         //val bgRdLineMemEntry = BgSubLineMemEntry()
         //val objRdLineMemEntry = ObjSubLineMemEntry()
         //val ext = CombinePipeOut1Ext()
+        //val rdColorMath = ColorMathSubLineMemEntry()
         val rdBg = Vec.fill(params.bgTileSize2d.x)(
           BgSubLineMemEntry()
         )
@@ -3870,7 +4192,10 @@ case class Gpu2d(
       }
       case class Stage6() extends Bundle {
         //val isObj = Bool()
-        val col = Rgb(params.rgbConfig)
+        //val col = Rgb(params.rgbConfig)
+        val col = Gpu2dRgba(params=params)
+        val colorMathInfo = Gpu2dColorMathInfo(params=params)
+        val colorMathCol = Gpu2dRgba(params=params)
       }
       case class Stage7() extends Bundle {
         val combineWrLineMemEntry = BgSubLineMemEntry()
@@ -3900,6 +4225,8 @@ case class Gpu2d(
 
       def stage6 = postStage0.stage6
       def col = stage6.col
+      def colorMathInfo = stage6.colorMathInfo
+      def colorMathCol = stage6.colorMathCol
 
       def stage7 = postStage0.stage7
       def combineWrLineMemEntry = stage7.combineWrLineMemEntry
@@ -5449,6 +5776,7 @@ case class Gpu2d(
               is (tempBgIdx) {
                 //tempOutp.scroll := bgAttrsArr(tempBgIdx).scroll
                 tempOutp.bgAttrs := bgAttrsArr(tempBgIdx)
+                tempOutp.colorMathAttrs := colorMathAttrs
               }
             }
           }
@@ -5468,76 +5796,6 @@ case class Gpu2d(
           stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
         },
       )
-      //HandleDualPipe(
-      //  stageData=stageData.craft(wrBgPipeCntMinus1StageIdx)
-      //)(
-      //  pipeStageMainFunc=(
-      //    stageData: DualPipeStageData[Flow[WrBgPipePayload]],
-      //    idx: Int,
-      //  ) => {
-      //    stageData.pipeOut(idx).cntMinus1 := (
-      //      stageData.pipeIn(idx).cntMinus1
-      //    )
-      //  },
-      //  copyOnlyFunc=(
-      //    stageData: DualPipeStageData[Flow[WrBgPipePayload]],
-      //    idx: Int,
-      //  ) => {
-      //    stageData.pipeOut(idx).cntMinus1 := (
-      //      stageData.pipeIn(idx).cntMinus1
-      //    )
-      //  },
-      //)
-      //HandleDualPipe(
-      //  stageData=stageData.craft(wrBgPipeBgIdxStageIdx)
-      //)(
-      //  pipeStageMainFunc=(
-      //    stageData: DualPipeStageData[Flow[WrBgPipePayload]],
-      //    idx: Int,
-      //  ) => {
-      //    stageData.pipeOut(idx).bgIdx := (
-      //      stageData.pipeIn(idx).bgIdx
-      //    )
-      //  },
-      //  copyOnlyFunc=(
-      //    stageData: DualPipeStageData[Flow[WrBgPipePayload]],
-      //    idx: Int,
-      //  ) => {
-      //    stageData.pipeOut(idx).bgIdx := (
-      //      stageData.pipeIn(idx).bgIdx
-      //    )
-      //  },
-      //)
-
-      //HandleDualPipe(
-      //  stageData=stageData.craft(wrBgPipeBgAttrsStageIdx)
-      //)(
-      //  pipeStageMainFunc=(
-      //    stageData: DualPipeStageData[Flow[WrBgPipePayload]],
-      //    idx: Int,
-      //  ) => {
-      //    val tempInp = stageData.pipeIn(idx)
-      //    val tempOutp = stageData.pipeOut(idx)
-
-      //    switch (tempInp.bgIdx) {
-      //      for (tempBgIdx <- 0 to params.numBgs - 1) {
-      //        is (tempBgIdx) {
-      //          //tempOutp.scroll := bgAttrsArr(tempBgIdx).scroll
-      //          tempOutp.bgAttrs := bgAttrsArr(tempBgIdx)
-      //        }
-      //      }
-      //    }
-      //  },
-      //  copyOnlyFunc=(
-      //    stageData: DualPipeStageData[Flow[WrBgPipePayload]],
-      //    idx: Int,
-      //  ) => {
-      //    stageData.pipeOut(idx).bgAttrs := (
-      //      stageData.pipeIn(idx).bgAttrs
-      //    )
-      //  },
-      //)
-      // END: stage 0
 
       // BEGIN: post stage 0
       HandleDualPipe(
@@ -5547,161 +5805,155 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
-
-          //val dbgTestPxPosX = Vec.fill(params.bgTileSize2d.x)(
-          //)
-          switch (tempInp.bgIdx) {
-            for (tempBgIdx <- 0 until params.numBgs) {
-              is (tempBgIdx) {
-                val dbgPxPosXGridIdxFindFirstSameAs: (Bool, UInt) = (
-                  tempOutp.pxPosXGridIdx.sFindFirst(
-                    //_(0) === tempInp.bgAttrs.scroll.x(
-                    //  params.bgTileSize2dPow.x + 1
-                    //  downto params.bgTileSize2dPow.x
-                    //)(0)
-                    _(0) === tempInp.bgAttrs.scroll.x(
-                      params.bgTileSize2dPow.x - 1
-                    )
-                  )
-                )
-                tempOutp.pxPosXGridIdxFindFirstSameAsFound := (
-                  dbgPxPosXGridIdxFindFirstSameAs._1
-                )
-                tempOutp.pxPosXGridIdxFindFirstSameAsIdx := (
-                  dbgPxPosXGridIdxFindFirstSameAs._2.resized
-                )
-                val dbgPxPosXGridIdxFindFirstDiff: (Bool, UInt) = (
-                  tempOutp.pxPosXGridIdx.sFindFirst(
-                    //_(0) =/= tempInp.bgAttrs.scroll.x(
-                    //  params.bgTileSize2dPow.x + 1
-                    //  downto params.bgTileSize2dPow.x
-                    //)(0)
-                    _(0) =/= tempInp.bgAttrs.scroll.x(
-                      params.bgTileSize2dPow.x - 1
-                    )
-                  )
-                )
-                tempOutp.pxPosXGridIdxFindFirstDiffFound := (
-                  dbgPxPosXGridIdxFindFirstDiff._1
-                )
-                tempOutp.pxPosXGridIdxFindFirstDiffIdx := (
-                  dbgPxPosXGridIdxFindFirstDiff._2.resized
-                )
+          for (kind <- 0 until 2) {
+            //val tempInp = stageData.pipeIn(idx)
+            //val tempOutp = stageData.pipeOut(idx)
+            def pipeIn = stageData.pipeIn(idx)
+            def tempInp = (
+              if (kind == 0) {
+                stageData.pipeIn(idx).postStage0
+              } else {
+                stageData.pipeIn(idx).colorMath
               }
-            }
-          }
-          for (x <- 0 until params.bgTileSize2d.x) {
-            tempOutp.pxPosXGridIdx(x) := tempOutp.pxPos(x).x(
-              tempOutp.pxPos(x).x.high
-              downto params.bgTileSize2dPow.x - 1
             )
-            switch (tempInp.bgIdx) {
+            def tempOutp = (
+              if (kind == 0) {
+                stageData.pipeOut(idx).postStage0
+              } else {
+                stageData.pipeOut(idx).colorMath
+              }
+            )
+
+            //val dbgTestPxPosX = Vec.fill(params.bgTileSize2d.x)(
+            //)
+            switch (pipeIn.bgIdx) {
               for (tempBgIdx <- 0 until params.numBgs) {
                 is (tempBgIdx) {
-                  //tempOutp.stage1.haveTwoMyIdx := (
-                  //  tempInp.bgAttrs.scroll.x(
-                  //    params.bgTileSize2dPow.x - 1 downto 0
-                  //  ) === 0x0
-                  //)
-                  //tempOutp.scroll := bgAttrsArr(tempBgIdx).scroll
-                  //tempOutp.bgEntryMemIdxPart0.x := (
-                  //  //tempInp.scroll.x >> params.bgTileSize2dPow.x
-                  //  tempInp.scroll.x
-                  //  //(params.bgTileSize2dPow.x - 1 downto 0)
-                  //)
-                  //tempOutp.bgEntryMemIdxPart0.y := (
-                  //  (tempInp.scroll.y << log2Up(params.bgSize2dInPxs.y))
-                  //  //(params.bgTileSize2dPow.y - 1 downto 0)
-                  //)
-
-                  //val tempWrBgPxsPos = params.coordT(params.intnlFbSize2d)
-                  def tempBgTileWidthPow = params.bgTileSize2dPow.x
-                  tempOutp.pxPos(x).x := (
-                    Cat(
-                      tempInp.cnt(
-                        (
-                          log2Up(params.intnlFbSize2d.x)
-                          + params.numBgsPow
-                          - params.bgTileSize2dPow.x
-                          - 1
-                        ) downto (
-                          params.numBgsPow
-                          //+ params.bgTileSize2dPow.x
-                        )
-                      ),
-                      U(f"$tempBgTileWidthPow'd$x")
-                    ).asUInt
-                    - tempInp.bgAttrs.scroll.x
-
-                    //+ tempInp.bgAttrs.scroll.x
-                  )
-                  tempOutp.pxPos(x).y := (
-                    (
-                      //rWrLineNum.resized
-                      //- bgAttrsArr(tempBgIdx).scroll.y
-                      //bgAttrsArr(tempBgIdx).scroll.y
-                      //- 
-                      //tempInp.lineNum.resized
-                      //- tempInp.bgAttrs.scroll.y
-                      tempInp.lineNum
-                      - tempInp.bgAttrs.scroll.y
-                      //+ tempInp.bgAttrs.scroll.y
-                    )
-                    //(
-                    //  params.bgTileSize2dPow.y - 1 downto 0
-                    //)
-                  )
-                  //def inpScroll = tempInp.bgAttrs.scroll
-                  def tempSliceRange = ElabVec2(
-                    //x=inpScroll.x.high downto params.bgTileSize2dPow.x,
-                    //y=inpScroll.y.high downto params.bgTileSize2dPow.y,
-                    x=(
-                      // BEGIN: old, pre-multi-pixel pipeline
-                      (
-                        params.bgSize2dInTilesPow.x
-                        + params.bgTileSize2dPow.x - 1
+                  val dbgPxPosXGridIdxFindFirstSameAs: (Bool, UInt) = (
+                    tempOutp.pxPosXGridIdx.sFindFirst(
+                      //_(0) === tempInp.bgAttrs.scroll.x(
+                      //  params.bgTileSize2dPow.x + 1
+                      //  downto params.bgTileSize2dPow.x
+                      //)(0)
+                      _(0) === pipeIn.bgAttrs.scroll.x(
+                        params.bgTileSize2dPow.x - 1
                       )
-                      downto params.bgTileSize2dPow.x
-                      // END: old, pre-multi-pixel pipeline
                     )
-                    //(
-                    //  params.bgTileSize2dPow.x - 1 downto 0
-                    //)
-                    ,
-                    y=(
+                  )
+                  tempOutp.pxPosXGridIdxFindFirstSameAsFound := (
+                    dbgPxPosXGridIdxFindFirstSameAs._1
+                  )
+                  tempOutp.pxPosXGridIdxFindFirstSameAsIdx := (
+                    dbgPxPosXGridIdxFindFirstSameAs._2.resized
+                  )
+                  val dbgPxPosXGridIdxFindFirstDiff: (Bool, UInt) = (
+                    tempOutp.pxPosXGridIdx.sFindFirst(
+                      //_(0) =/= tempInp.bgAttrs.scroll.x(
+                      //  params.bgTileSize2dPow.x + 1
+                      //  downto params.bgTileSize2dPow.x
+                      //)(0)
+                      _(0) =/= pipeIn.bgAttrs.scroll.x(
+                        params.bgTileSize2dPow.x - 1
+                      )
+                    )
+                  )
+                  tempOutp.pxPosXGridIdxFindFirstDiffFound := (
+                    dbgPxPosXGridIdxFindFirstDiff._1
+                  )
+                  tempOutp.pxPosXGridIdxFindFirstDiffIdx := (
+                    dbgPxPosXGridIdxFindFirstDiff._2.resized
+                  )
+                }
+              }
+            }
+            for (x <- 0 until params.bgTileSize2d.x) {
+              tempOutp.pxPosXGridIdx(x) := tempOutp.pxPos(x).x(
+                tempOutp.pxPos(x).x.high
+                downto params.bgTileSize2dPow.x - 1
+              )
+              switch (pipeIn.bgIdx) {
+                for (tempBgIdx <- 0 until params.numBgs) {
+                  is (tempBgIdx) {
+                    def tempBgTileWidthPow = params.bgTileSize2dPow.x
+                    tempOutp.pxPos(x).x := (
+                      Cat(
+                        pipeIn.cnt(
+                          (
+                            log2Up(params.intnlFbSize2d.x)
+                            + params.numBgsPow
+                            - params.bgTileSize2dPow.x
+                            - 1
+                          ) downto (
+                            params.numBgsPow
+                            //+ params.bgTileSize2dPow.x
+                          )
+                        ),
+                        U(f"$tempBgTileWidthPow'd$x")
+                      ).asUInt
+                      - pipeIn.bgAttrs.scroll.x
+
+                      //+ tempInp.bgAttrs.scroll.x
+                    )
+                    tempOutp.pxPos(x).y := (
+                      (
+                        pipeIn.lineNum
+                        - pipeIn.bgAttrs.scroll.y
+                        //+ tempInp.bgAttrs.scroll.y
+                      )
                       //(
-                      //  //params.bgEntryMemIdxWidth + params.bgTileSize2dPow.y 
-                      //  //- 1
-                      //  0
+                      //  params.bgTileSize2dPow.y - 1 downto 0
                       //)
-                      //inpScroll.y.high - 1
-                      //downto params.bgTileSize2dPow.y
-
-                      //inpScroll.y.high downto params.bgTileSize2dPow.y
-
-                      // BEGIN: old, pre-multi-pixel pipeline
-                      (
-                        params.bgSize2dInTilesPow.y
-                        + params.bgTileSize2dPow.y - 1
-                      )
-                      downto params.bgTileSize2dPow.y
-                      // END: old, pre-multi-pixel pipeline
-                      //tempWrBgPxsPos.y.high
-                      //downto params.bgTileSize2dPow.y
                     )
-                    //(
-                    //  params.bgTileSize2dPow.y - 1 downto 0
-                    //)
-                    ,
-                  )
-                  tempOutp.bgEntryMemIdx(x) := Cat(
-                    //inpScroll.y(scrollSliceRange.y),
-                    //inpScroll.x(scrollSliceRange.x),
-                    tempOutp.pxPos(x).y(tempSliceRange.y),
-                    tempOutp.pxPos(x).x(tempSliceRange.x),
-                  ).asUInt
+                    //def inpScroll = tempInp.bgAttrs.scroll
+                    def tempSliceRange = ElabVec2(
+                      //x=inpScroll.x.high downto params.bgTileSize2dPow.x,
+                      //y=inpScroll.y.high downto params.bgTileSize2dPow.y,
+                      x=(
+                        // BEGIN: old, pre-multi-pixel pipeline
+                        (
+                          params.bgSize2dInTilesPow.x
+                          + params.bgTileSize2dPow.x - 1
+                        )
+                        downto params.bgTileSize2dPow.x
+                        // END: old, pre-multi-pixel pipeline
+                      )
+                      //(
+                      //  params.bgTileSize2dPow.x - 1 downto 0
+                      //)
+                      ,
+                      y=(
+                        //(
+                        //  //params.bgEntryMemIdxWidth + params.bgTileSize2dPow.y 
+                        //  //- 1
+                        //  0
+                        //)
+                        //inpScroll.y.high - 1
+                        //downto params.bgTileSize2dPow.y
+
+                        //inpScroll.y.high downto params.bgTileSize2dPow.y
+
+                        // BEGIN: old, pre-multi-pixel pipeline
+                        (
+                          params.bgSize2dInTilesPow.y
+                          + params.bgTileSize2dPow.y - 1
+                        )
+                        downto params.bgTileSize2dPow.y
+                        // END: old, pre-multi-pixel pipeline
+                        //tempWrBgPxsPos.y.high
+                        //downto params.bgTileSize2dPow.y
+                      )
+                      //(
+                      //  params.bgTileSize2dPow.y - 1 downto 0
+                      //)
+                      ,
+                    )
+                    tempOutp.bgEntryMemIdx(x) := Cat(
+                      //inpScroll.y(scrollSliceRange.y),
+                      //inpScroll.x(scrollSliceRange.x),
+                      tempOutp.pxPos(x).y(tempSliceRange.y),
+                      tempOutp.pxPos(x).x(tempSliceRange.x),
+                    ).asUInt
+                  }
                 }
               }
             }
@@ -5717,7 +5969,11 @@ case class Gpu2d(
           //stageData.pipeOut(idx).bgEntryMemIdx := (
           //  stageData.pipeIn(idx).bgEntryMemIdx
           //)
-          stageData.pipeOut(idx).stage1 := stageData.pipeIn(idx).stage1
+          //stageData.pipeOut(idx).stage1 := stageData.pipeIn(idx).stage1
+          def pipeIn = stageData.pipeIn(idx)
+          def pipeOut = stageData.pipeOut(idx)
+          pipeOut.postStage0.stage1 := pipeIn.postStage0.stage1
+          pipeOut.colorMath.stage1 := pipeIn.colorMath.stage1
         },
       )
 
@@ -5728,72 +5984,70 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
+          for (kind <- 0 until 2) {
+            //val tempInp = stageData.pipeIn(idx)
+            //val tempOutp = stageData.pipeOut(idx)
+            def tempInp = (
+              if (kind == 0) {
+                stageData.pipeIn(idx).postStage0
+              } else {
+                stageData.pipeIn(idx).colorMath
+              }
+            )
+            def tempOutp = (
+              if (kind == 0) {
+                stageData.pipeOut(idx).postStage0
+              } else {
+                stageData.pipeOut(idx).colorMath
+              }
+            )
 
-          for (
-            //x <- 0 until params.bgTileSize2d.x
-            arrIdx <- 0 until params.numBgMemsPerNonPalKind
-          ) {
-            for (tempBgIdx <- 0 until params.numBgs) {
-              def arr = bgEntryMemA2d(tempBgIdx)(
-                arrIdx
-                //x
-              )
-              arr.io.rdEn := True
-              arr.io.rdAddr := 0
-              arr.io.rdAddr.allowOverride
-            }
-          }
-          for (tempBgIdx <- 0 until params.numBgs) {
-            //for (x <- 0 until params.bgTileSize2d.x) {
-            //  bgEntryMemA2d(tempBgIdx)(x).io.rdAddr := (
-            //    tempInp.bgEntryMemIdx(x)
-            //  )
-            //}
-            //def tempPxPosIdx = 0
-            //bgEntryMemA2d(tempBgIdx)(
-            //  tempPxPosIdx % 2
-            //).io.rdAddr := (
-            //  tempInp.bgEntryMemIdx(
-            //    tempInp.pxPosXGridIdxFindFirstSameAsIdx
-            //  )
-            //)
-            //when (tempInp.pxPosXGridIdxFindFirstDiffFound) {
-            //  bgEntryMemA2d(tempBgIdx)(
-            //    (tempPxPosIdx + 1) % 2
-            //  ).io.rdAddr := (
-            //    tempInp.bgEntryMemIdx(
-            //      tempInp.pxPosXGridIdxFindFirstDiffIdx
-            //    )
-            //  )
-            //}
-            //switch (Cat(
-            //  tempInp.pxPosXGridIdx
-            //)) {
-            //}
-            switch (
-              tempInp.pxPosXGridIdx(
-                tempInp.pxPosXGridIdxFindFirstSameAsIdx
-              )(0 downto 0)
+            for (
+              //x <- 0 until params.bgTileSize2d.x
+              arrIdx <- 0 until params.numBgMemsPerNonPalKind
+              //arrIdx <- 0 until params.numBgEntryMems
             ) {
-              for (tempPxPosIdx <- 0 until 2) {
-                is (tempPxPosIdx) {
-                  bgEntryMemA2d(tempBgIdx)(
-                    tempPxPosIdx % 2
-                  ).io.rdAddr := (
-                    tempInp.bgEntryMemIdx(
-                      tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                    )
-                  )
-                  when (tempInp.pxPosXGridIdxFindFirstDiffFound) {
+              for (tempBgIdx <- 0 until params.numBgs) {
+                def arr = (
+                  if (kind == 0) {
                     bgEntryMemA2d(tempBgIdx)(
-                      (tempPxPosIdx + 1) % 2
+                      arrIdx
+                      //x
+                    )
+                  } else {
+                    colorMathEntryMemArr(arrIdx)
+                  }
+                )
+                arr.io.rdEn := True
+                arr.io.rdEn.allowOverride
+                arr.io.rdAddr := 0
+                arr.io.rdAddr.allowOverride
+              }
+            }
+            for (tempBgIdx <- 0 until params.numBgs) {
+              switch (
+                tempInp.pxPosXGridIdx(
+                  tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                )(0 downto 0)
+              ) {
+                for (tempPxPosIdx <- 0 until 2) {
+                  is (tempPxPosIdx) {
+                    bgEntryMemA2d(tempBgIdx)(
+                      tempPxPosIdx % 2
                     ).io.rdAddr := (
                       tempInp.bgEntryMemIdx(
-                        tempInp.pxPosXGridIdxFindFirstDiffIdx
+                        tempInp.pxPosXGridIdxFindFirstSameAsIdx
                       )
                     )
+                    when (tempInp.pxPosXGridIdxFindFirstDiffFound) {
+                      bgEntryMemA2d(tempBgIdx)(
+                        (tempPxPosIdx + 1) % 2
+                      ).io.rdAddr := (
+                        tempInp.bgEntryMemIdx(
+                          tempInp.pxPosXGridIdxFindFirstDiffIdx
+                        )
+                      )
+                    }
                   }
                 }
               }
@@ -5821,7 +6075,11 @@ case class Gpu2d(
           //stageData.pipeOut(idx).bgEntry := (
           //  stageData.pipeIn(idx).bgEntry
           //)
-          stageData.pipeOut(idx).stage2 := stageData.pipeIn(idx).stage2
+          //stageData.pipeOut(idx).stage2 := stageData.pipeIn(idx).stage2
+          def pipeIn = stageData.pipeIn(idx)
+          def pipeOut = stageData.pipeOut(idx)
+          pipeOut.postStage0.stage2 := pipeIn.postStage0.stage2
+          pipeOut.colorMath.stage2 := pipeIn.colorMath.stage2
         },
       )
       HandleDualPipe(
@@ -5831,109 +6089,91 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
+          for (kind <- 0 until 2) {
+            //val tempInp = stageData.pipeIn(idx)
+            //val tempOutp = stageData.pipeOut(idx)
+            def pipeIn = stageData.pipeIn(idx)
+            def tempInp = (
+              if (kind == 0) {
+                stageData.pipeIn(idx).postStage0
+              } else {
+                stageData.pipeIn(idx).colorMath
+              }
+            )
+            def tempOutp = (
+              if (kind == 0) {
+                stageData.pipeOut(idx).postStage0
+              } else {
+                stageData.pipeOut(idx).colorMath
+              }
+            )
 
-          for (x <- 0 until params.bgTileSize2d.x) {
-            //def myIdxVec = tempInp.myIdxV2d(x)
-            //def myIdx = tempInp.myIdxV2d(x)(x)
-            switch (tempInp.bgIdx) {
-              for (tempBgIdx <- 0 until params.numBgs) {
-                is (tempBgIdx) {
-                  //--------
-                  def myBgEntryMemArr = bgEntryMemA2d(tempBgIdx)
-                  //def myIdx = tempInp.myIdxV2d(x)(x)
-                  //def setBgEntry(
-                  //  //plusAmount: Int,
-                  //  tempPxPosIdx: Int,
-                  //): Unit = {
-                  //  tempOutp.bgEntry(
-                  //    //x
-                  //    myIdx
-                  //  ) := (
-                  //    myBgEntryMemArr(
-                  //      //(tempPxPosIdx + plusAmount) % 2
-                  //      tempPxPosIdx
-                  //    ).io.rdData
-                  //  )
-                  //}
-                  //when (!tempInp.pxPosXGridIdxFindFirstDiffFound) {
-                  //  setBgEntry(0)
-                  //} otherwise {
-                  //  def sameAsIdx = (
-                  //    tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                  //  )
-                  //  def diffIdx = (
-                  //    tempInp.pxPosXGridIdxFindFirstDiffIdx
-                  //  )
-                  //  when (tempInp.pxPosXGridIdxFindFirstSameAsFound) {
-                  //  }
-                  //  //when (myIdx < diffIdx) {
-                  //  //  setBgEntry
-                  //  //}
-                  //  //if (tempPxPosIdx == 0) {
-                  //  //  when (x < diffIdx) {
-                  //  //    setBgEntry(1)
-                  //  //  } otherwise {
-                  //  //    setBgEntry(0)
-                  //  //  }
-                  //  //} else {
-                  //  //  when (x < sameAsIdx) {
-                  //  //    setBgEntry(0)
-                  //  //  } otherwise {
-                  //  //    setBgEntry(1)
-                  //  //  }
-                  //  //}
-                  //}
-                  switch (
-                    tempInp.pxPosXGridIdx(
-                      tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                    )(0 downto 0)
-                  ) {
-                    for (tempPxPosIdx <- 0 until 2) {
-                      def setBgEntry(
-                        plusAmount: Int
-                      ): Unit = {
-                        tempOutp.bgEntry(x) := (
-                          myBgEntryMemArr(
-                            (tempPxPosIdx + plusAmount) % 2
-                          ).io.rdData
-                        )
+            for (x <- 0 until params.bgTileSize2d.x) {
+              //def myIdxVec = tempInp.myIdxV2d(x)
+              //def myIdx = tempInp.myIdxV2d(x)(x)
+              switch (pipeIn.bgIdx) {
+                for (tempBgIdx <- 0 until params.numBgs) {
+                  is (tempBgIdx) {
+                    //--------
+                    def myBgEntryMemArr = (
+                      if (kind == 0) {
+                        bgEntryMemA2d(tempBgIdx)
+                      } else {
+                        colorMathEntryMemArr
                       }
-                      is (tempPxPosIdx) {
-                        when (!tempInp.pxPosXGridIdxFindFirstDiffFound) {
-                          setBgEntry(0)
-                        } otherwise {
-                          def sameAsIdx = (
-                            tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                    )
+                    switch (
+                      tempInp.pxPosXGridIdx(
+                        tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                      )(0 downto 0)
+                    ) {
+                      for (tempPxPosIdx <- 0 until 2) {
+                        def setBgEntry(
+                          plusAmount: Int
+                        ): Unit = {
+                          tempOutp.bgEntry(x) := (
+                            myBgEntryMemArr(
+                              (tempPxPosIdx + plusAmount) % 2
+                            ).io.rdData
                           )
-                          def diffIdx = (
-                            tempInp.pxPosXGridIdxFindFirstDiffIdx
-                          )
-                          if (tempPxPosIdx == 0) {
-                            when (x < diffIdx) {
-                              setBgEntry(1)
-                            } otherwise {
-                              setBgEntry(0)
-                            }
-                          } else {
-                            when (x < sameAsIdx) {
-                              setBgEntry(0)
-                            } otherwise {
-                              setBgEntry(1)
+                        }
+                        is (tempPxPosIdx) {
+                          when (
+                            !tempInp.pxPosXGridIdxFindFirstDiffFound
+                          ) {
+                            setBgEntry(0)
+                          } otherwise {
+                            def sameAsIdx = (
+                              tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                            )
+                            def diffIdx = (
+                              tempInp.pxPosXGridIdxFindFirstDiffIdx
+                            )
+                            if (tempPxPosIdx == 0) {
+                              when (x < diffIdx) {
+                                setBgEntry(1)
+                              } otherwise {
+                                setBgEntry(0)
+                              }
+                            } else {
+                              when (x < sameAsIdx) {
+                                setBgEntry(0)
+                              } otherwise {
+                                setBgEntry(1)
+                              }
                             }
                           }
                         }
                       }
                     }
+                    //--------
+                    //tempOutp.bgEntry(x) := (
+                    //  bgEntryMemA2d(tempBgIdx)(
+                    //    x
+                    //  ).io.rdData
+                    //)
+                    //--------
                   }
-                  //--------
-                  //tempOutp.bgEntry(x) := (
-                  //  bgEntryMemA2d(tempBgIdx)(
-                  //    x
-                  //  ).io.rdData
-                  //)
-                  //--------
                 }
               }
             }
@@ -5946,7 +6186,16 @@ case class Gpu2d(
           //stageData.pipeOut(idx).bgEntry := (
           //  stageData.pipeIn(idx).bgEntry
           //)
-          stageData.pipeOut(idx).stage3 := stageData.pipeIn(idx).stage3
+          //stageData.pipeOut(idx).postStage0.stage3 := (
+          //  stageData.pipeIn(idx).postStage0.stage3
+          //)
+          //stageData.pipeOut(idx).colorMath.stage3 := (
+          //  stageData.pipeIn(idx).colorMath.stage3
+          //)
+          def pipeIn = stageData.pipeIn(idx)
+          def pipeOut = stageData.pipeOut(idx)
+          pipeOut.postStage0.stage3 := pipeIn.postStage0.stage3
+          pipeOut.colorMath.stage3 := pipeIn.colorMath.stage3
         },
       )
       HandleDualPipe(
@@ -5956,8 +6205,8 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
+          //val tempInp = stageData.pipeIn(idx)
+          //val tempOutp = stageData.pipeOut(idx)
 
           //val tempTilePxsPos = Vec.fill(params.bgTileSize2d.x)(
           //  params.bgTilePxsCoordT()
@@ -5975,42 +6224,69 @@ case class Gpu2d(
           //  //  bgTileMemArr.readAsync(address=tempInp.bgEntry(x).tileMemIdx)
           //  //)
           //}
-          for (
-            //x <- 0 until params.bgTileSize2d.x
-            arrIdx <- 0 until params.numBgMemsPerNonPalKind
-          ) {
-            def arr = bgTileMemArr(arrIdx)
-            arr.io.rdEn := True
-            arr.io.rdAddr := 0
-            arr.io.rdAddr.allowOverride
-          }
-          switch (
-            tempInp.pxPosXGridIdx(
-              tempInp.pxPosXGridIdxFindFirstSameAsIdx
-            )(0 downto 0)
-          ) {
-            for (tempPxPosIdx <- 0 until 2) {
-              is (tempPxPosIdx) {
-                bgTileMemArr(
-                  tempPxPosIdx % 2
-                ).io.rdAddr := (
-                  //tempInp.bgEntryMemIdx(
-                  //  tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                  //)
-                  tempInp.bgEntry(
-                    //x
-                    tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                  ).tileMemIdx
-                )
-                when (tempInp.pxPosXGridIdxFindFirstDiffFound) {
-                  bgTileMemArr(
-                    (tempPxPosIdx + 1) % 2
+          for (kind <- 0 until 2) {
+            //val tempInp = stageData.pipeIn(idx)
+            //val tempOutp = stageData.pipeOut(idx)
+            def pipeIn = stageData.pipeIn(idx)
+            def tempInp = (
+              if (kind == 0) {
+                stageData.pipeIn(idx).postStage0
+              } else {
+                stageData.pipeIn(idx).colorMath
+              }
+            )
+            def tempOutp = (
+              if (kind == 0) {
+                stageData.pipeOut(idx).postStage0
+              } else {
+                stageData.pipeOut(idx).colorMath
+              }
+            )
+            def someTileMemArr = (
+              if (kind == 0) {
+                bgTileMemArr
+              } else {
+                colorMathTileMemArr
+              }
+            )
+            for (
+              //x <- 0 until params.bgTileSize2d.x
+              arrIdx <- 0 until params.numBgMemsPerNonPalKind
+              //arrIdx <- 0 until params.numBgTileMems - 1
+            ) {
+              def arr = someTileMemArr(arrIdx)
+              arr.io.rdEn := True
+              arr.io.rdAddr := 0
+              arr.io.rdAddr.allowOverride
+            }
+            switch (
+              tempInp.pxPosXGridIdx(
+                tempInp.pxPosXGridIdxFindFirstSameAsIdx
+              )(0 downto 0)
+            ) {
+              for (tempPxPosIdx <- 0 until 2) {
+                is (tempPxPosIdx) {
+                  someTileMemArr(
+                    tempPxPosIdx % 2
                   ).io.rdAddr := (
+                    //tempInp.bgEntryMemIdx(
+                    //  tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                    //)
                     tempInp.bgEntry(
                       //x
-                      tempInp.pxPosXGridIdxFindFirstDiffIdx
+                      tempInp.pxPosXGridIdxFindFirstSameAsIdx
                     ).tileMemIdx
                   )
+                  when (tempInp.pxPosXGridIdxFindFirstDiffFound) {
+                    someTileMemArr(
+                      (tempPxPosIdx + 1) % 2
+                    ).io.rdAddr := (
+                      tempInp.bgEntry(
+                        //x
+                        tempInp.pxPosXGridIdxFindFirstDiffIdx
+                      ).tileMemIdx
+                    )
+                  }
                 }
               }
             }
@@ -6034,124 +6310,150 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
+          for (kind <- 0 until 2) {
+            //val tempInp = stageData.pipeIn(idx)
+            //val tempOutp = stageData.pipeOut(idx)
+            def pipeIn = stageData.pipeIn(idx)
+            def tempInp = (
+              if (kind == 0) {
+                stageData.pipeIn(idx).postStage0
+              } else {
+                stageData.pipeIn(idx).colorMath
+              }
+            )
+            def tempOutp = (
+              if (kind == 0) {
+                stageData.pipeOut(idx).postStage0
+              } else {
+                stageData.pipeOut(idx).colorMath
+              }
+            )
+            //val tempInp = stageData.pipeIn(idx)
+            //val tempOutp = stageData.pipeOut(idx)
 
-          val tempTilePxsPos = Vec.fill(params.bgTileSize2d.x)(
-            params.bgTilePxsCoordT()
-          )
-          for (x <- 0 to params.bgTileSize2d.x - 1) {
-            switch (tempInp.bgIdx) {
-              for (tempBgIdx <- 0 to params.numBgs - 1) {
-                is (tempBgIdx) {
-                  tempTilePxsPos(x).x := (
-                    //(
-                    //  tempInp.getCntPxPosX()
-                    //  //+ bgAttrsArr(tempBgIdx).scroll.x
-                    //  - tempInp.bgAttrs.scroll.x
-                    //)
-                    //tempInp.pxPos(x).x
-                    //(
-                    //  params.bgTileSize2dPow.x - 1 downto 0
-                    //)
-                    (
-                      {
-                        def tempTileWidth = params.bgTileSize2dPow.x
-                        U(f"$tempTileWidth'd$x")
-                      } - tempInp.bgAttrs.scroll.x
-                    )(tempTilePxsPos(x).x.bitsRange)
-                  )
-                  tempTilePxsPos(x).y := (
-                    //(
-                    //  //rWrLineNum.resized
-                    //  //- bgAttrsArr(tempBgIdx).scroll.y
-                    //  //bgAttrsArr(tempBgIdx).scroll.y
-                    //  //- 
-                    //  rWrLineNum.resized
-                    //  - tempInp.bgAttrs.scroll.y
-                    //)
-                    (
-                      tempInp.lineNum
-                      //+ tempInp.bgAttrs.scroll.y
-                      - tempInp.bgAttrs.scroll.y
-                    ).resized
-                    //tempInp.pxPos(x).y
-                    //(
-                    //  params.bgTileSize2dPow.y - 1 downto 0
-                    //)
-                  )
-                  when (!tempInp.bgEntry(x).dispFlip.x) {
-                    tempOutp.tilePxsCoord(x).x := tempTilePxsPos(x).x
-                  } otherwise {
-                    tempOutp.tilePxsCoord(x).x := (
-                      params.bgTileSize2d.x - 1 - tempTilePxsPos(x).x
+            val tempTilePxsPos = Vec.fill(params.bgTileSize2d.x)(
+              params.bgTilePxsCoordT()
+            )
+            for (x <- 0 to params.bgTileSize2d.x - 1) {
+              switch (pipeIn.bgIdx) {
+                for (tempBgIdx <- 0 to params.numBgs - 1) {
+                  is (tempBgIdx) {
+                    tempTilePxsPos(x).x := (
+                      //(
+                      //  tempInp.getCntPxPosX()
+                      //  //+ bgAttrsArr(tempBgIdx).scroll.x
+                      //  - tempInp.bgAttrs.scroll.x
+                      //)
+                      //tempInp.pxPos(x).x
+                      //(
+                      //  params.bgTileSize2dPow.x - 1 downto 0
+                      //)
+                      (
+                        {
+                          def tempTileWidth = params.bgTileSize2dPow.x
+                          U(f"$tempTileWidth'd$x")
+                        } - pipeIn.bgAttrs.scroll.x
+                      )(tempTilePxsPos(x).x.bitsRange)
                     )
-                  }
-                  when (!tempInp.bgEntry(x).dispFlip.y) {
-                    tempOutp.tilePxsCoord(x).y := tempTilePxsPos(x).y
-                  } otherwise {
-                    tempOutp.tilePxsCoord(x).y := (
-                      params.bgTileSize2d.y - 1 - tempTilePxsPos(x).y
+                    tempTilePxsPos(x).y := (
+                      //(
+                      //  //rWrLineNum.resized
+                      //  //- bgAttrsArr(tempBgIdx).scroll.y
+                      //  //bgAttrsArr(tempBgIdx).scroll.y
+                      //  //- 
+                      //  rWrLineNum.resized
+                      //  - tempInp.bgAttrs.scroll.y
+                      //)
+                      (
+                        pipeIn.lineNum
+                        //+ tempInp.bgAttrs.scroll.y
+                        - pipeIn.bgAttrs.scroll.y
+                      ).resized
+                      //tempInp.pxPos(x).y
+                      //(
+                      //  params.bgTileSize2dPow.y - 1 downto 0
+                      //)
                     )
+                    when (!tempInp.bgEntry(x).dispFlip.x) {
+                      tempOutp.tilePxsCoord(x).x := tempTilePxsPos(x).x
+                    } otherwise {
+                      tempOutp.tilePxsCoord(x).x := (
+                        params.bgTileSize2d.x - 1 - tempTilePxsPos(x).x
+                      )
+                    }
+                    when (!tempInp.bgEntry(x).dispFlip.y) {
+                      tempOutp.tilePxsCoord(x).y := tempTilePxsPos(x).y
+                    } otherwise {
+                      tempOutp.tilePxsCoord(x).y := (
+                        params.bgTileSize2d.y - 1 - tempTilePxsPos(x).y
+                      )
+                    }
                   }
                 }
               }
-            }
-            //tempOutp.tile(x) := bgTileMemArr(x).io.rdData
-            //--------
-            //def myBgEntryMemArr = bgEntryMemA2d(tempBgIdx)
-            //when (!tempInp.pxPosXGridIdxFindFirstDiffFound) {
-            //} otherwise {
-            //}
-            switch (
-              tempInp.pxPosXGridIdx(
-                tempInp.pxPosXGridIdxFindFirstSameAsIdx
-              )(0 downto 0)
-            ) {
-              for (tempPxPosIdx <- 0 until 2) {
-                def setBgTile(
-                  plusAmount: Int
-                ): Unit = {
-                  //tempOutp.bgEntry(x) := (
-                  //  myBgEntryMemArr(
-                  //    (tempPxPosIdx + plusAmount) % 2
-                  //  ).io.rdData
-                  //)
-                  tempOutp.tile(x) := bgTileMemArr(
-                    //x
-                    (tempPxPosIdx + plusAmount) % 2
-                  ).io.rdData
-                }
-                is (tempPxPosIdx) {
-                  when (!tempInp.pxPosXGridIdxFindFirstDiffFound) {
-                    setBgTile(0)
-                  } otherwise {
-                    def sameAsIdx = (
-                      tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                    )
-                    def diffIdx = (
-                      tempInp.pxPosXGridIdxFindFirstDiffIdx
-                    )
-                    if (tempPxPosIdx == 0) {
-                      when (x < diffIdx) {
-                        setBgTile(1)
-                      } otherwise {
-                        setBgTile(0)
+              //tempOutp.tile(x) := bgTileMemArr(x).io.rdData
+              //--------
+              //def myBgEntryMemArr = bgEntryMemA2d(tempBgIdx)
+              //when (!tempInp.pxPosXGridIdxFindFirstDiffFound) {
+              //} otherwise {
+              //}
+              switch (
+                tempInp.pxPosXGridIdx(
+                  tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                )(0 downto 0)
+              ) {
+                for (tempPxPosIdx <- 0 until 2) {
+                  def setBgTile(
+                    plusAmount: Int
+                  ): Unit = {
+                    //tempOutp.bgEntry(x) := (
+                    //  myBgEntryMemArr(
+                    //    (tempPxPosIdx + plusAmount) % 2
+                    //  ).io.rdData
+                    //)
+                    def myTileMemArr = (
+                      if (kind == 0) {
+                        bgTileMemArr
+                      } else {
+                        colorMathTileMemArr
                       }
-                    } else {
-                      when (x < sameAsIdx) {
-                        setBgTile(0)
-                      } otherwise {
-                        setBgTile(1)
+                    )
+                    tempOutp.tile(x) := myTileMemArr(
+                      //x
+                      (tempPxPosIdx + plusAmount) % 2
+                    ).io.rdData
+                  }
+                  is (tempPxPosIdx) {
+                    when (!tempInp.pxPosXGridIdxFindFirstDiffFound) {
+                      setBgTile(0)
+                    } otherwise {
+                      def sameAsIdx = (
+                        tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                      )
+                      def diffIdx = (
+                        tempInp.pxPosXGridIdxFindFirstDiffIdx
+                      )
+                      if (tempPxPosIdx == 0) {
+                        when (x < diffIdx) {
+                          setBgTile(1)
+                        } otherwise {
+                          setBgTile(0)
+                        }
+                      } else {
+                        when (x < sameAsIdx) {
+                          setBgTile(0)
+                        } otherwise {
+                          setBgTile(1)
+                        }
                       }
                     }
                   }
                 }
               }
+              //tempOutp.tile(x) := (
+              //  bgTileMemArr.readAsync(address=tempInp.bgEntry(x).tileMemIdx)
+              //)
             }
-            //tempOutp.tile(x) := (
-            //  bgTileMemArr.readAsync(address=tempInp.bgEntry(x).tileMemIdx)
-            //)
           }
         },
         copyOnlyFunc=(
@@ -6161,7 +6463,11 @@ case class Gpu2d(
           //stageData.pipeOut(idx).tilePxsCoord := (
           //  stageData.pipeIn(idx).tilePxsCoord
           //)
-          stageData.pipeOut(idx).stage5 := stageData.pipeIn(idx).stage5
+          //stageData.pipeOut(idx).stage5 := stageData.pipeIn(idx).stage5
+          def pipeIn = stageData.pipeIn(idx)
+          def pipeOut = stageData.pipeOut(idx)
+          pipeOut.postStage0.stage5 := pipeIn.postStage0.stage5
+          pipeOut.colorMath.stage5 := pipeIn.colorMath.stage5
         },
       )
       //HandleDualPipe(
@@ -6194,34 +6500,42 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
-
-          //tempOutp.palEntryMemIdx := (
-          //  tempInp.tile.colIdxV2d(
-          //    //tempInp.scroll.y(params.bgTileSize2dPow.y - 1 downto 0)
-          //    tempInp.tilePxsCoord.y
-          //  )(
-          //    //tempInp.scroll.x(params.bgTileSize2dPow.x - 1 downto 0)
-          //    tempInp.tilePxsCoord.x
-          //  )
-          //)
-          //val row = tempInp.tile.colIdxRowVec(tempInp.tilePxsCoord.y)
-          //val colIdxVec = row.subdivideIn(tempInp.tile.pxsSize2d.x slices)
-          //tempOutp.palEntryMemIdx := colIdxVec(tempInp.tilePxsCoord.x)
-          for (x <- 0 to params.bgTileSize2d.x - 1) {
-            tempOutp.palEntryMemIdx(x) := tempInp.payload.tile(x).getPx(
-              tempInp.payload.tilePxsCoord(x)
+          for (kind <- 0 until 2) {
+            //val tempInp = stageData.pipeIn(idx)
+            //val tempOutp = stageData.pipeOut(idx)
+            def pipeIn = stageData.pipeIn(idx)
+            def tempInp = (
+              if (kind == 0) {
+                stageData.pipeIn(idx).postStage0
+              } else {
+                stageData.pipeIn(idx).colorMath
+              }
             )
+            def tempOutp = (
+              if (kind == 0) {
+                stageData.pipeOut(idx).postStage0
+              } else {
+                stageData.pipeOut(idx).colorMath
+              }
+            )
+            for (x <- 0 to params.bgTileSize2d.x - 1) {
+              tempOutp.palEntryMemIdx(x) := tempInp.tile(x).getPx(
+                tempInp.tilePxsCoord(x)
+              )
+            }
           }
         },
         copyOnlyFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).stage6 := (
-            stageData.pipeIn(idx).stage6
-          )
+          //stageData.pipeOut(idx).stage6 := (
+          //  stageData.pipeIn(idx).stage6
+          //)
+          def pipeIn = stageData.pipeIn(idx)
+          def pipeOut = stageData.pipeOut(idx)
+          pipeOut.postStage0.stage6 := pipeIn.postStage0.stage6
+          pipeOut.colorMath.stage6 := pipeIn.colorMath.stage6
         },
       )
       HandleDualPipe(
@@ -6231,25 +6545,46 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
-
-          //tempOutp.palEntry := bgPalEntryMem.readAsync(
-          //  address=tempInp.palEntryMemIdx
-          //)
-          for (x <- 0 to params.bgTileSize2d.x - 1) {
-            tempOutp.palEntryNzMemIdx(x) := (
-              tempInp.palEntryMemIdx(x) =/= 0
+          for (kind <- 0 until 2) {
+            //val tempInp = stageData.pipeIn(idx)
+            //val tempOutp = stageData.pipeOut(idx)
+            def pipeIn = stageData.pipeIn(idx)
+            def tempInp = (
+              if (kind == 0) {
+                stageData.pipeIn(idx).postStage0
+              } else {
+                stageData.pipeIn(idx).colorMath
+              }
             )
+            def tempOutp = (
+              if (kind == 0) {
+                stageData.pipeOut(idx).postStage0
+              } else {
+                stageData.pipeOut(idx).colorMath
+              }
+            )
+
+            //tempOutp.palEntry := bgPalEntryMem.readAsync(
+            //  address=tempInp.palEntryMemIdx
+            //)
+            for (x <- 0 to params.bgTileSize2d.x - 1) {
+              tempOutp.palEntryNzMemIdx(x) := (
+                tempInp.palEntryMemIdx(x) =/= 0
+              )
+            }
           }
         },
         copyOnlyFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).stage7 := (
-            stageData.pipeIn(idx).stage7
-          )
+          //stageData.pipeOut(idx).stage7 := (
+          //  stageData.pipeIn(idx).stage7
+          //)
+          def pipeIn = stageData.pipeIn(idx)
+          def pipeOut = stageData.pipeOut(idx)
+          pipeOut.postStage0.stage7 := pipeIn.postStage0.stage7
+          pipeOut.colorMath.stage7 := pipeIn.colorMath.stage7
         },
       )
       HandleDualPipe(
@@ -6259,16 +6594,40 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
+          for (kind <- 0 until 2) {
+            //val tempInp = stageData.pipeIn(idx)
+            //val tempOutp = stageData.pipeOut(idx)
+            def pipeIn = stageData.pipeIn(idx)
+            def tempInp = (
+              if (kind == 0) {
+                stageData.pipeIn(idx).postStage0
+              } else {
+                stageData.pipeIn(idx).colorMath
+              }
+            )
+            def tempOutp = (
+              if (kind == 0) {
+                stageData.pipeOut(idx).postStage0
+              } else {
+                stageData.pipeOut(idx).colorMath
+              }
+            )
 
-          for (x <- 0 to params.bgTileSize2d.x - 1) {
-            //tempOutp.palEntry(x) := bgPalEntryMemArr.readAsync(
-            //  address=tempInp.palEntryMemIdx(x)
-            //)
-            //tempOutp.palEntry(x) := bgPalEntryMemArr(x).io.rdData
-            bgPalEntryMemArr(x).io.rdEn := True
-            bgPalEntryMemArr(x).io.rdAddr := tempInp.palEntryMemIdx(x)
+            for (x <- 0 to params.bgTileSize2d.x - 1) {
+              //tempOutp.palEntry(x) := bgPalEntryMemArr.readAsync(
+              //  address=tempInp.palEntryMemIdx(x)
+              //)
+              //tempOutp.palEntry(x) := bgPalEntryMemArr(x).io.rdData
+              def myPalEntryMemArr = (
+                if (kind == 0) {
+                  bgPalEntryMemArr
+                } else {
+                  colorMathPalEntryMemArr
+                }
+              )
+              myPalEntryMemArr(x).io.rdEn := True
+              myPalEntryMemArr(x).io.rdAddr := tempInp.palEntryMemIdx(x)
+            }
           }
         },
         copyOnlyFunc=(
@@ -6287,23 +6646,51 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
+          for (kind <- 0 until 2) {
+            //val tempInp = stageData.pipeIn(idx)
+            //val tempOutp = stageData.pipeOut(idx)
+            def pipeIn = stageData.pipeIn(idx)
+            def tempInp = (
+              if (kind == 0) {
+                stageData.pipeIn(idx).postStage0
+              } else {
+                stageData.pipeIn(idx).colorMath
+              }
+            )
+            def tempOutp = (
+              if (kind == 0) {
+                stageData.pipeOut(idx).postStage0
+              } else {
+                stageData.pipeOut(idx).colorMath
+              }
+            )
 
-          for (x <- 0 to params.bgTileSize2d.x - 1) {
-            //tempOutp.palEntry(x) := bgPalEntryMemArr.readAsync(
-            //  address=tempInp.palEntryMemIdx(x)
-            //)
-            tempOutp.palEntry(x) := bgPalEntryMemArr(x).io.rdData
+            for (x <- 0 to params.bgTileSize2d.x - 1) {
+              //tempOutp.palEntry(x) := bgPalEntryMemArr.readAsync(
+              //  address=tempInp.palEntryMemIdx(x)
+              //)
+              def myPalEntryMemArr = (
+                if (kind == 0) {
+                  bgPalEntryMemArr
+                } else {
+                  colorMathPalEntryMemArr
+                }
+              )
+              tempOutp.palEntry(x) := myPalEntryMemArr(x).io.rdData
+            }
           }
         },
         copyOnlyFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).stage9 := (
-            stageData.pipeIn(idx).stage9
-          )
+          //stageData.pipeOut(idx).stage9 := (
+          //  stageData.pipeIn(idx).stage9
+          //)
+          def pipeIn = stageData.pipeIn(idx)
+          def pipeOut = stageData.pipeOut(idx)
+          pipeOut.postStage0.stage9 := pipeIn.postStage0.stage9
+          pipeOut.colorMath.stage9 := pipeIn.colorMath.stage9
         },
       )
       HandleDualPipe(
@@ -6341,7 +6728,7 @@ case class Gpu2d(
           )
           rPastLineMemEntry.setName(f"rPastWrBgLineMemEntry")
           for (x <- 0 to params.bgTileSize2d.x - 1) {
-            def tempLineMemEntry = tempOutp.subLineMemEntry(x)
+            def tempLineMemEntry = tempOutp.postStage0.subLineMemEntry(x)
             rPastLineMemEntry(x).init(rPastLineMemEntry(x).getZero)
             when (
               (bgIdx === (1 << bgIdx.getWidth) - 1)
@@ -6370,12 +6757,25 @@ case class Gpu2d(
             ) {
               // Starting rendering a new pixel or overwrite the existing
               // pixel
-              tempLineMemEntry.col.rgb := tempInp.palEntry(x).col
-              tempLineMemEntry.col.a := tempInp.palEntryNzMemIdx(x)
+              tempLineMemEntry.col.rgb := (
+                tempInp.postStage0.palEntry(x).col
+              )
+              tempLineMemEntry.col.a := (
+                tempInp.postStage0.palEntryNzMemIdx(x)
+              )
               tempLineMemEntry.prio := bgIdx
               tempLineMemEntry.addr := (
-                tempInp.pxPos(x).x
+                tempInp.postStage0.pxPos(x).x
                 + tempInp.bgAttrs.scroll.x
+              )
+              tempLineMemEntry.colorMathInfo := (
+                tempInp.bgAttrs.colorMathInfo
+              )
+              tempLineMemEntry.colorMathCol.rgb := (
+                tempInp.colorMath.palEntry(x).col
+              )
+              tempLineMemEntry.colorMathCol.a := (
+                tempInp.colorMath.palEntryNzMemIdx(x)
               )
               //rPastLineMemEntry(x) := tempLineMemEntry
             } otherwise {
@@ -6389,9 +6789,13 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          stageData.pipeOut(idx).stage10 := (
-            stageData.pipeIn(idx).stage10
-          )
+          //stageData.pipeOut(idx).stage10 := (
+          //  stageData.pipeIn(idx).stage10
+          //)
+          def pipeIn = stageData.pipeIn(idx)
+          def pipeOut = stageData.pipeOut(idx)
+          pipeOut.postStage0.stage10 := pipeIn.postStage0.stage10
+          pipeOut.colorMath.stage10 := pipeIn.colorMath.stage10
         },
       )
       //HandleDualPipe(
@@ -6455,7 +6859,8 @@ case class Gpu2d(
         //val tempLineMemEntry = LineMemEntry()
         //val bgIdx = wrBgPipeLast.bgIdx
         def tempArrIdx = (
-          wrBgPipeLast.subLineMemEntry(0).getSubLineMemTempArrIdx()
+          wrBgPipeLast.postStage0.subLineMemEntry(0)
+          .getSubLineMemTempArrIdx()
         )
 
         switch (rWrLineMemArrIdx) {
@@ -6463,21 +6868,21 @@ case class Gpu2d(
             is (jdx) {
               wrBgSubLineMemArr(jdx).write(
                 address=tempArrIdx,
-                data=wrBgPipeLast.subLineMemEntry,
+                data=wrBgPipeLast.postStage0.subLineMemEntry,
               )
               combineBgSubLineMemArr(jdx).io.wrPulse.valid := True
               combineBgSubLineMemArr(jdx).io.wrPulse.addr := (
                 tempArrIdx
               )
               combineBgSubLineMemArr(jdx).io.wrPulse.data := (
-                wrBgPipeLast.subLineMemEntry
+                wrBgPipeLast.postStage0.subLineMemEntry
               )
               for (kdx <- 0 until combineBgSubLineMemArr.size) {
                 if (kdx != jdx) {
                   combineBgSubLineMemArr(kdx).io.wrPulse.valid := False
                   combineBgSubLineMemArr(kdx).io.wrPulse.addr := 0x0
                   combineBgSubLineMemArr(kdx).io.wrPulse.data := (
-                    wrBgPipeLast.subLineMemEntry.getZero
+                    wrBgPipeLast.postStage0.subLineMemEntry.getZero
                   )
                 }
               }
@@ -6612,7 +7017,7 @@ case class Gpu2d(
           combineBgSubLineMemArr(jdx).io.wrPulse.valid := False
           combineBgSubLineMemArr(jdx).io.wrPulse.addr := 0x0
           combineBgSubLineMemArr(jdx).io.wrPulse.data := (
-            wrBgPipeLast.subLineMemEntry.getZero
+            wrBgPipeLast.postStage0.subLineMemEntry.getZero
           )
         }
       }
@@ -7928,6 +8333,9 @@ case class Gpu2d(
                 )
                 //tempOutp.wrLineMemEntry.prio.msb := True
                 someWrLineMemEntry.written := True
+                someWrLineMemEntry.colorMathInfo := (
+                  tempInp.objAttrs.colorMathInfo
+                )
               //--------
               // BEGIN: debug comment this out; later
               } otherwise {
@@ -9617,26 +10025,44 @@ case class Gpu2d(
             tempOutp.stage6 := tempOutp.stage6.getZero
           } otherwise {
             // BEGIN: Debug comment this out; later
+            tempOutp.colorMathCol := (
+              inpExt.bgRdSubLineMemEntry.colorMathCol
+            )
+            tempOutp.colorMathCol.allowOverride
             switch (Cat(
               inpExt.bgRdSubLineMemEntry.col.a,
               inpExt.objRdSubLineMemEntry.col.a,
               tempInp.objHiPrio
             )) {
               is (B"111") {
-                tempOutp.col := inpExt.objRdSubLineMemEntry.col.rgb
+                tempOutp.col := inpExt.objRdSubLineMemEntry.col
+                tempOutp.colorMathInfo := (
+                  inpExt.objRdSubLineMemEntry.colorMathInfo
+                )
               }
               is (B"110") {
-                tempOutp.col := inpExt.bgRdSubLineMemEntry.col.rgb
+                tempOutp.col := inpExt.bgRdSubLineMemEntry.col
+                tempOutp.colorMathInfo := (
+                  inpExt.bgRdSubLineMemEntry.colorMathInfo
+                )
               }
               is (M"10-") {
-                tempOutp.col := inpExt.bgRdSubLineMemEntry.col.rgb
+                tempOutp.col := inpExt.bgRdSubLineMemEntry.col
+                tempOutp.colorMathInfo := (
+                  inpExt.bgRdSubLineMemEntry.colorMathInfo
+                )
               }
               is (M"01-") {
-                tempOutp.col := inpExt.objRdSubLineMemEntry.col.rgb
+                tempOutp.col := inpExt.objRdSubLineMemEntry.col
+                tempOutp.colorMathInfo := (
+                  inpExt.objRdSubLineMemEntry.colorMathInfo
+                )
               }
               //is (M"00-")
               default {
                 tempOutp.col := tempOutp.col.getZero
+                tempOutp.colorMathInfo := tempOutp.colorMathInfo.getZero
+                tempOutp.colorMathCol := tempOutp.colorMathCol.getZero
               }
             }
             // END: Debug comment this out; later
@@ -9694,12 +10120,19 @@ case class Gpu2d(
                 )
               )
             //}
-            tempOutp.combineWrLineMemEntry.col.rgb := tempInp.col
+            tempOutp.combineWrLineMemEntry.col := tempInp.col
 
-            // not really necessary, but doing it anyway
-            tempOutp.combineWrLineMemEntry.col.a := True
+            //// not really necessary, but doing it anyway
+            //tempOutp.combineWrLineMemEntry.col.a := True
+            //tempOutp.combineWrLineMemEntry.col.a := 
 
             tempOutp.combineWrLineMemEntry.prio := 0x0
+            tempOutp.combineWrLineMemEntry.colorMathInfo := (
+              tempInp.colorMathInfo
+            )
+            tempOutp.combineWrLineMemEntry.colorMathCol := (
+              tempInp.colorMathCol
+            )
           }
         },
         copyOnlyFunc=(

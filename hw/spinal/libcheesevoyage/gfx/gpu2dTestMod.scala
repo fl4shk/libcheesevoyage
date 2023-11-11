@@ -67,6 +67,21 @@ case class Gpu2dTest(
       }
     }
   }
+  //--------
+  pop.colorMathTilePush.valid := False
+  pop.colorMathTilePush.payload := pop.colorMathTilePush.payload.getZero
+
+  pop.colorMathEntryPush.valid := False
+  pop.colorMathEntryPush.payload := pop.colorMathEntryPush.payload.getZero
+
+  pop.colorMathAttrsPush.valid := False
+  pop.colorMathAttrsPush.payload := pop.colorMathAttrsPush.payload.getZero
+
+  pop.colorMathPalEntryPush.valid := False
+  pop.colorMathPalEntryPush.payload := (
+    pop.colorMathPalEntryPush.payload.getZero
+  )
+  //--------
   val tempBgTile = Gpu2dTile(params=params, isObj=false)
   def mkBgTile(
     colIdx0: Int,
@@ -252,10 +267,11 @@ case class Gpu2dTest(
   ////pop.bgTilePush.payload.memIdx := params.intnlFbSize2d.x
   //--------
   val tempBgAttrs = Gpu2dBgAttrs(params=params)
-  val tempBgScroll = DualTypeNumVec2(
-    dataTypeX=SInt(tempBgAttrs.scroll.x.getWidth bits),
-    dataTypeY=SInt(tempBgAttrs.scroll.y.getWidth bits),
-  )
+  tempBgAttrs.colorMathInfo := tempBgAttrs.colorMathInfo.getZero
+  //val tempBgScroll = DualTypeNumVec2(
+  //  dataTypeX=SInt(tempBgAttrs.scroll.x.getWidth bits),
+  //  dataTypeY=SInt(tempBgAttrs.scroll.y.getWidth bits),
+  //)
   //tempBgAttrs.scroll := tempBgAttrs.scroll.getZero
   //tempBgAttrs.scroll.x := 0
   //tempBgAttrs.scroll.x := 1
@@ -274,8 +290,8 @@ case class Gpu2dTest(
   tempBgAttrs.scroll.y := 1
   //tempBgAttrs.scroll.x := 6
   //tempBgAttrs.scroll.y := 5
-  tempBgAttrs.visib := True
-  //tempBgAttrs.visib := False
+  //tempBgAttrs.visib := True
+  ////tempBgAttrs.visib := False
   for (idx <- 0 to pop.bgAttrsPushArr.size - 1) {
     val tempBgAttrsPush = pop.bgAttrsPushArr(idx)
     if (idx == 0) {
@@ -289,7 +305,10 @@ case class Gpu2dTest(
   }
 
   val rBgEntryPushValid = Reg(Bool()) init(True)
-  val tempBgEntry = Gpu2dBgEntry(params=params)
+  val tempBgEntry = Gpu2dBgEntry(
+    params=params,
+    isColorMath=false,
+  )
   //val bgEntryCntWidth = params.numBgsPow + 2
   val bgEntryCntWidth = params.bgEntryMemIdxWidth + 2
   val nextBgEntryCnt = SInt(bgEntryCntWidth bits)
@@ -572,6 +591,7 @@ case class Gpu2dTest(
   //val rObjAttrs = Reg(Gpu2dObjAttrs(params=params))
   //rObjAttrs.init(rObjAttrs.getZero)
   val rObjAttrsEntryPushValid = Reg(Bool()) init(True)
+  tempObjAttrs.colorMathInfo := tempObjAttrs.colorMathInfo.getZero
 
   when (rObjAttrsCnt < params.numObjs) {
     when (rObjAttrsCnt === 0) {
