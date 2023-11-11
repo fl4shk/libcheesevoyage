@@ -10252,55 +10252,111 @@ case class Gpu2d(
             when (tempCmathInfo.doIt) {
               switch (tempCmathInfo.kind) {
                 is (Gpu2dColorMathKind.add) {
-                  tempCol.r := (
-                    inpWrLineMemEntry.col.rgb.r + tempCmathCol.rgb.r
-                  ).resized
-                  tempCol.g := (
-                    inpWrLineMemEntry.col.rgb.g + tempCmathCol.rgb.g
-                  ).resized
-                  tempCol.b := (
-                    inpWrLineMemEntry.col.rgb.b + tempCmathCol.rgb.b
-                  ).resized
+                  tempCol.r(params.rgbConfig.rWidth downto 0) := (
+                    inpWrLineMemEntry.col.rgb.r.resized
+                    + Cat(False, tempCmathCol.rgb.r).asUInt
+                  )
+                  tempCol.r(
+                    tempCol.r.high downto params.rgbConfig.rWidth + 1
+                  ) := 0
+                  tempCol.g(params.rgbConfig.gWidth downto 0) := (
+                    inpWrLineMemEntry.col.rgb.g.resized
+                    + Cat(False, tempCmathCol.rgb.g).asUInt
+                  )
+                  tempCol.g(
+                    tempCol.g.high downto params.rgbConfig.gWidth + 1
+                  ) := 0
+                  tempCol.b(params.rgbConfig.bWidth downto 0) := (
+                    inpWrLineMemEntry.col.rgb.b.resized
+                    + Cat(False, tempCmathCol.rgb.b).asUInt
+                  )
+                  tempCol.b(
+                    tempCol.b.high downto params.rgbConfig.bWidth + 1
+                  ) := 0
                 }
                 is (Gpu2dColorMathKind.sub) {
                   tempCol.r := (
-                    inpWrLineMemEntry.col.rgb.r - tempCmathCol.rgb.r
-                  ).resized
+                    inpWrLineMemEntry.col.rgb.r.resized
+                    - Cat(
+                      B(
+                        tempCol.r.getWidth - tempCmathCol.rgb.r.getWidth
+                          bits,
+                        default -> tempCmathCol.rgb.r.msb),
+                      tempCmathCol.rgb.r
+                    ).asUInt
+                  )
                   tempCol.g := (
-                    inpWrLineMemEntry.col.rgb.g - tempCmathCol.rgb.g
-                  ).resized
+                    inpWrLineMemEntry.col.rgb.g.resized
+                    - Cat(
+                      B(
+                        tempCol.g.getWidth - tempCmathCol.rgb.g.getWidth
+                          bits,
+                        default -> tempCmathCol.rgb.g.msb),
+                      tempCmathCol.rgb.g
+                    ).asUInt
+                  )
                   tempCol.b := (
-                    inpWrLineMemEntry.col.rgb.b - tempCmathCol.rgb.b
-                  ).resized
+                    inpWrLineMemEntry.col.rgb.b.resized
+                    - Cat(
+                      B(
+                        tempCol.b.getWidth - tempCmathCol.rgb.b.getWidth
+                          bits,
+                        default -> tempCmathCol.rgb.b.msb),
+                      tempCmathCol.rgb.b
+                    ).asUInt
+                  )
                 }
                 is (Gpu2dColorMathKind.avg) {
-                  tempCol.r := (
+                  tempCol.r(params.rgbConfig.rWidth - 1 downto 0) := (
                     (
-                      inpWrLineMemEntry.col.rgb.r + tempCmathCol.rgb.r
+                      inpWrLineMemEntry.col.rgb.r.resized
+                      + Cat(False, tempCmathCol.rgb.r).asUInt
                     ) >> 1
                   ).resized
-                  tempCol.g := (
+                  tempCol.r(
+                    tempCol.r.high downto params.rgbConfig.rWidth
+                  ) := 0
+                  tempCol.g(params.rgbConfig.gWidth - 1 downto 0) := (
                     (
-                      inpWrLineMemEntry.col.rgb.g + tempCmathCol.rgb.g
+                      inpWrLineMemEntry.col.rgb.g.resized
+                      + Cat(False, tempCmathCol.rgb.g).asUInt
                     ) >> 1
                   ).resized
-                  tempCol.b := (
+                  tempCol.g(
+                    tempCol.g.high downto params.rgbConfig.gWidth
+                  ) := 0
+                  tempCol.b(params.rgbConfig.bWidth - 1 downto 0) := (
                     (
-                      inpWrLineMemEntry.col.rgb.b + tempCmathCol.rgb.b
+                      inpWrLineMemEntry.col.rgb.b.resized
+                      + Cat(False, tempCmathCol.rgb.b).asUInt
                     ) >> 1
                   ).resized
+                  tempCol.b(
+                    tempCol.b.high downto params.rgbConfig.bWidth
+                  ) := 0
+                  //tempCol.r := (
+                  //  (
+                  //    inpWrLineMemEntry.col.rgb.r + tempCmathCol.rgb.r
+                  //  ) >> 1
+                  //).resized
+                  //tempCol.g := (
+                  //  (
+                  //    inpWrLineMemEntry.col.rgb.g + tempCmathCol.rgb.g
+                  //  ) >> 1
+                  //).resized
+                  //tempCol.b := (
+                  //  (
+                  //    inpWrLineMemEntry.col.rgb.b + tempCmathCol.rgb.b
+                  //  ) >> 1
+                  //).resized
                 }
               }
 
               when (
-                tempCol.r(
-                  tempCol.r.high - 1
-                  downto tempCol.r.high - (extraWidth - 1)
-                )
-                =/= 0
+                tempCol.r.asSInt >= (1 << params.rgbConfig.rWidth) - 1
               ) {
                 outpWrLineMemEntry.col.rgb.r := (default -> True)
-              } elsewhen (tempCol.r(tempCol.r.high)) {
+              } elsewhen (tempCol.r.asSInt < 0) {
                 outpWrLineMemEntry.col.rgb.r := (default -> False)
               } otherwise {
                 outpWrLineMemEntry.col.rgb.r := tempCol.r(
@@ -10308,14 +10364,10 @@ case class Gpu2d(
                 )
               }
               when (
-                tempCol.g(
-                  tempCol.g.high - 1
-                  downto tempCol.g.high - (extraWidth - 1)
-                )
-                =/= 0
+                tempCol.g.asSInt >= (1 << params.rgbConfig.gWidth) - 1
               ) {
                 outpWrLineMemEntry.col.rgb.g := (default -> True)
-              } elsewhen (tempCol.g(tempCol.g.high)) {
+              } elsewhen (tempCol.g.asSInt < 0) {
                 outpWrLineMemEntry.col.rgb.g := (default -> False)
               } otherwise {
                 outpWrLineMemEntry.col.rgb.g := tempCol.g(
@@ -10323,14 +10375,10 @@ case class Gpu2d(
                 )
               }
               when (
-                tempCol.b(
-                  tempCol.b.high - 1
-                  downto tempCol.b.high - (extraWidth - 1)
-                )
-                =/= 0
+                tempCol.b.asSInt >= (1 << params.rgbConfig.bWidth) - 1
               ) {
                 outpWrLineMemEntry.col.rgb.b := (default -> True)
-              } elsewhen (tempCol.b(tempCol.b.high)) {
+              } elsewhen (tempCol.b.asSInt < 0) {
                 outpWrLineMemEntry.col.rgb.b := (default -> False)
               } otherwise {
                 outpWrLineMemEntry.col.rgb.b := tempCol.b(

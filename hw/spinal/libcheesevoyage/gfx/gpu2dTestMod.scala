@@ -445,10 +445,10 @@ case class Gpu2dTest(
   //tempBgAttrs.colorMathInfo := tempBgAttrs.colorMathInfo.getZero
   tempBgAttrs.colorMathInfo.doIt := True
   tempBgAttrs.colorMathInfo.kind := (
-    //Gpu2dColorMathKind.add
+    Gpu2dColorMathKind.add
     //Gpu2dColorMathKind.sub
     //Gpu2dColorMathKind.avg
-    Gpu2dColorMathKind.avg
+    //Gpu2dColorMathKind.avg
   )
   //val tempBgScroll = DualTypeNumVec2(
   //  dataTypeX=SInt(tempBgAttrs.scroll.x.getWidth bits),
