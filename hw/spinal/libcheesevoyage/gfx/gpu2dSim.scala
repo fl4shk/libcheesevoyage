@@ -141,8 +141,8 @@ object Gpu2dSim extends App {
     ),
     vtiming=LcvVgaTimingHv(
       //visib=1 << 3,
-      visib=1 << 4,
-      //visib=1 << 7,
+      //visib=1 << 4,
+      visib=1 << 7,
       //visib=4,
       //visib=8,
       front=1,
@@ -176,10 +176,10 @@ object Gpu2dSim extends App {
     objTileSize2dPow=ElabVec2[Int](
       //x=log2Up(8),
       //y=log2Up(8),
-      //x=log2Up(4),
-      //y=log2Up(4),
-      x=log2Up(2),
-      y=log2Up(2),
+      x=log2Up(4),
+      y=log2Up(4),
+      //x=log2Up(2),
+      //y=log2Up(2),
     ),
     //numBgsPow=log2Up(4),
     numBgsPow=log2Up(2),
@@ -225,8 +225,8 @@ object Gpu2dSim extends App {
       //  dut.clockDomain.waitRisingEdge()
       //}
       def simNumClks = (
-        //16000
-        32000
+        16000
+        //32000
       )
       for (idx <- 0 to simNumClks - 1) {
         dut.clockDomain.waitRisingEdge()
