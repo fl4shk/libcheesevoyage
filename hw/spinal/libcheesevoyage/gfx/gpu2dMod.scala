@@ -1398,7 +1398,7 @@ case class Gpu2dIo(
 case class Gpu2d(
   params: Gpu2dParams=DefaultGpu2dParams(),
   inSim: Boolean=false,
-  dbgSkipAffineObjs: Boolean=true,
+  noAffineObjs: Boolean=false,
 ) extends Component {
   //--------
   val io = Gpu2dIo(params=params)
@@ -2036,10 +2036,10 @@ case class Gpu2d(
     val rWrBgChangingRow = RegNext(nextWrBgChangingRow) init(False)
     val nextWrObjChangingRow = Bool()
     val rWrObjChangingRow = RegNext(nextWrObjChangingRow) init(False)
-    val nextWrObjAffineChangingRow = (!dbgSkipAffineObjs) generate (
+    val nextWrObjAffineChangingRow = (!noAffineObjs) generate (
       Bool()
     )
-    val rWrObjAffineChangingRow = (!dbgSkipAffineObjs) generate (
+    val rWrObjAffineChangingRow = (!noAffineObjs) generate (
       RegNext(
         nextWrObjAffineChangingRow
       ) init(False)
@@ -2062,7 +2062,7 @@ case class Gpu2d(
       rWrBgChangingRow
       && rWrObjChangingRow
       && (
-        if (!dbgSkipAffineObjs) {
+        if (!noAffineObjs) {
           rWrObjAffineChangingRow
         } else {
           True
@@ -3262,7 +3262,7 @@ case class Gpu2d(
       //extName=""
       isAffine=false,
     )
-    val objAffineWriter = (!dbgSkipAffineObjs) generate (
+    val objAffineWriter = (!noAffineObjs) generate (
       ObjSubLineMemWriter(
         someWrObjSubLineMemArr=wrObjAffineSubLineMemArr,
         someCombineObjSubLineMemArr=combineObjAffineSubLineMemArr,
@@ -3319,7 +3319,7 @@ case class Gpu2d(
     //}
     //objWriter.init(objWriter.getZero)
     objWriter.doWrite()
-    if (!dbgSkipAffineObjs) {
+    if (!noAffineObjs) {
       objAffineWriter.doWrite()
     }
     //--------
@@ -5367,7 +5367,7 @@ case class Gpu2d(
         Flow(WrObjPipePayload(isAffine=false))
       )
     )
-    val wrObjAffinePipeIn = (!dbgSkipAffineObjs) generate KeepAttribute(
+    val wrObjAffinePipeIn = (!noAffineObjs) generate KeepAttribute(
       //Vec.fill(wrBgObjPipeNumStages)(Reg(WrObjPipePayload()))
       Vec.fill(
         wrBgObjPipeNumStages
@@ -5377,7 +5377,7 @@ case class Gpu2d(
         Flow(WrObjPipePayload(isAffine=true))
       )
     )
-    val wrObjAffinePipeOut = (!dbgSkipAffineObjs) generate KeepAttribute(
+    val wrObjAffinePipeOut = (!noAffineObjs) generate KeepAttribute(
       //Vec.fill(wrBgObjPipeNumStages)(Reg(WrObjPipePayload()))
       Vec.fill(
         wrBgObjPipeNumStages
@@ -5532,11 +5532,11 @@ case class Gpu2d(
       }
     }
 
-    val wrObjAffinePipeLast = (!dbgSkipAffineObjs) generate KeepAttribute(
+    val wrObjAffinePipeLast = (!noAffineObjs) generate KeepAttribute(
       //Flow(WrObjPipePayload())
       Flow(WrObjPipePayload(isAffine=true))
     )
-    if (!dbgSkipAffineObjs) {
+    if (!noAffineObjs) {
       when (intnlChangingRowRe) {
         nextWrObjAffineChangingRow := False
       } elsewhen (
@@ -5547,22 +5547,22 @@ case class Gpu2d(
         nextWrObjAffineChangingRow := rWrObjAffineChangingRow
       }
     }
-    val nextWrObjAffinePipeFrontValid = (!dbgSkipAffineObjs) generate (
+    val nextWrObjAffinePipeFrontValid = (!noAffineObjs) generate (
       Bool()
     )
-    val rWrObjAffinePipeFrontValid = (!dbgSkipAffineObjs) generate (
+    val rWrObjAffinePipeFrontValid = (!noAffineObjs) generate (
       RegNext(
         nextWrObjAffinePipeFrontValid
       )
       .init(True)
     )
-    val rSavedWrObjAffinePipeFrontValid = (!dbgSkipAffineObjs) generate (
+    val rSavedWrObjAffinePipeFrontValid = (!noAffineObjs) generate (
       Reg(Bool()) init(False)
     )
-    val rWrObjAffinePipeFrontPayload = (!dbgSkipAffineObjs) generate Reg(
+    val rWrObjAffinePipeFrontPayload = (!noAffineObjs) generate Reg(
       WrObjPipePayload(isAffine=true)
     )
-    if (!dbgSkipAffineObjs) {
+    if (!noAffineObjs) {
       rWrObjAffinePipeFrontPayload.init(doInitWrObjPipePayload(
         isAffine=true,
         firstInit=true
@@ -8979,8 +8979,14 @@ case class Gpu2d(
               //)
               myIdx := (
                 firstMyIdxZero._2
-                //+ U(f"$myTempObjTileWidthPow'd$x")
-                + x
+                + (
+                  if (kind == 0) {
+                    val tempWidth = tempInp.affineObjXStart.getWidth
+                    U(f"$tempWidth'd0")
+                  } else {
+                    tempInp.affineObjXStart()
+                  }
+                ) + x
               )(
                 myTempObjTileWidthPow - 1 downto 0
               )
@@ -11111,16 +11117,16 @@ case class Gpu2d(
                       //)
                       ////combinePipeIn2PxReadFifo.io.pop.rdObj
                       //combinePipeIn1ObjMemReadSyncArr
-                      tempInp.stage2.rdObj
-                      //tempInp.stage2.rdObjAffine
+                      //tempInp.stage2.rdObj
+                      tempInp.stage2.rdObjAffine
                     )
                     tempOutp.stage3.ext.bgRdSubLineMemEntry := (
                       tempRdBg(bgSubLineMemArrElemIdx)
                     )
                     tempOutp.stage3.ext.objRdSubLineMemEntry := (
                       tempRdObj(
-                        objSubLineMemArrElemIdx
-                        //objAffineSubLineMemArrElemIdx
+                        //objSubLineMemArrElemIdx
+                        objAffineSubLineMemArrElemIdx
                       )
                     )
                     //--------
@@ -11693,7 +11699,7 @@ case class Gpu2d(
         objWriter.enVec(1) := True
         // END: new code, with muxing for single `.write()` call
         //--------
-        if (!dbgSkipAffineObjs) {
+        if (!noAffineObjs) {
           def tempObjAffineArrIdx = params.getObjAffineSubLineMemArrIdx(
             addr=(
               combinePipeLast.cnt
@@ -11728,7 +11734,7 @@ case class Gpu2d(
       } otherwise {
         //objWriter.enVec(rCombineLineMemArrIdx) := False
         objWriter.enVec(1) := False
-        if (!dbgSkipAffineObjs) {
+        if (!noAffineObjs) {
           objAffineWriter.enVec(1) := False
         }
         outp.col := rPastOutp.col
@@ -11769,7 +11775,7 @@ case class Gpu2d(
     //  //}
     //}
     writeBgLineMemEntries()
-    if (!dbgSkipAffineObjs) {
+    if (!noAffineObjs) {
       for (kind <- 0 until 2) {
         writeObjLineMemEntries(kind=kind)
       }
