@@ -923,32 +923,32 @@ case class Gpu2dTest(
 
   when (rObjAffineTileCnt < params.numObjAffineTiles) {
     when (pop.objAffineTilePush.fire) {
-      when (rObjAffineTileCnt === 0) {
-        //mkObjAffineTile(0, 1)
-        mkObjAffineTile(0, 0)
-      } elsewhen (rObjAffineTileCnt === 1) {
-        mkObjAffineTile(1, 2)
-        //mkObjAffineTile(1, 1)
-        //mkObjAffineTile(3, 3)
-        //mkObjAffineTile(2, 3)
-      } elsewhen (rObjAffineTileCnt === 2) {
-        //mkObjAffineTile(2, 3)
-        //mkObjAffineTile(3, 4)
-        mkObjAffineTile(2, 2)
-        //mkObjAffineTile(2, 2)
-      } elsewhen (rObjAffineTileCnt === 3) {
-        //mkObjAffineTile(3, 4)
-        mkObjAffineTile(3, 3)
-        //mkObjAffineTile(0, 1)
-      } elsewhen (rObjAffineTileCnt === 4) {
-        //mkObjAffineTile(4, 5)
-        mkObjAffineTile(4, 4)
-      } otherwise {
+      //when (rObjAffineTileCnt === 0) {
+      //  //mkObjAffineTile(0, 1)
+      //  mkObjAffineTile(0, 0)
+      //} elsewhen (rObjAffineTileCnt === 1) {
+      //  mkObjAffineTile(1, 2)
+      //  //mkObjAffineTile(1, 1)
+      //  //mkObjAffineTile(3, 3)
+      //  //mkObjAffineTile(2, 3)
+      //} elsewhen (rObjAffineTileCnt === 2) {
+      //  //mkObjAffineTile(2, 3)
+      //  //mkObjAffineTile(3, 4)
+      //  mkObjAffineTile(2, 2)
+      //  //mkObjAffineTile(2, 2)
+      //} elsewhen (rObjAffineTileCnt === 3) {
+      //  //mkObjAffineTile(3, 4)
+      //  mkObjAffineTile(3, 3)
+      //  //mkObjAffineTile(0, 1)
+      //} elsewhen (rObjAffineTileCnt === 4) {
+      //  //mkObjAffineTile(4, 5)
+      //  mkObjAffineTile(4, 4)
+      //} otherwise {
         tempObjAffineTile := tempObjAffineTile.getZero
         //when (rObjAffineTileCnt >= params.numObjAffineTiles) {
         //  rObjAffineTilePushValid := False
         //}
-      }
+      //}
       nextObjAffineTileCnt := rObjAffineTileCnt + 1
     } otherwise {
       tempObjAffineTile := tempObjAffineTile.getZero
