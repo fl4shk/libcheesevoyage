@@ -3840,6 +3840,7 @@ case class Gpu2d(
           )
         ) bits
       )
+      //val pxPosY = SInt(params.objPxsCoordSize2dPow.y bits)
       val pxPosYLsb = Bool()
       //val doFwd = Bool()
     }
@@ -8911,6 +8912,81 @@ case class Gpu2d(
             }
           }
 
+        },
+        copyOnlyFunc=(
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+          idx: Int,
+        ) => {
+          def pipeIn = stageData.pipeIn(idx)
+          def pipeOut = stageData.pipeOut(idx)
+          pipeOut.stage10 := pipeIn.stage10
+        },
+      )
+      HandleDualPipe(
+        stageData=stageData.craft(11)
+      )(
+        pipeStageMainFunc=(
+          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+          idx: Int,
+        ) => {
+          val tempInp = stageData.pipeIn(idx)
+          val tempOutp = stageData.pipeOut(idx)
+          def myTempObjTileWidth = tempInp.tempObjTileWidth()
+          def myTempObjTileWidthPow = (
+            tempInp.tempObjTileWidthPow()
+          )
+
+          for (jdx <- 0 until (1 << rWrLineMemArrIdx.getWidth)) {
+            //val temp = wrObjSubLineMemArr(jdx)
+
+            val temp = (
+              if (kind == 0) {
+                wrObjSubLineMemArr(jdx)
+              } else {
+                wrObjAffineSubLineMemArr(jdx)
+              }
+            )
+            temp.io.rdEn := True
+            temp.io.rdAddr := 0
+            temp.io.rdAddr.allowOverride
+          }
+          def stage10MyIdxV2d = tempInp.stage10.myIdxV2d
+          val tempStage10MyIdxVec = Vec.fill(myTempObjTileWidth)(
+            UInt(myTempObjTileWidthPow bits)
+          )
+
+          val firstMyIdxZero = (
+            // we are guaranteed to find a zero
+            tempStage10MyIdxVec.sFindFirst(
+              _ === 0
+            )
+          )
+            .setName(f"wrObjPipe11_firstMyIdxZero_$kind")
+          for (x <- 0 until myTempObjTileWidth) {
+            tempStage10MyIdxVec(x) := stage10MyIdxV2d(x)(x)
+            for (
+              jdx <- 0 until tempOutp.stage11.myIdxV2d(x).size
+            ) {
+              def myIdx = tempOutp.stage11.myIdxV2d(x)(jdx)
+              //myIdx := tempStage10MyIdxVec(
+              //  (
+              //    firstMyIdxZero._2
+              //    //+ U(f"$myTempObjTileWidthPow'd$x")
+              //    + x
+              //  )(
+              //    myTempObjTileWidthPow - 1 downto 0
+              //  )
+              //)
+              myIdx := (
+                firstMyIdxZero._2
+                //+ U(f"$myTempObjTileWidthPow'd$x")
+                + x
+              )(
+                myTempObjTileWidthPow - 1 downto 0
+              )
+              //myIdxVec(jdx) := 
+            }
+          }
           switch (
             rWrLineMemArrIdx
             //tempInp.lineMemArrIdx
@@ -9018,81 +9094,6 @@ case class Gpu2d(
               }
             }
           }
-        },
-        copyOnlyFunc=(
-          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-          idx: Int,
-        ) => {
-          def pipeIn = stageData.pipeIn(idx)
-          def pipeOut = stageData.pipeOut(idx)
-          pipeOut.stage10 := pipeIn.stage10
-        },
-      )
-      HandleDualPipe(
-        stageData=stageData.craft(11)
-      )(
-        pipeStageMainFunc=(
-          stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-          idx: Int,
-        ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
-          def myTempObjTileWidth = tempInp.tempObjTileWidth()
-          def myTempObjTileWidthPow = (
-            tempInp.tempObjTileWidthPow()
-          )
-
-          for (jdx <- 0 until (1 << rWrLineMemArrIdx.getWidth)) {
-            //val temp = wrObjSubLineMemArr(jdx)
-
-            val temp = (
-              if (kind == 0) {
-                wrObjSubLineMemArr(jdx)
-              } else {
-                wrObjAffineSubLineMemArr(jdx)
-              }
-            )
-            temp.io.rdEn := True
-            temp.io.rdAddr := 0
-            temp.io.rdAddr.allowOverride
-          }
-          def stage10MyIdxV2d = tempInp.stage10.myIdxV2d
-          val tempStage10MyIdxVec = Vec.fill(myTempObjTileWidth)(
-            UInt(myTempObjTileWidthPow bits)
-          )
-
-          val firstMyIdxZero = (
-            // we are guaranteed to find a zero
-            tempStage10MyIdxVec.sFindFirst(
-              _ === 0
-            )
-          )
-            .setName(f"wrObjPipe11_firstMyIdxZero_$kind")
-          for (x <- 0 until myTempObjTileWidth) {
-            tempStage10MyIdxVec(x) := stage10MyIdxV2d(x)(x)
-            for (
-              jdx <- 0 until tempOutp.stage11.myIdxV2d(x).size
-            ) {
-              def myIdx = tempOutp.stage11.myIdxV2d(x)(jdx)
-              //myIdx := tempStage10MyIdxVec(
-              //  (
-              //    firstMyIdxZero._2
-              //    //+ U(f"$myTempObjTileWidthPow'd$x")
-              //    + x
-              //  )(
-              //    myTempObjTileWidthPow - 1 downto 0
-              //  )
-              //)
-              myIdx := (
-                firstMyIdxZero._2
-                //+ U(f"$myTempObjTileWidthPow'd$x")
-                + x
-              )(
-                myTempObjTileWidthPow - 1 downto 0
-              )
-              //myIdxVec(jdx) := 
-            }
-          }
 
         },
         copyOnlyFunc=(
@@ -9104,7 +9105,7 @@ case class Gpu2d(
           pipeOut.stage11 := pipeIn.stage11
         },
       )
-      // END: Stage 10
+      // END: Stage 11
 
       // BEGIN: Stage 12
       HandleDualPipe(
@@ -9179,10 +9180,10 @@ case class Gpu2d(
             for (fwdIdx <- 0 to fwdVec.size - 1) {
               if (fwdIdx == 0) {
                 when (
-                  //!tempInp.bakCnt.msb
-                  !tempInp.bakCntWillBeDone
+                  !tempInp.bakCnt.msb
+                  //!tempInp.bakCntWillBeDone
                   //&& tempInp.pxPosXGridIdxMatches(x)
-                ){
+                ) {
                   //fwdVec(fwdIdx).pxPosY := (
                   //  tempInp.pxPos(
                   //    //tempInp.pxPosXGridIdxFindFirstSameAsIdx
@@ -9256,10 +9257,11 @@ case class Gpu2d(
                   (
                     fwdVec(fwdIdx).pxPosXGridIdx
                     === tempInp.stage10.pxPosXGridIdx
-                  )
-                  && (
+                  ) && (
                     fwdVec(fwdIdx).pxPosYLsb
                     === tempInp.stage10.pxPosYLsb
+                    //fwdVec(fwdIdx).pxPosY
+                    //=== tempInp.pxPos(0).y
                   )
                 )
               }

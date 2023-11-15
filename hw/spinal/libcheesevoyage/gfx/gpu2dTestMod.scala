@@ -651,8 +651,10 @@ case class Gpu2dTest(
     when (pop.objTilePush.fire) {
       when (rObjTileCnt === 0) {
         //mkObjTile(0, 1)
-        mkObjTile(0, 0)
+        //mkObjTile(0, 0)
+        tempObjTile := tempObjTile.getZero
       } elsewhen (rObjTileCnt === 1) {
+        //tempObjTile := tempObjTile.getZero
         mkObjTile(1, 2)
         //mkObjTile(1, 1)
         //mkObjTile(3, 3)
@@ -865,6 +867,7 @@ case class Gpu2dTest(
       //tempObjAttrs := tempObjAttrs.getZero
       tempObjAttrs.tileMemIdx := 0
       tempObjAttrs.pos.x := -params.objTileSize2d.x
+      //tempObjAttrs.pos.x := 16
       tempObjAttrs.pos.y := 0
       tempObjAttrs.prio := (
         0
