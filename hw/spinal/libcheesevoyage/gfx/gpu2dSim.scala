@@ -210,10 +210,10 @@ object Gpu2dSim extends App {
     numObjAffineTiles=Some(16),
     numColsInBgPalPow=log2Up(64),
     numColsInObjPalPow=log2Up(64),
-    //fancyObjPrio=false,
     noColorMath=true,
     noAffineBgs=true,
     noAffineObjs=true,
+    //fancyObjPrio=false,
     fancyObjPrio=true,
   )
 
