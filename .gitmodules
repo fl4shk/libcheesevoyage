@@ -1,0 +1,3 @@
+[submodule "submodules/liborangepower"]
+	path = submodules/liborangepower
+	url = https://github.com/fl4shk/liborangepower.git

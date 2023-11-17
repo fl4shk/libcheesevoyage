@@ -89,25 +89,49 @@ case class Gpu2dTest(
     tempTile: Gpu2dTile,
     colIdx0: Int,
     colIdx1: Int,
+    colIdx2: Option[Int]=None,
+    colIdx3: Option[Int]=None,
   ): Unit = {
     for (jdx <- 0 to tempTile.pxsSize2d.y - 1) {
       for (idx <- 0 to tempTile.pxsSize2d.x - 1) {
         def pxCoord = ElabVec2[Int](idx, jdx)
         if (jdx % 2 == 0) {
+          val myColIdx = colIdx2 match {
+            case Some(tempColIdx) => {
+              if (idx % 2 == 0) {
+                colIdx0
+              } else {
+                tempColIdx
+              }
+            }
+            case None => colIdx0
+          }
           tempTile.setPx(
             pxCoord=pxCoord,
             //colIdx=(idx % 2) + 1,
             //colIdx=(idx % 2) + colIdx0,
             //colIdx=3,
-            colIdx=colIdx0,
+            //colIdx=colIdx0,
+            colIdx=myColIdx,
           )
         } else { // if (jdx % 2 == 1)
+          val myColIdx = colIdx3 match {
+            case Some(tempColIdx) => {
+              if (idx % 2 == 0) {
+                colIdx1
+              } else {
+                tempColIdx
+              }
+            }
+            case None => colIdx1
+          }
           tempTile.setPx(
             pxCoord=pxCoord,
             //colIdx=((idx + 1) % 2) + 1,
             //colIdx=4,
             //colIdx=(idx % 2) + colIdx1,
-            colIdx=colIdx1,
+            //colIdx=colIdx1,
+            colIdx=myColIdx,
           )
         }
       }
@@ -122,11 +146,15 @@ case class Gpu2dTest(
   def mkColorMathTile(
     colIdx0: Int,
     colIdx1: Int,
+    colIdx2: Option[Int]=None,
+    colIdx3: Option[Int]=None,
   ): Unit = {
     mkTile(
       tempTile=tempColorMathTile,
       colIdx0=colIdx0,
       colIdx1=colIdx1,
+      colIdx2=colIdx2,
+      colIdx3=colIdx3,
     )
   }
   val nextColorMathTileCnt = SInt(params.numColorMathTilesPow + 2 bits)
@@ -266,11 +294,15 @@ case class Gpu2dTest(
   def mkBgTile(
     colIdx0: Int,
     colIdx1: Int,
+    colIdx2: Option[Int]=None,
+    colIdx3: Option[Int]=None,
   ): Unit = {
     mkTile(
       tempTile=tempBgTile,
       colIdx0=colIdx0,
       colIdx1=colIdx1,
+      colIdx2=colIdx2,
+      colIdx3=colIdx3,
     )
   }
   val nextBgTileCnt = SInt(params.numBgTilesPow + 2 bits)
@@ -636,11 +668,15 @@ case class Gpu2dTest(
   def mkObjTile(
     colIdx0: Int,
     colIdx1: Int,
+    colIdx2: Option[Int]=None,
+    colIdx3: Option[Int]=None,
   ): Unit = {
     mkTile(
       tempTile=tempObjTile,
       colIdx0=colIdx0,
       colIdx1=colIdx1,
+      colIdx2=colIdx2,
+      colIdx3=colIdx3,
     )
   }
   val nextObjTileCnt = SInt(params.numObjTilesPow + 2 bits)
@@ -655,8 +691,8 @@ case class Gpu2dTest(
         tempObjTile := tempObjTile.getZero
       } elsewhen (rObjTileCnt === 1) {
         //tempObjTile := tempObjTile.getZero
-        mkObjTile(1, 2)
-        //mkObjTile(1, 1)
+        //mkObjTile(1, 2, Some(3), Some(4))
+        mkObjTile(1, 1)
         //mkObjTile(3, 3)
         //mkObjTile(2, 3)
       } elsewhen (rObjTileCnt === 2) {
@@ -744,7 +780,9 @@ case class Gpu2dTest(
   tempObjAttrs.colorMathInfo := tempObjAttrs.colorMathInfo.getZero
 
   when (rObjAttrsCnt < params.numObjs) {
-    when (rObjAttrsCnt === 0) {
+    when (
+      rObjAttrsCnt === 0
+    ) {
       tempObjAttrs.tileMemIdx := 1
       //tempObjAttrs.tileMemIdx := 2
       //tempObjAttrs.pos.x := 16
@@ -815,7 +853,7 @@ case class Gpu2dTest(
       //tempObjAttrs.pos.y := 8
       tempObjAttrs.pos.y := 9
       tempObjAttrs.prio := (
-        0
+        1
         //1
       )
       tempObjAttrs.size2d.x := params.objTileSize2d.x
@@ -913,11 +951,15 @@ case class Gpu2dTest(
   def mkObjAffineTile(
     colIdx0: Int,
     colIdx1: Int,
+    colIdx2: Option[Int]=None,
+    colIdx3: Option[Int]=None,
   ): Unit = {
     mkTile(
       tempTile=tempObjAffineTile,
       colIdx0=colIdx0,
       colIdx1=colIdx1,
+      colIdx2=colIdx2,
+      colIdx3=colIdx3,
     )
   }
   val nextObjAffineTileCnt = SInt(params.numObjAffineTilesPow + 2 bits)

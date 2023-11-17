@@ -89,6 +89,9 @@ case class Gpu2dParams(
   numColsInObjPalPow: Int,    // power of two for how many colors in the
                               // sprite palette
   //--------
+  noColorMath: Boolean=false,
+  noAffineBgs: Boolean=false,
+  noAffineObjs: Boolean=false,
   fancyObjPrio: Boolean=true, // whether sprite-sprite priority
                               // comparisons should take sprite-BG
                               // priority into account
@@ -146,7 +149,16 @@ case class Gpu2dParams(
   def numBgMemsPerNonPalKind = 2
 
   //def numObjMemsPerKind = 2
-  def numObjMemsPerKind = 2
+  def numObjMemsPerKind = (
+    1
+    + (
+      if (!noAffineObjs) {
+        1
+      } else {
+        0
+      }
+    )
+  )
   //def numObjPalMems = 2
   //def numColorMathMemsPerNonPalKind = 2
   //--------
@@ -556,6 +568,9 @@ object DefaultGpu2dParams {
     numColsInBgPalPow: Int=log2Up(256), // 256 colors per BG palette
     numColsInObjPalPow: Int=log2Up(256), // 256 colors per OBJ palette
     //--------
+    noColorMath: Boolean=false,
+    noAffineBgs: Boolean=false,
+    noAffineObjs: Boolean=false,
     fancyObjPrio: Boolean=true,
     //--------
     bgTileArrRamStyle: String="block",
@@ -662,6 +677,9 @@ object DefaultGpu2dParams {
       numColsInBgPalPow=numColsInBgPalPow,
       numColsInObjPalPow=numColsInObjPalPow,
       //--------
+      noColorMath=noColorMath,
+      noAffineBgs=noAffineBgs,
+      noAffineObjs=noAffineObjs,
       fancyObjPrio=fancyObjPrio,
       //--------
       bgTileArrRamStyle=bgTileArrRamStyle,
@@ -1130,8 +1148,14 @@ case class Gpu2dObjAttrs(
   )
 
   //val size2dMinus1x1 = params.objTilePxsCoordT()
-  val size2d = params.objSize2dForAttrsT(
-    //isAffine=isAffine
+  val size2d = (
+    if (!isAffine) {
+      params.objSize2dForAttrsT(
+        //isAffine=isAffine
+      )
+    } else {
+      params.objAffineSize2dForAttrsT()
+    }
   )
 
   // whether or not to visibly flip x/y during rendering
@@ -1398,8 +1422,10 @@ case class Gpu2dIo(
 case class Gpu2d(
   params: Gpu2dParams=DefaultGpu2dParams(),
   inSim: Boolean=false,
-  noAffineObjs: Boolean=false,
+  //noAffineObjs: Boolean=false,
 ) extends Component {
+  //--------
+  def noAffineObjs = params.noAffineObjs
   //--------
   val io = Gpu2dIo(params=params)
   //--------
@@ -2738,6 +2764,7 @@ case class Gpu2d(
         initBigInt=Some(objSubLineMemInitBigInt),
         arrRamStyle=params.lineArrRamStyle,
       )
+        .setName(f"wrObjSubLineMemArr_$idx")
 
       //for (rdIdx <- 0 until RdObjSubLineMemArrInfo.numReaders) {
       //  objSubLineMemA2d.last += PipeSimpleDualPortMem(
@@ -2846,48 +2873,50 @@ case class Gpu2d(
         .setName(f"combineObjSubLineMemArr_$idx")
       //--------
 
-      val objAffineSubLineMemInitBigInt = new ArrayBuffer[BigInt]()
-      for (initIdx <- 0 until params.objAffineSubLineMemArrSize) {
-        objAffineSubLineMemInitBigInt += BigInt(0)
-      }
-      wrObjAffineSubLineMemArr += FpgacpuRamSimpleDualPort(
-        wordType=Vec.fill(
-          //params.objAffineDblTileSize2d.x
-          params.objAffineSliceTileWidth
-        )(
-          ObjSubLineMemEntry()
-        ),
-        depth=params.objAffineSubLineMemArrSize,
-        initBigInt=Some(objAffineSubLineMemInitBigInt),
-        arrRamStyle=params.lineArrRamStyle,
-      )
-      combineObjAffineSubLineMemArr += WrPulseRdPipeSimpleDualPortMem(
-        //dataType=HardType.union(
-        //  WrObjPipePayload(),
-        //  CombinePipePayload(),
-        //),
-        dataType=CombinePipePayload(),
-        wordType=Vec.fill(
-          //params.objAffineDblTileSize2d.x
-          params.objAffineSliceTileWidth
-        )(ObjSubLineMemEntry()),
-        depth=params.objAffineSubLineMemArrSize,
-        initBigInt=Some(objAffineSubLineMemInitBigInt),
-      )(
-        setWordFunc=(
-          //io: WrPulseRdPipeSimpleDualPortMemIo[
-          //  Bits,
-          //  Vec[ObjSubLineMemEntry],
-          //],
-          unionIdx: UInt,
-          outpPayload: CombinePipePayload,
-          inpPayload: CombinePipePayload,
-          objTileRow: Vec[ObjSubLineMemEntry],
-        ) => {
-          outpPayload.stage2.rdObjAffine := objTileRow
+      if (!noAffineObjs) {
+        val objAffineSubLineMemInitBigInt = new ArrayBuffer[BigInt]()
+        for (initIdx <- 0 until params.objAffineSubLineMemArrSize) {
+          objAffineSubLineMemInitBigInt += BigInt(0)
         }
-      )
+        wrObjAffineSubLineMemArr += FpgacpuRamSimpleDualPort(
+          wordType=Vec.fill(
+            //params.objAffineDblTileSize2d.x
+            params.objAffineSliceTileWidth
+          )(
+            ObjSubLineMemEntry()
+          ),
+          depth=params.objAffineSubLineMemArrSize,
+          initBigInt=Some(objAffineSubLineMemInitBigInt),
+          arrRamStyle=params.lineArrRamStyle,
+        )
+        combineObjAffineSubLineMemArr += WrPulseRdPipeSimpleDualPortMem(
+          //dataType=HardType.union(
+          //  WrObjPipePayload(),
+          //  CombinePipePayload(),
+          //),
+          dataType=CombinePipePayload(),
+          wordType=Vec.fill(
+            //params.objAffineDblTileSize2d.x
+            params.objAffineSliceTileWidth
+          )(ObjSubLineMemEntry()),
+          depth=params.objAffineSubLineMemArrSize,
+          initBigInt=Some(objAffineSubLineMemInitBigInt),
+        )(
+          setWordFunc=(
+            //io: WrPulseRdPipeSimpleDualPortMemIo[
+            //  Bits,
+            //  Vec[ObjSubLineMemEntry],
+            //],
+            unionIdx: UInt,
+            outpPayload: CombinePipePayload,
+            inpPayload: CombinePipePayload,
+            objTileRow: Vec[ObjSubLineMemEntry],
+          ) => {
+            outpPayload.stage2.rdObjAffine := objTileRow
+          }
+        )
         .setName(f"combineObjAffineSubLineMemArr_$idx")
+      }
 
       //objSubLineMemArr += Mem(
       //  //wordType=Rgb(params.rgbConfig),
@@ -3843,6 +3872,7 @@ case class Gpu2d(
       //val pxPosY = SInt(params.objPxsCoordSize2dPow.y bits)
       val pxPosYLsb = Bool()
       //val doFwd = Bool()
+      //val pxPosX = SInt(params.objPxsCoordSize2dPow.x bits)
     }
 
     //def wrObjPipeStage6NumFwd = 3
@@ -3854,6 +3884,7 @@ case class Gpu2d(
     //def wrObjPipeStage9NumFwd = wrBgObjPipeNumStages - 9 + 1 + 1
     //def wrObjPipeStage12NumFwd = wrBgObjPipeNumStages - 11 + 1 + 1
     def wrObjPipeStage14NumFwd = wrBgObjPipeNumStages - 14 - 1 + 1 + 1
+    //def wrObjPipeStage14NumFwd = wrBgObjPipeNumStages - 14 + 1 + 1
     //def wrObjPipeStage6NumFwd = 2
     //def wrObjPipeStage6NumFwd = 1
     def wrObjPipeStage12NumFwd = wrObjPipeStage14NumFwd //+ 1
@@ -4942,7 +4973,7 @@ case class Gpu2d(
         val rdObj = Vec.fill(params.objTileSize2d.x)(
           ObjSubLineMemEntry()
         )
-        val rdObjAffine = Vec.fill(
+        val rdObjAffine = (!noAffineObjs) generate Vec.fill(
           //params.objAffineDblTileSize2d.x
           params.objAffineSliceTileWidth
         )(
@@ -5658,16 +5689,23 @@ case class Gpu2d(
       //Stream(CombinePipePayload())
       Stream(CombinePipePayload())
     )
+    def combineBgObjForkJoinMax = (
+      if (!noAffineObjs) {
+        3
+      } else {
+        2
+      }
+    )
     val combineBgObjRdPipeFork = FpgacpuPipeForkBlocking(
       dataType=CombinePipePayload(),
       // BEGIN: add in BGs; later
-      oSize=params.numLineMemsPerBgObjRenderer * 3,
+      oSize=params.numLineMemsPerBgObjRenderer * combineBgObjForkJoinMax,
       // END: add in BGs; later
     )
     val combineBgObjRdPipeJoin = FpgacpuPipeJoin(
       dataType=CombinePipePayload(),
       // BEGIN: add in BGs; later
-      size=params.numLineMemsPerBgObjRenderer * 3,
+      size=params.numLineMemsPerBgObjRenderer * combineBgObjForkJoinMax,
       // END: add in BGs; later
     )
 
@@ -6035,21 +6073,34 @@ case class Gpu2d(
       } else {
         //combinePipeOut(idx)
         combineBgObjRdPipeFork.io.pipeIn << combinePipeIn(idx)
+        def theMax = (
+          if (!noAffineObjs) {
+            3
+          } else {
+            2
+          }
+        )
         for (
-          combineIdx <- 0 until params.numLineMemsPerBgObjRenderer * 3
+          combineIdx <- 0
+          until params.numLineMemsPerBgObjRenderer * theMax
         ) {
           //combineObjSubLineMemArr(combineIdx).io.rdAddrPipe << (
           //  combineBgObjRdPipeFork.io.pipeOutVec//(combineIdx)
           //);
-          def myLineMem = (
-            if (combineIdx % 3 == 0) {
-              combineBgSubLineMemArr(combineIdx / 3)
-            } else if (combineIdx % 3 == 1) {
-              combineObjSubLineMemArr(combineIdx / 3)
-            } else { // if (combineIdx % 3 == 2)
-              combineObjAffineSubLineMemArr(combineIdx / 3)
+          def myLineMem = {
+            
+            if (combineIdx % theMax == 0) {
+              combineBgSubLineMemArr(combineIdx / theMax)
+            } else if (combineIdx % theMax == 1) {
+              combineObjSubLineMemArr(combineIdx / theMax)
+            } else {
+              if (!noAffineObjs) {
+                combineObjAffineSubLineMemArr(combineIdx / theMax)
+              } else {
+                combineObjSubLineMemArr(combineIdx / theMax)
+              }
             }
-          )
+          }
           def myForkPipeOut = (
             combineBgObjRdPipeFork.io.pipeOutVec(combineIdx)
           )
@@ -6067,18 +6118,24 @@ case class Gpu2d(
               //  log2Up(params.objSubLineMemArrSize) - 1 downto 0
               //)
               o.addr := (
-                if (combineIdx % 3 == 0) {
+                if (combineIdx % theMax == 0) {
                   params.getBgSubLineMemArrIdx(
                     addr=i.cnt,
                   )
-                } else if (combineIdx % 3 == 1) {
+                } else if (combineIdx % theMax == 1) {
                   params.getObjSubLineMemArrIdx(
                     addr=i.cnt,
                   )
-                } else { // if (combineIdx % 3 == 2)
-                  params.getObjAffineSubLineMemArrIdx(
-                    addr=i.cnt,
-                  )
+                } else {
+                  if (!noAffineObjs) { // if (combineIdx % 3 == 2)
+                    params.getObjAffineSubLineMemArrIdx(
+                      addr=i.cnt,
+                    )
+                  } else {
+                    params.getObjSubLineMemArrIdx(
+                      addr=i.cnt,
+                    )
+                  }
                 }
               )
               o.data := i
@@ -6101,23 +6158,32 @@ case class Gpu2d(
               //combinePipeOut(idx).payload := (
               //  combineBgObjRdPipeJoin.io.pipeOut.payload(combineIdx * 2)
               //)
+              def theMax = (
+                if (!noAffineObjs) {
+                  3
+                } else {
+                  2
+                }
+              )
               combinePipeOut(idx).payload.stage2.rdBg := (
                 combineBgObjRdPipeJoin.io.pipeOut.payload(
-                  combineIdx * 3 //+ 0
+                  combineIdx * theMax //+ 0
                 )
                   .stage2.rdBg
               )
               //combinePipeOut(idx).payload.stage2.rdObj.allowOverride
               combinePipeOut(idx).payload.stage2.rdObj := (
                 combineBgObjRdPipeJoin.io.pipeOut.payload(
-                  combineIdx * 3 + 1
+                  combineIdx * theMax + 1
                 ).stage2.rdObj
               )
-              combinePipeOut(idx).payload.stage2.rdObjAffine := (
-                combineBgObjRdPipeJoin.io.pipeOut.payload(
-                  combineIdx * 3 + 2
-                ).stage2.rdObjAffine
-              )
+              if (!noAffineObjs) {
+                combinePipeOut(idx).payload.stage2.rdObjAffine := (
+                  combineBgObjRdPipeJoin.io.pipeOut.payload(
+                    combineIdx * theMax + 2
+                  ).stage2.rdObjAffine
+                )
+              }
               // END: add in BGs; later
             }
           }
@@ -8979,14 +9045,8 @@ case class Gpu2d(
               //)
               myIdx := (
                 firstMyIdxZero._2
-                + (
-                  if (kind == 0) {
-                    val tempWidth = tempInp.affineObjXStart.getWidth
-                    U(f"$tempWidth'd0")
-                  } else {
-                    tempInp.affineObjXStart()
-                  }
-                ) + x
+                //+ U(f"$myTempObjTileWidthPow'd$x")
+                + x
               )(
                 myTempObjTileWidthPow - 1 downto 0
               )
@@ -11117,16 +11177,16 @@ case class Gpu2d(
                       //)
                       ////combinePipeIn2PxReadFifo.io.pop.rdObj
                       //combinePipeIn1ObjMemReadSyncArr
-                      //tempInp.stage2.rdObj
-                      tempInp.stage2.rdObjAffine
+                      tempInp.stage2.rdObj
+                      //tempInp.stage2.rdObjAffine
                     )
                     tempOutp.stage3.ext.bgRdSubLineMemEntry := (
                       tempRdBg(bgSubLineMemArrElemIdx)
                     )
                     tempOutp.stage3.ext.objRdSubLineMemEntry := (
                       tempRdObj(
-                        //objSubLineMemArrElemIdx
-                        objAffineSubLineMemArrElemIdx
+                        objSubLineMemArrElemIdx
+                        //objAffineSubLineMemArrElemIdx
                       )
                     )
                     //--------
