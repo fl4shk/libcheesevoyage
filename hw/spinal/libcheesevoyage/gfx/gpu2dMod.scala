@@ -146,7 +146,7 @@ case class Gpu2dParams(
   def numBgMemsPerNonPalKind = 2
 
   //def numObjMemsPerKind = 2
-  def numObjMemsPerKind = 2
+  def numObjMemsPerKind = 1 // 2
   //def numObjPalMems = 2
   //def numColorMathMemsPerNonPalKind = 2
   //--------
@@ -1130,8 +1130,14 @@ case class Gpu2dObjAttrs(
   )
 
   //val size2dMinus1x1 = params.objTilePxsCoordT()
-  val size2d = params.objSize2dForAttrsT(
-    //isAffine=isAffine
+  val size2d = (
+    if (!isAffine) {
+      params.objSize2dForAttrsT(
+        //isAffine=isAffine
+      )
+    } else {
+      params.objAffineSize2dForAttrsT()
+    }
   )
 
   // whether or not to visibly flip x/y during rendering
@@ -9615,9 +9621,9 @@ case class Gpu2d(
                 )
                 someWrLineMemEntry.objIdx := (
                   if (kind == 0) {
-                    tempInp.objAttrsMemIdx
+                    tempInp.objAttrsMemIdx.resized
                   } else { // if (kind == 1)
-                    tempInp.stage0.affineObjAttrsMemIdx()
+                    tempInp.stage0.affineObjAttrsMemIdx().resized
                   }
                 )
               //--------
