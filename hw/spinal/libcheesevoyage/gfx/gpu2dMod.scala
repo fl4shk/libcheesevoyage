@@ -9936,10 +9936,10 @@ case class Gpu2d(
                     myOverwriteLineMemEntry := False
                   }
                   is (M"11") {
-                    myOverwriteLineMemEntry := doPrioEq()
+                    myOverwriteLineMemEntry := True
                   }
                   default {
-                    myOverwriteLineMemEntry := True
+                    myOverwriteLineMemEntry := doPrioEq()
                   }
                 }
               }
