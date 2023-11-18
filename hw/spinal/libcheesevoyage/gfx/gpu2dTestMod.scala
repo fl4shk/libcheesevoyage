@@ -1247,7 +1247,8 @@ case class Gpu2dTest(
       //tempObjAffineAttrs.pos.x := 16
       tempObjAffineAttrs.pos.x := (
         //1
-        2
+        //2
+        -params.objAffineDblTileSize2d.x
       )
       //tempObjAffineAttrs.pos.x := 9
       //tempObjAffineAttrs.pos.x := 9

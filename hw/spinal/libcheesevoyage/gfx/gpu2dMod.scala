@@ -451,8 +451,8 @@ case class Gpu2dParams(
     objAffineAttrsMemIdxWidth
     + 1 // to account for the rendering grid
     + 1 // to account for double size rendering
-    //+ objAffineTileWidthRshift
-    + objAffineSliceTileWidthPow
+    + objAffineTileWidthRshift
+    //+ objAffineSliceTileWidthPow
   )
   //def bgMemIdxWidth = log2Up(numBgs)
   //def tileIdxWidth = log2Up(numTiles)
@@ -4181,7 +4181,13 @@ case class Gpu2d(
               //  params.objAffineDblTileSize2dPow.x
               //  + params.objAffineAttrsMemIdxWidth
               //)
-              rawAffineIdx().high - 1 // account for 
+              //rawAffineIdx().high - 1 // account for 
+              (
+                //params.objAffineSliceTileWidthPow
+                params.objAffineAttrsMemIdxWidth
+                + params.objAffineTileWidthRshift
+                + 1 - 1
+              )
               downto params.objAffineAttrsMemIdxWidth
             ),
             B(
@@ -9158,7 +9164,12 @@ case class Gpu2d(
               //val myIdx = UInt((myTempObjTileWidthPow + 1) bits)
               //  .setName(f"wrObjPipe10_myIdx_$x")
               def sliceX = (
-                x & ((1 << params.objAffineSliceTileWidthPow) - 1)
+                x
+                & ((
+                  1
+                  //<< params.objAffineSliceTileWidthPow
+                  << params.objAffineTileWidthRshift
+                ) - 1)
               )
               val myIdxFull = cloneOf(tempInp.pxPos(sliceX).x)
                 .setName(
@@ -9722,8 +9733,16 @@ case class Gpu2d(
             //myIdx: Int
           ): Unit = {
             //--------
+            //def sliceX = (
+            //  x & ((1 << params.objAffineSliceTileWidthPow) - 1)
+            //)
             def sliceX = (
-              x & ((1 << params.objAffineSliceTileWidthPow) - 1)
+              x
+              & ((
+                1
+                //<< params.objAffineSliceTileWidthPow
+                << params.objAffineTileWidthRshift
+              ) - 1)
             )
             //--------
             def myIdxVec = myIdxV2d(x)
