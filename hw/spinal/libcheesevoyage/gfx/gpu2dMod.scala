@@ -4340,6 +4340,7 @@ case class Gpu2d(
         //    SInt()
         //  )
         //)
+        def myTempObjTileWidth = tempObjTileWidth()
         def fracWidth = Gpu2dAffine.fracWidth
         def multSize2dPow = Gpu2dAffine.multSize2dPow(
           params=params,
@@ -4347,23 +4348,30 @@ case class Gpu2d(
         )
         // X coordinate
         val multAX = (isAffine) generate Vec.fill(
-          params.objAffineDblTileSize2d.x
+          //params.objAffineDblTileSize2d.x
+          //params.objAffineDblTileSize2d.x
+          myTempObjTileWidth
         )(
           SInt(multSize2dPow.x bits)
         )
         val multBY = (isAffine) generate Vec.fill(
-          params.objAffineDblTileSize2d.x
+          //params.objAffineDblTileSize2d.x
+          //params.objAffineDblTileSize2d.x
+          //tempObjTileWidth()
+          myTempObjTileWidth
         )(
           SInt(multSize2dPow.x bits)
         )
         // Y coordinate
         val multCX = (isAffine) generate Vec.fill(
-          params.objAffineDblTileSize2d.y
+          //params.objAffineDblTileSize2d.y
+          myTempObjTileWidth
         )(
           SInt(multSize2dPow.y bits)
         )
         val multDY = (isAffine) generate Vec.fill(
-          params.objAffineDblTileSize2d.y
+          //params.objAffineDblTileSize2d.y
+          myTempObjTileWidth
         )(
           SInt(multSize2dPow.y bits)
         )
@@ -4374,12 +4382,14 @@ case class Gpu2d(
         // (a  b) × (x) = (ax+by)
         // (c  d)   (y)   (cx+dy)
         //--------
+        def myTempObjTileWidth = tempObjTileWidth()
         def fracWidth = Gpu2dAffine.fracWidth
         //val fxTilePxsCoord = DualTypeNumVec2(
         //  dataTypeX=
         //)
         val fxTilePxsCoord = (isAffine) generate Vec.fill(
-          params.objAffineDblTileSize2d.x
+          //params.objAffineDblTileSize2d.x
+          myTempObjTileWidth
         )(
           DualTypeNumVec2(
             dataTypeX=SInt(
@@ -8325,7 +8335,9 @@ case class Gpu2d(
 
           if (kind == 1) {
             for (x <- 0 until myTempObjTileWidth) {
-              def tileX = tempInp.affineObjXStart() + x
+              //def tileX = tempInp.affineObjXStart() + x
+              val tileX = (tempInp.affineObjXStart() + x)
+                .setName(f"wrObjPipe3_tileX_$kind" + f"_$x")
               def myMultAX = tempOutp.stage3.multAX(x)
               def myMultBY = tempOutp.stage3.multBY(x)
               def myMultCX = tempOutp.stage3.multCX(x)
@@ -8334,7 +8346,16 @@ case class Gpu2d(
               myMultAX := (
                 //tempInp.pxPos(x).x - 
                 (
-                  tileX.asSInt - params.objTileSize2d.x
+                  Cat(False, tileX).asSInt.resized
+                  - {
+                    //def tempTileWidth = params.objAffineTileSize2d.x
+                    def tempTileWidth = (
+                      //params.objAffineTileSize2d.x / 2
+                      params.objAffineTileSize2d.x
+                    )
+                    def tempWidth = tileX.getWidth + 1
+                    S(f"$tempWidth'd$tempTileWidth")
+                  }
                 ) * tempInp.objAttrs.affine.matA
               ).resized
               myMultBY := (
@@ -8344,15 +8365,30 @@ case class Gpu2d(
                   tempInp.lineNum.asSInt.resized
                   - (
                     tempInp.objAttrs.pos.y
-                    //- (params.objTileSize2d.y / 2)
+                    //- (params.objAffineTileSize2d.y / 2)
+                  ) - (
+                    //params.objAffineTileSize2d.y / 2
+                    params.objAffineTileSize2d.y
                   )
-                  - params.objTileSize2d.y
                 ) * tempInp.objAttrs.affine.matB
               ).resized
               myMultCX := (
                 //tempInp.pxPos(x).x
                 (
-                  tileX.asSInt - params.objTileSize2d.x
+                  //tileX.asSInt - params.objAffineTileSize2d.x
+                  //tileX.asSInt.resized
+                  Cat(False, tileX).asSInt.resized
+                  - {
+                    //def tempTileWidth = (
+                    //  params.objAffineTileSize2d.x / 2
+                    //)
+                    def tempTileWidth = (
+                      //params.objAffineTileSize2d.x / 2
+                      params.objAffineTileSize2d.x
+                    )
+                    def tempWidth = tileX.getWidth + 1
+                    S(f"$tempWidth'd$tempTileWidth")
+                  }
                 ) * tempInp.objAttrs.affine.matC
               ).resized
               myMultDY := (
@@ -8361,9 +8397,11 @@ case class Gpu2d(
                   tempInp.pxPos(x).y
                   - (
                     tempInp.objAttrs.pos.y
-                    //- (params.objTileSize2d.y / 2)
+                    //- (params.objAffineTileSize2d.y / 2)
+                  ) - (
+                    //params.objAffineTileSize2d.y / 2
+                    params.objAffineTileSize2d.y
                   )
-                  - params.objTileSize2d.y
                 ) * tempInp.objAttrs.affine.matD
               ).resized
               //switch (tempInp.stage0.affineMultIdxY()) {
@@ -8376,7 +8414,7 @@ case class Gpu2d(
               //               myMultAX := (
               //                //tempInp.pxPos(x).x - 
               //                (
-              //                  x - params.objTileSize2d.x
+              //                  x - params.objAffineTileSize2d.x
               //                ) * tempInp.objAttrs.affine.matA
               //              ).resized
               //              myMultBY := RegNext(myMultBY)
@@ -8391,9 +8429,9 @@ case class Gpu2d(
               //                  tempInp.lineNum.asSInt.resized
               //                  - (
               //                    tempInp.objAttrs.pos.y
-              //                    //- (params.objTileSize2d.y / 2)
+              //                    //- (params.objAffineTileSize2d.y / 2)
               //                  )
-              //                  - params.objTileSize2d.y
+              //                  - params.objAffineTileSize2d.y
               //                ) * tempInp.objAttrs.affine.matB
               //              ).resized
               //              myMultCX := RegNext(myMultCX)
@@ -8404,7 +8442,7 @@ case class Gpu2d(
               //              myMultCX := (
               //                //tempInp.pxPos(x).x
               //                (
-              //                  x - params.objTileSize2d.x
+              //                  x - params.objAffineTileSize2d.x
               //                ) * tempInp.objAttrs.affine.matC
               //              ).resized
               //              myMultDY := RegNext(myMultDY)
@@ -8418,9 +8456,9 @@ case class Gpu2d(
               //                  tempInp.pxPos(x).y
               //                  - (
               //                    tempInp.objAttrs.pos.y
-              //                    //- (params.objTileSize2d.y / 2)
+              //                    //- (params.objAffineTileSize2d.y / 2)
               //                  )
-              //                  - params.objTileSize2d.y
+              //                  - params.objAffineTileSize2d.y
               //                ) * tempInp.objAttrs.affine.matD
               //              ).resized
               //            }
@@ -8480,13 +8518,14 @@ case class Gpu2d(
               //when (tempInp.stage0.affineActive) {
                 tempOutp.stage4.fxTilePxsCoord(x).x := (
                   dbgTestFxTilePxsCoord.x
-                  //+ (
-                  //  (params.objTileSize2d.x / 2)
-                  //  //params.objTileSize2d.x
-                  //  << (
-                  //    Gpu2dAffine.fracWidth + 1//2
-                  //  )
-                  //)
+                  + (
+                    //(params.objTileSize2d.x / 2)
+                    (params.objAffineTileSize2d.x / 2)
+                    //params.objAffineTileSize2d.x
+                    << (
+                      Gpu2dAffine.fracWidth //+ 1//2
+                    )
+                  )
                   //Cat(
                   //  //False,
                   //  //dbgTestFxTilePxsCoord.x >> 1
@@ -8508,13 +8547,14 @@ case class Gpu2d(
                 )
                 tempOutp.stage4.fxTilePxsCoord(x).y := (
                   dbgTestFxTilePxsCoord.y
-                  //+ (
-                  //  (params.objTileSize2d.y / 2)
-                  //  //params.objTileSize2d.y
-                  //  << (
-                  //    Gpu2dAffine.fracWidth + 1//2
-                  //  )
-                  //)
+                  + (
+                    //(params.objTileSize2d.y / 2)
+                    (params.objAffineTileSize2d.y / 2)
+                    //params.objAffineTileSize2d.y
+                    << (
+                      Gpu2dAffine.fracWidth //+ 1//2
+                    )
+                  )
                   //Cat(
                   //  B"00",
                   //  //dbgTestFxTilePxsCoord.y >> 1
@@ -8605,15 +8645,15 @@ case class Gpu2d(
                 )
               )
                 .setName(f"dbgTestWrObjPipe5_fxTileX_$x")
-              val fxTileX1 = (
-                (
-                  tempInp.stage4.fxTilePxsCoord(x).x
-                  //+ (1 << (Gpu2dAffine.fracWidth - 1))
-                ) >> (
-                  Gpu2dAffine.fracWidth + shiftPlus
-                )
-              )
-                .setName(f"dbgTestWrObjPipe5_fxTileX1_$x")
+              //val fxTileX1 = (
+              //  (
+              //    tempInp.stage4.fxTilePxsCoord(x).x
+              //    //+ (1 << (Gpu2dAffine.fracWidth - 1))
+              //  ) >> (
+              //    Gpu2dAffine.fracWidth + shiftPlus
+              //  )
+              //)
+              //  .setName(f"dbgTestWrObjPipe5_fxTileX1_$x")
               //(
               //  fxTileX.high
               //  downto tempInp.stage4.fracWidth + 1//2
@@ -8622,14 +8662,14 @@ case class Gpu2d(
                 //x
                 (
                   fxTileX
-                  //(
-                  //  //tileX.high + 
-                  //  //tileX.high + 1
-                  //  //downto 1
-                  //)
-                  //fxTileX
-                  //+ (params.objTileSize2d.x / 2)
-                  + params.objTileSize2d.x
+                  ////(
+                  ////  //tileX.high + 
+                  ////  //tileX.high + 1
+                  ////  //downto 1
+                  ////)
+                  ////fxTileX
+                  ////+ (params.objAffineTileSize2d.x / 2)
+                  //+ params.objAffineTileSize2d.x
                 )
                 //>> 1 //2
               )
@@ -8637,13 +8677,15 @@ case class Gpu2d(
               tileX := tempX.asUInt(tileX.bitsRange)
               
               tempOutp.stage5.oorTilePxsCoord(x).x := (
-                tempX(tempX.high downto tileX.high) =/= 0
-                //fxTileX + (params.objTileSize2d.x / 2) < 0
-                ////< (-params.objTileSize2d.x / 2)
+                tempX < 0
+                || tempX >= params.objAffineTileSize2d.x //params.objAffineDblTileSize2d.x
+                //tempX(tempX.high downto tileX.high) =/= 0
+                //fxTileX + (params.objAffineTileSize2d.x / 2) < 0
+                ////< (-params.objAffineTileSize2d.x / 2)
                 //|| (
-                //  //fxTileX >= (params.objTileSize2d.x / 2)
-                //  fxTileX + (params.objTileSize2d.x / 2)
-                //  >= params.objTileSize2d.x
+                //  //fxTileX >= (params.objAffineTileSize2d.x / 2)
+                //  fxTileX + (params.objAffineTileSize2d.x / 2)
+                //  >= params.objAffineTileSize2d.x
                 //)
               )
 
@@ -8657,26 +8699,26 @@ case class Gpu2d(
                 )
               )
                 .setName(f"dbgTestWrObjPipe5_fxTileY_$x")
-              val fxTileY1 = (
-                //fxTileY1
-                (
-                  tempInp.stage4.fxTilePxsCoord(x).y
-                  //+ (1 << (Gpu2dAffine.fracWidth - 1))
-                ) >> (
-                  Gpu2dAffine.fracWidth + shiftPlus
-                )
-              )
-                .setName(f"dbgTestWrObjPipe5_fxTileY1_$x")
+              //val fxTileY1 = (
+              //  //fxTileY1
+              //  (
+              //    tempInp.stage4.fxTilePxsCoord(x).y
+              //    //+ (1 << (Gpu2dAffine.fracWidth - 1))
+              //  ) >> (
+              //    Gpu2dAffine.fracWidth + shiftPlus
+              //  )
+              //)
+              //  .setName(f"dbgTestWrObjPipe5_fxTileY1_$x")
               val tempY = (
                 ////x
                 //fxTileY1
                 ////fxTileY
-                //+ (params.objTileSize2d.y / 2)
-                ////+ params.objTileSize2d.y
+                //+ (params.objAffineTileSize2d.y / 2)
+                ////+ params.objAffineTileSize2d.y
                 (
                   fxTileY
-                  //+ (params.objTileSize2d.y / 2)
-                  + params.objTileSize2d.y
+                  //+ (params.objAffineTileSize2d.y / 2)
+                  //+ params.objAffineTileSize2d.y
                 )
                 //>> 1 //2
               )
@@ -8688,19 +8730,21 @@ case class Gpu2d(
               tileY := tempY.asUInt(tileY.bitsRange)
               
               tempOutp.stage5.oorTilePxsCoord(x).y := (
-                tempY(tempY.high downto tileY.high) =/= 0
+                tempY < 0
+                || tempY >= params.objAffineTileSize2d.y //params.objAffineDblTileSize2d.y
+                //tempY(tempY.high downto tileY.high) =/= 0
                 ////tempY(tempY.high downto tileY.getWidth) =/= 0
                 ////tempY(tempY.high downto tileY.getWidth) < 0
                 ////|| tempY(tempY.high downto tileY.getWidth)
-                ////  > params.objTileSize2d.y - 1
-                ////fxTileY < (-params.objTileSize2d.y / 2)
-                ////|| fxTileY >= (params.objTileSize2d.y / 2)
-                //fxTileY + (params.objTileSize2d.y / 2) < 0
-                ////< (-params.objTileSize2d.y / 2)
+                ////  > params.objAffineTileSize2d.y - 1
+                ////fxTileY < (-params.objAffineTileSize2d.y / 2)
+                ////|| fxTileY >= (params.objAffineTileSize2d.y / 2)
+                //fxTileY + (params.objAffineTileSize2d.y / 2) < 0
+                ////< (-params.objAffineTileSize2d.y / 2)
                 //|| (
-                //  //fxTileY >= (params.objTileSize2d.y / 2)
-                //  fxTileY + (params.objTileSize2d.y / 2)
-                //  >= params.objTileSize2d.y
+                //  //fxTileY >= (params.objAffineTileSize2d.y / 2)
+                //  fxTileY + (params.objAffineTileSize2d.y / 2)
+                //  >= params.objAffineTileSize2d.y
                 //)
               )
               tempOutp.stage5.affineDoIt(x) := (
@@ -9167,8 +9211,8 @@ case class Gpu2d(
                 x
                 & ((
                   1
-                  //<< params.objAffineSliceTileWidthPow
-                  << params.objAffineTileWidthRshift
+                  << params.objAffineSliceTileWidthPow
+                  //<< params.objAffineTileWidthRshift
                 ) - 1)
               )
               val myIdxFull = cloneOf(tempInp.pxPos(sliceX).x)
@@ -9740,8 +9784,8 @@ case class Gpu2d(
               x
               & ((
                 1
-                //<< params.objAffineSliceTileWidthPow
-                << params.objAffineTileWidthRshift
+                << params.objAffineSliceTileWidthPow
+                //<< params.objAffineTileWidthRshift
               ) - 1)
             )
             //--------
