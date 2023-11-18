@@ -173,6 +173,7 @@ public:		// functions
 		pos.x = _top->io_misc_hpipeC;
 		pos.y = _top->io_misc_vpipeC;
 		if (_top->io_misc_visib) {
+			refresh();
 			this->set(
 				(_top->io_phys_col_r << 20)
 				+ (_top->io_phys_col_g << 12)

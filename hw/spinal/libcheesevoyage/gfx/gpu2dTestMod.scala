@@ -311,32 +311,32 @@ case class Gpu2dTest(
 
   when (rBgTileCnt < params.numBgTiles) {
     when (pop.bgTilePush.fire) {
-      when (rBgTileCnt === 0) {
-        //mkBgTile(0, 1)
-        mkBgTile(0, 0)
-      } elsewhen (rBgTileCnt === 1) {
-        //mkBgTile(1, 2)
-        mkBgTile(1, 1)
-        //mkBgTile(3, 3)
-        //mkBgTile(2, 3)
-      } elsewhen (rBgTileCnt === 2) {
-        //mkBgTile(2, 3)
-        //mkBgTile(3, 4)
-        mkBgTile(2, 2)
-        //mkBgTile(2, 2)
-      } elsewhen (rBgTileCnt === 3) {
-        //mkBgTile(3, 4)
-        mkBgTile(3, 3)
-        //mkBgTile(0, 1)
-      } elsewhen (rBgTileCnt === 4) {
-        //mkBgTile(4, 5)
-        mkBgTile(4, 4)
-      } otherwise {
+      //when (rBgTileCnt === 0) {
+      //  //mkBgTile(0, 1)
+      //  mkBgTile(0, 0)
+      //} elsewhen (rBgTileCnt === 1) {
+      //  //mkBgTile(1, 2)
+      //  mkBgTile(1, 1)
+      //  //mkBgTile(3, 3)
+      //  //mkBgTile(2, 3)
+      //} elsewhen (rBgTileCnt === 2) {
+      //  //mkBgTile(2, 3)
+      //  //mkBgTile(3, 4)
+      //  mkBgTile(2, 2)
+      //  //mkBgTile(2, 2)
+      //} elsewhen (rBgTileCnt === 3) {
+      //  //mkBgTile(3, 4)
+      //  mkBgTile(3, 3)
+      //  //mkBgTile(0, 1)
+      //} elsewhen (rBgTileCnt === 4) {
+      //  //mkBgTile(4, 5)
+      //  mkBgTile(4, 4)
+      //} otherwise {
         tempBgTile := tempBgTile.getZero
         //when (rBgTileCnt >= params.numBgTiles) {
         //  rBgTilePushValid := False
         //}
-      }
+      //}
       nextBgTileCnt := rBgTileCnt + 1
     } otherwise {
       tempBgTile := tempBgTile.getZero
@@ -685,34 +685,34 @@ case class Gpu2dTest(
 
   when (rObjTileCnt < params.numObjTiles) {
     when (pop.objTilePush.fire) {
-      when (rObjTileCnt === 0) {
-        //mkObjTile(0, 1)
-        //mkObjTile(0, 0)
-        tempObjTile := tempObjTile.getZero
-      } elsewhen (rObjTileCnt === 1) {
-        //tempObjTile := tempObjTile.getZero
-        //mkObjTile(1, 2, Some(3), Some(4))
-        mkObjTile(1, 1)
-        //mkObjTile(3, 3)
-        //mkObjTile(2, 3)
-      } elsewhen (rObjTileCnt === 2) {
-        //mkObjTile(2, 3)
-        //mkObjTile(3, 4)
-        mkObjTile(2, 2)
-        //mkObjTile(2, 2)
-      } elsewhen (rObjTileCnt === 3) {
-        //mkObjTile(3, 4)
-        mkObjTile(3, 3)
-        //mkObjTile(0, 1)
-      } elsewhen (rObjTileCnt === 4) {
-        //mkObjTile(4, 5)
-        mkObjTile(4, 4)
-      } otherwise {
+      //when (rObjTileCnt === 0) {
+      //  //mkObjTile(0, 1)
+      //  //mkObjTile(0, 0)
+      //  tempObjTile := tempObjTile.getZero
+      //} elsewhen (rObjTileCnt === 1) {
+      //  //tempObjTile := tempObjTile.getZero
+      //  //mkObjTile(1, 2, Some(3), Some(4))
+      //  mkObjTile(1, 1)
+      //  //mkObjTile(3, 3)
+      //  //mkObjTile(2, 3)
+      //} elsewhen (rObjTileCnt === 2) {
+      //  //mkObjTile(2, 3)
+      //  //mkObjTile(3, 4)
+      //  mkObjTile(2, 2)
+      //  //mkObjTile(2, 2)
+      //} elsewhen (rObjTileCnt === 3) {
+      //  //mkObjTile(3, 4)
+      //  mkObjTile(3, 3)
+      //  //mkObjTile(0, 1)
+      //} elsewhen (rObjTileCnt === 4) {
+      //  //mkObjTile(4, 5)
+      //  mkObjTile(4, 4)
+      //} otherwise {
         tempObjTile := tempObjTile.getZero
         //when (rObjTileCnt >= params.numObjTiles) {
         //  rObjTilePushValid := False
         //}
-      }
+      //}
       nextObjTileCnt := rObjTileCnt + 1
     } otherwise {
       tempObjTile := tempObjTile.getZero
@@ -1129,32 +1129,33 @@ case class Gpu2dTest(
 
   when (rObjAffineTileCnt < params.numObjAffineTiles) {
     when (pop.objAffineTilePush.fire) {
-      //when (rObjAffineTileCnt === 0) {
-      //  //mkObjAffineTile(0, 1)
-      //  mkObjAffineTile(0, 0)
-      //} elsewhen (rObjAffineTileCnt === 1) {
-      //  mkObjAffineTile(1, 2)
-      //  //mkObjAffineTile(1, 1)
-      //  //mkObjAffineTile(3, 3)
-      //  //mkObjAffineTile(2, 3)
-      //} elsewhen (rObjAffineTileCnt === 2) {
-      //  //mkObjAffineTile(2, 3)
-      //  //mkObjAffineTile(3, 4)
-      //  mkObjAffineTile(2, 2)
-      //  //mkObjAffineTile(2, 2)
-      //} elsewhen (rObjAffineTileCnt === 3) {
-      //  //mkObjAffineTile(3, 4)
-      //  mkObjAffineTile(3, 3)
-      //  //mkObjAffineTile(0, 1)
-      //} elsewhen (rObjAffineTileCnt === 4) {
-      //  //mkObjAffineTile(4, 5)
-      //  mkObjAffineTile(4, 4)
-      //} otherwise {
+      when (rObjAffineTileCnt === 0) {
+        //mkObjAffineTile(0, 1)
+        mkObjAffineTile(0, 0)
+      } elsewhen (rObjAffineTileCnt === 1) {
+        mkObjAffineTile(1, 2, Some(3), Some(4))
+        //mkObjAffineTile(1, 1)
+        //mkObjAffineTile(3, 3)
+        //mkObjAffineTile(2, 3)
+      } elsewhen (rObjAffineTileCnt === 2) {
+        //mkObjAffineTile(2, 3)
+        //mkObjAffineTile(3, 4)
+        mkObjAffineTile(1, 2, Some(3), Some(4))
+        //mkObjAffineTile(2, 2)
+        //mkObjAffineTile(2, 2)
+      } elsewhen (rObjAffineTileCnt === 3) {
+        //mkObjAffineTile(3, 4)
+        mkObjAffineTile(3, 3)
+        //mkObjAffineTile(0, 1)
+      } elsewhen (rObjAffineTileCnt === 4) {
+        //mkObjAffineTile(4, 5)
+        mkObjAffineTile(4, 4)
+      } otherwise {
         tempObjAffineTile := tempObjAffineTile.getZero
         //when (rObjAffineTileCnt >= params.numObjAffineTiles) {
         //  rObjAffineTilePushValid := False
         //}
-      //}
+      }
       nextObjAffineTileCnt := rObjAffineTileCnt + 1
     } otherwise {
       tempObjAffineTile := tempObjAffineTile.getZero

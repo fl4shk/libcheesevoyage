@@ -2,3 +2,4 @@
 -I/usr/include/SDL2/
 -I/usr/share/verilator/include
 -I/usr/share/verilator/include/vltstd
+-Iverilated

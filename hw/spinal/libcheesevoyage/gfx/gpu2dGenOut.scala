@@ -100,6 +100,10 @@ object Gpu2dSimDutParams {
       //x=log2Up(2),
       //y=log2Up(2),
     ),
+    objAffineTileSize2dPow=ElabVec2[Int](
+      x=log2Up(16),
+      y=log2Up(16),
+    ),
     //numBgsPow=log2Up(4),
     numBgsPow=log2Up(2),
     //numObjsPow=log2Up(64),
@@ -113,6 +117,9 @@ object Gpu2dSimDutParams {
     numObjsPow=log2Up(
       16
     ),
+    numObjsAffinePow=log2Up(
+      32
+    ),
     //numBgTilesPow=Some(log2Up(256)),
     //numBgTilesPow=Some(log2Up(2)),
     numBgTiles=Some(
@@ -124,12 +131,15 @@ object Gpu2dSimDutParams {
       //8
       16
     ),
+    numObjAffineTiles=Some(
+      32
+    ),
     numColsInBgPalPow=log2Up(64),
     numColsInObjPalPow=log2Up(64),
     //--------
     noColorMath=true,
     noAffineBgs=true,
-    noAffineObjs=true,
+    noAffineObjs=false,
     fancyObjPrio=true,
     //--------
   )

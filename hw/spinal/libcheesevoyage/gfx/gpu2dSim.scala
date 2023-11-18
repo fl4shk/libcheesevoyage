@@ -184,10 +184,10 @@ object Gpu2dSim extends App {
     objAffineTileSize2dPow=ElabVec2[Int](
       //x=log2Up(8),
       //y=log2Up(8),
-      //x=log2Up(4),
-      //y=log2Up(4),
-      x=log2Up(2),
-      y=log2Up(2),
+      x=log2Up(4),
+      y=log2Up(4),
+      //x=log2Up(2),
+      //y=log2Up(2),
     ),
     objAffineTileWidthRshift=0,
     //numBgsPow=log2Up(4),
@@ -212,7 +212,7 @@ object Gpu2dSim extends App {
     numColsInObjPalPow=log2Up(64),
     noColorMath=true,
     noAffineBgs=true,
-    noAffineObjs=true,
+    noAffineObjs=false,
     //fancyObjPrio=false,
     fancyObjPrio=true,
   )

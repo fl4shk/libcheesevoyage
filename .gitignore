@@ -26,3 +26,8 @@ project
 target
 tmp
 gtkwave
+
+hw/gen/*.v
+hw/gen/*.vhdl
+hw/gen/*.vhd
+hw/gen/*.bin
