@@ -7,6 +7,7 @@
 //#include <SDL_video.h>
 //#include <SDL_render.h>
 //#include <SDL_syswm.h>
+#include "liborangepower_src/misc/misc_output_funcs.hpp"
 #include "liborangepower_src/math/vec2_classes.hpp"
 #include "liborangepower_src/misc/misc_includes.hpp"
 #include "liborangepower_src/sdl2/sdl_rect.hpp"
@@ -17,16 +18,17 @@
 //using std::cout;
 //using std::cin;
 //using std::cerr;
+using namespace liborangepower::misc_output;
 namespace sdl = liborangepower::sdl;
 using liborangepower::math::Vec2;
 
 
 static constexpr Vec2<size_t>
-	HALF_SIZE_2D{
+	SIZE_2D{
 		.x=1 << 7,
 		.y=1 << 7
 	},
-	SIZE_2D{.x=HALF_SIZE_2D.x << 1, .y=HALF_SIZE_2D.y << 1};
+	DBL_SIZE_2D{.x=SIZE_2D.x << 1, .y=SIZE_2D.y << 1};
 class Display {
 public:		// variables
 	sdl::Window window;
@@ -41,8 +43,8 @@ public:		// functions
 				"VGA",					// title
 				SDL_WINDOWPOS_CENTERED, // x
 				SDL_WINDOWPOS_CENTERED, // y
-				SIZE_2D.x,				// WIDTH
-				SIZE_2D.y,				// HEIGHT
+				DBL_SIZE_2D.x,				// WIDTH
+				DBL_SIZE_2D.y,				// HEIGHT
 										// flags
 				(
 					SDL_WINDOW_SHOWN
@@ -61,14 +63,14 @@ public:		// functions
 			SDL_CreateTexture(
 				renderer,
 				SDL_PIXELFORMAT_ARGB8888,
+				//SDL_PIXELFORMAT_ARGB4444,
 				SDL_TEXTUREACCESS_STATIC,
-				SIZE_2D.x,
-				SIZE_2D.y
+				DBL_SIZE_2D.x,
+				DBL_SIZE_2D.y
 			)
 		),
-		pixels(new Uint32[SIZE_2D.x * SIZE_2D.y]),
-		pos{.x=0, .y=0}
-	{
+		pixels(new Uint32[DBL_SIZE_2D.x * DBL_SIZE_2D.y]),
+		pos{.x=0, .y=0} {
 		//SDL_SetWindowResizable(window, SDL_TRUE);
 		//SDL_RenderSetScale(renderer, 2, 2);
 		//SDL_RenderSetIntegerScale(renderer, SDL_TRUE);
@@ -81,7 +83,9 @@ public:		// functions
 		//);
 		//SDL_RenderSetLogicalSize(renderer, SIZE_2D.x * 2, SIZE_2D.y * 2);
 		std::memset(
-			pixels.get(), 0, SIZE_2D.x * SIZE_2D.y * sizeof(Uint32)
+			pixels.get(),
+			0,
+			DBL_SIZE_2D.x * DBL_SIZE_2D.y * sizeof(Uint32)
 		);
 	}
 	inline void set(Uint32 col) {
@@ -91,7 +95,9 @@ public:		// functions
 				Vec2<Uint32> temp_pos;
 				temp_pos.x = pos.x * 2 + i;
 				temp_pos.y = pos.y * 2 + j;
-				pixels.get()[temp_pos.y * SIZE_2D.x + temp_pos.x] = col;
+				pixels.get()[
+					temp_pos.y * DBL_SIZE_2D.x + temp_pos.x
+				] = col;
 			}
 		}
 	};
@@ -111,13 +117,13 @@ public:		// functions
 	inline void refresh() {
 		SDL_UpdateTexture(
 			texture, NULL, pixels.get(),
-			sizeof(Uint32) * SIZE_2D.x // pitch
+			sizeof(Uint32) * DBL_SIZE_2D.x // pitch
 			//sizeof(Uint32) * SIZE_2D.x * SIZE_2D.y
 		);
 		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, texture, NULL, NULL);
 		SDL_RenderPresent(renderer);
-		std::memset(pixels.get(), 0, SIZE_2D.x * sizeof(Uint32));
+		std::memset(pixels.get(), 0, DBL_SIZE_2D.x * sizeof(Uint32));
 	};
 	virtual void post_cycle() {
 	}
@@ -159,7 +165,13 @@ public:		// functions
 		//	!_top->io_phys_vsync
 		//	&& _last_vsync
 		//) {
-		//	//pos.y = 0;
+		//	printout(
+		//		"refresh(): ",
+		//		pos,
+		//		"\n"
+		//	);
+		//	pos.y = 0;
+		//	//pos.x = 0;
 		//	refresh();
 		//}
 		//if (
@@ -173,8 +185,18 @@ public:		// functions
 		pos.x = _top->io_misc_hpipeC;
 		pos.y = _top->io_misc_vpipeC;
 		if (_top->io_misc_visib) {
-			refresh();
+			if (pos.x + 1 == SIZE_2D.x) {
+				printout(
+					"refresh(): ",
+					pos,
+					"\n"
+				);
+				refresh();
+			}
 			this->set(
+				//((_top->io_phys_col_r & 0xf) << 20)
+				//| ((_top->io_phys_col_g & 0xf) << 12)
+				//| ((_top->io_phys_col_b & 0xf) << 4)
 				(_top->io_phys_col_r << 20)
 				+ (_top->io_phys_col_g << 12)
 				+ (_top->io_phys_col_b << 4)
@@ -182,8 +204,8 @@ public:		// functions
 			//inc_x();
 		}
 
-		//_last_vsync = _top->io_phys_vsync;
-		//_last_hsync = _top->io_phys_hsync;
+		_last_vsync = _top->io_phys_vsync;
+		_last_hsync = _top->io_phys_hsync;
 	}
 };
 
