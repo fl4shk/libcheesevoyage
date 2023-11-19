@@ -186,11 +186,11 @@ public:		// functions
 		pos.y = _top->io_misc_vpipeC;
 		if (_top->io_misc_visib) {
 			if (pos.x + 1 == SIZE_2D.x) {
-				printout(
-					"refresh(): ",
-					pos,
-					"\n"
-				);
+				//printout(
+				//	"refresh(): ",
+				//	pos,
+				//	"\n"
+				//);
 				refresh();
 			}
 			this->set(
