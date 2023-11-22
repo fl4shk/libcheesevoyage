@@ -391,6 +391,7 @@ case class Gpu2dParams(
   )
   def objAffineSubLineMemArrSizePow = (
     log2Up(oneLineMemSize) - objAffineDblTileSize2dPow.x
+    //log2Up(oneLineMemSize) - objAffineSliceTileWidthPow
   )
   def objAffineSubLineMemArrSize = 1 << objAffineSubLineMemArrSizePow
   def getObjAffineSubLineMemArrIdx(
@@ -398,6 +399,7 @@ case class Gpu2dParams(
   ): UInt = {
     assert(addr.getWidth >= log2Up(oneLineMemSize))
     addr(log2Up(oneLineMemSize) - 1 downto objAffineDblTileSize2dPow.x)
+    //addr(log2Up(oneLineMemSize) - 1 downto objAffineSliceTileWidthPow)
   }
   //def getObjAffineSubLineMemArrGridIdx(
   //  addr: UInt
@@ -410,7 +412,69 @@ case class Gpu2dParams(
   ): UInt = {
     assert(addr.getWidth >= log2Up(oneLineMemSize))
     addr(objAffineDblTileSize2dPow.x - 1 downto 0)
+    //addr(objAffineSliceTileWidthPow - 1 downto 0)
   }
+  //--------
+  def tempObjTileWidthPow(isAffine: Boolean) = (
+    if (!isAffine) {
+      objTileSize2dPow.x
+    } else {
+      //objAffineDblTileSize2dPow
+      //ElabVec2[Int](
+      //  x=objAffineSliceTileWidthPow,
+      //  y=objAffineDblTileSize2dPow.y,
+      //)
+      //objAffineSliceTileWidthPow
+      myDbgObjAffineTileWidthPow
+    }
+  )
+  def tempObjTileWidth(isAffine: Boolean) = (
+    if (!isAffine) {
+      objTileSize2d.x
+    } else {
+      //objAffineDblTileSize2d
+      //objAffineSliceTileWidth
+      myDbgObjAffineTileWidth
+    }
+  )
+
+  def tempObjTileWidthPow2(isAffine: Boolean) = (
+    if (!isAffine) {
+      objTileSize2dPow.x
+    } else {
+      objAffineDblTileSize2dPow.x
+      //ElabVec2[Int](
+      //  x=objAffineSliceTileWidthPow,
+      //  y=objAffineDblTileSize2dPow.y,
+      //)
+      //objAffineSliceTileWidthPow
+      //myDbgObjAffineTileWidthPow
+    }
+  )
+  def tempObjTileWidth2(isAffine: Boolean) = (
+    if (!isAffine) {
+      objTileSize2d.x
+    } else {
+      objAffineDblTileSize2d.x
+      //objAffineSliceTileWidth
+      //myDbgObjAffineTileWidth
+    }
+  )
+
+  def tempObjTileHeight(isAffine: Boolean) = (
+    if (!isAffine) {
+      objTileSize2d.y
+    } else {
+      objAffineDblTileSize2d.y
+    }
+  )
+  def anyObjTilePxsCoordT(isAffine: Boolean) = (
+    if (!isAffine) {
+      objTilePxsCoordT()
+    } else {
+      objAffineTilePxsCoordT()
+    }
+  )
   //--------
   //def lineFifoDepth = oneLineMemSize * 2 + 1
   //def lineFifoDepth = oneLineMemSize + 1
@@ -447,18 +511,22 @@ case class Gpu2dParams(
   //def objAttrsVecIdxWidth = log2Up(numObjs)
   def objAttrsMemIdxWidth = numObjsPow
   def objAffineAttrsMemIdxWidth = numObjsAffinePow
-  def objAffineAttrsMemIdxTileCntWidth = (
+  def objAffineCntWidthShift = (
     1 // to account for the extra cycle delay between pixels
-    + (
-      if (objAffineTileWidthRshift == 0) {
-        1
-      } else {
-        objAffineTileWidthRshift
-      }
-    )
-    + 1 // to account for the rendering grid
-    + objAffineAttrsMemIdxWidth
+    //(
+    //  if (objAffineTileWidthRshift == 0) {
+    //    1
+    //  } else {
+    //    objAffineTileWidthRshift
+    //  }
+    //)
+    + objAffineTileWidthRshift
     + 1 // to account for double size rendering
+    + 1 // to account for the rendering grid
+  )
+  def objAffineAttrsMemIdxTileCntWidth = (
+    objAffineCntWidthShift
+    + objAffineAttrsMemIdxWidth
     //+ objAffineSliceTileWidthPow
   )
   //def bgMemIdxWidth = log2Up(numBgs)
@@ -3233,14 +3301,22 @@ case class Gpu2d(
           params.objAffineSubLineMemArrSize
         }
       )
-      def myTempObjTileWidth = (
-        if (!isAffine) {
-          params.objTileSize2d.x
-        } else {
-          params.objAffineDblTileSize2d.x
-          //params.objAffineSliceTileWidth
-          //params.myDbgObjAffineTileWidth
-        }
+      //def myTempObjTileWidth = (
+      //  if (!isAffine) {
+      //    params.objTileSize2d.x
+      //  } else {
+      //    params.objAffineDblTileSize2d.x
+      //    //params.objAffineSliceTileWidth
+      //    //params.myDbgObjAffineTileWidth
+      //  }
+      //)
+      def myTempObjTileWidth2 = params.tempObjTileWidth2(
+        //if (!isAffine) {
+        //  0
+        //} else {
+        //  1
+        //}
+        isAffine=isAffine
       )
       val addrVec = Vec.fill(params.numLineMemsPerBgObjRenderer)(
         //Reg(
@@ -3248,7 +3324,7 @@ case class Gpu2d(
         //) init(0x0)
       )
       val dataVec = Vec.fill(params.numLineMemsPerBgObjRenderer)(
-        Vec.fill(myTempObjTileWidth)(
+        Vec.fill(myTempObjTileWidth2)(
           //Reg(
             ObjSubLineMemEntry()
           //) init(ObjSubLineMemEntry().getZero)
@@ -3906,7 +3982,7 @@ case class Gpu2d(
               //+ params.objAffineTileWidthRshift
               params.objAffineAttrsMemIdxTileCntWidth
             }
-          ) 
+          )
         )
       )
       - 1
@@ -4084,65 +4160,85 @@ case class Gpu2d(
       //    )
       //  }
       //)
+      //def tempObjTileWidthPow() = (
+      //  if (!isAffine) {
+      //    params.objTileSize2dPow.x
+      //  } else {
+      //    //params.objAffineDblTileSize2dPow
+      //    //ElabVec2[Int](
+      //    //  x=params.objAffineSliceTileWidthPow,
+      //    //  y=params.objAffineDblTileSize2dPow.y,
+      //    //)
+      //    //params.objAffineSliceTileWidthPow
+      //    params.myDbgObjAffineTileWidthPow
+      //  }
+      //)
+      //def tempObjTileWidth() = (
+      //  if (!isAffine) {
+      //    params.objTileSize2d.x
+      //  } else {
+      //    //params.objAffineDblTileSize2d
+      //    //params.objAffineSliceTileWidth
+      //    params.myDbgObjAffineTileWidth
+      //  }
+      //)
+
+      //def tempObjTileWidthPow2() = (
+      //  if (!isAffine) {
+      //    params.objTileSize2dPow.x
+      //  } else {
+      //    params.objAffineDblTileSize2dPow.x
+      //    //ElabVec2[Int](
+      //    //  x=params.objAffineSliceTileWidthPow,
+      //    //  y=params.objAffineDblTileSize2dPow.y,
+      //    //)
+      //    //params.objAffineSliceTileWidthPow
+      //    //params.myDbgObjAffineTileWidthPow
+      //  }
+      //)
+      //def tempObjTileWidth2() = (
+      //  if (!isAffine) {
+      //    params.objTileSize2d.x
+      //  } else {
+      //    params.objAffineDblTileSize2d.x
+      //    //params.objAffineSliceTileWidth
+      //    //params.myDbgObjAffineTileWidth
+      //  }
+      //)
+
+      //def tempObjTileHeight() = (
+      //  if (!isAffine) {
+      //    params.objTileSize2d.y
+      //  } else {
+      //    params.objAffineDblTileSize2d.y
+      //  }
+      //)
+      //def TilePxsCoordT() = (
+      //  if (!isAffine) {
+      //    params.objTilePxsCoordT()
+      //  } else {
+      //    params.objAffineTilePxsCoordT()
+      //  }
+      //)
       def tempObjTileWidthPow() = (
-        if (!isAffine) {
-          params.objTileSize2dPow.x
-        } else {
-          //params.objAffineDblTileSize2dPow
-          //ElabVec2[Int](
-          //  x=params.objAffineSliceTileWidthPow,
-          //  y=params.objAffineDblTileSize2dPow.y,
-          //)
-          //params.objAffineSliceTileWidthPow
-          params.myDbgObjAffineTileWidthPow
-        }
+        params.tempObjTileWidthPow(isAffine=isAffine)
       )
       def tempObjTileWidth() = (
-        if (!isAffine) {
-          params.objTileSize2d.x
-        } else {
-          //params.objAffineDblTileSize2d
-          //params.objAffineSliceTileWidth
-          params.myDbgObjAffineTileWidth
-        }
+        params.tempObjTileWidth(isAffine=isAffine)
       )
 
       def tempObjTileWidthPow2() = (
-        if (!isAffine) {
-          params.objTileSize2dPow.x
-        } else {
-          params.objAffineDblTileSize2dPow.x
-          //ElabVec2[Int](
-          //  x=params.objAffineSliceTileWidthPow,
-          //  y=params.objAffineDblTileSize2dPow.y,
-          //)
-          //params.objAffineSliceTileWidthPow
-          //params.myDbgObjAffineTileWidthPow
-        }
+        params.tempObjTileWidthPow2(isAffine=isAffine)
       )
       def tempObjTileWidth2() = (
-        if (!isAffine) {
-          params.objTileSize2d.x
-        } else {
-          params.objAffineDblTileSize2d.x
-          //params.objAffineSliceTileWidth
-          //params.myDbgObjAffineTileWidth
-        }
+        params.tempObjTileWidth2(isAffine=isAffine)
       )
 
       def tempObjTileHeight() = (
-        if (!isAffine) {
-          params.objTileSize2d.y
-        } else {
-          params.objAffineDblTileSize2d.y
-        }
+        params.tempObjTileHeight(isAffine=isAffine)
       )
       def TilePxsCoordT() = (
-        if (!isAffine) {
-          params.objTilePxsCoordT()
-        } else {
-          params.objAffineTilePxsCoordT()
-        }
+        params.anyObjTilePxsCoordT(isAffine=isAffine)
       )
 
       case class Stage0() extends Bundle {
@@ -4193,7 +4289,21 @@ case class Gpu2d(
         //  params.objAffineTileWidthRshift
         //  + 1
         //)
-        def affineObjAttrsMemIdx() = (
+        def tempAffineShift = (
+          //1 // account for the extra cycle delay between pixels
+          ////(
+          ////  //if (params.objAffineTileWidthRshift == 0) {
+          ////  //  
+          ////  //} else {
+          ////  //}
+          ////)
+          //+ params.objAffineTileWidthRshift
+          //+ 1 // account for double size rendering
+          //+ 1 // account for the rendering grid
+          params.objAffineCntWidthShift
+        )
+        def affineObjAttrsMemIdx() = {
+          //def tempShift = tempAffineShift
           rawAffineIdx()(
             //params.objAttrsMemIdxWidth - 1 downto 2
             //justCopy.myMemIdxWidth - 1
@@ -4208,19 +4318,23 @@ case class Gpu2d(
             (
               //affineObjXStartRawWidthPow
               justCopy.myMemIdxWidth
+              + tempAffineShift
+              //+ 1 // account for double size rendering
               //params.objAffineSliceTileWidthPow
-              + params.objAffineTileWidthRshift + 1
               - 1 
             )
             downto (
               //params.objAffineSliceTileWidthPow
               //+ 
-              params.objAffineTileWidthRshift + 1
+              //params.objAffineTileWidthRshift + 1
+              tempAffineShift
+              //+ 1 // account for double size rendering
             )
           )
           //rawAffineIdx
-        )
-        def affineObjXStart() = (
+        }
+        def affineObjXStart() = {
+          //def tempShift = tempAffineShift
           Cat(
             //calcGridIdxLsb(
             //  if (!isAffine) {
@@ -4248,21 +4362,39 @@ case class Gpu2d(
               //)
               //downto params.objAffineAttrsMemIdxWidth
               (
-                //affineObjXStartRawWidthPow
-                //params.objAffineSliceTileWidthPow
-                1
-                + (
-                  if (params.objAffineTileWidthRshift == 0) {
-                    1 // for the extra cycle delay between pixels
-                  } else {
-                    params.objAffineTileWidthRshift
-                  }
-                )
+                ////affineObjXStartRawWidthPow
+                ////params.objAffineSliceTileWidthPow
+                //1 // to account for double size rendering
+                ////+ (
+                ////  if (params.objAffineTileWidthRshift == 0) {
+                ////    1 // for the extra cycle delay between pixels
+                ////  } else {
+                ////    params.objAffineTileWidthRshift
+                ////  }
+                ////)
+                //+
+                //tempAffineShift
+                params.objAffineTileWidthRshift
+                + 1 // account for double size rendering
+                + 1 // account for the extra cycle delay
+                + 1 // account for grid index
                 - 1 
               )
               //downto params.objAffineSliceTileWidthPow
               //downto params.objAffineTileWidthRshift + 1
-              downto 0
+              downto (
+                //if (params.objAffineTileWidthRshift == 0) {
+                //  1
+                //} else {
+                //  0
+                //}
+                //tempAffineShift
+                //0
+                1 // account for double size rendering
+                +
+                1 // account for the extra cycle delay
+                //+ 1 // account for grid index
+              )
             ),
             B(
               params.objAffineSliceTileWidthPow bits,
@@ -4270,7 +4402,7 @@ case class Gpu2d(
               default -> False
             ),
           ).asUInt
-        )
+        }
         //def objAttrsMemIdx = justCopy.objAttrsMemIdx
 
         //val objAttrsMemIdx
@@ -4350,11 +4482,14 @@ case class Gpu2d(
             //+ 1
             //params.objAffineSliceTileWidth
             (
-              if (params.objAffineTileWidthRshift == 0) {
-                1 // account for the extra cycle delay between pixels
-              } else {
-                params.objAffineTileWidthRshift
-              }
+              //if (params.objAffineTileWidthRshift == 0) {
+              //  1 // account for the extra cycle delay between pixels
+              //} else {
+              //  params.objAffineTileWidthRshift
+              //}
+              //params.objAffineTileWidthRshift
+              //+ 1 // to account for double size rendering
+              1 // to account for the extra cycle delay
             )
           )
         )
@@ -9398,13 +9533,13 @@ case class Gpu2d(
                 firstMyIdxZero._2
                 //+ U(f"$myTempObjTileWidthPow'd$x")
                 + x
-                + (
-                  if (kind == 0) {
-                    0
-                  } else {
-                    tempInp.affineObjXStart()
-                  }
-                )
+                //+ (
+                //  if (kind == 0) {
+                //    0
+                //  } else {
+                //    tempInp.affineObjXStart()
+                //  }
+                //)
               )(
                 myTempObjTileWidthPow2 - 1 downto 0
               )
@@ -9860,7 +9995,15 @@ case class Gpu2d(
               } otherwise {
                 someOverwriteLineMemEntry := False
               }
-              def doPrioEq() = (
+              def doPrioGe() = (
+                tempInp.palEntryNzMemIdx(
+                  //x
+                  sliceX
+                  //myIdx
+                  //myIdx(tempMyIdxRange)
+                )
+              )
+              def doPrioLt() = (
                 !someLineMemEntry.col.a
                 && tempInp.palEntryNzMemIdx(
                   //x
@@ -9903,17 +10046,18 @@ case class Gpu2d(
                     ) {
                       myOverwriteLineMemEntry := True
                     }
-                    is (M"1000") {
-                      myOverwriteLineMemEntry := doPrioEq()
+                    is (M"1000") { // 0 == 0
+                      myOverwriteLineMemEntry := doPrioGe()
                     }
-                    is (M"1011") {
-                      myOverwriteLineMemEntry := doPrioEq()
+                    is (M"1011") { // 1 == 1
+                      myOverwriteLineMemEntry := doPrioGe()
                     }
-                    is (M"1001") {
-                      myOverwriteLineMemEntry := False
+                    is (M"1001") { // 0 < 1
+                      myOverwriteLineMemEntry := doPrioLt()
                     }
                     default {
-                      myOverwriteLineMemEntry := True
+                      //myOverwriteLineMemEntry := True
+                      myOverwriteLineMemEntry := doPrioGe()
                     }
                   }
                 } else if (params.numBgsPow == log2Up(4)) {
@@ -9964,35 +10108,36 @@ case class Gpu2d(
                     //) {
                     //}
                     is (M"100001") { // 0 < 1
-                      myOverwriteLineMemEntry := False
+                      myOverwriteLineMemEntry := doPrioLt()
                     }
                     is (M"100-1-") { // 0 < 2, 0 < 3; 1 < 2, 1 < 3
-                      myOverwriteLineMemEntry := False
+                      myOverwriteLineMemEntry := doPrioLt()
                     }
                     //is (M"10001-") { // 0 < 2, 0 < 3
-                    //  myOverwriteLineMemEntry := False
+                    //  myOverwriteLineMemEntry := doPrioLt()
                     //}
                     //is (M"10011-") { // 1 < 2, 1 < 3
-                    //  myOverwriteLineMemEntry := False
+                    //  myOverwriteLineMemEntry := doPrioLt()
                     //}
                     is (M"101011") { // 2 < 3
-                      myOverwriteLineMemEntry := False
+                      myOverwriteLineMemEntry := doPrioLt()
                     }
 
                     is (M"100000") { // 0 === 0
-                      myOverwriteLineMemEntry := doPrioEq()
+                      myOverwriteLineMemEntry := doPrioGe()
                     }
                     is (M"100101") { // 1 === 1
-                      myOverwriteLineMemEntry := doPrioEq()
+                      myOverwriteLineMemEntry := doPrioGe()
                     }
                     is (M"101010") { // 2 === 2
-                      myOverwriteLineMemEntry := doPrioEq()
+                      myOverwriteLineMemEntry := doPrioGe()
                     }
                     is (M"101111") { // 3 === 3
-                      myOverwriteLineMemEntry := doPrioEq()
+                      myOverwriteLineMemEntry := doPrioGe()
                     }
                     default {
-                      myOverwriteLineMemEntry := True
+                      //myOverwriteLineMemEntry := True
+                      myOverwriteLineMemEntry := doPrioGe()
                     }
                   }
                 } else {
@@ -10003,26 +10148,32 @@ case class Gpu2d(
                     //tempInp.objAttrs.prio,
                     someLineMemEntry.prio
                       < tempInp.objAttrs.prio,
-                    someLineMemEntry.prio
-                      === tempInp.objAttrs.prio,
-                    someLineMemEntry.prio
-                      > tempInp.objAttrs.prio,
+                    //someLineMemEntry.prio
+                    //  === tempInp.objAttrs.prio,
+                    //someLineMemEntry.prio
+                    //  > tempInp.objAttrs.prio,
                   )) {
-                    is (M"0----") {
+                    //is (M"0----")
+                    is (M"0-") {
                       myOverwriteLineMemEntry := False
                     }
-                    is (M"11---") {
+                    //is (M"11---")
+                    is (M"11-") {
                       myOverwriteLineMemEntry := True
                     }
-                    is (M"101--") {
-                      myOverwriteLineMemEntry := False
-                    }
-                    is (M"1001-") {
-                      myOverwriteLineMemEntry := doPrioEq()
+                    //is (M"101--") 
+                    is (M"101") {
+                      myOverwriteLineMemEntry := doPrioLt()
                     }
                     default {
-                      myOverwriteLineMemEntry := True
+                      myOverwriteLineMemEntry := doPrioGe()
                     }
+                    //is (M"1001-") {
+                    //  myOverwriteLineMemEntry := doPrioGe()
+                    //}
+                    //default {
+                    //  myOverwriteLineMemEntry := doPrioGe()
+                    //}
                   }
                 }
                 //when (
@@ -10040,16 +10191,22 @@ case class Gpu2d(
                 //    myOverwriteLineMemEntry := True
                 //  } otherwise {
                 //    when (
+                //      //someLineMemEntry.prio < tempInp.objAttrs.prio
                 //      someLineMemEntry.prio < tempInp.objAttrs.prio
                 //    ) {
-                //      myOverwriteLineMemEntry := False
-                //    } elsewhen (
-                //      //tempLineMemEntryPrio === tempInp.objAttrs.prio
-                //      someLineMemEntry.prio === tempInp.objAttrs.prio
-                //    ) {
-                //      myOverwriteLineMemEntry := doPrioEq()
-                //    } otherwise {
+                //      myOverwriteLineMemEntry := doPrioLt()
+                //    }
+                //    //elsewhen (
+                //    //  //tempLineMemEntryPrio === tempInp.objAttrs.prio
+                //    //  //someLineMemEntry.prio === tempInp.objAttrs.prio
+                //    //) {
+                //    //  //myOverwriteLineMemEntry := doPrioLt()
+                //    //  //myOverwriteLineMemEntry := True
+                //    //  myOverwriteLineMemEntry := doPrioGe()
+                //    //}
+                //    .otherwise {
                 //      myOverwriteLineMemEntry := True
+                //      myOverwriteLineMemEntry := doPrioGe()
                 //    }
                 //  }
                 //} otherwise {
@@ -10068,7 +10225,8 @@ case class Gpu2d(
                     myOverwriteLineMemEntry := True
                   }
                   default {
-                    myOverwriteLineMemEntry := doPrioEq()
+                    //myOverwriteLineMemEntry := doPrioLt()
+                    myOverwriteLineMemEntry := doPrioGe()
                   }
                 }
               }
@@ -10299,13 +10457,38 @@ case class Gpu2d(
             //True
             if (kind == 0) {
               !tempWrObjPipeLast.stage0.rawObjAttrsMemIdx()(0)
+              //!tempWrObjPipeLast.stage0.calcNonAffineGridIdxLsb()
             } else {
               //tempInp.stage0.rawAffineIdx
-              if (params.objAffineTileWidthRshift == 0) {
-                !tempWrObjPipeLast.stage0.rawObjAttrsMemIdx()(0)
-              } else {
-                True
-              }
+              //if (
+              //  params.objAffineTileWidthRshift == 0
+              //) {
+              //  !tempWrObjPipeLast.stage0.rawObjAttrsMemIdx()(0)
+              //} else {
+              //  True
+              //}
+              //!tempWrObjPipeLast.cnt
+              //!tempWrObjPipeLast.stage0.rawObjAttrsMemIdx()(
+              //  //params.objAffineTileWidthRshift
+              //  //+ 1 // to account for double size rendering grid
+              //  //- 1
+              //  //+ 1
+              //)
+              //True
+              !tempWrObjPipeLast.stage0.rawObjAttrsMemIdx()(0)
+              //(
+              //  tempWrObjPipeLast.stage0.rawObjAttrsMemIdx()(1 downto 0)
+              //  === U"10"
+              //)
+              //!tempWrObjPipeLast.stage0.cnt(
+              //  0
+              //  //params.objAffineTileWidthRshift
+              //  //+ 1 // to account for double size rendering
+              //  //+ 1 // to account for the extra cycle delay
+              //  //- 1
+              //  //0
+              //)
+              //!tempWrObjPipeLast.stage0.calcAffineGridIdxLsb()
             }
             //!tempWrObjPipeLast.objAttrs.affine.doIt
             //tempWrObjPipeLast.stage10.ext.overwriteLineMemEntry

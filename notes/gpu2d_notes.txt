@@ -1,3 +1,12 @@
+//--------
+affine sprites:
+let `objAffineTileWidth` = 4 -> `objAffineTileWidthPow` == 2
+let `objAffineTileWidthRshift` = 0
+let `objAffineGridIdxPow` = 1
+let `extCyclePow` = 1
+let `numObjsAffinePow` = log2Up(16) == 4
+//--------
+// BEGIN: old notes
 scanline 0:
 write: writes to `bgLineMemArr[3]` and `objLineMemArr[3]`
 combined: reads from `(bg|obj)LineMemArr[2]`, writes to `bgLineMemArr[1]`
@@ -17,3 +26,5 @@ scanline 3:
 write: writes to `bgLineMemArr[2]` and `objLineMemArr[2]`
 combined: reads from `(bg|obj)LineMemArr[1]`, writes to `bgLineMemArr[0]`
 read: reads from `bgLineMemArr[3]`; erases `objLineMemArr[3]`
+// END: old notes
+//--------
