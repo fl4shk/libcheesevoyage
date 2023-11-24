@@ -4924,6 +4924,9 @@ case class Gpu2d(
         //def numSaved = 3
         //val savedWrLineMemEntryVec = Vec.fill(numSaved)(ObjSubLineMemEntry())
       }
+      case class Stage14() extends Bundle {
+        val haveAnyWritten = (isAffine) generate Bool()
+      }
       //case class Stage7() extends Bundle {
       //  //val ext = WrObjPipeOut6ExtData()
       //  val ext = WrObjPipe6Ext()
@@ -4942,6 +4945,7 @@ case class Gpu2d(
         val stage11 = Stage11()
         val stage12 = Stage12()
         val stage13 = Stage13()
+        //val stage14 = Stage14()
         //val stage7 = Stage7()
       }
 
@@ -5132,6 +5136,9 @@ case class Gpu2d(
         stage13.ext.overwriteLineMemEntry
       )
       def wrLineMemEntry = stage13.ext.wrLineMemEntry
+
+      //def stage14 = postStage0.stage14
+      //def haveAnyWritten = stage14.haveAnyWritten
       //def overwriteLineMemEntry = stage6.overwriteLineMemEntry
       ////def pxPosXIsSame = stage6.pxPosXIsSame
       ////def pxPosIsSame = stage6.pxPosIsSame
@@ -9904,14 +9911,14 @@ case class Gpu2d(
               if (kind == 0) {
                 True
               } else {
-                tempInp.stage12.inMainVec(
-                  x
-                  //tempInp.stage11.myIdxV2d(x)(x)
-                  + tempInp.affineObjXStart()(
-                    tempInp.affineObjXStart().high - 1 downto 0
-                  )
-                )
-                //True
+                //tempInp.stage12.inMainVec(
+                //  x
+                //  //tempInp.stage11.myIdxV2d(x)(x)
+                //  + tempInp.affineObjXStart()(
+                //    tempInp.affineObjXStart().high - 1 downto 0
+                //  )
+                //)
+                True
               }
             )
             //--------
@@ -10507,6 +10514,47 @@ case class Gpu2d(
         },
       )
       // END: Stage 13
+
+      // BEGIN: Stage 14
+      //HandleDualPipe(
+      //  stageData=stageData.craft(14)
+      //)(
+      //  pipeStageMainFunc=(
+      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+      //    //def myTempObjTileWidth = tempInp.tempObjTileWidth()
+      //    //def myTempObjTileWidth2 = tempInp.tempObjTileWidth2()
+      //    def myTempObjTileWidth = tempInp.tempObjTileWidth()
+      //    def myTempObjTileWidthPow = tempInp.tempObjTileWidthPow()
+
+      //    if (kind == 1) {
+      //      val tempVec = Vec.fill(myTempObjTileWidth)(Bool())
+
+      //      for (jdx <- 0 until myTempObjTileWidth) {
+      //        tempVec(jdx) := tempInp.wrLineMemEntry(jdx).written
+      //        //tempVec(jdx) := tempInp.overwriteLineMemEntry(jdx)
+      //      }
+      //      tempOutp.haveAnyWritten := (
+      //        //tempVec.sFindFirst(
+      //        //  _ === True
+      //        //)._1
+      //        True
+      //      )
+      //    }
+      //  },
+      //  copyOnlyFunc=(
+      //    stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    def pipeIn = stageData.pipeIn(idx)
+      //    def pipeOut = stageData.pipeOut(idx)
+      //    pipeOut.stage14 := pipeIn.stage14
+      //  },
+      //)
+      // END: Stage 14
       //--------
       // BEGIN: Stage 7
       //HandleDualPipe(
@@ -10677,10 +10725,26 @@ case class Gpu2d(
               //)
               //True
               //!tempWrObjPipeLast.stage0.rawObjAttrsMemIdx()(0)
+              def myTempObjTileWidth = (
+                tempWrObjPipeLast.tempObjTileWidth()
+              )
+              val tempVec = Vec.fill(myTempObjTileWidth)(Bool())
+
+              for (jdx <- 0 until myTempObjTileWidth) {
+                tempVec(jdx) := (
+                  tempWrObjPipeLast.wrLineMemEntry(jdx).written
+                )
+                //tempVec(jdx) := tempInp.overwriteLineMemEntry(jdx)
+              }
               !tempWrObjPipeLast.stage0.rawObjAttrsMemIdx()(
                 //params.objAffineTileWidthRshift
                 0
+              ) && (
+                tempVec.sFindFirst(
+                  _ === True
+                )._1
               )
+              //&& tempWrObjPipeLast.haveAnyWritten
               //!tempWrObjPipeLast.stage0.rawObjAttrsMemIdx()(1)
               //(
               //  tempWrObjPipeLast.stage0.rawObjAttrsMemIdx()(1 downto 0)
