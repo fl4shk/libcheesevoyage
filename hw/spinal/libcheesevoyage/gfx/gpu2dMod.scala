@@ -59,6 +59,7 @@ case class Gpu2dParams(
   objTileSize2dPow: ElabVec2[Int],  // power of two for width/height of a
                               // sprite tile 
                               // (in pixels)
+  objTileWidthRshift: Int,
   objAffineTileSize2dPow: ElabVec2[Int],
   objAffineTileWidthRshift: Int,
   //numBgTilesPow: Int,         // power of two for total number of
@@ -121,6 +122,15 @@ case class Gpu2dParams(
   //def objAffineTileSize2d = ElabVec2[Int](
   //  x=1 << (objTileSize2dPow.x + 1),
   //  y=1 << (objTileSize2dPow.y + 1),
+  //)
+  def objSliceTileWidthPow = (
+    objTileSize2dPow.x - objTileWidthRshift
+    //objTileSize2dPow.x
+  )
+  def objSliceTileWidth = 1 << objSliceTileWidthPow
+  //def objTileSize2d = ElabVec2[Int](
+  //  x=1 << objTileSize2dPow.x,
+  //  y=1 << objTileSize2dPow.y,
   //)
   def objAffineSliceTileWidthPow = (
     objAffineTileSize2dPow.x - objAffineTileWidthRshift
@@ -537,6 +547,24 @@ case class Gpu2dParams(
   //def objAttrsMemIdxWidth = log2Up(numObjs)
   //def objAttrsVecIdxWidth = log2Up(numObjs)
   def objAttrsMemIdxWidth = numObjsPow
+  def objCntWidthShift = (
+    1 // to account for the extra cycle delay between pixels
+    //(
+    //  if (objTileWidthRshift == 0) {
+    //    1
+    //  } else {
+    //    objTileWidthRshift
+    //  }
+    //)
+    + objTileWidthRshift
+    + 1 // to account for the rendering grid
+  )
+  def objAttrsMemIdxTileCntWidth = (
+    objCntWidthShift
+    + objAttrsMemIdxWidth
+    //+ objSliceTileWidthPow
+  )
+  //--------
   def objAffineAttrsMemIdxWidth = numObjsAffinePow
   def objAffineCntWidthShift = (
     1 // to account for the extra cycle delay between pixels
@@ -693,6 +721,7 @@ object DefaultGpu2dParams {
       x=log2Up(8), // tile width: 8
       y=log2Up(8), // tile height: 8
     ),
+    objTileWidthRshift: Int=0,
     objAffineTileSize2dPow: ElabVec2[Int]=ElabVec2[Int](
       x=log2Up(64), // tile width: 64
       y=log2Up(64), // tile height: 64
@@ -793,6 +822,7 @@ object DefaultGpu2dParams {
       physFbSize2dScalePow=physFbSize2dScalePow,
       bgTileSize2dPow=bgTileSize2dPow,
       objTileSize2dPow=objTileSize2dPow,
+      objTileWidthRshift=objTileWidthRshift,
       objAffineTileSize2dPow=objAffineTileSize2dPow,
       objAffineTileWidthRshift=objAffineTileWidthRshift,
       //numBgTilesPow=tempNumBgTilesPow,
@@ -3990,8 +4020,9 @@ case class Gpu2d(
       (
         if (!isAffine) {
           (
-            params.objAttrsMemIdxWidth
-            + 1 // for the extra cycle delay between pixels
+            //params.objAttrsMemIdxWidth
+            //+ 1 // for the extra cycle delay between pixels
+            params.objAttrsMemIdxTileCntWidth
           )
         } else {
           //params.objAffineAttrsMemIdxWidth
@@ -4014,9 +4045,10 @@ case class Gpu2d(
           (
             if (!isAffine) {
               (
-                params.objAttrsMemIdxWidth + 1
-                + 1 // for the extra cycle delay between pixels
-                //+ 1
+                //params.objAttrsMemIdxWidth + 1
+                //+ 1 // for the extra cycle delay between pixels
+                ////+ 1
+                params.objAttrsMemIdxTileCntWidth
               )
             } else {
               //params.objAffineAttrsMemIdxWidth
@@ -4168,11 +4200,12 @@ case class Gpu2d(
       //  //params.objAttrsMemIdxWidth bits
       //  (params.objAttrsMemIdxWidth + 1) bits
       //)
-      val dbgTestObjAttrsMemIdx = UInt(
+      val dbgTestIdx = UInt(
         (
           //params.objAttrsMemIdxWidth + 1 + 1
           //params.objAttrsMemIdxWidth + 3
-          params.objAttrsMemIdxWidth + 2
+          //params.objAttrsMemIdxWidth + 2
+          params.objAttrsMemIdxTileCntWidth
         ) bits
       )
     }
@@ -4308,12 +4341,116 @@ case class Gpu2d(
         def bakCntMinus1 = justCopy.bakCntMinus1
         //def affineIdx = cnt(params.objAttrsMemIdxWidth - 1 downto 2)
         //def affineIdx = justCopy.affineIdx
+        def rawIdx() = (
+          justCopy.dbgTestIdx
+        )
         def rawAffineIdx() = (
           justCopy.dbgTestAffineIdx
           //(
           //  params.objAttrsMemIdxWidth - 1 downto 0
           //)
         )
+
+        def rawObjAttrsMemIdx() = (
+          justCopy.dbgTestIdx(
+            //params.objAttrsMemIdxWidth - 1 downto 0
+            //params.objAttrsMemIdxWidth + 1 - 1 downto 0
+            //params.objAttrsMemIdxWidth + 1 + 1 - 1 downto 0
+            //params.objAttrsMemIdxWidth + 1 - 1 downto 1
+            //params.objAttrsMemIdxWidth + 3 - 1 downto 0
+            //params.objAttrsMemIdxWidth + 2 - 1 downto 0
+            justCopy.dbgTestIdx.high downto 0
+          )
+        )
+        def objAttrsMemIdx() = (
+          justCopy.dbgTestIdx(
+            //params.objAttrsMemIdxWidth - 1 downto 0
+            //params.objAttrsMemIdxWidth + 1 - 1 downto 1
+            //params.objAttrsMemIdxWidth + 1 + 1 - 1 downto 1 + 1
+            //params.objAttrsMemIdxWidth + 3 - 1 downto 3
+            //params.objAttrsMemIdxWidth + 2 - 1 downto 2
+            justCopy.dbgTestIdx.high
+            downto params.objCntWidthShift
+          )
+        )
+        def objXStart() = {
+          (
+            //def tempShift = tempAffineShift
+            Cat(
+              //calcGridIdxLsb(
+              //  if (!isAffine) {
+              //    0
+              //  } else {
+              //    1
+              //  }
+              //),
+              //rawAffineIdx()(
+              //  params.objTileWidthRshift
+              //),
+              rawIdx()(
+                //params.objTileWidthRshift - 1 downto 0
+                //params.objTileWidthRshift downto 0
+                //justCopy.myMemIdxWidth
+                //(
+                //  params.objDblTileSize2dPow.x
+                //  + params.objAttrsMemIdxWidth
+                //)
+                //rawAffineIdx().high - 1 // account for 
+                //(
+                //  objXStartRawPlus
+                //  //params.objSliceTileWidthPow
+                //  + params.objAttrsMemIdxWidth
+                //)
+                //downto params.objAttrsMemIdxWidth
+                (
+                  ////objXStartRawWidthPow
+                  ////params.objSliceTileWidthPow
+                  //1 // to account for double size rendering
+                  ////+ (
+                  ////  if (params.objTileWidthRshift == 0) {
+                  ////    1 // for the extra cycle delay between pixels
+                  ////  } else {
+                  ////    params.objTileWidthRshift
+                  ////  }
+                  ////)
+                  //+
+                  //tempAffineShift
+                  //params.objTileWidthRshift
+                  params.objSliceTileWidthPow
+                  + 1 // account for the extra cycle delay
+                  + 1 // account for grid index
+                  - 1 
+                )
+                //downto params.objSliceTileWidthPow
+                //downto params.objTileWidthRshift + 1
+                downto (
+                  //if (params.objTileWidthRshift == 0) {
+                  //  1
+                  //} else {
+                  //  0
+                  //}
+                  //tempAffineShift
+                  //0
+                  //1 // account for double size rendering
+                  //params.objTileWidthRshift
+                  + 1 // account for the extra cycle delay
+                  + 1 // account for grid index
+                )
+              ),
+              B(
+                params.objSliceTileWidthPow bits,
+                //params.objTileWidthRshift bits,
+                //params.objTileWidthRshift bits,
+                default -> False
+              ),
+            ).asUInt
+            //(
+            //  params.objDblTileSize2dPow.x - 1 downto 0
+            //  //params.objSliceTileWidthPow - 1 downto 0
+            //)
+          )
+        }
+
         //def affineMultKind() = rawAffineIdx()(1 downto 0)
 
         // (a  b) × (x) = (ax+by)
@@ -4452,10 +4589,11 @@ case class Gpu2d(
                 //params.objAffineTileWidthRshift bits,
                 default -> False
               ),
-            ).asUInt(
-              params.objAffineDblTileSize2dPow.x - 1 downto 0
-              //params.objAffineSliceTileWidthPow - 1 downto 0
-            )
+            ).asUInt
+            //(
+            //  params.objAffineDblTileSize2dPow.x - 1 downto 0
+            //  //params.objAffineSliceTileWidthPow - 1 downto 0
+            //)
           )
         }
         //def objAttrsMemIdx = justCopy.objAttrsMemIdx
@@ -4479,25 +4617,6 @@ case class Gpu2d(
         ////  params.objAttrsMemIdxWidth + params.objTileSize2dPow.x - 1
         ////  downto params.objTileSize2dPow.x
         ////)
-        def rawObjAttrsMemIdx() = (
-          justCopy.dbgTestObjAttrsMemIdx(
-            //params.objAttrsMemIdxWidth - 1 downto 0
-            //params.objAttrsMemIdxWidth + 1 - 1 downto 0
-            //params.objAttrsMemIdxWidth + 1 + 1 - 1 downto 0
-            //params.objAttrsMemIdxWidth + 1 - 1 downto 1
-            //params.objAttrsMemIdxWidth + 3 - 1 downto 0
-            params.objAttrsMemIdxWidth + 2 - 1 downto 0
-          )
-        )
-        def objAttrsMemIdx() = (
-          justCopy.dbgTestObjAttrsMemIdx(
-            //params.objAttrsMemIdxWidth - 1 downto 0
-            //params.objAttrsMemIdxWidth + 1 - 1 downto 1
-            //params.objAttrsMemIdxWidth + 1 + 1 - 1 downto 1 + 1
-            //params.objAttrsMemIdxWidth + 3 - 1 downto 3
-            params.objAttrsMemIdxWidth + 2 - 1 downto 2
-          )
-        )
 
         //def objAttrsMemIdx() = innerObjAttrsMemIdx
         //def invObjAttrsMemIdx() = (
@@ -4804,8 +4923,8 @@ case class Gpu2d(
         )
       }
       def numMyIdxVecs = (
-        4 + tempObjTileWidth() * 2
-        //4 + tempObjTileWidth1() * 2
+        //4 + tempObjTileWidth() * 2
+        4 + tempObjTileWidth1() * 2
         //4 + tempObjTileWidth2() * 2
       )
       case class Stage10() extends Bundle {
@@ -4971,6 +5090,7 @@ case class Gpu2d(
       //def getCntTilePxsCoordX() = stage0.getCntTilePxsCoordX()
       def bakCntWillBeDone = stage0.bakCntWillBeDone()
       //def gridIdxLsb = stage0.gridIdxLsb
+      def objXStart() = stage0.objXStart()
       def affineObjXStart() = stage0.affineObjXStart()
 
       val postStage0 = PostStage0()
@@ -5201,7 +5321,7 @@ case class Gpu2d(
             0
           }
         )
-        ret.stage0.justCopy.dbgTestObjAttrsMemIdx := (
+        ret.stage0.justCopy.dbgTestIdx := (
           if (params.fancyObjPrio) {
             //(1 << params.objAttrsMemIdxWidth) - 1
             (
@@ -5209,7 +5329,8 @@ case class Gpu2d(
               << (
                 //params.objAttrsMemIdxWidth + 1
                 //params.objAttrsMemIdxWidth + 3
-                params.objAttrsMemIdxWidth + 2
+                //params.objAttrsMemIdxWidth + 2
+                params.objAttrsMemIdxTileCntWidth
               )
             ) - 1
           } else {
@@ -9638,8 +9759,12 @@ case class Gpu2d(
             }
           )
             .setName(f"wrObjPipe11_firstMyIdxZero_$kind")
+          //println(f"$myTempObjTileWidth1")
           for (x <- 0 until myTempObjTileWidth1) {
-            tempStage10MyIdxVec(x) := stage10MyIdxV2d(x)(x)
+            def tempX = x
+            def tempMyIdxVec = stage10MyIdxV2d(tempX)
+            def tempMyIdx = tempMyIdxVec(x)
+            tempStage10MyIdxVec(x) := tempMyIdx
             for (
               jdx <- 0 until tempOutp.stage11.myIdxV2d(x).size
             ) {
@@ -11552,16 +11677,16 @@ case class Gpu2d(
                       //)
                       ////combinePipeIn2PxReadFifo.io.pop.rdObj
                       //combinePipeIn1ObjMemReadSyncArr
-                      //tempInp.stage2.rdObj
-                      tempInp.stage2.rdObjAffine
+                      tempInp.stage2.rdObj
+                      //tempInp.stage2.rdObjAffine
                     )
                     tempOutp.stage3.ext.bgRdSubLineMemEntry := (
                       tempRdBg(bgSubLineMemArrElemIdx)
                     )
                     tempOutp.stage3.ext.objRdSubLineMemEntry := (
                       tempRdObj(
-                        //objSubLineMemArrElemIdx
-                        objAffineSubLineMemArrElemIdx
+                        objSubLineMemArrElemIdx
+                        //objAffineSubLineMemArrElemIdx
                       )
                     )
                     //--------

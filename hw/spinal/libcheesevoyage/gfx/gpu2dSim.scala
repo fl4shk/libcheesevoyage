@@ -181,6 +181,7 @@ object Gpu2dSim extends App {
       //x=log2Up(2),
       //y=log2Up(2),
     ),
+    objTileWidthRshift=1,
     objAffineTileSize2dPow=ElabVec2[Int](
       //x=log2Up(8),
       //y=log2Up(8),

@@ -155,23 +155,23 @@ public:		// functions
 	}
 
 	virtual void pre_cycle(){
-		//if (
-		//	!_top->io_phys_vsync
-		//	&& _last_vsync
-		//) {
-		//	//pos.y = 0;
-		//	refresh();
-		//}
-		//if (
-		//	!_top->io_phys_hsync
-		//	&& _last_hsync
-		//	&& pos.x != 0
-		//) {
-		//	inc_y();
-		//	pos.x = 0;
-		//}
-		pos.x = _top->io_misc_hpipeC;
-		pos.y = _top->io_misc_vpipeC;
+		if (
+			!_top->io_phys_vsync
+			&& _last_vsync
+		) {
+			pos.y = 0;
+			refresh();
+		}
+		if (
+			!_top->io_phys_hsync
+			&& _last_hsync
+			&& pos.x != 0
+		) {
+			inc_y();
+			pos.x = 0;
+		}
+		//pos.x = _top->io_misc_hpipeC;
+		//pos.y = _top->io_misc_vpipeC;
 		if (_top->io_misc_visib) {
 			refresh();
 			this->set(
@@ -179,11 +179,11 @@ public:		// functions
 				+ (_top->io_phys_col_g << 12)
 				+ (_top->io_phys_col_b << 4)
 			);
-			//inc_x();
+			inc_x();
 		}
 
-		//_last_vsync = _top->io_phys_vsync;
-		//_last_hsync = _top->io_phys_hsync;
+		_last_vsync = _top->io_phys_vsync;
+		_last_hsync = _top->io_phys_hsync;
 	}
 };
 
