@@ -987,8 +987,8 @@ case class Gpu2dTest(
         //mkObjAffineTile(0, 1)
         mkObjAffineTile(0, 0)
       } elsewhen (rObjAffineTileCnt === 1) {
-        mkObjAffineTile(1, 2, Some(3), Some(4))
-        //mkObjAffineTile(1, 1)
+        //mkObjAffineTile(1, 2, Some(3), Some(4))
+        mkObjAffineTile(1, 1)
         //mkObjAffineTile(3, 3)
         //mkObjAffineTile(2, 3)
       } elsewhen (rObjAffineTileCnt === 2) {
@@ -1106,8 +1106,8 @@ case class Gpu2dTest(
       //tempObjAffineAttrs.pos.x := 16
       tempObjAffineAttrs.pos.x := (
         //1
-        //2
-        32
+        2
+        //32
         - (params.objAffineTileSize2d.x / 2)
         //-params.objAffineDblTileSize2d.x
       )
