@@ -11677,16 +11677,16 @@ case class Gpu2d(
                       //)
                       ////combinePipeIn2PxReadFifo.io.pop.rdObj
                       //combinePipeIn1ObjMemReadSyncArr
-                      tempInp.stage2.rdObj
-                      //tempInp.stage2.rdObjAffine
+                      //tempInp.stage2.rdObj
+                      tempInp.stage2.rdObjAffine
                     )
                     tempOutp.stage3.ext.bgRdSubLineMemEntry := (
                       tempRdBg(bgSubLineMemArrElemIdx)
                     )
                     tempOutp.stage3.ext.objRdSubLineMemEntry := (
                       tempRdObj(
-                        objSubLineMemArrElemIdx
-                        //objAffineSubLineMemArrElemIdx
+                        //objSubLineMemArrElemIdx
+                        objAffineSubLineMemArrElemIdx
                       )
                     )
                     //--------

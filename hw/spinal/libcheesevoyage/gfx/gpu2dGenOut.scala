@@ -48,8 +48,8 @@ object Gpu2dSimDutParams {
     htiming=LcvVgaTimingHv(
       //visib=1 << 6,
       //visib=64,
-      visib=1 << 7,
-      //visib=320,
+      //visib=1 << 7,
+      visib=320,
       //visib=1 << 8,
       //visib=4,
       //visib=8,
@@ -59,9 +59,9 @@ object Gpu2dSimDutParams {
     ),
     vtiming=LcvVgaTimingHv(
       //visib=1 << 3,
-      visib=1 << 4,
+      //visib=1 << 4,
       //visib=1 << 7,
-      //visib=240,
+      visib=240,
       //visib=4,
       //visib=8,
       front=1,
@@ -101,12 +101,15 @@ object Gpu2dSimDutParams {
       //y=log2Up(2),
     ),
     objAffineTileSize2dPow=ElabVec2[Int](
-      x=log2Up(32),
-      y=log2Up(32),
+      //x=log2Up(32),
+      //y=log2Up(32),
+      x=log2Up(8),
+      y=log2Up(8),
     ),
-    //objAffineTileWidthRshift=0,
-    objAffineTileWidthRshift=log2Up(4),
+    objAffineTileWidthRshift=0,
+    //objAffineTileWidthRshift=log2Up(4),
     //numBgsPow=log2Up(4),
+    //numBgsPow=log2Up(2),
     numBgsPow=log2Up(2),
     //numObjsPow=log2Up(64),
     //numObjsPow=log2Up(32),
@@ -118,9 +121,11 @@ object Gpu2dSimDutParams {
     //numObjsPow=log2Up(8),
     numObjsPow=log2Up(
       16
+      //4
     ),
     numObjsAffinePow=log2Up(
-      32
+      4,
+      //32
     ),
     //numBgTilesPow=Some(log2Up(256)),
     //numBgTilesPow=Some(log2Up(2)),
@@ -142,6 +147,7 @@ object Gpu2dSimDutParams {
     noColorMath=true,
     noAffineBgs=true,
     noAffineObjs=false,
+    //noAffineObjs=true,
     fancyObjPrio=true,
     //--------
   )

@@ -12,6 +12,7 @@
 #include "liborangepower_src/sdl2/sdl_rect.hpp"
 #include "liborangepower_src/sdl2/sdl_video.hpp"
 #include "liborangepower_src/sdl2/sdl_render.hpp"
+#include "liborangepower_src/misc/misc_output_funcs.hpp"
 #include "VGpu2dSimDut.h"
 
 //using std::cout;
@@ -19,12 +20,15 @@
 //using std::cerr;
 namespace sdl = liborangepower::sdl;
 using liborangepower::math::Vec2;
+using namespace liborangepower::misc_output;
 
 
 static constexpr Vec2<size_t>
 	HALF_SIZE_2D{
-		.x=1 << 7,
-		.y=1 << 7
+		//.x=1 << 7,
+		//.y=1 << 7,
+		.x=320,
+		.y=240,
 	},
 	SIZE_2D{.x=HALF_SIZE_2D.x << 1, .y=HALF_SIZE_2D.y << 1};
 class Display {
@@ -81,11 +85,37 @@ public:		// functions
 		//);
 		//SDL_RenderSetLogicalSize(renderer, SIZE_2D.x * 2, SIZE_2D.y * 2);
 		std::memset(
-			pixels.get(), 0, SIZE_2D.x * SIZE_2D.y * sizeof(Uint32)
+			pixels.get(),
+			0,
+			SIZE_2D.x * SIZE_2D.y * sizeof(Uint32)
 		);
 	}
-	inline void set(Uint32 col) {
+	inline void set(
+		Uint32 col
+		//Uint32 col_r,
+		//Uint32 col_g,
+		//Uint32 col_b
+	) {
 		//pixels.get()[pos.y * SIZE_2D.x + pos.x] = col;
+		//if (
+		//	//((col >> 20) & 0xf) == 0xf
+		//	//&& ((col >> 12) & 0xf) == 0x8
+		//	//&& ((col >> 4) & 0xf) == 0x0
+		//	col_r == 0xf
+		//	&& col_g == 0x8
+		//	&& col_b == 0x0
+		//) {
+		//	printout(
+		//		"Found orange: ",
+		//		pos, "; ",
+		//		std::hex,
+		//			col, "; ",
+		//			"{", col_r, " ", col_g, " ", col_b, "}",
+		//		std::dec,
+		//		"\n"
+		//	);
+		//}
+		//pixels.get()[pos.y * HALF_SIZE_2D.x + pos.x] = col;
 		for (size_t j=0; j<2; ++j) {
 			for (size_t i=0; i<2; ++i) {
 				Vec2<Uint32> temp_pos;
@@ -97,27 +127,33 @@ public:		// functions
 	};
 	inline void inc_x() {
 		++pos.x;
-		if (pos.x >= SIZE_2D.x) {
-			pos.x = SIZE_2D.x;
+		if (pos.x >= HALF_SIZE_2D.x) {
+			pos.x = HALF_SIZE_2D.x;
 		}
 	};
 	inline void inc_y() {
 		++pos.y;
-		if (pos.y >= SIZE_2D.y) {
-			pos.y = SIZE_2D.y;
+		if (pos.y >= HALF_SIZE_2D.y) {
+			pos.y = HALF_SIZE_2D.y;
 		}
 	};
 
 	inline void refresh() {
 		SDL_UpdateTexture(
-			texture, NULL, pixels.get(),
+			texture,
+			NULL,
+			pixels.get(),
 			sizeof(Uint32) * SIZE_2D.x // pitch
 			//sizeof(Uint32) * SIZE_2D.x * SIZE_2D.y
 		);
 		SDL_RenderClear(renderer);
 		SDL_RenderCopy(renderer, texture, NULL, NULL);
 		SDL_RenderPresent(renderer);
-		std::memset(pixels.get(), 0, SIZE_2D.x * sizeof(Uint32));
+		//std::memset(pixels.get(), 0, HALF_SIZE_2D.x * sizeof(Uint32));
+		std::memset(
+			pixels.get(), 0,
+			SIZE_2D.x * SIZE_2D.y * sizeof(Uint32)
+		);
 	};
 	virtual void post_cycle() {
 	}
@@ -172,15 +208,64 @@ public:		// functions
 		}
 		//pos.x = _top->io_misc_hpipeC;
 		//pos.y = _top->io_misc_vpipeC;
-		if (_top->io_misc_visib) {
-			refresh();
-			this->set(
-				(_top->io_phys_col_r << 20)
-				+ (_top->io_phys_col_g << 12)
-				+ (_top->io_phys_col_b << 4)
-			);
+		//if (
+		//	!_top->io_phys_vsync
+		//	&& _last_vsync
+		//) {
+		//	//pos.y = 0;
+		//	refresh();
+		//}
+		if (
+			//_top->io_misc_pastVisib
+			//&& _top->io_misc_pixelEn
+			//_top->io_misc_pastVisib
+			_top->io_misc_visib
+			//&& _top->io_misc_pixelEn
+		) {
+			//pos.x = _top->io_misc_hpipeC;
+			//pos.y = _top->io_misc_vpipeC;
+			//--------
+			//if (
+			//	(_top->io_phys_col_r & 0xf) == 0xf
+			//	&& (_top->io_phys_col_g & 0xf) == 0x8
+			//	&& (_top->io_phys_col_b & 0xf) == 0
+			//) {
+			//	printout(
+			//		//uint32_t(_top->io_misc_hpipeC & 0xff), " ",
+			//		//uint32_t(_top->io_misc_vpipeC & 0xff), "; ",
+			//		_top->io_phys_col_r & 0xf, " ",
+			//		_top->io_phys_col_g & 0xf, " ",
+			//		_top->io_phys_col_b & 0xf, "; ",
+			//		pos, "\n"
+			//	);
+			//}
+			//--------
+			//refresh();
+			//if (_top->io_misc_visib) {
+				if (
+					pos.x < HALF_SIZE_2D.x
+					&& pos.y < HALF_SIZE_2D.y
+				) {
+					this->set(
+						(
+							((_top->io_phys_col_r & 0xf) << 20)
+							+ ((_top->io_phys_col_g & 0xf) << 12)
+							+ ((_top->io_phys_col_b & 0xf) << 4)
+						)
+						//_top->io_phys_col_r & 0xf,
+						//_top->io_phys_col_g & 0xf,
+						//_top->io_phys_col_b & 0xf
+					);
+				}
+			//} else {
+			//	refresh();
+			//}
+			//refresh();
 			inc_x();
-		}
+		} 
+		//else {
+		//	refresh();
+		//}
 
 		_last_vsync = _top->io_phys_vsync;
 		_last_hsync = _top->io_phys_hsync;
@@ -188,6 +273,9 @@ public:		// functions
 };
 
 int main(int argc, char** argv) {
+	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+		return 1;
+	}
 	//std::unique_ptr<SDL_Window> win(new SDL_Window);
 	//SDL_Window* win = nullptr;
 	std::unique_ptr<VGpu2dSimDut> top(new VGpu2dSimDut());
@@ -218,9 +306,9 @@ int main(int argc, char** argv) {
 		top->clk = !top->clk;
 
 		if (!top->clk) {
-			vga.post_cycle();
-		} else {
 			vga.pre_cycle();
+		} else {
+			vga.post_cycle();
 		}
 
 		top->eval();
