@@ -661,13 +661,21 @@ case class Gpu2dParams(
     y=log2Up(objSize2dForAttrs.y),
   )
   def objSize2dForAttrsT() = coordT(someSize2d=objSize2dForAttrs)
-  def objAffineSize2dForAttrs = ElabVec2[Int](
-    x=objAffineTileSize2d.x + 1 + 1,
-    y=objAffineTileSize2d.y + 1 + 1,
+  //def objAffineSize2dForAttrs = ElabVec2[Int](
+  //  x=(objAffineTileSize2d.x + 1) * 2,
+  //  y=(objAffineTileSize2d.y + 1) * 2,
+  //)
+  def objAffineSize2dForAttrsPow = ElabVec2[Int](
+    //x=log2Up(objAffineSize2dForAttrs.x),
+    //y=log2Up(objAffineSize2dForAttrs.y),
+    x=log2Up(objAffineTileSize2d.x + 1) + 1,
+    y=log2Up(objAffineTileSize2d.y + 1) + 1,
   )
-  def objAFfineSize2dForAttrsPow = ElabVec2[Int](
-    x=log2Up(objAffineSize2dForAttrs.x),
-    y=log2Up(objAffineSize2dForAttrs.y),
+  def objAffineSize2dForAttrs= ElabVec2[Int](
+    //x=log2Up(objAffineSize2dForAttrs.x),
+    //y=log2Up(objAffineSize2dForAttrs.y),
+    x=1 << objAffineSize2dForAttrsPow.x,
+    y=1 << objAffineSize2dForAttrsPow.y,
   )
   def objAffineSize2dForAttrsT() = coordT(
     someSize2d=objAffineSize2dForAttrs
@@ -9154,17 +9162,24 @@ case class Gpu2d(
                   //  ) =/= U"00"
                   //)
                   (
-                    tempInp.objAttrs.size2d.x
-                    === params.objAffineTileSize2d.x
-                  )
-                  && (
+                    //tempInp.objAttrs.size2d.y
+                    //=== params.objAffineTileSize2d.y
+                    tempInp.objAttrs.size2d.x(
+                      tempInp.objAttrs.size2d.x.high
+                      downto tempInp.objAttrs.size2d.x.high - 1
+                    ) =/= U"00"
+                  ) && (
                     tempX < 0
                     || tempX >= params.objAffineTileSize2d.x
                   )
                 ) || (
                   (
-                    tempInp.objAttrs.size2d.x
-                    < params.objAffineTileSize2d.x
+                    //tempInp.objAttrs.size2d.x
+                    //< params.objAffineTileSize2d.x
+                    tempInp.objAttrs.size2d.x(
+                      tempInp.objAttrs.size2d.x.high
+                      downto tempInp.objAttrs.size2d.x.high - 1
+                    ) === U"00"
                   ) && !(
                     (
                       (tempX << 1) - params.objAffineTileSize2d.x 
@@ -9242,17 +9257,24 @@ case class Gpu2d(
                   //  ) =/= U"00"
                   //)
                   (
-                    tempInp.objAttrs.size2d.y
-                    === params.objAffineTileSize2d.y
-                  )
-                  && (
+                    //tempInp.objAttrs.size2d.y
+                    //=== params.objAffineTileSize2d.y
+                    tempInp.objAttrs.size2d.y(
+                      tempInp.objAttrs.size2d.y.high
+                      downto tempInp.objAttrs.size2d.y.high - 1
+                    ) =/= U"00"
+                  ) && (
                     tempY < 0
                     || tempY >= params.objAffineTileSize2d.y
                   )
                 ) || (
                   (
-                    tempInp.objAttrs.size2d.y
-                    < params.objAffineTileSize2d.y
+                    tempInp.objAttrs.size2d.y(
+                      tempInp.objAttrs.size2d.y.high
+                      downto tempInp.objAttrs.size2d.y.high - 1
+                    ) === U"00"
+                    //tempInp.objAttrs.size2d.y
+                    //< params.objAffineTileSize2d.y
                   ) && !(
                     (
                       (tempY << 1) - params.objAffineTileSize2d.y 
