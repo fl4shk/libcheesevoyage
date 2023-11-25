@@ -71,6 +71,91 @@ object Gpu2dSimDutParams {
   )
 
   def fbSize2d = vgaTimingInfo.fbSize2d
+  //def gpu2dParams = DefaultGpu2dParams(
+  //  rgbConfig=rgbConfig,
+  //  intnlFbSize2d=ElabVec2[Int](
+  //    x=vgaTimingInfo.fbSize2d.x,
+  //    y=vgaTimingInfo.fbSize2d.y,
+  //  ),
+  //  physFbSize2dScalePow=ElabVec2[Int](
+  //    x=log2Up(1),
+  //    y=log2Up(1),
+  //    //x=log2Up(2),
+  //    ////y=log2Up(2),
+  //    //y=log2Up(2),
+  //  ),
+  //  bgTileSize2dPow=ElabVec2[Int](
+  //    x=log2Up(8),
+  //    y=log2Up(8),
+  //    //x=log2Up(4),
+  //    //y=log2Up(4),
+  //    //x=log2Up(2),
+  //    //y=log2Up(2),
+  //  ),
+  //  objTileSize2dPow=ElabVec2[Int](
+  //    x=log2Up(8),
+  //    y=log2Up(8),
+  //    //x=log2Up(4),
+  //    //y=log2Up(4),
+  //    //x=log2Up(2),
+  //    //y=log2Up(2),
+  //  ),
+  //  objTileWidthRshift=1,
+  //  objAffineTileSize2dPow=ElabVec2[Int](
+  //    //x=log2Up(32),
+  //    //y=log2Up(32),
+  //    //x=log2Up(16),
+  //    //y=log2Up(16),
+  //    x=log2Up(8),
+  //    y=log2Up(8),
+  //  ),
+  //  objAffineTileWidthRshift=0,
+  //  //objAffineTileWidthRshift=log2Up(4),
+  //  //numBgsPow=log2Up(4),
+  //  numBgsPow=log2Up(2),
+  //  //numObjsPow=log2Up(64),
+  //  //numObjsPow=log2Up(32),
+  //  //numObjsPow=log2Up(2),
+  //  //numObjsPow=log2Up(32),
+  //  //numObjsPow=log2Up(16),
+  //  //numObjsPow=log2Up(2),
+  //  //numObjsPow=log2Up(4),
+  //  //numObjsPow=log2Up(8),
+  //  numObjsPow=log2Up(
+  //    //16
+  //    8
+  //  ),
+  //  numObjsAffinePow=log2Up(
+  //    //32
+  //    //8
+  //    4
+  //  ),
+  //  //numBgTilesPow=Some(log2Up(256)),
+  //  //numBgTilesPow=Some(log2Up(2)),
+  //  numBgTiles=Some(
+  //    //16
+  //    64
+  //  ),
+  //  //numObjTilesPow=None,
+  //  numObjTiles=Some(
+  //    //8
+  //    16
+  //  ),
+  //  numObjAffineTiles=Some(
+  //    //32
+  //    //8
+  //    4
+  //  ),
+  //  numColsInBgPalPow=log2Up(64),
+  //  numColsInObjPalPow=log2Up(64),
+  //  //--------
+  //  noColorMath=true,
+  //  noAffineBgs=true,
+  //  //noAffineObjs=true,
+  //  noAffineObjs=false,
+  //  fancyObjPrio=true,
+  //  //--------
+  //)
   def gpu2dParams = DefaultGpu2dParams(
     rgbConfig=rgbConfig,
     intnlFbSize2d=ElabVec2[Int](
@@ -85,10 +170,10 @@ object Gpu2dSimDutParams {
       //y=log2Up(2),
     ),
     bgTileSize2dPow=ElabVec2[Int](
-      x=log2Up(8),
-      y=log2Up(8),
-      //x=log2Up(4),
-      //y=log2Up(4),
+      //x=log2Up(8),
+      //y=log2Up(8),
+      x=log2Up(4),
+      y=log2Up(4),
       //x=log2Up(2),
       //y=log2Up(2),
     ),
@@ -100,17 +185,18 @@ object Gpu2dSimDutParams {
       //x=log2Up(2),
       //y=log2Up(2),
     ),
+    //objTileWidthRshift=0,
     objTileWidthRshift=0,
     objAffineTileSize2dPow=ElabVec2[Int](
-      //x=log2Up(32),
-      //y=log2Up(32),
-      //x=log2Up(16),
-      //y=log2Up(16),
-      x=log2Up(8),
-      y=log2Up(8),
+      //x=log2Up(8),
+      //y=log2Up(8),
+      x=log2Up(4),
+      y=log2Up(4),
+      //x=log2Up(2),
+      //y=log2Up(2),
     ),
-    objAffineTileWidthRshift=0,
-    //objAffineTileWidthRshift=log2Up(4),
+    //objAffineTileWidthRshift=0,
+    objAffineTileWidthRshift=1,
     //numBgsPow=log2Up(4),
     numBgsPow=log2Up(2),
     //numObjsPow=log2Up(64),
@@ -121,39 +207,22 @@ object Gpu2dSimDutParams {
     //numObjsPow=log2Up(2),
     //numObjsPow=log2Up(4),
     //numObjsPow=log2Up(8),
-    numObjsPow=log2Up(
-      16
-    ),
-    numObjsAffinePow=log2Up(
-      //32
-      //8
-      4
-    ),
+    numObjsPow=log2Up(16),
+    numObjsAffinePow=log2Up(16),
     //numBgTilesPow=Some(log2Up(256)),
     //numBgTilesPow=Some(log2Up(2)),
-    numBgTiles=Some(
-      //16
-      64
-    ),
+    numBgTiles=Some(16),
     //numObjTilesPow=None,
-    numObjTiles=Some(
-      //8
-      16
-    ),
-    numObjAffineTiles=Some(
-      //32
-      //8
-      4
-    ),
+    numObjTiles=Some(16),
+    numObjAffineTiles=Some(16),
     numColsInBgPalPow=log2Up(64),
     numColsInObjPalPow=log2Up(64),
-    //--------
     noColorMath=true,
     noAffineBgs=true,
-    //noAffineObjs=true,
-    noAffineObjs=false,
+    noAffineObjs=true,
+    //noAffineObjs=false,
+    //fancyObjPrio=false,
     fancyObjPrio=true,
-    //--------
   )
 }
 
