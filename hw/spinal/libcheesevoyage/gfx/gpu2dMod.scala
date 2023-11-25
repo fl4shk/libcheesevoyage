@@ -4844,6 +4844,9 @@ case class Gpu2d(
         //)
         def myTempObjTileWidth = tempObjTileWidth()
         def myTempObjTileWidthPow = tempObjTileWidthPow()
+        val affineDoIt = (isAffine) generate Vec.fill(
+          myTempObjTileWidth
+        )(Bool())
         val pxPosXGridIdx = (
           Vec.fill(myTempObjTileWidth)(
             UInt(
@@ -9310,8 +9313,8 @@ case class Gpu2d(
                 }
                 //&& tempInp.stage0.affineActive
                 //&& tempInp.stage0.affineActive
-                && !tempOutp.stage5.oorTilePxsCoord(x).x
-                && !tempOutp.stage5.oorTilePxsCoord(x).y
+                //&& !tempOutp.stage5.oorTilePxsCoord(x).x
+                //&& !tempOutp.stage5.oorTilePxsCoord(x).y
               )
               //tempOutp.tilePxsCoord(x).y := (
               //  tempInp.stage4.fxTilePxsCoord(x).y 
@@ -9576,7 +9579,10 @@ case class Gpu2d(
                   //    + params.objAffineTileSize2d.y 
                   //    >= -tempInp.objAttrs.size2d.y.asSInt
                   //) && (
-                    tempInp.stage5.affineDoIt(x)
+                    //tempInp.stage5.affineDoIt(x)
+                    //&& tempInp.stage5.oorTilePxsCoord(x).x
+                    //&& tempInp.stage5.oorTilePxsCoord(x).y
+                    tempOutp.stage6.affineDoIt(x)
                   //)
                 )
               }
@@ -9589,6 +9595,13 @@ case class Gpu2d(
               )
             } otherwise {
               tempOutp.palEntryMemIdx(x) := 0
+            }
+            if (kind == 1) {
+              tempOutp.stage6.affineDoIt(x) := (
+                tempInp.stage5.affineDoIt(x)
+                && !tempInp.stage5.oorTilePxsCoord(x).x
+                && !tempInp.stage5.oorTilePxsCoord(x).y
+              )
             }
           }
         },
@@ -10452,10 +10465,12 @@ case class Gpu2d(
                 } else {
                   (
                     //tempInp.objAttrs.affine.doIt
-                    tempInp.stage5.affineDoIt(
+                    tempInp.stage6.affineDoIt(
                       //x
                       sliceX
                     )
+                    //&& tempInp.stage5.oorTilePxsCoord(sliceX).x
+                    //&& tempInp.stage5.oorTilePxsCoord(sliceX).y
                     //&& tempInp.stage0.affineActive
                     //&& inMain
                   )
