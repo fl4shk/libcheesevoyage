@@ -813,8 +813,8 @@ case class Gpu2dTest(
       //tempObjAttrs.pos.y := 0
       //tempObjAttrs.prio := 0
       tempObjAttrs.prio := (
-        //1
         1
+        //0
       )
       tempObjAttrs.size2d.x := params.objTileSize2d.x
       tempObjAttrs.size2d.y := params.objTileSize2d.y
@@ -865,8 +865,8 @@ case class Gpu2dTest(
       //tempObjAttrs.pos.y := 8
       tempObjAttrs.pos.y := 9
       tempObjAttrs.prio := (
-        0
-        //1
+        //0
+        1
       )
       tempObjAttrs.size2d.x := params.objTileSize2d.x
       tempObjAttrs.size2d.y := params.objTileSize2d.y
@@ -901,8 +901,8 @@ case class Gpu2dTest(
       //tempObjAttrs.pos.x := 7
       tempObjAttrs.pos.y := 8
       tempObjAttrs.prio := (
-        0
-        //1
+        //0
+        1
       )
       tempObjAttrs.size2d.x := params.objTileSize2d.x
       tempObjAttrs.size2d.y := params.objTileSize2d.y
@@ -1108,6 +1108,7 @@ case class Gpu2dTest(
       tempObjAffineAttrs.pos.x := (
         //1
         //2
+        //7
         32
         - (params.objAffineTileSize2d.x / 2)
         //-params.objAffineDblTileSize2d.x
@@ -1121,8 +1122,10 @@ case class Gpu2dTest(
         0
         //1
       )
-      tempObjAffineAttrs.size2d.x := params.objAffineTileSize2d.x
-      tempObjAffineAttrs.size2d.y := params.objAffineTileSize2d.y
+      tempObjAffineAttrs.size2d.x := params.objAffineTileSize2d.x / 2
+      tempObjAffineAttrs.size2d.y := params.objAffineTileSize2d.y / 2
+      //tempObjAffineAttrs.size2d.x := params.objAffineTileSize2d.x
+      //tempObjAffineAttrs.size2d.y := params.objAffineTileSize2d.y
       tempObjAffineAttrs.dispFlip := tempObjAffineAttrs.dispFlip.getZero
       //tempObjAffineAttrs.affine := tempObjAffineAttrs.affine.getZero
       tempObjAffineAttrs.affine.doIt := True
@@ -1131,19 +1134,27 @@ case class Gpu2dTest(
         //2 << tempObjAffineAttrs.affine.fracWidth
         //(1 << Gpu2dAffine.fracWidth)
         //| 
-        (1 << (Gpu2dAffine.fracWidth - 1))
+        //(1 << (Gpu2dAffine.fracWidth - 1))
         //| (1 << (Gpu2dAffine.fracWidth - 2))
+        1
+      ) * (255)
+      tempObjAffineAttrs.affine.mat(0)(1) := (
+        //0
+        -5
       )
-      tempObjAffineAttrs.affine.mat(0)(1) := 0
-      tempObjAffineAttrs.affine.mat(1)(0) := 0
+      tempObjAffineAttrs.affine.mat(1)(0) := (
+        //0
+        5
+      )
       tempObjAffineAttrs.affine.mat(1)(1) := (
         //1 << (tempObjAffineAttrs.affine.fracWidth - 1)
         //2 << tempObjAffineAttrs.affine.fracWidth
         //(1 << Gpu2dAffine.fracWidth)
         //| 
-        (1 << (Gpu2dAffine.fracWidth - 1))
+        //(1 << (Gpu2dAffine.fracWidth - 1))
         //| (1 << (Gpu2dAffine.fracWidth - 2))
-      )
+        1
+      ) * (255)
       //tempObjAffineAttrs := tempObjAffineAttrs.getZero
     //} elsewhen (rObjAffineAttrsCnt === 2) {
     //  tempObjAffineAttrs.tileMemIdx := 3

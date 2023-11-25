@@ -445,7 +445,8 @@ case class Gpu2dParams(
   )
   def tempObjTileWidth(isAffine: Boolean) = (
     if (!isAffine) {
-      objTileSize2d.x
+      //objTileSize2d.x
+      objSliceTileWidth
     } else {
       //objAffineDblTileSize2d
       //objAffineSliceTileWidth
@@ -661,8 +662,8 @@ case class Gpu2dParams(
   )
   def objSize2dForAttrsT() = coordT(someSize2d=objSize2dForAttrs)
   def objAffineSize2dForAttrs = ElabVec2[Int](
-    x=objAffineTileSize2d.x + 1,
-    y=objAffineTileSize2d.y + 1,
+    x=objAffineTileSize2d.x + 1 + 1,
+    y=objAffineTileSize2d.y + 1 + 1,
   )
   def objAFfineSize2dForAttrsPow = ElabVec2[Int](
     x=log2Up(objAffineSize2dForAttrs.x),
@@ -4196,13 +4197,6 @@ case class Gpu2d(
           )
         }
       )
-      val dbgTestAffineIdx = UInt(
-        params.objAffineAttrsMemIdxTileCntWidth bits
-      )
-      //val objAttrsMemIdx = UInt(
-      //  //params.objAttrsMemIdxWidth bits
-      //  (params.objAttrsMemIdxWidth + 1) bits
-      //)
       val dbgTestIdx = UInt(
         (
           //params.objAttrsMemIdxWidth + 1 + 1
@@ -4211,6 +4205,13 @@ case class Gpu2d(
           params.objAttrsMemIdxTileCntWidth
         ) bits
       )
+      val dbgTestAffineIdx = UInt(
+        params.objAffineAttrsMemIdxTileCntWidth bits
+      )
+      //val objAttrsMemIdx = UInt(
+      //  //params.objAttrsMemIdxWidth bits
+      //  (params.objAttrsMemIdxWidth + 1) bits
+      //)
     }
     case class WrObjPipePayload(
       isAffine: Boolean
@@ -4379,50 +4380,54 @@ case class Gpu2d(
         def objXStart() = {
           (
             //def tempShift = tempAffineShift
-            Cat(
-              rawIdx()(
-                (
-                  ////objXStartRawWidthPow
-                  ////params.objSliceTileWidthPow
-                  //1 // to account for double size rendering
-                  ////+ (
-                  ////  if (params.objTileWidthRshift == 0) {
-                  ////    1 // for the extra cycle delay between pixels
-                  ////  } else {
-                  ////    params.objTileWidthRshift
-                  ////  }
-                  ////)
-                  //+
-                  //tempAffineShift
-                  //params.objTileWidthRshift
-                  params.objSliceTileWidthPow
-                  + 1 // account for the extra cycle delay
-                  + 1 // account for grid index
-                  - 1 
-                )
-                //downto params.objSliceTileWidthPow
-                //downto params.objTileWidthRshift + 1
-                downto (
-                  //if (params.objTileWidthRshift == 0) {
-                  //  1
-                  //} else {
-                  //  0
-                  //}
-                  //tempAffineShift
-                  //0
-                  //1 // account for double size rendering
-                  //params.objTileWidthRshift
-                  + 1 // account for the extra cycle delay
-                  + 1 // account for grid index
-                )
-              ),
-              B(
-                params.objSliceTileWidthPow bits,
-                //params.objTileWidthRshift bits,
-                //params.objTileWidthRshift bits,
-                default -> False
-              ),
-            ).asUInt
+            if (params.objTileWidthRshift > 0) {
+              Cat(
+                rawIdx()(
+                  (
+                    ////objXStartRawWidthPow
+                    ////params.objSliceTileWidthPow
+                    //1 // to account for double size rendering
+                    ////+ (
+                    ////  if (params.objTileWidthRshift == 0) {
+                    ////    1 // for the extra cycle delay between pixels
+                    ////  } else {
+                    ////    params.objTileWidthRshift
+                    ////  }
+                    ////)
+                    //+
+                    //tempAffineShift
+                    //params.objTileWidthRshift
+                    params.objSliceTileWidthPow
+                    + 1 // account for the extra cycle delay
+                    + 1 // account for grid index
+                    - 1 
+                  )
+                  //downto params.objSliceTileWidthPow
+                  //downto params.objTileWidthRshift + 1
+                  downto (
+                    //if (params.objTileWidthRshift == 0) {
+                    //  1
+                    //} else {
+                    //  0
+                    //}
+                    //tempAffineShift
+                    //0
+                    //1 // account for double size rendering
+                    //params.objTileWidthRshift
+                    + 1 // account for the extra cycle delay
+                    + 1 // account for grid index
+                  )
+                ),
+                B(
+                  params.objSliceTileWidthPow bits,
+                  //params.objTileWidthRshift bits,
+                  //params.objTileWidthRshift bits,
+                  default -> False
+                ),
+              ).asUInt
+            } else {
+              U"00".resized
+            }
           )
         }
 
@@ -4702,14 +4707,12 @@ case class Gpu2d(
         val pxPos = Vec.fill(myTempObjTileWidth)(
           params.objPxsCoordT()
         )
-        val myIdxPxPosX = (isAffine) generate (
-          Vec.fill(
-            //myTempObjTileWidth
-            tempObjTileWidth1()
-            //tempObjTileWidth2()
-          )(
-            SInt(params.objPxsCoordSize2dPow.x bits)
-          )
+        val myIdxPxPosX = Vec.fill(
+          //myTempObjTileWidth
+          tempObjTileWidth1()
+          //tempObjTileWidth2()
+        )(
+          SInt(params.objPxsCoordSize2dPow.x bits)
         )
         //val affinePxPos = (isAffine) generate Vec.fill(
         //  myTempObjTileWidth
@@ -8712,16 +8715,26 @@ case class Gpu2d(
               tempOutp.myIdxPxPosX(x) := (
                 tempOutp.objAttrs.pos.x.asUInt
                 + x
-                + tempInp.affineObjXStart()
+                + (
+                  if (kind == 0) {
+                    tempInp.objXStart()
+                  } else {
+                    tempInp.affineObjXStart()
+                  }
+                )
               ).asSInt
             }
           }
 
           for (x <- 0 until myTempObjTileWidth) {
-            val tempAffineObjXStart = (kind == 1) generate (
-              tempInp.affineObjXStart()
+            val tempObjXStart = (
+              if (kind == 0) {
+                tempInp.objXStart()
+              } else {
+                tempInp.affineObjXStart()
+              }
             )
-              .setName(f"wrObjPipe2_tempAffineObjXStart_$kind" + f"_$x")
+              .setName(f"wrObjPipe2_tempObjXStart_$kind" + f"_$x")
             val tileX = (
               (
                 if (kind == 0) {
@@ -8729,7 +8742,7 @@ case class Gpu2d(
                   U(f"$tempWidth'd0")
                 } else {
                   //tempInp.affineObjXStart()
-                  tempAffineObjXStart
+                  tempObjXStart
                 }
               ) + x
             )
@@ -9033,7 +9046,8 @@ case class Gpu2d(
             if (kind == 0) {
               tempOutp.tilePxsCoord(x).x := (
                 x
-              )
+                //+ tempInp.objXStart()
+              )//.resized
               tempOutp.tilePxsCoord(x).y := (
                 //rWrLineNum - tempInp.objAttrs.pos.y.asUInt
                 (
@@ -9090,15 +9104,91 @@ case class Gpu2d(
                 .setName(f"wrObjPipe5_tempX_$x")
               tileX := tempX.asUInt(tileX.bitsRange)
               
+              //tempOutp.stage5.oorTilePxsCoord(x).x := (
+              //  (
+              //    //(
+              //    //  tempInp.objAttrs.size2d.x(
+              //    //    tempInp.objAttrs.size2d.x.high
+              //    //    downto tempInp.objAttrs.size2d.x.high - 1
+              //    //  ) =/= U"00"
+              //    //) 
+              //    (
+              //      tempInp.objAttrs.size2d.x
+              //      === params.objAffineTileSize2d.x
+              //    ) && (
+              //      tempX < 0
+              //      || tempX >= params.objAffineTileSize2d.x
+              //    )
+              //  ) || (
+              //    (
+              //      tempInp.objAttrs.size2d.x
+              //      < params.objAffineTileSize2d.x
+              //    ) && !(
+              //      (
+              //        (tempX << 1) - params.objAffineTileSize2d.x 
+              //        //((tempX - (params.objAffineTileSize2d.x >> 1)) << 1)
+              //        < tempInp.objAttrs.size2d.x.asSInt
+              //      ) && (
+              //        (tempX << 1) - params.objAffineTileSize2d.x 
+              //        //((tempX - (params.objAffineTileSize2d.x >> 1)) << 1)
+              //        >= -tempInp.objAttrs.size2d.x.asSInt
+              //      )
+              //    )
+              //  )
+
+              //  //tempX(tempX.high downto tileX.high) =/= 0
+              //  //fxTileX + (params.objAffineTileSize2d.x / 2) < 0
+              //  ////< (-params.objAffineTileSize2d.x / 2)
+              //  //|| (
+              //  //  //fxTileX >= (params.objAffineTileSize2d.x / 2)
+              //  //  fxTileX + (params.objAffineTileSize2d.x / 2)
+              //  //  >= params.objAffineTileSize2d.x
+              //  //)
+              //)
               tempOutp.stage5.oorTilePxsCoord(x).x := (
-                tempX < 0
-                || tempX >= params.objAffineTileSize2d.x //params.objAffineDblTileSize2d.x
-                //tempX(tempX.high downto tileX.high) =/= 0
-                //fxTileX + (params.objAffineTileSize2d.x / 2) < 0
+                (
+                  //(
+                  //  tempInp.objAttrs.size2d.x(
+                  //    tempInp.objAttrs.size2d.x.high
+                  //    downto tempInp.objAttrs.size2d.x.high - 1
+                  //  ) =/= U"00"
+                  //)
+                  (
+                    tempInp.objAttrs.size2d.x
+                    === params.objAffineTileSize2d.x
+                  )
+                  && (
+                    tempX < 0
+                    || tempX >= params.objAffineTileSize2d.x
+                  )
+                ) || (
+                  (
+                    tempInp.objAttrs.size2d.x
+                    < params.objAffineTileSize2d.x
+                  ) && !(
+                    (
+                      (tempX << 1) - params.objAffineTileSize2d.x 
+                      //((tempX - (params.objAffineTileSize2d.x >> 1)) << 1)
+                      < tempInp.objAttrs.size2d.x.asSInt
+                    ) && (
+                      (tempX << 1) - params.objAffineTileSize2d.x 
+                      //((tempX - (params.objAffineTileSize2d.x >> 1)) << 1)
+                      >= -tempInp.objAttrs.size2d.x.asSInt
+                    )
+                  )
+                )
+                //tempX(tempX.high downto tileY.high) =/= 0
+                ////tempX(tempX.high downto tileY.getWidth) =/= 0
+                ////tempX(tempX.high downto tileY.getWidth) < 0
+                ////|| tempX(tempX.high downto tileY.getWidth)
+                ////  > params.objAffineTileSize2d.x - 1
+                ////fxTileY < (-params.objAffineTileSize2d.x / 2)
+                ////|| fxTileY >= (params.objAffineTileSize2d.x / 2)
+                //fxTileY + (params.objAffineTileSize2d.x / 2) < 0
                 ////< (-params.objAffineTileSize2d.x / 2)
                 //|| (
-                //  //fxTileX >= (params.objAffineTileSize2d.x / 2)
-                //  fxTileX + (params.objAffineTileSize2d.x / 2)
+                //  //fxTileY >= (params.objAffineTileSize2d.x / 2)
+                //  fxTileY + (params.objAffineTileSize2d.x / 2)
                 //  >= params.objAffineTileSize2d.x
                 //)
               )
@@ -9144,8 +9234,37 @@ case class Gpu2d(
               tileY := tempY.asUInt(tileY.bitsRange)
               
               tempOutp.stage5.oorTilePxsCoord(x).y := (
-                tempY < 0
-                || tempY >= params.objAffineTileSize2d.y //params.objAffineDblTileSize2d.y
+                (
+                  //(
+                  //  tempInp.objAttrs.size2d.y(
+                  //    tempInp.objAttrs.size2d.y.high
+                  //    downto tempInp.objAttrs.size2d.y.high - 1
+                  //  ) =/= U"00"
+                  //)
+                  (
+                    tempInp.objAttrs.size2d.y
+                    === params.objAffineTileSize2d.y
+                  )
+                  && (
+                    tempY < 0
+                    || tempY >= params.objAffineTileSize2d.y
+                  )
+                ) || (
+                  (
+                    tempInp.objAttrs.size2d.y
+                    < params.objAffineTileSize2d.y
+                  ) && !(
+                    (
+                      (tempY << 1) - params.objAffineTileSize2d.y 
+                      //((tempY - (params.objAffineTileSize2d.y >> 1)) << 1)
+                      < tempInp.objAttrs.size2d.y.asSInt
+                    ) && (
+                      (tempY << 1) - params.objAffineTileSize2d.y 
+                      //((tempY - (params.objAffineTileSize2d.y >> 1)) << 1)
+                      >= -tempInp.objAttrs.size2d.y.asSInt
+                    )
+                  )
+                )
                 //tempY(tempY.high downto tileY.high) =/= 0
                 ////tempY(tempY.high downto tileY.getWidth) =/= 0
                 ////tempY(tempY.high downto tileY.getWidth) < 0
@@ -9378,24 +9497,67 @@ case class Gpu2d(
               tempInp.pxPos(x).y < tempInp.objPosYShift
             )
             when (
-              tempInp.tilePxsCoord(x).x
-                < tempInp.objAttrs.size2d.x
-              && tempInp.tilePxsCoord(x).y
-                < tempInp.objAttrs.size2d.y
-              && (
-                if (kind == 0) {
-                  True //!tempInp.objAttrs.affine.doIt
-                } else { // if (kind == 1)
-                  (
-                    //tempInp.objAttrs.affine.doIt
-                    ////&& tempInp.stage0.affineActive
-                    //&& tempInp.stage0.affineActive
-                    //&& !tempInp.stage5.oorTilePxsCoord(x).x
-                    //&& !tempInp.stage5.oorTilePxsCoord(x).y
+              //tempInp.tilePxsCoord(x).x
+              //  < tempInp.objAttrs.size2d.x
+              //&& tempInp.tilePxsCoord(x).y
+              //  < tempInp.objAttrs.size2d.y
+              //&& (
+              //  if (kind == 0) {
+              //    True //!tempInp.objAttrs.affine.doIt
+              //  } else { // if (kind == 1)
+              //    (
+              //      //tempInp.objAttrs.affine.doIt
+              //      ////&& tempInp.stage0.affineActive
+              //      //&& tempInp.stage0.affineActive
+              //      //&& !tempInp.stage5.oorTilePxsCoord(x).x
+              //      //&& !tempInp.stage5.oorTilePxsCoord(x).y
+              //      tempInp.stage5.affineDoIt(x)
+              //    )
+              //  }
+              //)
+              if (kind == 0) {
+                (
+                  tempInp.tilePxsCoord(x).x
+                    < tempInp.objAttrs.size2d.x
+                  && tempInp.tilePxsCoord(x).y
+                    < tempInp.objAttrs.size2d.y
+                )
+              } else {
+                (
+                  //--------
+                  //tempInp.tilePxsCoord(x).x
+                  //  + (params.objAffineTileSize2d.x / 2)
+                  //  < tempInp.objAttrs.size2d.x
+                  //&& tempInp.tilePxsCoord(x).x.asSInt.resized
+                  //  - (params.objAffineTileSize2d.x / 2)
+                  //  >= 0
+                  //&& tempInp.tilePxsCoord(x).y
+                  //  + (params.objAffineTileSize2d.y / 2)
+                  //  < tempInp.objAttrs.size2d.y
+                  //--------
+                  // do some fixed point math (with one fractional bit)
+                  // this centers the coordinates
+                  //(
+                  //  (tempInp.tilePxsCoord(x).x << 1)
+                  //    - params.objAffineTileSize2d.x 
+                  //    < tempInp.objAttrs.size2d.x
+                  //) && (
+                  //  (tempInp.tilePxsCoord(x).x << 1).asSInt
+                  //    - params.objAffineTileSize2d.x
+                  //    >= -tempInp.objAttrs.size2d.x.asSInt
+                  //) && (
+                  //  (tempInp.tilePxsCoord(x).y << 1).asSInt
+                  //    - params.objAffineTileSize2d.y 
+                  //    < tempInp.objAttrs.size2d.y.asSInt
+                  //) && (
+                  //  (tempInp.tilePxsCoord(x).y << 1).asSInt
+                  //    + params.objAffineTileSize2d.y 
+                  //    >= -tempInp.objAttrs.size2d.y.asSInt
+                  //) && (
                     tempInp.stage5.affineDoIt(x)
-                  )
-                }
-              )
+                  //)
+                )
+              }
             ) {
               tempOutp.palEntryMemIdx(x) := (
                 tempInp.tile.getPx(
