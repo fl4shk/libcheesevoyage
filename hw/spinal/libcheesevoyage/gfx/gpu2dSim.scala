@@ -8,6 +8,7 @@ import spinal.core._
 //import spinal.core.formal._
 import spinal.core.sim._
 import spinal.lib._
+//import spinal.lib.graphic.vga._
 import spinal.lib.graphic.Rgb
 import spinal.lib.graphic.RgbConfig
 import scala.collection.mutable.ArrayBuffer
@@ -29,6 +30,7 @@ case class Gpu2dSimDut(
       fifoDepth=ctrlFifoDepth,
     ))
   }
+  def myVgaTimingsWidth = 12
   val vgaCtrl = LcvVgaCtrl(
     clkRate=clkRate,
     //rgbConfig=physRgbConfig,
@@ -36,12 +38,16 @@ case class Gpu2dSimDut(
     vgaTimingInfo=vgaTimingInfo,
     fifoDepth=ctrlFifoDepth,
   )
-  //val vidDith = LcvVideoDitherer(
-  //  //fbSize2d=fbSize2d,
+  val vidDith = LcvVideoDitherer(
+    //fbSize2d=fbSize2d,
+    rgbConfig=rgbConfig,
+    //vgaTimingInfo=vgaTimingInfo,
+    //fbSize2d=vgaTimingInfo.fbSize2d,
+    fbSize2d=vgaTimingInfo.fbSize2d,
+  )
+  //val vgaCtrl = VgaCtrl(
   //  rgbConfig=rgbConfig,
-  //  //vgaTimingInfo=vgaTimingInfo,
-  //  //fbSize2d=vgaTimingInfo.fbSize2d,
-  //  fbSize2d=fbSize2d,
+  //  timingsWidth=myVgaTimingsWidth,
   //)
   val gpu2d = Gpu2d(
     params=gpu2dParams,
@@ -55,47 +61,29 @@ case class Gpu2dSimDut(
   //val dithIo = vidDith.io
   val gpuIo = gpu2d.io
 
+  //val vgaTimingsH = VgaTimingsHV(timingsWidth=myVgaTimingsWidth)
+  //vgaTimingsH.colorStart := vgaTimingInfo.htiming.
+
   //gpuIo <> gpu2dTest.io.gpuIo
   //gpuIo.push <> gpu2dTest.io.pop
   //gpu2dTest.io.pop <> gpuIo.push
   gpuIo.push << gpu2dTest.io.pop
-
-  //gpuIo.push.bgTilePush << gpu2dTest.io.pop.bgTilePush
-  //for (idx <- 0 to gpu2dParams.numBgs - 1) {
-  //  gpuIo.push.bgEntryPushArr(idx) << (
-  //    gpu2dTest.io.pop.bgEntryPushArr(idx)
-  //  )
-  //  gpuIo.push.bgAttrsPushArr(idx) << (
-  //    gpu2dTest.io.pop.bgAttrsPushArr(idx)
-  //  )
-  //}
-  //gpuIo.push.bgPalEntryPush << gpu2dTest.io.pop.bgPalEntryPush
-  //gpuIo.push.objTilePush << gpu2dTest.io.pop.objTilePush
-  //gpuIo.push.objAttrsPush << gpu2dTest.io.pop.objAttrsPush
-  //gpuIo.push.objPalEntryPush << gpu2dTest.io.pop.objPalEntryPush
-
-  //gpuIo << gpu2dT
-
-  //when (rObjPalCnt < gpu2dParams.numColsInBgPal) {
-  //  rObjPalCnt := rObjPalCnt + 1
-  //}
-
-  //ctrlIo.en := True
-  //ctrlIo.push.valid := dithIo.pop.valid
-  //ctrlIo.push.payload := dithIo.pop.payload.col
-  //dithIo.pop.ready := ctrlIo.push.ready
-
-  //dithIo.push.valid := gpuIo.pop.valid
-  //dithIo.push.payload := gpuIo.pop.payload.col 
-  //gpuIo.pop.ready := dithIo.push.ready
-  //ctrlIo.en := True
-
+  //--------
+  // BEGIN: main code; later
   ctrlIo.en := gpuIo.ctrlEn
   //ctrlIo.en := False
 
   ctrlIo.push.valid := gpuIo.pop.valid
   ctrlIo.push.payload := gpuIo.pop.payload.col
   gpuIo.pop.ready := ctrlIo.push.ready
+  ////vgaCtrl.io.pixels << gpuIo.pop
+  ////ctrlIo.pixels.valid := gpuIo.pop.valid
+  ////ctrlIo.pixels.payload := gpuIo.pop.payload.col
+  ////gpuIo.pop.ready := ctrlIo.pixels.ready
+  // END: main cod; later
+  //--------
+
+
   //ctrlIo.push.valid := gpu2dTest.io.pop.valid
   //ctrlIo.push.payload := gpu2dTest.io.pop.payload.col
   //gpu2dTest.io.pop.ready := ctrlIo.push.ready
@@ -105,6 +93,8 @@ case class Gpu2dSimDut(
 
   io.phys := ctrlIo.phys
   io.misc := ctrlIo.misc
+  //io.misc.pastVisib := RegNext(io.misc.visib)
+  //io.misc.visib := ctrlIo.vga.colorEn
 }
 
 object Gpu2dSim extends App {
@@ -141,8 +131,8 @@ object Gpu2dSim extends App {
     ),
     vtiming=LcvVgaTimingHv(
       //visib=1 << 3,
-      //visib=1 << 4,
-      visib=1 << 7,
+      visib=1 << 4,
+      //visib=1 << 7,
       //visib=4,
       //visib=8,
       front=1,
@@ -181,7 +171,8 @@ object Gpu2dSim extends App {
       //x=log2Up(2),
       //y=log2Up(2),
     ),
-    objTileWidthRshift=1,
+    objTileWidthRshift=0,
+    //objTileWidthRshift=1,
     objAffineTileSize2dPow=ElabVec2[Int](
       //x=log2Up(8),
       //y=log2Up(8),
@@ -214,7 +205,8 @@ object Gpu2dSim extends App {
     numColsInObjPalPow=log2Up(64),
     noColorMath=true,
     noAffineBgs=true,
-    noAffineObjs=false,
+    noAffineObjs=true,
+    //noAffineObjs=false,
     //fancyObjPrio=false,
     fancyObjPrio=true,
   )
@@ -241,8 +233,8 @@ object Gpu2dSim extends App {
       //  dut.clockDomain.waitRisingEdge()
       //}
       def simNumClks = (
-        16000
-        //32000
+        //16000
+        32000
       )
       for (idx <- 0 to simNumClks - 1) {
         dut.clockDomain.waitRisingEdge()

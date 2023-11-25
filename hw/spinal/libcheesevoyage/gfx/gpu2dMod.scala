@@ -431,7 +431,8 @@ case class Gpu2dParams(
   //--------
   def tempObjTileWidthPow(isAffine: Boolean) = (
     if (!isAffine) {
-      objTileSize2dPow.x
+      //objTileSize2dPow.x
+      objSliceTileWidthPow
     } else {
       //objAffineDblTileSize2dPow
       //ElabVec2[Int](
@@ -465,6 +466,15 @@ case class Gpu2dParams(
       //myDbgObjAffineTileWidthPow
     }
   )
+  def tempObjTileWidth1(isAffine: Boolean) = (
+    if (!isAffine) {
+      objTileSize2d.x
+    } else {
+      objAffineTileSize2d.x
+      //objAffineSliceTileWidth
+      //myDbgObjAffineTileWidth
+    }
+  )
 
   def tempObjTileWidthPow2(isAffine: Boolean) = (
     if (!isAffine) {
@@ -477,15 +487,6 @@ case class Gpu2dParams(
       //)
       //objAffineSliceTileWidthPow
       //myDbgObjAffineTileWidthPow
-    }
-  )
-  def tempObjTileWidth1(isAffine: Boolean) = (
-    if (!isAffine) {
-      objTileSize2d.x
-    } else {
-      objAffineTileSize2d.x
-      //objAffineSliceTileWidth
-      //myDbgObjAffineTileWidth
     }
   )
   def tempObjTileWidth2(isAffine: Boolean) = (
@@ -556,7 +557,8 @@ case class Gpu2dParams(
     //    objTileWidthRshift
     //  }
     //)
-    + objTileWidthRshift
+    //+ objTileWidthRshift
+    + objSliceTileWidthPow
     + 1 // to account for the rendering grid
   )
   def objAttrsMemIdxTileCntWidth = (
@@ -575,7 +577,8 @@ case class Gpu2dParams(
     //    objAffineTileWidthRshift
     //  }
     //)
-    + objAffineTileWidthRshift
+    //+ objAffineTileWidthRshift
+    + objAffineSliceTileWidthPow
     + 1 // to account for double size rendering
     + 1 // to account for the rendering grid
   )
@@ -4377,31 +4380,7 @@ case class Gpu2d(
           (
             //def tempShift = tempAffineShift
             Cat(
-              //calcGridIdxLsb(
-              //  if (!isAffine) {
-              //    0
-              //  } else {
-              //    1
-              //  }
-              //),
-              //rawAffineIdx()(
-              //  params.objTileWidthRshift
-              //),
               rawIdx()(
-                //params.objTileWidthRshift - 1 downto 0
-                //params.objTileWidthRshift downto 0
-                //justCopy.myMemIdxWidth
-                //(
-                //  params.objDblTileSize2dPow.x
-                //  + params.objAttrsMemIdxWidth
-                //)
-                //rawAffineIdx().high - 1 // account for 
-                //(
-                //  objXStartRawPlus
-                //  //params.objSliceTileWidthPow
-                //  + params.objAttrsMemIdxWidth
-                //)
-                //downto params.objAttrsMemIdxWidth
                 (
                   ////objXStartRawWidthPow
                   ////params.objSliceTileWidthPow
@@ -4444,10 +4423,6 @@ case class Gpu2d(
                 default -> False
               ),
             ).asUInt
-            //(
-            //  params.objDblTileSize2dPow.x - 1 downto 0
-            //  //params.objSliceTileWidthPow - 1 downto 0
-            //)
           )
         }
 
@@ -5526,9 +5501,12 @@ case class Gpu2d(
     def combinePipeBakCntStart = (
       params.intnlFbSize2d.x - 1
     )
-    case class CombinePipeOut2Ext() extends Bundle {
+    case class CombinePipeOut3Ext() extends Bundle {
       val bgRdSubLineMemEntry = BgSubLineMemEntry()
       val objRdSubLineMemEntry = ObjSubLineMemEntry()
+      val objAffineRdSubLineMemEntry = (!noAffineObjs) generate (
+        ObjSubLineMemEntry()
+      )
     }
     //val rCombinePipeOut1Ext = Reg(CombinePipeOut1Ext())
     //rCombinePipeOut1Ext.init(rCombinePipeOut1Ext.getZero)
@@ -5601,13 +5579,16 @@ case class Gpu2d(
         )
       }
       case class Stage3() extends Bundle {
-        val ext = CombinePipeOut2Ext()
+        val ext = CombinePipeOut3Ext()
       }
       //case class Stage3() extends Bundle {
       //}
+      case class Stage4() extends Bundle {
+        val objPickSubLineMemEntry = ObjSubLineMemEntry()
+      }
       case class Stage5() extends Bundle {
         val objHiPrio = Bool()
-        //val ext = CombinePipeOut2Ext()
+        //val ext = CombinePipeOut3Ext()
       }
       case class Stage6() extends Bundle {
         //val isObj = Bool()
@@ -5627,6 +5608,7 @@ case class Gpu2d(
       case class PostStage0() extends Bundle {
         val stage2 = Stage2()
         val stage3 = Stage3()
+        val stage4 = Stage4()
         //val stage3 = Stage3()
         val stage5 = Stage5()
         val stage6 = Stage6()
@@ -5641,6 +5623,9 @@ case class Gpu2d(
       //def objRdLineMemEntry = stage1.objRdLineMemEntry
       def stage3 = postStage0.stage3
       //def stage3 = postStage0.stage3
+
+      def stage4 = postStage0.stage4
+      def objPickSubLineMemEntry = stage4.objPickSubLineMemEntry
 
       def stage5 = postStage0.stage5
       def objHiPrio = stage5.objHiPrio
@@ -9960,8 +9945,9 @@ case class Gpu2d(
                 tempInp.affineObjXStart()(
                   //myTempObjTileWidth1 - 1 downto 0
                   (
-                    tempInp.affineObjXStart().high - 1
+                    //tempInp.affineObjXStart().high - 1
                     //- params.objAffineTileWidthRshift
+                    params.objAffineTileSize2dPow.x - 1
                   )
                   downto 0
                 )
@@ -11689,6 +11675,17 @@ case class Gpu2d(
                         //objAffineSubLineMemArrElemIdx
                       )
                     )
+                    if (!noAffineObjs) {
+                      def tempRdObjAffine = (
+                        tempInp.stage2.rdObjAffine
+                      )
+                      tempOutp.stage3.ext.objAffineRdSubLineMemEntry := (
+                        tempRdObjAffine(
+                          //objSubLineMemArrElemIdx
+                          objAffineSubLineMemArrElemIdx
+                        )
+                      )
+                    }
                     //--------
                   //} otherwise {
                   //  tempOutp.stage2.ext.bgRdSubLineMemEntry := (
@@ -11741,6 +11738,84 @@ case class Gpu2d(
             } else {
               tempOutp.stage3 := (
                 combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage3
+              )
+            }
+          }
+        },
+      )
+      HandleDualPipe(
+        stageData=stageData.craft(4)
+      )(
+        pipeStageMainFunc=(
+          stageData: DualPipeStageData[Stream[CombinePipePayload]],
+          idx: Int,
+        ) => {
+          def tempInp = stageData.pipeIn(idx)
+          def tempOutp = stageData.pipeOut(idx)
+
+          def objRdSubLineMemEntry = (
+            tempInp.stage3.ext.objRdSubLineMemEntry
+          )
+          def objAffineRdSubLineMemEntry = (
+            tempInp.stage3.ext.objAffineRdSubLineMemEntry
+          )
+
+          if (noAffineObjs) {
+            tempOutp.objPickSubLineMemEntry := objRdSubLineMemEntry
+          } else {
+            switch (Cat(
+              objRdSubLineMemEntry.col.a,
+              objAffineRdSubLineMemEntry.col.a,
+              objRdSubLineMemEntry.prio < objAffineRdSubLineMemEntry.prio
+            )) {
+              //is (B"000") {
+              //  tempOutp.objPickSubLineMemEntry := (
+              //    objAffineRdSubLineMemEntry
+              //  )
+              //}
+              is (M"10-") {
+                tempOutp.objPickSubLineMemEntry := (
+                  objRdSubLineMemEntry
+                )
+              }
+              is (M"01-") {
+                tempOutp.objPickSubLineMemEntry := (
+                  objAffineRdSubLineMemEntry
+                )
+              }
+              is (M"110") {
+                tempOutp.objPickSubLineMemEntry := (
+                  objAffineRdSubLineMemEntry
+                )
+              }
+              is (M"111") {
+                tempOutp.objPickSubLineMemEntry := (
+                  objRdSubLineMemEntry
+                )
+              }
+              default {
+                tempOutp.objPickSubLineMemEntry := (
+                  objAffineRdSubLineMemEntry
+                )
+              }
+            }
+          }
+        },
+        copyOnlyFunc=(
+          stageData: DualPipeStageData[Stream[CombinePipePayload]],
+          idx: Int,
+        ) => {
+          def tempInp = stageData.pipeIn(idx)
+          def tempOutp = stageData.pipeOut(idx)
+
+          when (clockDomain.isResetActive) {
+            tempOutp.stage4 := tempOutp.stage4.getZero
+          } otherwise {
+            if (idx != 1) {
+              tempOutp.stage4 := tempInp.stage4
+            } else {
+              tempOutp.stage4 := (
+                combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage4
               )
             }
           }
@@ -11810,8 +11885,12 @@ case class Gpu2d(
 
                 //tempInp.objRdLineMemEntry.prio
                 //<= tempInp.bgRdLineMemEntry.prio
-                inpExt.objRdSubLineMemEntry.prio
+
+                //inpExt.objRdSubLineMemEntry.prio
+                //<= inpExt.bgRdSubLineMemEntry.prio
+                tempInp.objPickSubLineMemEntry.prio
                 <= inpExt.bgRdSubLineMemEntry.prio
+
                 //rCombinePipeOut1Ext.objRdLineMemEntry.prio
                 //<= rCombinePipeOut1Ext.bgRdLineMemEntry.prio
               )
@@ -11883,14 +11962,17 @@ case class Gpu2d(
             }
             switch (Cat(
               inpExt.bgRdSubLineMemEntry.col.a,
-              inpExt.objRdSubLineMemEntry.col.a,
+              //inpExt.objRdSubLineMemEntry.col.a,
+              tempInp.objPickSubLineMemEntry.col.a,
               tempInp.objHiPrio
             )) {
               is (B"111") {
-                tempOutp.col := inpExt.objRdSubLineMemEntry.col
+                //tempOutp.col := inpExt.objRdSubLineMemEntry.col
+                tempOutp.col := tempInp.objPickSubLineMemEntry.col
                 if (!noColorMath) {
                   tempOutp.colorMathInfo := (
-                    inpExt.objRdSubLineMemEntry.colorMathInfo
+                    //inpExt.objRdSubLineMemEntry.colorMathInfo
+                    tempInp.objPickSubLineMemEntry.colorMathInfo
                   )
                 }
               }
@@ -11911,10 +11993,12 @@ case class Gpu2d(
                 }
               }
               is (M"01-") {
-                tempOutp.col := inpExt.objRdSubLineMemEntry.col
+                //tempOutp.col := inpExt.objRdSubLineMemEntry.col
+                tempOutp.col := tempInp.objPickSubLineMemEntry.col
                 if (!noColorMath) {
                   tempOutp.colorMathInfo := (
-                    inpExt.objRdSubLineMemEntry.colorMathInfo
+                    //inpExt.objRdSubLineMemEntry.colorMathInfo
+                    tempInp.objPickSubLineMemEntry.colorMathInfo
                   )
                 }
               }
