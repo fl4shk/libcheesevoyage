@@ -86,59 +86,81 @@ case class Gpu2dTest(
     }
   }
   def mkTile(
-    tempTile: Gpu2dTile,
+    //tempTile: Gpu2dTileFull,
+    tempTileSlice: Gpu2dTileSlice,
+    //pxCoordStart: ElabVec2[Int],
+    pxCoordXStart: UInt,
+    pxCoordY: UInt,
+    palEntryMemIdxWidth: Int,
     colIdx0: Int,
     colIdx1: Int,
     colIdx2: Option[Int]=None,
     colIdx3: Option[Int]=None,
   ): Unit = {
-    for (jdx <- 0 to tempTile.pxsSize2d.y - 1) {
-      for (idx <- 0 to tempTile.pxsSize2d.x - 1) {
-        def pxCoord = ElabVec2[Int](idx, jdx)
-        if (jdx % 2 == 0) {
-          val myColIdx = colIdx2 match {
-            case Some(tempColIdx) => {
-              if (idx % 2 == 0) {
-                colIdx0
-              } else {
-                tempColIdx
+    switch (pxCoordY) {
+      for (jdx <- 0 until tempTileSlice.fullPxsSize2d.y) {
+        is (jdx) {
+          //def jdx = pxCoordY
+          //println(tempTileSlice.pxsSliceWidth)
+          //println(tempTileSlice.pxsSliceWidth)
+          for (
+            //idx <- until to tempTileSlice.pxsSize2d.x
+            idx <- 0 until tempTileSlice.pxsSliceWidth
+          ) {
+            //def pxCoord = ElabVec2[Int](idx, jdx)
+            def pxCoordX = idx + pxCoordXStart
+            //print(pxCoordX.getWidth)
+            //print(" ")
+            //println(f"$idx")
+            if (jdx % 2 == 0) {
+              val myColIdx = colIdx2 match {
+                case Some(tempColIdx) => {
+                  if (idx % 2 == 0) {
+                    colIdx0
+                  } else {
+                    tempColIdx
+                  }
+                }
+                case None => colIdx0
               }
-            }
-            case None => colIdx0
-          }
-          tempTile.setPx(
-            pxCoord=pxCoord,
-            //colIdx=(idx % 2) + 1,
-            //colIdx=(idx % 2) + colIdx0,
-            //colIdx=3,
-            //colIdx=colIdx0,
-            colIdx=myColIdx,
-          )
-        } else { // if (jdx % 2 == 1)
-          val myColIdx = colIdx3 match {
-            case Some(tempColIdx) => {
-              if (idx % 2 == 0) {
-                colIdx1
-              } else {
-                tempColIdx
+              tempTileSlice.setPx(
+                pxCoordX=pxCoordX,//.resized,
+                colIdx=U(f"$palEntryMemIdxWidth'd$myColIdx"),
+              )
+            } else { // if (jdx % 2 == 1)
+              val myColIdx = colIdx3 match {
+                case Some(tempColIdx) => {
+                  if (idx % 2 == 0) {
+                    colIdx1
+                  } else {
+                    tempColIdx
+                  }
+                }
+                case None => colIdx1
               }
+              tempTileSlice.setPx(
+                pxCoordX=pxCoordX,//.resized,
+                colIdx=U(f"$palEntryMemIdxWidth'd$myColIdx"),
+              )
             }
-            case None => colIdx1
           }
-          tempTile.setPx(
-            pxCoord=pxCoord,
-            //colIdx=((idx + 1) % 2) + 1,
-            //colIdx=4,
-            //colIdx=(idx % 2) + colIdx1,
-            //colIdx=colIdx1,
-            colIdx=myColIdx,
-          )
         }
       }
     }
   }
   //--------
-  val tempColorMathTile = Gpu2dTile(
+  val nextColorMathTileCnt = SInt(
+    //params.numColorMathTilesPow + 2 bits
+    params.colorMathTileMemIdxWidth + 5 bits
+  )
+  val rColorMathTileCnt = RegNext(nextColorMathTileCnt) init(-1)
+  val rColorMathTilePushValid = Reg(Bool()) init(True)
+  //val tempColorMathTile = Gpu2dTileFull(
+  //  params=params,
+  //  isObj=false,
+  //  isAffine=false,
+  //)
+  val tempColorMathTileSlice = Gpu2dTileSlice(
     params=params,
     isObj=false,
     isAffine=false,
@@ -150,49 +172,72 @@ case class Gpu2dTest(
     colIdx3: Option[Int]=None,
   ): Unit = {
     mkTile(
-      tempTile=tempColorMathTile,
+      //tempTile=tempColorMathTile,
+      tempTileSlice=tempColorMathTileSlice,
+      pxCoordXStart={
+        //rColorMathTileCnt(params.bgTileSize2dPow.x - 1 downto 0).asUInt
+        def tempWidthPow = params.bgTileSize2dPow.x
+        U(f"$tempWidthPow'd0")
+      },
+      pxCoordY=(
+        rColorMathTileCnt(
+          params.bgTileSize2dPow.y - 1
+          //downto params.bgTileSize2dPow.x
+          downto 0
+        ).asUInt
+      ),
+      palEntryMemIdxWidth=params.bgPalEntryMemIdxWidth,
       colIdx0=colIdx0,
       colIdx1=colIdx1,
       colIdx2=colIdx2,
       colIdx3=colIdx3,
     )
   }
-  val nextColorMathTileCnt = SInt(params.numColorMathTilesPow + 2 bits)
-  val rColorMathTileCnt = RegNext(nextColorMathTileCnt) init(-1)
-  val rColorMathTilePushValid = Reg(Bool()) init(True)
 
-  when (rColorMathTileCnt < params.numColorMathTiles) {
+  def tempColorMathTileCnt = (
+    rColorMathTileCnt
+    //>> (params.bgTileSize2dPow.y + params.bgTileSize2dPow.x)
+    >> params.bgTileSize2dPow.y
+  )
+  tempColorMathTileSlice := tempColorMathTileSlice.getZero
+  tempColorMathTileSlice.allowOverride
+  when (
+    //rColorMathTileCnt < params.numColorMathTiles
+    tempColorMathTileCnt < params.numColorMathTiles
+  ) {
     when (pop.colorMathTilePush.fire) {
-      when (rColorMathTileCnt === 0) {
+      when (tempColorMathTileCnt === 0) {
         mkColorMathTile(0, 0)
-      } elsewhen (rColorMathTileCnt === 1) {
+      } elsewhen (tempColorMathTileCnt === 1) {
         mkColorMathTile(1, 1)
-      } elsewhen (rColorMathTileCnt === 2) {
+      } elsewhen (tempColorMathTileCnt === 2) {
         mkColorMathTile(2, 2)
-      } elsewhen (rColorMathTileCnt === 3) {
+      } elsewhen (tempColorMathTileCnt === 3) {
         mkColorMathTile(3, 3)
-      } elsewhen (rColorMathTileCnt === 4) {
+      } elsewhen (tempColorMathTileCnt === 4) {
         mkColorMathTile(4, 4)
       } otherwise {
-        tempColorMathTile := tempColorMathTile.getZero
+        //tempColorMathTileSlice := tempColorMathTileSlice.getZero
       }
       nextColorMathTileCnt := rColorMathTileCnt + 1
     } otherwise {
-      tempColorMathTile := tempColorMathTile.getZero
+      //tempColorMathTileSlice := tempColorMathTileSlice.getZero
       nextColorMathTileCnt := rColorMathTileCnt
     }
   } otherwise {
-    tempColorMathTile := tempColorMathTile.getZero
+    //tempColorMathTileSlice := tempColorMathTileSlice.getZero
     nextColorMathTileCnt := rColorMathTileCnt
   }
-  when (rColorMathTileCnt + 1 >= params.numColorMathTiles) {
+  when (tempColorMathTileCnt >= params.numColorMathTiles - 1) {
     rColorMathTilePushValid := False
   }
 
   pop.colorMathTilePush.valid := rColorMathTilePushValid
-  pop.colorMathTilePush.payload.tile := tempColorMathTile
+  //pop.colorMathTilePush.payload.tile := tempColorMathTile
   pop.colorMathTilePush.payload.memIdx := (
-    rColorMathTileCnt.asUInt(pop.colorMathTilePush.payload.memIdx.bitsRange)
+    rColorMathTileCnt.asUInt(
+      pop.colorMathTilePush.payload.memIdx.bitsRange
+    )
   )
   //pop.colorMathTilePush.valid := False
   //pop.colorMathTilePush.payload := pop.colorMathTilePush.payload.getZero
@@ -221,7 +266,7 @@ case class Gpu2dTest(
   when (rColorMathEntryCnt < (1 << params.bgEntryMemIdxWidth)) {
     when (pop.colorMathEntryPush.fire) {
       when (rColorMathEntryCnt < 5) {
-        tempColorMathEntry.tileMemIdx := rColorMathEntryCnt.asUInt.resized
+        tempColorMathEntry.tileIdx := rColorMathEntryCnt.asUInt.resized
         tempColorMathEntry.dispFlip.x := False
         tempColorMathEntry.dispFlip.y := False
       } otherwise {
@@ -286,181 +331,117 @@ case class Gpu2dTest(
   //  pop.colorMathPalEntryPush.payload.getZero
   //)
   //--------
-  val tempBgTile = Gpu2dTile(
+  //val tempBgTile = Gpu2dTileFull(
+  //  params=params,
+  //  isObj=false,
+  //  isAffine=false,
+  //)
+  val tempBgTileSlice = Gpu2dTileSlice(
     params=params,
     isObj=false,
     isAffine=false,
   )
+
+  val nextBgTileCnt = SInt(
+    //params.numBgTilesPow + 2 bits
+    params.bgTileMemIdxWidth + 5 bits
+  )
+  val rBgTileCnt = RegNext(nextBgTileCnt) init(-1)
+  val rBgTilePushValid = Reg(Bool()) init(True)
   def mkBgTile(
     colIdx0: Int,
     colIdx1: Int,
     colIdx2: Option[Int]=None,
     colIdx3: Option[Int]=None,
   ): Unit = {
+    //mkTile(
+    //  //tempTile=tempBgTile,
+    //  colIdx0=colIdx0,
+    //  colIdx1=colIdx1,
+    //  colIdx2=colIdx2,
+    //  colIdx3=colIdx3,
+    //)
     mkTile(
-      tempTile=tempBgTile,
+      //tempTile=tempColorMathTile,
+      tempTileSlice=tempBgTileSlice,
+      pxCoordXStart={
+        //rBgTileCnt(params.bgTileSize2dPow.x - 1 downto 0).asUInt
+        //0
+        def tempWidthPow = params.bgTileSize2dPow.x
+        U(f"$tempWidthPow'd0")
+      },
+      pxCoordY=(
+        rBgTileCnt(
+          params.bgTileSize2dPow.y - 1
+          //downto params.bgTileSize2dPow.x
+          downto 0
+        ).asUInt
+      ),
+      palEntryMemIdxWidth=params.bgPalEntryMemIdxWidth,
       colIdx0=colIdx0,
       colIdx1=colIdx1,
       colIdx2=colIdx2,
       colIdx3=colIdx3,
     )
   }
-  val nextBgTileCnt = SInt(params.numBgTilesPow + 2 bits)
-  val rBgTileCnt = RegNext(nextBgTileCnt) init(-1)
-  val rBgTilePushValid = Reg(Bool()) init(True)
 
-  when (rBgTileCnt < params.numBgTiles) {
+  def tempBgTileCnt = (
+    rBgTileCnt
+    >> params.bgTileSize2dPow.y
+  )
+  tempBgTileSlice := tempBgTileSlice.getZero
+  tempBgTileSlice.allowOverride
+
+  when (
+    //rBgTileCnt < params.numBgTiles
+    tempBgTileCnt < params.numBgTiles
+    //rBgTileCnt < 
+  ) {
     when (pop.bgTilePush.fire) {
-      //when (rBgTileCnt === 0) {
-      //  //mkBgTile(0, 1)
-      //  mkBgTile(0, 0)
-      //} elsewhen (rBgTileCnt === 1) {
-      //  //mkBgTile(1, 2)
-      //  mkBgTile(1, 1)
-      //  //mkBgTile(3, 3)
-      //  //mkBgTile(2, 3)
-      //} elsewhen (rBgTileCnt === 2) {
-      //  //mkBgTile(2, 3)
-      //  //mkBgTile(3, 4)
-      //  mkBgTile(2, 2)
-      //  //mkBgTile(2, 2)
-      //} elsewhen (rBgTileCnt === 3) {
-      //  //mkBgTile(3, 4)
-      //  mkBgTile(3, 3)
-      //  //mkBgTile(0, 1)
-      //} elsewhen (rBgTileCnt === 4) {
-      //  //mkBgTile(4, 5)
-      //  mkBgTile(4, 4)
-      //} otherwise {
-        tempBgTile := tempBgTile.getZero
+      when (tempBgTileCnt === 0) {
+        //mkBgTile(0, 1)
+        mkBgTile(0, 0)
+      } elsewhen (tempBgTileCnt === 1) {
+        //mkBgTile(1, 2)
+        mkBgTile(1, 1)
+        //mkBgTile(3, 3)
+        //mkBgTile(2, 3)
+      } elsewhen (tempBgTileCnt === 2) {
+        //mkBgTile(2, 3)
+        //mkBgTile(3, 4)
+        mkBgTile(2, 2)
+        //mkBgTile(2, 2)
+      } elsewhen (tempBgTileCnt === 3) {
+        //mkBgTile(3, 4)
+        mkBgTile(3, 3)
+        //mkBgTile(0, 1)
+      } elsewhen (tempBgTileCnt === 4) {
+        //mkBgTile(4, 5)
+        mkBgTile(4, 4)
+      } otherwise {
+        //tempBgTileSlice := tempBgTileSlice.getZero
         //when (rBgTileCnt >= params.numBgTiles) {
         //  rBgTilePushValid := False
         //}
-      //}
+      }
       nextBgTileCnt := rBgTileCnt + 1
     } otherwise {
-      tempBgTile := tempBgTile.getZero
+      //tempBgTileSlice := tempBgTileSlice.getZero
       nextBgTileCnt := rBgTileCnt
     }
   } otherwise {
-    tempBgTile := tempBgTile.getZero
+    //tempBgTileSlice := tempBgTileSlice.getZero
     nextBgTileCnt := rBgTileCnt
   }
-  when (rBgTileCnt + 1 >= params.numBgTiles) {
+  when (tempBgTileCnt >= params.numBgTiles - 1) {
     rBgTilePushValid := False
   }
 
   pop.bgTilePush.valid := rBgTilePushValid
-  pop.bgTilePush.payload.tile := tempBgTile
+  pop.bgTilePush.payload.tileSlice := tempBgTileSlice
   pop.bgTilePush.payload.memIdx := (
     rBgTileCnt.asUInt(pop.bgTilePush.payload.memIdx.bitsRange)
   )
-  //val tempBgTileRow0Vec = (
-  //  tempBgTile.colIdxRowVec(0).subdivideIn(
-  //    params.bgTileSize2d.x slices
-  //  )
-  //)
-  //tempBgTileRow0Vec(0) := 1
-  //for (idx <- 0 to tempBgTile.colIdxRowVec.size - 1) {
-  //  tempBgTile.colIdxRowVec(0)(
-  //    params.bgPalEntryMemIdxWidth - 1 downto 0
-  //  ) := 1
-  //  tempBgTile
-  //}
-  //for (jdx <- 0 to tempBgTile.pxsSize2d.y - 1) {
-  //  for (idx <- 0 to tempBgTile.pxsSize2d.x - 1) {
-  //    def pxCoord = ElabVec2[Int](idx, jdx)
-  //    //// checkerboard pattern
-  //    //if (jdx % 2 == 0) {
-  //    //  tempBgTile.setPx(
-  //    //    pxCoord=pxCoord,
-  //    //    colIdx=(idx % 2) + 1,
-  //    //  )
-  //    //} else { // if (jdx % 2 == 1)
-  //    //  tempBgTile.setPx(
-  //    //    pxCoord=pxCoord,
-  //    //    colIdx=((idx + 1) % 2) + 1,
-  //    //  )
-  //    //}
-  //    tempBgTile.setPx(
-  //      pxCoord=pxCoord,
-  //      //colIdx=(jdx % 2) + 1,
-  //      //colIdx=(idx % 2) + 1,
-  //      //colIdx=(idx % 4) + 1,
-  //      colIdx=(
-  //        (idx % 4) >> log2Up(2),
-  //      )
-  //    )
-
-  //    //if (jdx % 4 == 0) {
-  //    //} else if (jdx % 4 == 1) {
-  //    //} else if (jdx % 4 == 2) {
-  //    //}
-  //    //if (idx == 0) {
-  //    //  tempBgTile.setPx(
-  //    //    pxCoord=pxCoord,
-  //    //    colIdx=(jdx % 4) + 1,
-  //    //  )
-  //    //} else if (idx + 1 < tempBgTile.pxsSize2d.x) {
-  //    //  tempBgTile.setPx(
-  //    //    pxCoord=pxCoord,
-  //    //    colIdx=jdx % 2,
-  //    //  )
-  //    //} else {
-  //    //  tempBgTile.setPx(
-  //    //    pxCoord=pxCoord,
-  //    //    colIdx=(jdx % 4) + 2
-  //    //  )
-  //    //}
-
-  //    //tempBgTile.setPx(
-  //    //  pxCoord=pxCoord,
-  //    //  colIdx=1,
-  //    //  //colIdx=0,
-  //    //)
-  //  }
-  //}
-  //tempBgTile.colIdxRowVec.assignFromBits(
-  //  //tempBgTile.colIdxRowVec.getZero.asBits
-  //)
-
-  //val rBgTileCnt = Reg(UInt(params.numBgTilesPow + 2 bits)) init(-1)
-  //val nextBgTileCnt = SInt(params.numBgTilesPow + 2 bits)
-  //val rBgTileCnt = RegNext(nextBgTileCnt) init(-1)
-  ////val rBgTile = Reg(cloneOf(tempBgTile)) init(tempBgTile.getZero)
-  //val rBgTilePushValid = Reg(Bool()) init(True)
-  //val tempBgTileToPush = cloneOf(tempBgTile)
-
-  ////when (!rBgTileCnt.msb)
-  //when (rBgTileCnt < params.numBgTiles) {
-  //  //when (rBgTileCnt + 1 === 1) {
-  //  //  //pop.bgTilePush.payload.tile := tempBgTile.getZero
-  //  //  tempBgTile := tempBgTile
-  //  //} otherwise {
-  //  //  //pop.bgTilePush.payload.tile := tempBgTile.getZero
-  //  //  rBgTile := rBgTile.getZero
-  //  //}
-  //  when (rBgTileCnt === 1) {
-  //    tempBgTileToPush := tempBgTile
-  //  } otherwise {
-  //    tempBgTileToPush := tempBgTileToPush.getZero
-  //    when (nextBgTileCnt >= params.numBgTiles) {
-  //      rBgTilePushValid := False
-  //    }
-  //  }
-  //  when (pop.bgTilePush.fire) {
-  //    nextBgTileCnt := rBgTileCnt + 1
-  //  } otherwise {
-  //    nextBgTileCnt := rBgTileCnt
-  //  }
-  //} otherwise {
-  //  tempBgTileToPush := tempBgTileToPush.getZero
-  //  nextBgTileCnt := rBgTileCnt
-  //}
-  ////when (rBgTileCnt + 1 >= params.numBgTiles) {
-  ////  rBgTilePushValid := False
-  ////}
-  ////pop.bgTilePush.payload.memIdx := 1
   ////--------
   //pop.bgTilePush.valid := rBgTilePushValid
   ////--------
@@ -599,7 +580,7 @@ case class Gpu2dTest(
           //  //mkBgEntry(4, 4)
           //} otherwise 
           when (rBgEntryCnt < 5) {
-            tempBgEntry.tileMemIdx := rBgEntryCnt.asUInt.resized
+            tempBgEntry.tileIdx := rBgEntryCnt.asUInt.resized
             tempBgEntry.dispFlip.x := False
             tempBgEntry.dispFlip.y := False
           } otherwise {
@@ -660,74 +641,149 @@ case class Gpu2dTest(
     palPushFire=pop.bgPalEntryPush.fire,
   )
   //--------
-  val tempObjTile = Gpu2dTile(
+  val tempObjTileSlice = Gpu2dTileSlice(
     params=params,
     isObj=true,
     isAffine=false,
   )
+
+  val nextObjTileCnt = SInt(
+    //params.numObjTilesPow + 2 bits
+    params.objTileMemIdxWidth + 5 bits
+  )
+  val rObjTileCnt = RegNext(nextObjTileCnt) init(-1)
+  val rObjTilePushValid = Reg(Bool()) init(True)
+
   def mkObjTile(
     colIdx0: Int,
     colIdx1: Int,
     colIdx2: Option[Int]=None,
     colIdx3: Option[Int]=None,
   ): Unit = {
+    //mkTile(
+    //  tempTile=tempObjTile,
+    //  colIdx0=colIdx0,
+    //  colIdx1=colIdx1,
+    //  colIdx2=colIdx2,
+    //  colIdx3=colIdx3,
+    //)
     mkTile(
-      tempTile=tempObjTile,
+      //tempTile=tempColorMathTile,
+      tempTileSlice=tempObjTileSlice,
+      pxCoordXStart={
+        if (params.objTileWidthRshift == 0) {
+          def tempWidthPow = params.objTileSize2dPow.x
+          U(f"$tempWidthPow'd0")
+        } else {
+          //rObjTileCnt(
+          //  //params.objTileSize2dPow.x - 1
+          //  ////downto 0
+          //  ////downto params.objSliceTileWidthPow
+          //  //downto params.objTileWidthRshift
+          //  //params.objTileWidthRshift - 1 downto 0
+          //  params.objSliceTileWidthPow - 1 downto 0
+          //).asUInt
+          //Cat(
+          //  rObjTileCnt(
+          //    params.objTileWidthRshift - 1 downto 0
+          //  ),
+          //  B(
+          //    params.objSliceTileWidthPow bits,
+          //    default -> False,
+          //  )
+          //).asUInt
+          rObjTileCnt(
+            //params.objTileWidthRshift - 1 downto 0
+            params.objTileSize2dPow.x - 1
+            downto params.objTileWidthRshift
+          ).asUInt
+        }
+      },
+      pxCoordY=(
+        rObjTileCnt(
+          (
+            params.objTileSize2dPow.y
+            //+ params.objSliceTileWidthPow
+            + params.objTileWidthRshift
+            - 1
+          )
+          downto (
+            //params.objTileSize2dPow.x
+            //params.objSliceTileWidthPow
+            params.objTileWidthRshift
+          )
+        ).asUInt
+      ),
+      palEntryMemIdxWidth=params.objPalEntryMemIdxWidth,
       colIdx0=colIdx0,
       colIdx1=colIdx1,
       colIdx2=colIdx2,
       colIdx3=colIdx3,
     )
   }
-  val nextObjTileCnt = SInt(params.numObjTilesPow + 2 bits)
-  val rObjTileCnt = RegNext(nextObjTileCnt) init(-1)
-  val rObjTilePushValid = Reg(Bool()) init(True)
+  def tempObjTileCnt = (
+    rObjTileCnt(
+      rObjTileCnt.high
+      downto (
+        params.objTileSize2dPow.y
+        //+ params.objSliceTileWidthPow
+        + params.objTileWidthRshift
+      )
+    )
+    //>> (
+    //  params.objTileSize2dPow.y
+    //  + params.objSliceTileWidthPow
+    //  //+ params.objTileWidthRshift
+    //)
+  )
+  tempObjTileSlice := tempObjTileSlice.getZero
+  tempObjTileSlice.allowOverride
 
-  when (rObjTileCnt < params.numObjTiles) {
+  when (tempObjTileCnt < params.numObjTiles) {
     when (pop.objTilePush.fire) {
-      when (rObjTileCnt === 0) {
+      when (tempObjTileCnt === 0) {
         //mkObjTile(0, 1)
         //mkObjTile(0, 0)
-        tempObjTile := tempObjTile.getZero
-      } elsewhen (rObjTileCnt === 1) {
+        tempObjTileSlice := tempObjTileSlice.getZero
+      } elsewhen (tempObjTileCnt === 1) {
         //tempObjTile := tempObjTile.getZero
-        //mkObjTile(1, 2, Some(3), Some(4))
-        mkObjTile(1, 1)
+        mkObjTile(1, 2, Some(3), Some(4))
+        //mkObjTile(1, 1)
         //mkObjTile(3, 3)
         //mkObjTile(2, 3)
-      } elsewhen (rObjTileCnt === 2) {
+      } elsewhen (tempObjTileCnt === 2) {
         //mkObjTile(2, 3)
         //mkObjTile(3, 4)
         mkObjTile(2, 2)
         //mkObjTile(2, 2)
-      } elsewhen (rObjTileCnt === 3) {
+      } elsewhen (tempObjTileCnt === 3) {
         //mkObjTile(3, 4)
         mkObjTile(3, 3)
         //mkObjTile(0, 1)
-      } elsewhen (rObjTileCnt === 4) {
+      } elsewhen (tempObjTileCnt === 4) {
         //mkObjTile(4, 5)
         mkObjTile(4, 4)
       } otherwise {
-        tempObjTile := tempObjTile.getZero
-        //when (rObjTileCnt >= params.numObjTiles) {
+        //tempObjTileSlice := tempObjTileSlice.getZero
+        //when (tempObjTileCnt >= params.numObjTiles) {
         //  rObjTilePushValid := False
         //}
       }
       nextObjTileCnt := rObjTileCnt + 1
     } otherwise {
-      tempObjTile := tempObjTile.getZero
+      //tempObjTileSlice := tempObjTileSlice.getZero
       nextObjTileCnt := rObjTileCnt
     }
   } otherwise {
-    tempObjTile := tempObjTile.getZero
+    //tempObjTileSlice := tempObjTileSlice.getZero
     nextObjTileCnt := rObjTileCnt
   }
-  when (rObjTileCnt + 1 >= params.numObjTiles) {
+  when (tempObjTileCnt >= params.numObjTiles - 1) {
     rObjTilePushValid := False
   }
 
   pop.objTilePush.valid := rObjTilePushValid
-  pop.objTilePush.payload.tile := tempObjTile
+  pop.objTilePush.payload.tileSlice := tempObjTileSlice
   pop.objTilePush.payload.memIdx := (
     rObjTileCnt.asUInt(pop.objTilePush.payload.memIdx.bitsRange)
   )
@@ -786,7 +842,7 @@ case class Gpu2dTest(
       //1 //0
       0
     ) {
-      tempObjAttrs.tileMemIdx := 1
+      tempObjAttrs.tileIdx := 1
       //tempObjAttrs.tileMemIdx := 2
       //tempObjAttrs.pos.x := 16
       //tempObjAttrs.pos.x := -1
@@ -846,7 +902,7 @@ case class Gpu2dTest(
       //2
     ) {
       //tempObjAttrs.tileMemIdx := 1
-      tempObjAttrs.tileMemIdx := (
+      tempObjAttrs.tileIdx := (
         //2
         3
       )
@@ -893,7 +949,7 @@ case class Gpu2dTest(
       //)
       //tempObjAttrs := tempObjAttrs.getZero
     } elsewhen (rObjAttrsCnt === 2) {
-      tempObjAttrs.tileMemIdx := (
+      tempObjAttrs.tileIdx := (
         //3
         2
       )
@@ -918,7 +974,7 @@ case class Gpu2dTest(
     ////  tempObjAttrs := tempObjAttrs.getZero
     } otherwise {
       //tempObjAttrs := tempObjAttrs.getZero
-      tempObjAttrs.tileMemIdx := 0
+      tempObjAttrs.tileIdx := 0
       tempObjAttrs.pos.x := -params.objTileSize2d.x
       //tempObjAttrs.pos.x := 16
       tempObjAttrs.pos.y := 0
@@ -958,73 +1014,137 @@ case class Gpu2dTest(
     rObjAttrsCnt.asUInt(params.objAttrsMemIdxWidth - 1 downto 0)
   )
   //--------
-  val tempObjAffineTile = Gpu2dTile(
+  val tempObjAffineTileSlice = Gpu2dTileSlice(
     params=params,
     isObj=true,
     isAffine=true,
   )
+
+  val nextObjAffineTileCnt = SInt(
+    //params.numObjAffineTilesPow + 2 bits
+    params.objAffineTileMemIdxWidth + 5 bits
+  )
+  val rObjAffineTileCnt = RegNext(nextObjAffineTileCnt) init(-1)
+  val rObjAffineTilePushValid = Reg(Bool()) init(True)
+
   def mkObjAffineTile(
     colIdx0: Int,
     colIdx1: Int,
     colIdx2: Option[Int]=None,
     colIdx3: Option[Int]=None,
   ): Unit = {
+    //mkTile(
+    //  tempTile=tempObjAffineTile,
+    //  colIdx0=colIdx0,
+    //  colIdx1=colIdx1,
+    //  colIdx2=colIdx2,
+    //  colIdx3=colIdx3,
+    //)
     mkTile(
-      tempTile=tempObjAffineTile,
+      //tempTile=tempColorMathTile,
+      tempTileSlice=tempObjAffineTileSlice,
+      pxCoordXStart={
+        if (params.objAffineTileWidthRshift == 0) {
+          def tempWidthPow = params.objAffineTileSize2dPow.x
+          U(f"$tempWidthPow'd0")
+        } else {
+          rObjAffineTileCnt(
+            params.objAffineTileSize2dPow.x - 1
+            //downto params.objAffineSliceTileWidthPow
+            downto params.objAffineTileWidthRshift
+            //params.objAffineSliceTileWidthPow - 1 downto 0
+            //params.objAffineTileWidthRshift - 1 downto 0
+          ).asUInt
+        }
+      },
+      pxCoordY=(
+        //rObjAffineTileCnt(
+        //  params.objAffineTileSize2dPow.y - 1
+        //  downto params.objAffineTileSize2dPow.x
+        //).asUInt
+        rObjAffineTileCnt(
+          (
+            params.objAffineTileSize2dPow.y
+            //+ params.objAffineSliceTileWidthPow
+            + params.objAffineTileWidthRshift
+            - 1
+          )
+          downto (
+            //params.objAffineTileSize2dPow.x
+            //params.objAffineSliceTileWidthPow
+            params.objAffineTileWidthRshift
+          )
+        ).asUInt
+      ),
+      palEntryMemIdxWidth=params.objPalEntryMemIdxWidth,
       colIdx0=colIdx0,
       colIdx1=colIdx1,
       colIdx2=colIdx2,
       colIdx3=colIdx3,
     )
   }
-  val nextObjAffineTileCnt = SInt(params.numObjAffineTilesPow + 2 bits)
-  val rObjAffineTileCnt = RegNext(nextObjAffineTileCnt) init(-1)
-  val rObjAffineTilePushValid = Reg(Bool()) init(True)
+  def tempObjAffineTileCnt = (
+    rObjAffineTileCnt(
+      rObjAffineTileCnt.high
+      downto (
+        params.objAffineTileSize2dPow.y
+        //+ params.objAffineSliceTileWidthPow
+        + params.objAffineTileWidthRshift
+      )
+    )
+    //>> (
+    //  params.objAffineTileSize2dPow.y
+    //  + params.objAffineSliceTileWidthPow
+    //  //+ params.objAffineTileWidthRshift
+    //)
+  )
+  tempObjAffineTileSlice := tempObjAffineTileSlice.getZero
+  tempObjAffineTileSlice.allowOverride
 
-  when (rObjAffineTileCnt < params.numObjAffineTiles) {
+  when (tempObjAffineTileCnt < params.numObjAffineTiles) {
     when (pop.objAffineTilePush.fire) {
-      when (rObjAffineTileCnt === 0) {
+      when (tempObjAffineTileCnt === 0) {
         //mkObjAffineTile(0, 1)
         mkObjAffineTile(0, 0)
-      } elsewhen (rObjAffineTileCnt === 1) {
+      } elsewhen (tempObjAffineTileCnt === 1) {
         mkObjAffineTile(1, 2, Some(3), Some(4))
         //mkObjAffineTile(1, 1, Some(3), Some(4))
         //mkObjAffineTile(1, 1)
         //mkObjAffineTile(3, 3)
         //mkObjAffineTile(2, 3)
-      } elsewhen (rObjAffineTileCnt === 2) {
+      } elsewhen (tempObjAffineTileCnt === 2) {
         //mkObjAffineTile(2, 3)
         //mkObjAffineTile(3, 4)
         mkObjAffineTile(1, 2, Some(3), Some(4))
         //mkObjAffineTile(2, 2)
-      } elsewhen (rObjAffineTileCnt === 3) {
+      } elsewhen (tempObjAffineTileCnt === 3) {
         //mkObjAffineTile(3, 4)
         mkObjAffineTile(3, 3)
         //mkObjAffineTile(0, 1)
-      } elsewhen (rObjAffineTileCnt === 4) {
+      } elsewhen (tempObjAffineTileCnt === 4) {
         //mkObjAffineTile(4, 5)
         mkObjAffineTile(4, 4)
       } otherwise {
-        tempObjAffineTile := tempObjAffineTile.getZero
-        //when (rObjAffineTileCnt >= params.numObjAffineTiles) {
+        //tempObjAffineTileSlice := tempObjAffineTileSlice.getZero
+        //when (tempObjAffineTileCnt >= params.numObjAffineTiles) {
         //  rObjAffineTilePushValid := False
         //}
       }
       nextObjAffineTileCnt := rObjAffineTileCnt + 1
     } otherwise {
-      tempObjAffineTile := tempObjAffineTile.getZero
+      //tempObjAffineTileSlice := tempObjAffineTileSlice.getZero
       nextObjAffineTileCnt := rObjAffineTileCnt
     }
   } otherwise {
-    tempObjAffineTile := tempObjAffineTile.getZero
+    //tempObjAffineTileSlice := tempObjAffineTileSlice.getZero
     nextObjAffineTileCnt := rObjAffineTileCnt
   }
-  when (rObjAffineTileCnt + 1 >= params.numObjAffineTiles) {
+  when (tempObjAffineTileCnt >= params.numObjAffineTiles - 1) {
     rObjAffineTilePushValid := False
   }
 
   pop.objAffineTilePush.valid := rObjAffineTilePushValid
-  pop.objAffineTilePush.payload.tile := tempObjAffineTile
+  pop.objAffineTilePush.payload.tileSlice := tempObjAffineTileSlice
   pop.objAffineTilePush.payload.memIdx := (
     rObjAffineTileCnt.asUInt(
       pop.objAffineTilePush.payload.memIdx.bitsRange
@@ -1035,7 +1155,8 @@ case class Gpu2dTest(
     params=params,
     isAffine=true,
   )
-  val objAffineAttrsCntWidth = params.numObjsAffinePow + 2
+  //val objAffineAttrsCntWidth = params.numObjsAffinePow + 2
+  val objAffineAttrsCntWidth = params.objAffineTileMemIdxWidth + 2
   //val rObjAffineAttrsCnt = Reg(UInt(objAffineAttrsCntWidth bits)) init(0x0)
   //val nextObjAffineAttrsCnt = UInt(objAffineAttrsCntWidth bits)
   //val rObjAffineAttrsCnt = RegNext(nextObjAffineAttrsCnt) init(0x0)
@@ -1048,7 +1169,7 @@ case class Gpu2dTest(
 
   when (rObjAffineAttrsCnt < params.numObjsAffine) {
     when (rObjAffineAttrsCnt === 0) {
-      tempObjAffineAttrs.tileMemIdx := 1
+      tempObjAffineAttrs.tileIdx := 1
       //tempObjAffineAttrs.tileMemIdx := 2
       tempObjAffineAttrs.pos.x := (
         //params.intnlFbSize2d.x - params.objAffineTileSize2d.x //- 1
@@ -1099,7 +1220,7 @@ case class Gpu2dTest(
       //tempObjAffineAttrs := tempObjAffineAttrs.getZero
     } elsewhen (rObjAffineAttrsCnt === 1) {
       //tempObjAffineAttrs.tileMemIdx := 1
-      tempObjAffineAttrs.tileMemIdx := 2
+      tempObjAffineAttrs.tileIdx := 2
       //tempObjAffineAttrs.tileMemIdx := 0
       //tempObjAffineAttrs.pos.x := 1
       //tempObjAffineAttrs.pos.x := 16
@@ -1134,9 +1255,9 @@ case class Gpu2dTest(
         //2 << tempObjAffineAttrs.affine.fracWidth
         //(1 << Gpu2dAffine.fracWidth)
         //| 
-        (1 << (Gpu2dAffine.fracWidth - 1))
+        //(1 << (Gpu2dAffine.fracWidth - 1))
         //| (1 << (Gpu2dAffine.fracWidth - 2))
-        //1
+        1
       ) * (255)
       tempObjAffineAttrs.affine.mat(0)(1) := (
         //0
@@ -1151,9 +1272,9 @@ case class Gpu2dTest(
         //2 << tempObjAffineAttrs.affine.fracWidth
         //(1 << Gpu2dAffine.fracWidth)
         //| 
-        (1 << (Gpu2dAffine.fracWidth - 1))
+        //(1 << (Gpu2dAffine.fracWidth - 1))
         //| (1 << (Gpu2dAffine.fracWidth - 2))
-        //1
+        1
       ) * (255)
       //tempObjAffineAttrs := tempObjAffineAttrs.getZero
     //} elsewhen (rObjAffineAttrsCnt === 2) {
@@ -1179,7 +1300,7 @@ case class Gpu2dTest(
     ////  tempObjAffineAttrs := tempObjAffineAttrs.getZero
     } otherwise {
       //tempObjAffineAttrs := tempObjAffineAttrs.getZero
-      tempObjAffineAttrs.tileMemIdx := 0
+      tempObjAffineAttrs.tileIdx := 0
       tempObjAffineAttrs.pos.x := -params.objAffineTileSize2d.x
       tempObjAffineAttrs.pos.y := 0
       tempObjAffineAttrs.prio := (
