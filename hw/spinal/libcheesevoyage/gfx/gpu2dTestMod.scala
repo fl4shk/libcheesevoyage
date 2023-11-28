@@ -1117,7 +1117,8 @@ case class Gpu2dTest(
       //tempObjAffineAttrs.pos.x := 9
       //tempObjAffineAttrs.pos.y := -1
       //tempObjAffineAttrs.pos.y := 8
-      tempObjAffineAttrs.pos.y := 9
+      //tempObjAffineAttrs.pos.y := 9
+      tempObjAffineAttrs.pos.y := 5
       tempObjAffineAttrs.prio := (
         0
         //1
@@ -1134,9 +1135,9 @@ case class Gpu2dTest(
         //2 << tempObjAffineAttrs.affine.fracWidth
         //(1 << Gpu2dAffine.fracWidth)
         //| 
-        (1 << (Gpu2dAffine.fracWidth - 1))
+        //(1 << (Gpu2dAffine.fracWidth - 1))
         //| (1 << (Gpu2dAffine.fracWidth - 2))
-        //1
+        1
       ) * (255)
       tempObjAffineAttrs.affine.mat(0)(1) := (
         //0
@@ -1151,9 +1152,9 @@ case class Gpu2dTest(
         //2 << tempObjAffineAttrs.affine.fracWidth
         //(1 << Gpu2dAffine.fracWidth)
         //| 
-        (1 << (Gpu2dAffine.fracWidth - 1))
+        //(1 << (Gpu2dAffine.fracWidth - 1))
         //| (1 << (Gpu2dAffine.fracWidth - 2))
-        //1
+        1
       ) * (255)
       //tempObjAffineAttrs := tempObjAffineAttrs.getZero
     //} elsewhen (rObjAffineAttrsCnt === 2) {
