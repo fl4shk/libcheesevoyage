@@ -649,7 +649,7 @@ case class Gpu2dTest(
 
   val nextObjTileCnt = SInt(
     //params.numObjTilesPow + 2 bits
-    params.objTileMemIdxWidth + 5 bits
+    params.objTileSliceMemIdxWidth + 5 bits
   )
   val rObjTileCnt = RegNext(nextObjTileCnt) init(-1)
   val rObjTilePushValid = Reg(Bool()) init(True)
@@ -1022,7 +1022,7 @@ case class Gpu2dTest(
 
   val nextObjAffineTileCnt = SInt(
     //params.numObjAffineTilesPow + 2 bits
-    params.objAffineTileMemIdxWidth + 5 bits
+    params.objAffineTilePxMemIdxWidth + 5 bits
   )
   val rObjAffineTileCnt = RegNext(nextObjAffineTileCnt) init(-1)
   val rObjAffineTilePushValid = Reg(Bool()) init(True)
@@ -1156,7 +1156,7 @@ case class Gpu2dTest(
     isAffine=true,
   )
   //val objAffineAttrsCntWidth = params.numObjsAffinePow + 2
-  val objAffineAttrsCntWidth = params.objAffineTileMemIdxWidth + 2
+  val objAffineAttrsCntWidth = params.objAffineTilePxMemIdxWidth + 2
   //val rObjAffineAttrsCnt = Reg(UInt(objAffineAttrsCntWidth bits)) init(0x0)
   //val nextObjAffineAttrsCnt = UInt(objAffineAttrsCntWidth bits)
   //val rObjAffineAttrsCnt = RegNext(nextObjAffineAttrsCnt) init(0x0)

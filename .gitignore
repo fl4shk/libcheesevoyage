@@ -18,6 +18,7 @@ build
 *.tar.*
 *.zip
 *.vcd
+*.fst
 
 *.o
 *.a
