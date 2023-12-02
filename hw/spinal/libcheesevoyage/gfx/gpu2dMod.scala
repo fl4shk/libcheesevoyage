@@ -515,8 +515,7 @@ case class Gpu2dParams(
       objAffineDblTileSize2d.y
     }
   )
-  def anyObjTilePxsCoordT(isAffine: Boolean) = (
-    if (!isAffine) {
+  def anyObjTilePxsCoordT(isAffine: Boolean) = ( if (!isAffine) {
       objTilePxsCoordT()
     } else {
       objAffineTilePxsCoordT()
@@ -624,12 +623,12 @@ case class Gpu2dParams(
     + objAffineTileSize2dPow.y
     + objAffineTileSize2dPow.x
   )
-  def objAffineTileSliceMemIdxWidth = (
-    numObjAffineTilesPow
-    + objAffineTileSize2dPow.y
-    //+ objAffineTileSize2dPow.x
-    + objAffineTileWidthRshift
-  )
+  //def objAffineTileSliceMemIdxWidth = (
+  //  numObjAffineTilesPow
+  //  + objAffineTileSize2dPow.y
+  //  //+ objAffineTileSize2dPow.x
+  //  + objAffineTileWidthRshift
+  //)
 
   //def tileMemIdxWidth = log2Up(numPxsForAllTiles)
   //def tileMemIdxWidth = log2Up(numTiles)
@@ -693,6 +692,7 @@ case class Gpu2dParams(
     //someSize2d=objAffineTileSize2d
     someSize2d=ElabVec2[Int](
       x=objAffineSliceTileWidth,
+      //x=objAffineTileSize2d.x,
       y=objAffineTileSize2d.y,
     ),
   )
@@ -1224,14 +1224,14 @@ case class Gpu2dObjTileStmPayload(
   //  isObj=true,
   //  isAffine=isAffine,
   //)
-  val tileSlice = Gpu2dTileSlice(
+  val tileSlice = (!isAffine) generate Gpu2dTileSlice(
     params=params,
     isObj=true,
     isAffine=isAffine,
   )
-  //val tilePx = (isAffine) generate (
-  //  UInt(params.objPalEntryMemIdxWidth bits)
-  //)
+  val tilePx = (isAffine) generate (
+    UInt(params.objPalEntryMemIdxWidth bits)
+  )
 
   // `Mem` index, so in units of tile slices
   //val idx = Vec2(LcvVgaCtrlMiscIo.coordElemT())
@@ -1241,8 +1241,8 @@ case class Gpu2dObjTileStmPayload(
       if (!isAffine) {
         params.objTileSliceMemIdxWidth 
       } else {
-        //params.objAffineTilePxMemIdxWidth
-        params.objAffineTileSliceMemIdxWidth
+        params.objAffineTilePxMemIdxWidth
+        //params.objAffineTileSliceMemIdxWidth
       }
     ) bits
   )
@@ -2001,22 +2001,23 @@ case class Gpu2d(
         },
         arrRamStyle=params.objTileArrRamStyle,
       )
+        .setName(f"objAffineTileMemArr_$idx")
       objAffineTileMemArr(idx).io.wrEn := (
         objAffineTilePush.fire
       )
       objAffineTileMemArr(idx).io.wrAddr := {
         def tempX = (
-          Cat(
+          //Cat(
             objAffineTilePush.payload.memIdx,
-            U{
-              def tempWidthPow = (
-                //params.objAffineTileWidthRshift
-                //params.objAffineTileSize2dPow.x
-                params.objAffineSliceTileWidthPow
-              )
-              f"$tempWidthPow'd$idx"
-            },
-          ).asUInt
+          //  U{
+          //    def tempWidthPow = (
+          //      //params.objAffineTileWidthRshift
+          //      //params.objAffineTileSize2dPow.x
+          //      params.objAffineSliceTileWidthPow
+          //    )
+          //    f"$tempWidthPow'd$idx"
+          //  },
+          //).asUInt
         )
         //def tempXWidth = tempX.getWidth
         //def tempWrAddrWidth = objAffineTileMemArr(idx).io.wrAddr.getWidth
@@ -2024,8 +2025,8 @@ case class Gpu2d(
         tempX
       }
       objAffineTileMemArr(idx).io.wrData := (
-        //objAffineTilePush.payload.tilePx
-        objAffineTilePush.payload.tileSlice.getPx(idx)
+        objAffineTilePush.payload.tilePx
+        //objAffineTilePush.payload.tileSlice.getPx(idx)
       )
     }
     //--------
@@ -9424,43 +9425,70 @@ case class Gpu2d(
           } else { // if (kind == 1)
             for (x <- 0 until myTempObjTileWidth) {
               objAffineTileMemArr(x).io.rdEn := True
-              def tempX = (
-                U{
-                  def tempWidthPow = (
-                    //params.objAffineTileWidthRshift
-                    //params.objAffineTileSize2dPow.x
-                    params.objAffineSliceTileWidthPow
-                  )
-                  f"$tempWidthPow'd$x"
-                }
+              //def tempX = (
+              //  U{
+              //    def tempWidthPow = (
+              //      //params.objAffineTileWidthRshift
+              //      //params.objAffineTileSize2dPow.x
+              //      params.objAffineSliceTileWidthPow
+              //    )
+              //    f"$tempWidthPow'd$x"
+              //  }
+              //)
+              val fxTileX = (
+                (
+                  tempInp.stage4.fxTilePxsCoord(x).x
+                  //+ (1 << (Gpu2dAffine.fracWidth - 1))
+                ) >> (
+                  Gpu2dAffine.fracWidth
+                )
               )
               objAffineTileMemArr(x).io.rdAddr := (
-                if (
-                  //(kind == 0 && params.objTileWidthRshift > 0)
-                  //|| 
-                  (kind == 1 && params.objAffineTileWidthRshift > 0)
-                ) {
+                //if (
+                //  //(kind == 0 && params.objTileWidthRshift > 0)
+                //  //|| 
+                //  (kind == 1 && params.objAffineTileWidthRshift > 0)
+                //) {
+                //  Cat(
+                //    tempInp.objAttrs.tileIdx,
+                //    tempOutp.tilePxsCoord(x).y,
+                //    //(
+                //    //  tempInp.affineObjXStart()(
+                //    //    ////tempInp.affineObjXStart().high
+                //    //    params.objAffineTileSize2dPow.x - 1
+                //    //    downto params.objAffineSliceTileWidthPow
+                //    //    //downto params.objAffineTileWidthRshift
+                //    //    //params.objAffineTileWidthRshift - 1 downto 0
+                //    //  )
+                //    //),
+                //    //tempX,
+                //    tempOutp.tilePxsCoord(x).x,
+                //  ).asUInt
+                //} else {
                   Cat(
                     tempInp.objAttrs.tileIdx,
                     tempOutp.tilePxsCoord(x).y,
-                    (
-                      tempInp.affineObjXStart()(
-                        ////tempInp.affineObjXStart().high
-                        params.objAffineTileSize2dPow.x - 1
-                        downto params.objAffineSliceTileWidthPow
-                        //downto params.objAffineTileWidthRshift
-                        //params.objAffineTileWidthRshift - 1 downto 0
-                      )
+                    //tempX,
+                    //(
+                    //  tempInp.affineObjXStart()(
+                    //    params.objAffineTileSize2dPow.x - 1 downto 0
+                    //  )
+                    //  | tempOutp.tilePxsCoord(x).x.resized
+                    //),
+                    //(
+                    //  tempInp.affineObjXStart()(
+                    //    ////tempInp.affineObjXStart().high
+                    //    params.objAffineTileSize2dPow.x - 1
+                    //    downto params.objAffineSliceTileWidthPow
+                    //    //downto params.objAffineTileWidthRshift
+                    //    //params.objAffineTileWidthRshift - 1 downto 0
+                    //  )
+                    //),
+                    fxTileX(
+                      params.objAffineTileSize2dPow.x - 1 downto 0
                     ),
-                    tempX,
                   ).asUInt
-                } else {
-                  Cat(
-                    tempInp.objAttrs.tileIdx,
-                    tempOutp.tilePxsCoord(x).y,
-                    tempX,
-                  ).asUInt
-                }
+                //}
               )
             }
           }
