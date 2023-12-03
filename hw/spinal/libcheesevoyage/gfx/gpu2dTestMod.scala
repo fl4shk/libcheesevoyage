@@ -89,7 +89,7 @@ case class Gpu2dTest(
     //tempTile: Gpu2dTileFull,
     tempTileSlice: Gpu2dTileSlice,
     //pxCoordStart: ElabVec2[Int],
-    pxCoordXStart: UInt,
+    //pxCoordXStart: UInt,
     pxCoordY: UInt,
     palEntryMemIdxWidth: Int,
     colIdx0: Int,
@@ -111,16 +111,20 @@ case class Gpu2dTest(
             //def pxCoord = ElabVec2[Int](idx, jdx)
             def pxCoordX = (
               //if (!onePx) {
-                idx + pxCoordXStart
+              //  idx + pxCoordXStart
               //} else {
               //  //pxCoordXStart
-              //  (
-              //    idx
-              //    + U{
-              //      def tempWidthPow = pxCoordXStart.getWidth
-              //      f"$tempWidthPow'd0"
-              //    }
-              //  )
+                //(
+                //  idx
+                //  + U{
+                //    def tempWidthPow = pxCoordXStart.getWidth
+                //    f"$tempWidthPow'd0"
+                //  }
+                //)
+                U{
+                  def tempWidthPow = log2Up(tempTileSlice.pxsSliceWidth)
+                  f"$tempWidthPow'd$idx"
+                }
               //}
             )
             //print(pxCoordX.getWidth)
@@ -188,11 +192,11 @@ case class Gpu2dTest(
     mkTile(
       //tempTile=tempColorMathTile,
       tempTileSlice=tempColorMathTileSlice,
-      pxCoordXStart={
-        //rColorMathTileCnt(params.bgTileSize2dPow.x - 1 downto 0).asUInt
-        def tempWidthPow = params.bgTileSize2dPow.x
-        U(f"$tempWidthPow'd0")
-      },
+      //pxCoordXStart={
+      //  //rColorMathTileCnt(params.bgTileSize2dPow.x - 1 downto 0).asUInt
+      //  def tempWidthPow = params.bgTileSize2dPow.x
+      //  U(f"$tempWidthPow'd0")
+      //},
       pxCoordY=(
         rColorMathTileCnt(
           params.bgTileSize2dPow.y - 1
@@ -378,12 +382,12 @@ case class Gpu2dTest(
     mkTile(
       //tempTile=tempColorMathTile,
       tempTileSlice=tempBgTileSlice,
-      pxCoordXStart={
-        //rBgTileCnt(params.bgTileSize2dPow.x - 1 downto 0).asUInt
-        //0
-        def tempWidthPow = params.bgTileSize2dPow.x
-        U(f"$tempWidthPow'd0")
-      },
+      //pxCoordXStart={
+      //  //rBgTileCnt(params.bgTileSize2dPow.x - 1 downto 0).asUInt
+      //  //0
+      //  def tempWidthPow = params.bgTileSize2dPow.x
+      //  U(f"$tempWidthPow'd0")
+      //},
       pxCoordY=(
         rBgTileCnt(
           params.bgTileSize2dPow.y - 1
@@ -684,35 +688,35 @@ case class Gpu2dTest(
     mkTile(
       //tempTile=tempColorMathTile,
       tempTileSlice=tempObjTileSlice,
-      pxCoordXStart={
-        if (params.objTileWidthRshift == 0) {
-          def tempWidthPow = params.objTileSize2dPow.x
-          U(f"$tempWidthPow'd0")
-        } else {
-          //rObjTileCnt(
-          //  //params.objTileSize2dPow.x - 1
-          //  ////downto 0
-          //  ////downto params.objSliceTileWidthPow
-          //  //downto params.objTileWidthRshift
-          //  //params.objTileWidthRshift - 1 downto 0
-          //  params.objSliceTileWidthPow - 1 downto 0
-          //).asUInt
-          //Cat(
-          //  rObjTileCnt(
-          //    params.objTileWidthRshift - 1 downto 0
-          //  ),
-          //  B(
-          //    params.objSliceTileWidthPow bits,
-          //    default -> False,
-          //  )
-          //).asUInt
-          rObjTileCnt(
-            //params.objTileWidthRshift - 1 downto 0
-            params.objTileSize2dPow.x - 1
-            downto params.objTileWidthRshift
-          ).asUInt
-        }
-      },
+      //pxCoordXStart={
+      //  if (params.objTileWidthRshift == 0) {
+      //    def tempWidthPow = params.objTileSize2dPow.x
+      //    U(f"$tempWidthPow'd0")
+      //  } else {
+      //    //rObjTileCnt(
+      //    //  //params.objTileSize2dPow.x - 1
+      //    //  ////downto 0
+      //    //  ////downto params.objSliceTileWidthPow
+      //    //  //downto params.objTileWidthRshift
+      //    //  //params.objTileWidthRshift - 1 downto 0
+      //    //  params.objSliceTileWidthPow - 1 downto 0
+      //    //).asUInt
+      //    //Cat(
+      //    //  rObjTileCnt(
+      //    //    params.objTileWidthRshift - 1 downto 0
+      //    //  ),
+      //    //  B(
+      //    //    params.objSliceTileWidthPow bits,
+      //    //    default -> False,
+      //    //  )
+      //    //).asUInt
+      //    rObjTileCnt(
+      //      //params.objTileWidthRshift - 1 downto 0
+      //      params.objTileSize2dPow.x - 1
+      //      downto params.objTileWidthRshift
+      //    ).asUInt
+      //  }
+      //},
       pxCoordY=(
         rObjTileCnt(
           (
@@ -1038,8 +1042,9 @@ case class Gpu2dTest(
     //params.numObjAffineTilesPow + 2 bits
     //params.objAffineTilePxMemIdxWidth + 5 bits
     (
-      params.objAffineTilePxMemIdxWidth
+      //params.objAffineTilePxMemIdxWidth
       //+ params.objAffineSliceTileWidthPow
+      params.objAffineTileSliceMemIdxWidth
       + 5
     ) bits
   )
@@ -1062,26 +1067,39 @@ case class Gpu2dTest(
     mkTile(
       //tempTile=tempColorMathTile,
       tempTileSlice=tempObjAffineTileSlice,
-      pxCoordXStart={
-        if (params.objAffineTileWidthRshift == 0) {
-          def tempWidthPow = params.objAffineTileSize2dPow.x
-          U(f"$tempWidthPow'd0")
-        } else {
-          def tempWidthPow = params.objAffineSliceTileWidthPow
-          U(f"$tempWidthPow'd0")
-          //rObjAffineTileCnt(
-          //  //params.objAffineTileSize2dPow.x - 1
-          //  ////downto params.objAffineSliceTileWidthPow
-          //  //downto params.objAffineTileWidthRshift
-          //  ////params.objAffineSliceTileWidthPow - 1 downto 0
-          //  ////params.objAffineTileWidthRshift - 1 downto 0
-          //  //params.objAffineTileSize2dPow.x - 1 downto 0
-          //  params.objAffineSliceTileWidthPow - 1 downto 0
-          //  //params.objAffineTileSize2dPow.x - 1
-          //  //downto params.objAffineTileWidthRshift
-          //).asUInt
-        }
-      },
+      //pxCoordXStart={
+      //  if (params.objAffineTileWidthRshift == 0) {
+      //    def tempWidthPow = params.objAffineTileSize2dPow.x
+      //    U(f"$tempWidthPow'd0")
+      //  } else {
+      //    def tempWidthPow = params.objAffineSliceTileWidthPow
+      //    //U(f"$tempWidthPow'd0")
+      //    //rObjAffineTileCnt(
+      //    //  //params.objAffineTileSize2dPow.x - 1
+      //    //  ////downto params.objAffineSliceTileWidthPow
+      //    //  //downto params.objAffineTileWidthRshift
+      //    //  ////params.objAffineSliceTileWidthPow - 1 downto 0
+      //    //  ////params.objAffineTileWidthRshift - 1 downto 0
+      //    //  //params.objAffineTileSize2dPow.x - 1 downto 0
+      //    //  params.objAffineSliceTileWidthPow - 1 downto 0
+      //    //  //params.objAffineTileSize2dPow.x - 1
+      //    //  //downto params.objAffineTileWidthRshift
+      //    //).asUInt
+      //    Cat(
+      //      rObjAffineTileCnt(
+      //        params.objAffineTileWidthRshift - 1 downto 0
+      //      ),
+      //      //U{
+      //      //  def tempWidthPow = params.objAffineSliceTileWidthPow
+      //      //  f"$tempWidthPow'd0"
+      //      //}
+      //      B(
+      //        params.objAffineSliceTileWidthPow bits,
+      //        default -> False
+      //      )
+      //    ).asUInt
+      //  }
+      //},
       pxCoordY=(
         //rObjAffineTileCnt(
         //  params.objAffineTileSize2dPow.y - 1
@@ -1091,15 +1109,15 @@ case class Gpu2dTest(
           (
             params.objAffineTileSize2dPow.y
             ////+ params.objAffineSliceTileWidthPow
-            //+ params.objAffineTileWidthRshift
-            + params.objAffineTileSize2dPow.x
+            + params.objAffineTileWidthRshift
+            //+ params.objAffineTileSize2dPow.x
             - 1
           )
           downto (
             //params.objAffineTileSize2dPow.x
             //params.objAffineSliceTileWidthPow
-            //params.objAffineTileWidthRshift
-            params.objAffineTileSize2dPow.x
+            params.objAffineTileWidthRshift
+            //params.objAffineTileSize2dPow.x
           )
         ).asUInt
       ),
@@ -1117,8 +1135,8 @@ case class Gpu2dTest(
       downto (
         params.objAffineTileSize2dPow.y
         //+ params.objAffineSliceTileWidthPow
-        //+ params.objAffineTileWidthRshift
-        + params.objAffineTileSize2dPow.x
+        + params.objAffineTileWidthRshift
+        //+ params.objAffineTileSize2dPow.x
       )
     )
     //>> (
@@ -1173,15 +1191,15 @@ case class Gpu2dTest(
   }
 
   pop.objAffineTilePush.valid := rObjAffineTilePushValid
-  //pop.objAffineTilePush.payload.tileSlice := tempObjAffineTileSlice
-  pop.objAffineTilePush.payload.tilePx := tempObjAffineTileSlice.getPx(
-    rObjAffineTileCnt(
-      //params.objAffineTileSize2dPow.x - 1
-      ////downto 0
-      //downto params.objAffineTileWidthRshift
-      params.objAffineSliceTileWidthPow - 1 downto 0
-    ).asUInt
-  )
+  pop.objAffineTilePush.payload.tileSlice := tempObjAffineTileSlice
+  //pop.objAffineTilePush.payload.tilePx := tempObjAffineTileSlice.getPx(
+  //  rObjAffineTileCnt(
+  //    //params.objAffineTileSize2dPow.x - 1
+  //    ////downto 0
+  //    //downto params.objAffineTileWidthRshift
+  //    params.objAffineSliceTileWidthPow - 1 downto 0
+  //  ).asUInt
+  //)
   pop.objAffineTilePush.payload.memIdx := (
     rObjAffineTileCnt.asUInt(
       //pop.objAffineTilePush.payload.memIdx.bitsRange
@@ -1197,8 +1215,8 @@ case class Gpu2dTest(
     params=params,
     isAffine=true,
   )
-  //val objAffineAttrsCntWidth = params.numObjsAffinePow + 2
-  val objAffineAttrsCntWidth = params.objAffineTilePxMemIdxWidth + 2
+  val objAffineAttrsCntWidth = params.numObjsAffinePow + 2
+  //val objAffineAttrsCntWidth = params.objAffineTilePxMemIdxWidth + 2
   //val rObjAffineAttrsCnt = Reg(UInt(objAffineAttrsCntWidth bits)) init(0x0)
   //val nextObjAffineAttrsCnt = UInt(objAffineAttrsCntWidth bits)
   //val rObjAffineAttrsCnt = RegNext(nextObjAffineAttrsCnt) init(0x0)
@@ -1207,7 +1225,9 @@ case class Gpu2dTest(
   //val rObjAffineAttrs = Reg(Gpu2dObjAffineAttrs(params=params))
   //rObjAffineAttrs.init(rObjAffineAttrs.getZero)
   val rObjAffineAttrsEntryPushValid = Reg(Bool()) init(True)
-  tempObjAffineAttrs.colorMathInfo := tempObjAffineAttrs.colorMathInfo.getZero
+  tempObjAffineAttrs.colorMathInfo := (
+    tempObjAffineAttrs.colorMathInfo.getZero
+  )
 
   when (rObjAffineAttrsCnt < params.numObjsAffine) {
     when (rObjAffineAttrsCnt === 0) {
@@ -1378,7 +1398,9 @@ case class Gpu2dTest(
   //)
   pop.objAffineAttrsPush.payload.objAttrs := tempObjAffineAttrs
   pop.objAffineAttrsPush.payload.memIdx := (
-    rObjAffineAttrsCnt.asUInt(params.objAffineAttrsMemIdxWidth - 1 downto 0)
+    rObjAffineAttrsCnt.asUInt(
+      params.objAffineAttrsMemIdxWidth - 1 downto 0
+    )
   )
 
   //--------
