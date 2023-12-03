@@ -742,6 +742,25 @@ case class Gpu2dParams(
   //)
   //def bgScrollCoordT() = coordT(someSize2d=)
   //--------
+  //--------
+  def fbBaseAddrWidthPow = (
+    log2Up(2) // for double buffering
+  )
+  def fbTileMemAddrWidthPow = (
+    //bgSize2dInTilesPow.y
+    //+ bgSize2dInTilesPow.x
+    log2Up(bgSize2dInPxs.y)
+    + log2Up(bgSize2dInPxs.x)
+    //--------
+    //+ bgTileSize2dPow.y
+    //--------
+    // we're indexing into `bgTileMemArr(...)`, which is in units of
+    // `Gpu2dTileSlice`s, so we need this 
+    - bgTileSize2dPow.x
+    //--------
+    + log2Up(2) // for double buffering
+    //--------
+  )
 }
 object DefaultGpu2dParams {
   def apply(
@@ -750,12 +769,12 @@ object DefaultGpu2dParams {
     intnlFbSize2d: ElabVec2[Int]=ElabVec2[Int](
       //x=(1920 / 3).toInt, // 640
       //y=(1080 / 3).toInt, // 360
+      x=(1920 / 4).toInt, // 480
+      y=(1080 / 4).toInt, // 270
       //x=(1920 / 4).toInt, // 480
       //y=(1080 / 4).toInt, // 270
-      //x=(1920 / 4).toInt, // 480
-      //y=(1080 / 4).toInt, // 270
-      x=(1600 >> log2Up(4)).toInt, // 400
-      y=(900 >> log2Up(4)).toInt, // 225
+      //x=(1600 >> log2Up(4)).toInt, // 400
+      //y=(900 >> log2Up(4)).toInt, // 225
     ),
     //physFbSize2dScale: ElabVec2[Int]=ElabVec2[Int](
     //  //x=3, // 1920 / 4 = 640
@@ -764,10 +783,10 @@ object DefaultGpu2dParams {
     //  y=4, // 1080 / 4 = 270
     //),
     physFbSize2dScalePow: ElabVec2[Int]=ElabVec2[Int](
-      //x=log2Up(4), // 1920 / 4 = 480
-      //y=log2Up(4), // 1080 / 4 = 270
-      x=log2Up(4), // 1600 / 4 = 400
-      y=log2Up(4), // 900 / 4 = 225
+      x=log2Up(4), // 1920 / 4 = 480
+      y=log2Up(4), // 1080 / 4 = 270
+      //x=log2Up(4), // 1600 / 4 = 400
+      //y=log2Up(4), // 900 / 4 = 225
     ),
     //tileSize2d: ElabVec2[Int]=ElabVec2[Int](x=8, y=8),
     bgTileSize2dPow: ElabVec2[Int]=ElabVec2[Int](
@@ -1406,6 +1425,31 @@ case class Gpu2dAffine(
   def matD = mat(1)(1)
   //--------
 }
+
+// Framebuffer Attributes
+case class Gpu2dFbAttrs(
+  params: Gpu2dParams,
+  isColorMath: Boolean,
+) extends Bundle {
+  // Whether to treat this background like a framebuffer
+  val doIt = Bool()
+
+  //def temp = (
+  //  params.bgSize2dInTiles.y
+  //  * params.bgSize2dInTiles.x
+  //  * params.bgTileSize2d.y
+  //)
+
+  // which address in `bgTileMemArr` that the framebuffer starts from
+  val tileMemBaseAddr = UInt(params.fbBaseAddrWidthPow bits)
+  //def getTileMemAddr(
+  //  //tilePxsCoordY: UInt,
+  //) = {
+  //  //assert(tilePxsCoordY.getWidth == params.bgTileSize2dPow.y)
+  //  //Cat(tileMemBaseAddr, tilePxsCoordY).asUInt
+  //  tileMemBaseAddr
+  //}
+}
 // Attributes for a whole background
 case class Gpu2dBgAttrs(
   params: Gpu2dParams,
@@ -1425,6 +1469,11 @@ case class Gpu2dBgAttrs(
 
   // How much to scroll this background
   val scroll = params.bgPxsCoordT()
+
+  val fbAttrs = Gpu2dFbAttrs(
+    params=params,
+    isColorMath=isColorMath,
+  )
   //--------
 }
 case class Gpu2dBgAttrsStmPayload(
@@ -7995,34 +8044,55 @@ case class Gpu2d(
                   someTileMemArr(
                     tempPxPosIdx % 2
                   ).io.rdAddr := (
-                    //tempInp.bgEntryMemIdx(
-                    //  tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                    //)
-                    Cat(
-                      tempInp.bgEntry(
-                        //x
-                        tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                      ).tileIdx,
-                      tempOutp.tilePxsCoord(0).y,
-                    ).asUInt
-                    //<< (
-                    //  params.bgTileSize2dPow.y
-                    //)
+                    Mux[UInt](
+                      !pipeIn.bgAttrs.fbAttrs.doIt,
+                      Cat(
+                        tempInp.bgEntry(
+                          //x
+                          tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                        ).tileIdx,
+                        tempOutp.tilePxsCoord(0).y,
+                      ).asUInt,
+                      Cat(
+                        pipeIn.bgAttrs.fbAttrs.tileMemBaseAddr,
+                        tempInp.pxPos(0).y,
+                        (
+                          tempInp.pxPos(
+                            tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                          ).x(
+                            log2Up(params.bgSize2dInPxs.x) - 1
+                            downto params.bgTileSize2dPow.x
+                          )
+                        ),
+                      ).asUInt,
+                    ).resized
                   )
                   when (tempInp.pxPosXGridIdxFindFirstDiffFound) {
                     someTileMemArr(
                       (tempPxPosIdx + 1) % 2
                     ).io.rdAddr := (
-                      Cat(
-                        tempInp.bgEntry(
-                          //x
-                          tempInp.pxPosXGridIdxFindFirstDiffIdx
-                        ).tileIdx,
-                        tempOutp.tilePxsCoord(0).y,
-                      ).asUInt
-                      //<< (
-                      //  params.bgTileSize2dPow.y
-                      //)
+                      Mux[UInt](
+                        !pipeIn.bgAttrs.fbAttrs.doIt,
+                        Cat(
+                          tempInp.bgEntry(
+                            //x
+                            tempInp.pxPosXGridIdxFindFirstDiffIdx
+                          ).tileIdx,
+                          tempOutp.tilePxsCoord(0).y,
+                        ).asUInt,
+                        Cat(
+                          pipeIn.bgAttrs.fbAttrs.tileMemBaseAddr,
+                          tempInp.pxPos(0).y,
+                          (
+                            tempInp.pxPos(
+                              tempInp.pxPosXGridIdxFindFirstDiffIdx
+                            ).x(
+                              log2Up(params.bgSize2dInPxs.x) - 1
+                              downto params.bgTileSize2dPow.x
+                            )
+                          ),
+                        ).asUInt,
+                      ).resized
                     )
                   }
                 }

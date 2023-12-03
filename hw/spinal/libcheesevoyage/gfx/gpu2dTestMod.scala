@@ -509,6 +509,7 @@ case class Gpu2dTest(
   //tempBgAttrs.scroll.y := 5
   //tempBgAttrs.visib := True
   ////tempBgAttrs.visib := False
+  tempBgAttrs.fbAttrs := tempBgAttrs.fbAttrs.getZero
   for (idx <- 0 to pop.bgAttrsPushArr.size - 1) {
     def tempBgAttrsPush = pop.bgAttrsPushArr(idx)
     if (idx == 0) {

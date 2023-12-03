@@ -211,7 +211,16 @@ object Gpu2dSimDutParams {
     numObjsAffinePow=log2Up(16),
     //numBgTilesPow=Some(log2Up(256)),
     //numBgTilesPow=Some(log2Up(2)),
-    numBgTiles=Some(16),
+    numBgTiles=(
+      //Some(16)
+      //Some(320 * 240)
+      // for double buffering
+      Some(
+        vgaTimingInfo.fbSize2d.x
+        * vgaTimingInfo.fbSize2d.y
+        * 2
+      )
+    ),
     //numObjTilesPow=None,
     numObjTiles=Some(16),
     numObjAffineTiles=Some(16),
