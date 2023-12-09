@@ -432,6 +432,19 @@ case class Gpu2dTest(
       } elsewhen (tempBgTileCnt === 4) {
         //mkBgTile(4, 5)
         mkBgTile(4, 4)
+      } elsewhen (
+        tempBgTileCnt
+        === (
+          //params.bgSize2dInTiles.x / params.bgTileSize2d.x
+          params.bgSize2dInPxs.x
+          / (
+            params.bgTileSize2d.x * params.bgTileSize2d.y
+          )
+        )
+      ) {
+        // test that there's a tile at the second row
+        //mkBgTile(1, 2, Some(3), Some(4))
+        mkBgTile(4, 4)
       } otherwise {
         //tempBgTileSlice := tempBgTileSlice.getZero
         //when (rBgTileCnt >= params.numBgTiles) {
