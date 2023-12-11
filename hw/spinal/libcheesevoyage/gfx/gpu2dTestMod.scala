@@ -444,7 +444,22 @@ case class Gpu2dTest(
       ) {
         // test that there's a tile at the second row
         //mkBgTile(1, 2, Some(3), Some(4))
-        mkBgTile(4, 4)
+        mkBgTile(1, 1)
+      } elsewhen (
+        tempBgTileCnt
+        === (
+          //params.bgSize2dInTiles.x / params.bgTileSize2d.x
+          (
+            params.bgSize2dInPxs.x
+            / (
+              params.bgTileSize2d.x * params.bgTileSize2d.y
+            )
+          ) + 1
+        )
+      ) {
+        // test that there's a tile at the second row
+        //mkBgTile(1, 2, Some(3), Some(4))
+        mkBgTile(2, 2)
       } otherwise {
         //tempBgTileSlice := tempBgTileSlice.getZero
         //when (rBgTileCnt >= params.numBgTiles) {
@@ -506,8 +521,9 @@ case class Gpu2dTest(
   //tempBgAttrs.scroll.x := 0
   //tempBgAttrs.scroll.x := 1
   tempBgAttrs.scroll.x := (
-    0
-    //2
+    //0
+    ////2
+    params.bgTileSize2d.x
   )
   //tempBgAttrs.scroll.x := 3
   //tempBgScroll.x := (-params.bgTileSize2d.x) + 1
@@ -515,9 +531,11 @@ case class Gpu2dTest(
   //tempBgAttrs.scroll.x := tempBgScroll.x.asUInt
   //tempBgAttrs.scroll.x := 0
   //tempBgAttrs.scroll.x := (default -> True)
-  //tempBgAttrs.scroll.y := 2
-  //tempBgAttrs.scroll.y := 0
-  tempBgAttrs.scroll.y := 1
+  tempBgAttrs.scroll.y := (
+    //2
+    //0
+    1
+  )
   //tempBgAttrs.scroll.x := 6
   //tempBgAttrs.scroll.y := 5
   //tempBgAttrs.visib := True
