@@ -283,18 +283,20 @@ case class FpgacpuRamSimpleDualPortImpl(
     wordType=Bits(wordWidth bits),
     wordCount=depth,
   )
-    //.initBigInt(Array.fill(depth)(BigInt(0)).toSeq)
-    .addAttribute("ramstyle", arrRamStyle)
+    .initBigInt(Array.fill(depth)(BigInt(0)).toSeq)
+    //.addAttribute("ramstyle", arrRamStyle)
     .addAttribute("ram_style", arrRamStyle)
     .addAttribute("rw_addr_collision", arrRwAddrCollision)
+    //.generateAsBlackBox()
+  //arr.setTechnology(ramBlock)
 
-  initBigInt match {
-    case Some(myInitBigInt) => {
-      arr.initBigInt(myInitBigInt.toSeq)
-    }
-    case None => {
-    }
-  }
+  //initBigInt match {
+  //  case Some(myInitBigInt) => {
+  //    arr.initBigInt(myInitBigInt.toSeq)
+  //  }
+  //  case None => {
+  //  }
+  //}
 
   arr.write(
     address=io.wrAddr,

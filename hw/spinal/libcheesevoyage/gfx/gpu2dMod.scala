@@ -2495,7 +2495,8 @@ case class Gpu2d(
           //} else {
           //  params.objAffineDblTileSize2d.x
           //}
-          params.tempObjTileWidth1(idx != 0)
+          //params.tempObjTileWidth1(idx != 0)
+          params.tempObjTileWidth(idx != 0)
         )
       ) {
         objPalEntryMemArr += FpgacpuRamSimpleDualPort(
