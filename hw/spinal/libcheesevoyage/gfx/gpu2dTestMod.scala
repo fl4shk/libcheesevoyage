@@ -515,7 +515,7 @@ case class Gpu2dTest(
       //Gpu2dColorMathKind.avg
     )
   } else {
-    tempBgAttrs.colorMathInfo := tempBgAttrs.colorMathInfo.getZero
+    //tempBgAttrs.colorMathInfo := tempBgAttrs.colorMathInfo.getZero
   }
   //val tempBgScroll = DualTypeNumVec2(
   //  dataTypeX=SInt(tempBgAttrs.scroll.x.getWidth bits),
@@ -885,7 +885,9 @@ case class Gpu2dTest(
   //val rObjAttrs = Reg(Gpu2dObjAttrs(params=params))
   //rObjAttrs.init(rObjAttrs.getZero)
   val rObjAttrsEntryPushValid = Reg(Bool()) init(True)
-  tempObjAttrs.colorMathInfo := tempObjAttrs.colorMathInfo.getZero
+  if (!params.noColorMath) {
+    tempObjAttrs.colorMathInfo := tempObjAttrs.colorMathInfo.getZero
+  }
 
   when (rObjAttrsCnt < params.numObjs) {
     when (
@@ -1245,7 +1247,11 @@ case class Gpu2dTest(
   //val rObjAffineAttrs = Reg(Gpu2dObjAffineAttrs(params=params))
   //rObjAffineAttrs.init(rObjAffineAttrs.getZero)
   val rObjAffineAttrsEntryPushValid = Reg(Bool()) init(True)
-  tempObjAffineAttrs.colorMathInfo := tempObjAffineAttrs.colorMathInfo.getZero
+  if (!params.noColorMath) {
+    tempObjAffineAttrs.colorMathInfo := (
+      tempObjAffineAttrs.colorMathInfo.getZero
+    )
+  }
 
   when (rObjAffineAttrsCnt < params.numObjsAffine) {
     when (rObjAffineAttrsCnt === 0) {
