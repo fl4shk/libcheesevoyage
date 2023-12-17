@@ -1460,7 +1460,9 @@ case class Gpu2dBgAttrs(
   //val visib = Bool()
 
   val colorMathInfo = (
-    (!isColorMath) generate Gpu2dColorMathInfo(params=params)
+    (
+      !isColorMath && !params.noColorMath
+    ) generate Gpu2dColorMathInfo(params=params)
   )
   //val affine = Gpu2dAffine(
   //  params=params,
@@ -1520,7 +1522,9 @@ case class Gpu2dObjAttrs(
   // the priority for the OBJ
   val prio = UInt(log2Up(params.numBgs) bits)
 
-  val colorMathInfo = Gpu2dColorMathInfo(params=params)
+  val colorMathInfo = (!params.noColorMath) generate (
+    Gpu2dColorMathInfo(params=params)
+  )
   val affine = (isAffine) generate Gpu2dAffine(
     params=params,
     isObj=true,
