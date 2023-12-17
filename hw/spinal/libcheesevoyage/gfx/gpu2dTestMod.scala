@@ -506,13 +506,17 @@ case class Gpu2dTest(
     isColorMath=false,
   )
   //tempBgAttrs.colorMathInfo := tempBgAttrs.colorMathInfo.getZero
-  tempBgAttrs.colorMathInfo.doIt := True
-  tempBgAttrs.colorMathInfo.kind := (
-    Gpu2dColorMathKind.add
-    //Gpu2dColorMathKind.sub
-    //Gpu2dColorMathKind.avg
-    //Gpu2dColorMathKind.avg
-  )
+  if (!params.noColorMath) {
+    tempBgAttrs.colorMathInfo.doIt := True
+    tempBgAttrs.colorMathInfo.kind := (
+      Gpu2dColorMathKind.add
+      //Gpu2dColorMathKind.sub
+      //Gpu2dColorMathKind.avg
+      //Gpu2dColorMathKind.avg
+    )
+  } else {
+    tempBgAttrs.colorMathInfo := tempBgAttrs.colorMathInfo.getZero
+  }
   //val tempBgScroll = DualTypeNumVec2(
   //  dataTypeX=SInt(tempBgAttrs.scroll.x.getWidth bits),
   //  dataTypeY=SInt(tempBgAttrs.scroll.y.getWidth bits),
