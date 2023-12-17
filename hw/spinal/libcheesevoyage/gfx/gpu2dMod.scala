@@ -1936,6 +1936,7 @@ case class Gpu2d(
         },
         arrRamStyle=params.bgTileArrRamStyle,
       )
+        .setName(f"bgTileMemArr_$jdx")
       bgTileMemArr(jdx).io.wrEn := bgTilePush.fire
       bgTileMemArr(jdx).io.wrAddr := bgTilePush.payload.memIdx
       //bgTileMemArr(jdx).io.wrData := bgTilePush.payload.tile
@@ -2128,6 +2129,7 @@ case class Gpu2d(
             },
             arrRamStyle=params.bgTileArrRamStyle,
           )
+            .setName(f"colorMathTileMemArr_$jdx")
         //(
         //  setWordFunc=(
         //    unionIdx: UInt,
@@ -2224,6 +2226,7 @@ case class Gpu2d(
           },
           arrRamStyle=params.bgEntryArrRamStyle,
         )
+          .setName(f"colorMathEntryMemArr_$jdx")
         //(
         //  setWordFunc=(
         //    unionIdx: UInt,
@@ -2390,6 +2393,7 @@ case class Gpu2d(
         },
         arrRamStyle=params.objAttrsArrRamStyle,
       )
+        .setName(f"objAttrsMemArr_$idx")
       //object RdObjAttrsMemInfo {
       //  def wrObjIdx = 0
       //  def numReaders = 1
@@ -2446,6 +2450,7 @@ case class Gpu2d(
         },
         arrRamStyle=params.bgPalEntryArrRamStyle,
       )
+        .setName(f"bgPalEntryMemArr_$jdx")
       bgPalEntryMemArr(jdx).io.wrEn := bgPalEntryPush.fire
       bgPalEntryMemArr(jdx).io.wrAddr := bgPalEntryPush.payload.memIdx
       bgPalEntryMemArr(jdx).io.wrData := bgPalEntryPush.payload.bgPalEntry
@@ -2505,6 +2510,7 @@ case class Gpu2d(
           },
           arrRamStyle=params.objPalEntryArrRamStyle,
         )
+          .setName(f"objPalEntryMemArr_$idx" + f"_$x")
         objPalEntryMemArr(x).io.wrEn := objPalEntryPush.fire
         objPalEntryMemArr(x).io.wrAddr := objPalEntryPush.payload.memIdx
         objPalEntryMemArr(x).io.wrData := (
