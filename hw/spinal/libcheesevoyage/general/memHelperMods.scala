@@ -367,14 +367,14 @@ object WrPulseRdPipeSimpleDualPortMemSim extends App {
           oPayload := iWord
         }
       )
-      dut.arr.arr.simPublic()
+      dut.arr.impl.arr.simPublic()
       //dut.testDut.mem.simPublic()
       //dut.testDut.io.data.simPublic()
       dut
     }
     .doSim("blub") { dut =>
       for (i <- 0 until depth) {
-        dut.arr.arr.setBigInt(i, i)
+        dut.arr.impl.arr.setBigInt(i, i)
       }
 
       val scoreboard = ScoreboardInOrder[Int]()

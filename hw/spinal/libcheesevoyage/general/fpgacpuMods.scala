@@ -268,24 +268,19 @@ case class FpgacpuRamSimpleDualPortIo[
   val rdData = out(wordType())
   //--------
 }
-case class FpgacpuRamSimpleDualPort[
-  WordT <: Data
-](
-  wordType: HardType[WordT],
+case class FpgacpuRamSimpleDualPortImpl(
+  wordWidth: Int,
   depth: Int,
   initBigInt: Option[ArrayBuffer[BigInt]]=None,
   arrRamStyle: String="block",
   arrRwAddrCollision: String="",
 ) extends Component {
-  //--------
   val io = FpgacpuRamSimpleDualPortIo(
-    wordType=wordType(),
+    wordType=Bits(wordWidth bits),
     depth=depth,
   )
-  def addrWidth = io.addrWidth
-  //--------
   val arr = Mem(
-    wordType=wordType(),
+    wordType=Bits(wordWidth bits),
     wordCount=depth,
   )
     //.initBigInt(Array.fill(depth)(BigInt(0)).toSeq)
@@ -313,6 +308,66 @@ case class FpgacpuRamSimpleDualPort[
       enable=io.rdEn,
     )
   )
+}
+case class FpgacpuRamSimpleDualPort[
+  WordT <: Data
+](
+  wordType: HardType[WordT],
+  depth: Int,
+  initBigInt: Option[ArrayBuffer[BigInt]]=None,
+  arrRamStyle: String="block",
+  arrRwAddrCollision: String="",
+) extends Component {
+  //--------
+  val io = FpgacpuRamSimpleDualPortIo(
+    wordType=wordType(),
+    depth=depth,
+  )
+  def addrWidth = io.addrWidth
+  //--------
+  val impl = FpgacpuRamSimpleDualPortImpl(
+    wordWidth=wordType().asBits.getWidth,
+    depth=depth,
+    initBigInt=initBigInt,
+    arrRamStyle=arrRamStyle,
+    arrRwAddrCollision=arrRwAddrCollision,
+  )
+  impl.io.wrEn := io.wrEn
+  impl.io.wrAddr := io.wrAddr
+  impl.io.wrData := io.wrData.asBits
+
+  impl.io.rdEn := io.rdEn
+  impl.io.rdAddr := io.rdAddr
+  io.rdData.assignFromBits(impl.io.rdData)
+  //val arr = Mem(
+  //  wordType=wordType(),
+  //  wordCount=depth,
+  //)
+  //  //.initBigInt(Array.fill(depth)(BigInt(0)).toSeq)
+  //  .addAttribute("ramstyle", arrRamStyle)
+  //  .addAttribute("ram_style", arrRamStyle)
+  //  .addAttribute("rw_addr_collision", arrRwAddrCollision)
+
+  //initBigInt match {
+  //  case Some(myInitBigInt) => {
+  //    arr.initBigInt(myInitBigInt.toSeq)
+  //  }
+  //  case None => {
+  //  }
+  //}
+
+  //arr.write(
+  //  address=io.wrAddr,
+  //  data=io.wrData,
+  //  enable=io.wrEn,
+  //)
+  //io.rdData := (
+  //  arr.readSync
+  //  (
+  //    address=io.rdAddr,
+  //    enable=io.rdEn,
+  //  )
+  //)
 }
 //--------
 // http://fpgacpu.ca/fpga/Pipeline_Fork_Lazy.html
