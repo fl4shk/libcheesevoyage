@@ -12949,10 +12949,10 @@ case class Gpu2d(
             //tempOutp.stage8.combineWrLineMemEntry.colorMathCol := (
             //  tempInp.colorMathCol
             //)
-            def tempCmathInfo = (!noColorMath) generate (
+            val tempCmathInfo = (!noColorMath) generate (
               tempInp.stage7.combineWrLineMemEntry.colorMathInfo
             )
-            def tempCmathCol = (!noColorMath) generate (
+            val tempCmathCol = (!noColorMath) generate (
               tempInp.stage7.combineWrLineMemEntry.colorMathCol
             )
             def inpWrLineMemEntry = tempInp.stage7.combineWrLineMemEntry
@@ -12972,8 +12972,8 @@ case class Gpu2d(
               when (
                 tempCmathInfo.doIt
               ) {
-                switch (tempCmathInfo.kind) {
-                  is (Gpu2dColorMathKind.add) {
+                switch (tempCmathInfo.kind.asBits) {
+                  is (Gpu2dColorMathKind.add.asBits) {
                     tempCol.r(params.rgbConfig.rWidth downto 0) := (
                       inpWrLineMemEntry.col.rgb.r.resized
                       + Cat(False, tempCmathCol.rgb.r).asUInt
@@ -12996,7 +12996,7 @@ case class Gpu2d(
                       tempCol.b.high downto params.rgbConfig.bWidth + 1
                     ) := 0
                   }
-                  is (Gpu2dColorMathKind.sub) {
+                  is (Gpu2dColorMathKind.sub.asBits) {
                     tempCol.r := (
                       inpWrLineMemEntry.col.rgb.r.resized
                       - Cat(
@@ -13028,7 +13028,7 @@ case class Gpu2d(
                       ).asUInt
                     )
                   }
-                  is (Gpu2dColorMathKind.avg) {
+                  is (Gpu2dColorMathKind.avg.asBits) {
                     tempCol.r(params.rgbConfig.rWidth - 1 downto 0) := (
                       (
                         inpWrLineMemEntry.col.rgb.r.resized
