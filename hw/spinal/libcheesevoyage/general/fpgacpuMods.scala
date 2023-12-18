@@ -286,7 +286,7 @@ case class FpgacpuRamSimpleDualPortImpl(
     //.initBigInt(Array.fill(depth)(BigInt(0)).toSeq)
     //.addAttribute("ramstyle", arrRamStyle)
     .addAttribute("ram_style", arrRamStyle)
-    .addAttribute("rw_addr_collision", arrRwAddrCollision)
+    //.addAttribute("rw_addr_collision", arrRwAddrCollision)
     //.generateAsBlackBox()
   //arr.setTechnology(ramBlock)
 
