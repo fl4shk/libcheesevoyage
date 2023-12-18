@@ -283,7 +283,7 @@ case class FpgacpuRamSimpleDualPortImpl(
     wordType=Bits(wordWidth bits),
     wordCount=depth,
   )
-    .initBigInt(Array.fill(depth)(BigInt(0)).toSeq)
+    //.initBigInt(Array.fill(depth)(BigInt(0)).toSeq)
     //.addAttribute("ramstyle", arrRamStyle)
     .addAttribute("ram_style", arrRamStyle)
     .addAttribute("rw_addr_collision", arrRwAddrCollision)
