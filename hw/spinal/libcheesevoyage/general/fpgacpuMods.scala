@@ -290,13 +290,13 @@ case class FpgacpuRamSimpleDualPortImpl(
     //.generateAsBlackBox()
   //arr.setTechnology(ramBlock)
 
-  //initBigInt match {
-  //  case Some(myInitBigInt) => {
-  //    arr.initBigInt(myInitBigInt.toSeq)
-  //  }
-  //  case None => {
-  //  }
-  //}
+  initBigInt match {
+    case Some(myInitBigInt) => {
+      arr.initBigInt(myInitBigInt.toSeq)
+    }
+    case None => {
+    }
+  }
 
   arr.write(
     address=io.wrAddr,
