@@ -99,16 +99,17 @@ case class Gpu2dParams(
   //--------
   bgTileArrRamStyle: String="block",
   objTileArrRamStyle: String="block",
+  objAffineTileArrRamStyle: String="block",
   bgEntryArrRamStyle: String="block",
   //bgAttrsArrRamStyle: String="block",
-  objAttrsArrRamStyle: String="block",
-  bgPalEntryArrRamStyle: String="block",
-  objPalEntryArrRamStyle: String="block",
+  objAttrsArrRamStyle: String="auto",
+  bgPalEntryArrRamStyle: String="auto",
+  objPalEntryArrRamStyle: String="auto",
 
   //bgLineArrRamStyle: String="block",
   //objLineArrRamStyle: String="block",
   //combineLineArrRamStyle: String="block",
-  lineArrRamStyle: String="block"
+  lineArrRamStyle: String="block",
 ) {
   //--------
   //def bgAffineTileSize2dPow = ElabVec2[Int](
@@ -825,11 +826,12 @@ object DefaultGpu2dParams {
     //--------
     bgTileArrRamStyle: String="block",
     objTileArrRamStyle: String="block",
+    objAffineTileArrRamStyle: String="block",
     bgEntryArrRamStyle: String="block",
     //bgAttrsArrRamStyle: String="block",
-    objAttrsArrRamStyle: String="block",
-    bgPalEntryArrRamStyle: String="block",
-    objPalEntryArrRamStyle: String="block",
+    objAttrsArrRamStyle: String="auto",
+    bgPalEntryArrRamStyle: String="auto",
+    objPalEntryArrRamStyle: String="auto",
     //bgLineArrRamStyle: String="block",
     //objLineArrRamStyle: String="block",
     //combineLineArrRamStyle: String="block",
@@ -935,6 +937,7 @@ object DefaultGpu2dParams {
       //--------
       bgTileArrRamStyle=bgTileArrRamStyle,
       objTileArrRamStyle=objTileArrRamStyle,
+      objAffineTileArrRamStyle=objAffineTileArrRamStyle,
       bgEntryArrRamStyle=bgEntryArrRamStyle,
       //bgAttrsArrRamStyle=bgAttrsArrRamStyle,
       objAttrsArrRamStyle=objAttrsArrRamStyle,
@@ -2053,7 +2056,7 @@ case class Gpu2d(
           }
           Some(temp)
         },
-        arrRamStyle=params.objTileArrRamStyle,
+        arrRamStyle=params.objAffineTileArrRamStyle,
       )
         .setName(f"objAffineTileMemArr_$idx")
       objAffineTileMemArr(idx).io.wrEn := (
@@ -2159,13 +2162,13 @@ case class Gpu2d(
           //dataType=CombinePipePayload(),
           wordType=Gpu2dPalEntry(params=params),
           depth=params.numColsInBgPal,
-          initBigInt={
-            val temp = new ArrayBuffer[BigInt]()
-            for (idx <- 0 until params.numColsInBgPal) {
-              temp += BigInt(0)
-            }
-            Some(temp)
-          },
+          //initBigInt={
+          //  val temp = new ArrayBuffer[BigInt]()
+          //  for (idx <- 0 until params.numColsInBgPal) {
+          //    temp += BigInt(0)
+          //  }
+          //  Some(temp)
+          //},
           arrRamStyle=params.bgPalEntryArrRamStyle,
         )
           .setName(f"colorMathPalEntryMemArr_$jdx")
@@ -2384,13 +2387,13 @@ case class Gpu2d(
           isAffine=idx != 0,
         ),
         depth=tempNumObjs,
-        initBigInt={
-          val temp = new ArrayBuffer[BigInt]()
-          for (_ <- 0 until tempNumObjs) {
-            temp += BigInt(0)
-          }
-          Some(temp)
-        },
+        //initBigInt={
+        //  val temp = new ArrayBuffer[BigInt]()
+        //  for (_ <- 0 until tempNumObjs) {
+        //    temp += BigInt(0)
+        //  }
+        //  Some(temp)
+        //},
         arrRamStyle=params.objAttrsArrRamStyle,
       )
         .setName(f"objAttrsMemArr_$idx")
@@ -2441,13 +2444,13 @@ case class Gpu2d(
       bgPalEntryMemArr += FpgacpuRamSimpleDualPort(
         wordType=Gpu2dPalEntry(params=params),
         depth=params.numColsInBgPal,
-        initBigInt={
-          val temp = new ArrayBuffer[BigInt]()
-          for (idx <- 0 until params.numColsInBgPal) {
-            temp += BigInt(0)
-          }
-          Some(temp)
-        },
+        //initBigInt={
+        //  val temp = new ArrayBuffer[BigInt]()
+        //  for (idx <- 0 until params.numColsInBgPal) {
+        //    temp += BigInt(0)
+        //  }
+        //  Some(temp)
+        //},
         arrRamStyle=params.bgPalEntryArrRamStyle,
       )
         .setName(f"bgPalEntryMemArr_$jdx")
@@ -2502,13 +2505,13 @@ case class Gpu2d(
         objPalEntryMemArr += FpgacpuRamSimpleDualPort(
           wordType=Gpu2dPalEntry(params=params),
           depth=params.numColsInObjPal,
-          initBigInt={
-            val temp = new ArrayBuffer[BigInt]()
-            for (idx <- 0 until params.numColsInObjPal) {
-              temp += BigInt(0)
-            }
-            Some(temp)
-          },
+          //initBigInt={
+          //  val temp = new ArrayBuffer[BigInt]()
+          //  for (idx <- 0 until params.numColsInObjPal) {
+          //    temp += BigInt(0)
+          //  }
+          //  Some(temp)
+          //},
           arrRamStyle=params.objPalEntryArrRamStyle,
         )
           .setName(f"objPalEntryMemArr_$idx" + f"_$x")
