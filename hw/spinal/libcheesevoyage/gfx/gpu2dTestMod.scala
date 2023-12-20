@@ -528,6 +528,7 @@ case class Gpu2dTest(
     //0
     ////2
     params.bgTileSize2d.x
+    //+ 2
   )
   //tempBgAttrs.scroll.x := 3
   //tempBgScroll.x := (-params.bgTileSize2d.x) + 1
@@ -545,7 +546,10 @@ case class Gpu2dTest(
   //tempBgAttrs.visib := True
   ////tempBgAttrs.visib := False
   //tempBgAttrs.fbAttrs := tempBgAttrs.fbAttrs.getZero
-  tempBgAttrs.fbAttrs.doIt := True
+  tempBgAttrs.fbAttrs.doIt := (
+    //True
+    False
+  )
   tempBgAttrs.fbAttrs.tileMemBaseAddr := 0
   for (idx <- 0 to pop.bgAttrsPushArr.size - 1) {
     def tempBgAttrsPush = pop.bgAttrsPushArr(idx)

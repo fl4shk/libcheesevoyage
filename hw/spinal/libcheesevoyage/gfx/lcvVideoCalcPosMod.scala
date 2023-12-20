@@ -87,69 +87,74 @@ case class LcvVideoPosInfo(
     )
   )
   //--------
-  def posSlice(
-    //thisSize2dPow: ElabVec2[Int], // left shift amounts for `this`
-    //thatSize2dPow: ElabVec2[Int], // left shift amounts for `that`
-    someSize2d: ElabVec2[Int],
-    someScalePow: ElabVec2[Int],
-    //thatSize2dScalePow: ElabVec2[Int],
-  ): LcvVideoPosSlice = {
-    //assert(thisWidthPow > thatWidthPow)
+  //def posSlice(
+  //  //thisSize2dPow: ElabVec2[Int], // left shift amounts for `this`
+  //  //thatSize2dPow: ElabVec2[Int], // left shift amounts for `that`
+  //  someSize2d: ElabVec2[Int],
+  //  //someScalePow: ElabVec2[Int],
+  //  someScale: ElabVec2[Int],
+  //  //thatSize2dScalePow: ElabVec2[Int],
+  //): LcvVideoPosSlice = {
+  //  //assert(thisWidthPow > thatWidthPow)
 
-    //assert(thisSize2dPow.x >= thatSize2dPow.x)
-    //assert(thisSize2dPow.y >= thatSize2dPow.y)
-    //assert(thisSize2dScalePow.x >= thatSize2dScalePow.x)
-    //assert(thisSize2dScalePow.y >= thatSize2dScalePow.y)
+  //  //assert(thisSize2dPow.x >= thatSize2dPow.x)
+  //  //assert(thisSize2dPow.y >= thatSize2dPow.y)
+  //  //assert(thisSize2dScalePow.x >= thatSize2dScalePow.x)
+  //  //assert(thisSize2dScalePow.y >= thatSize2dScalePow.y)
 
-    //def sliceLo = thisWidthPow - thatWidthPow
-    //def sliceLo = ElabVec2[Int](
-    //  //x=1 << (thisSize2dPow.x - thatSize2dPow.x),
-    //  //y=1 << (thisSize2dPow.y - thatSize2dPow.y),
-    //  //x=1 << (thisSize2dScalePow.x - thatSize2dScalePow.x),
-    //  //y=1 << (thisSize2dScalePow.y - thatSize2dScalePow.y),
-    //  x=1 << someScalePow.x,
-    //  y=1 << someScalePow.y,
-    //)
-    def sliceLo = someScalePow
+  //  //def sliceLo = thisWidthPow - thatWidthPow
+  //  //def sliceLo = ElabVec2[Int](
+  //  //  //x=1 << (thisSize2dPow.x - thatSize2dPow.x),
+  //  //  //y=1 << (thisSize2dPow.y - thatSize2dPow.y),
+  //  //  //x=1 << (thisSize2dScalePow.x - thatSize2dScalePow.x),
+  //  //  //y=1 << (thisSize2dScalePow.y - thatSize2dScalePow.y),
+  //  //  x=1 << someScalePow.x,
+  //  //  y=1 << someScalePow.y,
+  //  //)
+  //  //def sliceLo = someScalePow
+  //  def sliceLo = ElabVec2[Int](
+  //    x=log2Up(someScale.x),
+  //    y=log2Up(someScale.y),
+  //  )
 
-    val that = LcvVideoPosSlice(
-      //someWidthOrHeight=1 << thatWidthPow
-      //someSize2d=ElabVec2[Int](
-      //  //x=1 << thatSize2dPow.x,
-      //  //y=1 << thatSize2dPow.y,
-      //  //x=1 << thatSize2dScalePow.x,
-      //  //y=1 << thatSize2dScalePow.y,
-      //)
-      someSize2d=someSize2d,
-    )
-    //that.nextHpos := 
-    //that.posWillOverflow := 
-    //that.posWillOverflow := MkVec2(Bool(), x=True, y=True)
-    //that.posWillOverflow.x := True
-    //that.posWillOverflow.y := True
+  //  val that = LcvVideoPosSlice(
+  //    //someWidthOrHeight=1 << thatWidthPow
+  //    //someSize2d=ElabVec2[Int](
+  //    //  //x=1 << thatSize2dPow.x,
+  //    //  //y=1 << thatSize2dPow.y,
+  //    //  //x=1 << thatSize2dScalePow.x,
+  //    //  //y=1 << thatSize2dScalePow.y,
+  //    //)
+  //    someSize2d=someSize2d,
+  //  )
+  //  //that.nextHpos := 
+  //  //that.posWillOverflow := 
+  //  //that.posWillOverflow := MkVec2(Bool(), x=True, y=True)
+  //  //that.posWillOverflow.x := True
+  //  //that.posWillOverflow.y := True
 
-    //when (!changingRow) {
-    //  //that.crossingGrid.x := that.pos.x + 1 === that.nextPos.x
-    //  //that.crossingGrid.y := that.pos.y + 1 === that.nextPos.y
-    //  //that.pastCrossingGrid.x := that.pastPos.x + 1 === that.pos.x
-    //  //that.pastCrossingGrid.y := that.pastPos.y + 1 === that.pos.y
+  //  //when (!changingRow) {
+  //  //  //that.crossingGrid.x := that.pos.x + 1 === that.nextPos.x
+  //  //  //that.crossingGrid.y := that.pos.y + 1 === that.nextPos.y
+  //  //  //that.pastCrossingGrid.x := that.pastPos.x + 1 === that.pos.x
+  //  //  //that.pastCrossingGrid.y := that.pastPos.y + 1 === that.pos.y
 
-    //  // crossing the grid 
-    //  that.crossingGridX := that.pos.x + 1 === that.nextPos.x
-    //  //that.crossingGrid.y := 0
-    //} otherwise {
-    //  that.crossingGridX := (that.pos.x =/= 0 && that.nextPos.x === 0)
-    //  //that.crossingGrid.y := 
-    //}
-    that.nextPos.x := this.nextPos.x(this.nextPos.x.high downto sliceLo.x)
-    that.nextPos.y := this.nextPos.y(this.nextPos.y.high downto sliceLo.y)
-    that.pos.x := this.pos.x(this.pos.x.high downto sliceLo.x)
-    that.pos.y := this.pos.y(this.pos.y.high downto sliceLo.y)
-    that.pastPos.x := this.pastPos.x(this.pastPos.x.high downto sliceLo.x)
-    that.pastPos.y := this.pastPos.y(this.pastPos.y.high downto sliceLo.y)
-    that.nonSliceChangingRow := this.changingRow
-    that
-  }
+  //  //  // crossing the grid 
+  //  //  that.crossingGridX := that.pos.x + 1 === that.nextPos.x
+  //  //  //that.crossingGrid.y := 0
+  //  //} otherwise {
+  //  //  that.crossingGridX := (that.pos.x =/= 0 && that.nextPos.x === 0)
+  //  //  //that.crossingGrid.y := 
+  //  //}
+  //  that.nextPos.x := this.nextPos.x(this.nextPos.x.high downto sliceLo.x)
+  //  that.nextPos.y := this.nextPos.y(this.nextPos.y.high downto sliceLo.y)
+  //  that.pos.x := this.pos.x(this.pos.x.high downto sliceLo.x)
+  //  that.pos.y := this.pos.y(this.pos.y.high downto sliceLo.y)
+  //  that.pastPos.x := this.pastPos.x(this.pastPos.x.high downto sliceLo.x)
+  //  that.pastPos.y := this.pastPos.y(this.pastPos.y.high downto sliceLo.y)
+  //  that.nonSliceChangingRow := this.changingRow
+  //  that
+  //}
 }
 case class LcvVideoCalcPosIo(
   someSize2d: ElabVec2[Int],

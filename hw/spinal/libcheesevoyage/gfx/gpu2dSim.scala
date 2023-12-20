@@ -148,13 +148,20 @@ object Gpu2dSim extends App {
       x=vgaTimingInfo.fbSize2d.x,
       y=vgaTimingInfo.fbSize2d.y,
     ),
-    physFbSize2dScalePow=ElabVec2[Int](
-      x=log2Up(1),
-      y=log2Up(1),
-      //x=log2Up(2),
-      ////y=log2Up(2),
-      //y=log2Up(2),
+    physFbSize2dScale=ElabVec2[Int](
+      x=1,
+      y=1,
+      //x=2,
+      ////y=2,
+      //y=2,
     ),
+    //physFbSize2dScalePow=ElabVec2[Int](
+    //  x=log2Up(1),
+    //  y=log2Up(1),
+    //  //x=log2Up(2),
+    //  ////y=log2Up(2),
+    //  //y=log2Up(2),
+    //),
     bgTileSize2dPow=ElabVec2[Int](
       //x=log2Up(8),
       //y=log2Up(8),
