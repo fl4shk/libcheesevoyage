@@ -7596,8 +7596,9 @@ case class Gpu2d(
             for (x <- 0 until params.bgTileSize2d.x) {
               tempOutp.pxPosXGridIdx(x) := tempOutp.pxPos(x).x(
                 tempOutp.pxPos(x).x.high
-                downto params.bgTileSize2dPow.x - 1
-              )
+                //downto params.bgTileSize2dPow.x - 1
+                downto params.bgTileSize2dPow.x
+              ).resized
               switch (pipeIn.bgIdx) {
                 for (tempBgIdx <- 0 until params.numBgs) {
                   is (tempBgIdx) {
