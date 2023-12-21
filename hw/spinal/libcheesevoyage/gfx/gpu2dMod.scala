@@ -7559,6 +7559,13 @@ case class Gpu2d(
               is (tempBgIdx) {
                 //tempOutp.scroll := bgAttrsArr(tempBgIdx).scroll
                 tempOutp.bgAttrs := bgAttrsArr(tempBgIdx)
+                tempOutp.bgAttrs.scroll.allowOverride
+                when (tempOutp.bgAttrs.fbAttrs.doIt) {
+                  // Only allow scrolling with tilemaps
+                  tempOutp.bgAttrs.scroll := (
+                    tempOutp.bgAttrs.scroll.getZero
+                  )
+                }
                 if (!noColorMath) {
                   tempOutp.colorMathAttrs := colorMathAttrs
                 }
@@ -8515,10 +8522,27 @@ case class Gpu2d(
                       ).resized
                     )
                     switch (
-                      someTempRdAddr(
-                        someTempRdAddr.high
-                        downto someTempRdAddr.high
-                      )
+                      //Mux[UInt](
+                      //  !pipeIn.bgAttrs.fbAttrs.doIt,
+                        someTempRdAddr(
+                          //someTempRdAddr.high
+                          //downto someTempRdAddr.high
+                          params.bgTileSize2dPow.y
+                          downto params.bgTileSize2dPow.y
+                        ),
+                      //  {
+                      //    val slicePos = (
+                      //      log2Up(params.bgSize2dInPxs.y)
+                      //      + log2Up(params.bgSize2dInPxs.x)
+                      //      - params.bgTileSize2dPow.x
+                      //      + 1
+                      //      //- 1
+                      //    )
+                      //    someTempRdAddr(
+                      //      slicePos downto slicePos
+                      //    )
+                      //  },
+                      //)
                     ) {
                       for (mySliceIdx <- 0 until 2) {
                         is (mySliceIdx) {
@@ -8528,16 +8552,39 @@ case class Gpu2d(
                             mySliceIdx
                           ).io.rdAddr := (
                             //someTempRdAddr.resized
-                            Cat(
-                              someTempRdAddr(
-                                someTempRdAddr.high
-                                downto params.bgTileSize2dPow.y + 1
-                              ),
-                              someTempRdAddr(
-                                params.bgTileSize2dPow.y - 1
-                                downto 0
-                              ),
-                            ).asUInt.resized
+                            //Mux[UInt](
+                            //  !pipeIn.bgAttrs.fbAttrs.doIt,
+                              Cat(
+                                someTempRdAddr(
+                                  someTempRdAddr.high
+                                  downto params.bgTileSize2dPow.y + 1
+                                ),
+                                someTempRdAddr(
+                                  params.bgTileSize2dPow.y - 1
+                                  downto 0
+                                ),
+                              ).asUInt.resized,
+                            //  {
+                            //    val slicePos = (
+                            //      log2Up(params.bgSize2dInPxs.y)
+                            //      + log2Up(params.bgSize2dInPxs.x)
+                            //      - params.bgTileSize2dPow.x
+                            //      + 1
+                            //      //- 1
+                            //    )
+                            //    Cat(
+                            //      someTempRdAddr(
+                            //        someTempRdAddr.high
+                            //        downto slicePos + 1
+                            //      ),
+                            //      someTempRdAddr(
+                            //        slicePos - 1
+                            //        downto 0
+                            //      ),
+                            //    ).asUInt
+                            //  }
+                              //someTempRdAddr,
+                            //).resized
                           )
                         }
                       }
@@ -8657,188 +8704,6 @@ case class Gpu2d(
                     default {
                     }
                   }
-                  //tempRdAddrSameAs := (
-                  //  Mux[UInt](
-                  //    !pipeIn.bgAttrs.fbAttrs.doIt,
-                  //    Cat(
-                  //      tempInp.bgEntry(
-                  //        //x
-                  //        tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                  //      ).tileIdx,
-                  //      tempOutp.tilePxsCoord(0).y,
-                  //    ).asUInt,
-                  //    Cat(
-                  //      pipeIn.bgAttrs.fbAttrs.tileMemBaseAddr,
-                  //      tempInp.pxPos(0).y,
-                  //      (
-                  //        tempInp.pxPos(
-                  //          tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                  //        ).x(
-                  //          log2Up(params.bgSize2dInPxs.x) - 1
-                  //          downto params.bgTileSize2dPow.x
-                  //        )
-                  //      ),
-                  //    ).asUInt,
-                  //  ).resized //(tempRdAddrWidth - 1 downto 1).resized
-                  //)
-                  //tempOutp.stage4.tileMemRdAddrSameAs := tempRdAddrSameAs
-                  //val tempRdAddrSameAsGridIdx = (
-                  //  tempRdAddrSameAs(
-                  //    params.bgTileSize2dPow.y
-                  //    downto params.bgTileSize2dPow.y
-                  //  )
-                  //)
-                  //tempOutp.stage4.tileMemRdAddrSameAsGridIdx := (
-                  //  //tempRdAddrSameAsGridIdx
-                  //)
-                  //val tempRdAddrSameAsSliced = (
-                  //  //Cat(
-                  //  //  tempRdAddrSameAs(
-                  //  //    tempRdAddrSameAs.high
-                  //  //    downto params.bgTileSize2dPow.y + 1
-                  //  //  ),
-                  //  //  tempRdAddrSameAs(
-                  //  //    params.bgTileSize2dPow.y
-                  //  //    - 1
-                  //  //    //- 2
-                  //  //    downto 0
-                  //  //  )
-                  //  //).asUInt.resized
-                  //  tempRdAddrSameAs(tempRdAddrSameAs.high - 1 downto 0)
-                  //)
-                  //when (!tempRdAddrSameAs.msb) {
-                  //  myTileMemArr(
-                  //    //tempPxPosIdx % 2
-                  //    0
-                  //  ).io.rdAddr := (
-                  //    tempRdAddrSameAsSliced
-                  //  )
-                  //} otherwise { // when (tempRdAddrSameAs.msb)
-                  //  myTileMemArr(
-                  //    //tempPxPosIdx % 2
-                  //    1
-                  //  ).io.rdAddr := (
-                  //    tempRdAddrSameAsSliced
-                  //  )
-                  //}
-                  //tempOutp.stage4.tileMemRdAddrDiffGridIdx := 0
-                  //tempOutp.stage4.tileMemRdAddrDiff := 0
-                  //when (tempInp.pxPosXGridIdxFindFirstDiffFound) {
-                  //  val tempRdAddrDiff = UInt(
-                  //    params.bgTileMemIdxWidth bits
-                  //  )
-                  //  tempRdAddrDiff := (
-                  //    Mux[UInt](
-                  //      !pipeIn.bgAttrs.fbAttrs.doIt,
-                  //      Cat(
-                  //        tempInp.bgEntry(
-                  //          //x
-                  //          tempInp.pxPosXGridIdxFindFirstDiffIdx
-                  //        ).tileIdx,
-                  //        tempOutp.tilePxsCoord(0).y,
-                  //      ).asUInt,
-                  //      Cat(
-                  //        pipeIn.bgAttrs.fbAttrs.tileMemBaseAddr,
-                  //        tempInp.pxPos(0).y,
-                  //        (
-                  //          tempInp.pxPos(
-                  //            tempInp.pxPosXGridIdxFindFirstDiffIdx
-                  //          ).x(
-                  //            log2Up(params.bgSize2dInPxs.x) - 1
-                  //            downto params.bgTileSize2dPow.x
-                  //          )
-                  //        ),
-                  //      ).asUInt,
-                  //    ).resized //(tempRdAddrWidth - 1 downto 1).resized
-                  //  )
-                  //  tempOutp.stage4.tileMemRdAddrDiff := tempRdAddrDiff
-                  //  //val tempRdAddrDiffGridIdx = (
-                  //  //  tempRdAddrDiff(
-                  //  //    params.bgTileSize2dPow.y
-                  //  //    downto params.bgTileSize2dPow.y
-                  //  //  )
-                  //  //)
-                  //  //tempOutp.stage4.tileMemRdAddrDiffGridIdx := (
-                  //  //  tempRdAddrDiffGridIdx
-                  //  //)
-                  //  //val tempRdAddrDiffSliced = (
-                  //  //  Cat(
-                  //  //    tempRdAddrDiff(
-                  //  //      tempRdAddrDiff.high
-                  //  //      downto params.bgTileSize2dPow.y + 1
-                  //  //    ),
-                  //  //    tempRdAddrDiff(
-                  //  //      params.bgTileSize2dPow.y
-                  //  //      - 1
-                  //  //      //- 2
-                  //  //      downto 0
-                  //  //    )
-                  //  //  ).asUInt.resized
-                  //  //)
-                  //  val tempRdAddrDiffSliced = (
-                  //    //Cat(
-                  //    //  tempRdAddrDiff(
-                  //    //    tempRdAddrDiff.high
-                  //    //    downto params.bgTileSize2dPow.y + 1
-                  //    //  ),
-                  //    //  tempRdAddrDiff(
-                  //    //    params.bgTileSize2dPow.y
-                  //    //    - 1
-                  //    //    //- 2
-                  //    //    downto 0
-                  //    //  )
-                  //    //).asUInt.resized
-                  //    tempRdAddrDiff(tempRdAddrDiff.high - 1 downto 0)
-                  //  )
-                  //  when (!tempRdAddrDiff.msb) {
-                  //    myTileMemArr(
-                  //      //tempPxPosIdx % 2
-                  //      0
-                  //    ).io.rdAddr := (
-                  //      tempRdAddrDiffSliced
-                  //    )
-                  //  } otherwise { // when (tempRdAddrDiff.msb)
-                  //    myTileMemArr(
-                  //      //tempPxPosIdx % 2
-                  //      1
-                  //    ).io.rdAddr := (
-                  //      tempRdAddrDiffSliced
-                  //    )
-                  //  }
-                  //  //switch (tempRdAddrDiffGridIdx) {
-                  //  //  for (
-                  //  //    gridIdx
-                  //  //    <- 0 until (1 << tempRdAddrDiffGridIdx.getWidth)
-                  //  //  ) {
-                  //  //    is (gridIdx) {
-                  //  //      myTileMemArr(
-                  //  //        gridIdx
-                  //  //      ).io.rdAddr := tempRdAddrDiffSliced
-                  //  //    }
-                  //  //  }
-                  //  //}
-                  //  //myTileMemArr(
-                  //  //  (tempPxPosIdx + 1) % 2
-                  //  //).io.rdAddr := (
-                  //  //  Cat(
-                  //  //    tempRdAddrDiff(
-                  //  //      tempRdAddrDiff.high
-                  //  //      downto params.bgTileSize2dPow.y + 1
-                  //  //    ),
-                  //  //    tempRdAddrDiff(
-                  //  //      params.bgTileSize2dPow.y
-                  //  //      - 1
-                  //  //      //- 2
-                  //  //      downto 0
-                  //  //    )
-                  //  //  ).asUInt.resized
-                  //  //)
-                  //  //myTileMemArr(
-                  //  //  (tempPxPosIdx + 1) % 2
-                  //  //).io.rdAddr := (
-                  //  //  tempRdAddrDiffSliced
-                  //  //)
-                  //}
                 //}
             //  }
             //}
