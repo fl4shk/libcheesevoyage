@@ -7749,45 +7749,213 @@ case class Gpu2d(
                   }
                 )
                 arr.io.rdEn := True
-                arr.io.rdEn.allowOverride
+                //arr.io.rdEn.allowOverride
                 arr.io.rdAddr := 0
-                arr.io.rdAddr.allowOverride
+                //arr.io.rdAddr.allowOverride
               }
             }
-            for (tempBgIdx <- 0 until params.numBgs) {
-              switch (
-                tempInp.pxPosXGridIdx(
-                  tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                )(0 downto 0)
-              ) {
-                for (
-                  tempPxPosIdx <- 0
-                  until params.numBgMemsPerNonPalKind
-                ) {
-                  is (tempPxPosIdx) {
-                    //bgEntryMemA2d(tempBgIdx)
-                    def arr = (
-                      if (kind == 0) {
-                        bgEntryMemA2d(tempBgIdx)
-                      } else {
-                        colorMathEntryMemArr
-                      }
-                    )
-                    arr(tempPxPosIdx % 2).io.rdAddr := (
-                      tempInp.bgEntryMemIdx(
-                        tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                      )
-                    )
-                    //if (!noColorMath) {
-                      when (tempInp.pxPosXGridIdxFindFirstDiffFound) {
-                        arr((tempPxPosIdx + 1) % 2).io.rdAddr := (
-                          tempInp.bgEntryMemIdx(
-                            tempInp.pxPosXGridIdxFindFirstDiffIdx
+            switch (stageData.pipeIn(idx).stage0.bgIdx) {
+              for (tempBgIdx <- 0 until params.numBgs) {
+                is (tempBgIdx) {
+                  //switch (
+                  //  tempInp.pxPosXGridIdx(
+                  //    tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                  //  )(0 downto 0)
+                  //) {
+                  //  for (
+                  //    tempPxPosIdx <- 0
+                  //    until params.numBgMemsPerNonPalKind
+                  //  ) {
+                  //    is (tempPxPosIdx) {
+                        //bgEntryMemA2d(tempBgIdx)
+                        //def arr = (
+                        //  if (kind == 0) {
+                        //    bgEntryMemA2d(tempBgIdx)
+                        //  } else {
+                        //    colorMathEntryMemArr
+                        //  }
+                        //)
+                        def setRdAddr(
+                          someVecIdx: UInt,
+                          someMemArrIdx: Int,
+                        ): Unit = {
+                          //arr
+                          def tempMem = (
+                            if (kind == 0) {
+                              bgEntryMemA2d(tempBgIdx)(
+                                //(tempPxPosIdx + plusAmount) % 2
+                                someMemArrIdx
+                              )
+                            } else {
+                              colorMathEntryMemArr(
+                                //(tempPxPosIdx + plusAmount) % 2
+                                someMemArrIdx
+                              )
+                            }
+                          )//.io.rdAddr
+                          //bgEntryMemA2d()(
+                          //  tempBgIdx
+                          //).io.rdAddr 
+                          tempMem.io.rdAddr := (
+                            tempInp.bgEntryMemIdx(
+                              //tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                              //x
+                              //0
+                              someVecIdx
+                            )
                           )
-                        )
-                      }
-                    //}
-                  }
+                        }
+                        //def sameAsIdx = (
+                        //  tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                        //)
+                        //def diffIdx = (
+                        //  tempInp.pxPosXGridIdxFindFirstDiffIdx
+                        //)
+                        //if (tempPxPosIdx == 0) {
+                          setRdAddr(
+                            someVecIdx=(
+                              U{
+                                def tempWidth = params.bgTileSize2dPow.x
+                                def tempVal = 0
+                                f"$tempWidth'd$tempVal"
+                              }
+                            ),
+                            someMemArrIdx=0,
+                          )
+                        //} else {
+                          setRdAddr(
+                            someVecIdx=(
+                              //1 << bgEntryMemA2d(tempBgIdx)(
+                              //  //(tempPxPosIdx + plusAmount) % 2
+                              //  0
+                              //).io.rdAddr.getWidth
+                              U{
+                                def tempWidth = params.bgTileSize2dPow.x
+                                def tempVal = params.bgTileSize2d.x - 1
+                                f"$tempWidth'd$tempVal"
+                              }
+                            ),
+                            someMemArrIdx=1,
+                          )
+                        //}
+                        //when (!tempInp.pxPosXGridIdxFindFirstDiffFound) {
+                        //  setRdAddr(
+                        //    someIdx=sameAsIdx,
+                        //    plusAmount=0,
+                        //  )
+                        //} otherwise {
+                        //  if (tempPxPosIdx == 0) {
+                        //    when (sameAsIdx < diffIdx) {
+                        //    }
+                        //    //when (x < diffIdx) {
+                        //    //  setBgEntry(1)
+                        //    //} otherwise {
+                        //    //  setBgEntry(0)
+                        //    //}
+                        //  } else { //if (!noColorMath)
+                        //    //when (x < sameAsIdx) {
+                        //    //  setBgEntry(0)
+                        //    //} otherwise {
+                        //    //  setBgEntry(1)
+                        //    //}
+                        //  }
+                        //}
+                        //--------
+                        //switch (Cat(
+                        //  tempInp.pxPosXGridIdxFindFirstSameAsFound,
+                        //  tempInp.pxPosXGridIdxFindFirstDiffFound,
+                        //)) {
+                        //  is (M"-0") {
+                        //    // At least one of them will be found, so this
+                        //    // indicates `SameAsFound`
+                        //    setRdAddr(
+                        //      someIdx=sameAsIdx,
+                        //      plusAmount=0,
+                        //    )
+                        //  }
+                        //  is (M"01") {
+                        //    setRdAddr(
+                        //      someIdx=diffIdx,
+                        //      plusAmount=1,
+                        //    )
+                        //  }
+                        //  is (M"11") {
+                        //    //when (sameAsIdx < diffIdx) {
+                        //    //  setRdAddr(
+                        //    //    someIdx=sameAsIdx,
+                        //    //    plusAmount=tempPxPosIdx % 2,
+                        //    //  )
+                        //    //} otherwise {
+                        //    //  // this indicates `sameAsIdx > diffIdx`
+                        //    //  setRdAddr(
+                        //    //    someIdx=diffIdx,
+                        //    //    plusAmount=(tempPxPosIdx + 1) % 2,
+                        //    //  )
+                        //    //}
+                        //    if (tempPxPosIdx == 0) {
+                        //      when (sameAsIdx < diffIdx) {
+                        //        setRdAddr(
+                        //          someIdx=sameAsIdx,
+                        //          plusAmount=0,
+                        //        )
+                        //      } otherwise {
+                        //        // this indicates `sameAsIdx > diffIdx`
+                        //        setRdAddr(
+                        //          someIdx=diffIdx,
+                        //          plusAmount=1,
+                        //        )
+                        //      }
+                        //      //when (x < diffIdx) {
+                        //      //  setBgEntry(1)
+                        //      //} otherwise {
+                        //      //  setBgEntry(0)
+                        //      //}
+                        //    } else { //if (!tempPxPosIdx == 1)
+                        //      when (sameAsIdx < diffIdx) {
+                        //        setRdAddr(
+                        //          someIdx=sameAsIdx,
+                        //          plusAmount=1,
+                        //        )
+                        //      } otherwise {
+                        //        // this indicates `sameAsIdx > diffIdx`
+                        //        setRdAddr(
+                        //          someIdx=diffIdx,
+                        //          plusAmount=0,
+                        //        )
+                        //      }
+                        //      //when (x < sameAsIdx) {
+                        //      //  setBgEntry(0)
+                        //      //} otherwise {
+                        //      //  setBgEntry(1)
+                        //      //}
+                        //    }
+                        //  }
+                        //  default {
+                        //  }
+                        //}
+                        //--------
+                        //arr(tempPxPosIdx % 2).io.rdAddr := (
+                        //  tempInp.bgEntryMemIdx(
+                        //    //tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                        //    //x
+                        //    0
+                        //  )
+                        //)
+                        ////if (!noColorMath) {
+                        //  when (tempInp.pxPosXGridIdxFindFirstDiffFound) {
+                        //    arr((tempPxPosIdx + 1) % 2).io.rdAddr := (
+                        //      tempInp.bgEntryMemIdx(
+                        //        //tempInp.pxPosXGridIdxFindFirstDiffIdx
+                        //        //x
+                        //        //(1 << tempInp.bgEntryMemIdx.getWidth) - 1
+                        //        tempInp.bgEntryMemIdx.size - 1
+                        //      )
+                        //    )
+                        //  }
+                        ////}
+                  //    }
+                  //  }
+                  //}
                 }
               }
             }
@@ -7850,67 +8018,215 @@ case class Gpu2d(
             )
 
             for (x <- 0 until params.bgTileSize2d.x) {
+              tempOutp.bgEntry(x) := tempOutp.bgEntry(x).getZero
               //def myIdxVec = tempInp.myIdxV2d(x)
               //def myIdx = tempInp.myIdxV2d(x)(x)
               switch (pipeIn.bgIdx) {
                 for (tempBgIdx <- 0 until params.numBgs) {
                   is (tempBgIdx) {
                     //--------
-                    def myBgEntryMemArr = (
-                      if (kind == 0) {
-                        bgEntryMemA2d(tempBgIdx)
-                      } else {
-                        colorMathEntryMemArr
-                      }
-                    )
-                    switch (
-                      tempInp.pxPosXGridIdx(
-                        tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                      )(0 downto 0)
-                    ) {
-                      for (
-                        tempPxPosIdx <- 0
-                        until params.numBgMemsPerNonPalKind
-                        //until params.totalNumBgKinds
-                      ) {
+                    //def myBgEntryMemArr = (
+                    //  if (kind == 0) {
+                    //    bgEntryMemA2d(tempBgIdx)
+                    //  } else {
+                    //    colorMathEntryMemArr
+                    //  }
+                    //)
+                    //switch (
+                    //  tempInp.pxPosXGridIdx(
+                    //    tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                    //  )(0 downto 0)
+                    //) {
+                    //  for (
+                    //    tempPxPosIdx <- 0
+                    //    until params.numBgMemsPerNonPalKind
+                    //    //until params.totalNumBgKinds
+                    //  ) {
                         def setBgEntry(
-                          plusAmount: Int
+                          someMemIdx: Int
                         ): Unit = {
+                          def tempMem = (
+                            if (kind == 0) {
+                              bgEntryMemA2d(tempBgIdx)(
+                                //(tempPxPosIdx + plusAmount) % 2
+                                someMemIdx
+                              )
+                            } else {
+                              colorMathEntryMemArr(
+                                //(tempPxPosIdx + plusAmount) % 2
+                                someMemIdx
+                              )
+                            }
+                          )
                           tempOutp.bgEntry(x) := (
-                            myBgEntryMemArr(
-                              (tempPxPosIdx + plusAmount) % 2
-                            ).io.rdData
+                            tempMem.io.rdData
                           )
                         }
-                        is (tempPxPosIdx) {
-                          when (
-                            !tempInp.pxPosXGridIdxFindFirstDiffFound
-                          ) {
-                            setBgEntry(0)
-                          } otherwise {
-                            def sameAsIdx = (
-                              tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                            )
-                            def diffIdx = (
-                              tempInp.pxPosXGridIdxFindFirstDiffIdx
-                            )
-                            if (tempPxPosIdx == 0) {
-                              when (x < diffIdx) {
-                                setBgEntry(1)
+                        def sameAsIdx = (
+                          tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                        )
+                        def diffIdx = (
+                          tempInp.pxPosXGridIdxFindFirstDiffIdx
+                        )
+                        //is (tempPxPosIdx) {
+                          //if (tempPxPosIdx == 0) {
+                          //  setBgEntry(
+                          //    //someIdx=0,
+                          //    someMemIdx=0,
+                          //  )
+                          //} else {
+                          //  setBgEntry(
+                          //    //someIdx=(
+                          //    //  1 << bgEntryMemA2d(tempBgIdx)(
+                          //    //    //(tempPxPosIdx + plusAmount) % 2
+                          //    //    0
+                          //    //  ).io.rdAddr.getWidth
+                          //    //),
+                          //    someMemIdx=1,
+                          //  )
+                          //}
+                          switch (Cat(
+                            tempInp.pxPosXGridIdxFindFirstSameAsFound,
+                            tempInp.pxPosXGridIdxFindFirstDiffFound,
+                          )) {
+                            is (M"-0") {
+                              // At least one of them will be found, so
+                              // this indicates `SameAsFound`
+                              //setRdAddr(
+                              //  someIdx=sameAsIdx,
+                              //  plusAmount=0,
+                              //)
+                              setBgEntry(0)
+                            }
+                            is (M"01") {
+                              //setRdAddr(
+                              //  someIdx=diffIdx,
+                              //  plusAmount=1,
+                              //)
+                              setBgEntry(
+                                //1
+                                0
+                              )
+                            }
+                            is (M"11") {
+                              def sameAsIdx = (
+                                tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                              )
+                              def diffIdx = (
+                                tempInp.pxPosXGridIdxFindFirstDiffIdx
+                              )
+                              //if (tempPxPosIdx == 0) {
+                              //  when (x < diffIdx) {
+                              //    setBgEntry(1)
+                              //  } otherwise {
+                              //    setBgEntry(0)
+                              //  }
+                              //} else { //if (!noColorMath)
+                              //  when (x < sameAsIdx) {
+                              //    setBgEntry(0)
+                              //  } otherwise {
+                              //    setBgEntry(1)
+                              //  }
+                              //}
+                              when (sameAsIdx > diffIdx) {
+                                when (x < sameAsIdx) {
+                                  setBgEntry(0)
+                                } otherwise {
+                                  setBgEntry(1)
+                                }
                               } otherwise {
-                                setBgEntry(0)
+                                // this indicates `sameAsIdx < diffIdx`
+                                when (x < diffIdx) {
+                                  setBgEntry(0)
+                                } otherwise {
+                                  setBgEntry(1)
+                                }
                               }
-                            } else { //if (!noColorMath)
-                              when (x < sameAsIdx) {
-                                setBgEntry(0)
-                              } otherwise {
-                                setBgEntry(1)
-                              }
+                              //when (sameAsIdx < diffIdx) {
+                              //  setRdAddr(
+                              //    someIdx=sameAsIdx,
+                              //    plusAmount=tempPxPosIdx % 2,
+                              //  )
+                              //} otherwise {
+                              //  // this indicates `sameAsIdx > diffIdx`
+                              //  setRdAddr(
+                              //    someIdx=diffIdx,
+                              //    plusAmount=(tempPxPosIdx + 1) % 2,
+                              //  )
+                              //}
+                              //if (tempPxPosIdx == 0) {
+                              //  when (sameAsIdx < diffIdx) {
+                              //    //setRdAddr(
+                              //    //  someIdx=sameAsIdx,
+                              //    //  plusAmount=0,
+                              //    //)
+                              //    setBgEntry(0)
+                              //  } otherwise {
+                              //    // this indicates `sameAsIdx > diffIdx`
+                              //    //setRdAddr(
+                              //    //  someIdx=diffIdx,
+                              //    //  plusAmount=1,
+                              //    //)
+                              //    setBgEntry(1)
+                              //  }
+                              //  //when (x < diffIdx) {
+                              //  //  setBgEntry(1)
+                              //  //} otherwise {
+                              //  //  setBgEntry(0)
+                              //  //}
+                              //} else { //if (!tempPxPosIdx == 1)
+                              //  when (sameAsIdx < diffIdx) {
+                              //    //setRdAddr(
+                              //    //  someIdx=sameAsIdx,
+                              //    //  plusAmount=1,
+                              //    //)
+                              //    setBgEntry(1)
+                              //  } otherwise {
+                              //    // this indicates `sameAsIdx > diffIdx`
+                              //    //setRdAddr(
+                              //    //  someIdx=diffIdx,
+                              //    //  plusAmount=0,
+                              //    //)
+                              //    setBgEntry(0)
+                              //  }
+                              //  //when (x < sameAsIdx) {
+                              //  //  setBgEntry(0)
+                              //  //} otherwise {
+                              //  //  setBgEntry(1)
+                              //  //}
+                              //}
+                            }
+                            default {
                             }
                           }
-                        }
-                      }
-                    }
+                          //when (
+                          //  !tempInp.pxPosXGridIdxFindFirstDiffFound
+                          //) {
+                          //  setBgEntry(0)
+                          //} otherwise {
+                          //  def sameAsIdx = (
+                          //    tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                          //  )
+                          //  def diffIdx = (
+                          //    tempInp.pxPosXGridIdxFindFirstDiffIdx
+                          //  )
+                          //  if (tempPxPosIdx == 0) {
+                          //    when (x < diffIdx) {
+                          //      setBgEntry(1)
+                          //    } otherwise {
+                          //      setBgEntry(0)
+                          //    }
+                          //  } else { //if (!noColorMath)
+                          //    when (x < sameAsIdx) {
+                          //      setBgEntry(0)
+                          //    } otherwise {
+                          //      setBgEntry(1)
+                          //    }
+                          //  }
+                          //}
+                        //}
+                    //  }
+                    //}
                     //--------
                     //tempOutp.bgEntry(x) := (
                     //  bgEntryMemA2d(tempBgIdx)(

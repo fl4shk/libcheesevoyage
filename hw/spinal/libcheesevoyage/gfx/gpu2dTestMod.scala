@@ -417,7 +417,7 @@ case class Gpu2dTest(
         mkBgTile(0, 0)
       } elsewhen (tempBgTileCnt === 1) {
         //mkBgTile(1, 2)
-        mkBgTile(1, 1)
+        mkBgTile(1, 2, Some(3), Some(4))
         //mkBgTile(3, 3)
         //mkBgTile(2, 3)
       } elsewhen (tempBgTileCnt === 2) {
@@ -526,9 +526,9 @@ case class Gpu2dTest(
   //tempBgAttrs.scroll.x := 1
   tempBgAttrs.scroll.x := (
     //0
-    ////2
-    params.bgTileSize2d.x
-    //+ 2
+    //////2
+    //params.bgTileSize2d.x
+    ////+ 2
     + 1
   )
   //tempBgAttrs.scroll.x := 3
