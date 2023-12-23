@@ -763,21 +763,26 @@ case class Gpu2dParams(
   def fbBaseAddrWidthPow = (
     log2Up(2) // for double buffering
   )
-  def fbTileMemAddrWidthPow = (
-    //bgSize2dInTilesPow.y
-    //+ bgSize2dInTilesPow.x
-    log2Up(bgSize2dInPxs.y)
-    + log2Up(bgSize2dInPxs.x)
-    //--------
-    //+ bgTileSize2dPow.y
-    //--------
-    // we're indexing into `bgTileMemArr(...)`, which is in units of
-    // `Gpu2dTileSlice`s, so we need this 
-    - bgTileSize2dPow.x
-    //--------
-    + log2Up(2) // for double buffering
-    //--------
+  def fbRdAddrMultWidthPow = (
+    fbBaseAddrWidthPow
+    + log2Up(intnlFbSize2d.y)
+    + log2Up(intnlFbSize2d.x / bgTileSize2d.x)
   )
+  //def fbTileMemAddrWidthPow = (
+  //  //bgSize2dInTilesPow.y
+  //  //+ bgSize2dInTilesPow.x
+  //  log2Up(bgSize2dInPxs.y)
+  //  + log2Up(bgSize2dInPxs.x)
+  //  //--------
+  //  //+ bgTileSize2dPow.y
+  //  //--------
+  //  // we're indexing into `bgTileMemArr(...)`, which is in units of
+  //  // `Gpu2dTileSlice`s, so we need this 
+  //  - bgTileSize2dPow.x
+  //  //--------
+  //  + log2Up(2) // for double buffering
+  //  //--------
+  //)
 }
 object DefaultGpu2dParams {
   def apply(
@@ -4189,10 +4194,18 @@ case class Gpu2d(
         val bgEntryMemIdxSameAs = UInt(log2Up(params.numTilesPerBg) bits)
         val bgEntryMemIdxDiff = UInt(log2Up(params.numTilesPerBg) bits)
         //--------
+        val fbRdAddrMultTileMemBaseAddr = UInt(
+          params.fbRdAddrMultWidthPow bits
+        )
+        val fbRdAddrMultPxPosY = UInt(
+          params.fbRdAddrMultWidthPow bits
+        )
+        //--------
       }
       case class Stage3(
         isColorMath: Boolean
       ) extends Bundle {
+        //--------
         // `Gpu2dBgEntry`s that have been read
         val bgEntry = Vec.fill(params.bgTileSize2d.x)(
           Gpu2dBgEntry(
@@ -4200,6 +4213,9 @@ case class Gpu2d(
             isColorMath=isColorMath,
           )
         )
+        //--------
+        val fbRdAddrMultPlus = UInt(params.fbRdAddrMultWidthPow bits)
+        //--------
       }
       case class Stage4() extends Bundle {
         //val tilePxsPosY = UInt(params.bgTileSize2dPow.y bits)
@@ -4213,6 +4229,11 @@ case class Gpu2d(
         //val tileMemRdAddrDiffGridIdx = UInt(1 bits)
         val tileMemRdAddrSameAs = UInt(params.bgTileMemIdxWidth bits)
         val tileMemRdAddrDiff = UInt(params.bgTileMemIdxWidth bits)
+        //--------
+        val fbRdAddrFinalPlus = Vec.fill(params.bgTileSize2d.x)(
+          UInt(params.fbRdAddrMultWidthPow bits)
+        )
+        //--------
       }
       case class Stage5() extends Bundle {
         //val tilePxsCoord = Vec.fill(params.bgTileSize2d.x)(
@@ -7811,6 +7832,19 @@ case class Gpu2d(
                 stageData.pipeOut(idx).colorMath
               }
             )
+            tempOutp.stage2.fbRdAddrMultTileMemBaseAddr := (
+              stageData.pipeIn(idx).bgAttrs.fbAttrs.tileMemBaseAddr
+              * (
+                params.intnlFbSize2d.y
+                * (params.intnlFbSize2d.x / params.bgTileSize2d.x)
+              )
+            ).resized
+            tempOutp.stage2.fbRdAddrMultPxPosY := (
+              tempInp.pxPos(0).y(
+                log2Up(params.intnlFbSize2d.y) - 1 downto 0
+              )
+              * (params.intnlFbSize2d.x / params.bgTileSize2d.x)
+            ).resized
 
             for (
               //x <- 0 until params.bgTileSize2d.x
@@ -8167,6 +8201,10 @@ case class Gpu2d(
                 stageData.pipeOut(idx).colorMath
               }
             )
+            tempOutp.stage3.fbRdAddrMultPlus := (
+              tempInp.stage2.fbRdAddrMultTileMemBaseAddr
+              + tempInp.stage2.fbRdAddrMultPxPosY
+            )
 
             for (x <- 0 until params.bgTileSize2d.x) {
               tempOutp.bgEntry(x) := tempOutp.bgEntry(x).getZero
@@ -8495,6 +8533,13 @@ case class Gpu2d(
               params.bgTilePxsCoordT()
             )
             for (x <- 0 until params.bgTileSize2d.x) {
+              tempOutp.stage4.fbRdAddrFinalPlus(x) := (
+                tempInp.stage3.fbRdAddrMultPlus
+                + tempInp.pxPos(x).x(
+                  log2Up(params.intnlFbSize2d.x) - 1
+                  downto params.bgTileSize2dPow.x
+                ).resized
+              ).resized
               switch (pipeIn.bgIdx) {
                 for (tempBgIdx <- 0 until params.numBgs) {
                   is (tempBgIdx) {
@@ -8586,19 +8631,20 @@ case class Gpu2d(
                         // add non-scrolling framebuffer stuff back in
                         // later (see output Verilog from lost Spinal
                         // code)
-                        Cat(
-                          pipeIn.bgAttrs.fbAttrs.tileMemBaseAddr,
-                          tempInp.pxPos(0).y,
-                          (
-                            tempInp.pxPos(
-                              //tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                              someVecIdx
-                            ).x(
-                              log2Up(params.bgSize2dInPxs.x) - 1
-                              downto params.bgTileSize2dPow.x
-                            )
-                          ),
-                        ).asUInt,
+                        //Cat(
+                        //  pipeIn.bgAttrs.fbAttrs.tileMemBaseAddr,
+                        //  tempInp.pxPos(0).y,
+                        //  (
+                        //    tempInp.pxPos(
+                        //      //tempInp.pxPosXGridIdxFindFirstSameAsIdx
+                        //      someVecIdx
+                        //    ).x(
+                        //      log2Up(params.bgSize2dInPxs.x) - 1
+                        //      downto params.bgTileSize2dPow.x
+                        //    )
+                        //  ),
+                        //).asUInt,
+                        tempOutp.stage4.fbRdAddrFinalPlus(someVecIdx),
                       ).resized
                     )
                     switch (
