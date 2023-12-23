@@ -4218,6 +4218,11 @@ case class Gpu2d(
         //--------
       }
       case class Stage4() extends Bundle {
+        val fbRdAddrFinalPlus = Vec.fill(params.bgTileSize2d.x)(
+          UInt(params.fbRdAddrMultWidthPow bits)
+        )
+      }
+      case class Stage5() extends Bundle {
         //val tilePxsPosY = UInt(params.bgTileSize2dPow.y bits)
         //val tempTilePxsPos = Vec.fill(params.bgTileSize2d.x)(
         //  params.bgTilePxsCoordT()
@@ -4230,12 +4235,9 @@ case class Gpu2d(
         val tileMemRdAddrSameAs = UInt(params.bgTileMemIdxWidth bits)
         val tileMemRdAddrDiff = UInt(params.bgTileMemIdxWidth bits)
         //--------
-        val fbRdAddrFinalPlus = Vec.fill(params.bgTileSize2d.x)(
-          UInt(params.fbRdAddrMultWidthPow bits)
-        )
         //--------
       }
-      case class Stage5() extends Bundle {
+      case class Stage6() extends Bundle {
         //val tilePxsCoord = Vec.fill(params.bgTileSize2d.x)(
         //  params.bgTilePxsCoordT()
         //)
@@ -4255,12 +4257,12 @@ case class Gpu2d(
           )
         )
       }
-      case class Stage6() extends Bundle {
+      case class Stage7() extends Bundle {
         val palEntryMemIdx = Vec.fill(params.bgTileSize2d.x)(
           UInt(params.bgPalEntryMemIdxWidth bits)
         )
       }
-      case class Stage7() extends Bundle {
+      case class Stage8() extends Bundle {
         // Whether `palEntryMemIdx(someBgIdx)` is non-zero
         val palEntryNzMemIdx = Vec.fill(params.bgTileSize2d.x)(
           Bool()
@@ -4269,12 +4271,12 @@ case class Gpu2d(
       // The following BG pipeline stages are only performed when
       // `palEntryNzMemIdx(someBgIdx)` is `True`
       // `Gpu2dPalEntry`s that have been read
-      case class Stage9() extends Bundle {
+      case class Stage10() extends Bundle {
         val palEntry = Vec.fill(params.bgTileSize2d.x)(
           Gpu2dPalEntry(params=params)
         )
       }
-      case class Stage10() extends Bundle {
+      case class Stage11() extends Bundle {
         //val doWrite = Bool()
         val subLineMemEntry = Vec.fill(params.bgTileSize2d.x)(
           BgSubLineMemEntry()
@@ -4298,8 +4300,9 @@ case class Gpu2d(
         val stage5 = Stage5()
         val stage6 = Stage6()
         val stage7 = Stage7()
-        val stage9 = Stage9()
+        val stage8 = Stage8()
         val stage10 = Stage10()
+        val stage11 = Stage11()
         //--------
         def bgEntryMemIdx = stage1.bgEntryMemIdx
         def pxPos = stage1.pxPos
@@ -4325,17 +4328,17 @@ case class Gpu2d(
         def bgEntry = stage3.bgEntry
         //--------
         //def tempTilePxsPos = stage4.tempTilePxsPos
-        def tilePxsCoord = stage4.tilePxsCoord
+        def tilePxsCoord = stage5.tilePxsCoord
         //--------
-        def tileSlice = stage5.tileSlice
+        def tileSlice = stage6.tileSlice
         //--------
-        def palEntryMemIdx = stage6.palEntryMemIdx
+        def palEntryMemIdx = stage7.palEntryMemIdx
         //--------
-        def palEntryNzMemIdx = stage7.palEntryNzMemIdx
+        def palEntryNzMemIdx = stage8.palEntryNzMemIdx
         //--------
-        def palEntry = stage9.palEntry
+        def palEntry = stage10.palEntry
         //--------
-        def subLineMemEntry = stage10.subLineMemEntry
+        def subLineMemEntry = stage11.subLineMemEntry
         //--------
       }
       val postStage0 = PostStage0(isColorMath=false)
@@ -4367,11 +4370,11 @@ case class Gpu2d(
       def cmath7 = (!noColorMath) generate colorMath.stage7
       def stage7 = postStage0.stage7
 
-      def cmath9 = (!noColorMath) generate colorMath.stage9
-      def stage9 = postStage0.stage9
-
       def cmath10 = (!noColorMath) generate colorMath.stage10
       def stage10 = postStage0.stage10
+
+      def cmath11 = (!noColorMath) generate colorMath.stage11
+      def stage11 = postStage0.stage11
       //def doWrite = stage7.doWrite
     }
 
@@ -4420,9 +4423,12 @@ case class Gpu2d(
     //def wrBgPipePalEntryStageIdx = 6
     //def wrBgPipeLineMemEntryStageIdx = 7
 
-    //def wrBgPipeNumMainStages = 7
-    def wrBgPipeNumMainStages = 11
-    //def wrBgPipeNumMainStages = 9
+    def wrBgPipeNumMainStages = (
+      //7
+      //11
+      12
+      //9
+    )
 
     //def wrBgPipeNumStagesPerBg = 8
 
@@ -8485,6 +8491,64 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
+          for (kind <- 0 until params.totalNumBgKinds) {
+            //val tempInp = stageData.pipeIn(idx)
+            //val tempOutp = stageData.pipeOut(idx)
+            def pipeIn = stageData.pipeIn(idx)
+            def tempInp = (
+              if (kind == 0) {
+                stageData.pipeIn(idx).postStage0
+              } else {
+                stageData.pipeIn(idx).colorMath
+              }
+            )
+            def tempOutp = (
+              if (kind == 0) {
+                stageData.pipeOut(idx).postStage0
+              } else {
+                stageData.pipeOut(idx).colorMath
+              }
+            )
+
+            for (x <- 0 until params.bgTileSize2d.x) {
+              tempOutp.stage4.fbRdAddrFinalPlus(x) := (
+                tempInp.stage3.fbRdAddrMultPlus
+                + tempInp.pxPos(x).x(
+                  log2Up(params.intnlFbSize2d.x) - 1
+                  downto params.bgTileSize2dPow.x
+                ).resized
+              ).resized
+            }
+          }
+        },
+        copyOnlyFunc=(
+          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+          idx: Int,
+        ) => {
+          //stageData.pipeOut(idx).bgEntry := (
+          //  stageData.pipeIn(idx).bgEntry
+          //)
+          //stageData.pipeOut(idx).postStage0.stage4 := (
+          //  stageData.pipeIn(idx).postStage0.stage4
+          //)
+          //stageData.pipeOut(idx).colorMath.stage4 := (
+          //  stageData.pipeIn(idx).colorMath.stage4
+          //)
+          def pipeIn = stageData.pipeIn(idx)
+          def pipeOut = stageData.pipeOut(idx)
+          pipeOut.postStage0.stage4 := pipeIn.postStage0.stage4
+          if (!noColorMath) {
+            pipeOut.colorMath.stage4 := pipeIn.colorMath.stage4
+          }
+        },
+      )
+      HandleDualPipe(
+        stageData=stageData.craft(5)
+      )(
+        pipeStageMainFunc=(
+          stageData: DualPipeStageData[Flow[WrBgPipePayload]],
+          idx: Int,
+        ) => {
           //val tempInp = stageData.pipeIn(idx)
           //val tempOutp = stageData.pipeOut(idx)
 
@@ -8533,13 +8597,6 @@ case class Gpu2d(
               params.bgTilePxsCoordT()
             )
             for (x <- 0 until params.bgTileSize2d.x) {
-              tempOutp.stage4.fbRdAddrFinalPlus(x) := (
-                tempInp.stage3.fbRdAddrMultPlus
-                + tempInp.pxPos(x).x(
-                  log2Up(params.intnlFbSize2d.x) - 1
-                  downto params.bgTileSize2dPow.x
-                ).resized
-              ).resized
               switch (pipeIn.bgIdx) {
                 for (tempBgIdx <- 0 until params.numBgs) {
                   is (tempBgIdx) {
@@ -8644,7 +8701,7 @@ case class Gpu2d(
                         //    )
                         //  ),
                         //).asUInt,
-                        tempOutp.stage4.fbRdAddrFinalPlus(someVecIdx),
+                        tempInp.stage4.fbRdAddrFinalPlus(someVecIdx),
                       ).resized
                     )
                     switch (
@@ -8718,7 +8775,7 @@ case class Gpu2d(
                   }
                   setRdAddr(
                     someTempRdAddr=(
-                      tempOutp.stage4.tileMemRdAddrSameAs
+                      tempOutp.stage5.tileMemRdAddrSameAs
                     ),
                     someVecIdx=(
                       tempInp.pxPosXGridIdxFindFirstSameAsIdx
@@ -8726,7 +8783,7 @@ case class Gpu2d(
                   )
                   setRdAddr(
                     someTempRdAddr=(
-                      tempOutp.stage4.tileMemRdAddrDiff
+                      tempOutp.stage5.tileMemRdAddrDiff
                     ),
                     someVecIdx=(
                       tempInp.pxPosXGridIdxFindFirstDiffIdx
@@ -8815,12 +8872,12 @@ case class Gpu2d(
           //  stageData.pipeIn(idx).tilePxsCoord
           //)
           //stageData.pipeOut(idx).stage5 := stageData.pipeIn(idx).stage5
-          stageData.pipeOut(idx).stage4 := stageData.pipeIn(idx).stage4
+          stageData.pipeOut(idx).stage5 := stageData.pipeIn(idx).stage5
         },
       )
 
       HandleDualPipe(
-        stageData=stageData.craft(5)
+        stageData=stageData.craft(6)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
@@ -8902,7 +8959,7 @@ case class Gpu2d(
                 tempInp.pxPosXGridIdxFindFirstDiffFound,
               )) {
                 def tempRdAddrSameAsSliced = (
-                  tempInp.stage4.tileMemRdAddrSameAs(
+                  tempInp.stage5.tileMemRdAddrSameAs(
                     //tempInp.stage4.tileMemRdAddrSameAs.high
                     //downto tempInp.stage4.tileMemRdAddrSameAs.high
                     params.bgTileSize2dPow.y
@@ -8910,7 +8967,7 @@ case class Gpu2d(
                   )
                 )
                 def tempRdAddrDiffSliced = (
-                  tempInp.stage4.tileMemRdAddrDiff(
+                  tempInp.stage5.tileMemRdAddrDiff(
                     //tempInp.stage4.tileMemRdAddrDiff.high
                     //downto tempInp.stage4.tileMemRdAddrDiff.high
                     params.bgTileSize2dPow.y
@@ -9175,12 +9232,12 @@ case class Gpu2d(
           //stageData.pipeOut(idx).tilePxsCoord := (
           //  stageData.pipeIn(idx).tilePxsCoord
           //)
-          //stageData.pipeOut(idx).stage5 := stageData.pipeIn(idx).stage5
+          //stageData.pipeOut(idx).stage6 := stageData.pipeIn(idx).stage6
           def pipeIn = stageData.pipeIn(idx)
           def pipeOut = stageData.pipeOut(idx)
-          pipeOut.postStage0.stage5 := pipeIn.postStage0.stage5
+          pipeOut.postStage0.stage6 := pipeIn.postStage0.stage6
           if (!noColorMath) {
-            pipeOut.colorMath.stage5 := pipeIn.colorMath.stage5
+            pipeOut.colorMath.stage6 := pipeIn.colorMath.stage6
           }
         },
       )
@@ -9208,7 +9265,7 @@ case class Gpu2d(
       //  },
       //)
       HandleDualPipe(
-        stageData=stageData.craft(6)
+        stageData=stageData.craft(7)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
@@ -9249,14 +9306,14 @@ case class Gpu2d(
           //)
           def pipeIn = stageData.pipeIn(idx)
           def pipeOut = stageData.pipeOut(idx)
-          pipeOut.postStage0.stage6 := pipeIn.postStage0.stage6
+          pipeOut.postStage0.stage7 := pipeIn.postStage0.stage7
           if (!noColorMath) {
-            pipeOut.colorMath.stage6 := pipeIn.colorMath.stage6
+            pipeOut.colorMath.stage7 := pipeIn.colorMath.stage7
           }
         },
       )
       HandleDualPipe(
-        stageData=stageData.craft(7)
+        stageData=stageData.craft(8)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
@@ -9295,19 +9352,19 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          //stageData.pipeOut(idx).stage7 := (
-          //  stageData.pipeIn(idx).stage7
+          //stageData.pipeOut(idx).stage8 := (
+          //  stageData.pipeIn(idx).stage8
           //)
           def pipeIn = stageData.pipeIn(idx)
           def pipeOut = stageData.pipeOut(idx)
-          pipeOut.postStage0.stage7 := pipeIn.postStage0.stage7
+          pipeOut.postStage0.stage8 := pipeIn.postStage0.stage8
           if (!noColorMath) {
-            pipeOut.colorMath.stage7 := pipeIn.colorMath.stage7
+            pipeOut.colorMath.stage8 := pipeIn.colorMath.stage8
           }
         },
       )
       HandleDualPipe(
-        stageData=stageData.craft(8)
+        stageData=stageData.craft(9)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
@@ -9359,7 +9416,7 @@ case class Gpu2d(
         },
       )
       HandleDualPipe(
-        stageData=stageData.craft(9)
+        stageData=stageData.craft(10)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
@@ -9403,19 +9460,19 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          //stageData.pipeOut(idx).stage9 := (
-          //  stageData.pipeIn(idx).stage9
+          //stageData.pipeOut(idx).stage10 := (
+          //  stageData.pipeIn(idx).stage10
           //)
           def pipeIn = stageData.pipeIn(idx)
           def pipeOut = stageData.pipeOut(idx)
-          pipeOut.postStage0.stage9 := pipeIn.postStage0.stage9
+          pipeOut.postStage0.stage10 := pipeIn.postStage0.stage10
           if (!noColorMath) {
-            pipeOut.colorMath.stage9 := pipeIn.colorMath.stage9
+            pipeOut.colorMath.stage10 := pipeIn.colorMath.stage10
           }
         },
       )
       HandleDualPipe(
-        stageData=stageData.craft(10)
+        stageData=stageData.craft(11)
       )(
         pipeStageMainFunc=(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
@@ -9512,14 +9569,14 @@ case class Gpu2d(
           stageData: DualPipeStageData[Flow[WrBgPipePayload]],
           idx: Int,
         ) => {
-          //stageData.pipeOut(idx).stage10 := (
-          //  stageData.pipeIn(idx).stage10
+          //stageData.pipeOut(idx).stage11 := (
+          //  stageData.pipeIn(idx).stage11
           //)
           def pipeIn = stageData.pipeIn(idx)
           def pipeOut = stageData.pipeOut(idx)
-          pipeOut.postStage0.stage10 := pipeIn.postStage0.stage10
+          pipeOut.postStage0.stage11 := pipeIn.postStage0.stage11
           if (!noColorMath) {
-            pipeOut.colorMath.stage10 := pipeIn.colorMath.stage10
+            pipeOut.colorMath.stage11 := pipeIn.colorMath.stage11
           }
         },
       )
