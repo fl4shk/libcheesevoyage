@@ -23,7 +23,9 @@ using liborangepower::math::Vec2;
 using namespace liborangepower::misc_output;
 
 static constexpr double
-	CLK_RATE = 50.0,
+	CLK_RATE
+		//= 50.0,
+		= 125.0,
 	PIXEL_CLK = 25.0,
 	//CLKS_PER_PIXEL = CLK_RATE / PIXEL_CLK,
 	PIXELS_PER_CLK = PIXEL_CLK / CLK_RATE;

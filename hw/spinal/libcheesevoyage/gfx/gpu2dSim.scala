@@ -121,8 +121,8 @@ object Gpu2dSim extends App {
     htiming=LcvVgaTimingHv(
       //visib=1 << 6,
       //visib=64,
-      visib=1 << 7,
-      //visib=1 << 8,
+      //visib=1 << 7,
+      visib=1 << 8,
       //visib=4,
       //visib=8,
       front=1,
@@ -131,7 +131,8 @@ object Gpu2dSim extends App {
     ),
     vtiming=LcvVgaTimingHv(
       //visib=1 << 3,
-      visib=1 << 4,
+      //visib=1 << 4,
+      visib=1 << 5,
       //visib=1 << 7,
       //visib=4,
       //visib=8,
@@ -181,15 +182,20 @@ object Gpu2dSim extends App {
     objTileWidthRshift=0,
     //objTileWidthRshift=1,
     objAffineTileSize2dPow=ElabVec2[Int](
-      x=log2Up(8),
-      y=log2Up(8),
+      x=log2Up(16),
+      y=log2Up(16),
+      //x=log2Up(8),
+      //y=log2Up(8),
       //x=log2Up(4),
       //y=log2Up(4),
       //x=log2Up(2),
       //y=log2Up(2),
     ),
-    //objAffineTileWidthRshift=0,
-    objAffineTileWidthRshift=1,
+    objAffineTileWidthRshift=(
+      //0
+      1
+    ),
+    //objAffineTileWidthRshift=,
     //numBgsPow=log2Up(4),
     numBgsPow=log2Up(2),
     //numObjsPow=log2Up(64),
@@ -201,7 +207,10 @@ object Gpu2dSim extends App {
     //numObjsPow=log2Up(4),
     //numObjsPow=log2Up(8),
     numObjsPow=log2Up(16),
-    numObjsAffinePow=log2Up(16),
+    numObjsAffinePow=(
+      //log2Up(16)
+      log2Up(4)
+    ),
     //numBgTilesPow=Some(log2Up(256)),
     //numBgTilesPow=Some(log2Up(2)),
     numBgTiles=Some(
@@ -246,7 +255,9 @@ object Gpu2dSim extends App {
       //}
       def simNumClks = (
         //16000
-        32000
+        //32000
+        38400
+        //48000
       )
       for (idx <- 0 to simNumClks - 1) {
         dut.clockDomain.waitRisingEdge()

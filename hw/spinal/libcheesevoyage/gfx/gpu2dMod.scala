@@ -388,6 +388,7 @@ case class Gpu2dParams(
   def objSubLineMemArrSizePow = (
     //log2Up(oneLineMemSize) - objTileSize2dPow.x
     log2Up(oneLineMemSize) - objSliceTileWidthPow
+    //log2Up(oneLineMemSize) - objTileWidthRshift
   )
   def objSubLineMemArrSize = 1 << objSubLineMemArrSizePow
   def getObjSubLineMemArrIdx(
@@ -396,6 +397,7 @@ case class Gpu2dParams(
     assert(addr.getWidth >= log2Up(oneLineMemSize))
     //addr(log2Up(oneLineMemSize) - 1 downto objTileSize2dPow.x)
     addr(log2Up(oneLineMemSize) - 1 downto objSliceTileWidthPow)
+    //addr(log2Up(oneLineMemSize) - 1 downto objTileWidthRshift)
   }
   //def getObjSubLineMemArrGridIdx(
   //  addr: UInt
@@ -424,6 +426,7 @@ case class Gpu2dParams(
     //log2Up(oneLineMemSize) - objAffineDblTileSize2dPow.x
     //log2Up(oneLineMemSize) - objAffineTileSize2dPow.x
     log2Up(oneLineMemSize) - objAffineSliceTileWidthPow
+    //log2Up(oneLineMemSize) - objAffineTileWidthRshift //(objAffineTileWidthRshift + 1)
   )
   def objAffineSubLineMemArrSize = 1 << objAffineSubLineMemArrSizePow
   def getObjAffineSubLineMemArrIdx(
@@ -433,6 +436,10 @@ case class Gpu2dParams(
     //addr(log2Up(oneLineMemSize) - 1 downto objAffineDblTileSize2dPow.x)
     //addr(log2Up(oneLineMemSize) - 1 downto objAffineTileSize2dPow.x)
     addr(log2Up(oneLineMemSize) - 1 downto objAffineSliceTileWidthPow)
+    //addr(
+    //  log2Up(oneLineMemSize) - 1
+    //  downto objAffineTileWidthRshift //+ 1
+    //)
   }
   //def getObjAffineSubLineMemArrGridIdx(
   //  addr: UInt
@@ -11542,6 +11549,16 @@ case class Gpu2d(
                   def tempX = tempInp.pxPos(
                     tempInp.pxPosXGridIdxFindFirstSameAsIdx
                   ).x.asUInt
+                    .setName{
+                      def kindName = (
+                        if (kind == 0) {
+                          ""
+                        } else { // if (kind == 1)
+                          "Affine"
+                        }
+                      )
+                      f"wrObj$kindName" + f"Pipe11_tempXSameAs_$jdx"
+                    }
                   temp.io.rdAddr := (
                     if (kind == 0) {
                       params.getObjSubLineMemArrIdx(
@@ -11573,6 +11590,16 @@ case class Gpu2d(
                   def tempX = tempInp.pxPos(
                     tempInp.pxPosXGridIdxFindFirstDiffIdx
                   ).x.asUInt
+                    .setName{
+                      def kindName = (
+                        if (kind == 0) {
+                          ""
+                        } else { // if (kind == 1)
+                          "Affine"
+                        }
+                      )
+                      f"wrObj$kindName" + f"Pipe11_tempXDiff_$jdx"
+                    }
                   //temp.io.rdAddr := params.getObjSubLineMemArrIdx(
                   //  //tempInp.cnt
                   //  //tempInp.pxPos(0).x.asUInt
@@ -11591,7 +11618,7 @@ case class Gpu2d(
                         tempX
                       )
                     }
-                  )
+                  )//.resized
                 }
                 //--------
                 //tempOutp.stage6.rdSubLineMemEntry := (
@@ -11661,28 +11688,110 @@ case class Gpu2d(
             ) {
               val tempObjXStart = (
                 if (kind == 0) {
-                  tempInp.objXStart()(
-                    params.objTileSize2dPow.x - 1
-                    downto 0
-                  )
+                  //tempInp.objXStart()(
+                  //  params.objTileSize2dPow.x - 1
+                  //  downto //0
+                  //  params.objTileWidthRshift
+                  //)
+                  //Cat(
+                    tempInp.objXStart()
+                  //).asUInt
                 } else {
+                  //tempInp.affineObjXStart()(
+                  //  //myTempObjTileWidth1 - 1 downto 0
+                  //  (
+                  //    //tempInp.affineObjXStart().high - 1
+                  //    //- params.objAffineTileWidthRshift
+                  //    //params.objAffineTileSize2dPow.x - 1
+                  //    params.objAffineDblTileSize2dPow.x - 1
+                  //  )
+                  //  downto //0
+                  //  params.objAffineTileWidthRshift
+                  //)
+                  //Cat(
+                  //  tempInp.affineObjXStart()(
+                  //    tempInp.affineObjXStart().high
+                  //    downto 
+                  //      tempInp.affineObjXStart().high
+                  //      - params.objAffineTileWidthRshift + 1
+                  //  )
+                  //).asUInt
+                  //Cat(
+                  //  tempInp.affineObjXStart()(
+                  //    tempInp.affineObjXStart().high
+                  //    downto tempInp.affineObjXStart().high
+                  //  ),
+                  //  {
+                  //    def tempWidthPow = params.objAffineTileSize2dPow.x
+                  //    U(f"$tempWidthPow'd0")
+                  //  },
+                  //).asUInt
                   tempInp.affineObjXStart()(
-                    //myTempObjTileWidth1 - 1 downto 0
-                    (
-                      //tempInp.affineObjXStart().high - 1
-                      //- params.objAffineTileWidthRshift
-                      params.objAffineTileSize2dPow.x - 1
-                    )
-                    downto 0
+                    tempInp.affineObjXStart().high - 1 downto 0
+                    //downto tempInp.affineObjXStart().high
                   )
                 }
               )
+                .setName{
+                  def kindName = (
+                    if (kind == 0) {
+                      ""
+                    } else { // if (kind == 1)
+                      "Affine"
+                    }
+                  )
+                  f"wrObj$kindName" + f"Pipe12_tempObjXStart_$x"
+                }
               //println(f"$kind")
+              //def tempXPlusAmount = (
+              //  if (kind == 0) {
+              //    //U"1'd0".resized
+              //    tempInp.stage0.objXStart()(
+              //      tempInp.stage0.objXStart().high
+              //      - params.objTileWidthRshift
+              //      downto 0
+              //    )
+              //  } else {
+              //    //def tempSliceIdx = (
+              //    //  params.objAffineTileWidthRshift
+              //    //  + 1 // account for double size rendering
+              //    //  + 1 // account for the extra cycle delay
+              //    //  + 1 // account for grid index
+              //    //  - 1
+              //    //)
+              //    //def tempWidthPow = (
+              //    //  params.objAffineTileSize2dPow.x - 1
+              //    //)
+              //    //Cat(
+              //    //  tempInp.stage0.rawAffineIdx()(
+              //    //    tempSliceIdx
+              //    //  ),
+              //    //  U(f"$tempWidthPow'd0"),
+              //    //).asUInt
+              //    tempInp.stage0.affineObjXStart()(
+              //      tempInp.stage0.affineObjXStart().high
+              //      - params.objAffineTileWidthRshift
+              //      downto 0
+              //    )
+              //  }
+              //)
               val tempCmpGe = (
-                x >= tempObjXStart
+                (
+                  x //+ tempXPlusAmount
+                ) >= tempObjXStart
               )
+                .setName{
+                  def kindName = (
+                    if (kind == 0) {
+                      ""
+                    } else { // if (kind == 1)
+                      "Affine"
+                    }
+                  )
+                  f"wrObj$kindName" + f"Pipe12_tempCmpGe_$x"
+                }
               val tempCmpLe = (
-                x
+                x //+ tempXPlusAmount
                 <= tempObjXStart
                   + (
                     if (kind == 0) {
@@ -11693,6 +11802,16 @@ case class Gpu2d(
                   )
                   - 1
               )
+                .setName{
+                  def kindName = (
+                    if (kind == 0) {
+                      ""
+                    } else { // if (kind == 1)
+                      "Affine"
+                    }
+                  )
+                  f"wrObj$kindName" + f"Pipe12_tempCmpLe_$x"
+                }
               tempOutp.stage12.inMainVec(
                 x
                 //tempInp.stage11.myIdxV2d(x)(x)
@@ -11754,8 +11873,12 @@ case class Gpu2d(
           ): Unit = {
             //--------
             def inMain = (
+              //tempInp.stage12.inMainVec(x)
               if (kind == 0) {
-                True
+                //True
+                tempInp.stage12.inMainVec(
+                  x + tempInp.objXStart()
+                )
               } else {
                 //tempInp.stage12.inMainVec(
                 //  x
@@ -11764,7 +11887,12 @@ case class Gpu2d(
                 //    tempInp.affineObjXStart().high - 1 downto 0
                 //  )
                 //)
-                True
+                //True
+                tempInp.stage12.inMainVec(
+                  (x + tempInp.affineObjXStart())(
+                    params.objAffineTileSize2dPow.x - 1 downto 0
+                  )
+                )
               }
             )
             //--------
@@ -12314,7 +12442,7 @@ case class Gpu2d(
                 someRdLineMemEntry=tempRdLineMemEntry,
               )
             } otherwise {
-              tempOverwriteLineMemEntry := False //True
+              tempOverwriteLineMemEntry := True //False //True
               tempWrLineMemEntry := tempRdLineMemEntry
             }
             nonRotatedOverwriteLineMemEntry := (
@@ -12564,21 +12692,48 @@ case class Gpu2d(
                 tempWrObjPipeLast.tempObjTileWidth()
               )
               val tempVec = Vec.fill(myTempObjTileWidth)(Bool())
+                .setName(
+                  f"dbgTestWrObj"
+                  + (
+                    if (kind == 0) {
+                      ""
+                    } else {
+                      "Affine"
+                    }
+                  )
+                  + f"PipeLast_tempVec"
+                )
 
               for (jdx <- 0 until myTempObjTileWidth) {
                 tempVec(jdx) := (
-                  tempWrObjPipeLast.wrLineMemEntry(jdx).written
+                  //tempWrObjPipeLast.wrLineMemEntry(jdx).written
+                  //tempWrObjPipeLast.wrLineMemEntry(jdx).written
+                  tempWrObjPipeLast.overwriteLineMemEntry(jdx)
                 )
                 //tempVec(jdx) := tempInp.overwriteLineMemEntry(jdx)
               }
               //--------
+              val tempFindFirstFound = (
+                tempVec.sFindFirst(
+                  _ === True
+                )._1
+              )
+                .setName(
+                  f"dbgTestWrObj"
+                  + (
+                    if (kind == 0) {
+                      ""
+                    } else {
+                      "Affine"
+                    }
+                  )
+                  + f"PipeLast_tempFindFirstFound"
+                )
               !tempWrObjPipeLast.stage0.rawObjAttrsMemIdx()(
                 //params.objAffineTileWidthRshift
                 0
               ) && (
-                tempVec.sFindFirst(
-                  _ === True
-                )._1
+                tempFindFirstFound
               )
               //if (kind == 0) {
               //  !tempWrObjPipeLast.stage0.rawObjAttrsMemIdx()(0)

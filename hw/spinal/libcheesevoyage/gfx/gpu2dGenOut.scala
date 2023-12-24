@@ -24,8 +24,8 @@ object Gpu2dSimDutConfig {
   )
 }
 object Gpu2dSimDutParams {
-  //def clkRate = 125.0 MHz
-  def clkRate = 50.0 MHz
+  def clkRate = 125.0 MHz
+  //def clkRate = 50.0 MHz
   //def clkRate = 100.0 MHz
   //def clkRate = 100.7 MHz
   def pixelClk = 25.0 MHz
@@ -156,6 +156,14 @@ object Gpu2dSimDutParams {
   //  fancyObjPrio=true,
   //  //--------
   //)
+  def gpu2dBgTileSize2dPow = ElabVec2[Int](
+    //x=log2Up(8),
+    //y=log2Up(8),
+    x=log2Up(4),
+    y=log2Up(4),
+    //x=log2Up(2),
+    //y=log2Up(2),
+  )
   def gpu2dParams = DefaultGpu2dParams(
     rgbConfig=rgbConfig,
     intnlFbSize2d=ElabVec2[Int](
@@ -176,14 +184,7 @@ object Gpu2dSimDutParams {
     //  ////y=log2Up(2),
     //  //y=log2Up(2),
     //),
-    bgTileSize2dPow=ElabVec2[Int](
-      //x=log2Up(8),
-      //y=log2Up(8),
-      x=log2Up(4),
-      y=log2Up(4),
-      //x=log2Up(2),
-      //y=log2Up(2),
-    ),
+    bgTileSize2dPow=gpu2dBgTileSize2dPow,
     objTileSize2dPow=ElabVec2[Int](
       x=log2Up(8),
       y=log2Up(8),
@@ -192,18 +193,25 @@ object Gpu2dSimDutParams {
       //x=log2Up(2),
       //y=log2Up(2),
     ),
-    //objTileWidthRshift=0,
-    objTileWidthRshift=1,
+    objTileWidthRshift=(
+      //0
+      1
+    ),
+    //objTileWidthRshift=1,
     objAffineTileSize2dPow=ElabVec2[Int](
-      x=log2Up(8),
-      y=log2Up(8),
+      x=log2Up(16),
+      y=log2Up(16),
+      //x=log2Up(8),
+      //y=log2Up(8),
       //x=log2Up(4),
       //y=log2Up(4),
       //x=log2Up(2),
       //y=log2Up(2),
     ),
-    //objAffineTileWidthRshift=0,
-    objAffineTileWidthRshift=1,
+    objAffineTileWidthRshift=(
+      //0
+      1
+    ),
     //numBgsPow=log2Up(4),
     numBgsPow=log2Up(2),
     //numObjsPow=log2Up(64),
@@ -215,7 +223,10 @@ object Gpu2dSimDutParams {
     //numObjsPow=log2Up(4),
     //numObjsPow=log2Up(8),
     numObjsPow=log2Up(16),
-    numObjsAffinePow=log2Up(16),
+    numObjsAffinePow=(
+      //log2Up(16)
+      log2Up(4)
+    ),
     //numBgTilesPow=Some(log2Up(256)),
     //numBgTilesPow=Some(log2Up(2)),
     numBgTiles=(
@@ -226,6 +237,7 @@ object Gpu2dSimDutParams {
         vgaTimingInfo.fbSize2d.x
         * vgaTimingInfo.fbSize2d.y
         * 2
+        / (1 << (gpu2dBgTileSize2dPow.x + gpu2dBgTileSize2dPow.y))
       )
     ),
     //numObjTilesPow=None,
