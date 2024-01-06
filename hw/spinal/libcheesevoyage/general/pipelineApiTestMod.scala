@@ -105,8 +105,8 @@ case class PipelinedAdder(
     linkArr += cArr.last
   }
 
-  nArr(0).setAlwaysValid()
-  nArr.last.setAlwaysReady()
+  nArr(0).valid := True
+  nArr.last.ready := True
   nArr(0)(tempA) := io.inpA
   nArr(0)(tempB) := io.inpB
   //nArr(0)(tempSum(0)) := U(
