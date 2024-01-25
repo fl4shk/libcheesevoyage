@@ -26,14 +26,18 @@ object Gpu2dSimDutConfig {
 object Gpu2dSimDutParams {
   def clkRate = 125.0 MHz
   //def clkRate = 50.0 MHz
+  //def clkRate = 75.0 MHz
   //def clkRate = 100.0 MHz
+  //def clkRate = 150.0 MHz
   //def clkRate = 100.7 MHz
+  //def clkRate = 200.0 MHz
+  //def clkRate = 25.0 MHz
   def pixelClk = 25.0 MHz
   //def ctrlFifoDepth = 20
-  //def ctrlFifoDepth = 256
+  def ctrlFifoDepth = 256
   //def ctrlFifoDepth = 100
   //def ctrlFifoDepth = 128
-  def ctrlFifoDepth = 10
+  //def ctrlFifoDepth = 10
   //def fbSize2d = ElabVec2[Int](640, 480)
   //def fbSize2d = ElabVec2[Int](1, 1)
   //def fbSize2d = ElabVec2[Int](20, 20)
@@ -41,7 +45,7 @@ object Gpu2dSimDutParams {
   def rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
   ////def rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
   //def physRgbConfig = LcvVideoDithererIo.outRgbConfig(rgbConfig=rgbConfig)
-  ////def vgaTimingInfo = LcvVgaTimingInfoMap.map("640x480@60")
+  //def vgaTimingInfo = LcvVgaTimingInfoMap.map("640x480@60")
   def vgaTimingInfo=LcvVgaTimingInfo(
     pixelClk=pixelClk,
     //pixelClk=25.175 MHz,
@@ -53,20 +57,27 @@ object Gpu2dSimDutParams {
       //visib=1 << 8,
       //visib=4,
       //visib=8,
-      front=1,
-      sync=1,
-      back=1,
+      //front=1,
+      //sync=1,
+      //back=1,
+      front=4,
+      sync=4,
+      back=4,
     ),
     vtiming=LcvVgaTimingHv(
+      //visib=1 << 5,
       //visib=1 << 3,
       //visib=1 << 4,
       //visib=1 << 7,
       visib=240,
       //visib=4,
       //visib=8,
-      front=1,
-      sync=1,
-      back=1,
+      //front=1,
+      //sync=1,
+      //back=1,
+      front=4,
+      sync=4,
+      back=4,
     ),
   )
 
@@ -194,8 +205,8 @@ object Gpu2dSimDutParams {
       //y=log2Up(2),
     ),
     objTileWidthRshift=(
-      //0
-      1
+      0
+      //1
     ),
     //objTileWidthRshift=1,
     objAffineTileSize2dPow=ElabVec2[Int](
@@ -247,8 +258,8 @@ object Gpu2dSimDutParams {
     numColsInObjPalPow=log2Up(64),
     noColorMath=true,
     noAffineBgs=true,
-    //noAffineObjs=true,
-    noAffineObjs=false,
+    noAffineObjs=true,
+    //noAffineObjs=false,
     //fancyObjPrio=false,
     fancyObjPrio=true,
   )

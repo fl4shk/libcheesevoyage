@@ -8,7 +8,7 @@ import spinal.core._
 //import spinal.core.formal._
 import spinal.core.sim._
 import spinal.lib._
-//import spinal.lib.graphic.vga._
+import spinal.lib.graphic.vga._
 import spinal.lib.graphic.Rgb
 import spinal.lib.graphic.RgbConfig
 import scala.collection.mutable.ArrayBuffer
@@ -38,13 +38,18 @@ case class Gpu2dSimDut(
     vgaTimingInfo=vgaTimingInfo,
     fifoDepth=ctrlFifoDepth,
   )
-  val vidDith = LcvVideoDitherer(
-    //fbSize2d=fbSize2d,
-    rgbConfig=rgbConfig,
-    //vgaTimingInfo=vgaTimingInfo,
-    //fbSize2d=vgaTimingInfo.fbSize2d,
-    fbSize2d=vgaTimingInfo.fbSize2d,
-  )
+  //val vgaCtrl = VgaCtrl(
+  //  rgbConfig=rgbConfig,
+  //  timingsWidth=myVgaTimingsWidth,
+  //)
+  //val vidDith = LcvVideoDitherer(
+  //  //fbSize2d=fbSize2d,
+  //  rgbConfig=rgbConfig,
+  //  //vgaTimingInfo=vgaTimingInfo,
+  //  //fbSize2d=vgaTimingInfo.fbSize2d,
+  //  fbSize2d=vgaTimingInfo.fbSize2d,
+  //)
+
   //val vgaCtrl = VgaCtrl(
   //  rgbConfig=rgbConfig,
   //  timingsWidth=myVgaTimingsWidth,
@@ -63,6 +68,12 @@ case class Gpu2dSimDut(
 
   //val vgaTimingsH = VgaTimingsHV(timingsWidth=myVgaTimingsWidth)
   //vgaTimingsH.colorStart := vgaTimingInfo.htiming.
+  //--------
+  //vgaTimingInfo.driveSpinalVgaTimings(
+  //  clkRate=clkRate,
+  //  spinalVgaTimings=ctrlIo.timings,
+  //)
+  //--------
 
   //gpuIo <> gpu2dTest.io.gpuIo
   //gpuIo.push <> gpu2dTest.io.pop
@@ -73,16 +84,30 @@ case class Gpu2dSimDut(
   ctrlIo.en := gpuIo.ctrlEn
   //ctrlIo.en := False
 
-  ctrlIo.push.valid := gpuIo.pop.valid
-  ctrlIo.push.payload := gpuIo.pop.payload.col
-  gpuIo.pop.ready := ctrlIo.push.ready
+  //ctrlIo.push.valid := gpuIo.pop.valid
+  //ctrlIo.push.payload := gpuIo.pop.payload.col
+  //gpuIo.pop.ready := ctrlIo.push.ready
+  gpuIo.pop.translateInto(
+    into=ctrlIo.push
+  )(
+    dataAssignment=(ctrlPushPayload, gpuPopPayload) => {
+      ctrlPushPayload := gpuPopPayload.col
+    }
+  )
   ////vgaCtrl.io.pixels << gpuIo.pop
   ////ctrlIo.pixels.valid := gpuIo.pop.valid
   ////ctrlIo.pixels.payload := gpuIo.pop.payload.col
   ////gpuIo.pop.ready := ctrlIo.pixels.ready
-  // END: main cod; later
+  // END: main code; later
   //--------
-
+  //ctrlIo.pixels << gpuIo.pop
+  //gpuIo.pop.translateInto(
+  //  into=ctrlIo.pixels
+  //)(
+  //  dataAssignment=(pixelsPayload, gpuPopPayload) => {
+  //    pixelsPayload := gpuPopPayload.col
+  //  }
+  //)
 
   //ctrlIo.push.valid := gpu2dTest.io.pop.valid
   //ctrlIo.push.payload := gpu2dTest.io.pop.payload.col
@@ -91,16 +116,24 @@ case class Gpu2dSimDut(
   //ctrlIo.push.payload := ctrlIo.push.payload.getZero
   //gpuIo.pop.ready := True
 
+  //--------
   io.phys := ctrlIo.phys
   io.misc := ctrlIo.misc
-  //io.misc.pastVisib := RegNext(io.misc.visib)
+  //--------
+  //io.phys.col := ctrlIo.vga.color
+  //io.phys.hsync := ctrlIo.vga.hSync
+  //io.phys.vsync := ctrlIo.vga.vSync
+  //io.misc := io.misc.getZero
+  //io.misc.allowOverride
+  //io.misc.pastVisib := RegNext(io.misc.visib) init(False)
   //io.misc.visib := ctrlIo.vga.colorEn
+  //--------
 }
 
 object Gpu2dSim extends App {
-  //def clkRate = 125.0 MHz
+  def clkRate = 125.0 MHz
   //def clkRate = 50.0 MHz
-  def clkRate = 100.0 MHz
+  //def clkRate = 100.0 MHz
   //def clkRate = 100.7 MHz
   def pixelClk = 25.0 MHz
   //def ctrlFifoDepth = 20
@@ -122,9 +155,10 @@ object Gpu2dSim extends App {
       //visib=1 << 6,
       //visib=64,
       //visib=1 << 7,
-      visib=1 << 8,
+      //visib=1 << 8,
       //visib=4,
       //visib=8,
+      visib=1 << 6,
       front=1,
       sync=1,
       back=1,
@@ -179,7 +213,10 @@ object Gpu2dSim extends App {
       //x=log2Up(2),
       //y=log2Up(2),
     ),
-    objTileWidthRshift=0,
+    objTileWidthRshift=(
+      //0
+      1
+    ),
     //objTileWidthRshift=1,
     objAffineTileSize2dPow=ElabVec2[Int](
       x=log2Up(16),
@@ -226,11 +263,102 @@ object Gpu2dSim extends App {
     numColsInObjPalPow=log2Up(64),
     noColorMath=true,
     noAffineBgs=true,
-    //noAffineObjs=true,
-    noAffineObjs=false,
+    noAffineObjs=true,
+    //noAffineObjs=false,
     //fancyObjPrio=false,
     fancyObjPrio=true,
   )
+  //def gpu2dParams = DefaultGpu2dParams(
+  //  rgbConfig=rgbConfig,
+  //  intnlFbSize2d=ElabVec2[Int](
+  //    x=vgaTimingInfo.fbSize2d.x,
+  //    y=vgaTimingInfo.fbSize2d.y,
+  //  ),
+  //  physFbSize2dScale=ElabVec2[Int](
+  //    x=1,
+  //    y=1,
+  //    //x=2,
+  //    ////y=2,
+  //    //y=2,
+  //  ),
+  //  //physFbSize2dScalePow=ElabVec2[Int](
+  //  //  x=log2Up(1),
+  //  //  y=log2Up(1),
+  //  //  //x=log2Up(2),
+  //  //  ////y=log2Up(2),
+  //  //  //y=log2Up(2),
+  //  //),
+  //  bgTileSize2dPow=ElabVec2[Int](
+  //    //x=log2Up(8),
+  //    //y=log2Up(8),
+  //    x=log2Up(4),
+  //    y=log2Up(4),
+  //    //x=log2Up(2),
+  //    //y=log2Up(2),
+  //  ),
+  //  objTileSize2dPow=ElabVec2[Int](
+  //    x=log2Up(8),
+  //    y=log2Up(8),
+  //    //x=log2Up(4),
+  //    //y=log2Up(4),
+  //    //x=log2Up(2),
+  //    //y=log2Up(2),
+  //  ),
+  //  objTileWidthRshift=(
+  //    //0
+  //    1
+  //  ),
+  //  //objTileWidthRshift=1,
+  //  objAffineTileSize2dPow=ElabVec2[Int](
+  //    x=log2Up(16),
+  //    y=log2Up(16),
+  //    //x=log2Up(8),
+  //    //y=log2Up(8),
+  //    //x=log2Up(4),
+  //    //y=log2Up(4),
+  //    //x=log2Up(2),
+  //    //y=log2Up(2),
+  //  ),
+  //  objAffineTileWidthRshift=(
+  //    //0
+  //    1
+  //  ),
+  //  //objAffineTileWidthRshift=,
+  //  //numBgsPow=log2Up(4),
+  //  numBgsPow=log2Up(2),
+  //  //numObjsPow=log2Up(64),
+  //  //numObjsPow=log2Up(32),
+  //  //numObjsPow=log2Up(2),
+  //  //numObjsPow=log2Up(32),
+  //  //numObjsPow=log2Up(16),
+  //  //numObjsPow=log2Up(2),
+  //  //numObjsPow=log2Up(4),
+  //  //numObjsPow=log2Up(8),
+  //  numObjsPow=log2Up(16),
+  //  numObjsAffinePow=(
+  //    //log2Up(16)
+  //    log2Up(4)
+  //  ),
+  //  //numBgTilesPow=Some(log2Up(256)),
+  //  //numBgTilesPow=Some(log2Up(2)),
+  //  numBgTiles=Some(
+  //    //16
+  //    //256
+  //    //512
+  //    1024
+  //  ),
+  //  //numObjTilesPow=None,
+  //  numObjTiles=Some(16),
+  //  numObjAffineTiles=Some(16),
+  //  numColsInBgPalPow=log2Up(64),
+  //  numColsInObjPalPow=log2Up(64),
+  //  noColorMath=true,
+  //  noAffineBgs=true,
+  //  //noAffineObjs=true,
+  //  noAffineObjs=false,
+  //  //fancyObjPrio=false,
+  //  fancyObjPrio=true,
+  //)
 
   val simSpinalConfig = SpinalConfig(
     //defaultClockDomainFrequency=FixedFrequency(100 MHz)

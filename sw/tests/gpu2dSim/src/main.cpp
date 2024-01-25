@@ -24,17 +24,27 @@ using namespace liborangepower::misc_output;
 
 static constexpr double
 	CLK_RATE
+		//= 25.0,
 		//= 50.0,
+		//= 75.0,
+		//= 100.0,
 		= 125.0,
-	PIXEL_CLK = 25.0,
-	//CLKS_PER_PIXEL = CLK_RATE / PIXEL_CLK,
-	PIXELS_PER_CLK = PIXEL_CLK / CLK_RATE;
+		//= 150.0,
+		//= 200.0,
+	PIXEL_CLK = 25.0;
+static constexpr size_t
+	CLKS_PER_PIXEL = size_t(CLK_RATE / PIXEL_CLK);
+	//PIXELS_PER_CLK = PIXEL_CLK / CLK_RATE;
 static constexpr Vec2<size_t>
 	HALF_SIZE_2D{
 		//.x=1 << 7,
 		//.y=1 << 7,
+		//.x=1 << 6,
+		//.y=1 << 5,
 		.x=320,
 		.y=240,
+		//.x=640,
+		//.y=480,
 	},
 	SIZE_2D{.x=HALF_SIZE_2D.x << 1, .y=HALF_SIZE_2D.y << 1};
 class Display {
@@ -43,8 +53,9 @@ public:		// variables
 	sdl::Renderer renderer;
 	sdl::Texture texture;
 	std::unique_ptr<Uint32> pixels;
-	//Vec2<Uint32> pos{.x=0, .y=0};
-	Vec2<double> pos{.x=0.0, .y=0.0};
+	Vec2<Uint32> pos{.x=0, .y=0};
+	//Vec2<double> pos{.x=0.0, .y=0.0};
+	size_t cnt_x = 0;
 public:		// functions
 	inline Display()
 		: window(
@@ -132,6 +143,9 @@ public:		// functions
 		//	uint32_t(pos.y) * HALF_SIZE_2D.x
 		//	+ uint32_t(pos.x)
 		//] = col;
+		//pixels.get()[
+		//	uint32_t(pos.y) * HALF_SIZE_2D.x + uint32_t(pos.x)
+		//] = col;
 		for (size_t j=0; j<2; ++j) {
 			for (size_t i=0; i<2; ++i) {
 				Vec2<Uint32> temp_pos;
@@ -143,10 +157,34 @@ public:		// functions
 	};
 	inline void inc_x() {
 		//++pos.x;
-		pos.x += PIXELS_PER_CLK;
+		//pos.x += PIXELS_PER_CLK;
+		//if (pos.x >= HALF_SIZE_2D.x) {
+		//	pos.x = HALF_SIZE_2D.x;
+		//}
+
+		//++cnt_x;
+		//if ((cnt_x % CLKS_PER_PIXEL) == 0) {
+		//	++pos.x;
+		//}
+		//if (pos.x >= HALF_SIZE_2D.x) {
+		//	cnt_x = HALF_SIZE_2D.x * CLKS_PER_PIXEL;
+		//	pos.x = HALF_SIZE_2D.x;
+		//}
 		if (pos.x >= HALF_SIZE_2D.x) {
+			//cnt_x = 0;
 			pos.x = HALF_SIZE_2D.x;
+		} else {
+			++cnt_x;
+			if (cnt_x >= CLKS_PER_PIXEL) {
+				++pos.x;
+				cnt_x = 0;
+			}
 		}
+
+		//if (cnt_x >= (HALF_SIZE_2D.x * CLKS_PER_PIXEL)) {
+		//	cnt_x = HALF_SIZE_2D.x * CLKS_PER_PIXEL;
+		//	pos.x = HALF_SIZE_2D.x;
+		//}
 	};
 	inline void inc_y() {
 		++pos.y;
@@ -223,6 +261,7 @@ public:		// functions
 			&& pos.x != 0
 		) {
 			inc_y();
+			cnt_x = 0;
 			pos.x = 0;
 		}
 		//pos.x = _top->io_misc_hpipeC;
@@ -235,11 +274,15 @@ public:		// functions
 		//	refresh();
 		//}
 		if (
-			//_top->io_misc_pastVisib
-			//&& _top->io_misc_pixelEn
-			//_top->io_misc_pastVisib
+			////_top->io_misc_pastVisib
+			////&& _top->io_misc_pixelEn
+			////_top->io_misc_pastVisib
 			_top->io_misc_visib
 			//&& _top->io_misc_pixelEn
+			//!_top->io_phys_hsync
+			//&& !_top->io_phys_vsync
+			//_top->io_phys_hsync
+			//&& _top->io_phys_vsync
 		) {
 			//pos.x = _top->io_misc_hpipeC;
 			//pos.y = _top->io_misc_vpipeC;

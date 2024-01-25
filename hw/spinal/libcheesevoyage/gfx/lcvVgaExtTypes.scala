@@ -3,6 +3,7 @@ import libcheesevoyage.general.ElabVec2
 
 import spinal.core._
 import spinal.lib._
+import spinal.lib.graphic.vga._
 
 case class LcvVgaTimingHv(
   visib: Int,
@@ -72,4 +73,23 @@ case class LcvVgaTimingInfo(
   vtiming: LcvVgaTimingHv,
 ) {
   def fbSize2d: ElabVec2[Int] = ElabVec2(x=htiming.visib, y=vtiming.visib)
+  //def spinalVgaTimings: VgaTimings(
+  //)
+  def driveSpinalVgaTimings(
+    clkRate: HertzNumber,
+    spinalVgaTimings: VgaTimings,
+  ): Unit = {
+    spinalVgaTimings.setAs(
+      hPixels=htiming.visib,// * (clkRate / pixelClk).toInt,
+      hSync=htiming.sync,// * (clkRate / pixelClk).toInt,
+      hFront=htiming.front,// * (clkRate / pixelClk).toInt,
+      hBack=htiming.back,// * (clkRate / pixelClk).toInt,
+      hPolarity=true,
+      vPixels=vtiming.visib,// * (clkRate / pixelClk).toInt,
+      vSync=vtiming.sync,// * (clkRate / pixelClk).toInt,
+      vFront=vtiming.front,// * (clkRate / pixelClk).toInt,
+      vBack=vtiming.back,// * (clkRate / pixelClk).toInt,
+      vPolarity=true,
+    )
+  }
 }
