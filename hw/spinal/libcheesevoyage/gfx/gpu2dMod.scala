@@ -3296,6 +3296,8 @@ case class Gpu2d(
                   //)
                   //ret := ret.getZero
                   //outpPayload := inpPayload
+                  outpPayload := outpPayload.getZero
+                  outpPayload.allowOverride
                   outpPayload.stage0.changingRow := (
                     inpPayload.stage0.changingRow
                   )
@@ -6004,7 +6006,8 @@ case class Gpu2d(
       //6
       //7
       //8
-      9
+      9 // old, working value
+      //10
     )
     //def combinePipeNumMainStages = wrBgObjPipeNumStages + 5
     case class CombinePipePayload() extends Bundle {
@@ -6143,6 +6146,8 @@ case class Gpu2d(
       //prevLineMemArrIdx: UInt,
     ): CombinePipePayload = {
       val ret = CombinePipePayload()
+      ret := ret.getZero
+      ret.allowOverride
       ret.changingRow := changingRow
       ////ret.rdLineMemArrIdx := rCombineRdLineMemArrIdx
       ////ret.wrLineMemArrIdx := rCombineWrLineMemArrIdx
@@ -6982,28 +6987,28 @@ case class Gpu2d(
       }
     }
 
-    val combinePipeIn = KeepAttribute(
-      Vec.fill(
-        combinePipeNumMainStages
-        //anyPipeNumStages
-      )(
-        //Stream(CombinePipePayload())
-        Stream(CombinePipePayload())
-      )
-    )
-    val combinePipeOut = KeepAttribute(
-      Vec.fill(
-        combinePipeNumMainStages
-        //anyPipeNumStages
-      )(
-        //Stream(CombinePipePayload())
-        Stream(CombinePipePayload())
-      )
-    )
-    val combinePipeLast = KeepAttribute(
-      //Stream(CombinePipePayload())
-      Stream(CombinePipePayload())
-    )
+    //val combinePipeIn = KeepAttribute(
+    //  Vec.fill(
+    //    combinePipeNumMainStages
+    //    //anyPipeNumStages
+    //  )(
+    //    //Stream(CombinePipePayload())
+    //    Stream(CombinePipePayload())
+    //  )
+    //)
+    //val combinePipeOut = KeepAttribute(
+    //  Vec.fill(
+    //    combinePipeNumMainStages
+    //    //anyPipeNumStages
+    //  )(
+    //    //Stream(CombinePipePayload())
+    //    Stream(CombinePipePayload())
+    //  )
+    //)
+    //val combinePipeLast = KeepAttribute(
+    //  //Stream(CombinePipePayload())
+    //  Stream(CombinePipePayload())
+    //)
     def combineBgObjForkJoinMax = (
       if (!noAffineObjs) {
         3
@@ -7011,49 +7016,323 @@ case class Gpu2d(
         2
       }
     )
-    val combineBgObjRdPipeFork = FpgacpuPipeForkBlocking(
-      dataType=CombinePipePayload(),
-      // BEGIN: add in BGs; later
-      oSize=params.numLineMemsPerBgObjRenderer * combineBgObjForkJoinMax,
-      // END: add in BGs; later
+    def combineTotalForkOrJoinMax = (
+      params.numLineMemsPerBgObjRenderer * combineBgObjForkJoinMax
     )
-    val combineBgObjRdPipeJoin = FpgacpuPipeJoin(
-      dataType=CombinePipePayload(),
-      // BEGIN: add in BGs; later
-      size=params.numLineMemsPerBgObjRenderer * combineBgObjForkJoinMax,
-      // END: add in BGs; later
+    //val combineBgObjRdPipeFork = FpgacpuPipeForkBlocking(
+    //  dataType=CombinePipePayload(),
+    //  // BEGIN: add in BGs; later
+    //  oSize=params.numLineMemsPerBgObjRenderer * combineBgObjForkJoinMax,
+    //  // END: add in BGs; later
+    //)
+    //val combineBgObjRdPipeJoin = FpgacpuPipeJoin(
+    //  dataType=CombinePipePayload(),
+    //  // BEGIN: add in BGs; later
+    //  size=params.numLineMemsPerBgObjRenderer * combineBgObjForkJoinMax,
+    //  // END: add in BGs; later
+    //)
+    val nCombineArr = Array.fill(combinePipeNumMainStages + 1)(Node())
+    val sCombineArr = new ArrayBuffer[StageLink]()
+    val s2mCombineArr = new ArrayBuffer[S2MLink]()
+    val cCombineArr = new ArrayBuffer[CtrlLink]()
+
+    val nfCombineArr = Array.fill(combineTotalForkOrJoinMax)(Node())
+    val njCombineArr = Array.fill(combineTotalForkOrJoinMax)(Node())
+    //val cfCombineArr = new ArrayBuffer[CtrlLink]()
+    val fDriveToStmArr = Array.fill(combineTotalForkOrJoinMax)(
+      Stream(CombinePipePayload())
     )
+    val cfjCombineArr = new ArrayBuffer[CtrlLink]()
 
-    //def combinePipe1BgObjVecSize = (
-    //  params.numLineMemsPerBgObjRenderer
-    //)
-    //val combinePipeIn1BgVec = Vec.fill(combinePipe1BgObjVecSize)(
-    //  cloneOf(combinePipeIn(1))
-    //)
-    //val combinePipeIn1ObjVec = Vec.fill(combinePipe1BgObjVecSize)(
-    //  cloneOf(combinePipeIn(1))
-    //)
-    //val combinePipeOut1BgVec = Vec.fill(combinePipe1BgObjVecSize)(
-    //  cloneOf(combinePipeOut(1))
-    //)
-    //val combinePipeOut1ObjVec = Vec.fill(combinePipe1BgObjVecSize)(
-    //  cloneOf(combinePipeOut(1))
-    //)
+    //val cCombineFork = new ArrayBuffer
+    //val fCombineArr = new ArrayBuffer[ForkLink]()
+    //val jCombineArr = new ArrayBuffer[JoinLink]()
+    //var fMyCombine: ForkLink;
+    //var jMyCombine: JoinLink;
 
-    //val combinePipeIn1BgMemReadSyncArr = new ArrayBuffer[
-    //  MemReadSyncIntoPipe[
-    //    CombinePipePayload,
-    //    CombinePipePayload,
-    //    Vec[BgSubLineMemEntry],
-    //  ]
-    //]()
-    //val combinePipeIn1ObjMemReadSyncArr = new ArrayBuffer[
-    //  MemReadSyncIntoPipe[
-    //    CombinePipePayload,
-    //    CombinePipePayload,
-    //    Vec[ObjSubLineMemEntry],
-    //  ]
-    //]()
+    val combinePipePreForkPayload = Payload(CombinePipePayload())
+    //val combinePostJoinPipePayloadPair = (
+    //  Payload(CombinePipePayload()),
+    //  Payload(CombinePipePayload()),
+    //)
+    //val combineJoinPipePayload = Payload(CombinePipePayload())
+    val combinePipeJoinPayloadArr = (
+      Array.fill(combineTotalForkOrJoinMax)(
+        Payload(CombinePipePayload())
+      )
+    )
+    val combinePipePostJoinPayload = Payload(CombinePipePayload())
+    val combinePipeLast = nCombinePipeLast(
+      //combinePipePayload
+      combinePipePostJoinPayload
+    )
+    //val combinePipePayloadArr = new ArrayBuffer[CombinePipePayload]()
+    def nCombinePipeLast = nCombineArr.last
+    for (idx <- 0 until nCombineArr.size - 1) {
+      //--------
+      if (idx != 1) {
+        //--------
+        sCombineArr += StageLink(
+          up=nCombineArr(idx),
+          down=Node(),
+        )
+      } else { // if (idx == 1)
+        //--------
+        //def theMax = (
+        //  if (!noAffineObjs) {
+        //    3
+        //  } else {
+        //    2
+        //  }
+        //)
+        def theMax = combineBgObjForkJoinMax
+        val fMyCombine = ForkLink(
+          up=nCombineArr(idx),
+          downs=nfCombineArr.toSeq,
+          synchronous=true,
+        )
+        linkArr += fMyCombine
+        val jMyCombine = JoinLink(
+          ups=njCombineArr.toSeq,
+          down=Node(),
+        )
+        linkArr += jMyCombine
+        for (
+          combineIdx <- 0
+          //until params.numLineMemsPerBgObjRenderer * theMax
+          until combineTotalForkOrJoinMax
+        ) {
+          //combineObjSubLineMemArr(combineIdx).io.rdAddrPipe << (
+          //  combineBgObjRdPipeFork.io.pipeOutVec//(combineIdx)
+          //);
+          //println("combineIdx: " + f"$combineIdx")
+          def myLineMem = {
+            if (combineIdx % theMax == 0) {
+              //println("combineIdx % theMax == 0: " + f"$combineIdx")
+              combineBgSubLineMemArr(combineIdx / theMax)
+            } else if (combineIdx % theMax == 1) {
+              //println("combineIdx % theMax == 1: " + f"$combineIdx")
+              combineObjSubLineMemArr(combineIdx / theMax)
+            } else {
+              //println("combineIdx % theMax >= 2: " + f"$combineIdx")
+              if (!noAffineObjs) {
+                combineObjAffineSubLineMemArr(combineIdx / theMax)
+              } else {
+                combineObjSubLineMemArr(combineIdx / theMax)
+              }
+            }
+          }
+          def nfMyCombine = (
+            //combineBgObjRdPipeFork.io.pipeOutVec(combineIdx)
+            fMyCombine.downs(combineIdx)
+          )
+          def njMyCombine = (
+            //combineBgObjRdPipeJoin.io.pipeInVec(combineIdx)
+            //njCombineArr(combineIdx)
+            jMyCombine.ups(combineIdx)
+          )
+          //val cfjMyCombine = CtrlLink(
+          //  //up=nfMyCombine,
+          //  //down=njMyCombine,
+          //  up=nfMyCombine,
+          //  down=njMyCombine,
+          //)
+          //linkArr += cfjMyCombine
+          //def cfjMyCombine = (
+          //  cfjCombineArr.last
+          //)
+          def fMyDriveToStm = (
+            fDriveToStmArr(combineIdx)
+          )
+          nfMyCombine.driveTo(fMyDriveToStm)(
+            con=(
+              payload,
+              node,
+            ) => {
+              payload := node(combinePipePreForkPayload)
+            }
+          )
+
+          fMyDriveToStm.translateInto(myLineMem.io.rdAddrPipe)(
+            dataAssignment=(
+              o,
+              i,
+            ) => {
+              //o.addr := i.cnt(
+              //  log2Up(params.objSubLineMemArrSize) - 1 downto 0
+              //)
+              o.addr := (
+                if (combineIdx % theMax == 0) {
+                  params.getBgSubLineMemArrIdx(
+                    addr=i.cnt,
+                  )
+                } else if (combineIdx % theMax == 1) {
+                  params.getObjSubLineMemArrIdx(
+                    addr=i.cnt,
+                  )
+                } else {
+                  if (!noAffineObjs) { // if (combineIdx % 3 == 2)
+                    params.getObjAffineSubLineMemArrIdx(
+                      addr=i.cnt,
+                    )
+                  } else {
+                    params.getObjSubLineMemArrIdx(
+                      addr=i.cnt,
+                    )
+                  }
+                }
+              )
+              o.data := i
+            }
+          )
+
+          //njMyCombine << myLineMem.io.rdDataPipe
+          njMyCombine.driveFrom(myLineMem.io.rdDataPipe)(
+            con=(
+              node,
+              payload,
+            ) => {
+              //node(combinePipePayload) := payload
+              //node(combinePipePostJoinPayload) := payload
+              node(combinePipeJoinPayloadArr(combineIdx)) := payload
+              //node(combineJoinPipePayload) := payload
+              //def myPayload = node(combinePipePostJoinPayload)
+              //myPayload := payload
+              //myPayload.stage2.allowOverride
+            }
+          )
+
+          //--------
+          sCombineArr += StageLink(
+            //up=nCombineArr(idx),
+            up=jMyCombine.down,
+            down=Node(),
+          )
+          switch (rCombineLineMemArrIdx) {
+            for (
+              innerCombineIdx <- 0
+              until params.numLineMemsPerBgObjRenderer
+            ) {
+              is (innerCombineIdx) {
+                // BEGIN: add in BGs; later
+                //combinePipeOut(idx).payload := (
+                //  combineBgObjRdPipeJoin.io.pipeOut.payload(innerCombineIdx * 2)
+                //)
+                //def theMax = (
+                //  if (!noAffineObjs) {
+                //    3
+                //  } else {
+                //    2
+                //  }
+                //)
+                //--------
+                //val myPayload = CombinePipePayload()
+                def myOutpPayload = (
+                  jMyCombine.down(combinePipePostJoinPayload)
+                )
+                def myInpPayload(inpIdx: Int) = {
+                  jMyCombine.down(combinePipeJoinPayloadArr(inpIdx))
+                }
+                myOutpPayload.allowOverride
+                myOutpPayload := myInpPayload(0)
+                //def myOutpPayload = 
+                //cfjMyCombine.bypass(combinePipePostJoinPayload) := (
+                //  myOutpPayload
+                //)
+                myOutpPayload.stage2.rdBg := (
+                  //combineBgObjRdPipeJoin.io.pipeOut.payload(
+                  //  innerCombineIdx * theMax //+ 0
+                  //)
+                  //  .stage2.rdBg
+                  myInpPayload(
+                    innerCombineIdx * theMax //+ 0
+                  )
+                    .stage2.rdBg
+                )
+                //combinePipeOut(idx).payload.stage2.rdObj.allowOverride
+                myOutpPayload.stage2.rdObj := (
+                  myInpPayload(
+                    innerCombineIdx * theMax + 1
+                  ).stage2.rdObj
+                )
+                if (!noAffineObjs) {
+                  myOutpPayload.stage2.rdObjAffine := (
+                    myInpPayload(
+                      innerCombineIdx * theMax + 2
+                    ).stage2.rdObjAffine
+                  )
+                }
+                //--------
+
+                //combinePipeOut(idx).payload.stage2.rdBg := (
+                //  combineBgObjRdPipeJoin.io.pipeOut.payload(
+                //    innerCombineIdx * theMax //+ 0
+                //  )
+                //    .stage2.rdBg
+                //)
+                ////combinePipeOut(idx).payload.stage2.rdObj.allowOverride
+                //combinePipeOut(idx).payload.stage2.rdObj := (
+                //  combineBgObjRdPipeJoin.io.pipeOut.payload(
+                //    innerCombineIdx * theMax + 1
+                //  ).stage2.rdObj
+                //)
+                //if (!noAffineObjs) {
+                //  combinePipeOut(idx).payload.stage2.rdObjAffine := (
+                //    combineBgObjRdPipeJoin.io.pipeOut.payload(
+                //      innerCombineIdx * theMax + 2
+                //    ).stage2.rdObjAffine
+                //  )
+                //}
+                // END: add in BGs; later
+              }
+            }
+          }
+        }
+      }
+      //--------
+      linkArr += sCombineArr.last
+
+      s2mCombineArr += S2MLink(
+        up=sCombineArr.last.down,
+        down=Node(),
+      )
+      linkArr += s2mCombineArr.last
+
+      cCombineArr += CtrlLink(
+        up=s2mCombineArr.last.down,
+        down=nCombineArr(idx + 1),
+      )
+      linkArr += cCombineArr.last
+      //--------
+    }
+    def initCombinePipeOut(
+      idx: Int,
+      payload: Payload[CombinePipePayload],
+      //tempOutp: CombinePipePayload,
+    ): (CombinePipePayload, CombinePipePayload) = {
+      // This function returns `(tempInp, tempOutp)`
+      val pipeIn = (
+        //cCombineArr(idx).down(combinePipePayload)
+        //cCombineArr(idx).up(combinePipePostJoinPayload)
+        cCombineArr(idx).up(payload)
+        //nCombineArr(idx)(combinePipePayload)
+      )
+      val pipeOut = CombinePipePayload()
+
+      pipeOut := pipeIn
+      pipeOut.allowOverride
+      cCombineArr(idx).bypass(payload) := pipeOut
+
+      (pipeIn, pipeOut)
+    }
+    def initCombinePostJoinPipeOut(
+      idx: Int,
+    ): (CombinePipePayload, CombinePipePayload) = {
+      initCombinePipeOut(
+        idx=idx,
+        payload=combinePipePostJoinPayload,
+      )
+    }
 
     //--------
     // The logic is identical, so we only need one `valid` or `ready`
@@ -7087,12 +7366,23 @@ case class Gpu2d(
     val combinePipeInVeryFrontHaltWhen = combinePipeInVeryFront.haltWhen(
       haltCombinePipeVeryFront
     )
-    //combinePipeIn(0) << combinePipeInVeryFrontHaltWhen
-    combinePipeIn(0) <-/< combinePipeInVeryFrontHaltWhen
-    //combinePipeIn(0).valid := rCombinePipeFrontValid
-    //combinePipeIn(0).payload := rCombinePipeFrontPayload
-    combinePipeInVeryFront.valid := rCombinePipeFrontValid
+    ////combinePipeIn(0) << combinePipeInVeryFrontHaltWhen
+    //combinePipeIn(0) <-/< combinePipeInVeryFrontHaltWhen
+    ////combinePipeIn(0).valid := rCombinePipeFrontValid
+    ////combinePipeIn(0).payload := rCombinePipeFrontPayload
+    combinePipeInVeryFront.valid := (
+      rCombinePipeFrontValid //&& !haltCombinePipeVeryFront
+    )
     combinePipeInVeryFront.payload := rCombinePipeFrontPayload
+    nCombineArr(0).driveFrom(
+      //combinePipeInVeryFrontHaltWhen
+      //combinePipeInVeryFront
+      combinePipeInVeryFrontHaltWhen
+    )(
+      con=(node, payload) => {
+        node(combinePipePreForkPayload) := payload
+      }
+    )
 
     //val combinePipeStage1Busy = Reg(Bool()) init(False)
     //val combinePipeStage1Busy = Bool()
@@ -7170,362 +7460,174 @@ case class Gpu2d(
     // the almost full is set so that it can always absorb all the data
     // from the pipeline
     //--------
-    //def combinePipe2FifoDepth = (
-    //  //8
-    //  3
-    //)
-    //def combinePipe2FifoHaltWhenGeAmountCanPop = (
-    //  //4
-    //  1
-    //)
-    //case class CombinePipe2FifoWordType() extends Bundle {
-    //  val bgRd = BgSubLineMemEntry()
-    //  val objRd = ObjSubLineMemEntry()
+    // BEGIN: old combine code
+    //for (idx <- 0 until combinePipeIn.size) {
+    //  //psbCombinePipeArr += PipeSkidBuf(
+    //  //  dataType=CombinePipePayload(),
+    //  //  //optIncludeBusy=(idx == 2),
+    //  //)
+    //  //def psb = psbCombinePipeArr(idx)
+
+    //  //if (idx == 2) {
+    //  //  psb.io.misc.busy := haltCombinePipe2
+    //  //  //psb.io.misc.busy := False
+    //  //}
+    //  if (idx > 0) {
+    //    // `valid`, `payload`, and `ready` are all cut by a register
+    //    // stage
+    //    combinePipeIn(idx) <-/< combinePipeOut(idx - 1)
+    //    //--------
+    //  }
+    //  if (
+    //    idx
+    //    != 1
+    //    //!= 2
+    //  ) {
+    //    combinePipeOut(idx).valid := combinePipeIn(idx).valid
+    //    combinePipeIn(idx).ready := combinePipeOut(idx).ready
+    //  } else {
+    //    //combinePipeOut(idx)
+    //    combineBgObjRdPipeFork.io.pipeIn << combinePipeIn(idx)
+    //    def theMax = (
+    //      if (!noAffineObjs) {
+    //        3
+    //      } else {
+    //        2
+    //      }
+    //    )
+    //    for (
+    //      combineIdx <- 0
+    //      until params.numLineMemsPerBgObjRenderer * theMax
+    //    ) {
+    //      //combineObjSubLineMemArr(combineIdx).io.rdAddrPipe << (
+    //      //  combineBgObjRdPipeFork.io.pipeOutVec//(combineIdx)
+    //      //);
+    //      def myLineMem = {
+    //        
+    //        if (combineIdx % theMax == 0) {
+    //          combineBgSubLineMemArr(combineIdx / theMax)
+    //        } else if (combineIdx % theMax == 1) {
+    //          combineObjSubLineMemArr(combineIdx / theMax)
+    //        } else {
+    //          if (!noAffineObjs) {
+    //            combineObjAffineSubLineMemArr(combineIdx / theMax)
+    //          } else {
+    //            combineObjSubLineMemArr(combineIdx / theMax)
+    //          }
+    //        }
+    //      }
+    //      def myForkPipeOut = (
+    //        combineBgObjRdPipeFork.io.pipeOutVec(combineIdx)
+    //      )
+    //      def myJoinPipeIn = (
+    //        combineBgObjRdPipeJoin.io.pipeInVec(combineIdx)
+    //      )
+    //      myForkPipeOut.translateInto(
+    //        myLineMem.io.rdAddrPipe
+    //      )(
+    //        dataAssignment=(
+    //          o,
+    //          i,
+    //        ) => {
+    //          //o.addr := i.cnt(
+    //          //  log2Up(params.objSubLineMemArrSize) - 1 downto 0
+    //          //)
+    //          o.addr := (
+    //            if (combineIdx % theMax == 0) {
+    //              params.getBgSubLineMemArrIdx(
+    //                addr=i.cnt,
+    //              )
+    //            } else if (combineIdx % theMax == 1) {
+    //              params.getObjSubLineMemArrIdx(
+    //                addr=i.cnt,
+    //              )
+    //            } else {
+    //              if (!noAffineObjs) { // if (combineIdx % 3 == 2)
+    //                params.getObjAffineSubLineMemArrIdx(
+    //                  addr=i.cnt,
+    //                )
+    //              } else {
+    //                params.getObjSubLineMemArrIdx(
+    //                  addr=i.cnt,
+    //                )
+    //              }
+    //            }
+    //          )
+    //          o.data := i
+    //        }
+    //      )
+    //      myJoinPipeIn << myLineMem.io.rdDataPipe
+    //    }
+    //    combinePipeOut(idx).valid := (
+    //      combineBgObjRdPipeJoin.io.pipeOut.valid
+    //    )
+    //    combineBgObjRdPipeJoin.io.pipeOut.ready := (
+    //      combinePipeOut(idx).ready
+    //    )
+    //    switch (rCombineLineMemArrIdx) {
+    //      for (
+    //        combineIdx <- 0 until params.numLineMemsPerBgObjRenderer
+    //      ) {
+    //        is (combineIdx) {
+    //          // BEGIN: add in BGs; later
+    //          //combinePipeOut(idx).payload := (
+    //          //  combineBgObjRdPipeJoin.io.pipeOut.payload(combineIdx * 2)
+    //          //)
+    //          def theMax = (
+    //            if (!noAffineObjs) {
+    //              3
+    //            } else {
+    //              2
+    //            }
+    //          )
+    //          combinePipeOut(idx).payload.stage2.rdBg := (
+    //            combineBgObjRdPipeJoin.io.pipeOut.payload(
+    //              combineIdx * theMax //+ 0
+    //            )
+    //              .stage2.rdBg
+    //          )
+    //          //combinePipeOut(idx).payload.stage2.rdObj.allowOverride
+    //          combinePipeOut(idx).payload.stage2.rdObj := (
+    //            combineBgObjRdPipeJoin.io.pipeOut.payload(
+    //              combineIdx * theMax + 1
+    //            ).stage2.rdObj
+    //          )
+    //          if (!noAffineObjs) {
+    //            combinePipeOut(idx).payload.stage2.rdObjAffine := (
+    //              combineBgObjRdPipeJoin.io.pipeOut.payload(
+    //                combineIdx * theMax + 2
+    //              ).stage2.rdObjAffine
+    //            )
+    //          }
+    //          // END: add in BGs; later
+    //        }
+    //      }
+    //    }
+    //    //for (lineMemIdx <- 0 until combineObjSubLineMemArr.size) {
+    //    //  def myLineMem = combineObjSubLineMemArr(lineMemIdx)
+    //    //  myLineMem.io.rdAddrPipe.valid := combinePipeIn(idx).valid
+    //    //  myLineMem.io.rdAddrPipe.data := combinePipeIn(idx)
+    //    //  myLineMem.io.rdAddrPipe.addr := params.getObjSubLineMemArrIdx(
+    //    //    addr=combinePipeIn(idx).cnt,
+    //    //  )
+    //    //  myLineMem.io.rdDataPipe.ready := combinePipeOut(idx).ready
+    //    //}
+    //    //switch (rCombineLineMemArrIdx) {
+    //    //  for (combineIdx <- 0 until params.numLineMemsPerBgObjRenderer) {
+    //    //    def myLineMem = combineObjSubLineMemArr(combineIdx)
+    //    //    is (combineIdx) {
+    //    //      combinePipeIn(idx).ready := myLineMem.io.rdAddrPipe.ready
+    //    //      combinePipeOut(idx).valid := myLineMem.io.rdDataPipe.valid
+    //    //      combinePipeOut(idx).payload := (
+    //    //        myLineMem.io.rdDataPipe.payload
+    //    //      )
+    //    //    }
+    //    //  }
+    //    //}
+    //  }
     //}
-    //val combinePipe2Fifo = AsyncReadFifo(
-    //  dataType=CombinePipe2FifoWordType(),
-    //  depth=combinePipe2FifoDepth,
-    //)
-
-    //val myCombinePipe2FifoPush = cloneOf(combinePipe2Fifo.io.push)
-    ////val myHaltCombinePipe2FifoPush = Bool()
-    //combinePipe2Fifo.io.push << myCombinePipe2FifoPush.haltWhen(
-    //  //myHaltCombinePipe2FifoPush
-    //  haltCombinePipe2
-    //)
-    //myCombinePipe2FifoPush.valid := True
-    //
-    //val myCombinePipe2FifoPop = cloneOf(combinePipe2Fifo.io.pop)
-    //val myHaltCombinePipe2FifoPop = Bool()
-    //myCombinePipe2FifoPop << combinePipe2Fifo.io.pop.haltWhen(
-    //  myHaltCombinePipe2FifoPop
-    //)
-    //myHaltCombinePipe2FifoPop := combinePipeIn(2).ready
-    //myCombinePipe2FifoPop.ready := True
-
-    //haltCombinePipe2 := (
-    //  combinePipe2Fifo.io.misc.amountCanPop 
-    //  >= combinePipe2FifoHaltWhenGeAmountCanPop
-    //)
-    //val anyCombinePipe2BgMemRdArrHaltPipeVec = Vec.fill(
-    //  rdBgSubLineMemArr.size
-    //)(Bool())
-    //val anyCombinePipe2ObjMemRdArrHaltPipeVec = Vec.fill(
-    //  rdObjSubLineMemArr.size
-    //)(Bool())
-    //val combinePipe2BgHaltPipeVec = Vec.fill(rdBgSubLineMemArr.size)(
-    //  Bool()
-    //)
-    //def combinePipe2BgHaltVecsStartIdx = 0
-    //def combinePipe2ObjHaltVecsStartIdx = (
-    //  RdBgSubLineMemArrInfo.numReaders * 
-    //)
-    //object CombinePipe2HaltVecsInfo {
-    //  def bgIdx = 0
-    //  def objIdx = 1
-    //  def size = 2
-    //}
-    ////val combinePipe2HaltV2d = Vec.fill(CombinePipe2HaltVecsInfo.numElems)(
-    ////  MemReadSyncIntoStreamHaltVecs(
-    ////    size=params.numLineMemsPerBgObjRenderer
-    ////  )
-    ////)
-    //val combinePipe2HaltVecs = MemReadSyncIntoStreamHaltVecs(
-    //  size=CombinePipe2HaltVecsInfo.size
-    //)
-    //// We only need to check one of the rows because the memory readers
-    //// should all be synched up
-    //haltCombinePipe2 := (
-    //  //combinePipe2HaltV2d(CombinePipe2HaltV2dInfo.bgIdx).reducePipe()
-    //  combinePipe2HaltV2
-    //)
-
-    //val combinePipe2BgMemRdArr = (
-    //  new ArrayBuffer[MemReadSyncIntoStream[
-    //    //CombinePipe2FifoWordType,
-    //    Vec[BgSubLineMemEntry],
-    //    //CombinePipePayload,
-    //    //CombinePipePayload,
-    //  ]]()
-    //)
-    //val combinePipe2ObjMemRdArr = (
-    //  new ArrayBuffer[MemReadSyncIntoStream[
-    //    //CombinePipe2FifoWordType,
-    //    Vec[ObjSubLineMemEntry],
-    //    //CombinePipePayload,
-    //    //CombinePipePayload,
-    //  ]]()
-    //)
-    //for (idx <- 0 until rdBgSubLineMemArr.size) {
-    //  combinePipe2BgMemRdArr += MemReadSyncIntoStream(
-    //    //fifoWordType=CombinePipe2FifoWordType(),
-    //    memWordType=Vec.fill(rdBgSubLineMemArr.size)(
-    //      BgSubLineMemEntry()
-    //    ),
-    //    multiRd=rdBgSubLineMemArr(idx),
-    //    rdIdx=RdBgSubLineMemArrInfo.combineIdx,
-    //    haltV2d=combinePipe2HaltV2d,
-    //    haltJdx=CombinePipe2HaltV2dInfo.bgIdx,
-    //    haltIdx=idx,
-    //  )
-    //  //anyCombinePipe2BgMemRdArrHaltPipeVec(jdx) := 
-    //}
-    //for (idx <- 0 until rdObjSubLineMemArr.size) {
-    //  combinePipe2ObjMemRdArr += MemReadSyncIntoStream(
-    //    //fifoWordType=CombinePipe2FifoWordType(),
-    //    memWordType=Vec.fill(rdObjSubLineMemArr.size)(
-    //      ObjSubLineMemEntry()
-    //    ),
-    //    multiRd=rdObjSubLineMemArr(idx),
-    //    rdIdx=RdObjSubLineMemArrInfo.combineIdx,
-    //    haltV2d=combinePipe2HaltV2d,
-    //    haltJdx=CombinePipe2HaltV2dInfo.objIdx,
-    //    haltIdx=idx,
-    //  )
-    //}
-
-    //MemReadSyncIntoStream(
-    //  memWordType=BgSubLineMemEntry(),
-    //  multiRd=
-    //)
-    //haltCombinePipe2 := (
-    //  
-    //)
-    //when (!haltCombinePipe2) {
-    //}
-
-    //val psbCombinePipeArr = (
-    //  new ArrayBuffer[PipeSkidBuf[CombinePipePayload]]()
-    //)
-
-    //def combinePipeIn2FifoDepth = (
-    //  //20
-    //  3
-    //  //2
-    //)
-    ////def combinePipe2FifoPushStallGeAmountCanPop = 4
-    ////case class CombinePipe2FifoDataType() extends Bundle {
-    ////  val bgRd = Vec.fill(params.bgTileSize2d.x)(BgSubLineMemEntry())
-    ////  val objRd = Vec.fill(params.objTileSize2d.x)(ObjSubLineMemEntry())
-    ////}
-    //val combinePipeIn2Fifo = AsyncReadFifo(
-    //  //dataType=CombinePipe2FifoDataType(),
-    //  dataType=CombinePipePayload(),
-    //  depth=combinePipeIn2FifoDepth,
-    //)
-    ////val combinePipeIn2Fifo = StreamFifo(
-    ////  dataType=CombinePipePayload(),
-    ////  depth=combinePipeIn2FifoDepth,
-    ////  //latency=1,
-    ////  //forFMax=true,
-    ////)
-    for (idx <- 0 until combinePipeIn.size) {
-      //psbCombinePipeArr += PipeSkidBuf(
-      //  dataType=CombinePipePayload(),
-      //  //optIncludeBusy=(idx == 2),
-      //)
-      //def psb = psbCombinePipeArr(idx)
-
-      //if (idx == 2) {
-      //  psb.io.misc.busy := haltCombinePipe2
-      //  //psb.io.misc.busy := False
-      //}
-      if (idx > 0) {
-        //combinePipeIn(idx - 1) <, 
-        //combinePipeIn(idx) << psb.io.next
-        //psb.io.prev << combinePipeOut(idx - 1)
-        //if (idx + 1 == 2) {
-        //  combinePipeIn2Fifo.io.push << combinePipeOut(idx)
-        //} else if (idx == 2) { 
-        //  combinePipeIn(idx) << combinePipeIn2Fifo.io.pop
-        //if (idx + 1 == 2) {
-        //  combinePipeIn2Fifo.io.push << combinePipeOut(idx + 1)
-        //} else if (idx == 2) {
-        //  combinePipeIn2Fifo.io.pop >> combinePipeIn(idx)
-        //--------
-        //if (idx == 2) {
-        //  //combinePipeIn2Fifo.io.push <-/< combinePipeOut(idx - 1)
-        //  //combinePipeIn(idx) <-/< combinePipeIn2Fifo.io.pop
-        //  //combinePipeIn(idx) <-/< combinePipeOut(idx - 1).haltWhen(
-        //  //  haltCombinePipeIn2
-        //  //)
-        //}
-        //if (
-        //  (
-        //    idx == 1
-        //  ) || (
-        //    idx - 1 == 1
-        //  )
-        //) 
-
-        //if (idx == 1) {
-        //  // `valid` and `payload` are cut by a register stage
-        //  //combinePipeIn(idx) <-< combinePipeOut(idx - 1)
-        //  ////combinePipeIn(idx) <-/< combinePipeOut(idx - 1)
-        //  ////combinePipeIn(idx) <-/< combinePipeOut(idx - 1)
-        //  ////combinePipeIn(idx) << combinePipeOut(idx - 1)
-        //  //combinePipeIn(idx) << combineBgObjRdPipe
-        //  //combinePipeIn(idx) <-/< 
-        //} else if (idx - 1 == 1) {
-        //  // `ready` is cut by a register stage
-        //  //combinePipeIn(idx) </< combinePipeOut(idx - 1)
-        //  ////combinePipeIn(idx) <-/< combinePipeOut(idx - 1)
-        //  ////combinePipeIn(idx) << combinePipeOut(idx - 1)
-        //} else {
-          // `valid`, `payload`, and `ready` are all cut by a register
-          // stage
-          combinePipeIn(idx) <-/< combinePipeOut(idx - 1)
-        //}
-        //--------
-      }
-      if (
-        idx
-        != 1
-        //!= 2
-      ) {
-        combinePipeOut(idx).valid := combinePipeIn(idx).valid
-        combinePipeIn(idx).ready := combinePipeOut(idx).ready
-      } else {
-        //combinePipeOut(idx)
-        combineBgObjRdPipeFork.io.pipeIn << combinePipeIn(idx)
-        def theMax = (
-          if (!noAffineObjs) {
-            3
-          } else {
-            2
-          }
-        )
-        for (
-          combineIdx <- 0
-          until params.numLineMemsPerBgObjRenderer * theMax
-        ) {
-          //combineObjSubLineMemArr(combineIdx).io.rdAddrPipe << (
-          //  combineBgObjRdPipeFork.io.pipeOutVec//(combineIdx)
-          //);
-          def myLineMem = {
-            
-            if (combineIdx % theMax == 0) {
-              combineBgSubLineMemArr(combineIdx / theMax)
-            } else if (combineIdx % theMax == 1) {
-              combineObjSubLineMemArr(combineIdx / theMax)
-            } else {
-              if (!noAffineObjs) {
-                combineObjAffineSubLineMemArr(combineIdx / theMax)
-              } else {
-                combineObjSubLineMemArr(combineIdx / theMax)
-              }
-            }
-          }
-          def myForkPipeOut = (
-            combineBgObjRdPipeFork.io.pipeOutVec(combineIdx)
-          )
-          def myJoinPipeIn = (
-            combineBgObjRdPipeJoin.io.pipeInVec(combineIdx)
-          )
-          myForkPipeOut.translateInto(
-            myLineMem.io.rdAddrPipe
-          )(
-            dataAssignment=(
-              o,
-              i,
-            ) => {
-              //o.addr := i.cnt(
-              //  log2Up(params.objSubLineMemArrSize) - 1 downto 0
-              //)
-              o.addr := (
-                if (combineIdx % theMax == 0) {
-                  params.getBgSubLineMemArrIdx(
-                    addr=i.cnt,
-                  )
-                } else if (combineIdx % theMax == 1) {
-                  params.getObjSubLineMemArrIdx(
-                    addr=i.cnt,
-                  )
-                } else {
-                  if (!noAffineObjs) { // if (combineIdx % 3 == 2)
-                    params.getObjAffineSubLineMemArrIdx(
-                      addr=i.cnt,
-                    )
-                  } else {
-                    params.getObjSubLineMemArrIdx(
-                      addr=i.cnt,
-                    )
-                  }
-                }
-              )
-              o.data := i
-            }
-          )
-          myJoinPipeIn << myLineMem.io.rdDataPipe
-        }
-        combinePipeOut(idx).valid := (
-          combineBgObjRdPipeJoin.io.pipeOut.valid
-        )
-        combineBgObjRdPipeJoin.io.pipeOut.ready := (
-          combinePipeOut(idx).ready
-        )
-        switch (rCombineLineMemArrIdx) {
-          for (
-            combineIdx <- 0 until params.numLineMemsPerBgObjRenderer
-          ) {
-            is (combineIdx) {
-              // BEGIN: add in BGs; later
-              //combinePipeOut(idx).payload := (
-              //  combineBgObjRdPipeJoin.io.pipeOut.payload(combineIdx * 2)
-              //)
-              def theMax = (
-                if (!noAffineObjs) {
-                  3
-                } else {
-                  2
-                }
-              )
-              combinePipeOut(idx).payload.stage2.rdBg := (
-                combineBgObjRdPipeJoin.io.pipeOut.payload(
-                  combineIdx * theMax //+ 0
-                )
-                  .stage2.rdBg
-              )
-              //combinePipeOut(idx).payload.stage2.rdObj.allowOverride
-              combinePipeOut(idx).payload.stage2.rdObj := (
-                combineBgObjRdPipeJoin.io.pipeOut.payload(
-                  combineIdx * theMax + 1
-                ).stage2.rdObj
-              )
-              if (!noAffineObjs) {
-                combinePipeOut(idx).payload.stage2.rdObjAffine := (
-                  combineBgObjRdPipeJoin.io.pipeOut.payload(
-                    combineIdx * theMax + 2
-                  ).stage2.rdObjAffine
-                )
-              }
-              // END: add in BGs; later
-            }
-          }
-        }
-        //for (lineMemIdx <- 0 until combineObjSubLineMemArr.size) {
-        //  def myLineMem = combineObjSubLineMemArr(lineMemIdx)
-        //  myLineMem.io.rdAddrPipe.valid := combinePipeIn(idx).valid
-        //  myLineMem.io.rdAddrPipe.data := combinePipeIn(idx)
-        //  myLineMem.io.rdAddrPipe.addr := params.getObjSubLineMemArrIdx(
-        //    addr=combinePipeIn(idx).cnt,
-        //  )
-        //  myLineMem.io.rdDataPipe.ready := combinePipeOut(idx).ready
-        //}
-        //switch (rCombineLineMemArrIdx) {
-        //  for (combineIdx <- 0 until params.numLineMemsPerBgObjRenderer) {
-        //    def myLineMem = combineObjSubLineMemArr(combineIdx)
-        //    is (combineIdx) {
-        //      combinePipeIn(idx).ready := myLineMem.io.rdAddrPipe.ready
-        //      combinePipeOut(idx).valid := myLineMem.io.rdDataPipe.valid
-        //      combinePipeOut(idx).payload := (
-        //        myLineMem.io.rdDataPipe.payload
-        //      )
-        //    }
-        //  }
-        //}
-      }
-    }
+    // END: old combine code
+    //--------
 
     //for (idx <- 1 to combinePipeIn.size - 1) {
     //  // Create pipeline registering
@@ -7556,9 +7658,11 @@ case class Gpu2d(
     //  }
     //}
 
+    //--------
     // add one final register
     //combinePipeLast <-< combinePipeOut.last
-    combinePipeLast <-/< combinePipeOut.last
+    //combinePipeLast <-/< combinePipeOut.last
+    //--------
     //val rPastCombinePipeLastFire = RegNext(combinePipeLast.fire)
     //  .init(False)
     //val rCombinePipeOutLastDidFire = Reg(Bool()) init(False)
@@ -7619,9 +7723,23 @@ case class Gpu2d(
     //rPrevCombinePipeLast.init(rPrevCombinePipeLast.getZero)
     val rPrevCombinePipeLastCnt = Reg(SInt(combinePipeCntWidth bits))
       .init(S(combinePipeCntWidth bits, default -> True))
-    val combinePipeLastThrown = Stream(CombinePipePayload())
-    combinePipeLastThrown << combinePipeLast.throwWhen(
-      rPrevCombinePipeLastCnt.asUInt === combinePipeLastThrown.cnt
+    val combinePipeLastPreThrown = Stream(CombinePipePayload())
+    val combinePipeLastThrown = (
+      //Stream(CombinePipePayload())
+      combinePipeLastPreThrown.throwWhen(
+        rPrevCombinePipeLastCnt.asUInt === combinePipeLastPreThrown.cnt
+      )
+    )
+    //combinePipeLastThrown << combinePipeLast.throwWhen(
+    //  rPrevCombinePipeLastCnt.asUInt === combinePipeLastThrown.cnt
+    //)
+    nCombinePipeLast.driveTo(combinePipeLastPreThrown)(
+      con=(
+        payload,
+        node,
+      ) => {
+        payload := node(combinePipePostJoinPayload)
+      }
     )
     when (combinePipeLastThrown.fire) {
       rPrevCombinePipeLastCnt := combinePipeLastThrown.cnt.asSInt
@@ -7708,7 +7826,8 @@ case class Gpu2d(
           //combinePipeInVeryFront.changingRow
           //combinePipeIn(0).changingRow
           //combinePipeInVeryFront.changingRow
-          combinePipeInVeryFrontHaltWhen.changingRow
+          //combinePipeInVeryFrontHaltWhen.changingRow
+          combinePipeInVeryFront.changingRow
         ) {
           haltCombinePipeVeryFront := True
         } otherwise {
@@ -7717,7 +7836,8 @@ case class Gpu2d(
         }
         when (
           //combinePipeIn(0).fire
-          combinePipeInVeryFrontHaltWhen.fire
+          //combinePipeInVeryFrontHaltWhen.fire
+          combinePipeInVeryFront.fire
         ) {
           //rCombinePipeFrontPayload.cnt := rCombinePipeFrontPayload.cnt + 1
           //rCombinePipeFrontPayload.bakCnt := (
@@ -14772,1282 +14892,2050 @@ case class Gpu2d(
     def combineLineMemEntries(
       //someCombineLineMemArrIdx: Int
     ): Unit = {
-      val stageData = DualPipeStageData[Stream[CombinePipePayload]](
-        pipeIn=combinePipeIn,
-        pipeOut=combinePipeOut,
-        pipeNumMainStages=combinePipeNumMainStages,
-        pipeStageIdx=0,
-      )
-      //def createTempCnt(
-      //  //tempInp: Stream[CombinePipePayload],
-      //  tempOutp: Stream[CombinePipePayload],
-      //  pipeStageIdx: Int
-      //): UInt = {
-      //  val tempCombineLineMemIdx = KeepAttribute(
-      //    Reg(
-      //      UInt(
-      //        log2Up(
-      //          //params.oneLineMemSize
-      //          params.oneLineMemSize
-      //        ) bits
-      //      )
-      //    )
-      //      .init(0x0)
-      //      .setName(
-      //        f"dbgTestCombinePipe$pipeStageIdx"
-      //        + f"_tempCombineLineMemIdx"
-      //      )
-      //      //.setName("tempCombineLineMemIdx")
+      //val stageData = DualPipeStageData[Stream[CombinePipePayload]](
+      //  pipeIn=combinePipeIn,
+      //  pipeOut=combinePipeOut,
+      //  pipeNumMainStages=combinePipeNumMainStages,
+      //  pipeStageIdx=0,
+      //)
+      //pipeStageMainFunc=(
+      //  stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //  idx: Int,
+      //) => 
+      {
+        def idx = 0
+        //val tempInp = stageData.pipeIn(idx)
+        //val tempOutp = stageData.pipeOut(idx)
+
+        //when (clockDomain.isResetActive) {
+        //  tempOutp.stage0 := tempOutp.stage0.getZero
+        //} otherwise {
+        //  tempOutp.stage0 := tempInp.stage0
+        //}
+        val (pipeIn, pipeOut) = initCombinePipeOut(
+          idx=idx,
+          payload=combinePipePreForkPayload,
+        )
+        def tempInp = pipeIn
+        def tempOutp = pipeOut
+
+        when (clockDomain.isResetActive) {
+          tempOutp.stage0 := tempOutp.stage0.getZero
+        } otherwise {
+          tempOutp.stage0 := tempInp.stage0
+        }
+
+        //tempOut.stage0 := tempInp.stage0
+        //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
+      }
+      //HandleDualPipe(
+      //  stageData=stageData.craft(0)
+      //)(
+      //  pipeStageMainFunc=(
+      //    stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+
+      //    when (clockDomain.isResetActive) {
+      //      tempOutp.stage0 := tempOutp.stage0.getZero
+      //    } otherwise {
+      //      tempOutp.stage0 := tempInp.stage0
+      //    }
+      //    //tempOut.stage0 := tempInp.stage0
+      //    //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
+      //  },
+      //  copyOnlyFunc=(
+      //    stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
+      //    //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+
+      //    when (clockDomain.isResetActive) {
+      //      tempOutp.stage0 := tempOutp.stage0.getZero
+      //    } otherwise {
+      //      if (idx != 1) {
+      //        tempOutp.stage0 := tempInp.stage0
+      //      } else {
+      //        //switch (rCombineLineMemArrIdx) {
+      //        //  for (
+      //        //    combineIdx <- 0 until params.numLineMemsPerBgObjRenderer
+      //        //  ) {
+      //        //    is (combineIdx) {
+      //              tempOutp.stage0 := (
+      //                combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage0
+      //              )
+      //        //    }
+      //        //  }
+      //        //}
+      //      }
+      //    }
+      //  },
+      //)
+      //HandleDualPipe(
+      //  stageData=stageData.craft(
+      //    1
+      //    //2
+      //    //wrBgObjPipeNumStages + 1
       //  )
-      //  //when (intnlChangingRowRe) {
-      //  //  rTempCombineLineMemIdx := 0
-      //  //} elsewhen (tempOutp.fire) {
-      //  //  rTempCombineLineMemIdx := rTempCombineLineMemIdx + 1
-      //  //}
-      //  when (tempOutp.fire) {
-      //    tempCombineLineMemIdx := tempOutp.cnt(
-      //      tempCombineLineMemIdx
+      //)(
+      //  pipeStageMainFunc=(
+      //    stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    //val tempInp = stageData.pipeIn(idx)
+      //    //val tempOutp = stageData.pipeOut(idx)
+      //    //tempOutp.stage2 := (
+      //    //  combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage2
+      //    //)
+
+      //    ////val tempCombineLineMemIdx = createTempCnt(
+      //    ////  tempOutp=tempOutp,
+      //    ////  pipeStageIdx=1
+      //    ////)
+
+      //    ////def outpExt = (
+      //    ////  tempOutp.stage1.ext
+      //    ////  //rCombinePipeOut1Ext
+      //    ////)
+      //    ////def cntFifoDepth = 3
+      //    ////def cntFifoStallGeAmountCanPop = 1
+      //    ////val cntFifo = AsyncReadFifo(
+      //    ////  dataType=UInt(tempInp.cnt.getWidth bits),
+      //    ////  depth=cntFifoDepth,
+      //    ////)
+      //    ////when (tempInp.cnt + 1 >= params.oneLineMemSize) {
+      //    ////}
+      //    ////val rTempCombineLineMemIdx = KeepAttribute(
+      //    ////  Reg(
+      //    ////    UInt(
+      //    ////      log2Up(
+      //    ////        //params.oneLineMemSize
+      //    ////        params.oneLineMemSize
+      //    ////      ) bits
+      //    ////    )
+      //    ////  )
+      //    ////    .init(S"2'd-1".resized.asUInt)
+      //    ////    .setName("dbgTestCombinePipe1_tempCombineLineMemIdx")
+      //    ////    //.setName("tempCombineLineMemIdx")
+      //    ////)
+      //    //val tempCombineLineMemIdx = UInt(
+      //    //  log2Up(params.oneLineMemSize) bits
+      //    //)
+      //    //  .setName("dbgTestCombinePipe1_tempCombineLineMemIdx")
+      //    //tempCombineLineMemIdx := tempInp.cnt(
+      //    //  tempCombineLineMemIdx.bitsRange
+      //    //)
+      //    ////val rTempCombineLineMemIdx = Reg(cloneOf(tempOutp.lineMemIdx))
+      //    ////  .init(0x0)
+      //    ////--------
+      //    ////val nextTempCombineLineMemIdx = cloneOf(tempOutp.lineMemIdx)
+      //    ////val rTempCombineLineMemIdx = RegNext(nextTempCombineLineMemIdx)
+      //    ////  .init(0x0)
+      //    ////--------
+      //    ////when (intnlChangingRowRe) {
+      //    ////  tempCombineLineMemIdx := 0
+      //    ////} elsewhen (tempOutp.fire) {
+      //    ////  tempCombineLineMemIdx := tempCombineLineMemIdx + 1
+      //    ////}
+
+      //    ////when (!(tempOutp.valid && !tempOutp.ready)) {
+      //    ////  tempCombineLineMemIdx := tempInp.cnt(
+      //    ////    tempCombineLineMemIdx.bitsRange
+      //    ////  )
+      //    ////} otherwise {
+      //    ////  tempCombineLineMemIdx := RegNext(tempCombineLineMemIdx)
+      //    ////}
+
+      //    ////when (
+      //    ////  tempInp.fire
+      //    ////  &&
+      //    ////  tempInp.bakCntWillBeDone()
+      //    ////) {
+      //    ////  //tempCombineLineMemIdx := 0
+      //    ////  rTempCombineLineMemIdx := 0
+      //    ////} elsewhen (tempOutp.fire) {
+      //    ////  rTempCombineLineMemIdx := rTempCombineLineMemIdx + 1
+      //    ////}
+      //    ////--------
+      //    ////when (tempOutp.fire) {
+      //    ////  when (tempInp.bakCntWillBeDone()) {
+      //    ////    nextTempCombineLineMemIdx := 0x0
+      //    ////  } otherwise {
+      //    ////    nextTempCombineLineMemIdx := rTempCombineLineMemIdx + 1
+      //    ////  }
+      //    ////}
+      //    ////--------
+
+      //    ////when (
+      //    ////  //tempOutp.fire
+      //    ////  //tempOutp.ready
+      //    ////  //tempOutp.ready
+      //    ////  !(tempOutp.valid && !tempOutp.ready)
+      //    ////) {
+      //    ////  tempCombineLineMemIdx := (
+      //    ////    tempOutp.cnt(
+      //    ////      //log2Up(
+      //    ////      //  //params.oneLineMemSize
+      //    ////      //  params.oneLineMemSize
+      //    ////      //) - 1
+      //    ////      //downto 0
+      //    ////      tempCombineLineMemIdx.bitsRange
+      //    ////    )
+      //    ////  )
+      //    ////} otherwise {
+      //    ////  tempCombineLineMemIdx := RegNext(tempCombineLineMemIdx)
+      //    ////}
+      //    //def bgSubLineMemArrIdx = params.getBgSubLineMemArrIdx(
+      //    //  addr=(
+      //    //    //rTempCombineLineMemIdx
+      //    //    tempCombineLineMemIdx
+      //    //  )
+      //    //)
+      //    //val dbgTestCombinePipe1_bgSubLineMemArrIdx = UInt(
+      //    //  bgSubLineMemArrIdx.getWidth bits
+      //    //)
+      //    //  .setName("dbgTestCombinePipe1_bgSubLineMemArrIdx")
+      //    //dbgTestCombinePipe1_bgSubLineMemArrIdx := (
+      //    //  bgSubLineMemArrIdx
+      //    //)
+
+      //    //def objSubLineMemArrIdx = (
+      //    //  params.getObjSubLineMemArrIdx(
+      //    //    addr=(
+      //    //      //rTempCombineLineMemIdx
+      //    //      tempCombineLineMemIdx
+      //    //    )
+      //    //  )
+      //    //)
+      //    //val dbgTestCombinePipe1_objSubLineMemArrIdx = UInt(
+      //    //  objSubLineMemArrIdx.getWidth bits
+      //    //)
+      //    //  .setName("dbgTestCombinePipe1_objSubLineMemArrIdx")
+      //    //dbgTestCombinePipe1_objSubLineMemArrIdx := (
+      //    //  objSubLineMemArrIdx
+      //    //)
+
+      //    //when (clockDomain.isResetActive) {
+      //    //  tempOutp.stage2 := tempOutp.stage2.getZero
+      //    //  ////combinePipeStage1Busy := False
+      //    //  ////lineFifo.io.pop.ready := True
+      //    //  ////lineFifo.io.pop.ready := False
+      //    //  ////objLineFifo.io.pop.ready := False
+      //    //  //tempOutp.lineMemIdx := 0
+      //    //  for (jdx <- 0 until 1 << rCombineLineMemArrIdx.getWidth) {
+      //    //    rdBgSubLineMemArr(jdx).addrVec(
+      //    //      RdBgSubLineMemArrInfo.combineIdx
+      //    //    ) := 0x0
+      //    //    rdObjSubLineMemArr(jdx).addrVec(
+      //    //      RdObjSubLineMemArrInfo.combineIdx
+      //    //    ) := 0x0
+      //    //  }
+      //    //} otherwise {
+      //    //  //tempOutp.lineMemIdx := (
+      //    //  //  //rTempCombineLineMemIdx
+      //    //  //  tempCombineLineMemIdx
+      //    //  //  //tempOutp.cnt(
+      //    //  //  //  tempOutp.lineMemIdx.bitsRange
+      //    //  //  //)
+      //    //  //)
+      //    //  //tempOutp.stage1.lineMemIdx := 0
+      //    //  //when (
+      //    //  //  //tempOutp.fire
+      //    //  //  //tempOutp.valid
+      //    //  //  tempInp.fire
+      //    //  //) {
+      //    //  //--------
+      //    //  // BEGIN: new code, with `readSync`
+      //    //  switch (rCombineLineMemArrIdx) {
+      //    //    for (jdx <- 0 until rdBgSubLineMemArr.size) {
+      //    //      is (jdx) {
+      //    //        tempOutp.stage2.rdBg := (
+      //    //          combinePipeOut1BgVec(jdx).stage2.rdBg
+      //    //        )
+      //    //        tempOutp.stage2.rdObj := (
+      //    //          combinePipeOut1ObjVec(jdx).stage2.rdObj
+      //    //        )
+      //    //      }
+      //    //    }
+      //    //  }
+      //    //  // END: new code, with `readSync`
+      //    //  //for (jdx <- 0 until 1 << rCombineLineMemArrIdx.getWidth) {
+      //    //  ////haltCombinePipe2FifoPush := 
+      //    //  //  //when (!haltCombinePipe2) {
+      //    //  //  //  haltCombinePipe2FifoPush 
+      //    //  //  //}
+
+      //    //  //  //when (
+      //    //  //  //  //True
+      //    //  //  //  //tempOutp.fire
+      //    //  //  //  //tempInp.fire
+      //    //  //  //  //!haltCombinePipe2
+      //    //  //  //  //&& combinePipe2Fifo.push.fire
+      //    //  //  //  //tempOutp.ready
+      //    //  //  //  //tempInp.fire
+      //    //  //  //  tempOutp.fire
+      //    //  //  //) {
+      //    //  //    //--------
+      //    //  //    // We no longer need the `switch` statement here since we
+      //    //  //    // are just reading
+      //    //  //    //rdBgSubLineMemArr(jdx).addrVec(
+      //    //  //    //  RdBgSubLineMemArrInfo.combineIdx
+      //    //  //    //) := bgSubLineMemArrIdx
+      //    //  //    //rdObjSubLineMemArr(jdx).addrVec(
+      //    //  //    //  RdObjSubLineMemArrInfo.combineIdx
+      //    //  //    //) := objSubLineMemArrIdx
+      //    //  //    //--------
+      //    //  //  //} otherwise {
+      //    //  //  //  rdBgSubLineMemArr(jdx).addrVec(
+      //    //  //  //    RdBgSubLineMemArrInfo.combineIdx
+      //    //  //  //  ) := RegNext(
+      //    //  //  //    rdBgSubLineMemArr(jdx).addrVec(
+      //    //  //  //      RdBgSubLineMemArrInfo.combineIdx
+      //    //  //  //    )
+      //    //  //  //  )
+      //    //  //  //  rdObjSubLineMemArr(jdx).addrVec(
+      //    //  //  //    RdObjSubLineMemArrInfo.combineIdx
+      //    //  //  //  ) := RegNext(
+      //    //  //  //    rdObjSubLineMemArr(jdx).addrVec(
+      //    //  //  //      RdObjSubLineMemArrInfo.combineIdx
+      //    //  //  //    )
+      //    //  //  //  )
+      //    //  //  //}
+      //    //  //}
+      //    //  //--------
+      //    //}
+      //    ////tempOut.stage0 := tempInp.stage0
+      //    ////stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
+      //  },
+      //  copyOnlyFunc=(
+      //    stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
+      //    //stageData.pipeOut(idx).stage1 := stageData.pipeIn(idx).stage1
+
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+
+      //    when (clockDomain.isResetActive) {
+      //      tempOutp.stage2 := tempOutp.stage2.getZero
+      //    } otherwise {
+      //      if (idx != 1) {
+      //        tempOutp.stage2 := tempInp.stage2
+      //      } 
+      //      //else {
+      //      //  tempOutp.stage2 := (
+      //      //    combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage2
+      //      //  )
+      //      //}
+      //    }
+      //  },
+      //)
+      //pipeStageMainFunc=(
+      //  stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //  idx: Int,
+      //) => 
+      {
+        def idx = 3
+        val (pipeIn, pipeOut) = initCombinePostJoinPipeOut(idx)
+        def tempInp = pipeIn
+        def tempOutp = pipeOut
+
+        //val tempCombineLineMemIdx = createTempCnt(
+        //  tempOutp=tempOutp,
+        //  pipeStageIdx=idx
+        //)
+
+        //val tempCombineLineMemIdxArr = new ArrayBuffer[UInt]()
+        //val combinePipe2_tempCombineLineMemIdx = KeepAttribute(
+        //  Reg(
+        //    UInt(
+        //      log2Up(
+        //        //params.oneLineMemSize
+        //        params.oneLineMemSize
+        //      ) bits
+        //    )
+        //  )
+        //    .init(0x0)
+        //    .setName("dbgTestCombinePipe2_tempCombineLineMemIdx")
+        //)
+        //val tempCombineLineMemIdx = UInt(
+        //  log2Up(params.oneLineMemSize) bits
+        //)
+        //  .setName("dbgTestCombinePipe2_tempCombineLineMemIdx")
+        //tempCombineLineMemIdx := (
+        //  tempInp.cnt(tempCombineLineMemIdx.bitsRange)
+        //)
+        //fifo.io.push.valid := tempInp.valid
+        //val tempCombineLineMemIdx = KeepAttribute(
+        //  //Reg(
+        //    UInt(
+        //      log2Up(
+        //        //params.oneLineMemSize
+        //        params.oneLineMemSize
+        //      ) bits
+        //    )
+        //  //)
+        //    //.init(0x0)
+        //    .setName("dbgTestCombinePipe2_tempCombineLineMemIdx")
+        //    //.setName("tempCombineLineMemIdx")
+        //)
+        ////when (!(tempOutp.valid && !tempOutp.ready)) {
+        //  tempCombineLineMemIdx := tempInp.cnt(
+        //    tempCombineLineMemIdx.bitsRange
+        //  )
+        ////} otherwise {
+        ////  tempCombineLineMemIdx := RegNext(tempCombineLineMemIdx)
+        ////}
+
+        //when (intnlChangingRowRe) {
+        //  tempCombineLineMemIdx := 0
+        //} elsewhen (tempOutp.fire) {
+        //  tempCombineLineMemIdx := tempCombineLineMemIdx + 1
+        //}
+
+        //combinePipe2_tempCombineLineMemIdx := (
+        //  //tempInp.cnt(
+        //  //  log2Up(
+        //  //    //params.oneLineMemSize
+        //  //    params.oneLineMemSize
+        //  //  ) - 1
+        //  //  downto 0
+        //  //)
+        //  //tempInp.stage1.lineMemIdx
+        //  tempCombineLineMemIdx
+        //)
+        //val combinePipe2Fifo = AsyncReadFifo
+        //when (tempInp.fire) {
+        //}
+        //val combinePipe2_tempCombineLineMemIdx = (
+        //  //RegNext(tempCombineLineMemIdx)
+        //  //  .init(0x0)
+        //  //  .setName("dbgTestCombinePipe2_tempCombineLineMemIdx")
+        //  UInt(tempCombineLineMemIdx.getWidth bits)
+        //    .setName("dbgTestCombinePipe2_tempCombineLineMemIdx")
+        //)
+        //when (tempInp.fire) {
+        //  combinePipe2_tempCombineLineMemIdx := (
+        //    tempInp.cnt(
+        //      log2Up(
+        //        //params.oneLineMemSize
+        //        params.oneLineMemSize
+        //      ) - 1
+        //      downto 0
+        //    )
+        //    //tempCombineLineMemIdx
+        //  )
+        //} otherwise {
+        //  combinePipe2_tempCombineLineMemIdx := RegNext(
+        //    combinePipe2_tempCombineLineMemIdx
+        //  )
+        //}
+        val rTempCnt = Reg(UInt(tempInp.cnt.getWidth bits)) init(0x0)
+        def myLineMemIdx = (
+          //combinePipeIn2PxReadFifo.io.pop.lineMemIdx
+          tempInp.lineMemIdx
+          //tempInp.cnt
+        )
+        def bgSubLineMemArrIdx = params.getBgSubLineMemArrIdx(
+          addr=(
+            myLineMemIdx
+            //tempInp.lineMemIdx
+            //tempCombineLineMemIdx
+          )
+        )
+        val dbgTestCombinePipe2_bgSubLineMemArrIdx = UInt(
+          bgSubLineMemArrIdx.getWidth bits
+        )
+          .setName("dbgTestCombinePipe2_bgSubLineMemArrIdx")
+        dbgTestCombinePipe2_bgSubLineMemArrIdx := (
+          bgSubLineMemArrIdx
+        )
+
+        def bgSubLineMemArrElemIdx = params.getBgSubLineMemArrElemIdx(
+          addr=(
+            myLineMemIdx
+            //tempInp.lineMemIdx
+            //tempCombineLineMemIdx
+          )
+        )
+        val dbgTestCombinePipe2_bgSubLineMemArrElemIdx = UInt(
+          bgSubLineMemArrElemIdx.getWidth bits
+        )
+          .setName("dbgTestCombinePipe2_bgSubLineMemArrElemIdx")
+        dbgTestCombinePipe2_bgSubLineMemArrElemIdx := (
+          bgSubLineMemArrElemIdx
+        )
+
+        def objSubLineMemArrIdx = (
+          params.getObjSubLineMemArrIdx(
+            addr=(
+              myLineMemIdx
+              //tempInp.lineMemIdx
+              //tempCombineLineMemIdx
+            )
+          )
+        )
+        val dbgTestCombinePipe2_objSubLineMemArrIdx = UInt(
+          objSubLineMemArrIdx.getWidth bits
+        )
+          .setName("dbgTestCombinePipe2_objSubLineMemArrIdx")
+        dbgTestCombinePipe2_objSubLineMemArrIdx := (
+          objSubLineMemArrIdx
+        )
+
+        def objSubLineMemArrElemIdx = (
+          params.getObjSubLineMemArrElemIdx(
+            addr=(
+              myLineMemIdx
+              //tempInp.lineMemIdx
+              //tempCombineLineMemIdx
+            )
+          )
+        )
+        val dbgTestCombinePipe2_objSubLineMemArrElemIdx = UInt(
+          objSubLineMemArrElemIdx.getWidth bits
+        )
+          .setName("dbgTestCombinePipe2_objSubLineMemArrElemIdx")
+        dbgTestCombinePipe2_objSubLineMemArrElemIdx := (
+          objSubLineMemArrElemIdx
+        )
+
+        def objAffineSubLineMemArrElemIdx = (
+          params.getObjAffineSubLineMemArrElemIdx(
+            addr=(
+              myLineMemIdx
+              //tempInp.lineMemIdx
+              //tempCombineLineMemIdx
+            )
+          )
+        )
+        val dbgTestCombinePipe2_objAffineSubLineMemArrElemIdx = UInt(
+          objAffineSubLineMemArrElemIdx.getWidth bits
+        )
+          .setName("dbgTestCombinePipe2_objAffineSubLineMemArrElemIdx")
+        dbgTestCombinePipe2_objAffineSubLineMemArrElemIdx := (
+          objAffineSubLineMemArrElemIdx
+        )
+
+        when (clockDomain.isResetActive) {
+          //tempOutp.stage1 := tempOutp.stage1.getZero
+          ////combinePipeStage1Busy := False
+          ////lineFifo.io.pop.ready := True
+          ////lineFifo.io.pop.ready := False
+          ////objLineFifo.io.pop.ready := False
+          tempOutp.stage3 := tempOutp.stage3.getZero
+        } otherwise {
+          switch (rCombineLineMemArrIdx) {
+            for (jdx <- 0 until 1 << rCombineLineMemArrIdx.getWidth) {
+              is (jdx) {
+                //--------
+                //case class BufFifoElem() extends Bundle {
+                //  val bgRd = Vec.fill(params.bgTileSize2d.x)(
+                //    BgSubLineMemEntry()
+                //  )
+                //  val objRd = Vec.fill(params.objTileSize2d.x)(
+                //    ObjSubLineMemEntry()
+                //  )
+                //  val lineMemIdx = cloneOf(tempInp.lineMemIdx)
+                //}
+                //def bufFifoDepth = (
+                //  8
+                //)
+                //def bufFifoPushStallGeAmountCanPop = (
+                //  4
+                //)
+                //val bufFifo = AsyncReadFifo(
+                //  dataType=BufFifoElem(),
+                //  depth=bufFifoDepth,
+                //)
+                //bufFifo.io.push.valid := tempInp.valid
+                //haltCombinePipeIn2 := (
+                //  bufFifo.io.misc.amountCanPop
+                //  >= bufFifoPushStallGeAmountCanPop
+                //)
+                //bufFifo.io.pop.ready := True
+                // BEGIN: new code, for reading synchronously
+                //when (
+                //  //tempOutp.fire
+                //  //tempInp.fire
+                //  //tempOutp.fire
+                //  combinePipeIn2PxReadFifo.io.pop.fire
+                //) {
+                  //--------
+                  def tempRdBg = (
+                    //rdBgSubLineMemArr(jdx).dataVec(
+                    //  RdBgSubLineMemArrInfo.combineIdx
+                    //)
+                    ////combinePipeIn2PxReadFifo.io.pop.rdBg
+                    tempInp.stage2.rdBg
+                  )
+                  def tempRdObj = (
+                    //rdObjSubLineMemArr(jdx).dataVec(
+                    //  RdObjSubLineMemArrInfo.combineIdx
+                    //)
+                    ////combinePipeIn2PxReadFifo.io.pop.rdObj
+                    //combinePipeIn1ObjMemReadSyncArr
+                    tempInp.stage2.rdObj
+                    //tempInp.stage2.rdObjAffine
+                  )
+                  tempOutp.stage3.ext.bgRdSubLineMemEntry := (
+                    tempRdBg(bgSubLineMemArrElemIdx)
+                  )
+                  tempOutp.stage3.ext.objRdSubLineMemEntry := (
+                    tempRdObj(
+                      objSubLineMemArrElemIdx
+                      //objAffineSubLineMemArrElemIdx
+                    )
+                  )
+                  if (!noAffineObjs) {
+                    def tempRdObjAffine = (
+                      tempInp.stage2.rdObjAffine
+                    )
+                    tempOutp.stage3.ext.objAffineRdSubLineMemEntry := (
+                      tempRdObjAffine(
+                        //objSubLineMemArrElemIdx
+                        objAffineSubLineMemArrElemIdx
+                      )
+                    )
+                  }
+                  //--------
+                //} otherwise {
+                //  tempOutp.stage2.ext.bgRdSubLineMemEntry := (
+                //    //tempOutp.stage2.ext.bgRdSubLineMemEntry.getZero
+                //    RegNext(tempOutp.stage2.ext.bgRdSubLineMemEntry)
+                //  )
+                //  tempOutp.stage2.ext.objRdSubLineMemEntry := (
+                //    //tempOutp.stage2.ext.objRdSubLineMemEntry.getZero
+                //    RegNext(tempOutp.stage2.ext.objRdSubLineMemEntry)
+                //  )
+                //}
+                // END: new code, for reading synchronously
+                //--------
+                // BEGIN: old-style code, for reading asynchronously
+                //tempOutp.stage3.ext.bgRdSubLineMemEntry := (
+                //  bgSubLineMemArr(jdx).readAsync(
+                //    bgSubLineMemArrIdx
+                //  )(bgSubLineMemArrElemIdx)
+                //)
+                //tempOutp.stage3.ext.objRdSubLineMemEntry := (
+                //  objSubLineMemArr(jdx).readAsync(
+                //    objSubLineMemArrIdx
+                //  )(objSubLineMemArrElemIdx)
+                //)
+                // END: old-style code, for reading asynchronously
+                //--------
+              }
+            }
+          }
+        }
+        //tempOut.stage0 := tempInp.stage0
+        //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
+      }
+      //HandleDualPipe(
+      //  stageData=stageData.craft(
+      //    3
+      //    //4
+      //  )
+      //)(
+      //  pipeStageMainFunc=(
+      //    stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+
+      //    //val tempCombineLineMemIdx = createTempCnt(
+      //    //  tempOutp=tempOutp,
+      //    //  pipeStageIdx=idx
+      //    //)
+
+      //    //val tempCombineLineMemIdxArr = new ArrayBuffer[UInt]()
+      //    //val combinePipe2_tempCombineLineMemIdx = KeepAttribute(
+      //    //  Reg(
+      //    //    UInt(
+      //    //      log2Up(
+      //    //        //params.oneLineMemSize
+      //    //        params.oneLineMemSize
+      //    //      ) bits
+      //    //    )
+      //    //  )
+      //    //    .init(0x0)
+      //    //    .setName("dbgTestCombinePipe2_tempCombineLineMemIdx")
+      //    //)
+      //    //val tempCombineLineMemIdx = UInt(
+      //    //  log2Up(params.oneLineMemSize) bits
+      //    //)
+      //    //  .setName("dbgTestCombinePipe2_tempCombineLineMemIdx")
+      //    //tempCombineLineMemIdx := (
+      //    //  tempInp.cnt(tempCombineLineMemIdx.bitsRange)
+      //    //)
+      //    //fifo.io.push.valid := tempInp.valid
+      //    //val tempCombineLineMemIdx = KeepAttribute(
+      //    //  //Reg(
+      //    //    UInt(
+      //    //      log2Up(
+      //    //        //params.oneLineMemSize
+      //    //        params.oneLineMemSize
+      //    //      ) bits
+      //    //    )
+      //    //  //)
+      //    //    //.init(0x0)
+      //    //    .setName("dbgTestCombinePipe2_tempCombineLineMemIdx")
+      //    //    //.setName("tempCombineLineMemIdx")
+      //    //)
+      //    ////when (!(tempOutp.valid && !tempOutp.ready)) {
+      //    //  tempCombineLineMemIdx := tempInp.cnt(
+      //    //    tempCombineLineMemIdx.bitsRange
+      //    //  )
+      //    ////} otherwise {
+      //    ////  tempCombineLineMemIdx := RegNext(tempCombineLineMemIdx)
+      //    ////}
+
+      //    //when (intnlChangingRowRe) {
+      //    //  tempCombineLineMemIdx := 0
+      //    //} elsewhen (tempOutp.fire) {
+      //    //  tempCombineLineMemIdx := tempCombineLineMemIdx + 1
+      //    //}
+
+      //    //combinePipe2_tempCombineLineMemIdx := (
+      //    //  //tempInp.cnt(
+      //    //  //  log2Up(
+      //    //  //    //params.oneLineMemSize
+      //    //  //    params.oneLineMemSize
+      //    //  //  ) - 1
+      //    //  //  downto 0
+      //    //  //)
+      //    //  //tempInp.stage1.lineMemIdx
+      //    //  tempCombineLineMemIdx
+      //    //)
+      //    //val combinePipe2Fifo = AsyncReadFifo
+      //    //when (tempInp.fire) {
+      //    //}
+      //    //val combinePipe2_tempCombineLineMemIdx = (
+      //    //  //RegNext(tempCombineLineMemIdx)
+      //    //  //  .init(0x0)
+      //    //  //  .setName("dbgTestCombinePipe2_tempCombineLineMemIdx")
+      //    //  UInt(tempCombineLineMemIdx.getWidth bits)
+      //    //    .setName("dbgTestCombinePipe2_tempCombineLineMemIdx")
+      //    //)
+      //    //when (tempInp.fire) {
+      //    //  combinePipe2_tempCombineLineMemIdx := (
+      //    //    tempInp.cnt(
+      //    //      log2Up(
+      //    //        //params.oneLineMemSize
+      //    //        params.oneLineMemSize
+      //    //      ) - 1
+      //    //      downto 0
+      //    //    )
+      //    //    //tempCombineLineMemIdx
+      //    //  )
+      //    //} otherwise {
+      //    //  combinePipe2_tempCombineLineMemIdx := RegNext(
+      //    //    combinePipe2_tempCombineLineMemIdx
+      //    //  )
+      //    //}
+      //    val rTempCnt = Reg(UInt(tempInp.cnt.getWidth bits)) init(0x0)
+      //    def myLineMemIdx = (
+      //      //combinePipeIn2PxReadFifo.io.pop.lineMemIdx
+      //      tempInp.lineMemIdx
+      //      //tempInp.cnt
       //    )
-      //  } otherwise {
-      //  }
-      //}
-      HandleDualPipe(
-        stageData=stageData.craft(0)
-      )(
-        pipeStageMainFunc=(
-          stageData: DualPipeStageData[Stream[CombinePipePayload]],
-          idx: Int,
-        ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
+      //    def bgSubLineMemArrIdx = params.getBgSubLineMemArrIdx(
+      //      addr=(
+      //        myLineMemIdx
+      //        //tempInp.lineMemIdx
+      //        //tempCombineLineMemIdx
+      //      )
+      //    )
+      //    val dbgTestCombinePipe2_bgSubLineMemArrIdx = UInt(
+      //      bgSubLineMemArrIdx.getWidth bits
+      //    )
+      //      .setName("dbgTestCombinePipe2_bgSubLineMemArrIdx")
+      //    dbgTestCombinePipe2_bgSubLineMemArrIdx := (
+      //      bgSubLineMemArrIdx
+      //    )
 
-          when (clockDomain.isResetActive) {
-            tempOutp.stage0 := tempOutp.stage0.getZero
-          } otherwise {
-            tempOutp.stage0 := tempInp.stage0
-          }
-          //tempOut.stage0 := tempInp.stage0
-          //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
-        },
-        copyOnlyFunc=(
-          stageData: DualPipeStageData[Stream[CombinePipePayload]],
-          idx: Int,
-        ) => {
-          //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
-          //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
+      //    def bgSubLineMemArrElemIdx = params.getBgSubLineMemArrElemIdx(
+      //      addr=(
+      //        myLineMemIdx
+      //        //tempInp.lineMemIdx
+      //        //tempCombineLineMemIdx
+      //      )
+      //    )
+      //    val dbgTestCombinePipe2_bgSubLineMemArrElemIdx = UInt(
+      //      bgSubLineMemArrElemIdx.getWidth bits
+      //    )
+      //      .setName("dbgTestCombinePipe2_bgSubLineMemArrElemIdx")
+      //    dbgTestCombinePipe2_bgSubLineMemArrElemIdx := (
+      //      bgSubLineMemArrElemIdx
+      //    )
 
-          when (clockDomain.isResetActive) {
-            tempOutp.stage0 := tempOutp.stage0.getZero
-          } otherwise {
-            if (idx != 1) {
-              tempOutp.stage0 := tempInp.stage0
-            } else {
-              //switch (rCombineLineMemArrIdx) {
-              //  for (
-              //    combineIdx <- 0 until params.numLineMemsPerBgObjRenderer
-              //  ) {
-              //    is (combineIdx) {
-                    tempOutp.stage0 := (
-                      combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage0
-                    )
-              //    }
-              //  }
-              //}
-            }
-          }
-        },
-      )
-      HandleDualPipe(
-        stageData=stageData.craft(
-          1
-          //2
-          //wrBgObjPipeNumStages + 1
+      //    def objSubLineMemArrIdx = (
+      //      params.getObjSubLineMemArrIdx(
+      //        addr=(
+      //          myLineMemIdx
+      //          //tempInp.lineMemIdx
+      //          //tempCombineLineMemIdx
+      //        )
+      //      )
+      //    )
+      //    val dbgTestCombinePipe2_objSubLineMemArrIdx = UInt(
+      //      objSubLineMemArrIdx.getWidth bits
+      //    )
+      //      .setName("dbgTestCombinePipe2_objSubLineMemArrIdx")
+      //    dbgTestCombinePipe2_objSubLineMemArrIdx := (
+      //      objSubLineMemArrIdx
+      //    )
+
+      //    def objSubLineMemArrElemIdx = (
+      //      params.getObjSubLineMemArrElemIdx(
+      //        addr=(
+      //          myLineMemIdx
+      //          //tempInp.lineMemIdx
+      //          //tempCombineLineMemIdx
+      //        )
+      //      )
+      //    )
+      //    val dbgTestCombinePipe2_objSubLineMemArrElemIdx = UInt(
+      //      objSubLineMemArrElemIdx.getWidth bits
+      //    )
+      //      .setName("dbgTestCombinePipe2_objSubLineMemArrElemIdx")
+      //    dbgTestCombinePipe2_objSubLineMemArrElemIdx := (
+      //      objSubLineMemArrElemIdx
+      //    )
+
+      //    def objAffineSubLineMemArrElemIdx = (
+      //      params.getObjAffineSubLineMemArrElemIdx(
+      //        addr=(
+      //          myLineMemIdx
+      //          //tempInp.lineMemIdx
+      //          //tempCombineLineMemIdx
+      //        )
+      //      )
+      //    )
+      //    val dbgTestCombinePipe2_objAffineSubLineMemArrElemIdx = UInt(
+      //      objAffineSubLineMemArrElemIdx.getWidth bits
+      //    )
+      //      .setName("dbgTestCombinePipe2_objAffineSubLineMemArrElemIdx")
+      //    dbgTestCombinePipe2_objAffineSubLineMemArrElemIdx := (
+      //      objAffineSubLineMemArrElemIdx
+      //    )
+
+      //    when (clockDomain.isResetActive) {
+      //      //tempOutp.stage1 := tempOutp.stage1.getZero
+      //      ////combinePipeStage1Busy := False
+      //      ////lineFifo.io.pop.ready := True
+      //      ////lineFifo.io.pop.ready := False
+      //      ////objLineFifo.io.pop.ready := False
+      //      tempOutp.stage3 := tempOutp.stage3.getZero
+      //    } otherwise {
+      //      switch (rCombineLineMemArrIdx) {
+      //        for (jdx <- 0 until 1 << rCombineLineMemArrIdx.getWidth) {
+      //          is (jdx) {
+      //            //--------
+      //            //case class BufFifoElem() extends Bundle {
+      //            //  val bgRd = Vec.fill(params.bgTileSize2d.x)(
+      //            //    BgSubLineMemEntry()
+      //            //  )
+      //            //  val objRd = Vec.fill(params.objTileSize2d.x)(
+      //            //    ObjSubLineMemEntry()
+      //            //  )
+      //            //  val lineMemIdx = cloneOf(tempInp.lineMemIdx)
+      //            //}
+      //            //def bufFifoDepth = (
+      //            //  8
+      //            //)
+      //            //def bufFifoPushStallGeAmountCanPop = (
+      //            //  4
+      //            //)
+      //            //val bufFifo = AsyncReadFifo(
+      //            //  dataType=BufFifoElem(),
+      //            //  depth=bufFifoDepth,
+      //            //)
+      //            //bufFifo.io.push.valid := tempInp.valid
+      //            //haltCombinePipeIn2 := (
+      //            //  bufFifo.io.misc.amountCanPop
+      //            //  >= bufFifoPushStallGeAmountCanPop
+      //            //)
+      //            //bufFifo.io.pop.ready := True
+      //            // BEGIN: new code, for reading synchronously
+      //            //when (
+      //            //  //tempOutp.fire
+      //            //  //tempInp.fire
+      //            //  //tempOutp.fire
+      //            //  combinePipeIn2PxReadFifo.io.pop.fire
+      //            //) {
+      //              //--------
+      //              def tempRdBg = (
+      //                //rdBgSubLineMemArr(jdx).dataVec(
+      //                //  RdBgSubLineMemArrInfo.combineIdx
+      //                //)
+      //                ////combinePipeIn2PxReadFifo.io.pop.rdBg
+      //                tempInp.stage2.rdBg
+      //              )
+      //              def tempRdObj = (
+      //                //rdObjSubLineMemArr(jdx).dataVec(
+      //                //  RdObjSubLineMemArrInfo.combineIdx
+      //                //)
+      //                ////combinePipeIn2PxReadFifo.io.pop.rdObj
+      //                //combinePipeIn1ObjMemReadSyncArr
+      //                tempInp.stage2.rdObj
+      //                //tempInp.stage2.rdObjAffine
+      //              )
+      //              tempOutp.stage3.ext.bgRdSubLineMemEntry := (
+      //                tempRdBg(bgSubLineMemArrElemIdx)
+      //              )
+      //              tempOutp.stage3.ext.objRdSubLineMemEntry := (
+      //                tempRdObj(
+      //                  objSubLineMemArrElemIdx
+      //                  //objAffineSubLineMemArrElemIdx
+      //                )
+      //              )
+      //              if (!noAffineObjs) {
+      //                def tempRdObjAffine = (
+      //                  tempInp.stage2.rdObjAffine
+      //                )
+      //                tempOutp.stage3.ext.objAffineRdSubLineMemEntry := (
+      //                  tempRdObjAffine(
+      //                    //objSubLineMemArrElemIdx
+      //                    objAffineSubLineMemArrElemIdx
+      //                  )
+      //                )
+      //              }
+      //              //--------
+      //            //} otherwise {
+      //            //  tempOutp.stage2.ext.bgRdSubLineMemEntry := (
+      //            //    //tempOutp.stage2.ext.bgRdSubLineMemEntry.getZero
+      //            //    RegNext(tempOutp.stage2.ext.bgRdSubLineMemEntry)
+      //            //  )
+      //            //  tempOutp.stage2.ext.objRdSubLineMemEntry := (
+      //            //    //tempOutp.stage2.ext.objRdSubLineMemEntry.getZero
+      //            //    RegNext(tempOutp.stage2.ext.objRdSubLineMemEntry)
+      //            //  )
+      //            //}
+      //            // END: new code, for reading synchronously
+      //            //--------
+      //            // BEGIN: old-style code, for reading asynchronously
+      //            //tempOutp.stage3.ext.bgRdSubLineMemEntry := (
+      //            //  bgSubLineMemArr(jdx).readAsync(
+      //            //    bgSubLineMemArrIdx
+      //            //  )(bgSubLineMemArrElemIdx)
+      //            //)
+      //            //tempOutp.stage3.ext.objRdSubLineMemEntry := (
+      //            //  objSubLineMemArr(jdx).readAsync(
+      //            //    objSubLineMemArrIdx
+      //            //  )(objSubLineMemArrElemIdx)
+      //            //)
+      //            // END: old-style code, for reading asynchronously
+      //            //--------
+      //          }
+      //        }
+      //      }
+      //    }
+      //    //tempOut.stage0 := tempInp.stage0
+      //    //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
+      //  },
+      //  copyOnlyFunc=(
+      //    stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
+      //    //stageData.pipeOut(idx).stage1 := stageData.pipeIn(idx).stage1
+
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+
+      //    when (clockDomain.isResetActive) {
+      //      tempOutp.stage3 := tempOutp.stage3.getZero
+      //    } otherwise {
+      //      //tempOutp.stage3 := tempInp.stage3
+      //      if (idx != 1) {
+      //        tempOutp.stage3 := tempInp.stage3
+      //      } else {
+      //        tempOutp.stage3 := (
+      //          combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage3
+      //        )
+      //      }
+      //    }
+      //  },
+      //)
+      //pipeStageMainFunc=(
+      //  stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //  idx: Int,
+      //) => 
+      {
+        def idx = 4
+        val (pipeIn, pipeOut) = initCombinePostJoinPipeOut(idx)
+        def tempInp = pipeIn
+        def tempOutp = pipeOut
+
+        def objRdSubLineMemEntry = (
+          tempInp.stage3.ext.objRdSubLineMemEntry
         )
-      )(
-        pipeStageMainFunc=(
-          stageData: DualPipeStageData[Stream[CombinePipePayload]],
-          idx: Int,
-        ) => {
-          //val tempInp = stageData.pipeIn(idx)
-          //val tempOutp = stageData.pipeOut(idx)
-          //tempOutp.stage2 := (
-          //  combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage2
-          //)
+        def objAffineRdSubLineMemEntry = (
+          tempInp.stage3.ext.objAffineRdSubLineMemEntry
+        )
 
-          ////val tempCombineLineMemIdx = createTempCnt(
-          ////  tempOutp=tempOutp,
-          ////  pipeStageIdx=1
-          ////)
-
-          ////def outpExt = (
-          ////  tempOutp.stage1.ext
-          ////  //rCombinePipeOut1Ext
-          ////)
-          ////def cntFifoDepth = 3
-          ////def cntFifoStallGeAmountCanPop = 1
-          ////val cntFifo = AsyncReadFifo(
-          ////  dataType=UInt(tempInp.cnt.getWidth bits),
-          ////  depth=cntFifoDepth,
-          ////)
-          ////when (tempInp.cnt + 1 >= params.oneLineMemSize) {
-          ////}
-          ////val rTempCombineLineMemIdx = KeepAttribute(
-          ////  Reg(
-          ////    UInt(
-          ////      log2Up(
-          ////        //params.oneLineMemSize
-          ////        params.oneLineMemSize
-          ////      ) bits
-          ////    )
-          ////  )
-          ////    .init(S"2'd-1".resized.asUInt)
-          ////    .setName("dbgTestCombinePipe1_tempCombineLineMemIdx")
-          ////    //.setName("tempCombineLineMemIdx")
-          ////)
-          //val tempCombineLineMemIdx = UInt(
-          //  log2Up(params.oneLineMemSize) bits
-          //)
-          //  .setName("dbgTestCombinePipe1_tempCombineLineMemIdx")
-          //tempCombineLineMemIdx := tempInp.cnt(
-          //  tempCombineLineMemIdx.bitsRange
-          //)
-          ////val rTempCombineLineMemIdx = Reg(cloneOf(tempOutp.lineMemIdx))
-          ////  .init(0x0)
-          ////--------
-          ////val nextTempCombineLineMemIdx = cloneOf(tempOutp.lineMemIdx)
-          ////val rTempCombineLineMemIdx = RegNext(nextTempCombineLineMemIdx)
-          ////  .init(0x0)
-          ////--------
-          ////when (intnlChangingRowRe) {
-          ////  tempCombineLineMemIdx := 0
-          ////} elsewhen (tempOutp.fire) {
-          ////  tempCombineLineMemIdx := tempCombineLineMemIdx + 1
-          ////}
-
-          ////when (!(tempOutp.valid && !tempOutp.ready)) {
-          ////  tempCombineLineMemIdx := tempInp.cnt(
-          ////    tempCombineLineMemIdx.bitsRange
-          ////  )
-          ////} otherwise {
-          ////  tempCombineLineMemIdx := RegNext(tempCombineLineMemIdx)
-          ////}
-
-          ////when (
-          ////  tempInp.fire
-          ////  &&
-          ////  tempInp.bakCntWillBeDone()
-          ////) {
-          ////  //tempCombineLineMemIdx := 0
-          ////  rTempCombineLineMemIdx := 0
-          ////} elsewhen (tempOutp.fire) {
-          ////  rTempCombineLineMemIdx := rTempCombineLineMemIdx + 1
-          ////}
-          ////--------
-          ////when (tempOutp.fire) {
-          ////  when (tempInp.bakCntWillBeDone()) {
-          ////    nextTempCombineLineMemIdx := 0x0
-          ////  } otherwise {
-          ////    nextTempCombineLineMemIdx := rTempCombineLineMemIdx + 1
-          ////  }
-          ////}
-          ////--------
-
-          ////when (
-          ////  //tempOutp.fire
-          ////  //tempOutp.ready
-          ////  //tempOutp.ready
-          ////  !(tempOutp.valid && !tempOutp.ready)
-          ////) {
-          ////  tempCombineLineMemIdx := (
-          ////    tempOutp.cnt(
-          ////      //log2Up(
-          ////      //  //params.oneLineMemSize
-          ////      //  params.oneLineMemSize
-          ////      //) - 1
-          ////      //downto 0
-          ////      tempCombineLineMemIdx.bitsRange
-          ////    )
-          ////  )
-          ////} otherwise {
-          ////  tempCombineLineMemIdx := RegNext(tempCombineLineMemIdx)
-          ////}
-          //def bgSubLineMemArrIdx = params.getBgSubLineMemArrIdx(
-          //  addr=(
-          //    //rTempCombineLineMemIdx
-          //    tempCombineLineMemIdx
-          //  )
-          //)
-          //val dbgTestCombinePipe1_bgSubLineMemArrIdx = UInt(
-          //  bgSubLineMemArrIdx.getWidth bits
-          //)
-          //  .setName("dbgTestCombinePipe1_bgSubLineMemArrIdx")
-          //dbgTestCombinePipe1_bgSubLineMemArrIdx := (
-          //  bgSubLineMemArrIdx
-          //)
-
-          //def objSubLineMemArrIdx = (
-          //  params.getObjSubLineMemArrIdx(
-          //    addr=(
-          //      //rTempCombineLineMemIdx
-          //      tempCombineLineMemIdx
-          //    )
-          //  )
-          //)
-          //val dbgTestCombinePipe1_objSubLineMemArrIdx = UInt(
-          //  objSubLineMemArrIdx.getWidth bits
-          //)
-          //  .setName("dbgTestCombinePipe1_objSubLineMemArrIdx")
-          //dbgTestCombinePipe1_objSubLineMemArrIdx := (
-          //  objSubLineMemArrIdx
-          //)
-
-          //when (clockDomain.isResetActive) {
-          //  tempOutp.stage2 := tempOutp.stage2.getZero
-          //  ////combinePipeStage1Busy := False
-          //  ////lineFifo.io.pop.ready := True
-          //  ////lineFifo.io.pop.ready := False
-          //  ////objLineFifo.io.pop.ready := False
-          //  //tempOutp.lineMemIdx := 0
-          //  for (jdx <- 0 until 1 << rCombineLineMemArrIdx.getWidth) {
-          //    rdBgSubLineMemArr(jdx).addrVec(
-          //      RdBgSubLineMemArrInfo.combineIdx
-          //    ) := 0x0
-          //    rdObjSubLineMemArr(jdx).addrVec(
-          //      RdObjSubLineMemArrInfo.combineIdx
-          //    ) := 0x0
-          //  }
-          //} otherwise {
-          //  //tempOutp.lineMemIdx := (
-          //  //  //rTempCombineLineMemIdx
-          //  //  tempCombineLineMemIdx
-          //  //  //tempOutp.cnt(
-          //  //  //  tempOutp.lineMemIdx.bitsRange
-          //  //  //)
-          //  //)
-          //  //tempOutp.stage1.lineMemIdx := 0
-          //  //when (
-          //  //  //tempOutp.fire
-          //  //  //tempOutp.valid
-          //  //  tempInp.fire
-          //  //) {
-          //  //--------
-          //  // BEGIN: new code, with `readSync`
-          //  switch (rCombineLineMemArrIdx) {
-          //    for (jdx <- 0 until rdBgSubLineMemArr.size) {
-          //      is (jdx) {
-          //        tempOutp.stage2.rdBg := (
-          //          combinePipeOut1BgVec(jdx).stage2.rdBg
-          //        )
-          //        tempOutp.stage2.rdObj := (
-          //          combinePipeOut1ObjVec(jdx).stage2.rdObj
-          //        )
-          //      }
-          //    }
-          //  }
-          //  // END: new code, with `readSync`
-          //  //for (jdx <- 0 until 1 << rCombineLineMemArrIdx.getWidth) {
-          //  ////haltCombinePipe2FifoPush := 
-          //  //  //when (!haltCombinePipe2) {
-          //  //  //  haltCombinePipe2FifoPush 
-          //  //  //}
-
-          //  //  //when (
-          //  //  //  //True
-          //  //  //  //tempOutp.fire
-          //  //  //  //tempInp.fire
-          //  //  //  //!haltCombinePipe2
-          //  //  //  //&& combinePipe2Fifo.push.fire
-          //  //  //  //tempOutp.ready
-          //  //  //  //tempInp.fire
-          //  //  //  tempOutp.fire
-          //  //  //) {
-          //  //    //--------
-          //  //    // We no longer need the `switch` statement here since we
-          //  //    // are just reading
-          //  //    //rdBgSubLineMemArr(jdx).addrVec(
-          //  //    //  RdBgSubLineMemArrInfo.combineIdx
-          //  //    //) := bgSubLineMemArrIdx
-          //  //    //rdObjSubLineMemArr(jdx).addrVec(
-          //  //    //  RdObjSubLineMemArrInfo.combineIdx
-          //  //    //) := objSubLineMemArrIdx
-          //  //    //--------
-          //  //  //} otherwise {
-          //  //  //  rdBgSubLineMemArr(jdx).addrVec(
-          //  //  //    RdBgSubLineMemArrInfo.combineIdx
-          //  //  //  ) := RegNext(
-          //  //  //    rdBgSubLineMemArr(jdx).addrVec(
-          //  //  //      RdBgSubLineMemArrInfo.combineIdx
-          //  //  //    )
-          //  //  //  )
-          //  //  //  rdObjSubLineMemArr(jdx).addrVec(
-          //  //  //    RdObjSubLineMemArrInfo.combineIdx
-          //  //  //  ) := RegNext(
-          //  //  //    rdObjSubLineMemArr(jdx).addrVec(
-          //  //  //      RdObjSubLineMemArrInfo.combineIdx
-          //  //  //    )
-          //  //  //  )
-          //  //  //}
-          //  //}
-          //  //--------
-          //}
-          ////tempOut.stage0 := tempInp.stage0
-          ////stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
-        },
-        copyOnlyFunc=(
-          stageData: DualPipeStageData[Stream[CombinePipePayload]],
-          idx: Int,
-        ) => {
-          //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
-          //stageData.pipeOut(idx).stage1 := stageData.pipeIn(idx).stage1
-
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
-
-          when (clockDomain.isResetActive) {
-            tempOutp.stage2 := tempOutp.stage2.getZero
-          } otherwise {
-            if (idx != 1) {
-              tempOutp.stage2 := tempInp.stage2
-            } 
-            //else {
-            //  tempOutp.stage2 := (
-            //    combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage2
+        if (noAffineObjs) {
+          tempOutp.objPickSubLineMemEntry := objRdSubLineMemEntry
+        } else {
+          switch (Cat(
+            objRdSubLineMemEntry.col.a,
+            objAffineRdSubLineMemEntry.col.a,
+            objRdSubLineMemEntry.prio < objAffineRdSubLineMemEntry.prio
+          )) {
+            //is (B"000") {
+            //  tempOutp.objPickSubLineMemEntry := (
+            //    objAffineRdSubLineMemEntry
             //  )
             //}
+            is (M"10-") {
+              tempOutp.objPickSubLineMemEntry := (
+                objRdSubLineMemEntry
+              )
+            }
+            is (M"01-") {
+              tempOutp.objPickSubLineMemEntry := (
+                objAffineRdSubLineMemEntry
+              )
+            }
+            is (M"110") {
+              tempOutp.objPickSubLineMemEntry := (
+                objAffineRdSubLineMemEntry
+              )
+            }
+            is (M"111") {
+              tempOutp.objPickSubLineMemEntry := (
+                objRdSubLineMemEntry
+              )
+            }
+            default {
+              tempOutp.objPickSubLineMemEntry := (
+                objAffineRdSubLineMemEntry
+              )
+            }
           }
-        },
-      )
-      HandleDualPipe(
-        stageData=stageData.craft(
-          3
-          //4
+        }
+      }
+      //HandleDualPipe(
+      //  stageData=stageData.craft(4)
+      //)(
+      //  pipeStageMainFunc=(
+      //    stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    def tempInp = stageData.pipeIn(idx)
+      //    def tempOutp = stageData.pipeOut(idx)
+
+      //    def objRdSubLineMemEntry = (
+      //      tempInp.stage3.ext.objRdSubLineMemEntry
+      //    )
+      //    def objAffineRdSubLineMemEntry = (
+      //      tempInp.stage3.ext.objAffineRdSubLineMemEntry
+      //    )
+
+      //    if (noAffineObjs) {
+      //      tempOutp.objPickSubLineMemEntry := objRdSubLineMemEntry
+      //    } else {
+      //      switch (Cat(
+      //        objRdSubLineMemEntry.col.a,
+      //        objAffineRdSubLineMemEntry.col.a,
+      //        objRdSubLineMemEntry.prio < objAffineRdSubLineMemEntry.prio
+      //      )) {
+      //        //is (B"000") {
+      //        //  tempOutp.objPickSubLineMemEntry := (
+      //        //    objAffineRdSubLineMemEntry
+      //        //  )
+      //        //}
+      //        is (M"10-") {
+      //          tempOutp.objPickSubLineMemEntry := (
+      //            objRdSubLineMemEntry
+      //          )
+      //        }
+      //        is (M"01-") {
+      //          tempOutp.objPickSubLineMemEntry := (
+      //            objAffineRdSubLineMemEntry
+      //          )
+      //        }
+      //        is (M"110") {
+      //          tempOutp.objPickSubLineMemEntry := (
+      //            objAffineRdSubLineMemEntry
+      //          )
+      //        }
+      //        is (M"111") {
+      //          tempOutp.objPickSubLineMemEntry := (
+      //            objRdSubLineMemEntry
+      //          )
+      //        }
+      //        default {
+      //          tempOutp.objPickSubLineMemEntry := (
+      //            objAffineRdSubLineMemEntry
+      //          )
+      //        }
+      //      }
+      //    }
+      //  },
+      //  copyOnlyFunc=(
+      //    stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    def tempInp = stageData.pipeIn(idx)
+      //    def tempOutp = stageData.pipeOut(idx)
+
+      //    when (clockDomain.isResetActive) {
+      //      tempOutp.stage4 := tempOutp.stage4.getZero
+      //    } otherwise {
+      //      if (idx != 1) {
+      //        tempOutp.stage4 := tempInp.stage4
+      //      } else {
+      //        tempOutp.stage4 := (
+      //          combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage4
+      //        )
+      //      }
+      //    }
+      //  },
+      //)
+      //pipeStageMainFunc=(
+      //  stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //  idx: Int,
+      //) => 
+      {
+        def idx = 5
+        val (pipeIn, pipeOut) = initCombinePostJoinPipeOut(idx)
+        def tempInp = pipeIn
+        def tempOutp = pipeOut
+
+        def inpExt = (
+          //tempInp.stage1.ext
+          tempInp.stage3.ext
         )
-      )(
-        pipeStageMainFunc=(
-          stageData: DualPipeStageData[Stream[CombinePipePayload]],
-          idx: Int,
-        ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
 
-          //val tempCombineLineMemIdx = createTempCnt(
-          //  tempOutp=tempOutp,
-          //  pipeStageIdx=idx
-          //)
 
-          //val tempCombineLineMemIdxArr = new ArrayBuffer[UInt]()
-          //val combinePipe2_tempCombineLineMemIdx = KeepAttribute(
-          //  Reg(
-          //    UInt(
-          //      log2Up(
-          //        //params.oneLineMemSize
-          //        params.oneLineMemSize
-          //      ) bits
+        //when (
+        //  tempInp.bgRdLineMemEntry.col.a
+        //  && tempInp.objRdLineMemEntry.col.a
+        //) {
+        //  when (
+        //    // sprites take priority upon a tie, hence `<=`
+        //    tempInp.objRdLineMemEntry.prio
+        //    <= tempInp.bgRdLineMemEntry.prio
+        //  ) {
+        //    tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
+        //  } otherwise {
+        //    tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
+        //  }
+        //} elsewhen (
+        //  tempInp.bgRdLineMemEntry.col.a
+        //) {
+        //  tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
+        //} elsewhen (
+        //  tempInp.objRdLineMemEntry.col.a
+        //) {
+        //  tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
+        //} otherwise {
+        //  tempOutp.col := tempOutp.col.getZero
+        //}
+
+        // BEGIN: Debug comment this out
+        when (clockDomain.isResetActive) {
+          tempOutp.stage5 := tempOutp.stage5.getZero
+        } otherwise {
+          when (
+            //tempInp.valid
+            cCombineArr(idx).up.isValid
+          ) {
+            //tempOutp.stage5.ext := (
+            //  rCombinePipeOut1Ext
+            //)
+            tempOutp.objHiPrio := (
+              // sprites take priority upon a tie, hence `<=`
+              //tempInp.objRdLineMemEntry.prio(
+              //  tempInp.bgRdLineMemEntry.prio.bitsRange
+              //) <= tempInp.bgRdLineMemEntry.prio
+
+              //tempInp.objRdLineMemEntry.prio
+              //<= tempInp.bgRdLineMemEntry.prio
+
+              //inpExt.objRdSubLineMemEntry.prio
+              //<= inpExt.bgRdSubLineMemEntry.prio
+              tempInp.objPickSubLineMemEntry.prio
+              <= inpExt.bgRdSubLineMemEntry.prio
+
+              //rCombinePipeOut1Ext.objRdLineMemEntry.prio
+              //<= rCombinePipeOut1Ext.bgRdLineMemEntry.prio
+            )
+          } otherwise {
+            tempOutp.stage5 := RegNext(tempOutp.stage5)
+          }
+        }
+        // END: Debug comment this out
+
+        // BEGIN: Debug test no sprites
+        //tempOutp.objHiPrio := False
+        // END: Debug test no sprites
+
+        //tempOut.stage0 := tempInp.stage0
+        //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
+      }
+      //HandleDualPipe(
+      //  stageData=stageData.craft(
+      //    //2
+      //    //3
+      //    5
+      //    //wrBgObjPipeNumStages + 2
+      //  )
+      //)(
+      //  pipeStageMainFunc=(
+      //    stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+
+      //    def inpExt = (
+      //      //tempInp.stage1.ext
+      //      tempInp.stage3.ext
+      //    )
+
+
+      //    //when (
+      //    //  tempInp.bgRdLineMemEntry.col.a
+      //    //  && tempInp.objRdLineMemEntry.col.a
+      //    //) {
+      //    //  when (
+      //    //    // sprites take priority upon a tie, hence `<=`
+      //    //    tempInp.objRdLineMemEntry.prio
+      //    //    <= tempInp.bgRdLineMemEntry.prio
+      //    //  ) {
+      //    //    tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
+      //    //  } otherwise {
+      //    //    tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
+      //    //  }
+      //    //} elsewhen (
+      //    //  tempInp.bgRdLineMemEntry.col.a
+      //    //) {
+      //    //  tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
+      //    //} elsewhen (
+      //    //  tempInp.objRdLineMemEntry.col.a
+      //    //) {
+      //    //  tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
+      //    //} otherwise {
+      //    //  tempOutp.col := tempOutp.col.getZero
+      //    //}
+
+      //    // BEGIN: Debug comment this out
+      //    when (clockDomain.isResetActive) {
+      //      tempOutp.stage5 := tempOutp.stage5.getZero
+      //    } otherwise {
+      //      when (
+      //        tempInp.valid
+      //      ) {
+      //        //tempOutp.stage5.ext := (
+      //        //  rCombinePipeOut1Ext
+      //        //)
+      //        tempOutp.objHiPrio := (
+      //          // sprites take priority upon a tie, hence `<=`
+      //          //tempInp.objRdLineMemEntry.prio(
+      //          //  tempInp.bgRdLineMemEntry.prio.bitsRange
+      //          //) <= tempInp.bgRdLineMemEntry.prio
+
+      //          //tempInp.objRdLineMemEntry.prio
+      //          //<= tempInp.bgRdLineMemEntry.prio
+
+      //          //inpExt.objRdSubLineMemEntry.prio
+      //          //<= inpExt.bgRdSubLineMemEntry.prio
+      //          tempInp.objPickSubLineMemEntry.prio
+      //          <= inpExt.bgRdSubLineMemEntry.prio
+
+      //          //rCombinePipeOut1Ext.objRdLineMemEntry.prio
+      //          //<= rCombinePipeOut1Ext.bgRdLineMemEntry.prio
+      //        )
+      //      } otherwise {
+      //        tempOutp.stage5 := RegNext(tempOutp.stage5)
+      //      }
+      //    }
+      //    // END: Debug comment this out
+
+      //    // BEGIN: Debug test no sprites
+      //    //tempOutp.objHiPrio := False
+      //    // END: Debug test no sprites
+
+      //    //tempOut.stage0 := tempInp.stage0
+      //    //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
+      //  },
+      //  copyOnlyFunc=(
+      //    stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
+      //    //stageData.pipeOut(idx).stage2 := stageData.pipeIn(idx).stage2
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+
+      //    when (clockDomain.isResetActive) {
+      //      tempOutp.stage5 := tempOutp.stage5.getZero
+      //    } otherwise {
+      //      //tempOutp.stage5 := tempInp.stage5
+      //      if (idx != 1) {
+      //        tempOutp.stage5 := tempInp.stage5
+      //      } else {
+      //        tempOutp.stage5 := (
+      //          combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage5
+      //        )
+      //      }
+      //    }
+      //  },
+      //)
+      //pipeStageMainFunc=(
+      //  stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //  idx: Int,
+      //) => 
+      {
+        def idx = 6
+        val (pipeIn, pipeOut) = initCombinePostJoinPipeOut(idx)
+        def tempInp = pipeIn
+        def tempOutp = pipeOut
+
+        def inpExt = (
+          //tempInp.stage1.ext
+          tempInp.stage3.ext
+        )
+
+        when (clockDomain.isResetActive) {
+          tempOutp.stage6 := tempOutp.stage6.getZero
+        } otherwise {
+          // BEGIN: Debug comment this out; later
+          if (!noColorMath) {
+            tempOutp.colorMathCol := (
+              inpExt.bgRdSubLineMemEntry.colorMathCol
+            )
+            tempOutp.colorMathCol.allowOverride
+          }
+          switch (Cat(
+            inpExt.bgRdSubLineMemEntry.col.a,
+            //inpExt.objRdSubLineMemEntry.col.a,
+            tempInp.objPickSubLineMemEntry.col.a,
+            tempInp.objHiPrio
+          )) {
+            is (B"111") {
+              //tempOutp.col := inpExt.objRdSubLineMemEntry.col
+              tempOutp.col := tempInp.objPickSubLineMemEntry.col
+              if (!noColorMath) {
+                tempOutp.colorMathInfo := (
+                  //inpExt.objRdSubLineMemEntry.colorMathInfo
+                  tempInp.objPickSubLineMemEntry.colorMathInfo
+                )
+              }
+            }
+            is (B"110") {
+              tempOutp.col := inpExt.bgRdSubLineMemEntry.col
+              if (!noColorMath) {
+                tempOutp.colorMathInfo := (
+                  inpExt.bgRdSubLineMemEntry.colorMathInfo
+                )
+              }
+            }
+            is (M"10-") {
+              tempOutp.col := inpExt.bgRdSubLineMemEntry.col
+              if (!noColorMath) {
+                tempOutp.colorMathInfo := (
+                  inpExt.bgRdSubLineMemEntry.colorMathInfo
+                )
+              }
+            }
+            is (M"01-") {
+              //tempOutp.col := inpExt.objRdSubLineMemEntry.col
+              tempOutp.col := tempInp.objPickSubLineMemEntry.col
+              if (!noColorMath) {
+                tempOutp.colorMathInfo := (
+                  //inpExt.objRdSubLineMemEntry.colorMathInfo
+                  tempInp.objPickSubLineMemEntry.colorMathInfo
+                )
+              }
+            }
+            //is (M"00-")
+            default {
+              tempOutp.col := tempOutp.col.getZero
+              if (!noColorMath) {
+                tempOutp.colorMathInfo := (
+                  tempOutp.colorMathInfo.getZero
+                )
+                tempOutp.colorMathCol := (
+                  tempOutp.colorMathCol.getZero
+                )
+              }
+            }
+          }
+          // END: Debug comment this out; later
+          //tempOutp.col := inpExt.bgRdSubLineMemEntry.col.rgb
+          //tempOutp.col := inpExt.objRdSubLineMemEntry.col.rgb
+        }
+      }
+      //HandleDualPipe(
+      //  stageData=stageData.craft(
+      //    //3
+      //    //4
+      //    6
+      //    //wrBgObjPipeNumStages + 3
+      //  )
+      //)(
+      //  pipeStageMainFunc=(
+      //    stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+
+      //    def inpExt = (
+      //      //tempInp.stage1.ext
+      //      tempInp.stage3.ext
+      //    )
+
+      //    when (clockDomain.isResetActive) {
+      //      tempOutp.stage6 := tempOutp.stage6.getZero
+      //    } otherwise {
+      //      // BEGIN: Debug comment this out; later
+      //      if (!noColorMath) {
+      //        tempOutp.colorMathCol := (
+      //          inpExt.bgRdSubLineMemEntry.colorMathCol
+      //        )
+      //        tempOutp.colorMathCol.allowOverride
+      //      }
+      //      switch (Cat(
+      //        inpExt.bgRdSubLineMemEntry.col.a,
+      //        //inpExt.objRdSubLineMemEntry.col.a,
+      //        tempInp.objPickSubLineMemEntry.col.a,
+      //        tempInp.objHiPrio
+      //      )) {
+      //        is (B"111") {
+      //          //tempOutp.col := inpExt.objRdSubLineMemEntry.col
+      //          tempOutp.col := tempInp.objPickSubLineMemEntry.col
+      //          if (!noColorMath) {
+      //            tempOutp.colorMathInfo := (
+      //              //inpExt.objRdSubLineMemEntry.colorMathInfo
+      //              tempInp.objPickSubLineMemEntry.colorMathInfo
+      //            )
+      //          }
+      //        }
+      //        is (B"110") {
+      //          tempOutp.col := inpExt.bgRdSubLineMemEntry.col
+      //          if (!noColorMath) {
+      //            tempOutp.colorMathInfo := (
+      //              inpExt.bgRdSubLineMemEntry.colorMathInfo
+      //            )
+      //          }
+      //        }
+      //        is (M"10-") {
+      //          tempOutp.col := inpExt.bgRdSubLineMemEntry.col
+      //          if (!noColorMath) {
+      //            tempOutp.colorMathInfo := (
+      //              inpExt.bgRdSubLineMemEntry.colorMathInfo
+      //            )
+      //          }
+      //        }
+      //        is (M"01-") {
+      //          //tempOutp.col := inpExt.objRdSubLineMemEntry.col
+      //          tempOutp.col := tempInp.objPickSubLineMemEntry.col
+      //          if (!noColorMath) {
+      //            tempOutp.colorMathInfo := (
+      //              //inpExt.objRdSubLineMemEntry.colorMathInfo
+      //              tempInp.objPickSubLineMemEntry.colorMathInfo
+      //            )
+      //          }
+      //        }
+      //        //is (M"00-")
+      //        default {
+      //          tempOutp.col := tempOutp.col.getZero
+      //          if (!noColorMath) {
+      //            tempOutp.colorMathInfo := (
+      //              tempOutp.colorMathInfo.getZero
+      //            )
+      //            tempOutp.colorMathCol := (
+      //              tempOutp.colorMathCol.getZero
+      //            )
+      //          }
+      //        }
+      //      }
+      //      // END: Debug comment this out; later
+      //      //tempOutp.col := inpExt.bgRdSubLineMemEntry.col.rgb
+      //      //tempOutp.col := inpExt.objRdSubLineMemEntry.col.rgb
+      //    }
+      //  },
+      //  copyOnlyFunc=(
+      //    stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    //stageData.pipeOut(idx).stage3 := stageData.pipeIn(idx).stage3
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+
+      //    when (clockDomain.isResetActive) {
+      //      tempOutp.stage6 := tempOutp.stage6.getZero
+      //    } otherwise {
+      //      //tempOutp.stage6 := tempInp.stage6
+      //      if (idx != 1) {
+      //        tempOutp.stage6 := tempInp.stage6
+      //      } else {
+      //        tempOutp.stage6 := (
+      //          combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage6
+      //        )
+      //      }
+      //    }
+      //  },
+      //)
+      //pipeStageMainFunc=(
+      //  stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //  idx: Int,
+      //) => 
+      {
+        def idx = 7
+        val (pipeIn, pipeOut) = initCombinePostJoinPipeOut(idx)
+        def tempInp = pipeIn
+        def tempOutp = pipeOut
+
+        when (clockDomain.isResetActive) {
+          tempOutp.stage7 := tempOutp.stage7.getZero
+        } otherwise {
+          //if (inSim) {
+            tempOutp.stage7.combineWrLineMemEntry.addr := (
+              //tempInp.cnt
+              //tempInp.stage1.lineMemIdx
+              tempInp.cnt
+              (
+                tempOutp.stage7.combineWrLineMemEntry.addr.bitsRange
+              )
+            )
+          //}
+          tempOutp.stage7.combineWrLineMemEntry.col := tempInp.col
+
+          //// not really necessary, but doing it anyway
+          //tempOutp.stage7.combineWrLineMemEntry.col.a := True
+          //tempOutp.stage7.combineWrLineMemEntry.col.a := 
+
+          tempOutp.stage7.combineWrLineMemEntry.prio := 0x0
+          if (!noColorMath) {
+            tempOutp.stage7.combineWrLineMemEntry.colorMathInfo := (
+              tempInp.colorMathInfo
+            )
+            tempOutp.stage7.combineWrLineMemEntry.colorMathCol := (
+              tempInp.colorMathCol
+            )
+          }
+        }
+      }
+      //HandleDualPipe(
+      //  stageData=stageData.craft(
+      //    //4
+      //    //5
+      //    7
+      //    //wrBgObjPipeNumStages + 4
+      //  )
+      //)(
+      //  pipeStageMainFunc=(
+      //    stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+
+      //    when (clockDomain.isResetActive) {
+      //      tempOutp.stage7 := tempOutp.stage7.getZero
+      //    } otherwise {
+      //      //if (inSim) {
+      //        tempOutp.stage7.combineWrLineMemEntry.addr := (
+      //          //tempInp.cnt
+      //          //tempInp.stage1.lineMemIdx
+      //          tempInp.cnt
+      //          (
+      //            tempOutp.stage7.combineWrLineMemEntry.addr.bitsRange
+      //          )
+      //        )
+      //      //}
+      //      tempOutp.stage7.combineWrLineMemEntry.col := tempInp.col
+
+      //      //// not really necessary, but doing it anyway
+      //      //tempOutp.stage7.combineWrLineMemEntry.col.a := True
+      //      //tempOutp.stage7.combineWrLineMemEntry.col.a := 
+
+      //      tempOutp.stage7.combineWrLineMemEntry.prio := 0x0
+      //      if (!noColorMath) {
+      //        tempOutp.stage7.combineWrLineMemEntry.colorMathInfo := (
+      //          tempInp.colorMathInfo
+      //        )
+      //        tempOutp.stage7.combineWrLineMemEntry.colorMathCol := (
+      //          tempInp.colorMathCol
+      //        )
+      //      }
+      //    }
+      //  },
+      //  copyOnlyFunc=(
+      //    stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
+      //    //stageData.pipeOut(idx).stage4 := stageData.pipeIn(idx).stage4
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+
+      //    when (clockDomain.isResetActive) {
+      //      tempOutp.stage7 := tempOutp.stage7.getZero
+      //    } otherwise {
+      //      //tempOutp.stage7 := tempInp.stage7
+      //      if (idx != 1) {
+      //        tempOutp.stage7 := tempInp.stage7
+      //      } else {
+      //        tempOutp.stage7 := (
+      //          combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage7
+      //        )
+      //      }
+      //    }
+      //  },
+      //)
+      //pipeStageMainFunc=(
+      //  stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //  idx: Int,
+      //) => 
+      {
+        def idx = 8
+        //val tempInp = stageData.pipeIn(idx)
+        //val tempOutp = stageData.pipeOut(idx)
+        val (pipeIn, pipeOut) = initCombinePostJoinPipeOut(idx)
+        def tempInp = pipeIn
+        def tempOutp = pipeOut
+
+        when (clockDomain.isResetActive) {
+          tempOutp.stage8 := tempOutp.stage8.getZero
+        } otherwise {
+          ////if (inSim) {
+          //  tempOutp.stage8.combineWrLineMemEntry.addr := (
+          //    //tempInp.cnt
+          //    //tempInp.stage1.lineMemIdx
+          //    tempInp.cnt
+          //    (
+          //      tempOutp.stage8.combineWrLineMemEntry.addr.bitsRange
           //    )
           //  )
-          //    .init(0x0)
-          //    .setName("dbgTestCombinePipe2_tempCombineLineMemIdx")
-          //)
-          //val tempCombineLineMemIdx = UInt(
-          //  log2Up(params.oneLineMemSize) bits
-          //)
-          //  .setName("dbgTestCombinePipe2_tempCombineLineMemIdx")
-          //tempCombineLineMemIdx := (
-          //  tempInp.cnt(tempCombineLineMemIdx.bitsRange)
-          //)
-          //fifo.io.push.valid := tempInp.valid
-          //val tempCombineLineMemIdx = KeepAttribute(
-          //  //Reg(
-          //    UInt(
-          //      log2Up(
-          //        //params.oneLineMemSize
-          //        params.oneLineMemSize
-          //      ) bits
-          //    )
-          //  //)
-          //    //.init(0x0)
-          //    .setName("dbgTestCombinePipe2_tempCombineLineMemIdx")
-          //    //.setName("tempCombineLineMemIdx")
-          //)
-          ////when (!(tempOutp.valid && !tempOutp.ready)) {
-          //  tempCombineLineMemIdx := tempInp.cnt(
-          //    tempCombineLineMemIdx.bitsRange
-          //  )
-          ////} otherwise {
-          ////  tempCombineLineMemIdx := RegNext(tempCombineLineMemIdx)
           ////}
+          //tempOutp.stage8.combineWrLineMemEntry.col := tempInp.col
 
-          //when (intnlChangingRowRe) {
-          //  tempCombineLineMemIdx := 0
-          //} elsewhen (tempOutp.fire) {
-          //  tempCombineLineMemIdx := tempCombineLineMemIdx + 1
-          //}
+          ////// not really necessary, but doing it anyway
+          ////tempOutp.stage8.combineWrLineMemEntry.col.a := True
+          ////tempOutp.stage8.combineWrLineMemEntry.col.a := 
 
-          //combinePipe2_tempCombineLineMemIdx := (
-          //  //tempInp.cnt(
-          //  //  log2Up(
-          //  //    //params.oneLineMemSize
-          //  //    params.oneLineMemSize
-          //  //  ) - 1
-          //  //  downto 0
-          //  //)
-          //  //tempInp.stage1.lineMemIdx
-          //  tempCombineLineMemIdx
+          //tempOutp.stage8.combineWrLineMemEntry.prio := 0x0
+          //tempOutp.stage8.combineWrLineMemEntry.colorMathInfo := (
+          //  tempInp.colorMathInfo
           //)
-          //val combinePipe2Fifo = AsyncReadFifo
-          //when (tempInp.fire) {
-          //}
-          //val combinePipe2_tempCombineLineMemIdx = (
-          //  //RegNext(tempCombineLineMemIdx)
-          //  //  .init(0x0)
-          //  //  .setName("dbgTestCombinePipe2_tempCombineLineMemIdx")
-          //  UInt(tempCombineLineMemIdx.getWidth bits)
-          //    .setName("dbgTestCombinePipe2_tempCombineLineMemIdx")
+          //tempOutp.stage8.combineWrLineMemEntry.colorMathCol := (
+          //  tempInp.colorMathCol
           //)
-          //when (tempInp.fire) {
-          //  combinePipe2_tempCombineLineMemIdx := (
-          //    tempInp.cnt(
-          //      log2Up(
-          //        //params.oneLineMemSize
-          //        params.oneLineMemSize
-          //      ) - 1
-          //      downto 0
-          //    )
-          //    //tempCombineLineMemIdx
-          //  )
-          //} otherwise {
-          //  combinePipe2_tempCombineLineMemIdx := RegNext(
-          //    combinePipe2_tempCombineLineMemIdx
-          //  )
-          //}
-          val rTempCnt = Reg(UInt(tempInp.cnt.getWidth bits)) init(0x0)
-          def myLineMemIdx = (
-            //combinePipeIn2PxReadFifo.io.pop.lineMemIdx
-            tempInp.lineMemIdx
-            //tempInp.cnt
+          val tempCmathInfo = (!noColorMath) generate (
+            tempInp.stage7.combineWrLineMemEntry.colorMathInfo
           )
-          def bgSubLineMemArrIdx = params.getBgSubLineMemArrIdx(
-            addr=(
-              myLineMemIdx
-              //tempInp.lineMemIdx
-              //tempCombineLineMemIdx
-            )
+          val tempCmathCol = (!noColorMath) generate (
+            tempInp.stage7.combineWrLineMemEntry.colorMathCol
           )
-          val dbgTestCombinePipe2_bgSubLineMemArrIdx = UInt(
-            bgSubLineMemArrIdx.getWidth bits
+          def inpWrLineMemEntry = tempInp.stage7.combineWrLineMemEntry
+          def outpWrLineMemEntry = tempOutp.combineWrLineMemEntry
+          outpWrLineMemEntry := outpWrLineMemEntry.getZero
+          outpWrLineMemEntry.col.rgb.allowOverride
+          def extraWidth = 4
+          def tempRgbConfig = RgbConfig(
+            rWidth=params.rgbConfig.rWidth + extraWidth,
+            gWidth=params.rgbConfig.gWidth + extraWidth,
+            bWidth=params.rgbConfig.bWidth + extraWidth,
           )
-            .setName("dbgTestCombinePipe2_bgSubLineMemArrIdx")
-          dbgTestCombinePipe2_bgSubLineMemArrIdx := (
-            bgSubLineMemArrIdx
-          )
-
-          def bgSubLineMemArrElemIdx = params.getBgSubLineMemArrElemIdx(
-            addr=(
-              myLineMemIdx
-              //tempInp.lineMemIdx
-              //tempCombineLineMemIdx
-            )
-          )
-          val dbgTestCombinePipe2_bgSubLineMemArrElemIdx = UInt(
-            bgSubLineMemArrElemIdx.getWidth bits
-          )
-            .setName("dbgTestCombinePipe2_bgSubLineMemArrElemIdx")
-          dbgTestCombinePipe2_bgSubLineMemArrElemIdx := (
-            bgSubLineMemArrElemIdx
-          )
-
-          def objSubLineMemArrIdx = (
-            params.getObjSubLineMemArrIdx(
-              addr=(
-                myLineMemIdx
-                //tempInp.lineMemIdx
-                //tempCombineLineMemIdx
-              )
-            )
-          )
-          val dbgTestCombinePipe2_objSubLineMemArrIdx = UInt(
-            objSubLineMemArrIdx.getWidth bits
-          )
-            .setName("dbgTestCombinePipe2_objSubLineMemArrIdx")
-          dbgTestCombinePipe2_objSubLineMemArrIdx := (
-            objSubLineMemArrIdx
-          )
-
-          def objSubLineMemArrElemIdx = (
-            params.getObjSubLineMemArrElemIdx(
-              addr=(
-                myLineMemIdx
-                //tempInp.lineMemIdx
-                //tempCombineLineMemIdx
-              )
-            )
-          )
-          val dbgTestCombinePipe2_objSubLineMemArrElemIdx = UInt(
-            objSubLineMemArrElemIdx.getWidth bits
-          )
-            .setName("dbgTestCombinePipe2_objSubLineMemArrElemIdx")
-          dbgTestCombinePipe2_objSubLineMemArrElemIdx := (
-            objSubLineMemArrElemIdx
-          )
-
-          def objAffineSubLineMemArrElemIdx = (
-            params.getObjAffineSubLineMemArrElemIdx(
-              addr=(
-                myLineMemIdx
-                //tempInp.lineMemIdx
-                //tempCombineLineMemIdx
-              )
-            )
-          )
-          val dbgTestCombinePipe2_objAffineSubLineMemArrElemIdx = UInt(
-            objAffineSubLineMemArrElemIdx.getWidth bits
-          )
-            .setName("dbgTestCombinePipe2_objAffineSubLineMemArrElemIdx")
-          dbgTestCombinePipe2_objAffineSubLineMemArrElemIdx := (
-            objAffineSubLineMemArrElemIdx
-          )
-
-          when (clockDomain.isResetActive) {
-            //tempOutp.stage1 := tempOutp.stage1.getZero
-            ////combinePipeStage1Busy := False
-            ////lineFifo.io.pop.ready := True
-            ////lineFifo.io.pop.ready := False
-            ////objLineFifo.io.pop.ready := False
-            tempOutp.stage3 := tempOutp.stage3.getZero
-          } otherwise {
-            switch (rCombineLineMemArrIdx) {
-              for (jdx <- 0 until 1 << rCombineLineMemArrIdx.getWidth) {
-                is (jdx) {
-                  //--------
-                  //case class BufFifoElem() extends Bundle {
-                  //  val bgRd = Vec.fill(params.bgTileSize2d.x)(
-                  //    BgSubLineMemEntry()
-                  //  )
-                  //  val objRd = Vec.fill(params.objTileSize2d.x)(
-                  //    ObjSubLineMemEntry()
-                  //  )
-                  //  val lineMemIdx = cloneOf(tempInp.lineMemIdx)
-                  //}
-                  //def bufFifoDepth = (
-                  //  8
-                  //)
-                  //def bufFifoPushStallGeAmountCanPop = (
-                  //  4
-                  //)
-                  //val bufFifo = AsyncReadFifo(
-                  //  dataType=BufFifoElem(),
-                  //  depth=bufFifoDepth,
-                  //)
-                  //bufFifo.io.push.valid := tempInp.valid
-                  //haltCombinePipeIn2 := (
-                  //  bufFifo.io.misc.amountCanPop
-                  //  >= bufFifoPushStallGeAmountCanPop
-                  //)
-                  //bufFifo.io.pop.ready := True
-                  // BEGIN: new code, for reading synchronously
-                  //when (
-                  //  //tempOutp.fire
-                  //  //tempInp.fire
-                  //  //tempOutp.fire
-                  //  combinePipeIn2PxReadFifo.io.pop.fire
-                  //) {
-                    //--------
-                    def tempRdBg = (
-                      //rdBgSubLineMemArr(jdx).dataVec(
-                      //  RdBgSubLineMemArrInfo.combineIdx
-                      //)
-                      ////combinePipeIn2PxReadFifo.io.pop.rdBg
-                      tempInp.stage2.rdBg
-                    )
-                    def tempRdObj = (
-                      //rdObjSubLineMemArr(jdx).dataVec(
-                      //  RdObjSubLineMemArrInfo.combineIdx
-                      //)
-                      ////combinePipeIn2PxReadFifo.io.pop.rdObj
-                      //combinePipeIn1ObjMemReadSyncArr
-                      tempInp.stage2.rdObj
-                      //tempInp.stage2.rdObjAffine
-                    )
-                    tempOutp.stage3.ext.bgRdSubLineMemEntry := (
-                      tempRdBg(bgSubLineMemArrElemIdx)
-                    )
-                    tempOutp.stage3.ext.objRdSubLineMemEntry := (
-                      tempRdObj(
-                        objSubLineMemArrElemIdx
-                        //objAffineSubLineMemArrElemIdx
-                      )
-                    )
-                    if (!noAffineObjs) {
-                      def tempRdObjAffine = (
-                        tempInp.stage2.rdObjAffine
-                      )
-                      tempOutp.stage3.ext.objAffineRdSubLineMemEntry := (
-                        tempRdObjAffine(
-                          //objSubLineMemArrElemIdx
-                          objAffineSubLineMemArrElemIdx
-                        )
-                      )
-                    }
-                    //--------
-                  //} otherwise {
-                  //  tempOutp.stage2.ext.bgRdSubLineMemEntry := (
-                  //    //tempOutp.stage2.ext.bgRdSubLineMemEntry.getZero
-                  //    RegNext(tempOutp.stage2.ext.bgRdSubLineMemEntry)
-                  //  )
-                  //  tempOutp.stage2.ext.objRdSubLineMemEntry := (
-                  //    //tempOutp.stage2.ext.objRdSubLineMemEntry.getZero
-                  //    RegNext(tempOutp.stage2.ext.objRdSubLineMemEntry)
-                  //  )
-                  //}
-                  // END: new code, for reading synchronously
-                  //--------
-                  // BEGIN: old-style code, for reading asynchronously
-                  //tempOutp.stage3.ext.bgRdSubLineMemEntry := (
-                  //  bgSubLineMemArr(jdx).readAsync(
-                  //    bgSubLineMemArrIdx
-                  //  )(bgSubLineMemArrElemIdx)
-                  //)
-                  //tempOutp.stage3.ext.objRdSubLineMemEntry := (
-                  //  objSubLineMemArr(jdx).readAsync(
-                  //    objSubLineMemArrIdx
-                  //  )(objSubLineMemArrElemIdx)
-                  //)
-                  // END: old-style code, for reading asynchronously
-                  //--------
-                }
-              }
-            }
-          }
-          //tempOut.stage0 := tempInp.stage0
-          //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
-        },
-        copyOnlyFunc=(
-          stageData: DualPipeStageData[Stream[CombinePipePayload]],
-          idx: Int,
-        ) => {
-          //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
-          //stageData.pipeOut(idx).stage1 := stageData.pipeIn(idx).stage1
-
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
-
-          when (clockDomain.isResetActive) {
-            tempOutp.stage3 := tempOutp.stage3.getZero
-          } otherwise {
-            //tempOutp.stage3 := tempInp.stage3
-            if (idx != 1) {
-              tempOutp.stage3 := tempInp.stage3
-            } else {
-              tempOutp.stage3 := (
-                combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage3
-              )
-            }
-          }
-        },
-      )
-      HandleDualPipe(
-        stageData=stageData.craft(4)
-      )(
-        pipeStageMainFunc=(
-          stageData: DualPipeStageData[Stream[CombinePipePayload]],
-          idx: Int,
-        ) => {
-          def tempInp = stageData.pipeIn(idx)
-          def tempOutp = stageData.pipeOut(idx)
-
-          def objRdSubLineMemEntry = (
-            tempInp.stage3.ext.objRdSubLineMemEntry
-          )
-          def objAffineRdSubLineMemEntry = (
-            tempInp.stage3.ext.objAffineRdSubLineMemEntry
-          )
-
-          if (noAffineObjs) {
-            tempOutp.objPickSubLineMemEntry := objRdSubLineMemEntry
-          } else {
-            switch (Cat(
-              objRdSubLineMemEntry.col.a,
-              objAffineRdSubLineMemEntry.col.a,
-              objRdSubLineMemEntry.prio < objAffineRdSubLineMemEntry.prio
-            )) {
-              //is (B"000") {
-              //  tempOutp.objPickSubLineMemEntry := (
-              //    objAffineRdSubLineMemEntry
-              //  )
-              //}
-              is (M"10-") {
-                tempOutp.objPickSubLineMemEntry := (
-                  objRdSubLineMemEntry
-                )
-              }
-              is (M"01-") {
-                tempOutp.objPickSubLineMemEntry := (
-                  objAffineRdSubLineMemEntry
-                )
-              }
-              is (M"110") {
-                tempOutp.objPickSubLineMemEntry := (
-                  objAffineRdSubLineMemEntry
-                )
-              }
-              is (M"111") {
-                tempOutp.objPickSubLineMemEntry := (
-                  objRdSubLineMemEntry
-                )
-              }
-              default {
-                tempOutp.objPickSubLineMemEntry := (
-                  objAffineRdSubLineMemEntry
-                )
-              }
-            }
-          }
-        },
-        copyOnlyFunc=(
-          stageData: DualPipeStageData[Stream[CombinePipePayload]],
-          idx: Int,
-        ) => {
-          def tempInp = stageData.pipeIn(idx)
-          def tempOutp = stageData.pipeOut(idx)
-
-          when (clockDomain.isResetActive) {
-            tempOutp.stage4 := tempOutp.stage4.getZero
-          } otherwise {
-            if (idx != 1) {
-              tempOutp.stage4 := tempInp.stage4
-            } else {
-              tempOutp.stage4 := (
-                combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage4
-              )
-            }
-          }
-        },
-      )
-      HandleDualPipe(
-        stageData=stageData.craft(
-          //2
-          //3
-          5
-          //wrBgObjPipeNumStages + 2
-        )
-      )(
-        pipeStageMainFunc=(
-          stageData: DualPipeStageData[Stream[CombinePipePayload]],
-          idx: Int,
-        ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
-
-          def inpExt = (
-            //tempInp.stage1.ext
-            tempInp.stage3.ext
-          )
-
-
-          //when (
-          //  tempInp.bgRdLineMemEntry.col.a
-          //  && tempInp.objRdLineMemEntry.col.a
-          //) {
-          //  when (
-          //    // sprites take priority upon a tie, hence `<=`
-          //    tempInp.objRdLineMemEntry.prio
-          //    <= tempInp.bgRdLineMemEntry.prio
-          //  ) {
-          //    tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
-          //  } otherwise {
-          //    tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
-          //  }
-          //} elsewhen (
-          //  tempInp.bgRdLineMemEntry.col.a
-          //) {
-          //  tempOutp.col := tempInp.bgRdLineMemEntry.col.rgb
-          //} elsewhen (
-          //  tempInp.objRdLineMemEntry.col.a
-          //) {
-          //  tempOutp.col := tempInp.objRdLineMemEntry.col.rgb
-          //} otherwise {
-          //  tempOutp.col := tempOutp.col.getZero
-          //}
-
-          // BEGIN: Debug comment this out
-          when (clockDomain.isResetActive) {
-            tempOutp.stage5 := tempOutp.stage5.getZero
-          } otherwise {
+          val tempCol = Rgb(tempRgbConfig)
+          tempCol := tempCol.getZero
+          tempCol.allowOverride
+          if (!noColorMath) {
             when (
-              tempInp.valid
+              tempCmathInfo.doIt
             ) {
-              //tempOutp.stage5.ext := (
-              //  rCombinePipeOut1Ext
-              //)
-              tempOutp.objHiPrio := (
-                // sprites take priority upon a tie, hence `<=`
-                //tempInp.objRdLineMemEntry.prio(
-                //  tempInp.bgRdLineMemEntry.prio.bitsRange
-                //) <= tempInp.bgRdLineMemEntry.prio
-
-                //tempInp.objRdLineMemEntry.prio
-                //<= tempInp.bgRdLineMemEntry.prio
-
-                //inpExt.objRdSubLineMemEntry.prio
-                //<= inpExt.bgRdSubLineMemEntry.prio
-                tempInp.objPickSubLineMemEntry.prio
-                <= inpExt.bgRdSubLineMemEntry.prio
-
-                //rCombinePipeOut1Ext.objRdLineMemEntry.prio
-                //<= rCombinePipeOut1Ext.bgRdLineMemEntry.prio
-              )
-            } otherwise {
-              tempOutp.stage5 := RegNext(tempOutp.stage5)
-            }
-          }
-          // END: Debug comment this out
-
-          // BEGIN: Debug test no sprites
-          //tempOutp.objHiPrio := False
-          // END: Debug test no sprites
-
-          //tempOut.stage0 := tempInp.stage0
-          //stageData.pipeOut(idx).stage0 := stageData.pipeIn(idx).stage0
-        },
-        copyOnlyFunc=(
-          stageData: DualPipeStageData[Stream[CombinePipePayload]],
-          idx: Int,
-        ) => {
-          //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
-          //stageData.pipeOut(idx).stage2 := stageData.pipeIn(idx).stage2
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
-
-          when (clockDomain.isResetActive) {
-            tempOutp.stage5 := tempOutp.stage5.getZero
-          } otherwise {
-            //tempOutp.stage5 := tempInp.stage5
-            if (idx != 1) {
-              tempOutp.stage5 := tempInp.stage5
-            } else {
-              tempOutp.stage5 := (
-                combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage5
-              )
-            }
-          }
-        },
-      )
-      HandleDualPipe(
-        stageData=stageData.craft(
-          //3
-          //4
-          6
-          //wrBgObjPipeNumStages + 3
-        )
-      )(
-        pipeStageMainFunc=(
-          stageData: DualPipeStageData[Stream[CombinePipePayload]],
-          idx: Int,
-        ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
-
-          def inpExt = (
-            //tempInp.stage1.ext
-            tempInp.stage3.ext
-          )
-
-          when (clockDomain.isResetActive) {
-            tempOutp.stage6 := tempOutp.stage6.getZero
-          } otherwise {
-            // BEGIN: Debug comment this out; later
-            if (!noColorMath) {
-              tempOutp.colorMathCol := (
-                inpExt.bgRdSubLineMemEntry.colorMathCol
-              )
-              tempOutp.colorMathCol.allowOverride
-            }
-            switch (Cat(
-              inpExt.bgRdSubLineMemEntry.col.a,
-              //inpExt.objRdSubLineMemEntry.col.a,
-              tempInp.objPickSubLineMemEntry.col.a,
-              tempInp.objHiPrio
-            )) {
-              is (B"111") {
-                //tempOutp.col := inpExt.objRdSubLineMemEntry.col
-                tempOutp.col := tempInp.objPickSubLineMemEntry.col
-                if (!noColorMath) {
-                  tempOutp.colorMathInfo := (
-                    //inpExt.objRdSubLineMemEntry.colorMathInfo
-                    tempInp.objPickSubLineMemEntry.colorMathInfo
+              switch (tempCmathInfo.kind.asBits) {
+                is (Gpu2dColorMathKind.add.asBits) {
+                  tempCol.r(params.rgbConfig.rWidth downto 0) := (
+                    inpWrLineMemEntry.col.rgb.r.resized
+                    + Cat(False, tempCmathCol.rgb.r).asUInt
+                  )
+                  tempCol.r(
+                    tempCol.r.high downto params.rgbConfig.rWidth + 1
+                  ) := 0
+                  tempCol.g(params.rgbConfig.gWidth downto 0) := (
+                    inpWrLineMemEntry.col.rgb.g.resized
+                    + Cat(False, tempCmathCol.rgb.g).asUInt
+                  )
+                  tempCol.g(
+                    tempCol.g.high downto params.rgbConfig.gWidth + 1
+                  ) := 0
+                  tempCol.b(params.rgbConfig.bWidth downto 0) := (
+                    inpWrLineMemEntry.col.rgb.b.resized
+                    + Cat(False, tempCmathCol.rgb.b).asUInt
+                  )
+                  tempCol.b(
+                    tempCol.b.high downto params.rgbConfig.bWidth + 1
+                  ) := 0
+                }
+                is (Gpu2dColorMathKind.sub.asBits) {
+                  tempCol.r := (
+                    inpWrLineMemEntry.col.rgb.r.resized
+                    - Cat(
+                      B(
+                        tempCol.r.getWidth - tempCmathCol.rgb.r.getWidth
+                          bits,
+                        default -> tempCmathCol.rgb.r.msb),
+                      tempCmathCol.rgb.r
+                    ).asUInt
+                  )
+                  tempCol.g := (
+                    inpWrLineMemEntry.col.rgb.g.resized
+                    - Cat(
+                      B(
+                        tempCol.g.getWidth - tempCmathCol.rgb.g.getWidth
+                          bits,
+                        default -> tempCmathCol.rgb.g.msb),
+                      tempCmathCol.rgb.g
+                    ).asUInt
+                  )
+                  tempCol.b := (
+                    inpWrLineMemEntry.col.rgb.b.resized
+                    - Cat(
+                      B(
+                        tempCol.b.getWidth - tempCmathCol.rgb.b.getWidth
+                          bits,
+                        default -> tempCmathCol.rgb.b.msb),
+                      tempCmathCol.rgb.b
+                    ).asUInt
                   )
                 }
-              }
-              is (B"110") {
-                tempOutp.col := inpExt.bgRdSubLineMemEntry.col
-                if (!noColorMath) {
-                  tempOutp.colorMathInfo := (
-                    inpExt.bgRdSubLineMemEntry.colorMathInfo
-                  )
-                }
-              }
-              is (M"10-") {
-                tempOutp.col := inpExt.bgRdSubLineMemEntry.col
-                if (!noColorMath) {
-                  tempOutp.colorMathInfo := (
-                    inpExt.bgRdSubLineMemEntry.colorMathInfo
-                  )
-                }
-              }
-              is (M"01-") {
-                //tempOutp.col := inpExt.objRdSubLineMemEntry.col
-                tempOutp.col := tempInp.objPickSubLineMemEntry.col
-                if (!noColorMath) {
-                  tempOutp.colorMathInfo := (
-                    //inpExt.objRdSubLineMemEntry.colorMathInfo
-                    tempInp.objPickSubLineMemEntry.colorMathInfo
-                  )
-                }
-              }
-              //is (M"00-")
-              default {
-                tempOutp.col := tempOutp.col.getZero
-                if (!noColorMath) {
-                  tempOutp.colorMathInfo := (
-                    tempOutp.colorMathInfo.getZero
-                  )
-                  tempOutp.colorMathCol := (
-                    tempOutp.colorMathCol.getZero
-                  )
-                }
-              }
-            }
-            // END: Debug comment this out; later
-            //tempOutp.col := inpExt.bgRdSubLineMemEntry.col.rgb
-            //tempOutp.col := inpExt.objRdSubLineMemEntry.col.rgb
-          }
-        },
-        copyOnlyFunc=(
-          stageData: DualPipeStageData[Stream[CombinePipePayload]],
-          idx: Int,
-        ) => {
-          //stageData.pipeOut(idx).stage3 := stageData.pipeIn(idx).stage3
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
-
-          when (clockDomain.isResetActive) {
-            tempOutp.stage6 := tempOutp.stage6.getZero
-          } otherwise {
-            //tempOutp.stage6 := tempInp.stage6
-            if (idx != 1) {
-              tempOutp.stage6 := tempInp.stage6
-            } else {
-              tempOutp.stage6 := (
-                combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage6
-              )
-            }
-          }
-        },
-      )
-      HandleDualPipe(
-        stageData=stageData.craft(
-          //4
-          //5
-          7
-          //wrBgObjPipeNumStages + 4
-        )
-      )(
-        pipeStageMainFunc=(
-          stageData: DualPipeStageData[Stream[CombinePipePayload]],
-          idx: Int,
-        ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
-
-          when (clockDomain.isResetActive) {
-            tempOutp.stage7 := tempOutp.stage7.getZero
-          } otherwise {
-            //if (inSim) {
-              tempOutp.stage7.combineWrLineMemEntry.addr := (
-                //tempInp.cnt
-                //tempInp.stage1.lineMemIdx
-                tempInp.cnt
-                (
-                  tempOutp.stage7.combineWrLineMemEntry.addr.bitsRange
-                )
-              )
-            //}
-            tempOutp.stage7.combineWrLineMemEntry.col := tempInp.col
-
-            //// not really necessary, but doing it anyway
-            //tempOutp.stage7.combineWrLineMemEntry.col.a := True
-            //tempOutp.stage7.combineWrLineMemEntry.col.a := 
-
-            tempOutp.stage7.combineWrLineMemEntry.prio := 0x0
-            if (!noColorMath) {
-              tempOutp.stage7.combineWrLineMemEntry.colorMathInfo := (
-                tempInp.colorMathInfo
-              )
-              tempOutp.stage7.combineWrLineMemEntry.colorMathCol := (
-                tempInp.colorMathCol
-              )
-            }
-          }
-        },
-        copyOnlyFunc=(
-          stageData: DualPipeStageData[Stream[CombinePipePayload]],
-          idx: Int,
-        ) => {
-          //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
-          //stageData.pipeOut(idx).stage4 := stageData.pipeIn(idx).stage4
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
-
-          when (clockDomain.isResetActive) {
-            tempOutp.stage7 := tempOutp.stage7.getZero
-          } otherwise {
-            //tempOutp.stage7 := tempInp.stage7
-            if (idx != 1) {
-              tempOutp.stage7 := tempInp.stage7
-            } else {
-              tempOutp.stage7 := (
-                combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage7
-              )
-            }
-          }
-        },
-      )
-      HandleDualPipe(
-        stageData=stageData.craft(
-          //4
-          //5
-          8
-          //wrBgObjPipeNumStages + 4
-        )
-      )(
-        pipeStageMainFunc=(
-          stageData: DualPipeStageData[Stream[CombinePipePayload]],
-          idx: Int,
-        ) => {
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
-
-          when (clockDomain.isResetActive) {
-            tempOutp.stage8 := tempOutp.stage8.getZero
-          } otherwise {
-            ////if (inSim) {
-            //  tempOutp.stage8.combineWrLineMemEntry.addr := (
-            //    //tempInp.cnt
-            //    //tempInp.stage1.lineMemIdx
-            //    tempInp.cnt
-            //    (
-            //      tempOutp.stage8.combineWrLineMemEntry.addr.bitsRange
-            //    )
-            //  )
-            ////}
-            //tempOutp.stage8.combineWrLineMemEntry.col := tempInp.col
-
-            ////// not really necessary, but doing it anyway
-            ////tempOutp.stage8.combineWrLineMemEntry.col.a := True
-            ////tempOutp.stage8.combineWrLineMemEntry.col.a := 
-
-            //tempOutp.stage8.combineWrLineMemEntry.prio := 0x0
-            //tempOutp.stage8.combineWrLineMemEntry.colorMathInfo := (
-            //  tempInp.colorMathInfo
-            //)
-            //tempOutp.stage8.combineWrLineMemEntry.colorMathCol := (
-            //  tempInp.colorMathCol
-            //)
-            val tempCmathInfo = (!noColorMath) generate (
-              tempInp.stage7.combineWrLineMemEntry.colorMathInfo
-            )
-            val tempCmathCol = (!noColorMath) generate (
-              tempInp.stage7.combineWrLineMemEntry.colorMathCol
-            )
-            def inpWrLineMemEntry = tempInp.stage7.combineWrLineMemEntry
-            def outpWrLineMemEntry = tempOutp.combineWrLineMemEntry
-            outpWrLineMemEntry := outpWrLineMemEntry.getZero
-            outpWrLineMemEntry.col.rgb.allowOverride
-            def extraWidth = 4
-            def tempRgbConfig = RgbConfig(
-              rWidth=params.rgbConfig.rWidth + extraWidth,
-              gWidth=params.rgbConfig.gWidth + extraWidth,
-              bWidth=params.rgbConfig.bWidth + extraWidth,
-            )
-            val tempCol = Rgb(tempRgbConfig)
-            tempCol := tempCol.getZero
-            tempCol.allowOverride
-            if (!noColorMath) {
-              when (
-                tempCmathInfo.doIt
-              ) {
-                switch (tempCmathInfo.kind.asBits) {
-                  is (Gpu2dColorMathKind.add.asBits) {
-                    tempCol.r(params.rgbConfig.rWidth downto 0) := (
+                is (Gpu2dColorMathKind.avg.asBits) {
+                  tempCol.r(params.rgbConfig.rWidth - 1 downto 0) := (
+                    (
                       inpWrLineMemEntry.col.rgb.r.resized
                       + Cat(False, tempCmathCol.rgb.r).asUInt
-                    )
-                    tempCol.r(
-                      tempCol.r.high downto params.rgbConfig.rWidth + 1
-                    ) := 0
-                    tempCol.g(params.rgbConfig.gWidth downto 0) := (
+                    ) >> 1
+                  ).resized
+                  tempCol.r(
+                    tempCol.r.high downto params.rgbConfig.rWidth
+                  ) := 0
+                  tempCol.g(params.rgbConfig.gWidth - 1 downto 0) := (
+                    (
                       inpWrLineMemEntry.col.rgb.g.resized
                       + Cat(False, tempCmathCol.rgb.g).asUInt
-                    )
-                    tempCol.g(
-                      tempCol.g.high downto params.rgbConfig.gWidth + 1
-                    ) := 0
-                    tempCol.b(params.rgbConfig.bWidth downto 0) := (
+                    ) >> 1
+                  ).resized
+                  tempCol.g(
+                    tempCol.g.high downto params.rgbConfig.gWidth
+                  ) := 0
+                  tempCol.b(params.rgbConfig.bWidth - 1 downto 0) := (
+                    (
                       inpWrLineMemEntry.col.rgb.b.resized
                       + Cat(False, tempCmathCol.rgb.b).asUInt
-                    )
-                    tempCol.b(
-                      tempCol.b.high downto params.rgbConfig.bWidth + 1
-                    ) := 0
-                  }
-                  is (Gpu2dColorMathKind.sub.asBits) {
-                    tempCol.r := (
-                      inpWrLineMemEntry.col.rgb.r.resized
-                      - Cat(
-                        B(
-                          tempCol.r.getWidth - tempCmathCol.rgb.r.getWidth
-                            bits,
-                          default -> tempCmathCol.rgb.r.msb),
-                        tempCmathCol.rgb.r
-                      ).asUInt
-                    )
-                    tempCol.g := (
-                      inpWrLineMemEntry.col.rgb.g.resized
-                      - Cat(
-                        B(
-                          tempCol.g.getWidth - tempCmathCol.rgb.g.getWidth
-                            bits,
-                          default -> tempCmathCol.rgb.g.msb),
-                        tempCmathCol.rgb.g
-                      ).asUInt
-                    )
-                    tempCol.b := (
-                      inpWrLineMemEntry.col.rgb.b.resized
-                      - Cat(
-                        B(
-                          tempCol.b.getWidth - tempCmathCol.rgb.b.getWidth
-                            bits,
-                          default -> tempCmathCol.rgb.b.msb),
-                        tempCmathCol.rgb.b
-                      ).asUInt
-                    )
-                  }
-                  is (Gpu2dColorMathKind.avg.asBits) {
-                    tempCol.r(params.rgbConfig.rWidth - 1 downto 0) := (
-                      (
-                        inpWrLineMemEntry.col.rgb.r.resized
-                        + Cat(False, tempCmathCol.rgb.r).asUInt
-                      ) >> 1
-                    ).resized
-                    tempCol.r(
-                      tempCol.r.high downto params.rgbConfig.rWidth
-                    ) := 0
-                    tempCol.g(params.rgbConfig.gWidth - 1 downto 0) := (
-                      (
-                        inpWrLineMemEntry.col.rgb.g.resized
-                        + Cat(False, tempCmathCol.rgb.g).asUInt
-                      ) >> 1
-                    ).resized
-                    tempCol.g(
-                      tempCol.g.high downto params.rgbConfig.gWidth
-                    ) := 0
-                    tempCol.b(params.rgbConfig.bWidth - 1 downto 0) := (
-                      (
-                        inpWrLineMemEntry.col.rgb.b.resized
-                        + Cat(False, tempCmathCol.rgb.b).asUInt
-                      ) >> 1
-                    ).resized
-                    tempCol.b(
-                      tempCol.b.high downto params.rgbConfig.bWidth
-                    ) := 0
-                    //tempCol.r := (
-                    //  (
-                    //    inpWrLineMemEntry.col.rgb.r + tempCmathCol.rgb.r
-                    //  ) >> 1
-                    //).resized
-                    //tempCol.g := (
-                    //  (
-                    //    inpWrLineMemEntry.col.rgb.g + tempCmathCol.rgb.g
-                    //  ) >> 1
-                    //).resized
-                    //tempCol.b := (
-                    //  (
-                    //    inpWrLineMemEntry.col.rgb.b + tempCmathCol.rgb.b
-                    //  ) >> 1
-                    //).resized
-                  }
+                    ) >> 1
+                  ).resized
+                  tempCol.b(
+                    tempCol.b.high downto params.rgbConfig.bWidth
+                  ) := 0
+                  //tempCol.r := (
+                  //  (
+                  //    inpWrLineMemEntry.col.rgb.r + tempCmathCol.rgb.r
+                  //  ) >> 1
+                  //).resized
+                  //tempCol.g := (
+                  //  (
+                  //    inpWrLineMemEntry.col.rgb.g + tempCmathCol.rgb.g
+                  //  ) >> 1
+                  //).resized
+                  //tempCol.b := (
+                  //  (
+                  //    inpWrLineMemEntry.col.rgb.b + tempCmathCol.rgb.b
+                  //  ) >> 1
+                  //).resized
                 }
-
-                when (
-                  tempCol.r.asSInt >= (1 << params.rgbConfig.rWidth) - 1
-                ) {
-                  outpWrLineMemEntry.col.rgb.r := (default -> True)
-                } elsewhen (tempCol.r.asSInt < 0) {
-                  outpWrLineMemEntry.col.rgb.r := (default -> False)
-                } otherwise {
-                  outpWrLineMemEntry.col.rgb.r := tempCol.r(
-                    outpWrLineMemEntry.col.rgb.r.bitsRange
-                  )
-                }
-                when (
-                  tempCol.g.asSInt >= (1 << params.rgbConfig.gWidth) - 1
-                ) {
-                  outpWrLineMemEntry.col.rgb.g := (default -> True)
-                } elsewhen (tempCol.g.asSInt < 0) {
-                  outpWrLineMemEntry.col.rgb.g := (default -> False)
-                } otherwise {
-                  outpWrLineMemEntry.col.rgb.g := tempCol.g(
-                    outpWrLineMemEntry.col.rgb.g.bitsRange
-                  )
-                }
-                when (
-                  tempCol.b.asSInt >= (1 << params.rgbConfig.bWidth) - 1
-                ) {
-                  outpWrLineMemEntry.col.rgb.b := (default -> True)
-                } elsewhen (tempCol.b.asSInt < 0) {
-                  outpWrLineMemEntry.col.rgb.b := (default -> False)
-                } otherwise {
-                  outpWrLineMemEntry.col.rgb.b := tempCol.b(
-                    outpWrLineMemEntry.col.rgb.b.bitsRange
-                  )
-                }
-              } otherwise {
-                //tempCol := tempCol.getZero
-                outpWrLineMemEntry := inpWrLineMemEntry
               }
-            } else { // if (noColorMath)
-              outpWrLineMemEntry.col.rgb := inpWrLineMemEntry.col.rgb
-            }
-          }
-        },
-        copyOnlyFunc=(
-          stageData: DualPipeStageData[Stream[CombinePipePayload]],
-          idx: Int,
-        ) => {
-          //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
-          //stageData.pipeOut(idx).stage4 := stageData.pipeIn(idx).stage4
-          val tempInp = stageData.pipeIn(idx)
-          val tempOutp = stageData.pipeOut(idx)
 
-          when (clockDomain.isResetActive) {
-            tempOutp.stage8 := tempOutp.stage8.getZero
-          } otherwise {
-            //tempOutp.stage8 := tempInp.stage8
-            if (idx != 1) {
-              tempOutp.stage8 := tempInp.stage8
-            } else {
-              tempOutp.stage8 := (
-                combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage8
-              )
+              when (
+                tempCol.r.asSInt >= (1 << params.rgbConfig.rWidth) - 1
+              ) {
+                outpWrLineMemEntry.col.rgb.r := (default -> True)
+              } elsewhen (tempCol.r.asSInt < 0) {
+                outpWrLineMemEntry.col.rgb.r := (default -> False)
+              } otherwise {
+                outpWrLineMemEntry.col.rgb.r := tempCol.r(
+                  outpWrLineMemEntry.col.rgb.r.bitsRange
+                )
+              }
+              when (
+                tempCol.g.asSInt >= (1 << params.rgbConfig.gWidth) - 1
+              ) {
+                outpWrLineMemEntry.col.rgb.g := (default -> True)
+              } elsewhen (tempCol.g.asSInt < 0) {
+                outpWrLineMemEntry.col.rgb.g := (default -> False)
+              } otherwise {
+                outpWrLineMemEntry.col.rgb.g := tempCol.g(
+                  outpWrLineMemEntry.col.rgb.g.bitsRange
+                )
+              }
+              when (
+                tempCol.b.asSInt >= (1 << params.rgbConfig.bWidth) - 1
+              ) {
+                outpWrLineMemEntry.col.rgb.b := (default -> True)
+              } elsewhen (tempCol.b.asSInt < 0) {
+                outpWrLineMemEntry.col.rgb.b := (default -> False)
+              } otherwise {
+                outpWrLineMemEntry.col.rgb.b := tempCol.b(
+                  outpWrLineMemEntry.col.rgb.b.bitsRange
+                )
+              }
+            } otherwise {
+              //tempCol := tempCol.getZero
+              outpWrLineMemEntry := inpWrLineMemEntry
             }
+          } else { // if (noColorMath)
+            outpWrLineMemEntry.col.rgb := inpWrLineMemEntry.col.rgb
           }
-        },
-      )
+        }
+      }
+      //HandleDualPipe(
+      //  stageData=stageData.craft(
+      //    //4
+      //    //5
+      //    8
+      //    //wrBgObjPipeNumStages + 4
+      //  )
+      //)(
+      //  pipeStageMainFunc=(
+      //    stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+
+      //    when (clockDomain.isResetActive) {
+      //      tempOutp.stage8 := tempOutp.stage8.getZero
+      //    } otherwise {
+      //      ////if (inSim) {
+      //      //  tempOutp.stage8.combineWrLineMemEntry.addr := (
+      //      //    //tempInp.cnt
+      //      //    //tempInp.stage1.lineMemIdx
+      //      //    tempInp.cnt
+      //      //    (
+      //      //      tempOutp.stage8.combineWrLineMemEntry.addr.bitsRange
+      //      //    )
+      //      //  )
+      //      ////}
+      //      //tempOutp.stage8.combineWrLineMemEntry.col := tempInp.col
+
+      //      ////// not really necessary, but doing it anyway
+      //      ////tempOutp.stage8.combineWrLineMemEntry.col.a := True
+      //      ////tempOutp.stage8.combineWrLineMemEntry.col.a := 
+
+      //      //tempOutp.stage8.combineWrLineMemEntry.prio := 0x0
+      //      //tempOutp.stage8.combineWrLineMemEntry.colorMathInfo := (
+      //      //  tempInp.colorMathInfo
+      //      //)
+      //      //tempOutp.stage8.combineWrLineMemEntry.colorMathCol := (
+      //      //  tempInp.colorMathCol
+      //      //)
+      //      val tempCmathInfo = (!noColorMath) generate (
+      //        tempInp.stage7.combineWrLineMemEntry.colorMathInfo
+      //      )
+      //      val tempCmathCol = (!noColorMath) generate (
+      //        tempInp.stage7.combineWrLineMemEntry.colorMathCol
+      //      )
+      //      def inpWrLineMemEntry = tempInp.stage7.combineWrLineMemEntry
+      //      def outpWrLineMemEntry = tempOutp.combineWrLineMemEntry
+      //      outpWrLineMemEntry := outpWrLineMemEntry.getZero
+      //      outpWrLineMemEntry.col.rgb.allowOverride
+      //      def extraWidth = 4
+      //      def tempRgbConfig = RgbConfig(
+      //        rWidth=params.rgbConfig.rWidth + extraWidth,
+      //        gWidth=params.rgbConfig.gWidth + extraWidth,
+      //        bWidth=params.rgbConfig.bWidth + extraWidth,
+      //      )
+      //      val tempCol = Rgb(tempRgbConfig)
+      //      tempCol := tempCol.getZero
+      //      tempCol.allowOverride
+      //      if (!noColorMath) {
+      //        when (
+      //          tempCmathInfo.doIt
+      //        ) {
+      //          switch (tempCmathInfo.kind.asBits) {
+      //            is (Gpu2dColorMathKind.add.asBits) {
+      //              tempCol.r(params.rgbConfig.rWidth downto 0) := (
+      //                inpWrLineMemEntry.col.rgb.r.resized
+      //                + Cat(False, tempCmathCol.rgb.r).asUInt
+      //              )
+      //              tempCol.r(
+      //                tempCol.r.high downto params.rgbConfig.rWidth + 1
+      //              ) := 0
+      //              tempCol.g(params.rgbConfig.gWidth downto 0) := (
+      //                inpWrLineMemEntry.col.rgb.g.resized
+      //                + Cat(False, tempCmathCol.rgb.g).asUInt
+      //              )
+      //              tempCol.g(
+      //                tempCol.g.high downto params.rgbConfig.gWidth + 1
+      //              ) := 0
+      //              tempCol.b(params.rgbConfig.bWidth downto 0) := (
+      //                inpWrLineMemEntry.col.rgb.b.resized
+      //                + Cat(False, tempCmathCol.rgb.b).asUInt
+      //              )
+      //              tempCol.b(
+      //                tempCol.b.high downto params.rgbConfig.bWidth + 1
+      //              ) := 0
+      //            }
+      //            is (Gpu2dColorMathKind.sub.asBits) {
+      //              tempCol.r := (
+      //                inpWrLineMemEntry.col.rgb.r.resized
+      //                - Cat(
+      //                  B(
+      //                    tempCol.r.getWidth - tempCmathCol.rgb.r.getWidth
+      //                      bits,
+      //                    default -> tempCmathCol.rgb.r.msb),
+      //                  tempCmathCol.rgb.r
+      //                ).asUInt
+      //              )
+      //              tempCol.g := (
+      //                inpWrLineMemEntry.col.rgb.g.resized
+      //                - Cat(
+      //                  B(
+      //                    tempCol.g.getWidth - tempCmathCol.rgb.g.getWidth
+      //                      bits,
+      //                    default -> tempCmathCol.rgb.g.msb),
+      //                  tempCmathCol.rgb.g
+      //                ).asUInt
+      //              )
+      //              tempCol.b := (
+      //                inpWrLineMemEntry.col.rgb.b.resized
+      //                - Cat(
+      //                  B(
+      //                    tempCol.b.getWidth - tempCmathCol.rgb.b.getWidth
+      //                      bits,
+      //                    default -> tempCmathCol.rgb.b.msb),
+      //                  tempCmathCol.rgb.b
+      //                ).asUInt
+      //              )
+      //            }
+      //            is (Gpu2dColorMathKind.avg.asBits) {
+      //              tempCol.r(params.rgbConfig.rWidth - 1 downto 0) := (
+      //                (
+      //                  inpWrLineMemEntry.col.rgb.r.resized
+      //                  + Cat(False, tempCmathCol.rgb.r).asUInt
+      //                ) >> 1
+      //              ).resized
+      //              tempCol.r(
+      //                tempCol.r.high downto params.rgbConfig.rWidth
+      //              ) := 0
+      //              tempCol.g(params.rgbConfig.gWidth - 1 downto 0) := (
+      //                (
+      //                  inpWrLineMemEntry.col.rgb.g.resized
+      //                  + Cat(False, tempCmathCol.rgb.g).asUInt
+      //                ) >> 1
+      //              ).resized
+      //              tempCol.g(
+      //                tempCol.g.high downto params.rgbConfig.gWidth
+      //              ) := 0
+      //              tempCol.b(params.rgbConfig.bWidth - 1 downto 0) := (
+      //                (
+      //                  inpWrLineMemEntry.col.rgb.b.resized
+      //                  + Cat(False, tempCmathCol.rgb.b).asUInt
+      //                ) >> 1
+      //              ).resized
+      //              tempCol.b(
+      //                tempCol.b.high downto params.rgbConfig.bWidth
+      //              ) := 0
+      //              //tempCol.r := (
+      //              //  (
+      //              //    inpWrLineMemEntry.col.rgb.r + tempCmathCol.rgb.r
+      //              //  ) >> 1
+      //              //).resized
+      //              //tempCol.g := (
+      //              //  (
+      //              //    inpWrLineMemEntry.col.rgb.g + tempCmathCol.rgb.g
+      //              //  ) >> 1
+      //              //).resized
+      //              //tempCol.b := (
+      //              //  (
+      //              //    inpWrLineMemEntry.col.rgb.b + tempCmathCol.rgb.b
+      //              //  ) >> 1
+      //              //).resized
+      //            }
+      //          }
+
+      //          when (
+      //            tempCol.r.asSInt >= (1 << params.rgbConfig.rWidth) - 1
+      //          ) {
+      //            outpWrLineMemEntry.col.rgb.r := (default -> True)
+      //          } elsewhen (tempCol.r.asSInt < 0) {
+      //            outpWrLineMemEntry.col.rgb.r := (default -> False)
+      //          } otherwise {
+      //            outpWrLineMemEntry.col.rgb.r := tempCol.r(
+      //              outpWrLineMemEntry.col.rgb.r.bitsRange
+      //            )
+      //          }
+      //          when (
+      //            tempCol.g.asSInt >= (1 << params.rgbConfig.gWidth) - 1
+      //          ) {
+      //            outpWrLineMemEntry.col.rgb.g := (default -> True)
+      //          } elsewhen (tempCol.g.asSInt < 0) {
+      //            outpWrLineMemEntry.col.rgb.g := (default -> False)
+      //          } otherwise {
+      //            outpWrLineMemEntry.col.rgb.g := tempCol.g(
+      //              outpWrLineMemEntry.col.rgb.g.bitsRange
+      //            )
+      //          }
+      //          when (
+      //            tempCol.b.asSInt >= (1 << params.rgbConfig.bWidth) - 1
+      //          ) {
+      //            outpWrLineMemEntry.col.rgb.b := (default -> True)
+      //          } elsewhen (tempCol.b.asSInt < 0) {
+      //            outpWrLineMemEntry.col.rgb.b := (default -> False)
+      //          } otherwise {
+      //            outpWrLineMemEntry.col.rgb.b := tempCol.b(
+      //              outpWrLineMemEntry.col.rgb.b.bitsRange
+      //            )
+      //          }
+      //        } otherwise {
+      //          //tempCol := tempCol.getZero
+      //          outpWrLineMemEntry := inpWrLineMemEntry
+      //        }
+      //      } else { // if (noColorMath)
+      //        outpWrLineMemEntry.col.rgb := inpWrLineMemEntry.col.rgb
+      //      }
+      //    }
+      //  },
+      //  copyOnlyFunc=(
+      //    stageData: DualPipeStageData[Stream[CombinePipePayload]],
+      //    idx: Int,
+      //  ) => {
+      //    //stageData.pipeOut(idx).cnt := stageData.pipeIn(idx).cnt
+      //    //stageData.pipeOut(idx).stage4 := stageData.pipeIn(idx).stage4
+      //    val tempInp = stageData.pipeIn(idx)
+      //    val tempOutp = stageData.pipeOut(idx)
+
+      //    when (clockDomain.isResetActive) {
+      //      tempOutp.stage8 := tempOutp.stage8.getZero
+      //    } otherwise {
+      //      //tempOutp.stage8 := tempInp.stage8
+      //      if (idx != 1) {
+      //        tempOutp.stage8 := tempInp.stage8
+      //      } else {
+      //        tempOutp.stage8 := (
+      //          combineBgObjRdPipeJoin.io.pipeOut.payload(0).stage8
+      //        )
+      //      }
+      //    }
+      //  },
+      //)
 
       when (
-        combinePipeLast.fire
+        nCombinePipeLast.isFiring
         //combinePipeOut.last.fire
       ) {
         def tempObjArrIdx = params.getObjSubLineMemArrIdx(
