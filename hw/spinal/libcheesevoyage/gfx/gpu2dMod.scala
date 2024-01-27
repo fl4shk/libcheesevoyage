@@ -6146,8 +6146,8 @@ case class Gpu2d(
       //prevLineMemArrIdx: UInt,
     ): CombinePipePayload = {
       val ret = CombinePipePayload()
-      ret := ret.getZero
-      ret.allowOverride
+      //ret := ret.getZero
+      //ret.allowOverride
       ret.changingRow := changingRow
       ////ret.rdLineMemArrIdx := rCombineRdLineMemArrIdx
       ////ret.wrLineMemArrIdx := rCombineWrLineMemArrIdx
