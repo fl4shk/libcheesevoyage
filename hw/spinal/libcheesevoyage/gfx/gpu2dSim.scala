@@ -3,6 +3,7 @@ import libcheesevoyage._
 
 import libcheesevoyage.general.Vec2
 import libcheesevoyage.general.ElabVec2
+import libcheesevoyage.hwdev.SnesCtrlIo
 
 import spinal.core._
 //import spinal.core.formal._
@@ -22,6 +23,7 @@ case class Gpu2dSimDut(
   ctrlFifoDepth: Int,
 ) extends Component {
   val io = new Bundle {
+    val snesCtrl = SnesCtrlIo()
     //val phys = out(LcvVgaPhys(rgbConfig=physRgbConfig))
     val phys = out(LcvVgaPhys(rgbConfig=rgbConfig))
     val misc = out(LcvVgaCtrlMiscIo(
@@ -59,8 +61,10 @@ case class Gpu2dSimDut(
     inSim=true,
   )
   val gpu2dTest = Gpu2dTest(
+    clkRate=clkRate,
     params=gpu2dParams,
   )
+  io.snesCtrl <> gpu2dTest.io.snesCtrl
 
   val ctrlIo = vgaCtrl.io
   //val dithIo = vidDith.io

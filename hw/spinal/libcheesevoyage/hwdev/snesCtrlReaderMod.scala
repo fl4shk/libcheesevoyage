@@ -58,6 +58,84 @@ case class SnesCtrlIo() extends Bundle {
   val outpLatch = out Bool()
   val inpData = in Bool()
 }
+case class SnesCtrlReaderHelperIo(
+  //clkRate: HertzNumber,
+) extends Bundle {
+  val snesCtrl = SnesCtrlIo()
+  val pop = master Stream(UInt(SnesButtons.rawButtonsWidth bits))
+}
+case class SnesCtrlReaderHelper(
+  //snesCtrlReader: SnesCtrlReader,
+  clkRate: HertzNumber,
+) extends Component {
+  //--------
+  def clkTime = 16.67 ms
+  val io = SnesCtrlReaderHelperIo()
+  //--------
+  val snesCtrlReader = SnesCtrlReader(clkRate=clkRate)
+
+  val rSnesCtrlReaderPopReady = Reg(Bool()) init(False)
+  //rSnesCtrlReaderPopReady.addAttribute("MARK_DEBUG", "TRUE")
+  snesCtrlReader.io.pop.ready := rSnesCtrlReaderPopReady
+  io.snesCtrl <> snesCtrlReader.io.snesCtrl
+
+  val rSnesCntPopReady = Reg(ClkCnt(
+    clkRate=clkRate,
+    time=(
+      clkTime
+    ),
+  ))
+  rSnesCntPopReady.init(rSnesCntPopReady.getZero)
+  //when (io.pop.fire) {
+  //}
+  object State extends SpinalEnum(defaultEncoding=binarySequential) {
+    val
+      waitCtrlReader,
+      waitIoPop
+      = newElement();
+  }
+  val rState = Reg(State()) init(State.waitCtrlReader)
+  val rPopPayload = Reg(UInt(SnesButtons.rawButtonsWidth bits)) init(0x0)
+  val rPopValid = Reg(Bool()) init(False)
+  io.pop.payload := rPopPayload
+  io.pop.valid := rPopValid
+  switch (rState) {
+    is (State.waitCtrlReader) {
+      when (snesCtrlReader.io.pop.valid) {
+        rSnesCntPopReady.incr()
+        when (rSnesCntPopReady.overflowPipe(0)) {
+          rSnesCtrlReaderPopReady := True
+        }
+        //rLedArr(0) := !snesCtrlReader.io.pop.payload(SnesButtons.B)
+        //rLedArr(1) := !snesCtrlReader.io.pop.payload(SnesButtons.Y)
+        //rLedArr(2) := !snesCtrlReader.io.pop.payload(SnesButtons.A)
+        //rLedArr(3) := !snesCtrlReader.io.pop.payload(SnesButtons.X)
+
+        //rLedRgb(0) := !snesCtrlReader.io.pop.payload(SnesButtons.L)
+        //rLedRgb(1) := !snesCtrlReader.io.pop.payload(SnesButtons.R)
+        //rLedRgb(2) := !snesCtrlReader.io.pop.payload(SnesButtons.Start)
+        //rLedRgb(3) := !snesCtrlReader.io.pop.payload(SnesButtons.Select)
+        //io.buttons.payload
+        //io.pop.payload := ~snesCtrlReader.io.pop.payload
+        rPopPayload := snesCtrlReader.io.pop.payload
+      }
+      when (snesCtrlReader.io.pop.fire) {
+        rSnesCtrlReaderPopReady := False
+        //io.pop.valid := True
+        rPopValid := True
+        rState := State.waitIoPop
+      }
+    }
+    is (State.waitIoPop) {
+      when (io.pop.fire) {
+        rPopValid := False
+        rState := State.waitCtrlReader
+      }
+    }
+  }
+
+  //def
+}
 object SnesButtons {
   val B = 0
   val Y = 1
