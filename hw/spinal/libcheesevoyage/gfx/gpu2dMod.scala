@@ -585,8 +585,8 @@ case class Gpu2dParams(
     //    objTileWidthRshift
     //  }
     //)
-    //+ objTileWidthRshift
-    + objSliceTileWidthPow
+    + objTileWidthRshift
+    //+ objSliceTileWidthPow
     + 1 // to account for the rendering grid
   )
   def objAttrsMemIdxTileCntWidth = (
@@ -605,8 +605,8 @@ case class Gpu2dParams(
     //    objAffineTileWidthRshift
     //  }
     //)
-    //+ objAffineTileWidthRshift
-    + objAffineSliceTileWidthPow
+    + objAffineTileWidthRshift
+    //+ objAffineSliceTileWidthPow // old thing
     + 1 // to account for double size rendering
     + 1 // to account for the rendering grid
   )
@@ -10531,7 +10531,7 @@ case class Gpu2d(
                     //params.objAffineTileSize2d.x / 2
                     params.objAffineTileSize2d.x
                   )
-                  def tempWidth = tileX.getWidth + 1
+                  def tempWidth = tileX.getWidth + 1 + 1
                   S(f"$tempWidth'd$tempTileWidth")
                 }
               ) * tempInp.objAttrs.affine.matA
@@ -10564,7 +10564,7 @@ case class Gpu2d(
                     //params.objAffineTileSize2d.x / 2
                     params.objAffineTileSize2d.x
                   )
-                  def tempWidth = tileX.getWidth + 1
+                  def tempWidth = tileX.getWidth + 1 + 1
                   S(f"$tempWidth'd$tempTileWidth")
                 }
               ) * tempInp.objAttrs.affine.matC
@@ -13465,6 +13465,7 @@ case class Gpu2d(
                   tempInp.affineObjXStart().high - 1 downto 0
                   //downto tempInp.affineObjXStart().high
                 )
+                //tempInp.affineObjXStart()(
               }
             )
               .setName{
@@ -13803,9 +13804,15 @@ case class Gpu2d(
               //  )
               //)
               //True
+              //tempInp.stage13.inMainVec(
+              //  (x + tempInp.affineObjXStart())(
+              //    params.objAffineTileSize2dPow.x - 1 downto 0
+              //  )
+              //)
               tempInp.stage13.inMainVec(
                 (x + tempInp.affineObjXStart())(
                   params.objAffineTileSize2dPow.x - 1 downto 0
+                  //params.objAffineTileWidthRshift - 1 downto 0
                 )
               )
             }
@@ -14369,7 +14376,11 @@ case class Gpu2d(
           // END: debug comment this out; later
           //--------
         }
-        for (x <- 0 until tempInp.tempObjTileWidth()) {
+        for (
+          x <- 0
+          until tempInp.tempObjTileWidth()
+          //until tempInp.tempObjTileWidth1()
+        ) {
           //tempFunc(someX=x)
           myMainFunc(
             x=x,

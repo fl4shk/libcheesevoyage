@@ -24,11 +24,11 @@ object Gpu2dSimDutConfig {
   )
 }
 object Gpu2dSimDutParams {
+  //def clkRate = 150.0 MHz
   def clkRate = 125.0 MHz
   //def clkRate = 50.0 MHz
   //def clkRate = 75.0 MHz
   //def clkRate = 100.0 MHz
-  //def clkRate = 150.0 MHz
   //def clkRate = 100.7 MHz
   //def clkRate = 200.0 MHz
   //def clkRate = 25.0 MHz
@@ -45,41 +45,43 @@ object Gpu2dSimDutParams {
   def rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
   ////def rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
   //def physRgbConfig = LcvVideoDithererIo.outRgbConfig(rgbConfig=rgbConfig)
-  //def vgaTimingInfo = LcvVgaTimingInfoMap.map("640x480@60")
-  def vgaTimingInfo=LcvVgaTimingInfo(
-    pixelClk=pixelClk,
-    //pixelClk=25.175 MHz,
-    htiming=LcvVgaTimingHv(
-      //visib=1 << 6,
-      //visib=64,
-      //visib=1 << 7,
-      visib=320,
-      //visib=1 << 8,
-      //visib=4,
-      //visib=8,
-      //front=1,
-      //sync=1,
-      //back=1,
-      front=4,
-      sync=4,
-      back=4,
-    ),
-    vtiming=LcvVgaTimingHv(
-      //visib=1 << 5,
-      //visib=1 << 3,
-      //visib=1 << 4,
-      //visib=1 << 7,
-      visib=240,
-      //visib=4,
-      //visib=8,
-      //front=1,
-      //sync=1,
-      //back=1,
-      front=4,
-      sync=4,
-      back=4,
-    ),
-  )
+  def vgaTimingInfo = LcvVgaTimingInfoMap.map("640x480@60")
+  //def vgaTimingInfo=LcvVgaTimingInfo(
+  //  pixelClk=pixelClk,
+  //  //pixelClk=25.175 MHz,
+  //  htiming=LcvVgaTimingHv(
+  //    //visib=1 << 6,
+  //    //visib=64,
+  //    //visib=1 << 7,
+  //    //visib=320,
+  //    visib=640,
+  //    //visib=1 << 8,
+  //    //visib=4,
+  //    //visib=8,
+  //    //front=1,
+  //    //sync=1,
+  //    //back=1,
+  //    front=4,
+  //    sync=4,
+  //    back=4,
+  //  ),
+  //  vtiming=LcvVgaTimingHv(
+  //    //visib=1 << 5,
+  //    //visib=1 << 3,
+  //    //visib=1 << 4,
+  //    //visib=1 << 7,
+  //    //visib=240,
+  //    visib=480,
+  //    //visib=4,
+  //    //visib=8,
+  //    //front=1,
+  //    //sync=1,
+  //    //back=1,
+  //    front=4,
+  //    sync=4,
+  //    back=4,
+  //  ),
+  //)
 
   def fbSize2d = vgaTimingInfo.fbSize2d
   //def gpu2dParams = DefaultGpu2dParams(
@@ -197,19 +199,6 @@ object Gpu2dSimDutParams {
     //),
     bgTileSize2dPow=gpu2dBgTileSize2dPow,
     objTileSize2dPow=ElabVec2[Int](
-      x=log2Up(8),
-      y=log2Up(8),
-      //x=log2Up(4),
-      //y=log2Up(4),
-      //x=log2Up(2),
-      //y=log2Up(2),
-    ),
-    objTileWidthRshift=(
-      0
-      //1
-    ),
-    //objTileWidthRshift=1,
-    objAffineTileSize2dPow=ElabVec2[Int](
       x=log2Up(16),
       y=log2Up(16),
       //x=log2Up(8),
@@ -219,9 +208,32 @@ object Gpu2dSimDutParams {
       //x=log2Up(2),
       //y=log2Up(2),
     ),
+    objTileWidthRshift=(
+      //0
+      //1
+      2
+    ),
+    //objTileWidthRshift=1,
+    objAffineTileSize2dPow=ElabVec2[Int](
+      x=log2Up(64),
+      y=log2Up(64),
+      //x=log2Up(32),
+      //y=log2Up(32),
+      ///x=log2Up(16),
+      ///y=log2Up(16),
+      //x=log2Up(8),
+      //y=log2Up(8),
+      //x=log2Up(4),
+      //y=log2Up(4),
+      //x=log2Up(2),
+      //y=log2Up(2),
+    ),
     objAffineTileWidthRshift=(
       //0
-      1
+      //1
+      //2
+      //3
+      4
     ),
     //numBgsPow=log2Up(4),
     numBgsPow=log2Up(2),
@@ -233,10 +245,14 @@ object Gpu2dSimDutParams {
     //numObjsPow=log2Up(2),
     //numObjsPow=log2Up(4),
     //numObjsPow=log2Up(8),
-    numObjsPow=log2Up(16),
-    numObjsAffinePow=(
+    numObjsPow=(
       //log2Up(16)
-      log2Up(4)
+      log2Up(128)
+    ),
+    numObjsAffinePow=(
+      log2Up(16)
+      //log2Up(4)
+      //log2Up(32)
     ),
     //numBgTilesPow=Some(log2Up(256)),
     //numBgTilesPow=Some(log2Up(2)),
@@ -252,14 +268,23 @@ object Gpu2dSimDutParams {
       )
     ),
     //numObjTilesPow=None,
-    numObjTiles=Some(16),
-    numObjAffineTiles=Some(16),
+    numObjTiles=(
+      Some(16)
+    ),
+    numObjAffineTiles=(
+      Some(16)
+      //Some(32)
+    ),
     numColsInBgPalPow=log2Up(64),
     numColsInObjPalPow=log2Up(64),
-    noColorMath=true,
+    noColorMath=(
+      true
+    ),
     noAffineBgs=true,
-    noAffineObjs=true,
-    //noAffineObjs=false,
+    noAffineObjs=(
+      //true
+      false
+    ),
     //fancyObjPrio=false,
     fancyObjPrio=true,
   )

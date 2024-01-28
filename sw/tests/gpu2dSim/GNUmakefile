@@ -89,6 +89,7 @@ VC_CFLAGS:=-CFLAGS -O2
 VC_LDFLAGS:=-LDFLAGS -lm
 VC_FLAGS:=--cc -Wno-lint \
 	--threads 4 \
+	--verilate-jobs 4 \
 	--top $(V_TOP) \
 	$(VC_CFLAGS) \
 	$(VC_LDFLAGS) \

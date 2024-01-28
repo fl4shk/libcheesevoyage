@@ -41,12 +41,13 @@ static constexpr Vec2<size_t>
 		//.y=1 << 7,
 		//.x=1 << 6,
 		//.y=1 << 5,
-		.x=320,
-		.y=240,
-		//.x=640,
-		//.y=480,
+		//.x=320,
+		//.y=240,
+		.x=640,
+		.y=480,
 	},
 	SIZE_2D{.x=HALF_SIZE_2D.x << 1, .y=HALF_SIZE_2D.y << 1};
+	//SIZE_2D=HALF_SIZE_2D;
 class Display {
 public:		// variables
 	sdl::Window window;
@@ -145,6 +146,9 @@ public:		// functions
 		//] = col;
 		//pixels.get()[
 		//	uint32_t(pos.y) * HALF_SIZE_2D.x + uint32_t(pos.x)
+		//] = col;
+		//pixels.get()[
+		//	uint32_t(pos.y) * SIZE_2D.x + uint32_t(pos.x)
 		//] = col;
 		for (size_t j=0; j<2; ++j) {
 			for (size_t i=0; i<2; ++i) {

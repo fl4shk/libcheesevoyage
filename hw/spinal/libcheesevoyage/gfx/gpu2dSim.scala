@@ -65,6 +65,9 @@ case class Gpu2dSimDut(
     params=gpu2dParams,
   )
   io.snesCtrl <> gpu2dTest.io.snesCtrl
+  //gpu2dTest.io.snesCtrl.inpData := False
+  //io.snesCtrl.outpClk := False
+  //io.snesCtrl.outpLatch := False
 
   val ctrlIo = vgaCtrl.io
   //val dithIo = vidDith.io
@@ -267,8 +270,10 @@ object Gpu2dSim extends App {
     numColsInObjPalPow=log2Up(64),
     noColorMath=true,
     noAffineBgs=true,
-    noAffineObjs=true,
-    //noAffineObjs=false,
+    noAffineObjs=(
+      //true
+      false
+    ),
     //fancyObjPrio=false,
     fancyObjPrio=true,
   )
