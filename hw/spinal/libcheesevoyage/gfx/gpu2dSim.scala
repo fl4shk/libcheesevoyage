@@ -4,6 +4,7 @@ import libcheesevoyage._
 import libcheesevoyage.general.Vec2
 import libcheesevoyage.general.ElabVec2
 import libcheesevoyage.hwdev.SnesCtrlIo
+import libcheesevoyage.hwdev.SnesButtons
 
 import spinal.core._
 //import spinal.core.formal._
@@ -21,9 +22,13 @@ case class Gpu2dSimDut(
   vgaTimingInfo: LcvVgaTimingInfo,
   gpu2dParams: Gpu2dParams,
   ctrlFifoDepth: Int,
+  optRawSnesButtons: Boolean=false,
 ) extends Component {
   val io = new Bundle {
-    val snesCtrl = SnesCtrlIo()
+    val snesCtrl = (!optRawSnesButtons) generate SnesCtrlIo()
+    val rawSnesButtons = (optRawSnesButtons) generate (
+      slave Stream(UInt(SnesButtons.rawButtonsWidth bits))
+    )
     //val phys = out(LcvVgaPhys(rgbConfig=physRgbConfig))
     val phys = out(LcvVgaPhys(rgbConfig=rgbConfig))
     val misc = out(LcvVgaCtrlMiscIo(
@@ -63,8 +68,13 @@ case class Gpu2dSimDut(
   val gpu2dTest = Gpu2dTest(
     clkRate=clkRate,
     params=gpu2dParams,
+    optRawSnesButtons=optRawSnesButtons,
   )
-  io.snesCtrl <> gpu2dTest.io.snesCtrl
+  if (!optRawSnesButtons) {
+    io.snesCtrl <> gpu2dTest.io.snesCtrl
+  } else { // if (optRawSnesButtons)
+    gpu2dTest.io.rawSnesButtons << io.rawSnesButtons
+  }
   //gpu2dTest.io.snesCtrl.inpData := False
   //io.snesCtrl.outpClk := False
   //io.snesCtrl.outpLatch := False

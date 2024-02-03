@@ -45,43 +45,49 @@ object Gpu2dSimDutParams {
   def rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
   ////def rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
   //def physRgbConfig = LcvVideoDithererIo.outRgbConfig(rgbConfig=rgbConfig)
-  def vgaTimingInfo = LcvVgaTimingInfoMap.map("640x480@60")
-  //def vgaTimingInfo=LcvVgaTimingInfo(
-  //  pixelClk=pixelClk,
-  //  //pixelClk=25.175 MHz,
-  //  htiming=LcvVgaTimingHv(
-  //    //visib=1 << 6,
-  //    //visib=64,
-  //    //visib=1 << 7,
-  //    //visib=320,
-  //    visib=640,
-  //    //visib=1 << 8,
-  //    //visib=4,
-  //    //visib=8,
-  //    //front=1,
-  //    //sync=1,
-  //    //back=1,
-  //    front=4,
-  //    sync=4,
-  //    back=4,
-  //  ),
-  //  vtiming=LcvVgaTimingHv(
-  //    //visib=1 << 5,
-  //    //visib=1 << 3,
-  //    //visib=1 << 4,
-  //    //visib=1 << 7,
-  //    //visib=240,
-  //    visib=480,
-  //    //visib=4,
-  //    //visib=8,
-  //    //front=1,
-  //    //sync=1,
-  //    //back=1,
-  //    front=4,
-  //    sync=4,
-  //    back=4,
-  //  ),
-  //)
+  //def vgaTimingInfo = LcvVgaTimingInfoMap.map("640x480@60")
+  def vgaTimingInfo=LcvVgaTimingInfo(
+    pixelClk=pixelClk,
+    //pixelClk=25.175 MHz,
+    htiming=LcvVgaTimingHv(
+      //visib=1 << 6,
+      //visib=64,
+      //visib=1 << 7,
+      visib=320,
+      //visib=640,
+      //visib=1 << 8,
+      //visib=4,
+      //visib=8,
+      //front=1,
+      //sync=1,
+      //back=1,
+      //front=4,
+      //sync=4,
+      //back=4,
+      front=40,
+      sync=40,
+      back=40,
+    ),
+    vtiming=LcvVgaTimingHv(
+      //visib=1 << 5,
+      //visib=1 << 3,
+      //visib=1 << 4,
+      //visib=1 << 7,
+      visib=240,
+      //visib=480,
+      //visib=4,
+      //visib=8,
+      //front=1,
+      //sync=1,
+      //back=1,
+      //front=4,
+      //sync=4,
+      //back=4,
+      front=40,
+      sync=40,
+      back=40,
+    ),
+  )
 
   def fbSize2d = vgaTimingInfo.fbSize2d
   //def gpu2dParams = DefaultGpu2dParams(
@@ -215,12 +221,12 @@ object Gpu2dSimDutParams {
     ),
     //objTileWidthRshift=1,
     objAffineTileSize2dPow=ElabVec2[Int](
-      x=log2Up(64),
-      y=log2Up(64),
+      //x=log2Up(64),
+      //y=log2Up(64),
       //x=log2Up(32),
       //y=log2Up(32),
-      ///x=log2Up(16),
-      ///y=log2Up(16),
+      x=log2Up(16),
+      y=log2Up(16),
       //x=log2Up(8),
       //y=log2Up(8),
       //x=log2Up(4),
@@ -231,9 +237,9 @@ object Gpu2dSimDutParams {
     objAffineTileWidthRshift=(
       //0
       //1
-      //2
+      2
       //3
-      4
+      //4
     ),
     //numBgsPow=log2Up(4),
     numBgsPow=log2Up(2),
@@ -246,8 +252,8 @@ object Gpu2dSimDutParams {
     //numObjsPow=log2Up(4),
     //numObjsPow=log2Up(8),
     numObjsPow=(
-      //log2Up(16)
-      log2Up(128)
+      log2Up(16)
+      //log2Up(128)
     ),
     numObjsAffinePow=(
       log2Up(16)
@@ -269,7 +275,8 @@ object Gpu2dSimDutParams {
     ),
     //numObjTilesPow=None,
     numObjTiles=(
-      Some(16)
+      //Some(16)
+      Some(4)
     ),
     numObjAffineTiles=(
       Some(16)
@@ -297,6 +304,7 @@ object Gpu2dSimDutToVerilog extends App {
     vgaTimingInfo=Gpu2dSimDutParams.vgaTimingInfo,
     gpu2dParams=Gpu2dSimDutParams.gpu2dParams,
     ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
+    optRawSnesButtons=true,
   ))
 }
 
@@ -307,6 +315,7 @@ object Gpu2dSimDutToVhdl extends App {
     vgaTimingInfo=Gpu2dSimDutParams.vgaTimingInfo,
     gpu2dParams=Gpu2dSimDutParams.gpu2dParams,
     ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
+    optRawSnesButtons=true,
   ))
   //val report = SpinalVhdl(new Gpu2dTo())
   //report.printPruned()

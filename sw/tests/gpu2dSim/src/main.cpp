@@ -7,11 +7,17 @@
 //#include <SDL_video.h>
 //#include <SDL_render.h>
 //#include <SDL_syswm.h>
+#include "liborangepower_src/game_stuff/engine_key_status_class.hpp"
 #include "liborangepower_src/math/vec2_classes.hpp"
 #include "liborangepower_src/misc/misc_includes.hpp"
-#include "liborangepower_src/sdl2/sdl_rect.hpp"
+#include "liborangepower_src/sdl2/sdl.hpp"
+#include "liborangepower_src/sdl2/dpi_stuff.hpp"
+#include "liborangepower_src/sdl2/keyboard_stuff.hpp"
 #include "liborangepower_src/sdl2/sdl_video.hpp"
 #include "liborangepower_src/sdl2/sdl_render.hpp"
+#include "liborangepower_src/sdl2/sdl_surface.hpp"
+#include "liborangepower_src/sdl2/sdl_rect.hpp"
+#include <SDL_events.h>
 #include "liborangepower_src/misc/misc_output_funcs.hpp"
 #include "VGpu2dSimDut.h"
 
@@ -41,13 +47,14 @@ static constexpr Vec2<size_t>
 		//.y=1 << 7,
 		//.x=1 << 6,
 		//.y=1 << 5,
-		//.x=320,
-		//.y=240,
-		.x=640,
-		.y=480,
+		.x=320,
+		.y=240,
+		//.x=640,
+		//.y=480,
 	},
 	SIZE_2D{.x=HALF_SIZE_2D.x << 1, .y=HALF_SIZE_2D.y << 1};
 	//SIZE_2D=HALF_SIZE_2D;
+
 class Display {
 public:		// variables
 	sdl::Window window;
@@ -198,6 +205,7 @@ public:		// functions
 	};
 
 	inline void refresh() {
+		//--------
 		SDL_UpdateTexture(
 			texture,
 			NULL,
@@ -215,11 +223,29 @@ public:		// functions
 			SIZE_2D.x * SIZE_2D.y * sizeof(Uint32)
 			//HALF_SIZE_2D.x * HALF_SIZE_2D.y * sizeof(Uint32)
 		);
+		//--------
+		//--------
 	};
 	virtual void post_cycle() {
 	}
 	virtual void pre_cycle() {
 	}
+};
+
+enum class SnesKeyKind: uint32_t {
+	B = 0,
+	Y = 1,
+	Select = 2,
+	Start = 3,
+	DpadUp = 4,
+	DpadDown = 5,
+	DpadLeft = 6,
+	DpadRight = 7,
+	A = 8,
+	X = 9,
+	L = 10,
+	R = 11,
+	Lim = 12,
 };
 
 class Vga: public Display{
@@ -230,15 +256,126 @@ protected:	// variables
 	//std::unique_ptr<VGpu2dSimDut> _top;
 	//std::unique_ptr<VerilatedContext> _contextp;
 	VGpu2dSimDut* _top = nullptr;
+	sdl::KeyStatusUmap _key_status_umap;
+	liborangepower::game::EngineKeyStatus _engine_key_status;
 	uint32_t
 		_last_vsync = 0,
 		_last_hsync = 0;
+	enum class SnesKeyState: uint32_t {
+		DriveValid,
+		WaitFire,
+	};
+	SnesKeyState _snes_key_state = SnesKeyState::DriveValid;
+protected:		// functions
+	void _update_engine_key_status() {
+		switch (_snes_key_state) {
+			case SnesKeyState::DriveValid: {
+				_engine_key_status.update(
+					_key_status_umap,
+					sdl::EngineKeycUmap<SnesKeyKind>({
+						{SnesKeyKind::B, SDLK_k},
+						{SnesKeyKind::Y, SDLK_j},
+						{SnesKeyKind::Select, SDLK_a},
+						{SnesKeyKind::Start, SDLK_RETURN},
+						{SnesKeyKind::DpadUp, SDLK_e},
+						{SnesKeyKind::DpadDown, SDLK_d},
+						{SnesKeyKind::DpadLeft, SDLK_s},
+						{SnesKeyKind::DpadRight, SDLK_f},
+						{SnesKeyKind::A, SDLK_l},
+						{SnesKeyKind::X, SDLK_i},
+						{SnesKeyKind::L, SDLK_o},
+						{SnesKeyKind::R, SDLK_p},
+					})
+				);
+				_top->io_rawSnesButtons_valid = true;
+				//_top->io_rawSnesButtons_payload(0) = 3;
+				_top->io_rawSnesButtons_payload = (
+					(
+						_engine_key_status.key_up_now(SnesKeyKind::B)
+						<< uint32_t(SnesKeyKind::B)
+					) | (
+						_engine_key_status.key_up_now(SnesKeyKind::Y)
+						<< uint32_t(SnesKeyKind::Y)
+					) | (
+						_engine_key_status.key_up_now(SnesKeyKind::Select)
+						<< uint32_t(SnesKeyKind::Select)
+					) | (
+						_engine_key_status.key_up_now(SnesKeyKind::Start)
+						<< uint32_t(SnesKeyKind::Start)
+					) | (
+						_engine_key_status.key_up_now(SnesKeyKind::DpadUp)
+						<< uint32_t(SnesKeyKind::DpadUp)
+					) | (
+						_engine_key_status.key_up_now(SnesKeyKind::DpadDown)
+						<< uint32_t(SnesKeyKind::DpadDown)
+					) | (
+						_engine_key_status.key_up_now(SnesKeyKind::DpadLeft)
+						<< uint32_t(SnesKeyKind::DpadLeft)
+					) | (
+						_engine_key_status.key_up_now(
+							SnesKeyKind::DpadRight
+						)
+						<< uint32_t(SnesKeyKind::DpadRight)
+					) | (
+						_engine_key_status.key_up_now(SnesKeyKind::A)
+						<< uint32_t(SnesKeyKind::A)
+					) | (
+						_engine_key_status.key_up_now(SnesKeyKind::X)
+						<< uint32_t(SnesKeyKind::X)
+					) | (
+						_engine_key_status.key_up_now(SnesKeyKind::L)
+						<< uint32_t(SnesKeyKind::L)
+					) | (
+						_engine_key_status.key_up_now(SnesKeyKind::R)
+						<< uint32_t(SnesKeyKind::R)
+					) | (
+						0xf000
+					)
+				);
+				//printf("0x%x\n", uint32_t(_top->io_rawSnesButtons_payload));
+				_snes_key_state = SnesKeyState::WaitFire;
+			}
+				break;
+			case SnesKeyState::WaitFire: {
+				if (
+					//_top->io_rawSnesButtons_valid
+					//&& 
+					_top->io_rawSnesButtons_ready
+				) {
+					//printf("_top->io_rawSnesButtons_ready == true\n");
+					_top->io_rawSnesButtons_valid = false;
+					_snes_key_state = SnesKeyState::DriveValid;
+				}
+			}
+				break;
+			default:
+				break;
+		}
+	}
+	void _handle_sdl_events() {
+		bool ksm_perf_total_backup = true;
+		SDL_Event e;
+
+		while (SDL_PollEvent(&e) != 0) {
+			if (e.type == SDL_QUIT) {
+			} else if (
+				liborangepower::sdl::handle_key_events(
+					e,
+					_key_status_umap, 
+					ksm_perf_total_backup
+				)
+			) {
+			}
+		}
+		_update_engine_key_status();
+	}
 public:		// functions
 	inline Vga(VGpu2dSimDut* s_top)
 		: Display(),
-		_top(s_top)
+		_top(s_top),
 		//_top(new VGpu2dSimDut())
 		//_contextp(new VerilatedContext()) 
+		_engine_key_status(int32_t(SnesKeyKind::Lim))
 		{
 		//--------
 		//_contextp->commandArgs(argc, argv);
@@ -251,7 +388,8 @@ public:		// functions
 	virtual void post_cycle() {
 	}
 
-	virtual void pre_cycle(){
+	virtual void pre_cycle() {
+		_handle_sdl_events();
 		if (
 			!_top->io_phys_vsync
 			&& _last_vsync
