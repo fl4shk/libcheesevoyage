@@ -152,9 +152,11 @@ case class PipeMemTestBackPayload(
   
 }
 
-case class PipeMemTestIo[
-  T <: Data
-](
+case class PipeMemTestIo
+//[
+//  T <: Data
+//]
+(
   //wordType: HardType[T],
   wordCount: Int,
   //memCount: Int,
