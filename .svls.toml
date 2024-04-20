@@ -1,0 +1,10 @@
+[verilog]
+#include_paths = ["src/header"]
+#defines = ["DEBUG", "VAR=1"]
+#plugins = ["path/to/libfoo.so", "path/to/libbar.so"]
+include_paths = []
+defines = []
+plugins = []
+
+[option]
+linter = false
