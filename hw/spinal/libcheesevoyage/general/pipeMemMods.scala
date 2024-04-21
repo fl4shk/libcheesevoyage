@@ -144,6 +144,7 @@ case class PipeMemTestBackPayload(
     wordCount=wordCount,
   )
   val dbgRd = (debug) generate PipeMemTest.wordType()
+  //val dbgMemReadSync = (debug) generate PipeMemTest.wordType()
   val sum = (
     //UInt((wordWidth + log2Up(memCount)) bits)
     //UInt((wordWidth + 1) bits)
@@ -276,6 +277,7 @@ case class PipeMemTest
       debug=debug,
     )
     val back = Payload(mkBack())
+    val dbgMemReadSync = (debug) generate Payload(PipeMemTest.wordType())
   }
 
   //def printSize(): Unit = {
@@ -307,6 +309,9 @@ case class PipeMemTest
 
   val rdValid = (
     //Array.fill(cArr.size - 1)(Payload(Bool()))
+    Payload(Bool())
+  )
+  val frontDuplicateIt = (
     Payload(Bool())
   )
 
@@ -373,7 +378,18 @@ case class PipeMemTest
       val tempRdValid = (
         cSum.up(pipePayload.front).addr =/= up(pipePayload.front).addr
       )
-      val upRdValid = Bool()
+      val myUpRdValid = Bool()
+      val rPrevMyUpRdValid = (
+        //RegNextWhen(myUpRdValid, up.isFiring) init(False)
+        RegNext(myUpRdValid) init(False)
+      )
+      //--------
+      //val nextFlagUpRdValid = Bool()
+      //val rFlagUpRdValid = RegNext(nextFlagUpRdValid) init(False)
+      //--------
+      //val rUpRdValid = (
+      //  //RegNextWhen(myUpRdValid, up.isFiring) init(False)
+      //)
       //val rSavedUpRdValid = Reg(Bool()) init(True)
       //val rPastUpRdValid = RegNext(upRdValid) init(True)
       //haltWhen(!downRdValid)
@@ -381,24 +397,194 @@ case class PipeMemTest
 
       //upRdValid := rPastUpRdValid
       //upRdValid := RegNext(upRdValid) init(True)
-      up(rdValid) := (
-        //tempRdValid
-        upRdValid
+      //when (isValid) {
+      //  myUpRdValid := tempRdValid
+      //} otherwise {
+      //  upRdValid := RegNext(upRdValid) init(upRdValid.getZero)
+      //}
+      myUpRdValid := rPrevMyUpRdValid
+      //--------
+      //when (isValid) {
+      //  when (tempRdValid) {
+      //    myUpRdValid := True
+      //    //nextFlagUpRdValid := False
+      //  } otherwise { // when (!tempRdValid)
+      //    //myUpRdValid
+      //    //val rSavedTempRdValid = (
+      //    //  RegNextWhen(tempRdValid, up.isFiring) init(False)
+      //    //)
+      //    //when (up.isFiring) {
+      //    //}
+      //    //--------
+      //    //when (
+      //    //  //up.isFiring
+      //    //  //up.isReady
+      //    //  up.isReady
+      //    //  //down.isFiring
+      //    //) {
+      //    //  //when (!rFlagUpRdValid) {
+      //    //  //  rFlagUpRdValid := True
+      //    //  //  //myUpRdValid := 
+      //    //  //}
+      //    //  //myUpRdValid := True
+      //    //  nextFlagUpRdValid := !rFlagUpRdValid
+      //    //  myUpRdValid := nextFlagUpRdValid
+      //    //} otherwise { // when (!up.isFiring)
+      //    //  nextFlagUpRdValid := rFlagUpRdValid
+      //    //  myUpRdValid := RegNext(myUpRdValid) init(myUpRdValid.getZero)
+      //    //}
+      //    when (
+      //      //cSum.up.isFiring
+      //      up.isFiring
+      //    ) {
+      //      //--------
+      //      //nextFlagUpRdValid := True
+      //      //myUpRdValid := True
+      //      //--------
+      //      //myUpRdValid := False
+      //      //--------
+      //      //when (!rPrevMyUpRdValid) {
+      //      //  myUpRdValid
+      //      //}
+      //      myUpRdValid := !rPrevMyUpRdValid
+      //    }
+      //    //otherwise {
+      //    //  myUpRdValid := rPrevMyUpRdValid
+      //    //}
+      //    //when (rPrevMyUpRdValid) {
+      //      //duplicateIt()
+      //    //}
+      //    //--------
+      //  }
+      //}
+      //--------
+      //otherwise {
+      //  myUpRdValid := rPrevMyUpRdValid
+      //}
+
+      when (isValid) {
+        up(rdValid) := (
+          //tempRdValid
+          //myUpRdValid
+          //rPrevMyUpRdValid
+          myUpRdValid
+        )
+      } otherwise {
+        up(rdValid) := rPrevMyUpRdValid
+      }
+      //val rDuplicateIt = Reg(Bool()) init(False)
+      //when (
+      //  //!up(rdValid)
+      //  //!rPrevMyUpRdValid
+      //  !myUpRdValid
+      //) {
+      //  when (up.isFiring) {
+      //    rDuplicateIt := True
+      //    //duplicateIt()
+      //  }
+      //  when (rDuplicateIt) {
+      //    duplicateIt()
+      //    rDuplicateIt := False
+      //  }
+      //  //when (!down.isFiring) {
+      //  //  duplicateIt()
+      //  //}
+      //}
+      //--------
+      //val rPrevTempRdValid = (
+      //  RegNextWhen(tempRdValid, up.isFiring) init(tempRdValid.getZero)
+      //)
+      //val prevTempRdValidAddrs = new Area {
+      //  def mkAddr() = (
+      //    UInt(log2Up(wordCount) bits)
+      //  )
+      //  val rUpAddr = Reg(mkAddr()) init(0x0)
+      //  val rSumUpAddr = Reg(mkAddr()) init(0x0)
+      //}
+
+      val nextDuplicateIt = Bool()
+      val rDuplicateIt = (
+        RegNext(nextDuplicateIt) init(nextDuplicateIt.getZero)
       )
-      duplicateWhen(
-        //!cSum.up(rdValid)
-        //!up(rdValid)
-        //!down(rdValid)
-        //!rPastUpRdValid
-        //!upRdValid
-        //!down(rdValid)
-        //!cSum.up(rdValid)
-        //!down(rdValid)
-        //!rSavedUpRdValid
-        //!down(rdValid)
-        !upRdValid
-      )
-      upRdValid := tempRdValid
+      nextDuplicateIt := rDuplicateIt
+      up(frontDuplicateIt) := nextDuplicateIt
+
+      //when (up.isValid) {
+      //  //when (
+      //  //  tempRdValid
+      //  //  //&& rPrevTempRdValid
+      //  //  && !rDidDuplicateIt
+      //  //) {
+      //  //  duplicateIt()
+      //  //  rDidDuplicateIt := True
+      //  //} otherwise {
+      //  //}
+      //}
+      //when (isValid) {
+        //--------
+        // BEGIN: partially working! off by one
+        when (
+          !rDuplicateIt
+          //!cSum.up(frontDuplicateIt)
+          //!up(frontDuplicateIt)
+        ) {
+          myUpRdValid := tempRdValid
+          when (!tempRdValid) {
+            //nextDuplicateIt := True
+            nextDuplicateIt := True
+            duplicateIt()
+          }
+        } otherwise {
+          //nextDuplicateIt := False
+          //myUpRdValid := False
+          //duplicateIt()
+          myUpRdValid := True
+          when (up.isFiring) {
+            nextDuplicateIt := False
+            //nextDuplicateIt := False
+            //myUpRdValid := False
+            //myUpRdValid := True
+            //myUpRdValid := True
+          } 
+          //otherwise {
+          //  //myUpRdValid := False
+          //}
+          //otherwise {
+          //  duplicateIt()
+          //}
+        }
+        // END: partially working! off by one
+        //--------
+      //}
+      //--------
+
+      //duplicateWhen(
+      //  //!cSum.up(rdValid)
+      //  //!up(rdValid)
+      //  //!down(rdValid)
+      //  //!rPastUpRdValid
+      //  //!upRdValid
+      //  //!down(rdValid)
+      //  //!cSum.up(rdValid)
+      //  //!down(rdValid)
+      //  //!rSavedUpRdValid
+      //  //!down(rdValid)
+      //  //!up.isFiring
+      //  !upRdValid
+      //)
+      //--------
+      //when (!myUpRdValid) {
+      //  //when (
+      //  //  //!down.isReady
+      //  //  //!RegNext(down.isFiring)
+      //  //  //!down.isFiring
+      //  //  //RegNext(up.isFiring)
+      //  //  True
+      //  //) {
+      //    duplicateIt()
+      //  //}
+      //}
+      //--------
       //when (
       //  cBack.up(pipePayload.front).addr
       //  === down(pipePayload.front).addr
@@ -415,25 +601,34 @@ case class PipeMemTest
       //    )
       //  )
       //}
+      val upRd = pipePayload.mkRd()
       when (
-        //cBack.up.isFiring
-        //&& (
-          cBack.up(pipePayload.front).addr
-          === up(pipePayload.front).addr
-        //)
+        isValid
+        && myUpRdValid
       ) {
-        up(pipePayload.rd) := (
-          cBack.up(pipePayload.back).sum
-        )
-      } otherwise {
-        up(pipePayload.rd) := (
-          mem.readSync
-          //mem.readAsync
-          (
-            address=up(pipePayload.front).addr,
+        when (
+          //cBack.up.isFiring
+          //&& (
+            cBack.up(pipePayload.front).addr
+            === up(pipePayload.front).addr
+          //)
+        ) {
+          upRd := (
+            cBack.up(pipePayload.back).sum
           )
-        )
+        } otherwise {
+          upRd := (
+            mem.readSync
+            //mem.readAsync
+            (
+              address=up(pipePayload.front).addr,
+            )
+          )
+        }
+      } otherwise {
+        upRd := RegNext(upRd) init(upRd.getZero)
       }
+      up(pipePayload.rd) := upRd
       val rTempCnt = (debug) generate (
         Reg(UInt(8 bits)) init(0x0)
       )
@@ -509,7 +704,7 @@ case class PipeMemTest
             //|| past(tempRdValid)
             //&& rHadTempRdValid
             //&& 
-            upRdValid
+            myUpRdValid
             && up(pipePayload.front).data > 0
           ) {
             //rHadTempRdValid := False
@@ -536,8 +731,68 @@ case class PipeMemTest
     val rIsFiringCnt = (debug) generate (
       Reg(UInt(8 bits)) init(0x0)
     )
+    val rMyUpRdValidDelVec = (debug) generate Vec.fill(8)(
+      Reg(Bool()) init(False)
+    )
     //--------
     GenerationFlags.formal {
+      when (up.isFiring) {
+        for (idx <- 0 until rMyUpRdValidDelVec.size) {
+          def tempUpRdValid = rMyUpRdValidDelVec(idx)
+          if (idx == 0) {
+            tempUpRdValid := myUpRdValid
+          } else {
+            tempUpRdValid := rMyUpRdValidDelVec(idx - 1)
+          }
+        }
+      }
+      //val rMyUpRdValidDel1 = (
+      //  RegNextWhen(myUpRdValid, up.isFiring)
+      //  init(myUpRdValid.getZero)
+      //)
+      //val rMyUpRdValidDel2 = (
+      //  RegNextWhen(rMyUpRdValidDel1, up.isFiring)
+      //  init(myUpRdValid.getZero)
+      //)
+      //val rMyUpRdValidDel3 = (
+      //  RegNextWhen(rMyUpRdValidDel2, up.isFiring)
+      //  init(myUpRdValid.getZero)
+      //)
+      //cover(
+      //  (
+      //    RegNextWhen(True, io.back.fire) init(False)
+      //  )
+      //  //&& myUpRdValid
+      //  //&& !rMyUpRdValidDel1
+      //  //&& rMyUpRdValidDel2
+      //  //&& !rMyUpRdValidDel1
+      //)
+      //cover(
+      //  !(
+      //    RegNextWhen(myUpRdValid, up.isFiring) init(myUpRdValid.getZero)
+      //  )
+      //  && myUpRdValid
+      //  && !rMyUpRdValidDelVec(0)
+      //  && rMyUpRdValidDelVec(1)
+      //  && !rMyUpRdValidDelVec(2)
+      //  && rMyUpRdValidDelVec(3)
+      //  && !rMyUpRdValidDelVec(4)
+      //)
+      val myDbgMemReadSync = PipeMemTest.wordType()
+      when (up.isValid) {
+        myDbgMemReadSync := (
+          mem.readSync
+          //mem.readAsync
+          (
+            address=up(pipePayload.front).addr,
+          )
+        )
+      } otherwise {
+        myDbgMemReadSync := (
+          RegNext(myDbgMemReadSync) init(myDbgMemReadSync.getZero)
+        )
+      }
+      up(pipePayload.dbgMemReadSync) := myDbgMemReadSync
       //--------
       //assumeInitial(
       //  down(pipePayload.rd) === 0x0
@@ -602,65 +857,109 @@ case class PipeMemTest
           //past(cSum.up.isFiring)
           //&& past(cBack.up.isFiring)
           //&& 
-          (
-            (RegNextWhen(True, io.front.fire) init(False))
-            || io.front.fire
-          ) && (
-            (RegNextWhen(True, cFront.up.isFiring) init(False))
-            || cFront.up.isFiring
-          ) && (
-            (RegNextWhen(True, cSum.up.isFiring) init(False))
-            || cSum.up.isFiring
-          ) && (
-            (RegNextWhen(True, cBack.up.isFiring) init(False))
-            || cBack.up.isFiring
-          ) && (
-            //(RegNextWhen(True, io.back.fire) init(False))
-            //|| io.back.fire
-            True
-          ) && (
+          //myUpRdValid
+          up.isValid
+          && myUpRdValid
+          && cBack.up.isValid
+          && cBack.up(rdValid)
+          //&& (
+          //  (RegNextWhen(True, io.front.fire) init(False))
+          //  || io.front.fire
+          //) && (
+          //  (RegNextWhen(True, cFront.up.isFiring) init(False))
+          //  || cFront.up.isFiring
+          //) && (
+          //  (RegNextWhen(True, cSum.up.isFiring) init(False))
+          //  || cSum.up.isFiring
+          //) && (
+          //  (RegNextWhen(True, cBack.up.isFiring) init(False))
+          //  || cBack.up.isFiring
+          //) && (
+          //  //(RegNextWhen(True, io.back.fire) init(False))
+          //  //|| io.back.fire
+          //  True
+          //)
+        ) {
+          when (
             //cSum.up(pipePayload.front).addr
             cFront.up(pipePayload.front).addr
             === cBack.up(pipePayload.front).addr
-          )
-        ) {
-          assert(
-            //cSum.up(pipePayload.rd)
-            //=== cBack.up(pipePayload.back).sum
-            //past(cFront.down(pipePayload.rd))
-            //=== past(cSum.down(pipePayload.back).sum)
-            (
-              //RegNextWhen(
-              //  cSum.up(pipePayload.rd), cSum.up.isFiring
-              //) init(cSum.up(pipePayload.rd).getZero)
-              //cBack.up(pipePayload.rd)
-              //cSum.down(pipePayload.rd)
-              cFront.down(pipePayload.rd)
+          ) {
+            assert(
+              //cSum.up(pipePayload.rd)
+              //=== cBack.up(pipePayload.back).sum
+              //past(cFront.down(pipePayload.rd))
+              //=== past(cSum.down(pipePayload.back).sum)
+              (
+                //RegNextWhen(
+                //  cSum.up(pipePayload.rd), cSum.up.isFiring
+                //) init(cSum.up(pipePayload.rd).getZero)
+                //cBack.up(pipePayload.rd)
+                //cSum.down(pipePayload.rd)
+                cFront.down(pipePayload.rd)
+              )
+              === (
+                cBack.up(pipePayload.back).sum
+              )
             )
-            === (
-              cBack.up(pipePayload.back).sum
-            )
-          )
+          } otherwise {
+            //assert(
+            //  //cFront.down(pipePayload.rd)
+            //  //=== cBack.up(pipePayload.dbgMemReadSync)
+            //  cFront.down(pipePayload.rd)
+            //  === myDbgMemReadSync
+            //)
+          }
         }
       }
-      cover(
-        //up.isFiring
-        //&& 
-        //rTempCnt === 1
-        //rIsFiringCnt === 2
-        rIsFiringCnt >= 5
-        && rTempCnt >= 5
-        //&& rTempCnt > 3
-      )
+      //cover(
+      //  //up.isFiring
+      //  //&& 
+      //  //rTempCnt === 1
+      //  //rIsFiringCnt === 2
+      //  rIsFiringCnt >= 5
+      //  && rTempCnt >= 5
+      //  //&& rTempCnt > 3
+      //)
     }
     //--------
   }
   //--------
   val cSumArea = new cSum.Area {
     //--------
-    haltWhen(
-      !(RegNextWhen(True, io.front.fire) init(False))
+    //haltWhen(
+    //  !(RegNextWhen(True, io.front.fire) init(False))
+    //)
+    //val temp = up(rdValid)
+
+    terminateWhen(
+      //!pipe.nArr(1)(rdValid)
+      //temp
+      !up(rdValid)
     )
+    //--------
+    //val rDuplicateIt = Reg(Bool()) init(False)
+    //when (
+    //  !up(rdValid)
+    //) {
+    //  when (down.isFiring) {
+    //    rDuplicateIt := True
+    //    //duplicateIt()
+    //  }
+    //  when (rDuplicateIt) {
+    //    duplicateIt()
+    //    rDuplicateIt := False
+    //  }
+    //  //when (!down.isFiring) {
+    //  //  duplicateIt()
+    //  //}
+    //}
+    ////duplicateWhen(
+    ////  !up(rdValid)
+    ////  && 
+    ////)
+    //--------
+
     //when (isValid) {
     //  def front = pipePayload.front
     //  def rd = pipePayload.rd
@@ -674,7 +973,7 @@ case class PipeMemTest
     def upRd = up(pipePayload.rd)
     //def upBack = up(pipePayload.back)
     val upBack = pipePayload.mkBack()
-    def upRdValid = up(rdValid)
+    //def upRdValid = up(rdValid)
 
     ////def downPipePayload = down(pipePayload)
     //def downFront = down(pipePayload.front)
@@ -710,6 +1009,7 @@ case class PipeMemTest
     val tempSum = up(pipePayload.rd) + up(pipePayload.front).data
     when (
       up.isValid
+      && up(rdValid)
       //downRdValid
     ) {
       //up(pipePayload.back).sum 
@@ -725,34 +1025,34 @@ case class PipeMemTest
     }
     up(pipePayload.back) := upBack
     //val rDidFirstFire = Reg(Bool()) init(False)
-    val rDidFirstFire = (
+    val rDidFirstFire = (debug) generate (
       RegNextWhen(True, up.isFiring) init(False)
     )
     //val rPastIsFiring = Reg(Bool()) init(False)
 
     //rPastIsFiring := down.isFiring
 
-    val rPrevUpFront = (
-      Reg(pipePayload.mkFront()) init(pipePayload.mkFront().getZero)
-    )
-    val rPrevDownFront = (
-      Reg(pipePayload.mkFront()) init(pipePayload.mkFront().getZero)
-    )
-    val rPrevUpRd = (
-      Reg(pipePayload.mkRd()) init(pipePayload.mkRd().getZero)
-    )
-    val rPrevDownRd = (
-      Reg(pipePayload.mkRd()) init(pipePayload.mkRd().getZero)
-    )
-    val rPrevUpBack = (
-      Reg(pipePayload.mkBack()) init(pipePayload.mkBack().getZero)
-    )
-    //val rPrevDownBack = (
+    //val rPrevUpFront = (
+    //  Reg(pipePayload.mkFront()) init(pipePayload.mkFront().getZero)
+    //)
+    //val rPrevDownFront = (
+    //  Reg(pipePayload.mkFront()) init(pipePayload.mkFront().getZero)
+    //)
+    //val rPrevUpRd = (
+    //  Reg(pipePayload.mkRd()) init(pipePayload.mkRd().getZero)
+    //)
+    //val rPrevDownRd = (
+    //  Reg(pipePayload.mkRd()) init(pipePayload.mkRd().getZero)
+    //)
+    //val rPrevUpBack = (
     //  Reg(pipePayload.mkBack()) init(pipePayload.mkBack().getZero)
     //)
-    //val rPrevDownRdValid = (
-    //  Reg(Bool()) init(downRdValid.getZero)
-    //)
+    ////val rPrevDownBack = (
+    ////  Reg(pipePayload.mkBack()) init(pipePayload.mkBack().getZero)
+    ////)
+    ////val rPrevDownRdValid = (
+    ////  Reg(Bool()) init(downRdValid.getZero)
+    ////)
     //--------
     GenerationFlags.formal {
       //--------
@@ -794,6 +1094,7 @@ case class PipeMemTest
           when (past(
             up.isFiring
             //up.isValid
+            && up(rdValid)
           )) {
             //assert(
             //  down(pipePayload.back).sum
@@ -825,55 +1126,76 @@ case class PipeMemTest
         //}
       }
     }
-    //--------
-  }
-  //--------
-  val cBackArea = new cBack.Area {
-    haltWhen(
-      !(RegNextWhen(True, io.front.fire) init(False))
-    )
-    //--------
-    //def downFront = down(pipePayload.front)
-    //def downRd = down(pipePayload.rd)
-    //def downBack = down(pipePayload.back)
-    //assumeInitial(downFront === downFront.getZero)
-    //assumeInitial(downRd === downRd.getZero)
-    //assumeInitial(downBack === downBack.getZero)
-    //--------
-    //def downRdValid = down(rdValid)
-
-    //downRdValid := (
-    //  downFront.addr =/= up(pipePayload).front.addr
-    //)
-
-    when (isValid) {
-      //def front = pipePayload.front
-      //def rd = pipePayload.rd
-      //def back = pipePayload.back
-      mem.write(
-        address=up(pipePayload.front).addr,
-        data=up(pipePayload.back).sum,
-      )
-    }
-    //val rCoverInvIsFiringCnt = Reg(UInt(8 bits)) init(0x0)
-    val rCoverDiffData = Vec.fill(8)(
+    val rCoverDiffData = (debug) generate Vec.fill(8)(
       Reg(PipeMemTest.wordType()) init(0x0)
     )
-    val rCoverDiffDataCnt = Reg(UInt(8 bits)) init(0x0)
-    val rCoverInvIsFiring = Reg(Bool()) init(False)
-    val rCoverInvCnt = Reg(UInt(8 bits)) init(0x0)
-    val rCoverSameIsFiring = Reg(Bool()) init(False)
-    val rCoverSameCnt = Reg(UInt(8 bits)) init(0x0)
+    val rCoverDiffDataCnt = (debug) generate (
+      Reg(UInt(8 bits)) init(0x0)
+    )
+    val rCoverAddr = (debug) generate (
+      Vec.fill(4.min(wordCount))(
+        Reg(UInt(log2Up(wordCount) bits)) init(0x0)
+      )
+    )
+    val rCoverAddrCnt = (debug) generate (
+      Reg(UInt(8 bits)) init(0x0)
+    )
+    val rCoverAddrLeastCnt = (debug) generate (
+      Reg(UInt(8 bits)) init(0x0)
+    )
+    //val rCoverAddrLastIdx = Reg(
+    //  UInt(log2Up(rCoverAddr.size) bits) init(0x0)
+    //) 
+    //val rCoverInvIsFiring = Reg(Bool()) init(False)
+    //val rCoverInvCnt = Reg(UInt(8 bits)) init(0x0)
+    //val rCoverSameIsFiring = Reg(Bool()) init(False)
+    //val rCoverSameCnt = Reg(UInt(8 bits)) init(0x0)
+
+    //--------
+    //case class DbgUp() extends Bundle {
+    //}
+    val rUpRdValidDelVec = (debug) generate (
+      Vec.fill(8)(
+        Reg(Bool()) init(False)
+      )
+    )
+    //--------
+    val myHadFlip = (debug) generate (
+      RegNextWhen(
+        True,
+        (
+          up(rdValid)
+          && !rUpRdValidDelVec(0)
+          && rUpRdValidDelVec(1)
+          && !rUpRdValidDelVec(2)
+          && rUpRdValidDelVec(3)
+        )
+      ) init(False)
+    )
 
     GenerationFlags.formal {
+      //--------
+      when (up.isFiring) {
+        for (idx <- 0 until rUpRdValidDelVec.size) {
+          def tempUpRdValid = rUpRdValidDelVec(idx)
+          if (idx == 0) {
+            tempUpRdValid := up(rdValid)
+          } else {
+            tempUpRdValid := rUpRdValidDelVec(idx - 1)
+          }
+        }
+      }
+      //--------
       when (pastValidAfterReset) {
         //when (
         //  past(pastValidAfterReset)
         //) {
-          when (up.isFiring) {
-            rCoverInvIsFiring := True
-            rCoverSameIsFiring := True
-          }
+          //--------
+          //when (up.isFiring) {
+          //  rCoverInvIsFiring := True
+          //  rCoverSameIsFiring := True
+          //}
+          //--------
           //when (
           //  down(rdValid)
           //  && !past(down(rdValid))
@@ -901,10 +1223,78 @@ case class PipeMemTest
               rCoverDiffDataCnt := rCoverDiffDataCnt + 1
             }
           }
+          when (
+            up.isFiring
+            && rCoverAddrCnt < rCoverAddr.size
+          ) {
+            //--------
+            val leastPlusOne = rCoverAddrLeastCnt + 1
+            //--------
+            //val firstSame = rCoverAddr.sFindFirst(
+            //  _ === up(pipePayload.front).addr
+            //)
+            //when (!firstSame._1) {
+            //  rCoverAddr(rCoverAddrCnt.resized) := (
+            //    up(pipePayload.front).addr
+            //  )
+            //  rCoverAddrCnt := rCoverAddrCnt + 1
+            //}
+            //--------
+            when (!leastPlusOne(1)) {
+              //--------
+              when (
+                rCoverAddrCnt === 0
+                && leastPlusOne === 0
+              ) {
+                rCoverAddrLeastCnt := leastPlusOne
+                rCoverAddr(rCoverAddrCnt.resized) := (
+                  up(pipePayload.front).addr
+                )
+              } elsewhen (
+                rCoverAddr(rCoverAddrCnt.resized)
+                === up(pipePayload.front).addr
+              ) {
+                rCoverAddrLeastCnt := leastPlusOne
+              } otherwise {
+              }
+              //--------
+            } otherwise {
+              //--------
+              rCoverAddrLeastCnt := 0
+              //--------
+              rCoverAddrCnt := rCoverAddrCnt + 1
+              //--------
+              rCoverAddr((rCoverAddrCnt + 1).resized) := (
+                up(pipePayload.front).addr
+              )
+            }
+            //--------
+          }
           cover(
             rCoverDiffDataCnt === rCoverDiffData.size
+            && myHadFlip
+            //&& rCoverAddrCnt === rCoverAddr.size
             //rCoverDiffDataCnt === 1
           )
+          cover(
+            rCoverDiffDataCnt === rCoverDiffData.size
+            && rCoverAddrCnt === rCoverAddr.size
+            && myHadFlip
+            //--------
+            //up(rdValid)
+            //&& !rUpRdValidDelVec(0)
+            //&& rUpRdValidDelVec(1)
+            //&& !rUpRdValidDelVec(2)
+            //&& rUpRdValidDelVec(3)
+            //--------
+            //&& (RegNextWhen(True, up(rdValid)) init(False))
+            //&& (RegNextWhen(True, !rUpRdValidDelVec(0)) init(False))
+            //&& (RegNextWhen(True, rUpRdValidDelVec(1)) init(False))
+            //&& (RegNextWhen(True, !rUpRdValidDelVec(2)) init(False))
+            //&& (RegNextWhen(True, rUpRdValidDelVec(3)) init(False))
+            //rCoverDiffDataCnt === 1
+          )
+          //--------
           //val rHadNonZeroData = Vec.fill(2){
           //  val temp = Reg(Flow(PipeMemTest.wordType()))
           //  temp.init(temp.getZero)
@@ -951,6 +1341,235 @@ case class PipeMemTest
         //}
       }
     }
+    //--------
+  }
+  //--------
+  val cBackArea = new cBack.Area {
+    haltWhen(
+      !(RegNextWhen(True, io.front.fire) init(False))
+    )
+    //throwWhen(
+    //  //!pipe.nArr(1)(rdValid)
+    //  //temp
+    //  !up(rdValid)
+    //)
+    //--------
+    //def downFront = down(pipePayload.front)
+    //def downRd = down(pipePayload.rd)
+    //def downBack = down(pipePayload.back)
+    //assumeInitial(downFront === downFront.getZero)
+    //assumeInitial(downRd === downRd.getZero)
+    //assumeInitial(downBack === downBack.getZero)
+    //--------
+    //def downRdValid = down(rdValid)
+
+    //downRdValid := (
+    //  downFront.addr =/= up(pipePayload).front.addr
+    //)
+
+    when (
+      isValid
+      //&& up(rdValid)
+    ) {
+      //def front = pipePayload.front
+      //def rd = pipePayload.rd
+      //def back = pipePayload.back
+      mem.write(
+        address=up(pipePayload.front).addr,
+        data=up(pipePayload.back).sum,
+      )
+    }
+    //val rCoverInvIsFiringCnt = Reg(UInt(8 bits)) init(0x0)
+    //val rCoverDiffData = Vec.fill(8)(
+    //  Reg(PipeMemTest.wordType()) init(0x0)
+    //)
+    //val rCoverDiffDataCnt = Reg(UInt(8 bits)) init(0x0)
+    //val rCoverAddr = Vec.fill(4.min(wordCount))(
+    //  Reg(UInt(log2Up(wordCount) bits)) init(0x0)
+    //)
+    //val rCoverAddrCnt = Reg(UInt(8 bits)) init(0x0)
+    //val rCoverAddrLeastCnt = Reg(UInt(8 bits)) init(0x0)
+    ////val rCoverAddrLastIdx = Reg(
+    ////  UInt(log2Up(rCoverAddr.size) bits) init(0x0)
+    ////) 
+    ////val rCoverInvIsFiring = Reg(Bool()) init(False)
+    ////val rCoverInvCnt = Reg(UInt(8 bits)) init(0x0)
+    ////val rCoverSameIsFiring = Reg(Bool()) init(False)
+    ////val rCoverSameCnt = Reg(UInt(8 bits)) init(0x0)
+
+    ////--------
+    //val rUpRdValidDelVec = Vec.fill(8)(
+    //  Reg(Bool()) init(False)
+    //)
+    //when (up.isFiring) {
+    //  for (idx <- 0 until rUpRdValidDelVec.size) {
+    //    def tempUpRdValid = rUpRdValidDelVec(idx)
+    //    if (idx == 0) {
+    //      tempUpRdValid := up(rdValid)
+    //    } else {
+    //      tempUpRdValid := rUpRdValidDelVec(idx - 1)
+    //    }
+    //  }
+    //}
+    ////--------
+
+    //GenerationFlags.formal {
+    //  when (pastValidAfterReset) {
+    //    //when (
+    //    //  past(pastValidAfterReset)
+    //    //) {
+    //      //--------
+    //      //when (up.isFiring) {
+    //      //  rCoverInvIsFiring := True
+    //      //  rCoverSameIsFiring := True
+    //      //}
+    //      //--------
+    //      //when (
+    //      //  down(rdValid)
+    //      //  && !past(down(rdValid))
+    //      //) {
+    //      //  //when (down.isFiring /*|| rCoverInvIsFiring*/) {
+    //      //    //cover(past(down(rdValid)))
+    //      //    rCoverInvCnt := rCoverInvCnt + 1
+    //      //    //rCoverInvIsFiring := False
+    //      //  //}
+    //      //}
+    //      when (
+    //        up.isFiring
+    //        //&& 
+    //        //io.back.valid
+    //        //up.valid
+    //        && rCoverDiffDataCnt < rCoverDiffData.size
+    //      ) {
+    //        val firstSame = rCoverDiffData.sFindFirst(
+    //          _ === up(pipePayload.front).data
+    //        )
+    //        when (!firstSame._1) {
+    //          rCoverDiffData(rCoverDiffDataCnt.resized) := (
+    //            up(pipePayload.front).data
+    //          )
+    //          rCoverDiffDataCnt := rCoverDiffDataCnt + 1
+    //        }
+    //      }
+    //      when (
+    //        up.isFiring
+    //        && rCoverAddrCnt < rCoverAddr.size
+    //      ) {
+    //        val leastPlusOne = rCoverAddrLeastCnt + 1
+
+    //        //val firstSame = rCoverAddr.sFindFirst(
+    //        //  _ === up(pipePayload.front).addr
+    //        //)
+    //        //when (!firstSame._1) {
+    //        //  rCoverAddr(rCoverAddrCnt.resized) := (
+    //        //    up(pipePayload.front).addr
+    //        //  )
+    //        //  rCoverAddrCnt := rCoverAddrCnt + 1
+    //        //}
+    //        when (!leastPlusOne(1)) {
+    //          //--------
+    //          when (
+    //            rCoverAddrCnt === 0
+    //            && leastPlusOne === 0
+    //          ) {
+    //            rCoverAddrLeastCnt := leastPlusOne
+    //            rCoverAddr(rCoverAddrCnt.resized) := (
+    //              up(pipePayload.front).addr
+    //            )
+    //          } elsewhen (
+    //            rCoverAddr(rCoverAddrCnt.resized)
+    //            === up(pipePayload.front).addr
+    //          ) {
+    //            rCoverAddrLeastCnt := leastPlusOne
+    //          }
+    //          //--------
+    //        } otherwise {
+    //          //--------
+    //          rCoverAddrLeastCnt := 0
+    //          //--------
+    //          rCoverAddrCnt := rCoverAddrCnt + 1
+    //          //--------
+    //          rCoverAddr((rCoverAddrCnt + 1).resized) := (
+    //            up(pipePayload.front).addr
+    //          )
+    //        }
+    //      }
+    //      cover(
+    //        rCoverDiffDataCnt === rCoverDiffData.size
+    //        //&& rCoverAddrCnt === rCoverAddr.size
+    //        //rCoverDiffDataCnt === 1
+    //      )
+    //      //val rHadFlip = RegNext(
+    //      //  up(rdValid)
+    //      //  && !rUpRdValidDelVec(0)
+    //      //  && rUpRdValidDelVec(1)
+    //      //  && !rUpRdValidDelVec(2)
+    //      //  && rUpRdValidDelVec(3)
+    //      //) init(False)
+    //      cover(
+    //        rCoverDiffDataCnt === rCoverDiffData.size
+    //        && rCoverAddrCnt === rCoverAddr.size
+    //        //&& rHadFlip
+    //        //--------
+    //        //up(rdValid)
+    //        //&& !rUpRdValidDelVec(0)
+    //        //&& rUpRdValidDelVec(1)
+    //        //&& !rUpRdValidDelVec(2)
+    //        //&& rUpRdValidDelVec(3)
+    //        //--------
+    //        //&& (RegNextWhen(True, up(rdValid)) init(False))
+    //        //&& (RegNextWhen(True, !rUpRdValidDelVec(0)) init(False))
+    //        //&& (RegNextWhen(True, rUpRdValidDelVec(1)) init(False))
+    //        //&& (RegNextWhen(True, !rUpRdValidDelVec(2)) init(False))
+    //        //&& (RegNextWhen(True, rUpRdValidDelVec(3)) init(False))
+    //        //rCoverDiffDataCnt === 1
+    //      )
+    //      //val rHadNonZeroData = Vec.fill(2){
+    //      //  val temp = Reg(Flow(PipeMemTest.wordType()))
+    //      //  temp.init(temp.getZero)
+    //      //  temp
+    //      //}
+
+    //      //when (
+    //      //  io.front.fire
+    //      //  && (
+    //      //    io.front.data =/= 0
+    //      //  )
+    //      //) {
+    //      //  rHadNonZeroData.valid := True
+    //      //  rHadNonZeroData.payload := io.front.data
+    //      //}
+    //      //cover(
+    //      //  rHadNonZeroData.valid
+    //      //  //&& io.back.valid
+    //      //  //&& io.back.sum === rHadNonZeroData.payload
+    //      //  && up.valid
+    //      //  && up(pipePayload.front).data === rHadNonZeroData.payload
+    //      //)
+
+    //      //when (
+    //      //  up(rdValid)
+    //      //  //&& past(up(rdValid))
+    //      //  //&& stable(up(pipePayload.front).addr)
+    //      //  //&& !stable(up(pipePayload.front).data)
+    //      //) {
+    //      //  //when (up.isFiring /*|| rCoverSameIsFiring*/) {
+    //      //    rCoverSameCnt := rCoverSameCnt + 1
+    //      //  //}
+    //      //}
+    //      //cover(rCoverInvCnt === 3)
+    //      //cover(rCoverSameCnt === 3)
+    //      //cover(
+    //      //  //rCoverInvCnt === 3
+    //      //  //&& 
+    //      //  rCoverSameCnt === 3
+    //      //)
+    //      //cover(!stable(up(rdValid)))
+    //      //cover(!up(rdValid))
+    //      //cover(up(rdValid))
+    //    //}
+    //  }
+    //}
   }
   //--------
   Builder(linkArr.toSeq)

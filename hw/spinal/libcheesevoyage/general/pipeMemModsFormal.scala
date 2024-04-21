@@ -32,14 +32,36 @@ object PipeMemTestFormal extends App {
         ))
         assumeInitial(clockDomain.isResetActive)
         def front = dut.io.front
+        //val myFront = cloneOf(dut.io.front)
         def back = dut.io.back
+        //front <-/< myFront
 
+        //assumeInitial(myFront.payload === myFront.payload.getZero)
+        //assumeInitial(myFront.valid === myFront.valid.getZero)
+        ////anyseq(front.payload)
+        //anyseq(myFront.valid)
         assumeInitial(front.payload === front.payload.getZero)
         assumeInitial(front.valid === front.valid.getZero)
         anyseq(front.payload)
         anyseq(front.valid)
+        //myFront.valid := True
+        //anyseq(myFront.data)
+        //def addrExtWidth = 2
+        //val rFrontAddrCnt = (
+        //  Reg(
+        //    UInt(log2Up(wordCount) + addrExtWidth bits)
+        //  ) init(0x0)
+        //)
+        ////myFront.addr := RegNext(myFront.addr) init(myFront.addr.getZero)
+        //myFront.addr := rFrontAddrCnt(
+        //  rFrontAddrCnt.high downto addrExtWidth
+        //)
+        //when (myFront.fire) {
+        //  rFrontAddrCnt := rFrontAddrCnt + 1
+        //}
         assumeInitial(back.ready)
         anyseq(back.ready)
+        //back.ready := True
       }
     )
 }

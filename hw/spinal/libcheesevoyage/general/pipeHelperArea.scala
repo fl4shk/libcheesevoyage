@@ -81,19 +81,19 @@ case class PipeHelper(
         //}
       },
       down=Node()
-    ).setName(f"c$name")
+    )//.setName(f"c$name")
     linkArr += cArr.last
 
     sArr += StageLink(
       up=cArr.last.down,
       down=Node(),
-    ).setName(f"s$name")
+    )//.setName(f"s$name")
     linkArr += sArr.last
 
     s2mArr += S2MLink(
       up=sArr.last.down,
       down=Node(),
-    ).setName(f"s2m$name")
+    )//.setName(f"s2m$name")
     linkArr += s2mArr.last
 
     cArr.last
