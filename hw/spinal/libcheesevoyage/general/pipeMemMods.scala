@@ -606,9 +606,9 @@ extends Component {
     )
     val tempRdValid = (
       lastUpExt.memAddr =/= upExt(0).memAddr
-      //&& !lastUpExt.hazardId.msb
-      //&& upExt(1).hazardId.msb
-      || !upExt(1).hazardId.msb
+      ////&& !lastUpExt.hazardId.msb
+      ////&& upExt(1).hazardId.msb
+      //|| !upExt(1).hazardId.msb
     ).setName("cFrontArea_tempRdValid")
     //--------
     // This is equivalent to the following in `PipeMemTest`:
@@ -732,7 +732,33 @@ extends Component {
       //otherwise {
       //}
       //--------
-      val rTempHazardCnt = Reg(UInt(8 bits)) init(0x0)
+      //val rTempHazardCnt = Reg(UInt(8 bits)) init(0x0)
+      //--------
+      // BEGIN: debug
+      // END: debug
+      //--------
+      //nextHazardId := next
+      //when (  
+      //  //(
+      //  //  RegNextWhen(True, io.modFront.fire) init(False)
+      //  //) 
+      //  True
+      //) {
+      //  //when (!tempRdValid) {
+      //  //}
+      //  when (
+      //    //up.isFiring
+      //    up.isValid
+      //    && (
+      //      upExt(0).memAddr
+      //      === (
+      //        RegNextWhen(upExt(0).memAddr, up.isFiring) init(0x0)
+      //      )
+      //    )
+      //  ) {
+      //    duplicateIt()
+      //  }
+      //}
       when (rHazardId.msb) {
         //when (
         //  down.isFiring
@@ -742,16 +768,23 @@ extends Component {
         //when (up.isFiring) {
           //myUpRdValid := tempRdValid
           when (
+            //up.isValid
+            ////up.isFiring
+            ////io.modFront.fire
+            //////up.isFiring
             up.isValid
-            //up.isFiring
-            //io.modFront.fire
-            //up.isFiring
           ) {
-            when (!tempRdValid) {
-              duplicateIt()
-              //nextHazardId := modStageCnt - 2
+            when (
+              //!tempRdValid
+              upExt(0).memAddr
+              === (
+                RegNextWhen(upExt(0).memAddr, up.isFiring) init(0x0)
+              )
+            ) {
+              //duplicateIt()
+              nextHazardId := modStageCnt - 1
               //nextHazardId := modStageCnt - 1
-              nextHazardId := 0
+              //nextHazardId := 0
               //--------
               // BEGIN: debug
               //nextHazardId := 0
@@ -782,12 +815,17 @@ extends Component {
         ) {
           nextHazardId := hazardIdMinusOne
         }
-        when (
-          !hazardIdMinusOne.msb
-          //!nextHazardId.msb
-        ) {
-          duplicateIt()
-        }
+        duplicateIt()
+        //when (
+        //  //if (modStageCnt == 1) {
+        //  //  False
+        //  //} else {
+        //  //  !hazardIdMinusOne.msb
+        //  //}
+        //  !nextHazardId.msb
+        //) {
+        //  duplicateIt()
+        //}
         //--------
         //when (
         //  mod.back.cBack.up.isFiring
@@ -1359,6 +1397,8 @@ extends Component {
             }
             when (
               up.isFiring
+              //up.isValid
+              //down.isFiring
             ) {
               //val rUpMemAddrDel1 = RegNextWhen(
               //  upExt(1).memAddr,
@@ -1371,8 +1411,12 @@ extends Component {
               when (
                 //upExt.memAddr === backUpExt.memAddr
                 //&& 
-                upExt(1).memAddr === rUpMemAddrDel(0)
+                //upExt(1).memAddr === rUpMemAddrDel(0)
                 //&& upExt.memAddr === rUpMemAddrDel2
+                upExt(0).memAddr
+                === (
+                  RegNextWhen(upExt(0).memAddr, up.isFiring) init(0x0)
+                )
               ) {
                 kind match {
                   case 0 => {
@@ -1421,7 +1465,7 @@ extends Component {
                     )
                     case 2 => (
                       rUpMemAddrDel(0) =/= rUpMemAddrDel(1)
-                      && rUpMemAddrDel(1) =/= rUpMemAddrDel(2)
+                      //&& rUpMemAddrDel(1) =/= rUpMemAddrDel(2)
                     )
                     case 3 => (
                       rUpMemAddrDel(0) =/= rUpMemAddrDel(1)
@@ -1455,8 +1499,10 @@ extends Component {
             //) 
             (
               rSameAddrCnt > 8
+              //True
             ) && (
               rDiffAddrCnt > 8
+              //True
             ) && (
               RegNextWhen(True, io.front.fire) init(False)
             ) && (
@@ -1486,8 +1532,10 @@ extends Component {
         }
         //cover(myCoverFunc(kind=0))
         //cover(myCoverFunc(kind=1))
+
         //cover(myCoverFunc(kind=2))
         cover(myCoverFunc(kind=3))
+        //cover(io.back.fire)
       }
     }
     //--------

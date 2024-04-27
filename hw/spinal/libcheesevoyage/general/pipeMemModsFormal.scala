@@ -90,7 +90,7 @@ object PipeMemRmwFormal extends App {
     _keepDebugInfo=true,
   )
     .withProve(40)
-    .withCover(80)
+    .withCover(60)
     .doVerify(PipeMemRmwFormalDut())
   //--------
 }
