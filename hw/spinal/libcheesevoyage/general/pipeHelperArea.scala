@@ -16,6 +16,7 @@ case class PipeHelper(
   val cArr = new ArrayBuffer[CtrlLink]()
   val sArr = new ArrayBuffer[StageLink]()
   val s2mArr = new ArrayBuffer[S2MLink]()
+  private var didFinish: Boolean = false
 
   def addStage(
     //cLast: Option[CtrlLink],
@@ -23,6 +24,7 @@ case class PipeHelper(
     //isLast: Boolean=false,
     //linkArr: ArrayBuffer[Link]
     name: String,
+    finish: Boolean=false,
   ): CtrlLink = {
     //val isFirst: Boolean = (sArr.size == 0)
     //nArr += Node()
@@ -64,42 +66,63 @@ case class PipeHelper(
     ////}
     //cArr.last
     ////last
+    assert(!didFinish)
+    didFinish = finish
 
-    if (nArr.size == 0) {
-      nArr += Node().setName(f"n$name")
-    } else {
-      nArr += last.down.setName(f"n$name")
+    if (finish) {
+      nArr += s2mArr.last.down.setName(f"n$name")
+      cArr += CtrlLink(
+        up={
+          nArr.last
+        },
+        down=Node()
+      )
+      linkArr += cArr.last
+    } else { // if (!finish)
+      if (nArr.size == 0) {
+        nArr += Node().setName(f"n$name")
+      } else {
+        nArr += s2mArr.last.down.setName(f"n$name")
+      }
+      cArr += CtrlLink(
+        up={
+          nArr.last
+          //if (cArr.size == 0) {
+          //  Node().setName(f"n$name")
+          //} else {
+          //  s2mArr.last.down
+          //  //last.down//.setName(f"n$name")
+          //}
+        },
+        down=Node()
+      )//.setName(f"c$name")
+      linkArr += cArr.last
+
+      sArr += StageLink(
+        up=cArr.last.down,
+        down=Node(),
+      )//.setName(f"s$name")
+      linkArr += sArr.last
+
+      s2mArr += S2MLink(
+        up=sArr.last.down,
+        down=Node(),
+      )//.setName(f"s2m$name")
+      linkArr += s2mArr.last
     }
-    cArr += CtrlLink(
-      up={
-        nArr.last
-        //if (cArr.size == 0) {
-        //  Node().setName(f"n$name")
-        //} else {
-        //  s2mArr.last.down
-        //  //last.down//.setName(f"n$name")
-        //}
-      },
-      down=Node()
-    )//.setName(f"c$name")
-    linkArr += cArr.last
-
-    sArr += StageLink(
-      up=cArr.last.down,
-      down=Node(),
-    )//.setName(f"s$name")
-    linkArr += sArr.last
-
-    s2mArr += S2MLink(
-      up=sArr.last.down,
-      down=Node(),
-    )//.setName(f"s2m$name")
-    linkArr += s2mArr.last
 
     cArr.last
   }
+  //def finish(): Unit = {
+  //  assert(nArr.size > 0)
+  //  //cArr += CtrlLink(
+  //  //  up={
+  //  //    nArr.last
+  //  //  }
+  //  //)
+  //}
   def first = cArr(0)
-  def last = s2mArr.last
+  def last = cArr.last //s2mArr.last
   //def first = sArr(0)
   //def last = cArr.last
   //def doBuilder(): Unit = {

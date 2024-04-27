@@ -9,6 +9,92 @@ import scala.math._
 
 import libcheesevoyage.Config
 
+object PipeMemRmwFormal extends App {
+  //--------
+  def wordWidth = 8
+  def wordType() = UInt(wordWidth bits)
+  def wordCount = 4
+  def modStageCnt = (
+    //2
+    1
+  )
+  def modType() = SamplePipeMemRmwModType(
+    wordType=wordType(),
+    wordCount=wordCount,
+    modStageCnt=modStageCnt,
+  )
+  //--------
+  case class PipeMemRmwFormalDut() extends Component {
+    val dut = FormalDut(PipeMemRmw[
+      UInt,
+      SamplePipeMemRmwModType[UInt],
+      PipeMemRmwMultiRdTypeDisabled[UInt],
+    ](
+      wordType=wordType(),
+      wordCount=wordCount,
+      modType=modType(),
+      modStageCnt=modStageCnt,
+    ))
+
+    assumeInitial(clockDomain.isResetActive)
+    def front = dut.io.front
+    def modFront = dut.io.modFront
+    def modBack = dut.io.modBack
+    def back = dut.io.back
+
+    assumeInitial(front.payload === front.payload.getZero)
+    //assumeInitial(front.valid === front.valid.getZero)
+    anyseq(front.payload)
+    //anyseq(front.valid)
+    front.valid := True
+
+    //assumeInitial(modFront.ready)
+    //anyseq(modFront.ready)
+
+    //assumeInitial(modBack.payload === modBack.payload.getZero)
+    //assumeInitial(modBack.valid === modBack.valid.getZero)
+    //anyseq(modBack.payload)
+    //anyseq(modBack.valid)
+    val modFrontStm = Stream(modType())
+    val modBackStm = Stream(modType())
+    modFrontStm <-/< modFront
+    modFrontStm.translateInto(
+      into=modBackStm
+    )(
+      dataAssignment=(
+        modBackPayload,
+        modFrontPayload,
+      ) => {
+        //modBackPayload.myExt := modFrontPayload.myExt
+        modBackPayload := modFrontPayload
+        modBackPayload.myExt.allowOverride
+        modBackPayload.myExt.modMemWord := (
+          modFrontPayload.myExt.rdMemWord + 0x1
+        )
+      }
+    )
+    //modBack <-/< modBackStm
+    modBack << modBackStm
+
+    //assumeInitial(back.ready)
+    //anyseq(back.ready)
+    back.ready := True
+  }
+  //--------
+  new SpinalFormalConfig(
+    _spinalConfig=SpinalConfig(
+      defaultConfigForClockDomains=ClockDomainConfig(
+        resetKind=SYNC,
+      )
+    ).includeFormal,
+    _keepDebugInfo=true,
+  )
+    .withProve(40)
+    .withCover(80)
+    .doVerify(PipeMemRmwFormalDut())
+  //--------
+}
+
 object PipeMemTestFormal extends App {
   def wordCount = 4
   new SpinalFormalConfig(
@@ -21,7 +107,7 @@ object PipeMemTestFormal extends App {
   )
     //.withBMC(40)
     .withProve(40)
-    .withCover(40)
+    .withCover(60)
     .doVerify(
       //PipeMemTest(
       //  wordCount=wordCount
