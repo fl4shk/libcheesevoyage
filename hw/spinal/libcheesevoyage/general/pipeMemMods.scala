@@ -781,7 +781,7 @@ extends Component {
                 RegNextWhen(upExt(0).memAddr, up.isFiring) init(0x0)
               )
             ) {
-              //duplicateIt()
+              duplicateIt()
               nextHazardId := modStageCnt - 1
               //nextHazardId := modStageCnt - 1
               //nextHazardId := 0
@@ -808,24 +808,24 @@ extends Component {
           ////up.isFiring
           ////down.isFiring
           //--------
-          up.isFiring
+          //up.isFiring
           //io.modFront.fire
-          //down.isFiring
+          down.isFiring
           //--------
         ) {
           nextHazardId := hazardIdMinusOne
         }
-        duplicateIt()
-        //when (
-        //  //if (modStageCnt == 1) {
-        //  //  False
-        //  //} else {
-        //  //  !hazardIdMinusOne.msb
-        //  //}
-        //  !nextHazardId.msb
-        //) {
-        //  duplicateIt()
-        //}
+        //duplicateIt()
+        when (
+          //if (modStageCnt == 1) {
+          //  False
+          //} else {
+          //  !hazardIdMinusOne.msb
+          //}
+          !nextHazardId.msb
+        ) {
+          duplicateIt()
+        }
         //--------
         //when (
         //  mod.back.cBack.up.isFiring
@@ -1533,8 +1533,8 @@ extends Component {
         //cover(myCoverFunc(kind=0))
         //cover(myCoverFunc(kind=1))
 
-        //cover(myCoverFunc(kind=2))
-        cover(myCoverFunc(kind=3))
+        cover(myCoverFunc(kind=2))
+        //cover(myCoverFunc(kind=3))
         //cover(io.back.fire)
       }
     }
