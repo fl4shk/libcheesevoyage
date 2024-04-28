@@ -71,6 +71,15 @@ object PipeMemRmwFormal extends App {
         modBackPayload.myExt.modMemWord := (
           modFrontPayload.myExt.rdMemWord + 0x1
         )
+        when (
+          modFrontPayload.myExt.hazardId.msb
+        ) {
+          modBackPayload.myExt.dbgModMemWord := (
+            modBackPayload.myExt.modMemWord
+          )
+        } otherwise {
+          modBackPayload.myExt.dbgModMemWord := 0x0
+        }
       }
     )
     //modBack <-/< modBackStm

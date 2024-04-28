@@ -188,6 +188,13 @@ case class PipeMemRmwPayloadExt[
   //optUseModMemAddr: Boolean=false,
 ) extends Bundle {
   //--------
+  def debug: Boolean = {
+    GenerationFlags.formal {
+      return true
+    }
+    return false
+  }
+  //--------
   val memAddr = UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
   //val modMemAddrRaw = (optUseModMemAddr) generate cloneOf(memAddr)
   //def modMemAddr = (
@@ -203,17 +210,14 @@ case class PipeMemRmwPayloadExt[
 
   // hazard for when an address is already in the pipeline 
   val hazardId = (
-    SInt(log2Up(modStageCnt) + 2 bits)
+    SInt(log2Up(modStageCnt) + 3 bits)
     //UInt(log2Up(modStageCnt) bits)
   )
 
   //val frontDuplicateIt = Bool()
-  def debug: Boolean = {
-    GenerationFlags.formal {
-      return true
-    }
-    return false
-  }
+  val dbgModMemWord = (debug) generate (
+    wordType()
+  )
   val dbgMemReadSync = (debug) generate (
     wordType()
   )
@@ -689,18 +693,33 @@ extends Component {
     ////upExt.frontDuplicateIt := nextDuplicateIt
     val nextHazardId = cloneOf(upExt(1).hazardId)
     val rHazardId = RegNext(nextHazardId) init(
-      S(nextHazardId.getWidth bits, default -> True)
+      //S(nextHazardId.getWidth bits, default -> True)
+      -1
     )
     //nextHazardId := rHazardId
     //nextHazardId := modStageCnt - 1
-    nextHazardId := S(nextHazardId.getWidth bits, default -> True)
+    //nextHazardId := S(nextHazardId.getWidth bits, default -> True)
+    nextHazardId := -1
     //when (isValid) {
-    //  upExt(1).hazardId := nextHazardId
+      upExt(1).hazardId := nextHazardId
     //} otherwise {
-      upExt(1).hazardId := rHazardId
+      //upExt(1).hazardId := rHazardId
     //}
     //--------
     val hazardIdMinusOne = rHazardId - 1
+    val rUpMemAddrDel = Vec.fill(8)(
+      Reg(cloneOf(upExt(1).memAddr))
+        init(upExt(1).memAddr.getZero)
+    )
+    for (idx <- 0 until rUpMemAddrDel.size) {
+      when (up.isFiring) {
+        if (idx == 0) {
+          rUpMemAddrDel(idx) := upExt(1).memAddr
+        } else {
+          rUpMemAddrDel(idx) := rUpMemAddrDel(idx - 1)
+        }
+      }
+    }
     //when (
     //  //mod.front.cLastFront.up.isFiring
     //  down.isFiring
@@ -759,80 +778,110 @@ extends Component {
       //    duplicateIt()
       //  }
       //}
-      when (rHazardId.msb) {
-        //when (
-        //  down.isFiring
-        //) {
-        //}
-        //--------
-        //when (up.isFiring) {
-          //myUpRdValid := tempRdValid
+      //--------
+      val nextDuplicateIt = Bool()
+      val rDuplicateIt = RegNext(nextDuplicateIt) init(False)
+      nextDuplicateIt := rDuplicateIt
+      when (!rDuplicateIt) {
+        when (
+          up.isValid
+        ) {
           when (
-            //up.isValid
-            ////up.isFiring
-            ////io.modFront.fire
-            //////up.isFiring
-            up.isValid
+            upExt(0).memAddr === rUpMemAddrDel(0)
           ) {
-            when (
-              //!tempRdValid
-              upExt(0).memAddr
-              === (
-                RegNextWhen(upExt(0).memAddr, up.isFiring) init(0x0)
-              )
-            ) {
-              duplicateIt()
-              nextHazardId := modStageCnt - 1
-              //nextHazardId := modStageCnt - 1
-              //nextHazardId := 0
-              //--------
-              // BEGIN: debug
-              //nextHazardId := 0
-              // end: debug
-              //--------
-              //when (up.isValid) {
-              //}
-            }
+            duplicateIt()
+            nextDuplicateIt := True
+            nextHazardId := modStageCnt // has to be at least this much
+          }
+        }
+      } otherwise { // when (rDuplicateIt)
+        //when (!rHazardId.msb) {
+          when (down.isFiring) {
+            nextHazardId := hazardIdMinusOne
+          }
+          when (nextHazardId.msb) {
+            nextDuplicateIt := False
+          } otherwise {
+            duplicateIt()
           }
         //}
-        //--------
-      } otherwise { // when (!rHazardId.msb)
-        //when (nextHazardId.msb) {
-        //  duplicateIt()
-        //}
-        //duplicateIt()
-        //--------
-        when (
-          ////down.isFiring
-          ////io.modFront.fire
-          ////up.isFiring
-          ////down.isFiring
-          //--------
-          //up.isFiring
-          //io.modFront.fire
-          down.isFiring
-          //--------
-        ) {
-          nextHazardId := hazardIdMinusOne
-        }
-        //duplicateIt()
-        when (
-          //if (modStageCnt == 1) {
-          //  False
-          //} else {
-          //  !hazardIdMinusOne.msb
-          //}
-          !nextHazardId.msb
-        ) {
-          duplicateIt()
-        }
-        //--------
-        //when (
-        //  mod.back.cBack.up.isFiring
-        //  && backUpExt.hazardId === 0
-        //) {
-        //}
       }
+      //when (rHazardId.msb) {
+      //  //when (
+      //  //  down.isFiring
+      //  //) {
+      //  //}
+      //  //--------
+      //  //when (up.isFiring) {
+      //    //myUpRdValid := tempRdValid
+      //    when (
+      //      //up.isValid
+      //      ////up.isFiring
+      //      ////io.modFront.fire
+      //      //////up.isFiring
+      //      up.isValid
+      //    ) {
+      //      when (
+      //        //!tempRdValid
+      //        upExt(0).memAddr
+      //        === (
+      //          //RegNextWhen(upExt(0).memAddr, up.isFiring) init(0x0)
+      //          rUpMemAddrDel(0)
+      //        )
+      //      ) {
+      //        duplicateIt()
+      //        nextHazardId := modStageCnt - 1
+      //        //nextHazardId := modStageCnt - 1
+      //        //nextHazardId := 0
+      //        //--------
+      //        // BEGIN: debug
+      //        //nextHazardId := 0
+      //        // end: debug
+      //        //--------
+      //        //when (up.isValid) {
+      //        //}
+      //      }
+      //    }
+      //  //}
+      //  //--------
+      //} otherwise { // when (!rHazardId.msb)
+      //  //when (nextHazardId.msb) {
+      //  //  duplicateIt()
+      //  //}
+      //  //duplicateIt()
+      //  //--------
+      //  when (
+      //    ////down.isFiring
+      //    ////io.modFront.fire
+      //    ////up.isFiring
+      //    ////down.isFiring
+      //    //--------
+      //    //up.isFiring
+      //    //io.modFront.fire
+      //    down.isFiring
+      //    //--------
+      //  ) {
+      //    nextHazardId := hazardIdMinusOne
+      //  }
+      //  //duplicateIt()
+      //  when (
+      //    //if (modStageCnt == 1) {
+      //    //  False
+      //    //} else {
+      //    //  !hazardIdMinusOne.msb
+      //    //}
+      //    !nextHazardId.msb
+      //  ) {
+      //    duplicateIt()
+      //  }
+      //  //--------
+      //  //when (
+      //  //  mod.back.cBack.up.isFiring
+      //  //  && backUpExt.hazardId === 0
+      //  //) {
+      //  //}
+      //}
+      ////--------
     //}
     //def setRdMemWord(): Unit = {
     //}
@@ -986,18 +1035,28 @@ extends Component {
       //&& up.isFiring
       && up.isValid
     ) {
-      when (
-        //backUpExt.hazardId === 0
-        backUpExt.hazardId.msb
-        && mod.back.cBack.up.isFiring
-        && upExt(1).memAddr === backUpExt.memAddr
-      ) {
-        upExt(1).rdMemWord := backUpExt.modMemWord
-      } otherwise {
+      //when (
+      //  //backUpExt.hazardId === 0
+      //  backUpExt.hazardId.msb
+      //  && mod.back.cBack.up.isFiring
+      //  && upExt(1).memAddr === backUpExt.memAddr
+      //) {
+      //  upExt(1).rdMemWord := backUpExt.modMemWord
+      //} otherwise {
+      //  upExt(1).rdMemWord := modMem.readSync(
+      //    address=upExt(1).memAddr
+      //  )
+      //}
+      //when (
+      //  !nextHazardId
+      //)
+      //when (nextDuplicateIt) {
+      //  upExt(1).rdMemWord := upExt(1).rdMemWord.getZero
+      //} otherwise {
         upExt(1).rdMemWord := modMem.readSync(
-          address=upExt(1).memAddr
+          address=upExt(1).memAddr,
         )
-      }
+      //}
     }
 
     //otherwise {
@@ -1131,21 +1190,26 @@ extends Component {
             //up.isFiring
             up.isValid
           ) {
-            when (
-              backUpExt.hazardId.msb
-              && mod.back.cBack.up.isFiring
-              && upExt(1).memAddr === backUpExt.memAddr
-            ) {
-              assert(
-                upExt(1).rdMemWord === backUpExt.modMemWord
+            //when (
+            //  backUpExt.hazardId.msb
+            //  && mod.back.cBack.up.isFiring
+            //  && upExt(1).memAddr === backUpExt.memAddr
+            //) {
+            //  assert(
+            //    upExt(1).rdMemWord === backUpExt.modMemWord
+            //  )
+            //} otherwise {
+            //  assert(
+            //    upExt(1).rdMemWord === modMem.readSync(
+            //      address=upExt(1).memAddr
+            //    )
+            //  )
+            //}
+            assert(
+              upExt(1).rdMemWord === modMem.readSync(
+                address=upExt(1).memAddr,
               )
-            } otherwise {
-              assert(
-                upExt(1).rdMemWord === modMem.readSync(
-                  address=upExt(1).memAddr
-                )
-              )
-            }
+            )
           } otherwise {
             assert(
               /*past*/(upExt(1).rdMemWord)
@@ -1382,19 +1446,6 @@ extends Component {
             //) {
             //  rSomeDuplicateItCnt := rSomeDuplicateItCnt + 1
             //}
-            val rUpMemAddrDel = Vec.fill(8)(
-              Reg(cloneOf(upExt(1).memAddr))
-                init(upExt(1).memAddr.getZero)
-            )
-            for (idx <- 0 until rUpMemAddrDel.size) {
-              when (up.isFiring) {
-                if (idx == 0) {
-                  rUpMemAddrDel(idx) := upExt(1).memAddr
-                } else {
-                  rUpMemAddrDel(idx) := rUpMemAddrDel(idx - 1)
-                }
-              }
-            }
             when (
               up.isFiring
               //up.isValid
@@ -1413,10 +1464,11 @@ extends Component {
                 //&& 
                 //upExt(1).memAddr === rUpMemAddrDel(0)
                 //&& upExt.memAddr === rUpMemAddrDel2
-                upExt(0).memAddr
-                === (
-                  RegNextWhen(upExt(0).memAddr, up.isFiring) init(0x0)
-                )
+                upExt(1).memAddr
+                //=== (
+                //  RegNextWhen(upExt(1).memAddr, up.isFiring) init(0x0)
+                //)
+                === rUpMemAddrDel(0)
               ) {
                 kind match {
                   case 0 => {
@@ -1437,16 +1489,16 @@ extends Component {
                     //}
                     //rSameAddrCnt := rSameAddrCnt + 1
                   }
-                  case 1 | 2 => {
+                  case 1 | 2 | 3 => {
                     rSameAddrCnt := rSameAddrCnt + 1
                   }
-                  case 3 => {
-                    when (
-                      rUpMemAddrDel(0) =/= rUpMemAddrDel(1)
-                    ) {
-                      rSameAddrCnt := rSameAddrCnt + 1
-                    }
-                  }
+                  //case 3 => {
+                  //  when (
+                  //    rUpMemAddrDel(0) =/= rUpMemAddrDel(1)
+                  //  ) {
+                  //    rSameAddrCnt := rSameAddrCnt + 1
+                  //  }
+                  //}
                   case _ => {
                   }
                 }
@@ -1533,8 +1585,8 @@ extends Component {
         //cover(myCoverFunc(kind=0))
         //cover(myCoverFunc(kind=1))
 
-        cover(myCoverFunc(kind=2))
-        //cover(myCoverFunc(kind=3))
+        //cover(myCoverFunc(kind=2))
+        cover(myCoverFunc(kind=3))
         //cover(io.back.fire)
       }
     }
