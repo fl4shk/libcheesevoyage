@@ -388,6 +388,7 @@ case class PipeMemRmw[
   multiRdType: HardType[MultiRdT]=PipeMemRmwMultiRdTypeDisabled[WordT](),
   multiRdSize: Int=0,
   initBigInt: Option[Seq[BigInt]]=None,
+  forFmax: Boolean=false,
 )
 //(
 //  getModAddr: (
@@ -791,7 +792,16 @@ extends Component {
           ) {
             duplicateIt()
             nextDuplicateIt := True
-            nextHazardId := modStageCnt // has to be at least this much
+            nextHazardId := (
+              modStageCnt
+              - (
+                if (!forFmax) (
+                  1
+                ) else (
+                  0 
+                )
+              )
+            )
           }
         }
       } otherwise { // when (rDuplicateIt)
@@ -1035,28 +1045,36 @@ extends Component {
       //&& up.isFiring
       && up.isValid
     ) {
-      //when (
-      //  //backUpExt.hazardId === 0
-      //  backUpExt.hazardId.msb
-      //  && mod.back.cBack.up.isFiring
-      //  && upExt(1).memAddr === backUpExt.memAddr
-      //) {
-      //  upExt(1).rdMemWord := backUpExt.modMemWord
-      //} otherwise {
-      //  upExt(1).rdMemWord := modMem.readSync(
-      //    address=upExt(1).memAddr
-      //  )
-      //}
-      //when (
-      //  !nextHazardId
-      //)
-      //when (nextDuplicateIt) {
-      //  upExt(1).rdMemWord := upExt(1).rdMemWord.getZero
-      //} otherwise {
-        upExt(1).rdMemWord := modMem.readSync(
-          address=upExt(1).memAddr,
-        )
-      //}
+      if (!forFmax) {
+        when (
+          //backUpExt.hazardId === 0
+          backUpExt.hazardId.msb
+          //&& mod.back.cBack.up.isFiring
+          && mod.back.cBack.up.isValid
+          && upExt(1).memAddr === backUpExt.memAddr
+        ) {
+          upExt(1).rdMemWord := backUpExt.modMemWord
+        } otherwise {
+          upExt(1).rdMemWord := modMem.readSync(
+            address=upExt(1).memAddr
+          )
+        }
+      } else { // if (forFmax)
+        //when (
+        //  !nextHazardId
+        //)
+        //when (nextDuplicateIt) {
+        //  upExt(1).rdMemWord := upExt(1).rdMemWord.getZero
+        //} otherwise {
+          //--------
+          // BEGIN: debug
+          upExt(1).rdMemWord := modMem.readSync(
+            address=upExt(1).memAddr,
+          )
+          // END: debug
+          //--------
+        //}
+      }
     }
 
     //otherwise {
@@ -1190,26 +1208,30 @@ extends Component {
             //up.isFiring
             up.isValid
           ) {
-            //when (
-            //  backUpExt.hazardId.msb
-            //  && mod.back.cBack.up.isFiring
-            //  && upExt(1).memAddr === backUpExt.memAddr
-            //) {
-            //  assert(
-            //    upExt(1).rdMemWord === backUpExt.modMemWord
-            //  )
-            //} otherwise {
-            //  assert(
-            //    upExt(1).rdMemWord === modMem.readSync(
-            //      address=upExt(1).memAddr
-            //    )
-            //  )
-            //}
-            assert(
-              upExt(1).rdMemWord === modMem.readSync(
-                address=upExt(1).memAddr,
+            if (!forFmax) {
+              when (
+                backUpExt.hazardId.msb
+                //&& mod.back.cBack.up.isFiring
+                && mod.back.cBack.up.isValid
+                && upExt(1).memAddr === backUpExt.memAddr
+              ) {
+                assert(
+                  upExt(1).rdMemWord === backUpExt.modMemWord
+                )
+              } otherwise {
+                assert(
+                  upExt(1).rdMemWord === modMem.readSync(
+                    address=upExt(1).memAddr
+                  )
+                )
+              }
+            } else { // if (forFmax)
+              assert(
+                upExt(1).rdMemWord === modMem.readSync(
+                  address=upExt(1).memAddr,
+                )
               )
-            )
+            }
           } otherwise {
             assert(
               /*past*/(upExt(1).rdMemWord)
