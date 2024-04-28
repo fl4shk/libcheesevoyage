@@ -48,10 +48,10 @@ object PipeMemRmwFormal extends App {
     def back = dut.io.back
 
     assumeInitial(front.payload === front.payload.getZero)
-    //assumeInitial(front.valid === front.valid.getZero)
+    assumeInitial(front.valid === front.valid.getZero)
     anyseq(front.payload)
-    //anyseq(front.valid)
-    front.valid := True
+    anyseq(front.valid)
+    //front.valid := True
 
     //assumeInitial(modFront.ready)
     //anyseq(modFront.ready)
@@ -90,9 +90,9 @@ object PipeMemRmwFormal extends App {
     //modBack <-/< modBackStm
     modBack << modBackStm
 
-    //assumeInitial(back.ready)
-    //anyseq(back.ready)
-    back.ready := True
+    assumeInitial(back.ready)
+    anyseq(back.ready)
+    //back.ready := True
   }
   //--------
   new SpinalFormalConfig(
