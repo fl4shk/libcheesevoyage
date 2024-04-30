@@ -423,6 +423,7 @@ case class LcvVgaCtrlMiscIo(
   //val pixelEnPipe2 = Bool()
   val pixelEnPipe1 = Bool()
   val pixelEn = Bool()
+  val pastPixelEn = Bool()
   //val visibPipe3 = Bool()
   //val visibPipe2 = Bool()
   val visibPipe1 = Bool()
@@ -565,6 +566,8 @@ case class LcvVgaCtrl(
     clkRate=clkRate,
     vgaTimingInfo=vgaTimingInfo
   )
+  //--------
+  misc.pastPixelEn := RegNext(misc.pixelEn) init(misc.pixelEn.getZero)
   //--------
   //val fifo = Fifo
   val fifo = AsyncReadFifo(
@@ -811,11 +814,12 @@ case class LcvVgaCtrl(
   when (
     //fifoPop.valid
     //&& 
-    misc.pixelEnPipe1
+    //misc.pixelEnPipe1
     //&& rPastPixelEn
-    //&& misc.pixelEn
+    misc.pixelEn
     //&& misc.visib
-    && hpipe.rVisibPipe1 && vpipe.rVisib
+    //&& hpipe.rVisibPipe1 && vpipe.rVisib
+    && hpipe.rVisib && vpipe.rVisib
     //&& !fifoEmpty
   ) {
     //rFifoPopReady := True

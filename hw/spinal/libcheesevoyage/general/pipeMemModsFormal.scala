@@ -32,7 +32,7 @@ object PipeMemRmwFormal extends App {
     val dut = FormalDut(PipeMemRmw[
       UInt,
       SamplePipeMemRmwModType[UInt],
-      PipeMemRmwMultiRdTypeDisabled[UInt],
+      PipeMemRmwDualRdTypeDisabled[UInt],
     ](
       wordType=wordType(),
       wordCount=wordCount,

@@ -64,21 +64,14 @@ case class Gpu2dTest(
     when (rPalCnt < numColsInPal) {
       when (palPushFire) {
         when (rPalCnt + 1 === 1) {
-          rPalEntry.col.r := U(
-            //4
-            //0
-            rPalEntry.col.r.getWidth bits,
-            default -> True
-          )
+          rPalEntry.col.r := 0
           rPalEntry.col.g := (
             //2
             0
           )
-          rPalEntry.col.b := U(
-            //4
+          rPalEntry.col.b := (
+            4
             //0
-            rPalEntry.col.b.getWidth bits,
-            default -> True
           )
         } elsewhen (rPalCnt + 1 === 2) {
           rPalEntry.col.r := (default -> True)
@@ -738,19 +731,12 @@ case class Gpu2dTest(
     isAffine=false,
   )
 
-  def extraObjTileCntWidth = (
-    if (dbgPipeMemRmw) {
-      2
-    } else {
-      0
-    }
-  )
+  def extraObjTileCntWidth = 2
   val nextObjTileCnt = SInt(
     //params.numObjTilesPow + 2 bits
     //params.objTileSliceMemIdxWidth + 5 bits
     params.objTileSliceMemIdxWidth + 5
-    + extraObjTileCntWidth
-    bits
+    + extraObjTileCntWidth bits
   )
   val rObjTileCnt = RegNext(nextObjTileCnt) init(-1)
   val rObjTilePushValid = Reg(Bool()) init(True)
@@ -793,10 +779,7 @@ case class Gpu2dTest(
           //    default -> False,
           //  )
           //).asUInt
-          (
-            rObjTileCnt
-            >> extraObjTileCntWidth
-          )(
+          (rObjTileCnt >> extraObjTileCntWidth)(
             //params.objTileWidthRshift - 1 downto 0
             params.objTileSize2dPow.x - 1
             downto params.objTileWidthRshift
@@ -804,11 +787,7 @@ case class Gpu2dTest(
         }
       },
       pxCoordY=(
-        (
-          rObjTileCnt
-          >> extraObjTileCntWidth
-        )
-        (
+        (rObjTileCnt >> extraObjTileCntWidth)(
           (
             params.objTileSize2dPow.y
             //+ params.objSliceTileWidthPow
@@ -830,19 +809,17 @@ case class Gpu2dTest(
     )
   }
   val tempObjTileCnt = (
-    (
-      rObjTileCnt
-      >> extraObjTileCntWidth
-    )
+    //(rObjTileCnt >> extraObjTileCntWidth)
+    rObjTileCnt
     (
       (
-        rObjTileCnt.high - extraObjTileCntWidth
+        rObjTileCnt.high //- extraObjTileCntWidth
       ) downto (
         params.objTileSize2dPow.y
         //+ params.objSliceTileWidthPow
         + params.objTileWidthRshift
-        ////+ extraObjTileCntWidth
         //+ extraObjTileCntWidth
+        + extraObjTileCntWidth
       )
     )
     //>> (
@@ -856,11 +833,11 @@ case class Gpu2dTest(
   tempObjTileSlice.allowOverride
 
   nextObjTileCnt := rObjTileCnt
-  when (
-    tempObjTileCnt
-    //< (params.numObjTiles << extraObjTileCntWidth)
-    < params.numObjTiles
-  ) {
+  //when (
+  //  tempObjTileCnt
+  //  //< (params.numObjTiles << extraObjTileCntWidth)
+  //  < params.numObjTiles
+  //) {
     when (pop.objTilePush.fire) {
       when (tempObjTileCnt === 0) {
         //mkObjTile(0, 1)
@@ -895,10 +872,10 @@ case class Gpu2dTest(
       ////tempObjTileSlice := tempObjTileSlice.getZero
       //nextObjTileCnt := rObjTileCnt
     }
-  } otherwise {
-    ////tempObjTileSlice := tempObjTileSlice.getZero
-    //nextObjTileCnt := rObjTileCnt
-  }
+  //} otherwise {
+  //  ////tempObjTileSlice := tempObjTileSlice.getZero
+  //  //nextObjTileCnt := rObjTileCnt
+  //}
 
   when (
     tempObjTileCnt
@@ -908,8 +885,7 @@ case class Gpu2dTest(
       //<< extraObjTileCntWidth
     )
   ) {
-    nextObjTileCnt := 0x0
-    //rObjTilePushValid := False
+    rObjTilePushValid := False
   }
   val rTempForceWrVec = Vec.fill(params.numObjTiles)(
     Reg(Bool()) init(True)
@@ -1020,41 +996,17 @@ case class Gpu2dTest(
   rHoldCnt.init(rHoldCnt.getZero)
   rHoldCnt.incr()
 
-  def doSnesNotFire(): Unit = {
+  //when (
+  //  if (!optRawSnesButtons) {
+  //    !snesHelper.io.pop.fire
+  //  } else { // if (optRawSnesButtons)
+  //    !io.rawSnesButtons.fire
+  //  }
+  //) {
     rSnesPopReady := True
     when (
-      rObjAttrsCnt === 1
-    ) {
-      //tempObjAttrs := tempObjAttrs.getZero
-      //tempObjAttrs.allowOverride
-      tempObjAttrs.tileIdx := 2
-      tempObjAttrs.pos.x := (
-        0
-        //8
-      )
-      tempObjAttrs.pos.y := (
-        0
-      )
-      tempObjAttrs.prio := (
-        0
-        //1
-      )
-      tempObjAttrs.size2d.x := (
-        params.objTileSize2d.x
-      )
-      tempObjAttrs.size2d.y := (
-        params.objTileSize2d.y
-      )
-      tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-      when (pop.objAttrsPush.fire) {
-        nextObjAttrsCnt := rObjAttrsCnt + 1
-      } otherwise {
-        nextObjAttrsCnt := rObjAttrsCnt
-      }
-    } elsewhen (
-      //rObjAttrsCnt > 0
-      //&& 
-      rObjAttrsCnt < params.numObjs
+      rObjAttrsCnt > 0
+      && rObjAttrsCnt < params.numObjs
     ) {
       //when (
       //  rObjAttrsCnt
@@ -1225,6 +1177,35 @@ case class Gpu2dTest(
       //  tempObjAttrs := tempObjAttrs.getZero
       //  nextObjAttrsCnt := rObjAttrsCnt
       //}
+    } elsewhen (
+      rObjAttrsCnt === 0
+    ) {
+      //tempObjAttrs := tempObjAttrs.getZero
+      //tempObjAttrs.allowOverride
+      tempObjAttrs.tileIdx := 2
+      tempObjAttrs.pos.x := (
+        //1
+        8
+      )
+      tempObjAttrs.pos.y := (
+        0
+      )
+      tempObjAttrs.prio := (
+        0
+        //1
+      )
+      tempObjAttrs.size2d.x := (
+        params.objTileSize2d.x
+      )
+      tempObjAttrs.size2d.y := (
+        params.objTileSize2d.y
+      )
+      tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+      when (pop.objAttrsPush.fire) {
+        nextObjAttrsCnt := rObjAttrsCnt + 1
+      } otherwise {
+        nextObjAttrsCnt := rObjAttrsCnt
+      }
     } otherwise {
       tempObjAttrs := tempObjAttrs.getZero
       nextObjAttrsCnt := rObjAttrsCnt
@@ -1237,163 +1218,149 @@ case class Gpu2dTest(
     pop.objAttrsPush.payload.memIdx := (
       rObjAttrsCnt.asUInt(params.objAttrsMemIdxWidth - 1 downto 0)
     )
-  }
-  def doSnesFire(): Unit = {
-    nextObjAttrsCnt := RegNext(nextObjAttrsCnt) init(0x0)
-    rSnesPopReady := False
-    //val rTileIdx = Reg(cloneOf(tempObjAttrs.tileIdx)) init(0x1)
-    def myFracWidth = (
-      1
-      //4
-      //8
-      //16
-    )
-    val rTileIdx = Reg(
-      UInt((tempObjAttrs.tileIdx.getWidth + myFracWidth) bits)
-    ) init(1 << myFracWidth)
-    //tempObjAttrs.tileIdx := 1
-    tempObjAttrs.tileIdx := rTileIdx(rTileIdx.high downto myFracWidth)
+  //} otherwise {
+  //  //nextObjAttrsCnt := RegNext(nextObjAttrsCnt) init(0x0)
+  //  //rSnesPopReady := False
+  //  ////val rTileIdx = Reg(cloneOf(tempObjAttrs.tileIdx)) init(0x1)
+  //  //def myFracWidth = (
+  //  //  //1
+  //  //  4
+  //  //  //8
+  //  //  //16
+  //  //)
+  //  //val rTileIdx = Reg(
+  //  //  UInt((tempObjAttrs.tileIdx.getWidth + myFracWidth) bits)
+  //  //) init(1 << myFracWidth)
+  //  ////tempObjAttrs.tileIdx := 1
+  //  //tempObjAttrs.tileIdx := rTileIdx(rTileIdx.high downto myFracWidth)
 
-    //tempObjAttrs.tileMemIdx := 2
-    //tempObjAttrs.pos.x := 16
-    //tempObjAttrs.pos.x := -1
-    //tempObjAttrs.pos.x := 0
-    //tempObjAttrs.pos.x := 1
-    //tempObjAttrs.pos.x := 7
-    //tempObjAttrs.pos.x := 7
-    def buttons = (
-      if (!optRawSnesButtons) {
-        snesHelper.io.pop.payload
-      } else { // if (optRawSnesButtons)
-        io.rawSnesButtons.payload
-      }
-    )
-    //val rHoldCnt = Reg(
-    //  UInt((log2Up(clkRate.toTime.toBigDecimal.toInt) + 1) bits)
-    //) init(0x0)
-    //val rPos = Reg(cloneOf(tempObjAttrs.pos))
-    val rPos = Reg(DualTypeNumVec2[SInt, SInt](
-      dataTypeX=SInt((tempObjAttrs.pos.x.getWidth + myFracWidth) bits),
-      dataTypeY=SInt((tempObjAttrs.pos.y.getWidth + myFracWidth) bits),
-      //dataTypeX=SInt((tempObjAttrs.pos.x.getWidth) bits),
-      //dataTypeY=SInt((tempObjAttrs.pos.y.getWidth) bits),
-    ))
-    //rPos.init(rPos.getZero)
-    rPos.x.init(
-      //0x2
-      //0x1
-      //0x4
-      //0x4 << myFracWidth
-      0x0 << myFracWidth
-    )
-    rPos.y.init(
-      0x0 << myFracWidth
-    )
-    //--------
-    when (
-      //rHoldCnt(rHoldCnt.high - 1 downto 0) === 0x0
-      rHoldCnt.overflowPipe(0)
-    ) {
-      switch (
-        Cat(buttons(SnesButtons.B), buttons(SnesButtons.Y))
-      ) {
-        is (B"01") {
-          // B button held
-          rTileIdx := rTileIdx - 1
-        }
-        is (B"10") {
-          // Y button right
-          rTileIdx := rTileIdx + 1
-        }
-        default {
-        }
-      }
-      switch (
-        Cat(buttons(SnesButtons.DpadLeft), buttons(SnesButtons.DpadRight))
-      ) {
-        is (B"01") {
-          // move left
-          rPos.x := rPos.x - 1
-        }
-        is (B"10") {
-          // move right
-          rPos.x := rPos.x + 1
-        }
-        default {
-        }
-      }
-      switch (
-        Cat(buttons(SnesButtons.DpadUp), buttons(SnesButtons.DpadDown))
-      ) {
-        is (B"01") {
-          // move up
-          rPos.y := rPos.y - 1
-        }
-        is (B"10") {
-          // move down
-          rPos.y := rPos.y + 1
-        }
-        default {
-        }
-      }
-    }
-    tempObjAttrs.pos.x := (
-      rPos.x(rPos.x.high downto myFracWidth)
-      //rPos.x(rPos.x.high downto 0)
-    )
-    tempObjAttrs.pos.y := (
-      rPos.y(rPos.y.high downto myFracWidth)
-      //rPos.y(rPos.y.high downto 0)
-    )
-    tempObjAttrs.prio := (
-      //1
-      0
-    )
-    tempObjAttrs.size2d.x := params.objTileSize2d.x
-    tempObjAttrs.size2d.y := params.objTileSize2d.y
-    //tempObjAttrs.size2d.y := params.objTileSize2d.y - 1
-    tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-    //tempObjAttrs.affine := tempObjAttrs.affine.getZero
-    //tempObjAttrs.affine.doIt := True
-    //tempObjAttrs.affine.mat(0)(0) := (
-    //  //1 << (tempObjAttrs.affine.fracWidth - 1)
-    //  //2 << tempObjAttrs.affine.fracWidth
-    //  (1 << Gpu2dAffine.fracWidth)
-    //  //| (1 << (Gpu2dAffine.fracWidth - 1))
-    //  | (1 << (Gpu2dAffine.fracWidth - 2))
-    //)
-    //tempObjAttrs.affine.mat(0)(1) := 0
-    //tempObjAttrs.affine.mat(1)(0) := 0
-    //tempObjAttrs.affine.mat(1)(1) := (
-    //  //1 << (tempObjAttrs.affine.fracWidth - 1)
-    //  //2 << tempObjAttrs.affine.fracWidth
-    //  (1 << Gpu2dAffine.fracWidth)
-    //  //| (1 << (Gpu2dAffine.fracWidth - 1))
-    //  | (1 << (Gpu2dAffine.fracWidth - 2))
-    //)
-    //tempObjAttrs := tempObjAttrs.getZero
-    pop.objAttrsPush.valid := True
-    //pop.objAttrsPush.payload.objAttrs := (
-    //  Gpu2dObjAttrs(params=params).getZero
-    //)
-    pop.objAttrsPush.payload.objAttrs := tempObjAttrs
-    pop.objAttrsPush.payload.memIdx := (
-      //rObjAttrsCnt.asUInt(params.objAttrsMemIdxWidth - 1 downto 0)
-      0x1
-    )
-  }
-
-  when (
-    if (!optRawSnesButtons) {
-      !snesHelper.io.pop.fire
-    } else { // if (optRawSnesButtons)
-      !io.rawSnesButtons.fire
-    }
-  ) {
-    doSnesNotFire()
-  } otherwise {
-    doSnesFire()
-  }
+  //  ////tempObjAttrs.tileMemIdx := 2
+  //  ////tempObjAttrs.pos.x := 16
+  //  ////tempObjAttrs.pos.x := -1
+  //  ////tempObjAttrs.pos.x := 0
+  //  ////tempObjAttrs.pos.x := 1
+  //  ////tempObjAttrs.pos.x := 7
+  //  ////tempObjAttrs.pos.x := 7
+  //  //def buttons = (
+  //  //  if (!optRawSnesButtons) {
+  //  //    snesHelper.io.pop.payload
+  //  //  } else { // if (optRawSnesButtons)
+  //  //    io.rawSnesButtons.payload
+  //  //  }
+  //  //)
+  //  ////val rHoldCnt = Reg(
+  //  ////  UInt((log2Up(clkRate.toTime.toBigDecimal.toInt) + 1) bits)
+  //  ////) init(0x0)
+  //  ////val rPos = Reg(cloneOf(tempObjAttrs.pos))
+  //  //val rPos = Reg(DualTypeNumVec2[SInt, SInt](
+  //  //  dataTypeX=SInt((tempObjAttrs.pos.x.getWidth + myFracWidth) bits),
+  //  //  dataTypeY=SInt((tempObjAttrs.pos.y.getWidth + myFracWidth) bits),
+  //  //  //dataTypeX=SInt((tempObjAttrs.pos.x.getWidth) bits),
+  //  //  //dataTypeY=SInt((tempObjAttrs.pos.y.getWidth) bits),
+  //  //))
+  //  ////rPos.init(rPos.getZero)
+  //  //rPos.x.init(
+  //  //  //0x2
+  //  //  //0x1
+  //  //  //0x4
+  //  //  0x4 << myFracWidth
+  //  //)
+  //  //rPos.y.init(
+  //  //  0x0 << myFracWidth
+  //  //)
+  //  ////--------
+  //  ////when (
+  //  ////  //rHoldCnt(rHoldCnt.high - 1 downto 0) === 0x0
+  //  ////  rHoldCnt.overflowPipe(0)
+  //  ////) {
+  //  ////  switch (
+  //  ////    Cat(buttons(SnesButtons.B), buttons(SnesButtons.Y))
+  //  ////  ) {
+  //  ////    is (B"01") {
+  //  ////      // B button held
+  //  ////      rTileIdx := rTileIdx - 1
+  //  ////    }
+  //  ////    is (B"10") {
+  //  ////      // Y button right
+  //  ////      rTileIdx := rTileIdx + 1
+  //  ////    }
+  //  ////    default {
+  //  ////    }
+  //  ////  }
+  //  ////  switch (
+  //  ////    Cat(buttons(SnesButtons.DpadLeft), buttons(SnesButtons.DpadRight))
+  //  ////  ) {
+  //  ////    is (B"01") {
+  //  ////      // move left
+  //  ////      rPos.x := rPos.x - 1
+  //  ////    }
+  //  ////    is (B"10") {
+  //  ////      // move right
+  //  ////      rPos.x := rPos.x + 1
+  //  ////    }
+  //  ////    default {
+  //  ////    }
+  //  ////  }
+  //  ////  switch (
+  //  ////    Cat(buttons(SnesButtons.DpadUp), buttons(SnesButtons.DpadDown))
+  //  ////  ) {
+  //  ////    is (B"01") {
+  //  ////      // move up
+  //  ////      rPos.y := rPos.y - 1
+  //  ////    }
+  //  ////    is (B"10") {
+  //  ////      // move down
+  //  ////      rPos.y := rPos.y + 1
+  //  ////    }
+  //  ////    default {
+  //  ////    }
+  //  ////  }
+  //  ////}
+  //  //tempObjAttrs.pos.x := (
+  //  //  rPos.x(rPos.x.high downto myFracWidth)
+  //  //  //rPos.x(rPos.x.high downto 0)
+  //  //)
+  //  //tempObjAttrs.pos.y := (
+  //  //  rPos.y(rPos.y.high downto myFracWidth)
+  //  //  //rPos.y(rPos.y.high downto 0)
+  //  //)
+  //  //tempObjAttrs.prio := (
+  //  //  //1
+  //  //  0
+  //  //)
+  //  //tempObjAttrs.size2d.x := params.objTileSize2d.x
+  //  //tempObjAttrs.size2d.y := params.objTileSize2d.y
+  //  ////tempObjAttrs.size2d.y := params.objTileSize2d.y - 1
+  //  //tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+  //  ////tempObjAttrs.affine := tempObjAttrs.affine.getZero
+  //  ////tempObjAttrs.affine.doIt := True
+  //  ////tempObjAttrs.affine.mat(0)(0) := (
+  //  ////  //1 << (tempObjAttrs.affine.fracWidth - 1)
+  //  ////  //2 << tempObjAttrs.affine.fracWidth
+  //  ////  (1 << Gpu2dAffine.fracWidth)
+  //  ////  //| (1 << (Gpu2dAffine.fracWidth - 1))
+  //  ////  | (1 << (Gpu2dAffine.fracWidth - 2))
+  //  ////)
+  //  ////tempObjAttrs.affine.mat(0)(1) := 0
+  //  ////tempObjAttrs.affine.mat(1)(0) := 0
+  //  ////tempObjAttrs.affine.mat(1)(1) := (
+  //  ////  //1 << (tempObjAttrs.affine.fracWidth - 1)
+  //  ////  //2 << tempObjAttrs.affine.fracWidth
+  //  ////  (1 << Gpu2dAffine.fracWidth)
+  //  ////  //| (1 << (Gpu2dAffine.fracWidth - 1))
+  //  ////  | (1 << (Gpu2dAffine.fracWidth - 2))
+  //  ////)
+  //  ////tempObjAttrs := tempObjAttrs.getZero
+  //  //pop.objAttrsPush.valid := True
+  //  ////pop.objAttrsPush.payload.objAttrs := (
+  //  ////  Gpu2dObjAttrs(params=params).getZero
+  //  ////)
+  //  //pop.objAttrsPush.payload.objAttrs := tempObjAttrs
+  //  //pop.objAttrsPush.payload.memIdx := (
+  //  //  //rObjAttrsCnt.asUInt(params.objAttrsMemIdxWidth - 1 downto 0)
+  //  //  0x1
+  //  //)
+  //}
 
   //--------
   val tempObjAffineTileSlice = Gpu2dTileSlice(

@@ -87,9 +87,12 @@ VC_OUTMK:=V$(V_TOP).mk
 VC:=verilator
 VC_CFLAGS:=-CFLAGS -O2
 VC_LDFLAGS:=-LDFLAGS -lm
+TRACE:=#--trace
+MY_THREADS:=4 #8
 VC_FLAGS:=--cc -Wno-lint \
-	--threads 4 \
+	--threads $(MY_THREADS) \
 	--verilate-jobs 0 \
+	$(TRACE) \
 	--top $(V_TOP) \
 	$(VC_CFLAGS) \
 	$(VC_LDFLAGS) \
@@ -99,7 +102,8 @@ VC_FLAGS:=--cc -Wno-lint \
 CXX_SOURCES := \
 	$(foreach DIR,$(CXX_DIRS),$(wildcard $(DIR)/*.cpp)) \
 	$(VERILATOR_ROOT)/include/verilated.cpp \
-	$(VERILATOR_ROOT)/include/verilated_threads.cpp
+	$(VERILATOR_ROOT)/include/verilated_threads.cpp \
+	$(VERILATOR_ROOT)/include/verilated_vcd_c.cpp
 CXX_OFILES := $(CXX_SOURCES:%.cpp=$(OBJDIR)/%.o)
 CXX_PFILES := $(CXX_SOURCES:%.cpp=$(DEPDIR)/%.P)
 
@@ -121,7 +125,7 @@ all : all_pre verilate $(VC_OUTLIB) $(OFILES)
 	$(LD) $(OFILES) $(VC_OUTLIB) -o $(PROJ) $(LD_FLAGS)
 
 $(VC_OUTLIB): verilate
-	cd $(V_OBJDIR); $(MAKE) -f $(VC_OUTMK) -j $(shell nproc)
+	cd $(V_OBJDIR); $(MAKE) -f $(VC_OUTMK) 
 
 .PHONY : verilate
 verilate : all_pre $(V_SOURCES)

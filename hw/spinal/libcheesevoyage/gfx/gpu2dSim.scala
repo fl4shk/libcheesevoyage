@@ -1,6 +1,8 @@
 package libcheesevoyage.gfx
 import libcheesevoyage._
 
+import libcheesevoyage.general.PipeMemRmw
+import libcheesevoyage.general.PipeMemRmwIo
 import libcheesevoyage.general.Vec2
 import libcheesevoyage.general.ElabVec2
 import libcheesevoyage.hwdev.SnesCtrlIo
@@ -23,6 +25,10 @@ case class Gpu2dSimDut(
   gpu2dParams: Gpu2dParams,
   ctrlFifoDepth: Int,
   optRawSnesButtons: Boolean=false,
+  dbgPipeMemRmw: Boolean=(
+    true
+    //false
+  ),
 ) extends Component {
   val io = new Bundle {
     val snesCtrl = (!optRawSnesButtons) generate SnesCtrlIo()
@@ -61,14 +67,20 @@ case class Gpu2dSimDut(
   //  rgbConfig=rgbConfig,
   //  timingsWidth=myVgaTimingsWidth,
   //)
+  //def dbgPipeMemRmw = (
+  //  true
+  //  //false
+  //)
   val gpu2d = Gpu2d(
     params=gpu2dParams,
     inSim=true,
+    dbgPipeMemRmw=dbgPipeMemRmw,
   )
   val gpu2dTest = Gpu2dTest(
     clkRate=clkRate,
     params=gpu2dParams,
     optRawSnesButtons=optRawSnesButtons,
+    dbgPipeMemRmw=dbgPipeMemRmw,
   )
   if (!optRawSnesButtons) {
     io.snesCtrl <> gpu2dTest.io.snesCtrl
@@ -107,7 +119,9 @@ case class Gpu2dSimDut(
   gpuIo.pop.translateInto(
     into=ctrlIo.push
   )(
-    dataAssignment=(ctrlPushPayload, gpuPopPayload) => {
+    dataAssignment=(
+      ctrlPushPayload, gpuPopPayload
+    ) => {
       ctrlPushPayload := gpuPopPayload.col
     }
   )
@@ -175,18 +189,33 @@ object Gpu2dSim extends App {
       //visib=1 << 8,
       //visib=4,
       //visib=8,
-      visib=1 << 6,
+      //--------
+      //visib=1 << 6,
+      //front=1,
+      //sync=1,
+      //back=1,
+      //--------
+      visib=320,
       front=1,
       sync=1,
       back=1,
+      //--------
     ),
     vtiming=LcvVgaTimingHv(
-      //visib=1 << 3,
-      //visib=1 << 4,
-      visib=1 << 5,
-      //visib=1 << 7,
-      //visib=4,
-      //visib=8,
+      ////visib=1 << 3,
+      ////visib=1 << 4,
+      //visib=1 << 5,
+      ////visib=1 << 7,
+      ////visib=4,
+      ////visib=8,
+      //front=1,
+      //sync=1,
+      //back=1,
+      visib=(
+        //240
+        32
+        //16
+      ),
       front=1,
       sync=1,
       back=1,
@@ -392,6 +421,7 @@ object Gpu2dSim extends App {
       vgaTimingInfo=vgaTimingInfo,
       gpu2dParams=gpu2dParams,
       ctrlFifoDepth=ctrlFifoDepth,
+      optRawSnesButtons=true,
     ))
     .doSim { dut =>
       dut.clockDomain.forkStimulus(period=10)
@@ -400,10 +430,13 @@ object Gpu2dSim extends App {
       //  //sleep(1)
       //  dut.clockDomain.waitRisingEdge()
       //}
+      dut.io.rawSnesButtons.valid #= true
+      dut.io.rawSnesButtons.payload #= (1 << 16) - 1
       def simNumClks = (
         //16000
         //32000
         38400
+        //38400 * 2
         //48000
       )
       for (idx <- 0 to simNumClks - 1) {

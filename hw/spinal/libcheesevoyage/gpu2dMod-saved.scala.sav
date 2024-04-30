@@ -841,10 +841,7 @@ object DefaultGpu2dParams {
     //objAffineTileWidthRshift: Int=log2Up(8),
     objAffineTileWidthRshift: Int=log2Up(16),
     numBgsPow: Int=log2Up(4), // 4 BGs
-    numObjsPow: Int=(
-      //log2Up(256) // 256 OBJs
-      log2Up(16)
-    ),
+    numObjsPow: Int=log2Up(256), // 256 OBJs
     numObjsAffinePow: Int=log2Up(32), // 32 affine OBJs
     //numBgTilesPow: Option[Int]=None,
     //numObjTilesPow: Option[Int]=None,
@@ -1276,7 +1273,6 @@ case class Gpu2dBgTileStmPayload(
 case class Gpu2dObjTileStmPayload(
   params: Gpu2dParams,
   isAffine: Boolean,
-  dbgPipeMemRmw: Boolean,
 ) extends Bundle {
   //--------
   //val rgb = Rgb(params.rgbConfig)
@@ -1292,9 +1288,6 @@ case class Gpu2dObjTileStmPayload(
   )
   val tilePx = (isAffine) generate (
     UInt(params.objPalEntryMemIdxWidth bits)
-  )
-  val forceWr = (dbgPipeMemRmw) generate (
-    Bool()
   )
 
   // `Mem` index, so in units of tile slices
@@ -1665,8 +1658,7 @@ case class Gpu2dPopPayload(
 }
 
 case class Gpu2dPushInp(
-  params: Gpu2dParams=DefaultGpu2dParams(),
-  dbgPipeMemRmw: Boolean,
+  params: Gpu2dParams=DefaultGpu2dParams()
 ) extends Bundle with IMasterSlave {
   //--------
   val colorMathTilePush = slave Flow(
@@ -1721,15 +1713,13 @@ case class Gpu2dPushInp(
   val objTilePush = slave Stream(
     Gpu2dObjTileStmPayload(
       params=params,
-      isAffine=false,
-      dbgPipeMemRmw=dbgPipeMemRmw,
+      isAffine=false
     )
   )
   val objAffineTilePush = slave Flow(
     Gpu2dObjTileStmPayload(
       params=params,
       isAffine=true,
-      dbgPipeMemRmw=false,
     )
   )
   val objAttrsPush = slave Flow(
@@ -1800,7 +1790,6 @@ case class Gpu2dPushInp(
 }
 case class Gpu2dIo(
   params: Gpu2dParams=DefaultGpu2dParams(),
-  dbgPipeMemRmw: Boolean,
 ) extends Bundle {
   //--------
   //val en = in Bool()
@@ -1809,10 +1798,7 @@ case class Gpu2dIo(
   //--------
   //val bgTilePush = slave Stream()
   //val bgTilePush = slave Stream()
-  val push = Gpu2dPushInp(
-    params=params,
-    dbgPipeMemRmw=dbgPipeMemRmw,
-  )
+  val push = Gpu2dPushInp(params=params)
   def colorMathTilePush = push.colorMathTilePush
   def colorMathEntryPush = push.colorMathEntryPush 
   def colorMathAttrsPush = push.colorMathAttrsPush 
@@ -1866,10 +1852,7 @@ case class Gpu2d(
   def noAffineBgs = params.noAffineBgs
   def noAffineObjs = params.noAffineObjs
   //--------
-  val io = Gpu2dIo(
-    params=params,
-    dbgPipeMemRmw=dbgPipeMemRmw,
-  )
+  val io = Gpu2dIo(params=params)
   //--------
   def colorMathTilePush = io.colorMathTilePush
   def colorMathEntryPush = io.colorMathEntryPush 
@@ -2122,9 +2105,6 @@ case class Gpu2d(
       //  tempObjTilePush.ready := io.pop.ready
       //}
 
-      //--------
-      // BEGIN: new test code
-      //println(f"dbgPipeMemRmw: $dbgPipeMemRmw")
       if (
         !dbgPipeMemRmw
         || idx != 0
@@ -2141,7 +2121,12 @@ case class Gpu2d(
         //    data=objTilePush.payload.tile,
         //  )
         //}
-      } else {
+      } 
+      else {
+        val rMyPipeMemRmwCnt = (
+          Reg(UInt(8 bits)) init(0x0)
+        )
+          .setName(f"rMyPipeMemRmwCnt_$idx")
         //def wordType() = Gpu2dObjTileStmPayload(
         //  params=params,
         //  isAffine=false,
@@ -2153,7 +2138,6 @@ case class Gpu2d(
         )
         def wordCount = (
           1 << params.objTileSliceMemIdxWidth
-          //4
         )
         def modStageCnt = 1
         def modType() = SamplePipeMemRmwModType(
@@ -2171,11 +2155,6 @@ case class Gpu2d(
             wordCount=wordCount,
             modType=modType(),
             modStageCnt=modStageCnt,
-            forFmax=(
-              //true
-              false
-            ),
-            //forFmax=false,
           )
             .setName(f"myPipeMemRmw_objTileMemArr_$idx")
         )
@@ -2190,19 +2169,14 @@ case class Gpu2d(
             frontPayload,
             objTilePushPayload,
           ) => {
-            def myExt = frontPayload.myExt
-            myExt.helperForceWr := objTilePushPayload.forceWr
-            myExt.rdMemWord := myExt.rdMemWord.getZero
-            myExt.modMemWord := objTilePushPayload.tileSlice
-            myExt.memAddr := objTilePushPayload.memIdx
-            //myExt.hazardId := -1
-            myExt.doInitHazardId()
+            frontPayload.myExt.modMemWord := objTilePushPayload.tileSlice
+            frontPayload.myExt.memAddr := objTilePushPayload.memIdx
           },
         )
 
         val modFrontStm = Stream(modType())
         val modBackStm = Stream(modType())
-        modFrontStm << modFront
+        modFrontStm <-/< modFront
         modFrontStm.translateInto(
           into=modBackStm
         )(
@@ -2214,113 +2188,25 @@ case class Gpu2d(
             def modFrontExt = modFrontPayload.myExt
             def modBackExt = modBackPayload.myExt
             modBackExt.modMemWord.allowOverride
-            val tempMemWord = Mux[Gpu2dTileSlice](
-              modFrontExt.helperForceWr,
-              modFrontExt.modMemWord,
-              modFrontExt.rdMemWord,
-            )
-
             //frontExt.modMemWord := modFrontPayload.myExt.modMemWord
             for (
-              pxCoordX <- 0
-              //until modFrontExt.modMemWord.pxsSliceWidth
-              until tempMemWord.pxsSliceWidth
+              pxCoordX <- 0 until modFrontExt.modMemWord.pxsSliceWidth
             ) {
-              //val myPx = modFrontExt.modMemWord.getPx(pxCoordX=pxCoordX)
-              val myPx = tempMemWord.getPx(pxCoordX=pxCoordX)
-              //when (
-              //  myPx =/= 0x0
-              //) {
-                //modBackExt.modMemWord.setPx(
-                //  pxCoordX=pxCoordX,
-                //  colIdx=(
-                //    //myPx + 1
-                //    //3
-                //    //(myPx << 1).resized
-                //  )
-                //)
-                switch (myPx) {
-                  for (
-                    pxIdx <- 0 until (1 << myPx.getWidth)
-                  ) {
-                    is (pxIdx) {
-                      modBackExt.modMemWord.setPx(
-                        pxCoordX=pxCoordX,
-                        colIdx=(
-                          //(pxIdx % 2) + 1
-                          {
-                            //val tempPxIdx = (pxIdx + 1) % 4
-                            ////if (
-                            ////  tempPxIdx
-                            ////  >= 5 //(1 << myPx.getWidth)
-                            ////) {
-                            ////  pxIdx //1
-                            ////} else {
-                            ////  tempPxIdx
-                            ////}
-                            //if (tempPxIdx == 1) {
-                            //  tempPxIdx + 1
-                            //} else {
-                            //  tempPxIdx
-                            //}
-                            //(pxIdx % 4) + 1
-                            //pxIdx % 4
-                            //val (pxIdx + 1) % (1 << myPx.getWidth)
-                            //if (
-                            //  pxIdx == 0
-                            //)
-                            (pxIdx % 5) + 2
-                            //--------
-                            //(pxIdx + 1) % 5
-                            //--------
-                            //pxIdx
-                          }
-                          //3
-                          //(pxIdx << 1) % 2
-                          //(pxIdx % 2) + 1
-                        )
-                      )
-                    }
-                  }
-                }
-              //}
+              modBackExt.modMemWord.setPx(
+                pxCoordX=pxCoordX,
+                colIdx=(
+                  modFrontExt.modMemWord.getPx(pxCoordX=pxCoordX)
+                  //+ 1
+                )
+              )
             }
           }
         )
-        //modBackStm << modFrontStm
-        modBack <-/< modBackStm
-        val nextBackReadyCnt = UInt(4 bits)
-          .setName(f"dbgPipeMemRmw_nextBackReadyCnt_$idx")
-        val rBackReadyCnt = (
-          RegNextWhen(nextBackReadyCnt, front.fire)
-          init(nextBackReadyCnt.getZero)
-        )
-          .setName(f"dbgPipeMemRmw_rBackReadyCnt_$idx")
-        nextBackReadyCnt := rBackReadyCnt + 1
-        val myBackReady = !rBackReadyCnt(1)
-        //--------
-        // BEGIN: debug
-        //back.ready := True
-        // END: debug
-        //--------
-        back.ready := (
-          //rBackReadyCnt(1 downto 0) =/= U"2'b10" 
-          myBackReady
-        )
-        when (!myBackReady) {
-          // set `back.ready` with the pattern ^^_^^_^^_
-          // where "^" is high and "_" is low
-          // I could have used "1" and "0" but it's easier to visualize
-          // `back.ready` this way
-          nextBackReadyCnt := 0x0
-        }
+        modBack << modBackStm
+        back.ready := True
 
         //objTilePush.ready := True
-        objTileMemArr(idx).io.wrEn := (
-          //back.fire
-          back.valid
-          && back.myExt.hazardId.msb
-        )
+        objTileMemArr(idx).io.wrEn := back.fire
         objTileMemArr(idx).io.wrAddr := back.payload.myExt.memAddr
         //objTileMemArr(idx).io.wrData := objTilePush.payload.tile
         objTileMemArr(idx).io.wrData := (
@@ -2334,8 +2220,6 @@ case class Gpu2d(
         //}
         //tempObjTilePush.io.back.ready := io.pop.ready
       }
-      // END: new test code
-      //--------
     }
     val objAffineTileMemArr = new ArrayBuffer[
       FpgacpuRamSimpleDualPort[UInt]

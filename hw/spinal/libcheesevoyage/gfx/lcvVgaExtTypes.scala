@@ -84,12 +84,12 @@ case class LcvVgaTimingInfo(
       hSync=htiming.sync,// * (clkRate / pixelClk).toInt,
       hFront=htiming.front,// * (clkRate / pixelClk).toInt,
       hBack=htiming.back,// * (clkRate / pixelClk).toInt,
-      hPolarity=true,
+      hPolarity=false,
       vPixels=vtiming.visib,// * (clkRate / pixelClk).toInt,
       vSync=vtiming.sync,// * (clkRate / pixelClk).toInt,
       vFront=vtiming.front,// * (clkRate / pixelClk).toInt,
       vBack=vtiming.back,// * (clkRate / pixelClk).toInt,
-      vPolarity=true,
+      vPolarity=false,
     )
   }
 }

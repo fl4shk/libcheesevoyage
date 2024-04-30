@@ -204,15 +204,27 @@ case class PipeMemRmwPayloadExt[
   //    memAddr
   //  }
   //)
+  val helperForceWr = Bool()
   val modMemWord = wordType()
   val rdMemWord = wordType()
+  //val wrMemWord = wordType()
   val rdValid = Bool()
+
+  //val fwdId = (
+  //  SInt(log2Up(modStageCnt) + 3 bits)
+  //)
 
   // hazard for when an address is already in the pipeline 
   val hazardId = (
     SInt(log2Up(modStageCnt) + 3 bits)
     //UInt(log2Up(modStageCnt) bits)
   )
+  def getHazardIdIdleVal() = (
+    -1
+  )
+  def doInitHazardId(): Unit = {
+    hazardId := getHazardIdIdleVal()
+  }
 
   //val frontDuplicateIt = Bool()
   val dbgModMemWord = (debug) generate (
@@ -269,7 +281,7 @@ object PipeMemRmw {
     wordCount: Int,
   ) = log2Up(wordCount)
 }
-case class PipeMemRmwMultiRdTypeDisabled[
+case class PipeMemRmwDualRdTypeDisabled[
   WordT <: Data
 ](
 ) extends Bundle with PipeMemRmwPayloadBase[WordT] {
@@ -306,18 +318,18 @@ case class PipeMemRmwMultiRdTypeDisabled[
 case class PipeMemRmwIo[
   WordT <: Data,
   ModT <: PipeMemRmwPayloadBase[WordT],
-  MultiRdT <: PipeMemRmwPayloadBase[WordT],
+  DualRdT <: PipeMemRmwPayloadBase[WordT],
 ](
   wordType: HardType[WordT],
   wordCount: Int,
   modType: HardType[ModT],
-  //optMultiRdType: Option[HardType[MultiRdT]]=None,
-  //optMultiRdType: Option[HardType[MultiRdT]]={
-  //  //Some(HardType[PipeMemRmwMultiRdTypeDisabled[WordT]]())
+  //optDualRdType: Option[HardType[DualRdT]]=None,
+  //optDualRdType: Option[HardType[DualRdT]]={
+  //  //Some(HardType[PipeMemRmwDualRdTypeDisabled[WordT]]())
   //},
-  multiRdType: HardType[MultiRdT]=PipeMemRmwMultiRdTypeDisabled[WordT](),
-  //optMultiRdSize: Option[Int]=None,
-  multiRdSize: Int=0,
+  dualRdType: HardType[DualRdT]=PipeMemRmwDualRdTypeDisabled[WordT](),
+  //optDualRdSize: Option[Int]=None,
+  dualRdSize: Int=0,
 ) extends Bundle {
   //--------
   //val front = slave(
@@ -337,36 +349,36 @@ case class PipeMemRmwIo[
   // back of the pipeline (output)
   val back = master(Stream(modType()))
   //--------
-  //val optMultiRd: Boolean = optMultiRdType match {
-  //  case Some(myOptMultiRdType) => true
+  //val optDualRd: Boolean = optDualRdType match {
+  //  case Some(myOptDualRdType) => true
   //  case None => false
   //}
-  //def multiRdType() = optMultiRdType match {
-  //  case Some(myOptMultiRdType) => myOptMultiRdType()
-  //  case None => PipeMemRmwMultiRdTypeDisabled[WordT]()
+  //def dualRdType() = optDualRdType match {
+  //  case Some(myOptDualRdType) => myOptDualRdType()
+  //  case None => PipeMemRmwDualRdTypeDisabled[WordT]()
   //}
   //--------
-  val optMultiRd = (multiRdSize > 0)
-  val multiRdFront = (optMultiRd) generate (
+  val optDualRd = (dualRdSize > 0)
+  val dualRdFront = (optDualRd) generate (
     slave(
-      Stream(multiRdType())
+      Stream(dualRdType())
     )
   )
-  val multiRdBack = (optMultiRd) generate (
+  val dualRdBack = (optDualRd) generate (
     master(
-      Stream(multiRdType())
+      Stream(dualRdType())
     )
   )
   //--------
-  //val (multiRdPush, multiRdPop) = optMultiRdType match {
-  //  case Some(myMultiRdType) => {
+  //val (dualRdPush, dualRdPop) = optDualRdType match {
+  //  case Some(myDualRdType) => {
   //    (
   //      slave(
-  //        Stream(myMultiRdType())
-  //      ), // multiRdPush
+  //        Stream(myDualRdType())
+  //      ), // dualRdPush
   //      master(
-  //        Stream(myMultiRdType())
-  //      ) // multiRdPop
+  //        Stream(myDualRdType())
+  //      ) // dualRdPop
   //    )
   //  }
   //  case None => (None, None)
@@ -377,16 +389,16 @@ case class PipeMemRmwIo[
 case class PipeMemRmw[
   WordT <: Data,
   ModT <: PipeMemRmwPayloadBase[WordT],
-  MultiRdT <: PipeMemRmwPayloadBase[WordT],
+  DualRdT <: PipeMemRmwPayloadBase[WordT],
 ](
   wordType: HardType[WordT],
   wordCount: Int,
   modType: HardType[ModT],
   modStageCnt: Int,
   memArrIdx: Int=0,
-  //optMultiRdType: Option[HardType[MultiRdT]]=None,
-  multiRdType: HardType[MultiRdT]=PipeMemRmwMultiRdTypeDisabled[WordT](),
-  multiRdSize: Int=0,
+  //optDualRdType: Option[HardType[DualRdT]]=None,
+  dualRdType: HardType[DualRdT]=PipeMemRmwDualRdTypeDisabled[WordT](),
+  dualRdSize: Int=0,
   initBigInt: Option[Seq[BigInt]]=None,
   forFmax: Boolean=false,
 )
@@ -422,14 +434,14 @@ extends Component {
   //val io = PipeMemRmwIo(
   //  modType=modType(),
   //  wordCount=wordCount,
-  //  optMultiRdType=optMultiRdType,
+  //  optDualRdType=optDualRdType,
   //)
   val io = PipeMemRmwIo(
     wordType=wordType(),
     wordCount=wordCount,
     modType=modType(),
-    multiRdType=multiRdType(),
-    multiRdSize=multiRdSize,
+    dualRdType=dualRdType(),
+    dualRdSize=dualRdSize,
   )
   //--------
   def mkMem() = {
@@ -456,17 +468,23 @@ extends Component {
     ret
   }
   val modMem = mkMem()
-  val multiRdMemArr = new ArrayBuffer[Mem[WordT]]()
-  for (idx <- 0 until multiRdSize) {
-    multiRdMemArr += mkMem()
-  }
+  //val dualRdMemArr = new ArrayBuffer[Mem[WordT]]()
+  //for (idx <- 0 until dualRdSize) {
+  //  dualRdMemArr += mkMem()
+  //}
+  val dualRdMem = (io.optDualRd) generate (
+    mkMem()
+  )
   def memWriteIterate(
     writeFunc: (Mem[WordT]) => Unit
   ): Unit = {
     writeFunc(modMem)
-    for (idx <- 0 until multiRdSize) {
-      writeFunc(multiRdMemArr(idx))
+    if (io.optDualRd) {
+      writeFunc(dualRdMem)
     }
+    //for (idx <- 0 until dualRdSize) {
+    //  writeFunc(dualRdMemArr(idx))
+    //}
   }
   def memWriteAll(
     address: UInt,
@@ -489,8 +507,8 @@ extends Component {
   //  readFunc: (Mem[WordT]) => WordT
   //): Unit = {
   //  readFunc(modMem)
-  //  for (idx <- 0 until multiRdSize) {
-  //    readFunc(multiRdMemArr(idx))
+  //  for (idx <- 0 until dualRdSize) {
+  //    readFunc(dualRdMemArr(idx))
   //  }
   //}
   //--------
@@ -695,12 +713,15 @@ extends Component {
     val nextHazardId = cloneOf(upExt(1).hazardId)
     val rHazardId = RegNext(nextHazardId) init(
       //S(nextHazardId.getWidth bits, default -> True)
-      -1
+
+      //-1
+      upExt(1).getHazardIdIdleVal()
     )
     //nextHazardId := rHazardId
     //nextHazardId := modStageCnt - 1
     //nextHazardId := S(nextHazardId.getWidth bits, default -> True)
-    nextHazardId := -1
+    //nextHazardId := -1
+    nextHazardId := upExt(1).getHazardIdIdleVal()
     //when (isValid) {
       upExt(1).hazardId := nextHazardId
     //} otherwise {
@@ -897,222 +918,90 @@ extends Component {
     //}
     //setDoDuplicateIt(false)
 
-    //switch (rDuplicateItState) {
-    //  //--------
-    //  val hazardIdMinusOne = rHazardId - 1
-    //  //--------
-    //  is (DuplicateItState.IDLE) {
-    //    myUpRdValid := tempRdValid
-    //    nextHazardId := 0x0
-    //    setDoDuplicateIt(false)
-    //    when (
-    //      !tempRdValid
-    //    ) {
-    //      when (
-    //        up.isFiring
-    //        //mod.front.cLastFront.up.isFiring
-    //      ) {
-    //        nextDuplicateItState := (
-    //          //DuplicateItState.START
-    //          DuplicateItState.WAIT_CNT
-    //        )
-    //        nextHazardId := modStageCnt
-    //        //duplicateIt()
-    //        setDoDuplicateIt(true)
-    //      }
-    //    }
-    //    //otherwise {
-    //    //  //setRdMemWord()
-    //    //  setDoDuplicateIt(false)
-    //    //}
-    //  }
-    //  is (DuplicateItState.WAIT_CNT) {
-    //    //--------
-    //    // BEGIN: debug
-    //    //when (down.isFiring) {
-    //    //  nextHazardId := hazardIdMinusOne
-    //    //  setDoDuplicateIt(false)
-    //    //  rDuplicateItState := DuplicateItState.IDLE
-    //    //}
-    //    // END: debug
-    //    //--------
-    //    //setDoDuplicateIt(true)
-    //    setDoDuplicateIt(true)
-    //    when (
-    //      up.isFiring
-    //      //mod.front.cLastFront.up.isFiring
-    //    ) {
-    //      //nextHazardId := hazardIdMinusOne
-    //      when (
-    //        //hazardIdMinusOne =/= 0
-    //        rHazardId =/= 0
-    //      ) {
-    //        nextHazardId := hazardIdMinusOne
-    //        //when (up.isFiring) {
-    //        //  nextHazardId := hazardIdMinusOne
-    //        //}
-    //        //duplicateIt()
-    //        //nextHazardId := hazardIdMinusOne
-    //        //setDoDuplicateIt(true)
-    //      } otherwise { // when (/*hazardIdMinusOne*/ rHazardId === 0)
-    //        //when (up.isFiring) {
-    //          nextDuplicateItState := DuplicateItState.IDLE
-    //          setDoDuplicateIt(false)
-    //          //setRdMemWord()
-    //          //nextHazardId
-    //        //}
-    //        //when (up.isValid) {
-    //        //}
-    //        //--------
-    //        //myUpRdValid := True
-    //        ////setDoDuplicateIt(false)
-    //        //--------
-    //      }
-    //    } 
-    //    //otherwise {
-    //    //  setDoDuplicateIt(true)
-    //    //}
-    //  }
-    //}
-    upExt(1).rdMemWord := (
-      RegNext(upExt(1).rdMemWord) init(upExt(1).rdMemWord.getZero)
+    //--------
+    //upExt(1).rdMemWord := (
+    //  RegNext(upExt(1).rdMemWord) init(upExt(1).rdMemWord.getZero)
+    //)
+    //--------
+    //--------
+    upExt(1).rdMemWord := modMem.readSync(
+      address=upExt(1).memAddr
     )
-    //when (
-    //  //(
-    //  //  RegNextWhen(
-    //  //    True, io.front.fire
-    //  //  ) init(False)
-    //  //) && (
-    //  //  RegNextWhen(
-    //  //    True, io.modFront.fire
-    //  //  ) init(False)
-    //  //) && (
-    //  //  RegNextWhen(
-    //  //    True, io.modBack.fire
-    //  //  ) init(False)
-    //  //  //RegNextWhen(
-    //  //  //  True, /*io.back.fire*/ mod.back.cBack.isValid
-    //  //  //) init(False)
-    //  //) && 
-    //  //(
-    //  //  RegNextWhen(
-    //  //    True, io.back.fire
-    //  //  ) init(False)
-    //  //)
-    //  //True
-    //  !clockDomain.isResetActive
-    //  //&& up.isValid
-    //  && up.isFiring
-    //  && nextUpRdValid
-    //  && (upExt(1).hazardId) === 0
-    //) {
-    //  when (
-    //    backUpExt.rdValid
-    //    //////&& mod.back.cBack.up.isValid
-    //    ////&& mod.back.cBack.up.isFiring
-    //    && (backUpExt.hazardId) === 0
-
-    //    //&& mod.back.cBack.up.isValid
-    //    && mod.back.cBack.up.isFiring
-    //    && upExt(1).memAddr === backUpExt.memAddr
-    //  ) {
-    //    upExt(1).rdMemWord := backUpExt.modMemWord
-    //  } otherwise {
-    //    upExt(1).rdMemWord := modMem.readSync(
-    //      address=upExt(1).memAddr
-    //    )
-    //  }
-    //  //when (
-    //  //  backUpExt.rdValid
-    //  //  //&& mod.back.cBack.up.isValid
-    //  //  && mod.back.cBack.up.isFiring
-    //  //) {
-    //  //  when (
-    //  //    upExt(1).memAddr === backUpExt.memAddr
-    //  //    //&& backUpExt.rdValid
-    //  //    //&& mod.back.cBack.up.isValid
-    //  //  ) {
-    //  //    upExt(1).rdMemWord := backUpExt.modMemWord
-    //  //  } otherwise {
-    //  //    upExt(1).rdMemWord := modMem.readSync(
-    //  //      address=upExt(1).memAddr
-    //  //    )
-    //  //  }
-    //  //}
-    //} 
+    //--------
+    val rUpExtDel = Vec.fill(modStageCnt + 1)(
+      Reg(cloneOf(upExt(1))) init(upExt(1).getZero)
+    )
+    for (idx <- 0 until rUpExtDel.size) {
+      when (up.isFiring) {
+        if (idx == 0) {
+          rUpExtDel(idx) := upExt(1)
+        } else {
+          rUpExtDel(idx) := rUpExtDel(idx - 1)
+        }
+      }
+    }
+    def wantNonFmaxFwd(
+      //someUpMemAddr: UInt//=upExt(1).memAddr
+      someExt: PipeMemRmwPayloadExt[WordT]
+    ): Bool = (
+      if (!forFmax) (
+        //someExt.hazardId.msb
+        ////backUpExt.hazardId === 0
+        //&&
+        backUpExt.hazardId.msb
+        //&& mod.back.cBack.up.isFiring
+        && mod.back.cBack.up.isValid
+        //&& upExt(1).memAddr === backUpExt.memAddr
+        //&& someUpMemAddr === backUpExt.memAddr
+        && someExt.memAddr === backUpExt.memAddr
+        //&& someExt.memAddr === rUpExtDel(rUpExtDel.size - 1).memAddr
+        //&& someExt.fwdId === backUpExt.fwdId
+      ) else (
+        False
+      )
+    )
+    def getNonFmaxFwd() = (
+      backUpExt.modMemWord
+    )
+    def getNonFmaxFwdOutp(
+      someExt: PipeMemRmwPayloadExt[WordT]
+    ) = {
+      someExt.rdMemWord
+    }
+    def perfNonFmaxFwd(
+      someExt: PipeMemRmwPayloadExt[WordT]
+    ): Unit = {
+      getNonFmaxFwdOutp(someExt=someExt) := getNonFmaxFwd()
+    }
     when (
       !clockDomain.isResetActive
       //&& up.isFiring
       && up.isValid
     ) {
       if (!forFmax) {
-        when (
-          //backUpExt.hazardId === 0
-          backUpExt.hazardId.msb
-          //&& mod.back.cBack.up.isFiring
-          && mod.back.cBack.up.isValid
-          && upExt(1).memAddr === backUpExt.memAddr
-        ) {
-          upExt(1).rdMemWord := backUpExt.modMemWord
+        when (wantNonFmaxFwd(someExt=upExt(1))) {
+          //upExt(1).rdMemWord := getNonFmaxForward()
+          perfNonFmaxFwd(someExt=upExt(1))
         } otherwise {
-          upExt(1).rdMemWord := modMem.readSync(
-            address=upExt(1).memAddr
-          )
+          //upExt(1).rdMemWord := modMem.readSync(
+          //  address=upExt(1).memAddr
+          //)
         }
       } else { // if (forFmax)
-        //when (
-        //  !nextHazardId
-        //)
-        //when (nextDuplicateIt) {
-        //  upExt(1).rdMemWord := upExt(1).rdMemWord.getZero
-        //} otherwise {
-          //--------
-          // BEGIN: debug
-          upExt(1).rdMemWord := modMem.readSync(
-            address=upExt(1).memAddr,
-          )
-          // END: debug
-          //--------
-        //}
+        ////when (
+        ////  !nextHazardId
+        ////)
+        ////when (nextDuplicateIt) {
+        ////  upExt(1).rdMemWord := upExt(1).rdMemWord.getZero
+        ////} otherwise {
+        //  //--------
+        //  upExt(1).rdMemWord := modMem.readSync(
+        //    address=upExt(1).memAddr,
+        //  )
+        //  //--------
+        ////}
       }
     }
-
-    //otherwise {
-    //}
-    //when (
-    //  isValid
-    //  //&& myUpRdValid
-    //) {
-    //  when (myUpRdValid) {
-    //  } otherwise {
-    //  }
-    //  //when (
-    //  //  //upExt.hazardId
-    //  //  nextHazardId === back.cBack.up
-    //  //) {
-    //  //}
-    //} otherwise {
-    //  upExt.rdMemWord := (
-    //    RegNext(upExt.rdMemWord) init(upExt.rdMemWord.getZero)
-    //  )
-    //}
-
-    //when (
-    //  !rDuplicateIt
-    //  //!cSum.up(frontDuplicateIt)
-    //  //!up(frontDuplicateIt)
-    //) {
-    //  myUpRdValid := tempRdValid
-    //  when (!tempRdValid) {
-    //    nextDuplicateIt := True
-    //    duplicateIt()
-    //  }
-    //} otherwise {
-    //  myUpRdValid := True
-    //  when (up.isFiring) {
-    //    nextDuplicateIt := False
-    //  } 
-    //}
     //--------
     tempUpMod(1) := tempUpMod(0)
     tempUpMod(1).allowOverride
@@ -1210,13 +1099,16 @@ extends Component {
           ) {
             if (!forFmax) {
               when (
-                backUpExt.hazardId.msb
-                //&& mod.back.cBack.up.isFiring
-                && mod.back.cBack.up.isValid
-                && upExt(1).memAddr === backUpExt.memAddr
+                //backUpExt.hazardId.msb
+                ////&& mod.back.cBack.up.isFiring
+                //&& mod.back.cBack.up.isValid
+                //&& upExt(1).memAddr === backUpExt.memAddr
+                wantNonFmaxFwd(someExt=upExt(1))
               ) {
                 assert(
-                  upExt(1).rdMemWord === backUpExt.modMemWord
+                  //upExt(1).rdMemWord === getNonFmaxForward() //backUpExt.modMemWord
+                  getNonFmaxFwdOutp(someExt=upExt(1))
+                  === getNonFmaxFwd()
                 )
               } otherwise {
                 assert(
@@ -1233,199 +1125,18 @@ extends Component {
               )
             }
           } otherwise {
+            //assert(
+            //  /*past*/(upExt(1).rdMemWord)
+            //  === /*past*/(RegNext(upExt(1).rdMemWord))
+            //)
             assert(
-              /*past*/(upExt(1).rdMemWord)
-              === /*past*/(RegNext(upExt(1).rdMemWord))
+              upExt(1).rdMemWord === modMem.readSync(
+                address=upExt(1).memAddr,
+              )
             )
           }
-          //when (
-          //  //(
-          //  //  RegNextWhen(True, io.back.fire) init(False)
-          //  //)
-          //  //past(up.isFiring)
-          //  //&& past(myUpRdValid)
-          //  //&& past(backUpExt.rdValid)
-          //  //&& past(mod.back.cBack.up.isValid)
-          //  /*&&*/ /*past*/(
-          //    up.isFiring
-          //  )
-          //  //&& past(upExt.rdValid)
-          //  //--------
-          //  && /*past*/(
-          //    nextUpRdValid
-          //  )
-          //  //--------
-          //  && (
-          //    (upExt(1).hazardId) === 0
-          //  )
-          //  //&& past(backUpExt.rdValid)
-          //  //&& past(mod.back.cBack.up.isValid)
-          //) {
-          //  when (
-          //  //&& past(backUpExt.rdValid)
-          //  //&& past(mod.back.cBack.up.isValid)
-          //    /*past*/(backUpExt.rdValid)
-          //    && ((backUpExt.hazardId) === 0)
-          //    && /*past*/(mod.back.cBack.up.isValid)
-          //    && /*past*/(upExt(1).memAddr) === /*past*/(backUpExt.memAddr)
-          //  ) {
-          //    assert(
-          //      /*past*/(upExt(1).rdMemWord)
-          //      === /*past*/(backUpExt.modMemWord)
-          //    )
-          //  } otherwise {
-          //    assert(
-          //      //past(
-          //      upExt(1).rdMemWord
-          //      //)
-          //      === (
-          //        //RegNextWhen(
-          //        //  modMem.readSync(
-          //        //    address=(
-          //        //      RegNextWhen(
-          //        //        upExt.memAddr,
-          //        //        up.isFiring
-          //        //      ) init(upExt.memAddr.getZero)
-          //        //    ),
-          //        //  ), up.isFiring
-          //        //) init(myDbgMemReadSync.getZero)
-          //        //past(
-          //        //  modMem.readSync(
-          //        //    address=(
-          //        //      past(upExt.memAddr)
-          //        //    )
-          //        //  )
-          //        //)
-          //        //past(
-          //          modMem.readSync(
-          //            address=(
-          //              /*past*/(upExt(0).memAddr)
-          //            )
-          //          )
-          //        //)
-          //        //past(
-          //        //mod.back.rTempWord
-          //        //)
-          //      )
-          //    )
-          //  }
-          //} otherwise /*(
-          //  //(
-          //  //  RegNextWhen(True, io.back.fire) init(False)
-          //  //) 
-          //)*/ {
-          //  assert(
-          //    /*past*/(upExt(1).rdMemWord)
-          //    === /*past*/(RegNext(upExt(1).rdMemWord))
-          //  )
-          //}
         }
 
-        //when (
-        //  //past(cSum.up.isFiring)
-        //  //&& past(cBack.up.isFiring)
-        //  //&& 
-        //  //myUpRdValid
-        //  //--------
-        //  up.isValid
-        //  && myUpRdValid
-        //  && mod.back.cBack.up.isValid
-        //  //--------
-
-        //  //&& backUpExt.rdValid //cBack.up(rdValid)
-
-        //  //&& (
-        //  //  (RegNextWhen(True, io.front.fire) init(False))
-        //  //  || io.front.fire
-        //  //) && (
-        //  //  (RegNextWhen(True, cFront.up.isFiring) init(False))
-        //  //  || cFront.up.isFiring
-        //  //) && (
-        //  //  (RegNextWhen(True, cSum.up.isFiring) init(False))
-        //  //  || cSum.up.isFiring
-        //  //) && (
-        //  //  (RegNextWhen(True, cBack.up.isFiring) init(False))
-        //  //  || cBack.up.isFiring
-        //  //) && (
-        //  //  //(RegNextWhen(True, io.back.fire) init(False))
-        //  //  //|| io.back.fire
-        //  //  True
-        //  //)
-        //) {
-        //  when (
-        //    //cSum.up(pipePayload.front).addr
-        //    //cFront.up(pipePayload.front).addr
-        //    //=== cBack.up(pipePayload.front).addr
-        //    upExt.memAddr === backUpExt.memAddr
-        //  ) {
-        //    assert(
-        //      //cSum.up(pipePayload.rd)
-        //      //=== cBack.up(pipePayload.back).sum
-        //      //past(cFront.down(pipePayload.rd))
-        //      //=== past(cSum.down(pipePayload.back).sum)
-        //      (
-        //        //RegNextWhen(
-        //        //  cSum.up(pipePayload.rd), cSum.up.isFiring
-        //        //) init(cSum.up(pipePayload.rd).getZero)
-        //        //cBack.up(pipePayload.rd)
-        //        //cSum.down(pipePayload.rd)
-        //        //cFront.down(pipePayload.rd)
-        //        upExt.rdMemWord
-        //      )
-        //      === (
-        //        //cBack.up(pipePayload.back).sum
-        //        backUpExt.modMemWord
-        //      )
-        //    )
-        //  } otherwise {
-        //    //assert(
-        //    //  //cFront.down(pipePayload.rd)
-        //    //  //=== cBack.up(pipePayload.dbgMemReadSync)
-        //    //  cFront.down(pipePayload.rd)
-        //    //  === myDbgMemReadSync
-        //    //)
-        //    //assert(
-        //    //)
-        //    //when (
-        //    //  //RegNextWhen(
-        //    //  //  True,
-        //    //  //  up.isFiring,
-        //    //  //) init(False)
-        //    //  past(up.isFiring)
-        //    //) {
-        //    //  assert(
-        //    //    upExt.rdMemWord
-        //    //    === (
-        //    //      //RegNextWhen(
-        //    //      //  modMem.readSync(
-        //    //      //    address=(
-        //    //      //      RegNextWhen(
-        //    //      //        upExt.memAddr,
-        //    //      //        up.isFiring
-        //    //      //      ) init(upExt.memAddr.getZero)
-        //    //      //    ),
-        //    //      //  ), up.isFiring
-        //    //      //) init(myDbgMemReadSync.getZero)
-        //    //      past(
-        //    //        modMem.readSync(
-        //    //          address=(
-        //    //            past(upExt.memAddr)
-        //    //          )
-        //    //        )
-        //    //      )
-        //    //    )
-        //    //  )
-        //    //}
-        //  }
-        //}
-        //cover({
-        //  val rSameAddr = (
-        //    RegNextWhen(
-        //      True,
-        //      upExt.memAddr === backUpExt.memAddr
-        //    )
-        //  )
-        //})
         def myCoverFunc(
           //cond: Boolean,
           kind: Int,
@@ -1442,45 +1153,11 @@ extends Component {
             //&& up.isValid
             ////&& mod.back.cBack.up.isValid
           ) {
-            //when (
-            //  kind match {
-            //    case 0 => (
-            //      doDuplicateIt
-            //      && !past(doDuplicateIt)
-            //    )
-            //    case 1 => (
-            //      doDuplicateIt
-            //    )
-            //    case 2 => (
-            //      //doDuplicateIt
-            //      True
-            //    )
-            //    case _ => (
-            //      True
-            //    )
-            //  }
-            //  //if (cond) (
-            //  //  && !past(past(doDuplicateIt))
-            //  //) else (
-            //  //  !past(doDuplicateIt)
-            //  //)
-            //  //&& !past(past(doDuplicateIt))
-            //) {
-            //  rSomeDuplicateItCnt := rSomeDuplicateItCnt + 1
-            //}
             when (
               up.isFiring
               //up.isValid
               //down.isFiring
             ) {
-              //val rUpMemAddrDel1 = RegNextWhen(
-              //  upExt(1).memAddr,
-              //  up.isFiring,
-              //) init(upExt(1).memAddr.getZero)
-              //val rUpMemAddrDel2 = RegNextWhen(
-              //  rUpMemAddrDel1,
-              //  up.isFiring,
-              //) init(rUpMemAddrDel1.getZero)
               when (
                 //upExt.memAddr === backUpExt.memAddr
                 //&& 
@@ -1670,16 +1347,82 @@ extends Component {
     //--------
   }
   //--------
-  //val multiRd = (io.optMultiRd) generate new Area {
-  //  val front = new Area {
-  //    val pipe = PipeHelper(linkArr=linkArr)
-  //    val pipePayload = Payload(multiRdType())
-  //  }
-  //  val back = new Area {
-  //    val pipe = PipeHelper(linkArr=linkArr)
-  //    val pipePayload = Payload(multiRdType())
-  //  }
+  //val dualRd = (io.optDualRd) generate new Area {
+  //  val pipe = PipeHelper(linkArr=linkArr)
+  //  val pipePayload = Payload(dualRdType())
+  //  val cDualRdFront = pipe.addStage("DualRdFront")
+  //  //val front = new Area {
+  //  //}
+  //  //val back = new Area {
+  //  //  val pipe = PipeHelper(linkArr=linkArr)
+  //  //  val pipePayload = Payload(dualRdType())
+  //  //}
   //}
+  //val cDualRdFront = 
+  val dualRd = (io.optDualRd) generate new Area {
+    //val midFrontStm = Stream(dualRdType())
+    //val midBackStm = Stream(dualRdType())
+    ////midFrontStm <-/< io.dualRdFront
+    //midFrontStm << io.dualRdFront
+    //midFrontStm
+    val midStm = Stream(dualRdType())
+    io.dualRdFront.translateInto(
+      into=midStm
+    )(
+      dataAssignment=(
+        frontPayload,
+        midPayload,
+      ) => {
+        val myFrontExt = mkExt().setName(
+          "dualRd_frontExt"
+        )
+        val myMidExt = mkExt().setName(
+          "dualRd_midExt"
+        )
+        val tempFrontDualRd = dualRdType().setName(
+          "dualRd_tempFrontDualRd"
+        )
+        val tempMidDualRd = dualRdType().setName(
+          "dualRd_tempMidDualRd"
+        )
+        tempFrontDualRd.getPipeMemRmwExt(
+          outpExt=myFrontExt,
+          memArrIdx=memArrIdx,
+        )
+        myMidExt := myFrontExt
+        myMidExt.allowOverride
+
+        myMidExt.rdMemWord := (
+          //--------
+          // BEGIN: debug
+          //dualRdMemArr(0).readSync(
+          //  address=myMidExt.memAddr
+          //)
+          dualRdMem.readSync(
+            address=myMidExt.memAddr
+          )
+          //--------
+        )
+        if (!forFmax) {
+          when (
+            cFrontArea.wantNonFmaxFwd(someExt=myMidExt)
+          ) {
+            //myMidExt.rdMemWord := (
+            //  cFrontArea.getNonFmaxForward()
+            //  //cFrontArea.backUpExt.modMemWord
+            //)
+            cFrontArea.perfNonFmaxFwd(someExt=myMidExt)
+          }
+        }
+        tempMidDualRd.setPipeMemRmwExt(
+          inpExt=myMidExt,
+          memArrIdx=memArrIdx,
+        )
+      }
+    )
+    //io.dualRdBack << midBackStm
+    io.dualRdBack <-/< midStm
+  }
   //--------
   //--------
   Builder(linkArr.toSeq)
@@ -1725,7 +1468,7 @@ object PipeMemRmwToVerilog extends App {
     PipeMemRmw[
       UInt,
       SamplePipeMemRmwModType[UInt],
-      PipeMemRmwMultiRdTypeDisabled[UInt],
+      PipeMemRmwDualRdTypeDisabled[UInt],
     ](
       wordType=wordType(),
       wordCount=wordCount,

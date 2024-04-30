@@ -26,6 +26,7 @@ object Gpu2dSimDutConfig {
 object Gpu2dSimDutParams {
   //def clkRate = 150.0 MHz
   def clkRate = 125.0 MHz
+  //def clkRate = 1250.0 MHz
   //def clkRate = 50.0 MHz
   //def clkRate = 75.0 MHz
   //def clkRate = 100.0 MHz
@@ -33,6 +34,8 @@ object Gpu2dSimDutParams {
   //def clkRate = 200.0 MHz
   //def clkRate = 25.0 MHz
   def pixelClk = 25.0 MHz
+  //def pixelClk = 12.5 MHz
+  //def pixelClk = 125.0 MHz
   //def ctrlFifoDepth = 20
   def ctrlFifoDepth = 256
   //def ctrlFifoDepth = 100
@@ -67,6 +70,9 @@ object Gpu2dSimDutParams {
       front=40,
       sync=40,
       back=40,
+      //front=4,
+      //sync=4,
+      //back=4,
     ),
     vtiming=LcvVgaTimingHv(
       //visib=1 << 5,
@@ -83,9 +89,13 @@ object Gpu2dSimDutParams {
       //front=4,
       //sync=4,
       //back=4,
+      //front=20,
       front=40,
       sync=40,
       back=40,
+      ////front=8,
+      //sync=4,
+      //back=4,
     ),
   )
 
@@ -252,7 +262,8 @@ object Gpu2dSimDutParams {
     //numObjsPow=log2Up(4),
     //numObjsPow=log2Up(8),
     numObjsPow=(
-      log2Up(16)
+      log2Up(8)
+      //log2Up(16)
       //log2Up(128)
     ),
     numObjsAffinePow=(
@@ -263,20 +274,21 @@ object Gpu2dSimDutParams {
     //numBgTilesPow=Some(log2Up(256)),
     //numBgTilesPow=Some(log2Up(2)),
     numBgTiles=(
-      //Some(16)
+      Some(16)
       //Some(320 * 240)
       // for double buffering
-      Some(
-        vgaTimingInfo.fbSize2d.x
-        * vgaTimingInfo.fbSize2d.y
-        * 2
-        / (1 << (gpu2dBgTileSize2dPow.x + gpu2dBgTileSize2dPow.y))
-      )
+      //Some(
+      //  vgaTimingInfo.fbSize2d.x
+      //  * vgaTimingInfo.fbSize2d.y
+      //  * 2
+      //  / (1 << (gpu2dBgTileSize2dPow.x + gpu2dBgTileSize2dPow.y))
+      //)
     ),
     //numObjTilesPow=None,
     numObjTiles=(
+      Some(8)
       //Some(16)
-      Some(4)
+      //Some(4)
     ),
     numObjAffineTiles=(
       Some(16)
@@ -289,8 +301,8 @@ object Gpu2dSimDutParams {
     ),
     noAffineBgs=true,
     noAffineObjs=(
-      //true
-      false
+      true
+      //false
     ),
     //fancyObjPrio=false,
     fancyObjPrio=true,
@@ -305,6 +317,7 @@ object Gpu2dSimDutToVerilog extends App {
     gpu2dParams=Gpu2dSimDutParams.gpu2dParams,
     ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
     optRawSnesButtons=true,
+    dbgPipeMemRmw=true,
   ))
 }
 
@@ -316,6 +329,7 @@ object Gpu2dSimDutToVhdl extends App {
     gpu2dParams=Gpu2dSimDutParams.gpu2dParams,
     ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
     optRawSnesButtons=true,
+    dbgPipeMemRmw=false,
   ))
   //val report = SpinalVhdl(new Gpu2dTo())
   //report.printPruned()

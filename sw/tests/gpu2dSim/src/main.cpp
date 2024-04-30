@@ -20,6 +20,7 @@
 #include <SDL_events.h>
 #include "liborangepower_src/misc/misc_output_funcs.hpp"
 #include "VGpu2dSimDut.h"
+#include "verilated_vcd_c.h"
 
 //using std::cout;
 //using std::cin;
@@ -37,7 +38,9 @@ static constexpr double
 		= 125.0,
 		//= 150.0,
 		//= 200.0,
-	PIXEL_CLK = 25.0;
+	PIXEL_CLK
+		= 25.0;
+		//= 12.5;
 static constexpr size_t
 	CLKS_PER_PIXEL = size_t(CLK_RATE / PIXEL_CLK);
 	//PIXELS_PER_CLK = PIXEL_CLK / CLK_RATE;
@@ -60,7 +63,7 @@ public:		// variables
 	sdl::Window window;
 	sdl::Renderer renderer;
 	sdl::Texture texture;
-	std::unique_ptr<Uint32> pixels;
+	std::unique_ptr<Uint32[]> pixels;
 	Vec2<Uint32> pos{.x=0, .y=0};
 	//Vec2<double> pos{.x=0.0, .y=0.0};
 	size_t cnt_x = 0;
@@ -181,21 +184,28 @@ public:		// functions
 		//	cnt_x = HALF_SIZE_2D.x * CLKS_PER_PIXEL;
 		//	pos.x = HALF_SIZE_2D.x;
 		//}
+		//--------
+		//if (pos.x >= HALF_SIZE_2D.x) {
+		//	//cnt_x = 0;
+		//	pos.x = HALF_SIZE_2D.x;
+		//} else {
+		//	++cnt_x;
+		//	if (cnt_x >= CLKS_PER_PIXEL) {
+		//		++pos.x;
+		//		cnt_x = 0;
+		//	}
+		//}
+		//--------
+		++pos.x;
 		if (pos.x >= HALF_SIZE_2D.x) {
-			//cnt_x = 0;
 			pos.x = HALF_SIZE_2D.x;
-		} else {
-			++cnt_x;
-			if (cnt_x >= CLKS_PER_PIXEL) {
-				++pos.x;
-				cnt_x = 0;
-			}
 		}
-
+		//--------
 		//if (cnt_x >= (HALF_SIZE_2D.x * CLKS_PER_PIXEL)) {
 		//	cnt_x = HALF_SIZE_2D.x * CLKS_PER_PIXEL;
 		//	pos.x = HALF_SIZE_2D.x;
 		//}
+		//--------
 	};
 	inline void inc_y() {
 		++pos.y;
@@ -245,7 +255,8 @@ enum class SnesKeyKind: uint32_t {
 	X = 9,
 	L = 10,
 	R = 11,
-	Lim = 12,
+	ExitSim = 12,
+	Lim = 13,
 };
 
 class Vga: public Display{
@@ -266,72 +277,57 @@ protected:	// variables
 		WaitFire,
 	};
 	SnesKeyState _snes_key_state = SnesKeyState::DriveValid;
+	bool _do_exit = false;
 protected:		// functions
 	void _update_engine_key_status() {
+		_engine_key_status.update(
+			_key_status_umap,
+			sdl::EngineKeycUmap<SnesKeyKind>({
+				{SnesKeyKind::B, SDLK_k},
+				{SnesKeyKind::Y, SDLK_j},
+				{SnesKeyKind::Select, SDLK_a},
+				{SnesKeyKind::Start, SDLK_RETURN},
+				{SnesKeyKind::DpadUp, SDLK_e},
+				{SnesKeyKind::DpadDown, SDLK_d},
+				{SnesKeyKind::DpadLeft, SDLK_s},
+				{SnesKeyKind::DpadRight, SDLK_f},
+				{SnesKeyKind::A, SDLK_l},
+				{SnesKeyKind::X, SDLK_i},
+				{SnesKeyKind::L, SDLK_o},
+				{SnesKeyKind::R, SDLK_p},
+				{SnesKeyKind::ExitSim, SDLK_ESCAPE},
+			})
+		);
 		switch (_snes_key_state) {
 			case SnesKeyState::DriveValid: {
-				_engine_key_status.update(
-					_key_status_umap,
-					sdl::EngineKeycUmap<SnesKeyKind>({
-						{SnesKeyKind::B, SDLK_k},
-						{SnesKeyKind::Y, SDLK_j},
-						{SnesKeyKind::Select, SDLK_a},
-						{SnesKeyKind::Start, SDLK_RETURN},
-						{SnesKeyKind::DpadUp, SDLK_e},
-						{SnesKeyKind::DpadDown, SDLK_d},
-						{SnesKeyKind::DpadLeft, SDLK_s},
-						{SnesKeyKind::DpadRight, SDLK_f},
-						{SnesKeyKind::A, SDLK_l},
-						{SnesKeyKind::X, SDLK_i},
-						{SnesKeyKind::L, SDLK_o},
-						{SnesKeyKind::R, SDLK_p},
-					})
-				);
+				auto my_key_up_now
+					= [&](const SnesKeyKind& key) -> uint32_t {
+					return (
+						uint32_t(_engine_key_status.key_up_now(key))
+						<< uint32_t(key)
+					);
+				};
 				_top->io_rawSnesButtons_valid = true;
 				//_top->io_rawSnesButtons_payload(0) = 3;
 				_top->io_rawSnesButtons_payload = (
-					(
-						_engine_key_status.key_up_now(SnesKeyKind::B)
-						<< uint32_t(SnesKeyKind::B)
-					) | (
-						_engine_key_status.key_up_now(SnesKeyKind::Y)
-						<< uint32_t(SnesKeyKind::Y)
-					) | (
-						_engine_key_status.key_up_now(SnesKeyKind::Select)
-						<< uint32_t(SnesKeyKind::Select)
-					) | (
-						_engine_key_status.key_up_now(SnesKeyKind::Start)
-						<< uint32_t(SnesKeyKind::Start)
-					) | (
-						_engine_key_status.key_up_now(SnesKeyKind::DpadUp)
-						<< uint32_t(SnesKeyKind::DpadUp)
-					) | (
-						_engine_key_status.key_up_now(SnesKeyKind::DpadDown)
-						<< uint32_t(SnesKeyKind::DpadDown)
-					) | (
-						_engine_key_status.key_up_now(SnesKeyKind::DpadLeft)
-						<< uint32_t(SnesKeyKind::DpadLeft)
-					) | (
-						_engine_key_status.key_up_now(
-							SnesKeyKind::DpadRight
-						)
-						<< uint32_t(SnesKeyKind::DpadRight)
-					) | (
-						_engine_key_status.key_up_now(SnesKeyKind::A)
-						<< uint32_t(SnesKeyKind::A)
-					) | (
-						_engine_key_status.key_up_now(SnesKeyKind::X)
-						<< uint32_t(SnesKeyKind::X)
-					) | (
-						_engine_key_status.key_up_now(SnesKeyKind::L)
-						<< uint32_t(SnesKeyKind::L)
-					) | (
-						_engine_key_status.key_up_now(SnesKeyKind::R)
-						<< uint32_t(SnesKeyKind::R)
-					) | (
-						0xf000
-					)
+					my_key_up_now(SnesKeyKind::B)
+					| my_key_up_now(SnesKeyKind::Y)
+					| my_key_up_now(SnesKeyKind::Select)
+					| my_key_up_now(SnesKeyKind::Start)
+					| my_key_up_now(SnesKeyKind::DpadUp)
+					| my_key_up_now(SnesKeyKind::DpadDown)
+					| my_key_up_now(SnesKeyKind::DpadLeft)
+					| my_key_up_now(SnesKeyKind::DpadRight)
+					| my_key_up_now(SnesKeyKind::A)
+					| my_key_up_now(SnesKeyKind::X)
+					| my_key_up_now(SnesKeyKind::L)
+					| my_key_up_now(SnesKeyKind::R)
+					| 0xf000
 				);
+				if (_engine_key_status.key_down_now(SnesKeyKind::ExitSim)) {
+					_do_exit = true;
+					printf("Exiting...\n");
+				}
 				//printf("0x%x\n", uint32_t(_top->io_rawSnesButtons_payload));
 				_snes_key_state = SnesKeyState::WaitFire;
 			}
@@ -342,6 +338,7 @@ protected:		// functions
 					//&& 
 					_top->io_rawSnesButtons_ready
 				) {
+					//printf("testificate\n");
 					//printf("_top->io_rawSnesButtons_ready == true\n");
 					_top->io_rawSnesButtons_valid = false;
 					_snes_key_state = SnesKeyState::DriveValid;
@@ -386,28 +383,78 @@ public:		// functions
 	}
 
 	virtual void post_cycle() {
+		//if (
+		//	pos.x < HALF_SIZE_2D.x
+		//	&& pos.y < HALF_SIZE_2D.y
+		//	//true
+		//) {
+		//	this->set(
+		//		(
+		//			((_top->io_phys_col_r & 0xf) << 20)
+		//			+ ((_top->io_phys_col_g & 0xf) << 12)
+		//			+ ((_top->io_phys_col_b & 0xf) << 4)
+		//		)
+		//		//_top->io_phys_col_r & 0xf,
+		//		//_top->io_phys_col_g & 0xf,
+		//		//_top->io_phys_col_b & 0xf
+		//	);
+		//}
+		//_last_vsync = _top->io_phys_vsync;
+		//_last_hsync = _top->io_phys_hsync;
+		//--------
+		//_last_vsync = _top->io_phys_vsync;
+		//_last_hsync = _top->io_phys_hsync;
+		//_last_visib = _top->io_misc_visib;
+		//--------
+		//--------
+		////_handle_visib_enable();
+		//_handle_pos_update();
+		_handle_draw();
 	}
-
 	virtual void pre_cycle() {
+		//--------
 		_handle_sdl_events();
-		if (
-			!_top->io_phys_vsync
-			&& _last_vsync
-		) {
-			pos.y = 0;
-			refresh();
-		}
-		if (
-			!_top->io_phys_hsync
-			&& _last_hsync
-			&& pos.x != 0
-		) {
-			inc_y();
-			cnt_x = 0;
-			pos.x = 0;
-		}
+		//_handle_visib_enable();
+		_handle_pos_update();
+		//_handle_draw();
+		_last_vsync = _top->io_phys_vsync;
+		_last_hsync = _top->io_phys_hsync;
+		//_last_visib = _top->io_misc_visib;
+		//--------
+		//_handle_visib_enable();
+		//--------
+		//_last_vsync = _top->io_phys_vsync;
+		//_last_hsync = _top->io_phys_hsync;
+		//_last_visib = _top->io_misc_visib;
+		//--------
 		//pos.x = _top->io_misc_hpipeC;
 		//pos.y = _top->io_misc_vpipeC;
+		//--------
+		//if (
+		//	_top->io_phys_vsync
+		//	&& !_last_vsync
+		//	//!_top->io_phys_vsync
+		//	//&& _last_vsync
+		//) {
+		//	pos.y = 0;
+		//	refresh();
+		//}
+		//if (
+		//	_top->io_phys_hsync
+		//	&& !_last_hsync
+		//	//!_top->io_phys_hsync
+		//	//&& _last_hsync
+		//	&& pos.x != 0
+		//) {
+		//	inc_y();
+		//	cnt_x = 0;
+		//	pos.x = 0;
+		//}
+		//--------
+		//--------
+		//pos.x = _top->io_misc_hpipeC;
+		//pos.y = _top->io_misc_vpipeC;
+		//--------
 		//if (
 		//	!_top->io_phys_vsync
 		//	&& _last_vsync
@@ -415,16 +462,230 @@ public:		// functions
 		//	//pos.y = 0;
 		//	refresh();
 		//}
+		//if (
+		//	//////_top->io_misc_pastVisib
+		//	//////&& _top->io_misc_pixelEn
+		//	//////_top->io_misc_pastVisib
+		//	//_top->io_misc_visib
+		//	//--------
+		//	//&& _top->io_misc_pixelEn
+		//	//&& _top->io_misc_pastPixelEn
+		//	//--------
+		//	//_top->io_misc_visibPipe1
+		//	////&& _top->io_misc_pixelEn
+		//	//!_top->io_phys_hsync
+		//	//&& !_top->io_phys_vsync
+		//	////_top->io_phys_hsync
+		//	////&& _top->io_phys_vsync
+		//	////true
+		//	//_misc_visib_timer == CLKS_PER_PIXEL
+		//	_visib_enable
+		//) {
+		//	//pos.x = _top->io_misc_hpipeC;
+		//	//pos.y = _top->io_misc_vpipeC;
+		//	//--------
+		//	//if (
+		//	//	(_top->io_phys_col_r & 0xf) == 0xf
+		//	//	&& (_top->io_phys_col_g & 0xf) == 0x8
+		//	//	&& (_top->io_phys_col_b & 0xf) == 0
+		//	//) {
+		//	//	printout(
+		//	//		//uint32_t(_top->io_misc_hpipeC & 0xff), " ",
+		//	//		//uint32_t(_top->io_misc_vpipeC & 0xff), "; ",
+		//	//		_top->io_phys_col_r & 0xf, " ",
+		//	//		_top->io_phys_col_g & 0xf, " ",
+		//	//		_top->io_phys_col_b & 0xf, "; ",
+		//	//		pos, "\n"
+		//	//	);
+		//	//}
+		//	//--------
+		//	//if (
+		//	//	//_top->io_misc_visib
+		//	//	//_top->io_misc_pastVisib
+		//	//	true
+		//	//) {
+		//	//	inc_x();
+		//	//}
+		//	if (
+		//		//_top->io_misc_pastPixelEn
+		//		//&& 
+		//		pos.x < HALF_SIZE_2D.x
+		//		&& pos.y < HALF_SIZE_2D.y
+		//		//true
+		//	) {
+		//		this->set(
+		//			(
+		//				((_top->io_phys_col_r & 0xf) << 20)
+		//				+ ((_top->io_phys_col_g & 0xf) << 12)
+		//				+ ((_top->io_phys_col_b & 0xf) << 4)
+		//			)
+		//			//_top->io_phys_col_r & 0xf,
+		//			//_top->io_phys_col_g & 0xf,
+		//			//_top->io_phys_col_b & 0xf
+		//		);
+		//	}
+		//	//inc_x();
+		//} 
+		////else {
+		////	refresh();
+		////}
+		//--------
+		//if (
+		//	_top->io_misc_visib
+		//) {
+		//	if (
+		//		!_last_visib
+		//	) {
+		//		//_misc_visib_timer = 0;
+		//		_visib_enable = false;
+		//	} else if (
+		//		//_top->io_misc_pastPixelEn
+		//		_top->io_misc_pixelEn
+		//	) {
+		//		_visib_enable = true;
+		//	}
+		//} else {
+		//	//if (
+		//	//	_misc_visib_timer + 1 < CLKS_PER_PIXEL
+		//	//) {
+		//	//	++_misc_visib_timer;
+		//	//}
+		//	_visib_enable = false;
+		//}
+		//--------
+		//--------
+		//if (
+		//	//_top->io_phys_vsync
+		//	//&& !_last_vsync
+		//	!_top->io_phys_vsync
+		//	&& _last_vsync
+		//) {
+		//	pos.y = 0;
+		//	refresh();
+		//}
+		//if (
+		//	//_top->io_phys_hsync
+		//	//&& !_last_hsync
+		//	!_top->io_phys_hsync
+		//	&& _last_hsync
+		//	&& pos.x != 0
+		//) {
+		//	inc_y();
+		//	cnt_x = 0;
+		//	pos.x = 0;
+		//}
+	}
+	GEN_GETTER_BY_CON_REF(do_exit);
+protected:		// variables and helper functions
+	//uint32_t _misc_visib_timer = 0;
+	//bool _visib_enable = false;
+	//bool _last_visib = false;
+	//Vec2<Uint32> _temp_cnt{0, 0};
+	bool _did_first_refresh = false;
+	//void _handle_visib_enable() {
+	//	if (
+	//		_top->io_misc_visib
+	//	) {
+	//		if (
+	//			!_last_visib
+	//		) {
+	//			//_misc_visib_timer = 0;
+	//			_visib_enable = false;
+	//		} else if (
+	//			//_top->io_misc_pastPixelEn
+	//			_top->io_misc_pixelEn
+	//		) {
+	//			_visib_enable = true;
+	//		}
+	//	} else {
+	//		//if (
+	//		//	_misc_visib_timer + 1 < CLKS_PER_PIXEL
+	//		//) {
+	//		//	++_misc_visib_timer;
+	//		//}
+	//		_visib_enable = false;
+	//	}
+	//}
+	void _handle_pos_update() {
+		const bool old_did_first_refresh = _did_first_refresh;
+		//const Uint32 prev_pos_x = pos.x;
+		const Vec2<Uint32> prev_pos = pos;
 		if (
-			////_top->io_misc_pastVisib
-			////&& _top->io_misc_pixelEn
-			////_top->io_misc_pastVisib
+			_top->io_phys_vsync
+			&& !_last_vsync
+			//!_top->io_phys_vsync
+			//&& _last_vsync
+			&& (
+				pos.y >= HALF_SIZE_2D.y
+				|| !_did_first_refresh
+			)
+		) {
+			if (!_did_first_refresh) {
+				_did_first_refresh = true;
+			}
+			printf(
+				"refreshing: x, y: %u, %u\n",
+				pos.x, pos.y
+			);
+			pos.y = 0;
+			refresh();
+		} 
+		//else
+		if (
+			old_did_first_refresh
+		) {
+			if (
+				_top->io_phys_hsync
+				&& !_last_hsync
+				//!_top->io_phys_hsync
+				//&& _last_hsync
+				&& pos.x != 0
+				//&& pos.x >= HALF_SIZE_2D.x
+			) {
+				inc_y();
+				cnt_x = 0;
+				pos.x = 0;
+			}
+			if (
+				//_visib_enable
+				_top->io_misc_visib
+				//--------
+				//&& _top->io_misc_pixelEn
+				&& _top->io_misc_pastPixelEn
+				//--------
+			) {
+				//printf("testificate\n");
+				inc_x();
+			}
+		}
+		//if (
+		//	pos.y != prev_pos.y
+		//) {
+		//	printf(
+		//		"pos.y changed: x, y: %u, %u\n",
+		//		pos.x, pos.y
+		//	);
+		//}
+	}
+	void _handle_draw() {
+		if (
+			//////_top->io_misc_pastVisib
+			//////&& _top->io_misc_pixelEn
+			//////_top->io_misc_pastVisib
 			_top->io_misc_visib
+			//--------
 			//&& _top->io_misc_pixelEn
+			&& _top->io_misc_pastPixelEn
+			//--------
+			//_top->io_misc_visibPipe1
+			////&& _top->io_misc_pixelEn
 			//!_top->io_phys_hsync
 			//&& !_top->io_phys_vsync
-			//_top->io_phys_hsync
-			//&& _top->io_phys_vsync
+			////_top->io_phys_hsync
+			////&& _top->io_phys_vsync
+			////true
+			//_misc_visib_timer == CLKS_PER_PIXEL
+			//_visib_enable
 		) {
 			//pos.x = _top->io_misc_hpipeC;
 			//pos.y = _top->io_misc_vpipeC;
@@ -444,9 +705,19 @@ public:		// functions
 			//	);
 			//}
 			//--------
+			//if (
+			//	//_top->io_misc_visib
+			//	//_top->io_misc_pastVisib
+			//	true
+			//) {
+			//	inc_x();
+			//}
 			if (
+				//_top->io_misc_pastPixelEn
+				//&& 
 				pos.x < HALF_SIZE_2D.x
 				&& pos.y < HALF_SIZE_2D.y
+				//true
 			) {
 				this->set(
 					(
@@ -459,15 +730,13 @@ public:		// functions
 					//_top->io_phys_col_b & 0xf
 				);
 			}
-			inc_x();
+			//inc_x();
 		} 
 		//else {
 		//	refresh();
 		//}
-
-		_last_vsync = _top->io_phys_vsync;
-		_last_hsync = _top->io_phys_hsync;
 	}
+public:		// functions
 };
 
 int main(int argc, char** argv) {
@@ -477,14 +746,31 @@ int main(int argc, char** argv) {
 	//std::unique_ptr<SDL_Window> win(new SDL_Window);
 	//SDL_Window* win = nullptr;
 	std::unique_ptr<VGpu2dSimDut> top(new VGpu2dSimDut());
+	Verilated::traceEverOn(true);
 	std::unique_ptr<VerilatedContext> contextp(new VerilatedContext());
+	std::unique_ptr<VerilatedVcdC> trace(nullptr);//(new VerilatedVcdC);
 	Vga vga(top.get());
 	contextp->randReset(2);
-	contextp->traceEverOn(false);
+	contextp->traceEverOn(true);
 	contextp->commandArgs(argc, argv);
+	if (trace) {
+		top->trace(trace.get(), 20);
+		trace->open("sdl_test.vcd");
+	}
 
 	top->clk = 0;
 	top->reset = 1;
+	size_t tick_cnt = 0;
+	auto end_tick = [&]() -> void {
+		++tick_cnt;
+		top->eval();
+		if (trace) {
+			trace->dump(10 * tick_cnt - 1);
+			if (!top->clk) {
+				trace->flush();
+			}
+		}
+	};
 
 	while (top->reset == !0) {
 		contextp->timeInc(1);
@@ -496,10 +782,22 @@ int main(int argc, char** argv) {
 				top->reset = 0;
 			}
 		}
-		top->eval();
+		//top->eval();
+		//trace->dump(1);
+		//if (!top->clk) {
+		//	trace->flush();
+		//}
+		end_tick();
 	}
 
-	for (;;) {
+	//for (;;) 
+	for (
+		;//size_t i=0;
+		////i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 40 * 2) && !vga.do_exit();
+		//i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 2 * 2) && !vga.do_exit();
+		!vga.do_exit();
+		//++i
+	) {
 		contextp->timeInc(1);
 		top->clk = !top->clk;
 
@@ -509,9 +807,17 @@ int main(int argc, char** argv) {
 			vga.post_cycle();
 		}
 
-		top->eval();
+		//top->eval();
+		//trace->dump(1);
+		//if (!top->clk) {
+		//	trace->flush();
+		//}
+		end_tick();
 	}
 
+	if (trace) {
+		trace->close();
+	}
 	top->final();
 
 	return 0;

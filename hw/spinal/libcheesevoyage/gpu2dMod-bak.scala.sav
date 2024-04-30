@@ -2122,9 +2122,6 @@ case class Gpu2d(
       //  tempObjTilePush.ready := io.pop.ready
       //}
 
-      //--------
-      // BEGIN: new test code
-      //println(f"dbgPipeMemRmw: $dbgPipeMemRmw")
       if (
         !dbgPipeMemRmw
         || idx != 0
@@ -2141,7 +2138,8 @@ case class Gpu2d(
         //    data=objTilePush.payload.tile,
         //  )
         //}
-      } else {
+      } 
+      else {
         //def wordType() = Gpu2dObjTileStmPayload(
         //  params=params,
         //  isAffine=false,
@@ -2191,7 +2189,9 @@ case class Gpu2d(
             objTilePushPayload,
           ) => {
             def myExt = frontPayload.myExt
-            myExt.helperForceWr := objTilePushPayload.forceWr
+            if (dbgPipeMemRmw) {
+              myExt.helperForceWr := objTilePushPayload.forceWr
+            }
             myExt.rdMemWord := myExt.rdMemWord.getZero
             myExt.modMemWord := objTilePushPayload.tileSlice
             myExt.memAddr := objTilePushPayload.memIdx
@@ -2248,6 +2248,7 @@ case class Gpu2d(
                         pxCoordX=pxCoordX,
                         colIdx=(
                           //(pxIdx % 2) + 1
+                          //pxIdx + 1
                           {
                             //val tempPxIdx = (pxIdx + 1) % 4
                             ////if (
@@ -2263,16 +2264,8 @@ case class Gpu2d(
                             //} else {
                             //  tempPxIdx
                             //}
-                            //(pxIdx % 4) + 1
-                            //pxIdx % 4
+                            (pxIdx % 4) + 1
                             //val (pxIdx + 1) % (1 << myPx.getWidth)
-                            //if (
-                            //  pxIdx == 0
-                            //)
-                            (pxIdx % 5) + 2
-                            //--------
-                            //(pxIdx + 1) % 5
-                            //--------
                             //pxIdx
                           }
                           //3
@@ -2334,8 +2327,6 @@ case class Gpu2d(
         //}
         //tempObjTilePush.io.back.ready := io.pop.ready
       }
-      // END: new test code
-      //--------
     }
     val objAffineTileMemArr = new ArrayBuffer[
       FpgacpuRamSimpleDualPort[UInt]
