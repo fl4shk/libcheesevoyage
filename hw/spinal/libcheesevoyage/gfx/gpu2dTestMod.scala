@@ -588,8 +588,13 @@ case class Gpu2dTest(
   //tempBgAttrs.scroll.y := 5
   //tempBgAttrs.visib := True
   //tempBgAttrs.scroll.allowOverride
-  tempBgAttrs.scroll.x := myDefaultBgScroll.x
-  tempBgAttrs.scroll.y := myDefaultBgScroll.y
+
+  tempBgAttrs.scroll.x := (
+    RegNext(tempBgAttrs.scroll.x) init(myDefaultBgScroll.x)
+  )
+  tempBgAttrs.scroll.y := (
+    RegNext(tempBgAttrs.scroll.y) init(myDefaultBgScroll.y)
+  )
   //--------
   ////tempBgAttrs.visib := False
   //tempBgAttrs.fbAttrs := tempBgAttrs.fbAttrs.getZero
