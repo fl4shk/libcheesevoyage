@@ -49,7 +49,7 @@ case class ClkCnt(
 case class SnesCtrlIo() extends Bundle {
   // FL4SHK notes on SNES Controller pins (only my SNES controller
   // extension cable that I stripped the wires of):
-  //  Green (short)/Yellow (long): +5v
+  //  Green (short)/Yellow (long): +5v (hook up +3.3V for the Arty A7 100T)
   //  Black (short)/Black (long): Ground
   //  Blue (short)/Blue (long): Data Clock (`outpClk`)
   //  White w/ Green Tint (short)/White (long): Data Latch (`outpLatch`)

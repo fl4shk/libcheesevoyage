@@ -557,13 +557,21 @@ case class Gpu2dTest(
   //tempBgAttrs.scroll := tempBgAttrs.scroll.getZero
   //tempBgAttrs.scroll.x := 0
   //tempBgAttrs.scroll.x := 1
-  tempBgAttrs.scroll.x := (
-    //0
-    ////2
-    //params.bgTileSize2d.x
-    //+ 2
-    ////+ 1
-    params.bgTileSize2d.x * 5
+  //val myDefaultBgScroll = cloneOf(tempBgAttrs.scroll)
+  val myDefaultBgScroll = ElabVec2[Int](
+    x=(
+      //0
+      ////2
+      //params.bgTileSize2d.x
+      //+ 2
+      ////+ 1
+      params.bgTileSize2d.x * 5
+    ),
+    y=(
+      //2
+      0
+      //1
+    )
   )
   //tempBgAttrs.scroll.x := 3
   //tempBgScroll.x := (-params.bgTileSize2d.x) + 1
@@ -571,14 +579,18 @@ case class Gpu2dTest(
   //tempBgAttrs.scroll.x := tempBgScroll.x.asUInt
   //tempBgAttrs.scroll.x := 0
   //tempBgAttrs.scroll.x := (default -> True)
-  tempBgAttrs.scroll.y := (
-    //2
-    0
-    //1
-  )
+  //myDefaultBgScroll.y := (
+  //  //2
+  //  0
+  //  //1
+  //)
   //tempBgAttrs.scroll.x := 6
   //tempBgAttrs.scroll.y := 5
   //tempBgAttrs.visib := True
+  //tempBgAttrs.scroll.allowOverride
+  tempBgAttrs.scroll.x := myDefaultBgScroll.x
+  tempBgAttrs.scroll.y := myDefaultBgScroll.y
+  //--------
   ////tempBgAttrs.visib := False
   //tempBgAttrs.fbAttrs := tempBgAttrs.fbAttrs.getZero
   tempBgAttrs.fbAttrs.doIt := (
@@ -1242,17 +1254,27 @@ case class Gpu2dTest(
     nextObjAttrsCnt := RegNext(nextObjAttrsCnt) init(0x0)
     rSnesPopReady := False
     //val rTileIdx = Reg(cloneOf(tempObjAttrs.tileIdx)) init(0x1)
-    def myFracWidth = (
+    def myBgScrollFracWidth = (
+      1
+      //2
+    )
+    def myObjPosFracWidth = (
       1
       //4
       //8
       //16
     )
-    val rTileIdx = Reg(
-      UInt((tempObjAttrs.tileIdx.getWidth + myFracWidth) bits)
-    ) init(1 << myFracWidth)
+    def myTileFracWidth = (
+      4
+    )
+    val rObjTileIdx = (
+      Reg(UInt((tempObjAttrs.tileIdx.getWidth + myTileFracWidth) bits))
+      init(1 << myTileFracWidth)
+    )
     //tempObjAttrs.tileIdx := 1
-    tempObjAttrs.tileIdx := rTileIdx(rTileIdx.high downto myFracWidth)
+    tempObjAttrs.tileIdx := rObjTileIdx(
+      rObjTileIdx.high downto myTileFracWidth
+    )
 
     //tempObjAttrs.tileMemIdx := 2
     //tempObjAttrs.pos.x := 16
@@ -1268,26 +1290,46 @@ case class Gpu2dTest(
         io.rawSnesButtons.payload
       }
     )
+    val rBgScroll = (
+      Reg(DualTypeNumVec2[UInt, UInt](
+        dataTypeX=UInt(
+          (tempBgAttrs.scroll.x.getWidth + myBgScrollFracWidth) bits
+        ),
+        dataTypeY=UInt(
+          (tempBgAttrs.scroll.y.getWidth + myBgScrollFracWidth) bits
+        ),
+      ))
+    )
+    rBgScroll.x.init(
+      myDefaultBgScroll.x << myBgScrollFracWidth
+    )
+    rBgScroll.y.init(
+      myDefaultBgScroll.y << myBgScrollFracWidth
+    )
     //val rHoldCnt = Reg(
     //  UInt((log2Up(clkRate.toTime.toBigDecimal.toInt) + 1) bits)
     //) init(0x0)
     //val rPos = Reg(cloneOf(tempObjAttrs.pos))
-    val rPos = Reg(DualTypeNumVec2[SInt, SInt](
-      dataTypeX=SInt((tempObjAttrs.pos.x.getWidth + myFracWidth) bits),
-      dataTypeY=SInt((tempObjAttrs.pos.y.getWidth + myFracWidth) bits),
+    val rObjPos = Reg(DualTypeNumVec2[SInt, SInt](
+      dataTypeX=SInt(
+        (tempObjAttrs.pos.x.getWidth + myObjPosFracWidth) bits
+      ),
+      dataTypeY=SInt(
+        (tempObjAttrs.pos.y.getWidth + myObjPosFracWidth) bits
+      ),
       //dataTypeX=SInt((tempObjAttrs.pos.x.getWidth) bits),
       //dataTypeY=SInt((tempObjAttrs.pos.y.getWidth) bits),
     ))
     //rPos.init(rPos.getZero)
-    rPos.x.init(
+    rObjPos.x.init(
       //0x2
       //0x1
       //0x4
       //0x4 << myFracWidth
-      0x0 << myFracWidth
+      0x0 << myObjPosFracWidth
     )
-    rPos.y.init(
-      0x0 << myFracWidth
+    rObjPos.y.init(
+      0x0 << myObjPosFracWidth
     )
     //--------
     when (
@@ -1295,15 +1337,51 @@ case class Gpu2dTest(
       rHoldCnt.overflowPipe(0)
     ) {
       switch (
-        Cat(buttons(SnesButtons.B), buttons(SnesButtons.Y))
+        Cat(buttons(SnesButtons.L), buttons(SnesButtons.R))
       ) {
         is (B"01") {
-          // B button held
-          rTileIdx := rTileIdx - 1
+          // L button down, R button up
+          rObjTileIdx := rObjTileIdx - 1
         }
         is (B"10") {
-          // Y button right
-          rTileIdx := rTileIdx + 1
+          // R button down, L button up
+          rObjTileIdx := rObjTileIdx + 1
+        }
+        default {
+        }
+      }
+      switch (
+        Cat(buttons(SnesButtons.Y), buttons(SnesButtons.A))
+      ) {
+        is (B"01") {
+          // Y button down
+          // scroll left
+          //rBgScroll.x := rBgScroll.x - 1
+          rBgScroll.x := rBgScroll.x - myBgScrollFracWidth
+        }
+        is (B"10") {
+          // A button down
+          // scroll right
+          //rBgScroll.x := rBgScroll.x + 1
+          rBgScroll.x := rBgScroll.x + myBgScrollFracWidth
+        }
+        default {
+        }
+      }
+      switch (
+        Cat(buttons(SnesButtons.X), buttons(SnesButtons.B))
+      ) {
+        is (B"01") {
+          // X button down
+          // scroll up
+          //rBgScroll.y := rBgScroll.y - 1
+          rBgScroll.y := rBgScroll.y - myBgScrollFracWidth
+        }
+        is (B"10") {
+          // B button down
+          // scroll down
+          //rBgScroll.y := rBgScroll.y + 1
+          rBgScroll.y := rBgScroll.y + myBgScrollFracWidth
         }
         default {
         }
@@ -1312,12 +1390,12 @@ case class Gpu2dTest(
         Cat(buttons(SnesButtons.DpadLeft), buttons(SnesButtons.DpadRight))
       ) {
         is (B"01") {
-          // move left
-          rPos.x := rPos.x - 1
+          // move OBJ left
+          rObjPos.x := rObjPos.x - 1
         }
         is (B"10") {
-          // move right
-          rPos.x := rPos.x + 1
+          // move OBJ right
+          rObjPos.x := rObjPos.x + 1
         }
         default {
         }
@@ -1326,23 +1404,29 @@ case class Gpu2dTest(
         Cat(buttons(SnesButtons.DpadUp), buttons(SnesButtons.DpadDown))
       ) {
         is (B"01") {
-          // move up
-          rPos.y := rPos.y - 1
+          // move OBJ up
+          rObjPos.y := rObjPos.y - 1
         }
         is (B"10") {
-          // move down
-          rPos.y := rPos.y + 1
+          // move OBJ down
+          rObjPos.y := rObjPos.y + 1
         }
         default {
         }
       }
     }
+    tempBgAttrs.scroll.x := (
+      rBgScroll.x(rBgScroll.x.high downto myBgScrollFracWidth)
+    )
+    tempBgAttrs.scroll.y := (
+      rBgScroll.y(rBgScroll.y.high downto myBgScrollFracWidth)
+    )
     tempObjAttrs.pos.x := (
-      rPos.x(rPos.x.high downto myFracWidth)
+      rObjPos.x(rObjPos.x.high downto myObjPosFracWidth)
       //rPos.x(rPos.x.high downto 0)
     )
     tempObjAttrs.pos.y := (
-      rPos.y(rPos.y.high downto myFracWidth)
+      rObjPos.y(rObjPos.y.high downto myObjPosFracWidth)
       //rPos.y(rPos.y.high downto 0)
     )
     tempObjAttrs.prio := (
