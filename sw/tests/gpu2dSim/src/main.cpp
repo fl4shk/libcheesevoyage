@@ -776,10 +776,12 @@ int main(int argc, char** argv) {
 	}
 	//std::unique_ptr<SDL_Window> win(new SDL_Window);
 	//SDL_Window* win = nullptr;
-	Verilated::traceEverOn(true);
+	std::unique_ptr<VerilatedVcdC> trace(nullptr);//(new VerilatedVcdC);
+	if (trace) {
+		Verilated::traceEverOn(true);
+	}
 	std::unique_ptr<VGpu2dSimDut> top(new VGpu2dSimDut());
 	std::unique_ptr<VerilatedContext> contextp(new VerilatedContext());
-	std::unique_ptr<VerilatedVcdC> trace/*(nullptr);*/(new VerilatedVcdC);
 	//if (trace) {
 	//}
 	Vga vga(top.get());
