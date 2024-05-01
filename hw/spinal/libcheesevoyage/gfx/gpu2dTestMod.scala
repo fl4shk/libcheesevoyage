@@ -1356,14 +1356,14 @@ case class Gpu2dTest(
         is (B"01") {
           // Y button down
           // scroll left
-          //rBgScroll.x := rBgScroll.x - 1
-          rBgScroll.x := rBgScroll.x - myBgScrollFracWidth
+          rBgScroll.x := rBgScroll.x - 1
+          //rBgScroll.x := rBgScroll.x - myBgScrollFracWidth
         }
         is (B"10") {
           // A button down
           // scroll right
-          //rBgScroll.x := rBgScroll.x + 1
-          rBgScroll.x := rBgScroll.x + myBgScrollFracWidth
+          rBgScroll.x := rBgScroll.x + 1
+          //rBgScroll.x := rBgScroll.x + myBgScrollFracWidth
         }
         default {
         }
@@ -1374,14 +1374,14 @@ case class Gpu2dTest(
         is (B"01") {
           // X button down
           // scroll up
-          //rBgScroll.y := rBgScroll.y - 1
-          rBgScroll.y := rBgScroll.y - myBgScrollFracWidth
+          rBgScroll.y := rBgScroll.y - 1
+          //rBgScroll.y := rBgScroll.y - myBgScrollFracWidth
         }
         is (B"10") {
           // B button down
           // scroll down
-          //rBgScroll.y := rBgScroll.y + 1
-          rBgScroll.y := rBgScroll.y + myBgScrollFracWidth
+          rBgScroll.y := rBgScroll.y + 1
+          //rBgScroll.y := rBgScroll.y + myBgScrollFracWidth
         }
         default {
         }
