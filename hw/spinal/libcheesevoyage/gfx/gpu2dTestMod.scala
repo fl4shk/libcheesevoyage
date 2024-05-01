@@ -463,42 +463,46 @@ case class Gpu2dTest(
       } elsewhen (tempBgTileCnt === 4) {
         //mkBgTile(4, 5)
         mkBgTile(4, 4)
-      } elsewhen (
-        tempBgTileCnt
-        === (
-          //params.bgSize2dInTiles.x / params.bgTileSize2d.x
-          //params.bgSize2dInPxs.x
-          params.intnlFbSize2d.x
-          / (
-            params.bgTileSize2d.x * params.bgTileSize2d.y
-          )
-        )
-      ) {
-        // test that there's a tile at the second row
-        //mkBgTile(1, 2, Some(3), Some(4))
-        mkBgTile(1, 1)
-      } elsewhen (
-        tempBgTileCnt
-        === (
-          //params.bgSize2dInTiles.x / params.bgTileSize2d.x
-          (
-            //params.bgSize2dInPxs.x
-            params.intnlFbSize2d.x
-            / (
-              params.bgTileSize2d.x * params.bgTileSize2d.y
-            )
-          ) + 1
-        )
-      ) {
-        // test that there's a tile at the second row
-        //mkBgTile(1, 2, Some(3), Some(4))
-        mkBgTile(2, 2)
-      } otherwise {
-        //tempBgTileSlice := tempBgTileSlice.getZero
-        //when (rBgTileCnt >= params.numBgTiles) {
-        //  rBgTilePushValid := False
-        //}
-      }
+      } elsewhen (tempBgTileCnt === 5) {
+        mkBgTile(5, 5)
+      } 
+      //elsewhen (
+      //  tempBgTileCnt
+      //  === (
+      //    //params.bgSize2dInTiles.x / params.bgTileSize2d.x
+      //    //params.bgSize2dInPxs.x
+      //    params.intnlFbSize2d.x
+      //    / (
+      //      params.bgTileSize2d.x * params.bgTileSize2d.y
+      //    )
+      //  )
+      //) {
+      //  // test that there's a tile at the second row
+      //  //mkBgTile(1, 2, Some(3), Some(4))
+      //  mkBgTile(1, 1)
+      //} 
+      //elsewhen (
+      //  tempBgTileCnt
+      //  === (
+      //    //params.bgSize2dInTiles.x / params.bgTileSize2d.x
+      //    (
+      //      //params.bgSize2dInPxs.x
+      //      params.intnlFbSize2d.x
+      //      / (
+      //        params.bgTileSize2d.x * params.bgTileSize2d.y
+      //      )
+      //    ) + 1
+      //  )
+      //) {
+      //  // test that there's a tile at the second row
+      //  //mkBgTile(1, 2, Some(3), Some(4))
+      //  mkBgTile(2, 2)
+      //} otherwise {
+      //  //tempBgTileSlice := tempBgTileSlice.getZero
+      //  //when (rBgTileCnt >= params.numBgTiles) {
+      //  //  rBgTilePushValid := False
+      //  //}
+      //}
       nextBgTileCnt := rBgTileCnt + 1
     } otherwise {
       //tempBgTileSlice := tempBgTileSlice.getZero
@@ -565,7 +569,8 @@ case class Gpu2dTest(
       //params.bgTileSize2d.x
       //+ 2
       ////+ 1
-      params.bgTileSize2d.x * 5
+      //params.bgTileSize2d.x * 5
+      0x29
     ),
     y=(
       //2
@@ -687,7 +692,7 @@ case class Gpu2dTest(
           //  //mkBgEntry(4, 5)
           //  //mkBgEntry(4, 4)
           //} otherwise 
-          when (rBgEntryCnt < 5) {
+          when (rBgEntryCnt < 6) {
             tempBgEntry.tileIdx := rBgEntryCnt.asUInt.resized
             tempBgEntry.dispFlip.x := False
             tempBgEntry.dispFlip.y := False
@@ -1027,7 +1032,18 @@ case class Gpu2dTest(
   val rHoldCnt = Reg(ClkCnt(
     clkRate=clkRate,
     //time=0.5 sec,
-    time=0.01 sec,
+    //--------
+    //time=0.01 sec,
+    //--------
+    // BEGIN: debug
+    time=(
+      //1.0 us
+      //10.0 us
+      50.0 us
+    ),
+    // END: debug
+    //--------
+    //--------
     //time=0.0001 sec
     //time=10.00 ns,
     //time=50.00 ns,
@@ -1304,6 +1320,7 @@ case class Gpu2dTest(
           (tempBgAttrs.scroll.y.getWidth + myBgScrollFracWidth) bits
         ),
       ))
+      .setName("rBgScroll")
     )
     rBgScroll.x.init(
       myDefaultBgScroll.x << myBgScrollFracWidth
@@ -1355,6 +1372,7 @@ case class Gpu2dTest(
         default {
         }
       }
+      //rBgScroll.x := rBgScroll.x + 1
       switch (
         Cat(buttons(SnesButtons.Y), buttons(SnesButtons.A))
       ) {
@@ -1420,12 +1438,16 @@ case class Gpu2dTest(
         }
       }
     }
+    //--------
+    // BEGIN: debug comment this out
     tempBgAttrs.scroll.x := (
       rBgScroll.x(rBgScroll.x.high downto myBgScrollFracWidth)
     )
     tempBgAttrs.scroll.y := (
       rBgScroll.y(rBgScroll.y.high downto myBgScrollFracWidth)
     )
+    // END: debug comment this out
+    //--------
     tempObjAttrs.pos.x := (
       rObjPos.x(rObjPos.x.high downto myObjPosFracWidth)
       //rPos.x(rPos.x.high downto 0)

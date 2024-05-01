@@ -299,26 +299,57 @@ protected:		// functions
 			})
 		);
 		switch (_snes_key_state) {
+			enum class Always: uint32_t {
+				Disabled,
+				KeyUp,
+				KeyDown,
+			};
 			case SnesKeyState::DriveValid: {
 				auto my_key_up_now
-					= [&](const SnesKeyKind& key) -> uint32_t {
+				= [&](
+					const SnesKeyKind& key//,
+					//Always always=Always::Disabled
+				) -> uint32_t {
+					uint32_t my_key_status = 0b0u;
+					//switch (always) {
+					//	case Always::Disabled:
+							my_key_status = uint32_t(
+								_engine_key_status.key_up_now(key)
+							);
+					//		break;
+					//	case Always::KeyUp:
+					//		my_key_status = 0b1u;
+					//		break;
+					//	case Always::KeyDown:
+					//		my_key_status = 0b0u;
+					//		break;
+					//}
 					return (
-						uint32_t(_engine_key_status.key_up_now(key))
-						<< uint32_t(key)
+						my_key_status << uint32_t(key)
 					);
 				};
 				_top->io_rawSnesButtons_valid = true;
 				//_top->io_rawSnesButtons_payload(0) = 3;
 				_top->io_rawSnesButtons_payload = (
-					my_key_up_now(SnesKeyKind::B)
-					| my_key_up_now(SnesKeyKind::Y)
+					my_key_up_now(
+						SnesKeyKind::B//,
+						//Always::Disabled
+					)
+					| my_key_up_now(
+						SnesKeyKind::Y//,
+						//Always::Disabled
+					)
 					| my_key_up_now(SnesKeyKind::Select)
 					| my_key_up_now(SnesKeyKind::Start)
 					| my_key_up_now(SnesKeyKind::DpadUp)
 					| my_key_up_now(SnesKeyKind::DpadDown)
 					| my_key_up_now(SnesKeyKind::DpadLeft)
 					| my_key_up_now(SnesKeyKind::DpadRight)
-					| my_key_up_now(SnesKeyKind::A)
+					| my_key_up_now(
+						SnesKeyKind::A//,
+						////Always::KeyDown
+						//Always::Disabled
+					)
 					| my_key_up_now(SnesKeyKind::X)
 					| my_key_up_now(SnesKeyKind::L)
 					| my_key_up_now(SnesKeyKind::R)
@@ -745,13 +776,17 @@ int main(int argc, char** argv) {
 	}
 	//std::unique_ptr<SDL_Window> win(new SDL_Window);
 	//SDL_Window* win = nullptr;
-	std::unique_ptr<VGpu2dSimDut> top(new VGpu2dSimDut());
 	Verilated::traceEverOn(true);
+	std::unique_ptr<VGpu2dSimDut> top(new VGpu2dSimDut());
 	std::unique_ptr<VerilatedContext> contextp(new VerilatedContext());
-	std::unique_ptr<VerilatedVcdC> trace(nullptr);//(new VerilatedVcdC);
+	std::unique_ptr<VerilatedVcdC> trace/*(nullptr);*/(new VerilatedVcdC);
+	//if (trace) {
+	//}
 	Vga vga(top.get());
 	contextp->randReset(2);
-	contextp->traceEverOn(true);
+	if (trace) {
+		contextp->traceEverOn(true);
+	}
 	contextp->commandArgs(argc, argv);
 	if (trace) {
 		top->trace(trace.get(), 20);
@@ -791,11 +826,15 @@ int main(int argc, char** argv) {
 	}
 
 	//for (;;) 
-	for (
-		;//size_t i=0;
-		////i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 40 * 2) && !vga.do_exit();
-		//i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 2 * 2) && !vga.do_exit();
-		!vga.do_exit();
+	//for 
+	while
+	(
+		!vga.do_exit()
+		///*;*/size_t i=0;
+		//i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 40 * 2) && !vga.do_exit();
+		////i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 2 * 2) && !vga.do_exit();
+		////i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 3 * 2) && !vga.do_exit();
+		////!vga.do_exit();
 		//++i
 	) {
 		contextp->timeInc(1);

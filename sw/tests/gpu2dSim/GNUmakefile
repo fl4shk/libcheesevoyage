@@ -87,7 +87,7 @@ VC_OUTMK:=V$(V_TOP).mk
 VC:=verilator
 VC_CFLAGS:=-CFLAGS -O2
 VC_LDFLAGS:=-LDFLAGS -lm
-TRACE:=#--trace
+TRACE:=--trace
 MY_THREADS:=4 #8
 VC_FLAGS:=--cc -Wno-lint \
 	--threads $(MY_THREADS) \
