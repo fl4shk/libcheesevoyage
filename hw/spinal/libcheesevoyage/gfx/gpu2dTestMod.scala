@@ -1377,9 +1377,6 @@ case class Gpu2dTest(
     rSnesPopReady := False
     //val rTileIdx = Reg(cloneOf(tempObjAttrs.tileIdx)) init(0x1)
     //tempObjAttrs.tileIdx := 1
-    tempObjAttrs.tileIdx := rObjTileIdx(
-      rObjTileIdx.high downto myTileFracWidth
-    )
 
     //tempObjAttrs.tileMemIdx := 2
     //tempObjAttrs.pos.x := 16
@@ -1481,26 +1478,30 @@ case class Gpu2dTest(
       }
     }
   }
+  when (
+    if (!optRawSnesButtons) {
+      !snesHelper.io.pop.fire
+    } else { // if (optRawSnesButtons)
+      !io.rawSnesButtons.fire
+    }
+  ) {
+    doSnesNotFire()
+  } otherwise {
+    doSnesFire()
+  }
 
   when (
     //!io.vgaPhys.vsync
     //&& 
-    io.gpu2dPopReady
-    && io.vgaVpipeSPipe2 === LcvVgaState.visib
+    !io.gpu2dPopReady
+    || io.vgaVpipeSPipe2 === LcvVgaState.visib
   ) {
-    when (
-      if (!optRawSnesButtons) {
-        !snesHelper.io.pop.fire
-      } else { // if (optRawSnesButtons)
-        !io.rawSnesButtons.fire
-      }
-    ) {
-      doSnesNotFire()
-    } otherwise {
-      doSnesFire()
-    }
     tempBgAttrs0PushValid := False
-  } otherwise { 
+  } otherwise {
+    //--------
+    tempObjAttrs.tileIdx := rObjTileIdx(
+      rObjTileIdx.high downto myTileFracWidth
+    )
     //--------
     // BEGIN: debug comment this out
     tempBgAttrs.scroll.x := (
