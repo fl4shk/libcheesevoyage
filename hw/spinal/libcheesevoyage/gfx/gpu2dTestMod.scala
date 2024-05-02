@@ -1071,17 +1071,19 @@ case class Gpu2dTest(
     clkRate=clkRate,
     //time=0.5 sec,
     //--------
-    // BEGIN: actual SNES controller `time`
-    time=0.01 sec,
-    // END: actual SNES controller `time`
+    //time=
     //--------
-    // BEGIN: debug
-    //time=(
-    //  //1.0 us
-    //  //10.0 us
-    //  50.0 us
-    //),
-    // END: debug
+    time=(
+      //--------
+      //0.01 sec
+      //--------
+      // BEGIN: debug
+      //1.0 us
+      //10.0 us
+      50.0 us
+      // END: debug
+      //--------
+    ),
     //--------
     //--------
     //time=0.0001 sec
@@ -1478,6 +1480,7 @@ case class Gpu2dTest(
       }
     }
   }
+  val rDidSnesFire = Reg(Bool()) init(False)
   when (
     if (!optRawSnesButtons) {
       !snesHelper.io.pop.fire
@@ -1488,75 +1491,84 @@ case class Gpu2dTest(
     doSnesNotFire()
   } otherwise {
     doSnesFire()
+    rDidSnesFire := True
   }
 
-  when (
-    //!io.vgaPhys.vsync
-    //&& 
-    !io.gpu2dPopReady
-    || io.vgaVpipeSPipe2 === LcvVgaState.visib
-  ) {
+  when (!rDidSnesFire) {
     tempBgAttrs0PushValid := False
+    pop.objAttrsPush.valid := False
   } otherwise {
-    //--------
-    tempObjAttrs.tileIdx := rObjTileIdx(
-      rObjTileIdx.high downto myTileFracWidth
-    )
-    //--------
-    // BEGIN: debug comment this out
-    tempBgAttrs.scroll.x := (
-      rBgScroll.x(rBgScroll.x.high downto myBgScrollFracWidth)
-    )
-    tempBgAttrs.scroll.y := (
-      rBgScroll.y(rBgScroll.y.high downto myBgScrollFracWidth)
-    )
-    // END: debug comment this out
-    //--------
-    tempObjAttrs.pos.x := (
-      rObjPos.x(rObjPos.x.high downto myObjPosFracWidth)
-      //rPos.x(rPos.x.high downto 0)
-    )
-    tempObjAttrs.pos.y := (
-      rObjPos.y(rObjPos.y.high downto myObjPosFracWidth)
-      //rPos.y(rPos.y.high downto 0)
-    )
-    tempObjAttrs.prio := (
-      //1
-      0
-    )
-    tempObjAttrs.size2d.x := params.objTileSize2d.x
-    tempObjAttrs.size2d.y := params.objTileSize2d.y
-    //tempObjAttrs.size2d.y := params.objTileSize2d.y - 1
-    tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-    //tempObjAttrs.affine := tempObjAttrs.affine.getZero
-    //tempObjAttrs.affine.doIt := True
-    //tempObjAttrs.affine.mat(0)(0) := (
-    //  //1 << (tempObjAttrs.affine.fracWidth - 1)
-    //  //2 << tempObjAttrs.affine.fracWidth
-    //  (1 << Gpu2dAffine.fracWidth)
-    //  //| (1 << (Gpu2dAffine.fracWidth - 1))
-    //  | (1 << (Gpu2dAffine.fracWidth - 2))
-    //)
-    //tempObjAttrs.affine.mat(0)(1) := 0
-    //tempObjAttrs.affine.mat(1)(0) := 0
-    //tempObjAttrs.affine.mat(1)(1) := (
-    //  //1 << (tempObjAttrs.affine.fracWidth - 1)
-    //  //2 << tempObjAttrs.affine.fracWidth
-    //  (1 << Gpu2dAffine.fracWidth)
-    //  //| (1 << (Gpu2dAffine.fracWidth - 1))
-    //  | (1 << (Gpu2dAffine.fracWidth - 2))
-    //)
-    //tempObjAttrs := tempObjAttrs.getZero
-    tempBgAttrs0PushValid := True
-    pop.objAttrsPush.valid := True
-    //pop.objAttrsPush.payload.objAttrs := (
-    //  Gpu2dObjAttrs(params=params).getZero
-    //)
-    pop.objAttrsPush.payload.objAttrs := tempObjAttrs
-    pop.objAttrsPush.payload.memIdx := (
-      //rObjAttrsCnt.asUInt(params.objAttrsMemIdxWidth - 1 downto 0)
-      0x1
-    )
+    when (
+      //!io.vgaPhys.vsync
+      //&& 
+      io.gpu2dPopReady
+      || io.vgaVpipeSPipe2 === LcvVgaState.visib
+    ) {
+      tempBgAttrs0PushValid := False
+      pop.objAttrsPush.valid := False
+    } otherwise {
+      //--------
+      rDidSnesFire := False
+      //--------
+      tempObjAttrs.tileIdx := rObjTileIdx(
+        rObjTileIdx.high downto myTileFracWidth
+      )
+      //--------
+      // BEGIN: debug comment this out
+      tempBgAttrs.scroll.x := (
+        rBgScroll.x(rBgScroll.x.high downto myBgScrollFracWidth)
+      )
+      tempBgAttrs.scroll.y := (
+        rBgScroll.y(rBgScroll.y.high downto myBgScrollFracWidth)
+      )
+      // END: debug comment this out
+      //--------
+      tempObjAttrs.pos.x := (
+        rObjPos.x(rObjPos.x.high downto myObjPosFracWidth)
+        //rPos.x(rPos.x.high downto 0)
+      )
+      tempObjAttrs.pos.y := (
+        rObjPos.y(rObjPos.y.high downto myObjPosFracWidth)
+        //rPos.y(rPos.y.high downto 0)
+      )
+      tempObjAttrs.prio := (
+        //1
+        0
+      )
+      tempObjAttrs.size2d.x := params.objTileSize2d.x
+      tempObjAttrs.size2d.y := params.objTileSize2d.y
+      //tempObjAttrs.size2d.y := params.objTileSize2d.y - 1
+      tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+      //tempObjAttrs.affine := tempObjAttrs.affine.getZero
+      //tempObjAttrs.affine.doIt := True
+      //tempObjAttrs.affine.mat(0)(0) := (
+      //  //1 << (tempObjAttrs.affine.fracWidth - 1)
+      //  //2 << tempObjAttrs.affine.fracWidth
+      //  (1 << Gpu2dAffine.fracWidth)
+      //  //| (1 << (Gpu2dAffine.fracWidth - 1))
+      //  | (1 << (Gpu2dAffine.fracWidth - 2))
+      //)
+      //tempObjAttrs.affine.mat(0)(1) := 0
+      //tempObjAttrs.affine.mat(1)(0) := 0
+      //tempObjAttrs.affine.mat(1)(1) := (
+      //  //1 << (tempObjAttrs.affine.fracWidth - 1)
+      //  //2 << tempObjAttrs.affine.fracWidth
+      //  (1 << Gpu2dAffine.fracWidth)
+      //  //| (1 << (Gpu2dAffine.fracWidth - 1))
+      //  | (1 << (Gpu2dAffine.fracWidth - 2))
+      //)
+      //tempObjAttrs := tempObjAttrs.getZero
+      tempBgAttrs0PushValid := True
+      pop.objAttrsPush.valid := True
+      //pop.objAttrsPush.payload.objAttrs := (
+      //  Gpu2dObjAttrs(params=params).getZero
+      //)
+      pop.objAttrsPush.payload.objAttrs := tempObjAttrs
+      pop.objAttrsPush.payload.memIdx := (
+        //rObjAttrsCnt.asUInt(params.objAttrsMemIdxWidth - 1 downto 0)
+        0x1
+      )
+    }
   }
 
   //--------
