@@ -387,6 +387,7 @@ case class LcvVgaCtrlMiscIo(
   //val hsync = Bool()
   //val vsync = Bool()
   //val vga = LcvVga(rgbConfig=rgbConfig)
+  //val fifoPopReady = Bool()
 
   //val buf = port VgaDriverBufOutpLayt()//.shape
   //val buf = LcvVgaCtrlBufOutp()

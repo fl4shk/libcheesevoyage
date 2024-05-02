@@ -26,6 +26,10 @@ case class Gpu2dTestIo(
     params=params,
     dbgPipeMemRmw=dbgPipeMemRmw,
   ))
+  val gpu2dPopReady = in Bool()
+  val vgaPhys = in(LcvVgaPhys(
+    rgbConfig=params.rgbConfig
+  ))
   val snesCtrl = (!optRawSnesButtons) generate SnesCtrlIo()
   val rawSnesButtons = (optRawSnesButtons) generate (
     slave Stream(UInt(SnesButtons.rawButtonsWidth bits))
@@ -624,10 +628,13 @@ case class Gpu2dTest(
     False
   )
   tempBgAttrs.fbAttrs.tileMemBaseAddr := 0
+  val tempBgAttrs0PushValid = Bool()
+  tempBgAttrs0PushValid := RegNext(tempBgAttrs0PushValid) init(True)
   for (idx <- 0 to pop.bgAttrsPushArr.size - 1) {
     def tempBgAttrsPush = pop.bgAttrsPushArr(idx)
     if (idx == 0) {
-      tempBgAttrsPush.valid := True
+      //tempBgAttrsPush.valid := True
+      tempBgAttrsPush.valid := tempBgAttrs0PushValid
       tempBgAttrsPush.payload.bgAttrs := tempBgAttrs
     } else {
       //tempBgAttrsPush.valid := False
@@ -1016,12 +1023,26 @@ case class Gpu2dTest(
     params=params,
     isAffine=false,
   )
+  //tempBgAttrs.scroll := (
+  //  RegNext(tempBgAttrs.scroll) init(tempBgAttrs.scroll.getZero)
+  //)
+  tempObjAttrs := RegNext(tempObjAttrs) init(tempObjAttrs.getZero)
+  pop.objAttrsPush.valid := (
+    RegNext(pop.objAttrsPush.valid)
+    init(pop.objAttrsPush.valid.getZero)
+  )
+  pop.objAttrsPush.payload := (
+    RegNext(pop.objAttrsPush.payload)
+    init(pop.objAttrsPush.payload.getZero)
+  )
+
   val objAttrsCntWidth = params.numObjsPow + 2
   //val rObjAttrsCnt = Reg(UInt(objAttrsCntWidth bits)) init(0x0)
   //val nextObjAttrsCnt = UInt(objAttrsCntWidth bits)
   //val rObjAttrsCnt = RegNext(nextObjAttrsCnt) init(0x0)
   val nextObjAttrsCnt = SInt(objAttrsCntWidth bits)
   val rObjAttrsCnt = RegNext(nextObjAttrsCnt) init(-1)
+  nextObjAttrsCnt := rObjAttrsCnt
   //val rObjAttrs = Reg(Gpu2dObjAttrs(params=params))
   //rObjAttrs.init(rObjAttrs.getZero)
   val rObjAttrsEntryPushValid = Reg(Bool()) init(True)
@@ -1071,6 +1092,66 @@ case class Gpu2dTest(
   rHoldCnt.init(rHoldCnt.getZero)
   rHoldCnt.incr()
 
+  def myBgScrollFracWidth = (
+    1
+    //2
+  )
+  def myObjPosFracWidth = (
+    1
+    //4
+    //8
+    //16
+  )
+  def myTileFracWidth = (
+    4
+  )
+  val rBgScroll = (
+    Reg(DualTypeNumVec2[UInt, UInt](
+      dataTypeX=UInt(
+        (tempBgAttrs.scroll.x.getWidth + myBgScrollFracWidth) bits
+      ),
+      dataTypeY=UInt(
+        (tempBgAttrs.scroll.y.getWidth + myBgScrollFracWidth) bits
+      ),
+    ))
+    .setName("rBgScroll")
+  )
+  rBgScroll.x.init(
+    myDefaultBgScroll.x << myBgScrollFracWidth
+  )
+  rBgScroll.y.init(
+    myDefaultBgScroll.y << myBgScrollFracWidth
+  )
+  //val rHoldCnt = Reg(
+  //  UInt((log2Up(clkRate.toTime.toBigDecimal.toInt) + 1) bits)
+  //) init(0x0)
+  //val rPos = Reg(cloneOf(tempObjAttrs.pos))
+  val rObjPos = Reg(DualTypeNumVec2[SInt, SInt](
+    dataTypeX=SInt(
+      (tempObjAttrs.pos.x.getWidth + myObjPosFracWidth) bits
+    ),
+    dataTypeY=SInt(
+      (tempObjAttrs.pos.y.getWidth + myObjPosFracWidth) bits
+    ),
+    //dataTypeX=SInt((tempObjAttrs.pos.x.getWidth) bits),
+    //dataTypeY=SInt((tempObjAttrs.pos.y.getWidth) bits),
+  ))
+  //rPos.init(rPos.getZero)
+  rObjPos.x.init(
+    //0x2
+    //0x1
+    //0x4
+    //0x4 << myFracWidth
+    0x0 << myObjPosFracWidth
+  )
+  rObjPos.y.init(
+    0x0 << myObjPosFracWidth
+  )
+  val rObjTileIdx = (
+    Reg(UInt((tempObjAttrs.tileIdx.getWidth + myTileFracWidth) bits))
+    init(1 << myTileFracWidth)
+  )
+  //--------
   def doSnesNotFire(): Unit = {
     rSnesPopReady := True
     when (
@@ -1289,27 +1370,11 @@ case class Gpu2dTest(
       rObjAttrsCnt.asUInt(params.objAttrsMemIdxWidth - 1 downto 0)
     )
   }
+
   def doSnesFire(): Unit = {
     nextObjAttrsCnt := RegNext(nextObjAttrsCnt) init(0x0)
     rSnesPopReady := False
     //val rTileIdx = Reg(cloneOf(tempObjAttrs.tileIdx)) init(0x1)
-    def myBgScrollFracWidth = (
-      1
-      //2
-    )
-    def myObjPosFracWidth = (
-      1
-      //4
-      //8
-      //16
-    )
-    def myTileFracWidth = (
-      4
-    )
-    val rObjTileIdx = (
-      Reg(UInt((tempObjAttrs.tileIdx.getWidth + myTileFracWidth) bits))
-      init(1 << myTileFracWidth)
-    )
     //tempObjAttrs.tileIdx := 1
     tempObjAttrs.tileIdx := rObjTileIdx(
       rObjTileIdx.high downto myTileFracWidth
@@ -1328,48 +1393,6 @@ case class Gpu2dTest(
       } else { // if (optRawSnesButtons)
         io.rawSnesButtons.payload
       }
-    )
-    val rBgScroll = (
-      Reg(DualTypeNumVec2[UInt, UInt](
-        dataTypeX=UInt(
-          (tempBgAttrs.scroll.x.getWidth + myBgScrollFracWidth) bits
-        ),
-        dataTypeY=UInt(
-          (tempBgAttrs.scroll.y.getWidth + myBgScrollFracWidth) bits
-        ),
-      ))
-      .setName("rBgScroll")
-    )
-    rBgScroll.x.init(
-      myDefaultBgScroll.x << myBgScrollFracWidth
-    )
-    rBgScroll.y.init(
-      myDefaultBgScroll.y << myBgScrollFracWidth
-    )
-    //val rHoldCnt = Reg(
-    //  UInt((log2Up(clkRate.toTime.toBigDecimal.toInt) + 1) bits)
-    //) init(0x0)
-    //val rPos = Reg(cloneOf(tempObjAttrs.pos))
-    val rObjPos = Reg(DualTypeNumVec2[SInt, SInt](
-      dataTypeX=SInt(
-        (tempObjAttrs.pos.x.getWidth + myObjPosFracWidth) bits
-      ),
-      dataTypeY=SInt(
-        (tempObjAttrs.pos.y.getWidth + myObjPosFracWidth) bits
-      ),
-      //dataTypeX=SInt((tempObjAttrs.pos.x.getWidth) bits),
-      //dataTypeY=SInt((tempObjAttrs.pos.y.getWidth) bits),
-    ))
-    //rPos.init(rPos.getZero)
-    rObjPos.x.init(
-      //0x2
-      //0x1
-      //0x4
-      //0x4 << myFracWidth
-      0x0 << myObjPosFracWidth
-    )
-    rObjPos.y.init(
-      0x0 << myObjPosFracWidth
     )
     //--------
     when (
@@ -1456,6 +1479,26 @@ case class Gpu2dTest(
         }
       }
     }
+  }
+
+  when (
+    //!io.vgaPhys.vsync
+    //&& 
+    io.gpu2dPopReady
+  ) {
+    when (
+      if (!optRawSnesButtons) {
+        !snesHelper.io.pop.fire
+      } else { // if (optRawSnesButtons)
+        !io.rawSnesButtons.fire
+      }
+    ) {
+      doSnesNotFire()
+    } otherwise {
+      doSnesFire()
+    }
+    tempBgAttrs0PushValid := False
+  } otherwise { // when (!io.gpu2dPopReady)
     //--------
     // BEGIN: debug comment this out
     tempBgAttrs.scroll.x := (
@@ -1501,6 +1544,7 @@ case class Gpu2dTest(
     //  | (1 << (Gpu2dAffine.fracWidth - 2))
     //)
     //tempObjAttrs := tempObjAttrs.getZero
+    tempBgAttrs0PushValid := True
     pop.objAttrsPush.valid := True
     //pop.objAttrsPush.payload.objAttrs := (
     //  Gpu2dObjAttrs(params=params).getZero
@@ -1510,18 +1554,6 @@ case class Gpu2dTest(
       //rObjAttrsCnt.asUInt(params.objAttrsMemIdxWidth - 1 downto 0)
       0x1
     )
-  }
-
-  when (
-    if (!optRawSnesButtons) {
-      !snesHelper.io.pop.fire
-    } else { // if (optRawSnesButtons)
-      !io.rawSnesButtons.fire
-    }
-  ) {
-    doSnesNotFire()
-  } otherwise {
-    doSnesFire()
   }
 
   //--------
