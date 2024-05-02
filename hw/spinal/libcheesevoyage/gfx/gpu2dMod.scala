@@ -997,19 +997,45 @@ case class Gpu2dRgba(
   val a = Bool()
 }
 
+object Gpu2dTileSlice {
+  def myColIdxFracWidth(
+    doPipeMemRmw: Boolean
+  ) = (
+    if (!doPipeMemRmw) (
+      0
+    ) else (
+      //4
+      16
+    )
+  )
+  def colIdxWidth(
+    params: Gpu2dParams,
+    isObj: Boolean,
+    doPipeMemRmw: Boolean
+  ) = (
+    if (!isObj) (
+      params.bgPalEntryMemIdxWidth
+    ) else (
+      params.objPalEntryMemIdxWidth
+      + Gpu2dTileSlice.myColIdxFracWidth(doPipeMemRmw=doPipeMemRmw)
+    )
+  )
+}
+
 case class Gpu2dTileSlice(
   params: Gpu2dParams,
   isObj: Boolean,
   isAffine: Boolean,
+  doPipeMemRmw: Boolean=false,
 ) extends Bundle {
   //--------
   //val colIdx = UInt(params.palEntryMemIdxWidth bits)
   def colIdxWidth = (
-    if (!isObj) {
-      params.bgPalEntryMemIdxWidth
-    } else {
-      params.objPalEntryMemIdxWidth
-    }
+    Gpu2dTileSlice.colIdxWidth(
+      params=params,
+      isObj=isObj,
+      doPipeMemRmw=doPipeMemRmw,
+    )
   )
   def pxsSliceWidth = (
     if (!isObj) {
@@ -2150,6 +2176,7 @@ case class Gpu2d(
           params=params,
           isObj=true,
           isAffine=idx != 0,
+          doPipeMemRmw=true,
         )
         def wordCount = (
           1 << params.objTileSliceMemIdxWidth
@@ -2183,6 +2210,11 @@ case class Gpu2d(
         def modFront = myPipeMemRmw.io.modFront
         def modBack = myPipeMemRmw.io.modBack
         def back = myPipeMemRmw.io.back
+        def myFracWidth = (
+          Gpu2dTileSlice.myColIdxFracWidth(
+            doPipeMemRmw=true,
+          )
+        )
         objTilePush.translateInto(
           into=front,
         )(
@@ -2193,7 +2225,14 @@ case class Gpu2d(
             def myExt = frontPayload.myExt
             myExt.helperForceWr := objTilePushPayload.forceWr
             myExt.rdMemWord := myExt.rdMemWord.getZero
-            myExt.modMemWord := objTilePushPayload.tileSlice
+            for (
+              jdx <- 0 until myExt.modMemWord.colIdxVec.size
+            ) {
+              myExt.modMemWord.colIdxVec(jdx) := (
+                objTilePushPayload.tileSlice.colIdxVec(jdx)
+                << myFracWidth
+              )
+            }
             myExt.memAddr := objTilePushPayload.memIdx
             //myExt.hazardId := -1
             myExt.doInitHazardId()
@@ -2231,6 +2270,12 @@ case class Gpu2d(
               //when (
               //  myPx =/= 0x0
               //) {
+                modBackExt.modMemWord.colIdxVec(pxCoordX) := (
+                  (
+                    (myPx + 1)
+                    & ((8 << myFracWidth) - 1)
+                  ) + (2 << myFracWidth)
+                )
                 //modBackExt.modMemWord.setPx(
                 //  pxCoordX=pxCoordX,
                 //  colIdx=(
@@ -2239,50 +2284,58 @@ case class Gpu2d(
                 //    //(myPx << 1).resized
                 //  )
                 //)
-                switch (myPx) {
-                  for (
-                    pxIdx <- 0 until (1 << myPx.getWidth)
-                  ) {
-                    is (pxIdx) {
-                      modBackExt.modMemWord.setPx(
-                        pxCoordX=pxCoordX,
-                        colIdx=(
-                          //(pxIdx % 2) + 1
-                          {
-                            //val tempPxIdx = (pxIdx + 1) % 4
-                            ////if (
-                            ////  tempPxIdx
-                            ////  >= 5 //(1 << myPx.getWidth)
-                            ////) {
-                            ////  pxIdx //1
-                            ////} else {
-                            ////  tempPxIdx
-                            ////}
-                            //if (tempPxIdx == 1) {
-                            //  tempPxIdx + 1
-                            //} else {
-                            //  tempPxIdx
-                            //}
-                            //(pxIdx % 4) + 1
-                            //pxIdx % 4
-                            //val (pxIdx + 1) % (1 << myPx.getWidth)
-                            //if (
-                            //  pxIdx == 0
-                            //)
-                            (pxIdx % 5) + 2
-                            //--------
-                            //(pxIdx + 1) % 5
-                            //--------
-                            //pxIdx
-                          }
-                          //3
-                          //(pxIdx << 1) % 2
-                          //(pxIdx % 2) + 1
-                        )
-                      )
-                    }
-                  }
-                }
+                //switch (myPx) {
+                //  for (
+                //    pxIdx <- 0 until (1 << myPx.getWidth)
+                //  ) {
+                //    is (pxIdx) {
+                //      modBackExt.modMemWord.setPx(
+                //        pxCoordX=pxCoordX,
+                //        colIdx=(
+                //          //(pxIdx % 2) + 1
+                //          {
+                //            //val tempPxIdx = (pxIdx + 1) % 4
+                //            ////if (
+                //            ////  tempPxIdx
+                //            ////  >= 5 //(1 << myPx.getWidth)
+                //            ////) {
+                //            ////  pxIdx //1
+                //            ////} else {
+                //            ////  tempPxIdx
+                //            ////}
+                //            //if (tempPxIdx == 1) {
+                //            //  tempPxIdx + 1
+                //            //} else {
+                //            //  tempPxIdx
+                //            //}
+                //            //(pxIdx % 4) + 1
+                //            //pxIdx % 4
+                //            //val (pxIdx + 1) % (1 << myPx.getWidth)
+                //            //if (
+                //            //  pxIdx == 0
+                //            //)
+                //            //(pxIdx % 5) + 2
+                //            //--------
+                //            (
+                //              (
+                //                pxIdx
+                //                & ((8 << myFracWidth) - 1)
+                //              ) + (2 << myFracWidth)
+                //            )
+                //            //((pxIdx + 1) % (6) + 1
+                //            //--------
+                //            //(pxIdx + 1) % 5
+                //            //--------
+                //            //pxIdx
+                //          }
+                //          //3
+                //          //(pxIdx << 1) % 2
+                //          //(pxIdx % 2) + 1
+                //        )
+                //      )
+                //    }
+                //  }
+                //}
               //}
             }
           }
@@ -2323,9 +2376,31 @@ case class Gpu2d(
         )
         objTileMemArr(idx).io.wrAddr := back.payload.myExt.memAddr
         //objTileMemArr(idx).io.wrData := objTilePush.payload.tile
-        objTileMemArr(idx).io.wrData := (
-          back.payload.myExt.modMemWord
-        )
+
+        //--------
+        //objTileMemArr(idx).io.wrData := (
+        //  back.payload.myExt.modMemWord
+        //)
+        def myWrData = objTileMemArr(idx).io.wrData
+
+        for (
+          //jdx <- 0 until Gpu2dTileSlice.myColIdxFracWidth(true)
+          //jdx <- 0 until Gpu2dTileSlice.colIdxWidth(
+          //  params=params,
+          //  isObj=true,
+          //  doPipeMemRmw=true,
+          //)
+          jdx <- 0 until myWrData.colIdxVec.size
+        ) {
+          val myColIdx = back.payload.myExt.modMemWord.colIdxVec(jdx)
+          myWrData.colIdxVec(jdx) := (
+            (
+              myColIdx(myColIdx.high downto myFracWidth) 
+            )
+          )
+        }
+        //--------
+
         //when (objTilePush.fire) {
         //  objTileMem.write(
         //    address=objTilePush.payload.memIdx,

@@ -108,6 +108,22 @@ case class Gpu2dTest(
           rPalEntry.col.g.msb := True
           rPalEntry.col.g(rPalEntry.col.g.high - 1 downto 0) := 0x0
           rPalEntry.col.b := 5
+        } elsewhen (rPalCnt + 1 === 7) {
+          rPalEntry.col.r := (default -> True)
+          rPalEntry.col.g := (default -> True)
+          rPalEntry.col.b := (default -> True)
+        } elsewhen (rPalCnt + 1 === 8) {
+          rPalEntry.col.r := (default -> True)
+          rPalEntry.col.g.msb := True
+          rPalEntry.col.g(rPalEntry.col.g.high - 1 downto 0) := 0x0
+          rPalEntry.col.b := (default -> True)
+        } elsewhen (rPalCnt + 1 === 9) {
+          rPalEntry.col.r := (default -> True)
+          rPalEntry.col.g := 0x0
+          rPalEntry.col.b := (
+            (rPalEntry.col.b.high downto rPalEntry.col.b.high - 1) -> True,
+            default -> False
+          )
         } otherwise {
           rPalEntryPushValid := False
         }
@@ -930,8 +946,8 @@ case class Gpu2dTest(
       //<< extraObjTileCntWidth
     )
   ) {
-    nextObjTileCnt := 0x0
-    //rObjTilePushValid := False
+    //nextObjTileCnt := 0x0
+    rObjTilePushValid := False
   }
   val rTempForceWrVec = Vec.fill(params.numObjTiles)(
     Reg(Bool()) init(True)
