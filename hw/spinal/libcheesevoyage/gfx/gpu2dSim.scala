@@ -94,8 +94,9 @@ case class Gpu2dSimDut(
   val ctrlIo = vgaCtrl.io
   //val dithIo = vidDith.io
   val gpuIo = gpu2d.io
-  gpu2dTest.io.vgaPhys := ctrlIo.phys
+  //gpu2dTest.io.vgaPhys := ctrlIo.phys
   gpu2dTest.io.gpu2dPopReady := gpuIo.pop.ready
+  gpu2dTest.io.vgaVpipeSPipe2 := ctrlIo.misc.vpipeSPipe2
 
   //val vgaTimingsH = VgaTimingsHV(timingsWidth=myVgaTimingsWidth)
   //vgaTimingsH.colorStart := vgaTimingInfo.htiming.

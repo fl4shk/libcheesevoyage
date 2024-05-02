@@ -27,9 +27,10 @@ case class Gpu2dTestIo(
     dbgPipeMemRmw=dbgPipeMemRmw,
   ))
   val gpu2dPopReady = in Bool()
-  val vgaPhys = in(LcvVgaPhys(
-    rgbConfig=params.rgbConfig
-  ))
+  //val vgaPhys = in(LcvVgaPhys(
+  //  rgbConfig=params.rgbConfig
+  //))
+  val vgaVpipeSPipe2 = in(LcvVgaState())
   val snesCtrl = (!optRawSnesButtons) generate SnesCtrlIo()
   val rawSnesButtons = (optRawSnesButtons) generate (
     slave Stream(UInt(SnesButtons.rawButtonsWidth bits))
@@ -1485,6 +1486,7 @@ case class Gpu2dTest(
     //!io.vgaPhys.vsync
     //&& 
     io.gpu2dPopReady
+    && io.vgaVpipeSPipe2 === LcvVgaState.visib
   ) {
     when (
       if (!optRawSnesButtons) {
@@ -1498,7 +1500,7 @@ case class Gpu2dTest(
       doSnesFire()
     }
     tempBgAttrs0PushValid := False
-  } otherwise { // when (!io.gpu2dPopReady)
+  } otherwise { 
     //--------
     // BEGIN: debug comment this out
     tempBgAttrs.scroll.x := (
