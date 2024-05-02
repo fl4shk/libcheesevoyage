@@ -1075,12 +1075,14 @@ case class Gpu2dTest(
     //--------
     time=(
       //--------
-      //0.01 sec
+      // BEGIN: actual SNES controller `time`
+      0.01 sec
+      // END: actual SNES controller `time`
       //--------
       // BEGIN: debug
       //1.0 us
       //10.0 us
-      50.0 us
+      //50.0 us
       // END: debug
       //--------
     ),
