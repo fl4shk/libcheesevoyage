@@ -946,8 +946,8 @@ case class Gpu2dTest(
       //<< extraObjTileCntWidth
     )
   ) {
-    //nextObjTileCnt := 0x0
-    rObjTilePushValid := False
+    nextObjTileCnt := 0x0
+    //rObjTilePushValid := False
   }
   val rTempForceWrVec = Vec.fill(params.numObjTiles)(
     Reg(Bool()) init(True)
