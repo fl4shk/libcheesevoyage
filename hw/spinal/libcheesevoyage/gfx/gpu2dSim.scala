@@ -99,7 +99,8 @@ case class Gpu2dSimDut(
     //gpuIo.pop.ready
     gpuIo.pop.fire
   )
-  gpu2dTest.io.vgaVpipeSPipe2 := ctrlIo.misc.vpipeSPipe2
+  gpu2dTest.io.vgaSomeVpipeS := ctrlIo.misc.vpipeSPipe2
+  gpu2dTest.io.vgaSomeDrawPos := ctrlIo.misc.drawPos
 
   //val vgaTimingsH = VgaTimingsHV(timingsWidth=myVgaTimingsWidth)
   //vgaTimingsH.colorStart := vgaTimingInfo.htiming.
@@ -439,7 +440,13 @@ object Gpu2dSim extends App {
       //  dut.clockDomain.waitRisingEdge()
       //}
       dut.io.rawSnesButtons.valid #= true
-      dut.io.rawSnesButtons.payload #= (1 << 16) - 1
+      dut.io.rawSnesButtons.payload #= (
+        (
+          (1 << 16) - 1
+        ) & ~(
+          1 << SnesButtons.DpadRight
+        )
+      )
       def simNumClks = (
         //16000
         //32000

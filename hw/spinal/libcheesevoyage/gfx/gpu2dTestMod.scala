@@ -16,6 +16,9 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math._
 
 case class Gpu2dTestIo(
+  //clkRate: HertzNumber,
+  //vgaTimingInfo: LcvVgaTimingInfo,
+  //fifoDepth: Int,
   params: Gpu2dParams,
   optRawSnesButtons: Boolean=false,
   dbgPipeMemRmw: Boolean=false,
@@ -30,7 +33,15 @@ case class Gpu2dTestIo(
   //val vgaPhys = in(LcvVgaPhys(
   //  rgbConfig=params.rgbConfig
   //))
-  val vgaVpipeSPipe2 = in(LcvVgaState())
+  val vgaSomeVpipeS = in(LcvVgaState())
+  val vgaSomeDrawPos = in(LcvVgaCtrlMiscIo.coordT(
+    fbSize2d=params.intnlFbSize2d
+  ))
+  //val vgaMisc = in(LcvVgaCtrlMiscIo(
+  //  clkRate=clkRate,
+  //  vgaTimingInfo=vgaTimingInfo,
+  //  fifoDepth=fifoDepth,
+  //))
   val snesCtrl = (!optRawSnesButtons) generate SnesCtrlIo()
   val rawSnesButtons = (optRawSnesButtons) generate (
     slave Stream(UInt(SnesButtons.rawButtonsWidth bits))
@@ -1103,12 +1114,16 @@ case class Gpu2dTest(
   def myBgScrollFracWidth = (
     1
     //2
+    //16
+    //log2Up(gpu2dParams.intnlFbSize2d.y)
+    //8
   )
   def myObjPosFracWidth = (
     1
     //4
     //8
     //16
+    //8
   )
   def myTileFracWidth = (
     4
@@ -1160,8 +1175,8 @@ case class Gpu2dTest(
     init(1 << myTileFracWidth)
   )
   //--------
-  def doSnesNotFire(): Unit = {
-    rSnesPopReady := True
+  def doObjAttrsInit(): Unit = {
+    //rSnesPopReady := True
     when (
       rObjAttrsCnt === 1
     ) {
@@ -1381,7 +1396,9 @@ case class Gpu2dTest(
 
   def doSnesFire(): Unit = {
     nextObjAttrsCnt := RegNext(nextObjAttrsCnt) init(0x0)
-    rSnesPopReady := False
+    //--------
+    //rSnesPopReady := False
+    //--------
     //val rTileIdx = Reg(cloneOf(tempObjAttrs.tileIdx)) init(0x1)
     //tempObjAttrs.tileIdx := 1
 
@@ -1398,12 +1415,13 @@ case class Gpu2dTest(
       } else { // if (optRawSnesButtons)
         io.rawSnesButtons.payload
       }
-    )
+    );
     //--------
-    when (
-      //rHoldCnt(rHoldCnt.high - 1 downto 0) === 0x0
-      rHoldCnt.overflowPipe(0)
-    ) {
+    //when (
+    //  //rHoldCnt(rHoldCnt.high - 1 downto 0) === 0x0
+    //  rHoldCnt.overflowPipe(0)
+    //) 
+    {
       switch (
         Cat(buttons(SnesButtons.L), buttons(SnesButtons.R))
       ) {
@@ -1485,96 +1503,278 @@ case class Gpu2dTest(
       }
     }
   }
-  val rDidSnesFire = Reg(Bool()) init(False)
-  when (
-    if (!optRawSnesButtons) {
-      !snesHelper.io.pop.fire
-    } else { // if (optRawSnesButtons)
-      !io.rawSnesButtons.fire
-    }
+  def doSnesUpdate(): Unit = {
+    //--------
+    //--------
+    tempObjAttrs.tileIdx := rObjTileIdx(
+      rObjTileIdx.high downto myTileFracWidth
+    )
+    //--------
+    // BEGIN: debug comment this out
+    tempBgAttrs.scroll.x := (
+      rBgScroll.x(rBgScroll.x.high downto myBgScrollFracWidth)
+    )
+    tempBgAttrs.scroll.y := (
+      rBgScroll.y(rBgScroll.y.high downto myBgScrollFracWidth)
+    )
+    // END: debug comment this out
+    //--------
+    tempObjAttrs.pos.x := (
+      rObjPos.x(rObjPos.x.high downto myObjPosFracWidth)
+      //rPos.x(rPos.x.high downto 0)
+    )
+    tempObjAttrs.pos.y := (
+      rObjPos.y(rObjPos.y.high downto myObjPosFracWidth)
+      //rPos.y(rPos.y.high downto 0)
+    )
+    tempObjAttrs.prio := (
+      //1
+      0
+    )
+    tempObjAttrs.size2d.x := params.objTileSize2d.x
+    tempObjAttrs.size2d.y := params.objTileSize2d.y
+    //tempObjAttrs.size2d.y := params.objTileSize2d.y - 1
+    tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+    //tempObjAttrs.affine := tempObjAttrs.affine.getZero
+    //tempObjAttrs.affine.doIt := True
+    //tempObjAttrs.affine.mat(0)(0) := (
+    //  //1 << (tempObjAttrs.affine.fracWidth - 1)
+    //  //2 << tempObjAttrs.affine.fracWidth
+    //  (1 << Gpu2dAffine.fracWidth)
+    //  //| (1 << (Gpu2dAffine.fracWidth - 1))
+    //  | (1 << (Gpu2dAffine.fracWidth - 2))
+    //)
+    //tempObjAttrs.affine.mat(0)(1) := 0
+    //tempObjAttrs.affine.mat(1)(0) := 0
+    //tempObjAttrs.affine.mat(1)(1) := (
+    //  //1 << (tempObjAttrs.affine.fracWidth - 1)
+    //  //2 << tempObjAttrs.affine.fracWidth
+    //  (1 << Gpu2dAffine.fracWidth)
+    //  //| (1 << (Gpu2dAffine.fracWidth - 1))
+    //  | (1 << (Gpu2dAffine.fracWidth - 2))
+    //)
+    //tempObjAttrs := tempObjAttrs.getZero
+    tempBgAttrs0PushValid := True
+    pop.objAttrsPush.valid := True
+    //pop.objAttrsPush.payload.objAttrs := (
+    //  Gpu2dObjAttrs(params=params).getZero
+    //)
+    pop.objAttrsPush.payload.objAttrs := tempObjAttrs
+    pop.objAttrsPush.payload.memIdx := (
+      //rObjAttrsCnt.asUInt(params.objAttrsMemIdxWidth - 1 downto 0)
+      0x1
+    )
+  }
+  object SnesState extends SpinalEnum(
+    defaultEncoding=binarySequential
   ) {
-    doSnesNotFire()
-  } elsewhen (!rDidSnesFire) {
-    doSnesFire()
-    rDidSnesFire := True
+    val
+      OBJ_ATTRS_INIT,
+      WAIT_VBLANK,
+      //WAIT_SNES_FIRE,
+      SNES_UPDATE,
+      WAIT_VISIB
+      = newElement();
   }
-
-  when (!rDidSnesFire) {
-    tempBgAttrs0PushValid := False
-    pop.objAttrsPush.valid := False
-  } otherwise {
+  val rDidSnesFire = Reg(Bool()) init(False)
+  val rSeenVblank = Reg(Bool()) init(False)
+  val rSnesState = (
+    Reg(SnesState()) init(SnesState.OBJ_ATTRS_INIT)
+  )
+  val someNextSeenVblank = (
+    (
+      //io.gpu2dPopFire
+      //|| 
+      //io.vgaSomeVpipeS === LcvVgaState.visib
+      //&& io.vgaSomeDrawPos.x === 0x0
+      //&& io.vgaSomeDrawPos.y === 0x0
+      io.vgaSomeVpipeS === LcvVgaState.front
+    )
+  )
+  when (
+    !rDidSnesFire
+  ) {
     when (
-      //!io.vgaPhys.vsync
-      //&& 
-      io.gpu2dPopFire
-      || io.vgaVpipeSPipe2 === LcvVgaState.visib
+      if (!optRawSnesButtons) {
+        !snesHelper.io.pop.fire
+      } else { // if (optRawSnesButtons)
+        !io.rawSnesButtons.fire
+      }
     ) {
-      tempBgAttrs0PushValid := False
-      pop.objAttrsPush.valid := False
     } otherwise {
-      //--------
-      rDidSnesFire := False
-      //--------
-      tempObjAttrs.tileIdx := rObjTileIdx(
-        rObjTileIdx.high downto myTileFracWidth
-      )
-      //--------
-      // BEGIN: debug comment this out
-      tempBgAttrs.scroll.x := (
-        rBgScroll.x(rBgScroll.x.high downto myBgScrollFracWidth)
-      )
-      tempBgAttrs.scroll.y := (
-        rBgScroll.y(rBgScroll.y.high downto myBgScrollFracWidth)
-      )
-      // END: debug comment this out
-      //--------
-      tempObjAttrs.pos.x := (
-        rObjPos.x(rObjPos.x.high downto myObjPosFracWidth)
-        //rPos.x(rPos.x.high downto 0)
-      )
-      tempObjAttrs.pos.y := (
-        rObjPos.y(rObjPos.y.high downto myObjPosFracWidth)
-        //rPos.y(rPos.y.high downto 0)
-      )
-      tempObjAttrs.prio := (
-        //1
-        0
-      )
-      tempObjAttrs.size2d.x := params.objTileSize2d.x
-      tempObjAttrs.size2d.y := params.objTileSize2d.y
-      //tempObjAttrs.size2d.y := params.objTileSize2d.y - 1
-      tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
-      //tempObjAttrs.affine := tempObjAttrs.affine.getZero
-      //tempObjAttrs.affine.doIt := True
-      //tempObjAttrs.affine.mat(0)(0) := (
-      //  //1 << (tempObjAttrs.affine.fracWidth - 1)
-      //  //2 << tempObjAttrs.affine.fracWidth
-      //  (1 << Gpu2dAffine.fracWidth)
-      //  //| (1 << (Gpu2dAffine.fracWidth - 1))
-      //  | (1 << (Gpu2dAffine.fracWidth - 2))
-      //)
-      //tempObjAttrs.affine.mat(0)(1) := 0
-      //tempObjAttrs.affine.mat(1)(0) := 0
-      //tempObjAttrs.affine.mat(1)(1) := (
-      //  //1 << (tempObjAttrs.affine.fracWidth - 1)
-      //  //2 << tempObjAttrs.affine.fracWidth
-      //  (1 << Gpu2dAffine.fracWidth)
-      //  //| (1 << (Gpu2dAffine.fracWidth - 1))
-      //  | (1 << (Gpu2dAffine.fracWidth - 2))
-      //)
-      //tempObjAttrs := tempObjAttrs.getZero
-      tempBgAttrs0PushValid := True
-      pop.objAttrsPush.valid := True
-      //pop.objAttrsPush.payload.objAttrs := (
-      //  Gpu2dObjAttrs(params=params).getZero
-      //)
-      pop.objAttrsPush.payload.objAttrs := tempObjAttrs
-      pop.objAttrsPush.payload.memIdx := (
-        //rObjAttrsCnt.asUInt(params.objAttrsMemIdxWidth - 1 downto 0)
-        0x1
-      )
+      when (
+        rSeenVblank
+        //|| someNextSeenVblank
+      ) {
+        rSnesPopReady := False
+        rDidSnesFire := True
+        doSnesFire()
+        doSnesUpdate()
+      }
     }
   }
+  switch (rSnesState) {
+    is (SnesState.OBJ_ATTRS_INIT) {
+      rSnesPopReady := True
+      rSeenVblank := False
+      rDidSnesFire := False
+      doObjAttrsInit()
+      when (rObjAttrsCnt >= params.numObjs) {
+        rSnesState := SnesState.WAIT_VBLANK
+      }
+    }
+    is (SnesState.WAIT_VBLANK) {
+      when (
+        !rSeenVblank
+        && someNextSeenVblank
+      ) {
+        rSeenVblank := True
+      }
+      //when (
+      //  !rDidSnesFire
+      //) {
+      //  when (
+      //    if (!optRawSnesButtons) {
+      //      !snesHelper.io.pop.fire
+      //    } else { // if (optRawSnesButtons)
+      //      !io.rawSnesButtons.fire
+      //    }
+      //  ) {
+      //    when (
+      //      rSeenVblank
+      //      //|| someNextSeenVblank
+      //    ) {
+      //      rSnesPopReady := False
+      //      rDidSnesFire := True
+      //      doSnesFire()
+      //    }
+      //  }
+      //}
+      when (rSeenVblank && rDidSnesFire) {
+        rSnesState := SnesState.SNES_UPDATE
+      }
+    }
+    is (SnesState.SNES_UPDATE) {
+      //when (io.vgaSomeVpipeS === LcvVgaState.visib) {
+        //rSnesState := SnesState.WAIT_VBLANK_AND_SNES_FIRE
+        rSnesState := SnesState.WAIT_VISIB
+      //} otherwise {
+        rSeenVblank := False
+        rDidSnesFire := False
+        rSnesPopReady := True
+      //}
+    }
+    is (SnesState.WAIT_VISIB) {
+      when (
+        io.vgaSomeVpipeS === LcvVgaState.visib
+      ) {
+        rSnesState := SnesState.WAIT_VBLANK
+      }
+    }
+    //is (SnesState.WAIT_SNES_FIRE) {
+    //}
+    //is (SnesState.SNES_FIRE) {
+    //}
+  }
+  //when (
+  //  if (!optRawSnesButtons) {
+  //    !snesHelper.io.pop.fire
+  //  } else { // if (optRawSnesButtons)
+  //    !io.rawSnesButtons.fire
+  //  }
+  //) {
+  //  doObjAttrsInit()
+  //} elsewhen (!rDidSnesFire) {
+  //  doSnesFire()
+  //  rDidSnesFire := True
+  //}
+  //when (
+  //  //!io.vgaPhys.vsync
+  //  //&& 
+  //  io.gpu2dPopFire
+  //  || io.vgaVpipeSPipe2 === LcvVgaState.visib
+  //) {
+  //  //tempBgAttrs0PushValid := False
+  //  //pop.objAttrsPush.valid := False
+  //} otherwise {
+  //}
+
+  //when (!rDidSnesFire) {
+  //  tempBgAttrs0PushValid := False
+  //  pop.objAttrsPush.valid := False
+  //} otherwise {
+  //  when (
+  //    //!io.vgaPhys.vsync
+  //    //&& 
+  //    io.gpu2dPopFire
+  //    || io.vgaVpipeSPipe2 === LcvVgaState.visib
+  //  ) {
+  //    tempBgAttrs0PushValid := False
+  //    pop.objAttrsPush.valid := False
+  //  } otherwise {
+  //    //--------
+  //    rDidSnesFire := False
+  //    //--------
+  //    tempObjAttrs.tileIdx := rObjTileIdx(
+  //      rObjTileIdx.high downto myTileFracWidth
+  //    )
+  //    //--------
+  //    // BEGIN: debug comment this out
+  //    tempBgAttrs.scroll.x := (
+  //      rBgScroll.x(rBgScroll.x.high downto myBgScrollFracWidth)
+  //    )
+  //    tempBgAttrs.scroll.y := (
+  //      rBgScroll.y(rBgScroll.y.high downto myBgScrollFracWidth)
+  //    )
+  //    // END: debug comment this out
+  //    //--------
+  //    tempObjAttrs.pos.x := (
+  //      rObjPos.x(rObjPos.x.high downto myObjPosFracWidth)
+  //      //rPos.x(rPos.x.high downto 0)
+  //    )
+  //    tempObjAttrs.pos.y := (
+  //      rObjPos.y(rObjPos.y.high downto myObjPosFracWidth)
+  //      //rPos.y(rPos.y.high downto 0)
+  //    )
+  //    tempObjAttrs.prio := (
+  //      //1
+  //      0
+  //    )
+  //    tempObjAttrs.size2d.x := params.objTileSize2d.x
+  //    tempObjAttrs.size2d.y := params.objTileSize2d.y
+  //    //tempObjAttrs.size2d.y := params.objTileSize2d.y - 1
+  //    tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+  //    //tempObjAttrs.affine := tempObjAttrs.affine.getZero
+  //    //tempObjAttrs.affine.doIt := True
+  //    //tempObjAttrs.affine.mat(0)(0) := (
+  //    //  //1 << (tempObjAttrs.affine.fracWidth - 1)
+  //    //  //2 << tempObjAttrs.affine.fracWidth
+  //    //  (1 << Gpu2dAffine.fracWidth)
+  //    //  //| (1 << (Gpu2dAffine.fracWidth - 1))
+  //    //  | (1 << (Gpu2dAffine.fracWidth - 2))
+  //    //)
+  //    //tempObjAttrs.affine.mat(0)(1) := 0
+  //    //tempObjAttrs.affine.mat(1)(0) := 0
+  //    //tempObjAttrs.affine.mat(1)(1) := (
+  //    //  //1 << (tempObjAttrs.affine.fracWidth - 1)
+  //    //  //2 << tempObjAttrs.affine.fracWidth
+  //    //  (1 << Gpu2dAffine.fracWidth)
+  //    //  //| (1 << (Gpu2dAffine.fracWidth - 1))
+  //    //  | (1 << (Gpu2dAffine.fracWidth - 2))
+  //    //)
+  //    //tempObjAttrs := tempObjAttrs.getZero
+  //    tempBgAttrs0PushValid := True
+  //    pop.objAttrsPush.valid := True
+  //    //pop.objAttrsPush.payload.objAttrs := (
+  //    //  Gpu2dObjAttrs(params=params).getZero
+  //    //)
+  //    pop.objAttrsPush.payload.objAttrs := tempObjAttrs
+  //    pop.objAttrsPush.payload.memIdx := (
+  //      //rObjAttrsCnt.asUInt(params.objAttrsMemIdxWidth - 1 downto 0)
+  //      0x1
+  //    )
+  //  }
+  //}
 
   //--------
   val tempObjAffineTileSlice = Gpu2dTileSlice(
