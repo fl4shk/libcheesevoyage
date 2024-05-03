@@ -119,6 +119,9 @@ case class Gpu2dTest(
             (idx % myPxsSliceWidth) == 0
           ) {
             //println(myIdxPair._1)
+            //if (rawArr(idx) > 0) {
+            //  println(idx, rawArr(idx))
+            //}
             tempArr += wordType()
           }
           def myTileSlice = tempArr.last
@@ -149,19 +152,26 @@ case class Gpu2dTest(
       tempArr.toSeq
     })
   }
-  val palMem = (
+  val bgPalMem = {
+    def wordCount = (
+      //Gpu2dTestGfx.palette.size >> 1
+      params.numColsInBgPal
+    )
     Mem(
       wordType=Rgb(params.rgbConfig),
-      wordCount=Gpu2dTestGfx.palette.size >> 1,
+      wordCount=wordCount,
     )
-    initBigInt({
+    .initBigInt({
       val tempArr = new ArrayBuffer[BigInt]
-      for (idx <- 0 until (Gpu2dTestGfx.palette.size >> 1)) {
+      for (
+        //idx <- 0 until (Gpu2dTestGfx.palette.size >> 1)
+        idx <- 0 until wordCount
+      ) {
         def rgbConfig = params.rgbConfig
         //val tempCol = Rgb(rgbConfig)
         val tempRawCol = (
           (Gpu2dTestGfx.palette((idx << 1) + 1) << 8)
-          | Gpu2dTestGfx.palette(idx << 1)
+          | (Gpu2dTestGfx.palette(idx << 1) << 0)
         )
         //val myTempRawColG = (
         //  tempRawCol
@@ -236,7 +246,7 @@ case class Gpu2dTest(
       }
       tempArr.toSeq
     })
-  )
+  }
   def palPush(
     numColsInPal: Int,
     rPalCnt: UInt,
@@ -312,9 +322,10 @@ case class Gpu2dTest(
         //  rPalEntryPushValid := False
         //}
         val tempAddr = (rPalCnt + 1)(
-          log2Up(Gpu2dTestGfx.palette.size) - 2 downto 0
+          //Gpu2dTestGfx.palette.size
+          params.numColsInBgPalPow - 1 downto 0
         )
-        rPalEntry.col := palMem.readAsync(
+        rPalEntry.col := bgPalMem.readAsync(
           address=tempAddr
         )
         rPalMemAddr match {
@@ -792,16 +803,16 @@ case class Gpu2dTest(
   //val myDefaultBgScroll = cloneOf(tempBgAttrs.scroll)
   val myDefaultBgScroll = ElabVec2[Int](
     x=(
-      //0
+      0
       //////2
       ////params.bgTileSize2d.x
       ////+ 2
       //////+ 1
       ////params.bgTileSize2d.x * 5
       ////0x29
-      (
-        (1 << tempBgAttrs.scroll.x.getWidth) - 128
-      )
+      //(
+      //  (1 << tempBgAttrs.scroll.x.getWidth) - 32
+      //)
     ),
     y=(
       //2
@@ -900,7 +911,7 @@ case class Gpu2dTest(
   //    tempBgEntryPush.payload.memIdx := 0x0
   //  }
   //}
-  println(params.bgEntryMemIdxWidth)
+  //println(params.bgEntryMemIdxWidth)
   for (idx <- 0 until pop.bgEntryPushArr.size) {
     def tempBgEntryPush = pop.bgEntryPushArr(idx)
     if (idx == 0) {
