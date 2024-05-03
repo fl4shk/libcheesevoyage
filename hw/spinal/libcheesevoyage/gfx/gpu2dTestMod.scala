@@ -26,7 +26,7 @@ case class Gpu2dTestIo(
     params=params,
     dbgPipeMemRmw=dbgPipeMemRmw,
   ))
-  val gpu2dPopReady = in Bool()
+  val gpu2dPopFire = in Bool()
   //val vgaPhys = in(LcvVgaPhys(
   //  rgbConfig=params.rgbConfig
   //))
@@ -1074,17 +1074,20 @@ case class Gpu2dTest(
     //time=
     //--------
     time=(
-      //--------
-      // BEGIN: actual SNES controller `time`
-      0.01 sec
-      // END: actual SNES controller `time`
-      //--------
-      // BEGIN: debug
-      //1.0 us
-      //10.0 us
-      //50.0 us
-      // END: debug
-      //--------
+      if (!optRawSnesButtons) (
+        //--------
+        // BEGIN: actual SNES controller `time`
+        0.01 sec
+        // END: actual SNES controller `time`
+        //--------
+      ) else ( // if (optRawSnesButtons)
+        // BEGIN: debug
+        //1.0 us
+        //10.0 us
+        50.0 us
+        // END: debug
+        //--------
+      )
     ),
     //--------
     //--------
@@ -1491,7 +1494,7 @@ case class Gpu2dTest(
     }
   ) {
     doSnesNotFire()
-  } otherwise {
+  } elsewhen (!rDidSnesFire) {
     doSnesFire()
     rDidSnesFire := True
   }
@@ -1503,7 +1506,7 @@ case class Gpu2dTest(
     when (
       //!io.vgaPhys.vsync
       //&& 
-      io.gpu2dPopReady
+      io.gpu2dPopFire
       || io.vgaVpipeSPipe2 === LcvVgaState.visib
     ) {
       tempBgAttrs0PushValid := False

@@ -26,8 +26,8 @@ case class Gpu2dSimDut(
   ctrlFifoDepth: Int,
   optRawSnesButtons: Boolean=false,
   dbgPipeMemRmw: Boolean=(
-    true
-    //false
+    //true
+    false
   ),
 ) extends Component {
   val io = new Bundle {
@@ -95,7 +95,10 @@ case class Gpu2dSimDut(
   //val dithIo = vidDith.io
   val gpuIo = gpu2d.io
   //gpu2dTest.io.vgaPhys := ctrlIo.phys
-  gpu2dTest.io.gpu2dPopReady := gpuIo.pop.ready
+  gpu2dTest.io.gpu2dPopFire := (
+    //gpuIo.pop.ready
+    gpuIo.pop.fire
+  )
   gpu2dTest.io.vgaVpipeSPipe2 := ctrlIo.misc.vpipeSPipe2
 
   //val vgaTimingsH = VgaTimingsHV(timingsWidth=myVgaTimingsWidth)

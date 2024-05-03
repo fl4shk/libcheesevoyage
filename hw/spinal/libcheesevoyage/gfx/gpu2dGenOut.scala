@@ -318,8 +318,8 @@ object Gpu2dSimDutToVerilog extends App {
     ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
     optRawSnesButtons=true,
     dbgPipeMemRmw=(
-      true
-      //false
+      //true
+      false
     ),
   ))
 }
