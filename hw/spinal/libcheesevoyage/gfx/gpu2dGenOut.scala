@@ -296,6 +296,7 @@ object Gpu2dSimDutParams {
       Some(8)
       //Some(16)
       //Some(4)
+      //Some(256)
     ),
     numObjAffineTiles=(
       Some(16)

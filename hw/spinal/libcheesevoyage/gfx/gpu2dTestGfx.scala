@@ -16,11 +16,10 @@ object Gpu2dTestGfx {
   //  0x9C,0x7F,0xF7,0x7E,0x70,0x72,0x2B,0x5E,0xE8,0x41,0x84,0x25,0x06,0x32,0xAB,0x46,
   //  0x72,0x5F,0xD9,0x73,0x5C,0x57,0xD8,0x46,0x14,0x32,0x8F,0x29,0x2B,0x21,0xE8,0x18,
   //)
-  val palette = {
+  def doConvert(
+    filename: String
+  ) = {
     val tempArr = new ArrayBuffer[Int]()
-    //val file = new RandomAccessFile("gfx/foreground_common_gfx.raw", "r")
-    //val buffer = java.io.file.Files.readAllBytes("gfx/foreground_common_gfx.raw")
-    val filename = "gfx/master.pal"
     val bis = new BufferedInputStream(new FileInputStream(filename))
     Iterator.continually(bis.read())
       .takeWhile(_ != -1)
@@ -28,24 +27,33 @@ object Gpu2dTestGfx {
     bis.close
     tempArr
   }
-  val fgCommonTileArr = {
-    val tempArr = new ArrayBuffer[Int]()
-    //val file = new RandomAccessFile("gfx/foreground_common_gfx.raw", "r")
-    //val buffer = java.io.file.Files.readAllBytes("gfx/foreground_common_gfx.raw")
-    val filename = "gfx/foreground_common_gfx.raw"
-    val bis = new BufferedInputStream(new FileInputStream(filename))
-    Iterator.continually(bis.read())
-      .takeWhile(_ != -1)
-      .foreach(
-        b => {
-          //if (b.toInt > 0) {
-          //  println(s"test: ${b.toInt}")
-          //}
-          tempArr += b.toInt
-        }
-      )
-    bis.close
-    tempArr
-  }
+  val palette = doConvert(
+    filename="gfx/bmp/master.pal"
+  )
+  //val fgCommonTileArr = {
+  //  val tempArr = new ArrayBuffer[Int]()
+  //  //val file = new RandomAccessFile("gfx/foreground_common_gfx.raw", "r")
+  //  //val buffer = java.io.file.Files.readAllBytes("gfx/foreground_common_gfx.raw")
+  //  val filename = "gfx/bmp/foreground_common_gfx.raw"
+  //  val bis = new BufferedInputStream(new FileInputStream(filename))
+  //  Iterator.continually(bis.read())
+  //    .takeWhile(_ != -1)
+  //    .foreach(
+  //      b => {
+  //        //if (b.toInt > 0) {
+  //        //  println(s"test: ${b.toInt}")
+  //        //}
+  //        tempArr += b.toInt
+  //      }
+  //    )
+  //  bis.close
+  //  tempArr
+  //}
+  val fgCommonTileArr = doConvert(
+    filename="gfx/bmp/foreground_common_gfx.raw"
+  )
+  val fgGrasslandTileArr = doConvert(
+    filename="gfx/bmp/foreground_grassland_gfx.raw"
+  )
 
 }

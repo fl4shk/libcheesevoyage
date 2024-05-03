@@ -77,7 +77,8 @@ case class Gpu2dTest(
       isAffine=false,
       doPipeMemRmw=false
     )
-    val rawArr = Gpu2dTestGfx.fgCommonTileArr
+    val rawArrFgCommon = Gpu2dTestGfx.fgCommonTileArr
+    val rawArrFgGrassland = Gpu2dTestGfx.fgGrasslandTileArr
     val myPxsSliceWidth = (
       Gpu2dTileSlice.pxsSliceWidth(
         params=params,
@@ -88,7 +89,8 @@ case class Gpu2dTest(
     val wordCount = (
       //Gpu2dTestGfx.fgCommonTileArr.size << 1
       //(rawArr.size << 1) >> log2Up(myPxsSliceWidth)
-      rawArr.size >> log2Up(myPxsSliceWidth)
+      (rawArrFgCommon.size + rawArrFgGrassland.size)
+      >> log2Up(myPxsSliceWidth)
       //rawArr.size / myColIdxWidth
       //rawArr.size << 1
     )
@@ -99,55 +101,23 @@ case class Gpu2dTest(
     )
     .init({
       val tempArr = new ArrayBuffer[Gpu2dTileSlice]()
-      for (idx <- 0 until rawArr.size) {
-        //var myTileSlice = BigInt(0)
-        //for (jdx <- 0 until params.bgTileSize2d.x) {
-          //val myIdxPair = (
-          //  //(idx >> 1), //% myColIdxWidth,
-          //  //((idx >> 1) + 1), //% myColIdxWidth,
-          //  //--------
-          //  idx << 1,
-          //  (idx << 1) + 1,
-          //  //--------
-          //  //idx >> 1,
-          //  //idx + 1,
-          //  //idx,
-          //  //idx,
-          //)
-          if (
-            //(myIdxPair._1 % myPxsSliceWidth) == 0
-            (idx % myPxsSliceWidth) == 0
-          ) {
-            //println(myIdxPair._1)
-            //if (rawArr(idx) > 0) {
-            //  println(idx, rawArr(idx))
-            //}
-            tempArr += wordType()
-          }
-          def myTileSlice = tempArr.last
-          myTileSlice.colIdxVec(idx % myPxsSliceWidth) := rawArr(idx)
-
-          //val myColIdxPair = (
-          //  myTileSlice.colIdxVec(myIdxPair._1 % myPxsSliceWidth),
-          //  myTileSlice.colIdxVec(myIdxPair._2 % myPxsSliceWidth),
-          //)
-          //myColIdxPair._1 := (rawArr(idx) >> 0) & 0xff
-          //myColIdxPair._2 := (rawArr(idx) >> 8) & 0xff
-          //println(myIdxPair)
-          //myColIdxPair
-          //--------
-          // #= (
-          //  rawArr(idx)
-          //)
-          //--------
-          //println(1 << (params.bgTileSize2d.x - (jdx + 1)))
-          //myTileSlice = (
-          //  myTileSlice
-          //  << (
-          //    myColIdxWidth
-          //  )
-          //)
-        //}
+      for (idx <- 0 until rawArrFgCommon.size) {
+        if ((idx % myPxsSliceWidth) == 0) {
+          tempArr += wordType()
+        }
+        def myTileSlice = tempArr.last
+        myTileSlice.colIdxVec(idx % myPxsSliceWidth) := (
+          rawArrFgCommon(idx)
+        )
+      }
+      for (idx <- 0 until rawArrFgGrassland.size) {
+        if ((idx % myPxsSliceWidth) == 0) {
+          tempArr += wordType()
+        }
+        def myTileSlice = tempArr.last
+        myTileSlice.colIdxVec(idx % myPxsSliceWidth) := (
+          rawArrFgGrassland(idx)
+        )
       }
       tempArr.toSeq
     })
@@ -173,36 +143,6 @@ case class Gpu2dTest(
           (Gpu2dTestGfx.palette((idx << 1) + 1) << 8)
           | (Gpu2dTestGfx.palette(idx << 1) << 0)
         )
-        //val myTempRawColG = (
-        //  tempRawCol
-        //  >> (
-        //    5 + (5 - params.rgbConfig.gWidth)
-        //  )
-        //)
-        //tempCol.r := (
-        //  (
-        //    myTempRawColR
-        //    & ((1 << params.rgbConfig.rWidth) - 1)
-        //  )
-        //)
-        //tempCol.g := (
-        //  (
-        //    (
-        //      tempRawCol
-        //      >> (
-        //        10
-        //      )
-        //    ) & ((1 << params.rgbConfig.gWidth) - 1)
-        //  )
-        //)
-        //tempCol.b := {
-        //  (
-        //    (
-        //      tempRawCol >> (15 - params.rgbConfig.getWidth)
-        //    )
-        //    & ((1 << params.rgbConfig.bWidth) - 1)
-        //  )
-        //}
         val myTempRawColR = (
           tempRawCol >> (5 - rgbConfig.rWidth)
         )
@@ -216,18 +156,59 @@ case class Gpu2dTest(
         val myTempRawColB = (
           (tempRawCol >> 10) >> (5 - rgbConfig.bWidth)
         )
-        //tempCol.r := (
-        //  myTempRawColR & ((1 << rgbConfig.rWidth) - 1)
-        //)
-        //tempCol.g := (
-        //  myTempRawColG & ((1 << rgbConfig.gWidth) - 1)
-        //)
-        //tempCol.b := (
-        //  myTempRawColB & ((1 << rgbConfig.bWidth) - 1)
-        //)
-        //tempCol.r := (default -> True)
-        ////tempCol.g := (default -> True)
-        //tempCol.b := (default -> True)
+        tempArr += (
+          //tempCol
+          (
+            (myTempRawColR & ((1 << rgbConfig.rWidth) - 1))
+            //<< (rgbConfig.bWidth + rgbConfig.gWidth)
+          ) | (
+            (myTempRawColG & ((1 << rgbConfig.gWidth) - 1))
+            << (rgbConfig.rWidth)
+            //<< (rgbConfig.bWidth)
+          ) | (
+            (myTempRawColB & ((1 << rgbConfig.bWidth) - 1))
+            << (rgbConfig.rWidth + rgbConfig.gWidth)
+          )
+        )
+        //println(s"${idx} ${tempArr.last}")
+      }
+      tempArr.toSeq
+    })
+  }
+  val objPalMem = {
+    def wordCount = (
+      //Gpu2dTestGfx.palette.size >> 1
+      params.numColsInObjPal
+    )
+    Mem(
+      wordType=Rgb(params.rgbConfig),
+      wordCount=wordCount,
+    )
+    .initBigInt({
+      val tempArr = new ArrayBuffer[BigInt]
+      for (
+        //idx <- 0 until (Gpu2dTestGfx.palette.size >> 1)
+        idx <- 0 until wordCount
+      ) {
+        def rgbConfig = params.rgbConfig
+        //val tempCol = Rgb(rgbConfig)
+        val tempRawCol = (
+          (Gpu2dTestGfx.palette((idx << 1) + 1) << 8)
+          | (Gpu2dTestGfx.palette(idx << 1) << 0)
+        )
+        val myTempRawColR = (
+          tempRawCol >> (5 - rgbConfig.rWidth)
+        )
+        val myTempRawColG = (
+          //tempRawCol >> (10 - rgbConfig.gWidth)
+          //myTempRawColR >> (10 - (
+          //  5 + params.rgbConfig.gWidth
+          //))
+          (tempRawCol >> 5) >> (5 - rgbConfig.gWidth)
+        )
+        val myTempRawColB = (
+          (tempRawCol >> 10) >> (5 - rgbConfig.bWidth)
+        )
         tempArr += (
           //tempCol
           (
@@ -253,7 +234,8 @@ case class Gpu2dTest(
     rPalEntry: Gpu2dPalEntry,
     rPalEntryPushValid: Bool,
     palPushFire: Bool,
-    rPalMemAddr: Option[UInt]=None,
+    //rPalMemAddr: Option[UInt]=None,
+    somePalMem: Mem[Rgb],
   ): Unit = {
     when (rPalCnt < numColsInPal) {
       when (palPushFire) {
@@ -323,18 +305,24 @@ case class Gpu2dTest(
         //}
         val tempAddr = (rPalCnt + 1)(
           //Gpu2dTestGfx.palette.size
-          params.numColsInBgPalPow - 1 downto 0
+          //params.numColsInBgPalPow - 1 downto 0
+          log2Up(numColsInPal) - 1 downto 0
         )
-        rPalEntry.col := bgPalMem.readAsync(
-          address=tempAddr
+        rPalEntry.col := (
+          //bgPalMem.readAsync(
+          //  address=tempAddr
+          //)
+          somePalMem.readAsync(
+            address=tempAddr
+          )
         )
-        rPalMemAddr match {
-          case Some(myRPalMemAddr) => {
-            myRPalMemAddr := tempAddr
-          }
-          case None => {
-          }
-        };
+        //rPalMemAddr match {
+        //  case Some(myRPalMemAddr) => {
+        //    myRPalMemAddr := tempAddr
+        //  }
+        //  case None => {
+        //  }
+        //};
         rPalCnt := rPalCnt + 1
         when ((rPalCnt + 1).msb) {
           rPalEntryPushValid := False
@@ -596,6 +584,7 @@ case class Gpu2dTest(
     rPalEntry=rColorMathPalEntry,
     rPalEntryPushValid=rColorMathPalEntryPushValid,
     palPushFire=pop.bgPalEntryPush.fire,
+    somePalMem=bgPalMem,
   )
   //pop.colorMathPalEntryPush.valid := False
   //pop.colorMathPalEntryPush.payload := (
@@ -1005,7 +994,8 @@ case class Gpu2dTest(
     rPalEntry=rBgPalEntry,
     rPalEntryPushValid=rBgPalEntryPushValid,
     palPushFire=pop.bgPalEntryPush.fire,
-    rPalMemAddr=Some(rBgPalMemAddr),
+    //rPalMemAddr=Some(rBgPalMemAddr),
+    somePalMem=bgPalMem,
   )
   //--------
   val tempObjTileSlice = Gpu2dTileSlice(
@@ -1238,6 +1228,7 @@ case class Gpu2dTest(
     rPalEntry=rObjPalEntry,
     rPalEntryPushValid=rObjPalEntryPushValid,
     palPushFire=pop.objPalEntryPush.fire,
+    somePalMem=objPalMem,
   )
 
 
