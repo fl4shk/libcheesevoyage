@@ -100,7 +100,7 @@ case class Gpu2dSimDut(
     gpuIo.pop.fire
   )
   gpu2dTest.io.vgaSomeVpipeS := ctrlIo.misc.vpipeSPipe2
-  gpu2dTest.io.vgaSomeDrawPos := ctrlIo.misc.drawPos
+  //gpu2dTest.io.vgaSomeDrawPos := ctrlIo.misc.drawPos
 
   //val vgaTimingsH = VgaTimingsHV(timingsWidth=myVgaTimingsWidth)
   //vgaTimingsH.colorStart := vgaTimingInfo.htiming.

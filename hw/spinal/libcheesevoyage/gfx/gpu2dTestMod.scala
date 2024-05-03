@@ -34,9 +34,9 @@ case class Gpu2dTestIo(
   //  rgbConfig=params.rgbConfig
   //))
   val vgaSomeVpipeS = in(LcvVgaState())
-  val vgaSomeDrawPos = in(LcvVgaCtrlMiscIo.coordT(
-    fbSize2d=params.intnlFbSize2d
-  ))
+  //val vgaSomeDrawPos = in(LcvVgaCtrlMiscIo.coordT(
+  //  fbSize2d=params.intnlFbSize2d
+  //))
   //val vgaMisc = in(LcvVgaCtrlMiscIo(
   //  clkRate=clkRate,
   //  vgaTimingInfo=vgaTimingInfo,
