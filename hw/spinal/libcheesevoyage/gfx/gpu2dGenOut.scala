@@ -186,10 +186,12 @@ object Gpu2dSimDutParams {
   //  //--------
   //)
   def gpu2dBgTileSize2dPow = ElabVec2[Int](
-    //x=log2Up(8),
-    //y=log2Up(8),
-    x=log2Up(4),
-    y=log2Up(4),
+    //x=log2Up(16),
+    //y=log2Up(16),
+    x=log2Up(8),
+    y=log2Up(8),
+    //x=log2Up(4),
+    //y=log2Up(4),
     //x=log2Up(2),
     //y=log2Up(2),
   )
@@ -215,10 +217,10 @@ object Gpu2dSimDutParams {
     //),
     bgTileSize2dPow=gpu2dBgTileSize2dPow,
     objTileSize2dPow=ElabVec2[Int](
-      x=log2Up(16),
-      y=log2Up(16),
-      //x=log2Up(8),
-      //y=log2Up(8),
+      //x=log2Up(16),
+      //y=log2Up(16),
+      x=log2Up(8),
+      y=log2Up(8),
       //x=log2Up(4),
       //y=log2Up(4),
       //x=log2Up(2),
@@ -274,8 +276,13 @@ object Gpu2dSimDutParams {
     //numBgTilesPow=Some(log2Up(256)),
     //numBgTilesPow=Some(log2Up(2)),
     numBgTiles=(
-      Some(16)
-      //Some(320 * 240)
+      //Some(16)
+      ////Some(320 * 240)
+      Some(
+        vgaTimingInfo.fbSize2d.x
+        * vgaTimingInfo.fbSize2d.y
+        / (1 << (gpu2dBgTileSize2dPow.x + gpu2dBgTileSize2dPow.y))
+      )
       // for double buffering
       //Some(
       //  vgaTimingInfo.fbSize2d.x
@@ -294,8 +301,14 @@ object Gpu2dSimDutParams {
       Some(16)
       //Some(32)
     ),
-    numColsInBgPalPow=log2Up(64),
-    numColsInObjPalPow=log2Up(64),
+    numColsInBgPalPow=(
+      log2Up(64)
+      //log2Up(256)
+    ),
+    numColsInObjPalPow=(
+      log2Up(64)
+      //log2Up(256)
+    ),
     noColorMath=(
       true
     ),

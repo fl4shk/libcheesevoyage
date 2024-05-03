@@ -122,6 +122,7 @@ case class Gpu2dParams(
   //objLineArrRamStyle: String="block",
   //combineLineArrRamStyle: String="block",
   lineArrRamStyle: String="block",
+  //--------
 ) {
   //--------
   //def bgAffineTileSize2dPow = ElabVec2[Int](
@@ -1020,6 +1021,21 @@ object Gpu2dTileSlice {
       + Gpu2dTileSlice.myColIdxFracWidth(doPipeMemRmw=doPipeMemRmw)
     )
   )
+  def pxsSliceWidth(
+    params: Gpu2dParams,
+    isObj: Boolean,
+    isAffine: Boolean,
+  ) = (
+    if (!isObj) {
+      params.bgTileSize2d.x
+    } else if (!isAffine) {
+      //params.objTileSize2d
+      params.objSliceTileWidth
+    } else {
+      //params.objAffineTileSize2d
+      params.objAffineSliceTileWidth
+    }
+  )
 }
 
 case class Gpu2dTileSlice(
@@ -1038,15 +1054,11 @@ case class Gpu2dTileSlice(
     )
   )
   def pxsSliceWidth = (
-    if (!isObj) {
-      params.bgTileSize2d.x
-    } else if (!isAffine) {
-      //params.objTileSize2d
-      params.objSliceTileWidth
-    } else {
-      //params.objAffineTileSize2d
-      params.objAffineSliceTileWidth
-    }
+    Gpu2dTileSlice.pxsSliceWidth(
+      params=params,
+      isObj=isObj,
+      isAffine=isAffine,
+    )
   )
   def fullPxsSize2d = (
     if (!isObj) {
