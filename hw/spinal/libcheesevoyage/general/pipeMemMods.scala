@@ -226,6 +226,15 @@ case class PipeMemRmwPayloadExt[
     hazardId := getHazardIdIdleVal()
   }
 
+  //val dbgNonFmaxFwdCnt = (debug) generate (
+  //  Vec.fill(wordCount)(UInt(12 bits))
+  //)
+  //def maxFwdCnt = 20
+
+  //val dbgWantNonFmaxFwd = (debug) generate (
+  //  Bool()
+  //)
+
   //val frontDuplicateIt = Bool()
   val dbgModMemWord = (debug) generate (
     wordType()
@@ -329,7 +338,8 @@ case class PipeMemRmwIo[
   //},
   dualRdType: HardType[DualRdT]=PipeMemRmwDualRdTypeDisabled[WordT](),
   //optDualRdSize: Option[Int]=None,
-  dualRdSize: Int=0,
+  //dualRdSize: Int=0,
+  optDualRd: Boolean=false,
 ) extends Bundle {
   //--------
   //val front = slave(
@@ -358,7 +368,7 @@ case class PipeMemRmwIo[
   //  case None => PipeMemRmwDualRdTypeDisabled[WordT]()
   //}
   //--------
-  val optDualRd = (dualRdSize > 0)
+  //val optDualRd = (dualRdSize > 0)
   val dualRdFront = (optDualRd) generate (
     slave(
       Stream(dualRdType())
@@ -398,9 +408,10 @@ case class PipeMemRmw[
   memArrIdx: Int=0,
   //optDualRdType: Option[HardType[DualRdT]]=None,
   dualRdType: HardType[DualRdT]=PipeMemRmwDualRdTypeDisabled[WordT](),
-  dualRdSize: Int=0,
+  optDualRd: Boolean=false,
+  //dualRdSize: Int=0,
   initBigInt: Option[Seq[BigInt]]=None,
-  forFmax: Boolean=false,
+  //forFmax: Boolean=false,
 )
 //(
 //  getModAddr: (
@@ -441,7 +452,8 @@ extends Component {
     wordCount=wordCount,
     modType=modType(),
     dualRdType=dualRdType(),
-    dualRdSize=dualRdSize,
+    //dualRdSize=dualRdSize,
+    optDualRd=optDualRd
   )
   //--------
   def mkMem() = {
@@ -815,13 +827,13 @@ extends Component {
             nextDuplicateIt := True
             nextHazardId := (
               modStageCnt
-              - (
-                if (!forFmax) (
-                  1
-                ) else (
-                  0 
-                )
-              )
+              //- (
+              //  //if (!forFmax) (
+              //  //  1
+              //  //) else (
+              //    0 
+              //  //)
+              //)
             )
           }
         }
@@ -940,67 +952,98 @@ extends Component {
         }
       }
     }
-    def wantNonFmaxFwd(
-      //someUpMemAddr: UInt//=upExt(1).memAddr
-      someExt: PipeMemRmwPayloadExt[WordT]
-    ): Bool = (
-      if (!forFmax) (
-        //someExt.hazardId.msb
-        ////backUpExt.hazardId === 0
-        //&&
-        backUpExt.hazardId.msb
-        //&& mod.back.cBack.up.isFiring
-        && mod.back.cBack.up.isValid
-        //&& upExt(1).memAddr === backUpExt.memAddr
-        //&& someUpMemAddr === backUpExt.memAddr
-        && someExt.memAddr === backUpExt.memAddr
-        //&& someExt.memAddr === rUpExtDel(rUpExtDel.size - 1).memAddr
-        //&& someExt.fwdId === backUpExt.fwdId
-      ) else (
-        False
-      )
-    )
-    def getNonFmaxFwd() = (
-      backUpExt.modMemWord
-    )
-    def getNonFmaxFwdOutp(
-      someExt: PipeMemRmwPayloadExt[WordT]
-    ) = {
-      someExt.rdMemWord
-    }
-    def perfNonFmaxFwd(
-      someExt: PipeMemRmwPayloadExt[WordT]
-    ): Unit = {
-      getNonFmaxFwdOutp(someExt=someExt) := getNonFmaxFwd()
-    }
+    //def wantNonFmaxFwd(
+    //  //someUpMemAddr: UInt//=upExt(1).memAddr
+    //  //someNode: NodeApi,
+    //  someExt: PipeMemRmwPayloadExt[WordT]
+    //): Bool = (
+    //  if (!forFmax) (
+    //    //someExt.hazardId.msb
+    //    ////backUpExt.hazardId === 0
+    //    //&&
+    //    backUpExt.hazardId.msb
+    //    //&& mod.back.cBack.up.isFiring
+    //    && mod.back.cBack.up.isValid
+    //    //&& someNode.isValid
+    //    //&& upExt(1).memAddr === backUpExt.memAddr
+    //    //&& someUpMemAddr === backUpExt.memAddr
+    //    && someExt.memAddr === backUpExt.memAddr
+    //    //&& someExt.memAddr === rUpExtDel(rUpExtDel.size - 1).memAddr
+    //    //&& someExt.fwdId === backUpExt.fwdId
+    //  ) else (
+    //    False
+    //  )
+    //)
+    //--------
+    //def getNonFmaxFwd() = (
+    //  backUpExt.modMemWord
+    //)
+    //def getNonFmaxFwdOutp(
+    //  someExt: PipeMemRmwPayloadExt[WordT]
+    //) = {
+    //  someExt.rdMemWord
+    //}
+    //def perfNonFmaxFwd(
+    //  someExt: PipeMemRmwPayloadExt[WordT]
+    //): Unit = {
+    //  getNonFmaxFwdOutp(someExt=someExt) := getNonFmaxFwd()
+    //}
+    //val rDbgNonMaxFwdCnt = (
+    //  Reg(cloneOf(upExt(1).dbgNonFmaxFwdCnt)) //init(0x0)
+    //)
+    //for (idx <- 0 until rDbgNonMaxFwdCnt.size) {
+    //  rDbgNonMaxFwdCnt(idx).init(0x0)
+    //}
+    //upExt(1).dbgNonFmaxFwdCnt := (
+    //  //(rDbgNonMaxFwdCnt + 1)
+    //  rDbgNonMaxFwdCnt
+    //)
     when (
       !clockDomain.isResetActive
       //&& up.isFiring
       && up.isValid
     ) {
-      if (!forFmax) {
-        when (wantNonFmaxFwd(someExt=upExt(1))) {
-          //upExt(1).rdMemWord := getNonFmaxForward()
-          perfNonFmaxFwd(someExt=upExt(1))
-        } otherwise {
-          //upExt(1).rdMemWord := modMem.readSync(
-          //  address=upExt(1).memAddr
-          //)
-        }
-      } else { // if (forFmax)
-        ////when (
-        ////  !nextHazardId
-        ////)
-        ////when (nextDuplicateIt) {
-        ////  upExt(1).rdMemWord := upExt(1).rdMemWord.getZero
-        ////} otherwise {
-        //  //--------
-        //  upExt(1).rdMemWord := modMem.readSync(
-        //    address=upExt(1).memAddr,
-        //  )
-        //  //--------
-        ////}
-      }
+      //if (debug) {
+      //  upExt(1).dbgWantNonFmaxFwd := wantNonFmaxFwd(
+      //    //someNode=up,
+      //    someExt=upExt(1),
+      //  )
+      //  //upExt(1).dbgNonMaxFwdCnt 
+      //  when (
+      //    //cArr(0).down.isFiring
+      //    down.isFiring
+      //  ) {
+      //    def tempCnt = rDbgNonMaxFwdCnt(upExt(1).memAddr)
+      //    tempCnt := tempCnt + 1
+      //    //rDbgNonMaxFwdCnt := rDbgNonMaxFwdCnt + 1
+      //  }
+      //}
+      //if (!forFmax) {
+      //  when (wantNonFmaxFwd(
+      //    //someNode=up,
+      //    someExt=upExt(1),
+      //  )) {
+      //    //upExt(1).rdMemWord := getNonFmaxForward()
+      //    perfNonFmaxFwd(someExt=upExt(1))
+      //  } otherwise {
+      //    //upExt(1).rdMemWord := modMem.readSync(
+      //    //  address=upExt(1).memAddr
+      //    //)
+      //  }
+      //} else { // if (forFmax)
+      //  ////when (
+      //  ////  !nextHazardId
+      //  ////)
+      //  ////when (nextDuplicateIt) {
+      //  ////  upExt(1).rdMemWord := upExt(1).rdMemWord.getZero
+      //  ////} otherwise {
+      //  //  //--------
+      //  //  upExt(1).rdMemWord := modMem.readSync(
+      //  //    address=upExt(1).memAddr,
+      //  //  )
+      //  //  //--------
+      //  ////}
+      //}
     }
     //--------
     tempUpMod(1) := tempUpMod(0)
@@ -1093,38 +1136,41 @@ extends Component {
         when (
           RegNextWhen(True, io.back.fire) init(False)
         ) {
-          when (
-            //up.isFiring
-            up.isValid
-          ) {
-            if (!forFmax) {
-              when (
-                //backUpExt.hazardId.msb
-                ////&& mod.back.cBack.up.isFiring
-                //&& mod.back.cBack.up.isValid
-                //&& upExt(1).memAddr === backUpExt.memAddr
-                wantNonFmaxFwd(someExt=upExt(1))
-              ) {
-                assert(
-                  //upExt(1).rdMemWord === getNonFmaxForward() //backUpExt.modMemWord
-                  getNonFmaxFwdOutp(someExt=upExt(1))
-                  === getNonFmaxFwd()
-                )
-              } otherwise {
-                assert(
-                  upExt(1).rdMemWord === modMem.readSync(
-                    address=upExt(1).memAddr
-                  )
-                )
-              }
-            } else { // if (forFmax)
-              assert(
-                upExt(1).rdMemWord === modMem.readSync(
-                  address=upExt(1).memAddr,
-                )
-              )
-            }
-          } otherwise {
+          //when (
+          //  //up.isFiring
+          //  up.isValid
+          //) {
+          //  //if (!forFmax) {
+          //  //  when (
+          //  //    //backUpExt.hazardId.msb
+          //  //    ////&& mod.back.cBack.up.isFiring
+          //  //    //&& mod.back.cBack.up.isValid
+          //  //    //&& upExt(1).memAddr === backUpExt.memAddr
+          //  //    wantNonFmaxFwd(
+          //  //      //someNode=up,
+          //  //      someExt=upExt(1),
+          //  //    )
+          //  //  ) {
+          //  //    assert(
+          //  //      //upExt(1).rdMemWord === getNonFmaxForward() //backUpExt.modMemWord
+          //  //      getNonFmaxFwdOutp(someExt=upExt(1))
+          //  //      === getNonFmaxFwd()
+          //  //    )
+          //  //  } otherwise {
+          //  //    assert(
+          //  //      upExt(1).rdMemWord === modMem.readSync(
+          //  //        address=upExt(1).memAddr
+          //  //      )
+          //  //    )
+          //  //  }
+          //  //} else { // if (forFmax)
+          //    assert(
+          //      upExt(1).rdMemWord === modMem.readSync(
+          //        address=upExt(1).memAddr,
+          //      )
+          //    )
+          //  //}
+          //} otherwise {
             //assert(
             //  /*past*/(upExt(1).rdMemWord)
             //  === /*past*/(RegNext(upExt(1).rdMemWord))
@@ -1134,7 +1180,7 @@ extends Component {
                 address=upExt(1).memAddr,
               )
             )
-          }
+          //}
         }
 
         def myCoverFunc(
@@ -1281,12 +1327,12 @@ extends Component {
             )
           )
         }
-        //cover(myCoverFunc(kind=0))
-        //cover(myCoverFunc(kind=1))
+        ////cover(myCoverFunc(kind=0))
+        ////cover(myCoverFunc(kind=1))
 
-        //cover(myCoverFunc(kind=2))
-        cover(myCoverFunc(kind=3))
-        //cover(io.back.fire)
+        ////cover(myCoverFunc(kind=2))
+        //cover(myCoverFunc(kind=3))
+        ////cover(io.back.fire)
       }
     }
     //--------
@@ -1359,70 +1405,705 @@ extends Component {
   //  //}
   //}
   //val cDualRdFront = 
+  //--------
+  //val dualRd = (io.optDualRd) generate new Area {
+  //  //--------
+  //  GenerationFlags.formal {
+  //    when (pastValidAfterReset) {
+  //      val myBackExt = mkExt().setName(
+  //        "dbg_backExt"
+  //      )
+  //      val myDualRdBackExt = mkExt().setName(
+  //        "dbg_dualRd_backExt"
+  //      )
+  //      io.back.payload.getPipeMemRmwExt(
+  //        outpExt=myBackExt,
+  //        memArrIdx=memArrIdx,
+  //      )
+  //      io.dualRdBack.payload.getPipeMemRmwExt(
+  //        outpExt=myDualRdBackExt,
+  //        memArrIdx=memArrIdx,
+  //      )
+  //      //val tempCoverBackVec = Vec.fill(wordCount)(
+  //      //  Reg(Bool()) init(False)
+  //      //)
+  //      val rCoverBack = (
+  //        Reg(SInt(wordCount bits)) init(0x0)
+  //        setName("dualRd_rCoverBack")
+  //      )
+  //      val rCoverBackHazardIdGe0 = (
+  //        Reg(SInt(wordCount bits)) init(0x0)
+  //        setName("dualRd_rCoverBackHazardIdGe0")
+  //      )
+  //      val rCoverDualRdBack = (
+  //        Reg(SInt(wordCount bits)) init(0x0)
+  //        setName("dualRd_rCoverDualRdBack")
+  //      )
+  //      val rCoverDualRdBackNotReadyCnt = (
+  //        Reg(UInt(8 bits)) init(0x0)
+  //        setName("dualRd_rCoverDualRdBackNotReadyCnt")
+  //      )
+  //      when (
+  //        RegNextWhen(True, io.dualRdBack.fire) init(False)
+  //        && !io.dualRdBack.ready
+  //      ) {
+  //        rCoverDualRdBackNotReadyCnt := rCoverDualRdBackNotReadyCnt + 1
+  //      }
+
+  //      for (idx <- 0 until wordCount) {
+  //        when (
+  //          io.back.fire
+  //          && myBackExt.memAddr === idx
+  //          //&& myBackExt.modMemWord.asBits.asUInt > 0
+  //        ) {
+  //          when (myBackExt.hazardId.msb) {
+  //            when (
+  //              //myBackExt.modMemWord.asBits.asUInt === idx
+  //              myBackExt.rdMemWord.asBits.asUInt === idx + 1
+  //            ) {
+  //              rCoverBack(idx) := True
+  //            }
+  //          } otherwise {
+  //            rCoverBackHazardIdGe0(idx) := True
+  //          }
+  //        }
+  //        when (
+  //          io.dualRdBack.fire
+  //          && myDualRdBackExt.memAddr === idx
+  //          //&& myDualRdBackExt.modMemWord.asBits.asUInt > 0
+  //          //&& myDualRdBackExt.modMemWord.asBits.asUInt === idx
+  //          && myDualRdBackExt.rdMemWord.asBits.asUInt === idx + 1
+  //        ) {
+  //          rCoverDualRdBack(idx) := True
+  //        }
+  //      }
+  //      cover(
+  //        (
+  //          rCoverBack === -1
+  //          //=== B(rTempCoverBack.getWidth bits, default -> True)
+  //        ) && (
+  //          //rCoverBackHazardIdGe0 === -1
+  //          True
+  //        ) && (
+  //          rCoverDualRdBack === -1
+  //          //=== B(rTempCoverDualRdBack.getWidth bits, default -> True)
+  //        ) && (
+  //          rCoverDualRdBackNotReadyCnt > 2
+  //        )
+  //      )
+  //      //cover(
+  //      //  (
+  //      //    //RegNextWhen(
+  //      //    //  True,
+  //      //    //  (
+  //      //    //    io.back.fire
+  //      //    //    && myBackExt.memAddr === 0
+  //      //    //    && (
+  //      //    //      myBackExt.modMemWord.asBits.asUInt > 0
+  //      //    //    )
+  //      //    //  )
+  //      //    //) init(False)
+  //      //  )
+  //      //)
+
+  //      //cover(
+  //      //  io.back.valid
+  //      //  && io.dualRdBack.valid
+  //      //  && myDualRd
+  //      //)
+  //      //if (!forFmax) {
+  //      //  //when (
+  //      //  //  io.back.valid
+  //      //  //  && io.dualRdBack.valid
+  //      //  //  && myDualRdBackExt.dbgWantNonFmaxFwd
+  //      //  //  && myBackExt.dbgWantNonFmaxFwd
+  //      //  //  && myDualRdBackExt.hazardId === myBackExt.hazardId
+  //      //  //  //&& myDualRdBackExt.hazardId.msb
+  //      //  //  && (
+  //      //  //    myDualRdBackExt.dbgNonFmaxFwdCnt
+  //      //  //    === myBackExt.dbgNonFmaxFwdCnt
+  //      //  //  ) && (
+  //      //  //    myDualRdBackExt.memAddr === myBackExt.memAddr
+  //      //  //  )
+  //      //  //) {
+  //      //  //  assert(myDualRdBackExt.rdMemWord === myBackExt.rdMemWord)
+  //      //  //}
+  //      //  cover(
+  //      //    //(
+  //      //    //  RegNextWhen(True, io.back.fire) init(False)
+  //      //    //) && (
+  //      //    //  RegNextWhen(True, io.dualRdBack.fire) init(False)
+  //      //    //) 
+  //      //    //&& 
+  //      //    io.back.valid
+  //      //    && io.dualRdBack.valid
+  //      //    && myDualRdBackExt.dbgWantNonFmaxFwd
+  //      //    && myBackExt.dbgWantNonFmaxFwd
+  //      //    && (
+  //      //      myDualRdBackExt.memAddr === myBackExt.memAddr
+  //      //    ) && (
+  //      //      myDualRdBackExt.rdMemWord === myBackExt.rdMemWord
+  //      //    )
+  //      //  )
+  //      //  //cover(
+  //      //  //  //(
+  //      //  //  //  RegNextWhen(True, io.back.fire) init(False)
+  //      //  //  //) && (
+  //      //  //  //  RegNextWhen(True, io.dualRdBack.fire) init(False)
+  //      //  //  //)
+  //      //  //  //&& 
+  //      //  //  //--------
+  //      //  //  //io.back.valid
+  //      //  //  //&& 
+  //      //  //  //io.dualRdBack.valid
+  //      //  //  //--------
+  //      //  //  //&& 
+  //      //  //  myDualRdBackExt.dbgWantNonFmaxFwd
+  //      //  //  && myBackExt.dbgWantNonFmaxFwd
+  //      //  //  && (
+  //      //  //    myDualRdBackExt.memAddr === myBackExt.memAddr
+  //      //  //  ) && (
+  //      //  //    myDualRdBackExt.rdMemWord =/= myBackExt.rdMemWord
+  //      //  //  )
+  //      //  //)
+  //      //}
+  //      //when (
+  //      //  io.dualRdBack.valid
+  //      //  && myDualRdBackExt.dbgWantNonFmaxFwd
+  //      //) {
+  //      //}
+  //    }
+  //  }
+  //}
+  //--------
+  // BEGIN: working dualRd?
   val dualRd = (io.optDualRd) generate new Area {
-    //val midFrontStm = Stream(dualRdType())
-    //val midBackStm = Stream(dualRdType())
+    val midFrontStm = Stream(dualRdType())
+    val midMidStm = Stream(dualRdType())
+    val midBackStm = Stream(dualRdType())
     ////midFrontStm <-/< io.dualRdFront
     //midFrontStm << io.dualRdFront
     //midFrontStm
-    val midStm = Stream(dualRdType())
-    io.dualRdFront.translateInto(
-      into=midStm
+    //--------
+    //val myPayload = Payload(dualRdType())
+    //val midFrontStm = Stream(dualRdType())
+    ////val midMidStm = Stream(dualRdType())
+    //val midPipe = PipeHelper(linkArr=linkArr)
+    //val cArr = new ArrayBuffer[CtrlLink]()
+    //--------
+    ////for (
+    ////  // the + 3 is necessary
+    ////  idx <- 0 until modStageCnt + 3
+    ////) {
+    ////  //println(idx)
+    ////  cArr += midPipe.addStage(
+    ////    name=f"DualRd_$idx",
+    ////    finish=(idx + 1 >= modStageCnt + 3),
+    ////  )
+    ////}
+    //cArr += midPipe.addStage(
+    //  name=f"DualRd_0",
+    //  //finish=true,
+    //)
+    ////cArr += midPipe.addStage(
+    ////  name=f"DualRd_1",
+    ////  //finish=true,
+    ////)
+    //cArr += midPipe.addStage(
+    //  name=f"DualRdLast",
+    //  finish=true,
+    //)
+
+    //val midBackStm = Stream(dualRdType())
+    //midPipe.first.up.driveFrom(midFrontStm)(
+    //  con=(node, payload) => {
+    //    node(myPayload) := payload
+    //  }
+    //)
+    val myFrontExt = mkExt().setName(
+      "dualRd_frontExt"
+    )
+    val myMidFrontExt = mkExt().setName(
+      "dualRd_midFrontExt"
+    )
+    val myMidMidExt = mkExt().setName(
+      "dualRd_midMidExt"
+    )
+    val myMidBackExt = mkExt().setName(
+      "dualRd_midBackExt"
+    )
+    //val myMidFrontExt = mkExt().setName(
+    //  "dualRd_midFrontExt"
+    //)
+    //val rDbgNonFmaxFwdCnt = (debug) generate (
+    //  Reg(cloneOf(myMidFrontExt.dbgNonFmaxFwdCnt)) //init(0x0)
+    //)
+    //for (idx <- 0 until rDbgNonFmaxFwdCnt.size) {
+    //  rDbgNonFmaxFwdCnt(idx).init(rDbgNonFmaxFwdCnt(idx).getZero)
+    //}
+    //--------
+    //midPipe.first.up.driveFrom(io.dualRdFront)(
+    //  con=(node, payload) => {
+    //    //def midFrontPayload = node(myPayload)
+    //    def frontPayload = payload
+
+    //    //val tempFrontDualRd = dualRdType().setName(
+    //    //  "dualRd_tempFrontDualRd"
+    //    //)
+    //    //val tempMidDualRd = dualRdType().setName(
+    //    //  "dualRd_tempMidDualRd"
+    //    //)
+    //    frontPayload.getPipeMemRmwExt(
+    //      outpExt=myFrontExt,
+    //      memArrIdx=memArrIdx,
+    //    )
+
+    //    //if (debug) {
+    //    //  myMidFrontExt.hazardId := cFrontArea.upExt(1).hazardId
+    //    //  //myMidFrontExt.dbgWantNonFmaxFwd := (
+    //    //  //  cFrontArea.wantNonFmaxFwd(
+    //    //  //    //someNode=midPipe.first.up,
+    //    //  //    someExt=myMidFrontExt,
+    //    //  //  )
+    //    //  //)
+    //    //  //myMidFrontExt.dbgNonFmaxFwdCnt := rDbgNonFmaxFwdCnt
+    //    //  //when (midPipe.first.down.isFiring) {
+    //    //  //  def tempCnt = rDbgNonFmaxFwdCnt(myMidFrontExt.memAddr)
+    //    //  //  tempCnt := tempCnt + 1
+    //    //  //}
+    //    //}
+
+    //    //myMidFrontExt := (
+    //    //  RegNext(myMidFrontExt) init(myMidFrontExt.getZero)
+    //    //)
+    //    myMidFrontExt := myFrontExt
+    //    myMidFrontExt.allowOverride
+    //    when (midPipe.first.up.isValid) {
+    //      //myMidFrontExt.allowOverride
+    //      myMidFrontExt.rdMemWord := (
+    //        //--------
+    //        // BEGIN: debug
+    //        //dualRdMemArr(0).readSync(
+    //        //  address=myMidExt.memAddr
+    //        //)
+    //        dualRdMem.readSync(
+    //          address=myFrontExt.memAddr
+    //        )
+    //        //--------
+    //      )
+    //      myMidFrontExt.modMemWord := (
+    //        myMidFrontExt.rdMemWord
+    //      )
+    //    }
+    //    //if (!forFmax) {
+    //    //  when (
+    //    //    cFrontArea.wantNonFmaxFwd(
+    //    //      //someNode=midPipe.first.up,
+    //    //      someExt=myMidFrontExt
+    //    //    )
+    //    //  ) {
+    //    //    //myMidExt.rdMemWord := (
+    //    //    //  cFrontArea.getNonFmaxForward()
+    //    //    //  //cFrontArea.backUpExt.modMemWord
+    //    //    //)
+    //    //    cFrontArea.perfNonFmaxFwd(someExt=myMidFrontExt)
+    //    //  }
+    //    //}
+    //    node(myPayload).setPipeMemRmwExt(
+    //      inpExt=myMidFrontExt,
+    //      memArrIdx=memArrIdx,
+    //    )
+    //  }
+    //)
+    //--------
+    //midPipe.last.down.driveTo(io.dualRdBack)(
+    //  con=(payload, node) => {
+    //    payload := node(myPayload)
+    //  }
+    //)
+    //midPipe.first.duplicateWhen(
+    //  //cFrontArea.rDuplicateIt
+    //  cFrontArea.nextDuplicateIt
+    //)
+
+    //val myMidBackExt = mkExt().setName(
+    //  "dualRd_midBackExt"
+    //)
+    //--------
+    //midFrontStm.translateInto(
+    //  into=midMidStm
+    //)(
+    //  dataAssignment=(
+    //    midMidPayload,
+    //    midFrontPayload
+    //  ) => {
+    //  }
+    //)
+
+    //io.dualRdFront.translateInto(
+    //  into=midFrontStm
+    //)(
+    //  dataAssignment=(
+    //    midFrontPayload,
+    //    frontPayload,
+    //  ) => {
+    //    //val tempFrontDualRd = dualRdType().setName(
+    //    //  "dualRd_tempFrontDualRd"
+    //    //)
+    //    //val tempMidDualRd = dualRdType().setName(
+    //    //  "dualRd_tempMidDualRd"
+    //    //)
+    //    frontPayload.getPipeMemRmwExt(
+    //      outpExt=myMidFrontExt,
+    //      memArrIdx=memArrIdx,
+    //    )
+    //    //myMidFrontExt := myFrontExt
+
+    //    //if (debug) {
+    //    //  myMidFrontExt.dbgWantNonFmaxFwd := (
+    //    //    cFrontArea.wantNonFmaxFwd(someExt=myMidFrontExt)
+    //    //  )
+    //    //}
+
+    //    //when (io.dualRdFront.valid) {
+    //    //  myMidFrontExt.rdMemWord := (
+    //    //    //--------
+    //    //    // BEGIN: debug
+    //    //    //dualRdMemArr(0).readSync(
+    //    //    //  address=myMidExt.memAddr
+    //    //    //)
+    //    //    dualRdMem.readSync(
+    //    //      address=myMidFrontExt.memAddr
+    //    //    )
+    //    //    //--------
+    //    //  )
+    //    //}
+    //    ////if (!forFmax) {
+    //    ////  when (
+    //    ////    cFrontArea.wantNonFmaxFwd(someExt=myMidFrontExt)
+    //    ////  ) {
+    //    ////    //myMidExt.rdMemWord := (
+    //    ////    //  cFrontArea.getNonFmaxForward()
+    //    ////    //  //cFrontArea.backUpExt.modMemWord
+    //    ////    //)
+    //    ////    cFrontArea.perfNonFmaxFwd(someExt=myMidFrontExt)
+    //    ////  }
+    //    ////}
+    //    midFrontPayload.setPipeMemRmwExt(
+    //      inpExt=myMidFrontExt,
+    //      memArrIdx=memArrIdx,
+    //    )
+    //  }
+    //)
+    //midFrontStm.translateInto(
+    //  into=midMidStm
+    //)(
+    //  dataAssignment=(
+    //    midMidPayload,
+    //    midFrontPayload,
+    //  ) => {
+    //    midMidPayload := midFrontPayload
+    //    //midMidPayload
+    //    //myMidMidExt
+    //  }
+    //)
+    io.dualRdFront.getPipeMemRmwExt(
+      outpExt=myFrontExt,
+      memArrIdx=memArrIdx,
+    )
+    myMidFrontExt.allowOverride
+    //val tempReadSync = Reg(wordType())
+    //tempReadSync.init(tempReadSync.getZero)
+    val tempReadSync = wordType()
+    tempReadSync := RegNext(tempReadSync) init(tempReadSync.getZero)
+    when (
+      //io.dualRdFront.fire
+      //&& midFrontStm.valid
+      midFrontStm.fire
+    ) {
+      tempReadSync := dualRdMem.readSync(
+        //address=myMidFrontExt.memAddr
+        address=myFrontExt.memAddr
+      )
+    }
+    midFrontStm <-/< io.dualRdFront
+    //frontPayload.getPipeMemRmwExt(
+    //  outpExt=myMidFrontExt,
+    //  memArrIdx=memArrIdx,
+    //)
+    //midFrontStm.getPipeMemRmwExt(
+    //  outpExt=myMidFrontExt,
+    //  memArrIdx=memArrIdx,
+    //)
+    midFrontStm.translateInto(
+      into=midMidStm
     )(
       dataAssignment=(
-        frontPayload,
-        midPayload,
+        midMidPayload,
+        midFrontPayload,
       ) => {
-        val myFrontExt = mkExt().setName(
-          "dualRd_frontExt"
-        )
-        val myMidExt = mkExt().setName(
-          "dualRd_midExt"
-        )
-        val tempFrontDualRd = dualRdType().setName(
-          "dualRd_tempFrontDualRd"
-        )
-        val tempMidDualRd = dualRdType().setName(
-          "dualRd_tempMidDualRd"
-        )
-        tempFrontDualRd.getPipeMemRmwExt(
-          outpExt=myFrontExt,
+        midMidPayload := midFrontPayload
+        midMidPayload.allowOverride
+        midFrontPayload.getPipeMemRmwExt(
+          outpExt=myMidFrontExt,
           memArrIdx=memArrIdx,
         )
-        myMidExt := myFrontExt
-        myMidExt.allowOverride
-
-        myMidExt.rdMemWord := (
-          //--------
-          // BEGIN: debug
-          //dualRdMemArr(0).readSync(
-          //  address=myMidExt.memAddr
-          //)
-          dualRdMem.readSync(
-            address=myMidExt.memAddr
-          )
-          //--------
-        )
-        if (!forFmax) {
-          when (
-            cFrontArea.wantNonFmaxFwd(someExt=myMidExt)
-          ) {
-            //myMidExt.rdMemWord := (
-            //  cFrontArea.getNonFmaxForward()
-            //  //cFrontArea.backUpExt.modMemWord
-            //)
-            cFrontArea.perfNonFmaxFwd(someExt=myMidExt)
-          }
-        }
-        tempMidDualRd.setPipeMemRmwExt(
-          inpExt=myMidExt,
+        myMidMidExt := myMidFrontExt
+        myMidMidExt.allowOverride
+        myMidMidExt.rdMemWord := tempReadSync
+        //myMidMidExt.rdMemWord := (
+        //  RegNext(myMidMidExt.rdMemWord)
+        //  init(myMidMidExt.rdMemWord.getZero)
+        //  //rTempReadSync
+        //  //dualRdMem.readSync(
+        //  //  address=myMidFrontExt.memAddr
+        //  //)
+        //)
+        //when (midMidStm.valid) {
+        //  myMidMidExt.rdMemWord := (
+        //    rTempReadSync
+        //    //dualRdMem.readSync(
+        //    //  address=myMidMidExt.memAddr
+        //    //)
+        //  )
+        //}
+        myMidMidExt.modMemWord := myMidMidExt.rdMemWord
+        midMidPayload.setPipeMemRmwExt(
+          inpExt=myMidMidExt,
           memArrIdx=memArrIdx,
         )
       }
     )
+    //midMidStm <-/< midFrontStm
+    //midMidStm.translateInto(
+    //  into=midBackStm
+    //)(
+    //  dataAssignment=(
+    //    midBackPayload,
+    //    midMidPayload,
+    //  ) => {
+    //    midBackPayload := midMidPayload
+    //    midBackPayload.allowOverride
+    //    midMidPayload.getPipeMemRmwExt(
+    //      outpExt=myMidMidExt,
+    //      memArrIdx=memArrIdx,
+    //    )
+    //    myMidBackExt := myMidMidExt
+    //    myMidBackExt.allowOverride
+    //    myMidBackExt.rdMemWord := (
+    //      //rTempReadSync
+    //      //dualRdMem.readAsync(
+    //      //  address=myMidBackExt
+    //      //)
+    //    )
+    //    myMidBackExt.modMemWord := myMidBackExt.rdMemWord
+    //    midBackPayload.setPipeMemRmwExt(
+    //      inpExt=myMidBackExt,
+    //      memArrIdx=memArrIdx,
+    //    )
+    //  }
+    //)
+    //midBackStm << midMidStm
+    midBackStm <-/< midMidStm
+    io.dualRdBack <-/< midBackStm
+    //midBackStm.translateInto(
+    //  into=io.dualRdBack
+    //)(
+    //  dataAssignment=(
+    //    dualRdBackPayload,
+    //    midBackPayload,
+    //  ) => {
+    //  }
+    //)
+    //midBackStm.duplicateWhen(True) << midFrontStm
+    //when (cFrontArea.nextDuplicateIt) {
+    //  midBackStm.setBlocked()
+    //}
+    //--------
+    //val stmArr = Array.fill(modStageCnt)(Stream(dualRdType()))
+    //for (
+    //  idx <- 0 until stmArr.size
+    //) {
+    //  if (idx == 0) {
+    //    stmArr(idx) <-/< midBackStm
+    //  } else { // if (idx > 0)
+    //    stmArr(idx) <-/< stmArr(idx - 1)
+    //  }
+    //}
+    //io.dualRdBack << stmArr.last
     //io.dualRdBack << midBackStm
-    io.dualRdBack <-/< midStm
+    ////io.dualRdBack <-/< midStm
+    //--------
+    GenerationFlags.formal {
+      when (pastValidAfterReset) {
+        val myBackExt = mkExt().setName(
+          "dbg_backExt"
+        )
+        val myDualRdBackExt = mkExt().setName(
+          "dbg_dualRd_backExt"
+        )
+        io.back.payload.getPipeMemRmwExt(
+          outpExt=myBackExt,
+          memArrIdx=memArrIdx,
+        )
+        io.dualRdBack.payload.getPipeMemRmwExt(
+          outpExt=myDualRdBackExt,
+          memArrIdx=memArrIdx,
+        )
+        //val tempCoverBackVec = Vec.fill(wordCount)(
+        //  Reg(Bool()) init(False)
+        //)
+        val rCoverBack = (
+          Reg(SInt(wordCount bits)) init(0x0)
+          setName("dualRd_rCoverBack")
+        )
+        val rCoverBackHazardIdGe0 = (
+          Reg(SInt(wordCount bits)) init(0x0)
+          setName("dualRd_rCoverBackHazardIdGe0")
+        )
+        val rCoverDualRdBack = (
+          Reg(SInt(wordCount bits)) init(0x0)
+          setName("dualRd_rCoverDualRdBack")
+        )
+        val rCoverDualRdBackNotReadyCnt = (
+          Reg(UInt(8 bits)) init(0x0)
+          setName("dualRd_rCoverDualRdBackNotReadyCnt")
+        )
+        when (
+          RegNextWhen(True, io.dualRdBack.fire) init(False)
+          && !io.dualRdBack.ready
+          && RegNext(io.dualRdBack.ready)
+          && RegNext(RegNext(io.dualRdBack.ready))
+        ) {
+          rCoverDualRdBackNotReadyCnt := rCoverDualRdBackNotReadyCnt + 1
+        }
+
+        for (idx <- 0 until wordCount) {
+          when (
+            io.back.fire
+            && myBackExt.memAddr === idx
+            //&& myBackExt.modMemWord.asBits.asUInt > 0
+          ) {
+            when (myBackExt.hazardId.msb) {
+              when (
+                //myBackExt.modMemWord.asBits.asUInt === idx
+                myBackExt.rdMemWord.asBits.asUInt === idx + 1
+              ) {
+                rCoverBack(idx) := True
+              }
+            } otherwise {
+              rCoverBackHazardIdGe0(idx) := True
+            }
+          }
+          when (
+            io.dualRdBack.fire
+            && myDualRdBackExt.memAddr === idx
+            //&& myDualRdBackExt.modMemWord.asBits.asUInt > 0
+            //&& myDualRdBackExt.modMemWord.asBits.asUInt === idx
+            && myDualRdBackExt.rdMemWord.asBits.asUInt === idx + 1
+          ) {
+            rCoverDualRdBack(idx) := True
+          }
+        }
+        cover(
+          (
+            rCoverBack === -1
+            //=== B(rTempCoverBack.getWidth bits, default -> True)
+          ) && (
+            //rCoverBackHazardIdGe0 === -1
+            True
+          ) && (
+            rCoverDualRdBack === -1
+            //=== B(rTempCoverDualRdBack.getWidth bits, default -> True)
+          ) && (
+            rCoverDualRdBackNotReadyCnt > 2
+          )
+        )
+        //cover(
+        //  (
+        //    //RegNextWhen(
+        //    //  True,
+        //    //  (
+        //    //    io.back.fire
+        //    //    && myBackExt.memAddr === 0
+        //    //    && (
+        //    //      myBackExt.modMemWord.asBits.asUInt > 0
+        //    //    )
+        //    //  )
+        //    //) init(False)
+        //  )
+        //)
+
+        //cover(
+        //  io.back.valid
+        //  && io.dualRdBack.valid
+        //  && myDualRd
+        //)
+        //if (!forFmax) {
+        //  //when (
+        //  //  io.back.valid
+        //  //  && io.dualRdBack.valid
+        //  //  && myDualRdBackExt.dbgWantNonFmaxFwd
+        //  //  && myBackExt.dbgWantNonFmaxFwd
+        //  //  && myDualRdBackExt.hazardId === myBackExt.hazardId
+        //  //  //&& myDualRdBackExt.hazardId.msb
+        //  //  && (
+        //  //    myDualRdBackExt.dbgNonFmaxFwdCnt
+        //  //    === myBackExt.dbgNonFmaxFwdCnt
+        //  //  ) && (
+        //  //    myDualRdBackExt.memAddr === myBackExt.memAddr
+        //  //  )
+        //  //) {
+        //  //  assert(myDualRdBackExt.rdMemWord === myBackExt.rdMemWord)
+        //  //}
+        //  cover(
+        //    //(
+        //    //  RegNextWhen(True, io.back.fire) init(False)
+        //    //) && (
+        //    //  RegNextWhen(True, io.dualRdBack.fire) init(False)
+        //    //) 
+        //    //&& 
+        //    io.back.valid
+        //    && io.dualRdBack.valid
+        //    && myDualRdBackExt.dbgWantNonFmaxFwd
+        //    && myBackExt.dbgWantNonFmaxFwd
+        //    && (
+        //      myDualRdBackExt.memAddr === myBackExt.memAddr
+        //    ) && (
+        //      myDualRdBackExt.rdMemWord === myBackExt.rdMemWord
+        //    )
+        //  )
+        //  //cover(
+        //  //  //(
+        //  //  //  RegNextWhen(True, io.back.fire) init(False)
+        //  //  //) && (
+        //  //  //  RegNextWhen(True, io.dualRdBack.fire) init(False)
+        //  //  //)
+        //  //  //&& 
+        //  //  //--------
+        //  //  //io.back.valid
+        //  //  //&& 
+        //  //  //io.dualRdBack.valid
+        //  //  //--------
+        //  //  //&& 
+        //  //  myDualRdBackExt.dbgWantNonFmaxFwd
+        //  //  && myBackExt.dbgWantNonFmaxFwd
+        //  //  && (
+        //  //    myDualRdBackExt.memAddr === myBackExt.memAddr
+        //  //  ) && (
+        //  //    myDualRdBackExt.rdMemWord =/= myBackExt.rdMemWord
+        //  //  )
+        //  //)
+        //}
+        //when (
+        //  io.dualRdBack.valid
+        //  && myDualRdBackExt.dbgWantNonFmaxFwd
+        //) {
+        //}
+      }
+    }
   }
+  // END: working dualRd?
   //--------
   //--------
   Builder(linkArr.toSeq)
@@ -1697,9 +2378,9 @@ case class PipeMemTest
     //Array.fill(cArr.size - 1)(Payload(Bool()))
     Payload(Bool())
   )
-  val frontDuplicateIt = (
-    Payload(Bool())
-  )
+  //val frontDuplicateIt = (
+  //  Payload(Bool())
+  //)
 
   //GenerationFlags.formal {
   //  when (pastValidAfterReset) {

@@ -432,7 +432,7 @@
 //  def mkHostSend(
 //    helperP: TlHelperBusParams,
 //    txnSourceWidth: Int,
-//  ) = TlHelperPipePayload(
+//  ) = new TlHelperPipePayload(
 //    helperP=helperP,
 //    isHost=true,
 //    isSend=true,
@@ -441,7 +441,7 @@
 //  def mkHostRecv(
 //    helperP: TlHelperBusParams,
 //    txnSourceWidth: Int,
-//  ) = TlHelperPipePayload(
+//  ) = new TlHelperPipePayload(
 //    helperP=helperP,
 //    isHost=true,
 //    isSend=false,
@@ -450,7 +450,7 @@
 //  def mkDeviceSend(
 //    helperP: TlHelperBusParams,
 //    txnSourceWidth: Int,
-//  ) = TlHelperPipePayload(
+//  ) = new TlHelperPipePayload(
 //    helperP=helperP,
 //    isHost=false,
 //    isSend=true,
@@ -459,7 +459,7 @@
 //  def mkDeviceRecv(
 //    helperP: TlHelperBusParams,
 //    txnSourceWidth: Int,
-//  ) = TlHelperPipePayload(
+//  ) = new TlHelperPipePayload(
 //    helperP=helperP,
 //    isHost=false,
 //    isSend=false,
@@ -521,14 +521,42 @@
 //      def numSendRdWrStages = 2
 //      val send = new Area {
 //        def busChan = bus.a
-//        val busMemA2d = Array.fill(numMemArrs)(
-//          Array.fill(numSendRdWrStages)(
-//            Mem(
-//              wordType=Flow(tilelink.ChannelA(p=p)),
-//              wordCount=busMemDepth,
-//            )
+//        //val busMemA2d = Array.fill(numMemArrs)(
+//        //  Array.fill(numSendRdWrStages)(
+//        //    Mem(
+//        //      wordType=Flow(tilelink.ChannelA(p=p)),
+//        //      wordCount=busMemDepth,
+//        //    )
+//        //  )
+//        //)
+//        def busMemWordType() = Flow(tilelink.ChannelA(p=p))
+//        def busMemModStageCnt = 1 // Tentative!
+//        def busMemModType() = (
+//          SamplePipeMemRmwModType[Flow[tilelink.ChannelA]](
+//            wordType=busMemWordType(),
+//            wordCount=busMemDepth,
+//            modStageCnt=busMemModStageCnt,
 //          )
 //        )
+//        /*val busMemArr = Array.fill(numMemArrs)*/
+//        val busMem = ({
+//          /*Array.fill(numSendRdWrStages)*/(
+//            PipeMemRmw[
+//              Flow[tilelink.ChannelA],                          // WordT
+//              SamplePipeMemRmwModType[Flow[tilelink.ChannelA]], // ModT
+//              SamplePipeMemRmwModType[Flow[tilelink.ChannelA]], // DualRdT
+//            ](
+//              wordType=busMemWordType(),
+//              wordCount=busMemDepth,
+//              modType=busMemModType(),
+//              modStageCnt=busMemModStageCnt,
+//              //memArrIdx=0,
+//              dualRdType=busMemModType(),
+//              optDualRd=true,
+//              forFmax=true,
+//            )
+//          )
+//        })
 //        val pipe = PipeHelper(linkArr=linkArr)
 //        def mkPipePayload() = TlHelperPipePayload.mkHostSend(
 //          helperP=helperP,
@@ -537,10 +565,10 @@
 //        val front = Stream(mkPipePayload())
 //        val pipePayload = Payload(mkPipePayload())
 //
-//        val cReadBusMem = pipe.addStage()
-//        //val cReadBusMemFf1 = pipe.addPipeStage()
-//        val cWriteBusMem = pipe.addStage()
-//        //val cWriteBusMemFf1 = pipe.addPipeStage()
+//        //val cReadBusMem = pipe.addStage("HostSendReadBusMem")
+//        ////val cReadBusMemFf1 = pipe.addPipeStage()
+//        //val cWriteBusMem = pipe.addStage("HostSendWriteBusMem")
+//        ////val cWriteBusMemFf1 = pipe.addPipeStage()
 //
 //        pipe.first.up.driveFrom(front)(
 //          con=(node, payload) => {
@@ -555,12 +583,40 @@
 //      }
 //      val recv = new Area {
 //        def busChan = bus.d
-//        val busMemArr = Array.fill(numMemArrs)(
-//          Mem(
-//            wordType=Flow(tilelink.ChannelD(p=p)),
+//        //val busMemArr = Array.fill(numMemArrs)(
+//        //  Mem(
+//        //    wordType=Flow(tilelink.ChannelD(p=p)),
+//        //    wordCount=busMemDepth,
+//        //  )
+//        //)
+//        def busMemWordType() = Flow(tilelink.ChannelD(p=p))
+//        def busMemModStageCnt = 1 // Tentative!
+//        def busMemModType() = (
+//          SamplePipeMemRmwModType[Flow[tilelink.ChannelD]](
+//            wordType=busMemWordType(),
 //            wordCount=busMemDepth,
+//            modStageCnt=busMemModStageCnt,
 //          )
 //        )
+//        val busMemArr = Array.fill(numMemArrs)({
+//          /*Array.fill(numSendRdWrStages)*/(
+//            PipeMemRmw[
+//              Flow[tilelink.ChannelD],                          // WordT
+//              SamplePipeMemRmwModType[Flow[tilelink.ChannelD]], // ModT
+//              SamplePipeMemRmwModType[Flow[tilelink.ChannelD]],
+//                // DualRdT
+//            ](
+//              wordType=busMemWordType(),
+//              wordCount=busMemDepth,
+//              modType=busMemModType(),
+//              modStageCnt=busMemModStageCnt,
+//              //memArrIdx=0,
+//              dualRdType=busMemModType(),
+//              optDualRd=true,
+//              forFmax=true,
+//            )
+//          )
+//        })
 //        val pipe = PipeHelper(linkArr=linkArr)
 //        def mkPipePayload() = TlHelperPipePayload.mkHostRecv(
 //          helperP=helperP,
@@ -569,10 +625,10 @@
 //        val back = Stream(mkPipePayload())
 //        val pipePayload = Payload(mkPipePayload())
 //
-//        val cReadBusMem = pipe.addStage()
-//        //val cReadBusMemFf1 = pipe.addPipeStage()
-//        val cWriteBusMem = pipe.addStage()
-//        //val cWriteBusMemFf1 = pipe.addPipeStage()
+//        //val cReadBusMem = pipe.addStage("HostRecvReadBusMem")
+//        ////val cReadBusMemFf1 = pipe.addPipeStage()
+//        //val cWriteBusMem = pipe.addStage("HostRecvWriteBusMem")
+//        ////val cWriteBusMemFf1 = pipe.addPipeStage()
 //
 //        pipe.first.up.driveFrom(bus.d)(
 //          con=(node, payload) => {
@@ -595,17 +651,21 @@
 //        //  }
 //        //)
 //      }
-//      val sendReadBusMem = new send.cReadBusMem.Area {
-//        def myBus = send.pipePayload.bus
-//        for (idx <- 0 until numSendRdWrStages) {
-//          myBus.a.rd := (
-//            send.busMemA2d(sendMemArrIdx)(idx).readSync(
-//              address=myBus.a.inp.source,
-//              //enable=isReady,
-//            )
-//          )
-//        }
-//      }
+//      //--------
+//      // BEGIN: new code
+//      //val sendReadBusMem = new send.cReadBusMem.Area {
+//      //  def myBus = send.pipePayload.bus
+//      //  //for (idx <- 0 until numSendRdWrStages) {
+//      //  //  myBus.a.rd := (
+//      //  //    send.busMemA2d(sendMemArrIdx)(idx).readSync(
+//      //  //      address=myBus.a.inp.source,
+//      //  //      //enable=isReady,
+//      //  //    )
+//      //  //  )
+//      //  //}
+//      //}
+//      // END: new code
+//      //--------
 //      //val sendReadBusMemFf1 = new send.cReadBusMemFf1.Area {
 //      //  //when (down.isFiring) {
 //      //  //} otherwise { // if (!down.isFiring)
@@ -615,23 +675,27 @@
 //      //  //} otherwise { // when (!isValid)
 //      //  //}
 //      //}
-//      val sendWriteBusMem = new send.cWriteBusMem.Area {
-//        //when 
-//        //when (down.isFiring) {
-//        //} otherwise { // if (!down.isFiring)
-//        //}
-//        //when (isValid) {
-//        //} otherwise { // when (!isValid)
-//        //}
-//        def myBus = send.pipePayload.bus
-//        for (stageIdx <- 0 until numSendRdWrStages) {
-//          send.busMemA2d(sendMemArrIdx)(stageIdx).write(
-//            address=myBus.a.inp.source,
-//            data=myBus.a.mkInpFlow(),
-//            enable=isValid && isReady,
-//          )
-//        }
-//      }
+//      //--------
+//      // BEGIN: new code
+//      //val sendWriteBusMem = new send.cWriteBusMem.Area {
+//      //  //when 
+//      //  //when (down.isFiring) {
+//      //  //} otherwise { // if (!down.isFiring)
+//      //  //}
+//      //  //when (isValid) {
+//      //  //} otherwise { // when (!isValid)
+//      //  //}
+//      //  def myBus = send.pipePayload.bus
+//      //  for (stageIdx <- 0 until numSendRdWrStages) {
+//      //    //send.busMemA2d(sendMemArrIdx)(stageIdx).write(
+//      //    //  address=myBus.a.inp.source,
+//      //    //  data=myBus.a.mkInpFlow(),
+//      //    //  enable=isValid && isReady,
+//      //    //)
+//      //  }
+//      //}
+//      // END: new code
+//      //--------
 //      //val sendWriteBusMemFf1 = new send.cWriteBusMemFf1.Area {
 //      //  //when (down.isFiring) {
 //      //  //} otherwise { // if (!down.isFiring)
@@ -644,8 +708,12 @@
 //      //}
 //      //val sendExecute = new send.cExecute.Area {
 //      //}
-//      val recvReadBusMem = new recv.cReadBusMem.Area {
-//      }
+//      //--------
+//      // BEGIN: new code
+//      //val recvReadBusMem = new recv.cReadBusMem.Area {
+//      //}
+//      // END: new code
+//      //--------
 //      //val recvFetch = new recv.cFetch.Area {
 //      //}
 //      //val recvDecode = new recv.cDecode.Area {
@@ -653,70 +721,70 @@
 //      //val recvExecute = new recv.cExecute.Area {
 //      //}
 //    }
-//    val device = (!isHost) generate new Area {
-//      val send = new Area {
-//        def busChan = bus.d
-//        val busMemArr = Array.fill(numMemArrs)(
-//          Mem(
-//            wordType=Flow(tilelink.ChannelD(p=p)),
-//            wordCount=busMemDepth,
-//          )
-//        )
-//        val pipe = PipeHelper(linkArr=linkArr)
-//        def mkPipePayload() = TlHelperPipePayload.mkDeviceSend(
-//          helperP=helperP,
-//          txnSourceWidth=txnSourceWidth,
-//        )
-//        val front = Stream(mkPipePayload())
-//        val pipePayload = Payload(mkPipePayload())
+//    //val device = (!isHost) generate new Area {
+//    //  val send = new Area {
+//    //    def busChan = bus.d
+//    //    val busMemArr = Array.fill(numMemArrs)(
+//    //      Mem(
+//    //        wordType=Flow(tilelink.ChannelD(p=p)),
+//    //        wordCount=busMemDepth,
+//    //      )
+//    //    )
+//    //    val pipe = PipeHelper(linkArr=linkArr)
+//    //    def mkPipePayload() = TlHelperPipePayload.mkDeviceSend(
+//    //      helperP=helperP,
+//    //      txnSourceWidth=txnSourceWidth,
+//    //    )
+//    //    val front = Stream(mkPipePayload())
+//    //    val pipePayload = Payload(mkPipePayload())
 //
-//        val cReadBusMem = pipe.addStage()
-//        val cWriteBusMem = pipe.addStage()
+//    //    //val cReadBusMem = pipe.addStage("DeviceSendReadBusMem")
+//    //    //val cWriteBusMem = pipe.addStage("DeviceSendWriteBusMem")
 //
-//        pipe.first.up.driveFrom(front)(
-//          con=(node, payload) => {
-//            node(pipePayload) := payload
-//          }
-//        )
-//        pipe.last.down.driveTo(bus.d)(
-//          con=(payload, node) => {
-//            payload := node(pipePayload).bus.d.inp
-//          }
-//        )
-//      }
-//      val recv = new Area {
-//        def busChan = bus.a
-//        val busMemArr = Array.fill(numMemArrs)(
-//          Mem(
-//            wordType=Flow(tilelink.ChannelA(p=p)),
-//            wordCount=busMemDepth,
-//          )
-//        )
-//        val pipe = PipeHelper(linkArr=linkArr)
-//        def mkPipePayload() = TlHelperPipePayload.mkDeviceRecv(
-//          helperP=helperP,
-//          txnSourceWidth=txnSourceWidth,
-//        )
-//        val back = Stream(mkPipePayload())
-//        val pipePayload = Payload(mkPipePayload())
+//    //    pipe.first.up.driveFrom(front)(
+//    //      con=(node, payload) => {
+//    //        node(pipePayload) := payload
+//    //      }
+//    //    )
+//    //    pipe.last.down.driveTo(bus.d)(
+//    //      con=(payload, node) => {
+//    //        payload := node(pipePayload).bus.d.inp
+//    //      }
+//    //    )
+//    //  }
+//    //  val recv = new Area {
+//    //    def busChan = bus.a
+//    //    val busMemArr = Array.fill(numMemArrs)(
+//    //      Mem(
+//    //        wordType=Flow(tilelink.ChannelA(p=p)),
+//    //        wordCount=busMemDepth,
+//    //      )
+//    //    )
+//    //    val pipe = PipeHelper(linkArr=linkArr)
+//    //    def mkPipePayload() = TlHelperPipePayload.mkDeviceRecv(
+//    //      helperP=helperP,
+//    //      txnSourceWidth=txnSourceWidth,
+//    //    )
+//    //    val back = Stream(mkPipePayload())
+//    //    val pipePayload = Payload(mkPipePayload())
 //
-//        val cReadBusMem = pipe.addStage()
-//        val cWriteBusMem = pipe.addStage()
+//    //    //val cReadBusMem = pipe.addStage("DeviceRecvReadBusMem")
+//    //    //val cWriteBusMem = pipe.addStage("DeviceRecvWriteBusMem")
 //
-//        pipe.first.up.driveFrom(bus.a)(
-//          con=(node, payload) => {
-//            node(pipePayload) := node(pipePayload).getZero
-//            node(pipePayload).allowOverride
-//            node(pipePayload).bus.a.inp := payload
-//          }
-//        )
-//        pipe.last.down.driveTo(back)(
-//          con=(payload, node) => {
-//            payload := node(pipePayload)
-//          }
-//        )
-//      }
-//    }
+//    //    pipe.first.up.driveFrom(bus.a)(
+//    //      con=(node, payload) => {
+//    //        node(pipePayload) := node(pipePayload).getZero
+//    //        node(pipePayload).allowOverride
+//    //        node(pipePayload).bus.a.inp := payload
+//    //      }
+//    //    )
+//    //    pipe.last.down.driveTo(back)(
+//    //      con=(payload, node) => {
+//    //        payload := node(pipePayload)
+//    //      }
+//    //    )
+//    //  }
+//    //}
 //    //Builder(linkArr.toSeq)
 //  }
 //  def doBuilder() = {

@@ -2210,10 +2210,10 @@ case class Gpu2d(
             wordCount=wordCount,
             modType=modType(),
             modStageCnt=modStageCnt,
-            forFmax=(
-              //true
-              false
-            ),
+            //forFmax=(
+            //  //true
+            //  false
+            //),
             //forFmax=false,
           )
             .setName(f"myPipeMemRmw_objTileMemArr_$idx")

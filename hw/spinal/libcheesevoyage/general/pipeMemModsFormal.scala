@@ -23,22 +23,24 @@ object PipeMemRmwFormal extends App {
     wordCount=wordCount,
     modStageCnt=modStageCnt,
   )
-  def forFmax = (
-    //true
-    false
-  )
+  //def forFmax = (
+  //  //true
+  //  false
+  //)
   //--------
   case class PipeMemRmwFormalDut() extends Component {
     val dut = FormalDut(PipeMemRmw[
       UInt,
       SamplePipeMemRmwModType[UInt],
-      PipeMemRmwDualRdTypeDisabled[UInt],
+      SamplePipeMemRmwModType[UInt],
     ](
       wordType=wordType(),
       wordCount=wordCount,
       modType=modType(),
       modStageCnt=modStageCnt,
-      forFmax=forFmax,
+      dualRdType=modType(),
+      optDualRd=true,
+      //forFmax=forFmax,
     ))
 
     assumeInitial(clockDomain.isResetActive)
@@ -47,11 +49,20 @@ object PipeMemRmwFormal extends App {
     def modBack = dut.io.modBack
     def back = dut.io.back
 
+    def dualRdFront = dut.io.dualRdFront
+    def dualRdBack = dut.io.dualRdBack
+
     assumeInitial(front.payload === front.payload.getZero)
     assumeInitial(front.valid === front.valid.getZero)
     anyseq(front.payload)
     anyseq(front.valid)
     //front.valid := True
+    assumeInitial(dualRdFront.payload === dualRdFront.payload.getZero)
+    assumeInitial(dualRdFront.valid === dualRdFront.valid.getZero)
+    anyseq(dualRdFront.payload)
+    anyseq(dualRdFront.valid)
+    //dualRdFront.valid := True
+    //dualRdFront.valid := front.valid
 
     //assumeInitial(modFront.ready)
     //anyseq(modFront.ready)
@@ -61,38 +72,51 @@ object PipeMemRmwFormal extends App {
     //anyseq(modBack.payload)
     //anyseq(modBack.valid)
     val modFrontStm = Stream(modType())
+    val modMidStm = Stream(modType())
     val modBackStm = Stream(modType())
     modFrontStm <-/< modFront
     modFrontStm.translateInto(
-      into=modBackStm
+      into=modMidStm
     )(
       dataAssignment=(
-        modBackPayload,
+        modMidPayload,
         modFrontPayload,
       ) => {
-        //modBackPayload.myExt := modFrontPayload.myExt
-        modBackPayload := modFrontPayload
-        modBackPayload.myExt.allowOverride
-        modBackPayload.myExt.modMemWord := (
+        //modMidPayload.myExt := modFrontPayload.myExt
+        modMidPayload := modFrontPayload
+        modMidPayload.myExt.allowOverride
+        modMidPayload.myExt.modMemWord := (
           modFrontPayload.myExt.rdMemWord + 0x1
         )
         when (
           modFrontPayload.myExt.hazardId.msb
         ) {
-          modBackPayload.myExt.dbgModMemWord := (
-            modBackPayload.myExt.modMemWord
+          modMidPayload.myExt.dbgModMemWord := (
+            modMidPayload.myExt.modMemWord
           )
         } otherwise {
-          modBackPayload.myExt.dbgModMemWord := 0x0
+          modMidPayload.myExt.dbgModMemWord := 0x0
         }
       }
     )
+    //modBackStm <-/< modMidStm
+    modBackStm << modMidStm
+    //when (
+    //  dut.io.back ===
+    //)
     //modBack <-/< modBackStm
     modBack << modBackStm
+
 
     assumeInitial(back.ready)
     anyseq(back.ready)
     //back.ready := True
+    //back.ready := !(RegNext(back.ready) init(False))
+    assumeInitial(dualRdBack.ready)
+    anyseq(dualRdBack.ready)
+
+    //dualRdBack.ready := !(RegNext(dualRdBack.ready) init(False))
+    //dualRdBack.ready := back.ready
   }
   //--------
   new SpinalFormalConfig(
@@ -103,8 +127,9 @@ object PipeMemRmwFormal extends App {
     ).includeFormal,
     _keepDebugInfo=true,
   )
-    .withProve(40)
-    .withCover(60)
+    //.withBMC(20)
+    .withProve(20)
+    .withCover(20)
     .doVerify(PipeMemRmwFormalDut())
   //--------
 }

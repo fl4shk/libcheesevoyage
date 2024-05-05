@@ -927,19 +927,25 @@ case class Gpu2dTest(
           //  //mkBgEntry(4, 5)
           //  //mkBgEntry(4, 4)
           //} otherwise 
-          //when (
-          //  //rBgEntryCnt < 128
-          //  //rBgEntryCnt < (1 << params.bgEntryMemIdxWidth)
-          //) {
+          when (
+            //rBgEntryCnt < 128
+            //rBgEntryCnt < (1 << params.bgEntryMemIdxWidth)
+            if (rBgEntryCnt.getWidth > tempBgEntry.tileIdx.getWidth) (
+              rBgEntryCnt.resized
+              < (1 << tempBgEntry.tileIdx.getWidth)
+            ) else (
+              True
+            )
+          ) {
             tempBgEntry.tileIdx := rBgEntryCnt.asUInt.resized
             tempBgEntry.dispFlip.x := False
             tempBgEntry.dispFlip.y := False
-          //} otherwise {
-          //  tempBgEntry := tempBgEntry.getZero
-          //  //when (rBgEntryCnt >= params.numBgEntrys) {
-          //  //  rBgEntryPushValid := False
-          //  //}
-          //}
+          } otherwise {
+            tempBgEntry := tempBgEntry.getZero
+            //when (rBgEntryCnt >= params.numBgEntrys) {
+            //  rBgEntryPushValid := False
+            //}
+          }
           nextBgEntryCnt := rBgEntryCnt + 1
         } otherwise {
           tempBgEntry := tempBgEntry.getZero

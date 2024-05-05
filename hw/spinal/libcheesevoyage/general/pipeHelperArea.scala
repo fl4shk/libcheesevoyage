@@ -69,8 +69,10 @@ case class PipeHelper(
     assert(!didFinish)
     didFinish = finish
 
-    if (finish) {
-      nArr += s2mArr.last.down.setName(f"n$name")
+    def doFinish(
+      nName: String
+    ): Unit = {
+      nArr += s2mArr.last.down.setName(f"n$nName")
       cArr += CtrlLink(
         up={
           nArr.last
@@ -78,7 +80,11 @@ case class PipeHelper(
         down=Node()
       )
       linkArr += cArr.last
-    } else { // if (!finish)
+    }
+
+    if (finish && nArr.size > 0) {
+      doFinish(nName=name)
+    } else { // if (!(finish && nArr.size > 0))
       if (nArr.size == 0) {
         nArr += Node().setName(f"n$name")
       } else {
@@ -94,7 +100,11 @@ case class PipeHelper(
           //  //last.down//.setName(f"n$name")
           //}
         },
-        down=Node()
+        down={
+          val myDown = Node()
+          myDown.setName(f"n$name" + "_down")
+          myDown
+        }
       )//.setName(f"c$name")
       linkArr += cArr.last
 
@@ -109,6 +119,10 @@ case class PipeHelper(
         down=Node(),
       )//.setName(f"s2m$name")
       linkArr += s2mArr.last
+
+      if (finish) {
+        doFinish(nName=(name + "_Last"))
+      }
     }
 
     cArr.last
