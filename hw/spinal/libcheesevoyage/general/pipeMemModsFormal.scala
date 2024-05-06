@@ -23,10 +23,10 @@ object PipeMemRmwFormal extends App {
     wordCount=wordCount,
     modStageCnt=modStageCnt,
   )
-  //def forFmax = (
-  //  //true
-  //  false
-  //)
+  def forFmax = (
+    true
+    //false
+  )
   //--------
   case class PipeMemRmwFormalDut() extends Component {
     val dut = FormalDut(PipeMemRmw[
@@ -40,7 +40,7 @@ object PipeMemRmwFormal extends App {
       modStageCnt=modStageCnt,
       dualRdType=modType(),
       optDualRd=true,
-      //forFmax=forFmax,
+      forFmax=forFmax,
     ))
 
     assumeInitial(clockDomain.isResetActive)
@@ -129,7 +129,10 @@ object PipeMemRmwFormal extends App {
   )
     //.withBMC(20)
     .withProve(20)
-    .withCover(20)
+    .withCover(
+      //20
+      40
+    )
     .doVerify(PipeMemRmwFormalDut())
   //--------
 }

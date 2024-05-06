@@ -175,6 +175,59 @@ case class Gpu2dTest(
       tempArr.toSeq
     })
   }
+  val objTileMem = {
+    def wordType() = Gpu2dTileSlice(
+      params=params,
+      isObj=true,
+      isAffine=false,
+      doPipeMemRmw=false
+    )
+    val rawArrFgCommon = Gpu2dTestGfx.fgCommonTileArr
+    //val rawArrFgGrassland = Gpu2dTestGfx.fgGrasslandTileArr
+    val myPxsSliceWidth = (
+      Gpu2dTileSlice.pxsSliceWidth(
+        params=params,
+        isObj=true,
+        isAffine=false,
+      )
+    )
+    val wordCount = (
+      //Gpu2dTestGfx.fgCommonTileArr.size << 1
+      //(rawArr.size << 1) >> log2Up(myPxsSliceWidth)
+      //(rawArrFgCommon.size + rawArrFgGrassland.size)
+      (rawArrFgCommon.size)
+      >> log2Up(myPxsSliceWidth)
+      //rawArr.size / myColIdxWidth
+      //rawArr.size << 1
+    )
+    //println(wordCount, rawArr.size, myPxsSliceWidth)
+    Mem(
+      wordType=wordType(),
+      wordCount=wordCount,
+    )
+    .init({
+      val tempArr = new ArrayBuffer[Gpu2dTileSlice]()
+      for (idx <- 0 until rawArrFgCommon.size) {
+        if ((idx % myPxsSliceWidth) == 0) {
+          tempArr += wordType()
+        }
+        def myTileSlice = tempArr.last
+        myTileSlice.colIdxVec(idx % myPxsSliceWidth) := (
+          rawArrFgCommon(idx)
+        )
+      }
+      //for (idx <- 0 until rawArrFgGrassland.size) {
+      //  if ((idx % myPxsSliceWidth) == 0) {
+      //    tempArr += wordType()
+      //  }
+      //  def myTileSlice = tempArr.last
+      //  myTileSlice.colIdxVec(idx % myPxsSliceWidth) := (
+      //    rawArrFgGrassland(idx)
+      //  )
+      //}
+      tempArr.toSeq
+    })
+  }
   val objPalMem = {
     def wordCount = (
       //Gpu2dTestGfx.palette.size >> 1
@@ -724,7 +777,21 @@ case class Gpu2dTest(
       //  //  rBgTilePushValid := False
       //  //}
       //}
-      when (rBgTileCnt < bgTileMem.wordCount) {
+      when (
+        //rBgTileCnt < bgTileMem.wordCount
+        //tempBgTileCnt < bgTileMem.wordCount
+        //if (
+        //  (1 << tempBgTileCnt.getWidth) < bgTileMem.wordCount
+        //) (
+        //  True
+        //) else (
+          //tempBgTileCnt.resized < bgTileMem.wordCount
+          Cat(
+            U(s"${log2Up(bgTileMem.wordCount)}'d0"),
+            tempBgTileCnt 
+          ).asUInt < bgTileMem.wordCount
+        //)
+      ) {
         tempBgTileSlice := bgTileMem.readAsync(
           address=rBgTileCnt.asUInt.resized
         )
@@ -792,12 +859,12 @@ case class Gpu2dTest(
   //val myDefaultBgScroll = cloneOf(tempBgAttrs.scroll)
   val myDefaultBgScroll = ElabVec2[Int](
     x=(
-      0
+      //0
       //////2
       ////params.bgTileSize2d.x
       ////+ 2
       //////+ 1
-      ////params.bgTileSize2d.x * 5
+      params.bgTileSize2d.x * 5
       ////0x29
       //(
       //  (1 << tempBgAttrs.scroll.x.getWidth) - 32
@@ -1012,7 +1079,8 @@ case class Gpu2dTest(
 
   def extraObjTileCntWidth = (
     if (dbgPipeMemRmw) {
-      2
+      //2
+      0
     } else {
       0
     }
@@ -1024,8 +1092,18 @@ case class Gpu2dTest(
     + extraObjTileCntWidth
     bits
   )
-  val rObjTileCnt = RegNext(nextObjTileCnt) init(-1)
-  val rObjTilePushValid = Reg(Bool()) init(True)
+  val rObjTileCnt = (
+    //RegNext(nextObjTileCnt) init(0x0)
+    RegNextWhen(nextObjTileCnt, pop.objTilePush.fire) init(0)
+  )
+  val nextObjTilePushValid = Bool()
+  val rObjTilePushValid = RegNext(nextObjTilePushValid) init(False)
+  nextObjTilePushValid := rObjTilePushValid
+  when (
+    pop.objTilePush.ready
+  ) {
+    nextObjTilePushValid := True
+  }
 
   def mkObjTile(
     colIdx0: Int,
@@ -1127,91 +1205,153 @@ case class Gpu2dTest(
   tempObjTileSlice := tempObjTileSlice.getZero
   tempObjTileSlice.allowOverride
 
-  nextObjTileCnt := rObjTileCnt
-  when (
-    tempObjTileCnt
-    //< (params.numObjTiles << extraObjTileCntWidth)
-    < params.numObjTiles
-  ) {
-    when (pop.objTilePush.fire) {
-      when (tempObjTileCnt === 0) {
-        //mkObjTile(0, 1)
-        mkObjTile(0, 0)
-        //tempObjTileSlice := tempObjTileSlice.getZero
-      } elsewhen (tempObjTileCnt === 1) {
-        //tempObjTile := tempObjTile.getZero
-        mkObjTile(1, 2, Some(3), Some(4))
-        //mkObjTile(1, 1)
-        //mkObjTile(3, 3)
-        //mkObjTile(2, 3)
-      } elsewhen (tempObjTileCnt === 2) {
-        //mkObjTile(2, 3)
-        //mkObjTile(3, 4)
-        mkObjTile(2, 2)
-        //mkObjTile(2, 2)
-      } elsewhen (tempObjTileCnt === 3) {
-        //mkObjTile(3, 4)
-        mkObjTile(3, 3)
-        //mkObjTile(0, 1)
-      } elsewhen (tempObjTileCnt === 4) {
-        //mkObjTile(4, 5)
-        mkObjTile(4, 4)
+  //nextObjTileCnt := rObjTileCnt
+  //when (
+  //  tempObjTileCnt + 1
+  //  //< (params.numObjTiles << extraObjTileCntWidth)
+  //  < params.numObjTiles
+  //) {
+    //when (pop.objTilePush.fire) {
+      //--------
+      // BEGIN: old, geometrical shapes graphics
+      //when (tempObjTileCnt === 0) {
+      //  //mkObjTile(0, 1)
+      //  mkObjTile(0, 0)
+      //  //tempObjTileSlice := tempObjTileSlice.getZero
+      //} elsewhen (tempObjTileCnt === 1) {
+      //  //tempObjTile := tempObjTile.getZero
+      //  mkObjTile(1, 2, Some(3), Some(4))
+      //  //mkObjTile(1, 1)
+      //  //mkObjTile(3, 3)
+      //  //mkObjTile(2, 3)
+      //} elsewhen (tempObjTileCnt === 2) {
+      //  //mkObjTile(2, 3)
+      //  //mkObjTile(3, 4)
+      //  mkObjTile(2, 2)
+      //  //mkObjTile(2, 2)
+      //} elsewhen (tempObjTileCnt === 3) {
+      //  //mkObjTile(3, 4)
+      //  mkObjTile(3, 3)
+      //  //mkObjTile(0, 1)
+      //} elsewhen (tempObjTileCnt === 4) {
+      //  //mkObjTile(4, 5)
+      //  mkObjTile(4, 4)
+      //} otherwise {
+      //  tempObjTileSlice := tempObjTileSlice.getZero
+      //  //when (tempObjTileCnt >= params.numObjTiles) {
+      //  //  rObjTilePushValid := False
+      //  //}
+      //}
+      when (
+        //rObjTileCnt < objTileMem.wordCount
+        //if (
+        //  (1 << tempObjTileCnt.getWidth) < objTileMem.wordCount
+        //) (
+        //  True
+        //) else (
+          Cat(
+            U(s"${log2Up(objTileMem.wordCount)}'d0"),
+            tempObjTileCnt 
+          ).asUInt < objTileMem.wordCount
+        //)
+      ) {
+        tempObjTileSlice := objTileMem.readAsync(
+          address=rObjTileCnt.asUInt.resized
+        )
       } otherwise {
         tempObjTileSlice := tempObjTileSlice.getZero
-        //when (tempObjTileCnt >= params.numObjTiles) {
-        //  rObjTilePushValid := False
-        //}
       }
       nextObjTileCnt := rObjTileCnt + 1
-    } otherwise {
-      ////tempObjTileSlice := tempObjTileSlice.getZero
-      //nextObjTileCnt := rObjTileCnt
-    }
-  } otherwise {
-    ////tempObjTileSlice := tempObjTileSlice.getZero
-    //nextObjTileCnt := rObjTileCnt
-  }
+    //} otherwise {
+    //  ////tempObjTileSlice := tempObjTileSlice.getZero
+    //  //nextObjTileCnt := rObjTileCnt
+    //}
+  //} otherwise {
+  //  ////tempObjTileSlice := tempObjTileSlice.getZero
+  //  //nextObjTileCnt := rObjTileCnt
+  //}
+  val tempObjTileCond = (
+    (rObjTileCnt + 1)
+    (
+      (
+        rObjTileCnt.high - extraObjTileCntWidth
+      ) downto (
+        params.objTileSize2dPow.y
+        //+ params.objSliceTileWidthPow
+        + params.objTileWidthRshift
+        ////+ extraObjTileCntWidth
+        //+ extraObjTileCntWidth
+      )
+    ) >= params.numObjTiles
+  )
+    .addAttribute("keep")
 
   when (
-    tempObjTileCnt
-    >= (
-      //params.numObjTiles - 1
-      params.numObjTiles
-      //<< extraObjTileCntWidth
-    )
+    tempObjTileCond
+    //tempObjTileCnt //+ 1
+    //>= (
+    //  params.numObjTiles - 1
+    //  //params.numObjTiles
+    //  //<< extraObjTileCntWidth
+    //)
+    //tempObjTileCnt + 1 === params.numObjTiles
+    //(rObjTileCnt + 1)
+    //>= (1 << params.objTileSliceMemIdxWidth)
   ) {
     nextObjTileCnt := 0x0
     //rObjTilePushValid := False
   }
-  val rTempForceWrVec = Vec.fill(params.numObjTiles)(
-    Reg(Bool()) init(True)
-  )
+  //val rTempForceWrVec = Vec.fill(params.numObjTiles)(
+  //  Reg(Bool()) init(True)
+  //)
+  pop.objTilePush.forceWr := False
 
-  if (dbgPipeMemRmw) {
-    pop.objTilePush.forceWr := False
-    when (
-      rObjTileCnt(
-        extraObjTileCntWidth - 1
-        downto 0
-      ) === 0x0
-    ) {
-      def temp: Bool = (
-        rTempForceWrVec(tempObjTileCnt.asUInt(
-          params.numObjTilesPow - 1 downto 0
-        ))
-      )
-      when (!temp) {
-        pop.objTilePush.forceWr := True
-        temp := True
-      } otherwise {
-        pop.objTilePush.forceWr := False
-      }
-    }
-  }
-  pop.objTilePush.valid := rObjTilePushValid
+  //if (dbgPipeMemRmw) {
+  //  pop.objTilePush.forceWr := False
+  //  when (
+  //    rObjTileCnt(
+  //      extraObjTileCntWidth - 1
+  //      downto 0
+  //    ) === 0x0
+  //  ) {
+  //    def temp: Bool = (
+  //      rTempForceWrVec(tempObjTileCnt.asUInt(
+  //        params.numObjTilesPow - 1 downto 0
+  //      ))
+  //    )
+  //    when (!temp) {
+  //      pop.objTilePush.forceWr := True
+  //      temp := True
+  //    } otherwise {
+  //      pop.objTilePush.forceWr := False
+  //    }
+  //  }
+  //}
+  pop.objTilePush.valid := (
+    //nextObjTilePushValid
+    rObjTilePushValid
+  )
   pop.objTilePush.payload.tileSlice := tempObjTileSlice
   pop.objTilePush.payload.memIdx := (
     rObjTileCnt.asUInt(pop.objTilePush.payload.memIdx.bitsRange)
+    //rObjTileCnt.asUInt(
+    //  rObjTileCnt.high downto extraObjTileCntWidth
+    //).resized
+    //--------
+    //(rObjTileCnt >> extraObjTileCntWidth).asUInt(
+    //  pop.objTilePush.payload.memIdx.bitsRange
+    //)
+    //rObjTileCnt.asUInt
+    //--------
+    //tempObjTileCnt.asUInt(
+    //  tempObjTileCnt.getWidth - 1
+    //  .min(pop.objTilePush.payload.memIdx.getWidth)
+    //  downto 0
+    //)
+    //(
+    //  pop.objTilePush.payload.memIdx.bitsRange
+    //)
+      //.resized
   )
   //--------
   def objPalCntWidth = params.numColsInObjPalPow + 1
@@ -1342,7 +1482,8 @@ case class Gpu2dTest(
     //8
   )
   def myTileFracWidth = (
-    4
+    //4
+    1
   )
   val rBgScroll = (
     Reg(DualTypeNumVec2[UInt, UInt](

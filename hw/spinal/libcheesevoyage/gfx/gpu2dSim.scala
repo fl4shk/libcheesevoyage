@@ -261,6 +261,8 @@ object Gpu2dSim extends App {
       //y=log2Up(2),
     ),
     objTileSize2dPow=ElabVec2[Int](
+      //x=log2Up(16),
+      //y=log2Up(16),
       x=log2Up(8),
       y=log2Up(8),
       //x=log2Up(4),
@@ -269,8 +271,8 @@ object Gpu2dSim extends App {
       //y=log2Up(2),
     ),
     objTileWidthRshift=(
-      //0
-      1
+      0
+      //1
     ),
     //objTileWidthRshift=1,
     objAffineTileSize2dPow=ElabVec2[Int](
@@ -298,7 +300,10 @@ object Gpu2dSim extends App {
     //numObjsPow=log2Up(2),
     //numObjsPow=log2Up(4),
     //numObjsPow=log2Up(8),
-    numObjsPow=log2Up(16),
+    numObjsPow=(
+      //log2Up(16)
+      log2Up(8)
+    ),
     numObjsAffinePow=(
       //log2Up(16)
       log2Up(4)
@@ -312,7 +317,10 @@ object Gpu2dSim extends App {
       1024
     ),
     //numObjTilesPow=None,
-    numObjTiles=Some(16),
+    numObjTiles=Some(
+      //16
+      64
+    ),
     numObjAffineTiles=Some(16),
     numColsInBgPalPow=(
       //log2Up(256)
@@ -325,8 +333,8 @@ object Gpu2dSim extends App {
     noColorMath=true,
     noAffineBgs=true,
     noAffineObjs=(
-      //true
-      false
+      true
+      //false
     ),
     //fancyObjPrio=false,
     fancyObjPrio=true,
@@ -437,6 +445,10 @@ object Gpu2dSim extends App {
       gpu2dParams=gpu2dParams,
       ctrlFifoDepth=ctrlFifoDepth,
       optRawSnesButtons=true,
+      dbgPipeMemRmw=(
+        true
+        //false
+      ),
     ))
     .doSim { dut =>
       dut.clockDomain.forkStimulus(period=10)
@@ -449,9 +461,10 @@ object Gpu2dSim extends App {
       dut.io.rawSnesButtons.payload #= (
         (
           (1 << 16) - 1
-        ) & ~(
-          1 << SnesButtons.DpadRight
         )
+        //& ~(
+        //  1 << SnesButtons.DpadRight
+        //)
       )
       def simNumClks = (
         //16000

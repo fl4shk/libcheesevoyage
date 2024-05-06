@@ -411,7 +411,7 @@ case class PipeMemRmw[
   optDualRd: Boolean=false,
   //dualRdSize: Int=0,
   initBigInt: Option[Seq[BigInt]]=None,
-  //forFmax: Boolean=false,
+  forFmax: Boolean=false,
 )
 //(
 //  getModAddr: (
@@ -590,10 +590,14 @@ extends Component {
           node(pipePayload) := payload 
         }
       )
-      val rTempWord = (debug) generate (
-        Reg(wordType()) addAttribute("keep")
+      val rTempWord = /*(debug) generate*/ (
+        Reg(wordType())
+        addAttribute("keep")
       )
-      if (debug) {
+      if (
+        //debug
+        true
+      ) {
         rTempWord.init(rTempWord.getZero)
       }
       //when (cBack.up.isValid) {
@@ -827,13 +831,13 @@ extends Component {
             nextDuplicateIt := True
             nextHazardId := (
               modStageCnt
-              //- (
-              //  //if (!forFmax) (
-              //  //  1
-              //  //) else (
-              //    0 
-              //  //)
-              //)
+              - (
+                if (!forFmax) (
+                  1
+                ) else (
+                  0 
+                )
+              )
             )
           }
         }
@@ -936,58 +940,66 @@ extends Component {
     //)
     //--------
     //--------
-    upExt(1).rdMemWord := modMem.readSync(
+    //upExt(1).rdMemWord := (
+    //  RegNext(upExt(1).rdMemWord) init(upExt(1).rdMemWord.getZero)
+    //)
+    //when (up.isValid) {
+    //  upExt(1).rdMemWord := modMem.readSync(
+    //    address=upExt(1).memAddr
+    //  )
+    //}
+    upExt(1).rdMemWord := modMem.readAsync(
       address=upExt(1).memAddr
     )
     //--------
-    val rUpExtDel = Vec.fill(modStageCnt + 1)(
-      Reg(cloneOf(upExt(1))) init(upExt(1).getZero)
+    //val rUpExtDel = Vec.fill(modStageCnt + 1)(
+    //  Reg(cloneOf(upExt(1))) init(upExt(1).getZero)
+    //)
+    //for (idx <- 0 until rUpExtDel.size) {
+    //  when (up.isFiring) {
+    //    if (idx == 0) {
+    //      rUpExtDel(idx) := upExt(1)
+    //    } else {
+    //      rUpExtDel(idx) := rUpExtDel(idx - 1)
+    //    }
+    //  }
+    //}
+    def wantNonFmaxFwd(
+      //someUpMemAddr: UInt//=upExt(1).memAddr
+      //someNode: NodeApi,
+      someExt: PipeMemRmwPayloadExt[WordT]
+    ): Bool = (
+      if (!forFmax) (
+        //someExt.hazardId.msb
+        ////backUpExt.hazardId === 0
+        //&&
+        backUpExt.hazardId.msb
+        //&& mod.back.cBack.up.isFiring
+        && mod.back.cBack.up.isValid
+        //&& someNode.isValid
+        //&& upExt(1).memAddr === backUpExt.memAddr
+        //&& someUpMemAddr === backUpExt.memAddr
+        && someExt.memAddr === backUpExt.memAddr
+        //&& someExt.memAddr === rUpExtDel(rUpExtDel.size - 1).memAddr
+        //&& someExt.fwdId === backUpExt.fwdId
+      ) else (
+        False
+      )
     )
-    for (idx <- 0 until rUpExtDel.size) {
-      when (up.isFiring) {
-        if (idx == 0) {
-          rUpExtDel(idx) := upExt(1)
-        } else {
-          rUpExtDel(idx) := rUpExtDel(idx - 1)
-        }
-      }
-    }
-    //def wantNonFmaxFwd(
-    //  //someUpMemAddr: UInt//=upExt(1).memAddr
-    //  //someNode: NodeApi,
-    //  someExt: PipeMemRmwPayloadExt[WordT]
-    //): Bool = (
-    //  if (!forFmax) (
-    //    //someExt.hazardId.msb
-    //    ////backUpExt.hazardId === 0
-    //    //&&
-    //    backUpExt.hazardId.msb
-    //    //&& mod.back.cBack.up.isFiring
-    //    && mod.back.cBack.up.isValid
-    //    //&& someNode.isValid
-    //    //&& upExt(1).memAddr === backUpExt.memAddr
-    //    //&& someUpMemAddr === backUpExt.memAddr
-    //    && someExt.memAddr === backUpExt.memAddr
-    //    //&& someExt.memAddr === rUpExtDel(rUpExtDel.size - 1).memAddr
-    //    //&& someExt.fwdId === backUpExt.fwdId
-    //  ) else (
-    //    False
-    //  )
-    //)
     //--------
-    //def getNonFmaxFwd() = (
-    //  backUpExt.modMemWord
-    //)
-    //def getNonFmaxFwdOutp(
-    //  someExt: PipeMemRmwPayloadExt[WordT]
-    //) = {
-    //  someExt.rdMemWord
-    //}
-    //def perfNonFmaxFwd(
-    //  someExt: PipeMemRmwPayloadExt[WordT]
-    //): Unit = {
-    //  getNonFmaxFwdOutp(someExt=someExt) := getNonFmaxFwd()
-    //}
+    def getNonFmaxFwd() = (
+      backUpExt.modMemWord
+    )
+    def getNonFmaxFwdOutp(
+      someExt: PipeMemRmwPayloadExt[WordT]
+    ) = {
+      someExt.rdMemWord
+    }
+    def perfNonFmaxFwd(
+      someExt: PipeMemRmwPayloadExt[WordT]
+    ): Unit = {
+      getNonFmaxFwdOutp(someExt=someExt) := getNonFmaxFwd()
+    }
     //val rDbgNonMaxFwdCnt = (
     //  Reg(cloneOf(upExt(1).dbgNonFmaxFwdCnt)) //init(0x0)
     //)
@@ -1018,32 +1030,32 @@ extends Component {
       //    //rDbgNonMaxFwdCnt := rDbgNonMaxFwdCnt + 1
       //  }
       //}
-      //if (!forFmax) {
-      //  when (wantNonFmaxFwd(
-      //    //someNode=up,
-      //    someExt=upExt(1),
-      //  )) {
-      //    //upExt(1).rdMemWord := getNonFmaxForward()
-      //    perfNonFmaxFwd(someExt=upExt(1))
-      //  } otherwise {
-      //    //upExt(1).rdMemWord := modMem.readSync(
-      //    //  address=upExt(1).memAddr
-      //    //)
-      //  }
-      //} else { // if (forFmax)
-      //  ////when (
-      //  ////  !nextHazardId
-      //  ////)
-      //  ////when (nextDuplicateIt) {
-      //  ////  upExt(1).rdMemWord := upExt(1).rdMemWord.getZero
-      //  ////} otherwise {
-      //  //  //--------
-      //  //  upExt(1).rdMemWord := modMem.readSync(
-      //  //    address=upExt(1).memAddr,
-      //  //  )
-      //  //  //--------
-      //  ////}
-      //}
+      if (!forFmax) {
+        when (wantNonFmaxFwd(
+          //someNode=up,
+          someExt=upExt(1),
+        )) {
+          //upExt(1).rdMemWord := getNonFmaxForward()
+          perfNonFmaxFwd(someExt=upExt(1))
+        } otherwise {
+          //upExt(1).rdMemWord := modMem.readSync(
+          //  address=upExt(1).memAddr
+          //)
+        }
+      } else { // if (forFmax)
+        ////when (
+        ////  !nextHazardId
+        ////)
+        ////when (nextDuplicateIt) {
+        ////  upExt(1).rdMemWord := upExt(1).rdMemWord.getZero
+        ////} otherwise {
+        //  //--------
+        //  upExt(1).rdMemWord := modMem.readSync(
+        //    address=upExt(1).memAddr,
+        //  )
+        //  //--------
+        ////}
+      }
     }
     //--------
     tempUpMod(1) := tempUpMod(0)
@@ -1136,41 +1148,41 @@ extends Component {
         when (
           RegNextWhen(True, io.back.fire) init(False)
         ) {
-          //when (
-          //  //up.isFiring
-          //  up.isValid
-          //) {
-          //  //if (!forFmax) {
-          //  //  when (
-          //  //    //backUpExt.hazardId.msb
-          //  //    ////&& mod.back.cBack.up.isFiring
-          //  //    //&& mod.back.cBack.up.isValid
-          //  //    //&& upExt(1).memAddr === backUpExt.memAddr
-          //  //    wantNonFmaxFwd(
-          //  //      //someNode=up,
-          //  //      someExt=upExt(1),
-          //  //    )
-          //  //  ) {
-          //  //    assert(
-          //  //      //upExt(1).rdMemWord === getNonFmaxForward() //backUpExt.modMemWord
-          //  //      getNonFmaxFwdOutp(someExt=upExt(1))
-          //  //      === getNonFmaxFwd()
-          //  //    )
-          //  //  } otherwise {
-          //  //    assert(
-          //  //      upExt(1).rdMemWord === modMem.readSync(
-          //  //        address=upExt(1).memAddr
-          //  //      )
-          //  //    )
-          //  //  }
-          //  //} else { // if (forFmax)
-          //    assert(
-          //      upExt(1).rdMemWord === modMem.readSync(
-          //        address=upExt(1).memAddr,
-          //      )
-          //    )
-          //  //}
-          //} otherwise {
+          when (
+            //up.isFiring
+            up.isValid
+          ) {
+            if (!forFmax) {
+              when (
+                //backUpExt.hazardId.msb
+                ////&& mod.back.cBack.up.isFiring
+                //&& mod.back.cBack.up.isValid
+                //&& upExt(1).memAddr === backUpExt.memAddr
+                wantNonFmaxFwd(
+                  //someNode=up,
+                  someExt=upExt(1),
+                )
+              ) {
+                assert(
+                  //upExt(1).rdMemWord === getNonFmaxForward() //backUpExt.modMemWord
+                  getNonFmaxFwdOutp(someExt=upExt(1))
+                  === getNonFmaxFwd()
+                )
+              } otherwise {
+                assert(
+                  upExt(1).rdMemWord === modMem.readSync(
+                    address=upExt(1).memAddr
+                  )
+                )
+              }
+            } else { // if (forFmax)
+              assert(
+                upExt(1).rdMemWord === modMem.readSync(
+                  address=upExt(1).memAddr,
+                )
+              )
+            }
+          } otherwise {
             //assert(
             //  /*past*/(upExt(1).rdMemWord)
             //  === /*past*/(RegNext(upExt(1).rdMemWord))
@@ -1180,7 +1192,7 @@ extends Component {
                 address=upExt(1).memAddr,
               )
             )
-          //}
+          }
         }
 
         def myCoverFunc(
@@ -1352,12 +1364,18 @@ extends Component {
       outpExt=upExt(0),
       memArrIdx=memArrIdx,
     )
-    val dbgDoWrite = (debug) generate (
+    val dbgDoWrite = /*(debug) generate*/ (
       Bool().addAttribute("keep")
     )
-    if (debug) {
+    if (
+      //debug
+      true
+    ) {
       dbgDoWrite := False
     }
+    val extDbgDoWriteCond = (
+      upExt(0).hazardId.msb
+    )
     when (
       !clockDomain.isResetActive
       //&& isValid
@@ -1366,10 +1384,13 @@ extends Component {
       //&& upExt.rdValid
       //&& up.isValid
       //&& (upExt(0).hazardId) === 0
-      && upExt(0).hazardId.msb
       //&& upExt(0).rdValid
+      && extDbgDoWriteCond
     ) {
-      if (debug) {
+      if (
+        //debug
+        true
+      ) {
         mod.back.rTempWord := upExt(0).modMemWord
         dbgDoWrite := True
       }
@@ -1381,6 +1402,12 @@ extends Component {
       //  address=upExt(0).memAddr,
       //  data=upExt(0).modMemWord,
       //)
+    }
+    when (
+      up.isValid
+      && !extDbgDoWriteCond
+    ) {
+      throwIt()
     }
     //--------
     //tempUpMod(1) := tempUpMod(0)
@@ -1953,16 +1980,26 @@ extends Component {
         //val tempCoverBackVec = Vec.fill(wordCount)(
         //  Reg(Bool()) init(False)
         //)
+        def myCoverCntWidth = log2Up(4)
         val rCoverBack = (
-          Reg(SInt(wordCount bits)) init(0x0)
+          //Reg(SInt(wordCount bits)) init(0x0)
+          Vec.fill(wordCount)(
+            Reg(UInt(myCoverCntWidth bits)) init(0x0)
+          )
           setName("dualRd_rCoverBack")
         )
         val rCoverBackHazardIdGe0 = (
           Reg(SInt(wordCount bits)) init(0x0)
+          //Vec.fill(wordCount)(
+          //  Reg(UInt(myCoverCntWidth bits)) init(0x0)
+          //)
           setName("dualRd_rCoverBackHazardIdGe0")
         )
         val rCoverDualRdBack = (
-          Reg(SInt(wordCount bits)) init(0x0)
+          //Reg(SInt(wordCount bits)) init(0x0)
+          Vec.fill(wordCount)(
+            Reg(UInt(myCoverCntWidth bits)) init(0x0)
+          )
           setName("dualRd_rCoverDualRdBack")
         )
         val rCoverDualRdBackNotReadyCnt = (
@@ -1970,10 +2007,17 @@ extends Component {
           setName("dualRd_rCoverDualRdBackNotReadyCnt")
         )
         when (
-          RegNextWhen(True, io.dualRdBack.fire) init(False)
-          && !io.dualRdBack.ready
-          && RegNext(io.dualRdBack.ready)
-          && RegNext(RegNext(io.dualRdBack.ready))
+          //RegNextWhen(True, io.dualRdBack.fire) init(False)
+          //&& 
+          (
+            !io.dualRdBack.ready
+            && !RegNext(io.dualRdBack.ready)
+            && RegNext(RegNext(io.dualRdBack.ready))
+          ) || (
+            !io.dualRdBack.ready
+            && RegNext(io.dualRdBack.ready)
+            && RegNext(RegNext(io.dualRdBack.ready))
+          )
         ) {
           rCoverDualRdBackNotReadyCnt := rCoverDualRdBackNotReadyCnt + 1
         }
@@ -1982,14 +2026,16 @@ extends Component {
           when (
             io.back.fire
             && myBackExt.memAddr === idx
-            //&& myBackExt.modMemWord.asBits.asUInt > 0
+            && myBackExt.modMemWord.asBits.asUInt > 0
           ) {
             when (myBackExt.hazardId.msb) {
               when (
                 //myBackExt.modMemWord.asBits.asUInt === idx
-                myBackExt.rdMemWord.asBits.asUInt === idx + 1
+                //myBackExt.rdMemWord.asBits.asUInt === idx + 1
+                True
               ) {
-                rCoverBack(idx) := True
+                //rCoverBack(idx) := True
+                rCoverBack(idx) := rCoverBack(idx) + 1
               }
             } otherwise {
               rCoverBackHazardIdGe0(idx) := True
@@ -1998,25 +2044,26 @@ extends Component {
           when (
             io.dualRdBack.fire
             && myDualRdBackExt.memAddr === idx
-            //&& myDualRdBackExt.modMemWord.asBits.asUInt > 0
+            && myDualRdBackExt.modMemWord.asBits.asUInt > 0
             //&& myDualRdBackExt.modMemWord.asBits.asUInt === idx
-            && myDualRdBackExt.rdMemWord.asBits.asUInt === idx + 1
+            //&& myDualRdBackExt.rdMemWord.asBits.asUInt === idx + 1
           ) {
-            rCoverDualRdBack(idx) := True
+            //rCoverDualRdBack(idx) := True
+            rCoverDualRdBack(idx) := rCoverDualRdBack(idx) + 1
           }
         }
         cover(
           (
-            rCoverBack === -1
+            rCoverBack.asBits.asSInt === -1
             //=== B(rTempCoverBack.getWidth bits, default -> True)
           ) && (
             //rCoverBackHazardIdGe0 === -1
             True
           ) && (
-            rCoverDualRdBack === -1
+            rCoverDualRdBack.asBits.asSInt === -1
             //=== B(rTempCoverDualRdBack.getWidth bits, default -> True)
           ) && (
-            rCoverDualRdBackNotReadyCnt > 2
+            rCoverDualRdBackNotReadyCnt > 5
           )
         )
         //cover(

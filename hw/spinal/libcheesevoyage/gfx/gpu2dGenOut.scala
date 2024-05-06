@@ -217,10 +217,10 @@ object Gpu2dSimDutParams {
     //),
     bgTileSize2dPow=gpu2dBgTileSize2dPow,
     objTileSize2dPow=ElabVec2[Int](
-      //x=log2Up(16),
-      //y=log2Up(16),
-      x=log2Up(8),
-      y=log2Up(8),
+      x=log2Up(16),
+      y=log2Up(16),
+      //x=log2Up(8),
+      //y=log2Up(8),
       //x=log2Up(4),
       //y=log2Up(4),
       //x=log2Up(2),
@@ -293,10 +293,11 @@ object Gpu2dSimDutParams {
     ),
     //numObjTilesPow=None,
     numObjTiles=(
-      Some(8)
+      //Some(8)
       //Some(16)
       //Some(4)
       //Some(256)
+      Some(32)
     ),
     numObjAffineTiles=(
       Some(16)
@@ -332,8 +333,8 @@ object Gpu2dSimDutToVerilog extends App {
     ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
     optRawSnesButtons=true,
     dbgPipeMemRmw=(
-      //true
-      false
+      true
+      //false
     ),
   ))
 }
