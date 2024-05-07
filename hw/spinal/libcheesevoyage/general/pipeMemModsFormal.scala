@@ -138,8 +138,8 @@ object PipeMemRmwFormal extends App {
     ).includeFormal,
     _keepDebugInfo=true,
   )
-    .withBMC(20)
-    //.withProve(20)
+    //.withBMC(20)
+    .withProve(20)
     //.withCover(
     //  20
     //  //40

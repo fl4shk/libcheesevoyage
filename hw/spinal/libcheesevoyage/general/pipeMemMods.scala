@@ -2026,171 +2026,6 @@ extends Component {
     //  rDbgNonFmaxFwdCnt(idx).init(rDbgNonFmaxFwdCnt(idx).getZero)
     //}
     //--------
-    //midPipe.first.up.driveFrom(io.dualRdFront)(
-    //  con=(node, payload) => {
-    //    //def midFrontPayload = node(myPayload)
-    //    def frontPayload = payload
-
-    //    //val tempFrontDualRd = dualRdType().setName(
-    //    //  "dualRd_tempFrontDualRd"
-    //    //)
-    //    //val tempMidDualRd = dualRdType().setName(
-    //    //  "dualRd_tempMidDualRd"
-    //    //)
-    //    frontPayload.getPipeMemRmwExt(
-    //      outpExt=myFrontExt,
-    //      memArrIdx=memArrIdx,
-    //    )
-
-    //    //if (debug) {
-    //    //  myMidFrontExt.hazardId := cFrontArea.upExt(1).hazardId
-    //    //  //myMidFrontExt.dbgWantNonFmaxFwd := (
-    //    //  //  cFrontArea.wantNonFmaxFwd(
-    //    //  //    //someNode=midPipe.first.up,
-    //    //  //    someExt=myMidFrontExt,
-    //    //  //  )
-    //    //  //)
-    //    //  //myMidFrontExt.dbgNonFmaxFwdCnt := rDbgNonFmaxFwdCnt
-    //    //  //when (midPipe.first.down.isFiring) {
-    //    //  //  def tempCnt = rDbgNonFmaxFwdCnt(myMidFrontExt.memAddr)
-    //    //  //  tempCnt := tempCnt + 1
-    //    //  //}
-    //    //}
-
-    //    //myMidFrontExt := (
-    //    //  RegNext(myMidFrontExt) init(myMidFrontExt.getZero)
-    //    //)
-    //    myMidFrontExt := myFrontExt
-    //    myMidFrontExt.allowOverride
-    //    when (midPipe.first.up.isValid) {
-    //      //myMidFrontExt.allowOverride
-    //      myMidFrontExt.rdMemWord := (
-    //        //--------
-    //        // BEGIN: debug
-    //        //dualRdMemArr(0).readSync(
-    //        //  address=myMidExt.memAddr
-    //        //)
-    //        dualRdMem.readSync(
-    //          address=myFrontExt.memAddr
-    //        )
-    //        //--------
-    //      )
-    //      myMidFrontExt.modMemWord := (
-    //        myMidFrontExt.rdMemWord
-    //      )
-    //    }
-    //    //if (!forFmax) {
-    //    //  when (
-    //    //    cFrontArea.wantNonFmaxFwd(
-    //    //      //someNode=midPipe.first.up,
-    //    //      someExt=myMidFrontExt
-    //    //    )
-    //    //  ) {
-    //    //    //myMidExt.rdMemWord := (
-    //    //    //  cFrontArea.getNonFmaxForward()
-    //    //    //  //cFrontArea.backUpExt.modMemWord
-    //    //    //)
-    //    //    cFrontArea.perfNonFmaxFwd(someExt=myMidFrontExt)
-    //    //  }
-    //    //}
-    //    node(myPayload).setPipeMemRmwExt(
-    //      inpExt=myMidFrontExt,
-    //      memArrIdx=memArrIdx,
-    //    )
-    //  }
-    //)
-    //--------
-    //midPipe.last.down.driveTo(io.dualRdBack)(
-    //  con=(payload, node) => {
-    //    payload := node(myPayload)
-    //  }
-    //)
-    //midPipe.first.duplicateWhen(
-    //  //cFrontArea.rDuplicateIt
-    //  cFrontArea.nextDuplicateIt
-    //)
-
-    //val myMidBackExt = mkExt().setName(
-    //  "dualRd_midBackExt"
-    //)
-    //--------
-    //midFrontStm.translateInto(
-    //  into=midMidStm
-    //)(
-    //  dataAssignment=(
-    //    midMidPayload,
-    //    midFrontPayload
-    //  ) => {
-    //  }
-    //)
-
-    //io.dualRdFront.translateInto(
-    //  into=midFrontStm
-    //)(
-    //  dataAssignment=(
-    //    midFrontPayload,
-    //    frontPayload,
-    //  ) => {
-    //    //val tempFrontDualRd = dualRdType().setName(
-    //    //  "dualRd_tempFrontDualRd"
-    //    //)
-    //    //val tempMidDualRd = dualRdType().setName(
-    //    //  "dualRd_tempMidDualRd"
-    //    //)
-    //    frontPayload.getPipeMemRmwExt(
-    //      outpExt=myMidFrontExt,
-    //      memArrIdx=memArrIdx,
-    //    )
-    //    //myMidFrontExt := myFrontExt
-
-    //    //if (debug) {
-    //    //  myMidFrontExt.dbgWantNonFmaxFwd := (
-    //    //    cFrontArea.wantNonFmaxFwd(someExt=myMidFrontExt)
-    //    //  )
-    //    //}
-
-    //    //when (io.dualRdFront.valid) {
-    //    //  myMidFrontExt.rdMemWord := (
-    //    //    //--------
-    //    //    // BEGIN: debug
-    //    //    //dualRdMemArr(0).readSync(
-    //    //    //  address=myMidExt.memAddr
-    //    //    //)
-    //    //    dualRdMem.readSync(
-    //    //      address=myMidFrontExt.memAddr
-    //    //    )
-    //    //    //--------
-    //    //  )
-    //    //}
-    //    ////if (!forFmax) {
-    //    ////  when (
-    //    ////    cFrontArea.wantNonFmaxFwd(someExt=myMidFrontExt)
-    //    ////  ) {
-    //    ////    //myMidExt.rdMemWord := (
-    //    ////    //  cFrontArea.getNonFmaxForward()
-    //    ////    //  //cFrontArea.backUpExt.modMemWord
-    //    ////    //)
-    //    ////    cFrontArea.perfNonFmaxFwd(someExt=myMidFrontExt)
-    //    ////  }
-    //    ////}
-    //    midFrontPayload.setPipeMemRmwExt(
-    //      inpExt=myMidFrontExt,
-    //      memArrIdx=memArrIdx,
-    //    )
-    //  }
-    //)
-    //midFrontStm.translateInto(
-    //  into=midMidStm
-    //)(
-    //  dataAssignment=(
-    //    midMidPayload,
-    //    midFrontPayload,
-    //  ) => {
-    //    midMidPayload := midFrontPayload
-    //    //midMidPayload
-    //    //myMidMidExt
-    //  }
-    //)
     io.dualRdFront.getPipeMemRmwExt(
       outpExt=myFrontExt,
       memArrIdx=memArrIdx,
@@ -2199,17 +2034,22 @@ extends Component {
     //val tempReadSync = Reg(wordType())
     //tempReadSync.init(tempReadSync.getZero)
     val tempReadSync = wordType()
-    tempReadSync := RegNext(tempReadSync) init(tempReadSync.getZero)
-    when (
-      //io.dualRdFront.fire
-      //&& midFrontStm.valid
-      midFrontStm.fire
-    ) {
-      tempReadSync := dualRdMem.readSync(
-        //address=myMidFrontExt.memAddr
-        address=myFrontExt.memAddr
-      )
-    }
+    //tempReadSync := RegNext(tempReadSync) init(tempReadSync.getZero)
+    tempReadSync := dualRdMem.readSync(
+      //address=myMidFrontExt.memAddr
+      address=myFrontExt.memAddr,
+      enable=midFrontStm.fire,
+    )
+    //when (
+    //  //io.dualRdFront.fire
+    //  //&& midFrontStm.valid
+    //  midFrontStm.fire
+    //) {
+    //  tempReadSync := dualRdMem.readSync(
+    //    //address=myMidFrontExt.memAddr
+    //    address=myFrontExt.memAddr
+    //  )
+    //}
     midFrontStm <-/< io.dualRdFront
     //frontPayload.getPipeMemRmwExt(
     //  outpExt=myMidFrontExt,
