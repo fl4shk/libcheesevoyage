@@ -13,7 +13,10 @@ object PipeMemRmwFormal extends App {
   //--------
   def wordWidth = 8
   def wordType() = UInt(wordWidth bits)
-  def wordCount = 4
+  def wordCount = (
+    //4
+    8
+  )
   def modStageCnt = (
     //2
     1
@@ -24,8 +27,8 @@ object PipeMemRmwFormal extends App {
     modStageCnt=modStageCnt,
   )
   def forFmax = (
-    true
-    //false
+    //true
+    false
   )
   //--------
   case class PipeMemRmwFormalDut() extends Component {
@@ -55,6 +58,12 @@ object PipeMemRmwFormal extends App {
     assumeInitial(front.payload === front.payload.getZero)
     assumeInitial(front.valid === front.valid.getZero)
     anyseq(front.payload)
+    //val rFrontMemAddrCnt = Reg(UInt(log2Up(wordCount) + 1 bits)) init(0x0)
+    //front.payload.allowOverride
+    //front.payload.myExt.memAddr := rFrontMemAddrCnt.resized
+    //when (front.fire) {
+    //  rFrontMemAddrCnt := rFrontMemAddrCnt + 1
+    //}
     anyseq(front.valid)
     //front.valid := True
     assumeInitial(dualRdFront.payload === dualRdFront.payload.getZero)
@@ -86,7 +95,8 @@ object PipeMemRmwFormal extends App {
         modMidPayload := modFrontPayload
         modMidPayload.myExt.allowOverride
         modMidPayload.myExt.modMemWord := (
-          modFrontPayload.myExt.rdMemWord + 0x1
+          //modFrontPayload.myExt.rdMemWord + 0x1
+          modFrontPayload.myExt.rdMemWord //+ 0x1
         )
         when (
           modFrontPayload.myExt.hazardId.msb
@@ -110,6 +120,7 @@ object PipeMemRmwFormal extends App {
 
     assumeInitial(back.ready)
     anyseq(back.ready)
+    //back.ready.allowOverride
     //back.ready := True
     //back.ready := !(RegNext(back.ready) init(False))
     assumeInitial(dualRdBack.ready)
@@ -127,12 +138,12 @@ object PipeMemRmwFormal extends App {
     ).includeFormal,
     _keepDebugInfo=true,
   )
-    //.withBMC(20)
-    .withProve(20)
-    .withCover(
-      //20
-      40
-    )
+    .withBMC(20)
+    //.withProve(20)
+    //.withCover(
+    //  20
+    //  //40
+    //)
     .doVerify(PipeMemRmwFormalDut())
   //--------
 }

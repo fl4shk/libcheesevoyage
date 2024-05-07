@@ -2437,13 +2437,14 @@ case class Gpu2d(
         val nextBackReadyCnt = UInt(4 bits)
           .setName(f"dbgPipeMemRmw_nextBackReadyCnt_$idx")
         val rBackReadyCnt = (
-          RegNextWhen(nextBackReadyCnt, front.fire)
-          init(nextBackReadyCnt.getZero)
+          //RegNextWhen(nextBackReadyCnt, front.fire)
+          //init(nextBackReadyCnt.getZero)
+          RegNext(nextBackReadyCnt) init(nextBackReadyCnt.getZero)
         )
           .setName(f"dbgPipeMemRmw_rBackReadyCnt_$idx")
         nextBackReadyCnt := rBackReadyCnt + 1
-        //val myBackReady = !rBackReadyCnt(1)
-        val myBackReady = True
+        val myBackReady = !rBackReadyCnt(1)
+        //val myBackReady = True
         //--------
         // BEGIN: debug
         //back.ready := True
