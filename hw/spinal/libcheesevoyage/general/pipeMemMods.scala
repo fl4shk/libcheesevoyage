@@ -234,9 +234,9 @@ case class PipeMemRmwPayloadExt[
   //)
   //def maxFwdCnt = 20
 
-  //val dbgWantNonFmaxFwd = (debug) generate (
-  //  Bool()
-  //)
+  val dbgWantNonFmaxFwd = (debug) generate (
+    Bool()
+  )
 
   //val frontDuplicateIt = Bool()
   val dbgModMemWord = (debug) generate (
@@ -504,7 +504,7 @@ extends Component {
   def memWriteAll(
     address: UInt,
     data: WordT,
-    //enable: Bool=null,
+    enable: Bool=null,
     //mask: Bits=null,
   ): Unit = {
     memWriteIterate(
@@ -512,7 +512,7 @@ extends Component {
         item.write(
           address=address,
           data=data,
-          //enable=enable,
+          enable=enable,
           //mask=mask,
         )
       }
@@ -972,16 +972,18 @@ extends Component {
     //myRdMemWord := (
     //  RegNext(myRdMemWord) init(myRdMemWord.getZero)
     //)
-    val myDbgRdMemWord = (debug) generate (
-      /*Reg*/(
-      wordType()
+    val myDbgRdMemWord = (debug) generate {
+      val temp = Reg(
+        wordType()
       )
-    )
+      temp.init(temp.getZero)
+      temp
+    }
     if (debug) {
       up(dbgRdMemWord) := myDbgRdMemWord
-      myDbgRdMemWord := (
-        RegNext(myDbgRdMemWord) init(myDbgRdMemWord.getZero)
-      )
+      //myDbgRdMemWord := (
+      //  RegNext(myDbgRdMemWord) init(myDbgRdMemWord.getZero)
+      //)
     }
     val rSetRdId = Reg(Bool()) init(False)
     //val rRdId = Reg(cloneOf(upExt(1).rdId)) init(0x0)
@@ -1022,8 +1024,10 @@ extends Component {
       //up.isFiring
       //up.isValid
       //&&
-      !rSetRdId
-      && upExt(1).hazardId.msb
+      //--------
+      //!rSetRdId
+      //&& 
+      upExt(1).hazardId.msb
     )
 
     myRdMemWord := modMem.readSync(
@@ -1035,7 +1039,7 @@ extends Component {
       //) init(0x0)
       address=upExt(1).memAddr,
       //address=myDownExt.memAddr,
-      enable=up.isFiring && tempCond ,
+      enable=up.isFiring && tempCond,
     )
     when (
       up.isValid
@@ -1075,6 +1079,18 @@ extends Component {
       //    )
       //  )
       //}
+      //if (debug) {
+      //  myDbgRdMemWord := /*RegNext*/(
+      //    modMem.readAsync(
+      //      address=upExt(1).memAddr,
+      //    )
+      //  )
+      //}
+    }
+    when (
+      up.isFiring
+      && tempCond
+    ) {
       if (debug) {
         myDbgRdMemWord := /*RegNext*/(
           modMem.readAsync(
@@ -1128,9 +1144,11 @@ extends Component {
       someExt: PipeMemRmwPayloadExt[WordT]
     ): Bool = (
       if (!forFmax) (
+        //tempCond
         //someExt.hazardId.msb
         ////backUpExt.hazardId === 0
         //&&
+        //&& 
         backUpExt.hazardId.msb
         //&& mod.back.cBack.up.isFiring
         && mod.back.cBack.up.isValid
@@ -1144,6 +1162,11 @@ extends Component {
         False
       )
     )
+    if (debug) {
+      upExt(1).dbgWantNonFmaxFwd := wantNonFmaxFwd(
+        someExt=upExt(1)
+      )
+    }
     //--------
     def getNonFmaxFwd() = (
       backUpExt.modMemWord
@@ -1151,7 +1174,8 @@ extends Component {
     def getNonFmaxFwdOutp(
       someExt: PipeMemRmwPayloadExt[WordT]
     ) = {
-      someExt.rdMemWord
+      //someExt.rdMemWord
+      myRdMemWord
     }
     def perfNonFmaxFwd(
       someExt: PipeMemRmwPayloadExt[WordT]
@@ -1248,30 +1272,30 @@ extends Component {
         }
       }
       //--------
-      val myDbgMemReadSync = wordType()
-      myDbgMemReadSync := (
-        modMem.readSync
-        //mem.readAsync
-        (
-          //address=up(pipePayload.front).addr,
-          address=upExt(1).memAddr,
-          enable=(
-            up.isValid
-            && !rSetRdId
-            && upExt(1).hazardId.msb
-          )
-        )
-      )
-      when (
-        up.isValid
-      ) {
-      } otherwise {
-        myDbgMemReadSync := (
-          RegNext(myDbgMemReadSync) init(myDbgMemReadSync.getZero)
-        )
-      }
+      //val myDbgMemReadSync = wordType()
+      //myDbgMemReadSync := (
+      //  modMem.readSync
+      //  //mem.readAsync
+      //  (
+      //    //address=up(pipePayload.front).addr,
+      //    address=upExt(1).memAddr,
+      //    enable=(
+      //      up.isValid
+      //      && !rSetRdId
+      //      && upExt(1).hazardId.msb
+      //    )
+      //  )
+      //)
+      //when (
+      //  up.isValid
+      //) {
+      //} otherwise {
+      //  myDbgMemReadSync := (
+      //    RegNext(myDbgMemReadSync) init(myDbgMemReadSync.getZero)
+      //  )
+      //}
       //up(pipePayload.dbgMemReadSync) := myDbgMemReadSync
-      upExt(1).dbgMemReadSync := myDbgMemReadSync
+      upExt(1).dbgMemReadSync := myDbgRdMemWord //myDbgMemReadSync
       //--------
       when (up.isFiring) {
         rIsFiringCnt := rIsFiringCnt + 1
@@ -1339,41 +1363,44 @@ extends Component {
                   === getNonFmaxFwd()
                 )
               } otherwise {
-                //assert(
-                //  //upExt(1).rdMemWord === modMem.readSync(
-                //  //  address=upExt(1).memAddr
-                //  //)
-                //  //myRdMemWord === modMem.readSync(
-                //  //  address=upExt(1).memAddr
-                //  //)
-                //  myRdMemWord === myDbgMemReadSync
-                //)
+                assert(
+                  //upExt(1).rdMemWord === modMem.readSync(
+                  //  address=upExt(1).memAddr
+                  //)
+                  //myRdMemWord === modMem.readSync(
+                  //  address=upExt(1).memAddr
+                  //)
+                  //myRdMemWord === myDbgMemReadSync
+                  myRdMemWord === myDbgRdMemWord
+                )
               }
             } else { // if (forFmax)
-              //assert(
-              //  //upExt(1).rdMemWord === modMem.readSync(
-              //  //  address=upExt(1).memAddr,
-              //  //)
-              //  //myRdMemWord === modMem.readSync(
-              //  //  address=upExt(1).memAddr
-              //  //)
-              //  myRdMemWord === myDbgMemReadSync
-              //)
+              assert(
+                //upExt(1).rdMemWord === modMem.readSync(
+                //  address=upExt(1).memAddr,
+                //)
+                //myRdMemWord === modMem.readSync(
+                //  address=upExt(1).memAddr
+                //)
+                //myRdMemWord === myDbgMemReadSync
+                myRdMemWord === myDbgRdMemWord
+              )
             }
           } otherwise {
             //assert(
             //  /*past*/(upExt(1).rdMemWord)
             //  === /*past*/(RegNext(upExt(1).rdMemWord))
             //)
-            //assert(
-            //  //upExt(1).rdMemWord === modMem.readSync(
-            //  //  address=upExt(1).memAddr,
-            //  //)
-            //  //myRdMemWord === modMem.readSync(
-            //  //  address=upExt(1).memAddr
-            //  //)
-            //  myRdMemWord === myDbgMemReadSync
-            //)
+            assert(
+              //upExt(1).rdMemWord === modMem.readSync(
+              //  address=upExt(1).memAddr,
+              //)
+              //myRdMemWord === modMem.readSync(
+              //  address=upExt(1).memAddr
+              //)
+              //myRdMemWord === myDbgMemReadSync
+              myRdMemWord === myDbgRdMemWord
+            )
           }
         }
         // END: add this back later
@@ -1627,6 +1654,7 @@ extends Component {
       //  up.isFiring
       //) init(myRdMemWord.getZero)
       Reg(cloneOf(myRdMemWord)) init(myRdMemWord.getZero)
+      //cloneOf(myRdMemWord)
     )
     //val rPrevTempModMemReadAsync = (debug) generate (
     //  RegNext(tempModMemReadAsync) init(tempModMemReadAsync.getZero)
@@ -1636,24 +1664,56 @@ extends Component {
       //tempModMemReadAsync := rPrevTempModMemReadAsync
       //tempModMemReadAsync := up(mod.front.dbgRdMemWord)
       when (pastValidAfterReset) {
-        val tempCond = (
-          past(cFront.up.isFiring)
-          && !past(cFrontArea.rSetRdId)
-          && past(cFrontArea.upExt(1).hazardId.msb)
+        //val tempCond = (
+        //  past(cFront.up.isFiring)
+        //  && !past(cFrontArea.rSetRdId)
+        //  && past(cFrontArea.upExt(1).hazardId.msb)
+        //)
+        def tempCond(
+          someExt: PipeMemRmwPayloadExt[WordT]
+        ) = (
+          if (!forFmax) {
+            //!(
+            //  RegNextWhen(
+            //    cFrontArea.wantNonFmaxFwd(
+            //      someExt=cFrontArea.upExt(1)
+            //    ),
+            //    cFront.up.isFiring
+            //  ) init(False)
+            //)
+            //!upExt(1).dbgWantNonFmaxFwd
+            !someExt.dbgWantNonFmaxFwd
+          } else {
+            True
+          }
         )
-        when (
-          (cFront.up.isFiring)
-          && !(cFrontArea.rSetRdId)
-          && (cFrontArea.upExt(1).hazardId.msb)
-        ) {
-          tempModMemReadAsync := (
-            modMem.readAsync(
-              address=(cFrontArea.upExt(1).memAddr)
-              //address=upExt(1).memAddr,
-              //enable=tempCond,
-            )
-          )
-        }
+        //when (
+        //  (cFront.up.isFiring)
+        //  && !(cFrontArea.rSetRdId)
+        //  && (cFrontArea.upExt(1).hazardId.msb)
+        //  //&& !cFrontArea.upExt(1).dbgWantNonFmaxFwd
+        //  ////&& cFrontArea.tempCond
+        //  && tempCond(someExt=cFrontArea.upExt(1))
+        //) {
+        //  //when (
+        //  //  //if (!forFmax) {
+        //  //  //  !cFrontArea.wantNonFmaxFwd(
+        //  //  //    someExt=cFrontArea.upExt(1)
+        //  //  //  )
+        //  //  //} else {
+        //  //  //  True
+        //  //  //}
+        //  //  True
+        //  //) {
+        //    tempModMemReadAsync := (
+        //      modMem.readAsync(
+        //        address=(cFrontArea.upExt(1).memAddr)
+        //        //address=upExt(1).memAddr,
+        //        //enable=tempCond,
+        //      )
+        //    )
+        //  //}
+        //}
         //--------
         when (
           (RegNextWhen(True, io.front.fire) init(False))
@@ -1674,6 +1734,8 @@ extends Component {
           && up.isValid
           && !rSetRdId
           && upExt(1).hazardId.msb
+          //&& !tempCond
+          && tempCond(someExt=upExt(1))
         ) {
           //--------
           //tempModMemReadAsync := RegNextWhen(
@@ -1685,7 +1747,8 @@ extends Component {
           //tempModMemReadAsync
           assert(
             upExt(1).rdMemWord
-            === tempModMemReadAsync
+            //=== tempModMemReadAsync
+            === cFrontArea.myDbgRdMemWord
           )
           //--------
           //when (rDbgSeenFrontUpFiring) {
@@ -1736,8 +1799,8 @@ extends Component {
     when (
       !clockDomain.isResetActive
       //&& isValid
-      && up.isFiring
-      //&& up.isValid
+      //&& up.isFiring
+      && up.isValid
       //&& upExt.rdValid
       //&& up.isValid
       //&& (upExt(0).hazardId) === 0
@@ -1751,21 +1814,22 @@ extends Component {
         mod.back.rTempWord := upExt(0).modMemWord
         dbgDoWrite := True
       }
-      memWriteAll(
-        address=upExt(0).memAddr,
-        data=upExt(0).modMemWord,
-      )
       //modMem.write(
       //  address=upExt(0).memAddr,
       //  data=upExt(0).modMemWord,
       //)
     }
-    when (
-      up.isValid
-      && !extDbgDoWriteCond
-    ) {
-      throwIt()
-    }
+    memWriteAll(
+      address=upExt(0).memAddr,
+      data=upExt(0).modMemWord,
+      enable=dbgDoWrite,
+    )
+    //when (
+    //  up.isValid
+    //  && !extDbgDoWriteCond
+    //) {
+    //  throwIt()
+    //}
     //--------
     //tempUpMod(1) := tempUpMod(0)
     //tempUpMod(1).setPipeMemRmwExt(

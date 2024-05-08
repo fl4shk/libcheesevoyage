@@ -1005,7 +1005,8 @@ object Gpu2dTileSlice {
     if (!doPipeMemRmw) (
       0
     ) else (
-      1
+      0
+      //1
       //4
       //16
     )
@@ -2245,18 +2246,24 @@ case class Gpu2d(
             def myExt = frontPayload.myExt
             myExt.helperForceWr := objTilePushPayload.forceWr
             //when (myExt.helperForceWr) {
-              myExt.rdMemWord := myExt.modMemWord
+              myExt.rdMemWord := (
+                //myExt.modMemWord
+                myExt.rdMemWord.getZero
+              )
             //} otherwise {
             //  myExt.rdMemWord := myExt.rdMemWord.getZero
             //}
-            for (
-              jdx <- 0 until myExt.modMemWord.colIdxVec.size
-            ) {
-              myExt.modMemWord.colIdxVec(jdx) := (
-                objTilePushPayload.tileSlice.colIdxVec(jdx).resized
-                //<< myFracWidth
-              )
-            }
+            //for (
+            //  jdx <- 0 until myExt.modMemWord.colIdxVec.size
+            //) {
+            //  myExt.modMemWord.colIdxVec(jdx) := (
+            //    objTilePushPayload.tileSlice.colIdxVec(jdx).resized
+            //    //<< myFracWidth
+            //  )
+            //}
+            myExt.modMemWord.colIdxVec := (
+              objTilePushPayload.tileSlice.colIdxVec
+            )
             myExt.memAddr := objTilePushPayload.memIdx
             //myExt.hazardId := -1
             myExt.doInitHazardId()
@@ -2298,10 +2305,18 @@ case class Gpu2d(
             //modBackExt := modFrontExt
             //--------
             when (
-              //back.fire
+              back.fire
               //&& 
+              //modBackStm.fire
               //!didInitMem(modFrontExt.memAddr)
-              !didInitMem(back.myExt.memAddr)
+              && 
+              (
+                RegNextWhen(
+                  !didInitMem(back.myExt.memAddr),
+                  back.fire
+                ) init(didInitMem(back.myExt.memAddr).getZero)
+              )
+
             ) {
               //didInitMem(modFrontExt.memAddr) := True
               didInitMem(back.myExt.memAddr) := True
@@ -2314,6 +2329,8 @@ case class Gpu2d(
               modFrontExt.modMemWord,
               modFrontExt.rdMemWord,
             )
+              .setName("dbgPipeMemRmw_tempMemWord")
+              .addAttribute("keep")
             //val tempMemWord := modFrontExt.modMemWord
             //val tempMemWord = modFrontExt.modMemWord
             //--------
@@ -2333,101 +2350,101 @@ case class Gpu2d(
               //rDidModVec(modBackExt.memAddr) := True
 
               //frontExt.modMemWord := modFrontPayload.myExt.modMemWord
-              modBackExt.modMemWord := (
-                //modFrontExt.modMemWord
-                //modFrontExt.rdMemWord
-                tempMemWord
-              )
+              //modBackExt.modMemWord := (
+              //  //modFrontExt.modMemWord
+              //  //modFrontExt.rdMemWord
+              //  tempMemWord
+              //)
               //--------
-              //for (
-              //  pxCoordX <- 0
-              //  //until modFrontExt.modMemWord.pxsSliceWidth
-              //  until tempMemWord.pxsSliceWidth
-              //) {
-              //  //val myPx = modFrontExt.modMemWord.getPx(pxCoordX=pxCoordX)
-              //  val myPx = tempMemWord.getPx(pxCoordX=pxCoordX)
-              //  //when (
-              //  //  myPx =/= 0x0
-              //  //) {
-              //    modBackExt.modMemWord.colIdxVec(pxCoordX) := (
-              //      //(
-              //      //  (myPx + 1)
-              //      //  & ((8 << myFracWidth) - 1)
-              //      //) + (2 << myFracWidth)
-              //      //myPx + (1 << myFracWidth)
-              //      Mux[UInt](
-              //        myPx =/= 0,
-              //        Mux[UInt](
-              //          (myPx + 1 === 0x0),
-              //          myPx + 2,
-              //          myPx + 1
-              //        ),
-              //        myPx.getZero
-              //      )
-              //    )
-              //    //modBackExt.modMemWord := tempMemWord
-              //    //modBackExt.modMemWord.setPx(
-              //    //  pxCoordX=pxCoordX,
-              //    //  colIdx=(
-              //    //    //myPx + 1
-              //    //    //3
-              //    //    //(myPx << 1).resized
-              //    //  )
-              //    //)
-              //    //switch (myPx) {
-              //    //  for (
-              //    //    pxIdx <- 0 until (1 << myPx.getWidth)
-              //    //  ) {
-              //    //    is (pxIdx) {
-              //    //      modBackExt.modMemWord.setPx(
-              //    //        pxCoordX=pxCoordX,
-              //    //        colIdx=(
-              //    //          //(pxIdx % 2) + 1
-              //    //          {
-              //    //            //val tempPxIdx = (pxIdx + 1) % 4
-              //    //            ////if (
-              //    //            ////  tempPxIdx
-              //    //            ////  >= 5 //(1 << myPx.getWidth)
-              //    //            ////) {
-              //    //            ////  pxIdx //1
-              //    //            ////} else {
-              //    //            ////  tempPxIdx
-              //    //            ////}
-              //    //            //if (tempPxIdx == 1) {
-              //    //            //  tempPxIdx + 1
-              //    //            //} else {
-              //    //            //  tempPxIdx
-              //    //            //}
-              //    //            //(pxIdx % 4) + 1
-              //    //            //pxIdx % 4
-              //    //            //val (pxIdx + 1) % (1 << myPx.getWidth)
-              //    //            //if (
-              //    //            //  pxIdx == 0
-              //    //            //)
-              //    //            //(pxIdx % 5) + 2
-              //    //            //--------
-              //    //            (
-              //    //              (
-              //    //                pxIdx
-              //    //                & ((8 << myFracWidth) - 1)
-              //    //              ) + (2 << myFracWidth)
-              //    //            )
-              //    //            //((pxIdx + 1) % (6) + 1
-              //    //            //--------
-              //    //            //(pxIdx + 1) % 5
-              //    //            //--------
-              //    //            //pxIdx
-              //    //          }
-              //    //          //3
-              //    //          //(pxIdx << 1) % 2
-              //    //          //(pxIdx % 2) + 1
-              //    //        )
-              //    //      )
-              //    //    }
-              //    //  }
-              //    //}
-              //  //}
-              //}
+              for (
+                pxCoordX <- 0
+                //until modFrontExt.modMemWord.pxsSliceWidth
+                until tempMemWord.pxsSliceWidth
+              ) {
+                //val myPx = modFrontExt.modMemWord.getPx(pxCoordX=pxCoordX)
+                val myPx = tempMemWord.getPx(pxCoordX=pxCoordX)
+                //when (
+                //  myPx =/= 0x0
+                //) {
+                  modBackExt.modMemWord.colIdxVec(pxCoordX) := (
+                    //(
+                    //  (myPx + 1)
+                    //  & ((8 << myFracWidth) - 1)
+                    //) + (2 << myFracWidth)
+                    //myPx + (1 << myFracWidth)
+                    Mux[UInt](
+                      myPx =/= 0,
+                      Mux[UInt](
+                        (myPx + 1 === 0x0),
+                        myPx + 2,
+                        myPx + 1
+                      ),
+                      myPx.getZero
+                    )
+                  )
+                  //modBackExt.modMemWord := tempMemWord
+                  //modBackExt.modMemWord.setPx(
+                  //  pxCoordX=pxCoordX,
+                  //  colIdx=(
+                  //    //myPx + 1
+                  //    //3
+                  //    //(myPx << 1).resized
+                  //  )
+                  //)
+                  //switch (myPx) {
+                  //  for (
+                  //    pxIdx <- 0 until (1 << myPx.getWidth)
+                  //  ) {
+                  //    is (pxIdx) {
+                  //      modBackExt.modMemWord.setPx(
+                  //        pxCoordX=pxCoordX,
+                  //        colIdx=(
+                  //          //(pxIdx % 2) + 1
+                  //          {
+                  //            //val tempPxIdx = (pxIdx + 1) % 4
+                  //            ////if (
+                  //            ////  tempPxIdx
+                  //            ////  >= 5 //(1 << myPx.getWidth)
+                  //            ////) {
+                  //            ////  pxIdx //1
+                  //            ////} else {
+                  //            ////  tempPxIdx
+                  //            ////}
+                  //            //if (tempPxIdx == 1) {
+                  //            //  tempPxIdx + 1
+                  //            //} else {
+                  //            //  tempPxIdx
+                  //            //}
+                  //            //(pxIdx % 4) + 1
+                  //            //pxIdx % 4
+                  //            //val (pxIdx + 1) % (1 << myPx.getWidth)
+                  //            //if (
+                  //            //  pxIdx == 0
+                  //            //)
+                  //            //(pxIdx % 5) + 2
+                  //            //--------
+                  //            (
+                  //              (
+                  //                pxIdx
+                  //                & ((8 << myFracWidth) - 1)
+                  //              ) + (2 << myFracWidth)
+                  //            )
+                  //            //((pxIdx + 1) % (6) + 1
+                  //            //--------
+                  //            //(pxIdx + 1) % 5
+                  //            //--------
+                  //            //pxIdx
+                  //          }
+                  //          //3
+                  //          //(pxIdx << 1) % 2
+                  //          //(pxIdx % 2) + 1
+                  //        )
+                  //      )
+                  //    }
+                  //  }
+                  //}
+                //}
+              }
             }
             //--------
           }

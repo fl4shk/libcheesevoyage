@@ -14,8 +14,8 @@ object PipeMemRmwFormal extends App {
   def wordWidth = 8
   def wordType() = UInt(wordWidth bits)
   def wordCount = (
-    //4
-    8
+    4
+    //8
   )
   def modStageCnt = (
     //2
@@ -138,8 +138,11 @@ object PipeMemRmwFormal extends App {
     ).includeFormal,
     _keepDebugInfo=true,
   )
-    //.withBMC(20)
-    .withProve(20)
+    .withBMC(20)
+    //.withProve(
+    //  20
+    //  //40
+    //)
     //.withCover(
     //  20
     //  //40
