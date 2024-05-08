@@ -1080,8 +1080,9 @@ case class Gpu2dTest(
   def extraObjTileCntWidth = (
     if (dbgPipeMemRmw) {
       //2
-      //0
-      2
+      0
+      //2
+      //1
     } else {
       0
     }

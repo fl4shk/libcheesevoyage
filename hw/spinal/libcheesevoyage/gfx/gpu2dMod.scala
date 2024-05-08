@@ -2202,7 +2202,10 @@ case class Gpu2d(
           1 << params.objTileSliceMemIdxWidth
           //4
         )
-        def modStageCnt = 1
+        def modStageCnt = (
+          //1
+          2
+        )
         def modType() = SamplePipeMemRmwModType(
           wordType=wordType(),
           wordCount=wordCount,
@@ -2284,6 +2287,53 @@ case class Gpu2d(
         //)
         //  .setName("dbgPipeMemRmw_didInitMem")
         //  //.addAttribute("keep")
+        //def didInitMemElemWidth = 16 + 1
+        def cntMemWordCount = (
+          // only up to `min(params.numObjTiles, 32)` tiles
+          min(params.numObjTiles, 32)
+          * params.objTileSize2d.y * (1 << params.objTileWidthRshift)
+        )
+        def cntMemElemWidth = 16 //+ 1
+        val cntMem = Mem(
+          wordType=(
+            UInt(cntMemElemWidth bits)
+          ),
+          wordCount=cntMemWordCount,
+        )
+          .setName("dbgPipeMemRmw_cntMem")
+          .initBigInt(Array.fill(cntMemWordCount)(BigInt(0)).toSeq)
+        val rdCntMemElem = cntMem.readSync(
+          address=modFront.myExt.memAddr(
+            log2Up(cntMemWordCount) - 1 downto 0
+          ),
+          enable=modFront.fire,
+        )
+        val tempCntMemElem = UInt(rdCntMemElem.getWidth bits)
+        tempCntMemElem := (
+          RegNext(tempCntMemElem) init(tempCntMemElem.getZero)
+        )
+        val tempCntCond = modFront.myExt.memAddr <= cntMemWordCount
+        when (tempCntCond) {
+          //val tempRdCntPlusOne = UInt((cntMemElemWidth + 1) bits)
+          val tempRdCntPlusOne = Cat(B"1'b0", rdCntMemElem).asUInt + 1
+          when (
+            //(rRdCntMemElem + 1).msb
+            tempRdCntPlusOne.msb
+          ) {
+            tempCntMemElem := 0
+          } otherwise {
+            //tempCntMemElem := rdCntMemElem + 1
+            tempCntMemElem := tempRdCntPlusOne(tempCntMemElem.bitsRange)
+          }
+        }
+        cntMem.write(
+          address=modBack.myExt.memAddr(
+            log2Up(cntMemWordCount) - 1 downto 0
+          ),
+          data=tempCntMemElem,
+          enable=modBack.fire && tempCntCond,
+        )
+
         val didInitMem = Mem(
           wordType=(
             Bool()
@@ -2391,102 +2441,104 @@ case class Gpu2d(
               //  tempMemWord
               //)
               //--------
-              for (
-                pxCoordX <- 0
-                //until modFrontExt.modMemWord.pxsSliceWidth
-                until tempMemWord.pxsSliceWidth
-              ) {
-                //val myPx = modFrontExt.modMemWord.getPx(pxCoordX=pxCoordX)
-                val myPx = tempMemWord.getPx(pxCoordX=pxCoordX)
-                //when (
-                //  myPx =/= 0x0
-                //) {
-                  modBackExt.modMemWord.colIdxVec(pxCoordX) := (
-                    //(
-                    //  (myPx + 1)
-                    //  & ((8 << myFracWidth) - 1)
-                    //) + (2 << myFracWidth)
-                    //myPx + (1 << myFracWidth)
-                    Mux[UInt](
-                      myPx =/= 0,
+              when (rdCntMemElem === 1) {
+                for (
+                  pxCoordX <- 0
+                  //until modFrontExt.modMemWord.pxsSliceWidth
+                  until tempMemWord.pxsSliceWidth
+                ) {
+                  //val myPx = modFrontExt.modMemWord.getPx(pxCoordX=pxCoordX)
+                  val myPx = tempMemWord.getPx(pxCoordX=pxCoordX)
+                  //when (
+                  //  myPx =/= 0x0
+                  //) {
+                    modBackExt.modMemWord.colIdxVec(pxCoordX) := (
+                      //(
+                      //  (myPx + 1)
+                      //  & ((8 << myFracWidth) - 1)
+                      //) + (2 << myFracWidth)
+                      //myPx + (1 << myFracWidth)
                       Mux[UInt](
-                        (myPx + 1 === 0x0),
-                        myPx + 2,
-                        myPx + 1
-                      ),
-                      myPx.getZero
+                        myPx =/= 0,
+                        Mux[UInt](
+                          (myPx + 1 === 0x0),
+                          myPx + 2,
+                          myPx + 1
+                        ),
+                        myPx.getZero
+                      )
                     )
-                  )
-                  //modBackExt.modMemWord := tempMemWord
-                  //modBackExt.modMemWord.setPx(
-                  //  pxCoordX=pxCoordX,
-                  //  colIdx=(
-                  //    //myPx + 1
-                  //    //3
-                  //    //(myPx << 1).resized
-                  //  )
-                  //)
-                  //switch (myPx) {
-                  //  for (
-                  //    pxIdx <- 0 until (1 << myPx.getWidth)
-                  //  ) {
-                  //    is (pxIdx) {
-                  //      modBackExt.modMemWord.setPx(
-                  //        pxCoordX=pxCoordX,
-                  //        colIdx=(
-                  //          //(pxIdx % 2) + 1
-                  //          {
-                  //            //val tempPxIdx = (pxIdx + 1) % 4
-                  //            ////if (
-                  //            ////  tempPxIdx
-                  //            ////  >= 5 //(1 << myPx.getWidth)
-                  //            ////) {
-                  //            ////  pxIdx //1
-                  //            ////} else {
-                  //            ////  tempPxIdx
-                  //            ////}
-                  //            //if (tempPxIdx == 1) {
-                  //            //  tempPxIdx + 1
-                  //            //} else {
-                  //            //  tempPxIdx
-                  //            //}
-                  //            //(pxIdx % 4) + 1
-                  //            //pxIdx % 4
-                  //            //val (pxIdx + 1) % (1 << myPx.getWidth)
-                  //            //if (
-                  //            //  pxIdx == 0
-                  //            //)
-                  //            //(pxIdx % 5) + 2
-                  //            //--------
-                  //            (
-                  //              (
-                  //                pxIdx
-                  //                & ((8 << myFracWidth) - 1)
-                  //              ) + (2 << myFracWidth)
-                  //            )
-                  //            //((pxIdx + 1) % (6) + 1
-                  //            //--------
-                  //            //(pxIdx + 1) % 5
-                  //            //--------
-                  //            //pxIdx
-                  //          }
-                  //          //3
-                  //          //(pxIdx << 1) % 2
-                  //          //(pxIdx % 2) + 1
-                  //        )
-                  //      )
-                  //    }
-                  //  }
+                    //modBackExt.modMemWord := tempMemWord
+                    //modBackExt.modMemWord.setPx(
+                    //  pxCoordX=pxCoordX,
+                    //  colIdx=(
+                    //    //myPx + 1
+                    //    //3
+                    //    //(myPx << 1).resized
+                    //  )
+                    //)
+                    //switch (myPx) {
+                    //  for (
+                    //    pxIdx <- 0 until (1 << myPx.getWidth)
+                    //  ) {
+                    //    is (pxIdx) {
+                    //      modBackExt.modMemWord.setPx(
+                    //        pxCoordX=pxCoordX,
+                    //        colIdx=(
+                    //          //(pxIdx % 2) + 1
+                    //          {
+                    //            //val tempPxIdx = (pxIdx + 1) % 4
+                    //            ////if (
+                    //            ////  tempPxIdx
+                    //            ////  >= 5 //(1 << myPx.getWidth)
+                    //            ////) {
+                    //            ////  pxIdx //1
+                    //            ////} else {
+                    //            ////  tempPxIdx
+                    //            ////}
+                    //            //if (tempPxIdx == 1) {
+                    //            //  tempPxIdx + 1
+                    //            //} else {
+                    //            //  tempPxIdx
+                    //            //}
+                    //            //(pxIdx % 4) + 1
+                    //            //pxIdx % 4
+                    //            //val (pxIdx + 1) % (1 << myPx.getWidth)
+                    //            //if (
+                    //            //  pxIdx == 0
+                    //            //)
+                    //            //(pxIdx % 5) + 2
+                    //            //--------
+                    //            (
+                    //              (
+                    //                pxIdx
+                    //                & ((8 << myFracWidth) - 1)
+                    //              ) + (2 << myFracWidth)
+                    //            )
+                    //            //((pxIdx + 1) % (6) + 1
+                    //            //--------
+                    //            //(pxIdx + 1) % 5
+                    //            //--------
+                    //            //pxIdx
+                    //          }
+                    //          //3
+                    //          //(pxIdx << 1) % 2
+                    //          //(pxIdx % 2) + 1
+                    //        )
+                    //      )
+                    //    }
+                    //  }
+                    //}
                   //}
-                //}
+                }
               }
             }
             //--------
           }
         )
         //modBackStm << modFrontStm
-        //modBack <-/< modBackStm
-        modBack << modBackStm
+        modBack <-/< modBackStm
+        //modBack << modBackStm
         val nextBackReadyCnt = UInt(4 bits)
           .setName(f"dbgPipeMemRmw_nextBackReadyCnt_$idx")
         val rBackReadyCnt = (
