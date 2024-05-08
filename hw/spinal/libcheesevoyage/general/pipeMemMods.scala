@@ -746,7 +746,8 @@ extends Component {
     //nextHazardId := modStageCnt - 1
     //nextHazardId := S(nextHazardId.getWidth bits, default -> True)
     //nextHazardId := -1
-    nextHazardId := upExt(1).getHazardIdIdleVal()
+    //nextHazardId := upExt(1).getHazardIdIdleVal()
+    nextHazardId := rHazardId
     //when (isValid) {
       upExt(1).hazardId := nextHazardId
     //} otherwise {
@@ -843,8 +844,9 @@ extends Component {
               - (
                 if (!forFmax) (
                   1
-                ) else (
+                ) else ( // if (forFmax)
                   0 
+                  //1
                 )
               )
             )

@@ -1080,7 +1080,8 @@ case class Gpu2dTest(
   def extraObjTileCntWidth = (
     if (dbgPipeMemRmw) {
       //2
-      0
+      //0
+      2
     } else {
       0
     }
@@ -1104,6 +1105,9 @@ case class Gpu2dTest(
   ) {
     nextObjTilePushValid := True
   }
+  val tempObjTileCntRshiftByExtra = (
+    rObjTileCnt >> extraObjTileCntWidth
+  )
 
   def mkObjTile(
     colIdx0: Int,
@@ -1144,8 +1148,9 @@ case class Gpu2dTest(
           //  )
           //).asUInt
           (
-            rObjTileCnt
-            >> extraObjTileCntWidth
+            //rObjTileCnt
+            //>> extraObjTileCntWidth
+            tempObjTileCntRshiftByExtra
           )(
             //params.objTileWidthRshift - 1 downto 0
             params.objTileSize2dPow.x - 1
@@ -1155,8 +1160,9 @@ case class Gpu2dTest(
       },
       pxCoordY=(
         (
-          rObjTileCnt
-          >> extraObjTileCntWidth
+          //rObjTileCnt
+          //>> extraObjTileCntWidth
+          tempObjTileCntRshiftByExtra
         )
         (
           (
@@ -1181,12 +1187,14 @@ case class Gpu2dTest(
   }
   val tempObjTileCnt = (
     (
-      rObjTileCnt
-      >> extraObjTileCntWidth
+      //rObjTileCnt
+      //>> extraObjTileCntWidth
+      tempObjTileCntRshiftByExtra
     )
     (
       (
-        rObjTileCnt.high - extraObjTileCntWidth
+        //rObjTileCnt.high - extraObjTileCntWidth
+        tempObjTileCntRshiftByExtra.high
       ) downto (
         params.objTileSize2dPow.y
         //+ params.objSliceTileWidthPow
@@ -1205,13 +1213,13 @@ case class Gpu2dTest(
   tempObjTileSlice := tempObjTileSlice.getZero
   tempObjTileSlice.allowOverride
 
-  //nextObjTileCnt := rObjTileCnt
+  nextObjTileCnt := rObjTileCnt
   //when (
   //  tempObjTileCnt + 1
   //  //< (params.numObjTiles << extraObjTileCntWidth)
   //  < params.numObjTiles
   //) {
-    //when (pop.objTilePush.fire) {
+    when (pop.objTilePush.fire) {
       //--------
       // BEGIN: old, geometrical shapes graphics
       //when (tempObjTileCnt === 0) {
@@ -1256,13 +1264,20 @@ case class Gpu2dTest(
         //)
       ) {
         tempObjTileSlice := objTileMem.readAsync(
-          address=rObjTileCnt.asUInt.resized
+          //address=rObjTileCnt.asUInt.resized
+          address=tempObjTileCntRshiftByExtra.asUInt.resized
         )
       } otherwise {
         tempObjTileSlice := tempObjTileSlice.getZero
       }
-      nextObjTileCnt := rObjTileCnt + 1
-    //} otherwise {
+      //when (
+      //  //pop.objTilePush.fire
+      //  ////pop.objTilePush.valid
+      //  True
+      //) {
+        nextObjTileCnt := rObjTileCnt + 1
+      //}
+    } //otherwise {
     //  ////tempObjTileSlice := tempObjTileSlice.getZero
     //  //nextObjTileCnt := rObjTileCnt
     //}
@@ -1270,11 +1285,20 @@ case class Gpu2dTest(
   //  ////tempObjTileSlice := tempObjTileSlice.getZero
   //  //nextObjTileCnt := rObjTileCnt
   //}
+  val tempCondExtra = (
+    //(rObjTileCnt + 1)
+    //>> extraObjTileCntWidth
+    tempObjTileCntRshiftByExtra + 1
+  )
+    .addAttribute("keep")
   val tempObjTileCond = (
-    (rObjTileCnt + 1)
+    (
+      tempCondExtra
+    )
     (
       (
-        rObjTileCnt.high - extraObjTileCntWidth
+        //rObjTileCnt.high - extraObjTileCntWidth
+        tempCondExtra.high
       ) downto (
         params.objTileSize2dPow.y
         //+ params.objSliceTileWidthPow
@@ -1333,7 +1357,9 @@ case class Gpu2dTest(
   )
   pop.objTilePush.payload.tileSlice := tempObjTileSlice
   pop.objTilePush.payload.memIdx := (
-    rObjTileCnt.asUInt(pop.objTilePush.payload.memIdx.bitsRange)
+    //rObjTileCnt.asUInt(pop.objTilePush.payload.memIdx.bitsRange)
+    tempObjTileCntRshiftByExtra
+      .asUInt(pop.objTilePush.payload.memIdx.bitsRange)
     //rObjTileCnt.asUInt(
     //  rObjTileCnt.high downto extraObjTileCntWidth
     //).resized

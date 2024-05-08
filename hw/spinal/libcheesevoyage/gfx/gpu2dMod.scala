@@ -2264,6 +2264,9 @@ case class Gpu2d(
             myExt.modMemWord.colIdxVec := (
               objTilePushPayload.tileSlice.colIdxVec
             )
+            //myExt.memAddr := (
+            //  Cat(U"2'b00", objTilePushPayload.memIdx >> 2).asUInt
+            //)
             myExt.memAddr := objTilePushPayload.memIdx
             //myExt.hazardId := -1
             myExt.doInitHazardId()
@@ -2276,19 +2279,49 @@ case class Gpu2d(
         val modBackStm = Stream(modType())
           .setName("dbgPipeMemRmw_modBackStm")
           .addAttribute("keep")
-        val didInitMem = Vec.fill(wordCount)(
-          Reg(Bool()) init(False)
-        )
-          .setName("dbgPipeMemRmw_didInitMem")
-          //.addAttribute("keep")
-        //val didInitMem = Mem(
-        //  wordType=Bool(),
-        //  wordCount=wordCount,
+        //val didInitMem = Vec.fill(wordCount)(
+        //  Reg(Bool()) init(False)
         //)
         //  .setName("dbgPipeMemRmw_didInitMem")
-        //  .initBigInt(Array.fill(wordCount)(BigInt(0)).toSeq)
+        //  //.addAttribute("keep")
+        val didInitMem = Mem(
+          wordType=(
+            Bool()
+            //UInt(3 bits)
+          ),
+          wordCount=wordCount,
+        )
+          .setName("dbgPipeMemRmw_didInitMem")
+          .initBigInt(Array.fill(wordCount)(BigInt(0)).toSeq)
+        val rDidInitMemRdElem = (
+          //Reg(UInt(3 bits)) init(0x0)
+          Reg(Bool()) init(False)
+        )
+        //rDidInitMemRdElem := didInitMem
+        rDidInitMemRdElem := didInitMem.readSync(
+          address=modFront.myExt.memAddr,
+          enable=(
+            modFront.fire
+          )
+        )
+        didInitMem.write(
+          address=modBack.myExt.memAddr,
+          data=True,
+          //data=(
+          //  Mux[UInt](
+          //    !rDidInitMemRdElem.msb,
+          //    rDidInitMemRdElem + 1,
+          //    rDidInitMemRdElem
+          //  )
+          //),
+          enable=(
+            modBack.fire
+          ),
+        )
+        //when (!rDidInitMemRdElem) {
+        //}
 
-        modFrontStm << modFront
+        modFrontStm <-/< modFront
         modFrontStm.translateInto(
           into=modBackStm
         )(
@@ -2304,34 +2337,36 @@ case class Gpu2d(
             modBackExt.modMemWord.allowOverride
             //modBackExt := modFrontExt
             //--------
-            when (
-              back.fire
-              //&& 
-              //modBackStm.fire
-              //!didInitMem(modFrontExt.memAddr)
-              && 
-              (
-                RegNextWhen(
-                  !didInitMem(back.myExt.memAddr),
-                  back.fire
-                ) init(didInitMem(back.myExt.memAddr).getZero)
-              )
+            //when (
+            //  back.fire
+            //  //&& 
+            //  //modBackStm.fire
+            //  //!didInitMem(modFrontExt.memAddr)
+            //  && 
+            //  (
+            //    RegNextWhen(
+            //      !didInitMem(back.myExt.memAddr),
+            //      back.fire
+            //    ) init(didInitMem(back.myExt.memAddr).getZero)
+            //  )
 
-            ) {
-              //didInitMem(modFrontExt.memAddr) := True
-              didInitMem(back.myExt.memAddr) := True
-            }
+            //) {
+            //  //didInitMem(modFrontExt.memAddr) := True
+            //  didInitMem(back.myExt.memAddr) := True
+            //}
             val tempMemWord = Mux[Gpu2dTileSlice](
               //modFrontExt.helperForceWr,
               //!didInitMem.readAsync(modFrontExt.memAddr),
               //!didInitMem(modFrontExt.memAddr),
-              !didInitMem(back.myExt.memAddr),
+              //!didInitMem(back.myExt.memAddr),
+              !rDidInitMemRdElem,
+              //rDidInitMemRdElem.msb,
               modFrontExt.modMemWord,
               modFrontExt.rdMemWord,
             )
               .setName("dbgPipeMemRmw_tempMemWord")
               .addAttribute("keep")
-            //val tempMemWord := modFrontExt.modMemWord
+            //val tempMemWord = modFrontExt.modMemWord
             //val tempMemWord = modFrontExt.modMemWord
             //--------
             //when (
@@ -2450,7 +2485,8 @@ case class Gpu2d(
           }
         )
         //modBackStm << modFrontStm
-        modBack <-/< modBackStm
+        //modBack <-/< modBackStm
+        modBack << modBackStm
         val nextBackReadyCnt = UInt(4 bits)
           .setName(f"dbgPipeMemRmw_nextBackReadyCnt_$idx")
         val rBackReadyCnt = (
