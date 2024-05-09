@@ -1741,6 +1741,12 @@ case class Gpu2dPushInp(
       isColorMath=false,
     )
   )
+  //val bgEntryPushArr = slave(
+  //  Vec.fill(Flow(Gpu2dBgEntryStmPayload(
+  //    params=params,
+  //    isColorMath=false,
+  //  )))
+  //)
   val bgEntryPushArr = new ArrayBuffer[Flow[Gpu2dBgEntryStmPayload]]()
   val bgAttrsPushArr = new ArrayBuffer[Flow[Gpu2dBgAttrsStmPayload]]()
   for (idx <- 0 to params.numBgs - 1) {
@@ -10633,14 +10639,15 @@ case class Gpu2d(
         for (x <- 0 to params.bgTileSize2d.x - 1) {
           def tempLineMemEntry = tempOutp.postStage0.subLineMemEntry(x)
           rPastLineMemEntry(x).init(rPastLineMemEntry(x).getZero)
-          when (
-            (bgIdx === (1 << bgIdx.getWidth) - 1)
-            //&& !tempInp.bakCnt.msb
-          ) {
-            rPastLineMemEntry(x) := rPastLineMemEntry(x).getZero
-          } otherwise {
-            rPastLineMemEntry(x) := tempLineMemEntry
-          }
+          //when (
+          //  (bgIdx === (1 << bgIdx.getWidth) - 1)
+          //  //&& !tempInp.bakCnt.msb
+          //) {
+          //  rPastLineMemEntry(x) := rPastLineMemEntry(x).getZero
+          //} otherwise {
+          //  rPastLineMemEntry(x) := tempLineMemEntry
+          //}
+          rPastLineMemEntry(x) := tempLineMemEntry
           when (
             // This could be split into more pipeline stages, but it
             // might not be necessary with 4 or fewer backgrounds
@@ -10649,10 +10656,12 @@ case class Gpu2d(
                 (bgIdx === (1 << bgIdx.getWidth) - 1)
                 || (
                   //rPastLineMemEntry(x).col.a === False
-                  !rPastLineMemEntry(x).col.a
+                  //!rPastLineMemEntry(x).col.a
                   //&& pastLineMemEntry(x).prio === 
+                  tempInp.postStage0.palEntryNzMemIdx(x)
                 )
-              ) && (
+              ) 
+              && (
                 !tempInp.bakCnt.msb
               )
             ) //&& tempInp.bgAttrs.visib

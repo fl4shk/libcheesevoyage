@@ -975,6 +975,8 @@ case class Gpu2dTest(
   //  }
   //}
   //println(params.bgEntryMemIdxWidth)
+  tempBgEntry := tempBgEntry.getZero
+  nextBgEntryCnt := rBgEntryCnt
   for (idx <- 0 until pop.bgEntryPushArr.size) {
     def tempBgEntryPush = pop.bgEntryPushArr(idx)
     if (idx == 0) {
@@ -1022,16 +1024,17 @@ case class Gpu2dTest(
           }
           nextBgEntryCnt := rBgEntryCnt + 1
         } otherwise {
-          tempBgEntry := tempBgEntry.getZero
-          nextBgEntryCnt := rBgEntryCnt
+          //tempBgEntry := tempBgEntry.getZero
+          //nextBgEntryCnt := rBgEntryCnt
         }
       } otherwise {
-        tempBgEntry := tempBgEntry.getZero
-        nextBgEntryCnt := rBgEntryCnt
+        //tempBgEntry := tempBgEntry.getZero
+        //nextBgEntryCnt := rBgEntryCnt
       }
       when (rBgEntryCnt + 1 >= (1 << params.bgEntryMemIdxWidth)) {
         rBgEntryPushValid := False
       }
+
 
       tempBgEntryPush.valid := rBgEntryPushValid
       //tempBgEntryPush.payload.bgEntry.tileMemIdx := (
@@ -1043,10 +1046,38 @@ case class Gpu2dTest(
       tempBgEntryPush.payload.memIdx := (
         rBgEntryCnt.asUInt(pop.bgEntryPushArr(0).payload.memIdx.bitsRange)
       )
+    } else if (idx == 1) {
+      tempBgEntryPush.valid := True
+      val myPayload = (
+        KeepAttribute(cloneOf(tempBgEntryPush.payload))
+        .setName(f"myTempBgEntryPushPayload_$idx")
+      )
+      tempBgEntryPush.payload := myPayload
+
+      myPayload.memIdx := (
+        rBgEntryCnt.asUInt(pop.bgEntryPushArr(0).payload.memIdx.bitsRange)
+      )
+      myPayload.bgEntry := myPayload.bgEntry.getZero
+      myPayload.bgEntry.allowOverride
+      //myPayload.bgEntry.tileIdx := rBgEntryCnt.asUInt.resized
+      myPayload.bgEntry.tileIdx := (
+        //3
+        //4
+        if (params.bgTileSize2d.x == 8) (
+          7 * 4
+        ) else (
+          7
+        )
+      )
+      //myPayload.bgEntry.dispFlip.x := True
+      //myPayload.bgEntry.dispFlip.y := True
+      myPayload.bgEntry.dispFlip.x := rBgEntryCnt(0)
+      myPayload.bgEntry.dispFlip.y := rBgEntryCnt(1)
     } else {
       tempBgEntryPush.valid := True
       tempBgEntryPush.payload.bgEntry := tempBgEntry.getZero
-      tempBgEntryPush.payload.memIdx := 0x0
+      //tempBgEntryPush.bgEntry := 
+      //tempBgEntryPush.payload.memIdx := 0x0
     }
   }
   //--------
