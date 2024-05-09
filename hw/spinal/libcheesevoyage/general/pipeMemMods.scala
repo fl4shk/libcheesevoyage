@@ -698,10 +698,14 @@ extends Component {
       )
       val cMid0Front = pipe.addStage(
         name="Mid0Front",
-        optIncludeS2M=false,
+        //optIncludeS2M=false,
       )
       val cMid1Front = pipe.addStage(
         name="Mid1Front",
+        optIncludeS2M=false,
+      )
+      val cMid2Front = pipe.addStage(
+        name="Mid2Front"
       )
       val cLastFront = pipe.addStage(
         name="LastFront", 
@@ -2021,6 +2025,10 @@ extends Component {
       name="DualRd_Mid1",
       optIncludeS2M=false,
       //finish=true,
+    )
+    val cMid2 = pipe.addStage(
+      name="DualRd_Mid2",
+      optIncludeS2M=false,
     )
     val cBack = pipe.addStage(
       name="DualRd_Back",
