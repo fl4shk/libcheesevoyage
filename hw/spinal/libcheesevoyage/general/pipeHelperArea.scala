@@ -16,6 +16,7 @@ case class PipeHelper(
   val cArr = new ArrayBuffer[CtrlLink]()
   val sArr = new ArrayBuffer[StageLink]()
   val s2mArr = new ArrayBuffer[S2MLink]()
+  private var lastDown: Node = null
   private var didFinish: Boolean = false
 
   def addStage(
@@ -24,6 +25,7 @@ case class PipeHelper(
     //isLast: Boolean=false,
     //linkArr: ArrayBuffer[Link]
     name: String,
+    optIncludeS2M: Boolean=true,
     finish: Boolean=false,
   ): CtrlLink = {
     //val isFirst: Boolean = (sArr.size == 0)
@@ -72,7 +74,9 @@ case class PipeHelper(
     def doFinish(
       nName: String
     ): Unit = {
-      nArr += s2mArr.last.down.setName(f"n$nName")
+      //nArr += s2mArr.last.down.setName(f"n$nName")
+      //nArr += linkArr.last.down.setName(f"n$nName")
+      nArr += lastDown.setName(f"n$nName")
       cArr += CtrlLink(
         up={
           nArr.last
@@ -88,7 +92,9 @@ case class PipeHelper(
       if (nArr.size == 0) {
         nArr += Node().setName(f"n$name")
       } else {
-        nArr += s2mArr.last.down.setName(f"n$name")
+        //nArr += s2mArr.last.down.setName(f"n$name")
+        //nArr += linkArr.last.down.setName(f"n$name")
+        nArr += lastDown.setName(f"n$name")
       }
       cArr += CtrlLink(
         up={
@@ -101,24 +107,35 @@ case class PipeHelper(
           //}
         },
         down={
-          val myDown = Node()
-          myDown.setName(f"n$name" + "_down")
-          myDown
+          //val myDown = Node()
+          lastDown = Node()
+          lastDown.setName(f"n$name" + "_down")
+          lastDown
         }
       )//.setName(f"c$name")
       linkArr += cArr.last
 
       sArr += StageLink(
         up=cArr.last.down,
-        down=Node(),
+        down={
+          lastDown = Node()
+          lastDown
+        },
       )//.setName(f"s$name")
       linkArr += sArr.last
 
-      s2mArr += S2MLink(
-        up=sArr.last.down,
-        down=Node(),
-      )//.setName(f"s2m$name")
-      linkArr += s2mArr.last
+      if (optIncludeS2M) {
+        s2mArr += S2MLink(
+          up=sArr.last.down,
+          down={
+            lastDown = Node()
+            lastDown
+          },
+        )//.setName(f"s2m$name")
+        linkArr += s2mArr.last
+      }
+      //else {
+      //}
 
       if (finish) {
         doFinish(nName=(name + "_Last"))

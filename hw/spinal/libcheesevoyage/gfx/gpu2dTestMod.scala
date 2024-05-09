@@ -661,42 +661,42 @@ case class Gpu2dTest(
   )
   val rBgTileCnt = RegNext(nextBgTileCnt) init(-1)
   val rBgTilePushValid = Reg(Bool()) init(True)
-  //def mkBgTile(
-  //  colIdx0: Int,
-  //  colIdx1: Int,
-  //  colIdx2: Option[Int]=None,
-  //  colIdx3: Option[Int]=None,
-  //): Unit = {
-  //  //mkTile(
-  //  //  //tempTile=tempBgTile,
-  //  //  colIdx0=colIdx0,
-  //  //  colIdx1=colIdx1,
-  //  //  colIdx2=colIdx2,
-  //  //  colIdx3=colIdx3,
-  //  //)
-  //  mkTile(
-  //    //tempTile=tempColorMathTile,
-  //    tempTileSlice=tempBgTileSlice,
-  //    pxCoordXStart={
-  //      //rBgTileCnt(params.bgTileSize2dPow.x - 1 downto 0).asUInt
-  //      //0
-  //      def tempWidthPow = params.bgTileSize2dPow.x
-  //      U(f"$tempWidthPow'd0")
-  //    },
-  //    pxCoordY=(
-  //      rBgTileCnt(
-  //        params.bgTileSize2dPow.y - 1
-  //        //downto params.bgTileSize2dPow.x
-  //        downto 0
-  //      ).asUInt
-  //    ),
-  //    palEntryMemIdxWidth=params.bgPalEntryMemIdxWidth,
-  //    colIdx0=colIdx0,
-  //    colIdx1=colIdx1,
-  //    colIdx2=colIdx2,
-  //    colIdx3=colIdx3,
-  //  )
-  //}
+  def mkBgTile(
+    colIdx0: Int,
+    colIdx1: Int,
+    colIdx2: Option[Int]=None,
+    colIdx3: Option[Int]=None,
+  ): Unit = {
+    //mkTile(
+    //  //tempTile=tempBgTile,
+    //  colIdx0=colIdx0,
+    //  colIdx1=colIdx1,
+    //  colIdx2=colIdx2,
+    //  colIdx3=colIdx3,
+    //)
+    mkTile(
+      //tempTile=tempColorMathTile,
+      tempTileSlice=tempBgTileSlice,
+      pxCoordXStart={
+        //rBgTileCnt(params.bgTileSize2dPow.x - 1 downto 0).asUInt
+        //0
+        def tempWidthPow = params.bgTileSize2dPow.x
+        U(f"$tempWidthPow'd0")
+      },
+      pxCoordY=(
+        rBgTileCnt(
+          params.bgTileSize2dPow.y - 1
+          //downto params.bgTileSize2dPow.x
+          downto 0
+        ).asUInt
+      ),
+      palEntryMemIdxWidth=params.bgPalEntryMemIdxWidth,
+      colIdx0=colIdx0,
+      colIdx1=colIdx1,
+      colIdx2=colIdx2,
+      colIdx3=colIdx3,
+    )
+  }
 
   def tempBgTileCnt = (
     rBgTileCnt
@@ -715,11 +715,12 @@ case class Gpu2dTest(
       //--------
       // BEGIN: old, geometrical shapes graphics
       //when (tempBgTileCnt === 0) {
-      //  //mkBgTile(0, 1)
       //  mkBgTile(0, 0)
+      //  //mkBgTile(0, 1, Some(0), Some(1))
       //} elsewhen (tempBgTileCnt === 1) {
-      //  //mkBgTile(1, 2)
-      //  mkBgTile(1, 2, Some(3), Some(4))
+      //  mkBgTile(1, 2)
+      //  //mkBgTile(1, 2, Some(3), Some(4))
+      //  //mkObjTile(2, 2)
       //  //mkBgTile(1, 1)
       //  //mkBgTile(3, 3)
       //  //mkBgTile(2, 3)
@@ -727,16 +728,20 @@ case class Gpu2dTest(
       //  //mkBgTile(2, 3)
       //  //mkBgTile(3, 4)
       //  mkBgTile(2, 2)
+      //  //mkBgTile(3, 3)
       //  //mkBgTile(2, 2)
       //} elsewhen (tempBgTileCnt === 3) {
       //  //mkBgTile(3, 4)
       //  mkBgTile(3, 3)
+      //  //mkBgTile(4, 4)
       //  //mkBgTile(0, 1)
       //} elsewhen (tempBgTileCnt === 4) {
       //  //mkBgTile(4, 5)
       //  mkBgTile(4, 4)
+      //  //mkBgTile(5, 5)
       //} elsewhen (tempBgTileCnt === 5) {
       //  mkBgTile(5, 5)
+      //  //mkBgTile(6, 6)
       //} 
       // END: old, geometrical shapes graphics
       //--------
@@ -777,6 +782,7 @@ case class Gpu2dTest(
       //  //  rBgTilePushValid := False
       //  //}
       //}
+      //--------
       when (
         //rBgTileCnt < bgTileMem.wordCount
         //tempBgTileCnt < bgTileMem.wordCount
@@ -798,6 +804,7 @@ case class Gpu2dTest(
       } otherwise {
         tempBgTileSlice := tempBgTileSlice.getZero
       }
+      //--------
       nextBgTileCnt := rBgTileCnt + 1
     } otherwise {
       ////tempBgTileSlice := tempBgTileSlice.getZero
@@ -1329,7 +1336,7 @@ case class Gpu2dTest(
   //val rTempForceWrVec = Vec.fill(params.numObjTiles)(
   //  Reg(Bool()) init(True)
   //)
-  pop.objTilePush.forceWr := False
+  //pop.objTilePush.forceWr := False
 
   //if (dbgPipeMemRmw) {
   //  pop.objTilePush.forceWr := False
@@ -1556,7 +1563,7 @@ case class Gpu2dTest(
   )
   val rObjTileIdx = (
     Reg(UInt((tempObjAttrs.tileIdx.getWidth + myTileFracWidth) bits))
-    init(1 << myTileFracWidth)
+    init(4 << myTileFracWidth)
   )
   //--------
   def doObjAttrsInit(): Unit = {

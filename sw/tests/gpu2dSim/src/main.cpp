@@ -307,23 +307,23 @@ protected:		// functions
 			case SnesKeyState::DriveValid: {
 				auto my_key_up_now
 				= [&](
-					const SnesKeyKind& key//,
-					//Always always=Always::Disabled
+					const SnesKeyKind& key,
+					Always always=Always::Disabled
 				) -> uint32_t {
 					uint32_t my_key_status = 0b0u;
-					//switch (always) {
-					//	case Always::Disabled:
+					switch (always) {
+						case Always::Disabled:
 							my_key_status = uint32_t(
 								_engine_key_status.key_up_now(key)
 							);
-					//		break;
-					//	case Always::KeyUp:
-					//		my_key_status = 0b1u;
-					//		break;
-					//	case Always::KeyDown:
-					//		my_key_status = 0b0u;
-					//		break;
-					//}
+							break;
+						case Always::KeyUp:
+							my_key_status = 0b1u;
+							break;
+						case Always::KeyDown:
+							my_key_status = 0b0u;
+							break;
+					}
 					return (
 						my_key_status << uint32_t(key)
 					);
@@ -352,7 +352,10 @@ protected:		// functions
 					)
 					| my_key_up_now(SnesKeyKind::X)
 					| my_key_up_now(SnesKeyKind::L)
-					| my_key_up_now(SnesKeyKind::R)
+					| my_key_up_now(
+						SnesKeyKind::R//,
+						//Always::KeyDown
+					)
 					| 0xf000
 				);
 				if (_engine_key_status.key_down_now(SnesKeyKind::ExitSim)) {
@@ -828,14 +831,18 @@ int main(int argc, char** argv) {
 	}
 
 	//for (;;) 
-	//for 
-	while
+	for 
+	//while
 	(
-		!vga.do_exit()
+		//!vga.do_exit()
 		///*;*/size_t i=0;
+		;
 		//i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 40 * 2) && !vga.do_exit();
 		////i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 2 * 2) && !vga.do_exit();
-		////i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 3 * 2) && !vga.do_exit();
+		//	i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * CLKS_PER_PIXEL * 3 * 2)
+			//&& 
+			!vga.do_exit()
+		;
 		////!vga.do_exit();
 		//++i
 	) {

@@ -19,14 +19,18 @@ import libcheesevoyage.general.WrPulseRdPipeSimpleDualPortMemIo
 //import libcheesevoyage.general.MemReadSyncIntoStreamHaltVecs
 //import libcheesevoyage.general.MemReadSyncIntoStream
 //import libcheesevoyage.general.FpgacpuPipeForkLazy
-import libcheesevoyage.general.FpgacpuPipeForkBlocking
+//import libcheesevoyage.general.FpgacpuPipeForkBlocking
 //import libcheesevoyage.general.FpgacpuPipeForkEager
-import libcheesevoyage.general.FpgacpuPipeJoin
+//import libcheesevoyage.general.FpgacpuPipeJoin
 import libcheesevoyage.general.FpgacpuRamSimpleDualPort
+//import libcheesevoyage.general.PipeMemSimpleDualPort
+//import libcheesevoyage.general.PipeMemSimpleDualPortIo
 import libcheesevoyage.general.PipeMemRmw
 import libcheesevoyage.general.PipeMemRmwIo
+import libcheesevoyage.general.PipeMemRmwPayloadExt
 import libcheesevoyage.general.SamplePipeMemRmwModType
 import libcheesevoyage.general.PipeMemRmwDualRdTypeDisabled
+import libcheesevoyage.general.PipeMemRmwPayloadBase
 import spinal.lib.misc.pipeline._
 
 //import scala.math._
@@ -2172,9 +2176,9 @@ case class Gpu2d(
         .setName("dbgSeen0x20")
         .addAttribute("keep")
       if (
-        !dbgPipeMemRmw
-        || idx != 0
-        //true
+        //!dbgPipeMemRmw
+        //|| idx != 0
+        true
       ) {
         objTilePush.ready := True
         objTileMemArr(idx).io.wrEn := objTilePush.fire
@@ -2187,435 +2191,452 @@ case class Gpu2d(
         //    data=objTilePush.payload.tile,
         //  )
         //}
-      } else {
-        //def wordType() = Gpu2dObjTileStmPayload(
-        //  params=params,
-        //  isAffine=false,
-        //)
-        def wordType() = Gpu2dTileSlice(
-          params=params,
-          isObj=true,
-          isAffine=idx != 0,
-          doPipeMemRmw=true,
-        )
-        def wordCount = (
-          1 << params.objTileSliceMemIdxWidth
-          //4
-        )
-        def modStageCnt = (
-          //1
-          2
-        )
-        def modType() = SamplePipeMemRmwModType(
-          wordType=wordType(),
-          wordCount=wordCount,
-          modStageCnt=modStageCnt,
-        )
-        val myPipeMemRmw = (
-          PipeMemRmw[
-            Gpu2dTileSlice,
-            SamplePipeMemRmwModType[Gpu2dTileSlice],
-            PipeMemRmwDualRdTypeDisabled[Gpu2dTileSlice]
-          ](
-            wordType=wordType(),
-            wordCount=wordCount,
-            modType=modType(),
-            modStageCnt=modStageCnt,
-            initBigInt=Some(Array.fill(wordCount)(BigInt(0)).toSeq),
-            forFmax=(
-              true
-              //false
-            ),
-            //forFmax=false,
-          )
-            .setName(f"myPipeMemRmw_objTileMemArr_$idx")
-        )
-        def front = myPipeMemRmw.io.front
-        def modFront = myPipeMemRmw.io.modFront
-        def modBack = myPipeMemRmw.io.modBack
-        def back = myPipeMemRmw.io.back
-        def myFracWidth = (
-          Gpu2dTileSlice.myColIdxFracWidth(
-            doPipeMemRmw=true,
-          )
-        )
-        objTilePush.translateInto(
-          into=front,
-        )(
-          dataAssignment=(
-            frontPayload,
-            objTilePushPayload,
-          ) => {
-            def myExt = frontPayload.myExt
-            myExt.helperForceWr := objTilePushPayload.forceWr
-            //when (myExt.helperForceWr) {
-              myExt.rdMemWord := (
-                //myExt.modMemWord
-                myExt.rdMemWord.getZero
-              )
-            //} otherwise {
-            //  myExt.rdMemWord := myExt.rdMemWord.getZero
-            //}
-            //for (
-            //  jdx <- 0 until myExt.modMemWord.colIdxVec.size
-            //) {
-            //  myExt.modMemWord.colIdxVec(jdx) := (
-            //    objTilePushPayload.tileSlice.colIdxVec(jdx).resized
-            //    //<< myFracWidth
-            //  )
-            //}
-            myExt.modMemWord.colIdxVec := (
-              objTilePushPayload.tileSlice.colIdxVec
-            )
-            //myExt.memAddr := (
-            //  Cat(U"2'b00", objTilePushPayload.memIdx >> 2).asUInt
-            //)
-            myExt.memAddr := objTilePushPayload.memIdx
-            //myExt.hazardId := -1
-            myExt.doInitHazardId()
-          },
-        )
-
-        val modFrontStm = Stream(modType())
-          .setName("dbgPipeMemRmw_modFrontStm")
-          .addAttribute("keep")
-        val modBackStm = Stream(modType())
-          .setName("dbgPipeMemRmw_modBackStm")
-          .addAttribute("keep")
-        //val didInitMem = Vec.fill(wordCount)(
-        //  Reg(Bool()) init(False)
-        //)
-        //  .setName("dbgPipeMemRmw_didInitMem")
-        //  //.addAttribute("keep")
-        //def didInitMemElemWidth = 16 + 1
-        def cntMemWordCount = (
-          // only up to `min(params.numObjTiles, 32)` tiles
-          min(params.numObjTiles, 32)
-          * params.objTileSize2d.y * (1 << params.objTileWidthRshift)
-        )
-        def cntMemElemWidth = 16 //+ 1
-        val cntMem = Mem(
-          wordType=(
-            UInt(cntMemElemWidth bits)
-          ),
-          wordCount=cntMemWordCount,
-        )
-          .setName("dbgPipeMemRmw_cntMem")
-          .initBigInt(Array.fill(cntMemWordCount)(BigInt(0)).toSeq)
-        val rdCntMemElem = cntMem.readSync(
-          address=modFront.myExt.memAddr(
-            log2Up(cntMemWordCount) - 1 downto 0
-          ),
-          enable=modFront.fire,
-        )
-        val tempCntMemElem = UInt(rdCntMemElem.getWidth bits)
-        tempCntMemElem := (
-          RegNext(tempCntMemElem) init(tempCntMemElem.getZero)
-        )
-        val tempCntCond = modFront.myExt.memAddr <= cntMemWordCount
-        when (tempCntCond) {
-          //val tempRdCntPlusOne = UInt((cntMemElemWidth + 1) bits)
-          val tempRdCntPlusOne = Cat(B"1'b0", rdCntMemElem).asUInt + 1
-          when (
-            //(rRdCntMemElem + 1).msb
-            tempRdCntPlusOne.msb
-          ) {
-            tempCntMemElem := 0
-          } otherwise {
-            //tempCntMemElem := rdCntMemElem + 1
-            tempCntMemElem := tempRdCntPlusOne(tempCntMemElem.bitsRange)
-          }
-        }
-        cntMem.write(
-          address=modBack.myExt.memAddr(
-            log2Up(cntMemWordCount) - 1 downto 0
-          ),
-          data=tempCntMemElem,
-          enable=modBack.fire && tempCntCond,
-        )
-
-        val didInitMem = Mem(
-          wordType=(
-            Bool()
-            //UInt(3 bits)
-          ),
-          wordCount=wordCount,
-        )
-          .setName("dbgPipeMemRmw_didInitMem")
-          .initBigInt(Array.fill(wordCount)(BigInt(0)).toSeq)
-        val rDidInitMemRdElem = (
-          //Reg(UInt(3 bits)) init(0x0)
-          Reg(Bool()) init(False)
-        )
-        //rDidInitMemRdElem := didInitMem
-        rDidInitMemRdElem := didInitMem.readSync(
-          address=modFront.myExt.memAddr,
-          enable=(
-            modFront.fire
-          )
-        )
-        didInitMem.write(
-          address=modBack.myExt.memAddr,
-          data=True,
-          //data=(
-          //  Mux[UInt](
-          //    !rDidInitMemRdElem.msb,
-          //    rDidInitMemRdElem + 1,
-          //    rDidInitMemRdElem
-          //  )
-          //),
-          enable=(
-            modBack.fire
-          ),
-        )
-        //when (!rDidInitMemRdElem) {
-        //}
-
-        modFrontStm <-/< modFront
-        modFrontStm.translateInto(
-          into=modBackStm
-        )(
-          dataAssignment=(
-            modBackPayload,
-            modFrontPayload
-          ) => {
-            modBackPayload := modFrontPayload
-            def modFrontExt = modFrontPayload.myExt
-            def modBackExt = modBackPayload.myExt
-            modBackExt.allowOverride
-            //modBackExt := modFrontExt
-            modBackExt.modMemWord.allowOverride
-            //modBackExt := modFrontExt
-            //--------
-            //when (
-            //  back.fire
-            //  //&& 
-            //  //modBackStm.fire
-            //  //!didInitMem(modFrontExt.memAddr)
-            //  && 
-            //  (
-            //    RegNextWhen(
-            //      !didInitMem(back.myExt.memAddr),
-            //      back.fire
-            //    ) init(didInitMem(back.myExt.memAddr).getZero)
-            //  )
-
-            //) {
-            //  //didInitMem(modFrontExt.memAddr) := True
-            //  didInitMem(back.myExt.memAddr) := True
-            //}
-            val tempMemWord = Mux[Gpu2dTileSlice](
-              //modFrontExt.helperForceWr,
-              //!didInitMem.readAsync(modFrontExt.memAddr),
-              //!didInitMem(modFrontExt.memAddr),
-              //!didInitMem(back.myExt.memAddr),
-              !rDidInitMemRdElem,
-              //rDidInitMemRdElem.msb,
-              modFrontExt.modMemWord,
-              modFrontExt.rdMemWord,
-            )
-              .setName("dbgPipeMemRmw_tempMemWord")
-              .addAttribute("keep")
-            //val tempMemWord = modFrontExt.modMemWord
-            //val tempMemWord = modFrontExt.modMemWord
-            //--------
-            //when (
-            //  !didInitMem.readAsync(modFrontExt.memAddr)
-            //) {
-            //  didInitMem.write(
-            //    address=modFrontExt.memAddr,
-            //    data=True,
-            //  )
-            //}
-            when (
-              //!rDidModVec(modBackExt.memAddr)
-              True
-              //rDidModMem.readAsync
-            ) {
-              //rDidModVec(modBackExt.memAddr) := True
-
-              //frontExt.modMemWord := modFrontPayload.myExt.modMemWord
-              //modBackExt.modMemWord := (
-              //  //modFrontExt.modMemWord
-              //  //modFrontExt.rdMemWord
-              //  tempMemWord
-              //)
-              //--------
-              when (rdCntMemElem === 1) {
-                for (
-                  pxCoordX <- 0
-                  //until modFrontExt.modMemWord.pxsSliceWidth
-                  until tempMemWord.pxsSliceWidth
-                ) {
-                  //val myPx = modFrontExt.modMemWord.getPx(pxCoordX=pxCoordX)
-                  val myPx = tempMemWord.getPx(pxCoordX=pxCoordX)
-                  //when (
-                  //  myPx =/= 0x0
-                  //) {
-                    modBackExt.modMemWord.colIdxVec(pxCoordX) := (
-                      //(
-                      //  (myPx + 1)
-                      //  & ((8 << myFracWidth) - 1)
-                      //) + (2 << myFracWidth)
-                      //myPx + (1 << myFracWidth)
-                      Mux[UInt](
-                        myPx =/= 0,
-                        Mux[UInt](
-                          (myPx + 1 === 0x0),
-                          myPx + 2,
-                          myPx + 1
-                        ),
-                        myPx.getZero
-                      )
-                    )
-                    //modBackExt.modMemWord := tempMemWord
-                    //modBackExt.modMemWord.setPx(
-                    //  pxCoordX=pxCoordX,
-                    //  colIdx=(
-                    //    //myPx + 1
-                    //    //3
-                    //    //(myPx << 1).resized
-                    //  )
-                    //)
-                    //switch (myPx) {
-                    //  for (
-                    //    pxIdx <- 0 until (1 << myPx.getWidth)
-                    //  ) {
-                    //    is (pxIdx) {
-                    //      modBackExt.modMemWord.setPx(
-                    //        pxCoordX=pxCoordX,
-                    //        colIdx=(
-                    //          //(pxIdx % 2) + 1
-                    //          {
-                    //            //val tempPxIdx = (pxIdx + 1) % 4
-                    //            ////if (
-                    //            ////  tempPxIdx
-                    //            ////  >= 5 //(1 << myPx.getWidth)
-                    //            ////) {
-                    //            ////  pxIdx //1
-                    //            ////} else {
-                    //            ////  tempPxIdx
-                    //            ////}
-                    //            //if (tempPxIdx == 1) {
-                    //            //  tempPxIdx + 1
-                    //            //} else {
-                    //            //  tempPxIdx
-                    //            //}
-                    //            //(pxIdx % 4) + 1
-                    //            //pxIdx % 4
-                    //            //val (pxIdx + 1) % (1 << myPx.getWidth)
-                    //            //if (
-                    //            //  pxIdx == 0
-                    //            //)
-                    //            //(pxIdx % 5) + 2
-                    //            //--------
-                    //            (
-                    //              (
-                    //                pxIdx
-                    //                & ((8 << myFracWidth) - 1)
-                    //              ) + (2 << myFracWidth)
-                    //            )
-                    //            //((pxIdx + 1) % (6) + 1
-                    //            //--------
-                    //            //(pxIdx + 1) % 5
-                    //            //--------
-                    //            //pxIdx
-                    //          }
-                    //          //3
-                    //          //(pxIdx << 1) % 2
-                    //          //(pxIdx % 2) + 1
-                    //        )
-                    //      )
-                    //    }
-                    //  }
-                    //}
-                  //}
-                }
-              }
-            }
-            //--------
-          }
-        )
-        //modBackStm << modFrontStm
-        modBack <-/< modBackStm
-        //modBack << modBackStm
-        val nextBackReadyCnt = UInt(4 bits)
-          .setName(f"dbgPipeMemRmw_nextBackReadyCnt_$idx")
-        val rBackReadyCnt = (
-          //RegNextWhen(nextBackReadyCnt, front.fire)
-          //init(nextBackReadyCnt.getZero)
-          RegNext(nextBackReadyCnt) init(nextBackReadyCnt.getZero)
-        )
-          .setName(f"dbgPipeMemRmw_rBackReadyCnt_$idx")
-        nextBackReadyCnt := rBackReadyCnt + 1
-        val myBackReady = !rBackReadyCnt(1)
-        //val myBackReady = True
-        //--------
-        // BEGIN: debug
-        //back.ready := True
-        // END: debug
-        //--------
-        back.ready := (
-          //rBackReadyCnt(1 downto 0) =/= U"2'b10" 
-          myBackReady
-        )
-        when (!myBackReady) {
-          // set `back.ready` with the pattern ^^_^^_^^_
-          // where "^" is high and "_" is low
-          // I could have used "1" and "0" but it's easier to visualize
-          // `back.ready` this way
-          nextBackReadyCnt := 0x0
-        }
-        //val rDbgSeen = Reg(Bool()) init(False)
-        //when (
-        //  objTileMemArr(idx).io.wrEn
-        //  && objTileMemArr(idx).io.wrAddr === 0x20
-        //) {
-        //  rDbgSeen := True
-        //}
-
-        //objTilePush.ready := True
-        objTileMemArr(idx).io.wrEn := (
-          back.fire
-          //back.valid
-          //&& back.myExt.hazardId.msb
-        )
-        objTileMemArr(idx).io.wrAddr := back.payload.myExt.memAddr
-        //objTileMemArr(idx).io.wrData := objTilePush.payload.tile
-
-        //--------
-        //objTileMemArr(idx).io.wrData := (
-        //  back.payload.myExt.modMemWord
-        //)
-        def myWrData = objTileMemArr(idx).io.wrData
-
-        for (
-          //jdx <- 0 until Gpu2dTileSlice.myColIdxFracWidth(true)
-          //jdx <- 0 until Gpu2dTileSlice.colIdxWidth(
-          //  params=params,
-          //  isObj=true,
-          //  doPipeMemRmw=true,
-          //)
-          jdx <- 0 until myWrData.colIdxVec.size
-        ) {
-          val myColIdx = back.payload.myExt.modMemWord.colIdxVec(jdx)
-          myWrData.colIdxVec(jdx) := (
-            (
-              //myColIdx(myColIdx.high downto myFracWidth)
-              myColIdx(myColIdx.high - myFracWidth downto 0)
-            )
-          )
-        }
-        //--------
-
-        //when (objTilePush.fire) {
-        //  objTileMem.write(
-        //    address=objTilePush.payload.memIdx,
-        //    data=objTilePush.payload.tile,
-        //  )
-        //}
-        //tempObjTilePush.io.back.ready := io.pop.ready
       }
+      //else {
+      //  //def wordType() = Gpu2dObjTileStmPayload(
+      //  //  params=params,
+      //  //  isAffine=false,
+      //  //)
+      //  def wordType() = Gpu2dTileSlice(
+      //    params=params,
+      //    isObj=true,
+      //    isAffine=idx != 0,
+      //    doPipeMemRmw=true,
+      //  )
+      //  def wordCount = (
+      //    1 << params.objTileSliceMemIdxWidth
+      //    //4
+      //  )
+      //  def modStageCnt = (
+      //    //1
+      //    2
+      //  )
+      //  def modType() = SamplePipeMemRmwModType(
+      //    wordType=wordType(),
+      //    wordCount=wordCount,
+      //    modStageCnt=modStageCnt,
+      //  )
+      //  val myPipeMemRmw = (
+      //    PipeMemRmw[
+      //      Gpu2dTileSlice,
+      //      SamplePipeMemRmwModType[Gpu2dTileSlice],
+      //      PipeMemRmwDualRdTypeDisabled[Gpu2dTileSlice]
+      //    ](
+      //      wordType=wordType(),
+      //      wordCount=wordCount,
+      //      modType=modType(),
+      //      modStageCnt=modStageCnt,
+      //      initBigInt=Some(Array.fill(wordCount)(BigInt(0)).toSeq),
+      //      forFmax=(
+      //        true
+      //        //false
+      //      ),
+      //      //forFmax=false,
+      //    )
+      //      .setName(f"myPipeMemRmw_objTileMemArr_$idx")
+      //  )
+      //  def front = myPipeMemRmw.io.front
+      //  def modFront = myPipeMemRmw.io.modFront
+      //  def modBack = myPipeMemRmw.io.modBack
+      //  def back = myPipeMemRmw.io.back
+      //  def myFracWidth = (
+      //    Gpu2dTileSlice.myColIdxFracWidth(
+      //      doPipeMemRmw=true,
+      //    )
+      //  )
+      //  objTilePush.translateInto(
+      //    into=front,
+      //  )(
+      //    dataAssignment=(
+      //      frontPayload,
+      //      objTilePushPayload,
+      //    ) => {
+      //      def myExt = frontPayload.myExt
+      //      myExt.helperForceWr := objTilePushPayload.forceWr
+      //      //when (myExt.helperForceWr) {
+      //        myExt.rdMemWord := (
+      //          //myExt.modMemWord
+      //          myExt.rdMemWord.getZero
+      //        )
+      //      //} otherwise {
+      //      //  myExt.rdMemWord := myExt.rdMemWord.getZero
+      //      //}
+      //      //for (
+      //      //  jdx <- 0 until myExt.modMemWord.colIdxVec.size
+      //      //) {
+      //      //  myExt.modMemWord.colIdxVec(jdx) := (
+      //      //    objTilePushPayload.tileSlice.colIdxVec(jdx).resized
+      //      //    //<< myFracWidth
+      //      //  )
+      //      //}
+      //      myExt.modMemWord.colIdxVec := (
+      //        objTilePushPayload.tileSlice.colIdxVec
+      //      )
+      //      //myExt.memAddr := (
+      //      //  Cat(U"2'b00", objTilePushPayload.memIdx >> 2).asUInt
+      //      //)
+      //      myExt.memAddr := objTilePushPayload.memIdx
+      //      //myExt.hazardId := -1
+      //      myExt.doInitHazardId()
+      //    },
+      //  )
+
+      //  val modFrontStm = Stream(modType())
+      //    .setName("dbgPipeMemRmw_modFrontStm")
+      //    .addAttribute("keep")
+      //  val modBackStm = Stream(modType())
+      //    .setName("dbgPipeMemRmw_modBackStm")
+      //    .addAttribute("keep")
+      //  //val didInitMem = Vec.fill(wordCount)(
+      //  //  Reg(Bool()) init(False)
+      //  //)
+      //  //  .setName("dbgPipeMemRmw_didInitMem")
+      //  //  //.addAttribute("keep")
+      //  //def didInitMemElemWidth = 16 + 1
+      //  def cntMemWordCount = (
+      //    // only up to `min(params.numObjTiles, N)` tiles
+      //    min(params.numObjTiles, 4)
+      //    * params.objTileSize2d.y * (1 << params.objTileWidthRshift)
+      //  )
+      //  def cntMemElemWidth = 4 //1//16 //+ 1
+      //  val cntMem = Mem(
+      //    wordType=(
+      //      UInt(cntMemElemWidth bits)
+      //    ),
+      //    wordCount=cntMemWordCount,
+      //  )
+      //    .setName("dbgPipeMemRmw_cntMem")
+      //    .initBigInt(Array.fill(cntMemWordCount)(BigInt(0)).toSeq)
+      //  val rdCntMemElem = cntMem.readSync(
+      //    address=modFront.myExt.memAddr(
+      //      log2Up(cntMemWordCount) - 1 downto 0
+      //    ),
+      //    enable=modFront.fire,
+      //  )
+      //    .setName("dbgPipeMemRmw_rdCntMemElem")
+      //    .addAttribute("keep")
+
+      //  val tempCntMemElem = UInt(rdCntMemElem.getWidth bits)
+      //    .setName("dbgPipeMemRmw_tempCntMemElem")
+      //    .addAttribute("keep")
+
+      //  tempCntMemElem := (
+      //    RegNext(tempCntMemElem) init(tempCntMemElem.getZero)
+      //  )
+      //  val tempCntCond = (
+      //    if (log2Up(cntMemWordCount) < modFront.myExt.memAddr.getWidth) {
+      //      modFront.myExt.memAddr <= cntMemWordCount
+      //    } else {
+      //      True
+      //    }
+      //  )
+      //    .setName("dbgPipeMemRmw_tempCntCond")
+      //    .addAttribute("keep")
+      //  when (tempCntCond) {
+      //    //val tempRdCntPlusOne = UInt((cntMemElemWidth + 1) bits)
+      //    val tempRdCntPlusOne = (Cat(B"1'b0", rdCntMemElem).asUInt + 1)
+      //      .setName("dbgPipeMemRmw_tempRdCntPlusOne")
+      //      .addAttribute("keep")
+      //    when (
+      //      //(rRdCntMemElem + 1).msb
+      //      tempRdCntPlusOne.msb
+      //    ) {
+      //      tempCntMemElem := 0
+      //    } otherwise {
+      //      //tempCntMemElem := rdCntMemElem + 1
+      //      tempCntMemElem := tempRdCntPlusOne(tempCntMemElem.bitsRange)
+      //    }
+      //  }
+      //  cntMem.write(
+      //    address=modBack.myExt.memAddr(
+      //      log2Up(cntMemWordCount) - 1 downto 0
+      //    ),
+      //    data=tempCntMemElem,
+      //    enable=modBack.fire && tempCntCond,
+      //  )
+
+      //  val didInitMem = Mem(
+      //    wordType=(
+      //      Bool()
+      //      //UInt(3 bits)
+      //    ),
+      //    wordCount=wordCount,
+      //  )
+      //    .setName("dbgPipeMemRmw_didInitMem")
+      //    .initBigInt(Array.fill(wordCount)(BigInt(0)).toSeq)
+      //  val rDidInitMemRdElem = (
+      //    //Reg(UInt(3 bits)) init(0x0)
+      //    Reg(Bool()) init(False)
+      //  )
+      //  //rDidInitMemRdElem := didInitMem
+      //  rDidInitMemRdElem := didInitMem.readSync(
+      //    address=modFront.myExt.memAddr,
+      //    enable=(
+      //      modFront.fire
+      //    )
+      //  )
+      //  didInitMem.write(
+      //    address=modBack.myExt.memAddr,
+      //    data=True,
+      //    //data=(
+      //    //  Mux[UInt](
+      //    //    !rDidInitMemRdElem.msb,
+      //    //    rDidInitMemRdElem + 1,
+      //    //    rDidInitMemRdElem
+      //    //  )
+      //    //),
+      //    enable=(
+      //      modBack.fire
+      //    ),
+      //  )
+      //  //when (!rDidInitMemRdElem) {
+      //  //}
+
+      //  modFrontStm <-/< modFront
+      //  modFrontStm.translateInto(
+      //    into=modBackStm
+      //  )(
+      //    dataAssignment=(
+      //      modBackPayload,
+      //      modFrontPayload
+      //    ) => {
+      //      modBackPayload := modFrontPayload
+      //      def modFrontExt = modFrontPayload.myExt
+      //      def modBackExt = modBackPayload.myExt
+      //      modBackExt.allowOverride
+      //      //modBackExt := modFrontExt
+      //      modBackExt.modMemWord.allowOverride
+      //      //modBackExt := modFrontExt
+      //      //--------
+      //      //when (
+      //      //  back.fire
+      //      //  //&& 
+      //      //  //modBackStm.fire
+      //      //  //!didInitMem(modFrontExt.memAddr)
+      //      //  && 
+      //      //  (
+      //      //    RegNextWhen(
+      //      //      !didInitMem(back.myExt.memAddr),
+      //      //      back.fire
+      //      //    ) init(didInitMem(back.myExt.memAddr).getZero)
+      //      //  )
+
+      //      //) {
+      //      //  //didInitMem(modFrontExt.memAddr) := True
+      //      //  didInitMem(back.myExt.memAddr) := True
+      //      //}
+      //      val tempMemWord = Mux[Gpu2dTileSlice](
+      //        //modFrontExt.helperForceWr,
+      //        //!didInitMem.readAsync(modFrontExt.memAddr),
+      //        //!didInitMem(modFrontExt.memAddr),
+      //        //!didInitMem(back.myExt.memAddr),
+      //        !rDidInitMemRdElem,
+      //        //rDidInitMemRdElem.msb,
+      //        modFrontExt.modMemWord,
+      //        modFrontExt.rdMemWord,
+      //      )
+      //        .setName("dbgPipeMemRmw_tempMemWord")
+      //        .addAttribute("keep")
+      //      //val tempMemWord = modFrontExt.modMemWord
+      //      //val tempMemWord = modFrontExt.modMemWord
+      //      //--------
+      //      //when (
+      //      //  !didInitMem.readAsync(modFrontExt.memAddr)
+      //      //) {
+      //      //  didInitMem.write(
+      //      //    address=modFrontExt.memAddr,
+      //      //    data=True,
+      //      //  )
+      //      //}
+      //      when (
+      //        //!rDidModVec(modBackExt.memAddr)
+      //        True
+      //        //rDidModMem.readAsync
+      //      ) {
+      //        //rDidModVec(modBackExt.memAddr) := True
+
+      //        //frontExt.modMemWord := modFrontPayload.myExt.modMemWord
+      //        //modBackExt.modMemWord := (
+      //        //  //modFrontExt.modMemWord
+      //        //  //modFrontExt.rdMemWord
+      //        //  tempMemWord
+      //        //)
+      //        //--------
+      //        when (rdCntMemElem === 1) {
+      //          for (
+      //            pxCoordX <- 0
+      //            //until modFrontExt.modMemWord.pxsSliceWidth
+      //            until tempMemWord.pxsSliceWidth
+      //          ) {
+      //            //val myPx = modFrontExt.modMemWord.getPx(pxCoordX=pxCoordX)
+      //            val myPx = tempMemWord.getPx(pxCoordX=pxCoordX)
+      //            //when (
+      //            //  myPx =/= 0x0
+      //            //) {
+      //              modBackExt.modMemWord.colIdxVec(pxCoordX) := (
+      //                //(
+      //                //  (myPx + 1)
+      //                //  & ((8 << myFracWidth) - 1)
+      //                //) + (2 << myFracWidth)
+      //                //myPx + (1 << myFracWidth)
+      //                Mux[UInt](
+      //                  myPx =/= 0,
+      //                  Mux[UInt](
+      //                    (myPx + 1 === 0x0),
+      //                    myPx + 2,
+      //                    myPx + 1
+      //                  ),
+      //                  myPx.getZero
+      //                )
+      //              )
+      //              //modBackExt.modMemWord := tempMemWord
+      //              //modBackExt.modMemWord.setPx(
+      //              //  pxCoordX=pxCoordX,
+      //              //  colIdx=(
+      //              //    //myPx + 1
+      //              //    //3
+      //              //    //(myPx << 1).resized
+      //              //  )
+      //              //)
+      //              //switch (myPx) {
+      //              //  for (
+      //              //    pxIdx <- 0 until (1 << myPx.getWidth)
+      //              //  ) {
+      //              //    is (pxIdx) {
+      //              //      modBackExt.modMemWord.setPx(
+      //              //        pxCoordX=pxCoordX,
+      //              //        colIdx=(
+      //              //          //(pxIdx % 2) + 1
+      //              //          {
+      //              //            //val tempPxIdx = (pxIdx + 1) % 4
+      //              //            ////if (
+      //              //            ////  tempPxIdx
+      //              //            ////  >= 5 //(1 << myPx.getWidth)
+      //              //            ////) {
+      //              //            ////  pxIdx //1
+      //              //            ////} else {
+      //              //            ////  tempPxIdx
+      //              //            ////}
+      //              //            //if (tempPxIdx == 1) {
+      //              //            //  tempPxIdx + 1
+      //              //            //} else {
+      //              //            //  tempPxIdx
+      //              //            //}
+      //              //            //(pxIdx % 4) + 1
+      //              //            //pxIdx % 4
+      //              //            //val (pxIdx + 1) % (1 << myPx.getWidth)
+      //              //            //if (
+      //              //            //  pxIdx == 0
+      //              //            //)
+      //              //            //(pxIdx % 5) + 2
+      //              //            //--------
+      //              //            (
+      //              //              (
+      //              //                pxIdx
+      //              //                & ((8 << myFracWidth) - 1)
+      //              //              ) + (2 << myFracWidth)
+      //              //            )
+      //              //            //((pxIdx + 1) % (6) + 1
+      //              //            //--------
+      //              //            //(pxIdx + 1) % 5
+      //              //            //--------
+      //              //            //pxIdx
+      //              //          }
+      //              //          //3
+      //              //          //(pxIdx << 1) % 2
+      //              //          //(pxIdx % 2) + 1
+      //              //        )
+      //              //      )
+      //              //    }
+      //              //  }
+      //              //}
+      //            //}
+      //          }
+      //        }
+      //      }
+      //      //--------
+      //    }
+      //  )
+      //  //modBackStm << modFrontStm
+      //  modBack <-/< modBackStm
+      //  //modBack << modBackStm
+      //  val nextBackReadyCnt = UInt(4 bits)
+      //    .setName(f"dbgPipeMemRmw_nextBackReadyCnt_$idx")
+      //  val rBackReadyCnt = (
+      //    //RegNextWhen(nextBackReadyCnt, front.fire)
+      //    //init(nextBackReadyCnt.getZero)
+      //    RegNext(nextBackReadyCnt) init(nextBackReadyCnt.getZero)
+      //  )
+      //    .setName(f"dbgPipeMemRmw_rBackReadyCnt_$idx")
+      //  nextBackReadyCnt := rBackReadyCnt + 1
+      //  val myBackReady = !rBackReadyCnt(1)
+      //  //val myBackReady = True
+      //  //--------
+      //  // BEGIN: debug
+      //  //back.ready := True
+      //  // END: debug
+      //  //--------
+      //  back.ready := (
+      //    //rBackReadyCnt(1 downto 0) =/= U"2'b10" 
+      //    myBackReady
+      //  )
+      //  when (!myBackReady) {
+      //    // set `back.ready` with the pattern ^^_^^_^^_
+      //    // where "^" is high and "_" is low
+      //    // I could have used "1" and "0" but it's easier to visualize
+      //    // `back.ready` this way
+      //    nextBackReadyCnt := 0x0
+      //  }
+      //  //val rDbgSeen = Reg(Bool()) init(False)
+      //  //when (
+      //  //  objTileMemArr(idx).io.wrEn
+      //  //  && objTileMemArr(idx).io.wrAddr === 0x20
+      //  //) {
+      //  //  rDbgSeen := True
+      //  //}
+
+      //  //objTilePush.ready := True
+      //  objTileMemArr(idx).io.wrEn := (
+      //    back.fire
+      //    //back.valid
+      //    //&& back.myExt.hazardId.msb
+      //  )
+      //  objTileMemArr(idx).io.wrAddr := back.payload.myExt.memAddr
+      //  //objTileMemArr(idx).io.wrData := objTilePush.payload.tile
+
+      //  //--------
+      //  //objTileMemArr(idx).io.wrData := (
+      //  //  back.payload.myExt.modMemWord
+      //  //)
+      //  def myWrData = objTileMemArr(idx).io.wrData
+
+      //  for (
+      //    //jdx <- 0 until Gpu2dTileSlice.myColIdxFracWidth(true)
+      //    //jdx <- 0 until Gpu2dTileSlice.colIdxWidth(
+      //    //  params=params,
+      //    //  isObj=true,
+      //    //  doPipeMemRmw=true,
+      //    //)
+      //    jdx <- 0 until myWrData.colIdxVec.size
+      //  ) {
+      //    val myColIdx = back.payload.myExt.modMemWord.colIdxVec(jdx)
+      //    myWrData.colIdxVec(jdx) := (
+      //      (
+      //        //myColIdx(myColIdx.high downto myFracWidth)
+      //        myColIdx(myColIdx.high - myFracWidth downto 0)
+      //      )
+      //    )
+      //  }
+      //  //--------
+
+      //  //when (objTilePush.fire) {
+      //  //  objTileMem.write(
+      //  //    address=objTilePush.payload.memIdx,
+      //  //    data=objTilePush.payload.tile,
+      //  //  )
+      //  //}
+      //  //tempObjTilePush.io.back.ready := io.pop.ready
+      //}
       // END: new test code
       //--------
     }
@@ -3176,6 +3197,21 @@ case class Gpu2d(
     val rPastIntnlChangingRow = RegNext(rIntnlChangingRow) init(False)
     val intnlChangingRowRe = KeepAttribute(Bool())
     intnlChangingRowRe := rIntnlChangingRow && !rPastIntnlChangingRow
+    //intnlChangingRowRe := nextIntnlChangingRow && !rIntnlChangingRow
+    //intnlChangingRowRe := (
+    //  RegNext(rIntnlChangingRow && !rPastIntnlChangingRow)
+    //  init(intnlChangingRowRe.getZero)
+    //)
+    //intnlChangingRowRe := RegNextWhen(
+    //  rIntnlChangingRow && !rPastIntnlChangingRow,
+    //  nWrBgArr(0).isFiring,
+    //) init(False)
+    //intnlChangingRowRe := (
+    //  //RegNext(rIntnlChangingRow && !rPastIntnlChangingRow)
+    //  //init(False)
+    //  nextIntnlChangingRow && !rIntnlChangingRow
+    //)
+    //intnlChangingRowRe := r
     //val nextIntnlChangingRowRe = KeepAttribute(Bool())
     //nextIntnlChangingRowRe := nextIntnlChangingRow && !rIntnlChangingRow
     nextIntnlChangingRow := (
@@ -3426,7 +3462,14 @@ case class Gpu2d(
         CombinePipePayload,
         Vec[BgSubLineMemEntry]
       ]
+      //PipeMemRmw[
+      //  Vec[BgSubLineMemEntry],
+      //  CombinePipePayload,
+      //  CombinePipePayload,
+      //]
     ]()
+    def mkCombineBgSubLineMemArrPipeExt() = {
+    }
     //val rdBgSubLineMemArr = (
     //  new ArrayBuffer[MultiMemReadSync[Vec[BgSubLineMemEntry]]]()
     //)
@@ -3703,6 +3746,24 @@ case class Gpu2d(
     ////val combineLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
     ////val wrLineMemIdx
 
+    def combineBgSetWordFunc(
+      unionIdx: UInt,
+      outpPayload: CombinePipePayload,
+      inpPayload: CombinePipePayload,
+      bgTileRow: Vec[BgSubLineMemEntry],
+    ): Unit = {
+      //outpPayload := outpPayload.getZero
+      outpPayload.allowOverride
+      outpPayload.stage0.changingRow := (
+        inpPayload.stage0.changingRow
+      )
+      outpPayload.stage0.cnt := inpPayload.stage0.cnt
+      outpPayload.stage0.bakCnt := inpPayload.stage0.bakCnt
+      outpPayload.stage0.bakCntMinus1 := (
+        inpPayload.stage0.bakCntMinus1
+      )
+      outpPayload.stage2.rdBg := bgTileRow
+    }
     for (
       idx <- 0 until params.numLineMemsPerBgObjRenderer
     ) {
@@ -3734,10 +3795,38 @@ case class Gpu2d(
       //  .addAttribute("ram_style", params.lineArrRamStyle)
       //  //.addAttribute("ram_mode", "tdp") // true dual-port
       //  .setName(f"bgLineMemArr_$idx")
+      //--------
+      //combineBgSubLineMemArr += PipeMemRmw[
+      //  Vec[BgSubLineMemEntry],
+      //  CombinePipePayload,
+      //  CombinePipePayload,
+      //](
+      //  wordType=Vec.fill(params.bgTileSize2d.x)(BgSubLineMemEntry()),
+      //  wordCount=params.bgSubLineMemArrSize,
+      //  modType=CombinePipePayload(),
+      //  modStageCnt=1,
+      //  memArrIdx=idx,
+      //  dualRdType=CombinePipePayload(),
+      //  optDualRd=true,
+      //  initBigInt=Some(bgSubLineMemInitBigInt),
+      //  //forFmax=true,
+      //  optEnableModDuplicate=false, // to prevent writing stalls
+      //)
+      //  .setName(f"combineBgSubLineMemArr_$idx")
+      //def combineBgLast = combineBgSubLineMemArr.last
+      //combineBgLast.io.modBack <-/< combineBgLast.io.modFront
+      //combineBgLast.io.back.ready := True
+      //combineBgLast
+      //val combineBgModFrontStm = (
+      //  cloneOf(combineBgSubLineMemArr.last.io.modFront)
+      //)
+      //val combineBgModBackStm = (
+      //  cloneOf(combineBgSubLineMemArr.last.io.modBack)
+      //)
       combineBgSubLineMemArr += WrPulseRdPipeSimpleDualPortMem(
         dataType=CombinePipePayload(),
         wordType=Vec.fill(params.bgTileSize2d.x)(BgSubLineMemEntry()),
-        depth=params.bgSubLineMemArrSize,
+        wordCount=params.bgSubLineMemArrSize,
         initBigInt=Some(bgSubLineMemInitBigInt),
       )(
         //getWordFunc=(
@@ -3836,6 +3925,7 @@ case class Gpu2d(
         }
       )
         .setName(f"combineBgSubLineMemArr_$idx")
+      //--------
 
       //rdBgSubLineMemArr += MultiMemReadSync(
       //  someMem=bgSubLineMemArr(idx),
@@ -3895,7 +3985,7 @@ case class Gpu2d(
           //params.objTileSize2d.x
           params.objSliceTileWidth
         )(ObjSubLineMemEntry()),
-        depth=params.objSubLineMemArrSize,
+        wordCount=params.objSubLineMemArrSize,
         initBigInt=Some(objSubLineMemInitBigInt),
       )(
         //getWordFunc=(
@@ -4019,7 +4109,7 @@ case class Gpu2d(
             //params.objAffineSliceTileWidth
             //params.myDbgObjAffineTileWidth
           )(ObjSubLineMemEntry()),
-          depth=params.objAffineSubLineMemArrSize,
+          wordCount=params.objAffineSubLineMemArrSize,
           initBigInt=Some(objAffineSubLineMemInitBigInt),
         )(
           setWordFunc=(
@@ -6527,9 +6617,34 @@ case class Gpu2d(
       //8
       9 // old, working value
       //10
+      //10
     )
     //def combinePipeNumMainStages = wrBgObjPipeNumStages + 5
-    case class CombinePipePayload() extends Bundle {
+    case class CombinePipePayload(
+      //haveBgExt: Boolean=false,
+      //haveObjExt: Boolean=false,
+    ) extends Bundle
+      //with PipeMemRmwPayloadBase[Vec[BgSubLineMemEntry]]
+      //with PipeMemRmwPayloadBase[Vec[ObjSubLineMemEntry]]
+    {
+      //val bgExt = PipeMemRmwPayloadExt(
+      //  wordType=Vec.fill(params.bgTileSize2d.x)(BgSubLineMemEntry()),
+      //  wordCount=params.bgSubLineMemArrSize,
+      //  modStageCnt=1,
+      //  optEnableModDuplicate=false,
+      //)
+      //def setPipeMemRmwExt(
+      //  inpExt: PipeMemRmwPayloadExt[Vec[BgSubLineMemEntry]],
+      //  memArrIdx: Int
+      //): Unit = {
+      //  bgExt := inpExt
+      //}
+      //def getPipeMemRmwExt(
+      //  outpExt: PipeMemRmwPayloadExt[Vec[BgSubLineMemEntry]],
+      //  memArrIdx: Int
+      //): Unit = {
+      //  outpExt := bgExt
+      //}
       //--------
       //val bg = WrBgPipePayload()
       //val obj = WrObjPipePayload()
@@ -6673,10 +6788,14 @@ case class Gpu2d(
       //ret.rdLineMemArrIdx := prevRdLineMemArrIdx + 1
       //ret.wrLineMemArrIdx := prevWrLineMemArrIdx + 1
       //ret.lineMemArrIdx := prevLineMemArrIdx + 1
-      ret.cnt := 0
+      ret.cnt := (
+        //(default -> True)
+        0
+      )
       ret.bakCnt := combinePipeBakCntStart
       ret.bakCntMinus1 := combinePipeBakCntStart - 1
       ret.postStage0 := ret.postStage0.getZero
+      //ret.bgExt := ret.bgExt.getZero
       ret
     }
 
@@ -6809,6 +6928,14 @@ case class Gpu2d(
     //  )
     //)
     val nWrBgArr = Array.fill(wrBgObjPipeNumStages + 1)(Node())
+    //intnlChangingRowRe := RegNextWhen(
+    //  //rIntnlChangingRow && !rPastIntnlChangingRow,
+    //  rIntnlChangingRow, //&& !rPastIntnlChangingRow,
+    //  nWrBgArr(0).isFiring,
+    //) init(True)
+    //intnlChangingRowRe := (
+    //  rIntnlChangingRow && !rPastIntnlChangingRow
+    //)
     val sWrBgArr = new ArrayBuffer[StageLink]()
     val cWrBgArr = new ArrayBuffer[CtrlLink]()
     for (idx <- 0 until nWrBgArr.size - 1) {
@@ -7625,22 +7752,6 @@ case class Gpu2d(
           //  combineBgObjRdPipeFork.io.pipeOutVec//(combineIdx)
           //);
           //println("combineIdx: " + f"$combineIdx")
-          def myLineMem = {
-            if (combineIdx % theMax == 0) {
-              //println("combineIdx % theMax == 0: " + f"$combineIdx")
-              combineBgSubLineMemArr(combineIdx / theMax)
-            } else if (combineIdx % theMax == 1) {
-              //println("combineIdx % theMax == 1: " + f"$combineIdx")
-              combineObjSubLineMemArr(combineIdx / theMax)
-            } else {
-              //println("combineIdx % theMax >= 2: " + f"$combineIdx")
-              if (!noAffineObjs) {
-                combineObjAffineSubLineMemArr(combineIdx / theMax)
-              } else {
-                combineObjSubLineMemArr(combineIdx / theMax)
-              }
-            }
-          }
           def nfMyCombine = (
             //combineBgObjRdPipeFork.io.pipeOutVec(combineIdx)
             fMyCombine.downs(combineIdx)
@@ -7672,54 +7783,122 @@ case class Gpu2d(
             }
           )
 
-          fMyDriveToStm.translateInto(myLineMem.io.rdAddrPipe)(
-            dataAssignment=(
-              o,
-              i,
-            ) => {
-              //o.addr := i.cnt(
-              //  log2Up(params.objSubLineMemArrSize) - 1 downto 0
-              //)
-              o.addr := (
-                if (combineIdx % theMax == 0) {
-                  params.getBgSubLineMemArrIdx(
-                    addr=i.cnt,
-                  )
-                } else if (combineIdx % theMax == 1) {
-                  params.getObjSubLineMemArrIdx(
-                    addr=i.cnt,
-                  )
+          if (
+            //combineIdx % theMax == 0
+            false
+          ) {
+            def myLineMem = (
+              combineBgSubLineMemArr(combineIdx / theMax)
+            )
+            //fMyDriveToStm.translateInto(myLineMem.io.dualRdFront)(
+            //  dataAssignment=(
+            //    o, i
+            //  ) => {
+            //    o := i
+            //    o.allowOverride
+            //    o.bgExt := o.bgExt.getZero
+            //    o.bgExt.memAddr := (
+            //      params.getBgSubLineMemArrIdx(
+            //        addr=i.cnt,
+            //      )
+            //    )
+            //  }
+            //)
+            //njMyCombine.driveFrom(myLineMem.io.dualRdBack)(
+            //  con=(
+            //    node,
+            //    payload,
+            //  ) => {
+            //    //node(combinePipePayload) := payload
+            //    //node(combinePipePostJoinPayload) := payload
+            //    def o = node(combinePipeJoinPayloadArr(combineIdx))
+            //    def i = payload
+            //    o := i
+            //    combineBgSetWordFunc(
+            //      unionIdx=0,
+            //      outpPayload=o,
+            //      inpPayload=i,
+            //      bgTileRow=i.bgExt.modMemWord,
+            //    )
+            //    //--------
+            //    //node(combinePipeJoinPayloadArr(combineIdx)) := payload
+            //    //--------
+            //    //node(combineJoinPipePayload) := payload
+            //    //def myPayload = node(combinePipePostJoinPayload)
+            //    //myPayload := payload
+            //    //myPayload.stage2.allowOverride
+            //  }
+            //)
+          } else {
+            def myLineMem = {
+              if (combineIdx % theMax == 0) {
+                //println("combineIdx % theMax == 0: " + f"$combineIdx")
+                combineBgSubLineMemArr(combineIdx / theMax)
+                //combineObjSubLineMemAr//r(combineIdx / theMax)
+              } else if (combineIdx % theMax == 1) {
+                //println("combineIdx % theMax == 1: " + f"$combineIdx")
+                combineObjSubLineMemArr(combineIdx / theMax)
+              } else {
+                //println("combineIdx % theMax >= 2: " + f"$combineIdx")
+                if (!noAffineObjs) {
+                  combineObjAffineSubLineMemArr(combineIdx / theMax)
                 } else {
-                  if (!noAffineObjs) { // if (combineIdx % 3 == 2)
-                    params.getObjAffineSubLineMemArrIdx(
+                  combineObjSubLineMemArr(combineIdx / theMax)
+                }
+              }
+            }
+            fMyDriveToStm.translateInto(myLineMem.io.rdAddrPipe)(
+              dataAssignment=(
+                o,
+                i,
+              ) => {
+                //o.addr := i.cnt(
+                //  log2Up(params.objSubLineMemArrSize) - 1 downto 0
+                //)
+                o.addr := (
+                  if (combineIdx % theMax == 0) {
+                    params.getBgSubLineMemArrIdx(
                       addr=i.cnt,
                     )
-                  } else {
+                    //params.getObjSubLineMemArrIdx(
+                    //  addr=i.cnt,
+                    //)
+                  } else if (combineIdx % theMax == 1) {
                     params.getObjSubLineMemArrIdx(
                       addr=i.cnt,
                     )
+                  } else {
+                    if (!noAffineObjs) { // if (combineIdx % 3 == 2)
+                      params.getObjAffineSubLineMemArrIdx(
+                        addr=i.cnt,
+                      )
+                    } else {
+                      params.getObjSubLineMemArrIdx(
+                        addr=i.cnt,
+                      )
+                    }
                   }
-                }
-              )
-              o.data := i
-            }
-          )
+                )
+                o.data := i
+              }
+            )
 
-          //njMyCombine << myLineMem.io.rdDataPipe
-          njMyCombine.driveFrom(myLineMem.io.rdDataPipe)(
-            con=(
-              node,
-              payload,
-            ) => {
-              //node(combinePipePayload) := payload
-              //node(combinePipePostJoinPayload) := payload
-              node(combinePipeJoinPayloadArr(combineIdx)) := payload
-              //node(combineJoinPipePayload) := payload
-              //def myPayload = node(combinePipePostJoinPayload)
-              //myPayload := payload
-              //myPayload.stage2.allowOverride
-            }
-          )
+            //njMyCombine << myLineMem.io.rdDataPipe
+            njMyCombine.driveFrom(myLineMem.io.rdDataPipe)(
+              con=(
+                node,
+                payload,
+              ) => {
+                //node(combinePipePayload) := payload
+                //node(combinePipePostJoinPayload) := payload
+                node(combinePipeJoinPayloadArr(combineIdx)) := payload
+                //node(combineJoinPipePayload) := payload
+                //def myPayload = node(combinePipePostJoinPayload)
+                //myPayload := payload
+                //myPayload.stage2.allowOverride
+              }
+            )
+          }
 
           //--------
           sCombineArr += StageLink(
@@ -8248,6 +8427,7 @@ case class Gpu2d(
       combinePipeLastPreThrown.throwWhen(
         rPrevCombinePipeLastCnt.asUInt === combinePipeLastPreThrown.cnt
       )
+      //combinePipeLastPreThrown
     )
     //combinePipeLastThrown << combinePipeLast.throwWhen(
     //  rPrevCombinePipeLastCnt.asUInt === combinePipeLastThrown.cnt
@@ -10567,6 +10747,18 @@ case class Gpu2d(
       ////    ) - 1 downto 0
       ////  )
       ////}
+      //for (jdx <- 0 until (1 << rWrLineMemArrIdx.getWidth)) {
+      //  def tempCombine(myIdx: Int) = combineBgSubLineMemArr(myIdx)
+      //  tempCombine(jdx).io.front.valid := True
+      //  tempCombine(jdx).io.front.bgExt := (
+      //    tempCombine(jdx).io.front.bgExt.getZero
+      //  )
+      //  //tempCombine(jdx).io.front.bgExt.allowOverride
+      //  //tempCombine(jdx).io.front.bgExt.memAddr := (
+      //  //  tempArrIdx
+      //  //)
+      //  //--------
+      //}
       when (nWrBgPipeLast.isFiring) {
         //val tempLineMemEntry = LineMemEntry()
         //val bgIdx = wrBgPipeLast.bgIdx
@@ -10582,6 +10774,8 @@ case class Gpu2d(
               //  address=tempArrIdx,
               //  data=wrBgPipeLast.postStage0.subLineMemEntry,
               //)
+              //--------
+              // BEGIN: old `WrPulseRdPipeSimpleDualPortMem` code
               combineBgSubLineMemArr(jdx).io.wrPulse.valid := True
               combineBgSubLineMemArr(jdx).io.wrPulse.addr := (
                 tempArrIdx
@@ -10598,8 +10792,49 @@ case class Gpu2d(
                   )
                 }
               }
+              // END: old `WrPulseRdPipeSimpleDualPortMem` code
+              //--------
+              //def tempCombine(myIdx: Int) = combineBgSubLineMemArr(myIdx)
+              //tempCombine(jdx).io.front.valid := True
+              //tempCombine(jdx).io.front.bgExt := (
+              //  tempCombine(jdx).io.front.bgExt.getZero
+              //)
+              //tempCombine(jdx).io.front.bgExt.allowOverride
+              //tempCombine(jdx).io.front.bgExt.memAddr := (
+              //  tempArrIdx
+              //)
+              //tempCombine(jdx).io.front.bgExt.modMemWord := (
+              //  wrBgPipeLast.postStage0.subLineMemEntry
+              //)
+              //for (kdx <- 0 until combineBgSubLineMemArr.size) {
+              //  if (kdx != jdx) {
+              //    tempCombine(kdx).io.front.valid := False
+              //    tempCombine(kdx).io.front.bgExt := (
+              //      tempCombine(kdx).io.front.bgExt.getZero
+              //    )
+              //    //tempCombine(kdx).io.front.bgExt.memAddr := 0
+              //    //tempCombine(kdx).io.front.bgExt.modMemWord := (
+              //    //  wrBgPipeLast.postStage0.subLineMemEntry.getZero
+              //    //)
+              //  }
+              //}
+              //--------
             }
           }
+          //default {
+          //  for (jdx <- 0 until (1 << rWrLineMemArrIdx.getWidth)) {
+          //    def tempCombine(myIdx: Int) = combineBgSubLineMemArr(myIdx)
+          //    tempCombine(jdx).io.front.valid := True
+          //    tempCombine(jdx).io.front.bgExt := (
+          //      tempCombine(jdx).io.front.bgExt.getZero
+          //    )
+          //    //tempCombine(jdx).io.front.bgExt.allowOverride
+          //    //tempCombine(jdx).io.front.bgExt.memAddr := (
+          //    //  tempArrIdx
+          //    //)
+          //    //--------
+          //  }
+          //}
         }
         // BEGIN: old, non-synthesizable code
         //for (x <- 0 to params.bgTileSize2d.x - 1) {
@@ -10726,11 +10961,24 @@ case class Gpu2d(
         // END: old, non-synthesizable code
       } otherwise { // when (!nWrBgPipeLast.isFiring)
         for (jdx <- 0 until combineBgSubLineMemArr.size) {
+          //--------
+          // BEGIN: old `WrPulseRdPipeSimpleDualPortMem` code
           combineBgSubLineMemArr(jdx).io.wrPulse.valid := False
           combineBgSubLineMemArr(jdx).io.wrPulse.addr := 0x0
           combineBgSubLineMemArr(jdx).io.wrPulse.data := (
             wrBgPipeLast.postStage0.subLineMemEntry.getZero
           )
+          // END: old `WrPulseRdPipeSimpleDualPortMem` code
+          //--------
+          //combineBgSubLineMemArr(jdx).io.front.valid := False
+          //combineBgSubLineMemArr(jdx).io.front.bgExt := (
+          //  combineBgSubLineMemArr(jdx).io.front.bgExt.getZero
+          //)
+          //combineBgSubLineMemArr(jdx).io.front.bgExt.memAddr := 0x0
+          //combineBgSubLineMemArr(jdx).io.front.bgExt.modMemWord := (
+          //  wrBgPipeLast.postStage0.subLineMemEntry.getZero
+          //)
+          //--------
         }
       }
       //// END: post stage 0

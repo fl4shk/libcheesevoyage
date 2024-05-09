@@ -26,10 +26,10 @@ object PipeMemRmwFormal extends App {
     wordCount=wordCount,
     modStageCnt=modStageCnt,
   )
-  def forFmax = (
-    //true
-    false
-  )
+  //def forFmax = (
+  //  //true
+  //  false
+  //)
   //--------
   case class PipeMemRmwFormalDut() extends Component {
     val dut = FormalDut(PipeMemRmw[
@@ -43,7 +43,7 @@ object PipeMemRmwFormal extends App {
       modStageCnt=modStageCnt,
       dualRdType=modType(),
       optDualRd=true,
-      forFmax=forFmax,
+      //forFmax=forFmax,
     ))
 
     assumeInitial(clockDomain.isResetActive)
@@ -151,62 +151,62 @@ object PipeMemRmwFormal extends App {
   //--------
 }
 
-object PipeMemTestFormal extends App {
-  def wordCount = 4
-  new SpinalFormalConfig(
-    _spinalConfig=SpinalConfig(
-      defaultConfigForClockDomains=ClockDomainConfig(
-        resetKind=SYNC,
-      )
-    ).includeFormal,
-    _keepDebugInfo=true,
-  )
-    //.withBMC(40)
-    .withProve(40)
-    .withCover(60)
-    .doVerify(
-      //PipeMemTest(
-      //  wordCount=wordCount
-      //)
-      new Component {
-        val dut = FormalDut(PipeMemTest(
-          wordCount=wordCount
-        ))
-        assumeInitial(clockDomain.isResetActive)
-        def front = dut.io.front
-        //val myFront = cloneOf(dut.io.front)
-        def back = dut.io.back
-        //front <-/< myFront
-
-        //assumeInitial(myFront.payload === myFront.payload.getZero)
-        //assumeInitial(myFront.valid === myFront.valid.getZero)
-        ////anyseq(front.payload)
-        //anyseq(myFront.valid)
-        assumeInitial(front.payload === front.payload.getZero)
-        assumeInitial(front.valid === front.valid.getZero)
-        anyseq(front.payload)
-        anyseq(front.valid)
-        //myFront.valid := True
-        //anyseq(myFront.data)
-        //def addrExtWidth = 2
-        //val rFrontAddrCnt = (
-        //  Reg(
-        //    UInt(log2Up(wordCount) + addrExtWidth bits)
-        //  ) init(0x0)
-        //)
-        ////myFront.addr := RegNext(myFront.addr) init(myFront.addr.getZero)
-        //myFront.addr := rFrontAddrCnt(
-        //  rFrontAddrCnt.high downto addrExtWidth
-        //)
-        //when (myFront.fire) {
-        //  rFrontAddrCnt := rFrontAddrCnt + 1
-        //}
-        assumeInitial(back.ready)
-        anyseq(back.ready)
-        //back.ready := True
-      }
-    )
-}
+//object PipeMemTestFormal extends App {
+//  def wordCount = 4
+//  new SpinalFormalConfig(
+//    _spinalConfig=SpinalConfig(
+//      defaultConfigForClockDomains=ClockDomainConfig(
+//        resetKind=SYNC,
+//      )
+//    ).includeFormal,
+//    _keepDebugInfo=true,
+//  )
+//    //.withBMC(40)
+//    .withProve(40)
+//    .withCover(60)
+//    .doVerify(
+//      //PipeMemTest(
+//      //  wordCount=wordCount
+//      //)
+//      new Component {
+//        val dut = FormalDut(PipeMemTest(
+//          wordCount=wordCount
+//        ))
+//        assumeInitial(clockDomain.isResetActive)
+//        def front = dut.io.front
+//        //val myFront = cloneOf(dut.io.front)
+//        def back = dut.io.back
+//        //front <-/< myFront
+//
+//        //assumeInitial(myFront.payload === myFront.payload.getZero)
+//        //assumeInitial(myFront.valid === myFront.valid.getZero)
+//        ////anyseq(front.payload)
+//        //anyseq(myFront.valid)
+//        assumeInitial(front.payload === front.payload.getZero)
+//        assumeInitial(front.valid === front.valid.getZero)
+//        anyseq(front.payload)
+//        anyseq(front.valid)
+//        //myFront.valid := True
+//        //anyseq(myFront.data)
+//        //def addrExtWidth = 2
+//        //val rFrontAddrCnt = (
+//        //  Reg(
+//        //    UInt(log2Up(wordCount) + addrExtWidth bits)
+//        //  ) init(0x0)
+//        //)
+//        ////myFront.addr := RegNext(myFront.addr) init(myFront.addr.getZero)
+//        //myFront.addr := rFrontAddrCnt(
+//        //  rFrontAddrCnt.high downto addrExtWidth
+//        //)
+//        //when (myFront.fire) {
+//        //  rFrontAddrCnt := rFrontAddrCnt + 1
+//        //}
+//        assumeInitial(back.ready)
+//        anyseq(back.ready)
+//        //back.ready := True
+//      }
+//    )
+//}
 
 //case class PipeMemTestSpinalFormalBugFrontPayload
 ////[
