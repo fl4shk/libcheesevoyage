@@ -2030,6 +2030,11 @@ extends Component {
       name="DualRd_Mid2",
       optIncludeS2M=false,
     )
+    val rPrevMyRdMemWord = (
+      RegNextWhen(
+        myRdMemWord, cMid1.up.isFiring
+      ) init(myRdMemWord.getZero)
+    )
     val cBack = pipe.addStage(
       name="DualRd_Back",
       //finish=true,
@@ -2108,7 +2113,10 @@ extends Component {
         && !rDoIt
       ) {
         rDoIt := True
-        myOutpUpExt.rdMemWord := myRdMemWord
+        myOutpUpExt.rdMemWord := (
+          myRdMemWord
+          //rPrevMyRdMemWord
+        )
       }
       when (
         up.isFiring
