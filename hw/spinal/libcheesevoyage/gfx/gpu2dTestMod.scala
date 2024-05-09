@@ -1064,9 +1064,9 @@ case class Gpu2dTest(
         //3
         //4
         if (params.bgTileSize2d.x == 8) (
-          7 * 4
+          4 * 4
         ) else (
-          7
+          4
         )
       )
       //myPayload.bgEntry.dispFlip.x := True
