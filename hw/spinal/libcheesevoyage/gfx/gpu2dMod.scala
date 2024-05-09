@@ -6086,11 +6086,28 @@ case class Gpu2d(
       }
       case class Stage14() extends Bundle {
         def myTempObjTileWidth = tempObjTileWidth()
+        def myTempObjTileWidth1 = tempObjTileWidth1()
         val tempRdLineMemEntry = Vec.fill(
           myTempObjTileWidth
         )(
           ObjSubLineMemEntry()
         )
+        val inMainVec = (
+          Vec.fill(
+            //myTempObjTileWidth
+            myTempObjTileWidth1
+          )(
+            Bool()
+          )
+        )
+        //val affineInMainVec = (
+        //  Vec.fill(
+        //    //myTempObjTileWidth
+        //    myTempObjTileWidth1
+        //  )(
+        //    Bool()
+        //  )
+        //)
         //.setName(f"wrObjPipe15_tempRdLineMemEntry_$kind" + f"_$x")
       }
 
@@ -14860,6 +14877,20 @@ case class Gpu2d(
               //tempInp.stage11.myIdxV2d(x)(x)
             )
           )
+          tempOutp.stage14.inMainVec(x) := (
+            if (kind == 0) {
+              tempInp.stage13.inMainVec(
+                x + tempInp.objXStart()
+              )
+            } else { // if (kind == 1)
+              tempInp.stage13.inMainVec(
+                (x + tempInp.affineObjXStart())(
+                  params.objAffineTileSize2dPow.x - 1 downto 0
+                  //params.objAffineTileWidthRshift - 1 downto 0
+                )
+              )
+            }
+          )
         }
       }
 
@@ -14911,29 +14942,31 @@ case class Gpu2d(
             //tempInp.stage12.inMainVec(x)
             if (kind == 0) {
               //True
-              tempInp.stage13.inMainVec(
-                x + tempInp.objXStart()
-              )
-            } else {
-              //tempInp.stage12.inMainVec(
-              //  x
-              //  //tempInp.stage11.myIdxV2d(x)(x)
-              //  + tempInp.affineObjXStart()(
-              //    tempInp.affineObjXStart().high - 1 downto 0
-              //  )
+              //tempInp.stage13.inMainVec(
+              //  x + tempInp.objXStart()
               //)
-              //True
+              tempInp.stage14.inMainVec(x)
+            } else {
+              ////tempInp.stage12.inMainVec(
+              ////  x
+              ////  //tempInp.stage11.myIdxV2d(x)(x)
+              ////  + tempInp.affineObjXStart()(
+              ////    tempInp.affineObjXStart().high - 1 downto 0
+              ////  )
+              ////)
+              ////True
+              ////tempInp.stage13.inMainVec(
+              ////  (x + tempInp.affineObjXStart())(
+              ////    params.objAffineTileSize2dPow.x - 1 downto 0
+              ////  )
+              ////)
               //tempInp.stage13.inMainVec(
               //  (x + tempInp.affineObjXStart())(
               //    params.objAffineTileSize2dPow.x - 1 downto 0
+              //    //params.objAffineTileWidthRshift - 1 downto 0
               //  )
               //)
-              tempInp.stage13.inMainVec(
-                (x + tempInp.affineObjXStart())(
-                  params.objAffineTileSize2dPow.x - 1 downto 0
-                  //params.objAffineTileWidthRshift - 1 downto 0
-                )
-              )
+              tempInp.stage14.inMainVec(x)
             }
           )
           //--------
