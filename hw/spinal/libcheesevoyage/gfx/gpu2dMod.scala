@@ -113,6 +113,18 @@ case class Gpu2dParams(
                               // comparisons should take sprite-BG
                               // priority into account
   //--------
+  //bgTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
+  //colorMathTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
+  //objTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
+  bgTileMemInit: Option[ArrayBuffer[Gpu2dTileSlice]]=None,
+  colorMathTileMemInit: Option[ArrayBuffer[Gpu2dTileSlice]]=None,
+  objTileMemInit: Option[ArrayBuffer[Gpu2dTileSlice]]=None,
+  objAffineTileMemInit: Option[ArrayBuffer[UInt]]=None,
+  //objAffineTileMemInit: Option[ArrayBuffer[BigInt]]=None,
+  bgPalEntryMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
+  colorMathPalEntryMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
+  objPalEntryMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
+  //--------
   bgTileArrRamStyle: String="block",
   objTileArrRamStyle: String="block",
   objAffineTileArrRamStyle: String="block",
@@ -126,6 +138,7 @@ case class Gpu2dParams(
   //objLineArrRamStyle: String="block",
   //combineLineArrRamStyle: String="block",
   lineArrRamStyle: String="block",
+  //--------
   //--------
 ) {
   //--------
@@ -831,12 +844,16 @@ object DefaultGpu2dParams {
     //),
     //tileSize2d: ElabVec2[Int]=ElabVec2[Int](x=8, y=8),
     bgTileSize2dPow: ElabVec2[Int]=ElabVec2[Int](
-      x=log2Up(8), // tile width: 8
-      y=log2Up(8), // tile height: 8
+      x=log2Up(16), // tile width: 16
+      y=log2Up(16), // tile height: 16
+      //x=log2Up(8), // tile width: 8
+      //y=log2Up(8), // tile height: 8
     ),
     objTileSize2dPow: ElabVec2[Int]=ElabVec2[Int](
-      x=log2Up(8), // tile width: 8
-      y=log2Up(8), // tile height: 8
+      x=log2Up(16), // tile width: 16
+      y=log2Up(16), // tile height: 16
+      //x=log2Up(8), // tile width: 8
+      //y=log2Up(8), // tile height: 8
     ),
     objTileWidthRshift: Int=0,
     objAffineTileSize2dPow: ElabVec2[Int]=ElabVec2[Int](
@@ -866,6 +883,25 @@ object DefaultGpu2dParams {
     noAffineBgs: Boolean=false,
     noAffineObjs: Boolean=false,
     fancyObjPrio: Boolean=true,
+    //--------
+    //bgTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
+    //colorMathTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
+    //objTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
+    //objAffineTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
+    //bgPalEntryMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
+    //colorMathPalEntryMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
+    //objPalEntryMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
+    //bgTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
+    //colorMathTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
+    //objTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
+    bgTileMemInit: Option[ArrayBuffer[Gpu2dTileSlice]]=None,
+    colorMathTileMemInit: Option[ArrayBuffer[Gpu2dTileSlice]]=None,
+    objTileMemInit: Option[ArrayBuffer[Gpu2dTileSlice]]=None,
+    objAffineTileMemInit: Option[ArrayBuffer[UInt]]=None,
+    //objAffineTileMemInit: Option[ArrayBuffer[BigInt]]=None,
+    bgPalEntryMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
+    colorMathPalEntryMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
+    objPalEntryMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
     //--------
     bgTileArrRamStyle: String="block",
     objTileArrRamStyle: String="block",
@@ -977,6 +1013,14 @@ object DefaultGpu2dParams {
       noAffineBgs=noAffineBgs,
       noAffineObjs=noAffineObjs,
       fancyObjPrio=fancyObjPrio,
+      //--------
+      bgTileMemInit=bgTileMemInit,
+      colorMathTileMemInit=colorMathTileMemInit,
+      objTileMemInit=objTileMemInit,
+      objAffineTileMemInit=objAffineTileMemInit,
+      bgPalEntryMemInitBigInt=bgPalEntryMemInitBigInt,
+      colorMathPalEntryMemInitBigInt=colorMathPalEntryMemInitBigInt,
+      objPalEntryMemInitBigInt=objPalEntryMemInitBigInt,
       //--------
       bgTileArrRamStyle=bgTileArrRamStyle,
       objTileArrRamStyle=objTileArrRamStyle,
@@ -2032,15 +2076,15 @@ case class Gpu2d(
           //params.numBgTiles
           tempNumBgTileSlices
         ),
-        initBigInt={
-          val temp = new ArrayBuffer[BigInt]()
-          for (
-            //idx <- 0 until params.numBgTiles
-            idx <- 0 until tempNumBgTileSlices
-          ) {
-            temp += BigInt(0)
+        init={
+          params.bgTileMemInit match {
+            case Some(bgTileMemInit) => {
+              Some(bgTileMemInit)
+            }
+            case None => {
+              Some(Gpu2dTest.bgTileMemInit(params=params))
+            }
           }
-          Some(temp)
         },
         arrRamStyle=params.bgTileArrRamStyle,
       )
@@ -2134,12 +2178,21 @@ case class Gpu2d(
           isAffine=idx != 0,
         ),
         depth=tempNumObjTileSlices,
-        initBigInt={
-          val temp = new ArrayBuffer[BigInt]()
-          for (_ <- 0 until tempNumObjTileSlices) {
-            temp += BigInt(0)
+        init={
+          //val temp = new ArrayBuffer[]()
+          //for (_ <- 0 until tempNumObjTileSlices) {
+          //  temp += (0)
+          //}
+          //Some(temp)
+          params.objTileMemInit match {
+            case Some(objTileMemInit) => {
+              Some(objTileMemInit)
+            }
+            case None => {
+              //Some(Array.fill(tempNumObjTileSlices)((0)).toSeq)
+              Some(Gpu2dTest.objTileMemInit(params=params))
+            }
           }
-          Some(temp)
         },
         arrRamStyle=params.objTileArrRamStyle,
       )
@@ -2663,12 +2716,44 @@ case class Gpu2d(
         wordType=UInt(params.objPalEntryMemIdxWidth bits),
         depth=tempNumObjTileSlices,
         initBigInt={
-          val temp = new ArrayBuffer[BigInt]()
-          for (_ <- 0 until tempNumObjTileSlices) {
-            temp += BigInt(0)
-          }
-          Some(temp)
+          Some(Array.fill(tempNumObjTileSlices)(BigInt(0)).toSeq)
         },
+        //init={
+        //  //val temp = new ArrayBuffer[]()
+        //  //for (_ <- 0 until tempNumObjTileSlices) {
+        //  //  temp += (0)
+        //  //}
+        //  //Some(temp)
+        //  params.objAffineTileMemInit match {
+        //    case Some(objAffineTileMemInit) => {
+        //      Some(objAffineTileMemInit)
+        //    }
+        //    case None => {
+        //      //Some(Array.fill(tempNumObjTileSlices)(
+        //      //  (0)
+        //      //).toSeq)
+        //      //Gpu2dTest.objTileMemInit(params=params)
+        //      val tempArr = new ArrayBuffer[UInt]()
+        //      for (
+        //        jdx <- 0
+        //        until (
+        //          params.objPalEntryMemIdxWidth
+        //        )
+        //      ) {
+        //        for (
+        //          kdx <- 0 until params.objPalEntryMemIdxWidth
+        //        ) {
+        //        }
+        //      }
+        //      Some(tempArr.toSeq)
+        //    }
+        //  }
+        //  //Some(
+        //  //  Array.fill(tempNumObjTileSlices)(
+        //  //    U(s"${params.objPalEntryMemIdxWidth}'d0")
+        //  //  ).toSeq
+        //  //)
+        //},
         arrRamStyle=params.objAffineTileArrRamStyle,
       )
         .setName(f"objAffineTileMemArr_$idx")
@@ -2733,15 +2818,27 @@ case class Gpu2d(
               //params.numColorMathTiles
               tempNumColorMathTileSlices
             ),
-            initBigInt={
-              val temp = new ArrayBuffer[BigInt]()
-              for (
-                //idx <- 0 until params.numColorMathTiles
-                idx <- 0 until tempNumColorMathTileSlices
-              ) {
-                temp += BigInt(0)
+            init={
+              //val temp = new ArrayBuffer[]()
+              //for (
+              //  //idx <- 0 until params.numColorMathTiles
+              //  idx <- 0 until tempNumColorMathTileSlices
+              //) {
+              //  temp += (0)
+              //}
+              //Some(temp)
+              params.colorMathTileMemInit match {
+                case Some(colorMathTileMemInit) => {
+                  Some(colorMathTileMemInit)
+                }
+                case None => {
+                  //Some(Array.fill(tempNumColorMathTileSlices)(
+                  //  (0)
+                  //).toSeq)
+                  Some(Gpu2dTest.bgTileMemInit(params=params))
+                  //None
+                }
               }
-              Some(temp)
             },
             arrRamStyle=params.bgTileArrRamStyle,
           )
@@ -2782,6 +2879,34 @@ case class Gpu2d(
           //  }
           //  Some(temp)
           //},
+          initBigInt={
+            params.colorMathPalEntryMemInitBigInt match {
+              case Some(colorMathPalEntryMemInitBigInt) => {
+                Some(colorMathPalEntryMemInitBigInt)
+              }
+              case None => {
+                //Some(Array.fill(params.numColsInBgPal)(
+                //  (0)
+                //).toSeq)
+                Some(Gpu2dTest.bgPalMemInitBigInt(params=params))
+                //Some(Gpu2dTest.somePalMemInit(
+                //  params=params,
+                //  someBigIntArr=(
+                //    Gpu2dTest.bgPalMemInitBigInt(params=params)
+                //  ),
+                //))
+                //match {
+                //  case Some(mySeq) => {
+                //    Some(mySeq)
+                //  }
+                //  case None => {
+                //    None
+                //  }
+                //}
+                //None
+              }
+            }
+          },
           arrRamStyle=params.bgPalEntryArrRamStyle,
         )
           .setName(f"colorMathPalEntryMemArr_$jdx")
@@ -2839,6 +2964,7 @@ case class Gpu2d(
               temp += BigInt(0)
             }
             Some(temp)
+            //Some(Array.fill(params.numTilesPerBg)(BigInt(0)).toSeq)
           },
           arrRamStyle=params.bgEntryArrRamStyle,
         )
@@ -2929,13 +3055,14 @@ case class Gpu2d(
             isColorMath=false,
           ),
           depth=(params.numTilesPerBg >> 1),
-          initBigInt={
-            val temp = new ArrayBuffer[BigInt]()
-            for (_ <- 0 until (params.numTilesPerBg >> 1)) {
-              temp += BigInt(0)
-            }
-            Some(temp)
-          },
+          //initBigInt={
+          //  //val temp = new ArrayBuffer[BigInt]()
+          //  //for (_ <- 0 until (params.numTilesPerBg >> 1)) {
+          //  //  temp += BigInt(0)
+          //  //}
+          //  //Some(temp)
+          //  Some(Array.fill(params.numTilesPerBg >> 1)(BigInt(0)).toSeq)
+          //},
           arrRamStyle=params.bgEntryArrRamStyle,
         )
           .setName(f"bgEntryMemA2d_$idx" + f"_$jdx")
@@ -3013,11 +3140,12 @@ case class Gpu2d(
         ),
         depth=tempNumObjs,
         //initBigInt={
-        //  val temp = new ArrayBuffer[BigInt]()
-        //  for (_ <- 0 until tempNumObjs) {
-        //    temp += BigInt(0)
-        //  }
-        //  Some(temp)
+        //  //val temp = new ArrayBuffer[BigInt]()
+        //  //for (_ <- 0 until tempNumObjs) {
+        //  //  temp += BigInt(0)
+        //  //}
+        //  //Some(temp)
+        //  Some(Array.fill(tempNumObjs)(BigInt(0)).toSeq)
         //},
         arrRamStyle=params.objAttrsArrRamStyle,
       )
@@ -3069,13 +3197,28 @@ case class Gpu2d(
       bgPalEntryMemArr += FpgacpuRamSimpleDualPort(
         wordType=Gpu2dPalEntry(params=params),
         depth=params.numColsInBgPal,
-        //initBigInt={
-        //  val temp = new ArrayBuffer[BigInt]()
-        //  for (idx <- 0 until params.numColsInBgPal) {
-        //    temp += BigInt(0)
-        //  }
-        //  Some(temp)
-        //},
+        initBigInt={
+          //val temp = new ArrayBuffer[]()
+          //for (idx <- 0 until params.numColsInBgPal) {
+          //  temp += (0)
+          //}
+          //Some(temp)
+          params.bgPalEntryMemInitBigInt match {
+            case Some(bgPalEntryMemInitBigInt) => {
+              Some(bgPalEntryMemInitBigInt)
+            }
+            case None => {
+              //Some(Array.fill(params.numColsInBgPal)((0)).toSeq)
+              //Some(Gpu2dTest.somePalMemInit(
+              //  params=params,
+              //  someBigIntArr=Gpu2dTest.bgPalMemInitBigInt(
+              //    params=params,
+              //  )
+              //))
+              Some(Gpu2dTest.bgPalMemInitBigInt(params=params).toSeq)
+            }
+          }
+        },
         arrRamStyle=params.bgPalEntryArrRamStyle,
       )
         .setName(f"bgPalEntryMemArr_$jdx")
@@ -3130,13 +3273,29 @@ case class Gpu2d(
         objPalEntryMemArr += FpgacpuRamSimpleDualPort(
           wordType=Gpu2dPalEntry(params=params),
           depth=params.numColsInObjPal,
-          //initBigInt={
-          //  val temp = new ArrayBuffer[BigInt]()
-          //  for (idx <- 0 until params.numColsInObjPal) {
-          //    temp += BigInt(0)
-          //  }
-          //  Some(temp)
-          //},
+          initBigInt={
+            //val temp = new ArrayBuffer[]()
+            //for (idx <- 0 until params.numColsInObjPal) {
+            //  temp += (0)
+            //}
+            //Some(temp)
+            params.objPalEntryMemInitBigInt match {
+              case Some(objPalEntryMemInitBigInt) => {
+                Some(objPalEntryMemInitBigInt)
+              }
+              case None => {
+                //Some(Array.fill(params.numColsInObjPal)(BigInt(0)).toSeq)
+                //Some(Array.fill(params.numColsInBgPal)((0)).toSeq)
+                //Some(Gpu2dTest.somePalMemInit(
+                //  params=params,
+                //  someBigIntArr=Gpu2dTest.objPalMemInitBigInt(
+                //    params=params,
+                //  )
+                //))
+                Some(Gpu2dTest.objPalMemInitBigInt(params=params).toSeq)
+              }
+            }
+          },
           arrRamStyle=params.objPalEntryArrRamStyle,
         )
           .setName(f"objPalEntryMemArr_$idx" + f"_$x")
@@ -3949,6 +4108,15 @@ case class Gpu2d(
       for (initIdx <- 0 until params.objSubLineMemArrSize) {
         objSubLineMemInitBigInt += BigInt(0)
       }
+      //val objSubLineMemInit = new ArrayBuffer[Vec[ObjSubLineMemEntry]]()
+      //for (initIdx <- 0 until params.objSubLineMemArrSize) {
+      //  val temp = Vec.fill(
+      //    //params.objTileSize2d.x
+      //    params.objSliceTileWidth
+      //  )(ObjSubLineMemEntry())
+      //  temp := temp.getZero
+      //  objSubLineMemInit += temp
+      //}
 
       //objSubLineMemA2d += new ArrayBuffer[
       //  PipeSimpleDualPortMem[Vec[ObjSubLineMemEntry]]
@@ -3968,6 +4136,7 @@ case class Gpu2d(
         )(ObjSubLineMemEntry()),
         depth=params.objSubLineMemArrSize,
         initBigInt=Some(objSubLineMemInitBigInt),
+        //init=Some(objSubLineMemInit),
         arrRamStyle=params.lineArrRamStyle,
       )
         .setName(f"wrObjSubLineMemArr_$idx")
@@ -4098,7 +4267,7 @@ case class Gpu2d(
             ObjSubLineMemEntry()
           ),
           depth=params.objAffineSubLineMemArrSize,
-          initBigInt=Some(objAffineSubLineMemInitBigInt),
+          //initBigInt=Some(objAffineSubLineMemInitBigInt),
           arrRamStyle=params.lineArrRamStyle,
         )
           .setName(f"wrObjAffineSubLineMemArr_$idx")

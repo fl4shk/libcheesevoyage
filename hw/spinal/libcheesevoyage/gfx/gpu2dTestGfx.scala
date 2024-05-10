@@ -19,11 +19,17 @@ object Gpu2dTestGfx {
   def doConvert(
     filename: String
   ) = {
-    val tempArr = new ArrayBuffer[Int]()
+    val tempArr = new ArrayBuffer[Short]()
     val bis = new BufferedInputStream(new FileInputStream(filename))
     Iterator.continually(bis.read())
       .takeWhile(_ != -1)
-      .foreach(b => tempArr += b.toInt)
+      .foreach(
+        b => {
+          //tempArr += b.toInt
+          tempArr += b.toShort
+          //tempArr += (b.toInt & 0xff)
+        }
+      )
     bis.close
     tempArr
   }

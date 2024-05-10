@@ -268,19 +268,26 @@ case class FpgacpuRamSimpleDualPortIo[
   val rdData = out(wordType())
   //--------
 }
-case class FpgacpuRamSimpleDualPortImpl(
-  wordWidth: Int,
+case class FpgacpuRamSimpleDualPortImpl[
+  WordT <: Data
+](
+  //wordWidth: Int,
+  wordType: HardType[WordT],
   depth: Int,
-  initBigInt: Option[ArrayBuffer[BigInt]]=None,
+  initBigInt: Option[Seq[BigInt]]=None,
+  //init: Option[Seq[Bits]]=None,
+  init: Option[Seq[WordT]]=None,
   arrRamStyle: String="block",
   arrRwAddrCollision: String="",
 ) extends Component {
   val io = FpgacpuRamSimpleDualPortIo(
-    wordType=Bits(wordWidth bits),
+    //wordType=Bits(wordWidth bits),
+    wordType=wordType(),
     depth=depth,
   )
   val arr = Mem(
-    wordType=Bits(wordWidth bits),
+    //wordType=Bits(wordWidth bits),
+    wordType=wordType(),
     wordCount=depth,
   )
     //.initBigInt(Array.fill(depth)(BigInt(0)).toSeq)
@@ -292,7 +299,14 @@ case class FpgacpuRamSimpleDualPortImpl(
 
   initBigInt match {
     case Some(myInitBigInt) => {
-      arr.initBigInt(myInitBigInt.toSeq)
+      arr.initBigInt(myInitBigInt)
+    }
+    case None => {
+    }
+  }
+  init match {
+    case Some(myInit) => {
+      arr.init(myInit)
     }
     case None => {
     }
@@ -316,7 +330,8 @@ case class FpgacpuRamSimpleDualPort[
 ](
   wordType: HardType[WordT],
   depth: Int,
-  initBigInt: Option[ArrayBuffer[BigInt]]=None,
+  initBigInt: Option[Seq[BigInt]]=None,
+  init: Option[ArrayBuffer[WordT]]=None,
   arrRamStyle: String="block",
   arrRwAddrCollision: String="",
 ) extends Component {
@@ -328,19 +343,68 @@ case class FpgacpuRamSimpleDualPort[
   def addrWidth = io.addrWidth
   //--------
   val impl = FpgacpuRamSimpleDualPortImpl(
-    wordWidth=wordType().asBits.getWidth,
+    //wordWidth=wordType().asBits.getWidth,
+    wordType=wordType(),
     depth=depth,
-    initBigInt=initBigInt,
+    //initBigInt=initBigInt,
+    initBigInt={
+      initBigInt match {
+        case Some(myInit) => {
+          val tempArr = new ArrayBuffer[BigInt]()
+          if (myInit.size < depth) {
+            for (idx <- 0 until myInit.size) {
+              tempArr += myInit(idx)//.asBits
+            }
+            for (idx <- myInit.size until depth) {
+              tempArr += BigInt(0)//tempArr.last.getZero
+            }
+          } else {
+            for (idx <- 0 until depth) {
+              tempArr += myInit(idx)//.asBits
+            }
+          }
+          Some(tempArr.toSeq)
+        }
+        case None => {
+          None
+        }
+      }
+    },
+    init={
+      init match {
+        case Some(myInit) => {
+          val tempArr = new ArrayBuffer[WordT]()
+          if (myInit.size < depth) {
+            for (idx <- 0 until myInit.size) {
+              tempArr += myInit(idx)//.asBits
+            }
+            for (idx <- myInit.size until depth) {
+              tempArr += tempArr.last.getZero 
+              //BigInt(0)//tempArr.last.getZero
+            }
+          } else {
+            for (idx <- 0 until depth) {
+              tempArr += myInit(idx)//.asBits
+            }
+          }
+          Some(tempArr.toSeq)
+        }
+        case None => {
+          None
+        }
+      }
+    },
     arrRamStyle=arrRamStyle,
     arrRwAddrCollision=arrRwAddrCollision,
   )
   impl.io.wrEn := io.wrEn
   impl.io.wrAddr := io.wrAddr
-  impl.io.wrData := io.wrData.asBits
+  impl.io.wrData := io.wrData//.asBits
 
   impl.io.rdEn := io.rdEn
   impl.io.rdAddr := io.rdAddr
-  io.rdData.assignFromBits(impl.io.rdData)
+  //io.rdData.assignFromBits(impl.io.rdData)
+  io.rdData := impl.io.rdData
   //val arr = Mem(
   //  wordType=wordType(),
   //  wordCount=depth,
