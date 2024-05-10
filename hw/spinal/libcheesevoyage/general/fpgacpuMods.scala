@@ -350,20 +350,21 @@ case class FpgacpuRamSimpleDualPort[
     initBigInt={
       initBigInt match {
         case Some(myInit) => {
-          val tempArr = new ArrayBuffer[BigInt]()
-          if (myInit.size < depth) {
-            for (idx <- 0 until myInit.size) {
-              tempArr += myInit(idx)//.asBits
-            }
-            for (idx <- myInit.size until depth) {
-              tempArr += BigInt(0)//tempArr.last.getZero
-            }
-          } else {
-            for (idx <- 0 until depth) {
-              tempArr += myInit(idx)//.asBits
-            }
-          }
-          Some(tempArr.toSeq)
+          //val tempArr = new ArrayBuffer[BigInt]()
+          //if (myInit.size < depth) {
+          //  for (idx <- 0 until myInit.size) {
+          //    tempArr += myInit(idx)//.asBits
+          //  }
+          //  for (idx <- myInit.size until depth) {
+          //    tempArr += BigInt(0)//tempArr.last.getZero
+          //  }
+          //} else {
+          //  for (idx <- 0 until depth) {
+          //    tempArr += myInit(idx)//.asBits
+          //  }
+          //}
+          //Some(tempArr.toSeq)
+          Some(myInit)
         }
         case None => {
           None
@@ -373,21 +374,22 @@ case class FpgacpuRamSimpleDualPort[
     init={
       init match {
         case Some(myInit) => {
-          val tempArr = new ArrayBuffer[WordT]()
-          if (myInit.size < depth) {
-            for (idx <- 0 until myInit.size) {
-              tempArr += myInit(idx)//.asBits
-            }
-            for (idx <- myInit.size until depth) {
-              tempArr += tempArr.last.getZero 
-              //BigInt(0)//tempArr.last.getZero
-            }
-          } else {
-            for (idx <- 0 until depth) {
-              tempArr += myInit(idx)//.asBits
-            }
-          }
-          Some(tempArr.toSeq)
+          //val tempArr = new ArrayBuffer[WordT]()
+          //if (myInit.size < depth) {
+          //  for (idx <- 0 until myInit.size) {
+          //    tempArr += myInit(idx)//.asBits
+          //  }
+          //  for (idx <- myInit.size until depth) {
+          //    tempArr += tempArr.last.getZero 
+          //    //BigInt(0)//tempArr.last.getZero
+          //  }
+          //} else {
+          //  for (idx <- 0 until depth) {
+          //    tempArr += myInit(idx)//.asBits
+          //  }
+          //}
+          //Some(tempArr.toSeq)
+          Some(myInit)
         }
         case None => {
           None

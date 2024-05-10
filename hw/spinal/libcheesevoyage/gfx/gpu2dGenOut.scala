@@ -121,7 +121,7 @@ object Gpu2dSimDutParams {
   //    //x=log2Up(2),
   //    //y=log2Up(2),
   //  ),
-  //  objTileSize2dPow=ElabVec2[Int](
+  ////  objTileSize2dPow=ElabVec2[Int](
   //    x=log2Up(8),
   //    y=log2Up(8),
   //    //x=log2Up(4),
@@ -296,8 +296,9 @@ object Gpu2dSimDutParams {
       //Some(8)
       //Some(16)
       //Some(4)
+      Some(128)
       //Some(256)
-      Some(32)
+      //Some(32)
     ),
     numObjAffineTiles=(
       Some(16)

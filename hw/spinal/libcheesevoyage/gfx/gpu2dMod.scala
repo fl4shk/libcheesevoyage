@@ -116,8 +116,8 @@ case class Gpu2dParams(
   //bgTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
   //colorMathTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
   //objTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
-  bgTileMemInit: Option[ArrayBuffer[Gpu2dTileSlice]]=None,
-  colorMathTileMemInit: Option[ArrayBuffer[Gpu2dTileSlice]]=None,
+  bgTileMemInit: Option[Array[ArrayBuffer[Gpu2dTileSlice]]]=None,
+  colorMathTileMemInit: Option[Array[ArrayBuffer[Gpu2dTileSlice]]]=None,
   objTileMemInit: Option[ArrayBuffer[Gpu2dTileSlice]]=None,
   objAffineTileMemInit: Option[ArrayBuffer[UInt]]=None,
   //objAffineTileMemInit: Option[ArrayBuffer[BigInt]]=None,
@@ -894,8 +894,8 @@ object DefaultGpu2dParams {
     //bgTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
     //colorMathTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
     //objTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
-    bgTileMemInit: Option[ArrayBuffer[Gpu2dTileSlice]]=None,
-    colorMathTileMemInit: Option[ArrayBuffer[Gpu2dTileSlice]]=None,
+    bgTileMemInit: Option[Array[ArrayBuffer[Gpu2dTileSlice]]]=None,
+    colorMathTileMemInit: Option[Array[ArrayBuffer[Gpu2dTileSlice]]]=None,
     objTileMemInit: Option[ArrayBuffer[Gpu2dTileSlice]]=None,
     objAffineTileMemInit: Option[ArrayBuffer[UInt]]=None,
     //objAffineTileMemInit: Option[ArrayBuffer[BigInt]]=None,
@@ -2079,10 +2079,14 @@ case class Gpu2d(
         init={
           params.bgTileMemInit match {
             case Some(bgTileMemInit) => {
-              Some(bgTileMemInit)
+              Some(bgTileMemInit(jdx))
             }
             case None => {
-              Some(Gpu2dTest.bgTileMemInit(params=params))
+              Some(Gpu2dTest.doSplitBgTileMemInit(
+                params=params,
+                gridIdx=jdx,
+                //isColorMath=false,
+              ))
             }
           }
         },
@@ -2189,6 +2193,15 @@ case class Gpu2d(
               Some(objTileMemInit)
             }
             case None => {
+              //val tempArr = new ArrayBuffer[Gpu2dTileSlice]()
+              //for (kdx <- 0 until tempNumObjTileSlices) {
+              //  tempArr += Gpu2dTileSlice(
+              //    params=params,
+              //    isObj=true,
+              //    isAffine=idx != 0,
+              //  ).getZero
+              //}
+              //Some(tempArr)
               //Some(Array.fill(tempNumObjTileSlices)((0)).toSeq)
               Some(Gpu2dTest.objTileMemInit(params=params))
             }
@@ -2827,15 +2840,21 @@ case class Gpu2d(
               //  temp += (0)
               //}
               //Some(temp)
+              //Some(Gpu2dTest.bgTileMemInit(params=params))
               params.colorMathTileMemInit match {
                 case Some(colorMathTileMemInit) => {
-                  Some(colorMathTileMemInit)
+                  Some(colorMathTileMemInit(jdx))
                 }
                 case None => {
                   //Some(Array.fill(tempNumColorMathTileSlices)(
                   //  (0)
                   //).toSeq)
-                  Some(Gpu2dTest.bgTileMemInit(params=params))
+                  //Some(Gpu2dTest.bgTileMemInit(params=params))
+                  Some(Gpu2dTest.doSplitBgTileMemInit(
+                    params=params,
+                    gridIdx=jdx,
+                    //isColorMath=true,
+                  ))
                   //None
                 }
               }
