@@ -220,6 +220,9 @@ object Gpu2dSim extends App {
       //back=1,
       visib=(
         240
+        //128
+        //64
+        //48
         //32
         //16
       ),
@@ -251,20 +254,20 @@ object Gpu2dSim extends App {
     //  //y=log2Up(2),
     //),
     bgTileSize2dPow=ElabVec2[Int](
-      x=log2Up(16),
-      y=log2Up(16),
-      //x=log2Up(8),
-      //y=log2Up(8),
+      //x=log2Up(16),
+      //y=log2Up(16),
+      x=log2Up(8),
+      y=log2Up(8),
       //x=log2Up(4),
       //y=log2Up(4),
       //x=log2Up(2),
       //y=log2Up(2),
     ),
     objTileSize2dPow=ElabVec2[Int](
-      x=log2Up(16),
-      y=log2Up(16),
-      //x=log2Up(8),
-      //y=log2Up(8),
+      //x=log2Up(16),
+      //y=log2Up(16),
+      x=log2Up(8),
+      y=log2Up(8),
       //x=log2Up(4),
       //y=log2Up(4),
       //x=log2Up(2),
@@ -319,7 +322,8 @@ object Gpu2dSim extends App {
     //numObjTilesPow=None,
     numObjTiles=Some(
       //16
-      64
+      //64
+      512
     ),
     numObjAffineTiles=Some(16),
     numColsInBgPalPow=(
@@ -336,6 +340,9 @@ object Gpu2dSim extends App {
       true
       //false
     ),
+    //--------
+    bgTileMemInit=None,
+    //--------
     //fancyObjPrio=false,
     fancyObjPrio=true,
   )
@@ -470,7 +477,8 @@ object Gpu2dSim extends App {
         //16000
         //32000
         //vgaTimingInfo.fbSize2d.x * vgaTimingInfo.fbSize2d.y * 20 * 2
-        vgaTimingInfo.fbSize2d.x * vgaTimingInfo.fbSize2d.y * 3 * 2
+        //vgaTimingInfo.fbSize2d.x * vgaTimingInfo.fbSize2d.y * 3 * 2
+        vgaTimingInfo.fbSize2d.x * 32 * 3 * 2
         //38400
         //38400 * 2
         //48000

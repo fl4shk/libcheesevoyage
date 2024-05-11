@@ -819,17 +819,17 @@ case class LcvVgaCtrl(
     //&& rPastPixelEn
     misc.pixelEn
     //&& misc.visib
-    //&& hpipe.rVisibPipe1 && vpipe.rVisib
-    && hpipe.rVisib && vpipe.rVisib
+    && hpipe.rVisibPipe1 && vpipe.rVisib
+    //&& hpipe.rVisib && vpipe.rVisib
     //&& !fifoEmpty
   ) {
-    rFifoPopReady := True
-    //fifoPop.ready := True
+    //rFifoPopReady := True
+    fifoPop.ready := True
   } otherwise {
-    rFifoPopReady := False
-    //fifoPop.ready := False
+    //rFifoPopReady := False
+    fifoPop.ready := False
   }
-  fifoPop.ready := rFifoPopReady
+  //fifoPop.ready := rFifoPopReady
   //fifoPop.ready := (
   //  //misc.pixelEnPipe1
   //  misc.pixelEn
@@ -1058,9 +1058,15 @@ case class LcvVgaCtrl(
       rPhysColGPipe1 := rPhys.col.g + 1
     }
   }
+  //when (fifoPop.fire) {
+  //  rPhys.col := tempCol
+  //}
   when (misc.pixelEn) {
     // Visible area
-    when (misc.visib) {
+    when (
+      misc.visib
+      //hpipe.rVisibPipe2 && vpipe.rVisib
+    ) {
       //when (~io.en) {
       //  //m.d.sync += [
       //    //phys.col.r := (0xf),
@@ -1072,7 +1078,9 @@ case class LcvVgaCtrl(
       //  rPhys.col.b := (default -> True)
       //} otherwise { // when (io.en)
         //m.d.sync += [
-          rPhys.col := tempCol
+          //--------
+          rPhys.col := /*RegNext*/(tempCol)
+          //--------
           //rPhys.col := rTempColBuf
           //rPhys.col.r := (default -> True)
           ////when (hpipe.c === 0x0) {

@@ -704,9 +704,9 @@ extends Component {
         name="Mid1Front",
         optIncludeS2M=false,
       )
-      val cMid2Front = pipe.addStage(
-        name="Mid2Front"
-      )
+      //val cMid2Front = pipe.addStage(
+      //  name="Mid2Front"
+      //)
       val cLastFront = pipe.addStage(
         name="LastFront", 
         finish=true,
@@ -2062,10 +2062,10 @@ extends Component {
       optIncludeS2M=false,
       //finish=true,
     )
-    val cMid2 = pipe.addStage(
-      name="DualRd_Mid2",
-      optIncludeS2M=false,
-    )
+    //val cMid2 = pipe.addStage(
+    //  name="DualRd_Mid2",
+    //  optIncludeS2M=false,
+    //)
     val rPrevMyRdMemWord = (
       RegNextWhen(
         myRdMemWord, cMid1.up.isFiring

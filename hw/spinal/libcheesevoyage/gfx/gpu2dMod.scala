@@ -2089,6 +2089,7 @@ case class Gpu2d(
                 gridIdx=jdx,
                 //isColorMath=false,
               ))
+              //None
             }
           }
         },
@@ -8650,10 +8651,10 @@ case class Gpu2d(
     val combinePipeLastPreThrown = Stream(CombinePipePayload())
     val combinePipeLastThrown = (
       //Stream(CombinePipePayload())
-      //combinePipeLastPreThrown.throwWhen(
-      //  rPrevCombinePipeLastCnt.asUInt === combinePipeLastPreThrown.cnt
-      //)
-      combinePipeLastPreThrown
+      combinePipeLastPreThrown.throwWhen(
+        rPrevCombinePipeLastCnt.asUInt === combinePipeLastPreThrown.cnt
+      )
+      //combinePipeLastPreThrown
     )
     //combinePipeLastThrown << combinePipeLast.throwWhen(
     //  rPrevCombinePipeLastCnt.asUInt === combinePipeLastThrown.cnt
