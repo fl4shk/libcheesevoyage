@@ -684,8 +684,9 @@ protected:		// variables and helper functions
 				//_visib_enable
 				//_top->io_misc_pastVisib
 				//_top->io_misc_visib
-				_top->io_misc_visibPrev1
-				&& _top->io_misc_visib
+				//_top->io_misc_visibPrev1
+				//&& 
+				_top->io_misc_visib
 				//--------
 				&& _top->io_misc_pixelEn
 				//&& _top->io_misc_pastPixelEn
@@ -710,8 +711,9 @@ protected:		// variables and helper functions
 			//////&& _top->io_misc_pixelEn
 			//////_top->io_misc_pastVisib
 			//_top->io_misc_visib
-			_top->io_misc_visibPrev1
-			&& _top->io_misc_visib
+			//_top->io_misc_visibPrev1
+			//&&
+			_top->io_misc_visib
 			//--------
 			&& _top->io_misc_pixelEn
 			//&& _top->io_misc_pastPixelEn

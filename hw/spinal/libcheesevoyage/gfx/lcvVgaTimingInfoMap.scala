@@ -5,35 +5,35 @@ import spinal.core._
 object LcvVgaTimingInfoMap {
   //val map = Map[String, LcvVgaTimingInfo]()
   val map = Map[String, LcvVgaTimingInfo](
-    "320x240@60" -> LcvVgaTimingInfo(
-      //pixelClk=12.5 MHz,
-      //pixelClk=25.175 MHz,
-      pixelClk=6.0 MHz,
-      //htiming=LcvVgaTimingHv(
-      //  visib=640 / 2,
-      //  front=16 / 2,
-      //  sync=96 / 2,
-      //  back=48 / 2
-      //),
-      htiming=LcvVgaTimingHv(
-        visib=320,
-        front=8,
-        sync=32,
-        back=40,
-      ),
-      //vtiming=LcvVgaTimingHv(
-      //  visib=480 / 2,
-      //  front=10 / 2,
-      //  sync=2 / 2,
-      //  back=33 / 2
-      //),
-      vtiming=LcvVgaTimingHv(
-        visib=240,
-        front=3,
-        sync=4,
-        back=6,
-      ),
-    ),
+    //"320x240@60" -> LcvVgaTimingInfo(
+    //  //pixelClk=12.5 MHz,
+    //  //pixelClk=25.175 MHz,
+    //  pixelClk=6.0 MHz,
+    //  //htiming=LcvVgaTimingHv(
+    //  //  visib=640 / 2,
+    //  //  front=16 / 2,
+    //  //  sync=96 / 2,
+    //  //  back=48 / 2
+    //  //),
+    //  htiming=LcvVgaTimingHv(
+    //    visib=320,
+    //    front=8,
+    //    sync=32,
+    //    back=40,
+    //  ),
+    //  //vtiming=LcvVgaTimingHv(
+    //  //  visib=480 / 2,
+    //  //  front=10 / 2,
+    //  //  sync=2 / 2,
+    //  //  back=33 / 2
+    //  //),
+    //  vtiming=LcvVgaTimingHv(
+    //    visib=240,
+    //    front=3,
+    //    sync=4,
+    //    back=6,
+    //  ),
+    //),
     // 640 x 480 @ 60 Hz, taken from http://www.tinyvga.com
     "640x480@60" -> LcvVgaTimingInfo(
       pixelClk=25.0 MHz,

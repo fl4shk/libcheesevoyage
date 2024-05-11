@@ -36,27 +36,21 @@ class LcvVgaPipe(
   isVert: Boolean,
   vivadoDebug: Boolean=false,
 ) //extends Bundle
-  extends Area
 {
   //--------
   //val s = Reg(LcvVgaState()) init(LcvVgaState.front)
   ////val sWrapNext = s.wrapNext()
   //val c = Reg(UInt(vgaTimingHv.cntWidth() bits)) init(0x0)
 
-  //def minAhead = 1
-  ////def maxAhead = 3 
-  //def maxAhead = 2
-  //def numAhead = maxAhead - minAhead + 1
-  //def pipeSize = numAhead + 1
+  def minAhead = 1
+  //def maxAhead = 3 
+  def maxAhead = 2
+  def numAhead = maxAhead - minAhead + 1
+  def pipeSize = numAhead + 1
 
-  def prev1Idx = 0
-  def currIdx = 1
-  def pipe1Idx = 2
-  def pipe2Idx = 3
-  def pipeSize = pipe2Idx - prev1Idx + 1
-  //def currIdx = 0
-  //def pipe1Idx = 1
-  //def pipe2Idx = 2
+  def currIdx = 0
+  def pipe1Idx = 1
+  def pipe2Idx = 2
   //def pipe3Idx = 3
 
   //def cntWidth = vgaTimingHv.cntWidth(offs=maxAhead) 
@@ -120,8 +114,8 @@ class LcvVgaPipe(
 
   // `<whatever>ToDrive` are the inputs to the pipeline
   def c = rCPipe(currIdx)
-  def rCPipe1 = rCPipe(pipe1Idx)
-  def rCPipe2 = rCPipe(pipe2Idx)
+  def rCPipe1 = rCPipe(1)
+  def rCPipe2 = rCPipe(2)
   val rCPipe2Plus1GeStateSize = Reg(Bool()) init(False)
   val rCPipe2Plus1 = Reg(UInt(cntWidth bits)) init(0x0)
   //val rCPipe3 = rCPipe(3)
@@ -131,7 +125,6 @@ class LcvVgaPipe(
   def rSPipe2 = rSPipe(pipe2Idx)
   //val rSPipe3 = rSPipe(pipe3Idx)
 
-  def rVisibPrev1 = rVisibPipe(prev1Idx)
   def rVisib = rVisibPipe(currIdx)
   def rVisibPipe1 = rVisibPipe(pipe1Idx)
   def rVisibPipe2 = rVisibPipe(pipe2Idx)
@@ -436,7 +429,6 @@ case class LcvVgaCtrlMiscIo(
   //val visibPipe2 = Bool()
   val visibPipe1 = Bool()
   val visib = Bool()
-  val visibPrev1 = Bool()
   val pastVisib = Bool()
   //val drawPos = Vec2(LcvVgaCtrlMiscIo.coordElemT(
   //))
@@ -825,13 +817,9 @@ case class LcvVgaCtrl(
     //&& 
     //misc.pixelEnPipe1
     //&& rPastPixelEn
-    //--------
     misc.pixelEn
-    && misc.visib
-    //&& hpipe.rVisibPrev1 && vpipe.rVisib
-    //--------
-    //&& misc.pastVisib
-    //&& hpipe.rVisibPipe1 && vpipe.rVisib
+    //&& misc.visib
+    && hpipe.rVisibPipe1 && vpipe.rVisib
     //&& hpipe.rVisib && vpipe.rVisib
     //&& !fifoEmpty
   ) {
@@ -1076,10 +1064,7 @@ case class LcvVgaCtrl(
   when (misc.pixelEn) {
     // Visible area
     when (
-      //--------
       misc.visib
-      //hpipe.rVisibPrev1 && vpipe.rVisib
-      //--------
       //hpipe.rVisibPipe2 && vpipe.rVisib
     ) {
       //when (~io.en) {
@@ -1232,9 +1217,6 @@ case class LcvVgaCtrl(
     val rPastVisib = Reg(Bool()) init(False)
     rPastVisib := misc.visib
     misc.pastVisib := rPastVisib
-    misc.visibPrev1 := (
-      hpipe.rVisibPrev1 && vpipe.rVisib
-    )
 
     val rPastDrawPos = Reg(LcvVgaCtrlMiscIo.coordT(
       fbSize2d=vgaTimingInfo.fbSize2d
