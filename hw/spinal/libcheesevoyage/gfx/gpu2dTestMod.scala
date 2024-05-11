@@ -5,6 +5,7 @@ import libcheesevoyage.general.Vec2
 import libcheesevoyage.general.ElabVec2
 //import libcheesevoyage.general.DualTypeNumVec2PowCnt
 import libcheesevoyage.general.DualTypeNumVec2
+import libcheesevoyage.general.FpgacpuRamSimpleDualPort
 import libcheesevoyage.hwdev._
 
 import spinal.core._
@@ -1581,8 +1582,8 @@ case class Gpu2dTest(
           //}
           tempArr.toSeq
         })
-      //  .setName("myBg1MapArr")
-      //  .addAttribute("keep")
+        .setName("myBg1MapArr")
+        .addAttribute("keep")
       val myPayload = (
         KeepAttribute(cloneOf(tempBgEntryPush.payload))
         .setName(f"myTempBgEntryPushPayload_$idx")
@@ -1628,18 +1629,20 @@ case class Gpu2dTest(
       //)
       //  .setName("myBg1ReadSyncEnable")
       val myBg1MemAddr = KeepAttribute(
-        (
-          //Cat(
-            //B"16'd0",
-            RegNext(rBg1EntryCntV2d).y //- myBg1EntryCntYInit
-          //).asUInt.resized
-          * (
-            //params.bgSize2dInTiles.x
-            params.intnlFbSize2d.x / params.bgTileSize2d.x
+        RegNext(
+          (
+            //Cat(
+              //B"16'd0",
+              /*RegNext*/(rBg1EntryCntV2d).y //- myBg1EntryCntYInit
+            //).asUInt.resized
+            * (
+              //params.bgSize2dInTiles.x
+              params.intnlFbSize2d.x / params.bgTileSize2d.x
+            )
           )
+          + /*RegNext*/(rBg1EntryCntV2d).x.resized
+          //rBg0EntryCnt.asUInt.resized
         )
-        + RegNext(rBg1EntryCntV2d).x.resized
-        //rBg0EntryCnt.asUInt.resized
       )
         .setName("myBg1MemAddr")
       //myPayload.bgEntry.tileIdx := (
