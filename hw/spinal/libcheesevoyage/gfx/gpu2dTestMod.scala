@@ -1478,8 +1478,12 @@ case class Gpu2dTest(
       )
       myMemAddrCalcPos.io.en := tempBgEntryPush.fire
       //--------
-      nextBg1EntryCntV2d.x := myMemAddrCalcPos.io.info.nextPos.x.resized
-      nextBg1EntryCntV2d.y := myMemAddrCalcPos.io.info.nextPos.y.resized
+      nextBg1EntryCntV2d.x := (
+        RegNext(myMemAddrCalcPos.io.info.nextPos).x.resized
+      )
+      nextBg1EntryCntV2d.y := (
+        RegNext(myMemAddrCalcPos.io.info.nextPos.y).resized
+      )
       nextBg1EntryExtCntV2d.x := (
         myMemAddrExtCalcPos.io.info.nextPos.x.resized
       )
@@ -1490,10 +1494,10 @@ case class Gpu2dTest(
       tempBgEntryPush.valid := (
         //True
         (
-          rBg1EntryExtCntV2d.x - 1
+          /*RegNext*/(rBg1EntryExtCntV2d).x - 1
           < (params.intnlFbSize2d.x / params.bgTileSize2d.x)
         ) && (
-          rBg1EntryExtCntV2d.y 
+          /*RegNext*/(rBg1EntryExtCntV2d).y 
           < (params.intnlFbSize2d.y / params.bgTileSize2d.y)
         )
       )
@@ -1583,7 +1587,7 @@ case class Gpu2dTest(
       )
       tempBgEntryPush.payload := /*RegNext*/(myPayload)
       val myBg1MemIdx = (
-        KeepAttribute(rBg1EntryCntV2d.asBits.asUInt)
+        KeepAttribute(RegNext(rBg1EntryCntV2d).asBits.asUInt)
         //rBg0EntryCnt
         .setName("myBg1MemIdx")
       )
@@ -1625,14 +1629,14 @@ case class Gpu2dTest(
         (
           //Cat(
             //B"16'd0",
-            nextBg1EntryCntV2d.y //- myBg1EntryCntYInit
+            rBg1EntryCntV2d.y //- myBg1EntryCntYInit
           //).asUInt.resized
           * (
             //params.bgSize2dInTiles.x
             params.intnlFbSize2d.x / params.bgTileSize2d.x
           )
         )
-        + nextBg1EntryCntV2d.x.resized
+        + rBg1EntryCntV2d.x.resized
         //rBg0EntryCnt.asUInt.resized
       )
         .setName("myBg1MemAddr")
