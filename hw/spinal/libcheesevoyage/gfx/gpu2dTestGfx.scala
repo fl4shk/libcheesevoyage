@@ -17,16 +17,55 @@ object Gpu2dTestGfx {
   //  0x72,0x5F,0xD9,0x73,0x5C,0x57,0xD8,0x46,0x14,0x32,0x8F,0x29,0x2B,0x21,0xE8,0x18,
   //)
   def doConvert(
-    filename: String
+    filename: String,
+    //optPack: Boolean=false,
+    optMap: Boolean=false,
   ) = {
-    val tempArr = new ArrayBuffer[Short]()
+    var tempArr = new ArrayBuffer[Short]()
     val bis = new BufferedInputStream(new FileInputStream(filename))
+    var idx: Int = 0
+    var prevB: Int = 0
     Iterator.continually(bis.read())
       .takeWhile(_ != -1)
       .foreach(
         b => {
           //tempArr += b.toInt
-          tempArr += b.toShort
+          //if (optPack) {
+          //  if ((idx + 1) % 2 == 1) {
+          //    //tempArr last = tempArr.last << 8
+          //    tempArr += ((prevB << 8) | b.toInt).toShort
+          //    //--------
+          //    // little endian
+          //    //tempArr += ((b.toInt << 8) | prevB).toShort
+          //    //--------
+          //  } 
+          //  //else {
+          //  //  //tempArr += b.toShort
+          //  //}
+          //  idx = (idx + 1) % 2
+          //  prevB = b.toInt
+          //} else {
+          //  tempArr += b.toShort
+          //}
+          if (optMap) {
+            if ((idx + 1) % 2 == 1) {
+              ////tempArr += prevB.toShort
+              ////tempArr += b.toShort
+              //tempArr += b.toShort
+              tempArr += (
+                (prevB << 8) | b.toInt
+                //(b.toInt << 8) | prevB
+              ).toShort
+            } 
+            //tempArr += b.toShort
+            //tempArr += prevB.toShort
+            //else {
+            //}
+            idx = (idx + 1) % 2
+            prevB = b.toInt
+          } else {
+            tempArr += b.toShort
+          }
           //tempArr += (b.toInt & 0xff)
         }
       )
@@ -55,6 +94,17 @@ object Gpu2dTestGfx {
   //  bis.close
   //  tempArr
   //}
+  val sampleBgMapArr = doConvert(
+    filename="gfx/bmp/sample_background.map",
+    //optPack=true,
+    optMap=(
+      //false
+      true
+    ),
+  )
+  val sampleBgTileArr = doConvert(
+    filename="gfx/bmp/sample_background.raw"
+  )
   val fgCommonTileArr = doConvert(
     filename="gfx/bmp/foreground_common_gfx.raw"
   )

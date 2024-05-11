@@ -219,8 +219,8 @@ object Gpu2dSim extends App {
       //sync=1,
       //back=1,
       visib=(
-        //240
-        32
+        240
+        //32
         //16
       ),
       front=1,

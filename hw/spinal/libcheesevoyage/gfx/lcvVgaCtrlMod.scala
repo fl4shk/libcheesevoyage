@@ -823,13 +823,13 @@ case class LcvVgaCtrl(
     && hpipe.rVisib && vpipe.rVisib
     //&& !fifoEmpty
   ) {
-    //rFifoPopReady := True
-    fifoPop.ready := True
+    rFifoPopReady := True
+    //fifoPop.ready := True
   } otherwise {
-    //rFifoPopReady := False
-    fifoPop.ready := False
+    rFifoPopReady := False
+    //fifoPop.ready := False
   }
-  //fifoPop.ready := rFifoPopReady
+  fifoPop.ready := rFifoPopReady
   //fifoPop.ready := (
   //  //misc.pixelEnPipe1
   //  misc.pixelEn

@@ -819,10 +819,12 @@ object DefaultGpu2dParams {
     //--------
     rgbConfig: RgbConfig=RgbConfig(rWidth=6, gWidth=6, bWidth=6),
     intnlFbSize2d: ElabVec2[Int]=ElabVec2[Int](
+      x=640,
+      y=480,
       //x=(1920 / 3).toInt, // 640
       //y=(1080 / 3).toInt, // 360
-      x=(1920 / 4).toInt, // 480
-      y=(1080 / 4).toInt, // 270
+      //x=(1920 / 4).toInt, // 480
+      //y=(1080 / 4).toInt, // 270
       //x=(1920 / 4).toInt, // 480
       //y=(1080 / 4).toInt, // 270
       //x=(1600 >> log2Up(4)).toInt, // 400
@@ -8648,10 +8650,10 @@ case class Gpu2d(
     val combinePipeLastPreThrown = Stream(CombinePipePayload())
     val combinePipeLastThrown = (
       //Stream(CombinePipePayload())
-      combinePipeLastPreThrown.throwWhen(
-        rPrevCombinePipeLastCnt.asUInt === combinePipeLastPreThrown.cnt
-      )
-      //combinePipeLastPreThrown
+      //combinePipeLastPreThrown.throwWhen(
+      //  rPrevCombinePipeLastCnt.asUInt === combinePipeLastPreThrown.cnt
+      //)
+      combinePipeLastPreThrown
     )
     //combinePipeLastThrown << combinePipeLast.throwWhen(
     //  rPrevCombinePipeLastCnt.asUInt === combinePipeLastThrown.cnt

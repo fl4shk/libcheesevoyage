@@ -61,7 +61,6 @@ case class Vec2[
 ) extends Bundle {
   val x = dataType()
   val y = dataType()
-
 }
 object MkDualTypeNumVec2 {
   //implicit def implFactory[
@@ -115,6 +114,16 @@ object MkDualTypeNumVec2 {
     ret
   }
 }
+//case class DualTypeNumVec2PowCnt[
+//  Tx <: Data with Num[Tx],
+//  Ty <: Data with Num[Ty],
+//](
+//  dataTypeX: HardType[Tx],
+//  dataTypeY: HardType[Ty],
+//) extends Bundle {
+//  val x = dataTypeX()
+//  val y = dataTypeY()
+//}
 case class DualTypeNumVec2[
   Tx <: Data with Num[Tx],
   Ty <: Data with Num[Ty],
@@ -124,6 +133,45 @@ case class DualTypeNumVec2[
 ) extends Bundle {
   val x = dataTypeX()
   val y = dataTypeY()
+
+  //def magSquared() = x * y
+  def magSquared(
+    castType: HardType[UInt],
+  ) = {
+    val tempX = castType()
+    val tempY = castType()
+    tempX := x.asBits.asUInt.resized
+    tempY := y.asBits.asUInt.resized
+    tempX * tempY
+  }
+  def magSquared(
+    castType: HardType[SInt],
+  ) = {
+    val tempX = castType()
+    val tempY = castType()
+    tempX := x.asBits.asSInt.resized
+    tempY := y.asBits.asSInt.resized
+    tempX * tempY
+  }
+  //def magSquared[
+  //  T <: SInt
+  //](
+  //) = {
+  //  //val tempX = x.asUInt
+  //  //val tempY = y.asUInt
+  //  //tempX := x
+  //  //tempY := y
+  //  //tempX * tempY
+  //  x.asBits.asSInt * y.asBits.asSInt
+  //  //tempY := y
+  //  //x * tempY
+  //}
+  //def magSquaredTy() = {
+  //  val tempX = dataTypeY()
+  //  tempX := x
+  //  tempX * y
+  //}
+
 
   def +(that: DualTypeNumVec2[Tx, Ty]) = MkDualTypeNumVec2[Tx, Ty](
     dataTypeX=dataTypeX(),
@@ -233,6 +281,8 @@ case class NumVec2[
   val x = dataType()
   val y = dataType()
 
+  //def magSquared() = x * y
+
   def +(that: NumVec2[T]) = MkNumVec2[T](
     dataType=dataType(),
     x=this.x + that.x,
@@ -295,9 +345,18 @@ case class ElabDualTypeVec2[
   x: Tx,
   y: Ty,
 )
+//object ElabVec2 {
+//  def magSquared/*[
+//    T <: Int
+//  ]*/(
+//    someElabVec2: ElabVec2[Int]
+//  ) = someElabVec2.x * someElabVec2.y
+//}
 case class ElabVec2[
   T
 ](
   x: T,
   y: T,
-)
+) {
+  //def magSquared() = x * y
+}

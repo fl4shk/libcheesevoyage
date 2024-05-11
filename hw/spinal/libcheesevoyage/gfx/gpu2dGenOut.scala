@@ -275,13 +275,24 @@ object Gpu2dSimDutParams {
     ),
     //numBgTilesPow=Some(log2Up(256)),
     //numBgTilesPow=Some(log2Up(2)),
-    numBgTiles=(
+    numBgTiles=({
       //Some(16)
       ////Some(320 * 240)
+      val temp = (
+        (
+          vgaTimingInfo.fbSize2d.x
+          * vgaTimingInfo.fbSize2d.y
+          * 2
+          / (1 << (gpu2dBgTileSize2dPow.x + gpu2dBgTileSize2dPow.y))
+        ) 
+        //* (
+        //  //64
+        //  2
+        //)
+      )
+      //println(temp)
       Some(
-        vgaTimingInfo.fbSize2d.x
-        * vgaTimingInfo.fbSize2d.y
-        / (1 << (gpu2dBgTileSize2dPow.x + gpu2dBgTileSize2dPow.y))
+        temp
       )
       // for double buffering
       //Some(
@@ -290,7 +301,7 @@ object Gpu2dSimDutParams {
       //  * 2
       //  / (1 << (gpu2dBgTileSize2dPow.x + gpu2dBgTileSize2dPow.y))
       //)
-    ),
+    }),
     //numObjTilesPow=None,
     numObjTiles=(
       //Some(8)
