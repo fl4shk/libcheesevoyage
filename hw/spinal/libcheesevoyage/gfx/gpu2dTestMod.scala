@@ -1479,10 +1479,10 @@ case class Gpu2dTest(
       myMemAddrCalcPos.io.en := tempBgEntryPush.fire
       //--------
       nextBg1EntryCntV2d.x := (
-        RegNext(myMemAddrCalcPos.io.info.nextPos).x.resized
+        RegNext(RegNext(myMemAddrCalcPos.io.info.nextPos)).x.resized
       )
       nextBg1EntryCntV2d.y := (
-        RegNext(myMemAddrCalcPos.io.info.nextPos.y).resized
+        RegNext(RegNext(myMemAddrCalcPos.io.info.nextPos.y)).resized
       )
       nextBg1EntryExtCntV2d.x := (
         myMemAddrExtCalcPos.io.info.nextPos.x.resized
@@ -1493,13 +1493,15 @@ case class Gpu2dTest(
       //--------
       tempBgEntryPush.valid := (
         //True
-        (
-          /*RegNext*/(rBg1EntryExtCntV2d).x - 1
-          < (params.intnlFbSize2d.x / params.bgTileSize2d.x)
-        ) && (
-          /*RegNext*/(rBg1EntryExtCntV2d).y 
-          < (params.intnlFbSize2d.y / params.bgTileSize2d.y)
-        )
+        RegNext(
+          (
+            rBg1EntryExtCntV2d.x - 1
+            < (params.intnlFbSize2d.x / params.bgTileSize2d.x)
+          ) && (
+            rBg1EntryExtCntV2d.y 
+            < (params.intnlFbSize2d.y / params.bgTileSize2d.y)
+          )
+        ) init(False)
       )
       //val nextBg1EntryCnt = cloneOf(nextBg0EntryCnt)
       //val rBg1EntryCnt = RegNext(nextBg1EntryCnt) init(0x0)
@@ -1586,17 +1588,17 @@ case class Gpu2dTest(
         .setName(f"myTempBgEntryPushPayload_$idx")
       )
       tempBgEntryPush.payload := /*RegNext*/(myPayload)
-      val myBg1MemIdx = (
-        KeepAttribute(RegNext(rBg1EntryCntV2d).asBits.asUInt)
-        //rBg0EntryCnt
-        .setName("myBg1MemIdx")
-      )
+      //val myBg1MemIdx = (
+      //  KeepAttribute(RegNext(rBg1EntryCntV2d).asBits.asUInt)
+      //  //rBg0EntryCnt
+      //  .setName("myBg1MemIdx")
+      //)
 
       myPayload.memIdx := /*RegNext*/(
         //rBg0EntryCnt.asUInt(pop.bgEntryPushArr(0).payload.memIdx.bitsRange)
         //rBg1EntryCntMerged
         ///*RegNext*/(myBg1MemIdx(myPayload.memIdx.bitsRange))//.asUInt
-        (rBg0EntryCnt.asUInt(myPayload.memIdx.bitsRange))//.asUInt
+        (RegNext(rBg0EntryCnt).asUInt(myPayload.memIdx.bitsRange))//.asUInt
       )
       myPayload.bgEntry := myPayload.bgEntry.getZero
       myPayload.bgEntry.allowOverride
@@ -1629,14 +1631,14 @@ case class Gpu2dTest(
         (
           //Cat(
             //B"16'd0",
-            rBg1EntryCntV2d.y //- myBg1EntryCntYInit
+            RegNext(rBg1EntryCntV2d).y //- myBg1EntryCntYInit
           //).asUInt.resized
           * (
             //params.bgSize2dInTiles.x
             params.intnlFbSize2d.x / params.bgTileSize2d.x
           )
         )
-        + rBg1EntryCntV2d.x.resized
+        + RegNext(rBg1EntryCntV2d).x.resized
         //rBg0EntryCnt.asUInt.resized
       )
         .setName("myBg1MemAddr")

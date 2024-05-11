@@ -3753,14 +3753,36 @@ case class Gpu2d(
     //  //init(0x3)
     //  init(combineLineMemArrIdxInit)
     //)
-    val rWrLineMemArrIdx = KeepAttribute(
-      Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits))
-      //init(0x3)
-      init(wrLineMemArrIdxInit)
+    def mkLineMemIdx(
+      someInit: UInt
+    ) = (
+      KeepAttribute(
+        Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits))
+        //init(0x3)
+        //init(wrLineMemArrIdxInit)
+        init(someInit)
+      )
     )
-    val rCombineLineMemArrIdx = KeepAttribute(
-      Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits))
-      init(combineLineMemArrIdxInit)
+    val rWrObjWriterLineMemArrIdx = Vec.fill(
+      params.numLineMemsPerBgObjRenderer
+    )(
+      mkLineMemIdx(wrLineMemArrIdxInit)
+    )
+    val rWrObjPipeLineMemArrIdx = Vec.fill(3)(
+      mkLineMemIdx(wrLineMemArrIdxInit)
+    )
+    val rWrBgPipeLineMemArrIdx = mkLineMemIdx(
+      wrLineMemArrIdxInit
+    )
+    val rWrLineMemArrIdx = mkLineMemIdx(
+      wrLineMemArrIdxInit
+    )
+    //val rCombineLineMemArrIdx = KeepAttribute(
+    //  Reg(UInt(log2Up(params.numLineMemsPerBgObjRenderer) bits))
+    //  init(combineLineMemArrIdxInit)
+    //)
+    val rCombineLineMemArrIdx = mkLineMemIdx(
+      combineLineMemArrIdxInit
     )
     //def wrLineNumInit = 0x3
     //def wrLineNumInit = 0x2
@@ -3900,6 +3922,15 @@ case class Gpu2d(
       //rWrLineNum := rWrLineNumPipe1(rWrLineNum.bitsRange)
       //rWrLineNum := rWrLineNum + 1
 
+      for (zdx <- 0 until rWrObjWriterLineMemArrIdx.size) {
+        rWrObjWriterLineMemArrIdx(zdx) := (
+          rWrObjWriterLineMemArrIdx(zdx) + 1
+        )
+      }
+      for (zdx <- 0 until rWrObjPipeLineMemArrIdx.size) {
+        rWrObjPipeLineMemArrIdx(zdx) := rWrObjPipeLineMemArrIdx(zdx) + 1
+      }
+      rWrBgPipeLineMemArrIdx := rWrBgPipeLineMemArrIdx + 1
       rWrLineMemArrIdx := rWrLineMemArrIdx + 1
       rCombineLineMemArrIdx := rCombineLineMemArrIdx + 1
       rGlobWrBgLineNum := (
@@ -4640,7 +4671,8 @@ case class Gpu2d(
           val vecIdx = UInt(1 bits)
             .setName(f"obj" + extName + f"Writer_doWrite_vecIdx_$jdx")
           vecIdx := (
-            (rWrLineMemArrIdx + jdx)(0 downto 0)
+            //(rWrLineMemArrIdx + jdx)(0 downto 0)
+            (rWrObjWriterLineMemArrIdx(jdx) + jdx)(0 downto 0)
             //(rWrLineMemArrIdx + jdx + 1)(0 downto 0)
           )
           val tempAddr = cloneOf(addrVec(jdx))
@@ -4681,7 +4713,10 @@ case class Gpu2d(
             enVec(vecIdx)
             //enVec(jdx)
           )
-          someCombineObjSubLineMemArr(jdx).io.unionIdx := rWrLineMemArrIdx
+          //someCombineObjSubLineMemArr(jdx).io.unionIdx := rWrLineMemArrIdx
+          someCombineObjSubLineMemArr(jdx).io.unionIdx := (
+            rWrObjWriterLineMemArrIdx(jdx)
+          )
           someCombineObjSubLineMemArr(jdx).io.wrPulse.valid := (
             //objWriter.enVec(vecIdx)
             tempEn
@@ -10997,8 +11032,8 @@ case class Gpu2d(
           .getSubLineMemTempArrIdx()
         )
 
-        switch (rWrLineMemArrIdx) {
-          for (jdx <- 0 until (1 << rWrLineMemArrIdx.getWidth)) {
+        switch (rWrBgPipeLineMemArrIdx) {
+          for (jdx <- 0 until (1 << rWrBgPipeLineMemArrIdx.getWidth)) {
             is (jdx) {
               //wrBgSubLineMemArr(jdx).write(
               //  address=tempArrIdx,
@@ -14193,7 +14228,7 @@ case class Gpu2d(
         def myTempObjTileWidthPow1 = tempInp.tempObjTileWidthPow1()
         def myTempObjTileWidthPow = tempInp.tempObjTileWidthPow()
 
-        for (jdx <- 0 until (1 << rWrLineMemArrIdx.getWidth)) {
+        for (jdx <- 0 until (1 << rWrObjPipeLineMemArrIdx(0).getWidth)) {
           //val temp = wrObjSubLineMemArr(jdx)
 
           val temp = (
@@ -14291,10 +14326,13 @@ case class Gpu2d(
           }
         }
         switch (
-          rWrLineMemArrIdx
+          //rWrLineMemArrIdx
+          rWrObjPipeLineMemArrIdx(1)
           //tempInp.lineMemArrIdx
         ) {
-          for (jdx <- 0 until (1 << rWrLineMemArrIdx.getWidth)) {
+          for (
+            jdx <- 0 until (1 << rWrObjPipeLineMemArrIdx(1).getWidth)
+          ) {
             is (jdx) {
               //println(f"testificate: $jdx")
               //println({
@@ -14689,10 +14727,13 @@ case class Gpu2d(
         def myTempObjTileWidth1 = tempInp.tempObjTileWidth1()
         //--------
         switch (
-          rWrLineMemArrIdx
+          //rWrLineMemArrIdx
+          rWrObjPipeLineMemArrIdx(2)
           //tempInp.lineMemArrIdx
         ) {
-          for (jdx <- 0 until (1 << rWrLineMemArrIdx.getWidth)) {
+          for (
+            jdx <- 0 until (1 << rWrObjPipeLineMemArrIdx(2).getWidth)
+          ) {
             is (jdx) {
               //--------
               val temp = (

@@ -312,7 +312,10 @@ extends Component
   //  dataAssignment
   //)
   pipeMem.io.modBack <-/< pipeMem.io.modFront
-  io.wrPulse.toStream.translateInto(pipeMem.io.front)(
+  val tempWrPulseStm = io.wrPulse.toStream
+  val tempWrPulseStm1 = cloneOf(tempWrPulseStm)
+  tempWrPulseStm1 <-/< tempWrPulseStm
+  tempWrPulseStm1.translateInto(pipeMem.io.front)(
     dataAssignment=(wrPipePayload, wrPulsePayload) => {
       wrPipePayload := wrPipePayload.getZero
       wrPipePayload.allowOverride
