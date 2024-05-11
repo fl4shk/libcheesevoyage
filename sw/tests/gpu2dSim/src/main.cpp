@@ -682,10 +682,13 @@ protected:		// variables and helper functions
 			}
 			if (
 				//_visib_enable
-				_top->io_misc_visib
+				//_top->io_misc_pastVisib
+				//_top->io_misc_visib
+				_top->io_misc_visibPrev1
+				&& _top->io_misc_visib
 				//--------
-				//&& _top->io_misc_pixelEn
-				&& _top->io_misc_pastPixelEn
+				&& _top->io_misc_pixelEn
+				//&& _top->io_misc_pastPixelEn
 				//--------
 			) {
 				//printf("testificate\n");
@@ -706,10 +709,12 @@ protected:		// variables and helper functions
 			//////_top->io_misc_pastVisib
 			//////&& _top->io_misc_pixelEn
 			//////_top->io_misc_pastVisib
-			_top->io_misc_visib
+			//_top->io_misc_visib
+			_top->io_misc_visibPrev1
+			&& _top->io_misc_visib
 			//--------
-			//&& _top->io_misc_pixelEn
-			&& _top->io_misc_pastPixelEn
+			&& _top->io_misc_pixelEn
+			//&& _top->io_misc_pastPixelEn
 			//--------
 			//_top->io_misc_visibPipe1
 			////&& _top->io_misc_pixelEn
