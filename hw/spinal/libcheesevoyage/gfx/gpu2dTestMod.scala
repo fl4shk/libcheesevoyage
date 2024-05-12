@@ -1433,6 +1433,7 @@ case class Gpu2dTest(
             )
             tempBgEntry.dispFlip.x := False
             tempBgEntry.dispFlip.y := False
+            //tempBgEntry := tempBgEntry.getZero
           } otherwise {
             tempBgEntry := tempBgEntry.getZero
             //when (rBgEntryCnt >= params.numBgEntrys) {
@@ -1494,15 +1495,24 @@ case class Gpu2dTest(
       //--------
       tempBgEntryPush.valid := (
         //True
-        RegNext(
-          (
-            rBg1EntryExtCntV2d.x - 1
-            < (params.intnlFbSize2d.x / params.bgTileSize2d.x)
-          ) && (
-            rBg1EntryExtCntV2d.y 
-            < (params.intnlFbSize2d.y / params.bgTileSize2d.y)
-          )
-        ) init(False)
+        (
+          RegNextWhen(
+            False, (
+              myMemAddrCalcPos.io.info.posWillOverflow.x
+              && myMemAddrCalcPos.io.info.posWillOverflow.y
+            )
+          ) init(True)
+        ) && (
+          /*RegNext*/(
+            (
+              RegNext(rBg1EntryExtCntV2d).x - 1
+              < (params.intnlFbSize2d.x / params.bgTileSize2d.x)
+            ) && (
+              RegNext(rBg1EntryExtCntV2d).y 
+              < (params.intnlFbSize2d.y / params.bgTileSize2d.y)
+            )
+          ) //init(False)
+        )
       )
       //val nextBg1EntryCnt = cloneOf(nextBg0EntryCnt)
       //val rBg1EntryCnt = RegNext(nextBg1EntryCnt) init(0x0)
@@ -1629,20 +1639,20 @@ case class Gpu2dTest(
       //)
       //  .setName("myBg1ReadSyncEnable")
       val myBg1MemAddr = KeepAttribute(
-        RegNext(
+        /*RegNext*/(RegNext(
           (
             //Cat(
               //B"16'd0",
-              /*RegNext*/(rBg1EntryCntV2d).y //- myBg1EntryCntYInit
+              RegNext(rBg1EntryCntV2d).y //- myBg1EntryCntYInit
             //).asUInt.resized
             * (
               //params.bgSize2dInTiles.x
               params.intnlFbSize2d.x / params.bgTileSize2d.x
             )
           )
-          + /*RegNext*/(rBg1EntryCntV2d).x.resized
+          + RegNext(rBg1EntryCntV2d).x.resized
           //rBg0EntryCnt.asUInt.resized
-        )
+        ))
       )
         .setName("myBg1MemAddr")
       //myPayload.bgEntry.tileIdx := (
@@ -2193,10 +2203,12 @@ case class Gpu2dTest(
     //0x1
     //0x4
     //0x4 << myFracWidth
-    0x0 << myObjPosFracWidth
+    //0x0 << myObjPosFracWidth
+    (params.objTileSize2d.x * 2) << myObjPosFracWidth
   )
   rObjPos.y.init(
-    0x0 << myObjPosFracWidth
+    //0x0 << myObjPosFracWidth
+    (params.objTileSize2d.y * 2) << myObjPosFracWidth
   )
   val rObjTileIdx = (
     Reg(UInt((tempObjAttrs.tileIdx.getWidth + myTileFracWidth) bits))
