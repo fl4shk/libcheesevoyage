@@ -1,5 +1,7 @@
 package libcheesevoyage.gfx
 
+import libcheesevoyage.general.ElabVec2
+
 import scala.collection.mutable.ArrayBuffer
 import java.io.{FileInputStream, BufferedInputStream}
 //import scala.io.Source
@@ -94,6 +96,10 @@ object Gpu2dTestGfx {
   //  bis.close
   //  tempArr
   //}
+  val sampleBgMapSize2d = ElabVec2[Int](
+    x=320 / 16,
+    y=240 / 16,
+  )
   val sampleBgMapArr = doConvert(
     filename="gfx/bmp/sample_background.map",
     //optPack=true,
