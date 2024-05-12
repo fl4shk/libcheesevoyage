@@ -3771,8 +3771,10 @@ case class Gpu2d(
     val rWrObjPipeLineMemArrIdx = Vec.fill(3)(
       mkLineMemIdx(wrLineMemArrIdxInit)
     )
-    val rWrBgPipeLineMemArrIdx = mkLineMemIdx(
-      wrLineMemArrIdxInit
+    val rWrBgPipeLineMemArrIdx = Vec.fill(
+      params.numLineMemsPerBgObjRenderer
+    )(
+      mkLineMemIdx(wrLineMemArrIdxInit)
     )
     val rWrLineMemArrIdx = mkLineMemIdx(
       wrLineMemArrIdxInit
@@ -3930,7 +3932,9 @@ case class Gpu2d(
       for (zdx <- 0 until rWrObjPipeLineMemArrIdx.size) {
         rWrObjPipeLineMemArrIdx(zdx) := rWrObjPipeLineMemArrIdx(zdx) + 1
       }
-      rWrBgPipeLineMemArrIdx := rWrBgPipeLineMemArrIdx + 1
+      for (zdx <- 0 until rWrBgPipeLineMemArrIdx.size) {
+        rWrBgPipeLineMemArrIdx(zdx) := rWrBgPipeLineMemArrIdx(zdx) + 1
+      }
       rWrLineMemArrIdx := rWrLineMemArrIdx + 1
       rCombineLineMemArrIdx := rCombineLineMemArrIdx + 1
       rGlobWrBgLineNum := (
@@ -11032,75 +11036,92 @@ case class Gpu2d(
           .getSubLineMemTempArrIdx()
         )
 
-        switch (rWrBgPipeLineMemArrIdx) {
-          for (jdx <- 0 until (1 << rWrBgPipeLineMemArrIdx.getWidth)) {
-            is (jdx) {
-              //wrBgSubLineMemArr(jdx).write(
-              //  address=tempArrIdx,
-              //  data=wrBgPipeLast.postStage0.subLineMemEntry,
-              //)
-              //--------
-              // BEGIN: old `WrPulseRdPipeSimpleDualPortMem` code
-              combineBgSubLineMemArr(jdx).io.wrPulse.valid := True
-              combineBgSubLineMemArr(jdx).io.wrPulse.addr := (
-                tempArrIdx
-              )
-              combineBgSubLineMemArr(jdx).io.wrPulse.data := (
-                wrBgPipeLast.postStage0.subLineMemEntry
-              )
-              for (kdx <- 0 until combineBgSubLineMemArr.size) {
-                if (kdx != jdx) {
-                  combineBgSubLineMemArr(kdx).io.wrPulse.valid := False
-                  combineBgSubLineMemArr(kdx).io.wrPulse.addr := 0x0
-                  combineBgSubLineMemArr(kdx).io.wrPulse.data := (
-                    wrBgPipeLast.postStage0.subLineMemEntry.getZero
-                  )
-                }
-              }
-              // END: old `WrPulseRdPipeSimpleDualPortMem` code
-              //--------
-              //def tempCombine(myIdx: Int) = combineBgSubLineMemArr(myIdx)
-              //tempCombine(jdx).io.front.valid := True
-              //tempCombine(jdx).io.front.bgExt := (
-              //  tempCombine(jdx).io.front.bgExt.getZero
-              //)
-              //tempCombine(jdx).io.front.bgExt.allowOverride
-              //tempCombine(jdx).io.front.bgExt.memAddr := (
-              //  tempArrIdx
-              //)
-              //tempCombine(jdx).io.front.bgExt.modMemWord := (
-              //  wrBgPipeLast.postStage0.subLineMemEntry
-              //)
-              //for (kdx <- 0 until combineBgSubLineMemArr.size) {
-              //  if (kdx != jdx) {
-              //    tempCombine(kdx).io.front.valid := False
-              //    tempCombine(kdx).io.front.bgExt := (
-              //      tempCombine(kdx).io.front.bgExt.getZero
-              //    )
-              //    //tempCombine(kdx).io.front.bgExt.memAddr := 0
-              //    //tempCombine(kdx).io.front.bgExt.modMemWord := (
-              //    //  wrBgPipeLast.postStage0.subLineMemEntry.getZero
-              //    //)
-              //  }
-              //}
-              //--------
-            }
+        for (jdx <- 0 until rWrBgPipeLineMemArrIdx.size) {
+          when (rWrBgPipeLineMemArrIdx(jdx) === jdx) {
+            combineBgSubLineMemArr(jdx).io.wrPulse.valid := True
+            combineBgSubLineMemArr(jdx).io.wrPulse.addr := (
+              tempArrIdx
+            )
+            combineBgSubLineMemArr(jdx).io.wrPulse.data := (
+              wrBgPipeLast.postStage0.subLineMemEntry
+            )
+          } otherwise {
+            combineBgSubLineMemArr(jdx).io.wrPulse.valid := False
+            combineBgSubLineMemArr(jdx).io.wrPulse.addr := 0x0
+            combineBgSubLineMemArr(jdx).io.wrPulse.data := (
+              wrBgPipeLast.postStage0.subLineMemEntry.getZero
+            )
           }
-          //default {
-          //  for (jdx <- 0 until (1 << rWrLineMemArrIdx.getWidth)) {
-          //    def tempCombine(myIdx: Int) = combineBgSubLineMemArr(myIdx)
-          //    tempCombine(jdx).io.front.valid := True
-          //    tempCombine(jdx).io.front.bgExt := (
-          //      tempCombine(jdx).io.front.bgExt.getZero
-          //    )
-          //    //tempCombine(jdx).io.front.bgExt.allowOverride
-          //    //tempCombine(jdx).io.front.bgExt.memAddr := (
-          //    //  tempArrIdx
-          //    //)
-          //    //--------
-          //  }
-          //}
         }
+        //switch (rWrBgPipeLineMemArrIdx) {
+        //  for (jdx <- 0 until (1 << rWrBgPipeLineMemArrIdx.getWidth)) {
+        //    is (jdx) {
+        //      //wrBgSubLineMemArr(jdx).write(
+        //      //  address=tempArrIdx,
+        //      //  data=wrBgPipeLast.postStage0.subLineMemEntry,
+        //      //)
+        //      //--------
+        //      //// BEGIN: old `WrPulseRdPipeSimpleDualPortMem` code
+        //      combineBgSubLineMemArr(jdx).io.wrPulse.valid := True
+        //      combineBgSubLineMemArr(jdx).io.wrPulse.addr := (
+        //        tempArrIdx
+        //      )
+        //      combineBgSubLineMemArr(jdx).io.wrPulse.data := (
+        //        wrBgPipeLast.postStage0.subLineMemEntry
+        //      )
+        //      for (kdx <- 0 until combineBgSubLineMemArr.size) {
+        //        if (kdx != jdx) {
+        //          combineBgSubLineMemArr(kdx).io.wrPulse.valid := False
+        //          combineBgSubLineMemArr(kdx).io.wrPulse.addr := 0x0
+        //          combineBgSubLineMemArr(kdx).io.wrPulse.data := (
+        //            wrBgPipeLast.postStage0.subLineMemEntry.getZero
+        //          )
+        //        }
+        //      }
+        //      //// END: old `WrPulseRdPipeSimpleDualPortMem` code
+        //      //--------
+        //      //def tempCombine(myIdx: Int) = combineBgSubLineMemArr(myIdx)
+        //      //tempCombine(jdx).io.front.valid := True
+        //      //tempCombine(jdx).io.front.bgExt := (
+        //      //  tempCombine(jdx).io.front.bgExt.getZero
+        //      //)
+        //      //tempCombine(jdx).io.front.bgExt.allowOverride
+        //      //tempCombine(jdx).io.front.bgExt.memAddr := (
+        //      //  tempArrIdx
+        //      //)
+        //      //tempCombine(jdx).io.front.bgExt.modMemWord := (
+        //      //  wrBgPipeLast.postStage0.subLineMemEntry
+        //      //)
+        //      //for (kdx <- 0 until combineBgSubLineMemArr.size) {
+        //      //  if (kdx != jdx) {
+        //      //    tempCombine(kdx).io.front.valid := False
+        //      //    tempCombine(kdx).io.front.bgExt := (
+        //      //      tempCombine(kdx).io.front.bgExt.getZero
+        //      //    )
+        //      //    //tempCombine(kdx).io.front.bgExt.memAddr := 0
+        //      //    //tempCombine(kdx).io.front.bgExt.modMemWord := (
+        //      //    //  wrBgPipeLast.postStage0.subLineMemEntry.getZero
+        //      //    //)
+        //      //  }
+        //      //}
+        //      //--------
+        //    }
+        //  }
+        //  //default {
+        //  //  for (jdx <- 0 until (1 << rWrLineMemArrIdx.getWidth)) {
+        //  //    def tempCombine(myIdx: Int) = combineBgSubLineMemArr(myIdx)
+        //  //    tempCombine(jdx).io.front.valid := True
+        //  //    tempCombine(jdx).io.front.bgExt := (
+        //  //      tempCombine(jdx).io.front.bgExt.getZero
+        //  //    )
+        //  //    //tempCombine(jdx).io.front.bgExt.allowOverride
+        //  //    //tempCombine(jdx).io.front.bgExt.memAddr := (
+        //  //    //  tempArrIdx
+        //  //    //)
+        //  //    //--------
+        //  //  }
+        //  //}
+        //}
         // BEGIN: old, non-synthesizable code
         //for (x <- 0 to params.bgTileSize2d.x - 1) {
         //  //when (!wrBgPipeLast.bakCnt.msb) {

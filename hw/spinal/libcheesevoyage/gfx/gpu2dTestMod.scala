@@ -1647,14 +1647,14 @@ case class Gpu2dTest(
         KeepAttribute(cloneOf(tempBgEntryPush.payload))
         .setName(f"myTempBgEntryPushPayload_$idx")
       )
-      tempBgEntryPush.payload := RegNext(myPayload)
+      tempBgEntryPush.payload := /*RegNext*/(myPayload)
       //val myBg1MemIdx = (
       //  KeepAttribute(RegNext(rBg1EntryCntV2d).asBits.asUInt)
       //  //rBg0EntryCnt
       //  .setName("myBg1MemIdx")
       //)
 
-      myPayload.memIdx := /*RegNext*/(
+      myPayload.memIdx := RegNext(
         //rBg0EntryCnt.asUInt(pop.bgEntryPushArr(0).payload.memIdx.bitsRange)
         //rBg1EntryCntMerged
         ///*RegNext*/(myBg1MemIdx(myPayload.memIdx.bitsRange))//.asUInt
@@ -1696,7 +1696,7 @@ case class Gpu2dTest(
       //)
       //  .setName("myBg1ReadSyncEnable")
       val myBg1MemAddr = KeepAttribute(
-        /*RegNext*/(/*RegNext*/(
+        RegNext(/*RegNext*/(
           (
             //Cat(
               //B"16'd0",
