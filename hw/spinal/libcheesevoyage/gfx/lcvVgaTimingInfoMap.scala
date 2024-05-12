@@ -5,6 +5,21 @@ import spinal.core._
 object LcvVgaTimingInfoMap {
   //val map = Map[String, LcvVgaTimingInfo]()
   val map = Map[String, LcvVgaTimingInfo](
+    "640x360@60" -> LcvVgaTimingInfo(
+      pixelClk=18.0 MHz,
+      htiming=LcvVgaTimingHv(
+        visib=640,
+        front=16,
+        sync=64,
+        back=80,
+      ),
+      vtiming=LcvVgaTimingHv(
+        visib=360,
+        front=3,
+        sync=5,
+        back=8,
+      ),
+    ),
     "320x240@60" -> LcvVgaTimingInfo(
       //pixelClk=12.5 MHz,
       //pixelClk=25.175 MHz,
