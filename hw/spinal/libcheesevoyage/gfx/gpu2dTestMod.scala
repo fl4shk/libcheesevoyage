@@ -467,6 +467,9 @@ case class Gpu2dTestIo(
   //  vgaTimingInfo=vgaTimingInfo,
   //  fifoDepth=fifoDepth,
   //))
+  //val dbgBg1EntryCntV2d = out(
+  //  Vec2(dataType=UInt(16 bits))
+  //)
   val snesCtrl = (!optRawSnesButtons) generate SnesCtrlIo()
   val rawSnesButtons = (optRawSnesButtons) generate (
     slave Stream(UInt(SnesButtons.rawButtonsWidth bits))
@@ -1415,21 +1418,44 @@ case class Gpu2dTest(
             )
           ) {
             tempBgEntry.tileIdx := (
-              (
-                rBg0EntryCnt.asUInt//(tempBgEntry.tileIdx.bitsRange)
-                + {
-                  val temp = (
-                    Gpu2dTestGfx.sampleBgTileArr.size
-                    / (
-                      //ElabVec2.magSquared(params.bgTileSize2d)
-                      params.bgTileSize2d.x * params.bgTileSize2d.y
-                    )
-                    /// params.numBgTiles
+              ({
+                val tempSize = (
+                  Gpu2dTestGfx.sampleBgTileArr.size
+                  / (
+                    //ElabVec2.magSquared(params.bgTileSize2d)
+                    params.bgTileSize2d.x * params.bgTileSize2d.y
                   )
-                  //println(f"tileIdx addend: $temp")
-                  temp
-                }
-              )/*.resized*/(tempBgEntry.tileIdx.bitsRange) //.asUInt
+                )
+                val tempCnt = (
+                  rBg0EntryCnt.asUInt//(tempBgEntry.tileIdx.bitsRange)
+                  + {
+                    //val temp = (
+                    //  /// params.numBgTiles
+                    //)
+                    ////println(f"tileIdx addend: $temp")
+                    //temp
+                    tempSize
+                  }
+                )
+                val tempCnt1 = UInt(
+                  max(
+                    //log2Up(Gpu2dTestGfx.sampleBgTileArr.size),
+                    tempBgEntry.tileIdx.getWidth,
+                    tempCnt.getWidth,
+                  ) bits
+                )
+                tempCnt1 := tempCnt.resized
+                Mux[UInt](
+                  tempCnt1
+                  > (
+                    //Gpu2dTestGfx.sampleBgTileArr.size,
+                    tempSize
+                  ),
+                  tempCnt1,
+                  U(s"${tempCnt1.getWidth}'d0")
+                )
+                tempCnt1
+              }).resized/*(tempBgEntry.tileIdx.bitsRange)*/ //.asUInt
             )
             tempBgEntry.dispFlip.x := False
             tempBgEntry.dispFlip.y := False
@@ -1469,8 +1495,12 @@ case class Gpu2dTest(
       val myMemAddrExtCalcPos = LcvVideoCalcPos(
         someSize2d=params.bgSize2dInTiles
       )
-        .setName("myBg1EntryMemAddrCalcPos")
-      myMemAddrExtCalcPos.io.en := pop.bgEntryPushArr(0).fire
+        .addAttribute("keep")
+        .setName("myBg1EntryMemAddrExtCalcPos")
+      myMemAddrExtCalcPos.io.en := (
+        True
+        //pop.bgEntryPushArr(0).fire
+      )
       //--------
       val myMemAddrCalcPos = LcvVideoCalcPos(
         someSize2d=ElabVec2[Int](
@@ -1478,7 +1508,24 @@ case class Gpu2dTest(
           y=params.intnlFbSize2d.y / params.bgTileSize2d.y,
         )
       )
-      myMemAddrCalcPos.io.en := tempBgEntryPush.fire
+        .addAttribute("keep")
+        .setName("myBg1EntryMemAddrCalcPos")
+      val tempCalcPosEn = (
+        RegNext(
+          (
+            /*RegNext*/(RegNext(rBg1EntryExtCntV2d)).x //- 1
+            < (params.intnlFbSize2d.x / params.bgTileSize2d.x)
+          ) && (
+            /*RegNext*/(RegNext(rBg1EntryExtCntV2d)).y 
+            < (params.intnlFbSize2d.y / params.bgTileSize2d.y)
+          ),
+          init=False
+        ) //init(False)
+      )
+      myMemAddrCalcPos.io.en := (
+        //tempBgEntryPush.fire
+        tempCalcPosEn
+      )
       //--------
       nextBg1EntryCntV2d.x := (
         RegNext(RegNext(myMemAddrCalcPos.io.info.nextPos)).x.resized
@@ -1498,20 +1545,20 @@ case class Gpu2dTest(
         (
           RegNextWhen(
             False, (
-              myMemAddrCalcPos.io.info.posWillOverflow.x
-              && myMemAddrCalcPos.io.info.posWillOverflow.y
+              myMemAddrExtCalcPos.io.info.posWillOverflow.x
+              && myMemAddrExtCalcPos.io.info.posWillOverflow.y
             )
           ) init(True)
         ) && (
-          /*RegNext*/(
+          RegNext(RegNext(
             (
-              RegNext(rBg1EntryExtCntV2d).x - 1
+              RegNext(RegNext(rBg1EntryExtCntV2d)).x - 1
               < (params.intnlFbSize2d.x / params.bgTileSize2d.x)
             ) && (
-              RegNext(rBg1EntryExtCntV2d).y 
+              RegNext(RegNext(rBg1EntryExtCntV2d)).y 
               < (params.intnlFbSize2d.y / params.bgTileSize2d.y)
             )
-          ) //init(False)
+          )) //init(False)
         )
       )
       //val nextBg1EntryCnt = cloneOf(nextBg0EntryCnt)
@@ -1609,7 +1656,15 @@ case class Gpu2dTest(
         //rBg0EntryCnt.asUInt(pop.bgEntryPushArr(0).payload.memIdx.bitsRange)
         //rBg1EntryCntMerged
         ///*RegNext*/(myBg1MemIdx(myPayload.memIdx.bitsRange))//.asUInt
-        (RegNext(rBg0EntryCnt).asUInt(myPayload.memIdx.bitsRange))//.asUInt
+        //(RegNext(rBg0EntryCnt).asUInt(myPayload.memIdx.bitsRange))//.asUInt
+        (
+          RegNext(rBg1EntryCntV2d).y
+          * (
+            params.bgSize2dInTiles.x
+            /// params.bgTileSize2d.x
+          )
+          + RegNext(rBg1EntryCntV2d).x
+        )/*.asUInt*/(myPayload.memIdx.bitsRange)
       )
       myPayload.bgEntry := myPayload.bgEntry.getZero
       myPayload.bgEntry.allowOverride
@@ -1639,18 +1694,18 @@ case class Gpu2dTest(
       //)
       //  .setName("myBg1ReadSyncEnable")
       val myBg1MemAddr = KeepAttribute(
-        /*RegNext*/(RegNext(
+        /*RegNext*/(/*RegNext*/(
           (
             //Cat(
               //B"16'd0",
-              RegNext(rBg1EntryCntV2d).y //- myBg1EntryCntYInit
+              /*RegNext*/(/*RegNext*/(rBg1EntryCntV2d)).y //- myBg1EntryCntYInit
             //).asUInt.resized
             * (
               //params.bgSize2dInTiles.x
               params.intnlFbSize2d.x / params.bgTileSize2d.x
             )
           )
-          + RegNext(rBg1EntryCntV2d).x.resized
+          + /*RegNext*/(/*RegNext*/(rBg1EntryCntV2d)).x.resized
           //rBg0EntryCnt.asUInt.resized
         ))
       )
