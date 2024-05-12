@@ -1511,7 +1511,7 @@ case class Gpu2dTest(
         .addAttribute("keep")
         .setName("myBg1EntryMemAddrCalcPos")
       val tempCalcPosEn = (
-        RegNext(
+        /*RegNext*/(RegNext(
           (
             /*RegNext*/(RegNext(rBg1EntryExtCntV2d)).x //- 1
             < (params.intnlFbSize2d.x / params.bgTileSize2d.x)
@@ -1520,7 +1520,7 @@ case class Gpu2dTest(
             < (params.intnlFbSize2d.y / params.bgTileSize2d.y)
           ),
           init=False
-        ) //init(False)
+        )) //init(False)
       )
       myMemAddrCalcPos.io.en := (
         //tempBgEntryPush.fire
@@ -1528,10 +1528,12 @@ case class Gpu2dTest(
       )
       //--------
       nextBg1EntryCntV2d.x := (
-        RegNext(RegNext(myMemAddrCalcPos.io.info.nextPos)).x.resized
+        /*RegNext*/(RegNext(RegNext(myMemAddrCalcPos.io.info.nextPos))).x
+        .resized
       )
       nextBg1EntryCntV2d.y := (
-        RegNext(RegNext(myMemAddrCalcPos.io.info.nextPos.y)).resized
+        /*RegNext*/(RegNext(RegNext(myMemAddrCalcPos.io.info.nextPos))).y
+        .resized
       )
       nextBg1EntryExtCntV2d.x := (
         myMemAddrExtCalcPos.io.info.nextPos.x.resized
@@ -1550,7 +1552,7 @@ case class Gpu2dTest(
             )
           ) init(True)
         ) && (
-          RegNext(RegNext(
+          RegNext(RegNext(RegNext(
             (
               RegNext(RegNext(rBg1EntryExtCntV2d)).x - 1
               < (params.intnlFbSize2d.x / params.bgTileSize2d.x)
@@ -1558,7 +1560,7 @@ case class Gpu2dTest(
               RegNext(RegNext(rBg1EntryExtCntV2d)).y 
               < (params.intnlFbSize2d.y / params.bgTileSize2d.y)
             )
-          )) //init(False)
+          ))) //init(False)
         )
       )
       //val nextBg1EntryCnt = cloneOf(nextBg0EntryCnt)
@@ -1645,7 +1647,7 @@ case class Gpu2dTest(
         KeepAttribute(cloneOf(tempBgEntryPush.payload))
         .setName(f"myTempBgEntryPushPayload_$idx")
       )
-      tempBgEntryPush.payload := /*RegNext*/(myPayload)
+      tempBgEntryPush.payload := RegNext(myPayload)
       //val myBg1MemIdx = (
       //  KeepAttribute(RegNext(rBg1EntryCntV2d).asBits.asUInt)
       //  //rBg0EntryCnt
