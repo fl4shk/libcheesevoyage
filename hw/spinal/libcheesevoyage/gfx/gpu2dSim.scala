@@ -76,7 +76,7 @@ case class Gpu2dSimDut(
     inSim=true,
     dbgPipeMemRmw=dbgPipeMemRmw,
   )
-  //val gpu2dScaleX = Gpu2dScaleX(
+  //val gpu2dScaleY = Gpu2dScaleY(
   //  params=gpu2dParams,
   //)
   val gpu2dTest = Gpu2dTest(
@@ -101,7 +101,7 @@ case class Gpu2dSimDut(
   gpu2dTest.io.gpu2dPopFire := (
     //gpuIo.pop.ready
     gpuIo.pop.fire
-    //gpu2dScaleX.io.pop.fire
+    //gpu2dScaleY.io.pop.fire
   )
   gpu2dTest.io.vgaSomeVpipeS := ctrlIo.misc.vpipeSPipe2
   //gpu2dTest.io.vgaSomeDrawPos := ctrlIo.misc.drawPos
@@ -123,19 +123,19 @@ case class Gpu2dSimDut(
   // BEGIN: main code; later
   //ctrlIo.en := gpuIo.ctrlEn
   ctrlIo.en := (
-    //gpu2dScaleX.io.pop.fire
+    //gpu2dScaleY.io.pop.fire
     //&& 
     //(
     //  RegNextWhen(
     //    True,
-    //    gpu2dScaleX.io.pop.valid,
+    //    gpu2dScaleY.io.pop.valid,
     //  ) init(False),
     //)
     //&& 
-    //gpu2dScaleX.io.pop.ctrlEn
+    //gpu2dScaleY.io.pop.ctrlEn
     True
     //True
-    //gpu2dScaleX.io.pop.ctrlEn
+    //gpu2dScaleY.io.pop.ctrlEn
     //gpuIo.pop.valid
     //&& 
     //gpuIo.pop.ctrlEn
@@ -145,7 +145,7 @@ case class Gpu2dSimDut(
   //ctrlIo.push.valid := gpuIo.pop.valid
   //ctrlIo.push.payload := gpuIo.pop.payload.col
   //gpuIo.pop.ready := ctrlIo.push.ready
-  //gpu2dScaleX.io.push << gpuIo.pop
+  //gpu2dScaleY.io.push << gpuIo.pop
   gpuIo.pop.translateInto(
     into=ctrlIo.push
   )(
@@ -264,8 +264,8 @@ object Gpu2dSim extends App {
     //x=1,
     //y=1,
     //x=2,
-    x=2,
-    y=1,
+    x=1,
+    y=2,
     //y=2,
     //x=log2Up(2),
     ////y=log2Up(2),
@@ -279,7 +279,7 @@ object Gpu2dSim extends App {
     rgbConfig=rgbConfig,
     intnlFbSize2d=gpu2dIntnlFbSize2d,
     physFbSize2dScale=gpu2dPhysFbSize2dScale,
-    //physFbSize2dScalePow=ElabVec2[Int](
+    //physFbSize2dScaleYPow=ElabVec2[Int](
     //  x=log2Up(1),
     //  y=log2Up(1),
     //  //x=log2Up(2),
@@ -385,14 +385,14 @@ object Gpu2dSim extends App {
   //    x=vgaTimingInfo.fbSize2d.x,
   //    y=vgaTimingInfo.fbSize2d.y,
   //  ),
-  //  physFbSize2dScale=ElabVec2[Int](
+  //  physFbSize2dScaleY=ElabVec2[Int](
   //    x=1,
   //    y=1,
   //    //x=2,
   //    ////y=2,
   //    //y=2,
   //  ),
-  //  //physFbSize2dScalePow=ElabVec2[Int](
+  //  //physFbSize2dScaleYPow=ElabVec2[Int](
   //  //  x=log2Up(1),
   //  //  y=log2Up(1),
   //  //  //x=log2Up(2),

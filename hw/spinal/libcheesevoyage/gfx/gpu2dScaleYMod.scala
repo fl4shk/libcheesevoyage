@@ -15,17 +15,17 @@
 ////import scala.collection.immutable._
 //import scala.math._
 //
-//case class Gpu2dScaleXIo(
+//case class Gpu2dScaleYIo(
 //  params: Gpu2dParams,
 //) extends Bundle {
 //  val push = slave(Stream(Gpu2dPopPayload(params=params)))
 //  val pop = master(Stream(Gpu2dPopPayload(params=params)))
 //}
-//case class Gpu2dScaleX(
+//case class Gpu2dScaleY(
 //  params: Gpu2dParams,
 //) extends Component {
 //  //--------
-//  val io = Gpu2dScaleXIo(params=params)
+//  val io = Gpu2dScaleYIo(params=params)
 //  //--------
 //  //when (io.pop.fire) {
 //  //}
@@ -45,20 +45,23 @@
 //    )
 //    //def mkScaleCnt2d() = (
 //    //  DualTypeNumVec2(
-//    //    dataTypeX=UInt(log2Up(params.physFbSize2dScale.x) bits),
-//    //    dataTypeY=UInt(log2Up(params.physFbSize2dScale.x) bits),
+//    //    dataTypeX=UInt(log2Up(params.physFbSize2dScaleY.x) bits),
+//    //    dataTypeY=UInt(log2Up(params.physFbSize2dScaleY.x) bits),
 //    //  )
 //    //)
-//    def mkScaleXCnt() = (
+//    def mkScaleCnt() = (
 //      SInt(log2Up(params.physFbSize2dScale.x) + 2 bits)
 //    )
-//    //val scaleXCnt = Payload(mkScaleXCnt())
+//    //val scaleXCnt = Payload(mkScaleCnt())
 //    //val scaleCnt2d = Payload(mkScaleCnt2d())
 //    //val rScaleCnt2d = Reg(mkScaleCnt2d()) init(mkScaleCnt2d().getZero)
 //    val myPushPayload = Payload(cloneOf(io.push.payload))
 //    val myPopPayload = Payload(cloneOf(io.pop.payload))
+//    val tempPushStm = cloneOf(io.push)
+//    tempPushStm <-/< io.push
 //    pipe.first.up.driveFrom(
-//      io.push
+//      //io.push
+//      tempPushStm
 //    )(
 //      con=(node, payload) => {
 //        node(myPushPayload) := payload
@@ -76,28 +79,28 @@
 //      val nextDuplicateIt = Bool()
 //      val rDuplicateIt = RegNext(nextDuplicateIt, init=False)
 //      nextDuplicateIt := rDuplicateIt
-//      val nextScaleXCnt = mkScaleXCnt()
-//      val rScaleXCnt = (
-//        RegNext(nextScaleXCnt/*, init=nextScaleXCnt.getZero*/)
+//      val nextScaleCnt = mkScaleCnt()
+//      val rScaleCnt = (
+//        RegNext(nextScaleCnt/*, init=nextScaleCnt.getZero*/)
 //        //init(params.physFbSize2d.x - 1)
 //        init(-1)
 //      )
-//      nextScaleXCnt := rScaleXCnt
+//      nextScaleCnt := rScaleCnt
 //      when (!rDuplicateIt) {
 //        when (up.isValid) {
 //          when (
-//            rScaleXCnt.msb
+//            rScaleCnt.msb
 //          ) {
 //            duplicateIt()
 //            nextDuplicateIt := True
-//            nextScaleXCnt := params.physFbSize2dScale.x - 2
+//            nextScaleCnt := params.physFbSize2dScale.x - 1
 //          }
 //        }
 //      } otherwise { // when (rDuplicateIt)
 //        when (down.isFiring) {
-//          nextScaleXCnt := rScaleXCnt - 1
+//          nextScaleCnt := rScaleCnt - 1
 //        }
-//        when (nextScaleXCnt.msb) {
+//        when (nextScaleCnt.msb) {
 //          nextDuplicateIt := False
 //        } otherwise {
 //          duplicateIt()
