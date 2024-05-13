@@ -540,6 +540,13 @@ case class PipeMemRmwIo[
   //  case None => (None, None)
   //}
 }
+//case class PipeDuplicateItCnt[
+//  T <: Data
+//](
+//  dataType: HardType[T],
+//  cntWidth: Int,
+//  cntOverflow: 
+//)
 
 // A Read-Modify-Write pipelined BRAM
 case class PipeMemRmw[

@@ -76,6 +76,9 @@ case class Gpu2dSimDut(
     inSim=true,
     dbgPipeMemRmw=dbgPipeMemRmw,
   )
+  //val gpu2dScaleX = Gpu2dScaleX(
+  //  params=gpu2dParams,
+  //)
   val gpu2dTest = Gpu2dTest(
     clkRate=clkRate,
     params=gpu2dParams,
@@ -98,6 +101,7 @@ case class Gpu2dSimDut(
   gpu2dTest.io.gpu2dPopFire := (
     //gpuIo.pop.ready
     gpuIo.pop.fire
+    //gpu2dScaleX.io.pop.fire
   )
   gpu2dTest.io.vgaSomeVpipeS := ctrlIo.misc.vpipeSPipe2
   //gpu2dTest.io.vgaSomeDrawPos := ctrlIo.misc.drawPos
@@ -117,12 +121,31 @@ case class Gpu2dSimDut(
   gpuIo.push << gpu2dTest.io.pop
   //--------
   // BEGIN: main code; later
-  ctrlIo.en := gpuIo.ctrlEn
+  //ctrlIo.en := gpuIo.ctrlEn
+  ctrlIo.en := (
+    //gpu2dScaleX.io.pop.fire
+    //&& 
+    //(
+    //  RegNextWhen(
+    //    True,
+    //    gpu2dScaleX.io.pop.valid,
+    //  ) init(False),
+    //)
+    //&& 
+    //gpu2dScaleX.io.pop.ctrlEn
+    True
+    //True
+    //gpu2dScaleX.io.pop.ctrlEn
+    //gpuIo.pop.valid
+    //&& 
+    //gpuIo.pop.ctrlEn
+  )
   //ctrlIo.en := False
 
   //ctrlIo.push.valid := gpuIo.pop.valid
   //ctrlIo.push.payload := gpuIo.pop.payload.col
   //gpuIo.pop.ready := ctrlIo.push.ready
+  //gpu2dScaleX.io.push << gpuIo.pop
   gpuIo.pop.translateInto(
     into=ctrlIo.push
   )(
@@ -202,7 +225,10 @@ object Gpu2dSim extends App {
       //sync=1,
       //back=1,
       //--------
-      visib=320,
+      visib=(
+        320
+        //480
+      ),
       front=1,
       sync=1,
       back=1,
@@ -219,6 +245,7 @@ object Gpu2dSim extends App {
       //sync=1,
       //back=1,
       visib=(
+        //270
         240
         //128
         //64
@@ -233,19 +260,25 @@ object Gpu2dSim extends App {
   )
 
   def fbSize2d = vgaTimingInfo.fbSize2d
+  def gpu2dPhysFbSize2dScale = ElabVec2[Int](
+    //x=1,
+    //y=1,
+    //x=2,
+    x=2,
+    y=1,
+    //y=2,
+    //x=log2Up(2),
+    ////y=log2Up(2),
+    //y=log2Up(2),
+  )
+  def gpu2dIntnlFbSize2d = ElabVec2[Int](
+      x=fbSize2d.x / gpu2dPhysFbSize2dScale.x,
+      y=fbSize2d.y / gpu2dPhysFbSize2dScale.y,
+    )
   def gpu2dParams = DefaultGpu2dParams(
     rgbConfig=rgbConfig,
-    intnlFbSize2d=ElabVec2[Int](
-      x=vgaTimingInfo.fbSize2d.x,
-      y=vgaTimingInfo.fbSize2d.y,
-    ),
-    physFbSize2dScale=ElabVec2[Int](
-      x=1,
-      y=1,
-      //x=2,
-      ////y=2,
-      //y=2,
-    ),
+    intnlFbSize2d=gpu2dIntnlFbSize2d,
+    physFbSize2dScale=gpu2dPhysFbSize2dScale,
     //physFbSize2dScalePow=ElabVec2[Int](
     //  x=log2Up(1),
     //  y=log2Up(1),
@@ -478,7 +511,8 @@ object Gpu2dSim extends App {
         //32000
         //vgaTimingInfo.fbSize2d.x * vgaTimingInfo.fbSize2d.y * 20 * 2
         //vgaTimingInfo.fbSize2d.x * vgaTimingInfo.fbSize2d.y * 3 * 2
-        vgaTimingInfo.fbSize2d.x * 16 * 9 * 3 * 2
+        //vgaTimingInfo.fbSize2d.x * 16 * 9 * 3 * 2
+        vgaTimingInfo.fbSize2d.x * 16 * 4 * 3 * 2
         //38400
         //38400 * 2
         //48000

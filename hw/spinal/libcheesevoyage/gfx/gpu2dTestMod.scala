@@ -1554,11 +1554,17 @@ case class Gpu2dTest(
         ) && (
           RegNext(RegNext(RegNext(
             (
-              RegNext(RegNext(rBg1EntryExtCntV2d)).x - 1
-              < Gpu2dTestGfx.sampleBgMapSize2d.x //(params.intnlFbSize2d.x / params.bgTileSize2d.x)
+              RegNext(RegNext(Cat(B"12'd0",rBg1EntryExtCntV2d.x).asUInt)) //- 1
+              < min(
+                Gpu2dTestGfx.sampleBgMapSize2d.x,
+                params.intnlFbSize2d.x,
+              ) //(params.intnlFbSize2d.x / params.bgTileSize2d.x)
             ) && (
-              RegNext(RegNext(rBg1EntryExtCntV2d)).y 
-              < Gpu2dTestGfx.sampleBgMapSize2d.y //(params.intnlFbSize2d.y / params.bgTileSize2d.y)
+              RegNext(RegNext(Cat(B"12'd0", rBg1EntryExtCntV2d.y).asUInt))
+              < min(
+                Gpu2dTestGfx.sampleBgMapSize2d.y,
+                params.intnlFbSize2d.y,
+              ) //(params.intnlFbSize2d.y / params.bgTileSize2d.y)
             )
           ))) //init(False)
         )

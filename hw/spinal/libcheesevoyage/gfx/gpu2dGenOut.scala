@@ -24,6 +24,7 @@ object Gpu2dSimDutConfig {
   )
 }
 object Gpu2dSimDutParams {
+  //def clkRate = 200.0 MHz
   //def clkRate = 150.0 MHz
   def clkRate = 125.0 MHz
   //def clkRate = 1250.0 MHz
@@ -49,57 +50,74 @@ object Gpu2dSimDutParams {
   ////def rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
   //def physRgbConfig = LcvVideoDithererIo.outRgbConfig(rgbConfig=rgbConfig)
   //def vgaTimingInfo = LcvVgaTimingInfoMap.map("640x480@60")
-  def vgaTimingInfo=LcvVgaTimingInfo(
-    pixelClk=pixelClk,
-    //pixelClk=25.175 MHz,
-    htiming=LcvVgaTimingHv(
-      //visib=1 << 6,
-      //visib=64,
-      //visib=1 << 7,
-      visib=320,
-      //visib=640,
-      //visib=1 << 8,
-      //visib=4,
-      //visib=8,
-      //front=1,
-      //sync=1,
-      //back=1,
-      //front=4,
-      //sync=4,
-      //back=4,
-      front=40,
-      //sync=40,
-      //back=40,
-      //front=4,
-      sync=4,
-      back=4,
-    ),
-    vtiming=LcvVgaTimingHv(
-      //visib=1 << 5,
-      //visib=1 << 3,
-      //visib=1 << 4,
-      //visib=1 << 7,
-      visib=240,
-      //visib=480,
-      //visib=4,
-      //visib=8,
-      //front=1,
-      //sync=1,
-      //back=1,
-      //front=4,
-      //sync=4,
-      //back=4,
-      //front=20,
-      //front=40,
-      //sync=40,
-      //back=40,
-      front=8,
-      sync=4,
-      back=4,
-    ),
+  def vgaTimingInfo=(
+    //LcvVgaTimingInfoMap.map("640x480@60")
+    LcvVgaTimingInfo(
+      pixelClk=pixelClk,
+      //pixelClk=25.175 MHz,
+      htiming=LcvVgaTimingHv(
+        //visib=1 << 6,
+        //visib=64,
+        //visib=1 << 7,
+        visib=320,
+        //visib=640,
+        //visib=1 << 8,
+        //visib=4,
+        //visib=8,
+        //front=1,
+        //sync=1,
+        //back=1,
+        //front=4,
+        //sync=4,
+        //back=4,
+        front=40,
+        //sync=40,
+        //back=40,
+        //front=4,
+        sync=4,
+        back=4,
+      ),
+      vtiming=LcvVgaTimingHv(
+        //visib=1 << 5,
+        //visib=1 << 3,
+        //visib=1 << 4,
+        //visib=1 << 7,
+        visib=240,
+        //visib=480,
+        //visib=4,
+        //visib=8,
+        //front=1,
+        //sync=1,
+        //back=1,
+        //front=4,
+        //sync=4,
+        //back=4,
+        //front=20,
+        //front=40,
+        //sync=40,
+        //back=40,
+        front=8,
+        sync=4,
+        back=4,
+      ),
+    )
   )
 
-  def fbSize2d = vgaTimingInfo.fbSize2d
+  //def fbSize2d = vgaTimingInfo.fbSize2d
+  //--------
+  //def fbSize2d = ElabVec2[Int](
+  //  x=(
+  //    vgaTimingInfo.fbSize2d.x / 2
+  //    //320
+  //    //640
+  //  ),
+  //  y=(
+  //    vgaTimingInfo.fbSize2d.y
+  //    //240
+  //    //480
+  //  ),
+  //)
+  //--------
   //def gpu2dParams = DefaultGpu2dParams(
   //  rgbConfig=rgbConfig,
   //  intnlFbSize2d=ElabVec2[Int](
@@ -195,19 +213,25 @@ object Gpu2dSimDutParams {
     //x=log2Up(2),
     //y=log2Up(2),
   )
+  def gpu2dPhysFbSize2dScale = ElabVec2[Int](
+    //x=1,
+    //y=1,
+    //x=2,
+    x=1,
+    y=2,
+    //y=2,
+    //x=log2Up(2),
+    ////y=log2Up(2),
+    //y=log2Up(2),
+  )
+  def gpu2dIntnlFbSize2d = ElabVec2[Int](
+    x=vgaTimingInfo.fbSize2d.x / gpu2dPhysFbSize2dScale.x,
+    y=vgaTimingInfo.fbSize2d.y / gpu2dPhysFbSize2dScale.y,
+  )
   def gpu2dParams = DefaultGpu2dParams(
     rgbConfig=rgbConfig,
-    intnlFbSize2d=ElabVec2[Int](
-      x=vgaTimingInfo.fbSize2d.x,
-      y=vgaTimingInfo.fbSize2d.y,
-    ),
-    physFbSize2dScale=ElabVec2[Int](
-      x=1,
-      y=1,
-      //x=log2Up(2),
-      ////y=log2Up(2),
-      //y=log2Up(2),
-    ),
+    intnlFbSize2d=gpu2dIntnlFbSize2d,
+    physFbSize2dScale=gpu2dPhysFbSize2dScale,
     //physFbSize2dScalePow=ElabVec2[Int](
     //  x=log2Up(1),
     //  y=log2Up(1),
