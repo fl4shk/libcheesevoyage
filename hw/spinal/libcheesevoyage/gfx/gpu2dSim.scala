@@ -76,7 +76,7 @@ case class Gpu2dSimDut(
     inSim=true,
     dbgPipeMemRmw=dbgPipeMemRmw,
   )
-  //val gpu2dScaleY = Gpu2dScaleY(
+  //val gpu2dScaleY = Gpu2dScaleX(
   //  params=gpu2dParams,
   //)
   val gpu2dTest = Gpu2dTest(
@@ -192,8 +192,8 @@ case class Gpu2dSimDut(
 }
 
 object Gpu2dSim extends App {
-  def clkRate = 125.0 MHz
-  //def clkRate = 50.0 MHz
+  //def clkRate = 125.0 MHz
+  def clkRate = 50.0 MHz
   //def clkRate = 100.0 MHz
   //def clkRate = 100.7 MHz
   def pixelClk = 25.0 MHz
@@ -246,10 +246,10 @@ object Gpu2dSim extends App {
       //back=1,
       visib=(
         //270
-        240
+        //240
         //128
         //64
-        //48
+        48
         //32
         //16
       ),
@@ -264,7 +264,7 @@ object Gpu2dSim extends App {
     //x=1,
     //y=1,
     //x=2,
-    x=2,
+    x=1,
     //y=1,
     //y=2,
     y=1,
@@ -504,7 +504,8 @@ object Gpu2dSim extends App {
           (1 << 16) - 1
         )
         //& ~(
-        //  1 << SnesButtons.DpadRight
+        //  //1 << SnesButtons.DpadRight
+        //  1 << SnesButtons.A
         //)
       )
       def simNumClks = (
@@ -514,7 +515,8 @@ object Gpu2dSim extends App {
         //vgaTimingInfo.fbSize2d.x * vgaTimingInfo.fbSize2d.y * 3 * 2
         //vgaTimingInfo.fbSize2d.x * 16 * 9 * 3 * 2
         //vgaTimingInfo.fbSize2d.x * 16 * 4 * 3 * 2
-        vgaTimingInfo.fbSize2d.x * 4 * 4 * 3 * 2
+        //vgaTimingInfo.fbSize2d.x * 4 * 4 * 3 * 2
+        vgaTimingInfo.fbSize2d.x * vgaTimingInfo.fbSize2d.y * 2 * 4
         //38400
         //38400 * 2
         //48000

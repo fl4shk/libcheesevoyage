@@ -346,8 +346,8 @@ protected:		// functions
 					| my_key_up_now(SnesKeyKind::DpadLeft)
 					| my_key_up_now(SnesKeyKind::DpadRight)
 					| my_key_up_now(
-						SnesKeyKind::A//,
-						////Always::KeyDown
+						SnesKeyKind::A,
+						Always::KeyDown
 						//Always::Disabled
 					)
 					| my_key_up_now(SnesKeyKind::X)
@@ -842,16 +842,16 @@ int main(int argc, char** argv) {
 	//while
 	(
 		//!vga.do_exit()
-		///*;*/size_t i=0;
+		/*;*/size_t i=0
 		;
 		//i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 40 * 2) && !vga.do_exit();
-		////i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 2 * 2) && !vga.do_exit();
+		//i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 4 * 2) && !vga.do_exit()
 		//	i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * CLKS_PER_PIXEL * 3 * 2)
 			//&& 
 			!vga.do_exit()
 		;
 		////!vga.do_exit();
-		//++i
+		++i
 	) {
 		contextp->timeInc(1);
 		top->clk = !top->clk;

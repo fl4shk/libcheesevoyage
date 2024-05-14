@@ -214,12 +214,12 @@ object Gpu2dSimDutParams {
     //y=log2Up(2),
   )
   def gpu2dPhysFbSize2dScale = ElabVec2[Int](
-    //x=1,
-    //y=1,
+    x=1,
+    y=1,
     //x=2,
     //x=2,
-    x=2,
-    y=2,
+    //x=2,
+    //y=2,
     //y=2,
     //y=3,
     //x=log2Up(2),

@@ -3109,14 +3109,14 @@ case class Gpu2d(
             isColorMath=false,
           ),
           depth=(params.numTilesPerBg >> 1),
-          //initBigInt={
-          //  //val temp = new ArrayBuffer[BigInt]()
-          //  //for (_ <- 0 until (params.numTilesPerBg >> 1)) {
-          //  //  temp += BigInt(0)
-          //  //}
-          //  //Some(temp)
-          //  Some(Array.fill(params.numTilesPerBg >> 1)(BigInt(0)).toSeq)
-          //},
+          initBigInt={
+            //val temp = new ArrayBuffer[BigInt]()
+            //for (_ <- 0 until (params.numTilesPerBg >> 1)) {
+            //  temp += BigInt(0)
+            //}
+            //Some(temp)
+            Some(Array.fill(params.numTilesPerBg >> 1)(BigInt(0)).toSeq)
+          },
           arrRamStyle=params.bgEntryArrRamStyle,
         )
           .setName(f"bgEntryMemA2d_$idx" + f"_$jdx")
@@ -7302,14 +7302,14 @@ case class Gpu2d(
       //log2Up(params.physFbSize2d.x + 1) + 2
     )
     def combinePipeFullCntWidth = (
-      log2Up(params.physFbSize2d.x + 1) + 2
-      //combinePipeCntWidth
+      //log2Up(params.physFbSize2d.x + 1) + 2
+      combinePipeCntWidth
     )
     def combinePipeCntRange = (
       ////combinePipeFullCntWidth + log2Up(params.physFbSize2dScale.x) - 1
       combinePipeFullCntWidth - 1
-      downto log2Up(params.physFbSize2dScale.x)
-      //downto 0
+      //downto log2Up(params.physFbSize2dScale.x)
+      downto 0
     )
     //println(
     //  "cnt stuff: "
@@ -7322,8 +7322,8 @@ case class Gpu2d(
     //  //params.physFbSize2d.x - 1
     //)
     def combinePipeFullBakCntStart = (
-      //params.intnlFbSize2d.x - 1
-      params.physFbSize2d.x - 1
+      params.intnlFbSize2d.x - 1
+      //params.physFbSize2d.x - 1
       //params.physFbSize2d.x - params.
     )
     case class CombinePipeOut3Ext() extends Bundle {
@@ -7421,14 +7421,15 @@ case class Gpu2d(
         def fullBakCntWillBeDone() = {
           //fullBakCntMinus1.msb
           //fullBakCntMinus1 === 0
-          def myPow = log2Up(params.physFbSize2dScale.x)
+          //def myPow = log2Up(params.physFbSize2dScale.x)
           (
-            (
-              fullBakCnt(fullBakCnt.high downto myPow) === 0
-            ) && (
-              fullBakCnt(myPow - 1 downto 0)
-              === (1 << myPow) - params.physFbSize2dScale.x
-            )
+            fullBakCnt === 0
+            //(
+            //  fullBakCnt(fullBakCnt.high downto myPow) === 0
+            //) && (
+            //  fullBakCnt(myPow - 1 downto 0)
+            //  === (1 << myPow) - params.physFbSize2dScale.x
+            //)
           ) 
           //&& (
           //  //(fracCnt - 1).msb
@@ -9488,34 +9489,34 @@ case class Gpu2d(
               //  //)
               //} 
               .otherwise {
-                def myPow = log2Up(params.physFbSize2dScale.x)
-                def myBakCnt = rCombinePipeFrontPayload.fullBakCnt
-                when (
-                  myBakCnt(myPow - 1 downto 0)
-                  === (
-                    (1 << myPow) - params.physFbSize2dScale.x
-                  )
-                ) {
-                  rCombinePipeFrontPayload.cnt := (
-                    rCombinePipeFrontPayload.cnt + 1
-                  )
-                  rCombinePipeFrontPayload.fullCnt(
-                    myPow - 1 downto 0
-                  ) := 0x0
-                  rCombinePipeFrontPayload.bakCnt := (
-                    rCombinePipeFrontPayload.bakCnt - 1
-                  )
-                  rCombinePipeFrontPayload.fullBakCnt(
-                    myPow - 1 downto 0
-                  ) := (default -> True)
+                //def myPow = log2Up(params.physFbSize2dScale.x)
+                //def myBakCnt = rCombinePipeFrontPayload.fullBakCnt
+                //when (
+                //  myBakCnt(myPow - 1 downto 0)
+                //  === (
+                //    (1 << myPow) - params.physFbSize2dScale.x
+                //  )
+                //) {
+                //  rCombinePipeFrontPayload.cnt := (
+                //    rCombinePipeFrontPayload.cnt + 1
+                //  )
+                //  rCombinePipeFrontPayload.fullCnt(
+                //    myPow - 1 downto 0
+                //  ) := 0x0
+                //  rCombinePipeFrontPayload.bakCnt := (
+                //    rCombinePipeFrontPayload.bakCnt - 1
+                //  )
+                //  rCombinePipeFrontPayload.fullBakCnt(
+                //    myPow - 1 downto 0
+                //  ) := (default -> True)
 
-                  //rCombinePipeFrontPayload.bakCntMinus1 := (
-                  //  rCombinePipeFrontPayload.bakCntMinus1 - 1
-                  //)
-                  //rCombinePipeFrontPayload.fullBakCntMinus1(
-                  //  myPow - 1 downto 0
-                  //) := (default -> True)
-                } otherwise {
+                //  //rCombinePipeFrontPayload.bakCntMinus1 := (
+                //  //  rCombinePipeFrontPayload.bakCntMinus1 - 1
+                //  //)
+                //  //rCombinePipeFrontPayload.fullBakCntMinus1(
+                //  //  myPow - 1 downto 0
+                //  //) := (default -> True)
+                //} otherwise {
                   //nextCombineChangingRow := False
                   //nextCombinePipeFrontValid := rCombinePipeFrontValid
                   rCombinePipeFrontPayload.changingRow := False
@@ -9539,9 +9540,9 @@ case class Gpu2d(
                   //rCombinePipeFrontPayload.fracCnt := (
                   //  params.physFbSize2dScale.x - 2
                   //)
-                }
-              //}
-            }
+                //}
+              }
+            //}
           //} otherwise {
           //  rCombinePipeFrontPayload.fracCnt := (
           //    rCombinePipeFrontPayload.fracCnt - 1
@@ -10722,6 +10723,7 @@ case class Gpu2d(
                 //)
                 //--------
                 def setRdAddr(
+                  myTempIdx: Int,
                   someTempRdAddr: UInt,
                   someVecIdx: UInt,
                   //someMemArrIdx: Int,
@@ -10757,31 +10759,31 @@ case class Gpu2d(
                       tempInp.stage4.fbRdAddrFinalPlus(someVecIdx),
                     ).resized
                   )
-                  switch (
-                    //Mux[UInt](
-                    //  !pipeIn.bgAttrs.fbAttrs.doIt,
-                      someTempRdAddr(
-                        //someTempRdAddr.high
-                        //downto someTempRdAddr.high
-                        params.bgTileSize2dPow.y
-                        downto params.bgTileSize2dPow.y
-                      ),
-                    //  {
-                    //    val slicePos = (
-                    //      log2Up(params.bgSize2dInPxs.y)
-                    //      + log2Up(params.bgSize2dInPxs.x)
-                    //      - params.bgTileSize2dPow.x
-                    //      + 1
-                    //      //- 1
-                    //    )
-                    //    someTempRdAddr(
-                    //      slicePos downto slicePos
-                    //    )
-                    //  },
-                    //)
-                  ) {
-                    for (myTempIdx <- 0 until 2) {
-                      is (myTempIdx) {
+                  //switch (
+                  //  //Mux[UInt](
+                  //  //  !pipeIn.bgAttrs.fbAttrs.doIt,
+                  //    someTempRdAddr(
+                  //      //someTempRdAddr.high
+                  //      //downto someTempRdAddr.high
+                  //      params.bgTileSize2dPow.y
+                  //      downto params.bgTileSize2dPow.y
+                  //    ),
+                  //  //  {
+                  //  //    val slicePos = (
+                  //  //      log2Up(params.bgSize2dInPxs.y)
+                  //  //      + log2Up(params.bgSize2dInPxs.x)
+                  //  //      - params.bgTileSize2dPow.x
+                  //  //      + 1
+                  //  //      //- 1
+                  //  //    )
+                  //  //    someTempRdAddr(
+                  //  //      slicePos downto slicePos
+                  //  //    )
+                  //  //  },
+                  //  //)
+                  //) {
+                  //  for (myTempIdx <- 0 until 2) {
+                  //    is (myTempIdx) {
                         someTileMemArr(
                           //tempPxPosIdx % 2
                           //someMemArrIdx
@@ -10822,11 +10824,12 @@ case class Gpu2d(
                             //someTempRdAddr,
                           //).resized
                         )
-                      }
-                    }
-                  }
+                //      }
+                //    }
+                //  }
                 }
                 setRdAddr(
+                  myTempIdx=0,
                   someTempRdAddr=(
                     tempOutp.stage5.tileMemRdAddrSameAs
                   ),
@@ -10835,6 +10838,7 @@ case class Gpu2d(
                   ),
                 )
                 setRdAddr(
+                  myTempIdx=1,
                   someTempRdAddr=(
                     tempOutp.stage5.tileMemRdAddrDiff
                   ),
@@ -11743,9 +11747,9 @@ case class Gpu2d(
           .getSubLineMemTempArrIdx()
         )
 
-        //val tempFlowVec = Vec.fill(wrBgPipeLineMemArrIdx.size)(
-        //  cloneOf(combineBgSubLineMemArr(0).io.wrPulse)
-        //)
+        val tempFlowVec = Vec.fill(wrBgPipeLineMemArrIdx.size)(
+          cloneOf(combineBgSubLineMemArr(0).io.wrPulse)
+        )
         val rValidPipe1 = Vec.fill(wrBgPipeLineMemArrIdx.size)(
           Reg(Bool()) init(False)
         )
@@ -11788,8 +11792,8 @@ case class Gpu2d(
           //    wrBgPipeLast.postStage0.subLineMemEntry.getZero
           //  )
           //}
-        //switch (wrBgPipeLineMemArrIdx) {
-        //  for (jdx <- 0 until (1 << wrBgPipeLineMemArrIdx.getWidth)) {
+        //switch (wrBgPipeLineMemArrIdx(0)) {
+        //  for (jdx <- 0 until (1 << wrBgPipeLineMemArrIdx(0).getWidth)) {
         //    is (jdx) {
         //      //wrBgSubLineMemArr(jdx).write(
         //      //  address=tempArrIdx,
