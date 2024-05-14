@@ -2063,6 +2063,11 @@ case class Gpu2d(
     //val colorMathTileMemArr = new ArrayBuffer[
     //  FpgacpuRamSimpleDualPort[Gpu2dTile]
     //]()
+    val myBgTileMemInit = Gpu2dTest.doSplitBgTileMemInit(
+      params=params,
+      //gridIdx=jdx,
+      //isColorMath=false,
+    )
 
     val bgTileMemArr = new ArrayBuffer[
       //FpgacpuRamSimpleDualPort[Gpu2dTileFull]
@@ -2103,11 +2108,14 @@ case class Gpu2d(
               Some(bgTileMemInit(jdx))
             }
             case None => {
-              Some(Gpu2dTest.doSplitBgTileMemInit(
-                params=params,
-                gridIdx=jdx,
-                //isColorMath=false,
-              ))
+              Some(
+                //myBgTileMemInit(jdx)
+                Gpu2dTest.doSplitBgTileMemInit(
+                  params=params,
+                  //gridIdx=jdx,
+                  //isColorMath=false,
+                )(jdx)
+              )
               //None
             }
           }
@@ -2873,11 +2881,14 @@ case class Gpu2d(
                   //  (0)
                   //).toSeq)
                   //Some(Gpu2dTest.bgTileMemInit(params=params))
-                  Some(Gpu2dTest.doSplitBgTileMemInit(
-                    params=params,
-                    gridIdx=jdx,
-                    //isColorMath=true,
-                  ))
+                  Some(
+                    //Gpu2dTest.doSplitBgTileMemInit(
+                    //  params=params,
+                    //  gridIdx=jdx,
+                    //  //isColorMath=true,
+                    //)
+                    myBgTileMemInit(jdx)
+                  )
                   //None
                 }
               }

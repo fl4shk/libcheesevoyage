@@ -59,8 +59,8 @@ object Gpu2dSimDutParams {
         //visib=1 << 6,
         //visib=64,
         //visib=1 << 7,
-        visib=320,
-        //visib=640,
+        //visib=320,
+        visib=640,
         //visib=1 << 8,
         //visib=4,
         //visib=8,
@@ -82,8 +82,8 @@ object Gpu2dSimDutParams {
         //visib=1 << 3,
         //visib=1 << 4,
         //visib=1 << 7,
-        visib=240,
-        //visib=480,
+        //visib=240,
+        visib=480,
         //visib=4,
         //visib=8,
         //front=1,
@@ -219,7 +219,7 @@ object Gpu2dSimDutParams {
     //x=2,
     //x=2,
     x=2,
-    y=1,
+    y=2,
     //y=2,
     //y=3,
     //x=log2Up(2),
@@ -306,9 +306,12 @@ object Gpu2dSimDutParams {
       ////Some(320 * 240)
       val temp = (
         (
-          vgaTimingInfo.fbSize2d.x
-          * vgaTimingInfo.fbSize2d.y
+          //vgaTimingInfo.fbSize2d.x
+          //* vgaTimingInfo.fbSize2d.y
+          gpu2dIntnlFbSize2d.x
+          * gpu2dIntnlFbSize2d.y
           * 2
+          //* 3
           / (1 << (gpu2dBgTileSize2dPow.x + gpu2dBgTileSize2dPow.y))
         ) 
         //* (
