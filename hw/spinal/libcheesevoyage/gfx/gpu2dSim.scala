@@ -264,9 +264,10 @@ object Gpu2dSim extends App {
     //x=1,
     //y=1,
     //x=2,
-    x=1,
-    y=2,
+    x=2,
+    //y=1,
     //y=2,
+    y=1,
     //x=log2Up(2),
     ////y=log2Up(2),
     //y=log2Up(2),
@@ -512,7 +513,8 @@ object Gpu2dSim extends App {
         //vgaTimingInfo.fbSize2d.x * vgaTimingInfo.fbSize2d.y * 20 * 2
         //vgaTimingInfo.fbSize2d.x * vgaTimingInfo.fbSize2d.y * 3 * 2
         //vgaTimingInfo.fbSize2d.x * 16 * 9 * 3 * 2
-        vgaTimingInfo.fbSize2d.x * 16 * 4 * 3 * 2
+        //vgaTimingInfo.fbSize2d.x * 16 * 4 * 3 * 2
+        vgaTimingInfo.fbSize2d.x * 4 * 4 * 3 * 2
         //38400
         //38400 * 2
         //48000
