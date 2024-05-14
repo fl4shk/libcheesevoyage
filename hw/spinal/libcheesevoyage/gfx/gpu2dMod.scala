@@ -8,6 +8,7 @@ import libcheesevoyage.general.DualTypeNumVec2
 import libcheesevoyage.general.MkDualTypeNumVec2
 //import libcheesevoyage.general.MkVec2
 import libcheesevoyage.general.ElabVec2
+import libcheesevoyage.general.PipeHelper
 import libcheesevoyage.general.PipeSkidBuf
 import libcheesevoyage.general.PipeSkidBufIo
 import libcheesevoyage.general.DualPipeStageData
@@ -11734,7 +11735,7 @@ case class Gpu2d(
       //  //)
       //  //--------
       //}
-      when (nWrBgPipeLast.isFiring) {
+      when (/*RegNext*/(nWrBgPipeLast.isFiring) /*init(False)*/) {
         //val tempLineMemEntry = LineMemEntry()
         //val bgIdx = wrBgPipeLast.bgIdx
         def tempArrIdx = (
@@ -11742,23 +11743,51 @@ case class Gpu2d(
           .getSubLineMemTempArrIdx()
         )
 
+        //val tempFlowVec = Vec.fill(wrBgPipeLineMemArrIdx.size)(
+        //  cloneOf(combineBgSubLineMemArr(0).io.wrPulse)
+        //)
+        val rValidPipe1 = Vec.fill(wrBgPipeLineMemArrIdx.size)(
+          Reg(Bool()) init(False)
+        )
+        val rAddrPipe1 = Vec.fill(rValidPipe1.size)(
+          RegNext(tempArrIdx) init(tempArrIdx.getZero)
+        )
+        val rDataPipe1 = Vec.fill(rValidPipe1.size)(
+          RegNext(wrBgPipeLast.postStage0.subLineMemEntry)
+        )
+
         for (jdx <- 0 until wrBgPipeLineMemArrIdx.size) {
-          when (wrBgPipeLineMemArrIdx(jdx) === jdx) {
-            combineBgSubLineMemArr(jdx).io.wrPulse.valid := True
-            combineBgSubLineMemArr(jdx).io.wrPulse.addr := (
-              tempArrIdx
-            )
-            combineBgSubLineMemArr(jdx).io.wrPulse.data := (
-              wrBgPipeLast.postStage0.subLineMemEntry
-            )
-          } otherwise {
-            combineBgSubLineMemArr(jdx).io.wrPulse.valid := False
-            combineBgSubLineMemArr(jdx).io.wrPulse.addr := 0x0
-            combineBgSubLineMemArr(jdx).io.wrPulse.data := (
-              wrBgPipeLast.postStage0.subLineMemEntry.getZero
-            )
-          }
+          rValidPipe1(jdx) := (
+            wrBgPipeLineMemArrIdx(jdx) === jdx
+          )
+          combineBgSubLineMemArr(jdx).io.wrPulse.valid := (
+            //True
+            rValidPipe1(jdx)
+          )
+          combineBgSubLineMemArr(jdx).io.wrPulse.addr := (
+            //tempArrIdx
+            rAddrPipe1(jdx)
+          )
+          combineBgSubLineMemArr(jdx).io.wrPulse.data := (
+            //wrBgPipeLast.postStage0.subLineMemEntry
+            rDataPipe1(jdx)
+          )
         }
+          //when (rValidPipe1(jdx)) {
+          //  combineBgSubLineMemArr(jdx).io.wrPulse.valid := True
+          //  combineBgSubLineMemArr(jdx).io.wrPulse.addr := (
+          //    tempArrIdx
+          //  )
+          //  combineBgSubLineMemArr(jdx).io.wrPulse.data := (
+          //    wrBgPipeLast.postStage0.subLineMemEntry
+          //  )
+          //} otherwise {
+          //  combineBgSubLineMemArr(jdx).io.wrPulse.valid := False
+          //  combineBgSubLineMemArr(jdx).io.wrPulse.addr := 0x0
+          //  combineBgSubLineMemArr(jdx).io.wrPulse.data := (
+          //    wrBgPipeLast.postStage0.subLineMemEntry.getZero
+          //  )
+          //}
         //switch (wrBgPipeLineMemArrIdx) {
         //  for (jdx <- 0 until (1 << wrBgPipeLineMemArrIdx.getWidth)) {
         //    is (jdx) {
