@@ -54,6 +54,9 @@ static constexpr Vec2<size_t>
 		.y=240,
 		//.x=640,
 		//.y=480,
+		//.x=128,
+		//.x=160,
+		//.y=128,
 	},
 	SIZE_2D{.x=HALF_SIZE_2D.x << 1, .y=HALF_SIZE_2D.y << 1};
 	//SIZE_2D=HALF_SIZE_2D;

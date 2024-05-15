@@ -61,6 +61,7 @@ object Gpu2dSimDutParams {
         //visib=1 << 7,
         visib=320,
         //visib=640,
+        //visib=160,
         //visib=1 << 8,
         //visib=4,
         //visib=8,
@@ -82,6 +83,7 @@ object Gpu2dSimDutParams {
         //visib=1 << 3,
         //visib=1 << 4,
         //visib=1 << 7,
+        //visib=128,
         visib=240,
         //visib=480,
         //visib=4,
@@ -214,10 +216,10 @@ object Gpu2dSimDutParams {
     //y=log2Up(2),
   )
   def gpu2dPhysFbSize2dScale = ElabVec2[Int](
+    //x=1,
+    //y=1,
     x=1,
     y=1,
-    //x=2,
-    //x=2,
     //x=2,
     //y=2,
     //y=2,

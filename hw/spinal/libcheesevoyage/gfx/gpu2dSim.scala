@@ -263,11 +263,11 @@ object Gpu2dSim extends App {
   def gpu2dPhysFbSize2dScale = ElabVec2[Int](
     //x=1,
     //y=1,
-    //x=2,
     x=1,
+    //x=1,
     //y=1,
-    //y=2,
     y=1,
+    //y=1,
     //x=log2Up(2),
     ////y=log2Up(2),
     //y=log2Up(2),
@@ -288,10 +288,10 @@ object Gpu2dSim extends App {
     //  //y=log2Up(2),
     //),
     bgTileSize2dPow=ElabVec2[Int](
-      //x=log2Up(16),
-      //y=log2Up(16),
-      x=log2Up(8),
-      y=log2Up(8),
+      x=log2Up(16),
+      y=log2Up(16),
+      //x=log2Up(8),
+      //y=log2Up(8),
       //x=log2Up(4),
       //y=log2Up(4),
       //x=log2Up(2),
@@ -313,10 +313,10 @@ object Gpu2dSim extends App {
     ),
     //objTileWidthRshift=1,
     objAffineTileSize2dPow=ElabVec2[Int](
-      x=log2Up(16),
-      y=log2Up(16),
-      //x=log2Up(8),
-      //y=log2Up(8),
+      //x=log2Up(16),
+      //y=log2Up(16),
+      x=log2Up(8),
+      y=log2Up(8),
       //x=log2Up(4),
       //y=log2Up(4),
       //x=log2Up(2),
@@ -349,15 +349,17 @@ object Gpu2dSim extends App {
     //numBgTilesPow=Some(log2Up(2)),
     numBgTiles=Some(
       //16
-      //256
+      256
       //512
-      1024
+      //1024
     ),
     //numObjTilesPow=None,
     numObjTiles=Some(
       //16
       //64
-      512
+      //512
+      256
+      //128
     ),
     numObjAffineTiles=Some(16),
     numColsInBgPalPow=(
@@ -503,10 +505,10 @@ object Gpu2dSim extends App {
         (
           (1 << 16) - 1
         )
-        //& ~(
-        //  //1 << SnesButtons.DpadRight
-        //  1 << SnesButtons.A
-        //)
+        & ~(
+          //1 << SnesButtons.DpadRight
+          1 << SnesButtons.A
+        )
       )
       def simNumClks = (
         //16000
@@ -516,7 +518,8 @@ object Gpu2dSim extends App {
         //vgaTimingInfo.fbSize2d.x * 16 * 9 * 3 * 2
         //vgaTimingInfo.fbSize2d.x * 16 * 4 * 3 * 2
         //vgaTimingInfo.fbSize2d.x * 4 * 4 * 3 * 2
-        vgaTimingInfo.fbSize2d.x * vgaTimingInfo.fbSize2d.y * 2 * 4
+        //vgaTimingInfo.fbSize2d.x * vgaTimingInfo.fbSize2d.y * 2 * 4
+        vgaTimingInfo.fbSize2d.x * vgaTimingInfo.fbSize2d.y * 2 * 8
         //38400
         //38400 * 2
         //48000

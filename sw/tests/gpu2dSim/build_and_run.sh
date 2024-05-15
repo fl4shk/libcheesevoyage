@@ -1,5 +1,6 @@
 #!/bin/bash
-make verilate && make -j12
+#make verilate && make -j12
+make verilate && make -j8
 #numactl -m 0 -C 0,1,2,3,4,5,6,7 -- ./gpu2dSim
 #numactl -m 2 -C 0,1,2,3 -- ./gpu2dSim
 numactl -m 0 -C 0,1,2,3 -- ./gpu2dSim
