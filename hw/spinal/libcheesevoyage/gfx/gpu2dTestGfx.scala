@@ -128,6 +128,22 @@ object Gpu2dTestGfx {
     filename="gfx/bmp/sample_foreground.raw"
   )
   //--------
+  val sampleFg2MapSize2d = ElabVec2[Int](
+    x=320 / 16,
+    y=240 / 16,
+  )
+  val sampleFg2MapArr = doConvert(
+    filename="gfx/bmp/sample_foreground_2.map",
+    //optPack=true,
+    optMap=(
+      //false
+      true
+    ),
+  )
+  val sampleFg2TileArr = doConvert(
+    filename="gfx/bmp/sample_foreground_2.raw"
+  )
+  //--------
   val fgCommonTileArr = doConvert(
     filename="gfx/bmp/foreground_common_gfx.raw"
   )

@@ -167,6 +167,7 @@ object Gpu2dTest {
     val rawArrFgGrassland = Gpu2dTestGfx.fgGrasslandTileArr
     val rawArrSampleBg = Gpu2dTestGfx.sampleBgTileArr
     val rawArrSampleFg = Gpu2dTestGfx.sampleFgTileArr
+    val rawArrSampleFg2 = Gpu2dTestGfx.sampleFg2TileArr
     val myPxsSliceWidth = (
       Gpu2dTileSlice.pxsSliceWidth(
         params=params,
@@ -211,12 +212,16 @@ object Gpu2dTest {
           finish=finish,
         )
       }
+      //doInnerTileMemInit(
+      //  somePxsArr=rawArrSampleBg,
+      //  finish=false,
+      //)
+      //doInnerTileMemInit(
+      //  somePxsArr=rawArrSampleFg,
+      //  finish=true,
+      //)
       doInnerTileMemInit(
-        somePxsArr=rawArrSampleBg,
-        finish=false,
-      )
-      doInnerTileMemInit(
-        somePxsArr=rawArrSampleFg,
+        somePxsArr=rawArrSampleFg2,
         finish=true,
       )
       //doInnerTileMemInit(
@@ -271,11 +276,11 @@ object Gpu2dTest {
   }
   def doSplitBgTileMemInit(
     params: Gpu2dParams,
-    tempArr: ArrayBuffer[Gpu2dTileSlice],
+    //tempArr: ArrayBuffer[Gpu2dTileSlice],
     //gridIdx: Int,
     //isColorMath: Boolean
   ) = {
-    //val tempArr = bgTileMemInit(params=params)
+    val tempArr = bgTileMemInit(params=params)
     val tempArrPair = Array.fill(2)(
       new ArrayBuffer[Gpu2dTileSlice]()
     )
@@ -1047,123 +1052,123 @@ case class Gpu2dTest(
   tempBgTileSlice.allowOverride
 
   nextBgTileCnt := rBgTileCnt
-  when (
-    //rBgTileCnt < params.numBgTiles
-    tempBgTileCnt < params.numBgTiles
-    //rBgTileCnt < 
-  ) {
-    when (pop.bgTilePush.fire) {
-      //--------
-      // BEGIN: old, geometrical shapes graphics
-      when (tempBgTileCnt === 0) {
-        mkBgTile(0, 0)
-        //mkBgTile(0, 1, Some(0), Some(1))
-      } elsewhen (tempBgTileCnt === 1) {
-        mkBgTile(1, 2)
-        //mkBgTile(1, 2, Some(3), Some(4))
-        //mkObjTile(2, 2)
-        //mkBgTile(1, 1)
-        //mkBgTile(3, 3)
-        //mkBgTile(2, 3)
-      } elsewhen (tempBgTileCnt === 2) {
-        //mkBgTile(2, 3)
-        //mkBgTile(3, 4)
-        mkBgTile(2, 2)
-        //mkBgTile(3, 3)
-        //mkBgTile(2, 2)
-      } elsewhen (tempBgTileCnt === 3) {
-        //mkBgTile(3, 4)
-        mkBgTile(3, 3)
-        //mkBgTile(4, 4)
-        //mkBgTile(0, 1)
-      } elsewhen (tempBgTileCnt === 4) {
-        //mkBgTile(4, 5)
-        mkBgTile(4, 4, Some(5), Some(5))
-        //mkBgTile(5, 5)
-      } elsewhen (tempBgTileCnt === 5) {
-        mkBgTile(5, 6, Some(7), Some(8))
-        //mkBgTile(6, 6)
-      } elsewhen (tempBgTileCnt === 6) {
-        mkBgTile(8, 9, Some(8), Some(9))
-      } elsewhen (tempBgTileCnt === 7) {
-        mkBgTile(10, 11, Some(12), Some(13))
-      } elsewhen (tempBgTileCnt === 8) {
-        mkBgTile(14, 15, Some(14), Some(15))
-      }
-      // END: old, geometrical shapes graphics
-      //--------
-      //elsewhen (
-      //  tempBgTileCnt
-      //  === (
-      //    //params.bgSize2dInTiles.x / params.bgTileSize2d.x
-      //    //params.bgSize2dInPxs.x
-      //    params.intnlFbSize2d.x
-      //    / (
-      //      params.bgTileSize2d.x * params.bgTileSize2d.y
-      //    )
-      //  )
-      //) {
-      //  // test that there's a tile at the second row
-      //  //mkBgTile(1, 2, Some(3), Some(4))
-      //  mkBgTile(1, 1)
-      //} 
-      //elsewhen (
-      //  tempBgTileCnt
-      //  === (
-      //    //params.bgSize2dInTiles.x / params.bgTileSize2d.x
-      //    (
-      //      //params.bgSize2dInPxs.x
-      //      params.intnlFbSize2d.x
-      //      / (
-      //        params.bgTileSize2d.x * params.bgTileSize2d.y
-      //      )
-      //    ) + 1
-      //  )
-      //) {
-      //  // test that there's a tile at the second row
-      //  //mkBgTile(1, 2, Some(3), Some(4))
-      //  mkBgTile(2, 2)
-      //} otherwise {
-      //  //tempBgTileSlice := tempBgTileSlice.getZero
-      //  //when (rBgTileCnt >= params.numBgTiles) {
-      //  //  rBgTilePushValid := False
-      //  //}
-      //}
-      //--------
-      //when (
-      //  //rBgTileCnt < bgTileMem.wordCount
-      //  //tempBgTileCnt < bgTileMem.wordCount
-      //  //if (
-      //  //  (1 << tempBgTileCnt.getWidth) < bgTileMem.wordCount
-      //  //) (
-      //  //  True
-      //  //) else (
-      //    //tempBgTileCnt.resized < bgTileMem.wordCount
-      //    Cat(
-      //      U(s"${log2Up(bgTileMem.wordCount)}'d0"),
-      //      tempBgTileCnt 
-      //    ).asUInt < bgTileMem.wordCount
-      //  //)
-      //) {
-      //  tempBgTileSlice := bgTileMem.readSync(
-      //    address=nextBgTileCnt.asUInt.resized
-      //  )
-      //  //tempBgTileSlice := bgTileMem.readAsync(
-      //  //  address=rBgTileCnt.asUInt.resized
-      //  //)
-      //} otherwise {
-      //  tempBgTileSlice := tempBgTileSlice.getZero
-      //}
-      //--------
-      nextBgTileCnt := rBgTileCnt + 1
-    } otherwise {
-      ////tempBgTileSlice := tempBgTileSlice.getZero
-      //nextBgTileCnt := rBgTileCnt
-    }
-  } otherwise {
-    ////tempBgTileSlice := tempBgTileSlice.getZero
-    //nextBgTileCnt := rBgTileCnt
-  }
+  //when (
+  //  //rBgTileCnt < params.numBgTiles
+  //  tempBgTileCnt < params.numBgTiles
+  //  //rBgTileCnt < 
+  //) {
+  //  when (pop.bgTilePush.fire) {
+  //    //--------
+  //    // BEGIN: old, geometrical shapes graphics
+  //    //when (tempBgTileCnt === 0) {
+  //    //  mkBgTile(0, 0)
+  //    //  //mkBgTile(0, 1, Some(0), Some(1))
+  //    //} elsewhen (tempBgTileCnt === 1) {
+  //    //  mkBgTile(1, 2)
+  //    //  //mkBgTile(1, 2, Some(3), Some(4))
+  //    //  //mkObjTile(2, 2)
+  //    //  //mkBgTile(1, 1)
+  //    //  //mkBgTile(3, 3)
+  //    //  //mkBgTile(2, 3)
+  //    //} elsewhen (tempBgTileCnt === 2) {
+  //    //  //mkBgTile(2, 3)
+  //    //  //mkBgTile(3, 4)
+  //    //  mkBgTile(2, 2)
+  //    //  //mkBgTile(3, 3)
+  //    //  //mkBgTile(2, 2)
+  //    //} elsewhen (tempBgTileCnt === 3) {
+  //    //  //mkBgTile(3, 4)
+  //    //  mkBgTile(3, 3)
+  //    //  //mkBgTile(4, 4)
+  //    //  //mkBgTile(0, 1)
+  //    //} elsewhen (tempBgTileCnt === 4) {
+  //    //  //mkBgTile(4, 5)
+  //    //  mkBgTile(4, 4, Some(5), Some(5))
+  //    //  //mkBgTile(5, 5)
+  //    //} elsewhen (tempBgTileCnt === 5) {
+  //    //  mkBgTile(5, 6, Some(7), Some(8))
+  //    //  //mkBgTile(6, 6)
+  //    //} elsewhen (tempBgTileCnt === 6) {
+  //    //  mkBgTile(8, 9, Some(8), Some(9))
+  //    //} elsewhen (tempBgTileCnt === 7) {
+  //    //  mkBgTile(10, 11, Some(12), Some(13))
+  //    //} elsewhen (tempBgTileCnt === 8) {
+  //    //  mkBgTile(14, 15, Some(14), Some(15))
+  //    //}
+  //    // END: old, geometrical shapes graphics
+  //    //--------
+  //    //elsewhen (
+  //    //  tempBgTileCnt
+  //    //  === (
+  //    //    //params.bgSize2dInTiles.x / params.bgTileSize2d.x
+  //    //    //params.bgSize2dInPxs.x
+  //    //    params.intnlFbSize2d.x
+  //    //    / (
+  //    //      params.bgTileSize2d.x * params.bgTileSize2d.y
+  //    //    )
+  //    //  )
+  //    //) {
+  //    //  // test that there's a tile at the second row
+  //    //  //mkBgTile(1, 2, Some(3), Some(4))
+  //    //  mkBgTile(1, 1)
+  //    //} 
+  //    //elsewhen (
+  //    //  tempBgTileCnt
+  //    //  === (
+  //    //    //params.bgSize2dInTiles.x / params.bgTileSize2d.x
+  //    //    (
+  //    //      //params.bgSize2dInPxs.x
+  //    //      params.intnlFbSize2d.x
+  //    //      / (
+  //    //        params.bgTileSize2d.x * params.bgTileSize2d.y
+  //    //      )
+  //    //    ) + 1
+  //    //  )
+  //    //) {
+  //    //  // test that there's a tile at the second row
+  //    //  //mkBgTile(1, 2, Some(3), Some(4))
+  //    //  mkBgTile(2, 2)
+  //    //} otherwise {
+  //    //  //tempBgTileSlice := tempBgTileSlice.getZero
+  //    //  //when (rBgTileCnt >= params.numBgTiles) {
+  //    //  //  rBgTilePushValid := False
+  //    //  //}
+  //    //}
+  //    //--------
+  //    when (
+  //      //rBgTileCnt < bgTileMem.wordCount
+  //      //tempBgTileCnt < bgTileMem.wordCount
+  //      //if (
+  //      //  (1 << tempBgTileCnt.getWidth) < bgTileMem.wordCount
+  //      //) (
+  //      //  True
+  //      //) else (
+  //        //tempBgTileCnt.resized < bgTileMem.wordCount
+  //        Cat(
+  //          U(s"${log2Up(bgTileMem.wordCount)}'d0"),
+  //          tempBgTileCnt 
+  //        ).asUInt < bgTileMem.wordCount
+  //      //)
+  //    ) {
+  //      tempBgTileSlice := bgTileMem.readSync(
+  //        address=nextBgTileCnt.asUInt.resized
+  //      )
+  //      //tempBgTileSlice := bgTileMem.readAsync(
+  //      //  address=rBgTileCnt.asUInt.resized
+  //      //)
+  //    } otherwise {
+  //      tempBgTileSlice := tempBgTileSlice.getZero
+  //    }
+  //    //--------
+  //    nextBgTileCnt := rBgTileCnt + 1
+  //  } otherwise {
+  //    ////tempBgTileSlice := tempBgTileSlice.getZero
+  //    //nextBgTileCnt := rBgTileCnt
+  //  }
+  //} otherwise {
+  //  ////tempBgTileSlice := tempBgTileSlice.getZero
+  //  //nextBgTileCnt := rBgTileCnt
+  //}
   when (
     tempBgTileCnt >= params.numBgTiles - 1
   ) {
@@ -1171,15 +1176,15 @@ case class Gpu2dTest(
   }
 
   pop.bgTilePush.valid := (
-    rBgTilePushValid
-    //False
+    //rBgTilePushValid
+    False
     //True
   )
-  //pop.bgTilePush.payload := pop.bgTilePush.payload.getZero
-  pop.bgTilePush.tileSlice := tempBgTileSlice
-  pop.bgTilePush.memIdx := (
-    rBgTileCnt.asUInt(pop.bgTilePush.payload.memIdx.bitsRange)
-  )
+  pop.bgTilePush.payload := pop.bgTilePush.payload.getZero
+  //pop.bgTilePush.tileSlice := tempBgTileSlice
+  //pop.bgTilePush.memIdx := (
+  //  rBgTileCnt.asUInt(pop.bgTilePush.payload.memIdx.bitsRange)
+  //)
   ////--------
   //pop.bgTilePush.valid := rBgTilePushValid
   ////--------
@@ -1612,7 +1617,7 @@ case class Gpu2dTest(
     //  tempBgEntryPush.payload.memIdx := (
     //    rBg0EntryCnt.asUInt(pop.bgEntryPushArr(0).payload.memIdx.bitsRange)
     //  )
-    //} 
+    //}
     //else 
     if (idx == 0) {
       tempBgEntryPush.valid := (
@@ -1625,8 +1630,8 @@ case class Gpu2dTest(
       }
       val myBg0MapArr = Gpu2dTest.mkBgEntryMapArr(
         params=params,
-        someMapArr=Gpu2dTestGfx.sampleFgMapArr,
-        someMapSize2d=Gpu2dTestGfx.sampleFgMapSize2d,
+        someMapArr=Gpu2dTestGfx.sampleFg2MapArr,
+        someMapSize2d=Gpu2dTestGfx.sampleFg2MapSize2d,
       )
         .setName("myBg0MapArr")
         .addAttribute("keep")
@@ -1655,29 +1660,30 @@ case class Gpu2dTest(
       //  myPayload.bgEntry.tileIdx := (
       //  )
       //}
-      val myPosYBit = rBg0EntryCnt(params.bgSize2dInTilesPow.x)
-      myPayload.bgEntry.tileIdx := (
-        Cat(myPosYBit, rBg0EntryCnt(1 downto 0)).asUInt.resized
-      )
+      //val myPosYBit = rBg0EntryCnt(params.bgSize2dInTilesPow.x)
       //myPayload.bgEntry.tileIdx := (
-      //  //(rBg0EntryCnt(3 downto 0) + 1).asUInt.resized
-      //  //(
-      //  //  myBg0MapArr.readSync(
-      //  //    //address=nextBg0EntryCnt.asUInt.resized//rBgEntryCnt.asUInt.resized
-      //  //    address=(
-      //  //      myBg0MemAddr
-      //  //    ).resized,
-      //  //    //enable=myReadSyncEnable,
-      //  //  ) + (
-      //  //    Gpu2dTestGfx.sampleBgTileArr.size
-      //  //    / (
-      //  //      params.bgTileSize2d.x
-      //  //      * params.bgTileSize2d.y
-      //  //    )
-      //  //  )
-      //  //).resized
+      //  Cat(myPosYBit, rBg0EntryCnt(1 downto 0)).asUInt.resized
       //)
-    } 
+      myPayload.bgEntry.tileIdx := (
+        //(rBg0EntryCnt(3 downto 0) + 1).asUInt.resized
+        (
+          myBg0MapArr.readSync(
+            //address=nextBg0EntryCnt.asUInt.resized//rBgEntryCnt.asUInt.resized
+            address=(
+              myBg0MemAddr
+            ).resized,
+            //enable=myReadSyncEnable,
+          ) 
+          //+ (
+          //  Gpu2dTestGfx.sampleBgTileArr.size
+          //  / (
+          //    params.bgTileSize2d.x
+          //    * params.bgTileSize2d.y
+          //  )
+          //)
+        ).resized
+      )
+    }
     //else if (idx == 1) {
     //  //--------
     //  //tempBgEntryPush.valid := tempBgEntryPush.valid.getZero

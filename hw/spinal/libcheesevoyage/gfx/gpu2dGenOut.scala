@@ -320,6 +320,7 @@ object Gpu2dSimDutParams {
         //  //64
         //  2
         //)
+        //1024
       )
       //println(temp)
       Some(

@@ -2064,10 +2064,8 @@ case class Gpu2d(
     //val colorMathTileMemArr = new ArrayBuffer[
     //  FpgacpuRamSimpleDualPort[Gpu2dTile]
     //]()
-    val myBgTileMemInit = Gpu2dTest.bgTileMemInit(params=params)
-    val mySplitBgTileMemInit = Gpu2dTest.doSplitBgTileMemInit(
+    val myBgTileMemInit = Gpu2dTest.doSplitBgTileMemInit(
       params=params,
-      tempArr=myBgTileMemInit,
       //gridIdx=jdx,
       //isColorMath=false,
     )
@@ -2111,15 +2109,15 @@ case class Gpu2d(
               Some(bgTileMemInit(jdx))
             }
             case None => {
-              //Some(
-              //  mySplitBgTileMemInit(jdx)
-              //  //Gpu2dTest.doSplitBgTileMemInit(
-              //  //  params=params,
-              //  //  //gridIdx=jdx,
-              //  //  //isColorMath=false,
-              //  //)(jdx)
-              //)
-              None
+              Some(
+                myBgTileMemInit(jdx)
+                //Gpu2dTest.doSplitBgTileMemInit(
+                //  params=params,
+                //  //gridIdx=jdx,
+                //  //isColorMath=false,
+                //)(jdx)
+              )
+              //None
             }
           }
         },
@@ -2890,7 +2888,7 @@ case class Gpu2d(
                     //  gridIdx=jdx,
                     //  //isColorMath=true,
                     //)
-                    mySplitBgTileMemInit(jdx)
+                    myBgTileMemInit(jdx)
                   )
                   //None
                 }
@@ -5283,7 +5281,7 @@ case class Gpu2d(
           bakCnt(
             //cnt.high
             //downto (cnt.high - wrBgPipeBgIdxWidth + 1)
-            wrBgPipeBgIdxWidth -1 downto 0
+            wrBgPipeBgIdxWidth - 1 downto 0
           )
         )
         //val scroll = cloneOf(bgAttrsArr(0).scroll)
@@ -11146,7 +11144,7 @@ case class Gpu2d(
               tempInp.pxPosXGridIdxFindFirstSameAsFound,
               tempInp.pxPosXGridIdxFindFirstDiffFound,
             )) {
-              val tempRdAddrSameAsSliced = (
+              val tempRdAddrSameAsSliced = KeepAttribute(
                 tempInp.stage5.tileMemRdAddrSameAs(
                   //tempInp.stage4.tileMemRdAddrSameAs.high
                   //downto tempInp.stage4.tileMemRdAddrSameAs.high
@@ -11154,7 +11152,8 @@ case class Gpu2d(
                   downto params.bgTileSize2dPow.y
                 )
               )
-              val tempRdAddrDiffSliced = (
+                .setName(s"wrBgPipe_6_tempRdAddrSameAsSliced_$x")
+              val tempRdAddrDiffSliced = KeepAttribute(
                 tempInp.stage5.tileMemRdAddrDiff(
                   //tempInp.stage4.tileMemRdAddrDiff.high
                   //downto tempInp.stage4.tileMemRdAddrDiff.high
@@ -11162,6 +11161,8 @@ case class Gpu2d(
                   downto params.bgTileSize2dPow.y
                 )
               )
+                .setName(s"wrBgPipe_6_tempRdAddrDiffSliced_$x")
+
               is (M"-0") {
                 // At least one of them will be found, so
                 // this indicates `SameAsFound`
@@ -11195,34 +11196,78 @@ case class Gpu2d(
                 def diffIdx = (
                   tempInp.pxPosXGridIdxFindFirstDiffIdx
                 )
+                val tempCondX_sameAsIdx_gt_diffIdx = KeepAttribute(
+                  Flow(Bool())
+                )
+                  .setName(
+                    s"wrBgPipe_6_tempCondX_sameAsIdx_gt_diffIdx_$x"
+                  )
+                tempCondX_sameAsIdx_gt_diffIdx := (
+                  tempCondX_sameAsIdx_gt_diffIdx.getZero
+                )
+                val tempCondX_sameAsIdx_le_diffIdx = KeepAttribute(
+                  Flow(Bool())
+                )
+                  .setName(
+                    s"wrBgPipe_6_tempCondX_sameAsIdx_le_diffIdx_$x"
+                  )
+                tempCondX_sameAsIdx_le_diffIdx := (
+                  tempCondX_sameAsIdx_le_diffIdx.getZero
+                )
+
+                val myTempRdAddrSliced = KeepAttribute(
+                  //Bool()
+                  UInt(1 bits)
+                )
+                  .setName(s"wrBgPipe_6_myTempRdAddrSliced_$x")
+                setBgTile(
+                  tempPxPosIdx=myTempRdAddrSliced,
+                  //tempPxPosIdx=1,
+                  //plusAmount=0,
+                )
+
                 when (sameAsIdx > diffIdx) {
+                  tempCondX_sameAsIdx_gt_diffIdx.valid := True
+                  tempCondX_sameAsIdx_gt_diffIdx.payload := (
+                    x < sameAsIdx
+                  )
                   when (x < sameAsIdx) {
-                    setBgTile(
-                      tempPxPosIdx=tempRdAddrDiffSliced,
-                      //tempPxPosIdx=1,
-                      //plusAmount=0,
-                    )
+                    myTempRdAddrSliced := tempRdAddrDiffSliced
+                    //setBgTile(
+                    //  tempPxPosIdx=tempRdAddrDiffSliced,
+                    //  //tempPxPosIdx=1,
+                    //  //plusAmount=0,
+                    //)
                   } otherwise {
-                    setBgTile(
-                      tempPxPosIdx=tempRdAddrSameAsSliced,
-                      //tempPxPosIdx=0,
-                      //plusAmount=1,
-                    )
+                    myTempRdAddrSliced := tempRdAddrSameAsSliced
+                    //setBgTile(
+                    //  tempPxPosIdx=tempRdAddrSameAsSliced,
+                    //  //tempPxPosIdx=0,
+                    //  //plusAmount=1,
+                    //)
                   }
                 } otherwise {
+                  tempCondX_sameAsIdx_le_diffIdx.valid := True
+                  tempCondX_sameAsIdx_le_diffIdx.payload := (
+                    x < diffIdx
+                  )
                   // this indicates `sameAsIdx < diffIdx`
                   when (x < diffIdx) {
-                    setBgTile(
-                      tempPxPosIdx=tempRdAddrSameAsSliced,
-                      //tempPxPosIdx=0,
-                      //plusAmount=0,
-                    )
+                    myTempRdAddrSliced := tempRdAddrSameAsSliced
+                    //myTempRdAddrSliced := tempRdAddrDiffSliced
+                    //setBgTile(
+                    //  tempPxPosIdx=tempRdAddrSameAsSliced,
+                    //  //tempPxPosIdx=0,
+                    //  //plusAmount=0,
+                    //)
                   } otherwise {
-                    setBgTile(
-                      tempPxPosIdx=tempRdAddrDiffSliced,
-                      //tempPxPosIdx=1,
-                      //plusAmount=1,
-                    )
+                    myTempRdAddrSliced := tempRdAddrDiffSliced
+                    //myTempRdAddrSliced := tempRdAddrSameAsSliced
+                    //setBgTile(
+                    //  tempPxPosIdx=tempRdAddrDiffSliced,
+                    //  //tempPxPosIdx=1,
+                    //  //plusAmount=1,
+                    //)
                   }
                 }
               }
@@ -11636,26 +11681,12 @@ case class Gpu2d(
           //} otherwise {
           //  rPastLineMemEntry(x) := tempLineMemEntry
           //}
+          //--------
+          // BEGIN: fix this later
           rPastLineMemEntry(x) := tempLineMemEntry
-          when (
-            // This could be split into more pipeline stages, but it
-            // might not be necessary with 4 or fewer backgrounds
-            (
-              (
-                (bgIdx === (1 << bgIdx.getWidth) - 1)
-                || (
-                  //rPastLineMemEntry(x).col.a === False
-                  //!rPastLineMemEntry(x).col.a
-                  //&& pastLineMemEntry(x).prio === 
-                  tempInp.postStage0.palEntryNzMemIdx(x)
-                )
-              ) 
-              && (
-                !tempInp.bakCnt.msb
-              )
-            ) //&& tempInp.bgAttrs.visib
-            //bgIdx === 0
-          ) {
+          def setTempLineMemEntry(
+          ): Unit = {
+            //rPastLineMemEntry(x) := tempLineMemEntry
             // Starting rendering a new pixel or overwrite the existing
             // pixel
             tempLineMemEntry.col.rgb := (
@@ -11681,9 +11712,37 @@ case class Gpu2d(
               )
             }
             //rPastLineMemEntry(x) := tempLineMemEntry
-          } otherwise {
-            tempLineMemEntry := rPastLineMemEntry(x)
           }
+          when (
+            // This could be split into more pipeline stages, but it
+            // might not be necessary with 4 or fewer backgrounds
+            (
+              (
+                (bgIdx === (1 << bgIdx.getWidth) - 1)
+                || (
+                  //rPastLineMemEntry(x).col.a === False
+                  !rPastLineMemEntry(x).col.a
+                  //&& pastLineMemEntry(x).prio === 
+                  //tempInp.postStage0.palEntryNzMemIdx(x)
+                )
+              )
+              && (
+                !tempInp.bakCnt.msb
+              )
+            ) //&& tempInp.bgAttrs.visib
+            //bgIdx === 0
+          ) {
+            setTempLineMemEntry()
+          } elsewhen (
+            bgIdx =/= (1 << bgIdx.getWidth) - 1
+          ) {
+            tempLineMemEntry := rPastLineMemEntry(x)
+          } otherwise {
+            //tempLineMemEntry := rPastLineMemEntry(x)
+            tempLineMemEntry := tempLineMemEntry.getZero
+          }
+          // END: fix this later
+          //--------
         
         //tempOutp.doWrite := (bgIdx === 0)
         }

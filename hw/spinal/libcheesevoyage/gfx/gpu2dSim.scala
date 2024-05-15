@@ -329,6 +329,7 @@ object Gpu2dSim extends App {
     //objAffineTileWidthRshift=,
     //numBgsPow=log2Up(4),
     numBgsPow=log2Up(2),
+    //numBgsPow=log2Up(1),
     //numObjsPow=log2Up(64),
     //numObjsPow=log2Up(32),
     //numObjsPow=log2Up(2),
