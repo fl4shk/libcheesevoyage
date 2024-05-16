@@ -111,7 +111,7 @@ object Gpu2dTest {
         //  //val tempY = 
         //  tempArr += BigInt(myMapArr(jdx))
         //}
-        var z: Int = 0
+        //var z: Int = 0
         for (jdx <- 0 until params.bgSize2dInTiles.y) {
           for (kdx <- 0 until params.bgSize2dInTiles.x) {
             if (
@@ -131,22 +131,28 @@ object Gpu2dTest {
               )
             ) {
               //println(s"inner: ($kdx, $jdx)")
-              if (
-                (
-                  jdx < tempFbSize2d.y / params.bgTileSize2d.y
-                ) && (
-                  kdx < tempFbSize2d.x / params.bgTileSize2d.x
-                )
-              ) {
-                tempArr += BigInt(someMapArr(z) & 0x3ff)
-                //tempArr += BigInt(1)
-                //tempArr += BigInt(z)
-                //tempArr += BigInt(z)
-              } else {
-                tempArr += BigInt(0)
-                //tempArr += BigInt(1)
-              }
-              z += 1
+              //if (
+              //  (
+              //    jdx < tempFbSize2d.y / params.bgTileSize2d.y
+              //  ) && (
+              //    kdx < tempFbSize2d.x / params.bgTileSize2d.x
+              //  )
+              //) {
+              //  tempArr += BigInt(someMapArr(z) & 0x3ff)
+              //  //tempArr += BigInt(1)
+              //  //tempArr += BigInt(z)
+              //  //tempArr += BigInt(z)
+              //} else {
+              //  tempArr += BigInt(0)
+              //  //tempArr += BigInt(1)
+              //}
+              //z += 1
+              tempArr += BigInt(
+                someMapArr(
+                  jdx * someMapSize2d.x
+                  + kdx
+                ) & 0x3ff
+              )
             } else {
               //println(s"outer: ($kdx, $jdx)")
               //tempArr += BigInt(64)

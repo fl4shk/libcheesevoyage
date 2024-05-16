@@ -7783,30 +7783,47 @@ case class Gpu2d(
     //    Flow(WrBgPipePayload())
     //  )
     //)
-    val nWrBgArr = Array.fill(wrBgObjPipeNumStages + 1)(Node())
-    //intnlChangingRowRe := RegNextWhen(
-    //  //rIntnlChangingRow && !rPastIntnlChangingRow,
-    //  rIntnlChangingRow, //&& !rPastIntnlChangingRow,
-    //  nWrBgArr(0).isFiring,
-    //) init(True)
-    //intnlChangingRowRe := (
-    //  rIntnlChangingRow && !rPastIntnlChangingRow
-    //)
-    val sWrBgArr = new ArrayBuffer[StageLink]()
-    val cWrBgArr = new ArrayBuffer[CtrlLink]()
-    for (idx <- 0 until nWrBgArr.size - 1) {
-      sWrBgArr += StageLink(
-        up=nWrBgArr(idx),
-        down=Node(),
+    //val nWrBgArr = Array.fill(wrBgObjPipeNumStages + 1)(Node())
+    ////intnlChangingRowRe := RegNextWhen(
+    ////  //rIntnlChangingRow && !rPastIntnlChangingRow,
+    ////  rIntnlChangingRow, //&& !rPastIntnlChangingRow,
+    ////  nWrBgArr(0).isFiring,
+    ////) init(True)
+    ////intnlChangingRowRe := (
+    ////  rIntnlChangingRow && !rPastIntnlChangingRow
+    ////)
+    //val sWrBgArr = new ArrayBuffer[StageLink]()
+    //val cWrBgArr = new ArrayBuffer[CtrlLink]()
+    val wrBgPipe = PipeHelper(linkArr=linkArr)
+    def nWrBgArr = wrBgPipe.nArr
+    def sWrBgArr = wrBgPipe.sArr
+    def s2mWrBgArr = wrBgPipe.s2mArr
+    def cWrBgArr = wrBgPipe.cArr
+    for (
+      //idx <- 0 until nWrBgArr.size - 1
+      idx <- 0 until wrBgObjPipeNumStages + 1
+    ) {
+      wrBgPipe.addStage(
+        name=(s"WrBgPipe_$idx"),
+        optIncludeS2M=false,
       )
-      linkArr += sWrBgArr.last
+      //sWrBgArr += StageLink(
+      //  up=nWrBgArr(idx),
+      //  down=Node(),
+      //)
+      //linkArr += sWrBgArr.last
 
-      cWrBgArr += CtrlLink(
-        up=sWrBgArr.last.down,
-        down=nWrBgArr(idx + 1),
-      )
-      linkArr += cWrBgArr.last
+      //cWrBgArr += CtrlLink(
+      //  up=sWrBgArr.last.down,
+      //  down=nWrBgArr(idx + 1),
+      //)
+      //linkArr += cWrBgArr.last
     }
+    wrBgPipe.addStage(
+      name="WrBgPipe_Last",
+      optIncludeS2M=false,
+      finish=true,
+    )
     val nWrBgPipeLast = nWrBgArr.last
     //val wrBgPipePayloadArr = Array.fill(nWrBgArr.size)(
     //  Payload(WrBgPipePayload())
@@ -8074,22 +8091,52 @@ case class Gpu2d(
       }
     //}
 
-    val nWrObjArr = Array.fill(wrBgObjPipeNumStages + 1)(Node())
-    val sWrObjArr = new ArrayBuffer[StageLink]()
-    val cWrObjArr = new ArrayBuffer[CtrlLink]()
-    for (idx <- 0 until nWrObjArr.size - 1) {
-      sWrObjArr += StageLink(
-        up=nWrObjArr(idx),
-        down=Node(),
+    //val nWrObjArr = Array.fill(wrBgObjPipeNumStages + 1)(Node())
+    //val sWrObjArr = new ArrayBuffer[StageLink]()
+    //val cWrObjArr = new ArrayBuffer[CtrlLink]()
+    val wrObjPipe = PipeHelper(linkArr=linkArr)
+    def nWrObjArr = wrObjPipe.nArr
+    def sWrObjArr = wrObjPipe.sArr
+    def s2mWrObjArr = wrObjPipe.s2mArr
+    def cWrObjArr = wrObjPipe.cArr
+    for (
+      //idx <- 0 until nWrObjArr.size - 1
+      idx <- 0 until wrBgObjPipeNumStages + 1
+    ) {
+      wrObjPipe.addStage(
+        name=(s"WrObjPipe_$idx"),
+        optIncludeS2M=false,
       )
-      linkArr += sWrObjArr.last
+      //sWrObjArr += StageLink(
+      //  up=nWrObjArr(idx),
+      //  down=Node(),
+      //)
+      //linkArr += sWrObjArr.last
 
-      cWrObjArr += CtrlLink(
-        up=sWrObjArr.last.down,
-        down=nWrObjArr(idx + 1),
-      )
-      linkArr += cWrObjArr.last
+      //cWrObjArr += CtrlLink(
+      //  up=sWrObjArr.last.down,
+      //  down=nWrObjArr(idx + 1),
+      //)
+      //linkArr += cWrObjArr.last
     }
+    wrObjPipe.addStage(
+      name="WrObjPipe_Last",
+      optIncludeS2M=false,
+      finish=true,
+    )
+    //for (idx <- 0 until nWrObjArr.size - 1) {
+    //  sWrObjArr += StageLink(
+    //    up=nWrObjArr(idx),
+    //    down=Node(),
+    //  )
+    //  linkArr += sWrObjArr.last
+
+    //  cWrObjArr += CtrlLink(
+    //    up=sWrObjArr.last.down,
+    //    down=nWrObjArr(idx + 1),
+    //  )
+    //  linkArr += cWrObjArr.last
+    //}
     val nWrObjPipeLast = nWrObjArr.last
     //val wrObjPipePayloadArr = Array.fill(nWrObjArr.size)(
     //  Payload(WrObjPipePayload())
