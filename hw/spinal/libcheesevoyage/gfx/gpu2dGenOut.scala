@@ -59,8 +59,8 @@ object Gpu2dSimDutParams {
         //visib=1 << 6,
         //visib=64,
         //visib=1 << 7,
-        visib=320,
-        //visib=640,
+        //visib=320,
+        visib=640,
         //visib=160,
         //visib=1 << 8,
         //visib=4,
@@ -84,8 +84,8 @@ object Gpu2dSimDutParams {
         //visib=1 << 4,
         //visib=1 << 7,
         //visib=128,
-        visib=240,
-        //visib=480,
+        //visib=240,
+        visib=480,
         //visib=4,
         //visib=8,
         //front=1,
@@ -377,8 +377,8 @@ object Gpu2dSimDutToVerilog extends App {
     ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
     optRawSnesButtons=true,
     dbgPipeMemRmw=(
-      true
-      //false
+      //true
+      false
     ),
   ))
 }

@@ -33,9 +33,9 @@ static constexpr double
 	CLK_RATE
 		//= 25.0,
 		//= 50.0,
-		//= 75.0,
+		= 75.0,
 		//= 100.0,
-		= 125.0,
+		//= 125.0,
 		//= 150.0,
 		//= 200.0,
 	PIXEL_CLK
@@ -50,10 +50,10 @@ static constexpr Vec2<size_t>
 		//.y=1 << 7,
 		//.x=1 << 6,
 		//.y=1 << 5,
-		.x=320,
-		.y=240,
-		//.x=640,
-		//.y=480,
+		//.x=320,
+		//.y=240,
+		.x=640,
+		.y=480,
 		//.x=128,
 		//.x=160,
 		//.y=128,
@@ -335,7 +335,8 @@ protected:		// functions
 				//_top->io_rawSnesButtons_payload(0) = 3;
 				_top->io_rawSnesButtons_payload = (
 					my_key_up_now(
-						SnesKeyKind::B//,
+						SnesKeyKind::B,
+						Always::KeyDown
 						//Always::Disabled
 					)
 					| my_key_up_now(
@@ -804,7 +805,11 @@ int main(int argc, char** argv) {
 	}
 	contextp->commandArgs(argc, argv);
 	if (trace) {
-		top->trace(trace.get(), 20);
+		top->trace(
+			trace.get(),
+			//20
+			4
+		);
 		trace->open("sdl_test.vcd");
 	}
 
@@ -847,9 +852,10 @@ int main(int argc, char** argv) {
 		//!vga.do_exit()
 		/*;*/size_t i=0
 		;
-		//i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 40 * 2) && !vga.do_exit();
-		//i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 4 * 2) && !vga.do_exit()
-		//	i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * CLKS_PER_PIXEL * 3 * 2)
+		//i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 2 * CLKS_PER_PIXEL * 1.5)
+		////i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 40 * 2) && !vga.do_exit();
+		////i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 4 * 2) && !vga.do_exit()
+		////	i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * CLKS_PER_PIXEL * 3 * 2)
 			//&& 
 			!vga.do_exit()
 		;

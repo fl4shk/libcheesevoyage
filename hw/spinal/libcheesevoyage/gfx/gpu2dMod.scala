@@ -7353,14 +7353,14 @@ case class Gpu2d(
       //log2Up(params.physFbSize2d.x + 1) + 2
     )
     def combinePipeFullCntWidth = (
-      //log2Up(params.physFbSize2d.x + 1) + 2
-      combinePipeCntWidth
+      log2Up(params.physFbSize2d.x + 1) + 2
+      //combinePipeCntWidth
     )
     def combinePipeCntRange = (
       ////combinePipeFullCntWidth + log2Up(params.physFbSize2dScale.x) - 1
       combinePipeFullCntWidth - 1
-      //downto log2Up(params.physFbSize2dScale.x)
-      downto 0
+      downto log2Up(params.physFbSize2dScale.x)
+      //downto 0
     )
     //println(
     //  "cnt stuff: "
@@ -7472,15 +7472,18 @@ case class Gpu2d(
         def fullBakCntWillBeDone() = {
           //fullBakCntMinus1.msb
           //fullBakCntMinus1 === 0
-          //def myPow = log2Up(params.physFbSize2dScale.x)
+          def myPow = log2Up(params.physFbSize2dScale.x)
           (
-            fullBakCnt === 0
-            //(
-            //  fullBakCnt(fullBakCnt.high downto myPow) === 0
-            //) && (
-            //  fullBakCnt(myPow - 1 downto 0)
-            //  === (1 << myPow) - params.physFbSize2dScale.x
-            //)
+            if (params.physFbSize2dScale.x == 1) (
+              fullBakCnt === 0
+            ) else (
+              (
+                fullBakCnt(fullBakCnt.high downto myPow) === 0
+              ) && (
+                fullBakCnt(myPow - 1 downto 0)
+                === (1 << myPow) - params.physFbSize2dScale.x
+              )
+            )
           ) 
           //&& (
           //  //(fracCnt - 1).msb
@@ -9314,6 +9317,7 @@ case class Gpu2d(
       //False
       rPrevCombinePipeLastFullCnt.resized
       === combinePipeLastPreThrown.fullCnt
+      //&& pop.ready
     )
     val combinePipeLastThrown = (
       //Stream(CombinePipePayload())
@@ -9540,34 +9544,38 @@ case class Gpu2d(
               //  //)
               //} 
               .otherwise {
-                //def myPow = log2Up(params.physFbSize2dScale.x)
-                //def myBakCnt = rCombinePipeFrontPayload.fullBakCnt
-                //when (
-                //  myBakCnt(myPow - 1 downto 0)
-                //  === (
-                //    (1 << myPow) - params.physFbSize2dScale.x
-                //  )
-                //) {
-                //  rCombinePipeFrontPayload.cnt := (
-                //    rCombinePipeFrontPayload.cnt + 1
-                //  )
-                //  rCombinePipeFrontPayload.fullCnt(
-                //    myPow - 1 downto 0
-                //  ) := 0x0
-                //  rCombinePipeFrontPayload.bakCnt := (
-                //    rCombinePipeFrontPayload.bakCnt - 1
-                //  )
-                //  rCombinePipeFrontPayload.fullBakCnt(
-                //    myPow - 1 downto 0
-                //  ) := (default -> True)
+                def myPow = log2Up(params.physFbSize2dScale.x)
+                def myBakCnt = rCombinePipeFrontPayload.fullBakCnt
+                when (
+                  if (params.physFbSize2dScale.x > 1) (
+                    myBakCnt(myPow - 1 downto 0)
+                    === (
+                      (1 << myPow) - params.physFbSize2dScale.x
+                    )
+                  ) else (
+                    False
+                  )
+                ) {
+                  rCombinePipeFrontPayload.cnt := (
+                    rCombinePipeFrontPayload.cnt + 1
+                  )
+                  rCombinePipeFrontPayload.fullCnt(
+                    myPow - 1 downto 0
+                  ) := 0x0
+                  rCombinePipeFrontPayload.bakCnt := (
+                    rCombinePipeFrontPayload.bakCnt - 1
+                  )
+                  rCombinePipeFrontPayload.fullBakCnt(
+                    myPow - 1 downto 0
+                  ) := (default -> True)
 
-                //  //rCombinePipeFrontPayload.bakCntMinus1 := (
-                //  //  rCombinePipeFrontPayload.bakCntMinus1 - 1
-                //  //)
-                //  //rCombinePipeFrontPayload.fullBakCntMinus1(
-                //  //  myPow - 1 downto 0
-                //  //) := (default -> True)
-                //} otherwise {
+                  //rCombinePipeFrontPayload.bakCntMinus1 := (
+                  //  rCombinePipeFrontPayload.bakCntMinus1 - 1
+                  //)
+                  //rCombinePipeFrontPayload.fullBakCntMinus1(
+                  //  myPow - 1 downto 0
+                  //) := (default -> True)
+                } otherwise {
                   //nextCombineChangingRow := False
                   //nextCombinePipeFrontValid := rCombinePipeFrontValid
                   rCombinePipeFrontPayload.changingRow := False
@@ -9591,7 +9599,7 @@ case class Gpu2d(
                   //rCombinePipeFrontPayload.fracCnt := (
                   //  params.physFbSize2dScale.x - 2
                   //)
-                //}
+                }
               }
             //}
           //} otherwise {
@@ -10687,168 +10695,6 @@ case class Gpu2d(
                 //  params.bgTileMemIdxWidth bits
                 //)
                 //--------
-                //def setRdAddr(
-                //  someTempRdAddr: UInt,
-                //  someVecIdx: UInt,
-                //  //someMemArrIdx: Int,
-                //): Unit = {
-                //  someTempRdAddr := (
-                //    Mux[UInt](
-                //      !pipeIn.bgAttrs.fbAttrs.doIt,
-                //      Cat(
-                //        tempInp.bgEntry(
-                //          //x
-                //          //tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                //          someVecIdx
-                //        ).tileIdx,
-                //        tempOutp.tilePxsCoord(0).y,
-                //      ).asUInt,
-
-                //      // add non-scrolling framebuffer stuff back in
-                //      // later (see output Verilog from lost Spinal
-                //      // code)
-                //      //Cat(
-                //      //  pipeIn.bgAttrs.fbAttrs.tileMemBaseAddr,
-                //      //  tempInp.pxPos(0).y,
-                //      //  (
-                //      //    tempInp.pxPos(
-                //      //      //tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                //      //      someVecIdx
-                //      //    ).x(
-                //      //      log2Up(params.bgSize2dInPxs.x) - 1
-                //      //      downto params.bgTileSize2dPow.x
-                //      //    )
-                //      //  ),
-                //      //).asUInt,
-                //      tempInp.stage4.fbRdAddrFinalPlus(someVecIdx),
-                //    ).resized
-                //  )
-                //  val tempPxPosIdx = (
-                //    someTempRdAddr(
-                //      //tempInp.stage4.tileMemRdAddrFront.high
-                //      //downto tempInp.stage4.tileMemRdAddrFront.high
-                //      params.bgTileSize2dPow.y //- 1
-                //      downto params.bgTileSize2dPow.y //- 1
-                //    )
-                //  )
-                //  switch (tempPxPosIdx) {
-                //    for (myTempPxPosIdx <- 0 until 2) {
-                //      is (myTempPxPosIdx) {
-                //        //tempOutp.tileSlice(x) := tempMemArr(
-                //        //  //(myTempPxPosIdx + plusAmount) % 2   
-                //        //  myTempPxPosIdx % 2
-                //        //).io.rdData
-                //        someTileMemArr(
-                //          myTempPxPosIdx
-                //        ).io.rdAddr := (
-                //          //someTempRdAddr(
-                //          //  //someTempRdAddr.high downto 1
-                //          //  someTempRdAddr.high - 1 downto 0
-                //          //)
-                //          Cat(
-                //            someTempRdAddr(
-                //              someTempRdAddr.high
-                //              downto params.bgTileSize2dPow.y + 1
-                //              //downto params.bgTileSize2dPow.y 
-                //            ),
-                //            someTempRdAddr(
-                //              params.bgTileSize2dPow.y - 1
-                //              //params.bgTileSize2dPow.y - 2
-                //              downto 0
-                //            ),
-                //          ).asUInt.resized
-                //        )
-                //      }
-                //    }
-                //  }
-                //  //switch (
-                //  //  //Mux[UInt](
-                //  //  //  !pipeIn.bgAttrs.fbAttrs.doIt,
-                //  //    someTempRdAddr(
-                //  //      //someTempRdAddr.high
-                //  //      //downto someTempRdAddr.high
-                //  //      params.bgTileSize2dPow.y
-                //  //      downto params.bgTileSize2dPow.y
-                //  //    ),
-                //  //  //  {
-                //  //  //    val slicePos = (
-                //  //  //      log2Up(params.bgSize2dInPxs.y)
-                //  //  //      + log2Up(params.bgSize2dInPxs.x)
-                //  //  //      - params.bgTileSize2dPow.x
-                //  //  //      + 1
-                //  //  //      //- 1
-                //  //  //    )
-                //  //  //    someTempRdAddr(
-                //  //  //      slicePos downto slicePos
-                //  //  //    )
-                //  //  //  },
-                //  //  //)
-                //  //) {
-                //  //  for (myTempIdx <- 0 until 2) {
-                //  //    is (myTempIdx) {
-                //  //      someTileMemArr(
-                //  //        //tempPxPosIdx % 2
-                //  //        //someMemArrIdx
-                //  //        myTempIdx
-                //  //      ).io.rdAddr := (
-                //  //        //someTempRdAddr.resized
-                //  //        //Mux[UInt](
-                //  //        //  !pipeIn.bgAttrs.fbAttrs.doIt,
-                //  //          Cat(
-                //  //            someTempRdAddr(
-                //  //              someTempRdAddr.high
-                //  //              downto params.bgTileSize2dPow.y + 1
-                //  //              //downto params.bgTileSize2dPow.y 
-                //  //            ),
-                //  //            someTempRdAddr(
-                //  //              params.bgTileSize2dPow.y - 1
-                //  //              //params.bgTileSize2dPow.y - 2
-                //  //              downto 0
-                //  //            ),
-                //  //          ).asUInt.resized,
-                //  //        //  {
-                //  //        //    val slicePos = (
-                //  //        //      log2Up(params.bgSize2dInPxs.y)
-                //  //        //      + log2Up(params.bgSize2dInPxs.x)
-                //  //        //      - params.bgTileSize2dPow.x
-                //  //        //      + 1
-                //  //        //      //- 1
-                //  //        //    )
-                //  //        //    Cat(
-                //  //        //      someTempRdAddr(
-                //  //        //        someTempRdAddr.high
-                //  //        //        downto slicePos + 1
-                //  //        //      ),
-                //  //        //      someTempRdAddr(
-                //  //        //        slicePos - 1
-                //  //        //        downto 0
-                //  //        //      ),
-                //  //        //    ).asUInt
-                //  //        //  }
-                //  //          //someTempRdAddr,
-                //  //        //).resized
-                //  //      )
-                //  //    }
-                //  //  }
-                //  //}
-                //}
-                //setRdAddr(
-                //  someTempRdAddr=(
-                //    tempOutp.stage5.tileMemRdAddrFront
-                //  ),
-                //  someVecIdx=(
-                //    tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                //  ),
-                //)
-                //setRdAddr(
-                //  someTempRdAddr=(
-                //    tempOutp.stage5.tileMemRdAddrBack
-                //  ),
-                //  someVecIdx=(
-                //    //tempInp.pxPosXGridIdxFindFirstDiffIdx
-                //    tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                //  ),
-                //)
                 //--------
                 def setRdAddr(
                   someTempIdx: Int,
@@ -11010,216 +10856,6 @@ case class Gpu2d(
                     params.bgTileSize2d.x - 1
                   ).tileIdx//(0)
                 )
-                //tempOutp.tileIdxFrontLsb := (
-                //  tempOutp.tileIdxFront(0)
-                //)
-                //tempOutp.tileIdxBackLsb := (
-                //  tempOutp.tileIdxBack(0)
-                //)
-                //def doSetRdAddrSameAs(
-                //  someTempIdx: Int
-                //): Unit = {
-                //  setRdAddr(
-                //    someTempIdx=someTempIdx,
-                //    someTempRdAddr=(
-                //      tempOutp.stage5.tileMemRdAddrFront
-                //    ),
-                //    someVecIdx=(
-                //      tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                //    ),
-                //  )
-                //}
-                //def doSetRdAddrDiff(
-                //  someTempIdx: Int
-                //): Unit = {
-                //  setRdAddr(
-                //    someTempIdx=someTempIdx,
-                //    someTempRdAddr=(
-                //      tempOutp.stage5.tileMemRdAddrBack
-                //    ),
-                //    someVecIdx=(
-                //      tempInp.pxPosXGridIdxFindFirstDiffIdx
-                //    ),
-                //  )
-                //}
-                //switch (Cat(
-                //  tempInp.pxPosXGridIdxFindFirstSameAsFound,
-                //  tempInp.pxPosXGridIdxFindFirstDiffFound,
-                //)) {
-                //  is (M"-0") {
-                //    // At least one of them will be found, so
-                //    // this indicates `SameAsFound`
-                //    //setRdAddr(
-                //    //  someIdx=sameAsIdx,
-                //    //  plusAmount=0,
-                //    //)
-                //    //setBgTile(
-                //    //  //tempPxPosIdx=tempRdAddrSameAsSliced,
-                //    //  tempPxPosIdx=0,
-                //    //  //plusAmount=0,
-                //    //)
-                //    doSetRdAddrSameAs(
-                //      someTempIdx=0,
-                //    )
-                //  }
-                //  is (M"01") {
-                //    //setRdAddr(
-                //    //  someIdx=diffIdx,
-                //    //  plusAmount=1,
-                //    //)
-                //    //setBgTile(
-                //    //  //tempPxPosIdx=tempRdAddrDiffSliced,
-                //    //  tempPxPosIdx=1,
-                //    //  ////plusAmount=1
-                //    //  //plusAmount=0, // TODO: verify that this works
-                //    //  //0
-                //    //)
-                //    doSetRdAddrDiff(
-                //      someTempIdx=1,
-                //    )
-                //  }
-                //  is (M"11") {
-                //    def sameAsIdx = (
-                //      tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                //    )
-                //    def diffIdx = (
-                //      tempInp.pxPosXGridIdxFindFirstDiffIdx
-                //    )
-                //    when (sameAsIdx > diffIdx) {
-                //      doSetRdAddrSameAs(
-                //        someTempIdx=1
-                //      )
-                //      doSetRdAddrDiff(
-                //        someTempIdx=0
-                //      )
-                //      //when (x < sameAsIdx) {
-                //      //  //setBgTile(
-                //      //  //  //tempPxPosIdx=tempRdAddrDiffSliced,
-                //      //  //  tempPxPosIdx=1,
-                //      //  //  //plusAmount=0,
-                //      //  //)
-                //      //} otherwise {
-                //      //  //setBgTile(
-                //      //  //  //tempPxPosIdx=tempRdAddrSameAsSliced,
-                //      //  //  tempPxPosIdx=0,
-                //      //  //  //plusAmount=1,
-                //      //  //)
-                //      //}
-                //    } otherwise {
-                //      // this indicates `sameAsIdx < diffIdx`
-                //      doSetRdAddrSameAs(
-                //        someTempIdx=0
-                //      )
-                //      doSetRdAddrDiff(
-                //        someTempIdx=1
-                //      )
-                //      //when (x < diffIdx) {
-                //      //  //setBgTile(
-                //      //  //  //tempPxPosIdx=tempRdAddrSameAsSliced,
-                //      //  //  tempPxPosIdx=0,
-                //      //  //  //plusAmount=0,
-                //      //  //)
-                //      //} otherwise {
-                //      //  //setBgTile(
-                //      //  //  //tempPxPosIdx=tempRdAddrDiffSliced,
-                //      //  //  tempPxPosIdx=1,
-                //      //  //  //plusAmount=1,
-                //      //  //)
-                //      //}
-                //    }
-                //  }
-                //}
-                //setRdAddr(
-                //  myTempIdx=0,
-                //  someTempRdAddr=(
-                //    tempOutp.stage5.tileMemRdAddrFront
-                //  ),
-                //  someVecIdx=(
-                //    tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                //  ),
-                //)
-                //setRdAddr(
-                //  myTempIdx=1,
-                //  someTempRdAddr=(
-                //    tempOutp.stage5.tileMemRdAddrBack
-                //  ),
-                //  someVecIdx=(
-                //    tempInp.pxPosXGridIdxFindFirstDiffIdx
-                //  ),
-                //)
-                //--------
-                //--------
-                //--------
-                // which is cheaper? this `switch` or the above ^
-                //switch (Cat(
-                //  tempInp.pxPosXGridIdxFindFirstSameAsFound,
-                //  tempInp.pxPosXGridIdxFindFirstDiffFound,
-                //)) {
-                //  is (M"-0") {
-                //    // At least one of them will be found, so
-                //    // this indicates `SameAsFound`
-                //    //setRdAddr(
-                //    //  someIdx=sameAsIdx,
-                //    //  plusAmount=0,
-                //    //)
-                //    setRdAddr(
-                //      someTempRdAddr=(
-                //        tempOutp.stage4.tileMemRdAddrFront
-                //      ),
-                //      someVecIdx=0,
-                //    )
-                //    //setBgTile(
-                //    //  tempPxPosIdx=tempRdAddrSameAsSliced,
-                //    //  //plusAmount=0,
-                //    //)
-                //  }
-                //  is (M"01") {
-                //    setRdAddr(
-                //      someTempRdAddr=(
-                //        tempOutp.stage4.tileMemRdAddrBack
-                //      ),
-                //      someVecIdx=0,
-                //    )
-                //  }
-                //  is (M"11") {
-                //    def sameAsIdx = (
-                //      tempInp.pxPosXGridIdxFindFirstSameAsIdx
-                //    )
-                //    def diffIdx = (
-                //      tempInp.pxPosXGridIdxFindFirstDiffIdx
-                //    )
-                //    when (sameAsIdx > diffIdx) {
-                //      setRdAddr(
-                //        someTempRdAddr=(
-                //          tempOutp.stage4.tileMemRdAddrBack
-                //        ),
-                //        someVecIdx=0,
-                //      )
-                //      setRdAddr(
-                //        someTempRdAddr=(
-                //          tempOutp.stage4.tileMemRdAddrFront
-                //        ),
-                //        someVecIdx=params.bgTileSize2d.x - 1,
-                //      )
-                //    } otherwise {
-                //      // this indicates `sameAsIdx < diffIdx`
-                //      setRdAddr(
-                //        someTempRdAddr=(
-                //          tempOutp.stage4.tileMemRdAddrFront
-                //        ),
-                //        someVecIdx=0,
-                //      )
-                //      setRdAddr(
-                //        someTempRdAddr=(
-                //          tempOutp.stage4.tileMemRdAddrBack
-                //        ),
-                //        someVecIdx=params.bgTileSize2d.x - 1,
-                //      )
-                //    }
-                //  }
-                //  default {
-                //  }
-                //}
               //}
           //  }
           //}
@@ -11979,9 +11615,10 @@ case class Gpu2d(
           //}
           //--------
           // BEGIN: fix this later
-          rPastLineMemEntry(x) := tempLineMemEntry
-          def setTempLineMemEntry(
-          ): Unit = {
+          when (cWrBgArr(idx).up.isFiring) {
+            rPastLineMemEntry(x) := tempLineMemEntry
+          }
+          def setTempLineMemEntry(): Unit = {
             //rPastLineMemEntry(x) := tempLineMemEntry
             // Starting rendering a new pixel or overwrite the existing
             // pixel
@@ -12009,37 +11646,63 @@ case class Gpu2d(
             }
             //rPastLineMemEntry(x) := tempLineMemEntry
           }
-          when (
-            // This could be split into more pipeline stages, but it
-            // might not be necessary with 4 or fewer backgrounds
-            (
-              (
-                (bgIdx === (1 << bgIdx.getWidth) - 1)
-                || (
-                  //rPastLineMemEntry(x).col.a === False
-                  //!rPastLineMemEntry(x).col.a
-                  //&& pastLineMemEntry(x).prio === 
-                  tempInp.postStage0.palEntryNzMemIdx(x)
-                )
-                //&& 
-              )
-              && (
-                !tempInp.bakCnt.msb
-              )
-            ) //&& tempInp.bgAttrs.visib
-            //bgIdx === 0
-          ) {
-            setTempLineMemEntry()
-          } 
-          //elsewhen (
-          //  bgIdx =/= (1 << bgIdx.getWidth) - 1
-          //) {
-          //  tempLineMemEntry := rPastLineMemEntry(x)
-          //} 
-          .otherwise {
-            tempLineMemEntry := rPastLineMemEntry(x)
-            //tempLineMemEntry := tempLineMemEntry.getZero
+          tempLineMemEntry := rPastLineMemEntry(x)
+          when (cWrBgArr(idx).up.isValid) {
+            when (
+              bgIdx === (1 << bgIdx.getWidth) - 1
+            ) {
+              setTempLineMemEntry()
+            } otherwise {
+              when (
+                //!rPastLineMemEntry(x).col.a
+                tempInp.postStage0.palEntryNzMemIdx(x)
+              ) {
+                setTempLineMemEntry()
+              } 
+              //elsewhen (
+              //  //rPastLineMemEntry(x).col.a
+              //) {
+              //}
+              .otherwise {
+                tempLineMemEntry := rPastLineMemEntry(x)
+              }
+            }
           }
+          //when (
+          //  // This could be split into more pipeline stages, but it
+          //  // might not be necessary with 4 or fewer backgrounds
+          //  (
+          //    (
+          //      (bgIdx === (1 << bgIdx.getWidth) - 1)
+          //      || (
+          //        //rPastLineMemEntry(x).col.a === False
+          //        !rPastLineMemEntry(x).col.a
+          //        //&& pastLineMemEntry(x).prio === 
+          //        //--------
+          //        //False
+          //        //--------
+          //      )
+          //      //&& 
+          //    ) && (
+          //      tempInp.postStage0.palEntryNzMemIdx(x)
+          //    ) && (
+          //      !tempInp.bakCnt.msb
+          //    )
+          //  ) //&& tempInp.bgAttrs.visib
+          //  //bgIdx === 0
+          //) {
+          //  setTempLineMemEntry()
+          //} 
+          ////elsewhen (
+          ////  bgIdx =/= (1 << bgIdx.getWidth) - 1
+          ////) {
+          ////  //tempLineMemEntry := rPastLineMemEntry(x)
+          ////  tempLineMemEntry := tempLineMemEntry.getZero
+          ////} 
+          //  .otherwise {
+          //  tempLineMemEntry := rPastLineMemEntry(x)
+          //  //tempLineMemEntry := tempLineMemEntry.getZero
+          //}
           // END: fix this later
           //--------
         

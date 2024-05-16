@@ -135,17 +135,22 @@ object Gpu2dTest {
                 (
                   jdx < tempFbSize2d.y / params.bgTileSize2d.y
                 ) && (
-                  jdx < tempFbSize2d.x / params.bgTileSize2d.x
+                  kdx < tempFbSize2d.x / params.bgTileSize2d.x
                 )
               ) {
-                tempArr += BigInt(someMapArr(z))
+                tempArr += BigInt(someMapArr(z) & 0xff)
+                //tempArr += BigInt(1)
+                //tempArr += BigInt(z)
+                //tempArr += BigInt(z)
               } else {
                 tempArr += BigInt(0)
+                //tempArr += BigInt(1)
               }
               z += 1
             } else {
               //println(s"outer: ($kdx, $jdx)")
               //tempArr += BigInt(64)
+              //tempArr += BigInt(1)
               tempArr += BigInt(0)
             }
           }
@@ -1673,7 +1678,7 @@ case class Gpu2dTest(
               myBg0MemAddr
             ).resized,
             //enable=myReadSyncEnable,
-          ) 
+          )
           + (
             Gpu2dTestGfx.sampleBgTileArr.size
             / (
@@ -1998,7 +2003,8 @@ case class Gpu2dTest(
       //myPayload.bgEntry.dispFlip.y := True
       //myPayload.bgEntry.dispFlip.x := rBgEntryCnt(0)
       //myPayload.bgEntry.dispFlip.y := rBgEntryCnt(1)
-    } else {
+    } 
+    else {
       tempBgEntryPush.valid := True
       tempBgEntryPush.payload := tempBgEntryPush.payload.getZero
       //tempBgEntryPush.payload.bgEntry := tempBgEntry.getZero
@@ -2536,10 +2542,12 @@ case class Gpu2dTest(
     init(4 << myTileFracWidth)
   )
   //--------
+  def playerObjAttrsIdx = 1
+  def playerObjAttrsPrio = 0
   def doObjAttrsInit(): Unit = {
     //rSnesPopReady := True
     when (
-      rObjAttrsCnt === 1
+      rObjAttrsCnt === playerObjAttrsIdx
     ) {
       //tempObjAttrs := tempObjAttrs.getZero
       //tempObjAttrs.allowOverride
@@ -2550,6 +2558,35 @@ case class Gpu2dTest(
       )
       tempObjAttrs.pos.y := (
         0
+      )
+      tempObjAttrs.prio := (
+        //1
+        //1
+        playerObjAttrsPrio
+      )
+      tempObjAttrs.size2d.x := (
+        params.objTileSize2d.x
+      )
+      tempObjAttrs.size2d.y := (
+        params.objTileSize2d.y
+      )
+      tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
+      when (pop.objAttrsPush.fire) {
+        nextObjAttrsCnt := rObjAttrsCnt + 1
+      } otherwise {
+        nextObjAttrsCnt := rObjAttrsCnt
+      }
+    } elsewhen (
+      rObjAttrsCnt === 2
+    ) {
+      tempObjAttrs.tileIdx := 2
+      tempObjAttrs.pos.x := (
+        params.objTileSize2d.x * 1
+        //8
+      )
+      tempObjAttrs.pos.y := (
+        params.objTileSize2d.y * 1
+        //0
       )
       tempObjAttrs.prio := (
         0
@@ -2891,8 +2928,9 @@ case class Gpu2dTest(
       //rPos.y(rPos.y.high downto 0)
     )
     tempObjAttrs.prio := (
+      playerObjAttrsPrio
       //1
-      0
+      //0
     )
     tempObjAttrs.size2d.x := params.objTileSize2d.x
     tempObjAttrs.size2d.y := params.objTileSize2d.y
@@ -2925,7 +2963,8 @@ case class Gpu2dTest(
     pop.objAttrsPush.payload.objAttrs := tempObjAttrs
     pop.objAttrsPush.payload.memIdx := (
       //rObjAttrsCnt.asUInt(params.objAttrsMemIdxWidth - 1 downto 0)
-      0x1
+      //0x1
+      playerObjAttrsIdx
     )
   }
   object SnesState extends SpinalEnum(

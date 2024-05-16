@@ -87,11 +87,12 @@ VC_OUTMK:=V$(V_TOP).mk
 VC:=verilator
 VC_CFLAGS:=-CFLAGS -O2
 VC_LDFLAGS:=-LDFLAGS -lm
+VC_JOBS:=4
 TRACE:=#--trace
 MY_THREADS:=4 #8
 VC_FLAGS:=--cc -Wno-lint \
 	--threads $(MY_THREADS) \
-	--verilate-jobs 0 \
+	--verilate-jobs $(VC_JOBS) \
 	$(TRACE) \
 	--top $(V_TOP) \
 	$(VC_CFLAGS) \
