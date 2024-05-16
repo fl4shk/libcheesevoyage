@@ -228,7 +228,8 @@ object Gpu2dSim extends App {
       visib=(
         //320
         //480
-        640
+        //640
+        639
       ),
       front=1,
       sync=1,
@@ -247,11 +248,11 @@ object Gpu2dSim extends App {
       //back=1,
       visib=(
         //270
-        240
+        //240
         //128
         //64
         //48
-        //32
+        32
         //16
       ),
       front=1,
@@ -264,7 +265,7 @@ object Gpu2dSim extends App {
   def gpu2dPhysFbSize2dScale = ElabVec2[Int](
     //x=1,
     //y=1,
-    x=1,
+    x=3,
     //x=1,
     //y=1,
     y=1,
@@ -299,10 +300,10 @@ object Gpu2dSim extends App {
       //y=log2Up(2),
     ),
     objTileSize2dPow=ElabVec2[Int](
-      //x=log2Up(16),
-      //y=log2Up(16),
-      x=log2Up(8),
-      y=log2Up(8),
+      x=log2Up(16),
+      y=log2Up(16),
+      //x=log2Up(8),
+      //y=log2Up(8),
       //x=log2Up(4),
       //y=log2Up(4),
       //x=log2Up(2),
@@ -484,30 +485,30 @@ object Gpu2dSim extends App {
     .withConfig(config=simSpinalConfig)
     .withVcdWave
     .compile(
-    //Gpu2dSimDut(
-    //  clkRate=clkRate,
-    //  rgbConfig=rgbConfig,
-    //  vgaTimingInfo=vgaTimingInfo,
-    //  gpu2dParams=gpu2dParams,
-    //  ctrlFifoDepth=ctrlFifoDepth,
-    //  optRawSnesButtons=true,
-    //  dbgPipeMemRmw=(
-    //    //true
-    //    false
-    //  ),
-    //)
-      Gpu2dSimDut(
-        clkRate=Gpu2dSimDutParams.clkRate,
-        rgbConfig=Gpu2dSimDutParams.rgbConfig,
-        vgaTimingInfo=Gpu2dSimDutParams.vgaTimingInfo,
-        gpu2dParams=Gpu2dSimDutParams.gpu2dParams,
-        ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
-        optRawSnesButtons=true,
-        dbgPipeMemRmw=(
-          true
-          //false
-        ),
-      )
+    Gpu2dSimDut(
+      clkRate=clkRate,
+      rgbConfig=rgbConfig,
+      vgaTimingInfo=vgaTimingInfo,
+      gpu2dParams=gpu2dParams,
+      ctrlFifoDepth=ctrlFifoDepth,
+      optRawSnesButtons=true,
+      dbgPipeMemRmw=(
+        //true
+        false
+      ),
+    )
+      //Gpu2dSimDut(
+      //  clkRate=Gpu2dSimDutParams.clkRate,
+      //  rgbConfig=Gpu2dSimDutParams.rgbConfig,
+      //  vgaTimingInfo=Gpu2dSimDutParams.vgaTimingInfo,
+      //  gpu2dParams=Gpu2dSimDutParams.gpu2dParams,
+      //  ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
+      //  optRawSnesButtons=true,
+      //  dbgPipeMemRmw=(
+      //    true
+      //    //false
+      //  ),
+      //)
     )
     .doSim { dut =>
       dut.clockDomain.forkStimulus(period=10)
@@ -538,7 +539,8 @@ object Gpu2dSim extends App {
         (
           vgaTimingInfo.fbSize2d.x * vgaTimingInfo.fbSize2d.y
           * (
-            1.5
+            //1.5
+            2
             * (
               clkRate / vgaTimingInfo.pixelClk
             )

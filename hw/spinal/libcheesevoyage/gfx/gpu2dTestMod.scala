@@ -1065,17 +1065,21 @@ case class Gpu2dTest(
   //  when (pop.bgTilePush.fire) {
   //    //--------
   //    // BEGIN: old, geometrical shapes graphics
-  //    //when (tempBgTileCnt === 0) {
-  //    //  mkBgTile(0, 0)
-  //    //  //mkBgTile(0, 1, Some(0), Some(1))
-  //    //} elsewhen (tempBgTileCnt === 1) {
-  //    //  mkBgTile(1, 2)
-  //    //  //mkBgTile(1, 2, Some(3), Some(4))
-  //    //  //mkObjTile(2, 2)
-  //    //  //mkBgTile(1, 1)
-  //    //  //mkBgTile(3, 3)
-  //    //  //mkBgTile(2, 3)
-  //    //} elsewhen (tempBgTileCnt === 2) {
+  //    when (tempBgTileCnt === 0) {
+  //      mkBgTile(0, 0)
+  //      //mkBgTile(0, 1, Some(0), Some(1))
+  //    } elsewhen (tempBgTileCnt === 1) {
+  //      //mkBgTile(1, 2)
+  //      mkBgTile(1, 2, Some(1), Some(2))
+  //      //mkBgTile(1, 2, Some(3), Some(4))
+  //      //mkObjTile(2, 2)
+  //      //mkBgTile(1, 1)
+  //      //mkBgTile(3, 3)
+  //      //mkBgTile(2, 3)
+  //    } otherwise {
+  //      mkBgTile(0, 0)
+  //    }
+  //    //elsewhen (tempBgTileCnt === 2) {
   //    //  //mkBgTile(2, 3)
   //    //  //mkBgTile(3, 4)
   //    //  mkBgTile(2, 2)
@@ -1140,30 +1144,30 @@ case class Gpu2dTest(
   //    //  //}
   //    //}
   //    //--------
-  //    when (
-  //      //rBgTileCnt < bgTileMem.wordCount
-  //      //tempBgTileCnt < bgTileMem.wordCount
-  //      //if (
-  //      //  (1 << tempBgTileCnt.getWidth) < bgTileMem.wordCount
-  //      //) (
-  //      //  True
-  //      //) else (
-  //        //tempBgTileCnt.resized < bgTileMem.wordCount
-  //        Cat(
-  //          U(s"${log2Up(bgTileMem.wordCount)}'d0"),
-  //          tempBgTileCnt 
-  //        ).asUInt < bgTileMem.wordCount
-  //      //)
-  //    ) {
-  //      tempBgTileSlice := bgTileMem.readSync(
-  //        address=nextBgTileCnt.asUInt.resized
-  //      )
-  //      //tempBgTileSlice := bgTileMem.readAsync(
-  //      //  address=rBgTileCnt.asUInt.resized
-  //      //)
-  //    } otherwise {
-  //      tempBgTileSlice := tempBgTileSlice.getZero
-  //    }
+  //    //when (
+  //    //  //rBgTileCnt < bgTileMem.wordCount
+  //    //  //tempBgTileCnt < bgTileMem.wordCount
+  //    //  //if (
+  //    //  //  (1 << tempBgTileCnt.getWidth) < bgTileMem.wordCount
+  //    //  //) (
+  //    //  //  True
+  //    //  //) else (
+  //    //    //tempBgTileCnt.resized < bgTileMem.wordCount
+  //    //    Cat(
+  //    //      U(s"${log2Up(bgTileMem.wordCount)}'d0"),
+  //    //      tempBgTileCnt 
+  //    //    ).asUInt < bgTileMem.wordCount
+  //    //  //)
+  //    //) {
+  //    //  tempBgTileSlice := bgTileMem.readSync(
+  //    //    address=nextBgTileCnt.asUInt.resized
+  //    //  )
+  //    //  //tempBgTileSlice := bgTileMem.readAsync(
+  //    //  //  address=rBgTileCnt.asUInt.resized
+  //    //  //)
+  //    //} otherwise {
+  //    //  tempBgTileSlice := tempBgTileSlice.getZero
+  //    //}
   //    //--------
   //    nextBgTileCnt := rBgTileCnt + 1
   //  } otherwise {
@@ -1667,7 +1671,8 @@ case class Gpu2dTest(
       //}
       //val myPosYBit = rBg0EntryCnt(params.bgSize2dInTilesPow.x)
       //myPayload.bgEntry.tileIdx := (
-      //  Cat(myPosYBit, rBg0EntryCnt(1 downto 0)).asUInt.resized
+      //  //Cat(myPosYBit, rBg0EntryCnt(1 downto 0)).asUInt.resized
+      //  Cat(myPosYBit, rBg0EntryCnt(2 downto 0)).asUInt.resized
       //)
       myPayload.bgEntry.tileIdx := (
         //(rBg0EntryCnt(3 downto 0) + 1).asUInt.resized
@@ -1688,7 +1693,8 @@ case class Gpu2dTest(
           )
         ).resized
       )
-    } else if (idx == 1) {
+    } 
+    else if (idx == 1) {
       //--------
       //tempBgEntryPush.valid := tempBgEntryPush.valid.getZero
       //tempBgEntryPush.payload := tempBgEntryPush.payload.getZero
@@ -2539,7 +2545,10 @@ case class Gpu2dTest(
   )
   val rObjTileIdx = (
     Reg(UInt((tempObjAttrs.tileIdx.getWidth + myTileFracWidth) bits))
-    init(4 << myTileFracWidth)
+    init(
+      //4 << myTileFracWidth
+      4 << myTileFracWidth
+    )
   )
   //--------
   def playerObjAttrsIdx = 1

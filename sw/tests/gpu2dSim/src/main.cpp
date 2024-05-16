@@ -52,7 +52,9 @@ static constexpr Vec2<size_t>
 		//.y=1 << 5,
 		//.x=320,
 		//.y=240,
-		.x=640,
+		//.x=640,
+		//.y=480,
+		.x=639,
 		.y=480,
 		//.x=128,
 		//.x=160,
@@ -335,9 +337,9 @@ protected:		// functions
 				//_top->io_rawSnesButtons_payload(0) = 3;
 				_top->io_rawSnesButtons_payload = (
 					my_key_up_now(
-						SnesKeyKind::B,
-						Always::KeyDown
-						//Always::Disabled
+						SnesKeyKind::B//,
+						//Always::KeyDown
+						////Always::Disabled
 					)
 					| my_key_up_now(
 						SnesKeyKind::Y//,
@@ -350,9 +352,9 @@ protected:		// functions
 					| my_key_up_now(SnesKeyKind::DpadLeft)
 					| my_key_up_now(SnesKeyKind::DpadRight)
 					| my_key_up_now(
-						SnesKeyKind::A,
-						Always::KeyDown
-						//Always::Disabled
+						SnesKeyKind::A//,
+						//Always::KeyDown
+						////Always::Disabled
 					)
 					| my_key_up_now(SnesKeyKind::X)
 					| my_key_up_now(SnesKeyKind::L)

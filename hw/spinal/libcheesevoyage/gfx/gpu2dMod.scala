@@ -7353,8 +7353,10 @@ case class Gpu2d(
       //log2Up(params.physFbSize2d.x + 1) + 2
     )
     def combinePipeFullCntWidth = (
-      log2Up(params.physFbSize2d.x + 1) + 2
+      //log2Up(params.physFbSize2d.x + 1) + 2
       //combinePipeCntWidth
+      log2Up(params.intnlFbSize2d.x)
+      + log2Up(params.physFbSize2dScale.x)
     )
     def combinePipeCntRange = (
       ////combinePipeFullCntWidth + log2Up(params.physFbSize2dScale.x) - 1
@@ -7374,7 +7376,12 @@ case class Gpu2d(
     //)
     def combinePipeFullBakCntStart = (
       //params.intnlFbSize2d.x - 1
-      params.physFbSize2d.x - 1
+      //params.physFbSize2d.x - 1
+      (
+        params.intnlFbSize2d.x
+        * (1 << log2Up(params.physFbSize2dScale.x))
+        //(1 << combinePipeFullCntWidth) - 1
+      ) - 1
       //params.physFbSize2d.x - params.
     )
     case class CombinePipeOut3Ext() extends Bundle {
@@ -7480,8 +7487,10 @@ case class Gpu2d(
               (
                 fullBakCnt(fullBakCnt.high downto myPow) === 0
               ) && (
-                fullBakCnt(myPow - 1 downto 0)
-                === (1 << myPow) - params.physFbSize2dScale.x
+                //fullBakCnt(myPow - 1 downto 0)
+                //=== (1 << myPow) - params.physFbSize2dScale.x
+                fullCnt(myPow - 1 downto 0)
+                === params.physFbSize2dScale.x - 1
               )
             )
           ) 
@@ -9545,13 +9554,16 @@ case class Gpu2d(
               //} 
               .otherwise {
                 def myPow = log2Up(params.physFbSize2dScale.x)
-                def myBakCnt = rCombinePipeFrontPayload.fullBakCnt
+                //def myBakCnt = rCombinePipeFrontPayload.fullBakCnt
+                def myCnt = rCombinePipeFrontPayload.fullCnt
                 when (
                   if (params.physFbSize2dScale.x > 1) (
-                    myBakCnt(myPow - 1 downto 0)
-                    === (
-                      (1 << myPow) - params.physFbSize2dScale.x
-                    )
+                    //myBakCnt(myPow - 1 downto 0)
+                    //=== (
+                    //  (1 << myPow) - params.physFbSize2dScale.x
+                    //)
+                    myCnt(myPow - 1 downto 0)
+                    === params.physFbSize2dScale.x - 1
                   ) else (
                     False
                   )
