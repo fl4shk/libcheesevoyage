@@ -7373,8 +7373,8 @@ case class Gpu2d(
     //  //params.physFbSize2d.x - 1
     //)
     def combinePipeFullBakCntStart = (
-      params.intnlFbSize2d.x - 1
-      //params.physFbSize2d.x - 1
+      //params.intnlFbSize2d.x - 1
+      params.physFbSize2d.x - 1
       //params.physFbSize2d.x - params.
     )
     case class CombinePipeOut3Ext() extends Bundle {

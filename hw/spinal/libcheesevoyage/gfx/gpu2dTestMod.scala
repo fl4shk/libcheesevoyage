@@ -138,7 +138,7 @@ object Gpu2dTest {
                   kdx < tempFbSize2d.x / params.bgTileSize2d.x
                 )
               ) {
-                tempArr += BigInt(someMapArr(z) & 0xff)
+                tempArr += BigInt(someMapArr(z) & 0x3ff)
                 //tempArr += BigInt(1)
                 //tempArr += BigInt(z)
                 //tempArr += BigInt(z)
