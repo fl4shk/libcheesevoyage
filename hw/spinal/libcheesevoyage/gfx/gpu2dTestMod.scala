@@ -2526,7 +2526,7 @@ case class Gpu2dTest(
   //  UInt((log2Up(clkRate.toTime.toBigDecimal.toInt) + 1) bits)
   //) init(0x0)
   //val rPos = Reg(cloneOf(tempObjAttrs.pos))
-  val rObjPos = Reg(DualTypeNumVec2[SInt, SInt](
+  val rPlayerPos = Reg(DualTypeNumVec2[SInt, SInt](
     dataTypeX=SInt(
       (tempObjAttrs.pos.x.getWidth + myObjPosFracWidth) bits
     ),
@@ -2537,7 +2537,7 @@ case class Gpu2dTest(
     //dataTypeY=SInt((tempObjAttrs.pos.y.getWidth) bits),
   ))
   //rPos.init(rPos.getZero)
-  rObjPos.x.init(
+  rPlayerPos.x.init(
     //0x2
     //0x1
     //0x4
@@ -2545,11 +2545,11 @@ case class Gpu2dTest(
     0x0 << myObjPosFracWidth
     //(params.objTileSize2d.x * 2) << myObjPosFracWidth
   )
-  rObjPos.y.init(
+  rPlayerPos.y.init(
     0x0 << myObjPosFracWidth
     //(params.objTileSize2d.y * 2) << myObjPosFracWidth
   )
-  val rObjTileIdx = (
+  val rPlayerTileIdx = (
     Reg(UInt((tempObjAttrs.tileIdx.getWidth + myTileFracWidth) bits))
     init(
       //4 << myTileFracWidth
@@ -2558,7 +2558,11 @@ case class Gpu2dTest(
   )
   //--------
   def playerObjAttrsIdx = 1
-  def playerObjAttrsPrio = 0
+  val rPlayerObjAttrsPrio = (
+    Reg(UInt(
+      (params.numBgsPow << 8) bits
+    )) init(0x0)
+  )
   def doObjAttrsInit(): Unit = {
     //rSnesPopReady := True
     when (
@@ -2577,7 +2581,10 @@ case class Gpu2dTest(
       tempObjAttrs.prio := (
         //1
         //1
-        playerObjAttrsPrio
+        rPlayerObjAttrsPrio(
+          rPlayerObjAttrsPrio.high
+          downto rPlayerObjAttrsPrio.getWidth - params.numBgsPow
+        )
       )
       tempObjAttrs.size2d.x := (
         params.objTileSize2d.x
@@ -2835,19 +2842,25 @@ case class Gpu2dTest(
     //  rHoldCnt.overflowPipe(0)
     //) 
     {
-      switch (
-        Cat(buttons(SnesButtons.L), buttons(SnesButtons.R))
-      ) {
-        is (B"01") {
-          // L button down, R button up
-          rObjTileIdx := rObjTileIdx - 1
-        }
-        is (B"10") {
-          // R button down, L button up
-          rObjTileIdx := rObjTileIdx + 1
-        }
-        default {
-        }
+      //switch (
+      //  Cat(buttons(SnesButtons.L), buttons(SnesButtons.R))
+      //) {
+      //  is (B"01") {
+      //    // L button down, R button up
+      //    rPlayerTileIdx := rPlayerTileIdx - 1
+      //  }
+      //  is (B"10") {
+      //    // R button down, L button up
+      //    rPlayerTileIdx := rPlayerTileIdx + 1
+      //  }
+      //  default {
+      //  }
+      //}
+      when (buttons(SnesButtons.R)) {
+        rPlayerTileIdx := rPlayerTileIdx + 1
+      }
+      when (buttons(SnesButtons.L)) {
+        rPlayerObjAttrsPrio := rPlayerObjAttrsPrio + 1
       }
       //rBgScroll.x := rBgScroll.x + 1
       switch (
@@ -2891,11 +2904,11 @@ case class Gpu2dTest(
       ) {
         is (B"01") {
           // move OBJ left
-          rObjPos.x := rObjPos.x - 1
+          rPlayerPos.x := rPlayerPos.x - 1
         }
         is (B"10") {
           // move OBJ right
-          rObjPos.x := rObjPos.x + 1
+          rPlayerPos.x := rPlayerPos.x + 1
         }
         default {
         }
@@ -2905,11 +2918,11 @@ case class Gpu2dTest(
       ) {
         is (B"01") {
           // move OBJ up
-          rObjPos.y := rObjPos.y - 1
+          rPlayerPos.y := rPlayerPos.y - 1
         }
         is (B"10") {
           // move OBJ down
-          rObjPos.y := rObjPos.y + 1
+          rPlayerPos.y := rPlayerPos.y + 1
         }
         default {
         }
@@ -2919,8 +2932,8 @@ case class Gpu2dTest(
   def doSnesUpdate(): Unit = {
     //--------
     //--------
-    tempObjAttrs.tileIdx := rObjTileIdx(
-      rObjTileIdx.high downto myTileFracWidth
+    tempObjAttrs.tileIdx := rPlayerTileIdx(
+      rPlayerTileIdx.high downto myTileFracWidth
     )
     //--------
     // BEGIN: debug comment this out
@@ -2935,15 +2948,18 @@ case class Gpu2dTest(
     // END: debug comment this out
     //--------
     tempObjAttrs.pos.x := (
-      rObjPos.x(rObjPos.x.high downto myObjPosFracWidth)
+      rPlayerPos.x(rPlayerPos.x.high downto myObjPosFracWidth)
       //rPos.x(rPos.x.high downto 0)
     )
     tempObjAttrs.pos.y := (
-      rObjPos.y(rObjPos.y.high downto myObjPosFracWidth)
+      rPlayerPos.y(rPlayerPos.y.high downto myObjPosFracWidth)
       //rPos.y(rPos.y.high downto 0)
     )
     tempObjAttrs.prio := (
-      playerObjAttrsPrio
+      rPlayerObjAttrsPrio(
+        rPlayerObjAttrsPrio.high
+        downto rPlayerObjAttrsPrio.getWidth - params.numBgsPow
+      )
       //1
       //0
     )
