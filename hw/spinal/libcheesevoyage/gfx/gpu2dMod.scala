@@ -594,6 +594,8 @@ case class Gpu2dParams(
     x=bgSize2dInTiles.x * bgTileSize2d.x,
     y=bgSize2dInTiles.y * bgTileSize2d.y,
   )
+  println(bgSize2dInTiles)
+  println(bgSize2dInPxs)
   //--------
   def numPxsPerBgTile = bgTileSize2d.x * bgTileSize2d.y
   def numPxsPerObjTile = objTileSize2d.x * objTileSize2d.y
@@ -942,10 +944,11 @@ object DefaultGpu2dParams {
         //1024
         //2048 // (480 * 270) / (8 * 8) = 2025
         //1 <<
-        //log2Up(
+        //log2Up
+        (
           (intnlFbSize2d.x * intnlFbSize2d.y)
-          / (bgTileSize2d.x * bgTileSize2d.y)
-        //)
+          / (bgTileSize2d.x.toDouble * bgTileSize2d.y.toDouble)
+        ).toInt
       )
     }
     val tempNumColorMathTiles = numColorMathTiles match {
@@ -969,6 +972,17 @@ object DefaultGpu2dParams {
         1 << numObjsAffinePow
       )
     }
+    val tempBgSize2dInTilesPow=ElabVec2[Int](
+      //x=log2Up(
+      //  (intnlFbSize2d.x.toDouble / bgTileSize2d.x.toDouble) + 1
+      //),
+      //y=log2Up(
+      //  (intnlFbSize2d.y.toDouble / bgTileSize2d.y.toDouble).toInt
+      //),
+      x=log2Up(intnlFbSize2d.x) - log2Up(bgTileSize2d.x),
+      y=log2Up(intnlFbSize2d.y) - log2Up(bgTileSize2d.y),
+    )
+    println(s"bgSize2dInTilesPow: $tempBgSize2dInTilesPow")
     Gpu2dParams(
       //rgbConfig=RgbConfig(rWidth=6, gWidth=6, bWidth=6),
       //intnlFbSize2d=ElabVec2[Int](
@@ -1004,10 +1018,11 @@ object DefaultGpu2dParams {
       //  x=1 << log2Up(intnlFbSize2d.x / tileSize2d.x),
       //  y=1 << log2Up(intnlFbSize2d.y / tileSize2d.y),
       //),
-      bgSize2dInTilesPow=ElabVec2[Int](
-        x=log2Up(intnlFbSize2d.x / bgTileSize2d.x),
-        y=log2Up(intnlFbSize2d.y / bgTileSize2d.y),
-      ),
+      //bgSize2dInTilesPow=ElabVec2[Int](
+      //  x=log2Up(intnlFbSize2d.x / bgTileSize2d.x),
+      //  y=log2Up(intnlFbSize2d.y / bgTileSize2d.y),
+      //),
+      bgSize2dInTilesPow=tempBgSize2dInTilesPow,
       //numBgs=4,
       //numObjs=256,
       ////numObjsPerScanline=64,
