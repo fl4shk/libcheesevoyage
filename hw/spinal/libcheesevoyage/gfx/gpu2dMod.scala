@@ -2118,6 +2118,18 @@ case class Gpu2d(
           //params.numBgTiles
           tempNumBgTileSlices
         ),
+        //initBigInt=(
+        //  Some(
+        //    Array.fill(tempNumBgTileSlices)(
+        //      //Gpu2dTileSlice(
+        //      //  params=params,
+        //      //  isObj=false,
+        //      //  isAffine=false
+        //      //).getZero
+        //      BigInt(0)
+        //    )
+        //  )
+        //),
         init={
           params.bgTileMemInit match {
             case Some(bgTileMemInit) => {
@@ -2126,11 +2138,18 @@ case class Gpu2d(
             case None => {
               Some(
                 myBgTileMemInit//(jdx)
-                //Gpu2dTest.doSplitBgTileMemInit(
-                //  params=params,
-                //  //gridIdx=jdx,
-                //  //isColorMath=false,
-                //)(jdx)
+                ////Gpu2dTest.doSplitBgTileMemInit(
+                ////  params=params,
+                ////  //gridIdx=jdx,
+                ////  //isColorMath=false,
+                ////)(jdx)
+                //Array.fill(tempNumBgTileSlices)(
+                //  Gpu2dTileSlice(
+                //    params=params,
+                //    isObj=false,
+                //    isAffine=false
+                //  ).getZero
+                //)
               )
               //None
             }
@@ -5876,8 +5895,8 @@ case class Gpu2d(
       //11
       //12
       //14
-      //15
-      16
+      15
+      //16
     )
     def wrBgObjPipeNumStages = max(
       wrBgPipeNumMainStages,
@@ -5953,7 +5972,7 @@ case class Gpu2d(
     //  //val wrLineMemEntry = ObjSubLineMemEntry()
     //  //val extSingle = WrObjPipe6ExtSingle()
     //  //val ext = WrObjPipe9Ext(useVec=false)
-    //  val ext = WrObjPipe15Ext(
+    //  val ext = WrObjPipe14Ext(
     //    isAffine=isAffine,
     //    useVec=false,
     //  )
@@ -6827,6 +6846,10 @@ case class Gpu2d(
             Bool()
           )
         )
+        val ext = WrObjPipe14Ext(
+          isAffine=isAffine,
+          useVec=true,
+        )
         //val affineInMainVec = (
         //  Vec.fill(
         //    //myTempObjTileWidth
@@ -6842,38 +6865,38 @@ case class Gpu2d(
       // ALU operand forwarding
       //def wrObjPipeStage5NumFwd
       //def stage7NumFwd = 2
-      case class Stage15() extends Bundle {
-        //val overwriteLineMemEntry = Vec.fill(params.objTileSize2d.x)(
-        //  Bool()
-        //)
-        ////def numFwd = stage6NumFwd
-        //val wrLineMemEntry = Vec.fill(params.objTileSize2d.x)(
-        //  ObjSubLineMemEntry()
-        //)
-        val ext = WrObjPipe15Ext(
-          isAffine=isAffine,
-          useVec=true,
-        )
+      //case class Stage15() extends Bundle {
+      //  //val overwriteLineMemEntry = Vec.fill(params.objTileSize2d.x)(
+      //  //  Bool()
+      //  //)
+      //  ////def numFwd = stage6NumFwd
+      //  //val wrLineMemEntry = Vec.fill(params.objTileSize2d.x)(
+      //  //  ObjSubLineMemEntry()
+      //  //)
+      //  val ext = WrObjPipe14Ext(
+      //    isAffine=isAffine,
+      //    useVec=true,
+      //  )
 
-        //def numFwd = wrObjPipeStage14NumFwd
-        //val fwdV2d = Vec.fill(
-        //  //params.objTileSize2d.x
-        //  //tempObjTileWidth()
-        //  tempObjTileWidth2()
-        //  //params.objAffineDblTileSize2d.x
-        //)(
-        //  Vec.fill(numFwd)(WrObjPipeStage14Fwd(isAffine=isAffine))
-        //)
-        //val fwdWrLineMemEntryV2d = Vec.fill(numFwd)(
-        //  Vec.fill(params.objTileSize2d.x)(
-        //    ObjSubLineMemEntry()
-        //  )
-        //)
-        //val savedWrLineMemEntryVec = Vec.fill(numFwd)(ObjSubLineMemEntry())
+      //  //def numFwd = wrObjPipeStage14NumFwd
+      //  //val fwdV2d = Vec.fill(
+      //  //  //params.objTileSize2d.x
+      //  //  //tempObjTileWidth()
+      //  //  tempObjTileWidth2()
+      //  //  //params.objAffineDblTileSize2d.x
+      //  //)(
+      //  //  Vec.fill(numFwd)(WrObjPipeStage14Fwd(isAffine=isAffine))
+      //  //)
+      //  //val fwdWrLineMemEntryV2d = Vec.fill(numFwd)(
+      //  //  Vec.fill(params.objTileSize2d.x)(
+      //  //    ObjSubLineMemEntry()
+      //  //  )
+      //  //)
+      //  //val savedWrLineMemEntryVec = Vec.fill(numFwd)(ObjSubLineMemEntry())
 
-        //def numSaved = 3
-        //val savedWrLineMemEntryVec = Vec.fill(numSaved)(ObjSubLineMemEntry())
-      }
+      //  //def numSaved = 3
+      //  //val savedWrLineMemEntryVec = Vec.fill(numSaved)(ObjSubLineMemEntry())
+      //}
       //case class Stage14() extends Bundle {
       //  val haveAnyWritten = (isAffine) generate Bool()
       //}
@@ -6896,7 +6919,7 @@ case class Gpu2d(
         val stage12 = Stage12()
         val stage13 = Stage13()
         val stage14 = Stage14()
-        val stage15 = Stage15()
+        //val stage15 = Stage15()
         //val stage7 = Stage7()
       }
 
@@ -7088,13 +7111,13 @@ case class Gpu2d(
       def rdSubLineMemEntry = stage13.rdSubLineMemEntry
 
 
-      def stage14 = postStage0.stage14
+      //def stage14 = postStage0.stage14
 
-      def stage15 = postStage0.stage15
+      def stage14 = postStage0.stage14
       def overwriteLineMemEntry = (
-        stage15.ext.overwriteLineMemEntry
+        stage14.ext.overwriteLineMemEntry
       )
-      def wrLineMemEntry = stage15.ext.wrLineMemEntry
+      def wrLineMemEntry = stage14.ext.wrLineMemEntry
 
       //def stage14 = postStage0.stage14
       //def haveAnyWritten = stage14.haveAnyWritten
@@ -8106,39 +8129,43 @@ case class Gpu2d(
       }
     //}
 
-    //val nWrObjArr = Array.fill(wrBgObjPipeNumStages + 1)(Node())
-    //val sWrObjArr = new ArrayBuffer[StageLink]()
-    //val cWrObjArr = new ArrayBuffer[CtrlLink]()
-    val wrObjPipe = PipeHelper(linkArr=linkArr)
-    def nWrObjArr = wrObjPipe.nArr
-    def sWrObjArr = wrObjPipe.sArr
-    def s2mWrObjArr = wrObjPipe.s2mArr
-    def cWrObjArr = wrObjPipe.cArr
+    val nWrObjArr = Array.fill(wrBgObjPipeNumStages + 1)(Node())
+    val sWrObjArr = new ArrayBuffer[StageLink]()
+    val cWrObjArr = new ArrayBuffer[CtrlLink]()
+    //val wrObjPipe = PipeHelper(linkArr=linkArr)
+    //def nWrObjArr = wrObjPipe.nArr
+    //def sWrObjArr = wrObjPipe.sArr
+    //def s2mWrObjArr = wrObjPipe.s2mArr
+    //def cWrObjArr = wrObjPipe.cArr
     for (
-      //idx <- 0 until nWrObjArr.size - 1
-      idx <- 0 until wrBgObjPipeNumStages + 1
+      idx <- 0 until nWrObjArr.size - 1
+      //idx <- 0 until wrBgObjPipeNumStages + 1
+      //idx <- 0 until wrBgObjPipeNumStages - 1
     ) {
-      wrObjPipe.addStage(
-        name=(s"WrObjPipe_$idx"),
-        optIncludeS2M=false,
+      //wrObjPipe.addStage(
+      //  name=(s"WrObjPipe_$idx"),
+      //  optIncludeS2M=(
+      //    //false
+      //    idx >=
+      //  ),
+      //)
+      sWrObjArr += StageLink(
+        up=nWrObjArr(idx),
+        down=Node(),
       )
-      //sWrObjArr += StageLink(
-      //  up=nWrObjArr(idx),
-      //  down=Node(),
-      //)
-      //linkArr += sWrObjArr.last
+      linkArr += sWrObjArr.last
 
-      //cWrObjArr += CtrlLink(
-      //  up=sWrObjArr.last.down,
-      //  down=nWrObjArr(idx + 1),
-      //)
-      //linkArr += cWrObjArr.last
+      cWrObjArr += CtrlLink(
+        up=sWrObjArr.last.down,
+        down=nWrObjArr(idx + 1),
+      )
+      linkArr += cWrObjArr.last
     }
-    wrObjPipe.addStage(
-      name="WrObjPipe_Last",
-      optIncludeS2M=false,
-      finish=true,
-    )
+    //wrObjPipe.addStage(
+    //  name="WrObjPipe_Last",
+    //  optIncludeS2M=true,
+    //  finish=true,
+    //)
     //for (idx <- 0 until nWrObjArr.size - 1) {
     //  sWrObjArr += StageLink(
     //    up=nWrObjArr(idx),
@@ -8270,7 +8297,7 @@ case class Gpu2d(
     //  val wrLineMemEntry = ObjSubLineMemEntry()
     //  val overwriteLineMemEntry = Bool()
     //}
-    case class WrObjPipe15Ext(
+    case class WrObjPipe14Ext(
       isAffine: Boolean,
       useVec: Boolean//=true
     ) extends Bundle {
@@ -15950,6 +15977,60 @@ case class Gpu2d(
       //  },
       //)
       // END: Stage 13
+      //{
+      //  def idx = 14
+      //  val (pipeIn, pipeOut): (WrObjPipePayload, WrObjPipePayload) = (
+      //    if (kind == 0) {
+      //      initTempWrObjPipeOut(idx=idx)
+      //    } else { // if (kind == 1)
+      //      initTempWrObjAffinePipeOut(idx=idx)
+      //    }
+      //  )
+      //  val tempInp = pipeIn
+      //  val tempOutp = pipeOut
+      //  //def myTempObjTileWidth = tempInp.tempObjTileWidth()
+      //  //def myTempObjTileWidth2 = tempInp.tempObjTileWidth2()
+      //  def myTempObjTileWidth = tempInp.tempObjTileWidth()
+      //  def myTempObjTileWidthPow = tempInp.tempObjTileWidthPow()
+      //  def myIdxV2d = tempInp.stage12.myIdxV2d
+      //  for (x <- 0 until myTempObjTileWidth) {
+      //    tempOutp.stage14.tempRdLineMemEntry(x) := (
+      //      tempInp.rdSubLineMemEntry(
+      //        //x
+      //        // `myIdx` should be used here since it's an index into
+      //        // `objSubLineMemArr(jdx)`
+      //        //myIdx
+      //        //myIdxVec(1)
+      //        //x
+      //        tempInp.stage11.myIdxV2d(x)(x)(
+      //          //params.objAffineSliceTileWidthPow - 1 downto 0
+      //          myTempObjTileWidthPow - 1 downto 0
+      //        )
+      //        //tempInp.stage11.myIdxV2d(x)(x)
+      //      )
+      //    )
+      //    tempOutp.stage14.inMainVec(x) := (
+      //      if (kind == 0) {
+      //        tempInp.stage13.inMainVec(
+      //          x + tempInp.objXStart()
+      //        )
+      //      } else { // if (kind == 1)
+      //        tempInp.stage13.inMainVec(
+      //          (x + tempInp.affineObjXStart())(
+      //            params.objAffineTileSize2dPow.x - 1 downto 0
+      //            //params.objAffineTileWidthRshift - 1 downto 0
+      //          )
+      //        )
+      //      }
+      //    )
+      //  }
+      //}
+
+      // BEGIN: Stage 14
+      //pipeStageMainFunc=(
+      //  stageData: DualPipeStageData[Flow[WrObjPipePayload]],
+      //  idx: Int,
+      //) => 
       {
         def idx = 14
         val (pipeIn, pipeOut): (WrObjPipePayload, WrObjPipePayload) = (
@@ -15965,7 +16046,6 @@ case class Gpu2d(
         //def myTempObjTileWidth2 = tempInp.tempObjTileWidth2()
         def myTempObjTileWidth = tempInp.tempObjTileWidth()
         def myTempObjTileWidthPow = tempInp.tempObjTileWidthPow()
-        def myIdxV2d = tempInp.stage12.myIdxV2d
         for (x <- 0 until myTempObjTileWidth) {
           tempOutp.stage14.tempRdLineMemEntry(x) := (
             tempInp.rdSubLineMemEntry(
@@ -15997,34 +16077,43 @@ case class Gpu2d(
             }
           )
         }
-      }
-
-      // BEGIN: Stage 15
-      //pipeStageMainFunc=(
-      //  stageData: DualPipeStageData[Flow[WrObjPipePayload]],
-      //  idx: Int,
-      //) => 
-      {
-        def idx = 15
-        val (pipeIn, pipeOut): (WrObjPipePayload, WrObjPipePayload) = (
-          if (kind == 0) {
-            initTempWrObjPipeOut(idx=idx)
-          } else { // if (kind == 1)
-            initTempWrObjAffinePipeOut(idx=idx)
-          }
-        )
-        val tempInp = pipeIn
-        val tempOutp = pipeOut
-        //def myTempObjTileWidth = tempInp.tempObjTileWidth()
-        //def myTempObjTileWidth2 = tempInp.tempObjTileWidth2()
-        def myTempObjTileWidth = tempInp.tempObjTileWidth()
-        def myTempObjTileWidthPow = tempInp.tempObjTileWidthPow()
+        for (x <- 0 until myTempObjTileWidth) {
+          tempOutp.stage14.tempRdLineMemEntry(x) := (
+            tempInp.rdSubLineMemEntry(
+              //x
+              // `myIdx` should be used here since it's an index into
+              // `objSubLineMemArr(jdx)`
+              //myIdx
+              //myIdxVec(1)
+              //x
+              tempInp.stage11.myIdxV2d(x)(x)(
+                //params.objAffineSliceTileWidthPow - 1 downto 0
+                myTempObjTileWidthPow - 1 downto 0
+              )
+              //tempInp.stage11.myIdxV2d(x)(x)
+            )
+          )
+          tempOutp.stage14.inMainVec(x) := (
+            if (kind == 0) {
+              tempInp.stage13.inMainVec(
+                x + tempInp.objXStart()
+              )
+            } else { // if (kind == 1)
+              tempInp.stage13.inMainVec(
+                (x + tempInp.affineObjXStart())(
+                  params.objAffineTileSize2dPow.x - 1 downto 0
+                  //params.objAffineTileWidthRshift - 1 downto 0
+                )
+              )
+            }
+          )
+        }
         def outpExt = (
           //rWrObjPipeOut6Ext
-          tempOutp.stage15.ext
+          tempOutp.stage14.ext
           //cloneOf(tempOutp.stage14.ext)
         )
-        val nonRotatedOutpExt = cloneOf(tempOutp.stage15.ext)
+        val nonRotatedOutpExt = cloneOf(tempOutp.stage14.ext)
           .setName(f"wrObjPipe15_nonRotatedOutpExt_$kind")
         def myIdxV2d = tempInp.stage12.myIdxV2d
 
@@ -16050,7 +16139,7 @@ case class Gpu2d(
               //tempInp.stage13.inMainVec(
               //  x + tempInp.objXStart()
               //)
-              tempInp.stage14.inMainVec(x)
+              tempOutp.stage14.inMainVec(x)
             } else {
               ////tempInp.stage12.inMainVec(
               ////  x
@@ -16071,7 +16160,7 @@ case class Gpu2d(
               //    //params.objAffineTileWidthRshift - 1 downto 0
               //  )
               //)
-              tempInp.stage14.inMainVec(x)
+              tempOutp.stage14.inMainVec(x)
             }
           )
           //--------
@@ -16569,7 +16658,7 @@ case class Gpu2d(
           //val tempRdLineMemEntry = ObjSubLineMemEntry()
           //  .setName(f"wrObjPipeStage15_tempRdLineMemEntry_$x")
           def tempRdLineMemEntry = (
-            tempInp.stage14.tempRdLineMemEntry(x)
+            tempOutp.stage14.tempRdLineMemEntry(x)
           )
           //--------
           // BEGIN: debug comment this out; later
