@@ -131,28 +131,34 @@ object Gpu2dTest {
               )
             ) {
               //println(s"inner: ($kdx, $jdx)")
-              //if (
-              //  (
-              //    jdx < tempFbSize2d.y / params.bgTileSize2d.y
-              //  ) && (
-              //    kdx < tempFbSize2d.x / params.bgTileSize2d.x
-              //  )
-              //) {
-              //  tempArr += BigInt(someMapArr(z) & 0x3ff)
-              //  //tempArr += BigInt(1)
-              //  //tempArr += BigInt(z)
-              //  //tempArr += BigInt(z)
-              //} else {
-              //  tempArr += BigInt(0)
-              //  //tempArr += BigInt(1)
-              //}
+              if (
+                (
+                  jdx < tempFbSize2d.y / params.bgTileSize2d.y
+                ) && (
+                  kdx < tempFbSize2d.x / params.bgTileSize2d.x
+                )
+              ) {
+                //tempArr += BigInt(someMapArr(z) & 0x3ff)
+                //tempArr += BigInt(1)
+                //tempArr += BigInt(z)
+                //tempArr += BigInt(z)
+                tempArr += BigInt(
+                  someMapArr(
+                    jdx * someMapSize2d.x
+                    + kdx
+                  ) & 0x0ff
+                )
+              } else {
+                tempArr += BigInt(0)
+                //tempArr += BigInt(1)
+              }
               //z += 1
-              tempArr += BigInt(
-                someMapArr(
-                  jdx * someMapSize2d.x
-                  + kdx
-                ) & 0x3ff
-              )
+              //tempArr += BigInt(
+              //  someMapArr(
+              //    jdx * someMapSize2d.x
+              //    + kdx
+              //  ) & 0x3ff
+              //)
             } else {
               //println(s"outer: ($kdx, $jdx)")
               //tempArr += BigInt(64)
@@ -2560,7 +2566,7 @@ case class Gpu2dTest(
   def playerObjAttrsIdx = 1
   val rPlayerObjAttrsPrio = (
     Reg(UInt(
-      (params.numBgsPow << 8) bits
+      (params.numBgsPow + 16) bits
     )) init(0x0)
   )
   def doObjAttrsInit(): Unit = {
@@ -2856,10 +2862,10 @@ case class Gpu2dTest(
       //  default {
       //  }
       //}
-      when (buttons(SnesButtons.R)) {
+      when (!buttons(SnesButtons.R)) {
         rPlayerTileIdx := rPlayerTileIdx + 1
       }
-      when (buttons(SnesButtons.L)) {
+      when (!buttons(SnesButtons.L)) {
         rPlayerObjAttrsPrio := rPlayerObjAttrsPrio + 1
       }
       //rBgScroll.x := rBgScroll.x + 1
