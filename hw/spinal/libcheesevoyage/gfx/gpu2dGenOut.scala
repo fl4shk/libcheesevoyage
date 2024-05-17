@@ -242,7 +242,7 @@ object Gpu2dSimDutParams {
     x=vgaTimingInfo.fbSize2d.x / gpu2dPhysFbSize2dScale.x,
     y=vgaTimingInfo.fbSize2d.y / gpu2dPhysFbSize2dScale.y,
   )
-  println(gpu2dIntnlFbSize2d)
+  //println(gpu2dIntnlFbSize2d)
   def gpu2dParams = DefaultGpu2dParams(
     rgbConfig=rgbConfig,
     intnlFbSize2d=gpu2dIntnlFbSize2d,

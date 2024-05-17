@@ -594,8 +594,8 @@ case class Gpu2dParams(
     x=bgSize2dInTiles.x * bgTileSize2d.x,
     y=bgSize2dInTiles.y * bgTileSize2d.y,
   )
-  println(bgSize2dInTiles)
-  println(bgSize2dInPxs)
+  //println(bgSize2dInTiles)
+  //println(bgSize2dInPxs)
   //--------
   def numPxsPerBgTile = bgTileSize2d.x * bgTileSize2d.y
   def numPxsPerObjTile = objTileSize2d.x * objTileSize2d.y
@@ -982,7 +982,7 @@ object DefaultGpu2dParams {
       x=log2Up(intnlFbSize2d.x) - log2Up(bgTileSize2d.x),
       y=log2Up(intnlFbSize2d.y) - log2Up(bgTileSize2d.y),
     )
-    println(s"bgSize2dInTilesPow: $tempBgSize2dInTilesPow")
+    //println(s"bgSize2dInTilesPow: $tempBgSize2dInTilesPow")
     Gpu2dParams(
       //rgbConfig=RgbConfig(rWidth=6, gWidth=6, bWidth=6),
       //intnlFbSize2d=ElabVec2[Int](
