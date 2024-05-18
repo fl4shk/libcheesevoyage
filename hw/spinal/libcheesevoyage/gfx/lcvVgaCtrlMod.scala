@@ -387,6 +387,7 @@ case class LcvVgaCtrlMiscIo(
   clkRate: HertzNumber,
   vgaTimingInfo: LcvVgaTimingInfo,
   fifoDepth: Int,
+  optIncludeMiscVgaStates: Boolean=true,
 ) extends Bundle {
   // VGA physical pins
   //self.outpCol = ColorT()
@@ -398,19 +399,31 @@ case class LcvVgaCtrlMiscIo(
 
   //val buf = port VgaDriverBufOutpLayt()//.shape
   //val buf = LcvVgaCtrlBufOutp()
-  val hpipeS = LcvVgaState()
+  val hpipeS = (optIncludeMiscVgaStates) generate (
+    LcvVgaState()
+  )
   val hpipeC = UInt(vgaTimingInfo.htiming.cntWidth() bits)
   //val hpipeCP1 = hpipeC.resized + U(f"$cPWidth'd1")
   //val hpipeCP2 = hpipeC.resized + U(f"$cPWidth'd2")
-  val hpipeSPipe1 = LcvVgaState()
-  val hpipeSPipe2 = LcvVgaState()
+  val hpipeSPipe1 = (optIncludeMiscVgaStates) generate (
+    LcvVgaState()
+  )
+  val hpipeSPipe2 = (optIncludeMiscVgaStates) generate (
+    LcvVgaState()
+  )
 
-  val vpipeS = LcvVgaState()
+  val vpipeS = (optIncludeMiscVgaStates) generate (
+    LcvVgaState()
+  )
   val vpipeC = UInt(vgaTimingInfo.vtiming.cntWidth() bits)
   //val vpipeCP1 = vpipeC.resized + U(f"$cPWidth'd1")
   //val vpipeCP2 = vpipeC.resized + U(f"$cPWidth'd2")
-  val vpipeSPipe1 = LcvVgaState()
-  val vpipeSPipe2 = LcvVgaState()
+  val vpipeSPipe1 = (optIncludeMiscVgaStates) generate (
+    LcvVgaState()
+  )
+  val vpipeSPipe2 = (optIncludeMiscVgaStates) generate (
+    LcvVgaState()
+  )
 
   val fifoEmpty = Bool()
   val fifoFull = Bool()
@@ -460,6 +473,7 @@ case class LcvVgaCtrlIo(
   vgaTimingInfo: LcvVgaTimingInfo,
   fifoDepth: Int,
   //vivadoDebug: Boolean=false,
+  optIncludeMiscVgaStates: Boolean=true,
 ) extends Bundle with IMasterSlave {
   //--------
   val en = in Bool()
@@ -471,6 +485,7 @@ case class LcvVgaCtrlIo(
     clkRate=clkRate,
     vgaTimingInfo=vgaTimingInfo,
     fifoDepth=fifoDepth,
+    optIncludeMiscVgaStates=optIncludeMiscVgaStates,
   ))
   //if (vivadoDebug) {
   //  en.addAttribute("MARK_DEBUG", "TRUE")

@@ -35,6 +35,7 @@ case class LcvVgaCtrlPipelined(
     rgbConfig=rgbConfig,
     vgaTimingInfo=vgaTimingInfo,
     fifoDepth=fifoDepth,
+    optIncludeMiscVgaStates=false,
   )
   //--------
   def push = io.push
