@@ -41,6 +41,7 @@ case class Gpu2dSimDut(
       clkRate=clkRate,
       vgaTimingInfo=vgaTimingInfo,
       fifoDepth=ctrlFifoDepth,
+      optIncludeMiscVgaStates=true,
     ))
   }
   def myVgaTimingsWidth = 12
@@ -284,7 +285,8 @@ case class Gpu2dSimDut(
 
 object Gpu2dSim extends App {
   //def clkRate = 125.0 MHz
-  def clkRate = 50.0 MHz
+  //def clkRate = 50.0 MHz
+  def clkRate = 75.0 MHz
   //def clkRate = 100.0 MHz
   //def clkRate = 100.7 MHz
   def pixelClk = 25.0 MHz
@@ -362,7 +364,7 @@ object Gpu2dSim extends App {
   def gpu2dPhysFbSize2dScale = ElabVec2[Int](
     //x=1,
     //y=1,
-    x=3,
+    x=1,
     //x=1,
     //y=1,
     y=1,

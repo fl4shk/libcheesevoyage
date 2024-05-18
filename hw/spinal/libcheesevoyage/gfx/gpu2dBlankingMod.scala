@@ -58,10 +58,18 @@ case class Gpu2dBlanking(
     name="Last",
     finish=true,
   )
+  //def clkCntWidth = (
+  //  LcvVgaCtrl.clkCntWidth(
+  //    clkRate=clkRate,
+  //    vgaTimingInfo=vgaTimingInfo
+  //  ) + 2
+  //)
   val payload = new Area {
     val inpCol = Payload(Rgb(c=params.rgbConfig))
     val outpCol = Payload(Rgb(c=params.rgbConfig))
     //val doBlankCol = Payload(Bool())
+
+    //val clkCnt = Payload(SInt(clkCntWidth bits))
   }
   pipe.first.up.driveFrom(
     io.push
@@ -79,8 +87,8 @@ case class Gpu2dBlanking(
   )
   val cFrontArea = new cFront.Area {
     //calcPos.io.en := down.isFiring
-    calcPos.io.en := pipe.last.down.isFiring
-    //calcPos.io.en := cBack.up.isFiring
+    //calcPos.io.en := pipe.last.down.isFiring
+    calcPos.io.en := cBack.up.isFiring
     //calcPos.io.en := cBack.down.isFiring
     //calcPos.io.en := RegNext(up.isFiring) init(False)
     //calcPos.io.en := down.isFiring
@@ -138,6 +146,12 @@ case class Gpu2dBlanking(
           ) || (
             calcPos.info.pos.y < vgaTimingInfo.vtiming.calcNonVisibSum()
           )
+          //(
+          //  calcPos.io.info.pos.x
+          //    >= vgaTimingInfo.htiming.visib
+          //) || (
+          //  calcPos.info.pos.y >= vgaTimingInfo.vtiming.visib
+          //)
           //--------
         ) {
           duplicateIt()
@@ -160,8 +174,11 @@ case class Gpu2dBlanking(
         (
           calcPos.io.info.pos.x
             >= vgaTimingInfo.htiming.calcNonVisibSum()
+          //calcPos.io.info.pos.x
+          //< vgaTimingInfo.htiming.visib
         ) && (
           calcPos.io.info.pos.y >= vgaTimingInfo.vtiming.calcNonVisibSum()
+          //calcPos.io.info.pos.y < vgaTimingInfo.vtiming.visib
         )
         //--------
       ) {

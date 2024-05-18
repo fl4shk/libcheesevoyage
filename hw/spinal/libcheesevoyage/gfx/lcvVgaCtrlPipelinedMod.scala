@@ -35,7 +35,7 @@ case class LcvVgaCtrlPipelined(
     rgbConfig=rgbConfig,
     vgaTimingInfo=vgaTimingInfo,
     fifoDepth=fifoDepth,
-    optIncludeMiscVgaStates=false,
+    optIncludeMiscVgaStates=true,
   )
   //--------
   def push = io.push
@@ -46,9 +46,18 @@ case class LcvVgaCtrlPipelined(
   )
   phys.allowOverride
   misc := (
-    RegNext(misc) init(misc.getZero)
+    RegNext(misc) //init(misc.getZero)
   )
   misc.allowOverride
+  misc.visib := (
+    RegNext(misc.visib) init(misc.visib.getZero)
+  )
+  //misc.drawPos := (
+  //  RegNext(misc.drawPos) init(misc.drawPos.getZero)
+  //)
+  misc.pixelEn := (
+    RegNext(misc.pixelEn) init(misc.pixelEn.getZero)
+  )
   //--------
   def cpp = LcvVgaCtrl.cpp(clkRate=clkRate, vgaTimingInfo=vgaTimingInfo)
   def htiming: LcvVgaTimingHv = {
@@ -138,13 +147,13 @@ case class LcvVgaCtrlPipelined(
         val vsync = Payload(Bool())
         val clkCnt = Payload(SInt(clkCntWidth bits))
         //--------
-        val hCnt = Payload(UInt(
+        val hCnt = Payload(SInt(
           log2Up(
             vgaTimingInfo.htiming.visib
             + vgaTimingInfo.htiming.front
             + vgaTimingInfo.htiming.sync
             + vgaTimingInfo.htiming.back
-          ) + 1 bits
+          ) + 2 bits
         ))
         val hCntOverflow = Payload(Bool())
         val hIsFront = Payload(Bool())
@@ -153,13 +162,13 @@ case class LcvVgaCtrlPipelined(
         val hIsVisib = Payload(Bool())
         val hState = Payload(LcvVgaState())
         //--------
-        val vCnt = Payload(UInt(
+        val vCnt = Payload(SInt(
           log2Up(
             vgaTimingInfo.vtiming.visib
             + vgaTimingInfo.vtiming.front
             + vgaTimingInfo.vtiming.sync
             + vgaTimingInfo.vtiming.back
-          ) + 1 bits
+          ) + 2 bits
         ))
         val vIsFront = Payload(Bool())
         val vIsSync = Payload(Bool())
@@ -217,7 +226,7 @@ case class LcvVgaCtrlPipelined(
       val cFrontArea = new cFront.Area {
         //val rClkCnt = Reg(SInt(clkCntWidth bits)) init(cpp)
         val nextClkCnt = SInt(clkCntWidth bits)
-        val rClkCnt = RegNext(nextClkCnt) init(cpp - 1)
+        val rClkCnt = RegNext(nextClkCnt) init(cpp - 2)
         nextClkCnt := rClkCnt
         up(payload.clkCnt) := rClkCnt
 
@@ -235,7 +244,7 @@ case class LcvVgaCtrlPipelined(
                 duplicateIt()
                 nextDuplicateIt := True
               }
-              nextClkCnt := cpp - 1
+              nextClkCnt := cpp - 2
             }
           } otherwise { // when (rDuplicateIt)
             when (down.isFiring) {
@@ -250,8 +259,11 @@ case class LcvVgaCtrlPipelined(
         //}
       }
       val cHIncCntArea = new cHIncCnt.Area {
-        val nextHCnt = UInt(up(payload.hCnt).getWidth bits)
-        val rHCnt = RegNext(nextHCnt) init(nextHCnt.getZero)
+        val nextHCnt = SInt(up(payload.hCnt).getWidth bits)
+        val rHCnt = RegNext(nextHCnt) init(
+          //nextHCnt.getZero
+          -1
+        )
         nextHCnt := rHCnt
 
         //up(payload.hCntOverflow) := down(payload.hCntOverflow)
@@ -391,7 +403,7 @@ case class LcvVgaCtrlPipelined(
         }
       }
       val cVIncCntArea = new cVIncCnt.Area {
-        val nextVCnt = UInt(up(payload.vCnt).getWidth bits)
+        val nextVCnt = SInt(up(payload.vCnt).getWidth bits)
         val rVCnt = RegNext(nextVCnt) init(nextVCnt.getZero)
         nextVCnt := rVCnt
         up(payload.vCnt) := nextVCnt //down(payload.vCnt)
@@ -523,23 +535,35 @@ case class LcvVgaCtrlPipelined(
         //when (up.isFiring) {
           when (misc.visib) {
             phys.col := up(payload.col)
-            misc.drawPos.x := up(payload.hCnt)(
+            misc.drawPos.x := (
+              up(payload.hCnt)
+              - vgaTimingInfo.htiming.calcNonVisibSum()
+            )(
               misc.drawPos.x.bitsRange
-            )
-            misc.drawPos.y := up(payload.vCnt)(
+            ).asUInt
+            misc.drawPos.y := (
+              up(payload.vCnt)
+              - vgaTimingInfo.vtiming.calcNonVisibSum()
+            )(
               misc.drawPos.y.bitsRange
-            )
+            ).asUInt
           } otherwise {
             phys.col := phys.col.getZero
             misc.drawPos := misc.drawPos.getZero
           }
         //}
+        //when (up.isValid) {
+        //  phys.hsync := up(payload.hsync)
+        //  phys.vsync := up(payload.vsync)
+        //}
+        //misc.visib := up(payload.hIsVisib) && up(payload.vIsVisib)
+        //misc.pixelEn := up(payload.clkCnt).msb
         when (up.isValid) {
           phys.hsync := up(payload.hsync)
           phys.vsync := up(payload.vsync)
+          misc.visib := up(payload.hIsVisib) && up(payload.vIsVisib)
+          misc.pixelEn := up(payload.clkCnt).msb
         }
-        misc.visib := up(payload.hIsVisib) && up(payload.vIsVisib)
-        misc.pixelEn := up(payload.clkCnt).msb
       }
     }
     //--------

@@ -275,7 +275,9 @@ protected:	// variables
 	sdl::KeyStatusUmap _key_status_umap;
 	liborangepower::game::EngineKeyStatus _engine_key_status;
 	uint32_t
+		_did_vsync_re = 0,
 		_last_vsync = 0,
+		_did_hsync_re = 0,
 		_last_hsync = 0;
 	enum class SnesKeyState: uint32_t {
 		DriveValid,
@@ -650,15 +652,21 @@ protected:		// variables and helper functions
 		const bool old_did_first_refresh = _did_first_refresh;
 		//const Uint32 prev_pos_x = pos.x;
 		const Vec2<Uint32> prev_pos = pos;
+		pos.x = _top->io_misc_drawPos_x;
+		pos.y = _top->io_misc_drawPos_y;
 		if (
 			_top->io_phys_vsync
 			&& !_last_vsync
 			//!_top->io_phys_vsync
 			//&& _last_vsync
-			&& (
-				pos.y >= HALF_SIZE_2D.y
-				|| !_did_first_refresh
-			)
+			//&& (
+			//	pos.y >= HALF_SIZE_2D.y
+			//	|| !_did_first_refresh
+			//)
+			//&& _top->io_misc_drawPos_x == 0
+			//&& _top->io_misc_drawPos_y == 0
+			&& !_top->io_misc_visib
+			&& _top->io_misc_pixelEn
 		) {
 			if (!_did_first_refresh) {
 				_did_first_refresh = true;
@@ -667,41 +675,43 @@ protected:		// variables and helper functions
 				"refreshing: x, y: %u, %u\n",
 				pos.x, pos.y
 			);
-			pos.y = 0;
+			//pos.y = 0;
 			refresh();
-		} 
-		//else
-		if (
-			old_did_first_refresh
-		) {
-			if (
-				_top->io_phys_hsync
-				&& !_last_hsync
-				//!_top->io_phys_hsync
-				//&& _last_hsync
-				&& pos.x != 0
-				//&& pos.x >= HALF_SIZE_2D.x
-			) {
-				inc_y();
-				cnt_x = 0;
-				pos.x = 0;
-			}
-			if (
-				//_visib_enable
-				//_top->io_misc_pastVisib
-				//_top->io_misc_visib
-				//_top->io_misc_visibPrev1
-				//&& 
-				_top->io_misc_visib
-				//--------
-				&& _top->io_misc_pixelEn
-				//&& _top->io_misc_pastPixelEn
-				//--------
-			) {
-				//printf("testificate\n");
-				inc_x();
-			}
 		}
+		//else
+		//if (
+		//	old_did_first_refresh
+		//) {
+		//	if (
+		//		_top->io_phys_hsync
+		//		&& !_last_hsync
+		//		//!_top->io_phys_hsync
+		//		//&& _last_hsync
+		//		&& pos.x != 0
+		//		//&& pos.x >= HALF_SIZE_2D.x
+		//		&& !_top->io_misc_visib
+		//		&& _top->io_misc_pixelEn
+		//	) {
+		//		inc_y();
+		//		cnt_x = 0;
+		//		pos.x = 0;
+		//	}
+		//	if (
+		//		//_visib_enable
+		//		//_top->io_misc_pastVisib
+		//		//_top->io_misc_visib
+		//		//_top->io_misc_visibPrev1
+		//		//&& 
+		//		_top->io_misc_visib
+		//		//--------
+		//		&& _top->io_misc_pixelEn
+		//		//&& _top->io_misc_pastPixelEn
+		//		//--------
+		//	) {
+		//		//printf("testificate\n");
+		//		inc_x();
+		//	}
+		//}
 		//if (
 		//	pos.y != prev_pos.y
 		//) {
@@ -760,11 +770,11 @@ protected:		// variables and helper functions
 			//	inc_x();
 			//}
 			if (
-				//_top->io_misc_pastPixelEn
-				//&& 
-				pos.x < HALF_SIZE_2D.x
-				&& pos.y < HALF_SIZE_2D.y
-				//true
+				////_top->io_misc_pastPixelEn
+				////&& 
+				//pos.x < HALF_SIZE_2D.x
+				//&& pos.y < HALF_SIZE_2D.y
+				true
 			) {
 				this->set(
 					(
@@ -778,7 +788,7 @@ protected:		// variables and helper functions
 				);
 			}
 			//inc_x();
-		} 
+		}
 		//else {
 		//	refresh();
 		//}
