@@ -63,6 +63,12 @@ case class LcvVgaTimingHv(
     //return tmpList(tmpIdx)
     return tmp
   }
+  def calcSum(): Int = (
+    visib + calcNonVisibSum()
+  )
+  def calcNonVisibSum(): Int = (
+    front + sync + back
+  )
   //--------
 
   //--------

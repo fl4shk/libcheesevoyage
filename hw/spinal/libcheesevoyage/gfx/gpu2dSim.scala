@@ -45,22 +45,26 @@ case class Gpu2dSimDut(
   }
   def myVgaTimingsWidth = 12
   //--------
-  //val vgaCtrl = LcvVgaCtrl(
-  //  clkRate=clkRate,
-  //  //rgbConfig=physRgbConfig,
-  //  rgbConfig=rgbConfig,
-  //  vgaTimingInfo=vgaTimingInfo,
-  //  fifoDepth=ctrlFifoDepth,
-  //)
-  val vgaCtrl = VgaCtrl(
-    rgbConfig=gpu2dParams.rgbConfig
-  )
-  def ctrlIo = vgaCtrl.io
-  ctrlIo.softReset := RegNext(False) init(True)
-  vgaTimingInfo.driveSpinalVgaTimings(
+  val vgaCtrl = LcvVgaCtrlPipelined(
     clkRate=clkRate,
-    spinalVgaTimings=ctrlIo.timings,
+    //rgbConfig=physRgbConfig,
+    rgbConfig=rgbConfig,
+    vgaTimingInfo=vgaTimingInfo,
+    fifoDepth=ctrlFifoDepth,
   )
+  //val vgaCtrl = VgaCtrl(
+  //  rgbConfig=gpu2dParams.rgbConfig
+  //)
+  def ctrlIo = vgaCtrl.io
+  //--------
+  // BEGIN: `VgaCtrl` stuff
+  //ctrlIo.softReset := RegNext(False) init(True)
+  //vgaTimingInfo.driveSpinalVgaTimings(
+  //  clkRate=clkRate,
+  //  spinalVgaTimings=ctrlIo.timings,
+  //)
+  // END: `VgaCtrl` stuff
+  //--------
   //ctrlIo.timings.h.colorStart := 0
   //ctrlIo.timings.h.colorEnd := vgaTimingInfo.htiming.visib - 1
   //ctrlIo.timings.h.syncStart := vgaTimingInfo.htiming.visib
@@ -137,20 +141,28 @@ case class Gpu2dSimDut(
     //gpu2dScaleX.io.pop.fire
   )
   val myGpuPopStm = cloneOf(gpuIo.pop)
+
+  gpu2dTest.io.vgaSomeVpipeS := (
+    RegNext(gpu2dTest.io.vgaSomeVpipeS) init(LcvVgaState.front)
+  )
   when (
     myGpuPopStm.valid
-    //&& gpuIo.pop.physPosInfo.nextPos.x === 0
-    && myGpuPopStm.physPosInfo.nextPos.y === 0
   ) {
-    gpu2dTest.io.vgaSomeVpipeS := (
-      LcvVgaState.visib
-    )
-  } otherwise {
-    gpu2dTest.io.vgaSomeVpipeS := (
-      LcvVgaState.front
-    )
+    when (
+      //&& gpuIo.pop.physPosInfo.nextPos.x =/= 0
+      myGpuPopStm.physPosInfo.nextPos.y === 0
+    ) {
+      gpu2dTest.io.vgaSomeVpipeS := (
+        LcvVgaState.front
+      )
+    } otherwise {
+      gpu2dTest.io.vgaSomeVpipeS := (
+        LcvVgaState.visib
+      )
+    }
   }
   //gpu2dTest.io.vgaSomeVpipeS := ctrlIo.misc.vpipeSPipe2
+  //--------
 
   //gpu2dTest.io.vgaSomeDrawPos := ctrlIo.misc.drawPos
 
@@ -204,15 +216,24 @@ case class Gpu2dSimDut(
   //    ctrlPushPayload := gpuPopPayload.col
   //  }
   //)
+  val gpu2dBlanking = Gpu2dBlanking(
+    params=gpu2dParams,
+    vgaTimingInfo=vgaTimingInfo,
+  )
   myGpuPopStm <-/< gpuIo.pop
   //vgaCtrl.io.pixels <-/< myGpuPopStm
+  //--------
   myGpuPopStm.translateInto(
-    into=vgaCtrl.io.pixels
+    //into=vgaCtrl.io.pixels
+    //into=vgaCtrl.io.push
+    into=gpu2dBlanking.io.push,
   )(
     dataAssignment=(o, i) => {
       o := i.col
     }
   )
+  vgaCtrl.io.push <-/< gpu2dBlanking.io.pop 
+  //--------
   ////vgaCtrl.io.pixels << gpuIo.pop
   ////ctrlIo.pixels.valid := gpuIo.pop.valid
   ////ctrlIo.pixels.payload := gpuIo.pop.payload.col
@@ -236,9 +257,10 @@ case class Gpu2dSimDut(
   //gpuIo.pop.ready := True
 
   //--------
-  //io.phys := ctrlIo.phys
-  //io.misc := ctrlIo.misc
+  io.phys := ctrlIo.phys
+  io.misc := ctrlIo.misc
   //--------
+  // BEGIN: `VgaCtrl` stuff
   //io.phys.col := ctrlIo.vga.color
   //io.phys.hsync := ctrlIo.vga.hSync
   //io.phys.vsync := ctrlIo.vga.vSync
@@ -256,6 +278,7 @@ case class Gpu2dSimDut(
   //  rPixelEnCnt := rPixelEnCnt + 1
   //}
   //io.misc.pixelEn := rPixelEnCnt === 0x0
+  // END: `VgaCtrl` stuff
   //--------
 }
 
@@ -299,9 +322,15 @@ object Gpu2dSim extends App {
         //640
         //639
       ),
-      front=1,
-      sync=1,
-      back=1,
+      //front=1,
+      //sync=1,
+      //back=1,
+      front=40,
+      //sync=40,
+      //back=40,
+      //front=4,
+      sync=4,
+      back=4,
       //--------
     ),
     vtiming=LcvVgaTimingHv(
@@ -590,10 +619,10 @@ object Gpu2dSim extends App {
         (
           (1 << 16) - 1
         )
-        & ~(
-          //1 << SnesButtons.DpadRight
-          1 << SnesButtons.A
-        )
+        //& ~(
+        //  //1 << SnesButtons.DpadRight
+        //  1 << SnesButtons.A
+        //)
       )
       def simNumClks = (
         //16000
