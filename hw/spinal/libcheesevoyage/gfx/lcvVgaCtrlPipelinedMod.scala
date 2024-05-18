@@ -261,8 +261,8 @@ case class LcvVgaCtrlPipelined(
       val cHIncCntArea = new cHIncCnt.Area {
         val nextHCnt = SInt(up(payload.hCnt).getWidth bits)
         val rHCnt = RegNext(nextHCnt) init(
-          //nextHCnt.getZero
-          -2
+          nextHCnt.getZero
+          //-2
         )
         nextHCnt := rHCnt
 
@@ -406,8 +406,8 @@ case class LcvVgaCtrlPipelined(
         val nextVCnt = SInt(up(payload.vCnt).getWidth bits)
         val rVCnt = (
           RegNext(nextVCnt) init(
-            //nextVCnt.getZero
-            -2
+            nextVCnt.getZero
+            //-2
           )
         )
         nextVCnt := rVCnt
