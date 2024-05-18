@@ -143,15 +143,15 @@ object Gpu2dTest {
                 //tempArr += BigInt(z)
                 //tempArr += BigInt(z)
 
-                //tempArr += BigInt(
-                //  someMapArr(
-                //    jdx * someMapSize2d.x
-                //    + kdx
-                //  ) 
-                //  & 0x0ff
-                //  //& 0x3ff
-                //)
-                tempArr += BigInt(0)
+                tempArr += BigInt(
+                  someMapArr(
+                    jdx * someMapSize2d.x
+                    + kdx
+                  ) 
+                  & 0x0ff
+                  //& 0x3ff
+                )
+                //tempArr += BigInt(0)
               } else {
                 tempArr += BigInt(0)
                 //tempArr += BigInt(1)
