@@ -44,13 +44,46 @@ case class Gpu2dSimDut(
     ))
   }
   def myVgaTimingsWidth = 12
-  val vgaCtrl = LcvVgaCtrl(
-    clkRate=clkRate,
-    //rgbConfig=physRgbConfig,
-    rgbConfig=rgbConfig,
-    vgaTimingInfo=vgaTimingInfo,
-    fifoDepth=ctrlFifoDepth,
+  //--------
+  //val vgaCtrl = LcvVgaCtrl(
+  //  clkRate=clkRate,
+  //  //rgbConfig=physRgbConfig,
+  //  rgbConfig=rgbConfig,
+  //  vgaTimingInfo=vgaTimingInfo,
+  //  fifoDepth=ctrlFifoDepth,
+  //)
+  val vgaCtrl = VgaCtrl(
+    rgbConfig=gpu2dParams.rgbConfig
   )
+  def ctrlIo = vgaCtrl.io
+  ctrlIo.softReset := RegNext(False) init(True)
+  vgaTimingInfo.driveSpinalVgaTimings(
+    clkRate=clkRate,
+    spinalVgaTimings=ctrlIo.timings,
+  )
+  //ctrlIo.timings.h.colorStart := 0
+  //ctrlIo.timings.h.colorEnd := vgaTimingInfo.htiming.visib - 1
+  //ctrlIo.timings.h.syncStart := vgaTimingInfo.htiming.visib
+  //ctrlIo.timings.h.syncEnd := (
+  //  vgaTimingInfo.htiming.visib
+  //  + vgaTimingInfo.htiming.front
+  //  + vgaTimingInfo.htiming.sync
+  //  + vgaTimingInfo.htiming.back
+  //  - 1
+  //)
+  //ctrlIo.timings.h.polarity := True
+  //ctrlIo.timings.v.colorStart := 0
+  //ctrlIo.timings.v.colorEnd := vgaTimingInfo.vtiming.visib - 1
+  //ctrlIo.timings.v.syncStart := vgaTimingInfo.vtiming.visib
+  //ctrlIo.timings.v.syncEnd := (
+  //  vgaTimingInfo.vtiming.visib
+  //  + vgaTimingInfo.vtiming.front
+  //  + vgaTimingInfo.vtiming.sync
+  //  + vgaTimingInfo.vtiming.back
+  //  - 1
+  //)
+  //ctrlIo.timings.v.polarity := True
+  //--------
   //val vgaCtrl = VgaCtrl(
   //  rgbConfig=rgbConfig,
   //  timingsWidth=myVgaTimingsWidth,
@@ -94,7 +127,7 @@ case class Gpu2dSimDut(
   //io.snesCtrl.outpClk := False
   //io.snesCtrl.outpLatch := False
 
-  val ctrlIo = vgaCtrl.io
+  //val ctrlIo = vgaCtrl.io
   //val dithIo = vidDith.io
   val gpuIo = gpu2d.io
   //gpu2dTest.io.vgaPhys := ctrlIo.phys
@@ -103,7 +136,22 @@ case class Gpu2dSimDut(
     gpuIo.pop.fire
     //gpu2dScaleX.io.pop.fire
   )
-  gpu2dTest.io.vgaSomeVpipeS := ctrlIo.misc.vpipeSPipe2
+  val myGpuPopStm = cloneOf(gpuIo.pop)
+  when (
+    myGpuPopStm.valid
+    //&& gpuIo.pop.physPosInfo.nextPos.x === 0
+    && myGpuPopStm.physPosInfo.nextPos.y === 0
+  ) {
+    gpu2dTest.io.vgaSomeVpipeS := (
+      LcvVgaState.visib
+    )
+  } otherwise {
+    gpu2dTest.io.vgaSomeVpipeS := (
+      LcvVgaState.front
+    )
+  }
+  //gpu2dTest.io.vgaSomeVpipeS := ctrlIo.misc.vpipeSPipe2
+
   //gpu2dTest.io.vgaSomeDrawPos := ctrlIo.misc.drawPos
 
   //val vgaTimingsH = VgaTimingsHV(timingsWidth=myVgaTimingsWidth)
@@ -122,37 +170,47 @@ case class Gpu2dSimDut(
   //--------
   // BEGIN: main code; later
   //ctrlIo.en := gpuIo.ctrlEn
-  ctrlIo.en := (
-    //gpu2dScaleY.io.pop.fire
-    //&& 
-    //(
-    //  RegNextWhen(
-    //    True,
-    //    gpu2dScaleY.io.pop.valid,
-    //  ) init(False),
-    //)
-    //&& 
-    //gpu2dScaleY.io.pop.ctrlEn
-    True
-    //True
-    //gpu2dScaleY.io.pop.ctrlEn
-    //gpuIo.pop.valid
-    //&& 
-    //gpuIo.pop.ctrlEn
-  )
+  //ctrlIo.en := (
+  //  //gpu2dScaleY.io.pop.fire
+  //  //&& 
+  //  //(
+  //  //  RegNextWhen(
+  //  //    True,
+  //  //    gpu2dScaleY.io.pop.valid,
+  //  //  ) init(False),
+  //  //)
+  //  //&& 
+  //  //gpu2dScaleY.io.pop.ctrlEn
+  //  True
+  //  //True
+  //  //gpu2dScaleY.io.pop.ctrlEn
+  //  //gpuIo.pop.valid
+  //  //&& 
+  //  //gpuIo.pop.ctrlEn
+  //)
   //ctrlIo.en := False
 
   //ctrlIo.push.valid := gpuIo.pop.valid
   //ctrlIo.push.payload := gpuIo.pop.payload.col
   //gpuIo.pop.ready := ctrlIo.push.ready
   //gpu2dScaleX.io.push << gpuIo.pop
-  gpuIo.pop.translateInto(
-    into=ctrlIo.push
+  //gpuIo.pop.translateInto(
+  //  //into=ctrlIo.push
+  //  into=ctrlIo.pixels
+  //)(
+  //  dataAssignment=(
+  //    ctrlPushPayload, gpuPopPayload
+  //  ) => {
+  //    ctrlPushPayload := gpuPopPayload.col
+  //  }
+  //)
+  myGpuPopStm <-/< gpuIo.pop
+  //vgaCtrl.io.pixels <-/< myGpuPopStm
+  myGpuPopStm.translateInto(
+    into=vgaCtrl.io.pixels
   )(
-    dataAssignment=(
-      ctrlPushPayload, gpuPopPayload
-    ) => {
-      ctrlPushPayload := gpuPopPayload.col
+    dataAssignment=(o, i) => {
+      o := i.col
     }
   )
   ////vgaCtrl.io.pixels << gpuIo.pop
@@ -178,8 +236,8 @@ case class Gpu2dSimDut(
   //gpuIo.pop.ready := True
 
   //--------
-  io.phys := ctrlIo.phys
-  io.misc := ctrlIo.misc
+  //io.phys := ctrlIo.phys
+  //io.misc := ctrlIo.misc
   //--------
   //io.phys.col := ctrlIo.vga.color
   //io.phys.hsync := ctrlIo.vga.hSync
@@ -188,6 +246,16 @@ case class Gpu2dSimDut(
   //io.misc.allowOverride
   //io.misc.pastVisib := RegNext(io.misc.visib) init(False)
   //io.misc.visib := ctrlIo.vga.colorEn
+  //val rPixelEnCnt = (
+  //  Reg(UInt(log2Up((clkRate / vgaTimingInfo.pixelClk).toInt) + 1 bits))
+  //  init(0x0)
+  //)
+  //when (rPixelEnCnt + 1 === (clkRate / vgaTimingInfo.pixelClk).toInt) {
+  //  rPixelEnCnt := 0
+  //} otherwise {
+  //  rPixelEnCnt := rPixelEnCnt + 1
+  //}
+  //io.misc.pixelEn := rPixelEnCnt === 0x0
   //--------
 }
 
