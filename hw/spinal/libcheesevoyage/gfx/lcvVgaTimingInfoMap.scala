@@ -156,6 +156,8 @@ object LcvVgaTimingInfoMap {
         sync=5,
         back=36,
       ),
+      hPolarity=true,
+      vPolarity=true,
     )
   )
 }
