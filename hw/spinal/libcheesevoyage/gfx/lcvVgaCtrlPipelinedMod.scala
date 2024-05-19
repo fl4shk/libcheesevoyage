@@ -328,6 +328,12 @@ case class LcvVgaCtrlPipelined(
           var limGe: Int = 0
           def limLe(plusAmount: Int): Int = limGe + plusAmount - 1
 
+          myHIsVisib := (
+            up(payload.hCnt) >= limGe
+            && up(payload.hCnt) <= limLe(vgaTimingInfo.htiming.visib)
+          )
+          limGe = limLe(vgaTimingInfo.htiming.visib) + 1
+
           myHIsFront := (
             up(payload.hCnt) >= limGe
             && up(payload.hCnt) <= limLe(vgaTimingInfo.htiming.front)
@@ -345,12 +351,6 @@ case class LcvVgaCtrlPipelined(
             && up(payload.hCnt) <= limLe(vgaTimingInfo.htiming.back)
           )
           limGe = limLe(vgaTimingInfo.htiming.back) + 1
-
-          myHIsVisib := (
-            up(payload.hCnt) >= limGe
-            && up(payload.hCnt) <= limLe(vgaTimingInfo.htiming.visib)
-          )
-          limGe = limLe(vgaTimingInfo.htiming.visib) + 1
         }
       }
       val cHFsmArea = new cHFsm.Area {
@@ -464,6 +464,12 @@ case class LcvVgaCtrlPipelined(
           var limGe: Int = 0
           def limLe(plusAmount: Int): Int = limGe + plusAmount - 1
 
+          myVIsVisib := (
+            up(payload.vCnt) >= limGe
+            && up(payload.vCnt) <= limLe(vgaTimingInfo.vtiming.visib)
+          )
+          limGe = limLe(vgaTimingInfo.vtiming.visib) + 1
+
           myVIsFront := (
             up(payload.vCnt) >= limGe
             && up(payload.vCnt) <= limLe(vgaTimingInfo.vtiming.front)
@@ -481,12 +487,6 @@ case class LcvVgaCtrlPipelined(
             && up(payload.vCnt) <= limLe(vgaTimingInfo.vtiming.back)
           )
           limGe = limLe(vgaTimingInfo.vtiming.back) + 1
-
-          myVIsVisib := (
-            up(payload.vCnt) >= limGe
-            && up(payload.vCnt) <= limLe(vgaTimingInfo.vtiming.visib)
-          )
-          limGe = limLe(vgaTimingInfo.vtiming.visib) + 1
         }
       }
       val cVFsmArea = new cVFsm.Area {
@@ -542,13 +542,13 @@ case class LcvVgaCtrlPipelined(
             phys.col := up(payload.col)
             misc.drawPos.x := (
               up(payload.hCnt)
-              - vgaTimingInfo.htiming.calcNonVisibSum()
+              //- vgaTimingInfo.htiming.calcNonVisibSum()
             )(
               misc.drawPos.x.bitsRange
             ).asUInt
             misc.drawPos.y := (
               up(payload.vCnt)
-              - vgaTimingInfo.vtiming.calcNonVisibSum()
+              //- vgaTimingInfo.vtiming.calcNonVisibSum()
             )(
               misc.drawPos.y.bitsRange
             ).asUInt

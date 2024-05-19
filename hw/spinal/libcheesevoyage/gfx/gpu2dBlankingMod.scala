@@ -140,18 +140,18 @@ case class Gpu2dBlanking(
           //--------
           //calcPos.io.info.nextPos.x
           //  < vgaTimingInfo.htiming.calcNonVisibSum()
-          (
-            calcPos.io.info.pos.x
-              < vgaTimingInfo.htiming.calcNonVisibSum()
-          ) || (
-            calcPos.info.pos.y < vgaTimingInfo.vtiming.calcNonVisibSum()
-          )
           //(
           //  calcPos.io.info.pos.x
-          //    >= vgaTimingInfo.htiming.visib
+          //    < vgaTimingInfo.htiming.calcNonVisibSum()
           //) || (
-          //  calcPos.info.pos.y >= vgaTimingInfo.vtiming.visib
+          //  calcPos.info.pos.y < vgaTimingInfo.vtiming.calcNonVisibSum()
           //)
+          (
+            calcPos.io.info.pos.x
+              >= vgaTimingInfo.htiming.visib
+          ) || (
+            calcPos.info.pos.y >= vgaTimingInfo.vtiming.visib
+          )
           //--------
         ) {
           duplicateIt()
@@ -172,13 +172,13 @@ case class Gpu2dBlanking(
         //) 
         //&& 
         (
-          calcPos.io.info.pos.x
-            >= vgaTimingInfo.htiming.calcNonVisibSum()
           //calcPos.io.info.pos.x
-          //< vgaTimingInfo.htiming.visib
+          //  >= vgaTimingInfo.htiming.calcNonVisibSum()
+          calcPos.io.info.pos.x
+          < vgaTimingInfo.htiming.visib
         ) && (
-          calcPos.io.info.pos.y >= vgaTimingInfo.vtiming.calcNonVisibSum()
-          //calcPos.io.info.pos.y < vgaTimingInfo.vtiming.visib
+          //calcPos.io.info.pos.y >= vgaTimingInfo.vtiming.calcNonVisibSum()
+          calcPos.io.info.pos.y < vgaTimingInfo.vtiming.visib
         )
         //--------
       ) {
