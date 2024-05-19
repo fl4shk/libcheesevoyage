@@ -147,6 +147,9 @@ object Gpu2dTestGfx {
   val fgCommonTileArr = doConvert(
     filename="gfx/bmp/foreground_common_gfx.raw"
   )
+  val dbgBlankingFgCommonTileArr = doConvert(
+    filename="gfx/bmp/dbg_blanking_foreground_common_gfx.raw"
+  )
   val fgGrasslandTileArr = doConvert(
     filename="gfx/bmp/foreground_grassland_gfx.raw"
   )

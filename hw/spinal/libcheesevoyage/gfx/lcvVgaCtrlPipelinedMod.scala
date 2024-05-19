@@ -52,11 +52,23 @@ case class LcvVgaCtrlPipelined(
   misc.visib := (
     RegNext(misc.visib) init(misc.visib.getZero)
   )
+  misc.pixelEn := (
+    RegNext(misc.pixelEn) init(misc.pixelEn.getZero)
+  )
   //misc.drawPos := (
   //  RegNext(misc.drawPos) init(misc.drawPos.getZero)
   //)
-  misc.pixelEn := (
-    RegNext(misc.pixelEn) init(misc.pixelEn.getZero)
+  misc.hpipeS := (
+    RegNext(misc.hpipeS) init(LcvVgaState.front)
+  )
+  misc.vpipeS := (
+    RegNext(misc.vpipeS) init(LcvVgaState.front)
+  )
+  misc.hpipeC := (
+    RegNext(misc.hpipeC) init(misc.hpipeC.getZero)
+  )
+  misc.vpipeC := (
+    RegNext(misc.vpipeC) init(misc.vpipeC.getZero)
   )
   //--------
   def cpp = LcvVgaCtrl.cpp(clkRate=clkRate, vgaTimingInfo=vgaTimingInfo)
@@ -328,12 +340,6 @@ case class LcvVgaCtrlPipelined(
           var limGe: Int = 0
           def limLe(plusAmount: Int): Int = limGe + plusAmount - 1
 
-          myHIsVisib := (
-            up(payload.hCnt) >= limGe
-            && up(payload.hCnt) <= limLe(vgaTimingInfo.htiming.visib)
-          )
-          limGe = limLe(vgaTimingInfo.htiming.visib) + 1
-
           myHIsFront := (
             up(payload.hCnt) >= limGe
             && up(payload.hCnt) <= limLe(vgaTimingInfo.htiming.front)
@@ -351,6 +357,13 @@ case class LcvVgaCtrlPipelined(
             && up(payload.hCnt) <= limLe(vgaTimingInfo.htiming.back)
           )
           limGe = limLe(vgaTimingInfo.htiming.back) + 1
+
+          myHIsVisib := (
+            up(payload.hCnt) >= limGe
+            && up(payload.hCnt) <= limLe(vgaTimingInfo.htiming.visib)
+          )
+          limGe = limLe(vgaTimingInfo.htiming.visib) + 1
+
         }
       }
       val cHFsmArea = new cHFsm.Area {
@@ -464,12 +477,6 @@ case class LcvVgaCtrlPipelined(
           var limGe: Int = 0
           def limLe(plusAmount: Int): Int = limGe + plusAmount - 1
 
-          myVIsVisib := (
-            up(payload.vCnt) >= limGe
-            && up(payload.vCnt) <= limLe(vgaTimingInfo.vtiming.visib)
-          )
-          limGe = limLe(vgaTimingInfo.vtiming.visib) + 1
-
           myVIsFront := (
             up(payload.vCnt) >= limGe
             && up(payload.vCnt) <= limLe(vgaTimingInfo.vtiming.front)
@@ -487,6 +494,12 @@ case class LcvVgaCtrlPipelined(
             && up(payload.vCnt) <= limLe(vgaTimingInfo.vtiming.back)
           )
           limGe = limLe(vgaTimingInfo.vtiming.back) + 1
+
+          myVIsVisib := (
+            up(payload.vCnt) >= limGe
+            && up(payload.vCnt) <= limLe(vgaTimingInfo.vtiming.visib)
+          )
+          limGe = limLe(vgaTimingInfo.vtiming.visib) + 1
         }
       }
       val cVFsmArea = new cVFsm.Area {
@@ -542,13 +555,13 @@ case class LcvVgaCtrlPipelined(
             phys.col := up(payload.col)
             misc.drawPos.x := (
               up(payload.hCnt)
-              //- vgaTimingInfo.htiming.calcNonVisibSum()
+              - vgaTimingInfo.htiming.calcNonVisibSum()
             )(
               misc.drawPos.x.bitsRange
             ).asUInt
             misc.drawPos.y := (
               up(payload.vCnt)
-              //- vgaTimingInfo.vtiming.calcNonVisibSum()
+              - vgaTimingInfo.vtiming.calcNonVisibSum()
             )(
               misc.drawPos.y.bitsRange
             ).asUInt
@@ -568,6 +581,10 @@ case class LcvVgaCtrlPipelined(
           phys.vsync := up(payload.vsync)
           misc.visib := up(payload.hIsVisib) && up(payload.vIsVisib)
           misc.pixelEn := up(payload.clkCnt).msb
+          misc.hpipeS := up(payload.hState)
+          misc.vpipeS := up(payload.vState)
+          misc.hpipeC := up(payload.hCnt).asUInt.resized
+          misc.vpipeC := up(payload.vCnt).asUInt.resized
         }
       }
     }

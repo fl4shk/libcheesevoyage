@@ -25,7 +25,9 @@ case class Gpu2dBlankingIo(
   vgaTimingInfo: LcvVgaTimingInfo,
 ) extends Bundle {
   //--------
-  val push = slave Stream(Rgb(c=params.rgbConfig))
+  val push = slave Stream(
+    Rgb(c=params.rgbConfig)
+  )
   val pop = master Stream(Rgb(c=params.rgbConfig))
   //--------
 }
@@ -86,9 +88,9 @@ case class Gpu2dBlanking(
     }
   )
   val cFrontArea = new cFront.Area {
-    //calcPos.io.en := down.isFiring
+    calcPos.io.en := down.isFiring
     //calcPos.io.en := pipe.last.down.isFiring
-    calcPos.io.en := cBack.up.isFiring
+    //calcPos.io.en := cBack.up.isFiring
     //calcPos.io.en := cBack.down.isFiring
     //calcPos.io.en := RegNext(up.isFiring) init(False)
     //calcPos.io.en := down.isFiring
@@ -146,11 +148,21 @@ case class Gpu2dBlanking(
           //) || (
           //  calcPos.info.pos.y < vgaTimingInfo.vtiming.calcNonVisibSum()
           //)
+
+          //(
+          //  calcPos.io.info.pos.x
+          //    >= vgaTimingInfo.htiming.visib
+          //) || (
+          //  calcPos.info.pos.y >= vgaTimingInfo.vtiming.visib
+          //)
           (
-            calcPos.io.info.pos.x
-              >= vgaTimingInfo.htiming.visib
-          ) || (
-            calcPos.info.pos.y >= vgaTimingInfo.vtiming.visib
+            RegNext(calcPos.io.info.posWillOverflow.x) init(False)
+          )
+          //&& (
+          //  calcPos.io.info.posWillOverflow.y
+          //)
+          || (
+            calcPos.info.pos.y < vgaTimingInfo.vtiming.calcNonVisibSum()
           )
           //--------
         ) {
@@ -172,13 +184,13 @@ case class Gpu2dBlanking(
         //) 
         //&& 
         (
-          //calcPos.io.info.pos.x
-          //  >= vgaTimingInfo.htiming.calcNonVisibSum()
           calcPos.io.info.pos.x
-          < vgaTimingInfo.htiming.visib
+            >= vgaTimingInfo.htiming.calcNonVisibSum()
+          //calcPos.io.info.pos.x
+          //< vgaTimingInfo.htiming.visib
         ) && (
-          //calcPos.io.info.pos.y >= vgaTimingInfo.vtiming.calcNonVisibSum()
-          calcPos.io.info.pos.y < vgaTimingInfo.vtiming.visib
+          calcPos.io.info.pos.y >= vgaTimingInfo.vtiming.calcNonVisibSum()
+          //calcPos.io.info.pos.y < vgaTimingInfo.vtiming.visib
         )
         //--------
       ) {

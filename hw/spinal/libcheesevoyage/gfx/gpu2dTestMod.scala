@@ -423,6 +423,7 @@ object Gpu2dTest {
       doPipeMemRmw=false
     )
     val rawArrFgCommon = Gpu2dTestGfx.fgCommonTileArr
+    //val rawArrDbgBlankingFgCommon = Gpu2dTestGfx.dbgBlankingFgCommonTileArr
     //val rawArrFgGrassland = Gpu2dTestGfx.fgGrasslandTileArr
     val myPxsSliceWidth = (
       Gpu2dTileSlice.pxsSliceWidth(
@@ -481,7 +482,10 @@ object Gpu2dTest {
         somePxsSliceWidth=myPxsSliceWidth,
         //someTileHeight=params.objTileSize2d.y,
         //somePalEntryMemIdxWidth=params.bgPalEntryMemIdxWidth,
-        somePxsArr=rawArrFgCommon,
+        somePxsArr=(
+          rawArrFgCommon
+          //rawArrDbgBlankingFgCommon
+        ),
         tempArr=tempArr,
         //isObj=false,
         //doPrint=true,
@@ -2106,82 +2110,82 @@ case class Gpu2dTest(
     rObjTileCnt >> extraObjTileCntWidth
   )
 
-  //def mkObjTile(
-  //  colIdx0: Int,
-  //  colIdx1: Int,
-  //  colIdx2: Option[Int]=None,
-  //  colIdx3: Option[Int]=None,
-  //): Unit = {
-  //  //mkTile(
-  //  //  tempTile=tempObjTile,
-  //  //  colIdx0=colIdx0,
-  //  //  colIdx1=colIdx1,
-  //  //  colIdx2=colIdx2,
-  //  //  colIdx3=colIdx3,
-  //  //)
-  //  mkTile(
-  //    //tempTile=tempColorMathTile,
-  //    tempTileSlice=tempObjTileSlice,
-  //    pxCoordXStart={
-  //      if (params.objTileWidthRshift == 0) {
-  //        def tempWidthPow = params.objTileSize2dPow.x
-  //        U(f"$tempWidthPow'd0")
-  //      } else {
-  //        //rObjTileCnt(
-  //        //  //params.objTileSize2dPow.x - 1
-  //        //  ////downto 0
-  //        //  ////downto params.objSliceTileWidthPow
-  //        //  //downto params.objTileWidthRshift
-  //        //  //params.objTileWidthRshift - 1 downto 0
-  //        //  params.objSliceTileWidthPow - 1 downto 0
-  //        //).asUInt
-  //        //Cat(
-  //        //  rObjTileCnt(
-  //        //    params.objTileWidthRshift - 1 downto 0
-  //        //  ),
-  //        //  B(
-  //        //    params.objSliceTileWidthPow bits,
-  //        //    default -> False,
-  //        //  )
-  //        //).asUInt
-  //        (
-  //          //rObjTileCnt
-  //          //>> extraObjTileCntWidth
-  //          tempObjTileCntRshiftByExtra
-  //        )(
-  //          //params.objTileWidthRshift - 1 downto 0
-  //          params.objTileSize2dPow.x - 1
-  //          downto params.objTileWidthRshift
-  //        ).asUInt
-  //      }
-  //    },
-  //    pxCoordY=(
-  //      (
-  //        //rObjTileCnt
-  //        //>> extraObjTileCntWidth
-  //        tempObjTileCntRshiftByExtra
-  //      )
-  //      (
-  //        (
-  //          params.objTileSize2dPow.y
-  //          //+ params.objSliceTileWidthPow
-  //          + params.objTileWidthRshift
-  //          - 1
-  //        )
-  //        downto (
-  //          //params.objTileSize2dPow.x
-  //          //params.objSliceTileWidthPow
-  //          params.objTileWidthRshift
-  //        )
-  //      ).asUInt
-  //    ),
-  //    palEntryMemIdxWidth=params.objPalEntryMemIdxWidth,
-  //    colIdx0=colIdx0,
-  //    colIdx1=colIdx1,
-  //    colIdx2=colIdx2,
-  //    colIdx3=colIdx3,
-  //  )
-  //}
+  def mkObjTile(
+    colIdx0: Int,
+    colIdx1: Int,
+    colIdx2: Option[Int]=None,
+    colIdx3: Option[Int]=None,
+  ): Unit = {
+    //mkTile(
+    //  tempTile=tempObjTile,
+    //  colIdx0=colIdx0,
+    //  colIdx1=colIdx1,
+    //  colIdx2=colIdx2,
+    //  colIdx3=colIdx3,
+    //)
+    mkTile(
+      //tempTile=tempColorMathTile,
+      tempTileSlice=tempObjTileSlice,
+      pxCoordXStart={
+        if (params.objTileWidthRshift == 0) {
+          def tempWidthPow = params.objTileSize2dPow.x
+          U(f"$tempWidthPow'd0")
+        } else {
+          //rObjTileCnt(
+          //  //params.objTileSize2dPow.x - 1
+          //  ////downto 0
+          //  ////downto params.objSliceTileWidthPow
+          //  //downto params.objTileWidthRshift
+          //  //params.objTileWidthRshift - 1 downto 0
+          //  params.objSliceTileWidthPow - 1 downto 0
+          //).asUInt
+          //Cat(
+          //  rObjTileCnt(
+          //    params.objTileWidthRshift - 1 downto 0
+          //  ),
+          //  B(
+          //    params.objSliceTileWidthPow bits,
+          //    default -> False,
+          //  )
+          //).asUInt
+          (
+            //rObjTileCnt
+            //>> extraObjTileCntWidth
+            tempObjTileCntRshiftByExtra
+          )(
+            //params.objTileWidthRshift - 1 downto 0
+            params.objTileSize2dPow.x - 1
+            downto params.objTileWidthRshift
+          ).asUInt
+        }
+      },
+      pxCoordY=(
+        (
+          //rObjTileCnt
+          //>> extraObjTileCntWidth
+          tempObjTileCntRshiftByExtra
+        )
+        (
+          (
+            params.objTileSize2dPow.y
+            //+ params.objSliceTileWidthPow
+            + params.objTileWidthRshift
+            - 1
+          )
+          downto (
+            //params.objTileSize2dPow.x
+            //params.objSliceTileWidthPow
+            params.objTileWidthRshift
+          )
+        ).asUInt
+      ),
+      palEntryMemIdxWidth=params.objPalEntryMemIdxWidth,
+      colIdx0=colIdx0,
+      colIdx1=colIdx1,
+      colIdx2=colIdx2,
+      colIdx3=colIdx3,
+    )
+  }
   val tempObjTileCnt = (
     (
       //rObjTileCnt
@@ -2211,62 +2215,64 @@ case class Gpu2dTest(
   tempObjTileSlice.allowOverride
 
   nextObjTileCnt := rObjTileCnt
-  ////when (
-  ////  tempObjTileCnt + 1
-  ////  //< (params.numObjTiles << extraObjTileCntWidth)
-  ////  < params.numObjTiles
-  ////) {
+  //when (
+  //  tempObjTileCnt + 1
+  //  //< (params.numObjTiles << extraObjTileCntWidth)
+  //  < params.numObjTiles
+  //) {
+  //--------
   //  when (pop.objTilePush.fire) {
   //    //--------
   //    // BEGIN: old, geometrical shapes graphics
-  //    //when (tempObjTileCnt === 0) {
-  //    //  //mkObjTile(0, 1)
-  //    //  mkObjTile(0, 0)
-  //    //  //tempObjTileSlice := tempObjTileSlice.getZero
-  //    //} elsewhen (tempObjTileCnt === 1) {
-  //    //  //tempObjTile := tempObjTile.getZero
-  //    //  mkObjTile(1, 2, Some(3), Some(4))
-  //    //  //mkObjTile(1, 1)
-  //    //  //mkObjTile(3, 3)
-  //    //  //mkObjTile(2, 3)
-  //    //} elsewhen (tempObjTileCnt === 2) {
-  //    //  //mkObjTile(2, 3)
-  //    //  //mkObjTile(3, 4)
-  //    //  mkObjTile(2, 2)
-  //    //  //mkObjTile(2, 2)
-  //    //} elsewhen (tempObjTileCnt === 3) {
-  //    //  //mkObjTile(3, 4)
-  //    //  mkObjTile(3, 3)
-  //    //  //mkObjTile(0, 1)
-  //    //} elsewhen (tempObjTileCnt === 4) {
-  //    //  //mkObjTile(4, 5)
-  //    //  mkObjTile(4, 4)
-  //    //} otherwise {
-  //    //  tempObjTileSlice := tempObjTileSlice.getZero
-  //    //  //when (tempObjTileCnt >= params.numObjTiles) {
-  //    //  //  rObjTilePushValid := False
-  //    //  //}
-  //    //}
-  //    when (
-  //      //rObjTileCnt < objTileMem.wordCount
-  //      //if (
-  //      //  (1 << tempObjTileCnt.getWidth) < objTileMem.wordCount
-  //      //) (
-  //      //  True
-  //      //) else (
-  //        Cat(
-  //          U(s"${log2Up(objTileMem.wordCount)}'d0"),
-  //          tempObjTileCnt 
-  //        ).asUInt < objTileMem.wordCount
-  //      //)
-  //    ) {
-  //      tempObjTileSlice := objTileMem.readAsync(
-  //        //address=rObjTileCnt.asUInt.resized
-  //        address=tempObjTileCntRshiftByExtra.asUInt.resized
-  //      )
+  //    when (tempObjTileCnt === 0) {
+  //      //mkObjTile(0, 1)
+  //      mkObjTile(0, 0)
+  //      //tempObjTileSlice := tempObjTileSlice.getZero
+  //    } elsewhen (tempObjTileCnt === 1) {
+  //      //tempObjTile := tempObjTile.getZero
+  //      //mkObjTile(1, 2, Some(3), Some(4))
+  //      mkObjTile(1, 1)
+  //      //mkObjTile(3, 3)
+  //      //mkObjTile(2, 3)
+  //    } elsewhen (tempObjTileCnt === 2) {
+  //      //mkObjTile(2, 3)
+  //      //mkObjTile(3, 4)
+  //      mkObjTile(2, 2)
+  //      //mkObjTile(2, 2)
+  //    } elsewhen (tempObjTileCnt === 3) {
+  //      //mkObjTile(3, 4)
+  //      mkObjTile(3, 3)
+  //      //mkObjTile(0, 1)
+  //    } elsewhen (tempObjTileCnt === 4) {
+  //      //mkObjTile(4, 5)
+  //      //mkObjTile(4, 4)
+  //      mkObjTile(1, 2, Some(3), Some(4))
   //    } otherwise {
   //      tempObjTileSlice := tempObjTileSlice.getZero
+  //      when (tempObjTileCnt >= params.numObjTiles) {
+  //        rObjTilePushValid := False
+  //      }
   //    }
+  //    //when (
+  //    //  //rObjTileCnt < objTileMem.wordCount
+  //    //  //if (
+  //    //  //  (1 << tempObjTileCnt.getWidth) < objTileMem.wordCount
+  //    //  //) (
+  //    //  //  True
+  //    //  //) else (
+  //    //    Cat(
+  //    //      U(s"${log2Up(objTileMem.wordCount)}'d0"),
+  //    //      tempObjTileCnt 
+  //    //    ).asUInt < objTileMem.wordCount
+  //    //  //)
+  //    //) {
+  //    //  tempObjTileSlice := objTileMem.readAsync(
+  //    //    //address=rObjTileCnt.asUInt.resized
+  //    //    address=tempObjTileCntRshiftByExtra.asUInt.resized
+  //    //  )
+  //    //} otherwise {
+  //    //  tempObjTileSlice := tempObjTileSlice.getZero
+  //    //}
   //    //when (
   //    //  //pop.objTilePush.fire
   //    //  ////pop.objTilePush.valid
@@ -2278,10 +2284,11 @@ case class Gpu2dTest(
   //  //  ////tempObjTileSlice := tempObjTileSlice.getZero
   //  //  //nextObjTileCnt := rObjTileCnt
   //  //}
-  ////} otherwise {
-  ////  ////tempObjTileSlice := tempObjTileSlice.getZero
-  ////  //nextObjTileCnt := rObjTileCnt
-  ////}
+  //--------
+  //} otherwise {
+  //  ////tempObjTileSlice := tempObjTileSlice.getZero
+  //  //nextObjTileCnt := rObjTileCnt
+  //}
   //val tempCondExtra = (
   //  //(rObjTileCnt + 1)
   //  //>> extraObjTileCntWidth
@@ -2353,31 +2360,31 @@ case class Gpu2dTest(
     //rObjTilePushValid
     False
   )
-  pop.objTilePush.payload := pop.objTilePush.payload.getZero
-  //pop.objTilePush.payload.tileSlice := tempObjTileSlice
-  //pop.objTilePush.payload.memIdx := (
-  //  //rObjTileCnt.asUInt(pop.objTilePush.payload.memIdx.bitsRange)
-  //  tempObjTileCntRshiftByExtra
-  //    .asUInt(pop.objTilePush.payload.memIdx.bitsRange)
-  //  //rObjTileCnt.asUInt(
-  //  //  rObjTileCnt.high downto extraObjTileCntWidth
-  //  //).resized
-  //  //--------
-  //  //(rObjTileCnt >> extraObjTileCntWidth).asUInt(
-  //  //  pop.objTilePush.payload.memIdx.bitsRange
-  //  //)
-  //  //rObjTileCnt.asUInt
-  //  //--------
-  //  //tempObjTileCnt.asUInt(
-  //  //  tempObjTileCnt.getWidth - 1
-  //  //  .min(pop.objTilePush.payload.memIdx.getWidth)
-  //  //  downto 0
-  //  //)
-  //  //(
-  //  //  pop.objTilePush.payload.memIdx.bitsRange
-  //  //)
-  //    //.resized
-  //)
+  //pop.objTilePush.payload := pop.objTilePush.payload.getZero
+  pop.objTilePush.payload.tileSlice := tempObjTileSlice
+  pop.objTilePush.payload.memIdx := (
+    //rObjTileCnt.asUInt(pop.objTilePush.payload.memIdx.bitsRange)
+    tempObjTileCntRshiftByExtra
+      .asUInt(pop.objTilePush.payload.memIdx.bitsRange)
+    //rObjTileCnt.asUInt(
+    //  rObjTileCnt.high downto extraObjTileCntWidth
+    //).resized
+    //--------
+    //(rObjTileCnt >> extraObjTileCntWidth).asUInt(
+    //  pop.objTilePush.payload.memIdx.bitsRange
+    //)
+    //rObjTileCnt.asUInt
+    //--------
+    //tempObjTileCnt.asUInt(
+    //  tempObjTileCnt.getWidth - 1
+    //  .min(pop.objTilePush.payload.memIdx.getWidth)
+    //  downto 0
+    //)
+    //(
+    //  pop.objTilePush.payload.memIdx.bitsRange
+    //)
+      //.resized
+  )
   //--------
   //def objPalCntWidth = params.numColsInObjPalPow + 1
   //val rObjPalCnt = Reg(UInt(objPalCntWidth bits)) init(0x0)

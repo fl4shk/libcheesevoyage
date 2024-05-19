@@ -217,10 +217,12 @@ case class Gpu2dSimDut(
   //    ctrlPushPayload := gpuPopPayload.col
   //  }
   //)
+  //--------
   val gpu2dBlanking = Gpu2dBlanking(
     params=gpu2dParams,
     vgaTimingInfo=vgaTimingInfo,
   )
+  //--------
   myGpuPopStm <-/< gpuIo.pop
   //vgaCtrl.io.pixels <-/< myGpuPopStm
   //--------
