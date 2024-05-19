@@ -184,11 +184,11 @@ object Gpu2dTest {
       isAffine=false,
       doPipeMemRmw=false
     )
-    val rawArrFgCommon = Gpu2dTestGfx.fgCommonTileArr
-    val rawArrFgGrassland = Gpu2dTestGfx.fgGrasslandTileArr
+    val rawArrFgCommon = Gpu2dTestGfx.objFgCommonTileArr
+    val rawArrFgGrassland = Gpu2dTestGfx.objFgGrasslandTileArr
     val rawArrSampleBg = Gpu2dTestGfx.sampleBgTileArr
     val rawArrSampleFg = Gpu2dTestGfx.sampleFgTileArr
-    val rawArrSampleFg2 = Gpu2dTestGfx.sampleFg2TileArr
+    //val rawArrSampleFg2 = Gpu2dTestGfx.sampleFg2TileArr
     val myPxsSliceWidth = (
       Gpu2dTileSlice.pxsSliceWidth(
         params=params,
@@ -341,8 +341,8 @@ object Gpu2dTest {
         def rgbConfig = params.rgbConfig
         //val tempCol = Rgb(rgbConfig)
         val tempRawCol = (
-          (Gpu2dTestGfx.palette((idx << 1) + 1) << 8)
-          | (Gpu2dTestGfx.palette(idx << 1) << 0)
+          (Gpu2dTestGfx.bgPalette((idx << 1) + 1) << 8)
+          | (Gpu2dTestGfx.bgPalette(idx << 1) << 0)
         )
         val myTempRawColR = (
           tempRawCol >> (5 - rgbConfig.rWidth)
@@ -422,7 +422,7 @@ object Gpu2dTest {
       isAffine=false,
       doPipeMemRmw=false
     )
-    val rawArrFgCommon = Gpu2dTestGfx.fgCommonTileArr
+    val rawArrFgCommon = Gpu2dTestGfx.objFgCommonTileArr
     //val rawArrDbgBlankingFgCommon = Gpu2dTestGfx.dbgBlankingFgCommonTileArr
     //val rawArrFgGrassland = Gpu2dTestGfx.fgGrasslandTileArr
     val myPxsSliceWidth = (
@@ -525,8 +525,8 @@ object Gpu2dTest {
         def rgbConfig = params.rgbConfig
         //val tempCol = Rgb(rgbConfig)
         val tempRawCol = (
-          (Gpu2dTestGfx.palette((idx << 1) + 1) << 8)
-          | (Gpu2dTestGfx.palette(idx << 1) << 0)
+          (Gpu2dTestGfx.objPalette((idx << 1) + 1) << 8)
+          | (Gpu2dTestGfx.objPalette(idx << 1) << 0)
         )
         val myTempRawColR = (
           tempRawCol >> (5 - rgbConfig.rWidth)

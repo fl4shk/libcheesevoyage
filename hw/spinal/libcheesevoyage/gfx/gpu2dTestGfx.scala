@@ -74,8 +74,11 @@ object Gpu2dTestGfx {
     bis.close
     tempArr
   }
-  val palette = doConvert(
-    filename="gfx/bmp/master.pal"
+  val bgPalette = doConvert(
+    filename="gfx/bmp/bg/master.pal"
+  )
+  val objPalette = doConvert(
+    filename="gfx/bmp/obj/master.pal"
   )
   //val fgCommonTileArr = {
   //  val tempArr = new ArrayBuffer[Int]()
@@ -101,7 +104,7 @@ object Gpu2dTestGfx {
     y=240 / 16,
   )
   val sampleBgMapArr = doConvert(
-    filename="gfx/bmp/sample_background.map",
+    filename="gfx/bmp/bg/sample_background.map",
     //optPack=true,
     optMap=(
       //false
@@ -109,7 +112,7 @@ object Gpu2dTestGfx {
     ),
   )
   val sampleBgTileArr = doConvert(
-    filename="gfx/bmp/sample_background.raw"
+    filename="gfx/bmp/bg/sample_background.raw"
   )
   //--------
   val sampleFgMapSize2d = ElabVec2[Int](
@@ -117,7 +120,7 @@ object Gpu2dTestGfx {
     y=240 / 16,
   )
   val sampleFgMapArr = doConvert(
-    filename="gfx/bmp/sample_foreground.map",
+    filename="gfx/bmp/bg/sample_foreground.map",
     //optPack=true,
     optMap=(
       //false
@@ -125,32 +128,32 @@ object Gpu2dTestGfx {
     ),
   )
   val sampleFgTileArr = doConvert(
-    filename="gfx/bmp/sample_foreground.raw"
+    filename="gfx/bmp/bg/sample_foreground.raw"
   )
   //--------
-  val sampleFg2MapSize2d = ElabVec2[Int](
-    x=320 / 16,
-    y=240 / 16,
-  )
-  val sampleFg2MapArr = doConvert(
-    filename="gfx/bmp/sample_foreground_2.map",
-    //optPack=true,
-    optMap=(
-      //false
-      true
-    ),
-  )
-  val sampleFg2TileArr = doConvert(
-    filename="gfx/bmp/sample_foreground_2.raw"
-  )
+  //val sampleFg2MapSize2d = ElabVec2[Int](
+  //  x=320 / 16,
+  //  y=240 / 16,
+  //)
+  //val sampleFg2MapArr = doConvert(
+  //  filename="gfx/bmp/bg/sample_foreground_2.map",
+  //  //optPack=true,
+  //  optMap=(
+  //    //false
+  //    true
+  //  ),
+  //)
+  //val sampleFg2TileArr = doConvert(
+  //  filename="gfx/bmp/bg/sample_foreground_2.raw"
+  //)
   //--------
-  val fgCommonTileArr = doConvert(
+  val objFgCommonTileArr = doConvert(
     filename="gfx/bmp/foreground_common_gfx.raw"
   )
-  val dbgBlankingFgCommonTileArr = doConvert(
+  val objDbgBlankingFgCommonTileArr = doConvert(
     filename="gfx/bmp/dbg_blanking_foreground_common_gfx.raw"
   )
-  val fgGrasslandTileArr = doConvert(
+  val objFgGrasslandTileArr = doConvert(
     filename="gfx/bmp/foreground_grassland_gfx.raw"
   )
 
