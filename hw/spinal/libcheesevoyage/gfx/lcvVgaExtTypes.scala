@@ -77,6 +77,8 @@ case class LcvVgaTimingInfo(
   pixelClk: HertzNumber,
   htiming: LcvVgaTimingHv,
   vtiming: LcvVgaTimingHv,
+  hPolarity: Boolean=false,
+  vPolarity: Boolean=false,
 ) {
   def fbSize2d: ElabVec2[Int] = ElabVec2(x=htiming.visib, y=vtiming.visib)
   //def spinalVgaTimings: VgaTimings(
@@ -84,22 +86,24 @@ case class LcvVgaTimingInfo(
   def driveSpinalVgaTimings(
     clkRate: HertzNumber,
     spinalVgaTimings: VgaTimings,
+    //hPolarity: Boolean=true,
+    //vPolarity: Boolean=true,
   ): Unit = {
     def cpp = LcvVgaCtrl.cpp(
       clkRate=clkRate,
       vgaTimingInfo=this,
     )
     spinalVgaTimings.setAs(
-      hPixels=htiming.visib * cpp,
-      hSync=htiming.sync * cpp,
-      hFront=htiming.front * cpp,
-      hBack=htiming.back * cpp,
-      hPolarity=false,
-      vPixels=vtiming.visib * cpp,
-      vSync=vtiming.sync * cpp,
-      vFront=vtiming.front * cpp,
-      vBack=vtiming.back * cpp,
-      vPolarity=false,
+      hPixels=htiming.visib /* * cpp */,
+      hSync=htiming.sync /* * cpp */,
+      hFront=htiming.front /* * cpp */,
+      hBack=htiming.back /* * cpp */,
+      hPolarity=hPolarity,
+      vPixels=vtiming.visib /* * cpp */,
+      vSync=vtiming.sync /* * cpp */,
+      vFront=vtiming.front /* * cpp */,
+      vBack=vtiming.back /* * cpp */,
+      vPolarity=hPolarity,
     )
   }
 }
