@@ -2582,7 +2582,7 @@ case class Gpu2dTest(
   def playerObjAttrsIdx = 1
   val rPlayerObjAttrsPrio = (
     Reg(UInt(
-      (params.numBgsPow + 16) bits
+      (params.numBgsPow + 2) bits
     )) init(0x0)
   )
   def doObjAttrsInit(): Unit = {
