@@ -60,10 +60,16 @@ case class Gpu2dSimDut(
   //--------
   // BEGIN: `VgaCtrl` stuff
   ctrlIo.softReset := RegNext(False) init(True)
-  vgaTimingInfo.driveSpinalVgaTimings(
-    clkRate=clkRate,
-    spinalVgaTimings=ctrlIo.timings,
-  )
+  if (vgaTimingInfo == LcvVgaTimingInfoMap.map("640x480@60")) {
+    ctrlIo.timings.setAs_h640_v480_r60
+  } else if (vgaTimingInfo == LcvVgaTimingInfoMap.map("1920x1080@60")) {
+    ctrlIo.timings.setAs_h1920_v1080_r60
+  } else {
+    vgaTimingInfo.driveSpinalVgaTimings(
+      clkRate=clkRate,
+      spinalVgaTimings=ctrlIo.timings,
+    )
+  }
   // END: `VgaCtrl` stuff
   //--------
   //ctrlIo.timings.h.colorStart := 0
