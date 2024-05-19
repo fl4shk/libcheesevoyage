@@ -273,7 +273,8 @@ case class LcvVgaCtrlPipelined(
       val cHIncCntArea = new cHIncCnt.Area {
         val nextHCnt = SInt(up(payload.hCnt).getWidth bits)
         val rHCnt = RegNext(nextHCnt) init(
-          nextHCnt.getZero
+          //nextHCnt.getZero
+          -1
           //-2
         )
         nextHCnt := rHCnt
@@ -550,26 +551,28 @@ case class LcvVgaCtrlPipelined(
         }
       }
       val cLastArea = new cLast.Area {
-        //when (up.isFiring) {
-          when (misc.visib) {
-            phys.col := up(payload.col)
-            misc.drawPos.x := (
-              up(payload.hCnt)
-              - vgaTimingInfo.htiming.calcNonVisibSum()
-            )(
-              misc.drawPos.x.bitsRange
-            ).asUInt
-            misc.drawPos.y := (
-              up(payload.vCnt)
-              - vgaTimingInfo.vtiming.calcNonVisibSum()
-            )(
-              misc.drawPos.y.bitsRange
-            ).asUInt
-          } otherwise {
-            phys.col := phys.col.getZero
-            misc.drawPos := misc.drawPos.getZero
+        when (up.isFiring) {
+          when (misc.pixelEn) {
+            when (misc.visib) {
+              phys.col := up(payload.col)
+              misc.drawPos.x := (
+                up(payload.hCnt)
+                - vgaTimingInfo.htiming.calcNonVisibSum()
+              )(
+                misc.drawPos.x.bitsRange
+              ).asUInt
+              misc.drawPos.y := (
+                up(payload.vCnt)
+                - vgaTimingInfo.vtiming.calcNonVisibSum()
+              )(
+                misc.drawPos.y.bitsRange
+              ).asUInt
+            } otherwise {
+              phys.col := phys.col.getZero
+              misc.drawPos := misc.drawPos.getZero
+            }
           }
-        //}
+        }
         //when (up.isValid) {
         //  phys.hsync := up(payload.hsync)
         //  phys.vsync := up(payload.vsync)
@@ -577,6 +580,7 @@ case class LcvVgaCtrlPipelined(
         //misc.visib := up(payload.hIsVisib) && up(payload.vIsVisib)
         //misc.pixelEn := up(payload.clkCnt).msb
         when (up.isValid) {
+          //phys.col := up(payload.col)
           phys.hsync := up(payload.hsync)
           phys.vsync := up(payload.vsync)
           misc.visib := up(payload.hIsVisib) && up(payload.vIsVisib)
