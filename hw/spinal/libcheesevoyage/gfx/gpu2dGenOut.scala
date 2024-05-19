@@ -30,8 +30,9 @@ object Gpu2dSimDutParams {
   //def clkRate = 1250.0 MHz
   //def clkRate = 50.0 MHz
   //--------
-  def clkRate = 75.0 MHz
+  //def clkRate = 75.0 MHz
   //def clkRate = 25.0 MHz
+  def clkRate = 50.0 MHz
   //--------
   //def clkRate = 100.0 MHz
   //def clkRate = 100.7 MHz
@@ -234,10 +235,10 @@ object Gpu2dSimDutParams {
     //y=5,
     //x=4,
     //y=4,
-    //x=1,
-    //y=1,
-    x=2,
-    y=2,
+    x=1,
+    y=1,
+    //x=2,
+    //y=2,
     //y=2,
     //y=3,
     //x=log2Up(2),

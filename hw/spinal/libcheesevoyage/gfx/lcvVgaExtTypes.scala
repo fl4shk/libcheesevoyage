@@ -85,16 +85,20 @@ case class LcvVgaTimingInfo(
     clkRate: HertzNumber,
     spinalVgaTimings: VgaTimings,
   ): Unit = {
+    def cpp = LcvVgaCtrl.cpp(
+      clkRate=clkRate,
+      vgaTimingInfo=this,
+    )
     spinalVgaTimings.setAs(
-      hPixels=htiming.visib,// * (clkRate / pixelClk).toInt,
-      hSync=htiming.sync,// * (clkRate / pixelClk).toInt,
-      hFront=htiming.front,// * (clkRate / pixelClk).toInt,
-      hBack=htiming.back,// * (clkRate / pixelClk).toInt,
+      hPixels=htiming.visib * cpp,
+      hSync=htiming.sync * cpp,
+      hFront=htiming.front * cpp,
+      hBack=htiming.back * cpp,
       hPolarity=false,
-      vPixels=vtiming.visib,// * (clkRate / pixelClk).toInt,
-      vSync=vtiming.sync,// * (clkRate / pixelClk).toInt,
-      vFront=vtiming.front,// * (clkRate / pixelClk).toInt,
-      vBack=vtiming.back,// * (clkRate / pixelClk).toInt,
+      vPixels=vtiming.visib * cpp,
+      vSync=vtiming.sync * cpp,
+      vFront=vtiming.front * cpp,
+      vBack=vtiming.back * cpp,
       vPolarity=false,
     )
   }

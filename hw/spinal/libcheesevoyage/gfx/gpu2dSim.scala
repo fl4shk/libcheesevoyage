@@ -46,7 +46,7 @@ case class Gpu2dSimDut(
   }
   def myVgaTimingsWidth = 12
   //--------
-  val vgaCtrl = LcvVgaCtrlPipelined(
+  val vgaCtrl = LcvVgaCtrl(
     clkRate=clkRate,
     //rgbConfig=physRgbConfig,
     rgbConfig=rgbConfig,
@@ -183,24 +183,24 @@ case class Gpu2dSimDut(
   //--------
   // BEGIN: main code; later
   //ctrlIo.en := gpuIo.ctrlEn
-  //ctrlIo.en := (
-  //  //gpu2dScaleY.io.pop.fire
-  //  //&& 
-  //  //(
-  //  //  RegNextWhen(
-  //  //    True,
-  //  //    gpu2dScaleY.io.pop.valid,
-  //  //  ) init(False),
-  //  //)
-  //  //&& 
-  //  //gpu2dScaleY.io.pop.ctrlEn
-  //  True
-  //  //True
-  //  //gpu2dScaleY.io.pop.ctrlEn
-  //  //gpuIo.pop.valid
-  //  //&& 
-  //  //gpuIo.pop.ctrlEn
-  //)
+  ctrlIo.en := (
+    //gpu2dScaleY.io.pop.fire
+    //&& 
+    //(
+    //  RegNextWhen(
+    //    True,
+    //    gpu2dScaleY.io.pop.valid,
+    //  ) init(False),
+    //)
+    //&& 
+    //gpu2dScaleY.io.pop.ctrlEn
+    True
+    //True
+    //gpu2dScaleY.io.pop.ctrlEn
+    //gpuIo.pop.valid
+    //&& 
+    //gpuIo.pop.ctrlEn
+  )
   //ctrlIo.en := False
 
   //ctrlIo.push.valid := gpuIo.pop.valid
@@ -218,24 +218,24 @@ case class Gpu2dSimDut(
   //  }
   //)
   //--------
-  val gpu2dBlanking = Gpu2dBlanking(
-    params=gpu2dParams,
-    vgaTimingInfo=vgaTimingInfo,
-  )
+  //val gpu2dBlanking = Gpu2dBlanking(
+  //  params=gpu2dParams,
+  //  vgaTimingInfo=vgaTimingInfo,
+  //)
   //--------
   myGpuPopStm <-/< gpuIo.pop
   //vgaCtrl.io.pixels <-/< myGpuPopStm
   //--------
   myGpuPopStm.translateInto(
     //into=vgaCtrl.io.pixels
-    //into=vgaCtrl.io.push
-    into=gpu2dBlanking.io.push,
+    into=vgaCtrl.io.push
+    //into=gpu2dBlanking.io.push,
   )(
     dataAssignment=(o, i) => {
       o := i.col
     }
   )
-  vgaCtrl.io.push <-/< gpu2dBlanking.io.pop 
+  //vgaCtrl.io.push <-/< gpu2dBlanking.io.pop 
   //--------
   ////vgaCtrl.io.pixels << gpuIo.pop
   ////ctrlIo.pixels.valid := gpuIo.pop.valid
@@ -271,11 +271,27 @@ case class Gpu2dSimDut(
   //io.misc.allowOverride
   //io.misc.pastVisib := RegNext(io.misc.visib) init(False)
   //io.misc.visib := ctrlIo.vga.colorEn
+  //def cpp = LcvVgaCtrl.cpp(
+  //  clkRate=clkRate,
+  //  vgaTimingInfo=vgaTimingInfo
+  //)
+  //def clkCntWidth = LcvVgaCtrl.clkCntWidth(
+  //  clkRate=clkRate,
+  //  vgaTimingInfo=vgaTimingInfo
+  //)
   //val rPixelEnCnt = (
-  //  Reg(UInt(log2Up((clkRate / vgaTimingInfo.pixelClk).toInt) + 1 bits))
+  //  //Reg(UInt(log2Up((clkRate / vgaTimingInfo.pixelClk).toInt) + 1 bits))
+  //  Reg(UInt(clkCntWidth + 1 bits))
   //  init(0x0)
   //)
-  //when (rPixelEnCnt + 1 === (clkRate / vgaTimingInfo.pixelClk).toInt) {
+  //println(
+  //  s"$cpp, $clkCntWidth"
+  //)
+  //when (
+  //  //rPixelEnCnt + 1 === (clkRate / vgaTimingInfo.pixelClk).toInt
+  //  //rPixelEnCnt + 1 === cpp - 1
+  //  rPixelEnCnt === cpp - 1
+  //) {
   //  rPixelEnCnt := 0
   //} otherwise {
   //  rPixelEnCnt := rPixelEnCnt + 1
@@ -287,8 +303,9 @@ case class Gpu2dSimDut(
 
 object Gpu2dSim extends App {
   //def clkRate = 125.0 MHz
+  def clkRate = 25.0 MHz
   //def clkRate = 50.0 MHz
-  def clkRate = 75.0 MHz
+  //def clkRate = 75.0 MHz
   //def clkRate = 100.0 MHz
   //def clkRate = 100.7 MHz
   def pixelClk = 25.0 MHz

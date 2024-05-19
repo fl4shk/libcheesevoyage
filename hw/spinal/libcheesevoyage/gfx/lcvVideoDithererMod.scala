@@ -145,8 +145,7 @@ case class LcvVideoDithererIo(
   rgbConfig: RgbConfig,
   fbSize2d: ElabVec2[Int],
   //vgaTimingInfo: LcvVgaTimingInfo,
-) extends Bundle with IMasterSlave
-{
+) extends Bundle with IMasterSlave {
   val push = slave Stream(Rgb(rgbConfig))
   //val push = slave Stream(LcvVideoDithererPopPayload(
   //  //outRgbConfig=outRgbConfig

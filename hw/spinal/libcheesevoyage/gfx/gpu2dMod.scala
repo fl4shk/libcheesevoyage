@@ -5027,6 +5027,9 @@ case class Gpu2d(
         }
       ) - 1
     )
+    //println(
+    //  s"wrBgPipeBakCntStart: $wrBgPipeBakCntStart"
+    //)
     //--------
     // BEGIN: for muxing writes into `objSubLineMemArr`; later 
     case class ObjSubLineMemWriter(
@@ -11879,7 +11882,7 @@ case class Gpu2d(
       //  //)
       //  //--------
       //}
-      when (/*RegNext*/(nWrBgPipeLast.isFiring) /*init(False)*/) {
+      when (RegNext(nWrBgPipeLast.isFiring) init(False)) {
         //val tempLineMemEntry = LineMemEntry()
         //val bgIdx = wrBgPipeLast.bgIdx
         def tempArrIdx = (

@@ -1265,6 +1265,11 @@ case class Gpu2dTest(
       //params.bgTileSize2d.x * 5
       //0
       0
+
+      //params.bgTileSize2d.x * params.bgSize2dInTiles
+      //params.intnlFbSize2d.x - (params.bgTileSize2d.x * 3)
+      //320 - 64
+
       ////0x29
       //(
       //  (1 << tempBgAttrs.scroll.x.getWidth) - 32
