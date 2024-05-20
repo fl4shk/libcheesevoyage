@@ -333,7 +333,7 @@ object Gpu2dSimDutParams {
           * 2
           //* 3
           / (1 << (gpu2dBgTileSize2dPow.x + gpu2dBgTileSize2dPow.y))
-        ) 
+        )
         //* (
         //  //64
         //  2
@@ -352,6 +352,9 @@ object Gpu2dSimDutParams {
       //  / (1 << (gpu2dBgTileSize2dPow.x + gpu2dBgTileSize2dPow.y))
       //)
     }),
+    numColorMathTiles=(
+      Some(32)
+    ),
     //numObjTilesPow=None,
     numObjTiles=(
       //Some(8)
@@ -374,7 +377,8 @@ object Gpu2dSimDutParams {
       //log2Up(256)
     ),
     noColorMath=(
-      true
+      //true
+      false,
     ),
     noAffineBgs=true,
     noAffineObjs=(

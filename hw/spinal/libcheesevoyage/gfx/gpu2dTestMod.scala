@@ -885,6 +885,7 @@ case class Gpu2dTest(
 
   pop.colorMathTilePush.valid := rColorMathTilePushValid
   //pop.colorMathTilePush.payload.tile := tempColorMathTile
+  pop.colorMathTilePush.payload.tileSlice := tempColorMathTileSlice
   pop.colorMathTilePush.payload.memIdx := (
     rColorMathTileCnt.asUInt(
       pop.colorMathTilePush.payload.memIdx.bitsRange
@@ -916,16 +917,19 @@ case class Gpu2dTest(
     .init((1 << params.bgEntryMemIdxWidth) - 1)
   when (rColorMathEntryCnt < (1 << params.bgEntryMemIdxWidth)) {
     when (pop.colorMathEntryPush.fire) {
-      when (rColorMathEntryCnt < 5) {
-        tempColorMathEntry.tileIdx := rColorMathEntryCnt.asUInt.resized
-        tempColorMathEntry.dispFlip.x := False
-        tempColorMathEntry.dispFlip.y := False
-      } otherwise {
-        tempColorMathEntry := tempColorMathEntry.getZero
-        //when (rColorMathEntryCnt >= params.numColorMathEntrys) {
-        //  rColorMathEntryPushValid := False
-        //}
-      }
+      //when (rColorMathEntryCnt < 5) {
+      //  tempColorMathEntry.tileIdx := rColorMathEntryCnt.asUInt.resized
+      //  tempColorMathEntry.dispFlip.x := False
+      //  tempColorMathEntry.dispFlip.y := False
+      //} otherwise {
+      //  tempColorMathEntry := tempColorMathEntry.getZero
+      //  //when (rColorMathEntryCnt >= params.numColorMathEntrys) {
+      //  //  rColorMathEntryPushValid := False
+      //  //}
+      //}
+      tempColorMathEntry.tileIdx := 1
+      tempColorMathEntry.dispFlip.x := False
+      tempColorMathEntry.dispFlip.y := False
       nextColorMathEntryCnt := rColorMathEntryCnt + 1
     } otherwise {
       tempColorMathEntry := tempColorMathEntry.getZero
@@ -956,17 +960,21 @@ case class Gpu2dTest(
   pop.colorMathAttrsPush.valid := True
   pop.colorMathAttrsPush.payload := pop.colorMathAttrsPush.payload.getZero
   //--------
-  def colorMathPalCntWidth = params.numColsInBgPalPow + 1
-  val rColorMathPalCnt = Reg(UInt(colorMathPalCntWidth bits)) init(0x0)
-  val rColorMathPalEntry = Reg(Gpu2dPalEntry(params=params))
-  rColorMathPalEntry.init(rColorMathPalEntry.getZero)
-  val rColorMathPalEntryPushValid = Reg(Bool()) init(True)
+  //def colorMathPalCntWidth = params.numColsInBgPalPow + 1
+  //val rColorMathPalCnt = Reg(UInt(colorMathPalCntWidth bits)) init(0x0)
+  //val rColorMathPalEntry = Reg(Gpu2dPalEntry(params=params))
+  //rColorMathPalEntry.init(rColorMathPalEntry.getZero)
+  //val rColorMathPalEntryPushValid = Reg(Bool()) init(True)
 
-  //pop.colorMathPalEntryPush.valid := True
-  pop.colorMathPalEntryPush.valid := rColorMathPalEntryPushValid
-  pop.colorMathPalEntryPush.payload.bgPalEntry := rColorMathPalEntry
-  //pop.colorMathPalEntryPush.payload.memIdx := 1
-  pop.colorMathPalEntryPush.payload.memIdx := rColorMathPalCnt.resized
+  ////pop.colorMathPalEntryPush.valid := True
+  //pop.colorMathPalEntryPush.valid := rColorMathPalEntryPushValid
+  //pop.colorMathPalEntryPush.payload.bgPalEntry := rColorMathPalEntry
+  ////pop.colorMathPalEntryPush.payload.memIdx := 1
+  //pop.colorMathPalEntryPush.payload.memIdx := rColorMathPalCnt.resized
+  pop.colorMathPalEntryPush.valid := False
+  pop.colorMathPalEntryPush.payload := (
+    pop.colorMathPalEntryPush.payload.getZero
+  )
 
   //otherwise {
   //}
@@ -2455,6 +2463,7 @@ case class Gpu2dTest(
   val rObjAttrsEntryPushValid = Reg(Bool()) init(True)
   if (!params.noColorMath) {
     tempObjAttrs.colorMathInfo := tempObjAttrs.colorMathInfo.getZero
+    tempObjAttrs.colorMathInfo.allowOverride
   }
 
   //val snesCtrlReader = SnesCtrlReader(

@@ -428,6 +428,8 @@ object Gpu2dSim extends App {
       //y=log2Up(4),
       //x=log2Up(2),
       //y=log2Up(2),
+      //x=log2Up(1),
+      //y=log2Up(1),
     ),
     objTileSize2dPow=ElabVec2[Int](
       x=log2Up(16),
@@ -503,7 +505,10 @@ object Gpu2dSim extends App {
       log2Up(64)
       //log2Up(256)
     ),
-    noColorMath=true,
+    noColorMath=(
+      //true
+      false
+    ),
     noAffineBgs=true,
     noAffineObjs=(
       true

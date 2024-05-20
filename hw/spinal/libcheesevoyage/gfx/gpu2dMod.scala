@@ -117,8 +117,8 @@ case class Gpu2dParams(
   //bgTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
   //colorMathTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
   //objTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
-  bgTileMemInit: Option[Array[ArrayBuffer[Gpu2dTileSlice]]]=None,
-  colorMathTileMemInit: Option[Array[ArrayBuffer[Gpu2dTileSlice]]]=None,
+  bgTileMemInit: Option[ArrayBuffer[Gpu2dTileSlice]]=None,
+  colorMathTileMemInit: Option[ArrayBuffer[Gpu2dTileSlice]]=None,
   objTileMemInit: Option[ArrayBuffer[Gpu2dTileSlice]]=None,
   objAffineTileMemInit: Option[ArrayBuffer[UInt]]=None,
   //objAffineTileMemInit: Option[ArrayBuffer[BigInt]]=None,
@@ -907,8 +907,8 @@ object DefaultGpu2dParams {
     //bgTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
     //colorMathTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
     //objTileMemInitBigInt: Option[ArrayBuffer[BigInt]]=None,
-    bgTileMemInit: Option[Array[ArrayBuffer[Gpu2dTileSlice]]]=None,
-    colorMathTileMemInit: Option[Array[ArrayBuffer[Gpu2dTileSlice]]]=None,
+    bgTileMemInit: Option[ArrayBuffer[Gpu2dTileSlice]]=None,
+    colorMathTileMemInit: Option[ArrayBuffer[Gpu2dTileSlice]]=None,
     objTileMemInit: Option[ArrayBuffer[Gpu2dTileSlice]]=None,
     objAffineTileMemInit: Option[ArrayBuffer[UInt]]=None,
     //objAffineTileMemInit: Option[ArrayBuffer[BigInt]]=None,
@@ -1463,7 +1463,9 @@ case class Gpu2dBgEntryStmPayload(
   )
 
   // `Mem` index
-  val memIdx = UInt(params.bgEntryMemIdxWidth bits)
+  val memIdx = UInt(
+    params.bgEntryMemIdxWidth bits
+  )
   //--------
 }
 
@@ -2133,7 +2135,7 @@ case class Gpu2d(
         init={
           params.bgTileMemInit match {
             case Some(bgTileMemInit) => {
-              Some(bgTileMemInit(jdx))
+              Some(bgTileMemInit/*(jdx)*/)
             }
             case None => {
               Some(
@@ -2912,22 +2914,35 @@ case class Gpu2d(
               //Some(Gpu2dTest.bgTileMemInit(params=params))
               params.colorMathTileMemInit match {
                 case Some(colorMathTileMemInit) => {
-                  Some(colorMathTileMemInit(jdx))
+                  Some(colorMathTileMemInit/*(jdx)*/)
                 }
                 case None => {
                   //Some(Array.fill(tempNumColorMathTileSlices)(
-                  //  (0)
-                  //).toSeq)
+                  //  BigInt(0)
+                  //))
                   //Some(Gpu2dTest.bgTileMemInit(params=params))
-                  Some(
-                    //Gpu2dTest.doSplitBgTileMemInit(
-                    //  params=params,
-                    //  gridIdx=jdx,
-                    //  //isColorMath=true,
-                    //)
-                    myBgTileMemInit//(jdx)
-                  )
+                  //Some(
+                  //  //Gpu2dTest.doSplitBgTileMemInit(
+                  //  //  params=params,
+                  //  //  gridIdx=jdx,
+                  //  //  //isColorMath=true,
+                  //  //)
+                  //  myBgTileMemInit//(jdx)
+                  //)
                   //None
+                  val temp = new ArrayBuffer[Gpu2dTileSlice]()
+                  for (
+                    //idx <- 0 until params.numColorMathTiles
+                    idx <- 0 until tempNumColorMathTileSlices
+                  ) {
+                    //temp += BigInt(0)
+                    temp += Gpu2dTileSlice(
+                      params=params,
+                      isObj=false,
+                      isAffine=false,
+                    ).getZero
+                  }
+                  Some(temp)
                 }
               }
             },
@@ -3048,10 +3063,12 @@ case class Gpu2d(
             params=params,
             isColorMath=true,
           ),
-          depth=params.numTilesPerBg,
+          depth=(
+            params.numTilesPerBg >> 1
+          ),
           initBigInt={
             val temp = new ArrayBuffer[BigInt]()
-            for (_ <- 0 until params.numTilesPerBg) {
+            for (_ <- 0 until (params.numTilesPerBg >> 1)) {
               temp += BigInt(0)
             }
             Some(temp)
@@ -3074,7 +3091,9 @@ case class Gpu2d(
           colorMathEntryPush.fire
         )
         colorMathEntryMemArr(jdx).io.wrAddr := (
-          colorMathEntryPush.memIdx
+          colorMathEntryPush.memIdx(
+            colorMathEntryPush.memIdx.high downto 1
+          )
         )
         colorMathEntryMemArr(jdx).io.wrData := (
           colorMathEntryPush.bgEntry
@@ -5772,6 +5791,9 @@ case class Gpu2d(
       ret.bgAttrs := ret.bgAttrs.getZero
       //ret.tilePxsCoord := ret.tilePxsCoord.getZero
       ret.postStage0 := ret.postStage0.getZero
+      if (!noColorMath) {
+        ret.colorMath := ret.colorMath.getZero
+      }
       ret
     }
 
@@ -9827,10 +9849,13 @@ case class Gpu2d(
       //) => 
       {
         def idx = 1
-        for (kind <- 0 until params.totalNumBgKinds) {
+        val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
+        for (
+          kind <- 0 until params.totalNumBgKinds
+          //kind <- 0 until 1
+        ) {
           //val tempInp = stageData.pipeIn(idx)
           //val tempOutp = stageData.pipeOut(idx)
-          val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
           def tempInp = (
             if (kind == 0) {
               pipeIn.postStage0
@@ -9990,10 +10015,13 @@ case class Gpu2d(
       //) => 
       {
         def idx = 2
-        for (kind <- 0 until params.totalNumBgKinds) {
+        val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
+        for (
+          kind <- 0 until params.totalNumBgKinds
+          //kind <- 0 until 1
+        ) {
           //val tempInp = stageData.pipeIn(idx)
           //val tempOutp = stageData.pipeOut(idx)
-          val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
           def tempInp = (
             if (kind == 0) {
               pipeIn.postStage0
@@ -10042,6 +10070,10 @@ case class Gpu2d(
               //arr.io.rdEn.allowOverride
               arr.io.rdAddr := 0
               //arr.io.rdAddr.allowOverride
+              if (kind != 0) {
+                arr.io.rdEn.allowOverride
+                arr.io.rdAddr.allowOverride
+              }
             }
           }
           switch (pipeIn.stage0.bgIdx) {
@@ -10305,10 +10337,13 @@ case class Gpu2d(
       //  ) => 
       {
         def idx = 3
-        for (kind <- 0 until params.totalNumBgKinds) {
+        val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
+        for (
+          kind <- 0 until params.totalNumBgKinds
+          //kind <- 0 until 1
+        ) {
           //val tempInp = stageData.pipeIn(idx)
           //val tempOutp = stageData.pipeOut(idx)
-          val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
           def tempInp = (
             if (kind == 0) {
               pipeIn.postStage0
@@ -10585,10 +10620,13 @@ case class Gpu2d(
       //) => 
       {
         def idx = 4
-        for (kind <- 0 until params.totalNumBgKinds) {
+        val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
+        for (
+          kind <- 0 until params.totalNumBgKinds
+          //kind <- 0 until 1
+        ) {
           //val tempInp = stageData.pipeIn(idx)
           //val tempOutp = stageData.pipeOut(idx)
-          val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
           def tempInp = (
             if (kind == 0) {
               pipeIn.postStage0
@@ -10625,10 +10663,12 @@ case class Gpu2d(
       //  ) => 
       {
         def idx = 5
-        for (kind <- 0 until params.totalNumBgKinds) {
+        val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
+        for (
+          kind <- 0 until params.totalNumBgKinds
+        ) {
           //val tempInp = stageData.pipeIn(idx)
           //val tempOutp = stageData.pipeOut(idx)
-          val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
           def tempInp = (
             if (kind == 0) {
               pipeIn.postStage0
@@ -10887,7 +10927,7 @@ case class Gpu2d(
                             //    downto 0
                             //  ),
                             //).asUInt.resized,
-                            someTempRdAddr
+                            someTempRdAddr.resized
                           //  {
                           //    val slicePos = (
                           //      log2Up(params.bgSize2dInPxs.y)
@@ -10971,10 +11011,13 @@ case class Gpu2d(
       //) => 
       {
         def idx = 6
-        for (kind <- 0 until params.totalNumBgKinds) {
+        val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
+        for (
+          kind <- 0 until params.totalNumBgKinds
+          //kind <- 0 until 1
+        ) {
           //val tempInp = stageData.pipeIn(idx)
           //val tempOutp = stageData.pipeOut(idx)
-          val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
           def tempInp = (
             if (kind == 0) {
               pipeIn.postStage0
@@ -11529,10 +11572,13 @@ case class Gpu2d(
       //) => 
       {
         def idx = 7
-        for (kind <- 0 until params.totalNumBgKinds) {
+        val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
+        for (
+          kind <- 0 until params.totalNumBgKinds
+          //kind <- 0 until 1
+        ) {
           //val tempInp = stageData.pipeIn(idx)
           //val tempOutp = stageData.pipeOut(idx)
-          val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
           def tempInp = (
             if (kind == 0) {
               pipeIn.postStage0
@@ -11561,10 +11607,13 @@ case class Gpu2d(
       //) => 
       {
         def idx = 8
-        for (kind <- 0 until params.totalNumBgKinds) {
+        val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
+        for (
+          kind <- 0 until params.totalNumBgKinds
+          //kind <- 0 until 1
+        ) {
           //val tempInp = stageData.pipeIn(idx)
           //val tempOutp = stageData.pipeOut(idx)
-          val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
           def tempInp = (
             if (kind == 0) {
               pipeIn.postStage0
@@ -11596,10 +11645,13 @@ case class Gpu2d(
       //) => 
       {
         def idx = 9
-        for (kind <- 0 until params.totalNumBgKinds) {
+        val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
+        for (
+          kind <- 0 until params.totalNumBgKinds
+          //kind <- 0 until 1
+        ) {
           //val tempInp = stageData.pipeIn(idx)
           //val tempOutp = stageData.pipeOut(idx)
-          val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
           def tempInp = (
             if (kind == 0) {
               pipeIn.postStage0
@@ -11638,10 +11690,13 @@ case class Gpu2d(
       //) => 
       {
         def idx = 10
-        for (kind <- 0 until params.totalNumBgKinds) {
+        val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
+        for (
+          kind <- 0 until params.totalNumBgKinds
+          //kind <- 0 until 1
+        ) {
           //val tempInp = stageData.pipeIn(idx)
           //val tempOutp = stageData.pipeOut(idx)
-          val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
           def tempInp = (
             if (kind == 0) {
               pipeIn.postStage0
