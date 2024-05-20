@@ -5792,6 +5792,7 @@ case class Gpu2d(
       //ret.tilePxsCoord := ret.tilePxsCoord.getZero
       ret.postStage0 := ret.postStage0.getZero
       if (!noColorMath) {
+        ret.colorMathAttrs := ret.colorMathAttrs.getZero
         ret.colorMath := ret.colorMath.getZero
       }
       ret
@@ -9863,6 +9864,13 @@ case class Gpu2d(
               pipeIn.colorMath
             }
           )
+          def tempAttrs = (
+            if (kind == 0) {
+              pipeIn.bgAttrs
+            } else {
+              pipeIn.colorMathAttrs
+            }
+          )
           def tempOutp = (
             if (kind == 0) {
               pipeOut.postStage0
@@ -9883,7 +9891,7 @@ case class Gpu2d(
                     //  params.bgTileSize2dPow.x + 1
                     //  downto params.bgTileSize2dPow.x
                     //)(0)
-                    _(0) === pipeIn.bgAttrs.scroll.x(
+                    _(0) === tempAttrs.scroll.x(
                       params.bgTileSize2dPow.x - 1
                     )
                   )
@@ -9900,7 +9908,7 @@ case class Gpu2d(
                     //  params.bgTileSize2dPow.x + 1
                     //  downto params.bgTileSize2dPow.x
                     //)(0)
-                    _(0) =/= pipeIn.bgAttrs.scroll.x(
+                    _(0) =/= tempAttrs.scroll.x(
                       params.bgTileSize2dPow.x - 1
                     )
                   )
@@ -9939,14 +9947,14 @@ case class Gpu2d(
                       ),
                       U(f"$tempBgTileWidthPow'd$x")
                     ).asUInt
-                    - pipeIn.bgAttrs.scroll.x
+                    - tempAttrs.scroll.x
 
                     //+ tempInp.bgAttrs.scroll.x
                   )
                   tempOutp.pxPos(x).y := (
                     (
                       pipeIn.lineNum
-                      - pipeIn.bgAttrs.scroll.y
+                      - tempAttrs.scroll.y
                       //+ tempInp.bgAttrs.scroll.y
                     )
                     //(
@@ -10029,6 +10037,13 @@ case class Gpu2d(
               pipeIn.colorMath
             }
           )
+          def tempAttrs = (
+            if (kind == 0) {
+              pipeIn.bgAttrs
+            } else {
+              pipeIn.colorMathAttrs
+            }
+          )
           def tempOutp = (
             if (kind == 0) {
               pipeOut.postStage0
@@ -10037,7 +10052,7 @@ case class Gpu2d(
             }
           )
           tempOutp.stage2.fbRdAddrMultTileMemBaseAddr := (
-            pipeIn.bgAttrs.fbAttrs.tileMemBaseAddr
+            tempAttrs.fbAttrs.tileMemBaseAddr
             * (
               params.intnlFbSize2d.y
               * (params.intnlFbSize2d.x / params.bgTileSize2d.x)
@@ -10351,6 +10366,13 @@ case class Gpu2d(
               pipeIn.colorMath
             }
           )
+          def tempAttrs = (
+            if (kind == 0) {
+              pipeIn.bgAttrs
+            } else {
+              pipeIn.colorMathAttrs
+            }
+          )
           def tempOutp = (
             if (kind == 0) {
               pipeOut.postStage0
@@ -10634,6 +10656,13 @@ case class Gpu2d(
               pipeIn.colorMath
             }
           )
+          def tempAttrs = (
+            if (kind == 0) {
+              pipeIn.bgAttrs
+            } else {
+              pipeIn.colorMathAttrs
+            }
+          )
           def tempOutp = (
             if (kind == 0) {
               pipeOut.postStage0
@@ -10674,6 +10703,13 @@ case class Gpu2d(
               pipeIn.postStage0
             } else {
               pipeIn.colorMath
+            }
+          )
+          def tempAttrs = (
+            if (kind == 0) {
+              pipeIn.bgAttrs
+            } else {
+              pipeIn.colorMathAttrs
             }
           )
           def tempOutp = (
@@ -10775,14 +10811,14 @@ case class Gpu2d(
                       {
                         def tempTileWidth = params.bgTileSize2dPow.x
                         U(f"$tempTileWidth'd$x")
-                      } - pipeIn.bgAttrs.scroll.x
+                      } - tempAttrs.scroll.x
                     )(tempTilePxsPos(x).x.bitsRange)
                   )
                   tempTilePxsPos(x).y := (
                     (
                       pipeIn.lineNum
-                      //+ tempInp.bgAttrs.scroll.y
-                      - pipeIn.bgAttrs.scroll.y
+                      //+ tempAttrs.scroll.y
+                      - tempAttrs.scroll.y
                     ).resized
                   )
 
@@ -10848,7 +10884,7 @@ case class Gpu2d(
                 ): Unit = {
                   someTempRdAddr := (
                     Mux[UInt](
-                      !pipeIn.bgAttrs.fbAttrs.doIt,
+                      !tempAttrs.fbAttrs.doIt,
                       Cat(
                         tempInp.bgEntry(
                           //x
@@ -10862,7 +10898,7 @@ case class Gpu2d(
                       // later (see output Verilog from lost Spinal
                       // code)
                       //Cat(
-                      //  pipeIn.bgAttrs.fbAttrs.tileMemBaseAddr,
+                      //  tempAttrs.fbAttrs.tileMemBaseAddr,
                       //  tempInp.pxPos(0).y,
                       //  (
                       //    tempInp.pxPos(
@@ -10879,7 +10915,7 @@ case class Gpu2d(
                   )
                   //switch (
                   //  ////Mux[UInt](
-                  //  ////  !pipeIn.bgAttrs.fbAttrs.doIt,
+                  //  ////  !tempAttrs.fbAttrs.doIt,
                   //    //--------
                   //    someTempRdAddr(
                   //      //someTempRdAddr.high
@@ -10916,7 +10952,7 @@ case class Gpu2d(
                         ).io.rdAddr := (
                           //someTempRdAddr.resized
                           //Mux[UInt](
-                          //  !pipeIn.bgAttrs.fbAttrs.doIt,
+                          //  !tempAttrs.fbAttrs.doIt,
                             //Cat(
                             //  someTempRdAddr(
                             //    someTempRdAddr.high
@@ -11023,6 +11059,13 @@ case class Gpu2d(
               pipeIn.postStage0
             } else {
               pipeIn.colorMath
+            }
+          )
+          def tempAttrs = (
+            if (kind == 0) {
+              pipeIn.bgAttrs
+            } else {
+              pipeIn.colorMathAttrs
             }
           )
           def tempOutp = (
@@ -11586,6 +11629,13 @@ case class Gpu2d(
               pipeIn.colorMath
             }
           )
+          def tempAttrs = (
+            if (kind == 0) {
+              pipeIn.bgAttrs
+            } else {
+              pipeIn.colorMathAttrs
+            }
+          )
           def tempOutp = (
             if (kind == 0) {
               pipeOut.postStage0
@@ -11619,6 +11669,13 @@ case class Gpu2d(
               pipeIn.postStage0
             } else {
               pipeIn.colorMath
+            }
+          )
+          def tempAttrs = (
+            if (kind == 0) {
+              pipeIn.bgAttrs
+            } else {
+              pipeIn.colorMathAttrs
             }
           )
           def tempOutp = (
@@ -11657,6 +11714,13 @@ case class Gpu2d(
               pipeIn.postStage0
             } else {
               pipeIn.colorMath
+            }
+          )
+          def tempAttrs = (
+            if (kind == 0) {
+              pipeIn.bgAttrs
+            } else {
+              pipeIn.colorMathAttrs
             }
           )
           def tempOutp = (
@@ -11702,6 +11766,13 @@ case class Gpu2d(
               pipeIn.postStage0
             } else {
               pipeIn.colorMath
+            }
+          )
+          def tempAttrs = (
+            if (kind == 0) {
+              pipeIn.bgAttrs
+            } else {
+              pipeIn.colorMathAttrs
             }
           )
           def tempOutp = (
@@ -11847,7 +11918,7 @@ case class Gpu2d(
           //    ) && (
           //      !tempInp.bakCnt.msb
           //    )
-          //  ) //&& tempInp.bgAttrs.visib
+          //  ) //&& tempAttrs.visib
           //  //bgIdx === 0
           //) {
           //  setTempLineMemEntry()
@@ -12065,15 +12136,15 @@ case class Gpu2d(
         //  //  dbgBgLineMemVec(
         //  //    //(
         //  //      rWrLineMemArrIdx
-        //  //    //  + wrBgPipeLast.bgAttrs.scroll.y
+        //  //    //  + tempAttrs.scroll.y
         //  //    //)(rWrLineMemArrIdx.bitsRange)
         //  //  )(
         //  //    //wrBgPipeLast.pxPos(x).x
         //  //    //wrBgPipeLast.lineMemEntry(x).addr
         //  //    //(
         //  //      //wrBgPipeLast.pxPos(x).x
-        //  //      //+ wrBgPipeLast.bgAttrs.scroll.x
-        //  //      //- wrBgPipeLast.bgAttrs.scroll.x
+        //  //      //+ tempAttrs.scroll.x
+        //  //      //- tempAttrs.scroll.x
         //  //    //)(wrBgPipeLast.pxPos(x).x.bitsRange)
         //  //    wrBgPipeLast.lineMemEntry(x).addr
         //  //  ) := (
@@ -12090,8 +12161,8 @@ case class Gpu2d(
         //      pxPosX=(
         //        //(
         //        //  wrBgPipeLast.pxPos(x).x
-        //        //  //+ wrBgPipeLast.bgAttrs.scroll.x
-        //        //  //- wrBgPipeLast.bgAttrs.scroll.x
+        //        //  //+ tempAttrs.scroll.x
+        //        //  //- tempAttrs.scroll.x
         //        //)//(wrBgPipeLast.pxPos(x).x.bitsRange)
         //        wrBgPipeLast.lineMemEntry(x).addr
         //      ),
@@ -12110,8 +12181,8 @@ case class Gpu2d(
         //      //pxPosX=tempWrBgPipeLineMemAddr,
         //      //pxPosX=(
         //      //  wrBgPipeLast.pxPos(x).x
-        //      //  //+ wrBgPipeLast.bgAttrs.scroll.x
-        //      //  //- wrBgPipeLast.bgAttrs.scroll.x
+        //      //  //+ tempAttrs.scroll.x
+        //      //  //- tempAttrs.scroll.x
         //      //)//(wrBgPipeLast.pxPos(x).x.bitsRange),
         //      ////pxPosX=wrBgPipeLast.lineMemEntry(x).addr
         //      pxPosX=(

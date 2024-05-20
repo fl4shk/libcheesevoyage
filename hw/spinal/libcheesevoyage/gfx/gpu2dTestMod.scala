@@ -917,19 +917,23 @@ case class Gpu2dTest(
     .init((1 << params.bgEntryMemIdxWidth) - 1)
   when (rColorMathEntryCnt < (1 << params.bgEntryMemIdxWidth)) {
     when (pop.colorMathEntryPush.fire) {
-      //when (rColorMathEntryCnt < 5) {
-      //  tempColorMathEntry.tileIdx := rColorMathEntryCnt.asUInt.resized
-      //  tempColorMathEntry.dispFlip.x := False
-      //  tempColorMathEntry.dispFlip.y := False
-      //} otherwise {
-      //  tempColorMathEntry := tempColorMathEntry.getZero
-      //  //when (rColorMathEntryCnt >= params.numColorMathEntrys) {
-      //  //  rColorMathEntryPushValid := False
-      //  //}
-      //}
-      tempColorMathEntry.tileIdx := 1
-      tempColorMathEntry.dispFlip.x := False
-      tempColorMathEntry.dispFlip.y := False
+      when (
+        //rColorMathEntryCnt < 5
+        rColorMathEntryCnt < params.bgSize2dInTiles.x
+      ) {
+        //tempColorMathEntry.tileIdx := rColorMathEntryCnt.asUInt.resized
+        tempColorMathEntry.tileIdx := 1
+        tempColorMathEntry.dispFlip.x := False
+        tempColorMathEntry.dispFlip.y := False
+      } otherwise {
+        tempColorMathEntry := tempColorMathEntry.getZero
+        //when (rColorMathEntryCnt >= params.numColorMathEntrys) {
+        //  rColorMathEntryPushValid := False
+        //}
+      }
+      //tempColorMathEntry.tileIdx := 1
+      //tempColorMathEntry.dispFlip.x := False
+      //tempColorMathEntry.dispFlip.y := False
       nextColorMathEntryCnt := rColorMathEntryCnt + 1
     } otherwise {
       tempColorMathEntry := tempColorMathEntry.getZero
@@ -959,6 +963,15 @@ case class Gpu2dTest(
 
   pop.colorMathAttrsPush.valid := True
   pop.colorMathAttrsPush.payload := pop.colorMathAttrsPush.payload.getZero
+  pop.colorMathAttrsPush.payload.allowOverride
+  pop.colorMathAttrsPush.bgAttrs.scroll.x := (
+    //params.bgTileSize2d.x * 1
+    0
+  )
+  pop.colorMathAttrsPush.bgAttrs.scroll.y := (
+    //params.bgTileSize2d.y * 1
+    0
+  )
   //--------
   //def colorMathPalCntWidth = params.numColsInBgPalPow + 1
   //val rColorMathPalCnt = Reg(UInt(colorMathPalCntWidth bits)) init(0x0)
@@ -1244,12 +1257,14 @@ case class Gpu2dTest(
     isColorMath=false,
   )
   //tempBgAttrs.colorMathInfo := tempBgAttrs.colorMathInfo.getZero
+  //tempBgAttrs.fbAttrs.doIt := True
+  //tempBgAttrs.fbAttrs.tileMemBaseAddr := 0
   if (!params.noColorMath) {
     tempBgAttrs.colorMathInfo.doIt := True
     tempBgAttrs.colorMathInfo.kind := (
-      Gpu2dColorMathKind.add
+      //Gpu2dColorMathKind.add
       //Gpu2dColorMathKind.sub
-      //Gpu2dColorMathKind.avg
+      Gpu2dColorMathKind.avg
       //Gpu2dColorMathKind.avg
     )
   } else {
