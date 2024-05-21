@@ -215,6 +215,9 @@ case class PipeMemRmwDualRdTypeDisabled[
   //): Unit = {
   //}
 }
+//case class PipeMemRmwClearPaylow(
+//  wordCount: Int
+//)
 case class PipeMemRmwIo[
   WordT <: Data,
   ModT <: PipeMemRmwPayloadBase[WordT],
@@ -232,6 +235,7 @@ case class PipeMemRmwIo[
   //dualRdSize: Int=0,
   optDualRd: Boolean=false,
   optEnableModDuplicate: Boolean=true,
+  optEnableClear: Boolean=false,
 ) extends Bundle {
   //--------
   //val front = slave(
@@ -239,6 +243,11 @@ case class PipeMemRmwIo[
   //    wordCount=wordCount,
   //  ))
   //)
+  val clear = (optEnableClear) generate (
+    slave(Flow(
+      UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
+    ))
+  )
 
   // front of the pipeline (push)
   val front = slave(Stream(modType()))
@@ -314,6 +323,7 @@ case class PipeMemRmw[
   //optExtraCycleLatency: Boolean=false,
   //optDisableModRd: Boolean=false,
   optEnableModDuplicate: Boolean=true,
+  optEnableClear: Boolean=false,
 )
 //(
 //  getModAddr: (
@@ -357,6 +367,7 @@ extends Component {
     //dualRdSize=dualRdSize,
     optDualRd=optDualRd,
     optEnableModDuplicate=optEnableModDuplicate,
+    optEnableClear=optEnableClear,
   )
   //--------
   def mkMem() = {
@@ -1563,11 +1574,20 @@ extends Component {
       dbgDoWrite := False
     }
     val extDbgDoWriteCond = (
-      if (optEnableModDuplicate) {
-        upExt(0).hazardId.msb
-      } else {
-        True
-      }
+      (
+        if (optEnableModDuplicate) (
+          upExt(0).hazardId.msb
+        ) else (
+          True
+        )
+      ) 
+      //|| (
+      //  if (optEnableClear) (
+      //    io.clear.valid
+      //  ) else (
+      //    False
+      //  )
+      //)
     )
     when (
       !clockDomain.isResetActive
@@ -1593,9 +1613,39 @@ extends Component {
       //)
     }
     memWriteAll(
-      address=upExt(0).memAddr,
-      data=upExt(0).modMemWord,
-      enable=dbgDoWrite,
+      address=(
+        if (optEnableClear) (
+          Mux[UInt](
+            io.clear.fire,
+            io.clear.payload,
+            upExt(0).memAddr,
+          )
+        ) else (
+          upExt(0).memAddr
+        )
+      ),
+      data=(
+        //upExt(0).modMemWord
+        if (optEnableClear) (
+          Mux[WordT](
+            io.clear.fire,
+            wordType().getZero,
+            upExt(0).modMemWord,
+          )
+        ) else (
+          upExt(0).modMemWord
+        )
+      ),
+      enable=(
+        dbgDoWrite
+        || (
+          if (optEnableClear) (
+            io.clear.fire
+          ) else (
+            False
+          )
+        )
+      ),
     )
     when (
       up.isValid
