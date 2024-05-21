@@ -8,283 +8,29 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math._
 
 import libcheesevoyage.Config
-
-
-//case class PipeMemWrPayload[
-//  T <: Data
-//](
-//  wordType: HardType[T],
-//  wordCount: Int,
-//) extends Bundle {
-//  val data = wordType()
-//  val addr = UInt(log2Up(wordCount) bits)
-//}
-//case class PipeMemRd[
-//  T <: Data
-//](
-//  wordType: HardType[T],
-//  wordCount: Int,
-//) extends Bundle with IMasterSlave {
-//  val addr = in UInt(log2Up(wordCount) bits)
-//  val data = out(wordType())
-//
-//  def asMaster(): Unit = {
-//    out(addr)
-//    in(data)
-//  }
-//}
-//
-//case class PipeMemIo[
-//  T <: Data
-//](
-//  wordType: HardType[T],
-//  wordCount: Int,
-//) extends Bundle with IMasterSlave {
-//  val wr = slave(
-//    Stream(
-//      PipeMemWrPayload(
-//        wordType=wordType,
-//        wordCount=wordCount
-//      )
-//    )
-//  )
-//  //val rdPush = slave(Stream(UInt(log2Up(wordCount) bits)))
-//  //val rdPop = master(Stream(wordType()))
-//  val rd = master(
-//    PipeMemRd(
-//      wordType=wordType(),
-//      wordCount=wordCount,
-//    )
-//  )
-//
-//  def asMaster(): Unit = {
-//    master(wr)
-//    slave(rd)
-//    //master(rdPush)
-//    //slave(rdPop)
-//  }
-//}
-//
-//case class PipeMem[
-//  T <: Data
-//](
-//  wordType: HardType[T],
-//  wordCount: Int,
-//) extends Component {
-//  val io = slave(
-//    PipeMemIo(
-//      wordType=wordType(),
-//      wordCount=wordCount,
-//    )
-//  )
-//  val pipe = PipeHelper(linkArr=PipeHelper.mkLinkArr())
-//
-//  val mem = Mem(
-//    wordType=wordType(),
-//    wordCount=wordCount,
-//  )
-//  mem.write(
-//    address=io.wr.addr,
-//    data=io.wr.data,
-//    enable=io.wr.fire,
-//  )
-//  //io.rdPop.valid := True
-//  io.rd.data := mem.readSync(
-//    address=io.rd.addr,
-//  )
-//
-//  Builder(pipe.linkArr.toSeq)
-//}
-//case class PipeMemTestWordType(
-//  wordWidth: Int,
-//  wordCount: Int,
-//  idWidth: Int,
-//) extends Bundle {
-//}
-
 //--------
-//case class PipeMemWrPayload[
+//case class PipeHazardHandlerIo[
 //  T <: Data,
 //](
-//  wordType: HardType[T],
-//  wordCount: Int,
+//  dataType: HardType[T],
+//  //wordCount: Int,
 //) extends Bundle {
-//  val addr = UInt(log2Up(wordCount) bits)
-//  val data = wordType()
+//  val front = slave(Stream(dataType()))
+//  val back = master(Stream(dataType()))
 //}
-//case class PipeMemRdPushPayload[
+//case class PipeHazardHandler[
 //  T <: Data,
 //](
-//  wordType: HardType[T],
-//  wordCount: Int,
-//) extends Bundle {
-//  val addr = UInt(log2Up(wordCount) bits)
-//}
-//case class PipeMemRdPopPayload[
-//  T <: Data,
-//](
-//  wordType: HardType[T],
-//  wordCount: Int,
-//) extends Bundle {
-//  val data = wordType() 
+//  dataType: HardType[T],
+//  //wordCount: Int,
+//) extends Component {
+//  //--------
+//  val io = PipeHazardHandlerIo(
+//    dataType=dataType(),
+//  )
+//  //--------
 //}
 //--------
-//case class PipeMemIo[
-//  T <: Data,
-//](
-//  wordType: HardType[T],
-//  wordCount: Int,
-//) extends Bundle with IMasterSlave {
-//  //--------
-//  val wr = slave(
-//    Stream(PipeMemWrPayload(
-//      wordType=wordType(),
-//      wordCount=wordCount,
-//    ))
-//  )
-//  val rdPush = slave(
-//    Stream(PipeMemRdPushPayload(
-//      wordType=wordType(),
-//      wordCount=wordCount,
-//    ))
-//  )
-//  val rdPop = master(
-//    Stream(PipeMemRdPopPayload(
-//      wordType=wordType(),
-//      wordCount=wordCount,
-//    ))
-//  )
-//  //--------
-//  def asMaster(): Unit = {
-//    master(wr)
-//    master(rdPush)
-//    slave(rdPop)
-//  }
-//  //--------
-//}
-//case class PipeMemRmwFrontPayload
-//[
-//  ModT <: Data
-//]
-//(
-//  modType: HardType[ModT],
-//  //wordType: HardType[WordT],
-//  wordCount: Int,
-//  //memCount: Int,
-//) extends Bundle {
-//  //val addr = DualTypeNumVec2(
-//  //  dataTypeX=UInt(log2Up(wordCount) bits),
-//  //  dataTypeY=UInt(log2Up(memCount) bits),
-//  //)
-//  val addr = UInt(log2Up(wordCount) bits)
-//  //val data = wordType()
-//}
-//case class PipeMemSimpleDualPortIo[
-//  WordT <: Data,
-//  MainPipeT <: Data,
-//](
-//  wordType: HardType[WordT],
-//  wordCount: Int,
-//  mainPipeType: HardType[MainPipeT],
-//) extends Bundle {
-//  def debug: Boolean = {
-//    GenerationFlags.formal {
-//      return true
-//    }
-//    return false
-//  }
-//}
-
-//case class PipeMemSimpleDualPort[
-//  WordT <: Data
-//](
-//  wordType: HardType[WordT],
-//  wordCount: Int,
-//) extends Component {
-//}
-//case class WrPulsePipeSimpleDualPortMem[
-//  WordT <: Data,
-//  RdT <: Data,
-//](
-//)
-
-
-//trait PipeMemSimpleDualPortPayloadBase[
-//  WordT <: Data
-//] extends Bundle {
-//  //--------
-//  //// get the address of the memory to modify
-//  //def getMemAddr(): UInt
-//  //--------
-//  def setPipeMemSimpleDualPortExt(
-//    inpExt: PipeMemRmwPayloadExt[WordT],
-//    memArrIdx: Int,
-//  ): Unit
-//  //--------
-//  def getPipeMemSimpleDualPortExt(
-//    outpExt: PipeMemRmwPayloadExt[WordT],
-//      // this is essentially a return value
-//    memArrIdx: Int,
-//  ): Unit
-//  //--------
-//}
-//case class PipeMemSimpleDualPortPayloadExt[
-//  WordT <: Data,
-//](
-//  wordType: HardType[WordT],
-//  wordCount: Int,
-//  optIsWr: Boolean=false
-//) extends Bundle {
-//  //--------
-//  val memAddr = UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
-//  val wrMemWord = (optIsWr) generate (
-//    wordType()
-//  )
-//  val rdMemWord = (!optIsWr) generate (
-//    wordType()
-//  )
-//  //--------
-//}
-//case class PipeMemSimpleDualPortIo[
-//  WordT <: Data,
-//  WrT <: PipeMemSimpleDualPortPayloadBase[WordT],
-//  RdT <: PipeMemSimpleDualPortPayloadBase[WordT],
-//](
-//  wordType: HardType[WordT],
-//  wordCount: Int,
-//  wrType: HardType[WrT],
-//  rdType: HardType[RdT],
-//  memArrIdx: Int=0,
-//) extends Bundle {
-//  //--------
-//  val wr = slave(Stream(wrType()))
-//  val rdAddr = slave(Stream(rdType()))
-//  val rdData = master(Stream(rdType()))
-//  //--------
-//}
-//case class PipeMemSimpleDualPort[
-//  WordT <: Data,
-//  WrT <: PipeMemSimpleDualPortPayloadBase[WordT],
-//  RdT <: PipeMemSimpleDualPortPayloadBase[WordT],
-//](
-//  wordType: HardType[WordT],
-//  wordCount: Int,
-//  wrType: HardType[WrT],
-//  rdType: HardType[RdT],
-//  memArrIdx: Int=0,
-//  initBigInt: Option[Seq[BigInt]]=None,
-//  forFmax: Boolean=false,
-//) extends Component {
-//  //--------
-//  val io = PipeMemSimpleDualPortIo(
-//    wordType=wordType(),
-//    wordCount=wordCount,
-//    wrType=wrType(),
-//    rdType=rdType(),
-//    memArrIdx=memArrIdx,
-//  )
-//  //--------
-//}
 case class PipeMemRmwPayloadExt[
   WordT <: Data
 ](
