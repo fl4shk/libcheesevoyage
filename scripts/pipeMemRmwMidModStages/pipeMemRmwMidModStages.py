@@ -105,9 +105,9 @@ class NameDict:
 #--------
 
 def modStageCnt():
-	return 1
-def numPostFrontPreWriteStages():
-	return 3 + modStageCnt() - 1
+	return 2
+def numPostFrontStages():
+	return 2 + modStageCnt() + 1 #- 1
 def mkLst():
 	ret = ["Front", "Mid0Front", "Mid1Front"]
 
@@ -128,7 +128,7 @@ lst = mkLst()
 print(lst)
 def doPrint(idx: int):
 	tempIdx = (
-		numPostFrontPreWriteStages() - modStageCnt() + idx + 1
+		numPostFrontStages() - modStageCnt() + idx #+ 1
 		#+ 1
 		#+ (
 		#	0
@@ -138,7 +138,7 @@ def doPrint(idx: int):
 	)
 	print(idx, tempIdx, lst[tempIdx])
 
-for idx in range(0, modStageCnt()):
+for idx in range(0, modStageCnt() + 1):
 	doPrint(idx=idx)
 	#if modStageCnt() == 1:
 	#	doPrint(idx=idx)
