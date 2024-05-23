@@ -8691,7 +8691,7 @@ case class Gpu2d(
             Node()
           )
           njMyArr.last.setName(s"njMyArr_modFront_$jdx")
-          println(njMyArr.last.getName())
+          //println(njMyArr.last.getName())
         }
         val jMyWrObj = JoinLink(
           ups=njMyArr.toSeq,

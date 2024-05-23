@@ -549,7 +549,7 @@ extends Component {
         Vec.fill(
           PipeMemRmw.numPostFrontStages(
             modStageCnt=modStageCnt,
-          ) //- 1
+          ) - 1
         )(
           /*Reg*/(mkExt())
           //init(mkExt().getZero)
@@ -574,11 +574,11 @@ extends Component {
             //+ 1
             + idx 
           )
-          println(
-            s"io.midModStages.size=${io.midModStages.size} "
-            + s"modStageCnt=${modStageCnt} "
-            + s"idx=${idx} tempIdx=${tempIdx}"
-          ) 
+          //println(
+          //  s"io.midModStages.size=${io.midModStages.size} "
+          //  + s"modStageCnt=${modStageCnt} "
+          //  + s"idx=${idx} tempIdx=${tempIdx}"
+          //) 
           myUpExtDel(
             tempIdx
           ) := myExt
@@ -787,8 +787,9 @@ extends Component {
         when (
           up.isValid
         ) {
+          val myUpExtDel = mod.front.myUpExtDel
           val tempMyUpExtDelFindFirst = KeepAttribute(
-            mod.front.myUpExtDel.sFindFirst(
+            myUpExtDel.sFindFirst(
               myHazardCmpFunc(upExt(0), _)
             )
             .setName("cFrontArea_tempMyUpExtDelFindFirst")
@@ -797,23 +798,6 @@ extends Component {
             //io.doHazardCheck
             //&& (
             //  upExt(0).memAddr === rUpMemAddrDel(0)
-            //)
-            //--------
-            //myHazardCmpFunc(
-            //  upExt(0),
-            //  mod.front.myUpExtDel(0),
-            //) || myHazardCmpFunc(
-            //  upExt(0),
-            //  mod.front.myUpExtDel(1),
-            //) || myHazardCmpFunc(
-            //  upExt(0),
-            //  mod.front.myUpExtDel(2),
-            //) || myHazardCmpFunc(
-            //  upExt(0),
-            //  mod.front.myUpExtDel(3),
-            //) || myHazardCmpFunc(
-            //  upExt(0),
-            //  mod.front.myUpExtDel(4),
             //)
             //--------
             tempMyUpExtDelFindFirst._1
@@ -826,7 +810,11 @@ extends Component {
             duplicateIt()
             nextDuplicateIt := True
             nextHazardId := (
-              Cat(U"3'd0", tempMyUpExtDelFindFirst._2).asSInt
+              (
+                S(s"${nextHazardId.getWidth}'d${myUpExtDel.size - 1}")
+                - Cat(U"3'd0", tempMyUpExtDelFindFirst._2).asSInt
+              )
+              //tempMyUpExtDelFindFirst._2.asSInt
               //modStageCnt
               //- (
               //  if (!forFmax) (
@@ -1775,7 +1763,7 @@ extends Component {
     val upExt = Vec.fill(2)(mkExt()).setName("cBackArea_upExt")
     upExt(1) := upExt(0)
     upExt(1).allowOverride
-    mod.front.myUpExtDel(mod.front.myUpExtDel.size - 1) := upExt(1)
+    //mod.front.myUpExtDel(mod.front.myUpExtDel.size - 1) := upExt(1)
     val tempUpMod = modType().setName("cBackArea_tempUpMod")
     tempUpMod.allowOverride
     tempUpMod := up(mod.back.pipePayload)
