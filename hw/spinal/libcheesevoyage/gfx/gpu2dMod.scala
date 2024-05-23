@@ -3917,7 +3917,7 @@ case class Gpu2d(
       )
     }
     //--------
-    val rWrFullObjPipeLineMemArrIdx = Vec.fill(4)(
+    val rWrFullObjPipeLineMemArrIdx = Vec.fill(8)(
       mkFullLineMemIdx(wrFullLineMemArrIdxInit)
     )
     val wrObjPipeLineMemArrIdx = Vec.fill(3)(
@@ -4717,8 +4717,9 @@ case class Gpu2d(
               WrObjPipeSlmRmwHazardCmp,
             ],
           ) => (
-            curr.hazardCmp.cmp(prev.hazardCmp)
-            && PipeMemRmwPayloadExt.defaultDoHazardCmpFunc(
+            //curr.hazardCmp.cmp(prev.hazardCmp)
+            //&& 
+            PipeMemRmwPayloadExt.defaultDoHazardCmpFunc(
               curr=curr,
               prev=prev,
             )
@@ -6062,7 +6063,8 @@ case class Gpu2d(
       //12
       //14
       //15
-      16
+      //16
+      17
     )
     def wrBgObjPipeNumStages = max(
       wrBgPipeNumMainStages,
@@ -8626,6 +8628,8 @@ case class Gpu2d(
       if (idx == wrObjPipeIdxSlmRmwFront) {
         //println("wrObjPipeIdxSlmRmwFront")
         val down = Node()
+          .setName(s"wrObjPipeSlmRmw_front_down_$idx")
+
         addMainLinks(
           up=None,
           down=Some(down),
@@ -8650,6 +8654,7 @@ case class Gpu2d(
           downs=nfMyArr.toSeq,
           synchronous=true,
         )
+          .setName("fMyDown_front")
         linkArr += fMyDown
         for (jdx <- 0 until nfMyArr.size) {
           val sLink = StageLink(
@@ -8662,7 +8667,9 @@ case class Gpu2d(
           //  down=Node(),
           //)
           //linkArr += s2mLink
-          /*s2mLink*/sLink.down.driveTo(
+
+          /*s2mLink*/sLink.down
+          /*nfMyArr(jdx)*/.driveTo(
             wrObjSubLineMemArr(jdx).io.front
           )(
             con=(payload, node) => {
@@ -8670,7 +8677,8 @@ case class Gpu2d(
             }
           )
         }
-      } else if (idx == wrObjPipeIdxSlmRmwModFront) {
+      } 
+      else if (idx == wrObjPipeIdxSlmRmwModFront) {
         //println("wrObjPipeIdxSlmRmwModFront")
         //val njMyArr = Array.fill(
         //  wrObjPipeNumForkOrJoinRenderers
@@ -8683,6 +8691,7 @@ case class Gpu2d(
             Node()
           )
           njMyArr.last.setName(s"njMyArr_modFront_$jdx")
+          println(njMyArr.last.getName())
         }
         val jMyWrObj = JoinLink(
           ups=njMyArr.toSeq,
@@ -8695,32 +8704,66 @@ case class Gpu2d(
           )(
             con=(node, payload) => {
               node(wrObjPipePayloadSlmRmwModFrontInp(jdx)) := payload
+              ////node(wrObjPipePayloadMain) := payload
             }
           )
         }
-        switch (rWrFullObjPipeLineMemArrIdx(3)) {
+        val dMyWrObj = DirectLink(
+          up=jMyWrObj.down,
+          down=Node(),
+        )
+        linkArr += dMyWrObj
+        for (jdx <- 0 until njMyArr.size) {
+          wrObjSubLineMemArr(jdx).io.midModStages(0) := (
+            dMyWrObj.up(wrObjPipePayloadSlmRmwModFrontInp(jdx))
+          )
+        }
+        switch (rWrFullObjPipeLineMemArrIdx(4)) {
           for (
             jdx <- 0
-            until (1 << rWrFullObjPipeLineMemArrIdx(3).getWidth)
+            until (1 << rWrFullObjPipeLineMemArrIdx(4).getWidth)
           ) {
             is (jdx) {
-              jMyWrObj.down(wrObjPipePayloadSlmRmwModFrontOutp) := (
-                jMyWrObj.ups(jdx)(
-                  wrObjPipePayloadSlmRmwModFrontInp(jdx)
-                )
+              dMyWrObj.down(wrObjPipePayloadSlmRmwModFrontOutp) := (
+                dMyWrObj.up(wrObjPipePayloadSlmRmwModFrontInp(jdx))
               )
-              for (kdx <- 0 until wrObjSubLineMemArr.size) {
-                wrObjSubLineMemArr(kdx).io.midModStages(0) := (
-                  jMyWrObj.ups(jdx)(
-                    wrObjPipePayloadSlmRmwModFrontInp(jdx)
-                  )
-                )
-              }
             }
           }
         }
+        ////switch (rWrFullObjPipeLineMemArrIdx(3)) {
+        ////  for (
+        ////    jdx <- 0
+        ////    until (1 << rWrFullObjPipeLineMemArrIdx(3).getWidth)
+        ////  ) {
+        ////    is (jdx) {
+        ////      jMyWrObj.down(wrObjPipePayloadSlmRmwModFrontOutp) := (
+        ////        jMyWrObj.ups(jdx)(
+        ////          wrObjPipePayloadSlmRmwModFrontInp(jdx)
+        ////          //wrObjPipePayloadMain
+        ////        )
+        ////      )
+        ////      for (kdx <- 0 until wrObjSubLineMemArr.size) {
+        ////        wrObjSubLineMemArr(kdx).io.midModStages(0) := (
+        ////          jMyWrObj.ups(jdx)(
+        ////            wrObjPipePayloadSlmRmwModFrontInp(jdx)
+        ////            //wrObjPipePayloadMain
+        ////          )
+        ////          //nWrObjArr(
+        ////          //  idx //+ 1
+        ////          //)(
+        ////          //  //wrObjPipePayloadSlmRmwModFrontOutp
+        ////          //  wrObjPipePayloadMain
+        ////          //)
+        ////        )
+        ////      }
+        ////    }
+        ////  }
+        ////}
         addMainLinks(
-          up=Some(jMyWrObj.down),
+          up=Some(
+            //jMyWrObj.down
+            dMyWrObj.down
+          ),
           down=None,
         )
       } else if (idx == wrObjPipeIdxSlmRmwModBack) {
@@ -8764,18 +8807,34 @@ case class Gpu2d(
           //)
           //linkArr += s2mLink
           /*s2mLink*/
-          //sLink.down
-          nfMyArr(jdx).driveTo(
+          //
+          nfMyArr(jdx)
+          /*sLink.down*/.driveTo(
             wrObjSubLineMemArr(jdx).io.modBack
           )(
             con=(payload, node) => {
-              payload := node(wrObjPipePayloadMain)
+              payload := node(
+                wrObjPipePayloadMain
+                //wrObjPipePayloadSlmRmwModFrontOutp
+              )
             }
           )
           wrObjSubLineMemArr(jdx).io.midModStages(1) := (
-            //sLink.down(wrObjPipePayloadMain)
+            //node(wrObjPipePayloadMain)
             nfMyArr(jdx)(wrObjPipePayloadMain)
           )
+          //wrObjSubLineMemArr(jdx).io.midModStages(1) := (
+          //  nWrObjArr(idx)(
+          //    wrObjPipePayloadMain
+          //  )
+          //  ////sLink.down(wrObjPipePayloadMain)
+          //  //nfMyArr(jdx)(
+          //  //  wrObjPipePayloadMain
+          //  //  //wrObjPipePayloadSlmRmwModFrontOutp
+          //  //)
+          //  ////down(wrObjPipePayloadMain)
+          //  ////nWrObjArr(idx)(wrObjPipePayloadMain)
+          //)
         }
       } else if (idx == wrObjPipeIdxSlmRmwBack) {
         //println("wrObjPipeIdxSlmRmwBack")
@@ -8792,7 +8851,6 @@ case class Gpu2d(
           )
           njMyArr.last.setName(s"njMyArr_back_$jdx")
         }
-
         val jMyWrObj = JoinLink(
           ups=njMyArr.toSeq,
           down=Node(),
@@ -8804,28 +8862,78 @@ case class Gpu2d(
           )(
             con=(node, payload) => {
               node(wrObjPipePayloadSlmRmwBackInp(jdx)) := payload
+              //node(wrObjPipePayloadMain) := payload
+              //switch (rWrFullObjPipeLineMemArrIdx(5)) {
+              //  for (
+              //    kdx <- 0
+              //    until (1 << rWrFullObjPipeLineMemArrIdx(5).getWidth)
+              //  ) {
+              //    is (kdx) {
+              //      node(wrObjPipePayloadSlmRmwBackOutp) := payload
+              //    }
+              //  }
+              //}
             }
           )
         }
-        switch (rWrFullObjPipeLineMemArrIdx(3)) {
+        //val dMyWrObj = DirectLink(
+        //  up=jMyWrObj.down,
+        //  down=Node()
+        //)
+        val dMyWrObj = DirectLink(
+          up=jMyWrObj.down,
+          down=Node(),
+        )
+        linkArr += dMyWrObj
+        switch (rWrFullObjPipeLineMemArrIdx(5)) {
           for (
             jdx <- 0
-            until (1 << rWrFullObjPipeLineMemArrIdx(3).getWidth)
+            until (1 << rWrFullObjPipeLineMemArrIdx(5).getWidth)
           ) {
             is (jdx) {
-              jMyWrObj.down(wrObjPipePayloadSlmRmwBackOutp) := (
-                jMyWrObj.ups(jdx)(
-                  wrObjPipePayloadSlmRmwBackInp(jdx)
-                )
+              //println(s"is (${jdx})")
+              dMyWrObj.down(wrObjPipePayloadSlmRmwBackOutp) := (
+                dMyWrObj.up(wrObjPipePayloadSlmRmwBackInp(jdx))
               )
+              //wrObjSubLineMemArr(jdx).io.midModStages(0) := (
+              //  dMyWrObj.up(wrObjPipePayloadSlmRmwModFrontInp(jdx))
+              //)
+            }
+            default {
+              //println(s"default ${jdx}")
             }
           }
         }
+        //switch (rWrFullObjPipeLineMemArrIdx(3)) {
+        //  for (
+        //    jdx <- 0
+        //    until (1 << rWrFullObjPipeLineMemArrIdx(3).getWidth)
+        //  ) {
+        //    is (jdx) {
+        //      dMyWrObj.down(wrObjPipePayloadSlmRmwBackOutp) := (
+        //        dMyWrObj.up(wrObjPipePayloadSlmRmwBackInp(jdx))
+        //      )
+        //      //jMyWrObj.down(wrObjPipePayloadSlmRmwBackOutp) := (
+        //      //  //jMyWrObj.ups(jdx)(
+        //      //  //  wrObjPipePayloadSlmRmwBackInp(jdx)
+        //      //  //  //wrObjPipePayloadMain
+        //      //  //)
+        //      //)
+        //    }
+        //  }
+        //}
         addMainLinks(
-          up=Some(jMyWrObj.down),
+          up=(
+            Some(
+              //jMyWrObj.down
+              dMyWrObj.down
+            )
+            //None
+          ),
           down=None,
         )
-      } else {
+      } 
+      else {
         //println(idx)
         addMainLinks()
       }
@@ -8874,12 +8982,13 @@ case class Gpu2d(
     ): (WrObjPipePayload, WrObjPipePayload) = {
       // This function returns `(tempInp, tempOutp)`
       val pipeIn = (
-        if (idx == wrObjPipeIdxSlmRmwModFront) {
+        if (idx == wrObjPipeIdxSlmRmwModFront + 1) {
           //wrObjPipePayloadSlmRmwModFront(
           //  rWrObjWriterFullLineMemArrIdx(0)
           //)
           cWrObjArr(idx).up(wrObjPipePayloadSlmRmwModFrontOutp)
-        } else if (idx == wrObjPipeIdxSlmRmwBack) {
+        } else if (idx == wrObjPipeIdxSlmRmwBack + 1) {
+          //cWrObjArr(idx).up(wrObjPipePayloadSlmRmwBackOutp)
           cWrObjArr(idx).up(wrObjPipePayloadSlmRmwBackOutp)
         } else {
           //cWrObjArr(idx).down(wrObjPipePayload)
@@ -17451,7 +17560,7 @@ case class Gpu2d(
         //myMainFunc()
       }
       {
-        def idx = 15
+        def idx = 16
         val (pipeIn, pipeOut): (WrObjPipePayload, WrObjPipePayload) = (
           if (kind == 0) {
             initTempWrObjPipeOut(idx=idx)
@@ -17547,7 +17656,10 @@ case class Gpu2d(
       )
       def tempWrObjPipeLast = (
         if (kind == 0) {
-          tempNWrObjPipeLast(wrObjPipePayloadMain)
+          tempNWrObjPipeLast(
+            wrObjPipePayloadMain
+            //wrObjPipePayloadSlmRmwBackOutp
+          )
         } else {
           tempNWrObjPipeLast(wrObjAffinePipePayload)
         }
