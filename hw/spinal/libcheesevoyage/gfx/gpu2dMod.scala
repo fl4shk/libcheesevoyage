@@ -8560,9 +8560,18 @@ case class Gpu2d(
       Payload(WrObjPipePayload(isAffine=false))
     )
     //val wrObjPipePayloadFront = Payload(WrObjPipePayload(isAffine=false))
-    val wrObjPipePayloadMain = Array.fill(wrBgObjPipeNumStages + 1)(
-      Payload(WrObjPipePayload(isAffine=false))
-    )
+    //val wrObjPipePayloadMain = Array.fill(wrBgObjPipeNumStages + 1)(
+    //  Payload(WrObjPipePayload(isAffine=false))
+    //)
+    val wrObjPipePayloadMain = new ArrayBuffer[
+      Payload[WrObjPipePayload]
+    ]()
+    for (idx <- 0 until wrBgObjPipeNumStages + 1) {
+      wrObjPipePayloadMain += (
+        Payload(WrObjPipePayload(isAffine=false))
+        .setName(s"wrObjPipePayloadMain_${idx}")
+      )
+    }
     //val wrObjPipePayloadSlmRmwModFront = (
     //  WrObjPipePayload(isAffine=false)
     //)
@@ -8678,7 +8687,7 @@ case class Gpu2d(
             con=(payload, node) => {
               payload := (
                 //node(wrObjPipePayloadMain)
-                node(wrObjPipePayloadMain(idx))
+                node(wrObjPipePayloadMain(idx + 1))
               )
             }
           )
@@ -8779,6 +8788,7 @@ case class Gpu2d(
       } else if (idx == wrObjPipeIdxSlmRmwModBack) {
         //println("wrObjPipeIdxSlmRmwModBack")
         val down = Node()
+          .setName(s"wrObjPipeSlmRmw_modBack_down_$idx")
         addMainLinks(
           up=None,
           down=Some(down),
@@ -8826,17 +8836,18 @@ case class Gpu2d(
               payload := node(
                 //wrObjPipePayloadMain
                 //wrObjPipePayloadSlmRmwModFrontOutp
-                wrObjPipePayloadMain(idx)
+                wrObjPipePayloadMain(idx + 1)
               )
             }
           )
           wrObjSubLineMemArr(jdx).io.midModStages(1) := (
             //node(wrObjPipePayloadMain)
             //nfMyArr(jdx)(wrObjPipePayloadMain)
-            nWrObjArr(idx)(
+            //nWrObjArr(idx)
+            down(
               //wrObjPipePayloadMain
               //wrObjPipePayloadSlmRmwModFrontOutp
-              wrObjPipePayloadMain(idx)
+              wrObjPipePayloadMain(idx + 1)
             )
           )
           //wrObjSubLineMemArr(jdx).io.midModStages(1) := (
