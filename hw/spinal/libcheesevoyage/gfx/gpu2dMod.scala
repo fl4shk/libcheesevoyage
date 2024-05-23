@@ -4717,8 +4717,8 @@ case class Gpu2d(
               WrObjPipeSlmRmwHazardCmp,
             ],
           ) => (
-            //curr.hazardCmp.cmp(prev.hazardCmp)
-            //&& 
+            curr.hazardCmp.cmp(prev.hazardCmp)
+            && 
             PipeMemRmwPayloadExt.defaultDoHazardCmpFunc(
               curr=curr,
               prev=prev,
@@ -8559,7 +8559,10 @@ case class Gpu2d(
     val wrObjPipePayloadSlmRmwBackOutp = (
       Payload(WrObjPipePayload(isAffine=false))
     )
-    val wrObjPipePayloadMain = Payload(WrObjPipePayload(isAffine=false))
+    //val wrObjPipePayloadFront = Payload(WrObjPipePayload(isAffine=false))
+    val wrObjPipePayloadMain = Array.fill(wrBgObjPipeNumStages + 1)(
+      Payload(WrObjPipePayload(isAffine=false))
+    )
     //val wrObjPipePayloadSlmRmwModFront = (
     //  WrObjPipePayload(isAffine=false)
     //)
@@ -8673,7 +8676,10 @@ case class Gpu2d(
             wrObjSubLineMemArr(jdx).io.front
           )(
             con=(payload, node) => {
-              payload := node(wrObjPipePayloadMain)
+              payload := (
+                //node(wrObjPipePayloadMain)
+                node(wrObjPipePayloadMain(idx))
+              )
             }
           )
         }
@@ -8718,13 +8724,17 @@ case class Gpu2d(
             dMyWrObj.up(wrObjPipePayloadSlmRmwModFrontInp(jdx))
           )
         }
+        //cWrObjArr(idx).up
         switch (rWrFullObjPipeLineMemArrIdx(4)) {
           for (
             jdx <- 0
             until (1 << rWrFullObjPipeLineMemArrIdx(4).getWidth)
           ) {
             is (jdx) {
-              dMyWrObj.down(wrObjPipePayloadSlmRmwModFrontOutp) := (
+              dMyWrObj.down(
+                wrObjPipePayloadSlmRmwModFrontOutp
+                //wrObjPipePayloadMain(idx)
+              ) := (
                 dMyWrObj.up(wrObjPipePayloadSlmRmwModFrontInp(jdx))
               )
             }
@@ -8814,14 +8824,20 @@ case class Gpu2d(
           )(
             con=(payload, node) => {
               payload := node(
-                wrObjPipePayloadMain
+                //wrObjPipePayloadMain
                 //wrObjPipePayloadSlmRmwModFrontOutp
+                wrObjPipePayloadMain(idx)
               )
             }
           )
           wrObjSubLineMemArr(jdx).io.midModStages(1) := (
             //node(wrObjPipePayloadMain)
-            nfMyArr(jdx)(wrObjPipePayloadMain)
+            //nfMyArr(jdx)(wrObjPipePayloadMain)
+            nWrObjArr(idx)(
+              //wrObjPipePayloadMain
+              //wrObjPipePayloadSlmRmwModFrontOutp
+              wrObjPipePayloadMain(idx)
+            )
           )
           //wrObjSubLineMemArr(jdx).io.midModStages(1) := (
           //  nWrObjArr(idx)(
@@ -8895,6 +8911,9 @@ case class Gpu2d(
               dMyWrObj.down(wrObjPipePayloadSlmRmwBackOutp) := (
                 dMyWrObj.up(wrObjPipePayloadSlmRmwBackInp(jdx))
               )
+              //dMyWrObj.down(wrObjPipePayloadMain(idx)) := (
+              //  dMyWrObj.up(wrObjPipePayloadSlmRmwBackInp(jdx))
+              //)
               //wrObjSubLineMemArr(jdx).io.midModStages(0) := (
               //  dMyWrObj.up(wrObjPipePayloadSlmRmwModFrontInp(jdx))
               //)
@@ -8974,7 +8993,7 @@ case class Gpu2d(
     //)
     def wrObjPipeLast = nWrObjPipeLast(
       //wrObjPipePayloadArr.last
-      wrObjPipePayloadMain
+      wrObjPipePayloadMain(wrObjPipePayloadMain.size - 1)
     )
     def initTempWrObjPipeOut(
       idx: Int,
@@ -8982,25 +9001,42 @@ case class Gpu2d(
     ): (WrObjPipePayload, WrObjPipePayload) = {
       // This function returns `(tempInp, tempOutp)`
       val pipeIn = (
-        if (idx == wrObjPipeIdxSlmRmwModFront + 1) {
-          //wrObjPipePayloadSlmRmwModFront(
-          //  rWrObjWriterFullLineMemArrIdx(0)
-          //)
+        if (idx == wrObjPipeIdxSlmRmwModFront) {
           cWrObjArr(idx).up(wrObjPipePayloadSlmRmwModFrontOutp)
-        } else if (idx == wrObjPipeIdxSlmRmwBack + 1) {
+        } 
+        else if (idx == wrObjPipeIdxSlmRmwBack) {
           //cWrObjArr(idx).up(wrObjPipePayloadSlmRmwBackOutp)
           cWrObjArr(idx).up(wrObjPipePayloadSlmRmwBackOutp)
         } else {
-          //cWrObjArr(idx).down(wrObjPipePayload)
-          cWrObjArr(idx).up(wrObjPipePayloadMain)
-          //nWrObjArr(idx)(wrObjPipePayload)
+          cWrObjArr(idx).up(wrObjPipePayloadMain(idx))
         }
+        //if (idx == 0) (
+        //  cWrObjArr(idx).up(wrObjPipePayloadFront)
+        //) else ( // if (idx > 0)
+          //cWrObjArr(idx).up(wrObjPipePayloadMain(idx - 1))
+        //  cWrObjArr(idx).up(wrObjPipePayloadMain(idx))
+        //)
       )
       val pipeOut = WrObjPipePayload(isAffine=false)
 
       pipeOut := pipeIn
       pipeOut.allowOverride
-      cWrObjArr(idx).bypass(wrObjPipePayloadMain) := pipeOut
+      //if (idx == wrObjPipeIdxSlmRmwModFront + 1) {
+      //  cWrObjArr(idx).bypass(wrObjPipePayloadSlmRmwModFrontOutp) := (
+      //    pipeOut
+      //  )
+      //} else if (idx == wrObjPipeIdxSlmRmwBack + 1) {
+      //  cWrObjArr(idx).bypass(wrObjPipePayloadSlmRmwBackOutp) := (
+      //    pipeOut
+      //  )
+      //} else {
+      //  cWrObjArr(idx).bypass(wrObjPipePayloadMain) := (
+      //    pipeOut
+      //  )
+      //}
+      cWrObjArr(idx).up(wrObjPipePayloadMain(idx + 1)) := (
+        pipeOut
+      )
 
       (pipeIn, pipeOut)
     }
@@ -9176,7 +9212,8 @@ case class Gpu2d(
     nWrObjArr(0).driveFrom(wrObjPipeFront)(
       con=(node, payload) => {
         //node(wrObjPipePayloadArr(0)) := payload
-        node(wrObjPipePayloadMain) := payload
+        //node(wrObjPipePayloadMain) := payload
+        node(wrObjPipePayloadMain(0)) := payload
       },
     )
 
@@ -17560,6 +17597,22 @@ case class Gpu2d(
         //myMainFunc()
       }
       {
+        def idx = 15
+        val (pipeIn, pipeOut): (WrObjPipePayload, WrObjPipePayload) = (
+          if (kind == 0) {
+            initTempWrObjPipeOut(idx=idx)
+          } else { // if (kind == 1)
+            initTempWrObjAffinePipeOut(idx=idx)
+          }
+        )
+        val tempInp = pipeIn
+        val tempOutp = pipeOut
+        //def myTempObjTileWidth = tempInp.tempObjTileWidth()
+        //def myTempObjTileWidth2 = tempInp.tempObjTileWidth2()
+        def myTempObjTileWidth = tempInp.tempObjTileWidth()
+        def myTempObjTileWidthPow = tempInp.tempObjTileWidthPow()
+      }
+      {
         def idx = 16
         val (pipeIn, pipeOut): (WrObjPipePayload, WrObjPipePayload) = (
           if (kind == 0) {
@@ -17657,8 +17710,9 @@ case class Gpu2d(
       def tempWrObjPipeLast = (
         if (kind == 0) {
           tempNWrObjPipeLast(
-            wrObjPipePayloadMain
+            //wrObjPipePayloadMain
             //wrObjPipePayloadSlmRmwBackOutp
+            wrObjPipePayloadMain(wrObjPipePayloadMain.size - 1)
           )
         } else {
           tempNWrObjPipeLast(wrObjAffinePipePayload)

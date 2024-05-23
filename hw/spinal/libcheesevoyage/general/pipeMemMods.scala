@@ -549,7 +549,7 @@ extends Component {
         Vec.fill(
           PipeMemRmw.numPostFrontStages(
             modStageCnt=modStageCnt,
-          ) - 1
+          ) //- 1
         )(
           /*Reg*/(mkExt())
           //init(mkExt().getZero)
@@ -808,6 +808,7 @@ extends Component {
             //)
           ) {
             duplicateIt()
+            //terminateIt()
             nextDuplicateIt := True
             nextHazardId := (
               (
@@ -836,6 +837,7 @@ extends Component {
             nextDuplicateIt := False
           } otherwise {
             duplicateIt()
+            //terminateIt()
           }
         //}
       }
@@ -1763,7 +1765,7 @@ extends Component {
     val upExt = Vec.fill(2)(mkExt()).setName("cBackArea_upExt")
     upExt(1) := upExt(0)
     upExt(1).allowOverride
-    //mod.front.myUpExtDel(mod.front.myUpExtDel.size - 1) := upExt(1)
+    mod.front.myUpExtDel(mod.front.myUpExtDel.size - 1) := upExt(1)
     val tempUpMod = modType().setName("cBackArea_tempUpMod")
     tempUpMod.allowOverride
     tempUpMod := up(mod.back.pipePayload)
