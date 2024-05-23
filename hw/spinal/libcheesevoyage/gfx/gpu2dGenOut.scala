@@ -66,8 +66,8 @@ object Gpu2dSimDutParams {
         //visib=1 << 6,
         //visib=64,
         //visib=1 << 7,
-        visib=320,
-        //visib=640,
+        //visib=320,
+        visib=640,
         //visib=639,
         //visib=160,
         //visib=1 << 8,
@@ -92,8 +92,8 @@ object Gpu2dSimDutParams {
         //visib=1 << 4,
         //visib=1 << 7,
         //visib=128,
-        visib=240,
-        //visib=480,
+        //visib=240,
+        visib=480,
         //visib=32,
         //visib=4,
         //visib=8,
@@ -235,10 +235,10 @@ object Gpu2dSimDutParams {
     //y=5,
     //x=4,
     //y=4,
-    x=1,
-    y=1,
-    //x=2,
-    //y=2,
+    //x=1,
+    //y=1,
+    x=2,
+    y=2,
     //y=2,
     //y=3,
     //x=log2Up(2),
@@ -273,9 +273,9 @@ object Gpu2dSimDutParams {
       //y=log2Up(2),
     ),
     objTileWidthRshift=(
-      //0
+      0
       //1
-      2
+      //2
     ),
     //objTileWidthRshift=1,
     objAffineTileSize2dPow=ElabVec2[Int](
@@ -377,8 +377,8 @@ object Gpu2dSimDutParams {
       //log2Up(256)
     ),
     noColorMath=(
-      //true
-      false,
+      true
+      //false,
     ),
     noAffineBgs=true,
     noAffineObjs=(

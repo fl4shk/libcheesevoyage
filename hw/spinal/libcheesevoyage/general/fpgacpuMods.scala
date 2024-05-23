@@ -274,9 +274,9 @@ case class FpgacpuRamSimpleDualPortImpl[
   //wordWidth: Int,
   wordType: HardType[WordT],
   depth: Int,
-  initBigInt: Option[Seq[BigInt]]=None,
   //init: Option[Seq[Bits]]=None,
   init: Option[Seq[WordT]]=None,
+  initBigInt: Option[Seq[BigInt]]=None,
   arrRamStyle: String="block",
   arrRwAddrCollision: String="",
 ) extends Component {
@@ -297,16 +297,18 @@ case class FpgacpuRamSimpleDualPortImpl[
     //.generateAsBlackBox()
   //arr.setTechnology(ramBlock)
 
-  initBigInt match {
-    case Some(myInitBigInt) => {
-      arr.initBigInt(myInitBigInt)
+  init match {
+    case Some(myInit) => {
+      arr.init(myInit)
+      assert(initBigInt == None)
     }
     case None => {
     }
   }
-  init match {
-    case Some(myInit) => {
-      arr.init(myInit)
+  initBigInt match {
+    case Some(myInitBigInt) => {
+      arr.initBigInt(myInitBigInt)
+      assert(init == None)
     }
     case None => {
     }
@@ -330,8 +332,8 @@ case class FpgacpuRamSimpleDualPort[
 ](
   wordType: HardType[WordT],
   depth: Int,
-  initBigInt: Option[Seq[BigInt]]=None,
   init: Option[ArrayBuffer[WordT]]=None,
+  initBigInt: Option[Seq[BigInt]]=None,
   arrRamStyle: String="block",
   arrRwAddrCollision: String="",
 ) extends Component {
@@ -347,16 +349,17 @@ case class FpgacpuRamSimpleDualPort[
     wordType=wordType(),
     depth=depth,
     //initBigInt=initBigInt,
-    initBigInt={
-      initBigInt match {
+    init={
+      init match {
         case Some(myInit) => {
-          //val tempArr = new ArrayBuffer[BigInt]()
+          //val tempArr = new ArrayBuffer[WordT]()
           //if (myInit.size < depth) {
           //  for (idx <- 0 until myInit.size) {
           //    tempArr += myInit(idx)//.asBits
           //  }
           //  for (idx <- myInit.size until depth) {
-          //    tempArr += BigInt(0)//tempArr.last.getZero
+          //    tempArr += tempArr.last.getZero 
+          //    //BigInt(0)//tempArr.last.getZero
           //  }
           //} else {
           //  for (idx <- 0 until depth) {
@@ -371,17 +374,16 @@ case class FpgacpuRamSimpleDualPort[
         }
       }
     },
-    init={
-      init match {
+    initBigInt={
+      initBigInt match {
         case Some(myInit) => {
-          //val tempArr = new ArrayBuffer[WordT]()
+          //val tempArr = new ArrayBuffer[BigInt]()
           //if (myInit.size < depth) {
           //  for (idx <- 0 until myInit.size) {
           //    tempArr += myInit(idx)//.asBits
           //  }
           //  for (idx <- myInit.size until depth) {
-          //    tempArr += tempArr.last.getZero 
-          //    //BigInt(0)//tempArr.last.getZero
+          //    tempArr += BigInt(0)//tempArr.last.getZero
           //  }
           //} else {
           //  for (idx <- 0 until depth) {

@@ -266,23 +266,24 @@ extends Component
   def mkExt() = PipeMemRmwPayloadExt(
     wordType=wordType(),
     wordCount=wordCount,
+    hazardCmpType=Bool(),
     modStageCnt=modStageCnt,
     optEnableModDuplicate=false,
   )
   case class PmRmwModType(
   ) extends Bundle
-    with PipeMemRmwPayloadBase[WordT]
+    with PipeMemRmwPayloadBase[WordT, Bool]
   {
     val data = dataType()
     val myExt = mkExt()
     def setPipeMemRmwExt(
-      inpExt: PipeMemRmwPayloadExt[WordT],
+      inpExt: PipeMemRmwPayloadExt[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
       myExt := inpExt
     }
     def getPipeMemRmwExt(
-      outpExt: PipeMemRmwPayloadExt[WordT],
+      outpExt: PipeMemRmwPayloadExt[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
       outpExt := myExt
@@ -290,11 +291,13 @@ extends Component
   }
   val pipeMem = PipeMemRmw[
     WordT,
+    Bool,
     PmRmwModType,
     PmRmwModType,
   ](
     wordType=wordType(),
     wordCount=wordCount,
+    hazardCmpType=Bool(),
     modType=PmRmwModType(),
     modStageCnt=modStageCnt,
     memArrIdx=0,
@@ -302,6 +305,8 @@ extends Component
     optDualRd=true,
     initBigInt=initBigInt,
     optEnableModDuplicate=false,
+  )(
+    doHazardCmpFunc=None
   )
   //val wrPipe = Stream(cloneOf(io.wrPulse.payload))
   //val pipeMemModFrontStm = cloneOf(pipeMem.io.modFront)

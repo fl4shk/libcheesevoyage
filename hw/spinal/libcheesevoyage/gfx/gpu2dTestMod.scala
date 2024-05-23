@@ -34,6 +34,7 @@ object Gpu2dTest {
     tempArr: ArrayBuffer[Gpu2dTileSlice],
     //isObj: Boolean,
     //doPrint: Boolean=false,
+    isBg: Boolean=false,
     finish: Boolean=false,
   ): Unit = {
     //var tempWord = BigInt(0)
@@ -48,7 +49,11 @@ object Gpu2dTest {
       //}
       def myTileSlice = tempArr.last
       myTileSlice.colIdxVec(idx % somePxsSliceWidth) := (
-        somePxsArr(idx)
+        if (isBg) (
+          0x0
+        ) else (
+          somePxsArr(idx)
+        )
       )
     }
     if (finish) {
@@ -230,6 +235,7 @@ object Gpu2dTest {
           somePxsSliceWidth=myPxsSliceWidth,
           somePxsArr=somePxsArr,
           tempArr=tempArr,
+          isBg=true,
           finish=finish,
         )
       }
@@ -2588,7 +2594,8 @@ case class Gpu2dTest(
     //0x1
     //0x4
     //0x4 << myFracWidth
-    0x0 << myObjPosFracWidth
+    //0x0 << myObjPosFracWidth
+    5 << myObjPosFracWidth
     //(params.objTileSize2d.x * 2) << myObjPosFracWidth
   )
   rPlayerPos.y.init(

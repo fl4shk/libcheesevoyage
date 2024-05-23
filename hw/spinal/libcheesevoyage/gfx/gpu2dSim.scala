@@ -315,8 +315,8 @@ case class Gpu2dSimDut(
 
 object Gpu2dSim extends App {
   //def clkRate = 125.0 MHz
-  def clkRate = 25.0 MHz
-  //def clkRate = 50.0 MHz
+  //def clkRate = 25.0 MHz
+  def clkRate = 50.0 MHz
   //def clkRate = 75.0 MHz
   //def clkRate = 100.0 MHz
   //def clkRate = 100.7 MHz
@@ -432,18 +432,19 @@ object Gpu2dSim extends App {
       //y=log2Up(1),
     ),
     objTileSize2dPow=ElabVec2[Int](
-      //x=log2Up(16),
-      //y=log2Up(16),
-      x=log2Up(8),
-      y=log2Up(8),
+      x=log2Up(16),
+      y=log2Up(16),
+      //x=log2Up(8),
+      //y=log2Up(8),
       //x=log2Up(4),
       //y=log2Up(4),
       //x=log2Up(2),
       //y=log2Up(2),
     ),
     objTileWidthRshift=(
-      0
+      //0
       //1
+      2
     ),
     //objTileWidthRshift=1,
     objAffineTileSize2dPow=ElabVec2[Int](
