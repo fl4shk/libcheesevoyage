@@ -215,7 +215,7 @@ object PipeMemRmw {
     modStageCnt: Int,
   ) = (
     //modStageCnt
-    2 + modStageCnt + 1
+    3 + modStageCnt + 1
     //- 1
     //+ 1
   )
@@ -596,9 +596,9 @@ extends Component {
         name="Mid1Front",
         optIncludeS2M=false,
       )
-      //val cMid2Front = pipe.addStage(
-      //  name="Mid2Front"
-      //)
+      val cMid2Front = pipe.addStage(
+        name="Mid2Front"
+      )
       val cLastFront = pipe.addStage(
         name="LastFront", 
         finish=true,
@@ -1756,6 +1756,18 @@ extends Component {
       memArrIdx=memArrIdx,
     )
     mod.front.myUpExtDel(1) := upExt
+  }
+  val cMid2Front = mod.front.cMid2Front
+  val cMid2FrontArea = new cMid2Front.Area {
+    val upExt = KeepAttribute(
+      mkExt()
+      .setName("cMid2FrontArea_upExt")
+    )
+    up(mod.front.outpPipePayload).getPipeMemRmwExt(
+      outpExt=upExt,
+      memArrIdx=memArrIdx,
+    )
+    mod.front.myUpExtDel(2) := upExt
   }
   val cBack = mod.back.cBack
   val cBackArea = new cBack.Area {

@@ -8376,7 +8376,7 @@ case class Gpu2d(
 
     val nWrObjArr = Array.fill(wrBgObjPipeNumStages + 1)(Node())
     val sWrObjArr = new ArrayBuffer[StageLink]()
-    //val s2mWrObjArr = new ArrayBuffer[S2MLink]()
+    val s2mWrObjArr = new ArrayBuffer[S2MLink]()
     val cWrObjArr = new ArrayBuffer[CtrlLink]()
     def wrObjPipeIdxSlmRmwFront = 12
     def wrObjPipeIdxSlmRmwModFront = 13
@@ -8612,16 +8612,16 @@ case class Gpu2d(
         )
         linkArr += sWrObjArr.last
 
-        //s2mWrObjArr += S2MLink(
-        //  up=sWrObjArr.last.down,
-        //  down=Node(),
-        //)
-        //linkArr += s2mWrObjArr.last
+        s2mWrObjArr += S2MLink(
+          up=sWrObjArr.last.down,
+          down=Node(),
+        )
+        linkArr += s2mWrObjArr.last
 
         cWrObjArr += CtrlLink(
           up=(
-            sWrObjArr.last.down
-            //s2mWrObjArr.last.down
+            //sWrObjArr.last.down
+            s2mWrObjArr.last.down
             //lastNode
           ),
           down={
@@ -8674,13 +8674,13 @@ case class Gpu2d(
             down=Node(),
           )
           linkArr += sLink
-          //val s2mLink = S2MLink(
-          //  up=sLink.down,
-          //  down=Node(),
-          //)
-          //linkArr += s2mLink
+          val s2mLink = S2MLink(
+            up=sLink.down,
+            down=Node(),
+          )
+          linkArr += s2mLink
 
-          /*s2mLink*/sLink.down
+          s2mLink.down//sLink.down
           /*nfMyArr(jdx)*/.driveTo(
             wrObjSubLineMemArr(jdx).io.front
           )(
@@ -8815,21 +8815,22 @@ case class Gpu2d(
         )
         linkArr += fMyDown
         for (jdx <- 0 until nfMyArr.size) {
-          //val sLink = StageLink(
-          //  up=nfMyArr(jdx),
-          //  down=Node(),
-          //)
-          //linkArr += sLink
+          val sLink = StageLink(
+            up=nfMyArr(jdx),
+            down=Node(),
+          )
+          linkArr += sLink
 
-          //val s2mLink = S2MLink(
-          //  up=sLink.down,
-          //  down=Node(),
-          //)
-          //linkArr += s2mLink
+          val s2mLink = S2MLink(
+            up=sLink.down,
+            down=Node(),
+          )
+          linkArr += s2mLink
           /*s2mLink*/
           //
-          nfMyArr(jdx)
-          /*sLink.down*/.driveTo(
+          //nfMyArr(jdx)
+          //sLink
+          s2mLink.down.driveTo(
             wrObjSubLineMemArr(jdx).io.modBack
           )(
             con=(payload, node) => {
