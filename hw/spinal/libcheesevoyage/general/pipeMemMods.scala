@@ -557,7 +557,9 @@ extends Component {
       )
       val myUpExtDel = KeepAttribute(
         Vec.fill(
-          PipeMemRmw.numPostFrontStages(
+          //PipeMemRmw.numPostFrontStages
+          PipeMemRmw.numPostFrontPreWriteStages
+          (
             modStageCnt=modStageCnt,
           ) //- 1
         )(
@@ -852,8 +854,22 @@ extends Component {
         .setName("cFrontArea_tempMyUpExtDelFindFirst1")
       )
     )
+    val nextDidChangeState = (optEnableModDuplicate) generate (
+      KeepAttribute(Bool())
+    )
+    val rDidChangeState = (optEnableModDuplicate) generate (
+      KeepAttribute(RegNext(nextDidChangeState)) init(True)
+    )
+    val nextHaltItIdle = (optEnableModDuplicate) generate (
+      KeepAttribute(Bool())
+    )
+    val rHaltItIdle = (optEnableModDuplicate) generate (
+      KeepAttribute(RegNext(nextHaltItIdle) init(False))
+    )
     if (optEnableModDuplicate) {
       nextState := rState
+      nextDidChangeState := rDidChangeState
+      nextHaltItIdle := rHaltItIdle
       switch (rState) {
         is (State.IDLE) {
           when (
@@ -876,10 +892,13 @@ extends Component {
               //&& myUpExtDel.sFindFirst(
               //  _.hazardId.msb
               //)._1
+              && !rHaltItIdle
             ) {
               //// `duplicateIt()` instead of `haltIt()` so that we can let
               //// through 
               duplicateIt()
+              nextDidChangeState := False
+              //nextHaltItIdle := False
               //terminateIt()
               //nextDuplicateIt := True
               nextState := State.DELAY
@@ -890,6 +909,24 @@ extends Component {
                 )
               )
             }
+            when (rHaltItIdle) {
+              //duplicateIt()
+              haltIt()
+              nextHaltItIdle := False
+            }
+            //when (rDidChangeState) {
+            //  nextDidChangeState := False
+            //  duplicateIt()
+            //}
+            //when (!rHazardId.msb) {
+            //  duplicateIt()
+            //}
+            //when (
+            //  (
+            //    RegNextWhen(nextState, down.isFiring) 
+            //  ) === State.IDLE
+            //) {
+            //}
           }
         }
         is (State.DELAY) {
@@ -901,11 +938,18 @@ extends Component {
               //nextDuplicateIt := False
               //nextState := State.WAIT_CLEAR
               nextState := State.IDLE
+              nextDidChangeState := True
+              nextHaltItIdle := True
             } otherwise {
               duplicateIt()
               //haltIt()
               //terminateIt()
             }
+            //when (rHazardId.msb) {
+            //  nextState := State.IDLE
+            //} otherwise {
+            //  duplicateIt()
+            //}
           //}
         }
         //is (State.WAIT_CLEAR) {
@@ -1067,7 +1111,14 @@ extends Component {
       //!rSetRdId
       //&& 
       if (optEnableModDuplicate) (
-        up.isFiring && upExt(1).hazardId.msb
+        //up.isFiring && 
+        //upExt(1).hazardId.msb
+        (
+          rState === State.IDLE
+          && !rHaltItIdle
+        )
+        //&& !nextDidChangeState
+        //&& rDidChangeState
         //nextState =/= State.DELAY
         //Mux[Bool](
         //  nextState === State.IDLE,
@@ -1096,7 +1147,7 @@ extends Component {
       address=upExt(1).memAddr,
       //address=myDownExt.memAddr,
       enable=(
-        tempCond
+        up.isFiring && tempCond
         //down.isFiring && tempCond
         //up.isFiring && tempCond
         //down.isFiring && tempCond
@@ -1933,7 +1984,7 @@ extends Component {
     val upExt = Vec.fill(2)(mkExt()).setName("cBackArea_upExt")
     upExt(1) := upExt(0)
     upExt(1).allowOverride
-    mod.front.myUpExtDel(mod.front.myUpExtDel.size - 1) := upExt(1)
+    //mod.front.myUpExtDel(mod.front.myUpExtDel.size - 1) := upExt(1)
     val tempUpMod = modType().setName("cBackArea_tempUpMod")
     tempUpMod.allowOverride
     tempUpMod := up(mod.back.pipePayload)

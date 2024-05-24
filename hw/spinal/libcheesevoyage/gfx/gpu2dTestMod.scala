@@ -2634,8 +2634,8 @@ case class Gpu2dTest(
   val rPlayerTileIdx = (
     Reg(UInt((tempObjAttrs.tileIdx.getWidth + myTileFracWidth) bits))
     init(
-      //4 << myTileFracWidth
-      1 << myTileFracWidth
+      4 << myTileFracWidth
+      //1 << myTileFracWidth
     )
   )
   //--------
