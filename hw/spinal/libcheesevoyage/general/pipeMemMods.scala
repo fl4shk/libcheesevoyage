@@ -1052,13 +1052,13 @@ extends Component {
       //!rSetRdId
       //&& 
       if (optEnableModDuplicate) (
-        //upExt(1).hazardId.msb
+        up.isFiring && upExt(1).hazardId.msb
         //nextState =/= State.DELAY
-        Mux[Bool](
-          nextState === State.IDLE,
-          up.isFiring,
-          down.isFiring,
-        )
+        //Mux[Bool](
+        //  nextState === State.IDLE,
+        //  //up.isFiring,
+        //  //down.isFiring,
+        //)
         //tempMyUpExtDelFindFirst1._1
         //&& myHazardCmpFunc(
         //  curr=upExt(1),
@@ -1940,11 +1940,11 @@ extends Component {
     }
     val extDbgDoWriteCond = (
       (
-        //if (optEnableModDuplicate) (
-        //  upExt(0).hazardId.msb
-        //) else (
+        if (optEnableModDuplicate) (
+          upExt(0).hazardId.msb
+        ) else (
           True
-        //)
+        )
       )
       //|| (
       //  if (optEnableClear) (
