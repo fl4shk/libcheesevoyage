@@ -8862,11 +8862,13 @@ case class Gpu2d(
             //  wrObjPipePayloadMain(idx + 1)
             //)
           )
+          //--------
           wrObjSubLineMemArr(jdx).io.midModStages(2) := (
             /*s2mLink.*/down(
               wrObjPipePayloadMain(idx + 1)
             )
           )
+          //--------
           //wrObjSubLineMemArr(jdx).io.midModStages(1) := (
           //  nWrObjArr(idx)(
           //    wrObjPipePayloadMain

@@ -127,7 +127,7 @@ case class PipeMemRmwPayloadExt[
   // hazard for when an address is already in the pipeline 
   val hazardId = (optEnableModDuplicate) generate (
     SInt(log2Up(
-      PipeMemRmw.numPostFrontPreWriteStages(
+      PipeMemRmw.numPostFrontStages(
         modStageCnt=modStageCnt,
       )
     ) + 3 bits)
@@ -213,11 +213,11 @@ object PipeMemRmw {
   ) = log2Up(wordCount)
   //def kindRmw = 0
   //def kindSimpleDualPort = 1
-  def numPostFrontPreWriteStages(
+  def numPostFrontStages(
     modStageCnt: Int,
   ) = (
     //modStageCnt
-    3 + modStageCnt //+ 1
+    3 + modStageCnt + 1
     //- 1
     //+ 1
   )
@@ -549,7 +549,7 @@ extends Component {
       )
       val myUpExtDel = KeepAttribute(
         Vec.fill(
-          PipeMemRmw.numPostFrontPreWriteStages(
+          PipeMemRmw.numPostFrontStages(
             modStageCnt=modStageCnt,
           ) //- 1
         )(
@@ -568,19 +568,19 @@ extends Component {
             memArrIdx=memArrIdx,
           )
           val tempIdx = (
-            PipeMemRmw.numPostFrontPreWriteStages(
+            PipeMemRmw.numPostFrontStages(
               modStageCnt=modStageCnt
             )
             - modStageCnt
-            //- 1
+            - 1
             ////+ 1
             + idx 
           )
-          //println(
-          //  s"io.midModStages.size=${io.midModStages.size} "
-          //  + s"modStageCnt=${modStageCnt} "
-          //  + s"idx=${idx} tempIdx=${tempIdx}"
-          //) 
+          println(
+            s"io.midModStages.size=${io.midModStages.size} "
+            + s"modStageCnt=${modStageCnt} "
+            + s"idx=${idx} tempIdx=${tempIdx}"
+          )
           myUpExtDel(
             tempIdx
           ) := myExt
@@ -708,12 +708,12 @@ extends Component {
       outpExt=lastUpExt,
       memArrIdx=memArrIdx,
     )
-    val tempRdValid = (
-      lastUpExt.memAddr =/= upExt(0).memAddr
-      ////&& !lastUpExt.hazardId.msb
-      ////&& upExt(1).hazardId.msb
-      //|| !upExt(1).hazardId.msb
-    ).setName("cFrontArea_tempRdValid")
+    //val tempRdValid = (
+    //  lastUpExt.memAddr =/= upExt(0).memAddr
+    //  ////&& !lastUpExt.hazardId.msb
+    //  ////&& upExt(1).hazardId.msb
+    //  //|| !upExt(1).hazardId.msb
+    //).setName("cFrontArea_tempRdValid")
     //--------
     val nextHazardId = (optEnableModDuplicate) generate (
       cloneOf(upExt(1).hazardId)
@@ -819,8 +819,9 @@ extends Component {
           //upExt(0).memAddr === _.memAddr
           //&& myHazardCmpFunc(upExt(0), _)
           (prev) => (
-            upExt(0).memAddr === prev.memAddr
-            //&& myHazardCmpFunc(upExt(0), prev)
+            upExt(1).memAddr === prev.memAddr
+            //&& prev.hazardId.msb
+            && myHazardCmpFunc(upExt(1), prev)
           )
           //&& myHazardCmpFunc(upExt(0), prev)
         )
@@ -835,7 +836,9 @@ extends Component {
           //|| _.hazardId.msb
           (prev) => (
             upExt(0).memAddr === prev.memAddr
-            //&& myHazardCmpFunc(upExt(0), prev)
+            //&& prev.hazardId.msb
+            ////&& myHazardCmpFunc(upExt(0), prev)
+            && myHazardCmpFunc(upExt(1), prev)
           )
         )
         .setName("cFrontArea_tempMyUpExtDelFindFirst1")
@@ -852,10 +855,14 @@ extends Component {
             //  
             //} else
             when (
+              (
               tempMyUpExtDelFindFirst0._1
-              && myHazardCmpFunc(
-                curr=upExt(0),
-                prev=myUpExtDel(0),
+              //&& myHazardCmpFunc(
+              //  curr=upExt(1),
+              //  prev=myUpExtDel(0),
+              ) && (
+                //upExt(1).hazardId.msb
+                True
               )
 
               //&& myUpExtDel.sFindFirst(
@@ -1066,8 +1073,8 @@ extends Component {
         //)
         //|| myUpExtDel(myUpExtDel)
       ) else (
-        //True
-        up.isFiring
+        True
+        //up.isFiring
       )
     )
 
@@ -1918,7 +1925,7 @@ extends Component {
     val upExt = Vec.fill(2)(mkExt()).setName("cBackArea_upExt")
     upExt(1) := upExt(0)
     upExt(1).allowOverride
-    //mod.front.myUpExtDel(mod.front.myUpExtDel.size - 1) := upExt(1)
+    mod.front.myUpExtDel(mod.front.myUpExtDel.size - 1) := upExt(1)
     val tempUpMod = modType().setName("cBackArea_tempUpMod")
     tempUpMod.allowOverride
     tempUpMod := up(mod.back.pipePayload)
@@ -2016,6 +2023,10 @@ extends Component {
       data=myWriteData,
       enable=myWriteEnable,
     )
+    //when (!myWriteEnable) {
+    //  //throwIt()
+    //  forgetOneNow()
+    //}
     //when (
     //  up.isValid
     //  && !extDbgDoWriteCond
