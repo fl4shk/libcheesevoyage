@@ -8730,8 +8730,12 @@ case class Gpu2d(
         }
         val dMyWrObj = DirectLink(
           up=jMyWrObj.down,
-          down=Node(),
+          down=(
+            Node()
+              .setName(s"dMyWrObj_modFront_down_$idx")
+          ),
         )
+          .setName(s"dMyWrObj_modFront_$idx")
         linkArr += dMyWrObj
         for (jdx <- 0 until njMyArr.size) {
           wrObjSubLineMemArr(jdx).io.midModStages(0) := (
@@ -8928,8 +8932,12 @@ case class Gpu2d(
         //)
         val dMyWrObj = DirectLink(
           up=jMyWrObj.down,
-          down=Node(),
+          down=(
+            Node()
+              .setName(s"dMyWrObj_back_down_$idx")
+          ),
         )
+          .setName(s"dMyWrObj_back_$idx")
         linkArr += dMyWrObj
         switch (rWrFullObjPipeLineMemArrIdx(5)) {
           for (

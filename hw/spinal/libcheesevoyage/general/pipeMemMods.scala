@@ -216,8 +216,16 @@ object PipeMemRmw {
   def numPostFrontStages(
     modStageCnt: Int,
   ) = (
+    numPostFrontPreWriteStages(
+      modStageCnt=modStageCnt
+    )
+    + 1
+  )
+  def numPostFrontPreWriteStages(
+    modStageCnt: Int
+  ) = (
     //modStageCnt
-    3 + modStageCnt + 1
+    3 + modStageCnt //+ 1
     //- 1
     //+ 1
   )
@@ -568,11 +576,11 @@ extends Component {
             memArrIdx=memArrIdx,
           )
           val tempIdx = (
-            PipeMemRmw.numPostFrontStages(
+            PipeMemRmw.numPostFrontPreWriteStages(
               modStageCnt=modStageCnt
             )
             - modStageCnt
-            - 1
+            //- 1
             ////+ 1
             + idx 
           )
