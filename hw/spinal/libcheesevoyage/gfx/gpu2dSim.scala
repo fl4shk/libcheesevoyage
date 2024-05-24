@@ -503,8 +503,8 @@ object Gpu2dSim extends App {
       //64
       //512
       //256
-      //128
-      16
+      128
+      //16
     ),
     numObjAffineTiles=Some(16),
     numColsInBgPalPow=(
