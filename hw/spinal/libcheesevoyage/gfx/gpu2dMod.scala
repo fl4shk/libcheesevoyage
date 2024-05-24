@@ -8743,7 +8743,7 @@ case class Gpu2d(
           )
         }
         //cWrObjArr(idx).up
-        switch (rWrFullObjPipeLineMemArrIdx(4)) {
+        switch (rWrFullObjPipeLineMemArrIdx(4) + 1) {
           for (
             jdx <- 0
             until (1 << rWrFullObjPipeLineMemArrIdx(4).getWidth)
@@ -8939,7 +8939,7 @@ case class Gpu2d(
         )
           .setName(s"dMyWrObj_back_$idx")
         linkArr += dMyWrObj
-        switch (rWrFullObjPipeLineMemArrIdx(5)) {
+        switch (rWrFullObjPipeLineMemArrIdx(5) + 1) {
           for (
             jdx <- 0
             until (1 << rWrFullObjPipeLineMemArrIdx(5).getWidth)
