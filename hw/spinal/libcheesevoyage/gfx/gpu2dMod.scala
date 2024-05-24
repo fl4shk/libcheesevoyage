@@ -2263,17 +2263,18 @@ case class Gpu2d(
               Some(objTileMemInit)
             }
             case None => {
-              //val tempArr = new ArrayBuffer[Gpu2dTileSlice]()
-              //for (kdx <- 0 until tempNumObjTileSlices) {
-              //  tempArr += Gpu2dTileSlice(
-              //    params=params,
-              //    isObj=true,
-              //    isAffine=idx != 0,
-              //  ).getZero
-              //}
+              val tempArr = new ArrayBuffer[Gpu2dTileSlice]()
+              for (kdx <- 0 until tempNumObjTileSlices) {
+                tempArr += Gpu2dTileSlice(
+                  params=params,
+                  isObj=true,
+                  isAffine=idx != 0,
+                ).getZero
+              }
+              Some(tempArr)
               //Some(tempArr)
               //Some(Array.fill(tempNumObjTileSlices)((0)).toSeq)
-              Some(Gpu2dTest.objTileMemInit(params=params))
+              //Some(Gpu2dTest.objTileMemInit(params=params))
               //None
             }
           }
@@ -4718,11 +4719,11 @@ case class Gpu2d(
             ],
           ) => (
             curr.hazardCmp.cmp(prev.hazardCmp)
-            && 
-            PipeMemRmwPayloadExt.defaultDoHazardCmpFunc(
-              curr=curr,
-              prev=prev,
-            )
+            //&& 
+            //PipeMemRmwPayloadExt.defaultDoHazardCmpFunc(
+            //  curr=curr,
+            //  prev=prev,
+            //)
             //curr.hazardCmp.objAttrsMemIdx
             //=/= prev.hazardCmp.objAttrsMemIdx
           )
@@ -6194,31 +6195,34 @@ case class Gpu2d(
     ) extends Bundle {
       //val cnt = UInt(wrObjPipeCntWidth(isAffine) bits),
       //val rawObjAttrsMemIdx
-      val objAttrsMemIdx = (!isAffine) generate (
-        UInt(
-          (params.objAttrsMemIdxTileCntWidth - params.objCntWidthShift)
-          bits
-        )
-      )
-      val affineObjAttrsMemIdx = (isAffine) generate (
-        UInt(
-          //(params.objAttrsMemIdxTileCntWidth - params.objCntWidthShift)
-          params.objAffineAttrsMemIdxWidth
-          bits
-        )
-      )
+      //val objAttrsMemIdx = (!isAffine) generate (
+      //  UInt(
+      //    (params.objAttrsMemIdxTileCntWidth - params.objCntWidthShift)
+      //    bits
+      //  )
+      //)
+      //val affineObjAttrsMemIdx = (isAffine) generate (
+      //  UInt(
+      //    //(params.objAttrsMemIdxTileCntWidth - params.objCntWidthShift)
+      //    params.objAffineAttrsMemIdxWidth
+      //    bits
+      //  )
+      //)
       val anyPxPosInLine = Bool()
       def cmp(
-        that: WrObjPipeSlmRmwHazardCmp
+        prev: WrObjPipeSlmRmwHazardCmp
       ) = (
         (
-          if (!isAffine) (
-            this.objAttrsMemIdx
-            =/= that.objAttrsMemIdx
-          ) else (
-            this.affineObjAttrsMemIdx
-            =/= that.affineObjAttrsMemIdx
-          )
+          //if (!isAffine) (
+          //  this.objAttrsMemIdx
+          //  =/= prev.objAttrsMemIdx
+          //) else (
+          //  this.affineObjAttrsMemIdx
+          //  =/= prev.affineObjAttrsMemIdx
+          //)
+          True
+          //pxPosXGridIdxLsb
+          //=== prev.pxPosXGridIdxLsb
         ) && (
           anyPxPosInLine
         )
@@ -8386,6 +8390,7 @@ case class Gpu2d(
       wrObjPipeIdxSlmRmwModBack
       - wrObjPipeIdxSlmRmwModFront
       + 1
+      + 1
     )
 
     def wrObjPipeNumForkOrJoinRenderers = (
@@ -8815,22 +8820,22 @@ case class Gpu2d(
         )
         linkArr += fMyDown
         for (jdx <- 0 until nfMyArr.size) {
-          val sLink = StageLink(
-            up=nfMyArr(jdx),
-            down=Node(),
-          )
-          linkArr += sLink
+          //val sLink = StageLink(
+          //  up=nfMyArr(jdx),
+          //  down=Node(),
+          //)
+          //linkArr += sLink
 
-          val s2mLink = S2MLink(
-            up=sLink.down,
-            down=Node(),
-          )
-          linkArr += s2mLink
+          //val s2mLink = S2MLink(
+          //  up=sLink.down,
+          //  down=Node(),
+          //)
+          //linkArr += s2mLink
           /*s2mLink*/
           //
-          //nfMyArr(jdx)
+          nfMyArr(jdx)
           //sLink
-          s2mLink.down.driveTo(
+          /*s2mLink.down*/.driveTo(
             wrObjSubLineMemArr(jdx).io.modBack
           )(
             con=(payload, node) => {
@@ -8844,10 +8849,21 @@ case class Gpu2d(
           wrObjSubLineMemArr(jdx).io.midModStages(1) := (
             //node(wrObjPipePayloadMain)
             //nfMyArr(jdx)(wrObjPipePayloadMain)
-            //nWrObjArr(idx)
-            down(
+            nWrObjArr(idx)
+            /*down*/
+            (
               //wrObjPipePayloadMain
               //wrObjPipePayloadSlmRmwModFrontOutp
+              wrObjPipePayloadMain(idx /*+ 1*/)
+            )
+            //nWrObjArr(idx)(
+            //  //wrObjPipePayloadMain
+            //  //wrObjPipePayloadSlmRmwModFrontOutp
+            //  wrObjPipePayloadMain(idx + 1)
+            //)
+          )
+          wrObjSubLineMemArr(jdx).io.midModStages(2) := (
+            /*s2mLink.*/down(
               wrObjPipePayloadMain(idx + 1)
             )
           )
@@ -16221,45 +16237,49 @@ case class Gpu2d(
                   )
                 })
               val myHazardCmp = tempOutp.subLineMemEntryExt.hazardCmp
-              if (kind == 0) {
-                //--------
-                //val prevTempRdAddr = KeepAttribute(
-                //  RegNextWhen(
-                //    tempRdAddr,
-                //    cWrObjArr(idx).down.isFiring,
-                //  ) init(tempRdAddr.getZero)
-                //)
-                //  .setName(s"wrObjPipe_12_prevTempRdAddr_${jdx}")
-                //val prevCnt = KeepAttribute(
-                //  RegNextWhen(
-                //    tempInp.cnt,
-                //    cWrObjArr(idx).down.isFiring,
-                //  ) init(tempInp.cnt.getZero)
-                //)
-                //  .setName(s"wrObjPipe_12_prevCnt_${jdx}")
-                //--------
-                //tempOutp.subLineMemEntryExt.doHazardCheck := (
-                //  (tempRdAddr === prevTempRdAddr)
-                //)
-                myHazardCmp.objAttrsMemIdx := (
-                  tempInp.stage0.objAttrsMemIdx()
-                )
-                //myHazardCmp.cnt := tempInp.stage0.rawObjAttrsMemIdx
-                //for (kdx <- 0 until wrObjSubLineMemArr.size) {
-                //  //wrObjSubLineMemArr(kdx).io.doHazardCheck := (
-                //  //  tempRdAddr === prevTempRdAddr
-                //  //  && tempInp.cnt =/= prevCnt
-                //  //)
-                //  //wrObjSubLineMemArr(kdx).io.doHazardCheck := (
-                //  //  tempRdAddr === prevTempRdAddr
-                //  //  && tempInp.cnt =/= prevCnt
-                //  //)
-                //}
-              } else { // if (kind == 1)
-                myHazardCmp.affineObjAttrsMemIdx := (
-                  tempInp.stage0.affineObjAttrsMemIdx()
-                )
-              }
+              //myHazardCmp.pxPosXGridIdxLsb := tempInp.pxPosXGridIdxLsb
+              //if (kind == 0) {
+              //  //--------
+              //  //val prevTempRdAddr = KeepAttribute(
+              //  //  RegNextWhen(
+              //  //    tempRdAddr,
+              //  //    cWrObjArr(idx).down.isFiring,
+              //  //  ) init(tempRdAddr.getZero)
+              //  //)
+              //  //  .setName(s"wrObjPipe_12_prevTempRdAddr_${jdx}")
+              //  //val prevCnt = KeepAttribute(
+              //  //  RegNextWhen(
+              //  //    tempInp.cnt,
+              //  //    cWrObjArr(idx).down.isFiring,
+              //  //  ) init(tempInp.cnt.getZero)
+              //  //)
+              //  //  .setName(s"wrObjPipe_12_prevCnt_${jdx}")
+              //  //--------
+              //  //tempOutp.subLineMemEntryExt.doHazardCheck := (
+              //  //  (tempRdAddr === prevTempRdAddr)
+              //  //)
+              //  //--------
+              //  //myHazardCmp.objAttrsMemIdx := (
+              //  //  tempInp.stage0.objAttrsMemIdx()
+              //  //)
+              //  //--------
+
+              //  //myHazardCmp.cnt := tempInp.stage0.rawObjAttrsMemIdx
+              //  //for (kdx <- 0 until wrObjSubLineMemArr.size) {
+              //  //  //wrObjSubLineMemArr(kdx).io.doHazardCheck := (
+              //  //  //  tempRdAddr === prevTempRdAddr
+              //  //  //  && tempInp.cnt =/= prevCnt
+              //  //  //)
+              //  //  //wrObjSubLineMemArr(kdx).io.doHazardCheck := (
+              //  //  //  tempRdAddr === prevTempRdAddr
+              //  //  //  && tempInp.cnt =/= prevCnt
+              //  //  //)
+              //  //}
+              //} else { // if (kind == 1)
+              //  myHazardCmp.affineObjAttrsMemIdx := (
+              //    tempInp.stage0.affineObjAttrsMemIdx()
+              //  )
+              //}
               myHazardCmp.anyPxPosInLine := (
                 tempInp.pxPosInLine(0)
                 || tempInp.pxPosInLine(tempInp.pxPosInLine.size - 1)

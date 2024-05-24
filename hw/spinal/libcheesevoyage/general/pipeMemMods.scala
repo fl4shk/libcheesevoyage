@@ -45,10 +45,12 @@ object PipeMemRmwPayloadExt {
   ](
     curr: PipeMemRmwPayloadExt[WordT, HazardCmpT],
     prev: PipeMemRmwPayloadExt[WordT, HazardCmpT],
-  ): Bool = {
-    //curr === b
-    curr.memAddr === prev.memAddr
-  }
+  ): Bool = (
+    True
+    ////curr === b
+    //curr.memAddr === prev.memAddr
+    ////&& prev.hazardId.msb
+  )
 }
 case class PipeMemRmwPayloadExt[
   WordT <: Data,
@@ -125,7 +127,7 @@ case class PipeMemRmwPayloadExt[
   // hazard for when an address is already in the pipeline 
   val hazardId = (optEnableModDuplicate) generate (
     SInt(log2Up(
-      PipeMemRmw.numPostFrontStages(
+      PipeMemRmw.numPostFrontPreWriteStages(
         modStageCnt=modStageCnt,
       )
     ) + 3 bits)
@@ -211,11 +213,11 @@ object PipeMemRmw {
   ) = log2Up(wordCount)
   //def kindRmw = 0
   //def kindSimpleDualPort = 1
-  def numPostFrontStages(
+  def numPostFrontPreWriteStages(
     modStageCnt: Int,
   ) = (
     //modStageCnt
-    3 + modStageCnt + 1
+    3 + modStageCnt //+ 1
     //- 1
     //+ 1
   )
@@ -547,7 +549,7 @@ extends Component {
       )
       val myUpExtDel = KeepAttribute(
         Vec.fill(
-          PipeMemRmw.numPostFrontStages(
+          PipeMemRmw.numPostFrontPreWriteStages(
             modStageCnt=modStageCnt,
           ) //- 1
         )(
@@ -566,12 +568,12 @@ extends Component {
             memArrIdx=memArrIdx,
           )
           val tempIdx = (
-            PipeMemRmw.numPostFrontStages(
+            PipeMemRmw.numPostFrontPreWriteStages(
               modStageCnt=modStageCnt
             )
             - modStageCnt
-            - 1
-            //+ 1
+            //- 1
+            ////+ 1
             + idx 
           )
           //println(
@@ -751,96 +753,217 @@ extends Component {
     //  }
     //}
     //--------
-    val nextDuplicateIt = (optEnableModDuplicate) generate (
-      Bool()
-    )
-    val rDuplicateIt = (optEnableModDuplicate) generate (
-      RegNext(nextDuplicateIt) init(False)
-    )
+    //val nextDuplicateIt = (optEnableModDuplicate) generate (
+    //  Bool()
+    //)
+    //val rDuplicateIt = (optEnableModDuplicate) generate (
+    //  RegNext(nextDuplicateIt) init(False)
+    //)
     //--------
+    object State extends SpinalEnum(
+      defaultEncoding=binarySequential
+    ) {
+      val
+        IDLE,
+        DELAY
+        //WAIT_CLEAR
+        = newElement();
+    }
+    val nextState = (optEnableModDuplicate) generate (
+      State()
+    )
+    val rState = (optEnableModDuplicate) generate (
+      RegNext(nextState) init(State.IDLE)
+    )
+    //val rPostDuplicateCnt = Reg(cloneOf(upExt(0).hazardId))
     def myHazardCmpFunc(
       curr: PipeMemRmwPayloadExt[WordT, HazardCmpT],
       prev: PipeMemRmwPayloadExt[WordT, HazardCmpT],
-    ): Bool = {
-      doHazardCmpFunc match {
-        case Some(myHazardCmpFuncA) => {
-          myHazardCmpFuncA(
-            //upExt(0),
-            //rUpExtDel(0),
-            curr,
-            prev,
+      //hazardIdMsbCond: Boolean,
+    ): Bool = (
+      (
+        doHazardCmpFunc match {
+          case Some(myHazardCmpFuncA) => (
+            myHazardCmpFuncA(
+              //upExt(0),
+              //rUpExtDel(0),
+              curr,
+              prev,
+            )
+          )
+          case None => (
+            PipeMemRmwPayloadExt.defaultDoHazardCmpFunc(
+              //upExt(0),
+              //rUpExtDel(0),
+              curr,
+              prev,
+            )
           )
         }
-        case None => {
-          PipeMemRmwPayloadExt.defaultDoHazardCmpFunc(
-            //upExt(0),
-            //rUpExtDel(0),
-            curr,
-            prev,
+      ) && (
+        True
+        //if (hazardIdMsbCond) (
+        //  prev.hazardId.msb //^ hazardIdMsbCond
+        //) else (
+        //  True
+        //)
+      )
+    )
+    val myUpExtDel = (optEnableModDuplicate) generate (
+      mod.front.myUpExtDel
+    )
+    val tempMyUpExtDelFindFirst0 = (optEnableModDuplicate) generate (
+      KeepAttribute(
+        myUpExtDel.sFindFirst(
+          //myHazardCmpFunc(upExt(0), _, true)
+          //upExt(0).memAddr === _.memAddr
+          //&& myHazardCmpFunc(upExt(0), _)
+          (prev) => (
+            upExt(0).memAddr === prev.memAddr
+            //&& myHazardCmpFunc(upExt(0), prev)
           )
-        }
-      }
-    }
+          //&& myHazardCmpFunc(upExt(0), prev)
+        )
+        .setName("cFrontArea_tempMyUpExtDelFindFirst0")
+      )
+    )
+    val tempMyUpExtDelFindFirst1 = (optEnableModDuplicate) generate (
+      KeepAttribute(
+        myUpExtDel.sFindFirst(
+          //myHazardCmpFunc(upExt(0), _, true)
+          //upExt(0).hazardId.msb
+          //|| _.hazardId.msb
+          (prev) => (
+            upExt(0).memAddr === prev.memAddr
+            //&& myHazardCmpFunc(upExt(0), prev)
+          )
+        )
+        .setName("cFrontArea_tempMyUpExtDelFindFirst1")
+      )
+    )
     if (optEnableModDuplicate) {
-      nextDuplicateIt := rDuplicateIt
-      when (!rDuplicateIt) {
-        when (
-          up.isValid
-        ) {
-          val myUpExtDel = mod.front.myUpExtDel
-          val tempMyUpExtDelFindFirst = KeepAttribute(
-            myUpExtDel.sFindFirst(
-              myHazardCmpFunc(upExt(0), _)
-            )
-            .setName("cFrontArea_tempMyUpExtDelFindFirst")
-          )
+      nextState := rState
+      switch (rState) {
+        is (State.IDLE) {
           when (
-            //io.doHazardCheck
-            //&& (
-            //  upExt(0).memAddr === rUpMemAddrDel(0)
-            //)
-            //--------
-            tempMyUpExtDelFindFirst._1
-            //myHazardCmpFunc(
-            //  upExt(0),
-            //  //rUpExtDel(0),
-            //  mod.cMid0Front
-            //)
+            up.isValid
           ) {
-            duplicateIt()
-            //terminateIt()
-            nextDuplicateIt := True
-            nextHazardId := (
-              (
-                S(s"${nextHazardId.getWidth}'d${myUpExtDel.size - 1}")
-                - Cat(U"3'd0", tempMyUpExtDelFindFirst._2).asSInt
+            //when (RegNext(rDuplicateIt) init(False)) {
+            //  
+            //} else
+            when (
+              tempMyUpExtDelFindFirst0._1
+              && myHazardCmpFunc(
+                curr=upExt(0),
+                prev=myUpExtDel(0),
               )
-              //tempMyUpExtDelFindFirst._2.asSInt
-              //modStageCnt
-              //- (
-              //  if (!forFmax) (
-              //    1
-              //  ) else ( // if (forFmax)
-              //    0 
-              //    //1
-              //  )
-              //)
-            )
+
+              //&& myUpExtDel.sFindFirst(
+              //  _.hazardId.msb
+              //)._1
+            ) {
+              //// `duplicateIt()` instead of `haltIt()` so that we can let
+              //// through 
+              duplicateIt()
+              //terminateIt()
+              //nextDuplicateIt := True
+              nextState := State.DELAY
+              nextHazardId := (
+                (
+                  S(s"${nextHazardId.getWidth}'d${myUpExtDel.size - 1}")
+                  - Cat(U"3'd0", tempMyUpExtDelFindFirst0._2).asSInt
+                )
+              )
+            }
           }
         }
-      } otherwise { // when (rDuplicateIt)
-        //when (!rHazardId.msb) {
-          when (down.isFiring) {
-            nextHazardId := hazardIdMinusOne
-          }
-          when (nextHazardId.msb) {
-            nextDuplicateIt := False
-          } otherwise {
-            duplicateIt()
-            //terminateIt()
-          }
+        is (State.DELAY) {
+          //when (!rHazardId.msb) {
+            when (down.isFiring) {
+              nextHazardId := hazardIdMinusOne
+            }
+            when (nextHazardId.msb) {
+              //nextDuplicateIt := False
+              //nextState := State.WAIT_CLEAR
+              nextState := State.IDLE
+            } otherwise {
+              duplicateIt()
+              //haltIt()
+              //terminateIt()
+            }
+          //}
+        }
+        //is (State.WAIT_CLEAR) {
         //}
       }
+      //nextDuplicateIt := rDuplicateIt
+      //when (!rDuplicateIt) {
+      //  when (
+      //    up.isValid
+      //  ) {
+      //    val myUpExtDel = mod.front.myUpExtDel
+      //    val tempMyUpExtDelFindFirst = KeepAttribute(
+      //      myUpExtDel.sFindFirst(
+      //        myHazardCmpFunc(upExt(0), _)
+      //      )
+      //      .setName("cFrontArea_tempMyUpExtDelFindFirst")
+      //    )
+      //    //when (RegNext(rDuplicateIt) init(False)) {
+      //    //  
+      //    //} else
+      //    when (
+      //      //io.doHazardCheck
+      //      //&& (
+      //      //  upExt(0).memAddr === rUpMemAddrDel(0)
+      //      //)
+      //      //--------
+      //      tempMyUpExtDelFindFirst._1
+      //      //&& !(
+      //      //  RegNext(nextDuplicateIt) init(nextDuplicateIt.getZero)
+      //      //)
+      //      //myHazardCmpFunc(
+      //      //  upExt(0),
+      //      //  //rUpExtDel(0),
+      //      //  mod.cMid0Front
+      //      //)
+      //      //&& (
+      //      //  !RegNext(rDuplicateIt) init(False)
+      //      //)
+      //    ) {
+      //      duplicateIt()
+      //      //terminateIt()
+      //      nextDuplicateIt := True
+      //      nextHazardId := (
+      //        (
+      //          S(s"${nextHazardId.getWidth}'d${myUpExtDel.size - 1}")
+      //          - Cat(U"3'd0", tempMyUpExtDelFindFirst._2).asSInt
+      //        )
+      //        //tempMyUpExtDelFindFirst._2.asSInt
+      //        //modStageCnt
+      //        //- (
+      //        //  if (!forFmax) (
+      //        //    1
+      //        //  ) else ( // if (forFmax)
+      //        //    0 
+      //        //    //1
+      //        //  )
+      //        //)
+      //      )
+      //    }
+      //  }
+      //} otherwise { // when (rDuplicateIt)
+      //  //when (!rHazardId.msb) {
+      //    when (down.isFiring) {
+      //      nextHazardId := hazardIdMinusOne
+      //    }
+      //    when (nextHazardId.msb) {
+      //      nextDuplicateIt := False
+      //    } otherwise {
+      //      duplicateIt()
+      //      //terminateIt()
+      //    }
+      //  //}
+      //}
     }
     //setDoDuplicateIt(false)
 
@@ -919,7 +1042,7 @@ extends Component {
     //    //address=myDownExt.memAddr,
     //  )
     //}
-    val tempCond = (
+    val tempCond = KeepAttribute(
       //up.isValid
       //&& !rSetRdId
       //up.isFiring
@@ -928,11 +1051,24 @@ extends Component {
       //--------
       //!rSetRdId
       //&& 
-      if (optEnableModDuplicate) {
-        upExt(1).hazardId.msb
-      } else {
-        True
-      }
+      if (optEnableModDuplicate) (
+        //upExt(1).hazardId.msb
+        //nextState =/= State.DELAY
+        Mux[Bool](
+          nextState === State.IDLE,
+          up.isFiring,
+          down.isFiring,
+        )
+        //tempMyUpExtDelFindFirst1._1
+        //&& myHazardCmpFunc(
+        //  curr=upExt(1),
+        //  prev=myUpExtDel(0),
+        //)
+        //|| myUpExtDel(myUpExtDel)
+      ) else (
+        //True
+        up.isFiring
+      )
     )
 
     myRdMemWord := modMem.readSync(
@@ -944,7 +1080,12 @@ extends Component {
       //) init(0x0)
       address=upExt(1).memAddr,
       //address=myDownExt.memAddr,
-      enable=up.isFiring && tempCond,
+      enable=(
+        tempCond
+        //down.isFiring && tempCond
+        //up.isFiring && tempCond
+        //down.isFiring && tempCond
+      ),
     )
     when (
       up.isValid
@@ -1777,7 +1918,7 @@ extends Component {
     val upExt = Vec.fill(2)(mkExt()).setName("cBackArea_upExt")
     upExt(1) := upExt(0)
     upExt(1).allowOverride
-    mod.front.myUpExtDel(mod.front.myUpExtDel.size - 1) := upExt(1)
+    //mod.front.myUpExtDel(mod.front.myUpExtDel.size - 1) := upExt(1)
     val tempUpMod = modType().setName("cBackArea_tempUpMod")
     tempUpMod.allowOverride
     tempUpMod := up(mod.back.pipePayload)
@@ -1799,11 +1940,11 @@ extends Component {
     }
     val extDbgDoWriteCond = (
       (
-        if (optEnableModDuplicate) (
-          upExt(0).hazardId.msb
-        ) else (
+        //if (optEnableModDuplicate) (
+        //  upExt(0).hazardId.msb
+        //) else (
           True
-        )
+        //)
       )
       //|| (
       //  if (optEnableClear) (

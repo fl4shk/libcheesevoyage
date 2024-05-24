@@ -350,7 +350,9 @@ object Gpu2dSim extends App {
       //back=1,
       //--------
       visib=(
-        320
+        //64
+        96
+        //320
         //480
         //640
         //639
@@ -358,7 +360,10 @@ object Gpu2dSim extends App {
       //front=1,
       //sync=1,
       //back=1,
-      front=40,
+      front=(
+        //40
+        20
+      ),
       //sync=40,
       //back=40,
       //front=4,
@@ -420,14 +425,14 @@ object Gpu2dSim extends App {
     //  //y=log2Up(2),
     //),
     bgTileSize2dPow=ElabVec2[Int](
-      x=log2Up(16),
-      y=log2Up(16),
+      //x=log2Up(16),
+      //y=log2Up(16),
       //x=log2Up(8),
       //y=log2Up(8),
       //x=log2Up(4),
       //y=log2Up(4),
-      //x=log2Up(2),
-      //y=log2Up(2),
+      x=log2Up(2),
+      y=log2Up(2),
       //x=log2Up(1),
       //y=log2Up(1),
     ),
@@ -475,7 +480,8 @@ object Gpu2dSim extends App {
     //numObjsPow=log2Up(8),
     numObjsPow=(
       //log2Up(16)
-      log2Up(8)
+      //log2Up(8)
+      log2Up(4)
     ),
     numObjsAffinePow=(
       //log2Up(16)
@@ -485,17 +491,20 @@ object Gpu2dSim extends App {
     //numBgTilesPow=Some(log2Up(2)),
     numBgTiles=Some(
       //16
-      256
+      //256
       //512
       //1024
+      //128
+      16
     ),
     //numObjTilesPow=None,
     numObjTiles=Some(
       //16
       //64
       //512
-      256
+      //256
       //128
+      16
     ),
     numObjAffineTiles=Some(16),
     numColsInBgPalPow=(
