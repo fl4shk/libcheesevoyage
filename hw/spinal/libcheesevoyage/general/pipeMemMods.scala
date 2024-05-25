@@ -1114,8 +1114,10 @@ extends Component {
         //up.isFiring && 
         //upExt(1).hazardId.msb
         (
+          //nextState === State.IDLE
+          //|| 
           rState === State.IDLE
-          && !rHaltItIdle
+          //&& !rHaltItIdle
         )
         //&& !nextDidChangeState
         //&& rDidChangeState
@@ -1132,8 +1134,8 @@ extends Component {
         //)
         //|| myUpExtDel(myUpExtDel)
       ) else (
-        True
-        //up.isFiring
+        //True
+        up.isFiring
       )
     )
 
@@ -1147,7 +1149,8 @@ extends Component {
       address=upExt(1).memAddr,
       //address=myDownExt.memAddr,
       enable=(
-        up.isFiring && tempCond
+        tempCond
+        //up.isFiring && tempCond
         //down.isFiring && tempCond
         //up.isFiring && tempCond
         //down.isFiring && tempCond
