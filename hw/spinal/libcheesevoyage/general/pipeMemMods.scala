@@ -2214,7 +2214,10 @@ extends Component {
       )
     )
     myUpExtDel(myUpExtDel.size - 1) := (
-      RegNext(myUpExtDel(myUpExtDel.size - 2))
+      RegNextWhen(
+        myUpExtDel(myUpExtDel.size - 2),
+        down.isFiring,
+      )
       init(myUpExtDel(myUpExtDel.size - 1).getZero)
     )
     
