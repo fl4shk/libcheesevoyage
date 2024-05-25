@@ -6231,7 +6231,7 @@ case class Gpu2d(
           //=== prev.pxPosXGridIdxLsb
         ) && (
           anyPxPosInLine
-          || prev.anyPxPosInLine
+          && prev.anyPxPosInLine
         )
       )
     }

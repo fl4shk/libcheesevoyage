@@ -564,12 +564,20 @@ extends Component {
           //PipeMemRmw.numPostFrontPreWriteStages
           (
             modStageCnt=modStageCnt,
-          ) //- 1
+          ) + 1 //- 1
         )(
           /*Reg*/(mkExt())
           //init(mkExt().getZero)
         )
       )
+      val myUpExtDelPreBack = KeepAttribute(
+        Vec.fill(myUpExtDel.size - 1)(
+          mkExt()
+        )
+      )
+      for (idx <- 0 until myUpExtDelPreBack.size) {
+        myUpExtDelPreBack(idx) := myUpExtDel(idx)
+      }
       println(s"myUpExtDel.size: ${myUpExtDel.size}")
       if (optEnableModDuplicate) {
         for (
@@ -655,6 +663,19 @@ extends Component {
       //--------
     }
     val back = new Area {
+      //val dbgDoClear = (optEnableClear) generate (
+      //  KeepAttribute(Bool())
+      //)
+      val dbgDoWrite = /*(debug) generate*/ (
+        KeepAttribute(Bool())
+      )
+      val myWriteAddr = KeepAttribute(
+        cloneOf(front.myUpExtDel(0).memAddr)
+      )
+      val myWriteData = KeepAttribute(
+        cloneOf(front.myUpExtDel(0).modMemWord)
+      )
+      val myWriteEnable = KeepAttribute(Bool())
       val pipe = PipeHelper(linkArr=linkArr)
       val pipePayload = Payload(modType())
 
@@ -886,24 +907,63 @@ extends Component {
     //  )
     //)
     val rDidDelayItIdle = Reg(Bool()) init(False)
+    def findFirstFunc(
+      prev: PipeMemRmwPayloadExt[
+        WordT,
+        HazardCmpT
+      ],
+      //memAddr: UInt,
+    ) = (
+      //(upExt(1).memAddr === prev.memAddr)
+      (upExtRealMemAddr === prev.memAddr)
+      //&& prev.hazardId.msb
+      //&& (prev.hazardId === 0)
+      //&& upExt(1).hazardId.msb
+      && myHazardCmpFunc(upExt(1), prev)
+    )
+    val myUpExtDelPreBack = mod.front.myUpExtDelPreBack
     val tempMyUpExtDelFindFirst1 = (optEnableModDuplicate) generate (
       KeepAttribute(
-        myUpExtDel.sFindFirst(
-          //myHazardCmpFunc(upExt(0), _, true)
-          //upExt(0).memAddr === _.memAddr
-          //&& myHazardCmpFunc(upExt(0), _)
-          (prev) => (
-            //(upExt(1).memAddr === prev.memAddr)
-            (upExtRealMemAddr === prev.memAddr)
-            //&& prev.hazardId.msb
-            //&& upExt(1).hazardId.msb
-            && myHazardCmpFunc(upExt(1), prev)
-          )
+        myUpExtDelPreBack
+        /*myUpExtDel*/.sFindFirst(
+          ////myHazardCmpFunc(upExt(0), _, true)
+          ////upExt(0).memAddr === _.memAddr
+          ////&& myHazardCmpFunc(upExt(0), _)
+          //(prev) => (
+          //  //(upExt(1).memAddr === prev.memAddr)
+          //  (upExtRealMemAddr === prev.memAddr)
+          //  //&& prev.hazardId.msb
+          //  //&& (prev.hazardId === 0)
+          //  //&& upExt(1).hazardId.msb
+          //  && myHazardCmpFunc(upExt(1), prev)
+          //)
+          findFirstFunc(_)
           //&& myHazardCmpFunc(upExt(0), prev)
         )
         .setName("cFrontArea_tempMyUpExtDelFindFirst1")
       )
     )
+    //val tempMyUpExtDelFindFirst2 = (optEnableModDuplicate) generate (
+    //  KeepAttribute(
+    //    myUpExtDel.sFindFirst(
+    //      //myHazardCmpFunc(upExt(0), _, true)
+    //      //upExt(0).memAddr === _.memAddr
+    //      //&& myHazardCmpFunc(upExt(0), _)
+    //      (prev) => (
+    //        //(upExt(1).memAddr === prev.memAddr)
+    //        //(upExtRealMemAddr === prev.memAddr)
+    //        //&& prev.hazardId.msb
+    //        //&& 
+    //        //(prev.hazardId === 0)
+    //        //&& upExt(1).hazardId.msb
+    //        && 
+    //        myHazardCmpFunc(upExt(1), prev)
+    //      )
+    //      //&& myHazardCmpFunc(upExt(0), prev)
+    //    )
+    //    .setName("cFrontArea_tempMyUpExtDelFindFirst2")
+    //  )
+    //)
     //val tempMyUpExtDelDoCancelFrontFindFirst = (
     //  (optEnableModDuplicate) generate (
     //    myUpExtDel.sFindFirst(
@@ -954,7 +1014,29 @@ extends Component {
               upExt(1).hazardId := nextHazardId
               upExtRealMemAddr := upExt(0).memAddr
               when (
-                tempMyUpExtDelFindFirst1._1
+                Mux[Bool](
+                  rPrevStateWhen === State.IDLE,
+                  tempMyUpExtDelFindFirst1._1,
+                  //tempMyUpExtDelFindFirst2._1,
+                  //True,
+                  //findFirstFunc(
+                  //  //myUpExtDel(myUpExtDel.size - 1)
+                  //)
+                  (
+                    //mod.back.dbgDoWrite
+                    mod.back.myWriteEnable
+                    && 
+                    //!mod.back.dbgDoClear
+                    !io.clear.fire
+                    //&& (
+                    //  upExtRealMemAddr
+                    //  === mod.back.myWriteAddr 
+                    //)
+                    && findFirstFunc(
+                      prev=myUpExtDel(myUpExtDel.size - 1)
+                    )
+                  )
+                )
               ) {
                 rDidDelayItIdle := False
                 duplicateIt()
@@ -967,7 +1049,7 @@ extends Component {
                     // after `cFront` and strictly before `cBack`
                     // if including `cBack` in `myUpExtDel`, then it should
                     // be `myUpExtDel.size - 1`
-                    S(s"${nextHazardId.getWidth}'d${myUpExtDel.size}")
+                    S(s"${nextHazardId.getWidth}'d${myUpExtDel.size - 1}")
                     - Cat(U"3'd0", tempMyUpExtDelFindFirst1._2).asSInt
                   )
                 )
@@ -1000,9 +1082,9 @@ extends Component {
             //terminateIt()
           } otherwise {
             duplicateIt()
-            upExt(1).memAddr := (
-              upExtRealMemAddr + 1
-            )
+            //upExt(1).memAddr := (
+            //  upExt(0).memAddr + upExtRealMemAddr + 1
+            //)
             //myStopIt := True
             //haltIt()
             //terminateIt()
@@ -2045,12 +2127,12 @@ extends Component {
       upExt(1) := upExt(0)
     //}
 
-    myUpExtDel(myUpExtDel.size - 1) := (
-      RegNext(myUpExtDel(myUpExtDel.size - 1))
-      init(myUpExtDel(myUpExtDel.size - 1).getZero)
+    myUpExtDel(myUpExtDel.size - 2) := (
+      RegNext(myUpExtDel(myUpExtDel.size - 2))
+      init(myUpExtDel(myUpExtDel.size - 2).getZero)
     )
     when (up.isValid) {
-      myUpExtDel(myUpExtDel.size - 1) := upExt(1)
+      myUpExtDel(myUpExtDel.size - 2) := upExt(1)
     }
 
     val tempUpMod = modType().setName("cBackArea_tempUpMod")
@@ -2060,12 +2142,19 @@ extends Component {
       outpExt=upExt(0),
       memArrIdx=memArrIdx,
     )
-    val dbgDoClear = (optEnableClear) generate (
-      KeepAttribute(Bool())
-    )
-    val dbgDoWrite = /*(debug) generate*/ (
-      Bool().addAttribute("keep")
-    )
+    //val dbgDoClear = (optEnableClear) generate (
+    //  KeepAttribute(Bool())
+    //)
+    //val dbgDoWrite = /*(debug) generate*/ (
+    //  KeepAttribute(Bool())
+    //)
+    val dbgDoWrite = mod.back.dbgDoWrite
+    //val dbgDoClear = mod.back.dbgDoClear
+    //when (
+    //  dbgDoWrite
+    //  && !dbgDoClear
+    //) {
+    //}
     if (
       //debug
       true
@@ -2088,7 +2177,8 @@ extends Component {
       //  )
       //)
     )
-    val myWriteAddr = KeepAttribute(
+    val myWriteAddr = mod.back.myWriteAddr
+    myWriteAddr := (
       if (optEnableClear) (
         Mux[UInt](
           io.clear.fire,
@@ -2099,7 +2189,8 @@ extends Component {
         upExt(0).memAddr
       )
     )
-    val myWriteData = KeepAttribute(
+    val myWriteData = mod.back.myWriteData
+    myWriteData := (
       //upExt(0).modMemWord
       if (optEnableClear) (
         Mux[WordT](
@@ -2111,7 +2202,8 @@ extends Component {
         upExt(0).modMemWord
       )
     )
-    val myWriteEnable = KeepAttribute(
+    val myWriteEnable = mod.back.myWriteEnable
+    myWriteEnable := (
       dbgDoWrite
       || (
         if (optEnableClear) (
@@ -2120,6 +2212,10 @@ extends Component {
           False
         )
       )
+    )
+    myUpExtDel(myUpExtDel.size - 1) := (
+      RegNext(myUpExtDel(myUpExtDel.size - 2))
+      init(myUpExtDel(myUpExtDel.size - 1).getZero)
     )
     
     when (
