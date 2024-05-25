@@ -560,8 +560,8 @@ extends Component {
       )
       val myUpExtDel = KeepAttribute(
         Vec.fill(
-          //PipeMemRmw.numPostFrontStages
-          PipeMemRmw.numPostFrontPreWriteStages
+          PipeMemRmw.numPostFrontStages
+          //PipeMemRmw.numPostFrontPreWriteStages
           (
             modStageCnt=modStageCnt,
           ) //- 1
@@ -570,6 +570,7 @@ extends Component {
           //init(mkExt().getZero)
         )
       )
+      println(s"myUpExtDel.size: ${myUpExtDel.size}")
       if (optEnableModDuplicate) {
         for (
           //idx <- 0 until modStageCnt - 1
@@ -950,6 +951,7 @@ extends Component {
             //  //)
             //} otherwise {
               upExt(1) := upExt(0)
+              upExt(1).hazardId := nextHazardId
               upExtRealMemAddr := upExt(0).memAddr
               when (
                 tempMyUpExtDelFindFirst1._1
@@ -2043,13 +2045,13 @@ extends Component {
       upExt(1) := upExt(0)
     //}
 
-    //myUpExtDel(myUpExtDel.size - 1) := (
-    //  RegNext(myUpExtDel(myUpExtDel.size - 1))
-    //  init(myUpExtDel(myUpExtDel.size - 1).getZero)
-    //)
-    //when (up.isValid) {
-    //  myUpExtDel(myUpExtDel.size - 1) := upExt(1)
-    //}
+    myUpExtDel(myUpExtDel.size - 1) := (
+      RegNext(myUpExtDel(myUpExtDel.size - 1))
+      init(myUpExtDel(myUpExtDel.size - 1).getZero)
+    )
+    when (up.isValid) {
+      myUpExtDel(myUpExtDel.size - 1) := upExt(1)
+    }
 
     val tempUpMod = modType().setName("cBackArea_tempUpMod")
     tempUpMod.allowOverride
