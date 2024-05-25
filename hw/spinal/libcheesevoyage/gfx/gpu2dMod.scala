@@ -6233,6 +6233,7 @@ case class Gpu2d(
       //    bits
       //  )
       //)
+
       val objIdx = UInt(
         (
           params.objAttrsMemIdxWidth
@@ -6268,10 +6269,11 @@ case class Gpu2d(
             && prev.anyPxPosInLine
           )
         ) else ( // if (isPostDelay)
-          anyPxPosInLine
-          && prev.anyPxPosInLine
-          && (
-            objIdx =/= prev.objIdx
+          //anyPxPosInLine
+          //&& prev.anyPxPosInLine
+          //&&
+          (
+            objIdx + 1 =/= prev.objIdx
           )
         )
       )
@@ -13545,12 +13547,17 @@ case class Gpu2d(
         //)
         objAttrsMemArr(kind).io.rdEn := True
         objAttrsMemArr(kind).io.rdAddr := (
-          if (kind == 0) {
-            tempInp.objAttrsMemIdx.resized
-          } else {
-            tempInp.stage0.affineObjAttrsMemIdx().resized
-          }
+          RegNext(objAttrsMemArr(kind).io.rdAddr) init(0x0)
         )
+        when (cWrObjArr(idx).up.isFiring) {
+          objAttrsMemArr(kind).io.rdAddr := (
+            if (kind == 0) {
+              tempInp.objAttrsMemIdx.resized
+            } else {
+              tempInp.stage0.affineObjAttrsMemIdx().resized
+            }
+          )
+        }
       }
       //HandleDualPipe(
       //  stageData=stageData.craft(1)
@@ -13615,7 +13622,12 @@ case class Gpu2d(
         //)
         //objAttrsMem.io.rdEn := True
         //objAttrsMem.io.rdAddr := tempInp.objAttrsMemIdx()
-        tempOutp.objAttrs := objAttrsMemArr(kind).io.rdData
+        tempOutp.objAttrs := (
+          RegNext(tempOutp.objAttrs) init(tempOutp.objAttrs.getZero)
+        )
+        when (cWrObjArr(idx).up.isFiring) {
+          tempOutp.objAttrs := objAttrsMemArr(kind).io.rdData
+        }
         val tempObjXStart = (
           if (kind == 0) {
             tempInp.objXStart()
@@ -14295,30 +14307,37 @@ case class Gpu2d(
         if (kind == 0) {
           objTileMemArr(kind).io.rdEn := True
           objTileMemArr(kind).io.rdAddr := (
-            if (
-              (kind == 0 && params.objTileWidthRshift > 0)
-              //|| (kind == 1 && params.objAffineTileWidthRshift > 0)
-            ) {
-              Cat(
-                tempInp.objAttrs.tileIdx,
-                tempOutp.tilePxsCoord(0).y,
-                (
-                  tempInp.objXStart()(
-                    //tempInp.objXStart().high
-                    params.objTileSize2dPow.x - 1
-                    downto params.objSliceTileWidthPow
-                    //downto params.objTileWidthRshift
-                    //params.objTileWidthRshift - 1 downto 0
-                  )
-                ),
-              ).asUInt
-            } else {
-              Cat(
-                tempInp.objAttrs.tileIdx,
-                tempOutp.tilePxsCoord(0).y,
-              ).asUInt
-            }
+            RegNext(objTileMemArr(kind).io.rdAddr)
+            //init(objTileMemArr(kind).io.rdAddr.getZero)
+            init(0x0)
           )
+          when (cWrObjArr(idx).up.isFiring) {
+            objTileMemArr(kind).io.rdAddr := (
+              if (
+                (kind == 0 && params.objTileWidthRshift > 0)
+                //|| (kind == 1 && params.objAffineTileWidthRshift > 0)
+              ) {
+                Cat(
+                  tempInp.objAttrs.tileIdx,
+                  tempOutp.tilePxsCoord(0).y,
+                  (
+                    tempInp.objXStart()(
+                      //tempInp.objXStart().high
+                      params.objTileSize2dPow.x - 1
+                      downto params.objSliceTileWidthPow
+                      //downto params.objTileWidthRshift
+                      //params.objTileWidthRshift - 1 downto 0
+                    )
+                  ),
+                ).asUInt
+              } else {
+                Cat(
+                  tempInp.objAttrs.tileIdx,
+                  tempOutp.tilePxsCoord(0).y,
+                ).asUInt
+              }
+            )
+          }
         } else { // if (kind == 1)
           for (x <- 0 until myTempObjTileWidth) {
             objAffineTileMemArr(x).io.rdEn := True
@@ -15240,7 +15259,12 @@ case class Gpu2d(
           tempObjTileWidthPow(kind != 0)
         )
         if (kind == 0) {
-          tempOutp.tileSlice := objTileMemArr(kind).io.rdData
+          tempOutp.tileSlice := (
+            RegNext(tempOutp.tileSlice) init(tempOutp.tileSlice.getZero)
+          )
+          when (cWrObjArr(idx).up.isFiring) {
+            tempOutp.tileSlice := objTileMemArr(kind).io.rdData
+          }
         } else {
           for (kdx <- 0 until myTempObjTileWidth) {
             tempOutp.tilePx(kdx) := objAffineTileMemArr(kdx).io.rdData
@@ -15844,8 +15868,13 @@ case class Gpu2d(
         for (x <- 0 until myTempObjTileWidth) {
           objPalEntryMemA2d(kind)(x).io.rdEn := True
           objPalEntryMemA2d(kind)(x).io.rdAddr := (
-            tempInp.palEntryMemIdx(x)
+            RegNext(objPalEntryMemA2d(kind)(x).io.rdAddr) init(0x0)
           )
+          when (cWrObjArr(idx).up.isFiring) {
+            objPalEntryMemA2d(kind)(x).io.rdAddr := (
+              tempInp.palEntryMemIdx(x)
+            )
+          }
         }
       }
       //HandleDualPipe(
@@ -15903,8 +15932,14 @@ case class Gpu2d(
           //  address=tempInp.palEntryMemIdx(x)
           //)
           tempOutp.palEntry(x) := (
-            objPalEntryMemA2d(kind)(x).io.rdData
+            RegNext(tempOutp.palEntry(x))
+            init(tempOutp.palEntry(x).getZero)
           )
+          when (cWrObjArr(idx).up.isFiring) {
+            tempOutp.palEntry(x) := (
+              objPalEntryMemA2d(kind)(x).io.rdData
+            )
+          }
           tempOutp.pxPosInLine(x) := (
             tempInp.pxPosRangeCheck(x).x
             && tempInp.pxPosRangeCheck(x).y
@@ -16246,7 +16281,7 @@ case class Gpu2d(
             if (kind == 0) {
               //wrObjSubLineMemArr(jdx)
             } else {
-              val temp =wrObjAffineSubLineMemArr(jdx)
+              val temp = wrObjAffineSubLineMemArr(jdx)
               temp.io.rdEn := True
               temp.io.rdAddr := 0
               temp.io.rdAddr.allowOverride

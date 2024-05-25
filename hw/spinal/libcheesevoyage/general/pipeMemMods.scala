@@ -943,8 +943,9 @@ extends Component {
         //&& upExt(1).hazardId.msb
         && myHazardCmpFunc(upExt(1), prev, isPostDelay)
       ) else (
-        (upExtRealMemAddr === prev.memAddr)
-        || myHazardCmpFunc(upExt(1), prev, isPostDelay)
+        //(upExtRealMemAddr === prev.memAddr)
+        //|| 
+        myHazardCmpFunc(upExt(1), prev, isPostDelay)
       )
     )
     val myUpExtDelPreBack = mod.front.myUpExtDelPreBack
