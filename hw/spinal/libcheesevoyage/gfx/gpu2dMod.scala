@@ -8761,13 +8761,24 @@ case class Gpu2d(
           .setName(s"dMyWrObj_modFront_$idx")
         linkArr += dMyWrObj
         for (jdx <- 0 until njMyArr.size) {
-          wrObjSubLineMemArr(
-            (jdx + 0) % 2
-          ).io.midModStages(0) := (
-            dMyWrObj.up(wrObjPipePayloadSlmRmwModFrontInp(
-              (jdx + 0) % 2
-            ))
+          wrObjSubLineMemArr((jdx + 0) % 2).io.midModStages(0) := (
+            RegNext(
+              wrObjSubLineMemArr((jdx + 0) % 2).io.midModStages(0)
+            )
+            init(
+              wrObjSubLineMemArr((jdx + 0) % 2).io.midModStages(0)
+              .getZero
+            )
           )
+          when (dMyWrObj.up.isValid) {
+            wrObjSubLineMemArr(
+              (jdx + 0) % 2
+            ).io.midModStages(0) := (
+              dMyWrObj.up(wrObjPipePayloadSlmRmwModFrontInp(
+                (jdx + 0) % 2
+              ))
+            )
+          }
         }
         //cWrObjArr(idx).up
         switch (wrObjPipeLineMemArrIdx(4) + 1) {
@@ -8880,21 +8891,30 @@ case class Gpu2d(
             }
           )
           wrObjSubLineMemArr((jdx + 0) % 2).io.midModStages(1) := (
-            //node(wrObjPipePayloadMain)
-            //nfMyArr(jdx)(wrObjPipePayloadMain)
-            nWrObjArr(idx)
-            /*down*/
-            (
-              //wrObjPipePayloadMain
-              //wrObjPipePayloadSlmRmwModFrontOutp
-              wrObjPipePayloadMain(idx /*+ 1*/)
+            RegNext(wrObjSubLineMemArr((jdx + 0) % 2).io.midModStages(1))
+            init(
+              wrObjSubLineMemArr((jdx + 0) % 2).io.midModStages(1)
+              .getZero
             )
-            //nWrObjArr(idx)(
-            //  //wrObjPipePayloadMain
-            //  //wrObjPipePayloadSlmRmwModFrontOutp
-            //  wrObjPipePayloadMain(idx + 1)
-            //)
           )
+          when (nWrObjArr(idx).isValid) {
+            wrObjSubLineMemArr((jdx + 0) % 2).io.midModStages(1) := (
+              //node(wrObjPipePayloadMain)
+              //nfMyArr(jdx)(wrObjPipePayloadMain)
+              nWrObjArr(idx)
+              /*down*/
+              (
+                //wrObjPipePayloadMain
+                //wrObjPipePayloadSlmRmwModFrontOutp
+                wrObjPipePayloadMain(idx /*+ 1*/)
+              )
+              //nWrObjArr(idx)(
+              //  //wrObjPipePayloadMain
+              //  //wrObjPipePayloadSlmRmwModFrontOutp
+              //  wrObjPipePayloadMain(idx + 1)
+              //)
+            )
+          }
           //--------
           //wrObjSubLineMemArr((jdx + 0) % 2).io.midModStages(2) := (
           //  /*s2mLink.*/down(
