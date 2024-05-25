@@ -892,7 +892,8 @@ extends Component {
           //upExt(0).memAddr === _.memAddr
           //&& myHazardCmpFunc(upExt(0), _)
           (prev) => (
-            (upExt(1).memAddr === prev.memAddr)
+            //(upExt(1).memAddr === prev.memAddr)
+            (upExtRealMemAddr === prev.memAddr)
             //&& prev.hazardId.msb
             //&& upExt(1).hazardId.msb
             && myHazardCmpFunc(upExt(1), prev)
