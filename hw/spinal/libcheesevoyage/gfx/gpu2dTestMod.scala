@@ -439,7 +439,9 @@ object Gpu2dTest {
       doPipeMemRmw=false
     )
     val rawArrFgCommon = Gpu2dTestGfx.objFgCommonTileArr
-    //val rawArrDbgBlankingFgCommon = Gpu2dTestGfx.dbgBlankingFgCommonTileArr
+    val rawArrDbgBlankingFgCommon = (
+      Gpu2dTestGfx.objDbgBlankingFgCommonTileArr
+    )
     //val rawArrFgGrassland = Gpu2dTestGfx.fgGrasslandTileArr
     val myPxsSliceWidth = (
       Gpu2dTileSlice.pxsSliceWidth(
@@ -499,8 +501,8 @@ object Gpu2dTest {
         //someTileHeight=params.objTileSize2d.y,
         //somePalEntryMemIdxWidth=params.bgPalEntryMemIdxWidth,
         somePxsArr=(
-          rawArrFgCommon
-          //rawArrDbgBlankingFgCommon
+          //rawArrFgCommon
+          rawArrDbgBlankingFgCommon
         ),
         tempArr=tempArr,
         //isObj=false,
@@ -2634,7 +2636,8 @@ case class Gpu2dTest(
   val rPlayerTileIdx = (
     Reg(UInt((tempObjAttrs.tileIdx.getWidth + myTileFracWidth) bits))
     init(
-      4 << myTileFracWidth
+      //4 << myTileFracWidth
+      5 << myTileFracWidth
       //1 << myTileFracWidth
     )
   )

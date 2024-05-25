@@ -329,7 +329,10 @@ object Gpu2dSim extends App {
   //def fbSize2d = ElabVec2[Int](1, 1)
   //def fbSize2d = ElabVec2[Int](20, 20)
   //def rgbConfig = RgbConfig(rWidth=6, gWidth=6, bWidth=6)
-  def rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
+  def rgbConfig = (
+    //RgbConfig(rWidth=4, gWidth=4, bWidth=4)
+    RgbConfig(rWidth=5, gWidth=5, bWidth=5)
+  )
   ////def rgbConfig = RgbConfig(rWidth=4, gWidth=4, bWidth=4)
   //def physRgbConfig = LcvVideoDithererIo.outRgbConfig(rgbConfig=rgbConfig)
   ////def vgaTimingInfo = LcvVgaTimingInfoMap.map("640x480@60")
