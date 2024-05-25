@@ -687,8 +687,8 @@ object Gpu2dSim extends App {
         (
           vgaTimingInfo.fbSize2d.x * vgaTimingInfo.fbSize2d.y
           * (
-            //1.5
-            2
+            1.5
+            //2
             * (
               clkRate / vgaTimingInfo.pixelClk
             )

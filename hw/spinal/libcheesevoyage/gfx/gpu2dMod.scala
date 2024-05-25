@@ -4723,8 +4723,27 @@ case class Gpu2d(
               Vec[ObjSubLineMemEntry],
               WrObjPipeSlmRmwHazardCmp,
             ],
+            //idx: Int,
+            //kind: Boolean
+            isPostDelay: Boolean,
           ) => (
-            curr.hazardCmp.cmp(prev.hazardCmp)
+            curr.hazardCmp.cmp(
+              prev=prev.hazardCmp,
+              isPostDelay=isPostDelay,
+            )
+            //&& (
+            //  if (
+            //    //idx 
+            //    //== PipeMemRmw.numPostFrontStages(
+            //    //  modStageCnt=wrObjPipeIdxSlmRmwModStageCnt,
+            //    //) - 1
+            //    isPostDelay
+            //  ) (
+            //  ) else (
+            //    
+            //  )
+            //)
+            //--------
             //&& 
             //PipeMemRmwPayloadExt.defaultDoHazardCmpFunc(
             //  curr=curr,
@@ -5316,7 +5335,7 @@ case class Gpu2d(
             //  }
             //}
             val clearVecIdx = (
-              (wrObjWriterLineMemArrIdx(jdx) + jdx + 1)(0 downto 0)
+              (wrObjWriterLineMemArrIdx(jdx) + jdx)(0 downto 0)
             )
             val tempClearAddr = (
               //Mux[UInt](
@@ -6214,24 +6233,45 @@ case class Gpu2d(
       //    bits
       //  )
       //)
+      val objIdx = UInt(
+        (
+          params.objAttrsMemIdxWidth
+          //.max(params.objAffineAttrsMemIdxWidth)
+        )
+        bits
+      )
       val anyPxPosInLine = Bool()
       def cmp(
-        prev: WrObjPipeSlmRmwHazardCmp
+        prev: WrObjPipeSlmRmwHazardCmp,
+        isPostDelay: Boolean
       ) = (
-        (
-          //if (!isAffine) (
-          //  this.objAttrsMemIdx
-          //  =/= prev.objAttrsMemIdx
-          //) else (
-          //  this.affineObjAttrsMemIdx
-          //  =/= prev.affineObjAttrsMemIdx
-          //)
-          True
-          //pxPosXGridIdxLsb
-          //=== prev.pxPosXGridIdxLsb
-        ) && (
+        if (
+          //idx 
+          //== PipeMemRmw.numPostFrontStages(
+          //  modStageCnt=wrObjPipeIdxSlmRmwModStageCnt,
+          //) - 1
+          !isPostDelay
+        ) (
+          (
+            //if (!isAffine) (
+            //  this.objAttrsMemIdx
+            //  =/= prev.objAttrsMemIdx
+            //) else (
+            //  this.affineObjAttrsMemIdx
+            //  =/= prev.affineObjAttrsMemIdx
+            //)
+            True
+            //pxPosXGridIdxLsb
+            //=== prev.pxPosXGridIdxLsb
+          ) && (
+            anyPxPosInLine
+            && prev.anyPxPosInLine
+          )
+        ) else ( // if (isPostDelay)
           anyPxPosInLine
-          && prev.anyPxPosInLine
+          && (
+            objIdx === prev.objIdx
+          )
         )
       )
     }
@@ -8781,7 +8821,7 @@ case class Gpu2d(
           }
         }
         //cWrObjArr(idx).up
-        switch (wrObjPipeLineMemArrIdx(4) + 1) {
+        switch (wrObjPipeLineMemArrIdx(4)) {
           for (
             jdx <- 0
             until (1 << wrObjPipeLineMemArrIdx(4).getWidth)
@@ -8917,10 +8957,20 @@ case class Gpu2d(
           }
           //--------
           //wrObjSubLineMemArr((jdx + 0) % 2).io.midModStages(2) := (
-          //  /*s2mLink.*/down(
-          //    wrObjPipePayloadMain(idx + 1)
+          //  RegNext(
+          //    wrObjSubLineMemArr((jdx + 0) % 2).io.midModStages(2)
+          //  )
+          //  init(
+          //    wrObjSubLineMemArr((jdx + 0) % 2).io.midModStages(2).getZero
           //  )
           //)
+          //when (down.isValid) {
+          //  wrObjSubLineMemArr((jdx + 0) % 2).io.midModStages(2) := (
+          //    /*s2mLink.*/down(
+          //      wrObjPipePayloadMain(idx + 1)
+          //    )
+          //  )
+          //}
           //--------
           //wrObjSubLineMemArr(jdx).io.midModStages(1) := (
           //  nWrObjArr(idx)(
@@ -8990,7 +9040,7 @@ case class Gpu2d(
         )
           .setName(s"dMyWrObj_back_$idx")
         linkArr += dMyWrObj
-        switch (wrObjPipeLineMemArrIdx(5) + 1) {
+        switch (wrObjPipeLineMemArrIdx(5)) {
           for (
             jdx <- 0
             until (1 << wrObjPipeLineMemArrIdx(5).getWidth)
@@ -16367,6 +16417,9 @@ case class Gpu2d(
               //    tempInp.stage0.affineObjAttrsMemIdx()
               //  )
               //}
+              myHazardCmp.objIdx := (
+                tempInp.objAttrsMemIdx
+              )
               myHazardCmp.anyPxPosInLine := (
                 tempInp.pxPosInLine(0)
                 || tempInp.pxPosInLine(tempInp.pxPosInLine.size - 1)
