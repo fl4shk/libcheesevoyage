@@ -6269,8 +6269,9 @@ case class Gpu2d(
           )
         ) else ( // if (isPostDelay)
           anyPxPosInLine
+          && prev.anyPxPosInLine
           && (
-            objIdx === prev.objIdx
+            objIdx =/= prev.objIdx
           )
         )
       )

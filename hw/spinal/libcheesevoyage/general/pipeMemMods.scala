@@ -936,11 +936,16 @@ extends Component {
       //memAddr: UInt,
     ) = (
       //(upExt(1).memAddr === prev.memAddr)
-      (upExtRealMemAddr === prev.memAddr)
-      //&& prev.hazardId.msb
-      //&& (prev.hazardId === 0)
-      //&& upExt(1).hazardId.msb
-      && myHazardCmpFunc(upExt(1), prev, isPostDelay)
+      if (!isPostDelay) (
+        (upExtRealMemAddr === prev.memAddr)
+        //&& prev.hazardId.msb
+        //&& (prev.hazardId === 0)
+        //&& upExt(1).hazardId.msb
+        && myHazardCmpFunc(upExt(1), prev, isPostDelay)
+      ) else (
+        (upExtRealMemAddr === prev.memAddr)
+        || myHazardCmpFunc(upExt(1), prev, isPostDelay)
+      )
     )
     val myUpExtDelPreBack = mod.front.myUpExtDelPreBack
     val myUpExtDelPreBackFindFirstVecNotPostDelay = (
