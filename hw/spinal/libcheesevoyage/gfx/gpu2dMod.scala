@@ -6257,6 +6257,8 @@ case class Gpu2d(
         )
         bits
       )
+      val objIdxPlus1 = cloneOf(objIdx)
+
       val anyPxPosInLine = Bool()
       def cmp(
         prev: WrObjPipeSlmRmwHazardCmp,
@@ -6282,14 +6284,15 @@ case class Gpu2d(
             //=== prev.pxPosXGridIdxLsb
           ) && (
             anyPxPosInLine
-            && prev.anyPxPosInLine
+            //&& prev.anyPxPosInLine
           )
         ) else ( // if (isPostDelay)
           //anyPxPosInLine
           //&& prev.anyPxPosInLine
           //&&
           (
-            objIdx + 1 =/= prev.objIdx
+            //objIdx + 1 =/= prev.objIdx
+            objIdxPlus1 =/= prev.objIdx
           )
         )
       )
@@ -16545,6 +16548,9 @@ case class Gpu2d(
               //}
               myHazardCmp.objIdx := (
                 tempInp.objAttrsMemIdx
+              )
+              myHazardCmp.objIdxPlus1 := (
+                myHazardCmp.objIdx + 1
               )
               myHazardCmp.anyPxPosInLine := (
                 tempInp.pxPosInLine(0)

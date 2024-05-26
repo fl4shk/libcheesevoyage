@@ -430,7 +430,8 @@ case class PipeMemRmw[
       //Int,
       Boolean,
     ) => Bool
-  ]=None
+  ]=None,
+  doPrevHazardCmpFunc: Boolean=false,
 )
 //(
 //  getModAddr: (
@@ -1003,10 +1004,16 @@ extends Area {
       //(upExt(1).memAddr === prev.memAddr)
       if (!isPostDelay) (
         (upExtRealMemAddr === prev.memAddr)
-        //&& prev.hazardId.msb
-        //&& (prev.hazardId === 0)
-        //&& upExt(1).hazardId.msb
-        && myHazardCmpFunc(upExt(1), prev, isPostDelay)
+        ////&& prev.hazardId.msb
+        ////&& (prev.hazardId === 0)
+        ////&& upExt(1).hazardId.msb
+        && (
+          if (doPrevHazardCmpFunc) (
+            myHazardCmpFunc(upExt(1), prev, isPostDelay)
+          ) else (
+            True
+          )
+        )
       ) else (
         //(upExtRealMemAddr === prev.memAddr)
         //|| 
@@ -1141,35 +1148,46 @@ extends Area {
               upExt(1).hazardId := nextHazardId
               upExtRealMemAddr := upExt(0).memAddr
               when (
-                Mux[Bool](
-                  rPrevStateWhen === State.IDLE,
-                  tempMyUpExtDelFindFirstNotPostDelay._1,
-                  tempMyUpExtDelFindFirstIsPostDelay._1,
-                  //findFirstFunc(
-                  //  //myUpExtDel(myUpExtDel.size - 2)
-                  //  myUpExtDel(0)
-                  //)
-                  //True
-                  //tempMyUpExtDelFindFirst2._1,
-                  //True,
-                  //findFirstFunc(
-                  //  //myUpExtDel(myUpExtDel.size - 1)
-                  //)
-                  //(
-                  //  //mod.back.dbgDoWrite
-                  //  mod.back.myWriteEnable
-                  //  && 
-                  //  //!mod.back.dbgDoClear
-                  //  !io.clear.fire
-                  //  //&& (
-                  //  //  upExtRealMemAddr
-                  //  //  === mod.back.myWriteAddr 
-                  //  //)
-                  //  && findFirstFunc(
-                  //    prev=myUpExtDel(myUpExtDel.size - 1)
-                  //  )
-                  //)
-                )
+                //Mux[Bool](
+                //  rPrevStateWhen === State.IDLE,
+                  tempMyUpExtDelFindFirstNotPostDelay._1
+                  && (
+                    if (!doPrevHazardCmpFunc) (
+                      myHazardCmpFunc(
+                        curr=upExt(1),
+                        prev=mod.front.myUpExtDel(0),
+                        isPostDelay=false,
+                      )
+                    ) else ( // if (doPrevHazardCmpFunc)
+                      True
+                    )
+                  )
+                //  tempMyUpExtDelFindFirstIsPostDelay._1,
+                //  //findFirstFunc(
+                //  //  //myUpExtDel(myUpExtDel.size - 2)
+                //  //  myUpExtDel(0)
+                //  //)
+                //  //True
+                //  //tempMyUpExtDelFindFirst2._1,
+                //  //True,
+                //  //findFirstFunc(
+                //  //  //myUpExtDel(myUpExtDel.size - 1)
+                //  //)
+                //  //(
+                //  //  //mod.back.dbgDoWrite
+                //  //  mod.back.myWriteEnable
+                //  //  && 
+                //  //  //!mod.back.dbgDoClear
+                //  //  !io.clear.fire
+                //  //  //&& (
+                //  //  //  upExtRealMemAddr
+                //  //  //  === mod.back.myWriteAddr 
+                //  //  //)
+                //  //  && findFirstFunc(
+                //  //    prev=myUpExtDel(myUpExtDel.size - 1)
+                //  //  )
+                //  //)
+                //)
               ) {
                 rDidDelayItIdle := False
                 duplicateIt()
