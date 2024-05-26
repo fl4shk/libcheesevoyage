@@ -594,7 +594,7 @@ extends Component {
           Bool()
         )
       )
-      println(s"myUpExtDelPreBack.size: ${myUpExtDelPreBack.size}")
+      //println(s"myUpExtDelPreBack.size: ${myUpExtDelPreBack.size}")
       if (optEnableModDuplicate) {
         for (
           //idx <- 0 until modStageCnt - 1
@@ -614,11 +614,11 @@ extends Component {
             ////+ 1
             + idx 
           )
-          println(
-            s"io.midModStages.size=${io.midModStages.size} "
-            + s"modStageCnt=${modStageCnt} "
-            + s"idx=${idx} tempIdx=${tempIdx}"
-          )
+          //println(
+          //  s"io.midModStages.size=${io.midModStages.size} "
+          //  + s"modStageCnt=${modStageCnt} "
+          //  + s"idx=${idx} tempIdx=${tempIdx}"
+          //)
           myUpExtDel(
             tempIdx
           ) := myExt

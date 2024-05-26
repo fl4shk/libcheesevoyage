@@ -428,14 +428,14 @@ object Gpu2dSim extends App {
     //  //y=log2Up(2),
     //),
     bgTileSize2dPow=ElabVec2[Int](
-      //x=log2Up(16),
-      //y=log2Up(16),
+      x=log2Up(16),
+      y=log2Up(16),
       //x=log2Up(8),
       //y=log2Up(8),
       //x=log2Up(4),
       //y=log2Up(4),
-      x=log2Up(2),
-      y=log2Up(2),
+      //x=log2Up(2),
+      //y=log2Up(2),
       //x=log2Up(1),
       //y=log2Up(1),
     ),
@@ -494,11 +494,11 @@ object Gpu2dSim extends App {
     //numBgTilesPow=Some(log2Up(2)),
     numBgTiles=Some(
       //16
-      //256
+      256
       //512
       //1024
       //128
-      16
+      //16
     ),
     //numObjTilesPow=None,
     numObjTiles=Some(
