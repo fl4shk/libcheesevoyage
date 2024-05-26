@@ -225,7 +225,9 @@ case class WrPulseRdPipeSimpleDualPortMem[
   dataType: HardType[T],
   wordType: HardType[WordT],
   wordCount: Int,
+  pipeName: String,
   initBigInt: Option[ArrayBuffer[BigInt]]=None,
+  linkArr: Option[ArrayBuffer[Link]]=None,
   //latency: Int=1,
   arrRamStyle: String="block",
   arrRwAddrCollision: String="",
@@ -289,6 +291,7 @@ extends Component
       outpExt := myExt
     }
   }
+  //val linkArr = PipeMemRmw.mkLinkArr()
   val pipeMem = PipeMemRmw[
     WordT,
     Bool,
@@ -300,6 +303,9 @@ extends Component
     hazardCmpType=Bool(),
     modType=PmRmwModType(),
     modStageCnt=modStageCnt,
+    pipeName=pipeName,
+    //linkArr=Some(PipeMemRmw.mkLinkArr()),
+    linkArr=linkArr,
     memArrIdx=0,
     dualRdType=PmRmwModType(),
     optDualRd=true,
@@ -316,31 +322,67 @@ extends Component
   //pipeMemModFrontStm.translateInto(pipeMemModBackStm)(
   //  dataAssignment
   //)
-  pipeMem.io.modBack <-/< pipeMem.io.modFront
+
+  //--------
+  val sMyMod = StageLink(
+    up=pipeMem.io.modFront,
+    down=pipeMem.io.modBack,
+  )
+    .setName("sMyMod")
+  pipeMem.myLinkArr += sMyMod
+  //val cMyMod = CtrlLink(
+  //  up=sMyMod.down,
+  //  down=pipeMem.io.modBack,
+  //)
+  //pipeMem.myLinkArr += cMyMod
+
+  val tempModBackPayload = PmRmwModType()
+  //pipeMem.io.modBack
+  sMyMod.up(pipeMem.io.modBackPayload) := tempModBackPayload
+  tempModBackPayload := (
+    RegNext(tempModBackPayload) init(tempModBackPayload.getZero)
+  )
+  when (pipeMem.io.modBack.isValid) {
+    tempModBackPayload := (
+      pipeMem.io.modFront(pipeMem.io.modFrontPayload)
+    )
+  }
+  //--------
+  //pipeMem.io.modBack <-/< pipeMem.io.modFront
   val tempWrPulseStm = io.wrPulse.toStream
   val tempWrPulseStm1 = cloneOf(tempWrPulseStm)
   tempWrPulseStm1 <-/< tempWrPulseStm
-  tempWrPulseStm1.translateInto(pipeMem.io.front)(
-    dataAssignment=(wrPipePayload, wrPulsePayload) => {
+  pipeMem.io.front.driveFrom(tempWrPulseStm1)(
+  //tempWrPulseStm1.translateInto(pipeMem.io.front)
+    con=(/*wrPipePayload*/ node, wrPulsePayload) => {
+      def wrPipePayload = node(pipeMem.io.frontPayload)
       wrPipePayload := wrPipePayload.getZero
       wrPipePayload.allowOverride
       //wrPipePayload.data := io.wrPulse
       wrPipePayload.myExt.memAddr := wrPulsePayload.addr
       wrPipePayload.myExt.rdMemWord := wrPulsePayload.data
-      wrPipePayload.myExt.modMemWord := wrPipePayload.myExt.rdMemWord
+      wrPipePayload.myExt.modMemWord := wrPulsePayload.data //wrPipePayload.myExt.rdMemWord
     }
   )
   pipeMem.io.back.ready := True
-  io.rdAddrPipe.translateInto(pipeMem.io.dualRdFront)(
-    dataAssignment=(dualRdPipePayload, rdAddrPipePayload) => {
+  //io.rdAddrPipe.translateInto(pipeMem.io.dualRdFront)
+  val tempRdAddrPipe = cloneOf(io.rdAddrPipe)
+  tempRdAddrPipe << io.rdAddrPipe
+  pipeMem.io.dualRdFront.driveFrom(tempRdAddrPipe)(
+    con=(/*dualRdPipePayload*/node, rdAddrPipePayload) => {
+      def dualRdPipePayload = node(pipeMem.io.dualRdFrontPayload)
       dualRdPipePayload := dualRdPipePayload.getZero
       dualRdPipePayload.allowOverride
       dualRdPipePayload.data := rdAddrPipePayload.data
       dualRdPipePayload.myExt.memAddr := rdAddrPipePayload.addr
     }
   )
-  pipeMem.io.dualRdBack.translateInto(io.rdDataPipe)(
-    dataAssignment=(rdDataPipePayload, dualRdPipePayload) => {
+  //pipeMem.io.dualRdBack.translateInto(io.rdDataPipe)
+  val tempRdDataPipe = cloneOf(io.rdDataPipe)
+  io.rdDataPipe << tempRdDataPipe
+  pipeMem.io.dualRdBack.driveTo(tempRdDataPipe)(
+    con=(rdDataPipePayload, node/*dualRdPipePayload*/) => {
+      def dualRdPipePayload = node(pipeMem.io.dualRdBackPayload)
       setWordFunc(
         io.unionIdx,
         rdDataPipePayload,
@@ -350,6 +392,8 @@ extends Component
       //rdDataPipePayload := dualRdPipePayload.myExt.modMemWord
     }
   )
+  Builder(pipeMem.myLinkArr.toSeq)
+  //--------
   //val mem = Mem(
   //  wordType=wordType(),
   //  wordCount=wordCount,
@@ -677,7 +721,7 @@ extends Component
   //  up(read.front.outpPipePayload) := tempOutpPayload
   //}
   //--------
-  //Builder(linkArr.toSeq)
+  //Builder(pipeMem.myLinkArr.toSeq)
   //--------
   ////val wrPipeToPulse = FpgacpuPipeToPulse(
   ////  dataType=PipeSimpleDualPortMemDrivePayload(

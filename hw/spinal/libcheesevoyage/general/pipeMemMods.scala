@@ -299,7 +299,7 @@ case class PipeMemRmwIo[
   optDualRd: Boolean=false,
   optEnableModDuplicate: Boolean=true,
   optEnableClear: Boolean=false,
-) extends Bundle {
+) extends Area {
   //--------
   //val front = slave(
   //  Stream(PipeMemRmwFrontPayload(
@@ -308,22 +308,28 @@ case class PipeMemRmwIo[
   //)
   //val doHazardCheck = in(Bool())
   val clear = (optEnableClear) generate (
-    slave(Flow(
+    /*slave*/(Flow(
       UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
     ))
   )
 
   // front of the pipeline (push)
-  val front = slave(Stream(modType()))
+  //val front = slave(Stream(modType()))
+  val front = Node()
+  val frontPayload = Payload(modType())
 
   // Use `modFront` and `modBack` to insert a pipeline stage for modifying
   // the`WordT`
-  val modFront = master(Stream(modType()))
-  val modBack = slave(Stream(modType()))
+  //val modFront = master(Stream(modType()))
+  //val modBack = slave(Stream(modType()))
+  val modFront = Node()
+  val modFrontPayload = Payload(modType())
+  val modBack = Node()
+  val modBackPayload = Payload(modType())
 
   val midModStages = (
     /*(modStageCnt > 1)*/ optEnableModDuplicate generate (
-      in(
+      /*in*/(
         Vec.fill(
           modStageCnt //- 1 //- 2
         )(modType())
@@ -332,7 +338,9 @@ case class PipeMemRmwIo[
   )
 
   // back of the pipeline (output)
-  val back = master(Stream(modType()))
+  //val back = master(Stream(modType()))
+  val back = Node()
+  val backPayload = Payload(modType())
   //--------
   //val optDualRd: Boolean = optDualRdType match {
   //  case Some(myOptDualRdType) => true
@@ -345,14 +353,22 @@ case class PipeMemRmwIo[
   //--------
   //val optDualRd = (dualRdSize > 0)
   val dualRdFront = (optDualRd) generate (
-    slave(
-      Stream(dualRdType())
-    )
+    //slave(
+    //  Stream(dualRdType())
+    //)
+    Node()
+  )
+  val dualRdFrontPayload = (optDualRd) generate (
+    Payload(dualRdType())
   )
   val dualRdBack = (optDualRd) generate (
-    master(
-      Stream(dualRdType())
-    )
+    //master(
+    //  Stream(dualRdType())
+    //)
+    Node()
+  )
+  val dualRdBackPayload = (optDualRd) generate (
+    Payload(dualRdType())
   )
   //--------
   //val (dualRdPush, dualRdPop) = optDualRdType match {
@@ -389,6 +405,8 @@ case class PipeMemRmw[
   hazardCmpType: HardType[HazardCmpT],
   modType: HardType[ModT],
   modStageCnt: Int,
+  pipeName: String,
+  linkArr: Option[ArrayBuffer[Link]]=None,
   memArrIdx: Int=0,
   //optDualRdType: Option[HardType[DualRdT]]=None,
   dualRdType: HardType[DualRdT]=PipeMemRmwDualRdTypeDisabled[
@@ -428,7 +446,7 @@ case class PipeMemRmw[
 //    WordT,  // word
 //  ) => Unit,
 //)
-extends Component {
+extends Area {
   //--------
   def debug: Boolean = {
     GenerationFlags.formal {
@@ -552,13 +570,24 @@ extends Component {
     modStageCnt=modStageCnt,
     optEnableModDuplicate=optEnableModDuplicate,
   )
-  val linkArr = PipeHelper.mkLinkArr()
+  val myLinkArr = (
+    linkArr match {
+      case Some(theLinkArr) => {
+        theLinkArr
+      }
+      case None => {
+        PipeHelper.mkLinkArr()
+      }
+    }
+  )
   val mod = new Area {
     val front = new Area {
-      val pipe = PipeHelper(linkArr=linkArr)
-      val inpPipePayload = Payload(modType())
+      val pipe = PipeHelper(linkArr=myLinkArr)
+      //val inpPipePayload = Payload(modType())
+      def inpPipePayload = io.frontPayload
       val midPipePayload = Payload(modType())
-      val outpPipePayload = Payload(modType())
+      //val outpPipePayload = Payload(modType())
+      def outpPipePayload = io.modFrontPayload
       val myRdMemWord = wordType()
       //val rRdMemWord1 = Reg(wordType()) init(myRdMemWord.getZero)
       val dbgRdMemWord = (debug) generate (
@@ -625,58 +654,72 @@ extends Component {
         }
       }
 
+
       val cFront = pipe.addStage(
-        name="Front"
+        name=pipeName + "_Front"
       )
+      val cIoFront = DirectLink(
+        up=io.front,
+        down=cFront.up,
+      )
+      myLinkArr += cIoFront
       val cMid0Front = pipe.addStage(
-        name="Mid0Front",
+        name=pipeName + "_Mid0Front",
         optIncludeS2M=false,
       )
       //val cMid1Front = pipe.addStage(
-      //  name="Mid1Front",
+      //  name=pipeName + "_Mid1Front",
       //  optIncludeS2M=false,
       //)
       //val cMid2Front = pipe.addStage(
-      //  name="Mid2Front",
+      //  name=pipeName + "_Mid2Front",
       //  //optIncludeS2M=false,
       //)
       val cLastFront = pipe.addStage(
-        name="LastFront", 
+        name=pipeName + "_LastFront", 
         finish=true,
       )
-      //val cModFront = pipe.addStage("ModFront")
-      pipe.first.up.driveFrom(io.front)(
-        con=(node, payload) => {
-          node(inpPipePayload) := payload 
-        }
+      val cIoModFront = DirectLink(
+        up=(
+          cLastFront.down
+          //cMid0Front.down,
+        ),
+        down=io.modFront,
       )
-      //when (cFront.up.isValid) {
-      //}
-
-      //--------
-      // This is equivalent to the following in `PipeMemTest`:
-      //  cSum.terminateWhen(
-      //    !cSum.up(rdValid)
-      //  )
-      val tempModFront = cloneOf(io.modFront)
-      //val modFrontTerminateCond = Bool()
-      //val modFrontTerminateMaybe = (
-      //  //tempModFront.clearValidWhen(modFrontTerminateCond)
-      //  //tempModFront.throwWhen(modFrontTerminateCond)
-      //  tempModFront
+      myLinkArr += cIoModFront
+      ////val cModFront = pipe.addStage("ModFront")
+      //pipe.first.up.driveFrom(io.front)(
+      //  con=(node, payload) => {
+      //    node(inpPipePayload) := payload 
+      //  }
       //)
-      //io.modFront << modFrontTerminateMaybe
-      io.modFront << tempModFront
-      //--------
-      pipe.last.down.driveTo(
-        //io.modFront
-        //modFrontTerminateMaybe
-        tempModFront
-      )(
-        con=(payload, node) => {
-          payload := node(outpPipePayload)
-        }
-      )
+      ////when (cFront.up.isValid) {
+      ////}
+
+      ////--------
+      //// This is equivalent to the following in `PipeMemTest`:
+      ////  cSum.terminateWhen(
+      ////    !cSum.up(rdValid)
+      ////  )
+      //val tempModFront = cloneOf(io.modFront)
+      ////val modFrontTerminateCond = Bool()
+      ////val modFrontTerminateMaybe = (
+      ////  //tempModFront.clearValidWhen(modFrontTerminateCond)
+      ////  //tempModFront.throwWhen(modFrontTerminateCond)
+      ////  tempModFront
+      ////)
+      ////io.modFront << modFrontTerminateMaybe
+      //io.modFront << tempModFront
+      ////--------
+      //pipe.last.down.driveTo(
+      //  //io.modFront
+      //  //modFrontTerminateMaybe
+      //  tempModFront
+      //)(
+      //  con=(payload, node) => {
+      //    payload := node(outpPipePayload)
+      //  }
+      //)
       //--------
     }
     val back = new Area {
@@ -693,20 +736,37 @@ extends Component {
         cloneOf(front.myUpExtDel(0).modMemWord)
       )
       val myWriteEnable = KeepAttribute(Bool())
-      val pipe = PipeHelper(linkArr=linkArr)
-      val pipePayload = Payload(modType())
+      val pipe = PipeHelper(linkArr=myLinkArr)
+      //val pipePayload = Payload(modType())
+      def pipePayload = io.modBackPayload
 
       //val cModBack = pipe.addStage("ModBack")
-      val cBack = pipe.addStage("Back")
+      val cBack = pipe.addStage(
+        name=pipeName + "_Back"
+      )
+      val cIoModBack = DirectLink(
+        up=io.modBack,
+        down=cBack.up,
+      )
+      myLinkArr += cIoModBack
       val cLastBack = pipe.addStage(
-        name="LastBack",
+        name=pipeName + "_LastBack",
         finish=true,
       )
-      pipe.first.up.driveFrom(io.modBack)(
-        con=(node, payload) => {
-          node(pipePayload) := payload 
-        }
+      val cIoBack = DirectLink(
+        up=(
+          cLastBack.down
+          //cBack.down
+        ),
+        down=io.back,
       )
+      myLinkArr += cIoBack
+      cIoBack.up(io.backPayload) := cIoBack.up(pipePayload)
+      //pipe.first.up.driveFrom(io.modBack)(
+      //  con=(node, payload) => {
+      //    node(pipePayload) := payload 
+      //  }
+      //)
       val rTempWord = /*(debug) generate*/ (
         Reg(wordType())
         addAttribute("keep")
@@ -720,11 +780,13 @@ extends Component {
       //when (cBack.up.isValid) {
       //}
       //val tempBackStm = cloneOf(io.back)
-      pipe.last.down.driveTo(io.back)(
-        con=(payload, node) => {
-          payload := node(pipePayload)
-        }
-      )
+
+      //pipe.last.down.driveTo(io.back)(
+      //  con=(payload, node) => {
+      //    payload := node(pipePayload)
+      //  }
+      //)
+
       //io.back <-/< tempBackStm.haltWhen(
       //  !(RegNextWhen(True, io.front.fire) init(False))
       //)
@@ -1198,7 +1260,7 @@ extends Component {
     //    address=upExt(1).memAddr
     //  )
     //}
-    val cLastFront = mod.front.cLastFront
+    //val cLastFront = mod.front.cLastFront
     val myRdMemWord = mod.front.myRdMemWord
     //val rRdMemWord1 = mod.front.rRdMemWord1
     val dbgRdMemWord = (debug) generate (
@@ -2073,10 +2135,10 @@ extends Component {
         //}
         //--------
         when (
-          (RegNextWhen(True, io.front.fire) init(False))
-          && (RegNextWhen(True, io.modFront.fire) init(False))
-          && (RegNextWhen(True, io.modBack.fire) init(False))
-          && (RegNextWhen(True, io.back.fire) init(False))
+          (RegNextWhen(True, io.front.isFiring) init(False))
+          && (RegNextWhen(True, io.modFront.isFiring) init(False))
+          && (RegNextWhen(True, io.modBack.isFiring) init(False))
+          && (RegNextWhen(True, io.back.isFiring) init(False))
           //&& up.isValid
           //up.isFiring
           //&& cFront.down.isValid
@@ -2141,7 +2203,7 @@ extends Component {
             && upExt(1).rdMemWord.asBits =/= 0
             && (
               RegNextWhen(
-                True, io.back.fire
+                True, io.back.isFiring
               ) init(False)
             )
           )
@@ -2206,7 +2268,7 @@ extends Component {
   val cBack = mod.back.cBack
   val cBackArea = new cBack.Area {
     haltWhen(
-      !(RegNextWhen(True, io.front.fire) init(False))
+      !(RegNextWhen(True, io.front.isFiring) init(False))
     )
     val upExt = Vec.fill(2)(mkExt()).setName("cBackArea_upExt")
     //upExt(1) := (
@@ -2312,10 +2374,12 @@ extends Component {
     )
     
     when (
-      !clockDomain.isResetActive
+      //!clockDomain.isResetActive
+
       //&& isValid
       //&& up.isFiring
-      && up.isValid
+      //&& 
+      up.isValid
       //&& upExt.rdValid
       //&& up.isValid
       //&& (upExt(0).hazardId) === 0
@@ -2551,53 +2615,69 @@ extends Component {
   //}
   //--------
   val dualRd = (io.optDualRd) generate new Area {
-    val pipe = PipeHelper(linkArr=linkArr)
+    val pipe = PipeHelper(linkArr=myLinkArr)
     val myRdMemWord = wordType()
     val cFront = pipe.addStage(
-      name="DualRd_Front",
+      name=pipeName + "_DualRd_Front",
     )
+    val cIoDualRdFront = DirectLink(
+      up=io.dualRdFront,
+      down=cFront.up,
+    )
+    myLinkArr += cIoDualRdFront
     //val cMidFrontFront = pipe.addStage(
-    //  name="DualRd_MidFrontFront",
+    //  name=pipeName + "_DualRd_MidFrontFront",
     //)
     val cMid0 = pipe.addStage(
-      name="DualRd_Mid0",
+      name=pipeName + "_DualRd_Mid0",
       optIncludeS2M=false,
     )
-    val cMid1 = pipe.addStage(
-      name="DualRd_Mid1",
-      optIncludeS2M=false,
-      //finish=true,
-    )
-    val cMid2 = pipe.addStage(
-      name="DualRd_Mid2",
-      optIncludeS2M=false,
-    )
-    val rPrevMyRdMemWord = (
-      RegNextWhen(
-        myRdMemWord, cMid1.up.isFiring
-      ) init(myRdMemWord.getZero)
-    )
+    //val cMid1 = pipe.addStage(
+    //  name=pipeName + "_DualRd_Mid1",
+    //  optIncludeS2M=false,
+    //  //finish=true,
+    //)
+    //val cMid2 = pipe.addStage(
+    //  name=pipeName + "_DualRd_Mid2",
+    //  optIncludeS2M=false,
+    //)
+    //val rPrevMyRdMemWord = (
+    //  RegNextWhen(
+    //    myRdMemWord, cMid1.up.isFiring
+    //  ) init(myRdMemWord.getZero)
+    //)
     val cBack = pipe.addStage(
-      name="DualRd_Back",
+      name=pipeName + "_DualRd_Back",
       //finish=true,
     )
     val cLast = pipe.addStage(
-      name="DualRd_Last",
+      name=pipeName + "_DualRd_Last",
       finish=true,
     )
-    val inpPipePayload = Payload(dualRdType())
+    val cIoDualRdBack = DirectLink(
+      up=(
+        //cBack.down
+        cLast.down,
+      ),
+      down=io.dualRdBack,
+    )
+    myLinkArr += cIoDualRdBack
+
+    //val inpPipePayload = Payload(dualRdType())
+    def inpPipePayload = io.dualRdFrontPayload
     //val midPipePayload = Payload(dualRdType())
-    val outpPipePayload = Payload(dualRdType())
-    pipe.first.up.driveFrom(io.dualRdFront)(
-      con=(node, payload) => {
-        node(inpPipePayload) := payload
-      }
-    )
-    pipe.last.down.driveTo(io.dualRdBack)(
-      con=(payload, node) => {
-        payload := node(outpPipePayload)
-      }
-    )
+    //val outpPipePayload = Payload(dualRdType())
+    def outpPipePayload = io.dualRdBackPayload
+    //pipe.first.up.driveFrom(io.dualRdFront)(
+    //  con=(node, payload) => {
+    //    node(inpPipePayload) := payload
+    //  }
+    //)
+    //pipe.last.down.driveTo(io.dualRdBack)(
+    //  con=(payload, node) => {
+    //    payload := node(outpPipePayload)
+    //  }
+    //)
     val cDualRdFrontArea = new cFront.Area {
       //val upExt = Vec.fill(2)(mkExt())
       val myInpDualRd = dualRdType()
@@ -3077,7 +3157,7 @@ extends Component {
   // END: working dualRd?
   //--------
   //--------
-  Builder(linkArr.toSeq)
+  //Builder(myLinkArr.toSeq)
   //--------
 }
 case class SamplePipeMemRmwModType[
@@ -3112,39 +3192,40 @@ case class SamplePipeMemRmwModType[
   }
   //--------
 }
-object PipeMemRmwToVerilog extends App {
-  //--------
-  def wordWidth = 8
-  def wordType() = UInt(wordWidth bits)
-  def wordCount = 4
-  def hazardCmpType() = UInt(
-    PipeMemRmw.addrWidth(wordCount=wordCount) bits
-  )
-  def modStageCnt = 1
-  //--------
-  Config.spinal.generateVerilog(
-    PipeMemRmw[
-      UInt,
-      UInt,
-      SamplePipeMemRmwModType[UInt, UInt],
-      PipeMemRmwDualRdTypeDisabled[UInt, UInt],
-    ](
-      wordType=wordType(),
-      wordCount=wordCount,
-      hazardCmpType=hazardCmpType(),
-      modType=SamplePipeMemRmwModType[UInt, UInt](
-        wordType=wordType(),
-        wordCount=wordCount,
-        hazardCmpType=hazardCmpType(),
-        modStageCnt=modStageCnt,
-      ),
-      modStageCnt=modStageCnt,
-    )(
-      doHazardCmpFunc=None
-    )
-  )
-  //--------
-}
+//object PipeMemRmwToVerilog extends App {
+//  //--------
+//  def wordWidth = 8
+//  def wordType() = UInt(wordWidth bits)
+//  def wordCount = 4
+//  def hazardCmpType() = UInt(
+//    PipeMemRmw.addrWidth(wordCount=wordCount) bits
+//  )
+//  def modStageCnt = 1
+//  //--------
+//  Config.spinal.generateVerilog(
+//    PipeMemRmw[
+//      UInt,
+//      UInt,
+//      SamplePipeMemRmwModType[UInt, UInt],
+//      PipeMemRmwDualRdTypeDisabled[UInt, UInt],
+//    ](
+//      wordType=wordType(),
+//      wordCount=wordCount,
+//      hazardCmpType=hazardCmpType(),
+//      modType=SamplePipeMemRmwModType[UInt, UInt](
+//        wordType=wordType(),
+//        wordCount=wordCount,
+//        hazardCmpType=hazardCmpType(),
+//        modStageCnt=modStageCnt,
+//      ),
+//      modStageCnt=modStageCnt,
+//      linkArr=None,
+//    )(
+//      doHazardCmpFunc=None
+//    )
+//  )
+//  //--------
+//}
 //--------
 
 //case class PipeMemTestFrontPayload
@@ -3352,7 +3433,7 @@ object PipeMemRmwToVerilog extends App {
 //  //val testificate = pipe.addStage()
 //  //def backPipePayload = cBack.down(pipePayload)
 //  val cLast = pipe.addStage(
-//    name="Last",
+//    name=pipeName + "_Last",
 //    finish=true,
 //  )
 //
