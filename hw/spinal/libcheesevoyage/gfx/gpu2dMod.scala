@@ -3596,7 +3596,10 @@ case class Gpu2d(
     //physCalcPos.io.en := fifoPush.fire
     //physCalcPos.io.en := True
 
-    outp.physPosInfo := rdPhysCalcPos.io.info
+    outp.physPosInfo := (
+      //rdPhysCalcPos.io.info
+      rdPhysCalcPos.io.info
+    )
     //outp.bgPxsPosSlice := outp.physPosInfo.posSlice(
     //  someSize2d=params.fbSize2dInPxs,
     //  someScalePow=params.physToIntnlScalePow,
@@ -5372,11 +5375,16 @@ case class Gpu2d(
             //  enVec(clearVecIdx)
             //  //enVec(jdx)
             //)
-            wrObjSubLineMemArr(jdx).io.clear.valid := (
+            val rClear = (
+              Reg(cloneOf(wrObjSubLineMemArr(jdx).io.clear))
+              .setName(s"wrObjWriter_${extName}_rClear_${jdx}")
+            )
+            wrObjSubLineMemArr(jdx).io.clear <-< rClear
+            rClear.valid := (
               //clearVecIdx =/= jdx
               tempClearValid
             )
-            wrObjSubLineMemArr(jdx).io.clear.payload := tempClearAddr
+            rClear.payload := tempClearAddr
             //switch (clearVecIdx) {
             //  for (kdx <- 0 until (1 << clearVecIdx.getWidth)) {
             //    is (kdx) {
@@ -10490,19 +10498,25 @@ case class Gpu2d(
       //  combinePipeLastThrown.stage0.scaleXCnt
       //)
     }
-    //val rPrePopStm = cloneOf(pop)
-    //pop <-/< rPrePopStm
+    val prePopStm = cloneOf(pop)
+    pop <-/< prePopStm
     combinePipeLastThrown.translateInto(
-      pop
-      //rPrePopStm
+      //pop
+      prePopStm
     )(
       dataAssignment=(
         popPayload,
         combinePipeLastPayload,
       ) => {
-        popPayload := outp
+        popPayload.ctrlEn := outp.ctrlEn
+        popPayload.col := outp.col
+        popPayload.physPosInfo := (
+          popPayload.physPosInfo.getZero
+        )
       }
     )
+    pop.physPosInfo.allowOverride
+    pop.physPosInfo := outp.physPosInfo
 
     //pop.valid := (
     //  wrBgPipeLast.valid && wrObjPipeLast.valid && combinePipeLast.valid
@@ -20227,7 +20241,10 @@ case class Gpu2d(
         outp.col := rPastOutp.col
         //rdPhysCalcPosEn := False
       }
-      when (combinePipeLastThrown.fire) {
+      when (
+        //combinePipeLastThrown.fire
+        pop.fire
+      ) {
         rdPhysCalcPosEn := True
         //outp.col := combinePipeLastThrown.combineWrLineMemEntry.col.rgb
       } otherwise {
