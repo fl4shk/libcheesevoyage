@@ -3743,20 +3743,30 @@ case class Gpu2d(
     //  depth=combineRdSubLineFifoDepth,
     //)
     //val wrBgSubLineMemArr = new ArrayBuffer[Mem[Vec[BgSubLineMemEntry]]]()
-    val combineBgSubLineMemArr = new ArrayBuffer[
-      WrPulseRdPipeSimpleDualPortMem[
-        //Bits,
-        CombinePipePayload,
-        Vec[BgSubLineMemEntry]
-      ]
-      //PipeMemRmw[
-      //  Vec[BgSubLineMemEntry],
-      //  CombinePipePayload,
-      //  CombinePipePayload,
-      //]
-    ]()
-    def mkCombineBgSubLineMemArrPipeExt() = {
-    }
+    val combineBgSubLineMemA2d = Array.fill(params.bgTileSize2d.x)(
+      new ArrayBuffer[
+        WrPulseRdPipeSimpleDualPortMem[
+          //Bits,
+          CombinePipePayload,
+          /*Vec[*/BgSubLineMemEntry/*]*/
+        ]
+      ]()
+    )
+    //val combineBgSubLineMemArr = new ArrayBuffer[
+    //  WrPulseRdPipeSimpleDualPortMem[
+    //    //Bits,
+    //    CombinePipePayload,
+    //    Vec[BgSubLineMemEntry]
+    //  ]
+    //  //PipeMemRmw[
+    //  //  Vec[BgSubLineMemEntry],
+    //  //  CombinePipePayload,
+    //  //  CombinePipePayload,
+    //  //]
+    //]()
+
+    //def mkCombineBgSubLineMemArrPipeExt() = {
+    //}
     //val rdBgSubLineMemArr = (
     //  new ArrayBuffer[MultiMemReadSync[Vec[BgSubLineMemEntry]]]()
     //)
@@ -4452,26 +4462,77 @@ case class Gpu2d(
     ////val combineLineMemArr = new ArrayBuffer[Mem[Gpu2dRgba]]()
     ////val wrLineMemIdx
 
-    def combineBgSetWordFunc(
-      unionIdx: UInt,
-      outpPayload: CombinePipePayload,
-      inpPayload: CombinePipePayload,
-      bgTileRow: Vec[BgSubLineMemEntry],
-    ): Unit = {
-      //outpPayload := outpPayload.getZero
-      outpPayload.allowOverride
-      outpPayload.stage0.changingRow := (
-        inpPayload.stage0.changingRow
-      )
-      //outpPayload.stage0.bakCnt
-      //outpPayload.stage0.fracCnt := inpPayload.stage0.fracCnt
-      outpPayload.stage0.fullCnt := inpPayload.stage0.fullCnt
-      outpPayload.stage0.fullBakCnt := inpPayload.stage0.fullBakCnt
-      //outpPayload.stage0.fullBakCntMinus1 := (
-      //  inpPayload.stage0.fullBakCntMinus1
-      //)
-      outpPayload.stage2.rdBg := bgTileRow
-    }
+    //def combineBgSetWordFunc(
+    //  unionIdx: UInt,
+    //  outpPayload: CombinePipePayload,
+    //  inpPayload: CombinePipePayload,
+    //  bgTileRow: Vec[BgSubLineMemEntry],
+    //): Unit = {
+    //  //outpPayload := outpPayload.getZero
+    //  outpPayload.allowOverride
+    //  outpPayload.stage0.changingRow := (
+    //    inpPayload.stage0.changingRow
+    //  )
+    //  //outpPayload.stage0.bakCnt
+    //  //outpPayload.stage0.fracCnt := inpPayload.stage0.fracCnt
+    //  outpPayload.stage0.fullCnt := inpPayload.stage0.fullCnt
+    //  outpPayload.stage0.fullBakCnt := inpPayload.stage0.fullBakCnt
+    //  //outpPayload.stage0.fullBakCntMinus1 := (
+    //  //  inpPayload.stage0.fullBakCntMinus1
+    //  //)
+    //  outpPayload.stage2.rdBg := bgTileRow
+    //}
+    //for (kdx <- 0 until params.bgTileSize2d.x) {
+    //  
+    //  for (
+    //    kdx <- 0 until params.bgTileSize2d.x
+    //  ) {
+    //    combineBgSubLineMemA2d.last += WrPulseRdPipeSimpleDualPortMem(
+    //      dataType=CombinePipePayload(),
+    //      wordType=BgSubLineMemEntry(),//Vec.fill(params.bgTileSize2d.x)(BgSubLineMemEntry()),
+    //      wordCount=params.bgSubLineMemArrSize,
+    //      pipeName=s"combineBgSubLineMemArr_${idx}",
+    //      initBigInt=Some(bgSubLineMemInitBigInt),
+    //    )(
+    //      setWordFunc=(
+    //        //io: WrPulseRdPipeSimpleDualPortMemIo[
+    //        //  Bits,
+    //        //  Vec[BgSubLineMemEntry],
+    //        //],
+    //        unionIdx: UInt,
+    //        outpPayload: CombinePipePayload,
+    //        inpPayload: CombinePipePayload,
+    //        //bgTileRow: /*Vec[*/BgSubLineMemEntry/*]*/,
+    //        bgTileSliceElem: /*Vec[*/BgSubLineMemEntry/*]*/,
+    //      ) => {
+    //        //outpPayload := inpPayload
+    //        outpPayload := outpPayload.getZero
+    //        outpPayload.allowOverride
+    //        outpPayload.stage0.changingRow := (
+    //          inpPayload.stage0.changingRow
+    //        )
+    //        //outpPayload.stage0.fracCnt := (
+    //        //  inpPayload.stage0.fracCnt
+    //        //)
+    //        outpPayload.stage0.fullCnt := (
+    //          inpPayload.stage0.fullCnt
+    //        )
+    //        outpPayload.stage0.fullBakCnt := (
+    //          inpPayload.stage0.fullBakCnt
+    //        )
+    //        //outpPayload.stage0.fullBakCntMinus1 := (
+    //        //  inpPayload.stage0.fullBakCntMinus1
+    //        //)
+    //        ////tempOutpData.allowOverride
+    //        ////outpPayload.stage2.rdBg.removeAssignments()
+    //        //outpPayload.allowOverride
+    //        //outpPayload.stage2.rdBg := bgTileRow
+    //        outpPayload.stage2.rdBg(kdx) := bgTileSliceElem
+    //      }
+    //    )
+    //      .setName(f"combineBgSubLineMemA2d_${idx}_${kdx}")
+    //  }
+    //}
     for (
       idx <- 0 until params.numLineMemsPerBgObjRenderer
     ) {
@@ -4531,116 +4592,62 @@ case class Gpu2d(
       //val combineBgModBackStm = (
       //  cloneOf(combineBgSubLineMemArr.last.io.modBack)
       //)
-      combineBgSubLineMemArr += WrPulseRdPipeSimpleDualPortMem(
-        dataType=CombinePipePayload(),
-        wordType=Vec.fill(params.bgTileSize2d.x)(BgSubLineMemEntry()),
-        wordCount=params.bgSubLineMemArrSize,
-        pipeName=s"combineBgSubLineMemArr_${idx}",
-        initBigInt=Some(bgSubLineMemInitBigInt),
-      )(
-        //getWordFunc=(
-        //  inpPayload: Bits,
-        //) => {
-        //  val ret = Vec.fill(params.bgTileSize2d.x)(BgSubLineMemEntry())
-        //  switch (rWrLineMemArrIdx) {
-        //    for (jdx <- 0 until params.numLineMemsPerBgBgRenderer) {
-        //      is (jdx) {
-        //        if (idx == jdx) {
-        //          val tempInpData = (
-        //            inpPayload.aliasAs(WrBgPipePayload())
-        //          )
-        //          //ret := tempInpData.stage5.rdSubLineMemEntry
-        //          ret := tempInpData.stage7.ext.wrLineMemEntry
-        //        } else {
-        //          val tempInpData = (
-        //            inpPayload.aliasAs(CombinePipePayload())
-        //          )
-        //          //ret := tempInpData.stage2.rdBg
-        //          //ret := cloneOf(ret).getZero
-        //          ret := ret.getZero
-        //        }
-        //      }
-        //    }
-        //    //is (0) {
-        //    //  if (idx == 0) {
-        //    //    val tempInpData = inpPayload.aliasAs(WrBgPipePayload())
-        //    //  } else { // if (idx == 1)
-        //    //    val tempInpData = inpPayload
-        //    //  }
-        //    //}
-        //    //is (1) {
-        //    //  if (idx == 0) {
-        //    //  } else { // if (idx == 1)
-        //    //  }
-        //    //}
-        //  }
-        //  ret
-        //},
-        setWordFunc=(
-          //io: WrPulseRdPipeSimpleDualPortMemIo[
-          //  Bits,
-          //  Vec[BgSubLineMemEntry],
-          //],
-          unionIdx: UInt,
-          outpPayload: CombinePipePayload,
-          inpPayload: CombinePipePayload,
-          bgTileRow: Vec[BgSubLineMemEntry],
-        ) => {
-          //switch (
-          //  //rWrLineMemArrIdx
-          //  unionIdx
-          //) {
-            //for (jdx <- 0 until params.numLineMemsPerBgBgRenderer) {
-              //is (jdx) {
-              //  if (idx == jdx) {
-              //    val tempOutpData = (
-              //      outpPayload.aliasAs(WrBgPipePayload())
-              //    )
-              //    val tempInpData = (
-              //      inpPayload.aliasAs(WrBgPipePayload())
-              //    )
-              //    //ret := tempInpData.stage7.ext.wrLineMemEntry
-              //    tempOutpData := tempInpData
-              //    //tempOutpData.allowOverride
-              //    tempOutpData.stage5.rdSubLineMemEntry.removeAssignments()
-              //    tempOutpData.stage5.rdSubLineMemEntry := bgTileRow
-              //  } else {
-                  //val tempOutpData = (
-                  //  outpPayload.aliasAs(CombinePipePayload())
-                  //)
-                  //val tempInpData = (
-                  //  inpPayload.aliasAs(CombinePipePayload())
-                  //)
-                  //ret := ret.getZero
-                  //outpPayload := inpPayload
-                  outpPayload := outpPayload.getZero
-                  outpPayload.allowOverride
-                  outpPayload.stage0.changingRow := (
-                    inpPayload.stage0.changingRow
-                  )
-                  //outpPayload.stage0.fracCnt := (
-                  //  inpPayload.stage0.fracCnt
-                  //)
-                  outpPayload.stage0.fullCnt := (
-                    inpPayload.stage0.fullCnt
-                  )
-                  outpPayload.stage0.fullBakCnt := (
-                    inpPayload.stage0.fullBakCnt
-                  )
-                  //outpPayload.stage0.fullBakCntMinus1 := (
-                  //  inpPayload.stage0.fullBakCntMinus1
-                  //)
-                  ////tempOutpData.allowOverride
-                  ////outpPayload.stage2.rdBg.removeAssignments()
-                  //outpPayload.allowOverride
-                  outpPayload.stage2.rdBg := bgTileRow
-                //}
-              //}
+      //combineBgSubLineMemA2d += new ArrayBuffer[
+      //  WrPulseRdPipeSimpleDualPortMem[
+      //    CombinePipePayload,
+      //    BgSubLineMemEntry,
+      //  ]
+      //]()
+      for (
+        kdx <- 0 until params.bgTileSize2d.x
+      ) {
+        combineBgSubLineMemA2d(kdx) += WrPulseRdPipeSimpleDualPortMem(
+          dataType=CombinePipePayload(),
+          wordType=BgSubLineMemEntry(),//Vec.fill(params.bgTileSize2d.x)(BgSubLineMemEntry()),
+          wordCount=params.bgSubLineMemArrSize,
+          pipeName=s"combineBgSubLineMemArr_${kdx}_${idx}",
+          initBigInt=Some(bgSubLineMemInitBigInt),
+        )(
+          setWordFunc=(
+            //io: WrPulseRdPipeSimpleDualPortMemIo[
+            //  Bits,
+            //  Vec[BgSubLineMemEntry],
+            //],
+            unionIdx: UInt,
+            outpPayload: CombinePipePayload,
+            inpPayload: CombinePipePayload,
+            //bgTileRow: /*Vec[*/BgSubLineMemEntry/*]*/,
+            bgTileSliceElem: /*Vec[*/BgSubLineMemEntry/*]*/,
+          ) => {
+            //outpPayload := inpPayload
+            outpPayload := outpPayload.getZero
+            outpPayload.allowOverride
+            outpPayload.stage0.changingRow := (
+              inpPayload.stage0.changingRow
+            )
+            //outpPayload.stage0.fracCnt := (
+            //  inpPayload.stage0.fracCnt
+            //)
+            outpPayload.stage0.fullCnt := (
+              inpPayload.stage0.fullCnt
+            )
+            outpPayload.stage0.fullBakCnt := (
+              inpPayload.stage0.fullBakCnt
+            )
+            //outpPayload.stage0.fullBakCntMinus1 := (
+            //  inpPayload.stage0.fullBakCntMinus1
+            //)
+            ////tempOutpData.allowOverride
+            ////outpPayload.stage2.rdBg.removeAssignments()
+            //outpPayload.allowOverride
+            //outpPayload.stage2.rdBg := bgTileRow
+            //for (zdx <- 0 until params.bgTileSize2d.x) {
+              outpPayload.stage2.rdBg(kdx) := bgTileSliceElem
             //}
-          //}
-        }
-      )
-        .setName(f"combineBgSubLineMemArr_$idx")
+          }
+        )
+          .setName(f"combineBgSubLineMemA2d_${kdx}_${idx}")
+      }
       //--------
 
       //rdBgSubLineMemArr += MultiMemReadSync(
@@ -9688,16 +9695,33 @@ case class Gpu2d(
     //  //Stream(CombinePipePayload())
     //  Stream(CombinePipePayload())
     //)
-    def combineBgObjForkJoinMax = (
+    def combineObjForkJoinMax = (
       if (!noAffineObjs) {
-        3
-      } else {
         2
+      } else {
+        1
       }
     )
-    def combineTotalForkOrJoinMax = (
-      params.numLineMemsPerBgObjRenderer * combineBgObjForkJoinMax
+    def combineBgObjForkJoinMax = (
+      //if (!noAffineObjs) {
+      //  3
+      //} else {
+      //  2
+      //}
+      combineObjForkJoinMax + 1
     )
+    def combineTotalForkOrJoinMax = (
+      (
+        params.numLineMemsPerBgObjRenderer
+        //* combineBgObjForkJoinMax
+        * (
+          combineBgObjForkJoinMax - 1
+          + params.bgTileSize2d.x
+        )
+      )
+      //* params.bgTileSize2d.x
+    )
+    println(s"combineTotalForkOrJoinMax: $combineTotalForkOrJoinMax")
     //val combineBgObjRdPipeFork = FpgacpuPipeForkBlocking(
     //  dataType=CombinePipePayload(),
     //  // BEGIN: add in BGs; later
@@ -9710,18 +9734,43 @@ case class Gpu2d(
     //  size=params.numLineMemsPerBgObjRenderer * combineBgObjForkJoinMax,
     //  // END: add in BGs; later
     //)
-    val nCombineArr = Array.fill(combinePipeNumMainStages + 1)(Node())
-    val sCombineArr = new ArrayBuffer[StageLink]()
-    val s2mCombineArr = new ArrayBuffer[S2MLink]()
-    val cCombineArr = new ArrayBuffer[CtrlLink]()
-
-    val nfCombineArr = Array.fill(combineTotalForkOrJoinMax)(Node())
-    val njCombineArr = Array.fill(combineTotalForkOrJoinMax)(Node())
-    //val cfCombineArr = new ArrayBuffer[CtrlLink]()
-    val fDriveToStmArr = Array.fill(combineTotalForkOrJoinMax)(
-      Stream(CombinePipePayload())
+    val nCombineArr = /*Array.fill(params.bgTileSize2d.x)*/(
+      Array.fill(combinePipeNumMainStages + 1)(Node())
     )
-    val cfjCombineArr = new ArrayBuffer[CtrlLink]()
+    val sCombineArr = /*Array.fill(params.bgTileSize2d.x)*/(
+      new ArrayBuffer[StageLink]()
+    )
+    val s2mCombineArr = /*Array.fill(params.bgTileSize2d.x)*/(
+      new ArrayBuffer[S2MLink]()
+    )
+    val cCombineArr = /*Array.fill(params.bgTileSize2d.x)*/(
+      new ArrayBuffer[CtrlLink]()
+    )
+
+    val nfCombineArr = /*Array.fill(params.bgTileSize2d.x)*/(
+      Array.fill(
+        combineTotalForkOrJoinMax
+        //* params.bgTileSize2d.x
+      )(Node())
+    )
+    val njCombineArr = /*Array.fill(params.bgTileSize2d.x)*/(
+      Array.fill(
+        combineTotalForkOrJoinMax
+        //* params.bgTileSize2d.x
+      )(Node())
+    )
+    //val cfCombineArr = new ArrayBuffer[CtrlLink]()
+    val fDriveToStmArr = /*Array.fill(params.bgTileSize2d.x)*/(
+      Array.fill(
+        combineTotalForkOrJoinMax
+        //* params.bgTileSize2d.x
+      )(
+        Stream(CombinePipePayload())
+      )
+    )
+    //val cfjCombineArr = /*Array.fill(params.bgTileSize2d.x)*/(
+    //  new ArrayBuffer[CtrlLink]()
+    //)
 
     //val cCombineFork = new ArrayBuffer
     //val fCombineArr = new ArrayBuffer[ForkLink]()
@@ -9736,9 +9785,14 @@ case class Gpu2d(
     //)
     //val combineJoinPipePayload = Payload(CombinePipePayload())
     val combinePipeJoinPayloadArr = (
-      Array.fill(combineTotalForkOrJoinMax)(
-        Payload(CombinePipePayload())
-      )
+      //Array.fill(params.bgTileSize2d.x)(
+        Array.fill(
+          combineTotalForkOrJoinMax
+          //* params.bgTileSize2d.x
+        )(
+          Payload(CombinePipePayload())
+        )
+      //)
     )
     val combinePipePostJoinPayload = Payload(CombinePipePayload())
     val combinePipeLast = nCombinePipeLast(
@@ -9764,7 +9818,8 @@ case class Gpu2d(
         //    2
         //  }
         //)
-        def theMax = combineBgObjForkJoinMax
+        def theMax = combineObjForkJoinMax //combineBgObjForkJoinMax - 1
+        //def theMax = combineBgObjForkJoinMax * params.bgTileSize2d.x
         val fMyCombine = ForkLink(
           up=nCombineArr(idx),
           downs=nfCombineArr.toSeq,
@@ -9776,161 +9831,210 @@ case class Gpu2d(
           down=Node(),
         )
         linkArr += jMyCombine
-        for (
-          combineIdx <- 0
-          //until params.numLineMemsPerBgObjRenderer * theMax
-          until combineTotalForkOrJoinMax
-        ) {
-          //combineObjSubLineMemArr(combineIdx).io.rdAddrPipe << (
-          //  combineBgObjRdPipeFork.io.pipeOutVec//(combineIdx)
-          //);
-          //println("combineIdx: " + f"$combineIdx")
-          def nfMyCombine = (
-            //combineBgObjRdPipeFork.io.pipeOutVec(combineIdx)
-            fMyCombine.downs(combineIdx)
-          )
-          def njMyCombine = (
-            //combineBgObjRdPipeJoin.io.pipeInVec(combineIdx)
-            //njCombineArr(combineIdx)
-            jMyCombine.ups(combineIdx)
-          )
-          //val cfjMyCombine = CtrlLink(
-          //  //up=nfMyCombine,
-          //  //down=njMyCombine,
-          //  up=nfMyCombine,
-          //  down=njMyCombine,
-          //)
-          //linkArr += cfjMyCombine
-          //def cfjMyCombine = (
-          //  cfjCombineArr.last
-          //)
-          def fMyDriveToStm = (
-            fDriveToStmArr(combineIdx)
-          )
-          nfMyCombine.driveTo(fMyDriveToStm)(
-            con=(
-              payload,
-              node,
-            ) => {
-              payload := node(combinePipePreForkPayload)
-            }
-          )
-
-          if (
-            //combineIdx % theMax == 0
-            false
+        //for (
+        //  kdx <- 0 until params.bgTileSize2d.x
+        //) {
+          for (
+            jdx <- 0
+            //until params.numLineMemsPerBgObjRenderer * theMax
+            until combineTotalForkOrJoinMax
           ) {
-            def myLineMem = (
-              combineBgSubLineMemArr(combineIdx / theMax)
+            def zdx = (
+              jdx
+              - (
+                params.numLineMemsPerBgObjRenderer * params.bgTileSize2d.x
+              )
             )
-            //fMyDriveToStm.translateInto(myLineMem.io.dualRdFront)(
-            //  dataAssignment=(
-            //    o, i
-            //  ) => {
-            //    o := i
-            //    o.allowOverride
-            //    o.bgExt := o.bgExt.getZero
-            //    o.bgExt.memAddr := (
-            //      params.getBgSubLineMemArrIdx(
-            //        addr=i.cnt,
-            //      )
-            //    )
-            //  }
+            //def combineIdx = (
+            //  jdx * params.bgTileSize2d.x + kdx
             //)
-            //njMyCombine.driveFrom(myLineMem.io.dualRdBack)(
-            //  con=(
-            //    node,
-            //    payload,
-            //  ) => {
-            //    //node(combinePipePayload) := payload
-            //    //node(combinePipePostJoinPayload) := payload
-            //    def o = node(combinePipeJoinPayloadArr(combineIdx))
-            //    def i = payload
-            //    o := i
-            //    combineBgSetWordFunc(
-            //      unionIdx=0,
-            //      outpPayload=o,
-            //      inpPayload=i,
-            //      bgTileRow=i.bgExt.modMemWord,
-            //    )
-            //    //--------
-            //    //node(combinePipeJoinPayloadArr(combineIdx)) := payload
-            //    //--------
-            //    //node(combineJoinPipePayload) := payload
-            //    //def myPayload = node(combinePipePostJoinPayload)
-            //    //myPayload := payload
-            //    //myPayload.stage2.allowOverride
-            //  }
+            //combineObjSubLineMemArr(combineIdx).io.rdAddrPipe << (
+            //  combineBgObjRdPipeFork.io.pipeOutVec//(combineIdx)
+            //);
+            //println("combineIdx: " + f"$combineIdx")
+            def nfMyCombine = (
+              //combineBgObjRdPipeFork.io.pipeOutVec(combineIdx)
+              fMyCombine.downs(jdx)
+            )
+            def njMyCombine = (
+              //combineBgObjRdPipeJoin.io.pipeInVec(combineIdx)
+              //njCombineArr(combineIdx)
+              jMyCombine.ups(jdx)
+            )
+            //val cfjMyCombine = CtrlLink(
+            //  //up=nfMyCombine,
+            //  //down=njMyCombine,
+            //  up=nfMyCombine,
+            //  down=njMyCombine,
             //)
-          } else {
-            def myLineMem = {
-              if (combineIdx % theMax == 0) {
-                //println("combineIdx % theMax == 0: " + f"$combineIdx")
-                combineBgSubLineMemArr(combineIdx / theMax)
-                //combineObjSubLineMemAr//r(combineIdx / theMax)
-              } else if (combineIdx % theMax == 1) {
-                //println("combineIdx % theMax == 1: " + f"$combineIdx")
-                combineObjSubLineMemArr(combineIdx / theMax)
-              } else {
-                //println("combineIdx % theMax >= 2: " + f"$combineIdx")
-                if (!noAffineObjs) {
-                  combineObjAffineSubLineMemArr(combineIdx / theMax)
-                } else {
-                  combineObjSubLineMemArr(combineIdx / theMax)
-                }
-              }
-            }
-            fMyDriveToStm.translateInto(myLineMem.io.rdAddrPipe)(
-              dataAssignment=(
-                o,
-                i,
+            //linkArr += cfjMyCombine
+            //def cfjMyCombine = (
+            //  cfjCombineArr.last
+            //)
+            def fMyDriveToStm = (
+              fDriveToStmArr(jdx)
+            )
+            nfMyCombine.driveTo(fMyDriveToStm)(
+              con=(
+                payload,
+                node,
               ) => {
-                //o.addr := i.cnt(
-                //  log2Up(params.objSubLineMemArrSize) - 1 downto 0
-                //)
-                o.addr := (
-                  if (combineIdx % theMax == 0) {
-                    params.getBgSubLineMemArrIdx(
-                      addr=i.cnt,
-                    )
-                    //params.getObjSubLineMemArrIdx(
-                    //  addr=i.cnt,
-                    //)
-                  } else if (combineIdx % theMax == 1) {
-                    params.getObjSubLineMemArrIdx(
-                      addr=i.cnt,
-                    )
+                payload := node(combinePipePreForkPayload)
+              }
+            )
+
+            if (
+              //combineIdx % theMax == 0
+              false
+            ) {
+              //def myLineMem = (
+              //  combineBgSubLineMemA2d(combineIdx / theMax)
+              //)
+              //fMyDriveToStm.translateInto(myLineMem.io.dualRdFront)(
+              //  dataAssignment=(
+              //    o, i
+              //  ) => {
+              //    o := i
+              //    o.allowOverride
+              //    o.bgExt := o.bgExt.getZero
+              //    o.bgExt.memAddr := (
+              //      params.getBgSubLineMemArrIdx(
+              //        addr=i.cnt,
+              //      )
+              //    )
+              //  }
+              //)
+              //njMyCombine.driveFrom(myLineMem.io.dualRdBack)(
+              //  con=(
+              //    node,
+              //    payload,
+              //  ) => {
+              //    //node(combinePipePayload) := payload
+              //    //node(combinePipePostJoinPayload) := payload
+              //    def o = node(combinePipeJoinPayloadArr(combineIdx))
+              //    def i = payload
+              //    o := i
+              //    combineBgSetWordFunc(
+              //      unionIdx=0,
+              //      outpPayload=o,
+              //      inpPayload=i,
+              //      bgTileRow=i.bgExt.modMemWord,
+              //    )
+              //    //--------
+              //    //node(combinePipeJoinPayloadArr(combineIdx)) := payload
+              //    //--------
+              //    //node(combineJoinPipePayload) := payload
+              //    //def myPayload = node(combinePipePostJoinPayload)
+              //    //myPayload := payload
+              //    //myPayload.stage2.allowOverride
+              //  }
+              //)
+            } else {
+              def myLineMem = {
+                if (
+                  //zdx % theMax1 == 0
+                  zdx < 0
+                  //jdx < 
+                ) {
+                  //println("combineIdx % theMax == 0: " + f"$combineIdx")
+                  //combineBgSubLineMemArr(combineIdx / theMax)
+                  //val tempJdx = jdx / theMax
+                  val kdx = (
+                    jdx / params.numLineMemsPerBgObjRenderer
+                  )
+                  val tempJdx = (
+                    jdx % params.numLineMemsPerBgObjRenderer
+                  )
+                  val tempSize = combineBgSubLineMemA2d(kdx).size
+                  println(
+                    s"kdx, tempJdx, tempSize: $kdx $tempJdx $tempSize"
+                  )
+                  //println(combineBgSubLineMemA2d.size)
+                  combineBgSubLineMemA2d(kdx)(tempJdx)
+                  //combineObjSubLineMemAr//r(combineIdx / theMax)
+                } else {
+                  if (zdx % theMax == 0) {
+                    //println("combineIdx % theMax == 1: " + f"$combineIdx")
+                    combineObjSubLineMemArr(zdx / theMax)
                   } else {
-                    if (!noAffineObjs) { // if (combineIdx % 3 == 2)
-                      params.getObjAffineSubLineMemArrIdx(
-                        addr=i.cnt,
-                      )
+                    //println("combineIdx % theMax >= 2: " + f"$combineIdx")
+                    if (!noAffineObjs) {
+                      combineObjAffineSubLineMemArr(zdx / theMax)
                     } else {
-                      params.getObjSubLineMemArrIdx(
-                        addr=i.cnt,
-                      )
+                      combineObjSubLineMemArr(zdx / theMax)
                     }
                   }
+                }
+              }
+              //if (
+              //  //(
+              //  //  jdx % theMax1 == 0
+              //  //) || (
+              //  //  kdx == 0
+              //  //  && (
+              //  //    (jdx % theMax1 == 1)
+              //  //    || (jdx % theMax == 2)
+              //  //  )
+              //  //)
+              //) {
+                fMyDriveToStm.translateInto(myLineMem.io.rdAddrPipe)(
+                  dataAssignment=(
+                    o,
+                    i,
+                  ) => {
+                    //o.addr := i.cnt(
+                    //  log2Up(params.objSubLineMemArrSize) - 1 downto 0
+                    //)
+                    o.addr := (
+                      if (
+                        //jdx % theMax1 == 0
+                        zdx < 0
+                      ) {
+                        params.getBgSubLineMemArrIdx(
+                          addr=i.cnt,
+                        )
+                        //params.getObjSubLineMemArrIdx(
+                        //  addr=i.cnt,
+                        //)
+                      } else {
+                        if (zdx % theMax == 0) {
+                          params.getObjSubLineMemArrIdx(
+                            addr=i.cnt,
+                          )
+                        } else {
+                          if (!noAffineObjs) { // if (zdx % theMax1 == 2)
+                            params.getObjAffineSubLineMemArrIdx(
+                              addr=i.cnt,
+                            )
+                          } else {
+                            params.getObjSubLineMemArrIdx(
+                              addr=i.cnt,
+                            )
+                          }
+                        }
+                      }
+                    )
+                    o.data := i
+                  }
                 )
-                o.data := i
-              }
-            )
 
-            //njMyCombine << myLineMem.io.rdDataPipe
-            njMyCombine.driveFrom(myLineMem.io.rdDataPipe)(
-              con=(
-                node,
-                payload,
-              ) => {
-                //node(combinePipePayload) := payload
-                //node(combinePipePostJoinPayload) := payload
-                node(combinePipeJoinPayloadArr(combineIdx)) := payload
-                //node(combineJoinPipePayload) := payload
-                //def myPayload = node(combinePipePostJoinPayload)
-                //myPayload := payload
-                //myPayload.stage2.allowOverride
-              }
-            )
+                //njMyCombine << myLineMem.io.rdDataPipe
+                njMyCombine.driveFrom(myLineMem.io.rdDataPipe)(
+                  con=(
+                    node,
+                    payload,
+                  ) => {
+                    //node(combinePipePayload) := payload
+                    //node(combinePipePostJoinPayload) := payload
+                    node(combinePipeJoinPayloadArr(jdx)) := payload
+                    //node(combineJoinPipePayload) := payload
+                    //def myPayload = node(combinePipePostJoinPayload)
+                    //myPayload := payload
+                    //myPayload.stage2.allowOverride
+                  }
+                )
+              //}
+            }
           }
 
           //--------
@@ -9945,17 +10049,6 @@ case class Gpu2d(
               until params.numLineMemsPerBgObjRenderer
             ) {
               is (innerCombineIdx) {
-                // BEGIN: add in BGs; later
-                //combinePipeOut(idx).payload := (
-                //  combineBgObjRdPipeJoin.io.pipeOut.payload(innerCombineIdx * 2)
-                //)
-                //def theMax = (
-                //  if (!noAffineObjs) {
-                //    3
-                //  } else {
-                //    2
-                //  }
-                //)
                 //--------
                 //val myPayload = CombinePipePayload()
                 def myOutpPayload = (
@@ -9970,26 +10063,45 @@ case class Gpu2d(
                 //cfjMyCombine.bypass(combinePipePostJoinPayload) := (
                 //  myOutpPayload
                 //)
-                myOutpPayload.stage2.rdBg := (
-                  //combineBgObjRdPipeJoin.io.pipeOut.payload(
-                  //  innerCombineIdx * theMax //+ 0
-                  //)
-                  //  .stage2.rdBg
-                  myInpPayload(
-                    innerCombineIdx * theMax //+ 0
+                //if (zdx < 0) {
+                for (jdx <- 0 until params.bgTileSize2d.x) {
+                  myOutpPayload.stage2.rdBg(jdx) := (
+                    //combineBgObjRdPipeJoin.io.pipeOut.payload(
+                    //  innerCombineIdx * theMax //+ 0
+                    //)
+                    //  .stage2.rdBg
+                    myInpPayload(
+                      (
+                        jdx 
+                        * params.numLineMemsPerBgObjRenderer
+                      )
+                      + (
+                        innerCombineIdx * theMax //+ 0
+                      )
+                    )
+                      .stage2.rdBg(jdx)
                   )
-                    .stage2.rdBg
-                )
+                }
                 //combinePipeOut(idx).payload.stage2.rdObj.allowOverride
                 myOutpPayload.stage2.rdObj := (
                   myInpPayload(
-                    innerCombineIdx * theMax + 1
+                    (
+                      params.bgTileSize2d.x 
+                      * params.numLineMemsPerBgObjRenderer
+                    ) + (
+                      innerCombineIdx * theMax //+ 1
+                    )
                   ).stage2.rdObj
                 )
                 if (!noAffineObjs) {
                   myOutpPayload.stage2.rdObjAffine := (
                     myInpPayload(
-                      innerCombineIdx * theMax + 2
+                      (
+                        params.bgTileSize2d.x 
+                        * params.numLineMemsPerBgObjRenderer
+                      ) + (
+                        innerCombineIdx * theMax + 1 //+ 2
+                      )
                     ).stage2.rdObjAffine
                   )
                 }
@@ -10018,7 +10130,7 @@ case class Gpu2d(
               }
             }
           }
-        }
+        //}
       }
       //--------
       linkArr += sCombineArr.last
@@ -13076,43 +13188,57 @@ case class Gpu2d(
       //  //)
       //  //--------
       //}
+      def tempArrIdx(kdx: Int) = (
+        wrBgPipeLast.postStage0.subLineMemEntry(kdx)
+        .getSubLineMemTempArrIdx()
+      )
+
+      val tempFlowVec = Vec.fill(params.bgTileSize2d.x)(
+        Vec.fill(wrBgPipeLineMemArrIdx.size)(
+          cloneOf(combineBgSubLineMemA2d(0)(0).io.wrPulse)
+        )
+      )
+      val rValidPipe1 = Vec.fill(params.bgTileSize2d.x)(
+        Vec.fill(wrBgPipeLineMemArrIdx.size)(
+          Reg(Bool()) init(False)
+        )
+      )
+      val rAddrPipe1 = Vec.fill(params.bgTileSize2d.x)(
+        Vec.fill(rValidPipe1.size)(
+          //RegNext(tempArrIdx) init(tempArrIdx.getZero)
+          Reg(cloneOf(tempArrIdx(0))) init(tempArrIdx(0).getZero)
+        )
+      )
+      val rDataPipe1 = Vec.fill(rValidPipe1.size)(
+        RegNext(wrBgPipeLast.postStage0.subLineMemEntry)
+      )
+      for (kdx <- 0 until params.bgTileSize2d.x) {
+        for (jdx <- 0 until wrBgPipeLineMemArrIdx.size) {
+          combineBgSubLineMemA2d(kdx)(jdx).io.wrPulse.valid := (
+            //True
+            rValidPipe1(kdx)(jdx)
+          )
+          combineBgSubLineMemA2d(kdx)(jdx).io.wrPulse.addr := (
+            //tempArrIdx
+            rAddrPipe1(kdx)(jdx)
+          )
+          combineBgSubLineMemA2d(kdx)(jdx).io.wrPulse.data := (
+            //wrBgPipeLast.postStage0.subLineMemEntry
+            rDataPipe1(jdx)(kdx)
+          )
+        }
+      } 
       when (RegNext(nWrBgPipeLast.isFiring) init(False)) {
         //val tempLineMemEntry = LineMemEntry()
         //val bgIdx = wrBgPipeLast.bgIdx
-        def tempArrIdx = (
-          wrBgPipeLast.postStage0.subLineMemEntry(0)
-          .getSubLineMemTempArrIdx()
-        )
 
-        val tempFlowVec = Vec.fill(wrBgPipeLineMemArrIdx.size)(
-          cloneOf(combineBgSubLineMemArr(0).io.wrPulse)
-        )
-        val rValidPipe1 = Vec.fill(wrBgPipeLineMemArrIdx.size)(
-          Reg(Bool()) init(False)
-        )
-        val rAddrPipe1 = Vec.fill(rValidPipe1.size)(
-          RegNext(tempArrIdx) init(tempArrIdx.getZero)
-        )
-        val rDataPipe1 = Vec.fill(rValidPipe1.size)(
-          RegNext(wrBgPipeLast.postStage0.subLineMemEntry)
-        )
-
-        for (jdx <- 0 until wrBgPipeLineMemArrIdx.size) {
-          rValidPipe1(jdx) := (
-            wrBgPipeLineMemArrIdx(jdx) === jdx
-          )
-          combineBgSubLineMemArr(jdx).io.wrPulse.valid := (
-            //True
-            rValidPipe1(jdx)
-          )
-          combineBgSubLineMemArr(jdx).io.wrPulse.addr := (
-            //tempArrIdx
-            rAddrPipe1(jdx)
-          )
-          combineBgSubLineMemArr(jdx).io.wrPulse.data := (
-            //wrBgPipeLast.postStage0.subLineMemEntry
-            rDataPipe1(jdx)
-          )
+        for (kdx <- 0 until params.bgTileSize2d.x) {
+          for (jdx <- 0 until wrBgPipeLineMemArrIdx.size) {
+            rAddrPipe1(kdx)(jdx) := tempArrIdx(kdx=kdx)
+            rValidPipe1(kdx)(jdx) := (
+              wrBgPipeLineMemArrIdx(jdx) === jdx
+            )
+          }
         }
           //when (rValidPipe1(jdx)) {
           //  combineBgSubLineMemArr(jdx).io.wrPulse.valid := True
@@ -13322,25 +13448,31 @@ case class Gpu2d(
         //}
         // END: old, non-synthesizable code
       } otherwise { // when (!nWrBgPipeLast.isFiring)
-        for (jdx <- 0 until combineBgSubLineMemArr.size) {
-          //--------
-          // BEGIN: old `WrPulseRdPipeSimpleDualPortMem` code
-          combineBgSubLineMemArr(jdx).io.wrPulse.valid := False
-          combineBgSubLineMemArr(jdx).io.wrPulse.addr := 0x0
-          combineBgSubLineMemArr(jdx).io.wrPulse.data := (
-            wrBgPipeLast.postStage0.subLineMemEntry.getZero
-          )
-          // END: old `WrPulseRdPipeSimpleDualPortMem` code
-          //--------
-          //combineBgSubLineMemArr(jdx).io.front.valid := False
-          //combineBgSubLineMemArr(jdx).io.front.bgExt := (
-          //  combineBgSubLineMemArr(jdx).io.front.bgExt.getZero
-          //)
-          //combineBgSubLineMemArr(jdx).io.front.bgExt.memAddr := 0x0
-          //combineBgSubLineMemArr(jdx).io.front.bgExt.modMemWord := (
-          //  wrBgPipeLast.postStage0.subLineMemEntry.getZero
-          //)
-          //--------
+        for (kdx <- 0 until params.bgTileSize2d.x) {
+          for (jdx <- 0 until combineBgSubLineMemA2d(kdx).size) {
+            //--------
+            // BEGIN: old `WrPulseRdPipeSimpleDualPortMem` code
+            //combineBgSubLineMemA2d(kdx)(jdx).io.wrPulse.valid := False
+            //combineBgSubLineMemA2d(kdx)(jdx).io.wrPulse.addr := 0x0
+            combineBgSubLineMemA2d(kdx)(jdx).io.wrPulse.data := (
+              wrBgPipeLast.postStage0.subLineMemEntry(kdx).getZero
+            )
+            rAddrPipe1(kdx)(jdx) := tempArrIdx(kdx=kdx)
+            rValidPipe1(kdx)(jdx) := (
+              wrBgPipeLineMemArrIdx(jdx) === jdx
+            )
+            // END: old `WrPulseRdPipeSimpleDualPortMem` code
+            //--------
+            //combineBgSubLineMemArr(jdx).io.front.valid := False
+            //combineBgSubLineMemArr(jdx).io.front.bgExt := (
+            //  combineBgSubLineMemArr(jdx).io.front.bgExt.getZero
+            //)
+            //combineBgSubLineMemArr(jdx).io.front.bgExt.memAddr := 0x0
+            //combineBgSubLineMemArr(jdx).io.front.bgExt.modMemWord := (
+            //  wrBgPipeLast.postStage0.subLineMemEntry.getZero
+            //)
+            //--------
+          }
         }
       }
       //// END: post stage 0
