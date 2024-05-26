@@ -240,22 +240,22 @@ object Gpu2dTest {
         )
       }
       //--------
-      val rawArrBlankBg = new ArrayBuffer[Short]()
-      for (idx <- 0 until params.bgTileSize2d.x * params.bgTileSize2d.y) {
-        rawArrBlankBg += 0.toShort
-      }
-      doInnerTileMemInit(
-        somePxsArr=rawArrBlankBg,
-        finish=true,
-      )
+      //val rawArrBlankBg = new ArrayBuffer[Short]()
+      //for (idx <- 0 until params.bgTileSize2d.x * params.bgTileSize2d.y) {
+      //  rawArrBlankBg += 0.toShort
+      //}
       //doInnerTileMemInit(
-      //  somePxsArr=rawArrSampleBg,
-      //  finish=false,
-      //)
-      //doInnerTileMemInit(
-      //  somePxsArr=rawArrSampleFg,
+      //  somePxsArr=rawArrBlankBg,
       //  finish=true,
       //)
+      doInnerTileMemInit(
+        somePxsArr=rawArrSampleBg,
+        finish=false,
+      )
+      doInnerTileMemInit(
+        somePxsArr=rawArrSampleFg,
+        finish=true,
+      )
       //--------
       //doInnerTileMemInit(
       //  somePxsArr=rawArrSampleFg2,
@@ -501,8 +501,8 @@ object Gpu2dTest {
         //someTileHeight=params.objTileSize2d.y,
         //somePalEntryMemIdxWidth=params.bgPalEntryMemIdxWidth,
         somePxsArr=(
-          //rawArrFgCommon
-          rawArrDbgBlankingFgCommon
+          rawArrFgCommon
+          //rawArrDbgBlankingFgCommon
         ),
         tempArr=tempArr,
         //isObj=false,

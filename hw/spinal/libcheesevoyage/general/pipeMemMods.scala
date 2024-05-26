@@ -230,7 +230,9 @@ object PipeMemRmw {
     modStageCnt: Int
   ) = (
     //modStageCnt
-    3 + modStageCnt //+ 1
+    //3 + modStageCnt //+ 1
+    //2 + modStageCnt //+ 1
+    1 + modStageCnt //+ 1
     //- 1
     //+ 1
   )
@@ -592,7 +594,7 @@ extends Component {
           Bool()
         )
       )
-      println(s"myUpExtDel.size: ${myUpExtDel.size}")
+      println(s"myUpExtDelPreBack.size: ${myUpExtDelPreBack.size}")
       if (optEnableModDuplicate) {
         for (
           //idx <- 0 until modStageCnt - 1
@@ -630,14 +632,14 @@ extends Component {
         name="Mid0Front",
         optIncludeS2M=false,
       )
-      val cMid1Front = pipe.addStage(
-        name="Mid1Front",
-        optIncludeS2M=false,
-      )
-      val cMid2Front = pipe.addStage(
-        name="Mid2Front",
-        //optIncludeS2M=false,
-      )
+      //val cMid1Front = pipe.addStage(
+      //  name="Mid1Front",
+      //  optIncludeS2M=false,
+      //)
+      //val cMid2Front = pipe.addStage(
+      //  name="Mid2Front",
+      //  //optIncludeS2M=false,
+      //)
       val cLastFront = pipe.addStage(
         name="LastFront", 
         finish=true,
@@ -752,6 +754,7 @@ extends Component {
     //  upExt(1) := upExt(0)
     //}
     upExt(1).allowOverride
+    upExtRealMemAddr.allowOverride
     //def savedIdx = 2
     val lastUpExt = mkExt().setName("cFrontArea_lastUpExt")
     val backUpExt = mkExt().setName("cFrontArea_backUpExt")
@@ -1174,6 +1177,10 @@ extends Component {
           }
         }
       }
+    } else { // if (!optEnableModDuplicate)
+      upExt(1) := upExt(0)
+      //upExt(1).hazardId := nextHazardId
+      upExtRealMemAddr := upExt(0).memAddr
     }
     //setDoDuplicateIt(false)
 
@@ -2161,41 +2168,41 @@ extends Component {
     }
     //--------
   }
-  val cMid1Front = mod.front.cMid1Front
-  val cMid1FrontArea = new cMid1Front.Area {
-    val upExt = KeepAttribute(
-      /*Vec.fill(2)*/(mkExt())
-      .setName("cMid1FrontArea_upExt")
-    )
-    up(mod.front.outpPipePayload).getPipeMemRmwExt(
-      outpExt=upExt,
-      memArrIdx=memArrIdx,
-    )
-    //myUpExtDel(1) := upExt
-    myUpExtDel(1) := (
-      RegNext(myUpExtDel(1)) init(myUpExtDel(1).getZero)
-    )
-    when (up.isValid) {
-      myUpExtDel(1) := upExt
-    }
-  }
-  val cMid2Front = mod.front.cMid2Front
-  val cMid2FrontArea = new cMid2Front.Area {
-    val upExt = KeepAttribute(
-      /*Vec.fill(2)*/(mkExt())
-      .setName("cMid2FrontArea_upExt")
-    )
-    up(mod.front.outpPipePayload).getPipeMemRmwExt(
-      outpExt=upExt,
-      memArrIdx=memArrIdx,
-    )
-    myUpExtDel(2) := (
-      RegNext(myUpExtDel(2)) init(myUpExtDel(2).getZero)
-    )
-    when (up.isValid) {
-      myUpExtDel(2) := upExt
-    }
-  }
+  //val cMid1Front = mod.front.cMid1Front
+  //val cMid1FrontArea = new cMid1Front.Area {
+  //  val upExt = KeepAttribute(
+  //    /*Vec.fill(2)*/(mkExt())
+  //    .setName("cMid1FrontArea_upExt")
+  //  )
+  //  up(mod.front.outpPipePayload).getPipeMemRmwExt(
+  //    outpExt=upExt,
+  //    memArrIdx=memArrIdx,
+  //  )
+  //  //myUpExtDel(1) := upExt
+  //  myUpExtDel(1) := (
+  //    RegNext(myUpExtDel(1)) init(myUpExtDel(1).getZero)
+  //  )
+  //  when (up.isValid) {
+  //    myUpExtDel(1) := upExt
+  //  }
+  //}
+  //val cMid2Front = mod.front.cMid2Front
+  //val cMid2FrontArea = new cMid2Front.Area {
+  //  val upExt = KeepAttribute(
+  //    /*Vec.fill(2)*/(mkExt())
+  //    .setName("cMid2FrontArea_upExt")
+  //  )
+  //  up(mod.front.outpPipePayload).getPipeMemRmwExt(
+  //    outpExt=upExt,
+  //    memArrIdx=memArrIdx,
+  //  )
+  //  myUpExtDel(2) := (
+  //    RegNext(myUpExtDel(2)) init(myUpExtDel(2).getZero)
+  //  )
+  //  when (up.isValid) {
+  //    myUpExtDel(2) := upExt
+  //  }
+  //}
   val cBack = mod.back.cBack
   val cBackArea = new cBack.Area {
     haltWhen(
@@ -2554,7 +2561,7 @@ extends Component {
     //)
     val cMid0 = pipe.addStage(
       name="DualRd_Mid0",
-      //optIncludeS2M=false,
+      optIncludeS2M=false,
     )
     val cMid1 = pipe.addStage(
       name="DualRd_Mid1",
