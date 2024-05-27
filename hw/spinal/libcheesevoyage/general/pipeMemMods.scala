@@ -562,9 +562,9 @@ extends Area {
       }
     }
 
-    if (vivadoDebug) {
-      ret.addAttribute("MARK_DEBUG", "TRUE")
-    }
+    //if (vivadoDebug) {
+    //  ret.addAttribute("MARK_DEBUG", "TRUE")
+    //}
     ret
   }
   val modMem = (optEnableModDuplicate) generate (
