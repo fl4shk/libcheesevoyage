@@ -9946,9 +9946,9 @@ case class Gpu2d(
                     jdx % params.numLineMemsPerBgObjRenderer
                   )
                   val tempSize = combineBgSubLineMemA2d(kdx).size
-                  println(
-                    s"kdx, tempJdx, tempSize: $kdx $tempJdx $tempSize"
-                  )
+                  //println(
+                  //  s"kdx, tempJdx, tempSize: $kdx $tempJdx $tempSize"
+                  //)
                   //println(combineBgSubLineMemA2d.size)
                   combineBgSubLineMemA2d(kdx)(tempJdx)
                   //combineObjSubLineMemAr//r(combineIdx / theMax)
@@ -13193,25 +13193,28 @@ case class Gpu2d(
         .getSubLineMemTempArrIdx()
       )
 
-      val tempFlowVec = Vec.fill(params.bgTileSize2d.x)(
-        Vec.fill(wrBgPipeLineMemArrIdx.size)(
-          cloneOf(combineBgSubLineMemA2d(0)(0).io.wrPulse)
-        )
-      )
+      //val tempFlowVec = Vec.fill(params.bgTileSize2d.x)(
+      //  Vec.fill(wrBgPipeLineMemArrIdx.size)(
+      //    cloneOf(combineBgSubLineMemA2d(0)(0).io.wrPulse)
+      //  )
+      //)
       val rValidPipe1 = Vec.fill(params.bgTileSize2d.x)(
         Vec.fill(wrBgPipeLineMemArrIdx.size)(
           Reg(Bool()) init(False)
         )
       )
+        .setName("wrBgPipeLast_rValidPipe1")
       val rAddrPipe1 = Vec.fill(params.bgTileSize2d.x)(
-        Vec.fill(rValidPipe1.size)(
+        Vec.fill(wrBgPipeLineMemArrIdx.size)(
           //RegNext(tempArrIdx) init(tempArrIdx.getZero)
           Reg(cloneOf(tempArrIdx(0))) init(tempArrIdx(0).getZero)
         )
       )
-      val rDataPipe1 = Vec.fill(rValidPipe1.size)(
+        .setName("wrBgPipeLast_rAddrPipe1")
+      val rDataPipe1 = Vec.fill(wrBgPipeLineMemArrIdx.size)(
         RegNext(wrBgPipeLast.postStage0.subLineMemEntry)
       )
+        .setName("wrBgPipeLast_rDataPipe1")
       for (kdx <- 0 until params.bgTileSize2d.x) {
         for (jdx <- 0 until wrBgPipeLineMemArrIdx.size) {
           combineBgSubLineMemA2d(kdx)(jdx).io.wrPulse.valid := (
@@ -13227,8 +13230,10 @@ case class Gpu2d(
             rDataPipe1(jdx)(kdx)
           )
         }
-      } 
-      when (RegNext(nWrBgPipeLast.isFiring) init(False)) {
+      }
+      when (
+        /*RegNext*/(nWrBgPipeLast.isFiring) /*init(False)*/
+      ) {
         //val tempLineMemEntry = LineMemEntry()
         //val bgIdx = wrBgPipeLast.bgIdx
 
@@ -13449,31 +13454,39 @@ case class Gpu2d(
         // END: old, non-synthesizable code
       } otherwise { // when (!nWrBgPipeLast.isFiring)
         for (kdx <- 0 until params.bgTileSize2d.x) {
-          for (jdx <- 0 until combineBgSubLineMemA2d(kdx).size) {
-            //--------
-            // BEGIN: old `WrPulseRdPipeSimpleDualPortMem` code
-            //combineBgSubLineMemA2d(kdx)(jdx).io.wrPulse.valid := False
-            //combineBgSubLineMemA2d(kdx)(jdx).io.wrPulse.addr := 0x0
-            combineBgSubLineMemA2d(kdx)(jdx).io.wrPulse.data := (
-              wrBgPipeLast.postStage0.subLineMemEntry(kdx).getZero
-            )
+          for (jdx <- 0 until wrBgPipeLineMemArrIdx.size) {
             rAddrPipe1(kdx)(jdx) := tempArrIdx(kdx=kdx)
-            rValidPipe1(kdx)(jdx) := (
-              wrBgPipeLineMemArrIdx(jdx) === jdx
-            )
-            // END: old `WrPulseRdPipeSimpleDualPortMem` code
-            //--------
-            //combineBgSubLineMemArr(jdx).io.front.valid := False
-            //combineBgSubLineMemArr(jdx).io.front.bgExt := (
-            //  combineBgSubLineMemArr(jdx).io.front.bgExt.getZero
-            //)
-            //combineBgSubLineMemArr(jdx).io.front.bgExt.memAddr := 0x0
-            //combineBgSubLineMemArr(jdx).io.front.bgExt.modMemWord := (
-            //  wrBgPipeLast.postStage0.subLineMemEntry.getZero
-            //)
-            //--------
+            rValidPipe1(kdx)(jdx) := False
           }
         }
+        //for (kdx <- 0 until params.bgTileSize2d.x) {
+        //  for (jdx <- 0 until combineBgSubLineMemA2d(kdx).size) {
+        //    //--------
+        //    // BEGIN: old `WrPulseRdPipeSimpleDualPortMem` code
+        //    //combineBgSubLineMemA2d(kdx)(jdx).io.wrPulse.valid := False
+        //    //combineBgSubLineMemA2d(kdx)(jdx).io.wrPulse.addr := 0x0
+
+        //    //combineBgSubLineMemA2d(kdx)(jdx).io.wrPulse.data := (
+        //    //  wrBgPipeLast.postStage0.subLineMemEntry(kdx).getZero
+        //    //)
+
+        //    //rAddrPipe1(kdx)(jdx) := tempArrIdx(kdx=kdx)
+        //    //rValidPipe1(kdx)(jdx) := (
+        //    //  wrBgPipeLineMemArrIdx(jdx) === jdx
+        //    //)
+        //    // END: old `WrPulseRdPipeSimpleDualPortMem` code
+        //    //--------
+        //    //combineBgSubLineMemArr(jdx).io.front.valid := False
+        //    //combineBgSubLineMemArr(jdx).io.front.bgExt := (
+        //    //  combineBgSubLineMemArr(jdx).io.front.bgExt.getZero
+        //    //)
+        //    //combineBgSubLineMemArr(jdx).io.front.bgExt.memAddr := 0x0
+        //    //combineBgSubLineMemArr(jdx).io.front.bgExt.modMemWord := (
+        //    //  wrBgPipeLast.postStage0.subLineMemEntry.getZero
+        //    //)
+        //    //--------
+        //  }
+        //}
       }
       //// END: post stage 0
 
