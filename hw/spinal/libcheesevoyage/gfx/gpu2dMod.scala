@@ -6263,39 +6263,42 @@ case class Gpu2d(
       def cmp(
         prev: WrObjPipeSlmRmwHazardCmp,
         isPostDelay: Boolean
-      ) = (
-        if (
-          //idx 
-          //== PipeMemRmw.numPostFrontStages(
-          //  modStageCnt=wrObjPipeIdxSlmRmwModStageCnt,
-          //) - 1
-          !isPostDelay
-        ) (
-          (
-            //if (!isAffine) (
-            //  this.objAttrsMemIdx
-            //  =/= prev.objAttrsMemIdx
-            //) else (
-            //  this.affineObjAttrsMemIdx
-            //  =/= prev.affineObjAttrsMemIdx
-            //)
-            True
-            //pxPosXGridIdxLsb
-            //=== prev.pxPosXGridIdxLsb
-          ) && (
-            anyPxPosInLine
+      ) = {
+        //println(s"cmp(): isPostDelay: $isPostDelay")
+        (
+          if (
+            //idx 
+            //== PipeMemRmw.numPostFrontStages(
+            //  modStageCnt=wrObjPipeIdxSlmRmwModStageCnt,
+            //) - 1
+            !isPostDelay
+          ) (
+            (
+              //if (!isAffine) (
+              //  this.objAttrsMemIdx
+              //  =/= prev.objAttrsMemIdx
+              //) else (
+              //  this.affineObjAttrsMemIdx
+              //  =/= prev.affineObjAttrsMemIdx
+              //)
+              True
+              //pxPosXGridIdxLsb
+              //=== prev.pxPosXGridIdxLsb
+            ) && (
+              anyPxPosInLine
+              //&& prev.anyPxPosInLine
+            )
+          ) else ( // if (isPostDelay)
+            //anyPxPosInLine
             //&& prev.anyPxPosInLine
-          )
-        ) else ( // if (isPostDelay)
-          //anyPxPosInLine
-          //&& prev.anyPxPosInLine
-          //&&
-          (
-            //objIdx + 1 =/= prev.objIdx
-            objIdxPlus1 =/= prev.objIdx
+            //&&
+            (
+              //objIdx + 1 =/= prev.objIdx
+              objIdxPlus1 =/= prev.objIdx
+            )
           )
         )
-      )
+      }
     }
     def tempObjTileWidthPow(isAffine: Boolean) = (
       params.tempObjTileWidthPow(isAffine=isAffine)

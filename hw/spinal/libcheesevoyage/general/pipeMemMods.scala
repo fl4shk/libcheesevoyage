@@ -1040,15 +1040,15 @@ extends Area {
         //idx=idx,
       )
     }
-    for (
-      idx <- 0 until myUpExtDelPreBackFindFirstVecNotPostDelay.size
-    ) {
-      myUpExtDelPreBackFindFirstVecIsPostDelay(idx) := findFirstFunc(
-        prev=myUpExtDelPreBack(idx),
-        isPostDelay=true,
-        //idx=idx,
-      )
-    }
+    //for (
+    //  idx <- 0 until myUpExtDelPreBackFindFirstVecNotPostDelay.size
+    //) {
+    //  myUpExtDelPreBackFindFirstVecIsPostDelay(idx) := findFirstFunc(
+    //    prev=myUpExtDelPreBack(idx),
+    //    isPostDelay=true,
+    //    //idx=idx,
+    //  )
+    //}
     val tempMyUpExtDelFindFirstNotPostDelay = (
       (optEnableModDuplicate) generate (
         KeepAttribute(
@@ -1073,14 +1073,14 @@ extends Area {
         )
       )
     )
-    val tempMyUpExtDelFindFirstIsPostDelay = (
-      (optEnableModDuplicate) generate (
-        KeepAttribute(
-          myUpExtDelPreBackFindFirstVecIsPostDelay.sFindFirst(_ === True)
-          .setName("cFrontArea_tempMyUpExtDelFindFirstIsPostDelay")
-        )
-      )
-    )
+    //val tempMyUpExtDelFindFirstIsPostDelay = (
+    //  (optEnableModDuplicate) generate (
+    //    KeepAttribute(
+    //      myUpExtDelPreBackFindFirstVecIsPostDelay.sFindFirst(_ === True)
+    //      .setName("cFrontArea_tempMyUpExtDelFindFirstIsPostDelay")
+    //    )
+    //  )
+    //)
     //val tempMyUpExtDelFindFirst2 = (optEnableModDuplicate) generate (
     //  KeepAttribute(
     //    myUpExtDel.sFindFirst(
@@ -1215,11 +1215,11 @@ extends Area {
                     )
                     - Cat(
                       U"3'd0", 
-                      Mux[UInt](
-                        rPrevStateWhen === State.IDLE,
+                      //Mux[UInt](
+                      //  rPrevStateWhen === State.IDLE,
                         tempMyUpExtDelFindFirstNotPostDelay._2,
-                        tempMyUpExtDelFindFirstIsPostDelay._2,
-                      )
+                      //  tempMyUpExtDelFindFirstIsPostDelay._2,
+                      //)
                     ).asSInt
                   )
                 )
