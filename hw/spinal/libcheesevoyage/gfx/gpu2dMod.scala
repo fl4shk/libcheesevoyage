@@ -2009,6 +2009,7 @@ case class Gpu2dIo(
 case class Gpu2d(
   params: Gpu2dParams=DefaultGpu2dParams(),
   inSim: Boolean=false,
+  vivadoDebug: Boolean=false,
   dbgPipeMemRmw: Boolean=false,
   //noAffineObjs: Boolean=false,
 ) extends Component {
@@ -4569,6 +4570,7 @@ case class Gpu2d(
           wordCount=params.bgSubLineMemArrSize,
           pipeName=s"combineBgSubLineMemArr_${idx}",
           initBigInt=Some(bgSubLineMemInitBigInt),
+          vivadoDebug=vivadoDebug,
         )(
           setWordFunc=(
             //io: WrPulseRdPipeSimpleDualPortMemIo[
@@ -4690,6 +4692,7 @@ case class Gpu2d(
         optEnableClear=true,
         //init=Some(objSubLineMemInit),
         //arrRamStyle=params.lineArrRamStyle,
+        vivadoDebug=true,
       )(
         doHazardCmpFunc=Some(
           (
@@ -4756,6 +4759,7 @@ case class Gpu2d(
         wordCount=params.objSubLineMemArrSize,
         pipeName=s"combineObjSubLineMemArr_${idx}",
         initBigInt=Some(objSubLineMemInitBigInt),
+        vivadoDebug=vivadoDebug,
       )(
         //getWordFunc=(
         //  inpPayload: Bits,
@@ -4881,6 +4885,7 @@ case class Gpu2d(
           wordCount=params.objAffineSubLineMemArrSize,
           pipeName=s"combineObjAffineSubLineMemArr_${idx}",
           initBigInt=Some(objAffineSubLineMemInitBigInt),
+          vivadoDebug=vivadoDebug,
         )(
           setWordFunc=(
             //io: WrPulseRdPipeSimpleDualPortMemIo[
@@ -8854,6 +8859,11 @@ case class Gpu2d(
               wrObjSubLineMemArr(jdx).io.modFrontPayload
             )
           )
+          if (vivadoDebug) {
+            njMyArr(jdx)(
+              wrObjPipePayloadSlmRmwModFrontInp(jdx)
+            ).addAttribute("MARK_DEBUG", "TRUE")
+          }
         }
         val dMyWrObj = DirectLink(
           up=jMyWrObj.down,

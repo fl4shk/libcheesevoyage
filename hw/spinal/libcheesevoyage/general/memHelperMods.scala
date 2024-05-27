@@ -232,6 +232,7 @@ case class WrPulseRdPipeSimpleDualPortMem[
   arrRamStyle: String="block",
   arrRwAddrCollision: String="",
   unionIdxWidth: Int=1,
+  vivadoDebug: Boolean=false,
 )
 (
   //getWordFunc: (
@@ -264,135 +265,145 @@ extends Component
   )
   def addrWidth = io.addrWidth
   //--------
-  def modStageCnt = 1
-  def mkExt() = PipeMemRmwPayloadExt(
-    wordType=wordType(),
-    wordCount=wordCount,
-    hazardCmpType=Bool(),
-    modStageCnt=modStageCnt,
-    optEnableModDuplicate=false,
-  )
-  case class PmRmwModType(
-  ) extends Bundle
-    with PipeMemRmwPayloadBase[WordT, Bool]
-  {
-    val data = dataType()
-    val myExt = mkExt()
-    def setPipeMemRmwExt(
-      inpExt: PipeMemRmwPayloadExt[WordT, Bool],
-      memArrIdx: Int,
-    ): Unit = {
-      myExt := inpExt
-    }
-    def getPipeMemRmwExt(
-      outpExt: PipeMemRmwPayloadExt[WordT, Bool],
-      memArrIdx: Int,
-    ): Unit = {
-      outpExt := myExt
-    }
-  }
-  //val linkArr = PipeMemRmw.mkLinkArr()
-  val pipeMem = PipeMemRmw[
-    WordT,
-    Bool,
-    PmRmwModType,
-    PmRmwModType,
-  ](
-    wordType=wordType(),
-    wordCount=wordCount,
-    hazardCmpType=Bool(),
-    modType=PmRmwModType(),
-    modStageCnt=modStageCnt,
-    pipeName=pipeName,
-    //linkArr=Some(PipeMemRmw.mkLinkArr()),
-    linkArr=linkArr,
-    memArrIdx=0,
-    dualRdType=PmRmwModType(),
-    optDualRd=true,
-    initBigInt=initBigInt,
-    optEnableModDuplicate=false,
-  )(
-    doHazardCmpFunc=None
-  )
-  //val wrPipe = Stream(cloneOf(io.wrPulse.payload))
-  //val pipeMemModFrontStm = cloneOf(pipeMem.io.modFront)
-  //val pipeMemModBackStm = cloneOf(pipeMem.io.modBack)
-  //pipeMemModFrontStm << pipeMem.io.modFront
-  //pipeMem.io.modBack <-/< pipeMemModBackStm
-  //pipeMemModFrontStm.translateInto(pipeMemModBackStm)(
-  //  dataAssignment
+  //def modStageCnt = 1
+  //def mkExt() = {
+  //  val ret = PipeMemRmwPayloadExt(
+  //    wordType=wordType(),
+  //    wordCount=wordCount,
+  //    hazardCmpType=Bool(),
+  //    modStageCnt=modStageCnt,
+  //    optEnableModDuplicate=false,
+  //  )
+  //  if (vivadoDebug) {
+  //    ret.addAttribute("MARK_DEBUG", "TRUE")
+  //  }
+  //  ret
+  //}
+  //if (vivadoDebug) {
+  //  io.addAttribute("MARK_DEBUG", "TRUE")
+  //}
+  //case class PmRmwModType(
+  //) extends Bundle
+  //  with PipeMemRmwPayloadBase[WordT, Bool]
+  //{
+  //  val data = dataType()
+  //  val myExt = mkExt()
+  //  def setPipeMemRmwExt(
+  //    inpExt: PipeMemRmwPayloadExt[WordT, Bool],
+  //    memArrIdx: Int,
+  //  ): Unit = {
+  //    myExt := inpExt
+  //  }
+  //  def getPipeMemRmwExt(
+  //    outpExt: PipeMemRmwPayloadExt[WordT, Bool],
+  //    memArrIdx: Int,
+  //  ): Unit = {
+  //    outpExt := myExt
+  //  }
+  //}
+  ////val linkArr = PipeMemRmw.mkLinkArr()
+  //val pipeMem = PipeMemRmw[
+  //  WordT,
+  //  Bool,
+  //  PmRmwModType,
+  //  PmRmwModType,
+  //](
+  //  wordType=wordType(),
+  //  wordCount=wordCount,
+  //  hazardCmpType=Bool(),
+  //  modType=PmRmwModType(),
+  //  modStageCnt=modStageCnt,
+  //  pipeName=pipeName,
+  //  //linkArr=Some(PipeMemRmw.mkLinkArr()),
+  //  linkArr=linkArr,
+  //  memArrIdx=0,
+  //  dualRdType=PmRmwModType(),
+  //  optDualRd=true,
+  //  initBigInt=initBigInt,
+  //  optEnableModDuplicate=false,
+  //  vivadoDebug=vivadoDebug,
+  //)(
+  //  doHazardCmpFunc=None
   //)
+  ////val wrPipe = Stream(cloneOf(io.wrPulse.payload))
+  ////val pipeMemModFrontStm = cloneOf(pipeMem.io.modFront)
+  ////val pipeMemModBackStm = cloneOf(pipeMem.io.modBack)
+  ////pipeMemModFrontStm << pipeMem.io.modFront
+  ////pipeMem.io.modBack <-/< pipeMemModBackStm
+  ////pipeMemModFrontStm.translateInto(pipeMemModBackStm)(
+  ////  dataAssignment
+  ////)
 
-  //--------
-  val sMyMod = StageLink(
-    up=pipeMem.io.modFront,
-    down=pipeMem.io.modBack,
-  )
-    .setName("sMyMod")
-  pipeMem.myLinkArr += sMyMod
-  //val cMyMod = CtrlLink(
-  //  up=sMyMod.down,
+  ////--------
+  //val sMyMod = StageLink(
+  //  up=pipeMem.io.modFront,
   //  down=pipeMem.io.modBack,
   //)
-  //pipeMem.myLinkArr += cMyMod
+  //  .setName("sMyMod")
+  //pipeMem.myLinkArr += sMyMod
+  ////val cMyMod = CtrlLink(
+  ////  up=sMyMod.down,
+  ////  down=pipeMem.io.modBack,
+  ////)
+  ////pipeMem.myLinkArr += cMyMod
 
-  val tempModBackPayload = PmRmwModType()
-  //pipeMem.io.modBack
-  sMyMod.up(pipeMem.io.modBackPayload) := tempModBackPayload
-  tempModBackPayload := (
-    RegNext(tempModBackPayload) init(tempModBackPayload.getZero)
-  )
-  when (pipeMem.io.modBack.isValid) {
-    tempModBackPayload := (
-      pipeMem.io.modFront(pipeMem.io.modFrontPayload)
-    )
-  }
-  //--------
-  //pipeMem.io.modBack <-/< pipeMem.io.modFront
-  val tempWrPulseStm = io.wrPulse.toStream
-  val tempWrPulseStm1 = cloneOf(tempWrPulseStm)
-  tempWrPulseStm1 <-/< tempWrPulseStm
-  pipeMem.io.front.driveFrom(tempWrPulseStm1)(
-  //tempWrPulseStm1.translateInto(pipeMem.io.front)
-    con=(/*wrPipePayload*/ node, wrPulsePayload) => {
-      def wrPipePayload = node(pipeMem.io.frontPayload)
-      wrPipePayload := wrPipePayload.getZero
-      wrPipePayload.allowOverride
-      //wrPipePayload.data := io.wrPulse
-      wrPipePayload.myExt.memAddr := wrPulsePayload.addr
-      wrPipePayload.myExt.rdMemWord := wrPulsePayload.data
-      wrPipePayload.myExt.modMemWord := wrPulsePayload.data //wrPipePayload.myExt.rdMemWord
-    }
-  )
-  pipeMem.io.back.ready := True
-  //io.rdAddrPipe.translateInto(pipeMem.io.dualRdFront)
-  val tempRdAddrPipe = cloneOf(io.rdAddrPipe)
-  tempRdAddrPipe << io.rdAddrPipe
-  pipeMem.io.dualRdFront.driveFrom(tempRdAddrPipe)(
-    con=(/*dualRdPipePayload*/node, rdAddrPipePayload) => {
-      def dualRdPipePayload = node(pipeMem.io.dualRdFrontPayload)
-      dualRdPipePayload := dualRdPipePayload.getZero
-      dualRdPipePayload.allowOverride
-      dualRdPipePayload.data := rdAddrPipePayload.data
-      dualRdPipePayload.myExt.memAddr := rdAddrPipePayload.addr
-    }
-  )
-  //pipeMem.io.dualRdBack.translateInto(io.rdDataPipe)
-  val tempRdDataPipe = cloneOf(io.rdDataPipe)
-  io.rdDataPipe << tempRdDataPipe
-  pipeMem.io.dualRdBack.driveTo(tempRdDataPipe)(
-    con=(rdDataPipePayload, node/*dualRdPipePayload*/) => {
-      def dualRdPipePayload = node(pipeMem.io.dualRdBackPayload)
-      setWordFunc(
-        io.unionIdx,
-        rdDataPipePayload,
-        dualRdPipePayload.data,
-        dualRdPipePayload.myExt.rdMemWord
-      )
-      //rdDataPipePayload := dualRdPipePayload.myExt.modMemWord
-    }
-  )
-  Builder(pipeMem.myLinkArr.toSeq)
+  //val tempModBackPayload = PmRmwModType()
+  ////pipeMem.io.modBack
+  //sMyMod.up(pipeMem.io.modBackPayload) := tempModBackPayload
+  //tempModBackPayload := (
+  //  RegNext(tempModBackPayload) init(tempModBackPayload.getZero)
+  //)
+  //when (pipeMem.io.modBack.isValid) {
+  //  tempModBackPayload := (
+  //    pipeMem.io.modFront(pipeMem.io.modFrontPayload)
+  //  )
+  //}
+  ////--------
+  ////pipeMem.io.modBack <-/< pipeMem.io.modFront
+  //val tempWrPulseStm = io.wrPulse.toStream
+  //val tempWrPulseStm1 = cloneOf(tempWrPulseStm)
+  //tempWrPulseStm1 <-/< tempWrPulseStm
+  //pipeMem.io.front.driveFrom(tempWrPulseStm1)(
+  ////tempWrPulseStm1.translateInto(pipeMem.io.front)
+  //  con=(/*wrPipePayload*/ node, wrPulsePayload) => {
+  //    def wrPipePayload = node(pipeMem.io.frontPayload)
+  //    wrPipePayload := wrPipePayload.getZero
+  //    wrPipePayload.allowOverride
+  //    //wrPipePayload.data := io.wrPulse
+  //    wrPipePayload.myExt.memAddr := wrPulsePayload.addr
+  //    wrPipePayload.myExt.rdMemWord := wrPulsePayload.data
+  //    wrPipePayload.myExt.modMemWord := wrPulsePayload.data //wrPipePayload.myExt.rdMemWord
+  //  }
+  //)
+  //pipeMem.io.back.ready := True
+  ////io.rdAddrPipe.translateInto(pipeMem.io.dualRdFront)
+  //val tempRdAddrPipe = cloneOf(io.rdAddrPipe)
+  //tempRdAddrPipe << io.rdAddrPipe
+  //pipeMem.io.dualRdFront.driveFrom(tempRdAddrPipe)(
+  //  con=(/*dualRdPipePayload*/node, rdAddrPipePayload) => {
+  //    def dualRdPipePayload = node(pipeMem.io.dualRdFrontPayload)
+  //    dualRdPipePayload := dualRdPipePayload.getZero
+  //    dualRdPipePayload.allowOverride
+  //    dualRdPipePayload.data := rdAddrPipePayload.data
+  //    dualRdPipePayload.myExt.memAddr := rdAddrPipePayload.addr
+  //  }
+  //)
+  ////pipeMem.io.dualRdBack.translateInto(io.rdDataPipe)
+  //val tempRdDataPipe = cloneOf(io.rdDataPipe)
+  //io.rdDataPipe << tempRdDataPipe
+  //pipeMem.io.dualRdBack.driveTo(tempRdDataPipe)(
+  //  con=(rdDataPipePayload, node/*dualRdPipePayload*/) => {
+  //    def dualRdPipePayload = node(pipeMem.io.dualRdBackPayload)
+  //    setWordFunc(
+  //      io.unionIdx,
+  //      rdDataPipePayload,
+  //      dualRdPipePayload.data,
+  //      dualRdPipePayload.myExt.rdMemWord
+  //    )
+  //    //rdDataPipePayload := dualRdPipePayload.myExt.modMemWord
+  //  }
+  //)
+  //Builder(pipeMem.myLinkArr.toSeq)
   //--------
   //val mem = Mem(
   //  wordType=wordType(),
@@ -723,86 +734,86 @@ extends Component
   //--------
   //Builder(pipeMem.myLinkArr.toSeq)
   //--------
-  ////val wrPipeToPulse = FpgacpuPipeToPulse(
-  ////  dataType=PipeSimpleDualPortMemDrivePayload(
-  ////    //wordType=wordType(),
-  ////    dataType=dataType(),
-  ////    wordCount=depth,
-  ////  )
-  ////)
-  //val rdAddrPipeToPulse = FpgacpuPipeToPulse(
-  //  //dataType=UInt(addrWidth bits)
+  //val wrPipeToPulse = FpgacpuPipeToPulse(
   //  dataType=PipeSimpleDualPortMemDrivePayload(
   //    //wordType=wordType(),
   //    dataType=dataType(),
-  //    wordCount=wordCount,
+  //    wordCount=depth,
   //  )
   //)
+  val rdAddrPipeToPulse = FpgacpuPipeToPulse(
+    //dataType=UInt(addrWidth bits)
+    dataType=PipeSimpleDualPortMemDrivePayload(
+      //wordType=wordType(),
+      dataType=dataType(),
+      wordCount=wordCount,
+    )
+  )
+  rdAddrPipeToPulse.io.pipe << io.rdAddrPipe
+  rdAddrPipeToPulse.io.clear := False
+  val rdDataPulseToPipe = FpgacpuPulseToPipe(
+    //dataType=wordType()
+    dataType=dataType()
+  )
+  rdDataPulseToPipe.io.clear := False
+  rdAddrPipeToPulse.io.moduleReady := rdDataPulseToPipe.io.moduleReady
+  //--------
+  val arr = FpgacpuRamSimpleDualPort(
+    wordType=wordType(),
+    depth=wordCount,
+    initBigInt=initBigInt,
+    arrRamStyle=arrRamStyle,
+    arrRwAddrCollision=arrRwAddrCollision,
+  )
+
+  //arr.io.wrEn := wrPipeToPulse.io.pulse.valid
+  //arr.io.wrAddr := wrPipeToPulse.io.pulse.addr
+  //arr.io.wrData := getWordFunc(wrPipeToPulse.io.pulse.data)
+  //--------
+  // BEGIN: debug comment this out; later
+  arr.io.wrEn := io.wrPulse.valid
+  // END: debug comment this out; later
+  //arr.io.wrEn := False
+  arr.io.wrAddr := io.wrPulse.addr
+  //arr.io.wrData := getWordFunc(io.wrPulse.data)
+  arr.io.wrData := io.wrPulse.data
+  //--------
+  arr.io.rdEn := rdAddrPipeToPulse.io.pulse.valid
+  arr.io.rdAddr := rdAddrPipeToPulse.io.pulse.payload.addr
+  //rdDataPulseToPipe.io.pulse.payload := arr.io.rdData
+  //--------
+  //wrPipeToPulse.io.pipe << io.wrPipe
+  //wrPipeToPulse.io.moduleReady := True
   //rdAddrPipeToPulse.io.pipe << io.rdAddrPipe
-  //rdAddrPipeToPulse.io.clear := False
-  //val rdDataPulseToPipe = FpgacpuPulseToPipe(
-  //  //dataType=wordType()
-  //  dataType=dataType()
-  //)
-  //rdDataPulseToPipe.io.clear := False
-  //rdAddrPipeToPulse.io.moduleReady := rdDataPulseToPipe.io.moduleReady
-  ////--------
-  //val arr = FpgacpuRamSimpleDualPort(
-  //  wordType=wordType(),
-  //  depth=wordCount,
-  //  initBigInt=initBigInt,
-  //  arrRamStyle=arrRamStyle,
-  //  arrRwAddrCollision=arrRwAddrCollision,
-  //)
 
-  ////arr.io.wrEn := wrPipeToPulse.io.pulse.valid
-  ////arr.io.wrAddr := wrPipeToPulse.io.pulse.addr
-  ////arr.io.wrData := getWordFunc(wrPipeToPulse.io.pulse.data)
-  ////--------
-  //// BEGIN: debug comment this out; later
-  //arr.io.wrEn := io.wrPulse.valid
-  //// END: debug comment this out; later
-  ////arr.io.wrEn := False
-  //arr.io.wrAddr := io.wrPulse.addr
-  ////arr.io.wrData := getWordFunc(io.wrPulse.data)
-  //arr.io.wrData := io.wrPulse.data
-  ////--------
-  //arr.io.rdEn := rdAddrPipeToPulse.io.pulse.valid
-  //arr.io.rdAddr := rdAddrPipeToPulse.io.pulse.payload.addr
-  ////rdDataPulseToPipe.io.pulse.payload := arr.io.rdData
-  ////--------
-  ////wrPipeToPulse.io.pipe << io.wrPipe
-  ////wrPipeToPulse.io.moduleReady := True
-  ////rdAddrPipeToPulse.io.pipe << io.rdAddrPipe
-
-  //io.rdDataPipe << rdDataPulseToPipe.io.pipe
-  ////--------
-  //def latency = 1
-  //val rRdPulseValidVec = Vec.fill(latency)(Reg(Bool()) init(False))
-  //val rRdPulsePipePayloadVec = Vec.fill(latency)(
-  //  Reg(dataType()) init(dataType().getZero)
-  //)
-  //setWordFunc(
-  //  io.unionIdx,
-  //  rdDataPulseToPipe.io.pulse.payload,
-  //  rRdPulsePipePayloadVec(latency - 1),
-  //  //rdAddrPipeToPulse.io.pulse.payload.data,
-  //  arr.io.rdData
-  //)
-  //rdDataPulseToPipe.io.pulse.valid := (
-  //  rRdPulseValidVec(latency - 1)
-  //  //rdAddrPipeToPulse.io.pulse.valid
-  //)
-  //for (idx <- 0 until latency) {
-  //  if (idx == 0) {
-  //    rRdPulsePipePayloadVec(idx) := rdAddrPipeToPulse.io.pulse.data
-  //    //rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.moduleReady
-  //    rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.pulse.valid
-  //  } else {
-  //    rRdPulsePipePayloadVec(idx) := rRdPulsePipePayloadVec(idx - 1)
-  //    rRdPulseValidVec(idx) := rRdPulseValidVec(idx - 1)
-  //  }
-  //}
+  io.rdDataPipe << rdDataPulseToPipe.io.pipe
+  //--------
+  def latency = 1
+  val rRdPulseValidVec = Vec.fill(latency)(Reg(Bool()) init(False))
+  val rRdPulsePipePayloadVec = Vec.fill(latency)(
+    Reg(dataType()) init(dataType().getZero)
+  )
+  setWordFunc(
+    io.unionIdx,
+    rdDataPulseToPipe.io.pulse.payload,
+    rRdPulsePipePayloadVec(latency - 1),
+    //rdAddrPipeToPulse.io.pulse.payload.data,
+    arr.io.rdData
+  )
+  rdDataPulseToPipe.io.pulse.valid := (
+    rRdPulseValidVec(latency - 1)
+    //rdAddrPipeToPulse.io.pulse.valid
+  )
+  for (idx <- 0 until latency) {
+    if (idx == 0) {
+      rRdPulsePipePayloadVec(idx) := rdAddrPipeToPulse.io.pulse.data
+      //rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.moduleReady
+      rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.pulse.valid
+    } else {
+      rRdPulsePipePayloadVec(idx) := rRdPulsePipePayloadVec(idx - 1)
+      rRdPulseValidVec(idx) := rRdPulseValidVec(idx - 1)
+    }
+  }
   //--------
   //--------
 }
