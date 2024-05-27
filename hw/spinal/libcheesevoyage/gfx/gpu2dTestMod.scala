@@ -50,7 +50,7 @@ object Gpu2dTest {
         //}
         def myTileSlice = tempArr.last
         myTileSlice.colIdxVec(idx % somePxsSliceWidth) := (
-          if (!isBg) (
+          if (isBg) (
             0x0
           ) else (
             somePxsArr(idx)
