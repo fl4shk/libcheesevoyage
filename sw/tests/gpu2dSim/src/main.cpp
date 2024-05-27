@@ -31,8 +31,8 @@ using namespace liborangepower::misc_output;
 
 static constexpr double
 	CLK_RATE
-		= 25.0,
-		//= 50.0,
+		//= 25.0,
+		= 50.0,
 		//= 75.0,
 		//= 100.0,
 		//= 125.0,

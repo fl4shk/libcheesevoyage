@@ -47,30 +47,30 @@ case class Gpu2dSimDut(
   }
   def myVgaTimingsWidth = 12
   //--------
-  //val vgaCtrl = LcvVgaCtrlPipelined(
-  //  clkRate=clkRate,
-  //  //rgbConfig=physRgbConfig,
-  //  rgbConfig=rgbConfig,
-  //  vgaTimingInfo=vgaTimingInfo,
-  //  fifoDepth=ctrlFifoDepth,
-  //)
-  val vgaCtrl = VgaCtrl(
-    rgbConfig=gpu2dParams.rgbConfig
+  val vgaCtrl = LcvVgaCtrl(
+    clkRate=clkRate,
+    //rgbConfig=physRgbConfig,
+    rgbConfig=rgbConfig,
+    vgaTimingInfo=vgaTimingInfo,
+    fifoDepth=ctrlFifoDepth,
   )
+  //val vgaCtrl = VgaCtrl(
+  //  rgbConfig=gpu2dParams.rgbConfig
+  //)
   def ctrlIo = vgaCtrl.io
   //--------
   // BEGIN: `VgaCtrl` stuff
-  ctrlIo.softReset := RegNext(False) init(True)
-  if (vgaTimingInfo == LcvVgaTimingInfoMap.map("640x480@60")) {
-    ctrlIo.timings.setAs_h640_v480_r60
-  } else if (vgaTimingInfo == LcvVgaTimingInfoMap.map("1920x1080@60")) {
-    ctrlIo.timings.setAs_h1920_v1080_r60
-  } else {
-    vgaTimingInfo.driveSpinalVgaTimings(
-      clkRate=clkRate,
-      spinalVgaTimings=ctrlIo.timings,
-    )
-  }
+  //ctrlIo.softReset := RegNext(False) init(True)
+  //if (vgaTimingInfo == LcvVgaTimingInfoMap.map("640x480@60")) {
+  //  ctrlIo.timings.setAs_h640_v480_r60
+  //} else if (vgaTimingInfo == LcvVgaTimingInfoMap.map("1920x1080@60")) {
+  //  ctrlIo.timings.setAs_h1920_v1080_r60
+  //} else {
+  //  vgaTimingInfo.driveSpinalVgaTimings(
+  //    clkRate=clkRate,
+  //    spinalVgaTimings=ctrlIo.timings,
+  //  )
+  //}
   // END: `VgaCtrl` stuff
   //--------
   //ctrlIo.timings.h.colorStart := 0
@@ -191,24 +191,24 @@ case class Gpu2dSimDut(
   //--------
   // BEGIN: main code; later
   //ctrlIo.en := gpuIo.ctrlEn
-  //ctrlIo.en := (
-  //  //gpu2dScaleY.io.pop.fire
-  //  //&& 
-  //  //(
-  //  //  RegNextWhen(
-  //  //    True,
-  //  //    gpu2dScaleY.io.pop.valid,
-  //  //  ) init(False),
-  //  //)
-  //  //&& 
-  //  //gpu2dScaleY.io.pop.ctrlEn
-  //  True
-  //  //True
-  //  //gpu2dScaleY.io.pop.ctrlEn
-  //  //gpuIo.pop.valid
-  //  //&& 
-  //  //gpuIo.pop.ctrlEn
-  //)
+  ctrlIo.en := (
+    //gpu2dScaleY.io.pop.fire
+    //&& 
+    //(
+    //  RegNextWhen(
+    //    True,
+    //    gpu2dScaleY.io.pop.valid,
+    //  ) init(False),
+    //)
+    //&& 
+    //gpu2dScaleY.io.pop.ctrlEn
+    True
+    //True
+    //gpu2dScaleY.io.pop.ctrlEn
+    //gpuIo.pop.valid
+    //&& 
+    //gpuIo.pop.ctrlEn
+  )
   //ctrlIo.en := False
 
   //ctrlIo.push.valid := gpuIo.pop.valid
@@ -235,8 +235,8 @@ case class Gpu2dSimDut(
   //vgaCtrl.io.pixels <-/< myGpuPopStm
   //--------
   myGpuPopStm.translateInto(
-    into=vgaCtrl.io.pixels
-    //into=vgaCtrl.io.push
+    //into=vgaCtrl.io.pixels
+    into=vgaCtrl.io.push
     //into=gpu2dBlanking.io.push,
   )(
     dataAssignment=(o, i) => {
@@ -270,47 +270,47 @@ case class Gpu2dSimDut(
   //gpuIo.pop.ready := True
 
   //--------
-  //io.phys := ctrlIo.phys
-  //io.misc := ctrlIo.misc
+  io.phys := ctrlIo.phys
+  io.misc := ctrlIo.misc
   //--------
   // BEGIN: `VgaCtrl` stuff
-  when (ctrlIo.vga.colorEn) {
-    io.phys.col := ctrlIo.vga.color
-  } otherwise {
-    io.phys.col := io.phys.col.getZero
-  }
-  io.phys.hsync := ctrlIo.vga.hSync
-  io.phys.vsync := ctrlIo.vga.vSync
-  io.misc := io.misc.getZero
-  io.misc.allowOverride
-  io.misc.pastVisib := RegNext(io.misc.visib) init(False)
-  io.misc.visib := ctrlIo.vga.colorEn
-  def cpp = LcvVgaCtrl.cpp(
-    clkRate=clkRate,
-    vgaTimingInfo=vgaTimingInfo
-  )
-  def clkCntWidth = LcvVgaCtrl.clkCntWidth(
-    clkRate=clkRate,
-    vgaTimingInfo=vgaTimingInfo
-  )
-  val rPixelEnCnt = (
-    //Reg(UInt(log2Up((clkRate / vgaTimingInfo.pixelClk).toInt) + 1 bits))
-    Reg(UInt(clkCntWidth + 1 bits))
-    init(0x0)
-  )
-  //println(
-  //  s"$cpp, $clkCntWidth"
+  //when (ctrlIo.vga.colorEn) {
+  //  io.phys.col := ctrlIo.vga.color
+  //} otherwise {
+  //  io.phys.col := io.phys.col.getZero
+  //}
+  //io.phys.hsync := ctrlIo.vga.hSync
+  //io.phys.vsync := ctrlIo.vga.vSync
+  //io.misc := io.misc.getZero
+  //io.misc.allowOverride
+  //io.misc.pastVisib := RegNext(io.misc.visib) init(False)
+  //io.misc.visib := ctrlIo.vga.colorEn
+  //def cpp = LcvVgaCtrl.cpp(
+  //  clkRate=clkRate,
+  //  vgaTimingInfo=vgaTimingInfo
   //)
-  when (
-    //rPixelEnCnt + 1 === (clkRate / vgaTimingInfo.pixelClk).toInt
-    //rPixelEnCnt + 1 === cpp - 1
-    rPixelEnCnt === cpp - 1
-  ) {
-    rPixelEnCnt := 0
-  } otherwise {
-    rPixelEnCnt := rPixelEnCnt + 1
-  }
-  io.misc.pixelEn := rPixelEnCnt === 0x0
+  //def clkCntWidth = LcvVgaCtrl.clkCntWidth(
+  //  clkRate=clkRate,
+  //  vgaTimingInfo=vgaTimingInfo
+  //)
+  //val rPixelEnCnt = (
+  //  //Reg(UInt(log2Up((clkRate / vgaTimingInfo.pixelClk).toInt) + 1 bits))
+  //  Reg(UInt(clkCntWidth + 1 bits))
+  //  init(0x0)
+  //)
+  ////println(
+  ////  s"$cpp, $clkCntWidth"
+  ////)
+  //when (
+  //  //rPixelEnCnt + 1 === (clkRate / vgaTimingInfo.pixelClk).toInt
+  //  //rPixelEnCnt + 1 === cpp - 1
+  //  rPixelEnCnt === cpp - 1
+  //) {
+  //  rPixelEnCnt := 0
+  //} otherwise {
+  //  rPixelEnCnt := rPixelEnCnt + 1
+  //}
+  //io.misc.pixelEn := rPixelEnCnt === 0x0
   // END: `VgaCtrl` stuff
   //--------
 }
