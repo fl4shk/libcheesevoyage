@@ -616,7 +616,7 @@ extends Area {
   //  }
   //}
   //--------
-  def mkExt() = {
+  def mkExt(myVivadoDebug: Boolean=false) = {
     val ret = PipeMemRmwPayloadExt(
       wordType=wordType(),
       wordCount=wordCount,
@@ -624,8 +624,12 @@ extends Area {
       modStageCnt=modStageCnt,
       optEnableModDuplicate=optEnableModDuplicate,
     )
-    if (vivadoDebug) {
-      ret.addAttribute("MARK_DEBUG", "TRUE")
+    if (vivadoDebug && myVivadoDebug) {
+      //ret.addAttribute("MARK_DEBUG", "TRUE")
+      ret.memAddr.addAttribute("MARK_DEBUG", "TRUE")
+      ret.hazardCmp.addAttribute("MARK_DEBUG", "TRUE")
+      ret.hazardId.addAttribute("MARK_DEBUG", "TRUE")
+      ret.modMemWord.addAttribute("MARK_DEBUG", "TRUE")
     }
     ret
   }
@@ -660,7 +664,7 @@ extends Area {
             modStageCnt=modStageCnt,
           ) + 1 //- 1
         )(
-          /*Reg*/(mkExt())
+          /*Reg*/(mkExt(myVivadoDebug=true))
           //init(mkExt().getZero)
         )
       )
@@ -682,6 +686,9 @@ extends Area {
           Bool()
         )
       )
+      //if (vivadoDebug) {
+      //  myUpExtDel.addAttribute("MARK_DEBUG", "TRUE")
+      //}
       //println(s"myUpExtDelPreBack.size: ${myUpExtDelPreBack.size}")
       if (optEnableModDuplicate) {
         for (
@@ -795,6 +802,11 @@ extends Area {
         cloneOf(front.myUpExtDel(0).modMemWord)
       )
       val myWriteEnable = KeepAttribute(Bool())
+      if (vivadoDebug) {
+        myWriteAddr.addAttribute("MARK_DEBUG", "TRUE")
+        myWriteData.addAttribute("MARK_DEBUG", "TRUE")
+        myWriteEnable.addAttribute("MARK_DEBUG", "TRUE")
+      }
       val pipe = PipeHelper(linkArr=myLinkArr)
       //val pipePayload = Payload(modType())
       def pipePayload = io.modBackPayload
@@ -826,15 +838,17 @@ extends Area {
       //    node(pipePayload) := payload 
       //  }
       //)
-      val rTempWord = /*(debug) generate*/ (
+      val rTempWord = /*(debug) generate*/ KeepAttribute(
         Reg(wordType())
-        addAttribute("keep")
       )
       if (
         //debug
         true
       ) {
         rTempWord.init(rTempWord.getZero)
+      }
+      if (vivadoDebug) {
+        rTempWord.addAttribute("MARK_DEBUG", "TRUE")
       }
       //when (cBack.up.isValid) {
       //}
@@ -877,7 +891,7 @@ extends Area {
     upExt(1).allowOverride
     upExtRealMemAddr.allowOverride
     //def savedIdx = 2
-    val lastUpExt = mkExt().setName("cFrontArea_lastUpExt")
+    //val lastUpExt = mkExt().setName("cFrontArea_lastUpExt")
     val backUpExt = mkExt().setName("cFrontArea_backUpExt")
 
     val tempUpMod = Vec.fill(2)(modType())
@@ -887,17 +901,17 @@ extends Area {
       outpExt=upExt(0),
       memArrIdx=memArrIdx,
     )
-    val tempBackUpMod = modType()
-    tempBackUpMod := mod.back.cBack.up(mod.back.pipePayload)
-    tempBackUpMod.getPipeMemRmwExt(
-      outpExt=backUpExt,
-      memArrIdx=memArrIdx,
-    )
+    //val tempBackUpMod = modType()
+    //tempBackUpMod := mod.back.cBack.up(mod.back.pipePayload)
+    //tempBackUpMod.getPipeMemRmwExt(
+    //  outpExt=backUpExt,
+    //  memArrIdx=memArrIdx,
+    //)
     //--------
-    mod.front.pipe.last.up(mod.front.inpPipePayload).getPipeMemRmwExt(
-      outpExt=lastUpExt,
-      memArrIdx=memArrIdx,
-    )
+    //mod.front.pipe.last.up(mod.front.inpPipePayload).getPipeMemRmwExt(
+    //  outpExt=lastUpExt,
+    //  memArrIdx=memArrIdx,
+    //)
     //val tempRdValid = (
     //  lastUpExt.memAddr =/= upExt(0).memAddr
     //  ////&& !lastUpExt.hazardId.msb
@@ -906,14 +920,16 @@ extends Area {
     //).setName("cFrontArea_tempRdValid")
     //--------
     val nextHazardId = (optEnableModDuplicate) generate (
-      cloneOf(upExt(1).hazardId)
+      KeepAttribute(cloneOf(upExt(1).hazardId))
     )
     val rHazardId = (optEnableModDuplicate) generate (
-      RegNext(nextHazardId) init(
-        //S(nextHazardId.getWidth bits, default -> True)
+      KeepAttribute(
+        RegNext(nextHazardId) init(
+          //S(nextHazardId.getWidth bits, default -> True)
 
-        //-1
-        upExt(1).getHazardIdIdleVal()
+          //-1
+          upExt(1).getHazardIdIdleVal()
+        )
       )
     )
     if (optEnableModDuplicate) {
@@ -960,10 +976,10 @@ extends Area {
         = newElement();
     }
     val nextState = (optEnableModDuplicate) generate (
-      State()
+      KeepAttribute(State())
     )
     val rState = (optEnableModDuplicate) generate (
-      RegNext(nextState) init(State.IDLE)
+      KeepAttribute(RegNext(nextState) init(State.IDLE))
     )
     //val rPostDuplicateCnt = Reg(cloneOf(upExt(0).hazardId))
     def myHazardCmpFunc(
@@ -1183,11 +1199,14 @@ extends Area {
         nextHazardId.addAttribute("MARK_DEBUG", "TRUE")
         nextState.addAttribute("MARK_DEBUG", "TRUE")
         rState.addAttribute("MARK_DEBUG", "TRUE")
+        rPrevStateWhen.addAttribute("MARK_DEBUG", "TRUE")
         upExt.addAttribute("MARK_DEBUG", "TRUE")
         upExtRealMemAddr.addAttribute("MARK_DEBUG", "TRUE")
-        //tempMyUpExtDelFindFirstNotPostDelay.addAttribute(
-        //  "MARK_DEBUG", "TRUE"
-        //)
+        //for (idx <- 0 until tempMyUpExtDelFindFirstNotPostDelay.size) {
+        //}
+        tempMyUpExtDelFindFirstNotPostDelay.addAttribute(
+          "MARK_DEBUG", "TRUE"
+        )
         //tempMyUpExtDelFindFirstIsPostDelay.addAttribute(
         //  "MARK_DEBUG", "TRUE"
         //)
@@ -2365,13 +2384,18 @@ extends Area {
     haltWhen(
       !(RegNextWhen(True, io.front.isFiring) init(False))
     )
-    val upExt = Vec.fill(2)(mkExt()).setName("cBackArea_upExt")
+    val upExt = Vec.fill(
+      //2
+      1
+    )(
+      mkExt(myVivadoDebug=true)
+    ).setName("cBackArea_upExt")
     //upExt(1) := (
     //  RegNext(upExt(1)) init(upExt(1).getZero)
     //)
     //upExt(1).allowOverride
     //when (up.isValid) {
-      upExt(1) := upExt(0)
+    //  upExt(1) := upExt(0)
     //}
 
     myUpExtDel(myUpExtDel.size - 2) := (
@@ -2379,7 +2403,7 @@ extends Area {
       init(myUpExtDel(myUpExtDel.size - 2).getZero)
     )
     when (up.isValid) {
-      myUpExtDel(myUpExtDel.size - 2) := upExt(1)
+      myUpExtDel(myUpExtDel.size - 2) := upExt(0)
     }
 
     val tempUpMod = modType().setName("cBackArea_tempUpMod")
