@@ -29,6 +29,7 @@ case class Gpu2dSimDut(
     //true
     false
   ),
+  vivadoDebug: Boolean=false,
 ) extends Component {
   val io = new Bundle {
     val snesCtrl = (!optRawSnesButtons) generate SnesCtrlIo()
@@ -119,6 +120,7 @@ case class Gpu2dSimDut(
     params=gpu2dParams,
     inSim=true,
     dbgPipeMemRmw=dbgPipeMemRmw,
+    vivadoDebug=vivadoDebug,
   )
   //val gpu2dScaleX = Gpu2dScaleX(
   //  params=gpu2dParams,
