@@ -628,7 +628,9 @@ extends Area {
       //ret.addAttribute("MARK_DEBUG", "TRUE")
       ret.memAddr.addAttribute("MARK_DEBUG", "TRUE")
       ret.hazardCmp.addAttribute("MARK_DEBUG", "TRUE")
-      ret.hazardId.addAttribute("MARK_DEBUG", "TRUE")
+      if (optEnableModDuplicate) {
+        ret.hazardId.addAttribute("MARK_DEBUG", "TRUE")
+      }
       ret.modMemWord.addAttribute("MARK_DEBUG", "TRUE")
     }
     ret
