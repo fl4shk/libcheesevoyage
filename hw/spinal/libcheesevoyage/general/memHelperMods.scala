@@ -274,9 +274,9 @@ extends Component
       modStageCnt=modStageCnt,
       optEnableModDuplicate=false,
     )
-    if (vivadoDebug) {
-      ret.addAttribute("MARK_DEBUG", "TRUE")
-    }
+    //if (vivadoDebug) {
+    //  ret.addAttribute("MARK_DEBUG", "TRUE")
+    //}
     ret
   }
   if (vivadoDebug) {

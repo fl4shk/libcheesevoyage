@@ -313,21 +313,21 @@ case class PipeMemRmwIo[
       UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
     ))
   )
-  if (optEnableClear) {
-    if (vivadoDebug) {
-      clear.addAttribute("MARK_DEBUG", "TRUE")
-    }
-  }
+  //if (optEnableClear) {
+  //  if (vivadoDebug) {
+  //    clear.addAttribute("MARK_DEBUG", "TRUE")
+  //  }
+  //}
 
   // front of the pipeline (push)
   //val front = slave(Stream(modType()))
   val front = Node()
   val frontPayload = Payload(modType())
-  if (vivadoDebug) {
-    front(frontPayload).addAttribute(
-      "MARK_DEBUG", "TRUE"
-    )
-  }
+  //if (vivadoDebug) {
+  //  front(frontPayload).addAttribute(
+  //    "MARK_DEBUG", "TRUE"
+  //  )
+  //}
 
   // Use `modFront` and `modBack` to insert a pipeline stage for modifying
   // the`WordT`
@@ -335,18 +335,18 @@ case class PipeMemRmwIo[
   //val modBack = slave(Stream(modType()))
   val modFront = Node()
   val modFrontPayload = Payload(modType())
-  if (vivadoDebug) {
-    modFront(modFrontPayload).addAttribute(
-      "MARK_DEBUG", "TRUE"
-    )
-  }
+  //if (vivadoDebug) {
+  //  modFront(modFrontPayload).addAttribute(
+  //    "MARK_DEBUG", "TRUE"
+  //  )
+  //}
   val modBack = Node()
   val modBackPayload = Payload(modType())
-  if (vivadoDebug) {
-    modBack(modBackPayload).addAttribute(
-      "MARK_DEBUG", "TRUE"
-    )
-  }
+  //if (vivadoDebug) {
+  //  modBack(modBackPayload).addAttribute(
+  //    "MARK_DEBUG", "TRUE"
+  //  )
+  //}
 
   val midModStages = (
     /*(modStageCnt > 1)*/ optEnableModDuplicate generate (
@@ -370,11 +370,11 @@ case class PipeMemRmwIo[
   //val back = master(Stream(modType()))
   val back = Node()
   val backPayload = Payload(modType())
-  if (vivadoDebug) {
-    back(backPayload).addAttribute(
-      "MARK_DEBUG", "TRUE"
-    )
-  }
+  //if (vivadoDebug) {
+  //  back(backPayload).addAttribute(
+  //    "MARK_DEBUG", "TRUE"
+  //  )
+  //}
   //--------
   //val optDualRd: Boolean = optDualRdType match {
   //  case Some(myOptDualRdType) => true
@@ -404,14 +404,14 @@ case class PipeMemRmwIo[
   val dualRdBackPayload = (optDualRd) generate (
     Payload(dualRdType())
   )
-  if (optDualRd && vivadoDebug) {
-    dualRdFront(dualRdFrontPayload).addAttribute(
-      "MARK_DEBUG", "TRUE"
-    )
-    dualRdBack(dualRdBackPayload).addAttribute(
-      "MARK_DEBUG", "TRUE"
-    )
-  }
+  //if (optDualRd && vivadoDebug) {
+  //  dualRdFront(dualRdFrontPayload).addAttribute(
+  //    "MARK_DEBUG", "TRUE"
+  //  )
+  //  dualRdBack(dualRdBackPayload).addAttribute(
+  //    "MARK_DEBUG", "TRUE"
+  //  )
+  //}
   //--------
   //val (dualRdPush, dualRdPop) = optDualRdType match {
   //  case Some(myDualRdType) => {
@@ -1185,9 +1185,9 @@ extends Area {
         rState.addAttribute("MARK_DEBUG", "TRUE")
         upExt.addAttribute("MARK_DEBUG", "TRUE")
         upExtRealMemAddr.addAttribute("MARK_DEBUG", "TRUE")
-        tempMyUpExtDelFindFirstNotPostDelay.addAttribute(
-          "MARK_DEBUG", "TRUE"
-        )
+        //tempMyUpExtDelFindFirstNotPostDelay.addAttribute(
+        //  "MARK_DEBUG", "TRUE"
+        //)
         //tempMyUpExtDelFindFirstIsPostDelay.addAttribute(
         //  "MARK_DEBUG", "TRUE"
         //)
@@ -1351,9 +1351,9 @@ extends Area {
     //}
     //val cLastFront = mod.front.cLastFront
     val myRdMemWord = mod.front.myRdMemWord
-    if (vivadoDebug) {
-      myRdMemWord.addAttribute("MARK_DEBUG", "TRUE")
-    }
+    //if (vivadoDebug) {
+    //  myRdMemWord.addAttribute("MARK_DEBUG", "TRUE")
+    //}
     //val rRdMemWord1 = mod.front.rRdMemWord1
     val dbgRdMemWord = (debug) generate (
       mod.front.dbgRdMemWord
@@ -2713,11 +2713,11 @@ extends Area {
     val pipe = PipeHelper(linkArr=myLinkArr)
     val myRdMemWord = wordType()
 
-    if (vivadoDebug) {
-      myRdMemWord.addAttribute(
-        "MARK_DEBUG", "TRUE",
-      )
-    }
+    //if (vivadoDebug) {
+    //  myRdMemWord.addAttribute(
+    //    "MARK_DEBUG", "TRUE",
+    //  )
+    //}
 
     val cFront = pipe.addStage(
       name=pipeName + "_DualRd_Front",
@@ -2786,10 +2786,10 @@ extends Area {
       //val myMidDualRd = dualRdType()
       val myInpUpExt = mkExt()
       //val myMidUpExt = mkExt()
-      if (vivadoDebug) {
-        myInpDualRd.addAttribute("MARK_DEBUG", "TRUE")
-        //myOutpDualRd.addAttribute("MARK_DEBUG", "TRUE")
-      }
+      //if (vivadoDebug) {
+      //  myInpDualRd.addAttribute("MARK_DEBUG", "TRUE")
+      //  //myOutpDualRd.addAttribute("MARK_DEBUG", "TRUE")
+      //}
 
       myInpDualRd := up(inpPipePayload)
       myInpDualRd.getPipeMemRmwExt(
@@ -2813,10 +2813,10 @@ extends Area {
       val myOutpDualRd = dualRdType()
       val myInpUpExt = mkExt()
       val myOutpUpExt = mkExt()
-      if (vivadoDebug) {
-        myInpDualRd.addAttribute("MARK_DEBUG", "TRUE")
-        myOutpDualRd.addAttribute("MARK_DEBUG", "TRUE")
-      }
+      //if (vivadoDebug) {
+      //  myInpDualRd.addAttribute("MARK_DEBUG", "TRUE")
+      //  myOutpDualRd.addAttribute("MARK_DEBUG", "TRUE")
+      //}
 
       myInpDualRd := up(inpPipePayload)
       myInpDualRd.getPipeMemRmwExt(
