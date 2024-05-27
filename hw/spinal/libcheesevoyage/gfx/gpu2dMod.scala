@@ -9728,7 +9728,7 @@ case class Gpu2d(
       )
       //* params.bgTileSize2d.x
     )
-    println(s"combineTotalForkOrJoinMax: $combineTotalForkOrJoinMax")
+    //println(s"combineTotalForkOrJoinMax: $combineTotalForkOrJoinMax")
     //--------
     //val combineBgObjRdPipeFork = FpgacpuPipeForkBlocking(
     //  dataType=CombinePipePayload(),
@@ -9931,10 +9931,10 @@ case class Gpu2d(
                     //kdx
                     tempJdx
                   ).size
-                  println(
-                    s"kdx, tempJdx, tempSize: $kdx $tempJdx $tempSize"
-                  )
-                  println(combineBgSubLineMemA2d.size)
+                  //println(
+                  //  s"kdx, tempJdx, tempSize: $kdx $tempJdx $tempSize"
+                  //)
+                  //println(combineBgSubLineMemA2d.size)
                   combineBgSubLineMemA2d(
                     //kdx
                     tempJdx
@@ -10121,7 +10121,7 @@ case class Gpu2d(
                     )
                     + innerCombineIdx //* theMax
                   )
-                  println(s"jdx, kdx, tempKdx: ${jdx} ${kdx} ${tempKdx}")
+                  //println(s"jdx, kdx, tempKdx: ${jdx} ${kdx} ${tempKdx}")
                   myOutpPayload.stage2.rdBg(jdx) := (
                     myInpPayload(
                       //tempJdx
@@ -13599,15 +13599,15 @@ case class Gpu2d(
           kdx <- 0 until params.combineBgSubLineMemArrSize
           //params.bgTileSize2d.x
         ) {
-          println(s"jdx, kdx: ${jdx} ${kdx}")
+          //println(s"jdx, kdx: ${jdx} ${kdx}")
           def tempMem = combineBgSubLineMemA2d(jdx)(kdx)
-          println(s"${rDataPipe1.size} ${rDataPipe1(0).size}")
-          println(
-            s"tempMem: "
-            + s"${combineBgSubLineMemA2d.size} "
-            + s"${combineBgSubLineMemA2d(jdx).size} "
-            //+ s"${tempMem.size}"
-          )
+          //println(s"${rDataPipe1.size} ${rDataPipe1(0).size}")
+          //println(
+          //  s"tempMem: "
+          //  + s"${combineBgSubLineMemA2d.size} "
+          //  + s"${combineBgSubLineMemA2d(jdx).size} "
+          //  //+ s"${tempMem.size}"
+          //)
           tempMem.io.wrPulse.valid := (
             //True
             rValidPipe1(kdx)(jdx)
@@ -13620,7 +13620,7 @@ case class Gpu2d(
             val tempIndex = (
               kdx * params.combineBgSubLineMemArrSize + zdx
             )
-            println(s"tempIndex: ${jdx} ${kdx} ${zdx} ${tempIndex}")
+            //println(s"tempIndex: ${jdx} ${kdx} ${zdx} ${tempIndex}")
             tempMem.io.wrPulse.data(zdx) := (
               //wrBgPipeLast.postStage0.subLineMemEntry
               rDataPipe1(jdx)(
