@@ -152,10 +152,10 @@ case class Gpu2dParams(
   )
   //--------
   def combineBgSubLineMemVecElemSize = (
-    min(
+    //min(
       bgTileSize2d.x,
-      4,
-    )
+    //  4,
+    //)
   )
   def combineBgSubLineMemArrSize = (
     //numLineMemsPerBgObjRenderer
