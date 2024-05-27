@@ -279,9 +279,9 @@ extends Component
     //}
     ret
   }
-  if (vivadoDebug) {
-    io.addAttribute("MARK_DEBUG", "TRUE")
-  }
+  //if (vivadoDebug) {
+  //  io.addAttribute("MARK_DEBUG", "TRUE")
+  //}
   case class PmRmwModType(
   ) extends Bundle
     with PipeMemRmwPayloadBase[WordT, Bool]

@@ -4692,7 +4692,13 @@ case class Gpu2d(
         optEnableClear=true,
         //init=Some(objSubLineMemInit),
         //arrRamStyle=params.lineArrRamStyle,
-        vivadoDebug=true,
+        vivadoDebug=(
+          if (idx == 0) (
+            vivadoDebug
+          ) else (
+            false
+          )
+        ),
       )(
         doHazardCmpFunc=Some(
           (
@@ -4759,7 +4765,13 @@ case class Gpu2d(
         wordCount=params.objSubLineMemArrSize,
         pipeName=s"combineObjSubLineMemArr_${idx}",
         initBigInt=Some(objSubLineMemInitBigInt),
-        vivadoDebug=vivadoDebug,
+        vivadoDebug=(
+          if (idx == 0) (
+            vivadoDebug
+          ) else (
+            false
+          )
+        ),
       )(
         //getWordFunc=(
         //  inpPayload: Bits,
@@ -4885,7 +4897,7 @@ case class Gpu2d(
           wordCount=params.objAffineSubLineMemArrSize,
           pipeName=s"combineObjAffineSubLineMemArr_${idx}",
           initBigInt=Some(objAffineSubLineMemInitBigInt),
-          vivadoDebug=vivadoDebug,
+          vivadoDebug=false,
         )(
           setWordFunc=(
             //io: WrPulseRdPipeSimpleDualPortMemIo[
