@@ -25,6 +25,7 @@ case class Gpu2dSimDut(
   gpu2dParams: Gpu2dParams,
   ctrlFifoDepth: Int,
   optRawSnesButtons: Boolean=false,
+  optUseLcvVgaCtrl: Boolean=false,
   dbgPipeMemRmw: Boolean=(
     //true
     false
@@ -47,30 +48,37 @@ case class Gpu2dSimDut(
   }
   def myVgaTimingsWidth = 12
   //--------
-  val vgaCtrl = LcvVgaCtrl(
-    clkRate=clkRate,
-    //rgbConfig=physRgbConfig,
-    rgbConfig=rgbConfig,
-    vgaTimingInfo=vgaTimingInfo,
-    fifoDepth=ctrlFifoDepth,
+  val lcvVgaCtrl = (optUseLcvVgaCtrl) generate (
+    LcvVgaCtrl(
+      clkRate=clkRate,
+      //rgbConfig=physRgbConfig,
+      rgbConfig=rgbConfig,
+      vgaTimingInfo=vgaTimingInfo,
+      fifoDepth=ctrlFifoDepth,
+    )
   )
-  //val vgaCtrl = VgaCtrl(
-  //  rgbConfig=gpu2dParams.rgbConfig
-  //)
-  def ctrlIo = vgaCtrl.io
+  val vgaCtrl = (!optUseLcvVgaCtrl) generate (
+    VgaCtrl(
+      rgbConfig=gpu2dParams.rgbConfig
+    )
+  )
+  val lcvCtrlIo = (optUseLcvVgaCtrl) generate (lcvVgaCtrl.io)
+  val ctrlIo = (!optUseLcvVgaCtrl) generate (vgaCtrl.io)
   //--------
   // BEGIN: `VgaCtrl` stuff
-  //ctrlIo.softReset := RegNext(False) init(True)
-  //if (vgaTimingInfo == LcvVgaTimingInfoMap.map("640x480@60")) {
-  //  ctrlIo.timings.setAs_h640_v480_r60
-  //} else if (vgaTimingInfo == LcvVgaTimingInfoMap.map("1920x1080@60")) {
-  //  ctrlIo.timings.setAs_h1920_v1080_r60
-  //} else {
-  //  vgaTimingInfo.driveSpinalVgaTimings(
-  //    clkRate=clkRate,
-  //    spinalVgaTimings=ctrlIo.timings,
-  //  )
-  //}
+  if (!optUseLcvVgaCtrl) {
+    ctrlIo.softReset := RegNext(False) init(True)
+    if (vgaTimingInfo == LcvVgaTimingInfoMap.map("640x480@60")) {
+      ctrlIo.timings.setAs_h640_v480_r60
+    } else if (vgaTimingInfo == LcvVgaTimingInfoMap.map("1920x1080@60")) {
+      ctrlIo.timings.setAs_h1920_v1080_r60
+    } else {
+      vgaTimingInfo.driveSpinalVgaTimings(
+        clkRate=clkRate,
+        spinalVgaTimings=ctrlIo.timings,
+      )
+    }
+  }
   // END: `VgaCtrl` stuff
   //--------
   //ctrlIo.timings.h.colorStart := 0
@@ -191,24 +199,30 @@ case class Gpu2dSimDut(
   //--------
   // BEGIN: main code; later
   //ctrlIo.en := gpuIo.ctrlEn
-  ctrlIo.en := (
-    //gpu2dScaleY.io.pop.fire
-    //&& 
-    //(
-    //  RegNextWhen(
-    //    True,
-    //    gpu2dScaleY.io.pop.valid,
-    //  ) init(False),
-    //)
-    //&& 
-    //gpu2dScaleY.io.pop.ctrlEn
-    True
-    //True
-    //gpu2dScaleY.io.pop.ctrlEn
-    //gpuIo.pop.valid
-    //&& 
-    //gpuIo.pop.ctrlEn
-  )
+  //--------
+  // BEGIN: `LcvVgaCtrl`
+  if (optUseLcvVgaCtrl) {
+    lcvCtrlIo.en := (
+      //gpu2dScaleY.io.pop.fire
+      //&& 
+      //(
+      //  RegNextWhen(
+      //    True,
+      //    gpu2dScaleY.io.pop.valid,
+      //  ) init(False),
+      //)
+      //&& 
+      //gpu2dScaleY.io.pop.ctrlEn
+      True
+      //True
+      //gpu2dScaleY.io.pop.ctrlEn
+      //gpuIo.pop.valid
+      //&& 
+      //gpuIo.pop.ctrlEn
+    )
+  }
+  // END: `LcvVgaCtrl` stuff
+  //--------
   //ctrlIo.en := False
 
   //ctrlIo.push.valid := gpuIo.pop.valid
@@ -235,8 +249,14 @@ case class Gpu2dSimDut(
   //vgaCtrl.io.pixels <-/< myGpuPopStm
   //--------
   myGpuPopStm.translateInto(
-    //into=vgaCtrl.io.pixels
-    into=vgaCtrl.io.push
+    into=(
+      if (optUseLcvVgaCtrl) (
+        lcvVgaCtrl.io.push
+      ) else (
+        vgaCtrl.io.pixels
+      )
+    )
+    //into=vgaCtrl.io.push
     //into=gpu2dBlanking.io.push,
   )(
     dataAssignment=(o, i) => {
@@ -270,55 +290,62 @@ case class Gpu2dSimDut(
   //gpuIo.pop.ready := True
 
   //--------
-  io.phys := ctrlIo.phys
-  io.misc := ctrlIo.misc
+  // BEGIN: `LcvVgaCtrl` stuff
+  if (optUseLcvVgaCtrl) {
+    io.phys := lcvCtrlIo.phys
+    io.misc := lcvCtrlIo.misc
+  }
+  // END: `LcvVgaCtrl` stuff
   //--------
   // BEGIN: `VgaCtrl` stuff
-  //when (ctrlIo.vga.colorEn) {
-  //  io.phys.col := ctrlIo.vga.color
-  //} otherwise {
-  //  io.phys.col := io.phys.col.getZero
-  //}
-  //io.phys.hsync := ctrlIo.vga.hSync
-  //io.phys.vsync := ctrlIo.vga.vSync
-  //io.misc := io.misc.getZero
-  //io.misc.allowOverride
-  //io.misc.pastVisib := RegNext(io.misc.visib) init(False)
-  //io.misc.visib := ctrlIo.vga.colorEn
-  //def cpp = LcvVgaCtrl.cpp(
-  //  clkRate=clkRate,
-  //  vgaTimingInfo=vgaTimingInfo
-  //)
-  //def clkCntWidth = LcvVgaCtrl.clkCntWidth(
-  //  clkRate=clkRate,
-  //  vgaTimingInfo=vgaTimingInfo
-  //)
-  //val rPixelEnCnt = (
-  //  //Reg(UInt(log2Up((clkRate / vgaTimingInfo.pixelClk).toInt) + 1 bits))
-  //  Reg(UInt(clkCntWidth + 1 bits))
-  //  init(0x0)
-  //)
-  ////println(
-  ////  s"$cpp, $clkCntWidth"
-  ////)
-  //when (
-  //  //rPixelEnCnt + 1 === (clkRate / vgaTimingInfo.pixelClk).toInt
-  //  //rPixelEnCnt + 1 === cpp - 1
-  //  rPixelEnCnt === cpp - 1
-  //) {
-  //  rPixelEnCnt := 0
-  //} otherwise {
-  //  rPixelEnCnt := rPixelEnCnt + 1
-  //}
-  //io.misc.pixelEn := rPixelEnCnt === 0x0
+  if (!optUseLcvVgaCtrl) {
+    when (ctrlIo.vga.colorEn) {
+      io.phys.col := ctrlIo.vga.color
+    } otherwise {
+      io.phys.col := io.phys.col.getZero
+    }
+    io.phys.hsync := ctrlIo.vga.hSync
+    io.phys.vsync := ctrlIo.vga.vSync
+    io.misc := io.misc.getZero
+    io.misc.allowOverride
+    io.misc.pastVisib := RegNext(io.misc.visib) init(False)
+    io.misc.visib := ctrlIo.vga.colorEn
+    //def cpp = LcvVgaCtrl.cpp(
+    //  clkRate=clkRate,
+    //  vgaTimingInfo=vgaTimingInfo
+    //)
+    //def clkCntWidth = LcvVgaCtrl.clkCntWidth(
+    //  clkRate=clkRate,
+    //  vgaTimingInfo=vgaTimingInfo
+    //)
+    //val rPixelEnCnt = (
+    //  //Reg(UInt(log2Up((clkRate / vgaTimingInfo.pixelClk).toInt) + 1 bits))
+    //  Reg(UInt(clkCntWidth + 1 bits))
+    //  init(0x0)
+    //)
+    //println(
+    //  s"$cpp, $clkCntWidth"
+    //)
+    //when (
+    //  //rPixelEnCnt + 1 === (clkRate / vgaTimingInfo.pixelClk).toInt
+    //  //rPixelEnCnt + 1 === cpp - 1
+    //  rPixelEnCnt === cpp - 1
+    //) {
+    //  rPixelEnCnt := 0
+    //} otherwise {
+    //  rPixelEnCnt := rPixelEnCnt + 1
+    //}
+    //io.misc.pixelEn := rPixelEnCnt === 0x0
+    io.misc.pixelEn := True
+  }
   // END: `VgaCtrl` stuff
   //--------
 }
 
 object Gpu2dSim extends App {
   //def clkRate = 125.0 MHz
-  //def clkRate = 25.0 MHz
-  def clkRate = 50.0 MHz
+  def clkRate = 25.0 MHz
+  //def clkRate = 50.0 MHz
   //def clkRate = 75.0 MHz
   //def clkRate = 100.0 MHz
   //def clkRate = 100.7 MHz
@@ -366,8 +393,8 @@ object Gpu2dSim extends App {
       //sync=1,
       //back=1,
       front=(
-        //40
-        20
+        40
+        //20
       ),
       //sync=40,
       //back=40,
@@ -388,32 +415,67 @@ object Gpu2dSim extends App {
       //back=1,
       visib=(
         //270
+        //--------
+        80
         //240
+        //--------
         //128
         //64
         //48
-        32
+        //32
         //16
       ),
       front=1,
       sync=1,
       back=1,
+      //front=8,
+      //sync=4,
+      //back=4,
     ),
   )
 
-  def fbSize2d = vgaTimingInfo.fbSize2d
+  def gpu2dBgTileSize2dPow = ElabVec2[Int](
+    x=log2Up(16),
+    y=log2Up(16),
+    //x=log2Up(8),
+    //y=log2Up(8),
+    //x=log2Up(4),
+    //y=log2Up(4),
+    //x=log2Up(2),
+    //y=log2Up(2),
+  )
   def gpu2dPhysFbSize2dScale = ElabVec2[Int](
     //x=1,
     //y=1,
-    x=1,
+    x=5,
     //x=1,
     //y=1,
-    y=1,
+    y=5,
     //y=1,
     //x=log2Up(2),
     ////y=log2Up(2),
     //y=log2Up(2),
   )
+  //def gpu2dPhysFbSize2dScale = ElabVec2[Int](
+  //  //x=1,
+  //  //y=1,
+  //  //x=3,
+  //  //y=2,
+  //  x=5,
+  //  y=5,
+  //  //x=4,
+  //  //y=4,
+  //  //x=1,
+  //  //y=1,
+  //  //x=2,
+  //  //y=2,
+  //  //y=2,
+  //  //y=3,
+  //  //x=log2Up(2),
+  //  ////y=log2Up(2),
+  //  //y=log2Up(2),
+  //)
+  def fbSize2d = vgaTimingInfo.fbSize2d
   def gpu2dIntnlFbSize2d = ElabVec2[Int](
       x=fbSize2d.x / gpu2dPhysFbSize2dScale.x,
       y=fbSize2d.y / gpu2dPhysFbSize2dScale.y,
@@ -422,25 +484,14 @@ object Gpu2dSim extends App {
     rgbConfig=rgbConfig,
     intnlFbSize2d=gpu2dIntnlFbSize2d,
     physFbSize2dScale=gpu2dPhysFbSize2dScale,
-    //physFbSize2dScaleYPow=ElabVec2[Int](
+    //physFbSize2dScalePow=ElabVec2[Int](
     //  x=log2Up(1),
     //  y=log2Up(1),
     //  //x=log2Up(2),
     //  ////y=log2Up(2),
     //  //y=log2Up(2),
     //),
-    bgTileSize2dPow=ElabVec2[Int](
-      x=log2Up(16),
-      y=log2Up(16),
-      //x=log2Up(8),
-      //y=log2Up(8),
-      //x=log2Up(4),
-      //y=log2Up(4),
-      //x=log2Up(2),
-      //y=log2Up(2),
-      //x=log2Up(1),
-      //y=log2Up(1),
-    ),
+    bgTileSize2dPow=gpu2dBgTileSize2dPow,
     objTileSize2dPow=ElabVec2[Int](
       x=log2Up(16),
       y=log2Up(16),
@@ -458,10 +509,14 @@ object Gpu2dSim extends App {
     ),
     //objTileWidthRshift=1,
     objAffineTileSize2dPow=ElabVec2[Int](
-      //x=log2Up(16),
-      //y=log2Up(16),
-      x=log2Up(8),
-      y=log2Up(8),
+      //x=log2Up(64),
+      //y=log2Up(64),
+      //x=log2Up(32),
+      //y=log2Up(32),
+      x=log2Up(16),
+      y=log2Up(16),
+      //x=log2Up(8),
+      //y=log2Up(8),
       //x=log2Up(4),
       //y=log2Up(4),
       //x=log2Up(2),
@@ -469,12 +524,13 @@ object Gpu2dSim extends App {
     ),
     objAffineTileWidthRshift=(
       //0
-      1
+      //1
+      2
+      //3
+      //4
     ),
-    //objAffineTileWidthRshift=,
     //numBgsPow=log2Up(4),
     numBgsPow=log2Up(2),
-    //numBgsPow=log2Up(1),
     //numObjsPow=log2Up(64),
     //numObjsPow=log2Up(32),
     //numObjsPow=log2Up(2),
@@ -484,37 +540,68 @@ object Gpu2dSim extends App {
     //numObjsPow=log2Up(4),
     //numObjsPow=log2Up(8),
     numObjsPow=(
+      log2Up(8)
       //log2Up(16)
-      //log2Up(8)
-      log2Up(4)
+      //log2Up(128)
     ),
     numObjsAffinePow=(
-      //log2Up(16)
-      log2Up(4)
+      log2Up(16)
+      //log2Up(4)
+      //log2Up(32)
     ),
     //numBgTilesPow=Some(log2Up(256)),
     //numBgTilesPow=Some(log2Up(2)),
-    numBgTiles=Some(
-      //16
-      256
-      //512
-      //1024
-      //128
-      //16
+    numBgTiles=({
+      //Some(16)
+      ////Some(320 * 240)
+      val temp = (
+        //(
+        //  //vgaTimingInfo.fbSize2d.x
+        //  //* vgaTimingInfo.fbSize2d.y
+        //  gpu2dIntnlFbSize2d.x
+        //  * gpu2dIntnlFbSize2d.y
+        //  * 2
+        //  //* 3
+        //  / (1 << (gpu2dBgTileSize2dPow.x + gpu2dBgTileSize2dPow.y))
+        //)
+        256
+        //* (
+        //  //64
+        //  2
+        //)
+        //1024
+      )
+      //println(temp)
+      Some(
+        temp
+      )
+      // for double buffering
+      //Some(
+      //  vgaTimingInfo.fbSize2d.x
+      //  * vgaTimingInfo.fbSize2d.y
+      //  * 2
+      //  / (1 << (gpu2dBgTileSize2dPow.x + gpu2dBgTileSize2dPow.y))
+      //)
+    }),
+    numColorMathTiles=(
+      Some(32)
     ),
     //numObjTilesPow=None,
-    numObjTiles=Some(
-      //16
-      //64
-      //512
-      //256
-      128
-      //16
+    numObjTiles=(
+      //Some(8)
+      //Some(16)
+      //Some(4)
+      Some(128)
+      //Some(256)
+      //Some(32)
     ),
-    numObjAffineTiles=Some(16),
+    numObjAffineTiles=(
+      Some(16)
+      //Some(32)
+    ),
     numColsInBgPalPow=(
-      //log2Up(256)
       log2Up(64)
+      //log2Up(256)
     ),
     numColsInObjPalPow=(
       log2Up(64)
@@ -522,19 +609,133 @@ object Gpu2dSim extends App {
     ),
     noColorMath=(
       true
-      //false
+      //false,
     ),
     noAffineBgs=true,
     noAffineObjs=(
       true
       //false
     ),
-    //--------
-    bgTileMemInit=None,
-    //--------
     //fancyObjPrio=false,
     fancyObjPrio=true,
   )
+  //def gpu2dParams = DefaultGpu2dParams(
+  //  rgbConfig=rgbConfig,
+  //  intnlFbSize2d=gpu2dIntnlFbSize2d,
+  //  physFbSize2dScale=gpu2dPhysFbSize2dScale,
+  //  //physFbSize2dScaleYPow=ElabVec2[Int](
+  //  //  x=log2Up(1),
+  //  //  y=log2Up(1),
+  //  //  //x=log2Up(2),
+  //  //  ////y=log2Up(2),
+  //  //  //y=log2Up(2),
+  //  //),
+  //  bgTileSize2dPow=ElabVec2[Int](
+  //    x=log2Up(16),
+  //    y=log2Up(16),
+  //    //x=log2Up(8),
+  //    //y=log2Up(8),
+  //    //x=log2Up(4),
+  //    //y=log2Up(4),
+  //    //x=log2Up(2),
+  //    //y=log2Up(2),
+  //    //x=log2Up(1),
+  //    //y=log2Up(1),
+  //  ),
+  //  objTileSize2dPow=ElabVec2[Int](
+  //    x=log2Up(16),
+  //    y=log2Up(16),
+  //    //x=log2Up(8),
+  //    //y=log2Up(8),
+  //    //x=log2Up(4),
+  //    //y=log2Up(4),
+  //    //x=log2Up(2),
+  //    //y=log2Up(2),
+  //  ),
+  //  objTileWidthRshift=(
+  //    //0
+  //    //1
+  //    2
+  //  ),
+  //  //objTileWidthRshift=1,
+  //  objAffineTileSize2dPow=ElabVec2[Int](
+  //    //x=log2Up(16),
+  //    //y=log2Up(16),
+  //    x=log2Up(8),
+  //    y=log2Up(8),
+  //    //x=log2Up(4),
+  //    //y=log2Up(4),
+  //    //x=log2Up(2),
+  //    //y=log2Up(2),
+  //  ),
+  //  objAffineTileWidthRshift=(
+  //    //0
+  //    1
+  //  ),
+  //  //objAffineTileWidthRshift=,
+  //  //numBgsPow=log2Up(4),
+  //  numBgsPow=log2Up(2),
+  //  //numBgsPow=log2Up(1),
+  //  //numObjsPow=log2Up(64),
+  //  //numObjsPow=log2Up(32),
+  //  //numObjsPow=log2Up(2),
+  //  //numObjsPow=log2Up(32),
+  //  //numObjsPow=log2Up(16),
+  //  //numObjsPow=log2Up(2),
+  //  //numObjsPow=log2Up(4),
+  //  //numObjsPow=log2Up(8),
+  //  numObjsPow=(
+  //    //log2Up(16)
+  //    //log2Up(8)
+  //    log2Up(4)
+  //  ),
+  //  numObjsAffinePow=(
+  //    //log2Up(16)
+  //    log2Up(4)
+  //  ),
+  //  //numBgTilesPow=Some(log2Up(256)),
+  //  //numBgTilesPow=Some(log2Up(2)),
+  //  numBgTiles=Some(
+  //    //16
+  //    256
+  //    //512
+  //    //1024
+  //    //128
+  //    //16
+  //  ),
+  //  //numObjTilesPow=None,
+  //  numObjTiles=Some(
+  //    //16
+  //    //64
+  //    //512
+  //    //256
+  //    128
+  //    //16
+  //  ),
+  //  numObjAffineTiles=Some(16),
+  //  numColsInBgPalPow=(
+  //    //log2Up(256)
+  //    log2Up(64)
+  //  ),
+  //  numColsInObjPalPow=(
+  //    log2Up(64)
+  //    //log2Up(256)
+  //  ),
+  //  noColorMath=(
+  //    true
+  //    //false
+  //  ),
+  //  noAffineBgs=true,
+  //  noAffineObjs=(
+  //    true
+  //    //false
+  //  ),
+  //  //--------
+  //  bgTileMemInit=None,
+  //  //--------
+  //  //fancyObjPrio=false,
+  //  fancyObjPrio=true,
+  //)
   //def gpu2dParams = DefaultGpu2dParams(
   //  rgbConfig=rgbConfig,
   //  intnlFbSize2d=ElabVec2[Int](
@@ -642,6 +843,10 @@ object Gpu2dSim extends App {
       gpu2dParams=gpu2dParams,
       ctrlFifoDepth=ctrlFifoDepth,
       optRawSnesButtons=true,
+      optUseLcvVgaCtrl=(
+        //true
+        false
+      ),
       dbgPipeMemRmw=(
         //true
         false
@@ -689,8 +894,8 @@ object Gpu2dSim extends App {
         (
           vgaTimingInfo.fbSize2d.x * vgaTimingInfo.fbSize2d.y
           * (
-            1.5
-            //2
+            //1.5
+            2
             * (
               clkRate / vgaTimingInfo.pixelClk
             )

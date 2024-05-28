@@ -31,8 +31,8 @@ object Gpu2dSimDutParams {
   //def clkRate = 50.0 MHz
   //--------
   //def clkRate = 75.0 MHz
-  def clkRate = 50.0 MHz
-  //def clkRate = 25.0 MHz
+  //def clkRate = 50.0 MHz
+  def clkRate = 25.0 MHz
   //--------
   //def clkRate = 100.0 MHz
   //def clkRate = 100.7 MHz
@@ -231,12 +231,12 @@ object Gpu2dSimDutParams {
     //y=1,
     //x=3,
     //y=2,
-    //x=5,
-    //y=5,
+    x=5,
+    y=5,
     //x=4,
     //y=4,
-    x=1,
-    y=1,
+    //x=1,
+    //y=1,
     //x=2,
     //y=2,
     //y=2,
@@ -325,15 +325,16 @@ object Gpu2dSimDutParams {
       //Some(16)
       ////Some(320 * 240)
       val temp = (
-        (
-          //vgaTimingInfo.fbSize2d.x
-          //* vgaTimingInfo.fbSize2d.y
-          gpu2dIntnlFbSize2d.x
-          * gpu2dIntnlFbSize2d.y
-          * 2
-          //* 3
-          / (1 << (gpu2dBgTileSize2dPow.x + gpu2dBgTileSize2dPow.y))
-        )
+        //(
+        //  //vgaTimingInfo.fbSize2d.x
+        //  //* vgaTimingInfo.fbSize2d.y
+        //  gpu2dIntnlFbSize2d.x
+        //  * gpu2dIntnlFbSize2d.y
+        //  * 2
+        //  //* 3
+        //  / (1 << (gpu2dBgTileSize2dPow.x + gpu2dBgTileSize2dPow.y))
+        //)
+        256
         //* (
         //  //64
         //  2
@@ -398,6 +399,10 @@ object Gpu2dSimDutToVerilog extends App {
     gpu2dParams=Gpu2dSimDutParams.gpu2dParams,
     ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
     optRawSnesButtons=true,
+    optUseLcvVgaCtrl=(
+      //true
+      false
+    ),
     dbgPipeMemRmw=(
       //true
       false

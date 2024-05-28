@@ -31,8 +31,8 @@ using namespace liborangepower::misc_output;
 
 static constexpr double
 	CLK_RATE
-		//= 25.0,
-		= 50.0,
+		= 25.0,
+		//= 50.0,
 		//= 75.0,
 		//= 100.0,
 		//= 125.0,
@@ -857,7 +857,7 @@ int main(int argc, char** argv) {
 		//i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 2 * CLKS_PER_PIXEL * 1.5)
 		////i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 40 * 2) && !vga.do_exit();
 		////i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 4 * 2) && !vga.do_exit()
-		////	i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * CLKS_PER_PIXEL * 3 * 2)
+			//i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y /* * CLKS_PER_PIXEL */ * 3 * 2)
 			//&& 
 			!vga.do_exit()
 		;

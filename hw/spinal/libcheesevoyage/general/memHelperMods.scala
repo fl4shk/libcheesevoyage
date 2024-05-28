@@ -394,6 +394,11 @@ extends Component
   pipeMem.io.dualRdBack.driveTo(tempRdDataPipe)(
     con=(rdDataPipePayload, node/*dualRdPipePayload*/) => {
       def dualRdPipePayload = node(pipeMem.io.dualRdBackPayload)
+      //val rTempWord = (
+      //  Reg(
+      //    cloneOf(dualRdPipePayload)
+      //  )
+      //)
       setWordFunc(
         io.unionIdx,
         rdDataPipePayload,

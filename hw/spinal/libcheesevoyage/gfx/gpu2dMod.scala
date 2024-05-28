@@ -164,10 +164,10 @@ case class Gpu2dParams(
       bgTileSize2d.x / combineBgSubLineMemVecElemSize
     )
   )
-  println(
-    s"${combineBgSubLineMemVecElemSize} "
-    + s"${combineBgSubLineMemArrSize}"
-  )
+  //println(
+  //  s"${combineBgSubLineMemVecElemSize} "
+  //  + s"${combineBgSubLineMemArrSize}"
+  //)
   //--------
   //def bgAffineTileSize2dPow = ElabVec2[Int](
   //  x=bgTileSize2dPow.x + 1,
@@ -7804,6 +7804,7 @@ case class Gpu2d(
       //7
       //8
       9 // old, working value
+      + params.physFbSize2dScale.x
       //10
       //10
     )
@@ -10163,9 +10164,9 @@ case class Gpu2d(
                     + innerCombineIdx //* theMax
                   )
                   //println(s"jdx, kdx, tempKdx: ${jdx} ${kdx} ${tempKdx}")
-                  println(
-                    s"rdBg: $innerCombineIdx $jdx $kdx $tempKdx"
-                  )
+                  //println(
+                  //  s"rdBg: $innerCombineIdx $jdx $kdx $tempKdx"
+                  //)
                   myOutpPayload.stage2.rdBg(jdx) := (
                     myInpPayload(
                       //tempJdx
@@ -10185,9 +10186,9 @@ case class Gpu2d(
                       innerCombineIdx * theMax //+ 1
                     )
                   )
-                  println(
-                    s"rdObj: ${innerCombineIdx} ${tempIndex}"
-                  )
+                  //println(
+                  //  s"rdObj: ${innerCombineIdx} ${tempIndex}"
+                  //)
                   myInpPayload(
                     tempIndex
                   ).stage2.rdObj
@@ -10203,9 +10204,9 @@ case class Gpu2d(
                         innerCombineIdx * theMax + 1 //+ 2
                       )
                     )
-                    println(
-                      s"rdObjAffine: ${innerCombineIdx} ${tempIndex}"
-                    )
+                    //println(
+                    //  s"rdObjAffine: ${innerCombineIdx} ${tempIndex}"
+                    //)
                     myInpPayload(
                       tempIndex
                     ).stage2.rdObjAffine
@@ -13677,7 +13678,7 @@ case class Gpu2d(
             val tempIndex = (
               kdx * params.combineBgSubLineMemArrSize + zdx
             )
-            println(s"tempIndex: ${jdx} ${kdx} ${zdx} ${tempIndex}")
+            //println(s"tempIndex: ${jdx} ${kdx} ${zdx} ${tempIndex}")
             tempMem.io.wrPulse.data(zdx) := (
               //wrBgPipeLast.postStage0.subLineMemEntry
               rDataPipe1(jdx)(

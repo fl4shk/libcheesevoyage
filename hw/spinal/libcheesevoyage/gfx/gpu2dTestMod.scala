@@ -40,6 +40,10 @@ object Gpu2dTest {
     //var tempWord = BigInt(0)
     //val tempArr = new ArrayBuffer[Gpu2dTileSlice]()
     //var jdx = 0
+    def myBgPx = (
+      //2
+      0
+    )
     if (somePxsArr.size <= someNumTileSlices) {
       for (idx <- 0 until somePxsArr.size) {
         if ((idx % somePxsSliceWidth) == 0) {
@@ -50,18 +54,32 @@ object Gpu2dTest {
         //}
         def myTileSlice = tempArr.last
         myTileSlice.colIdxVec(idx % somePxsSliceWidth) := (
-          if (isBg) (
-            0x0
-          ) else (
+          //if (isBg) (
+          //  //0x0
+          //  //2
+          //  myBgPx
+          //) else (
             somePxsArr(idx)
-          )
+          //)
         )
       }
     }
     if (finish) {
       val oldSize = tempArr.size
       for (jdx <- oldSize until someNumTileSlices) {
-        tempArr += wordType().getZero
+        val tempWord = wordType()
+        for (idx <- 0 until tempWord.colIdxVec.size) {
+          tempWord.colIdxVec(idx) := (
+            if (isBg) (
+              myBgPx
+            ) else (
+              //somePxsArr(idx)
+              0x0
+            )
+          )
+        }
+        tempArr += tempWord
+        //tempArr += wordType().getZero
       }
     }
     //if (somePxsArr.size < someNumTileSlices) {
