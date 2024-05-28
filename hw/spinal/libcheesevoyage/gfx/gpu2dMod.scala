@@ -11111,7 +11111,7 @@ case class Gpu2d(
       //)
     }
     val prePopStm = cloneOf(pop)
-    pop << prePopStm
+    pop <-/< prePopStm
     combinePipeLastThrown.translateInto(
       //pop
       prePopStm
