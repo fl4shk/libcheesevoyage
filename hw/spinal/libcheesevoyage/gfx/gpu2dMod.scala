@@ -8872,11 +8872,11 @@ case class Gpu2d(
               wrObjSubLineMemArr(jdx).io.modFrontPayload
             )
           )
-          //if (vivadoDebug) {
-            njMyArr(jdx)(
-              wrObjPipePayloadSlmRmwModFrontInp(jdx)
-            ).addAttribute("MARK_DEBUG", "TRUE")
-          //}
+          if (vivadoDebug) {
+            //njMyArr(jdx)(
+            //  wrObjPipePayloadSlmRmwModFrontInp(jdx)
+            //).addAttribute("MARK_DEBUG", "TRUE")
+          }
         }
         val dMyWrObj = DirectLink(
           up=jMyWrObj.down,

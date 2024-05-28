@@ -358,9 +358,9 @@ case class PipeMemRmwIo[
     )
   )
   if (optEnableModDuplicate) {
-   if (vivadoDebug) {
-    midModStages.addAttribute("MARK_DEBUG", "TRUE")
-   }
+   //if (vivadoDebug) {
+   // midModStages.addAttribute("MARK_DEBUG", "TRUE")
+   //}
   }
   //if (vivadoDebug) {
   //  frontPayload.addAttribute("MARK_DEBUG", "TRUE")
@@ -626,12 +626,12 @@ extends Area {
     )
     if (vivadoDebug && myVivadoDebug) {
       //ret.addAttribute("MARK_DEBUG", "TRUE")
-      ret.memAddr.addAttribute("MARK_DEBUG", "TRUE")
-      ret.hazardCmp.addAttribute("MARK_DEBUG", "TRUE")
-      if (optEnableModDuplicate) {
-        ret.hazardId.addAttribute("MARK_DEBUG", "TRUE")
-      }
-      ret.modMemWord.addAttribute("MARK_DEBUG", "TRUE")
+      //ret.memAddr.addAttribute("MARK_DEBUG", "TRUE")
+      //ret.hazardCmp.addAttribute("MARK_DEBUG", "TRUE")
+      //if (optEnableModDuplicate) {
+      //  ret.hazardId.addAttribute("MARK_DEBUG", "TRUE")
+      //}
+      //ret.modMemWord.addAttribute("MARK_DEBUG", "TRUE")
     }
     ret
   }
@@ -805,9 +805,9 @@ extends Area {
       )
       val myWriteEnable = KeepAttribute(Bool())
       if (vivadoDebug) {
-        myWriteAddr.addAttribute("MARK_DEBUG", "TRUE")
-        myWriteData.addAttribute("MARK_DEBUG", "TRUE")
-        myWriteEnable.addAttribute("MARK_DEBUG", "TRUE")
+        //myWriteAddr.addAttribute("MARK_DEBUG", "TRUE")
+        //myWriteData.addAttribute("MARK_DEBUG", "TRUE")
+        //myWriteEnable.addAttribute("MARK_DEBUG", "TRUE")
       }
       val pipe = PipeHelper(linkArr=myLinkArr)
       //val pipePayload = Payload(modType())
@@ -850,7 +850,7 @@ extends Area {
         rTempWord.init(rTempWord.getZero)
       }
       if (vivadoDebug) {
-        rTempWord.addAttribute("MARK_DEBUG", "TRUE")
+        //rTempWord.addAttribute("MARK_DEBUG", "TRUE")
       }
       //when (cBack.up.isValid) {
       //}
@@ -1198,20 +1198,20 @@ extends Area {
       //upExt(1).doCancelFront := False
       nextState := rState
       if (vivadoDebug) {
-        nextHazardId.addAttribute("MARK_DEBUG", "TRUE")
-        nextState.addAttribute("MARK_DEBUG", "TRUE")
-        rState.addAttribute("MARK_DEBUG", "TRUE")
-        rPrevStateWhen.addAttribute("MARK_DEBUG", "TRUE")
-        upExt.addAttribute("MARK_DEBUG", "TRUE")
-        upExtRealMemAddr.addAttribute("MARK_DEBUG", "TRUE")
-        //for (idx <- 0 until tempMyUpExtDelFindFirstNotPostDelay.size) {
-        //}
-        tempMyUpExtDelFindFirstNotPostDelay.addAttribute(
-          "MARK_DEBUG", "TRUE"
-        )
-        //tempMyUpExtDelFindFirstIsPostDelay.addAttribute(
+        //nextHazardId.addAttribute("MARK_DEBUG", "TRUE")
+        //nextState.addAttribute("MARK_DEBUG", "TRUE")
+        //rState.addAttribute("MARK_DEBUG", "TRUE")
+        //rPrevStateWhen.addAttribute("MARK_DEBUG", "TRUE")
+        //upExt.addAttribute("MARK_DEBUG", "TRUE")
+        //upExtRealMemAddr.addAttribute("MARK_DEBUG", "TRUE")
+        ////for (idx <- 0 until tempMyUpExtDelFindFirstNotPostDelay.size) {
+        ////}
+        //tempMyUpExtDelFindFirstNotPostDelay.addAttribute(
         //  "MARK_DEBUG", "TRUE"
         //)
+        ////tempMyUpExtDelFindFirstIsPostDelay.addAttribute(
+        ////  "MARK_DEBUG", "TRUE"
+        ////)
       }
       //nextDidChangeState := rDidChangeState
       //nextHaltItIdleCnt := rHaltItIdleCnt
