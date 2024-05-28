@@ -9766,6 +9766,7 @@ case class Gpu2d(
           combineObjForkJoinMax
           //+ params.bgTileSize2d.x
           + params.combineBgSubLineMemArrSize
+          //combineBgObjForkJoinMax
         )
       )
       //* params.bgTileSize2d.x
@@ -9791,6 +9792,30 @@ case class Gpu2d(
 
     val nfCombineArr = Array.fill(combineTotalForkOrJoinMax)(Node())
     val njCombineArr = Array.fill(combineTotalForkOrJoinMax)(Node())
+    //val nfCombineBgA2d = (
+    //  Array.fill(
+    //    params.numLineMemsPerBgObjRenderer
+    //  )(
+    //    Array.fill(
+    //      params.combineBgSubLineMemVecElemSize
+    //      * params.combineBgSubLineMemArrSize
+    //    )(
+    //      Node()
+    //    )
+    //  )
+    //)
+    //val njCombineBgA2d = (
+    //  Array.fill(
+    //    params.numLineMemsPerBgObjRenderer
+    //  )(
+    //    Array.fill(
+    //      params.combineBgSubLineMemVecElemSize
+    //      * params.combineBgSubLineMemArrSize
+    //    )(
+    //      Node()
+    //    )
+    //  )
+    //)
     //val cfCombineArr = new ArrayBuffer[CtrlLink]()
     val fDriveToStmArr = Array.fill(combineTotalForkOrJoinMax)(
       Stream(CombinePipePayload())
@@ -13699,7 +13724,9 @@ case class Gpu2d(
             kdx <- 0 until params.combineBgSubLineMemArrSize
             //params.bgTileSize2d.x
           ) {
-            rValidPipe1(kdx)(jdx) := True
+            rValidPipe1(kdx)(jdx) := (
+              wrBgPipeLineMemArrIdx(jdx) === jdx
+            )
             rAddrPipe1(kdx)(jdx) := RegNext(tempArrIdx(kdx=kdx))
           }
           rDataPipe1(jdx) := (

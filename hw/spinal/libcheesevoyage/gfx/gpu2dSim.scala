@@ -416,13 +416,13 @@ object Gpu2dSim extends App {
       visib=(
         //270
         //--------
-        80
+        //80
         //240
         //--------
         //128
         //64
         //48
-        //32
+        32
         //16
       ),
       front=1,
@@ -447,10 +447,10 @@ object Gpu2dSim extends App {
   def gpu2dPhysFbSize2dScale = ElabVec2[Int](
     //x=1,
     //y=1,
-    x=5,
-    //x=1,
-    //y=1,
-    y=5,
+    //x=5,
+    //y=5,
+    x=1,
+    y=1,
     //y=1,
     //x=log2Up(2),
     ////y=log2Up(2),
