@@ -2612,11 +2612,11 @@ extends Area {
     }
     val extDbgDoWriteCond = (
       (
-        //if (optEnableModDuplicate) (
-        //  upExt(0).hazardId.msb
-        //) else (
+        if (optEnableModDuplicate) (
+          upExt(0).hazardId.msb
+        ) else (
           True
-        //)
+        )
       )
       //|| (
       //  if (optEnableClear) (

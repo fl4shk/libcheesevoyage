@@ -6401,7 +6401,7 @@ case class Gpu2d(
                   //tempAffineShift
                   params.objTileWidthRshift
                   //params.objSliceTileWidthPow
-                  + 1 // account for the extra cycle delay
+                  //+ 1 // account for the extra cycle delay
                   + 1 // account for grid index
                   - 1 
                 )
@@ -6417,7 +6417,7 @@ case class Gpu2d(
                   //0
                   //1 // account for double size rendering
                   //params.objTileWidthRshift
-                  + 1 // account for the extra cycle delay
+                  //+ 1 // account for the extra cycle delay
                   + 1 // account for grid index
                 )
               ),
