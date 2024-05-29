@@ -533,53 +533,9 @@ case class LongDivPipelined(
       tieFirstIfwdValid=true,
       tieLastIbakReady=true,
     )
-    ////itsIo(idx + 1) :
-    ////itdIn(idx + 1) := itdOut(idx)
-    ////itsIo(idx + 1).sbIo.prev <> itsIo(idx).sbIo.next
-    ////itsIo(idx + 1).sbIo.prev := itsIo(idx).sbIo.next
-    ////itsIo(idx + 1).sbIo.prev.ready := itsIo(idx).sbIo.next.ready
-    ////itsIo(idx + 1).sbIo.prev.payload := 
-
-    ////itdIn(idx + 1) := itdOut(idx)
-    ////ifwdValid(idx + 1) := ofwdValid(idx)
-    ////ibakReady(idx) := obakReady(idx + 1)
-    ////itsIo(idx + 1).sbIo.prev <-/< itsIo(idx).sbIo.next
-    ////itsIo(idx + 1).sbIo.prev << itsIo(idx).sbIo.next
-    ////itsIo(idx + 1).sbIo.prev >/-> itsIo(idx).sbIo.next
-    //val nextIdx = idx + 1
-    ////println(f"idx $idx; nextIdx $nextIdx")
-    ////itsIo(nextIdx).sbIo.prev <-/< itsIo(prevIdx).sbIo.next
-    ////itsIo(prevIdx).sbIo.next <-/< itsIo(nextIdx).sbIo.prev
-    //val currSbIo = itsIo(idx).sbIo
-    //val nextSbIo = itsIo(nextIdx).sbIo
-    ////prevSbIo.next.connectFrom(nextSbIo.prev)
-    //nextSbIo.prev.connectFrom(currSbIo.next)
-    ////val prevThatSbIo = itsIo(prevIdx).thatSbIo
-    ////val nextThatSbIo = itsIo(nextIdx).thatSbIo
-    ////if (prevIdx == 0) {
-    ////  //prevThatSbIo.next.connectFrom()
-    ////  //prevSbIo
-    ////} else { // if (prevIdx > 0)
-    ////}
-    ////if (nextIdx == loc.m.size - 1) {
-    ////} else { // if (nextIdx < loc.m.size - 1)
-    ////}
-
-    ////if (prevSbIo.thatNext != null) {
-    ////}
-    ////if (nextSbIo.thatPrev != null) {
-    ////}
-    ////itsIo(1).sbIo.prev <-/< itsIo(0).sbIo.next
-    ////itsIo(2).sbIo.prev <-/< itsIo(1).sbIo.next
-    ////itsIo(3).sbIo.prev <-/< itsIo(2).sbIo.next
-    ////itsIo(4).sbIo.prev <-/< itsIo(3).sbIo.next
   }
   //--------
-  when (
-    //(not USE_PIPE_SKID_BUF)
-    //|
-    ifwdMove(0)
-  ) {
+  when (ifwdMove(0)) {
     //--------
     loc.tSync.tempNumer := Mux(
       inp.signed & inp.numer.msb,
@@ -643,17 +599,6 @@ case class LongDivPipelined(
     loc.tCombPrev.tempBusRema,
   )
   //--------
-  //for i in range(len(loc.m)):
-  //when(
-  // not usePipeSkidBuf
-  // | i == 0
-  //):
-  //when(
-  // not usePipeSkidBuf
-  //)
-  //when(ofwdMove(idx + 1)):
-  //when(ofwdMove(idx) & ifwdMove(idx + 1)):
-  //when(ifwdMove(idx + 1)):
   for (idx <- 0 to loc.m.size - 1) {
     when (ofwdMove(idx)) {
       loc.tSync.numerWasLez(idx + 1) := loc.tSync.numerWasLez(idx)
@@ -684,47 +629,19 @@ case class LongDivPipelined(
   if (params.formal()) {
     val skipCond = itdOut.last.tempDenom === 0
     //--------
-    //m.d.sync += (
-    //  //--------
-    //  pastValid.eq(0b1),
-    //  pastValid_2.eq(pastValid),
-    //  //--------
-    //)
     when (ifwdMove(0)) {
-      //m.d.sync += (
-        //--------
-        //itdIn(0).tempNumer.eq(loc.t.tempNumer),
-        //itdIn(0).tempDenom.eq(loc.t.tempDenom),
-
-        loc.itdIn0Reg.formal.oracleQuot := (
-          loc.tSync.tempNumer / loc.tSync.tempDenom
-        )
-        loc.itdIn0Reg.formal.oracleRema := (
-          loc.tSync.tempNumer % loc.tSync.tempDenom
-        )
-        //--------
-      //)
-      //m.d.sync += (
-        //itdIn(0).shape().formalDmlElem(
-        //  itdIn(0), i, constants.formal(),
-        //).eq(
-        //  loc.t.tempDenom * i)
-        //  for i in range(constants.dmlSize()
-        //)
-      //)
+      //--------
+      loc.itdIn0Reg.formal.oracleQuot := (
+        loc.tSync.tempNumer / loc.tSync.tempDenom
+      )
+      loc.itdIn0Reg.formal.oracleRema := (
+        loc.tSync.tempNumer % loc.tSync.tempDenom
+      )
+      //--------
     }
 
-    when(
-      //~resetsignal() & pastValid
-      //& (
-      // 0b1
-      // if not constants.usePipeSkidBuf()
-      // else itsBus(itsBus.size - 1).sbBus.outp.fwd.valid
-      //)
-      pastValidAfterReset
-    ) {
+    when(pastValidAfterReset) {
       //--------
-      //when (ifwdMove(0)):
       when (ifwdMvp(0)) {
         //--------
         assert(
@@ -760,32 +677,26 @@ case class LongDivPipelined(
         //--------
       }
       //--------
-      //for i in range(len(loc.m)):
-      for (idx <- 0 to loc.m.size - 1) {
-        //when (ofwdMove(idx + 1)):
-        //when (ifwdMove(idx + 1)):
+      for (idx <- 0 until loc.m.size) {
         when (ofwdMove(idx)) {
-        //when (ifwdMove(idx)):
-          //m.d.sync += (
-            //--------
-            assert(
-              loc.tSync.numerWasLez(idx + 1)
-              === past(loc.tSync.numerWasLez)(idx)
-            )
-            assert(
-              loc.tSync.denomWasLez(idx + 1)
-              === past(loc.tSync.denomWasLez)(idx)
-            )
-            assert(
-              loc.tSync.quotWillBeLez(idx + 1)
-              === past(loc.tSync.quotWillBeLez)(idx)
-            )
-            assert(
-              loc.tSync.remaWillBeLez(idx + 1)
-              === past(loc.tSync.remaWillBeLez)(idx)
-            )
-            //--------
-          //)
+          //--------
+          assert(
+            loc.tSync.numerWasLez(idx + 1)
+            === past(loc.tSync.numerWasLez)(idx)
+          )
+          assert(
+            loc.tSync.denomWasLez(idx + 1)
+            === past(loc.tSync.denomWasLez)(idx)
+          )
+          assert(
+            loc.tSync.quotWillBeLez(idx + 1)
+            === past(loc.tSync.quotWillBeLez)(idx)
+          )
+          assert(
+            loc.tSync.remaWillBeLez(idx + 1)
+            === past(loc.tSync.remaWillBeLez)(idx)
+          )
+          //--------
         }
       }
       //--------
