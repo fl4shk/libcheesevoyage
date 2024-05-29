@@ -11,55 +11,18 @@
 //
 //object PipeMemRmwFormal extends App {
 //  //--------
-//  def wordWidth = 8
-//  def wordType() = UInt(wordWidth bits)
-//  def wordCount = (
-//    4
-//    //8
-//  )
-//  def hazardCmpType() = UInt(
-//    PipeMemRmw.addrWidth(wordCount=wordCount) bits
-//  )
-//  def modStageCnt = (
-//    //2
-//    1
-//  )
-//  def modType() = SamplePipeMemRmwModType(
-//    wordType=wordType(),
-//    wordCount=wordCount,
-//    hazardCmpType=hazardCmpType(),
-//    modStageCnt=modStageCnt,
-//  )
-//  //def forFmax = (
-//  //  //true
-//  //  false
-//  //)
 //  //--------
 //  case class PipeMemRmwFormalDut() extends Component {
-//    val dut = FormalDut(PipeMemRmw[
-//      UInt,
-//      UInt,
-//      SamplePipeMemRmwModType[UInt, UInt],
-//      SamplePipeMemRmwModType[UInt, UInt],
-//    ](
-//      wordType=wordType(),
-//      wordCount=wordCount,
-//      hazardCmpType=hazardCmpType(),
-//      modType=modType(),
-//      modStageCnt=modStageCnt,
-//      dualRdType=modType(),
-//      optDualRd=true,
-//      //forFmax=forFmax,
-//    ))
+//    val dut = FormalDut(PipeMemRmwTester())
 //
 //    assumeInitial(clockDomain.isResetActive)
 //    def front = dut.io.front
-//    def modFront = dut.io.modFront
-//    def modBack = dut.io.modBack
+//    //def modFront = dut.io.modFront
+//    //def modBack = dut.io.modBack
 //    def back = dut.io.back
 //
-//    def dualRdFront = dut.io.dualRdFront
-//    def dualRdBack = dut.io.dualRdBack
+//    //def dualRdFront = dut.io.dualRdFront
+//    //def dualRdBack = dut.io.dualRdBack
 //
 //    assumeInitial(front.payload === front.payload.getZero)
 //    assumeInitial(front.valid === front.valid.getZero)
@@ -71,13 +34,13 @@
 //    //  rFrontMemAddrCnt := rFrontMemAddrCnt + 1
 //    //}
 //    anyseq(front.valid)
-//    //front.valid := True
-//    assumeInitial(dualRdFront.payload === dualRdFront.payload.getZero)
-//    assumeInitial(dualRdFront.valid === dualRdFront.valid.getZero)
-//    anyseq(dualRdFront.payload)
-//    anyseq(dualRdFront.valid)
-//    //dualRdFront.valid := True
-//    //dualRdFront.valid := front.valid
+//    ////front.valid := True
+//    //assumeInitial(dualRdFront.payload === dualRdFront.payload.getZero)
+//    //assumeInitial(dualRdFront.valid === dualRdFront.valid.getZero)
+//    //anyseq(dualRdFront.payload)
+//    //anyseq(dualRdFront.valid)
+//    ////dualRdFront.valid := True
+//    ////dualRdFront.valid := front.valid
 //
 //    //assumeInitial(modFront.ready)
 //    //anyseq(modFront.ready)
@@ -86,42 +49,6 @@
 //    //assumeInitial(modBack.valid === modBack.valid.getZero)
 //    //anyseq(modBack.payload)
 //    //anyseq(modBack.valid)
-//    val modFrontStm = Stream(modType())
-//    val modMidStm = Stream(modType())
-//    val modBackStm = Stream(modType())
-//    modFrontStm <-/< modFront
-//    modFrontStm.translateInto(
-//      into=modMidStm
-//    )(
-//      dataAssignment=(
-//        modMidPayload,
-//        modFrontPayload,
-//      ) => {
-//        //modMidPayload.myExt := modFrontPayload.myExt
-//        modMidPayload := modFrontPayload
-//        modMidPayload.myExt.allowOverride
-//        modMidPayload.myExt.modMemWord := (
-//          //modFrontPayload.myExt.rdMemWord + 0x1
-//          modFrontPayload.myExt.rdMemWord //+ 0x1
-//        )
-//        when (
-//          modFrontPayload.myExt.hazardId.msb
-//        ) {
-//          modMidPayload.myExt.dbgModMemWord := (
-//            modMidPayload.myExt.modMemWord
-//          )
-//        } otherwise {
-//          modMidPayload.myExt.dbgModMemWord := 0x0
-//        }
-//      }
-//    )
-//    //modBackStm <-/< modMidStm
-//    modBackStm << modMidStm
-//    //when (
-//    //  dut.io.back ===
-//    //)
-//    //modBack <-/< modBackStm
-//    modBack << modBackStm
 //
 //
 //    assumeInitial(back.ready)
@@ -129,8 +56,9 @@
 //    //back.ready.allowOverride
 //    //back.ready := True
 //    //back.ready := !(RegNext(back.ready) init(False))
-//    assumeInitial(dualRdBack.ready)
-//    anyseq(dualRdBack.ready)
+//
+//    //assumeInitial(dualRdBack.ready)
+//    //anyseq(dualRdBack.ready)
 //
 //    //dualRdBack.ready := !(RegNext(dualRdBack.ready) init(False))
 //    //dualRdBack.ready := back.ready
@@ -153,7 +81,7 @@
 //    //)
 //    .withCover(
 //      //20
-//      40
+//      60
 //    )
 //    .doVerify(PipeMemRmwFormalDut())
 //  //--------

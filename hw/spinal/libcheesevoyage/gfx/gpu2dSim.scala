@@ -834,7 +834,7 @@ object Gpu2dSim extends App {
   )
   SimConfig
     .withConfig(config=simSpinalConfig)
-    .withVcdWave
+    .withFstWave
     .compile(
     Gpu2dSimDut(
       clkRate=clkRate,

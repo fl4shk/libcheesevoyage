@@ -1446,8 +1446,9 @@ extends Area {
       //&& 
       if (optEnableModDuplicate) (
         //up.isFiring
-        down.isReady
-        //down.isFiring
+        //down.isReady
+        down.isFiring
+        //True
         && 
         //upExt(1).hazardId.msb
         (
@@ -1475,7 +1476,9 @@ extends Area {
       ) else (
         //True
         //up.isFiring
-        down.isReady
+        //down.isReady
+        down.isFiring
+        //True
       )
     )
 
@@ -1745,6 +1748,179 @@ extends Area {
     //  Reg(Bool()) init(False)
     //)
     //--------
+    GenerationFlags.formal {
+      //val haveStableMemAddr = Bool()
+      //when (!up.isValid) {
+      //  haveStableMemAddr := 
+      //}
+      //when (
+      //  up.isValid
+      //  && !up.isFiring
+      //) {
+      //  assume(stable(upExt(0).memAddr))
+      //}
+      when (
+        //up.isFiring
+        (
+          RegNextWhen(True, io.back.isFiring) init(False)
+        ) && (
+          RegNext(tempCond) init(False)
+        )
+      ) {
+        assert(
+          mod.front.myRdMemWord
+          === (
+            RegNext(
+              modMem.readAsync(
+                address=/*RegNext*/(upExtRealMemAddr) //init(0x0)
+              )
+            ) init(mod.front.myRdMemWord.getZero)
+          )
+        )
+      }
+      val myDownFireHazardId = (
+        RegNextWhen(upExt(1).hazardId, down.isFiring)
+        init(upExt(1).getHazardIdIdleVal())
+      )
+      switch (rState) {
+        is (State.IDLE) {
+          switch (rPrevStateWhen) {
+            is (State.IDLE) {
+              //assert()
+              //when (RegNext(down.isFiring) init(False)) {
+              //  //assert(myDownFireHazardId)
+              //}
+            }
+            is (State.DELAY) {
+              assert(myDownFireHazardId.msb)
+            } 
+          }
+        }
+        is (State.DELAY) {
+        }
+      }
+      when (
+        RegNextWhen(mod.back.myWriteEnable, io.back.isFiring)
+        init(False)
+      ) {
+        when (
+          //RegNextWhen(
+          (
+            RegNextWhen(mod.back.myWriteAddr, io.back.isFiring) init(0x0)
+          ) === (
+            RegNext(upExtRealMemAddr) init(0x0)
+          )
+        ) {
+          when (RegNext(tempCond) init(False)) {
+            cover(
+              (
+                RegNextWhen(
+                  RegNextWhen(
+                    RegNextWhen(
+                      RegNextWhen(
+                        RegNextWhen(True, io.back.isFiring) init(False),
+                        io.back.isFiring
+                      ) init(False),
+                      io.back.isFiring
+                    ) init(False),
+                    io.back.isFiring
+                  ) init(False),
+                  io.back.isFiring
+                ) init(False)
+              ) && (
+                mod.front.myRdMemWord
+                === RegNextWhen(mod.back.myWriteData, io.back.isFiring)
+              )
+            )
+          }
+        }
+      }
+      //cover(
+      //  //(
+      //  //  //RegNextWhen(
+      //  //  //  RegNextWhen(
+      //  //  //    RegNextWhen(
+      //  //  //      RegNextWhen(
+      //  //  //        RegNextWhen(True, io.front.isFiring) init(False),
+      //  //  //        io.front.isFiring
+      //  //  //      ) init(False),
+      //  //  //      io.front.isFiring
+      //  //  //    ) init(False),
+      //  //  //    io.front.isFiring
+      //  //  //  ) init(False),
+      //  //  //  io.front.isFiring
+      //  //  //) init(False)
+      //  //  RegNextWhen(True, io.front.isFiring) init(False)
+      //  //) && (
+      //  //  RegNextWhen(True, io.modFront.isFiring) init(False)
+      //  //) && (
+      //  //  RegNextWhen(True, io.modBack.isFiring) init(False)
+      //  //) && 
+      //  (
+      //    //RegNextWhen(
+      //    //  RegNextWhen(
+      //    //    RegNextWhen(
+      //    //      RegNextWhen(
+      //    //        RegNextWhen(True, io.back.isFiring) init(False),
+      //    //        io.back.isFiring
+      //    //      ) init(False),
+      //    //      io.back.isFiring
+      //    //    ) init(False),
+      //    //    io.back.isFiring
+      //    //  ) init(False),
+      //    //  io.back.isFiring
+      //    //) init(False)
+      //    //RegNextWhen(True, io.back.isFiring) init(False)
+      //    True
+      //  ) && (
+      //    /*RegNextWhen*//*RegNext(RegNext*/(mod.back.myWriteEnable/*,
+      //    io.back.isFiring*/)/*)*/ //init(False)
+      //  ) && (
+      //    //RegNext(up.isFiring)
+      //    True
+      //  ) && (
+      //    (
+      //      //RegNext(upExt(0).memAddr)
+      //      /*RegNext(RegNext*/(upExtRealMemAddr)/*)*/
+      //    ) === (
+      //      /*RegNextWhen*//*RegNext(RegNext*/(mod.back.myWriteAddr/*,
+      //      io.back.isFiring*/)/*)*/ //init(0x0)
+      //    )
+      //  ) && (
+      //    //RegNext(upExt(0).memAddr) > 0
+      //    True
+      //  ) 
+      //  //&& (
+      //  //  io.back.isFiring
+      //  //) && (
+      //  //  RegNext(io.back.isFiring) init(False)
+      //  //) && (
+      //  //  RegNext(RegNext(io.back.isFiring))
+      //  //) 
+      //  && ({
+      //    (
+      //      mod.front.myRdMemWord
+      //      === /*RegNext(RegNext*/(mod.back.myWriteData)/*)*/
+      //    )
+      //  }) && (
+      //    //mod.front.myRdMemWord.asBits.asUInt > 0
+      //    True
+      //  ) && (
+      //    //RegNextWhen(
+      //    //  mod.front.myRdMemWord.asBits.asUInt,
+      //    //  mod.front.cMid0Front.up.isFiring
+      //    //) > 0
+      //    True
+      //  ) && (
+      //    //mod.front.myRdMemWord
+      //    //=/= RegNextWhen(
+      //    //  mod.front.myRdMemWord,
+      //    //  mod.front.cMid0Front.up.isFiring
+      //    //)
+      //    True
+      //  )
+      //)
+    }
     //GenerationFlags.formal {
     //  //--------
     //  //when (up.isFiring) {
@@ -2195,155 +2371,155 @@ extends Area {
     //  RegNext(tempModMemReadAsync) init(tempModMemReadAsync.getZero)
     //)
     //--------
-    GenerationFlags.formal {
-      //tempModMemReadAsync := rPrevTempModMemReadAsync
-      //tempModMemReadAsync := up(mod.front.dbgRdMemWord)
-      when (pastValidAfterReset) {
-        //val tempCond = (
-        //  past(cFront.up.isFiring)
-        //  && !past(cFrontArea.rSetRdId)
-        //  && past(cFrontArea.upExt(1).hazardId.msb)
-        //)
-        def tempCond(
-          someExt: PipeMemRmwPayloadExt[WordT, HazardCmpT]
-        ) = (
-          //if (!forFmax) {
-          //  //!(
-          //  //  RegNextWhen(
-          //  //    cFrontArea.wantNonFmaxFwd(
-          //  //      someExt=cFrontArea.upExt(1)
-          //  //    ),
-          //  //    cFront.up.isFiring
-          //  //  ) init(False)
-          //  //)
-          //  //!upExt(1).dbgWantNonFmaxFwd
-          //  !someExt.dbgWantNonFmaxFwd
-          //} else {
-            True
-          //}
-        )
-        //when (
-        //  (cFront.up.isFiring)
-        //  && !(cFrontArea.rSetRdId)
-        //  && (cFrontArea.upExt(1).hazardId.msb)
-        //  //&& !cFrontArea.upExt(1).dbgWantNonFmaxFwd
-        //  ////&& cFrontArea.tempCond
-        //  && tempCond(someExt=cFrontArea.upExt(1))
-        //) {
-        //  //when (
-        //  //  //if (!forFmax) {
-        //  //  //  !cFrontArea.wantNonFmaxFwd(
-        //  //  //    someExt=cFrontArea.upExt(1)
-        //  //  //  )
-        //  //  //} else {
-        //  //  //  True
-        //  //  //}
-        //  //  True
-        //  //) {
-        //    tempModMemReadAsync := (
-        //      modMem.readAsync(
-        //        address=(cFrontArea.upExt(1).memAddr)
-        //        //address=upExt(1).memAddr,
-        //        //enable=tempCond,
-        //      )
-        //    )
-        //  //}
-        //}
-        //--------
-        when (
-          (RegNextWhen(True, io.front.isFiring) init(False))
-          && (RegNextWhen(True, io.modFront.isFiring) init(False))
-          && (RegNextWhen(True, io.modBack.isFiring) init(False))
-          && (RegNextWhen(True, io.back.isFiring) init(False))
-          //&& up.isValid
-          //up.isFiring
-          //&& cFront.down.isValid
-          //&& upExt(1).hazardId.msb
-          //&& upExt(1).rdId.msb
-          //&& !rSetRdId
-          //--------
-          //&& up.isFiring
-          //&& rRdId === upExt(0).rdId
-          //&& upExt(0).hazardId.msb
-          //True
-          && up.isValid
-          && !rSetRdId
-          && (
-            if (optEnableModDuplicate) {
-              upExt(1).hazardId.msb
-            } else {
-              True
-            }
-          )
-          //&& !tempCond
-          && tempCond(someExt=upExt(1))
-        ) {
-          //--------
-          //tempModMemReadAsync := RegNextWhen(
-          //  modMem.readAsync(
-          //    address=upExt(1).memAddr,
-          //  ),
-          //  cFront.up.isFiring
-          //)
-          //tempModMemReadAsync
-          assert(
-            upExt(1).rdMemWord
-            //=== tempModMemReadAsync
-            //=== RegNextWhen(
-            //  RegNextWhen(
-            //    RegNextWhen(
-            //      RegNextWhen(
-            //        //cFrontArea.myDbgRdMemWord,
-            //        modMem.readSync(
-            //          address=cFrontArea.upExt(1).memAddr
-            //        ),
-            //        cFrontArea.up.isFiring,
-            //      ),
-            //      mod.front.cMid0Front.up.isFiring,
-            //    ),
-            //    mod.front.cMid1Front.up.isFiring,
-            //  ),
-            //  mod.front.cMid2Front.up.isFiring,
-            //)
-            === /*RegNextWhen*/(
-              modMem.readAsync(
-                address=upExt(1).memAddr
-              )
-            )
-          )
-          cover(
-            upExt(1).rdMemWord
-            === modMem.readAsync(
-              address=upExt(1).memAddr
-            )
-            && upExt(1).rdMemWord.asBits =/= 0
-            && (
-              RegNextWhen(
-                True, io.back.isFiring
-              ) init(False)
-            )
-          )
-          //--------
-          //when (rDbgSeenFrontUpFiring) {
-          //  assert(
-          //    upExt(1).rdMemWord
-          //    === (
-          //      //RegNextWhen(
-          //        modMem.readAsync(
-          //          address=rDbgPrevMemAddr
-          //        )
-          //        //cFront.down.isFiring
-          //      //) init(upExt(1).rdMemWord.getZero)
-          //    )
-          //  )
-          //}
-        }
-      }
-      //cover(
-      //  upExt(1).rdMemWord
-      //  === cFrontArea.myDbgRdMemWord
-      //)
-    }
+    //GenerationFlags.formal {
+    //  //tempModMemReadAsync := rPrevTempModMemReadAsync
+    //  //tempModMemReadAsync := up(mod.front.dbgRdMemWord)
+    //  when (pastValidAfterReset) {
+    //    //val tempCond = (
+    //    //  past(cFront.up.isFiring)
+    //    //  && !past(cFrontArea.rSetRdId)
+    //    //  && past(cFrontArea.upExt(1).hazardId.msb)
+    //    //)
+    //    //def tempCond(
+    //    //  someExt: PipeMemRmwPayloadExt[WordT, HazardCmpT]
+    //    //) = (
+    //    //  //if (!forFmax) {
+    //    //  //  //!(
+    //    //  //  //  RegNextWhen(
+    //    //  //  //    cFrontArea.wantNonFmaxFwd(
+    //    //  //  //      someExt=cFrontArea.upExt(1)
+    //    //  //  //    ),
+    //    //  //  //    cFront.up.isFiring
+    //    //  //  //  ) init(False)
+    //    //  //  //)
+    //    //  //  //!upExt(1).dbgWantNonFmaxFwd
+    //    //  //  !someExt.dbgWantNonFmaxFwd
+    //    //  //} else {
+    //    //    True
+    //    //  //}
+    //    //)
+    //    ////when (
+    //    ////  (cFront.up.isFiring)
+    //    ////  && !(cFrontArea.rSetRdId)
+    //    ////  && (cFrontArea.upExt(1).hazardId.msb)
+    //    ////  //&& !cFrontArea.upExt(1).dbgWantNonFmaxFwd
+    //    ////  ////&& cFrontArea.tempCond
+    //    ////  && tempCond(someExt=cFrontArea.upExt(1))
+    //    ////) {
+    //    ////  //when (
+    //    ////  //  //if (!forFmax) {
+    //    ////  //  //  !cFrontArea.wantNonFmaxFwd(
+    //    ////  //  //    someExt=cFrontArea.upExt(1)
+    //    ////  //  //  )
+    //    ////  //  //} else {
+    //    ////  //  //  True
+    //    ////  //  //}
+    //    ////  //  True
+    //    ////  //) {
+    //    ////    tempModMemReadAsync := (
+    //    ////      modMem.readAsync(
+    //    ////        address=(cFrontArea.upExt(1).memAddr)
+    //    ////        //address=upExt(1).memAddr,
+    //    ////        //enable=tempCond,
+    //    ////      )
+    //    ////    )
+    //    ////  //}
+    //    ////}
+    //    ////--------
+    //    //when (
+    //    //  (RegNextWhen(True, io.front.isFiring) init(False))
+    //    //  && (RegNextWhen(True, io.modFront.isFiring) init(False))
+    //    //  && (RegNextWhen(True, io.modBack.isFiring) init(False))
+    //    //  && (RegNextWhen(True, io.back.isFiring) init(False))
+    //    //  //&& up.isValid
+    //    //  //up.isFiring
+    //    //  //&& cFront.down.isValid
+    //    //  //&& upExt(1).hazardId.msb
+    //    //  //&& upExt(1).rdId.msb
+    //    //  //&& !rSetRdId
+    //    //  //--------
+    //    //  //&& up.isFiring
+    //    //  //&& rRdId === upExt(0).rdId
+    //    //  //&& upExt(0).hazardId.msb
+    //    //  //True
+    //    //  && up.isValid
+    //    //  && !rSetRdId
+    //    //  && (
+    //    //    if (optEnableModDuplicate) {
+    //    //      upExt(1).hazardId.msb
+    //    //    } else {
+    //    //      True
+    //    //    }
+    //    //  )
+    //    //  //&& !tempCond
+    //    //  && tempCond(someExt=upExt(1))
+    //    //) {
+    //    //  //--------
+    //    //  //tempModMemReadAsync := RegNextWhen(
+    //    //  //  modMem.readAsync(
+    //    //  //    address=upExt(1).memAddr,
+    //    //  //  ),
+    //    //  //  cFront.up.isFiring
+    //    //  //)
+    //    //  //tempModMemReadAsync
+    //    //  assert(
+    //    //    upExt(1).rdMemWord
+    //    //    //=== tempModMemReadAsync
+    //    //    //=== RegNextWhen(
+    //    //    //  RegNextWhen(
+    //    //    //    RegNextWhen(
+    //    //    //      RegNextWhen(
+    //    //    //        //cFrontArea.myDbgRdMemWord,
+    //    //    //        modMem.readSync(
+    //    //    //          address=cFrontArea.upExt(1).memAddr
+    //    //    //        ),
+    //    //    //        cFrontArea.up.isFiring,
+    //    //    //      ),
+    //    //    //      mod.front.cMid0Front.up.isFiring,
+    //    //    //    ),
+    //    //    //    mod.front.cMid1Front.up.isFiring,
+    //    //    //  ),
+    //    //    //  mod.front.cMid2Front.up.isFiring,
+    //    //    //)
+    //    //    === /*RegNextWhen*/(
+    //    //      modMem.readAsync(
+    //    //        address=upExt(1).memAddr
+    //    //      )
+    //    //    )
+    //    //  )
+    //    //  cover(
+    //    //    upExt(1).rdMemWord
+    //    //    === modMem.readAsync(
+    //    //      address=upExt(1).memAddr
+    //    //    )
+    //    //    && upExt(1).rdMemWord.asBits =/= 0
+    //    //    && (
+    //    //      RegNextWhen(
+    //    //        True, io.back.isFiring
+    //    //      ) init(False)
+    //    //    )
+    //    //  )
+    //    //  //--------
+    //    //  //when (rDbgSeenFrontUpFiring) {
+    //    //  //  assert(
+    //    //  //    upExt(1).rdMemWord
+    //    //  //    === (
+    //    //  //      //RegNextWhen(
+    //    //  //        modMem.readAsync(
+    //    //  //          address=rDbgPrevMemAddr
+    //    //  //        )
+    //    //  //        //cFront.down.isFiring
+    //    //  //      //) init(upExt(1).rdMemWord.getZero)
+    //    //  //    )
+    //    //  //  )
+    //    //  //}
+    //    //}
+    //  }
+    //  //cover(
+    //  //  upExt(1).rdMemWord
+    //  //  === cFrontArea.myDbgRdMemWord
+    //  //)
+    //}
     //--------
   }
   //val cMid1Front = mod.front.cMid1Front
