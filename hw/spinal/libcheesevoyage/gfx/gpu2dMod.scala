@@ -6396,21 +6396,7 @@ case class Gpu2d(
           downto params.objCntWidthShift
         )
       )
-      val myObjXStart = UInt(
-        (
-          (
-            params.objTileWidthRshift
-            //params.objSliceTileWidthPow
-            //+ 1 // account for the extra cycle delay
-            + 1 // account for grid index
-          ) - (
-            1 // account for the grid index
-          ) + (
-            params.objSliceTileWidthPow
-          )
-        ) bits
-      )
-      myObjXStart := {
+      def objXStart() = {
         (
           //def tempShift = tempAffineShift
           //if (params.objTileWidthRshift > 0) {
@@ -6463,8 +6449,6 @@ case class Gpu2d(
           //}
         )
       }
-      myObjXStart.allowOverride
-      def objXStart() = myObjXStart
 
       //def affineMultKind() = rawAffineIdx()(1 downto 0)
 
@@ -18297,10 +18281,7 @@ case class Gpu2d(
             someLineMemEntry: ObjSubLineMemEntry,
             someOverwriteLineMemEntry: Bool,
           ): Unit = {
-            val myOverwriteLineMemEntry = KeepAttribute(
-              Bool()
-              .setName(s"wrObjPipe_16_myOverwriteLineMemEntry_${x}")
-            )
+            val myOverwriteLineMemEntry = Bool()
             when (
               if (kind == 0) {
                 //!tempInp.objAttrs.affine.doIt
@@ -18653,36 +18634,22 @@ case class Gpu2d(
             )
           )
           outpExt.overwriteLineMemEntry(x) := (
-            Mux[Bool](
-              outpExt.wrLineMemEntry(x).col.a,
-              nonRotatedOutpExt.overwriteLineMemEntry(
-                myIdxV2d(x)(
-                  //x * 2
-                  x
-                )(
-                  myTempObjTileWidthPow - 1 downto 0
-                )
-              ),
-              False
+            nonRotatedOutpExt.overwriteLineMemEntry(
+              myIdxV2d(x)(
+                //x * 2
+                x
+              )(
+                myTempObjTileWidthPow - 1 downto 0
+              )
             )
           )
           when (outpExt.overwriteLineMemEntry(x)) {
             tempOutp.subLineMemEntryExt.modMemWord(x) := (
               outpExt.wrLineMemEntry(x)
             )
-            //when (!outpExt.wrLineMemEntry(x).col.a) {
-            //  //outpExt.overwriteLineMemEntry(x) := False
-            //  outpExt.wrLineMemEntry(x) := (
-            //    outpExt.wrLineMemEntry(x).getZero
-            //  )
-            //  tempOutp.subLineMemEntryExt.modMemWord(x) := (
-            //    tempOutp.subLineMemEntryExt.modMemWord(x).getZero
-            //  )
-            //}
           } otherwise {
             tempOutp.subLineMemEntryExt.modMemWord(x) := (
               tempInp.subLineMemEntryExt.rdMemWord(x)
-              //tempOutp.stage16.tempRdLineMemEntry(x)
             )
           }
         }
@@ -18986,7 +18953,7 @@ case class Gpu2d(
                 )
               //!tempWrObjPipeLast.stage0.rawObjAttrsMemIdx()(
               //  //params.objAffineTileWidthRshift
-              //  0 // old grid index stuff
+              //  0
               //) && (
                 tempFindFirstFound
               //)
