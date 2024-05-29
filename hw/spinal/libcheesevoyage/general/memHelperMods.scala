@@ -353,7 +353,7 @@ extends Component
   tempModBackPayload := (
     RegNext(tempModBackPayload) init(tempModBackPayload.getZero)
   )
-  when (pipeMem.io.modBack.isValid) {
+  when (pipeMem.io.modFront.isValid) {
     tempModBackPayload := (
       pipeMem.io.modFront(pipeMem.io.modFrontPayload)
     )
