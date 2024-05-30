@@ -77,6 +77,8 @@ case class PipeMemRmwSimDut(
       //true
       false
     ),
+    init=None,
+    initBigInt=Some(Array.fill(wordCount)(BigInt(0)).toSeq),
     optEnableModDuplicate=true,
     //forFmax=forFmax,
   )(
@@ -116,17 +118,17 @@ case class PipeMemRmwTester() extends Component {
     1
   )
   def modType() = PipeMemRmwSimDut.modType()
-  //val io = new Bundle {
-  //  val front = slave(Stream(modType()))
-  //  val back = master(Stream(modType()))
-  //}
+  val io = new Bundle {
+    //val front = slave(Stream(modType()))
+    val back = master(Stream(modType()))
+  }
   val dut = PipeMemRmwSimDut()
   //dut.io.front << io.front
-  //io.back << dut.io.back
+  io.back << dut.io.back
   def front = dut.io.front
-  def back = dut.io.back
+  //def back = dut.io.back
 
-  def memAddrFracWidth = 1
+  def memAddrFracWidth = 0
   val rMemAddr = Reg(
     UInt((front.myExt.memAddr.getWidth + memAddrFracWidth) bits)
   ) init(0x0)
@@ -134,9 +136,14 @@ case class PipeMemRmwTester() extends Component {
   def memAddrIntRange = rMemAddr.high downto memAddrFracWidth
 
   front.valid := True
+  front.payload := (
+    RegNext(front.payload) init(front.payload.getZero)
+  )
+  front.myExt.allowOverride
   front.myExt.memAddr := rMemAddr >> memAddrFracWidth
   when (front.fire) {
-    rMemAddr := rMemAddr + 1
+    rMemAddr := rMemAddr  + 1
+    //rMemAddr(0 downto 0) := rMemAddr(0 downto 0) + 1
     //when (rMemAddr(memAddrFracRange) === 2) {
     //  rMemAddr(memAddrIntRange) := (
     //    rMemAddr(memAddrIntRange) + 1
@@ -144,7 +151,7 @@ case class PipeMemRmwTester() extends Component {
     //  rMemAddr(memAddrFracRange) := 0
     //}
   }
-  back.ready := True
+  //back.ready := True
   //--------
 
   val modFrontStm = Stream(modType())
@@ -161,10 +168,12 @@ case class PipeMemRmwTester() extends Component {
       //modMidPayload.myExt := modFrontPayload.myExt
       modMidPayload := modFrontPayload
       modMidPayload.myExt.allowOverride
-      modMidPayload.myExt.modMemWord := (
-        //modFrontPayload.myExt.rdMemWord + 0x1
-        modFrontPayload.myExt.rdMemWord + 0x1
-      )
+      when (modMidPayload.myExt.hazardId.msb) {
+        modMidPayload.myExt.modMemWord := (
+          //modFrontPayload.myExt.rdMemWord + 0x1
+          modFrontPayload.myExt.rdMemWord + 0x1
+        )
+      }
       //when (
       //  modFrontPayload.myExt.hazardId.msb
       //) {
@@ -177,8 +186,8 @@ case class PipeMemRmwTester() extends Component {
       dut.io.midModStages(0) := modMidPayload
     }
   )
-  //modBackStm <-/< modMidStm
-  modBackStm << modMidStm
+  modBackStm <-/< modMidStm
+  //modBackStm << modMidStm
   dut.io.modBack << modBackStm
 }
 object PipeMemRmwSim extends App {
@@ -211,7 +220,8 @@ object PipeMemRmwSim extends App {
       ////StreamMonitor(dut.io.front, dut.clockDomain) { payload => 
       ////  scoreboard.pushRef(payload.toInt)
       ////}
-      ////StreamReadyRandomizer(dut.io.back, dut.clockDomain)
+      //StreamReadyRandomizer(dut.io.back, dut.clockDomain)
+      dut.io.back.ready #= true
       //dut.io.back.ready #= true
       //dut.clockDomain.forkStimulus(period=10)
       ////dut.clockDomain.waitActiveEdgeWhere(scoreboard.matches == 100)

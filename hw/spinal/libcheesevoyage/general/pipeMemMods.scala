@@ -670,28 +670,28 @@ extends Area {
           //init(mkExt().getZero)
         )
       )
-      val myUpExtDelPreBack = KeepAttribute(
-        Vec.fill(myUpExtDel.size - 1)(
+      val myUpExtDelFull = KeepAttribute(
+        Vec.fill(myUpExtDel.size)(
           mkExt()
         )
       )
-      for (idx <- 0 until myUpExtDelPreBack.size) {
-        myUpExtDelPreBack(idx) := myUpExtDel(idx)
+      for (idx <- 0 until myUpExtDelFull.size) {
+        myUpExtDelFull(idx) := myUpExtDel(idx)
       }
-      val myUpExtDelPreBackFindFirstVecNotPostDelay = KeepAttribute(
-        Vec.fill(myUpExtDelPreBack.size)(
+      val myUpExtDelFullFindFirstVecNotPostDelay = KeepAttribute(
+        Vec.fill(myUpExtDelFull.size)(
           Bool()
         )
       )
-      val myUpExtDelPreBackFindFirstVecIsPostDelay = KeepAttribute(
-        Vec.fill(myUpExtDelPreBack.size)(
+      val myUpExtDelFullFindFirstVecIsPostDelay = KeepAttribute(
+        Vec.fill(myUpExtDelFull.size)(
           Bool()
         )
       )
       //if (vivadoDebug) {
       //  myUpExtDel.addAttribute("MARK_DEBUG", "TRUE")
       //}
-      //println(s"myUpExtDelPreBack.size: ${myUpExtDelPreBack.size}")
+      //println(s"myUpExtDelFull.size: ${myUpExtDelFull.size}")
       if (optEnableModDuplicate) {
         for (
           //idx <- 0 until modStageCnt - 1
@@ -1096,27 +1096,27 @@ extends Area {
         myHazardCmpFunc(upExt(1), prev, isPostDelay)
       )
     )
-    val myUpExtDelPreBack = mod.front.myUpExtDelPreBack
-    val myUpExtDelPreBackFindFirstVecNotPostDelay = (
-      mod.front.myUpExtDelPreBackFindFirstVecNotPostDelay
+    val myUpExtDelFull = mod.front.myUpExtDelFull
+    val myUpExtDelFullFindFirstVecNotPostDelay = (
+      mod.front.myUpExtDelFullFindFirstVecNotPostDelay
     )
-    val myUpExtDelPreBackFindFirstVecIsPostDelay = (
-      mod.front.myUpExtDelPreBackFindFirstVecIsPostDelay
+    val myUpExtDelFullFindFirstVecIsPostDelay = (
+      mod.front.myUpExtDelFullFindFirstVecIsPostDelay
     )
     for (
-      idx <- 0 until myUpExtDelPreBackFindFirstVecNotPostDelay.size
+      idx <- 0 until myUpExtDelFullFindFirstVecNotPostDelay.size
     ) {
-      myUpExtDelPreBackFindFirstVecNotPostDelay(idx) := findFirstFunc(
-        prev=myUpExtDelPreBack(idx),
+      myUpExtDelFullFindFirstVecNotPostDelay(idx) := findFirstFunc(
+        prev=myUpExtDelFull(idx),
         isPostDelay=false,
         //idx=idx,
       )
     }
     //for (
-    //  idx <- 0 until myUpExtDelPreBackFindFirstVecNotPostDelay.size
+    //  idx <- 0 until myUpExtDelFullFindFirstVecNotPostDelay.size
     //) {
-    //  myUpExtDelPreBackFindFirstVecIsPostDelay(idx) := findFirstFunc(
-    //    prev=myUpExtDelPreBack(idx),
+    //  myUpExtDelFullFindFirstVecIsPostDelay(idx) := findFirstFunc(
+    //    prev=myUpExtDelFull(idx),
     //    isPostDelay=true,
     //    //idx=idx,
     //  )
@@ -1124,7 +1124,7 @@ extends Area {
     val tempMyUpExtDelFindFirstNotPostDelay = (
       (optEnableModDuplicate) generate (
         KeepAttribute(
-          //myUpExtDelPreBack
+          //myUpExtDelFull
           ///*myUpExtDel*/.sFindFirst(
           //  ////myHazardCmpFunc(upExt(0), _, true)
           //  ////upExt(0).memAddr === _.memAddr
@@ -1140,7 +1140,7 @@ extends Area {
           //  findFirstFunc(_)
           //  //&& myHazardCmpFunc(upExt(0), prev)
           //)
-          myUpExtDelPreBackFindFirstVecNotPostDelay.sFindFirst(_ === True)
+          myUpExtDelFullFindFirstVecNotPostDelay.sFindFirst(_ === True)
           .setName("cFrontArea_tempMyUpExtDelFindFirstNotPostDelay")
         )
       )
@@ -1148,7 +1148,7 @@ extends Area {
     //val tempMyUpExtDelFindFirstIsPostDelay = (
     //  (optEnableModDuplicate) generate (
     //    KeepAttribute(
-    //      myUpExtDelPreBackFindFirstVecIsPostDelay.sFindFirst(_ === True)
+    //      myUpExtDelFullFindFirstVecIsPostDelay.sFindFirst(_ === True)
     //      .setName("cFrontArea_tempMyUpExtDelFindFirstIsPostDelay")
     //    )
     //  )
@@ -1213,11 +1213,16 @@ extends Area {
         ////  "MARK_DEBUG", "TRUE"
         ////)
       }
+      //upExt(1) := upExt(0)
+      //upExt(1).hazardId := nextHazardId
+      //upExtRealMemAddr := upExt(0).memAddr
       //nextDidChangeState := rDidChangeState
       //nextHaltItIdleCnt := rHaltItIdleCnt
       switch (rState) {
         is (State.IDLE) {
-          when (up.isValid) {
+          when (
+            up.isValid
+          ) {
             //when (
             //  rPrevStateWhen === State.DELAY
             //  && !rDidDelayItIdle
@@ -1299,7 +1304,7 @@ extends Area {
 
                     S(
                       s"${nextHazardId.getWidth}"
-                      + s"'d${myUpExtDelPreBack.size - 1}"
+                      + s"'d${myUpExtDelFull.size}"
                     )
                     - Cat(
                       U"3'd0", 
@@ -1447,10 +1452,13 @@ extends Area {
       if (optEnableModDuplicate) (
         //up.isFiring
         //down.isReady
-        down.isFiring
+        //down.isFiring
         //True
-        && 
+        //down.isReady
+        //&& 
         //upExt(1).hazardId.msb
+        nextHazardId.msb
+        &&
         (
           //nextState === State.IDLE
           //|| 
@@ -1474,10 +1482,10 @@ extends Area {
         //)
         //|| myUpExtDel(myUpExtDel)
       ) else (
-        //True
+        True
         //up.isFiring
         //down.isReady
-        down.isFiring
+        //down.isFiring
         //True
       )
     )
@@ -2311,13 +2319,13 @@ extends Area {
     when (
       up.isValid
       //&& upExt(0).hazardId.msb
-      && !rSetRdId
+      //&& !rSetRdId
       && (
-        //if (optEnableModDuplicate) {
-        //  upExt(1).hazardId.msb
-        //} else {
+        if (optEnableModDuplicate) {
+          upExt(1).hazardId.msb
+        } else {
           True
-        //}
+        }
       )
     ) {
       //myRdMemWord 
@@ -2325,12 +2333,12 @@ extends Area {
       upExt(1).rdMemWord := myRdMemWord
       //rSavedRdMemWord := myRdMemWord
     }
-    when (
-      //down.isFiring
-      up.isFiring
-    ) {
-      rSetRdId := False
-    }
+    //when (
+    //  //down.isFiring
+    //  up.isFiring
+    //) {
+    //  rSetRdId := False
+    //}
     //--------
     //when (
     //  down.isFiring
@@ -2676,7 +2684,8 @@ extends Area {
       //&& isValid
       //&& up.isFiring
       //&& 
-      up.isValid
+      //up.isValid
+      up.isFiring
       //&& upExt.rdValid
       //&& up.isValid
       //&& (upExt(0).hazardId) === 0
