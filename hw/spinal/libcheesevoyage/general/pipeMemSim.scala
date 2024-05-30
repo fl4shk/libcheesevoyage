@@ -15,8 +15,8 @@ object PipeMemRmwSimDut {
   def wordWidth = 8
   def wordType() = UInt(wordWidth bits)
   def wordCount = (
-    4
-    //8
+    //4
+    8
   )
   def hazardCmpType() = UInt(
     PipeMemRmw.addrWidth(wordCount=wordCount) bits

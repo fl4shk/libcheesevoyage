@@ -18630,17 +18630,24 @@ case class Gpu2d(
           outpExt.wrLineMemEntry(x) := (
             myWrLineMemEntry
           )
-          outpExt.overwriteLineMemEntry(x) := (
-            myOverwriteLineMemEntry
+          tempOutp.subLineMemEntryExt.modMemWord(x) := (
+            myWrLineMemEntry
           )
-          when (outpExt.overwriteLineMemEntry(x)) {
-            tempOutp.subLineMemEntryExt.modMemWord(x) := (
-              outpExt.wrLineMemEntry(x)
+          when (tempInp.subLineMemEntryExt.hazardId.msb) {
+            outpExt.overwriteLineMemEntry(x) := (
+              myOverwriteLineMemEntry
             )
+            //when (outpExt.overwriteLineMemEntry(x)) {
+            //  tempOutp.subLineMemEntryExt.modMemWord(x) := (
+            //    outpExt.wrLineMemEntry(x)
+            //  )
+            //} otherwise {
+            //  tempOutp.subLineMemEntryExt.modMemWord(x) := (
+            //    tempInp.subLineMemEntryExt.rdMemWord(x)
+            //  )
+            //}
           } otherwise {
-            tempOutp.subLineMemEntryExt.modMemWord(x) := (
-              tempInp.subLineMemEntryExt.rdMemWord(x)
-            )
+            outpExt.overwriteLineMemEntry(x) := False
           }
         }
         //myMainFunc()

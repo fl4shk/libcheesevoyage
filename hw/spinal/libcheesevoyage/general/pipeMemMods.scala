@@ -1083,13 +1083,13 @@ extends Area {
         ////&& prev.hazardId.msb
         ////&& (prev.hazardId === 0)
         ////&& upExt(1).hazardId.msb
-        && (
-          if (doPrevHazardCmpFunc) (
-            myHazardCmpFunc(upExt(1), prev, isPostDelay)
-          ) else (
-            True
-          )
-        )
+        //&& (
+        //  if (doPrevHazardCmpFunc) (
+        //    myHazardCmpFunc(upExt(1), prev, isPostDelay)
+        //  ) else (
+        //    True
+        //  )
+        //)
       ) else (
         //(upExtRealMemAddr === prev.memAddr)
         //|| 
@@ -1248,17 +1248,17 @@ extends Area {
                 //Mux[Bool](
                 //  rPrevStateWhen === State.IDLE,
                   tempMyUpExtDelFindFirstNotPostDelay._1
-                  && (
-                    if (!doPrevHazardCmpFunc) (
-                      myHazardCmpFunc(
-                        curr=upExt(1),
-                        prev=mod.front.myUpExtDel(0),
-                        isPostDelay=false,
-                      )
-                    ) else ( // if (doPrevHazardCmpFunc)
-                      True
-                    )
-                  )
+                  //&& (
+                  //  if (!doPrevHazardCmpFunc) (
+                  //    myHazardCmpFunc(
+                  //      curr=upExt(1),
+                  //      prev=mod.front.myUpExtDel(0),
+                  //      isPostDelay=false,
+                  //    )
+                  //  ) else ( // if (doPrevHazardCmpFunc)
+                  //    True
+                  //  )
+                  //)
                 //  tempMyUpExtDelFindFirstIsPostDelay._1,
                 //  //findFirstFunc(
                 //  //  //myUpExtDel(myUpExtDel.size - 2)

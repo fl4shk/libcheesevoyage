@@ -2693,7 +2693,8 @@ case class Gpu2dTest(
         //8
       )
       tempObjAttrs.pos.y := (
-        0
+        //0
+        8
       )
       tempObjAttrs.prio := (
         //1
