@@ -2657,8 +2657,8 @@ case class Gpu2dTest(
     //0x4
     //0x4 << myFracWidth
     //0x0 << myObjPosFracWidth
-    //5 << myObjPosFracWidth
-    18 << myObjPosFracWidth
+    5 << myObjPosFracWidth
+    //18 << myObjPosFracWidth
     //(params.objTileSize2d.x * 2) << myObjPosFracWidth
   )
   rPlayerPos.y.init(

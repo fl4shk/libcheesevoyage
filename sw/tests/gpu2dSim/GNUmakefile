@@ -42,7 +42,7 @@ OBJDUMP:=$(PREFIX)objdump
 LD:=$(CXX)
 
 # Initial linker flags
-LD_FLAGS:=$(LD_FLAGS) -lm \
+LD_FLAGS:=$(LD_FLAGS) -lm -lz \
 	$(shell pkg-config --libs sdl2)
 
 ifdef DEBUG
@@ -88,12 +88,14 @@ VC:=verilator
 VC_CFLAGS:=-CFLAGS -O2
 VC_LDFLAGS:=-LDFLAGS -lm
 VC_JOBS:=8#4
-TRACE:=#--trace
+TRACE:=#--trace-fst
+TRACE_THREADS:=#--trace-threads 2
 MY_THREADS:=1#4 #8
 VC_FLAGS:=--cc -Wno-lint \
 	--threads $(MY_THREADS) \
 	--verilate-jobs $(VC_JOBS) \
 	$(TRACE) \
+	$(TRACE_THREADS) \
 	--top $(V_TOP) \
 	$(VC_CFLAGS) \
 	$(VC_LDFLAGS) \
@@ -104,6 +106,7 @@ CXX_SOURCES := \
 	$(foreach DIR,$(CXX_DIRS),$(wildcard $(DIR)/*.cpp)) \
 	$(VERILATOR_ROOT)/include/verilated.cpp \
 	$(VERILATOR_ROOT)/include/verilated_threads.cpp \
+	$(VERILATOR_ROOT)/include/verilated_fst_c.cpp \
 	$(VERILATOR_ROOT)/include/verilated_vcd_c.cpp
 CXX_OFILES := $(CXX_SOURCES:%.cpp=$(OBJDIR)/%.o)
 CXX_PFILES := $(CXX_SOURCES:%.cpp=$(DEPDIR)/%.P)

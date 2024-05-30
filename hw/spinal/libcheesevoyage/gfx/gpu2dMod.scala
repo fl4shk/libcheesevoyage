@@ -19331,68 +19331,6 @@ case class Gpu2d(
         def tempInp = pipeIn
         def tempOutp = pipeOut
 
-        def tempObjArrIdx = params.getObjSubLineMemArrIdx(
-          addr=(
-            tempInp.cnt
-            //inpPayload.stage1.lineMemIdx
-          )
-        )
-        val dbgTestCombinePipeSwf_tempObjArrIdx = KeepAttribute(
-          UInt(tempObjArrIdx.getWidth bits)
-          .setName("dbgTestCombinePipeSwf_tempObjArrIdx")
-        )
-        dbgTestCombinePipeSwf_tempObjArrIdx := tempObjArrIdx
-        //--------
-        // BEGIN: new code, with muxing for single `.write()` call
-        val tempObjLineMemEntry = Vec.fill(
-          //params.objTileSize2d.x
-          params.objSliceTileWidth
-        )(
-          ObjSubLineMemEntry()
-        ).getZero
-        objWriter.addrVec(1) := tempObjArrIdx
-        objWriter.dataVec(1) := tempObjLineMemEntry
-        objWriter.enVec(1) := True
-        // END: new code, with muxing for single `.write()` call
-        //--------
-        if (!noAffineObjs) {
-          def tempObjAffineArrIdx = (
-            params.getObjAffineSubLineMemArrIdx(
-              addr=(
-                tempInp.cnt
-                //inpPayload.stage1.lineMemIdx
-              )
-            )
-          )
-          val dbgTestCombinePipeSwf_tempObjAffineArrIdx = (
-            UInt(
-              tempObjAffineArrIdx.getWidth bits
-            )
-          )
-            .setName(
-              "dbgTestCombinePipeSwf_tempObjAffineArrIdx"
-            )
-          dbgTestCombinePipeSwf_tempObjAffineArrIdx := (
-            tempObjAffineArrIdx
-          )
-          //--------
-          val tempObjAffineLineMemEntry = (
-            Vec.fill(
-              params.objAffineSliceTileWidth
-              //params.objAffineTileSize2d.x
-              //params.objAffineDblTileSize2d.x
-              //params.objAffineSliceTileWidth
-              //params.myDbgObjAffineTileWidth
-            )(
-              ObjSubLineMemEntry()
-            ).getZero
-          )
-          objAffineWriter.addrVec(1) := tempObjAffineArrIdx
-          objAffineWriter.dataVec(1) := (
-            tempObjAffineLineMemEntry
-          )
-          objAffineWriter.enVec(1) := True
-        }
 
         //val tempCombineLineMemIdx = createTempCnt(
         //  tempOutp=tempOutp,
@@ -21086,60 +21024,60 @@ case class Gpu2d(
         nCombinePipeLast.isFiring
         //combinePipeOut.last.fire
       ) {
-        //def tempObjArrIdx = params.getObjSubLineMemArrIdx(
-        //  addr=(
-        //    combinePipeLast.cnt
-        //    //combinePipeLast.stage1.lineMemIdx
-        //  )
-        //)
-        //val dbgTestCombinePipeLast_tempObjArrIdx = UInt(
-        //  tempObjArrIdx.getWidth bits
-        //)
-        //  .setName("dbgTestCombinePipeLast_tempObjArrIdx")
-        //dbgTestCombinePipeLast_tempObjArrIdx := tempObjArrIdx
-        ////--------
-        //// BEGIN: new code, with muxing for single `.write()` call
-        //val tempObjLineMemEntry = Vec.fill(
-        //  //params.objTileSize2d.x
-        //  params.objSliceTileWidth
-        //)(
-        //  ObjSubLineMemEntry()
-        //).getZero
-        //objWriter.addrVec(1) := tempObjArrIdx
-        //objWriter.dataVec(1) := tempObjLineMemEntry
-        //objWriter.enVec(1) := True
-        //// END: new code, with muxing for single `.write()` call
-        ////--------
-        //if (!noAffineObjs) {
-        //  def tempObjAffineArrIdx = params.getObjAffineSubLineMemArrIdx(
-        //    addr=(
-        //      combinePipeLast.cnt
-        //      //combinePipeLast.stage1.lineMemIdx
-        //    )
-        //  )
-        //  val dbgTestCombinePipeLast_tempObjAffineArrIdx = UInt(
-        //    tempObjAffineArrIdx.getWidth bits
-        //  )
-        //    .setName("dbgTestCombinePipeLast_tempObjAffineArrIdx")
-        //  dbgTestCombinePipeLast_tempObjAffineArrIdx := (
-        //    tempObjAffineArrIdx
-        //  )
-        //  //--------
-        //  val tempObjAffineLineMemEntry = (
-        //    Vec.fill(
-        //      params.objAffineSliceTileWidth
-        //      //params.objAffineTileSize2d.x
-        //      //params.objAffineDblTileSize2d.x
-        //      //params.objAffineSliceTileWidth
-        //      //params.myDbgObjAffineTileWidth
-        //    )(
-        //      ObjSubLineMemEntry()
-        //    ).getZero
-        //  )
-        //  objAffineWriter.addrVec(1) := tempObjAffineArrIdx
-        //  objAffineWriter.dataVec(1) := tempObjAffineLineMemEntry
-        //  objAffineWriter.enVec(1) := True
-        //}
+        def tempObjArrIdx = params.getObjSubLineMemArrIdx(
+          addr=(
+            combinePipeLast.cnt
+            //combinePipeLast.stage1.lineMemIdx
+          )
+        )
+        val dbgTestCombinePipeLast_tempObjArrIdx = UInt(
+          tempObjArrIdx.getWidth bits
+        )
+          .setName("dbgTestCombinePipeLast_tempObjArrIdx")
+        dbgTestCombinePipeLast_tempObjArrIdx := tempObjArrIdx
+        //--------
+        // BEGIN: new code, with muxing for single `.write()` call
+        val tempObjLineMemEntry = Vec.fill(
+          //params.objTileSize2d.x
+          params.objSliceTileWidth
+        )(
+          ObjSubLineMemEntry()
+        ).getZero
+        objWriter.addrVec(1) := tempObjArrIdx
+        objWriter.dataVec(1) := tempObjLineMemEntry
+        objWriter.enVec(1) := True
+        // END: new code, with muxing for single `.write()` call
+        //--------
+        if (!noAffineObjs) {
+          def tempObjAffineArrIdx = params.getObjAffineSubLineMemArrIdx(
+            addr=(
+              combinePipeLast.cnt
+              //combinePipeLast.stage1.lineMemIdx
+            )
+          )
+          val dbgTestCombinePipeLast_tempObjAffineArrIdx = UInt(
+            tempObjAffineArrIdx.getWidth bits
+          )
+            .setName("dbgTestCombinePipeLast_tempObjAffineArrIdx")
+          dbgTestCombinePipeLast_tempObjAffineArrIdx := (
+            tempObjAffineArrIdx
+          )
+          //--------
+          val tempObjAffineLineMemEntry = (
+            Vec.fill(
+              params.objAffineSliceTileWidth
+              //params.objAffineTileSize2d.x
+              //params.objAffineDblTileSize2d.x
+              //params.objAffineSliceTileWidth
+              //params.myDbgObjAffineTileWidth
+            )(
+              ObjSubLineMemEntry()
+            ).getZero
+          )
+          objAffineWriter.addrVec(1) := tempObjAffineArrIdx
+          objAffineWriter.dataVec(1) := tempObjAffineLineMemEntry
+          objAffineWriter.enVec(1) := True
+        }
         //--------
         outp.col := combinePipeLast.combineWrLineMemEntry.col.rgb
         //outp.col := combinePipeOut.last.combineWrLineMemEntry.col.rgb

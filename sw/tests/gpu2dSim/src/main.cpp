@@ -21,6 +21,7 @@
 #include "liborangepower_src/misc/misc_output_funcs.hpp"
 #include "VGpu2dSimDut.h"
 #include "verilated_vcd_c.h"
+#include "verilated_fst_c.h"
 
 //using std::cout;
 //using std::cin;
@@ -792,7 +793,10 @@ int main(int argc, char** argv) {
 	}
 	//std::unique_ptr<SDL_Window> win(new SDL_Window);
 	//SDL_Window* win = nullptr;
-	std::unique_ptr<VerilatedVcdC> trace(nullptr);//(new VerilatedVcdC);
+	std::unique_ptr<
+		//VerilatedFstC
+		VerilatedVcdC
+	> trace(nullptr);//(new VerilatedFstC);
 	if (trace) {
 		Verilated::traceEverOn(true);
 	}
@@ -812,7 +816,7 @@ int main(int argc, char** argv) {
 			//20
 			4
 		);
-		trace->open("sdl_test.vcd");
+		trace->open("libcheesevoyage-gpu2d-sdl_test.fst");
 	}
 
 	top->clk = 0;
@@ -857,7 +861,7 @@ int main(int argc, char** argv) {
 		//i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 2 * CLKS_PER_PIXEL * 1.5)
 		////i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 40 * 2) && !vga.do_exit();
 		////i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y * 4 * 2) && !vga.do_exit()
-			//i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y /* * CLKS_PER_PIXEL */ * 3 * 2)
+			//i<(HALF_SIZE_2D.x * HALF_SIZE_2D.y /* * CLKS_PER_PIXEL */ * 5 * 2)
 			//&& 
 			!vga.do_exit()
 		;
