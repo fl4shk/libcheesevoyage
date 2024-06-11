@@ -386,55 +386,63 @@ case class TlHelperPipePayloadExtras(
     //  tilelink.ChannelD(p=p)
     //}
     val a = (isHost == isSend) generate new Bundle {
-      // `PUT` burst information is included in `front`
-      // `GET` burst information is included in `front`
-      val inp = tilelink.ChannelA(p=p)
-
-      //val back = tilelink.ChannelA(p=p)
-
-      //val frontBurst = p.withDataA generate new Bundle {
-      //  val mask = p.mask()
-      //  val data = p.data()
-      //}
-      //def mkInpFlow(
-      //  valid: Bool=True,
-      //) = {
-      //  val ret = Flow(tilelink.ChannelA(p=p))
-      //  ret.valid := valid
-      //  ret.payload := inp
-      //  ret
-      //}
-      //val rd, wr = Flow(tilelink.ChannelA(p=p))
-      //val outp = new Bundle {
-      //}
+      //val bus = Flow(tilelink.ChannelA(p=p))
+      val bus = tilelink.ChannelA(p=p)
     }
     val d = (isHost != isSend) generate new Bundle {
-      val inp = tilelink.ChannelD(p=p)
-
-      //def mkInpFlow(
-      //  valid: Bool=True,
-      //) = {
-      //  val ret = Flow(tilelink.ChannelD(p=p))
-      //  ret.valid := valid
-      //  ret.payload := inp
-      //  ret
-      //}
-
-      //val outp = new Bundle {
-      //  // `opcode` is included just in case the main host wants it
-      //  val opcode = tilelink.Opcode.D() 
-      //  // `param` must be zero, so we ignore it for `outp`
-      //  val source = p.source()
-      //  val size = p.size()
-      //  // `sink` is ignored, so we ignore it for `outp`
-      //  val denied = Bool()
-      //  val data = p.withDataD generate p.data()
-      //  val corrupt = p.withDataD generate Bool()
-      //}
-      //val back = tilelink.ChannelD(p=p)
-
-      //val rd, wr = Flow(tilelink.ChannelD(p=p))
+      //val bus = Flow(tilelink.ChannelD(p=p))
+      val bus = tilelink.ChannelD(p=p)
     }
+    //val a = (isHost == isSend) generate new Bundle {
+    //  // `PUT` burst information is included in `front`
+    //  // `GET` burst information is included in `front`
+    //  val outp = tilelink.ChannelA(p=p)
+
+    //  //val back = tilelink.ChannelA(p=p)
+
+    //  //val frontBurst = p.withDataA generate new Bundle {
+    //  //  val mask = p.mask()
+    //  //  val data = p.data()
+    //  //}
+    //  //def mkInpFlow(
+    //  //  valid: Bool=True,
+    //  //) = {
+    //  //  val ret = Flow(tilelink.ChannelA(p=p))
+    //  //  ret.valid := valid
+    //  //  ret.payload := inp
+    //  //  ret
+    //  //}
+    //  //val rd, wr = Flow(tilelink.ChannelA(p=p))
+    //  //val outp = new Bundle {
+    //  //}
+    //}
+    //val d = (isHost != isSend) generate new Bundle {
+    //  val inp = tilelink.ChannelD(p=p)
+
+    //  //def mkInpFlow(
+    //  //  valid: Bool=True,
+    //  //) = {
+    //  //  val ret = Flow(tilelink.ChannelD(p=p))
+    //  //  ret.valid := valid
+    //  //  ret.payload := inp
+    //  //  ret
+    //  //}
+
+    //  //val outp = new Bundle {
+    //  //  // `opcode` is included just in case the main host wants it
+    //  //  val opcode = tilelink.Opcode.D() 
+    //  //  // `param` must be zero, so we ignore it for `outp`
+    //  //  val source = p.source()
+    //  //  val size = p.size()
+    //  //  // `sink` is ignored, so we ignore it for `outp`
+    //  //  val denied = Bool()
+    //  //  val data = p.withDataD generate p.data()
+    //  //  val corrupt = p.withDataD generate Bool()
+    //  //}
+    //  //val back = tilelink.ChannelD(p=p)
+
+    //  //val rd, wr = Flow(tilelink.ChannelD(p=p))
+    //}
     //val a = (isHost == isSend) generate Flow(tilelink.ChannelA(p=p))
     //val d = (isHost == isSend) generate Flow(tilelink.ChannelD(p=p))
   //}
@@ -712,815 +720,1064 @@ object TlHostLinkTesterSim extends App {
     })
 }
 
-//case class TlHelper(
-//  //p: tilelink.BusParameter,
-//  helperP: TlHelperBusParams,
-//  isHost: Boolean,
-//  //isSend: Boolean,
-//  //source: Int,
-//  //fifoDepth: Int,
-//  //maxOutstandingTxns: Int,
-//  txnSourceWidth: Int,
-//  tlName: String,
-//) extends Area {
-//  //--------
-//  assert(txnSourceWidth <= helperP.sourceWidth)
-//  assert(txnSourceWidth > 0)
-//  //--------
-//  val p = helperP.mkBusParams
-//  //assert(!p.withBCE)
-//  //val fire = Bool()
-//  //val extSendValid = Bool() //Reg(Bool()) init(False)
-//  //--------
-//  //val testficate = Axi4ToTilelink
-//  //val bridge = tilelink.Axi4Bridge
-//  val bus = tilelink.Bus(p=p)
-//  //if (isHost) {
-//  //  bus.a.valid.setAsReg() init(False)
-//  //  //bus.a.source.setAsReg() init(0x0)
-//  //  bus.d.ready.setAsReg() init(False)
-//  //} else { // if (!isHost)
-//  //  bus.a.ready.setAsReg() init(False)
-//  //  bus.d.valid.setAsReg() init(False)
-//  //  //bus.d.source.setAsReg() init(0x0)
-//  //}
-//  //
-//  //val loc = new Area {
-//    def pipeMemDepth = (1 << txnSourceWidth)
-//    //val busAMem = Mem(
-//    //  wordType=tilelink.ChannelA(p=p),
-//    //  wordCount=pipeMemDepth,
-//    //)
-//    //val busDMem = Mem(
-//    //  wordType=tilelink.ChannelD(p=p),
-//    //  wordCount=pipeMemDepth
-//    //)
-//    //val opcodeA = tilelink.Opcode.A()
-//    //val opcodeD = tilelink.Opcode.D()
-//    def sendMemArrIdx = 0
-//    def recvMemArrIdx = 1
-//    def numMemArrs = 2
-//
-//    val linkArr = PipeHelper.mkLinkArr()
-//
-//    val host = (isHost) generate new Area {
-//      //def numSendRdWrStages = 2
-//      def sendPipeMemWordType() = Flow(tilelink.ChannelA(p=p))
-//      def sendPipeMemModStageCnt = 1 // Tentative!
-//      //def sendPipeMemModType() = (
-//      //  SamplePipeMemRmwModType[Flow[tilelink.ChannelA], Bool](
-//      //    wordType=sendPipeMemWordType(),
-//      //    wordCount=sendPipeMemDepth,
-//      //    hazardCmpType=Bool(),
-//      //    modStageCnt=sendPipeMemModStageCnt,
-//      //  )
-//      //)
-//      def mkSendPipePayloadExtras() = (
-//        TlHelperPipePayloadExtras.mkHostSend(
-//          helperP=helperP,
-//          txnSourceWidth=txnSourceWidth,
-//        )
-//      )
-//      def mkSendExt() = {
-//        val ret = PipeMemRmwPayloadExt(
-//          wordType=sendPipeMemWordType(),
-//          wordCount=pipeMemDepth,
-//          hazardCmpType=Bool(),
-//          modStageCnt=sendPipeMemModStageCnt,
-//          optEnableModDuplicate=true,
-//        )
-//        //if (vivadoDebug) {
-//        //  ret.addAttribute("MARK_DEBUG", "TRUE")
-//        //}
-//        ret
-//      }
-//      case class SendPmRmwModType(
-//      ) extends Bundle
-//        with PipeMemRmwPayloadBase[
-//          Flow[tilelink.ChannelA], Bool
-//        ]
-//      {
-//        val extras = mkSendPipePayloadExtras()
-//        val myExt = mkSendExt()
-//        def setPipeMemRmwExt(
-//          inpExt: PipeMemRmwPayloadExt[Flow[tilelink.ChannelA], Bool],
-//          memArrIdx: Int,
-//        ): Unit = {
-//          myExt := inpExt
-//        }
-//        def getPipeMemRmwExt(
-//          outpExt: PipeMemRmwPayloadExt[Flow[tilelink.ChannelA], Bool],
-//          memArrIdx: Int,
-//        ): Unit = {
-//          outpExt := myExt
-//        }
-//      }
-//      //--------
-//      val io = new Area {
-//        val send = Stream(TlHelperPipePayloadExtras.mkHostSend(
-//          helperP=helperP,
-//          txnSourceWidth=txnSourceWidth,
-//        ))
-//        //val send = Stream(tilelink.ChannelA(p=p))
-//        val recv = Stream(TlHelperPipePayloadExtras.mkHostRecv(
-//          helperP=helperP,
-//          txnSourceWidth=txnSourceWidth,
-//        ))
-//        //val recv = Stream(tilelink.ChannelD(p=p))
-//      }
-//      //--------
-//      val send = new Area {
-//        def busChan = bus.a
-//        def pipeMemWordType() = sendPipeMemWordType()
-//        def pipeMemModStageCnt = sendPipeMemModStageCnt
-//        /*val pipeMemArr = Array.fill(numMemArrs)*/
-//        val pipeMem = {
-//          ///*Array.fill(numSendRdWrStages)*/(
-//          PipeMemRmw[
-//            Flow[tilelink.ChannelA],
-//            Bool,
-//            //SamplePipeMemRmwModType[Flow[tilelink.ChannelA], Bool],
-//            SendPmRmwModType,
-//            PipeMemRmwDualRdTypeDisabled[Flow[tilelink.ChannelA], Bool],
-//          ](
-//            wordType=pipeMemWordType(),
-//            wordCount=pipeMemDepth,
-//            hazardCmpType=Bool(),
-//            modType=SendPmRmwModType(),
-//            modStageCnt=pipeMemModStageCnt,
-//            pipeName=tlName + "_HostSend",
-//            linkArr=Some(linkArr),
-//            dualRdType=PipeMemRmwDualRdTypeDisabled[
-//              Flow[tilelink.ChannelA], Bool
-//            ](),
-//            optDualRd=false,
-//          )(
-//            //doHazardCmpFunc=None,
-//          )
-//          //)
-//        }
-//        val frontPipe = PipeHelper(linkArr=linkArr)
-//        //val modPipe = PipeHelper(linkArr=linkArr)
-//        val backPipe = PipeHelper(linkArr=linkArr)
-//
-//        val frontPayload = Payload(SendPmRmwModType())
-//        //val modPayload = Payload(SendPmRmwModType())
-//        val backPayload = Payload(SendPmRmwModType())
-//
-//        //val cReadBusMem = pipe.addStage("HostSendReadBusMem")
-//        ////val cReadBusMemFf1 = pipe.addPipeStage()
-//        //val cWriteBusMem = pipe.addStage("HostSendWriteBusMem")
-//        ////val cWriteBusMemFf1 = pipe.addPipeStage()
-//        val cFrontFront = frontPipe.addStage(
-//          name=tlName + "_HostSendFrontFront"
-//        )
-//        val cFrontLast = frontPipe.addStage(
-//          name=tlName + "_HostSendFrontLast",
-//          finish=true,
-//        )
-//
-//        frontPipe.first.up.driveFrom(io.send)(
-//          con=(node, payload) => {
-//            node(frontPayload) := node(frontPayload).getZero
-//            node(frontPayload).extras := payload
-//          }
-//        )
-//        val dFrontLast = DirectLink(
-//          up=frontPipe.last.down,
-//          down=pipeMem.io.front,
-//        )
-//        linkArr += dFrontLast
-//
-//        //val cModFront = modPipe.addStage(
-//        //  name=tlName + "_HostSendModFront"
-//        //)
-//
-//        //val cModBack = modPipe.addStage(
-//        //  name=
-//        //)
-//
-//
-//        //pipe.last.down.driveTo(bus.a)(
-//        //  con=(payload, node) => {
-//        //    payload := node(frontPayload).bus.a
-//        //  }
-//        //)
-//      }
-//      val recv = new Area {
-//        def busChan = bus.d
-//        //val pipeMemArr = Array.fill(numMemArrs)(
-//        //  Mem(
-//        //    wordType=Flow(tilelink.ChannelD(p=p)),
-//        //    wordCount=pipeMemDepth,
-//        //  )
-//        //)
-//        def pipeMemWordType() = Flow(tilelink.ChannelD(p=p))
-//        def pipeMemModStageCnt = 1 // Tentative!
-//        def pipeMemModType() = (
-//          SamplePipeMemRmwModType[Flow[tilelink.ChannelD], Bool](
-//            wordType=pipeMemWordType(),
-//            wordCount=pipeMemDepth,
-//            hazardCmpType=Bool(),
-//            modStageCnt=pipeMemModStageCnt,
-//          )
-//        )
-//        val pipeMem = /*Array.fill(numMemArrs)*/({
-//          /*Array.fill(numSendRdWrStages)*/(
-//            PipeMemRmw[
-//              Flow[tilelink.ChannelD],
-//              Bool,
-//              SamplePipeMemRmwModType[Flow[tilelink.ChannelD], Bool],
-//              PipeMemRmwDualRdTypeDisabled[Flow[tilelink.ChannelD], Bool],
-//            ](
-//              wordType=pipeMemWordType(),
-//              wordCount=pipeMemDepth,
-//              hazardCmpType=Bool(),
-//              modType=pipeMemModType(),
-//              modStageCnt=pipeMemModStageCnt,
-//              pipeName="HostSend",
-//              linkArr=Some(linkArr),
-//              dualRdType=PipeMemRmwDualRdTypeDisabled[
-//                Flow[tilelink.ChannelD], Bool
-//              ](),
-//              optDualRd=false,
-//            )(
-//              //doHazardCmpFunc=None,
-//            )
-//          )
-//        })
-//        val frontPipe = PipeHelper(linkArr=linkArr)
-//        val modPipe = PipeHelper(linkArr=linkArr)
-//        val backPipe = PipeHelper(linkArr=linkArr)
-//        def mkPipePayload() = TlHelperPipePayloadExtras.mkHostRecv(
-//          helperP=helperP,
-//          txnSourceWidth=txnSourceWidth,
-//        )
-//        //val back = Stream(mkPipePayload())
-//        val frontPayload = Payload(mkPipePayload())
-//        val modPayload = Payload(mkPipePayload())
-//        val backPayload = Payload(mkPipePayload())
-//
-//        //val cReadBusMem = pipe.addStage("HostRecvReadBusMem")
-//        ////val cReadBusMemFf1 = pipe.addPipeStage()
-//        //val cWriteBusMem = pipe.addStage("HostRecvWriteBusMem")
-//        ////val cWriteBusMemFf1 = pipe.addPipeStage()
-//
-//        frontPipe.first.up.driveFrom(bus.d)(
-//          con=(node, payload) => {
-//            ////node(frontPayload) := node(frontPayload).getZero
-//            ////node(frontPayload).allowOverride
-//            //node(frontPayload).d.valid := False
-//            //node(frontPayload).d.payload := payload
-//            ////node(frontPayload).bus.d := payload
-//          }
-//        )
-//        val dFrontLast = DirectLink(
-//          up=frontPipe.last.down,
-//          down=pipeMem.io.front,
-//        )
-//        linkArr += dFrontLast
-//        //when (dFrontLast.up.isValid) {
-//        //}
-//        backPipe.last.down.driveTo(io.recv)(
-//          con=(payload, node) => {
-//            payload := node(backPayload)
-//          }
-//        )
-//
-//        //def intf = pipe.last
-//
-//        //pipe.first.up.driveFrom(front)(
-//        //  con=(node, payload) => {
-//        //    node(pipePayload) := payload
-//        //  }
-//        //)
-//      }
-//      //--------
-//      // BEGIN: new code
-//      //val sendReadBusMem = new send.cReadBusMem.Area {
-//      //  def myBus = send.pipePayload.bus
-//      //  //for (idx <- 0 until numSendRdWrStages) {
-//      //  //  myBus.a.rd := (
-//      //  //    send.pipeMemA2d(sendMemArrIdx)(idx).readSync(
-//      //  //      address=myBus.a.inp.source,
-//      //  //      //enable=isReady,
-//      //  //    )
-//      //  //  )
-//      //  //}
-//      //}
-//      // END: new code
-//      //--------
-//      //val sendReadBusMemFf1 = new send.cReadBusMemFf1.Area {
-//      //  //when (down.isFiring) {
-//      //  //} otherwise { // if (!down.isFiring)
-//      //  //}
-//
-//      //  //when (isValid) {
-//      //  //} otherwise { // when (!isValid)
-//      //  //}
-//      //}
-//      //--------
-//      // BEGIN: new code
-//      //val sendWriteBusMem = new send.cWriteBusMem.Area {
-//      //  //when 
-//      //  //when (down.isFiring) {
-//      //  //} otherwise { // if (!down.isFiring)
-//      //  //}
-//      //  //when (isValid) {
-//      //  //} otherwise { // when (!isValid)
-//      //  //}
-//      //  def myBus = send.pipePayload.bus
-//      //  for (stageIdx <- 0 until numSendRdWrStages) {
-//      //    //send.pipeMemA2d(sendMemArrIdx)(stageIdx).write(
-//      //    //  address=myBus.a.inp.source,
-//      //    //  data=myBus.a.mkInpFlow(),
-//      //    //  enable=isValid && isReady,
-//      //    //)
-//      //  }
-//      //}
-//      // END: new code
-//      //--------
-//      //val sendWriteBusMemFf1 = new send.cWriteBusMemFf1.Area {
-//      //  //when (down.isFiring) {
-//      //  //} otherwise { // if (!down.isFiring)
-//      //  //}
-//      //  when (isValid) {
-//      //  } otherwise { // when (!isValid)
-//      //  }
-//      //}
-//      //val sendDecode = new send.cDecode.Area {
-//      //}
-//      //val sendExecute = new send.cExecute.Area {
-//      //}
-//      //--------
-//      // BEGIN: new code
-//      //val recvReadBusMem = new recv.cReadBusMem.Area {
-//      //}
-//      // END: new code
-//      //--------
-//      //val recvFetch = new recv.cFetch.Area {
-//      //}
-//      //val recvDecode = new recv.cDecode.Area {
-//      //}
-//      //val recvExecute = new recv.cExecute.Area {
-//      //}
-//    }
-//    //val device = (!isHost) generate new Area {
-//    //  val send = new Area {
-//    //    def busChan = bus.d
-//    //    val pipeMemArr = Array.fill(numMemArrs)(
-//    //      Mem(
-//    //        wordType=Flow(tilelink.ChannelD(p=p)),
-//    //        wordCount=pipeMemDepth,
-//    //      )
-//    //    )
-//    //    val pipe = PipeHelper(linkArr=linkArr)
-//    //    def mkPipePayload() = TlHelperPipePayload.mkDeviceSend(
-//    //      helperP=helperP,
-//    //      txnSourceWidth=txnSourceWidth,
-//    //    )
-//    //    val front = Stream(mkPipePayload())
-//    //    val pipePayload = Payload(mkPipePayload())
-//
-//    //    //val cReadBusMem = pipe.addStage("DeviceSendReadBusMem")
-//    //    //val cWriteBusMem = pipe.addStage("DeviceSendWriteBusMem")
-//
-//    //    pipe.first.up.driveFrom(front)(
-//    //      con=(node, payload) => {
-//    //        node(pipePayload) := payload
-//    //      }
-//    //    )
-//    //    pipe.last.down.driveTo(bus.d)(
-//    //      con=(payload, node) => {
-//    //        payload := node(pipePayload).bus.d.inp
-//    //      }
-//    //    )
-//    //  }
-//    //  val recv = new Area {
-//    //    def busChan = bus.a
-//    //    val pipeMemArr = Array.fill(numMemArrs)(
-//    //      Mem(
-//    //        wordType=Flow(tilelink.ChannelA(p=p)),
-//    //        wordCount=pipeMemDepth,
-//    //      )
-//    //    )
-//    //    val pipe = PipeHelper(linkArr=linkArr)
-//    //    def mkPipePayload() = TlHelperPipePayload.mkDeviceRecv(
-//    //      helperP=helperP,
-//    //      txnSourceWidth=txnSourceWidth,
-//    //    )
-//    //    val back = Stream(mkPipePayload())
-//    //    val pipePayload = Payload(mkPipePayload())
-//
-//    //    //val cReadBusMem = pipe.addStage("DeviceRecvReadBusMem")
-//    //    //val cWriteBusMem = pipe.addStage("DeviceRecvWriteBusMem")
-//
-//    //    pipe.first.up.driveFrom(bus.a)(
-//    //      con=(node, payload) => {
-//    //        node(pipePayload) := node(pipePayload).getZero
-//    //        node(pipePayload).allowOverride
-//    //        node(pipePayload).bus.a.inp := payload
-//    //      }
-//    //    )
-//    //    pipe.last.down.driveTo(back)(
-//    //      con=(payload, node) => {
-//    //        payload := node(pipePayload)
-//    //      }
-//    //    )
-//    //  }
-//    //}
-//    //Builder(linkArr.toSeq)
-//  //}
-//  def doBuilder() = {
-//    //Builder((sendPipe.linkArr + recvPipe.linkArr).toSeq)
-//    Builder(linkArr.toSeq)
-//  }
-//  //def doBuilder() = {
-//  //  if (isHost) {
-//  //    //--------
-//  //    def tempSend = loc.host.send
-//  //    def tempRecv = loc.host.recv
-//  //    //--------
-//  //    Builder(
-//  //      //--------
-//  //      tempSend.cWaitfire,
-//  //      tempSend.cDecode,
-//  //      tempSend.cExecute,
-//  //      tempSend.sWaitfireDecode,
-//  //      tempSend.sDecodeExecute,
-//  //      //--------
-//  //      tempRecv.cFetch,
-//  //      tempRecv.cDecode,
-//  //      tempRecv.cExecute,
-//  //      tempRecv.s0,
-//  //      tempRecv.s1,
-//  //      //--------
-//  //    )
-//  //    //--------
-//  //  } else { // if (!isHost)
-//  //    //--------
-//  //    def tempSend = loc.device.send
-//  //    def tempRecv = loc.device.recv
-//  //    //--------
-//  //    Builder(
-//  //      //--------
-//  //      tempSend.cFetch,
-//  //      tempSend.cDecode,
-//  //      tempSend.cExecute,
-//  //      tempSend.sFetchDecode,
-//  //      tempSend.sDecodeExecute,
-//  //      //--------
-//  //      tempRecv.cFetch,
-//  //      tempRecv.cDecode,
-//  //      tempRecv.cExecute,
-//  //      tempRecv.sFetchDecode,
-//  //      tempRecv.sDecodeExecute,
-//  //      //--------
-//  //    )
-//  //    //--------
-//  //  }
-//  //}
-//  //val locHost = (isHost) generate new Area {
-//  //}
-//  //val locDev = (!isHost) generate new Area {
-//  //}
-//  //--------
-//  // BEGIN: need to translate
-//  //val loc = new Area {
-//  //  def pipeMemDepth = (1 << txnSourceWidth)
-//  //  val busAMem = Mem(
-//  //    wordType=tilelink.ChannelA(p=p),
-//  //    wordCount=pipeMemDepth,
-//  //  )
-//
-//  //  //when (bus.a.fire) {
-//  //  //  busAMem.write(
-//  //  //    enable=bus.a.fire
-//  //  //  )
-//  //  //}
-//  //  //opcodeA.assignFromBits(bus.a.opcode.asBits)
-//
-//  //  //val rSavedBusA = Reg(cloneOf(bus.a.payload))
-//  //  //rSavedBusA.init(rSavedBusA.getZero)
-//  //  //def savedOpcodeA = {
-//  //  //  tilelink.Opcode.A().assignFromBits(rSavedBusA.opcode.asBits)
-//  //  //}
-//
-//  //  val busDMem = Mem(
-//  //    wordType=tilelink.ChannelD(p=p),
-//  //    wordCount=pipeMemDepth,
-//  //  )
-//  //  //if (isHost) {
-//  //  //} else { // if (!isHost)
-//  //  //}
-//  //  val (sendBusMem, recvBusMem) = (
-//  //    if (isHost) {
-//  //      (busAMem, busDMem) // (sendBusMem, recvBusMem)
-//  //    } else { // if (!isHost)
-//  //      (busDMem, busAMem) // (sendBusMem, recvBusMem)
-//  //    }
-//  //  )
-//  //  val (sendBus, recvBus) = (
-//  //    if (isHost) {
-//  //      (bus.a, bus.d) // (sendBus, recvBus)
-//  //    } else { // if (!isHost)
-//  //      (bus.d, bus.a) // (sendBus, recvBus)
-//  //    }
-//  //  )
-//  //  //val recvBusMem = if (isHost) { busDMem } else { busAMem }
-//  //  //val locSend = new Area {
-//  //  //}
-//  //  val opcodeA = tilelink.Opcode.A()
-//  //  val opcodeD = tilelink.Opcode.D()
-//  //  val (sendOpcode, recvOpcode) = (
-//  //    if (isHost) {
-//  //      (opcodeA, opcodeD)
-//  //    } else {
-//  //      (opcodeD, opcodeA)
-//  //    }
-//  //  )
-//  //}
-//  // END: need to translate
-//  //--------
-//  //opcodeD.assignFromBits(bus.d.opcode.asBits)
-//
-//  //savedBusDMem.write(
-//  //  enable=bus.d.fire
-//  //)
-//  ////if (isHost) {
-//  //} else { // if (!isHost)
-//  //}
-//
-//  //val rSavedBusD = Reg(cloneOf(bus.d.payload))
-//  //rSavedBusD.init(rSavedBusD.getZero)
-//  //def savedOpcodeD = {
-//  //  tilelink.Opcode.D().assignFromBits(rSavedBusD.opcode.asBits)
-//  //}
-//
-//  //if (isHost) {
-//  //  when (bus.d.fire) {
-//  //    //rSavedOpcodeD := opcodeD
-//  //    rSavedBusD := bus.d.payload
-//  //  }
-//  //} else { // if (!isHost)
-//  //  when (bus.a.fire) {
-//  //    //rSavedOpcodeA := opcodeA
-//  //    rSavedBusA := bus.a.payload
-//  //  }
-//  //}
-//  //--------
-//  def connectBusHost(
-//    hostBus: tilelink.Bus,
-//  ): Unit = {
-//    bus << hostBus
-//  }
-//  def connectBusDevice(
-//    deviceBus: tilelink.Bus,
-//  ): Unit = {
-//    deviceBus << bus
-//  }
-//
-//  //def chanAPipe
-//  //object HostAPipe {
-//  //  def start = 0
-//  //  def assertValid = 1
-//  //  //def waitFire = 2
-//  //  def exec = 2
-//  //  //def execAndWaitFire = 2
-//  //  //def waitResp = 3
-//  //  //def waitFire
-//  //}
-//  //object HostAState extends SpinalEnum(defaultEncoding=binarySequential) {
-//  //  val
-//  //    idle,
-//  //    start,
-//  //    checkBurst,
-//  //    doBurst,
-//  //    end
-//  //    = newElement();
-//  //}
-//
-//  //object State extends SpinalEnum(defaultEncoding=binarySequential) {
-//  //  val
-//  //    idle,
-//  //    //assertValid,
-//  //    doPipe
-//  //    //doNonBurst,
-//  //    //doBurst
-//  //    //deassertValid
-//  //    = newElement();
-//  //}
-//
-//  //val rStateA = Reg(State()) init(State.idle)
-//  //val rStateD = Reg(State()) init(State.idle)
-//
-//  //case class FifoAPayload() extends Bundle {
-//  //  val a = tilelink.ChannelA(p=p)
-//  //}
-//  //val fifo = StreamFifo(
-//  //  dataType=(
-//  //    if (isHost) {
-//  //      tilelink.ChannelA(p=p)
-//  //    } else {
-//  //      tilelink.ChannelD(p=p)
-//  //    }
-//  //  ),
-//  //  depth=fifoDepth,
-//  //  //latency=2,
-//  //)
-//  //val fifoD = StreamFifo(
-//  //  dataType=tilelink.ChannelD(p=p),
-//  //  depth=fifoDepth,
-//  //  //latency=2,
-//  //)
-//
-//  //def run(
-//  //  //sendDoIt: Bool,
-//  //  //opcode: Bits,
-//  //  //address: UInt,
-//  //  //data: Bits,
-//  //  //size: UInt,
-//  //  //source: UInt,
-//  //): Unit = {
-//  //  //assert(isHost)
-//  //  //--------
-//  //  //--------
-//  //  //def doIt[
-//  //  //  SendPayloadT <: Data,
-//  //  //  RecvPayloadT <: Data,
-//  //  //](
-//  //  //  //sendState: State.C,
-//  //  //  sendStm: Stream[SendPayloadT],
-//  //  //  //recvState: State.C,
-//  //  //  recvStm: Stream[RecvPayloadT],
-//  //  //): Unit = {
-//  //  //  //var myOpcodeA: tilelink.Opcode.A.E = tilelink.Opcode.A.PUT_FULL_DATA
-//  //  //  //def myOpcodeD = (
-//  //  //  //  tilelink.Opcode.hostToDevMap(myOpcodeA)
-//  //  //  //)
-//  //  //  //val hostToDevMap = Map[tilelink.Opcode.A.E, tilelink.Opcode.D.E](
-//  //  //  //  tilelink.Opcode.A.PUT_FULL_DATA -> tilelink.Opcode.D.ACCESS_ACK,
-//  //  //  //  tilelink.Opcode.A.PUT_PARTIAL_DATA -> tilelink.Opcode.D.ACCESS_ACK,
-//  //  //  //  tilelink.Opcode.A.GET -> tilelink.Opcode.D.ACCESS_ACK_DATA,
-//  //  //  //)
-//  //  //  //val devToHostMap = Map[tilelink.Opcode.D.E, tilelink.Opcode.A.E](
-//  //  //  //  tilelink.Opcode.D.ACCESS_ACK -> tilelink.Opcode.A.PUT_FULL_DATA,
-//  //  //  //  tilelink.Opcode.D.ACCESS_ACK -> tilelink.Opcode.A.PUT_PARTIAL_DATA,
-//  //  //  //  tilelink.Opcode.D.ACCESS_ACK_DATA -> tilelink.Opcode.A.GET,
-//  //  //  //)
-//
-//  //  //  //switch (sendState) {
-//  //  //  //  is (State.idle) {
-//  //  //  //    when (sendDoIt) {
-//  //  //  //      sendState := State.doPipe
-//  //  //  //      sendStm.valid := True
-//  //  //  //    }
-//  //  //  //  }
-//  //  //  //  is (State.doPipe) {
-//  //  //      //when (bus.a.fire) {
-//  //  //      //}
-//  //  //      var myOpcodeA: tilelink.Opcode.A.E = (
-//  //  //        tilelink.Opcode.A.PUT_FULL_DATA
-//  //  //      )
-//  //  //      def myOpcodeD = (
-//  //  //        TlOpcode.tlUlHostToDevMap(myOpcodeA)
-//  //  //      )
-//  //  //      def setBusOpcode(): Unit = {
-//  //  //        if (isHost) {
-//  //  //          //bus.a.opcode.assignFromBits(myOpcodeA.asBits)
-//  //  //          bus.a.opcode := myOpcodeA
-//  //  //        } else { // if (!isHost)
-//  //  //          //bus.d.opcode.assignFromBits(myOpcodeD.asBits)
-//  //  //          bus.d.opcode := myOpcodeD
-//  //  //        }
-//  //  //      }
-//  //  //      when (sendStm.fire) {
-//  //  //        //loc.sendBusMem.write(
-//  //  //        //  addr=
-//  //  //        //)
-//  //  //        switch (
-//  //  //          loc.opcodeA
-//  //  //        ) {
-//  //  //          is (tilelink.Opcode.A.PUT_FULL_DATA) {
-//  //  //            myOpcodeA = tilelink.Opcode.A.PUT_FULL_DATA
-//  //  //            setBusOpcode()
-//  //  //          }
-//  //  //          is (tilelink.Opcode.A.PUT_PARTIAL_DATA) {
-//  //  //            myOpcodeA = tilelink.Opcode.A.PUT_PARTIAL_DATA
-//  //  //            setBusOpcode()
-//  //  //          }
-//  //  //          //is (tilelink.Opcode.A.ARITHMETIC_DATA) {
-//  //  //          //  myOpcodeA = tilelink.Opcode.A.ARITHMETIC_DATA
-//  //  //          //  setBusOpcode()
-//  //  //          //}
-//  //  //          //is (tilelink.Opcode.A.LOGICAL_DATA) {
-//  //  //          //  myOpcodeA = tilelink.Opcode.A.LOGICAL_DATA
-//  //  //          //  setBusOpcode()
-//  //  //          //}
-//  //  //          is (tilelink.Opcode.A.GET) {
-//  //  //            myOpcodeA = tilelink.Opcode.A.GET
-//  //  //            setBusOpcode()
-//  //  //          }
-//  //  //          //is (tilelink.Opcode.A.INTENT) {
-//  //  //          //  myOpcodeA = tilelink.Opcode.A.INTENT
-//  //  //          //  setBusOpcode()
-//  //  //          //}
-//  //  //          default {
-//  //  //            if (isHost) {
-//  //  //              bus.a.opcode := bus.a.opcode.getZero
-//  //  //            } else { // if (!isHost)
-//  //  //              bus.d.opcode := bus.d.opcode.getZero
-//  //  //            }
-//  //  //          }
-//  //  //        }
-//  //  //      }
-//  //  //  //  }
-//  //  //  //}
-//  //  //  //switch (recvState) {
-//  //  //  //  is (State.idle) {
-//  //  //  //    when (recvStm.valid) {
-//  //  //  //    } otherwise { // when (!recvStm.valid)
-//  //  //  //    }
-//  //  //  //  }
-//  //  //  //  is (State.doPipe) {
-//  //  //  when (recvStm.valid) {
-//  //  //    switch (
-//  //  //      loc.opcodeA // TODO: this needs changed!
-//  //  //    ) {
-//  //  //      is (tilelink.Opcode.A.PUT_FULL_DATA) {
-//  //  //        myOpcodeA = tilelink.Opcode.A.PUT_FULL_DATA
-//  //  //        if (isHost) {
-//  //  //        } else { // if (!isHost)
-//  //  //        }
-//  //  //      }
-//  //  //      is (tilelink.Opcode.A.PUT_PARTIAL_DATA) {
-//  //  //        myOpcodeA = tilelink.Opcode.A.PUT_PARTIAL_DATA
-//  //  //        if (isHost) {
-//  //  //        } else { // if (!isHost)
-//  //  //        }
-//  //  //      }
-//  //  //      //is (tilelink.Opcode.A.ARITHMETIC_DATA) {
-//  //  //      //  myOpcodeA = tilelink.Opcode.A.ARITHMETIC_DATA
-//  //  //      //  if (isHost) {
-//  //  //      //  } else { // if (!isHost)
-//  //  //      //  }
-//  //  //      //}
-//  //  //      //is (tilelink.Opcode.A.LOGICAL_DATA) {
-//  //  //      //  myOpcodeA = tilelink.Opcode.A.LOGICAL_DATA
-//  //  //      //  if (isHost) {
-//  //  //      //  } else { // if (!isHost)
-//  //  //      //  }
-//  //  //      //}
-//  //  //      is (tilelink.Opcode.A.GET) {
-//  //  //        myOpcodeA = tilelink.Opcode.A.GET
-//  //  //        if (isHost) {
-//  //  //        } else { // if (!isHost)
-//  //  //        }
-//  //  //      }
-//  //  //      //is (tilelink.Opcode.A.INTENT) {
-//  //  //      //  myOpcodeA = tilelink.Opcode.A.INTENT
-//  //  //      //  if (isHost) {
-//  //  //      //  } else { // if (!isHost)
-//  //  //      //  }
-//  //  //      //}
-//  //  //      default {
-//  //  //      }
-//  //  //    }
-//  //  //  }
-//  //  //  //  }
-//  //  //  //}
-//  //  //}
-//  //  //if (isHost) {
-//  //  //  doIt(
-//  //  //    //sendState=rStateA,
-//  //  //    sendStm=bus.a,
-//  //  //    //recvState=rStateD,
-//  //  //    recvStm=bus.d,
-//  //  //  )
-//  //  //} else { // if (!isHost)
-//  //  //  doIt(
-//  //  //    //sendState=rStateD,
-//  //  //    sendStm=bus.d,
-//  //  //    //recvState=rStateA,
-//  //  //    recvStm=bus.a,
-//  //  //  )
-//  //  //}
-//  //  //--------
-//  //}
-//  //def deviceBurst(
-//  //  address: UInt,
-//  //  data: Bits,
-//  //  size: UInt,
-//  //  source: UInt,
-//  //  alignAddress: Boolean,
-//  //)(
-//  //): Unit = {
-//  //  object BurstState extends SpinalEnum(
-//  //    defaultEncoding=binarySequential
-//  //  ) {
-//  //    val
-//  //      idle
-//  //      = newElement;
-//  //  }
-//  //}
-//}
+case class TlHelper(
+  //p: tilelink.BusParameter,
+  helperP: TlHelperBusParams,
+  isHost: Boolean,
+  //isSend: Boolean,
+  //source: Int,
+  //fifoDepth: Int,
+  //maxOutstandingTxns: Int,
+  txnSourceWidth: Int,
+  tlName: String,
+) extends Area {
+  //--------
+  assert(txnSourceWidth <= helperP.sourceWidth)
+  assert(txnSourceWidth > 0)
+  //--------
+  val p = helperP.mkBusParams
+  //assert(!p.withBCE)
+  //val fire = Bool()
+  //val extSendValid = Bool() //Reg(Bool()) init(False)
+  //--------
+  //val testficate = Axi4ToTilelink
+  //val bridge = tilelink.Axi4Bridge
+  val bus = tilelink.Bus(p=p)
+  //if (isHost) {
+  //  bus.a.valid.setAsReg() init(False)
+  //  //bus.a.source.setAsReg() init(0x0)
+  //  bus.d.ready.setAsReg() init(False)
+  //} else { // if (!isHost)
+  //  bus.a.ready.setAsReg() init(False)
+  //  bus.d.valid.setAsReg() init(False)
+  //  //bus.d.source.setAsReg() init(0x0)
+  //}
+  //
+  //val loc = new Area {
+    def pipeMemDepth = (1 << txnSourceWidth)
+    //val busAMem = Mem(
+    //  wordType=tilelink.ChannelA(p=p),
+    //  wordCount=pipeMemDepth,
+    //)
+    //val busDMem = Mem(
+    //  wordType=tilelink.ChannelD(p=p),
+    //  wordCount=pipeMemDepth
+    //)
+    //val opcodeA = tilelink.Opcode.A()
+    //val opcodeD = tilelink.Opcode.D()
+    def sendMemArrIdx = 0
+    def recvMemArrIdx = 1
+    def numMemArrs = 2
+
+    val linkArr = PipeHelper.mkLinkArr()
+
+    val host = (isHost) generate new Area {
+      //def numSendRdWrStages = 2
+      def pipeMemWordType() = Flow(tilelink.ChannelA(p=p))
+      def pipeMemModStageCnt = 1 // Tentative!
+      //def sendPipeMemModType() = (
+      //  SamplePipeMemRmwModType[Flow[tilelink.ChannelA], Bool](
+      //    wordType=sendPipeMemWordType(),
+      //    wordCount=sendPipeMemDepth,
+      //    hazardCmpType=Bool(),
+      //    modStageCnt=sendPipeMemModStageCnt,
+      //  )
+      //)
+      def mkSendPipePayloadExtras() = (
+        TlHelperPipePayloadExtras.mkHostSend(
+          helperP=helperP,
+          txnSourceWidth=txnSourceWidth,
+        )
+      )
+      def mkRecvPipePayloadExtras() = (
+        TlHelperPipePayloadExtras.mkHostRecv(
+          helperP=helperP,
+          txnSourceWidth=txnSourceWidth,
+        )
+      )
+      def mkExt() = {
+        val ret = PipeMemRmwPayloadExt(
+          wordType=pipeMemWordType(),
+          wordCount=pipeMemDepth,
+          hazardCmpType=Bool(),
+          modStageCnt=pipeMemModStageCnt,
+          optEnableModDuplicate=true,
+        )
+        //if (vivadoDebug) {
+        //  ret.addAttribute("MARK_DEBUG", "TRUE")
+        //}
+        ret
+      }
+      case class PmRmwModType(
+      ) extends Bundle
+        with PipeMemRmwPayloadBase[
+          Flow[tilelink.ChannelA], Bool
+        ]
+      {
+        //val send = mkSendPipePayloadExtras()
+        val isSend = Bool()
+        val send = mkSendPipePayloadExtras()
+        val recv = mkRecvPipePayloadExtras()
+        val myExt = mkExt()
+        def setPipeMemRmwExt(
+          inpExt: PipeMemRmwPayloadExt[Flow[tilelink.ChannelA], Bool],
+          memArrIdx: Int,
+        ): Unit = {
+          myExt := inpExt
+        }
+        def getPipeMemRmwExt(
+          outpExt: PipeMemRmwPayloadExt[Flow[tilelink.ChannelA], Bool],
+          memArrIdx: Int,
+        ): Unit = {
+          outpExt := myExt
+        }
+      }
+      //--------
+      val io = new Area {
+        //val send = Stream(TlHelperPipePayloadExtras.mkHostSend(
+        //  helperP=helperP,
+        //  txnSourceWidth=txnSourceWidth,
+        //))
+        //val send = Stream(tilelink.ChannelA(p=p))
+        //val recv = Stream(TlHelperPipePayloadExtras.mkHostRecv(
+        //  helperP=helperP,
+        //  txnSourceWidth=txnSourceWidth,
+        //))
+        //val recv = Stream(tilelink.ChannelD(p=p))
+        //val send = Stream(PmRmwModType())
+        //val recv = Stream(PmRmwModType())
+        val send = Stream(mkSendPipePayloadExtras())
+        val recv = Stream(mkRecvPipePayloadExtras())
+      }
+      //--------
+      //def pipeMemWordType() = pipeMemWordType()
+      //def pipeMemModStageCnt = pipeMemModStageCnt
+      val pipeMem = { // for keeping track of outstanding transactions
+        ///*Array.fill(numSendRdWrStages)*/(
+        PipeMemRmw[
+          Flow[tilelink.ChannelA],
+          Bool,
+          //SamplePipeMemRmwModType[Flow[tilelink.ChannelA], Bool],
+          PmRmwModType,
+          PipeMemRmwDualRdTypeDisabled[Flow[tilelink.ChannelA], Bool],
+        ](
+          wordType=pipeMemWordType(),
+          wordCount=pipeMemDepth,
+          hazardCmpType=Bool(),
+          modType=PmRmwModType(),
+          modStageCnt=pipeMemModStageCnt,
+          pipeName=tlName + "_HostSend",
+          linkArr=Some(linkArr),
+          dualRdType=PipeMemRmwDualRdTypeDisabled[
+            Flow[tilelink.ChannelA], Bool
+          ](),
+          optDualRd=false,
+        )(
+          //doHazardCmpFunc=None,
+        )
+        //)
+      }
+      def addDirectLink(
+        //toAdd: Link
+        up: Node,
+        down: Node,
+      ): DirectLink = {
+        val ret = DirectLink(
+          up=up,
+          down=down,
+        )
+        linkArr += ret
+        ret
+      }
+      val sendFrontPipe = PipeHelper(linkArr=linkArr)
+      val recvFrontPipe = PipeHelper(linkArr=linkArr)
+      val recvBackPipe = PipeHelper(linkArr=linkArr)
+      val pmRmwFrontPipe = PipeHelper(linkArr=linkArr)
+      val pmRmwModPipe = PipeHelper(linkArr=linkArr)
+      val pmRmwBackPipe = PipeHelper(linkArr=linkArr)
+
+      // `frontPayload` is shared by `sendFrontPipe` and `recvFrontPipe`
+      // due to how `TlHostLink` works
+      val frontPayload = Payload(PmRmwModType())
+      //val recvFrontPayload = Payload(PmRmwModType())
+      val recvBackPayload = Payload(PmRmwModType())
+
+      sendFrontPipe.first.up.driveFrom(io.send)(
+        con=(node, payload) => {
+          val tempPayload = PmRmwModType()
+
+          tempPayload := tempPayload.getZero
+          tempPayload.allowOverride
+          tempPayload.send := payload
+          tempPayload.isSend := True
+
+          node(frontPayload) := tempPayload
+        }
+      )
+      recvFrontPipe.first.up.driveFrom(bus.d)(
+        con=(node, payload) => {
+          val tempPayload = PmRmwModType()
+
+          tempPayload := tempPayload.getZero
+          tempPayload.allowOverride
+          tempPayload.recv.d.bus := payload
+          //tempPayload.recv.d.valid := True
+          tempPayload.isSend := False
+
+          node(frontPayload) := tempPayload
+        }
+      )
+      def doDriveBusA(): Unit = {
+        pmRmwBackPipe.last.down.driveTo(bus.a)(
+          con=(payload, node) => {
+            payload := node(frontPayload).send.a.bus
+          }
+        )
+      }
+      def doDriveIoRecv(): Unit = {
+        recvBackPipe.last.down.driveTo(io.recv)(
+          con=(payload, node) => {
+            payload := node(recvBackPayload).recv
+          }
+        )
+      }
+      //--------
+      // `sendFront`
+      val cSendFrontFront = sendFrontPipe.addStage(
+        name=tlName + "_SendFrontFront",
+      )
+      val cSendFrontLast = sendFrontPipe.addStage(
+        name=tlName + "_SendFrontLast",
+        finish=true,
+      )
+      val cSendFrontFrontArea = new cSendFrontFront.Area {
+        when (up.isValid) {
+        }
+      }
+      //--------
+      // `recvFront`
+      val cRecvFrontFront = recvFrontPipe.addStage(
+        name=tlName + "_RecvFrontFront",
+      )
+      val cRecvFrontLast = recvFrontPipe.addStage(
+        name=tlName + "_RecvFrontLast",
+        finish=true,
+      )
+      val cRecvFrontFrontArea = new cRecvFrontFront.Area {
+        when (up.isValid) {
+        }
+      }
+      //--------
+      // `recvBack`
+      val cRecvBackFront = recvFrontPipe.addStage(
+        name=tlName + "_RecvBackFront",
+      )
+      val cRecvBackLast = recvFrontPipe.addStage(
+        name=tlName + "_RecvBackLast",
+        finish=true,
+      )
+      val cRecvBackFrontArea = new cRecvBackFront.Area {
+        when (up.isValid) {
+        }
+      }
+      //--------
+      // This is the part where the two pipelines, A and D, meet
+      val nfRecvFrontArr = Array.fill(2)(Node())
+      val fRecvFront = ForkLink(
+        up=recvFrontPipe.last.down,
+        downs=nfRecvFrontArr.toSeq,
+        // `synchonous`'s value could be changed I guess?
+        // I'll leave it for now; it might work well enough.
+        synchronous=true, 
+      )
+      linkArr += fRecvFront
+      val dRecvFrontToBack = addDirectLink(
+        up=nfRecvFrontArr(0),
+        down=recvBackPipe.first.up,
+      )
+
+      val lTlHost = TlHostLink(
+        upA=sendFrontPipe.last.down,
+        upD=(
+          //recvFrontPipe.last.down
+          nfRecvFrontArr(1)
+        ),
+        down=Node(),
+      )
+      linkArr += lTlHost
+      //--------
+      // `pmRmwFront`
+      val cPmRmwFrontFront = pmRmwFrontPipe.addStage(
+        name=tlName + "_PmRmwFrontFront",
+      )
+      val cPmRmwFrontLast = pmRmwFrontPipe.addStage(
+        name=tlName + "_PmRmwFrontLast",
+        finish=true,
+      )
+      val cPmRmFrontFrontArea = new cPmRmwFrontFront.Area {
+        val myUpMod = PmRmwModType()
+      }
+      val dPmRmwFrontFront = addDirectLink(
+        up=lTlHost.down,
+        down=pmRmwFrontPipe.first.up,
+      )
+
+      val dPmRmwFront = addDirectLink(
+        up=pmRmwFrontPipe.last.down,
+        down=pipeMem.io.front,
+      )
+      //--------
+      // `pmRmwModPipe`
+      val cPmRmwModFront = pmRmwModPipe.addStage(
+        name=tlName + "_PmRmwModFront",
+      )
+      val cPmRmwModLast = pmRmwModPipe.addStage(
+        name=tlName + "_PmRmwModLast",
+        finish=true,
+      )
+
+      pipeMem.io.midModStages(0) :=(
+        RegNext(pipeMem.io.midModStages(0).getZero)
+        init(pipeMem.io.midModStages(0).getZero)
+      )
+      val cPmRmwModFrontArea = new cPmRmwModFront.Area {
+      }
+
+      val dPmRmwModFront = addDirectLink(
+        up=pipeMem.io.modFront,
+        down=pmRmwModPipe.first.up,
+      )
+
+      val dPmRmwModBack = addDirectLink(
+        up=pmRmwModPipe.last.down,
+        down=pipeMem.io.modBack,
+      )
+      //--------
+      // `pmRmwBackPipe`
+      val cPmRmwBackFront = pmRmwBackPipe.addStage(
+        name=tlName + "_PmRmwBackFront",
+      )
+      val cPmRmwBackLast = pmRmwBackPipe.addStage(
+        name=tlName + "_PmRmwBackLast",
+        finish=true,
+      )
+      val dPmRmwBack = addDirectLink(
+        up=pipeMem.io.back,
+        down=pmRmwBackPipe.first.up,
+      )
+      val cPmRmwBackFrontArea = new cPmRmwBackFront.Area {
+        val myUpMod = PmRmwModType()
+        myUpMod := up(pipeMem.io.backPayload)
+        when (up.isValid) {
+          when (!myUpMod.isSend) {
+            // only payloads that originate from `io.send` should make it
+            // to `bus.a`
+            throwIt()
+          }
+        }
+      }
+
+      //--------
+      doDriveBusA()
+      doDriveIoRecv()
+      //--------
+      //val nSendFront = Node()
+      //val nSend = Node()
+      //val nPmRwmModFront = Node()
+      //val nPmRwmModBack = Node()
+      //--------
+      //val send = new Area {
+      //  def busChan = bus.a
+      //  def pipeMemWordType() = sendPipeMemWordType()
+      //  def pipeMemModStageCnt = sendPipeMemModStageCnt
+      //  /*val pipeMemArr = Array.fill(numMemArrs)*/
+      //  val pipeMem = {
+      //    ///*Array.fill(numSendRdWrStages)*/(
+      //    PipeMemRmw[
+      //      Flow[tilelink.ChannelA],
+      //      Bool,
+      //      //SamplePipeMemRmwModType[Flow[tilelink.ChannelA], Bool],
+      //      PmRmwModType,
+      //      PipeMemRmwDualRdTypeDisabled[Flow[tilelink.ChannelA], Bool],
+      //    ](
+      //      wordType=pipeMemWordType(),
+      //      wordCount=pipeMemDepth,
+      //      hazardCmpType=Bool(),
+      //      modType=PmRmwModType(),
+      //      modStageCnt=pipeMemModStageCnt,
+      //      pipeName=tlName + "_HostSend",
+      //      linkArr=Some(linkArr),
+      //      dualRdType=PipeMemRmwDualRdTypeDisabled[
+      //        Flow[tilelink.ChannelA], Bool
+      //      ](),
+      //      optDualRd=false,
+      //    )(
+      //      //doHazardCmpFunc=None,
+      //    )
+      //    //)
+      //  }
+      //  val frontPipe = PipeHelper(linkArr=linkArr)
+      //  //val modPipe = PipeHelper(linkArr=linkArr)
+      //  val backPipe = PipeHelper(linkArr=linkArr)
+
+      //  val frontPayload = Payload(PmRmwModType())
+      //  //val modPayload = Payload(PmRmwModType())
+      //  val backPayload = Payload(PmRmwModType())
+
+      //  //val cReadBusMem = pipe.addStage("HostSendReadBusMem")
+      //  ////val cReadBusMemFf1 = pipe.addPipeStage()
+      //  //val cWriteBusMem = pipe.addStage("HostSendWriteBusMem")
+      //  ////val cWriteBusMemFf1 = pipe.addPipeStage()
+      //  val cFrontFront = frontPipe.addStage(
+      //    name=tlName + "_HostSendFrontFront"
+      //  )
+      //  val cFrontLast = frontPipe.addStage(
+      //    name=tlName + "_HostSendFrontLast",
+      //    finish=true,
+      //  )
+
+      //  frontPipe.first.up.driveFrom(io.send)(
+      //    con=(node, payload) => {
+      //      node(frontPayload) := node(frontPayload).getZero
+      //      node(frontPayload).extras := payload
+      //    }
+      //  )
+      //  val dFrontLast = DirectLink(
+      //    up=frontPipe.last.down,
+      //    down=pipeMem.io.front,
+      //  )
+      //  linkArr += dFrontLast
+
+      //  //val cModFront = modPipe.addStage(
+      //  //  name=tlName + "_HostSendModFront"
+      //  //)
+
+      //  //val cModBack = modPipe.addStage(
+      //  //  name=
+      //  //)
+
+
+      //  //pipe.last.down.driveTo(bus.a)(
+      //  //  con=(payload, node) => {
+      //  //    payload := node(frontPayload).bus.a
+      //  //  }
+      //  //)
+      //}
+      //val recv = new Area {
+      //  def busChan = bus.d
+      //  //val pipeMemArr = Array.fill(numMemArrs)(
+      //  //  Mem(
+      //  //    wordType=Flow(tilelink.ChannelD(p=p)),
+      //  //    wordCount=pipeMemDepth,
+      //  //  )
+      //  //)
+      //  def pipeMemWordType() = Flow(tilelink.ChannelD(p=p))
+      //  def pipeMemModStageCnt = 1 // Tentative!
+      //  def pipeMemModType() = (
+      //    SamplePipeMemRmwModType[Flow[tilelink.ChannelD], Bool](
+      //      wordType=pipeMemWordType(),
+      //      wordCount=pipeMemDepth,
+      //      hazardCmpType=Bool(),
+      //      modStageCnt=pipeMemModStageCnt,
+      //    )
+      //  )
+      //  val pipeMem = /*Array.fill(numMemArrs)*/({
+      //    /*Array.fill(numSendRdWrStages)*/(
+      //      PipeMemRmw[
+      //        Flow[tilelink.ChannelD],
+      //        Bool,
+      //        SamplePipeMemRmwModType[Flow[tilelink.ChannelD], Bool],
+      //        PipeMemRmwDualRdTypeDisabled[Flow[tilelink.ChannelD], Bool],
+      //      ](
+      //        wordType=pipeMemWordType(),
+      //        wordCount=pipeMemDepth,
+      //        hazardCmpType=Bool(),
+      //        modType=pipeMemModType(),
+      //        modStageCnt=pipeMemModStageCnt,
+      //        pipeName="HostSend",
+      //        linkArr=Some(linkArr),
+      //        dualRdType=PipeMemRmwDualRdTypeDisabled[
+      //          Flow[tilelink.ChannelD], Bool
+      //        ](),
+      //        optDualRd=false,
+      //      )(
+      //        //doHazardCmpFunc=None,
+      //      )
+      //    )
+      //  })
+      //  val frontPipe = PipeHelper(linkArr=linkArr)
+      //  val modPipe = PipeHelper(linkArr=linkArr)
+      //  val backPipe = PipeHelper(linkArr=linkArr)
+      //  def mkPipePayload() = TlHelperPipePayloadExtras.mkHostRecv(
+      //    helperP=helperP,
+      //    txnSourceWidth=txnSourceWidth,
+      //  )
+      //  //val back = Stream(mkPipePayload())
+      //  val frontPayload = Payload(mkPipePayload())
+      //  val modPayload = Payload(mkPipePayload())
+      //  val backPayload = Payload(mkPipePayload())
+
+      //  //val cReadBusMem = pipe.addStage("HostRecvReadBusMem")
+      //  ////val cReadBusMemFf1 = pipe.addPipeStage()
+      //  //val cWriteBusMem = pipe.addStage("HostRecvWriteBusMem")
+      //  ////val cWriteBusMemFf1 = pipe.addPipeStage()
+
+      //  frontPipe.first.up.driveFrom(bus.d)(
+      //    con=(node, payload) => {
+      //      ////node(frontPayload) := node(frontPayload).getZero
+      //      ////node(frontPayload).allowOverride
+      //      //node(frontPayload).d.valid := False
+      //      //node(frontPayload).d.payload := payload
+      //      ////node(frontPayload).bus.d := payload
+      //    }
+      //  )
+      //  val dFrontLast = DirectLink(
+      //    up=frontPipe.last.down,
+      //    down=pipeMem.io.front,
+      //  )
+      //  linkArr += dFrontLast
+      //  //when (dFrontLast.up.isValid) {
+      //  //}
+      //  backPipe.last.down.driveTo(io.recv)(
+      //    con=(payload, node) => {
+      //      payload := node(backPayload)
+      //    }
+      //  )
+
+      //  //def intf = pipe.last
+
+      //  //pipe.first.up.driveFrom(front)(
+      //  //  con=(node, payload) => {
+      //  //    node(pipePayload) := payload
+      //  //  }
+      //  //)
+      //}
+      //--------
+      // BEGIN: new code
+      //val sendReadBusMem = new send.cReadBusMem.Area {
+      //  def myBus = send.pipePayload.bus
+      //  //for (idx <- 0 until numSendRdWrStages) {
+      //  //  myBus.a.rd := (
+      //  //    send.pipeMemA2d(sendMemArrIdx)(idx).readSync(
+      //  //      address=myBus.a.inp.source,
+      //  //      //enable=isReady,
+      //  //    )
+      //  //  )
+      //  //}
+      //}
+      // END: new code
+      //--------
+      //val sendReadBusMemFf1 = new send.cReadBusMemFf1.Area {
+      //  //when (down.isFiring) {
+      //  //} otherwise { // if (!down.isFiring)
+      //  //}
+
+      //  //when (isValid) {
+      //  //} otherwise { // when (!isValid)
+      //  //}
+      //}
+      //--------
+      // BEGIN: new code
+      //val sendWriteBusMem = new send.cWriteBusMem.Area {
+      //  //when 
+      //  //when (down.isFiring) {
+      //  //} otherwise { // if (!down.isFiring)
+      //  //}
+      //  //when (isValid) {
+      //  //} otherwise { // when (!isValid)
+      //  //}
+      //  def myBus = send.pipePayload.bus
+      //  for (stageIdx <- 0 until numSendRdWrStages) {
+      //    //send.pipeMemA2d(sendMemArrIdx)(stageIdx).write(
+      //    //  address=myBus.a.inp.source,
+      //    //  data=myBus.a.mkInpFlow(),
+      //    //  enable=isValid && isReady,
+      //    //)
+      //  }
+      //}
+      // END: new code
+      //--------
+      //val sendWriteBusMemFf1 = new send.cWriteBusMemFf1.Area {
+      //  //when (down.isFiring) {
+      //  //} otherwise { // if (!down.isFiring)
+      //  //}
+      //  when (isValid) {
+      //  } otherwise { // when (!isValid)
+      //  }
+      //}
+      //val sendDecode = new send.cDecode.Area {
+      //}
+      //val sendExecute = new send.cExecute.Area {
+      //}
+      //--------
+      // BEGIN: new code
+      //val recvReadBusMem = new recv.cReadBusMem.Area {
+      //}
+      // END: new code
+      //--------
+      //val recvFetch = new recv.cFetch.Area {
+      //}
+      //val recvDecode = new recv.cDecode.Area {
+      //}
+      //val recvExecute = new recv.cExecute.Area {
+      //}
+    }
+    //val device = (!isHost) generate new Area {
+    //  val send = new Area {
+    //    def busChan = bus.d
+    //    val pipeMemArr = Array.fill(numMemArrs)(
+    //      Mem(
+    //        wordType=Flow(tilelink.ChannelD(p=p)),
+    //        wordCount=pipeMemDepth,
+    //      )
+    //    )
+    //    val pipe = PipeHelper(linkArr=linkArr)
+    //    def mkPipePayload() = TlHelperPipePayload.mkDeviceSend(
+    //      helperP=helperP,
+    //      txnSourceWidth=txnSourceWidth,
+    //    )
+    //    val front = Stream(mkPipePayload())
+    //    val pipePayload = Payload(mkPipePayload())
+
+    //    //val cReadBusMem = pipe.addStage("DeviceSendReadBusMem")
+    //    //val cWriteBusMem = pipe.addStage("DeviceSendWriteBusMem")
+
+    //    pipe.first.up.driveFrom(front)(
+    //      con=(node, payload) => {
+    //        node(pipePayload) := payload
+    //      }
+    //    )
+    //    pipe.last.down.driveTo(bus.d)(
+    //      con=(payload, node) => {
+    //        payload := node(pipePayload).bus.d.inp
+    //      }
+    //    )
+    //  }
+    //  val recv = new Area {
+    //    def busChan = bus.a
+    //    val pipeMemArr = Array.fill(numMemArrs)(
+    //      Mem(
+    //        wordType=Flow(tilelink.ChannelA(p=p)),
+    //        wordCount=pipeMemDepth,
+    //      )
+    //    )
+    //    val pipe = PipeHelper(linkArr=linkArr)
+    //    def mkPipePayload() = TlHelperPipePayload.mkDeviceRecv(
+    //      helperP=helperP,
+    //      txnSourceWidth=txnSourceWidth,
+    //    )
+    //    val back = Stream(mkPipePayload())
+    //    val pipePayload = Payload(mkPipePayload())
+
+    //    //val cReadBusMem = pipe.addStage("DeviceRecvReadBusMem")
+    //    //val cWriteBusMem = pipe.addStage("DeviceRecvWriteBusMem")
+
+    //    pipe.first.up.driveFrom(bus.a)(
+    //      con=(node, payload) => {
+    //        node(pipePayload) := node(pipePayload).getZero
+    //        node(pipePayload).allowOverride
+    //        node(pipePayload).bus.a.inp := payload
+    //      }
+    //    )
+    //    pipe.last.down.driveTo(back)(
+    //      con=(payload, node) => {
+    //        payload := node(pipePayload)
+    //      }
+    //    )
+    //  }
+    //}
+    //Builder(linkArr.toSeq)
+  //}
+  def doBuilder() = {
+    //Builder((sendPipe.linkArr + recvPipe.linkArr).toSeq)
+    Builder(linkArr.toSeq)
+  }
+  //def doBuilder() = {
+  //  if (isHost) {
+  //    //--------
+  //    def tempSend = loc.host.send
+  //    def tempRecv = loc.host.recv
+  //    //--------
+  //    Builder(
+  //      //--------
+  //      tempSend.cWaitfire,
+  //      tempSend.cDecode,
+  //      tempSend.cExecute,
+  //      tempSend.sWaitfireDecode,
+  //      tempSend.sDecodeExecute,
+  //      //--------
+  //      tempRecv.cFetch,
+  //      tempRecv.cDecode,
+  //      tempRecv.cExecute,
+  //      tempRecv.s0,
+  //      tempRecv.s1,
+  //      //--------
+  //    )
+  //    //--------
+  //  } else { // if (!isHost)
+  //    //--------
+  //    def tempSend = loc.device.send
+  //    def tempRecv = loc.device.recv
+  //    //--------
+  //    Builder(
+  //      //--------
+  //      tempSend.cFetch,
+  //      tempSend.cDecode,
+  //      tempSend.cExecute,
+  //      tempSend.sFetchDecode,
+  //      tempSend.sDecodeExecute,
+  //      //--------
+  //      tempRecv.cFetch,
+  //      tempRecv.cDecode,
+  //      tempRecv.cExecute,
+  //      tempRecv.sFetchDecode,
+  //      tempRecv.sDecodeExecute,
+  //      //--------
+  //    )
+  //    //--------
+  //  }
+  //}
+  //val locHost = (isHost) generate new Area {
+  //}
+  //val locDev = (!isHost) generate new Area {
+  //}
+  //--------
+  // BEGIN: need to translate
+  //val loc = new Area {
+  //  def pipeMemDepth = (1 << txnSourceWidth)
+  //  val busAMem = Mem(
+  //    wordType=tilelink.ChannelA(p=p),
+  //    wordCount=pipeMemDepth,
+  //  )
+
+  //  //when (bus.a.fire) {
+  //  //  busAMem.write(
+  //  //    enable=bus.a.fire
+  //  //  )
+  //  //}
+  //  //opcodeA.assignFromBits(bus.a.opcode.asBits)
+
+  //  //val rSavedBusA = Reg(cloneOf(bus.a.payload))
+  //  //rSavedBusA.init(rSavedBusA.getZero)
+  //  //def savedOpcodeA = {
+  //  //  tilelink.Opcode.A().assignFromBits(rSavedBusA.opcode.asBits)
+  //  //}
+
+  //  val busDMem = Mem(
+  //    wordType=tilelink.ChannelD(p=p),
+  //    wordCount=pipeMemDepth,
+  //  )
+  //  //if (isHost) {
+  //  //} else { // if (!isHost)
+  //  //}
+  //  val (sendBusMem, recvBusMem) = (
+  //    if (isHost) {
+  //      (busAMem, busDMem) // (sendBusMem, recvBusMem)
+  //    } else { // if (!isHost)
+  //      (busDMem, busAMem) // (sendBusMem, recvBusMem)
+  //    }
+  //  )
+  //  val (sendBus, recvBus) = (
+  //    if (isHost) {
+  //      (bus.a, bus.d) // (sendBus, recvBus)
+  //    } else { // if (!isHost)
+  //      (bus.d, bus.a) // (sendBus, recvBus)
+  //    }
+  //  )
+  //  //val recvBusMem = if (isHost) { busDMem } else { busAMem }
+  //  //val locSend = new Area {
+  //  //}
+  //  val opcodeA = tilelink.Opcode.A()
+  //  val opcodeD = tilelink.Opcode.D()
+  //  val (sendOpcode, recvOpcode) = (
+  //    if (isHost) {
+  //      (opcodeA, opcodeD)
+  //    } else {
+  //      (opcodeD, opcodeA)
+  //    }
+  //  )
+  //}
+  // END: need to translate
+  //--------
+  //opcodeD.assignFromBits(bus.d.opcode.asBits)
+
+  //savedBusDMem.write(
+  //  enable=bus.d.fire
+  //)
+  ////if (isHost) {
+  //} else { // if (!isHost)
+  //}
+
+  //val rSavedBusD = Reg(cloneOf(bus.d.payload))
+  //rSavedBusD.init(rSavedBusD.getZero)
+  //def savedOpcodeD = {
+  //  tilelink.Opcode.D().assignFromBits(rSavedBusD.opcode.asBits)
+  //}
+
+  //if (isHost) {
+  //  when (bus.d.fire) {
+  //    //rSavedOpcodeD := opcodeD
+  //    rSavedBusD := bus.d.payload
+  //  }
+  //} else { // if (!isHost)
+  //  when (bus.a.fire) {
+  //    //rSavedOpcodeA := opcodeA
+  //    rSavedBusA := bus.a.payload
+  //  }
+  //}
+  //--------
+  def connectBusHost(
+    hostBus: tilelink.Bus,
+  ): Unit = {
+    bus << hostBus
+  }
+  def connectBusDevice(
+    deviceBus: tilelink.Bus,
+  ): Unit = {
+    deviceBus << bus
+  }
+
+  //def chanAPipe
+  //object HostAPipe {
+  //  def start = 0
+  //  def assertValid = 1
+  //  //def waitFire = 2
+  //  def exec = 2
+  //  //def execAndWaitFire = 2
+  //  //def waitResp = 3
+  //  //def waitFire
+  //}
+  //object HostAState extends SpinalEnum(defaultEncoding=binarySequential) {
+  //  val
+  //    idle,
+  //    start,
+  //    checkBurst,
+  //    doBurst,
+  //    end
+  //    = newElement();
+  //}
+
+  //object State extends SpinalEnum(defaultEncoding=binarySequential) {
+  //  val
+  //    idle,
+  //    //assertValid,
+  //    doPipe
+  //    //doNonBurst,
+  //    //doBurst
+  //    //deassertValid
+  //    = newElement();
+  //}
+
+  //val rStateA = Reg(State()) init(State.idle)
+  //val rStateD = Reg(State()) init(State.idle)
+
+  //case class FifoAPayload() extends Bundle {
+  //  val a = tilelink.ChannelA(p=p)
+  //}
+  //val fifo = StreamFifo(
+  //  dataType=(
+  //    if (isHost) {
+  //      tilelink.ChannelA(p=p)
+  //    } else {
+  //      tilelink.ChannelD(p=p)
+  //    }
+  //  ),
+  //  depth=fifoDepth,
+  //  //latency=2,
+  //)
+  //val fifoD = StreamFifo(
+  //  dataType=tilelink.ChannelD(p=p),
+  //  depth=fifoDepth,
+  //  //latency=2,
+  //)
+
+  //def run(
+  //  //sendDoIt: Bool,
+  //  //opcode: Bits,
+  //  //address: UInt,
+  //  //data: Bits,
+  //  //size: UInt,
+  //  //source: UInt,
+  //): Unit = {
+  //  //assert(isHost)
+  //  //--------
+  //  //--------
+  //  //def doIt[
+  //  //  SendPayloadT <: Data,
+  //  //  RecvPayloadT <: Data,
+  //  //](
+  //  //  //sendState: State.C,
+  //  //  sendStm: Stream[SendPayloadT],
+  //  //  //recvState: State.C,
+  //  //  recvStm: Stream[RecvPayloadT],
+  //  //): Unit = {
+  //  //  //var myOpcodeA: tilelink.Opcode.A.E = tilelink.Opcode.A.PUT_FULL_DATA
+  //  //  //def myOpcodeD = (
+  //  //  //  tilelink.Opcode.hostToDevMap(myOpcodeA)
+  //  //  //)
+  //  //  //val hostToDevMap = Map[tilelink.Opcode.A.E, tilelink.Opcode.D.E](
+  //  //  //  tilelink.Opcode.A.PUT_FULL_DATA -> tilelink.Opcode.D.ACCESS_ACK,
+  //  //  //  tilelink.Opcode.A.PUT_PARTIAL_DATA -> tilelink.Opcode.D.ACCESS_ACK,
+  //  //  //  tilelink.Opcode.A.GET -> tilelink.Opcode.D.ACCESS_ACK_DATA,
+  //  //  //)
+  //  //  //val devToHostMap = Map[tilelink.Opcode.D.E, tilelink.Opcode.A.E](
+  //  //  //  tilelink.Opcode.D.ACCESS_ACK -> tilelink.Opcode.A.PUT_FULL_DATA,
+  //  //  //  tilelink.Opcode.D.ACCESS_ACK -> tilelink.Opcode.A.PUT_PARTIAL_DATA,
+  //  //  //  tilelink.Opcode.D.ACCESS_ACK_DATA -> tilelink.Opcode.A.GET,
+  //  //  //)
+
+  //  //  //switch (sendState) {
+  //  //  //  is (State.idle) {
+  //  //  //    when (sendDoIt) {
+  //  //  //      sendState := State.doPipe
+  //  //  //      sendStm.valid := True
+  //  //  //    }
+  //  //  //  }
+  //  //  //  is (State.doPipe) {
+  //  //      //when (bus.a.fire) {
+  //  //      //}
+  //  //      var myOpcodeA: tilelink.Opcode.A.E = (
+  //  //        tilelink.Opcode.A.PUT_FULL_DATA
+  //  //      )
+  //  //      def myOpcodeD = (
+  //  //        TlOpcode.tlUlHostToDevMap(myOpcodeA)
+  //  //      )
+  //  //      def setBusOpcode(): Unit = {
+  //  //        if (isHost) {
+  //  //          //bus.a.opcode.assignFromBits(myOpcodeA.asBits)
+  //  //          bus.a.opcode := myOpcodeA
+  //  //        } else { // if (!isHost)
+  //  //          //bus.d.opcode.assignFromBits(myOpcodeD.asBits)
+  //  //          bus.d.opcode := myOpcodeD
+  //  //        }
+  //  //      }
+  //  //      when (sendStm.fire) {
+  //  //        //loc.sendBusMem.write(
+  //  //        //  addr=
+  //  //        //)
+  //  //        switch (
+  //  //          loc.opcodeA
+  //  //        ) {
+  //  //          is (tilelink.Opcode.A.PUT_FULL_DATA) {
+  //  //            myOpcodeA = tilelink.Opcode.A.PUT_FULL_DATA
+  //  //            setBusOpcode()
+  //  //          }
+  //  //          is (tilelink.Opcode.A.PUT_PARTIAL_DATA) {
+  //  //            myOpcodeA = tilelink.Opcode.A.PUT_PARTIAL_DATA
+  //  //            setBusOpcode()
+  //  //          }
+  //  //          //is (tilelink.Opcode.A.ARITHMETIC_DATA) {
+  //  //          //  myOpcodeA = tilelink.Opcode.A.ARITHMETIC_DATA
+  //  //          //  setBusOpcode()
+  //  //          //}
+  //  //          //is (tilelink.Opcode.A.LOGICAL_DATA) {
+  //  //          //  myOpcodeA = tilelink.Opcode.A.LOGICAL_DATA
+  //  //          //  setBusOpcode()
+  //  //          //}
+  //  //          is (tilelink.Opcode.A.GET) {
+  //  //            myOpcodeA = tilelink.Opcode.A.GET
+  //  //            setBusOpcode()
+  //  //          }
+  //  //          //is (tilelink.Opcode.A.INTENT) {
+  //  //          //  myOpcodeA = tilelink.Opcode.A.INTENT
+  //  //          //  setBusOpcode()
+  //  //          //}
+  //  //          default {
+  //  //            if (isHost) {
+  //  //              bus.a.opcode := bus.a.opcode.getZero
+  //  //            } else { // if (!isHost)
+  //  //              bus.d.opcode := bus.d.opcode.getZero
+  //  //            }
+  //  //          }
+  //  //        }
+  //  //      }
+  //  //  //  }
+  //  //  //}
+  //  //  //switch (recvState) {
+  //  //  //  is (State.idle) {
+  //  //  //    when (recvStm.valid) {
+  //  //  //    } otherwise { // when (!recvStm.valid)
+  //  //  //    }
+  //  //  //  }
+  //  //  //  is (State.doPipe) {
+  //  //  when (recvStm.valid) {
+  //  //    switch (
+  //  //      loc.opcodeA // TODO: this needs changed!
+  //  //    ) {
+  //  //      is (tilelink.Opcode.A.PUT_FULL_DATA) {
+  //  //        myOpcodeA = tilelink.Opcode.A.PUT_FULL_DATA
+  //  //        if (isHost) {
+  //  //        } else { // if (!isHost)
+  //  //        }
+  //  //      }
+  //  //      is (tilelink.Opcode.A.PUT_PARTIAL_DATA) {
+  //  //        myOpcodeA = tilelink.Opcode.A.PUT_PARTIAL_DATA
+  //  //        if (isHost) {
+  //  //        } else { // if (!isHost)
+  //  //        }
+  //  //      }
+  //  //      //is (tilelink.Opcode.A.ARITHMETIC_DATA) {
+  //  //      //  myOpcodeA = tilelink.Opcode.A.ARITHMETIC_DATA
+  //  //      //  if (isHost) {
+  //  //      //  } else { // if (!isHost)
+  //  //      //  }
+  //  //      //}
+  //  //      //is (tilelink.Opcode.A.LOGICAL_DATA) {
+  //  //      //  myOpcodeA = tilelink.Opcode.A.LOGICAL_DATA
+  //  //      //  if (isHost) {
+  //  //      //  } else { // if (!isHost)
+  //  //      //  }
+  //  //      //}
+  //  //      is (tilelink.Opcode.A.GET) {
+  //  //        myOpcodeA = tilelink.Opcode.A.GET
+  //  //        if (isHost) {
+  //  //        } else { // if (!isHost)
+  //  //        }
+  //  //      }
+  //  //      //is (tilelink.Opcode.A.INTENT) {
+  //  //      //  myOpcodeA = tilelink.Opcode.A.INTENT
+  //  //      //  if (isHost) {
+  //  //      //  } else { // if (!isHost)
+  //  //      //  }
+  //  //      //}
+  //  //      default {
+  //  //      }
+  //  //    }
+  //  //  }
+  //  //  //  }
+  //  //  //}
+  //  //}
+  //  //if (isHost) {
+  //  //  doIt(
+  //  //    //sendState=rStateA,
+  //  //    sendStm=bus.a,
+  //  //    //recvState=rStateD,
+  //  //    recvStm=bus.d,
+  //  //  )
+  //  //} else { // if (!isHost)
+  //  //  doIt(
+  //  //    //sendState=rStateD,
+  //  //    sendStm=bus.d,
+  //  //    //recvState=rStateA,
+  //  //    recvStm=bus.a,
+  //  //  )
+  //  //}
+  //  //--------
+  //}
+  //def deviceBurst(
+  //  address: UInt,
+  //  data: Bits,
+  //  size: UInt,
+  //  source: UInt,
+  //  alignAddress: Boolean,
+  //)(
+  //): Unit = {
+  //  object BurstState extends SpinalEnum(
+  //    defaultEncoding=binarySequential
+  //  ) {
+  //    val
+  //      idle
+  //      = newElement;
+  //  }
+  //}
+}
