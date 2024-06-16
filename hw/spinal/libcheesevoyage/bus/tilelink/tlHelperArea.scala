@@ -388,10 +388,12 @@ case class TlHelperPipePayloadExtras(
     val a = (isHost == isSend) generate new Bundle {
       //val bus = Flow(tilelink.ChannelA(p=p))
       val bus = tilelink.ChannelA(p=p)
+      //val burstCnt 
     }
     val d = (isHost != isSend) generate new Bundle {
       //val bus = Flow(tilelink.ChannelD(p=p))
       val bus = tilelink.ChannelD(p=p)
+      //val beat = p.beat()
     }
     //val a = (isHost == isSend) generate new Bundle {
     //  // `PUT` burst information is included in `front`
@@ -506,22 +508,223 @@ object TlHelperPipePayloadExtras {
   )
 }
 
-object TlHostLink {
-  def apply(upA: Node, upD: Node, down: Node): TlHostLink = (
-    new TlHostLink(
-      upA=upA,
-      upD=upD,
-      down=down,
-    )
-  )
-}
-class TlHostLink(
+//object TlHostLink {
+//  def apply(
+//    upA: Node, upD: Node, down: Node
+//  ): TlHostLink = (
+//    new TlHostLink(
+//      upA=upA,
+//      upD=upD,
+//      down=down,
+//    )
+//  )
+//}
+
+case class TlHostLink(
+  //val payloadA: Payload[PayloadT],
+  //val payloadD: Payload[PayloadT],
   val upA: Node,
   val upD: Node,
-  val down: Node
-) extends Link {
+  val down: Node,
+)(
+  compareFunc: //Option[
+    (
+      Node,     // upA
+      Node,     // upD
+      //Boolean,  // checkDValid
+    ) => Bool
+  //]=None
+)
+extends Link {
   this.ups.foreach(_.down = this)
   down.up = this
+
+  //val rPrevGnt = Reg(UInt(1 bits)) init(0x0)
+  object GntKind extends SpinalEnum(defaultEncoding=binarySequential) {
+    val
+      A,
+      D
+      = newElement();
+  }
+  //val rGnt = Reg(GntKind()) init(GntKind.A)
+  val currGnt = GntKind()
+  val nextGnt = GntKind()
+  //val rGnt = RegNext(nextGnt) init(GntKind.A)
+  val rGnt = (
+    RegNextWhen(nextGnt, upA.isFiring || upD.isFiring)
+    init(GntKind.A)
+  )
+  currGnt := rGnt
+  nextGnt := rGnt
+  //def doSwitch(
+  //  myCat: Bits,
+  //  isCurr: Boolean
+  //): Unit = {
+  //  switch (myCat) {
+  //    is (M"00-") {
+  //    }
+  //    is (M"10-") {
+  //      if (isCurr) {
+  //        currGnt := GntKind.A
+  //      } else {
+  //        nextGnt := GntKind.D
+  //      }
+  //    }
+  //    is (M"01-") {
+  //      if (isCurr) {
+  //        currGnt := GntKind.D
+  //      } else {
+  //        nextGnt := GntKind.A
+  //      }
+  //    }
+  //    is (M"110") {
+  //      when (doCompare()) {
+  //        if (isCurr) {
+  //          currGnt := GntKind.A
+  //        } else {
+  //          nextGnt := GntKind.D
+  //        }
+  //      } otherwise {
+  //        if (isCurr) {
+  //          currGnt := GntKind.D
+  //        } else {
+  //          nextGnt := GntKind.A
+  //        }
+  //      }
+  //    }
+  //    is (M"111") {
+  //      when (doCompare()) {
+  //        if (isCurr) {
+  //          currGnt := GntKind.D
+  //        } else {
+  //          nextGnt := GntKind.A
+  //        }
+  //      } otherwise {
+  //        if (isCurr) {
+  //          currGnt := GntKind.A
+  //        } else {
+  //          nextGnt := GntKind.D
+  //        }
+  //      }
+  //    }
+  //    //is (M"111") {
+  //    //  //nextGnt := GntKind.A
+  //    //  nextGnt := Mux[SpinalEnum](
+  //    //    doCompare(), GntKind.A, GntKind.D
+  //    //  )
+  //    //}
+  //  }
+  //}
+  switch (Cat(upA.valid, upD.valid, rGnt.asBits)) {
+    is (M"00-") {
+    }
+    is (M"10-") {
+      currGnt := GntKind.A
+      nextGnt := GntKind.D
+    }
+    is (M"01-") {
+      currGnt := GntKind.D
+      nextGnt := GntKind.A
+    }
+    is (M"110") {
+      when (doCompare()) {
+        currGnt := GntKind.A
+        nextGnt := GntKind.D
+      } otherwise {
+        currGnt := GntKind.D
+        nextGnt := GntKind.A
+      }
+    }
+    is (M"111") {
+      when (doCompare()) {
+        currGnt := GntKind.D
+        nextGnt := GntKind.A
+      } otherwise {
+        currGnt := GntKind.A
+        nextGnt := GntKind.D
+      }
+    }
+    //is (M"111") {
+    //  //nextGnt := GntKind.A
+    //  nextGnt := Mux[SpinalEnum](
+    //    doCompare(), GntKind.A, GntKind.D
+    //  )
+    //}
+  }
+  //doSwitch(
+  //  myCat=(
+  //    //Cat(upA.isFiring, upD.isFiring, rGnt.asBits)
+  //    Cat(upA.valid, upD.valid, rGnt.asBits)
+  //  ),
+  //  isCurr=false,
+  //)
+  //doSwitch(
+  //  myCat=(
+  //    Cat(upA.valid, upD.valid, rGnt.asBits)
+  //  ),
+  //  isCurr=true,
+  //)
+  //switch (Cat(upA.isFiring, upD.isFiring, rGnt.asBits)) {
+  //  is (M"00-") {
+  //  }
+  //  is (M"10-") {
+  //    //currGnt := GntKind.A
+  //    nextGnt := GntKind.D
+  //  }
+  //  is (M"01-") {
+  //    //currGnt := GntKind.D
+  //    nextGnt := GntKind.A
+  //  }
+  //  is (M"110") {
+  //    when (doCompare()) {
+  //      //currGnt := GntKind.A
+  //      nextGnt := GntKind.D
+  //    } otherwise {
+  //      //currGnt := GntKind.D
+  //      nextGnt := GntKind.A
+  //    }
+  //  }
+  //  is (M"111") {
+  //    when (doCompare()) {
+  //      //currGnt := GntKind.D
+  //      nextGnt := GntKind.A
+  //    } otherwise {
+  //      //currGnt := GntKind.A
+  //      nextGnt := GntKind.D
+  //    }
+  //  }
+  //  //is (M"111") {
+  //  //  //nextGnt := GntKind.A
+  //  //  nextGnt := Mux[SpinalEnum](
+  //  //    doCompare(), GntKind.A, GntKind.D
+  //  //  )
+  //  //}
+  //}
+  //switch (Cat(upA.isValid, upD.isValid, rGnt.asBits)) {
+  //}
+
+  def doCompare(
+    //checkDValid: Boolean
+  ): Bool = (
+    //upD.isValid
+    //&& 
+    //(
+    //  compareFunc match {
+    //    case Some(myCompareFunc) => (
+    //      myCompareFunc(upA, upD)
+    //    )
+    //    case None => (
+    //      True
+    //    )
+    //  }
+    //)
+    compareFunc(upA, upD/*, checkDValid*/)
+    //Mux(
+    //  nextGnt === GntKind.A,
+    //  upA.isValid,
+    //  upD.isValid,
+    //)
+  )
 
   override def ups: Seq[Node] = List(upA, upD)
   override def downs: Seq[Node] = List(down)
@@ -539,7 +742,14 @@ class TlHostLink(
     //for (up <- ups) {
     //  
     //}
-    Mux[Bool](upD.isValid, upD.ready, upA.ready)
+
+    Mux[Bool](
+      //upD.isValid, 
+      //doCompare(true), upD.ready, upA.ready
+      //nextGnt === GntKind.A, upA.ready, upD.ready
+      currGnt === GntKind.A, upA.ready, upD.ready
+    )
+
     //when (upD.isValid) {
     //  upD.ready
     //} otherwise {
@@ -551,8 +761,18 @@ class TlHostLink(
     assert(down.ctrl.forgetOne.isEmpty)
     down.valid := ups.map(_.isValid).orR
 
-    upA.ready := down.isValid && down.isReady && !upD.isValid
-    upD.ready := down.isValid && down.isReady
+    upA.ready := (
+      down.isValid
+      && down.isReady
+      //&& !doCompare(true)//upD.isValid
+      && (currGnt === GntKind.A)
+    )
+    upD.ready := (
+      down.isValid
+      && down.isReady
+      //&& doCompare(false)
+      && (currGnt === GntKind.D)
+    )
 
     for (key <- down.fromUp.payload) {
       //val filtered = ups.filter(
@@ -564,15 +784,18 @@ class TlHostLink(
       ////}
       when (
         //upD.isFiring
-        upD.isValid
+        //upD.isValid
+        //doCompare(true)
+        //doCompare()
+        currGnt === GntKind.A
       ) {
-        val filtered = List(upD).filter(
+        val filtered = List(upA).filter(
           up => up.keyToData.contains(key)
           || up.fromUp.payload.contains(key)
         )
         down(key) := filtered(0)(key)
       } otherwise {
-        val filtered = List(upA).filter(
+        val filtered = List(upD).filter(
           up => up.keyToData.contains(key)
           || up.fromUp.payload.contains(key)
         )
@@ -581,14 +804,23 @@ class TlHostLink(
     }
   }
 }
+case class TlHostLinkTesterPayload[
+  T <: Data,
+](
+  dataType: HardType[T],
+) extends Bundle {
+  val data = dataType()
+  val source = UInt(2 bits)
+  //val isA = Bool()
+}
 case class TlHostLinkTesterIo[
   T <: Data,
 ](
   dataType: HardType[T],
 ) extends Bundle {
-  val pushA = slave(Stream(dataType()))
-  val pushD = slave(Stream(dataType()))
-  val pop = master(Stream(dataType()))
+  val pushA = slave(Stream(TlHostLinkTesterPayload(dataType())))
+  val pushD = slave(Stream(TlHostLinkTesterPayload(dataType())))
+  val pop = master(Stream(TlHostLinkTesterPayload(dataType())))
 }
 case class TlHostLinkTester[
   T <: Data,
@@ -604,12 +836,8 @@ case class TlHostLinkTester[
   //val pipeA = PipeHelper(linkArr=linkArr)
   //val pipeD = PipeHelper(linkArr=linkArr)
   //val pipePop = PipeHelper(linkArr=linkArr)
-  case class MyPayload() extends Bundle {
-    val data = dataType()
-    //val isA = Bool()
-  }
 
-  val pipePayload = Payload(MyPayload())
+  val pipePayload = Payload(TlHostLinkTesterPayload(dataType()))
   //val pipeDPayload = Payload(MyPayload())
   //val pipePopPayload = Payload(MyPayload())
 
@@ -634,17 +862,18 @@ case class TlHostLinkTester[
   //  name="PopLast",
   //  finish=true,
   //)
+  //--------
   val nUpA = Node()
   val nUpD = Node()
   nUpA.driveFrom(io.pushA)(
     con=(node, payload) => {
-      node(pipePayload).data := payload
+      node(pipePayload) := payload
       //node(pipePayload).isA := True
     }
   )
   nUpD.driveFrom(io.pushD)(
     con=(node, payload) => {
-      node(pipePayload).data := payload
+      node(pipePayload) := payload
       //node(pipePayload).isA := False
     }
   )
@@ -659,17 +888,38 @@ case class TlHostLinkTester[
   //val nUpA = Node()
   //val nUpD = Node()
   //val nUpPop = pipePop.first.up
+  ////--------
+  //val arb = StreamArbiterFactory.roundRobin.roundRobin.on(
+  //  inputs=List(io.pushA, io.pushD)
+  //)
+  //io.pop << arb
+  // BEGIN: old code
   val lTlHost = TlHostLink(
     upA=nUpA,
     upD=nUpD,
     down=Node(),
+  )(
+    //compareFunc=None
+    compareFunc=/*Some*/(
+      (
+        upA: Node,
+        upD: Node,
+        //checkDValid: Boolean,
+      ) => (
+        //upA(pipePayload).source
+        //=== upD(pipePayload).source
+        True
+      )
+    )
   )
   linkArr += lTlHost
   lTlHost.down.driveTo(io.pop)(
     con=(payload, node) => {
-      payload := node(pipePayload).data
+      payload := node(pipePayload)
     }
   )
+  // END: old code
+  //--------
   //when (nUpD.isValid) {
   //  //cPopFront.up(pipePopPayload) := lTlHost.down(pipeDPayload)
   //} otherwise {
@@ -708,7 +958,8 @@ object TlHostLinkTesterSim extends App {
         payload.randomize()
         true
       }
-      StreamReadyRandomizer(dut.io.pop, dut.clockDomain)
+      //StreamReadyRandomizer(dut.io.pop, dut.clockDomain)
+      dut.io.pop.ready #= true
 
       dut.clockDomain.forkStimulus(period=10)
 
@@ -808,7 +1059,7 @@ case class TlHelper(
         //}
         ret
       }
-      case class PmRmwModType(
+      case class PipePayload(
       ) extends Bundle
         with PipeMemRmwPayloadBase[
           Flow[tilelink.ChannelA], Bool
@@ -816,6 +1067,7 @@ case class TlHelper(
       {
         //val send = mkSendPipePayloadExtras()
         val isSend = Bool()
+        //val burstCnt = UInt()
         val send = mkSendPipePayloadExtras()
         val recv = mkRecvPipePayloadExtras()
         val myExt = mkExt()
@@ -844,8 +1096,8 @@ case class TlHelper(
         //  txnSourceWidth=txnSourceWidth,
         //))
         //val recv = Stream(tilelink.ChannelD(p=p))
-        //val send = Stream(PmRmwModType())
-        //val recv = Stream(PmRmwModType())
+        //val send = Stream(PipePayload())
+        //val recv = Stream(PipePayloaPipePayload())
         val send = Stream(mkSendPipePayloadExtras())
         val recv = Stream(mkRecvPipePayloadExtras())
       }
@@ -858,13 +1110,13 @@ case class TlHelper(
           Flow[tilelink.ChannelA],
           Bool,
           //SamplePipeMemRmwModType[Flow[tilelink.ChannelA], Bool],
-          PmRmwModType,
+          PipePayload,
           PipeMemRmwDualRdTypeDisabled[Flow[tilelink.ChannelA], Bool],
         ](
           wordType=pipeMemWordType(),
           wordCount=pipeMemDepth,
           hazardCmpType=Bool(),
-          modType=PmRmwModType(),
+          modType=PipePayload(),
           modStageCnt=pipeMemModStageCnt,
           pipeName=tlName + "_HostSend",
           linkArr=Some(linkArr),
@@ -896,15 +1148,15 @@ case class TlHelper(
       val pmRmwModPipe = PipeHelper(linkArr=linkArr)
       val pmRmwBackPipe = PipeHelper(linkArr=linkArr)
 
-      // `frontPayload` is shared by `sendFrontPipe` and `recvFrontPipe`
-      // due to how `TlHostLink` works
-      val frontPayload = Payload(PmRmwModType())
-      //val recvFrontPayload = Payload(PmRmwModType())
-      val recvBackPayload = Payload(PmRmwModType())
+      //// `frontPayload` is shared by `sendFrontPipe` and `recvFrontPipe`
+      //// due to how `TlHostLink` works
+      val frontPayload = Payload(PipePayload())
+      //val recvFrontPayload = Payload(PipePayload())
+      val recvBackPayload = Payload(PipePayload())
 
       sendFrontPipe.first.up.driveFrom(io.send)(
         con=(node, payload) => {
-          val tempPayload = PmRmwModType()
+          val tempPayload = PipePayload()
 
           tempPayload := tempPayload.getZero
           tempPayload.allowOverride
@@ -916,7 +1168,7 @@ case class TlHelper(
       )
       recvFrontPipe.first.up.driveFrom(bus.d)(
         con=(node, payload) => {
-          val tempPayload = PmRmwModType()
+          val tempPayload = PipePayload()
 
           tempPayload := tempPayload.getZero
           tempPayload.allowOverride
@@ -952,6 +1204,7 @@ case class TlHelper(
       )
       val cSendFrontFrontArea = new cSendFrontFront.Area {
         when (up.isValid) {
+          // the `sendFront` pipeline will need to have 
         }
       }
       //--------
@@ -996,15 +1249,38 @@ case class TlHelper(
         down=recvBackPipe.first.up,
       )
 
-      val lTlHost = TlHostLink(
-        upA=sendFrontPipe.last.down,
-        upD=(
-          //recvFrontPipe.last.down
-          nfRecvFrontArr(1)
-        ),
-        down=Node(),
-      )
-      linkArr += lTlHost
+      //val lTlHost = TlHostLink(
+      //  upA=sendFrontPipe.last.down,
+      //  upD=(
+      //    //recvFrontPipe.last.down
+      //    nfRecvFrontArr(1)
+      //  ),
+      //  down=Node(),
+      //)(
+      //  compareFunc=(
+      //    //None
+      //    /*Some*/(
+      //      (
+      //        upA: Node,
+      //        upD: Node,
+      //        checkDValid: Boolean,
+      //      ) => (
+      //        (
+      //          if (checkDValid) (
+      //            upD.isValid
+      //          ) else (
+      //            True
+      //          )
+      //        )
+      //        && (
+      //          upA(frontPayload).send.a.bus.source
+      //          === upD(frontPayload).recv.d.bus.source
+      //        )
+      //      )
+      //    )
+      //  )
+      //)
+      //linkArr += lTlHost
       //--------
       // `pmRmwFront`
       val cPmRmwFrontFront = pmRmwFrontPipe.addStage(
@@ -1015,10 +1291,13 @@ case class TlHelper(
         finish=true,
       )
       val cPmRmFrontFrontArea = new cPmRmwFrontFront.Area {
-        val myUpMod = PmRmwModType()
+        val myUpMod = PipePayload()
       }
       val dPmRmwFrontFront = addDirectLink(
-        up=lTlHost.down,
+        up=(
+          //lTlHost.down
+          Node()
+        ),
         down=pmRmwFrontPipe.first.up,
       )
 
@@ -1036,11 +1315,17 @@ case class TlHelper(
         finish=true,
       )
 
-      pipeMem.io.midModStages(0) :=(
+      pipeMem.io.midModStages(0) := (
         RegNext(pipeMem.io.midModStages(0).getZero)
         init(pipeMem.io.midModStages(0).getZero)
       )
       val cPmRmwModFrontArea = new cPmRmwModFront.Area {
+
+        val tempInp = PipePayload()
+        val tempOutp = PipePayload()
+        tempInp := up(pipeMem.io.modFrontPayload)
+        when (up.isValid) {
+        }
       }
 
       val dPmRmwModFront = addDirectLink(
@@ -1066,10 +1351,10 @@ case class TlHelper(
         down=pmRmwBackPipe.first.up,
       )
       val cPmRmwBackFrontArea = new cPmRmwBackFront.Area {
-        val myUpMod = PmRmwModType()
-        myUpMod := up(pipeMem.io.backPayload)
+        val tempInp = PipePayload()
+        tempInp := up(pipeMem.io.backPayload)
         when (up.isValid) {
-          when (!myUpMod.isSend) {
+          when (!tempInp.isSend) {
             // only payloads that originate from `io.send` should make it
             // to `bus.a`
             throwIt()
@@ -1097,13 +1382,13 @@ case class TlHelper(
       //      Flow[tilelink.ChannelA],
       //      Bool,
       //      //SamplePipeMemRmwModType[Flow[tilelink.ChannelA], Bool],
-      //      PmRmwModType,
+      //      PipePayload,
       //      PipeMemRmwDualRdTypeDisabled[Flow[tilelink.ChannelA], Bool],
       //    ](
       //      wordType=pipeMemWordType(),
       //      wordCount=pipeMemDepth,
       //      hazardCmpType=Bool(),
-      //      modType=PmRmwModType(),
+      //      modType=PipePayload(),
       //      modStageCnt=pipeMemModStageCnt,
       //      pipeName=tlName + "_HostSend",
       //      linkArr=Some(linkArr),
@@ -1120,9 +1405,9 @@ case class TlHelper(
       //  //val modPipe = PipeHelper(linkArr=linkArr)
       //  val backPipe = PipeHelper(linkArr=linkArr)
 
-      //  val frontPayload = Payload(PmRmwModType())
-      //  //val modPayload = Payload(PmRmwModType())
-      //  val backPayload = Payload(PmRmwModType())
+      //  val frontPayload = Payload(PipePayload())
+      //  //val modPayload = Payload(PipePayload())
+      //  val backPayload = Payload(PipePayload())
 
       //  //val cReadBusMem = pipe.addStage("HostSendReadBusMem")
       //  ////val cReadBusMemFf1 = pipe.addPipeStage()
