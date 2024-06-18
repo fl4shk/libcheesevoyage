@@ -65,6 +65,7 @@ case class PipeMemRmwPayloadExt[
   //optSimpleIsWr: Option[Boolean]=None,
   //optUseModMemAddr: Boolean=false,
   optEnableModDuplicate: Boolean=true,
+  optReorder: Boolean=false,
 ) extends Bundle {
   //--------
   def debug: Boolean = {
@@ -75,6 +76,22 @@ case class PipeMemRmwPayloadExt[
   }
   //--------
   val memAddr = UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
+  //val didReorderCommit = (optReorder) generate (
+  //  Bool()
+  //)
+  val reqReorderCommit = (optReorder) generate (
+    Bool()
+  )
+  val didReorderCommit = (optReorder) generate (
+    Bool()
+  )
+
+  //// When `True`, read from the address `memAddr`
+  //// When `False`, read from the address `dualRd.rReorderCommitHead`, 
+  //// which provides in-order reads
+  //val memAddrReorderValid = (optReorder) generate (
+  //  Bool()
+  //)
   val hazardCmp = hazardCmpType()
   //val modMemAddrRaw = (optUseModMemAddr) generate cloneOf(memAddr)
   //def modMemAddr = (
@@ -274,9 +291,6 @@ case class PipeMemRmwDualRdTypeDisabled[
   //): Unit = {
   //}
 }
-//case class PipeMemRmwClearPaylow(
-//  wordCount: Int
-//)
 case class PipeMemRmwIo[
   WordT <: Data,
   HazardCmpT <: Data,
@@ -297,6 +311,7 @@ case class PipeMemRmwIo[
   //optDualRdSize: Option[Int]=None,
   //dualRdSize: Int=0,
   optDualRd: Boolean=false,
+  optReorder: Boolean=false,
   optEnableModDuplicate: Boolean=true,
   optEnableClear: Boolean=false,
   vivadoDebug: Boolean=false,
@@ -318,6 +333,15 @@ case class PipeMemRmwIo[
   //    clear.addAttribute("MARK_DEBUG", "TRUE")
   //  }
   //}
+
+  // the commit head
+  val reorderCommitHead = (optReorder) generate (
+    //Reg(UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)) init(0x0)
+    UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
+  )
+  //val reorderCommitTail = (optReorder) generate (
+  //  UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
+  //)
 
   // front of the pipeline (push)
   //val front = slave(Stream(modType()))
@@ -435,6 +459,39 @@ case class PipeMemRmwIo[
 //  cntOverflow: 
 //)
 
+trait PipeMemRmwReorderFtable[
+  WordT <: Data,
+  //ExceptT <: Data,
+] {
+  //def getReorderValidBusyExceptFunc: (
+  //  WordT,                  // word
+  //): (Bool, Bool, ExceptT),  // (valid, busy, except)
+  //--------
+  def getValid(
+    word: WordT, // whether or not the ROB entry has valid data 
+  ): Bool // Vec[Bool]
+  //def setValid(
+  //  word: WordT,
+  //  valid: Bool,
+  //): Unit
+  //--------
+  def getBusyOrExceptThrowing(
+    // this function indicates when an exception is throwing, so if the
+    // return value is `True`, we cannot commit
+    word: WordT,
+  ): Bool //Vec[Bool]
+  //def setBusy(
+  //  word: WordT,
+  //  busy: Bool,
+  //): Unit
+  //--------
+  //def getAnyExceptThrowing(
+  //  // this function indicates when an exception is throwing, so if the
+  //  // return value is `True`, we cannot commit
+  //  word: WordT,
+  //): Bool
+  //--------
+}
 // A Read-Modify-Write pipelined BRAM
 case class PipeMemRmw[
   WordT <: Data,
@@ -455,6 +512,7 @@ case class PipeMemRmw[
     WordT, HazardCmpT,
   ](),
   optDualRd: Boolean=false,
+  optReorder: Boolean=false,
   //dualRdSize: Int=0,
   init: Option[Seq[WordT]]=None,
   initBigInt: Option[Seq[BigInt]]=None,
@@ -466,6 +524,7 @@ case class PipeMemRmw[
   memRamStyle: String="auto",
   vivadoDebug: Boolean=false,
 )(
+  //--------
   doHazardCmpFunc: Option[
     (
       PipeMemRmwPayloadExt[WordT, HazardCmpT],
@@ -475,6 +534,15 @@ case class PipeMemRmw[
     ) => Bool
   ]=None,
   doPrevHazardCmpFunc: Boolean=false,
+  //--------
+  reorderFtable: Option[PipeMemRmwReorderFtable[WordT]]=None,
+  //setReorderBusyFunc: Option[
+  //  (
+  //    WordT,    // self
+  //    Bool,     // busy
+  //  ) => Unit
+  //]=None,
+  //--------
 )
 //(
 //  getModAddr: (
@@ -567,6 +635,29 @@ extends Area {
     //}
     ret
   }
+
+  def getReorderValid(
+    word: WordT, // whether or not the ROB entry has valid data 
+  ): Bool /* Vec[Bool]*/ = reorderFtable match {
+    case Some(myReorderFtable) => {
+      myReorderFtable.getValid(word)
+    }
+    case None => {
+      True
+    }
+  }
+  def getReorderBusyEtc(
+    // this function indicates when an exception is throwing, so if the
+    // return value is `True`, we cannot commit
+    word: WordT,
+  ): Bool = reorderFtable match {
+    case Some(myReorderFtable) => {
+      myReorderFtable.getBusyOrExceptThrowing(word)
+    }
+    case None => {
+      False
+    }
+  }
   val modMem = (optEnableModDuplicate) generate (
     mkMem()
   )
@@ -623,6 +714,7 @@ extends Area {
       hazardCmpType=hazardCmpType(),
       modStageCnt=modStageCnt,
       optEnableModDuplicate=optEnableModDuplicate,
+      optReorder=optReorder,
     )
     if (vivadoDebug && myVivadoDebug) {
       //ret.addAttribute("MARK_DEBUG", "TRUE")
@@ -646,6 +738,12 @@ extends Area {
     }
   )
   val mod = new Area {
+    //--------
+    val rReorderCommitHead = (optReorder) generate (
+      Reg(UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)) init(0x0)
+    )
+    io.reorderCommitHead := rReorderCommitHead
+    //--------
     val front = new Area {
       val pipe = PipeHelper(linkArr=myLinkArr)
       //val inpPipePayload = Payload(modType())
@@ -1513,6 +1611,43 @@ extends Area {
           //down.isFiring && tempCond
         ),
       )
+      //when (
+      //  if (!optReorder) (
+      //    True
+      //  ) else (
+      //    myInpUpExt.memAddrReorderValid
+      //  )
+      //) {
+      //  //myRdMemWord := dualRdMem.readSync(
+      //  //  address=myInpUpExt.memAddr,
+      //  //  enable=up.isFiring,
+      //  //)
+      //  myRdMemWord := modMem.readSync(
+      //    address=(
+      //      //upExt(1).memAddr
+      //      upExtRealMemAddr
+      //    ),
+      //    //address=myDownExt.memAddr,
+      //    enable=(
+      //      tempCond
+      //    ),
+      //  )
+      //} otherwise {
+      //  myRdMemWord := dualRdMem.readSync(
+      //    address=rReorderCommitHead,
+      //    enable=up.isFiring,
+      //  )
+      //  val reorderMemAddrPlus1 = (
+      //    Cat(B"1'b0", rReorderCommitHead).asUInt + 1
+      //  )
+      //  when (reorderMemAddrPlus1 < wordCount) {
+      //    rReorderCommitHead := 0x0
+      //  } otherwise {
+      //    rReorderCommitHead := (
+      //      reorderMemAddrPlus1(rReorderCommitHead.bitsRange)
+      //    )
+      //  }
+      //}
     }
     //when (
     //  up.isValid
@@ -2571,18 +2706,18 @@ extends Area {
       !(RegNextWhen(True, io.front.isFiring) init(False))
     )
     val upExt = Vec.fill(
-      //2
-      1
+      2
+      //1
     )(
       mkExt(myVivadoDebug=true)
     ).setName("cBackArea_upExt")
-    //upExt(1) := (
-    //  RegNext(upExt(1)) init(upExt(1).getZero)
-    //)
-    //upExt(1).allowOverride
-    //when (up.isValid) {
-    //  upExt(1) := upExt(0)
-    //}
+    upExt(1) := (
+      RegNext(upExt(1)) init(upExt(1).getZero)
+    )
+    upExt(1).allowOverride
+    when (up.isValid) {
+      upExt(1) := upExt(0)
+    }
 
     myUpExtDel(myUpExtDel.size - 2) := (
       RegNext(myUpExtDel(myUpExtDel.size - 2))
@@ -2592,11 +2727,19 @@ extends Area {
       myUpExtDel(myUpExtDel.size - 2) := upExt(0)
     }
 
-    val tempUpMod = modType().setName("cBackArea_tempUpMod")
-    tempUpMod.allowOverride
-    tempUpMod := up(mod.back.pipePayload)
-    tempUpMod.getPipeMemRmwExt(
+    val tempUpMod = Vec.fill(2)(
+      modType()
+    ).setName("cBackArea_tempUpMod")
+    tempUpMod(0).allowOverride
+    tempUpMod(0) := up(mod.back.pipePayload)
+    tempUpMod(0).getPipeMemRmwExt(
       outpExt=upExt(0),
+      memArrIdx=memArrIdx,
+    )
+    tempUpMod(1) := tempUpMod(0)
+    tempUpMod(1).allowOverride
+    tempUpMod(1).setPipeMemRmwExt(
+      inpExt=upExt(1),
       memArrIdx=memArrIdx,
     )
     //val dbgDoClear = (optEnableClear) generate (
@@ -2703,6 +2846,18 @@ extends Area {
       //  address=upExt(0).memAddr,
       //  data=upExt(0).modMemWord,
       //)
+    }
+    if (optReorder) {
+      when (
+        myWriteEnable
+        && myWriteAddr === io.reorderCommitHead
+        && getReorderValid(myWriteData)
+        && !getReorderBusyEtc(myWriteData)
+        && upExt(0).reqReorderCommit
+      ) {
+        mod.rReorderCommitHead := mod.rReorderCommitHead
+        //upExt(0).didReorderCommit 
+      }
     }
     memWriteAll(
       address=myWriteAddr,
@@ -2923,6 +3078,10 @@ extends Area {
   val dualRd = (io.optDualRd) generate new Area {
     val pipe = PipeHelper(linkArr=myLinkArr)
     val myRdMemWord = wordType()
+    //val rReorderCommitHead = (optReorder) generate (
+    //  Reg(UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)) init(0x0)
+    //)
+    //io.reorderCommitHead := rReorderCommitHead
 
     //if (vivadoDebug) {
     //  myRdMemWord.addAttribute(
@@ -3014,10 +3173,37 @@ extends Area {
       //  memArrIdx=memArrIdx,
       //)
       //up(midPipePayload) := myMidDualRd
-      myRdMemWord := dualRdMem.readSync(
-        address=myInpUpExt.memAddr,
-        enable=up.isFiring,
-      )
+      //myRdMemWord := dualRdMem.readSync(
+      //  address=myInpUpExt.memAddr,
+      //  enable=up.isFiring,
+      //)
+      when (
+        if (!optReorder) (
+          True
+        ) else (
+          myInpUpExt.memAddrReorderValid
+        )
+      ) {
+        myRdMemWord := dualRdMem.readSync(
+          address=myInpUpExt.memAddr,
+          enable=up.isFiring,
+        )
+      } otherwise {
+        myRdMemWord := dualRdMem.readSync(
+          address=rReorderCommitHead,
+          enable=up.isFiring,
+        )
+        val reorderMemAddrPlus1 = (
+          Cat(B"1'b0", rReorderCommitHead).asUInt + 1
+        )
+        when (reorderMemAddrPlus1 < wordCount) {
+          rReorderCommitHead := 0x0
+        } otherwise {
+          rReorderCommitHead := (
+            reorderMemAddrPlus1(rReorderCommitHead.bitsRange)
+          )
+        }
+      }
     }
     val cDualRdMid0Area = new cMid0.Area {
       val myInpDualRd = dualRdType()
@@ -3481,6 +3667,180 @@ extends Area {
   //Builder(myLinkArr.toSeq)
   //--------
 }
+//trait PipeMemRmwReorderDualRdTypeBase
+//[
+//  WordT <: Data,
+//  HazardCmpT <: Data,
+//  //ModT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
+//  //DualRdT <: PipeMemRmwPayloadBase[WordT, HazardCmpT]
+//]
+////(
+////  //wordType: HardType[WordT],
+////  //wordCount: Int,
+////)
+//extends PipeMemRmwPayloadBase[WordT, HazardCmpT] {
+//  //--------
+//  def getReorderMemAddr(
+//    
+//  ): Unit
+//  //--------
+//}
+
+object PipeMemRmwReorderIo {
+  def apply[
+    WordT <: Data,
+    HazardCmpT <: Data,
+    ModT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
+    DualRdT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
+  ](
+    wordType: HardType[WordT],
+    wordCount: Int,
+    modType: HardType[ModT],
+    modStageCnt: Int,
+    dualRdType: HardType[DualRdT],
+    optEnableModDuplicate: Boolean=true,
+    optEnableClear: Boolean=false,
+    vivadoDebug: Boolean=false,
+  ) /*extends Bundle*/ = {
+    //val clear = (optEnableClear) generate (
+    //  /*slave*/(Flow(
+    //    UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
+    //  ))
+    //)
+    PipeMemRmwIo[
+      WordT,
+      HazardCmpT,
+      ModT,
+      DualRdT
+    ](
+      wordType=wordType(),
+      wordCount=wordCount,
+      modType=modType(),
+      modStageCnt=modStageCnt,
+      dualRdType=dualRdType(),
+      optDualRd=true,
+      optReorder=true,
+      optEnableModDuplicate=optEnableModDuplicate,
+      optEnableClear=optEnableClear,
+      vivadoDebug=vivadoDebug,
+    )
+    //val front = Node()
+    //val frontPayload = Payload(modType())
+    //val modFront = Node()
+    //val modFrontPayload = Payload(modType())
+    //val modBack = Node()
+    //val modBackPayload = Payload(modType())
+    //val midModStages = (
+    //  /*(modStageCnt > 1)*/ optEnableModDuplicate generate (
+    //    /*in*/(
+    //      Vec.fill(
+    //        modStageCnt //- 1 //- 2
+    //      )(modType())
+    //    )
+    //  )
+    //)
+    //val back = Node()
+    //val backPayload = Payload(modType())
+    //val dualRdFront = Node()
+    //val dualRdFrontPayload = Payload(dualRdType())
+    //val dualRdBack = Node()
+    //val dualRdBackPayload = Payload(dualRdType())
+  }
+}
+//class PipeMemRmwReorderDualRdExtBase
+////[
+////  //WordT <: Data,
+////  //HazardCmpT <: Data,
+////]
+//(
+//  //wordType: HardType[WordT],
+//  wordCount: Int,
+//  //hazardCmpType
+//) extends Bundle {
+//  //--------
+//  //val head = UInt((PipeMemRmw.addrWidth(wordCount=wordCount) + 1) bits)
+//  //val tail = UInt((PipeMemRmw.addrWidth(wordCount=wordCount) + 1) bits)
+//  //--------
+//}
+
+//case class PipeMemRmwReorderDualRdType[
+//  WordT <: Data,
+//  HazardCmpT <: Data,
+//  DualRdExtT <: Data,
+//](
+//  wordType: HardType[WordT],
+//  wordCount: Int,
+//  hazardCmpType: HardType[HazardCmpT],
+//  modStageCnt: Int,
+//  dualRdExtType: HardType[DualRdExtT],
+//) extends Bundle with PipeMemRmwPayloadBase[WordT, HazardCmpT] {
+//  //--------
+//  val myDualRdExt = dualRdExtType()
+//  //--------
+//  val myExt = PipeMemRmwPayloadExt(
+//    wordType=wordType(),
+//    wordCount=wordCount,
+//    hazardCmpType=hazardCmpType(),
+//    modStageCnt=modStageCnt,
+//  )
+//  //--------
+//  def setPipeMemRmwExt(
+//    ext: PipeMemRmwPayloadExt[WordT, HazardCmpT],
+//    memArrIdx: Int,
+//  ): Unit = {
+//    myExt := ext
+//  }
+//  def getPipeMemRmwExt(
+//    ext: PipeMemRmwPayloadExt[WordT, HazardCmpT],
+//    memArrIdx: Int,
+//  ): Unit = {
+//    ext := myExt
+//  }
+//  //--------
+//}
+// a generic pipelined reorder buffer, for use with OoOE CPUs and OoO buses
+// (such as Tilelink)
+//case class PipeMemRmwReorder[
+//  WordT <: Data,
+//  HazardCmpT <: Data,
+//  ModT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
+//  DualRdT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
+//](
+//  wordType: HardType[WordT],
+//  wordCount: Int,
+//  hazardCmpType: HardType[HazardCmpT],
+//  modType: HardType[ModT],
+//  modStageCnt: Int,
+//  pipeName: String,
+//  dualRdType: HardType[DualRdT],
+//  linkArr: Option[ArrayBuffer[Link]]=None,
+//  memArrIdx: Int=0,
+//  init: Option[Seq[WordT]]=None,
+//  initBigInt: Option[Seq[BigInt]]=None,
+//  optEnableModDuplicate: Boolean=true,
+//  optEnableClear: Boolean=false,
+//  memRamStyle: String="auto",
+//  vivadoDebug: Boolean=false,
+//) extends Component {
+//  //--------
+//  val io = PipeMemRmwReorderIo[
+//    WordT,
+//    HazardCmpT,
+//    ModT,
+//    DualRdT,
+//  ](
+//    wordType=wordType(),
+//    wordCount=wordCount,
+//    modType=modType,
+//    modStageCnt=modStageCnt,
+//    dualRdType=dualRdType(),
+//    optEnableModDuplicate=optEnableModDuplicate,
+//    optEnableClear=optEnableClear,
+//    vivadoDebug=vivadoDebug
+//  )
+//  //--------
+//  //--------
+//}
 case class SamplePipeMemRmwModType[
   WordT <: Data,
   HazardCmpT <: Data,
@@ -3490,6 +3850,7 @@ case class SamplePipeMemRmwModType[
   wordCount: Int,
   hazardCmpType: HardType[HazardCmpT],
   modStageCnt: Int,
+  optReorder: Boolean=false,
 ) extends Bundle with PipeMemRmwPayloadBase[WordT, HazardCmpT] {
   //--------
   val myExt = PipeMemRmwPayloadExt(
@@ -3497,6 +3858,7 @@ case class SamplePipeMemRmwModType[
     wordCount=wordCount,
     hazardCmpType=hazardCmpType(),
     modStageCnt=modStageCnt,
+    optReorder=optReorder,
   )
   //--------
   def setPipeMemRmwExt(
