@@ -273,6 +273,7 @@ extends Component
       hazardCmpType=Bool(),
       modStageCnt=modStageCnt,
       optEnableModDuplicate=false,
+      //optReorder=true,
     )
     //if (vivadoDebug) {
     //  ret.addAttribute("MARK_DEBUG", "TRUE")

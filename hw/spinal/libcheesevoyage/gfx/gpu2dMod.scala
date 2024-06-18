@@ -7109,6 +7109,7 @@ case class Gpu2d(
         hazardCmpType=WrObjPipeSlmRmwHazardCmp(isAffine=isAffine),
         modStageCnt=wrObjPipeIdxSlmRmwModStageCnt,
         optEnableModDuplicate=true,
+        //optReorder=true,
       )
       def setPipeMemRmwExt(
         inpExt: PipeMemRmwPayloadExt[

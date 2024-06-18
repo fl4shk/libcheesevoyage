@@ -592,6 +592,7 @@ extends Area {
     dualRdType=dualRdType(),
     //dualRdSize=dualRdSize,
     optDualRd=optDualRd,
+    optReorder=optReorder,
     optEnableModDuplicate=optEnableModDuplicate,
     optEnableClear=optEnableClear,
     vivadoDebug=vivadoDebug,
@@ -742,7 +743,9 @@ extends Area {
     val rReorderCommitHead = (optReorder) generate (
       Reg(UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)) init(0x0)
     )
-    io.reorderCommitHead := rReorderCommitHead
+    if (optReorder) {
+      io.reorderCommitHead := rReorderCommitHead
+    }
     //--------
     val front = new Area {
       val pipe = PipeHelper(linkArr=myLinkArr)
@@ -2856,7 +2859,7 @@ extends Area {
         && upExt(0).reqReorderCommit
       ) {
         mod.rReorderCommitHead := mod.rReorderCommitHead
-        //upExt(0).didReorderCommit 
+        upExt(1).didReorderCommit := True
       }
     }
     memWriteAll(
@@ -3177,33 +3180,37 @@ extends Area {
       //  address=myInpUpExt.memAddr,
       //  enable=up.isFiring,
       //)
-      when (
-        if (!optReorder) (
-          True
-        ) else (
-          myInpUpExt.memAddrReorderValid
-        )
-      ) {
-        myRdMemWord := dualRdMem.readSync(
-          address=myInpUpExt.memAddr,
-          enable=up.isFiring,
-        )
-      } otherwise {
-        myRdMemWord := dualRdMem.readSync(
-          address=rReorderCommitHead,
-          enable=up.isFiring,
-        )
-        val reorderMemAddrPlus1 = (
-          Cat(B"1'b0", rReorderCommitHead).asUInt + 1
-        )
-        when (reorderMemAddrPlus1 < wordCount) {
-          rReorderCommitHead := 0x0
-        } otherwise {
-          rReorderCommitHead := (
-            reorderMemAddrPlus1(rReorderCommitHead.bitsRange)
-          )
-        }
-      }
+      myRdMemWord := dualRdMem.readSync(
+        address=myInpUpExt.memAddr,
+        enable=up.isFiring,
+      )
+      //when (
+      //  if (!optReorder) (
+      //    True
+      //  ) else (
+      //    myInpUpExt.memAddrReorderValid
+      //  )
+      //) {
+      //  myRdMemWord := dualRdMem.readSync(
+      //    address=myInpUpExt.memAddr,
+      //    enable=up.isFiring,
+      //  )
+      //} otherwise {
+      //  myRdMemWord := dualRdMem.readSync(
+      //    address=rReorderCommitHead,
+      //    enable=up.isFiring,
+      //  )
+      //  val reorderMemAddrPlus1 = (
+      //    Cat(B"1'b0", rReorderCommitHead).asUInt + 1
+      //  )
+      //  when (reorderMemAddrPlus1 < wordCount) {
+      //    rReorderCommitHead := 0x0
+      //  } otherwise {
+      //    rReorderCommitHead := (
+      //      reorderMemAddrPlus1(rReorderCommitHead.bitsRange)
+      //    )
+      //  }
+      //}
     }
     val cDualRdMid0Area = new cMid0.Area {
       val myInpDualRd = dualRdType()
