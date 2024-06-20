@@ -1790,322 +1790,322 @@ case class Gpu2dTest(
         ).resized
       )
     } 
-    //else if (idx == 1) {
-    //  //--------
-    //  //tempBgEntryPush.valid := tempBgEntryPush.valid.getZero
-    //  //tempBgEntryPush.payload := tempBgEntryPush.payload.getZero
-    //  //val myMemAddrExtCalcPos = LcvVideoCalcPos(
-    //  //  someSize2d=params.bgSize2dInTiles
-    //  //)
-    //  //  .addAttribute("keep")
-    //  //  .setName("myBg1EntryMemAddrExtCalcPos")
-    //  //myMemAddrExtCalcPos.io.en := (
-    //  //  //True
-    //  //  pop.bgEntryPushArr(0).fire
-    //  //)
-    //  //--------
-    //  //val tempFbSize2d = ElabVec2[Int](
-    //  //  x=min(
-    //  //    Gpu2dTestGfx.sampleBgMapSize2d.x * 16,
-    //  //    params.intnlFbSize2d.x,
-    //  //  ),
-    //  //  y=min(
-    //  //    Gpu2dTestGfx.sampleBgMapSize2d.y * 16,
-    //  //    params.intnlFbSize2d.y,
-    //  //  ),
-    //  //)
-    //  //val tempFbSize2d = Gpu2dTest.mkBgEntryMapTempFbSize2d(
-    //  //  params=params,
-    //  //  someMapSize2d=Gpu2dTestGfx.sampleBgMapSize2d,
-    //  //)
-    //  //val myMemAddrCalcPos = LcvVideoCalcPos(
-    //  //  someSize2d=ElabVec2[Int](
-    //  //    x=params.intnlFbSize2d.x / params.bgTileSize2d.x,
-    //  //    y=params.intnlFbSize2d.y / params.bgTileSize2d.y,
-    //  //  )
-    //  //)
-    //  //  .addAttribute("keep")
-    //  //  .setName("myBg1EntryMemAddrCalcPos")
-    //  //val tempCalcPosEn = (
-    //  //  /*RegNext*/(RegNext(
-    //  //    (
-    //  //      /*RegNext*/(RegNext(rBg1EntryExtCntV2d)).x //- 1
-    //  //      < (
-    //  //        params.intnlFbSize2d.x / params.bgTileSize2d.x
-    //  //      )
-    //  //    ) && (
-    //  //      /*RegNext*/(RegNext(rBg1EntryExtCntV2d)).y 
-    //  //      < (
-    //  //        params.intnlFbSize2d.y / params.bgTileSize2d.y
-    //  //      )
-    //  //    ),
-    //  //    init=False
-    //  //  )) //init(False)
-    //  //)
-    //  //myMemAddrCalcPos.io.en := (
-    //  //  //tempBgEntryPush.fire
-    //  //  tempCalcPosEn
-    //  //)
-    //  //--------
-    //  //nextBg1EntryCntV2d.x := (
-    //  //  /*RegNext*/(RegNext(RegNext(myMemAddrCalcPos.io.info.pos))).x
-    //  //  .resized
-    //  //)
-    //  //nextBg1EntryCntV2d.y := (
-    //  //  /*RegNext*/(RegNext(RegNext(myMemAddrCalcPos.io.info.pos))).y
-    //  //  .resized
-    //  //)
-    //  //nextBg1EntryExtCntV2d.x := (
-    //  //  myMemAddrExtCalcPos.io.info.pos.x.resized
-    //  //)
-    //  //nextBg1EntryExtCntV2d.y := (
-    //  //  myMemAddrExtCalcPos.io.info.pos.y.resized
-    //  //)
-    //  //--------
-    //  tempBgEntryPush.valid := (
-    //    (rBg1EntryCnt + 1)
-    //    < (params.bgSize2dInTiles.x * params.bgSize2dInTiles.y)
-    //    //(
-    //    //  RegNextWhen(
-    //    //    False, (
-    //    //      myMemAddrExtCalcPos.io.info.posWillOverflow.x
-    //    //      && myMemAddrExtCalcPos.io.info.posWillOverflow.y
-    //    //    )
-    //    //  ) init(True)
-    //    //) && (
-    //    //  RegNext(RegNext(RegNext(RegNext(
-    //    //    RegNext(
-    //    //      (RegNext(Cat(B"12'd0",rBg1EntryExtCntV2d.x).asUInt))
-    //    //      //- 1
-    //    //      < (
-    //    //        //params.intnlFbSize2d.x / params.bgTileSize2d.x
-    //    //        tempFbSize2d.x / params.bgTileSize2d.x
-    //    //      )
-    //    //    ) && RegNext(
-    //    //      (RegNext(Cat(B"12'd0", rBg1EntryExtCntV2d.y).asUInt))
-    //    //      < (
-    //    //        //params.intnlFbSize2d.y / params.bgTileSize2d.y
-    //    //        tempFbSize2d.y / params.bgTileSize2d.y
-    //    //      )
-    //    //    ))
-    //    //  ))) //init(False)
-    //    //)
-    //  )
-    //  when (tempBgEntryPush.fire) {
-    //    nextBg1EntryCnt := rBg1EntryCnt + 1
-    //  }
-    //  //val nextBg1EntryCnt = cloneOf(nextBg0EntryCnt)
-    //  //val rBg1EntryCnt = RegNext(nextBg1EntryCnt) init(0x0)
-    //  //tempBgEntryPush.payload := (
-    //  //  tempBgEntryPush.payload.getZero
-    //  //)
-    //  //val myBg1EntryCntMerged = (
-    //  //  Cat(
-    //  //    rBg1EntryCntV2d.y,
-    //  //    rBg1EntryCntV2d.x,
-    //  //  ).asUInt
-    //  //)
-    //  //when (
-    //  //  //nextBg0EntryCnt === rBg0EntryCnt + 1
-    //  //  tempBgEntryPush.fire
-    //  //) {
-    //  //  //nextBg1EntryCntV2d.assignFromBits(
-    //  //  //  (rBg1EntryCntV2d.asBits.asUInt + 1).asBits
-    //  //  //)
-    //  //  //val tempCntV2d = (
-    //  //  //  Cat(
-    //  //  //    rBg1EntryCntV2d.y,
-    //  //  //    rBg1EntryCntV2d.x,
-    //  //  //  ).asUInt + 1
-    //  //  //)
-    //  //  //nextBg1EntryCntV2d.x := (
-    //  //  //  tempCntV2d(nextBg1EntryCntV2d.x.bitsRange)
-    //  //  //)
-    //  //  //nextBg1EntryCntV2d.y := (
-    //  //  //  tempCntV2d(
-    //  //  //    tempCntV2d.high
-    //  //  //    downto nextBg1EntryCntV2d.x.getWidth
-    //  //  //  )
-    //  //  //)
-    //  //}
-    //  //--------
-    //  //--------
-    //  //def myMapArr = Gpu2dTestGfx.sampleBgMapArr
-    //  val myBg1MapArr = Gpu2dTest.mkBgEntryMapArr(
-    //    params=params,
-    //    someMapArr=Gpu2dTestGfx.sampleBgMapArr,
-    //    someMapSize2d=Gpu2dTestGfx.sampleBgMapSize2d,
-    //  )
-    //    .setName("myBg1MapArr")
-    //    .addAttribute("keep")
-    //  //val myBg1MapArr = Mem(
-    //  //  wordType=(
-    //  //    UInt(16 bits)
-    //  //    //UInt(8 bits)
-    //  //  ),
-    //  //  //wordCount=myMapArr.size,
-    //  //  wordCount=(
-    //  //    params.bgSize2dInTiles.y * params.bgSize2dInTiles.x
-    //  //  ),
-    //  //)
-    //  //  .initBigInt({
-    //  //    val tempArr = new ArrayBuffer[BigInt]()
-    //  //    ////var jdx: Int = 0
-    //  //    //for (jdx <- 0 until myMapArr.size) {
-    //  //    //  //val tempY = 
-    //  //    //  tempArr += BigInt(myMapArr(jdx))
-    //  //    //}
-    //  //    var z: Int = 0
-    //  //    for (jdx <- 0 until params.bgSize2dInTiles.y) {
-    //  //      for (kdx <- 0 until params.bgSize2dInTiles.x) {
-    //  //        if (
-    //  //          jdx
-    //  //          < (
-    //  //            //params.intnlFbSize2d.y / params.bgTileSize2d.y
-    //  //            //tempFbSize2d.y / params.bgTileSize2d.y
-    //  //            Gpu2dTestGfx.sampleBgMapSize2d.y
-    //  //          )
-    //  //          && kdx
-    //  //          < (
-    //  //            //params.intnlFbSize2d.x / params.bgTileSize2d.x
-    //  //            //tempFbSize2d.x / params.bgTileSize2d.x
-    //  //            Gpu2dTestGfx.sampleBgMapSize2d.x
-    //  //          )
-    //  //        ) {
-    //  //          //println(s"inner: ($kdx, $jdx)")
-    //  //          if (
-    //  //            (
-    //  //              jdx < tempFbSize2d.y / params.bgTileSize2d.y
-    //  //            ) && (
-    //  //              jdx < tempFbSize2d.x / params.bgTileSize2d.x
-    //  //            )
-    //  //          ) {
-    //  //            tempArr += BigInt(myMapArr(z))
-    //  //          } else {
-    //  //            tempArr += BigInt(0)
-    //  //          }
-    //  //          z += 1
-    //  //        } else {
-    //  //          //println(s"outer: ($kdx, $jdx)")
-    //  //          //tempArr += BigInt(64)
-    //  //          tempArr += BigInt(0)
-    //  //        }
-    //  //      }
-    //  //    }
-    //  //    tempArr.toSeq
-    //  //  })
-    //  //  .setName("myBg1MapArr")
-    //  //  .addAttribute("keep")
-    //  val myPayload = (
-    //    KeepAttribute(cloneOf(tempBgEntryPush.payload))
-    //    .setName(f"myTempBgEntryPushPayload_$idx")
-    //  )
-    //  tempBgEntryPush.payload := /*RegNext*/(myPayload)
-    //  //val myBg1MemIdx = (
-    //  //  KeepAttribute(RegNext(rBg1EntryCntV2d).asBits.asUInt)
-    //  //  //rBg0EntryCnt
-    //  //  .setName("myBg1MemIdx")
-    //  //)
+    else if (idx == 1) {
+      //--------
+      //tempBgEntryPush.valid := tempBgEntryPush.valid.getZero
+      //tempBgEntryPush.payload := tempBgEntryPush.payload.getZero
+      //val myMemAddrExtCalcPos = LcvVideoCalcPos(
+      //  someSize2d=params.bgSize2dInTiles
+      //)
+      //  .addAttribute("keep")
+      //  .setName("myBg1EntryMemAddrExtCalcPos")
+      //myMemAddrExtCalcPos.io.en := (
+      //  //True
+      //  pop.bgEntryPushArr(0).fire
+      //)
+      //--------
+      //val tempFbSize2d = ElabVec2[Int](
+      //  x=min(
+      //    Gpu2dTestGfx.sampleBgMapSize2d.x * 16,
+      //    params.intnlFbSize2d.x,
+      //  ),
+      //  y=min(
+      //    Gpu2dTestGfx.sampleBgMapSize2d.y * 16,
+      //    params.intnlFbSize2d.y,
+      //  ),
+      //)
+      //val tempFbSize2d = Gpu2dTest.mkBgEntryMapTempFbSize2d(
+      //  params=params,
+      //  someMapSize2d=Gpu2dTestGfx.sampleBgMapSize2d,
+      //)
+      //val myMemAddrCalcPos = LcvVideoCalcPos(
+      //  someSize2d=ElabVec2[Int](
+      //    x=params.intnlFbSize2d.x / params.bgTileSize2d.x,
+      //    y=params.intnlFbSize2d.y / params.bgTileSize2d.y,
+      //  )
+      //)
+      //  .addAttribute("keep")
+      //  .setName("myBg1EntryMemAddrCalcPos")
+      //val tempCalcPosEn = (
+      //  /*RegNext*/(RegNext(
+      //    (
+      //      /*RegNext*/(RegNext(rBg1EntryExtCntV2d)).x //- 1
+      //      < (
+      //        params.intnlFbSize2d.x / params.bgTileSize2d.x
+      //      )
+      //    ) && (
+      //      /*RegNext*/(RegNext(rBg1EntryExtCntV2d)).y 
+      //      < (
+      //        params.intnlFbSize2d.y / params.bgTileSize2d.y
+      //      )
+      //    ),
+      //    init=False
+      //  )) //init(False)
+      //)
+      //myMemAddrCalcPos.io.en := (
+      //  //tempBgEntryPush.fire
+      //  tempCalcPosEn
+      //)
+      //--------
+      //nextBg1EntryCntV2d.x := (
+      //  /*RegNext*/(RegNext(RegNext(myMemAddrCalcPos.io.info.pos))).x
+      //  .resized
+      //)
+      //nextBg1EntryCntV2d.y := (
+      //  /*RegNext*/(RegNext(RegNext(myMemAddrCalcPos.io.info.pos))).y
+      //  .resized
+      //)
+      //nextBg1EntryExtCntV2d.x := (
+      //  myMemAddrExtCalcPos.io.info.pos.x.resized
+      //)
+      //nextBg1EntryExtCntV2d.y := (
+      //  myMemAddrExtCalcPos.io.info.pos.y.resized
+      //)
+      //--------
+      tempBgEntryPush.valid := (
+        (rBg1EntryCnt + 1)
+        < (params.bgSize2dInTiles.x * params.bgSize2dInTiles.y)
+        //(
+        //  RegNextWhen(
+        //    False, (
+        //      myMemAddrExtCalcPos.io.info.posWillOverflow.x
+        //      && myMemAddrExtCalcPos.io.info.posWillOverflow.y
+        //    )
+        //  ) init(True)
+        //) && (
+        //  RegNext(RegNext(RegNext(RegNext(
+        //    RegNext(
+        //      (RegNext(Cat(B"12'd0",rBg1EntryExtCntV2d.x).asUInt))
+        //      //- 1
+        //      < (
+        //        //params.intnlFbSize2d.x / params.bgTileSize2d.x
+        //        tempFbSize2d.x / params.bgTileSize2d.x
+        //      )
+        //    ) && RegNext(
+        //      (RegNext(Cat(B"12'd0", rBg1EntryExtCntV2d.y).asUInt))
+        //      < (
+        //        //params.intnlFbSize2d.y / params.bgTileSize2d.y
+        //        tempFbSize2d.y / params.bgTileSize2d.y
+        //      )
+        //    ))
+        //  ))) //init(False)
+        //)
+      )
+      when (tempBgEntryPush.fire) {
+        nextBg1EntryCnt := rBg1EntryCnt + 1
+      }
+      //val nextBg1EntryCnt = cloneOf(nextBg0EntryCnt)
+      //val rBg1EntryCnt = RegNext(nextBg1EntryCnt) init(0x0)
+      //tempBgEntryPush.payload := (
+      //  tempBgEntryPush.payload.getZero
+      //)
+      //val myBg1EntryCntMerged = (
+      //  Cat(
+      //    rBg1EntryCntV2d.y,
+      //    rBg1EntryCntV2d.x,
+      //  ).asUInt
+      //)
+      //when (
+      //  //nextBg0EntryCnt === rBg0EntryCnt + 1
+      //  tempBgEntryPush.fire
+      //) {
+      //  //nextBg1EntryCntV2d.assignFromBits(
+      //  //  (rBg1EntryCntV2d.asBits.asUInt + 1).asBits
+      //  //)
+      //  //val tempCntV2d = (
+      //  //  Cat(
+      //  //    rBg1EntryCntV2d.y,
+      //  //    rBg1EntryCntV2d.x,
+      //  //  ).asUInt + 1
+      //  //)
+      //  //nextBg1EntryCntV2d.x := (
+      //  //  tempCntV2d(nextBg1EntryCntV2d.x.bitsRange)
+      //  //)
+      //  //nextBg1EntryCntV2d.y := (
+      //  //  tempCntV2d(
+      //  //    tempCntV2d.high
+      //  //    downto nextBg1EntryCntV2d.x.getWidth
+      //  //  )
+      //  //)
+      //}
+      //--------
+      //--------
+      //def myMapArr = Gpu2dTestGfx.sampleBgMapArr
+      val myBg1MapArr = Gpu2dTest.mkBgEntryMapArr(
+        params=params,
+        someMapArr=Gpu2dTestGfx.sampleBgMapArr,
+        someMapSize2d=Gpu2dTestGfx.sampleBgMapSize2d,
+      )
+        .setName("myBg1MapArr")
+        .addAttribute("keep")
+      //val myBg1MapArr = Mem(
+      //  wordType=(
+      //    UInt(16 bits)
+      //    //UInt(8 bits)
+      //  ),
+      //  //wordCount=myMapArr.size,
+      //  wordCount=(
+      //    params.bgSize2dInTiles.y * params.bgSize2dInTiles.x
+      //  ),
+      //)
+      //  .initBigInt({
+      //    val tempArr = new ArrayBuffer[BigInt]()
+      //    ////var jdx: Int = 0
+      //    //for (jdx <- 0 until myMapArr.size) {
+      //    //  //val tempY = 
+      //    //  tempArr += BigInt(myMapArr(jdx))
+      //    //}
+      //    var z: Int = 0
+      //    for (jdx <- 0 until params.bgSize2dInTiles.y) {
+      //      for (kdx <- 0 until params.bgSize2dInTiles.x) {
+      //        if (
+      //          jdx
+      //          < (
+      //            //params.intnlFbSize2d.y / params.bgTileSize2d.y
+      //            //tempFbSize2d.y / params.bgTileSize2d.y
+      //            Gpu2dTestGfx.sampleBgMapSize2d.y
+      //          )
+      //          && kdx
+      //          < (
+      //            //params.intnlFbSize2d.x / params.bgTileSize2d.x
+      //            //tempFbSize2d.x / params.bgTileSize2d.x
+      //            Gpu2dTestGfx.sampleBgMapSize2d.x
+      //          )
+      //        ) {
+      //          //println(s"inner: ($kdx, $jdx)")
+      //          if (
+      //            (
+      //              jdx < tempFbSize2d.y / params.bgTileSize2d.y
+      //            ) && (
+      //              jdx < tempFbSize2d.x / params.bgTileSize2d.x
+      //            )
+      //          ) {
+      //            tempArr += BigInt(myMapArr(z))
+      //          } else {
+      //            tempArr += BigInt(0)
+      //          }
+      //          z += 1
+      //        } else {
+      //          //println(s"outer: ($kdx, $jdx)")
+      //          //tempArr += BigInt(64)
+      //          tempArr += BigInt(0)
+      //        }
+      //      }
+      //    }
+      //    tempArr.toSeq
+      //  })
+      //  .setName("myBg1MapArr")
+      //  .addAttribute("keep")
+      val myPayload = (
+        KeepAttribute(cloneOf(tempBgEntryPush.payload))
+        .setName(f"myTempBgEntryPushPayload_$idx")
+      )
+      tempBgEntryPush.payload := /*RegNext*/(myPayload)
+      //val myBg1MemIdx = (
+      //  KeepAttribute(RegNext(rBg1EntryCntV2d).asBits.asUInt)
+      //  //rBg0EntryCnt
+      //  .setName("myBg1MemIdx")
+      //)
 
-    //  myPayload.memIdx := RegNext(
-    //    //rBg0EntryCnt.asUInt(pop.bgEntryPushArr(0).payload.memIdx.bitsRange)
-    //    rBg1EntryCnt.asUInt(myPayload.memIdx.bitsRange)
-    //    //rBg1EntryCntMerged
-    //    ///*RegNext*/(myBg1MemIdx(myPayload.memIdx.bitsRange))//.asUInt
-    //    //(RegNext(rBg0EntryCnt).asUInt(myPayload.memIdx.bitsRange))//.asUInt
-    //    //(
-    //    //  RegNext(
-    //    //    //rBg1EntryCntV2d
-    //    //    rBg1EntryExtCntV2d
-    //    //  ).y
-    //    //  * (
-    //    //    params.bgSize2dInTiles.x
-    //    //    /// params.bgTileSize2d.x
-    //    //  )
-    //    //  + RegNext(
-    //    //    //rBg1EntryCntV2d
-    //    //    rBg1EntryExtCntV2d
-    //    //  ).x
-    //    //)/*.asUInt*/(myPayload.memIdx.bitsRange)
-    //  )
-    //  myPayload.bgEntry := myPayload.bgEntry.getZero
-    //  myPayload.bgEntry.allowOverride
-    //  //myPayload.bgEntry.tileIdx := rBgEntryCnt.asUInt.resized
-    //  //val myReadSyncEnable = KeepAttribute(
-    //  //  {
-    //  //    val tempX = Cat(B"16'd0", /*RegNext*/(rBg1EntryCntV2d.x)).asUInt
-    //  //    (
-    //  //      tempX
-    //  //      <= (params.intnlFbSize2d.x / params.bgTileSize2d.x)
-    //  //    )
-    //  //  } && {
-    //  //    val tempY = Cat(B"16'd0", /*RegNext*/(rBg1EntryCntV2d).y).asUInt
-    //  //    (
-    //  //      //(
-    //  //      //  //tempY >= myBg1EntryCntYInit
-    //  //      //  True
-    //  //      //) && (
-    //  //        tempY
-    //  //        <= (
-    //  //          (params.intnlFbSize2d.y / params.bgTileSize2d.y)
-    //  //          //+ myBg1EntryCntYInit - 1
-    //  //        )
-    //  //      //)
-    //  //    )
-    //  //  }
-    //  //)
-    //  //  .setName("myBg1ReadSyncEnable")
-    //  val myBg1MemAddr = KeepAttribute(
-    //    //RegNext(/*RegNext*/(
-    //    //  (
-    //    //    //Cat(
-    //    //      //B"16'd0",
-    //    //      /*RegNext*/(/*RegNext*/(rBg1EntryCntV2d)).y //- myBg1EntryCntYInit
-    //    //    //).asUInt.resized
-    //    //    * (
-    //    //      //params.bgSize2dInTiles.x
-    //    //      //params.intnlFbSize2d.x / params.bgTileSize2d.x
-    //    //      Gpu2dTestGfx.sampleBgMapSize2d.x /// params.bgTileSize2d.x
-    //    //    )
-    //    //  )
-    //    //  + /*RegNext*/(/*RegNext*/(rBg1EntryCntV2d)).x.resized
-    //    //  //rBg0EntryCnt.asUInt.resized
-    //    //))
-    //    /*RegNext*/(
-    //      rBg1EntryCnt.asUInt.resized
-    //    )
-    //  )
-    //    .setName("myBg1MemAddr")
-    //  //myPayload.bgEntry.tileIdx := (
-    //  //  RegNext(myPayload.bgEntry.tileIdx)
-    //  //  init(myPayload.bgEntry.tileIdx.getZero)
-    //  //)
-    //  //when (myReadSyncEnable) {
-    //    myPayload.bgEntry.tileIdx := (
-    //      //0x0
-    //      //3
-    //      //4
-    //      //if (params.bgTileSize2d.x == 8) (
-    //      //  3 * 4
-    //      //) else (
-    //      //  3
-    //      //)
-    //      //--------
-    //      myBg1MapArr.readSync(
-    //        //address=nextBg1EntryCnt.asUInt.resized//rBgEntryCnt.asUInt.resized
-    //        address=(
-    //          myBg1MemAddr
-    //        ).resized,
-    //        //enable=myReadSyncEnable,
-    //      ).resized
-    //      //--------
-    //    )
-    //  //}
-    //  //myPayload.bgEntry.dispFlip.x := True
-    //  //myPayload.bgEntry.dispFlip.y := True
-    //  //myPayload.bgEntry.dispFlip.x := rBgEntryCnt(0)
-    //  //myPayload.bgEntry.dispFlip.y := rBgEntryCnt(1)
-    //} 
+      myPayload.memIdx := RegNext(
+        //rBg0EntryCnt.asUInt(pop.bgEntryPushArr(0).payload.memIdx.bitsRange)
+        rBg1EntryCnt.asUInt(myPayload.memIdx.bitsRange)
+        //rBg1EntryCntMerged
+        ///*RegNext*/(myBg1MemIdx(myPayload.memIdx.bitsRange))//.asUInt
+        //(RegNext(rBg0EntryCnt).asUInt(myPayload.memIdx.bitsRange))//.asUInt
+        //(
+        //  RegNext(
+        //    //rBg1EntryCntV2d
+        //    rBg1EntryExtCntV2d
+        //  ).y
+        //  * (
+        //    params.bgSize2dInTiles.x
+        //    /// params.bgTileSize2d.x
+        //  )
+        //  + RegNext(
+        //    //rBg1EntryCntV2d
+        //    rBg1EntryExtCntV2d
+        //  ).x
+        //)/*.asUInt*/(myPayload.memIdx.bitsRange)
+      )
+      myPayload.bgEntry := myPayload.bgEntry.getZero
+      myPayload.bgEntry.allowOverride
+      //myPayload.bgEntry.tileIdx := rBgEntryCnt.asUInt.resized
+      //val myReadSyncEnable = KeepAttribute(
+      //  {
+      //    val tempX = Cat(B"16'd0", /*RegNext*/(rBg1EntryCntV2d.x)).asUInt
+      //    (
+      //      tempX
+      //      <= (params.intnlFbSize2d.x / params.bgTileSize2d.x)
+      //    )
+      //  } && {
+      //    val tempY = Cat(B"16'd0", /*RegNext*/(rBg1EntryCntV2d).y).asUInt
+      //    (
+      //      //(
+      //      //  //tempY >= myBg1EntryCntYInit
+      //      //  True
+      //      //) && (
+      //        tempY
+      //        <= (
+      //          (params.intnlFbSize2d.y / params.bgTileSize2d.y)
+      //          //+ myBg1EntryCntYInit - 1
+      //        )
+      //      //)
+      //    )
+      //  }
+      //)
+      //  .setName("myBg1ReadSyncEnable")
+      val myBg1MemAddr = KeepAttribute(
+        //RegNext(/*RegNext*/(
+        //  (
+        //    //Cat(
+        //      //B"16'd0",
+        //      /*RegNext*/(/*RegNext*/(rBg1EntryCntV2d)).y //- myBg1EntryCntYInit
+        //    //).asUInt.resized
+        //    * (
+        //      //params.bgSize2dInTiles.x
+        //      //params.intnlFbSize2d.x / params.bgTileSize2d.x
+        //      Gpu2dTestGfx.sampleBgMapSize2d.x /// params.bgTileSize2d.x
+        //    )
+        //  )
+        //  + /*RegNext*/(/*RegNext*/(rBg1EntryCntV2d)).x.resized
+        //  //rBg0EntryCnt.asUInt.resized
+        //))
+        /*RegNext*/(
+          rBg1EntryCnt.asUInt.resized
+        )
+      )
+        .setName("myBg1MemAddr")
+      //myPayload.bgEntry.tileIdx := (
+      //  RegNext(myPayload.bgEntry.tileIdx)
+      //  init(myPayload.bgEntry.tileIdx.getZero)
+      //)
+      //when (myReadSyncEnable) {
+        myPayload.bgEntry.tileIdx := (
+          //0x0
+          //3
+          //4
+          //if (params.bgTileSize2d.x == 8) (
+          //  3 * 4
+          //) else (
+          //  3
+          //)
+          //--------
+          myBg1MapArr.readSync(
+            //address=nextBg1EntryCnt.asUInt.resized//rBgEntryCnt.asUInt.resized
+            address=(
+              myBg1MemAddr
+            ).resized,
+            //enable=myReadSyncEnable,
+          ).resized
+          //--------
+        )
+      //}
+      //myPayload.bgEntry.dispFlip.x := True
+      //myPayload.bgEntry.dispFlip.y := True
+      //myPayload.bgEntry.dispFlip.x := rBgEntryCnt(0)
+      //myPayload.bgEntry.dispFlip.y := rBgEntryCnt(1)
+    } 
     else {
       tempBgEntryPush.valid := True
       tempBgEntryPush.payload := tempBgEntryPush.payload.getZero

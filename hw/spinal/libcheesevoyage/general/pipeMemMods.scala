@@ -152,9 +152,14 @@ case class PipeMemRmwPayloadExt[
       PipeMemRmw.numPostFrontStages(
         modStageCnt=modStageCnt,
       )
-    ) + 3 bits)
+    ) + 4 bits)
     //UInt(log2Up(modStageCnt) bits)
   )
+  //if (optEnableModDuplicate) {
+  //  println(
+  //    s"hazardId.getWidth: ${hazardId.getWidth}"
+  //  )
+  //}
   def getHazardIdIdleVal() = (
     -1
   )
@@ -373,7 +378,7 @@ case class PipeMemRmwIo[
   //}
 
   val midModStages = (
-    /*(modStageCnt > 1)*/ optEnableModDuplicate generate (
+    (modStageCnt > 0 && optEnableModDuplicate) generate (
       /*in*/(
         Vec.fill(
           modStageCnt //- 1 //- 2
@@ -534,6 +539,18 @@ case class PipeMemRmw[
     ) => Bool
   ]=None,
   doPrevHazardCmpFunc: Boolean=false,
+  //--------
+  doModSingleStageFunc: Option[
+    //[
+    //  ModT <: Data,
+    //]
+    (
+      //PipeMemRmwPayloadExt[WordT, HazardCmpT],  // inp
+      //PipeMemRmwPayloadExt[WordT, HazardCmpT],  // outp
+      ModT, // outp
+      ModT, // inp
+    ) => Unit
+  ]=None,
   //--------
   reorderFtable: Option[PipeMemRmwReorderFtable[WordT]]=None,
   //setReorderBusyFunc: Option[
@@ -793,7 +810,8 @@ extends Area {
       //  myUpExtDel.addAttribute("MARK_DEBUG", "TRUE")
       //}
       //println(s"myUpExtDelFull.size: ${myUpExtDelFull.size}")
-      if (optEnableModDuplicate) {
+      if (optEnableModDuplicate && modStageCnt > 0) {
+        //assert(modStageCnt > 0)
         for (
           //idx <- 0 until modStageCnt - 1
           idx <- 0 until io.midModStages.size
@@ -835,6 +853,7 @@ extends Area {
       val cMid0Front = pipe.addStage(
         name=pipeName + "_Mid0Front",
         optIncludeS2M=false,
+        //finish=true,
       )
       //val cMid1Front = pipe.addStage(
       //  name=pipeName + "_Mid1Front",
@@ -1402,19 +1421,20 @@ extends Area {
                     //--------
                     //--------
                     //--------
-
-                    S(
-                      s"${nextHazardId.getWidth}"
-                      + s"'d${myUpExtDelFull.size}"
+                    (
+                      S(
+                        s"${nextHazardId.getWidth}"
+                        + s"'d${myUpExtDelFull.size}"
+                      )
+                      - Cat(
+                        U"3'd0", 
+                        //Mux[UInt](
+                        //  rPrevStateWhen === State.IDLE,
+                          tempMyUpExtDelFindFirstNotPostDelay._2,
+                        //  tempMyUpExtDelFindFirstIsPostDelay._2,
+                        //)
+                      ).asSInt
                     )
-                    - Cat(
-                      U"3'd0", 
-                      //Mux[UInt](
-                      //  rPrevStateWhen === State.IDLE,
-                        tempMyUpExtDelFindFirstNotPostDelay._2,
-                      //  tempMyUpExtDelFindFirstIsPostDelay._2,
-                      //)
-                    ).asSInt
                   )
                 )
                 //nextHaltItIdleCnt := (
@@ -2416,7 +2436,7 @@ extends Area {
     }
     upExt(1).rdMemWord.allowOverride
     val tempUpMod = (
-      Vec.fill(2)(modType())
+      Vec.fill(3)(modType())
       .setName("cMid0FrontArea_tempUpMod")
     )
     tempUpMod(0) := up(mod.front.midPipePayload)
@@ -2424,6 +2444,28 @@ extends Area {
       outpExt=upExt(0),
       memArrIdx=memArrIdx,
     )
+    //def doModSingleStage
+    ////[
+    ////  ModT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
+    ////]
+    //(
+    //  outpMod: ModT,
+    //  inpMod: ModT,
+    //): Unit = {
+    //  doModSingleStageFunc match {
+    //    case Some(myDoModSingleStage) => {
+    //      assert(modStageCnt == 0)
+    //      myDoModSingleStage(
+    //        tempUpMod(2),
+    //        tempUpMod(1),
+    //      )
+    //    }
+    //    case None => {
+    //      assert(modStageCnt > 0)
+    //      tempUpMod(2) := tempUpMod(1)
+    //    }
+    //  }
+    //}
     //val cMid0Front = mod.front.cMid0Front
     val myRdMemWord = mod.front.myRdMemWord
     //when (up.isValid) {
@@ -2493,7 +2535,28 @@ extends Area {
       inpExt=upExt(1),
       memArrIdx=memArrIdx
     )
-    up(mod.front.outpPipePayload) := tempUpMod(1)
+    doModSingleStageFunc match {
+      case Some(myDoModSingleStage) => {
+        assert(modStageCnt == 0)
+        myDoModSingleStage(
+          tempUpMod(2),
+          tempUpMod(1),
+        )
+      }
+      case None => {
+        assert(modStageCnt > 0)
+        tempUpMod(2) := tempUpMod(1)
+      }
+    }
+    up(mod.front.outpPipePayload) := tempUpMod(2)
+    //if (modStageCnt == 0) {
+    //  doModSingleStage(
+    //    outpMod=tempUpMod(2),
+    //    inpMod=tempUpMod(1),
+    //  )
+    //} else { // if (modStageCnt > 0)
+    //  tempUpMod(2) := tempUpMod(1)
+    //}
     //val rDbgSeenFrontUpFiring = (debug) generate (
     //  RegNextWhen(True, cFront.up.isFiring) init(False)
     //)
@@ -2502,17 +2565,17 @@ extends Area {
     //    cFrontArea.upExt(1).memAddr, cFront.up.isFiring
     //  ) init(0x0)
     //)
-    val tempModMemReadAsync = (debug) generate (
-      //RegNextWhen(
-      //  modMem.readAsync(
-      //    address=upExt(1).memAddr,
-      //  ),
-      //  //cFront.down.isFiring,
-      //  up.isFiring
-      //) init(myRdMemWord.getZero)
-      Reg(cloneOf(myRdMemWord)) init(myRdMemWord.getZero)
-      //cloneOf(myRdMemWord)
-    )
+    //val tempModMemReadAsync = (debug) generate (
+    //  //RegNextWhen(
+    //  //  modMem.readAsync(
+    //  //    address=upExt(1).memAddr,
+    //  //  ),
+    //  //  //cFront.down.isFiring,
+    //  //  up.isFiring
+    //  //) init(myRdMemWord.getZero)
+    //  Reg(cloneOf(myRdMemWord)) init(myRdMemWord.getZero)
+    //  //cloneOf(myRdMemWord)
+    //)
     //val rPrevTempModMemReadAsync = (debug) generate (
     //  RegNext(tempModMemReadAsync) init(tempModMemReadAsync.getZero)
     //)
@@ -3106,25 +3169,26 @@ extends Area {
     val cMid0 = pipe.addStage(
       name=pipeName + "_DualRd_Mid0",
       optIncludeS2M=false,
-    )
-    val cMid1 = pipe.addStage(
-      name=pipeName + "_DualRd_Mid1",
-      optIncludeS2M=false,
       //finish=true,
     )
-    //val cMid2 = pipe.addStage(
-    //  name=pipeName + "_DualRd_Mid2",
+    //val cMid1 = pipe.addStage(
+    //  name=pipeName + "_DualRd_Mid1",
     //  optIncludeS2M=false,
+    //  //finish=true,
     //)
-    //val rPrevMyRdMemWord = (
-    //  RegNextWhen(
-    //    myRdMemWord, cMid1.up.isFiring
-    //  ) init(myRdMemWord.getZero)
+    ////val cMid2 = pipe.addStage(
+    ////  name=pipeName + "_DualRd_Mid2",
+    ////  optIncludeS2M=false,
+    ////)
+    ////val rPrevMyRdMemWord = (
+    ////  RegNextWhen(
+    ////    myRdMemWord, cMid1.up.isFiring
+    ////  ) init(myRdMemWord.getZero)
+    ////)
+    //val cBack = pipe.addStage(
+    //  name=pipeName + "_DualRd_Back",
+    //  //finish=true,
     //)
-    val cBack = pipe.addStage(
-      name=pipeName + "_DualRd_Back",
-      //finish=true,
-    )
     val cLast = pipe.addStage(
       name=pipeName + "_DualRd_Last",
       finish=true,
@@ -3133,6 +3197,7 @@ extends Area {
       up=(
         //cBack.down
         cLast.down,
+        //cMid0.down
       ),
       down=io.dualRdBack,
     )
