@@ -527,7 +527,6 @@ case class PipeMemRmw[
   optEnableModDuplicate: Boolean=true,
   //optRegFileRdPorts: Int=0,
   optEnableClear: Boolean=false,
-  //optBackPipe: Boolean=true,
   memRamStyle: String="auto",
   vivadoDebug: Boolean=false,
 )(
@@ -554,15 +553,6 @@ case class PipeMemRmw[
       CtrlLink, // cMid0Front
     ) => Unit
   ]=None,
-  //doBackStageFunc: Option[
-  //  (
-  //    //PipeMemRmwPayloadExt[WordT, HazardCmpT],  // inp
-  //    //PipeMemRmwPayloadExt[WordT, HazardCmpT],  // outp
-  //    ModT, // outp
-  //    ModT, // inp
-  //    CtrlLink, // cBack
-  //  ) => Unit
-  //]=None,
   //--------
   reorderFtable: Option[PipeMemRmwReorderFtable[WordT]]=None,
   //setReorderBusyFunc: Option[
@@ -941,37 +931,32 @@ extends Area {
         //myWriteData.addAttribute("MARK_DEBUG", "TRUE")
         //myWriteEnable.addAttribute("MARK_DEBUG", "TRUE")
       }
-      //val pipe = PipeHelper(linkArr=myLinkArr)
-      ////val pipePayload = Payload(modType())
+      val pipe = PipeHelper(linkArr=myLinkArr)
+      //val pipePayload = Payload(modType())
       def pipePayload = io.modBackPayload
 
       //val cModBack = pipe.addStage("ModBack")
-      //val cBack = pipe.addStage(
-      //  name=pipeName + "_Back"
-      //)
-      val cBack = CtrlLink()
-      myLinkArr += cBack
-
+      val cBack = pipe.addStage(
+        name=pipeName + "_Back"
+      )
       val cIoModBack = DirectLink(
         up=io.modBack,
         down=cBack.up,
       )
       myLinkArr += cIoModBack
-
-      //val cLastBack = pipe.addStage(
-      //  name=pipeName + "_LastBack",
-      //  finish=true,
-      //)
+      val cLastBack = pipe.addStage(
+        name=pipeName + "_LastBack",
+        finish=true,
+      )
       val cIoBack = DirectLink(
         up=(
-          //cLastBack.down
-          cBack.down
+          cLastBack.down
+          //cBack.down
         ),
         down=io.back,
       )
       myLinkArr += cIoBack
       cIoBack.up(io.backPayload) := cIoBack.up(pipePayload)
-
       //pipe.first.up.driveFrom(io.modBack)(
       //  con=(node, payload) => {
       //    node(pipePayload) := payload 
