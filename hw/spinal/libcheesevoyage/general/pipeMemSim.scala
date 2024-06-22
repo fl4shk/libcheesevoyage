@@ -96,15 +96,21 @@ case class PipeMemRmwSimDut(
     doHazardCmpFunc=None,
     doPrevHazardCmpFunc=false,
     doModSingleStageFunc=Some(
-      (outp, inp) => {
+      (
+        outp,
+        inp,
+        cMid0Front,
+      ) => {
         outp.myExt := inp.myExt
         outp.myExt.allowOverride
-        when (outp.myExt.hazardId.msb) {
-          outp.myExt.modMemWord := (
-            //modFrontPayload.myExt.rdMemWord + 0x1
-            inp.myExt.rdMemWord + 0x1
-          )
-        }
+        //when (cMid0Front.up.isFiring) {
+          when (outp.myExt.hazardId.msb) {
+            outp.myExt.modMemWord := (
+              //modFrontPayload.myExt.rdMemWord + 0x1
+              inp.myExt.rdMemWord + 0x1
+            )
+          }
+        //}
       }
     ),
   )

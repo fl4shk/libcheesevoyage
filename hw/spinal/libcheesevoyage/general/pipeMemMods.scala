@@ -550,6 +550,7 @@ case class PipeMemRmw[
       //PipeMemRmwPayloadExt[WordT, HazardCmpT],  // outp
       ModT, // outp
       ModT, // inp
+      CtrlLink, // cMid0Front
     ) => Unit
   ]=None,
   //--------
@@ -2542,6 +2543,7 @@ extends Area {
         myDoModSingleStage(
           tempUpMod(2),
           tempUpMod(1),
+          cMid0Front,
         )
       }
       case None => {
