@@ -525,6 +525,7 @@ case class PipeMemRmw[
   //optExtraCycleLatency: Boolean=false,
   //optDisableModRd: Boolean=false,
   optEnableModDuplicate: Boolean=true,
+  //optRegFileRdPorts: Int=0,
   optEnableClear: Boolean=false,
   memRamStyle: String="auto",
   vivadoDebug: Boolean=false,
@@ -3758,67 +3759,94 @@ extends Area {
 //  //--------
 //}
 
-object PipeMemRmwReorderIo {
-  def apply[
-    WordT <: Data,
-    HazardCmpT <: Data,
-    ModT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
-    DualRdT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
-  ](
-    wordType: HardType[WordT],
-    wordCount: Int,
-    modType: HardType[ModT],
-    modStageCnt: Int,
-    dualRdType: HardType[DualRdT],
-    optEnableModDuplicate: Boolean=true,
-    optEnableClear: Boolean=false,
-    vivadoDebug: Boolean=false,
-  ) /*extends Bundle*/ = {
-    //val clear = (optEnableClear) generate (
-    //  /*slave*/(Flow(
-    //    UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
-    //  ))
-    //)
-    PipeMemRmwIo[
-      WordT,
-      HazardCmpT,
-      ModT,
-      DualRdT
-    ](
-      wordType=wordType(),
-      wordCount=wordCount,
-      modType=modType(),
-      modStageCnt=modStageCnt,
-      dualRdType=dualRdType(),
-      optDualRd=true,
-      optReorder=true,
-      optEnableModDuplicate=optEnableModDuplicate,
-      optEnableClear=optEnableClear,
-      vivadoDebug=vivadoDebug,
-    )
-    //val front = Node()
-    //val frontPayload = Payload(modType())
-    //val modFront = Node()
-    //val modFrontPayload = Payload(modType())
-    //val modBack = Node()
-    //val modBackPayload = Payload(modType())
-    //val midModStages = (
-    //  /*(modStageCnt > 1)*/ optEnableModDuplicate generate (
-    //    /*in*/(
-    //      Vec.fill(
-    //        modStageCnt //- 1 //- 2
-    //      )(modType())
-    //    )
-    //  )
-    //)
-    //val back = Node()
-    //val backPayload = Payload(modType())
-    //val dualRdFront = Node()
-    //val dualRdFrontPayload = Payload(dualRdType())
-    //val dualRdBack = Node()
-    //val dualRdBackPayload = Payload(dualRdType())
-  }
+//object PipeMemRmwReorderIo {
+//  def apply[
+//    WordT <: Data,
+//    HazardCmpT <: Data,
+//    ModT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
+//    DualRdT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
+//  ](
+//    wordType: HardType[WordT],
+//    wordCount: Int,
+//    modType: HardType[ModT],
+//    modStageCnt: Int,
+//    dualRdType: HardType[DualRdT],
+//    optEnableModDuplicate: Boolean=true,
+//    optEnableClear: Boolean=false,
+//    vivadoDebug: Boolean=false,
+//  ) /*extends Bundle*/ = {
+//    //val clear = (optEnableClear) generate (
+//    //  /*slave*/(Flow(
+//    //    UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
+//    //  ))
+//    //)
+//    PipeMemRmwIo[
+//      WordT,
+//      HazardCmpT,
+//      ModT,
+//      DualRdT
+//    ](
+//      wordType=wordType(),
+//      wordCount=wordCount,
+//      modType=modType(),
+//      modStageCnt=modStageCnt,
+//      dualRdType=dualRdType(),
+//      optDualRd=true,
+//      optReorder=true,
+//      optEnableModDuplicate=optEnableModDuplicate,
+//      optEnableClear=optEnableClear,
+//      vivadoDebug=vivadoDebug,
+//    )
+//    //val front = Node()
+//    //val frontPayload = Payload(modType())
+//    //val modFront = Node()
+//    //val modFrontPayload = Payload(modType())
+//    //val modBack = Node()
+//    //val modBackPayload = Payload(modType())
+//    //val midModStages = (
+//    //  /*(modStageCnt > 1)*/ optEnableModDuplicate generate (
+//    //    /*in*/(
+//    //      Vec.fill(
+//    //        modStageCnt //- 1 //- 2
+//    //      )(modType())
+//    //    )
+//    //  )
+//    //)
+//    //val back = Node()
+//    //val backPayload = Payload(modType())
+//    //val dualRdFront = Node()
+//    //val dualRdFrontPayload = Payload(dualRdType())
+//    //val dualRdBack = Node()
+//    //val dualRdBackPayload = Payload(dualRdType())
+//  }
+//}
+
+//case class PipeRegFileIoWrPayload[
+//  WordT <: Data
+//](
+//  wordType: HardType[WordT],
+//  wordCount: Int,
+//) extends Bundle {
+//}
+case class PipeRegFileRmwIo[
+  WordT <: Data,
+  //HazardCmpT <: Data,
+](
+  wordType: HardType[WordT],
+  wordCount: Int,
+  numRdPorts: Int,
+) extends Area {
+  //val rWr = Reg(Flow(UInt(
 }
+case class PipeRegFileRmw[
+  WordT <: Data
+](
+  wordType: HardType[WordT],
+  wordCount: Int,
+  numRdPorts: Int,
+) extends Area {
+}
+
 //class PipeMemRmwReorderDualRdExtBase
 ////[
 ////  //WordT <: Data,

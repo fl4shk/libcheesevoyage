@@ -25,6 +25,7 @@ case class PipeHelper(
     //isLast: Boolean=false,
     //linkArr: ArrayBuffer[Link]
     name: String,
+    optIncludeStage: Boolean=true,
     optIncludeS2M: Boolean=true,
     finish: Boolean=false,
   ): CtrlLink = {
@@ -115,14 +116,16 @@ case class PipeHelper(
       )//.setName(f"c$name")
       linkArr += cArr.last
 
-      sArr += StageLink(
-        up=cArr.last.down,
-        down={
-          lastDown = Node()
-          lastDown
-        },
-      )//.setName(f"s$name")
-      linkArr += sArr.last
+      if (optIncludeStage) {
+        sArr += StageLink(
+          up=cArr.last.down,
+          down={
+            lastDown = Node()
+            lastDown
+          },
+        )//.setName(f"s$name")
+        linkArr += sArr.last
+      }
 
       if (optIncludeS2M) {
         s2mArr += S2MLink(
