@@ -39,26 +39,38 @@ object LongDivMultiCycleFormal extends App {
       //val itdOut = dut.io.itdOut
       val inp = dut.io.inp
       val outp = dut.io.outp
-      cover(
-        (
-          RegNextWhen(
-            True,
-            inp.valid && inp.numer > 1 && inp.denom > 1
-          ) init(False)
-        ) 
-        //&& (
-        //  RegNextWhen(True, inp.denom > 1) init(False)
-        //) 
-        && (
-          outp.ready
-        ) && (
-          outp.quot =/= 0x0
-        )
-      )
+      //assume(inp.denom =/= 0)
+      //assume(inp.denom =/= 1)
+      //assume(inp.signed =/= True)
+      //cover(
+      //  (
+      //    RegNextWhen(
+      //      (
+      //        inp.valid && inp.numer > 1 && inp.denom > 1
+      //        //&& !outp.ready
+      //      ),
+      //      RegNextWhen(
+      //        True,
+      //        inp.valid && inp.numer > 1 && inp.denom > 1
+      //        && !outp.ready
+      //      ) init(False)
+      //    ) init(False)
+      //  ) 
+      //  //&& (
+      //  //  RegNextWhen(True, inp.denom > 1) init(False)
+      //  //)
+      //  && (
+      //    outp.ready
+      //  ) && (
+      //    outp.quot =/= 0x0
+      //    && outp.quot =/= 0xc
+      //  )
+      //)
 
       assumeInitial(clockDomain.isResetActive)
       //assumeInitial(~pastValid)
-      assumeInitial(inp === inp.getZero)
+      //assumeInitial(inp === inp.getZero)
+      assumeInitial(inp.valid === inp.valid.getZero)
       anyseq(inp)
       //when (clockDomain.isResetActive) {
       //  pastValid := False

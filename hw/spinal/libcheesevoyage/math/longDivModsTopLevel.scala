@@ -5,29 +5,29 @@ import spinal.core._
 import spinal.lib._
 import spinal.core.formal._
 
-object LongDivMultiCycleTopLevelVerilog extends App {
+object LongDivMultiCycleTopLevelSystemVerilog extends App {
   val mainWidth = 4
   val denomWidth = 4
   val chunkWidth = 2
-  Config.spinal.generateVerilog(LongDivMultiCycle(
+  Config.spinal.generateSystemVerilog(LongDivMultiCycle(
     mainWidth=mainWidth,
     denomWidth=denomWidth,
     chunkWidth=chunkWidth,
   ))
-  //val report = SpinalVerilog(new LongUdivIter(params=params))
+  //val report = SpinalSystemVerilog(new LongUdivIter(params=params))
   //report.printPruned()
 }
-object LongDivPipelinedTopLevelVerilog extends App {
+object LongDivPipelinedTopLevelSystemVerilog extends App {
   val mainWidth = 4
   val denomWidth = 4
   val chunkWidth = 2
   val usePipeSkidBuf = true
-  Config.spinal.generateVerilog(LongDivPipelined(
+  Config.spinal.generateSystemVerilog(LongDivPipelined(
     mainWidth=mainWidth,
     denomWidth=denomWidth,
     chunkWidth=chunkWidth,
     usePipeSkidBuf=usePipeSkidBuf,
   ))
-  //val report = SpinalVerilog(new LongUdivIter(params=params))
+  //val report = SpinalSystemVerilog(new LongUdivIter(params=params))
   //report.printPruned()
 }

@@ -1,5 +1,6 @@
 package libcheesevoyage.math
 import libcheesevoyage.general._
+import libcheesevoyage._
 
 import spinal.core._
 import spinal.lib._
@@ -140,4 +141,108 @@ case class BarrelShifter(
       }
     }
   }
+}
+
+case class ClzIo(
+  wordWidth: Int
+) extends Bundle {
+  //--------
+  val inpData = in UInt(wordWidth bits)
+  val outpData = out UInt(log2Up(wordWidth) + 1 bits)
+  //--------
+}
+case class Clz(
+  wordWidth: Int,
+) extends Component {
+  //--------
+  assert(
+    wordWidth == 8
+    || wordWidth == 16
+    || wordWidth == 32
+    || wordWidth == 64
+  )
+  //--------
+  val io = ClzIo(wordWidth=wordWidth)
+  //--------
+  //if (wordWidth == 8) {
+  //} else if (wordWidth == 16) {
+  //} else if (wordWidth == 32) {
+  //} else /* if (wordWidth == 64) */ {
+  //}
+  //val temp = Vec.fill(
+  //  log2Up(wordWidth) //+ 1
+  //)(
+  //  UInt(wordWidth + 1 bits)
+  //)
+  //val temp = new ArrayBuffer[UInt]()
+  def tempFinalSizeMinus1 = log2Up(wordWidth) //- 1
+  val temp = Vec.fill(tempFinalSizeMinus1)(
+    UInt(wordWidth bits)
+  )
+
+  for (idx <- 0 until temp.size) {
+    temp(idx) := 0x0
+  }
+
+  io.outpData := 0x0
+  when (io.inpData === 0) {
+    io.outpData := wordWidth
+  } otherwise {
+    // binary search for the leading one
+    var idx: Int = (
+      //temp.size
+      tempFinalSizeMinus1 /*- 1*/ //+ 1
+    )
+    //def prevTemp = temp(idx)
+    //def currTemp = temp(idx - 1)
+    def currOutp = io.outpData(idx - 1)
+    while (idx > 0) {
+      //if (idx - 1 > 0) {
+      //  temp += (
+      //    UInt(wordWidth bits)
+      //    .setName(s"temp_${idx}")
+      //  )
+      //}
+      def hiRange = (
+        (1 << (idx + 1)) - 1,
+        1 << (idx + 1 - 1),
+      )
+      def loRange = (
+        hiRange._2 - 1,
+        0,
+      )
+      if (idx == tempFinalSizeMinus1 /*- 1*/ /*+ 1*/) {
+        //currTemp := io.inpData
+        temp(idx - 1) := io.inpData
+        currOutp := False
+      } else if (idx == 0) {
+        //currOutp := !prevTemp(1)
+        currOutp := !temp(idx)(1)
+        //currOutp := !temp(idx + 1)(1)
+      } else {
+        //temp(idx) := temp(idx + 1)
+        //currOutp := currTemp(1 << idx)
+        //temp.last := 
+        println(s"${hiRange}, ${loRange}; ${idx} ${1 << idx}")
+        def prevTemp = temp(idx) //temp(temp.size - 2)
+        temp(idx - 1) := Mux(
+          prevTemp(hiRange._1 downto hiRange._2) =/= 0,
+          prevTemp(hiRange._1 downto hiRange._2),
+          Cat(True, prevTemp(loRange._1 downto loRange._2)).asUInt,
+        ).resized
+        currOutp := temp(idx - 1)(1 << idx)
+      }
+      idx -= 1
+    }
+  }
+  //for (idx <- 0 until temp.size) {
+  //  
+  //}
+}
+
+object ClzToSystemVerilog extends App {
+  def wordWidth = 32 
+  Config.spinal.generateSystemVerilog(Clz(
+    wordWidth=wordWidth
+  ))
 }
