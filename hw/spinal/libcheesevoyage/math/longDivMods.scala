@@ -65,31 +65,37 @@ case class LongDivMultiCycle(
 
     //val tempNumer = params.buildTempShape()
     //val tempDenom = params.buildTempShape()
-    val tempNumerReg = Reg(params.buildTempShape()) init(0x0)
+    val rTempNumer = Reg(params.buildTempShape()) init(0x0)
     //val tempNumer = tempNumerReg.wrapNext()
     val tempNumer = params.buildTempShape()
-    val tempDenomReg = Reg(params.buildTempShape()) init(0x0)
+    val rTempDenom = Reg(params.buildTempShape()) init(0x0)
     //val tempDenom = tempDenomReg.wrapNext()
     val tempDenom = params.buildTempShape()
-    val tempQuotReg = Reg(params.buildTempShape()) init(0x0)
+    val rTempQuot = Reg(params.buildTempShape()) init(0x0)
     val tempQuot = params.buildTempShape()
     //val tempQuot = tempQuotReg.wrapNext()
-    val tempRemaReg = Reg(params.buildTempShape()) init(0x0)
+    val rTempRema = Reg(params.buildTempShape()) init(0x0)
     val tempRema = params.buildTempShape()
     //val tempRema = tempRemaReg.wrapNext()
-    val denomMultLutReg = Reg(Vec(
-      UInt(params.dmlElemWidth() bits),
-      params.dmlSize()
-    ))
-    for (idx <- 0 to params.dmlSize() - 1) {
-      denomMultLutReg(idx).init(denomMultLutReg(idx).getZero)
+    val rDenomMultLut = Reg(
+      Vec(
+        UInt(params.dmlElemWidth() bits),
+        params.dmlSize()
+      )
+    )
+    for (idx <- 0 until params.dmlSize()) {
+      rDenomMultLut(idx).init(rDenomMultLut(idx).getZero)
     }
-    val oracleQuotReg = (params.formal()) generate Reg(
-      params.buildTempShape()
-    ) init(0x0)
-    val oracleRemaReg = (params.formal()) generate Reg(
-      params.buildTempShape()
-    ) init(0x0)
+    val rOracleQuot = (params.formal()) generate (
+      Reg(
+        params.buildTempShape()
+      ) init(0x0)
+    )
+    val rOracleRema = (params.formal()) generate (
+      Reg(
+        params.buildTempShape()
+      ) init(0x0)
+    )
 
     val numerWasLez = Reg(Bool()) init(False)
     val denomWasLez = Reg(Bool()) init(False)
@@ -104,16 +110,16 @@ case class LongDivMultiCycle(
 
     //val tempIoQuot = UInt(outp.quot.getWidth bits)
     //val tempIoRema = UInt(outp.rema.getWidth bits)
-    val tempIoQuotReg = Reg(UInt(outp.quot.getWidth bits)) init(0x0)
+    val rTempIoQuot = Reg(UInt(outp.quot.getWidth bits)) init(0x0)
     //val tempIoQuot = tempIoQuotReg.wrapNext()
     val tempIoQuot = UInt(outp.quot.getWidth bits)
-    val tempIoRemaReg = Reg(UInt(outp.rema.getWidth bits)) init(0x0)
+    val rTempIoRema = Reg(UInt(outp.rema.getWidth bits)) init(0x0)
     //val tempIoRema = tempIoRemaReg.wrapNext()
     val tempIoRema = UInt(outp.rema.getWidth bits)
-    val tempIoReadyReg = Reg(Bool()) init(False)
+    val rTempIoReady = Reg(Bool()) init(False)
 
     //val chunkStartBegin = params.buildTempShape()
-    val chunkStartBeginReg = Reg(params.buildTempShape()) init(0x0)
+    val rChunkStartBegin = Reg(params.buildTempShape()) init(0x0)
     val chunkStartBegin = params.buildTempShape()
     //chunkStartBeginReg.init(chunkStartBeginReg.getZero)
     //val chunkStartBegin = chunkStartBeginReg.wrapNext()
@@ -147,8 +153,8 @@ case class LongDivMultiCycle(
 
   //loc.ioSzdTempQ := itdOut.tempQuot(outp.quot.bitsRange)
   //loc.ioSzdTempR := itdOut.tempRema(outp.rema.bitsRange)
-  loc.ioSzdTempQ := loc.tempQuotReg(outp.quot.bitsRange)
-  loc.ioSzdTempR := loc.tempRemaReg(outp.rema.bitsRange)
+  loc.ioSzdTempQ := loc.rTempQuot(outp.quot.bitsRange)
+  loc.ioSzdTempR := loc.rTempRema(outp.rema.bitsRange)
 
   loc.lezIoSzdTempQ := (~loc.ioSzdTempQ) + 1
   loc.lezIoSzdTempR := (~loc.ioSzdTempR) + 1
@@ -167,24 +173,26 @@ case class LongDivMultiCycle(
   loc.chunkStartBegin := (params.numChunks() - 1)
   //loc.chunkStartBeginReg := loc.chunkStartBegin
 
-  chunkStart := S(loc.chunkStartBeginReg).resized
-  itdIn.tempNumer := loc.tempNumerReg
-  itdIn.tempDenom := loc.tempDenomReg
-  itdIn.tempQuot := loc.tempQuotReg
-  itdIn.tempRema := loc.tempRemaReg
-  itdIn.denomMultLut := loc.denomMultLutReg
+  chunkStart := S(loc.rChunkStartBegin).resized
+  itdIn.tempNumer := loc.rTempNumer
+  itdIn.tempDenom := loc.rTempDenom
+  itdIn.tempQuot := loc.rTempQuot
+  itdIn.tempRema := loc.rTempRema
+  itdIn.denomMultLut := loc.rDenomMultLut
 
-  outp.quot := loc.tempIoQuotReg
-  outp.rema := loc.tempIoRemaReg
+  outp.quot := loc.rTempIoQuot
+  outp.rema := loc.rTempIoRema
   //outp.ready := True
-  outp.ready := loc.tempIoReadyReg
+  outp.ready := loc.rTempIoReady
 
-  if (params.formal()) {
-    itdIn.formal.oracleQuot := loc.oracleQuotReg
-    itdIn.formal.oracleRema := loc.oracleRemaReg
+  //if (params.formal()) 
+  GenerationFlags.formal {
+    itdIn.formal.oracleQuot := loc.rOracleQuot
+    itdIn.formal.oracleRema := loc.rOracleRema
   }
 
-  if (params.formal()) {
+  //if (params.formal()) 
+  GenerationFlags.formal {
     //when (clockDomain.isResetActive) {
     //  //loc.tempNumerReg := 0x0
     //  //loc.tempDenomReg := 0x0
@@ -206,28 +214,28 @@ case class LongDivMultiCycle(
 
         //chunkStart := params.numChunks() - 1
         //chunkStart := S(loc.chunkStartBeginReg).resized
-        loc.chunkStartBeginReg := loc.chunkStartBegin
+        loc.rChunkStartBegin := loc.chunkStartBegin
 
-        loc.tempNumerReg := loc.tempNumer
-        loc.tempDenomReg := loc.tempDenom
-        loc.tempQuotReg := 0x0
-        loc.tempRemaReg := 0x0
+        loc.rTempNumer := loc.tempNumer
+        loc.rTempDenom := loc.tempDenom
+        loc.rTempQuot := 0x0
+        loc.rTempRema := 0x0
 
         //itdIn.tempNumer := loc.tempNumerReg
         //itdIn.tempDenom := loc.tempDenomReg
         //itdIn.tempQuot := 0x0
         //itdIn.tempRema := 0x0
         for (idx <- 0 to params.dmlSize() - 1) {
-          loc.denomMultLutReg(idx) := (loc.tempDenom * idx).resized
+          loc.rDenomMultLut(idx) := (loc.tempDenom * idx).resized
         }
         //--------
         when (inp.valid) {
           //outp.quot := 0x0
           //outp.rema := 0x0
           //outp.ready := False
-          loc.tempIoQuotReg := 0x0
-          loc.tempIoRemaReg := 0x0
-          loc.tempIoReadyReg := False
+          loc.rTempIoQuot := 0x0
+          loc.rTempIoRema := 0x0
+          loc.rTempIoReady := False
 
           loc.state := LocState.running
         }
@@ -241,28 +249,29 @@ case class LongDivMultiCycle(
           // not `FORMAL` is true.
           //m.d.sync += itdIn.eq(itdOut)
           //itdIn := loc.itdOutReg
-          loc.tempNumerReg := itdOut.tempNumer
-          loc.tempDenomReg := itdOut.tempDenom
-          loc.tempQuotReg := itdOut.tempQuot
-          loc.tempRemaReg := itdOut.tempRema
-          loc.denomMultLutReg := itdOut.denomMultLut
+          loc.rTempNumer := itdOut.tempNumer
+          loc.rTempDenom := itdOut.tempDenom
+          loc.rTempQuot := itdOut.tempQuot
+          loc.rTempRema := itdOut.tempRema
+          loc.rDenomMultLut := itdOut.denomMultLut
         } otherwise { // when(chunkStart <= 0)
           //outp.quot := loc.tempIoQuotReg
           //outp.rema := loc.tempIoRemaReg
           ////outp.ready := True
           //outp.ready := loc.tempIoReadyReg
-          loc.tempIoQuotReg := loc.tempIoQuot
-          loc.tempIoRemaReg := loc.tempIoRema
-          loc.tempIoReadyReg := True
+          loc.rTempIoQuot := loc.tempIoQuot
+          loc.rTempIoRema := loc.tempIoRema
+          loc.rTempIoReady := True
 
           loc.state := LocState.idle
         }
         //chunkStart := chunkStart - 1
-        loc.chunkStartBeginReg := loc.chunkStartBeginReg - 1
+        loc.rChunkStartBegin := loc.rChunkStartBegin - 1
         //--------
       }
     } // switch (loc.state)
-    if (params.formal()) {
+    //if (params.formal()) 
+    GenerationFlags.formal {
       //assume(~skipCond)
       when (pastValidAfterReset()) {
         //--------
@@ -274,8 +283,8 @@ case class LongDivMultiCycle(
       }
       switch (loc.state) {
         is (LocState.idle) {
-          loc.oracleQuotReg := loc.tempNumer / loc.tempDenom
-          loc.oracleRemaReg := loc.tempNumer % loc.tempDenom
+          loc.rOracleQuot := loc.tempNumer / loc.tempDenom
+          loc.rOracleRema := loc.tempNumer % loc.tempDenom
           when (pastValidAfterReset() & (~stable(loc.state))) {
             //--------
             //assert(~skipCond)
@@ -460,8 +469,8 @@ case class LongDivPipelined(
     val tComb = TempComb()
     val tCombPrev = Reg(TempComb()) init(TempComb().getZero)
 
-    val itdIn0Reg = Reg(LongUdivIterData(params=params))
-    itdIn0Reg.init(itdIn0Reg.getZero)
+    val rItdIn0 = Reg(LongUdivIterData(params=params))
+    rItdIn0.init(rItdIn0.getZero)
   }
 
   // Wrapper variables
@@ -517,9 +526,12 @@ case class LongDivPipelined(
   }
   //itdIn(0) := loc.itdIn0Reg
   //itsIo(0).sbIo.prev.payload := loc.itdIn0Reg
-  itdIn(0) := loc.itdIn0Reg
+  itdIn(0) := loc.rItdIn0
   //--------
   // Connect the pipeline stages together
+  println(
+    s"div pipelined: ${usePipeSkidBuf}"
+  )
   if (!usePipeSkidBuf) {
     for (idx <- 0 to loc.m.size - 2) {
       itdIn(idx + 1) := itdOut(idx)
@@ -608,33 +620,34 @@ case class LongDivPipelined(
     }
   }
   when (ifwdMove(0)) {
-    loc.itdIn0Reg.tempNumer := loc.tSync.tempNumer
-    loc.itdIn0Reg.tempDenom := loc.tSync.tempDenom
+    loc.rItdIn0.tempNumer := loc.tSync.tempNumer
+    loc.rItdIn0.tempDenom := loc.tSync.tempDenom
 
-    loc.itdIn0Reg.tempQuot := 0x0
-    loc.itdIn0Reg.tempRema := 0x0
+    loc.rItdIn0.tempQuot := 0x0
+    loc.rItdIn0.tempRema := 0x0
 
-    if (loc.itdIn0Reg.tag != null) {
-      loc.itdIn0Reg.tag := inp.tag
+    if (loc.rItdIn0.tag != null) {
+      loc.rItdIn0.tag := inp.tag
     }
   }
   for (idx <- 0 to params.dmlSize() - 1) {
-    loc.itdIn0Reg.denomMultLut(idx) := (loc.tSync.tempDenom * idx).resized
+    loc.rItdIn0.denomMultLut(idx) := (loc.tSync.tempDenom * idx).resized
   }
   outp.quot := loc.tComb.tempBusQuot
   outp.rema := loc.tComb.tempBusRema
 
   outp.tag := itdOut.last.tag
   //--------
-  if (params.formal()) {
+  //if (params.formal()) 
+  GenerationFlags.formal {
     val skipCond = itdOut.last.tempDenom === 0
     //--------
     when (ifwdMove(0)) {
       //--------
-      loc.itdIn0Reg.formal.oracleQuot := (
+      loc.rItdIn0.formal.oracleQuot := (
         loc.tSync.tempNumer / loc.tSync.tempDenom
       )
-      loc.itdIn0Reg.formal.oracleRema := (
+      loc.rItdIn0.formal.oracleRema := (
         loc.tSync.tempNumer % loc.tSync.tempDenom
       )
       //--------
