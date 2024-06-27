@@ -1,6 +1,6 @@
 // Generator : SpinalHDL v1.10.2    git head : 279867b771fb50fc0aec21d8a20d8fdad0f87e3f
 // Component : Clz
-// Git hash  : 87c8d3496c900406422e9e81525a9c47e4bca3db
+// Git hash  : a5c5346711c73a4ecbc5f72d3c51fbe6cf4b1a35
 
 `timescale 1ns/1ps
 

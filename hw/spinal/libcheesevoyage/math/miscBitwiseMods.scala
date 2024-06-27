@@ -223,7 +223,7 @@ case class Clz(
         //temp(idx) := temp(idx + 1)
         //currOutp := currTemp(1 << idx)
         //temp.last := 
-        println(s"${hiRange}, ${loRange}; ${idx} ${1 << idx}")
+        //println(s"${hiRange}, ${loRange}; ${idx} ${1 << idx}")
         def prevTemp = temp(idx) //temp(temp.size - 2)
         temp(idx - 1) := Mux(
           prevTemp(hiRange._1 downto hiRange._2) =/= 0,
