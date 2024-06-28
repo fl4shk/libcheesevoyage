@@ -1,6 +1,6 @@
 // Generator : SpinalHDL v1.10.2    git head : 279867b771fb50fc0aec21d8a20d8fdad0f87e3f
 // Component : Clz
-// Git hash  : a5c5346711c73a4ecbc5f72d3c51fbe6cf4b1a35
+// Git hash  : 0eb84f39e3d12399d5296898ff7ae6fe856b0fc4
 
 `timescale 1ns/1ps
 
@@ -26,7 +26,8 @@ module Clz (
   reg        [31:0]   temp_2;
   reg        [31:0]   temp_3;
   reg        [31:0]   temp_4;
-  wire                when_miscBitwiseMods_l188;
+  wire       [31:0]   temp_5;
+  wire                when_miscBitwiseMods_l209;
 
   assign _zz_temp_3 = ((temp_4[31 : 16] != 16'h0) ? _zz_temp_3_1 : {1'b1,temp_4[15 : 0]});
   assign _zz_temp_3_2 = temp_4[31 : 16];
@@ -42,52 +43,54 @@ module Clz (
   assign _zz_temp_0_1 = {1'd0, _zz_temp_0_2};
   always @(*) begin
     temp_0 = 32'h0;
-    if(!when_miscBitwiseMods_l188) begin
+    if(!when_miscBitwiseMods_l209) begin
       temp_0 = {29'd0, _zz_temp_0};
     end
   end
 
   always @(*) begin
     temp_1 = 32'h0;
-    if(!when_miscBitwiseMods_l188) begin
+    if(!when_miscBitwiseMods_l209) begin
       temp_1 = {27'd0, _zz_temp_1};
     end
   end
 
   always @(*) begin
     temp_2 = 32'h0;
-    if(!when_miscBitwiseMods_l188) begin
+    if(!when_miscBitwiseMods_l209) begin
       temp_2 = {23'd0, _zz_temp_2};
     end
   end
 
   always @(*) begin
     temp_3 = 32'h0;
-    if(!when_miscBitwiseMods_l188) begin
+    if(!when_miscBitwiseMods_l209) begin
       temp_3 = {15'd0, _zz_temp_3};
     end
   end
 
   always @(*) begin
     temp_4 = 32'h0;
-    if(!when_miscBitwiseMods_l188) begin
+    if(!when_miscBitwiseMods_l209) begin
       temp_4 = io_inpData;
     end
   end
 
+  assign temp_5 = 32'h0;
   always @(*) begin
     io_outpData = 6'h0;
-    if(when_miscBitwiseMods_l188) begin
+    if(when_miscBitwiseMods_l209) begin
       io_outpData = 6'h20;
     end else begin
-      io_outpData[4] = 1'b0;
-      io_outpData[3] = temp_3[16];
-      io_outpData[2] = temp_2[8];
-      io_outpData[1] = temp_1[4];
-      io_outpData[0] = temp_0[2];
+      io_outpData[5] = 1'b0;
+      io_outpData[4] = temp_3[16];
+      io_outpData[3] = temp_2[8];
+      io_outpData[2] = temp_1[4];
+      io_outpData[1] = temp_0[2];
+      io_outpData[0] = (! temp_0[1]);
     end
   end
 
-  assign when_miscBitwiseMods_l188 = (io_inpData == 32'h0);
+  assign when_miscBitwiseMods_l209 = (io_inpData == 32'h0);
 
 endmodule

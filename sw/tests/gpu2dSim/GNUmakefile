@@ -78,7 +78,7 @@ LD_FLAGS:=$(LD_FLAGS) $(EXTRA_LD_FLAGS) $(COMMON_LD_FLAGS)
 
 VERILATOR_ROOT = /usr/share/verilator
 
-V_SOURCES := $(foreach DIR,$(V_DIRS),$(wildcard $(DIR)/*.v))
+V_SOURCES := $(foreach DIR,$(V_DIRS),$(wildcard $(DIR)/*.sv))
 
 V_TOP:=Gpu2dSimDut
 VC_OUTLIB:=$(V_OBJDIR)/V$(V_TOP)__ALL.a

@@ -2,6 +2,8 @@ package libcheesevoyage.math
 import libcheesevoyage.general._
 
 import spinal.core._
+import spinal.lib._
+import spinal.lib.CountLeadingZeroes
 import spinal.core.formal._
 import scala.collection.mutable.ArrayBuffer
 
@@ -105,6 +107,121 @@ object BarrelShifterFormal extends App {
       assumeInitial(dut.io.inpAmount === dut.io.inpAmount.getZero)
       anyseq(dut.io.inpData)
       anyseq(dut.io.inpAmount)
+      //when (clockDomain.isResetActive) {
+      //  pastValid := False
+      //} otherwise {
+      //  pastValid := True
+      //}
+      //anyseq(clockDomain.isResetActive)
+    })
+}
+case class ClzFormalDut(
+  wordWidth: Int,
+) extends Component {
+  val io = ClzIo(
+    wordWidth=wordWidth,
+  )
+  val dut = Clz(
+    wordWidth=wordWidth,
+  )
+  val rOutpData = (
+    Reg(UInt(log2Up(wordWidth) + 1 bits)) init(0x0)
+  )
+  io.outpData := rOutpData
+
+  dut.io.inpData := io.inpData
+  //dut.io.inpAmount := io.inpAmount
+  rOutpData := dut.io.outpData
+
+  //GenerationFlags.formal {
+    when (pastValidAfterReset) {
+      when (
+        past(io.inpData) === 0
+      ) {
+      } elsewhen (
+        past(io.inpData) < wordWidth
+      ) {
+        assert(
+          rOutpData === CountLeadingZeroes(past(io.inpData).asBits)
+        )
+      }
+      //when (
+      //  past(io.inpAmount) > 0
+      //  && past(io.inpAmount) < log2Up(wordWidth)
+      //) {
+      //  if (kind == Clz.kindLsl) {
+      //    cover(rOutpData === 0x4 && past(dut.io.inpAmount) =/= 0)
+      //    //println("testificate")
+      //    assert(
+      //      rOutpData
+      //      === (
+      //        (
+      //          past(dut.io.inpData) << past(dut.io.inpAmount)
+      //        )(wordWidth - 1 downto 0)
+      //      )
+      //    )
+      //  } else if (kind == Clz.kindLsr) {
+      //    assert(
+      //      rOutpData
+      //      === (
+      //        (
+      //          past(dut.io.inpData) >> past(dut.io.inpAmount)
+      //        )(wordWidth - 1 downto 0)
+      //      )
+      //    )
+      //  } else if (kind == Clz.kindAsr) {
+      //    assert(
+      //      rOutpData.asSInt
+      //      === (
+      //        (
+      //          past(dut.io.inpData).asSInt >> past(dut.io.inpAmount)
+      //        )(wordWidth - 1 downto 0)
+      //      )
+      //    )
+      //  }
+      //}
+    }
+  //}
+}
+object ClzFormal extends App {
+  def wordWidth = 16
+  //def kind = (
+  //  //Clz.kindLsl
+  //  //Clz.kindLsr
+  //  Clz.kindAsr
+  //)
+  new SpinalFormalConfig(_keepDebugInfo=true)
+  //FormalConfig
+    .withBMC(10)
+    .withProve(10)
+    .withCover(10)
+    .withConfig(
+      config=SpinalConfig(
+        defaultConfigForClockDomains=ClockDomainConfig(
+          resetActiveLevel = HIGH,
+          resetKind = SYNC,
+        ),
+        formalAsserts=true,
+      )
+    )
+    .doVerify(new Component {
+      val dut = FormalDut(ClzFormalDut(
+        //params=params
+        wordWidth=wordWidth,
+      ))
+      //val itdIn = dut.io.itdIn
+      //val chunkStart = dut.io.chunkStart
+      //val itdOut = dut.io.itdOut
+      //val inp = dut.io.inp
+      //val outp = dut.io.outp
+
+      assumeInitial(clockDomain.isResetActive)
+      //assumeInitial(~pastValid)
+      //assumeInitial(inp === inp.getZero)
+      assumeInitial(dut.io.inpData === dut.io.inpData.getZero)
+      //assumeInitial(dut.io.inpAmount === dut.io.inpAmount.getZero)
+      anyseq(dut.io.inpData)
+      //anyseq(dut.io.inpAmount)
       //when (clockDomain.isResetActive) {
       //  pastValid := False
       //} otherwise {

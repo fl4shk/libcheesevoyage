@@ -142,6 +142,27 @@ case class BarrelShifter(
     }
   }
 }
+object LslToSystemVerilog extends App {
+  def wordWidth = 32 
+  Config.spinal.generateSystemVerilog(BarrelShifter(
+    wordWidth=wordWidth,
+    kind=BarrelShifter.kindLsl,
+  ))
+}
+object LsrToSystemVerilog extends App {
+  def wordWidth = 32 
+  Config.spinal.generateSystemVerilog(BarrelShifter(
+    wordWidth=wordWidth,
+    kind=BarrelShifter.kindLsr,
+  ))
+}
+object AsrToSystemVerilog extends App {
+  def wordWidth = 32 
+  Config.spinal.generateSystemVerilog(BarrelShifter(
+    wordWidth=wordWidth,
+    kind=BarrelShifter.kindAsr,
+  ))
+}
 
 case class ClzIo(
   wordWidth: Int
@@ -175,8 +196,8 @@ case class Clz(
   //  UInt(wordWidth + 1 bits)
   //)
   //val temp = new ArrayBuffer[UInt]()
-  def tempFinalSizeMinus1 = log2Up(wordWidth) //- 1
-  val temp = Vec.fill(tempFinalSizeMinus1)(
+  def tempFinalSize = log2Up(wordWidth) + 1 //- 1
+  val temp = Vec.fill(tempFinalSize)(
     UInt(wordWidth bits)
   )
 
@@ -191,12 +212,12 @@ case class Clz(
     // binary search for the leading one
     var idx: Int = (
       //temp.size
-      tempFinalSizeMinus1 /*- 1*/ //+ 1
+      tempFinalSize - 1 //+ 1
     )
     //def prevTemp = temp(idx)
     //def currTemp = temp(idx - 1)
-    def currOutp = io.outpData(idx - 1)
-    while (idx > 0) {
+    def currOutp = io.outpData(idx)
+    while (idx >= 0) {
       //if (idx - 1 > 0) {
       //  temp += (
       //    UInt(wordWidth bits)
@@ -211,18 +232,12 @@ case class Clz(
         hiRange._2 - 1,
         0,
       )
-      if (idx == tempFinalSizeMinus1 /*- 1*/ /*+ 1*/) {
-        //currTemp := io.inpData
+      if (idx == tempFinalSize - 1 /*+ 1*/) {
         temp(idx - 1) := io.inpData
         currOutp := False
       } else if (idx == 0) {
-        //currOutp := !prevTemp(1)
         currOutp := !temp(idx)(1)
-        //currOutp := !temp(idx + 1)(1)
       } else {
-        //temp(idx) := temp(idx + 1)
-        //currOutp := currTemp(1 << idx)
-        //temp.last := 
         //println(s"${hiRange}, ${loRange}; ${idx} ${1 << idx}")
         def prevTemp = temp(idx) //temp(temp.size - 2)
         temp(idx - 1) := Mux(

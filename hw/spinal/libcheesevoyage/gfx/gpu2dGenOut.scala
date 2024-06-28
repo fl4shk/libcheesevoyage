@@ -391,8 +391,8 @@ object Gpu2dSimDutParams {
   )
 }
 
-object Gpu2dSimDutToVerilog extends App {
-  Gpu2dSimDutConfig.spinal.generateVerilog(Gpu2dSimDut(
+object Gpu2dSimDutToSystemVerilog extends App {
+  Gpu2dSimDutConfig.spinal.generateSystemVerilog(Gpu2dSimDut(
     clkRate=Gpu2dSimDutParams.clkRate,
     rgbConfig=Gpu2dSimDutParams.rgbConfig,
     vgaTimingInfo=Gpu2dSimDutParams.vgaTimingInfo,
