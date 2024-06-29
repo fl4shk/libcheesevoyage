@@ -38,8 +38,8 @@ object PipeMemRmwSimDut {
     //),
   )
   def optModHazardKind = (
-    PipeMemRmw.modHazardKindDupl
-    //PipeMemRmw.modHazardKindFwd
+    //PipeMemRmw.modHazardKindDupl
+    PipeMemRmw.modHazardKindFwd
   )
   //def forFmax = (
   //  //true

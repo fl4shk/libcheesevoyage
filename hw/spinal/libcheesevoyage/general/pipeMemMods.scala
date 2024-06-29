@@ -411,7 +411,7 @@ case class PipeMemRmwIo[
       modStageCnt > 0
       && (
         //optEnableModDuplicate
-        optModHazardKind != PipeMemRmw.modHazardKindDupl
+        optModHazardKind != PipeMemRmw.modHazardKindDont
       )
     ) generate (
       /*in*/(
@@ -1050,7 +1050,7 @@ extends Area {
           //)
         )(Bool())
       )
-      println(myUpExtDel2FindFirstVec.size)
+      //println(myUpExtDel2FindFirstVec.size)
       for (idx <- 0 until myUpExtDel2FindFirstVec.size) {
         myUpExtDel2FindFirstVec(idx) := (
           //RegNextWhen(
@@ -2706,15 +2706,15 @@ extends Area {
     //--------
     val upExt = Vec.fill(3)(mkExt()).setName("cMid0FrontArea_upExt")
     //mod.front.myUpExtDel(0) := upExt(1)
-    //doModInModFrontFunc match {
-    //  case Some(myDoModSingleStageFunc) => {
-    //  }
-    //  case None => {
+    doModInModFrontFunc match {
+      case Some(myDoModSingleStageFunc) => {
         myUpExtDel(0) := (
           RegNext(myUpExtDel(0)) init(myUpExtDel(0).getZero)
         )
-    //  }
-    //}
+      }
+      case None => {
+      }
+    }
     upExt(1) := (
       RegNext(upExt(1)) init(upExt(1).getZero)
     )
@@ -2722,13 +2722,13 @@ extends Area {
       up.isValid
       //&& upExt(0).hazardId.msb
     ) {
-      //doModInModFrontFunc match {
-      //  case Some(myDoModSingleStageFunc) => {
-      //  }
-      //  case None => {
+      doModInModFrontFunc match {
+        case Some(myDoModSingleStageFunc) => {
           myUpExtDel(0) := upExt(2)
-      //  }
-      //}
+        }
+        case None => {
+        }
+      }
       upExt(1) := upExt(0)
     }
     upExt(1).rdMemWord.allowOverride
@@ -3134,7 +3134,7 @@ extends Area {
     //  case Some(myDoModSingleStageFunc) => {
     //  }
     //  case None => {
-      if (myUpExtDel.size - 2 > 0) {
+      if (myUpExtDel.size - 2 > 2) {
         myUpExtDel(myUpExtDel.size - 2) := (
           RegNext(myUpExtDel(myUpExtDel.size - 2))
           init(myUpExtDel(myUpExtDel.size - 2).getZero)

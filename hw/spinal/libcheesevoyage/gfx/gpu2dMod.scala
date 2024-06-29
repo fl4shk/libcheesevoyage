@@ -4719,6 +4719,10 @@ case class Gpu2d(
         optDualRd=false,
         initBigInt=Some(objSubLineMemInitBigInt.toSeq),
         optEnableClear=true,
+        optModHazardKind=(
+          //PipeMemRmw.modHazardKindFwd
+          PipeMemRmw.modHazardKindDupl
+        ),
         //init=Some(objSubLineMemInit),
         //arrRamStyle=params.lineArrRamStyle,
         vivadoDebug=(
