@@ -23,14 +23,18 @@ object PipeMemRmwSimDut {
   )
   def modStageCnt = (
     //2
-    //1
-    0
+    1
+    //0
   )
   def modType() = SamplePipeMemRmwModType(
     wordType=wordType(),
     wordCount=wordCount,
     hazardCmpType=hazardCmpType(),
     modStageCnt=modStageCnt,
+    doModSingleStage=(
+      //true
+      false
+    ),
   )
   //def forFmax = (
   //  //true
@@ -42,9 +46,11 @@ case class PipeMemRmwSimDutIo() extends Bundle {
   val modFront = master(Stream(PipeMemRmwSimDut.modType()))
   val modBack = slave(Stream(PipeMemRmwSimDut.modType()))
   val back = master(Stream(PipeMemRmwSimDut.modType()))
-  //val midModStages = in(Vec.fill(PipeMemRmwSimDut.modStageCnt)(
-  //  PipeMemRmwSimDut.modType())
-  //)
+  val midModStages = (PipeMemRmwSimDut.modStageCnt > 0) generate (
+    in(Vec.fill(PipeMemRmwSimDut.modStageCnt)(
+      PipeMemRmwSimDut.modType())
+    )
+  )
 }
 //case class PipeMemRmwDoModFuncSimDut(
 //) extends Component {
@@ -95,26 +101,28 @@ case class PipeMemRmwSimDut(
   )(
     doHazardCmpFunc=None,
     doPrevHazardCmpFunc=false,
-    doModSingleStageFunc=Some(
-      (
-        outp,
-        inp,
-        cMid0Front,
-      ) => {
-        outp.myExt := inp.myExt
-        outp.myExt.allowOverride
-        //when (cMid0Front.up.isFiring) {
-          when (outp.myExt.hazardId.msb) {
-            outp.myExt.modMemWord := (
-              //modFrontPayload.myExt.rdMemWord + 0x1
-              inp.myExt.rdMemWord + 0x1
-            )
-          }
-        //}
-      }
-    ),
+    //doModSingleStageFunc=Some(
+    //  (
+    //    outp,
+    //    inp,
+    //    cMid0Front,
+    //  ) => {
+    //    outp.myExt := inp.myExt
+    //    outp.myExt.allowOverride
+    //    //when (cMid0Front.up.isFiring) {
+    //      when (outp.myExt.hazardId.msb) {
+    //        outp.myExt.modMemWord := (
+    //          //modFrontPayload.myExt.rdMemWord + 0x1
+    //          inp.myExt.rdMemWord + 0x1
+    //        )
+    //      }
+    //    //}
+    //  }
+    //),
   )
-  //pipeMem.io.midModStages := io.midModStages
+  if (modStageCnt > 0) {
+    pipeMem.io.midModStages := io.midModStages
+  }
   pipeMem.io.front.driveFrom(io.front)(
     con=(node, payload) => {
       node(pipeMem.io.frontPayload) := payload
@@ -153,13 +161,16 @@ case class PipeMemRmwTester() extends Component {
     //val front = slave(Stream(modType()))
     val back = master(Stream(modType()))
   }
-  val dut = PipeMemRmwSimDut()
+  val dut: PipeMemRmwSimDut = PipeMemRmwSimDut()
   //dut.io.front << io.front
   io.back << dut.io.back
   def front = dut.io.front
   //def back = dut.io.back
 
-  def memAddrFracWidth = 0
+  def memAddrFracWidth = (
+    0
+    //1
+  )
   val rMemAddr = Reg(
     UInt((front.myExt.memAddr.getWidth + memAddrFracWidth) bits)
   ) init(0x0)
@@ -173,8 +184,8 @@ case class PipeMemRmwTester() extends Component {
   front.myExt.allowOverride
   front.myExt.memAddr := rMemAddr >> memAddrFracWidth
   when (front.fire) {
-    rMemAddr := rMemAddr  + 1
-    //rMemAddr(0 downto 0) := rMemAddr(0 downto 0) + 1
+    //rMemAddr := rMemAddr  + 1
+    rMemAddr(0 downto 0) := rMemAddr(0 downto 0) + 1
     //when (rMemAddr(memAddrFracRange) === 2) {
     //  rMemAddr(memAddrIntRange) := (
     //    rMemAddr(memAddrIntRange) + 1
@@ -190,37 +201,39 @@ case class PipeMemRmwTester() extends Component {
   val modBackStm = Stream(modType())
   //modFrontStm <-/< dut.io.modFront
   modFrontStm << dut.io.modFront
-  modMidStm << modFrontStm
-  //modFrontStm.translateInto(
-  //  into=modMidStm
-  //)(
-  //  dataAssignment=(
-  //    modMidPayload,
-  //    modFrontPayload,
-  //  ) => {
-  //    //modMidPayload.myExt := modFrontPayload.myExt
-  //    modMidPayload := modFrontPayload
-  //    modMidPayload.myExt.allowOverride
-  //    when (modMidPayload.myExt.hazardId.msb) {
-  //      modMidPayload.myExt.modMemWord := (
-  //        //modFrontPayload.myExt.rdMemWord + 0x1
-  //        modFrontPayload.myExt.rdMemWord + 0x1
-  //      )
-  //    }
-  //    //when (
-  //    //  modFrontPayload.myExt.hazardId.msb
-  //    //) {
-  //    //  modMidPayload.myExt.dbgModMemWord := (
-  //    //    modMidPayload.myExt.modMemWord
-  //    //  )
-  //    //} otherwise {
-  //    //  modMidPayload.myExt.dbgModMemWord := 0x0
-  //    //}
-  //    dut.io.midModStages(0) := modMidPayload
-  //  }
-  //)
-  modBackStm <-/< modMidStm
-  //modBackStm << modMidStm
+  //modMidStm << modFrontStm
+  modFrontStm.translateInto(
+    into=modMidStm
+  )(
+    dataAssignment=(
+      modMidPayload,
+      modFrontPayload,
+    ) => {
+      //modMidPayload.myExt := modFrontPayload.myExt
+      modMidPayload := modFrontPayload
+      modMidPayload.myExt.allowOverride
+      when (modMidPayload.myExt.hazardId.msb) {
+        modMidPayload.myExt.modMemWord := (
+          //modFrontPayload.myExt.rdMemWord + 0x1
+          modFrontPayload.myExt.rdMemWord + 0x1
+        )
+      }
+      //when (
+      //  modFrontPayload.myExt.hazardId.msb
+      //) {
+      //  modMidPayload.myExt.dbgModMemWord := (
+      //    modMidPayload.myExt.modMemWord
+      //  )
+      //} otherwise {
+      //  modMidPayload.myExt.dbgModMemWord := 0x0
+      //}
+      if (modStageCnt > 0) {
+        dut.io.midModStages(0) := modMidPayload
+      }
+    }
+  )
+  //modBackStm <-/< modMidStm
+  modBackStm << modMidStm
   dut.io.modBack << modBackStm
 }
 object PipeMemRmwSim extends App {

@@ -64,6 +64,7 @@ case class PipeMemRmwPayloadExt[
   modStageCnt: Int,
   //optSimpleIsWr: Option[Boolean]=None,
   //optUseModMemAddr: Boolean=false,
+  doModSingleStage: Boolean=false,
   optEnableModDuplicate: Boolean=true,
   optReorder: Boolean=false,
 ) extends Bundle {
@@ -150,6 +151,7 @@ case class PipeMemRmwPayloadExt[
   val hazardId = (optEnableModDuplicate) generate (
     SInt(log2Up(
       PipeMemRmw.numPostFrontStages(
+        doModSingleStage=doModSingleStage,
         modStageCnt=modStageCnt,
       )
     ) + 4 bits)
@@ -241,23 +243,29 @@ object PipeMemRmw {
   //def kindRmw = 0
   //def kindSimpleDualPort = 1
   def numPostFrontStages(
+    doModSingleStage: Boolean,
     modStageCnt: Int,
   ) = (
     numPostFrontPreWriteStages(
-      modStageCnt=modStageCnt
+      doModSingleStage=doModSingleStage,
+      modStageCnt=modStageCnt,
     )
     + 1
   )
   def numPostFrontPreWriteStages(
+    doModSingleStage: Boolean,
     modStageCnt: Int
   ) = (
     //modStageCnt
     //3 + modStageCnt //+ 1
     //2 + modStageCnt //+ 1
-    1 + modStageCnt //+ 1
+    (if (doModSingleStage) (0) else (1)) + modStageCnt //+ 1
     //- 1
     //+ 1
   )
+  def modHazardKindDont = 0
+  def modHazardKindDuplicate = 1
+  def modHazardKindFwd = 2
 }
 case class PipeMemRmwDualRdTypeDisabled[
   WordT <: Data,
@@ -733,6 +741,10 @@ extends Area {
       wordCount=wordCount,
       hazardCmpType=hazardCmpType(),
       modStageCnt=modStageCnt,
+      doModSingleStage=doModSingleStageFunc match {
+        case Some(myDoModSingleStageFunc) => true
+        case None => false
+      },
       optEnableModDuplicate=optEnableModDuplicate,
       optReorder=optReorder,
     )
@@ -783,6 +795,10 @@ extends Area {
           PipeMemRmw.numPostFrontStages
           //PipeMemRmw.numPostFrontPreWriteStages
           (
+            doModSingleStage=doModSingleStageFunc match {
+              case Some(myDoModSingleStageFunc) => true
+              case None => false
+            },
             modStageCnt=modStageCnt,
           ) + 1 //- 1
         )(
@@ -825,6 +841,10 @@ extends Area {
           )
           val tempIdx = (
             PipeMemRmw.numPostFrontPreWriteStages(
+              doModSingleStage=doModSingleStageFunc match {
+                case Some(myDoModSingleStageFunc) => true
+                case None => false
+              },
               modStageCnt=modStageCnt
             )
             - modStageCnt
@@ -2455,9 +2475,9 @@ extends Area {
     //  inpMod: ModT,
     //): Unit = {
     //  doModSingleStageFunc match {
-    //    case Some(myDoModSingleStage) => {
+    //    case Some(myDoModSingleStageFunc) => {
     //      assert(modStageCnt == 0)
-    //      myDoModSingleStage(
+    //      myDoModSingleStageFunc(
     //        tempUpMod(2),
     //        tempUpMod(1),
     //      )
@@ -2538,9 +2558,9 @@ extends Area {
       memArrIdx=memArrIdx
     )
     doModSingleStageFunc match {
-      case Some(myDoModSingleStage) => {
-        assert(modStageCnt == 0)
-        myDoModSingleStage(
+      case Some(myDoModSingleStageFunc) => {
+        //assert(modStageCnt == 0)
+        myDoModSingleStageFunc(
           tempUpMod(2),
           tempUpMod(1),
           cMid0Front,
@@ -2771,9 +2791,9 @@ extends Area {
   //}
   val cBack = mod.back.cBack
   val cBackArea = new cBack.Area {
-    haltWhen(
-      !(RegNextWhen(True, io.front.isFiring) init(False))
-    )
+    //haltWhen(
+    //  !(RegNextWhen(True, io.front.isFiring) init(False))
+    //)
     val upExt = Vec.fill(
       2
       //1
@@ -2788,12 +2808,18 @@ extends Area {
       upExt(1) := upExt(0)
     }
 
-    myUpExtDel(myUpExtDel.size - 2) := (
-      RegNext(myUpExtDel(myUpExtDel.size - 2))
-      init(myUpExtDel(myUpExtDel.size - 2).getZero)
-    )
-    when (up.isValid) {
-      myUpExtDel(myUpExtDel.size - 2) := upExt(0)
+    doModSingleStageFunc match {
+      case Some(myDoModSingleStageFunc) => {
+      }
+      case None => {
+        myUpExtDel(myUpExtDel.size - 2) := (
+          RegNext(myUpExtDel(myUpExtDel.size - 2))
+          init(myUpExtDel(myUpExtDel.size - 2).getZero)
+        )
+        when (up.isValid) {
+          myUpExtDel(myUpExtDel.size - 2) := upExt(0)
+        }
+      }
     }
 
     val tempUpMod = Vec.fill(2)(
@@ -3952,6 +3978,7 @@ case class SamplePipeMemRmwModType[
   wordCount: Int,
   hazardCmpType: HardType[HazardCmpT],
   modStageCnt: Int,
+  doModSingleStage: Boolean=false,
   optReorder: Boolean=false,
 ) extends Bundle with PipeMemRmwPayloadBase[WordT, HazardCmpT] {
   //--------
@@ -3960,6 +3987,7 @@ case class SamplePipeMemRmwModType[
     wordCount=wordCount,
     hazardCmpType=hazardCmpType(),
     modStageCnt=modStageCnt,
+    doModSingleStage=doModSingleStage,
     optReorder=optReorder,
   )
   //--------
