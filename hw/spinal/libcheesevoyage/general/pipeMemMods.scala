@@ -265,8 +265,8 @@ object PipeMemRmw {
     //modStageCnt
     //3 + modStageCnt //+ 1
     //2 + modStageCnt //+ 1
-    1 + modStageCnt
-    //(if (doModInModFront) (0) else (1)) + modStageCnt //+ 1
+    //1 + modStageCnt
+    (if (doModInModFront) (0) else (1)) + modStageCnt //+ 1
     //(if (doModInModFront) (-1) else (1)) + modStageCnt //+ 1
     //- 1
     //+ 1
@@ -3221,7 +3221,7 @@ extends Area {
         )
       )
     )
-    //if (myUpExtDel.size - 2 >= 0) {
+    if (myUpExtDel.size - 2 >= 0) {
       myUpExtDel(myUpExtDel.size - 1) := (
         RegNextWhen(
           myUpExtDel(myUpExtDel.size - 2),
@@ -3229,7 +3229,8 @@ extends Area {
         )
         init(myUpExtDel(myUpExtDel.size - 1).getZero)
       )
-    //} else {
+    } 
+    //else {
     //  myUpExtDel(myUpExtDel.size - 1) := upExt(1)
     //}
     
