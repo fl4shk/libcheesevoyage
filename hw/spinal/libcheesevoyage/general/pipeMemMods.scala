@@ -64,7 +64,7 @@ case class PipeMemRmwPayloadExt[
   modStageCnt: Int,
   //optSimpleIsWr: Option[Boolean]=None,
   //optUseModMemAddr: Boolean=false,
-  doModInModFront: Boolean=false,
+  //doModInModFront: Boolean=false,
   //optEnableModDuplicate: Boolean=true,
   optModHazardKind: Int=PipeMemRmw.modHazardKindDupl,
   optReorder: Boolean=false,
@@ -155,7 +155,8 @@ case class PipeMemRmwPayloadExt[
   ) generate (
     SInt(log2Up(
       PipeMemRmw.numPostFrontStages(
-        doModInModFront=doModInModFront,
+        //doModInModFront=doModInModFront,
+        optModHazardKind=optModHazardKind,
         modStageCnt=modStageCnt,
       )
     ) + 4 bits)
@@ -247,11 +248,13 @@ object PipeMemRmw {
   //def kindRmw = 0
   //def kindSimpleDualPort = 1
   def numPostFrontStages(
-    doModInModFront: Boolean,
+    //doModInModFront: Boolean,
+    optModHazardKind: Int,
     modStageCnt: Int,
   ) = (
     numPostFrontPreWriteStages(
-      doModInModFront=doModInModFront,
+      //doModInModFront=doModInModFront,
+      optModHazardKind=optModHazardKind,
       modStageCnt=modStageCnt,
     )
     + 1
@@ -259,14 +262,23 @@ object PipeMemRmw {
     //+ (if (doModInModFront) (-1) else (0))
   )
   def numPostFrontPreWriteStages(
-    doModInModFront: Boolean,
+    //doModInModFront: Boolean,
+    optModHazardKind: Int,
     modStageCnt: Int
   ) = (
     //modStageCnt
     //3 + modStageCnt //+ 1
     //2 + modStageCnt //+ 1
     //1 + modStageCnt
-    (if (doModInModFront) (0) else (1)) + modStageCnt //+ 1
+    //(if (doModInModFront) (0) else (1)) + modStageCnt //+ 1
+    (
+      if (optModHazardKind == PipeMemRmw.modHazardKindDupl) (
+        0
+      ) else (
+        1
+      )
+    )
+      + modStageCnt //+ 1
     //(if (doModInModFront) (-1) else (1)) + modStageCnt //+ 1
     //- 1
     //+ 1
@@ -774,10 +786,10 @@ extends Area {
       wordCount=wordCount,
       hazardCmpType=hazardCmpType(),
       modStageCnt=modStageCnt,
-      doModInModFront=doModInModFrontFunc match {
-        case Some(myDoModSingleStageFunc) => true
-        case None => false
-      },
+      //doModInModFront=doModInModFrontFunc match {
+      //  case Some(myDoModSingleStageFunc) => true
+      //  case None => false
+      //},
       //optEnableModDuplicate=optEnableModDuplicate,
       optModHazardKind=optModHazardKind,
       optReorder=optReorder,
@@ -909,10 +921,11 @@ extends Area {
           PipeMemRmw.numPostFrontStages
           //PipeMemRmw.numPostFrontPreWriteStages
           (
-            doModInModFront=doModInModFrontFunc match {
-              case Some(myDoModSingleStageFunc) => true
-              case None => false
-            },
+            //doModInModFront=doModInModFrontFunc match {
+            //  case Some(myDoModSingleStageFunc) => true
+            //  case None => false
+            //},
+            optModHazardKind=optModHazardKind,
             modStageCnt=modStageCnt,
           ) //+ 1 //- 1
         )(
@@ -961,10 +974,11 @@ extends Area {
           )
           val tempIdx = (
             PipeMemRmw.numPostFrontPreWriteStages(
-              doModInModFront=doModInModFrontFunc match {
-                case Some(myDoModSingleStageFunc) => true
-                case None => false
-              },
+              //doModInModFront=doModInModFrontFunc match {
+              //  case Some(myDoModSingleStageFunc) => true
+              //  case None => false
+              //},
+              optModHazardKind=optModHazardKind,
               modStageCnt=modStageCnt
             )
             - modStageCnt
@@ -4297,7 +4311,7 @@ case class SamplePipeMemRmwModType[
   hazardCmpType: HardType[HazardCmpT],
   modStageCnt: Int,
   optModHazardKind: Int,
-  doModInModFront: Boolean/*=false*/,
+  //doModInModFront: Boolean/*=false*/,
   optReorder: Boolean=false,
 ) extends Bundle with PipeMemRmwPayloadBase[WordT, HazardCmpT] {
   //--------
@@ -4307,7 +4321,7 @@ case class SamplePipeMemRmwModType[
     hazardCmpType=hazardCmpType(),
     modStageCnt=modStageCnt,
     optModHazardKind=optModHazardKind,
-    doModInModFront=doModInModFront,
+    //doModInModFront=doModInModFront,
     optReorder=optReorder,
   )
   //--------

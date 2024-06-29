@@ -32,10 +32,10 @@ object PipeMemRmwSimDut {
     hazardCmpType=hazardCmpType(),
     modStageCnt=modStageCnt,
     optModHazardKind=optModHazardKind,
-    doModInModFront=(
-      true
-      //false
-    ),
+    //doModInModFront=(
+    //  true
+    //  //false
+    //),
   )
   def optModHazardKind = (
     PipeMemRmw.modHazardKindDupl
