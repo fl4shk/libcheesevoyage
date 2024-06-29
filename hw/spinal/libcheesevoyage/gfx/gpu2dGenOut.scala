@@ -20,7 +20,8 @@ object Gpu2dSimDutConfig {
       resetActiveLevel=HIGH,
       //resetKind=BOOT,
     ),
-    onlyStdLogicVectorAtTopLevelIo=true,
+    //onlyStdLogicVectorAtTopLevelIo=true,
+    svInterface=true,
   )
 }
 object Gpu2dSimDutParams {

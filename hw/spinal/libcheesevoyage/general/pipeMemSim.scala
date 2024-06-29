@@ -31,10 +31,15 @@ object PipeMemRmwSimDut {
     wordCount=wordCount,
     hazardCmpType=hazardCmpType(),
     modStageCnt=modStageCnt,
-    doModSingleStage=(
+    optModHazardKind=optModHazardKind,
+    doModInModFront=(
       true
       //false
     ),
+  )
+  def optModHazardKind = (
+    PipeMemRmw.modHazardKindDupl
+    //PipeMemRmw.modHazardKindFwd
   )
   //def forFmax = (
   //  //true
@@ -69,6 +74,9 @@ case class PipeMemRmwSimDut(
     //0
     PipeMemRmwSimDut.modStageCnt
   )
+  def optModHazardKind = (
+    PipeMemRmwSimDut.optModHazardKind
+  )
   def modType() = PipeMemRmwSimDut.modType()
   val io = PipeMemRmwSimDutIo()
   val pipeMem = PipeMemRmw[
@@ -100,15 +108,18 @@ case class PipeMemRmwSimDut(
       //Some(Array.fill(wordCount)(BigInt(0)).toSeq)
       Some(tempArr.toSeq)
     },
-    optEnableModDuplicate=(
-      true,
-      //false,
+    //optEnableModDuplicate=(
+    //  true,
+    //  //false,
+    //),
+    optModHazardKind=(
+      optModHazardKind
     ),
     //forFmax=forFmax,
   )(
     doHazardCmpFunc=None,
     doPrevHazardCmpFunc=false,
-    doModSingleStageFunc=Some(
+    doModInModFrontFunc=Some(
       (
         outp,
         inp,
@@ -117,13 +128,27 @@ case class PipeMemRmwSimDut(
         outp.myExt := inp.myExt
         outp.myExt.allowOverride
         //when (cMid0Front.up.isFiring) {
-          when (outp.myExt.hazardId.msb) {
-            outp.myExt.modMemWord := (
-              //modFrontPayload.myExt.rdMemWord + 0x1
-              inp.myExt.rdMemWord + 0x1
-            )
-          }
+        when (
+          if (optModHazardKind == PipeMemRmw.modHazardKindDupl) (
+            outp.myExt.hazardId.msb
+          ) else (
+            True
+          )
+        ) {
+          outp.myExt.modMemWord := (
+            //modFrontPayload.myExt.rdMemWord + 0x1
+            inp.myExt.rdMemWord + 0x1
+          )
+        }
         //}
+      }
+    ),
+    doFwdFunc=Some(
+      (
+        stageIdx,
+        myUpExtDel,
+      ) => {
+        myUpExtDel.last.modMemWord
       }
     ),
   )

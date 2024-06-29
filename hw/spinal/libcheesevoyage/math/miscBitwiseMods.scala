@@ -144,21 +144,21 @@ case class BarrelShifter(
 }
 object LslToSystemVerilog extends App {
   def wordWidth = 32 
-  Config.spinal.generateSystemVerilog(BarrelShifter(
+  SpinalConfig(svInterface=true).generateSystemVerilog(BarrelShifter(
     wordWidth=wordWidth,
     kind=BarrelShifter.kindLsl,
   ))
 }
 object LsrToSystemVerilog extends App {
   def wordWidth = 32 
-  Config.spinal.generateSystemVerilog(BarrelShifter(
+  SpinalConfig(svInterface=true).generateSystemVerilog(BarrelShifter(
     wordWidth=wordWidth,
     kind=BarrelShifter.kindLsr,
   ))
 }
 object AsrToSystemVerilog extends App {
   def wordWidth = 32 
-  Config.spinal.generateSystemVerilog(BarrelShifter(
+  SpinalConfig(svInterface=true).generateSystemVerilog(BarrelShifter(
     wordWidth=wordWidth,
     kind=BarrelShifter.kindAsr,
   ))

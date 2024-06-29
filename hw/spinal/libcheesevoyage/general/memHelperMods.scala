@@ -272,7 +272,10 @@ extends Component
       wordCount=wordCount,
       hazardCmpType=Bool(),
       modStageCnt=modStageCnt,
-      optEnableModDuplicate=false,
+      //optEnableModDuplicate=false,
+      optModHazardKind=(
+        PipeMemRmw.modHazardKindDont
+      ),
       //optReorder=true,
     )
     //if (vivadoDebug) {
@@ -321,7 +324,10 @@ extends Component
     dualRdType=PmRmwModType(),
     optDualRd=true,
     initBigInt=initBigInt,
-    optEnableModDuplicate=false,
+    //optEnableModDuplicate=false,
+    optModHazardKind=(
+      PipeMemRmw.modHazardKindDont
+    ),
     vivadoDebug=vivadoDebug,
   )(
     doHazardCmpFunc=None
