@@ -251,6 +251,7 @@ object PipeMemRmw {
       modStageCnt=modStageCnt,
     )
     + 1
+    //+ (if (doModSingleStage) (-1) else (0))
   )
   def numPostFrontPreWriteStages(
     doModSingleStage: Boolean,
@@ -259,7 +260,8 @@ object PipeMemRmw {
     //modStageCnt
     //3 + modStageCnt //+ 1
     //2 + modStageCnt //+ 1
-    (if (doModSingleStage) (0) else (1)) + modStageCnt //+ 1
+    //(if (doModSingleStage) (0) else (1)) + modStageCnt //+ 1
+    (if (doModSingleStage) (-1) else (1)) + modStageCnt //+ 1
     //- 1
     //+ 1
   )
@@ -2808,10 +2810,11 @@ extends Area {
       upExt(1) := upExt(0)
     }
 
-    doModSingleStageFunc match {
-      case Some(myDoModSingleStageFunc) => {
-      }
-      case None => {
+    //doModSingleStageFunc match {
+    //  case Some(myDoModSingleStageFunc) => {
+    //  }
+    //  case None => {
+      if (myUpExtDel.size - 2 >= 0) {
         myUpExtDel(myUpExtDel.size - 2) := (
           RegNext(myUpExtDel(myUpExtDel.size - 2))
           init(myUpExtDel(myUpExtDel.size - 2).getZero)
@@ -2820,7 +2823,8 @@ extends Area {
           myUpExtDel(myUpExtDel.size - 2) := upExt(0)
         }
       }
-    }
+    //  }
+    //}
 
     val tempUpMod = Vec.fill(2)(
       modType()
@@ -2908,13 +2912,15 @@ extends Area {
         )
       )
     )
-    myUpExtDel(myUpExtDel.size - 1) := (
-      RegNextWhen(
-        myUpExtDel(myUpExtDel.size - 2),
-        down.isFiring,
+    if (myUpExtDel.size - 2 >= 0) {
+      myUpExtDel(myUpExtDel.size - 1) := (
+        RegNextWhen(
+          myUpExtDel(myUpExtDel.size - 2),
+          down.isFiring,
+        )
+        init(myUpExtDel(myUpExtDel.size - 1).getZero)
       )
-      init(myUpExtDel(myUpExtDel.size - 1).getZero)
-    )
+    }
     
     when (
       //!clockDomain.isResetActive
