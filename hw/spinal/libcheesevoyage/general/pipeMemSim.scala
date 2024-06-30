@@ -103,7 +103,11 @@ case class PipeMemRmwSimDut(
     initBigInt={
       val tempArr = new ArrayBuffer[BigInt]()
       for (idx <- 0 until wordCount) {
-        tempArr += BigInt(idx)
+        val toAdd: Int = idx * 2
+        //println(s"${toAdd} ${idx} ${wordCount}")
+        //tempArr += idx * 2
+        tempArr += toAdd
+        //println(tempArr.last)
       }
       //Some(Array.fill(wordCount)(BigInt(0)).toSeq)
       Some(tempArr.toSeq)
@@ -146,9 +150,13 @@ case class PipeMemRmwSimDut(
     doFwdFunc=Some(
       (
         stageIdx,
-        myUpExtDel,
+        myUpExtDel2,
       ) => {
-        myUpExtDel.last.modMemWord
+        //myUpExtDel.last.modMemWord
+        //myUpExtDel(
+        //  Mux[UInt](stageIdx === 0, 1, stageIdx)
+        //).modMemWord
+        myUpExtDel2(stageIdx).modMemWord
       }
     ),
   )
@@ -216,7 +224,7 @@ case class PipeMemRmwTester() extends Component {
   front.myExt.allowOverride
   front.myExt.memAddr := rMemAddr >> memAddrFracWidth
   when (front.fire) {
-    //rMemAddr := rMemAddr  + 1
+    rMemAddr := rMemAddr  + 1
     //rMemAddr(0 downto 0) := rMemAddr(0 downto 0) + 1
     //when (rMemAddr(memAddrFracRange) === 2) {
     //  rMemAddr(memAddrIntRange) := (
@@ -275,7 +283,8 @@ object PipeMemRmwSim extends App {
   )
   SimConfig
     .withConfig(config=simSpinalConfig)
-    .withFstWave
+    //.withFstWave
+    .withVcdWave
     .compile(
       PipeMemRmwTester()
     )
