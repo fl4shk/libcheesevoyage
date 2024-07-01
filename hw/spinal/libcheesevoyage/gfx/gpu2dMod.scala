@@ -4708,7 +4708,8 @@ case class Gpu2d(
         wordCount=params.objSubLineMemArrSize,
         hazardCmpType=WrObjPipeSlmRmwHazardCmp(isAffine=false),
         modType=WrObjPipePayload(isAffine=false),
-        modStageCnt=wrObjPipeIdxSlmRmwModStageCnt,
+        modRdPortCnt=wrObjPipeSlmRmwModRdPortCnt,
+        modStageCnt=wrObjPipeSlmRmwModStageCnt,
         pipeName=s"wrObjSubLineMemArr_${idx}",
         linkArr=Some(linkArr),
         memArrIdx=idx,
@@ -4743,6 +4744,7 @@ case class Gpu2d(
               Vec[ObjSubLineMemEntry],
               WrObjPipeSlmRmwHazardCmp,
             ],
+            zdx: Int,
             //idx: Int,
             //kind: Boolean
             isPostDelay: Boolean,
@@ -4755,7 +4757,7 @@ case class Gpu2d(
             //  if (
             //    //idx 
             //    //== PipeMemRmw.numPostFrontStages(
-            //    //  modStageCnt=wrObjPipeIdxSlmRmwModStageCnt,
+            //    //  modStageCnt=wrObjPipeSlmRmwModStageCnt,
             //    //) - 1
             //    isPostDelay
             //  ) (
@@ -6269,7 +6271,7 @@ case class Gpu2d(
           if (
             //idx 
             //== PipeMemRmw.numPostFrontStages(
-            //  modStageCnt=wrObjPipeIdxSlmRmwModStageCnt,
+            //  modStageCnt=wrObjPipeSlmRmwModStageCnt,
             //) - 1
             !isPostDelay
           ) (
@@ -7111,7 +7113,8 @@ case class Gpu2d(
           )
         ),
         hazardCmpType=WrObjPipeSlmRmwHazardCmp(isAffine=isAffine),
-        modStageCnt=wrObjPipeIdxSlmRmwModStageCnt,
+        modRdPortCnt=wrObjPipeSlmRmwModRdPortCnt,
+        modStageCnt=wrObjPipeSlmRmwModStageCnt,
         //optEnableModDuplicate=true,
         optModHazardKind=(
           PipeMemRmw.modHazardKindDupl
@@ -8498,11 +8501,14 @@ case class Gpu2d(
     def wrObjPipeIdxSlmRmwModFront = 15
     def wrObjPipeIdxSlmRmwModBack = 17
     def wrObjPipeIdxSlmRmwBack = 18
-    def wrObjPipeIdxSlmRmwModStageCnt = (
+    def wrObjPipeSlmRmwModStageCnt = (
       wrObjPipeIdxSlmRmwModBack
       - wrObjPipeIdxSlmRmwModFront
       + 1
       //+ 1
+    )
+    def wrObjPipeSlmRmwModRdPortCnt = (
+      1
     )
 
     def wrObjPipeNumForkOrJoinRenderers = (
@@ -17236,7 +17242,7 @@ case class Gpu2d(
               val tempRdAddr = (
                 if (kind == 0) {
                   //wrObjSubLineMemArr(jdx)
-                  tempOutp.subLineMemEntryExt.memAddr
+                  tempOutp.subLineMemEntryExt.memAddr(PipeMemRmw.modWrIdx)
                 } else {
                   wrObjAffineSubLineMemArr(jdx).io.rdAddr
                 }
@@ -17694,7 +17700,9 @@ case class Gpu2d(
               val tempRdData = KeepAttribute(
                 if (kind == 0) {
                   //wrObjSubLineMemArr(jdx)
-                  tempInp.subLineMemEntryExt.rdMemWord
+                  tempInp.subLineMemEntryExt.rdMemWord(
+                    PipeMemRmw.modWrIdx
+                  )
                 } else {
                   wrObjAffineSubLineMemArr(jdx).io.rdData
                 }

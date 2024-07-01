@@ -265,12 +265,14 @@ extends Component
   )
   def addrWidth = io.addrWidth
   //--------
+  def modRdPortCnt = 1
   def modStageCnt = 1
   def mkExt() = {
     val ret = PipeMemRmwPayloadExt(
       wordType=wordType(),
       wordCount=wordCount,
       hazardCmpType=Bool(),
+      modRdPortCnt=modRdPortCnt,
       modStageCnt=modStageCnt,
       //optEnableModDuplicate=false,
       optModHazardKind=(
@@ -316,6 +318,7 @@ extends Component
     wordCount=wordCount,
     hazardCmpType=Bool(),
     modType=PmRmwModType(),
+    modRdPortCnt=modRdPortCnt,
     modStageCnt=modStageCnt,
     pipeName=pipeName,
     //linkArr=Some(PipeMemRmw.mkLinkArr()),
@@ -377,8 +380,12 @@ extends Component
       wrPipePayload := wrPipePayload.getZero
       wrPipePayload.allowOverride
       //wrPipePayload.data := io.wrPulse
-      wrPipePayload.myExt.memAddr := wrPulsePayload.addr
-      wrPipePayload.myExt.rdMemWord := wrPulsePayload.data
+      wrPipePayload.myExt.memAddr(PipeMemRmw.modWrIdx) := (
+        wrPulsePayload.addr
+      )
+      wrPipePayload.myExt.rdMemWord(PipeMemRmw.modWrIdx) := (
+        wrPulsePayload.data
+      )
       wrPipePayload.myExt.modMemWord := wrPulsePayload.data //wrPipePayload.myExt.rdMemWord
     }
   )
@@ -392,7 +399,9 @@ extends Component
       dualRdPipePayload := dualRdPipePayload.getZero
       dualRdPipePayload.allowOverride
       dualRdPipePayload.data := rdAddrPipePayload.data
-      dualRdPipePayload.myExt.memAddr := rdAddrPipePayload.addr
+      dualRdPipePayload.myExt.memAddr(PipeMemRmw.modWrIdx) := (
+        rdAddrPipePayload.addr
+      )
     }
   )
   //pipeMem.io.dualRdBack.translateInto(io.rdDataPipe)
@@ -410,7 +419,7 @@ extends Component
         io.unionIdx,
         rdDataPipePayload,
         dualRdPipePayload.data,
-        dualRdPipePayload.myExt.rdMemWord
+        dualRdPipePayload.myExt.rdMemWord(PipeMemRmw.modWrIdx)
       )
       //rdDataPipePayload := dualRdPipePayload.myExt.modMemWord
     }

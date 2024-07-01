@@ -23,13 +23,18 @@ object PipeMemRmwSimDut {
   )
   def modStageCnt = (
     //2
-    //1
-    0
+    1
+    //0
+  )
+  def modRdPortCnt = (
+    1
+    //2
   )
   def modType() = SamplePipeMemRmwModType(
     wordType=wordType(),
     wordCount=wordCount,
     hazardCmpType=hazardCmpType(),
+    modRdPortCnt=modRdPortCnt,
     modStageCnt=modStageCnt,
     optModHazardKind=optModHazardKind,
     //doModInModFront=(
@@ -38,8 +43,8 @@ object PipeMemRmwSimDut {
     //),
   )
   def optModHazardKind = (
-    //PipeMemRmw.modHazardKindDupl
-    PipeMemRmw.modHazardKindFwd
+    PipeMemRmw.modHazardKindDupl
+    //PipeMemRmw.modHazardKindFwd
   )
   //def forFmax = (
   //  //true
@@ -68,6 +73,9 @@ case class PipeMemRmwSimDut(
   def wordType() = PipeMemRmwSimDut.wordType()
   def wordCount = PipeMemRmwSimDut.wordCount
   def hazardCmpType() = PipeMemRmwSimDut.hazardCmpType()
+  def modRdPortCnt = (
+    PipeMemRmwSimDut.modRdPortCnt
+  )
   def modStageCnt = (
     //2
     //1
@@ -89,6 +97,7 @@ case class PipeMemRmwSimDut(
     wordCount=wordCount,
     hazardCmpType=hazardCmpType(),
     modType=modType(),
+    modRdPortCnt=modRdPortCnt,
     modStageCnt=modStageCnt,
     pipeName="PipeMemRmw_FormalDut",
     dualRdType=(
@@ -129,21 +138,23 @@ case class PipeMemRmwSimDut(
         inp,
         cMid0Front,
       ) => {
-        outp.myExt := inp.myExt
+        //outp.myExt := RegNext(outp.myExt) init(outp.myExt.getZero)
         outp.myExt.allowOverride
         //when (cMid0Front.up.isFiring) {
-        when (
-          if (optModHazardKind == PipeMemRmw.modHazardKindDupl) (
-            outp.myExt.hazardId.msb
-          ) else (
-            True
-          )
-        ) {
-          outp.myExt.modMemWord := (
-            //modFrontPayload.myExt.rdMemWord + 0x1
-            inp.myExt.rdMemWord + 0x1
-          )
-        }
+          outp.myExt := inp.myExt
+          when (
+            if (optModHazardKind == PipeMemRmw.modHazardKindDupl) (
+              outp.myExt.hazardId.msb
+            ) else (
+              True
+            )
+          ) {
+            outp.myExt.modMemWord := (
+              //modFrontPayload.myExt.rdMemWord(0) + 0x1
+              inp.myExt.rdMemWord(0) + 0x1
+              //inp.myExt.rdMemWord(0) + inp.myExt.rdMemWord(1) + 0x1
+            )
+          }
         //}
       }
     ),
@@ -151,6 +162,7 @@ case class PipeMemRmwSimDut(
       (
         stageIdx,
         myUpExtDel2,
+        zdx,
       ) => {
         //myUpExtDel.last.modMemWord
         //myUpExtDel(
@@ -190,6 +202,9 @@ case class PipeMemRmwTester() extends Component {
   def wordType() = PipeMemRmwSimDut.wordType()
   def wordCount = PipeMemRmwSimDut.wordCount
   def hazardCmpType() = PipeMemRmwSimDut.hazardCmpType()
+  def modRdPortCnt = (
+    PipeMemRmwSimDut.modRdPortCnt
+  )
   def modStageCnt = (
     //2
     //1
@@ -212,7 +227,7 @@ case class PipeMemRmwTester() extends Component {
     //1
   )
   val rMemAddr = Reg(
-    UInt((front.myExt.memAddr.getWidth + memAddrFracWidth) bits)
+    UInt((front.myExt.memAddr(0).getWidth + memAddrFracWidth) bits)
   ) init(0x0)
   def memAddrFracRange = memAddrFracWidth - 1 downto 0
   def memAddrIntRange = rMemAddr.high downto memAddrFracWidth
@@ -222,9 +237,11 @@ case class PipeMemRmwTester() extends Component {
     RegNext(front.payload) init(front.payload.getZero)
   )
   front.myExt.allowOverride
-  front.myExt.memAddr := rMemAddr >> memAddrFracWidth
+  for (zdx <- 0 until modRdPortCnt) {
+    front.myExt.memAddr(zdx) := (rMemAddr + zdx) >> memAddrFracWidth
+  }
   when (front.fire) {
-    rMemAddr := rMemAddr  + 1
+    rMemAddr := rMemAddr + 1
     //rMemAddr(0 downto 0) := rMemAddr(0 downto 0) + 1
     //when (rMemAddr(memAddrFracRange) === 2) {
     //  rMemAddr(memAddrIntRange) := (
@@ -307,8 +324,8 @@ object PipeMemRmwSim extends App {
       ////StreamMonitor(dut.io.front, dut.clockDomain) { payload => 
       ////  scoreboard.pushRef(payload.toInt)
       ////}
-      //StreamReadyRandomizer(dut.io.back, dut.clockDomain)
-      dut.io.back.ready #= true
+      StreamReadyRandomizer(dut.io.back, dut.clockDomain)
+      //dut.io.back.ready #= true
       //dut.io.back.ready #= true
       //dut.clockDomain.forkStimulus(period=10)
       ////dut.clockDomain.waitActiveEdgeWhere(scoreboard.matches == 100)

@@ -21,7 +21,7 @@ object Gpu2dSimDutConfig {
       //resetKind=BOOT,
     ),
     //onlyStdLogicVectorAtTopLevelIo=true,
-    svInterface=true,
+    //svInterface=true,
   )
 }
 object Gpu2dSimDutParams {
@@ -392,8 +392,8 @@ object Gpu2dSimDutParams {
   )
 }
 
-object Gpu2dSimDutToSystemVerilog extends App {
-  Gpu2dSimDutConfig.spinal.generateSystemVerilog(Gpu2dSimDut(
+object Gpu2dSimDutToVerilog extends App {
+  Gpu2dSimDutConfig.spinal.generateVerilog(Gpu2dSimDut(
     clkRate=Gpu2dSimDutParams.clkRate,
     rgbConfig=Gpu2dSimDutParams.rgbConfig,
     vgaTimingInfo=Gpu2dSimDutParams.vgaTimingInfo,
