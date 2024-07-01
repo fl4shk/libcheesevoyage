@@ -1718,6 +1718,8 @@ extends Area {
             ) && (
               //RegNextWhen(True, mod.back.cBack.up.isValid) init(False)
               //mod.back.cBack.up.isValid
+              mod.back.myWriteEnable
+            ) && (
               //mod.back.cBack.up.isFiring
               //mod.back.cLastBack.up.isValid
               True
@@ -1726,6 +1728,10 @@ extends Area {
               //  mod.back.myWriteEnable,
               //  mod.back.cBack.up.isFiring,
               //) init(False)
+              True
+              //down.isReady
+            ) && (
+              //up.isValid
               True
             )
           //) else (
@@ -1840,13 +1846,22 @@ extends Area {
             enable=(
               //tempCond
               !mod.front.nextDidFwd(zdx)(0)
+              && up.isValid
+              && down.isReady
             ),
           )
-          when (mod.front.nextDidFwd(zdx)(0)) {
+          when (
+            mod.front.nextDidFwd(zdx)(0)
+            && up.isValid
+            && down.isReady
+          ) {
             //myRdMemWord := myUpExtDelFull.last.modMemWord
             myRdMemWord(zdx) := (
               //RegNextWhen(
-                RegNext(mod.back.myWriteData),
+                (
+                  RegNext(mod.back.myWriteData)
+                  init(mod.back.myWriteData.getZero)
+                ),
                 //io.back.isFiring,
                 //io.modBack.isFiring,
                 //mod.back.cBack.up.isValid
@@ -1929,7 +1944,7 @@ extends Area {
     val upExt = Vec.fill(3)(mkExt()).setName("cMid0FrontArea_upExt")
     //mod.front.myUpExtDel(0) := upExt(1)
     //doModInModFrontFunc match {
-    //  case Some(myDoModSingleStageFunc) => {
+    //  case Some(myDoModInModFrontFunc) => {
     //    myUpExtDel(0) := (
     //      RegNext(myUpExtDel(0)) init(myUpExtDel(0).getZero)
     //    )
@@ -1946,9 +1961,10 @@ extends Area {
     when (
       up.isValid
       //&& upExt(0).hazardId.msb
+      && down.isReady
     ) {
       //doModInModFrontFunc match {
-      //  case Some(myDoModSingleStageFunc) => {
+      //  case Some(myDoModInModFrontFunc) => {
       //    myUpExtDel(0) := upExt(2)
       //  }
       //  case None => {
@@ -2053,8 +2069,11 @@ extends Area {
     //--------
     //println(myUpExtDel.size)
     when (
-      //up.isValid
-      up.isFiring
+      if (optModHazardKind != PipeMemRmw.modHazardKindFwd) (
+        up.isFiring
+      ) else (
+        up.isValid
+      )
       //&& upExt(0).hazardId.msb
       //&& !rSetRdId
       && (
@@ -2071,50 +2090,56 @@ extends Area {
     ) {
       //myRdMemWord 
       rSetRdId := True
-      //when (down.isReady) {
+      when (
+        //if (optModHazardKind != PipeMemRmw.modHazardKindFwd) (
+        //  True
+        //) else (
+          down.isReady
+        //)
+      ) {
         upExt(1).rdMemWord := myRdMemWord
-      //}
-      for (zdx <- 0 until modRdPortCnt) {
-        val tempFindFirst = (
-          (optModHazardKind == PipeMemRmw.modHazardKindFwd) generate (
-            //KeepAttribute(
-              mod.front.myUpExtDel2FindFirstVec(zdx).sFindFirst(
-                _ === True
-              )
-              //.setName("cMid0FrontArea_tempFindFirst")
-            //)
-          )
-          .setName("tempFindFirst")
-        )
-        if (optModHazardKind == PipeMemRmw.modHazardKindFwd) {
-          when (
-            tempFindFirst._1
-            && (
-              if (
-                !doPrevHazardCmpFunc
-                //&& mod.front.myUpExtDel.size > 1
-              ) (
-                mod.front.myHazardCmpFunc(
-                  curr=mod.front.myUpExtDel(0),
-                  prev=mod.front.myUpExtDel(1),
-                  zdx=zdx,
-                  isPostDelay=false,
+        for (zdx <- 0 until modRdPortCnt) {
+          val tempFindFirst = (
+            (optModHazardKind == PipeMemRmw.modHazardKindFwd) generate (
+              //KeepAttribute(
+                mod.front.myUpExtDel2FindFirstVec(zdx).sFindFirst(
+                  _ === True
                 )
-              ) else (
-                True
-              )
+                //.setName("cMid0FrontArea_tempFindFirst")
+              //)
             )
-          ) {
-            doFwdFunc match {
-              case Some(myDoFwdFunc) => {
-                upExt(1).rdMemWord(zdx) := myDoFwdFunc(
-                  tempFindFirst._2,
-                  mod.front.myUpExtDel2,
-                  zdx,
+            .setName(s"tempFindFirst_${zdx}")
+          )
+          if (optModHazardKind == PipeMemRmw.modHazardKindFwd) {
+            when (
+              tempFindFirst._1
+              && (
+                if (
+                  !doPrevHazardCmpFunc
+                  //&& mod.front.myUpExtDel.size > 1
+                ) (
+                  mod.front.myHazardCmpFunc(
+                    curr=mod.front.myUpExtDel(0),
+                    prev=mod.front.myUpExtDel(1),
+                    zdx=zdx,
+                    isPostDelay=false,
+                  )
+                ) else (
+                  True
                 )
-              }
-              case None => {
-                assert(false)
+              )
+            ) {
+              doFwdFunc match {
+                case Some(myDoFwdFunc) => {
+                  upExt(1).rdMemWord(zdx) := myDoFwdFunc(
+                    tempFindFirst._2,
+                    mod.front.myUpExtDel2,
+                    zdx,
+                  )
+                }
+                case None => {
+                  assert(false)
+                }
               }
             }
           }
@@ -2363,15 +2388,28 @@ extends Area {
           False
         )
       )
-      && down.isReady
+      && (
+        if (optModHazardKind != PipeMemRmw.modHazardKindFwd) (
+          up.isFiring
+        ) else (
+          up.isValid
+        )
+        && down.isReady
+      )
     )
     if (myUpExtDel.size - 2 >= 0) {
       myUpExtDel(myUpExtDel.size - 1) := (
         RegNextWhen(
           myUpExtDel(myUpExtDel.size - 2),
           //down.isFiring,
-          up.isFiring,
-          //down.isReady
+          (
+            //if (optModHazardKind != PipeMemRmw.modHazardKindFwd) (
+            //  //up.isFiring
+            //) else (
+              up.isValid
+            //  && down.isReady
+            //)
+          )
           //up.isValid
           //True
         )
@@ -2388,8 +2426,13 @@ extends Area {
       //&& isValid
       //&& up.isFiring
       //&& 
-      //up.isValid
-      up.isFiring
+      //--------
+      if (optModHazardKind != PipeMemRmw.modHazardKindFwd) (
+        up.isFiring
+      ) else (
+        up.isValid
+      )
+      //--------
       //down.isReady
       //True
       //&& upExt.rdValid

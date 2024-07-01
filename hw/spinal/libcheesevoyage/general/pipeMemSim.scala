@@ -145,17 +145,22 @@ case class PipeMemRmwSimDut(
       //    //when (cMid0Front.up.isFiring) {
       //      outp.myExt := inp.myExt
       //      when (
-      //        if (optModHazardKind == PipeMemRmw.modHazardKindDupl) (
-      //          outp.myExt.hazardId.msb
-      //        ) else (
-      //          True
-      //        )
+      //        cMid0Front.up.isValid
+      //        && cMid0Front.down.isReady
       //      ) {
-      //        outp.myExt.modMemWord := (
-      //          //modFrontPayload.myExt.rdMemWord(0) + 0x1
-      //          inp.myExt.rdMemWord(0) + 0x1
-      //          //inp.myExt.rdMemWord(0) + inp.myExt.rdMemWord(1) + 0x1
-      //        )
+      //        when (
+      //          if (optModHazardKind == PipeMemRmw.modHazardKindDupl) (
+      //            outp.myExt.hazardId.msb
+      //          ) else (
+      //            True
+      //          )
+      //        ) {
+      //          outp.myExt.modMemWord := (
+      //            //modFrontPayload.myExt.rdMemWord(0) + 0x1
+      //            inp.myExt.rdMemWord(PipeMemRmw.modWrIdx) + 0x1
+      //            //inp.myExt.rdMemWord(0) + inp.myExt.rdMemWord(1) + 0x1
+      //          )
+      //        }
       //      }
       //    //}
       //  }
@@ -235,7 +240,14 @@ case class PipeMemRmwTester() extends Component {
   def memAddrFracRange = memAddrFracWidth - 1 downto 0
   def memAddrIntRange = rMemAddr.high downto memAddrFracWidth
 
-  front.valid := True
+  val nextFrontValid = Bool()
+  val rFrontValid = (
+    RegNext(nextFrontValid) init(nextFrontValid.getZero)
+  )
+  //nextFrontValid := rFrontValid
+  nextFrontValid := !rFrontValid
+  //front.valid := True
+  front.valid := nextFrontValid
   front.payload := (
     RegNext(front.payload) init(front.payload.getZero)
   )
@@ -246,6 +258,7 @@ case class PipeMemRmwTester() extends Component {
   when (front.fire) {
     //rMemAddr := rMemAddr + 1
     rMemAddr(0 downto 0) := rMemAddr(0 downto 0) + 1
+    //rMemAddr(1 downto 0) := rMemAddr(1 downto 0) + 1
     //when (rMemAddr(memAddrFracRange) === 2) {
     //  rMemAddr(memAddrIntRange) := (
     //    rMemAddr(memAddrIntRange) + 1
