@@ -1576,8 +1576,8 @@ extends Area {
           //}
           when (
             up.isValid
-            //&& down.isReady
-            && down.isFiring
+            && down.isReady
+            //&& down.isFiring
             //&& down.isFiring
           ) {
             upExt(1) := upExt(0)
@@ -1806,8 +1806,8 @@ extends Area {
       //  rState === State.IDLE
       //)
       && up.isValid
-      && down.isFiring
-      //&& down.isReady
+      //&& down.isFiring
+      && down.isReady
     )
 
     if (
@@ -2266,7 +2266,7 @@ extends Area {
     //  case Some(myDoModSingleStageFunc) => {
     //  }
     //  case None => {
-      if (myUpExtDel.size - 2 >= 2) {
+      if (myUpExtDel.size - 2 >= 1) {
         myUpExtDel(myUpExtDel.size - 2) := (
           RegNext(myUpExtDel(myUpExtDel.size - 2))
           init(myUpExtDel(myUpExtDel.size - 2).getZero)
