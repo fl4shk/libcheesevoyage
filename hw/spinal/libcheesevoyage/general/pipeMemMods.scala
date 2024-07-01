@@ -85,6 +85,11 @@ case class PipeMemRmwPayloadExt[
     return false
   }
   //--------
+  val duplState = (
+    (optModHazardKind == PipeMemRmw.modHazardKindDupl) generate (
+      KeepAttribute(Bool())
+    )
+  )
 
   val memAddr = Vec.fill(modRdPortCnt)(
     UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
@@ -297,11 +302,12 @@ object PipeMemRmw {
     //1 + modStageCnt
     //(if (doModInModFront) (0) else (1)) + modStageCnt //+ 1
     (
-      if (optModHazardKind == PipeMemRmw.modHazardKindDupl) (
-        0
-      ) else (
-        1
-      )
+      //if (optModHazardKind == PipeMemRmw.modHazardKindDupl) (
+      //  0
+      //) else (
+      //  1
+      //)
+      1
     )
       + modStageCnt //+ 1
     //(if (doModInModFront) (-1) else (1)) + modStageCnt //+ 1
@@ -998,21 +1004,6 @@ extends Area {
           //init(mkExt().getZero)
         )
       )
-      //val myUpExtDel2Extended = KeepAttribute(
-      //  Vec.fill(
-      //    PipeMemRmw.numPostFrontStages
-      //    (
-      //      //doModInModFront=doModInModFrontFunc match {
-      //      //  case Some(myDoModSingleStageFunc) => true
-      //      //  case None => false
-      //      //},
-      //      optModHazardKind=optModHazardKind,
-      //      modStageCnt=modStageCnt,
-      //    ) //+ 1 //- 1
-      //  )(
-      //    mkExt(myVivadoDebug=true)
-      //  )
-      //)
       for (idx <- 0 until myUpExtDel2.size) {
         myUpExtDel2(idx) := myUpExtDel(idx + 1)
       }
@@ -1090,7 +1081,10 @@ extends Area {
 
 
       val cFront = pipe.addStage(
-        name=pipeName + "_Front"
+        name=pipeName + "_Front",
+        optIncludeS2M=(
+          false
+        )
       )
       val cIoFront = DirectLink(
         up=io.front,
@@ -1117,6 +1111,10 @@ extends Area {
         }
       }
       myLinkArr += cIoFront
+      //val cMidMinus1Front = pipe.addStage(
+      //  name=pipeName + "_MidMinus1Front",
+      //  optIncludeS2M=false,
+      //)
       val cMid0Front = pipe.addStage(
         name=pipeName + "_Mid0Front",
         //optIncludeStage=(
@@ -1125,7 +1123,10 @@ extends Area {
         //    case None => true
         //  }
         //),
-        optIncludeS2M=false,
+        optIncludeS2M=(
+          //false
+          true
+        ),
         //finish=true,
       )
       //println(myUpExtDelFull.size)
@@ -1187,39 +1188,6 @@ extends Area {
         down=io.modFront,
       )
       myLinkArr += cIoModFront
-      ////val cModFront = pipe.addStage("ModFront")
-      //pipe.first.up.driveFrom(io.front)(
-      //  con=(node, payload) => {
-      //    node(inpPipePayload) := payload 
-      //  }
-      //)
-      ////when (cFront.up.isValid) {
-      ////}
-
-      ////--------
-      //// This is equivalent to the following in `PipeMemTest`:
-      ////  cSum.terminateWhen(
-      ////    !cSum.up(rdValid)
-      ////  )
-      //val tempModFront = cloneOf(io.modFront)
-      ////val modFrontTerminateCond = Bool()
-      ////val modFrontTerminateMaybe = (
-      ////  //tempModFront.clearValidWhen(modFrontTerminateCond)
-      ////  //tempModFront.throwWhen(modFrontTerminateCond)
-      ////  tempModFront
-      ////)
-      ////io.modFront << modFrontTerminateMaybe
-      //io.modFront << tempModFront
-      ////--------
-      //pipe.last.down.driveTo(
-      //  //io.modFront
-      //  //modFrontTerminateMaybe
-      //  tempModFront
-      //)(
-      //  con=(payload, node) => {
-      //    payload := node(outpPipePayload)
-      //  }
-      //)
       //--------
     }
     val back = new Area {
@@ -1309,6 +1277,7 @@ extends Area {
     //--------
   }
   val myUpExtDel = mod.front.myUpExtDel
+  println(myUpExtDel.size)
   val cFront = mod.front.cFront
   //--------
   val cFrontArea = new cFront.Area {
@@ -1344,23 +1313,7 @@ extends Area {
       outpExt=upExt(0),
       memArrIdx=memArrIdx,
     )
-    //val tempBackUpMod = modType()
-    //tempBackUpMod := mod.back.cBack.up(mod.back.pipePayload)
-    //tempBackUpMod.getPipeMemRmwExt(
-    //  outpExt=backUpExt,
-    //  memArrIdx=memArrIdx,
-    //)
     //--------
-    //mod.front.pipe.last.up(mod.front.inpPipePayload).getPipeMemRmwExt(
-    //  outpExt=lastUpExt,
-    //  memArrIdx=memArrIdx,
-    //)
-    //val tempRdValid = (
-    //  lastUpExt.memAddr =/= upExt(0).memAddr
-    //  ////&& !lastUpExt.hazardId.msb
-    //  ////&& upExt(1).hazardId.msb
-    //  //|| !upExt(1).hazardId.msb
-    //).setName("cFrontArea_tempRdValid")
     //--------
     val nextHazardId = (
       //optEnableModDuplicate
@@ -1385,11 +1338,6 @@ extends Area {
       //optEnableModDuplicate
       optModHazardKind == PipeMemRmw.modHazardKindDupl
     ) {
-      //nextHazardId := rHazardId
-      //nextHazardId := modStageCnt - 1
-      //nextHazardId := S(nextHazardId.getWidth bits, default -> True)
-      //nextHazardId := -1
-      //nextHazardId := upExt(1).getHazardIdIdleVal()
       nextHazardId := rHazardId
       //when (isValid) {
           upExt(1).hazardId := nextHazardId
@@ -1404,22 +1352,7 @@ extends Area {
     ) generate (
       rHazardId - 1
     )
-    //for (idx <- 0 until rUpExtDel.size) {
-    //  when (up.isFiring) {
-    //    if (idx == 0) {
-    //      rUpExtDel(idx) := upExt(1)
-    //    } else {
-    //      rUpExtDel(idx) := rUpExtDel(idx - 1)
-    //    }
-    //  }
-    //}
     //--------
-    //val nextDuplicateIt = (optEnableModDuplicate) generate (
-    //  Bool()
-    //)
-    //val rDuplicateIt = (optEnableModDuplicate) generate (
-    //  RegNext(nextDuplicateIt) init(False)
-    //)
     //--------
     object State extends SpinalEnum(
       defaultEncoding=binarySequential
@@ -1483,21 +1416,6 @@ extends Area {
     ) generate (
       KeepAttribute(RegNext(nextDidChangeState)) init(True)
     )
-    //val nextHaltItIdleCnt = (optEnableModDuplicate) generate (
-    //  KeepAttribute(
-    //    //Bool()
-    //    SInt(3 bits)
-    //  )
-    //)
-    //val rHaltItIdleCnt = (optEnableModDuplicate) generate (
-    //  KeepAttribute(
-    //    RegNext(nextHaltItIdleCnt)
-    //    init(
-    //      //False
-    //      -1
-    //    )
-    //  )
-    //)
     val rDidDelayItIdle = Reg(Bool()) init(False)
     val myUpExtDelFull = mod.front.myUpExtDelFull
     val myUpExtDelFullFindFirstVecNotPostDelay = (
@@ -1508,7 +1426,7 @@ extends Area {
     )
     for (zdx <- 0 until modRdPortCnt) {
       for (
-        idx <- 0 until myUpExtDelFullFindFirstVecNotPostDelay.size
+        idx <- 0 until myUpExtDelFullFindFirstVecNotPostDelay(zdx).size
       ) {
         myUpExtDelFullFindFirstVecNotPostDelay(zdx)(idx) := (
           mod.front.findFirstFunc(
@@ -1634,6 +1552,7 @@ extends Area {
       //down.cancel := False
       //upExt(1).doCancelFront := False
       nextState := rState
+      upExt(1).duplState := nextState.asBits(0)
       if (vivadoDebug) {
         //nextHazardId.addAttribute("MARK_DEBUG", "TRUE")
         //nextState.addAttribute("MARK_DEBUG", "TRUE")
@@ -1650,130 +1569,81 @@ extends Area {
         ////  "MARK_DEBUG", "TRUE"
         ////)
       }
-      //upExt(1) := upExt(0)
-      //upExt(1).hazardId := nextHazardId
-      //upExtRealMemAddr := upExt(0).memAddr
-      //nextDidChangeState := rDidChangeState
-      //nextHaltItIdleCnt := rHaltItIdleCnt
       switch (rState) {
         is (State.IDLE) {
-          when (down.isFiring) {
-            upExtRealMemAddr := upExt(0).memAddr
-          }
+          //when (down.isFiring) {
+          //  upExtRealMemAddr := upExt(0).memAddr
+          //}
           when (
             up.isValid
-            //&& down.isReady
+            && down.isReady
           ) {
-            //when (
-            //  rPrevStateWhen === State.DELAY
-            //  && !rDidDelayItIdle
-            //) {
-            //  //haltIt()
-            //  //myStopIt := True
-            //  haltIt()
-            //  //down.cancel := True
-            //  //upExt(1).doCancelFront := True
-            //  //upExt
-            //  rDidDelayItIdle := True
-            //  //nextHazardId := (
-            //  //  (
-            //  //    S(s"${nextHazardId.getWidth}'d${myUpExtDel.size - 1}")
-            //  //    - Cat(U"3'd0", tempMyUpExtDelFindFirst0._2).asSInt
-            //  //  )
-            //  //)
-            //} otherwise {
-              upExt(1) := upExt(0)
-              upExt(1).hazardId := nextHazardId
-              for (zdx <- 0 until modRdPortCnt) {
-                when (
-                  //Mux[Bool](
-                  //  rPrevStateWhen === State.IDLE,
-                    tempMyUpExtDelFindFirstNotPostDelay(zdx)._1
-                    && (
-                      if (!doPrevHazardCmpFunc) (
-                        mod.front.myHazardCmpFunc(
-                          curr=upExt(1),
-                          prev=mod.front.myUpExtDel(0),
-                          zdx=zdx,
-                          isPostDelay=false,
-                        )
-                      ) else ( // if (doPrevHazardCmpFunc)
-                        True
+            upExt(1) := upExt(0)
+            upExt(1).hazardId := nextHazardId
+            upExtRealMemAddr := upExt(0).memAddr
+            for (zdx <- 0 until modRdPortCnt) {
+              when (
+                //Mux[Bool](
+                //  rPrevStateWhen === State.IDLE,
+                  tempMyUpExtDelFindFirstNotPostDelay(zdx)._1
+                  && (
+                    if (!doPrevHazardCmpFunc) (
+                      mod.front.myHazardCmpFunc(
+                        curr=upExt(1),
+                        prev=mod.front.myUpExtDel(0),
+                        zdx=zdx,
+                        isPostDelay=false,
                       )
-                    )
-                  //  tempMyUpExtDelFindFirstIsPostDelay._1,
-                  //  //findFirstFunc(
-                  //  //  //myUpExtDel(myUpExtDel.size - 2)
-                  //  //  myUpExtDel(0)
-                  //  //)
-                  //  //True
-                  //  //tempMyUpExtDelFindFirst2._1,
-                  //  //True,
-                  //  //findFirstFunc(
-                  //  //  //myUpExtDel(myUpExtDel.size - 1)
-                  //  //)
-                  //  //(
-                  //  //  //mod.back.dbgDoWrite
-                  //  //  mod.back.myWriteEnable
-                  //  //  && 
-                  //  //  //!mod.back.dbgDoClear
-                  //  //  !io.clear.fire
-                  //  //  //&& (
-                  //  //  //  upExtRealMemAddr
-                  //  //  //  === mod.back.myWriteAddr 
-                  //  //  //)
-                  //  //  && findFirstFunc(
-                  //  //    prev=myUpExtDel(myUpExtDel.size - 1)
-                  //  //  )
-                  //  //)
-                  //)
-                ) {
-                  rDidDelayItIdle := False
-                  duplicateIt()
-                  //nextDidChangeState := False
-                  nextState := State.DELAY
-                  nextHazardId := (
-                    (
-                      //--------
-                      //// this should be `myUpExtDel.size` if
-                      //// `myUpExtDel.size` is the number of stages strictly
-                      //// after `cFront` and strictly before `cBack`
-                      //// if including `cBack` in `myUpExtDel`, then it should
-                      //// be `myUpExtDel.size - 1`
-                      //--------
-                      //--------
-                      //--------
-                      (
-                        S(
-                          s"${nextHazardId.getWidth}"
-                          + s"'d${myUpExtDelFull.size}"
-                        )
-                        - Cat(
-                          U"3'd0", 
-                          //Mux[UInt](
-                          //  rPrevStateWhen === State.IDLE,
-                            (
-                              tempMyUpExtDelFindFirstNotPostDelay(zdx)._2
-                              //+ (
-                              //  doModInModFrontFunc match {
-                              //    case Some(myDoModSingleStageFunc) => -1
-                              //    case None => 0
-                              //  }
-                              //)
-                            ),
-                          //  tempMyUpExtDelFindFirstIsPostDelay._2,
-                          //)
-                        ).asSInt
-                      )
+                    ) else ( // if (doPrevHazardCmpFunc)
+                      True
                     )
                   )
-                  //nextHaltItIdleCnt := (
-                  //  //1
-                  //  0
-                  //)
-                }
+              ) {
+                rDidDelayItIdle := False
+                duplicateIt()
+                //nextDidChangeState := False
+                nextState := State.DELAY
+                nextHazardId := (
+                  (
+                    //--------
+                    //// this should be `myUpExtDel.size` if
+                    //// `myUpExtDel.size` is the number of stages strictly
+                    //// after `cFront` and strictly before `cBack`
+                    //// if including `cBack` in `myUpExtDel`, then it should
+                    //// be `myUpExtDel.size - 1`
+                    //--------
+                    //--------
+                    //--------
+                    (
+                      S(
+                        s"${nextHazardId.getWidth}"
+                        + s"'d${myUpExtDelFull.size}"
+                      )
+                      - Cat(
+                        U"3'd0", 
+                        //Mux[UInt](
+                        //  rPrevStateWhen === State.IDLE,
+                          (
+                            tempMyUpExtDelFindFirstNotPostDelay(zdx)._2
+                            //+ (
+                            //  doModInModFrontFunc match {
+                            //    case Some(myDoModSingleStageFunc) => -1
+                            //    case None => 0
+                            //  }
+                            //)
+                          ),
+                        //  tempMyUpExtDelFindFirstIsPostDelay._2,
+                        //)
+                      ).asSInt
+                    )
+                  )
+                )
+                //nextHaltItIdleCnt := (
+                //  //1
+                //  0
+                //)
               }
-            //}
+            }
           }
         }
         is (State.DELAY) {
@@ -1784,25 +1654,8 @@ extends Area {
           //duplicateIt()
           when (nextHazardId.msb) {
             nextState := State.IDLE
-            //myStopIt := False
-            //myStopIt := True
-            //nextDidChangeState := True
-
-            //nextHaltItIdleCnt := (
-            //  //True
-            //  
-            //)
-            //haltIt()
-            //duplicateIt()
-            //terminateIt()
           } otherwise {
             duplicateIt()
-            ////upExt(1).memAddr := (
-            ////  upExt(0).memAddr + upExtRealMemAddr + 1
-            ////)
-            ////myStopIt := True
-            ////haltIt()
-            ////terminateIt()
           }
         }
       }
@@ -1817,32 +1670,6 @@ extends Area {
         mod.front.nextDidFwd(zdx)(0) := False
       }
 
-      //when (
-      //  tempMyUpExtDelFindFirstNotPostDelay._1
-      //  && (
-      //    if (!doPrevHazardCmpFunc) (
-      //      myHazardCmpFunc(
-      //        curr=upExt(1),
-      //        prev=mod.front.myUpExtDel(0),
-      //        isPostDelay=false,
-      //      )
-      //    ) else ( // if (doPrevHazardCmpFunc)
-      //      True
-      //    )
-      //  )
-      //) {
-      //  when (tempMyUpExtDelFindFirstNotPostDelay._2 === 0) {
-      //    upExt(1).rdMemWord := myUpExtDel(0).rdMemWord
-      //  } otherwise {
-      //    //upExt(1).rdMemWord := 
-      //    //doFwdFunc match {
-      //    //upExt(1).rdMemWord := 
-      //  }
-      //  up(mod.front.didFwd(0)) := True
-      //}
-      //myRdMemWord := (
-      //  RegNext(myRdMemWord) init(myRdMemWord.getZero)
-      //)
       val tempFwdPrevMemAddr = KeepAttribute(
         //myUpExtDelFull.last.memAddr
         //mod.back.myWriteAddr
@@ -1949,114 +1776,29 @@ extends Area {
     )
     //myRdMemWord := RegNext(myRdMemWord) init(myRdMemWord.getZero)
     val myDownExt = mkExt().setName("cFrontArea_myDownExt")
-    //down(mod.front.midPipePayload).getPipeMemRmwExt(
-    //  outpExt=myDownExt,
-    //  memArrIdx=memArrIdx,
-    //)
     //myRdMemWord := (
     //  RegNext(myRdMemWord) init(myRdMemWord.getZero)
     //)
 
-    //val myDbgRdMemWord = (debug) generate {
-    //  val temp = Reg(
-    //    wordType()
-    //  )
-    //  temp.init(temp.getZero)
-    //  temp
-    //}
-    //if (debug) {
-    //  up(dbgRdMemWord) := myDbgRdMemWord
-    //  //myDbgRdMemWord := (
-    //  //  RegNext(myDbgRdMemWord) init(myDbgRdMemWord.getZero)
-    //  //)
-    //}
     val rSetRdId = Reg(Bool()) init(False)
     //val rRdId = Reg(cloneOf(upExt(1).rdId)) init(0x0)
     //val rPrevRdId = RegNext(upExt(1).rdId) init(0x0)
     //upExt(1).rdId := rPrevRdId
     //upExt(1).rdId := rRdId
     //--------
-    //when (
-    //  ////mod.front.cLastFront.up.isReady
-    //  ////mod.front.cLastFront.
-    //  //up.isValid
-    //  ////down.isFiring
-    //  //True
-    //  //up.isValid
-    //  //down.isValid
-    //  up.isFiring
-    //  && upExt(1).hazardId.msb
-    //  //up.isValid
-    //  //upExt(1).hazardId.msb
-    //  //&& down.isFiring
-    //) {
-    //  //upExt(1).rdId := rPrevRdId + 1
-    //  rRdId := rRdId + 1
-    //  myRdMemWord := modMem.readSync(
-    //    //address=RegNextWhen(
-    //    //  upExt(1).memAddr, up.isFiring
-    //    //) init(0x0)
-    //    //address=RegNextWhen(
-    //    //  upExt(1).memAddr, down.isFiring
-    //    //) init(0x0)
-    //    address=upExt(1).memAddr,
-    //    //address=myDownExt.memAddr,
-    //  )
-    //}
     tempCond := (
-      //up.isValid
-      //&& !rSetRdId
-      //up.isFiring
-      //up.isValid
-      //&&
-      //--------
-      //!rSetRdId
-      //&& 
       (
         if (
           //optEnableModDuplicate
           optModHazardKind == PipeMemRmw.modHazardKindDupl
         ) (
-          //up.isFiring
-          //down.isReady
-          //down.isFiring
-          //True
-          //down.isReady
-          //&& 
-          //upExt(1).hazardId.msb
           nextHazardId.msb
-          &&
-          (
-            //nextState === State.IDLE
-            //|| 
-            //rState === State.IDLE
-            //&& !rHaltItIdle
-            //!myStopIt
-            True
-          )
-          //&& !nextDidChangeState
-          //&& rDidChangeState
-          //nextState =/= State.DELAY
-          //Mux[Bool](
-          //  nextState === State.IDLE,
-          //  //up.isFiring,
-          //  //down.isFiring,
-          //)
-          //tempMyUpExtDelFindFirst1._1
-          //&& myHazardCmpFunc(
-          //  curr=upExt(1),
-          //  prev=myUpExtDel(0),
-          //)
-          //|| myUpExtDel(myUpExtDel)
         ) else (
           True
-          //up.isFiring
-          //down.isReady
-          //down.isFiring
-          //True
         )
       )
-      && down.isFiring
+      && down.isReady
+      //&& down.isFiring
     )
 
     if (
@@ -2152,231 +1894,16 @@ extends Area {
       //  }
       //}
     }
-    //when (
-    //  up.isValid
-    //  && tempCond
-    //) {
-    //  rSetRdId := True
-    //  //rRdId := rRdId + 1
-    //  //if (debug) {
-    //  //  myDbgRdMemWord := /*RegNext*/(
-    //  //    modMem.readAsync(
-    //  //      address=upExt(1).memAddr,
-    //  //    )
-    //  //  )
-    //  //}
-    //}
     val tempCondDown = (
       down.isFiring
     )
-    //if (debug) {
-    //  myDbgRdMemWord := RegNext(
-    //    modMem.readAsync(
-    //      address=upExt(1).memAddr,
-    //      //enable=tempCondDown,
-    //    )
-    //  )
-    //}
-    //when (
-    //  //down.isFiring
-    //  //up.isFiring
-    //  tempCondDown
-    //) {
-    //  rSetRdId := False
-    //  //if (debug) {
-    //  //  myDbgRdMemWord := RegNext(
-    //  //    modMem.readAsync(
-    //  //      address=upExt(1).memAddr,
-    //  //    )
-    //  //  )
-    //  //}
-    //  //if (debug) {
-    //  //  myDbgRdMemWord := /*RegNext*/(
-    //  //    modMem.readAsync(
-    //  //      address=upExt(1).memAddr,
-    //  //    )
-    //  //  )
-    //  //}
-    //}
-    //when (
-    //  up.isFiring
-    //  && tempCond
-    //) {
-    //  if (debug) {
-    //    myDbgRdMemWord := /*RegNext*/(
-    //      modMem.readAsync(
-    //        address=upExt(1).memAddr,
-    //      )
-    //    )
-    //  }
-    //}
     //--------
-    //upExt(1).rdMemWord := modMem.readAsync(
-    //  address=upExt(1).memAddr
-    //)
-    //val cLastFront = mod.front.cLastFront
-    //val myRdMemWord = mod.front.myRdMemWord
-    //myRdMemWord := RegNext(myRdMemWord) init(myRdMemWord.getZero)
-    //when (
-    //  //mod.front.cLastFront.up.isReady
-    //  //mod.front.cLastFront.
-    //  cLastFront.up.isValid
-    //  //down.isValid
-    //) {
-    //  myRdMemWord := modMem.readSync(
-    //    //address=RegNextWhen(
-    //    //  upExt(1).memAddr, up.isFiring
-    //    //) init(0x0)
-    //    address=upExt(1).memAddr
-    //  )
-    //}
-    //mod.front.myRdMemWord := modMem.readAsync(
-    //  address=upExt(1).memAddr
-    //)
-    //upExt(2).rdMemWord := modMem.readSync(
-    //  address=upExt(1).mem
-    //)
     //--------
-    //val rUpExtDel = Vec.fill(modStageCnt + 1)(
-    //  Reg(cloneOf(upExt(1))) init(upExt(1).getZero)
-    //)
-    //for (idx <- 0 until rUpExtDel.size) {
-    //  when (up.isFiring) {
-    //    if (idx == 0) {
-    //      rUpExtDel(idx) := upExt(1)
-    //    } else {
-    //      rUpExtDel(idx) := rUpExtDel(idx - 1)
-    //    }
-    //  }
-    //}
-    //def wantNonFmaxFwd(
-    //  //someUpMemAddr: UInt//=upExt(1).memAddr
-    //  //someNode: NodeApi,
-    //  someExt: PipeMemRmwPayloadExt[WordT]
-    //): Bool = (
-    //  if (
-    //    !forFmax
-    //    && 
-    //    optEnableModDuplicate
-    //  ) (
-    //    //tempCond
-    //    //someExt.hazardId.msb
-    //    ////backUpExt.hazardId === 0
-    //    //&&
-    //    //&& 
-    //    backUpExt.hazardId.msb
-    //    //&& mod.back.cBack.up.isFiring
-    //    && mod.back.cBack.up.isValid
-    //    //&& someNode.isValid
-    //    //&& upExt(1).memAddr === backUpExt.memAddr
-    //    //&& someUpMemAddr === backUpExt.memAddr
-    //    && someExt.memAddr === backUpExt.memAddr
-    //    //&& someExt.memAddr === rUpExtDel(rUpExtDel.size - 1).memAddr
-    //    //&& someExt.fwdId === backUpExt.fwdId
-    //  ) else (
-    //    False
-    //  )
-    //)
-    //if (debug) {
-    //  upExt(1).dbgWantNonFmaxFwd := wantNonFmaxFwd(
-    //    someExt=upExt(1)
-    //  )
-    //}
-    //--------
-    //def getNonFmaxFwd() = (
-    //  backUpExt.modMemWord
-    //)
-    //def getNonFmaxFwdOutp(
-    //  someExt: PipeMemRmwPayloadExt[WordT]
-    //) = {
-    //  //someExt.rdMemWord
-    //  myRdMemWord
-    //}
-    //def perfNonFmaxFwd(
-    //  someExt: PipeMemRmwPayloadExt[WordT]
-    //): Unit = {
-    //  getNonFmaxFwdOutp(someExt=someExt) := getNonFmaxFwd()
-    //}
-    ////val rDbgNonMaxFwdCnt = (
-    ////  Reg(cloneOf(upExt(1).dbgNonFmaxFwdCnt)) //init(0x0)
-    ////)
-    ////for (idx <- 0 until rDbgNonMaxFwdCnt.size) {
-    ////  rDbgNonMaxFwdCnt(idx).init(0x0)
-    ////}
-    ////upExt(1).dbgNonFmaxFwdCnt := (
-    ////  //(rDbgNonMaxFwdCnt + 1)
-    ////  rDbgNonMaxFwdCnt
-    ////)
-    //when (
-    //  !clockDomain.isResetActive
-    //  //&& up.isFiring
-    //  && up.isValid
-    //  && (
-    //    if (optEnableModDuplicate) {
-    //      upExt(1).hazardId.msb
-    //    } else {
-    //      True
-    //    }
-    //  )
-    //) {
-    //  //if (debug) {
-    //  //  upExt(1).dbgWantNonFmaxFwd := wantNonFmaxFwd(
-    //  //    //someNode=up,
-    //  //    someExt=upExt(1),
-    //  //  )
-    //  //  //upExt(1).dbgNonMaxFwdCnt 
-    //  //  when (
-    //  //    //cArr(0).down.isFiring
-    //  //    down.isFiring
-    //  //  ) {
-    //  //    def tempCnt = rDbgNonMaxFwdCnt(upExt(1).memAddr)
-    //  //    tempCnt := tempCnt + 1
-    //  //    //rDbgNonMaxFwdCnt := rDbgNonMaxFwdCnt + 1
-    //  //  }
-    //  //}
-    //  //if (!forFmax) {
-    //  //  when (wantNonFmaxFwd(
-    //  //    //someNode=up,
-    //  //    someExt=upExt(1),
-    //  //  )) {
-    //  //    //upExt(1).rdMemWord := getNonFmaxForward()
-    //  //    perfNonFmaxFwd(someExt=upExt(1))
-    //  //  } otherwise {
-    //  //    //upExt(1).rdMemWord := modMem.readSync(
-    //  //    //  address=upExt(1).memAddr
-    //  //    //)
-    //  //  }
-    //  //} else { // if (forFmax)
-    //  //  ////when (
-    //  //  ////  !nextHazardId
-    //  //  ////)
-    //  //  ////when (nextDuplicateIt) {
-    //  //  ////  upExt(1).rdMemWord := upExt(1).rdMemWord.getZero
-    //  //  ////} otherwise {
-    //  //  //  //--------
-    //  //  //  upExt(1).rdMemWord := modMem.readSync(
-    //  //  //    address=upExt(1).memAddr,
-    //  //  //  )
-    //  //  //  //--------
-    //  //  ////}
-    //  //}
-    //}
     //--------
     tempUpMod(1) := (
       RegNext(tempUpMod(1)) init(tempUpMod(1).getZero)
     )
-    //when (
-    //  //if (optEnableModDuplicate) (
-    //  //  //nextState === State.IDLE
-    //  //  !down.cancel
-    //  //) else (
-    //  //  True
-    //  //)
-    //  //!myStopIt
-    //  tempCond
-    //) {
-      tempUpMod(1) := tempUpMod(0)
-    //}
+    tempUpMod(1) := tempUpMod(0)
     tempUpMod(1).allowOverride
     tempUpMod(1).setPipeMemRmwExt(
       inpExt=upExt(1),
@@ -2394,506 +1921,6 @@ extends Area {
     //  Reg(Bool()) init(False)
     //)
     //--------
-    //GenerationFlags.formal {
-    //  //val haveStableMemAddr = Bool()
-    //  //when (!up.isValid) {
-    //  //  haveStableMemAddr := 
-    //  //}
-    //  //when (
-    //  //  up.isValid
-    //  //  && !up.isFiring
-    //  //) {
-    //  //  assume(stable(upExt(0).memAddr))
-    //  //}
-    //  when (
-    //    //up.isFiring
-    //    (
-    //      RegNextWhen(True, io.back.isFiring) init(False)
-    //    ) && (
-    //      RegNext(tempCond) init(False)
-    //    )
-    //  ) {
-    //    assert(
-    //      mod.front.myRdMemWord
-    //      === (
-    //        RegNext(
-    //          modMem.readAsync(
-    //            address=/*RegNext*/(upExtRealMemAddr) //init(0x0)
-    //          )
-    //        ) init(mod.front.myRdMemWord.getZero)
-    //      )
-    //    )
-    //  }
-    //  val myDownFireHazardId = (
-    //    RegNextWhen(upExt(1).hazardId, down.isFiring)
-    //    init(upExt(1).getHazardIdIdleVal())
-    //  )
-    //  switch (rState) {
-    //    is (State.IDLE) {
-    //      switch (rPrevStateWhen) {
-    //        is (State.IDLE) {
-    //          //assert()
-    //          //when (RegNext(down.isFiring) init(False)) {
-    //          //  //assert(myDownFireHazardId)
-    //          //}
-    //        }
-    //        is (State.DELAY) {
-    //          assert(myDownFireHazardId.msb)
-    //        } 
-    //      }
-    //    }
-    //    is (State.DELAY) {
-    //    }
-    //  }
-    //  when (
-    //    RegNextWhen(mod.back.myWriteEnable, io.back.isFiring)
-    //    init(False)
-    //  ) {
-    //    when (
-    //      //RegNextWhen(
-    //      (
-    //        RegNextWhen(mod.back.myWriteAddr, io.back.isFiring) init(0x0)
-    //      ) === (
-    //        RegNext(upExtRealMemAddr) init(0x0)
-    //      )
-    //    ) {
-    //      when (RegNext(tempCond) init(False)) {
-    //        cover(
-    //          (
-    //            RegNextWhen(
-    //              RegNextWhen(
-    //                RegNextWhen(
-    //                  RegNextWhen(
-    //                    RegNextWhen(True, io.back.isFiring) init(False),
-    //                    io.back.isFiring
-    //                  ) init(False),
-    //                  io.back.isFiring
-    //                ) init(False),
-    //                io.back.isFiring
-    //              ) init(False),
-    //              io.back.isFiring
-    //            ) init(False)
-    //          ) && (
-    //            mod.front.myRdMemWord
-    //            === RegNextWhen(mod.back.myWriteData, io.back.isFiring)
-    //          )
-    //        )
-    //      }
-    //    }
-    //  }
-    //  //cover(
-    //  //  //(
-    //  //  //  //RegNextWhen(
-    //  //  //  //  RegNextWhen(
-    //  //  //  //    RegNextWhen(
-    //  //  //  //      RegNextWhen(
-    //  //  //  //        RegNextWhen(True, io.front.isFiring) init(False),
-    //  //  //  //        io.front.isFiring
-    //  //  //  //      ) init(False),
-    //  //  //  //      io.front.isFiring
-    //  //  //  //    ) init(False),
-    //  //  //  //    io.front.isFiring
-    //  //  //  //  ) init(False),
-    //  //  //  //  io.front.isFiring
-    //  //  //  //) init(False)
-    //  //  //  RegNextWhen(True, io.front.isFiring) init(False)
-    //  //  //) && (
-    //  //  //  RegNextWhen(True, io.modFront.isFiring) init(False)
-    //  //  //) && (
-    //  //  //  RegNextWhen(True, io.modBack.isFiring) init(False)
-    //  //  //) && 
-    //  //  (
-    //  //    //RegNextWhen(
-    //  //    //  RegNextWhen(
-    //  //    //    RegNextWhen(
-    //  //    //      RegNextWhen(
-    //  //    //        RegNextWhen(True, io.back.isFiring) init(False),
-    //  //    //        io.back.isFiring
-    //  //    //      ) init(False),
-    //  //    //      io.back.isFiring
-    //  //    //    ) init(False),
-    //  //    //    io.back.isFiring
-    //  //    //  ) init(False),
-    //  //    //  io.back.isFiring
-    //  //    //) init(False)
-    //  //    //RegNextWhen(True, io.back.isFiring) init(False)
-    //  //    True
-    //  //  ) && (
-    //  //    /*RegNextWhen*//*RegNext(RegNext*/(mod.back.myWriteEnable/*,
-    //  //    io.back.isFiring*/)/*)*/ //init(False)
-    //  //  ) && (
-    //  //    //RegNext(up.isFiring)
-    //  //    True
-    //  //  ) && (
-    //  //    (
-    //  //      //RegNext(upExt(0).memAddr)
-    //  //      /*RegNext(RegNext*/(upExtRealMemAddr)/*)*/
-    //  //    ) === (
-    //  //      /*RegNextWhen*//*RegNext(RegNext*/(mod.back.myWriteAddr/*,
-    //  //      io.back.isFiring*/)/*)*/ //init(0x0)
-    //  //    )
-    //  //  ) && (
-    //  //    //RegNext(upExt(0).memAddr) > 0
-    //  //    True
-    //  //  ) 
-    //  //  //&& (
-    //  //  //  io.back.isFiring
-    //  //  //) && (
-    //  //  //  RegNext(io.back.isFiring) init(False)
-    //  //  //) && (
-    //  //  //  RegNext(RegNext(io.back.isFiring))
-    //  //  //) 
-    //  //  && ({
-    //  //    (
-    //  //      mod.front.myRdMemWord
-    //  //      === /*RegNext(RegNext*/(mod.back.myWriteData)/*)*/
-    //  //    )
-    //  //  }) && (
-    //  //    //mod.front.myRdMemWord.asBits.asUInt > 0
-    //  //    True
-    //  //  ) && (
-    //  //    //RegNextWhen(
-    //  //    //  mod.front.myRdMemWord.asBits.asUInt,
-    //  //    //  mod.front.cMid0Front.up.isFiring
-    //  //    //) > 0
-    //  //    True
-    //  //  ) && (
-    //  //    //mod.front.myRdMemWord
-    //  //    //=/= RegNextWhen(
-    //  //    //  mod.front.myRdMemWord,
-    //  //    //  mod.front.cMid0Front.up.isFiring
-    //  //    //)
-    //  //    True
-    //  //  )
-    //  //)
-    //}
-    //GenerationFlags.formal {
-    //  //--------
-    //  //when (up.isFiring) {
-    //  //  for (idx <- 0 until rMyUpRdValidDelVec.size) {
-    //  //    def tempUpRdValid = rMyUpRdValidDelVec(idx)
-    //  //    if (idx == 0) {
-    //  //      tempUpRdValid := nextUpRdValid
-    //  //    } else {
-    //  //      tempUpRdValid := rMyUpRdValidDelVec(idx - 1)
-    //  //    }
-    //  //  }
-    //  //}
-    //  //--------
-    //  //val myDbgMemReadSync = wordType()
-    //  //myDbgMemReadSync := (
-    //  //  modMem.readSync
-    //  //  //mem.readAsync
-    //  //  (
-    //  //    //address=up(pipePayload.front).addr,
-    //  //    address=upExt(1).memAddr,
-    //  //    enable=(
-    //  //      up.isValid
-    //  //      && !rSetRdId
-    //  //      && upExt(1).hazardId.msb
-    //  //    )
-    //  //  )
-    //  //)
-    //  //when (
-    //  //  up.isValid
-    //  //) {
-    //  //} otherwise {
-    //  //  myDbgMemReadSync := (
-    //  //    RegNext(myDbgMemReadSync) init(myDbgMemReadSync.getZero)
-    //  //  )
-    //  //}
-    //  //up(pipePayload.dbgMemReadSync) := myDbgMemReadSync
-    //  //upExt(1).dbgMemReadSync := myDbgRdMemWord //myDbgMemReadSync
-    //  //--------
-    //  //when (up.isFiring) {
-    //  //  rIsFiringCnt := rIsFiringCnt + 1
-    //  //}
-    //  when (pastValidAfterReset) {
-    //    ////when (
-    //    ////  past(up.isFiring)
-    //    ////) {
-    //    ////  when (
-    //    ////    past(cBack.up(pipePayload.front).addr)
-    //    ////    === cSum.up(pipePayload.front).addr
-    //    ////  ) {
-    //    ////    assert(
-    //    ////      past(cSum.up(pipePayload.rd))
-    //    ////      === past(cBack.up(pipePayload.rd))
-    //    ////    )
-    //    ////  } otherwise {
-    //    ////    assert(
-    //    ////      cSum.up(pipePayload.rd) === past(
-    //    ////        mem.readAsync(
-    //    ////          address=down(pipePayload.front).addr
-    //    ////        )
-    //    ////      )
-    //    ////    )
-    //    ////  }
-    //    ////}
-    //    ////when (past(cSum.up.isFiring)) {
-    //    ////  when (
-    //    ////    cBack.up
-    //    ////  ) {
-    //    ////  } otherwise {
-    //    ////  }
-    //    ////}
-    //    //val rPrevCSumFront = Reg(pipePayload.mkFront())
-    //    //rPrevCSumFront.init(rPrevCSumFront.getZero)
-    //    //val rPrevCBackFront = Reg(pipePayload.mkFront())
-    //    //rPrevCBackFront.init(rPrevCBackFront.getZero)
-    //    ////when (cSum.up.isFiring) {
-    //    ////}
-    //    //--------
-    //    // BEGIN: add this back later
-    //    //when (
-    //    //  RegNextWhen(True, io.back.fire) init(False)
-    //    //) {
-    //    //  when (
-    //    //    //up.isFiring
-    //    //    up.isValid
-    //    //    && !rSetRdId
-    //    //    && (
-    //    //      if (optEnableModDuplicate) {
-    //    //        upExt(1).hazardId.msb
-    //    //      } else {
-    //    //        True
-    //    //      }
-    //    //    )
-    //    //  ) {
-    //    //    //if (!forFmax) {
-    //    //    //  when (
-    //    //    //    //backUpExt.hazardId.msb
-    //    //    //    ////&& mod.back.cBack.up.isFiring
-    //    //    //    //&& mod.back.cBack.up.isValid
-    //    //    //    //&& upExt(1).memAddr === backUpExt.memAddr
-    //    //    //    wantNonFmaxFwd(
-    //    //    //      //someNode=up,
-    //    //    //      someExt=upExt(1),
-    //    //    //    )
-    //    //    //  ) {
-    //    //    //    assert(
-    //    //    //      //upExt(1).rdMemWord === getNonFmaxForward() //backUpExt.modMemWord
-    //    //    //      getNonFmaxFwdOutp(someExt=upExt(1))
-    //    //    //      === getNonFmaxFwd()
-    //    //    //    )
-    //    //    //  } otherwise {
-    //    //    //    assert(
-    //    //    //      //upExt(1).rdMemWord === modMem.readSync(
-    //    //    //      //  address=upExt(1).memAddr
-    //    //    //      //)
-    //    //    //      //myRdMemWord === modMem.readSync(
-    //    //    //      //  address=upExt(1).memAddr
-    //    //    //      //)
-    //    //    //      //myRdMemWord === myDbgMemReadSync
-    //    //    //      myRdMemWord === myDbgRdMemWord
-    //    //    //    )
-    //    //    //  }
-    //    //    //} else { // if (forFmax)
-    //    //      assert(
-    //    //        //upExt(1).rdMemWord === modMem.readSync(
-    //    //        //  address=upExt(1).memAddr,
-    //    //        //)
-    //    //        //myRdMemWord === modMem.readSync(
-    //    //        //  address=upExt(1).memAddr
-    //    //        //)
-    //    //        //myRdMemWord === myDbgMemReadSync
-    //    //        myRdMemWord === myDbgRdMemWord
-    //    //      )
-    //    //    //}
-    //    //  } otherwise {
-    //    //    //assert(
-    //    //    //  /*past*/(upExt(1).rdMemWord)
-    //    //    //  === /*past*/(RegNext(upExt(1).rdMemWord))
-    //    //    //)
-    //    //    assert(
-    //    //      //upExt(1).rdMemWord === modMem.readSync(
-    //    //      //  address=upExt(1).memAddr,
-    //    //      //)
-    //    //      //myRdMemWord === modMem.readSync(
-    //    //      //  address=upExt(1).memAddr
-    //    //      //)
-    //    //      //myRdMemWord === myDbgMemReadSync
-    //    //      myRdMemWord === myDbgRdMemWord
-    //    //    )
-    //    //  }
-    //    //}
-    //    // END: add this back later
-    //    //--------
-
-    //    //def myCoverFunc(
-    //    //  //cond: Boolean,
-    //    //  kind: Int,
-    //    //): Bool = {
-    //    //  val rSameAddrCnt = Reg(UInt(8 bits)) init(0x0)
-    //    //  val rDiffAddrCnt = Reg(UInt(8 bits)) init(0x0)
-    //    //  //val rSomeDuplicateItCnt = Reg(UInt(8 bits)) init(0x0)
-    //    //  //val rUpNotFiringCnt = (cond) generate (
-    //    //  //  Reg(UInt(8 bits)) init(0x0)
-    //    //  //)
-    //    //  val myModMemWordCond = backUpExt.modMemWord.asBits.asUInt > 0 
-    //    //  when (
-    //    //    myModMemWordCond
-    //    //    //&& up.isValid
-    //    //    ////&& mod.back.cBack.up.isValid
-    //    //  ) {
-    //    //    when (
-    //    //      up.isFiring
-    //    //      //up.isValid
-    //    //      //down.isFiring
-    //    //    ) {
-    //    //      when (
-    //    //        ////upExt.memAddr === backUpExt.memAddr
-    //    //        ////&& 
-    //    //        ////upExt(1).memAddr === rUpMemAddrDel(0)
-    //    //        ////&& upExt.memAddr === rUpMemAddrDel2
-    //    //        //upExt(1).memAddr
-    //    //        ////=== (
-    //    //        ////  RegNextWhen(upExt(1).memAddr, up.isFiring) init(0x0)
-    //    //        ////)
-    //    //        //=== rUpMemAddrDel(0)
-    //    //        myHazardCmpFunc(
-    //    //          upExt(1),
-    //    //          rUpExtDel(0),
-    //    //        )
-    //    //      ) {
-    //    //        kind match {
-    //    //          case 0 => {
-    //    //            when (past(up.isFiring)) {
-    //    //              when (
-    //    //                rSameAddrCnt(0)
-    //    //              ) {
-    //    //                rSameAddrCnt := rSameAddrCnt + 1
-    //    //              }
-    //    //            } otherwise {
-    //    //              rSameAddrCnt := rSameAddrCnt + 1
-    //    //            }
-    //    //            //when (
-    //    //            //  past(up.isFiring)
-    //    //            //  && !past(past(up.isFiring))
-    //    //            //) {
-    //    //            //  rUpNotFiringCnt := rUpNotFiringCnt + 1
-    //    //            //}
-    //    //            //rSameAddrCnt := rSameAddrCnt + 1
-    //    //          }
-    //    //          case 1 | 2 | 3 => {
-    //    //            rSameAddrCnt := rSameAddrCnt + 1
-    //    //          }
-    //    //          //case 3 => {
-    //    //          //  when (
-    //    //          //    rUpMemAddrDel(0) =/= rUpMemAddrDel(1)
-    //    //          //  ) {
-    //    //          //    rSameAddrCnt := rSameAddrCnt + 1
-    //    //          //  }
-    //    //          //}
-    //    //          case _ => {
-    //    //          }
-    //    //        }
-    //    //      }
-    //    //      //otherwise 
-    //    //      when (
-    //    //        //upExt(1).memAddr =/= rUpMemAddrDel(0)
-    //    //        !myHazardCmpFunc(
-    //    //          upExt(1),
-    //    //          rUpExtDel(0),
-    //    //        ) && (
-    //    //          kind match {
-    //    //            case 0 => (
-    //    //              True
-    //    //            )
-    //    //            //&& upExt(1).memAddr
-    //    //            case 1 => (
-    //    //              True
-    //    //            )
-    //    //            case 2 => (
-    //    //              //rUpMemAddrDel(0) =/= rUpMemAddrDel(1)
-    //    //              ////&& rUpMemAddrDel(1) =/= rUpMemAddrDel(2)
-    //    //              !myHazardCmpFunc(
-    //    //                rUpExtDel(0),
-    //    //                rUpExtDel(1),
-    //    //              )
-    //    //            )
-    //    //            case 3 => (
-    //    //              //rUpMemAddrDel(0) =/= rUpMemAddrDel(1)
-    //    //              //&& rUpMemAddrDel(1) =/= rUpMemAddrDel(2)
-    //    //              (
-    //    //                !myHazardCmpFunc(
-    //    //                  rUpExtDel(0),
-    //    //                  rUpExtDel(1),
-    //    //                )
-    //    //              ) && (
-    //    //                !myHazardCmpFunc(
-    //    //                  rUpExtDel(1),
-    //    //                  rUpExtDel(2),
-    //    //                )
-    //    //              )
-    //    //            )
-    //    //            case _ => (
-    //    //              True
-    //    //            )
-    //    //          }
-    //    //        )
-    //    //      ) {
-    //    //        rDiffAddrCnt := rDiffAddrCnt + 1
-    //    //      }
-    //    //    }
-    //    //  }
-    //    //  (
-    //    //    //(
-    //    //    //  RegNextWhen(
-    //    //    //    True,
-    //    //    //  ) init(False)
-    //    //    //) && (
-    //    //    //  RegNextWhen(
-    //    //    //    True,
-    //    //    //    (
-    //    //    //      upExt.memAddr =/= backUpExt.memAddr
-    //    //    //      && backUpExt.modMemWord.asBits.asUInt > 0 
-    //    //    //      && up.isFiring
-    //    //    //      && mod.back.cBack.up.isFiring
-    //    //    //    )
-    //    //    //  ) init(False)
-    //    //    //) 
-    //    //    (
-    //    //      rSameAddrCnt > 8
-    //    //      //True
-    //    //    ) && (
-    //    //      rDiffAddrCnt > 8
-    //    //      //True
-    //    //    ) && (
-    //    //      RegNextWhen(True, io.front.fire) init(False)
-    //    //    ) && (
-    //    //      RegNextWhen(True, io.modFront.fire) init(False)
-    //    //    ) && (
-    //    //      RegNextWhen(True, io.modBack.fire) init(False)
-    //    //    ) && (
-    //    //      RegNextWhen(True, io.back.fire) init(False)
-    //    //    ) && (
-    //    //      kind match {
-    //    //        case 0 | 1 => (
-    //    //          //rSomeDuplicateItCnt > 4
-    //    //          True
-    //    //        )
-    //    //        case 2 => (
-    //    //          True
-    //    //        )
-    //    //        case 3 => (
-    //    //          True
-    //    //        )
-    //    //        case _ => (
-    //    //          True
-    //    //        )
-    //    //      }
-    //    //    )
-    //    //  )
-    //    //}
-    //    ////cover(myCoverFunc(kind=0))
-    //    ////cover(myCoverFunc(kind=1))
-
-    //    ////cover(myCoverFunc(kind=2))
-    //    //cover(myCoverFunc(kind=3))
-    //    ////cover(io.back.fire)
-    //  }
-    //}
     //--------
   }
   val cMid0Front = mod.front.cMid0Front
@@ -2901,15 +1928,18 @@ extends Area {
     //--------
     val upExt = Vec.fill(3)(mkExt()).setName("cMid0FrontArea_upExt")
     //mod.front.myUpExtDel(0) := upExt(1)
-    doModInModFrontFunc match {
-      case Some(myDoModSingleStageFunc) => {
-        myUpExtDel(0) := (
-          RegNext(myUpExtDel(0)) init(myUpExtDel(0).getZero)
-        )
-      }
-      case None => {
-      }
-    }
+    //doModInModFrontFunc match {
+    //  case Some(myDoModSingleStageFunc) => {
+    //    myUpExtDel(0) := (
+    //      RegNext(myUpExtDel(0)) init(myUpExtDel(0).getZero)
+    //    )
+    //  }
+    //  case None => {
+    //  }
+    //}
+    myUpExtDel(0) := (
+      RegNext(myUpExtDel(0)) init(myUpExtDel(0).getZero)
+    )
     upExt(1) := (
       RegNext(upExt(1)) init(upExt(1).getZero)
     )
@@ -2917,13 +1947,14 @@ extends Area {
       up.isValid
       //&& upExt(0).hazardId.msb
     ) {
-      doModInModFrontFunc match {
-        case Some(myDoModSingleStageFunc) => {
-          myUpExtDel(0) := upExt(2)
-        }
-        case None => {
-        }
-      }
+      //doModInModFrontFunc match {
+      //  case Some(myDoModSingleStageFunc) => {
+      //    myUpExtDel(0) := upExt(2)
+      //  }
+      //  case None => {
+      //  }
+      //}
+      myUpExtDel(0) := upExt(2)
       upExt(1) := upExt(0)
     }
     upExt(1).rdMemWord.allowOverride
@@ -2965,18 +1996,6 @@ extends Area {
     //upExt(1).rdMemWord := (
     //  RegNext(upExt(1).rdMemWord) init(upExt(1).rdMemWord.getZero)
     //)
-
-    //val myCancelIt = (optEnableModDuplicate) generate (
-    //  KeepAttribute(Bool())
-    //)
-    //if (optEnableModDuplicate) {
-    //  myCancelIt := False
-    //  when (!upExt(0).hazardId.msb) {
-    //    myCancelIt := True
-    //    //throwIt()
-    //  }
-    //  up.cancel := myCancelIt
-    //}
 
     //upExt(1).rdId.allowOverride
     //val rPrevRdId = RegNext(upExt(1).rdId) init(0x0)
@@ -3034,8 +2053,8 @@ extends Area {
     //--------
     //println(myUpExtDel.size)
     when (
-      up.isValid
-      //up.isFiring
+      //up.isValid
+      up.isFiring
       //&& upExt(0).hazardId.msb
       //&& !rSetRdId
       && (
@@ -3052,9 +2071,9 @@ extends Area {
     ) {
       //myRdMemWord 
       rSetRdId := True
-      when (down.isReady) {
+      //when (down.isReady) {
         upExt(1).rdMemWord := myRdMemWord
-      }
+      //}
       for (zdx <- 0 until modRdPortCnt) {
         val tempFindFirst = (
           (optModHazardKind == PipeMemRmw.modHazardKindFwd) generate (
@@ -3178,155 +2197,6 @@ extends Area {
     //  RegNext(tempModMemReadAsync) init(tempModMemReadAsync.getZero)
     //)
     //--------
-    //GenerationFlags.formal {
-    //  //tempModMemReadAsync := rPrevTempModMemReadAsync
-    //  //tempModMemReadAsync := up(mod.front.dbgRdMemWord)
-    //  when (pastValidAfterReset) {
-    //    //val tempCond = (
-    //    //  past(cFront.up.isFiring)
-    //    //  && !past(cFrontArea.rSetRdId)
-    //    //  && past(cFrontArea.upExt(1).hazardId.msb)
-    //    //)
-    //    //def tempCond(
-    //    //  someExt: PipeMemRmwPayloadExt[WordT, HazardCmpT]
-    //    //) = (
-    //    //  //if (!forFmax) {
-    //    //  //  //!(
-    //    //  //  //  RegNextWhen(
-    //    //  //  //    cFrontArea.wantNonFmaxFwd(
-    //    //  //  //      someExt=cFrontArea.upExt(1)
-    //    //  //  //    ),
-    //    //  //  //    cFront.up.isFiring
-    //    //  //  //  ) init(False)
-    //    //  //  //)
-    //    //  //  //!upExt(1).dbgWantNonFmaxFwd
-    //    //  //  !someExt.dbgWantNonFmaxFwd
-    //    //  //} else {
-    //    //    True
-    //    //  //}
-    //    //)
-    //    ////when (
-    //    ////  (cFront.up.isFiring)
-    //    ////  && !(cFrontArea.rSetRdId)
-    //    ////  && (cFrontArea.upExt(1).hazardId.msb)
-    //    ////  //&& !cFrontArea.upExt(1).dbgWantNonFmaxFwd
-    //    ////  ////&& cFrontArea.tempCond
-    //    ////  && tempCond(someExt=cFrontArea.upExt(1))
-    //    ////) {
-    //    ////  //when (
-    //    ////  //  //if (!forFmax) {
-    //    ////  //  //  !cFrontArea.wantNonFmaxFwd(
-    //    ////  //  //    someExt=cFrontArea.upExt(1)
-    //    ////  //  //  )
-    //    ////  //  //} else {
-    //    ////  //  //  True
-    //    ////  //  //}
-    //    ////  //  True
-    //    ////  //) {
-    //    ////    tempModMemReadAsync := (
-    //    ////      modMem.readAsync(
-    //    ////        address=(cFrontArea.upExt(1).memAddr)
-    //    ////        //address=upExt(1).memAddr,
-    //    ////        //enable=tempCond,
-    //    ////      )
-    //    ////    )
-    //    ////  //}
-    //    ////}
-    //    ////--------
-    //    //when (
-    //    //  (RegNextWhen(True, io.front.isFiring) init(False))
-    //    //  && (RegNextWhen(True, io.modFront.isFiring) init(False))
-    //    //  && (RegNextWhen(True, io.modBack.isFiring) init(False))
-    //    //  && (RegNextWhen(True, io.back.isFiring) init(False))
-    //    //  //&& up.isValid
-    //    //  //up.isFiring
-    //    //  //&& cFront.down.isValid
-    //    //  //&& upExt(1).hazardId.msb
-    //    //  //&& upExt(1).rdId.msb
-    //    //  //&& !rSetRdId
-    //    //  //--------
-    //    //  //&& up.isFiring
-    //    //  //&& rRdId === upExt(0).rdId
-    //    //  //&& upExt(0).hazardId.msb
-    //    //  //True
-    //    //  && up.isValid
-    //    //  && !rSetRdId
-    //    //  && (
-    //    //    if (optEnableModDuplicate) {
-    //    //      upExt(1).hazardId.msb
-    //    //    } else {
-    //    //      True
-    //    //    }
-    //    //  )
-    //    //  //&& !tempCond
-    //    //  && tempCond(someExt=upExt(1))
-    //    //) {
-    //    //  //--------
-    //    //  //tempModMemReadAsync := RegNextWhen(
-    //    //  //  modMem.readAsync(
-    //    //  //    address=upExt(1).memAddr,
-    //    //  //  ),
-    //    //  //  cFront.up.isFiring
-    //    //  //)
-    //    //  //tempModMemReadAsync
-    //    //  assert(
-    //    //    upExt(1).rdMemWord
-    //    //    //=== tempModMemReadAsync
-    //    //    //=== RegNextWhen(
-    //    //    //  RegNextWhen(
-    //    //    //    RegNextWhen(
-    //    //    //      RegNextWhen(
-    //    //    //        //cFrontArea.myDbgRdMemWord,
-    //    //    //        modMem.readSync(
-    //    //    //          address=cFrontArea.upExt(1).memAddr
-    //    //    //        ),
-    //    //    //        cFrontArea.up.isFiring,
-    //    //    //      ),
-    //    //    //      mod.front.cMid0Front.up.isFiring,
-    //    //    //    ),
-    //    //    //    mod.front.cMid1Front.up.isFiring,
-    //    //    //  ),
-    //    //    //  mod.front.cMid2Front.up.isFiring,
-    //    //    //)
-    //    //    === /*RegNextWhen*/(
-    //    //      modMem.readAsync(
-    //    //        address=upExt(1).memAddr
-    //    //      )
-    //    //    )
-    //    //  )
-    //    //  cover(
-    //    //    upExt(1).rdMemWord
-    //    //    === modMem.readAsync(
-    //    //      address=upExt(1).memAddr
-    //    //    )
-    //    //    && upExt(1).rdMemWord.asBits =/= 0
-    //    //    && (
-    //    //      RegNextWhen(
-    //    //        True, io.back.isFiring
-    //    //      ) init(False)
-    //    //    )
-    //    //  )
-    //    //  //--------
-    //    //  //when (rDbgSeenFrontUpFiring) {
-    //    //  //  assert(
-    //    //  //    upExt(1).rdMemWord
-    //    //  //    === (
-    //    //  //      //RegNextWhen(
-    //    //  //        modMem.readAsync(
-    //    //  //          address=rDbgPrevMemAddr
-    //    //  //        )
-    //    //  //        //cFront.down.isFiring
-    //    //  //      //) init(upExt(1).rdMemWord.getZero)
-    //    //  //    )
-    //    //  //  )
-    //    //  //}
-    //    //}
-    //  }
-    //  //cover(
-    //  //  upExt(1).rdMemWord
-    //  //  === cFrontArea.myDbgRdMemWord
-    //  //)
-    //}
     //--------
   }
   //val cMid1Front = mod.front.cMid1Front
@@ -3493,6 +2363,7 @@ extends Area {
           False
         )
       )
+      && down.isReady
     )
     if (myUpExtDel.size - 2 >= 0) {
       myUpExtDel(myUpExtDel.size - 1) := (

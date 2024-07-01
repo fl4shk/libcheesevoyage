@@ -838,6 +838,166 @@ extends Component
   //--------
   //--------
 }
+//case class SimplePipeMemRmwIo[
+//  WordT <: Data,
+//  ModT <: Data,
+//](
+//  wordType: HardType[WordT],
+//  wordCount: Int,
+//  modType: HardType[ModT],
+//) extends Area {
+//}
+//case class SimplePipeMemRmw[
+//  WordT <: Data,
+//  ModT <: Data,
+//](
+//  wordType: HardType[WordT],
+//  wordCount: Int,
+//  modType: HardType[ModT],
+//  pipeName: String,
+//  initBigInt: Option[ArrayBuffer[BigInt]]=None,
+//  linkArr: Option[ArrayBuffer[Link]]=None,
+//  arrRamStyle: String="block",
+//  arrRwAddrCollision: String="",
+//)(
+//  setWordFunc: (
+//    ModT,   // pass-through pipeline outp
+//    ModT,   // pass-through pipeline inp
+//    WordT,  // data read from the RAM
+//  ) => Unit
+//) extends Area {
+//}
+case class WrPulseRdPipeSimpleDualPortMemFpgacpu[
+  T <: Data,
+  WordT <: Data
+](
+  dataType: HardType[T],
+  wordType: HardType[WordT],
+  wordCount: Int,
+  pipeName: String,
+  initBigInt: Option[ArrayBuffer[BigInt]]=None,
+  linkArr: Option[ArrayBuffer[Link]]=None,
+  //latency: Int=1,
+  arrRamStyle: String="block",
+  arrRwAddrCollision: String="",
+  unionIdxWidth: Int=1,
+  vivadoDebug: Boolean=false,
+)
+(
+  //getWordFunc: (
+  //  T           // input pipeline payload
+  //) => WordT,   // 
+  setWordFunc: (
+    UInt,   // union type indicator
+    T,      // pass through pipeline payload (output)
+    T,      // pass through pipeline payload (input)
+    WordT,  // data read from the RAM
+  ) => Unit,
+) //extends Area 
+extends Component 
+{
+  //object Testificate extends TaggedUnion {
+  //  val uint = UInt(3 bits)
+  //  val sint = SInt(3 bits)
+  //}
+  //val testificate = dataType() aliasAs(Bits(3 bits))
+  //val testificate = HardType.union(Bits(3 bits), UInt(3 bits))
+  //testificate.aliasAs(UInt(3 bits)) := 3
+  //--------
+  //assert(latency >= 1)
+  //--------
+  val io = WrPulseRdPipeSimpleDualPortMemIo(
+    dataType=dataType(),
+    wordType=wordType(),
+    wordCount=wordCount,
+    unionIdxWidth=unionIdxWidth,
+  )
+  def addrWidth = io.addrWidth
+  //--------
+  //--------
+  //val wrPipeToPulse = FpgacpuPipeToPulse(
+  //  dataType=PipeSimpleDualPortMemDrivePayload(
+  //    //wordType=wordType(),
+  //    dataType=dataType(),
+  //    wordCount=depth,
+  //  )
+  //)
+  val rdAddrPipeToPulse = FpgacpuPipeToPulse(
+    //dataType=UInt(addrWidth bits)
+    dataType=PipeSimpleDualPortMemDrivePayload(
+      //wordType=wordType(),
+      dataType=dataType(),
+      wordCount=wordCount,
+    )
+  )
+  rdAddrPipeToPulse.io.pipe << io.rdAddrPipe
+  rdAddrPipeToPulse.io.clear := False
+  val rdDataPulseToPipe = FpgacpuPulseToPipe(
+    //dataType=wordType()
+    dataType=dataType()
+  )
+  rdDataPulseToPipe.io.clear := False
+  rdAddrPipeToPulse.io.moduleReady := rdDataPulseToPipe.io.moduleReady
+  //--------
+  val mem = FpgacpuRamSimpleDualPort(
+    wordType=wordType(),
+    depth=wordCount,
+    initBigInt=initBigInt,
+    arrRamStyle=arrRamStyle,
+    arrRwAddrCollision=arrRwAddrCollision,
+  )
+
+  //arr.io.wrEn := wrPipeToPulse.io.pulse.valid
+  //arr.io.wrAddr := wrPipeToPulse.io.pulse.addr
+  //arr.io.wrData := getWordFunc(wrPipeToPulse.io.pulse.data)
+  //--------
+  // BEGIN: debug comment this out; later
+  mem.io.wrEn := io.wrPulse.valid
+  // END: debug comment this out; later
+  //arr.io.wrEn := False
+  mem.io.wrAddr := io.wrPulse.addr
+  //arr.io.wrData := getWordFunc(io.wrPulse.data)
+  mem.io.wrData := io.wrPulse.data
+  //--------
+  mem.io.rdEn := rdAddrPipeToPulse.io.pulse.valid
+  mem.io.rdAddr := rdAddrPipeToPulse.io.pulse.payload.addr
+  //rdDataPulseToPipe.io.pulse.payload := arr.io.rdData
+  //--------
+  //wrPipeToPulse.io.pipe << io.wrPipe
+  //wrPipeToPulse.io.moduleReady := True
+  //rdAddrPipeToPulse.io.pipe << io.rdAddrPipe
+
+  io.rdDataPipe << rdDataPulseToPipe.io.pipe
+  //--------
+  def latency = 1
+  val rRdPulseValidVec = Vec.fill(latency)(Reg(Bool()) init(False))
+  val rRdPulsePipePayloadVec = Vec.fill(latency)(
+    Reg(dataType()) init(dataType().getZero)
+  )
+  setWordFunc(
+    io.unionIdx,
+    rdDataPulseToPipe.io.pulse.payload,
+    rRdPulsePipePayloadVec(latency - 1),
+    //rdAddrPipeToPulse.io.pulse.payload.data,
+    mem.io.rdData
+  )
+  rdDataPulseToPipe.io.pulse.valid := (
+    rRdPulseValidVec(latency - 1)
+    //rdAddrPipeToPulse.io.pulse.valid
+  )
+  for (idx <- 0 until latency) {
+    if (idx == 0) {
+      rRdPulsePipePayloadVec(idx) := rdAddrPipeToPulse.io.pulse.data
+      //rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.moduleReady
+      rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.pulse.valid
+    } else {
+      rRdPulsePipePayloadVec(idx) := rRdPulsePipePayloadVec(idx - 1)
+      rRdPulseValidVec(idx) := rRdPulseValidVec(idx - 1)
+    }
+  }
+  //--------
+  //--------
+}
 //object WrPulseRdPipeSimpleDualPortMemSim extends App {
 //  def wordWidth = 8
 //  val dataType = HardType(UInt(wordWidth bits))
