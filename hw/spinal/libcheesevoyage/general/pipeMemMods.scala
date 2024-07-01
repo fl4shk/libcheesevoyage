@@ -981,7 +981,7 @@ extends Area {
             //},
             optModHazardKind=optModHazardKind,
             modStageCnt=modStageCnt,
-          ) //+ 1 //- 1
+          ) + 1 //- 1
         )(
           /*Reg*/(mkExt(myVivadoDebug=true))
           //init(mkExt().getZero)
@@ -998,7 +998,7 @@ extends Area {
             //},
             optModHazardKind=optModHazardKind,
             modStageCnt=modStageCnt,
-          ) //+ 1 //- 1
+          ) + 1 //- 1
         )(
           /*Reg*/(mkExt(myVivadoDebug=true))
           //init(mkExt().getZero)
@@ -1576,7 +1576,9 @@ extends Area {
           //}
           when (
             up.isValid
-            && down.isReady
+            //&& down.isReady
+            && down.isFiring
+            //&& down.isFiring
           ) {
             upExt(1) := upExt(0)
             upExt(1).hazardId := nextHazardId
@@ -1797,8 +1799,15 @@ extends Area {
           True
         )
       )
-      && down.isReady
+      //&& up.isValid
+      //////&& down.isReady
       //&& down.isFiring
+      //&& (
+      //  rState === State.IDLE
+      //)
+      && up.isValid
+      && down.isFiring
+      //&& down.isReady
     )
 
     if (
@@ -2257,7 +2266,7 @@ extends Area {
     //  case Some(myDoModSingleStageFunc) => {
     //  }
     //  case None => {
-      if (myUpExtDel.size - 2 > 2) {
+      if (myUpExtDel.size - 2 >= 2) {
         myUpExtDel(myUpExtDel.size - 2) := (
           RegNext(myUpExtDel(myUpExtDel.size - 2))
           init(myUpExtDel(myUpExtDel.size - 2).getZero)

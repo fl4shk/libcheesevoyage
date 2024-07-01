@@ -235,7 +235,14 @@ case class PipeMemRmwTester() extends Component {
   def memAddrFracRange = memAddrFracWidth - 1 downto 0
   def memAddrIntRange = rMemAddr.high downto memAddrFracWidth
 
-  front.valid := True
+  //front.valid := True
+  val nextFrontValid = Bool()
+  val rFrontValid = RegNext(nextFrontValid) init(nextFrontValid.getZero)
+
+  nextFrontValid := !rFrontValid
+  //nextFrontValid := True
+  front.valid := nextFrontValid
+
   front.payload := (
     RegNext(front.payload) init(front.payload.getZero)
   )
@@ -244,8 +251,9 @@ case class PipeMemRmwTester() extends Component {
     front.myExt.memAddr(zdx) := (rMemAddr + zdx) >> memAddrFracWidth
   }
   when (front.fire) {
-    //rMemAddr := rMemAddr + 1
-    rMemAddr(0 downto 0) := rMemAddr(0 downto 0) + 1
+    rMemAddr := rMemAddr + 1
+    //rMemAddr(0 downto 0) := rMemAddr(0 downto 0) + 1
+    //rMemAddr(1 downto 0) := rMemAddr(1 downto 0) + 1
     //when (rMemAddr(memAddrFracRange) === 2) {
     //  rMemAddr(memAddrIntRange) := (
     //    rMemAddr(memAddrIntRange) + 1
