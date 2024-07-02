@@ -82,7 +82,7 @@ case class PipeHelper(
         up={
           nArr.last
         },
-        down=Node()
+        down=Node(),
       )
       linkArr += cArr.last
     }

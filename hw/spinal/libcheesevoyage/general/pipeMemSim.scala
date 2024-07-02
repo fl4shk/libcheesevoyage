@@ -144,9 +144,9 @@ case class PipeMemRmwSimDut(
             outp.myExt := RegNext(outp.myExt) init(outp.myExt.getZero)
             outp.myExt.allowOverride
             when (
-              //cMid0Front.up.isFiring
-              cMid0Front.up.isValid
-              && cMid0Front.down.isReady
+              cMid0Front.up.isFiring
+              //cMid0Front.up.isValid
+              //&& cMid0Front.down.isReady
             ) {
               outp.myExt := inp.myExt
               when (
@@ -248,8 +248,8 @@ case class PipeMemRmwTester() extends Component {
   val nextFrontValid = Bool()
   val rFrontValid = RegNext(nextFrontValid) init(nextFrontValid.getZero)
 
-  nextFrontValid := !rFrontValid
-  //nextFrontValid := True
+  //nextFrontValid := !rFrontValid
+  nextFrontValid := True
   front.valid := nextFrontValid
 
   front.payload := (
@@ -261,7 +261,19 @@ case class PipeMemRmwTester() extends Component {
   }
   when (front.fire) {
     //rMemAddr := rMemAddr + 1
-    rMemAddr(0 downto 0) := rMemAddr(0 downto 0) + 1
+    when (
+      rMemAddr + 1
+      ===
+        //0x3
+        0x2
+        //0x1
+        //0x4
+    ) {
+      rMemAddr := 0x0
+    } otherwise {
+      rMemAddr := rMemAddr + 1
+    }
+    //rMemAddr(0 downto 0) := rMemAddr(0 downto 0) + 1
     //rMemAddr(1 downto 0) := rMemAddr(1 downto 0) + 1
     //when (rMemAddr(memAddrFracRange) === 2) {
     //  rMemAddr(memAddrIntRange) := (
@@ -351,8 +363,8 @@ object PipeMemRmwSim extends App {
       ////StreamMonitor(dut.io.front, dut.clockDomain) { payload => 
       ////  scoreboard.pushRef(payload.toInt)
       ////}
-      StreamReadyRandomizer(dut.io.back, dut.clockDomain)
-      //dut.io.back.ready #= true
+      //StreamReadyRandomizer(dut.io.back, dut.clockDomain)
+      dut.io.back.ready #= true
       //dut.io.back.ready #= true
       //dut.clockDomain.forkStimulus(period=10)
       ////dut.clockDomain.waitActiveEdgeWhere(scoreboard.matches == 100)
