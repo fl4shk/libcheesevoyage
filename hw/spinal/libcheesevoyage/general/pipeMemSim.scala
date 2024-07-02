@@ -49,6 +49,11 @@ object PipeMemRmwSimDut {
     //PipeMemRmw.modHazardKindDupl
     PipeMemRmw.modHazardKindFwd
   )
+  def optModFwdToFront = (
+    optModHazardKind == PipeMemRmw.modHazardKindFwd
+    //true
+    //false
+  )
 }
 case class PipeMemRmwSimDutIo() extends Bundle {
   val front = slave(Stream(PipeMemRmwSimDut.modType()))
@@ -83,6 +88,9 @@ case class PipeMemRmwSimDut(
   )
   def optModHazardKind = (
     PipeMemRmwSimDut.optModHazardKind
+  )
+  def optModFwdToFront = (
+    PipeMemRmwSimDut.optModFwdToFront
   )
   def modType() = PipeMemRmwSimDut.modType()
   val io = PipeMemRmwSimDutIo()
@@ -126,6 +134,9 @@ case class PipeMemRmwSimDut(
     //),
     optModHazardKind=(
       optModHazardKind
+    ),
+    optModFwdToFront=(
+      optModFwdToFront
     ),
     //forFmax=forFmax,
   )(
@@ -262,12 +273,15 @@ case class PipeMemRmwTester() extends Component {
   when (front.fire) {
     //rMemAddr := rMemAddr + 1
     when (
-      rMemAddr + 1
-      ===
-        //0x3
-        0x2
-        //0x1
+      //Cat(False, rMemAddr).asUInt + 1
+      rMemAddr
+      === (
+        //0x8
         //0x4
+        //0x3
+        //0x2
+        0x1
+      ) - 1
     ) {
       rMemAddr := 0x0
     } otherwise {
@@ -363,8 +377,8 @@ object PipeMemRmwSim extends App {
       ////StreamMonitor(dut.io.front, dut.clockDomain) { payload => 
       ////  scoreboard.pushRef(payload.toInt)
       ////}
-      //StreamReadyRandomizer(dut.io.back, dut.clockDomain)
-      dut.io.back.ready #= true
+      StreamReadyRandomizer(dut.io.back, dut.clockDomain)
+      //dut.io.back.ready #= true
       //dut.io.back.ready #= true
       //dut.clockDomain.forkStimulus(period=10)
       ////dut.clockDomain.waitActiveEdgeWhere(scoreboard.matches == 100)
