@@ -187,9 +187,9 @@ case class PipeMemRmwSimDut(
             outp.myExt.allowOverride
             when (
               //cMid0Front.up.isFiring
-              //cMid0Front.up.isValid
+              cMid0Front.up.isValid
               //&& cMid0Front.down.isReady
-              True
+              //True
               //cMid0Front.down.isFiring
             ) {
               //outp.myExt := inp.myExt
@@ -211,18 +211,21 @@ case class PipeMemRmwSimDut(
         )
       )
     ),
-    doFwdFunc=Some(
-      (
-        stageIdx,
-        myUpExtDel2,
-        zdx,
-      ) => {
-        //myUpExtDel.last.modMemWord
-        //myUpExtDel(
-        //  Mux[UInt](stageIdx === 0, 1, stageIdx)
-        //).modMemWord
-        myUpExtDel2(stageIdx).modMemWord
-      }
+    doFwdFunc=(
+      None
+      //Some(
+      //  (
+      //    stageIdx,
+      //    myUpExtDel2,
+      //    zdx,
+      //  ) => {
+      //    //myUpExtDel.last.modMemWord
+      //    //myUpExtDel(
+      //    //  Mux[UInt](stageIdx === 0, 1, stageIdx)
+      //    //).modMemWord
+      //    myUpExtDel2(stageIdx).modMemWord
+      //  }
+      //)
     ),
   )
   //GenerationFlags.formal 
@@ -277,52 +280,140 @@ case class PipeMemRmwSimDut(
     //  modBack.isFiring,
     //) init(0x0)
   )
-  val tempRight = rSavedModArr(
-    //modBack.myExt.memAddr(PipeMemRmw.modWrIdx)
-    //RegNextWhen(
-      modBack(modBackPayload).myExt.memAddr(PipeMemRmw.modWrIdx),
-    //  modBack.isFiring,
-    //) init(0x0)
-  ) + 1
+
+  //val nextSavedMod = 
+
+  //val next
+  //val tempRight = rSavedModArr(
+  //  //modBack.myExt.memAddr(PipeMemRmw.modWrIdx)
+  //  //RegNextWhen(
+  //    //modFront(modFrontPayload).myExt.memAddr(PipeMemRmw.modWrIdx),
+  //      RegNextWhen(
+  //        modFront(modFrontPayload).myExt.memAddr(PipeMemRmw.modWrIdx),
+  //        modFront.isFiring
+  //      )
+  //    //modBack(modBackPayload).myExt.memAddr(PipeMemRmw.modWrIdx),
+  //  //  modBack.isFiring,
+  //  //) init(0x0)
+  //) + 1
+
+  //val savedModMemWord = Payload(PipeMemRmwSimDut.wordType())
 
   when (pastValidAfterReset) {
+    //def mySavedMod = (
+    //  rSavedModArr(
+    //    modBack(modBackPayload).myExt.memAddr(PipeMemRmw.modWrIdx)
+    //    //RegNextWhen(
+    //    //  modFront(modFrontPayload).myExt.memAddr(PipeMemRmw.modWrIdx),
+    //    //  modFront.isFiring
+    //    //)
+    //  )
+    //)
+    //when (
+    //  ////modFront.isFiring
+    //  ////modBack.isFiring
+    //  ////modFront.isFiring
+    //  ////&& (
+    //  ////  RegNextWhen(True, back.isFiring) init(False)
+    //  ////)
+    //  ////(
+    //  ////  RegNextWhen(
+    //  ////    pipeMem.mod.back.myWriteEnable,
+    //  ////    modBack.isFiring
+    //  ////  ) init(False)
+    //  ////) && (
+    //  ////  back.isFiring
+    //  ////)
+    //  //pipeMem.mod.back.myWriteEnable
+    //  //&& modBack.isFiring
+    //  ////&& back.isReady
+    //  //True
+    //  modFront.isFiring
+    //  //&& modBack.isReady
+    //) {
+    //  // := (
+    //  //  //modBack.myExt.rdMemWord(PipeMemRmw.modWrIdx)
+    //  //)
+    //  def mySavedMod = (
+    //    rSavedModArr(
+    //      //modBack(modBackPayload).myExt.memAddr(PipeMemRmw.modWrIdx)
+    //      //modFront
+    //      RegNextWhen(
+    //        modFront(modFrontPayload).myExt.memAddr(PipeMemRmw.modWrIdx),
+    //        modFront.isFiring
+    //      )
+    //    )
+    //  )
+    //  mySavedMod := mySavedMod + 1
+    //  //when (
+    //  //  RegNextWhen(True, back.isFiring) init(False)
+    //  //) {
+    //  //  assert(
+    //  //    (
+    //  //      modBack(modBackPayload).myExt.memAddr(PipeMemRmw.modWrIdx)
+    //  //    ) === (
+    //  //      tempMemAddrPlus
+    //  //    )
+    //  //  )
+    //  //}
+    //}
+    def mySavedMod = (
+      rSavedModArr(
+        modBack(modBackPayload).myExt.memAddr(PipeMemRmw.modWrIdx)
+        //RegNextWhen(
+        //  modFront(modFrontPayload).myExt.memAddr(PipeMemRmw.modWrIdx),
+        //  modFront.isFiring
+        //)
+      )
+    )
+    val tempRight = (
+      ////RegNext(
+      //  rSavedModArr(
+      //    modBack(modBackPayload).myExt.memAddr(PipeMemRmw.modWrIdx)
+      //  )
+      ////)
+      mySavedMod
+      + 1
+    )
     when (
-      modBack.isFiring
-      //&& (
-      //  RegNextWhen(True, back.isFiring) init(False)
-      //)
+      /*past*/(modBack.isFiring)
+      && /*past*/(pipeMem.mod.back.myWriteEnable)
     ) {
-      def mySavedMod = (
-        rSavedModArr(
-          modBack(modBackPayload).myExt.memAddr(PipeMemRmw.modWrIdx)
+      //def mySavedMod = (
+      //  rSavedModArr(
+      //    modBack(modBackPayload).myExt.memAddr(PipeMemRmw.modWrIdx)
+      //    //RegNextWhen(
+      //    //  modFront(modFrontPayload).myExt.memAddr(PipeMemRmw.modWrIdx),
+      //    //  modFront.isFiring
+      //    //)
+      //  )
+      //)
+      assert(
+        tempLeft
+        === (
+          //mySavedMod
+          tempRight
+          //mySavedMod + 1
         )
       )
-      // := (
-      //  //modBack.myExt.rdMemWord(PipeMemRmw.modWrIdx)
-      //)
-      mySavedMod := mySavedMod + 1
-      //when (
+    }
+    when (
+      ////(
+      ////  RegNextWhen(True, modBack.isFiring) init(False)
+      ////) && 
+      //(
       //  RegNextWhen(True, back.isFiring) init(False)
-      //) {
-      //  assert(
-      //    (
-      //      modBack(modBackPayload).myExt.memAddr(PipeMemRmw.modWrIdx)
-      //    ) === (
-      //      tempMemAddrPlus
-      //    )
-      //  )
-      //}
-      when (
-        //(
-        //  RegNextWhen(True, modBack.isFiring) init(False)
-        //) && (
-          RegNextWhen(True, back.isFiring) init(False)
-        //)
-      ) {
-        assert(
-          tempLeft === tempRight
-        )
-      }
+      //) && (
+      //  //back.isValid
+      //  True
+      //)
+      //back.isFiring
+      //back.isValid
+      //modBack.isValid
+      modBack.isFiring
+      //modBack.isReady
+    ) {
+      mySavedMod := tempRight
     }
     cover(
       back.isFiring
@@ -556,53 +647,92 @@ case class PipeMemRmwTester() extends Component {
     //if (optModHazardKind == PipeMemRmw.modHazardKindFwd) {
       assert(modStageCnt == 1)
     //}
-    val midModPayload = PipeMemRmwSimDut.modType()
-    midModPayload := (
-      RegNext(midModPayload) init(midModPayload.getZero)
+    val cMidModFront = CtrlLink(
+      up=pmIo.modFront,
+      down=Node(),
     )
-    when (pmIo.modFront.isFiring) {
+    pipeMem.myLinkArr += cMidModFront
+    val sMidModFront = StageLink(
+      up=cMidModFront.down,
+      down=(
+        pmIo.modBack
+        //Node()
+      ),
+    )
+    pipeMem.myLinkArr += sMidModFront
+    //val s2mMidModFront = S2MLink(
+    //  up=sMidModFront.down,
+    //  down=(
+    //    pmIo.modBack
+    //    //Node()
+    //  ),
+    //)
+    //pipeMem.myLinkArr += s2mMidModFront
+    //val cMidModBack = CtrlLink(
+    //  up=(
+    //    //pmIo.modBack
+    //    s2mMidModFront.down
+    //  ),
+    //  down=Node(),
+    //)
+    //pipeMem.myLinkArr += cMidModBack
+    //val sMidModBack = StageLink(
+    //  up=cMidModBack.down,
+    //  down=Node()
+    //)
+    //pipeMem.myLinkArr += sMidModBack
+    //val s2mMidModBack = S2MLink(
+    //  up=sMidModBack.down,
+    //  //down=pmIo.modBack,
+    //  down=pmIo.modBack,
+    //)
+    //pipeMem.myLinkArr += s2mMidModBack
+
+    val midModPayload = PipeMemRmwSimDut.modType()
+    //midModPayload := (
+    //  RegNext(midModPayload) init(midModPayload.getZero)
+    //)
+    //when (
+    //  //cMidModFront.down.isFiring
+    //  cMidModFront.down.isValid
+    //  //cMidModFront.up.isValid
+    //) {
+      //midModPayload := cMidModFront.down(modFrontPayload)
+      //midModPayload := cMidModFront.down(modFrontPayload)
       midModPayload := pmIo.modFront(modFrontPayload)
-    }
+    //}
 
     def setMidModStages(): Unit = {
-      pmIo.midModStages(0) := (
-        RegNext(pmIo.midModStages(0))
-        init(pmIo.midModStages(0).getZero)
-      )
+      //pmIo.midModStages(0) := (
+      //  RegNext(pmIo.midModStages(0))
+      //  init(pmIo.midModStages(0).getZero)
+      //)
       pmIo.midModStages(0).myExt.valid.allowOverride
-      when (
-        //modFrontStm.valid
-        //&& modMidStm.ready
-        //modFrontStm.fire
-        pmIo.modFront.isFiring
-      ) {
+      pmIo.midModStages(0).myExt.ready.allowOverride
+      //when (
+      //  //modFrontStm.valid
+      //  //&& modMidStm.ready
+      //  //modFrontStm.fire
+      //  //cMidModFront.down.isFiring
+      //  cMidModFront.down.isValid
+      //) {
         //pmIo.midModStages(0) := modFrontStm.payload
         //pmIo.midModStages(0) := pmIo.modFront(modFrontPayload)
         pmIo.midModStages(0) := midModPayload
-      }
+      //}
       //pmIo.midModStages(0).myExt.valid := modFrontStm.valid
-      pmIo.midModStages(0).myExt.valid := pmIo.modFront.isValid
+      pmIo.midModStages(0).myExt.valid := pmIo.modFront.isValid //cMidModFront.down.isValid
+      pmIo.midModStages(0).myExt.ready := pmIo.modFront.isReady //cMidModFront.down.ready
       //modMidStm << modFrontStm
     }
     setMidModStages()
 
     pmIo.modFront(modBackPayload) := midModPayload
 
-    val cMidMod = CtrlLink(
-      up=pmIo.modFront,
-      down=Node(),
-    )
-    pipeMem.myLinkArr += cMidMod
-    val sMidMod = StageLink(
-      up=cMidMod.down,
-      down=Node()
-    )
-    pipeMem.myLinkArr += sMidMod
-    val s2mMidMod = S2MLink(
-      up=sMidMod.down,
-      down=pmIo.modBack,
-    )
-    pipeMem.myLinkArr += s2mMidMod
+    //pipeMem.myLinkArr += DirectLink(
+    //  up=pmIo.modFront,
+    //  down=pmIo.modBack,
+    //)
     if (optModHazardKind == PipeMemRmw.modHazardKindDupl) {
       //modFrontStm.translateInto(
       //  into=modMidStm
@@ -666,9 +796,9 @@ case class PipeMemRmwTester() extends Component {
       //    }
       //  }
       //)
-      when (pmIo.modFront(modFrontPayload).myExt.hazardId.msb) {
+      when (cMidModFront.down(modFrontPayload).myExt.hazardId.msb) {
         midModPayload.myExt.modMemWord := (
-          pmIo.modFront(modFrontPayload).myExt.rdMemWord(
+          cMidModFront.down(modFrontPayload).myExt.rdMemWord(
             PipeMemRmw.modWrIdx
           ) + 0x1
         )

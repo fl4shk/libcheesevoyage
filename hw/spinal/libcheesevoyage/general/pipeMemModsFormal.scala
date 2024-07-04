@@ -31,13 +31,15 @@ object PipeMemRmwFormal extends App {
       //=== dut.pmIo.front(dut.frontPayload).getZero
       //tempFrontPayload === tempFrontPayload.getZero
     )
-    assumeInitial(
-      front.valid === front.valid.getZero
-    )
+    //assumeInitial(
+    //  front.valid === front.valid.getZero
+    //)
+    //--------
     anyseq(
       front.payload
       //tempFrontPayload
     )
+    //--------
     //front(dut.frontPayload) := tempFrontPayload
     //val rFrontMemAddrCnt = Reg(UInt(log2Up(wordCount) + 1 bits)) init(0x0)
     //front.payload.allowOverride
@@ -45,7 +47,9 @@ object PipeMemRmwFormal extends App {
     //when (front.fire) {
     //  rFrontMemAddrCnt := rFrontMemAddrCnt + 1
     //}
-    anyseq(front.valid)
+    //anyseq(front.valid)
+    //assume(front.valid === True)
+    front.valid := True
     ////front.valid := True
     //assumeInitial(dualRdFront.payload === dualRdFront.payload.getZero)
     //assumeInitial(dualRdFront.valid === dualRdFront.valid.getZero)
