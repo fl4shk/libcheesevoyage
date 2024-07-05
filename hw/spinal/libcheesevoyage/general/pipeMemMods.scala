@@ -2085,7 +2085,8 @@ extends Area {
           //up.isValid
           //&& 
           //down.isFiring
-          down.isReady
+          //down.isReady
+          mod.front.cMid0Front.up.isReady
         )
           .setName("tempSharedEnable")
         for (zdx <- 0 until modRdPortCnt) {
