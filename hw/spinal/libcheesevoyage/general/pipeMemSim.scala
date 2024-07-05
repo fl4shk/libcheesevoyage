@@ -181,6 +181,8 @@ case class PipeMemRmwSimDut(
             outp,
             inp,
             cMid0Front,
+            //myRdMemWord,
+            myModMemWord,
           ) => {
             //outp.myExt := RegNext(outp.myExt) init(outp.myExt.getZero)
             outp.myExt := inp.myExt
@@ -202,7 +204,8 @@ case class PipeMemRmwSimDut(
               ) {
                 outp.myExt.modMemWord := (
                   //modFrontPayload.myExt.rdMemWord(0) + 0x1
-                  inp.myExt.rdMemWord(0) + 0x1
+                  //inp.myExt.rdMemWord(0) + 0x1
+                  myModMemWord/*(0)*/ + 0x1
                   //inp.myExt.rdMemWord(0) + inp.myExt.rdMemWord(1) + 0x1
                 )
               }
@@ -212,20 +215,20 @@ case class PipeMemRmwSimDut(
       )
     ),
     doFwdFunc=(
-      None
-      //Some(
-      //  (
-      //    stageIdx,
-      //    myUpExtDel2,
-      //    zdx,
-      //  ) => {
-      //    //myUpExtDel.last.modMemWord
-      //    //myUpExtDel(
-      //    //  Mux[UInt](stageIdx === 0, 1, stageIdx)
-      //    //).modMemWord
-      //    myUpExtDel2(stageIdx).modMemWord
-      //  }
-      //)
+      //None
+      Some(
+        (
+          stageIdx,
+          myUpExtDel2,
+          zdx,
+        ) => {
+          //myUpExtDel.last.modMemWord
+          //myUpExtDel(
+          //  Mux[UInt](stageIdx === 0, 1, stageIdx)
+          //).modMemWord
+          myUpExtDel2(stageIdx).modMemWord
+        }
+      )
     ),
   )
   //GenerationFlags.formal 
@@ -655,19 +658,19 @@ case class PipeMemRmwTester() extends Component {
     val sMidModFront = StageLink(
       up=cMidModFront.down,
       down=(
+        //pmIo.modBack
+        Node()
+      ),
+    )
+    pipeMem.myLinkArr += sMidModFront
+    val s2mMidModFront = S2MLink(
+      up=sMidModFront.down,
+      down=(
         pmIo.modBack
         //Node()
       ),
     )
-    pipeMem.myLinkArr += sMidModFront
-    //val s2mMidModFront = S2MLink(
-    //  up=sMidModFront.down,
-    //  down=(
-    //    pmIo.modBack
-    //    //Node()
-    //  ),
-    //)
-    //pipeMem.myLinkArr += s2mMidModFront
+    pipeMem.myLinkArr += s2mMidModFront
     //val cMidModBack = CtrlLink(
     //  up=(
     //    //pmIo.modBack
@@ -689,18 +692,18 @@ case class PipeMemRmwTester() extends Component {
     //pipeMem.myLinkArr += s2mMidModBack
 
     val midModPayload = PipeMemRmwSimDut.modType()
-    //midModPayload := (
-    //  RegNext(midModPayload) init(midModPayload.getZero)
-    //)
-    //when (
-    //  //cMidModFront.down.isFiring
-    //  cMidModFront.down.isValid
-    //  //cMidModFront.up.isValid
-    //) {
+    midModPayload := (
+      RegNext(midModPayload) init(midModPayload.getZero)
+    )
+    when (
+      //cMidModFront.down.isFiring
+      cMidModFront.down.isValid
+      //cMidModFront.up.isValid
+    ) {
       //midModPayload := cMidModFront.down(modFrontPayload)
       //midModPayload := cMidModFront.down(modFrontPayload)
       midModPayload := pmIo.modFront(modFrontPayload)
-    //}
+    }
 
     def setMidModStages(): Unit = {
       //pmIo.midModStages(0) := (
@@ -714,15 +717,21 @@ case class PipeMemRmwTester() extends Component {
       //  //&& modMidStm.ready
       //  //modFrontStm.fire
       //  //cMidModFront.down.isFiring
-      //  cMidModFront.down.isValid
+      //  //cMidModFront.down.isValid
+      //  True
       //) {
         //pmIo.midModStages(0) := modFrontStm.payload
         //pmIo.midModStages(0) := pmIo.modFront(modFrontPayload)
         pmIo.midModStages(0) := midModPayload
       //}
       //pmIo.midModStages(0).myExt.valid := modFrontStm.valid
-      pmIo.midModStages(0).myExt.valid := pmIo.modFront.isValid //cMidModFront.down.isValid
-      pmIo.midModStages(0).myExt.ready := pmIo.modFront.isReady //cMidModFront.down.ready
+      when (!clockDomain.isResetActive) {
+        pmIo.midModStages(0).myExt.valid := pmIo.modFront.isValid //cMidModFront.down.isValid
+        pmIo.midModStages(0).myExt.ready := pmIo.modFront.isReady //cMidModFront.down.ready
+      } otherwise {
+        pmIo.midModStages(0).myExt.valid := False
+        pmIo.midModStages(0).myExt.ready := False
+      }
       //modMidStm << modFrontStm
     }
     setMidModStages()

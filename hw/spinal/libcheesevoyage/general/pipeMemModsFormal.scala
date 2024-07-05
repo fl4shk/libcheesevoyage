@@ -39,6 +39,8 @@ object PipeMemRmwFormal extends App {
       front.payload
       //tempFrontPayload
     )
+    anyseq(front.valid)
+    //front.valid := True
     //--------
     //front(dut.frontPayload) := tempFrontPayload
     //val rFrontMemAddrCnt = Reg(UInt(log2Up(wordCount) + 1 bits)) init(0x0)
@@ -47,9 +49,7 @@ object PipeMemRmwFormal extends App {
     //when (front.fire) {
     //  rFrontMemAddrCnt := rFrontMemAddrCnt + 1
     //}
-    //anyseq(front.valid)
     //assume(front.valid === True)
-    front.valid := True
     ////front.valid := True
     //assumeInitial(dualRdFront.payload === dualRdFront.payload.getZero)
     //assumeInitial(dualRdFront.valid === dualRdFront.valid.getZero)
