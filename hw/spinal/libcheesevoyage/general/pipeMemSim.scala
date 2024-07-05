@@ -696,13 +696,25 @@ case class PipeMemRmwTester() extends Component {
       RegNext(midModPayload) init(midModPayload.getZero)
     )
     when (
-      //cMidModFront.down.isFiring
-      cMidModFront.down.isValid
+      cMidModFront.down.isFiring
+      //cMidModFront.down.isValid
       //cMidModFront.up.isValid
     ) {
       //midModPayload := cMidModFront.down(modFrontPayload)
       //midModPayload := cMidModFront.down(modFrontPayload)
       midModPayload := pmIo.modFront(modFrontPayload)
+    }
+    midModPayload.myExt.valid.allowOverride
+    midModPayload.myExt.ready.allowOverride
+    midModPayload.myExt.fire.allowOverride
+    when (!clockDomain.isResetActive) {
+      midModPayload.myExt.valid := pmIo.modFront.isValid //cMidModFront.down.isValid
+      midModPayload.myExt.ready := pmIo.modFront.isReady //cMidModFront.down.ready
+      midModPayload.myExt.fire := pmIo.modFront.isFiring
+    } otherwise {
+      midModPayload.myExt.valid := False
+      midModPayload.myExt.ready := False
+      midModPayload.myExt.fire := False
     }
 
     def setMidModStages(): Unit = {
@@ -710,8 +722,8 @@ case class PipeMemRmwTester() extends Component {
       //  RegNext(pmIo.midModStages(0))
       //  init(pmIo.midModStages(0).getZero)
       //)
-      pmIo.midModStages(0).myExt.valid.allowOverride
-      pmIo.midModStages(0).myExt.ready.allowOverride
+      //pmIo.midModStages(0).myExt.valid.allowOverride
+      //pmIo.midModStages(0).myExt.ready.allowOverride
       //when (
       //  //modFrontStm.valid
       //  //&& modMidStm.ready
@@ -725,13 +737,6 @@ case class PipeMemRmwTester() extends Component {
         pmIo.midModStages(0) := midModPayload
       //}
       //pmIo.midModStages(0).myExt.valid := modFrontStm.valid
-      when (!clockDomain.isResetActive) {
-        pmIo.midModStages(0).myExt.valid := pmIo.modFront.isValid //cMidModFront.down.isValid
-        pmIo.midModStages(0).myExt.ready := pmIo.modFront.isReady //cMidModFront.down.ready
-      } otherwise {
-        pmIo.midModStages(0).myExt.valid := False
-        pmIo.midModStages(0).myExt.ready := False
-      }
       //modMidStm << modFrontStm
     }
     setMidModStages()

@@ -93,6 +93,7 @@ case class PipeMemRmwPayloadExt[
 
   val valid = KeepAttribute(Bool())
   val ready = KeepAttribute(Bool())
+  val fire = KeepAttribute(Bool())
   val memAddr = Vec.fill(modRdPortCnt)(
     UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
   )
@@ -995,17 +996,19 @@ extends Area {
         ) && (
           //True
           (
-            curr.valid
-            //|| (
-            //  RegNextWhen(True, curr.valid) init(False)
-            //)
+            curr.fire
+            || (
+              RegNextWhen(True, curr.fire) init(False)
+            )
           )
-          && (
+          && 
+          (
             if (doValidCheck) (
-              prev.valid
-              //|| (
-              //  RegNextWhen(True, prev.valid) init(False)
-              //)
+              //prev.valid
+              prev.fire
+              || (
+                RegNextWhen(True, prev.fire) init(False)
+              )
             ) else (
               True
             )
@@ -1220,15 +1223,16 @@ extends Area {
           //optModFwdToFront
         ) generate (
           //Array.fill(2)(Payload(Bool()))
-          RegNextWhen
-          //RegNext
+          //RegNextWhen
+          RegNext
           (
             nextDidFwd,
-            cFront.down.isReady
-            //cFront.down.isFiring
-            //cFront.down.isValid
-            //cMid0Front.up.isValid
+            //cFront.down.isReady
+            ////cFront.down.isFiring
+            ////cFront.down.isValid
+            ////cMid0Front.up.isValid
           )
+          //init(nextDidFwd.getZero)
         )
       )
       for (zdx <- 0 until modRdPortCnt) {
@@ -1798,6 +1802,8 @@ extends Area {
         ////  "MARK_DEBUG", "TRUE"
         ////)
       }
+      //upExt(1).valid := up.isValid
+      //upExt(1).ready := up.isReady
       switch (rState) {
         is (State.IDLE) {
           //when (down.isFiring) {
@@ -1810,7 +1816,9 @@ extends Area {
             //&& down.isFiring
           ) {
             upExt(1) := upExt(0)
-            upExt(1).valid := True
+            upExt(1).valid := up.isValid
+            upExt(1).ready := up.isReady
+            upExt(1).fire := up.isFiring
             upExt(1).hazardId := nextHazardId
             upExtRealMemAddr := upExt(0).memAddr
             for (zdx <- 0 until modRdPortCnt) {
@@ -1896,11 +1904,16 @@ extends Area {
       //optModHazardKind != PipeMemRmw.modHazardKindDupl
       optModHazardKind == PipeMemRmw.modHazardKindFwd
     ) {
-      upExt(1) := upExt(0)
-      when (up.isValid) {
-        //upExt(1) := upExt(0)
+      //upExt(1) := upExt(0)
+      when (
+        //up.isValid
+        up.isFiring
+      ) {
+        upExt(1) := upExt(0)
       }
       upExt(1).valid := up.isValid
+      upExt(1).ready := up.isReady
+      upExt(1).fire := up.isFiring
       //up(mod.front.didFwd(0)) := False
       if (
         //optModFwdToFront
@@ -1959,15 +1972,25 @@ extends Area {
       //upExtRealMemAddr := upExt(0).memAddr
       //upExt(1) := upExt(0)
       //when (down.isFiring) 
-      when (
-        up.isValid //&& down.isReady
-      ) {
-        upExtRealMemAddr := upExt(0).memAddr
-      }
+      //when (
+      //  //up.isValid //&& down.isReady
+      //) {
+      //  upExtRealMemAddr := upExt(1).memAddr
+      //}
+      upExtRealMemAddr := upExt(1).memAddr
     } else {
-      upExt(1) := upExt(0)
+      //upExt(1) := upExt(0)
+      when (
+        //up.isValid
+        up.isFiring
+      ) {
+        upExt(1) := upExt(0)
+      }
+      upExt(1).valid := up.isValid
+      upExt(1).ready := up.isReady
+      upExt(1).fire := up.isFiring
       //upExt(1).hazardId := nextHazardId
-      upExtRealMemAddr := upExt(0).memAddr
+      upExtRealMemAddr := upExt(1).memAddr
     }
     //setDoDuplicateIt(false)
 
@@ -2318,7 +2341,13 @@ extends Area {
     myUpExtDel(0) := (
       RegNext(myUpExtDel(0)) init(myUpExtDel(0).getZero)
     )
-    when (up.isValid) {
+    myUpExtDel(0).valid.allowOverride
+    myUpExtDel(0).ready.allowOverride
+    myUpExtDel(0).fire.allowOverride
+    when (
+      //up.isValid
+      up.isFiring
+    ) {
       myUpExtDel(0) := (
         upExt(2)
       )
@@ -2326,6 +2355,10 @@ extends Area {
     }
     upExt(1).valid := up.isValid
     upExt(1).ready := up.isReady
+    upExt(1).fire := up.isFiring
+    myUpExtDel(0).valid := upExt(1).valid
+    myUpExtDel(0).ready := upExt(1).ready
+    myUpExtDel(0).fire := upExt(1).fire
     //upExt(1) := upExt(0)
 
     val tempUpMod = (
@@ -2750,15 +2783,19 @@ extends Area {
     )(
       mkExt(myVivadoDebug=true)
     ).setName("cBackArea_upExt")
-    //upExt(1) := (
-    //  RegNext(upExt(1)) init(upExt(1).getZero)
-    //)
+    upExt(1) := (
+      RegNext(upExt(1)) init(upExt(1).getZero)
+    )
     upExt(1).allowOverride
-    //when (up.isValid) {
+    when (
+      //up.isValid
+      up.isFiring
+    ) {
       upExt(1) := upExt(0)
-    //}
+    }
     upExt(1).valid := up.isValid
     upExt(1).ready := up.isReady
+    upExt(1).fire := up.isFiring
     def tempMyUpExtDelLast = (
       //if (!optModFwdToFront) (
         //myUpExtDel(myUpExtDel.size - 1)
@@ -2797,6 +2834,10 @@ extends Area {
         //  up.isValid
         //) {
           tempMyUpExtDelFrontFwd := upExt(1)
+          tempMyUpExtDelFrontFwd.allowOverride
+          tempMyUpExtDelFrontFwd.valid := upExt(1).valid
+          tempMyUpExtDelFrontFwd.ready := upExt(1).ready
+          tempMyUpExtDelFrontFwd.fire := upExt(1).fire
           //tempMyUpExtDelLast := tempMyUpExtDelFrontFwd
         //}
       }
