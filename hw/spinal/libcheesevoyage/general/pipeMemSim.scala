@@ -640,6 +640,9 @@ case class PipeMemRmwTester() extends Component {
   //val modBackStm = Stream(modType())
   ////modFrontStm <-/< dut.io.modFront
   //modFrontStm << dut.io.modFront
+  def extIdxUp = PipeMemRmw.extIdxUp
+  def extIdxDown = PipeMemRmw.extIdxDown
+  def extIdxLim = PipeMemRmw.extIdxLim
   if (
     optModHazardKind == PipeMemRmw.modHazardKindDupl
     || (
@@ -691,10 +694,17 @@ case class PipeMemRmwTester() extends Component {
     //)
     //pipeMem.myLinkArr += s2mMidModBack
 
-    val midModPayload = PipeMemRmwSimDut.modType()
-    midModPayload := (
-      RegNext(midModPayload) init(midModPayload.getZero)
+    val midModPayload = Vec.fill(extIdxLim)(
+      PipeMemRmwSimDut.modType()
     )
+    for (extIdx <- 0 until extIdxLim) {
+      midModPayload(extIdx) := (
+        RegNext(midModPayload)(extIdx) init(midModPayload(extIdx).getZero)
+      )
+    }
+    when (cMidModFront.up.isFiring) {
+      midModPayload(extIdxUp) := pmIo.modFront(modFrontPayload)
+    }
     when (
       cMidModFront.down.isFiring
       //cMidModFront.down.isValid
@@ -702,20 +712,39 @@ case class PipeMemRmwTester() extends Component {
     ) {
       //midModPayload := cMidModFront.down(modFrontPayload)
       //midModPayload := cMidModFront.down(modFrontPayload)
-      midModPayload := pmIo.modFront(modFrontPayload)
+      midModPayload(extIdxDown) := (
+        RegNext(midModPayload(extIdxUp))
+      )
     }
-    midModPayload.myExt.valid.allowOverride
-    midModPayload.myExt.ready.allowOverride
-    midModPayload.myExt.fire.allowOverride
-    when (!clockDomain.isResetActive) {
-      midModPayload.myExt.valid := pmIo.modFront.isValid //cMidModFront.down.isValid
-      midModPayload.myExt.ready := pmIo.modFront.isReady //cMidModFront.down.ready
-      midModPayload.myExt.fire := pmIo.modFront.isFiring
-    } otherwise {
-      midModPayload.myExt.valid := False
-      midModPayload.myExt.ready := False
-      midModPayload.myExt.fire := False
-    }
+    midModPayload(extIdxUp).myExt.valid.allowOverride
+    midModPayload(extIdxUp).myExt.ready.allowOverride
+    midModPayload(extIdxUp).myExt.fire.allowOverride
+    midModPayload(extIdxDown).myExt.valid.allowOverride
+    midModPayload(extIdxDown).myExt.ready.allowOverride
+    midModPayload(extIdxDown).myExt.fire.allowOverride
+    //when (!clockDomain.isResetActive) {
+    //  midModPayload(extIdxUp).myExt.valid := (
+    //    pmIo.modFront.isValid //cMidModFront.down.isValid
+    //  )
+    //  midModPayload.myExt.ready := pmIo.modFront.isReady //cMidModFront.down.ready
+    //  midModPayload.myExt.fire := pmIo.modFront.isFiring
+    //} otherwise {
+    //  midModPayload.myExt.valid := False
+    //  midModPayload.myExt.ready := False
+    //  midModPayload.myExt.fire := False
+    //}
+    midModPayload(extIdxUp).myExt.valid := cMidModFront.up.isValid
+    midModPayload(extIdxUp).myExt.ready := cMidModFront.up.isReady
+    midModPayload(extIdxUp).myExt.fire := cMidModFront.up.isFiring
+    //midModPayload(extIdxDown).myExt.valid := (
+    //  RegNext(cMidModFront.down.isValid)
+    //)
+    //midModPayload(extIdxDown).myExt.ready := (
+    //  RegNext(cMidModFront.down.isReady)
+    //)
+    //midModPayload(extIdxDown).myExt.fire := (
+    //  RegNext(cMidModFront.down.isFiring)
+    //)
 
     def setMidModStages(): Unit = {
       //pmIo.midModStages(0) := (
@@ -741,7 +770,7 @@ case class PipeMemRmwTester() extends Component {
     }
     setMidModStages()
 
-    pmIo.modFront(modBackPayload) := midModPayload
+    pmIo.modFront(modBackPayload) := midModPayload(extIdxUp)
 
     //pipeMem.myLinkArr += DirectLink(
     //  up=pmIo.modFront,
@@ -811,7 +840,7 @@ case class PipeMemRmwTester() extends Component {
       //  }
       //)
       when (cMidModFront.down(modFrontPayload).myExt.hazardId.msb) {
-        midModPayload.myExt.modMemWord := (
+        midModPayload(extIdxUp).myExt.modMemWord := (
           cMidModFront.down(modFrontPayload).myExt.rdMemWord(
             PipeMemRmw.modWrIdx
           ) + 0x1
