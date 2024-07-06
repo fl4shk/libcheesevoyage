@@ -1106,7 +1106,7 @@ extends Area {
             //optModFwdToFront=optModFwdToFront,
             modStageCnt=modStageCnt,
           )
-          //+ 1 
+          + 1 
           //+ (
           //  if (optModHazardKind != PipeMemRmw.modHazardKindFwd) (
           //    0
@@ -1142,7 +1142,7 @@ extends Area {
             //optModFwdToFront=optModFwdToFront,
             modStageCnt=modStageCnt,
           )
-          //+ 1
+          + 1
           //+ (
           //  if (optModHazardKind != PipeMemRmw.modHazardKindFwd) (
           //    0
@@ -1315,16 +1315,36 @@ extends Area {
       )
       for (zdx <- 0 until modRdPortCnt) {
         //myRdMemWord(zdx) := myNonFwdRdMemWord(zdx)
-        myRdMemWord(zdx) := Mux(
-          !rDidFwd(zdx)(0),
-          //RegNext(!nextDidFwd(zdx)(0)) init(False),
-          //!(
-          //  //RegNext(nextDidFwd(zdx)(0)) init(False)
-          //  nextDidFwd(zdx)(0)
-          //),
-          myNonFwdRdMemWord(zdx),
-          myFwdRdMemWord(zdx)
-        )
+        //myRdMemWord(zdx) := (
+        //  RegNext(myRdMemWord(zdx)) init(myRdMemWord(zdx).getZero)
+        //)
+        //when (RegNext(cFront.down.isFiring)) {
+          myRdMemWord(zdx) := /*Mux*/(
+            //!rDidFwd(zdx)(0),
+            ////RegNext(!nextDidFwd(zdx)(0)) init(False),
+            ////!(
+            ////  //RegNext(nextDidFwd(zdx)(0)) init(False)
+            ////  nextDidFwd(zdx)(0)
+            ////),
+            myNonFwdRdMemWord(zdx),
+            ////myFwdRdMemWord(zdx)
+            //Mux(
+            //  (
+            //    myUpExtDel(0)(extIdxUp).memAddr(zdx)
+            //    === myUpExtDel.last(extIdxUp).memAddr(PipeMemRmw.modWrIdx)
+            //  ),
+            //  myUpExtDel.last(extIdxUp).modMemWord,
+            //  Mux(
+            //    myUpExtDel(0)(extIdxUp).memAddr(zdx)
+            //    === myUpExtDel.last(extIdxDown).memAddr(
+            //      PipeMemRmw.modWrIdx
+            //    ),
+            //    myUpExtDel.last(extIdxDown).modMemWord,
+            //    myNonFwdRdMemWord(zdx)
+            //  )
+            //)
+          )
+        //}
       }
       if (
         optModHazardKind == PipeMemRmw.modHazardKindFwd
@@ -2119,7 +2139,14 @@ extends Area {
                 upExtRealMemAddr(zdx)
                 === mod.back.myWriteAddr
               ) && (
-                mod.back.myWriteEnable
+                (
+                  RegNextWhen(
+                    True,
+                    mod.back.myWriteEnable,
+                  ) init(False)
+                ) || (
+                  mod.back.myWriteEnable
+                )
               ) && (
                 //RegNextWhen(True, mod.back.cBack.up.isValid) init(False)
                 //mod.back.cBack.up.isValid
@@ -2295,80 +2322,81 @@ extends Area {
               //down.isReady
             ),
           )
-          myFwdRdMemWord(zdx) := (
-            RegNext(myFwdRdMemWord(zdx))
-            init(myFwdRdMemWord(zdx).getZero)
-          )
-          when (
-            tempSharedEnable
-            ////down.isFiring
-            ////up.isValid 
-            ////&& down.isFiring
-            ////down.isReady
-            ////True
-            //&&
-            ////(
-            ////  RegNext(
-            //    mod.back.myWriteEnable
-            ////  )
-            ////  init(False)
-            ////)
-          ) {
-            myFwdRdMemWord(zdx) := (
-            //myUpExtDel.last.modMemWord
-            ////RegNext(
-              /*RegNextWhen*/(
-                //mod.front.myUpExtDelFwd.modMemWord
-                //RegNext(mod.front.myUpExtDelFwd.modMemWord)
-                //init(mod.front.myUpExtDelFwd.modMemWord.getZero)
-                //mod.back.myWriteData
-                (
-                  //RegNext(
-                  //  RegNextWhen(
-                  //    (
-                  //      //RegNext(mod.back.myWriteData)
-                  //      //init(mod.back.myWriteData.getZero)
-                  //      mod.back.myWriteData
-                  //    ),
-                  //    //down.isFiring
-                  //    //&& 
-                  //    mod.back.myWriteEnable
-                  //  )
-                  //)
-                  //RegNextWhen(
-                    //RegNext(
-                    //  mod.back.myWriteData
-                    //),
-                    //RegNext(tempFwdPrev.modMemWord)
-                    //RegNext(
-                    //  Mux(
-                    //    tempFwdPrev.valid,
-                        //RegNext(tempFwdPrev.modMemWord)
-                        //init(tempFwdPrev.modMemWord.getZero)
-                        RegNext(
-                          //RegNextWhen(
-                            //tempFwdPrev.modMemWord,
-                          //  mod.back.myWriteEnable
-                          //)
-                          //init(tempFwdPrev.modMemWord.getZero)
-                          mod.back.myWriteData
-                        )
-                        init(
-                          //tempFwdPrev.modMemWord.getZero
-                          mod.back.myWriteData.getZero
-                        )
-                    //    RegNext(tempFwdPrev.modMemWord),
-                    //  )
-                    //)
-                  //  mod.front.cMid0Front.down.isFiring,
-                  //)
-                )
-                //RegNext(mod.front.myUpExtDelFwd.modMemWord)
-                //init(mod.front.myUpExtDelFwd.modMemWord.getZero),
-              //  io.back.isFiring,
-              )
-            )
-          }
+          //myFwdRdMemWord(zdx) := (
+          //  RegNext(myFwdRdMemWord(zdx))
+          //  init(myFwdRdMemWord(zdx).getZero)
+          //)
+          //when (
+          //  tempSharedEnable
+          //  //&& mod.back.myWriteEnable
+          //  ////down.isFiring
+          //  ////up.isValid 
+          //  ////&& down.isFiring
+          //  ////down.isReady
+          //  ////True
+          //  //&&
+          //  ////(
+          //  ////  RegNext(
+          //  //    mod.back.myWriteEnable
+          //  ////  )
+          //  ////  init(False)
+          //  ////)
+          //) {
+          //  myFwdRdMemWord(zdx) := (
+          //  //myUpExtDel.last.modMemWord
+          //  ////RegNext(
+          //    /*RegNextWhen*/(
+          //      //mod.front.myUpExtDelFwd.modMemWord
+          //      //RegNext(mod.front.myUpExtDelFwd.modMemWord)
+          //      //init(mod.front.myUpExtDelFwd.modMemWord.getZero)
+          //      //mod.back.myWriteData
+          //      (
+          //        //RegNext(
+          //        //  RegNextWhen(
+          //        //    (
+          //        //      //RegNext(mod.back.myWriteData)
+          //        //      //init(mod.back.myWriteData.getZero)
+          //        //      mod.back.myWriteData
+          //        //    ),
+          //        //    //down.isFiring
+          //        //    //&& 
+          //        //    mod.back.myWriteEnable
+          //        //  )
+          //        //)
+          //        //RegNextWhen(
+          //          //RegNext(
+          //          //  mod.back.myWriteData
+          //          //),
+          //          //RegNext(tempFwdPrev.modMemWord)
+          //          //RegNext(
+          //          //  Mux(
+          //          //    tempFwdPrev.valid,
+          //              //RegNext(tempFwdPrev.modMemWord)
+          //              //init(tempFwdPrev.modMemWord.getZero)
+          //              RegNext(
+          //                //RegNextWhen(
+          //                  //tempFwdPrev.modMemWord,
+          //                //  mod.back.myWriteEnable
+          //                //)
+          //                //init(tempFwdPrev.modMemWord.getZero)
+          //                mod.back.myWriteData
+          //              )
+          //              init(
+          //                //tempFwdPrev.modMemWord.getZero
+          //                mod.back.myWriteData.getZero
+          //              )
+          //          //    RegNext(tempFwdPrev.modMemWord),
+          //          //  )
+          //          //)
+          //        //  mod.front.cMid0Front.down.isFiring,
+          //        //)
+          //      )
+          //      //RegNext(mod.front.myUpExtDelFwd.modMemWord)
+          //      //init(mod.front.myUpExtDelFwd.modMemWord.getZero),
+          //    //  io.back.isFiring,
+          //    )
+          //  )
+          //}
           //myFwdRdMemWord(zdx) := (
           //  RegNext(myFwdRdMemWord(zdx))
           //  init(myFwdRdMemWord(zdx).getZero)
@@ -3391,17 +3419,18 @@ extends Area {
     //upExt(1)(extIdxDown).valid := RegNext(down.isValid)
     //upExt(1)(extIdxDown).ready := RegNext(down.isReady)
     //upExt(1)(extIdxDown).fire := RegNext(down.isFiring)
-    def tempMyUpExtDelLast = (
-      //if (!optModFwdToFront) (
-        //myUpExtDel(myUpExtDel.size - 1)
-        myUpExtDel.last
-      //) else (
-      //  mod.front.myUpExtDelFwd
-      //)
-    )
-    //def tempMyUpExtDelPenLast = (
-    //  myUpExtDel(myUpExtDel.size - 2)
+    //--------
+    //def tempMyUpExtDelLast = (
+    //  //if (!optModFwdToFront) (
+    //    //myUpExtDel(myUpExtDel.size - 1)
+    //    myUpExtDel.last
+    //  //) else (
+    //  //  mod.front.myUpExtDelFwd
+    //  //)
     //)
+    def tempMyUpExtDelPenLast = (
+      myUpExtDel(myUpExtDel.size - 2)
+    )
     //def tempMyUpExtDelFrontFwd = (
     //  //if (!optModFwdToFront) (
     //    //myUpExtDel(myUpExtDel.size - 2)
@@ -3437,7 +3466,8 @@ extends Area {
           //tempMyUpExtDelFrontFwd.ready := upExt(1).ready
           //tempMyUpExtDelFrontFwd.fire := upExt(1).fire
           //--------
-          tempMyUpExtDelLast := upExt(1)
+          //tempMyUpExtDelLast := upExt(1)
+          tempMyUpExtDelPenLast := upExt(1)
           //tempMyUpExtDelPenLast.allowOverride
           //tempMyUpExtDelPenLast.valid := upExt(1).valid
           //tempMyUpExtDelPenLast.ready := upExt(1).ready
@@ -3765,6 +3795,41 @@ extends Area {
     ////--------
     //bypass(mod.back.pipePayload) := tempUpMod(1)
     //--------
+  }
+  val cLastBack = mod.back.cLastBack
+  val cLastBackArea = new cLastBack.Area {
+    val upExt = Vec.fill(2)(
+      mkExt()
+    )
+    for (extIdx <- 0 until extIdxLim) {
+      upExt(1)(extIdx) := (
+        RegNext(upExt(1)(extIdx)) init(upExt(1)(extIdx).getZero)
+      )
+      upExt(1)(extIdx).allowOverride
+    }
+    when (up.isFiring) {
+      upExt(1)(extIdxUp) := upExt(0)(extIdxSingle)
+    }
+    when (down.isFiring) {
+      upExt(1)(extIdxDown) := upExt(1)(extIdxUp)
+    }
+    mod.front.myUpExtDel.last := upExt(1)
+
+    val tempUpMod = Vec.fill(1)(
+      modType()
+    )
+    tempUpMod(0).allowOverride
+    tempUpMod(0) := up(mod.back.pipePayload)
+    tempUpMod(0).getPipeMemRmwExt(
+      outpExt=upExt(0)(extIdxSingle),
+      memArrIdx=memArrIdx,
+    )
+    //tempUpMod(1) := tempUpMod(0)
+    //tempUpMod(1).allowOverride
+    //tempUpMod(1).setPipeMemRmwExt(
+    //  inpExt=upExt(1)(extIdxUp),
+    //  memArrIdx=memArrIdx,
+    //)
   }
   //--------
   //val dualRd = (io.optDualRd) generate new Area {
