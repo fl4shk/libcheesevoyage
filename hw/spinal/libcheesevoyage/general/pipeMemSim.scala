@@ -694,34 +694,103 @@ case class PipeMemRmwTester() extends Component {
     //)
     //pipeMem.myLinkArr += s2mMidModBack
 
-    val midModPayload = Vec.fill(extIdxLim)(
-      PipeMemRmwSimDut.modType()
+    val midModPayload = (
+      Vec.fill(extIdxLim)(
+        PipeMemRmwSimDut.modType()
+      )
+      .setName("midModPayload")
     )
     for (extIdx <- 0 until extIdxLim) {
-      midModPayload(extIdx) := (
-        RegNext(midModPayload)(extIdx) init(midModPayload(extIdx).getZero)
-      )
+      if (extIdx != extIdxDown) {
+        midModPayload(extIdx) := (
+          RegNext(midModPayload)(extIdx)
+          init(midModPayload(extIdx).getZero)
+        )
+      }
     }
-    when (cMidModFront.up.isFiring) {
+    when (cMidModFront.up.isValid) {
       midModPayload(extIdxUp) := pmIo.modFront(modFrontPayload)
+      //midModPayload(extIdxDown) := (
+      //  RegNext(midModPayload(extIdxUp))
+      //)
     }
-    when (
-      cMidModFront.down.isFiring
-      //cMidModFront.down.isValid
-      //cMidModFront.up.isValid
-    ) {
-      //midModPayload := cMidModFront.down(modFrontPayload)
-      //midModPayload := cMidModFront.down(modFrontPayload)
-      midModPayload(extIdxDown) := (
-        RegNext(midModPayload(extIdxUp))
-      )
-    }
+    midModPayload(extIdxDown) := (
+      RegNextWhen(midModPayload(extIdxUp), cMidModFront.up.isFiring)
+      init(midModPayload(extIdxDown).getZero)
+    )
     midModPayload(extIdxUp).myExt.valid.allowOverride
     midModPayload(extIdxUp).myExt.ready.allowOverride
     midModPayload(extIdxUp).myExt.fire.allowOverride
-    midModPayload(extIdxDown).myExt.valid.allowOverride
-    midModPayload(extIdxDown).myExt.ready.allowOverride
-    midModPayload(extIdxDown).myExt.fire.allowOverride
+    //midModPayload(extIdxDown).myExt.valid.allowOverride
+    //midModPayload(extIdxDown).myExt.ready.allowOverride
+    //midModPayload(extIdxDown).myExt.fire.allowOverride
+    //midModPayload(extIdxDown).myExt.hadActiveUpFire.allowOverride
+    //val tempHadActiveUpFire = Bool()
+    //when (
+    //  //cMidModFront.down.isFiring
+    //  //cMidModFront.down.isValid
+    //  //cMidModFront.up.isValid
+    //  tempHadActiveUpFire 
+    //) {
+    //  //midModPayload := cMidModFront.down(modFrontPayload)
+    //  //midModPayload := cMidModFront.down(modFrontPayload)
+    //  midModPayload(extIdxDown) := (
+    //    RegNext(midModPayload(extIdxUp))
+    //  )
+    //}
+    //when (RegNext(cMidModFront.down.isFiring)) {
+    //  midModPayload(extIdxDown).myExt.valid := True
+    //  midModPayload(extIdxDown).myExt.ready := True
+    //  midModPayload(extIdxDown).myExt.fire := True
+    //} otherwise {
+    //  midModPayload(extIdxDown).myExt.valid := False
+    //  midModPayload(extIdxDown).myExt.ready := False
+    //  midModPayload(extIdxDown).myExt.fire := False
+    //}
+    midModPayload(extIdxUp).myExt.valid := (
+      cMidModFront.up.isValid
+    )
+    midModPayload(extIdxUp).myExt.ready := (
+      cMidModFront.up.isReady
+    )
+    midModPayload(extIdxUp).myExt.fire := (
+      cMidModFront.up.isFiring
+    )
+    //midModPayload(extIdxDown).myExt.valid := (
+    //  RegNext(cMidModFront.down.isFiring) init(False)
+    //)
+    //midModPayload(extIdxDown).myExt.ready := (
+    //  RegNext(cMidModFront.down.isFiring) init(False)
+    //)
+    //midModPayload(extIdxDown).myExt.fire := (
+    //  RegNext(cMidModFront.down.isFiring) init(False)
+    //)
+    //--------
+    //tempHadActiveUpFire := (
+    //  RegNext(tempHadActiveUpFire)
+    //  init(False)
+    //)
+    //when (cMidModFront.up.isFiring) {
+    //  tempHadActiveUpFire := True
+    //} elsewhen (/*RegNext*/(cMidModFront.down.isFiring)) {
+    //  tempHadActiveUpFire := False
+    //}
+    //midModPayload(extIdxDown).myExt.hadActiveUpFire := (
+    //  tempHadActiveUpFire
+    //)
+    //--------
+    //upExt(1)(extIdxDown).hadActiveUpFire := tempHadActiveUpFire
+    //midModPayload(extIdxDown).myExt.hadActiveUpFire := (
+    //  RegNext(midModPayload(extIdxDown).myExt.hadActiveUpFire)
+    //  init(False)
+    //)
+    //when (cMidModFront.down.isFiring) {
+    //  midModPayload(extIdxDown).myExt.hadActiveUpFire := False
+    //}
+    //when (cMidModFront.up.isFiring) {
+    //  midModPayload(extIdxDown).myExt.hadActiveUpFire := True
+    //}
+
     //when (!clockDomain.isResetActive) {
     //  midModPayload(extIdxUp).myExt.valid := (
     //    pmIo.modFront.isValid //cMidModFront.down.isValid
@@ -733,9 +802,12 @@ case class PipeMemRmwTester() extends Component {
     //  midModPayload.myExt.ready := False
     //  midModPayload.myExt.fire := False
     //}
-    midModPayload(extIdxUp).myExt.valid := cMidModFront.up.isValid
-    midModPayload(extIdxUp).myExt.ready := cMidModFront.up.isReady
-    midModPayload(extIdxUp).myExt.fire := cMidModFront.up.isFiring
+    //midModPayload(extIdxUp).myExt.valid := cMidModFront.up.isValid
+    //midModPayload(extIdxUp).myExt.ready := cMidModFront.up.isReady
+    //midModPayload(extIdxUp).myExt.fire := cMidModFront.up.isFiring
+    //midModPayload(extIdxDown).myExt.valid := cMidModFront.down.isValid
+    //midModPayload(extIdxDown).myExt.ready := cMidModFront.down.isReady
+    //midModPayload(extIdxDown).myExt.fire := cMidModFront.down.isFiring
     //midModPayload(extIdxDown).myExt.valid := (
     //  RegNext(cMidModFront.down.isValid)
     //)
