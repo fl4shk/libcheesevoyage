@@ -90,13 +90,13 @@ object PipeMemRmwFormal extends App {
     ),
     _keepDebugInfo=true,
   )
-    .withBMC(
-      20
-    )
-    //.withProve(
+    //.withBMC(
     //  20
-    //  //40
     //)
+    .withProve(
+      20
+      //40
+    )
     .withCover(
       //20
       60

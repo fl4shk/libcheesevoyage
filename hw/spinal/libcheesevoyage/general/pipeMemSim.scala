@@ -641,7 +641,7 @@ case class PipeMemRmwTester() extends Component {
   ////modFrontStm <-/< dut.io.modFront
   //modFrontStm << dut.io.modFront
   def extIdxUp = PipeMemRmw.extIdxUp
-  def extIdxDown = PipeMemRmw.extIdxDown
+  def extIdxSaved = PipeMemRmw.extIdxSaved
   def extIdxLim = PipeMemRmw.extIdxLim
   if (
     optModHazardKind == PipeMemRmw.modHazardKindDupl
@@ -701,7 +701,7 @@ case class PipeMemRmwTester() extends Component {
       .setName("midModPayload")
     )
     for (extIdx <- 0 until extIdxLim) {
-      if (extIdx != extIdxDown) {
+      if (extIdx != extIdxSaved) {
         midModPayload(extIdx) := (
           RegNext(midModPayload)(extIdx)
           init(midModPayload(extIdx).getZero)
@@ -710,21 +710,21 @@ case class PipeMemRmwTester() extends Component {
     }
     when (cMidModFront.up.isValid) {
       midModPayload(extIdxUp) := pmIo.modFront(modFrontPayload)
-      //midModPayload(extIdxDown) := (
+      //midModPayload(extIdxSaved) := (
       //  RegNext(midModPayload(extIdxUp))
       //)
     }
-    midModPayload(extIdxDown) := (
+    midModPayload(extIdxSaved) := (
       RegNextWhen(midModPayload(extIdxUp), cMidModFront.up.isFiring)
-      init(midModPayload(extIdxDown).getZero)
+      init(midModPayload(extIdxSaved).getZero)
     )
     midModPayload(extIdxUp).myExt.valid.allowOverride
     midModPayload(extIdxUp).myExt.ready.allowOverride
     midModPayload(extIdxUp).myExt.fire.allowOverride
-    //midModPayload(extIdxDown).myExt.valid.allowOverride
-    //midModPayload(extIdxDown).myExt.ready.allowOverride
-    //midModPayload(extIdxDown).myExt.fire.allowOverride
-    //midModPayload(extIdxDown).myExt.hadActiveUpFire.allowOverride
+    //midModPayload(extIdxSaved).myExt.valid.allowOverride
+    //midModPayload(extIdxSaved).myExt.ready.allowOverride
+    //midModPayload(extIdxSaved).myExt.fire.allowOverride
+    //midModPayload(extIdxSaved).myExt.hadActiveUpFire.allowOverride
     //val tempHadActiveUpFire = Bool()
     //when (
     //  //cMidModFront.down.isFiring
@@ -734,18 +734,18 @@ case class PipeMemRmwTester() extends Component {
     //) {
     //  //midModPayload := cMidModFront.down(modFrontPayload)
     //  //midModPayload := cMidModFront.down(modFrontPayload)
-    //  midModPayload(extIdxDown) := (
+    //  midModPayload(extIdxSaved) := (
     //    RegNext(midModPayload(extIdxUp))
     //  )
     //}
     //when (RegNext(cMidModFront.down.isFiring)) {
-    //  midModPayload(extIdxDown).myExt.valid := True
-    //  midModPayload(extIdxDown).myExt.ready := True
-    //  midModPayload(extIdxDown).myExt.fire := True
+    //  midModPayload(extIdxSaved).myExt.valid := True
+    //  midModPayload(extIdxSaved).myExt.ready := True
+    //  midModPayload(extIdxSaved).myExt.fire := True
     //} otherwise {
-    //  midModPayload(extIdxDown).myExt.valid := False
-    //  midModPayload(extIdxDown).myExt.ready := False
-    //  midModPayload(extIdxDown).myExt.fire := False
+    //  midModPayload(extIdxSaved).myExt.valid := False
+    //  midModPayload(extIdxSaved).myExt.ready := False
+    //  midModPayload(extIdxSaved).myExt.fire := False
     //}
     midModPayload(extIdxUp).myExt.valid := (
       cMidModFront.up.isValid
@@ -756,13 +756,13 @@ case class PipeMemRmwTester() extends Component {
     midModPayload(extIdxUp).myExt.fire := (
       cMidModFront.up.isFiring
     )
-    //midModPayload(extIdxDown).myExt.valid := (
+    //midModPayload(extIdxSaved).myExt.valid := (
     //  RegNext(cMidModFront.down.isFiring) init(False)
     //)
-    //midModPayload(extIdxDown).myExt.ready := (
+    //midModPayload(extIdxSaved).myExt.ready := (
     //  RegNext(cMidModFront.down.isFiring) init(False)
     //)
-    //midModPayload(extIdxDown).myExt.fire := (
+    //midModPayload(extIdxSaved).myExt.fire := (
     //  RegNext(cMidModFront.down.isFiring) init(False)
     //)
     //--------
@@ -775,20 +775,20 @@ case class PipeMemRmwTester() extends Component {
     //} elsewhen (/*RegNext*/(cMidModFront.down.isFiring)) {
     //  tempHadActiveUpFire := False
     //}
-    //midModPayload(extIdxDown).myExt.hadActiveUpFire := (
+    //midModPayload(extIdxSaved).myExt.hadActiveUpFire := (
     //  tempHadActiveUpFire
     //)
     //--------
-    //upExt(1)(extIdxDown).hadActiveUpFire := tempHadActiveUpFire
-    //midModPayload(extIdxDown).myExt.hadActiveUpFire := (
-    //  RegNext(midModPayload(extIdxDown).myExt.hadActiveUpFire)
+    //upExt(1)(extIdxSaved).hadActiveUpFire := tempHadActiveUpFire
+    //midModPayload(extIdxSaved).myExt.hadActiveUpFire := (
+    //  RegNext(midModPayload(extIdxSaved).myExt.hadActiveUpFire)
     //  init(False)
     //)
     //when (cMidModFront.down.isFiring) {
-    //  midModPayload(extIdxDown).myExt.hadActiveUpFire := False
+    //  midModPayload(extIdxSaved).myExt.hadActiveUpFire := False
     //}
     //when (cMidModFront.up.isFiring) {
-    //  midModPayload(extIdxDown).myExt.hadActiveUpFire := True
+    //  midModPayload(extIdxSaved).myExt.hadActiveUpFire := True
     //}
 
     //when (!clockDomain.isResetActive) {
@@ -805,16 +805,16 @@ case class PipeMemRmwTester() extends Component {
     //midModPayload(extIdxUp).myExt.valid := cMidModFront.up.isValid
     //midModPayload(extIdxUp).myExt.ready := cMidModFront.up.isReady
     //midModPayload(extIdxUp).myExt.fire := cMidModFront.up.isFiring
-    //midModPayload(extIdxDown).myExt.valid := cMidModFront.down.isValid
-    //midModPayload(extIdxDown).myExt.ready := cMidModFront.down.isReady
-    //midModPayload(extIdxDown).myExt.fire := cMidModFront.down.isFiring
-    //midModPayload(extIdxDown).myExt.valid := (
+    //midModPayload(extIdxSaved).myExt.valid := cMidModFront.down.isValid
+    //midModPayload(extIdxSaved).myExt.ready := cMidModFront.down.isReady
+    //midModPayload(extIdxSaved).myExt.fire := cMidModFront.down.isFiring
+    //midModPayload(extIdxSaved).myExt.valid := (
     //  RegNext(cMidModFront.down.isValid)
     //)
-    //midModPayload(extIdxDown).myExt.ready := (
+    //midModPayload(extIdxSaved).myExt.ready := (
     //  RegNext(cMidModFront.down.isReady)
     //)
-    //midModPayload(extIdxDown).myExt.fire := (
+    //midModPayload(extIdxSaved).myExt.fire := (
     //  RegNext(cMidModFront.down.isFiring)
     //)
 
