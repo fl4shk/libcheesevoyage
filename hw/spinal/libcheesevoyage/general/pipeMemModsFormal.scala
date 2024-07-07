@@ -97,10 +97,10 @@ object PipeMemRmwFormal extends App {
       20
       //40
     )
-    .withCover(
-      //20
-      60
-    )
+    //.withCover(
+    //  //20
+    //  60
+    //)
     .doVerify(PipeMemRmwFormalDut())
   //--------
 }
