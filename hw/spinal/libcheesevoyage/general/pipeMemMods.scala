@@ -2023,7 +2023,7 @@ extends Area {
                   )
                 )
               )
-                .setName(s"Dupl_myUpCmp_${zdx}")
+                .setName(s"${pipeName}_Dupl_myUpCmp_${zdx}")
               val mySavedCmp = KeepAttribute(
                 tempMyUpExtDelFindFirstNotPostDelay(extIdxSaved)(zdx)._1
                 && (
@@ -2042,7 +2042,7 @@ extends Area {
                   )
                 )
               )
-                .setName(s"Dupl_myDownCmp_${zdx}")
+                .setName(s"${pipeName}_Dupl_myDownCmp_${zdx}")
               when (
                 //Mux[Bool](
                 //  rPrevStateWhen === State.IDLE,
@@ -2227,7 +2227,7 @@ extends Area {
       down.isFiring
       //down.isReady
     )
-      .setName("tempSharedEnable")
+      .setName(s"${pipeName}_tempSharedEnable")
     tempCond := (
       (
         if (
@@ -2517,14 +2517,16 @@ extends Area {
     //)
     //--------
     //--------
-          upExt(1)(extIdxUp).hazardId := nextHazardId
+    if (optModHazardKind == PipeMemRmw.modHazardKindDupl) {
+      upExt(1)(extIdxUp).hazardId := nextHazardId
+    }
   }
   val cMid0Front = mod.front.cMid0Front
   val cMid0FrontArea = new cMid0Front.Area {
     //--------
     val upExt = Vec.fill(3)(
       mkExt()
-    ).setName("cMid0FrontArea_upExt")
+    ).setName(s"cMid0FrontArea_upExt")
     //mod.front.myUpExtDel(0) := upExt(1)
     //doModInModFrontFunc match {
     //  case Some(myDoModSingleStageFunc) => {
