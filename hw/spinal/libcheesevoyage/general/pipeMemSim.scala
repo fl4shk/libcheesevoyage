@@ -53,8 +53,8 @@ object PipeMemRmwSimDut {
     //),
   )
   def optModHazardKind = (
-    //PipeMemRmw.modHazardKindDupl
-    PipeMemRmw.modHazardKindFwd
+    PipeMemRmw.modHazardKindDupl
+    //PipeMemRmw.modHazardKindFwd
   )
   //def optModFwdToFront = (
   //  //optModHazardKind == PipeMemRmw.modHazardKindFwd
@@ -415,6 +415,7 @@ case class PipeMemRmwSimDut(
       //modBack.isValid
       modBack.isFiring
       //modBack.isReady
+      && pipeMem.mod.back.myWriteEnable
     ) {
       mySavedMod := tempRight
     }
