@@ -85,11 +85,11 @@ case class PipeMemRmwPayloadExt[
     return false
   }
   //--------
-  val duplState = (
-    (optModHazardKind == PipeMemRmw.modHazardKindDupl) generate (
-      KeepAttribute(Bool())
-    )
-  )
+  //val duplState = (
+  //  (optModHazardKind == PipeMemRmw.modHazardKindDupl) generate (
+  //    KeepAttribute(Bool())
+  //  )
+  //)
 
   val valid = KeepAttribute(Bool())
   val ready = KeepAttribute(Bool())
@@ -656,6 +656,15 @@ case class PipeMemRmw[
   ]=None,
   doPrevHazardCmpFunc: Boolean=false,
   //--------
+  doModInFrontFunc: Option[
+    (
+      ModT, // outp
+      ModT, // inp
+      CtrlLink, // mod.front.cFront
+      WordT,  // my
+    )
+  ]=None,
+  //--------
   doModInModFrontFunc: Option[
     //[
     //  ModT <: Data,
@@ -665,19 +674,19 @@ case class PipeMemRmw[
       //PipeMemRmwPayloadExt[WordT, HazardCmpT],  // outp
       ModT, // outp
       ModT, // inp
-      CtrlLink, // cMid0Front
+      CtrlLink, // mod.front.cMid0Front
       WordT,    // myModMemWord
       //Vec[WordT],  // myRdMemWord
     ) => Unit
   ]=None,
-  doFwdFunc: Option[
-    (
-      //ModT, //
-      UInt, // stage index
-      Vec[PipeMemRmwPayloadExt[WordT, HazardCmpT]], // myUpExtDel
-      Int,  // zdx
-    ) => WordT
-  ]=None,
+  //doFwdFunc: Option[
+  //  (
+  //    //ModT, //
+  //    UInt, // stage index
+  //    Vec[PipeMemRmwPayloadExt[WordT, HazardCmpT]], // myUpExtDel
+  //    Int,  // zdx
+  //  ) => WordT
+  //]=None,
   //--------
   reorderFtable: Option[PipeMemRmwReorderFtable[WordT]]=None,
   //setReorderBusyFunc: Option[
@@ -2915,7 +2924,7 @@ extends Area {
               //)
             //)
           )
-          .setName(s"myFindFirstUp_${zdx}")
+          .setName(s"{pipeName}_myFindFirstUp_${zdx}")
         )
         val myFindFirstSaved = KeepAttribute(
           (optModHazardKind == PipeMemRmw.modHazardKindFwd) generate (
@@ -2933,7 +2942,7 @@ extends Area {
             //  )
             //)
           )
-          .setName(s"myFindFirstDown_${zdx}")
+          .setName(s"{pipeName}_myFindFirstDown_${zdx}")
         )
         //val tempFindFirst = KeepAttribute(
         //  (optModHazardKind == PipeMemRmw.modHazardKindFwd) generate (
@@ -2987,43 +2996,43 @@ extends Area {
             //  )
             //)
           )
-          .setName(s"myFwdCondUp_${zdx}")
+          .setName(s"{pipeName}_myFwdCondUp_${zdx}")
         )
         val myFwdCondSaved = (
           KeepAttribute(
             myFindFirstSaved._1
           )
-          .setName(s"myFwdCondDown_${zdx}")
+          .setName(s"${pipeName}_myFwdCondDown_${zdx}")
         )
         val myFwdDataUp = (
           KeepAttribute(
-            doFwdFunc match {
-              case Some(myDoFwdFunc) => {
+            //doFwdFunc match {
+            //  case Some(myDoFwdFunc) => {
                 mod.front.myUpExtDel2(myFindFirstUp._2)(
                   extIdxUp
                 ).modMemWord
-              }
-              case None => {
-                mod.front.myUpExtDel2.last(extIdxUp).modMemWord
-              }
-            }
+            //  }
+            //  case None => {
+            //    mod.front.myUpExtDel2.last(extIdxUp).modMemWord
+            //  }
+            //}
           )
           .setName(s"myFwdDataUp_${zdx}")
         )
         val myFwdDataSaved = (
           KeepAttribute(
-            doFwdFunc match {
-              case Some(myDoFwdFunc) => {
+            //doFwdFunc match {
+            //  case Some(myDoFwdFunc) => {
                 mod.front.myUpExtDel2(myFindFirstSaved._2)(
                   extIdxSaved
                 ).modMemWord
-              }
-              case None => {
-                mod.front.myUpExtDel2.last(extIdxSaved).modMemWord
-              }
-            }
+            //  }
+            //  case None => {
+            //    mod.front.myUpExtDel2.last(extIdxSaved).modMemWord
+            //  }
+            //}
           )
-          .setName(s"myFwdDataDown_${zdx}")
+          .setName(s"{pipeName}_myFwdDataDown_${zdx}")
         )
         //val tempFwdCond = (
         //  KeepAttribute(

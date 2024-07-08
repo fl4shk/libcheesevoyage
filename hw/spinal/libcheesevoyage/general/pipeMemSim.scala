@@ -35,6 +35,10 @@ object PipeMemRmwSimDut {
     1
     //2
   )
+  def doAddrZeroDuplIt = (
+    true
+    //false
+  )
   //def formalHaltItCnt = (
   //  1
   //)
@@ -62,8 +66,8 @@ object PipeMemRmwSimDut {
   //  false
   //)
   def doRandFront = (
-    true
-    //false
+    //true
+    false
   )
   def memAddrPlusAmount = (
       //0x8
@@ -187,6 +191,24 @@ case class PipeMemRmwSimDut(
             //outp.myExt := RegNext(outp.myExt) init(outp.myExt.getZero)
             outp.myExt := inp.myExt
             outp.myExt.allowOverride
+            //val nextAddrZeroCnt = UInt(4 bits)
+            //val rAddrZeroCnt = (
+            //  RegNext(nextAddrZeroCnt)
+            //  init(0x0)
+            //)
+            //object HaltItState extends SpinalEnum(
+            //  defaultEncoding=binarySequential
+            //) {
+            //  val
+            //    IDLE,
+            //    ZERO_ADDR
+            //    = newElement();
+            //}
+            //val nextHaltItState = HaltItState()
+            //val rHaltItState = (
+            //  RegNext(nextHaltItState)
+            //  init(HaltItState.IDLE)
+            //)
             when (
               //cMid0Front.up.isFiring
               cMid0Front.up.isValid
@@ -196,6 +218,16 @@ case class PipeMemRmwSimDut(
             ) {
               //outp.myExt := inp.myExt
               when (
+                //if (PipeMemRmwSimDut.doAddrZeroDuplIt) (
+                //  inp.myExt.memAddr(PipeMemRmw.modWrIdx) === 0x0
+                //  && rAddrZeroCnt === 0x0
+                //) else (
+                //  False
+                //)
+                False
+              ) {
+                //cMid0Front.haltIt()
+              } elsewhen (
                 if (optModHazardKind == PipeMemRmw.modHazardKindDupl) (
                   outp.myExt.hazardId.msb
                 ) else (
@@ -214,22 +246,22 @@ case class PipeMemRmwSimDut(
         )
       )
     ),
-    doFwdFunc=(
-      //None
-      Some(
-        (
-          stageIdx,
-          myUpExtDel2,
-          zdx,
-        ) => {
-          //myUpExtDel.last.modMemWord
-          //myUpExtDel(
-          //  Mux[UInt](stageIdx === 0, 1, stageIdx)
-          //).modMemWord
-          myUpExtDel2(stageIdx).modMemWord
-        }
-      )
-    ),
+    //doFwdFunc=(
+    //  //None
+    //  Some(
+    //    (
+    //      stageIdx,
+    //      myUpExtDel2,
+    //      zdx,
+    //    ) => {
+    //      //myUpExtDel.last.modMemWord
+    //      //myUpExtDel(
+    //      //  Mux[UInt](stageIdx === 0, 1, stageIdx)
+    //      //).modMemWord
+    //      myUpExtDel2(stageIdx).modMemWord
+    //    }
+    //  )
+    //),
   )
   //GenerationFlags.formal 
   val rSavedModArr = (
@@ -391,6 +423,14 @@ case class PipeMemRmwSimDut(
       //    //)
       //  )
       //)
+      for (
+        zdx <- 0 until PipeMemRmwSimDut.modRdPortCnt
+      ) {
+        assert(
+          rSavedModArr(modBack(modBackPayload).myExt.memAddr(zdx))
+          === modBack(modBackPayload).myExt.rdMemWord(zdx)
+        )
+      }
       assert(
         tempLeft
         === (
