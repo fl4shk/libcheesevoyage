@@ -37,6 +37,7 @@ object PipeMemRmwSimDut {
   )
   def doAddrOneHaltIt = (
     true
+    //optModHazardKind == PipeMemRmw.modHazardKindFwd
     //false
   )
   //def formalHaltItCnt = (

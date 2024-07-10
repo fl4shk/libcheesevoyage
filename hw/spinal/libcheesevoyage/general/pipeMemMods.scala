@@ -2251,10 +2251,10 @@ extends Area {
 
     val rSetRdId = Reg(Bool()) init(False)
     //--------
-    val rDidFirstTempSharedEnable = (
-      Reg(Bool())
-      init(False)
-    )
+    //val rDidFirstTempSharedEnable = (
+    //  Reg(Bool())
+    //  init(False)
+    //)
     val tempSharedEnable = KeepAttribute(
       //down.isFiring
       //(
@@ -2291,9 +2291,9 @@ extends Area {
       //)
     )
       .setName(s"${pipeName}_tempSharedEnable")
-    when (tempSharedEnable) {
-      rDidFirstTempSharedEnable := True
-    }
+    //when (tempSharedEnable) {
+    //  rDidFirstTempSharedEnable := True
+    //}
     tempCond := (
       (
         if (
@@ -2628,7 +2628,7 @@ extends Area {
         KeepAttribute(
           Bool()
         )
-        .setName("nextPrevTxnWasHazard")
+        .setName(s"${pipeName}_nextPrevTxnWasHazard")
       //)
     )
     val rPrevTxnWasHazard = (
@@ -2637,7 +2637,7 @@ extends Area {
           RegNext(nextPrevTxnWasHazard)
           init(nextPrevTxnWasHazard.getZero)
         )
-        .setName("rPrevTxnWasHazard")
+        .setName(s"${pipeName}_rPrevTxnWasHazard")
       //)
     )
     nextPrevTxnWasHazard := rPrevTxnWasHazard

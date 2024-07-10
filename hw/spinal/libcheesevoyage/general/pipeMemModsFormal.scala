@@ -92,7 +92,8 @@ object PipeMemRmwFormal extends App {
   )
     .withBMC(
       //20
-      15
+      //15
+      16
     )
     //.withProve(
     //  20
