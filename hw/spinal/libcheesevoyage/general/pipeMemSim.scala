@@ -12,6 +12,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math._
 import spinal.core.formal._
 
+
+
 object PipeMemRmwSimDut {
   def wordWidth = 8
   def wordType() = UInt(wordWidth bits)
@@ -35,28 +37,48 @@ object PipeMemRmwSimDut {
     1
     //2
   )
-  def doAddrOneHaltIt = (
-    true
-    //optModHazardKind == PipeMemRmw.modHazardKindFwd
+  //def doAddrOneHaltIt = (
+  //  optModHazardKind == PipeMemRmw.modHazardKindFwd
+  //  //false
+  //)
+  def doTestModOp = (
+    optModHazardKind == PipeMemRmw.modHazardKindFwd
     //false
   )
+  object ModOp extends SpinalEnum(defaultEncoding=binarySequential) {
+    val
+      //NONE,
+      ADD_RA_RB,
+      BRANCH_MISPREDICT,     // `EX` should send a bubble downstream  
+      //LDR_RA_RB_DCACHE_HIT,
+      //  // no MEM stall for this load instruction, but could cause a 
+      //  // stall in EX for the next instruction if the next instruction
+      //  // uses this instruction's `rA`
+      //LDR_RA_RB_DCACHE_MISS,
+      //  // Stall in MEM if 
+      LDR_RA_RB,
+      MUL_RA_RB               // stall in EX
+      = newElement();
+  }
   //def formalHaltItCnt = (
   //  1
   //)
   //def formalHaltItCnt = (
   //)
-  def modType() = SamplePipeMemRmwModType(
-    wordType=wordType(),
-    wordCount=wordCount,
-    hazardCmpType=hazardCmpType(),
-    modRdPortCnt=modRdPortCnt,
-    modStageCnt=modStageCnt,
-    optModHazardKind=optModHazardKind,
-    //doModInModFront=(
-    //  true
-    //  //false
-    //),
-  )
+  // Fake instruction opcodes, just for testing different kinds of stalls
+  // that may occur 
+  //def modType() = SamplePipeMemRmwModType(
+  //  wordType=wordType(),
+  //  wordCount=wordCount,
+  //  hazardCmpType=hazardCmpType(),
+  //  modRdPortCnt=modRdPortCnt,
+  //  modStageCnt=modStageCnt,
+  //  optModHazardKind=optModHazardKind,
+  //  //doModInModFront=(
+  //  //  true
+  //  //  //false
+  //  //),
+  //)
   def optModHazardKind = (
     //PipeMemRmw.modHazardKindDupl
     PipeMemRmw.modHazardKindFwd
@@ -77,6 +99,43 @@ object PipeMemRmwSimDut {
       0x2
       //0x1
   )
+}
+case class PipeMemRmwSimDutModType(
+) extends Bundle with PipeMemRmwPayloadBase[UInt, UInt]
+{
+  val op = (
+    (PipeMemRmwSimDut.doTestModOp) generate (
+      PipeMemRmwSimDut.ModOp()
+    )
+  )
+  val dcacheHit = (
+    // for the purposes of testing `PipeMemRmw`, this can just be the value
+    // that was driven into the `io.front(io.frontPayload)`, as it is
+    // determined in `MEM` in the real CPU anyway.
+    (PipeMemRmwSimDut.doTestModOp) generate (
+      Bool()
+    )
+  )
+  val myExt = PipeMemRmwPayloadExt(
+    wordType=PipeMemRmwSimDut.wordType(),
+    wordCount=PipeMemRmwSimDut.wordCount,
+    hazardCmpType=PipeMemRmwSimDut.hazardCmpType(),
+    modRdPortCnt=PipeMemRmwSimDut.modRdPortCnt,
+    modStageCnt=PipeMemRmwSimDut.modStageCnt,
+    optModHazardKind=PipeMemRmwSimDut.optModHazardKind
+  )
+  def setPipeMemRmwExt(
+    ext: PipeMemRmwPayloadExt[UInt, UInt],
+    memArrIdx: Int,
+  ): Unit = {
+    myExt := ext
+  }
+  def getPipeMemRmwExt(
+    ext: PipeMemRmwPayloadExt[UInt, UInt],
+    memArrIdx: Int,
+  ): Unit = {
+    ext := myExt
+  }
 }
 //case class PipeMemRmwSimDutIo() extends Area {
 //  //val front = slave(Stream(PipeMemRmwSimDut.modType()))
@@ -126,18 +185,19 @@ case class PipeMemRmwSimDut(
   //def optModFwdToFront = (
   //  PipeMemRmwSimDut.optModFwdToFront
   //)
-  def modType() = PipeMemRmwSimDut.modType()
+  def ModType() = PipeMemRmwSimDutModType()
   //val io = PipeMemRmwSimDutIo()
   val pipeMem = PipeMemRmw[
     UInt,
     UInt,
-    SamplePipeMemRmwModType[UInt, UInt],
+    //SamplePipeMemRmwModType[UInt, UInt],
+    PipeMemRmwSimDutModType,
     PipeMemRmwDualRdTypeDisabled[UInt, UInt],
   ](
     wordType=wordType(),
     wordCount=wordCount,
     hazardCmpType=hazardCmpType(),
-    modType=modType(),
+    modType=ModType(),
     modRdPortCnt=modRdPortCnt,
     modStageCnt=modStageCnt,
     pipeName="PipeMemRmw_FormalDut",
@@ -212,40 +272,175 @@ case class PipeMemRmwSimDut(
             //  RegNext(nextHaltItState)
             //  init(HaltItState.IDLE)
             //)
+            def setOutpModMemWord(): Unit = {
+              outp.myExt.modMemWord := (
+                //modFrontPayload.myExt.rdMemWord(0) + 0x1
+                //inp.myExt.rdMemWord(0) + 0x1
+                myModMemWord/*(0)*/ + 0x1
+                //inp.myExt.rdMemWord(0) + inp.myExt.rdMemWord(1) + 0x1
+              )
+            }
+            val rPrevOutp = (
+              RegNextWhen(
+                outp,
+                cMid0Front.up.isFiring
+              )
+              //init(PipeMemRmwSimDut.ModOp.NONE)
+              init(outp.getZero)
+            )
+            val rMulHaltItCnt = (
+              Reg(SInt(5 bits)) init(0x0)
+            )
             when (
               (
-                if (PipeMemRmwSimDut.doAddrOneHaltIt) (
+                if (
+                  //PipeMemRmwSimDut.doAddrOneHaltIt
+                  PipeMemRmwSimDut.doTestModOp
+                ) (
                   rPrevTxnWasHazard
                 ) else (
                   False
                 )
               ) 
-              //&& (
-              //  cMid0Front.up.isValid
-              //)
             ) {
-              //cMid0Front.haltIt()
-              //cMid0Front.duplicateIt()
-              outp.myExt.valid := False
-              //cMid0Front.throwIt()
-              when (
-                //nextPrevTxnWasHazard
-                //!cMid0Front.down.isFiring
-                True
-              ) {
-                outp.myExt.modMemWordValid := False
-                cMid0Front.duplicateIt()
-              }
+              assert(PipeMemRmwSimDut.modRdPortCnt == 1)
+              //val myFindFirstHazardAddrOne = KeepAttribute(
+              //  inp.myExt.memAddr.sFindFirst(
+              //    _ === 0x1
+              //  )
+              //  .setName("myFindFirstHazardAddrOne")
+              //)
               //when (
-              //  cMid0Front.up.isValid
+              //  //True
+              //  myFindFirstHazardAddrOne._1
               //) {
-                when (/*RegNext*/(cMid0Front.down.isFiring)) {
-                  //cMid0Front.duplicateIt()
-                  nextPrevTxnWasHazard := False
-                } otherwise {
-                  //cMid0Front.duplicateIt()
-                  //cMid0Front.haltIt()
+              //  outp.myExt.valid := False
+              //  outp.myExt.modMemWordValid := False
+              //  cMid0Front.duplicateIt()
+              //  when (cMid0Front.down.isFiring) {
+              //    //cMid0Front.duplicateIt()
+              //    nextPrevTxnWasHazard := False
+              //  } otherwise {
+              //    //cMid0Front.duplicateIt()
+              //    //cMid0Front.haltIt()
+              //  }
+              //} otherwise {
+              //  outp.myExt.valid := True
+              //  outp.myExt.modMemWordValid := True
+              //  setOutpModMemWord()
+              //  nextPrevTxnWasHazard := False
+              //}
+              val myFindFirstHazardAddr = KeepAttribute(
+                inp.myExt.memAddr.sFindFirst(
+                  _ === rPrevOutp.myExt.memAddr(PipeMemRmw.modWrIdx)
+                )
+                //(
+                //  // Only check one register.
+                //  // This will work fine for testing the different
+                //  // categories of stalls, but the real CPU will need to
+                //  /// be tested for *all* registers
+                //  inp.myExt.memAddr(PipeMemRmw.modWrIdx)
+                //  === rPrevOutp.myExt.memAddr(PipeMemRmw.modWrIdx)
+                //)
+                .setName("myFindFirstHazardAddr")
+              )
+              when (
+                rPrevOutp.op =/= PipeMemRmwSimDut.ModOp.BRANCH_MISPREDICT
+              ) {
+                switch (
+                  Cat(rPrevOutp.dcacheHit, myFindFirstHazardAddr._1)
+                ) {
+                  is (B"00") { // !dcacheHit, !myFindFirstHazardAddr._1
+                    outp.myExt.valid := False
+                    outp.myExt.modMemWordValid := False
+                    cMid0Front.duplicateIt()
+                    when (cMid0Front.down.isFiring) {
+                      nextPrevTxnWasHazard := False
+                    }
+                  }
+                  is (B"01") { // !dcacheHit, myFindFirstHazardAddr._1
+                    switch (rPrevOutp.op) {
+                      is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
+                      }
+                      is (PipeMemRmwSimDut.ModOp.LDR_RA_RB) {
+                      }
+                      is (PipeMemRmwSimDut.ModOp.MUL_RA_RB) {
+                      }
+                      default {
+                      }
+                    }
+                  }
+                  is (B"10") { // dcacheHit, !myFindFirstHazardAddr._1
+                    outp.myExt.valid := True
+                    outp.myExt.modMemWordValid := True
+                    setOutpModMemWord()
+                    nextPrevTxnWasHazard := False
+                  }
+                  is (B"11") { // dcacheHit, myFindFirstHazardAddr._1
+                    switch (rPrevOutp.op) {
+                      is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
+                      }
+                      is (PipeMemRmwSimDut.ModOp.LDR_RA_RB) {
+                      }
+                      is (PipeMemRmwSimDut.ModOp.MUL_RA_RB) {
+                      }
+                      default {
+                      }
+                    }
+                  }
                 }
+              } otherwise {
+                // when (
+                //  rPrevOutp.op
+                //  === PipeMemRmwSimDut.ModOp.BRANCH_MISPREDICT
+                // )
+                outp.myExt.valid := False
+                outp.myExt.modMemWordValid := False
+                nextPrevTxnWasHazard := False
+              }
+              //switch (rPrevOutp.op) {
+              //  is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
+              //    //when (rPrevOutp.dcacheHit) {
+              //    //  when () {
+              //    //  } otherwise {
+              //    //  }
+              //    //} otherwise {
+              //    //  when (cMid0Front.down.isFiring) {
+              //    //  }
+              //    //}
+              //  }
+              //  is (PipeMemRmwSimDut.ModOp.BRANCH_MISPREDICT) {
+              //    //cMid0Front.throwIt()
+              //  }
+              //  is (PipeMemRmwSimDut.ModOp.LDR_RA_RB) {
+              //    nextPrevTxnWasHazard := True
+              //    switch (
+              //      Cat(rPrevOutp.dcacheHit, myFindFirstHazardAddr)
+              //    ) {
+              //      is (B"00") {
+              //      }
+              //      is (B"01") { // !dcacheHit, myFindFirstHazardAddr
+              //      }
+              //      is (B"10") { // dcacheHit, !myFindFirstHazardAddr
+              //      }
+              //      is (B"11") {
+              //      }
+              //    }
+              //  }
+              //  is (PipeMemRmwSimDut.ModOp.MUL_RA_RB) {
+              //    switch (
+              //      Cat(rPrevOutp.dcacheHit, myFindFirstHazardAddr)
+              //    ) {
+              //      is (B"00") {
+              //      }
+              //      is (B"01") { // !dcacheHit, myFindFirstHazardAddr
+              //      }
+              //      is (B"10") { // dcacheHit, !myFindFirstHazardAddr
+              //      }
+              //      is (B"11") {
+              //      }
+              //    }
+              //  }
               //}
             } elsewhen (
               //cMid0Front.up.isFiring
@@ -272,20 +467,42 @@ case class PipeMemRmwSimDut(
                   True
                 )
               ) {
-                outp.myExt.modMemWord := (
-                  //modFrontPayload.myExt.rdMemWord(0) + 0x1
-                  //inp.myExt.rdMemWord(0) + 0x1
-                  myModMemWord/*(0)*/ + 0x1
-                  //inp.myExt.rdMemWord(0) + inp.myExt.rdMemWord(1) + 0x1
-                )
-                if (PipeMemRmwSimDut.doAddrOneHaltIt) {
-                  when (
-                    inp.myExt.memAddr(PipeMemRmw.modWrIdx) === 0x1
-                  ) {
-                    when (cMid0Front.up.isFiring) {
-                      nextPrevTxnWasHazard := True
+                if (
+                  //PipeMemRmwSimDut.doAddrOneHaltIt
+                  PipeMemRmwSimDut.doTestModOp
+                ) {
+                  //when (
+                  //  inp.myExt.memAddr(PipeMemRmw.modWrIdx) === 0x1
+                  //) {
+                  //  when (cMid0Front.up.isFiring) {
+                  //    nextPrevTxnWasHazard := True
+                  //  }
+                  //}
+                  when (cMid0Front.up.isFiring) {
+                    switch (inp.op) {
+                      //is (PipeMemRmwSimDut.ModOp.NONE) {
+                      //}
+                      is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
+                        //when (rPrevOutp.op =/= PipeMemRmwSimDut.ModOp.NONE)
+                      }
+                      //is (PipeMemRmwSimDut.ModOp.BRANCH_NOT_TAKEN) {
+                      //}
+                      is (PipeMemRmwSimDut.ModOp.BRANCH_MISPREDICT) {
+                        //cMid0Front.throwIt()
+                        outp.myExt.modMemWordValid := False
+                      }
+                      is (PipeMemRmwSimDut.ModOp.LDR_RA_RB) {
+                        nextPrevTxnWasHazard := True
+                      }
+                      is (PipeMemRmwSimDut.ModOp.MUL_RA_RB) {
+                        // we should stall `EX` in this case until the
+                        // calculation is done. The same stalling logic
+                        // will be used for `divmod`, etc.
+                      }
                     }
                   }
+                } else {
+                  setOutpModMemWord()
                 }
               }
             }
@@ -587,7 +804,7 @@ case class PipeMemRmwTester() extends Component {
   def optModHazardKind = (
     PipeMemRmwSimDut.optModHazardKind
   )
-  def modType() = PipeMemRmwSimDut.modType()
+  def modType() = PipeMemRmwSimDutModType()
   val io = new Bundle {
     //val front = (
     //  PipeMemRmwSimDut.doRandFront
@@ -798,7 +1015,7 @@ case class PipeMemRmwTester() extends Component {
 
     val midModPayload = (
       Vec.fill(extIdxLim)(
-        PipeMemRmwSimDut.modType()
+        PipeMemRmwSimDut.ModType()
       )
       .setName("midModPayload")
     )
@@ -972,32 +1189,9 @@ case class PipeMemRmwTester() extends Component {
         && rHaltItState === HaltItState.IDLE
       ) {
         nextHaltItState := HaltItState.IDLE
-        //midModPayload(extIdxUp) := pmIo.modFront(modFrontPayload)
-        //midModPayload(extIdxUp).myExt.memAddr(
-        //  PipeMemRmw.modWrIdx
-        //) := RegNext(
-        //  midModPayload(extIdxUp).myExt.memAddr(
-        //    PipeMemRmw.modWrIdx
-        //  )
-        //)
-        //midModPayload(extIdxUp).myExt.modMemWordValid := False
-        //midModPayload(extIdxUp).myExt.modMemWord := (
-        //  pmIo.modFront(modFrontPayload).myExt.rdMemWord(
-        //    PipeMemRmw.modWrIdx
-        //  ) //+ 2
-        //  //pmIo.modFront(modFrontPayload).myExt.rdMemWord(
-        //  //  PipeMemRmw.modWrIdx
-        //  //) //+ 2
-        //  //rSavedModMemWord
-        //)
-        //midModPayload(extIdxUp).myExt.modMemW
-        midModPayload(extIdxUp).myExt.valid := False
-        midModPayload(extIdxUp).myExt.ready := False
-        midModPayload(extIdxUp).myExt.fire := False
-        //midModPayload(extIdxUp).myExt.modMemWordValid := (
-        //  False
-        //  //midModPayload(extIdxUp).myExt.valid
-        //)
+        //midModPayload(extIdxUp).myExt.valid := False
+        //midModPayload(extIdxUp).myExt.ready := False
+        //midModPayload(extIdxUp).myExt.fire := False
       } otherwise {
         //midModPayload(extIdxUp).myExt.modMemWordValid := (
         //  True

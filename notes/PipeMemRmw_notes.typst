@@ -1,0 +1,137 @@
+#set text(
+  font: "New Computer Modern",
+  size: 10pt,
+)
+#set document(
+  title: [PipeMemRmw Note],
+  author: "Andrew Clark (FL4SHK)",
+  date: auto,
+)
+#set heading(
+  numbering: "I.A.1.i.a"
+)
+
+= Flare CPU Pipeline Stalls With `PipeMemRmw`
+== Pipeline Stages `EX` and `MEM`
+=== Loads/Stores/Atomics with Memory
+//- Note: I'm thinking of making `cmpxchg` and `xchg`-with-memory just have
+//  bubbles be sent from `ID` until `MEM` completes the `cmpxchg` or
+//  `xchg`-with-memory instruction. Alternatively I could use stall `ID` from
+//  `EX` via `EX.duplicateIt()`? That would mean `EX` needs to wait for
+//  `EX.down.isFiring` at least once.
+- `MEM` should stall when there's a load/store instruction that has a dcache
+  miss. This means that `EX` needs to stall too.
+  - Situations:
+  - `EX` has a *load*-based RAW pipeline hazard with an instruction that
+    doesn't stall outside of this situation.
+    - Example code:
+      ```
+      ldr r1, [r2]
+      add r3, r1
+      ```
+    - Stalling states:
+      - `EX`: stalls until it can forward from `MEM`.
+      - `MEM`: stalls until it finishes the *load* instruction.
+    //- How does the `EX` stalling until it can forward from `MEM` look? I
+    //  suppose it waits for `EX.down.isFiring === True`.
+    //- *No forwarding should take place until* `EX.down.isFiring === True`.
+    //- How does forwarding upon `EX.down.isFiring` work?
+    //  - Should be able to just set `MEM.up(...).modMemWordValid := True`,
+    //   which enables the forwarding, but will need to set 
+    //    `MEM.up(...).modMemWordValid := False` until
+    //    `MEM.up.isFiring === True`
+    //- Note: Do `EX.duplicateIt()` until `MEM.down.isFiring`.
+    //- `EX.duplicateIt()` until
+    //- `MEM`
+    - `EX` checks for a *load* instruction and changes FSM state upon
+      `EX.up.isFiring === True`.
+    //- If the previous instruction was a *load* instruction into a register
+    //  that is used in the next instruction, then `EX` will need to stall
+    //  until `EX.down.isFiring`.
+    - What happens if after `EX.up.isFiring` that there's an
+      instance of `EX.haltIt()`? Does `MEM` still see the instruction that
+      was previously in `EX`? The answer should be *yes*. 
+    - If there's a dcache miss, `MEM` should stall by doing
+      `MEM.duplicateIt()` and also deassert `MEM.up(...).modMemWordValid`
+      - Also, stop `MEM.up(...).modMemWordValid` upon no longer doing
+        `MEM.duplicateIt()`.
+    - If there's a dcache hit, `MEM` should not stall and I think that
+      `EX` doesn't need to either? That's cool! I thought there'd be a
+      hazard even in this case, but if the address loaded from was in
+      dcache, I can already forward, as I already have the result in that
+      case (i.e. I already read it from the BRAM).
+  - `EX` has a *load*-based RAW pipeline hazard with an instruction that
+    *does* stall normally in `EX`, i.e. `mul`, `div`, etc.
+    //- Again wait until dcache is loaded again, then capture the forwarded
+    //  data, and do `EX.duplicateIt()` until `EX.down.isReady`, then do
+    //  `EX.haltIt()`
+
+    //- Do `EX.duplicateIt()` until `EX.down.isReady`. Forward upon
+    //  `EX.down.isReady`, but also do `EX.haltIt()` when
+    //  `EX.down.isReady == True`
+      //--------
+      //- /*This still doesn't seem right, as*/
+      //  I can't have `MEM.up.isFiring` if I do `EX.haltIt()` immediately
+      //  following a detected *load* instruction. Thus I think I should do
+      //  `EX.duplicateIt()` but with a pipeline bubble (deassert
+      //  `EX.upExt(...).modMemWordValid`).
+      //  Upon `EX.down.isFiring`, `EX` should save a copy of the data being
+      //  forwarded from `MEM`, then on the following cycle `EX` can send it
+      //  to the multiplier, divider, etc.
+      //- *Don't use `EX.haltIt()` until `EX` has captured the forwarded
+      //  data.*
+      //- I will add an extra cycle before doing `EX.haltIt()` and using the
+      //  forwarded data, so send the _captured_ forwarded data to the
+      //  multiplier/divider/etc.
+      - I can't have `MEM.up.isFiring` if I do `EX.haltIt()` immediately
+        following a detected *load* instruction. Thus I think I should do
+        `EX.duplicateIt()` but with pipeline bubbles sent from `EX` to
+        `MEM` until `MEM.up.isFiring`/`EX.down.isFiring`.
+        //`EX` finishes its current instruction.
+        - Pipeline bubbles should be something other than `modMemWordValid`
+          in the actual Flare CPU pipeline, as `modMemWordValid` is only
+          for `PipeMemRmw` itself.
+      - Upon `EX.down.isFiring` (and following the detected *load* in
+        `EX.up.isFiring`), `EX` should save a copy of the data being
+        forwarded from `MEM`, then on the following cycle `EX` can send it
+        to the multiplier, divider, etc. For those following cycles until
+        `EX.up.isFiring`, `EX` should do `EX.haltIt()` until the
+        mul, div, etc. completes. On the cycle following the completed
+        instruction, don't do `EX.haltIt()` and maintain the value of
+        `tempUpMod(2)` until `EX.up.isFiring`.
+        - I have existing code in the `PipeMemRmw` tester stuff that
+          already does this kind of capture, in the fake `MEM` stage, but
+          `EX` in the Flare CPU needs to do the same thing with its own
+          instruction.
+      - `PipeMemRmw` already checks for `up.isValid` when capturing the
+        input pipe payload into `upExt(1)(extIdxSingle)`, so we can at least
+        see the instruction via `upExt(1)(extIdxSingle)` in the
+        `doModInModFrontFunc()` generic. Actually, `doModInModFront()`
+        takes `tempUpMod(1)`, which does still contain the value of
+        `upExt(1)(extIdxSingle)`.
+      - When `EX` stalls, _maybe_ it should not change the value of
+        `tempUpMod(2)`? Instead _maybe_ `EX` should change the value of
+        `tempUpMod(2)` upon no longer stalling via `EX.duplicateIt()`.
+        `tempUpMod(2)` should have its value set to the output of `EX` upon
+        the multiply/divide finishing, at which point we stop doing
+        `EX.duplicateIt()`, after which `tempUpMod(2)`'s value should be
+        held constant until `EX.up.isFiring`.
+      //- When `MEM` is stalling it should 
+      //--------
+  - Is everything similar for *store* instructions but without the
+    forwarding? I guess just do everything that was needed for a *load*
+    instruction besides the forwarding. Thus deassert a *store*
+    instruction's `modMemWordValid` to prevent its "results" from being
+    forwarded. This approach is guaranteed to work and will use less logic
+    than specially handling *stores*.
+
+  - *Is there actually no hazard here? Other than that we can't forward upon
+    a dcache miss?*
+    //- Upon `EX.down.isFiring`
+    //- `EX.duplicateIt()` until `EX.down.isReady`
+    //  - Capture the data to forward from `MEM` upon 
+    //    `EX.down.isReady === True`
+    //- `EX.haltIt()` following `EX.down.isReady` until the instruction in
+    //  asdf `EX`
+
+== 
