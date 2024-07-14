@@ -19,9 +19,38 @@
 //  `xchg`-with-memory instruction. Alternatively I could use stall `ID` from
 //  `EX` via `EX.duplicateIt()`? That would mean `EX` needs to wait for
 //  `EX.down.isFiring` at least once.
-- `MEM` should stall when there's a load/store instruction that has a dcache
-  miss. This means that `EX` needs to stall too.
-  - Situations:
+- `MEM` should stall when there's a load/store/atomic-with-memory
+  instruction that has a dcache miss. This means that `EX` needs to stall
+  too.
+- Here are the main situations of this for when forwarding loaded
+  values (including atomic swap-type instructions) results from `MEM` to
+  `EX`.
+  - `xchg.l`/`cmpxchg`/`cmpxchg.l` (which are my only non-load/store/stack
+    access instructions with memory arguments)
+    - The atomic forms of these instructions, i.e. `xchg.l` and
+      `cmpxchg.l`, will need to stall `MEM` while the bus is accesses.
+      Treat these similarly to *load*``/``*store* instructions that have
+      dcache misses, i.e. stall until we can forward.
+    - These instructions each do one load and one store
+  - `push`/`pop`:
+    - `pop` at least needs to store new values into two registers. How do I
+      handle multiple register updates? `PipeMemRmw` only supports one
+      backing-mem write per transaction. The best I can figure is to stall
+      `ID` upon such an instruction being decoded until it finishes. That
+      is what I guess I'll do. Unfortunately this makes `pop` take more
+      cycles even upon a dcache hit, but it's the only thing I can think of
+      for how to handle memory-access instructions that drive more than one
+      reigster. At least `push`, for register writes, only affects the
+      register used as a stack pointer, which will _usually_ be `sp`, but
+      that is not enforced by the instruction set at all. If I were making
+      an OoOX version of the Flare CPU, maybe it'd be wise to optimize the
+      case of using `sp` for the `push`/`pop` stack pointer operand
+      somehow.
+    - It may make sense to just get rid of `push`/`pop` as instructions
+      since a combination of `ldr`/`str` and an `add sp, #...`
+      instruction would possibly be faster if the addresses that are
+      accesses are in dcache
+  //- Situations:
   - `EX` has a *load*-based RAW pipeline hazard with an instruction that
     doesn't stall outside of this situation.
     - Example code:
