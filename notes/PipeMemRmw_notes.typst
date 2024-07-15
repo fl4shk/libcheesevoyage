@@ -28,7 +28,7 @@
   - `xchg.l`/`cmpxchg`/`cmpxchg.l` (which are my only non-load/store/stack
     access instructions with memory arguments)
     - The atomic forms of these instructions, i.e. `xchg.l` and
-      `cmpxchg.l`, will need to stall `MEM` while the bus is accesses.
+      `cmpxchg.l`, will need to stall `MEM` while the bus is accessed.
       Treat these similarly to *load*``/``*store* instructions that have
       dcache misses, i.e. stall until we can forward.
     - These instructions each do one load and one store
@@ -49,7 +49,7 @@
     - It may make sense to just get rid of `push`/`pop` as instructions
       since a combination of `ldr`/`str` and an `add sp, #...`
       instruction would possibly be faster if the addresses that are
-      accesses are in dcache
+      accessed are in dcache
   //- Situations:
   - `EX` has a *load*-based RAW pipeline hazard with an instruction that
     doesn't stall outside of this situation.

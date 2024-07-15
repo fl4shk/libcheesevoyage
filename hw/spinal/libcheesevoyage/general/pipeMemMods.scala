@@ -662,8 +662,8 @@ case class PipeMemRmw[
       ModT, // outp
       ModT, // inp
       CtrlLink, // mod.front.cFront
-      Vec[UInt], // upExt(1)(extIdxUp).memAddr
-    )
+      //Vec[UInt], // upExt(1)(extIdxUp).memAddr
+    ) => Unit
   ]=None,
   //--------
   doModInModFrontFunc: Option[
@@ -2247,6 +2247,17 @@ extends Area {
       //upExtRealMemAddr := upExt(1).memAddr
       // END: no hazard resolution code; fix later 
       //--------
+    }
+    doModInFrontFunc match {
+      case Some(myDoModInFrontFunc) => {
+        myDoModInFrontFunc(
+          tempUpMod(1),
+          tempUpMod(0),
+          cFront,
+        )
+      }
+      case None => {
+      }
     }
 
     val rSetRdId = Reg(Bool()) init(False)
