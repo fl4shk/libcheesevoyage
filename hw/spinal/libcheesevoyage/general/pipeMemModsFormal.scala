@@ -9,10 +9,10 @@ import scala.math._
 
 import libcheesevoyage.Config
 
-object PipeMemRmwFormal extends App {
+object PipeMemRmwFormalBmc extends App {
   //--------
   //--------
-  case class PipeMemRmwFormalDut() extends Component {
+  case class PipeMemRmwFormalDutBmc() extends Component {
     val dut = FormalDut(PipeMemRmwTester())
 
     assumeInitial(clockDomain.isResetActive)
@@ -20,6 +20,8 @@ object PipeMemRmwFormal extends App {
     //def modFront = dut.pmIo.modFront
     //def modBack = dut.dut.io.modBack
     def back = dut.io.back //dut.pmIo.back
+    front.formalAssumesSlave(payloadInvariance=false)
+    back.formalAssertsMaster(payloadInvariance=false)
 
     //def dualRdFront = dut.io.dualRdFront
     //def dualRdBack = dut.io.dualRdBack
@@ -35,9 +37,48 @@ object PipeMemRmwFormal extends App {
     //  front.valid === front.valid.getZero
     //)
     //--------
+    //anyseq(
+    //  front.dcacheHit
+    //)
     anyseq(
       front.payload
-      //tempFrontPayload
+      //front.op
+      ////tempFrontPayload
+    )
+    //anyseq(
+    //  front.opCnt
+    //)
+    //anyseq(
+    //  front.myExt.memAddr
+    //)
+    when (front.fire) {
+    } otherwise {
+      assume(
+        stable(front.dcacheHit)
+      )
+      assume(
+        stable(front.op)
+      )
+      assume(
+        stable(front.opCnt)
+      )
+      assume(
+        stable(front.myExt.memAddr)
+      )
+    }
+    assume(
+      front.myExt.modMemWord
+      === front.myExt.modMemWord.getZero
+    )
+    assume(
+      front.myExt.rdMemWord
+      === front.myExt.rdMemWord.getZero
+    )
+    assume(
+      front.myExt.hazardCmp === front.myExt.hazardCmp.getZero
+    )
+    assume(
+      front.myExt.modMemWordValid === True
     )
     anyseq(front.valid)
     //front.valid := True
@@ -103,7 +144,7 @@ object PipeMemRmwFormal extends App {
     //  //20
     //  60
     //)
-    .doVerify(PipeMemRmwFormalDut())
+    .doVerify(PipeMemRmwFormalDutBmc())
   //--------
 }
 

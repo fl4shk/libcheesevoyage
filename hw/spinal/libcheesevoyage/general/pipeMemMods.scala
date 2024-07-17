@@ -453,6 +453,7 @@ case class PipeMemRmwIo[
   //val modBack = slave(Stream(modType()))
   val modFront = Node()
   val modFrontPayload = Payload(modType())
+  val tempModFrontPayload = modType()
   //if (vivadoDebug) {
   //  modFront(modFrontPayload).addAttribute(
   //    "MARK_DEBUG", "TRUE"
@@ -678,6 +679,8 @@ case class PipeMemRmw[
       ModT, // outp
       ModT, // inp
       CtrlLink, // mod.front.cMid0Front
+      Node,     // io.modFront
+      ModT, // io.tempModFrontPayload
       WordT,    // myModMemWord
       //Vec[WordT],  // myRdMemWord
     ) => Unit
@@ -1278,8 +1281,10 @@ extends Area {
         //  }
         //),
         optIncludeS2M=(
-          //false
-          true
+          false // needed to ensure it works with a second `PipeMemRmw`
+                // running in parallel with this pipeline stage,
+                // such as the data cache of the Flare CPU
+          //true
           //optModHazardKind != PipeMemRmw.modHazardKindFwd
           //|| (
           //  doFwdFunc match {
@@ -2939,6 +2944,8 @@ extends Area {
           tempUpMod(2),
           tempUpMod(1),
           cMid0Front,
+          io.modFront,
+          io.tempModFrontPayload,
           upExt(1)(extIdxSingle).rdMemWord(PipeMemRmw.modWrIdx)
           //myRdMemWord,
         )
@@ -3348,6 +3355,10 @@ extends Area {
     ) {
       upExt(1)(extIdxUp).valid := False
     }
+    //GenerationFlags.formal {
+    //  when (pastValidAfterReset) {
+    //  }
+    //}
     //upExt(1)(extIdxSaved).valid := RegNext(down.isValid)
     //upExt(1)(extIdxSaved).ready := RegNext(down.isReady)
     //upExt(1)(extIdxSaved).fire := RegNext(down.isFiring)
