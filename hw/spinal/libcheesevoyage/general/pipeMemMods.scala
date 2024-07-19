@@ -646,7 +646,8 @@ case class PipeMemRmw[
   optEnableClear: Boolean=false,
   memRamStyle: String="auto",
   vivadoDebug: Boolean=false,
-  optLinkFrontToModFront: Boolean=true,
+  //optLinkFrontToModFront: Boolean=true,
+  optIncludeModFrontStageLink: Boolean=true,
 )(
   //--------
   doHazardCmpFunc: Option[
@@ -1309,23 +1310,33 @@ extends Area {
       //)
       val cMid0Front = CtrlLink(
         up=(
-          if (optLinkFrontToModFront) (
+          //if (optLinkFrontToModFront) (
             sFront.down
-          ) else (
-            Node()
-          )
+          //) else (
+          //  Node()
+          //)
         ),
-        down=Node(),
+        down=(
+          //if (optIncludeModFrontStageLink) (
+            Node()
+          //) else (
+          //  io.modFront
+          //)
+        ),
       )
       myLinkArr += cMid0Front
-      val sMid0Front = StageLink(
-        up=cMid0Front.down,
-        down=(
-          //Node()
-          io.modFront
-        ),
+      val sMid0Front = (optIncludeModFrontStageLink) generate (
+        StageLink(
+          up=cMid0Front.down,
+          down=(
+            //Node()
+            io.modFront
+          ),
+        )
       )
-      myLinkArr += sMid0Front
+      if (optIncludeModFrontStageLink) {
+        myLinkArr += sMid0Front
+      }
       // lack of `s2mMid0Front` (which would have been an `S2MLink`):
       //  needed to ensure it works with a second `PipeMemRmw`
       //  running in parallel with this pipeline stage,
