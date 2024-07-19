@@ -646,6 +646,7 @@ case class PipeMemRmw[
   optEnableClear: Boolean=false,
   memRamStyle: String="auto",
   vivadoDebug: Boolean=false,
+  optLinkFrontToModFront: Boolean=true,
 )(
   //--------
   doHazardCmpFunc: Option[
@@ -1087,7 +1088,7 @@ extends Area {
           //curr.valid && prev.valid
         )
       )
-      val pipe = PipeHelper(linkArr=myLinkArr)
+      //val pipe = PipeHelper(linkArr=myLinkArr)
       //val inpPipePayload = Payload(modType())
       def inpPipePayload = io.frontPayload
       val midPipePayload = Payload(modType())
@@ -1254,47 +1255,83 @@ extends Area {
       }
 
 
-      val cFront = pipe.addStage(
-        name=pipeName + "_Front",
-        optIncludeS2M=(
-          false
-          //true
-          //optModHazardKind != PipeMemRmw.modHazardKindFwd
-          //|| (
-          //  doFwdFunc match {
-          //    case Some(myDoFwdFunc) => false
-          //    case None => true
-          //  }
-          //)
-        )
-      )
-      val cIoFront = DirectLink(
+      //val cFront = pipe.addStage(
+      //  name=pipeName + "_Front",
+      //  optIncludeS2M=(
+      //    false
+      //    //true
+      //    //optModHazardKind != PipeMemRmw.modHazardKindFwd
+      //    //|| (
+      //    //  doFwdFunc match {
+      //    //    case Some(myDoFwdFunc) => false
+      //    //    case None => true
+      //    //  }
+      //    //)
+      //  )
+      //)
+      val cFront = CtrlLink(
         up=io.front,
-        down=cFront.up,
+        down=Node()
       )
-      val cMid0Front = pipe.addStage(
-        name=pipeName + "_Mid0Front",
-        //optIncludeStage=(
-        //  doModInModFrontFunc match {
-        //    case Some(myDoModSingleStageFunc) => false
-        //    case None => true
-        //  }
-        //),
-        optIncludeS2M=(
-          false // needed to ensure it works with a second `PipeMemRmw`
-                // running in parallel with this pipeline stage,
-                // such as the data cache of the Flare CPU
-          //true
-          //optModHazardKind != PipeMemRmw.modHazardKindFwd
-          //|| (
-          //  doFwdFunc match {
-          //    case Some(myDoFwdFunc) => false
-          //    case None => true
-          //  }
-          //)
+        //.setName(s"${pipeName}_Front")
+      myLinkArr += cFront
+      val sFront = StageLink(
+        up=cFront.down,
+        down=Node(),
+      )
+      myLinkArr += sFront
+      //val cIoFront = DirectLink(
+      //  up=io.front,
+      //  down=cFront.up,
+      //)
+      //val cMid0Front = pipe.addStage(
+      //  name=pipeName + "_Mid0Front",
+      //  //optIncludeStage=(
+      //  //  doModInModFrontFunc match {
+      //  //    case Some(myDoModSingleStageFunc) => false
+      //  //    case None => true
+      //  //  }
+      //  //),
+      //  optIncludeS2M=(
+      //    false // needed to ensure it works with a second `PipeMemRmw`
+      //          // running in parallel with this pipeline stage,
+      //          // such as the data cache of the Flare CPU
+      //    //true
+      //    //optModHazardKind != PipeMemRmw.modHazardKindFwd
+      //    //|| (
+      //    //  doFwdFunc match {
+      //    //    case Some(myDoFwdFunc) => false
+      //    //    case None => true
+      //    //  }
+      //    //)
+      //  ),
+      //  //finish=true,
+      //)
+      val cMid0Front = CtrlLink(
+        up=(
+          if (optLinkFrontToModFront) (
+            sFront.down
+          ) else (
+            Node()
+          )
         ),
-        //finish=true,
+        down=Node(),
       )
+      myLinkArr += cMid0Front
+      val sMid0Front = StageLink(
+        up=cMid0Front.down,
+        down=(
+          //Node()
+          io.modFront
+        ),
+      )
+      myLinkArr += sMid0Front
+      // lack of `s2mMid0Front` (which would have been an `S2MLink`):
+      //  needed to ensure it works with a second `PipeMemRmw`
+      //  running in parallel with this pipeline stage,
+      //  such as the data cache of the Flare CPU
+
+
       val nextDidFwd = (
         (
           optModHazardKind == PipeMemRmw.modHazardKindFwd
@@ -1369,7 +1406,7 @@ extends Area {
           }
         }
       }
-      myLinkArr += cIoFront
+      //myLinkArr += cIoFront
       //val cMidMinus1Front = pipe.addStage(
       //  name=pipeName + "_MidMinus1Front",
       //  optIncludeS2M=false,
@@ -1469,18 +1506,19 @@ extends Area {
       //  name=pipeName + "_Mid2Front",
       //  //optIncludeS2M=false,
       //)
-      val cLastFront = pipe.addStage(
-        name=pipeName + "_LastFront", 
-        finish=true,
-      )
-      val cIoModFront = DirectLink(
-        up=(
-          cLastFront.down
-          //cMid0Front.down,
-        ),
-        down=io.modFront,
-      )
-      myLinkArr += cIoModFront
+
+      //val cLastFront = pipe.addStage(
+      //  name=pipeName + "_LastFront", 
+      //  finish=true,
+      //)
+      //val cIoModFront = DirectLink(
+      //  up=(
+      //    cLastFront.down
+      //    //cMid0Front.down,
+      //  ),
+      //  down=io.modFront,
+      //)
+      //myLinkArr += cIoModFront
       //--------
     }
     val back = new Area {
