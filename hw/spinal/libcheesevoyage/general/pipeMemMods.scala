@@ -396,6 +396,7 @@ case class PipeMemRmwIo[
   //optDualRdType: Option[HardType[DualRdT]]={
   //  //Some(HardType[PipeMemRmwDualRdTypeDisabled[WordT]]())
   //},
+  pipeName: String,
   dualRdType: HardType[DualRdT]=PipeMemRmwDualRdTypeDisabled[
     WordT, HazardCmpT
   ](),
@@ -441,6 +442,7 @@ case class PipeMemRmwIo[
   //val front = slave(Stream(modType()))
   val front = Node()
   val frontPayload = Payload(modType())
+    .setName(s"${pipeName}_io_frontPayload")
   //if (vivadoDebug) {
   //  front(frontPayload).addAttribute(
   //    "MARK_DEBUG", "TRUE"
@@ -453,6 +455,7 @@ case class PipeMemRmwIo[
   //val modBack = slave(Stream(modType()))
   val modFront = Node()
   val modFrontPayload = Payload(modType())
+    .setName(s"${pipeName}_io_modFrontPayload")
   val tempModFrontPayload = modType()
   //if (vivadoDebug) {
   //  modFront(modFrontPayload).addAttribute(
@@ -461,6 +464,7 @@ case class PipeMemRmwIo[
   //}
   val modBack = Node()
   val modBackPayload = Payload(modType())
+    .setName(s"${pipeName}_io_modBackPayload")
   //if (vivadoDebug) {
   //  modBack(modBackPayload).addAttribute(
   //    "MARK_DEBUG", "TRUE"
@@ -513,6 +517,7 @@ case class PipeMemRmwIo[
   //val back = master(Stream(modType()))
   val back = Node()
   val backPayload = Payload(modType())
+    .setName(s"${pipeName}_io_backPayload")
   //if (vivadoDebug) {
   //  back(backPayload).addAttribute(
   //    "MARK_DEBUG", "TRUE"
@@ -537,6 +542,7 @@ case class PipeMemRmwIo[
   )
   val dualRdFrontPayload = (optDualRd) generate (
     Payload(dualRdType())
+    .setName(s"${pipeName}_io_dualRdFrontPayload")
   )
   val dualRdBack = (optDualRd) generate (
     //master(
@@ -546,6 +552,7 @@ case class PipeMemRmwIo[
   )
   val dualRdBackPayload = (optDualRd) generate (
     Payload(dualRdType())
+    .setName(s"${pipeName}_io_dualRdBackPayload")
   )
   //if (optDualRd && vivadoDebug) {
   //  dualRdFront(dualRdFrontPayload).addAttribute(
@@ -765,6 +772,7 @@ extends Area {
     modType=modType(),
     modRdPortCnt=modRdPortCnt,
     modStageCnt=modStageCnt,
+    pipeName=pipeName,
     dualRdType=dualRdType(),
     //dualRdSize=dualRdSize,
     optDualRd=optDualRd,
