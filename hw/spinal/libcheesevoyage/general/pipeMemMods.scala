@@ -3000,7 +3000,10 @@ extends Area {
         )
       }
       case None => {
-        assert(modStageCnt > 0)
+        assert(
+          modStageCnt > 0
+          || !optIncludeModFrontStageLink
+        )
         //tempUpMod(2) := tempUpMod(1)
         tempUpMod(2) := tempUpMod(1)
       }
