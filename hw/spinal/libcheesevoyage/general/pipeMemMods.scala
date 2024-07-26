@@ -3230,7 +3230,7 @@ extends Area {
             //  }
             //}
           )
-          .setName(s"myFwdDataUp_${zdx}")
+          .setName(s"${pipeName}_myFwdDataUp_${zdx}")
         )
         val myFwdDataSaved = (
           KeepAttribute(
