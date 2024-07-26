@@ -1101,6 +1101,7 @@ extends Area {
       //val inpPipePayload = Payload(modType())
       def inpPipePayload = io.frontPayload
       val midPipePayload = Payload(modType())
+        .setName(s"${pipeName}_mod_front_midPipePayload")
       //val outpPipePayload = Payload(modType())
       def outpPipePayload = io.modFrontPayload
       val myRdMemWord = Vec.fill(modRdPortCnt)(wordType())
