@@ -397,6 +397,8 @@ case class PipeMemRmwIo[
   //  //Some(HardType[PipeMemRmwDualRdTypeDisabled[WordT]]())
   //},
   pipeName: String,
+  memArrIdx: Int=0,
+  memArrSize: Int=1,
   dualRdType: HardType[DualRdT]=PipeMemRmwDualRdTypeDisabled[
     WordT, HazardCmpT
   ](),
@@ -441,8 +443,14 @@ case class PipeMemRmwIo[
   // front of the pipeline (push)
   //val front = slave(Stream(modType()))
   val front = Node()
-  val frontPayload = Payload(modType())
-    .setName(s"${pipeName}_io_frontPayload")
+  //val frontPayload = Payload(modType())
+  //  .setName(s"${pipeName}_io_frontPayload")
+  val frontPayloadArr = Array.fill(memArrSize)(Payload(modType()))
+  for (idx <- 0 until memArrSize) {
+    frontPayloadArr(idx)
+    .setName(s"${pipeName}_${idx}_io_frontPayload")
+  }
+  def frontPayload = frontPayloadArr(memArrIdx)
   //if (vivadoDebug) {
   //  front(frontPayload).addAttribute(
   //    "MARK_DEBUG", "TRUE"
@@ -454,8 +462,12 @@ case class PipeMemRmwIo[
   //val modFront = master(Stream(modType()))
   //val modBack = slave(Stream(modType()))
   val modFront = Node()
-  val modFrontPayload = Payload(modType())
-    .setName(s"${pipeName}_io_modFrontPayload")
+  val modFrontPayloadArr = Array.fill(memArrSize)(Payload(modType()))
+  for (idx <- 0 until memArrSize) {
+    modFrontPayloadArr(idx)
+    .setName(s"${pipeName}_${idx}_io_modFrontPayload")
+  }
+  def modFrontPayload = modFrontPayloadArr(memArrIdx)
   val tempModFrontPayload = modType()
   //if (vivadoDebug) {
   //  modFront(modFrontPayload).addAttribute(
@@ -463,8 +475,14 @@ case class PipeMemRmwIo[
   //  )
   //}
   val modBack = Node()
-  val modBackPayload = Payload(modType())
-    .setName(s"${pipeName}_io_modBackPayload")
+  //val modBackPayload = Payload(modType())
+  //  .setName(s"${pipeName}_io_modBackPayload")
+  val modBackPayloadArr = Array.fill(memArrSize)(Payload(modType()))
+  for (idx <- 0 until memArrSize) {
+    modBackPayloadArr(idx)
+    .setName(s"${pipeName}_${idx}_io_modBackPayload")
+  }
+  def modBackPayload = modBackPayloadArr(memArrIdx)
   //if (vivadoDebug) {
   //  modBack(modBackPayload).addAttribute(
   //    "MARK_DEBUG", "TRUE"
@@ -516,8 +534,14 @@ case class PipeMemRmwIo[
   // back of the pipeline (output)
   //val back = master(Stream(modType()))
   val back = Node()
-  val backPayload = Payload(modType())
-    .setName(s"${pipeName}_io_backPayload")
+  //val backPayload = Payload(modType())
+  //  .setName(s"${pipeName}_io_backPayload")
+  val backPayloadArr = Array.fill(memArrSize)(Payload(modType()))
+  for (idx <- 0 until memArrSize) {
+    backPayloadArr(idx)
+    .setName(s"${pipeName}_${idx}_io_backPayload")
+  }
+  def backPayload = backPayloadArr(memArrIdx)
   //if (vivadoDebug) {
   //  back(backPayload).addAttribute(
   //    "MARK_DEBUG", "TRUE"
@@ -540,20 +564,32 @@ case class PipeMemRmwIo[
     //)
     Node()
   )
-  val dualRdFrontPayload = (optDualRd) generate (
-    Payload(dualRdType())
-    .setName(s"${pipeName}_io_dualRdFrontPayload")
-  )
+  //val dualRdFrontPayload = (optDualRd) generate (
+  //  Payload(dualRdType())
+  //  .setName(s"${pipeName}_io_dualRdFrontPayload")
+  //)
+  val dualRdFrontPayloadArr = Array.fill(memArrSize)(Payload(dualRdType()))
+  for (idx <- 0 until memArrSize) {
+    dualRdFrontPayloadArr(idx)
+    .setName(s"${pipeName}_${idx}_io_dualRdFrontPayload")
+  }
+  def dualRdFrontPayload = dualRdFrontPayloadArr(memArrIdx)
   val dualRdBack = (optDualRd) generate (
     //master(
     //  Stream(dualRdType())
     //)
     Node()
   )
-  val dualRdBackPayload = (optDualRd) generate (
-    Payload(dualRdType())
-    .setName(s"${pipeName}_io_dualRdBackPayload")
-  )
+  //val dualRdBackPayload = (optDualRd) generate (
+  //  Payload(dualRdType())
+  //  .setName(s"${pipeName}_io_dualRdBackPayload")
+  //)
+  val dualRdBackPayloadArr = Array.fill(memArrSize)(Payload(dualRdType()))
+  for (idx <- 0 until memArrSize) {
+    dualRdBackPayloadArr(idx)
+    .setName(s"${pipeName}_${idx}_io_dualRdBackPayload")
+  }
+  def dualRdBackPayload = dualRdBackPayloadArr(memArrIdx)
   //if (optDualRd && vivadoDebug) {
   //  dualRdFront(dualRdFrontPayload).addAttribute(
   //    "MARK_DEBUG", "TRUE"
@@ -634,6 +670,7 @@ case class PipeMemRmw[
   pipeName: String,
   linkArr: Option[ArrayBuffer[Link]]=None,
   memArrIdx: Int=0,
+  memArrSize: Int=1,
   //optDualRdType: Option[HardType[DualRdT]]=None,
   dualRdType: HardType[DualRdT]=PipeMemRmwDualRdTypeDisabled[
     WordT, HazardCmpT,
@@ -773,6 +810,8 @@ extends Area {
     modRdPortCnt=modRdPortCnt,
     modStageCnt=modStageCnt,
     pipeName=pipeName,
+    memArrIdx=memArrIdx,
+    memArrSize=memArrSize,
     dualRdType=dualRdType(),
     //dualRdSize=dualRdSize,
     optDualRd=optDualRd,
@@ -1100,8 +1139,14 @@ extends Area {
       //val pipe = PipeHelper(linkArr=myLinkArr)
       //val inpPipePayload = Payload(modType())
       def inpPipePayload = io.frontPayload
-      val midPipePayload = Payload(modType())
-        .setName(s"${pipeName}_mod_front_midPipePayload")
+      //val midPipePayload = Payload(modType())
+      //  .setName(s"${pipeName}_mod_front_midPipePayload")
+      val midPipePayloadArr = Array.fill(memArrSize)(Payload(modType()))
+      for (idx <- 0 until memArrSize) {
+        midPipePayloadArr(idx)
+        .setName(s"${pipeName}_${idx}_io_midPipePayload")
+      }
+      def midPipePayload = midPipePayloadArr(memArrIdx)
       //val outpPipePayload = Payload(modType())
       def outpPipePayload = io.modFrontPayload
       val myRdMemWord = Vec.fill(modRdPortCnt)(wordType())
