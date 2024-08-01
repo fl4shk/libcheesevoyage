@@ -359,13 +359,13 @@ extends Component
 
   val tempModBackPayload = PmRmwModType()
   //pipeMem.io.modBack
-  sMyMod.up(pipeMem.io.modBackPayload) := tempModBackPayload
+  sMyMod.up(pipeMem.io.modBackPayloadArr(0)) := tempModBackPayload
   tempModBackPayload := (
     RegNext(tempModBackPayload) init(tempModBackPayload.getZero)
   )
   when (pipeMem.io.modFront.isValid) {
     tempModBackPayload := (
-      pipeMem.io.modFront(pipeMem.io.modFrontPayload)
+      pipeMem.io.modFront(pipeMem.io.modFrontPayloadArr(0))
     )
   }
   //--------
@@ -376,7 +376,7 @@ extends Component
   pipeMem.io.front.driveFrom(tempWrPulseStm1)(
   //tempWrPulseStm1.translateInto(pipeMem.io.front)
     con=(/*wrPipePayload*/ node, wrPulsePayload) => {
-      def wrPipePayload = node(pipeMem.io.frontPayload)
+      def wrPipePayload = node(pipeMem.io.frontPayloadArr(0))
       wrPipePayload := wrPipePayload.getZero
       wrPipePayload.allowOverride
       //wrPipePayload.data := io.wrPulse

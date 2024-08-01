@@ -4712,7 +4712,7 @@ case class Gpu2d(
         modStageCnt=wrObjPipeSlmRmwModStageCnt,
         pipeName=s"wrObjSubLineMemArr_${idx}",
         linkArr=Some(linkArr),
-        memArrIdx=idx,
+        memArrIdx=0,
         dualRdType=PipeMemRmwDualRdTypeDisabled[
           Vec[ObjSubLineMemEntry],
           WrObjPipeSlmRmwHazardCmp,
@@ -8820,7 +8820,7 @@ case class Gpu2d(
           //  }
           //)
           wrObjSubLineMemArr(jdx).io.front(
-            wrObjSubLineMemArr(jdx).io.frontPayload
+            wrObjSubLineMemArr(jdx).io.frontPayloadArr(0)
           ) := (
             s2mLink.down(wrObjPipePayloadMain(idx + 1))
           )
@@ -8869,7 +8869,7 @@ case class Gpu2d(
             wrObjSubLineMemArr(
               jdx
             ).io.modFront(
-              wrObjSubLineMemArr(jdx).io.modFrontPayload
+              wrObjSubLineMemArr(jdx).io.modFrontPayloadArr(0)
             )
           )
           if (vivadoDebug) {
@@ -9083,7 +9083,7 @@ case class Gpu2d(
           //)
 
           wrObjSubLineMemArr(jdx).io.modBack(
-            wrObjSubLineMemArr(jdx).io.modBackPayload
+            wrObjSubLineMemArr(jdx).io.modBackPayloadArr(0)
           ) := (
             nfMyArr(jdx)(
               wrObjPipePayloadMain(idx + 1)
@@ -9215,7 +9215,7 @@ case class Gpu2d(
             wrObjPipePayloadSlmRmwBackInp(jdx)
           ) := (
             wrObjSubLineMemArr(jdx).io.back(
-              wrObjSubLineMemArr(jdx).io.backPayload
+              wrObjSubLineMemArr(jdx).io.backPayloadArr(0)
             )
           )
         }
