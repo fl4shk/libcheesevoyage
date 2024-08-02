@@ -395,7 +395,7 @@ extends Component
   tempRdAddrPipe << io.rdAddrPipe
   pipeMem.io.dualRdFront.driveFrom(tempRdAddrPipe)(
     con=(/*dualRdPipePayload*/node, rdAddrPipePayload) => {
-      def dualRdPipePayload = node(pipeMem.io.dualRdFrontPayload)
+      def dualRdPipePayload = node(pipeMem.io.dualRdFrontPayload(0))
       dualRdPipePayload := dualRdPipePayload.getZero
       dualRdPipePayload.allowOverride
       dualRdPipePayload.data := rdAddrPipePayload.data
@@ -409,7 +409,7 @@ extends Component
   io.rdDataPipe << tempRdDataPipe
   pipeMem.io.dualRdBack.driveTo(tempRdDataPipe)(
     con=(rdDataPipePayload, node/*dualRdPipePayload*/) => {
-      def dualRdPipePayload = node(pipeMem.io.dualRdBackPayload)
+      def dualRdPipePayload = node(pipeMem.io.dualRdBackPayload(0))
       //val rTempWord = (
       //  Reg(
       //    cloneOf(dualRdPipePayload)

@@ -265,7 +265,8 @@ case class PipeMemRmwSimDut(
           (
             outp,
             inp,
-            cFront
+            cFront,
+            ydx,
           ) => {
             //GenerationFlags.formal {
               when (
@@ -324,6 +325,7 @@ case class PipeMemRmwSimDut(
             tempModFrontPayload,
             //myRdMemWord,
             myModMemWord,
+            ydx,
           ) => {
             //outp.myExt := RegNext(outp.myExt) init(outp.myExt.getZero)
             //outp.myExt := inp.myExt
@@ -1050,7 +1052,7 @@ case class PipeMemRmwSimDut(
         0x0
       )
       rSavedModArr(idx) := (
-        pipeMem.modMem(PipeMemRmw.modWrIdx).readAsync(
+        pipeMem.modMem(0)(PipeMemRmw.modWrIdx).readAsync(
           address=U{
             val width = log2Up(wordCount)
             s"${width}'d${idx}"
@@ -1060,13 +1062,13 @@ case class PipeMemRmwSimDut(
     }
   }
   def front = pipeMem.io.front
-  def frontPayload = pipeMem.io.frontPayload
+  def frontPayload = pipeMem.io.frontPayload(0)
   def modFront = pipeMem.io.modFront
-  def modFrontPayload = pipeMem.io.modFrontPayload
+  def modFrontPayload = pipeMem.io.modFrontPayload(0)
   def modBack = pipeMem.io.modBack
-  def modBackPayload = pipeMem.io.modBackPayload
+  def modBackPayload = pipeMem.io.modBackPayload(0)
   def back = pipeMem.io.back
-  def backPayload = pipeMem.io.backPayload
+  def backPayload = pipeMem.io.backPayload(0)
 
   //val tempMemAddrPlus = (
   //  (
@@ -1196,7 +1198,7 @@ case class PipeMemRmwSimDut(
     val rPrevOpCnt = (
       RegNextWhen(
         modBack(modBackPayload).opCnt,
-        modBack.isFiring && pipeMem.mod.back.myWriteEnable
+        modBack.isFiring && pipeMem.mod.back.myWriteEnable(0)
       )
       init(0x0)
     )
@@ -1208,7 +1210,7 @@ case class PipeMemRmwSimDut(
             RegNextWhen(True, modBack.isFiring) init(False)
           )
         ) && (
-          !past(pipeMem.mod.back.myWriteEnable)
+          !past(pipeMem.mod.back.myWriteEnable(0))
         )
       ) {
         for (idx <- 0 until rSavedModArr.size) {
@@ -1227,7 +1229,7 @@ case class PipeMemRmwSimDut(
     //}
     val myCoverCond = (
       modBack.isFiring
-      && pipeMem.mod.back.myWriteEnable
+      && pipeMem.mod.back.myWriteEnable(0)
     )
     def myCoverVecSize = 8
     val rMyCoverVec = (
@@ -1308,7 +1310,7 @@ case class PipeMemRmwSimDut(
     //)
     when (
       /*past*/(modBack.isFiring)
-      && /*past*/(pipeMem.mod.back.myWriteEnable)
+      && /*past*/(pipeMem.mod.back.myWriteEnable(0))
     ) {
       //def mySavedMod = (
       //  rSavedModArr(
@@ -1331,7 +1333,7 @@ case class PipeMemRmwSimDut(
       when (
         RegNextWhen(
           True,
-          modBack.isFiring && pipeMem.mod.back.myWriteEnable
+          modBack.isFiring && pipeMem.mod.back.myWriteEnable(0)
         ) init(False)
       ) {
         assert(
@@ -1363,7 +1365,7 @@ case class PipeMemRmwSimDut(
       //modBack.isValid
       modBack.isFiring
       //modBack.isReady
-      && pipeMem.mod.back.myWriteEnable
+      && pipeMem.mod.back.myWriteEnable(0)
     ) {
       mySavedMod := tempRight
     }
@@ -1391,22 +1393,22 @@ case class PipeMemRmwSimDut(
   //}
   //pipeMem.io.front.driveFrom(io.front)(
   //  con=(node, payload) => {
-  //    node(pipeMem.io.frontPayload) := payload
+  //    node(pipeMem.io.frontPayload(0)) := payload
   //  }
   //)
   //pipeMem.io.modFront.driveTo(io.modFront)(
   //  con=(payload, node) => {
-  //    payload := node(pipeMem.io.modFrontPayload)
+  //    payload := node(pipeMem.io.modFrontPayload(0))
   //  }
   //)
   //pipeMem.io.modBack.driveFrom(io.modBack)(
   //  con=(node, payload) => {
-  //    node(pipeMem.io.modBackPayload) := payload
+  //    node(pipeMem.io.modBackPayload(0)) := payload
   //  }
   //)
   //pipeMem.io.back.driveTo(io.back)(
   //  con=(payload, node) => {
-  //    payload := node(pipeMem.io.backPayload)
+  //    payload := node(pipeMem.io.backPayload(0))
   //  }
   //)
   //Builder(pipeMem.myLinkArr)
@@ -1650,7 +1652,7 @@ case class PipeMemRmwTester() extends Component {
       )
       .setName("midModPayload")
     )
-    pmIo.tempModFrontPayload := midModPayload(0)
+    pmIo.tempModFrontPayload(0) := midModPayload(0)
     //midModPayload(extIdxUp).allowOverride
     val rDidFirstMidModRegNext = (
       Reg(Bool()) init(False)
@@ -1891,12 +1893,12 @@ case class PipeMemRmwTester() extends Component {
     )
 
     def setMidModStages(): Unit = {
-      //pmIo.midModStages(0) := (
-      //  RegNext(pmIo.midModStages(0))
-      //  init(pmIo.midModStages(0).getZero)
+      //pmIo.midModStages(0)(0) := (
+      //  RegNext(pmIo.midModStages(0)(0))
+      //  init(pmIo.midModStages(0)(0).getZero)
       //)
-      //pmIo.midModStages(0).myExt.valid.allowOverride
-      //pmIo.midModStages(0).myExt.ready.allowOverride
+      //pmIo.midModStages(0)(0).myExt.valid.allowOverride
+      //pmIo.midModStages(0)(0).myExt.ready.allowOverride
       //when (
       //  //modFrontStm.valid
       //  //&& modMidStm.ready
@@ -1905,11 +1907,11 @@ case class PipeMemRmwTester() extends Component {
       //  //cMidModFront.down.isValid
       //  True
       //) {
-        //pmIo.midModStages(0) := modFrontStm.payload
-        //pmIo.midModStages(0) := pmIo.modFront(modFrontPayload)
-        pmIo.midModStages(0) := midModPayload
+        //pmIo.midModStages(0)(0) := modFrontStm.payload
+        //pmIo.midModStages(0)(0) := pmIo.modFront(modFrontPayload)
+        pmIo.midModStages(0)(0) := midModPayload
       //}
-      //pmIo.midModStages(0).myExt.valid := modFrontStm.valid
+      //pmIo.midModStages(0)(0).myExt.valid := modFrontStm.valid
       //modMidStm << modFrontStm
     }
     setMidModStages()
@@ -1947,39 +1949,39 @@ case class PipeMemRmwTester() extends Component {
       //    //  modMidPayload.myExt.dbgModMemWord := 0x0
       //    //}
       //    if (modStageCnt > 0) {
-      //      ////dut.io.midModStages(0) := (
-      //      ////  RegNext(dut.io.midModStages(0))
-      //      ////  init(dut.io.midModStages(0).getZero)
+      //      ////dut.io.midModStages(0)(0) := (
+      //      ////  RegNext(dut.io.midModStages(0)(0))
+      //      ////  init(dut.io.midModStages(0)(0).getZero)
       //      ////)
-      //      ////dut.io.midModStages(0).myExt.valid.allowOverride
-      //      ////dut.io.midModStages(0).myExt.valid := modFrontStm.valid
+      //      ////dut.io.midModStages(0)(0).myExt.valid.allowOverride
+      //      ////dut.io.midModStages(0)(0).myExt.valid := modFrontStm.valid
       //      ////when (modFrontStm.valid) {
-      //      ////  dut.io.midModStages(0) := modMidPayload
-      //      ////  //dut.io.midModStages(0).valid.allowOverride
-      //      ////  //dut.io.midModStages(0).valid := True
+      //      ////  dut.io.midModStages(0)(0) := modMidPayload
+      //      ////  //dut.io.midModStages(0)(0).valid.allowOverride
+      //      ////  //dut.io.midModStages(0)(0).valid := True
       //      ////}
-      //      ////dut.io.midModStages(0) := (
-      //      ////  RegNext(dut.io.midModStages(0))
-      //      ////  init(dut.io.midModStages(0).getZero)
+      //      ////dut.io.midModStages(0)(0) := (
+      //      ////  RegNext(dut.io.midModStages(0)(0))
+      //      ////  init(dut.io.midModStages(0)(0).getZero)
       //      ////)
-      //      //dut.io.midModStages(0).myExt.valid.allowOverride
+      //      //dut.io.midModStages(0)(0).myExt.valid.allowOverride
       //      ////when (modFrontStm.valid) {
-      //      //  dut.io.midModStages(0) := modFrontStm.payload
+      //      //  dut.io.midModStages(0)(0) := modFrontStm.payload
       //      ////}
-      //      //dut.io.midModStages(0).myExt.valid := modFrontStm.valid
-      //      dut.io.midModStages(0) := (
-      //        RegNext(dut.io.midModStages(0))
-      //        init(dut.io.midModStages(0).getZero)
+      //      //dut.io.midModStages(0)(0).myExt.valid := modFrontStm.valid
+      //      dut.io.midModStages(0)(0) := (
+      //        RegNext(dut.io.midModStages(0)(0))
+      //        init(dut.io.midModStages(0)(0).getZero)
       //      )
-      //      dut.io.midModStages(0).myExt.valid.allowOverride
+      //      dut.io.midModStages(0)(0).myExt.valid.allowOverride
       //      when (
       //        //modFrontStm.valid
       //        //&& modMidStm.ready
       //        modFrontStm.fire
       //      ) {
-      //        dut.io.midModStages(0) := modFrontStm.payload
+      //        dut.io.midModStages(0)(0) := modFrontStm.payload
       //      }
-      //      dut.io.midModStages(0).myExt.valid := modFrontStm.valid
+      //      dut.io.midModStages(0)(0).myExt.valid := modFrontStm.valid
       //    }
       //  }
       //)
@@ -1991,19 +1993,19 @@ case class PipeMemRmwTester() extends Component {
         )
       }
     } else {
-      //dut.io.midModStages(0) := (
-      //  RegNext(dut.io.midModStages(0))
-      //  init(dut.io.midModStages(0).getZero)
+      //dut.io.midModStages(0)(0) := (
+      //  RegNext(dut.io.midModStages(0)(0))
+      //  init(dut.io.midModStages(0)(0).getZero)
       //)
-      //dut.io.midModStages(0).myExt.valid.allowOverride
+      //dut.io.midModStages(0)(0).myExt.valid.allowOverride
       //when (
       //  //modFrontStm.valid
       //  //&& modMidStm.ready
       //  modFrontStm.fire
       //) {
-      //  dut.io.midModStages(0) := modFrontStm.payload
+      //  dut.io.midModStages(0)(0) := modFrontStm.payload
       //}
-      //dut.io.midModStages(0).myExt.valid := modFrontStm.valid
+      //dut.io.midModStages(0)(0).myExt.valid := modFrontStm.valid
       //modMidStm << modFrontStm
     }
     //modBackStm <-/< modMidStm
