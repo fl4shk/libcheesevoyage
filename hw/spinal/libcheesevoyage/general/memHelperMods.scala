@@ -315,7 +315,7 @@ extends Component
     PmRmwModType,
   ](
     wordType=wordType(),
-    wordCount=wordCount,
+    wordCountArr=Array.fill(1)(wordCount).toSeq,
     hazardCmpType=Bool(),
     modType=PmRmwModType(),
     modRdPortCnt=modRdPortCnt,

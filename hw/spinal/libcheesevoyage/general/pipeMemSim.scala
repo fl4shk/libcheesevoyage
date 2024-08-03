@@ -212,7 +212,7 @@ case class PipeMemRmwSimDut(
     PipeMemRmwDualRdTypeDisabled[UInt, UInt],
   ](
     wordType=wordType(),
-    wordCount=wordCount,
+    wordCountArr=Array.fill(1)(wordCount).toSeq,
     hazardCmpType=hazardCmpType(),
     modType=ModType(),
     modRdPortCnt=modRdPortCnt,

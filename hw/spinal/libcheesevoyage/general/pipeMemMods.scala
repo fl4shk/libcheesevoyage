@@ -388,7 +388,7 @@ case class PipeMemRmwIo[
   DualRdT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
 ](
   wordType: HardType[WordT],
-  wordCount: Int,
+  wordCountMax: Int,
   modType: HardType[ModT],
   modRdPortCnt: Int,
   modStageCnt: Int,
@@ -416,18 +416,18 @@ case class PipeMemRmwIo[
   val clear = (optEnableClear) generate (
     /*slave*/(Flow(
       /*Vec.fill(modRdPortCnt)*/(
-        UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
+        UInt(PipeMemRmw.addrWidth(wordCount=wordCountMax) bits)
       )
     ))
   )
 
   // the commit head
   val reorderCommitHead = (optReorder) generate (
-    //Reg(UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)) init(0x0)
-    UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
+    //Reg(UInt(PipeMemRmw.addrWidth(wordCount=wordCountMax) bits)) init(0x0)
+    UInt(PipeMemRmw.addrWidth(wordCount=wordCountMax) bits)
   )
   //val reorderCommitTail = (optReorder) generate (
-  //  UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
+  //  UInt(PipeMemRmw.addrWidth(wordCount=wordCountMax) bits)
   //)
 
   // front of the pipeline (push)
@@ -595,7 +595,7 @@ case class PipeMemRmw[
   DualRdT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
 ](
   wordType: HardType[WordT],
-  wordCount: Int,
+  wordCountArr: Seq[Int],
   hazardCmpType: HardType[HazardCmpT],
   modType: HardType[ModT],
   modRdPortCnt: Int,
@@ -603,7 +603,7 @@ case class PipeMemRmw[
   pipeName: String,
   linkArr: Option[ArrayBuffer[Link]]=None,
   memArrIdx: Int=0,
-  memArrSize: Int=1,
+  //memArrSize: Int=1,
   //optDualRdType: Option[HardType[DualRdT]]=None,
   dualRdType: HardType[DualRdT]=PipeMemRmwDualRdTypeDisabled[
     WordT, HazardCmpT,
@@ -689,6 +689,7 @@ case class PipeMemRmw[
   //--------
 )
 extends Area {
+  def memArrSize = wordCountArr.size
   def extIdxUp = PipeMemRmw.extIdxUp
   def extIdxSaved = PipeMemRmw.extIdxSaved
   def extIdxLim = PipeMemRmw.extIdxLim
@@ -712,6 +713,12 @@ extends Area {
     }
     return false
   }
+  var wordCountMax: Int = 0
+  for (ydx <- 0 until memArrSize) {
+    if (wordCountMax < wordCountArr(ydx)) {
+      wordCountMax = wordCountArr(ydx)
+    }
+  }
   //--------
   //val io = slave(
   //  PipeMemIo(
@@ -731,14 +738,14 @@ extends Area {
     DualRdT,
   ](
     wordType=wordType(),
-    wordCount=wordCount,
+    wordCountMax=wordCountMax,
     //hazardCmpType=hazardCmpType(),
     modType=modType(),
     modRdPortCnt=modRdPortCnt,
     modStageCnt=modStageCnt,
     pipeName=pipeName,
     memArrIdx=memArrIdx,
-    memArrSize=memArrSize,
+    //memArrSize=memArrSize,
     dualRdType=dualRdType(),
     //dualRdSize=dualRdSize,
     optDualRd=optDualRd,
@@ -749,10 +756,10 @@ extends Area {
     vivadoDebug=vivadoDebug,
   )
   //--------
-  def mkMem() = {
+  def mkMem(ydx: Int) = {
     val ret = Mem(
       wordType=wordType(),
-      wordCount=wordCount,
+      wordCount=wordCountArr(ydx),
     )
       .addAttribute("ram_style", memRamStyle)
     init match {
@@ -813,22 +820,33 @@ extends Area {
   val modMem = (
     //optEnableModDuplicate
     optModHazardKind != PipeMemRmw.modHazardKindDont
-  ) generate (
-    Array.fill(memArrSize)(
-      Array.fill(modRdPortCnt)(
-        mkMem()
+  ) generate {
+    val myArr = new ArrayBuffer[Array[Mem[WordT]]]()
+    for (ydx <- 0 until memArrSize) {
+      myArr += (
+      //Array.fill(memArrSize)(
+        Array.fill(modRdPortCnt)(
+          mkMem(ydx=ydx)
+        )
+      //)
       )
-    )
-  )
+    }
+    myArr
+  }
   //val dualRdMemArr = new ArrayBuffer[Mem[WordT]]()
   //for (idx <- 0 until dualRdSize) {
   //  dualRdMemArr += mkMem()
   //}
-  val dualRdMem = (io.optDualRd) generate (
-    Array.fill(memArrSize)(
-      mkMem()
-    )
-  )
+  val dualRdMem = (io.optDualRd) generate {
+    val myArr = new ArrayBuffer[Mem[WordT]]()
+    //Array.fill(memArrSize)(
+    //  mkMem()
+    //)
+    for (ydx <- 0 until memArrSize) {
+      myArr += mkMem(ydx=ydx)
+    }
+    myArr
+  }
   def memWriteIterate(
     writeFunc: (Mem[WordT]) => Unit,
     ydx: Int,
@@ -864,7 +882,10 @@ extends Area {
           //ydx: Int,
         ) => {
           item.write(
-            address=address(ydx),
+            address=address(ydx)(
+              PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+              downto 0
+            ),
             data=data(ydx),
             enable=enable(ydx),
             //mask=mask(ydx),
@@ -888,7 +909,7 @@ extends Area {
       Vec.fill(extIdxLim)(
         PipeMemRmwPayloadExt(
           wordType=wordType(),
-          wordCount=wordCount,
+          wordCount=wordCountMax,
           hazardCmpType=hazardCmpType(),
           modRdPortCnt=modRdPortCnt,
           modStageCnt=modStageCnt,
@@ -926,7 +947,8 @@ extends Area {
   val mod = new Area {
     //--------
     val rReorderCommitHead = (optReorder) generate (
-      Reg(UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)) init(0x0)
+      Reg(UInt(PipeMemRmw.addrWidth(wordCount=wordCountMax) bits))
+      init(0x0)
     )
     if (optReorder) {
       io.reorderCommitHead := rReorderCommitHead
@@ -1934,7 +1956,10 @@ extends Area {
             modMem(ydx)(PipeMemRmw.modWrIdx).readSync(
               address=(
                 //upExtRealMemAddr(PipeMemRmw.modWrIdx)
-                upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)
+                upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)(
+                  PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+                  downto 0
+                )
               ),
               //address=myDownExt.memAddr,
               enable=(
@@ -1950,7 +1975,10 @@ extends Area {
             myNonFwdRdMemWord(ydx)(zdx) := modMem(ydx)(zdx).readSync(
               address=(
                 //upExtRealMemAddr(zdx)
-                upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+                upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
+                  PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+                  downto 0
+                )
               ),
               enable=(
                 //tempCond
@@ -2124,10 +2152,18 @@ extends Area {
               //) && 
               (
                 mod.front.findFirstFunc(
-                  currMemAddr=upExt(1)(ydx)(extIdxSingle).memAddr(zdx),
+                  currMemAddr=upExt(1)(ydx)(extIdxSingle).memAddr(zdx)(
+                    (
+                      PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+                      downto 0
+                    )
+                  ),
                   prevMemAddr=(
                     mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddr(
                       PipeMemRmw.modWrIdx
+                    )(
+                      PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+                      downto 0
                     )
                   ),
                   curr=(
@@ -2476,10 +2512,16 @@ extends Area {
           Mux[UInt](
             io.clear.fire,
             io.clear.payload,
-            upExt(0)(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx),
+            upExt(0)(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)(
+              PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+              downto 0
+            ),
           )
         ) else (
-          upExt(0)(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)
+          upExt(0)(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)(
+            PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+            downto 0
+          )
         )
       )
     }
@@ -2967,7 +3009,10 @@ extends Area {
       for (ydx <- 0 until memArrSize) {
         myRdMemWord := dualRdMem(ydx).readSync(
           address=(
-            myInpUpExt(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)
+            myInpUpExt(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)(
+              PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+              downto 0
+            )
           ),
           enable=up.isFiring,
         )

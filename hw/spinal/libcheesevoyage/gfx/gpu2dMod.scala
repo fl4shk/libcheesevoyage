@@ -4705,7 +4705,7 @@ case class Gpu2d(
           //params.objTileSize2d.x
           params.objSliceTileWidth
         )(ObjSubLineMemEntry()),
-        wordCount=params.objSubLineMemArrSize,
+        wordCountArr=Array.fill(1)(params.objSubLineMemArrSize).toSeq,
         hazardCmpType=WrObjPipeSlmRmwHazardCmp(isAffine=false),
         modType=WrObjPipePayload(isAffine=false),
         modRdPortCnt=wrObjPipeSlmRmwModRdPortCnt,
