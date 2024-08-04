@@ -4598,7 +4598,7 @@ case class Gpu2d(
           )(BgSubLineMemEntry()),
           wordCount=params.bgSubLineMemArrSize,
           pipeName=s"combineBgSubLineMemArr_${idx}",
-          initBigInt=Some(bgSubLineMemInitBigInt),
+          initBigInt=Some(Array.fill(1)(bgSubLineMemInitBigInt).toSeq),
           vivadoDebug=vivadoDebug,
         )(
           setWordFunc=(
@@ -4718,7 +4718,9 @@ case class Gpu2d(
           WrObjPipeSlmRmwHazardCmp,
         ],
         optDualRd=false,
-        initBigInt=Some(objSubLineMemInitBigInt.toSeq),
+        initBigInt=Some(
+          Array.fill(1)(objSubLineMemInitBigInt.toSeq).toSeq
+        ),
         optEnableClear=true,
         optModHazardKind=(
           //PipeMemRmw.modHazardKindFwd
@@ -4799,7 +4801,7 @@ case class Gpu2d(
         )(ObjSubLineMemEntry()),
         wordCount=params.objSubLineMemArrSize,
         pipeName=s"combineObjSubLineMemArr_${idx}",
-        initBigInt=Some(objSubLineMemInitBigInt),
+        initBigInt=Some(Array.fill(1)(objSubLineMemInitBigInt).toSeq),
         vivadoDebug=(
           if (idx == 0) (
             vivadoDebug
@@ -4886,7 +4888,9 @@ case class Gpu2d(
           )(ObjSubLineMemEntry()),
           wordCount=params.objAffineSubLineMemArrSize,
           pipeName=s"combineObjAffineSubLineMemArr_${idx}",
-          initBigInt=Some(objAffineSubLineMemInitBigInt),
+          initBigInt=Some(
+            Array.fill(1)(objAffineSubLineMemInitBigInt).toSeq
+          ),
           vivadoDebug=false,
         )(
           setWordFunc=(

@@ -238,7 +238,7 @@ case class PipeMemRmwSimDut(
         //println(tempArr.last)
       }
       //Some(Array.fill(wordCount)(BigInt(0)).toSeq)
-      Some(tempArr.toSeq)
+      Some(Array.fill(1)(tempArr.toSeq).toSeq)
     },
     //optEnableModDuplicate=(
     //  true,

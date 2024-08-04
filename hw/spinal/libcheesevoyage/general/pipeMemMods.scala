@@ -611,8 +611,8 @@ case class PipeMemRmw[
   optDualRd: Boolean=false,
   optReorder: Boolean=false,
   //dualRdSize: Int=0,
-  init: Option[Seq[WordT]]=None,
-  initBigInt: Option[Seq[BigInt]]=None,
+  init: Option[Seq[Seq[WordT]]]=None,
+  initBigInt: Option[Seq[Seq[BigInt]]]=None,
   //forFmax: Boolean=false,
   //optExtraCycleLatency: Boolean=false,
   //optDisableModRd: Boolean=false,
@@ -766,7 +766,7 @@ extends Area {
       case Some(myInit) => {
         //assert(myInit.size == wordCount)
         assert(initBigInt == None)
-        ret.init(myInit)
+        ret.init(myInit(ydx))
       }
       case None => {
       }
@@ -775,7 +775,7 @@ extends Area {
       case Some(myInitBigInt) => {
         //assert(myInitBigInt.size == wordCount)
         assert(init == None)
-        ret.initBigInt(myInitBigInt)
+        ret.initBigInt(myInitBigInt(ydx))
       }
       case None => {
         //ret.initBigInt({

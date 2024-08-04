@@ -226,7 +226,7 @@ case class WrPulseRdPipeSimpleDualPortMem[
   wordType: HardType[WordT],
   wordCount: Int,
   pipeName: String,
-  initBigInt: Option[ArrayBuffer[BigInt]]=None,
+  initBigInt: Option[Seq[Seq[BigInt]]]=None,
   linkArr: Option[ArrayBuffer[Link]]=None,
   //latency: Int=1,
   arrRamStyle: String="block",
