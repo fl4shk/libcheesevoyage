@@ -2511,17 +2511,17 @@ extends Area {
         if (optEnableClear) (
           Mux[UInt](
             io.clear.fire,
-            io.clear.payload,
+            io.clear.payload.resized,
             upExt(0)(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)(
               PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
               downto 0
-            ),
+            ).resized,
           )
         ) else (
           upExt(0)(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)(
             PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
             downto 0
-          )
+          ).resized
         )
       )
     }
