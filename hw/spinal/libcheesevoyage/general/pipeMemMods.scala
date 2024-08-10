@@ -745,7 +745,7 @@ extends Area {
     modStageCnt=modStageCnt,
     pipeName=pipeName,
     memArrIdx=memArrIdx,
-    //memArrSize=memArrSize,
+    memArrSize=memArrSize,
     dualRdType=dualRdType(),
     //dualRdSize=dualRdSize,
     optDualRd=optDualRd,
