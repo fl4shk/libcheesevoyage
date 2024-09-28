@@ -654,14 +654,15 @@ case class PipeMemRmw[
     (
       //PipeMemRmwPayloadExt[WordT, HazardCmpT],  // inp
       //PipeMemRmwPayloadExt[WordT, HazardCmpT],  // outp
-      Bool, // nextPrevTxnWasHazard,
-      Bool, // rPrevTxnWasHazard,
-      ModT, // outp
-      ModT, // inp
+      Vec[Bool], // nextPrevTxnWasHazard,
+      Vec[Bool], // rPrevTxnWasHazard,
+      Vec[ModT], // outp
+      Vec[ModT], // inp
       CtrlLink, // mod.front.cMid0Front
       Node,     // io.modFront
-      ModT, // io.tempModFrontPayload
-      WordT,    // myModMemWord
+      Vec[ModT], // io.tempModFrontPayload
+      //WordT,    // myModMemWord
+      (Int) => WordT, // getMyModMemWordFunc
       //Vec[WordT],  // myRdMemWord
       Int,    // ydx
     ) => Unit
@@ -2203,14 +2204,18 @@ extends Area {
         case Some(myDoModInModFrontFunc) => {
           //assert(modStageCnt == 0)
           myDoModInModFrontFunc(
-            nextPrevTxnWasHazard(ydx),
-            rPrevTxnWasHazard(ydx),
-            tempUpMod(2)(ydx),
-            tempUpMod(1)(ydx),
+            nextPrevTxnWasHazard,
+            rPrevTxnWasHazard,
+            tempUpMod(2),
+            tempUpMod(1),
             cMid0Front,
             io.modFront,
-            io.tempModFrontPayload(ydx),
-            upExt(1)(ydx)(extIdxSingle).rdMemWord(PipeMemRmw.modWrIdx),
+            io.tempModFrontPayload,
+            (someYdx: Int) => (
+              upExt(1)(someYdx)(extIdxSingle).rdMemWord(
+                PipeMemRmw.modWrIdx
+              )
+            ),
             //myRdMemWord,
             ydx,
           )
@@ -2511,17 +2516,17 @@ extends Area {
         if (optEnableClear) (
           Mux[UInt](
             io.clear.fire,
-            io.clear.payload.resized,
+            io.clear.payload,
             upExt(0)(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)(
               PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
               downto 0
-            ).resized,
+            ),
           )
         ) else (
           upExt(0)(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)(
             PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
             downto 0
-          ).resized
+          )
         )
       )
     }

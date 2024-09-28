@@ -316,17 +316,24 @@ case class PipeMemRmwSimDut(
       ) else (
         Some(
           (
-            nextPrevTxnWasHazard,
-            rPrevTxnWasHazard,
-            outp,
-            inp,
+            nextPrevTxnWasHazardVec,
+            rPrevTxnWasHazardVec,
+            outpVec,
+            inpVec,
             cMid0Front,
             modFront,
-            tempModFrontPayload,
+            tempModFrontPayloadVec,
             //myRdMemWord,
-            myModMemWord,
+            getMyModMemWordFunc,
             ydx,
           ) => {
+            def nextPrevTxnWasHazard = nextPrevTxnWasHazardVec(ydx)
+            def rPrevTxnWasHazard = rPrevTxnWasHazardVec(ydx)
+            def outp = outpVec(ydx)
+            def inp = inpVec(ydx)
+            def tempModFrontPayload = tempModFrontPayloadVec(ydx)
+            def myModMemWord = getMyModMemWordFunc(ydx)
+
             outp := inp
             outp.allowOverride
             val nextHaltItState = KeepAttribute(

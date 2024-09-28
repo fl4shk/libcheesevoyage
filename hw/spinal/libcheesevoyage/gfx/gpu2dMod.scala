@@ -441,6 +441,7 @@ case class Gpu2dParams(
     //log2Up(oneLineMemSize) - objTileWidthRshift
   )
   def objSubLineMemArrSize = 1 << objSubLineMemArrSizePow
+  //println(objSubLineMemArrSize)
   def getObjSubLineMemArrIdx(
     addr: UInt
   ): UInt = {
