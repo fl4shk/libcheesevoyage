@@ -2512,23 +2512,42 @@ extends Area {
     //)
     //when (up.isValid) {
     for (ydx <- 0 until memArrSize) {
-      myWriteAddr(ydx) := (
-        if (optEnableClear) (
-          Mux[UInt](
-            io.clear.fire,
-            io.clear.payload,
-            upExt(0)(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)(
-              PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
-              downto 0
-            ),
+      if (optEnableClear) {
+        when (io.clear.fire) {
+          myWriteAddr(ydx) := (
+            io.clear.payload
           )
-        ) else (
-          upExt(0)(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)(
-            PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
-            downto 0
+        } otherwise { // when (!io.clear.fire)
+          myWriteAddr(ydx) := (
+            upExt(0)(ydx)(extIdxSingle).memAddr(
+              PipeMemRmw.modWrIdx
+            ).resized
           )
+        }
+      } else { // if (!optEnableClear)
+        myWriteAddr(ydx) := (
+          upExt(0)(ydx)(extIdxSingle).memAddr(
+            PipeMemRmw.modWrIdx
+          ).resized
         )
-      )
+      }
+      //myWriteAddr(ydx) := (
+      //  if (optEnableClear) (
+      //    Mux[UInt](
+      //      io.clear.fire,
+      //      io.clear.payload,
+      //      upExt(0)(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)(
+      //        PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+      //        downto 0
+      //      ),
+      //    )
+      //  ) else (
+      //    upExt(0)(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)(
+      //      PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+      //      downto 0
+      //    )
+      //  )
+      //)
     }
     //}
     val myWriteData = mod.back.myWriteData
