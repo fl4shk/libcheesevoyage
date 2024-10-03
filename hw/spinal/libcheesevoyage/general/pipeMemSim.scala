@@ -318,6 +318,7 @@ case class PipeMemRmwSimDut(
           (
             nextPrevTxnWasHazardVec,
             rPrevTxnWasHazardVec,
+            rPrevTxnWasHazardAny,
             outpVec,
             inpVec,
             cMid0Front,
@@ -328,7 +329,7 @@ case class PipeMemRmwSimDut(
             ydx,
           ) => {
             def nextPrevTxnWasHazard = nextPrevTxnWasHazardVec(ydx)
-            def rPrevTxnWasHazard = rPrevTxnWasHazardVec(ydx)
+            //def rPrevTxnWasHazard = rPrevTxnWasHazardVec(ydx)
             def outp = outpVec(ydx)
             def inp = inpVec(ydx)
             def tempModFrontPayload = tempModFrontPayloadVec(ydx)
@@ -574,7 +575,8 @@ case class PipeMemRmwSimDut(
                   //PipeMemRmwSimDut.doAddrOneHaltIt
                   PipeMemRmwSimDut.doTestModOp
                 ) (
-                  rPrevTxnWasHazard
+                  //rPrevTxnWasHazard
+                  rPrevTxnWasHazardAny
                 ) else (
                   False
                 )

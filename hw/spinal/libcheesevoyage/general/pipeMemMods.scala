@@ -654,8 +654,9 @@ case class PipeMemRmw[
     (
       //PipeMemRmwPayloadExt[WordT, HazardCmpT],  // inp
       //PipeMemRmwPayloadExt[WordT, HazardCmpT],  // outp
-      Vec[Bool], // nextPrevTxnWasHazard,
-      Vec[Bool], // rPrevTxnWasHazard,
+      Vec[Bool], // nextPrevTxnWasHazardVec,
+      Vec[Bool], // rPrevTxnWasHazardVec,
+      Bool,      // rPrevTxnWasHazardAny,
       Vec[ModT], // outp
       Vec[ModT], // inp
       CtrlLink, // mod.front.cMid0Front
@@ -2051,28 +2052,39 @@ extends Area {
       upExt(1)(ydx).allowOverride
       upExt(2)(ydx).allowOverride
     }
-    val nextPrevTxnWasHazard = (
+    val nextPrevTxnWasHazardVec = (
       //(PipeMemRmwSimDut.doAddrOneHaltIt) generate (
         KeepAttribute(
           Vec.fill(memArrSize)(
             Bool()
           )
         )
-        .setName(s"${pipeName}_nextPrevTxnWasHazard")
+        .setName(s"${pipeName}_nextPrevTxnWasHazardVec")
       //)
     )
-    val rPrevTxnWasHazard = (
+    val rPrevTxnWasHazardVec = (
       //(PipeMemRmwSimDut.doAddrOneHaltIt) generate (
         KeepAttribute(
-          RegNext(nextPrevTxnWasHazard)
-          //init(nextPrevTxnWasHazard.getZero)
+          RegNext(nextPrevTxnWasHazardVec)
+          //init(nextPrevTxnWasHazardVec.getZero)
         )
-        .setName(s"${pipeName}_rPrevTxnWasHazard")
+        .setName(s"${pipeName}_rPrevTxnWasHazardVec")
       //)
     )
+    val rPrevTxnWasHazardAny = (
+      KeepAttribute(
+        Reg(Bool()) init(False)
+      )
+      .setName(s"${pipeName}_rPrevTxnWasHazardAny")
+    )
+    rPrevTxnWasHazardAny := (
+      nextPrevTxnWasHazardVec.sFindFirst(
+        _ === True
+      )._1
+    )
     for (ydx <- 0 until memArrSize) {
-      rPrevTxnWasHazard(ydx).init(nextPrevTxnWasHazard(ydx).getZero)
-      nextPrevTxnWasHazard(ydx) := rPrevTxnWasHazard(ydx)
+      rPrevTxnWasHazardVec(ydx).init(nextPrevTxnWasHazardVec(ydx).getZero)
+      nextPrevTxnWasHazardVec(ydx) := rPrevTxnWasHazardVec(ydx)
       for (extIdx <- 0 until extIdxLim) {
         myUpExtDel(0)(ydx)(extIdx).valid.allowOverride
         myUpExtDel(0)(ydx)(extIdx).ready.allowOverride
@@ -2204,8 +2216,9 @@ extends Area {
         case Some(myDoModInModFrontFunc) => {
           //assert(modStageCnt == 0)
           myDoModInModFrontFunc(
-            nextPrevTxnWasHazard,
-            rPrevTxnWasHazard,
+            nextPrevTxnWasHazardVec,
+            rPrevTxnWasHazardVec,
+            rPrevTxnWasHazardAny,
             tempUpMod(2),
             tempUpMod(1),
             cMid0Front,
