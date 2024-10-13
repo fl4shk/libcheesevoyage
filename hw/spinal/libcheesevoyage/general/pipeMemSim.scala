@@ -316,24 +316,37 @@ case class PipeMemRmwSimDut(
       ) else (
         Some(
           (
-            nextPrevTxnWasHazardVec,
-            rPrevTxnWasHazardVec,
-            rPrevTxnWasHazardAny,
-            outpVec,
-            inpVec,
-            cMid0Front,
-            modFront,
-            tempModFrontPayloadVec,
-            //myRdMemWord,
-            getMyModMemWordFunc,
-            ydx,
+            doModInModFrontParams
+            //nextPrevTxnWasHazardVec,
+            //rPrevTxnWasHazardVec,
+            //rPrevTxnWasHazardAny,
+            //outpVec,
+            //inpVec,
+            //cMid0Front,
+            //modFront,
+            //tempModFrontPayloadVec,
+            ////myRdMemWord,
+            //getMyModMemWordFunc,
+            //ydx,
           ) => {
-            def nextPrevTxnWasHazard = nextPrevTxnWasHazardVec(ydx)
+            def nextPrevTxnWasHazard = (
+              doModInModFrontParams.nextPrevTxnWasHazardVec(ydx)
+            )
             //def rPrevTxnWasHazard = rPrevTxnWasHazardVec(ydx)
-            def outp = outpVec(ydx)
-            def inp = inpVec(ydx)
-            def tempModFrontPayload = tempModFrontPayloadVec(ydx)
-            def myModMemWord = getMyModMemWordFunc(ydx)
+            def rPrevTxnWasHazardAny = (
+              doModInModFrontParams.rPrevTxnWasHazardAny
+            )
+            def outp = doModInModFrontParams.outpVec(ydx)
+            def inp = doModInModFrontParams.inpVec(ydx)
+            def cMid0Front = doModInModFrontParams.cMid0Front
+            def modFront = doModInModFrontParams.modFront
+            def tempModFrontPayload = (
+              doModInModFrontParams.tempModFrontPayloadVec(ydx)
+            )
+            def myModMemWord = (
+              doModInModFrontParams.getMyModMemWordFunc(ydx)
+            )
+            def ydx = doModInModFrontParams.ydx
 
             outp := inp
             outp.allowOverride

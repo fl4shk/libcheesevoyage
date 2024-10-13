@@ -17,17 +17,17 @@ object LongDivMultiCycleTopLevelSystemVerilog extends App {
   //val report = SpinalSystemVerilog(new LongUdivIter(params=params))
   //report.printPruned()
 }
-object LongDivPipelinedTopLevelSystemVerilog extends App {
-  val mainWidth = 4
-  val denomWidth = 4
-  val chunkWidth = 2
-  val usePipeSkidBuf = true
-  Config.spinal.generateSystemVerilog(LongDivPipelined(
-    mainWidth=mainWidth,
-    denomWidth=denomWidth,
-    chunkWidth=chunkWidth,
-    usePipeSkidBuf=usePipeSkidBuf,
-  ))
-  //val report = SpinalSystemVerilog(new LongUdivIter(params=params))
-  //report.printPruned()
-}
+//object LongDivPipelinedTopLevelSystemVerilog extends App {
+//  val mainWidth = 4
+//  val denomWidth = 4
+//  val chunkWidth = 2
+//  val usePipeSkidBuf = true
+//  Config.spinal.generateSystemVerilog(LongDivPipelined(
+//    mainWidth=mainWidth,
+//    denomWidth=denomWidth,
+//    chunkWidth=chunkWidth,
+//    usePipeSkidBuf=usePipeSkidBuf,
+//  ))
+//  //val report = SpinalSystemVerilog(new LongUdivIter(params=params))
+//  //report.printPruned()
+//}

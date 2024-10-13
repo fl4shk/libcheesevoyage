@@ -588,6 +588,27 @@ trait PipeMemRmwReorderFtable[
   //--------
 }
 // A Read-Modify-Write pipelined BRAM
+case class PipeMemRmwDoModInModFrontFuncParams[
+  WordT <: Data,
+  HazardCmpT <: Data,
+  ModT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
+](
+  //inp: PipeMemRmwPayloadExt[WordT, HazardCmpT],
+  //outp: PipeMemRmwPayloadExt[WordT, HazardCmpT],
+  nextPrevTxnWasHazardVec: Vec[Bool],
+  rPrevTxnWasHazardVec: Vec[Bool],
+  rPrevTxnWasHazardAny: Bool,
+  outpVec: Vec[ModT],
+  inpVec: Vec[ModT],
+  cMid0Front: CtrlLink, // mod.front.cMid0Front
+  modFront: Node,     // io.modFront
+  tempModFrontPayloadVec: Vec[ModT], // io.tempModFrontPayload
+  //myModMemWord: WordT,    // myModMemWord
+  getMyModMemWordFunc: (Int) => WordT, // getMyModMemWordFunc
+  //Vec[WordT],  // myRdMemWord
+  ydx: Int,    // ydx
+) {
+}
 case class PipeMemRmw[
   WordT <: Data,
   HazardCmpT <: Data,
@@ -652,20 +673,11 @@ case class PipeMemRmw[
     //  ModT <: Data,
     //]
     (
-      //PipeMemRmwPayloadExt[WordT, HazardCmpT],  // inp
-      //PipeMemRmwPayloadExt[WordT, HazardCmpT],  // outp
-      Vec[Bool], // nextPrevTxnWasHazardVec,
-      Vec[Bool], // rPrevTxnWasHazardVec,
-      Bool,      // rPrevTxnWasHazardAny,
-      Vec[ModT], // outp
-      Vec[ModT], // inp
-      CtrlLink, // mod.front.cMid0Front
-      Node,     // io.modFront
-      Vec[ModT], // io.tempModFrontPayload
-      //WordT,    // myModMemWord
-      (Int) => WordT, // getMyModMemWordFunc
-      //Vec[WordT],  // myRdMemWord
-      Int,    // ydx
+      PipeMemRmwDoModInModFrontFuncParams[
+        WordT,
+        HazardCmpT,
+        ModT,
+      ],
     ) => Unit
   ]=None,
   //doFwdFunc: Option[
@@ -2216,21 +2228,23 @@ extends Area {
         case Some(myDoModInModFrontFunc) => {
           //assert(modStageCnt == 0)
           myDoModInModFrontFunc(
-            nextPrevTxnWasHazardVec,
-            rPrevTxnWasHazardVec,
-            rPrevTxnWasHazardAny,
-            tempUpMod(2),
-            tempUpMod(1),
-            cMid0Front,
-            io.modFront,
-            io.tempModFrontPayload,
-            (someYdx: Int) => (
-              upExt(1)(someYdx)(extIdxSingle).rdMemWord(
-                PipeMemRmw.modWrIdx
-              )
-            ),
-            //myRdMemWord,
-            ydx,
+            PipeMemRmwDoModInModFrontFuncParams(
+              nextPrevTxnWasHazardVec,
+              rPrevTxnWasHazardVec,
+              rPrevTxnWasHazardAny,
+              tempUpMod(2),
+              tempUpMod(1),
+              cMid0Front,
+              io.modFront,
+              io.tempModFrontPayload,
+              (someYdx: Int) => (
+                upExt(1)(someYdx)(extIdxSingle).rdMemWord(
+                  PipeMemRmw.modWrIdx
+                )
+              ),
+              //myRdMemWord,
+              ydx,
+            )
           )
         }
         case None => {
