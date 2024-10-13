@@ -780,7 +780,7 @@ case class LongUdivIterSync(
           )
         }
       )
-    when(ofwdMvp) {
+    when (ofwdMvp) {
       //--------
       assert(
         //Mux(
