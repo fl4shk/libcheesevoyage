@@ -1,4 +1,4 @@
-package libcheesevoyage.general
+package libcheesevoyage.formal
 
 import spinal.core._
 import spinal.core.formal._
