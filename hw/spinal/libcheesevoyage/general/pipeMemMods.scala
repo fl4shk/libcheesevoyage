@@ -595,18 +595,18 @@ case class PipeMemRmwDoModInModFrontFuncParams[
 ](
   //inp: PipeMemRmwPayloadExt[WordT, HazardCmpT],
   //outp: PipeMemRmwPayloadExt[WordT, HazardCmpT],
-  nextPrevTxnWasHazardVec: Vec[Bool],
-  rPrevTxnWasHazardVec: Vec[Bool],
-  rPrevTxnWasHazardAny: Bool,
-  outpVec: Vec[ModT],
-  inpVec: Vec[ModT],
-  cMid0Front: CtrlLink, // mod.front.cMid0Front
-  modFront: Node,     // io.modFront
-  tempModFrontPayloadVec: Vec[ModT], // io.tempModFrontPayload
-  //myModMemWord: WordT,    // myModMemWord
-  getMyModMemWordFunc: (Int) => WordT, // getMyModMemWordFunc
+  nextPrevTxnWasHazardVec: Vec[Bool],   // nextPrevTxnWasHazardVec
+  rPrevTxnWasHazardVec: Vec[Bool],      // rPrevTxnWasHazardVec
+  rPrevTxnWasHazardAny: Bool,           // rPrevTxnWasHazardAny
+  outpVec: Vec[ModT],                   // tempUpMod(2),
+  inpVec: Vec[ModT],                    // tempUpMod(1),
+  cMid0Front: CtrlLink,                 // mod.front.cMid0Front
+  modFront: Node,                       // io.modFront
+  tempModFrontPayloadVec: Vec[ModT],    // io.tempModFrontPayload
+  //myModMemWord: WordT,                // myModMemWord
+  getMyModMemWordFunc: (Int) => WordT,  // getMyModMemWordFunc
   //Vec[WordT],  // myRdMemWord
-  ydx: Int,    // ydx
+  ydx: Int,                             // ydx
 ) {
 }
 case class PipeMemRmw[
@@ -2229,21 +2229,21 @@ extends Area {
           //assert(modStageCnt == 0)
           myDoModInModFrontFunc(
             PipeMemRmwDoModInModFrontFuncParams(
-              nextPrevTxnWasHazardVec,
-              rPrevTxnWasHazardVec,
-              rPrevTxnWasHazardAny,
-              tempUpMod(2),
-              tempUpMod(1),
-              cMid0Front,
-              io.modFront,
-              io.tempModFrontPayload,
-              (someYdx: Int) => (
+              nextPrevTxnWasHazardVec,  // nextPrevTxnWasHazardVec
+              rPrevTxnWasHazardVec,     // rPrevTxnWasHazardVec
+              rPrevTxnWasHazardAny,     // rPrevTxnWasHazardAny
+              tempUpMod(2),             // outpVec
+              tempUpMod(1),             // inpVec
+              cMid0Front,               // cMid0Front
+              io.modFront,              // modFront
+              io.tempModFrontPayload,   // tempModFrontPayloadVec
+              (someYdx: Int) => (       // getMyModMemWordFunc
                 upExt(1)(someYdx)(extIdxSingle).rdMemWord(
                   PipeMemRmw.modWrIdx
                 )
               ),
               //myRdMemWord,
-              ydx,
+              ydx,                      // ydx
             )
           )
         }
