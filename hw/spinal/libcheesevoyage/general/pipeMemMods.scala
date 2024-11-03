@@ -604,7 +604,7 @@ case class PipeMemRmwDoModInModFrontFuncParams[
   modFront: Node,                       // io.modFront
   tempModFrontPayloadVec: Vec[ModT],    // io.tempModFrontPayload
   //myModMemWord: WordT,                // myModMemWord
-  getMyModMemWordFunc: (Int) => WordT,  // getMyModMemWordFunc
+  getMyRdMemWordFunc: (Int) => WordT,  // getMyRdMemWordFunc
   //Vec[WordT],  // myRdMemWord
   ydx: Int,                             // ydx
 ) {
@@ -2237,7 +2237,7 @@ extends Area {
               cMid0Front,               // cMid0Front
               io.modFront,              // modFront
               io.tempModFrontPayload,   // tempModFrontPayloadVec
-              (someYdx: Int) => (       // getMyModMemWordFunc
+              (someYdx: Int) => (       // getMyRdMemWordFunc
                 upExt(1)(someYdx)(extIdxSingle).rdMemWord(
                   PipeMemRmw.modWrIdx
                 )

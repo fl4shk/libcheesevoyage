@@ -326,7 +326,7 @@ case class PipeMemRmwSimDut(
             //modFront,
             //tempModFrontPayloadVec,
             ////myRdMemWord,
-            //getMyModMemWordFunc,
+            //getMyRdMemWordFunc,
             //ydx,
           ) => {
             def nextPrevTxnWasHazard = (
@@ -343,8 +343,8 @@ case class PipeMemRmwSimDut(
             def tempModFrontPayload = (
               doModInModFrontParams.tempModFrontPayloadVec(ydx)
             )
-            def myModMemWord = (
-              doModInModFrontParams.getMyModMemWordFunc(ydx)
+            def myRdMemWord = (
+              doModInModFrontParams.getMyRdMemWordFunc(ydx)
             )
             def ydx = doModInModFrontParams.ydx
 
@@ -368,7 +368,7 @@ case class PipeMemRmwSimDut(
             nextHaltItState := rHaltItState
             nextMulHaltItCnt := rMulHaltItCnt
             def setOutpModMemWord(
-              someModMemWord: UInt=myModMemWord
+              someModMemWord: UInt=myRdMemWord
             ): Unit = {
               outp.myExt.modMemWord := (
                 someModMemWord + 0x1
@@ -376,8 +376,8 @@ case class PipeMemRmwSimDut(
               outp.myExt.modMemWordValid := True
             }
             val rSavedModMemWord = (
-              Reg(cloneOf(myModMemWord))
-              init(myModMemWord.getZero)
+              Reg(cloneOf(myRdMemWord))
+              init(myRdMemWord.getZero)
             )
               .setName("doModInModFrontFunc_rSavedModMemWord")
             val rPrevOutp = KeepAttribute(
@@ -404,7 +404,7 @@ case class PipeMemRmwSimDut(
                   nextMulHaltItCnt := myInitMulHaltItCnt
                 }
                 outp.myExt.modMemWordValid := False
-                rSavedModMemWord := myModMemWord
+                rSavedModMemWord := myRdMemWord
               }
             }
             def doMulHaltItFsmHaltItInnards(): Unit = {
@@ -452,7 +452,7 @@ case class PipeMemRmwSimDut(
                 haveCurrLoad: Boolean,
               ): Unit = {
                 def handleCurrFire(
-                  someModMemWord: UInt=myModMemWord
+                  someModMemWord: UInt=myRdMemWord
                 ): Unit = {
                   outp.myExt.valid := True
                   nextPrevTxnWasHazard := False
@@ -484,8 +484,8 @@ case class PipeMemRmwSimDut(
                     + s"_rState"
                   )
                 val rSavedModMemWord1 = (
-                  Reg(cloneOf(myModMemWord))
-                  init(myModMemWord.getZero)
+                  Reg(cloneOf(myRdMemWord))
+                  init(myRdMemWord.getZero)
                   .setName(
                     s"doModInModFrontFunc"
                     + s"_${doCheckHazard}_${haveCurrLoad}"
@@ -504,7 +504,7 @@ case class PipeMemRmwSimDut(
                         if (haveCurrLoad) {
                           //cMid0Front.duplicateIt()
                           handleDuplicateIt()
-                          rSavedModMemWord1 := myModMemWord
+                          rSavedModMemWord1 := myRdMemWord
                           rState := True
                         } else {  // if (!haveCurrLoad)
                           when (modFront.isFiring) {
