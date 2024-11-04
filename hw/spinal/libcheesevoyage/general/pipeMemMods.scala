@@ -665,7 +665,7 @@ case class PipeMemRmw[
       CtrlLink, // mod.front.cFront
       //Vec[UInt], // upExt(1)(extIdxUp).memAddr
       Int, // ydx
-    ) => Unit
+    ) => Area
   ]=None,
   //--------
   doModInModFrontFunc: Option[
@@ -678,7 +678,7 @@ case class PipeMemRmw[
         HazardCmpT,
         ModT,
       ],
-    ) => Unit
+    ) => Area
   ]=None,
   //doFwdFunc: Option[
   //  (
@@ -1917,14 +1917,18 @@ extends Area {
       // END: no hazard resolution code; fix later 
       //--------
     }
+    val myDoModInFrontAreaArr = new ArrayBuffer[Area]()
     for (ydx <- 0 until memArrSize) {
       doModInFrontFunc match {
         case Some(myDoModInFrontFunc) => {
-          myDoModInFrontFunc(
-            tempUpMod(1)(ydx),
-            tempUpMod(0)(ydx),
-            cFront,
-            ydx,
+          myDoModInFrontAreaArr += (
+            myDoModInFrontFunc(
+              tempUpMod(1)(ydx),
+              tempUpMod(0)(ydx),
+              cFront,
+              ydx,
+            )
+            .setName(s"${pipeName}_myDoModInFrontAreaArr_${ydx}")
           )
         }
         case None => {
@@ -2224,27 +2228,32 @@ extends Area {
         upExt(1)(ydx)(extIdxSingle).rdMemWord := myRdMemWord(ydx)
       }
       upExt(1)(ydx)(extIdxSingle).modMemWordValid := True
+
+      val myDoModInModFrontAreaArr = new ArrayBuffer[Area]()
       doModInModFrontFunc match {
         case Some(myDoModInModFrontFunc) => {
           //assert(modStageCnt == 0)
-          myDoModInModFrontFunc(
-            PipeMemRmwDoModInModFrontFuncParams(
-              nextPrevTxnWasHazardVec,  // nextPrevTxnWasHazardVec
-              rPrevTxnWasHazardVec,     // rPrevTxnWasHazardVec
-              rPrevTxnWasHazardAny,     // rPrevTxnWasHazardAny
-              tempUpMod(2),             // outpVec
-              tempUpMod(1),             // inpVec
-              cMid0Front,               // cMid0Front
-              io.modFront,              // modFront
-              io.tempModFrontPayload,   // tempModFrontPayloadVec
-              (someYdx: Int) => (       // getMyRdMemWordFunc
-                upExt(1)(someYdx)(extIdxSingle).rdMemWord(
-                  PipeMemRmw.modWrIdx
-                )
-              ),
-              //myRdMemWord,
-              ydx,                      // ydx
+          myDoModInModFrontAreaArr += (
+            myDoModInModFrontFunc(
+              PipeMemRmwDoModInModFrontFuncParams(
+                nextPrevTxnWasHazardVec,  // nextPrevTxnWasHazardVec
+                rPrevTxnWasHazardVec,     // rPrevTxnWasHazardVec
+                rPrevTxnWasHazardAny,     // rPrevTxnWasHazardAny
+                tempUpMod(2),             // outpVec
+                tempUpMod(1),             // inpVec
+                cMid0Front,               // cMid0Front
+                io.modFront,              // modFront
+                io.tempModFrontPayload,   // tempModFrontPayloadVec
+                (someYdx: Int) => (       // getMyRdMemWordFunc
+                  upExt(1)(someYdx)(extIdxSingle).rdMemWord(
+                    PipeMemRmw.modWrIdx
+                  )
+                ),
+                //myRdMemWord,
+                ydx,                      // ydx
+              )
             )
+              .setName(s"${pipeName}_myDoModInModFrontAreaArr_${ydx}")
           )
         }
         case None => {

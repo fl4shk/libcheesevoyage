@@ -258,16 +258,16 @@ case class PipeMemRmwSimDut(
       if (!(
         optModHazardKind == PipeMemRmw.modHazardKindFwd
         && PipeMemRmwSimDut.doTestModOp
-      )) (
+      )) {
         None
-      ) else (
+      } else {
         Some(
           (
             outp,
             inp,
             cFront,
             ydx,
-          ) => {
+          ) => new Area {
             //GenerationFlags.formal {
               when (
                 cFront.up.isValid
@@ -308,7 +308,7 @@ case class PipeMemRmwSimDut(
             //}
           }
         )
-      )
+      }
     ),
     doModInModFrontFunc=(
       if (optModHazardKind != PipeMemRmw.modHazardKindFwd) (
@@ -328,7 +328,7 @@ case class PipeMemRmwSimDut(
             ////myRdMemWord,
             //getMyRdMemWordFunc,
             //ydx,
-          ) => {
+          ) => new Area {
             def nextPrevTxnWasHazard = (
               doModInModFrontParams.nextPrevTxnWasHazardVec(ydx)
             )
