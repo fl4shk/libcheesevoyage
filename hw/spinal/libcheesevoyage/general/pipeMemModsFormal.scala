@@ -9,10 +9,15 @@ import scala.math._
 
 import libcheesevoyage.Config
 
-object PipeMemRmwFormalBmc extends App {
+object PipeMemRmwFormal extends App {
   //--------
   //--------
-  case class PipeMemRmwFormalDutBmc() extends Component {
+  def myProveNumCycles = (
+    //10
+    //15
+    16
+  )
+  case class PipeMemRmwFormalDut() extends Component {
     val dut = FormalDut(PipeMemRmwTester())
 
     assumeInitial(clockDomain.isResetActive)
@@ -20,8 +25,8 @@ object PipeMemRmwFormalBmc extends App {
     //def modFront = dut.pmIo.modFront
     //def modBack = dut.dut.io.modBack
     def back = dut.io.back //dut.pmIo.back
-    front.formalAssumesSlave(payloadInvariance=false)
-    back.formalAssertsMaster(payloadInvariance=false)
+    front.formalAssumesSlave(payloadInvariance=true)
+    back.formalAssertsMaster(payloadInvariance=true)
 
     //def dualRdFront = dut.io.dualRdFront
     //def dualRdBack = dut.io.dualRdBack
@@ -33,6 +38,13 @@ object PipeMemRmwFormalBmc extends App {
       //=== dut.pmIo.front(dut.frontPayload).getZero
       //tempFrontPayload === tempFrontPayload.getZero
     )
+    //when (pastValidAfterReset) {
+    //  when (front.fire) {
+    //    assume(
+    //      front.opCnt === past(front.opCnt) + 1
+    //    )
+    //  }
+    //}
     //assumeInitial(
     //  front.valid === front.valid.getZero
     //)
@@ -51,20 +63,32 @@ object PipeMemRmwFormalBmc extends App {
     //anyseq(
     //  front.myExt.memAddr
     //)
-    when (front.fire) {
-    } otherwise {
-      assume(
-        stable(front.dcacheHit)
-      )
-      assume(
-        stable(front.op)
-      )
-      assume(
-        stable(front.opCnt)
-      )
-      assume(
-        stable(front.myExt.memAddr)
-      )
+    assume(
+      front.op =/= PipeMemRmwSimDut.ModOp.MUL_RA_RB
+    )
+    assume(
+      front.op.asBits.asUInt
+      < PipeMemRmwSimDut.ModOp.LIM.asBits.asUInt
+    )
+    when (pastValidAfterReset) {
+      when (front.fire) {
+        assume(
+          front.opCnt === past(front.opCnt) + 1
+        )
+      } otherwise {
+        assume(
+          stable(front.dcacheHit)
+        )
+        assume(
+          stable(front.op)
+        )
+        assume(
+          stable(front.opCnt)
+        )
+        assume(
+          stable(front.myExt.memAddr)
+        )
+      }
     }
     assume(
       front.myExt.modMemWord
@@ -134,17 +158,21 @@ object PipeMemRmwFormalBmc extends App {
     .withBMC(
       //20
       //15
-      16
+      //16
+      PipeMemRmwFormal.myProveNumCycles
     )
     //.withProve(
-    //  20
+    //  //20
     //  //40
+    //  //10
+    //  PipeMemRmwFormal.myProveNumCycles
     //)
     //.withCover(
+    //  PipeMemRmwFormal.myProveNumCycles
     //  //20
-    //  60
+    //  //60
     //)
-    .doVerify(PipeMemRmwFormalDutBmc())
+    .doVerify(PipeMemRmwFormalDut())
   //--------
 }
 
