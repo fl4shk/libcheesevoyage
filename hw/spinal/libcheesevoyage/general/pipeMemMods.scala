@@ -2103,19 +2103,33 @@ extends Area {
     val rPrevTxnWasHazardVec = (
       //(PipeMemRmwSimDut.doAddrOneHaltIt) generate (
         KeepAttribute(
-          RegNext(nextPrevTxnWasHazardVec)
+          RegNextWhen(
+            nextPrevTxnWasHazardVec,
+            up.isFiring
+          )
           //init(nextPrevTxnWasHazardVec.getZero)
         )
         .setName(s"${pipeName}_rPrevTxnWasHazardVec")
       //)
     )
+    val nextPrevTxnWasHazardAny = (
+      KeepAttribute(
+        Bool()
+      )
+      .setName(s"${pipeName}_nextPrevTxnWasHazardAny")
+    )
     val rPrevTxnWasHazardAny = (
       KeepAttribute(
-        Reg(Bool()) init(False)
+        //Reg(Bool()) init(False)
+        RegNextWhen(
+          nextPrevTxnWasHazardAny,
+          up.isFiring
+        )
+        init(False)
       )
       .setName(s"${pipeName}_rPrevTxnWasHazardAny")
     )
-    rPrevTxnWasHazardAny := (
+    nextPrevTxnWasHazardAny := (
       nextPrevTxnWasHazardVec.sFindFirst(
         _ === True
       )._1
@@ -2245,6 +2259,37 @@ extends Area {
     //  upExt(1).rdMemWord := myRdMemWord
     //}
     for (ydx <- 0 until memArrSize) {
+      //GenerationFlags.formal {
+        //when (
+        //  //past(cMid0Front.up.isFiring) init(False)
+        //  io.modFront.isValid
+        //) {
+        //  //for (zdx <- 0 until upExt(1)(ydx)(extIdxSingle).rdMemWord.size) {
+        //    val tempMyExt = mkExt(myVivadoDebug=true)
+        //    //io.tempModFrontPayload
+        //    io.tempModFrontPayload(ydx).getPipeMemRmwExt(
+        //      outpExt=tempMyExt(ydx)(extIdxUp),
+        //      memArrIdx=memArrIdx,
+        //    )
+        //    for (zdx <- 0 until modRdPortCnt) {
+        //      assert(
+        //        (
+        //          RegNextWhen(
+        //            //inp.myExt.rdMemWord(ydx),
+        //            upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx),
+        //            up.isFiring,
+        //          )
+        //          init(upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx).getZero)
+        //        ) === (
+        //          tempMyExt(ydx)(extIdxSingle).rdMemWord(zdx)
+        //          //io.tempModFrontPayload.myExt.rdMemWord(ydx)
+        //          //myRdMemWord(ydx)
+        //        )
+        //      )
+        //    }
+        //  //}
+        //}
+      //}
       when (
         //RegNext(up.isReady)
         RegNext(cFrontArea.tempSharedEnable) init(False)

@@ -63,9 +63,9 @@ object PipeMemRmwFormal extends App {
     //anyseq(
     //  front.myExt.memAddr
     //)
-    assume(
-      front.op =/= PipeMemRmwSimDut.ModOp.MUL_RA_RB
-    )
+    //assume(
+    //  front.op =/= PipeMemRmwSimDut.ModOp.MUL_RA_RB
+    //)
     assume(
       front.op.asBits.asUInt
       < PipeMemRmwSimDut.ModOp.LIM.asBits.asUInt

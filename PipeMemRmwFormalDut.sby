@@ -1,0 +1,16 @@
+[tasks]
+prove_my prove
+
+[options]
+prove: mode prove
+
+[engines]
+prove: abc pdr
+
+[script]
+read -formal PipeMemRmwFormalDut.sv
+prep  -top PipeMemRmwFormalDut
+
+[files]
+rtl/PipeMemRmwFormalDut.sv
+rtl/PipeMemRmwFormalDut.sv_toplevel_dut_dut_pipeMem_modMem_0_0.bin
