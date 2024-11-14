@@ -646,6 +646,7 @@ case class PipeMemRmw[
   vivadoDebug: Boolean=false,
   //optLinkFrontToModFront: Boolean=true,
   optIncludeModFrontStageLink: Boolean=true,
+  optFormal: Boolean=false,
 )(
   //--------
   doHazardCmpFunc: Option[
@@ -2146,9 +2147,12 @@ extends Area {
         up.isValid
       ) {
         upExt(1)(ydx)(extIdxSingle) := upExt(0)(ydx)(extIdxSingle)
-        upExt(1)(ydx)(extIdxSingle).rdMemWord := (
-          RegNext(upExt(1)(ydx)(extIdxSingle).rdMemWord)
-        )
+        for (zdx <- 0 until modRdPortCnt) {
+          upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
+            RegNext(upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx))
+            init(upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx).getZero)
+          )
+        }
         //upExt(1)(ydx)(extIdxSingle).modMemWord := upExt(2)(ydx)(extIdxUp).modMemWord
       }
       myUpExtDel(0)(ydx)(extIdxUp) := (

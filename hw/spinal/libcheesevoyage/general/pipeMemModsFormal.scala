@@ -13,9 +13,9 @@ object PipeMemRmwFormal extends App {
   //--------
   //--------
   def myProveNumCycles = (
-    //10
+    10
     //15
-    16
+    //16
   )
   case class PipeMemRmwFormalDut() extends Component {
     val dut = FormalDut(PipeMemRmwTester())
@@ -68,7 +68,7 @@ object PipeMemRmwFormal extends App {
     //)
     assume(
       front.op.asBits.asUInt
-      < PipeMemRmwSimDut.ModOp.LIM.asBits.asUInt
+      < PipeMemRmwSimDut.ModOp.MUL_RA_RB.asBits.asUInt
     )
     when (pastValidAfterReset) {
       when (front.fire) {
@@ -155,23 +155,23 @@ object PipeMemRmwFormal extends App {
     ),
     _keepDebugInfo=true,
   )
-    .withBMC(
+    //.withBMC(
+    //  //20
+    //  //15
+    //  //16
+    //  PipeMemRmwFormal.myProveNumCycles
+    //)
+    .withProve(
       //20
-      //15
-      //16
+      //40
+      //10
       PipeMemRmwFormal.myProveNumCycles
     )
-    //.withProve(
-    //  //20
-    //  //40
-    //  //10
-    //  PipeMemRmwFormal.myProveNumCycles
-    //)
-    //.withCover(
-    //  PipeMemRmwFormal.myProveNumCycles
-    //  //20
-    //  //60
-    //)
+    .withCover(
+      PipeMemRmwFormal.myProveNumCycles
+      //20
+      //60
+    )
     .doVerify(PipeMemRmwFormalDut())
   //--------
 }
