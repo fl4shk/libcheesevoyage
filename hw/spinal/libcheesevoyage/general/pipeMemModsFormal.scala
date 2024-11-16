@@ -68,7 +68,8 @@ object PipeMemRmwFormal extends App {
     //)
     assume(
       front.op.asBits.asUInt
-      < PipeMemRmwSimDut.ModOp.MUL_RA_RB.asBits.asUInt
+      //< PipeMemRmwSimDut.ModOp.MUL_RA_RB.asBits.asUInt
+      < PipeMemRmwSimDut.postMaxModOp.asBits.asUInt
     )
     when (pastValidAfterReset) {
       when (front.fire) {

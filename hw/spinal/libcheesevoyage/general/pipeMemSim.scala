@@ -72,6 +72,10 @@ object PipeMemRmwSimDut {
       LIM
       = newElement();
   }
+  val postMaxModOp = (
+    ModOp.MUL_RA_RB
+    //ModOp.LIM
+  )
   //def formalHaltItCnt = (
   //  1
   //)
@@ -555,7 +559,8 @@ case class PipeMemRmwSimDut(
               //)
               assume(
                 inp.op.asBits.asUInt
-                < PipeMemRmwSimDut.ModOp.MUL_RA_RB.asBits.asUInt
+                //< PipeMemRmwSimDut.ModOp.MUL_RA_RB.asBits.asUInt
+                < PipeMemRmwSimDut.postMaxModOp.asBits.asUInt
               )
               when (pastValidAfterReset) {
                 assert(
@@ -623,7 +628,8 @@ case class PipeMemRmwSimDut(
             def ydx = doModInModFrontParams.ydx
             assume(
               inp.op.asBits.asUInt
-              < PipeMemRmwSimDut.ModOp.MUL_RA_RB.asBits.asUInt
+              //< PipeMemRmwSimDut.ModOp.MUL_RA_RB.asBits.asUInt
+              < PipeMemRmwSimDut.postMaxModOp.asBits.asUInt
             )
 
             val nextSetOutpState = (
@@ -663,8 +669,8 @@ case class PipeMemRmwSimDut(
                 //    cMid0Front.up.isValid
                 //    && !rSetOutpState
                 //  ),
-                //  U(s"2'd1"),
-                  U(s"2'd2"),
+                  U(s"2'd1"),
+                  //U(s"2'd2"),
                 //),
                 ydx
               )
@@ -972,7 +978,8 @@ case class PipeMemRmwSimDut(
                 )
               }
               def handleDuplicateIt(
-                actuallyDuplicateIt: Boolean=true
+                //actuallyDuplicateIt: Boolean=true
+                someModMemWordValid: Bool
               ): Unit = {
                 //outp := (
                 //  RegNext(outp) init(outp.getZero)
@@ -980,326 +987,13 @@ case class PipeMemRmwSimDut(
                 //nextPrevTxnWasHazard := True
                 outp.myExt.valid := False
                 outp.myExt.modMemWordValid := (
-                  False
+                  //False
+                  someModMemWordValid
                 )
-                if (actuallyDuplicateIt) {
+                //if (actuallyDuplicateIt) {
                   cMid0Front.duplicateIt()
-                }
+                //}
               }
-              //def doHandleHazardWithDcacheMiss(
-              //  //haveCurrLoad: Bool//ean,
-              //): Unit = {
-              //  def handleCurrFire(
-              //    someRdMemWord: UInt=myRdMemWord
-              //  ): Unit = {
-              //    outp.myExt.valid := True
-              //    nextPrevTxnWasHazard := False
-              //    setOutpModMemWord(
-              //      someRdMemWord=someRdMemWord
-              //    )
-              //  }
-              //  def handleDuplicateIt(
-              //    actuallyDuplicateIt: Boolean=true
-              //  ): Unit = {
-              //    //outp := (
-              //    //  RegNext(outp) init(outp.getZero)
-              //    //)
-              //    outp.myExt.valid := False
-              //    outp.myExt.modMemWordValid := (
-              //      False
-              //    )
-              //    if (actuallyDuplicateIt) {
-              //      cMid0Front.duplicateIt()
-              //    }
-              //  }
-              //  //--------
-              //  //def myDoCheckHazardIdx = (
-              //  //  if (doCheckHazard) (
-              //  //    0
-              //  //  ) else (
-              //  //    1
-              //  //  )
-              //  //)
-              //  //def myHaveCurrLoadIdx = (
-              //  //  if (haveCurrLoad) (
-              //  //    0
-              //  //  ) else (
-              //  //    1
-              //  //  )
-              //  //)
-              //  //--------
-              //  def rState = (
-              //    doTestModOpMainArea.rState
-              //    //(
-              //    //  myDoCheckHazardIdx
-              //    //)(
-              //    //  myHaveCurrLoadIdx
-              //    //)
-              //  )
-              //  //--------
-              //  //val rState = KeepAttribute(
-              //  //  Reg(Bool())
-              //  //  init(False)
-              //  //)
-              //  //  .setName(
-              //  //    s"doHandleHazardWithDcacheMiss"
-              //  //    + s"_${doCheckHazard}_${haveCurrLoad}"
-              //  //    + s"_rState"
-              //  //  )
-              //  //val rSavedRdMemWord1 = (
-              //  //  (
-              //  //    //Reg(cloneOf(myRdMemWord))
-              //  //    //init(myRdMemWord.getZero)
-              //  //    Reg(
-              //  //      Flow(
-              //  //        PipeMemRmwSimDut.wordType()
-              //  //      )
-              //  //    )
-              //  //  )
-              //  //  .setName(
-              //  //    s"doHandleHazardWithDcacheMiss"
-              //  //    + s"_${doCheckHazard}_${haveCurrLoad}"
-              //  //    + s"_rSavedRdMemWord1"
-              //  //  )
-              //  //)
-              //  def rSavedRdMemWord1 = (
-              //    doTestModOpMainArea.rSavedRdMemWord1
-              //    //(
-              //    //  myDoCheckHazardIdx
-              //    //)(
-              //    //  myHaveCurrLoadIdx
-              //    //)
-              //  )
-              //  //rSavedRdMemWord1.init(rSavedRdMemWord1.getZero)
-              //  //val rTempPrevOp = (
-              //  //  KeepAttribute(
-              //  //    RegNextWhen(
-              //  //      inp.op, cMid0Front.up.isFiring
-              //  //    )
-              //  //  )
-              //  //  .setName(
-              //  //    s"doHandleHazardWithDcacheMiss"
-              //  //    + s"_${doCheckHazard}_${haveCurrLoad}"
-              //  //    + s"_rTempPrevOp"
-              //  //  )
-              //  //)
-              //  def rTempPrevOp = (
-              //    doTestModOpMainArea.rTempPrevOp
-              //    //(
-              //    //  myDoCheckHazardIdx
-              //    //)(
-              //    //  myHaveCurrLoadIdx
-              //    //)
-              //  )
-              //  switch (rState) {
-              //    is (False) {
-              //      when (
-              //        !tempModFrontPayload.dcacheHit
-              //      ) {
-              //      }
-              //    }
-              //    is (True) {
-              //    }
-              //  }
-              //  //when (haveCurrLoad) {
-              //  //  cover(rState === True)
-              //  //}
-              //  //switch (rState) {
-              //  //  is (False) {
-              //  //    //when (cMid0Front.up.isValid) {
-              //  //      when (
-              //  //        //rTempPrevOp === PipeMemRmwSimDut.ModOp
-              //  //        !tempModFrontPayload.dcacheHit
-              //  //        //&& (
-              //  //        //  if (haveCurrLoad) (
-              //  //        //    modFront.isValid
-              //  //        //  ) else (
-              //  //        //    False
-              //  //        //  )
-              //  //        //)
-              //  //      ) {
-              //  //        //if (haveCurrLoad) {
-              //  //        //  when (
-              //  //        //    modFront.isValid
-              //  //        //  ) {
-              //  //        //  } otherwise {
-              //  //        //    handleDuplicateIt()
-              //  //        //  }
-              //  //        //} else {
-
-              //  //        when (
-              //  //          modFront.isValid
-              //  //        ) {
-              //  //          //when (
-              //  //          //   rTempPrevOp
-              //  //          //   === (
-              //  //          //    PipeMemRmwSimDut.ModOp.LDR_RA_RB
-              //  //          //  )
-              //  //          //) {
-              //  //          //if (haveCurrLoad) {
-              //  //          //when (haveCurrLoad) {
-              //  //            //cMid0Front.duplicateIt()
-              //  //            when (haveCurrLoad) {
-              //  //              handleDuplicateIt()
-              //  //              rState := True
-              //  //              rSavedRdMemWord1.valid := False
-              //  //              rSavedRdMemWord1.payload := (
-              //  //                myRdMemWord
-              //  //              )
-              //  //            } otherwise {
-              //  //              when (cMid0Front.up.isFiring) {
-              //  //                handleCurrFire(
-              //  //                )
-              //  //              }
-              //  //            }
-              //  //            //assert(!rSavedRdMemWord1.valid)
-              //  //          //} else {  // if (!haveCurrLoad)
-              //  //          //} otherwise {
-              //  //          //  when (modFront.isFiring) {
-              //  //          //    handleCurrFire()
-              //  //          //  }
-              //  //          //}
-              //  //        } otherwise {
-              //  //          handleDuplicateIt()
-              //  //        }
-              //  //      } otherwise { // when (tempModFrontPayload.dcacheHit)
-              //  //        when (cMid0Front.up.isFiring) {
-              //  //          //when (
-              //  //          //  (
-              //  //          //    (
-              //  //          //      RegNext(rState) init(False)
-              //  //          //    ) === False
-              //  //          //  ) && (
-              //  //          //    rTempPrevOp
-              //  //          //    === PipeMemRmwSimDut.ModOp.LDR_RA_RB
-              //  //          //  )
-              //  //          //) {
-              //  //          //  handleCurrFire()
-              //  //          //} otherwise {
-              //  //          //  handleCurrFire(
-              //  //          //  )
-              //  //          //}
-              //  //          when (rSavedRdMemWord1.valid) {
-              //  //            rSavedRdMemWord1.valid := False
-              //  //            handleCurrFire(
-              //  //              someRdMemWord=rSavedRdMemWord1.payload
-              //  //            )
-              //  //          } otherwise {
-              //  //            handleCurrFire()
-              //  //          }
-              //  //        }
-              //  //      }
-              //  //    //}
-              //  //    //if (haveCurrLoad) {
-              //  //    when (haveCurrLoad) {
-              //  //      when (pastValidAfterReset) {
-              //  //        when (past(rState) === True) {
-              //  //          assert(stable(rSavedRdMemWord1.payload))
-              //  //          when (!past(cMid0Front.up.isFiring)) {
-              //  //            assert(rSavedRdMemWord1.valid)
-              //  //            assert(
-              //  //              !past(tempModFrontPayload.dcacheHit)
-              //  //            )
-              //  //          }
-              //  //          assert(
-              //  //            past(cMid0Front.down.isFiring)
-              //  //          )
-              //  //        }
-              //  //        //if (haveCurrLoad) {
-              //  //        //when (r) {
-              //  //          //when (rSavedRdMemWord1.valid) {
-              //  //          //  assert(
-              //  //          //    //rSavedRdMemWord1.valid
-              //  //          //    !past(cMid0Front.up.isFiring)
-              //  //          //  )
-              //  //          //  assert(
-              //  //          //    past(rState) === True
-              //  //          //  )
-              //  //          //}
-              //  //        //}
-              //  //        //}
-              //  //      }
-              //  //    }
-              //  //    //}
-              //  //  }
-              //  //  is (True) {
-              //  //    //when (cMid0Front.down.isFiring) {
-              //  //    //}
-              //  //    //when (
-              //  //    //  cMid0Front.down.isFiring
-              //  //    //) {
-              //  //    //  when (cMid0Front.up.isFiring) {
-              //  //    //    rState := False
-              //  //    //    handleCurrFire(
-              //  //    //      someRdMemWord=rSavedRdMemWord1
-              //  //    //    )
-              //  //    //  }
-              //  //    //} otherwise {
-              //  //    //  handleDuplicateIt(actuallyDuplicateIt=true)
-              //  //    //}
-
-              //  //    //when (
-              //  //    //  cMid0Front.down.isFiring
-              //  //    //)
-              //  //    when (pastValidAfterReset) {
-              //  //      when (past(rState) === False) {
-              //  //        assert(!past(tempModFrontPayload.dcacheHit))
-              //  //        assert(!rSavedRdMemWord1.valid)
-              //  //      } otherwise {
-              //  //        assert(
-              //  //          stable(rSavedRdMemWord1)
-              //  //        )
-              //  //      }
-              //  //    }
-              //  //    //val nextHadDownFire = (
-              //  //    //  KeepAttribute(
-              //  //    //    Bool()
-              //  //    //  )
-              //  //    //  .setName(s"${}")
-              //  //    //)
-              //  //    //if (haveCurrLoad) {
-              //  //    when (haveCurrLoad) {
-              //  //      cover(
-              //  //        cMid0Front.down.isFiring
-              //  //      )
-              //  //    }
-              //  //    //}
-              //  //    when (
-              //  //      cMid0Front.down.isFiring
-              //  //    ) {
-              //  //      rState := False
-              //  //      when (cMid0Front.up.isFiring) {
-              //  //        rSavedRdMemWord1.valid := False
-              //  //        handleCurrFire(
-              //  //          someRdMemWord=rSavedRdMemWord1.payload
-              //  //        )
-              //  //      } otherwise {
-              //  //        rSavedRdMemWord1.valid := True
-              //  //      }
-              //  //    } otherwise {
-              //  //      handleDuplicateIt(actuallyDuplicateIt=true)
-              //  //    }
-
-              //  //    //when (
-              //  //    //  cMid0Front.up.isFiring
-              //  //    //) {
-              //  //    //  rState := False
-              //  //    //  handleCurrFire(
-              //  //    //    someRdMemWord=rSavedRdMemWord1
-              //  //    //  )
-              //  //    //}
-              //  //    //.otherwise 
-              //  //    ////when (!cMid0Front.down.isReady) 
-              //  //    //{
-              //  //    //  handleDuplicateIt(actuallyDuplicateIt=false)
-              //  //    //  //outp := (
-              //  //    //  //  RegNext(outp) init(outp.getZero)
-              //  //    //  //)
-              //  //    //  //cMid0Front.duplicateIt()
-              //  //    //}
-              //  //  }
-              //  //}
-              //}
               when (
                 cMid0Front.up.isValid
                 //|| (
@@ -1408,89 +1102,110 @@ case class PipeMemRmwSimDut(
               //) {
               //  is (False) {
                   //when (cMid0Front.up.isValid) {
-                    //when (cMid0Front.up.isValid) {
-                      when (doCheckHazard) {
-                        //handleDuplicateIt()
-                        ////nextState := True
-                        //nextSavedRdMemWord1.valid := False
-                        //nextSavedRdMemWord1.payload := (
-                        //  myRdMemWord
-                        //)
-                        ////when (haveCurrLoad) {
-                        ////} otherwise {
-                        ////}
-                        when (
-                          //(
-                          //  !tempModFrontPayload.dcacheHit
-                          //) &&
-                          (
-                            //!dcacheHitIo.ready
-                            !(
-                              //dcacheHitIo.fire
-                              //|| 
-                              savedDcacheHitIo.eitherFire
-                            )
-                          ) 
-                          || (
-                            (
-                              outp.myExt.memAddr(0)
-                              === tempModFrontPayload.myExt.memAddr(0)
-                            ) && (
-                              tempModFrontPayload.myExt.modMemWordValid
-                            )
-                          )
-                        ) {
-                          //when (
-                          //  cMid0Front.down.isFiring
-                          //  //modFront.isFiring
-                          //) {
-                          //  //nextPrevTxnWasHazard := False
-                          //} otherwise {
-                            handleDuplicateIt()
-                          //}
-                        }
-                      }
+                    //--------
+                    when (doCheckHazard) {
                       when (
-                        savedDcacheHitIo.eitherFire
-                        //dcacheHitIo.ready
-                        //|| (
-                        //  RegNextWhen(
-                        //    dcacheHitIo.fire,
-                        //    cMid0Front.down.isReady,
-                        //  )
-                        //  init(False)
-                        //)
+                        //(
+                        //  !savedDcacheHitIo.eitherFire
+                        //) && 
+                        (
+                          (
+                            outp.myExt.memAddr(0)
+                            === tempModFrontPayload.myExt.memAddr(0)
+                          ) && (
+                            !tempModFrontPayload.myExt.modMemWordValid
+                          )
+                        )
                       ) {
-                        dcacheHitIo.nextValid := False
+                        handleDuplicateIt(
+                          someModMemWordValid=(
+                            //!savedDcacheHitIo.eitherFire
+                            False
+                          )
+                        )
                       }
-                    //}
+                      cover(
+                        //(
+                        //  savedDcacheHitIo.eitherFire
+                        //) 
+                        //&& 
+                        (
+                          outp.myExt.memAddr(0)
+                          === tempModFrontPayload.myExt.memAddr(0)
+                        ) 
+                        //&& (
+                        //  //tempModFrontPayload.myExt.modMemWordValid
+                        //) 
+                        && (
+                          cMid0Front.up.isFiring
+                        )
+                      )
+                    }
+                    //--------
+                    when (
+                      //savedDcacheHitIo.eitherFire
+                      dcacheHitIo.fire
+                    ) {
+                      dcacheHitIo.nextValid := False
+                    }
+                    //--------
                     when (cMid0Front.up.isFiring) {
                       //when (dcacheHitIo.fire) {
                       //  dcacheHitIo.nextValid := False
                       //}
                       handleCurrFire()
+                      //switch (
+                      //  myCurrOp
+                      //) {
+                      //  is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
+                      //  }
+                      //  is (PipeMemRmwSimDut.ModOp.LDR_RA_RB) {
+                      //    nextPrevTxnWasHazard := True
+                      //    dcacheHitIo.nextValid := (
+                      //      //!outp.dcacheHit
+                      //      True
+                      //    )
+                      //  }
+                      //  is (PipeMemRmwSimDut.ModOp.MUL_RA_RB) {
+                      //  }
+                      //}
+                      //--------
+                      // BEGIN: Old, working code (without ModOp.MUL_RA_RB)
+                      //when (haveCurrLoad) {
+                      //  nextPrevTxnWasHazard := True
+                      //  //dcacheHitIo.valid := True
+                      //  dcacheHitIo.nextValid := (
+                      //    //!outp.dcacheHit
+                      //    True
+                      //  )
+                      //} otherwise {
+                      //  //dcacheHitIo.nextValid := (
+                      //  //  False
+                      //  //)
+                      //}
+                      // END: Old, working code (without ModOp.MUL_RA_RB)
+                      //--------
+                    }
+                    when (
+                      //cMid0Front.up.isValid
+                      cMid0Front.up.isFiring
+                    ) {
                       when (haveCurrLoad) {
                         nextPrevTxnWasHazard := True
                         //dcacheHitIo.valid := True
-                        dcacheHitIo.nextValid := (
-                          //!outp.dcacheHit
-                          True
-                        )
+                        when (cMid0Front.up.isFiring) {
+                          dcacheHitIo.nextValid := (
+                            //!outp.dcacheHit
+                            True
+                          )
+                        }
                       } otherwise {
                         //dcacheHitIo.nextValid := (
                         //  False
                         //)
                       }
                     }
-                    //when (
-                    //) {
-                    //}
-                    //when (haveCurrLoad) {
-                    //  when (
-                    //    
-                    //  ) {
-                    //  }
-                    //}
+                    //--------
                   //}
               //  }
               //  is (True) {
@@ -2664,53 +2379,55 @@ case class PipeMemRmwSimDut(
     //    }
     //  }
     //}
-    cover(
-      (
-        rMyCoverVec(0).op === PipeMemRmwSimDut.ModOp.ADD_RA_RB
-      ) && (
-        rMyCoverVec(1).op === PipeMemRmwSimDut.ModOp.LDR_RA_RB
-        //&& !rMyCoverVec(1).dcacheHit
-      ) && (
-        rMyCoverVec(2).op === PipeMemRmwSimDut.ModOp.LDR_RA_RB
-        //&& !rMyCoverVec(2).dcacheHit
+    when (myHaveCurrWrite) {
+      cover(
+        (
+          rMyCoverVec(0).op === PipeMemRmwSimDut.ModOp.ADD_RA_RB
+        ) && (
+          rMyCoverVec(1).op === PipeMemRmwSimDut.ModOp.LDR_RA_RB
+          //&& !rMyCoverVec(1).dcacheHit
+        ) && (
+          rMyCoverVec(2).op === PipeMemRmwSimDut.ModOp.LDR_RA_RB
+          //&& !rMyCoverVec(2).dcacheHit
+        )
       )
-    )
-    cover(
-      (
-        rMyCoverVec(0).op === PipeMemRmwSimDut.ModOp.LDR_RA_RB
-        //&& !rMyCoverVec(0).dcacheHit
-      ) && (
-        rMyCoverVec(1).op === PipeMemRmwSimDut.ModOp.LDR_RA_RB
-        //&& rMyCoverVec(1).dcacheHit
-      ) && (
-        rMyCoverVec(2).op === PipeMemRmwSimDut.ModOp.LDR_RA_RB
-        //&& !rMyCoverVec(2).dcacheHit
+      cover(
+        (
+          rMyCoverVec(0).op === PipeMemRmwSimDut.ModOp.LDR_RA_RB
+          //&& !rMyCoverVec(0).dcacheHit
+        ) && (
+          rMyCoverVec(1).op === PipeMemRmwSimDut.ModOp.LDR_RA_RB
+          //&& rMyCoverVec(1).dcacheHit
+        ) && (
+          rMyCoverVec(2).op === PipeMemRmwSimDut.ModOp.LDR_RA_RB
+          //&& !rMyCoverVec(2).dcacheHit
+        )
       )
-    )
-    //cover(
-    //  (
-    //    rMyCoverVec(0).op === PipeMemRmwSimDut.ModOp.MUL_RA_RB
-    //    //&& !rMyCoverVec(0).dcacheHit
-    //  ) && (
-    //    rMyCoverVec(1).op === PipeMemRmwSimDut.ModOp.LDR_RA_RB
-    //    && !rMyCoverVec(1).dcacheHit
-    //  ) && (
-    //    rMyCoverVec(2).op === PipeMemRmwSimDut.ModOp.LDR_RA_RB
-    //    && rMyCoverVec(2).dcacheHit
-    //  )
-    //)
-    //cover(
-    //  (
-    //    rMyCoverVec(0).op === PipeMemRmwSimDut.ModOp.LDR_RA_RB
-    //    && !rMyCoverVec(0).dcacheHit
-    //  ) && (
-    //    rMyCoverVec(1).op === PipeMemRmwSimDut.ModOp.MUL_RA_RB
-    //    //&& !rMyCoverVec(0).dcacheHit
-    //  ) && (
-    //    rMyCoverVec(2).op === PipeMemRmwSimDut.ModOp.LDR_RA_RB
-    //    && !rMyCoverVec(2).dcacheHit
-    //  )
-    //)
+      //cover(
+      //  (
+      //    rMyCoverVec(0).op === PipeMemRmwSimDut.ModOp.MUL_RA_RB
+      //    //&& !rMyCoverVec(0).dcacheHit
+      //  ) && (
+      //    rMyCoverVec(1).op === PipeMemRmwSimDut.ModOp.LDR_RA_RB
+      //    //&& !rMyCoverVec(1).dcacheHit
+      //  ) && (
+      //    rMyCoverVec(2).op === PipeMemRmwSimDut.ModOp.LDR_RA_RB
+      //    //&& rMyCoverVec(2).dcacheHit
+      //  )
+      //)
+      //cover(
+      //  (
+      //    rMyCoverVec(0).op === PipeMemRmwSimDut.ModOp.LDR_RA_RB
+      //    //&& !rMyCoverVec(0).dcacheHit
+      //  ) && (
+      //    rMyCoverVec(1).op === PipeMemRmwSimDut.ModOp.MUL_RA_RB
+      //    //&& !rMyCoverVec(0).dcacheHit
+      //  ) && (
+      //    rMyCoverVec(2).op === PipeMemRmwSimDut.ModOp.LDR_RA_RB
+      //    //&& !rMyCoverVec(2).dcacheHit
+      //  )
+      //)
+    }
     //cover(
     //  RegNextWhen
     //  myCoverCond
@@ -3162,11 +2879,13 @@ case class PipeMemRmwTester() extends Component {
   def backPayload = dut.backPayload
   assume(
     pmIo.modFront(modFrontPayload).op.asBits.asUInt
-    < PipeMemRmwSimDut.ModOp.MUL_RA_RB.asBits.asUInt
+    //< PipeMemRmwSimDut.ModOp.MUL_RA_RB.asBits.asUInt
+    < PipeMemRmwSimDut.postMaxModOp.asBits.asUInt
   )
   assume(
     pmIo.modBack(modBackPayload).op.asBits.asUInt
-    < PipeMemRmwSimDut.ModOp.MUL_RA_RB.asBits.asUInt
+    //< PipeMemRmwSimDut.ModOp.MUL_RA_RB.asBits.asUInt
+    < PipeMemRmwSimDut.postMaxModOp.asBits.asUInt
   )
 
   //def memAddrFracWidth = (
@@ -3368,7 +3087,7 @@ case class PipeMemRmwTester() extends Component {
       )
       .setName("midModPayload")
     )
-    pmIo.tempModFrontPayload(0) := midModPayload(0)
+    pmIo.tempModFrontPayload(0) := midModPayload(extIdxUp)
     midModPayload(extIdxSaved) := (
       RegNextWhen(midModPayload(extIdxUp), cMidModFront.up.isFiring)
       init(midModPayload(extIdxSaved).getZero)
@@ -3629,24 +3348,33 @@ case class PipeMemRmwTester() extends Component {
           //  }
           //}
           //--------
+          cover(
+            !dut.dcacheHitIo.fire
+          )
           when (
-            //!dut.dcacheHitIo.fire
-            !savedDcacheHitIo.eitherFire
+            !dut.dcacheHitIo.fire
+            //!savedDcacheHitIo.eitherFire
           ) {
             //--------
             cMidModFront.haltIt()
             //--------
-            midModPayload(extIdxUp).myExt.modMemWordValid := False
+            for (extIdx <- 0 until extIdxLim) {
+              midModPayload(extIdx).myExt.modMemWordValid := False
+            }
             //--------
           } otherwise {
             when (cMidModFront.up.isFiring) {
-              midModPayload(extIdxUp).myExt.modMemWordValid := True
+              for (extIdx <- 0 until extIdxLim) {
+                midModPayload(extIdx).myExt.modMemWordValid := True
+              }
             }
             //--------
           }
         } otherwise {
           when (cMidModFront.up.isFiring) {
-            midModPayload(extIdxUp).myExt.modMemWordValid := True
+            for (extIdx <- 0 until extIdxLim) {
+              midModPayload(extIdx).myExt.modMemWordValid := True
+            }
           }
         }
         //--------
