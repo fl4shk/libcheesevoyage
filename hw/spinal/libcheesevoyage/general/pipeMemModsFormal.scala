@@ -13,8 +13,8 @@ object PipeMemRmwFormal extends App {
   //--------
   //--------
   def myProveNumCycles = (
-    10
-    //15
+    //10
+    15
     //16
   )
   case class PipeMemRmwFormalDut() extends Component {
@@ -76,9 +76,9 @@ object PipeMemRmwFormal extends App {
           front.opCnt === past(front.opCnt) + 1
         )
       } otherwise {
-        assume(
-          stable(front.dcacheHit)
-        )
+        //assume(
+        //  stable(front.dcacheHit)
+        //)
         assume(
           stable(front.op)
         )

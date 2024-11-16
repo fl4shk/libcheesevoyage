@@ -604,7 +604,7 @@ case class PipeMemRmwDoModInModFrontFuncParams[
   modFront: Node,                       // io.modFront
   tempModFrontPayloadVec: Vec[ModT],    // io.tempModFrontPayload
   //myModMemWord: WordT,                // myModMemWord
-  getMyRdMemWordFunc: (Int) => WordT,  // getMyRdMemWordFunc
+  getMyRdMemWordFunc: (UInt, Int) => WordT,  // getMyRdMemWordFunc
   //Vec[WordT],  // myRdMemWord
   ydx: Int,                             // ydx
 ) {
@@ -847,6 +847,27 @@ extends Area {
       )
     }
     myArr
+  }
+  if (
+    optFormal
+  ) {
+    if (
+      optModHazardKind == PipeMemRmw.modHazardKindFwd
+    ) {
+      for (ydx <- 0 until memArrSize) {
+        for (zdx <- 0 until modRdPortCnt) {
+          for (idx <- 0 until wordCountArr(ydx)) {
+            assumeInitial(
+              modMem(ydx)(zdx).readAsync(
+                address=U(s"${log2Up(wordCountArr(ydx))}'d${idx}")
+              ) === (
+                wordType().getZero
+              )
+            )
+          }
+        }
+      }
+    }
   }
   //val dualRdMemArr = new ArrayBuffer[Mem[WordT]]()
   //for (idx <- 0 until dualRdSize) {
@@ -1321,6 +1342,9 @@ extends Area {
         )
       )
       if (optIncludeModFrontStageLink) {
+        //println(
+        //  s"optIncludeModFrontStageLink: ${optIncludeModFrontStageLink}"
+        //)
         myLinkArr += sMid0Front
       }
       // lack of `s2mMid0Front` (which would have been an `S2MLink`):
@@ -2104,10 +2128,11 @@ extends Area {
     val rPrevTxnWasHazardVec = (
       //(PipeMemRmwSimDut.doAddrOneHaltIt) generate (
         KeepAttribute(
-          RegNextWhen(
+          RegNextWhen/*RegNext*/(
             nextPrevTxnWasHazardVec,
-            up.isFiring
+            up.isFiring,
           )
+          //init(False)
           //init(nextPrevTxnWasHazardVec.getZero)
         )
         .setName(s"${pipeName}_rPrevTxnWasHazardVec")
@@ -2122,9 +2147,9 @@ extends Area {
     val rPrevTxnWasHazardAny = (
       KeepAttribute(
         //Reg(Bool()) init(False)
-        RegNextWhen(
+        RegNextWhen/*RegNext*/(
           nextPrevTxnWasHazardAny,
-          up.isFiring
+          up.isFiring,
         )
         init(False)
       )
@@ -2187,7 +2212,15 @@ extends Area {
       )
       .setName(s"${pipeName}_cMid0FrontArea_tempUpMod")
     )
+    //tempUpMod(2) := (
+    //  RegNext(tempUpMod(2))
+    //  init(tempUpMod(2).getZero)
+    //)
     for (ydx <- 0 until memArrSize) {
+      tempUpMod(2)(ydx) := (
+        RegNext(tempUpMod(2)(ydx))
+        init(tempUpMod(2)(ydx).getZero)
+      )
       tempUpMod(0)(ydx) := up(mod.front.midPipePayload(ydx))
       tempUpMod(0)(ydx).getPipeMemRmwExt(
         outpExt=upExt(0)(ydx)(extIdxSingle),
@@ -2317,8 +2350,14 @@ extends Area {
                 cMid0Front=cMid0Front,
                 modFront=io.modFront,
                 tempModFrontPayloadVec=io.tempModFrontPayload,
-                getMyRdMemWordFunc=(someYdx: Int) => (
-                  upExt(1)(someYdx)(extIdxSingle).rdMemWord(
+                getMyRdMemWordFunc=(
+                  someUpExtIdx: UInt,
+                  someYdx: Int,
+                ) => (
+                  //upExt(1)(someYdx)(extIdxSingle).rdMemWord(
+                  //  PipeMemRmw.modWrIdx
+                  //)
+                  upExt(someUpExtIdx)(someYdx)(extIdxSingle).rdMemWord(
                     PipeMemRmw.modWrIdx
                   )
                 ),
