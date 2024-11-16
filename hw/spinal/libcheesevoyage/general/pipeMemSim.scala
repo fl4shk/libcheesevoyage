@@ -1991,6 +1991,22 @@ case class PipeMemRmwSimDut(
       )
     }
   }
+  when (
+    pastValidAfterReset()
+  ) {
+    when (
+      (
+        myHaveCurrWrite
+      ) && (
+        tempHaveCurrWritePostFirst._1
+      )
+    ) {
+      assert(
+        myHistModBackOpCnt(0)
+        === myHistModBackOpCnt(tempHaveCurrWritePostFirst._2) + 1
+      )
+    }
+  }
 
   when (pastValidAfterReset) {
     //when (past(pipeMem.mod.back.myWriteEnable(0))) {
