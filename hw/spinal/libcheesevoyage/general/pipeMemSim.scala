@@ -1833,6 +1833,19 @@ case class PipeMemRmwSimDut(
     )
     .setName(s"myHistHaveCurrWrite")
   )
+  when (!tempHadModFrontIsFiring._1) {
+    for (ydx <- 0 until wordCount) {
+      assume(
+        (
+          pipeMem.modMem(0)(0).readAsync(
+            address=U(s"${log2Up(wordCount)}'d${ydx}")
+          )
+        ) === (
+          0x0
+        )
+      )
+    }
+  }
   val myHistMyWriteAddr = (
     KeepAttribute(
       History[UInt](
@@ -2672,8 +2685,9 @@ case class PipeMemRmwSimDut(
       when (
         ///*past*/(modBack.isFiring)
         //&& /*past*/(pipeMem.mod.back.myWriteEnable(0))
-        /*past*/(myHaveCurrWrite)
+        ///*past*/(myHaveCurrWrite)
         //pipeMem.mod.back.myWriteEnable(0)
+        True
       ) {
         //def mySavedMod = (
         //  rSavedModArr(
@@ -2709,15 +2723,15 @@ case class PipeMemRmwSimDut(
           (
             //myTempHistWriteAtFindFirst._1
             //myTempHistWriteAtPostFirstFindFirst._1
-            /*past*/(tempHaveCurrWrite._1)
-            && /*past*/(tempHaveCurrWritePostFirst._1)
+            /*past*/(tempHaveCurrWritePostFirst._1)
+            && /*past*/(tempHaveCurrWritePostSecond._1)
             //&& tempHaveCurrWritePostSecond._1
           ) && (
             (
               /*past*/(
-                myHistMyWriteAddr(/*past*/(tempHaveCurrWrite._2))
-              ) === /*past*/(
                 myHistMyWriteAddr(/*past*/(tempHaveCurrWritePostFirst._2))
+              ) === /*past*/(
+                myHistMyWriteAddr(/*past*/(tempHaveCurrWritePostSecond._2))
               )
             ) 
             //&& (
@@ -2738,13 +2752,15 @@ case class PipeMemRmwSimDut(
         ) {
           //when (tempLeft =/= tempRight) {
             assert(
-              /*past*/(tempLeft) //+ 1
-              === (
-                //mySavedMod
-                /*past*//*past*/(tempRight) + 1 //+ 1
-                /*past*///(mySavedMod)
-                //mySavedMod + 1
-              )
+              ///*past*/(tempLeft) //+ 1
+              //=== (
+              //  //mySavedMod
+              //  /*past*//*past*/(tempRight) + 1 //+ 1
+              //  /*past*///(mySavedMod)
+              //  //mySavedMod + 1
+              //)
+              myHistMyWriteData(tempHaveCurrWritePostFirst._2)
+              === myHistMyWriteData(tempHaveCurrWritePostSecond._2) + 1
             )
           //}
         }
