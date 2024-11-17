@@ -80,6 +80,9 @@ object PipeMemRmwFormal extends App {
         //assume(
         //  stable(front.dcacheHit)
         //)
+        //assume(
+        //  stable(front.finishedOp)
+        //)
         assume(
           stable(front.op)
         )
@@ -91,6 +94,10 @@ object PipeMemRmwFormal extends App {
         )
       }
     }
+    assume(
+      front.finishedOp
+      === front.finishedOp.getZero
+    )
     assume(
       front.myExt.modMemWord
       === front.myExt.modMemWord.getZero
@@ -133,7 +140,11 @@ object PipeMemRmwFormal extends App {
     //anyseq(modBack.valid)
 
 
-    assumeInitial(back.ready)
+    //--------
+    // BEGIN: old stuff for `back.ready`
+    //assumeInitial(back.ready)
+    // END: old stuff for `back.ready`
+    //--------
     anyseq(back.ready)
     //back.ready.allowOverride
     //back.ready := True
@@ -156,18 +167,18 @@ object PipeMemRmwFormal extends App {
     ),
     _keepDebugInfo=true,
   )
-    //.withBMC(
-    //  //20
-    //  //15
-    //  //16
-    //  PipeMemRmwFormal.myProveNumCycles
-    //)
-    .withProve(
+    .withBMC(
       //20
-      //40
-      //10
+      //15
+      //16
       PipeMemRmwFormal.myProveNumCycles
     )
+    //.withProve(
+    //  //20
+    //  //40
+    //  //10
+    //  PipeMemRmwFormal.myProveNumCycles
+    //)
     .withCover(
       PipeMemRmwFormal.myProveNumCycles
       //20
