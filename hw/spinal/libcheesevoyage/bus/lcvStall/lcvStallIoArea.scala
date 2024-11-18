@@ -109,6 +109,7 @@ extends Area
       }
       when (
         !rValid
+        //&& ready
       ) {
         //assume(!ready)
         assume(!RegNext(ready))

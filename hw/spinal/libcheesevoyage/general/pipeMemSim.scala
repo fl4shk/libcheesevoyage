@@ -266,7 +266,7 @@ case class PipeMemRmwSimDut(
       }
       when (
         !rValid
-        && ready
+        //&& ready
       ) {
         //assume(!ready)
         assume(!RegNext(ready))
@@ -3233,7 +3233,8 @@ case class PipeMemRmwTester() extends Component {
       )
     )
     when (
-      savedPsMemStallIo.eitherLinkFireState(extIdxUp)
+      //savedPsMemStallIo.eitherLinkFireState(extIdxUp)
+      cMidModFront.up.isValid
     ) {
       midModPayload(extIdxUp) := pmIo.modFront(modFrontPayload)
     }
@@ -3412,21 +3413,39 @@ case class PipeMemRmwTester() extends Component {
     } otherwise {
     }
     if (PipeMemRmwSimDut.doTestModOp) {
+      val rHadPsMemStallFire = (
+        KeepAttribute (
+          Reg(
+            Bool()
+          )
+          init(
+            False
+          )
+        )
+        .setName(
+          s"rHadPsMemStallFire"
+        )
+      )
       when (
         cMidModFront.up.isValid
         //savedPsMemStallIo.eitherLinkFireState(
         //  PipeMemRmw.extIdxUp
         //)
+        && (
+          //midModPayload(extIdxUp).op
+          pmIo.modFront(modFrontPayload).op
+          === PipeMemRmwSimDut.ModOp.LDR_RA_RB
+        )
       ) {
         //midModPayload(extIdxUp) := pmIo.modFront(modFrontPayload)
-        when (
-          (
-            //midModPayload(extIdxUp).op
-            pmIo.modFront(modFrontPayload).op
-            === PipeMemRmwSimDut.ModOp.LDR_RA_RB
-          )
-          //&& !dut.psMemStallIo.fire
-        ) {
+        //when (
+        //  (
+        //    //midModPayload(extIdxUp).op
+        //    pmIo.modFront(modFrontPayload).op
+        //    === PipeMemRmwSimDut.ModOp.LDR_RA_RB
+        //  )
+        //  //&& !dut.psMemStallIo.fire
+        //) {
           //--------
           //when (pastValidAfterReset()) {
           //  when (past(dut.psMemStallIo.fire)) {
@@ -3440,13 +3459,18 @@ case class PipeMemRmwTester() extends Component {
             !dut.psMemStallIo.fire
           )
           when (
-            !dut.psMemStallIo.fire
+            (
+              !dut.psMemStallIo.fire
+            )
             //!savedPsMemStallIo.eitherFire(extIdxUp)
             //!(
             //  savedPsMemStallIo.
             //)
             //True
             //!savedPsMemStallIo.eitherSavedFire
+            && (
+              !rHadPsMemStallFire   
+            )
           ) {
             //--------
             //when (
@@ -3458,6 +3482,7 @@ case class PipeMemRmwTester() extends Component {
             //} otherwise {
             //  cMidModFront.haltIt()
             //}
+            rHadPsMemStallFire := True
             cMidModFront.haltIt()
             //--------
             for (extIdx <- 0 until extIdxLim) {
@@ -3475,15 +3500,23 @@ case class PipeMemRmwTester() extends Component {
             //}
             //--------
           }
-        } otherwise {
+        //} otherwise {
+        //  //when (cMidModFront.up.isValid) {
+        //    for (extIdx <- 0 until extIdxLim) {
+        //      midModPayload(extIdx).myExt.modMemWordValid := True
+        //    }
+        //  //}
+        //}
+        //--------
+      } otherwise {
           //when (cMidModFront.up.isValid) {
             for (extIdx <- 0 until extIdxLim) {
               midModPayload(extIdx).myExt.modMemWordValid := True
             }
           //}
-        }
-        //--------
-      } otherwise {
+      }
+      when (cMidModFront.up.isFiring) {
+        rHadPsMemStallFire := False
       }
       //switch (rHaltItState) {
       //  is (HaltItState.IDLE) {
