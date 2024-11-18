@@ -94,10 +94,10 @@ object PipeMemRmwFormal extends App {
         )
       }
     }
-    assume(
-      front.finishedOp
-      === front.finishedOp.getZero
-    )
+    //assume(
+    //  front.finishedOp
+    //  === front.finishedOp.getZero
+    //)
     assume(
       front.myExt.modMemWord
       === front.myExt.modMemWord.getZero
@@ -180,9 +180,10 @@ object PipeMemRmwFormal extends App {
     //  PipeMemRmwFormal.myProveNumCycles
     //)
     .withCover(
-      PipeMemRmwFormal.myProveNumCycles
+      //PipeMemRmwFormal.myProveNumCycles
       //20
       //60
+      20
     )
     .doVerify(PipeMemRmwFormalDut())
   //--------
