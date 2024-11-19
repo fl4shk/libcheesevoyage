@@ -12,8 +12,8 @@ case class LcvStallIo[
 ](
   // I'm not sure whether or not these can be made into
   // `Option[HardType[...DataType]]`s. It might be possible?
-  hostDataType: (Boolean, HardType[HostDataT]),
-  devDataType: (Boolean, HardType[DevDataT]),
+  hostDataType: Option[HardType[HostDataT]],
+  devDataType: Option[HardType[DevDataT]],
   optFormal: Boolean=false
 ) //extends Bundle with IMasterSlave 
 extends Area
@@ -49,86 +49,183 @@ extends Area
   )
   nextValid := rValid
   val ready = Bool()
+  //val rReady = (
+  //  RegNext(nextReady)
+  //  init(nextReady.getZero)
+  //)
   val fire = rValid && ready
-  //if (optFormal) {
-  //}
-  def mkSaved(
-    someLink: CtrlLink,
-    myName: String,
-    optIncludeOneStageStall: Boolean=false,
-  ) = new Area {
-    //println(
-    //  s"${myName}"
-    //)
-    //--------
-    val rSavedFire = (
-      KeepAttribute(
-        Reg(
-          Bool()
-        )
-        init(
-          False
-        )
-      )
-      .setName(
-        s"${myName}_"
-        + s"rSavedFire"
-      )
-    )
-    val eitherFire = (
-      KeepAttribute(
-        fire
-        || rSavedFire
-      )
-      .setName(
-        s"${myName}_"
-        + s"eitherFire"
-      )
-    )
-    //--------
-    when (
-      someLink.up.isValid 
-    ) {
-      //--------
-      when (fire) {
-        rSavedFire := True
-      }
-      when (someLink.up.isFiring) {
-        rSavedFire := False
-      }
-      //--------
-    }
-    //--------
-    //--------
-  }
+  //--------
   if (optFormal) {
     anyseq(ready)
     when (pastValidAfterReset) {
-      when (fire) {
-        assume(!RegNext(ready))
-      }
+      //when (fire) {
+      //  assume(!RegNext(ready))
+      //}
+      //--------
       when (
         !rValid
         //&& ready
       ) {
+        assume(!ready)
+        //--------
+        //when (!RegNext(rValid)) {
+        //  assume(!RegNext(ready))
+        //}
+        //--------
+        //assume(!RegNext(ready))
         //assume(!ready)
-        assume(!RegNext(ready))
       }
-      //when (!nextValid) {
-      //  assume(!RegNext(ready))
-      //}
-      when (rValid) {
-        cover(
-          (
-            RegNext(rValid)
-          ) && (
-            !ready
-          ) && (
-            RegNext(ready)
+      when (
+        rValid
+      ) {
+        when (
+          RegNextWhen(
+            (
+              RegNextWhen(
+                True,
+                fire,
+              )
+              init(False)
+            ),
+            fire,
           )
-        )
+          init(False)
+        ) {
+          cover(
+            !ready
+            && RegNext(ready)
+          )
+        }
       }
       //--------
     }
   }
+  //--------
+  def mkSaved(
+    someLink: CtrlLink,
+    myName: String,
+    //optIncludeOneStageStall: Boolean=false,
+  ) = LcvStallIoSaved(
+    stallIo=this,
+    someLink=someLink,
+    myName=myName,
+  )
+}
+case class LcvStallIoSaved[
+  HostDataT <: Data,
+  DevDataT <: Data,
+](
+  stallIo: LcvStallIo[
+    HostDataT,
+    DevDataT,
+  ],
+  someLink: CtrlLink,
+  myName: String,
+) extends Area {
+  //println(
+  //  s"${myName}"
+  //)
+  //--------
+  //--------
+  val nextSavedFire = (
+    //KeepAttribute(
+      Bool()
+    //)
+    .setName(
+      s"${myName}_"
+      + s"nextSavedFire"
+    )
+  )
+  val rSavedFire = (
+    //KeepAttribute(
+      RegNext(
+        nextSavedFire
+      )
+      init(
+        nextSavedFire.getZero
+      )
+    //)
+    .setName(
+      s"${myName}_"
+      + s"rSavedFire"
+    )
+  )
+  nextSavedFire := rSavedFire
+  //--------
+  val nextHadDownFire = (
+    //KeepAttribute (
+      Bool()
+    //)
+    .setName(
+      s"${myName}_"
+      + s"nextHadDownFire"
+    )
+  )
+  val rHadDownFire = (
+    //KeepAttribute (
+      RegNext(
+        nextHadDownFire
+      )
+      init(
+        nextHadDownFire.getZero
+      )
+    //)
+    .setName(
+      s"${myName}_"
+      + s"rHadDownFire"
+    )
+  )
+  nextHadDownFire := rHadDownFire
+  //--------
+  val myDuplicateIt = (
+    (
+      // We should only call `someLink.duplicateIt()` until the first cycle 
+      // that we haven't seen `stallIo.fire` and `someLink.down.isFiring` 
+      // since seeing
+      // `someLink.up.isValid`
+      !(
+        (
+          stallIo.fire
+          && someLink.down.isFiring
+        ) || (
+          stallIo.fire
+          && rHadDownFire
+        ) || (
+          rSavedFire
+          && someLink.down.isFiring
+        )
+      )
+    )
+    .setName(
+      s"${myName}_"
+      + s"myDuplicateIt"
+    )
+  )
+  //--------
+  when (
+    stallIo.fire
+  ) {
+    nextSavedFire := True
+  }
+  when (
+    someLink.down.isFiring
+  ) {
+    nextHadDownFire := True
+  }
+  when (
+    someLink.up.isFiring
+  ) {
+    nextSavedFire := False
+    nextHadDownFire := False
+  }
+  //val eitherSavedFire = (
+  //  KeepAttribute(
+  //    Bool()
+  //  )
+  //  .setName(
+  //    s"${myName}_"
+  //    + s"eitherSavedFire"
+  //  )
+  //)
+  //--------
 }
