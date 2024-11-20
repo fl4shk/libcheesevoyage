@@ -55,6 +55,24 @@ extends Area
   //)
   val fire = rValid && ready
   //--------
+  val rHadFirstFire = (
+    (optFormal) generate (
+      RegNextWhen(
+        True,
+        fire,
+      )
+      init(False)
+    )
+  )
+  val rHadSecondFire = (
+    (optFormal) generate (
+      RegNextWhen(
+        rHadFirstFire,
+        fire,
+      )
+      init(False)
+    )
+  )
   if (optFormal) {
     anyseq(ready)
     when (pastValidAfterReset) {
@@ -76,24 +94,31 @@ extends Area
         //assume(!ready)
       }
       when (
-        rValid
+        past(rValid)
       ) {
         when (
-          RegNextWhen(
-            (
-              RegNextWhen(
-                True,
-                fire,
-              )
-              init(False)
-            ),
-            fire,
-          )
-          init(False)
+          //RegNextWhen(
+          //  fire,
+          //)
+          //init(False)
+          //rHadFirstFire
+          //&& 
+          rHadSecondFire
+          //True
         ) {
           cover(
-            !ready
-            && RegNext(ready)
+            //!ready
+            //&& (
+            //  RegNext(ready)
+            //  init(False)
+            //)
+            ready
+            && (
+              !(
+                past(ready)
+                init(False)
+              )
+            )
           )
         }
       }
@@ -101,15 +126,15 @@ extends Area
     }
   }
   //--------
-  def mkSaved(
-    someLink: CtrlLink,
-    myName: String,
-    //optIncludeOneStageStall: Boolean=false,
-  ) = LcvStallIoSaved(
-    stallIo=this,
-    someLink=someLink,
-    myName=myName,
-  )
+  //def mkSaved(
+  //  someLink: CtrlLink,
+  //  myName: String,
+  //  //optIncludeOneStageStall: Boolean=false,
+  //) = LcvStallIoSaved(
+  //  stallIo=this,
+  //  someLink=someLink,
+  //  myName=myName,
+  //)
 }
 case class LcvStallIoSaved[
   HostDataT <: Data,
@@ -120,7 +145,7 @@ case class LcvStallIoSaved[
     DevDataT,
   ],
   someLink: CtrlLink,
-  myName: String,
+  //myName: String,
 ) extends Area {
   //println(
   //  s"${myName}"
@@ -131,10 +156,10 @@ case class LcvStallIoSaved[
     //KeepAttribute(
       Bool()
     //)
-    .setName(
-      s"${myName}_"
-      + s"nextSavedFire"
-    )
+    //.setName(
+    //  s"${myName}_"
+    //  + s"nextSavedFire"
+    //)
   )
   val rSavedFire = (
     //KeepAttribute(
@@ -145,10 +170,10 @@ case class LcvStallIoSaved[
         nextSavedFire.getZero
       )
     //)
-    .setName(
-      s"${myName}_"
-      + s"rSavedFire"
-    )
+    //.setName(
+    //  s"${myName}_"
+    //  + s"rSavedFire"
+    //)
   )
   nextSavedFire := rSavedFire
   //--------
@@ -156,10 +181,10 @@ case class LcvStallIoSaved[
     //KeepAttribute (
       Bool()
     //)
-    .setName(
-      s"${myName}_"
-      + s"nextHadDownFire"
-    )
+    //.setName(
+    //  s"${myName}_"
+    //  + s"nextHadDownFire"
+    //)
   )
   val rHadDownFire = (
     //KeepAttribute (
@@ -170,15 +195,15 @@ case class LcvStallIoSaved[
         nextHadDownFire.getZero
       )
     //)
-    .setName(
-      s"${myName}_"
-      + s"rHadDownFire"
-    )
+    //.setName(
+    //  s"${myName}_"
+    //  + s"rHadDownFire"
+    //)
   )
   nextHadDownFire := rHadDownFire
   //--------
   val myDuplicateIt = (
-    (
+    KeepAttribute(
       // We should only call `someLink.duplicateIt()` until the first cycle 
       // that we haven't seen `stallIo.fire` and `someLink.down.isFiring` 
       // since seeing
@@ -196,10 +221,10 @@ case class LcvStallIoSaved[
         )
       )
     )
-    .setName(
-      s"${myName}_"
-      + s"myDuplicateIt"
-    )
+    //.setName(
+    //  s"${myName}_"
+    //  + s"myDuplicateIt"
+    //)
   )
   //--------
   when (
