@@ -1195,9 +1195,9 @@ extends Area {
           mkExt(myVivadoDebug=true)
         )
       )
-      println(
-        s"myUpExtDel2: ${myUpExtDel2.size}"
-      )
+      //println(
+      //  s"myUpExtDel2: ${myUpExtDel2.size}"
+      //)
       for (idx <- 0 until myUpExtDel2.size) {
         myUpExtDel2(idx) := myUpExtDel(idx + 1)
       }
@@ -2224,6 +2224,7 @@ extends Area {
         RegNext(tempUpMod(2)(ydx))
         init(tempUpMod(2)(ydx).getZero)
       )
+      tempUpMod(2)(ydx).allowOverride
       tempUpMod(0)(ydx) := up(mod.front.midPipePayload(ydx))
       tempUpMod(0)(ydx).getPipeMemRmwExt(
         outpExt=upExt(0)(ydx)(extIdxSingle),

@@ -94,7 +94,7 @@ extends Area
         //assume(!ready)
       }
       when (
-        past(rValid)
+        past(rValid) init(False)
       ) {
         when (
           //RegNextWhen(

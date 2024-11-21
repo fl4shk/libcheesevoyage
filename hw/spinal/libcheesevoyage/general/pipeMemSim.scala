@@ -57,7 +57,11 @@ object PipeMemRmwSimDut {
   def modOpCntWidth = (
     8
   )
-  object ModOp extends SpinalEnum(defaultEncoding=binarySequential) {
+  def pcWidth = (
+    8
+  )
+  object ModOp
+  extends SpinalEnum(defaultEncoding=binarySequential) {
     val
       //NONE,
       ADD_RA_RB,
@@ -67,9 +71,10 @@ object PipeMemRmwSimDut {
       //  // stall in EX for the next instruction if the next instruction
       //  // uses this instruction's `rA`
       //LDR_RA_RB_DCACHE_MISS,
-      //  // Stall in MEM if 
+      //  // Stall in MEM if
       LDR_RA_RB,
       MUL_RA_RB,               // stall in EX
+      //BEQ_RA_SIMM,
       LIM
       = newElement();
   }
@@ -79,12 +84,16 @@ object PipeMemRmwSimDut {
     true
     //false
   )
+  val allModOpsSameChange = (
+    //true
+    false
+  )
   val postMaxModOp = (
-    if (!haveModOpMul) (
-      ModOp.MUL_RA_RB
-    ) else (
+    //if (!haveModOpMul) (
+    //  ModOp.MUL_RA_RB
+    //) else (
       ModOp.LIM
-    )
+    //)
   )
   //def formalHaltItCnt = (
   //  1
@@ -132,19 +141,30 @@ case class PipeMemRmwSimDutModType(
 {
   val opCnt = (
     (PipeMemRmwSimDut.doTestModOp) generate (
-      KeepAttribute(UInt(PipeMemRmwSimDut.modOpCntWidth bits))
+      KeepAttribute(
+        UInt(PipeMemRmwSimDut.modOpCntWidth bits)
+      )
     )
   )
   val op = (
     (PipeMemRmwSimDut.doTestModOp) generate (
-      KeepAttribute(PipeMemRmwSimDut.ModOp())
+      KeepAttribute(
+        PipeMemRmwSimDut.ModOp()
+      )
     )
   )
-  val finishedOp = (
+  val pc = (
     (PipeMemRmwSimDut.doTestModOp) generate (
-      KeepAttribute(Bool())
+      KeepAttribute(
+        UInt(PipeMemRmwSimDut.pcWidth bits)
+      )
     )
   )
+  //val finishedOp = (
+  //  (PipeMemRmwSimDut.doTestModOp) generate (
+  //    KeepAttribute(Bool())
+  //  )
+  //)
   //val dcacheHit = (
   //  // for the purposes of testing `PipeMemRmw`, this can just be the value
   //  // that was driven into the `io.front(io.frontPayload)`, as it is
@@ -697,32 +717,32 @@ case class PipeMemRmwSimDut(
                   RegNext(doCheckHazard)
                   init(doCheckHazard.getZero)
                 )
-                val haveCurrLoad = (
-                  KeepAttribute(
-                    Bool()
-                  )
-                  .setName(
-                    s"doTestModOpMainArea_"
-                    + s"haveCurrLoad"
-                  )
-                )
-                haveCurrLoad := (
-                  RegNext(haveCurrLoad)
-                  init(haveCurrLoad.getZero)
-                )
-                val haveCurrMul = (
-                  KeepAttribute(
-                    Bool()
-                  )
-                  .setName(
-                    s"doTestModOpMainArea_"
-                    + s"haveCurrMul"
-                  )
-                )
-                haveCurrMul := (
-                  RegNext(haveCurrMul)
-                  init(haveCurrMul.getZero)
-                )
+                //val haveCurrLoad = (
+                //  KeepAttribute(
+                //    Bool()
+                //  )
+                //  .setName(
+                //    s"doTestModOpMainArea_"
+                //    + s"haveCurrLoad"
+                //  )
+                //)
+                //haveCurrLoad := (
+                //  RegNext(haveCurrLoad)
+                //  init(haveCurrLoad.getZero)
+                //)
+                //val haveCurrMul = (
+                //  KeepAttribute(
+                //    Bool()
+                //  )
+                //  .setName(
+                //    s"doTestModOpMainArea_"
+                //    + s"haveCurrMul"
+                //  )
+                //)
+                //haveCurrMul := (
+                //  RegNext(haveCurrMul)
+                //  init(haveCurrMul.getZero)
+                //)
                 val myDoHaveHazardAddrCheck = (
                   KeepAttribute(
                     outp.myExt.memAddr(0)
@@ -778,46 +798,61 @@ case class PipeMemRmwSimDut(
             def setOutpModMemWord(
               someRdMemWord: UInt=myRdMemWord
             ): Unit = {
-              def haveCurrLoad = (
-                doTestModOpMainArea.haveCurrLoad
-              )
+              //def haveCurrLoad = (
+              //  doTestModOpMainArea.haveCurrLoad
+              //)
               //def haveCurrMul = (
               //  doTestModOpMainArea.haveCurrMul
               //)
               outp.myExt.modMemWordValid := (
                 True
               )
-              switch (myCurrOp) {
-                is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
-                  outp.myExt.modMemWord := (
-                    someRdMemWord + 0x1
-                  )
-                  //outp.myExt.modMemWordValid := (
-                  //  True
-                  //)
-                }
-                is (PipeMemRmwSimDut.ModOp.LDR_RA_RB) {
-                  outp.myExt.modMemWord := (
-                    //someRdMemWord //+ 0x1
-                    0x0
-                  )
-                  outp.myExt.modMemWordValid := (
-                    False
-                  )
-                }
-                is (PipeMemRmwSimDut.ModOp.MUL_RA_RB) {
-                  outp.myExt.modMemWord := (
-                    (
-                      someRdMemWord << 0x1
-                    )(
-                      outp.myExt.modMemWord.bitsRange
+              //if (PipeMemRmwSimDut.allModOpsSameChange) {
+              //} else {
+                switch (myCurrOp) {
+                  is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
+                    outp.myExt.modMemWord := (
+                      someRdMemWord + 0x1
                     )
-                  )
-                  //outp.myExt.modMemWordValid := (
-                  //  True
-                  //)
+                    //outp.myExt.modMemWordValid := (
+                    //  True
+                    //)
+                  }
+                  is (PipeMemRmwSimDut.ModOp.LDR_RA_RB) {
+                    outp.myExt.modMemWord := (
+                      //someRdMemWord //+ 0x1
+                      0x0
+                    )
+                    outp.myExt.modMemWordValid := (
+                      False
+                    )
+                  }
+                  is (PipeMemRmwSimDut.ModOp.MUL_RA_RB) {
+                    outp.myExt.modMemWord := (
+                      (
+                        if (PipeMemRmwSimDut.allModOpsSameChange) (
+                          someRdMemWord + 0x1
+                        ) else (
+                          someRdMemWord << 1
+                        )
+                      )(
+                        outp.myExt.modMemWord.bitsRange
+                      )
+                    )
+                    //outp.myExt.modMemWordValid := (
+                    //  True
+                    //)
+                  }
+                  //if (PipeMemRmwSimDut.ModOp.BEQ_RA_SIMM) {
+                  //  outp.myExt.modMemWord := (
+                  //    0x0
+                  //  )
+                  //  outp.myExt.modMemWordValid := (
+                  //    False
+                  //  )
+                  //}
                 }
-              }
+              //}
               //when (haveCurrLoad) {
               //  outp.myExt.modMemWord := (
               //    someRdMemWord //+ 0x1
@@ -915,12 +950,12 @@ case class PipeMemRmwSimDut(
               def doCheckHazard = (
                 doTestModOpMainArea.doCheckHazard
               )
-              def haveCurrLoad = (
-                doTestModOpMainArea.haveCurrLoad
-              )
-              def haveCurrMul = (
-                doTestModOpMainArea.haveCurrMul
-              )
+              //def haveCurrLoad = (
+              //  doTestModOpMainArea.haveCurrLoad
+              //)
+              //def haveCurrMul = (
+              //  doTestModOpMainArea.haveCurrMul
+              //)
               //val myFindFirstHazardAddr = (doCheckHazard) generate (
               //  KeepAttribute(
               //    inp.myExt.memAddr.sFindFirst(
@@ -991,40 +1026,40 @@ case class PipeMemRmwSimDut(
               //    someModMemWordValid=someModMemWordValid,
               //  )
               //}
-              when (
-                cMid0Front.up.isValid
-                //|| (
-                //  nextSetOutpState
-                //  //rSetOutpState
-                //)
-              ) {
-                switch (
-                  //inp.op
-                  myCurrOp
-                ) {
-                  is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
-                    haveCurrLoad := False
-                    haveCurrMul := False
-                  }
-                  is (PipeMemRmwSimDut.ModOp.LDR_RA_RB) {
-                    haveCurrLoad := True
-                    haveCurrMul := False
-                  }
-                  is (PipeMemRmwSimDut.ModOp.MUL_RA_RB) {
-                    // we should stall `EX` in this case until the
-                    // calculation is done. The same stalling logic
-                    // will be used for `divmod`, etc.
-                    //doHandleHazardWithDcacheMissArea.doIt := False
-                    haveCurrLoad := False
-                    haveCurrMul := True
-                  }
-                }
-                //when (
-                //  //doHandleHazardWithDcacheMissArea.doIt
-                //) {
-                //  doHandleHazardWithDcacheMiss()
-                //}
-              }
+              //when (
+              //  cMid0Front.up.isValid
+              //  //|| (
+              //  //  nextSetOutpState
+              //  //  //rSetOutpState
+              //  //)
+              //) {
+              //  switch (
+              //    //inp.op
+              //    myCurrOp
+              //  ) {
+              //    is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
+              //      haveCurrLoad := False
+              //      haveCurrMul := False
+              //    }
+              //    is (PipeMemRmwSimDut.ModOp.LDR_RA_RB) {
+              //      haveCurrLoad := True
+              //      haveCurrMul := False
+              //    }
+              //    is (PipeMemRmwSimDut.ModOp.MUL_RA_RB) {
+              //      // we should stall `EX` in this case until the
+              //      // calculation is done. The same stalling logic
+              //      // will be used for `divmod`, etc.
+              //      //doHandleHazardWithDcacheMissArea.doIt := False
+              //      haveCurrLoad := False
+              //      haveCurrMul := True
+              //    }
+              //  }
+              //  //when (
+              //  //  //doHandleHazardWithDcacheMissArea.doIt
+              //  //) {
+              //  //  doHandleHazardWithDcacheMiss()
+              //  //}
+              //}
               //def nextState = (
               //  doTestModOpMainArea.nextState
               //)
@@ -1170,77 +1205,55 @@ case class PipeMemRmwSimDut(
                       psMemStallIo.nextValid := False
                     }
                     //--------
-                    when (
-                      cMid0Front.up.isFiring
-                    ) {
+                    when (cMid0Front.up.isFiring) {
                       handleCurrFire()
                     }
-                    when (
-                      cMid0Front.up.isValid
-                      //cMid0Front.up.isFiring
-                      //savedPsMemStallIo.eitherLinkFireState(
-                      //  PipeMemRmw.extIdxUp
-                      //)
-                    ) {
-                      when (haveCurrLoad) {
-                        when (cMid0Front.up.isFiring) {
-                          nextPrevTxnWasHazard := True
-                          //psMemStallIo.valid := True
-                          psMemStallIo.nextValid := (
-                            //!outp.dcacheHit
-                            True
-                          )
+                    when (cMid0Front.up.isValid) {
+                      switch (myCurrOp) {
+                        is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
                         }
-                      } elsewhen (haveCurrMul) {
-                        if (PipeMemRmwSimDut.haveModOpMul) {
-                          //when (
-                          //) {
-                          //}
-                          //--------
-                          when (
-                            //savedPsExStallIo
-                            doCheckHazard
-                          ) {
-                            when (!currDuplicateIt) {
+                        is (PipeMemRmwSimDut.ModOp.LDR_RA_RB) {
+                          when (cMid0Front.up.isFiring) {
+                            nextPrevTxnWasHazard := True
+                            //psMemStallIo.valid := True
+                            psMemStallIo.nextValid := (
+                              //!outp.dcacheHit
+                              True
+                            )
+                          }
+                        }
+                        is (PipeMemRmwSimDut.ModOp.MUL_RA_RB) {
+                          if (PipeMemRmwSimDut.haveModOpMul) {
+                            //when (
+                            //) {
+                            //}
+                            //--------
+                            when (
+                              //savedPsExStallIo
+                              doCheckHazard
+                            ) {
+                              when (!currDuplicateIt) {
+                                psExStallIo.nextValid := (
+                                  True
+                                )
+                              }
+                            } otherwise { // when (!doCheckHazard)
                               psExStallIo.nextValid := (
                                 True
                               )
                             }
-                          } otherwise { // when (!doCheckHazard)
-                            psExStallIo.nextValid := (
-                              True
-                            )
+                            //--------
+                            when (
+                              savedPsExStallIo.myDuplicateIt
+                            ) {
+                              currDuplicateIt := True
+                            }
                           }
-                          //--------
-                          when (
-                            savedPsExStallIo.myDuplicateIt
-                          ) {
-                            currDuplicateIt := True
-                          }
-                          //when (
-                          //  cMid0Front.up.isFiring
-                          //) {
-                          //  nextPrevTxnWasHazard := False
-                          //}
-                          //--------
-                          //psExStallIo.nextValid := (
-                          //  False
-                          //)
-                          //psMemStallIo.nextValid := (
-                          //  False
-                          //)
                         }
+                        //is (PipeMemRmwSimDut.ModOp.BEQ_RA_SIMM) {
+                        //}
                       }
                     }
-                    //when (cMid0Front.up.isValid) {
-                    //when (haveCurrMul) {
-                    //  when (cMid0Front.up.isFiring) {
-                    //    psExStallIo.nextValid := (
-                    //      False
-                    //    )
-                    //  }
-                    //}
-                    //}
                     //--------
                   //}
               //  }
@@ -2705,12 +2718,22 @@ case class PipeMemRmwSimDut(
             )
           )
           if (
-            optModHazardKind == PipeMemRmw.modHazardKindDupl
-          ) {
-            assert(
-              myTempLeft
-              === myTempRight + 1
+            (
+              optModHazardKind == PipeMemRmw.modHazardKindDupl
+            ) || (
+              (
+                optModHazardKind == PipeMemRmw.modHazardKindFwd
+              ) && (
+                PipeMemRmwSimDut.allModOpsSameChange
+              )
             )
+          ) {
+            when (myHaveCurrWrite) {
+              assert(
+                myTempLeft
+                === myTempRight + 1
+              )
+            }
           } else if (
             //PipeMemRmwSimDut.doTestModOp
             optModHazardKind == PipeMemRmw.modHazardKindFwd
@@ -2737,15 +2760,24 @@ case class PipeMemRmwSimDut(
                   assert(
                     myTempLeft
                     === myTempRight - 1
+                    //myTempLeft
+                    //=== myTempRight + 1
                   )
                 }
                 is (PipeMemRmwSimDut.ModOp.MUL_RA_RB) {
-                  val tempBitsRange = wordType().bitsRange
+                  val tempBitsRange = (
+                    //wordType().bitsRange
+                    modBack(modBackPayload).myExt.modMemWord.bitsRange
+                  )
                   assert(
                     myTempLeft(tempBitsRange)
                     === (myTempRight << 1)(tempBitsRange)
+                    //myTempLeft(tempBitsRange)
+                    //=== (myTempRight + 1)(tempBitsRange)
                   )
                 }
+                //is (PipeMemRmwSimDut.ModOp.BEQ_RA_SIMM) {
+                //}
               }
             }
           }
@@ -3474,7 +3506,11 @@ case class PipeMemRmwTester() extends Component {
           //for (extIdx <- 0 until extIdxLim) {
             midModPayload(extIdxUp).myExt.modMemWordValid := True
             midModPayload(extIdxUp).myExt.modMemWord := (
-              midModPayload(extIdxUp).myExt.rdMemWord(0) - 1
+              if (PipeMemRmwSimDut.allModOpsSameChange) (
+                midModPayload(extIdxUp).myExt.rdMemWord(0) + 1
+              ) else (
+                midModPayload(extIdxUp).myExt.rdMemWord(0) - 1
+              )
             )
           //}
         //}
