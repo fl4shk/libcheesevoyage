@@ -18,7 +18,11 @@ object PipeMemRmwFormal extends App {
     //16
   )
   case class PipeMemRmwFormalDut() extends Component {
-    val dut = FormalDut(PipeMemRmwTester())
+    val dut = FormalDut(
+      PipeMemRmwTester(
+        optFormal=true,
+      )
+    )
 
     assumeInitial(clockDomain.isResetActive)
     def front = dut.io.front //dut.pmIo.front
