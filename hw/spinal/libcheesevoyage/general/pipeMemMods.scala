@@ -2487,27 +2487,27 @@ extends Area {
             )
             .setName(s"${pipeName}_myFindFirstUp_${ydx}_${zdx}")
           )
-          val myFindFirstSaved = KeepAttribute(
-            (optModHazardKind == PipeMemRmw.modHazardKindFwd) generate (
-              mod.front.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxSaved)
-              .sFindFirst(
-                _ === True
-              )
-            )
-            .setName(s"${pipeName}_myFindFirstDown_${ydx}_${zdx}")
-          )
+          //val myFindFirstSaved = KeepAttribute(
+          //  (optModHazardKind == PipeMemRmw.modHazardKindFwd) generate (
+          //    mod.front.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxSaved)
+          //    .sFindFirst(
+          //      _ === True
+          //    )
+          //  )
+          //  .setName(s"${pipeName}_myFindFirstDown_${ydx}_${zdx}")
+          //)
           val myFwdCondUp = (
             KeepAttribute(
               myFindFirstUp._1
             )
             .setName(s"${pipeName}_myFwdCondUp_${ydx}_${zdx}")
           )
-          val myFwdCondSaved = (
-            KeepAttribute(
-              myFindFirstSaved._1
-            )
-            .setName(s"${pipeName}_myFwdCondDown_${ydx}_${zdx}")
-          )
+          //val myFwdCondSaved = (
+          //  KeepAttribute(
+          //    myFindFirstSaved._1
+          //  )
+          //  .setName(s"${pipeName}_myFwdCondDown_${ydx}_${zdx}")
+          //)
           val myFwdDataUp = (
             KeepAttribute(
               mod.front.myUpExtDel2(myFindFirstUp._2)(ydx)(
@@ -2516,49 +2516,52 @@ extends Area {
             )
             .setName(s"${pipeName}_myFwdDataUp_${ydx}_${zdx}")
           )
-          val myFwdDataSaved = (
-            KeepAttribute(
-              mod.front.myUpExtDel2(myFindFirstSaved._2)(ydx)(
-                extIdxSaved
-              ).modMemWord
-            )
-            .setName(s"${pipeName}_myFwdDataDown_${ydx}_${zdx}")
-          )
+          //val myFwdDataSaved = (
+          //  KeepAttribute(
+          //    mod.front.myUpExtDel2(myFindFirstSaved._2)(ydx)(
+          //      extIdxSaved
+          //    ).modMemWord
+          //  )
+          //  .setName(s"${pipeName}_myFwdDataDown_${ydx}_${zdx}")
+          //)
           if (optModHazardKind == PipeMemRmw.modHazardKindFwd) {
             def setToMyFwdUp(): Unit = {
               upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
                 myFwdDataUp
               )
             }
-            def setToMyFwdSaved(): Unit = {
-              upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
-                myFwdDataSaved
-              )
-            }
-            def innerFunc(): Unit = {
-              when (
-                myFwdCondUp
-              ) {
-                setToMyFwdUp()
-              } elsewhen (
-                myFwdCondSaved
-              ) {
-                setToMyFwdSaved()
-              } 
-            }
-            when (
-              myFwdCondUp
-              && myFwdCondSaved
-            ) {
-              when (myFindFirstUp._2 < myFindFirstSaved._2) {
-                setToMyFwdUp()
-              } elsewhen (myFindFirstSaved._2 < myFindFirstUp._2) {
-                setToMyFwdSaved()
-              } otherwise {
-                innerFunc()
-              }
-            } otherwise {
-              innerFunc()
+            //def setToMyFwdSaved(): Unit = {
+            //  upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
+            //    myFwdDataSaved
+            //  )
+            //}
+            //def innerFunc(): Unit = {
+            //  when (
+            //    myFwdCondUp
+            //  ) {
+            //    setToMyFwdUp()
+            //  } elsewhen (
+            //    myFwdCondSaved
+            //  ) {
+            //    setToMyFwdSaved()
+            //  } 
+            //}
+            //when (
+            //  myFwdCondUp
+            //  && myFwdCondSaved
+            //) {
+            //  when (myFindFirstUp._2 < myFindFirstSaved._2) {
+            //    setToMyFwdUp()
+            //  } elsewhen (myFindFirstSaved._2 < myFindFirstUp._2) {
+            //    setToMyFwdSaved()
+            //  } otherwise {
+            //    innerFunc()
+            //  }
+            //} otherwise {
+            //  innerFunc()
+            //}
+            when (myFwdCondUp) {
+              setToMyFwdUp()
             }
           }
         }
