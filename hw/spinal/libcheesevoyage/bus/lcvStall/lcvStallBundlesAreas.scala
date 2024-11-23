@@ -7,7 +7,7 @@ import spinal.lib._
 import spinal.lib.misc.pipeline._
 
 //--------
-case class LcvStallIo[
+class LcvStallIo[
   HostDataT <: Data,
   DevDataT <: Data,
 ](
