@@ -17,7 +17,7 @@ object PipeMemRmwFormal extends App {
     15
     //16
   )
-  case class PipeMemRmwFormalDut() extends Component {
+  case class PipeMemRmwFormalDut2() extends Component {
     val dut = FormalDut(
       PipeMemRmwTester(
         optFormal=true,
@@ -189,7 +189,7 @@ object PipeMemRmwFormal extends App {
       //60
       20
     )
-    .doVerify(PipeMemRmwFormalDut())
+    .doVerify(PipeMemRmwFormalDut2())
   //--------
 }
 

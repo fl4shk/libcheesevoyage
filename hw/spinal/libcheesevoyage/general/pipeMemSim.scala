@@ -2006,12 +2006,19 @@ case class PipeMemRmwTester(
       up=cMidModFront.down,
       down=(
         //pmIo.modBack
-        //Node()
+        Node()
 
-        pmIo.modBack
+        //pmIo.modBack
       ),
     )
     pipeMem.myLinkArr += sMidModFront
+    val s2mMidModFront = S2MLink(
+      up=sMidModFront.down,
+      down=(
+        pmIo.modBack
+      ),
+    )
+    pipeMem.myLinkArr += s2mMidModFront
 
     val midModPayload = (
       Vec.fill(extIdxLim)(
@@ -2068,6 +2075,7 @@ case class PipeMemRmwTester(
       ) {
         nextSetMidModPayloadState := False
       }
+      //pmIo.tempModFrontPayload(0) := 
     }
     val savedPsMemStallHost = (
       PipeMemRmwSimDut.doTestModOp
@@ -2080,6 +2088,7 @@ case class PipeMemRmwTester(
         stallHost=dut.psMemStallHost,
         someLink=cMidModFront,
       )
+      .setName(s"psMem_savedPsMemStallHost")
     )
     //--------
     midModPayload(extIdxUp).myExt.allowOverride
@@ -2116,8 +2125,8 @@ case class PipeMemRmwTester(
               next=True,
               cond=(
                 (
-                  midModPayload(extIdxUp).op
-                  //pmIo.modFront(modFrontPayload).op
+                  //midModPayload(extIdxUp).op
+                  pmIo.modFront(modFrontPayload).op
                   === PipeMemRmwSimDut.ModOp.LDR_RA_RB
                 ) && (
                   cMidModFront.up.isFiring
@@ -2127,8 +2136,8 @@ case class PipeMemRmwTester(
             ),
             cond=(
               (
-                midModPayload(extIdxUp).op
-                //pmIo.modFront(modFrontPayload).op
+                //midModPayload(extIdxUp).op
+                pmIo.modFront(modFrontPayload).op
                 === PipeMemRmwSimDut.ModOp.ADD_RA_RB
               ) && (
                 cMidModFront.up.isFiring
@@ -2142,8 +2151,8 @@ case class PipeMemRmwTester(
       when (
         cMidModFront.up.isValid
         && (
-          midModPayload(extIdxUp).op
-          //pmIo.modFront(modFrontPayload).op
+          //midModPayload(extIdxUp).op
+          pmIo.modFront(modFrontPayload).op
           === PipeMemRmwSimDut.ModOp.LDR_RA_RB
         )
       ) {
@@ -2158,27 +2167,34 @@ case class PipeMemRmwTester(
           //--------
           midModPayload(extIdxUp).myExt.modMemWordValid := True
           //--------
+          midModPayload(extIdxUp).myExt.modMemWord := (
+            if (PipeMemRmwSimDut.allModOpsSameChange) (
+              midModPayload(extIdxUp).myExt.rdMemWord(0) + 1
+            ) else (
+              midModPayload(extIdxUp).myExt.rdMemWord(0) - 1
+            )
+          )
         }
         //--------
       }
-      when (
-        dut.psMemStallHost.fire
-        && dut.psMemStallHost.rValid
-      ) {
-        midModPayload(extIdxUp).myExt.modMemWordValid := True
-        midModPayload(extIdxUp).myExt.modMemWord := (
-          if (PipeMemRmwSimDut.allModOpsSameChange) (
-            midModPayload(extIdxUp).myExt.rdMemWord(0) + 1
-          ) else (
-            midModPayload(extIdxUp).myExt.rdMemWord(0) - 1
-          )
-        )
-      }
-      cover(
-        dut.psMemStallHost.fire
-        && dut.psMemStallHost.rValid
-        //&& pmIo.tempModFrontPayload(0).myExt.modMemWordValid
-      )
+      //when (
+      //  dut.psMemStallHost.fire
+      //  && dut.psMemStallHost.rValid
+      //) {
+      //  midModPayload(extIdxUp).myExt.modMemWordValid := True
+      //  midModPayload(extIdxUp).myExt.modMemWord := (
+      //    if (PipeMemRmwSimDut.allModOpsSameChange) (
+      //      midModPayload(extIdxUp).myExt.rdMemWord(0) + 1
+      //    ) else (
+      //      midModPayload(extIdxUp).myExt.rdMemWord(0) - 1
+      //    )
+      //  )
+      //}
+      //cover(
+      //  dut.psMemStallHost.fire
+      //  && dut.psMemStallHost.rValid
+      //  //&& pmIo.tempModFrontPayload(0).myExt.modMemWordValid
+      //)
     }
 
     def setMidModStages(): Unit = {

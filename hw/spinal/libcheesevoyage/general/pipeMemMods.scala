@@ -1289,6 +1289,21 @@ extends Area {
         },
       )
       myLinkArr += sFront
+      val s2mFront = (
+        optModHazardKind == PipeMemRmw.modHazardKindFwd
+      ) generate (
+        S2MLink(
+          up=sFront.down,
+          down={
+            val temp = Node()
+            temp.setName(s"${pipeName}_s2mFront_down")
+            temp
+          },
+        )
+      )
+      if (optModHazardKind == PipeMemRmw.modHazardKindFwd) {
+        myLinkArr += s2mFront
+      }
       //val cIoFront = DirectLink(
       //  up=io.front,
       //  down=cFront.up,
@@ -1319,7 +1334,11 @@ extends Area {
       val cMid0Front = CtrlLink(
         up=(
           //if (optLinkFrontToModFront) (
+          if (optModHazardKind != PipeMemRmw.modHazardKindFwd) (
             sFront.down
+          ) else (
+            s2mFront.down
+          )
           //) else (
           //  Node()
           //)
@@ -1340,7 +1359,13 @@ extends Area {
           up=cMid0Front.down,
           down=(
             //Node()
-            io.modFront
+            if (optModHazardKind != PipeMemRmw.modHazardKindFwd) (
+              io.modFront
+            ) else {
+              val temp = Node()
+              temp.setName(s"${pipeName}_sMid0Front_down")
+              temp
+            }
           ),
         )
       )
@@ -1349,6 +1374,28 @@ extends Area {
         //  s"optIncludeModFrontStageLink: ${optIncludeModFrontStageLink}"
         //)
         myLinkArr += sMid0Front
+      }
+      val myIncludeS2mMid0Front = (
+        optIncludeModFrontStageLink
+        && (
+          optModHazardKind == PipeMemRmw.modHazardKindFwd
+        )
+      )
+      val s2mMid0Front = (
+        myIncludeS2mMid0Front
+      ) generate (
+        S2MLink(
+          up=sMid0Front.down,
+          down={
+            //val temp = Node()
+            //temp.setName(s"${pipeName}_s2mMid0Front_down")
+            //temp
+            io.modFront
+          },
+        )
+      )
+      if (myIncludeS2mMid0Front) {
+        myLinkArr += s2mMid0Front
       }
       // lack of `s2mMid0Front` (which would have been an `S2MLink`):
       //  needed to ensure it works with a second `PipeMemRmw`
