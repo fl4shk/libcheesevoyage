@@ -76,7 +76,7 @@ object PipeMemRmwSimDut {
       //  // Stall in MEM if
       LDR_RA_RB,
       MUL_RA_RB,               // stall in EX
-      BEQ_RA_SIMM,
+      //BEQ_RA_SIMM,
       LIM
       = newElement();
   }
