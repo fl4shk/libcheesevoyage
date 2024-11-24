@@ -1426,40 +1426,42 @@ case class PipeMemRmwSimDut(
       )
     }
   }
-  val myHistMyWriteAddr = (
-    KeepAttribute(
-      History[UInt](
-        that=(
-          pipeMem.mod.back.myWriteAddr(0)
-        ),
-        length=myProveNumCycles,
-        when=(
-          tempHadModFrontIsFiring._1
-        ),
-        init=(
-          U"1'd0".resized
-        )
-      )
-    )
-    .setName(s"myHistMyWriteAddr")
-  )
-  val myHistMyWriteData = (
-    KeepAttribute(
-      History[UInt](
-        that=(
-          pipeMem.mod.back.myWriteData(0)
-        ),
-        length=myProveNumCycles,
-        when=(
-          tempHadModFrontIsFiring._1
-        ),
-        init=(
-          U"1'd0".resized
-        )
-      )
-    )
-    .setName(s"myHistMyWriteData")
-  )
+  //val myHistMyWriteAddr = (
+  //  KeepAttribute(
+  //    History[UInt](
+  //      that=(
+  //        pipeMem.mod.back.myWriteAddr(0)
+  //      ),
+  //      length=myProveNumCycles,
+  //      when=(
+  //        tempHadModFrontIsFiring._1
+  //        && myHaveCurrWrite
+  //      ),
+  //      init=(
+  //        U"1'd0".resized
+  //      )
+  //    )
+  //  )
+  //  .setName(s"myHistMyWriteAddr")
+  //)
+  //val myHistMyWriteData = (
+  //  KeepAttribute(
+  //    History[UInt](
+  //      that=(
+  //        pipeMem.mod.back.myWriteData(0)
+  //      ),
+  //      length=myProveNumCycles,
+  //      when=(
+  //        tempHadModFrontIsFiring._1
+  //        && myHaveCurrWrite
+  //      ),
+  //      init=(
+  //        U"1'd0".resized
+  //      )
+  //    )
+  //  )
+  //  .setName(s"myHistMyWriteData")
+  //)
   val myHistModBackPayloadOp = (
     KeepAttribute(
       History(
@@ -1470,6 +1472,7 @@ case class PipeMemRmwSimDut(
         when=(
           tempHadModFrontIsFiring._1
           //&& myHaveCurrWrite
+          && myHaveCurrWrite
         ),
         //init=(
         //  PipeMemRmwSimDut.ModOp.ADD_RA_RB
@@ -1645,38 +1648,38 @@ case class PipeMemRmwSimDut(
 
   when (pastValidAfterReset) {
     //--------
-    val tempRight = (
-      //--------
-      KeepAttribute(
-        //RegNextWhen(
-        //  pipeMem.modMem(0)(0).readAsync(
-        //    address=(
-        //      //RegNextWhen(
-        //        //modBack(modBackPayload).myExt.memAddr(PipeMemRmw.modWrIdx)
-        //        //pipeMem.cBackArea.upExt(1)(0)(
-        //        //  PipeMemRmw.extIdxSingle
-        //        //).memAddr(0),
-        //        pipeMem.mod.back.myWriteAddr(0)
-        //      //  modBack.isFiring,
-        //      //) init(0x0)
-        //    )
-        //    //RegNextWhen(
-        //    //  modFront(modFrontPayload).myExt.memAddr(PipeMemRmw.modWrIdx),
-        //    //  modFront.isFiring
-        //    //)
-        //  ),
-        //  //modBack.isFiring
-        //  myHaveCurrWrite
-        //) init(rSavedModArr(0).getZero)
-        /*RegNextWhen*//*RegNext*/(
-          myHistMyWriteData(
-            (tempHaveCurrWritePostFirst._2)
-          ),
-        )
-        //init(pipeMem.mod.back.myWriteData(0).getZero)
-      )
-      .setName(s"tempRight")
-    )
+    //val tempRight = (
+    //  //--------
+    //  KeepAttribute(
+    //    //RegNextWhen(
+    //    //  pipeMem.modMem(0)(0).readAsync(
+    //    //    address=(
+    //    //      //RegNextWhen(
+    //    //        //modBack(modBackPayload).myExt.memAddr(PipeMemRmw.modWrIdx)
+    //    //        //pipeMem.cBackArea.upExt(1)(0)(
+    //    //        //  PipeMemRmw.extIdxSingle
+    //    //        //).memAddr(0),
+    //    //        pipeMem.mod.back.myWriteAddr(0)
+    //    //      //  modBack.isFiring,
+    //    //      //) init(0x0)
+    //    //    )
+    //    //    //RegNextWhen(
+    //    //    //  modFront(modFrontPayload).myExt.memAddr(PipeMemRmw.modWrIdx),
+    //    //    //  modFront.isFiring
+    //    //    //)
+    //    //  ),
+    //    //  //modBack.isFiring
+    //    //  myHaveCurrWrite
+    //    //) init(rSavedModArr(0).getZero)
+    //    /*RegNextWhen*//*RegNext*/(
+    //      myHistMyWriteData(
+    //        (tempHaveCurrWritePostFirst._2)
+    //      ),
+    //    )
+    //    //init(pipeMem.mod.back.myWriteData(0).getZero)
+    //  )
+    //  .setName(s"tempRight")
+    //)
     val rPrevOpCnt = (
       RegNextWhen(
         next=modBack(modBackPayload).opCnt,
@@ -1759,7 +1762,6 @@ case class PipeMemRmwSimDut(
         )
       )
     }
-
     when (pastValidAfterReset()) {
       when (
         ///*past*/(modBack.isFiring)
@@ -1768,62 +1770,89 @@ case class PipeMemRmwSimDut(
         //pipeMem.mod.back.myWriteEnable(0)
         True
       ) {
-        def firstTempHaveCurrWrite = (
-          tempHaveCurrWrite
-          //tempHaveCurrWritePostFirst
+        //def firstTempHaveCurrWrite = (
+        //  tempHaveCurrWrite
+        //  //tempHaveCurrWritePostFirst
+        //)
+        //def secondTempHaveCurrWrite = (
+        //  tempHaveCurrWritePostFirst
+        //  //tempHaveCurrWritePostSecond
+        //)
+        val rMyPrevWriteData = (
+          KeepAttribute(
+            Vec[UInt]({
+              val myArr = new ArrayBuffer[UInt]() 
+              for (idx <- 0 until pipeMem.wordCountArr(0)) {
+                myArr += (
+                  RegNextWhen(
+                    next=pipeMem.mod.back.myWriteData(0),
+                    cond=(
+                      (
+                        myHaveCurrWrite
+                        //pipeMem.mod.back.myWriteEnable(0)
+                      ) && (
+                        pipeMem.mod.back.myWriteAddr(0) === idx
+                      )
+                    ),
+                    init=0x0,
+                  )
+                )
+              }
+              myArr
+            })
+          )
+          .setName(s"rMyPrevWriteData")
         )
-        def secondTempHaveCurrWrite = (
-          tempHaveCurrWritePostFirst
-          //tempHaveCurrWritePostSecond
+        val rMyHadFirstWriteAt = (
+          KeepAttribute(
+            Vec[Bool]({
+              val myArr = new ArrayBuffer[Bool]()
+              for (idx <- 0 until pipeMem.wordCountArr(0)) {
+                myArr += (
+                  RegNextWhen(
+                    next=True,
+                    cond=(
+                      (
+                        myHaveCurrWrite
+                      ) && (
+                        pipeMem.mod.back.myWriteAddr(0) === idx
+                      )
+                    ),
+                    init=False,
+                  )
+                )
+              }
+              myArr
+            })
+          )
+          .setName(s"rMyHadFirstWriteAt")
         )
         when (
           (
-            /*past*/(firstTempHaveCurrWrite._1)
-            && /*past*/(secondTempHaveCurrWrite._1)
-            && (tempHaveCurrWritePostSecond._1)
-          ) && (
-            (
-              /*past*/(
-                myHistMyWriteAddr(/*past*/(firstTempHaveCurrWrite._2))
-              ) === /*past*/(
-                myHistMyWriteAddr(/*past*/(secondTempHaveCurrWrite._2))
-              )
-            ) 
+            myHaveCurrWrite
+          )
+          //&& (
+          //  RegNextWhen(
+          //    next=True,
+          //    cond=(
+          //      myHaveCurrWrite
+          //      && pipeMem.mod.back.myWriteAddr(0)
+          //    ),
+          //    init=False,
+          //  )
+          //)
+          && (
+            rMyHadFirstWriteAt(
+              pipeMem.mod.back.myWriteAddr(0)
+            )
           )
         ) {
           def myTempLeft = (
-            //if (
-            //  firstTempHaveCurrWrite == tempHaveCurrWrite
-            //) (
-            //  Mux[UInt](
-            //    
-            //  )
-            //) else (
-              myHistMyWriteData(firstTempHaveCurrWrite._2)
-            //)
+            pipeMem.mod.back.myWriteData(0)
           )
           def myTempRight = (
-            //myHistMyWriteData(secondTempHaveCurrWrite._2)
-            if (
-              (
-                firstTempHaveCurrWrite == tempHaveCurrWrite
-              ) && (
-                secondTempHaveCurrWrite == tempHaveCurrWritePostFirst
-              )
-            ) (
-              //Mux[UInt](
-              //  (
-              //    //firstTempHaveCurrWrite._1
-              //    //&& (
-              //    //  firstTempHaveCurrWrite._2 === 0x0
-              //    //)
-              //    myHaveCurrWrite
-              //  ),
-                modBack(modBackPayload).myExt.rdMemWord(0),
-              //  myHistMyWriteData(firstTempHaveCurrWrite._2)
-              //)
-            ) else (
-              myHistMyWriteData(firstTempHaveCurrWrite._2)
+            rMyPrevWriteData(
+              pipeMem.mod.back.myWriteAddr(0)
             )
           )
           if (
@@ -1837,61 +1866,190 @@ case class PipeMemRmwSimDut(
               )
             )
           ) {
-            when (myHaveCurrWrite) {
-              assert(
-                myTempLeft
-                === myTempRight + 1
-              )
-            }
-          } else if (
-            //PipeMemRmwSimDut.doTestModOp
-            optModHazardKind == PipeMemRmw.modHazardKindFwd
-          ) {
-            when (myHaveCurrWrite) {
-              switch (
-                //myHistModBackPayloadOp(firstTempHaveCurrWrite._2)
-                modBack(modBackPayload).op
-              ) {
-                is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
-                  assert(
-                    ///*past*/(tempLeft) //+ 1
-                    //=== (
-                    //  //mySavedMod
-                    //  /*past*//*past*/(tempRight) + 1 //+ 1
-                    //  /*past*///(mySavedMod)
-                    //  //mySavedMod + 1
-                    //)
-                    myTempLeft
-                    === myTempRight + 1
-                  )
-                }
-                is (PipeMemRmwSimDut.ModOp.LDR_RA_RB) {
-                  assert(
-                    myTempLeft
-                    === myTempRight - 1
-                    //myTempLeft
-                    //=== myTempRight + 1
-                  )
-                }
-                is (PipeMemRmwSimDut.ModOp.MUL_RA_RB) {
-                  val tempBitsRange = (
-                    //wordType().bitsRange
-                    modBack(modBackPayload).myExt.modMemWord.bitsRange
-                  )
-                  assert(
-                    myTempLeft(tempBitsRange)
-                    === (myTempRight << 1)(tempBitsRange)
-                    //myTempLeft(tempBitsRange)
-                    //=== (myTempRight + 1)(tempBitsRange)
-                  )
-                }
-                //is (PipeMemRmwSimDut.ModOp.BEQ_RA_SIMM) {
-                //}
+            assert(
+              myTempLeft
+              === myTempRight + 1
+            )
+          } else {
+            switch (
+              //myHistModBackPayloadOp(firstTempHaveCurrWrite._2)
+              modBack(modBackPayload).op
+            ) {
+              is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
+                assert(
+                  ///*past*/(tempLeft) //+ 1
+                  //=== (
+                  //  //mySavedMod
+                  //  /*past*//*past*/(tempRight) + 1 //+ 1
+                  //  /*past*///(mySavedMod)
+                  //  //mySavedMod + 1
+                  //)
+                  myTempLeft
+                  === myTempRight + 1
+                )
               }
+              is (PipeMemRmwSimDut.ModOp.LDR_RA_RB) {
+                assert(
+                  myTempLeft
+                  === myTempRight - 1
+                  //myTempLeft
+                  //=== myTempRight + 1
+                )
+              }
+              is (PipeMemRmwSimDut.ModOp.MUL_RA_RB) {
+                val tempBitsRange = (
+                  //wordType().bitsRange
+                  modBack(modBackPayload).myExt.modMemWord.bitsRange
+                )
+                assert(
+                  myTempLeft(tempBitsRange)
+                  === (myTempRight << 1)(tempBitsRange)
+                  //myTempLeft(tempBitsRange)
+                  //=== (myTempRight + 1)(tempBitsRange)
+                )
+              }
+              //is (PipeMemRmwSimDut.ModOp.BEQ_RA_SIMM) {
+              //}
             }
           }
-          //}
         }
+        //when (
+        //  (
+        //    ///*past*/(
+        //    //  firstTempHaveCurrWrite._1
+        //    //) && (
+        //    //  firstTempHaveCurrWrite._2 === 0
+        //    //)
+        //    (
+        //      myHaveCurrWrite
+        //    )
+        //    && /*past*/(secondTempHaveCurrWrite._1)
+        //    && (tempHaveCurrWritePostSecond._1)
+        //  ) && (
+        //    (
+        //      /*past*/(
+        //        myHistMyWriteAddr(/*past*/(
+        //          //firstTempHaveCurrWrite._2
+        //          0
+        //        ))
+        //      ) === /*past*/(
+        //        myHistMyWriteAddr(/*past*/(secondTempHaveCurrWrite._2))
+        //      )
+        //    ) 
+        //  )
+        //) {
+        //  def myTempLeft = (
+        //    //if (
+        //    //  firstTempHaveCurrWrite == tempHaveCurrWrite
+        //    //) (
+        //    //  Mux[UInt](
+        //    //    
+        //    //  )
+        //    //) else (
+        //      myHistMyWriteData(
+        //        //firstTempHaveCurrWrite._2
+        //        0x0
+        //      )
+        //    //)
+        //  )
+        //  def myTempRight = (
+        //    //myHistMyWriteData(secondTempHaveCurrWrite._2)
+        //    //if (
+        //    //  (
+        //    //    firstTempHaveCurrWrite == tempHaveCurrWrite
+        //    //  ) && (
+        //    //    secondTempHaveCurrWrite == tempHaveCurrWritePostFirst
+        //    //  )
+        //    //) 
+        //    (
+        //      //Mux[UInt](
+        //      //  (
+        //      //    //firstTempHaveCurrWrite._1
+        //      //    //&& (
+        //      //    //  firstTempHaveCurrWrite._2 === 0x0
+        //      //    //)
+        //      //    myHaveCurrWrite
+        //      //  ),
+        //        //modBack(modBackPayload).myExt.rdMemWord(0),
+        //        myHistMyWriteData(
+        //          //firstTempHaveCurrWrite._2
+        //          secondTempHaveCurrWrite._2
+        //          //0x0
+        //        )
+        //      //)
+        //    ) 
+        //    //else (
+        //    //  myHistMyWriteData(
+        //    //    firstTempHaveCurrWrite._2
+        //    //  )
+        //    //)
+        //  )
+        //  if (
+        //    (
+        //      optModHazardKind == PipeMemRmw.modHazardKindDupl
+        //    ) || (
+        //      (
+        //        optModHazardKind == PipeMemRmw.modHazardKindFwd
+        //      ) && (
+        //        PipeMemRmwSimDut.allModOpsSameChange
+        //      )
+        //    )
+        //  ) {
+        //    //when (myHaveCurrWrite) {
+        //      assert(
+        //        myTempLeft
+        //        === myTempRight + 1
+        //      )
+        //    //}
+        //  } else if (
+        //    //PipeMemRmwSimDut.doTestModOp
+        //    optModHazardKind == PipeMemRmw.modHazardKindFwd
+        //  ) {
+        //    //when (myHaveCurrWrite) {
+        //      switch (
+        //        //myHistModBackPayloadOp(firstTempHaveCurrWrite._2)
+        //        modBack(modBackPayload).op
+        //      ) {
+        //        is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
+        //          assert(
+        //            ///*past*/(tempLeft) //+ 1
+        //            //=== (
+        //            //  //mySavedMod
+        //            //  /*past*//*past*/(tempRight) + 1 //+ 1
+        //            //  /*past*///(mySavedMod)
+        //            //  //mySavedMod + 1
+        //            //)
+        //            myTempLeft
+        //            === myTempRight + 1
+        //          )
+        //        }
+        //        is (PipeMemRmwSimDut.ModOp.LDR_RA_RB) {
+        //          assert(
+        //            myTempLeft
+        //            === myTempRight - 1
+        //            //myTempLeft
+        //            //=== myTempRight + 1
+        //          )
+        //        }
+        //        is (PipeMemRmwSimDut.ModOp.MUL_RA_RB) {
+        //          val tempBitsRange = (
+        //            //wordType().bitsRange
+        //            modBack(modBackPayload).myExt.modMemWord.bitsRange
+        //          )
+        //          assert(
+        //            myTempLeft(tempBitsRange)
+        //            === (myTempRight << 1)(tempBitsRange)
+        //            //myTempLeft(tempBitsRange)
+        //            //=== (myTempRight + 1)(tempBitsRange)
+        //          )
+        //        }
+        //        //is (PipeMemRmwSimDut.ModOp.BEQ_RA_SIMM) {
+        //        //}
+        //      }
+        //    //}
+        //  }
+        //  //}
+        //}
       }
     }
     cover(
