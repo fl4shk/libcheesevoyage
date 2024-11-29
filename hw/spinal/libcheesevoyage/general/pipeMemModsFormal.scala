@@ -13,11 +13,12 @@ object PipeMemRmwFormal extends App {
   //--------
   //--------
   def myProveNumCycles = (
-    //10
-    15
+    //6
+    10
+    //15
     //16
   )
-  case class PipeMemRmwFormalDut2() extends Component {
+  case class PipeMemRmwFormalDut6() extends Component {
     val dut = FormalDut(
       PipeMemRmwTester(
         optFormal=true,
@@ -171,25 +172,25 @@ object PipeMemRmwFormal extends App {
     ),
     _keepDebugInfo=true,
   )
-    .withBMC(
-      //20
-      //15
-      //16
-      PipeMemRmwFormal.myProveNumCycles
-    )
-    //.withProve(
+    //.withBMC(
     //  //20
-    //  //40
-    //  //10
+    //  //15
+    //  //16
     //  PipeMemRmwFormal.myProveNumCycles
     //)
+    .withProve(
+      //20
+      //40
+      //10
+      PipeMemRmwFormal.myProveNumCycles
+    )
     .withCover(
       //PipeMemRmwFormal.myProveNumCycles
       //20
       //60
       20
     )
-    .doVerify(PipeMemRmwFormalDut2())
+    .doVerify(PipeMemRmwFormalDut6())
   //--------
 }
 

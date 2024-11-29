@@ -24,11 +24,14 @@ object PipeMemRmwSimDutHaltItState extends SpinalEnum(
     = newElement();
 }
 object PipeMemRmwSimDut {
-  def wordWidth = 8
+  def wordWidth = (
+    //8
+    4
+  )
   def wordType() = UInt(wordWidth bits)
   def wordCount = (
-    //4
-    8
+    4
+    //8
   )
   def hazardCmpType() = UInt(
     PipeMemRmw.addrWidth(wordCount=wordCount) bits
@@ -55,7 +58,8 @@ object PipeMemRmwSimDut {
     //false
   )
   def modOpCntWidth = (
-    8
+    //8
+    4
   )
   def pcWidth = (
     8
@@ -241,6 +245,98 @@ case class PipeMemRmwSimDut(
   //  PipeMemRmwSimDut.optModFwdToFront
   //)
   def ModType() = PipeMemRmwSimDutModType()
+  val io = new Area {
+    var rMyPrevWriteData: Vec[UInt] = null
+    //(
+    //  KeepAttribute(
+    //    Vec.fill(wordCount)(wordType())
+    //  )
+    //)
+    //var rMyHadFirstWriteAt: Vec[Bool] = null
+    ////(
+    ////  KeepAttribute(
+    ////    Vec.fill(wordCount)(Bool())
+    ////  )
+    ////)
+    //var rMyHadSecondWriteAt: Vec[Bool] = null
+    var myHaveCurrWrite: Bool = null
+    val myHaveCurrWriteCntVec: Vec[SInt] = (
+      KeepAttribute(
+        //Reg(
+          Vec.fill(wordCount)(
+            //Vec.fill(myProveNumCycles)(
+              SInt((log2Up(myProveNumCycles) + 2) bits)
+            //)
+          )
+        //)
+      )
+    )
+    val rPrevMyHaveCurrWriteCntVec: Vec[SInt] = (
+      KeepAttribute(
+        RegNext(
+          next=myHaveCurrWriteCntVec
+        )
+      )
+    )
+    for (idx <- 0 until myHaveCurrWriteCntVec.size) {
+      myHaveCurrWriteCntVec(idx) := rPrevMyHaveCurrWriteCntVec(idx)
+      rPrevMyHaveCurrWriteCntVec(idx).init(
+        myHaveCurrWriteCntVec(idx).getZero
+        //-1
+      )
+    }
+    // This is a `Vec` of `History[SInt]`s, so it's called
+    // `myHist...CntVec` instead of `myHist...CntV2d` 
+    var myHistHaveCurrWriteCntVec: Vec[Vec[SInt]] = null
+    //(
+    //  KeepAttribute(
+    //    Vec[Vec[UInt]]({
+    //      val myArr = new ArrayBuffer[Vec[UInt]]()
+    //      for (idx <- 0 until wordCount) {
+    //        myArr += (
+    //          History[UInt](
+    //            that=myHaveCurrWriteCntVec(idx),
+    //            length=myProveNumCycles,
+    //            init=0x0,
+    //          )
+    //        )
+    //      }
+    //      myArr
+    //    })
+    //  )
+    //)
+    val myHaveCurrWriteCntValidV2d = (
+      KeepAttribute(
+        Vec.fill(wordCount)(
+          Vec.fill(myProveNumCycles)(
+            Bool()
+          )
+        )
+      )
+    )
+    //for (jdx <- 0 until wordCount) {
+    //  for (idx <- 0 until myProveNumCycles) {
+    //    rMyHaveCurrWriteCntV2d(jdx)(idx).init(
+    //      rMyHaveCurrWriteCntV2d(jdx)(idx).getZero
+    //    )
+    //  }
+    //}
+  }
+  def rMyPrevWriteData = io.rMyPrevWriteData
+  //def rMyHadFirstWriteAt = io.rMyHadFirstWriteAt
+  //def rMyHadSecondWriteAt = io.rMyHadFirstWriteAt
+  def myHaveCurrWrite = io.myHaveCurrWrite
+  def myHaveCurrWriteCntVec = io.myHaveCurrWriteCntVec
+  def myHistHaveCurrWriteCntVec = io.myHistHaveCurrWriteCntVec
+  def myHaveCurrWriteCntValidV2d = io.myHaveCurrWriteCntValidV2d
+  def myHaveCurrWriteCntCond(
+    jdx: Int
+  ) = (
+    myHaveCurrWrite
+    && (
+      pipeMem.mod.back.myWriteAddr(0) === jdx
+    )
+  )
   //val io = PipeMemRmwSimDutIo()
   //val psMemStallHost = new Bundle {
   //  //val valid = Bool()
@@ -552,6 +648,7 @@ case class PipeMemRmwSimDut(
                 nextSetOutpState := False
               }
             }
+            outp.opCnt := inp.opCnt
             outp.myExt.rdMemWord := inp.myExt.rdMemWord
             //when (
             //  cMid0Front.up.isReady
@@ -1015,7 +1112,7 @@ case class PipeMemRmwSimDut(
   //)
 
   //val savedModMemWord = Payload(PipeMemRmwSimDut.wordType())
-  val myHaveCurrWrite = (
+  io.myHaveCurrWrite = (
     KeepAttribute(
       pastValidAfterReset
       && modBack.isFiring
@@ -1023,6 +1120,83 @@ case class PipeMemRmwSimDut(
     )
     .setName(s"myHaveCurrWrite")
   )
+  io.myHistHaveCurrWriteCntVec = (
+    KeepAttribute(
+      Vec[Vec[SInt]]({
+        val myArr = new ArrayBuffer[Vec[SInt]]()
+        for (jdx <- 0 until wordCount) {
+          myArr += (
+            History[SInt](
+              that=myHaveCurrWriteCntVec(jdx),
+              length=myProveNumCycles,
+              when=(
+                //myHaveCurrWrite
+                myHaveCurrWriteCntCond(jdx=jdx)
+              ),
+              init=S(s"${log2Up(myProveNumCycles) + 2}'d-1"),
+            )
+          )
+        }
+        myArr
+      })
+    )
+    .setName("myHistHaveCurrWriteCntVec")
+  )
+  for (jdx <- 0 until wordCount) {
+    when (
+      //myHaveCurrWrite
+      //&& (
+      //  pipeMem.mod.back.myWriteAddr(0) === jdx
+      //)
+      myHaveCurrWriteCntCond(jdx=jdx)
+    ) {
+      myHaveCurrWriteCntVec(jdx) := (
+        io.rPrevMyHaveCurrWriteCntVec(jdx) + 1
+        //myHistHaveCurrWriteCntVec(jdx)(1) + 1
+      )
+    }
+    for (idx <- 0 until myProveNumCycles) {
+      if (idx == 0) {
+        myHaveCurrWriteCntValidV2d(jdx)(idx) := (
+          True
+          //myHaveCurrWriteCntCond(jdx=jdx)
+        )
+      } else { // if (idx > 0)
+        //myHaveCurrWriteCntValidV2d(jdx)(idx) := (
+        //  RegNext(
+        //    next=myHaveCurrWriteCntValidV2d(jdx)(idx),
+        //    init=myHaveCurrWriteCntValidV2d(jdx)(idx).getZero,
+        //  )
+        //)
+        //when (
+        //  myHaveCurrWriteCntCond(jdx=jdx)
+        //) {
+          myHaveCurrWriteCntValidV2d(jdx)(idx) := (
+            (
+              myHistHaveCurrWriteCntVec(jdx)(idx - 1)
+              === myHistHaveCurrWriteCntVec(jdx)(idx) + 1
+            ) && (
+              myHistHaveCurrWriteCntVec(jdx)(idx) > -1
+            ) && (
+              myHistHaveCurrWriteCntVec(jdx)(idx) < myProveNumCycles
+            )
+          )
+        //} otherwise {
+        //  //assume(
+        //  //  myHistHaveCurrWriteCntVec(jdx)(idx) === -1
+        //  //)
+        //}
+        when (
+          !myHaveCurrWriteCntValidV2d(jdx)(idx)
+        ) {
+          assume(
+            myHistHaveCurrWriteCntVec(jdx)(idx) === -1
+          )
+        } otherwise {
+        }
+      }
+    }
+  }
   val tempLeft = (
     /*RegNextWhen*//*RegNext*/(
       //modBack(modBackPayload).myExt.modMemWord,
@@ -1625,26 +1799,40 @@ case class PipeMemRmwSimDut(
       )
     }
   }
-  when (
-    pastValidAfterReset()
-  ) {
-    when (
-      (
-        //myHaveCurrWrite
-        tempHaveCurrWrite._1
-      ) && (
-        tempHaveCurrWritePostFirst._1
-      )
-    ) {
-      assert(
-        myHistModBackOpCnt(
-          //0
-          tempHaveCurrWrite._2
-        )
-        === myHistModBackOpCnt(tempHaveCurrWritePostFirst._2) + 1
-      )
-    }
-  }
+  //--------
+  // BEGIN: TODO: add this back
+  //when (
+  //  pastValidAfterReset()
+  //) {
+  //  when (
+  //    (
+  //      //myHaveCurrWrite
+  //      tempHaveCurrWrite._1
+  //    ) && (
+  //      tempHaveCurrWritePostFirst._1
+  //    )
+  //  ) {
+  //    //assert(
+  //    //  myHistModBackOpCnt(
+  //    //    //0
+  //    //    tempHaveCurrWrite._2
+  //    //  )
+  //    //  === myHistModBackOpCnt(tempHaveCurrWritePostFirst._2) + 1
+  //    //)
+  //    assert(
+  //      modBack(modBackPayload).opCnt
+  //      === (
+  //        RegNextWhen(
+  //          next=modBack(modBackPayload).opCnt,
+  //          cond=myHaveCurrWrite,
+  //          init=modBack(modBackPayload).opCnt.getZero,
+  //        ) + 1
+  //      )
+  //    )
+  //  }
+  //}
+  // END: TODO: add this back
+  //--------
 
   when (pastValidAfterReset) {
     //--------
@@ -1762,7 +1950,113 @@ case class PipeMemRmwSimDut(
         )
       )
     }
+    io.rMyPrevWriteData = (
+      KeepAttribute(
+        Vec[UInt]({
+          val myArr = new ArrayBuffer[UInt]() 
+          for (jdx <- 0 until pipeMem.wordCountArr(0)) {
+            myArr += (
+              RegNextWhen(
+                next=pipeMem.mod.back.myWriteData(0),
+                cond=(
+                  //(
+                  //  myHaveCurrWrite
+                  //  //pipeMem.mod.back.myWriteEnable(0)
+                  //) && (
+                  //  pipeMem.mod.back.myWriteAddr(0) === jdx
+                  //)
+                  (
+                    myHaveCurrWriteCntCond(
+                      jdx=jdx
+                    )
+                  ) 
+                  //&& (
+                  //  myHaveCurrWriteCntValidV2d(
+                  //    jdx
+                  //  )(1)
+                  //)
+                ),
+                init=(
+                  //0x0
+                  pipeMem.mod.back.myWriteData(0).getZero
+                ),
+              )
+            )
+          }
+          myArr
+        })
+      )
+      .setName(s"PipeMemRmwSimDut_io_rMyPrevWriteData")
+    )
+    //io.rMyHadFirstWriteAt = (
+    //  KeepAttribute(
+    //    Vec[Bool]({
+    //      val myArr = new ArrayBuffer[Bool]()
+    //      for (idx <- 0 until pipeMem.wordCountArr(0)) {
+    //        myArr += {
+    //          val myCond = (
+    //            (
+    //              myHaveCurrWrite
+    //            ) && (
+    //              pipeMem.mod.back.myWriteAddr(0) === idx
+    //            )
+    //          )
+    //          RegNextWhen(
+    //            next=myCond,
+    //            cond=myCond,
+    //            init=False,
+    //          )
+    //        }
+    //      }
+    //      myArr
+    //    })
+    //  )
+    //  .setName(s"PipeMemRmwSimDut_io_rMyHadFirstWriteAt")
+    //)
+    //io.rMyHadSecondWriteAt = (
+    //  KeepAttribute(
+    //    Vec[Bool]({
+    //      val myArr = new ArrayBuffer[Bool]()
+    //      for (idx <- 0 until pipeMem.wordCountArr(0)) {
+    //        myArr += {
+    //          val myCond = (
+    //            (
+    //              myHaveCurrWrite
+    //            ) && (
+    //              rMyHadFirstWriteAt(idx)
+    //            ) && (
+    //              pipeMem.mod.back.myWriteAddr(0) === idx
+    //            )
+    //          )
+    //          RegNextWhen(
+    //            next=myCond,
+    //            cond=myCond,
+    //            init=False,
+    //          )
+    //        }
+    //      }
+    //      myArr
+    //    })
+    //  )
+    //  .setName(s"PipeMemRmwSimDut_io_rMyHadSecondWriteAt")
+    //)
+    //for (idx <- 0 until wordCount) {
+    //  when (!rMyHadFirstWriteAt(idx)) {
+    //    assume(
+    //      !rMyHadSecondWriteAt(idx)
+    //    )
+    //  }
+    //}
     when (pastValidAfterReset()) {
+      //when (
+      //  past(modFront.isFiring)
+      //  && modBack.isFiring
+      //) {
+      //  assert(
+      //    modBack(modBackPayload).myExt.rdMemWord
+      //    === modBack(modFrontPayload).myExt.rdMemWord
+      //  )
+      //}
       when (
         ///*past*/(modBack.isFiring)
         //&& /*past*/(pipeMem.mod.back.myWriteEnable(0))
@@ -1778,58 +2072,20 @@ case class PipeMemRmwSimDut(
         //  tempHaveCurrWritePostFirst
         //  //tempHaveCurrWritePostSecond
         //)
-        val rMyPrevWriteData = (
-          KeepAttribute(
-            Vec[UInt]({
-              val myArr = new ArrayBuffer[UInt]() 
-              for (idx <- 0 until pipeMem.wordCountArr(0)) {
-                myArr += (
-                  RegNextWhen(
-                    next=pipeMem.mod.back.myWriteData(0),
-                    cond=(
-                      (
-                        myHaveCurrWrite
-                        //pipeMem.mod.back.myWriteEnable(0)
-                      ) && (
-                        pipeMem.mod.back.myWriteAddr(0) === idx
-                      )
-                    ),
-                    init=0x0,
-                  )
-                )
-              }
-              myArr
-            })
-          )
-          .setName(s"rMyPrevWriteData")
-        )
-        val rMyHadFirstWriteAt = (
-          KeepAttribute(
-            Vec[Bool]({
-              val myArr = new ArrayBuffer[Bool]()
-              for (idx <- 0 until pipeMem.wordCountArr(0)) {
-                myArr += (
-                  RegNextWhen(
-                    next=True,
-                    cond=(
-                      (
-                        myHaveCurrWrite
-                      ) && (
-                        pipeMem.mod.back.myWriteAddr(0) === idx
-                      )
-                    ),
-                    init=False,
-                  )
-                )
-              }
-              myArr
-            })
-          )
-          .setName(s"rMyHadFirstWriteAt")
-        )
         when (
           (
             myHaveCurrWrite
+          ) && (
+            //myHistHaveCurrWriteCntVec(
+            //  pipeMem.mod.back.myWriteAddr(0)
+            //)(1)
+            myHaveCurrWriteCntValidV2d(
+              pipeMem.mod.back.myWriteAddr(0)
+            )(1)
+          ) && (
+            myHaveCurrWriteCntValidV2d(
+              pipeMem.mod.back.myWriteAddr(0)
+            )(2)
           )
           //&& (
           //  RegNextWhen(
@@ -1841,18 +2097,21 @@ case class PipeMemRmwSimDut(
           //    init=False,
           //  )
           //)
-          && (
-            rMyHadFirstWriteAt(
-              pipeMem.mod.back.myWriteAddr(0)
-            )
-          )
+          //&& (
+          //  rMyHadFirstWriteAt(
+          //    pipeMem.mod.back.myWriteAddr(0)
+          //  )
+          //)
         ) {
           def myTempLeft = (
             pipeMem.mod.back.myWriteData(0)
           )
           def myTempRight = (
-            rMyPrevWriteData(
-              pipeMem.mod.back.myWriteAddr(0)
+            //rMyPrevWriteData(
+            //  pipeMem.mod.back.myWriteAddr(0)
+            //)
+            pipeMem.modMem(0)(0).readAsync(
+              address=pipeMem.mod.back.myWriteAddr(0),
             )
           )
           if (
@@ -2276,64 +2535,156 @@ case class PipeMemRmwTester(
     )
     def myProveNumCycles = PipeMemRmwFormal.myProveNumCycles
     if (PipeMemRmwSimDut.doTestModOp) {
-      cover(
-        (
-          RegNextWhen(
-            next=RegNextWhen(
-              next=True,
+      if (optFormal) {
+        cover(
+          (
+            RegNextWhen(
+              next=RegNextWhen(
+                next=True,
+                cond=(
+                  (
+                    //midModPayload(extIdxUp).op
+                    pmIo.modFront(modFrontPayload).op
+                    === PipeMemRmwSimDut.ModOp.LDR_RA_RB
+                  ) && (
+                    cMidModFront.up.isFiring
+                  )
+                ),
+                init=False,
+              ),
               cond=(
                 (
                   //midModPayload(extIdxUp).op
                   pmIo.modFront(modFrontPayload).op
-                  === PipeMemRmwSimDut.ModOp.LDR_RA_RB
+                  === PipeMemRmwSimDut.ModOp.ADD_RA_RB
                 ) && (
                   cMidModFront.up.isFiring
                 )
               ),
               init=False,
-            ),
-            cond=(
-              (
-                //midModPayload(extIdxUp).op
-                pmIo.modFront(modFrontPayload).op
-                === PipeMemRmwSimDut.ModOp.ADD_RA_RB
-              ) && (
-                cMidModFront.up.isFiring
-              )
-            ),
-            init=False,
-          )
-        )
-      )
-
-      when (
-        cMidModFront.up.isValid
-        && (
-          //midModPayload(extIdxUp).op
-          pmIo.modFront(modFrontPayload).op
-          === PipeMemRmwSimDut.ModOp.LDR_RA_RB
-        )
-      ) {
-          //--------
-        when (savedPsMemStallHost.myDuplicateIt) {
-          //--------
-          cMidModFront.duplicateIt()
-          //--------
-          midModPayload(extIdxUp).myExt.modMemWordValid := False
-          //--------
-        } otherwise {
-          //--------
-          midModPayload(extIdxUp).myExt.modMemWordValid := True
-          //--------
-          midModPayload(extIdxUp).myExt.modMemWord := (
-            if (PipeMemRmwSimDut.allModOpsSameChange) (
-              midModPayload(extIdxUp).myExt.rdMemWord(0) + 1
-            ) else (
-              midModPayload(extIdxUp).myExt.rdMemWord(0) - 1
             )
           )
+        )
+      }
+
+      when (
+        //midModPayload(extIdxUp).op
+        pmIo.modFront(modFrontPayload).op
+        === PipeMemRmwSimDut.ModOp.LDR_RA_RB
+      ) {
+        //if (optFormal) {
+        //  //midModPayload(extIdxUp).myExt.modMemWordValid := False
+        //  assert(
+        //    !midModPayload(extIdxUp).myExt.modMemWordValid
+        //  )
+        //}
+        when (
+          cMidModFront.up.isValid
+        ) {
+          //--------
+          when (savedPsMemStallHost.myDuplicateIt) {
+            //--------
+            cMidModFront.duplicateIt()
+            //--------
+            midModPayload(extIdxUp).myExt.modMemWordValid := False
+            //--------
+          } otherwise {
+            //--------
+            midModPayload(extIdxUp).myExt.modMemWordValid := True
+            //--------
+            midModPayload(extIdxUp).myExt.modMemWord := (
+              if (PipeMemRmwSimDut.allModOpsSameChange) (
+                midModPayload(extIdxUp).myExt.rdMemWord(0) + 1
+              ) else (
+                midModPayload(extIdxUp).myExt.rdMemWord(0) - 1
+              )
+            )
+          }
         }
         //--------
+        if (optFormal) {
+          when (
+            pastValidAfterReset
+            //&& (
+            //  //pmIo.modFront(modFrontPayload).myExt.modMemWordValid
+            //  //midModPayload(extIdxUp).myExt.modMemWordValid
+            //) 
+            && {
+              val tempMemAddr = (
+                //pmIo.modFront(modFrontPayload).myExt.memAddr(0)
+                midModPayload(extIdxUp).myExt.memAddr(0)
+              )
+              //True
+              //dut.io.rMyHadSecondWriteAt
+              (
+                (
+                  dut.io.myHaveCurrWriteCntValidV2d(tempMemAddr)(1)
+                ) && (
+                  dut.io.myHaveCurrWriteCntValidV2d(tempMemAddr)(2)
+                )
+              )
+            }
+          ) {
+            switch (pmIo.modFront(modFrontPayload).op) {
+              is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
+                assert(
+                  //pmIo.modFront(modFrontPayload).myExt.modMemWord
+                  //=== (
+                  //  pmIo.modFront(modFrontPayload).myExt.rdMemWord(0)
+                  //  + 1
+                  //)
+                  midModPayload(extIdxUp).myExt.modMemWord
+                  === (
+                    midModPayload(extIdxUp).myExt.rdMemWord(0)
+                    + 1
+                  )
+                )
+              }
+              is (PipeMemRmwSimDut.ModOp.LDR_RA_RB) {
+                //assert(
+                //  pmIo.modFront(modFrontPayload).myExt.modMemWord
+                //  === 0x0
+                //)
+                //if (PipeMemRmwSimDut.allModOpsSameChange) {
+                //} else {
+                //}
+              }
+              is (PipeMemRmwSimDut.ModOp.MUL_RA_RB) {
+                if (PipeMemRmwSimDut.allModOpsSameChange) {
+                  assert(
+                    //pmIo.modFront(modFrontPayload).myExt.modMemWord
+                    //=== (
+                    //  pmIo.modFront(modFrontPayload).myExt.rdMemWord(0)
+                    //  + 1
+                    //)
+                    midModPayload(extIdxUp).myExt.modMemWord
+                    === (
+                      midModPayload(extIdxUp).myExt.rdMemWord(0)
+                      + 1
+                    )
+                  )
+                } else {
+                  val tempBitsRange = wordType().bitsRange
+                  assert(
+                    //pmIo.modFront(modFrontPayload).myExt.modMemWord(
+                    //  tempBitsRange
+                    //) === (
+                    //  pmIo.modFront(modFrontPayload).myExt.rdMemWord(0)
+                    //  << 1
+                    //)(tempBitsRange)
+                    midModPayload(extIdxUp).myExt.modMemWord(
+                      tempBitsRange
+                    ) === (
+                      midModPayload(extIdxUp).myExt.rdMemWord(0) << 1
+                    )(tempBitsRange)
+                  )
+                }
+              }
+              default {
+              }
+            }
+          }
+        }
       }
       //when (
       //  dut.psMemStallHost.fire
