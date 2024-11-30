@@ -24,11 +24,14 @@ object PipeMemRmwSimDutHaltItState extends SpinalEnum(
     = newElement();
 }
 object PipeMemRmwSimDut {
-  def wordWidth = 8
+  def wordWidth = (
+    //8
+    4
+  )
   def wordType() = UInt(wordWidth bits)
   def wordCount = (
-    //4
-    8
+    4
+    //8
   )
   def hazardCmpType() = UInt(
     PipeMemRmw.addrWidth(wordCount=wordCount) bits
@@ -55,7 +58,7 @@ object PipeMemRmwSimDut {
     //false
   )
   def modOpCntWidth = (
-    8
+    4
   )
   def pcWidth = (
     8
@@ -247,6 +250,18 @@ case class PipeMemRmwSimDut(
   //  val ready = Bool()
   //}
   //val io = new Area {
+  //  //val tempHadFrontIsFiring_0 = (
+  //  //  KeepAttribute(
+  //  //    Bool()
+  //  //  )
+  //  //)
+  //  val tempHadMid0FrontUpIsFiring_0 = (
+  //    KeepAttribute(
+  //      Bool()
+  //    )
+  //  )
+  //}
+  //val io = new Area {
   //  def mkMainPsExStallIo() = (
   //    LcvStallIo[
   //      Bool,
@@ -403,56 +418,62 @@ case class PipeMemRmwSimDut(
             ydx,
           ) => new Area {
             //GenerationFlags.formal {
-              when (
-                cFront.up.isValid
-                && (
-                  RegNextWhen(
-                    next=True,
-                    cond=cFront.up.isFiring,
-                    init=False,
-                  )
-                )
-              ) {
+              if (optFormal) {
+                when (pastValidAfterReset) {
+                  when (
+                    cFront.up.isValid
+                    //&& (
+                    //  RegNextWhen(
+                    //    next=True,
+                    //    cond=cFront.up.isFiring,
+                    //    init=False,
+                    //  )
+                    //)
+                    && past(cFront.up.isFiring)
+                  ) {
+                    assume(
+                      inp.opCnt
+                      //=== RegNextWhen(
+                      //  next=outp.opCnt,
+                      //  cond=cFront.up.isFiring,
+                      //  init=outp.opCnt.getZero,
+                      //) + 1
+                      === past(inp.opCnt) + 1
+                    )
+                  }
+                }
+                //println(
+                //  "doModInFrontFunc(): Don't forget about the `assume` "
+                //  + "statement for `inp.op`!"
+                //)
                 assume(
-                  inp.opCnt
-                  === RegNextWhen(
-                    next=outp.opCnt,
-                    cond=cFront.up.isFiring,
-                    init=outp.opCnt.getZero,
-                  ) + 1
+                  inp.op.asBits.asUInt
+                  //< PipeMemRmwSimDut.ModOp.MUL_RA_RB.asBits.asUInt
+                  < PipeMemRmwSimDut.postMaxModOp.asBits.asUInt
                 )
-              }
-              //println(
-              //  "doModInFrontFunc(): Don't forget about the `assume` "
-              //  + "statement for `inp.op`!"
-              //)
-              assume(
-                inp.op.asBits.asUInt
-                //< PipeMemRmwSimDut.ModOp.MUL_RA_RB.asBits.asUInt
-                < PipeMemRmwSimDut.postMaxModOp.asBits.asUInt
-              )
-              when (pastValidAfterReset) {
-                assert(
-                  stable(inp.myExt.hazardCmp)
-                )
-                assert(
-                  stable(inp.myExt.modMemWord)
-                )
-                assert(
-                  stable(inp.myExt.rdMemWord)
-                  //=== inp.myExt.rdMemWord.getZero
-                )
-                assert(
-                  inp.myExt.rdMemWord
-                  === inp.myExt.rdMemWord.getZero
-                )
-                assert(
-                  stable(inp.myExt.hazardCmp)
-                  //=== inp.myExt.hazardCmp.getZero
-                )
-                assert(
-                  stable(inp.myExt.modMemWordValid) //=== True
-                )
+                when (pastValidAfterReset) {
+                  assert(
+                    stable(inp.myExt.hazardCmp)
+                  )
+                  assert(
+                    stable(inp.myExt.modMemWord)
+                  )
+                  assert(
+                    stable(inp.myExt.rdMemWord)
+                    //=== inp.myExt.rdMemWord.getZero
+                  )
+                  assert(
+                    inp.myExt.rdMemWord
+                    === inp.myExt.rdMemWord.getZero
+                  )
+                  assert(
+                    stable(inp.myExt.hazardCmp)
+                    //=== inp.myExt.hazardCmp.getZero
+                  )
+                  assert(
+                    stable(inp.myExt.modMemWordValid) //=== True
+                  )
+                }
               }
             //}
           }
@@ -489,6 +510,32 @@ case class PipeMemRmwSimDut(
               //< PipeMemRmwSimDut.ModOp.MUL_RA_RB.asBits.asUInt
               < PipeMemRmwSimDut.postMaxModOp.asBits.asUInt
             )
+            assume(
+              outp.op.asBits.asUInt
+              //< PipeMemRmwSimDut.ModOp.MUL_RA_RB.asBits.asUInt
+              < PipeMemRmwSimDut.postMaxModOp.asBits.asUInt
+            )
+            val myCurrOp = (
+              KeepAttribute(
+                cloneOf(inp.op)
+              )
+              .setName(s"myCurrOp")
+            )
+            myCurrOp := (
+              RegNext(
+                next=myCurrOp,
+                //init=PipeMemRmwSimDut
+              )
+              init(
+                //myCurrOp.getZero
+                PipeMemRmwSimDut.ModOp.ADD_RA_RB
+              )
+            )
+            assume(
+              myCurrOp.asBits.asUInt
+              //< PipeMemRmwSimDut.ModOp.MUL_RA_RB.asBits.asUInt
+              < PipeMemRmwSimDut.postMaxModOp.asBits.asUInt
+            )
 
             val nextSetOutpState = (
               KeepAttribute(
@@ -514,18 +561,6 @@ case class PipeMemRmwSimDut(
               )
             )
             outp.allowOverride
-            val myCurrOp = (
-              KeepAttribute(
-                cloneOf(inp.op)
-              )
-              .setName(s"myCurrOp")
-            )
-            myCurrOp := (
-              RegNext(
-                next=myCurrOp,
-              )
-              //init(myCurrOp.getZero)
-            )
             //myCurrOp := (
             //  inp.op
             //)
@@ -536,8 +571,8 @@ case class PipeMemRmwSimDut(
                 //    cMid0Front.up.isValid
                 //    && !rSetOutpState
                 //  ),
-                  U(s"2'd1"),
-                  //U(s"2'd2"),
+                  //U(s"2'd1"),
+                  U(s"2'd2"),
                 //),
                 ydx
               )
@@ -551,8 +586,27 @@ case class PipeMemRmwSimDut(
               when (cMid0Front.up.isFiring) {
                 nextSetOutpState := False
               }
+            } otherwise {
             }
-            outp.myExt.rdMemWord := inp.myExt.rdMemWord
+            if (optFormal) {
+              assert(
+                myCurrOp === outp.op
+              )
+            }
+            //outp.opCnt := inp.opCnt
+            //outp.myExt.valid := (
+            //  inp.myExt.valid
+            //)
+            //outp.myExt.ready := (
+            //  inp.myExt.ready
+            //)
+            //outp.myExt.fire := (
+            //  inp.myExt.fire
+            //)
+            //outp.myExt.rdMemWord := (
+            //  //myRdMemWord
+            //  inp.myExt.rdMemWord
+            //)
             //when (
             //  cMid0Front.up.isReady
             //) {
@@ -641,6 +695,39 @@ case class PipeMemRmwSimDut(
                     + s"myDoHaveHazardValidCheck"
                   )
                 )
+                //--------
+                val nextDoHaveHazardState = (
+                  KeepAttribute(
+                    Bool()
+                  )
+                  .setName(
+                    s"doTestModOpMainArea_"
+                    + s"nextDoHaveHazardState"
+                  )
+                )
+                //val rDoHaveHazardState = (
+                //  KeepAttribute(
+                //    RegNext(
+                //      next=nextDoHaveHazardState,
+                //      init=nextDoHaveHazardState.getZero,
+                //    )
+                //  )
+                //  .setName(
+                //    s"doTestModOpMainArea_"
+                //    + s"rDoHaveHazardState"
+                //  )
+                //)
+                //nextDoHaveHazardState := rDoHaveHazardState
+                //--------
+                //val myDoHaveHazardIsReadyCheck = (
+                //  KeepAttribute(
+                //    !cMid0Front.down.isReady
+                //  )
+                //  .setName(
+                //    s"doTestModOpMainArea_"
+                //    + s"myDoHaveHazardIsReadyCheck"
+                //  )
+                //)
                 val myDoHaveHazard = (
                   KeepAttribute(
                     (
@@ -648,6 +735,12 @@ case class PipeMemRmwSimDut(
                     ) && (
                       myDoHaveHazardValidCheck
                     )
+                    //&& (
+                    //  rDoHaveHazardState
+                    //)
+                    //&& (
+                    //  myDoHaveHazardIsReadyCheck
+                    //)
                   )
                   .setName(
                     s"doTestModOpMainArea_"
@@ -705,12 +798,11 @@ case class PipeMemRmwSimDut(
                         if (PipeMemRmwSimDut.allModOpsSameChange) (
                           someRdMemWord + 0x1
                         ) else (
-                          someRdMemWord << 1
+                          (someRdMemWord << 1)(
+                            outp.myExt.modMemWord.bitsRange
+                          )
                         )
-                      )(
-                        outp.myExt.modMemWord.bitsRange
-                      )
-                    )
+                      )                    )
                     //outp.myExt.modMemWordValid := (
                     //  True
                     //)
@@ -754,10 +846,13 @@ case class PipeMemRmwSimDut(
               def handleCurrFire(
                 someRdMemWord: UInt=myRdMemWord,
               ): Unit = {
-                outp.myExt.valid := True
+                //outp.myExt.valid := True
                 nextPrevTxnWasHazard := False
                 setOutpModMemWord(
                   someRdMemWord=someRdMemWord
+                )
+                outp.myExt.valid := (
+                  outp.myExt.modMemWordValid
                 )
               }
               def handleDuplicateIt(
@@ -775,6 +870,12 @@ case class PipeMemRmwSimDut(
               def myDoHaveHazardValidCheck = (
                 doTestModOpMainArea.myDoHaveHazardValidCheck
               )
+              //def nextDoHaveHazardState = (
+              //  doTestModOpMainArea.nextDoHaveHazardState
+              //)
+              //def rDoHaveHazardState = (
+              //  doTestModOpMainArea.rDoHaveHazardState
+              //)
               def myDoHaveHazard = (
                 doTestModOpMainArea.myDoHaveHazard
               )
@@ -792,6 +893,28 @@ case class PipeMemRmwSimDut(
                 when (myDoHaveHazard) {
                   currDuplicateIt := True
                 }
+                //currDuplicateIt := (
+                //  RegNext(
+                //    next=currDuplicateIt,
+                //    init=currDuplicateIt.getZero,
+                //  )
+                //)
+                //switch (rDoHaveHazardState) {
+                //  is (False) {
+                //    when (myDoHaveHazard) {
+                //      currDuplicateIt := True
+                //      nextDoHaveHazardState := True
+                //    }
+                //  }
+                //  is (True) {
+                //    when (
+                //      !myDoHaveHazard
+                //    ) {
+                //      currDuplicateIt := False
+                //      nextDoHaveHazardState := False
+                //    }
+                //  }
+                //}
                 cover(
                   (
                     ///outp.myExt.memAddr(0)
@@ -820,9 +943,31 @@ case class PipeMemRmwSimDut(
               when (cMid0Front.up.isFiring) {
                 handleCurrFire()
               }
-              when (cMid0Front.up.isValid) {
+              when (
+                //cMid0Front.up.isValid
+                True
+              ) {
                 switch (myCurrOp) {
                   is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
+                    if (optFormal) {
+                      when (cMid0Front.up.isValid) {
+                        when (
+                          //(
+                          //  RegNextWhen(
+                          //    next=myCurrOp,
+                          //    cond=cMid0Front.down.isFiring,
+                          //  )
+                          //  init(PipeMemRmwSimDut.ModOp.ADD_RA_RB)
+                          //) =/= (
+                          //  PipeMemRmwSimDut.ModOp.LDR_RA_RB
+                          //)
+                          !doCheckHazard
+                        ) {
+                          //assert(!savedPsMemStallHost.myDuplicateIt)
+                          assert(!currDuplicateIt)
+                        }
+                      }
+                    }
                   }
                   is (PipeMemRmwSimDut.ModOp.LDR_RA_RB) {
                     when (cMid0Front.up.isFiring) {
@@ -836,34 +981,66 @@ case class PipeMemRmwSimDut(
                   }
                   is (PipeMemRmwSimDut.ModOp.MUL_RA_RB) {
                     if (PipeMemRmwSimDut.haveModOpMul) {
+                      //if (optFormal) {
+                      //  when (
+                      //    (
+                      //      RegNextWhen(
+                      //        next=myCurrOp,
+                      //        cond=cMid0Front.down.isFiring,
+                      //      )
+                      //      init(PipeMemRmwSimDut.ModOp.ADD_RA_RB)
+                      //    ) =/= (
+                      //      PipeMemRmwSimDut.ModOp.LDR_RA_RB
+                      //    )
+                      //  ) {
+                      //    assert(!savedPsMemStallHost.myDuplicateIt)
+                      //  }
+                      //}
                       //when (
                       //) {
                       //}
                       //--------
-                      when (
-                        //savedPsExStallHost
-                        doCheckHazard
-                      ) {
-                        when (!currDuplicateIt) {
+                      when (cMid0Front.up.isValid) {
+                        when (
+                          //savedPsExStallHost
+                          doCheckHazard
+                        ) {
+                          when (!currDuplicateIt) {
+                            psExStallHost.nextValid := (
+                              True
+                            )
+                          }
+                        } otherwise { // when (!doCheckHazard)
                           psExStallHost.nextValid := (
                             True
                           )
                         }
-                      } otherwise { // when (!doCheckHazard)
-                        psExStallHost.nextValid := (
-                          True
-                        )
+                        //--------
                       }
-                      //--------
                       when (savedPsExStallHost.myDuplicateIt) {
                         currDuplicateIt := True
+                      }
+                      if (optFormal) {
+                        when (!doCheckHazard) {
+                          when (!savedPsExStallHost.myDuplicateIt) {
+                            assert(
+                              !currDuplicateIt
+                            )
+                          }
+                        }
                       }
                     }
                   }
                   //is (PipeMemRmwSimDut.ModOp.BEQ_RA_SIMM) {
                   //}
                 }
+              } otherwise {
+                //outp.myExt.modMemWordValid := False
               }
+              //if (optFormal) {
+              //  when 
+              //  assert
+              //}
               if (PipeMemRmwSimDut.haveModOpMul) {
                 when (
                   psExStallHost.fire
@@ -1309,25 +1486,30 @@ case class PipeMemRmwSimDut(
   //  }
   //}
   val myHistFrontIsFiring = (
-    KeepAttribute(
+    KeepAttribute{
+      val thatWhen = (
+        front.isFiring
+      )
       History[Bool](
         that=(
-          front.isFiring
-          && !myDbgInitstate
-          && (
-            myResetCond
-          )
-        ),
-        length=myProveNumCycles,
-        when=(
-          front.isFiring
+          thatWhen
+          //front.isFiring
+          //&& !myDbgInitstate
           //&& (
           //  myResetCond
           //)
         ),
+        length=myProveNumCycles,
+        when=(
+          //front.isFiring
+          ////&& (
+          ////  myResetCond
+          ////)
+          thatWhen
+        ),
         init=False
       )
-    )
+    }
     .setName("myHistFrontIsFiring")
   )
   val tempHadFrontIsFiring = (
@@ -1338,82 +1520,229 @@ case class PipeMemRmwSimDut(
   when (
     !tempHadFrontIsFiring._1
   ) {
-    for (ydx <- 1 until myHistFrontIsFiring.size) {
-      assume(
-        myHistFrontIsFiring(ydx) === myHistFrontIsFiring(ydx).getZero
-      )
-    }
+    //for (ydx <- 1 until myHistFrontIsFiring.size) {
+    //  assume(
+    //    myHistFrontIsFiring(ydx) === myHistFrontIsFiring(ydx).getZero
+    //  )
+    //}
   }
-  val myHistMid0FrontUpIsFiring = (
-    KeepAttribute(
+  //val myHistMid0FrontUpIsFiring = (
+  //  KeepAttribute{
+  //    val thatWhen = (
+  //      pipeMem.cMid0FrontArea.up.isFiring
+  //      && tempHadFrontIsFiring._1
+  //    )
+  //    History[Bool](
+  //      that=(
+  //        //pipeMem.cMid0FrontArea.up.isFiring
+  //        //&& tempHadFrontIsFiring._1
+  //        //&& !myDbgInitstate
+  //        //&& (
+  //        //  myResetCond
+  //        //)
+  //        //pipeMem.cMid0FrontArea.up.isFiring
+  //        thatWhen
+  //      ),
+  //      length=myProveNumCycles,
+  //      when=(
+  //        //tempHadFrontIsFiring._1
+  //        //&& !myDbgInitstate
+  //        //&& (
+  //        //  myResetCond
+  //        //)
+  //        thatWhen
+  //      ),
+  //      init=False
+  //    )
+  //  }
+  //  .setName(s"myHistMid0FrontUpIsFiring")
+  //)
+  //val tempHadMid0FrontUpIsFiring = (
+  //  myHistMid0FrontUpIsFiring.sFindFirst(
+  //    _ === True
+  //  )
+  //)
+  //when (pastValidAfterReset) {
+  //  when (!tempHadMid0FrontUpIsFiring._1) {
+  //    for (ydx <- 1 until myHistMid0FrontUpIsFiring.size) {
+  //      assume(
+  //        myHistMid0FrontUpIsFiring(ydx)
+  //        === myHistMid0FrontUpIsFiring(ydx).getZero
+  //      )
+  //    }
+  //    assume(
+  //      pipeMem.cMid0FrontArea.tempUpMod(0)(0).opCnt === 0x0
+  //    )
+  //  }
+  //}
+  val myHistMid0FrontUpIsValid = (
+    KeepAttribute{
+      val thatWhen = (
+        pipeMem.cMid0FrontArea.up.isValid
+        && tempHadFrontIsFiring._1
+      )
       History[Bool](
         that=(
-          pipeMem.cMid0FrontArea.up.isFiring
-          && !myDbgInitstate
-          && (
-            myResetCond
-          )
+          //pipeMem.cMid0FrontArea.up.isValid
+          //&& tempHadFrontIsValid._1
+          //&& !myDbgInitstate
+          //&& (
+          //  myResetCond
+          //)
+          //pipeMem.cMid0FrontArea.up.isValid
+          thatWhen
         ),
         length=myProveNumCycles,
         when=(
-          tempHadFrontIsFiring._1
+          //tempHadFrontIsValid._1
+          //&& !myDbgInitstate
+          //&& (
+          //  myResetCond
+          //)
+          thatWhen
         ),
         init=False
       )
-      .setName(s"myHistMid0FrontUpIsFiring")
-    )
+    }
+    .setName(s"myHistMid0FrontUpIsValid")
   )
-  val tempHadMid0FrontUpIsFiring = (
-    myHistMid0FrontUpIsFiring.sFindFirst(
+  val tempHadMid0FrontUpIsValid = (
+    myHistMid0FrontUpIsValid.sFindFirst(
       _ === True
     )
   )
   when (pastValidAfterReset) {
-    when (!tempHadMid0FrontUpIsFiring._1) {
-      for (ydx <- 1 until myHistMid0FrontUpIsFiring.size) {
-        assume(
-          myHistMid0FrontUpIsFiring(ydx)
-          === myHistMid0FrontUpIsFiring(ydx).getZero
-        )
-      }
+    when (!tempHadMid0FrontUpIsValid._1) {
+      //for (ydx <- 1 until myHistMid0FrontUpIsValid.size) {
+      //  assume(
+      //    myHistMid0FrontUpIsValid(ydx)
+      //    === myHistMid0FrontUpIsValid(ydx).getZero
+      //  )
+      //}
       assume(
         pipeMem.cMid0FrontArea.tempUpMod(0)(0).opCnt === 0x0
       )
     }
   }
-  val myHistModFrontIsFiring = (
-    KeepAttribute(
+  val myHistMid0FrontDownIsFiring = (
+    KeepAttribute{
+      val thatWhen = (
+        pipeMem.cMid0FrontArea.down.isFiring
+        && tempHadFrontIsFiring._1
+        && tempHadMid0FrontUpIsValid._1
+      )
       History[Bool](
         that=(
-          modFront.isFiring
-          && !myDbgInitstate
-          && (
-            myResetCond
-          )
+          //pipeMem.cMid0FrontArea.up.isFiring
+          //&& tempHadFrontIsFiring._1
+          //&& !myDbgInitstate
+          //&& (
+          //  myResetCond
+          //)
+          //pipeMem.cMid0FrontArea.up.isFiring
+          thatWhen
         ),
         length=myProveNumCycles,
         when=(
-          tempHadMid0FrontUpIsFiring._1
+          //tempHadFrontIsFiring._1
+          //&& !myDbgInitstate
+          //&& (
+          //  myResetCond
+          //)
+          thatWhen
         ),
         init=False
       )
-    )
-    .setName(s"myHistModFrontIsFiring")
+    }
+    .setName(s"myHistMid0FrontDownIsFiring")
   )
-  val tempHadModFrontIsFiring = (
-    myHistModFrontIsFiring.sFindFirst(
+  val tempHadMid0FrontDownIsFiring = (
+    myHistMid0FrontDownIsFiring.sFindFirst(
       _ === True
     )
   )
-  when (!tempHadModFrontIsFiring._1) {
-    for (ydx <- 1 until myHistModFrontIsFiring.size) {
-      assume(
-        myHistModFrontIsFiring(ydx)
-        === myHistModFrontIsFiring(ydx).getZero
+  //when (pastValidAfterReset) {
+  //  when (!tempHadMid0FrontDownIsFiring._1) {
+  //    for (ydx <- 1 until myHistMid0FrontDownIsFiring.size) {
+  //      assume(
+  //        myHistMid0FrontDownIsFiring(ydx)
+  //        === myHistMid0FrontDownIsFiring(ydx).getZero
+  //      )
+  //    }
+  //    assume(
+  //      pipeMem.cMid0FrontArea.tempUpMod(0)(0).opCnt === 0x0
+  //    )
+  //  }
+  //}
+  val myHistModFrontIsValid = (
+    KeepAttribute{
+      val thatWhen = (
+        modFront.isValid
+        && tempHadFrontIsFiring._1
+        && tempHadMid0FrontUpIsValid._1
+      )
+      History[Bool](
+        that=(
+          //modFront.isValid
+          //&& !myDbgInitstate
+          //&& (
+          //  myResetCond
+          //)
+          thatWhen
+        ),
+        length=myProveNumCycles,
+        when=(
+          thatWhen
+        ),
+        init=False
       )
     }
+    .setName(s"myHistModFrontIsValid")
+  )
+  val tempHadModFrontIsValid = (
+    myHistModFrontIsValid.sFindFirst(
+      _ === True
+    )
+  )
+  //val myHistModFrontIsValid = (
+  //  KeepAttribute{
+  //    val thatWhen = (
+  //      modFront.isValid
+  //      && tempHadFrontIsFiring._1
+  //      && tempHadMid0FrontUpIsValid._1
+  //    )
+  //    History[Bool](
+  //      that=(
+  //        //modFront.isFiring
+  //        ////&& !myDbgInitstate
+  //        ////&& (
+  //        ////  myResetCond
+  //        ////)
+  //        thatWhen
+  //      ),
+  //      length=myProveNumCycles,
+  //      when=(
+  //        thatWhen
+  //      ),
+  //      init=False
+  //    )
+  //  }
+  //  .setName(s"myHistModFrontIsValid")
+  //)
+  //val tempHadModFrontIsValid = (
+  //  myHistModFrontIsValid.sFindFirst(
+  //    _ === True
+  //  )
+  //)
+  when (!tempHadModFrontIsValid._1) {
+    //for (ydx <- 1 until myHistModFrontIsValid.size) {
+    //  assume(
+    //    myHistModFrontIsValid(ydx)
+    //    === myHistModFrontIsValid(ydx).getZero
+    //  )
+    //}
   }
-  when (!tempHadModFrontIsFiring._1) {
+  when (!tempHadModFrontIsValid._1) {
     for (ydx <- 0 until wordCount) {
       assume(
         (
@@ -1426,6 +1755,197 @@ case class PipeMemRmwSimDut(
       )
     }
   }
+  val myHistModBackIsFiring = (
+    KeepAttribute{
+      val thatWhen = (
+        modBack.isFiring
+        && tempHadFrontIsFiring._1
+        && tempHadMid0FrontUpIsValid._1
+        && tempHadModFrontIsValid._1
+      )
+      History[Bool](
+        that=(
+          //modBack.isFiring
+          //&& !myDbgInitstate
+          //&& (
+          //  myResetCond
+          //)
+          thatWhen
+        ),
+        length=myProveNumCycles,
+        when=(
+          thatWhen
+        ),
+        init=False
+      )
+    }
+    .setName(s"myHistModBackIsFiring")
+  )
+  val tempHadModBackIsFiring = (
+    myHistModBackIsFiring.sFindFirst(
+      _ === True
+    )
+  )
+  when (!tempHadModBackIsFiring._1) {
+    //for (ydx <- 1 until myHistModBackIsFiring.size) {
+    //  assume(
+    //    myHistModBackIsFiring(ydx)
+    //    === myHistModBackIsFiring(ydx).getZero
+    //  )
+    //}
+  }
+  val myHistModBackIsValid = (
+    KeepAttribute{
+      val thatWhen = (
+        modBack.isValid
+        && tempHadFrontIsFiring._1
+        && tempHadMid0FrontUpIsValid._1
+        && tempHadModFrontIsValid._1
+      )
+      History[Bool](
+        that=(
+          //modBack.isFiring
+          //&& !myDbgInitstate
+          //&& (
+          //  myResetCond
+          //)
+          thatWhen
+        ),
+        length=myProveNumCycles,
+        when=(
+          thatWhen
+        ),
+        init=False
+      )
+    }
+    .setName(s"myHistModBackIsValid")
+  )
+  val tempHadModBackIsValid = (
+    myHistModBackIsValid.sFindFirst(
+      _ === True
+    )
+  )
+  when (!tempHadModBackIsValid._1) {
+    //for (ydx <- 1 until myHistModBackIsValid.size) {
+    //  assume(
+    //    myHistModBackIsValid(ydx)
+    //    === myHistModBackIsValid(ydx).getZero
+    //  )
+    //}
+  }
+  //when (!tempHadModBackIsFiring._1) {
+  //  for (ydx <- 0 until wordCount) {
+  //    assume(
+  //      (
+  //        pipeMem.modMem(0)(0).readAsync(
+  //          address=U(s"${log2Up(wordCount)}'d${ydx}")
+  //        )
+  //      ) === (
+  //        0x0
+  //      )
+  //    )
+  //  }
+  //}
+  val myHistBackIsFiring = (
+    KeepAttribute{
+      val thatWhen = (
+        back.isFiring
+        && tempHadFrontIsFiring._1
+        && tempHadMid0FrontUpIsValid._1
+        && tempHadModFrontIsValid._1
+        && tempHadModBackIsFiring._1
+      )
+      History[Bool](
+        that=(
+          //back.isFiring
+          //&& !myDbgInitstate
+          //&& (
+          //  myResetCond
+          //)
+          thatWhen
+        ),
+        length=myProveNumCycles,
+        when=(
+          thatWhen
+        ),
+        init=False
+      )
+    }
+    .setName(s"myHistBackIsFiring")
+  )
+  val tempHadBackIsFiring = (
+    myHistBackIsFiring.sFindFirst(
+      _ === True
+    )
+  )
+  val myHistBackIsValid = (
+    KeepAttribute{
+      val thatWhen = (
+        back.isValid
+        && tempHadFrontIsFiring._1
+        && tempHadMid0FrontUpIsValid._1
+        && tempHadModFrontIsValid._1
+        && tempHadModBackIsFiring._1
+      )
+      History[Bool](
+        that=(
+          //back.isFiring
+          //&& !myDbgInitstate
+          //&& (
+          //  myResetCond
+          //)
+          thatWhen
+        ),
+        length=myProveNumCycles,
+        when=(
+          thatWhen
+        ),
+        init=False
+      )
+    }
+    .setName(s"myHistBackIsValid")
+  )
+  val tempHadBackIsValid = (
+    myHistBackIsValid.sFindFirst(
+      _ === True
+    )
+  )
+  //when (!tempHadBackIsFiring._1) {
+  //  for (ydx <- 1 until myHistBackIsFiring.size) {
+  //    assume(
+  //      myHistBackIsFiring(ydx)
+  //      === myHistBackIsFiring(ydx).getZero
+  //    )
+  //  }
+  //}
+  //when (!tempHadBackIsFiring._1) {
+  //  for (ydx <- 0 until wordCount) {
+  //    assume(
+  //      (
+  //        pipeMem.modMem(0)(0).readAsync(
+  //          address=U(s"${log2Up(wordCount)}'d${ydx}")
+  //        )
+  //      ) === (
+  //        0x0
+  //      )
+  //    )
+  //  }
+  //}
+  val myHaveSeenPipeToModFrontFire = (
+    KeepAttribute(
+      tempHadFrontIsFiring._1
+      && tempHadMid0FrontUpIsValid._1
+      && tempHadModFrontIsValid._1
+    )
+    .setName(s"myHaveSeenPipeToModFrontFire")
+  )
+  val myHaveSeenPipeToWrite = (
+    KeepAttribute(
+      myHaveSeenPipeToModFrontFire
+      && myHaveCurrWrite
+    )
+    .setName(s"myHaveSeenPipeToWrite")
+  )
   //val myHistMyWriteAddr = (
   //  KeepAttribute(
   //    History[UInt](
@@ -1470,9 +1990,10 @@ case class PipeMemRmwSimDut(
         ),
         length=myProveNumCycles,
         when=(
-          tempHadModFrontIsFiring._1
+          //tempHadModFrontIsFiring._1
+          ////&& myHaveCurrWrite
           //&& myHaveCurrWrite
-          && myHaveCurrWrite
+          myHaveSeenPipeToWrite
         ),
         //init=(
         //  PipeMemRmwSimDut.ModOp.ADD_RA_RB
@@ -1487,23 +2008,23 @@ case class PipeMemRmwSimDut(
         that=(
           //modBack.isFiring
           myHaveCurrWrite
-          //&& tempHadModFrontIsFiring._1
-          && !myDbgInitstate
+          ////&& tempHadModFrontIsFiring._1
+          //&& !myDbgInitstate
+          ////&& (
+          ////  //tempHadReset._1
+          ////  //&& tempHadNotReset._1
+          ////  myResetCond
+          ////)
           //&& (
-          //  //tempHadReset._1
-          //  //&& tempHadNotReset._1
           //  myResetCond
           //)
-          && (
-            myResetCond
-          )
         ),
         length=myProveNumCycles,
         when=(
           //modBack.isFiring
           //myHaveCurrWrite
           //&& 
-          tempHadModFrontIsFiring._1
+          myHaveSeenPipeToWrite
           //&& (
           //  //tempHadReset._1
           //  //&& tempHadNotReset._1
@@ -1519,7 +2040,13 @@ case class PipeMemRmwSimDut(
     )
     .setName(s"myHistHaveCurrWrite")
   )
-  when (!tempHadModFrontIsFiring._1) {
+
+  when (
+    !(
+      //tempHadModFrontIsFiring._1
+      myHaveSeenPipeToWrite
+    )
+  ) {
     for (ydx <- 1 until myHistHaveCurrWrite.size) {
       assume(
         myHistHaveCurrWrite(ydx) === False
@@ -1601,8 +2128,10 @@ case class PipeMemRmwSimDut(
         length=myProveNumCycles,
         when=(
           //myHaveCurrWrite
-          tempHaveCurrWrite._1
-          //&& myHaveCurrWrite
+          //tempHaveCurrWrite._1
+          //&& 
+          //myHaveCurrWrite
+          myHaveSeenPipeToWrite
           //&& !myDbgInitstate
           //&& (
           //  myResetCond
@@ -1625,26 +2154,184 @@ case class PipeMemRmwSimDut(
       )
     }
   }
-  when (
-    pastValidAfterReset()
-  ) {
-    when (
-      (
-        //myHaveCurrWrite
-        tempHaveCurrWrite._1
-      ) && (
-        tempHaveCurrWritePostFirst._1
-      )
-    ) {
-      assert(
-        myHistModBackOpCnt(
-          //0
-          tempHaveCurrWrite._2
+  def getMyHistHaveSeenPipeToWriteVecCond(
+    idx: Int
+  ) = (
+    myHaveSeenPipeToWrite
+    && (
+      pipeMem.mod.back.myWriteAddr(0) === idx
+    )
+  )
+  val myHistHaveSeenPipeToWriteV2d = (
+    KeepAttribute(
+      //Vec.fill(myHistHaveSeenPipeToWriteV2dOuterDim)(
+        Vec[Vec[Bool]]({
+          val myArr = new ArrayBuffer[Vec[Bool]]()
+          for (idx <- 0 until wordCount) {
+            myArr += (
+              History[Bool](
+                that=(
+                  //myHaveCurrWriteCntVec(idx)
+                  getMyHistHaveSeenPipeToWriteVecCond(idx=idx)
+                ),
+                length=myProveNumCycles,
+                //when=(
+                //  getMyHistHaveSeenPipeToWriteVecCond(idx=idx)
+                //),
+                init=False,
+              )
+            )
+          }
+          myArr
+        })
+      //)
+    )
+  )
+  def tempHistHaveSeenPipeToWriteV2dOuterDim = (
+    3
+  )
+  val myHistHaveSeenPipeToWriteV2dPost = (
+    Vec.fill(tempHistHaveSeenPipeToWriteV2dOuterDim - 1)(
+      Vec.fill(wordCount)(
+        Vec.fill(myProveNumCycles)(
+          Bool()
         )
-        === myHistModBackOpCnt(tempHaveCurrWritePostFirst._2) + 1
+      )
+    )
+  )
+  myHistHaveSeenPipeToWriteV2dPost(0).allowOverride
+  myHistHaveSeenPipeToWriteV2dPost(1).allowOverride
+
+  val tempHaveSeenPipeToWriteV2dFindFirst_0 = (
+    KeepAttribute(
+      Vec.fill(tempHistHaveSeenPipeToWriteV2dOuterDim)(
+        Vec.fill(wordCount)(
+          Bool()
+        )
+      )
+    )
+    .setName(s"tempHaveSeenPipeToWriteV2dFindFirst_0")
+  )
+  val tempHaveSeenPipeToWriteV2dFindFirst_1 = (
+    KeepAttribute(
+      Vec.fill(tempHistHaveSeenPipeToWriteV2dOuterDim)(
+        Vec.fill(wordCount)(
+          UInt(log2Up(myProveNumCycles) bits)
+        )
+      )
+    )
+    .setName(s"tempHaveSeenPipeToWriteV2dFindFirst_1")
+  )
+  for (idx <- 0 until wordCount) {
+    val tempFindFirst = (
+      myHistHaveSeenPipeToWriteV2d(idx).sFindFirst(
+        _ === True
+      )
+    )
+    tempHaveSeenPipeToWriteV2dFindFirst_0(0)(idx) := tempFindFirst._1
+    tempHaveSeenPipeToWriteV2dFindFirst_1(0)(idx) := tempFindFirst._2
+
+    for (jdx <- 0 until myProveNumCycles) {
+      myHistHaveSeenPipeToWriteV2dPost(0)(idx)(jdx) := (
+        myHistHaveSeenPipeToWriteV2dPost(0)(idx)(jdx).getZero
+      )
+      myHistHaveSeenPipeToWriteV2dPost(1)(idx)(jdx) := (
+        myHistHaveSeenPipeToWriteV2dPost(1)(idx)(jdx).getZero
       )
     }
+
+    when (tempHaveSeenPipeToWriteV2dFindFirst_0(0)(idx)) {
+      switch (tempHaveSeenPipeToWriteV2dFindFirst_1(0)(idx)) {
+        for (jdx <- 0 until myProveNumCycles) {
+          is (jdx) {
+            for (kdx <- jdx + 1 until myProveNumCycles) {
+              myHistHaveSeenPipeToWriteV2dPost(0)(idx)(kdx) := (
+                myHistHaveSeenPipeToWriteV2d(idx)(kdx)
+              )
+            }
+          }
+        }
+      }
+    }
+    val tempFindFirstPost0 = (
+      myHistHaveSeenPipeToWriteV2dPost(0)(idx).sFindFirst(
+        _ === True
+      )
+    )
+    tempHaveSeenPipeToWriteV2dFindFirst_0(1)(idx) := tempFindFirstPost0._1
+    tempHaveSeenPipeToWriteV2dFindFirst_1(1)(idx) := tempFindFirstPost0._2
+
+    when (tempHaveSeenPipeToWriteV2dFindFirst_0(1)(idx)) {
+      switch (tempHaveSeenPipeToWriteV2dFindFirst_1(1)(idx)) {
+        for (jdx <- 0 until myProveNumCycles) {
+          is (jdx) {
+            for (kdx <- jdx + 1 until myProveNumCycles) {
+              myHistHaveSeenPipeToWriteV2dPost(1)(idx)(kdx) := (
+                myHistHaveSeenPipeToWriteV2d(idx)(kdx)
+              )
+            }
+          }
+        }
+      }
+    }
+    val tempFindFirstPost1 = (
+      myHistHaveSeenPipeToWriteV2dPost(1)(idx).sFindFirst(
+        _ === True
+      )
+    )
+    tempHaveSeenPipeToWriteV2dFindFirst_0(2)(idx) := tempFindFirstPost1._1
+    tempHaveSeenPipeToWriteV2dFindFirst_1(2)(idx) := tempFindFirstPost1._2
+
+    //tempHaveSeenPipeToWriteV2dFindFirst_0(1)(idx) := False
+    //tempHaveSeenPipeToWriteV2dFindFirst_1(1)(idx) := 0x0
+
+    //when (tempHaveSeenPipeToWriteV2dFindFirst_0(0)(idx)) {
+    //}
+
+    //tempHaveSeenPipeToWriteV2dFindFirst_0(2)(idx) := False
+    //tempHaveSeenPipeToWriteV2dFindFirst_1(2)(idx) := 0x0
   }
+  for (idx <- 0 until wordCount) {
+    //for (jdx <- 0 until myProveNumCycles) {
+    //  myHistHaveSeenPipeToWriteV2d(1)(idx)(jdx) := (
+    //    False
+    //  )
+    //  myHistHaveSeenPipeToWriteV2d(2)(idx)(jdx) := (
+    //    False
+    //  )
+    //}
+  }
+  //val myHistHadWriteAt = (
+  //  KeepAttribute(
+  //    History[Bool](
+  //      that=(
+  //      )
+  //    )
+  //  )
+  //  .setName(s"myHistHadWriteAt")
+  //)
+  //when (
+  //  pastValidAfterReset()
+  //) {
+  //  when (
+  //    myHaveSeenPipeToModFrontFire
+  //    && (
+  //      myHaveCurrWrite
+  //    ) && (
+  //      tempHaveCurrWrite._1
+  //    ) && (
+  //      tempHaveCurrWritePostFirst._1
+  //    )
+  //  ) {
+  //    assert(
+  //      myHistModBackOpCnt(
+  //        //0
+  //        tempHaveCurrWrite._2
+  //      )
+  //      === myHistModBackOpCnt(tempHaveCurrWritePostFirst._2) + 1
+  //    )
+  //  }
+  //}
 
   when (pastValidAfterReset) {
     //--------
@@ -1778,58 +2465,120 @@ case class PipeMemRmwSimDut(
         //  tempHaveCurrWritePostFirst
         //  //tempHaveCurrWritePostSecond
         //)
-        val rMyPrevWriteData = (
+        val myPrevWriteData = (
           KeepAttribute(
             Vec[UInt]({
               val myArr = new ArrayBuffer[UInt]() 
               for (idx <- 0 until pipeMem.wordCountArr(0)) {
                 myArr += (
-                  RegNextWhen(
-                    next=pipeMem.mod.back.myWriteData(0),
-                    cond=(
-                      (
-                        myHaveCurrWrite
-                        //pipeMem.mod.back.myWriteEnable(0)
-                      ) && (
-                        pipeMem.mod.back.myWriteAddr(0) === idx
-                      )
-                    ),
-                    init=0x0,
-                  )
+                  //RegNextWhen(
+                  //  next=pipeMem.mod.back.myWriteData(0),
+                  //  cond=(
+                  //    getMyHistHaveSeenPipeToWriteVecCond(idx=idx)
+                  //    //(
+                  //    //  //myHaveCurrWrite
+                  //    //  //pipeMem.mod.back.myWriteEnable(0)
+                  //    //  myHaveSeenPipeToWrite
+                  //    //) && (
+                  //    //  pipeMem.mod.back.myWriteAddr(0) === idx
+                  //    //)
+                  //  ),
+                  //  init=pipeMem.mod.back.myWriteData(0).getZero,
+                  //)
+                  wordType()
                 )
               }
               myArr
             })
           )
-          .setName(s"rMyPrevWriteData")
+          .setName(s"myPrevWriteData")
         )
-        val rMyHadFirstWriteAt = (
-          KeepAttribute(
-            Vec[Bool]({
-              val myArr = new ArrayBuffer[Bool]()
-              for (idx <- 0 until pipeMem.wordCountArr(0)) {
-                myArr += (
-                  RegNextWhen(
-                    next=True,
-                    cond=(
-                      (
-                        myHaveCurrWrite
-                      ) && (
-                        pipeMem.mod.back.myWriteAddr(0) === idx
-                      )
-                    ),
-                    init=False,
-                  )
-                )
-              }
-              myArr
-            })
+        for (idx <- 0 until wordCount) {
+          myPrevWriteData(idx) := (
+            RegNext(
+              next=myPrevWriteData(idx),
+              init=myPrevWriteData(idx).getZero,
+            )
           )
-          .setName(s"rMyHadFirstWriteAt")
-        )
+          when (getMyHistHaveSeenPipeToWriteVecCond(idx=idx)) {
+            myPrevWriteData(idx) := (
+              RegNext(pipeMem.mod.back.myWriteData(0))
+            )
+          }
+        }
+        //val rMyHadFirstWriteAt = (
+        //  KeepAttribute(
+        //    Vec[Bool]({
+        //      val myArr = new ArrayBuffer[Bool]()
+        //      for (idx <- 0 until pipeMem.wordCountArr(0)) {
+        //        myArr += (
+        //          RegNextWhen(
+        //            next=(
+        //              getMyHistHaveSeenPipeToWriteVecCond(idx=idx)
+        //            ),
+        //            cond=(
+        //              getMyHistHaveSeenPipeToWriteVecCond(idx=idx)
+        //              //(
+        //              //  //myHaveCurrWrite
+        //              //  myHaveSeenPipeToWrite
+        //              //) && (
+        //              //  pipeMem.mod.back.myWriteAddr(0) === idx
+        //              //)
+        //            ),
+        //            init=False,
+        //          )
+        //        )
+        //      }
+        //      myArr
+        //    })
+        //  )
+        //  .setName(s"rMyHadFirstWriteAt")
+        //)
+        //val rMyHadSecondWriteAt = (
+        //  KeepAttribute(
+        //    Vec[Bool]({
+        //      val myArr = new ArrayBuffer[Bool]()
+        //      for (idx <- 0 until pipeMem.wordCountArr(0)) {
+        //        myArr += (
+        //          RegNextWhen(
+        //            next=(
+        //              rMyHadFirstWriteAt(idx)
+        //              && getMyHistHaveSeenPipeToWriteVecCond(idx=idx)
+        //            ),
+        //            cond=(
+        //              rMyHadFirstWriteAt(idx)
+        //              && getMyHistHaveSeenPipeToWriteVecCond(idx=idx)
+        //              //(
+        //              //  //myHaveCurrWrite
+        //              //  myHaveSeenPipeToWrite
+        //              //) && (
+        //              //  pipeMem.mod.back.myWriteAddr(0) === idx
+        //              //)
+        //            ),
+        //            init=False,
+        //          )
+        //        )
+        //      }
+        //      myArr
+        //    })
+        //  )
+        //  .setName(s"rMyHadSecondWriteAt")
+        //)
+        //when (
+        //  past(modFront.isFiring)
+        //) {
+        //  assert(
+        //    modBack(modBackPayload).myExt.rdMemWord(0)
+        //  )
+        //}
         when (
           (
-            myHaveCurrWrite
+            //myHaveCurrWrite
+            //past(myHaveSeenPipeToWrite)
+            //past(myHaveSeenPipeToModFrontFire)
+            //&& 
+            past(modBack.isValid)
+            && past(pipeMem.mod.back.myWriteEnable(0))
           )
           //&& (
           //  RegNextWhen(
@@ -1842,17 +2591,30 @@ case class PipeMemRmwSimDut(
           //  )
           //)
           && (
-            rMyHadFirstWriteAt(
-              pipeMem.mod.back.myWriteAddr(0)
-            )
+            //tempHaveSeenPipeToWriteVec(
+            //  pipeMem.mod.back.myWriteAddr(0)
+            //)
+            /*past*/(tempHaveSeenPipeToWriteV2dFindFirst_0(2)(
+              past(pipeMem.mod.back.myWriteAddr(0))
+            ))
+          ) && (
+            True
+            //rMyHadSecondWriteAt(
+            //  pipeMem.mod.back.myWriteAddr(0)
+            //)
           )
         ) {
           def myTempLeft = (
-            pipeMem.mod.back.myWriteData(0)
+            past(pipeMem.mod.back.myWriteData(0))
           )
           def myTempRight = (
-            rMyPrevWriteData(
-              pipeMem.mod.back.myWriteAddr(0)
+            //myPrevWriteData(
+            //  pipeMem.mod.back.myWriteAddr(0)
+            //)
+            past(
+              pipeMem.modMem(0)(0).readAsync(
+                address=past(pipeMem.mod.back.myWriteAddr(0))
+              )
             )
           )
           if (
@@ -1873,7 +2635,7 @@ case class PipeMemRmwSimDut(
           } else {
             switch (
               //myHistModBackPayloadOp(firstTempHaveCurrWrite._2)
-              modBack(modBackPayload).op
+              past(modBack(modBackPayload).op)
             ) {
               is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
                 assert(
@@ -2218,23 +2980,6 @@ case class PipeMemRmwTester(
       .setName(s"rSetMidModPayloadState")
     )
     nextSetMidModPayloadState := rSetMidModPayloadState
-    when (
-      cMidModFront.up.isValid 
-    ) {
-      when (
-        !rSetMidModPayloadState
-      ) {
-        //outp := inp
-        midModPayload(extIdxUp) := pmIo.modFront(modFrontPayload)
-        nextSetMidModPayloadState := True
-      }
-      when (
-        cMidModFront.up.isFiring
-      ) {
-        nextSetMidModPayloadState := False
-      }
-      //pmIo.tempModFrontPayload(0) := 
-    }
     val savedPsMemStallHost = (
       PipeMemRmwSimDut.doTestModOp
     ) generate (
@@ -2248,6 +2993,219 @@ case class PipeMemRmwTester(
       )
       .setName(s"psMem_savedPsMemStallHost")
     )
+    when (
+      cMidModFront.up.isValid 
+    ) {
+      when (
+        !rSetMidModPayloadState
+        //|| !cMidModFront.up.isValid
+      ) {
+        //outp := inp
+        midModPayload(extIdxUp) := pmIo.modFront(modFrontPayload)
+        //midModPayload(extIdxUp).myExt.rdMemWord := (
+        //  pmIo.modFront(modFrontPayload).myExt.rdMemWord
+        //)
+        //midModPayload(extIdxUp).myExt.valid := 
+        nextSetMidModPayloadState := True
+      }
+      when (
+        cMidModFront.up.isFiring
+      ) {
+        nextSetMidModPayloadState := False
+      }
+      //pmIo.tempModFrontPayload(0) := 
+      //--------
+      //if (optFormal) {
+      //  //when (
+      //  //  !cMidModFront.up.isFiring
+      //  //) {
+      //    assert(
+      //      midModPayload(extIdxUp).myExt.rdMemWord
+      //      === pmIo.modFront(modFrontPayload).myExt.rdMemWord
+      //    )
+      //    //assert(
+      //    //  midModPayload(extIdxUp).myExt.rdMemWord
+      //    //  === pmIo.modFront(modFrontPayload).myExt.rdMemWord
+      //    //)
+      //    //assert(
+      //    //  //!midModPayload(extIdxUp).myExt.modMemWordValid
+      //    //  midModPayload(extIdxUp).myExt.modMemWordValid
+      //    //  === pmIo.modFront(modFrontPayload).myExt.modMemWordValid
+      //    //)
+
+      //    assert(
+      //      midModPayload(extIdxUp).op
+      //      === pmIo.modFront(modFrontPayload).op
+      //    )
+      //    //assert(
+      //    //  midModPayload(extIdxUp).opCnt
+      //    //  === pmIo.modFront(modFrontPayload).opCnt
+      //    //)
+      //  //}
+      //  //assume(
+      //  //  midModPayload(extIdxUp).op
+      //  //  === pmIo.modFront(modFrontPayload).op
+      //  //)
+      //}
+      //--------
+      if (PipeMemRmwSimDut.doTestModOp) {
+        switch (
+          //pmIo.modFront(modFrontPayload).op
+          midModPayload(extIdxUp).op
+        ) {
+          is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
+            //if (optFormal) {
+            //  when (
+            //    (
+            //      RegNextWhen(
+            //        next=pmIo.modFront(modFrontPayload).op,
+            //        cond=pmIo.modFront.isFiring,
+            //      )
+            //      init(PipeMemRmwSimDut.ModOp.ADD_RA_RB)
+            //    ) === (
+            //      PipeMemRmwSimDut.ModOp.LDR_RA_RB
+            //    )
+            //  ) {
+            //    assert(!savedPsMemStallHost.myDuplicateIt)
+            //  }
+            //}
+            when (!rSetMidModPayloadState) {
+              midModPayload(extIdxUp).myExt.modMemWord := (
+                pmIo.modFront(modFrontPayload).myExt.modMemWord
+              )
+              midModPayload(extIdxUp).myExt.modMemWordValid := (
+                pmIo.modFront(modFrontPayload).myExt.modMemWordValid
+              )
+            }
+            if (optFormal) {
+              //when (cMidModFront.up.isFiring) {
+              //  assert(
+              //    //!midModPayload(extIdxUp).myExt.modMemWordValid
+              //    midModPayload(extIdxUp).myExt.modMemWordValid
+              //    //=== pmIo.modFront(modFrontPayload).myExt.modMemWordValid
+              //  )
+              //}
+              when (cMidModFront.up.isFiring) {
+                when (
+                  //cMidModFront.up.isFiring
+                  //pmIo.modFront(modFrontPayload).myExt.valid
+                  //midModPayload(extIdxUp).myExt.valid
+                  //midModPayload(extIdxUp).myExt.modMemWordValid
+                  (
+                    (
+                      !rSetMidModPayloadState
+                    ) && (
+                      pmIo.modFront(modFrontPayload).myExt.valid
+                    )
+                  ) || (
+                    (
+                      rSetMidModPayloadState
+                    ) && (
+                      RegNextWhen(
+                        next=pmIo.modFront(modFrontPayload).myExt.valid,
+                        cond=pmIo.modFront.isFiring,
+                        init=False,
+                      )
+                    )
+                  )
+                ) {
+                  //assert(
+                  //  pmIo.modFront(modFrontPayload).myExt.valid
+                  //)
+                  assert(
+                    //pmIo.modFront(modFrontPayload).myExt.modMemWordValid
+                    midModPayload(extIdxUp).myExt.modMemWordValid
+                    //midModPayload(extIdxUp).myExt.valid
+                  )
+                }
+              }
+            }
+          }
+          is (PipeMemRmwSimDut.ModOp.LDR_RA_RB) {
+            when (!midModPayload(extIdxUp).myExt.modMemWordValid) {
+              //if (optFormal) {
+              //  when (
+              //    RegNextWhen(
+              //      pmIo.modFront(modFrontPayload).op,
+              //      pmIo.modFront.isFiring,
+              //    ) =/= (
+              //      PipeMemRmwSimDut.ModOp.LDR_RA_RB
+              //    )
+              //  ) {
+              //    assert(!savedPsMemStallHost.myDuplicateIt)
+              //  }
+              //}
+              //midModPayload(extIdxUp).myExt.modMemWord := (
+              //  //pmIo.modFront(modFrontPayload).myExt.modMemWord
+              //  midModPayload(extIdxUp).myExt.modMemWord.getZero
+              //)
+            } otherwise {
+              if (optFormal) {
+                assert(!savedPsMemStallHost.myDuplicateIt)
+              }
+            }
+            if (optFormal) {
+              when (cMidModFront.up.isFiring) {
+                assert(
+                  midModPayload(extIdxUp).myExt.modMemWordValid
+                )
+              }
+            }
+          }
+          is (PipeMemRmwSimDut.ModOp.MUL_RA_RB) {
+            //if (optFormal) {
+            //  assert(!savedPsMemStallHost.myDuplicateIt)
+            //}
+            //if (optFormal) {
+            //  when (cMidModFront.up.isFiring) {
+            //    assert(
+            //      //!midModPayload(extIdxUp).myExt.modMemWordValid
+            //      midModPayload(extIdxUp).myExt.modMemWordValid
+            //      //=== pmIo.modFront(modFrontPayload).myExt.modMemWordValid
+            //    )
+            //  }
+            //  //when (
+            //  //  (
+            //  //    RegNextWhen(
+            //  //      next=pmIo.modFront(modFrontPayload).op,
+            //  //      cond=pmIo.modFront.isFiring,
+            //  //    )
+            //  //    init(PipeMemRmwSimDut.ModOp.ADD_RA_RB)
+            //  //  ) === (
+            //  //    PipeMemRmwSimDut.ModOp.LDR_RA_RB
+            //  //  )
+            //  //) {
+            //  //  assert(!savedPsMemStallHost.myDuplicateIt)
+            //  //}
+            //}
+            //midModPayload(extIdxUp).myExt.modMemWord := (
+            //  pmIo.modFront(modFrontPayload).myExt.modMemWord
+            //)
+            when (!rSetMidModPayloadState) {
+              midModPayload(extIdxUp).myExt.modMemWord := (
+                pmIo.modFront(modFrontPayload).myExt.modMemWord
+              )
+              midModPayload(extIdxUp).myExt.modMemWordValid := (
+                pmIo.modFront(modFrontPayload).myExt.modMemWordValid
+              )
+            }
+          }
+        }
+      }
+    } otherwise {
+      //assert(
+      //  midModPayload
+      //)
+    }
+    if (optFormal) {
+    }
+    //midModPayload(extIdxUp).myExt.rdMemWord(0) := (
+    //  pmIo.modFront(modFrontPayload).myExt.rdMemWord(0)
+    //)
+    //if (optFormal) {
+    //  when (!rSetMidModPayloadState) {
+    //  }
+    //}
     //--------
     midModPayload(extIdxUp).myExt.allowOverride
     midModPayload(extIdxUp).myExt.valid := (
@@ -2276,64 +3234,545 @@ case class PipeMemRmwTester(
     )
     def myProveNumCycles = PipeMemRmwFormal.myProveNumCycles
     if (PipeMemRmwSimDut.doTestModOp) {
-      cover(
-        (
-          RegNextWhen(
-            next=RegNextWhen(
-              next=True,
+      if (optFormal) {
+        cover(
+          (
+            RegNextWhen(
+              next=RegNextWhen(
+                next=True,
+                cond=(
+                  (
+                    //midModPayload(extIdxUp).op
+                    pmIo.modFront(modFrontPayload).op
+                    === PipeMemRmwSimDut.ModOp.LDR_RA_RB
+                  ) && (
+                    cMidModFront.up.isFiring
+                  )
+                ),
+                init=False,
+              ),
               cond=(
                 (
                   //midModPayload(extIdxUp).op
                   pmIo.modFront(modFrontPayload).op
-                  === PipeMemRmwSimDut.ModOp.LDR_RA_RB
+                  === PipeMemRmwSimDut.ModOp.ADD_RA_RB
                 ) && (
                   cMidModFront.up.isFiring
                 )
               ),
               init=False,
-            ),
-            cond=(
-              (
-                //midModPayload(extIdxUp).op
-                pmIo.modFront(modFrontPayload).op
-                === PipeMemRmwSimDut.ModOp.ADD_RA_RB
-              ) && (
-                cMidModFront.up.isFiring
-              )
-            ),
-            init=False,
-          )
-        )
-      )
-
-      when (
-        cMidModFront.up.isValid
-        && (
-          //midModPayload(extIdxUp).op
-          pmIo.modFront(modFrontPayload).op
-          === PipeMemRmwSimDut.ModOp.LDR_RA_RB
-        )
-      ) {
-          //--------
-        when (savedPsMemStallHost.myDuplicateIt) {
-          //--------
-          cMidModFront.duplicateIt()
-          //--------
-          midModPayload(extIdxUp).myExt.modMemWordValid := False
-          //--------
-        } otherwise {
-          //--------
-          midModPayload(extIdxUp).myExt.modMemWordValid := True
-          //--------
-          midModPayload(extIdxUp).myExt.modMemWord := (
-            if (PipeMemRmwSimDut.allModOpsSameChange) (
-              midModPayload(extIdxUp).myExt.rdMemWord(0) + 1
-            ) else (
-              midModPayload(extIdxUp).myExt.rdMemWord(0) - 1
             )
           )
+        )
+      }
+
+      when (
+        //midModPayload(extIdxUp).op
+        pmIo.modFront(modFrontPayload).op
+        === PipeMemRmwSimDut.ModOp.LDR_RA_RB
+      ) {
+        when (cMidModFront.up.isValid) {
+          //--------
+          when (savedPsMemStallHost.myDuplicateIt) {
+            //--------
+            cMidModFront.duplicateIt()
+            //--------
+            midModPayload(extIdxUp).myExt.modMemWordValid := False
+            //--------
+          } otherwise {
+            //--------
+            midModPayload(extIdxUp).myExt.modMemWordValid := True
+            //--------
+            midModPayload(extIdxUp).myExt.modMemWord := (
+              if (PipeMemRmwSimDut.allModOpsSameChange) (
+                midModPayload(extIdxUp).myExt.rdMemWord(0) + 1
+              ) else (
+                midModPayload(extIdxUp).myExt.rdMemWord(0) - 1
+              )
+            )
+          }
+        } otherwise {
+          //midModPayload(extIdxUp).myExt.modMemWordValid := (
+          //  RegNext(
+          //    next=midModPayload(extIdxUp).myExt.modMemWordValid,
+          //    init=False,
+          //  )
+          //)
         }
         //--------
+      }
+      if (optFormal) {
+        when (pastValidAfterReset) {
+          val tempMyFindFirstUp = (
+            pipeMem.cMid0FrontArea.myFindFirst_0(0)(0)(extIdxUp),
+            pipeMem.cMid0FrontArea.myFindFirst_1(0)(0)(extIdxUp),
+          )
+          val tempMyFindFirstSaved = (
+            pipeMem.cMid0FrontArea.myFindFirst_0(0)(0)(extIdxSaved),
+            pipeMem.cMid0FrontArea.myFindFirst_1(0)(0)(extIdxSaved),
+          )
+          val myUpExtDel = (
+            pipeMem.mod.front.myUpExtDel
+          )
+          val myUpExtDel2 = (
+            pipeMem.mod.front.myUpExtDel2
+          )
+          println(
+            s"${myUpExtDel2.size}"
+          )
+          when (
+            past(pmIo.front.isFiring)
+            && pmIo.front.isValid
+          ) {
+            assert(
+              pmIo.front(frontPayload).opCnt
+              === past(pmIo.front(frontPayload).opCnt) + 1
+            )
+          }
+          //when (
+          //  past(pipeMem.cMid0FrontArea.up.isFiring)
+          //  && pipeMem.cMid0FrontArea.up.isValid
+          //) {
+          //  assert(
+          //    pipeMem.cMid0FrontArea.tempUpMod(2)(0).opCnt
+          //    === past(pipeMem.cMid0FrontArea.tempUpMod(2)(0).opCnt) + 1
+          //  )
+          //}
+          //when (
+          //  past(pmIo.modFront.isFiring)
+          //  && pmIo.modFront.isValid
+          //) {
+          //  assert(
+          //    pmIo.modFront(modFrontPayload).opCnt
+          //    === past(pmIo.modFront(modFrontPayload).opCnt) + 1
+          //  )
+          //}
+          //when (
+          //  past(pmIo.modBack.isFiring)
+          //  && pmIo.modBack.isValid
+          //) {
+          //  assert(
+          //    pmIo.modBack(modBackPayload).opCnt
+          //    === past(pmIo.modBack(modBackPayload).opCnt) + 1
+          //  )
+          //}
+          val myTempUpMod = pipeMem.cMid0FrontArea.tempUpMod(2)(0)
+          when (
+            !dut.tempHadFrontIsFiring._1
+          ) {
+            assert(
+              !myTempUpMod.myExt.modMemWordValid
+            )
+            assert(
+              !pmIo.modFront(modFrontPayload).myExt.modMemWordValid
+            )
+            assert(
+              !pmIo.modBack(modBackPayload).myExt.modMemWordValid
+            )
+            //assert(
+            //  !pmIo.back(backPayload).myExt.modMemWordValid
+            //)
+
+            assert(
+              !dut.tempHadMid0FrontUpIsValid._1
+            )
+            assert(
+              !dut.tempHadMid0FrontDownIsFiring._1
+            )
+            assert(
+              !dut.tempHadModFrontIsValid._1
+            )
+            assert(
+              !dut.tempHadModBackIsFiring._1
+            )
+            assert(
+              !dut.tempHadBackIsFiring._1
+            )
+            assert(
+              !dut.myHaveSeenPipeToWrite
+            )
+            assert(
+              !tempMyFindFirstUp._1
+            )
+            assert(
+              !tempMyFindFirstSaved._1
+            )
+            assert(
+              !pipeMem.cMid0FrontArea.up.isValid
+            )
+            assert(
+              !pmIo.modFront.isValid
+            )
+            assert(
+              !pmIo.modBack.isValid
+            )
+            assert(
+              !pmIo.back.isValid
+            )
+          } elsewhen (
+            !dut.tempHadMid0FrontUpIsValid._1
+          ) {
+            when (!pipeMem.cMid0FrontArea.up.isValid) {
+              assert(
+                !myTempUpMod.myExt.modMemWordValid
+              )
+            }
+            assert(
+              !pmIo.modFront(modFrontPayload).myExt.modMemWordValid
+            )
+            assert(
+              !pmIo.modBack(modBackPayload).myExt.modMemWordValid
+            )
+            //assert(
+            //  !pmIo.back(backPayload).myExt.modMemWordValid
+            //)
+            assert(
+              !dut.tempHadMid0FrontDownIsFiring._1
+            )
+            assert(
+              !dut.tempHadModFrontIsValid._1
+            )
+            assert(
+              !dut.tempHadModBackIsFiring._1
+            )
+            assert(
+              !dut.myHaveSeenPipeToWrite
+            )
+            assert(
+              !dut.tempHadBackIsFiring._1
+            )
+            assert(
+              !pmIo.modFront.isValid
+            )
+            assert(
+              !pmIo.modBack.isValid
+            )
+            assert(
+              !pmIo.back.isValid
+            )
+            //--------
+            //assert(
+            //  !tempMyFindFirstUp._1
+            //)
+            //assert(
+            //  !tempMyFindFirstSaved._1
+            //)
+            //--------
+            //assert(
+            //  !pipeMem.cMid0FrontArea.up.isValid
+            //)
+            //when (
+            //  //!pipeMem.cMid0FrontArea.up.isReady
+            //  !dut.tempHadMid0FrontDownIsFiring._1
+            //) {
+            //  //assert(
+            //  //  !pmIo.modFront.isFiring
+            //  //)
+            //  assert(
+            //    !pmIo.modBack.isValid
+            //  )
+            //  assert(
+            //    !pmIo.back.isValid
+            //  )
+            //}
+            //--------
+            //when (
+            //  pipeMem.cMid0FrontArea.up.isValid
+            //) {
+            //  val tempUpMod = (
+            //    pipeMem.cMid0FrontArea.tempUpMod
+            //  )
+            //  when (
+            //    tempUpMod(2)(0).op
+            //    =/= PipeMemRmwSimDut.ModOp.LDR_RA_RB
+            //  ) {
+            //    assert(
+            //      !tempMyFindFirstUp._1
+            //    )
+            //  }
+            //}
+            //--------
+            //assert(
+            //  tempUpMod(1).myExt.rdMemWord(0)
+            //  === 
+            //)
+          } elsewhen (
+            !dut.tempHadModFrontIsValid._1
+          ) {
+            //--------
+            assert(
+              !dut.tempHadModBackIsFiring._1
+            )
+            assert(
+              !dut.myHaveSeenPipeToWrite
+            )
+            assert(
+              !dut.tempHadBackIsFiring._1
+            )
+            //when (!pmIo.modBack.isValid) {
+            //  assert(
+            //    !pmIo.modBack(modBackPayload).myExt.modMemWordValid
+            //  )
+            //}
+            //--------
+            when (
+              pmIo.modFront.isValid
+            ) {
+              //assert(
+              //  pmIo.modFront(modFrontPayload).myExt.rdMemWord(0)
+              //  === (
+              //    //RegNextWhen(
+              //    //  next=
+              //      myUpExtDel(0)(0)(extIdxSaved).rdMemWord(0),
+              //    //  cond=pmIo.modFront.isFiring
+              //    //)
+              //  )
+              //)
+              //--------
+              //when (tempMyFindFirstUp._1) {
+              //  when (
+              //    //!pmIo.modFront.isFiring
+              //    !midModPayload(extIdxUp).myExt.modMemWordValid
+              //  ) {
+              //    assert(
+              //      tempMyFindFirstUp._2 === 0x0
+              //    )
+              //  } otherwise {
+              //    assert(
+              //      tempMyFindFirstUp._2 <= 0x1
+              //    )
+              //  }
+              //}
+              //--------
+              //when (tempMyFindFirstSaved._1) {
+              //  assert(
+              //    tempMyFindFirstSaved._2 === 0x0
+              //  )
+              //}
+            } otherwise {
+              //when (!dut.tempHadMid0FrontUpIsFiring._1) {
+              //}
+              assert(
+                !pmIo.modFront(modFrontPayload).myExt.modMemWordValid
+              )
+              assert(
+                !dut.tempHadBackIsValid._1
+              )
+            }
+            //--------
+          } elsewhen (
+            !dut.tempHadModBackIsFiring._1
+          ) {
+            //--------
+            assert(
+              !dut.myHaveSeenPipeToWrite
+            )
+            assert(
+              !dut.tempHadBackIsFiring._1
+            )
+            assert(
+              !dut.tempHadBackIsValid._1
+            )
+            //when (
+            //  (
+            //    !pmIo.modBack.isValid
+            //  ) && (
+            //    !dut.tempHadModBackIsValid._1
+            //  )
+            //) {
+            //  assert(
+            //    !pmIo.modBack(modBackPayload).myExt.modMemWordValid
+            //  )
+            //  assert(
+            //    !pipeMem.mod.back.myWriteEnable(0)
+            //  )
+            //}
+            //--------
+            //when (
+            //  pmIo.modBack.isValid
+            //  && (
+            //    //pmIo.modBack.isFiring
+            //    //!dut.myHaveSeenPipeToWrite
+            //    !pipeMem.mod.back.myWriteEnable(0)
+            //  )
+            //) {
+            //  //assert(
+            //  //  pmIo.modBack(modBackPayload).myExt.rdMemWord(0)
+            //  //  === (
+            //  //    //RegNextWhen(
+            //  //    //  next=
+            //  //      myUpExtDel2(0)(0)(extIdxSaved).rdMemWord(0),
+            //  //    //  cond=pmIo.modFront.isFiring
+            //  //    //)
+            //  //  )
+            //  //)
+            //  when (tempMyFindFirstUp._1) {
+            //    assert(
+            //      tempMyFindFirstUp._2 <= 0x1
+            //    )
+            //  }
+            //  //when (tempMyFindFirstSaved._1) {
+            //  //  assert(
+            //  //    tempMyFindFirstSaved._2 <= 0x1
+            //  //  )
+            //  //}
+            //}
+          }
+          //when (
+          //  !dut.tempHadMid0FrontUpIsFiring
+          //)
+          //when (
+          //  !(
+          //    dut.tempHadFrontIsFiring._1
+          //    && dut.tempHadMid0FrontUpIsFiring._1
+          //  )
+          //) {
+          //  assert(
+          //    !tempMyFindFirstUp._1
+          //  )
+          //  assert(
+          //    !tempMyFindFirstSaved._1
+          //  )
+          //  assert(
+          //    !dut.myHaveSeenPipeToWrite
+          //  )
+          //} elsewhen (
+          //  !dut.tempHadModFrontIsValid._1
+          //  //!dut.tempHadModFrontIsFiring._1
+          //) {
+          //  when (tempMyFindFirstUp._1) {
+          //    assert(
+          //      tempMyFindFirstUp._2 === 0x0
+          //    )
+          //  }
+          //  when (tempMyFindFirstSaved._1) {
+          //    assert(
+          //      tempMyFindFirstSaved._2 === 0x0
+          //    )
+          //  }
+          //  //for (idx <- 0 until myUpExtDel2.size) {
+          //  //  assert(
+          //  //  )
+          //  //}
+          //} elsewhen (
+          //  dut.myHaveSeenPipeToModFrontFire
+          //  && !(
+          //    pmIo.modBack.isValid
+          //  )
+          //) {
+          //  when (tempMyFindFirstUp._1) {
+          //    assert(
+          //      tempMyFindFirstUp._2 <= 0x1
+          //    )
+          //  }
+          //  when (tempMyFindFirstSaved._1) {
+          //    assert(
+          //      tempMyFindFirstSaved._2 <= 0x1
+          //    )
+          //  }
+          //}
+          when (
+            cMidModFront.up.isValid
+            && dut.tempHadFrontIsFiring._1
+            //&& dut.tempHadMid0FrontUpIsFiring._1
+            && dut.tempHadMid0FrontUpIsValid._1
+          ) {
+            //when (
+            //  //dut.tempHadMid0FrontDownIsFiring._1
+            //  past(pipeMem.cMid0FrontArea.up.isFiring)
+            //  && (
+            //    pmIo.modFront.isFiring
+            //  )
+            //  //True
+            //) {
+            //  //val myTempUpMod = pipeMem.cMid0FrontArea.tempUpMod(2)(0)
+            //  val myTempUpExt = (
+            //    /*past*/(pipeMem.mod.front.myUpExtDel(0)(0)(extIdxSaved))
+            //  )
+            //  assert(
+            //    //midModPayload(extIdxUp).myExt.rdMemWord(0)
+            //    pmIo.modFront(modFrontPayload).myExt.rdMemWord(0)
+            //    === (
+            //      ////past(
+            //      //  myTempUpMod.myExt.rdMemWord(0)
+            //      ////)
+            //      /*past*/(myTempUpExt.rdMemWord(0))
+            //    )
+            //  )
+            //}
+            for (extIdx <- 0 until extIdxLim) {
+              when (
+                if (extIdx == extIdxUp) (
+                  //True
+                  cMidModFront.up.isFiring
+                ) else ( // if (extIdx == extIdxSaved)
+                  //past(cMidModFront.up.isFiring)
+                  False
+                )
+              ) {
+                switch (
+                  //pmIo.modFront(modFrontPayload).op
+                  midModPayload(extIdx).op
+                ) {
+                  is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
+                    when (
+                      midModPayload(extIdx).myExt.modMemWordValid
+                    ) {
+                      assert(
+                        midModPayload(extIdx).myExt.modMemWord
+                        === midModPayload(extIdx).myExt.rdMemWord(0) + 1
+                      )
+                    }
+                  }
+                  is (PipeMemRmwSimDut.ModOp.LDR_RA_RB) {
+                    when (
+                      midModPayload(extIdx).myExt.modMemWordValid
+                    ) {
+                      if (PipeMemRmwSimDut.allModOpsSameChange) {
+                        assert(
+                          midModPayload(extIdx).myExt.modMemWord
+                          === midModPayload(extIdx).myExt.rdMemWord(0) + 1
+                        )
+                      } else {
+                        assert(
+                          midModPayload(extIdx).myExt.modMemWord
+                          === midModPayload(extIdx).myExt.rdMemWord(0) - 1
+                        )
+                      }
+                    }
+                  }
+                  is (PipeMemRmwSimDut.ModOp.MUL_RA_RB) {
+                    when (
+                      //dut.tempHadMid0FrontUpIsValid._1
+                      //&& 
+                      midModPayload(extIdx).myExt.modMemWordValid
+                    ) {
+                      if (PipeMemRmwSimDut.allModOpsSameChange) {
+                        assert(
+                          midModPayload(extIdx).myExt.modMemWord
+                          === midModPayload(extIdx).myExt.rdMemWord(0) + 1
+                        )
+                      } else {
+                        val tempBitsRange = (
+                          wordType().bitsRange
+                        )
+                        assert(
+                          midModPayload(extIdx).myExt.modMemWord(
+                            tempBitsRange
+                          ) === (
+                            midModPayload(extIdx).myExt.rdMemWord(0) << 1
+                          )(
+                            tempBitsRange
+                          )
+                        )
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
       }
       //when (
       //  dut.psMemStallHost.fire
@@ -2360,7 +3799,15 @@ case class PipeMemRmwTester(
     }
     setMidModStages()
 
+    //pmIo.modFront(modBackPayload) := RegNext(
+    //  next=midModPayload(extIdxUp),
+    //  init=midModPayload(extIdxUp).getZero
+    //)
     pmIo.modFront(modBackPayload) := midModPayload(extIdxUp)
+    when (pmIo.modFront.isValid) {
+      //pmIo.modFront(modBackPayload) := midModPayload(extIdxUp)
+    } otherwise {
+    }
 
     if (optModHazardKind == PipeMemRmw.modHazardKindDupl) {
       when (cMidModFront.down(modFrontPayload).myExt.hazardId.msb) {
@@ -2384,7 +3831,11 @@ case class PipeMemRmwTester(
     )
   }
   if (
-    optModHazardKind == PipeMemRmw.modHazardKindFwd
+    (
+      optModHazardKind == PipeMemRmw.modHazardKindFwd
+    ) && (
+      optFormal
+    )
   ) {
     def cMid0FrontArea = pipeMem.cMid0FrontArea
     def myNonFwdRdMemWord = pipeMem.mod.front.myNonFwdRdMemWord

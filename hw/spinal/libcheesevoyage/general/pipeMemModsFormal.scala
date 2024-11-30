@@ -13,8 +13,9 @@ object PipeMemRmwFormal extends App {
   //--------
   //--------
   def myProveNumCycles = (
-    //10
-    15
+    //8
+    10
+    //15
     //16
   )
   case class PipeMemRmwFormalDut2() extends Component {
@@ -171,18 +172,18 @@ object PipeMemRmwFormal extends App {
     ),
     _keepDebugInfo=true,
   )
-    .withBMC(
-      //20
-      //15
-      //16
-      PipeMemRmwFormal.myProveNumCycles
-    )
-    //.withProve(
+    //.withBMC(
     //  //20
-    //  //40
-    //  //10
+    //  //15
+    //  //16
     //  PipeMemRmwFormal.myProveNumCycles
     //)
+    .withProve(
+      //20
+      //40
+      //10
+      PipeMemRmwFormal.myProveNumCycles
+    )
     .withCover(
       //PipeMemRmwFormal.myProveNumCycles
       //20

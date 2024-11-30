@@ -452,6 +452,12 @@ case class PipeMemRmwIo[
     modType()
   )
   val modBack = Node()
+  //val modBackPrePayloadArr = Array.fill(memArrSize)(Payload(modType()))
+  //for (idx <- 0 until memArrSize) {
+  //  modBackPrePayloadArr(idx)
+  //  .setName(s"${pipeName}_${idx}_io_modBackPrePayloadArr")
+  //}
+  //def modBackPrePayload = modBackPrePayloadArr
   //val modBackPayload = Payload(modType())
   //  .setName(s"${pipeName}_io_modBackPayload")
   val modBackPayloadArr = Array.fill(memArrSize)(Payload(modType()))
@@ -1276,7 +1282,11 @@ extends Area {
       //)
       val cFront = CtrlLink(
         up=io.front,
-        down=Node()
+        down={
+          val temp = Node()
+          temp.setName(s"${pipeName}_cFront_down")
+          temp
+        }
       )
         //.setName(s"${pipeName}_Front")
       myLinkArr += cFront
@@ -1354,12 +1364,27 @@ extends Area {
         },
       )
       myLinkArr += cMid0Front
+      val myIncludeS2mMid0Front = (
+        optIncludeModFrontStageLink
+        && (
+          optModHazardKind == PipeMemRmw.modHazardKindFwd
+        )
+        //false
+      )
       val sMid0Front = (optIncludeModFrontStageLink) generate (
         StageLink(
           up=cMid0Front.down,
           down=(
             //Node()
-            if (optModHazardKind != PipeMemRmw.modHazardKindFwd) (
+            if (
+              //(
+              //  !optIncludeModFrontStageLink
+              //) && (
+              //  optModHazardKind != PipeMemRmw.modHazardKindFwd
+              //)
+              //true
+              !myIncludeS2mMid0Front
+            ) (
               io.modFront
             ) else {
               val temp = Node()
@@ -1375,12 +1400,6 @@ extends Area {
         //)
         myLinkArr += sMid0Front
       }
-      val myIncludeS2mMid0Front = (
-        optIncludeModFrontStageLink
-        && (
-          optModHazardKind == PipeMemRmw.modHazardKindFwd
-        )
-      )
       val s2mMid0Front = (
         myIncludeS2mMid0Front
       ) generate (
@@ -1564,6 +1583,9 @@ extends Area {
       //val pipePayload = Payload(modType())
       def pipePayload = io.modBackPayload
 
+      //val cBackPre = pipe.addStage(
+      //)
+
       //val cModBack = pipe.addStage("ModBack")
       val cBack = pipe.addStage(
         name=pipeName + "_Back",
@@ -1583,25 +1605,63 @@ extends Area {
           //)
         )
       )
-      val cIoModBack = DirectLink(
+
+      val dIoModBack = DirectLink(
         up=io.modBack,
         down=cBack.up,
       )
-      myLinkArr += cIoModBack
+      myLinkArr += dIoModBack
       val cLastBack = pipe.addStage(
         name=pipeName + "_LastBack",
         finish=true,
       )
-      val cIoBack = DirectLink(
+      val dIoBack = DirectLink(
         up=(
           cLastBack.down
           //cBack.down
         ),
         down=io.back,
       )
-      myLinkArr += cIoBack
+      myLinkArr += dIoBack
+      //val tempModBackPostUpExt = (
+      //  Vec.fill(2)(mkExt())
+      //)
+      //val tempModBackPostUpMod = (
+      //  Vec.fill(2)(
+      //    Vec.fill(memArrSize)(
+      //      modType()
+      //    )
+      //  )
+      //)
       for (ydx <- 0 until memArrSize) {
-        cIoBack.up(io.backPayload(ydx)) := cIoBack.up(pipePayload(ydx))
+        //tempModBackPostUpMod(0)(ydx) := (
+        //  dIoModBack.up(io.modBackPayload(ydx))
+        //)
+        //tempModBackPostUpMod(0)(ydx).getPipeMemRmwExt(
+        //  outpExt=tempModBackPostUpExt(0)(ydx)(extIdxSingle),
+        //  memArrIdx=memArrIdx,
+        //)
+        //when (ClockDomain.isResetActive) {
+        //  tempModBackPostUpExt(1)(ydx)(extIdxSingle) := (
+        //    tempModBackPostUpExt(0)(ydx)(extIdxSingle)
+        //  )
+        //  tempModBackPostUpExt(1)(ydx)(extIdxSingle).modMemWordValid := (
+        //    False
+        //  )
+        //  //dIoModBack.up(pipePayload(ydx)) := 
+        //  //dIoModBack.up(pipePayload(ydx)).setPipeMemRmwExt(
+        //  //)
+        //}
+        //tempModBackPostUpMod(1)(ydx) := tempModBackPostUpMod(0)(ydx)
+        //tempModBackPostUpMod(1)(ydx).allowOverride
+        //tempModBackPostUpMod(1)(ydx).setPipeMemRmwExt(
+        //  inpExt=tempModBackPostUpExt(1)(ydx)(extIdxSingle),
+        //  memArrIdx=memArrIdx,
+        //)
+        dIoBack.up(io.backPayload(ydx)) := dIoBack.up(pipePayload(ydx))
+        //when (ClockDomain.isResetActive) {
+        //  cIoBack.up(io.backPayload(ydx)).myExt.modMemWordValid := False
+        //}
       }
       //pipe.first.up.driveFrom(io.modBack)(
       //  con=(node, payload) => {
@@ -2051,7 +2111,8 @@ extends Area {
     //  init(False)
     //)
     val tempSharedEnable = KeepAttribute(
-      down.isReady
+      //down.isReady
+      down.isFiring
     )
       .setName(s"${pipeName}_tempSharedEnable")
     tempCond := (
@@ -2167,6 +2228,19 @@ extends Area {
       cMid0Front.up.isFiring
     )
       .setName(s"${pipeName}_cMid0FrontArea_dbgUpIsFiring")
+    val dbgDownIsValid = KeepAttribute(
+      cMid0Front.down.isValid
+    )
+      .setName(s"${pipeName}_cMid0FrontArea_dbgDownIsValid")
+    val dbgDownIsReady = KeepAttribute(
+      cMid0Front.down.isReady
+    )
+      .setName(s"${pipeName}_cMid0FrontArea_dbgDownIsReady")
+    val dbgDownIsFiring = KeepAttribute(
+      cMid0Front.down.isFiring
+    )
+      .setName(s"${pipeName}_cMid0FrontArea_dbgDownIsFiring")
+    //--------
     //--------
     val upExt = Vec.fill(3)(
       mkExt()
@@ -2474,8 +2548,44 @@ extends Area {
           tempUpMod(2)(ydx) := tempUpMod(1)(ydx)
         }
       }
+      //for (ydx <- 0 until memArrSize) {
+      //  upExt(2)(ydx)(extIdxSingle).valid := up.isValid
+      //  upExt(2)(ydx)(extIdxSingle).ready := up.isReady
+      //  upExt(2)(ydx)(extIdxSingle).fire := up.isFiring
+      //}
     }
-    if (optModHazardKind == PipeMemRmw.modHazardKindFwd) {
+    val myHaveFwd = (
+      optModHazardKind == PipeMemRmw.modHazardKindFwd
+    )
+    val myFindFirst_0 = (
+      myHaveFwd
+    ) generate (
+      KeepAttribute(
+        Vec.fill(memArrSize)(
+          Vec.fill(modRdPortCnt)(
+            Vec.fill(extIdxLim)(
+              Bool()
+            )
+          )
+        )
+      )
+      .setName(s"${pipeName}_myFindFirst_0")
+    )
+    val myFindFirst_1 = (
+      myHaveFwd
+    ) generate (
+      KeepAttribute(
+        Vec.fill(memArrSize)(
+          Vec.fill(modRdPortCnt)(
+            Vec.fill(extIdxLim)(
+              UInt(log2Up(mod.front.myUpExtDel2.size) bits)
+            )
+          )
+        )
+      )
+      .setName(s"${pipeName}_myFindFirst_1")
+    )
+    if (myHaveFwd) {
       for (ydx <- 0 until memArrSize) {
         for (zdx <- 0 until modRdPortCnt) {
           val myFindFirstUp = KeepAttribute(
@@ -2495,6 +2605,18 @@ extends Area {
               )
             )
             .setName(s"${pipeName}_myFindFirstDown_${ydx}_${zdx}")
+          )
+          myFindFirst_0(ydx)(zdx)(extIdxUp) := (
+            myFindFirstUp._1
+          )
+          myFindFirst_1(ydx)(zdx)(extIdxUp) := (
+            myFindFirstUp._2
+          )
+          myFindFirst_0(ydx)(zdx)(extIdxSaved) := (
+            myFindFirstSaved._1
+          )
+          myFindFirst_1(ydx)(zdx)(extIdxSaved) := (
+            myFindFirstSaved._2
           )
           val myFwdCondUp = (
             KeepAttribute(
@@ -2583,12 +2705,18 @@ extends Area {
         outpExt=upExt(2)(ydx)(extIdxUp),
         memArrIdx=memArrIdx,
       )
-      up(mod.front.outpPipePayload(ydx)) := RegNext(
-        next=tempUpMod(2)(ydx)
-      )
-      when (myDbgUpIsValid) {
+      //--------
+      //up(mod.front.outpPipePayload(ydx)) := RegNext(
+      //  next=tempUpMod(2)(ydx)
+      //)
+      //--------
+      //upExt(3)(ydx) := upExt(2)(ydx)
+      //tempUpMod(3)(ydx).setPipeMemRmwExt(
+      //  inpExt=upExt(3)
+      //)
+      //when (myDbgUpIsValid) {
         up(mod.front.outpPipePayload(ydx)) := tempUpMod(2)(ydx)
-      }
+      //}
     }
     //--------
     //--------
@@ -2972,11 +3100,14 @@ extends Area {
           init=upExt(1)(ydx)(extIdxSaved).getZero,
         )
       )
+      for (extIdx <- 0 until extIdxLim) {
+        upExt(1)(ydx)(extIdx).modMemWordValid := False
+      }
       //--------
       mod.front.myUpExtDel.last(ydx) := upExt(1)(ydx)
     }
 
-    val tempUpMod = Vec.fill(1)(
+    val tempUpMod = Vec.fill(2)(
       Vec.fill(memArrSize)(
         modType()
       )
@@ -2989,6 +3120,13 @@ extends Area {
         memArrIdx=memArrIdx,
       )
       //upExt(1)(ydx)(extIdxSaved).modMemWordValid := False
+      //tempUpMod(1)(ydx).allowOverride
+      //tempUpMod(1)(ydx) := tempUpMod(0)(ydx)
+      //tempUpMod(1)(ydx).setPipeMemRmwExt(
+      //  inpExt=upExt(1)(ydx)(extIdxSingle),
+      //  memArrIdx=memArrIdx,
+      //)
+      //up(io.backPayload(ydx)) := tempUpMod(1)(ydx)
     }
   }
   //--------
