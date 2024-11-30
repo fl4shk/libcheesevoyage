@@ -2485,7 +2485,9 @@ case class PipeMemRmwSimDut(
                   //  ),
                   //  init=pipeMem.mod.back.myWriteData(0).getZero,
                   //)
-                  wordType()
+                  /*Reg*/(
+                    wordType()
+                  )
                 )
               }
               myArr
@@ -2500,11 +2502,6 @@ case class PipeMemRmwSimDut(
               init=myPrevWriteData(idx).getZero,
             )
           )
-          when (getMyHistHaveSeenPipeToWriteVecCond(idx=idx)) {
-            myPrevWriteData(idx) := (
-              RegNext(pipeMem.mod.back.myWriteData(0))
-            )
-          }
         }
         //val rMyHadFirstWriteAt = (
         //  KeepAttribute(
@@ -2571,14 +2568,36 @@ case class PipeMemRmwSimDut(
         //    modBack(modBackPayload).myExt.rdMemWord(0)
         //  )
         //}
-        when (
+        val tempCond = (
           (
             //myHaveCurrWrite
             //past(myHaveSeenPipeToWrite)
             //past(myHaveSeenPipeToModFrontFire)
-            //&& 
-            past(modBack.isValid)
-            && past(pipeMem.mod.back.myWriteEnable(0))
+            //&&
+            ///*past*/(modBack.isValid)
+            //&& /*past*/(pipeMem.mod.back.myWriteEnable(0))
+            myHaveCurrWrite
+          )
+        )
+        when (
+          past(
+            tempCond
+          )
+        ) {
+          for (idx <- 0 until wordCount) {
+            when (
+              //getMyHistHaveSeenPipeToWriteVecCond(idx=idx)
+              past(pipeMem.mod.back.myWriteAddr(0)) === idx
+            ) {
+              myPrevWriteData(idx) := (
+                past(pipeMem.mod.back.myWriteData(0))
+              )
+            }
+          }
+        }
+        when (
+          (
+            tempCond
           )
           //&& (
           //  RegNextWhen(
@@ -2595,7 +2614,7 @@ case class PipeMemRmwSimDut(
             //  pipeMem.mod.back.myWriteAddr(0)
             //)
             /*past*/(tempHaveSeenPipeToWriteV2dFindFirst_0(2)(
-              past(pipeMem.mod.back.myWriteAddr(0))
+              /*past*/(pipeMem.mod.back.myWriteAddr(0))
             ))
           ) && (
             True
@@ -2605,17 +2624,26 @@ case class PipeMemRmwSimDut(
           )
         ) {
           def myTempLeft = (
-            past(pipeMem.mod.back.myWriteData(0))
+            /*past*/(pipeMem.mod.back.myWriteData(0))
           )
           def myTempRight = (
-            //myPrevWriteData(
-            //  pipeMem.mod.back.myWriteAddr(0)
-            //)
-            past(
-              pipeMem.modMem(0)(0).readAsync(
-                address=past(pipeMem.mod.back.myWriteAddr(0))
+            /*past*/(
+              myPrevWriteData(
+                /*past*/(pipeMem.mod.back.myWriteAddr(0))
               )
             )
+            ///*past*/(
+            //  //pipeMem.modMem(0)(0).readAsync(
+            //  //  address=past(pipeMem.mod.back.myWriteAddr(0))
+            //  //)
+            //  //RegNextWhen(
+            //  //  next=pipeMem.mod.back.myWriteData(0),
+            //  //  cond=(
+            //  //    pipeMem.mod.back.myWriteAddr(0)
+            //  //  ),
+            //  //  init=pipeMem.mod.back.myWriteData(0).getZero,
+            //  //)
+            //)
           )
           if (
             (
@@ -2635,7 +2663,7 @@ case class PipeMemRmwSimDut(
           } else {
             switch (
               //myHistModBackPayloadOp(firstTempHaveCurrWrite._2)
-              past(modBack(modBackPayload).op)
+              /*past*/(modBack(modBackPayload).op)
             ) {
               is (PipeMemRmwSimDut.ModOp.ADD_RA_RB) {
                 assert(
