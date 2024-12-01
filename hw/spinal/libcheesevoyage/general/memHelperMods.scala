@@ -274,9 +274,10 @@ extends Component
       hazardCmpType=Bool(),
       modRdPortCnt=modRdPortCnt,
       modStageCnt=modStageCnt,
+      memArrSize=1,
       //optEnableModDuplicate=false,
       optModHazardKind=(
-        PipeMemRmw.modHazardKindDont
+        PipeMemRmw.ModHazardKind.Dont
       ),
       //optReorder=true,
     )
@@ -296,15 +297,32 @@ extends Component
     val myExt = mkExt()
     def setPipeMemRmwExt(
       inpExt: PipeMemRmwPayloadExt[WordT, Bool],
+      ydx: Int,
       memArrIdx: Int,
     ): Unit = {
       myExt := inpExt
     }
     def getPipeMemRmwExt(
       outpExt: PipeMemRmwPayloadExt[WordT, Bool],
+      ydx: Int,
       memArrIdx: Int,
     ): Unit = {
       outpExt := myExt
+    }
+    //def optFormalFwdFuncs(
+    //): Option[PipeMemRmwPayloadBaseFormalFwdFuncs[WordT, Bool]] = (
+    //  None
+    //)
+    def formalSetPipeMemRmwFwd(
+      outpFwd: PipeMemRmwFwd[WordT, Bool],
+      memArrIdx: Int,
+    ): Unit = {
+    }
+
+    def formalGetPipeMemRmwFwd(
+      inpFwd: PipeMemRmwFwd[WordT, Bool],
+      memArrIdx: Int,
+    ): Unit = {
     }
   }
   //val linkArr = PipeMemRmw.mkLinkArr()
@@ -329,7 +347,7 @@ extends Component
     initBigInt=initBigInt,
     //optEnableModDuplicate=false,
     optModHazardKind=(
-      PipeMemRmw.modHazardKindDont
+      PipeMemRmw.ModHazardKind.Dont
     ),
     vivadoDebug=vivadoDebug,
   )(
@@ -359,13 +377,13 @@ extends Component
 
   val tempModBackPayload = PmRmwModType()
   //pipeMem.io.modBack
-  sMyMod.up(pipeMem.io.modBackPayloadArr(0)) := tempModBackPayload
+  sMyMod.up(pipeMem.io.modBackPayload) := tempModBackPayload
   tempModBackPayload := (
     RegNext(tempModBackPayload) init(tempModBackPayload.getZero)
   )
   when (pipeMem.io.modFront.isValid) {
     tempModBackPayload := (
-      pipeMem.io.modFront(pipeMem.io.modFrontPayloadArr(0))
+      pipeMem.io.modFront(pipeMem.io.modFrontPayload)
     )
   }
   //--------
@@ -376,7 +394,7 @@ extends Component
   pipeMem.io.front.driveFrom(tempWrPulseStm1)(
   //tempWrPulseStm1.translateInto(pipeMem.io.front)
     con=(/*wrPipePayload*/ node, wrPulsePayload) => {
-      def wrPipePayload = node(pipeMem.io.frontPayloadArr(0))
+      def wrPipePayload = node(pipeMem.io.frontPayload)
       wrPipePayload := wrPipePayload.getZero
       wrPipePayload.allowOverride
       //wrPipePayload.data := io.wrPulse
@@ -395,7 +413,7 @@ extends Component
   tempRdAddrPipe << io.rdAddrPipe
   pipeMem.io.dualRdFront.driveFrom(tempRdAddrPipe)(
     con=(/*dualRdPipePayload*/node, rdAddrPipePayload) => {
-      def dualRdPipePayload = node(pipeMem.io.dualRdFrontPayload(0))
+      def dualRdPipePayload = node(pipeMem.io.dualRdFrontPayload)
       dualRdPipePayload := dualRdPipePayload.getZero
       dualRdPipePayload.allowOverride
       dualRdPipePayload.data := rdAddrPipePayload.data
@@ -409,7 +427,7 @@ extends Component
   io.rdDataPipe << tempRdDataPipe
   pipeMem.io.dualRdBack.driveTo(tempRdDataPipe)(
     con=(rdDataPipePayload, node/*dualRdPipePayload*/) => {
-      def dualRdPipePayload = node(pipeMem.io.dualRdBackPayload(0))
+      def dualRdPipePayload = node(pipeMem.io.dualRdBackPayload)
       //val rTempWord = (
       //  Reg(
       //    cloneOf(dualRdPipePayload)

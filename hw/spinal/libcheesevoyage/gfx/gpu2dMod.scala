@@ -32,6 +32,8 @@ import libcheesevoyage.general.PipeMemRmwPayloadExt
 import libcheesevoyage.general.SamplePipeMemRmwModType
 import libcheesevoyage.general.PipeMemRmwDualRdTypeDisabled
 import libcheesevoyage.general.PipeMemRmwPayloadBase
+import libcheesevoyage.general.PipeMemRmwFwd
+//import libcheesevoyage.general.PipeMemRmwPayloadBaseFormalFwdFuncs
 import spinal.lib.misc.pipeline._
 
 //import scala.math._
@@ -4724,8 +4726,8 @@ case class Gpu2d(
         ),
         optEnableClear=true,
         optModHazardKind=(
-          //PipeMemRmw.modHazardKindFwd
-          PipeMemRmw.modHazardKindDupl
+          //PipeMemRmw.ModHazardKind.Fwd
+          PipeMemRmw.ModHazardKind.Dupl
         ),
         //init=Some(objSubLineMemInit),
         //arrRamStyle=params.lineArrRamStyle,
@@ -7101,7 +7103,7 @@ case class Gpu2d(
       extends Bundle 
       with PipeMemRmwPayloadBase[
         Vec[ObjSubLineMemEntry],
-        WrObjPipeSlmRmwHazardCmp
+        WrObjPipeSlmRmwHazardCmp,
       ]
     {
       val subLineMemEntryExt = PipeMemRmwPayloadExt(
@@ -7120,9 +7122,10 @@ case class Gpu2d(
         hazardCmpType=WrObjPipeSlmRmwHazardCmp(isAffine=isAffine),
         modRdPortCnt=wrObjPipeSlmRmwModRdPortCnt,
         modStageCnt=wrObjPipeSlmRmwModStageCnt,
+        memArrSize=1,
         //optEnableModDuplicate=true,
         optModHazardKind=(
-          PipeMemRmw.modHazardKindDupl
+          PipeMemRmw.ModHazardKind.Dupl
         ),
         //optReorder=true,
       )
@@ -7131,6 +7134,7 @@ case class Gpu2d(
           Vec[ObjSubLineMemEntry],
           WrObjPipeSlmRmwHazardCmp,
         ],
+        ydx: Int,
         memArrIdx: Int,
       ): Unit = {
         subLineMemEntryExt := inpExt
@@ -7140,10 +7144,34 @@ case class Gpu2d(
           Vec[ObjSubLineMemEntry],
           WrObjPipeSlmRmwHazardCmp,
         ],
+        ydx: Int,
         memArrIdx: Int,
       ): Unit = {
         outpExt := subLineMemEntryExt
       }
+      def formalSetPipeMemRmwFwd(
+        inpFwd: PipeMemRmwFwd[
+          Vec[ObjSubLineMemEntry],
+          WrObjPipeSlmRmwHazardCmp,
+        ],
+        memArrIdx: Int,
+      ): Unit = {
+        //subLineMemEntryFwd := inpFwd
+      }
+      def formalGetPipeMemRmwFwd(
+        outpFwd: PipeMemRmwFwd[
+          Vec[ObjSubLineMemEntry],
+          WrObjPipeSlmRmwHazardCmp,
+        ],
+        memArrIdx: Int,
+      ): Unit = {
+        //outpFwd := subLineMemEntryFwd
+      }
+      //def optFormalFwdFuncs(
+      //): Option[PipeMemRmwPayloadBaseFormalFwdFuncs[
+      //  Vec[ObjSubLineMemEntry],
+      //  WrObjPipeSlmRmwHazardCmp,
+      //]] = None
       //def tempObjTileSize2dPow(isAffine: Boolean) = (
       //  if (!isAffine) {
       //    params.objTileSize2dPow
@@ -8825,7 +8853,7 @@ case class Gpu2d(
           //  }
           //)
           wrObjSubLineMemArr(jdx).io.front(
-            wrObjSubLineMemArr(jdx).io.frontPayloadArr(0)
+            wrObjSubLineMemArr(jdx).io.frontPayload
           ) := (
             s2mLink.down(wrObjPipePayloadMain(idx + 1))
           )
@@ -8874,7 +8902,7 @@ case class Gpu2d(
             wrObjSubLineMemArr(
               jdx
             ).io.modFront(
-              wrObjSubLineMemArr(jdx).io.modFrontPayloadArr(0)
+              wrObjSubLineMemArr(jdx).io.modFrontPayload
             )
           )
           if (vivadoDebug) {
@@ -8893,16 +8921,16 @@ case class Gpu2d(
           .setName(s"dMyWrObj_modFront_$idx")
         linkArr += dMyWrObj
         for (jdx <- 0 until njMyArr.size) {
-          wrObjSubLineMemArr(jdx).io.midModStages(0)(0)(
+          wrObjSubLineMemArr(jdx).io.midModStages(0)(
             PipeMemRmw.extIdxUp
           ) := (
             RegNext(
-              wrObjSubLineMemArr(jdx).io.midModStages(0)(0)(
+              wrObjSubLineMemArr(jdx).io.midModStages(0)(
                 PipeMemRmw.extIdxUp
               )
             )
             init(
-              wrObjSubLineMemArr(jdx).io.midModStages(0)(0)(
+              wrObjSubLineMemArr(jdx).io.midModStages(0)(
                 PipeMemRmw.extIdxUp
               ).getZero
             )
@@ -8910,23 +8938,23 @@ case class Gpu2d(
           when (dMyWrObj.up.isValid) {
             wrObjSubLineMemArr(
               jdx
-            ).io.midModStages(0)(0)(PipeMemRmw.extIdxUp) := (
+            ).io.midModStages(0)(PipeMemRmw.extIdxUp) := (
               dMyWrObj.up(wrObjPipePayloadSlmRmwModFrontInp(
                 jdx
               ))
             )
           }
-          wrObjSubLineMemArr(jdx).io.midModStages(0)(0)(
+          wrObjSubLineMemArr(jdx).io.midModStages(0)(
             PipeMemRmw.extIdxSaved
           ) := (
             RegNextWhen(
               wrObjSubLineMemArr(
                 jdx
-              ).io.midModStages(0)(0)(PipeMemRmw.extIdxUp),
+              ).io.midModStages(0)(PipeMemRmw.extIdxUp),
               dMyWrObj.up.isFiring
             )
             init(
-              wrObjSubLineMemArr(jdx).io.midModStages(0)(0)(
+              wrObjSubLineMemArr(jdx).io.midModStages(0)(
                 PipeMemRmw.extIdxSaved
               )
               .getZero
@@ -8964,7 +8992,7 @@ case class Gpu2d(
         ////        )
         ////      )
         ////      for (kdx <- 0 until wrObjSubLineMemArr.size) {
-        ////        wrObjSubLineMemArr(kdx).io.midModStages(0)(0) := (
+        ////        wrObjSubLineMemArr(kdx).io.midModStages(0) := (
         ////          jMyWrObj.ups(jdx)(
         ////            wrObjPipePayloadSlmRmwModFrontInp(jdx)
         ////            //wrObjPipePayloadMain
@@ -8990,21 +9018,21 @@ case class Gpu2d(
       } else if (idx == wrObjPipeIdxSlmRmwModFront + 1) {
         //println(s"idx == modFront + 1: ${idx}")
         for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
-          wrObjSubLineMemArr(jdx).io.midModStages(1)(0)(
+          wrObjSubLineMemArr(jdx).io.midModStages(1)(
             PipeMemRmw.extIdxUp
           ) := (
-            RegNext(wrObjSubLineMemArr(jdx).io.midModStages(1)(0)(
+            RegNext(wrObjSubLineMemArr(jdx).io.midModStages(1)(
               PipeMemRmw.extIdxUp
             ))
             init(
-              wrObjSubLineMemArr(jdx).io.midModStages(1)(0)(
+              wrObjSubLineMemArr(jdx).io.midModStages(1)(
                 PipeMemRmw.extIdxUp
               )
               .getZero
             )
           )
           when (nWrObjArr(idx).isValid) {
-            wrObjSubLineMemArr(jdx).io.midModStages(1)(0)(
+            wrObjSubLineMemArr(jdx).io.midModStages(1)(
               PipeMemRmw.extIdxUp
             ) := (
               nWrObjArr(idx)
@@ -9013,11 +9041,11 @@ case class Gpu2d(
               )
             )
           }
-          wrObjSubLineMemArr(jdx).io.midModStages(1)(0)(
+          wrObjSubLineMemArr(jdx).io.midModStages(1)(
             PipeMemRmw.extIdxSaved
           ) := (
             RegNextWhen(
-              wrObjSubLineMemArr(jdx).io.midModStages(1)(0)(
+              wrObjSubLineMemArr(jdx).io.midModStages(1)(
                 PipeMemRmw.extIdxUp
               ),
               nWrObjArr(idx).isFiring
@@ -9088,29 +9116,29 @@ case class Gpu2d(
           //)
 
           wrObjSubLineMemArr(jdx).io.modBack(
-            wrObjSubLineMemArr(jdx).io.modBackPayloadArr(0)
+            wrObjSubLineMemArr(jdx).io.modBackPayload
           ) := (
             nfMyArr(jdx)(
               wrObjPipePayloadMain(idx + 1)
             )
           )
-          wrObjSubLineMemArr(jdx).io.midModStages(2)(0)(
+          wrObjSubLineMemArr(jdx).io.midModStages(2)(
               PipeMemRmw.extIdxUp
           ):= (
             RegNext(
-              wrObjSubLineMemArr(jdx).io.midModStages(2)(0)(
+              wrObjSubLineMemArr(jdx).io.midModStages(2)(
                 PipeMemRmw.extIdxUp
               )
             )
             init(
-              wrObjSubLineMemArr(jdx).io.midModStages(2)(0)(
+              wrObjSubLineMemArr(jdx).io.midModStages(2)(
                 PipeMemRmw.extIdxUp
               )
               .getZero
             )
           )
           when (nWrObjArr(idx).isValid) {
-            wrObjSubLineMemArr(jdx).io.midModStages(2)(0)(
+            wrObjSubLineMemArr(jdx).io.midModStages(2)(
               PipeMemRmw.extIdxUp
             ) := (
               //node(wrObjPipePayloadMain)
@@ -9129,34 +9157,34 @@ case class Gpu2d(
               //)
             )
           }
-          wrObjSubLineMemArr(jdx).io.midModStages(2)(0)(
+          wrObjSubLineMemArr(jdx).io.midModStages(2)(
             PipeMemRmw.extIdxSaved
           ) := (
             RegNextWhen(
-              wrObjSubLineMemArr(jdx).io.midModStages(2)(0)(
+              wrObjSubLineMemArr(jdx).io.midModStages(2)(
                 PipeMemRmw.extIdxUp
               ),
               nWrObjArr(idx).isFiring
             )
           )
           //--------
-          //wrObjSubLineMemArr(jdx).io.midModStages(2)(0) := (
+          //wrObjSubLineMemArr(jdx).io.midModStages(2) := (
           //  RegNext(
-          //    wrObjSubLineMemArr(jdx).io.midModStages(2)(0)
+          //    wrObjSubLineMemArr(jdx).io.midModStages(2)
           //  )
           //  init(
-          //    wrObjSubLineMemArr(jdx).io.midModStages(2)(0).getZero
+          //    wrObjSubLineMemArr(jdx).io.midModStages(2).getZero
           //  )
           //)
           //when (down.isValid) {
-          //  wrObjSubLineMemArr(jdx).io.midModStages(2)(0) := (
+          //  wrObjSubLineMemArr(jdx).io.midModStages(2) := (
           //    /*s2mLink.*/down(
           //      wrObjPipePayloadMain(idx + 1)
           //    )
           //  )
           //}
           //--------
-          //wrObjSubLineMemArr(jdx).io.midModStages(1)(0) := (
+          //wrObjSubLineMemArr(jdx).io.midModStages(1) := (
           //  nWrObjArr(idx)(
           //    wrObjPipePayloadMain
           //  )
@@ -9220,7 +9248,7 @@ case class Gpu2d(
             wrObjPipePayloadSlmRmwBackInp(jdx)
           ) := (
             wrObjSubLineMemArr(jdx).io.back(
-              wrObjSubLineMemArr(jdx).io.backPayloadArr(0)
+              wrObjSubLineMemArr(jdx).io.backPayload
             )
           )
         }
@@ -9250,7 +9278,7 @@ case class Gpu2d(
               //dMyWrObj.down(wrObjPipePayloadMain(idx)) := (
               //  dMyWrObj.up(wrObjPipePayloadSlmRmwBackInp(jdx))
               //)
-              //wrObjSubLineMemArr(jdx).io.midModStages(0)(0) := (
+              //wrObjSubLineMemArr(jdx).io.midModStages(0) := (
               //  dMyWrObj.up(wrObjPipePayloadSlmRmwModFrontInp(jdx))
               //)
             }

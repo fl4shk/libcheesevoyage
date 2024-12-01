@@ -95,7 +95,7 @@ object PipeMemRmwFormal extends App {
           stable(front.opCnt)
         )
         assume(
-          stable(front.myExt.memAddr)
+          stable(front.myExt(0).memAddr)
         )
       }
     }
@@ -104,18 +104,18 @@ object PipeMemRmwFormal extends App {
     //  === front.finishedOp.getZero
     //)
     assume(
-      front.myExt.modMemWord
-      === front.myExt.modMemWord.getZero
+      front.myExt(0).modMemWord
+      === front.myExt(0).modMemWord.getZero
     )
     assume(
-      front.myExt.rdMemWord
-      === front.myExt.rdMemWord.getZero
+      front.myExt(0).rdMemWord
+      === front.myExt(0).rdMemWord.getZero
     )
     assume(
-      front.myExt.hazardCmp === front.myExt.hazardCmp.getZero
+      front.myExt(0).hazardCmp === front.myExt(0).hazardCmp.getZero
     )
     assume(
-      front.myExt.modMemWordValid === True
+      front.myExt(0).modMemWordValid === True
     )
     anyseq(front.valid)
     //front.valid := True
