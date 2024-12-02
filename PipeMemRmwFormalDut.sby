@@ -5,7 +5,8 @@ prove_my prove
 prove: mode prove
 
 [engines]
-prove: abc pdr
+prove: abc pdr -l
+prove: fst on
 
 [script]
 read -formal PipeMemRmwFormalDut.sv
