@@ -3588,7 +3588,7 @@ extends Area {
         }
       }
     }
-    val doFormalFwdSaved = /*(myHaveFormalFwd) generate*/ (
+    val doFormalFwdSaved = (myHaveFormalFwd) generate (
       PipeMemRmwDoFwdArea(
         fwdAreaName=s"${pipeName}_cMid0FrontArea_doFwdFormalSaved",
         fwd=doFormalFwdSavedMyFwd,
