@@ -332,24 +332,32 @@ extends Component
     PmRmwModType,
     PmRmwModType,
   ](
-    wordType=wordType(),
-    wordCountArr=Array.fill(1)(wordCount).toSeq,
-    hazardCmpType=Bool(),
-    modType=PmRmwModType(),
-    modRdPortCnt=modRdPortCnt,
-    modStageCnt=modStageCnt,
-    pipeName=pipeName,
-    //linkArr=Some(PipeMemRmw.mkLinkArr()),
-    linkArr=linkArr,
-    memArrIdx=0,
-    dualRdType=PmRmwModType(),
-    optDualRd=true,
-    initBigInt=initBigInt,
-    //optEnableModDuplicate=false,
-    optModHazardKind=(
-      PipeMemRmw.ModHazardKind.Dont
+    cfg=PipeMemRmwConfig[
+      WordT,
+      Bool,
+      //PmRmwModType,
+      //PmRmwModType,
+    ](
+      wordType=wordType(),
+      wordCountArr=Array.fill(1)(wordCount).toSeq,
+      hazardCmpType=Bool(),
+      modRdPortCnt=modRdPortCnt,
+      modStageCnt=modStageCnt,
+      pipeName=pipeName,
+      //linkArr=Some(PipeMemRmw.mkLinkArr()),
+      linkArr=linkArr,
+      memArrIdx=0,
+      //dualRdType=PmRmwModType(),
+      optDualRd=true,
+      initBigInt=initBigInt,
+      //optEnableModDuplicate=false,
+      optModHazardKind=(
+        PipeMemRmw.ModHazardKind.Dont
+      ),
+      vivadoDebug=vivadoDebug,
     ),
-    vivadoDebug=vivadoDebug,
+    modType=PmRmwModType(),
+    dualRdType=PmRmwModType(),
   )(
     doHazardCmpFunc=None
   )

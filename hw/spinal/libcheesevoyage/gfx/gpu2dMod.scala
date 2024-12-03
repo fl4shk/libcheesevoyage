@@ -27,6 +27,7 @@ import libcheesevoyage.general.FpgacpuRamSimpleDualPort
 //import libcheesevoyage.general.PipeMemSimpleDualPort
 //import libcheesevoyage.general.PipeMemSimpleDualPortIo
 import libcheesevoyage.general.PipeMemRmw
+import libcheesevoyage.general.PipeMemRmwConfig
 import libcheesevoyage.general.PipeMemRmwIo
 import libcheesevoyage.general.PipeMemRmwPayloadExt
 import libcheesevoyage.general.SamplePipeMemRmwModType
@@ -4704,40 +4705,55 @@ case class Gpu2d(
           WrObjPipeSlmRmwHazardCmp,
         ],
       ](
-        wordType=Vec.fill(
-          //params.objTileSize2d.x
-          params.objSliceTileWidth
-        )(ObjSubLineMemEntry()),
-        wordCountArr=Array.fill(1)(params.objSubLineMemArrSize).toSeq,
-        hazardCmpType=WrObjPipeSlmRmwHazardCmp(isAffine=false),
+        cfg=PipeMemRmwConfig[
+          Vec[ObjSubLineMemEntry],
+          WrObjPipeSlmRmwHazardCmp,
+          //WrObjPipePayload,
+          //PipeMemRmwDualRdTypeDisabled[
+          //  Vec[ObjSubLineMemEntry],
+          //  WrObjPipeSlmRmwHazardCmp,
+          //],
+        ](
+          wordType=Vec.fill(
+            //params.objTileSize2d.x
+            params.objSliceTileWidth
+          )(ObjSubLineMemEntry()),
+          wordCountArr=Array.fill(1)(params.objSubLineMemArrSize).toSeq,
+          hazardCmpType=WrObjPipeSlmRmwHazardCmp(isAffine=false),
+          //modType=WrObjPipePayload(isAffine=false),
+          modRdPortCnt=wrObjPipeSlmRmwModRdPortCnt,
+          modStageCnt=wrObjPipeSlmRmwModStageCnt,
+          pipeName=s"wrObjSubLineMemArr_${idx}",
+          linkArr=Some(linkArr),
+          memArrIdx=0,
+          //dualRdType=PipeMemRmwDualRdTypeDisabled[
+          //  Vec[ObjSubLineMemEntry],
+          //  WrObjPipeSlmRmwHazardCmp,
+          //],
+          optDualRd=false,
+          initBigInt=Some(
+            Array.fill(1)(objSubLineMemInitBigInt.toSeq).toSeq
+          ),
+          optEnableClear=true,
+          optModHazardKind=(
+            //PipeMemRmw.ModHazardKind.Fwd
+            PipeMemRmw.ModHazardKind.Dupl
+          ),
+          //init=Some(objSubLineMemInit),
+          //arrRamStyle=params.lineArrRamStyle,
+          vivadoDebug=(
+            if (idx == 0) (
+              vivadoDebug
+            ) else (
+              false
+            )
+          ),
+        ),
         modType=WrObjPipePayload(isAffine=false),
-        modRdPortCnt=wrObjPipeSlmRmwModRdPortCnt,
-        modStageCnt=wrObjPipeSlmRmwModStageCnt,
-        pipeName=s"wrObjSubLineMemArr_${idx}",
-        linkArr=Some(linkArr),
-        memArrIdx=0,
         dualRdType=PipeMemRmwDualRdTypeDisabled[
           Vec[ObjSubLineMemEntry],
           WrObjPipeSlmRmwHazardCmp,
         ],
-        optDualRd=false,
-        initBigInt=Some(
-          Array.fill(1)(objSubLineMemInitBigInt.toSeq).toSeq
-        ),
-        optEnableClear=true,
-        optModHazardKind=(
-          //PipeMemRmw.ModHazardKind.Fwd
-          PipeMemRmw.ModHazardKind.Dupl
-        ),
-        //init=Some(objSubLineMemInit),
-        //arrRamStyle=params.lineArrRamStyle,
-        vivadoDebug=(
-          if (idx == 0) (
-            vivadoDebug
-          ) else (
-            false
-          )
-        ),
       )(
         doHazardCmpFunc=Some(
           (

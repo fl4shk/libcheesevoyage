@@ -25,16 +25,16 @@ object PipeMemRmwSimDutHaltItState extends SpinalEnum(
 }
 object PipeMemRmwSimDut {
   def wordWidth = (
-    4
+    //4
     //8
     //16
-    //32
+    32
   )
   def wordType() = UInt(wordWidth bits)
   def wordCount = (
-    4
+    //4
     //8
-    //16
+    16
     //32
   )
   def hazardCmpType() = UInt(
@@ -144,6 +144,7 @@ case class PipeMemRmwSimDutModType(
   //optIncludeDcacheHit: Boolean=false
   optModHazardKind: PipeMemRmw.ModHazardKind,
   optFormal: Boolean,
+  cfg: PipeMemRmwConfig[UInt, UInt],
 ) extends Bundle with PipeMemRmwPayloadBase[UInt, UInt]
 {
   val opCnt = (
@@ -236,14 +237,15 @@ case class PipeMemRmwSimDutModType(
       UInt,
       UInt,
     ](
-      wordType=PipeMemRmwSimDut.wordType(),
-      wordCount=PipeMemRmwSimDut.wordCount,
-      hazardCmpType=PipeMemRmwSimDut.hazardCmpType(),
-      modRdPortCnt=PipeMemRmwSimDut.modRdPortCnt,
-      modStageCnt=PipeMemRmwSimDut.modStageCnt,
-      memArrSize=PipeMemRmwSimDut.memArrSize,
-      optModHazardKind=PipeMemRmwSimDut.optModHazardKind,
-      optReorder=PipeMemRmwSimDut.optReorder,
+      //wordType=PipeMemRmwSimDut.wordType(),
+      //wordCount=PipeMemRmwSimDut.wordCount,
+      //hazardCmpType=PipeMemRmwSimDut.hazardCmpType(),
+      //modRdPortCnt=PipeMemRmwSimDut.modRdPortCnt,
+      //modStageCnt=PipeMemRmwSimDut.modStageCnt,
+      //memArrSize=PipeMemRmwSimDut.memArrSize,
+      //optModHazardKind=PipeMemRmwSimDut.optModHazardKind,
+      //optReorder=PipeMemRmwSimDut.optReorder,
+      cfg=cfg
     )
   )
   def formalSetPipeMemRmwFwd(
@@ -326,9 +328,58 @@ case class PipeMemRmwSimDut(
   def extIdxUp = PipeMemRmw.extIdxUp
   def extIdxSaved = PipeMemRmw.extIdxSaved
   def extIdxLim = PipeMemRmw.extIdxLim
+  val pmCfg = PipeMemRmwConfig[
+    UInt,
+    UInt,
+    //PipeMemRmwSimDutModType,
+    //PipeMemRmwDualRdTypeDisabled[UInt, UInt],
+  ](
+    wordType=wordType(),
+    wordCountArr=Array.fill(1)(wordCount).toSeq,
+    hazardCmpType=hazardCmpType(),
+    //modType=ModType(),
+    modRdPortCnt=modRdPortCnt,
+    modStageCnt=modStageCnt,
+    pipeName=pipeName,
+    //dualRdType=(
+    //  //modType()
+    //  PipeMemRmwDualRdTypeDisabled[UInt, UInt](),
+    //),
+    optDualRd=(
+      //true
+      false
+    ),
+    init=None,
+    initBigInt={
+      val tempArr = new ArrayBuffer[BigInt]()
+      for (idx <- 0 until wordCount) {
+        //val toAdd: Int = idx * 2
+        val toAdd: Int = 0x0
+        //println(s"${toAdd} ${idx} ${wordCount}")
+        //tempArr += idx * 2
+        tempArr += toAdd
+        //println(tempArr.last)
+      }
+      //Some(Array.fill(wordCount)(BigInt(0)).toSeq)
+      Some(Array.fill(1)(tempArr.toSeq).toSeq)
+    },
+    //optEnableModDuplicate=(
+    //  true,
+    //  //false,
+    //),
+    optModHazardKind=(
+      optModHazardKind
+    ),
+    //optModFwdToFront=(
+    //  optModFwdToFront
+    //),
+    //forFmax=forFmax,
+    optFormal=optFormal,
+  )
   def ModType() = PipeMemRmwSimDutModType(
     optModHazardKind=optModHazardKind,
-    optFormal=optFormal
+    optFormal=optFormal,
+    cfg=pmCfg,
   )
   //val io = PipeMemRmwSimDutIo()
   //val psMemStallHost = new Bundle {
@@ -445,47 +496,12 @@ case class PipeMemRmwSimDut(
     PipeMemRmwSimDutModType,
     PipeMemRmwDualRdTypeDisabled[UInt, UInt],
   ](
-    wordType=wordType(),
-    wordCountArr=Array.fill(1)(wordCount).toSeq,
-    hazardCmpType=hazardCmpType(),
+    cfg=pmCfg,
     modType=ModType(),
-    modRdPortCnt=modRdPortCnt,
-    modStageCnt=modStageCnt,
-    pipeName=pipeName,
     dualRdType=(
       //modType()
       PipeMemRmwDualRdTypeDisabled[UInt, UInt](),
     ),
-    optDualRd=(
-      //true
-      false
-    ),
-    init=None,
-    initBigInt={
-      val tempArr = new ArrayBuffer[BigInt]()
-      for (idx <- 0 until wordCount) {
-        //val toAdd: Int = idx * 2
-        val toAdd: Int = 0x0
-        //println(s"${toAdd} ${idx} ${wordCount}")
-        //tempArr += idx * 2
-        tempArr += toAdd
-        //println(tempArr.last)
-      }
-      //Some(Array.fill(wordCount)(BigInt(0)).toSeq)
-      Some(Array.fill(1)(tempArr.toSeq).toSeq)
-    },
-    //optEnableModDuplicate=(
-    //  true,
-    //  //false,
-    //),
-    optModHazardKind=(
-      optModHazardKind
-    ),
-    //optModFwdToFront=(
-    //  optModFwdToFront
-    //),
-    //forFmax=forFmax,
-    optFormal=optFormal,
   )(
     doHazardCmpFunc=None,
     doPrevHazardCmpFunc=false,
@@ -2770,6 +2786,7 @@ case class PipeMemRmwSimDut(
     val tempMyCoverInit = PipeMemRmwSimDutModType(
       optModHazardKind=optModHazardKind,
       optFormal=optFormal,
+      cfg=pmCfg,
     )
     tempMyCoverInit.allowOverride
     tempMyCoverInit := tempMyCoverInit.getZero
@@ -3660,9 +3677,17 @@ case class PipeMemRmwTester(
   def optModHazardKind = (
     PipeMemRmwSimDut.optModHazardKind
   )
-  def modType() = PipeMemRmwSimDutModType(
-    optModHazardKind=optModHazardKind,
-    optFormal=optFormal,
+  //def modType() = PipeMemRmwSimDutModType(
+  //  optModHazardKind=optModHazardKind,
+  //  optFormal=optFormal,
+  //)
+  val dut: PipeMemRmwSimDut = (
+    PipeMemRmwSimDut(
+      optFormal=(
+        //doFormal
+        optFormal
+      )
+    )
   )
   val io = new Bundle {
     //val front = (
@@ -3674,16 +3699,10 @@ case class PipeMemRmwTester(
     val front = slave(Stream(modType()))
     val back = master(Stream(modType()))
   }
-  val dut: PipeMemRmwSimDut = (
-    PipeMemRmwSimDut(
-      optFormal=(
-        //doFormal
-        optFormal
-      )
-    )
-  )
+  def modType() = dut.ModType()
   def pipeMem = dut.pipeMem
   def pmIo = pipeMem.io
+  def pmCfg = pipeMem.cfg
   def frontPayload = dut.frontPayload
   def modFrontPayload = dut.modFrontPayload
   def modBackPayload = dut.modBackPayload
@@ -3732,6 +3751,7 @@ case class PipeMemRmwTester(
       PipeMemRmwSimDutModType(
         optModHazardKind=optModHazardKind,
         optFormal=optFormal,
+        cfg=pmCfg,
       )
     )
     .setName("midModPayload")
