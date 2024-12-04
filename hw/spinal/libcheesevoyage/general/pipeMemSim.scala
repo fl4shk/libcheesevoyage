@@ -142,9 +142,9 @@ object PipeMemRmwSimDut {
 }
 case class PipeMemRmwSimDutModType(
   //optIncludeDcacheHit: Boolean=false
+  cfg: PipeMemRmwConfig[UInt, UInt],
   optModHazardKind: PipeMemRmw.ModHazardKind,
   optFormal: Boolean,
-  cfg: PipeMemRmwConfig[UInt, UInt],
 ) extends Bundle with PipeMemRmwPayloadBase[UInt, UInt]
 {
   val opCnt = (
@@ -197,14 +197,15 @@ case class PipeMemRmwSimDutModType(
   //)
   def mkOneExt() = (
     PipeMemRmwPayloadExt(
-      wordType=PipeMemRmwSimDut.wordType(),
+      //wordType=PipeMemRmwSimDut.wordType(),
+      cfg=cfg,
       wordCount=PipeMemRmwSimDut.wordCount,
-      hazardCmpType=PipeMemRmwSimDut.hazardCmpType(),
-      modRdPortCnt=PipeMemRmwSimDut.modRdPortCnt,
-      modStageCnt=PipeMemRmwSimDut.modStageCnt,
-      memArrSize=PipeMemRmwSimDut.memArrSize,
-      optModHazardKind=PipeMemRmwSimDut.optModHazardKind,
-      optReorder=PipeMemRmwSimDut.optReorder,
+      //hazardCmpType=PipeMemRmwSimDut.hazardCmpType(),
+      //modRdPortCnt=PipeMemRmwSimDut.modRdPortCnt,
+      //modStageCnt=PipeMemRmwSimDut.modStageCnt,
+      //memArrSize=PipeMemRmwSimDut.memArrSize,
+      //optModHazardKind=PipeMemRmwSimDut.optModHazardKind,
+      //optReorder=PipeMemRmwSimDut.optReorder,
     )
   )
   val myExt = Vec.fill(PipeMemRmwSimDut.memArrSize)(
@@ -377,9 +378,9 @@ case class PipeMemRmwSimDut(
     optFormal=optFormal,
   )
   def ModType() = PipeMemRmwSimDutModType(
+    cfg=pmCfg,
     optModHazardKind=optModHazardKind,
     optFormal=optFormal,
-    cfg=pmCfg,
   )
   //val io = PipeMemRmwSimDutIo()
   //val psMemStallHost = new Bundle {
@@ -2784,9 +2785,9 @@ case class PipeMemRmwSimDut(
     )
     def myCoverVecSize = 8
     val tempMyCoverInit = PipeMemRmwSimDutModType(
+      cfg=pmCfg,
       optModHazardKind=optModHazardKind,
       optFormal=optFormal,
-      cfg=pmCfg,
     )
     tempMyCoverInit.allowOverride
     tempMyCoverInit := tempMyCoverInit.getZero

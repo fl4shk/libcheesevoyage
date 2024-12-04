@@ -264,22 +264,47 @@ extends Component
     unionIdxWidth=unionIdxWidth,
   )
   def addrWidth = io.addrWidth
+  val pmCfg = PipeMemRmwConfig[
+    WordT,
+    Bool,
+    //PmRmwModType,
+    //PmRmwModType,
+  ](
+    wordType=wordType(),
+    wordCountArr=Array.fill(1)(wordCount).toSeq,
+    hazardCmpType=Bool(),
+    modRdPortCnt=modRdPortCnt,
+    modStageCnt=modStageCnt,
+    pipeName=pipeName,
+    //linkArr=Some(PipeMemRmw.mkLinkArr()),
+    linkArr=linkArr,
+    memArrIdx=0,
+    //dualRdType=PmRmwModType(),
+    optDualRd=true,
+    initBigInt=initBigInt,
+    //optEnableModDuplicate=false,
+    optModHazardKind=(
+      PipeMemRmw.ModHazardKind.Dont
+    ),
+    vivadoDebug=vivadoDebug,
+  )
   //--------
   def modRdPortCnt = 1
   def modStageCnt = 1
   def mkExt() = {
     val ret = PipeMemRmwPayloadExt(
-      wordType=wordType(),
+      cfg=pmCfg,
+      //wordType=wordType(),
       wordCount=wordCount,
-      hazardCmpType=Bool(),
-      modRdPortCnt=modRdPortCnt,
-      modStageCnt=modStageCnt,
-      memArrSize=1,
-      //optEnableModDuplicate=false,
-      optModHazardKind=(
-        PipeMemRmw.ModHazardKind.Dont
-      ),
-      //optReorder=true,
+      //hazardCmpType=Bool(),
+      //modRdPortCnt=modRdPortCnt,
+      //modStageCnt=modStageCnt,
+      //memArrSize=1,
+      ////optEnableModDuplicate=false,
+      //optModHazardKind=(
+      //  PipeMemRmw.ModHazardKind.Dont
+      //),
+      ////optReorder=true,
     )
     //if (vivadoDebug) {
     //  ret.addAttribute("MARK_DEBUG", "TRUE")
@@ -332,30 +357,7 @@ extends Component
     PmRmwModType,
     PmRmwModType,
   ](
-    cfg=PipeMemRmwConfig[
-      WordT,
-      Bool,
-      //PmRmwModType,
-      //PmRmwModType,
-    ](
-      wordType=wordType(),
-      wordCountArr=Array.fill(1)(wordCount).toSeq,
-      hazardCmpType=Bool(),
-      modRdPortCnt=modRdPortCnt,
-      modStageCnt=modStageCnt,
-      pipeName=pipeName,
-      //linkArr=Some(PipeMemRmw.mkLinkArr()),
-      linkArr=linkArr,
-      memArrIdx=0,
-      //dualRdType=PmRmwModType(),
-      optDualRd=true,
-      initBigInt=initBigInt,
-      //optEnableModDuplicate=false,
-      optModHazardKind=(
-        PipeMemRmw.ModHazardKind.Dont
-      ),
-      vivadoDebug=vivadoDebug,
-    ),
+    cfg=pmCfg,
     modType=PmRmwModType(),
     dualRdType=PmRmwModType(),
   )(

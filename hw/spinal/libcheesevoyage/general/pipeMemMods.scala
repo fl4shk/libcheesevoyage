@@ -167,20 +167,36 @@ case class PipeMemRmwPayloadExtMain[
   WordT <: Data,
   HazardCmpT <: Data,
 ](
-  wordType: HardType[WordT],
+  cfg: PipeMemRmwConfig[
+    WordT,
+    HazardCmpT,
+  ],
+  //wordType: HardType[WordT],
   wordCount: Int,
-  hazardCmpType: HardType[HazardCmpT],
-  modRdPortCnt: Int,
-  modStageCnt: Int,
-  memArrSize: Int,
-  //optSimpleIsWr: Option[Boolean]=None,
-  //optUseModMemAddr: Boolean=false,
-  //doModInModFront: Boolean=false,
-  //optEnableModDuplicate: Boolean=true,
-  optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
-  optReorder: Boolean=false,
-  //myHaveFormalFwd: Boolean=false,
+  //hazardCmpType: HardType[HazardCmpT],
+  //modRdPortCnt: Int,
+  //modStageCnt: Int,
+  //memArrSize: Int,
+  ////optSimpleIsWr: Option[Boolean]=None,
+  ////optUseModMemAddr: Boolean=false,
+  ////doModInModFront: Boolean=false,
+  ////optEnableModDuplicate: Boolean=true,
+  //optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
+  //optReorder: Boolean=false,
+  ////myHaveFormalFwd: Boolean=false,
 ) extends Bundle {
+  
+  def wordType() = cfg.wordType()
+  //def wordCount = cfg.wordCount
+  def hazardCmpType() = cfg.hazardCmpType()
+  def modRdPortCnt = cfg.modRdPortCnt
+  def modStageCnt = cfg.modStageCnt
+  def memArrSize = cfg.memArrSize
+  def optModHazardKind: PipeMemRmw.ModHazardKind = (
+    cfg.optModHazardKind
+  )
+  def optReorder = cfg.optReorder 
+  //myHaveFormalFwd: Boolean=false,
   //--------
   //val hadActiveUpFire = KeepAttribute(Bool())
   val memAddr = Vec.fill(modRdPortCnt)(
@@ -316,20 +332,36 @@ class PipeMemRmwPayloadExtBase[
   WordT <: Data,
   HazardCmpT <: Data,
 ](
-  wordType: HardType[WordT],
+  cfg: PipeMemRmwConfig[
+    WordT,
+    HazardCmpT,
+  ],
+  //wordType: HardType[WordT],
   wordCount: Int,
-  hazardCmpType: HardType[HazardCmpT],
-  modRdPortCnt: Int,
-  modStageCnt: Int,
-  memArrSize: Int,
-  //optSimpleIsWr: Option[Boolean]=None,
-  //optUseModMemAddr: Boolean=false,
-  //doModInModFront: Boolean=false,
-  //optEnableModDuplicate: Boolean=true,
-  optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
-  optReorder: Boolean=false,
-  //myHaveFormalFwd: Boolean=false,
+  //hazardCmpType: HardType[HazardCmpT],
+  //modRdPortCnt: Int,
+  //modStageCnt: Int,
+  //memArrSize: Int,
+  ////optSimpleIsWr: Option[Boolean]=None,
+  ////optUseModMemAddr: Boolean=false,
+  ////doModInModFront: Boolean=false,
+  ////optEnableModDuplicate: Boolean=true,
+  //optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
+  //optReorder: Boolean=false,
+  ////myHaveFormalFwd: Boolean=false,
 ) extends Bundle {
+  def wordType() = cfg.wordType() 
+  //def wordCount = cfg.wordCount 
+  def hazardCmpType() = cfg.hazardCmpType()
+  def modRdPortCnt = cfg.modRdPortCnt
+  def modStageCnt = cfg.modStageCnt
+  def memArrSize = cfg.memArrSize
+  def optModHazardKind: PipeMemRmw.ModHazardKind = (
+    cfg.optModHazardKind
+  )
+  def optReorder = cfg.optReorder
+  //myHaveFormalFwd: Boolean=false,
+  
   if (optModHazardKind == PipeMemRmw.ModHazardKind.Fwd) {
     assert(modRdPortCnt > 0)
     assert(!optReorder)
@@ -349,14 +381,15 @@ class PipeMemRmwPayloadExtBase[
 
   val main = KeepAttribute(
     PipeMemRmwPayloadExtMain(
-      wordType=wordType(),
+      cfg=cfg,
+      //wordType=wordType(),
       wordCount=wordCount,
-      hazardCmpType=hazardCmpType(),
-      modRdPortCnt=modRdPortCnt,
-      modStageCnt=modStageCnt,
-      memArrSize=memArrSize,
-      optModHazardKind=optModHazardKind,
-      optReorder=optReorder,
+      //hazardCmpType=hazardCmpType(),
+      //modRdPortCnt=modRdPortCnt,
+      //modStageCnt=modStageCnt,
+      //memArrSize=memArrSize,
+      //optModHazardKind=optModHazardKind,
+      //optReorder=optReorder,
     )
   )
   def memAddr = main.memAddr
@@ -380,28 +413,33 @@ case class PipeMemRmwPayloadExt[
   WordT <: Data,
   HazardCmpT <: Data,
 ](
-  wordType: HardType[WordT],
+  cfg: PipeMemRmwConfig[
+    WordT,
+    HazardCmpT,
+  ],
+  //wordType: HardType[WordT],
   wordCount: Int,
-  hazardCmpType: HardType[HazardCmpT],
-  modRdPortCnt: Int,
-  modStageCnt: Int,
-  memArrSize: Int,
-  //optSimpleIsWr: Option[Boolean]=None,
-  //optUseModMemAddr: Boolean=false,
-  //doModInModFront: Boolean=false,
-  //optEnableModDuplicate: Boolean=true,
-  optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
-  optReorder: Boolean=false,
-  //myHaveFormalFwd: Boolean=false,
+  //hazardCmpType: HardType[HazardCmpT],
+  //modRdPortCnt: Int,
+  //modStageCnt: Int,
+  //memArrSize: Int,
+  ////optSimpleIsWr: Option[Boolean]=None,
+  ////optUseModMemAddr: Boolean=false,
+  ////doModInModFront: Boolean=false,
+  ////optEnableModDuplicate: Boolean=true,
+  //optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
+  //optReorder: Boolean=false,
+  ////myHaveFormalFwd: Boolean=false,
 ) extends PipeMemRmwPayloadExtBase(
-  wordType=wordType(),
+  cfg=cfg,
+  //wordType=wordType(),
   wordCount=wordCount,
-  hazardCmpType=hazardCmpType(),
-  modRdPortCnt=modRdPortCnt,
-  modStageCnt=modStageCnt,
-  memArrSize=memArrSize,
-  optModHazardKind=optModHazardKind,
-  optReorder=optReorder,
+  //hazardCmpType=hazardCmpType(),
+  //modRdPortCnt=modRdPortCnt,
+  //modStageCnt=modStageCnt,
+  //memArrSize=memArrSize,
+  //optModHazardKind=optModHazardKind,
+  //optReorder=optReorder,
 ) {
 }
 //case class PipeMemRmwPayloadBaseFormalFwdFuncs[
@@ -765,14 +803,15 @@ extends Bundle {
           WordT,
           HazardCmpT,
         ](
-          wordType=wordType(),
+          cfg=cfg,
+          //wordType=wordType(),
           wordCount=wordCount,
-          hazardCmpType=hazardCmpType(),
-          modRdPortCnt=modRdPortCnt,
-          modStageCnt=modStageCnt,
-          memArrSize=memArrSize,
-          optModHazardKind=optModHazardKind,
-          optReorder=optReorder,
+          //hazardCmpType=hazardCmpType(),
+          //modRdPortCnt=modRdPortCnt,
+          //modStageCnt=modStageCnt,
+          //memArrSize=memArrSize,
+          //optModHazardKind=optModHazardKind,
+          //optReorder=optReorder,
         )
       )
     )
@@ -1127,32 +1166,61 @@ case class PipeMemRmwIo[
   ModT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
   DualRdT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
 ](
-  wordType: HardType[WordT],
-  wordCountMax: Int,
-  hazardCmpType: HardType[HazardCmpT],
+  cfg: PipeMemRmwConfig[
+    WordT,
+    HazardCmpT,
+  ],
+  //wordType: HardType[WordT],
+  //wordCountMax: Int,
+  //hazardCmpType: HardType[HazardCmpT],
   modType: HardType[ModT],
-  modRdPortCnt: Int,
-  modStageCnt: Int,
+  //modRdPortCnt: Int,
+  //modStageCnt: Int,
+  ////optDualRdType: Option[HardType[DualRdT]]=None,
+  ////optDualRdType: Option[HardType[DualRdT]]={
+  ////  //Some(HardType[PipeMemRmwDualRdTypeDisabled[WordT]]())
+  ////},
+  //pipeName: String,
+  //memArrIdx: Int=0,
+  //memArrSize: Int=1,
+  dualRdType: HardType[DualRdT]=PipeMemRmwDualRdTypeDisabled[
+    WordT, HazardCmpT
+  ](),
+  ////optDualRdSize: Option[Int]=None,
+  ////dualRdSize: Int=0,
+  //optDualRd: Boolean=false,
+  //optReorder: Boolean=false,
+  ////optEnableModDuplicate: Boolean=true,
+  //optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
+  //optEnableClear: Boolean=false,
+  //optFormal: Boolean=false,
+  //vivadoDebug: Boolean=false,
+) extends Area {
+  def wordType() = cfg.wordType()
+  def wordCountMax = cfg.wordCountMax
+  def hazardCmpType() = cfg.hazardCmpType()
+  //def modType() = cfg.modType()
+  def modRdPortCnt = cfg.modRdPortCnt
+  def modStageCnt = cfg.modStageCnt
   //optDualRdType: Option[HardType[DualRdT]]=None,
   //optDualRdType: Option[HardType[DualRdT]]={
   //  //Some(HardType[PipeMemRmwDualRdTypeDisabled[WordT]]())
   //},
-  pipeName: String,
-  memArrIdx: Int=0,
-  memArrSize: Int=1,
-  dualRdType: HardType[DualRdT]=PipeMemRmwDualRdTypeDisabled[
-    WordT, HazardCmpT
-  ](),
+  def pipeName = cfg.pipeName
+  def memArrIdx = cfg.memArrIdx
+  def memArrSize = cfg.memArrSize
+  //def dualRdType() = cfg.dualRdType()
   //optDualRdSize: Option[Int]=None,
   //dualRdSize: Int=0,
-  optDualRd: Boolean=false,
-  optReorder: Boolean=false,
+  def optDualRd = cfg.optDualRd
+  def optReorder = cfg.optReorder
   //optEnableModDuplicate: Boolean=true,
-  optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
-  optEnableClear: Boolean=false,
-  optFormal: Boolean=false,
-  vivadoDebug: Boolean=false,
-) extends Area {
+  def optModHazardKind: PipeMemRmw.ModHazardKind = (
+    cfg.optModHazardKind
+  )
+  def optEnableClear = cfg.optEnableClear
+  def optFormal = cfg.optFormal 
+  def vivadoDebug = cfg.vivadoDebug 
   //--------
   //val doHazardCheck = in(Bool())
   val clear = (optEnableClear) generate (
@@ -1637,24 +1705,25 @@ extends Area {
     ModT,
     DualRdT,
   ](
-    wordType=wordType(),
-    wordCountMax=wordCountMax,
-    hazardCmpType=hazardCmpType(),
+    cfg=cfg,
+    //wordType=wordType(),
+    //wordCountMax=wordCountMax,
+    //hazardCmpType=hazardCmpType(),
     modType=modType(),
-    modRdPortCnt=modRdPortCnt,
-    modStageCnt=modStageCnt,
-    pipeName=pipeName,
-    memArrIdx=memArrIdx,
-    memArrSize=memArrSize,
+    //modRdPortCnt=modRdPortCnt,
+    //modStageCnt=modStageCnt,
+    //pipeName=pipeName,
+    //memArrIdx=memArrIdx,
+    //memArrSize=memArrSize,
     dualRdType=dualRdType(),
-    //dualRdSize=dualRdSize,
-    optDualRd=optDualRd,
-    optReorder=optReorder,
-    //optEnableModDuplicate=optEnableModDuplicate,
-    optModHazardKind=optModHazardKind,
-    optEnableClear=optEnableClear,
-    optFormal=optFormal,
-    vivadoDebug=vivadoDebug,
+    ////dualRdSize=dualRdSize,
+    //optDualRd=optDualRd,
+    //optReorder=optReorder,
+    ////optEnableModDuplicate=optEnableModDuplicate,
+    //optModHazardKind=optModHazardKind,
+    //optEnableClear=optEnableClear,
+    //optFormal=optFormal,
+    //vivadoDebug=vivadoDebug,
   )
   //--------
   def mkMem(ydx: Int) = {
@@ -1907,15 +1976,16 @@ extends Area {
     HazardCmpT,
   ] = (
     PipeMemRmwPayloadExt(
-      wordType=wordType(),
+      cfg=cfg,
+      //wordType=wordType(),
       wordCount=wordCountMax,
-      hazardCmpType=hazardCmpType(),
-      modRdPortCnt=modRdPortCnt,
-      modStageCnt=modStageCnt,
-      memArrSize=memArrSize,
-      optModHazardKind=optModHazardKind,
-      optReorder=optReorder,
-      //myHaveFormalFwd=myHaveFormalFwd
+      //hazardCmpType=hazardCmpType(),
+      //modRdPortCnt=modRdPortCnt,
+      //modStageCnt=modStageCnt,
+      //memArrSize=memArrSize,
+      //optModHazardKind=optModHazardKind,
+      //optReorder=optReorder,
+      ////myHaveFormalFwd=myHaveFormalFwd
     )
   )
   //def mkExt(
@@ -5492,28 +5562,33 @@ case class SamplePipeMemRmwModType[
   WordT <: Data,
   HazardCmpT <: Data,
 ](
-  //wordWidth: Int,
-  wordType: HardType[WordT],
+  cfg: PipeMemRmwConfig[
+    WordT,
+    HazardCmpT,
+  ],
+  ////wordWidth: Int,
+  //wordType: HardType[WordT],
   wordCount: Int,
-  hazardCmpType: HardType[HazardCmpT],
-  modRdPortCnt: Int,
-  modStageCnt: Int,
-  memArrSize: Int,
-  optModHazardKind: PipeMemRmw.ModHazardKind,
-  //doModInModFront: Boolean/*=false*/,
-  optReorder: Boolean=false,
+  //hazardCmpType: HardType[HazardCmpT],
+  //modRdPortCnt: Int,
+  //modStageCnt: Int,
+  //memArrSize: Int,
+  //optModHazardKind: PipeMemRmw.ModHazardKind,
+  ////doModInModFront: Boolean/*=false*/,
+  //optReorder: Boolean=false,
 ) extends Bundle with PipeMemRmwPayloadBase[WordT, HazardCmpT] {
   //--------
   val myExt = PipeMemRmwPayloadExt(
-    wordType=wordType(),
+    cfg=cfg,
+    //wordType=wordType(),
     wordCount=wordCount,
-    hazardCmpType=hazardCmpType(),
-    modRdPortCnt=modRdPortCnt,
-    modStageCnt=modStageCnt,
-    memArrSize=memArrSize,
-    optModHazardKind=optModHazardKind,
-    //doModInModFront=doModInModFront,
-    optReorder=optReorder,
+    //hazardCmpType=hazardCmpType(),
+    //modRdPortCnt=modRdPortCnt,
+    //modStageCnt=modStageCnt,
+    //memArrSize=memArrSize,
+    //optModHazardKind=optModHazardKind,
+    ////doModInModFront=doModInModFront,
+    //optReorder=optReorder,
   )
   //--------
   def setPipeMemRmwExt(

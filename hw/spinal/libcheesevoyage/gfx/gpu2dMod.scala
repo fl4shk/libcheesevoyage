@@ -4696,16 +4696,8 @@ case class Gpu2d(
       //  arrRamStyle=params.lineArrRamStyle,
       //)
       //  .setName(f"wrObjSubLineMemArr_$idx")
-      wrObjSubLineMemArr += PipeMemRmw[
-        Vec[ObjSubLineMemEntry],
-        WrObjPipeSlmRmwHazardCmp,
-        WrObjPipePayload,
-        PipeMemRmwDualRdTypeDisabled[
-          Vec[ObjSubLineMemEntry],
-          WrObjPipeSlmRmwHazardCmp,
-        ],
-      ](
-        cfg=PipeMemRmwConfig[
+      val wrObjSubLineMemPmCfg = (
+        PipeMemRmwConfig[
           Vec[ObjSubLineMemEntry],
           WrObjPipeSlmRmwHazardCmp,
           //WrObjPipePayload,
@@ -4748,7 +4740,18 @@ case class Gpu2d(
               false
             )
           ),
-        ),
+        )
+      )
+      wrObjSubLineMemArr += PipeMemRmw[
+        Vec[ObjSubLineMemEntry],
+        WrObjPipeSlmRmwHazardCmp,
+        WrObjPipePayload,
+        PipeMemRmwDualRdTypeDisabled[
+          Vec[ObjSubLineMemEntry],
+          WrObjPipeSlmRmwHazardCmp,
+        ],
+      ](
+        cfg=wrObjSubLineMemPmCfg,
         modType=WrObjPipePayload(isAffine=false),
         dualRdType=PipeMemRmwDualRdTypeDisabled[
           Vec[ObjSubLineMemEntry],
@@ -7122,12 +7125,57 @@ case class Gpu2d(
         WrObjPipeSlmRmwHazardCmp,
       ]
     {
+      // TODO: temporary assert, fix later!
+      assert(
+        !isAffine
+      )
+      val myPmCfg = (
+        PipeMemRmwConfig[
+          Vec[ObjSubLineMemEntry],
+          WrObjPipeSlmRmwHazardCmp,
+          //WrObjPipePayload,
+          //PipeMemRmwDualRdTypeDisabled[
+          //  Vec[ObjSubLineMemEntry],
+          //  WrObjPipeSlmRmwHazardCmp,
+          //],
+        ](
+          wordType=Vec.fill(
+            //params.objTileSize2d.x
+            params.objSliceTileWidth
+          )(ObjSubLineMemEntry()),
+          wordCountArr=Array.fill(1)(params.objSubLineMemArrSize).toSeq,
+          hazardCmpType=WrObjPipeSlmRmwHazardCmp(isAffine=false),
+          //modType=WrObjPipePayload(isAffine=false),
+          modRdPortCnt=wrObjPipeSlmRmwModRdPortCnt,
+          modStageCnt=wrObjPipeSlmRmwModStageCnt,
+          pipeName=s"WrObjPipePayload",
+          linkArr=None,
+          memArrIdx=0,
+          //dualRdType=PipeMemRmwDualRdTypeDisabled[
+          //  Vec[ObjSubLineMemEntry],
+          //  WrObjPipeSlmRmwHazardCmp,
+          //],
+          optDualRd=false,
+          initBigInt=None,
+          optEnableClear=true,
+          optModHazardKind=(
+            //PipeMemRmw.ModHazardKind.Fwd
+            PipeMemRmw.ModHazardKind.Dupl
+          ),
+          //init=Some(objSubLineMemInit),
+          //arrRamStyle=params.lineArrRamStyle,
+          vivadoDebug=(
+            vivadoDebug
+          ),
+        )
+      )
       val subLineMemEntryExt = PipeMemRmwPayloadExt(
-        wordType=(
-          Vec.fill(params.tempObjTileWidth(isAffine=isAffine))(
-            ObjSubLineMemEntry()
-          )
-        ),
+        //wordType=(
+        //  Vec.fill(params.tempObjTileWidth(isAffine=isAffine))(
+        //    ObjSubLineMemEntry()
+        //  )
+        //),
+        cfg=myPmCfg,
         wordCount=(
           if (!isAffine) (
             params.objSubLineMemArrSize,
@@ -7135,15 +7183,15 @@ case class Gpu2d(
             params.objAffineSubLineMemArrSize
           )
         ),
-        hazardCmpType=WrObjPipeSlmRmwHazardCmp(isAffine=isAffine),
-        modRdPortCnt=wrObjPipeSlmRmwModRdPortCnt,
-        modStageCnt=wrObjPipeSlmRmwModStageCnt,
-        memArrSize=1,
-        //optEnableModDuplicate=true,
-        optModHazardKind=(
-          PipeMemRmw.ModHazardKind.Dupl
-        ),
-        //optReorder=true,
+        //hazardCmpType=WrObjPipeSlmRmwHazardCmp(isAffine=isAffine),
+        //modRdPortCnt=wrObjPipeSlmRmwModRdPortCnt,
+        //modStageCnt=wrObjPipeSlmRmwModStageCnt,
+        //memArrSize=1,
+        ////optEnableModDuplicate=true,
+        //optModHazardKind=(
+        //  PipeMemRmw.ModHazardKind.Dupl
+        //),
+        ////optReorder=true,
       )
       def setPipeMemRmwExt(
         inpExt: PipeMemRmwPayloadExt[
