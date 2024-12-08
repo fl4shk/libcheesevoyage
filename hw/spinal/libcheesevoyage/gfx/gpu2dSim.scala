@@ -167,7 +167,7 @@ case class Gpu2dSimDut(
   ) {
     when (
       //&& gpuIo.pop.physPosInfo.nextPos.x =/= 0
-      myGpuPopStm.physPosInfo.nextPos.y === 0
+      myGpuPopStm.payload.physPosInfo.nextPos.y === 0
     ) {
       gpu2dTest.io.vgaSomeVpipeS := (
         LcvVgaState.front
@@ -260,7 +260,9 @@ case class Gpu2dSimDut(
     //into=gpu2dBlanking.io.push,
   )(
     dataAssignment=(o, i) => {
-      o := i.col
+      o.r := i.col.r
+      o.g := i.col.g
+      o.b := i.col.b
     }
   )
   //vgaCtrl.io.push <-/< gpu2dBlanking.io.pop 

@@ -21,7 +21,7 @@ object Gpu2dSimDutConfig {
       //resetKind=BOOT,
     ),
     //onlyStdLogicVectorAtTopLevelIo=true,
-    //svInterface=true,
+    svInterface=true,
   )
 }
 object Gpu2dSimDutParams {
@@ -393,7 +393,23 @@ object Gpu2dSimDutParams {
 }
 
 object Gpu2dSimDutToVerilog extends App {
-  Gpu2dSimDutConfig.spinal.generateVerilog(Gpu2dSimDut(
+  //Gpu2dSimDutConfig.spinal.generateVerilog(Gpu2dSimDut(
+  //  clkRate=Gpu2dSimDutParams.clkRate,
+  //  rgbConfig=Gpu2dSimDutParams.rgbConfig,
+  //  vgaTimingInfo=Gpu2dSimDutParams.vgaTimingInfo,
+  //  gpu2dParams=Gpu2dSimDutParams.gpu2dParams,
+  //  ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
+  //  optRawSnesButtons=true,
+  //  optUseLcvVgaCtrl=(
+  //    //true
+  //    false
+  //  ),
+  //  dbgPipeMemRmw=(
+  //    //true
+  //    false
+  //  ),
+  //))
+  Gpu2dSimDutConfig.spinal.generateSystemVerilog(Gpu2dSimDut(
     clkRate=Gpu2dSimDutParams.clkRate,
     rgbConfig=Gpu2dSimDutParams.rgbConfig,
     vgaTimingInfo=Gpu2dSimDutParams.vgaTimingInfo,
@@ -410,6 +426,11 @@ object Gpu2dSimDutToVerilog extends App {
     ),
   ))
 }
+object Gpu2dToVerilog extends App {
+  Gpu2dSimDutConfig.spinal.generateSystemVerilog(Gpu2d(
+    params=Gpu2dSimDutParams.gpu2dParams,
+  ))
+}
 
 object Gpu2dSimDutToVhdl extends App {
   Gpu2dSimDutConfig.spinal.generateVhdl(Gpu2dSimDut(
@@ -419,6 +440,10 @@ object Gpu2dSimDutToVhdl extends App {
     gpu2dParams=Gpu2dSimDutParams.gpu2dParams,
     ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
     optRawSnesButtons=true,
+    optUseLcvVgaCtrl=(
+      //true
+      false
+    ),
     dbgPipeMemRmw=false,
   ))
   //val report = SpinalVhdl(new Gpu2dTo())

@@ -19,16 +19,18 @@ import spinal.core.formal._
 import scala.collection.mutable.ArrayBuffer
 import scala.math._
 
-object LcvVgaState extends SpinalEnum(
-  defaultEncoding=binarySequential
-  //defaultEncoding=binaryOneHot
-) {
-  val
-    front,
-    sync,
-    back,
-    visib
-    = newElement();
+object LcvVgaState 
+//extends SpinalEnum(
+//  defaultEncoding=binarySequential
+//  //defaultEncoding=binaryOneHot
+//) 
+{
+  def apply() = UInt(2 bits)
+  def front = U"2'b00"
+  def sync = U"2'b01"
+  def back = U"2'b10"
+  def visib = U"2'b11"
+    //= newElement();
 }
 
 class LcvVgaPipe(
@@ -63,7 +65,7 @@ class LcvVgaPipe(
   def cntWidth = vgaTimingHv.cntWidth(offs=2)
   val rCPipe = new ArrayBuffer[UInt]()
   val cToDrive = UInt(cntWidth bits) // next value of `rCPipe.last`
-  val rSPipe = new ArrayBuffer[LcvVgaState.C]()
+  val rSPipe = new ArrayBuffer[UInt/*LcvVgaState.C*/]()
   val sToDrive = LcvVgaState() // next value of `rSPipe.last`
 
   //val sPipe1 = new ArrayBuffer[LcvVgaState.C]()
@@ -145,14 +147,14 @@ class LcvVgaPipe(
   def runMkCaseFunc(
     vgaTimingHv: LcvVgaTimingHv,
     //somePixelEn: Bool,
-    someState: LcvVgaState.C,
+    someState: UInt, //LcvVgaState.C,
   )(
     mkCaseFunc: (
       //Bool, // `somePixelEn`
       LcvVgaTimingHv, // vgaTimingHv
-      LcvVgaState.E, // `someState` (`is (someState)`)
+      UInt, //LcvVgaState.E, // `someState` (`is (someState)`)
       Int, // `stateSize`
-      LcvVgaState.E, // `nextState`
+      UInt, //LcvVgaState.E, // `nextState`
     ) => Unit
   ): Unit = {
     switch (someState) {
@@ -212,9 +214,9 @@ class LcvVgaPipe(
   ): Unit = {
     def mkCase(
       vgaTimingHv: LcvVgaTimingHv,
-      currState: LcvVgaState.E,
+      currState: UInt, //LcvVgaState.E,
       stateSize: Int,
-      nextState: LcvVgaState.E,
+      nextState: UInt, //LcvVgaState.E,
     ): Unit = {
       rCPipe2Plus1 := rCPipe2 + 1
       // delayed by one, so this code requires at least 2x the pixel clock
@@ -237,9 +239,9 @@ class LcvVgaPipe(
   ): Unit = {
     def mkCase(
       vgaTimingHv: LcvVgaTimingHv,
-      currState: LcvVgaState.E,
+      currState: UInt, //LcvVgaState.E,
       stateSize: Int,
-      nextState: LcvVgaState.E,
+      nextState: UInt, //LcvVgaState.E,
     ): Unit = {
       for (idx <- 1 to pipeSize - 1) {
         rCPipe(idx - 1) := rCPipe(idx)

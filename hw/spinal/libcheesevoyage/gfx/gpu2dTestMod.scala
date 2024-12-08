@@ -613,18 +613,18 @@ case class Gpu2dTestIo(
   params: Gpu2dParams,
   optRawSnesButtons: Boolean=false,
   dbgPipeMemRmw: Boolean=false,
-) extends Bundle {
+) extends /*Bundle*/ Interface with IMasterSlave {
   //--------
   //val gpuIo = master(Gpu2dIo(params=params))
-  val pop = master(Gpu2dPushInp(
+  val pop = /*master*/(Gpu2dPushInp(
     params=params,
     dbgPipeMemRmw=dbgPipeMemRmw,
   ))
-  val gpu2dPopFire = in Bool()
+  val gpu2dPopFire = /*in*/ Bool()
   //val vgaPhys = in(LcvVgaPhys(
   //  rgbConfig=params.rgbConfig
   //))
-  val vgaSomeVpipeS = in(LcvVgaState())
+  val vgaSomeVpipeS = /*in*/(LcvVgaState())
   //val vgaSomeDrawPos = in(LcvVgaCtrlMiscIo.coordT(
   //  fbSize2d=params.intnlFbSize2d
   //))
@@ -636,13 +636,38 @@ case class Gpu2dTestIo(
   //val dbgBg1EntryCntV2d = out(
   //  Vec2(dataType=UInt(16 bits))
   //)
-  val snesCtrl = (!optRawSnesButtons) generate SnesCtrlIo()
+  val snesCtrl = (!optRawSnesButtons) generate master(SnesCtrlIo())
   val rawSnesButtons = (optRawSnesButtons) generate (
     slave Stream(UInt(SnesButtons.rawButtonsWidth bits))
   )
   //--------
   //val ctrlEn = out Bool()
   //val pop = master Stream(Gpu2dPopPayload(params=params))
+  //--------
+  override def asMaster(): Unit = mst
+  @modport
+  def mst = {
+    master(pop)
+    in(gpu2dPopFire)
+    in(vgaSomeVpipeS)
+    if (!optRawSnesButtons) {
+      master(snesCtrl)
+    } else { // if (optRawSnesButtons)
+      slave(rawSnesButtons)
+    }
+  }
+
+  @modport
+  def slv = {
+    slave(pop)
+    out(gpu2dPopFire)
+    out(vgaSomeVpipeS)
+    if (!optRawSnesButtons) {
+      slave(snesCtrl)
+    } else { // if (optRawSnesButtons)
+      master(rawSnesButtons)
+    }
+  }
   //--------
 }
 case class Gpu2dTest(
@@ -652,18 +677,18 @@ case class Gpu2dTest(
   dbgPipeMemRmw: Boolean=false,
 ) extends Component {
   //--------
-  val io = Gpu2dTestIo(
+  val io = master(Gpu2dTestIo(
     params=params,
     optRawSnesButtons=optRawSnesButtons,
     dbgPipeMemRmw=dbgPipeMemRmw,
-  )
+  ))
   //def gpuIo = io.gpu2dPush
   //io.ctrlEn := gpuIo.ctrlEn
   ////io.pop <> gpuIo.pop
   ////io.pop <> gpuIo.pop
   //io.pop << io.gpuIo.pop
   def pop = io.pop
-  //--------
+  ////--------
   //def palPush(
   //  numColsInPal: Int,
   //  rPalCnt: UInt,
@@ -1008,11 +1033,11 @@ case class Gpu2dTest(
   pop.colorMathAttrsPush.valid := True
   pop.colorMathAttrsPush.payload := pop.colorMathAttrsPush.payload.getZero
   pop.colorMathAttrsPush.payload.allowOverride
-  pop.colorMathAttrsPush.bgAttrs.scroll.x := (
+  pop.colorMathAttrsPush.payload.bgAttrs.scroll.x := (
     //params.bgTileSize2d.x * 1
     0
   )
-  pop.colorMathAttrsPush.bgAttrs.scroll.y := (
+  pop.colorMathAttrsPush.payload.bgAttrs.scroll.y := (
     //params.bgTileSize2d.y * 1
     0
   )
@@ -1384,8 +1409,8 @@ case class Gpu2dTest(
   tempBgAttrs.fbAttrs.tileMemBaseAddr := 0
   val tempBgAttrs0PushValid = Bool()
   tempBgAttrs0PushValid := RegNext(tempBgAttrs0PushValid) init(True)
-  for (idx <- 0 to pop.bgAttrsPushArr.size - 1) {
-    def tempBgAttrsPush = pop.bgAttrsPushArr(idx)
+  for (idx <- 0 until pop.bgAttrsPushVec.size) {
+    def tempBgAttrsPush = pop.bgAttrsPushVec(idx)
     if (idx == 0) {
       //tempBgAttrsPush.valid := True
       tempBgAttrsPush.valid := tempBgAttrs0PushValid
@@ -1462,8 +1487,8 @@ case class Gpu2dTest(
   val rBgEntryMemIdx = Reg(SInt((params.bgEntryMemIdxWidth + 1) bits))
     .init((1 << params.bgEntryMemIdxWidth) - 1)
 
-  //for (idx <- 0 to pop.bgEntryPushArr.size - 1) {
-  //  val tempBgEntryPush = pop.bgEntryPushArr(idx)
+  //for (idx <- 0 to pop.bgEntryPushVec.size - 1) {
+  //  val tempBgEntryPush = pop.bgEntryPushVec(idx)
   //  if (idx == 0) {
   //    when (rBgEntryMemIdx === 0) {
   //      tempBgEntryPush.payload.bgEntry := tempBgEntry
@@ -1493,8 +1518,8 @@ case class Gpu2dTest(
   //println(params.bgEntryMemIdxWidth)
   //tempBgEntry := tempBgEntry.getZero
   //nextBgEntryCnt := rBgEntryCnt
-  //for (idx <- 0 until pop.bgEntryPushArr.size) {
-  //  def tempBgEntryPush = pop.bgEntryPushArr(idx)
+  //for (idx <- 0 until pop.bgEntryPushVec.size) {
+  //  def tempBgEntryPush = pop.bgEntryPushVec(idx)
   //  if (idx == 0) {
   //    when (rBgEntryCnt < (1 << params.bgEntryMemIdxWidth)) {
   //      when (tempBgEntryPush.fire) {
@@ -1560,7 +1585,7 @@ case class Gpu2dTest(
   //    //)
   //    tempBgEntryPush.payload.bgEntry := tempBgEntry
   //    tempBgEntryPush.payload.memIdx := (
-  //      rBgEntryCnt.asUInt(pop.bgEntryPushArr(0).payload.memIdx.bitsRange)
+  //      rBgEntryCnt.asUInt(pop.bgEntryPushVec(0).payload.memIdx.bitsRange)
   //    )
   //  } else if (idx == 1) {
   //    tempBgEntryPush.valid := (
@@ -1574,7 +1599,7 @@ case class Gpu2dTest(
   //    tempBgEntryPush.payload := myPayload
 
   //    myPayload.memIdx := (
-  //      rBgEntryCnt.asUInt(pop.bgEntryPushArr(0).payload.memIdx.bitsRange)
+  //      rBgEntryCnt.asUInt(pop.bgEntryPushVec(0).payload.memIdx.bitsRange)
   //    )
   //    myPayload.bgEntry := myPayload.bgEntry.getZero
   //    myPayload.bgEntry.allowOverride
@@ -1603,8 +1628,8 @@ case class Gpu2dTest(
   nextBg0EntryCnt := rBg0EntryCnt
   nextBg1EntryCnt := rBg1EntryCnt
   //nextBg1EntryCnt := rBg1EntryCnt
-  for (idx <- 0 until pop.bgEntryPushArr.size) {
-    def tempBgEntryPush = pop.bgEntryPushArr(idx)
+  for (idx <- 0 until pop.bgEntryPushVec.size) {
+    def tempBgEntryPush = pop.bgEntryPushVec(idx)
     //if (idx == 0) {
     //  //tempBgEntryPush.valid := tempBgEntryPush.valid.getZero
     //  //tempBgEntryPush.payload := tempBgEntryPush.payload.getZero
@@ -1720,7 +1745,7 @@ case class Gpu2dTest(
     //  //)
     //  tempBgEntryPush.payload.bgEntry := tempBgEntry
     //  tempBgEntryPush.payload.memIdx := (
-    //    rBg0EntryCnt.asUInt(pop.bgEntryPushArr(0).payload.memIdx.bitsRange)
+    //    rBg0EntryCnt.asUInt(pop.bgEntryPushVec(0).payload.memIdx.bitsRange)
     //  )
     //}
     //else 
@@ -1746,7 +1771,7 @@ case class Gpu2dTest(
       )
       tempBgEntryPush.payload := /*RegNext*/(myPayload)
       myPayload.memIdx := RegNext(
-        //rBg0EntryCnt.asUInt(pop.bgEntryPushArr(0).payload.memIdx.bitsRange)
+        //rBg0EntryCnt.asUInt(pop.bgEntryPushVec(0).payload.memIdx.bitsRange)
         rBg0EntryCnt.asUInt(myPayload.memIdx.bitsRange)
       )
       myPayload.bgEntry := myPayload.bgEntry.getZero
@@ -1801,7 +1826,7 @@ case class Gpu2dTest(
       //  .setName("myBg1EntryMemAddrExtCalcPos")
       //myMemAddrExtCalcPos.io.en := (
       //  //True
-      //  pop.bgEntryPushArr(0).fire
+      //  pop.bgEntryPushVec(0).fire
       //)
       //--------
       //val tempFbSize2d = ElabVec2[Int](
@@ -2008,7 +2033,7 @@ case class Gpu2dTest(
       //)
 
       myPayload.memIdx := RegNext(
-        //rBg0EntryCnt.asUInt(pop.bgEntryPushArr(0).payload.memIdx.bitsRange)
+        //rBg0EntryCnt.asUInt(pop.bgEntryPushVec(0).payload.memIdx.bitsRange)
         rBg1EntryCnt.asUInt(myPayload.memIdx.bitsRange)
         //rBg1EntryCntMerged
         ///*RegNext*/(myBg1MemIdx(myPayload.memIdx.bitsRange))//.asUInt
@@ -3769,5 +3794,5 @@ case class Gpu2dTest(
     rObjAffineAttrsCnt.asUInt(params.objAffineAttrsMemIdxWidth - 1 downto 0)
   )
 
-  //--------
+  ////--------
 }

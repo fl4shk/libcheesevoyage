@@ -2,6 +2,7 @@ package libcheesevoyage.general
 import libcheesevoyage._
 
 import spinal.core._
+import spinal.core.Interface
 import spinal.lib._
 import spinal.core.formal._
 import scala.collection.mutable.ArrayBuffer
@@ -272,6 +273,7 @@ case class FpgacpuRamSimpleDualPortImpl[
   WordT <: Data
 ](
   //wordWidth: Int,
+  io: FpgacpuRamSimpleDualPortIo[WordT],
   wordType: HardType[WordT],
   depth: Int,
   //init: Option[Seq[Bits]]=None,
@@ -279,12 +281,12 @@ case class FpgacpuRamSimpleDualPortImpl[
   initBigInt: Option[Seq[BigInt]]=None,
   arrRamStyle: String="block",
   arrRwAddrCollision: String="",
-) extends Component {
-  val io = FpgacpuRamSimpleDualPortIo(
-    //wordType=Bits(wordWidth bits),
-    wordType=wordType(),
-    depth=depth,
-  )
+) extends Area {
+  //val io = FpgacpuRamSimpleDualPortIo(
+  //  //wordType=Bits(wordWidth bits),
+  //  wordType=wordType(),
+  //  depth=depth,
+  //)
   val arr = Mem(
     //wordType=Bits(wordWidth bits),
     wordType=wordType(),
@@ -345,6 +347,7 @@ case class FpgacpuRamSimpleDualPort[
   def addrWidth = io.addrWidth
   //--------
   val impl = FpgacpuRamSimpleDualPortImpl(
+    io=io,
     //wordWidth=wordType().asBits.getWidth,
     wordType=wordType(),
     depth=depth,
@@ -401,14 +404,16 @@ case class FpgacpuRamSimpleDualPort[
     arrRamStyle=arrRamStyle,
     arrRwAddrCollision=arrRwAddrCollision,
   )
-  impl.io.wrEn := io.wrEn
-  impl.io.wrAddr := io.wrAddr
-  impl.io.wrData := io.wrData//.asBits
+  //--------
+  //impl.io.wrEn := io.wrEn
+  //impl.io.wrAddr := io.wrAddr
+  //impl.io.wrData := io.wrData//.asBits
 
-  impl.io.rdEn := io.rdEn
-  impl.io.rdAddr := io.rdAddr
-  //io.rdData.assignFromBits(impl.io.rdData)
-  io.rdData := impl.io.rdData
+  //impl.io.rdEn := io.rdEn
+  //impl.io.rdAddr := io.rdAddr
+  ////io.rdData.assignFromBits(impl.io.rdData)
+  //io.rdData := impl.io.rdData
+  //--------
   //val arr = Mem(
   //  wordType=wordType(),
   //  wordCount=depth,

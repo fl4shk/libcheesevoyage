@@ -43,6 +43,7 @@ import spinal.lib._
 import spinal.lib.graphic.Rgb
 import spinal.lib.graphic.RgbConfig
 import spinal.core.formal._
+//import spinal.core.Interface
 import scala.collection.mutable.ArrayBuffer
 //import scala.collection.immutable._
 import scala.math._
@@ -1810,34 +1811,123 @@ case class Gpu2dPopPayload(
   //--------
 }
 
+//case class Gpu2dPushFlow[
+//  DataT <: Data
+//](
+//  dataType: HardType[DataT],
+//) extends Interface with IMasterSlave {
+//  //--------
+//  val valid = Bool()
+//  val payload = dataType()
+//  def fire = valid
+//  //--------
+//  override def asMaster(): Unit = mst
+//  @modport
+//  def mst = {
+//    out(
+//      valid,
+//      payload,
+//    )
+//  }
+//  //--------
+//  @modport
+//  def slv = {
+//    in(
+//      valid,
+//      payload,
+//    )
+//  }
+//  //--------
+//  def <<(
+//    that: Gpu2dPushFlow[DataT]
+//  ) = {
+//    this.valid := that.valid
+//    this.payload := that.payload
+//  }
+//  def >>(
+//    that: Gpu2dPushFlow[DataT]
+//  ) = {
+//    that.valid := this.valid
+//    that.payload := this.payload
+//  }
+//}
+//case class Gpu2dPushStream[
+//  DataT <: Data
+//](
+//  dataType: HardType[DataT],
+//) extends Interface with IMasterSlave {
+//  //--------
+//  val valid = Bool()
+//  val payload = dataType()
+//  val ready = Bool()
+//  def fire = (valid && ready)
+//  //--------
+//  override def asMaster(): Unit = mst
+//  @modport
+//  def mst = {
+//    out(
+//      valid,
+//      payload,
+//    )
+//    in(
+//      ready
+//    )
+//  }
+//  //--------
+//  @modport
+//  def slv = {
+//    in(
+//      valid,
+//      payload,
+//    )
+//    out(
+//      ready
+//    )
+//  }
+//  //--------
+//  def <<(
+//    that: Gpu2dPushStream[DataT]
+//  ) = {
+//    this.valid := that.valid
+//    this.payload := that.payload
+//    that.ready := this.ready
+//  }
+//  def >>(
+//    that: Gpu2dPushStream[DataT]
+//  ) = {
+//    that.valid := this.valid
+//    that.payload := this.payload
+//    this.ready := that.ready
+//  }
+//}
 case class Gpu2dPushInp(
   params: Gpu2dParams=DefaultGpu2dParams(),
   dbgPipeMemRmw: Boolean,
-) extends Bundle with IMasterSlave {
+) extends Interface with IMasterSlave {
   //--------
-  val colorMathTilePush = slave Flow(
+  val colorMathTilePush = Flow(
     Gpu2dBgTileStmPayload(
       params=params,
       isColorMath=true,
     )
   )
-  val colorMathEntryPush = slave Flow(
+  val colorMathEntryPush = Flow(
     Gpu2dBgEntryStmPayload(
       params=params,
       isColorMath=true,
     )
   )
-  val colorMathAttrsPush = slave Flow(
+  val colorMathAttrsPush = Flow(
     Gpu2dBgAttrsStmPayload(
       params=params,
       isColorMath=true,
     )
   )
-  val colorMathPalEntryPush = slave Flow(
+  val colorMathPalEntryPush = Flow(
     Gpu2dBgPalEntryStmPayload(params=params)
   )
   //--------
-  val bgTilePush = slave Flow(
+  val bgTilePush = Flow(
     Gpu2dBgTileStmPayload(
       params=params,
       isColorMath=false,
@@ -1849,58 +1939,78 @@ case class Gpu2dPushInp(
   //    isColorMath=false,
   //  )))
   //)
-  val bgEntryPushArr = new ArrayBuffer[Flow[Gpu2dBgEntryStmPayload]]()
-  val bgAttrsPushArr = new ArrayBuffer[Flow[Gpu2dBgAttrsStmPayload]]()
-  for (idx <- 0 to params.numBgs - 1) {
-    bgEntryPushArr += (
-      slave Flow(Gpu2dBgEntryStmPayload(
-        params=params,
-        isColorMath=false,
-      ))
-        .setName(f"bgEntryPushArr_$idx")
-    )
-    bgAttrsPushArr += (
-      slave Flow(Gpu2dBgAttrsStmPayload(
-        params=params,
-        isColorMath=false,
-      ))
-        .setName(f"bgAttrsPushArr_$idx")
-    )
-  }
-  val bgPalEntryPush = slave Flow(Gpu2dBgPalEntryStmPayload(
+  val bgEntryPushVec = Vec.fill(params.numBgs)(
+    Flow(Gpu2dBgEntryStmPayload(
+      params=params,
+      isColorMath=false,
+    ))
+      //.setName(f"bgEntryPushArr_$idx")
+  )
+  val bgAttrsPushVec = Vec.fill(params.numBgs)(
+    Flow(Gpu2dBgAttrsStmPayload(
+      params=params,
+      isColorMath=false,
+    ))
+      //.setName(f"bgAttrsPushArr_$idx")
+  )
+  //val bgEntryPushVec = new ArrayBuffer[
+  //  Flow[Gpu2dBgEntryStmPayload]
+  //]()
+  //val bgAttrsPushVec = new ArrayBuffer[
+  //  Flow[Gpu2dBgAttrsStmPayload]
+  //]()
+  //for (idx <- 0 until params.numBgs) {
+  //  //bgEntryPushVec += (
+  //  //  Flow(Gpu2dBgEntryStmPayload(
+  //  //    params=params,
+  //  //    isColorMath=false,
+  //  //  ))
+  //  //    .setName(f"bgEntryPushArr_$idx")
+  //  //)
+  //  bgAttrsPushVec += (
+  //    Flow(Gpu2dBgAttrsStmPayload(
+  //      params=params,
+  //      isColorMath=false,
+  //    ))
+  //      .setName(f"bgAttrsPushArr_$idx")
+  //  )
+  //}
+  val bgPalEntryPush = Flow(Gpu2dBgPalEntryStmPayload(
     params=params
   ))
-  val objTilePush = slave Stream(
+  val objTilePush = Stream(
     Gpu2dObjTileStmPayload(
       params=params,
       isAffine=false,
       dbgPipeMemRmw=dbgPipeMemRmw,
     )
   )
-  val objAffineTilePush = slave Flow(
+  val objAffineTilePush = Flow(
     Gpu2dObjTileStmPayload(
       params=params,
       isAffine=true,
       dbgPipeMemRmw=false,
     )
   )
-  val objAttrsPush = slave Flow(
+  val objAttrsPush = Flow(
     Gpu2dObjAttrsStmPayload(
       params=params,
       isAffine=false,
     )
   )
-  val objAffineAttrsPush = slave Flow(
+  val objAffineAttrsPush = Flow(
     Gpu2dObjAttrsStmPayload(
       params=params,
       isAffine=true,
     )
   )
-  val objPalEntryPush = slave Flow(Gpu2dObjPalEntryStmPayload(
+  val objPalEntryPush = Flow(Gpu2dObjPalEntryStmPayload(
     params=params
   ))
   //--------
-  def asMaster(): Unit = {
+  override def asMaster(): Unit = mst
+  @modport
+  def mst = {
     master(
       colorMathTilePush,
       colorMathEntryPush,
@@ -1916,10 +2026,34 @@ case class Gpu2dPushInp(
       objAffineAttrsPush,
       objPalEntryPush,
     )
-    for (idx <- 0 to params.numBgs - 1) {
+    for (idx <- 0 until params.numBgs) {
       master(
-        bgEntryPushArr(idx),
-        bgAttrsPushArr(idx),
+        bgEntryPushVec(idx),
+        bgAttrsPushVec(idx),
+      )
+    }
+  }
+  @modport
+  def slv = {
+    slave(
+      colorMathTilePush,
+      colorMathEntryPush,
+      colorMathAttrsPush,
+      colorMathPalEntryPush,
+      bgTilePush,
+      //bgEntryPushArr,
+      //bgAttrsPushArr,
+      bgPalEntryPush,
+      objTilePush,
+      objAffineTilePush,
+      objAttrsPush,
+      objAffineAttrsPush,
+      objPalEntryPush,
+    )
+    for (idx <- 0 to params.numBgs - 1) {
+      slave(
+        bgEntryPushVec(idx),
+        bgAttrsPushVec(idx),
       )
     }
   }
@@ -1933,8 +2067,8 @@ case class Gpu2dPushInp(
     this.colorMathPalEntryPush << that.colorMathPalEntryPush
     this.bgTilePush << that.bgTilePush
     for (idx <- 0 to params.numBgs - 1) {
-      this.bgEntryPushArr(idx) << that.bgEntryPushArr(idx)
-      this.bgAttrsPushArr(idx) << that.bgAttrsPushArr(idx)
+      this.bgEntryPushVec(idx) << that.bgEntryPushVec(idx)
+      this.bgAttrsPushVec(idx) << that.bgAttrsPushVec(idx)
     }
     this.bgPalEntryPush << that.bgPalEntryPush
     this.objTilePush << that.objTilePush
@@ -1953,7 +2087,7 @@ case class Gpu2dPushInp(
 case class Gpu2dIo(
   params: Gpu2dParams=DefaultGpu2dParams(),
   dbgPipeMemRmw: Boolean,
-) extends Bundle {
+) extends Interface with IMasterSlave {
   //--------
   //val en = in Bool()
   //val blank = in(Vec2(Bool()))
@@ -1961,17 +2095,17 @@ case class Gpu2dIo(
   //--------
   //val bgTilePush = slave Stream()
   //val bgTilePush = slave Stream()
-  val push = Gpu2dPushInp(
+  val push = /*slave*/(Gpu2dPushInp(
     params=params,
     dbgPipeMemRmw=dbgPipeMemRmw,
-  )
+  ))
   def colorMathTilePush = push.colorMathTilePush
   def colorMathEntryPush = push.colorMathEntryPush 
   def colorMathAttrsPush = push.colorMathAttrsPush 
   def colorMathPalEntryPush = push.colorMathPalEntryPush 
   def bgTilePush = push.bgTilePush
-  def bgEntryPushArr = push.bgEntryPushArr
-  def bgAttrsPushArr = push.bgAttrsPushArr
+  def bgEntryPushArr = push.bgEntryPushVec
+  def bgAttrsPushArr = push.bgAttrsPushVec
   def bgPalEntryPush = push.bgPalEntryPush
   def objTilePush = push.objTilePush
   def objAffineTilePush = push.objAffineTilePush
@@ -1983,7 +2117,19 @@ case class Gpu2dIo(
   //  //out Bool()
   //  
   //)
-  val pop = master(Stream(Gpu2dPopPayload(params=params)))
+  val pop = /*master*/(Stream(Gpu2dPopPayload(params=params)))
+  //--------
+  override def asMaster(): Unit = mst
+  @modport
+  def mst = {
+    slave(push)
+    master(pop)
+  }
+  @modport
+  def slv = {
+    master(push)
+    slave(pop)
+  }
   //--------
   //def asHost(): Unit = {
   //  master(
@@ -2022,10 +2168,10 @@ case class Gpu2d(
   def noAffineBgs = params.noAffineBgs
   def noAffineObjs = params.noAffineObjs
   //--------
-  val io = Gpu2dIo(
+  val io = master(Gpu2dIo(
     params=params,
     dbgPipeMemRmw=dbgPipeMemRmw,
-  )
+  ))
   //--------
   def colorMathTilePush = io.colorMathTilePush
   def colorMathEntryPush = io.colorMathEntryPush 
@@ -2831,9 +2977,11 @@ case class Gpu2d(
       objAffineTileMemArr += FpgacpuRamSimpleDualPort(
         wordType=UInt(params.objPalEntryMemIdxWidth bits),
         depth=tempNumObjTileSlices,
+
         initBigInt={
           Some(Array.fill(tempNumObjTileSlices)(BigInt(0)).toSeq)
         },
+
         //init={
         //  //val temp = new ArrayBuffer[]()
         //  //for (_ <- 0 until tempNumObjTileSlices) {
@@ -2992,9 +3140,9 @@ case class Gpu2d(
         //)
         def colorMathTileMem = colorMathTileMemArr(jdx)
         colorMathTileMem.io.wrEn := colorMathTilePush.fire
-        colorMathTileMem.io.wrAddr := colorMathTilePush.memIdx
+        colorMathTileMem.io.wrAddr := colorMathTilePush.payload.memIdx
         //colorMathTileMem.io.wrData := colorMathTilePush.tile
-        colorMathTileMem.io.wrData := colorMathTilePush.tileSlice
+        colorMathTileMem.io.wrData := colorMathTilePush.payload.tileSlice
         //colorMathTileMem.io.wrPulse.valid := colorMathTilePush.fire
         //colorMathTileMem.io.wrPulse.addr := colorMathTilePush.memIdx
         //colorMathTileMem.io.wrPulse.data := colorMathTilePush.tile
@@ -3061,10 +3209,10 @@ case class Gpu2d(
           colorMathPalEntryPush.fire
         )
         colorMathPalEntryMemArr(jdx).io.wrAddr := (
-          colorMathPalEntryPush.memIdx
+          colorMathPalEntryPush.payload.memIdx
         )
         colorMathPalEntryMemArr(jdx).io.wrData := (
-          colorMathPalEntryPush.bgPalEntry
+          colorMathPalEntryPush.payload.bgPalEntry
         )
         //colorMathPalEntryMem.io.wrPulse.valid := (
         //  colorMathPalEntryPush.fire
@@ -3123,12 +3271,12 @@ case class Gpu2d(
           colorMathEntryPush.fire
         )
         colorMathEntryMemArr(jdx).io.wrAddr := (
-          colorMathEntryPush.memIdx(
-            colorMathEntryPush.memIdx.high downto 1
+          colorMathEntryPush.payload.memIdx(
+            colorMathEntryPush.payload.memIdx.high downto 1
           )
         )
         colorMathEntryMemArr(jdx).io.wrData := (
-          colorMathEntryPush.bgEntry
+          colorMathEntryPush.payload.bgEntry
         )
         //colorMathEntryMem.io.wrPulse.valid := (
         //  colorMathEntryPush.fire
@@ -3148,7 +3296,7 @@ case class Gpu2d(
     if (!noColorMath) {
       colorMathAttrs.init(colorMathAttrs.getZero)
       when (colorMathAttrsPush.fire) {
-        colorMathAttrs := colorMathAttrsPush.bgAttrs
+        colorMathAttrs := colorMathAttrsPush.payload.bgAttrs
       }
     }
     //--------
@@ -4731,7 +4879,7 @@ case class Gpu2d(
             //PipeMemRmw.ModHazardKind.Fwd
             PipeMemRmw.ModHazardKind.Dupl
           ),
-          //init=Some(objSubLineMemInit),
+          ////init=Some(objSubLineMemInit),
           //arrRamStyle=params.lineArrRamStyle,
           vivadoDebug=(
             if (idx == 0) (
@@ -5168,7 +5316,7 @@ case class Gpu2d(
         if (!isAffine) {
           ""
         } else {
-          "Affine"
+          "Affine_"
         }
       )
       def wrIdx = 0
@@ -5387,7 +5535,7 @@ case class Gpu2d(
             //)
             val rClear = (
               Reg(cloneOf(wrObjSubLineMemArr(jdx).io.clear))
-              .setName(s"wrObjWriter_${extName}_rClear_${jdx}")
+              .setName(s"wrObjWriter_${extName}rClear_${jdx}")
             )
             wrObjSubLineMemArr(jdx).io.clear <-< rClear
             rClear.valid := (

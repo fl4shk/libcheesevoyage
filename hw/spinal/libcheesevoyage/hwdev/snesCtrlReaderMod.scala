@@ -46,7 +46,8 @@ case class ClkCnt(
     }
   }
 }
-case class SnesCtrlIo() extends Bundle {
+case class SnesCtrlIo(
+) extends Interface with IMasterSlave {
   // FL4SHK notes on SNES Controller pins (only my SNES controller
   // extension cable that I stripped the wires of):
   //  Green (short)/Yellow (long): +5v (hook up +3.3V for the Arty A7 100T)
@@ -54,9 +55,25 @@ case class SnesCtrlIo() extends Bundle {
   //  Blue (short)/Blue (long): Data Clock (`outpClk`)
   //  White w/ Green Tint (short)/White (long): Data Latch (`outpLatch`)
   //  Red (short)/Red (long): Serial Data (`inpData`)
-  val outpClk = out Bool()
-  val outpLatch = out Bool()
-  val inpData = in Bool()
+  val outpClk = /*out*/ Bool()
+  val outpLatch = /*out*/ Bool()
+  val inpData = /*in*/ Bool()
+  //--------
+  override def asMaster(): Unit = mst
+  @modport
+  def mst = {
+    out(outpClk)
+    out(outpLatch)
+    in(inpData)
+  }
+
+  @modport
+  def slv = {
+    in(outpClk)
+    in(outpLatch)
+    out(inpData)
+  }
+  //--------
 }
 case class SnesCtrlReaderHelperIo(
   //clkRate: HertzNumber,
