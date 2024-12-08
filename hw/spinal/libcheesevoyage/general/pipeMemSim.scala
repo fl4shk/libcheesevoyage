@@ -672,14 +672,14 @@ case class PipeMemRmwSimDut(
             //)
             def myRdMemWord = (
               doModInModFrontParams.getMyRdMemWordFunc(
-                //Mux[UInt](
-                //  (
-                //    cMid0Front.up.isValid
-                //    && !rSetOutpState
-                //  ),
-                  //U(s"2'd1"),
-                  U(s"2'd2"),
-                //),
+                ////Mux[UInt](
+                ////  (
+                ////    cMid0Front.up.isValid
+                ////    && !rSetOutpState
+                ////  ),
+                //  //U(s"2'd1"),
+                //  U(s"2'd2"),
+                ////),
                 ydx
               )
             )

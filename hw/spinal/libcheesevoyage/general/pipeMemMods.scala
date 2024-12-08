@@ -1499,7 +1499,6 @@ trait PipeMemRmwReorderFtable[
   //): Bool
   //--------
 }
-// A Read-Modify-Write pipelined BRAM
 case class PipeMemRmwDoModInModFrontFuncParams[
   WordT <: Data,
   HazardCmpT <: Data,
@@ -1516,11 +1515,15 @@ case class PipeMemRmwDoModInModFrontFuncParams[
   modFront: Node,                       // io.modFront
   tempModFrontPayload: ModT,    // io.tempModFrontPayload
   //myModMemWord: WordT,                // myModMemWord
-  getMyRdMemWordFunc: (UInt, Int) => WordT,  // getMyRdMemWordFunc
+  getMyRdMemWordFunc: (
+    //UInt,
+    Int
+  ) => WordT,  // getMyRdMemWordFunc
   //Vec[WordT],  // myRdMemWord
   //ydx: Int,                             // ydx
 ) {
 }
+// A Read-Modify-Write pipelined BRAM
 case class PipeMemRmw[
   WordT <: Data,
   HazardCmpT <: Data,
@@ -3717,13 +3720,15 @@ extends Area {
               modFront=io.modFront,
               tempModFrontPayload=io.tempModFrontPayload,
               getMyRdMemWordFunc=(
-                someUpExtIdx: UInt,
+                //someUpExtIdx: UInt,
                 someYdx: Int,
               ) => (
                 //upExt(1)(someYdx)(extIdxSingle).rdMemWord(
                 //  PipeMemRmw.modWrIdx
                 //)
-                upExt(someUpExtIdx)(someYdx)(extIdxSingle).rdMemWord(
+                upExt(
+                  2
+                )(someYdx)(extIdxSingle).rdMemWord(
                   PipeMemRmw.modWrIdx
                 )
               ),
