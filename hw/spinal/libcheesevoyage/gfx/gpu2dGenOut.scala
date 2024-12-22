@@ -3,6 +3,7 @@ import libcheesevoyage._
 
 import libcheesevoyage.general.Vec2
 import libcheesevoyage.general.ElabVec2
+import libcheesevoyage.general._
 
 import spinal.core._
 //import spinal.core.formal._
@@ -21,7 +22,14 @@ object Gpu2dSimDutConfig {
       //resetKind=BOOT,
     ),
     //onlyStdLogicVectorAtTopLevelIo=true,
-    svInterface=true,
+    svInterface=(
+      //false
+      true
+    ),
+    svInterfaceIncludeModport=(
+      false
+      //true
+    ),
   )
 }
 object Gpu2dSimDutParams {
@@ -262,7 +270,9 @@ object Gpu2dSimDutParams {
     //  ////y=log2Up(2),
     //  //y=log2Up(2),
     //),
-    bgTileSize2dPow=gpu2dBgTileSize2dPow,
+    bgTileSize2dPow=(
+      gpu2dBgTileSize2dPow
+    ),
     objTileSize2dPow=ElabVec2[Int](
       x=log2Up(16),
       y=log2Up(16),
@@ -284,12 +294,12 @@ object Gpu2dSimDutParams {
       //y=log2Up(64),
       //x=log2Up(32),
       //y=log2Up(32),
-      x=log2Up(16),
-      y=log2Up(16),
+      //x=log2Up(16),
+      //y=log2Up(16),
       //x=log2Up(8),
       //y=log2Up(8),
-      //x=log2Up(4),
-      //y=log2Up(4),
+      x=log2Up(4),
+      y=log2Up(4),
       //x=log2Up(2),
       //y=log2Up(2),
     ),
@@ -382,7 +392,9 @@ object Gpu2dSimDutParams {
       true
       //false,
     ),
-    noAffineBgs=true,
+    noAffineBgs=(
+      true
+    ),
     noAffineObjs=(
       true
       //false
@@ -409,27 +421,44 @@ object Gpu2dSimDutToVerilog extends App {
   //    false
   //  ),
   //))
-  Gpu2dSimDutConfig.spinal.generateSystemVerilog(Gpu2dSimDut(
-    clkRate=Gpu2dSimDutParams.clkRate,
-    rgbConfig=Gpu2dSimDutParams.rgbConfig,
-    vgaTimingInfo=Gpu2dSimDutParams.vgaTimingInfo,
-    gpu2dParams=Gpu2dSimDutParams.gpu2dParams,
-    ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
-    optRawSnesButtons=true,
-    optUseLcvVgaCtrl=(
-      //true
-      false
-    ),
-    dbgPipeMemRmw=(
-      //true
-      false
-    ),
-  ))
+  Gpu2dSimDutConfig.spinal.generateSystemVerilog{
+    /*val top =*/ Gpu2dSimDut(
+      clkRate=Gpu2dSimDutParams.clkRate,
+      rgbConfig=Gpu2dSimDutParams.rgbConfig,
+      vgaTimingInfo=Gpu2dSimDutParams.vgaTimingInfo,
+      gpu2dParams=Gpu2dSimDutParams.gpu2dParams,
+      ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
+      optRawSnesButtons=true,
+      optUseLcvVgaCtrl=(
+        //true
+        false
+      ),
+      dbgPipeMemRmw=(
+        //true
+        false
+      ),
+    )
+    //top
+  }
 }
 object Gpu2dToVerilog extends App {
-  Gpu2dSimDutConfig.spinal.generateSystemVerilog(Gpu2d(
-    params=Gpu2dSimDutParams.gpu2dParams,
-  ))
+  Gpu2dSimDutConfig.spinal.generateSystemVerilog{
+    val top = new Component {
+      val gpu2d = Gpu2d(
+        params=Gpu2dSimDutParams.gpu2dParams,
+      )
+      //gpu2d.setName("Gpu2dInnards")
+      val io = Gpu2dIo(
+        params=Gpu2dSimDutParams.gpu2dParams,
+        dbgPipeMemRmw=false,
+      )
+      //io.notSVIFthisLevel()
+      io.notSVIF()
+      io <> gpu2d.io
+    }
+    top.setDefinitionName("Gpu2dTopLevel")
+    top
+  }
 }
 
 object Gpu2dSimDutToVhdl extends App {
@@ -451,3 +480,492 @@ object Gpu2dSimDutToVhdl extends App {
   //val test = PipeSkidBuf(UInt(3 bits))
 }
 
+object Gpu2dInterfaceTestToVerilog extends App {
+  //case class InterfaceTestIo(
+  //  wordWidth: Int,
+  //) extends Bundle {
+  //  //val inpWord = in(Vec.fill(mySize)(TestIntf()))
+  //  //val outpWord = out(Vec.fill(mySize)(TestIntf()))
+  //  val myIntf = Vec.fill(mySize)(TestIntf(wordWidth=wordWidth))
+  //  addGeneric(
+  //    name="wordWidth",
+  //    that=wordWidth,
+  //    default="8",
+  //  )
+  //  for (idx <- 0 until myIntf.size) {
+  //    tieIFParameter(
+  //      signal=myIntf(idx),
+  //      signalParam="wordWidth",
+  //      inputParam="wordWidth",
+  //    )
+  //  }
+  //  notSVModport()
+  //}
+  //case class InterfaceTest(
+  //  wordWidth: Int
+  //) extends Component {
+  //  val io = InterfaceTestIo(wordWidth=wordWidth)
+  //  //io.outpWord.myWord.setAsReg()
+  //  //io.outpWord.myWord := io.inpWord.myWord + 1
+  //  for (idx <- 0 until io.myIntf.size) {
+  //    io.myIntf(idx).outpWord.setAsReg()
+  //    io.myIntf(idx).outpWord := io.myIntf(idx).inpWord + 1
+  //  }
+  //}
+  //--------
+  //def testPmRmwWordWidth = 8
+  //def testPmRmwWordType() = UInt(testPmRmwWordWidth bits)
+  val testPmRmwWordCountArr = Array.fill(1)(8.toInt)
+  //--------
+  def testPmRmwCfg[
+    WordT <: Data
+  ](
+    wordType: HardType[WordT],
+  ): PipeMemRmwConfig[WordT, Bool] = PipeMemRmwConfig(
+    wordType=wordType(),
+    wordCountArr=testPmRmwWordCountArr,
+    hazardCmpType=Bool(),
+    modRdPortCnt=1,
+    modStageCnt=1,
+    pipeName="pipeMem_InterfaceDebug",
+  )
+  def mkTestExt[
+    WordT <: Data
+  ](
+    wordType: HardType[WordT]
+  ) = {
+    val ret = PipeMemRmwPayloadExt(
+      cfg=testPmRmwCfg(wordType=wordType()),
+      wordCount=testPmRmwWordCountArr(0)
+    )
+    ret
+  }
+  case class TestPmRmwModType[
+    WordT <: Data
+  ](
+    wordType: HardType[WordT],
+  ) extends PipeMemRmwPayloadBase[WordT, Bool] {
+    //--------
+    val myExt = mkTestExt(wordType=wordType())
+    //--------
+    override def setPipeMemRmwExt(
+      inpExt: PipeMemRmwPayloadExt[WordT, Bool],
+      ydx: Int,
+      memArrIdx: Int,
+    ): Unit = {
+      myExt := inpExt
+    }
+    override def getPipeMemRmwExt(
+      outpExt: PipeMemRmwPayloadExt[WordT, Bool],
+      ydx: Int,
+      memArrIdx: Int,
+    ): Unit = {
+      outpExt := myExt
+    }
+    //--------
+    override def formalSetPipeMemRmwFwd(
+      outpFwd: PipeMemRmwFwd[WordT, Bool],
+      memArrIdx: Int,
+    ): Unit = {
+    }
+    override def formalGetPipeMemRmwFwd(
+      inpFwd: PipeMemRmwFwd[WordT, Bool],
+      memArrIdx: Int,
+    ): Unit = {
+    }
+    //--------
+    setDefinitionName(
+      "TestPmRmwModType"
+    )
+    //--------
+  }
+  case class TestVecPmRmwModType[
+    WordT <: Data
+  ](
+    wordType: HardType[WordT],
+    vecSize: Int,
+  ) extends PipeMemRmwPayloadBase[WordT, Bool] {
+    //--------
+    val myExt = Vec.fill(vecSize)(mkTestExt(wordType=wordType()))
+    //--------
+    override def setPipeMemRmwExt(
+      inpExt: PipeMemRmwPayloadExt[WordT, Bool],
+      ydx: Int,
+      memArrIdx: Int,
+    ): Unit = {
+      myExt(ydx) := inpExt
+    }
+    override def getPipeMemRmwExt(
+      outpExt: PipeMemRmwPayloadExt[WordT, Bool],
+      ydx: Int,
+      memArrIdx: Int,
+    ): Unit = {
+      outpExt := myExt(ydx)
+    }
+    //--------
+    override def formalSetPipeMemRmwFwd(
+      outpFwd: PipeMemRmwFwd[WordT, Bool],
+      memArrIdx: Int,
+    ): Unit = {
+    }
+    override def formalGetPipeMemRmwFwd(
+      inpFwd: PipeMemRmwFwd[WordT, Bool],
+      memArrIdx: Int,
+    ): Unit = {
+    }
+    //--------
+    setDefinitionName(
+      "TestPmRmwModType"
+    )
+    //--------
+  }
+  case class TestPmRmwThing(
+  ) extends Interface {
+    //--------
+    val tempMod = TestPmRmwModType(UInt(8 bits))
+    val tempVecMod = TestVecPmRmwModType(UInt(4 bits), 2)
+    //--------
+  }
+  //--------
+  val myDefaultWordWidth = 8
+  //def wordType() = UInt(wordWidth bits)
+  val myDefaultWordCount = 3
+  val outerWordCount = 2
+  //case class TestIntf(
+  //  wordWidth: Int,
+  //) extends Bundle {
+  //  val inpWord = in(UInt(wordWidth bits))
+  //  val outpWord = out(UInt(wordWidth bits))
+  //  addGeneric(
+  //    name="wordWidth",
+  //    that=wordWidth,
+  //    default="8",
+  //  )
+  //  tieGeneric(
+  //    signal=inpWord,
+  //    generic="wordWidth",
+  //  )
+  //  tieGeneric(
+  //    signal=outpWord,
+  //    generic="wordWidth",
+  //  )
+  //  notSVModport()
+  //}
+  case class TestStreamPayloadInner(
+    wordWidth: Int
+  ) extends Interface {
+    val myData = UInt(wordWidth bits)
+    setAsSVstruct()
+    notSVModport()
+    //addGeneric(
+    //  name="wordWidth",
+    //  that=wordWidth,
+    //  default="8",
+    //)
+    //tieGeneric(
+    //  signal=myData,
+    //  generic="wordWidth",
+    //)
+    //notSVModportthisLevel()
+    setDefinitionName(
+      s"TestStreamPayloadInner"
+    )
+    //doConvertSVIFvec()
+  }
+  case class TestStreamPayload(
+    wordWidth: Int,
+    wordCount: Int,
+  ) extends Interface {
+    //val inpData = UInt(wordWidth bits)
+    //val outpData = UInt(wordWidth bits)
+    val inpData = Vec.fill(outerWordCount)(
+      Vec.fill(wordCount)(
+        TestStreamPayloadInner(wordWidth=wordWidth)
+      )
+    )
+    val outpData = Vec.fill(outerWordCount)(
+      Vec.fill(wordCount)(
+        TestStreamPayloadInner(wordWidth=wordWidth)
+      )
+    )
+    notSVModport()
+    setAsSVstruct()
+    //addGeneric(
+    //  name="wordWidth",
+    //  that=wordWidth,
+    //  default="8",
+    //)
+    ////addGeneric(
+    ////  name="wordCount",
+    ////  that=wordCount,
+    ////  default="3",
+    ////)
+    //for (jdx <- 0 until outerWordCount) {
+    //  for (idx <- 0 until wordCount) {
+    //    tieIFParameter(
+    //      signal=inpData(jdx)(idx),
+    //      signalParam="wordWidth",
+    //      inputParam="wordWidth",
+    //    )
+    //    tieIFParameter(
+    //      signal=outpData(jdx)(idx),
+    //      signalParam="wordWidth",
+    //      inputParam="wordWidth",
+    //    )
+    //  }
+    //}
+    ////notSVModport()
+    //notSVModportthisLevel()
+    ////setDefinitionName(
+    ////  s"TestStreamPayload_${wordCount}"
+    ////)
+    ////setDefinitionName(
+    ////  s"TestStreamPayload"
+    ////)
+    setDefinitionName(
+      s"TestStreamPayloadInner"
+    )
+    //doConvertSVIFvec()
+  }
+
+  case class TopLevelIo(
+    wordWidth: Int,
+    wordCount: Int,
+  ) extends Interface with IMasterSlave {
+    //val testThing = in(TestPmRmwThing())
+    //println(
+    //  this.getClass.getSimpleName
+    //)
+    //setName(
+    //  "TopLevel_io"
+    //)
+    //setDefinitionName(
+    //  s"TopLevelIo_${wordWidth}_${wordCount}"
+    //)
+    //val inpWord = in(
+    //  Vec.fill(mySize)(
+    //    //wordType()
+    //    UInt(wordWidth bits)
+    //  )
+    //)
+    //val outpWord = out(
+    //  Vec.fill(mySize)(
+    //    //wordType()
+    //    UInt(wordWidth bits)
+    //  )
+    //)
+    val tempStruct = /*out*/(
+      TestStreamPayload(
+        wordWidth=wordWidth,
+        wordCount=wordCount,
+      )
+    )
+    //val stm0 = (
+    //  DebugStream(wordType=UInt(wordWidth bits))
+    //)
+    //val stm1 = /*in*/(
+    //  DebugStream(wordType=UInt(wordWidth + 1 bits))
+    //)
+    val push = (
+      /*slave*/(
+        Stream(
+          Vec.fill(wordCount)(
+            TestStreamPayload(
+              wordWidth=wordWidth,
+              wordCount=wordCount,
+            )
+          )
+        )
+      )
+    )
+    val pop = (
+      /*master*/(
+        Stream(
+          Vec.fill(wordCount)(
+            TestStreamPayload(
+              wordWidth=wordWidth,
+              wordCount=wordCount,
+            )
+          )
+        )
+      )
+    )
+    override def asMaster(): Unit = mst
+    @modport
+    def mst = {
+      in(tempStruct)
+      //in(stm0)
+      //in(stm1)
+      slave(push)
+      master(pop)
+    }
+    @modport
+    def slv = {
+      out(tempStruct)
+      //out(stm0)
+      //out(stm1)
+      master(push)
+      slave(pop)
+    }
+    //notSVIF()
+    //notSVModport()
+    setDefinitionName(
+      s"TopLevelIo_${wordWidth}_${wordCount}"
+    )
+  }
+  //case class DebugStream[
+  //  WordT <: Data
+  //](
+  //  wordType: HardType[WordT],
+  //  //wordWidth: Int
+  //) extends Interface {
+  //  val stmData = Stream(
+  //    //UInt(wordWidth bits)
+  //    wordType()
+  //  )
+  //  setDefinitionName(
+  //    s"Stream"
+  //  )
+  //  notSVModport()
+  //}
+  case class TopLevelInnards(
+    wordWidth: Int,
+    wordCount: Int,
+  ) extends Component {
+    //--------
+    val io = master(TopLevelIo(
+      wordWidth=wordWidth,
+      wordCount=wordCount,
+    ))
+    //--------
+    val pushMidStm = (
+      Stream(
+        Vec.fill(wordCount)(
+          TestStreamPayload(
+            wordWidth=wordWidth,
+            wordCount=wordCount,
+          )
+        )
+      )
+    )
+    //pushMidStm.doConvertSVIFvec()
+    pushMidStm.notSVModport()
+    val popMidStm = (
+      Stream(
+        Vec.fill(wordCount)(
+          TestStreamPayload(
+            wordWidth=wordWidth,
+            wordCount=wordCount,
+          )
+        )
+      )
+    )
+    //for ((elem, idx) <- popMidStm.payload.zipWithIndex) {
+    //  elem.doConvertSVIFvec()
+    //}
+    popMidStm.notSVModport()
+    ////val myIoPushS2mPipe = (
+    ////  io.push.s2mPipe()
+    ////  .setName(s"myIoPushS2mPipe")
+    ////)
+    ////val myIoPushM2sPipe = (
+    ////  myIoPushS2mPipe.m2sPipe()
+    ////  .setName(s"myIoPushM2sPipe")
+    ////)
+    ////pushMidStm << io.push //myIoPushM2sPipe
+    //--------
+    pushMidStm <-/< io.push
+    ////val myPopMidStmS2mPipe = (
+    ////  popMidStm.s2mPipe()
+    ////  .setName(s"myPopMidStmS2mPipe")
+    ////)
+    ////val myPopMidStmM2sPipe = (
+    ////  myPopMidStmS2mPipe.m2sPipe()
+    ////  .setName(s"myPopMidStmM2sPipe")
+    ////)
+    ////io.pop << popMidStm //myPopMidStmM2sPipe
+    io.pop <-/< popMidStm
+
+    pushMidStm.translateInto(into=popMidStm)(
+      dataAssignment=(
+        o,
+        i
+      ) => {
+        for (kdx <- 0 until wordCount) {
+          for (jdx <- 0 until outerWordCount) {
+            for (idx <- 0 until wordCount) {
+              o(kdx).inpData(jdx)(idx).myData := (
+                i(kdx).inpData(jdx)(idx).myData
+              )
+              o(kdx).outpData(jdx)(idx).myData := (
+                i(kdx).inpData(jdx)(idx).myData + 1
+              )
+            }
+          }
+        }
+      }
+    )
+    //--------
+    //io.pop <-/< io.push
+    ////val dut = InterfaceTest(wordWidth=wordWidth)
+    //val tempStmVec = Vec.fill(mySize)(
+    //  //Vec.fill(3)(
+    //    Stream(TestStreamPayload(wordWidth=wordWidth))
+    //  //)
+    //)
+    ////tempStm(0).valid := True
+    ////tempStm(0).myData := 3
+    ////tempStm(1) <-/< tempStm(0)
+    ////tempStm(1).ready := True
+    ////val tempMem = Mem(
+    ////  wordType=TestStreamPayload(wordWidth=wordWidth),
+    ////  wordCount=8
+    ////)
+    ////dut.io.outp
+    ////for (idx <- 0 until mySize) {
+    ////  dut.io.myIntf(idx).inpWord := io.inpWord(idx)
+    ////  io.outpWord(idx) := dut.io.myIntf(idx).outpWord
+    ////}
+    //for (idx <- 0 until mySize) {
+    //  def myStm = tempStmVec(idx)
+    //  for (jdx <- 0 until myStm.size) {
+    //    if (jdx == 0) {
+    //      myStm(jdx) <-/< io.push(idx)
+    //    } else if (jdx == myStm.size - 1) {
+    //      //io.pop(idx) <-/< myStm(jdx)
+    //      val between = Stream(TestStreamPayload(wordWidth=wordWidth))
+    //      //between.translateFrom(that=myStm)
+    //    } else {
+    //      myStm(jdx) <-/< tempStmVec(idx)(jdx - 1)
+    //    }
+    //    
+    //  }
+    //}
+    //--------
+  }
+  case class TopLevel(
+    wordWidth: Int,
+    wordCount: Int,
+  ) extends Component {
+    val io = master(TopLevelIo(
+      wordWidth=wordWidth,
+      wordCount=wordCount,
+    ))
+    io.notSVIF()
+    val dut = TopLevelInnards(
+      wordWidth=wordWidth,
+      wordCount=wordCount,
+    )
+    dut.io <> io
+  }
+  Gpu2dSimDutConfig.spinal.generateSystemVerilog{
+    val top = TopLevel(
+      //wordWidth=8
+      wordWidth=myDefaultWordWidth,
+      wordCount=myDefaultWordCount,
+    )
+    top.setName("TopLevel")
+    //top.io.notSVIF()
+    top
+  }
+}

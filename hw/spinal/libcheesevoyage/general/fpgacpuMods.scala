@@ -13,7 +13,7 @@ case class FpgacpuRegisterIo[
 ](
   dataType: HardType[T],
   //resetVal: HardType[T],
-) extends Bundle {
+) extends Interface {
   //--------
   val clkEn = in Bool()
   val clear = in Bool()
@@ -45,7 +45,7 @@ case class FpgacpuRegister[
 }
 //--------
 // http://fpgacpu.ca/fpga/Pulse_Latch.html
-case class FpgacpuPulseLatchIo() extends Bundle {
+case class FpgacpuPulseLatchIo() extends Interface {
   //--------
   val clear = in Bool()
   val inpPulse = in Bool()
@@ -74,7 +74,7 @@ case class FpgacpuPipeToPulseIo[
   T <: Data
 ](
   dataType: HardType[T],
-) extends Bundle {
+) extends Interface {
   val clear = in Bool()
 
   // Pipe input
@@ -146,7 +146,7 @@ case class FpgacpuPulseToPipeIo[
   //--------
   dataType: HardType[T],
   //--------
-) extends Bundle {
+) extends Interface {
   //--------
   val clear = in Bool()
   //--------
@@ -249,31 +249,76 @@ case class FpgacpuPulseToPipe[
 }
 //--------
 // http://fpgacpu.ca/fpga/RAM_Simple_Dual_Port.html
-case class FpgacpuRamSimpleDualPortIo[
-  WordT <: Data
-](
-  wordType: HardType[WordT],
+case class FpgacpuRamSimpleDualPortIo
+//[
+//  WordT <: Data
+//]
+(
+  //wordType: HardType[WordT],
+  wordWidth: Int,
   //addrWidth: Int,
-  depth: Int,
+  //depth: Int,
+  addrWidth: Int,
 ) extends Bundle {
-  def addrWidth = log2Up(depth)
+  //val addrWidth = log2Up(depth)
   //--------
   // Writes
   val wrEn = in Bool()
   val wrAddr = in UInt(addrWidth bits)
-  val wrData = in(wordType())
+  val wrData = in(
+    Bits(
+      //wordType().asBits.getWidth 
+      wordWidth
+      bits
+    )
+  )
   //--------
   // Reads
   val rdEn = in Bool()
   val rdAddr = in UInt(addrWidth bits)
-  val rdData = out(wordType())
-  //--------
+  val rdData = out(
+    Bits(
+      //wordType().asBits.getWidth
+      wordWidth
+      bits
+    )
+  )
+  ////--------
+  //addGeneric(
+  //  name="addrWidth",
+  //  that=addrWidth,
+  //  default="8",
+  //)
+  //tieGeneric(
+  //  signal=wrAddr,
+  //  generic="addrWidth",
+  //)
+  //tieGeneric(
+  //  signal=rdAddr,
+  //  generic="addrWidth",
+  //)
+  //addGeneric(
+  //  name="wordWidth",
+  //  that=wordWidth,
+  //  default="8",
+  //)
+  //tieGeneric(
+  //  signal=wrData,
+  //  generic="wordWidth",
+  //)
+  //tieGeneric(
+  //  signal=rdData,
+  //  generic="wordWidth",
+  //)
+  ////--------
+  //notSVModport()
+  ////--------
 }
 case class FpgacpuRamSimpleDualPortImpl[
   WordT <: Data
 ](
   //wordWidth: Int,
-  io: FpgacpuRamSimpleDualPortIo[WordT],
+  io: FpgacpuRamSimpleDualPortIo,
   wordType: HardType[WordT],
   depth: Int,
   //init: Option[Seq[Bits]]=None,
@@ -300,16 +345,16 @@ case class FpgacpuRamSimpleDualPortImpl[
   //arr.setTechnology(ramBlock)
 
   init match {
-    case Some(myInit) => {
-      arr.init(myInit)
+    case Some(_) => {
+      arr.init(init.get)
       assert(initBigInt == None)
     }
     case None => {
     }
   }
   initBigInt match {
-    case Some(myInitBigInt) => {
-      arr.initBigInt(myInitBigInt)
+    case Some(_) => {
+      arr.initBigInt(initBigInt.get)
       assert(init == None)
     }
     case None => {
@@ -318,31 +363,39 @@ case class FpgacpuRamSimpleDualPortImpl[
 
   arr.write(
     address=io.wrAddr,
-    data=io.wrData,
+    data={
+      val tempWrData = wordType()
+      tempWrData.assignFromBits(
+        io.wrData
+      )
+      tempWrData
+    },
     enable=io.wrEn,
   )
-  io.rdData := (
-    arr.readSync
-    (
+  io.rdData := {
+    val tempRdData = arr.readSync(
       address=io.rdAddr,
       enable=io.rdEn,
     )
-  )
+    tempRdData.asBits
+  }
 }
 case class FpgacpuRamSimpleDualPort[
   WordT <: Data
 ](
   wordType: HardType[WordT],
   depth: Int,
-  init: Option[ArrayBuffer[WordT]]=None,
+  init: Option[Seq[WordT]]=None,
   initBigInt: Option[Seq[BigInt]]=None,
   arrRamStyle: String="block",
   arrRwAddrCollision: String="",
 ) extends Component {
   //--------
   val io = FpgacpuRamSimpleDualPortIo(
-    wordType=wordType(),
-    depth=depth,
+    //wordType=wordType(),
+    wordWidth=(wordType().asBits.getWidth),
+    //depth=depth,
+    addrWidth=log2Up(depth),
   )
   def addrWidth = io.addrWidth
   //--------
@@ -354,7 +407,7 @@ case class FpgacpuRamSimpleDualPort[
     //initBigInt=initBigInt,
     init={
       init match {
-        case Some(myInit) => {
+        case Some(_) => {
           //val tempArr = new ArrayBuffer[WordT]()
           //if (myInit.size < depth) {
           //  for (idx <- 0 until myInit.size) {
@@ -370,7 +423,8 @@ case class FpgacpuRamSimpleDualPort[
           //  }
           //}
           //Some(tempArr.toSeq)
-          Some(myInit)
+          //Some(myInit)
+          init
         }
         case None => {
           None
@@ -379,7 +433,7 @@ case class FpgacpuRamSimpleDualPort[
     },
     initBigInt={
       initBigInt match {
-        case Some(myInit) => {
+        case Some(_) => {
           //val tempArr = new ArrayBuffer[BigInt]()
           //if (myInit.size < depth) {
           //  for (idx <- 0 until myInit.size) {
@@ -394,7 +448,8 @@ case class FpgacpuRamSimpleDualPort[
           //  }
           //}
           //Some(tempArr.toSeq)
-          Some(myInit)
+          //Some(myInit)
+          initBigInt
         }
         case None => {
           None
@@ -451,7 +506,7 @@ case class FpgacpuPipeForkIo[
 ](
   dataType: HardType[T],
   oSize: Int,
-) extends Bundle {
+) extends Interface {
   val pipeIn = slave Stream(dataType())
   val pipeOutVec = Vec.fill(oSize)(master Stream(dataType()))
 }
@@ -522,7 +577,7 @@ case class FpgacpuPipeJoinIo[
 ](
   dataType: HardType[T],
   size: Int,
-) extends Bundle {
+) extends Interface {
   //--------
   val pipeInVec = Vec.fill(size)(slave Stream(dataType()))
   val pipeOut = master Stream(Vec.fill(size)(dataType()))
@@ -564,13 +619,13 @@ case class FpgacpuPipeJoin[
 //--------
 //case class FpgacpuPipeForkJoinCombinedPayload(
 //  typeArr: ArrayBuffer[HardType[Data]],
-//) extends Bundle {
+//) extends Interface {
 //  val data = typeArr.map(ht => ht.craft())
 //}
 //// http://fpgacpu.ca/fpga/Pipe_Fork_Lazy.html
 //case class FpgacpuPipeForkLazyIo(
 //  typeArr: ArrayBuffer[HardType[Data]],
-//) extends Bundle {
+//) extends Interface {
 //  //--------
 //  val clear = in Bool()
 //  //--------
@@ -610,7 +665,7 @@ case class FpgacpuPipeJoin[
 //// http://fpgacpu.ca/fpga/Pipe_Join.html
 //case class FpgacpuPipeJoinIo(
 //  typeArr: ArrayBuffer[HardType[Data]],
-//) extends Bundle {
+//) extends Interface {
 //  //--------
 //  val clear = in Bool()
 //  //--------

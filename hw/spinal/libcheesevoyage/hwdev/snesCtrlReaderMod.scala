@@ -47,7 +47,7 @@ case class ClkCnt(
   }
 }
 case class SnesCtrlIo(
-) extends Interface with IMasterSlave {
+) extends Bundle with IMasterSlave {
   // FL4SHK notes on SNES Controller pins (only my SNES controller
   // extension cable that I stripped the wires of):
   //  Green (short)/Yellow (long): +5v (hook up +3.3V for the Arty A7 100T)

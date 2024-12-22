@@ -82,14 +82,14 @@ V_SOURCES := \
 	$(foreach DIR,$(V_DIRS),$(wildcard $(DIR)/*.v)) \
 	$(foreach DIR,$(V_DIRS),$(wildcard $(DIR)/*.sv))
 
-V_TOP:=Gpu2dSimDut
+V_TOP:=Gpu2d#Gpu2dSimDut
 VC_OUTLIB:=$(V_OBJDIR)/V$(V_TOP)__ALL.a
 VC_OUTMK:=V$(V_TOP).mk 
 
 VC:=verilator
 VC_CFLAGS:=-CFLAGS -O2
 VC_LDFLAGS:=-LDFLAGS -lm
-VC_JOBS:=8#4
+VC_JOBS:=8#12#8#4
 TRACE:=#--trace-fst
 TRACE_THREADS:=#--trace-threads 2
 MY_THREADS:=1#4 #8

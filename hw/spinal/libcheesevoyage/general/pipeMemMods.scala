@@ -14,7 +14,7 @@ import libcheesevoyage.Config
 //](
 //  dataType: HardType[T],
 //  //wordCount: Int,
-//) extends Bundle {
+//) extends Interface {
 //  val front = slave(Stream(dataType()))
 //  val back = master(Stream(dataType()))
 //}
@@ -158,7 +158,7 @@ object PipeMemRmwPayloadExt {
   )
 }
 case class PipeMemRmwPayloadExtPipeFlags(
-) extends Bundle {
+) extends Interface {
   val valid = KeepAttribute(Bool())
   val ready = KeepAttribute(Bool())
   val fire = KeepAttribute(Bool())
@@ -184,7 +184,7 @@ case class PipeMemRmwPayloadExtMain[
   //optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
   //optReorder: Boolean=false,
   ////myHaveFormalFwd: Boolean=false,
-) extends Bundle {
+) extends Interface {
   
   def wordType() = cfg.wordType()
   //def wordCount = cfg.wordCount
@@ -206,12 +206,14 @@ case class PipeMemRmwPayloadExtMain[
   //val didReorderCommit = (optReorder) generate (
   //  Bool()
   //)
-  val reqReorderCommit = (optReorder) generate (
-    /*Vec.fill(modRdPortCnt)*/(Bool())
-  )
-  val didReorderCommit = (optReorder) generate (
-    /*Vec.fill(modRdPortCnt)*/(Bool())
-  )
+  //--------
+  //val reqReorderCommit = (optReorder) generate (
+  //  /*Vec.fill(modRdPortCnt)*/(Bool())
+  //)
+  //val didReorderCommit = (optReorder) generate (
+  //  /*Vec.fill(modRdPortCnt)*/(Bool())
+  //)
+  //--------
 
   //// When `True`, read from the address `memAddr`
   //// When `False`, read from the address `dualRd.rReorderCommitHead`, 
@@ -328,7 +330,7 @@ case class PipeMemRmwPayloadExtMain[
   //--------
 }
 
-class PipeMemRmwPayloadExtBase[
+case class PipeMemRmwPayloadExt[
   WordT <: Data,
   HazardCmpT <: Data,
 ](
@@ -349,7 +351,10 @@ class PipeMemRmwPayloadExtBase[
   //optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
   //optReorder: Boolean=false,
   ////myHaveFormalFwd: Boolean=false,
-) extends Bundle {
+) extends Interface {
+  //setDefinitionName(
+  //  s"testificate_${cfg}_${wordCount}"
+  //)
   def wordType() = cfg.wordType() 
   //def wordCount = cfg.wordCount 
   def hazardCmpType() = cfg.hazardCmpType()
@@ -396,8 +401,8 @@ class PipeMemRmwPayloadExtBase[
   def modMemWord = main.modMemWord
   def modMemWordValid = main.modMemWordValid
   def rdMemWord = main.rdMemWord
-  def reqReorderCommit = main.reqReorderCommit
-  def didReorderCommit = main.didReorderCommit
+  //def reqReorderCommit = main.reqReorderCommit
+  //def didReorderCommit = main.didReorderCommit
   def hazardCmp = main.hazardCmp
   def hazardId = main.hazardId
   def getHazardIdIdleVal() = (
@@ -409,39 +414,39 @@ class PipeMemRmwPayloadExtBase[
     //}
   }
 }
-case class PipeMemRmwPayloadExt[
-  WordT <: Data,
-  HazardCmpT <: Data,
-](
-  cfg: PipeMemRmwConfig[
-    WordT,
-    HazardCmpT,
-  ],
-  //wordType: HardType[WordT],
-  wordCount: Int,
-  //hazardCmpType: HardType[HazardCmpT],
-  //modRdPortCnt: Int,
-  //modStageCnt: Int,
-  //memArrSize: Int,
-  ////optSimpleIsWr: Option[Boolean]=None,
-  ////optUseModMemAddr: Boolean=false,
-  ////doModInModFront: Boolean=false,
-  ////optEnableModDuplicate: Boolean=true,
-  //optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
-  //optReorder: Boolean=false,
-  ////myHaveFormalFwd: Boolean=false,
-) extends PipeMemRmwPayloadExtBase(
-  cfg=cfg,
-  //wordType=wordType(),
-  wordCount=wordCount,
-  //hazardCmpType=hazardCmpType(),
-  //modRdPortCnt=modRdPortCnt,
-  //modStageCnt=modStageCnt,
-  //memArrSize=memArrSize,
-  //optModHazardKind=optModHazardKind,
-  //optReorder=optReorder,
-) {
-}
+//case class PipeMemRmwPayloadExt[
+//  WordT <: Data,
+//  HazardCmpT <: Data,
+//](
+//  cfg: PipeMemRmwConfig[
+//    WordT,
+//    HazardCmpT,
+//  ],
+//  //wordType: HardType[WordT],
+//  wordCount: Int,
+//  //hazardCmpType: HardType[HazardCmpT],
+//  //modRdPortCnt: Int,
+//  //modStageCnt: Int,
+//  //memArrSize: Int,
+//  ////optSimpleIsWr: Option[Boolean]=None,
+//  ////optUseModMemAddr: Boolean=false,
+//  ////doModInModFront: Boolean=false,
+//  ////optEnableModDuplicate: Boolean=true,
+//  //optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
+//  //optReorder: Boolean=false,
+//  ////myHaveFormalFwd: Boolean=false,
+//) extends PipeMemRmwPayloadExtBase(
+//  cfg=cfg,
+//  //wordType=wordType(),
+//  wordCount=wordCount,
+//  //hazardCmpType=hazardCmpType(),
+//  //modRdPortCnt=modRdPortCnt,
+//  //modStageCnt=modStageCnt,
+//  //memArrSize=memArrSize,
+//  //optModHazardKind=optModHazardKind,
+//  //optReorder=optReorder,
+//) {
+//}
 //case class PipeMemRmwPayloadBaseFormalFwdFuncs[
 //  WordT <: Data,
 //  HazardCmpT <: Data,
@@ -455,13 +460,13 @@ case class PipeMemRmwPayloadExt[
 //    PipeMemRmwFwd[WordT, HazardCmpT], // inpFwd
 //    Int,                              // memArrIdx
 //  ) => Unit,
-//) extends Bundle {
+//) extends Interface {
 //}
 
-trait PipeMemRmwPayloadBase[
+class PipeMemRmwPayloadBase[
   WordT <: Data,
   HazardCmpT <: Data,
-] extends Bundle {
+] extends Interface {
   //--------
   def setPipeMemRmwExt
   //[
@@ -472,7 +477,8 @@ trait PipeMemRmwPayloadBase[
     inpExt: PipeMemRmwPayloadExt[WordT, HazardCmpT],
     ydx: Int,
     memArrIdx: Int,
-  ): Unit
+  ): Unit = {
+  }
 
   def getPipeMemRmwExt
   //[
@@ -484,7 +490,8 @@ trait PipeMemRmwPayloadBase[
       // this is essentially a return value
     ydx: Int,
     memArrIdx: Int,
-  ): Unit
+  ): Unit = {
+  }
   //--------
   // Optional methods for when 
   // (
@@ -504,7 +511,8 @@ trait PipeMemRmwPayloadBase[
       //DualRdT,
     ],
     memArrIdx: Int,
-  ): Unit //= ???
+  ): Unit = { //= ???
+  } 
 
   def formalGetPipeMemRmwFwd
   //[
@@ -519,7 +527,8 @@ trait PipeMemRmwPayloadBase[
       //DualRdT,
     ],
     memArrIdx: Int,
-  ): Unit //= ???
+  ): Unit = { //= ???
+  }
 
   //def optFormalFwdFuncs(
   //): Option[PipeMemRmwPayloadBaseFormalFwdFuncs[WordT, HazardCmpT]]
@@ -655,17 +664,16 @@ case class PipeMemRmwDualRdTypeDisabled[
   WordT <: Data,
   HazardCmpT <: Data,
 ](
-) extends Bundle
-  with PipeMemRmwPayloadBase[WordT, HazardCmpT]
+) extends /*Interface with*/ PipeMemRmwPayloadBase[WordT, HazardCmpT]
 {
   //--------
-  def setPipeMemRmwExt(
+  override def setPipeMemRmwExt(
     inpExt: PipeMemRmwPayloadExt[WordT, HazardCmpT],
     ydx: Int,
     memArrIdx: Int,
   ): Unit = {
   }
-  def getPipeMemRmwExt(
+  override def getPipeMemRmwExt(
     outpExt: PipeMemRmwPayloadExt[WordT, HazardCmpT],
     ydx: Int,
     memArrIdx: Int,
@@ -673,13 +681,13 @@ case class PipeMemRmwDualRdTypeDisabled[
   }
   //def optFormalFwdFuncs(
   //): Option[PipeMemRmwPayloadBaseFormalFwdFuncs[WordT, HazardCmpT]] = None
-  def formalSetPipeMemRmwFwd(
+  override def formalSetPipeMemRmwFwd(
     outpFwd: PipeMemRmwFwd[WordT, HazardCmpT],
     memArrIdx: Int,
   ): Unit = {
   }
 
-  def formalGetPipeMemRmwFwd(
+  override def formalGetPipeMemRmwFwd(
     inpFwd: PipeMemRmwFwd[
       WordT,
       HazardCmpT,
@@ -728,7 +736,7 @@ case class PipeMemRmwFwd[
 //    HazardCmpT,
 //  ]/*]]*/
 //) 
-extends Bundle {
+extends Interface {
   
   def wordType() = cfg.wordType()
   def wordCount = cfg.wordCountMax
@@ -5396,7 +5404,7 @@ extends Area {
 //    optEnableModDuplicate: Boolean=true,
 //    optEnableClear: Boolean=false,
 //    vivadoDebug: Boolean=false,
-//  ) /*extends Bundle*/ = {
+//  ) /*extends Interface*/ = {
 //    //val clear = (optEnableClear) generate (
 //    //  /*slave*/(Flow(
 //    //    UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
@@ -5448,7 +5456,7 @@ extends Area {
 //](
 //  wordType: HardType[WordT],
 //  wordCount: Int,
-//) extends Bundle {
+//) extends Interface {
 //}
 //case class PipeRegFileRmwIo[
 //  WordT <: Data,
@@ -5478,7 +5486,7 @@ extends Area {
 //  //wordType: HardType[WordT],
 //  wordCount: Int,
 //  //hazardCmpType
-//) extends Bundle {
+//) extends Interface {
 //  //--------
 //  //val head = UInt((PipeMemRmw.addrWidth(wordCount=wordCount) + 1) bits)
 //  //val tail = UInt((PipeMemRmw.addrWidth(wordCount=wordCount) + 1) bits)
@@ -5495,7 +5503,7 @@ extends Area {
 //  hazardCmpType: HardType[HazardCmpT],
 //  modStageCnt: Int,
 //  dualRdExtType: HardType[DualRdExtT],
-//) extends Bundle with PipeMemRmwPayloadBase[WordT, HazardCmpT] {
+//) extends Interface with PipeMemRmwPayloadBase[WordT, HazardCmpT] {
 //  //--------
 //  val myDualRdExt = dualRdExtType()
 //  //--------
@@ -5581,7 +5589,7 @@ case class SamplePipeMemRmwModType[
   //optModHazardKind: PipeMemRmw.ModHazardKind,
   ////doModInModFront: Boolean/*=false*/,
   //optReorder: Boolean=false,
-) extends Bundle with PipeMemRmwPayloadBase[WordT, HazardCmpT] {
+) extends /*Interface with*/ PipeMemRmwPayloadBase[WordT, HazardCmpT] {
   //--------
   val myExt = PipeMemRmwPayloadExt(
     cfg=cfg,
@@ -5596,14 +5604,14 @@ case class SamplePipeMemRmwModType[
     //optReorder=optReorder,
   )
   //--------
-  def setPipeMemRmwExt(
+  override def setPipeMemRmwExt(
     ext: PipeMemRmwPayloadExt[WordT, HazardCmpT],
     ydx: Int,
     memArrIdx: Int,
   ): Unit = {
     myExt := ext
   }
-  def getPipeMemRmwExt(
+  override def getPipeMemRmwExt(
     ext: PipeMemRmwPayloadExt[WordT, HazardCmpT],
     ydx: Int,
     memArrIdx: Int,
@@ -5611,13 +5619,13 @@ case class SamplePipeMemRmwModType[
     ext := myExt
   }
   //--------
-  def formalSetPipeMemRmwFwd(
+  override def formalSetPipeMemRmwFwd(
     outpFwd: PipeMemRmwFwd[WordT, HazardCmpT],
     memArrIdx: Int,
   ): Unit = {
   }
 
-  def formalGetPipeMemRmwFwd(
+  override def formalGetPipeMemRmwFwd(
     inpFwd: PipeMemRmwFwd[WordT, HazardCmpT],
     memArrIdx: Int,
   ): Unit = {
@@ -5671,7 +5679,7 @@ case class SamplePipeMemRmwModType[
 //  wordWidth: Int,
 //  wordCount: Int,
 //  //memCount: Int,
-//) extends Bundle {
+//) extends Interface {
 //  //val addr = DualTypeNumVec2(
 //  //  dataTypeX=UInt(log2Up(wordCount) bits),
 //  //  dataTypeY=UInt(log2Up(memCount) bits),
@@ -5684,7 +5692,7 @@ case class SamplePipeMemRmwModType[
 ////](
 ////  wordType: HardType[T],
 ////  wordCount: Int,
-////) extends Bundle with IMasterSlave {
+////) extends Interface with IMasterSlave {
 ////  val addr = in UInt(log2Up(wordCount) bits)
 ////  val data = out(wordType())
 ////
@@ -5698,7 +5706,7 @@ case class SamplePipeMemRmwModType[
 //  wordCount: Int,
 //  //memCount: Int,
 //  debug: Boolean=false,
-//) extends Bundle {
+//) extends Interface {
 //  val dbgFront = (debug) generate PipeMemTestFrontPayload(
 //    wordWidth=wordWidth,
 //    wordCount=wordCount,
@@ -5722,7 +5730,7 @@ case class SamplePipeMemRmwModType[
 //  wordCount: Int,
 //  //memCount: Int,
 //  debug: Boolean=false,
-//) extends Bundle /*with IMasterSlave*/ {
+//) extends Interface /*with IMasterSlave*/ {
 //
 //  def wordWidth = PipeMemTest.wordWidth
 //  def wordType() = PipeMemTest.wordType()
@@ -6714,7 +6722,7 @@ case class SamplePipeMemRmwModType[
 //    //val rCoverSameCnt = Reg(UInt(8 bits)) init(0x0)
 //
 //    //--------
-//    //case class DbgUp() extends Bundle {
+//    //case class DbgUp() extends Interface {
 //    //}
 //    val rUpRdValidDelVec = (debug) generate (
 //      Vec.fill(8)(
@@ -7148,7 +7156,7 @@ case class SamplePipeMemRmwModType[
 ////--------
 //case class PipeMemTestSimDutIo(
 //  wordCount: Int,
-//) extends Bundle {
+//) extends Interface {
 //  val sum = out(PipeMemTest.wordType())
 //}
 //object PipeMemTestSimDut {
@@ -7164,7 +7172,7 @@ case class SamplePipeMemRmwModType[
 //  wordCount: Int,
 //) extends Component {
 //  //--------
-//  //val io = new Bundle {
+//  //val io = new Interface {
 //  //  //val sum = out(PipeMemTest.wordType())
 //  //}
 //  //--------

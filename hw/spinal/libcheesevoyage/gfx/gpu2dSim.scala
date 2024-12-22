@@ -32,7 +32,7 @@ case class Gpu2dSimDut(
   ),
   vivadoDebug: Boolean=false,
 ) extends Component {
-  val io = new Bundle {
+  val io = new Interface {
     val snesCtrl = (!optRawSnesButtons) generate SnesCtrlIo()
     val rawSnesButtons = (optRawSnesButtons) generate (
       slave Stream(UInt(SnesButtons.rawButtonsWidth bits))
@@ -45,6 +45,7 @@ case class Gpu2dSimDut(
       fifoDepth=ctrlFifoDepth,
       optIncludeMiscVgaStates=true,
     ))
+    notSVIF()
   }
   def myVgaTimingsWidth = 12
   //--------
@@ -437,14 +438,14 @@ object Gpu2dSim extends App {
   )
 
   def gpu2dBgTileSize2dPow = ElabVec2[Int](
-    x=log2Up(16),
-    y=log2Up(16),
-    //x=log2Up(8),
-    //y=log2Up(8),
-    //x=log2Up(4),
-    //y=log2Up(4),
-    //x=log2Up(2),
-    //y=log2Up(2),
+    //x=log2Up(16),
+    //y=log2Up(16),
+    ////x=log2Up(8),
+    ////y=log2Up(8),
+    x=log2Up(4),
+    y=log2Up(4),
+    ////x=log2Up(2),
+    ////y=log2Up(2),
   )
   def gpu2dPhysFbSize2dScale = ElabVec2[Int](
     //x=1,
@@ -495,12 +496,12 @@ object Gpu2dSim extends App {
     //),
     bgTileSize2dPow=gpu2dBgTileSize2dPow,
     objTileSize2dPow=ElabVec2[Int](
-      x=log2Up(16),
-      y=log2Up(16),
-      //x=log2Up(8),
-      //y=log2Up(8),
-      //x=log2Up(4),
-      //y=log2Up(4),
+      //x=log2Up(16),
+      //y=log2Up(16),
+      ////x=log2Up(8),
+      ////y=log2Up(8),
+      x=log2Up(4),
+      y=log2Up(4),
       //x=log2Up(2),
       //y=log2Up(2),
     ),
@@ -515,14 +516,14 @@ object Gpu2dSim extends App {
       //y=log2Up(64),
       //x=log2Up(32),
       //y=log2Up(32),
-      x=log2Up(16),
-      y=log2Up(16),
-      //x=log2Up(8),
-      //y=log2Up(8),
-      //x=log2Up(4),
-      //y=log2Up(4),
-      //x=log2Up(2),
-      //y=log2Up(2),
+      //x=log2Up(16),
+      //y=log2Up(16),
+      ////x=log2Up(8),
+      ////y=log2Up(8),
+      x=log2Up(4),
+      y=log2Up(4),
+      ////x=log2Up(2),
+      ////y=log2Up(2),
     ),
     objAffineTileWidthRshift=(
       //0

@@ -145,7 +145,7 @@ case class PipeMemRmwSimDutModType(
   cfg: PipeMemRmwConfig[UInt, UInt],
   optModHazardKind: PipeMemRmw.ModHazardKind,
   optFormal: Boolean,
-) extends Bundle with PipeMemRmwPayloadBase[UInt, UInt]
+) extends /*Interface with*/ PipeMemRmwPayloadBase[UInt, UInt]
 {
   val opCnt = (
     (PipeMemRmwSimDut.doTestModOp) generate (
@@ -211,14 +211,14 @@ case class PipeMemRmwSimDutModType(
   val myExt = Vec.fill(PipeMemRmwSimDut.memArrSize)(
     mkOneExt()
   )
-  def setPipeMemRmwExt(
+  override def setPipeMemRmwExt(
     inpExt: PipeMemRmwPayloadExt[UInt, UInt],
     ydx: Int,
     memArrIdx: Int,
   ): Unit = {
     myExt(ydx) := inpExt
   }
-  def getPipeMemRmwExt(
+  override def getPipeMemRmwExt(
     outpExt: PipeMemRmwPayloadExt[UInt, UInt],
     ydx: Int,
     memArrIdx: Int,
@@ -249,7 +249,7 @@ case class PipeMemRmwSimDutModType(
       cfg=cfg
     )
   )
-  def formalSetPipeMemRmwFwd(
+  override def formalSetPipeMemRmwFwd(
     inpFwd: PipeMemRmwFwd[UInt, UInt],
     memArrIdx: Int,
   ): Unit = {
@@ -258,7 +258,7 @@ case class PipeMemRmwSimDutModType(
     )
     myFwd := inpFwd
   }
-  def formalGetPipeMemRmwFwd(
+  override def formalGetPipeMemRmwFwd(
     outpFwd: PipeMemRmwFwd[UInt, UInt],
     memArrIdx: Int,
   ): Unit = {

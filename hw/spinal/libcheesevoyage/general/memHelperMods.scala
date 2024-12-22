@@ -15,10 +15,17 @@ case class PipeSimpleDualPortMemDrivePayload[
   //wordType: HardType[WordT],
   dataType: HardType[T],
   wordCount: Int,
-) extends Bundle {
+) extends Interface {
   def addrWidth = log2Up(wordCount)
   val addr = UInt(addrWidth bits)
   val data = dataType()
+  //setName(
+  //  name=(
+  //    s"PipeSimpleDualPortMemDrivePayload_"
+  //    + s"${dataType().getClass.getName}_"
+  //    + s"${wordCount}"
+  //  )
+  //)
 }
 //case class PipeSimpleDualPortMemIo[
 //  //WordT <: Data
@@ -229,6 +236,7 @@ case class WrPulseRdPipeSimpleDualPortMem[
   initBigInt: Option[Seq[Seq[BigInt]]]=None,
   linkArr: Option[ArrayBuffer[Link]]=None,
   //latency: Int=1,
+  pmRmwModTypeName: String,
   arrRamStyle: String="block",
   arrRwAddrCollision: String="",
   unionIdxWidth: Int=1,
@@ -315,19 +323,20 @@ extends Component
   //  io.addAttribute("MARK_DEBUG", "TRUE")
   //}
   case class PmRmwModType(
-  ) extends Bundle
-    with PipeMemRmwPayloadBase[WordT, Bool]
-  {
+  ) extends /*Interface with*/ PipeMemRmwPayloadBase[WordT, Bool] {
+    //setName(
+    //  name=pmRmwModTypeName,
+    //)
     val data = dataType()
     val myExt = mkExt()
-    def setPipeMemRmwExt(
+    override def setPipeMemRmwExt(
       inpExt: PipeMemRmwPayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
     ): Unit = {
       myExt := inpExt
     }
-    def getPipeMemRmwExt(
+    override def getPipeMemRmwExt(
       outpExt: PipeMemRmwPayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
@@ -338,13 +347,13 @@ extends Component
     //): Option[PipeMemRmwPayloadBaseFormalFwdFuncs[WordT, Bool]] = (
     //  None
     //)
-    def formalSetPipeMemRmwFwd(
+    override def formalSetPipeMemRmwFwd(
       outpFwd: PipeMemRmwFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
     }
 
-    def formalGetPipeMemRmwFwd(
+    override def formalGetPipeMemRmwFwd(
       inpFwd: PipeMemRmwFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
@@ -895,6 +904,7 @@ extends Component
 //  ) => Unit
 //) extends Area {
 //}
+//--------
 case class WrPulseRdPipeSimpleDualPortMemFpgacpu[
   T <: Data,
   WordT <: Data
@@ -903,7 +913,7 @@ case class WrPulseRdPipeSimpleDualPortMemFpgacpu[
   wordType: HardType[WordT],
   wordCount: Int,
   pipeName: String,
-  initBigInt: Option[ArrayBuffer[BigInt]]=None,
+  initBigInt: Option[Seq[BigInt]]=None,
   linkArr: Option[ArrayBuffer[Link]]=None,
   //latency: Int=1,
   arrRamStyle: String="block",
@@ -985,7 +995,7 @@ extends Component
   //arr.io.wrEn := False
   mem.io.wrAddr := io.wrPulse.addr
   //arr.io.wrData := getWordFunc(io.wrPulse.data)
-  mem.io.wrData := io.wrPulse.data
+  mem.io.wrData.assignFromBits(io.wrPulse.data.asBits)
   //--------
   mem.io.rdEn := rdAddrPipeToPulse.io.pulse.valid
   mem.io.rdAddr := rdAddrPipeToPulse.io.pulse.payload.addr
@@ -1007,7 +1017,11 @@ extends Component
     rdDataPulseToPipe.io.pulse.payload,
     rRdPulsePipePayloadVec(latency - 1),
     //rdAddrPipeToPulse.io.pulse.payload.data,
-    mem.io.rdData
+    {
+      val tempRdData = wordType()
+      tempRdData.assignFromBits(mem.io.rdData.asBits)
+      tempRdData
+    }
   )
   rdDataPulseToPipe.io.pulse.valid := (
     rRdPulseValidVec(latency - 1)
