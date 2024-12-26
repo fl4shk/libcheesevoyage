@@ -58,7 +58,7 @@ case class PipeMemRmwConfig[
   modRdPortCnt: Int,
   modStageCnt: Int,
   pipeName: String,
-  linkArr: Option[ArrayBuffer[Link]]=None,
+  var linkArr: Option[ArrayBuffer[Link]]=None,
   memArrIdx: Int=0,
   //dualRdType: HardType[DualRdT]=PipeMemRmwDualRdTypeDisabled[
   //  WordT, HazardCmpT,
