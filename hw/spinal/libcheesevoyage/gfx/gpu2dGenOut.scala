@@ -26,10 +26,10 @@ object Gpu2dSimDutConfig {
       //false
       true
     ),
-    svInterfaceIncludeModport=(
-      false
-      //true
-    ),
+    //svInterfaceIncludeModport=(
+    //  false
+    //  //true
+    //),
   )
 }
 object Gpu2dSimDutParams {

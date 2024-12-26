@@ -32,7 +32,7 @@ case class Gpu2dSimDut(
   ),
   vivadoDebug: Boolean=false,
 ) extends Component {
-  val io = new Interface {
+  val io = new Bundle {
     val snesCtrl = (!optRawSnesButtons) generate SnesCtrlIo()
     val rawSnesButtons = (optRawSnesButtons) generate (
       slave Stream(UInt(SnesButtons.rawButtonsWidth bits))
@@ -45,7 +45,7 @@ case class Gpu2dSimDut(
       fifoDepth=ctrlFifoDepth,
       optIncludeMiscVgaStates=true,
     ))
-    notSVIF()
+    //notSVIF()
     //notSVmodport()
   }
   def myVgaTimingsWidth = 12
