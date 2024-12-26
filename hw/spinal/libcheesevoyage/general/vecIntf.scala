@@ -8,7 +8,7 @@ case class VecIntfElem[
   //_dataType: => DataT,
   dataType: () => DataT,
   generics: Option[(VecIntfElem[DataT]) => String]=None,
-) extends Interface with DataCarrier[DataT] {
+) extends Bundle with DataCarrier[DataT] {
   val v = dataType()
   def payload: DataT = v
   def fire: Bool = False

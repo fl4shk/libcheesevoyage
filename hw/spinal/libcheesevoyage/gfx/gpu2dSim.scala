@@ -46,6 +46,7 @@ case class Gpu2dSimDut(
       optIncludeMiscVgaStates=true,
     ))
     notSVIF()
+    //notSVmodport()
   }
   def myVgaTimingsWidth = 12
   //--------

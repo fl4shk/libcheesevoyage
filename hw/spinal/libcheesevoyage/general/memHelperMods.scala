@@ -15,7 +15,7 @@ case class PipeSimpleDualPortMemDrivePayload[
   //wordType: HardType[WordT],
   dataType: HardType[T],
   wordCount: Int,
-) extends Interface {
+) extends Bundle {
   def addrWidth = log2Up(wordCount)
   val addr = UInt(addrWidth bits)
   val data = dataType()
@@ -26,6 +26,7 @@ case class PipeSimpleDualPortMemDrivePayload[
   //    + s"${wordCount}"
   //  )
   //)
+  //setAsSVstruct()
 }
 //case class PipeSimpleDualPortMemIo[
 //  //WordT <: Data
@@ -323,20 +324,20 @@ extends Component
   //  io.addAttribute("MARK_DEBUG", "TRUE")
   //}
   case class PmRmwModType(
-  ) extends /*Interface with*/ PipeMemRmwPayloadBase[WordT, Bool] {
+  ) extends Bundle with PipeMemRmwPayloadBase[WordT, Bool] {
     //setName(
     //  name=pmRmwModTypeName,
     //)
     val data = dataType()
     val myExt = mkExt()
-    override def setPipeMemRmwExt(
+    /*override*/ def setPipeMemRmwExt(
       inpExt: PipeMemRmwPayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
     ): Unit = {
       myExt := inpExt
     }
-    override def getPipeMemRmwExt(
+    /*override*/ def getPipeMemRmwExt(
       outpExt: PipeMemRmwPayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
@@ -347,13 +348,13 @@ extends Component
     //): Option[PipeMemRmwPayloadBaseFormalFwdFuncs[WordT, Bool]] = (
     //  None
     //)
-    override def formalSetPipeMemRmwFwd(
+    /*override*/ def formalSetPipeMemRmwFwd(
       outpFwd: PipeMemRmwFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
     }
 
-    override def formalGetPipeMemRmwFwd(
+    /*override*/ def formalGetPipeMemRmwFwd(
       inpFwd: PipeMemRmwFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {

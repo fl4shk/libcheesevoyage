@@ -13,7 +13,7 @@ case class FpgacpuRegisterIo[
 ](
   dataType: HardType[T],
   //resetVal: HardType[T],
-) extends Interface {
+) extends Bundle {
   //--------
   val clkEn = in Bool()
   val clear = in Bool()
@@ -45,7 +45,7 @@ case class FpgacpuRegister[
 }
 //--------
 // http://fpgacpu.ca/fpga/Pulse_Latch.html
-case class FpgacpuPulseLatchIo() extends Interface {
+case class FpgacpuPulseLatchIo() extends Bundle {
   //--------
   val clear = in Bool()
   val inpPulse = in Bool()
@@ -74,7 +74,7 @@ case class FpgacpuPipeToPulseIo[
   T <: Data
 ](
   dataType: HardType[T],
-) extends Interface {
+) extends Bundle {
   val clear = in Bool()
 
   // Pipe input
@@ -146,7 +146,7 @@ case class FpgacpuPulseToPipeIo[
   //--------
   dataType: HardType[T],
   //--------
-) extends Interface {
+) extends Bundle {
   //--------
   val clear = in Bool()
   //--------
@@ -311,7 +311,7 @@ case class FpgacpuRamSimpleDualPortIo
   //  generic="wordWidth",
   //)
   ////--------
-  //notSVModport()
+  //notSVmodport()
   ////--------
 }
 case class FpgacpuRamSimpleDualPortImpl[
@@ -506,7 +506,7 @@ case class FpgacpuPipeForkIo[
 ](
   dataType: HardType[T],
   oSize: Int,
-) extends Interface {
+) extends Bundle {
   val pipeIn = slave Stream(dataType())
   val pipeOutVec = Vec.fill(oSize)(master Stream(dataType()))
 }
@@ -577,7 +577,7 @@ case class FpgacpuPipeJoinIo[
 ](
   dataType: HardType[T],
   size: Int,
-) extends Interface {
+) extends Bundle {
   //--------
   val pipeInVec = Vec.fill(size)(slave Stream(dataType()))
   val pipeOut = master Stream(Vec.fill(size)(dataType()))

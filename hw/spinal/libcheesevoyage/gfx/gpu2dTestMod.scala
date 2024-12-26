@@ -645,7 +645,7 @@ case class Gpu2dTestIo(
   //val pop = master Stream(Gpu2dPopPayload(params=params))
   //--------
   override def asMaster(): Unit = mst
-  @modport
+  //@modport
   def mst = {
     master(pop)
     in(gpu2dPopFire)
@@ -657,7 +657,7 @@ case class Gpu2dTestIo(
     }
   }
 
-  @modport
+  //@modport
   def slv = {
     slave(pop)
     out(gpu2dPopFire)

@@ -60,14 +60,14 @@ case class SnesCtrlIo(
   val inpData = /*in*/ Bool()
   //--------
   override def asMaster(): Unit = mst
-  @modport
+  //@modport
   def mst = {
     out(outpClk)
     out(outpLatch)
     in(inpData)
   }
 
-  @modport
+  //@modport
   def slv = {
     in(outpClk)
     in(outpLatch)

@@ -453,7 +453,7 @@ object Gpu2dToVerilog extends App {
         dbgPipeMemRmw=false,
       )
       //io.notSVIFthisLevel()
-      io.notSVIF()
+      //io.notSVIF()
       io <> gpu2d.io
     }
     top.setDefinitionName("Gpu2dTopLevel")
@@ -499,7 +499,7 @@ object Gpu2dInterfaceTestToVerilog extends App {
   //      inputParam="wordWidth",
   //    )
   //  }
-  //  notSVModport()
+  //  notSVmodport()
   //}
   //case class InterfaceTest(
   //  wordWidth: Int
@@ -544,18 +544,18 @@ object Gpu2dInterfaceTestToVerilog extends App {
     WordT <: Data
   ](
     wordType: HardType[WordT],
-  ) extends PipeMemRmwPayloadBase[WordT, Bool] {
+  ) extends Bundle with PipeMemRmwPayloadBase[WordT, Bool] {
     //--------
     val myExt = mkTestExt(wordType=wordType())
     //--------
-    override def setPipeMemRmwExt(
+    /*override*/ def setPipeMemRmwExt(
       inpExt: PipeMemRmwPayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
     ): Unit = {
       myExt := inpExt
     }
-    override def getPipeMemRmwExt(
+    /*override*/ def getPipeMemRmwExt(
       outpExt: PipeMemRmwPayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
@@ -563,20 +563,20 @@ object Gpu2dInterfaceTestToVerilog extends App {
       outpExt := myExt
     }
     //--------
-    override def formalSetPipeMemRmwFwd(
+    /*override*/ def formalSetPipeMemRmwFwd(
       outpFwd: PipeMemRmwFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
     }
-    override def formalGetPipeMemRmwFwd(
+    /*override*/ def formalGetPipeMemRmwFwd(
       inpFwd: PipeMemRmwFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
     }
     //--------
-    setDefinitionName(
-      "TestPmRmwModType"
-    )
+    //setDefinitionName(
+    //  "TestPmRmwModType"
+    //)
     //--------
   }
   case class TestVecPmRmwModType[
@@ -584,18 +584,18 @@ object Gpu2dInterfaceTestToVerilog extends App {
   ](
     wordType: HardType[WordT],
     vecSize: Int,
-  ) extends PipeMemRmwPayloadBase[WordT, Bool] {
+  ) extends Bundle with PipeMemRmwPayloadBase[WordT, Bool] {
     //--------
     val myExt = Vec.fill(vecSize)(mkTestExt(wordType=wordType()))
     //--------
-    override def setPipeMemRmwExt(
+    /*override*/ def setPipeMemRmwExt(
       inpExt: PipeMemRmwPayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
     ): Unit = {
       myExt(ydx) := inpExt
     }
-    override def getPipeMemRmwExt(
+    /*override*/ def getPipeMemRmwExt(
       outpExt: PipeMemRmwPayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
@@ -603,24 +603,24 @@ object Gpu2dInterfaceTestToVerilog extends App {
       outpExt := myExt(ydx)
     }
     //--------
-    override def formalSetPipeMemRmwFwd(
+    /*override*/ def formalSetPipeMemRmwFwd(
       outpFwd: PipeMemRmwFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
     }
-    override def formalGetPipeMemRmwFwd(
+    /*override*/ def formalGetPipeMemRmwFwd(
       inpFwd: PipeMemRmwFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
     }
     //--------
-    setDefinitionName(
-      "TestPmRmwModType"
-    )
+    //setDefinitionName(
+    //  "TestPmRmwModType"
+    //)
     //--------
   }
   case class TestPmRmwThing(
-  ) extends Interface {
+  ) extends Bundle {
     //--------
     val tempMod = TestPmRmwModType(UInt(8 bits))
     val tempVecMod = TestVecPmRmwModType(UInt(4 bits), 2)
@@ -629,8 +629,14 @@ object Gpu2dInterfaceTestToVerilog extends App {
   //--------
   val myDefaultWordWidth = 8
   //def wordType() = UInt(wordWidth bits)
-  val myDefaultWordCount = 3
-  val outerWordCount = 2
+  val myDefaultWordCount = (
+    //1
+    2
+  )
+  val outerWordCount = (
+    //1
+    3
+  )
   //case class TestIntf(
   //  wordWidth: Int,
   //) extends Bundle {
@@ -649,14 +655,14 @@ object Gpu2dInterfaceTestToVerilog extends App {
   //    signal=outpWord,
   //    generic="wordWidth",
   //  )
-  //  notSVModport()
+  //  notSVmodport()
   //}
   case class TestStreamPayloadInner(
     wordWidth: Int
-  ) extends Interface {
+  ) extends Bundle {
     val myData = UInt(wordWidth bits)
-    setAsSVstruct()
-    notSVModport()
+    //setAsSVstruct()
+    //notSVmodport()
     //addGeneric(
     //  name="wordWidth",
     //  that=wordWidth,
@@ -666,30 +672,50 @@ object Gpu2dInterfaceTestToVerilog extends App {
     //  signal=myData,
     //  generic="wordWidth",
     //)
-    //notSVModportthisLevel()
-    setDefinitionName(
-      s"TestStreamPayloadInner"
-    )
+    //notSVmodportthisLevel()
+    //setDefinitionName(
+    //  s"TestStreamPayloadInner"
+    //)
     //doConvertSVIFvec()
   }
   case class TestStreamPayload(
     wordWidth: Int,
     wordCount: Int,
-  ) extends Interface {
+  ) extends Bundle /*with IMasterSlave*/ {
+    //setDefinitionName(
+    //  s"TestStreamPayloadInner"
+    //)
     //val inpData = UInt(wordWidth bits)
     //val outpData = UInt(wordWidth bits)
-    val inpData = Vec.fill(outerWordCount)(
+    val inpData = (Vec.fill(outerWordCount)(
       Vec.fill(wordCount)(
         TestStreamPayloadInner(wordWidth=wordWidth)
       )
-    )
-    val outpData = Vec.fill(outerWordCount)(
+    ))
+    val outpData = (Vec.fill(outerWordCount)(
       Vec.fill(wordCount)(
         TestStreamPayloadInner(wordWidth=wordWidth)
       )
-    )
-    notSVModport()
-    setAsSVstruct()
+    ))
+    //--------
+    //notSVmodport()
+    //setAsSVstruct()
+    //--------
+    //override def asMaster(): Unit = mst
+    //@modport
+    //def mst = {
+    //  in(inpData)
+    //  out(outpData)
+    //}
+    //@modport
+    //def slv = {
+    //  out(inpData)
+    //  in(outpData)
+    //}
+
+    //setAsSVstruct()
+    //notSVmodport()
+    //setAsSVstruct()
     //addGeneric(
     //  name="wordWidth",
     //  that=wordWidth,
@@ -714,24 +740,21 @@ object Gpu2dInterfaceTestToVerilog extends App {
     //    )
     //  }
     //}
-    ////notSVModport()
-    //notSVModportthisLevel()
+    ////notSVmodport()
+    //notSVmodportthisLevel()
     ////setDefinitionName(
     ////  s"TestStreamPayload_${wordCount}"
     ////)
     ////setDefinitionName(
     ////  s"TestStreamPayload"
     ////)
-    setDefinitionName(
-      s"TestStreamPayloadInner"
-    )
     //doConvertSVIFvec()
   }
 
   case class TopLevelIo(
     wordWidth: Int,
     wordCount: Int,
-  ) extends Interface with IMasterSlave {
+  ) extends Bundle with IMasterSlave {
     //val testThing = in(TestPmRmwThing())
     //println(
     //  this.getClass.getSimpleName
@@ -754,12 +777,14 @@ object Gpu2dInterfaceTestToVerilog extends App {
     //    UInt(wordWidth bits)
     //  )
     //)
-    val tempStruct = /*out*/(
-      TestStreamPayload(
-        wordWidth=wordWidth,
-        wordCount=wordCount,
-      )
-    )
+    //--------
+    //val tempStruct = /*out*/(
+    //  TestStreamPayload(
+    //    wordWidth=wordWidth,
+    //    wordCount=wordCount,
+    //  )
+    //)
+    //--------
     //val stm0 = (
     //  DebugStream(wordType=UInt(wordWidth bits))
     //)
@@ -790,28 +815,39 @@ object Gpu2dInterfaceTestToVerilog extends App {
         )
       )
     )
-    override def asMaster(): Unit = mst
-    @modport
-    def mst = {
-      in(tempStruct)
-      //in(stm0)
-      //in(stm1)
-      slave(push)
-      master(pop)
-    }
-    @modport
+    //@modport
     def slv = {
-      out(tempStruct)
-      //out(stm0)
-      //out(stm1)
+      ////out(tempStruct)
+      //slave(tempStruct)
+      ////out(stm0)
+      ////out(stm1)
       master(push)
       slave(pop)
+      //for (idx <- 0 until wordCount) {
+      //  master(push.payload(idx))
+      //  slave(pop.payload(idx))
+      //}
+    }
+    slv
+    override def asMaster(): Unit = mst
+    //@modport
+    def mst = {
+      ////in(tempStruct)
+      //master(tempStruct)
+      ////in(stm0)
+      ////in(stm1)
+      slave(push)
+      master(pop)
+      //for (idx <- 0 until wordCount) {
+      //  slave(push.payload(idx))
+      //  master(pop.payload(idx))
+      //}
     }
     //notSVIF()
-    //notSVModport()
-    setDefinitionName(
-      s"TopLevelIo_${wordWidth}_${wordCount}"
-    )
+    //notSVmodport()
+    //setDefinitionName(
+    //  s"TopLevelIo_${wordWidth}_${wordCount}"
+    //)
   }
   //case class DebugStream[
   //  WordT <: Data
@@ -826,8 +862,19 @@ object Gpu2dInterfaceTestToVerilog extends App {
   //  setDefinitionName(
   //    s"Stream"
   //  )
-  //  notSVModport()
+  //  notSVmodport()
   //}
+  case class TopLevelInnards1(
+    wordWidth: Int,
+    wordCount: Int,
+  ) extends Component {
+    //--------
+    val io = slave(TopLevelIo(
+      wordWidth=wordWidth,
+      wordCount=wordCount,
+    ))
+    //--------
+  }
   case class TopLevelInnards(
     wordWidth: Int,
     wordCount: Int,
@@ -837,33 +884,47 @@ object Gpu2dInterfaceTestToVerilog extends App {
       wordWidth=wordWidth,
       wordCount=wordCount,
     ))
+    ////--------
+    //val pushMidStm = (
+    //  Stream(
+    //    Vec.fill(wordCount)(
+    //      TestStreamPayload(
+    //        wordWidth=wordWidth,
+    //        wordCount=wordCount,
+    //      )
+    //    )
+    //  )
+    //)
+    ////pushMidStm.doConvertSVIFvec()
+    ////pushMidStm.notSVmodport()
+    //val popMidStm = (
+    //  Stream(
+    //    Vec.fill(wordCount)(
+    //      TestStreamPayload(
+    //        wordWidth=wordWidth,
+    //        wordCount=wordCount,
+    //      )
+    //    )
+    //  )
+    //)
     //--------
-    val pushMidStm = (
-      Stream(
-        Vec.fill(wordCount)(
-          TestStreamPayload(
-            wordWidth=wordWidth,
-            wordCount=wordCount,
-          )
-        )
-      )
-    )
-    //pushMidStm.doConvertSVIFvec()
-    pushMidStm.notSVModport()
-    val popMidStm = (
-      Stream(
-        Vec.fill(wordCount)(
-          TestStreamPayload(
-            wordWidth=wordWidth,
-            wordCount=wordCount,
-          )
-        )
-      )
-    )
+    //case class MyInterface() extends Interface {
+    //  val data = UInt(8 bits)
+    //}
+    //case class MyInterfaceOuter() extends Interface {
+    //  val tempV2d = Vec.fill(3)(
+    //    Vec.fill(2)(
+    //      MyInterface()
+    //    )
+    //  )
+    //}
+    //val myOuter = MyInterfaceOuter()
+    //--------
+
     //for ((elem, idx) <- popMidStm.payload.zipWithIndex) {
     //  elem.doConvertSVIFvec()
     //}
-    popMidStm.notSVModport()
+    //popMidStm.notSVmodport()
     ////val myIoPushS2mPipe = (
     ////  io.push.s2mPipe()
     ////  .setName(s"myIoPushS2mPipe")
@@ -874,37 +935,41 @@ object Gpu2dInterfaceTestToVerilog extends App {
     ////)
     ////pushMidStm << io.push //myIoPushM2sPipe
     //--------
-    pushMidStm <-/< io.push
-    ////val myPopMidStmS2mPipe = (
-    ////  popMidStm.s2mPipe()
-    ////  .setName(s"myPopMidStmS2mPipe")
-    ////)
-    ////val myPopMidStmM2sPipe = (
-    ////  myPopMidStmS2mPipe.m2sPipe()
-    ////  .setName(s"myPopMidStmM2sPipe")
-    ////)
-    ////io.pop << popMidStm //myPopMidStmM2sPipe
-    io.pop <-/< popMidStm
+    //pushMidStm <-/< io.push
+    //////val myPopMidStmS2mPipe = (
+    //////  popMidStm.s2mPipe()
+    //////  .setName(s"myPopMidStmS2mPipe")
+    //////)
+    //////val myPopMidStmM2sPipe = (
+    //////  myPopMidStmS2mPipe.m2sPipe()
+    //////  .setName(s"myPopMidStmM2sPipe")
+    //////)
+    //////io.pop << popMidStm //myPopMidStmM2sPipe
+    //io.pop <-/< popMidStm
+    io.pop << io.push
+    //--------
+    //io.tempStruct.outpData := io.tempStruct.inpData
+    //--------
 
-    pushMidStm.translateInto(into=popMidStm)(
-      dataAssignment=(
-        o,
-        i
-      ) => {
-        for (kdx <- 0 until wordCount) {
-          for (jdx <- 0 until outerWordCount) {
-            for (idx <- 0 until wordCount) {
-              o(kdx).inpData(jdx)(idx).myData := (
-                i(kdx).inpData(jdx)(idx).myData
-              )
-              o(kdx).outpData(jdx)(idx).myData := (
-                i(kdx).inpData(jdx)(idx).myData + 1
-              )
-            }
-          }
-        }
-      }
-    )
+    //pushMidStm.translateInto(into=popMidStm)(
+    //  dataAssignment=(
+    //    o,
+    //    i
+    //  ) => {
+    //    for (kdx <- 0 until wordCount) {
+    //      for (jdx <- 0 until outerWordCount) {
+    //        for (idx <- 0 until wordCount) {
+    //          o(kdx).inpData(jdx)(idx).myData := (
+    //            i(kdx).inpData(jdx)(idx).myData
+    //          )
+    //          o(kdx).outpData(jdx)(idx).myData := (
+    //            i(kdx).inpData(jdx)(idx).myData + 1
+    //          )
+    //        }
+    //      }
+    //    }
+    //  }
+    //)
     //--------
     //io.pop <-/< io.push
     ////val dut = InterfaceTest(wordWidth=wordWidth)
@@ -951,7 +1016,7 @@ object Gpu2dInterfaceTestToVerilog extends App {
       wordWidth=wordWidth,
       wordCount=wordCount,
     ))
-    io.notSVIF()
+    //io.notSVIF()
     val dut = TopLevelInnards(
       wordWidth=wordWidth,
       wordCount=wordCount,

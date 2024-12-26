@@ -145,7 +145,7 @@ case class PipeMemRmwSimDutModType(
   cfg: PipeMemRmwConfig[UInt, UInt],
   optModHazardKind: PipeMemRmw.ModHazardKind,
   optFormal: Boolean,
-) extends /*Interface with*/ PipeMemRmwPayloadBase[UInt, UInt]
+) extends /*Bundle with*/ PipeMemRmwPayloadBase[UInt, UInt]
 {
   val opCnt = (
     (PipeMemRmwSimDut.doTestModOp) generate (

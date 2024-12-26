@@ -82,7 +82,7 @@ V_SOURCES := \
 	$(foreach DIR,$(V_DIRS),$(wildcard $(DIR)/*.v)) \
 	$(foreach DIR,$(V_DIRS),$(wildcard $(DIR)/*.sv))
 
-V_TOP:=Gpu2d#Gpu2dSimDut
+V_TOP:=Gpu2dSimDut#Gpu2d#Gpu2dSimDut
 VC_OUTLIB:=$(V_OBJDIR)/V$(V_TOP)__ALL.a
 VC_OUTMK:=V$(V_TOP).mk 
 
@@ -196,7 +196,7 @@ $(CXX_ASMOUTS) : $(ASMOUTDIR)/%.s : %.cpp
 
 .PHONY : clean
 clean :
-	rm -rfv $(OBJDIR) $(DEPDIR) $(ASMOUTDIR) $(PREPROCDIR) $(PROJ) tags *.taghl gmon.out
+	rm -rfv $(V_OBJDIR) $(OBJDIR) $(DEPDIR) $(ASMOUTDIR) $(PREPROCDIR) $(PROJ) tags *.taghl gmon.out
 
 
 # Flags for make disassemble*

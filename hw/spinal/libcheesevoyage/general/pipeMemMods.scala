@@ -158,7 +158,7 @@ object PipeMemRmwPayloadExt {
   )
 }
 case class PipeMemRmwPayloadExtPipeFlags(
-) extends Interface {
+) extends Bundle {
   val valid = KeepAttribute(Bool())
   val ready = KeepAttribute(Bool())
   val fire = KeepAttribute(Bool())
@@ -184,7 +184,7 @@ case class PipeMemRmwPayloadExtMain[
   //optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
   //optReorder: Boolean=false,
   ////myHaveFormalFwd: Boolean=false,
-) extends Interface {
+) extends Bundle {
   
   def wordType() = cfg.wordType()
   //def wordCount = cfg.wordCount
@@ -351,7 +351,7 @@ case class PipeMemRmwPayloadExt[
   //optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
   //optReorder: Boolean=false,
   ////myHaveFormalFwd: Boolean=false,
-) extends Interface {
+) extends Bundle {
   //setDefinitionName(
   //  s"testificate_${cfg}_${wordCount}"
   //)
@@ -463,10 +463,10 @@ case class PipeMemRmwPayloadExt[
 //) extends Interface {
 //}
 
-class PipeMemRmwPayloadBase[
+trait PipeMemRmwPayloadBase[
   WordT <: Data,
   HazardCmpT <: Data,
-] extends Interface {
+] extends Bundle {
   //--------
   def setPipeMemRmwExt
   //[
@@ -477,8 +477,7 @@ class PipeMemRmwPayloadBase[
     inpExt: PipeMemRmwPayloadExt[WordT, HazardCmpT],
     ydx: Int,
     memArrIdx: Int,
-  ): Unit = {
-  }
+  ): Unit
 
   def getPipeMemRmwExt
   //[
@@ -490,8 +489,7 @@ class PipeMemRmwPayloadBase[
       // this is essentially a return value
     ydx: Int,
     memArrIdx: Int,
-  ): Unit = {
-  }
+  ): Unit
   //--------
   // Optional methods for when 
   // (
@@ -511,8 +509,8 @@ class PipeMemRmwPayloadBase[
       //DualRdT,
     ],
     memArrIdx: Int,
-  ): Unit = { //= ???
-  } 
+  ): Unit// = { //= ???
+  //} 
 
   def formalGetPipeMemRmwFwd
   //[
@@ -527,8 +525,8 @@ class PipeMemRmwPayloadBase[
       //DualRdT,
     ],
     memArrIdx: Int,
-  ): Unit = { //= ???
-  }
+  ): Unit// = { //= ???
+  //}
 
   //def optFormalFwdFuncs(
   //): Option[PipeMemRmwPayloadBaseFormalFwdFuncs[WordT, HazardCmpT]]
@@ -664,16 +662,16 @@ case class PipeMemRmwDualRdTypeDisabled[
   WordT <: Data,
   HazardCmpT <: Data,
 ](
-) extends /*Interface with*/ PipeMemRmwPayloadBase[WordT, HazardCmpT]
+) extends Bundle with PipeMemRmwPayloadBase[WordT, HazardCmpT]
 {
   //--------
-  override def setPipeMemRmwExt(
+  /*override*/ def setPipeMemRmwExt(
     inpExt: PipeMemRmwPayloadExt[WordT, HazardCmpT],
     ydx: Int,
     memArrIdx: Int,
   ): Unit = {
   }
-  override def getPipeMemRmwExt(
+  /*override*/ def getPipeMemRmwExt(
     outpExt: PipeMemRmwPayloadExt[WordT, HazardCmpT],
     ydx: Int,
     memArrIdx: Int,
@@ -681,13 +679,13 @@ case class PipeMemRmwDualRdTypeDisabled[
   }
   //def optFormalFwdFuncs(
   //): Option[PipeMemRmwPayloadBaseFormalFwdFuncs[WordT, HazardCmpT]] = None
-  override def formalSetPipeMemRmwFwd(
+  /*override*/ def formalSetPipeMemRmwFwd(
     outpFwd: PipeMemRmwFwd[WordT, HazardCmpT],
     memArrIdx: Int,
   ): Unit = {
   }
 
-  override def formalGetPipeMemRmwFwd(
+  /*override*/ def formalGetPipeMemRmwFwd(
     inpFwd: PipeMemRmwFwd[
       WordT,
       HazardCmpT,
@@ -736,7 +734,7 @@ case class PipeMemRmwFwd[
 //    HazardCmpT,
 //  ]/*]]*/
 //) 
-extends Interface {
+extends Bundle {
   
   def wordType() = cfg.wordType()
   def wordCount = cfg.wordCountMax
@@ -5589,7 +5587,7 @@ case class SamplePipeMemRmwModType[
   //optModHazardKind: PipeMemRmw.ModHazardKind,
   ////doModInModFront: Boolean/*=false*/,
   //optReorder: Boolean=false,
-) extends /*Interface with*/ PipeMemRmwPayloadBase[WordT, HazardCmpT] {
+) extends Bundle with PipeMemRmwPayloadBase[WordT, HazardCmpT] {
   //--------
   val myExt = PipeMemRmwPayloadExt(
     cfg=cfg,
@@ -5604,14 +5602,14 @@ case class SamplePipeMemRmwModType[
     //optReorder=optReorder,
   )
   //--------
-  override def setPipeMemRmwExt(
+  /*override*/ def setPipeMemRmwExt(
     ext: PipeMemRmwPayloadExt[WordT, HazardCmpT],
     ydx: Int,
     memArrIdx: Int,
   ): Unit = {
     myExt := ext
   }
-  override def getPipeMemRmwExt(
+  /*override*/ def getPipeMemRmwExt(
     ext: PipeMemRmwPayloadExt[WordT, HazardCmpT],
     ydx: Int,
     memArrIdx: Int,
@@ -5619,13 +5617,13 @@ case class SamplePipeMemRmwModType[
     ext := myExt
   }
   //--------
-  override def formalSetPipeMemRmwFwd(
+  /*override*/ def formalSetPipeMemRmwFwd(
     outpFwd: PipeMemRmwFwd[WordT, HazardCmpT],
     memArrIdx: Int,
   ): Unit = {
   }
 
-  override def formalGetPipeMemRmwFwd(
+  /*override*/ def formalGetPipeMemRmwFwd(
     inpFwd: PipeMemRmwFwd[WordT, HazardCmpT],
     memArrIdx: Int,
   ): Unit = {
