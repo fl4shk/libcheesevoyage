@@ -17,23 +17,23 @@ class LcvStallIo[
   //devDataType: (Boolean, HardType[HostDataT]),
 ) extends Bundle with IMasterSlave {
   //--------
-  val myHostDataType: (Boolean, HardType[Data]) = (
+  val myHostDataType: (Boolean, HardType[HostDataT]) = (
     hostDataType match {
       case Some(innerHostDataType) => {
         (true, innerHostDataType())
       }
       case None => {
-        (false, Bool())
+        (false, null)
       }
     }
   )
-  val myDevDataType: (Boolean, HardType[Data]) = (
+  val myDevDataType: (Boolean, HardType[DevDataT]) = (
     devDataType match {
       case Some(innerDevDataType) => {
         (true, innerDevDataType())
       }
       case None => {
-        (false, Bool())
+        (false, null)
       }
     }
   )
