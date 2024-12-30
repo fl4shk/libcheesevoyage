@@ -502,7 +502,7 @@ trait PipeMemRmwPayloadBase[
   //  DualRdT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
   //]
   (
-    outpFwd: PipeMemRmwFwd[
+    inpFwd: PipeMemRmwFwd[
       WordT,
       HazardCmpT,
       //ModT,
@@ -518,7 +518,7 @@ trait PipeMemRmwPayloadBase[
   //  DualRdT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
   //]
   (
-    inpFwd: PipeMemRmwFwd[
+    outpFwd: PipeMemRmwFwd[
       WordT,
       HazardCmpT,
       //ModT,
@@ -4122,7 +4122,7 @@ extends Area {
         && (ydx == 0)
       ) {
         tempUpMod(2).formalSetPipeMemRmwFwd(
-          outpFwd=myFwd,
+          inpFwd=myFwd,
           memArrIdx=memArrIdx,
         )
       }
@@ -4268,7 +4268,7 @@ extends Area {
       if (ydx == 0) {
         if (myHaveFormalFwd) {
           tempUpMod(0).formalGetPipeMemRmwFwd(
-            inpFwd=upFwd(extIdxUp),
+            outpFwd=upFwd(extIdxUp),
             memArrIdx=memArrIdx,
           )
         }
