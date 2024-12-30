@@ -102,14 +102,6 @@ case class LcvStallHost[
   }
   //--------
   val nextValid: Bool = (
-    //stallIo match {
-    //  case Some(myStallIo) => {
-    //    myStallIo.valid
-    //  }
-    //  case None => {
-    //    Bool()
-    //  }
-    //}
     if (myStallIo._1) (
       myStallIo._2.nextValid
     ) else (
@@ -128,42 +120,15 @@ case class LcvStallHost[
   )
   nextValid := rValid
   val ready: Bool = (
-    //stallIo match {
-    //  case Some(myStallIo) => {
-    //    Bool()
-    //  }
-    //}
     if (myStallIo._1) (
       myStallIo._2.ready
     ) else (
       Bool()
     )
   )
-  //val rReady = (
-  //  RegNext(
-  //    next=nextReady,
-  //    init=nextReady.getZero
-  //  )
-  //)
-  //val rReady = (
-  //  RegNext(nextReady)
-  //  init(nextReady.getZero)
-  //)
   val fire = (
-    //rPastValid && ready
-    //valid && nextReady
-    //nextValid && rReady
-    //rPastValid && nextReady
-    //valid && rReady
-    //rPastValid && ready
-    //nextValid && ready
     rValid && ready
   )
-  //val fireWithPastValid = (
-  //  //fire
-  //  rValid
-  //  && rValid
-  //)
   //--------
   val rHadFirstFire = (
     (optFormalJustHost) generate (
