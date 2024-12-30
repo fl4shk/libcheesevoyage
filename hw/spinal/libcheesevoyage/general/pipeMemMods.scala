@@ -129,14 +129,16 @@ case class PipeMemRmwConfig[
   ////--------
 ) {
   def memArrSize = wordCountArr.size
-  val wordCountMax: Int = {
-    var temp: Int = 0
+  val (wordCountSum, wordCountMax): (Int, Int) = {
+    var mySum: Int = 0
+    var myMax: Int = 0
     for (ydx <- 0 until memArrSize) {
-      if (temp < wordCountArr(ydx)) {
-        temp = wordCountArr(ydx)
+      mySum += wordCountArr(ydx)
+      if (myMax < wordCountArr(ydx)) {
+        myMax = wordCountArr(ydx)
       }
     }
-    temp
+    (mySum, myMax)
   }
 }
 //--------
