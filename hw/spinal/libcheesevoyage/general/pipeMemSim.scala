@@ -715,7 +715,8 @@ case class PipeMemRmwSimDut(
                 //  //U(s"2'd1"),
                 //  U(s"2'd2"),
                 ////),
-                ydx
+                ydx,
+                PipeMemRmw.modWrIdx,
               )
             )
             when (cMid0Front.up.isValid ) {

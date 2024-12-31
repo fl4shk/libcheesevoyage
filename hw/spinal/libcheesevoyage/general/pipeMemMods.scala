@@ -1536,7 +1536,8 @@ case class PipeMemRmwDoModInModFrontFuncParams[
   //myModMemWord: WordT,                // myModMemWord
   getMyRdMemWordFunc: (
     //UInt,
-    Int
+    Int,
+    Int,
   ) => WordT,  // getMyRdMemWordFunc
   //Vec[WordT],  // myRdMemWord
   //ydx: Int,                             // ydx
@@ -3741,6 +3742,7 @@ extends Area {
               getMyRdMemWordFunc=(
                 //someUpExtIdx: UInt,
                 someYdx: Int,
+                someModIdx: Int,
               ) => (
                 //upExt(1)(someYdx)(extIdxSingle).rdMemWord(
                 //  PipeMemRmw.modWrIdx
@@ -3748,7 +3750,8 @@ extends Area {
                 upExt(
                   2
                 )(someYdx)(extIdxSingle).rdMemWord(
-                  PipeMemRmw.modWrIdx
+                  //PipeMemRmw.modWrIdx
+                  someModIdx
                 )
               ),
               //myRdMemWord,
