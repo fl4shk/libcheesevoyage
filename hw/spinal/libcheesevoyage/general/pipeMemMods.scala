@@ -128,6 +128,17 @@ case class PipeMemRmwConfig[
   ////formalFwdStallAddr: Option[UInt]=None,
   ////--------
 ) {
+  assert(
+    wordCountArr.size > 0,
+    s"wordCountArr.size (${wordCountArr.size}) must be greater than zero"
+  )
+  for ((wordCount, wordCountIdx) <- wordCountArr.view.zipWithIndex) {
+    assert(
+      wordCount > 0,
+      s"wordCount (value:${wordCount} index:${wordCountIdx}) "
+      + s"must be greater than zero"
+    )
+  }
   def memArrSize = wordCountArr.size
   val (wordCountSum, wordCountMax): (Int, Int) = {
     var mySum: Int = 0
