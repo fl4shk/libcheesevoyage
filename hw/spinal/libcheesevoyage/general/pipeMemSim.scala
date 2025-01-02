@@ -491,7 +491,7 @@ case class PipeMemRmwSimDut(
       DevDataT,
     ]]
   ) = {
-    LcvStallHost[
+    val temp = LcvStallHost[
       HostDataT,
       DevDataT,
     ](
@@ -500,6 +500,17 @@ case class PipeMemRmwSimDut(
       stallIo=stallIo,
       optFormalJustHost=optFormal,
     )
+    if (optFormal) {
+      anyseq(temp.ready)
+      //stallIo match {
+      //  case Some(stallIo) => {
+      //    anyseq(stallIo.ready)
+      //  }
+      //  case None => {
+      //  }
+      //}
+    }
+    temp
   }
   val psExStallHost = (
     PipeMemRmwSimDut.haveModOpMul
@@ -1132,7 +1143,7 @@ case class PipeMemRmwSimDut(
                     cMid0Front.up.isFiring
                   )
                 )
-              } 
+              }
               //--------
               when (
                 //savedPsMemStallHost.eitherSavedFire

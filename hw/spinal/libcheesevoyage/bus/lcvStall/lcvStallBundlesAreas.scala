@@ -159,10 +159,10 @@ case class LcvStallHost[
     //  )
     //)
   ) {
-    anyseq(
-      //nextReady
-      ready
-    )
+    //anyseq(
+    //  //nextReady
+    //  ready
+    //)
     when (pastValidAfterReset) {
       //when (fire) {
       //  assume(!RegNext(ready))
