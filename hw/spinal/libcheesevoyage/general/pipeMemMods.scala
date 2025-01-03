@@ -1550,9 +1550,16 @@ case class PipeMemRmwDoModInModFrontFuncParams[
   WordT <: Data,
   HazardCmpT <: Data,
   ModT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
+  DualRdT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
 ](
   //inp: PipeMemRmwPayloadExt[WordT, HazardCmpT],
   //outp: PipeMemRmwPayloadExt[WordT, HazardCmpT],
+  pipeMemIo: PipeMemRmwIo[
+    WordT,
+    HazardCmpT,
+    ModT,
+    DualRdT,
+  ],
   nextPrevTxnWasHazardVec: Vec[Bool],   // nextPrevTxnWasHazardVec
   rPrevTxnWasHazardVec: Vec[Bool],      // rPrevTxnWasHazardVec
   rPrevTxnWasHazardAny: Bool,           // rPrevTxnWasHazardAny
@@ -1652,6 +1659,7 @@ case class PipeMemRmw[
         WordT,
         HazardCmpT,
         ModT,
+        DualRdT,
       ],
     ) => Area
   ]=None,
@@ -3759,6 +3767,7 @@ extends Area {
         myDoModInModFrontAreaArr += (
           myDoModInModFrontFunc(
             PipeMemRmwDoModInModFrontFuncParams(
+              pipeMemIo=io,
               nextPrevTxnWasHazardVec=nextPrevTxnWasHazardVec,
               rPrevTxnWasHazardVec=rPrevTxnWasHazardVec,
               rPrevTxnWasHazardAny=rPrevTxnWasHazardAny,
