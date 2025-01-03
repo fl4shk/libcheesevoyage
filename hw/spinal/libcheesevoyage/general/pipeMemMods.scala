@@ -176,29 +176,17 @@ case class PipeMemRmwPayloadExtPipeFlags(
   val ready = KeepAttribute(Bool())
   val fire = KeepAttribute(Bool())
 }
-case class PipeMemRmwPayloadExtMain[
+case class PipeMemRmwPayloadExtMainNonMemAddr[
   WordT <: Data,
-  HazardCmpT <: Data,
+  HazardCmpT <: Data
 ](
   cfg: PipeMemRmwConfig[
     WordT,
     HazardCmpT,
   ],
-  //wordType: HardType[WordT],
   wordCount: Int,
-  //hazardCmpType: HardType[HazardCmpT],
-  //modRdPortCnt: Int,
-  //modStageCnt: Int,
-  //memArrSize: Int,
-  ////optSimpleIsWr: Option[Boolean]=None,
-  ////optUseModMemAddr: Boolean=false,
-  ////doModInModFront: Boolean=false,
-  ////optEnableModDuplicate: Boolean=true,
-  //optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
-  //optReorder: Boolean=false,
-  ////myHaveFormalFwd: Boolean=false,
 ) extends Bundle {
-  
+  //--------
   def wordType() = cfg.wordType()
   //def wordCount = cfg.wordCount
   def hazardCmpType() = cfg.hazardCmpType()
@@ -210,30 +198,6 @@ case class PipeMemRmwPayloadExtMain[
   )
   def optReorder = cfg.optReorder 
   //myHaveFormalFwd: Boolean=false,
-  //--------
-  //val hadActiveUpFire = KeepAttribute(Bool())
-  val memAddr = Vec.fill(modRdPortCnt)(
-    UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
-  )
-  //def modMemAddr = memAddr(0)
-  //val didReorderCommit = (optReorder) generate (
-  //  Bool()
-  //)
-  //--------
-  //val reqReorderCommit = (optReorder) generate (
-  //  /*Vec.fill(modRdPortCnt)*/(Bool())
-  //)
-  //val didReorderCommit = (optReorder) generate (
-  //  /*Vec.fill(modRdPortCnt)*/(Bool())
-  //)
-  //--------
-
-  //// When `True`, read from the address `memAddr`
-  //// When `False`, read from the address `dualRd.rReorderCommitHead`, 
-  //// which provides in-order reads
-  //val memAddrReorderValid = (optReorder) generate (
-  //  Bool()
-  //)
   //--------
   val hazardCmp = hazardCmpType()
   //--------
@@ -342,6 +306,70 @@ case class PipeMemRmwPayloadExtMain[
   //)
   //--------
 }
+case class PipeMemRmwPayloadExtMain[
+  WordT <: Data,
+  HazardCmpT <: Data,
+](
+  cfg: PipeMemRmwConfig[
+    WordT,
+    HazardCmpT,
+  ],
+  //wordType: HardType[WordT],
+  wordCount: Int,
+  //hazardCmpType: HardType[HazardCmpT],
+  //modRdPortCnt: Int,
+  //modStageCnt: Int,
+  //memArrSize: Int,
+  ////optSimpleIsWr: Option[Boolean]=None,
+  ////optUseModMemAddr: Boolean=false,
+  ////doModInModFront: Boolean=false,
+  ////optEnableModDuplicate: Boolean=true,
+  //optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
+  //optReorder: Boolean=false,
+  ////myHaveFormalFwd: Boolean=false,
+) extends Bundle {
+  
+  def wordType() = cfg.wordType()
+  //def wordCount = cfg.wordCount
+  def hazardCmpType() = cfg.hazardCmpType()
+  def modRdPortCnt = cfg.modRdPortCnt
+  def modStageCnt = cfg.modStageCnt
+  def memArrSize = cfg.memArrSize
+  def optModHazardKind: PipeMemRmw.ModHazardKind = (
+    cfg.optModHazardKind
+  )
+  def optReorder = cfg.optReorder 
+  //myHaveFormalFwd: Boolean=false,
+  //--------
+  //val hadActiveUpFire = KeepAttribute(Bool())
+  val memAddr = Vec.fill(modRdPortCnt)(
+    UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
+  )
+  //def modMemAddr = memAddr(0)
+  //val didReorderCommit = (optReorder) generate (
+  //  Bool()
+  //)
+  //--------
+  //val reqReorderCommit = (optReorder) generate (
+  //  /*Vec.fill(modRdPortCnt)*/(Bool())
+  //)
+  //val didReorderCommit = (optReorder) generate (
+  //  /*Vec.fill(modRdPortCnt)*/(Bool())
+  //)
+  //--------
+
+  //// When `True`, read from the address `memAddr`
+  //// When `False`, read from the address `dualRd.rReorderCommitHead`, 
+  //// which provides in-order reads
+  //val memAddrReorderValid = (optReorder) generate (
+  //  Bool()
+  //)
+  //--------
+  val nonMemAddr = PipeMemRmwPayloadExtMainNonMemAddr(
+    cfg=cfg,
+    wordCount=wordCount,
+  )
+}
 
 case class PipeMemRmwPayloadExt[
   WordT <: Data,
@@ -411,13 +439,13 @@ case class PipeMemRmwPayloadExt[
     )
   )
   def memAddr = main.memAddr
-  def modMemWord = main.modMemWord
-  def modMemWordValid = main.modMemWordValid
-  def rdMemWord = main.rdMemWord
-  //def reqReorderCommit = main.reqReorderCommit
-  //def didReorderCommit = main.didReorderCommit
-  def hazardCmp = main.hazardCmp
-  def hazardId = main.hazardId
+  def modMemWord = main.nonMemAddr.modMemWord
+  def modMemWordValid = main.nonMemAddr.modMemWordValid
+  def rdMemWord = main.nonMemAddr.rdMemWord
+  //def reqReorderCommit = main.nonMemAddr.reqReorderCommit
+  //def didReorderCommit = main.nonMemAddr.didReorderCommit
+  def hazardCmp = main.nonMemAddr.hazardCmp
+  def hazardId = main.nonMemAddr.hazardId
   def getHazardIdIdleVal() = (
     -1
   )
