@@ -395,7 +395,7 @@ case class PipeMemRmwPayloadExt[
   )
   def valid = pipeFlags.valid
   def ready = pipeFlags.ready
-  def fire = pipeFlags.ready
+  def fire = pipeFlags.fire
 
   val main = KeepAttribute(
     PipeMemRmwPayloadExtMain(
