@@ -635,8 +635,7 @@ case class PipeMemRmwSimDut(
       ) else (
         Some(
           (
-            doModInModFrontParams,
-            pipeMem,
+            doModInModFrontParams
           ) => new Area {
             def nextPrevTxnWasHazard = (
               doModInModFrontParams.nextPrevTxnWasHazardVec(0)

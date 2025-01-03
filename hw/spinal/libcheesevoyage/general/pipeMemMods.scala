@@ -1653,12 +1653,6 @@ case class PipeMemRmw[
         HazardCmpT,
         ModT,
       ],
-      PipeMemRmw[
-        WordT,
-        HazardCmpT,
-        ModT,
-        DualRdT,
-      ],
     ) => Area
   ]=None,
   //doFwdFunc: Option[
@@ -1685,7 +1679,6 @@ case class PipeMemRmw[
 )
 extends Area {
   //--------
-  val pipeMem = this
   def wordType() = cfg.wordType()
   def wordCountArr = cfg.wordCountArr 
   def hazardCmpType() = cfg.hazardCmpType()
@@ -3791,8 +3784,7 @@ extends Area {
               ),
               //myRdMemWord,
               //ydx=ydx,                      // ydx
-            ),
-            pipeMem,
+            )
           )
             .setName(s"${pipeName}_myDoModInModFrontAreaArr")
         )
