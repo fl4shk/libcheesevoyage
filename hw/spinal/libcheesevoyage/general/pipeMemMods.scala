@@ -71,7 +71,7 @@ case class PipeMemRmwConfig[
   optEnableClear: Boolean=false,
   memRamStyle: String="auto",
   vivadoDebug: Boolean=false,
-  optIncludeModFrontS2mLink: Boolean=true,
+  optIncludeModFrontS2MLink: Boolean=true,
   optFormal: Boolean=false,
   //--------
   //doHazardCmpFunc: Option[
@@ -1626,7 +1626,7 @@ case class PipeMemRmw[
 //  memRamStyle: String="auto",
 //  vivadoDebug: Boolean=false,
 //  //optLinkFrontToModFront: Boolean=true,
-//  optIncludeModFrontStageLink: Boolean=true,
+//  optIncludeModFrontS2MLink: Boolean=true,
 //  optFormal: Boolean=false,
 )(
   //--------
@@ -1705,7 +1705,7 @@ extends Area {
   def optEnableClear = cfg.optEnableClear 
   def memRamStyle = cfg.memRamStyle 
   def vivadoDebug = cfg.vivadoDebug 
-  def optIncludeModFrontStageLink = cfg.optIncludeModFrontS2mLink
+  def optIncludeModFrontS2MLink = cfg.optIncludeModFrontS2MLink
   def optFormal = cfg.optFormal
   //--------
   //def doHazardCmpFunc = cfg.doHazardCmpFunc
@@ -2565,7 +2565,7 @@ extends Area {
           //)
         ),
         down={
-          //if (optIncludeModFrontStageLink) (
+          //if (optIncludeModFrontS2MLink) (
           val temp = Node()
           temp.setName(s"${pipeName}_cMid0Front_down")
           temp
@@ -2576,20 +2576,20 @@ extends Area {
       )
       myLinkArr += cMid0Front
       val myIncludeS2mMid0Front = (
-        optIncludeModFrontStageLink
+        optIncludeModFrontS2MLink
         && (
           optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
         )
         //false
       )
-      val sMid0Front = (optIncludeModFrontStageLink) generate (
+      val sMid0Front = (optIncludeModFrontS2MLink) generate (
         StageLink(
           up=cMid0Front.down,
           down=(
             //Node()
             if (
               //(
-              //  !optIncludeModFrontStageLink
+              //  !optIncludeModFrontS2MLink
               //) && (
               //  optModHazardKind != PipeMemRmw.ModHazardKind.Fwd
               //)
@@ -2605,9 +2605,9 @@ extends Area {
           ),
         )
       )
-      if (optIncludeModFrontStageLink) {
+      if (optIncludeModFrontS2MLink) {
         //println(
-        //  s"optIncludeModFrontStageLink: ${optIncludeModFrontStageLink}"
+        //  s"optIncludeModFrontS2MLink: ${optIncludeModFrontS2MLink}"
         //)
         myLinkArr += sMid0Front
       }
@@ -3801,7 +3801,7 @@ extends Area {
       case None => {
         assert(
           modStageCnt > 0
-          || !optIncludeModFrontStageLink
+          || !optIncludeModFrontS2MLink
         )
         //tempUpMod(2)(ydx) := tempUpMod(1)(ydx)
         //tempUpMod(2)(ydx) := tempUpMod(1)(ydx)
