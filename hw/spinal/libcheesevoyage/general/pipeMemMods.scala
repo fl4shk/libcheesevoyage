@@ -71,7 +71,7 @@ case class PipeMemRmwConfig[
   optEnableClear: Boolean=false,
   memRamStyle: String="auto",
   vivadoDebug: Boolean=false,
-  optIncludeModFrontStageLink: Boolean=true,
+  optIncludeModFrontS2mLink: Boolean=true,
   optFormal: Boolean=false,
   //--------
   //doHazardCmpFunc: Option[
@@ -1705,7 +1705,7 @@ extends Area {
   def optEnableClear = cfg.optEnableClear 
   def memRamStyle = cfg.memRamStyle 
   def vivadoDebug = cfg.vivadoDebug 
-  def optIncludeModFrontStageLink = cfg.optIncludeModFrontStageLink
+  def optIncludeModFrontStageLink = cfg.optIncludeModFrontS2mLink
   def optFormal = cfg.optFormal
   //--------
   //def doHazardCmpFunc = cfg.doHazardCmpFunc
