@@ -71,6 +71,7 @@ case class PipeMemRmwConfig[
   optEnableClear: Boolean=false,
   memRamStyle: String="auto",
   vivadoDebug: Boolean=false,
+  optIncludeModFrontStageLink: Boolean=true,
   optIncludeModFrontS2MLink: Boolean=true,
   optFormal: Boolean=false,
   //--------
@@ -1705,7 +1706,13 @@ extends Area {
   def optEnableClear = cfg.optEnableClear 
   def memRamStyle = cfg.memRamStyle 
   def vivadoDebug = cfg.vivadoDebug 
+  def optIncludeModFrontStageLink = cfg.optIncludeModFrontStageLink
   def optIncludeModFrontS2MLink = cfg.optIncludeModFrontS2MLink
+  if (optIncludeModFrontS2MLink) {
+    assert(
+      optIncludeModFrontStageLink
+    )
+  }
   def optFormal = cfg.optFormal
   //--------
   //def doHazardCmpFunc = cfg.doHazardCmpFunc
@@ -2576,13 +2583,14 @@ extends Area {
       )
       myLinkArr += cMid0Front
       val myIncludeS2mMid0Front = (
-        optIncludeModFrontS2MLink
+        optIncludeModFrontStageLink
+        && optIncludeModFrontS2MLink
         && (
           optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
         )
         //false
       )
-      val sMid0Front = (optIncludeModFrontS2MLink) generate (
+      val sMid0Front = (optIncludeModFrontStageLink) generate (
         StageLink(
           up=cMid0Front.down,
           down=(
@@ -2605,7 +2613,7 @@ extends Area {
           ),
         )
       )
-      if (optIncludeModFrontS2MLink) {
+      if (optIncludeModFrontStageLink) {
         //println(
         //  s"optIncludeModFrontS2MLink: ${optIncludeModFrontS2MLink}"
         //)
@@ -3801,7 +3809,7 @@ extends Area {
       case None => {
         assert(
           modStageCnt > 0
-          || !optIncludeModFrontS2MLink
+          || !optIncludeModFrontStageLink
         )
         //tempUpMod(2)(ydx) := tempUpMod(1)(ydx)
         //tempUpMod(2)(ydx) := tempUpMod(1)(ydx)
