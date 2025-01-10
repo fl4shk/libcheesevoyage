@@ -7,23 +7,23 @@ import spinal.lib._
 import spinal.core.formal._
 import scala.collection.mutable.ArrayBuffer
 
-case class LongDivInp(params: LongDivParams) extends Bundle {
-  val valid = (!params.pipelined) generate Bool()
-  val numer = UInt(params.mainWidth bits)
-  val denom = UInt(params.denomWidth bits)
+case class LongDivInp(cfg: LongDivConfig) extends Bundle {
+  val valid = (!cfg.pipelined) generate Bool()
+  val numer = UInt(cfg.mainWidth bits)
+  val denom = UInt(cfg.denomWidth bits)
   val signed = Bool()
-  val tag = (params.pipelined) generate UInt(params.tagWidth bits)
+  val tag = (cfg.pipelined) generate UInt(cfg.tagWidth bits)
 }
-case class LongDivOutp(params: LongDivParams) extends Bundle {
-  val ready = (!params.pipelined) generate Bool()
-  val quot = UInt(params.mainWidth bits)
-  val rema = UInt(params.mainWidth bits)
-  val tag = (params.pipelined) generate UInt(params.tagWidth bits)
+case class LongDivOutp(cfg: LongDivConfig) extends Bundle {
+  val ready = (!cfg.pipelined) generate Bool()
+  val quot = UInt(cfg.mainWidth bits)
+  val rema = UInt(cfg.mainWidth bits)
+  val tag = (cfg.pipelined) generate UInt(cfg.tagWidth bits)
 }
 
-case class LongDivIo(params: LongDivParams) extends Bundle {
-  val inp = in(LongDivInp(params=params))
-  val outp = out(LongDivOutp(params=params))
+case class LongDivIo(cfg: LongDivConfig) extends Bundle {
+  val inp = in(LongDivInp(cfg=cfg))
+  val outp = out(LongDivOutp(cfg=cfg))
 }
 
 case class LongDivMultiCycle(
@@ -33,7 +33,7 @@ case class LongDivMultiCycle(
   chunkWidth: Int,
   signedReset: BigInt=0x0,
 ) extends Component {
-  val params = LongDivParams(
+  val cfg = LongDivConfig(
     mainWidth=mainWidth,
     denomWidth=denomWidth,
     chunkWidth=chunkWidth,
@@ -41,15 +41,15 @@ case class LongDivMultiCycle(
     pipelined=false,
     usePipeSkidBuf=false,
   )
-  val io = LongDivIo(params=params)
+  val io = LongDivIo(cfg=cfg)
 
   object LocState extends SpinalEnum(
     //defaultEncoding=binarySequential
     defaultEncoding=binaryOneHot
   ) {
     val
-      idle,
-      running
+      IDLE,
+      RUNNING
       = newElement();
   }
   val inp = io.inp
@@ -58,42 +58,42 @@ case class LongDivMultiCycle(
   //class Loc
   val loc = new Area {
     val state = Reg(LocState())
-    val m = LongUdivIter(params=params)
+    val m = LongUdivIter(params=cfg)
 
     //val itdOutReg = Reg(LongUdivIterData(params=params))
     //val pastValid = (params.formal()) generate Reg(Bool()) init(False)
 
     //val tempNumer = params.buildTempShape()
     //val tempDenom = params.buildTempShape()
-    val rTempNumer = Reg(params.buildTempShape()) init(0x0)
+    val rTempNumer = Reg(cfg.buildTempShape()) init(0x0)
     //val tempNumer = tempNumerReg.wrapNext()
-    val tempNumer = params.buildTempShape()
-    val rTempDenom = Reg(params.buildTempShape()) init(0x0)
+    val tempNumer = cfg.buildTempShape()
+    val rTempDenom = Reg(cfg.buildTempShape()) init(0x0)
     //val tempDenom = tempDenomReg.wrapNext()
-    val tempDenom = params.buildTempShape()
-    val rTempQuot = Reg(params.buildTempShape()) init(0x0)
-    val tempQuot = params.buildTempShape()
+    val tempDenom = cfg.buildTempShape()
+    val rTempQuot = Reg(cfg.buildTempShape()) init(0x0)
+    val tempQuot = cfg.buildTempShape()
     //val tempQuot = tempQuotReg.wrapNext()
-    val rTempRema = Reg(params.buildTempShape()) init(0x0)
-    val tempRema = params.buildTempShape()
+    val rTempRema = Reg(cfg.buildTempShape()) init(0x0)
+    val tempRema = cfg.buildTempShape()
     //val tempRema = tempRemaReg.wrapNext()
     val rDenomMultLut = Reg(
       Vec(
-        UInt(params.dmlElemWidth() bits),
-        params.dmlSize()
+        UInt(cfg.dmlElemWidth() bits),
+        cfg.dmlSize()
       )
     )
-    for (idx <- 0 until params.dmlSize()) {
+    for (idx <- 0 until cfg.dmlSize()) {
       rDenomMultLut(idx).init(rDenomMultLut(idx).getZero)
     }
-    val rOracleQuot = (params.formal()) generate (
+    val rOracleQuot = (cfg.formal()) generate (
       Reg(
-        params.buildTempShape()
+        cfg.buildTempShape()
       ) init(0x0)
     )
-    val rOracleRema = (params.formal()) generate (
+    val rOracleRema = (cfg.formal()) generate (
       Reg(
-        params.buildTempShape()
+        cfg.buildTempShape()
       ) init(0x0)
     )
 
@@ -119,8 +119,8 @@ case class LongDivMultiCycle(
     val rTempIoReady = Reg(Bool()) init(False)
 
     //val chunkStartBegin = params.buildTempShape()
-    val rChunkStartBegin = Reg(params.buildTempShape()) init(0x0)
-    val chunkStartBegin = params.buildTempShape()
+    val rChunkStartBegin = Reg(cfg.buildTempShape()) init(0x0)
+    val chunkStartBegin = cfg.buildTempShape()
     //chunkStartBeginReg.init(chunkStartBeginReg.getZero)
     //val chunkStartBegin = chunkStartBeginReg.wrapNext()
     //val tempDbg = Bool()
@@ -170,7 +170,7 @@ case class LongDivMultiCycle(
 
   //loc.chunkStartBegin := (chunkStart
   // === (params.numChunks() - 1))
-  loc.chunkStartBegin := (params.numChunks() - 1)
+  loc.chunkStartBegin := (cfg.numChunks() - 1)
   //loc.chunkStartBeginReg := loc.chunkStartBegin
 
   chunkStart := S(loc.rChunkStartBegin).resized
@@ -205,7 +205,7 @@ case class LongDivMultiCycle(
   }
   when (~clockDomain.isResetActive) {
     switch (loc.state) {
-      is (LocState.idle) {
+      is (LocState.IDLE) {
         //--------
         // Need to check for `inp.signed` so that unsigned
         // divides still work properly.
@@ -225,7 +225,7 @@ case class LongDivMultiCycle(
         //itdIn.tempDenom := loc.tempDenomReg
         //itdIn.tempQuot := 0x0
         //itdIn.tempRema := 0x0
-        for (idx <- 0 to params.dmlSize() - 1) {
+        for (idx <- 0 to cfg.dmlSize() - 1) {
           loc.rDenomMultLut(idx) := (loc.tempDenom * idx).resized
         }
         //--------
@@ -237,11 +237,11 @@ case class LongDivMultiCycle(
           loc.rTempIoRema := 0x0
           loc.rTempIoReady := False
 
-          loc.state := LocState.running
+          loc.state := LocState.RUNNING
         }
         //--------
       }
-      is (LocState.running) {
+      is (LocState.RUNNING) {
         //--------
         when (chunkStart > 0) {
           // Since `itdIn` and `itdOut` are `Splitrec`s, we
@@ -263,7 +263,7 @@ case class LongDivMultiCycle(
           loc.rTempIoRema := loc.tempIoRema
           loc.rTempIoReady := True
 
-          loc.state := LocState.idle
+          loc.state := LocState.IDLE
         }
         //chunkStart := chunkStart - 1
         loc.rChunkStartBegin := loc.rChunkStartBegin - 1
@@ -282,7 +282,7 @@ case class LongDivMultiCycle(
         //--------
       }
       switch (loc.state) {
-        is (LocState.idle) {
+        is (LocState.IDLE) {
           loc.rOracleQuot := loc.tempNumer / loc.tempDenom
           loc.rOracleRema := loc.tempNumer % loc.tempDenom
           when (pastValidAfterReset() & (~stable(loc.state))) {
@@ -297,9 +297,9 @@ case class LongDivMultiCycle(
           }
           //elsewhen (pastValidAfterReset() & stable(loc.state)):
         }
-        is (LocState.running) {
+        is (LocState.RUNNING) {
           when (
-            pastValidAfterReset() & (past(loc.state) === LocState.idle)
+            pastValidAfterReset() & (past(loc.state) === LocState.IDLE)
           ) {
             //--------
             assert(loc.numerWasLez
@@ -372,7 +372,7 @@ case class LongDivMultiCycle(
             //    * i
             //  ))
             //  for i in range(params.dmlSize())
-            for (idx <- 0 to params.dmlSize() - 1) {
+            for (idx <- 0 to cfg.dmlSize() - 1) {
               assert(
                 itdIn.denomMultLut(idx)
                 === (

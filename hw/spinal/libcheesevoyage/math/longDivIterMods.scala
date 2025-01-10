@@ -9,7 +9,7 @@ import spinal.lib._
 import spinal.core.formal._
 //import scala.collection.mutable.ArrayBuffer
 
-case class LongDivParams(
+case class LongDivConfig(
   mainWidth: Int,
   denomWidth: Int,
   chunkWidth: Int,
@@ -56,7 +56,7 @@ case class LongDivParams(
     return radix()
   }
 }
-case class LongUdivIterDataFormal(params: LongDivParams) extends Bundle {
+case class LongUdivIterDataFormal(params: LongDivConfig) extends Bundle {
   //new Bundle {
     //val formalNumer = params.buildTempShape()
     //val formalDenom = params.buildTempShape()
@@ -67,7 +67,7 @@ case class LongUdivIterDataFormal(params: LongDivParams) extends Bundle {
     //)
   //}
 }
-case class LongUdivIterData(params: LongDivParams) extends Bundle {
+case class LongUdivIterData(params: LongDivConfig) extends Bundle {
   val tempNumer = params.buildTempShape()
   val tempDenom = UInt(params.denomWidth bits)
   var tempQuot = params.buildTempShape()
@@ -95,7 +95,7 @@ case class LongUdivIterData(params: LongDivParams) extends Bundle {
   //  formal := null
   //}
 }
-case class LongUdivIterIo(params: LongDivParams) extends Bundle {
+case class LongUdivIterIo(params: LongDivConfig) extends Bundle {
   //--------
   // Inputs
   val ofwdMvp = in port Bool()
@@ -126,7 +126,7 @@ case class LongUdivIterIo(params: LongDivParams) extends Bundle {
   //--------
 }
 
-case class LongUdivIter(params: LongDivParams) extends Component {
+case class LongUdivIter(params: LongDivConfig) extends Component {
   val io = LongUdivIterIo(params=params)
 
   val itdIn = io.itdIn
@@ -439,7 +439,7 @@ case class LongUdivIter(params: LongDivParams) extends Component {
   }
 }
 
-case class LongUdivIterSyncIo(params: LongDivParams) extends Bundle {
+case class LongUdivIterSyncIo(params: LongDivConfig) extends Bundle {
   val sbIo = PipeSkidBufIo(
     dataType=LongUdivIterData(params=params),
     //optIncludeValidBusy=false,
@@ -449,7 +449,7 @@ case class LongUdivIterSyncIo(params: LongDivParams) extends Bundle {
 }
 
 case class LongUdivIterSync(
-  params: LongDivParams,
+  params: LongDivConfig,
   chunkStartVal: BigInt,
 ) extends Component {
   val io = LongUdivIterSyncIo(params=params)

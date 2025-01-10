@@ -6,7 +6,7 @@ import spinal.lib._
 import spinal.core.formal._
 
 object LongUdivIterTopLevelVerilog extends App {
-  val params = LongDivParams(
+  val params = LongDivConfig(
     mainWidth=4,
     denomWidth=4,
     chunkWidth=2,
@@ -19,7 +19,7 @@ object LongUdivIterTopLevelVerilog extends App {
   //report.printPruned()
 }
 object LongUdivIterSyncTopLevelVerilog extends App {
-  val params = LongDivParams(
+  val params = LongDivConfig(
     mainWidth=4,
     denomWidth=4,
     chunkWidth=2,
