@@ -12,9 +12,72 @@ object LongDivMultiCycleFormal extends App {
   //  pipelined=false,
   //  usePipeSkidBuf=false,
   //)
-  val mainWidth = 4
-  val denomWidth = 4
+  val mainWidth = 6
+  val denomWidth = 6
   val chunkWidth = 2
+  case class MyFormalDutLongDivMultiCycle(
+  ) extends Component {
+    val dut = FormalDut(LongDivMultiCycle(
+      //params=params
+      mainWidth=mainWidth,
+      denomWidth=denomWidth,
+      chunkWidth=chunkWidth,
+      formal=true,
+    ))
+    //val itdIn = dut.io.itdIn
+    //val chunkStart = dut.io.chunkStart
+    //val itdOut = dut.io.itdOut
+    def inp = dut.io.inp
+    def outp = dut.io.outp
+    //assume(inp.denom =/= 0)
+    //assume(inp.denom =/= 1)
+    //assume(inp.signed =/= True)
+    //cover(
+    //  (
+    //    RegNextWhen(
+    //      (
+    //        inp.valid && inp.numer > 1 && inp.denom > 1
+    //        //&& !outp.ready
+    //      ),
+    //      RegNextWhen(
+    //        True,
+    //        inp.valid && inp.numer > 1 && inp.denom > 1
+    //        && !outp.ready
+    //      ) init(False)
+    //    ) init(False)
+    //  ) 
+    //  //&& (
+    //  //  RegNextWhen(True, inp.denom > 1) init(False)
+    //  //)
+    //  && (
+    //    outp.ready
+    //  ) && (
+    //    outp.quot =/= 0x0
+    //    && outp.quot =/= 0xc
+    //  )
+    //)
+
+    assumeInitial(clockDomain.isResetActive)
+    //assumeInitial(~pastValid)
+    //assumeInitial(inp === inp.getZero)
+    //assumeInitial(inp.valid === inp.valid.getZero)
+
+    anyseq(inp)
+    //cover(inp.valid === True)
+    //when (!clockDomain.isResetActive) {
+    //  assume(inp.valid === True)
+    //  assume(inp.numer === 8)
+    //  assume(inp.denom === 4)
+    //  assume(inp.signed === False)
+    //}
+
+    //when (clockDomain.isResetActive) {
+    //  pastValid := False
+    //} otherwise {
+    //  pastValid := True
+    //}
+    //anyseq(clockDomain.isResetActive)
+  }
   new SpinalFormalConfig(
     _spinalConfig=SpinalConfig(
       defaultConfigForClockDomains=ClockDomainConfig(
@@ -27,8 +90,8 @@ object LongDivMultiCycleFormal extends App {
   )
   //FormalConfig
     .withBMC(10)
-    .withProve(10)
-    .withCover(20)
+    //.withProve(10)
+    .withCover(10)
     //.withConfig(config=SpinalConfig(
     //  defaultConfigForClockDomains=ClockDomainConfig(
     //    resetActiveLevel = HIGH,
@@ -36,58 +99,7 @@ object LongDivMultiCycleFormal extends App {
     //  ),
     //  formalAsserts=true,
     //))
-    .doVerify(new Component {
-      val dut = FormalDut(LongDivMultiCycle(
-        //params=params
-        mainWidth=mainWidth,
-        denomWidth=denomWidth,
-        chunkWidth=chunkWidth,
-      ))
-      //val itdIn = dut.io.itdIn
-      //val chunkStart = dut.io.chunkStart
-      //val itdOut = dut.io.itdOut
-      val inp = dut.io.inp
-      val outp = dut.io.outp
-      //assume(inp.denom =/= 0)
-      //assume(inp.denom =/= 1)
-      //assume(inp.signed =/= True)
-      //cover(
-      //  (
-      //    RegNextWhen(
-      //      (
-      //        inp.valid && inp.numer > 1 && inp.denom > 1
-      //        //&& !outp.ready
-      //      ),
-      //      RegNextWhen(
-      //        True,
-      //        inp.valid && inp.numer > 1 && inp.denom > 1
-      //        && !outp.ready
-      //      ) init(False)
-      //    ) init(False)
-      //  ) 
-      //  //&& (
-      //  //  RegNextWhen(True, inp.denom > 1) init(False)
-      //  //)
-      //  && (
-      //    outp.ready
-      //  ) && (
-      //    outp.quot =/= 0x0
-      //    && outp.quot =/= 0xc
-      //  )
-      //)
-
-      assumeInitial(clockDomain.isResetActive)
-      //assumeInitial(~pastValid)
-      //assumeInitial(inp === inp.getZero)
-      assumeInitial(inp.valid === inp.valid.getZero)
-      anyseq(inp)
-      //when (clockDomain.isResetActive) {
-      //  pastValid := False
-      //} otherwise {
-      //  pastValid := True
-      //}
-      //anyseq(clockDomain.isResetActive)
-    })
+    .doVerify(MyFormalDutLongDivMultiCycle())
 }
 //object LongDivPipelinedFormal extends App {
 //  //val params = LongDivParams(

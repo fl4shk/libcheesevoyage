@@ -8,17 +8,17 @@ import spinal.core.formal._
 import scala.collection.mutable.ArrayBuffer
 
 case class LongDivInp(cfg: LongDivConfig) extends Bundle {
-  val valid = (!cfg.pipelined) generate Bool()
+  val valid = (!cfg.pipelined) generate (Bool())
   val numer = UInt(cfg.mainWidth bits)
   val denom = UInt(cfg.denomWidth bits)
   val signed = Bool()
-  val tag = (cfg.pipelined) generate UInt(cfg.tagWidth bits)
+  val tag = (cfg.pipelined) generate (UInt(cfg.tagWidth bits))
 }
 case class LongDivOutp(cfg: LongDivConfig) extends Bundle {
-  val ready = (!cfg.pipelined) generate Bool()
+  val ready = (!cfg.pipelined) generate (Bool())
   val quot = UInt(cfg.mainWidth bits)
   val rema = UInt(cfg.mainWidth bits)
-  val tag = (cfg.pipelined) generate UInt(cfg.tagWidth bits)
+  val tag = (cfg.pipelined) generate (UInt(cfg.tagWidth bits))
 }
 
 case class LongDivIo(cfg: LongDivConfig) extends Bundle {
@@ -27,11 +27,12 @@ case class LongDivIo(cfg: LongDivConfig) extends Bundle {
 }
 
 case class LongDivMultiCycle(
-  //params: LongDivParams
+  //cfg: LongDivParams
   mainWidth: Int,
   denomWidth: Int,
   chunkWidth: Int,
   signedReset: BigInt=0x0,
+  formal: Boolean=false,
 ) extends Component {
   val cfg = LongDivConfig(
     mainWidth=mainWidth,
@@ -40,352 +41,545 @@ case class LongDivMultiCycle(
     tagWidth=1,
     pipelined=false,
     usePipeSkidBuf=false,
+    formal=formal,
   )
   val io = LongDivIo(cfg=cfg)
+  def inp = io.inp
+  def outp = io.outp
 
-  object LocState extends SpinalEnum(
-    //defaultEncoding=binarySequential
-    defaultEncoding=binaryOneHot
-  ) {
+  outp.ready.setAsReg
+  outp.ready.init(False)
+  //:= RegNext(next=outp.ready, init=outp.ready.getZero)
+  //outp.quot := RegNext(next=outp.quot, init=outp.quot.getZero)
+  //outp.rema := RegNext(next=outp.rema, init=outp.rema.getZero)
+  outp.quot.setAsReg
+  outp.quot.init(0x0)
+  outp.rema.setAsReg
+  outp.rema.init(0x0)
+
+  if (cfg.formal) {
+  }
+  val udivIter = LongUdivIter(cfg=cfg)
+
+  //--------
+  def itdIn = udivIter.io.itdIn
+  def chunkStart = udivIter.io.chunkStart
+  //--------
+  def itdOut = udivIter.io.itdOut
+  def quotDigit = udivIter.io.quotDigit
+  def shiftInRema = udivIter.io.shiftInRema
+  def gtVec = udivIter.io.gtVec
+  object State extends SpinalEnum(defaultEncoding=binarySequential) {
     val
       IDLE,
       RUNNING
-      = newElement();
+      = newElement()
   }
-  val inp = io.inp
-  val outp = io.outp
-  val zeroD = inp.denom === 0
-  //class Loc
-  val loc = new Area {
-    val state = Reg(LocState())
-    val m = LongUdivIter(params=cfg)
-
-    //val itdOutReg = Reg(LongUdivIterData(params=params))
-    //val pastValid = (params.formal()) generate Reg(Bool()) init(False)
-
-    //val tempNumer = params.buildTempShape()
-    //val tempDenom = params.buildTempShape()
-    val rTempNumer = Reg(cfg.buildTempShape()) init(0x0)
-    //val tempNumer = tempNumerReg.wrapNext()
-    val tempNumer = cfg.buildTempShape()
-    val rTempDenom = Reg(cfg.buildTempShape()) init(0x0)
-    //val tempDenom = tempDenomReg.wrapNext()
-    val tempDenom = cfg.buildTempShape()
-    val rTempQuot = Reg(cfg.buildTempShape()) init(0x0)
-    val tempQuot = cfg.buildTempShape()
-    //val tempQuot = tempQuotReg.wrapNext()
-    val rTempRema = Reg(cfg.buildTempShape()) init(0x0)
-    val tempRema = cfg.buildTempShape()
-    //val tempRema = tempRemaReg.wrapNext()
-    val rDenomMultLut = Reg(
-      Vec(
-        UInt(cfg.dmlElemWidth() bits),
-        cfg.dmlSize()
-      )
+  val rState = (
+    Reg(State())
+    init(State.IDLE)
+  )
+  val tempNumer = cfg.buildTempShape()
+  val tempDenom = cfg.buildTempShape()
+  val tempQuot = Reg(cfg.buildTempShape()) init(0x0)
+  val tempRema = Reg(cfg.buildTempShape()) init(0x0)
+  tempNumer := RegNext(next=tempNumer, init=tempNumer.getZero)
+  tempDenom := RegNext(next=tempDenom, init=tempDenom.getZero)
+  //tempQuot := RegNext(next=tempQuot, init=tempQuot.getZero)
+  //tempRema := RegNext(next=tempRema, init=tempRema.getZero)
+  itdIn.tempNumer := tempNumer
+  itdIn.tempDenom := tempDenom
+  itdIn.tempQuot := tempQuot
+  itdIn.tempRema := tempRema
+  val chunkStartBegin = cfg.numChunks() //- 1
+  val rPrevChunkStart = RegNext(next=chunkStart, init=chunkStart.getZero)
+  chunkStart := rPrevChunkStart
+  val denomMultLut = /*Reg*/(
+    Vec.fill(cfg.dmlSize())(
+      UInt(cfg.dmlElemWidth() bits)
     )
-    for (idx <- 0 until cfg.dmlSize()) {
-      rDenomMultLut(idx).init(rDenomMultLut(idx).getZero)
-    }
-    val rOracleQuot = (cfg.formal()) generate (
-      Reg(
-        cfg.buildTempShape()
-      ) init(0x0)
+  )
+  for (idx <- 0 until cfg.dmlSize()) {
+    //rDenomMultLut(idx).init(rDenomMultLut(idx).getZero)
+    denomMultLut(idx) := (
+      RegNext(next=denomMultLut(idx), init=denomMultLut(idx).getZero)
     )
-    val rOracleRema = (cfg.formal()) generate (
-      Reg(
-        cfg.buildTempShape()
-      ) init(0x0)
-    )
-
-    val numerWasLez = Reg(Bool()) init(False)
-    val denomWasLez = Reg(Bool()) init(False)
-
-    val quotWillBeLez = Bool()
-    val remaWillBeLez = Bool()
-
-    val ioSzdTempQ = UInt(outp.quot.getWidth bits)
-    val ioSzdTempR = UInt(outp.rema.getWidth bits)
-    val lezIoSzdTempQ = UInt(outp.quot.getWidth bits)
-    val lezIoSzdTempR = UInt(outp.rema.getWidth bits)
-
-    //val tempIoQuot = UInt(outp.quot.getWidth bits)
-    //val tempIoRema = UInt(outp.rema.getWidth bits)
-    val rTempIoQuot = Reg(UInt(outp.quot.getWidth bits)) init(0x0)
-    //val tempIoQuot = tempIoQuotReg.wrapNext()
-    val tempIoQuot = UInt(outp.quot.getWidth bits)
-    val rTempIoRema = Reg(UInt(outp.rema.getWidth bits)) init(0x0)
-    //val tempIoRema = tempIoRemaReg.wrapNext()
-    val tempIoRema = UInt(outp.rema.getWidth bits)
-    val rTempIoReady = Reg(Bool()) init(False)
-
-    //val chunkStartBegin = params.buildTempShape()
-    val rChunkStartBegin = Reg(cfg.buildTempShape()) init(0x0)
-    val chunkStartBegin = cfg.buildTempShape()
-    //chunkStartBeginReg.init(chunkStartBeginReg.getZero)
-    //val chunkStartBegin = chunkStartBeginReg.wrapNext()
-    //val tempDbg = Bool()
-  }
-  //val loc = new Loc()
-  val itIo = loc.m.io
-  val chunkStart = itIo.chunkStart
-  val itdIn = itIo.itdIn
-  val itdOut = itIo.itdOut
-  val skipCond = itdIn.tempDenom === 0
-  //if (params.formal()) {
-  //  
-  //}
-  //loc.tempNumer := Mux(
-  //  inp.signed & inp.numer.msb,
-  //  (~inp.numer) + 1, inp.numer)
-  //)
-  loc.tempNumer := Mux(
-    inp.signed & inp.numer.msb, (~inp.numer) + 1, inp.numer
-  )
-  loc.tempDenom := Mux(
-    inp.signed & inp.denom.msb, (~inp.denom) + 1, inp.denom
-  )
-  //loc.tempNumerReg := loc.tempNumer
-  //loc.tempDenomReg := loc.tempDenom
-
-  loc.quotWillBeLez := loc.numerWasLez =/= loc.denomWasLez
-  // Implement C's rules for modulo's sign
-  loc.remaWillBeLez := loc.numerWasLez
-
-  //loc.ioSzdTempQ := itdOut.tempQuot(outp.quot.bitsRange)
-  //loc.ioSzdTempR := itdOut.tempRema(outp.rema.bitsRange)
-  loc.ioSzdTempQ := loc.rTempQuot(outp.quot.bitsRange)
-  loc.ioSzdTempR := loc.rTempRema(outp.rema.bitsRange)
-
-  loc.lezIoSzdTempQ := (~loc.ioSzdTempQ) + 1
-  loc.lezIoSzdTempR := (~loc.ioSzdTempR) + 1
-
-  loc.tempIoQuot := Mux(
-    loc.quotWillBeLez, loc.lezIoSzdTempQ, loc.ioSzdTempQ
-  )
-  loc.tempIoRema := Mux(
-    loc.remaWillBeLez, loc.lezIoSzdTempR, loc.ioSzdTempR
-  )
-  //loc.tempIoQuot := (loc.ioSzdTempQ)
-  //loc.tempIoRema := (loc.ioSzdTempR)
-
-  //loc.chunkStartBegin := (chunkStart
-  // === (params.numChunks() - 1))
-  loc.chunkStartBegin := (cfg.numChunks() - 1)
-  //loc.chunkStartBeginReg := loc.chunkStartBegin
-
-  chunkStart := S(loc.rChunkStartBegin).resized
-  itdIn.tempNumer := loc.rTempNumer
-  itdIn.tempDenom := loc.rTempDenom
-  itdIn.tempQuot := loc.rTempQuot
-  itdIn.tempRema := loc.rTempRema
-  itdIn.denomMultLut := loc.rDenomMultLut
-
-  outp.quot := loc.rTempIoQuot
-  outp.rema := loc.rTempIoRema
-  //outp.ready := True
-  outp.ready := loc.rTempIoReady
-
-  //if (params.formal()) 
-  GenerationFlags.formal {
-    itdIn.formal.oracleQuot := loc.rOracleQuot
-    itdIn.formal.oracleRema := loc.rOracleRema
+    itdIn.denomMultLut(idx) := denomMultLut(idx)
   }
 
-  //if (params.formal()) 
-  GenerationFlags.formal {
-    //when (clockDomain.isResetActive) {
-    //  //loc.tempNumerReg := 0x0
-    //  //loc.tempDenomReg := 0x0
-    //  //loc.tempQuotReg := 0x0
-    //  //loc.tempRemaReg := 0x0
-    //  loc.pastValid := True
-    //}
-    //loc.pastValid := True
-    //loc.pastValid := True
-  }
-  when (~clockDomain.isResetActive) {
-    switch (loc.state) {
-      is (LocState.IDLE) {
-        //--------
-        // Need to check for `inp.signed` so that unsigned
-        // divides still work properly.
-        loc.numerWasLez := inp.signed & inp.numer.msb
-        loc.denomWasLez := inp.signed & inp.denom.msb
-
-        //chunkStart := params.numChunks() - 1
-        //chunkStart := S(loc.chunkStartBeginReg).resized
-        loc.rChunkStartBegin := loc.chunkStartBegin
-
-        loc.rTempNumer := loc.tempNumer
-        loc.rTempDenom := loc.tempDenom
-        loc.rTempQuot := 0x0
-        loc.rTempRema := 0x0
-
-        //itdIn.tempNumer := loc.tempNumerReg
-        //itdIn.tempDenom := loc.tempDenomReg
-        //itdIn.tempQuot := 0x0
-        //itdIn.tempRema := 0x0
-        for (idx <- 0 to cfg.dmlSize() - 1) {
-          loc.rDenomMultLut(idx) := (loc.tempDenom * idx).resized
+  switch (rState) {
+    is (State.IDLE) {
+      //when (RegNext(rState) === State.RUNNING) {
+      //  outp.ready := True
+      //}
+      when (inp.valid) {
+        tempNumer := inp.numer.resized
+        tempDenom := inp.denom.resized
+        chunkStart := chunkStartBegin
+        outp.ready := False
+        rState := State.RUNNING
+        rPrevChunkStart := chunkStartBegin
+        //rDenomMultLut
+        for (idx <- 0 until cfg.dmlSize()) {
+          denomMultLut(idx) := (inp.denom * idx).resized
         }
-        //--------
-        when (inp.valid) {
-          //outp.quot := 0x0
-          //outp.rema := 0x0
-          //outp.ready := False
-          loc.rTempIoQuot := 0x0
-          loc.rTempIoRema := 0x0
-          loc.rTempIoReady := False
-
-          loc.state := LocState.RUNNING
-        }
-        //--------
       }
-      is (LocState.RUNNING) {
-        //--------
-        when (chunkStart > 0) {
-          // Since `itdIn` and `itdOut` are `Splitrec`s, we
-          // can do a simple `.eq()` regardless of whether or
-          // not `FORMAL` is true.
-          //m.d.sync += itdIn.eq(itdOut)
-          //itdIn := loc.itdOutReg
-          loc.rTempNumer := itdOut.tempNumer
-          loc.rTempDenom := itdOut.tempDenom
-          loc.rTempQuot := itdOut.tempQuot
-          loc.rTempRema := itdOut.tempRema
-          loc.rDenomMultLut := itdOut.denomMultLut
-        } otherwise { // when(chunkStart <= 0)
-          //outp.quot := loc.tempIoQuotReg
-          //outp.rema := loc.tempIoRemaReg
-          ////outp.ready := True
-          //outp.ready := loc.tempIoReadyReg
-          loc.rTempIoQuot := loc.tempIoQuot
-          loc.rTempIoRema := loc.tempIoRema
-          loc.rTempIoReady := True
-
-          loc.state := LocState.IDLE
-        }
-        //chunkStart := chunkStart - 1
-        loc.rChunkStartBegin := loc.rChunkStartBegin - 1
-        //--------
-      }
-    } // switch (loc.state)
-    //if (params.formal()) 
-    GenerationFlags.formal {
-      //assume(~skipCond)
-      when (pastValidAfterReset()) {
-        //--------
-        assume(stable(inp.signed))
-        //--------
-        assume(stable(loc.tempNumer))
-        assume(stable(loc.tempDenom))
-        //--------
-      }
-      switch (loc.state) {
-        is (LocState.IDLE) {
-          loc.rOracleQuot := loc.tempNumer / loc.tempDenom
-          loc.rOracleRema := loc.tempNumer % loc.tempDenom
-          when (pastValidAfterReset() & (~stable(loc.state))) {
-            //--------
-            //assert(~skipCond)
-            assert(skipCond | (outp.quot === past(loc.tempIoQuot)))
-            assert(skipCond | (outp.rema === past(loc.tempIoRema)))
-            //assert(skipCond | (outp.quot === loc.oracleQuotReg))
-            //assert(skipCond | (outp.rema === loc.oracleRemaReg))
+      if (cfg.formal) {
+        when (pastValidAfterReset) {
+          cover(past(rState) === State.RUNNING)
+          when (past(rState) === State.RUNNING) {
             assert(outp.ready)
-            //--------
-          }
-          //elsewhen (pastValidAfterReset() & stable(loc.state)):
-        }
-        is (LocState.RUNNING) {
-          when (
-            pastValidAfterReset() & (past(loc.state) === LocState.IDLE)
-          ) {
-            //--------
-            assert(loc.numerWasLez
-              === (past(inp.signed)
-                & past(inp.numer).msb))
-            assert(loc.denomWasLez
-              === (past(inp.signed)
-                & past(inp.denom).msb))
-            //--------
-            //assert(chunkStart
-            // === (params.numChunks() - 1)),
-            //assert(chunkStart[:len(chunkStart) - 1]
-            // === (params.numChunks() - 1)),
-            //assert(chunkStart
-            //  [:len(loc.chunkStartBegin)]
-            //  === loc.chunkStartBegin)
-            assert(U(chunkStart)
-              === loc.chunkStartBegin(chunkStart.bitsRange))
-            //assert(loc.chunkStartBegin)
-            //--------
-            //assert(itdIn.tempNumer
-            //  === past(loc.tempNumerReg))
-            assert(itdIn.tempQuot === 0x0)
-            assert(itdIn.tempRema === 0x0)
-            //--------
-            assert(itdIn.tempNumer
-              === past(loc.tempNumer))
-            assert(itdIn.tempDenom
-              === past(loc.tempDenom))
-
-            assert(itdIn.formal.oracleQuot
-              === (past(loc.tempNumer)
-                / past(loc.tempDenom)))
-            assert(itdIn.formal.oracleRema
-              === (past(loc.tempNumer)
-                % past(loc.tempDenom)))
-            //--------
-          } elsewhen (pastValidAfterReset() & stable(loc.state)) {
-            //--------
-            assert(stable(loc.numerWasLez))
-            assert(stable(loc.denomWasLez))
-            //--------
-            assert(chunkStart
-              === (past(chunkStart) - 1))
-            //--------
-            assert(itdOut.tempNumer
-              === past(itdIn.tempNumer))
-            //--------
-            assert(itdOut.denomMultLut
-              === past(itdIn.denomMultLut))
-            //--------
-            assert(itdOut.tempNumer
-              === past(itdIn.tempNumer))
-            assert(itdOut.tempDenom
-              === past(itdIn.tempDenom))
-
-            assert(itdOut.formal.oracleQuot
-              === past(itdIn.formal.oracleQuot))
-            assert(itdOut.formal.oracleRema
-              === past(itdIn.formal.oracleRema))
-            //--------
-            assert(itdOut.denomMultLut
-              === past(itdIn.denomMultLut))
-            //--------
-          }
-          when (pastValidAfterReset()) {
-            //assert(itdIn.denomMultLut[i]
-            //  === (
-            //    itdIn.tempDenom
-            //    * i
-            //  ))
-            //  for i in range(params.dmlSize())
-            for (idx <- 0 to cfg.dmlSize() - 1) {
+            when (
+              //past(tempNumer) =/= 0x0
+              //&& 
+              past(tempDenom) =/= 0x0
+            ) {
               assert(
-                itdIn.denomMultLut(idx)
-                === (
-                  itdIn.tempDenom * idx
-                )
+                outp.quot
+                === (past(tempNumer) / past(tempDenom)).resized
+              )
+              assert(
+                outp.rema
+                === (past(tempNumer) % past(tempDenom)).resized
               )
             }
           }
         }
       }
     }
+    is (State.RUNNING) {
+      if (cfg.formal) {
+        when (pastValidAfterReset) {
+          assume(stable(tempNumer))
+          assume(stable(tempDenom))
+          //when (stable(rState)) {
+            for (idx <- 0 until cfg.dmlSize()) {
+              //assert(stable(rDenomMultLut(idx)))
+              assert(denomMultLut(idx) === (tempDenom * idx).resized)
+            }
+          //}
+        }
+      }
+      when (inp.valid) {
+        when (rPrevChunkStart > 0) {
+        } otherwise {
+          outp.ready := True
+          outp.quot := tempQuot
+          outp.rema := tempRema
+          rState := State.IDLE
+        }
+        chunkStart := rPrevChunkStart - 1
+        tempQuot := itdOut.tempQuot
+        tempRema := itdOut.tempRema
+      }
+    }
   }
 }
+
+//case class LongDivMultiCycle(
+//  //cfg: LongDivParams
+//  mainWidth: Int,
+//  denomWidth: Int,
+//  chunkWidth: Int,
+//  signedReset: BigInt=0x0,
+//  formal: Boolean=false,
+//) extends Component {
+//  val cfg = LongDivConfig(
+//    mainWidth=mainWidth,
+//    denomWidth=denomWidth,
+//    chunkWidth=chunkWidth,
+//    tagWidth=1,
+//    pipelined=false,
+//    usePipeSkidBuf=false,
+//    formal=formal,
+//  )
+//  val io = LongDivIo(cfg=cfg)
+//  if (cfg.formal) {
+//    when (!clockDomain.isResetActive) {
+//      cover(io.inp.valid)
+//    }
+//    io.outp.ready := False
+//    io.outp.quot := 0x0
+//    io.outp.rema := 0x0 
+//  }
+//
+//  object LocState extends SpinalEnum(
+//    defaultEncoding=binarySequential
+//    //defaultEncoding=binaryOneHot
+//  ) {
+//    val
+//      IDLE,
+//      RUNNING
+//      = newElement();
+//  }
+//  def inp = io.inp
+//  def outp = io.outp
+//  val zeroD = inp.denom === 0
+//  //class Loc
+//  val loc = new Area {
+//    val rState = Reg(LocState()) init(LocState.IDLE)
+//    val m = LongUdivIter(cfg=cfg)
+//
+//    //val itdOutReg = Reg(LongUdivIterData(cfg=cfg))
+//    //val pastValid = (cfg.formal) generate Reg(Bool()) init(False)
+//
+//    //val tempNumer = cfg.buildTempShape()
+//    //val tempDenom = cfg.buildTempShape()
+//    val rTempNumer = Reg(cfg.buildTempShape()) init(0x0)
+//    //val tempNumer = tempNumerReg.wrapNext()
+//    val tempNumer = cfg.buildTempShape()
+//    val rTempDenom = Reg(cfg.buildTempShape()) init(0x0)
+//    //val tempDenom = tempDenomReg.wrapNext()
+//    val tempDenom = cfg.buildTempShape()
+//    val rTempQuot = Reg(cfg.buildTempShape()) init(0x0)
+//    val tempQuot = cfg.buildTempShape()
+//    //val tempQuot = tempQuotReg.wrapNext()
+//    val rTempRema = Reg(cfg.buildTempShape()) init(0x0)
+//    val tempRema = cfg.buildTempShape()
+//    //val tempRema = tempRemaReg.wrapNext()
+//    val rDenomMultLut = Reg(
+//      Vec.fill(cfg.dmlSize())(
+//        UInt(cfg.dmlElemWidth() bits)
+//      )
+//    )
+//    for (idx <- 0 until cfg.dmlSize()) {
+//      rDenomMultLut(idx).init(rDenomMultLut(idx).getZero)
+//    }
+//    val rOracleQuot = (cfg.formal) generate (
+//      Reg(
+//        cfg.buildTempShape()
+//      ) init(0x0)
+//    )
+//    val rOracleRema = (cfg.formal) generate (
+//      Reg(
+//        cfg.buildTempShape()
+//      ) init(0x0)
+//    )
+//
+//    val numerWasLez = Reg(Bool()) init(False)
+//    val denomWasLez = Reg(Bool()) init(False)
+//
+//    val quotWillBeLez = Bool()
+//    val remaWillBeLez = Bool()
+//
+//    val ioSzdTempQ = UInt(outp.quot.getWidth bits)
+//    val ioSzdTempR = UInt(outp.rema.getWidth bits)
+//    val lezIoSzdTempQ = UInt(outp.quot.getWidth bits)
+//    val lezIoSzdTempR = UInt(outp.rema.getWidth bits)
+//
+//    //val tempIoQuot = UInt(outp.quot.getWidth bits)
+//    //val tempIoRema = UInt(outp.rema.getWidth bits)
+//    val rTempIoQuot = Reg(UInt(outp.quot.getWidth bits)) init(0x0)
+//    //val tempIoQuot = tempIoQuotReg.wrapNext()
+//    val tempIoQuot = UInt(outp.quot.getWidth bits)
+//    val rTempIoRema = Reg(UInt(outp.rema.getWidth bits)) init(0x0)
+//    //val tempIoRema = tempIoRemaReg.wrapNext()
+//    val tempIoRema = UInt(outp.rema.getWidth bits)
+//    val rTempIoReady = Reg(Bool()) init(False)
+//
+//    //val chunkStartBegin = cfg.buildTempShape()
+//    val rChunkStartBegin = Reg(cfg.buildTempShape()) init(0x0)
+//    val chunkStartBegin = cfg.buildTempShape()
+//    //chunkStartBeginReg.init(chunkStartBeginReg.getZero)
+//    //val chunkStartBegin = chunkStartBeginReg.wrapNext()
+//    //val tempDbg = Bool()
+//  }
+//  //val loc = new Loc()
+//  def itIo = loc.m.io
+//  def chunkStart = itIo.chunkStart
+//  def itdIn = itIo.itdIn
+//  def itdOut = itIo.itdOut
+//  val skipCond = itdIn.tempDenom === 0
+//  //if (cfg.formal) {
+//  //  
+//  //}
+//  //loc.tempNumer := Mux(
+//  //  inp.signed & inp.numer.msb,
+//  //  (~inp.numer) + 1, inp.numer)
+//  //)
+//  //if (cfg.formal) {
+//  //  assume(!inp.signed)
+//  //}
+//  loc.tempNumer := (
+//    //Mux(
+//    //  inp.signed && inp.numer.msb, (~inp.numer) + 1, inp.numer
+//    //)
+//    inp.numer
+//  )
+//  loc.tempDenom := (
+//    //Mux(
+//    //  inp.signed && inp.denom.msb, (~inp.denom) + 1, inp.denom
+//    //).resized
+//    inp.denom.resized
+//  )
+//  //loc.tempNumerReg := loc.tempNumer
+//  //loc.tempDenomReg := loc.tempDenom
+//
+//  loc.quotWillBeLez := loc.numerWasLez =/= loc.denomWasLez
+//  // Implement C's rules for modulo's sign
+//  loc.remaWillBeLez := loc.numerWasLez
+//
+//  //loc.ioSzdTempQ := itdOut.tempQuot(outp.quot.bitsRange)
+//  //loc.ioSzdTempR := itdOut.tempRema(outp.rema.bitsRange)
+//  loc.ioSzdTempQ := loc.rTempQuot(outp.quot.bitsRange)
+//  loc.ioSzdTempR := loc.rTempRema(outp.rema.bitsRange)
+//
+//  loc.lezIoSzdTempQ := (~loc.ioSzdTempQ) + 1
+//  loc.lezIoSzdTempR := (~loc.ioSzdTempR) + 1
+//
+//  loc.tempIoQuot := Mux(
+//    loc.quotWillBeLez, loc.lezIoSzdTempQ, loc.ioSzdTempQ
+//  )
+//  loc.tempIoRema := Mux(
+//    loc.remaWillBeLez, loc.lezIoSzdTempR, loc.ioSzdTempR
+//  )
+//  //loc.tempIoQuot := (loc.ioSzdTempQ)
+//  //loc.tempIoRema := (loc.ioSzdTempR)
+//
+//  //loc.chunkStartBegin := (chunkStart
+//  // === (cfg.numChunks() - 1))
+//  loc.chunkStartBegin := (cfg.numChunks() - 1)
+//  println(
+//    (cfg.numChunks() - 1)
+//  )
+//  //loc.chunkStartBeginReg := loc.chunkStartBegin
+//
+//  chunkStart := loc.rChunkStartBegin.asSInt.resized //S(loc.rChunkStartBegin).resized
+//  if (cfg.formal) {
+//    cover(chunkStart === 0)
+//  }
+//  itdIn.tempNumer := loc.rTempNumer
+//  itdIn.tempDenom := loc.rTempDenom.resized
+//  itdIn.tempQuot := loc.rTempQuot
+//  itdIn.tempRema := loc.rTempRema
+//  for (idx <- 0 until itdIn.denomMultLut.size) {
+//    itdIn.denomMultLut(idx) := loc.rDenomMultLut(idx)
+//  }
+//
+//  //outp.quot := loc.rTempIoQuot
+//  //outp.rema := loc.rTempIoRema
+//  ////outp.ready := True
+//  //outp.ready := loc.rTempIoReady
+//
+//  if (cfg.formal) 
+//  //GenerationFlags.formal
+//  {
+//    itdIn.formal.oracleQuot := loc.rOracleQuot
+//    itdIn.formal.oracleRema := loc.rOracleRema
+//  }
+//
+//  //if (cfg.formal) 
+//  //GenerationFlags.formal
+//  {
+//    //when (ClockDomain.isResetActive) {
+//    //  //loc.tempNumerReg := 0x0
+//    //  //loc.tempDenomReg := 0x0
+//    //  //loc.tempQuotReg := 0x0
+//    //  //loc.tempRemaReg := 0x0
+//    //  loc.pastValid := True
+//    //}
+//    //loc.pastValid := True
+//    //loc.pastValid := True
+//  }
+//  if (cfg.formal) {
+//    when (inp.valid) {
+//      cover(True)
+//    }
+//    //cover(inp.valid)
+//  }
+//  //when (!clockDomain.isResetActive) {
+//    //if (cfg.formal) {
+//    //  cover(loc.rState === LocState.IDLE)
+//    //  cover(loc.rState === LocState.RUNNING)
+//    //}
+//    //switch (loc.rState) {
+//    //  is (LocState.IDLE) {
+//    //    //--------
+//    //    // Need to check for `inp.signed` so that unsigned
+//    //    // divides still work properly.
+//    //    loc.numerWasLez := inp.signed & inp.numer.msb
+//    //    loc.denomWasLez := inp.signed & inp.denom.msb
+//
+//    //    //chunkStart := cfg.numChunks() - 1
+//    //    //chunkStart := S(loc.chunkStartBeginReg).resized
+//    //    loc.rChunkStartBegin := loc.chunkStartBegin
+//
+//    //    loc.rTempNumer := loc.tempNumer
+//    //    loc.rTempDenom := loc.tempDenom
+//    //    loc.rTempQuot := 0x0
+//    //    loc.rTempRema := 0x0
+//
+//    //    //itdIn.tempNumer := loc.tempNumerReg
+//    //    //itdIn.tempDenom := loc.tempDenomReg
+//    //    //itdIn.tempQuot := 0x0
+//    //    //itdIn.tempRema := 0x0
+//    //    for (idx <- 0 to cfg.dmlSize() - 1) {
+//    //      loc.rDenomMultLut(idx) := (loc.tempDenom * idx).resized
+//    //    }
+//    //    //--------
+//    //    when (inp.valid) {
+//    //      //outp.quot := 0x0
+//    //      //outp.rema := 0x0
+//    //      //outp.ready := False
+//    //      loc.rTempIoQuot := 0x0
+//    //      loc.rTempIoRema := 0x0
+//    //      loc.rTempIoReady := False
+//
+//    //      loc.rState := LocState.RUNNING
+//    //    }
+//    //    //--------
+//    //  }
+//    //  is (LocState.RUNNING) {
+//    //    //--------
+//    //    when (chunkStart > 0) {
+//    //      // Since `itdIn` and `itdOut` are `Splitrec`s, we
+//    //      // can do a simple `.eq()` regardless of whether or
+//    //      // not `FORMAL` is true.
+//    //      //m.d.sync += itdIn.eq(itdOut)
+//    //      //itdIn := loc.itdOutReg
+//    //      loc.rTempNumer := itdOut.tempNumer
+//    //      loc.rTempDenom := itdOut.tempDenom.resized
+//    //      loc.rTempQuot := itdOut.tempQuot
+//    //      loc.rTempRema := itdOut.tempRema
+//    //      loc.rDenomMultLut := itdOut.denomMultLut
+//    //    } otherwise { // when(chunkStart <= 0)
+//    //      //outp.quot := loc.tempIoQuotReg
+//    //      //outp.rema := loc.tempIoRemaReg
+//    //      ////outp.ready := True
+//    //      //outp.ready := loc.tempIoReadyReg
+//    //      loc.rTempIoQuot := loc.tempIoQuot
+//    //      loc.rTempIoRema := loc.tempIoRema
+//    //      loc.rTempIoReady := True
+//
+//    //      loc.rState := LocState.IDLE
+//    //    }
+//    //    //chunkStart := chunkStart - 1
+//    //    loc.rChunkStartBegin := loc.rChunkStartBegin - 1
+//    //    //--------
+//    //  }
+//    //} // switch (loc.state)
+//    //if (cfg.formal) 
+//    ////GenerationFlags.formal 
+//    //{
+//    //  //assume(~skipCond)
+//    //  when (pastValidAfterReset()) {
+//    //    //--------
+//    //    //assume(stable(inp.signed))
+//    //    //assume(inp.numer === 8)
+//    //    //assume(inp.denom === 4)
+//    //    //--------
+//    //    //assume(stable(loc.tempNumer))
+//    //    //assume(stable(loc.tempDenom))
+//    //    //--------
+//    //  }
+//    //  switch (loc.rState) {
+//    //    is (LocState.IDLE) {
+//    //      loc.rOracleQuot := loc.tempNumer / loc.tempDenom
+//    //      loc.rOracleRema := loc.tempNumer % loc.tempDenom
+//    //      when (pastValidAfterReset() && (!stable(loc.rState))) {
+//    //        //--------
+//    //        //assert(~skipCond)
+//    //        when (!skipCond) {
+//    //          //assert((outp.quot === past(loc.tempIoQuot)))
+//    //          //assert((outp.rema === past(loc.tempIoRema)))
+//    //          //assert((outp.quot === loc.rOracleQuot))
+//    //          //assert((outp.rema === loc.rOracleRema))
+//    //          assert(outp.ready)
+//    //          cover(outp.quot =/= 0x0)
+//    //        }
+//    //        //--------
+//    //      }
+//    //      //elsewhen (pastValidAfterReset() & stable(loc.state)):
+//    //    }
+//    //    //is (LocState.RUNNING) {
+//    //    //  when (
+//    //    //    pastValidAfterReset() & (past(loc.state) === LocState.IDLE)
+//    //    //  ) {
+//    //    //    //--------
+//    //    //    assert(loc.numerWasLez
+//    //    //      === (past(inp.signed)
+//    //    //        & past(inp.numer).msb))
+//    //    //    assert(loc.denomWasLez
+//    //    //      === (past(inp.signed)
+//    //    //        & past(inp.denom).msb))
+//    //    //    //--------
+//    //    //    //assert(chunkStart
+//    //    //    // === (cfg.numChunks() - 1)),
+//    //    //    //assert(chunkStart[:len(chunkStart) - 1]
+//    //    //    // === (cfg.numChunks() - 1)),
+//    //    //    //assert(chunkStart
+//    //    //    //  [:len(loc.chunkStartBegin)]
+//    //    //    //  === loc.chunkStartBegin)
+//    //    //    assert(U(chunkStart)
+//    //    //      === loc.chunkStartBegin(chunkStart.bitsRange))
+//    //    //    //assert(loc.chunkStartBegin)
+//    //    //    //--------
+//    //    //    //assert(itdIn.tempNumer
+//    //    //    //  === past(loc.tempNumerReg))
+//    //    //    assert(itdIn.tempQuot === 0x0)
+//    //    //    assert(itdIn.tempRema === 0x0)
+//    //    //    //--------
+//    //    //    assert(itdIn.tempNumer
+//    //    //      === past(loc.tempNumer))
+//    //    //    assert(itdIn.tempDenom
+//    //    //      === past(loc.tempDenom))
+//
+//    //    //    assert(itdIn.formal.oracleQuot
+//    //    //      === (past(loc.tempNumer)
+//    //    //        / past(loc.tempDenom)))
+//    //    //    assert(itdIn.formal.oracleRema
+//    //    //      === (past(loc.tempNumer)
+//    //    //        % past(loc.tempDenom)))
+//    //    //    //--------
+//    //    //  } elsewhen (pastValidAfterReset() & stable(loc.state)) {
+//    //    //    //--------
+//    //    //    assert(stable(loc.numerWasLez))
+//    //    //    assert(stable(loc.denomWasLez))
+//    //    //    //--------
+//    //    //    assert(chunkStart
+//    //    //      === (past(chunkStart) - 1))
+//    //    //    //--------
+//    //    //    assert(itdOut.tempNumer
+//    //    //      === past(itdIn.tempNumer))
+//    //    //    //--------
+//    //    //    assert(itdOut.denomMultLut
+//    //    //      === past(itdIn.denomMultLut))
+//    //    //    //--------
+//    //    //    assert(itdOut.tempNumer
+//    //    //      === past(itdIn.tempNumer))
+//    //    //    assert(itdOut.tempDenom
+//    //    //      === past(itdIn.tempDenom))
+//
+//    //    //    assert(itdOut.formal.oracleQuot
+//    //    //      === past(itdIn.formal.oracleQuot))
+//    //    //    assert(itdOut.formal.oracleRema
+//    //    //      === past(itdIn.formal.oracleRema))
+//    //    //    //--------
+//    //    //    assert(itdOut.denomMultLut
+//    //    //      === past(itdIn.denomMultLut))
+//    //    //    //--------
+//    //    //  }
+//    //    //  when (pastValidAfterReset()) {
+//    //    //    //assert(itdIn.denomMultLut[i]
+//    //    //    //  === (
+//    //    //    //    itdIn.tempDenom
+//    //    //    //    * i
+//    //    //    //  ))
+//    //    //    //  for i in range(cfg.dmlSize())
+//    //    //    for (idx <- 0 to cfg.dmlSize() - 1) {
+//    //    //      assert(
+//    //    //        itdIn.denomMultLut(idx)
+//    //    //        === (
+//    //    //          itdIn.tempDenom * idx
+//    //    //        )
+//    //    //      )
+//    //    //    }
+//    //    //  }
+//    //    //}
+//    //  }
+//    //}
+//  //}
+//}
 
 
 //case class LongDivPipelined(
@@ -395,7 +589,7 @@ case class LongDivMultiCycle(
 //  signedReset: BigInt=0x0,
 //  usePipeSkidBuf: Boolean=false,
 //) extends Component {
-//  val params = LongDivParams(
+//  val cfg = LongDivParams(
 //    mainWidth=mainWidth,
 //    denomWidth=denomWidth,
 //    chunkWidth=chunkWidth,
@@ -403,24 +597,24 @@ case class LongDivMultiCycle(
 //    pipelined=true,
 //    usePipeSkidBuf=usePipeSkidBuf,
 //  )
-//  val io = LongDivIo(params=params)
+//  val io = LongDivIo(cfg=cfg)
 //  val inp = io.inp
 //  val outp = io.outp
 //
-//  //numPstages = params.numChunks() + 1
-//  val numPstages = params.numChunks()
+//  //numPstages = cfg.numChunks() + 1
+//  val numPstages = cfg.numChunks()
 //  val numPsElems = numPstages + 1
 //
 //  val loc = new Area {
 //    //val m = Array.fill(LongUdivIterSync(
-//    //  params=params,
+//    //  cfg=cfg,
 //    //  chunkStartVal=
 //    //)){ 
 //    //}
 //    val m = new ArrayBuffer[LongUdivIterSync]()
 //    for (idx <- 0 to numPstages - 1) {
 //      m += new LongUdivIterSync(
-//        params=params,
+//        cfg=cfg,
 //        chunkStartVal=(numPstages - 1) - idx
 //      )
 //      val lastM = m.last
@@ -445,8 +639,8 @@ case class LongDivMultiCycle(
 //    }
 //
 //    case class TempSync() extends Bundle {
-//      val tempNumer = UInt(params.mainWidth bits)
-//      val tempDenom = UInt(params.denomWidth bits)
+//      val tempNumer = UInt(cfg.mainWidth bits)
+//      val tempDenom = UInt(cfg.denomWidth bits)
 //
 //      val numerWasLez = UInt(numPsElems bits)
 //      val denomWasLez = UInt(numPsElems bits)
@@ -469,7 +663,7 @@ case class LongDivMultiCycle(
 //    val tComb = TempComb()
 //    val tCombPrev = Reg(TempComb()) init(TempComb().getZero)
 //
-//    val rItdIn0 = Reg(LongUdivIterData(params=params))
+//    val rItdIn0 = Reg(LongUdivIterData(cfg=cfg))
 //    rItdIn0.init(rItdIn0.getZero)
 //  }
 //
@@ -630,7 +824,7 @@ case class LongDivMultiCycle(
 //      loc.rItdIn0.tag := inp.tag
 //    }
 //  }
-//  for (idx <- 0 to params.dmlSize() - 1) {
+//  for (idx <- 0 to cfg.dmlSize() - 1) {
 //    loc.rItdIn0.denomMultLut(idx) := (loc.tSync.tempDenom * idx).resized
 //  }
 //  outp.quot := loc.tComb.tempBusQuot
@@ -638,8 +832,9 @@ case class LongDivMultiCycle(
 //
 //  outp.tag := itdOut.last.tag
 //  //--------
-//  //if (params.formal()) 
-//  GenerationFlags.formal {
+//  if (cfg.formal) 
+//  //GenerationFlags.formal 
+//  {
 //    val skipCond = itdOut.last.tempDenom === 0
 //    //--------
 //    when (ifwdMove(0)) {
