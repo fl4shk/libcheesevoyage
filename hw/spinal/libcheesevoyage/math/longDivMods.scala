@@ -80,6 +80,12 @@ case class LongDivMultiCycle(
     init(State.IDLE)
   )
   val tempNumer = cfg.buildTempShape()
+  println(
+    s"chunkWidth:${chunkWidth} "
+    + s"numChunks:${cfg.numChunks()} "
+    + s"tempShapeWidth:${cfg.tempShapeWidth} "
+    + s"tempNumer.getWidth:${tempNumer.getWidth}"
+  )
   val tempDenom = cfg.buildTempShape()
   val rTempQuot = Reg(cfg.buildTempShape()) init(0x0)
   val rTempRema = Reg(cfg.buildTempShape()) init(0x0)
@@ -87,8 +93,8 @@ case class LongDivMultiCycle(
   tempDenom := RegNext(next=tempDenom, init=tempDenom.getZero)
   //tempQuot := RegNext(next=tempQuot, init=tempQuot.getZero)
   //tempRema := RegNext(next=tempRema, init=tempRema.getZero)
-  itdIn.tempNumer := tempNumer
-  itdIn.tempDenom := tempDenom
+  itdIn.tempNumer := tempNumer.resized
+  itdIn.tempDenom := tempDenom.resized
   itdIn.tempQuot := rTempQuot
   itdIn.tempRema := rTempRema
   val chunkStartBegin = cfg.numChunks() //- 1
@@ -131,20 +137,26 @@ case class LongDivMultiCycle(
           nextDenomWasSgnLtz := False
         } otherwise {
           //--------
-          val tempSignedNumer = SInt(cfg.tempShapeWidth bits)
-          val tempSignedDenom = SInt(cfg.tempShapeWidth bits)
+          val tempSignedNumer = Vec.fill(2)(
+            SInt(cfg.tempShapeWidth bits)
+          )
+          val tempSignedDenom = Vec.fill(2)(
+            SInt(cfg.tempShapeWidth bits)
+          )
+          tempSignedNumer(0) := inp.numer.asSInt.resized
+          tempSignedDenom(0) := inp.denom.asSInt.resized
           when (nextNumerWasSgnLtz) {
-            tempSignedNumer := ((~inp.numer) + 1).asSInt.resized
+            tempSignedNumer(1) := ((~tempSignedNumer(0)) + 1)
           } otherwise {
-            tempSignedNumer := inp.numer.asSInt.resized
+            tempSignedNumer(1) := tempSignedNumer(0)
           }
           when (nextDenomWasSgnLtz) {
-            tempSignedDenom := ((~inp.denom) + 1).asSInt.resized
+            tempSignedDenom(1) := ((~tempSignedDenom(0)) + 1)
           } otherwise {
-            tempSignedDenom := inp.denom.asSInt.resized
+            tempSignedDenom(1) := tempSignedDenom(0)
           }
-          tempNumer := tempSignedNumer.asUInt
-          tempDenom := tempSignedDenom.asUInt
+          tempNumer := tempSignedNumer.last.asUInt
+          tempDenom := tempSignedDenom.last.asUInt
           //--------
           nextNumerWasSgnLtz := inp.numer.msb
           nextDenomWasSgnLtz := inp.denom.msb
@@ -200,25 +212,42 @@ case class LongDivMultiCycle(
                 //)
                 val myTempNumer = (
                   Mux[SInt](
-                    rNumerWasSgnLtz,
+                    past(rNumerWasSgnLtz),
                     past((~tempNumer) + 1).asSInt,
                     past(tempNumer).asSInt,
                   )
                 )
                 val myTempDenom = (
                   Mux[SInt](
-                    rDenomWasSgnLtz,
+                    past(rDenomWasSgnLtz),
                     past((~tempDenom) + 1).asSInt,
                     past(tempDenom.asSInt),
                   )
                 )
                 assert(
-                  outp.quot.asSInt
-                  === (myTempNumer / myTempDenom).resized
+                  Mux[UInt](
+                    (past(rNumerWasSgnLtz) =/= past(rDenomWasSgnLtz)),
+                    ((~past((itdOut.tempQuot))) + 1),
+                    past(itdOut.tempQuot),
+                  )(cfg.mainWidth - 1 downto 0)
+                  //outp.quot.asSInt.resized
+                  === (
+                    (myTempNumer / myTempDenom).asUInt
+                    (cfg.mainWidth - 1 downto 0)
+                  )
                 )
                 assert(
-                  outp.rema.asSInt
-                  === (myTempNumer % myTempDenom).resized
+                  //outp.rema.asSInt.resized
+                  //past(rTempRema)
+                  Mux[UInt](
+                    past(rNumerWasSgnLtz),
+                    ((~past((itdOut.tempRema))) + 1),
+                    past(itdOut.tempRema),
+                  )(cfg.mainWidth - 1 downto 0)
+                  === (
+                    (myTempNumer % myTempDenom).asUInt
+                    (cfg.mainWidth - 1 downto 0)
+                  )
                 )
                 //when (rNumerWasSgnLtz =/= rDenomWasSgnLtz) {
                 //  //outp.quot := ((~myTempQuot) + 1).resized

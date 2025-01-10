@@ -12,9 +12,9 @@ object LongDivMultiCycleFormal extends App {
   //  pipelined=false,
   //  usePipeSkidBuf=false,
   //)
-  val mainWidth = 6
-  val denomWidth = 6
-  val chunkWidth = 2
+  val mainWidth = 8
+  val denomWidth = 8
+  val chunkWidth = 3
   case class MyFormalDutLongDivMultiCycle(
   ) extends Component {
     val dut = FormalDut(LongDivMultiCycle(

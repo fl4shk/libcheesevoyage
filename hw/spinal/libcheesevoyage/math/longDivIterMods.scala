@@ -25,8 +25,10 @@ case class LongDivConfig(
   //  return false
   //}
   def tempTWidth(): Int = {
-    return chunkWidth * scala.math.ceil(
-      mainWidth / chunkWidth
+    return (
+      chunkWidth * scala.math.ceil(
+        mainWidth.toDouble / chunkWidth.toDouble
+      )
     ).toInt
   }
   //def buildTempShape(): Vec[UInt] = {
@@ -39,11 +41,13 @@ case class LongDivConfig(
   }
   def buildChunkStartShape(): SInt = {
     //return SInt((chunkWidth + 1) bits)
-    return SInt((log2Up(numChunks()) + 1) bits)
+    return SInt((log2Up(numChunks()) + 2) bits)
   }
 
   def numChunks(): Int = {
-    return (tempTWidth() / chunkWidth)
+    return (
+      scala.math.ceil(tempTWidth().toDouble / chunkWidth.toDouble)
+    ).toInt
   }
 
   def radix(): Int = {
