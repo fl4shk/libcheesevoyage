@@ -32,13 +32,14 @@ case class LongDivConfig(
   //def buildTempShape(): Vec[UInt] = {
   //  return Vec(UInt(chunkWidth bits), numChunks)
   //}
+  def tempShapeWidth = (chunkWidth * numChunks())
   def buildTempShape(): UInt = {
-    return UInt((chunkWidth * numChunks()) bits)
+    return UInt(tempShapeWidth bits)
     //return Vec(UInt(chunkWidth bits), numChunks)
   }
   def buildChunkStartShape(): SInt = {
     //return SInt((chunkWidth + 1) bits)
-    return SInt((log2Up(numChunks()) + 2) bits)
+    return SInt((log2Up(numChunks()) + 1) bits)
   }
 
   def numChunks(): Int = {

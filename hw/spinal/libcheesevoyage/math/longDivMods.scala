@@ -50,12 +50,12 @@ case class LongDivMultiCycle(
   outp.ready.setAsReg
   outp.ready.init(False)
   //:= RegNext(next=outp.ready, init=outp.ready.getZero)
-  //outp.quot := RegNext(next=outp.quot, init=outp.quot.getZero)
-  //outp.rema := RegNext(next=outp.rema, init=outp.rema.getZero)
-  outp.quot.setAsReg
-  outp.quot.init(0x0)
-  outp.rema.setAsReg
-  outp.rema.init(0x0)
+  outp.quot := RegNext(next=outp.quot, init=outp.quot.getZero)
+  outp.rema := RegNext(next=outp.rema, init=outp.rema.getZero)
+  //outp.quot.setAsReg
+  //outp.quot.init(0x0)
+  //outp.rema.setAsReg
+  //outp.rema.init(0x0)
 
   if (cfg.formal) {
   }
@@ -81,16 +81,16 @@ case class LongDivMultiCycle(
   )
   val tempNumer = cfg.buildTempShape()
   val tempDenom = cfg.buildTempShape()
-  val tempQuot = Reg(cfg.buildTempShape()) init(0x0)
-  val tempRema = Reg(cfg.buildTempShape()) init(0x0)
+  val rTempQuot = Reg(cfg.buildTempShape()) init(0x0)
+  val rTempRema = Reg(cfg.buildTempShape()) init(0x0)
   tempNumer := RegNext(next=tempNumer, init=tempNumer.getZero)
   tempDenom := RegNext(next=tempDenom, init=tempDenom.getZero)
   //tempQuot := RegNext(next=tempQuot, init=tempQuot.getZero)
   //tempRema := RegNext(next=tempRema, init=tempRema.getZero)
   itdIn.tempNumer := tempNumer
   itdIn.tempDenom := tempDenom
-  itdIn.tempQuot := tempQuot
-  itdIn.tempRema := tempRema
+  itdIn.tempQuot := rTempQuot
+  itdIn.tempRema := rTempRema
   val chunkStartBegin = cfg.numChunks() //- 1
   val rPrevChunkStart = RegNext(next=chunkStart, init=chunkStart.getZero)
   chunkStart := rPrevChunkStart
@@ -106,6 +106,13 @@ case class LongDivMultiCycle(
     )
     itdIn.denomMultLut(idx) := denomMultLut(idx)
   }
+  val rInpSigned = Reg(Bool(), init=False)
+  val nextNumerWasSgnLtz = Bool()
+  val rNumerWasSgnLtz = RegNext(nextNumerWasSgnLtz, init=False)
+  nextNumerWasSgnLtz := rNumerWasSgnLtz
+  val nextDenomWasSgnLtz = Bool()
+  val rDenomWasSgnLtz = RegNext(nextDenomWasSgnLtz, init=False)
+  nextDenomWasSgnLtz := rDenomWasSgnLtz
 
   switch (rState) {
     is (State.IDLE) {
@@ -113,15 +120,42 @@ case class LongDivMultiCycle(
       //  outp.ready := True
       //}
       when (inp.valid) {
-        tempNumer := inp.numer.resized
-        tempDenom := inp.denom.resized
+        //nextNumerWasSgnLtz := inp.numer.
+        rTempQuot := 0x0
+        rTempRema := 0x0
+        rInpSigned := inp.signed
+        when (!inp.signed) {
+          tempNumer := inp.numer.resized
+          tempDenom := inp.denom.resized
+          nextNumerWasSgnLtz := False
+          nextDenomWasSgnLtz := False
+        } otherwise {
+          //--------
+          val tempSignedNumer = SInt(cfg.tempShapeWidth bits)
+          val tempSignedDenom = SInt(cfg.tempShapeWidth bits)
+          when (nextNumerWasSgnLtz) {
+            tempSignedNumer := ((~inp.numer) + 1).asSInt.resized
+          } otherwise {
+            tempSignedNumer := inp.numer.asSInt.resized
+          }
+          when (nextDenomWasSgnLtz) {
+            tempSignedDenom := ((~inp.denom) + 1).asSInt.resized
+          } otherwise {
+            tempSignedDenom := inp.denom.asSInt.resized
+          }
+          tempNumer := tempSignedNumer.asUInt
+          tempDenom := tempSignedDenom.asUInt
+          //--------
+          nextNumerWasSgnLtz := inp.numer.msb
+          nextDenomWasSgnLtz := inp.denom.msb
+          //--------
+        }
         chunkStart := chunkStartBegin
         outp.ready := False
         rState := State.RUNNING
         rPrevChunkStart := chunkStartBegin
-        //rDenomMultLut
         for (idx <- 0 until cfg.dmlSize()) {
-          denomMultLut(idx) := (inp.denom * idx).resized
+          denomMultLut(idx) := (tempDenom * idx).resized
         }
       }
       if (cfg.formal) {
@@ -134,14 +168,82 @@ case class LongDivMultiCycle(
               //&& 
               past(tempDenom) =/= 0x0
             ) {
-              assert(
-                outp.quot
-                === (past(tempNumer) / past(tempDenom)).resized
-              )
-              assert(
-                outp.rema
-                === (past(tempNumer) % past(tempDenom)).resized
-              )
+              when (!rInpSigned) {
+                cover(
+                  outp.quot
+                  === (past(tempNumer) / past(tempDenom)).resized
+                )
+                cover(
+                  outp.rema
+                  === (past(tempNumer) % past(tempDenom)).resized
+                )
+                assert(
+                  outp.quot
+                  === (past(tempNumer) / past(tempDenom)).resized
+                )
+                assert(
+                  outp.rema
+                  === (past(tempNumer) % past(tempDenom)).resized
+                )
+              } otherwise {
+                //cover(
+                //  outp.quot.asSInt
+                //  === (
+                //    past(tempNumer.asSInt) / past(tempDenom.asSInt)
+                //  ).resized
+                //)
+                //cover(
+                //  outp.rema.asSInt
+                //  === (
+                //    past(tempNumer.asSInt) % past(tempDenom.asSInt)
+                //  ).resized
+                //)
+                val myTempNumer = (
+                  Mux[SInt](
+                    rNumerWasSgnLtz,
+                    past((~tempNumer) + 1).asSInt,
+                    past(tempNumer).asSInt,
+                  )
+                )
+                val myTempDenom = (
+                  Mux[SInt](
+                    rDenomWasSgnLtz,
+                    past((~tempDenom) + 1).asSInt,
+                    past(tempDenom.asSInt),
+                  )
+                )
+                assert(
+                  outp.quot.asSInt
+                  === (myTempNumer / myTempDenom).resized
+                )
+                assert(
+                  outp.rema.asSInt
+                  === (myTempNumer % myTempDenom).resized
+                )
+                //when (rNumerWasSgnLtz =/= rDenomWasSgnLtz) {
+                //  //outp.quot := ((~myTempQuot) + 1).resized
+                //} otherwise {
+                //  //assert(
+                //  //  outp.quot
+                //  //)
+                //}
+                //when (rNumerWasSgnLtz) {
+                //  // This is C's rule for signed remainder
+                //  //outp.rema := ((~myTempRema) + 1).resized
+                //}
+                //assert(
+                //  outp.quot.asSInt
+                //  === (
+                //    past(tempNumer.asSInt) / past(tempDenom.asSInt)
+                //  ).resized
+                //)
+                //assert(
+                //  outp.rema.asSInt
+                //  === (
+                //    past(tempNumer.asSInt) % past(tempDenom.asSInt)
+                //  ).resized
+                //)
+              }
             }
           }
         }
@@ -152,6 +254,7 @@ case class LongDivMultiCycle(
         when (pastValidAfterReset) {
           assume(stable(tempNumer))
           assume(stable(tempDenom))
+          //assume(stable(inp.signed))
           //when (stable(rState)) {
             for (idx <- 0 until cfg.dmlSize()) {
               //assert(stable(rDenomMultLut(idx)))
@@ -160,18 +263,30 @@ case class LongDivMultiCycle(
           //}
         }
       }
-      when (inp.valid) {
-        when (rPrevChunkStart > 0) {
+      //when (inp.valid) {
+        when (chunkStart > 0) {
+          rTempQuot := itdOut.tempQuot
+          rTempRema := itdOut.tempRema
         } otherwise {
           outp.ready := True
-          outp.quot := tempQuot
-          outp.rema := tempRema
+          val myTempQuot = itdOut.tempQuot
+          val myTempRema = itdOut.tempRema
+          outp.quot := myTempQuot.resized
+          outp.rema := myTempRema.resized
+          when (rInpSigned) {
+            when (rNumerWasSgnLtz =/= rDenomWasSgnLtz) {
+              outp.quot := ((~myTempQuot) + 1).resized
+            }
+            when (rNumerWasSgnLtz) {
+              // This is C's rule for signed remainder
+              outp.rema := ((~myTempRema) + 1).resized
+            }
+          }
+
           rState := State.IDLE
         }
         chunkStart := rPrevChunkStart - 1
-        tempQuot := itdOut.tempQuot
-        tempRema := itdOut.tempRema
-      }
+      //}
     }
   }
 }
