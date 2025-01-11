@@ -80,12 +80,12 @@ case class LongDivMultiCycle(
     init(State.IDLE)
   )
   val tempNumer = cfg.buildTempShape()
-  println(
-    s"chunkWidth:${chunkWidth} "
-    + s"numChunks:${cfg.numChunks()} "
-    + s"tempShapeWidth:${cfg.tempShapeWidth} "
-    + s"tempNumer.getWidth:${tempNumer.getWidth}"
-  )
+  //println(
+  //  s"chunkWidth:${chunkWidth} "
+  //  + s"numChunks:${cfg.numChunks()} "
+  //  + s"tempShapeWidth:${cfg.tempShapeWidth} "
+  //  + s"tempNumer.getWidth:${tempNumer.getWidth}"
+  //)
   val tempDenom = cfg.buildTempShape()
   val rTempQuot = Reg(cfg.buildTempShape()) init(0x0)
   val rTempRema = Reg(cfg.buildTempShape()) init(0x0)
