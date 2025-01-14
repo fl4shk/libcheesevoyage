@@ -33,7 +33,9 @@ case class Gpu2dSimDut(
   vivadoDebug: Boolean=false,
 ) extends Component {
   val io = new Bundle {
-    val snesCtrl = (!optRawSnesButtons) generate SnesCtrlIo()
+    val snesCtrl = (!optRawSnesButtons) generate (
+      master(SnesCtrlIo())
+    )
     val rawSnesButtons = (optRawSnesButtons) generate (
       slave Stream(UInt(SnesButtons.rawButtonsWidth bits))
     )
