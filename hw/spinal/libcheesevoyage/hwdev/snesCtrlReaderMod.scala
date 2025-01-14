@@ -78,7 +78,7 @@ case class SnesCtrlIo(
 case class SnesCtrlReaderHelperIo(
   //clkRate: HertzNumber,
 ) extends Bundle {
-  val snesCtrl = SnesCtrlIo()
+  val snesCtrl = master(SnesCtrlIo())
   val pop = master Stream(UInt(SnesButtons.rawButtonsWidth bits))
 }
 case class SnesCtrlReaderHelper(
