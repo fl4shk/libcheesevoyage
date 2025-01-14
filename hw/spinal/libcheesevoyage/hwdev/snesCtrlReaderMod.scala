@@ -181,7 +181,7 @@ object SnesCtrlReaderIo {
 case class SnesCtrlReaderIo(
   clkRate: HertzNumber,
 ) extends Bundle {
-  val snesCtrl = SnesCtrlIo()
+  val snesCtrl = master(SnesCtrlIo())
   val unitCntLatch = out(ClkCnt(
     clkRate=clkRate,
     time=SnesCtrlReaderIo.unitCntLatchTime,
