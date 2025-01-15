@@ -4211,8 +4211,20 @@ extends Area {
         //  init=tempUpMod(2).getZero,
         //)
         //when (myDbgUpIsValid) 
+        //val myTempPayload = 
+        //up(mod.front.outpPipePayload) := (
+        //  up(mod.front.outpPipePayload)
+        //)
+        val myTempUpMod = modType()
+        myTempUpMod := RegNext(
+          //tempUpMod(2)
+          next=myTempUpMod,
+          init=myTempUpMod.getZero,
+        )
+        up(mod.front.outpPipePayload) := myTempUpMod
         when (up.isFiring) {
-          up(mod.front.outpPipePayload) := tempUpMod(2)
+          myTempUpMod := tempUpMod(2)
+          // := tempUpMod(2)
         }
         if (optFormal) {
           when (pastValidAfterReset) {
