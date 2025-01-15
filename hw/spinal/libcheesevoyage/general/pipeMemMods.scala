@@ -2438,14 +2438,16 @@ extends Area {
       for (idx <- 0 until myUpExtDel2.size) {
         for (ydx <- 0 until memArrSize) {
           for (extIdx <- 0 until extIdxLim) {
+            val tempUpExt = myUpExtDel2(idx)(ydx)(extIdx)
+            tempUpExt := (
+              myUpExtDel(idx + 1)(ydx)(extIdx)
+            )
             if (idx == 0 && extIdx == extIdxUp) {
-              myUpExtDel2(idx)(ydx)(extIdx) := (
-                myUpExtDel2(idx)(ydx)(extIdx).getZero
-              )
-            } else {
-              myUpExtDel2(idx)(ydx)(extIdx) := (
-                myUpExtDel(idx + 1)(ydx)(extIdx)
-              )
+              tempUpExt.modMemWordValid.allowOverride
+              //tempUpExt := (
+              //  myUpExtDel2(idx)(ydx)(extIdx).getZero
+              //)
+              tempUpExt.modMemWordValid := False
             }
           }
         }
