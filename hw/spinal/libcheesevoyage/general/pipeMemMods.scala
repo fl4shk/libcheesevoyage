@@ -2382,6 +2382,20 @@ extends Area {
       )
       //--------
       //--------
+      val myUpExtDel2MemAddr = Vec.fill(
+        myFwd.numMyUpExtDel2
+      )(
+        Vec.fill(memArrSize)(
+          Vec.fill(PipeMemRmw.extIdxLim)(
+            //Vec.fill(modRdPortCnt)(
+              /*Reg*/(
+                UInt(PipeMemRmw.addrWidth(wordCount=wordCountMax) bits)
+              )
+              init(0x0)
+            //)
+          )
+        )
+      )
       val myUpExtDel2 = (
         KeepAttribute(
           //if (myHaveFormalFwd) (
@@ -3671,6 +3685,24 @@ extends Area {
       for (zdx <- 0 until modRdPortCnt) {
         for (idx <- 0 until mod.front.myUpExtDel2.size) {
           for (extIdx <- 0 until extIdxLim) {
+            if (zdx == 0) {
+              when (up.isFiring) {
+                val tempMemAddr = (
+                  mod.front.myUpExtDel2MemAddr(idx)(ydx)(extIdx)
+                )
+                if (idx == 0) {
+                  tempMemAddr := upExt(1)(ydx)(extIdxSingle).memAddr(zdx)
+                } else {
+                  val tempMemAddr1 = (
+                    mod.front.myUpExtDel2MemAddr(idx - 1)(ydx)(extIdx)
+                  )
+                  tempMemAddr := (
+                    RegNext(tempMemAddr1)
+                    init(0x0)
+                  )
+                }
+              }
+            }
             mod.front.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdx)(idx) := (
               //(
               //  if (zdx == PipeMemRmw.modWrIdx) (
@@ -3688,12 +3720,16 @@ extends Area {
                     )
                   ),
                   prevMemAddr=(
-                    mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddr(
-                      PipeMemRmw.modWrIdx
-                    )(
+                    mod.front.myUpExtDel2MemAddr(idx)(ydx)(extIdx)(
                       PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
                       downto 0
                     )
+                    //mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddr(
+                    //  PipeMemRmw.modWrIdx
+                    //)(
+                    //  PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+                    //  downto 0
+                    //)
                   ),
                   curr=(
                     upExt(1)(ydx)(extIdxSingle)
