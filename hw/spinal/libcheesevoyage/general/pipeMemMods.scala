@@ -2303,8 +2303,8 @@ extends Area {
             )
             && 
             (
-              prev.modMemWordValid
-              //True
+              //prev.modMemWordValid
+              True
             ) && (
               if (doValidCheck) (
                 prev.valid
