@@ -2382,20 +2382,20 @@ extends Area {
       )
       //--------
       //--------
-      val myUpExtDel2MemAddr = Vec.fill(
-        myFwd.numMyUpExtDel2
-      )(
-        Vec.fill(memArrSize)(
-          Vec.fill(PipeMemRmw.extIdxLim)(
-            //Vec.fill(modRdPortCnt)(
-              /*Reg*/(
-                UInt(PipeMemRmw.addrWidth(wordCount=wordCountMax) bits)
-              )
-              //init(0x0)
-            //)
-          )
-        )
-      )
+      //val myUpExtDel2MemAddr = Vec.fill(
+      //  myFwd.numMyUpExtDel2
+      //)(
+      //  Vec.fill(memArrSize)(
+      //    Vec.fill(PipeMemRmw.extIdxLim)(
+      //      //Vec.fill(modRdPortCnt)(
+      //        /*Reg*/(
+      //          UInt(PipeMemRmw.addrWidth(wordCount=wordCountMax) bits)
+      //        )
+      //        //init(0x0)
+      //      //)
+      //    )
+      //  )
+      //)
       val myUpExtDel2 = (
         KeepAttribute(
           //if (myHaveFormalFwd) (
@@ -3685,52 +3685,52 @@ extends Area {
       for (zdx <- 0 until modRdPortCnt) {
         for (idx <- 0 until mod.front.myUpExtDel2.size) {
           for (extIdx <- 0 until extIdxLim) {
-            if (zdx == 0) {
-              val tempMemAddr = (
-                mod.front.myUpExtDel2MemAddr(idx)(ydx)(extIdx)
-              )
-              if (idx == 0) {
-                tempMemAddr := (
-                  mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddr(
-                    PipeMemRmw.modWrIdx
-                  )(
-                    PipeMemRmw.addrWidth(
-                      wordCount=wordCountArr(ydx)
-                    ) - 1
-                      downto 0
-                    )
-                  //upExt(1)(ydx)(extIdxSingle).memAddr(zdx)
-                )
-              } else {
-                tempMemAddr := (
-                  RegNext(tempMemAddr)
-                  init(0x0)
-                )
-                when (
-                  //if (idx == 1) (
-                    down.isFiring
-                  //) else (
-                  //  up.isFiring
-                  //)
-                ) {
-                  val tempMemAddr1 = (
-                    //mod.front.myUpExtDel2MemAddr(idx - 1)(ydx)(extIdx)
-                    mod.front.myUpExtDel2(idx - 1)(ydx)(extIdx).memAddr(
-                      PipeMemRmw.modWrIdx
-                    )(
-                      PipeMemRmw.addrWidth(
-                        wordCount=wordCountArr(ydx)
-                      ) - 1
-                      downto 0
-                    )
-                  )
-                  tempMemAddr := (
-                    RegNext(tempMemAddr1)
-                    init(0x0)
-                  )
-                }
-              }
-            }
+            //if (zdx == 0) {
+            //  val tempMemAddr = (
+            //    mod.front.myUpExtDel2MemAddr(idx)(ydx)(extIdx)
+            //  )
+            //  if (idx == 0) {
+            //    tempMemAddr := (
+            //      mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddr(
+            //        PipeMemRmw.modWrIdx
+            //      )(
+            //        PipeMemRmw.addrWidth(
+            //          wordCount=wordCountArr(ydx)
+            //        ) - 1
+            //          downto 0
+            //        )
+            //      //upExt(1)(ydx)(extIdxSingle).memAddr(zdx)
+            //    )
+            //  } else {
+            //    tempMemAddr := (
+            //      RegNext(tempMemAddr)
+            //      init(0x0)
+            //    )
+            //    when (
+            //      //if (idx == 1) (
+            //      //  down.isFiring
+            //      //) else (
+            //      //  up.isFiring
+            //      //)
+            //    ) {
+            //      val tempMemAddr1 = (
+            //        //mod.front.myUpExtDel2MemAddr(idx - 1)(ydx)(extIdx)
+            //        mod.front.myUpExtDel2(idx - 1)(ydx)(extIdx).memAddr(
+            //          PipeMemRmw.modWrIdx
+            //        )(
+            //          PipeMemRmw.addrWidth(
+            //            wordCount=wordCountArr(ydx)
+            //          ) - 1
+            //          downto 0
+            //        )
+            //      )
+            //      tempMemAddr := (
+            //        RegNext(tempMemAddr1)
+            //        init(0x0)
+            //      )
+            //    }
+            //  }
+            //}
             mod.front.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdx)(idx) := (
               //(
               //  if (zdx == PipeMemRmw.modWrIdx) (
@@ -3748,14 +3748,14 @@ extends Area {
                     )
                   ),
                   prevMemAddr=(
-                    if (idx > 0) {
-                      mod.front.myUpExtDel2MemAddr(idx)(ydx)(extIdx)(
-                        PipeMemRmw.addrWidth(
-                          wordCount=wordCountArr(ydx)
-                        ) - 1
-                        downto 0
-                      )
-                    } else {
+                    //if (idx > 0) {
+                    //  mod.front.myUpExtDel2MemAddr(idx)(ydx)(extIdx)(
+                    //    PipeMemRmw.addrWidth(
+                    //      wordCount=wordCountArr(ydx)
+                    //    ) - 1
+                    //    downto 0
+                    //  )
+                    //} else {
                       mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddr(
                         PipeMemRmw.modWrIdx
                       )(
@@ -3764,7 +3764,7 @@ extends Area {
                         ) - 1
                         downto 0
                       )
-                    }
+                    //}
                   ),
                   curr=(
                     upExt(1)(ydx)(extIdxSingle)
