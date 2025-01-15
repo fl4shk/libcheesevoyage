@@ -3714,7 +3714,15 @@ extends Area {
                   )
                 ) {
                   val tempMemAddr1 = (
-                    mod.front.myUpExtDel2MemAddr(idx - 1)(ydx)(extIdx)
+                    //mod.front.myUpExtDel2MemAddr(idx - 1)(ydx)(extIdx)
+                    mod.front.myUpExtDel2(idx - 1)(ydx)(extIdx).memAddr(
+                      PipeMemRmw.modWrIdx
+                    )(
+                      PipeMemRmw.addrWidth(
+                        wordCount=wordCountArr(ydx)
+                      ) - 1
+                      downto 0
+                    )
                   )
                   tempMemAddr := (
                     RegNext(tempMemAddr1)
