@@ -3800,7 +3800,8 @@ extends Area {
                   isPostDelay=false,
                   doValidCheck=false,
                   forceFalse=(
-                    idx == 0 && extIdx == extIdxUp
+                    //idx == 0 && extIdx == extIdxUp
+                    false
                   )
                 )
               )
