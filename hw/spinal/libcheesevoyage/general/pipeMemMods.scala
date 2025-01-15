@@ -3779,6 +3779,7 @@ extends Area {
                   ydx=ydx,
                   zdx=zdx,
                   isPostDelay=false,
+                  doValidCheck=false,
                 )
               )
             )
