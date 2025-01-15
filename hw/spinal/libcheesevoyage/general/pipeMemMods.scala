@@ -3686,10 +3686,14 @@ extends Area {
         for (idx <- 0 until mod.front.myUpExtDel2.size) {
           for (extIdx <- 0 until extIdxLim) {
             if (zdx == 0) {
+              val tempMemAddr = (
+                mod.front.myUpExtDel2MemAddr(idx)(ydx)(extIdx)
+              )
+              tempMemAddr := (
+                RegNext(tempMemAddr)
+                init(0x0)
+              )
               when (up.isFiring) {
-                val tempMemAddr = (
-                  mod.front.myUpExtDel2MemAddr(idx)(ydx)(extIdx)
-                )
                 if (idx == 0) {
                   tempMemAddr := upExt(1)(ydx)(extIdxSingle).memAddr(zdx)
                 } else {
@@ -3698,7 +3702,7 @@ extends Area {
                   )
                   tempMemAddr := (
                     RegNext(tempMemAddr1)
-                    //init(0x0)
+                    init(0x0)
                   )
                 }
               }
