@@ -14,7 +14,7 @@ object LongDivMultiCycleFormal extends App {
   //)
   val mainWidth = 8
   val denomWidth = 8
-  val chunkWidth = 3
+  val chunkWidth = 1
   case class MyFormalDutLongDivMultiCycle(
   ) extends Component {
     val dut = FormalDut(LongDivMultiCycle(

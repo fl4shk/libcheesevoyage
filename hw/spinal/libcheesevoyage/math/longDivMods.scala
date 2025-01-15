@@ -26,39 +26,14 @@ case class LongDivIo(cfg: LongDivConfig) extends Bundle {
   val outp = out(LongDivOutp(cfg=cfg))
 }
 
-case class LongDivMultiCycle(
-  //cfg: LongDivParams
-  mainWidth: Int,
-  denomWidth: Int,
-  chunkWidth: Int,
-  signedReset: BigInt=0x0,
-  formal: Boolean=false,
-) extends Component {
-  val cfg = LongDivConfig(
-    mainWidth=mainWidth,
-    denomWidth=denomWidth,
-    chunkWidth=chunkWidth,
-    tagWidth=1,
-    pipelined=false,
-    usePipeSkidBuf=false,
-    formal=formal,
-  )
-  val io = LongDivIo(cfg=cfg)
-  def inp = io.inp
-  def outp = io.outp
-
-  outp.ready.setAsReg
-  outp.ready.init(False)
-  //:= RegNext(next=outp.ready, init=outp.ready.getZero)
-  outp.quot := RegNext(next=outp.quot, init=outp.quot.getZero)
-  outp.rema := RegNext(next=outp.rema, init=outp.rema.getZero)
-  //outp.quot.setAsReg
-  //outp.quot.init(0x0)
-  //outp.rema.setAsReg
-  //outp.rema.init(0x0)
-
+case class LongDivMultiCycleMultiChunkArea(
+  io: LongDivIo,
+  cfg: LongDivConfig,
+) extends Area {
   if (cfg.formal) {
   }
+  def inp = io.inp
+  def outp = io.outp
   val udivIter = LongUdivIter(cfg=cfg)
 
   //--------
@@ -318,6 +293,178 @@ case class LongDivMultiCycle(
       //}
     }
   }
+}
+case class LongDivMultiCycle(
+  //cfg: LongDivParams
+  mainWidth: Int,
+  denomWidth: Int,
+  chunkWidth: Int,
+  signedReset: BigInt=0x0,
+  formal: Boolean=false,
+) extends Component {
+  val cfg = LongDivConfig(
+    mainWidth=mainWidth,
+    denomWidth=denomWidth,
+    chunkWidth=chunkWidth,
+    tagWidth=1,
+    pipelined=false,
+    usePipeSkidBuf=false,
+    formal=formal,
+  )
+  val io = LongDivIo(cfg=cfg)
+  def inp = io.inp
+  def outp = io.outp
+
+  outp.ready.setAsReg
+  outp.ready.init(False)
+  //:= RegNext(next=outp.ready, init=outp.ready.getZero)
+  outp.quot := RegNext(next=outp.quot, init=outp.quot.getZero)
+  outp.rema := RegNext(next=outp.rema, init=outp.rema.getZero)
+  //outp.quot.setAsReg
+  //outp.quot.init(0x0)
+  //outp.rema.setAsReg
+  //outp.rema.init(0x0)
+
+  val singleChunkWidthArea: Area = (
+    chunkWidth == 1
+  ) generate new Area {
+    val rTempNumer = Reg(cfg.buildTempShape()) init(0x0)
+    //println(
+    //  s"chunkWidth:${chunkWidth} "
+    //  + s"numChunks:${cfg.numChunks()} "
+    //  + s"tempShapeWidth:${cfg.tempShapeWidth} "
+    //  + s"tempNumer.getWidth:${tempNumer.getWidth}"
+    //)
+    val rTempDenom = Reg(cfg.buildTempShape()) init(0x0)
+    val rTempQuot = Reg(cfg.buildTempShape()) init(0x0)
+    val rTempRema = Reg(cfg.buildTempShape()) init(0x0)
+    //tempNumer := RegNext(next=tempNumer, init=tempNumer.getZero)
+    //tempDenom := RegNext(next=tempDenom, init=tempDenom.getZero)
+    val rInpSigned = Reg(Bool(), init=False)
+    val nextNumerWasSgnLtz = Bool()
+    val rNumerWasSgnLtz = RegNext(nextNumerWasSgnLtz, init=False)
+    nextNumerWasSgnLtz := rNumerWasSgnLtz
+    val nextDenomWasSgnLtz = Bool()
+    val rDenomWasSgnLtz = RegNext(nextDenomWasSgnLtz, init=False)
+    nextDenomWasSgnLtz := rDenomWasSgnLtz
+    val rCnt = Reg(UInt(log2Up(rTempNumer.getWidth) + 2 bits)) init(0x0)
+    object State
+    extends SpinalEnum(defaultEncoding=binarySequential) {
+      val
+        IDLE,
+        CAPTURE_INPUTS_PIPE,
+        RUNNING,
+        YIELD_RESULT_PIPE_1,
+        YIELD_RESULT
+        = newElement()
+    }
+    val rState = (
+      Reg(State())
+      init(State.IDLE)
+    )
+    switch (rState) {
+      is (State.IDLE) {
+        when (inp.valid) {
+          rTempQuot := 0x0
+          rTempRema := 0x0
+          rInpSigned := inp.signed
+          rTempNumer := inp.numer
+          rTempDenom := inp.denom.resized
+          rState := State.CAPTURE_INPUTS_PIPE
+          outp.ready := False
+        }
+      }
+      is (State.CAPTURE_INPUTS_PIPE) {
+        rCnt := rTempNumer.getWidth - 1
+        when (!rInpSigned) {
+          //tempNumer := inp.numer.resized
+          //tempDenom := inp.denom.resized
+          nextNumerWasSgnLtz := False
+          nextDenomWasSgnLtz := False
+        } otherwise {
+          //--------
+          val tempSignedNumer = Vec.fill(2)(
+            SInt(cfg.tempShapeWidth bits)
+          )
+          val tempSignedDenom = Vec.fill(2)(
+            SInt(cfg.tempShapeWidth bits)
+          )
+          tempSignedNumer(0) := rTempNumer.asSInt.resized//inp.numer.asSInt.resized
+          tempSignedDenom(0) := rTempDenom.asSInt.resized//inp.denom.asSInt.resized
+          when (nextNumerWasSgnLtz) {
+            tempSignedNumer(1) := ((~tempSignedNumer(0)) + 1)
+          } otherwise {
+            tempSignedNumer(1) := tempSignedNumer(0)
+          }
+          when (nextDenomWasSgnLtz) {
+            tempSignedDenom(1) := ((~tempSignedDenom(0)) + 1)
+          } otherwise {
+            tempSignedDenom(1) := tempSignedDenom(0)
+          }
+          rTempNumer := tempSignedNumer.last.asUInt
+          rTempDenom := tempSignedDenom.last.asUInt
+          //--------
+          nextNumerWasSgnLtz := rTempNumer.msb//inp.numer.msb
+          nextDenomWasSgnLtz := rTempDenom.msb//inp.denom.msb
+          //--------
+        }
+        rState := State.RUNNING
+      }
+      is (State.RUNNING) {
+        rCnt := rCnt - 1
+        when (!rCnt.msb) {
+          switch (rCnt) {
+            for (myCnt <- 0 until rTempNumer.getWidth) {
+              is (myCnt) {
+                val nextTempRema = Vec.fill(2)(
+                  UInt(rTempRema.getWidth bits)
+                )
+                nextTempRema(0) := Cat(
+                  rTempRema,
+                  rTempNumer(myCnt),
+                ).asUInt(rTempRema.bitsRange)
+                nextTempRema(1) := nextTempRema(0)
+                when (nextTempRema(0) >= rTempDenom) {
+                  nextTempRema(1) := nextTempRema(0) - rTempDenom
+                  rTempQuot(myCnt) := True
+                }
+                rTempRema := nextTempRema(1)
+              }
+            }
+          }
+        } otherwise {
+          rState := State.YIELD_RESULT_PIPE_1
+        }
+      }
+      is (State.YIELD_RESULT_PIPE_1) {
+        when (rInpSigned) {
+          when (rNumerWasSgnLtz =/= rDenomWasSgnLtz) {
+            rTempQuot := ((~rTempQuot) + 1).resized
+          }
+          when (rNumerWasSgnLtz) {
+            // This is C's rule for signed remainder
+            rTempRema := ((~rTempRema) + 1).resized
+          }
+        }
+        rState := State.YIELD_RESULT
+      }
+      is (State.YIELD_RESULT) {
+        outp.ready := True
+        outp.quot := rTempQuot
+        outp.rema := rTempRema
+        rState := State.IDLE
+      }
+    }
+  }
+
+  val multiChunkWidthArea = (
+    chunkWidth > 1
+  ) generate (
+    LongDivMultiCycleMultiChunkArea(
+      io=io,
+      cfg=cfg,
+    )
+  )
 }
 
 //case class LongDivMultiCycle(
