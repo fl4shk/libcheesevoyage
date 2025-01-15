@@ -3706,7 +3706,13 @@ extends Area {
                   RegNext(tempMemAddr)
                   init(0x0)
                 )
-                when (up.isFiring) {
+                when (
+                  if (idx == 1) (
+                    down.isFiring
+                  ) else (
+                    up.isFiring
+                  )
+                ) {
                   val tempMemAddr1 = (
                     mod.front.myUpExtDel2MemAddr(idx - 1)(ydx)(extIdx)
                   )
