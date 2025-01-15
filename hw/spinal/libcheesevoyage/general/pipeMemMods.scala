@@ -3724,16 +3724,23 @@ extends Area {
                     )
                   ),
                   prevMemAddr=(
-                    mod.front.myUpExtDel2MemAddr(idx)(ydx)(extIdx)(
-                      PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
-                      downto 0
-                    )
-                    //mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddr(
-                    //  PipeMemRmw.modWrIdx
-                    //)(
-                    //  PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
-                    //  downto 0
-                    //)
+                    if (idx > 0) {
+                      mod.front.myUpExtDel2MemAddr(idx)(ydx)(extIdx)(
+                        PipeMemRmw.addrWidth(
+                          wordCount=wordCountArr(ydx)
+                        ) - 1
+                        downto 0
+                      )
+                    } else {
+                      mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddr(
+                        PipeMemRmw.modWrIdx
+                      )(
+                        PipeMemRmw.addrWidth(
+                          wordCount=wordCountArr(ydx)
+                        ) - 1
+                        downto 0
+                      )
+                    }
                   ),
                   curr=(
                     upExt(1)(ydx)(extIdxSingle)
