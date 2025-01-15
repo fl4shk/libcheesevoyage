@@ -2259,59 +2259,64 @@ extends Area {
         //fireCnt: UInt,
         //idx: Int,
         //memAddr: UInt,
+        forceFalse: Boolean=false,
       ) = (
-      //(upExt(1).memAddr === prev.memAddr)
-        (
-          if (!isPostDelay) (
-            (
-              currMemAddr
-              === prevMemAddr
-            )
-            && (
-              if (doPrevHazardCmpFunc) (
-                myHazardCmpFunc(
-                  curr/*upExt(1)*/,
-                  prev,
-                  ydx,
-                  zdx,
-                  isPostDelay
+        if (!forceFalse) {
+        //(upExt(1).memAddr === prev.memAddr)
+          (
+            if (!isPostDelay) (
+              (
+                currMemAddr
+                === prevMemAddr
+              )
+              && (
+                if (doPrevHazardCmpFunc) (
+                  myHazardCmpFunc(
+                    curr/*upExt(1)*/,
+                    prev,
+                    ydx,
+                    zdx,
+                    isPostDelay
+                  )
+                ) else (
+                  True
                 )
+              )
+            ) else (
+              myHazardCmpFunc(
+                curr/*upExt(1)*/,
+                prev,
+                ydx,
+                zdx,
+                isPostDelay
+              )
+            )
+          ) && (
+            //True
+            (
+              //curr.fire
+              //|| (
+              //  RegNextWhen(True, curr.fire) init(False)
+              //)
+              //curr.valid
+              True
+            )
+            && 
+            (
+              prev.modMemWordValid
+              //True
+            ) && (
+              if (doValidCheck) (
+                prev.valid
               ) else (
                 True
               )
             )
-          ) else (
-            myHazardCmpFunc(
-              curr/*upExt(1)*/,
-              prev,
-              ydx,
-              zdx,
-              isPostDelay
-            )
+            //curr.valid && prev.valid
           )
-        ) && (
-          //True
-          (
-            //curr.fire
-            //|| (
-            //  RegNextWhen(True, curr.fire) init(False)
-            //)
-            //curr.valid
-            True
-          )
-          && 
-          (
-            prev.modMemWordValid
-            //True
-          ) && (
-            if (doValidCheck) (
-              prev.valid
-            ) else (
-              True
-            )
-          )
-          //curr.valid && prev.valid
-        )
+        } else {
+          False
+        }
       )
       def inpPipePayload = io.frontPayload
       //val midPipePayloadArr = /*Array.fill(memArrSize)*/(Payload(modType()))
@@ -3794,6 +3799,9 @@ extends Area {
                   zdx=zdx,
                   isPostDelay=false,
                   doValidCheck=false,
+                  forceFalse=(
+                    idx == 0 && extIdx == extIdxUp
+                  )
                 )
               )
             )
