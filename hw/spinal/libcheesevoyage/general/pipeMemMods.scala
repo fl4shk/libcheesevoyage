@@ -4287,16 +4287,16 @@ extends Area {
         //  up(mod.front.outpPipePayload)
         //)
         val myTempUpMod = modType()
-        myTempUpMod := RegNext(
-          //tempUpMod(2)
-          next=myTempUpMod,
-          init=myTempUpMod.getZero,
-        )
+        //myTempUpMod := RegNext(
+        //  //tempUpMod(2)
+        //  next=myTempUpMod,
+        //  init=myTempUpMod.getZero,
+        //)
         up(mod.front.outpPipePayload) := myTempUpMod
-        when (up.isFiring) {
+        //when (up.isFiring) {
           myTempUpMod := tempUpMod(2)
           // := tempUpMod(2)
-        }
+        //}
         if (optFormal) {
           when (pastValidAfterReset) {
             when (past(up.isValid)) {
