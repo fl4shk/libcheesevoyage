@@ -2442,13 +2442,13 @@ extends Area {
             tempUpExt := (
               myUpExtDel(idx + 1)(ydx)(extIdx)
             )
-            if (idx == 0 && extIdx == extIdxUp) {
-              tempUpExt.modMemWordValid.allowOverride
-              //tempUpExt := (
-              //  myUpExtDel2(idx)(ydx)(extIdx).getZero
-              //)
-              tempUpExt.modMemWordValid := False
-            }
+            //if (idx == 0 && extIdx == extIdxUp) {
+            //  tempUpExt.modMemWordValid.allowOverride
+            //  //tempUpExt := (
+            //  //  myUpExtDel2(idx)(ydx)(extIdx).getZero
+            //  //)
+            //  tempUpExt.modMemWordValid := False
+            //}
           }
         }
       }
