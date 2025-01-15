@@ -1038,33 +1038,33 @@ case class PipeMemRmwDoFwdArea[
             .setName(s"${fwdAreaName}_myFindFirstUp_${ydx}_${zdx}")
           )
         )
-        val myFindFirstSaved = KeepAttribute(
-          //(
-          //  //optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
-          //  doOverrideFindFirst
-          //) generate 
-          (
-            (
-              fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxSaved)
-              .sFindFirst(
-                _ === True
-              )
-            )
-            .setName(s"${fwdAreaName}_myFindFirstDown_${ydx}_${zdx}")
-          )
-        )
+        //val myFindFirstSaved = KeepAttribute(
+        //  //(
+        //  //  //optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
+        //  //  doOverrideFindFirst
+        //  //) generate 
+        //  (
+        //    (
+        //      fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxSaved)
+        //      .sFindFirst(
+        //        _ === True
+        //      )
+        //    )
+        //    .setName(s"${fwdAreaName}_myFindFirstDown_${ydx}_${zdx}")
+        //  )
+        //)
         def tempMyFindFirstUp_0 = (
           fwd.myFindFirst_0(ydx)(zdx)(extIdxUp)
         )
         def tempMyFindFirstUp_1 = (
           fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
         )
-        def tempMyFindFirstSaved_0 = (
-          fwd.myFindFirst_0(ydx)(zdx)(extIdxSaved)
-        )
-        def tempMyFindFirstSaved_1 = (
-          fwd.myFindFirst_1(ydx)(zdx)(extIdxSaved)
-        )
+        //def tempMyFindFirstSaved_0 = (
+        //  fwd.myFindFirst_0(ydx)(zdx)(extIdxSaved)
+        //)
+        //def tempMyFindFirstSaved_1 = (
+        //  fwd.myFindFirst_1(ydx)(zdx)(extIdxSaved)
+        //)
         def tempMyFwdData = (
           fwd.myFwdData(ydx)(zdx)
         )
@@ -1082,16 +1082,16 @@ case class PipeMemRmwDoFwdArea[
           )
           .setName(s"${fwdAreaName}_myFwdCondUp_${ydx}_${zdx}")
         )
-        val myFwdCondSaved = (
-          firstFwd
-        ) generate (
-          KeepAttribute(
-            //myFindFirstSaved._1
-            //fwd.myFindFirst_0(ydx)(zdx)(extIdxSaved)
-            tempMyFindFirstSaved_0
-          )
-          .setName(s"${fwdAreaName}_myFwdCondDown_${ydx}_${zdx}")
-        )
+        //val myFwdCondSaved = (
+        //  firstFwd
+        //) generate (
+        //  KeepAttribute(
+        //    //myFindFirstSaved._1
+        //    //fwd.myFindFirst_0(ydx)(zdx)(extIdxSaved)
+        //    tempMyFindFirstSaved_0
+        //  )
+        //  .setName(s"${fwdAreaName}_myFwdCondDown_${ydx}_${zdx}")
+        //)
         val myFwdDataUp = (
           firstFwd
         ) generate (
@@ -1106,20 +1106,20 @@ case class PipeMemRmwDoFwdArea[
           )
           .setName(s"${fwdAreaName}_myFwdDataUp_${ydx}_${zdx}")
         )
-        val myFwdDataSaved = (
-          firstFwd
-        ) generate (
-          KeepAttribute(
-            fwd.myUpExtDel2(
-              //myFindFirstSaved._2
-              //fwd.myFindFirst_1(ydx)(zdx)(extIdxSaved)
-              tempMyFindFirstSaved_1
-            )(ydx)(
-              extIdxSaved
-            ).modMemWord
-          )
-          .setName(s"${fwdAreaName}_myFwdDataDown_${ydx}_${zdx}")
-        )
+        //val myFwdDataSaved = (
+        //  firstFwd
+        //) generate (
+        //  KeepAttribute(
+        //    fwd.myUpExtDel2(
+        //      //myFindFirstSaved._2
+        //      //fwd.myFindFirst_1(ydx)(zdx)(extIdxSaved)
+        //      tempMyFindFirstSaved_1
+        //    )(ydx)(
+        //      extIdxSaved
+        //    ).modMemWord
+        //  )
+        //  .setName(s"${fwdAreaName}_myFwdDataDown_${ydx}_${zdx}")
+        //)
         if (firstFwd) {
           tempMyFindFirstUp_0 := (
             myFindFirstUp._1
@@ -1127,12 +1127,12 @@ case class PipeMemRmwDoFwdArea[
           tempMyFindFirstUp_1 := (
             myFindFirstUp._2
           )
-          tempMyFindFirstSaved_0 := (
-            myFindFirstSaved._1
-          )
-          tempMyFindFirstSaved_1 := (
-            myFindFirstSaved._2
-          )
+          //tempMyFindFirstSaved_0 := (
+          //  myFindFirstSaved._1
+          //)
+          //tempMyFindFirstSaved_1 := (
+          //  myFindFirstSaved._2
+          //)
         }
         if (
           //optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
@@ -1150,49 +1150,52 @@ case class PipeMemRmwDoFwdArea[
             //)
             tempMyFwdData := myFwdDataUp
           }
-          def mySetToMyFwdSaved(): Unit = {
-            //upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
-            //  myFwdDataSaved
-            //)
-            //setToMyFwdDataFunc(
-            //  ydx,
-            //  zdx,
-            //  myFwdDataSaved
-            //)
-            tempMyFwdData := myFwdDataSaved
-          }
-          def innerFunc(): Unit = {
-            when (
-              tempMyFindFirstUp_0
-            ) {
-              mySetToMyFwdUp()
-            } elsewhen (
-              tempMyFindFirstSaved_0
-            ) {
-              mySetToMyFwdSaved()
-            } otherwise {
-              tempMyFwdData := firstFwdRdMemWord._2
-            }
-          }
+          //def mySetToMyFwdSaved(): Unit = {
+          //  //upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
+          //  //  myFwdDataSaved
+          //  //)
+          //  //setToMyFwdDataFunc(
+          //  //  ydx,
+          //  //  zdx,
+          //  //  myFwdDataSaved
+          //  //)
+          //  tempMyFwdData := myFwdDataSaved
+          //}
+          //def innerFunc(): Unit = {
+          //  when (
+          //    tempMyFindFirstUp_0
+          //  ) {
+          //    mySetToMyFwdUp()
+          //  } elsewhen (
+          //    tempMyFindFirstSaved_0
+          //  ) {
+          //    mySetToMyFwdSaved()
+          //  } otherwise {
+          //    tempMyFwdData := firstFwdRdMemWord._2
+          //  }
+          //}
           when (
             tempMyFindFirstUp_0
-            && tempMyFindFirstSaved_0
+            //&& tempMyFindFirstSaved_0
           ) {
-            when (
-              //myFindFirstUp._2 < myFindFirstSaved._2
-              tempMyFindFirstUp_1 < tempMyFindFirstSaved_1
-            ) {
-              mySetToMyFwdUp()
-            } elsewhen (
-              //myFindFirstSaved._2 < myFindFirstUp._2
-              tempMyFindFirstSaved_1 < tempMyFindFirstUp_1
-            ) {
-              mySetToMyFwdSaved()
-            } otherwise {
-              innerFunc()
-            }
+            //when (
+            //  //myFindFirstUp._2 < myFindFirstSaved._2
+            //  tempMyFindFirstUp_1 < tempMyFindFirstSaved_1
+            //) {
+            //  mySetToMyFwdUp()
+            //} elsewhen (
+            //  //myFindFirstSaved._2 < myFindFirstUp._2
+            //  tempMyFindFirstSaved_1 < tempMyFindFirstUp_1
+            //) {
+            //  mySetToMyFwdSaved()
+            //} otherwise {
+            //  innerFunc()
+            //}
+            mySetToMyFwdUp()
           } otherwise {
-            innerFunc()
+            //innerFunc()
+
+            tempMyFwdData := firstFwdRdMemWord._2
           }
           //when (tempMyFindFirstUp_0) {
           //  setToMyFwdUp()
