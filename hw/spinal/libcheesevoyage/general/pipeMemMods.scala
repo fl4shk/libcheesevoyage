@@ -3870,15 +3870,15 @@ extends Area {
                 someYdx: Int,
                 someModIdx: Int,
               ) => (
-                //upExt(1)(someYdx)(extIdxSingle).rdMemWord(
-                //  PipeMemRmw.modWrIdx
-                //)
-                upExt(
-                  2
-                )(someYdx)(extIdxSingle).rdMemWord(
-                  //PipeMemRmw.modWrIdx
-                  someModIdx
+                upExt(1)(someYdx)(extIdxSingle).rdMemWord(
+                  PipeMemRmw.modWrIdx
                 )
+                //upExt(
+                //  2
+                //)(someYdx)(extIdxSingle).rdMemWord(
+                //  //PipeMemRmw.modWrIdx
+                //  someModIdx
+                //)
               ),
               //myRdMemWord,
               //ydx=ydx,                      // ydx
