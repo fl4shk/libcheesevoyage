@@ -4210,9 +4210,10 @@ extends Area {
         //  //cond=myDbgUpIsValid,
         //  init=tempUpMod(2).getZero,
         //)
-        //when (myDbgUpIsValid) {
+        //when (myDbgUpIsValid) 
+        when (up.isFiring) {
           up(mod.front.outpPipePayload) := tempUpMod(2)
-        //}
+        }
         if (optFormal) {
           when (pastValidAfterReset) {
             when (past(up.isValid)) {
