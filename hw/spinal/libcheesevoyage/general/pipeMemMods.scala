@@ -1134,6 +1134,12 @@ case class PipeMemRmwDoFwdArea[
           //  myFindFirstSaved._2
           //)
         }
+          tempMyFindFirstUp_0 := (
+            myFindFirstUp._1
+          )
+          tempMyFindFirstUp_1 := (
+            myFindFirstUp._2
+          )
         if (
           //optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
           //myHaveFwd
@@ -3782,7 +3788,7 @@ extends Area {
                   ydx=ydx,
                   zdx=zdx,
                   isPostDelay=false,
-                  doValidCheck=false,
+                  //doValidCheck=false,
                 )
               )
             )
