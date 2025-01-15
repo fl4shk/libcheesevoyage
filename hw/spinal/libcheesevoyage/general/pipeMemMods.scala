@@ -4292,11 +4292,11 @@ extends Area {
           next=myTempUpMod,
           init=myTempUpMod.getZero,
         )
-        up(mod.front.outpPipePayload) := myTempUpMod
-        when (up.isFiring) {
-          myTempUpMod := tempUpMod(2)
-          // := tempUpMod(2)
-        }
+        up(mod.front.outpPipePayload) := tempUpMod(2)//myTempUpMod
+        //when (up.isFiring) {
+        //  myTempUpMod := tempUpMod(2)
+        //  // := tempUpMod(2)
+        //}
         if (optFormal) {
           when (pastValidAfterReset) {
             when (past(up.isValid)) {
