@@ -3698,7 +3698,7 @@ extends Area {
                   )
                   tempMemAddr := (
                     RegNext(tempMemAddr1)
-                    init(0x0)
+                    //init(0x0)
                   )
                 }
               }
