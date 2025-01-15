@@ -2391,7 +2391,7 @@ extends Area {
               /*Reg*/(
                 UInt(PipeMemRmw.addrWidth(wordCount=wordCountMax) bits)
               )
-              init(0x0)
+              //init(0x0)
             //)
           )
         )
