@@ -666,7 +666,7 @@ object PipeMemRmw {
       optModHazardKind=optModHazardKind,
       modStageCnt=modStageCnt,
     )
-    //+ 1
+    + 1
     //+ (
     //  if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
     //    0
@@ -2436,10 +2436,19 @@ extends Area {
       //  s"myUpExtDel2: ${myUpExtDel2.size}"
       //)
       for (idx <- 0 until myUpExtDel2.size) {
-        myUpExtDel2(idx) := (
-          //myUpExtDel(idx + 1)
-          myUpExtDel(idx + 2)
-        )
+        for (ydx <- 0 until memArrSize) {
+          for (extIdx <- 0 until extIdxLim) {
+            if (idx == 0 && extIdx == extIdxUp) {
+              myUpExtDel2(idx)(ydx)(extIdx) := (
+                myUpExtDel2(idx)(ydx)(extIdx).getZero
+              )
+            } else {
+              myUpExtDel2(idx)(ydx)(extIdx) := (
+                myUpExtDel(idx + 1)(ydx)(extIdx)
+              )
+            }
+          }
+        }
       }
       val myUpExtDelFullFindFirstVecNotPostDelay = KeepAttribute(
         Vec.fill(memArrSize)(
