@@ -3788,7 +3788,7 @@ extends Area {
                   ydx=ydx,
                   zdx=zdx,
                   isPostDelay=false,
-                  doValidCheck=false,
+                  //doValidCheck=false,
                 )
               )
             )
@@ -3871,7 +3871,8 @@ extends Area {
                 someModIdx: Int,
               ) => (
                 upExt(1)(someYdx)(extIdxSingle).rdMemWord(
-                  PipeMemRmw.modWrIdx
+                  //PipeMemRmw.modWrIdx
+                  someModIdx
                 )
                 //upExt(
                 //  2
