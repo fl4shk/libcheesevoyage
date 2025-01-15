@@ -1134,12 +1134,12 @@ case class PipeMemRmwDoFwdArea[
           //  myFindFirstSaved._2
           //)
         }
-          tempMyFindFirstUp_0 := (
-            myFindFirstUp._1
-          )
-          tempMyFindFirstUp_1 := (
-            myFindFirstUp._2
-          )
+        //  tempMyFindFirstUp_0 := (
+        //    myFindFirstUp._1
+        //  )
+        //  tempMyFindFirstUp_1 := (
+        //    myFindFirstUp._2
+        //  )
         if (
           //optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
           //myHaveFwd
