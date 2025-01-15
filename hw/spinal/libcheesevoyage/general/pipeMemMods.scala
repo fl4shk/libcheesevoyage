@@ -3788,7 +3788,7 @@ extends Area {
                   ydx=ydx,
                   zdx=zdx,
                   isPostDelay=false,
-                  //doValidCheck=false,
+                  doValidCheck=false,
                 )
               )
             )
