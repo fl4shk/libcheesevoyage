@@ -3690,7 +3690,17 @@ extends Area {
                 mod.front.myUpExtDel2MemAddr(idx)(ydx)(extIdx)
               )
               if (idx == 0) {
-                tempMemAddr := upExt(1)(ydx)(extIdxSingle).memAddr(zdx)
+                tempMemAddr := (
+                  mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddr(
+                    PipeMemRmw.modWrIdx
+                  )(
+                    PipeMemRmw.addrWidth(
+                      wordCount=wordCountArr(ydx)
+                    ) - 1
+                      downto 0
+                    )
+                  //upExt(1)(ydx)(extIdxSingle).memAddr(zdx)
+                )
               } else {
                 tempMemAddr := (
                   RegNext(tempMemAddr)
