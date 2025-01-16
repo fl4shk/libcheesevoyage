@@ -647,8 +647,8 @@ object PipeMemRmw {
         optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
         //&& optModFwdToFront
       ) (
-        //1
-        0
+        1
+        //0
       ) else (
         //2
         1
@@ -2521,7 +2521,8 @@ extends Area {
                 + idx 
                 + (
                   if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
-                    0
+                    //0
+                    1
                   ) else (
                     1
                   )
@@ -4619,7 +4620,7 @@ extends Area {
           if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
             2
           ) else (
-            1
+            2//1
           )
         )
       )
@@ -4926,13 +4927,15 @@ extends Area {
           init=upExt(1)(ydx)(extIdxSaved).getZero,
         )
       )
-      for (extIdx <- 0 until extIdxLim) {
-        upExt(1)(ydx)(extIdx).modMemWordValid := False
+      if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) {
+        for (extIdx <- 0 until extIdxLim) {
+          upExt(1)(ydx)(extIdx).modMemWordValid := False
+        }
       }
       //--------
-      if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) {
+      //if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) {
         mod.front.myUpExtDel.last(ydx) := upExt(1)(ydx)
-      }
+      //}
     }
 
     val tempUpMod = Vec.fill(2)(
