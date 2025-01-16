@@ -2394,6 +2394,9 @@ extends Area {
           //init(mkExt().getZero)
         )
       )
+      println(
+        s"myUpExtDel.size: ${myUpExtDel.size}"
+      )
       //--------
       //--------
       //val myUpExtDel2MemAddr = Vec.fill(
