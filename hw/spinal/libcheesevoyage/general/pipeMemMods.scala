@@ -4794,39 +4794,40 @@ extends Area {
     
     for (ydx <- 0 until memArrSize) {
       when (
-        //!clockDomain.isResetActive
+        ////!clockDomain.isResetActive
 
-        //&& isValid
-        //&& up.isFiring
-        //&& 
-        //up.isValid
-        //(
-        //  if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
-            //up.isFiring
-            //down.isFiring
-            up.isValid
-            //|| (
-            //  RegNextWhen(True, up.isValid)
-            //  init(False)
-            //)
-        //  ) else (
+        ////&& isValid
+        ////&& up.isFiring
+        ////&& 
+        ////up.isValid
+        ////(
+        ////  if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
+        //    //up.isFiring
+        //    //down.isFiring
         //    up.isValid
-        //  )
-        //)
-        //&& (
-        //  //if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
-        //  //  down.isReady
-        //  //) else (
-        //  //  True
-        //  //)
-        //  down.isReady
-        //)
-        //True
-        //&& upExt.rdValid
-        //&& up.isValid
-        //&& (upExt(0).hazardId) === 0
-        //&& upExt(0).rdValid
-        && extDbgDoWriteCond(ydx)
+        //    //|| (
+        //    //  RegNextWhen(True, up.isValid)
+        //    //  init(False)
+        //    //)
+        ////  ) else (
+        ////    up.isValid
+        ////  )
+        ////)
+        ////&& (
+        ////  //if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
+        ////  //  down.isReady
+        ////  //) else (
+        ////  //  True
+        ////  //)
+        ////  down.isReady
+        ////)
+        ////True
+        ////&& upExt.rdValid
+        ////&& up.isValid
+        ////&& (upExt(0).hazardId) === 0
+        ////&& upExt(0).rdValid
+        //&& 
+        extDbgDoWriteCond(ydx)
       ) {
         if (
           //debug
