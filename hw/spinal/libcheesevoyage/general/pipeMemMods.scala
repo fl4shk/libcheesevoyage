@@ -2325,10 +2325,10 @@ extends Area {
       //  .setName(s"${pipeName}_${idx}_io_midPipePayloadArr")
       //}
       //def midPipePayload = midPipePayloadArr//(memArrIdx)
-      val midPipePayload = (
-        Payload(modType())
+      val midPipePayload = {
+        Payload(Vec.fill(2)(modType()))
         .setName(s"${pipeName}_io_midPipePayload")
-      )
+      }
       //val outpPipePayload = Payload(modType())
       def outpPipePayload = io.modFrontPayload
       val myRdMemWord = Vec.fill(memArrSize)(
@@ -3482,7 +3482,9 @@ extends Area {
         )
       //}
       if (ydx == 0) {
-        up(mod.front.midPipePayload) := tempUpMod(1)
+        for (idx <- 0 until up(mod.front.midPipePayload).size) {
+          up(mod.front.midPipePayload)(idx) := tempUpMod(1)
+        }
       }
       //--------
       //val rIsFiringCnt = (debug) generate (
@@ -3670,7 +3672,9 @@ extends Area {
       )
     )
     tempUpMod(2).allowOverride
-    tempUpMod(0) := up(mod.front.midPipePayload)
+    tempUpMod(0) := up(mod.front.midPipePayload)(0)
+    val tempUpMod0a = modType() 
+    tempUpMod0a := up(mod.front.midPipePayload)(1)
     for (ydx <- 0 until memArrSize) {
       //tempUpMod(2) := (
       //  RegNext(
@@ -3681,7 +3685,14 @@ extends Area {
       //tempUpMod(2).allowOverride
       //tempUpMod(0) := up(mod.front.midPipePayload(ydx))
       for (extIdx <- 0 until extIdxLim) {
-        tempUpMod(0).getPipeMemRmwExt(
+        val myMod = (
+          if (extIdx == 0) {
+            tempUpMod(0)
+          } else {
+            tempUpMod0a
+          }
+        )
+        myMod.getPipeMemRmwExt(
           outpExt=upExt(0)(ydx)(extIdx),
           ydx=ydx,
           memArrIdx=memArrIdx,
