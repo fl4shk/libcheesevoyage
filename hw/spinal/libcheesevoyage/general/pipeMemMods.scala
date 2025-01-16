@@ -3680,11 +3680,13 @@ extends Area {
       //)
       //tempUpMod(2).allowOverride
       //tempUpMod(0) := up(mod.front.midPipePayload(ydx))
-      tempUpMod(0).getPipeMemRmwExt(
-        outpExt=upExt(0)(ydx)(extIdxSingle),
-        ydx=ydx,
-        memArrIdx=memArrIdx,
-      )
+      for (extIdx <- 0 until extIdxLim) {
+        tempUpMod(0).getPipeMemRmwExt(
+          outpExt=upExt(0)(ydx)(extIdx),
+          ydx=ydx,
+          memArrIdx=memArrIdx,
+        )
+      }
     }
     val myRdMemWord = mod.front.myRdMemWord
 
