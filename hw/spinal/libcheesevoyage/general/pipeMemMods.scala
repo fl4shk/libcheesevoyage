@@ -2521,10 +2521,11 @@ extends Area {
                 + idx 
                 + (
                   if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
-                    //0
-                    1
+                    0
+                    //1
                   ) else (
-                    1
+                    //1
+                    0
                   )
                 )
               )
