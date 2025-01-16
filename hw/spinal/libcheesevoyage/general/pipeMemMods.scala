@@ -4630,7 +4630,15 @@ extends Area {
     for (ydx <- 0 until memArrSize) {
       if (ydx == 0) {
         tempUpMod(0).allowOverride
-        tempUpMod(0) := up(mod.back.pipePayload)
+        tempUpMod(0) := (
+          RegNext(
+            next=tempUpMod(0),
+            init=tempUpMod(0).getZero
+          )
+        )
+        when (up.isValid) {
+          tempUpMod(0) := up(mod.back.pipePayload)
+        }
       }
       tempUpMod(0).getPipeMemRmwExt(
         outpExt=upExt(0)(ydx)(extIdxSingle),
