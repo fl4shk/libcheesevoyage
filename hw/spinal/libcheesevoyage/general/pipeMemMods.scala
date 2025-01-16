@@ -216,6 +216,8 @@ case class PipeMemRmwPayloadExtMainNonMemAddr[
   //val modMemWrSel = (modRdPortCnt > 1) generate (
   //  UInt(log2Up(modRdPortCnt) bits)
   //)
+  //val modMemWordFwd = wordType()
+  //val modMemWordValidFwd = Bool()
   val modMemWord = wordType()
   val modMemWordValid = Bool()
   val rdMemWord = Vec.fill(modRdPortCnt)(wordType())
@@ -346,6 +348,9 @@ case class PipeMemRmwPayloadExtMain[
   val memAddr = Vec.fill(modRdPortCnt)(
     UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
   )
+  val memAddrFwd = Vec.fill(modRdPortCnt)(
+    UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
+  )
   //def modMemAddr = memAddr(0)
   //val didReorderCommit = (optReorder) generate (
   //  Bool()
@@ -440,8 +445,11 @@ case class PipeMemRmwPayloadExt[
     )
   )
   def memAddr = main.memAddr
+  def memAddrFwd = main.memAddrFwd
   def modMemWord = main.nonMemAddr.modMemWord
+  //def modMemWordFwd = main.nonMemAddr.modMemWordFwd
   def modMemWordValid = main.nonMemAddr.modMemWordValid
+  //def modMemWordValidFwd = main.nonMemAddr.modMemWordValidFwd
   def rdMemWord = main.nonMemAddr.rdMemWord
   //def reqReorderCommit = main.nonMemAddr.reqReorderCommit
   //def didReorderCommit = main.nonMemAddr.didReorderCommit
@@ -601,6 +609,7 @@ trait PipeMemRmwPayloadBase[
   ////--------
 }
 object PipeMemRmw {
+  def extMainSize = 2
   def addrWidth(
     wordCount: Int,
   ) = log2Up(wordCount)
@@ -3475,6 +3484,10 @@ extends Area {
       //for (extIdx <- 0 until extIdxLim) {
       //}
       //when (up.isFiring) {
+        upExt(1)(ydx)(extIdxUp).memAddrFwd.allowOverride
+        upExt(1)(ydx)(extIdxUp).memAddrFwd := (
+          upExt(1)(ydx)(extIdxUp).memAddr
+        )
         tempUpMod(1).setPipeMemRmwExt(
           inpExt=upExt(1)(ydx)(extIdxUp),
           ydx=ydx,
@@ -3792,7 +3805,7 @@ extends Area {
                     //    downto 0
                     //  )
                     //} else {
-                      mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddr(
+                      mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddrFwd(
                         PipeMemRmw.modWrIdx
                       )(
                         PipeMemRmw.addrWidth(
