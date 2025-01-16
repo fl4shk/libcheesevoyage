@@ -1183,29 +1183,31 @@ case class PipeMemRmwDoFwdArea[
               tempMyFwdData := firstFwdRdMemWord._2
             }
           }
-          when (
-            tempMyFindFirstUp_0
-            && tempMyFindFirstSaved_0
-          ) {
-            when (
-              //myFindFirstUp._2 < myFindFirstSaved._2
-              tempMyFindFirstUp_1 < tempMyFindFirstSaved_1
-            ) {
-              mySetToMyFwdUp()
-            } elsewhen (
-              //myFindFirstSaved._2 < myFindFirstUp._2
-              tempMyFindFirstSaved_1 < tempMyFindFirstUp_1
-            ) {
-              mySetToMyFwdSaved()
-            } otherwise {
-              innerFunc()
-            }
-          } otherwise {
-            innerFunc()
-          }
-          //when (tempMyFindFirstUp_0) {
-          //  setToMyFwdUp()
+          //when (
+          //  tempMyFindFirstUp_0
+          //  && tempMyFindFirstSaved_0
+          //) {
+          //  when (
+          //    //myFindFirstUp._2 < myFindFirstSaved._2
+          //    tempMyFindFirstUp_1 < tempMyFindFirstSaved_1
+          //  ) {
+          //    mySetToMyFwdUp()
+          //  } elsewhen (
+          //    //myFindFirstSaved._2 < myFindFirstUp._2
+          //    tempMyFindFirstSaved_1 < tempMyFindFirstUp_1
+          //  ) {
+          //    mySetToMyFwdSaved()
+          //  } otherwise {
+          //    innerFunc()
+          //  }
+          //} otherwise {
+          //  innerFunc()
           //}
+          when (tempMyFindFirstUp_0) {
+            mySetToMyFwdUp()
+          } otherwise {
+            tempMyFwdData := firstFwdRdMemWord._2
+          }
         }
         setToMyFwdDataFunc(
           ydx,
@@ -2870,8 +2872,8 @@ extends Area {
           //  case Some(myDoModSingleStageFunc) => false
           //  case None => true
           //}
-          true
-          //optModHazardKind != PipeMemRmw.ModHazardKind.Fwd
+          //true
+          optModHazardKind != PipeMemRmw.ModHazardKind.Fwd
           //|| (
           //  doFwdFunc match {
           //    case Some(myDoFwdFunc) => false
