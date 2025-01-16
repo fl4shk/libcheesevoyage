@@ -3809,7 +3809,7 @@ extends Area {
                 mod.front.findFirstFunc(
                   currMemAddr=(
                     //if (extIdx == PipeMemRmw.extIdxUp) (
-                      upExt(1)(ydx)(extIdx).memAddrFwd(zdx)(
+                      upExt(1)(ydx)(extIdx).memAddr(zdx)(
                         (
                           PipeMemRmw.addrWidth(
                             wordCount=wordCountArr(ydx)
@@ -3837,7 +3837,7 @@ extends Area {
                     //    downto 0
                     //  )
                     //} else {
-                      mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddrFwd(
+                      mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddr(
                         PipeMemRmw.modWrIdx
                       )(
                         PipeMemRmw.addrWidth(
