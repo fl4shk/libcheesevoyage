@@ -2449,6 +2449,9 @@ extends Area {
         )
         //.setName(s"${pipeName}_mod_front_myUpExtDel2")
       )
+      println(
+        s"myUpExtDel2.size: ${myUpExtDel2.size}"
+      )
       //println(
       //  s"myUpExtDel2: ${myUpExtDel2.size}"
       //)
