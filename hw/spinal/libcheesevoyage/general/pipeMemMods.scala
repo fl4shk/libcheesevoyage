@@ -4630,15 +4630,7 @@ extends Area {
     for (ydx <- 0 until memArrSize) {
       if (ydx == 0) {
         tempUpMod(0).allowOverride
-        tempUpMod(0) := (
-          RegNext(
-            next=tempUpMod(0),
-            init=tempUpMod(0).getZero
-          )
-        )
-        when (up.isValid) {
-          tempUpMod(0) := up(mod.back.pipePayload)
-        }
+        tempUpMod(0) := up(mod.back.pipePayload)
       }
       tempUpMod(0).getPipeMemRmwExt(
         outpExt=upExt(0)(ydx)(extIdxSingle),
@@ -4802,40 +4794,39 @@ extends Area {
     
     for (ydx <- 0 until memArrSize) {
       when (
-        ////!clockDomain.isResetActive
+        //!clockDomain.isResetActive
 
-        ////&& isValid
-        ////&& up.isFiring
-        ////&& 
-        ////up.isValid
-        ////(
-        ////  if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
-        //    //up.isFiring
-        //    //down.isFiring
-        //    up.isValid
-        //    //|| (
-        //    //  RegNextWhen(True, up.isValid)
-        //    //  init(False)
-        //    //)
-        ////  ) else (
-        ////    up.isValid
-        ////  )
-        ////)
-        ////&& (
-        ////  //if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
-        ////  //  down.isReady
-        ////  //) else (
-        ////  //  True
-        ////  //)
-        ////  down.isReady
-        ////)
-        ////True
-        ////&& upExt.rdValid
-        ////&& up.isValid
-        ////&& (upExt(0).hazardId) === 0
-        ////&& upExt(0).rdValid
+        //&& isValid
+        //&& up.isFiring
         //&& 
-        extDbgDoWriteCond(ydx)
+        //up.isValid
+        //(
+        //  if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
+            //up.isFiring
+            //down.isFiring
+            up.isValid
+            //|| (
+            //  RegNextWhen(True, up.isValid)
+            //  init(False)
+            //)
+        //  ) else (
+        //    up.isValid
+        //  )
+        //)
+        //&& (
+        //  //if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
+        //  //  down.isReady
+        //  //) else (
+        //  //  True
+        //  //)
+        //  down.isReady
+        //)
+        //True
+        //&& upExt.rdValid
+        //&& up.isValid
+        //&& (upExt(0).hazardId) === 0
+        //&& upExt(0).rdValid
+        && extDbgDoWriteCond(ydx)
       ) {
         if (
           //debug
