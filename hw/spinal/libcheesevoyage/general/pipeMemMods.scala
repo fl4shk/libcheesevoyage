@@ -3612,7 +3612,9 @@ extends Area {
       when (
         up.isValid
       ) {
-        upExt(1)(ydx)(extIdxSingle) := upExt(0)(ydx)(extIdxSingle)
+        for (extIdx <- 0 until extIdxLim) {
+          upExt(1)(ydx)(extIdx) := upExt(0)(ydx)(extIdx)
+        }
         for (zdx <- 0 until modRdPortCnt) {
           upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
             RegNext(
