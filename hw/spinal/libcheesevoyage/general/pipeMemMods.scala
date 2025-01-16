@@ -2326,7 +2326,7 @@ extends Area {
       //}
       //def midPipePayload = midPipePayloadArr//(memArrIdx)
       val midPipePayload = {
-        Payload(Vec.fill(2)(modType()))
+        Payload(Vec.fill(extIdxLim)(modType()))
         .setName(s"${pipeName}_io_midPipePayload")
       }
       //val outpPipePayload = Payload(modType())
@@ -3482,8 +3482,8 @@ extends Area {
         )
       //}
       if (ydx == 0) {
-        for (idx <- 0 until up(mod.front.midPipePayload).size) {
-          up(mod.front.midPipePayload)(idx) := tempUpMod(1)
+        for (extIdx <- 0 until extIdxLim) {
+          up(mod.front.midPipePayload)(extIdx) := tempUpMod(1)
         }
       }
       //--------
@@ -3618,14 +3618,14 @@ extends Area {
       ) {
         for (extIdx <- 0 until extIdxLim) {
           upExt(1)(ydx)(extIdx) := upExt(0)(ydx)(extIdx)
-        }
-        for (zdx <- 0 until modRdPortCnt) {
-          upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
-            RegNext(
-              next=upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx),
-              init=upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx).getZero,
+          for (zdx <- 0 until modRdPortCnt) {
+            upExt(1)(ydx)(extIdx).rdMemWord(zdx) := (
+              RegNext(
+                next=upExt(1)(ydx)(extIdx).rdMemWord(zdx),
+                init=upExt(1)(ydx)(extIdx).rdMemWord(zdx).getZero,
+              )
             )
-          )
+          }
         }
         //upExt(1)(ydx)(extIdxSingle).modMemWord := upExt(2)(ydx)(extIdxUp).modMemWord
       }
@@ -3803,7 +3803,7 @@ extends Area {
                     //}
                   ),
                   curr=(
-                    upExt(1)(ydx)(extIdxSingle)
+                    upExt(1)(ydx)(extIdx)
                   ),
                   prev=(
                     //mod.front.myUpExtDel2(idx)(ydx)
@@ -3864,17 +3864,19 @@ extends Area {
         //  //}
         //}
       //}
-      when (
-        //RegNext(up.isReady)
-        RegNext(
-          next=cFrontArea.tempSharedEnable,
-          init=False,
-        )
-      ) {
-        upExt(1)(ydx)(extIdxSingle).rdMemWord := myRdMemWord(ydx)
-        //upExt(2)(ydx)(extIdxUp).rdMemWord := myRdMemWord(ydx)
+      for (extIdx <- 0 until extIdxLim) {
+        when (
+          //RegNext(up.isReady)
+          RegNext(
+            next=cFrontArea.tempSharedEnable,
+            init=False,
+          )
+        ) {
+          upExt(1)(ydx)(extIdx).rdMemWord := myRdMemWord(ydx)
+          //upExt(2)(ydx)(extIdxUp).rdMemWord := myRdMemWord(ydx)
+        }
+        upExt(1)(ydx)(extIdx).modMemWordValid := True
       }
-      upExt(1)(ydx)(extIdxSingle).modMemWordValid := True
       //upExt(2)(ydx)(extIdxUp).rdMemWord := (
       //  upExt(1)(ydx)(extIdxSingle).rdMemWord
       //)
@@ -3993,9 +3995,11 @@ extends Area {
           zdx: Int,
           myFwdData: WordT,
         ) => {
-          upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
-            myFwdData
-          )
+          for (extIdx <- 0 until extIdxLim) {
+            upExt(1)(ydx)(extIdx).rdMemWord(zdx) := (
+              myFwdData
+            )
+          }
         },
         optFirstFwdRdMemWord=Some(
           //upExt(2)
