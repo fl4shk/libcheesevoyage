@@ -3790,7 +3790,7 @@ extends Area {
               //) && 
               (
                 mod.front.findFirstFunc(
-                  currMemAddr=upExt(1)(ydx)(extIdx).memAddrFwd(zdx)(
+                  currMemAddr=upExt(1)(ydx)(extIdx).memAddr(zdx)(
                     (
                       PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
                       downto 0
