@@ -3002,11 +3002,13 @@ extends Area {
     for (ydx <- 0 until memArrSize) {
       //tempUpMod(0).allowOverride
       //tempUpMod(0) := up(mod.front.inpPipePayload(ydx))
-      tempUpMod(0).getPipeMemRmwExt(
-        outpExt=upExt(0)(ydx)(extIdxSingle),
-        ydx=ydx,
-        memArrIdx=memArrIdx,
-      )
+      for (extIdx <- 0 until extIdxLim) {
+        tempUpMod(0).getPipeMemRmwExt(
+          outpExt=upExt(0)(ydx)(extIdx),
+          ydx=ydx,
+          memArrIdx=memArrIdx,
+        )
+      }
     }
     //--------
     //--------
