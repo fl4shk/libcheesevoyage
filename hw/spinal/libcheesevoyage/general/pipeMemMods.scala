@@ -4923,7 +4923,7 @@ extends Area {
       )
       for (extIdx <- 0 until extIdxLim) {
         upExt(1)(ydx)(extIdx).modMemWordValid := False
-        upExt(1)(ydx)(extIdx).valid := False
+        //upExt(1)(ydx)(extIdx).valid := False
       }
       //--------
       //if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) {
