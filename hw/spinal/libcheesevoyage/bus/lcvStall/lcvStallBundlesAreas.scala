@@ -51,6 +51,9 @@ class LcvStallIo[
   val devData = (myDevPayloadType._1) generate (
     out(myDevPayloadType._2())
   )
+  def fire = (
+    rValid && ready
+  )
   //--------
   def asMaster(): Unit = {
     //--------
