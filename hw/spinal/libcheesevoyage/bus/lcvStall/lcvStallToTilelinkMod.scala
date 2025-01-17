@@ -124,7 +124,7 @@ case class LcvStallToTilelinkHost(
           io.tlBus.a.opcode := tilelink.Opcode.A.GET
         }
         io.tlBus.a.param := 0x0
-        io.tlBus.a.size := (cfg.dataWidth / 8)
+        io.tlBus.a.size := 1//(cfg.dataWidth / 8)
         io.tlBus.a.source := io.lcvStall.hostData.src
         io.tlBus.a.address := io.lcvStall.hostData.addr
         io.tlBus.a.mask := B(io.tlBus.a.mask.getWidth bits, default -> True)
