@@ -8,29 +8,29 @@ import spinal.lib.misc.pipeline._
 
 //--------
 class LcvStallIo[
-  HostPayloadT <: Data,
-  DevPayloadT <: Data,
+  SendPayloadT <: Data,
+  RecvPayloadT <: Data,
 ](
-  hostPayloadType: Option[HardType[HostPayloadT]],
-  devPayloadType: Option[HardType[DevPayloadT]],
+  sendPayloadType: Option[HardType[SendPayloadT]],
+  recvPayloadType: Option[HardType[RecvPayloadT]],
   //hostDataType: (Boolean, HardType[HostDataT]),
   //devDataType: (Boolean, HardType[HostDataT]),
 ) extends Bundle with IMasterSlave {
   //--------
-  val myHostPayloadType: (Boolean, HardType[HostPayloadT]) = (
-    hostPayloadType match {
-      case Some(innerHostPayloadType) => {
-        (true, innerHostPayloadType())
+  val mySendPayloadType: (Boolean, HardType[SendPayloadT]) = (
+    sendPayloadType match {
+      case Some(innerSendPayloadType) => {
+        (true, innerSendPayloadType())
       }
       case None => {
         (false, null)
       }
     }
   )
-  val myDevPayloadType: (Boolean, HardType[DevPayloadT]) = (
-    devPayloadType match {
-      case Some(innerDevPayloadType) => {
-        (true, innerDevPayloadType())
+  val myRecvPayloadType: (Boolean, HardType[RecvPayloadT]) = (
+    recvPayloadType match {
+      case Some(innerRecvPayloadType) => {
+        (true, innerRecvPayloadType())
       }
       case None => {
         (false, null)
@@ -44,12 +44,12 @@ class LcvStallIo[
     next=nextValid,
     init=nextValid.getZero,
   )
-  val hostData = (myHostPayloadType._1) generate (
-    in(myHostPayloadType._2())
+  val sendData = (mySendPayloadType._1) generate (
+    in(mySendPayloadType._2())
   )
   val ready = out(Bool())
-  val devData = (myDevPayloadType._1) generate (
-    out(myDevPayloadType._2())
+  val recvData = (myRecvPayloadType._1) generate (
+    out(myRecvPayloadType._2())
   )
   def fire = (
     rValid && ready
@@ -59,21 +59,21 @@ class LcvStallIo[
     //--------
     out(nextValid)
     //out(rValid)
-    if (myHostPayloadType._1) {
-      out(hostData)
+    if (mySendPayloadType._1) {
+      out(sendData)
     }
     //--------
     in(ready)
-    if (myDevPayloadType._1) {
-      in(devData)
+    if (myRecvPayloadType._1) {
+      in(recvData)
     }
     //--------
   }
 }
 //--------
 case class LcvStallHost[
-  HostPayloadT <: Data,
-  DevPayloadT <: Data,
+  SendPayloadT <: Data,
+  RecvPayloadT <: Data,
 ](
   // I'm not sure whether or not these can be made into
   // `Option[HardType[...DataType]]`s. It might be possible?
@@ -83,15 +83,15 @@ case class LcvStallHost[
   //hostDataType: (Boolean, HardType[HostDataT]),
   //devDataType: (Boolean, HardType[DevDataT]),
   stallIo: Option[LcvStallIo[
-    HostPayloadT,
-    DevPayloadT,
+    SendPayloadT,
+    RecvPayloadT,
   ]],
   //--------
   optFormalJustHost: Boolean=false
   //--------
 ) extends Area {
   //--------
-  val myStallIo: (Boolean, LcvStallIo[HostPayloadT, DevPayloadT]) = {
+  val myStallIo: (Boolean, LcvStallIo[SendPayloadT, RecvPayloadT]) = {
     stallIo match {
       case Some(innerStallIo) => (true, innerStallIo)
       case None => (false, null)
