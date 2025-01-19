@@ -56,26 +56,20 @@ case class LcvStallToTilelinkH2dSendPayload(
   cfg: LcvStallToTilelinkConfig,
 ) extends Bundle {
   //cfg.doNeedIsDualEqFalse()
+  val isWrite = Bool()
   val addr = UInt(cfg.addrWidth bits)
   val data = UInt(cfg.dataWidth bits)
   val src = UInt(cfg.srcWidth bits)
-  val isWrite = Bool()
-  //val isBurst = (
-  //  cfg.isDual
-  //) generate (
-  //  Bool()
-  //)
   val size = (
     cfg.isDual
   ) generate (
     UInt(cfg.tlCfg.sizeWidth bits)
   )
-  //--------
-  //val burstCnt = (
-  //  cfg.isDual
-  //) generate (
-  //  UInt(cfg.tlCfg.beatWidth bits)
-  //)
+  val mask = (
+    cfg.isDual
+  ) generate (
+    UInt(cfg.tlCfg.dataBytes bits)
+  )
   //--------
   //val lock = (
   //  cfg.optAtomic
@@ -197,7 +191,7 @@ case class LcvStallToTilelink(
         io.tlBus.a.size := 1//(cfg.dataWidth / 8)
         io.tlBus.a.source := io.lcvStall.sendData.src
         io.tlBus.a.address := io.lcvStall.sendData.addr
-        io.tlBus.a.mask := B(io.tlBus.a.mask.getWidth bits, default -> True)
+        io.tlBus.a.mask := io.lcvStall.sendData.mask.asBits //B(io.tlBus.a.mask.getWidth bits, default -> True)
         io.tlBus.a.corrupt := False
         io.tlBus.a.data := io.lcvStall.sendData.data.asBits
       }
@@ -271,7 +265,7 @@ case class LcvStallDualToTilelink(
       outp.size := inp.size
       outp.source := inp.src
       outp.address := inp.addr
-      outp.mask := B(outp.mask.getWidth bits, default -> True)
+      outp.mask := inp.mask.asBits //B(outp.mask.getWidth bits, default -> True)
       outp.corrupt := False
       outp.data := inp.data.asBits
     }
