@@ -244,7 +244,7 @@ case class LcvStallDualToTilelink(
   //--------
   val myH2dPushStm = Stream(h2dFifo.dataType())
   h2dFifo.io.push <-/< myH2dPushStm
-  myH2dPushStm.valid := io.h2dBus.nextValid
+  myH2dPushStm.valid := io.h2dBus.rValid
   myH2dPushStm.payload := io.h2dBus.sendData
   io.h2dBus.ready := myH2dPushStm.ready
   //--------
