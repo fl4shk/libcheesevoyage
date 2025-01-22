@@ -1134,13 +1134,13 @@ case class PipeMemRmwDoFwdArea[
             myFindFirstUp._1
           )
           tempMyFindFirstUp_1 := (
-            myFindFirstUp._2 + 1
+            (myFindFirstUp._2 + 1).resized
           )
           tempMyFindFirstSaved_0 := (
             myFindFirstSaved._1
           )
           tempMyFindFirstSaved_1 := (
-            myFindFirstSaved._2 + 1
+            (myFindFirstSaved._2 + 1).resized
           )
         }
         if (
@@ -3804,10 +3804,10 @@ extends Area {
             //    }
             //  }
             //}
-            if (ydx > 0) {
-              mod.front.myUpExtDel2FindFirstVec(
-                ydx - 1
-              )(zdx)(extIdx)(idx) := (
+            if (idx > 0) {
+              mod.front.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdx)(
+                idx - 1
+              ) := (
                 //(
                 //  if (zdx == PipeMemRmw.modWrIdx) (
                 //    True
