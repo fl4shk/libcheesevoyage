@@ -931,7 +931,7 @@ extends Bundle {
         Vec.fill(memArrSize)(
           Vec.fill(modRdPortCnt)(
             Vec.fill(PipeMemRmw.extIdxLim)(
-              Vec.fill(numMyUpExtDel2)(
+              Vec.fill(numMyUpExtDel2 - 1)(
                 Bool()
               )
             )
@@ -1134,13 +1134,13 @@ case class PipeMemRmwDoFwdArea[
             myFindFirstUp._1
           )
           tempMyFindFirstUp_1 := (
-            myFindFirstUp._2
+            myFindFirstUp._2 + 1
           )
           tempMyFindFirstSaved_0 := (
             myFindFirstSaved._1
           )
           tempMyFindFirstSaved_1 := (
-            myFindFirstSaved._2
+            myFindFirstSaved._2 + 1
           )
         }
         if (
@@ -3479,6 +3479,13 @@ extends Area {
                 //down.isReady
               ),
             )
+            when (
+              upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+              === mod.back.myWriteAddr(ydx)
+              && mod.back.myWriteEnable(ydx)
+            ) {
+              myNonFwdRdMemWord(ydx)(zdx) := mod.back.myWriteData(ydx)
+            }
           }
         }
       }
