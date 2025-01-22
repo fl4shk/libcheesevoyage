@@ -445,7 +445,7 @@ case class PipeMemRmwPayloadExt[
     )
   )
   def memAddr = main.memAddr
-  def memAddrAlt = main.memAddrFwd
+  def memAddrAlt = main.memAddrAlt
   def modMemWord = main.nonMemAddr.modMemWord
   //def modMemWordFwd = main.nonMemAddr.modMemWordFwd
   def modMemWordValid = main.nonMemAddr.modMemWordValid
