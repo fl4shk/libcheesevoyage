@@ -3804,80 +3804,84 @@ extends Area {
             //    }
             //  }
             //}
-            mod.front.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdx)(idx) := (
-              //(
-              //  if (zdx == PipeMemRmw.modWrIdx) (
-              //    True
-              //  ) else (
-              //    False
-              //  )
-              //) && 
-              (
-                mod.front.findFirstFunc(
-                  currMemAddr=(
-                    //if (extIdx == PipeMemRmw.extIdxUp) (
-                      upExt(1)(ydx)(extIdx).memAddr(zdx)(
-                        (
+            if (ydx > 0) {
+              mod.front.myUpExtDel2FindFirstVec(
+                ydx - 1
+              )(zdx)(extIdx)(idx) := (
+                //(
+                //  if (zdx == PipeMemRmw.modWrIdx) (
+                //    True
+                //  ) else (
+                //    False
+                //  )
+                //) && 
+                (
+                  mod.front.findFirstFunc(
+                    currMemAddr=(
+                      //if (extIdx == PipeMemRmw.extIdxUp) (
+                        upExt(1)(ydx)(extIdx).memAddr(zdx)(
+                          (
+                            PipeMemRmw.addrWidth(
+                              wordCount=wordCountArr(ydx)
+                            ) - 1
+                            downto 0
+                          )
+                        )
+                      //) else (
+                      //  upExt(1)(ydx)(extIdx).memAddrAlt(zdx)(
+                      //    (
+                      //      PipeMemRmw.addrWidth(
+                      //        wordCount=wordCountArr(ydx)
+                      //      ) - 1
+                      //      downto 0
+                      //    )
+                      //  )
+                      //)
+                    ),
+                    prevMemAddr=(
+                      //if (idx > 0) {
+                      //  mod.front.myUpExtDel2MemAddr(idx)(ydx)(extIdx)(
+                      //    PipeMemRmw.addrWidth(
+                      //      wordCount=wordCountArr(ydx)
+                      //    ) - 1
+                      //    downto 0
+                      //  )
+                      //} else {
+                        mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddr(
+                          PipeMemRmw.modWrIdx
+                        )(
                           PipeMemRmw.addrWidth(
                             wordCount=wordCountArr(ydx)
                           ) - 1
                           downto 0
                         )
+                      //}
+                    ),
+                    curr=(
+                      upExt(1)(ydx)(
+                        //extIdxSingle
+                        extIdx
                       )
-                    //) else (
-                    //  upExt(1)(ydx)(extIdx).memAddrAlt(zdx)(
-                    //    (
-                    //      PipeMemRmw.addrWidth(
-                    //        wordCount=wordCountArr(ydx)
-                    //      ) - 1
-                    //      downto 0
-                    //    )
-                    //  )
-                    //)
-                  ),
-                  prevMemAddr=(
-                    //if (idx > 0) {
-                    //  mod.front.myUpExtDel2MemAddr(idx)(ydx)(extIdx)(
-                    //    PipeMemRmw.addrWidth(
-                    //      wordCount=wordCountArr(ydx)
-                    //    ) - 1
-                    //    downto 0
-                    //  )
-                    //} else {
-                      mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddr(
-                        PipeMemRmw.modWrIdx
-                      )(
-                        PipeMemRmw.addrWidth(
-                          wordCount=wordCountArr(ydx)
-                        ) - 1
-                        downto 0
-                      )
-                    //}
-                  ),
-                  curr=(
-                    upExt(1)(ydx)(
-                      //extIdxSingle
-                      extIdx
+                    ),
+                    prev=(
+                      //mod.front.myUpExtDel2(idx)(ydx)
+                      //tempMyUpExtDel2
+                      //mod.front.myUpExtDel2(idx)(ydx)
+                      mod.front.myUpExtDel2(idx)(ydx)(extIdx)
+                      //mod.front.myUpExtDel(idx + 1)
+                    ),
+                    ydx=ydx,
+                    zdx=zdx,
+                    isPostDelay=false,
+                    doValidCheck=false,
+                    forceFalse=(
+                      //idx == 0 && extIdx == extIdxUp
+                      false
                     )
-                  ),
-                  prev=(
-                    //mod.front.myUpExtDel2(idx)(ydx)
-                    //tempMyUpExtDel2
-                    //mod.front.myUpExtDel2(idx)(ydx)
-                    mod.front.myUpExtDel2(idx)(ydx)(extIdx)
-                    //mod.front.myUpExtDel(idx + 1)
-                  ),
-                  ydx=ydx,
-                  zdx=zdx,
-                  isPostDelay=false,
-                  doValidCheck=false,
-                  forceFalse=(
-                    //idx == 0 && extIdx == extIdxUp
-                    false
                   )
                 )
               )
-            )
+            }
           }
         }
       }
