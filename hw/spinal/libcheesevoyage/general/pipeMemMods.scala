@@ -3830,9 +3830,9 @@ extends Area {
             //    }
             //  }
             //}
-            if (idx > 0) {
+            if (idx < mod.front.myUpExtDel2.size - 1) {
               mod.front.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdx)(
-                idx - 1
+                idx
               ) := (
                 //(
                 //  if (zdx == PipeMemRmw.modWrIdx) (
