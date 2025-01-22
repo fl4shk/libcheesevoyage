@@ -3483,8 +3483,12 @@ extends Area {
               upExt(1)(ydx)(extIdxUp).memAddr(zdx)
               === mod.back.myWriteAddr(ydx)
               && mod.back.myWriteEnable(ydx)
+              && tempSharedEnable
             ) {
-              myNonFwdRdMemWord(ydx)(zdx) := mod.back.myWriteData(ydx)
+              myNonFwdRdMemWord(ydx)(zdx) := RegNext(
+                next=mod.back.myWriteData(ydx),
+                init=mod.back.myWriteData(ydx).getZero
+              )
             }
           }
         }
