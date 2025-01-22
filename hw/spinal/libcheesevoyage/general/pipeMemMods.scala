@@ -348,7 +348,7 @@ case class PipeMemRmwPayloadExtMain[
   val memAddr = Vec.fill(modRdPortCnt)(
     UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
   )
-  val memAddrFwd = Vec.fill(modRdPortCnt)(
+  val memAddrAlt = Vec.fill(modRdPortCnt)(
     UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
   )
   //def modMemAddr = memAddr(0)
@@ -445,7 +445,7 @@ case class PipeMemRmwPayloadExt[
     )
   )
   def memAddr = main.memAddr
-  def memAddrFwd = main.memAddrFwd
+  def memAddrAlt = main.memAddrFwd
   def modMemWord = main.nonMemAddr.modMemWord
   //def modMemWordFwd = main.nonMemAddr.modMemWordFwd
   def modMemWordValid = main.nonMemAddr.modMemWordValid
@@ -3501,8 +3501,8 @@ extends Area {
       //for (extIdx <- 0 until extIdxLim) {
       //}
       //when (up.isFiring) {
-        upExt(1)(ydx)(extIdxUp).memAddrFwd.allowOverride
-        upExt(1)(ydx)(extIdxUp).memAddrFwd := (
+        upExt(1)(ydx)(extIdxUp).memAddrAlt.allowOverride
+        upExt(1)(ydx)(extIdxUp).memAddrAlt := (
           upExt(1)(ydx)(extIdxUp).memAddr
         )
         tempUpMod(1).setPipeMemRmwExt(
@@ -3818,7 +3818,7 @@ extends Area {
                         )
                       )
                     //) else (
-                    //  upExt(1)(ydx)(extIdx).memAddrFwd(zdx)(
+                    //  upExt(1)(ydx)(extIdx).memAddrAlt(zdx)(
                     //    (
                     //      PipeMemRmw.addrWidth(
                     //        wordCount=wordCountArr(ydx)
@@ -4732,14 +4732,14 @@ extends Area {
           )
         } otherwise { // when (!io.clear.fire)
           myWriteAddr(ydx) := (
-            upExt(0)(ydx)(extIdxSingle).memAddr(
+            upExt(0)(ydx)(extIdxSingle).memAddrAlt(
               PipeMemRmw.modWrIdx
             ).resized
           )
         }
       } else { // if (!optEnableClear)
         myWriteAddr(ydx) := (
-          upExt(0)(ydx)(extIdxSingle).memAddr(
+          upExt(0)(ydx)(extIdxSingle).memAddrAlt(
             PipeMemRmw.modWrIdx
           ).resized
         )
