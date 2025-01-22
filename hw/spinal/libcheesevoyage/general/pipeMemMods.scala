@@ -3483,7 +3483,8 @@ extends Area {
               upExt(1)(ydx)(extIdxUp).memAddr(zdx)
               === mod.back.myWriteAddr(ydx)
               && mod.back.myWriteEnable(ydx)
-              && tempSharedEnable
+              //&& tempSharedEnable
+              && down.isReady
             ) {
               myNonFwdRdMemWord(ydx)(zdx) := RegNext(
                 next=mod.back.myWriteData(ydx),
