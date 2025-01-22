@@ -2349,7 +2349,9 @@ extends Area {
       )
       val myNonFwdRdMemWord = Vec.fill(memArrSize)(
         Vec.fill(modRdPortCnt)(
-          wordType()
+          Reg(
+            wordType()
+          )
         )
       )
       //val myFwdRdMemWord = Vec.fill(memArrSize)(
@@ -3463,33 +3465,52 @@ extends Area {
       } else { // if (optModHazardKind == PipeMemRmw.ModHazardKind.Fwd)
         for (ydx <- 0 until memArrSize) {
           for (zdx <- 0 until modRdPortCnt) {
-            myNonFwdRdMemWord(ydx)(zdx) := modMem(ydx)(zdx).readSync(
-              address=(
-                //upExtRealMemAddr(zdx)
-                upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
-                  PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
-                  downto 0
-                )
-              ),
-              enable=(
-                //tempCond
-                //!mod.front.nextDidFwd(zdx)(0)
-                //&& 
-                tempSharedEnable
-                //down.isReady
-              ),
-            )
-            when (
-              upExt(1)(ydx)(extIdxUp).memAddr(zdx)
-              === mod.back.myWriteAddr(ydx)
-              && mod.back.myWriteEnable(ydx)
-              //&& tempSharedEnable
-              && down.isReady
-            ) {
-              myNonFwdRdMemWord(ydx)(zdx) := RegNext(
-                next=mod.back.myWriteData(ydx),
-                init=mod.back.myWriteData(ydx).getZero
+            //myNonFwdRdMemWord(ydx)(zdx) := modMem(ydx)(zdx).readSync(
+            //  address=(
+            //    //upExtRealMemAddr(zdx)
+            //    upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
+            //      PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+            //      downto 0
+            //    )
+            //  ),
+            //  enable=(
+            //    //tempCond
+            //    //!mod.front.nextDidFwd(zdx)(0)
+            //    //&& 
+            //    tempSharedEnable
+            //    //down.isReady
+            //  ),
+            //)
+            when (tempSharedEnable) {
+              myNonFwdRdMemWord(ydx)(zdx) := modMem(ydx)(zdx).readAsync(
+                address=(
+                  //upExtRealMemAddr(zdx)
+                  upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
+                    PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+                    downto 0
+                  )
+                ),
+                //enable=(
+                //  //tempCond
+                //  //!mod.front.nextDidFwd(zdx)(0)
+                //  //&& 
+                //  tempSharedEnable
+                //  //down.isReady
+                //),
               )
+              when (
+                upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+                === mod.back.myWriteAddr(ydx)
+                && mod.back.myWriteEnable(ydx)
+                //&& tempSharedEnable
+                //&& down.isReady
+              ) {
+                myNonFwdRdMemWord(ydx)(zdx) := /*RegNext*/(
+                  mod.back.myWriteData(ydx)
+                  //next=mod.back.myWriteData(ydx),
+                  //init=mod.back.myWriteData(ydx).getZero
+                )
+              }
             }
           }
         }
