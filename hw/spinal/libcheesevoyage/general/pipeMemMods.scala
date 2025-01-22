@@ -1134,13 +1134,13 @@ case class PipeMemRmwDoFwdArea[
             myFindFirstUp._1
           )
           tempMyFindFirstUp_1 := (
-            (myFindFirstUp._2 + 1).resized
+            (myFindFirstUp._2).resized
           )
           tempMyFindFirstSaved_0 := (
             myFindFirstSaved._1
           )
           tempMyFindFirstSaved_1 := (
-            (myFindFirstSaved._2 + 1).resized
+            (myFindFirstSaved._2).resized
           )
         }
         if (
