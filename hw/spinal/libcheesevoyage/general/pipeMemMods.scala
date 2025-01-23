@@ -2368,7 +2368,7 @@ extends Area {
       )
       val myNonFwdRdMemWord = Vec.fill(memArrSize)(
         Vec.fill(modRdPortCnt)(
-          Reg(
+          /*Reg*/(
             wordType()
           )
         )
@@ -3591,7 +3591,9 @@ extends Area {
       //}
       if (ydx == 0) {
         for (idx <- 0 until up(mod.front.midPipePayload).size) {
-          up(mod.front.midPipePayload)(idx) := tempUpMod(1)
+          when (up.isFiring) {
+            up(mod.front.midPipePayload)(idx) := tempUpMod(1)
+          }
         }
       }
       //--------
