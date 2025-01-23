@@ -3562,7 +3562,7 @@ extends Area {
           KeepAttribute(
             History[UInt](
               that=upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx),
-              length=mod.front.myUpExtDel.size + 1/*- 1*/,
+              length=mod.front.myUpExtDel.size /*- 1*/,
               when=up.isFiring,
               init=upExt(1)(ydx)(extIdxUp).memAddr(
                 PipeMemRmw.modWrIdx
@@ -3575,9 +3575,9 @@ extends Area {
         )
         for (zdx <- 0 until modRdPortCnt) {
           for (idx <- 0 until myHistMemAddr.size) {
-            if (idx > 1) {
-              myMemAddrFwdCmp(zdx)(idx - 2).allowOverride
-              myMemAddrFwdCmp(zdx)(idx - 2)(0) := (
+            if (idx > 0) {
+              myMemAddrFwdCmp(zdx)(idx - 1).allowOverride
+              myMemAddrFwdCmp(zdx)(idx - 1)(0) := (
                 upExt(1)(ydx)(extIdxUp).memAddr(zdx)
                 === myHistMemAddr(idx)
               )
