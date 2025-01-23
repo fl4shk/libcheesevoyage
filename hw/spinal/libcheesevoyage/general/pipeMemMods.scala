@@ -3547,7 +3547,9 @@ extends Area {
         init=tempUpMod(1).getZero,
       )
     )
-    tempUpMod(1) := tempUpMod(0)
+    when (up.isFiring) {
+      tempUpMod(1) := tempUpMod(0)
+    }
     tempUpMod(1).allowOverride
     for (ydx <- 0 until memArrSize) {
       //for (extIdx <- 0 until extIdxLim) {
@@ -3583,17 +3585,17 @@ extends Area {
         upExt(1)(ydx)(extIdxUp).memAddrAlt := (
           upExt(1)(ydx)(extIdxUp).memAddr
         )
-        tempUpMod(1).setPipeMemRmwExt(
-          inpExt=upExt(1)(ydx)(extIdxUp),
-          ydx=ydx,
-          memArrIdx=memArrIdx,
-        )
+        when (up.isFiring) {
+          tempUpMod(1).setPipeMemRmwExt(
+            inpExt=upExt(1)(ydx)(extIdxUp),
+            ydx=ydx,
+            memArrIdx=memArrIdx,
+          )
+        }
       //}
       if (ydx == 0) {
         for (idx <- 0 until up(mod.front.midPipePayload).size) {
-          when (up.isFiring) {
-            up(mod.front.midPipePayload)(idx) := tempUpMod(1)
-          }
+          up(mod.front.midPipePayload)(idx) := tempUpMod(1)
         }
       }
       //--------
