@@ -3558,25 +3558,27 @@ extends Area {
         def myMemAddrFwdCmp = (
           upExt(1)(ydx)(extIdxUp).memAddrFwdCmp
         )
-        for (zdx <- 0 until modRdPortCnt) {
-          val myHistMemAddr = (
-            KeepAttribute(
-              History[UInt](
-                that=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
-                length=mod.front.myUpExtDel.size /*- 1*/,
-                when=up.isFiring,
-                init=upExt(1)(ydx)(extIdxUp).memAddr(zdx).getZero,
-              )
-            )
-            .setName(
-              s"cFrontArea_myHistMemAddr_${ydx}_${zdx}"
+        val myHistMemAddr = (
+          KeepAttribute(
+            History[UInt](
+              that=upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx),
+              length=mod.front.myUpExtDel.size /*- 1*/,
+              when=up.isFiring,
+              init=upExt(1)(ydx)(extIdxUp).memAddr(
+                PipeMemRmw.modWrIdx
+              ).getZero,
             )
           )
+          .setName(
+            s"cFrontArea_myHistMemAddr_${ydx}"
+          )
+        )
+        for (zdx <- 0 until modRdPortCnt) {
           for (idx <- 0 until myHistMemAddr.size) {
             if (idx > 0) {
               myMemAddrFwdCmp(zdx)(idx - 1).allowOverride
               myMemAddrFwdCmp(zdx)(idx - 1)(0) := (
-                upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)
+                upExt(1)(ydx)(extIdxUp).memAddr(zdx)
                 === myHistMemAddr(idx)
               )
             }
