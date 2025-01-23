@@ -353,7 +353,7 @@ case class PipeMemRmwPayloadExtMain[
   //val hadActiveUpFire = KeepAttribute(Bool())
 
   val memAddrFwdCmp = Vec.fill(modRdPortCnt)(
-    Vec.fill(numMyUpExtDel2 - 1)(
+    Vec.fill(numMyUpExtDel2/* - 1*/)(
       UInt(1 bits)
       //Bool()
     )
@@ -3563,7 +3563,7 @@ extends Area {
             KeepAttribute(
               History[UInt](
                 that=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
-                length=mod.front.myUpExtDel2.size /*- 1*/,
+                length=mod.front.myUpExtDel.size /*- 1*/,
                 when=up.isFiring,
               )
             )
