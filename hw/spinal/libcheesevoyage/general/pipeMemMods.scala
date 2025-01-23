@@ -3893,8 +3893,17 @@ extends Area {
                 (
                   mod.front.findFirstFunc(
                     currMemAddr=(
-                      ////if (extIdx == PipeMemRmw.extIdxUp) (
-                      //  upExt(1)(ydx)(extIdx).memAddr(zdx)(
+                      //if (extIdx == PipeMemRmw.extIdxUp) (
+                        upExt(1)(ydx)(extIdx).memAddr(zdx)(
+                          (
+                            PipeMemRmw.addrWidth(
+                              wordCount=wordCountArr(ydx)
+                            ) - 1
+                            downto 0
+                          )
+                        )
+                      //) else (
+                      //  upExt(1)(ydx)(extIdx).memAddrAlt(zdx)(
                       //    (
                       //      PipeMemRmw.addrWidth(
                       //        wordCount=wordCountArr(ydx)
@@ -3902,17 +3911,8 @@ extends Area {
                       //      downto 0
                       //    )
                       //  )
-                      ////) else (
-                      ////  upExt(1)(ydx)(extIdx).memAddrAlt(zdx)(
-                      ////    (
-                      ////      PipeMemRmw.addrWidth(
-                      ////        wordCount=wordCountArr(ydx)
-                      ////      ) - 1
-                      ////      downto 0
-                      ////    )
-                      ////  )
-                      ////)
-                      upExt(1)(ydx)(extIdx).memAddrFwdCmp(zdx)(idx)
+                      //)
+                      //upExt(1)(ydx)(extIdx).memAddrFwdCmp(zdx)(idx)
                     ),
                     prevMemAddr=(
                       //if (idx > 0) {
@@ -3954,7 +3954,7 @@ extends Area {
                       //idx == 0 && extIdx == extIdxUp
                       false
                     ),
-                    forFwd=true,
+                    //forFwd=true,
                   )
                 )
               )
