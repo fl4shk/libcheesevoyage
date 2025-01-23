@@ -2368,7 +2368,7 @@ extends Area {
       )
       val myNonFwdRdMemWord = Vec.fill(memArrSize)(
         Vec.fill(modRdPortCnt)(
-          /*Reg*/(
+          Reg(
             wordType()
           )
         )
