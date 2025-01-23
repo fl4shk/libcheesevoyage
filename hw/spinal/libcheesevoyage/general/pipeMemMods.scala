@@ -3565,6 +3565,7 @@ extends Area {
                 that=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
                 length=mod.front.myUpExtDel.size /*- 1*/,
                 when=up.isFiring,
+                init=upExt(1)(ydx)(extIdxUp).memAddr(zdx).getZero,
               )
             )
             .setName(
@@ -3575,7 +3576,7 @@ extends Area {
             if (idx > 0) {
               myMemAddrFwdCmp(zdx)(idx - 1).allowOverride
               myMemAddrFwdCmp(zdx)(idx - 1)(0) := (
-                myHistMemAddr(0)
+                upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)
                 === myHistMemAddr(idx)
               )
             }
