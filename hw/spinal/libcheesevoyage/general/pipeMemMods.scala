@@ -4542,8 +4542,9 @@ extends Area {
   //}
   val cBackFwdArea = (
     optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
-  ) generate (
-    new mod.back.cBackFwd.Area {
+  ) generate {
+    val cBackFwd = mod.back.cBackFwd
+    new cBackFwd.Area {
       val upFwd = Vec.fill(
         //2
         extIdxLim
@@ -4652,7 +4653,7 @@ extends Area {
         tempMyUpExtDelPenLast := upExt(1)
       }
     }
-  )
+  }
   val cBack = mod.back.cBack
   val cBackArea = new cBack.Area {
     //haltWhen(
