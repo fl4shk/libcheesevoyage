@@ -4652,6 +4652,33 @@ extends Area {
       ) {
         tempMyUpExtDelPenLast := upExt(1)
       }
+      for (ydx <- 0 until memArrSize) {
+        if (ydx == 0) {
+          tempUpMod(0).allowOverride
+          tempUpMod(0) := up(mod.back.pipePayload)
+        }
+        tempUpMod(0).getPipeMemRmwExt(
+          outpExt=upExt(0)(ydx)(extIdxSingle),
+          ydx=ydx,
+          memArrIdx=memArrIdx,
+        )
+        if (ydx == 0) {
+          //tempUpMod(1) := RegNextWhen(
+          //  next=tempUpMod(0),
+          //  cond=up.isValid,
+          //  init=tempUpMod(1).getZero,
+          //)
+          //when (up.isValid) {
+            tempUpMod(1) := tempUpMod(0)
+          //}
+          tempUpMod(1).allowOverride
+        }
+        tempUpMod(1).setPipeMemRmwExt(
+          inpExt=upExt(1)(ydx)(extIdxUp),
+          ydx=ydx,
+          memArrIdx=memArrIdx,
+        )
+      }
     }
   }
   val cBack = mod.back.cBack
