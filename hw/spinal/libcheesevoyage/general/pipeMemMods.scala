@@ -173,9 +173,9 @@ object PipeMemRmwPayloadExt {
 }
 case class PipeMemRmwPayloadExtPipeFlags(
 ) extends Bundle {
-  val valid = KeepAttribute(Bool())
-  val ready = KeepAttribute(Bool())
-  val fire = KeepAttribute(Bool())
+  val valid = /*KeepAttribute*/(Bool())
+  val ready = /*KeepAttribute*/(Bool())
+  val fire = /*KeepAttribute*/(Bool())
 }
 case class PipeMemRmwPayloadExtMainNonMemAddr[
   WordT <: Data,
@@ -350,7 +350,7 @@ case class PipeMemRmwPayloadExtMain[
   )
   //myHaveFormalFwd: Boolean=false,
   //--------
-  //val hadActiveUpFire = KeepAttribute(Bool())
+  //val hadActiveUpFire = /*KeepAttribute*/(Bool())
 
   val memAddrFwdCmp = Vec.fill(modRdPortCnt)(
     Vec.fill(numMyUpExtDel2 - 1)(
@@ -434,17 +434,17 @@ case class PipeMemRmwPayloadExt[
     assert(modRdPortCnt == 1)
   }
 
-  //val valid = KeepAttribute(Bool())
-  //val ready = KeepAttribute(Bool())
-  //val fire = KeepAttribute(Bool())
-  val pipeFlags = KeepAttribute(
+  //val valid = /*KeepAttribute*/(Bool())
+  //val ready = /*KeepAttribute*/(Bool())
+  //val fire = /*KeepAttribute*/(Bool())
+  val pipeFlags = /*KeepAttribute*/(
     PipeMemRmwPayloadExtPipeFlags()
   )
   def valid = pipeFlags.valid
   def ready = pipeFlags.ready
   def fire = pipeFlags.fire
 
-  val main = KeepAttribute(
+  val main = /*KeepAttribute*/(
     PipeMemRmwPayloadExtMain(
       cfg=cfg,
       //wordType=wordType(),
@@ -815,7 +815,7 @@ extends Bundle {
   //myHaveFormalFwd: Boolean,
   //--------
   val myFindFirst_0 = (
-    KeepAttribute(
+    /*KeepAttribute*/(
       Vec.fill(memArrSize)(
         Vec.fill(modRdPortCnt)(
           Vec.fill(PipeMemRmw.extIdxLim)(
@@ -827,7 +827,7 @@ extends Bundle {
   )
   //--------
   val myFindFirst_1 = (
-    KeepAttribute(
+    /*KeepAttribute*/(
       Vec.fill(memArrSize)(
         Vec.fill(modRdPortCnt)(
           Vec.fill(PipeMemRmw.extIdxLim)(
@@ -903,7 +903,7 @@ extends Bundle {
     //  myHaveFormalFwd
     //) generate 
     (
-      KeepAttribute(
+      /*KeepAttribute*/(
         //Vec.fill(numMyUpExtDel2)(
           Vec.fill(memArrSize)(
             //Vec.fill(PipeMemRmw.extIdxLim)(
@@ -922,7 +922,7 @@ extends Bundle {
     //  myHaveFormalFwd
     //) generate 
     (
-      KeepAttribute(
+      /*KeepAttribute*/(
         Vec.fill(
           numMyUpExtDel2
         )(
@@ -941,7 +941,7 @@ extends Bundle {
     //  myHaveFormalFwd
     //) generate 
     (
-      KeepAttribute(
+      /*KeepAttribute*/(
         Vec.fill(memArrSize)(
           Vec.fill(modRdPortCnt)(
             Vec.fill(PipeMemRmw.extIdxLim)(
@@ -1046,7 +1046,7 @@ case class PipeMemRmwDoFwdArea[
           }
         )
         def firstFwd = firstFwdRdMemWord._1
-        val myFindFirstUp = KeepAttribute(
+        val myFindFirstUp = /*KeepAttribute*/(
           //(
           //  //optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
           //  doOverrideFindFirst
@@ -1061,7 +1061,7 @@ case class PipeMemRmwDoFwdArea[
             .setName(s"${fwdAreaName}_myFindFirstUp_${ydx}_${zdx}")
           )
         )
-        val myFindFirstSaved = KeepAttribute(
+        val myFindFirstSaved = /*KeepAttribute*/(
           //(
           //  //optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
           //  doOverrideFindFirst
@@ -1098,7 +1098,7 @@ case class PipeMemRmwDoFwdArea[
         val myFwdCondUp = (
           firstFwd
         ) generate (
-          KeepAttribute(
+          /*KeepAttribute*/(
             //myFindFirstUp._1
             //fwd.myFindFirst_0(ydx)(zdx)(extIdxUp)
             tempMyFindFirstUp_0
@@ -1108,7 +1108,7 @@ case class PipeMemRmwDoFwdArea[
         val myFwdCondSaved = (
           firstFwd
         ) generate (
-          KeepAttribute(
+          /*KeepAttribute*/(
             //myFindFirstSaved._1
             //fwd.myFindFirst_0(ydx)(zdx)(extIdxSaved)
             tempMyFindFirstSaved_0
@@ -1118,7 +1118,7 @@ case class PipeMemRmwDoFwdArea[
         val myFwdDataUp = (
           firstFwd
         ) generate (
-          KeepAttribute(
+          /*KeepAttribute*/(
             fwd.myUpExtDel2(
               //myFindFirstUp._2
               //fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
@@ -1132,7 +1132,7 @@ case class PipeMemRmwDoFwdArea[
         val myFwdDataSaved = (
           firstFwd
         ) generate (
-          KeepAttribute(
+          /*KeepAttribute*/(
             fwd.myUpExtDel2(
               //myFindFirstSaved._2
               //fwd.myFindFirst_1(ydx)(zdx)(extIdxSaved)
@@ -2198,7 +2198,7 @@ extends Area {
   //  //myHaveFwd
   //) generate 
     (
-      KeepAttribute(
+      /*KeepAttribute*/(
         mkFwd()
         //myUpExtDel(0)(0)(0).fwd
       )
@@ -2389,7 +2389,7 @@ extends Area {
       //val dbgRdMemWord = (debug) generate (
       //  Payload(wordType())
       //)
-      val myUpExtDel = KeepAttribute(
+      val myUpExtDel = /*KeepAttribute*/(
         Vec.fill(
           PipeMemRmw.numPostFrontStages
           //PipeMemRmw.numPostFrontPreWriteStages
@@ -2442,7 +2442,7 @@ extends Area {
       //  )
       //)
       val myUpExtDel2 = (
-        KeepAttribute(
+        /*KeepAttribute*/(
           //if (myHaveFormalFwd) (
             myFwd.myUpExtDel2
           //) else (
@@ -2500,7 +2500,7 @@ extends Area {
           }
         }
       }
-      val myUpExtDelFullFindFirstVecNotPostDelay = KeepAttribute(
+      val myUpExtDelFullFindFirstVecNotPostDelay = /*KeepAttribute*/(
         Vec.fill(memArrSize)(
           Vec.fill(modRdPortCnt)(
             Vec.fill(extIdxLim)(
@@ -2808,7 +2808,7 @@ extends Area {
       //)
       //println(myUpExtDelFull.size)
       //--------
-      val myUpExtDel2FindFirstVec = KeepAttribute(
+      val myUpExtDel2FindFirstVec = /*KeepAttribute*/(
         myFwd.myUpExtDel2FindFirstVec
         //Vec.fill(memArrSize)(
         //  Vec.fill(modRdPortCnt)(
@@ -2842,7 +2842,7 @@ extends Area {
         //)
       )
       //--------
-      //val tempMyUpExtDelFrontFindFirstVec = KeepAttribute(
+      //val tempMyUpExtDelFrontFindFirstVec = /*KeepAttribute*/(
       //  Vec.fill(modRdPortCnt)(
       //    Vec.fill(1)(
       //      //Vec.fill(extIdxLim)(
@@ -2855,26 +2855,26 @@ extends Area {
     }
     val back = new Area {
       //val dbgDoClear = (optEnableClear) generate (
-      //  KeepAttribute(Bool())
+      //  /*KeepAttribute*/(Bool())
       //)
       val dbgDoWrite = /*(debug) generate*/ (
-        KeepAttribute(
+        /*KeepAttribute*/(
           Vec.fill(memArrSize)(
             Bool()
           )
         )
       )
-      val myWriteAddr = KeepAttribute(
+      val myWriteAddr = /*KeepAttribute*/(
         Vec.fill(memArrSize)(
           cloneOf(front.myUpExtDel(0)(0)(0).memAddr(PipeMemRmw.modWrIdx))
         )
       )
-      val myWriteData = KeepAttribute(
+      val myWriteData = /*KeepAttribute*/(
         Vec.fill(memArrSize)(
           cloneOf(front.myUpExtDel(0)(0)(0).modMemWord)
         )
       )
-      val myWriteEnable = KeepAttribute(
+      val myWriteEnable = /*KeepAttribute*/(
         Vec.fill(memArrSize)(
           Bool()
         )
@@ -2986,7 +2986,7 @@ extends Area {
       //    node(pipePayload) := payload 
       //  }
       //)
-      val rTempWord = /*(debug) generate*/ KeepAttribute(
+      val rTempWord = /*(debug) generate*/ /*KeepAttribute*/(
         Vec.fill(memArrSize)(
           Reg(
             dataType=wordType()
@@ -3038,7 +3038,7 @@ extends Area {
     //  cloneOf(upExt(1)(0).memAddr)
     //)
     //upExt(1) := upExt(0)
-    val tempCond = KeepAttribute(Bool())
+    val tempCond = /*KeepAttribute*/(Bool())
     for (ydx <- 0 until memArrSize) {
       for (extIdx <- 0 until extIdxLim) {
         upExt(1)(ydx)(extIdx) := (
@@ -3080,13 +3080,13 @@ extends Area {
       //optEnableModDuplicate
       optModHazardKind == PipeMemRmw.ModHazardKind.Dupl
     ) generate (
-      KeepAttribute(cloneOf(upExt(1)(0)(0).hazardId))
+      /*KeepAttribute*/(cloneOf(upExt(1)(0)(0).hazardId))
     )
     val rHazardId = (
       //optEnableModDuplicate
       optModHazardKind == PipeMemRmw.ModHazardKind.Dupl
     ) generate (
-      KeepAttribute(
+      /*KeepAttribute*/(
         RegNext(
           next=nextHazardId
         )
@@ -3131,19 +3131,19 @@ extends Area {
       //optEnableModDuplicate
       optModHazardKind == PipeMemRmw.ModHazardKind.Dupl
     ) generate (
-      KeepAttribute(State())
+      /*KeepAttribute*/(State())
     )
     val rState = (
       //optEnableModDuplicate
       optModHazardKind == PipeMemRmw.ModHazardKind.Dupl
     ) generate (
-      KeepAttribute(RegNext(nextState) init(State.IDLE))
+      /*KeepAttribute*/(RegNext(nextState) init(State.IDLE))
     )
     val rPrevStateWhen = (
       //optEnableModDuplicate
       optModHazardKind == PipeMemRmw.ModHazardKind.Dupl
     ) generate (
-      KeepAttribute(
+      /*KeepAttribute*/(
         RegNextWhen(
           next=rState,
           cond=down.isFiring
@@ -3154,12 +3154,12 @@ extends Area {
     val nextDidChangeState = (
       optModHazardKind == PipeMemRmw.ModHazardKind.Dupl
     ) generate (
-      KeepAttribute(Bool())
+      /*KeepAttribute*/(Bool())
     )
     val rDidChangeState = (
       optModHazardKind == PipeMemRmw.ModHazardKind.Dupl
     ) generate (
-      KeepAttribute(
+      /*KeepAttribute*/(
         RegNext(
           next=nextDidChangeState,
           init=True,
@@ -3294,7 +3294,7 @@ extends Area {
             for (ydx <- 0 until memArrSize) {
               upExt(1)(ydx)(extIdxSingle).hazardId := nextHazardId
               for (zdx <- 0 until modRdPortCnt) {
-                val myUpCmp = KeepAttribute(
+                val myUpCmp = /*KeepAttribute*/(
                   tempMyUpExtDelFindFirstNotPostDelay(ydx)(extIdxUp)(
                     zdx
                   )._1
@@ -3316,7 +3316,7 @@ extends Area {
                   )
                 )
                   .setName(s"${pipeName}_Dupl_myUpCmp_${ydx}_${zdx}")
-                val mySavedCmp = KeepAttribute(
+                val mySavedCmp = /*KeepAttribute*/(
                   tempMyUpExtDelFindFirstNotPostDelay(ydx)(extIdxSaved)(
                     zdx
                   )._1
@@ -3452,7 +3452,7 @@ extends Area {
     //  Reg(Bool())
     //  init(False)
     //)
-    val tempSharedEnable = KeepAttribute(
+    val tempSharedEnable = /*KeepAttribute*/(
       //down.isReady
       down.isFiring
     )
@@ -3581,7 +3581,7 @@ extends Area {
           upExt(1)(ydx)(extIdxUp).memAddrFwdCmp
         )
         val myHistMemAddr = (
-          KeepAttribute(
+          /*KeepAttribute*/(
             History[UInt](
               that=upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx),
               length=mod.front.myUpExtDel2.size /*- 1*/,
@@ -3636,27 +3636,27 @@ extends Area {
   val cMid0Front = mod.front.cMid0Front
   val cMid0FrontArea = new cMid0Front.Area {
     //--------
-    val dbgUpIsValid = KeepAttribute(
+    val dbgUpIsValid = /*KeepAttribute*/(
       cMid0Front.up.isValid
     )
       .setName(s"${pipeName}_cMid0FrontArea_dbgUpIsValid")
-    val dbgUpIsReady = KeepAttribute(
+    val dbgUpIsReady = /*KeepAttribute*/(
       cMid0Front.up.isReady
     )
       .setName(s"${pipeName}_cMid0FrontArea_dbgUpIsReady")
-    val dbgUpIsFiring = KeepAttribute(
+    val dbgUpIsFiring = /*KeepAttribute*/(
       cMid0Front.up.isFiring
     )
       .setName(s"${pipeName}_cMid0FrontArea_dbgUpIsFiring")
-    val dbgDownIsValid = KeepAttribute(
+    val dbgDownIsValid = /*KeepAttribute*/(
       cMid0Front.down.isValid
     )
       .setName(s"${pipeName}_cMid0FrontArea_dbgDownIsValid")
-    val dbgDownIsReady = KeepAttribute(
+    val dbgDownIsReady = /*KeepAttribute*/(
       cMid0Front.down.isReady
     )
       .setName(s"${pipeName}_cMid0FrontArea_dbgDownIsReady")
-    val dbgDownIsFiring = KeepAttribute(
+    val dbgDownIsFiring = /*KeepAttribute*/(
       cMid0Front.down.isFiring
     )
       .setName(s"${pipeName}_cMid0FrontArea_dbgDownIsFiring")
@@ -3699,7 +3699,7 @@ extends Area {
     }
     val nextPrevTxnWasHazardVec = (
       //(PipeMemRmwSimDut.doAddrOneHaltIt) generate (
-        KeepAttribute(
+        /*KeepAttribute*/(
           Vec.fill(memArrSize)(
             Bool()
           )
@@ -3709,7 +3709,7 @@ extends Area {
     )
     val rPrevTxnWasHazardVec = (
       //(PipeMemRmwSimDut.doAddrOneHaltIt) generate (
-        KeepAttribute(
+        /*KeepAttribute*/(
           RegNextWhen/*RegNext*/(
             next=nextPrevTxnWasHazardVec,
             cond=up.isFiring,
@@ -3721,13 +3721,13 @@ extends Area {
       //)
     )
     val nextPrevTxnWasHazardAny = (
-      KeepAttribute(
+      /*KeepAttribute*/(
         Bool()
       )
       .setName(s"${pipeName}_nextPrevTxnWasHazardAny")
     )
     val rPrevTxnWasHazardAny = (
-      KeepAttribute(
+      /*KeepAttribute*/(
         //Reg(Bool()) init(False)
         RegNextWhen/*RegNext*/(
           next=nextPrevTxnWasHazardAny,
@@ -3842,7 +3842,7 @@ extends Area {
       dataType=Bool(),
       init=False,
     )
-    val tempMyUpExtDelFrontFindFirstV2d = KeepAttribute(
+    val tempMyUpExtDelFrontFindFirstV2d = /*KeepAttribute*/(
       Vec.fill(modRdPortCnt)(
         Vec.fill(1)(
           //Vec.fill(extIdxLim)(
@@ -4100,7 +4100,7 @@ extends Area {
     //val myFindFirst_0 = (
     //  myHaveFwd
     //) generate (
-    //  KeepAttribute(
+    //  /*KeepAttribute*/(
     //    Vec.fill(memArrSize)(
     //      Vec.fill(modRdPortCnt)(
     //        Vec.fill(extIdxLim)(
@@ -4114,7 +4114,7 @@ extends Area {
     //val myFindFirst_1 = (
     //  myHaveFwd
     //) generate (
-    //  KeepAttribute(
+    //  /*KeepAttribute*/(
     //    Vec.fill(memArrSize)(
     //      Vec.fill(modRdPortCnt)(
     //        Vec.fill(extIdxLim)(
@@ -4165,7 +4165,7 @@ extends Area {
       )
     )
     val doFormalFwdSavedMyFwd = (myHaveFormalFwd) generate (
-      KeepAttribute(
+      /*KeepAttribute*/(
         RegNextWhen(
           next=myFwd,
           cond=up.isFiring,
@@ -4327,7 +4327,7 @@ extends Area {
     //if (myHaveFwd) {
     //  //for (ydx <- 0 until memArrSize) {
     //  //  for (zdx <- 0 until modRdPortCnt) {
-    //  //    val myFindFirstUp = KeepAttribute(
+    //  //    val myFindFirstUp = /*KeepAttribute*/(
     //  //      (optModHazardKind == PipeMemRmw.ModHazardKind.Fwd) generate (
     //  //        mod.front.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxUp)
     //  //        .sFindFirst(
@@ -4336,7 +4336,7 @@ extends Area {
     //  //      )
     //  //      .setName(s"${pipeName}_myFindFirstUp_${ydx}_${zdx}")
     //  //    )
-    //  //    val myFindFirstSaved = KeepAttribute(
+    //  //    val myFindFirstSaved = /*KeepAttribute*/(
     //  //      (optModHazardKind == PipeMemRmw.ModHazardKind.Fwd) generate (
     //  //        mod.front.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxSaved)
     //  //        .sFindFirst(
@@ -4358,19 +4358,19 @@ extends Area {
     //  //      myFindFirstSaved._2
     //  //    )
     //  //    val myFwdCondUp = (
-    //  //      KeepAttribute(
+    //  //      /*KeepAttribute*/(
     //  //        myFindFirstUp._1
     //  //      )
     //  //      .setName(s"${pipeName}_myFwdCondUp_${ydx}_${zdx}")
     //  //    )
     //  //    val myFwdCondSaved = (
-    //  //      KeepAttribute(
+    //  //      /*KeepAttribute*/(
     //  //        myFindFirstSaved._1
     //  //      )
     //  //      .setName(s"${pipeName}_myFwdCondDown_${ydx}_${zdx}")
     //  //    )
     //  //    val myFwdDataUp = (
-    //  //      KeepAttribute(
+    //  //      /*KeepAttribute*/(
     //  //        mod.front.myUpExtDel2(myFindFirstUp._2)(ydx)(
     //  //          extIdxUp
     //  //        ).modMemWord
@@ -4378,7 +4378,7 @@ extends Area {
     //  //      .setName(s"${pipeName}_myFwdDataUp_${ydx}_${zdx}")
     //  //    )
     //  //    val myFwdDataSaved = (
-    //  //      KeepAttribute(
+    //  //      /*KeepAttribute*/(
     //  //        mod.front.myUpExtDel2(myFindFirstSaved._2)(ydx)(
     //  //          extIdxSaved
     //  //        ).modMemWord
@@ -4432,7 +4432,7 @@ extends Area {
     //  //}
     //}
     //--------
-    val myDbgUpIsValid = KeepAttribute(
+    val myDbgUpIsValid = /*KeepAttribute*/(
       up.isValid
     )
       .setName(s"${pipeName}_cMid0FrontArea_myDbgUpIsValid")
@@ -4512,7 +4512,7 @@ extends Area {
   }
   //val cMid1Front = mod.front.cMid1Front
   //val cMid1FrontArea = new cMid1Front.Area {
-  //  val upExt = KeepAttribute(
+  //  val upExt = /*KeepAttribute*/(
   //    /*Vec.fill(2)*/(mkExt())
   //    .setName("cMid1FrontArea_upExt")
   //  )
@@ -4530,7 +4530,7 @@ extends Area {
   //}
   //val cMid2Front = mod.front.cMid2Front
   //val cMid2FrontArea = new cMid2Front.Area {
-  //  val upExt = KeepAttribute(
+  //  val upExt = /*KeepAttribute*/(
   //    /*Vec.fill(2)*/(mkExt())
   //    .setName("cMid2FrontArea_upExt")
   //  )
