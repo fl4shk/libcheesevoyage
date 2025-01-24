@@ -3517,7 +3517,7 @@ extends Area {
                 //down.isReady
               ),
             )
-            when (tempSharedEnable) {
+            //when (tempSharedEnable) {
               //myNonFwdRdMemWord(ydx)(zdx) := modMem(ydx)(zdx).readAsync(
               //  address=(
               //    //upExtRealMemAddr(zdx)
@@ -3535,9 +3535,14 @@ extends Area {
               //  //),
               //)
               when (
-                upExt(1)(ydx)(extIdxUp).memAddr(zdx)
-                === mod.back.myWriteAddr(ydx)
-                && mod.back.myWriteEnable(ydx)
+                (
+                  RegNext(
+                    upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+                    === mod.back.myWriteAddr(ydx)
+                  )
+                ) && (
+                  RegNext(mod.back.myWriteEnable(ydx))
+                )
                 //&& tempSharedEnable
                 //&& down.isReady
               ) {
@@ -3547,7 +3552,7 @@ extends Area {
                   init=mod.back.myWriteData(ydx).getZero
                 )
               }
-            }
+            //}
           }
         }
       }
