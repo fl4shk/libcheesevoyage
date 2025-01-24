@@ -244,12 +244,12 @@ case class LcvStallHostSaved[
 ) extends Area {
   //--------
   val nextSavedFire = (
-    KeepAttribute(
+    /*KeepAttribute*/(
       Bool()
     )
   )
   val rSavedFire = (
-    KeepAttribute(
+    /*KeepAttribute*/(
       RegNext(
         next=nextSavedFire,
         init=nextSavedFire.getZero,
@@ -259,12 +259,12 @@ case class LcvStallHostSaved[
   nextSavedFire := rSavedFire
   //--------
   val nextHadDownFire = (
-    KeepAttribute (
+    /*KeepAttribute*/ (
       Bool()
     )
   )
   val rHadDownFire = (
-    KeepAttribute (
+    /*KeepAttribute*/ (
       RegNext(
         next=nextHadDownFire,
         init=nextHadDownFire.getZero,
@@ -274,7 +274,7 @@ case class LcvStallHostSaved[
   nextHadDownFire := rHadDownFire
   //--------
   val myDuplicateIt = (
-    KeepAttribute(
+    /*KeepAttribute*/(
       // We should only call `someLink.duplicateIt()` until the first cycle 
       // that we haven't seen `stallIo.fire` and `someLink.down.isFiring` 
       // since seeing
