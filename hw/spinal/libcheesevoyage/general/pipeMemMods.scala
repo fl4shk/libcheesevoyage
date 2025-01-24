@@ -4562,7 +4562,7 @@ extends Area {
         mkExt(
           //myVivadoDebug=true
         )
-      ).setName(s"${pipeName}_cBackFWdArea_upExt")
+      ).setName(s"${pipeName}_cBackFwdArea_upExt")
       //--------
       val tempUpMod = Vec.fill(3)(
         //Vec.fill(extIdxLim)(
@@ -4570,7 +4570,7 @@ extends Area {
           modType()
         //)
         //)
-      ).setName(s"${pipeName}_cBackArea_tempUpMod")
+      ).setName(s"${pipeName}_cBackFwdArea_tempUpMod")
       //--------
       for (ydx <- 0 until memArrSize) {
         for (extIdx <- 0 until extIdxLim) {
