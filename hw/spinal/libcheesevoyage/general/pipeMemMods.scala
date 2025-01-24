@@ -1415,6 +1415,11 @@ case class PipeMemRmwIo[
     modType()
   )
   val modBack = Node()
+  val modBackFwd = (
+    optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
+  ) generate (
+    Node()
+  )
   //val modBackPrePayloadArr = Array.fill(memArrSize)(Payload(modType()))
   //for (idx <- 0 until memArrSize) {
   //  modBackPrePayloadArr(idx)
@@ -2905,6 +2910,18 @@ extends Area {
           //)
         )
       )
+      val cBackFwd = (
+        optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
+      ) generate (
+        CtrlLink(
+          up=io.modBackFwd,
+          down=Node()
+        )
+      )
+      if (optModHazardKind == PipeMemRmw.ModHazardKind.Fwd) {
+        myLinkArr += cBackFwd
+        cBackFwd.down.ready := True
+      }
 
       val dIoModBack = DirectLink(
         up=io.modBack,
@@ -4523,6 +4540,119 @@ extends Area {
   //    myUpExtDel(2) := upExt
   //  }
   //}
+  val cBackFwdArea = (
+    optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
+  ) generate (
+    new mod.back.cBackFwd.Area {
+      val upFwd = Vec.fill(
+        //2
+        extIdxLim
+        //1
+      )(
+        mkFwd(
+          //myVivadoDebug=true
+        )
+      ).setName(s"${pipeName}_cBackFwdArea_upFwd")
+      //--------
+      val upExt = Vec.fill(
+        2
+        //1
+      )(
+        mkExt(
+          //myVivadoDebug=true
+        )
+      ).setName(s"${pipeName}_cBackFWdArea_upExt")
+      //--------
+      val tempUpMod = Vec.fill(3)(
+        //Vec.fill(extIdxLim)(
+        //Vec.fill(memArrSize)(
+          modType()
+        //)
+        //)
+      ).setName(s"${pipeName}_cBackArea_tempUpMod")
+      //--------
+      for (ydx <- 0 until memArrSize) {
+        for (extIdx <- 0 until extIdxLim) {
+          //--------
+          upExt(1)(ydx)(extIdx) := (
+            RegNext(
+              next=upExt(1)(ydx)(extIdx),
+              init=upExt(1)(ydx)(extIdx).getZero,
+            )
+          )
+          upExt(1)(ydx)(extIdx).allowOverride
+          //--------
+          //--------
+        }
+        if (ydx == 0) {
+          upFwd(extIdxUp) := (
+            RegNext(
+              next=upFwd(extIdxUp),
+              init=upFwd(extIdxUp).getZero,
+            )
+          )
+          upFwd(extIdxUp).allowOverride
+          upFwd(extIdxSaved) := (
+            RegNextWhen(
+              next=upFwd(extIdxUp),
+              cond=up.isFiring,
+              init=upFwd(extIdxSaved).getZero,
+            )
+          )
+        }
+        when (
+          up.isValid
+          //up.isFiring
+        ) {
+          upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
+        }
+        if (ydx == 0) {
+          if (myHaveFormalFwd) {
+            tempUpMod(0).formalGetPipeMemRmwFwd(
+              outpFwd=upFwd(extIdxUp),
+              memArrIdx=memArrIdx,
+            )
+          }
+        }
+        //--------
+        upExt(1)(ydx)(extIdxSaved) := (
+          RegNextWhen(
+            next=upExt(1)(ydx)(extIdxUp),
+            cond=up.isFiring,
+            init=upExt(1)(ydx)(extIdxSaved).getZero,
+          )
+        )
+        upExt(1)(ydx)(extIdxUp).valid := up.isValid
+        upExt(1)(ydx)(extIdxUp).ready := up.isReady
+        upExt(1)(ydx)(extIdxUp).fire := up.isFiring
+        when (
+          !upExt(1)(ydx)(extIdxUp).modMemWordValid
+        ) {
+          upExt(1)(ydx)(extIdxUp).valid := False
+        }
+      }
+      //--------
+      def tempMyUpExtDelPenLast = (
+        myUpExtDel(
+          myUpExtDel.size
+          - (
+            if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
+              2
+            ) else (
+              2//1
+            )
+          )
+        )
+        //myUpExtDel(myUpExtDel.size - 2)
+        //myUpExtDel.last
+      )
+      if (
+        optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
+      ) {
+        tempMyUpExtDelPenLast := upExt(1)
+      }
+    }
+  )
   val cBack = mod.back.cBack
   val cBackArea = new cBack.Area {
     //haltWhen(
@@ -4720,7 +4850,7 @@ extends Area {
       //myUpExtDel.last
     )
     if (
-      true
+      optModHazardKind != PipeMemRmw.ModHazardKind.Fwd
     ) {
       tempMyUpExtDelPenLast := upExt(1)
     }
