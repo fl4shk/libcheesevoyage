@@ -3517,7 +3517,7 @@ extends Area {
                 //down.isReady
               ),
             )
-            //when (tempSharedEnable) {
+            when (RegNext(next=tempSharedEnable, init=False)) {
               //myNonFwdRdMemWord(ydx)(zdx) := modMem(ydx)(zdx).readAsync(
               //  address=(
               //    //upExtRealMemAddr(zdx)
@@ -3552,7 +3552,7 @@ extends Area {
                   init=mod.back.myWriteData(ydx).getZero
                 )
               }
-            //}
+            }
           }
         }
       }
