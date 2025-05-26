@@ -434,6 +434,7 @@ case class LcvStallSdramCtrl(
       rCmd := SdramCmd.Write
       rDqTriState.writeEnable := True
       rDqTriState.write := rSavedH2d.data(31 downto 16)
+      rIdleCnt := 2
 
       io.lcvStall.ready := True
     }
