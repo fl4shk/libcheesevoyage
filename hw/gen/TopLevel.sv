@@ -1,103 +1,255 @@
-// Generator : SpinalHDL dev    git head : e7a32ed060dbfabadca7a827d45277b2ff5e2dca
+// Generator : SpinalHDL v1.10.2a    git head : a348a60b7e8b6a455c72e1536ec3d74a2ea16935
 // Component : TopLevel
-// Git hash  : 95bb5dce5312c656b29e60cc48fe159315e3c5c7
+// Git hash  : e944dd9459c9a01bc219bd2ac237965291fa000e
 
 `timescale 1ns/1ps
 
-typedef struct {
-
-  logic  [7:0]    myData ;
-
-} TestStreamPayloadInner;
-
-typedef struct {
-
-  TestStreamPayloadInner inpData_0[2];
-  TestStreamPayloadInner inpData_1[2];
-  TestStreamPayloadInner inpData_2[2];
-  TestStreamPayloadInner outpData_0[2];
-  TestStreamPayloadInner outpData_1[2];
-  TestStreamPayloadInner outpData_2[2];
-
-} TestStreamPayloadInner_1;
-
-interface TopLevelIo () ;
-
-  logic           push_valid ;
-  logic           push_ready ;
-  TestStreamPayloadInner_1 push_payload_0;
-  TestStreamPayloadInner_1 push_payload_1;
-  logic           pop_valid ;
-  logic           pop_ready ;
-  TestStreamPayloadInner_1 pop_payload_0;
-  TestStreamPayloadInner_1 pop_payload_1;
-
-  modport slv (
-    output          push_valid,
-    input           push_ready,
-    output          push_payload_0,
-    output          push_payload_1,
-    input           pop_valid,
-    output          pop_ready,
-    input           pop_payload_0,
-    input           pop_payload_1
-  );
-
-  modport mst (
-    input           push_valid,
-    output          push_ready,
-    input           push_payload_0,
-    input           push_payload_1,
-    output          pop_valid,
-    input           pop_ready,
-    output          pop_payload_0,
-    output          pop_payload_1
-  );
-
-endinterface
-
-
 module TopLevel (
-  TopLevelIo.mst       io
+  input  wire          io_push_valid,
+  output wire          io_push_ready,
+  input  wire [7:0]    io_push_payload_0_inpData_0_0_myData,
+  input  wire [7:0]    io_push_payload_0_inpData_0_1_myData,
+  input  wire [7:0]    io_push_payload_0_inpData_1_0_myData,
+  input  wire [7:0]    io_push_payload_0_inpData_1_1_myData,
+  input  wire [7:0]    io_push_payload_0_inpData_2_0_myData,
+  input  wire [7:0]    io_push_payload_0_inpData_2_1_myData,
+  input  wire [7:0]    io_push_payload_0_outpData_0_0_myData,
+  input  wire [7:0]    io_push_payload_0_outpData_0_1_myData,
+  input  wire [7:0]    io_push_payload_0_outpData_1_0_myData,
+  input  wire [7:0]    io_push_payload_0_outpData_1_1_myData,
+  input  wire [7:0]    io_push_payload_0_outpData_2_0_myData,
+  input  wire [7:0]    io_push_payload_0_outpData_2_1_myData,
+  input  wire [7:0]    io_push_payload_1_inpData_0_0_myData,
+  input  wire [7:0]    io_push_payload_1_inpData_0_1_myData,
+  input  wire [7:0]    io_push_payload_1_inpData_1_0_myData,
+  input  wire [7:0]    io_push_payload_1_inpData_1_1_myData,
+  input  wire [7:0]    io_push_payload_1_inpData_2_0_myData,
+  input  wire [7:0]    io_push_payload_1_inpData_2_1_myData,
+  input  wire [7:0]    io_push_payload_1_outpData_0_0_myData,
+  input  wire [7:0]    io_push_payload_1_outpData_0_1_myData,
+  input  wire [7:0]    io_push_payload_1_outpData_1_0_myData,
+  input  wire [7:0]    io_push_payload_1_outpData_1_1_myData,
+  input  wire [7:0]    io_push_payload_1_outpData_2_0_myData,
+  input  wire [7:0]    io_push_payload_1_outpData_2_1_myData,
+  output wire          io_pop_valid,
+  input  wire          io_pop_ready,
+  output wire [7:0]    io_pop_payload_0_inpData_0_0_myData,
+  output wire [7:0]    io_pop_payload_0_inpData_0_1_myData,
+  output wire [7:0]    io_pop_payload_0_inpData_1_0_myData,
+  output wire [7:0]    io_pop_payload_0_inpData_1_1_myData,
+  output wire [7:0]    io_pop_payload_0_inpData_2_0_myData,
+  output wire [7:0]    io_pop_payload_0_inpData_2_1_myData,
+  output wire [7:0]    io_pop_payload_0_outpData_0_0_myData,
+  output wire [7:0]    io_pop_payload_0_outpData_0_1_myData,
+  output wire [7:0]    io_pop_payload_0_outpData_1_0_myData,
+  output wire [7:0]    io_pop_payload_0_outpData_1_1_myData,
+  output wire [7:0]    io_pop_payload_0_outpData_2_0_myData,
+  output wire [7:0]    io_pop_payload_0_outpData_2_1_myData,
+  output wire [7:0]    io_pop_payload_1_inpData_0_0_myData,
+  output wire [7:0]    io_pop_payload_1_inpData_0_1_myData,
+  output wire [7:0]    io_pop_payload_1_inpData_1_0_myData,
+  output wire [7:0]    io_pop_payload_1_inpData_1_1_myData,
+  output wire [7:0]    io_pop_payload_1_inpData_2_0_myData,
+  output wire [7:0]    io_pop_payload_1_inpData_2_1_myData,
+  output wire [7:0]    io_pop_payload_1_outpData_0_0_myData,
+  output wire [7:0]    io_pop_payload_1_outpData_0_1_myData,
+  output wire [7:0]    io_pop_payload_1_outpData_1_0_myData,
+  output wire [7:0]    io_pop_payload_1_outpData_1_1_myData,
+  output wire [7:0]    io_pop_payload_1_outpData_2_0_myData,
+  output wire [7:0]    io_pop_payload_1_outpData_2_1_myData
 );
 
+  wire                dut_io_push_ready;
+  wire                dut_io_pop_valid;
+  wire       [7:0]    dut_io_pop_payload_0_inpData_0_0_myData;
+  wire       [7:0]    dut_io_pop_payload_0_inpData_0_1_myData;
+  wire       [7:0]    dut_io_pop_payload_0_inpData_1_0_myData;
+  wire       [7:0]    dut_io_pop_payload_0_inpData_1_1_myData;
+  wire       [7:0]    dut_io_pop_payload_0_inpData_2_0_myData;
+  wire       [7:0]    dut_io_pop_payload_0_inpData_2_1_myData;
+  wire       [7:0]    dut_io_pop_payload_0_outpData_0_0_myData;
+  wire       [7:0]    dut_io_pop_payload_0_outpData_0_1_myData;
+  wire       [7:0]    dut_io_pop_payload_0_outpData_1_0_myData;
+  wire       [7:0]    dut_io_pop_payload_0_outpData_1_1_myData;
+  wire       [7:0]    dut_io_pop_payload_0_outpData_2_0_myData;
+  wire       [7:0]    dut_io_pop_payload_0_outpData_2_1_myData;
+  wire       [7:0]    dut_io_pop_payload_1_inpData_0_0_myData;
+  wire       [7:0]    dut_io_pop_payload_1_inpData_0_1_myData;
+  wire       [7:0]    dut_io_pop_payload_1_inpData_1_0_myData;
+  wire       [7:0]    dut_io_pop_payload_1_inpData_1_1_myData;
+  wire       [7:0]    dut_io_pop_payload_1_inpData_2_0_myData;
+  wire       [7:0]    dut_io_pop_payload_1_inpData_2_1_myData;
+  wire       [7:0]    dut_io_pop_payload_1_outpData_0_0_myData;
+  wire       [7:0]    dut_io_pop_payload_1_outpData_0_1_myData;
+  wire       [7:0]    dut_io_pop_payload_1_outpData_1_0_myData;
+  wire       [7:0]    dut_io_pop_payload_1_outpData_1_1_myData;
+  wire       [7:0]    dut_io_pop_payload_1_outpData_2_0_myData;
+  wire       [7:0]    dut_io_pop_payload_1_outpData_2_1_myData;
 
   TopLevelInnards dut (
-    .io                                     (io)  //TopLevelIo.mst
+    .io_push_valid                         (io_push_valid                                ), //i
+    .io_push_ready                         (dut_io_push_ready                            ), //o
+    .io_push_payload_0_inpData_0_0_myData  (io_push_payload_0_inpData_0_0_myData[7:0]    ), //i
+    .io_push_payload_0_inpData_0_1_myData  (io_push_payload_0_inpData_0_1_myData[7:0]    ), //i
+    .io_push_payload_0_inpData_1_0_myData  (io_push_payload_0_inpData_1_0_myData[7:0]    ), //i
+    .io_push_payload_0_inpData_1_1_myData  (io_push_payload_0_inpData_1_1_myData[7:0]    ), //i
+    .io_push_payload_0_inpData_2_0_myData  (io_push_payload_0_inpData_2_0_myData[7:0]    ), //i
+    .io_push_payload_0_inpData_2_1_myData  (io_push_payload_0_inpData_2_1_myData[7:0]    ), //i
+    .io_push_payload_0_outpData_0_0_myData (io_push_payload_0_outpData_0_0_myData[7:0]   ), //i
+    .io_push_payload_0_outpData_0_1_myData (io_push_payload_0_outpData_0_1_myData[7:0]   ), //i
+    .io_push_payload_0_outpData_1_0_myData (io_push_payload_0_outpData_1_0_myData[7:0]   ), //i
+    .io_push_payload_0_outpData_1_1_myData (io_push_payload_0_outpData_1_1_myData[7:0]   ), //i
+    .io_push_payload_0_outpData_2_0_myData (io_push_payload_0_outpData_2_0_myData[7:0]   ), //i
+    .io_push_payload_0_outpData_2_1_myData (io_push_payload_0_outpData_2_1_myData[7:0]   ), //i
+    .io_push_payload_1_inpData_0_0_myData  (io_push_payload_1_inpData_0_0_myData[7:0]    ), //i
+    .io_push_payload_1_inpData_0_1_myData  (io_push_payload_1_inpData_0_1_myData[7:0]    ), //i
+    .io_push_payload_1_inpData_1_0_myData  (io_push_payload_1_inpData_1_0_myData[7:0]    ), //i
+    .io_push_payload_1_inpData_1_1_myData  (io_push_payload_1_inpData_1_1_myData[7:0]    ), //i
+    .io_push_payload_1_inpData_2_0_myData  (io_push_payload_1_inpData_2_0_myData[7:0]    ), //i
+    .io_push_payload_1_inpData_2_1_myData  (io_push_payload_1_inpData_2_1_myData[7:0]    ), //i
+    .io_push_payload_1_outpData_0_0_myData (io_push_payload_1_outpData_0_0_myData[7:0]   ), //i
+    .io_push_payload_1_outpData_0_1_myData (io_push_payload_1_outpData_0_1_myData[7:0]   ), //i
+    .io_push_payload_1_outpData_1_0_myData (io_push_payload_1_outpData_1_0_myData[7:0]   ), //i
+    .io_push_payload_1_outpData_1_1_myData (io_push_payload_1_outpData_1_1_myData[7:0]   ), //i
+    .io_push_payload_1_outpData_2_0_myData (io_push_payload_1_outpData_2_0_myData[7:0]   ), //i
+    .io_push_payload_1_outpData_2_1_myData (io_push_payload_1_outpData_2_1_myData[7:0]   ), //i
+    .io_pop_valid                          (dut_io_pop_valid                             ), //o
+    .io_pop_ready                          (io_pop_ready                                 ), //i
+    .io_pop_payload_0_inpData_0_0_myData   (dut_io_pop_payload_0_inpData_0_0_myData[7:0] ), //o
+    .io_pop_payload_0_inpData_0_1_myData   (dut_io_pop_payload_0_inpData_0_1_myData[7:0] ), //o
+    .io_pop_payload_0_inpData_1_0_myData   (dut_io_pop_payload_0_inpData_1_0_myData[7:0] ), //o
+    .io_pop_payload_0_inpData_1_1_myData   (dut_io_pop_payload_0_inpData_1_1_myData[7:0] ), //o
+    .io_pop_payload_0_inpData_2_0_myData   (dut_io_pop_payload_0_inpData_2_0_myData[7:0] ), //o
+    .io_pop_payload_0_inpData_2_1_myData   (dut_io_pop_payload_0_inpData_2_1_myData[7:0] ), //o
+    .io_pop_payload_0_outpData_0_0_myData  (dut_io_pop_payload_0_outpData_0_0_myData[7:0]), //o
+    .io_pop_payload_0_outpData_0_1_myData  (dut_io_pop_payload_0_outpData_0_1_myData[7:0]), //o
+    .io_pop_payload_0_outpData_1_0_myData  (dut_io_pop_payload_0_outpData_1_0_myData[7:0]), //o
+    .io_pop_payload_0_outpData_1_1_myData  (dut_io_pop_payload_0_outpData_1_1_myData[7:0]), //o
+    .io_pop_payload_0_outpData_2_0_myData  (dut_io_pop_payload_0_outpData_2_0_myData[7:0]), //o
+    .io_pop_payload_0_outpData_2_1_myData  (dut_io_pop_payload_0_outpData_2_1_myData[7:0]), //o
+    .io_pop_payload_1_inpData_0_0_myData   (dut_io_pop_payload_1_inpData_0_0_myData[7:0] ), //o
+    .io_pop_payload_1_inpData_0_1_myData   (dut_io_pop_payload_1_inpData_0_1_myData[7:0] ), //o
+    .io_pop_payload_1_inpData_1_0_myData   (dut_io_pop_payload_1_inpData_1_0_myData[7:0] ), //o
+    .io_pop_payload_1_inpData_1_1_myData   (dut_io_pop_payload_1_inpData_1_1_myData[7:0] ), //o
+    .io_pop_payload_1_inpData_2_0_myData   (dut_io_pop_payload_1_inpData_2_0_myData[7:0] ), //o
+    .io_pop_payload_1_inpData_2_1_myData   (dut_io_pop_payload_1_inpData_2_1_myData[7:0] ), //o
+    .io_pop_payload_1_outpData_0_0_myData  (dut_io_pop_payload_1_outpData_0_0_myData[7:0]), //o
+    .io_pop_payload_1_outpData_0_1_myData  (dut_io_pop_payload_1_outpData_0_1_myData[7:0]), //o
+    .io_pop_payload_1_outpData_1_0_myData  (dut_io_pop_payload_1_outpData_1_0_myData[7:0]), //o
+    .io_pop_payload_1_outpData_1_1_myData  (dut_io_pop_payload_1_outpData_1_1_myData[7:0]), //o
+    .io_pop_payload_1_outpData_2_0_myData  (dut_io_pop_payload_1_outpData_2_0_myData[7:0]), //o
+    .io_pop_payload_1_outpData_2_1_myData  (dut_io_pop_payload_1_outpData_2_1_myData[7:0])  //o
   );
+  assign io_push_ready = dut_io_push_ready;
+  assign io_pop_valid = dut_io_pop_valid;
+  assign io_pop_payload_0_inpData_0_0_myData = dut_io_pop_payload_0_inpData_0_0_myData;
+  assign io_pop_payload_0_inpData_0_1_myData = dut_io_pop_payload_0_inpData_0_1_myData;
+  assign io_pop_payload_0_inpData_1_0_myData = dut_io_pop_payload_0_inpData_1_0_myData;
+  assign io_pop_payload_0_inpData_1_1_myData = dut_io_pop_payload_0_inpData_1_1_myData;
+  assign io_pop_payload_0_inpData_2_0_myData = dut_io_pop_payload_0_inpData_2_0_myData;
+  assign io_pop_payload_0_inpData_2_1_myData = dut_io_pop_payload_0_inpData_2_1_myData;
+  assign io_pop_payload_0_outpData_0_0_myData = dut_io_pop_payload_0_outpData_0_0_myData;
+  assign io_pop_payload_0_outpData_0_1_myData = dut_io_pop_payload_0_outpData_0_1_myData;
+  assign io_pop_payload_0_outpData_1_0_myData = dut_io_pop_payload_0_outpData_1_0_myData;
+  assign io_pop_payload_0_outpData_1_1_myData = dut_io_pop_payload_0_outpData_1_1_myData;
+  assign io_pop_payload_0_outpData_2_0_myData = dut_io_pop_payload_0_outpData_2_0_myData;
+  assign io_pop_payload_0_outpData_2_1_myData = dut_io_pop_payload_0_outpData_2_1_myData;
+  assign io_pop_payload_1_inpData_0_0_myData = dut_io_pop_payload_1_inpData_0_0_myData;
+  assign io_pop_payload_1_inpData_0_1_myData = dut_io_pop_payload_1_inpData_0_1_myData;
+  assign io_pop_payload_1_inpData_1_0_myData = dut_io_pop_payload_1_inpData_1_0_myData;
+  assign io_pop_payload_1_inpData_1_1_myData = dut_io_pop_payload_1_inpData_1_1_myData;
+  assign io_pop_payload_1_inpData_2_0_myData = dut_io_pop_payload_1_inpData_2_0_myData;
+  assign io_pop_payload_1_inpData_2_1_myData = dut_io_pop_payload_1_inpData_2_1_myData;
+  assign io_pop_payload_1_outpData_0_0_myData = dut_io_pop_payload_1_outpData_0_0_myData;
+  assign io_pop_payload_1_outpData_0_1_myData = dut_io_pop_payload_1_outpData_0_1_myData;
+  assign io_pop_payload_1_outpData_1_0_myData = dut_io_pop_payload_1_outpData_1_0_myData;
+  assign io_pop_payload_1_outpData_1_1_myData = dut_io_pop_payload_1_outpData_1_1_myData;
+  assign io_pop_payload_1_outpData_2_0_myData = dut_io_pop_payload_1_outpData_2_0_myData;
+  assign io_pop_payload_1_outpData_2_1_myData = dut_io_pop_payload_1_outpData_2_1_myData;
 
 endmodule
 
 module TopLevelInnards (
-  TopLevelIo.mst       io
+  input  wire          io_push_valid,
+  output wire          io_push_ready,
+  input  wire [7:0]    io_push_payload_0_inpData_0_0_myData,
+  input  wire [7:0]    io_push_payload_0_inpData_0_1_myData,
+  input  wire [7:0]    io_push_payload_0_inpData_1_0_myData,
+  input  wire [7:0]    io_push_payload_0_inpData_1_1_myData,
+  input  wire [7:0]    io_push_payload_0_inpData_2_0_myData,
+  input  wire [7:0]    io_push_payload_0_inpData_2_1_myData,
+  input  wire [7:0]    io_push_payload_0_outpData_0_0_myData,
+  input  wire [7:0]    io_push_payload_0_outpData_0_1_myData,
+  input  wire [7:0]    io_push_payload_0_outpData_1_0_myData,
+  input  wire [7:0]    io_push_payload_0_outpData_1_1_myData,
+  input  wire [7:0]    io_push_payload_0_outpData_2_0_myData,
+  input  wire [7:0]    io_push_payload_0_outpData_2_1_myData,
+  input  wire [7:0]    io_push_payload_1_inpData_0_0_myData,
+  input  wire [7:0]    io_push_payload_1_inpData_0_1_myData,
+  input  wire [7:0]    io_push_payload_1_inpData_1_0_myData,
+  input  wire [7:0]    io_push_payload_1_inpData_1_1_myData,
+  input  wire [7:0]    io_push_payload_1_inpData_2_0_myData,
+  input  wire [7:0]    io_push_payload_1_inpData_2_1_myData,
+  input  wire [7:0]    io_push_payload_1_outpData_0_0_myData,
+  input  wire [7:0]    io_push_payload_1_outpData_0_1_myData,
+  input  wire [7:0]    io_push_payload_1_outpData_1_0_myData,
+  input  wire [7:0]    io_push_payload_1_outpData_1_1_myData,
+  input  wire [7:0]    io_push_payload_1_outpData_2_0_myData,
+  input  wire [7:0]    io_push_payload_1_outpData_2_1_myData,
+  output wire          io_pop_valid,
+  input  wire          io_pop_ready,
+  output wire [7:0]    io_pop_payload_0_inpData_0_0_myData,
+  output wire [7:0]    io_pop_payload_0_inpData_0_1_myData,
+  output wire [7:0]    io_pop_payload_0_inpData_1_0_myData,
+  output wire [7:0]    io_pop_payload_0_inpData_1_1_myData,
+  output wire [7:0]    io_pop_payload_0_inpData_2_0_myData,
+  output wire [7:0]    io_pop_payload_0_inpData_2_1_myData,
+  output wire [7:0]    io_pop_payload_0_outpData_0_0_myData,
+  output wire [7:0]    io_pop_payload_0_outpData_0_1_myData,
+  output wire [7:0]    io_pop_payload_0_outpData_1_0_myData,
+  output wire [7:0]    io_pop_payload_0_outpData_1_1_myData,
+  output wire [7:0]    io_pop_payload_0_outpData_2_0_myData,
+  output wire [7:0]    io_pop_payload_0_outpData_2_1_myData,
+  output wire [7:0]    io_pop_payload_1_inpData_0_0_myData,
+  output wire [7:0]    io_pop_payload_1_inpData_0_1_myData,
+  output wire [7:0]    io_pop_payload_1_inpData_1_0_myData,
+  output wire [7:0]    io_pop_payload_1_inpData_1_1_myData,
+  output wire [7:0]    io_pop_payload_1_inpData_2_0_myData,
+  output wire [7:0]    io_pop_payload_1_inpData_2_1_myData,
+  output wire [7:0]    io_pop_payload_1_outpData_0_0_myData,
+  output wire [7:0]    io_pop_payload_1_outpData_0_1_myData,
+  output wire [7:0]    io_pop_payload_1_outpData_1_0_myData,
+  output wire [7:0]    io_pop_payload_1_outpData_1_1_myData,
+  output wire [7:0]    io_pop_payload_1_outpData_2_0_myData,
+  output wire [7:0]    io_pop_payload_1_outpData_2_1_myData
 );
 
 
-  assign io.pop_valid = io.push_valid;
-  assign io.push_ready = io.pop_ready;
-  assign io.pop_payload_0.inpData_0[0].myData = io.push_payload_0.inpData_0[0].myData;
-  assign io.pop_payload_0.inpData_0[1].myData = io.push_payload_0.inpData_0[1].myData;
-  assign io.pop_payload_0.inpData_1[0].myData = io.push_payload_0.inpData_1[0].myData;
-  assign io.pop_payload_0.inpData_1[1].myData = io.push_payload_0.inpData_1[1].myData;
-  assign io.pop_payload_0.inpData_2[0].myData = io.push_payload_0.inpData_2[0].myData;
-  assign io.pop_payload_0.inpData_2[1].myData = io.push_payload_0.inpData_2[1].myData;
-  assign io.pop_payload_0.outpData_0[0].myData = io.push_payload_0.outpData_0[0].myData;
-  assign io.pop_payload_0.outpData_0[1].myData = io.push_payload_0.outpData_0[1].myData;
-  assign io.pop_payload_0.outpData_1[0].myData = io.push_payload_0.outpData_1[0].myData;
-  assign io.pop_payload_0.outpData_1[1].myData = io.push_payload_0.outpData_1[1].myData;
-  assign io.pop_payload_0.outpData_2[0].myData = io.push_payload_0.outpData_2[0].myData;
-  assign io.pop_payload_0.outpData_2[1].myData = io.push_payload_0.outpData_2[1].myData;
-  assign io.pop_payload_1.inpData_0[0].myData = io.push_payload_1.inpData_0[0].myData;
-  assign io.pop_payload_1.inpData_0[1].myData = io.push_payload_1.inpData_0[1].myData;
-  assign io.pop_payload_1.inpData_1[0].myData = io.push_payload_1.inpData_1[0].myData;
-  assign io.pop_payload_1.inpData_1[1].myData = io.push_payload_1.inpData_1[1].myData;
-  assign io.pop_payload_1.inpData_2[0].myData = io.push_payload_1.inpData_2[0].myData;
-  assign io.pop_payload_1.inpData_2[1].myData = io.push_payload_1.inpData_2[1].myData;
-  assign io.pop_payload_1.outpData_0[0].myData = io.push_payload_1.outpData_0[0].myData;
-  assign io.pop_payload_1.outpData_0[1].myData = io.push_payload_1.outpData_0[1].myData;
-  assign io.pop_payload_1.outpData_1[0].myData = io.push_payload_1.outpData_1[0].myData;
-  assign io.pop_payload_1.outpData_1[1].myData = io.push_payload_1.outpData_1[1].myData;
-  assign io.pop_payload_1.outpData_2[0].myData = io.push_payload_1.outpData_2[0].myData;
-  assign io.pop_payload_1.outpData_2[1].myData = io.push_payload_1.outpData_2[1].myData;
+  assign io_pop_valid = io_push_valid;
+  assign io_push_ready = io_pop_ready;
+  assign io_pop_payload_0_inpData_0_0_myData = io_push_payload_0_inpData_0_0_myData;
+  assign io_pop_payload_0_inpData_0_1_myData = io_push_payload_0_inpData_0_1_myData;
+  assign io_pop_payload_0_inpData_1_0_myData = io_push_payload_0_inpData_1_0_myData;
+  assign io_pop_payload_0_inpData_1_1_myData = io_push_payload_0_inpData_1_1_myData;
+  assign io_pop_payload_0_inpData_2_0_myData = io_push_payload_0_inpData_2_0_myData;
+  assign io_pop_payload_0_inpData_2_1_myData = io_push_payload_0_inpData_2_1_myData;
+  assign io_pop_payload_0_outpData_0_0_myData = io_push_payload_0_outpData_0_0_myData;
+  assign io_pop_payload_0_outpData_0_1_myData = io_push_payload_0_outpData_0_1_myData;
+  assign io_pop_payload_0_outpData_1_0_myData = io_push_payload_0_outpData_1_0_myData;
+  assign io_pop_payload_0_outpData_1_1_myData = io_push_payload_0_outpData_1_1_myData;
+  assign io_pop_payload_0_outpData_2_0_myData = io_push_payload_0_outpData_2_0_myData;
+  assign io_pop_payload_0_outpData_2_1_myData = io_push_payload_0_outpData_2_1_myData;
+  assign io_pop_payload_1_inpData_0_0_myData = io_push_payload_1_inpData_0_0_myData;
+  assign io_pop_payload_1_inpData_0_1_myData = io_push_payload_1_inpData_0_1_myData;
+  assign io_pop_payload_1_inpData_1_0_myData = io_push_payload_1_inpData_1_0_myData;
+  assign io_pop_payload_1_inpData_1_1_myData = io_push_payload_1_inpData_1_1_myData;
+  assign io_pop_payload_1_inpData_2_0_myData = io_push_payload_1_inpData_2_0_myData;
+  assign io_pop_payload_1_inpData_2_1_myData = io_push_payload_1_inpData_2_1_myData;
+  assign io_pop_payload_1_outpData_0_0_myData = io_push_payload_1_outpData_0_0_myData;
+  assign io_pop_payload_1_outpData_0_1_myData = io_push_payload_1_outpData_0_1_myData;
+  assign io_pop_payload_1_outpData_1_0_myData = io_push_payload_1_outpData_1_0_myData;
+  assign io_pop_payload_1_outpData_1_1_myData = io_push_payload_1_outpData_1_1_myData;
+  assign io_pop_payload_1_outpData_2_0_myData = io_push_payload_1_outpData_2_0_myData;
+  assign io_pop_payload_1_outpData_2_1_myData = io_push_payload_1_outpData_2_1_myData;
 
 endmodule

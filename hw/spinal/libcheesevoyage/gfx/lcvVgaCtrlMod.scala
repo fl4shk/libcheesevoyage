@@ -516,6 +516,7 @@ object LcvVgaCtrl {
     clkRate: HertzNumber,
     vgaTimingInfo: LcvVgaTimingInfo,
   ): Int = {
+    // clocks per pixel
     //return scala.math.floor(
     //  clkRate / vgaTimingInfo.pixelClk
     //).toInt

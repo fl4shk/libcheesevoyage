@@ -1022,6 +1022,9 @@ object Gpu2dInterfaceTestToVerilog extends App {
       wordCount=wordCount,
     )
     dut.io <> io
+    //val rA = Reg(UInt(2 bits)) init(0x0)
+    //val rB = Reg(UInt(3 bits)) init(0x0)
+    //(rA, rB) := B"5'h3"
   }
   Gpu2dSimDutConfig.spinal.generateSystemVerilog{
     val top = TopLevel(

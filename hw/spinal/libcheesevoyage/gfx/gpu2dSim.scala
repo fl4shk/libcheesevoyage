@@ -77,6 +77,7 @@ case class Gpu2dSimDut(
     } else if (vgaTimingInfo == LcvVgaTimingInfoMap.map("1920x1080@60")) {
       ctrlIo.timings.setAs_h1920_v1080_r60
     } else {
+      // TODO: check if this works?
       vgaTimingInfo.driveSpinalVgaTimings(
         clkRate=clkRate,
         spinalVgaTimings=ctrlIo.timings,
