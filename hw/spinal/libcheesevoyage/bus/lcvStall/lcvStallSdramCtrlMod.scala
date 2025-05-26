@@ -203,6 +203,7 @@ case class LcvStallSdramCtrlH2dPayload(
   val isWrite = Bool()
   val addr = UInt(cfg.addrWidth bits)
   val data = UInt(cfg.wordWidth bits)
+  val byteEn = UInt(((cfg.wordWidth / 8).toInt) bits)
 }
 case class LcvStallSdramCtrlD2hPayload(
   cfg: LcvStallSdramCtrlConfig,
@@ -434,6 +435,9 @@ case class LcvStallSdramCtrl(
       rCmd := SdramCmd.Write
       rDqTriState.writeEnable := True
       rDqTriState.write := rSavedH2d.data(31 downto 16)
+      rCasAddr(rCasAddr.high downto rCasAddr.high - 1) := (
+        ~rSavedH2d.byteEn(3 downto 2)
+      )
       rIdleCnt := 2
 
       io.lcvStall.ready := True
@@ -464,7 +468,8 @@ case class LcvStallSdramCtrl(
         //  rCasAddr(8 downto 0),
         //)
         rFullAddr := Cat(
-          U"2'b00",
+          //U"2'b00",
+          ~rSavedH2d.byteEn(1 downto 0),
           ~io.lcvStall.sendData.isWrite, 
           io.lcvStall.sendData.addr(25 downto 1),
         )
