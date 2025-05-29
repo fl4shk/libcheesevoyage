@@ -92,7 +92,7 @@ VC_LDFLAGS:=-LDFLAGS -lm
 VC_JOBS:=16#8#12#8#4
 TRACE:=#--trace-fst
 TRACE_THREADS:=#--trace-threads 2
-MY_THREADS:=1#16#1#4 #8
+MY_THREADS:=1#2#24#2#1#16#1#4 #8
 VC_FLAGS:=--cc -Wno-lint \
 	--threads $(MY_THREADS) \
 	--verilate-jobs $(VC_JOBS) \

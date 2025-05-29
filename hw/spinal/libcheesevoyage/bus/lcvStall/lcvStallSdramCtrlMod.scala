@@ -234,8 +234,8 @@ case class LcvStallSdramCtrlIo(
 case class LcvStallSdramCtrl(
   cfg: LcvStallSdramCtrlConfig,
 ) extends Component {
-  //assert(cfg.clkRate >= (99.2 MHz))
-  //assert(cfg.clkRate <= (100.7 MHz))
+  assert(cfg.clkRate >= (99.2 MHz))
+  assert(cfg.clkRate <= (100.7 MHz))
   //--------
   val io = LcvStallSdramCtrlIo(cfg=cfg)
 
@@ -253,6 +253,7 @@ case class LcvStallSdramCtrl(
   object State extends SpinalEnum(defaultEncoding=binarySequential) {
     val
       Startup,
+      StartRdWr,
       WaitRdWr,
       DoRdWr0,
       DoWr1,
@@ -317,8 +318,6 @@ case class LcvStallSdramCtrl(
   io.sdram.nWe := rCmd.asBits(0)
   io.sdram.cke := True
   (io.sdram.dqmh, io.sdram.dqml) := io.sdram.a(12 downto 11)
-  //io.sdram.dqmh := io.sdram.a(12)
-  //io.sdram.dqml := io.sdram.a(11)
 
   rHaveValid.head := RegNext(io.lcvStall.nextValid) init(False)
   when (RegNext(io.lcvStall.nextValid) =/= rHaveValid.head) {
@@ -329,8 +328,6 @@ case class LcvStallSdramCtrl(
   rDqTriState.writeEnable := False
   rDataReadyDelay := Cat(False, (rDataReadyDelay >> 1)).asUInt
 
-  //when (rDataReadyDelay) {
-  //}
   for (burstIdx <- 0 until cfg.burstLen) {
     when (rDataReadyDelay(cfg.burstLen - 1 - burstIdx)) {
       io.lcvStall.recvData.data(
@@ -467,9 +464,15 @@ case class LcvStallSdramCtrl(
         //)
         rFullAddr := Cat(
           //U"2'b00",
-          ~rSavedH2d.byteEn(1 downto 0),
+          Mux[UInt](
+            io.lcvStall.sendData.isWrite,
+            ~io.lcvStall.sendData.byteEn(1 downto 0),
+            U"2'b00",
+          ),
           ~io.lcvStall.sendData.isWrite, 
-          io.lcvStall.sendData.addr(25 downto 1),
+          //io.lcvStall.sendData.addr(25 downto 1),
+          io.lcvStall.sendData.addr(25 downto 2),
+          U"1'b0"
         )
         rSavedH2d := io.lcvStall.sendData
         rChip := io.lcvStall.sendData.addr(26)
@@ -511,386 +514,6 @@ case class LcvStallSdramCtrl(
   //--------
 }
 
-//case class LcvSdramWrapIo(
-//  cfg: LcvStallSdramCtrlConfig,
-//) extends Bundle {
-//  val start = in(Bool())
-//  val done = out(Bool())
-//  val isWrite = in(Bool())
-//  val ready = out(Bool())
-//    // strobe. when writing, one means that data from wdat written to 
-//    // memory
-//    //
-//    // when reading, one means that data read from memroy is on rdat
-//    // output
-//  val wdat = in(UInt(16 bits)) // input, data to be written to memory
-//  val rdat = out(UInt(16 bits)) // output, data last read from memory 
-//  val sz = in(UInt(2 bits))
-//  val chip = in(UInt(2 bits))
-//
-//  val sdram = LcvStallSdramIo(cfg=cfg)
-//}
-//
-//case class LcvSdramWrap(
-//  cfg: LcvStallSdramCtrlConfig
-//) extends Component {
-//  val io = LcvSdramWrapIo(cfg=cfg)
-//
-//  io.done.setAsReg() init(io.done.getZero)
-//  io.ready.setAsReg() init(io.ready.getZero)
-//  io.rdat.setAsReg() init(io.rdat.getZero)
-//  //io.sdram.dq.setAsReg() init(io.sdram.dq.getZero)
-//
-//  val sdramCtrl = LcvStallSdramCtrl(cfg=cfg)
-//  io.sdram <> sdramCtrl.io.sdram
-//
-//  def scLcvStall = sdramCtrl.io.lcvStall
-//  //scLcvStall.nextValid := True
-//  //scLcvStall.sendData.setAsReg() init(scLcvStall.sendData.getZero)
-//  val rSendData = {
-//    val temp = Reg(LcvStallSdramCtrlH2dPayload(cfg=cfg))
-//    temp.init(temp.getZero)
-//    temp
-//  }
-//  scLcvStall.sendData := rSendData
-//  io.ready := (
-//    RegNext(scLcvStall.nextValid, init=False)
-//    && scLcvStall.ready
-//  )
-//  when (!rSendData.addr(1)) {
-//    io.rdat := scLcvStall.recvData.data(15 downto 0)
-//  } otherwise {
-//    io.rdat := scLcvStall.recvData.data(31 downto 16)
-//  }
-//  def szUnset = U"2'b00"
-//  def sz32M = U"2'b01"
-//  def sz64M = U"2'b10"
-//  def sz128M = U"2'b11"
-//
-//  //object State extends SpinalEnum(defaultEncoding=binarySequential) {
-//  //  val
-//  //    //Startup,
-//  //    Idle,
-//  //    Running
-//  //    = newElement()
-//  //}
-//  //val rState = Reg(State()) init(State.Idle)
-//
-//  //switch (rState) {
-//  //  //is (State.Startup) {
-//  //  //}
-//  //  is (State.Idle) {
-//  //    io.done := False
-//  //  }
-//  //  is (State.Running) {
-//  //  }
-//  //}
-//  //val rDone3 = Reg(Bool()) init(False)
-//  val nextDone3 = Bool()
-//  val rDone3 = RegNext(nextDone3) init(nextDone3.getZero)
-//  nextDone3 := rDone3
-//
-//  rSendData.byteEn := U(rSendData.byteEn.getWidth bits, default -> True)
-//
-//  scLcvStall.nextValid := False
-//  when (
-//    io.start
-//    || io.done
-//  ) {
-//    io.done := False
-//    nextDone3 := False
-//    //rState := State.Idle
-//    rSendData.addr := 0x0
-//    rSendData.isWrite := io.isWrite
-//    //io.ready := False
-//  } otherwise {
-//    rSendData.isWrite := io.isWrite
-//    when (
-//      (io.chip === 0)
-//      && (io.sz === sz128M)
-//      && rSendData.addr(25 downto 2).andR
-//    ) {
-//      //scLcvStall.nextValid := False
-//      nextDone3 := True
-//    }
-//    when (
-//      (io.chip === 1)
-//      && (io.sz === sz128M)
-//      && rSendData.addr(rSendData.addr.high - 1 downto 2).andR
-//    ) {
-//      //scLcvStall.nextValid := False
-//      nextDone3 := True
-//    }
-//    when (
-//      (io.chip === 2)
-//      && (io.sz === sz128M)
-//      && rSendData.addr(rSendData.addr.high downto 2).andR
-//    ) {
-//      //scLcvStall.nextValid := False
-//      nextDone3 := True
-//      //io.done := 
-//    }
-//    when (
-//      (io.sz === sz64M)
-//      && rSendData.addr(rSendData.addr.high - 1 downto 2).andR
-//    ) {
-//      //scLcvStall.nextValid := False
-//      nextDone3 := True
-//    }
-//    when (
-//      (io.sz === sz32M)
-//      && rSendData.addr(rSendData.addr.high - 2 downto 2).andR
-//    ) {
-//      //scLcvStall.nextValid := False
-//      nextDone3 := True
-//    }
-//    when (nextDone3) {
-//      scLcvStall.nextValid := False
-//    }
-//    when (rDone3) {
-//      scLcvStall.nextValid := False
-//      io.done := True
-//    } otherwise {
-//      scLcvStall.nextValid := True
-//      when (
-//        RegNext(scLcvStall.nextValid, init=False)
-//        && scLcvStall.ready
-//      ) {
-//        rSendData.data := io.wdat.resize(rSendData.data.getWidth)
-//        val myAddrRangeLo = 2
-//        val myAddrRange = rSendData.addr.high downto myAddrRangeLo
-//        rSendData.addr(myAddrRange) := rSendData.addr(myAddrRange) + 1
-//      }
-//    }
-//  }
-//  //val rAddr = Reg(UInt(cfg.addrWidth bits)) init(0x0)
-//}
-
-//case class LcvSdramWrap(
-//  cfg: LcvStallSdramCtrlConfig,
-//) extends Component {
-//  val io = LcvSdramWrapIo(cfg=cfg)
-//
-//  io.done.setAsReg() init(io.done.getZero)
-//  io.ready.setAsReg() init(io.ready.getZero)
-//  io.rdat.setAsReg() init(io.rdat.getZero)
-//  io.sdram.dq.setAsReg() init(io.sdram.dq.getZero)
-//
-//  val sdaddr = Reg(UInt(13 bits)) init(0x0)
-//  val sdaddr2 = Reg(UInt(13 bits)) init(0x0)
-//  val ba = Reg(UInt(2 bits)) init(0x0)
-//  val ba2 = Reg(UInt(2 bits)) init(0x0)
-//  val cmd = Reg(SdramCmd()) init(SdramCmd.Nop)
-//  val cmd2 = Reg(SdramCmd()) init(SdramCmd.Nop)
-//  val cs = Reg(Bool()) init(False)
-//  val cs2 = Reg(Bool()) init(False)
-//
-//  val initstate = Reg(UInt(5 bits)) init(0x0)
-//  val init_done = Reg(Bool()) init(False)
-//
-//  val ready2 = Reg(Bool()) init(False)
-//
-//  val state = Reg(UInt(3 bits)) init(0x0)
-//  val wr = Reg(Bool()) init(False)
-//  val rd = Reg(Bool()) init(False)
-//  val wr2 = Reg(Bool()) init(False)
-//  val done2 = Reg(Bool()) init(False)
-//
-//  val cas_addr = Reg(UInt(10 bits)) init(0x0)
-//  val cas_addr2 = Reg(UInt(10 bits)) init(0x0)
-//  val addr = Reg(UInt(24 bits)) init(0x0)
-//  val addr2 = Reg(UInt(24 bits)) init(0x0)
-//  val addr3 = Reg(UInt(24 bits)) init(0x0)
-//  val rcnt = Reg(UInt(6 bits)) init(0x0)
-//  val rnw_reg = Reg(Bool()) init(False)
-//  val rfsh = Reg(UInt(2 bits)) init(0x0)
-//  val rdat2 = Reg(UInt(16 bits)) init(0x0)
-//  val rdat3 = Reg(UInt(16 bits)) init(0x0)
-//  val done3 = Reg(Bool()) init(False)
-//  val myIs = Reg(UInt(5 bits)) init(0x0)
-//  val is2 = Reg(UInt(5 bits)) init(0x0)
-//  val is3 = Reg(UInt(5 bits)) init(0x0)
-//  val st = Reg(UInt(3 bits)) init(0x0)
-//  val id = Reg(Bool()) init(False)
-//  val cas_cmd = Reg(SdramCmd()) init(SdramCmd.Nop) //Reg(UInt(3 bits)) init(0x0)
-//  val cas_cmd2 = Reg(SdramCmd()) init(SdramCmd.Nop) //Reg(UInt(3 bits)) init(0x0)
-//  val wdat_req = Reg(Bool()) init(False)
-//
-//  //when (state === 5) {
-//  //}
-//  when (state === 5) {
-//    when (
-//      //~&initstate
-//
-//    // I looked it up online, and Verilog's `~&initstate` is the same as
-//    // the below SpinalHDL code
-//      ~initstate.andR 
-//    ) {
-//      initstate := initstate + U"4'd1"
-//    } otherwise {
-//      init_done := True
-//    }
-//  }
-//
-//  ready2 := False
-//  when (wr) {
-//    switch (state) {
-//      is (3, 4, 5 ,6) {
-//        ready2 := True
-//      }
-//    }
-//  }
-//  when (rd) {
-//    switch (state) {
-//      is (2, 3, 4, 5) {
-//        ready2 := True
-//      }
-//    }
-//  }
-//
-//  st    := st + U"1'd1"
-//  state := st
-//
-//  //DRAM_DQ := 16'bZ;
-//
-//  wr := wr2
-//  wdat_req := wr2 & ready2
-//  when (wdat_req) {
-//    //DRAM_DQ := wdat
-//    io.sdram.dq := io.wdat
-//  }
-//
-//  //rdat3 := DRAM_DQ
-//  rdat3 := io.sdram.dq
-//  rdat2 := rdat3
-//  io.rdat := rdat2
-//  cmd2 := SdramCmd.Nop //CMD_NOP
-//
-//  is3 := initstate
-//  is2 := is3
-//  myIs := is2
-//  id := init_done
-//
-//  when (!id) {
-//    cs2 := myIs(4)
-//
-//    when (state === 1) {
-//      switch (myIs(3 downto 0)) {
-//        is (2) {
-//          sdaddr2(10) := True // all banks
-//          cmd2 := SdramCmd.Precharge //CMD_PRECHARGE
-//        }
-//        is (4, 7) {
-//          cmd2 := SdramCmd.AutoRefresh //CMD_AUTO_REFRESH
-//        }
-//        is (10, 13) {
-//          cmd2 := SdramCmd.LoadMode //CMD_LOAD_MODE
-//          sdaddr2 := U"13'b000_0_00_011_0_010" // WRITE BURST, LATENCY=3, BURST=4
-//        }
-//      }
-//    }
-//    wr2 := False
-//    wr := False
-//    rd := False
-//    rcnt := 0x0
-//    done2 := False
-//  } elsewhen (done2) {
-//    rd := False
-//    wr2 := False
-//    wr := False
-//    when (io.chip === U"2'h2") {
-//      addr := U"24'h800000"
-//      addr2 := U"24'h800000"
-//    } otherwise {
-//      addr := 0
-//      addr2 := 0
-//    }
-//    st := 0
-//    done3 := False
-//    when (io.start) {
-//      done2 := False
-//      rnw_reg := ~io.isWrite //True //rnw
-//    }
-//  } otherwise {
-//    switch (state) {
-//      is (0) {
-//        rcnt := rcnt + U"1'd1"
-//        when (rcnt === 50) {
-//          rcnt := 0
-//        }
-//
-//        rfsh := 0
-//        when (rcnt >= 49) {
-//          rfsh := Cat(List(U"1'b1", rcnt(0 downto 0)).reverse).asUInt
-//        }
-//        addr3 := addr
-//      }
-//
-//      // RAS
-//      is (1) {
-//        cas_cmd2 := SdramCmd.Nop //CMD_NOP
-//        wr2 := False //0
-//        when (rfsh(1)) {
-//          cmd2 := SdramCmd.AutoRefresh //CMD_AUTO_REFRESH
-//          cs2 := rfsh(0)
-//        } elsewhen (~done3) {
-//          (
-//            cs2,
-//            cas_addr2(9),
-//            cas_addr2(8 downto 2),
-//            sdaddr2,
-//            ba2,
-//            cas_addr2(1 downto 0)
-//          ) := Cat(List(addr3, U"2'b00").reverse)
-//          wr2     := ~rnw_reg
-//          //cas_cmd2:= rnw_reg ? CMD_READ : CMD_WRITE
-//          //cmd2    := CMD_ACTIVE
-//          when (rnw_reg) {
-//            cas_cmd2 := SdramCmd.Read
-//          } otherwise {
-//            cas_cmd2 := SdramCmd.Write
-//          }
-//          cmd2 := SdramCmd.Active
-//          addr2   := addr + U"1'd1"
-//        }
-//      }
-//      
-//      is (2) {
-//        addr := addr2
-//        cas_addr := cas_addr2
-//        cas_cmd := cas_cmd2
-//      }
-//      // CAS
-//      is (4) {
-//        sdaddr2 := Cat(List(U"3'b001", cas_addr).reverse).asUInt // AUTO PRECHARGE
-//        cmd2 := cas_cmd
-//      }
-//      
-//      is (7) {
-//          when (io.chip === 0 && io.sz === 3 && addr(23 downto 0).andR) {
-//            done3 := True//1
-//          }
-//          when (io.chip === 1 && io.sz === 3 && addr(22 downto 0).andR) {
-//            done3 := True //1
-//          }
-//          when (io.chip === 2 && io.sz === 3 && addr(23 downto 0).andR) {
-//            done3 := True //1
-//          }
-//          when (io.sz === 2 && addr(22 downto 0).andR) {
-//            done3 := True //1
-//          }
-//          when (io.sz <= 1 && addr(21 downto 0).andR) {
-//            done3 := True //1
-//          }
-//          rd := (cas_cmd === SdramCmd.Read /*CMD_READ*/)
-//          when (done3) {
-//            done2 := True //1
-//          }
-//        }
-//    }
-//  }
-//}
-
 object LcvStallSdramCtrlConfig {
   def spinal = SpinalConfig(
     targetDirectory="hw/gen",
@@ -911,14 +534,3 @@ object LcvStallSdramCtrlToVerilog extends App {
     top
   }
 }
-
-//object LcvSdramWrapToVerilog extends App {
-//  LcvStallSdramCtrlConfig.spinal.generateVerilog{
-//    val top = LcvSdramWrap(
-//      cfg=LcvStallSdramCtrlConfig(
-//        clkRate=(167.0 MHz)
-//      )
-//    )
-//    top
-//  }
-//}
