@@ -21,7 +21,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math._
 
 case class Gpu2dBlankingIo(
-  params: Gpu2dParams,
+  params: Gpu2dConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
 ) extends Bundle {
   //--------
@@ -32,7 +32,7 @@ case class Gpu2dBlankingIo(
   //--------
 }
 case class Gpu2dBlanking(
-  params: Gpu2dParams,
+  params: Gpu2dConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
 ) extends Component {
   //--------

@@ -259,7 +259,7 @@ object Gpu2dSimDutParams {
     y=vgaTimingInfo.fbSize2d.y / gpu2dPhysFbSize2dScale.y,
   )
   //println(gpu2dIntnlFbSize2d)
-  def gpu2dParams = DefaultGpu2dParams(
+  def gpu2dParams = DefaultGpu2dConfig(
     rgbConfig=rgbConfig,
     intnlFbSize2d=gpu2dIntnlFbSize2d,
     physFbSize2dScale=gpu2dPhysFbSize2dScale,
@@ -426,7 +426,7 @@ object Gpu2dSimDutToVerilog extends App {
       clkRate=Gpu2dSimDutParams.clkRate,
       rgbConfig=Gpu2dSimDutParams.rgbConfig,
       vgaTimingInfo=Gpu2dSimDutParams.vgaTimingInfo,
-      gpu2dParams=Gpu2dSimDutParams.gpu2dParams,
+      gpu2dCfg=Gpu2dSimDutParams.gpu2dParams,
       ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
       optRawSnesButtons=true,
       optUseLcvVgaCtrl=(
@@ -445,11 +445,11 @@ object Gpu2dToVerilog extends App {
   Gpu2dSimDutConfig.spinal.generateSystemVerilog{
     val top = new Component {
       val gpu2d = Gpu2d(
-        params=Gpu2dSimDutParams.gpu2dParams,
+        cfg=Gpu2dSimDutParams.gpu2dParams,
       )
       //gpu2d.setName("Gpu2dInnards")
       val io = Gpu2dIo(
-        params=Gpu2dSimDutParams.gpu2dParams,
+        cfg=Gpu2dSimDutParams.gpu2dParams,
         dbgPipeMemRmw=false,
       )
       //io.notSVIFthisLevel()
@@ -466,7 +466,7 @@ object Gpu2dSimDutToVhdl extends App {
     clkRate=Gpu2dSimDutParams.clkRate,
     rgbConfig=Gpu2dSimDutParams.rgbConfig,
     vgaTimingInfo=Gpu2dSimDutParams.vgaTimingInfo,
-    gpu2dParams=Gpu2dSimDutParams.gpu2dParams,
+    gpu2dCfg=Gpu2dSimDutParams.gpu2dParams,
     ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
     optRawSnesButtons=true,
     optUseLcvVgaCtrl=(

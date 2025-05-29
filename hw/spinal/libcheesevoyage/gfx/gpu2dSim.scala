@@ -22,7 +22,7 @@ case class Gpu2dSimDut(
   clkRate: HertzNumber,
   rgbConfig: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
-  gpu2dParams: Gpu2dParams,
+  gpu2dCfg: Gpu2dConfig,
   ctrlFifoDepth: Int,
   optRawSnesButtons: Boolean=false,
   optUseLcvVgaCtrl: Boolean=false,
@@ -63,7 +63,7 @@ case class Gpu2dSimDut(
   )
   val vgaCtrl = (!optUseLcvVgaCtrl) generate (
     VgaCtrl(
-      rgbConfig=gpu2dParams.rgbConfig
+      rgbConfig=gpu2dCfg.rgbConfig
     )
   )
   val lcvCtrlIo = (optUseLcvVgaCtrl) generate (lcvVgaCtrl.io)
@@ -130,17 +130,17 @@ case class Gpu2dSimDut(
   //  //false
   //)
   val gpu2d = Gpu2d(
-    params=gpu2dParams,
+    cfg=gpu2dCfg,
     inSim=true,
     dbgPipeMemRmw=dbgPipeMemRmw,
     vivadoDebug=vivadoDebug,
   )
   //val gpu2dScaleX = Gpu2dScaleX(
-  //  params=gpu2dParams,
+  //  cfg=gpu2dParams,
   //)
   val gpu2dTest = Gpu2dTest(
     clkRate=clkRate,
-    params=gpu2dParams,
+    cfg=gpu2dCfg,
     optRawSnesButtons=optRawSnesButtons,
     dbgPipeMemRmw=dbgPipeMemRmw,
   )
@@ -246,7 +246,7 @@ case class Gpu2dSimDut(
   //)
   //--------
   //val gpu2dBlanking = Gpu2dBlanking(
-  //  params=gpu2dParams,
+  //  cfg=gpu2dParams,
   //  vgaTimingInfo=vgaTimingInfo,
   //)
   //--------
@@ -487,7 +487,7 @@ object Gpu2dSim extends App {
       x=fbSize2d.x / gpu2dPhysFbSize2dScale.x,
       y=fbSize2d.y / gpu2dPhysFbSize2dScale.y,
     )
-  def gpu2dParams = DefaultGpu2dParams(
+  def gpu2dParams = DefaultGpu2dConfig(
     rgbConfig=rgbConfig,
     intnlFbSize2d=gpu2dIntnlFbSize2d,
     physFbSize2dScale=gpu2dPhysFbSize2dScale,
@@ -847,7 +847,7 @@ object Gpu2dSim extends App {
       clkRate=clkRate,
       rgbConfig=rgbConfig,
       vgaTimingInfo=vgaTimingInfo,
-      gpu2dParams=gpu2dParams,
+      gpu2dCfg=gpu2dParams,
       ctrlFifoDepth=ctrlFifoDepth,
       optRawSnesButtons=true,
       optUseLcvVgaCtrl=(

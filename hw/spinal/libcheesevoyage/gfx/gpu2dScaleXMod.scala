@@ -16,16 +16,16 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math._
 
 case class Gpu2dScaleYIo(
-  params: Gpu2dParams,
+  cfg: Gpu2dConfig,
 ) extends Bundle {
-  val push = slave(Stream(Gpu2dPopPayload(params=params)))
-  val pop = master(Stream(Gpu2dPopPayload(params=params)))
+  val push = slave(Stream(Gpu2dPopPayload(cfg=cfg)))
+  val pop = master(Stream(Gpu2dPopPayload(cfg=cfg)))
 }
 case class Gpu2dScaleX(
-  params: Gpu2dParams,
+  cfg: Gpu2dConfig,
 ) extends Component {
   //--------
-  val io = Gpu2dScaleYIo(params=params)
+  val io = Gpu2dScaleYIo(cfg=cfg)
   //--------
   //when (io.pop.fire) {
   //}
@@ -45,12 +45,12 @@ case class Gpu2dScaleX(
     )
     //def mkScaleCnt2d() = (
     //  DualTypeNumVec2(
-    //    dataTypeX=UInt(log2Up(params.physFbSize2dScaleY.x) bits),
-    //    dataTypeY=UInt(log2Up(params.physFbSize2dScaleY.x) bits),
+    //    dataTypeX=UInt(log2Up(cfg.physFbSize2dScaleY.x) bits),
+    //    dataTypeY=UInt(log2Up(cfg.physFbSize2dScaleY.x) bits),
     //  )
     //)
     def mkScaleCnt() = (
-      SInt(log2Up(params.physFbSize2dScale.x) + 2 bits)
+      SInt(log2Up(cfg.physFbSize2dScale.x) + 2 bits)
     )
     //val scaleXCnt = Payload(mkScaleCnt())
     //val scaleCnt2d = Payload(mkScaleCnt2d())
@@ -82,7 +82,7 @@ case class Gpu2dScaleX(
       val nextScaleCnt = mkScaleCnt()
       val rScaleCnt = (
         RegNext(nextScaleCnt/*, init=nextScaleCnt.getZero*/)
-        //init(params.physFbSize2d.x - 1)
+        //init(cfg.physFbSize2d.x - 1)
         init(-1)
       )
       nextScaleCnt := rScaleCnt
@@ -93,7 +93,7 @@ case class Gpu2dScaleX(
           ) {
             duplicateIt()
             nextDuplicateIt := True
-            nextScaleCnt := params.physFbSize2dScale.x - 1
+            nextScaleCnt := cfg.physFbSize2dScale.x - 1
           }
         }
       } otherwise { // when (rDuplicateIt)

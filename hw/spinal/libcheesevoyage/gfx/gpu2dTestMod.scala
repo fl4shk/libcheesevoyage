@@ -24,7 +24,7 @@ object Gpu2dTest {
   //}
   def innerTileMemInit(
     wordType: HardType[Gpu2dTileSlice],
-    //params: Gpu2dParams,
+    //cfg: Gpu2dParams,
     someNumTileSlices: Int,
     somePxsSliceWidth: Int,
     //someTileHeight: Int,
@@ -100,29 +100,29 @@ object Gpu2dTest {
     //}
   }
   def mkBgEntryMapTempFbSize2d(
-    params: Gpu2dParams,
+    cfg: Gpu2dConfig,
     someMapSize2d: ElabVec2[Int],
   ) = {
     ElabVec2[Int](
       x=min(
         //Gpu2dTestGfx.sampleBgMapSize2d.x * 16,
         someMapSize2d.x * 16,
-        params.intnlFbSize2d.x,
+        cfg.intnlFbSize2d.x,
       ),
       y=min(
         //Gpu2dTestGfx.sampleBgMapSize2d.y * 16,
         someMapSize2d.y * 16,
-        params.intnlFbSize2d.y,
+        cfg.intnlFbSize2d.y,
       ),
     )
   }
   def mkBgEntryMapArr(
-    params: Gpu2dParams,
+    cfg: Gpu2dConfig,
     someMapArr: ArrayBuffer[Short],
     someMapSize2d: ElabVec2[Int],
   ) = {
     val tempFbSize2d = mkBgEntryMapTempFbSize2d(
-      params=params,
+      cfg=cfg,
       someMapSize2d=someMapSize2d,
     )
     Mem(
@@ -132,7 +132,7 @@ object Gpu2dTest {
       ),
       wordCount=(
         //
-        params.bgSize2dInTiles.x * params.bgSize2dInTiles.y
+        cfg.bgSize2dInTiles.x * cfg.bgSize2dInTiles.y
       )
     )
       .initBigInt({
@@ -143,20 +143,20 @@ object Gpu2dTest {
         //  tempArr += BigInt(myMapArr(jdx))
         //}
         //var z: Int = 0
-        for (jdx <- 0 until params.bgSize2dInTiles.y) {
-          for (kdx <- 0 until params.bgSize2dInTiles.x) {
+        for (jdx <- 0 until cfg.bgSize2dInTiles.y) {
+          for (kdx <- 0 until cfg.bgSize2dInTiles.x) {
             if (
               jdx
               < (
-                //params.intnlFbSize2d.y / params.bgTileSize2d.y
-                //tempFbSize2d.y / params.bgTileSize2d.y
+                //cfg.intnlFbSize2d.y / cfg.bgTileSize2d.y
+                //tempFbSize2d.y / cfg.bgTileSize2d.y
                 //Gpu2dTestGfx.sampleBgMapSize2d.y
                 someMapSize2d.y
               )
               && kdx
               < (
-                //params.intnlFbSize2d.x / params.bgTileSize2d.x
-                //tempFbSize2d.x / params.bgTileSize2d.x
+                //cfg.intnlFbSize2d.x / cfg.bgTileSize2d.x
+                //tempFbSize2d.x / cfg.bgTileSize2d.x
                 //Gpu2dTestGfx.sampleBgMapSize2d.x
                 someMapSize2d.x
               )
@@ -164,9 +164,9 @@ object Gpu2dTest {
               //println(s"inner: ($kdx, $jdx)")
               if (
                 (
-                  jdx < tempFbSize2d.y / params.bgTileSize2d.y
+                  jdx < tempFbSize2d.y / cfg.bgTileSize2d.y
                 ) && (
-                  kdx < tempFbSize2d.x / params.bgTileSize2d.x
+                  kdx < tempFbSize2d.x / cfg.bgTileSize2d.x
                 )
               ) {
                 //tempArr += BigInt(someMapArr(z) & 0x3ff)
@@ -206,11 +206,11 @@ object Gpu2dTest {
       })
   }
   def bgTileMemInit(
-    params: Gpu2dParams,
+    cfg: Gpu2dConfig,
     //gridIdx: Int,
   ) = {
     def wordType() = Gpu2dTileSlice(
-      params=params,
+      cfg=cfg,
       isObj=false,
       isAffine=false,
       doPipeMemRmw=false
@@ -222,7 +222,7 @@ object Gpu2dTest {
     //val rawArrSampleFg2 = Gpu2dTestGfx.sampleFg2TileArr
     val myPxsSliceWidth = (
       Gpu2dTileSlice.pxsSliceWidth(
-        params=params,
+        cfg=cfg,
         isObj=false,
         isAffine=false,
       )
@@ -247,8 +247,8 @@ object Gpu2dTest {
       //  println(s"${tempWord} ${idx}")
       //}
       val tempNumTileSlices = (
-        //params.numBgTiles * params.bgTileSize2d.y 
-        1 << params.bgTileMemIdxWidth
+        //cfg.numBgTiles * cfg.bgTileSize2d.y 
+        1 << cfg.bgTileMemIdxWidth
       )
       //println(f"BG num tile slices: $tempNumTileSlices")
       def doInnerTileMemInit(
@@ -267,7 +267,7 @@ object Gpu2dTest {
       }
       //--------
       //val rawArrBlankBg = new ArrayBuffer[Short]()
-      //for (idx <- 0 until params.bgTileSize2d.x * params.bgTileSize2d.y) {
+      //for (idx <- 0 until cfg.bgTileSize2d.x * cfg.bgTileSize2d.y) {
       //  rawArrBlankBg += 0.toShort
       //}
       //doInnerTileMemInit(
@@ -338,23 +338,23 @@ object Gpu2dTest {
     //)
   }
   //def doSplitBgTileMemInit(
-  //  params: Gpu2dParams,
+  //  cfg: Gpu2dParams,
   //  //tempArr: ArrayBuffer[Gpu2dTileSlice],
   //  //gridIdx: Int,
   //  //isColorMath: Boolean
   //) = {
-  //  val tempArr = bgTileMemInit(params=params)
+  //  val tempArr = bgTileMemInit(cfg=cfg)
   //  val tempArrPair = Array.fill(2)(
   //    new ArrayBuffer[Gpu2dTileSlice]()
   //  )
   //  for (idx <- 0 until tempArr.size) {
   //    val tempIdx = (
-  //      //idx % params.bgTileSize2dPow.y
-  //      (idx >> params.bgTileSize2dPow.y) % 2
+  //      //idx % cfg.bgTileSize2dPow.y
+  //      (idx >> cfg.bgTileSize2dPow.y) % 2
   //    )
   //    tempArrPair(
   //      //(
-  //      //  idx % (params.bgTileMemIdxWidth)
+  //      //  idx % (cfg.bgTileMemIdxWidth)
   //      //)
   //      //% 2
   //      //tempIdx % 2
@@ -364,14 +364,14 @@ object Gpu2dTest {
   //  tempArrPair//(gridIdx)
   //}
   def bgPalMemInitBigInt(
-    params: Gpu2dParams
+    cfg: Gpu2dConfig
   ) = {
     def wordCount = (
       //Gpu2dTestGfx.palette.size >> 1
-      params.numColsInBgPal
+      cfg.numColsInBgPal
     )
     //Mem(
-    //  wordType=Rgb(params.rgbConfig),
+    //  wordType=Rgb(cfg.rgbConfig),
     //  wordCount=wordCount,
     //)
     //.initBigInt({
@@ -380,7 +380,7 @@ object Gpu2dTest {
         //idx <- 0 until (Gpu2dTestGfx.palette.size >> 1)
         idx <- 0 until wordCount
       ) {
-        def rgbConfig = params.rgbConfig
+        def rgbConfig = cfg.rgbConfig
         //val tempCol = Rgb(rgbConfig)
         val tempRawCol = (
           (Gpu2dTestGfx.bgPalette((idx << 1) + 1) << 8)
@@ -392,7 +392,7 @@ object Gpu2dTest {
         val myTempRawColG = (
           //tempRawCol >> (10 - rgbConfig.gWidth)
           //myTempRawColR >> (10 - (
-          //  5 + params.rgbConfig.gWidth
+          //  5 + cfg.rgbConfig.gWidth
           //))
           (tempRawCol >> 5) >> (5 - rgbConfig.gWidth)
         )
@@ -420,19 +420,19 @@ object Gpu2dTest {
     //})
   }
   //def somePalMemInit(
-  //  params: Gpu2dParams,
+  //  cfg: Gpu2dParams,
   //  someBigIntArr: ArrayBuffer[BigInt],
   //) = {
   //  def wordCount = (
   //    //Gpu2dTestGfx.palette.size >> 1
-  //    params.numColsInBgPal
+  //    cfg.numColsInBgPal
   //  )
-  //  //val tempBigIntArr = bgPalMemInitBigInt(params=params)
+  //  //val tempBigIntArr = bgPalMemInitBigInt(cfg=cfg)
   //  val tempArr = new ArrayBuffer[Gpu2dPalEntry]()
   //  for (idx <- 0 until someBigIntArr.size) {
-  //    val myPalEntry = Gpu2dPalEntry(params=params)
+  //    val myPalEntry = Gpu2dPalEntry(cfg=cfg)
   //    val tempBigInt = someBigIntArr(idx).toInt
-  //    val rgbConfig = params.rgbConfig
+  //    val rgbConfig = cfg.rgbConfig
   //    //myPalEntry := myPalEntry.getZero
   //    //myPalEntry.allowOverride
   //    //val tempColR = (
@@ -456,10 +456,10 @@ object Gpu2dTest {
   //  tempArr
   //}
   def objTileMemInit(
-    params: Gpu2dParams
+    cfg: Gpu2dConfig
   ) = {
     def wordType() = Gpu2dTileSlice(
-      params=params,
+      cfg=cfg,
       isObj=true,
       isAffine=false,
       doPipeMemRmw=false
@@ -471,7 +471,7 @@ object Gpu2dTest {
     //val rawArrFgGrassland = Gpu2dTestGfx.fgGrasslandTileArr
     val myPxsSliceWidth = (
       Gpu2dTileSlice.pxsSliceWidth(
-        params=params,
+        cfg=cfg,
         isObj=true,
         isAffine=false,
       )
@@ -502,30 +502,30 @@ object Gpu2dTest {
       //  )
       //}
       //innerTileMemInit(
-      //  params=params,
+      //  cfg=cfg,
       //  somePxsSliceWidth=myPxsSliceWidth,
-      //  somePalEntryMemIdxWidth=params.objPalEntryMemIdxWidth,
+      //  somePalEntryMemIdxWidth=cfg.objPalEntryMemIdxWidth,
       //  somePxsArr=rawArrFgCommon,
       //  tempArr=tempArr,
       //  isObj=true,
       //)
       val tempNumTileSlices = (
-        //params.numObjTiles
-        //* params.objTileSize2d.y 
-        //* (1 << (params.objTileSize2d.x - params.objTileWidthRshift))
-        ////* (1 << (params.objTileSize2d.x - params.objTileWidthRshift))
-        ////1 << params.objTileSliceMemIdxWidth
-        1 << params.objTileSliceMemIdxWidth
+        //cfg.numObjTiles
+        //* cfg.objTileSize2d.y 
+        //* (1 << (cfg.objTileSize2d.x - cfg.objTileWidthRshift))
+        ////* (1 << (cfg.objTileSize2d.x - cfg.objTileWidthRshift))
+        ////1 << cfg.objTileSliceMemIdxWidth
+        1 << cfg.objTileSliceMemIdxWidth
       )
       //println(tempNumTileSlices)
       innerTileMemInit(
         wordType=wordType(),
-        //params=params,
-        //someNumTiles=params.numObjTiles,
+        //cfg=cfg,
+        //someNumTiles=cfg.numObjTiles,
         someNumTileSlices=tempNumTileSlices,
         somePxsSliceWidth=myPxsSliceWidth,
-        //someTileHeight=params.objTileSize2d.y,
-        //somePalEntryMemIdxWidth=params.bgPalEntryMemIdxWidth,
+        //someTileHeight=cfg.objTileSize2d.y,
+        //somePalEntryMemIdxWidth=cfg.bgPalEntryMemIdxWidth,
         somePxsArr=(
           rawArrFgCommon
           //rawArrDbgBlankingFgCommon
@@ -550,14 +550,14 @@ object Gpu2dTest {
     //})
   }
   def objPalMemInitBigInt(
-    params: Gpu2dParams
+    cfg: Gpu2dConfig
   ) = {
     def wordCount = (
       //Gpu2dTestGfx.palette.size >> 1
-      params.numColsInObjPal
+      cfg.numColsInObjPal
     )
     //Mem(
-    //  wordType=Rgb(params.rgbConfig),
+    //  wordType=Rgb(cfg.rgbConfig),
     //  wordCount=wordCount,
     //)
     //.initBigInt({
@@ -566,7 +566,7 @@ object Gpu2dTest {
         //idx <- 0 until (Gpu2dTestGfx.palette.size >> 1)
         idx <- 0 until wordCount
       ) {
-        def rgbConfig = params.rgbConfig
+        def rgbConfig = cfg.rgbConfig
         //val tempCol = Rgb(rgbConfig)
         val tempRawCol = (
           (Gpu2dTestGfx.objPalette((idx << 1) + 1) << 8)
@@ -578,7 +578,7 @@ object Gpu2dTest {
         val myTempRawColG = (
           //tempRawCol >> (10 - rgbConfig.gWidth)
           //myTempRawColR >> (10 - (
-          //  5 + params.rgbConfig.gWidth
+          //  5 + cfg.rgbConfig.gWidth
           //))
           (tempRawCol >> 5) >> (5 - rgbConfig.gWidth)
         )
@@ -610,23 +610,23 @@ case class Gpu2dTestIo(
   //clkRate: HertzNumber,
   //vgaTimingInfo: LcvVgaTimingInfo,
   //fifoDepth: Int,
-  params: Gpu2dParams,
+  cfg: Gpu2dConfig,
   optRawSnesButtons: Boolean=false,
   dbgPipeMemRmw: Boolean=false,
 ) extends /*Bundle*/ Bundle with IMasterSlave {
   //--------
-  //val gpuIo = master(Gpu2dIo(params=params))
+  //val gpuIo = master(Gpu2dIo(cfg=cfg))
   val pop = /*master*/(Gpu2dPushInp(
-    params=params,
+    cfg=cfg,
     dbgPipeMemRmw=dbgPipeMemRmw,
   ))
   val gpu2dPopFire = /*in*/ Bool()
   //val vgaPhys = in(LcvVgaPhys(
-  //  rgbConfig=params.rgbConfig
+  //  rgbConfig=cfg.rgbConfig
   //))
   val vgaSomeVpipeS = /*in*/(LcvVgaState())
   //val vgaSomeDrawPos = in(LcvVgaCtrlMiscIo.coordT(
-  //  fbSize2d=params.intnlFbSize2d
+  //  fbSize2d=cfg.intnlFbSize2d
   //))
   //val vgaMisc = in(LcvVgaCtrlMiscIo(
   //  clkRate=clkRate,
@@ -642,7 +642,7 @@ case class Gpu2dTestIo(
   )
   //--------
   //val ctrlEn = out Bool()
-  //val pop = master Stream(Gpu2dPopPayload(params=params))
+  //val pop = master Stream(Gpu2dPopPayload(cfg=cfg))
   //--------
   override def asMaster(): Unit = mst
   //@modport
@@ -672,13 +672,13 @@ case class Gpu2dTestIo(
 }
 case class Gpu2dTest(
   clkRate: HertzNumber,
-  params: Gpu2dParams,
+  cfg: Gpu2dConfig,
   optRawSnesButtons: Boolean=false,
   dbgPipeMemRmw: Boolean=false,
 ) extends Component {
   //--------
   val io = master(Gpu2dTestIo(
-    params=params,
+    cfg=cfg,
     optRawSnesButtons=optRawSnesButtons,
     dbgPipeMemRmw=dbgPipeMemRmw,
   ))
@@ -766,7 +766,7 @@ case class Gpu2dTest(
   //      //}
   //      val tempAddr = (rPalCnt + 1)(
   //        //Gpu2dTestGfx.palette.size
-  //        //params.numColsInBgPalPow - 1 downto 0
+  //        //cfg.numColsInBgPalPow - 1 downto 0
   //        log2Up(numColsInPal) - 1 downto 0
   //      )
   //      rPalEntry.col := (
@@ -875,18 +875,18 @@ case class Gpu2dTest(
   //--------
   // BEGIN: color math stuff
   //val nextColorMathTileCnt = SInt(
-  //  //params.numColorMathTilesPow + 2 bits
-  //  params.colorMathTileMemIdxWidth + 5 bits
+  //  //cfg.numColorMathTilesPow + 2 bits
+  //  cfg.colorMathTileMemIdxWidth + 5 bits
   //)
   //val rColorMathTileCnt = RegNext(nextColorMathTileCnt) init(-1)
   //val rColorMathTilePushValid = Reg(Bool()) init(True)
   ////val tempColorMathTile = Gpu2dTileFull(
-  ////  params=params,
+  ////  cfg=cfg,
   ////  isObj=false,
   ////  isAffine=false,
   ////)
   //val tempColorMathTileSlice = Gpu2dTileSlice(
-  //  params=params,
+  //  cfg=cfg,
   //  isObj=false,
   //  isAffine=false,
   //)
@@ -900,18 +900,18 @@ case class Gpu2dTest(
   //    //tempTile=tempColorMathTile,
   //    tempTileSlice=tempColorMathTileSlice,
   //    pxCoordXStart={
-  //      //rColorMathTileCnt(params.bgTileSize2dPow.x - 1 downto 0).asUInt
-  //      def tempWidthPow = params.bgTileSize2dPow.x
+  //      //rColorMathTileCnt(cfg.bgTileSize2dPow.x - 1 downto 0).asUInt
+  //      def tempWidthPow = cfg.bgTileSize2dPow.x
   //      U(f"$tempWidthPow'd0")
   //    },
   //    pxCoordY=(
   //      rColorMathTileCnt(
-  //        params.bgTileSize2dPow.y - 1
-  //        //downto params.bgTileSize2dPow.x
+  //        cfg.bgTileSize2dPow.y - 1
+  //        //downto cfg.bgTileSize2dPow.x
   //        downto 0
   //      ).asUInt
   //    ),
-  //    palEntryMemIdxWidth=params.bgPalEntryMemIdxWidth,
+  //    palEntryMemIdxWidth=cfg.bgPalEntryMemIdxWidth,
   //    colIdx0=colIdx0,
   //    colIdx1=colIdx1,
   //    colIdx2=colIdx2,
@@ -921,14 +921,14 @@ case class Gpu2dTest(
 
   //def tempColorMathTileCnt = (
   //  rColorMathTileCnt
-  //  //>> (params.bgTileSize2dPow.y + params.bgTileSize2dPow.x)
-  //  >> params.bgTileSize2dPow.y
+  //  //>> (cfg.bgTileSize2dPow.y + cfg.bgTileSize2dPow.x)
+  //  >> cfg.bgTileSize2dPow.y
   //)
   //tempColorMathTileSlice := tempColorMathTileSlice.getZero
   //tempColorMathTileSlice.allowOverride
   //when (
-  //  //rColorMathTileCnt < params.numColorMathTiles
-  //  tempColorMathTileCnt < params.numColorMathTiles
+  //  //rColorMathTileCnt < cfg.numColorMathTiles
+  //  tempColorMathTileCnt < cfg.numColorMathTiles
   //) {
   //  when (pop.colorMathTilePush.fire) {
   //    when (tempColorMathTileCnt === 0) {
@@ -953,7 +953,7 @@ case class Gpu2dTest(
   //  //tempColorMathTileSlice := tempColorMathTileSlice.getZero
   //  nextColorMathTileCnt := rColorMathTileCnt
   //}
-  //when (tempColorMathTileCnt >= params.numColorMathTiles - 1) {
+  //when (tempColorMathTileCnt >= cfg.numColorMathTiles - 1) {
   //  rColorMathTilePushValid := False
   //}
 
@@ -972,11 +972,11 @@ case class Gpu2dTest(
   ////pop.colorMathEntryPush.payload := pop.colorMathEntryPush.payload.getZero
   //val rColorMathEntryPushValid = Reg(Bool()) init(True)
   //val tempColorMathEntry = Gpu2dBgEntry(
-  //  params=params,
+  //  cfg=cfg,
   //  isColorMath=true,
   //)
-  ////val colorMathEntryCntWidth = params.numColorMathsPow + 2
-  //val colorMathEntryCntWidth = params.bgEntryMemIdxWidth + 2
+  ////val colorMathEntryCntWidth = cfg.numColorMathsPow + 2
+  //val colorMathEntryCntWidth = cfg.bgEntryMemIdxWidth + 2
   //val nextColorMathEntryCnt = SInt(colorMathEntryCntWidth bits)
   //val rColorMathEntryCnt = RegNext(nextColorMathEntryCnt) init(-1)
   ////val rColorMathEntryPushValid = Reg(Bool()) init(True)
@@ -986,14 +986,14 @@ case class Gpu2dTest(
   ////tempColorMathEntry.dispFlip.y := False
 
   //val rColorMathEntryMemIdx = Reg(SInt(
-  //  (params.bgEntryMemIdxWidth + 1) bits
+  //  (cfg.bgEntryMemIdxWidth + 1) bits
   //))
-  //  .init((1 << params.bgEntryMemIdxWidth) - 1)
-  //when (rColorMathEntryCnt < (1 << params.bgEntryMemIdxWidth)) {
+  //  .init((1 << cfg.bgEntryMemIdxWidth) - 1)
+  //when (rColorMathEntryCnt < (1 << cfg.bgEntryMemIdxWidth)) {
   //  when (pop.colorMathEntryPush.fire) {
   //    when (
   //      //rColorMathEntryCnt < 5
-  //      rColorMathEntryCnt < params.bgSize2dInTiles.x
+  //      rColorMathEntryCnt < cfg.bgSize2dInTiles.x
   //    ) {
   //      //tempColorMathEntry.tileIdx := rColorMathEntryCnt.asUInt.resized
   //      tempColorMathEntry.tileIdx := 1
@@ -1001,7 +1001,7 @@ case class Gpu2dTest(
   //      tempColorMathEntry.dispFlip.y := False
   //    } otherwise {
   //      tempColorMathEntry := tempColorMathEntry.getZero
-  //      //when (rColorMathEntryCnt >= params.numColorMathEntrys) {
+  //      //when (rColorMathEntryCnt >= cfg.numColorMathEntrys) {
   //      //  rColorMathEntryPushValid := False
   //      //}
   //    }
@@ -1018,14 +1018,14 @@ case class Gpu2dTest(
   //  nextColorMathEntryCnt := rColorMathEntryCnt
   //}
   //when (rColorMathEntryCnt + 1
-  //  >= (1 << params.bgEntryMemIdxWidth)) {
+  //  >= (1 << cfg.bgEntryMemIdxWidth)) {
   //  rColorMathEntryPushValid := False
   //}
 
   //pop.colorMathEntryPush.valid := rColorMathEntryPushValid
   ////tempColorMathEntryPush.payload.colorMathEntry.tileMemIdx := (
   ////  rColorMathEntryMemIdx.asUInt(
-  ////    params.bgEntryMemIdxWidth - 1 downto 0
+  ////    cfg.bgEntryMemIdxWidth - 1 downto 0
   ////  )
   ////)
   //pop.colorMathEntryPush.payload.bgEntry := tempColorMathEntry
@@ -1039,18 +1039,18 @@ case class Gpu2dTest(
   //pop.colorMathAttrsPush.payload := pop.colorMathAttrsPush.payload.getZero
   //pop.colorMathAttrsPush.payload.allowOverride
   //pop.colorMathAttrsPush.payload.bgAttrs.scroll.x := (
-  //  //params.bgTileSize2d.x * 1
+  //  //cfg.bgTileSize2d.x * 1
   //  0
   //)
   //pop.colorMathAttrsPush.payload.bgAttrs.scroll.y := (
-  //  //params.bgTileSize2d.y * 1
+  //  //cfg.bgTileSize2d.y * 1
   //  0
   //)
   // END: color math stuff
   //--------
-  //def colorMathPalCntWidth = params.numColsInBgPalPow + 1
+  //def colorMathPalCntWidth = cfg.numColsInBgPalPow + 1
   //val rColorMathPalCnt = Reg(UInt(colorMathPalCntWidth bits)) init(0x0)
-  //val rColorMathPalEntry = Reg(Gpu2dPalEntry(params=params))
+  //val rColorMathPalEntry = Reg(Gpu2dPalEntry(cfg=cfg))
   //rColorMathPalEntry.init(rColorMathPalEntry.getZero)
   //val rColorMathPalEntryPushValid = Reg(Bool()) init(True)
 
@@ -1067,7 +1067,7 @@ case class Gpu2dTest(
   //otherwise {
   //}
   //palPush(
-  //  numColsInPal=params.numColsInBgPal,
+  //  numColsInPal=cfg.numColsInBgPal,
   //  rPalCnt=rColorMathPalCnt,
   //  rPalEntry=rColorMathPalEntry,
   //  rPalEntryPushValid=rColorMathPalEntryPushValid,
@@ -1080,19 +1080,19 @@ case class Gpu2dTest(
   //)
   //--------
   //val tempBgTile = Gpu2dTileFull(
-  //  params=params,
+  //  cfg=cfg,
   //  isObj=false,
   //  isAffine=false,
   //)
   val tempBgTileSlice = Gpu2dTileSlice(
-    params=params,
+    cfg=cfg,
     isObj=false,
     isAffine=false,
   )
 
   val nextBgTileCnt = SInt(
-    //params.numBgTilesPow + 2 bits
-    params.bgTileMemIdxWidth + 5 bits
+    //cfg.numBgTilesPow + 2 bits
+    cfg.bgTileMemIdxWidth + 5 bits
   )
   val rBgTileCnt = RegNext(nextBgTileCnt) init(0)
   val rBgTilePushValid = Reg(Bool()) init(True)
@@ -1114,19 +1114,19 @@ case class Gpu2dTest(
   //    //tempTile=tempColorMathTile,
   //    tempTileSlice=tempBgTileSlice,
   //    pxCoordXStart={
-  //      //rBgTileCnt(params.bgTileSize2dPow.x - 1 downto 0).asUInt
+  //      //rBgTileCnt(cfg.bgTileSize2dPow.x - 1 downto 0).asUInt
   //      //0
-  //      def tempWidthPow = params.bgTileSize2dPow.x
+  //      def tempWidthPow = cfg.bgTileSize2dPow.x
   //      U(f"$tempWidthPow'd0")
   //    },
   //    pxCoordY=(
   //      rBgTileCnt(
-  //        params.bgTileSize2dPow.y - 1
-  //        //downto params.bgTileSize2dPow.x
+  //        cfg.bgTileSize2dPow.y - 1
+  //        //downto cfg.bgTileSize2dPow.x
   //        downto 0
   //      ).asUInt
   //    ),
-  //    palEntryMemIdxWidth=params.bgPalEntryMemIdxWidth,
+  //    palEntryMemIdxWidth=cfg.bgPalEntryMemIdxWidth,
   //    colIdx0=colIdx0,
   //    colIdx1=colIdx1,
   //    colIdx2=colIdx2,
@@ -1137,11 +1137,11 @@ case class Gpu2dTest(
   //val rawArrFgCommon = Gpu2dTestGfx.fgCommonTileArr
   //val rawArrFgGrassland = Gpu2dTestGfx.fgGrasslandTileArr
   //val myBgTileMemInit = (
-  //  Gpu2dTest.bgTileMemInit(params=params)
+  //  Gpu2dTest.bgTileMemInit(cfg=cfg)
   //)
   //val bgTileMem = Mem(
   //  wordType=Gpu2dTileSlice(
-  //    params=params,
+  //    cfg=cfg,
   //    isObj=false,
   //    isAffine=false,
   //    doPipeMemRmw=false
@@ -1149,7 +1149,7 @@ case class Gpu2dTest(
   //  wordCount={
   //    //val myPxsSliceWidth = (
   //    //  Gpu2dTileSlice.pxsSliceWidth(
-  //    //    params=params,
+  //    //    cfg=cfg,
   //    //    isObj=false,
   //    //    isAffine=false,
   //    //  )
@@ -1166,7 +1166,7 @@ case class Gpu2dTest(
 
   def tempBgTileCnt = (
     rBgTileCnt
-    >> params.bgTileSize2dPow.y
+    >> cfg.bgTileSize2dPow.y
   )
   ////tempBgTileSlice := tempBgTileSlice.getZero
   tempBgTileSlice := (
@@ -1176,8 +1176,8 @@ case class Gpu2dTest(
 
   nextBgTileCnt := rBgTileCnt
   //when (
-  //  //rBgTileCnt < params.numBgTiles
-  //  tempBgTileCnt < params.numBgTiles
+  //  //rBgTileCnt < cfg.numBgTiles
+  //  tempBgTileCnt < cfg.numBgTiles
   //  //rBgTileCnt < 
   //) {
   //  when (pop.bgTilePush.fire) {
@@ -1227,11 +1227,11 @@ case class Gpu2dTest(
   //    //elsewhen (
   //    //  tempBgTileCnt
   //    //  === (
-  //    //    //params.bgSize2dInTiles.x / params.bgTileSize2d.x
-  //    //    //params.bgSize2dInPxs.x
-  //    //    params.intnlFbSize2d.x
+  //    //    //cfg.bgSize2dInTiles.x / cfg.bgTileSize2d.x
+  //    //    //cfg.bgSize2dInPxs.x
+  //    //    cfg.intnlFbSize2d.x
   //    //    / (
-  //    //      params.bgTileSize2d.x * params.bgTileSize2d.y
+  //    //      cfg.bgTileSize2d.x * cfg.bgTileSize2d.y
   //    //    )
   //    //  )
   //    //) {
@@ -1242,12 +1242,12 @@ case class Gpu2dTest(
   //    //elsewhen (
   //    //  tempBgTileCnt
   //    //  === (
-  //    //    //params.bgSize2dInTiles.x / params.bgTileSize2d.x
+  //    //    //cfg.bgSize2dInTiles.x / cfg.bgTileSize2d.x
   //    //    (
-  //    //      //params.bgSize2dInPxs.x
-  //    //      params.intnlFbSize2d.x
+  //    //      //cfg.bgSize2dInPxs.x
+  //    //      cfg.intnlFbSize2d.x
   //    //      / (
-  //    //        params.bgTileSize2d.x * params.bgTileSize2d.y
+  //    //        cfg.bgTileSize2d.x * cfg.bgTileSize2d.y
   //    //      )
   //    //    ) + 1
   //    //  )
@@ -1257,7 +1257,7 @@ case class Gpu2dTest(
   //    //  mkBgTile(2, 2)
   //    //} otherwise {
   //    //  //tempBgTileSlice := tempBgTileSlice.getZero
-  //    //  //when (rBgTileCnt >= params.numBgTiles) {
+  //    //  //when (rBgTileCnt >= cfg.numBgTiles) {
   //    //  //  rBgTilePushValid := False
   //    //  //}
   //    //}
@@ -1297,7 +1297,7 @@ case class Gpu2dTest(
   //  //nextBgTileCnt := rBgTileCnt
   //}
   when (
-    tempBgTileCnt >= params.numBgTiles - 1
+    tempBgTileCnt >= cfg.numBgTiles - 1
   ) {
     rBgTilePushValid := False
   }
@@ -1319,24 +1319,24 @@ case class Gpu2dTest(
   //// when (!rBgTileCnt.msb) {
   //  pop.bgTilePush.payload.tile := tempBgTileToPush
   //  pop.bgTilePush.payload.memIdx := (
-  //    rBgTileCnt.asUInt(params.numBgTilesPow - 1 downto 0)
+  //    rBgTileCnt.asUInt(cfg.numBgTilesPow - 1 downto 0)
   //  )
   ////} otherwise {
   ////  pop.bgTilePush.payload.tile := rBgTile
   ////  pop.bgTilePush.payload.memIdx := (
-  ////    rBgTileCnt(params.numBgTilesPow - 1 downto 0)
+  ////    rBgTileCnt(cfg.numBgTilesPow - 1 downto 0)
   ////  )
   ////}
-  ////pop.bgTilePush.payload.memIdx := params.intnlFbSize2d.x
+  ////pop.bgTilePush.payload.memIdx := cfg.intnlFbSize2d.x
   //--------
   val tempBgAttrs = Gpu2dBgAttrs(
-    params=params,
+    cfg=cfg,
     isColorMath=false,
   )
   //tempBgAttrs.colorMathInfo := tempBgAttrs.colorMathInfo.getZero
   //tempBgAttrs.fbAttrs.doIt := True
   //tempBgAttrs.fbAttrs.tileMemBaseAddr := 0
-  if (!params.noColorMath) {
+  if (!cfg.noColorMath) {
     tempBgAttrs.colorMathInfo.doIt := True
     tempBgAttrs.colorMathInfo.kind := (
       //Gpu2dColorMathKind.add
@@ -1359,34 +1359,34 @@ case class Gpu2dTest(
     x=(
       //0
       //////2
-      ////params.bgTileSize2d.x
+      ////cfg.bgTileSize2d.x
       ////+ 2
       //////+ 1
-      //params.bgTileSize2d.x * 5
+      //cfg.bgTileSize2d.x * 5
       //0
       //0
 
-      //params.bgTileSize2d.x * params.bgSize2dInTiles
-      //params.intnlFbSize2d.x - (params.bgTileSize2d.x * 3)
+      //cfg.bgTileSize2d.x * cfg.bgSize2dInTiles
+      //cfg.intnlFbSize2d.x - (cfg.bgTileSize2d.x * 3)
       //320 - 64
 
       ////0x29
       //(
       //  (1 << tempBgAttrs.scroll.x.getWidth) - 32
       //)
-      4 * params.bgTileSize2d.x
+      4 * cfg.bgTileSize2d.x
     ),
     y=(
       //2
       //0
-      //7 * params.bgTileSize2d.y
-      //2 * params.bgTileSize2d.y
-      1 * params.bgTileSize2d.y
+      //7 * cfg.bgTileSize2d.y
+      //2 * cfg.bgTileSize2d.y
+      1 * cfg.bgTileSize2d.y
       //1
     )
   )
   //tempBgAttrs.scroll.x := 3
-  //tempBgScroll.x := (-params.bgTileSize2d.x) + 1
+  //tempBgScroll.x := (-cfg.bgTileSize2d.x) + 1
   //tempBgScroll.x := 1
   //tempBgAttrs.scroll.x := tempBgScroll.x.asUInt
   //tempBgAttrs.scroll.x := 0
@@ -1432,33 +1432,33 @@ case class Gpu2dTest(
 
   val rBgEntryPushValid = Reg(Bool()) init(True)
   val tempBgEntry = Gpu2dBgEntry(
-    params=params,
+    cfg=cfg,
     isColorMath=false,
   )
-  //val bgEntryCntWidth = params.numBgsPow + 2
-  val bgEntryCntWidth = params.bgEntryMemIdxWidth + 2
+  //val bgEntryCntWidth = cfg.numBgsPow + 2
+  val bgEntryCntWidth = cfg.bgEntryMemIdxWidth + 2
   val nextBg0EntryCnt = SInt(bgEntryCntWidth bits)
   val rBg0EntryCnt = RegNext(nextBg0EntryCnt) init(-1)
   val nextBg1EntryCnt = SInt(bgEntryCntWidth bits)
   val rBg1EntryCnt = RegNext(nextBg1EntryCnt) init(-1)
   //val nextBg1EntryExtCntV2d = DualTypeNumVec2(
-  //  dataTypeX=UInt(params.bgSize2dInTilesPow.x bits),
-  //  dataTypeY=UInt(params.bgSize2dInTilesPow.y bits),
+  //  dataTypeX=UInt(cfg.bgSize2dInTilesPow.x bits),
+  //  dataTypeY=UInt(cfg.bgSize2dInTilesPow.y bits),
   //)
   //val rBg1EntryExtCntV2d = (
   //  RegNext(nextBg1EntryExtCntV2d) init(nextBg1EntryExtCntV2d.getZero)
   //)
   //val nextBg1EntryCntV2d = DualTypeNumVec2(
-  //  dataTypeX=UInt(params.bgSize2dInTilesPow.x bits),
-  //  //dataTypeY=UInt(params.bgSize2dInTilesPow.y bits),
+  //  dataTypeX=UInt(cfg.bgSize2dInTilesPow.x bits),
+  //  //dataTypeY=UInt(cfg.bgSize2dInTilesPow.y bits),
   //  //dataTypeX=UInt(16 bits),
   //  dataTypeY=UInt(16 bits),
   //)
   //  .addAttribute("keep")
   //  .setName("nextBg1EntryCntV2d")
   //val nextBg1EntryCntV2d = new Bundle {
-  //  val x = UInt(params.bgSize2dInTilesPow.x bits)
-  //  val y = UInt(params.bgSize2dInTilesPow.y bits)
+  //  val x = UInt(cfg.bgSize2dInTilesPow.x bits)
+  //  val y = UInt(cfg.bgSize2dInTilesPow.y bits)
   //}
   //  .setName("nextBg1EntryCntV2d")
   //  .addAttribute("keep")
@@ -1492,8 +1492,8 @@ case class Gpu2dTest(
   //tempBgEntry.dispFlip.x := False
   //tempBgEntry.dispFlip.y := False
 
-  val rBgEntryMemIdx = Reg(SInt((params.bgEntryMemIdxWidth + 1) bits))
-    .init((1 << params.bgEntryMemIdxWidth) - 1)
+  val rBgEntryMemIdx = Reg(SInt((cfg.bgEntryMemIdxWidth + 1) bits))
+    .init((1 << cfg.bgEntryMemIdxWidth) - 1)
 
   //for (idx <- 0 to pop.bgEntryPushVec.size - 1) {
   //  val tempBgEntryPush = pop.bgEntryPushVec(idx)
@@ -1523,13 +1523,13 @@ case class Gpu2dTest(
   //    tempBgEntryPush.payload.memIdx := 0x0
   //  }
   //}
-  //println(params.bgEntryMemIdxWidth)
+  //println(cfg.bgEntryMemIdxWidth)
   //tempBgEntry := tempBgEntry.getZero
   //nextBgEntryCnt := rBgEntryCnt
   //for (idx <- 0 until pop.bgEntryPushVec.size) {
   //  def tempBgEntryPush = pop.bgEntryPushVec(idx)
   //  if (idx == 0) {
-  //    when (rBgEntryCnt < (1 << params.bgEntryMemIdxWidth)) {
+  //    when (rBgEntryCnt < (1 << cfg.bgEntryMemIdxWidth)) {
   //      when (tempBgEntryPush.fire) {
   //        //when (rBgEntryCnt === 0) {
   //        //  //mkBgEntry(0, 1)
@@ -1554,7 +1554,7 @@ case class Gpu2dTest(
   //        //} otherwise 
   //        when (
   //          //rBgEntryCnt < 128
-  //          //rBgEntryCnt < (1 << params.bgEntryMemIdxWidth)
+  //          //rBgEntryCnt < (1 << cfg.bgEntryMemIdxWidth)
   //          if (rBgEntryCnt.getWidth > tempBgEntry.tileIdx.getWidth) (
   //            rBgEntryCnt.resized
   //            < (1 << tempBgEntry.tileIdx.getWidth)
@@ -1567,7 +1567,7 @@ case class Gpu2dTest(
   //          tempBgEntry.dispFlip.y := False
   //        } otherwise {
   //          tempBgEntry := tempBgEntry.getZero
-  //          //when (rBgEntryCnt >= params.numBgEntrys) {
+  //          //when (rBgEntryCnt >= cfg.numBgEntrys) {
   //          //  rBgEntryPushValid := False
   //          //}
   //        }
@@ -1580,7 +1580,7 @@ case class Gpu2dTest(
   //      //tempBgEntry := tempBgEntry.getZero
   //      //nextBgEntryCnt := rBgEntryCnt
   //    }
-  //    when (rBgEntryCnt + 1 >= (1 << params.bgEntryMemIdxWidth)) {
+  //    when (rBgEntryCnt + 1 >= (1 << cfg.bgEntryMemIdxWidth)) {
   //      rBgEntryPushValid := False
   //    }
 
@@ -1588,7 +1588,7 @@ case class Gpu2dTest(
   //    tempBgEntryPush.valid := rBgEntryPushValid
   //    //tempBgEntryPush.payload.bgEntry.tileMemIdx := (
   //    //  rBgEntryMemIdx.asUInt(
-  //    //    params.bgEntryMemIdxWidth - 1 downto 0
+  //    //    cfg.bgEntryMemIdxWidth - 1 downto 0
   //    //  )
   //    //)
   //    tempBgEntryPush.payload.bgEntry := tempBgEntry
@@ -1615,7 +1615,7 @@ case class Gpu2dTest(
   //    myPayload.bgEntry.tileIdx := (
   //      //3
   //      //4
-  //      if (params.bgTileSize2d.x == 8) (
+  //      if (cfg.bgTileSize2d.x == 8) (
   //        3 * 4
   //      ) else (
   //        3
@@ -1641,7 +1641,7 @@ case class Gpu2dTest(
     //if (idx == 0) {
     //  //tempBgEntryPush.valid := tempBgEntryPush.valid.getZero
     //  //tempBgEntryPush.payload := tempBgEntryPush.payload.getZero
-    //  when (rBg0EntryCnt < (1 << params.bgEntryMemIdxWidth)) {
+    //  when (rBg0EntryCnt < (1 << cfg.bgEntryMemIdxWidth)) {
     //    when (tempBgEntryPush.fire) {
     //      //when (rBgEntryCnt === 0) {
     //      //  //mkBgEntry(0, 1)
@@ -1666,7 +1666,7 @@ case class Gpu2dTest(
     //      //} otherwise 
     //      when (
     //        //rBgEntryCnt < 128
-    //        //rBgEntryCnt < (1 << params.bgEntryMemIdxWidth)
+    //        //rBgEntryCnt < (1 << cfg.bgEntryMemIdxWidth)
     //        if (rBg0EntryCnt.getWidth > tempBgEntry.tileIdx.getWidth) (
     //          rBg0EntryCnt.asUInt.resized
     //          < (1 << tempBgEntry.tileIdx.getWidth)
@@ -1679,15 +1679,15 @@ case class Gpu2dTest(
     //            val tempSize = (
     //              Gpu2dTestGfx.sampleBgTileArr.size
     //              / (
-    //                //ElabVec2.magSquared(params.bgTileSize2d)
-    //                params.bgTileSize2d.x * params.bgTileSize2d.y
+    //                //ElabVec2.magSquared(cfg.bgTileSize2d)
+    //                cfg.bgTileSize2d.x * cfg.bgTileSize2d.y
     //              )
     //            )
     //            val tempCnt = (
     //              rBg0EntryCnt.asUInt//(tempBgEntry.tileIdx.bitsRange)
     //              + {
     //                //val temp = (
-    //                //  /// params.numBgTiles
+    //                //  /// cfg.numBgTiles
     //                //)
     //                ////println(f"tileIdx addend: $temp")
     //                //temp
@@ -1719,7 +1719,7 @@ case class Gpu2dTest(
     //        //tempBgEntry := tempBgEntry.getZero
     //      } otherwise {
     //        tempBgEntry := tempBgEntry.getZero
-    //        //when (rBgEntryCnt >= params.numBgEntrys) {
+    //        //when (rBgEntryCnt >= cfg.numBgEntrys) {
     //        //  rBgEntryPushValid := False
     //        //}
     //      }
@@ -1735,7 +1735,7 @@ case class Gpu2dTest(
     //  when (
     //    rBg0EntryCnt + 1
     //    >= (
-    //      //1 << params.bgEntryMemIdxWidth
+    //      //1 << cfg.bgEntryMemIdxWidth
     //      //(Gpu2dTestGfx.fgCommonTileArr.size / (16 * 16))
     //      //+ (Gpu2dTestGfx.fgGrasslandTileArr.size / (16 * 16))
     //      myBgTileMemInit.size / (16 * 16)
@@ -1748,7 +1748,7 @@ case class Gpu2dTest(
     //  tempBgEntryPush.valid := rBgEntryPushValid
     //  //tempBgEntryPush.payload.bgEntry.tileMemIdx := (
     //  //  rBgEntryMemIdx.asUInt(
-    //  //    params.bgEntryMemIdxWidth - 1 downto 0
+    //  //    cfg.bgEntryMemIdxWidth - 1 downto 0
     //  //  )
     //  //)
     //  tempBgEntryPush.payload.bgEntry := tempBgEntry
@@ -1761,13 +1761,13 @@ case class Gpu2dTest(
       tempBgEntryPush.valid := (
         //True
         (rBg0EntryCnt + 1)
-        < (params.bgSize2dInTiles.x * params.bgSize2dInTiles.y)
+        < (cfg.bgSize2dInTiles.x * cfg.bgSize2dInTiles.y)
       )
       when (tempBgEntryPush.fire) {
         nextBg0EntryCnt := rBg0EntryCnt + 1
       }
       val myBg0MapArr = Gpu2dTest.mkBgEntryMapArr(
-        params=params,
+        cfg=cfg,
         someMapArr=Gpu2dTestGfx.sampleFgMapArr,
         someMapSize2d=Gpu2dTestGfx.sampleFgMapSize2d,
       )
@@ -1792,13 +1792,13 @@ case class Gpu2dTest(
       //  rBg0EntryCnt(1 downto 0)
       //)
       //when (
-      //  rBg0EntryCnt(params.bgSize2dInTilesPow.x - 1)
+      //  rBg0EntryCnt(cfg.bgSize2dInTilesPow.x - 1)
       //) {
       //} otherwise {
       //  myPayload.bgEntry.tileIdx := (
       //  )
       //}
-      //val myPosYBit = rBg0EntryCnt(params.bgSize2dInTilesPow.x)
+      //val myPosYBit = rBg0EntryCnt(cfg.bgSize2dInTilesPow.x)
       //myPayload.bgEntry.tileIdx := (
       //  //Cat(myPosYBit, rBg0EntryCnt(1 downto 0)).asUInt.resized
       //  Cat(myPosYBit, rBg0EntryCnt(2 downto 0)).asUInt.resized
@@ -1816,8 +1816,8 @@ case class Gpu2dTest(
           + (
             Gpu2dTestGfx.sampleBgTileArr.size
             / (
-              params.bgTileSize2d.x
-              * params.bgTileSize2d.y
+              cfg.bgTileSize2d.x
+              * cfg.bgTileSize2d.y
             )
           )
         ).resized
@@ -1828,7 +1828,7 @@ case class Gpu2dTest(
       //tempBgEntryPush.valid := tempBgEntryPush.valid.getZero
       //tempBgEntryPush.payload := tempBgEntryPush.payload.getZero
       //val myMemAddrExtCalcPos = LcvVideoCalcPos(
-      //  someSize2d=params.bgSize2dInTiles
+      //  someSize2d=cfg.bgSize2dInTiles
       //)
       //  .addAttribute("keep")
       //  .setName("myBg1EntryMemAddrExtCalcPos")
@@ -1840,21 +1840,21 @@ case class Gpu2dTest(
       //val tempFbSize2d = ElabVec2[Int](
       //  x=min(
       //    Gpu2dTestGfx.sampleBgMapSize2d.x * 16,
-      //    params.intnlFbSize2d.x,
+      //    cfg.intnlFbSize2d.x,
       //  ),
       //  y=min(
       //    Gpu2dTestGfx.sampleBgMapSize2d.y * 16,
-      //    params.intnlFbSize2d.y,
+      //    cfg.intnlFbSize2d.y,
       //  ),
       //)
       //val tempFbSize2d = Gpu2dTest.mkBgEntryMapTempFbSize2d(
-      //  params=params,
+      //  cfg=cfg,
       //  someMapSize2d=Gpu2dTestGfx.sampleBgMapSize2d,
       //)
       //val myMemAddrCalcPos = LcvVideoCalcPos(
       //  someSize2d=ElabVec2[Int](
-      //    x=params.intnlFbSize2d.x / params.bgTileSize2d.x,
-      //    y=params.intnlFbSize2d.y / params.bgTileSize2d.y,
+      //    x=cfg.intnlFbSize2d.x / cfg.bgTileSize2d.x,
+      //    y=cfg.intnlFbSize2d.y / cfg.bgTileSize2d.y,
       //  )
       //)
       //  .addAttribute("keep")
@@ -1864,12 +1864,12 @@ case class Gpu2dTest(
       //    (
       //      /*RegNext*/(RegNext(rBg1EntryExtCntV2d)).x //- 1
       //      < (
-      //        params.intnlFbSize2d.x / params.bgTileSize2d.x
+      //        cfg.intnlFbSize2d.x / cfg.bgTileSize2d.x
       //      )
       //    ) && (
       //      /*RegNext*/(RegNext(rBg1EntryExtCntV2d)).y 
       //      < (
-      //        params.intnlFbSize2d.y / params.bgTileSize2d.y
+      //        cfg.intnlFbSize2d.y / cfg.bgTileSize2d.y
       //      )
       //    ),
       //    init=False
@@ -1897,7 +1897,7 @@ case class Gpu2dTest(
       //--------
       tempBgEntryPush.valid := (
         (rBg1EntryCnt + 1)
-        < (params.bgSize2dInTiles.x * params.bgSize2dInTiles.y)
+        < (cfg.bgSize2dInTiles.x * cfg.bgSize2dInTiles.y)
         //(
         //  RegNextWhen(
         //    False, (
@@ -1911,14 +1911,14 @@ case class Gpu2dTest(
         //      (RegNext(Cat(B"12'd0",rBg1EntryExtCntV2d.x).asUInt))
         //      //- 1
         //      < (
-        //        //params.intnlFbSize2d.x / params.bgTileSize2d.x
-        //        tempFbSize2d.x / params.bgTileSize2d.x
+        //        //cfg.intnlFbSize2d.x / cfg.bgTileSize2d.x
+        //        tempFbSize2d.x / cfg.bgTileSize2d.x
         //      )
         //    ) && RegNext(
         //      (RegNext(Cat(B"12'd0", rBg1EntryExtCntV2d.y).asUInt))
         //      < (
-        //        //params.intnlFbSize2d.y / params.bgTileSize2d.y
-        //        tempFbSize2d.y / params.bgTileSize2d.y
+        //        //cfg.intnlFbSize2d.y / cfg.bgTileSize2d.y
+        //        tempFbSize2d.y / cfg.bgTileSize2d.y
         //      )
         //    ))
         //  ))) //init(False)
@@ -1965,7 +1965,7 @@ case class Gpu2dTest(
       //--------
       //def myMapArr = Gpu2dTestGfx.sampleBgMapArr
       val myBg1MapArr = Gpu2dTest.mkBgEntryMapArr(
-        params=params,
+        cfg=cfg,
         someMapArr=Gpu2dTestGfx.sampleBgMapArr,
         someMapSize2d=Gpu2dTestGfx.sampleBgMapSize2d,
       )
@@ -1978,7 +1978,7 @@ case class Gpu2dTest(
       //  ),
       //  //wordCount=myMapArr.size,
       //  wordCount=(
-      //    params.bgSize2dInTiles.y * params.bgSize2dInTiles.x
+      //    cfg.bgSize2dInTiles.y * cfg.bgSize2dInTiles.x
       //  ),
       //)
       //  .initBigInt({
@@ -1989,28 +1989,28 @@ case class Gpu2dTest(
       //    //  tempArr += BigInt(myMapArr(jdx))
       //    //}
       //    var z: Int = 0
-      //    for (jdx <- 0 until params.bgSize2dInTiles.y) {
-      //      for (kdx <- 0 until params.bgSize2dInTiles.x) {
+      //    for (jdx <- 0 until cfg.bgSize2dInTiles.y) {
+      //      for (kdx <- 0 until cfg.bgSize2dInTiles.x) {
       //        if (
       //          jdx
       //          < (
-      //            //params.intnlFbSize2d.y / params.bgTileSize2d.y
-      //            //tempFbSize2d.y / params.bgTileSize2d.y
+      //            //cfg.intnlFbSize2d.y / cfg.bgTileSize2d.y
+      //            //tempFbSize2d.y / cfg.bgTileSize2d.y
       //            Gpu2dTestGfx.sampleBgMapSize2d.y
       //          )
       //          && kdx
       //          < (
-      //            //params.intnlFbSize2d.x / params.bgTileSize2d.x
-      //            //tempFbSize2d.x / params.bgTileSize2d.x
+      //            //cfg.intnlFbSize2d.x / cfg.bgTileSize2d.x
+      //            //tempFbSize2d.x / cfg.bgTileSize2d.x
       //            Gpu2dTestGfx.sampleBgMapSize2d.x
       //          )
       //        ) {
       //          //println(s"inner: ($kdx, $jdx)")
       //          if (
       //            (
-      //              jdx < tempFbSize2d.y / params.bgTileSize2d.y
+      //              jdx < tempFbSize2d.y / cfg.bgTileSize2d.y
       //            ) && (
-      //              jdx < tempFbSize2d.x / params.bgTileSize2d.x
+      //              jdx < tempFbSize2d.x / cfg.bgTileSize2d.x
       //            )
       //          ) {
       //            tempArr += BigInt(myMapArr(z))
@@ -2052,8 +2052,8 @@ case class Gpu2dTest(
         //    rBg1EntryExtCntV2d
         //  ).y
         //  * (
-        //    params.bgSize2dInTiles.x
-        //    /// params.bgTileSize2d.x
+        //    cfg.bgSize2dInTiles.x
+        //    /// cfg.bgTileSize2d.x
         //  )
         //  + RegNext(
         //    //rBg1EntryCntV2d
@@ -2069,7 +2069,7 @@ case class Gpu2dTest(
       //    val tempX = Cat(B"16'd0", /*RegNext*/(rBg1EntryCntV2d.x)).asUInt
       //    (
       //      tempX
-      //      <= (params.intnlFbSize2d.x / params.bgTileSize2d.x)
+      //      <= (cfg.intnlFbSize2d.x / cfg.bgTileSize2d.x)
       //    )
       //  } && {
       //    val tempY = Cat(B"16'd0", /*RegNext*/(rBg1EntryCntV2d).y).asUInt
@@ -2080,7 +2080,7 @@ case class Gpu2dTest(
       //      //) && (
       //        tempY
       //        <= (
-      //          (params.intnlFbSize2d.y / params.bgTileSize2d.y)
+      //          (cfg.intnlFbSize2d.y / cfg.bgTileSize2d.y)
       //          //+ myBg1EntryCntYInit - 1
       //        )
       //      //)
@@ -2096,9 +2096,9 @@ case class Gpu2dTest(
         //      /*RegNext*/(/*RegNext*/(rBg1EntryCntV2d)).y //- myBg1EntryCntYInit
         //    //).asUInt.resized
         //    * (
-        //      //params.bgSize2dInTiles.x
-        //      //params.intnlFbSize2d.x / params.bgTileSize2d.x
-        //      Gpu2dTestGfx.sampleBgMapSize2d.x /// params.bgTileSize2d.x
+        //      //cfg.bgSize2dInTiles.x
+        //      //cfg.intnlFbSize2d.x / cfg.bgTileSize2d.x
+        //      Gpu2dTestGfx.sampleBgMapSize2d.x /// cfg.bgTileSize2d.x
         //    )
         //  )
         //  + /*RegNext*/(/*RegNext*/(rBg1EntryCntV2d)).x.resized
@@ -2118,7 +2118,7 @@ case class Gpu2dTest(
           //0x0
           //3
           //4
-          //if (params.bgTileSize2d.x == 8) (
+          //if (cfg.bgTileSize2d.x == 8) (
           //  3 * 4
           //) else (
           //  3
@@ -2148,9 +2148,9 @@ case class Gpu2dTest(
     }
   }
   //--------
-  //def bgPalCntWidth = params.numColsInBgPalPow + 1
+  //def bgPalCntWidth = cfg.numColsInBgPalPow + 1
   //val rBgPalCnt = Reg(UInt(bgPalCntWidth bits)) init(0x0)
-  //val rBgPalEntry = Reg(Gpu2dPalEntry(params=params))
+  //val rBgPalEntry = Reg(Gpu2dPalEntry(cfg=cfg))
   //rBgPalEntry.init(rBgPalEntry.getZero)
   //val rBgPalEntryPushValid = Reg(Bool()) init(True)
 
@@ -2167,11 +2167,11 @@ case class Gpu2dTest(
   ////otherwise {
   ////}
   //val rBgPalMemAddr = (
-  //  Reg(UInt(params.numColsInBgPalPow bits)) init(0x0)
+  //  Reg(UInt(cfg.numColsInBgPalPow bits)) init(0x0)
   //  addAttribute("keep")
   //)
   //palPush(
-  //  numColsInPal=params.numColsInBgPal,
+  //  numColsInPal=cfg.numColsInBgPal,
   //  rPalCnt=rBgPalCnt,
   //  rPalEntry=rBgPalEntry,
   //  rPalEntryPushValid=rBgPalEntryPushValid,
@@ -2181,7 +2181,7 @@ case class Gpu2dTest(
   //)
   //--------
   val tempObjTileSlice = Gpu2dTileSlice(
-    params=params,
+    cfg=cfg,
     isObj=true,
     isAffine=false,
   )
@@ -2197,9 +2197,9 @@ case class Gpu2dTest(
     }
   )
   val nextObjTileCnt = SInt(
-    //params.numObjTilesPow + 2 bits
-    //params.objTileSliceMemIdxWidth + 5 bits
-    params.objTileSliceMemIdxWidth + 5
+    //cfg.numObjTilesPow + 2 bits
+    //cfg.objTileSliceMemIdxWidth + 5 bits
+    cfg.objTileSliceMemIdxWidth + 5
     + extraObjTileCntWidth
     bits
   )
@@ -2237,24 +2237,24 @@ case class Gpu2dTest(
   //    //tempTile=tempColorMathTile,
   //    tempTileSlice=tempObjTileSlice,
   //    pxCoordXStart={
-  //      if (params.objTileWidthRshift == 0) {
-  //        def tempWidthPow = params.objTileSize2dPow.x
+  //      if (cfg.objTileWidthRshift == 0) {
+  //        def tempWidthPow = cfg.objTileSize2dPow.x
   //        U(f"$tempWidthPow'd0")
   //      } else {
   //        //rObjTileCnt(
-  //        //  //params.objTileSize2dPow.x - 1
+  //        //  //cfg.objTileSize2dPow.x - 1
   //        //  ////downto 0
-  //        //  ////downto params.objSliceTileWidthPow
-  //        //  //downto params.objTileWidthRshift
-  //        //  //params.objTileWidthRshift - 1 downto 0
-  //        //  params.objSliceTileWidthPow - 1 downto 0
+  //        //  ////downto cfg.objSliceTileWidthPow
+  //        //  //downto cfg.objTileWidthRshift
+  //        //  //cfg.objTileWidthRshift - 1 downto 0
+  //        //  cfg.objSliceTileWidthPow - 1 downto 0
   //        //).asUInt
   //        //Cat(
   //        //  rObjTileCnt(
-  //        //    params.objTileWidthRshift - 1 downto 0
+  //        //    cfg.objTileWidthRshift - 1 downto 0
   //        //  ),
   //        //  B(
-  //        //    params.objSliceTileWidthPow bits,
+  //        //    cfg.objSliceTileWidthPow bits,
   //        //    default -> False,
   //        //  )
   //        //).asUInt
@@ -2263,9 +2263,9 @@ case class Gpu2dTest(
   //          //>> extraObjTileCntWidth
   //          tempObjTileCntRshiftByExtra
   //        )(
-  //          //params.objTileWidthRshift - 1 downto 0
-  //          params.objTileSize2dPow.x - 1
-  //          downto params.objTileWidthRshift
+  //          //cfg.objTileWidthRshift - 1 downto 0
+  //          cfg.objTileSize2dPow.x - 1
+  //          downto cfg.objTileWidthRshift
   //        ).asUInt
   //      }
   //    },
@@ -2277,19 +2277,19 @@ case class Gpu2dTest(
   //      )
   //      (
   //        (
-  //          params.objTileSize2dPow.y
-  //          //+ params.objSliceTileWidthPow
-  //          + params.objTileWidthRshift
+  //          cfg.objTileSize2dPow.y
+  //          //+ cfg.objSliceTileWidthPow
+  //          + cfg.objTileWidthRshift
   //          - 1
   //        )
   //        downto (
-  //          //params.objTileSize2dPow.x
-  //          //params.objSliceTileWidthPow
-  //          params.objTileWidthRshift
+  //          //cfg.objTileSize2dPow.x
+  //          //cfg.objSliceTileWidthPow
+  //          cfg.objTileWidthRshift
   //        )
   //      ).asUInt
   //    ),
-  //    palEntryMemIdxWidth=params.objPalEntryMemIdxWidth,
+  //    palEntryMemIdxWidth=cfg.objPalEntryMemIdxWidth,
   //    colIdx0=colIdx0,
   //    colIdx1=colIdx1,
   //    colIdx2=colIdx2,
@@ -2307,17 +2307,17 @@ case class Gpu2dTest(
         //rObjTileCnt.high - extraObjTileCntWidth
         tempObjTileCntRshiftByExtra.high
       ) downto (
-        params.objTileSize2dPow.y
-        //+ params.objSliceTileWidthPow
-        + params.objTileWidthRshift
+        cfg.objTileSize2dPow.y
+        //+ cfg.objSliceTileWidthPow
+        + cfg.objTileWidthRshift
         ////+ extraObjTileCntWidth
         //+ extraObjTileCntWidth
       )
     )
     //>> (
-    //  params.objTileSize2dPow.y
-    //  + params.objSliceTileWidthPow
-    //  //+ params.objTileWidthRshift
+    //  cfg.objTileSize2dPow.y
+    //  + cfg.objSliceTileWidthPow
+    //  //+ cfg.objTileWidthRshift
     //)
   )
   //val tempObjTileCntSliced
@@ -2327,8 +2327,8 @@ case class Gpu2dTest(
   //nextObjTileCnt := rObjTileCnt
   //when (
   //  tempObjTileCnt + 1
-  //  //< (params.numObjTiles << extraObjTileCntWidth)
-  //  < params.numObjTiles
+  //  //< (cfg.numObjTiles << extraObjTileCntWidth)
+  //  < cfg.numObjTiles
   //) {
   //--------
   //  when (pop.objTilePush.fire) {
@@ -2374,7 +2374,7 @@ case class Gpu2dTest(
   //    //  mkObjTile(1, 2)
   //    //} otherwise {
   //    //  tempObjTileSlice := tempObjTileSlice.getZero
-  //    //  //when (tempObjTileCnt >= params.numObjTiles) {
+  //    //  //when (tempObjTileCnt >= cfg.numObjTiles) {
   //    //  //  rObjTilePushValid := False
   //    //  //}
   //    //}
@@ -2429,13 +2429,13 @@ case class Gpu2dTest(
   //      //rObjTileCnt.high - extraObjTileCntWidth
   //      tempCondExtra.high
   //    ) downto (
-  //      params.objTileSize2dPow.y
-  //      //+ params.objSliceTileWidthPow
-  //      + params.objTileWidthRshift
+  //      cfg.objTileSize2dPow.y
+  //      //+ cfg.objSliceTileWidthPow
+  //      + cfg.objTileWidthRshift
   //      ////+ extraObjTileCntWidth
   //      //+ extraObjTileCntWidth
   //    )
-  //  ) >= params.numObjTiles
+  //  ) >= cfg.numObjTiles
   //)
   //  .addAttribute("keep")
 
@@ -2443,18 +2443,18 @@ case class Gpu2dTest(
   //  tempObjTileCond
   //  //tempObjTileCnt //+ 1
   //  //>= (
-  //  //  params.numObjTiles - 1
-  //  //  //params.numObjTiles
+  //  //  cfg.numObjTiles - 1
+  //  //  //cfg.numObjTiles
   //  //  //<< extraObjTileCntWidth
   //  //)
-  //  //tempObjTileCnt + 1 === params.numObjTiles
+  //  //tempObjTileCnt + 1 === cfg.numObjTiles
   //  //(rObjTileCnt + 1)
-  //  //>= (1 << params.objTileSliceMemIdxWidth)
+  //  //>= (1 << cfg.objTileSliceMemIdxWidth)
   //) {
   //  nextObjTileCnt := 0x0
   //  //rObjTilePushValid := False
   //}
-  //val rTempForceWrVec = Vec.fill(params.numObjTiles)(
+  //val rTempForceWrVec = Vec.fill(cfg.numObjTiles)(
   //  Reg(Bool()) init(True)
   //)
   //pop.objTilePush.forceWr := False
@@ -2469,7 +2469,7 @@ case class Gpu2dTest(
   //  ) {
   //    def temp: Bool = (
   //      rTempForceWrVec(tempObjTileCnt.asUInt(
-  //        params.numObjTilesPow - 1 downto 0
+  //        cfg.numObjTilesPow - 1 downto 0
   //      ))
   //    )
   //    when (!temp) {
@@ -2514,9 +2514,9 @@ case class Gpu2dTest(
       //.resized
   )
   //--------
-  //def objPalCntWidth = params.numColsInObjPalPow + 1
+  //def objPalCntWidth = cfg.numColsInObjPalPow + 1
   //val rObjPalCnt = Reg(UInt(objPalCntWidth bits)) init(0x0)
-  //val rObjPalEntry = Reg(Gpu2dPalEntry(params=params))
+  //val rObjPalEntry = Reg(Gpu2dPalEntry(cfg=cfg))
   //rObjPalEntry.init(rObjPalEntry.getZero)
   //val rObjPalEntryPushValid = Reg(Bool()) init(True)
 
@@ -2531,7 +2531,7 @@ case class Gpu2dTest(
   //otherwise {
   //}
   //palPush(
-  //  numColsInPal=params.numColsInObjPal,
+  //  numColsInPal=cfg.numColsInObjPal,
   //  rPalCnt=rObjPalCnt,
   //  rPalEntry=rObjPalEntry,
   //  rPalEntryPushValid=rObjPalEntryPushValid,
@@ -2550,7 +2550,7 @@ case class Gpu2dTest(
 
 
   val tempObjAttrs = Gpu2dObjAttrs(
-    params=params,
+    cfg=cfg,
     isAffine=false,
   )
   //tempBgAttrs.scroll := (
@@ -2566,17 +2566,17 @@ case class Gpu2dTest(
     init(pop.objAttrsPush.payload.getZero)
   )
 
-  val objAttrsCntWidth = params.numObjsPow + 2
+  val objAttrsCntWidth = cfg.numObjsPow + 2
   //val rObjAttrsCnt = Reg(UInt(objAttrsCntWidth bits)) init(0x0)
   //val nextObjAttrsCnt = UInt(objAttrsCntWidth bits)
   //val rObjAttrsCnt = RegNext(nextObjAttrsCnt) init(0x0)
   val nextObjAttrsCnt = SInt(objAttrsCntWidth bits)
   val rObjAttrsCnt = RegNext(nextObjAttrsCnt) init(-1)
   nextObjAttrsCnt := rObjAttrsCnt
-  //val rObjAttrs = Reg(Gpu2dObjAttrs(params=params))
+  //val rObjAttrs = Reg(Gpu2dObjAttrs(cfg=cfg))
   //rObjAttrs.init(rObjAttrs.getZero)
   val rObjAttrsEntryPushValid = Reg(Bool()) init(True)
-  if (!params.noColorMath) {
+  if (!cfg.noColorMath) {
     tempObjAttrs.colorMathInfo := tempObjAttrs.colorMathInfo.getZero
     tempObjAttrs.colorMathInfo.allowOverride
   }
@@ -2692,11 +2692,11 @@ case class Gpu2dTest(
     //0x0 << myObjPosFracWidth
     5 << myObjPosFracWidth
     //18 << myObjPosFracWidth
-    //(params.objTileSize2d.x * 2) << myObjPosFracWidth
+    //(cfg.objTileSize2d.x * 2) << myObjPosFracWidth
   )
   rPlayerPos.y.init(
     0x0 << myObjPosFracWidth
-    //(params.objTileSize2d.y * 2) << myObjPosFracWidth
+    //(cfg.objTileSize2d.y * 2) << myObjPosFracWidth
   )
   val rPlayerTileIdx = (
     Reg(UInt((tempObjAttrs.tileIdx.getWidth + myTileFracWidth) bits))
@@ -2710,7 +2710,7 @@ case class Gpu2dTest(
   def playerObjAttrsIdx = 1
   val rPlayerObjAttrsPrio = (
     Reg(UInt(
-      (params.numBgsPow + 2) bits
+      (cfg.numBgsPow + 2) bits
     )) init(0x0)
   )
   def doObjAttrsInit(): Unit = {
@@ -2734,14 +2734,14 @@ case class Gpu2dTest(
         //1
         rPlayerObjAttrsPrio(
           rPlayerObjAttrsPrio.high
-          downto rPlayerObjAttrsPrio.getWidth - params.numBgsPow
+          downto rPlayerObjAttrsPrio.getWidth - cfg.numBgsPow
         )
       )
       tempObjAttrs.size2d.x := (
-        params.objTileSize2d.x
+        cfg.objTileSize2d.x
       )
       tempObjAttrs.size2d.y := (
-        params.objTileSize2d.y
+        cfg.objTileSize2d.y
       )
       tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
       when (pop.objAttrsPush.fire) {
@@ -2754,11 +2754,11 @@ case class Gpu2dTest(
     ) {
       tempObjAttrs.tileIdx := 2
       tempObjAttrs.pos.x := (
-        params.objTileSize2d.x * 1
+        cfg.objTileSize2d.x * 1
         //8
       )
       tempObjAttrs.pos.y := (
-        params.objTileSize2d.y * 1
+        cfg.objTileSize2d.y * 1
         //0
       )
       tempObjAttrs.prio := (
@@ -2766,10 +2766,10 @@ case class Gpu2dTest(
         //1
       )
       tempObjAttrs.size2d.x := (
-        params.objTileSize2d.x
+        cfg.objTileSize2d.x
       )
       tempObjAttrs.size2d.y := (
-        params.objTileSize2d.y
+        cfg.objTileSize2d.y
       )
       tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
       when (pop.objAttrsPush.fire) {
@@ -2780,7 +2780,7 @@ case class Gpu2dTest(
     } elsewhen (
       //rObjAttrsCnt > 0
       //&& 
-      rObjAttrsCnt < params.numObjs
+      rObjAttrsCnt < cfg.numObjs
     ) {
       //when (
       //  rObjAttrsCnt
@@ -2797,9 +2797,9 @@ case class Gpu2dTest(
       //  //tempObjAttrs.pos.x := 6
       //  //tempObjAttrs.pos.x := 7
       //  tempObjAttrs.pos.x := (
-      //    //params.intnlFbSize2d.x - params.objTileSize2d.x //- 1
-      //    //params.intnlFbSize2d.x - params.objTileSize2d.x - 5
-      //    //params.intnlFbSize2d.x >> 1
+      //    //cfg.intnlFbSize2d.x - cfg.objTileSize2d.x //- 1
+      //    //cfg.intnlFbSize2d.x - cfg.objTileSize2d.x - 5
+      //    //cfg.intnlFbSize2d.x >> 1
       //    //0x3e
       //    //3
       //    //2
@@ -2818,9 +2818,9 @@ case class Gpu2dTest(
       //    1
       //    //0
       //  )
-      //  tempObjAttrs.size2d.x := params.objTileSize2d.x
-      //  tempObjAttrs.size2d.y := params.objTileSize2d.y
-      //  //tempObjAttrs.size2d.y := params.objTileSize2d.y - 1
+      //  tempObjAttrs.size2d.x := cfg.objTileSize2d.x
+      //  tempObjAttrs.size2d.y := cfg.objTileSize2d.y
+      //  //tempObjAttrs.size2d.y := cfg.objTileSize2d.y - 1
       //  tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
       //  //tempObjAttrs.affine := tempObjAttrs.affine.getZero
       //  //tempObjAttrs.affine.doIt := True
@@ -2870,8 +2870,8 @@ case class Gpu2dTest(
       //    //0
       //    1
       //  )
-      //  tempObjAttrs.size2d.x := params.objTileSize2d.x
-      //  tempObjAttrs.size2d.y := params.objTileSize2d.y
+      //  tempObjAttrs.size2d.x := cfg.objTileSize2d.x
+      //  tempObjAttrs.size2d.y := cfg.objTileSize2d.y
       //  tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
       //  //tempObjAttrs.affine := tempObjAttrs.affine.getZero
       //  //tempObjAttrs.affine.doIt := True
@@ -2906,15 +2906,15 @@ case class Gpu2dTest(
       //    //0
       //    1
       //  )
-      //  tempObjAttrs.size2d.x := params.objTileSize2d.x
-      //  tempObjAttrs.size2d.y := params.objTileSize2d.y
+      //  tempObjAttrs.size2d.x := cfg.objTileSize2d.x
+      //  tempObjAttrs.size2d.y := cfg.objTileSize2d.y
       //  tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
       //  //tempObjAttrs.affine := tempObjAttrs.affine.getZero
       //  //tempObjAttrs := tempObjAttrs.getZero
       //////} elsewhen (rObjAttrsCnt === 3) {
       //////  //tempObjAttrs.tileMemIdx := 0
       //////  //tempObjAttrs.pos.x := 8
-      //////  //tempObjAttrs.pos.y := 0 //+ params.objTileSize2d.y - 1
+      //////  //tempObjAttrs.pos.y := 0 //+ cfg.objTileSize2d.y - 1
       //////  //tempObjAttrs.prio := 0
       //////  //tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
       //////  tempObjAttrs := tempObjAttrs.getZero
@@ -2923,7 +2923,7 @@ case class Gpu2dTest(
         //tempObjAttrs := tempObjAttrs.getZero
         tempObjAttrs.tileIdx := 0
         tempObjAttrs.pos.x := (
-          -params.objTileSize2d.x
+          -cfg.objTileSize2d.x
           //0
           //1
         )
@@ -2933,11 +2933,11 @@ case class Gpu2dTest(
           0
           //1
         )
-        tempObjAttrs.size2d.x := params.objTileSize2d.x
-        tempObjAttrs.size2d.y := params.objTileSize2d.y
+        tempObjAttrs.size2d.x := cfg.objTileSize2d.x
+        tempObjAttrs.size2d.y := cfg.objTileSize2d.y
         tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
         //tempObjAttrs.affine := tempObjAttrs.affine.getZero
-        when (nextObjAttrsCnt >= params.numObjs) {
+        when (nextObjAttrsCnt >= cfg.numObjs) {
           rObjAttrsEntryPushValid := False
         }
         //rObjAttrsEntryPushValid := False
@@ -2957,11 +2957,11 @@ case class Gpu2dTest(
     }
     pop.objAttrsPush.valid := rObjAttrsEntryPushValid
     //pop.objAttrsPush.payload.objAttrs := (
-    //  Gpu2dObjAttrs(params=params).getZero
+    //  Gpu2dObjAttrs(cfg=cfg).getZero
     //)
     pop.objAttrsPush.payload.objAttrs := tempObjAttrs
     pop.objAttrsPush.payload.memIdx := (
-      rObjAttrsCnt.asUInt(params.objAttrsMemIdxWidth - 1 downto 0)
+      rObjAttrsCnt.asUInt(cfg.objAttrsMemIdxWidth - 1 downto 0)
     )
   }
 
@@ -3109,14 +3109,14 @@ case class Gpu2dTest(
     tempObjAttrs.prio := (
       rPlayerObjAttrsPrio(
         rPlayerObjAttrsPrio.high
-        downto rPlayerObjAttrsPrio.getWidth - params.numBgsPow
+        downto rPlayerObjAttrsPrio.getWidth - cfg.numBgsPow
       )
       //1
       //0
     )
-    tempObjAttrs.size2d.x := params.objTileSize2d.x
-    tempObjAttrs.size2d.y := params.objTileSize2d.y
-    //tempObjAttrs.size2d.y := params.objTileSize2d.y - 1
+    tempObjAttrs.size2d.x := cfg.objTileSize2d.x
+    tempObjAttrs.size2d.y := cfg.objTileSize2d.y
+    //tempObjAttrs.size2d.y := cfg.objTileSize2d.y - 1
     tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
     //tempObjAttrs.affine := tempObjAttrs.affine.getZero
     //tempObjAttrs.affine.doIt := True
@@ -3140,11 +3140,11 @@ case class Gpu2dTest(
     tempBgAttrs0PushValid := True
     pop.objAttrsPush.valid := True
     //pop.objAttrsPush.payload.objAttrs := (
-    //  Gpu2dObjAttrs(params=params).getZero
+    //  Gpu2dObjAttrs(cfg=cfg).getZero
     //)
     pop.objAttrsPush.payload.objAttrs := tempObjAttrs
     pop.objAttrsPush.payload.memIdx := (
-      //rObjAttrsCnt.asUInt(params.objAttrsMemIdxWidth - 1 downto 0)
+      //rObjAttrsCnt.asUInt(cfg.objAttrsMemIdxWidth - 1 downto 0)
       //0x1
       playerObjAttrsIdx
     )
@@ -3203,7 +3203,7 @@ case class Gpu2dTest(
       rSeenVblank := False
       rDidSnesFire := False
       doObjAttrsInit()
-      when (rObjAttrsCnt >= params.numObjs) {
+      when (rObjAttrsCnt >= cfg.numObjs) {
         rSnesState := SnesState.WAIT_VBLANK
       }
     }
@@ -3324,9 +3324,9 @@ case class Gpu2dTest(
   //      //1
   //      0
   //    )
-  //    tempObjAttrs.size2d.x := params.objTileSize2d.x
-  //    tempObjAttrs.size2d.y := params.objTileSize2d.y
-  //    //tempObjAttrs.size2d.y := params.objTileSize2d.y - 1
+  //    tempObjAttrs.size2d.x := cfg.objTileSize2d.x
+  //    tempObjAttrs.size2d.y := cfg.objTileSize2d.y
+  //    //tempObjAttrs.size2d.y := cfg.objTileSize2d.y - 1
   //    tempObjAttrs.dispFlip := tempObjAttrs.dispFlip.getZero
   //    //tempObjAttrs.affine := tempObjAttrs.affine.getZero
   //    //tempObjAttrs.affine.doIt := True
@@ -3350,11 +3350,11 @@ case class Gpu2dTest(
   //    tempBgAttrs0PushValid := True
   //    pop.objAttrsPush.valid := True
   //    //pop.objAttrsPush.payload.objAttrs := (
-  //    //  Gpu2dObjAttrs(params=params).getZero
+  //    //  Gpu2dObjAttrs(cfg=cfg).getZero
   //    //)
   //    pop.objAttrsPush.payload.objAttrs := tempObjAttrs
   //    pop.objAttrsPush.payload.memIdx := (
-  //      //rObjAttrsCnt.asUInt(params.objAttrsMemIdxWidth - 1 downto 0)
+  //      //rObjAttrsCnt.asUInt(cfg.objAttrsMemIdxWidth - 1 downto 0)
   //      0x1
   //    )
   //  }
@@ -3362,17 +3362,17 @@ case class Gpu2dTest(
 
   //--------
   //val tempObjAffineTileSlice = Gpu2dTileSlice(
-  //  params=params,
+  //  cfg=cfg,
   //  isObj=true,
   //  isAffine=true,
   //)
 
   //val nextObjAffineTileCnt = SInt(
-  //  //params.numObjAffineTilesPow + 2 bits
-  //  //params.objAffineTilePxMemIdxWidth + 5 bits
+  //  //cfg.numObjAffineTilesPow + 2 bits
+  //  //cfg.objAffineTilePxMemIdxWidth + 5 bits
   //  (
-  //    params.objAffineTilePxMemIdxWidth
-  //    //+ params.objAffineSliceTileWidthPow
+  //    cfg.objAffineTilePxMemIdxWidth
+  //    //+ cfg.objAffineSliceTileWidthPow
   //    + 5
   //  ) bits
   //)
@@ -3396,47 +3396,47 @@ case class Gpu2dTest(
   //    //tempTile=tempColorMathTile,
   //    tempTileSlice=tempObjAffineTileSlice,
   //    pxCoordXStart={
-  //      if (params.objAffineTileWidthRshift == 0) {
-  //        def tempWidthPow = params.objAffineTileSize2dPow.x
+  //      if (cfg.objAffineTileWidthRshift == 0) {
+  //        def tempWidthPow = cfg.objAffineTileSize2dPow.x
   //        U(f"$tempWidthPow'd0")
   //      } else {
-  //        def tempWidthPow = params.objAffineSliceTileWidthPow
+  //        def tempWidthPow = cfg.objAffineSliceTileWidthPow
   //        U(f"$tempWidthPow'd0")
   //        //rObjAffineTileCnt(
-  //        //  //params.objAffineTileSize2dPow.x - 1
-  //        //  ////downto params.objAffineSliceTileWidthPow
-  //        //  //downto params.objAffineTileWidthRshift
-  //        //  ////params.objAffineSliceTileWidthPow - 1 downto 0
-  //        //  ////params.objAffineTileWidthRshift - 1 downto 0
-  //        //  //params.objAffineTileSize2dPow.x - 1 downto 0
-  //        //  params.objAffineSliceTileWidthPow - 1 downto 0
-  //        //  //params.objAffineTileSize2dPow.x - 1
-  //        //  //downto params.objAffineTileWidthRshift
+  //        //  //cfg.objAffineTileSize2dPow.x - 1
+  //        //  ////downto cfg.objAffineSliceTileWidthPow
+  //        //  //downto cfg.objAffineTileWidthRshift
+  //        //  ////cfg.objAffineSliceTileWidthPow - 1 downto 0
+  //        //  ////cfg.objAffineTileWidthRshift - 1 downto 0
+  //        //  //cfg.objAffineTileSize2dPow.x - 1 downto 0
+  //        //  cfg.objAffineSliceTileWidthPow - 1 downto 0
+  //        //  //cfg.objAffineTileSize2dPow.x - 1
+  //        //  //downto cfg.objAffineTileWidthRshift
   //        //).asUInt
   //      }
   //    },
   //    pxCoordY=(
   //      //rObjAffineTileCnt(
-  //      //  params.objAffineTileSize2dPow.y - 1
-  //      //  downto params.objAffineTileSize2dPow.x
+  //      //  cfg.objAffineTileSize2dPow.y - 1
+  //      //  downto cfg.objAffineTileSize2dPow.x
   //      //).asUInt
   //      rObjAffineTileCnt(
   //        (
-  //          params.objAffineTileSize2dPow.y
-  //          ////+ params.objAffineSliceTileWidthPow
-  //          //+ params.objAffineTileWidthRshift
-  //          + params.objAffineTileSize2dPow.x
+  //          cfg.objAffineTileSize2dPow.y
+  //          ////+ cfg.objAffineSliceTileWidthPow
+  //          //+ cfg.objAffineTileWidthRshift
+  //          + cfg.objAffineTileSize2dPow.x
   //          - 1
   //        )
   //        downto (
-  //          //params.objAffineTileSize2dPow.x
-  //          //params.objAffineSliceTileWidthPow
-  //          //params.objAffineTileWidthRshift
-  //          params.objAffineTileSize2dPow.x
+  //          //cfg.objAffineTileSize2dPow.x
+  //          //cfg.objAffineSliceTileWidthPow
+  //          //cfg.objAffineTileWidthRshift
+  //          cfg.objAffineTileSize2dPow.x
   //        )
   //      ).asUInt
   //    ),
-  //    palEntryMemIdxWidth=params.objPalEntryMemIdxWidth,
+  //    palEntryMemIdxWidth=cfg.objPalEntryMemIdxWidth,
   //    colIdx0=colIdx0,
   //    colIdx1=colIdx1,
   //    colIdx2=colIdx2,
@@ -3448,22 +3448,22 @@ case class Gpu2dTest(
   //  rObjAffineTileCnt(
   //    rObjAffineTileCnt.high
   //    downto (
-  //      params.objAffineTileSize2dPow.y
-  //      //+ params.objAffineSliceTileWidthPow
-  //      //+ params.objAffineTileWidthRshift
-  //      + params.objAffineTileSize2dPow.x
+  //      cfg.objAffineTileSize2dPow.y
+  //      //+ cfg.objAffineSliceTileWidthPow
+  //      //+ cfg.objAffineTileWidthRshift
+  //      + cfg.objAffineTileSize2dPow.x
   //    )
   //  )
   //  //>> (
-  //  //  params.objAffineTileSize2dPow.y
-  //  //  + params.objAffineSliceTileWidthPow
-  //  //  //+ params.objAffineTileWidthRshift
+  //  //  cfg.objAffineTileSize2dPow.y
+  //  //  + cfg.objAffineSliceTileWidthPow
+  //  //  //+ cfg.objAffineTileWidthRshift
   //  //)
   //)
   //tempObjAffineTileSlice := tempObjAffineTileSlice.getZero
   //tempObjAffineTileSlice.allowOverride
 
-  //when (tempObjAffineTileCnt < params.numObjAffineTiles) {
+  //when (tempObjAffineTileCnt < cfg.numObjAffineTiles) {
   //  when (pop.objAffineTilePush.fire) {
   //    when (tempObjAffineTileCnt === 0) {
   //      //mkObjAffineTile(0, 1)
@@ -3491,7 +3491,7 @@ case class Gpu2dTest(
   //      mkObjAffineTile(4, 4)
   //    } otherwise {
   //      //tempObjAffineTileSlice := tempObjAffineTileSlice.getZero
-  //      //when (tempObjAffineTileCnt >= params.numObjAffineTiles) {
+  //      //when (tempObjAffineTileCnt >= cfg.numObjAffineTiles) {
   //      //  rObjAffineTilePushValid := False
   //      //}
   //    }
@@ -3504,7 +3504,7 @@ case class Gpu2dTest(
   //  //tempObjAffineTileSlice := tempObjAffineTileSlice.getZero
   //  nextObjAffineTileCnt := rObjAffineTileCnt
   //}
-  //when (tempObjAffineTileCnt >= params.numObjAffineTiles - 1) {
+  //when (tempObjAffineTileCnt >= cfg.numObjAffineTiles - 1) {
   //  rObjAffineTilePushValid := False
   //}
   pop.objAffineTilePush.valid := rObjAffineTilePushValid
@@ -3514,10 +3514,10 @@ case class Gpu2dTest(
   ////pop.objAffineTilePush.payload.tileSlice := tempObjAffineTileSlice
   //pop.objAffineTilePush.payload.tilePx := tempObjAffineTileSlice.getPx(
   //  rObjAffineTileCnt(
-  //    //params.objAffineTileSize2dPow.x - 1
+  //    //cfg.objAffineTileSize2dPow.x - 1
   //    ////downto 0
-  //    //downto params.objAffineTileWidthRshift
-  //    params.objAffineSliceTileWidthPow - 1 downto 0
+  //    //downto cfg.objAffineTileWidthRshift
+  //    cfg.objAffineSliceTileWidthPow - 1 downto 0
   //  ).asUInt
   //)
   //pop.objAffineTilePush.payload.memIdx := (
@@ -3525,34 +3525,34 @@ case class Gpu2dTest(
   //    //pop.objAffineTilePush.payload.memIdx.bitsRange
   //    (
   //      pop.objAffineTilePush.payload.memIdx.getWidth
-  //      //+ params.objAffineTileSize2dPow.x
+  //      //+ cfg.objAffineTileSize2dPow.x
   //      - 1
-  //    ) downto 0 //params.objAffineTileSize2dPow.x
+  //    ) downto 0 //cfg.objAffineTileSize2dPow.x
   //  )
   //)
   //--------
   val tempObjAffineAttrs = Gpu2dObjAttrs(
-    params=params,
+    cfg=cfg,
     isAffine=true,
   )
-  //val objAffineAttrsCntWidth = params.numObjsAffinePow + 2
-  //val objAffineAttrsCntWidth = params.objAffineTilePxMemIdxWidth + 2
-  val objAffineAttrsCntWidth = params.numObjsAffinePow + 2
+  //val objAffineAttrsCntWidth = cfg.numObjsAffinePow + 2
+  //val objAffineAttrsCntWidth = cfg.objAffineTilePxMemIdxWidth + 2
+  val objAffineAttrsCntWidth = cfg.numObjsAffinePow + 2
   //val rObjAffineAttrsCnt = Reg(UInt(objAffineAttrsCntWidth bits)) init(0x0)
   //val nextObjAffineAttrsCnt = UInt(objAffineAttrsCntWidth bits)
   //val rObjAffineAttrsCnt = RegNext(nextObjAffineAttrsCnt) init(0x0)
   val nextObjAffineAttrsCnt = SInt(objAffineAttrsCntWidth bits)
   val rObjAffineAttrsCnt = RegNext(nextObjAffineAttrsCnt) init(-1)
-  //val rObjAffineAttrs = Reg(Gpu2dObjAffineAttrs(params=params))
+  //val rObjAffineAttrs = Reg(Gpu2dObjAffineAttrs(cfg=cfg))
   //rObjAffineAttrs.init(rObjAffineAttrs.getZero)
   val rObjAffineAttrsEntryPushValid = Reg(Bool()) init(True)
-  if (!params.noColorMath) {
+  if (!cfg.noColorMath) {
     tempObjAffineAttrs.colorMathInfo := (
       tempObjAffineAttrs.colorMathInfo.getZero
     )
   }
 
-  when (rObjAffineAttrsCnt < params.numObjsAffine) {
+  when (rObjAffineAttrsCnt < cfg.numObjsAffine) {
     when (rObjAffineAttrsCnt === 0) {
       tempObjAffineAttrs.tileIdx := (
         //1
@@ -3560,9 +3560,9 @@ case class Gpu2dTest(
       )
       //tempObjAffineAttrs.tileMemIdx := 2
       tempObjAffineAttrs.pos.x := (
-        //params.intnlFbSize2d.x - params.objAffineTileSize2d.x //- 1
-        //params.intnlFbSize2d.x - params.objAffineTileSize2d.x - 5
-        //params.intnlFbSize2d.x >> 1
+        //cfg.intnlFbSize2d.x - cfg.objAffineTileSize2d.x //- 1
+        //cfg.intnlFbSize2d.x - cfg.objAffineTileSize2d.x - 5
+        //cfg.intnlFbSize2d.x >> 1
         //0x3e
         //3
         //2
@@ -3573,21 +3573,21 @@ case class Gpu2dTest(
         //48
         //32
         //64
-        //(params.objAffineTileSize2d.x.toDouble * 1.5).toInt
+        //(cfg.objAffineTileSize2d.x.toDouble * 1.5).toInt
         48
-        //- params.objAffineTileSize2d.x
-        + (params.objAffineTileSize2d.x / 2)
-        //- (params.objAffineTileSize2d.x / 2)
-        //params.objAffineTileSize2d.x / 2
+        //- cfg.objAffineTileSize2d.x
+        + (cfg.objAffineTileSize2d.x / 2)
+        //- (cfg.objAffineTileSize2d.x / 2)
+        //cfg.objAffineTileSize2d.x / 2
         //8
       )
       tempObjAffineAttrs.pos.y := (
         //8
         //0
-        //-params.objAffineTileSize2d.y / 2
-        //(params.objAffineTileSize2d.y.toDouble * 1.5).toInt
+        //-cfg.objAffineTileSize2d.y / 2
+        //(cfg.objAffineTileSize2d.y.toDouble * 1.5).toInt
         //64
-        //params.objAffineTileSize2d.y / 2
+        //cfg.objAffineTileSize2d.y / 2
         8
       )
       //tempObjAffineAttrs.pos.y := 0
@@ -3596,9 +3596,9 @@ case class Gpu2dTest(
         //1
         0
       )
-      tempObjAffineAttrs.size2d.x := params.objAffineTileSize2d.x
-      tempObjAffineAttrs.size2d.y := params.objAffineTileSize2d.y
-      //tempObjAffineAttrs.size2d.y := params.objAffineTileSize2d.y - 1
+      tempObjAffineAttrs.size2d.x := cfg.objAffineTileSize2d.x
+      tempObjAffineAttrs.size2d.y := cfg.objAffineTileSize2d.y
+      //tempObjAffineAttrs.size2d.y := cfg.objAffineTileSize2d.y - 1
       tempObjAffineAttrs.dispFlip := tempObjAffineAttrs.dispFlip.getZero
       //tempObjAffineAttrs.affine := tempObjAffineAttrs.affine.getZero
       tempObjAffineAttrs.affine.doIt := True
@@ -3687,8 +3687,8 @@ case class Gpu2dTest(
         //7
         32
         //48
-        - (params.objAffineTileSize2d.x / 2)
-        //-params.objAffineDblTileSize2d.x
+        - (cfg.objAffineTileSize2d.x / 2)
+        //-cfg.objAffineDblTileSize2d.x
       )
       //tempObjAffineAttrs.pos.x := 9
       //tempObjAffineAttrs.pos.x := 9
@@ -3697,16 +3697,16 @@ case class Gpu2dTest(
       tempObjAffineAttrs.pos.y := (
         9
         //0
-        //-params.objAffineTileSize2d.y / 2
+        //-cfg.objAffineTileSize2d.y / 2
       )
       tempObjAffineAttrs.prio := (
         0
         //1
       )
-      //tempObjAffineAttrs.size2d.x := params.objAffineTileSize2d.x / 2
-      //tempObjAffineAttrs.size2d.y := params.objAffineTileSize2d.y / 2
-      tempObjAffineAttrs.size2d.x := params.objAffineTileSize2d.x
-      tempObjAffineAttrs.size2d.y := params.objAffineTileSize2d.y
+      //tempObjAffineAttrs.size2d.x := cfg.objAffineTileSize2d.x / 2
+      //tempObjAffineAttrs.size2d.y := cfg.objAffineTileSize2d.y / 2
+      tempObjAffineAttrs.size2d.x := cfg.objAffineTileSize2d.x
+      tempObjAffineAttrs.size2d.y := cfg.objAffineTileSize2d.y
       tempObjAffineAttrs.dispFlip := tempObjAffineAttrs.dispFlip.getZero
       //tempObjAffineAttrs.affine := tempObjAffineAttrs.affine.getZero
       tempObjAffineAttrs.affine.doIt := True
@@ -3746,35 +3746,35 @@ case class Gpu2dTest(
     ////    0
     ////    //1
     ////  )
-    ////  tempObjAffineAttrs.size2d.x := params.objAffineTileSize2d.x
-    ////  tempObjAffineAttrs.size2d.y := params.objAffineTileSize2d.y
+    ////  tempObjAffineAttrs.size2d.x := cfg.objAffineTileSize2d.x
+    ////  tempObjAffineAttrs.size2d.y := cfg.objAffineTileSize2d.y
     ////  tempObjAffineAttrs.dispFlip := tempObjAffineAttrs.dispFlip.getZero
     ////  tempObjAffineAttrs.affine := tempObjAffineAttrs.affine.getZero
     ////  //tempObjAffineAttrs := tempObjAffineAttrs.getZero
     //////} elsewhen (rObjAffineAttrsCnt === 3) {
     //////  //tempObjAffineAttrs.tileMemIdx := 0
     //////  //tempObjAffineAttrs.pos.x := 8
-    //////  //tempObjAffineAttrs.pos.y := 0 //+ params.objAffineTileSize2d.y - 1
+    //////  //tempObjAffineAttrs.pos.y := 0 //+ cfg.objAffineTileSize2d.y - 1
     //////  //tempObjAffineAttrs.prio := 0
     //////  //tempObjAffineAttrs.dispFlip := tempObjAffineAttrs.dispFlip.getZero
     //////  tempObjAffineAttrs := tempObjAffineAttrs.getZero
     } otherwise {
       //tempObjAffineAttrs := tempObjAffineAttrs.getZero
       tempObjAffineAttrs.tileIdx := 0
-      tempObjAffineAttrs.pos.x := -params.objAffineTileSize2d.x
+      tempObjAffineAttrs.pos.x := -cfg.objAffineTileSize2d.x
       tempObjAffineAttrs.pos.y := (
         //0
-        -params.objAffineTileSize2d.y
+        -cfg.objAffineTileSize2d.y
       )
       tempObjAffineAttrs.prio := (
         0
         //1
       )
-      tempObjAffineAttrs.size2d.x := params.objAffineTileSize2d.x
-      tempObjAffineAttrs.size2d.y := params.objAffineTileSize2d.y
+      tempObjAffineAttrs.size2d.x := cfg.objAffineTileSize2d.x
+      tempObjAffineAttrs.size2d.y := cfg.objAffineTileSize2d.y
       tempObjAffineAttrs.dispFlip := tempObjAffineAttrs.dispFlip.getZero
       tempObjAffineAttrs.affine := tempObjAffineAttrs.affine.getZero
-      when (nextObjAffineAttrsCnt >= params.numObjsAffine) {
+      when (nextObjAffineAttrsCnt >= cfg.numObjsAffine) {
         rObjAffineAttrsEntryPushValid := False
       }
       //rObjAffineAttrsEntryPushValid := False
@@ -3795,11 +3795,11 @@ case class Gpu2dTest(
 
   pop.objAffineAttrsPush.valid := rObjAffineAttrsEntryPushValid
   //pop.objAffineAttrsPush.payload.objAffineAttrs := (
-  //  Gpu2dObjAffineAttrs(params=params).getZero
+  //  Gpu2dObjAffineAttrs(cfg=cfg).getZero
   //)
   pop.objAffineAttrsPush.payload.objAttrs := tempObjAffineAttrs
   pop.objAffineAttrsPush.payload.memIdx := (
-    rObjAffineAttrsCnt.asUInt(params.objAffineAttrsMemIdxWidth - 1 downto 0)
+    rObjAffineAttrsCnt.asUInt(cfg.objAffineAttrsMemIdxWidth - 1 downto 0)
   )
 
   ////--------
