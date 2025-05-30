@@ -41,7 +41,10 @@ object Gpu2dSimDutParams {
   //--------
   //def clkRate = 75.0 MHz
   //def clkRate = 50.0 MHz
-  def clkRate = 25.0 MHz
+  //def clkRate = 25.0 MHz
+  def clkRate = (
+    100.0 MHz
+  )
   //--------
   //def clkRate = 100.0 MHz
   //def clkRate = 100.7 MHz
@@ -294,19 +297,19 @@ object Gpu2dSimDutParams {
       //y=log2Up(64),
       //x=log2Up(32),
       //y=log2Up(32),
-      //x=log2Up(16),
-      //y=log2Up(16),
+      x=log2Up(16),
+      y=log2Up(16),
       //x=log2Up(8),
       //y=log2Up(8),
-      x=log2Up(4),
-      y=log2Up(4),
+      //x=log2Up(4),
+      //y=log2Up(4),
       //x=log2Up(2),
       //y=log2Up(2),
     ),
     objAffineTileWidthRshift=(
-      //0
+      0
       //1
-      2
+      //2
       //3
       //4
     ),
@@ -326,8 +329,8 @@ object Gpu2dSimDutParams {
       //log2Up(128)
     ),
     numObjsAffinePow=(
-      log2Up(16)
-      //log2Up(4)
+      //log2Up(16)
+      log2Up(4)
       //log2Up(32)
     ),
     //numBgTilesPow=Some(log2Up(256)),
@@ -377,8 +380,8 @@ object Gpu2dSimDutParams {
       //Some(32)
     ),
     numObjAffineTiles=(
-      Some(16)
-      //Some(32)
+      //Some(16)
+      Some(32)
     ),
     numColsInBgPalPow=(
       log2Up(64)
@@ -396,11 +399,13 @@ object Gpu2dSimDutParams {
       true
     ),
     noAffineObjs=(
-      true
-      //false
+      //true
+      false
     ),
-    //fancyObjPrio=false,
-    fancyObjPrio=true,
+    fancyObjPrio=(
+      //false
+      true
+    ),
   )
 }
 

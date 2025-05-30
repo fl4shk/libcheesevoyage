@@ -465,9 +465,9 @@ object Gpu2dTest {
       doPipeMemRmw=false
     )
     val rawArrFgCommon = Gpu2dTestGfx.objFgCommonTileArr
-    val rawArrDbgBlankingFgCommon = (
-      Gpu2dTestGfx.objDbgBlankingFgCommonTileArr
-    )
+    //val rawArrDbgBlankingFgCommon = (
+    //  Gpu2dTestGfx.objDbgBlankingFgCommonTileArr
+    //)
     //val rawArrFgGrassland = Gpu2dTestGfx.fgGrasslandTileArr
     val myPxsSliceWidth = (
       Gpu2dTileSlice.pxsSliceWidth(
@@ -476,78 +476,77 @@ object Gpu2dTest {
         isAffine=false,
       )
     )
-    //val wordCount = (
-    //  //Gpu2dTestGfx.fgCommonTileArr.size << 1
-    //  //(rawArr.size << 1) >> log2Up(myPxsSliceWidth)
-    //  //(rawArrFgCommon.size + rawArrFgGrassland.size)
-    //  (rawArrFgCommon.size)
-    //  >> log2Up(myPxsSliceWidth)
-    //  //rawArr.size / myColIdxWidth
-    //  //rawArr.size << 1
+    val tempArr = new ArrayBuffer[Gpu2dTileSlice]()
+    val tempNumTileSlices = (
+      1 << cfg.objTileSliceMemIdxWidth
+    )
+    innerTileMemInit(
+      wordType=wordType(),
+      someNumTileSlices=tempNumTileSlices,
+      somePxsSliceWidth=myPxsSliceWidth,
+      somePxsArr=(
+        rawArrFgCommon
+      ),
+      tempArr=tempArr,
+      finish=true,
+    )
+    tempArr
+  }
+  def objAffineTileMemInit(
+    cfg: Gpu2dConfig
+  ) = {
+    def wordType() = Gpu2dTileSlice(
+      cfg=cfg,
+      isObj=true,
+      isAffine=false,
+      doPipeMemRmw=false
+    )
+    val rawArrFgCommon = Gpu2dTestGfx.objFgCommonTileArr
+    //val rawArrDbgBlankingFgCommon = (
+    //  Gpu2dTestGfx.objDbgBlankingFgCommonTileArr
     //)
-    //println(wordCount, rawArr.size, myPxsSliceWidth)
-    //Mem(
+    //val rawArrFgGrassland = Gpu2dTestGfx.fgGrasslandTileArr
+    //val myPxsSliceWidth = (
+    //  Gpu2dTileSlice.pxsSliceWidth(
+    //    cfg=cfg,
+    //    isObj=true,
+    //    isAffine=true,
+    //  )
+    //)
+    val tempArr = new ArrayBuffer[BigInt]()
+    //val tempNumTileSlices = (
+    //  1 << cfg.objAffineTilePxMemIdxWidth
+    //)
+    //innerTileMemInit(
     //  wordType=wordType(),
-    //  wordCount=wordCount,
+    //  someNumTileSlices=tempNumTileSlices,
+    //  somePxsSliceWidth=myPxsSliceWidth,
+    //  somePxsArr=(
+    //    rawArrFgCommon
+    //  ),
+    //  tempArr=tempArr,
+    //  finish=true,
     //)
-    //.init({
-      val tempArr = new ArrayBuffer[Gpu2dTileSlice]()
-      //for (idx <- 0 until rawArrFgCommon.size) {
-      //  if ((idx % myPxsSliceWidth) == 0) {
-      //    tempArr += wordType()
-      //  }
-      //  def myTileSlice = tempArr.last
-      //  myTileSlice.colIdxVec(idx % myPxsSliceWidth) := (
-      //    rawArrFgCommon(idx)
-      //  )
+
+    def tempNumObjTileSlices = (
+      //if (idx == 0) {
+      //  //cfg.numObjTiles
+      //  1 << cfg.objTileSliceMemIdxWidth
+      //} else {
+      //  //cfg.numObjAffineTiles
+        1 << cfg.objAffineTilePxMemIdxWidth
       //}
-      //innerTileMemInit(
-      //  cfg=cfg,
-      //  somePxsSliceWidth=myPxsSliceWidth,
-      //  somePalEntryMemIdxWidth=cfg.objPalEntryMemIdxWidth,
-      //  somePxsArr=rawArrFgCommon,
-      //  tempArr=tempArr,
-      //  isObj=true,
-      //)
-      val tempNumTileSlices = (
-        //cfg.numObjTiles
-        //* cfg.objTileSize2d.y 
-        //* (1 << (cfg.objTileSize2d.x - cfg.objTileWidthRshift))
-        ////* (1 << (cfg.objTileSize2d.x - cfg.objTileWidthRshift))
-        ////1 << cfg.objTileSliceMemIdxWidth
-        1 << cfg.objTileSliceMemIdxWidth
-      )
-      //println(tempNumTileSlices)
-      innerTileMemInit(
-        wordType=wordType(),
-        //cfg=cfg,
-        //someNumTiles=cfg.numObjTiles,
-        someNumTileSlices=tempNumTileSlices,
-        somePxsSliceWidth=myPxsSliceWidth,
-        //someTileHeight=cfg.objTileSize2d.y,
-        //somePalEntryMemIdxWidth=cfg.bgPalEntryMemIdxWidth,
-        somePxsArr=(
-          rawArrFgCommon
-          //rawArrDbgBlankingFgCommon
-        ),
-        tempArr=tempArr,
-        //isObj=false,
-        //doPrint=true,
-        finish=true,
-        //finish=false
-      )
-      //for (idx <- 0 until rawArrFgGrassland.size) {
-      //  if ((idx % myPxsSliceWidth) == 0) {
-      //    tempArr += wordType()
-      //  }
-      //  def myTileSlice = tempArr.last
-      //  myTileSlice.colIdxVec(idx % myPxsSliceWidth) := (
-      //    rawArrFgGrassland(idx)
-      //  )
-      //}
-      //Some(tempArr.toSeq)
-      tempArr
-    //})
+    )
+    for (
+      idx <- 0 until rawArrFgCommon.size.max(tempNumObjTileSlices)
+    ) {
+      if (idx < rawArrFgCommon.size) {
+        tempArr += BigInt(rawArrFgCommon(idx))
+      } else {
+        tempArr += BigInt(0)
+      }
+    }
+    tempArr
   }
   def objPalMemInitBigInt(
     cfg: Gpu2dConfig
