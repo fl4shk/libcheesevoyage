@@ -307,9 +307,9 @@ object Gpu2dSimDutParams {
       //y=log2Up(2),
     ),
     objAffineTileWidthRshift=(
-      0
+      //0
       //1
-      //2
+      2
       //3
       //4
     ),
