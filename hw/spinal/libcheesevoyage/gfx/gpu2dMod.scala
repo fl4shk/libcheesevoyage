@@ -11379,11 +11379,11 @@ case class Gpu2d(
           tempOutp.objPickSubLineMemEntry := objRdSubLineMemEntry
         } else {
           switch (Cat(
-            //List(
-              objRdSubLineMemEntry.prio < objAffineRdSubLineMemEntry.prio,
-              objAffineRdSubLineMemEntry.col.a,
+            List(
               objRdSubLineMemEntry.col.a,
-            //).reverse
+              objAffineRdSubLineMemEntry.col.a,
+              objRdSubLineMemEntry.prio < objAffineRdSubLineMemEntry.prio,
+            ).reverse
           )) {
             is (M"10-") {
               tempOutp.objPickSubLineMemEntry := (
