@@ -341,92 +341,6 @@ case class Gpu2dConfig(
   def oneLineMemSize = intnlFbSize2d.x
   //def wholeLineMemSize = 1 << log2Up(intnlFbSize2d.x)
 
-  // BEGIN: old, working but non-synthesizable code
-  //def bgSubLineMemArrSizePow = bgTileSize2dPow.x
-  //def bgSubLineMemArrSize = 1 << bgSubLineMemArrSizePow
-  //def bgSubLineMemSizePow = (
-  //  log2Up(oneLineMemSize) - bgSubLineMemArrSizePow
-  //)
-  ////def bgSubLineMemSize = oneLineMemSize >> bgSubLineMemArrSizePow
-  //def bgSubLineMemSize = 1 << bgSubLineMemSizePow
-
-  // BEGIN: old, working but non-synthesizable code; comment out later
-  //def objSubLineMemArrSizePow = objTileSize2dPow.x
-  //def objSubLineMemArrSize = 1 << objSubLineMemArrSizePow
-  //def objSubLineMemSizePow = (
-  //  log2Up(oneLineMemSize) - objSubLineMemArrSizePow
-  //)
-  ////def objSubLineMemSize = oneLineMemSize >> objSubLineMemArrSizePow
-  //def objSubLineMemSize = 1 << objSubLineMemSizePow
-  ////println(
-  ////  f"oneLineMemSize:$oneLineMemSize "
-  ////  + f"ArrSizePow:$objSubLineMemArrSizePow "
-  ////  + f"objSubLineMemArrSize:$objSubLineMemArrSize "
-  ////  + f"objSubLineMemSize:$objSubLineMemSize "
-  ////)
-
-  //def getEitherSubLineMemTempArrIdx(
-  //  pxPosX: UInt,
-  //  ////someSubLineMemArrSizePow: Int
-  //  //isObj: Boolean,
-  //) = {
-  //  assert(pxPosX.getWidth >= log2Up(oneLineMemSize))
-  //  //pxPosX(objTileSize2dPow.x - 1 downto 0)
-  //  //pxPosX(objSubLineMemArrSizePow - 1 downto 0)
-  //  //if (!isObj) {
-  //  //} else {
-  //    pxPosX(
-  //      (
-  //        //if (!isObj) bgSubLineMemArrSizePow else objSubLineMemArrSizePow
-  //        objSubLineMemArrSizePow
-  //      ) - 1 downto 0
-  //    )
-  //  //}
-  //}
-
-  ////def getBgSubLineMemTempArrIdx(
-  ////  pxPosX: UInt
-  ////) = getEitherSubLineMemTempArrIdx(pxPosX=pxPosX, isObj=false)
-  //def getObjSubLineMemTempArrIdx(
-  //  pxPosX: UInt
-  //) = getEitherSubLineMemTempArrIdx(
-  //  pxPosX=pxPosX,
-  //  //isObj=true
-  //)
-
-
-  //def getEitherSubLineMemTempAddr(
-  //  pxPosX: UInt,
-  //  //isObj: Boolean,
-  //) = {
-  //  assert(pxPosX.getWidth >= log2Up(oneLineMemSize))
-
-  //  pxPosX(
-  //    log2Up(oneLineMemSize) - 1
-  //    downto (
-  //      //if (!isObj) {
-  //      //  bgSubLineMemArrSizePow
-  //      //} else 
-  //      {
-  //        objSubLineMemArrSizePow
-  //      }
-  //    )
-  //    //(
-  //    //  //objSubLineMemArrSizePow
-  //    //  if (!isObj) bgSubLineMemArrSizePow else objSubLineMemArrSizePow
-  //    //) - 1 downto 0
-  //  )
-  //}
-  ////def getBgSubLineMemTempAddr(
-  ////  pxPosX: UInt
-  ////) = getEitherSubLineMemTempAddr(pxPosX, isObj=false)
-  //def getObjSubLineMemTempAddr(
-  //  pxPosX: UInt
-  //) = getEitherSubLineMemTempAddr(
-  //  pxPosX=pxPosX,
-  //  //isObj=true
-  //)
-  // END: old, working but non-synthesizable code; comment out later
   //--------
   // BEGIN: new code, for implementing purely dual-port RAM for synthesis
   val bgSubLineMemArrSizePow = (
@@ -447,9 +361,7 @@ case class Gpu2dConfig(
   }
 
   def objSubLineMemArrSizePow = (
-    //log2Up(oneLineMemSize) - objTileSize2dPow.x
     log2Up(oneLineMemSize) - objSliceTileWidthPow
-    //log2Up(oneLineMemSize) - objTileWidthRshift
   )
   def objSubLineMemArrSize = 1 << objSubLineMemArrSizePow
   //println(objSubLineMemArrSize)
@@ -457,17 +369,8 @@ case class Gpu2dConfig(
     addr: UInt
   ): UInt = {
     assert(addr.getWidth >= log2Up(oneLineMemSize))
-    //addr(log2Up(oneLineMemSize) - 1 downto objTileSize2dPow.x)
     addr(log2Up(oneLineMemSize) - 1 downto objSliceTileWidthPow)
-    //addr(log2Up(oneLineMemSize) - 1 downto objTileWidthRshift)
   }
-  //def getObjSubLineMemArrGridIdx(
-  //  addr: UInt
-  //): Bool = {
-  //  assert(addr.getWidth >= log2Up(oneLineMemSize))
-  //  //addr(objTileSize2dPow.x downto objTileSize2dPow.x)
-  //  addr(objTileSize2dPow.x)
-  //}
   def getObjSubLineMemArrElemIdx(
     addr: UInt
   ): UInt = {
@@ -485,43 +388,31 @@ case class Gpu2dConfig(
     objAffineSliceTileWidth
   )
   def objAffineSubLineMemArrSizePow = (
-    //log2Up(oneLineMemSize) - objAffineDblTileSize2dPow.x
-    //log2Up(oneLineMemSize) - objAffineTileSize2dPow.x
     log2Up(oneLineMemSize) - objAffineSliceTileWidthPow
-    //log2Up(oneLineMemSize) - objAffineTileWidthRshift //(objAffineTileWidthRshift + 1)
   )
   def objAffineSubLineMemArrSize = 1 << objAffineSubLineMemArrSizePow
-  println(
-    f"obj slm: "
-    + f"${objSubLineMemArrSize} "
-    + f"${objSubLineMemArrSizePow}: "
-    + f"log2Up(${objSliceTileWidth}) "
-    + f" == ${objSliceTileWidthPow}"
-  )
-  println(
-    f"objAffine slm: "
-    + f"${objAffineSubLineMemArrSize} "
-    + f"${objAffineSubLineMemArrSizePow}: "
-    + f"log2Up(${objAffineSliceTileWidth}) "
-    + f" == ${objAffineSliceTileWidthPow}"
-  )
+  //println(
+  //  f"obj slm: "
+  //  + f"${objSubLineMemArrSize} "
+  //  + f"${objSubLineMemArrSizePow}: "
+  //  + f"log2Up(${objSliceTileWidth}) "
+  //  + f" == ${objSliceTileWidthPow}"
+  //)
+  //println(
+  //  f"objAffine slm: "
+  //  + f"${objAffineSubLineMemArrSize} "
+  //  + f"${objAffineSubLineMemArrSizePow}: "
+  //  + f"log2Up(${objAffineSliceTileWidth}) "
+  //  + f" == ${objAffineSliceTileWidthPow}"
+  //)
   def getObjAffineSubLineMemArrIdx(
     addr: UInt
   ): UInt = {
     assert(addr.getWidth >= log2Up(oneLineMemSize))
-    //addr(log2Up(oneLineMemSize) - 1 downto objAffineDblTileSize2dPow.x)
-    //addr(log2Up(oneLineMemSize) - 1 downto objAffineTileSize2dPow.x)
     val tempRange = (
       log2Up(oneLineMemSize) - 1 downto objAffineSliceTileWidthPow
     )
-    //println(
-    //  f"getObjAffineSubLineMemArrIdx(): ${tempRange}"
-    //)
     addr(tempRange)
-    //addr(
-    //  log2Up(oneLineMemSize) - 1
-    //  downto objAffineTileWidthRshift //+ 1
-    //)
   }
   //def getObjAffineSubLineMemArrGridIdx(
   //  addr: UInt
@@ -540,25 +431,15 @@ case class Gpu2dConfig(
   //--------
   def tempObjTileWidthPow(isAffine: Boolean) = (
     if (!isAffine) {
-      //objTileSize2dPow.x
       objSliceTileWidthPow
     } else {
-      //objAffineDblTileSize2dPow
-      //ElabVec2[Int](
-      //  x=objAffineSliceTileWidthPow,
-      //  y=objAffineDblTileSize2dPow.y,
-      //)
-      //objAffineSliceTileWidthPow
       myDbgObjAffineTileWidthPow
     }
   )
   def tempObjTileWidth(isAffine: Boolean) = (
     if (!isAffine) {
-      //objTileSize2d.x
       objSliceTileWidth
     } else {
-      //objAffineDblTileSize2d
-      //objAffineSliceTileWidth
       myDbgObjAffineTileWidth
     }
   )
@@ -568,12 +449,6 @@ case class Gpu2dConfig(
       objTileSize2dPow.x
     } else {
       objAffineTileSize2dPow.x
-      //ElabVec2[Int](
-      //  x=objAffineSliceTileWidthPow,
-      //  y=objAffineDblTileSize2dPow.y,
-      //)
-      //objAffineSliceTileWidthPow
-      //myDbgObjAffineTileWidthPow
     }
   )
   def tempObjTileWidth1(isAffine: Boolean) = (
@@ -581,8 +456,6 @@ case class Gpu2dConfig(
       objTileSize2d.x
     } else {
       objAffineTileSize2d.x
-      //objAffineSliceTileWidth
-      //myDbgObjAffineTileWidth
     }
   )
 
@@ -591,12 +464,6 @@ case class Gpu2dConfig(
       objTileSize2dPow.x
     } else {
       objAffineDblTileSize2dPow.x
-      //ElabVec2[Int](
-      //  x=objAffineSliceTileWidthPow,
-      //  y=objAffineDblTileSize2dPow.y,
-      //)
-      //objAffineSliceTileWidthPow
-      //myDbgObjAffineTileWidthPow
     }
   )
   def tempObjTileWidth2(isAffine: Boolean) = (
@@ -604,8 +471,6 @@ case class Gpu2dConfig(
       objTileSize2d.x
     } else {
       objAffineDblTileSize2d.x
-      //objAffineSliceTileWidth
-      //myDbgObjAffineTileWidth
     }
   )
 
@@ -624,18 +489,7 @@ case class Gpu2dConfig(
     }
   )
   //--------
-  //def lineFifoDepth = oneLineMemSize * 2 + 1
-  //def lineFifoDepth = oneLineMemSize + 1
-  //def numLineMems = 2
-  //def numLineMems = 1 << physFbSize2dScalePow.y
-  //def numLineMems = 4
-  //def numLineMems = 2
-  //def numLineMemsPerBgObjRenderer = 4
   def numLineMemsPerBgObjRenderer = 2
-  //def numLineMems = numBgs
-  //def wrBgObjStallFifoAmountCanPush = 8
-  //def combinePipeOverflowFifoSize = oneLineMemSize
-  //def combinePipeOverflowOccupancyAt = combinePipeOverflowFifoSize - 8
   //--------
   val bgSize2dInTiles = ElabVec2[Int](
     x=1 << bgSize2dInTilesPow.x,
@@ -650,27 +504,14 @@ case class Gpu2dConfig(
   //--------
   def numPxsPerBgTile = bgTileSize2d.x * bgTileSize2d.y
   def numPxsPerObjTile = objTileSize2d.x * objTileSize2d.y
-  //def numPxsForAllBgTiles = numBgTiles * numPxsPerBgTile
-  //def numPxsForAllObjTiles = numObjTiles * numPxsPerObjTile
   //--------
   def numTilesPerBg = bgSize2dInTiles.x * bgSize2dInTiles.y
   def numPxsPerBg = numTilesPerBg * numPxsPerBgTile
   def numPxsForAllBgs = numBgs * numPxsPerBg
   //--------
-  //def objAttrsMemIdxWidth = log2Up(numObjs)
-  //def objAttrsVecIdxWidth = log2Up(numObjs)
   def objAttrsMemIdxWidth = numObjsPow
   def objCntWidthShift = (
-    //1 // to account for the extra cycle delay between pixels
-    //(
-    //  if (objTileWidthRshift == 0) {
-    //    1
-    //  } else {
-    //    objTileWidthRshift
-    //  }
-    //)
     + objTileWidthRshift
-    //+ objSliceTileWidthPow
     + 1 // to account for the rendering grid
   )
   def objAttrsMemIdxTileCntWidth = (
@@ -9731,88 +9572,26 @@ case class Gpu2d(
           tempObjTileWidthPow(kind != 0)
         )
 
-        //objTileMemArr(kind).io.rdEn := True
-        //objTileMemArr(kind).io.rdAddr := (
-        //  tempInp.objAttrs.tileIdx
-        //)
         if (kind == 1) {
           for (x <- 0 until myTempObjTileWidth) {
-            //val dbgTestFxTilePxsCoord = cloneOf(
-            //  tempOutp.stage5.fxTilePxsCoord(x)
-            //)
-            //  .setName(f"dbgTestWrObjPipe4_fxTilePxsCoord_$x")
-            //dbgTestFxTilePxsCoord.x := (
-            //  tempInp.stage3.multAX(x)
-            //  + tempInp.stage3.multBY(x)
-            //).resized
-            //dbgTestFxTilePxsCoord.y := (
-            //  tempInp.stage3.multCX(x)
-            //  + tempInp.stage3.multDY(x)
-            //).resized
-            //when (tempInp.stage0.affineActive) {
-              tempOutp.stage6.fxTilePxsCoord(x).x := (
-                tempInp.stage5.dbgTestFxTilePxsCoord(x).x
-                + (
-                  //(cfg.objTileSize2d.x / 2)
-                  (cfg.objAffineTileSize2d.x / 2)
-                  //cfg.objAffineTileSize2d.x
-                  << (
-                    Gpu2dAffine.fracWidth //+ 1//2
-                  )
+            tempOutp.stage6.fxTilePxsCoord(x).x := (
+              tempInp.stage5.dbgTestFxTilePxsCoord(x).x
+              + (
+                (cfg.objAffineTileSize2d.x / 2)
+                << (
+                  Gpu2dAffine.fracWidth
                 )
-                //Cat(
-                //  //False,
-                //  //dbgTestFxTilePxsCoord.x >> 1
-                //  B"00",
-                //  dbgTestFxTilePxsCoord.x >> 2
-                //).asUInt
-                //+ Mux[SInt](
-                //  dbgTestFxTilePxsCoord.x < 0,
-                //  //S(
-                //  //  dbgTestFxTilePxsCoord.x.getWidth bits,
-                //    1 << (Gpu2dAffine.fracWidth - 1)
-                //  //)
-                //  ,
-                //  //S(
-                //  //  dbgTestFxTilePxsCoord.x.getWidth bits,
-                //    -1 << (Gpu2dAffine.fracWidth - 1)
-                //  //)
-                //)
               )
-              tempOutp.stage6.fxTilePxsCoord(x).y := (
-                //dbgTestFxTilePxsCoord.y
-                tempInp.stage5.dbgTestFxTilePxsCoord(x).y
-                + (
-                  //(cfg.objTileSize2d.y / 2)
-                  (cfg.objAffineTileSize2d.y / 2)
-                  //cfg.objAffineTileSize2d.y
-                  << (
-                    Gpu2dAffine.fracWidth //+ 1//2
-                  )
+            )
+            tempOutp.stage6.fxTilePxsCoord(x).y := (
+              tempInp.stage5.dbgTestFxTilePxsCoord(x).y
+              + (
+                (cfg.objAffineTileSize2d.y / 2)
+                << (
+                  Gpu2dAffine.fracWidth
                 )
-                //Cat(
-                //  B"00",
-                //  //dbgTestFxTilePxsCoord.y >> 1
-                //  dbgTestFxTilePxsCoord.y >> 2
-                //).asUInt
-                //+ (1 << (Gpu2dAffine.fracWidth - 1))
-                //+ Mux[SInt](
-                //  dbgTestFxTilePxsCoord.y < 0,
-                //  //S(
-                //  //  dbgTestFxTilePxsCoord.x.getWidth bits,
-                //    1 << (Gpu2dAffine.fracWidth - 1)
-                //  //)
-                //  ,
-                //  //S(
-                //  //  dbgTestFxTilePxsCoord.x.getWidth bits,
-                //    -1 << (Gpu2dAffine.fracWidth - 1)
-                //  //)
-                //)
               )
-            //} otherwise {
-            //  tempOutp.stage5.fxTilePxsCoord(x).x := 0
-            //  tempOutp.stage5.fxTilePxsCoord(x).y := 0
-            //}
+            )
           }
         }
       }
@@ -11600,11 +11379,11 @@ case class Gpu2d(
           tempOutp.objPickSubLineMemEntry := objRdSubLineMemEntry
         } else {
           switch (Cat(
-            List(
-              objRdSubLineMemEntry.col.a,
+            //List(
+              objRdSubLineMemEntry.prio < objAffineRdSubLineMemEntry.prio,
               objAffineRdSubLineMemEntry.col.a,
-              objRdSubLineMemEntry.prio < objAffineRdSubLineMemEntry.prio
-            ).reverse
+              objRdSubLineMemEntry.col.a,
+            //).reverse
           )) {
             is (M"10-") {
               tempOutp.objPickSubLineMemEntry := (

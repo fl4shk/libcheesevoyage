@@ -1821,7 +1821,7 @@ case class Gpu2dTest(
           )
         ).resized
       )
-    } 
+    }
     else if (idx == 1) {
       //--------
       //tempBgEntryPush.valid := tempBgEntryPush.valid.getZero
@@ -3592,8 +3592,8 @@ case class Gpu2dTest(
       //tempObjAffineAttrs.pos.y := 0
       //tempObjAffineAttrs.prio := 0
       tempObjAffineAttrs.prio := (
-        //1
-        0
+        1
+        //0
       )
       tempObjAffineAttrs.size2d.x := cfg.objAffineTileSize2d.x
       tempObjAffineAttrs.size2d.y := cfg.objAffineTileSize2d.y
