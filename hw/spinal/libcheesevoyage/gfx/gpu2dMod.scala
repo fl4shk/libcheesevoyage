@@ -4409,6 +4409,20 @@ case class Gpu2d(
     val wrObjAffineSubLineMemArr = new ArrayBuffer[
       FpgacpuRamSimpleDualPort[Vec[ObjSubLineMemEntry]]
     ]()
+    // BEGIN: don't remove this
+    //val wrObjSubLineMemArr = new ArrayBuffer[
+    //  //FpgacpuRamSimpleDualPort[Vec[ObjSubLineMemEntry]]
+    //  PipeMemRmw[
+    //    Vec[ObjSubLineMemEntry],
+    //    WrObjPipeSlmRmwHazardCmp,
+    //    WrObjPipePayload,
+    //    PipeMemRmwDualRdTypeDisabled[
+    //      Vec[ObjSubLineMemEntry],
+    //      WrObjPipeSlmRmwHazardCmp,
+    //    ]
+    //  ]
+    //]()
+    // END: don't remove this
     val combineObjAffineSubLineMemArr = new ArrayBuffer[
       WrPulseRdPipeSimpleDualPortMem[
         //Bits,
@@ -9293,7 +9307,6 @@ case class Gpu2d(
         switch (pipeIn.bgIdx) {
           for (tempBgIdx <- 0 until cfg.numBgs) {
             is (tempBgIdx) {
-              //pipeOut.scroll := bgAttrsArr(tempBgIdx).scroll
               pipeOut.bgAttrs := bgAttrsArr(tempBgIdx)
               pipeOut.bgAttrs.scroll.allowOverride
               when (pipeOut.bgAttrs.fbAttrs.doIt) {
@@ -9314,8 +9327,10 @@ case class Gpu2d(
         pipeOut.bakCntMinus1 := pipeIn.bakCntMinus1
         pipeOut.bgIdx := pipeIn.bgIdx
       }
+      // END: Stage 0
 
       //// BEGIN: post stage 0
+      // BEGIN: Stage 1
       //pipeStageMainFunc=(
       //  stageData: DualPipeStageData[Flow[WrBgPipePayload]],
       //  idx: Int,
@@ -9422,11 +9437,6 @@ case class Gpu2d(
                     )
                     ,
                     y=(
-                      //inpScroll.y.high - 1
-                      //downto cfg.bgTileSize2dPow.y
-
-                      //inpScroll.y.high downto cfg.bgTileSize2dPow.y
-
                       // BEGIN: old, pre-multi-pixel pipeline
                       (
                         cfg.bgSize2dInTilesPow.y
@@ -9434,8 +9444,6 @@ case class Gpu2d(
                       )
                       downto cfg.bgTileSize2dPow.y
                       // END: old, pre-multi-pixel pipeline
-                      //tempWrBgPxsPos.y.high
-                      //downto cfg.bgTileSize2dPow.y
                     )
                     ,
                   )
@@ -9449,7 +9457,9 @@ case class Gpu2d(
           }
         }
       }
+      // END: Stage 1
 
+      // BEGIN: Stage 2
       //pipeStageMainFunc=(
       //  stageData: DualPipeStageData[Flow[WrBgPipePayload]],
       //  idx: Int,
@@ -9565,15 +9575,13 @@ case class Gpu2d(
           }
         }
       }
+      // END: Stage 2
+
+      // BEGIN: Stage 3
       {
         def idx = 3
         val (pipeIn, pipeOut) = initTempWrBgPipeOut(idx=idx)
-        for (
-          kind <- 0 until cfg.totalNumBgKinds
-          //kind <- 0 until 1
-        ) {
-          //val tempInp = stageData.pipeIn(idx)
-          //val tempOutp = stageData.pipeOut(idx)
+        for (kind <- 0 until cfg.totalNumBgKinds) {
           def tempInp = (
             if (kind == 0) {
               pipeIn.postStage0
@@ -9669,6 +9677,9 @@ case class Gpu2d(
           }
         }
       }
+      // END: Stage 3
+
+      // BEGIN: Stage 4
       //  pipeStageMainFunc=(
       //    stageData: DualPipeStageData[Flow[WrBgPipePayload]],
       //    idx: Int,
@@ -9736,6 +9747,9 @@ case class Gpu2d(
           }
         }
       }
+      // END: Stage 4
+
+      // BEGIN: Stage 5
       //  pipeStageMainFunc=(
       //    stageData: DualPipeStageData[Flow[WrBgPipePayload]],
       //    idx: Int,
@@ -9778,6 +9792,9 @@ case class Gpu2d(
 
         }
       }
+      // END: Stage 5
+
+      // BEGIN: Stage 6
       //  pipeStageMainFunc=(
       //    stageData: DualPipeStageData[Flow[WrBgPipePayload]],
       //    idx: Int,
@@ -9942,6 +9959,9 @@ case class Gpu2d(
           )
         }
       }
+      // END: Stage 6
+
+      // BEGIN: Stage 7
       //pipeStageMainFunc=(
       //  stageData: DualPipeStageData[Flow[WrBgPipePayload]],
       //  idx: Int,
@@ -10042,6 +10062,8 @@ case class Gpu2d(
           }
         }
       }
+      // END: Stage 7
+      // BEGIN: Stage 8
       //pipeStageMainFunc=(
       //  stageData: DualPipeStageData[Flow[WrBgPipePayload]],
       //  idx: Int,
@@ -10078,6 +10100,8 @@ case class Gpu2d(
           }
         }
       }
+      // END: Stage 8
+      // BEGIN: Stage 9
       //pipeStageMainFunc=(
       //  stageData: DualPipeStageData[Flow[WrBgPipePayload]],
       //  idx: Int,
@@ -10115,6 +10139,8 @@ case class Gpu2d(
           }
         }
       }
+      // END: Stage 9
+      // BEGIN: Stage 10
       //pipeStageMainFunc=(
       //  stageData: DualPipeStageData[Flow[WrBgPipePayload]],
       //  idx: Int,
@@ -10158,6 +10184,8 @@ case class Gpu2d(
           }
         }
       }
+      // END: Stage 10
+      // BEGIN: Stage 11
       //pipeStageMainFunc=(
       //  stageData: DualPipeStageData[Flow[WrBgPipePayload]],
       //  idx: Int,
@@ -10202,6 +10230,8 @@ case class Gpu2d(
           }
         }
       }
+      // END: Stage 11
+      // BEGIN: Stage 12
       //pipeStageMainFunc=(
       //  stageData: DualPipeStageData[Flow[WrBgPipePayload]],
       //  idx: Int,
@@ -10267,46 +10297,13 @@ case class Gpu2d(
               }
             }
           }
-          //when (
-          //  // This could be split into more pipeline stages, but it
-          //  // might not be necessary with 4 or fewer backgrounds
-          //  (
-          //    (
-          //      (bgIdx === (1 << bgIdx.getWidth) - 1)
-          //      || (
-          //        //rPastLineMemEntry(x).col.a === False
-          //        !rPastLineMemEntry(x).col.a
-          //        //&& pastLineMemEntry(x).prio === 
-          //        //--------
-          //        //False
-          //        //--------
-          //      )
-          //      //&& 
-          //    ) && (
-          //      tempInp.postStage0.palEntryNzMemIdx(x)
-          //    ) && (
-          //      !tempInp.bakCnt.msb
-          //    )
-          //  ) //&& tempAttrs.visib
-          //  //bgIdx === 0
-          //) {
-          //  setTempLineMemEntry()
-          //} 
-          ////elsewhen (
-          ////  bgIdx =/= (1 << bgIdx.getWidth) - 1
-          ////) {
-          ////  //tempLineMemEntry := rPastLineMemEntry(x)
-          ////  tempLineMemEntry := tempLineMemEntry.getZero
-          ////} 
-          //  .otherwise {
-          //  tempLineMemEntry := rPastLineMemEntry(x)
-          //  //tempLineMemEntry := tempLineMemEntry.getZero
-          //}
           // END: fix this later
           //--------
         
         }
       }
+      // END: Stage 12
+
       def tempArrIdx(kdx: Int) = (
         wrBgPipeLast.postStage0.subLineMemEntry(kdx)
         .getSubLineMemTempArrIdx()
