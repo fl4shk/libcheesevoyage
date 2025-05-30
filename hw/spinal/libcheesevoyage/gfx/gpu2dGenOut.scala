@@ -324,7 +324,8 @@ object Gpu2dSimDutParams {
     //numObjsPow=log2Up(4),
     //numObjsPow=log2Up(8),
     numObjsPow=(
-      log2Up(8)
+      log2Up(4)
+      //log2Up(8)
       //log2Up(16)
       //log2Up(128)
     ),
@@ -375,7 +376,8 @@ object Gpu2dSimDutParams {
       //Some(8)
       //Some(16)
       //Some(4)
-      Some(128)
+      //Some(128)
+      Some(32 * 4 * 4)
       //Some(256)
       //Some(32)
     ),

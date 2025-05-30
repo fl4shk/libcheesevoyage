@@ -1,5 +1,5 @@
 #!/bin/bash
-make verilate && make -j12
+make verilate && make -j18
 #numactl -m 0 -C 0,1,2,3 -m 1 -C 4,5,6,7 -- make verilate 
 #numactl --physcpubind=+0-4,8-12 -- 
 #./build.sh

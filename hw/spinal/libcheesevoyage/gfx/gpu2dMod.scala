@@ -4406,22 +4406,22 @@ case class Gpu2d(
         Vec[ObjSubLineMemEntry]
       ]
     ]()
-    val wrObjAffineSubLineMemArr = new ArrayBuffer[
-      FpgacpuRamSimpleDualPort[Vec[ObjSubLineMemEntry]]
-    ]()
-    // BEGIN: don't remove this
     //val wrObjAffineSubLineMemArr = new ArrayBuffer[
-    //  //FpgacpuRamSimpleDualPort[Vec[ObjSubLineMemEntry]]
-    //  PipeMemRmw[
-    //    Vec[ObjSubLineMemEntry],
-    //    WrObjPipeSlmRmwHazardCmp,
-    //    WrObjPipePayload,
-    //    PipeMemRmwDualRdTypeDisabled[
-    //      Vec[ObjSubLineMemEntry],
-    //      WrObjPipeSlmRmwHazardCmp,
-    //    ]
-    //  ]
+    //  FpgacpuRamSimpleDualPort[Vec[ObjSubLineMemEntry]]
     //]()
+    // BEGIN: don't remove this
+    val wrObjAffineSubLineMemArr = new ArrayBuffer[
+      //FpgacpuRamSimpleDualPort[Vec[ObjSubLineMemEntry]]
+      PipeMemRmw[
+        Vec[ObjSubLineMemEntry],
+        WrObjPipeSlmRmwHazardCmp,
+        WrObjPipePayload,
+        PipeMemRmwDualRdTypeDisabled[
+          Vec[ObjSubLineMemEntry],
+          WrObjPipeSlmRmwHazardCmp,
+        ]
+      ]
+    ]()
     // END: don't remove this
     val combineObjAffineSubLineMemArr = new ArrayBuffer[
       WrPulseRdPipeSimpleDualPortMem[
@@ -4669,17 +4669,17 @@ case class Gpu2d(
       someFullLineNumInit=wrObjFullLineNumInit,
     )
     val objWriter = ObjSubLineMemWriter(
-      someWrObjSubLineMemArr=(
-        //wrObjSubLineMemArr
-        None
-      ),
+      //someWrObjSubLineMemArr=(
+      //  //wrObjSubLineMemArr
+      //  None
+      //),
       someCombineObjSubLineMemArr=combineObjSubLineMemArr,
       //extName=""
       isAffine=false,
     )
     val objAffineWriter = (!noAffineObjs) generate (
       ObjSubLineMemWriter(
-        someWrObjSubLineMemArr=Some(wrObjAffineSubLineMemArr),
+        //someWrObjSubLineMemArr=Some(wrObjAffineSubLineMemArr),
         someCombineObjSubLineMemArr=combineObjAffineSubLineMemArr,
         //extName="Affine"
         isAffine=true,
@@ -4895,17 +4895,93 @@ case class Gpu2d(
         for (initIdx <- 0 until cfg.objAffineSubLineMemArrSize) {
           objAffineSubLineMemInitBigInt += BigInt(0)
         }
-        wrObjAffineSubLineMemArr += FpgacpuRamSimpleDualPort(
-          wordType=Vec.fill(
-            cfg.objAffineSliceTileWidth
-          )(
-            ObjSubLineMemEntry()
-          ),
-          depth=cfg.objAffineSubLineMemArrSize,
-          //initBigInt=Some(objAffineSubLineMemInitBigInt),
-          arrRamStyle=cfg.lineArrRamStyle,
+        val wrObjAffineSubLineMemPmCfg = (
+          PipeMemRmwConfig[
+            Vec[ObjSubLineMemEntry],
+            WrObjPipeSlmRmwHazardCmp,
+          ](
+            wordType=Vec.fill(
+              //cfg.objSliceTileWidth
+              cfg.objAffineSliceTileWidth
+            )(
+              ObjSubLineMemEntry()
+            ),
+            wordCountArr=Array.fill(1)(
+              cfg.objAffineSubLineMemArrSize
+            ).toSeq,
+            hazardCmpType=WrObjPipeSlmRmwHazardCmp(isAffine=true),
+            modRdPortCnt=wrObjPipeSlmRmwModRdPortCnt,
+            modStageCnt=wrObjPipeSlmRmwModStageCnt,
+            pipeName=s"wrObjAffineSubLineMemArr_${idx}",
+            linkArr=Some(linkArr),
+            memArrIdx=0,
+            optDualRd=false,
+            initBigInt=Some(
+              Array.fill(1)(
+                objAffineSubLineMemInitBigInt.toSeq
+              ).toSeq
+            ),
+            optEnableClear=true,
+            optModHazardKind=(
+              PipeMemRmw.ModHazardKind.Dupl
+            ),
+            vivadoDebug=(
+              if (idx == 0) (
+                vivadoDebug
+              ) else (
+                false
+              )
+            ),
+          )
         )
-          .setName(f"wrObjAffineSubLineMemArr_$idx")
+        wrObjAffineSubLineMemArr += PipeMemRmw[
+          Vec[ObjSubLineMemEntry],
+          WrObjPipeSlmRmwHazardCmp,
+          WrObjPipePayload,
+          PipeMemRmwDualRdTypeDisabled[
+            Vec[ObjSubLineMemEntry],
+            WrObjPipeSlmRmwHazardCmp,
+          ],
+        ](
+          cfg=wrObjAffineSubLineMemPmCfg,
+          modType=WrObjPipePayload(isAffine=true),
+          dualRdType=PipeMemRmwDualRdTypeDisabled[
+            Vec[ObjSubLineMemEntry],
+            WrObjPipeSlmRmwHazardCmp,
+          ],
+        )(
+          doHazardCmpFunc=Some(
+            (
+              curr: PipeMemRmwPayloadExt[
+                Vec[ObjSubLineMemEntry],
+                WrObjPipeSlmRmwHazardCmp,
+              ],
+              prev: PipeMemRmwPayloadExt[
+                Vec[ObjSubLineMemEntry],
+                WrObjPipeSlmRmwHazardCmp,
+              ],
+              zdx: Int,
+              isPostDelay: Boolean,
+            ) => (
+              curr.hazardCmp.cmp(
+                prev=prev.hazardCmp,
+                isPostDelay=isPostDelay,
+              )
+            )
+          ),
+        )
+        //.setName(f"wrObjSubLineMemArr_$idx")
+        //wrObjAffineSubLineMemArr += FpgacpuRamSimpleDualPort(
+        //  wordType=Vec.fill(
+        //    cfg.objAffineSliceTileWidth
+        //  )(
+        //    ObjSubLineMemEntry()
+        //  ),
+        //  depth=cfg.objAffineSubLineMemArrSize,
+        //  //initBigInt=Some(objAffineSubLineMemInitBigInt),
+        //  arrRamStyle=cfg.lineArrRamStyle,
+        //)
+        //  .setName(f"wrObjAffineSubLineMemArr_$idx")
         combineObjAffineSubLineMemArr += WrPulseRdPipeSimpleDualPortMem(
           dataType=CombinePipePayload(),
           wordType=Vec.fill(
@@ -4982,9 +5058,9 @@ case class Gpu2d(
     //--------
     // BEGIN: for muxing writes into `objSubLineMemArr`; later 
     case class ObjSubLineMemWriter(
-      someWrObjSubLineMemArr: Option[ArrayBuffer[
-        FpgacpuRamSimpleDualPort[Vec[ObjSubLineMemEntry]]
-      ]],
+      //someWrObjSubLineMemArr: Option[ArrayBuffer[
+      //  FpgacpuRamSimpleDualPort[Vec[ObjSubLineMemEntry]]
+      //]],
       someCombineObjSubLineMemArr: ArrayBuffer[
         WrPulseRdPipeSimpleDualPortMem[
           //Bits,
@@ -5156,15 +5232,23 @@ case class Gpu2d(
           //  data=tempData,
           //  enable=tempEn,
           //)
-          someWrObjSubLineMemArr match {
-            case Some(myWrObjSubLineMemArr) => {
-              myWrObjSubLineMemArr(jdx).io.wrEn := tempEn
-              myWrObjSubLineMemArr(jdx).io.wrAddr := tempAddr
-              myWrObjSubLineMemArr(jdx).io.wrData := tempData.asBits
-            }
-            case None => {
-            }
-          }
+
+
+          //--------
+          // BEGIN: old code for affine sprites
+          //someWrObjSubLineMemArr match {
+          //  case Some(myWrObjSubLineMemArr) => {
+          //    myWrObjSubLineMemArr(jdx).io.wrEn := tempEn
+          //    myWrObjSubLineMemArr(jdx).io.wrAddr := tempAddr
+          //    myWrObjSubLineMemArr(jdx).io.wrData := tempData.asBits
+          //  }
+          //  case None => {
+          //  }
+          //}
+          // END: old code for affine sprites
+          //--------
+
+
           //if (!isAffine) {
           //  //when (tempEn) {
           //    //switch (rCombineFullLineMemArrIdx) {
@@ -5173,7 +5257,10 @@ case class Gpu2d(
           //    }
           //  //}
           //}
-          if (!isAffine) {
+          if (
+            //!isAffine
+            true
+          ) {
             val clearVecIdx = (
               (wrObjWriterLineMemArrIdx(jdx) + jdx)(0 downto 0)
             )
@@ -5184,10 +5271,20 @@ case class Gpu2d(
               clearValidVec(clearVecIdx)
             )
             val rClear = (
-              Reg(cloneOf(wrObjSubLineMemArr(jdx).io.clear))
-              .setName(s"wrObjWriter_${extName}rClear_${jdx}")
+              Reg(cloneOf(
+                if (!isAffine) {
+                  wrObjSubLineMemArr(jdx).io.clear
+                } else {
+                  wrObjAffineSubLineMemArr(jdx).io.clear
+                }
+              ))
+              .setName(s"wrObjWriter_${extName}_rClear_${jdx}")
             )
-            wrObjSubLineMemArr(jdx).io.clear <-< rClear
+            if (!isAffine) {
+              wrObjSubLineMemArr(jdx).io.clear <-< rClear
+            } else {
+              wrObjAffineSubLineMemArr(jdx).io.clear <-< rClear
+            }
             rClear.valid := (
               //clearVecIdx =/= jdx
               tempClearValid
@@ -7131,38 +7228,467 @@ case class Gpu2d(
     val nWrObjAffineArr = Array.fill(wrBgObjPipeNumStages + 1)(Node())
     val sWrObjAffineArr = new ArrayBuffer[StageLink]()
     val cWrObjAffineArr = new ArrayBuffer[CtrlLink]()
-    for (idx <- 0 until nWrObjAffineArr.size - 1) {
-      sWrObjAffineArr += StageLink(
-        up=nWrObjAffineArr(idx),
-        down=Node(),
-      )
-      linkArr += sWrObjAffineArr.last
 
-      cWrObjAffineArr += CtrlLink(
-        up=sWrObjAffineArr.last.down,
-        down=nWrObjAffineArr(idx + 1),
+    val wrObjAffinePipePayloadSlmRmwModFrontInp = Array.fill(
+      cfg.numLineMemsPerBgObjRenderer
+    )(
+      Payload(WrObjPipePayload(isAffine=true))
+    )
+    val wrObjAffinePipePayloadSlmRmwModFrontOutp = (
+      Payload(WrObjPipePayload(isAffine=true))
+    )
+    val wrObjAffinePipePayloadSlmRmwBackInp = Array.fill(
+      cfg.numLineMemsPerBgObjRenderer
+    )(
+      Payload(WrObjPipePayload(isAffine=true))
+    )
+    val wrObjAffinePipePayloadSlmRmwBackOutp = (
+      Payload(WrObjPipePayload(isAffine=true))
+    )
+
+    val wrObjAffinePipePayloadMain = new ArrayBuffer[
+      Payload[WrObjPipePayload]
+    ]()
+
+    for (idx <- 0 until wrBgObjPipeNumStages + 1) {
+      wrObjAffinePipePayloadMain += (
+        Payload(WrObjPipePayload(isAffine=true))
+        .setName(s"wrObjAffinePipePayloadMain_${idx}")
       )
-      linkArr += cWrObjAffineArr.last
+    }
+    for (idx <- 0 until nWrObjAffineArr.size - 1) {
+      //sWrObjAffineArr += StageLink(
+      //  up=nWrObjAffineArr(idx),
+      //  down=Node(),
+      //)
+      //linkArr += sWrObjAffineArr.last
+
+      //cWrObjAffineArr += CtrlLink(
+      //  up=sWrObjAffineArr.last.down,
+      //  down=nWrObjAffineArr(idx + 1),
+      //)
+      //linkArr += cWrObjAffineArr.last
+      def addMainLinks(
+        up: Option[Node]=None,
+        down: Option[Node]=None,
+      ): Unit = {
+        sWrObjAffineArr += StageLink(
+          up={
+            up match {
+              case Some(myUp) => {
+                myUp
+              }
+              case None => {
+                nWrObjAffineArr(idx)
+              }
+            }
+          },
+          down=Node(),
+        )
+        linkArr += sWrObjAffineArr.last
+
+        cWrObjAffineArr += CtrlLink(
+          up=sWrObjAffineArr.last.down,
+          down={
+            down match {
+              case Some(myDown) => {
+                myDown
+              }
+              case None => {
+                nWrObjAffineArr(idx + 1),
+              }
+            }
+          },
+        )
+        linkArr += cWrObjAffineArr.last
+      }
+      if (idx == wrObjPipeIdxSlmRmwFront) {
+        //println("wrObjAffinePipeIdxSlmRmwFront")
+        //println(s"idx == front: $idx")
+        val down = Node()
+          .setName(s"wrObjAffinePipeSlmRmw_front_down_$idx")
+
+        addMainLinks(
+          up=None,
+          down=Some(down),
+        )
+        val nfMyArr = new ArrayBuffer[Node]()
+        for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
+          nfMyArr += (
+            Node()
+          )
+          nfMyArr.last.setName(s"nfMyArr_Affine_front_$jdx")
+        }
+        val fMyDown = ForkLink(
+          up=down,
+          downs=nfMyArr.toSeq,
+          synchronous=true,
+        )
+          .setName("fMyDown_Affine_front")
+        linkArr += fMyDown
+        for (jdx <- 0 until nfMyArr.size) {
+          val sLink = StageLink(
+            up=nfMyArr(jdx),
+            down=Node(),
+          )
+          linkArr += sLink
+          val s2mLink = S2MLink(
+            up=sLink.down,
+            down=(
+              //Node()
+              wrObjAffineSubLineMemArr(jdx).io.front
+            ),
+          )
+          linkArr += s2mLink
+
+          wrObjAffineSubLineMemArr(jdx).io.front(
+            wrObjAffineSubLineMemArr(jdx).io.frontPayload
+          ) := (
+            s2mLink.down(wrObjAffinePipePayloadMain(idx + 1))
+          )
+        }
+      } else if (idx == wrObjPipeIdxSlmRmwModFront) {
+        //println(s"idx == modFront: $idx")
+        val njMyArr = new ArrayBuffer[Node]()
+        for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
+          njMyArr += (
+            Node()
+          )
+          njMyArr.last.setName(s"njMyArr_Affine_modFront_$jdx")
+          //println(njMyArr.last.getName())
+        }
+        val jMyWrObjAffine = JoinLink(
+          ups=njMyArr.toSeq,
+          down=(
+            Node()
+            .setName("jMyWrObjAffine_modFront_down")
+          ),
+        )
+          .setName("jMyWrObjAffine_modFront")
+        linkArr += jMyWrObjAffine 
+        for (jdx <- 0 until njMyArr.size) {
+          njMyArr(jdx)(
+            wrObjAffinePipePayloadSlmRmwModFrontInp(jdx)
+          ) := (
+            wrObjAffineSubLineMemArr(
+              jdx
+            ).io.modFront(
+              wrObjAffineSubLineMemArr(jdx).io.modFrontPayload
+            )
+          )
+          if (vivadoDebug) {
+            //njMyArr(jdx)(
+            //  wrObjAffinePipePayloadSlmRmwModFrontInp(jdx)
+            //).addAttribute("MARK_DEBUG", "TRUE")
+          }
+        }
+        val dMyWrObjAffine = DirectLink(
+          up=jMyWrObjAffine.down,
+          down=(
+            Node()
+              .setName(s"dMyWrObjAffine_modFront_down_$idx")
+          ),
+        )
+          .setName(s"dMyWrObjAffine_modFront_$idx")
+        linkArr += dMyWrObjAffine
+        for (jdx <- 0 until njMyArr.size) {
+          wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
+            PipeMemRmw.extIdxUp
+          ) := (
+            RegNext(
+              wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
+                PipeMemRmw.extIdxUp
+              )
+            )
+            init(
+              wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
+                PipeMemRmw.extIdxUp
+              ).getZero
+            )
+          )
+          when (dMyWrObjAffine.up.isValid) {
+            wrObjAffineSubLineMemArr(
+              jdx
+            ).io.midModStages(0)(PipeMemRmw.extIdxUp) := (
+              dMyWrObjAffine.up(wrObjAffinePipePayloadSlmRmwModFrontInp(
+                jdx
+              ))
+            )
+          }
+          wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
+            PipeMemRmw.extIdxSaved
+          ) := (
+            RegNextWhen(
+              wrObjAffineSubLineMemArr(
+                jdx
+              ).io.midModStages(0)(PipeMemRmw.extIdxUp),
+              dMyWrObjAffine.up.isFiring
+            )
+            init(
+              wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
+                PipeMemRmw.extIdxSaved
+              )
+              .getZero
+            )
+          )
+        }
+        switch (
+          (wrObjPipeLineMemArrIdx(4) + 0)(0 downto 0)
+        ) {
+          for (
+            jdx <- 0
+            until (1 << wrObjPipeLineMemArrIdx(4).getWidth)
+          ) {
+            is (jdx) {
+              dMyWrObjAffine.down(
+                wrObjAffinePipePayloadSlmRmwModFrontOutp
+              ) := (
+                dMyWrObjAffine.up(
+                  wrObjAffinePipePayloadSlmRmwModFrontInp(jdx)
+                )
+              )
+            }
+          }
+        }
+        addMainLinks(
+          up=Some(dMyWrObjAffine.down),
+          down=None,
+        )
+      } else if (idx == wrObjPipeIdxSlmRmwModFront + 1) {
+        //println(s"idx == modFront + 1: ${idx}")
+        for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
+          wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
+            PipeMemRmw.extIdxUp
+          ) := (
+            RegNext(wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
+              PipeMemRmw.extIdxUp
+            ))
+            init(
+              wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
+                PipeMemRmw.extIdxUp
+              )
+              .getZero
+            )
+          )
+          when (nWrObjAffineArr(idx).isValid) {
+            wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
+              PipeMemRmw.extIdxUp
+            ) := (
+              nWrObjAffineArr(idx)
+              (
+                wrObjAffinePipePayloadMain(idx /*+ 1*/)
+              )
+            )
+          }
+          wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
+            PipeMemRmw.extIdxSaved
+          ) := (
+            RegNextWhen(
+              wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
+                PipeMemRmw.extIdxUp
+              ),
+              nWrObjAffineArr(idx).isFiring
+            )
+          )
+        }
+        addMainLinks(
+          up=None,
+          down=None,
+        )
+      } else if (idx == wrObjPipeIdxSlmRmwModBack) {
+        //println("wrObjAffinePipeIdxSlmRmwModBack")
+        //println(s"idx == modBack: $idx")
+        val down = Node()
+          .setName(s"wrObjAffinePipeSlmRmw_modBack_down_$idx")
+        addMainLinks(
+          up=None,
+          down=Some(down),
+        )
+        val nfMyArr = new ArrayBuffer[Node]()
+        for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
+          nfMyArr += (
+            wrObjAffineSubLineMemArr(jdx).io.modBack
+          )
+          nfMyArr.last.setName(s"nfMyArr_Affine_modBack_$jdx")
+        }
+        val fMyDown = ForkLink(
+          up=down,
+          downs=nfMyArr.toSeq,
+          synchronous=true,
+        )
+        linkArr += fMyDown
+        for (jdx <- 0 until nfMyArr.size) {
+          wrObjAffineSubLineMemArr(jdx).io.modBack(
+            wrObjAffineSubLineMemArr(jdx).io.modBackPayload
+          ) := (
+            nfMyArr(jdx)(
+              wrObjAffinePipePayloadMain(idx + 1)
+            )
+          )
+          wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
+              PipeMemRmw.extIdxUp
+          ):= (
+            RegNext(
+              wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
+                PipeMemRmw.extIdxUp
+              )
+            )
+            init(
+              wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
+                PipeMemRmw.extIdxUp
+              )
+              .getZero
+            )
+          )
+          when (nWrObjAffineArr(idx).isValid) {
+            wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
+              PipeMemRmw.extIdxUp
+            ) := (
+              nWrObjAffineArr(idx)(
+                wrObjAffinePipePayloadMain(idx /*+ 1*/)
+              )
+            )
+          }
+          wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
+            PipeMemRmw.extIdxSaved
+          ) := (
+            RegNextWhen(
+              wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
+                PipeMemRmw.extIdxUp
+              ),
+              nWrObjAffineArr(idx).isFiring
+            )
+          )
+          //--------
+        }
+      } else if (idx == wrObjPipeIdxSlmRmwBack) {
+        //println(s"idx == back: $idx")
+        //println("wrObjAffinePipeIdxSlmRmwBack")
+
+        val njMyArr = new ArrayBuffer[Node]()
+        for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
+          njMyArr += (
+            Node()
+          )
+          njMyArr.last.setName(s"njMyArr_Affine_back_$jdx")
+        }
+        val jMyWrObjAffine = JoinLink(
+          ups=njMyArr.toSeq,
+          down=(
+            Node()
+            .setName("jMyWrObjAffine_back_down")
+          ),
+        )
+          .setName("jMyWrObjAffine_back")
+        linkArr += jMyWrObjAffine 
+        for (jdx <- 0 until njMyArr.size) {
+          njMyArr(jdx)(
+            wrObjAffinePipePayloadSlmRmwBackInp(jdx)
+          ) := (
+            wrObjAffineSubLineMemArr(jdx).io.back(
+              wrObjAffineSubLineMemArr(jdx).io.backPayload
+            )
+          )
+        }
+        val dMyWrObjAffine = DirectLink(
+          up=jMyWrObjAffine.down,
+          down=(
+            Node()
+              .setName(s"dMyWrObjAffine_back_down_$idx")
+          ),
+        )
+          .setName(s"dMyWrObjAffine_back_$idx")
+        linkArr += dMyWrObjAffine
+        switch ((wrObjPipeLineMemArrIdx(5) + 0)(0 downto 0)) {
+          for (
+            jdx <- 0
+            until (1 << wrObjPipeLineMemArrIdx(5).getWidth)
+          ) {
+            is (jdx) {
+              //println(s"is (${jdx})")
+              dMyWrObjAffine.down(
+                wrObjAffinePipePayloadSlmRmwBackOutp
+              ) := (
+                dMyWrObjAffine.up(
+                  wrObjAffinePipePayloadSlmRmwBackInp(jdx)
+                )
+              )
+            }
+            default {
+              //println(s"default ${jdx}")
+            }
+          }
+        }
+        addMainLinks(
+          up=Some(dMyWrObjAffine.down),
+          down=None,
+        )
+      } else {
+        addMainLinks()
+      }
     }
     val nWrObjAffinePipeLast = nWrObjAffineArr.last
-    val wrObjAffinePipePayload = Payload(WrObjPipePayload(
-      isAffine=true
-    ))
+    //val wrObjAffinePipePayload = Payload(WrObjPipePayload(
+    //  isAffine=true
+    //))
+    //def wrObjAffinePipeLast = nWrObjAffinePipeLast(
+    //  wrObjAffinePipePayload
+    //)
+    //def initTempWrObjAffinePipeOut(
+    //  idx: Int,
+    //): (WrObjPipePayload, WrObjPipePayload) = {
+    //  // This function returns `(tempInp, tempOutp)`
+    //  val pipeIn = (
+    //    cWrObjAffineArr(idx).up(wrObjAffinePipePayload)
+    //  )
+    //  val pipeOut = WrObjPipePayload(isAffine=true)
+
+    //  pipeOut := pipeIn
+    //  pipeOut.allowOverride
+    //  cWrObjAffineArr(idx).bypass(wrObjAffinePipePayload) := pipeOut
+
+    //  (pipeIn, pipeOut)
+    //}
     def wrObjAffinePipeLast = nWrObjAffinePipeLast(
-      wrObjAffinePipePayload
+      //wrObjAffinePipePayloadArr.last
+      wrObjAffinePipePayloadMain(wrObjAffinePipePayloadMain.size - 1)
+    )
+    val wrObjAffinePipeOutArr = Array.fill(wrBgObjPipeNumStages)(
+      WrObjPipePayload(isAffine=true)
+    )
+    val tempWrObjAffinePipeOutArr = Array.fill(wrBgObjPipeNumStages)(
+      WrObjPipePayload(isAffine=true)
     )
     def initTempWrObjAffinePipeOut(
       idx: Int,
     ): (WrObjPipePayload, WrObjPipePayload) = {
       // This function returns `(tempInp, tempOutp)`
-      val pipeIn = (
-        cWrObjAffineArr(idx).up(wrObjAffinePipePayload)
+      def pipeIn = (
+        if (idx == wrObjPipeIdxSlmRmwModFront) {
+          cWrObjAffineArr(idx).up(
+            wrObjAffinePipePayloadSlmRmwModFrontOutp
+          )
+        } 
+        else if (idx == wrObjPipeIdxSlmRmwBack) {
+          cWrObjAffineArr(idx).up(wrObjAffinePipePayloadSlmRmwBackOutp)
+        } else {
+          cWrObjAffineArr(idx).up(wrObjAffinePipePayloadMain(idx))
+        }
       )
-      val pipeOut = WrObjPipePayload(isAffine=true)
-
+      def pipeOut = wrObjAffinePipeOutArr(idx)
       pipeOut := pipeIn
       pipeOut.allowOverride
-      cWrObjAffineArr(idx).bypass(wrObjAffinePipePayload) := pipeOut
+
+      def tempPipeOut = tempWrObjAffinePipeOutArr(idx)
+      tempPipeOut := (
+        RegNext(tempPipeOut) init(tempPipeOut.getZero)
+      )
+      when (cWrObjAffineArr(idx).up.isValid) {
+        tempPipeOut := pipeOut
+      }
+      cWrObjAffineArr(idx).up(wrObjAffinePipePayloadMain(idx + 1)) := (
+        tempPipeOut
+      )
 
       (pipeIn, pipeOut)
     }
@@ -7308,7 +7834,7 @@ case class Gpu2d(
 
       nWrObjAffineArr(0).driveFrom(wrObjAffinePipeFront)(
         con=(node, payload) => {
-          node(wrObjAffinePipePayload) := payload
+          node(wrObjAffinePipePayloadMain(0)) := payload
         },
       )
 
@@ -9849,10 +10375,10 @@ case class Gpu2d(
             if (kind == 0) {
               //wrObjSubLineMemArr(jdx)
             } else {
-              val temp = wrObjAffineSubLineMemArr(jdx)
-              temp.io.rdEn := True
-              temp.io.rdAddr := 0
-              temp.io.rdAddr.allowOverride
+              //val temp = wrObjAffineSubLineMemArr(jdx)
+              //temp.io.rdEn := True
+              //temp.io.rdAddr := 0
+              //temp.io.rdAddr.allowOverride
             }
           //)
         }
@@ -9908,7 +10434,8 @@ case class Gpu2d(
                 if (kind == 0) {
                   tempOutp.subLineMemEntryExt.memAddr(PipeMemRmw.modWrIdx)
                 } else {
-                  wrObjAffineSubLineMemArr(jdx).io.rdAddr
+                  tempOutp.subLineMemEntryExt.memAddr(PipeMemRmw.modWrIdx)
+                  //wrObjAffineSubLineMemArr(jdx).io.rdAddr
                 }
               )
                 .setName({
@@ -10016,7 +10543,10 @@ case class Gpu2d(
                     PipeMemRmw.modWrIdx
                   ).asBits
                 } else {
-                  wrObjAffineSubLineMemArr(jdx).io.rdData.asBits
+                  tempInp.subLineMemEntryExt.rdMemWord(
+                    PipeMemRmw.modWrIdx
+                  ).asBits
+                  //wrObjAffineSubLineMemArr(jdx).io.rdData.asBits
                 }
               )
                 .setName(
@@ -10693,7 +11223,15 @@ case class Gpu2d(
             wrObjPipePayloadMain(wrObjPipePayloadMain.size - 1)
           )
         } else {
-          tempNWrObjPipeLast(wrObjAffinePipePayload)
+          //tempNWrObjPipeLast(wrObjAffinePipePayload)
+
+          tempNWrObjPipeLast(
+            //wrObjPipePayloadMain
+            //wrObjPipePayloadSlmRmwBackOutp
+            wrObjAffinePipePayloadMain(
+              wrObjAffinePipePayloadMain.size - 1
+            )
+          )
         }
       )
       def tempObjWriter = (

@@ -796,7 +796,7 @@ int main(int argc, char** argv) {
 	std::unique_ptr<
 		//VerilatedFstC
 		VerilatedVcdC
-	> trace(nullptr);//(new VerilatedFstC);
+	> trace(nullptr /*new VerilatedFstC*/);
 	if (trace) {
 		Verilated::traceEverOn(true);
 	}
