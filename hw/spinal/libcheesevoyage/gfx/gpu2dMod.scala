@@ -491,13 +491,33 @@ case class Gpu2dConfig(
     //log2Up(oneLineMemSize) - objAffineTileWidthRshift //(objAffineTileWidthRshift + 1)
   )
   def objAffineSubLineMemArrSize = 1 << objAffineSubLineMemArrSizePow
+  println(
+    f"obj slm: "
+    + f"${objSubLineMemArrSize} "
+    + f"${objSubLineMemArrSizePow}: "
+    + f"log2Up(${objSliceTileWidth}) "
+    + f" == ${objSliceTileWidthPow}"
+  )
+  println(
+    f"objAffine slm: "
+    + f"${objAffineSubLineMemArrSize} "
+    + f"${objAffineSubLineMemArrSizePow}: "
+    + f"log2Up(${objAffineSliceTileWidth}) "
+    + f" == ${objAffineSliceTileWidthPow}"
+  )
   def getObjAffineSubLineMemArrIdx(
     addr: UInt
   ): UInt = {
     assert(addr.getWidth >= log2Up(oneLineMemSize))
     //addr(log2Up(oneLineMemSize) - 1 downto objAffineDblTileSize2dPow.x)
     //addr(log2Up(oneLineMemSize) - 1 downto objAffineTileSize2dPow.x)
-    addr(log2Up(oneLineMemSize) - 1 downto objAffineSliceTileWidthPow)
+    val tempRange = (
+      log2Up(oneLineMemSize) - 1 downto objAffineSliceTileWidthPow
+    )
+    //println(
+    //  f"getObjAffineSubLineMemArrIdx(): ${tempRange}"
+    //)
+    addr(tempRange)
     //addr(
     //  log2Up(oneLineMemSize) - 1
     //  downto objAffineTileWidthRshift //+ 1
@@ -596,7 +616,8 @@ case class Gpu2dConfig(
       objAffineDblTileSize2d.y
     }
   )
-  def anyObjTilePxsCoordT(isAffine: Boolean) = ( if (!isAffine) {
+  def anyObjTilePxsCoordT(isAffine: Boolean) = (
+    if (!isAffine) {
       objTilePxsCoordT()
     } else {
       objAffineTilePxsCoordT()
@@ -5777,7 +5798,11 @@ case class Gpu2d(
 
       val objIdx = UInt(
         (
-          cfg.objAttrsMemIdxWidth
+          if (!isAffine) (
+            cfg.objAttrsMemIdxWidth
+          ) else (
+            cfg.objAffineAttrsMemIdxWidth
+          )
           //.max(cfg.objAffineAttrsMemIdxWidth)
         )
         bits
@@ -9418,13 +9443,20 @@ case class Gpu2d(
       //someWrLineMemArrIdx: Int,
       kind: Int,
     ): Unit = {
+      def myCWrObjArr = (
+        if (kind == 0) (
+          cWrObjArr
+        ) else (
+          cWrObjAffineArr
+        )
+      )
       // Handle sprites
       // BEGIN: stage 0
       //pipeStageMainFunc=(
       //  stageData: DualPipeStageData[Flow[WrObjPipePayload]],
       //  idx: Int,
       //) => 
-      {
+      if (true) {
         def idx = 0
         val (pipeIn, pipeOut): (WrObjPipePayload, WrObjPipePayload) = (
           if (kind == 0) {
@@ -9464,12 +9496,12 @@ case class Gpu2d(
         objAttrsMemArr(kind).io.rdAddr := (
           RegNext(objAttrsMemArr(kind).io.rdAddr) init(0x0)
         )
-        when (cWrObjArr(idx).up.isFiring) {
+        when (myCWrObjArr(idx).up.isFiring) {
           objAttrsMemArr(kind).io.rdAddr := (
             if (kind == 0) {
-              tempInp.objAttrsMemIdx.resized
+              tempInp.objAttrsMemIdx//.resized
             } else {
-              tempInp.stage0.affineObjAttrsMemIdx().resized
+              tempInp.stage0.affineObjAttrsMemIdx()//.resized
             }
           )
         }
@@ -9497,7 +9529,7 @@ case class Gpu2d(
         tempOutp.objAttrs := (
           RegNext(tempOutp.objAttrs) init(tempOutp.objAttrs.getZero)
         )
-        when (cWrObjArr(idx).up.isFiring) {
+        when (myCWrObjArr(idx).up.isFiring) {
           tempOutp.objAttrs.assignFromBits(
             objAttrsMemArr(kind).io.rdData
           )
@@ -9814,7 +9846,7 @@ case class Gpu2d(
             RegNext(objTileMemArr(kind).io.rdAddr)
             init(0x0)
           )
-          when (cWrObjArr(idx).up.isFiring) {
+          when (myCWrObjArr(idx).up.isFiring) {
             objTileMemArr(kind).io.rdAddr := (
               if (
                 (kind == 0 && cfg.objTileWidthRshift > 0)
@@ -10027,7 +10059,7 @@ case class Gpu2d(
           tempOutp.tileSlice := (
             RegNext(tempOutp.tileSlice) init(tempOutp.tileSlice.getZero)
           )
-          when (cWrObjArr(idx).up.isFiring) {
+          when (myCWrObjArr(idx).up.isFiring) {
             tempOutp.tileSlice.assignFromBits(
               objTileMemArr(kind).io.rdData
             )
@@ -10223,7 +10255,7 @@ case class Gpu2d(
           objPalEntryMemA2d(kind)(x).io.rdAddr := (
             RegNext(objPalEntryMemA2d(kind)(x).io.rdAddr) init(0x0)
           )
-          when (cWrObjArr(idx).up.isFiring) {
+          when (myCWrObjArr(idx).up.isFiring) {
             objPalEntryMemA2d(kind)(x).io.rdAddr := (
               tempInp.palEntryMemIdx(x)
             )
@@ -10254,7 +10286,7 @@ case class Gpu2d(
             RegNext(tempOutp.palEntry(x))
             init(tempOutp.palEntry(x).getZero)
           )
-          when (cWrObjArr(idx).up.isFiring) {
+          when (myCWrObjArr(idx).up.isFiring) {
             tempOutp.palEntry(x).assignFromBits(
               objPalEntryMemA2d(kind)(x).io.rdData.asBits
             )
@@ -11568,9 +11600,11 @@ case class Gpu2d(
           tempOutp.objPickSubLineMemEntry := objRdSubLineMemEntry
         } else {
           switch (Cat(
-            objRdSubLineMemEntry.col.a,
-            objAffineRdSubLineMemEntry.col.a,
-            objRdSubLineMemEntry.prio < objAffineRdSubLineMemEntry.prio
+            List(
+              objRdSubLineMemEntry.col.a,
+              objAffineRdSubLineMemEntry.col.a,
+              objRdSubLineMemEntry.prio < objAffineRdSubLineMemEntry.prio
+            ).reverse
           )) {
             is (M"10-") {
               tempOutp.objPickSubLineMemEntry := (
