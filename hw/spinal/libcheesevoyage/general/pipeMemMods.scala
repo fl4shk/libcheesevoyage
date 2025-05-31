@@ -1828,6 +1828,7 @@ extends Area {
       wordCount=wordCountArr(ydx),
     )
       .addAttribute("ram_style", memRamStyle)
+      .addAttribute("ramstyle", memRamStyle)
     init match {
       case Some(myInit) => {
         //assert(myInit.size == wordCount)
