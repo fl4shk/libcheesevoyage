@@ -3951,11 +3951,7 @@ extends Area {
                       ////    )
                       ////  )
                       ////)
-                      //--------
-                      // BEGIN: old `forFwd` thingy
-                      //upExt(1)(ydx)(extIdx).memAddrFwdCmp(zdx)(idx)
-                      // END: old `forFwd` thingy
-                      upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+                      upExt(1)(ydx)(extIdx).memAddrFwdCmp(zdx)(idx)
                     ),
                     prevMemAddr=(
                       //if (idx > 0) {
@@ -3997,7 +3993,7 @@ extends Area {
                       //idx == 0 && extIdx == extIdxUp
                       false
                     ),
-                    //forFwd=true,
+                    forFwd=true,
                   )
                 )
               )
