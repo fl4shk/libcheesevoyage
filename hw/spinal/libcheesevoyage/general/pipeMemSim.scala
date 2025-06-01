@@ -1079,14 +1079,18 @@ case class PipeMemRmwSimDut(
                 setOutpModMemWord(
                   someRdMemWord=someRdMemWord
                 )
-                outp.myExt(0).valid := (
-                  outp.myExt(0).modMemWordValid(0)
-                )
+                for (kdx <- 0 until PipeMemRmw.modMemWordValidSize) {
+                  outp.myExt(0).valid(kdx) := (
+                    outp.myExt(0).modMemWordValid(kdx)
+                  )
+                }
               }
               def handleDuplicateIt(
                 someModMemWordValid: Bool=False,
               ): Unit = {
-                outp.myExt(0).valid := False
+                outp.myExt(0).valid.foreach(current => {
+                  current := False
+                })
                 outp.myExt(0).modMemWordValid.foreach(current => {
                   current := (
                     someModMemWordValid
@@ -4554,9 +4558,11 @@ case class PipeMemRmwTester(
     //}
     //--------
     midModPayload(extIdxUp).myExt(0).allowOverride
-    midModPayload(extIdxUp).myExt(0).valid := (
-      cMidModFront.up.isValid
-    )
+    midModPayload(extIdxUp).myExt(0).valid.foreach(current => {
+      current := (
+        cMidModFront.up.isValid
+      )
+    })
     midModPayload(extIdxUp).myExt(0).ready := (
       cMidModFront.up.isReady
     )

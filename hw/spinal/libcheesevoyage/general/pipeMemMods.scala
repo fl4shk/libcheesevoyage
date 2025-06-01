@@ -153,7 +153,7 @@ case class PipeMemRmwConfig[
     (mySum, myMax)
   }
 
-  val modMemWordValidSize: Int = 4
+  val modMemWordValidSize: Int = PipeMemRmw.modMemWordValidSize
 }
 //--------
 object PipeMemRmwPayloadExt {
@@ -175,7 +175,11 @@ object PipeMemRmwPayloadExt {
 }
 case class PipeMemRmwPayloadExtPipeFlags(
 ) extends Bundle {
-  val valid = /*KeepAttribute*/(Bool())
+  val valid = /*KeepAttribute*/(Vec.fill(
+    PipeMemRmw.modMemWordValidSize
+  )(
+    Bool()
+  ))
   val ready = /*KeepAttribute*/(Bool())
   val fire = /*KeepAttribute*/(Bool())
 }
@@ -627,6 +631,7 @@ trait PipeMemRmwPayloadBase[
   ////--------
 }
 object PipeMemRmw {
+  def modMemWordValidSize: Int = 4
   def extMainSize = 2
   def addrWidth(
     wordCount: Int,
@@ -2357,7 +2362,7 @@ extends Area {
               //True
             ) && (
               if (doValidCheck) (
-                prev.valid
+                prev.valid(3)
               ) else (
                 True
               )
@@ -3293,7 +3298,9 @@ extends Area {
         }
       }
 
-      upExt(1)(ydx)(extIdxUp).valid := up.isValid
+      upExt(1)(ydx)(extIdxUp).valid.foreach(current => {
+        current := up.isValid
+      })
       upExt(1)(ydx)(extIdxUp).ready := up.isReady
       upExt(1)(ydx)(extIdxUp).fire := up.isFiring
     }
@@ -3794,7 +3801,9 @@ extends Area {
         )
       )
 
-      upExt(1)(ydx)(extIdxSingle).valid := up.isValid
+      upExt(1)(ydx)(extIdxSingle).valid.foreach(current => {
+        current := up.isValid
+      })
       upExt(1)(ydx)(extIdxSingle).ready := up.isReady
       upExt(1)(ydx)(extIdxSingle).fire := up.isFiring
       myUpExtDel(0)(ydx)(extIdxUp).valid := upExt(2)(ydx)(extIdxUp).valid
@@ -4645,13 +4654,17 @@ extends Area {
             init=upExt(1)(ydx)(extIdxSaved).getZero,
           )
         )
-        upExt(1)(ydx)(extIdxUp).valid := up.isValid
+        upExt(1)(ydx)(extIdxUp).valid.foreach(current => {
+          current := up.isValid
+        })
         upExt(1)(ydx)(extIdxUp).ready := up.isReady
         upExt(1)(ydx)(extIdxUp).fire := up.isFiring
-        when (
-          !upExt(1)(ydx)(extIdxUp).modMemWordValid.head
-        ) {
-          upExt(1)(ydx)(extIdxUp).valid := False
+        for (kdx <- 0 until cfg.modMemWordValidSize) {
+          when (
+            !upExt(1)(ydx)(extIdxUp).modMemWordValid(kdx)
+          ) {
+            upExt(1)(ydx)(extIdxUp).valid(kdx) := False
+          }
         }
       }
       //--------
@@ -4781,13 +4794,17 @@ extends Area {
           init=upExt(1)(ydx)(extIdxSaved).getZero,
         )
       )
-      upExt(1)(ydx)(extIdxUp).valid := up.isValid
+      upExt(1)(ydx)(extIdxUp).valid.foreach(current => {
+        current := up.isValid
+      })
       upExt(1)(ydx)(extIdxUp).ready := up.isReady
       upExt(1)(ydx)(extIdxUp).fire := up.isFiring
-      when (
-        !upExt(1)(ydx)(extIdxUp).modMemWordValid(1)
-      ) {
-        upExt(1)(ydx)(extIdxUp).valid := False
+      for (kdx <- 0 until cfg.modMemWordValidSize) {
+        when (
+          !upExt(1)(ydx)(extIdxUp).modMemWordValid(kdx)
+        ) {
+          upExt(1)(ydx)(extIdxUp).valid(kdx) := False
+        }
       }
     }
     if (myHaveFormalFwd) {
