@@ -719,8 +719,8 @@ object PipeMemRmw {
   // TODO (*Maybe*): Implement `FwdSubKind`
   sealed trait FwdSubKind
   object FwdSubKind {
-    case object Mid0FrontOnly extends ModHazardKind
-    case object UseLaterStages extends ModHazardKind
+    case object Mid0FrontOnly extends FwdSubKind
+    case object UseLaterPipeStages extends FwdSubKind
   }
   //--------
   //def modHazardKindDont = ModHazardKind.Dont
