@@ -74,7 +74,6 @@ case class PipeMemRmwConfig[
   optIncludeModFrontStageLink: Boolean=true,
   optIncludeModFrontS2MLink: Boolean=true,
   optFormal: Boolean=false,
-  modMemWordValidSize: Int = 1
   //--------
   //doHazardCmpFunc: Option[
   //  (
@@ -153,6 +152,8 @@ case class PipeMemRmwConfig[
     }
     (mySum, myMax)
   }
+
+  val modMemWordValidSize: Int = 4
 }
 //--------
 object PipeMemRmwPayloadExt {
@@ -2315,6 +2316,7 @@ extends Area {
                   === prevMemAddr
                 ) else (
                   currMemAddr(0)
+                  //currMemAddr =/= 0x0
                 )
               )
               && (
@@ -2351,7 +2353,7 @@ extends Area {
             )
             && 
             (
-              prev.modMemWordValid.head
+              prev.modMemWordValid(3)
               //True
             ) && (
               if (doValidCheck) (
@@ -4783,7 +4785,7 @@ extends Area {
       upExt(1)(ydx)(extIdxUp).ready := up.isReady
       upExt(1)(ydx)(extIdxUp).fire := up.isFiring
       when (
-        !upExt(1)(ydx)(extIdxUp).modMemWordValid.head
+        !upExt(1)(ydx)(extIdxUp).modMemWordValid(1)
       ) {
         upExt(1)(ydx)(extIdxUp).valid := False
       }
@@ -5076,7 +5078,7 @@ extends Area {
           )
         )
         && !ClockDomain.isResetActive
-        && upExt(1)(ydx)(extIdxUp).modMemWordValid.head
+        && upExt(1)(ydx)(extIdxUp).modMemWordValid(2)
         //&& up.isValid
         //&& down.isReady
       )
