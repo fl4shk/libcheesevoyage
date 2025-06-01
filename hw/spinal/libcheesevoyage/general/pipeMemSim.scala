@@ -619,9 +619,14 @@ case class PipeMemRmwSimDut(
                     stable(inp.myExt(0).hazardCmp)
                     //=== inp.myExt.hazardCmp.getZero
                   )
-                  assert(
-                    stable(inp.myExt(0).modMemWordValid) //=== True
-                  )
+                  //assert(
+                  //  stable(inp.myExt(0).modMemWordValid) //=== True
+                  //)
+                  inp.myExt(0).modMemWordValid.foreach(current => {
+                    assert(
+                      stable(current)
+                    )
+                  })
                 }
               }
             //}
@@ -906,7 +911,7 @@ case class PipeMemRmwSimDut(
                 )
                 val myDoHaveHazardValidCheck = (
                   KeepAttribute(
-                    !tempModFrontPayload.myExt(0).modMemWordValid
+                    !tempModFrontPayload.myExt(0).modMemWordValid(0)
                     //!savedPsMemStallHost
                   )
                   .setName(
@@ -988,9 +993,11 @@ case class PipeMemRmwSimDut(
             def setOutpModMemWord(
               someRdMemWord: UInt=myRdMemWord,
             ): Unit = {
-              outp.myExt(0).modMemWordValid := (
-                True
-              )
+              outp.myExt(0).modMemWordValid.foreach(current => {
+                current := (
+                  True
+                )
+              })
               //if (PipeMemRmwSimDut.allModOpsSameChange) {
               //} else {
                 switch (myCurrOp) {
@@ -1007,9 +1014,11 @@ case class PipeMemRmwSimDut(
                       //someRdMemWord //+ 0x1
                       0x0
                     )
-                    outp.myExt(0).modMemWordValid := (
-                      False
-                    )
+                    outp.myExt(0).modMemWordValid.foreach(current => {
+                      current := (
+                        False
+                      )
+                    })
                   }
                   is (PipeMemRmwSimDut.ModOp.MulRaRb) {
                     outp.myExt(0).modMemWord := (
@@ -1071,16 +1080,18 @@ case class PipeMemRmwSimDut(
                   someRdMemWord=someRdMemWord
                 )
                 outp.myExt(0).valid := (
-                  outp.myExt(0).modMemWordValid
+                  outp.myExt(0).modMemWordValid(0)
                 )
               }
               def handleDuplicateIt(
                 someModMemWordValid: Bool=False,
               ): Unit = {
                 outp.myExt(0).valid := False
-                outp.myExt(0).modMemWordValid := (
-                  someModMemWordValid
-                )
+                outp.myExt(0).modMemWordValid.foreach(current => {
+                  current := (
+                    someModMemWordValid
+                  )
+                })
                 cMid0Front.duplicateIt()
               }
               def myDoHaveHazardAddrCheck = (
@@ -4060,11 +4071,14 @@ case class PipeMemRmwTester(
           //  === cMidModFront.up(modFrontPayload).myExt(0).modMemWordValid
           //)
           when (
-            cMidModFront.up(modFrontPayload).myExt(0).modMemWordValid
+            cMidModFront.up(modFrontPayload).myExt(0).modMemWordValid(0)
           ) {
-            assert(
-              myExt(extIdxUp)(0).modMemWordValid
-            )
+            //assert(
+            //  myExt(extIdxUp)(0).modMemWordValid
+            //)
+            myExt(extIdxUp)(0).modMemWordValid.foreach(current => {
+              assert(current == True)
+            })
           }
         }
       }
@@ -4202,8 +4216,13 @@ case class PipeMemRmwTester(
               midModPayload(extIdxUp).myExt(0).modMemWord := (
                 pmIo.modFront(modFrontPayload).myExt(0).modMemWord
               )
-              midModPayload(extIdxUp).myExt(0).modMemWordValid := (
-                pmIo.modFront(modFrontPayload).myExt(0).modMemWordValid
+              midModPayload(extIdxUp).myExt(0).modMemWordValid.foreach(
+                current => {
+                  current := (
+                    pmIo.modFront(modFrontPayload).myExt(0)
+                      .modMemWordValid(0)
+                  )
+                }
               )
             //}
             if (optFormal) {
@@ -4242,10 +4261,10 @@ case class PipeMemRmwTester(
                     )
                   )
                   assert(
-                    midModPayload(extIdxUp).myExt(0).modMemWordValid
+                    midModPayload(extIdxUp).myExt(0).modMemWordValid(0)
                     === past(
                       pmIo.modFront(modFrontPayload).myExt(0)
-                      .modMemWordValid
+                      .modMemWordValid(0)
                     )
                   )
                 } otherwise {
@@ -4288,7 +4307,7 @@ case class PipeMemRmwTester(
             }
           }
           is (PipeMemRmwSimDut.ModOp.LdrRaRb) {
-            when (!midModPayload(extIdxUp).myExt(0).modMemWordValid) {
+            when (!midModPayload(extIdxUp).myExt(0).modMemWordValid(0)) {
               //if (optFormal) {
               //  when (
               //    RegNextWhen(
@@ -4313,7 +4332,7 @@ case class PipeMemRmwTester(
             if (optFormal) {
               when (cMidModFront.up.isFiring) {
                 assert(
-                  midModPayload(extIdxUp).myExt(0).modMemWordValid
+                  midModPayload(extIdxUp).myExt(0).modMemWordValid(0)
                 )
               }
             }
@@ -4465,7 +4484,7 @@ case class PipeMemRmwTester(
                   )
                 )
                 when (
-                  midModPayload(extIdxUp).myExt(0).modMemWordValid
+                  midModPayload(extIdxUp).myExt(0).modMemWordValid(0)
                 ) {
                   assert(
                     midModPayload(extIdxUp).myExt(0).modMemWord
@@ -4606,11 +4625,11 @@ case class PipeMemRmwTester(
             //--------
             cMidModFront.duplicateIt()
             //--------
-            midModPayload(extIdxUp).myExt(0).modMemWordValid := False
+            midModPayload(extIdxUp).myExt(0).modMemWordValid(0) := False
             //--------
           } otherwise {
             //--------
-            midModPayload(extIdxUp).myExt(0).modMemWordValid := True
+            midModPayload(extIdxUp).myExt(0).modMemWordValid(0) := True
             //--------
             midModPayload(extIdxUp).myExt(0).modMemWord := (
               if (PipeMemRmwSimDut.allModOpsSameChange) (
@@ -4690,13 +4709,13 @@ case class PipeMemRmwTester(
             !dut.tempHadFrontIsFiring._1
           ) {
             assert(
-              !myTempUpMod.myExt(0).modMemWordValid
+              !myTempUpMod.myExt(0).modMemWordValid(0)
             )
             assert(
-              !pmIo.modFront(modFrontPayload).myExt(0).modMemWordValid
+              !pmIo.modFront(modFrontPayload).myExt(0).modMemWordValid(0)
             )
             assert(
-              !pmIo.modBack(modBackPayload).myExt(0).modMemWordValid
+              !pmIo.modBack(modBackPayload).myExt(0).modMemWordValid(0)
             )
             //assert(
             //  !pmIo.back(backPayload).myExt(0).modMemWordValid
@@ -4770,10 +4789,10 @@ case class PipeMemRmwTester(
               //  === midModPayload.getZero
               //)
               assert(
-                !pmIo.modFront(modFrontPayload).myExt(0).modMemWordValid
+                !pmIo.modFront(modFrontPayload).myExt(0).modMemWordValid(0)
               )
               assert(
-                !midModPayload(extIdxUp).myExt(0).modMemWordValid
+                !midModPayload(extIdxUp).myExt(0).modMemWordValid(0)
               )
               assert(
                 !tempMyFindFirstUp._1
@@ -4783,7 +4802,7 @@ case class PipeMemRmwTester(
               )
             }
             assert(
-              !pmIo.modBack(modBackPayload).myExt(0).modMemWordValid
+              !pmIo.modBack(modBackPayload).myExt(0).modMemWordValid(0)
             )
             //assert(
             //  !pmIo.back(backPayload).myExt(0).modMemWordValid
@@ -5196,7 +5215,7 @@ case class PipeMemRmwTester(
                 ) {
                   is (PipeMemRmwSimDut.ModOp.AddRaRb) {
                     when (
-                      midModPayload(extIdx).myExt(0).modMemWordValid
+                      midModPayload(extIdx).myExt(0).modMemWordValid(0)
                     ) {
                       assert(
                         midModPayload(extIdx).myExt(0).modMemWord
@@ -5207,7 +5226,7 @@ case class PipeMemRmwTester(
                   }
                   is (PipeMemRmwSimDut.ModOp.LdrRaRb) {
                     when (
-                      midModPayload(extIdx).myExt(0).modMemWordValid
+                      midModPayload(extIdx).myExt(0).modMemWordValid(0)
                     ) {
                       if (PipeMemRmwSimDut.allModOpsSameChange) {
                         assert(
@@ -5232,7 +5251,7 @@ case class PipeMemRmwTester(
                     when (
                       //dut.tempHadMid0FrontUpIsValid._1
                       //&& 
-                      midModPayload(extIdx).myExt(0).modMemWordValid
+                      midModPayload(extIdx).myExt(0).modMemWordValid(0)
                     ) {
                       if (PipeMemRmwSimDut.allModOpsSameChange) {
                         assert(

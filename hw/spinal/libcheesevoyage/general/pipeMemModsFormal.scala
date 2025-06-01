@@ -114,9 +114,15 @@ object PipeMemRmwFormal extends App {
     assume(
       front.myExt(0).hazardCmp === front.myExt(0).hazardCmp.getZero
     )
-    assume(
-      front.myExt(0).modMemWordValid === True
-    )
+    for (idx <- 0 until front.myExt(0).modMemWordValid.size) {
+      
+      //assume(
+      //  front.myExt(0).modMemWordValid === True
+      //)
+      front.myExt(0).modMemWordValid.foreach(current => {
+        assume(current === True)
+      })
+    }
     anyseq(front.valid)
     //front.valid := True
     //--------

@@ -74,6 +74,7 @@ case class PipeMemRmwConfig[
   optIncludeModFrontStageLink: Boolean=true,
   optIncludeModFrontS2MLink: Boolean=true,
   optFormal: Boolean=false,
+  modMemWordValidSize: Int = 1
   //--------
   //doHazardCmpFunc: Option[
   //  (
@@ -219,7 +220,9 @@ case class PipeMemRmwPayloadExtMainNonMemAddr[
   //val modMemWordFwd = wordType()
   //val modMemWordValidFwd = Bool()
   val modMemWord = wordType()
-  val modMemWordValid = Bool()
+  val modMemWordValid = Vec.fill(cfg.modMemWordValidSize)(
+    Bool()
+  )
   val rdMemWord = Vec.fill(modRdPortCnt)(wordType())
   //val (modMemWord, rdMemWord) = optSimpleIsWr match {
   //  case Some(myIsWr) => (
@@ -855,11 +858,11 @@ extends Bundle {
       modStageCnt=modStageCnt,
     )
   )
-  println(
-    //f"numMyUpExtDel:${numMyUpExtDel }"
-    //+ 
-    f"numMyUpExtDel2:${numMyUpExtDel2}"
-  )
+  //println(
+  //  //f"numMyUpExtDel:${numMyUpExtDel }"
+  //  //+ 
+  //  f"numMyUpExtDel2:${numMyUpExtDel2}"
+  //)
   def mkExt(
     //myHaveFormalFwd: Boolean,
     //myVivadoDebug: Boolean=false,
@@ -2348,7 +2351,7 @@ extends Area {
             )
             && 
             (
-              prev.modMemWordValid
+              prev.modMemWordValid.head
               //True
             ) && (
               if (doValidCheck) (
@@ -4045,7 +4048,9 @@ extends Area {
         upExt(1)(ydx)(extIdxSingle).rdMemWord := myRdMemWord(ydx)
         //upExt(2)(ydx)(extIdxUp).rdMemWord := myRdMemWord(ydx)
       }
-      upExt(1)(ydx)(extIdxSingle).modMemWordValid := True
+      upExt(1)(ydx)(extIdxSingle).modMemWordValid.foreach(current => {
+        current := True
+      })
       //upExt(2)(ydx)(extIdxUp).rdMemWord := (
       //  upExt(1)(ydx)(extIdxSingle).rdMemWord
       //)
@@ -4642,7 +4647,7 @@ extends Area {
         upExt(1)(ydx)(extIdxUp).ready := up.isReady
         upExt(1)(ydx)(extIdxUp).fire := up.isFiring
         when (
-          !upExt(1)(ydx)(extIdxUp).modMemWordValid
+          !upExt(1)(ydx)(extIdxUp).modMemWordValid.head
         ) {
           upExt(1)(ydx)(extIdxUp).valid := False
         }
@@ -4698,13 +4703,8 @@ extends Area {
   }
   val cBack = mod.back.cBack
   val cBackArea = new cBack.Area {
-    //haltWhen(
-    //  !(RegNextWhen(True, io.front.isFiring) init(False))
-    //)
     val upFwd = Vec.fill(
-      //2
       extIdxLim
-      //1
     )(
       mkFwd(
         //myVivadoDebug=true
@@ -4783,7 +4783,7 @@ extends Area {
       upExt(1)(ydx)(extIdxUp).ready := up.isReady
       upExt(1)(ydx)(extIdxUp).fire := up.isFiring
       when (
-        !upExt(1)(ydx)(extIdxUp).modMemWordValid
+        !upExt(1)(ydx)(extIdxUp).modMemWordValid.head
       ) {
         upExt(1)(ydx)(extIdxUp).valid := False
       }
@@ -5076,7 +5076,7 @@ extends Area {
           )
         )
         && !ClockDomain.isResetActive
-        && upExt(1)(ydx)(extIdxUp).modMemWordValid
+        && upExt(1)(ydx)(extIdxUp).modMemWordValid.head
         //&& up.isValid
         //&& down.isReady
       )
@@ -5194,7 +5194,9 @@ extends Area {
       )
       if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) {
         for (extIdx <- 0 until extIdxLim) {
-          upExt(1)(ydx)(extIdx).modMemWordValid := False
+          upExt(1)(ydx)(extIdx).modMemWordValid.foreach(current => {
+            current := False
+          })
         }
       }
       //--------
@@ -5218,14 +5220,6 @@ extends Area {
         ydx=ydx,
         memArrIdx=memArrIdx,
       )
-      //upExt(1)(ydx)(extIdxSaved).modMemWordValid := False
-      //tempUpMod(1)(ydx).allowOverride
-      //tempUpMod(1)(ydx) := tempUpMod(0)(ydx)
-      //tempUpMod(1)(ydx).setPipeMemRmwExt(
-      //  inpExt=upExt(1)(ydx)(extIdxSingle),
-      //  memArrIdx=memArrIdx,
-      //)
-      //up(io.backPayload(ydx)) := tempUpMod(1)(ydx)
     }
   }
   //--------
