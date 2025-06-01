@@ -2347,22 +2347,12 @@ extends Area {
               )
             )
           ) && (
-            //True
-            (
-              //curr.fire
-              //|| (
-              //  RegNextWhen(True, curr.fire) init(False)
-              //)
-              //curr.valid
-              True
-            )
-            && 
             (
               prev.modMemWordValid(3)
               //True
             ) && (
               if (doValidCheck) (
-                prev.valid(3)
+                prev.valid(2)
               ) else (
                 True
               )
@@ -3961,7 +3951,11 @@ extends Area {
                       ////    )
                       ////  )
                       ////)
-                      upExt(1)(ydx)(extIdx).memAddrFwdCmp(zdx)(idx)
+                      //--------
+                      // BEGIN: old `forFwd` thingy
+                      //upExt(1)(ydx)(extIdx).memAddrFwdCmp(zdx)(idx)
+                      // END: old `forFwd` thingy
+                      upExt(1)(ydx)(extIdxUp).memAddr(zdx)
                     ),
                     prevMemAddr=(
                       //if (idx > 0) {
@@ -4003,7 +3997,7 @@ extends Area {
                       //idx == 0 && extIdx == extIdxUp
                       false
                     ),
-                    forFwd=true,
+                    //forFwd=true,
                   )
                 )
               )
