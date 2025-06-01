@@ -706,6 +706,14 @@ object PipeMemRmw {
     case object Dupl extends ModHazardKind
     case object Fwd extends ModHazardKind
   }
+  //--------
+  // TODO (*Maybe*): Implement `FwdSubKind`
+  sealed trait FwdSubKind
+  object FwdSubKind {
+    case object Mid0FrontOnly extends ModHazardKind
+    case object UseLaterStages extends ModHazardKind
+  }
+  //--------
   //def modHazardKindDont = ModHazardKind.Dont
   //def modHazardKindDupl = ModHazardKind.Dupl
   //def modHazardKindFwd = ModHazardKind.Fwd
@@ -846,6 +854,11 @@ extends Bundle {
       optModHazardKind=optModHazardKind,
       modStageCnt=modStageCnt,
     )
+  )
+  println(
+    //f"numMyUpExtDel:${numMyUpExtDel }"
+    //+ 
+    f"numMyUpExtDel2:${numMyUpExtDel2}"
   )
   def mkExt(
     //myHaveFormalFwd: Boolean,
@@ -1184,39 +1197,35 @@ case class PipeMemRmwDoFwdArea[
             //)
             tempMyFwdData := myFwdDataSaved
           }
-          def innerFunc(): Unit = {
-            when (
-              tempMyFindFirstUp_0
-            ) {
-              mySetToMyFwdUp()
-            } elsewhen (
-              tempMyFindFirstSaved_0
-            ) {
-              mySetToMyFwdSaved()
-            } otherwise {
-              tempMyFwdData := firstFwdRdMemWord._2
-            }
-          }
-          //when (
-          //  tempMyFindFirstUp_0
-          //  && tempMyFindFirstSaved_0
-          //) {
-          //  when (
-          //    //myFindFirstUp._2 < myFindFirstSaved._2
-          //    tempMyFindFirstUp_1 < tempMyFindFirstSaved_1
-          //  ) {
+          //def innerFunc(): Unit = {
+          //  when (tempMyFindFirstUp_0) {
           //    mySetToMyFwdUp()
-          //  } elsewhen (
-          //    //myFindFirstSaved._2 < myFindFirstUp._2
-          //    tempMyFindFirstSaved_1 < tempMyFindFirstUp_1
-          //  ) {
+          //  } elsewhen (tempMyFindFirstSaved_0) {
           //    mySetToMyFwdSaved()
           //  } otherwise {
-          //    innerFunc()
+          //    tempMyFwdData := firstFwdRdMemWord._2
           //  }
-          //} otherwise {
-          //  innerFunc()
           //}
+          ////when (
+          ////  tempMyFindFirstUp_0
+          ////  && tempMyFindFirstSaved_0
+          ////) {
+          ////  when (
+          ////    //myFindFirstUp._2 < myFindFirstSaved._2
+          ////    tempMyFindFirstUp_1 < tempMyFindFirstSaved_1
+          ////  ) {
+          ////    mySetToMyFwdUp()
+          ////  } elsewhen (
+          ////    //myFindFirstSaved._2 < myFindFirstUp._2
+          ////    tempMyFindFirstSaved_1 < tempMyFindFirstUp_1
+          ////  ) {
+          ////    mySetToMyFwdSaved()
+          ////  } otherwise {
+          ////    innerFunc()
+          ////  }
+          ////} otherwise {
+          ////  innerFunc()
+          ////}
           when (tempMyFindFirstUp_0) {
             mySetToMyFwdUp()
           } otherwise {
