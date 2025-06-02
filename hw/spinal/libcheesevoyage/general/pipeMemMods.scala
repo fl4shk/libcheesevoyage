@@ -1302,10 +1302,11 @@ case class PipeMemRmwDoFwdArea[
           ////} otherwise {
           ////  innerFunc()
           ////}
-          mySetToMyFwdUp()
+          tempMyFwdData := firstFwdRdMemWord._2
           when (tempMyFindFirstUp_0) {
+            mySetToMyFwdUp()
           } otherwise {
-            tempMyFwdData := firstFwdRdMemWord._2
+            //tempMyFwdData := firstFwdRdMemWord._2
           }
         }
         setToMyFwdDataFunc(
