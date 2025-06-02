@@ -4495,8 +4495,9 @@ extends Area {
           )
         }
         when (
-          up.isValid
+          //up.isValid
           //up.isFiring
+          True
         ) {
           upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
         }
@@ -4662,9 +4663,7 @@ extends Area {
       upExt(1)(ydx)(extIdxUp).ready := up.isReady
       upExt(1)(ydx)(extIdxUp).fire := up.isFiring
       for (kdx <- 0 until cfg.modMemWordValidSize) {
-        when (
-          !upExt(1)(ydx)(extIdxUp).modMemWordValid(kdx)
-        ) {
+        when (!upExt(1)(ydx)(extIdxUp).modMemWordValid(kdx)) {
           upExt(1)(ydx)(extIdxUp).valid(kdx) := False
         }
       }
