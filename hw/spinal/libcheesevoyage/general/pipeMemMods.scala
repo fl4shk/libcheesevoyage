@@ -2416,7 +2416,7 @@ extends Area {
             )
           ) && (
             (
-              prev.modMemWordValid(ydx)
+              prev.modMemWordValid(3)
               //True
             ) && (
               if (doValidCheck) (
