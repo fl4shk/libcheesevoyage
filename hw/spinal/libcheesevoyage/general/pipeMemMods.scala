@@ -45,6 +45,52 @@ import libcheesevoyage.Config
 //](
 //) {
 //}
+
+object LcvFastOrR {
+  def apply(
+    self: UInt
+  ): Bool = {
+    val q = Bool()
+    val unusedSumOut = UInt(self.getWidth bits)
+    (q, unusedSumOut) := (
+      Cat(False, self).asUInt
+      + U(self.getWidth bits, default -> True)
+    )
+    q
+  }
+}
+object LcvFastAndR {
+  def apply(
+    self: UInt
+  ): Bool = {
+    val q = Bool()
+    val unusedSumOut = UInt(self.getWidth bits)
+    (q, unusedSumOut) := (
+      Cat(False, self).asUInt
+      + U(self.getWidth + 1 bits, 0 -> True, default -> False)
+    )
+    q
+  }
+}
+object LcvFastCmpEq {
+  def apply(
+    left: UInt,
+    right: UInt,
+  ): Bool = {
+    assert(
+      left.getWidth == right.getWidth,
+      f"leftWidth:${left.getWidth} != rightWidth:${right.getWidth}"
+    )
+    val q = Bool()
+    val unusedSumOut = UInt(left.getWidth bits)
+    (q, unusedSumOut) := (
+      Cat(False, left ^ (~right)).asUInt
+      + U(left.getWidth + 1 bits, 0 -> True, default -> False)
+    )
+    q
+  }
+}
+
 case class PipeMemRmwConfig[
   WordT <: Data,
   HazardCmpT <: Data,
@@ -3600,7 +3646,20 @@ extends Area {
                 //down.isReady
               ),
             )
-            when (RegNext(next=tempSharedEnable, init=False)) {
+            when (
+              LcvFastAndR(
+                Vec[Bool](
+                  RegNext(next=tempSharedEnable, init=False),
+                  RegNext(
+                    LcvFastCmpEq(
+                      left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
+                      right=mod.back.myWriteAddr(ydx),
+                    ),
+                  ),
+                  RegNext(mod.back.myWriteEnable(ydx))
+                ).asBits.asUInt
+              )
+            ) {
               //myNonFwdRdMemWord(ydx)(zdx) := modMem(ydx)(zdx).readAsync(
               //  address=(
               //    //upExtRealMemAddr(zdx)
@@ -3617,24 +3676,24 @@ extends Area {
               //  //  //down.isReady
               //  //),
               //)
-              when (
-                (
-                  RegNext(
-                    upExt(1)(ydx)(extIdxUp).memAddr(zdx)
-                    === mod.back.myWriteAddr(ydx)
-                  )
-                ) && (
-                  RegNext(mod.back.myWriteEnable(ydx))
-                )
-                //&& tempSharedEnable
-                //&& down.isReady
-              ) {
+              //when (
+              //  (
+              //    RegNext(
+              //      upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+              //      === mod.back.myWriteAddr(ydx)
+              //    )
+              //  ) && (
+              //    RegNext(mod.back.myWriteEnable(ydx))
+              //  )
+              //  //&& tempSharedEnable
+              //  //&& down.isReady
+              //) {
                 myNonFwdRdMemWord(ydx)(zdx) := RegNext(
                   //mod.back.myWriteData(ydx)
                   next=mod.back.myWriteData(ydx),
                   init=mod.back.myWriteData(ydx).getZero
                 )
-              }
+              //}
             }
           }
         }
@@ -4948,18 +5007,22 @@ extends Area {
 
     for (ydx <- 0 until memArrSize) {
       myWriteEnable(ydx) := (
-        (
-          dbgDoWrite(ydx)
-          || (
-            if (optEnableClear) (
-              io.clear.fire
-            ) else (
-              False
-            )
-          )
+        LcvFastAndR(
+          Vec[Bool](
+            (
+              dbgDoWrite(ydx)
+              || (
+                if (optEnableClear) (
+                  io.clear.fire
+                ) else (
+                  False
+                )
+              )
+            ),
+            !ClockDomain.isResetActive,
+            upExt(1)(ydx)(extIdxUp).modMemWordValid(2),
+          ).asBits.asUInt
         )
-        && !ClockDomain.isResetActive
-        && upExt(1)(ydx)(extIdxUp).modMemWordValid(2)
         //&& up.isValid
         //&& down.isReady
       )
