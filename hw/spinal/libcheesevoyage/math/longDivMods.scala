@@ -464,12 +464,12 @@ case class LongDivMultiCycle(
                 )
                 nextTempRema(0) := Cat(
                   rTempRema,
-                  rTempNumer(rCnt),
+                  rTempNumer(rCnt.resized),
                 ).asUInt(rTempRema.bitsRange)
                 nextTempRema(1) := nextTempRema(0)
                 when (nextTempRema(0) >= rTempDenom) {
                   nextTempRema(1) := nextTempRema(0) - rTempDenom
-                  rTempQuot(rCnt) := True
+                  rTempQuot(rCnt.resized) := True
                 }
                 rTempRema := nextTempRema(1)
           //    }
