@@ -45,6 +45,77 @@ import libcheesevoyage.Config
 //](
 //) {
 //}
+object LcvSFindFirst {
+  def apply[
+    T <: Data
+  ](
+    self: Seq[T],
+    condition: T => Bool,
+  ): (Bool, UInt) = {
+    //val hitValid = self.map(condition(_)).reduceLeft(_ || _)
+    //val hitValid
+    val myHitValidMap = self.map(condition(_))
+    val myHitValidVec = Vec.fill(self.size)(Bool())
+    for (idx <- 0 until self.size) {
+      myHitValidVec(idx) := myHitValidMap(idx) //self.map(condition(idx))
+    }
+    //val hitValid = Bool()
+    val hitValid = LcvFastOrR(
+      myHitValidVec.asBits.asUInt
+    )
+    if (self.size == 2) {
+      val hits = self.map(condition(_))
+      (
+        hitValid,
+        {
+          Mux[UInt](
+            hits(0),
+            U"1'd0",
+            U"1'd1",
+          )
+        }
+      )
+    } else if (self.size == 3) {
+      val hits = self.map(condition(_))
+      (
+        hitValid,
+        {
+          Mux[UInt](
+            hits(0),
+            U"2'd0",
+            Mux[UInt](
+              hits(1),
+              U"2'd1",
+              U"2'd2",
+            )
+          )
+        }
+      )
+    } else if (self.size == 4) {
+      val hits = self.map(condition(_))
+      (
+        hitValid,
+        {
+          Mux[UInt](
+            hits(0),
+            U"2'd0",
+            Mux[UInt](
+              hits(1),
+              U"2'd1",
+              Mux[UInt](
+                hits(2),
+                U"2'd2",
+                U"2'd3",
+              )
+            )
+          )
+        }
+      )
+    } else {
+      (hitValid, self.sFindFirst(condition)._2)
+    }
+  }
+}
 
 object LcvFastOrR {
   def apply(
@@ -785,65 +856,6 @@ object PipeMemRmw {
   //def formalFwdStallKindHalt = 1
   //def formalFwdStallKindDuplicate = 2
   //--------
-  def mySFindFirst[
-    T <: Data
-  ](
-    self: Seq[T],
-    condition: T => Bool,
-  ): (Bool, UInt) = {
-    val hitValid = self.map(condition(_)).reduceLeft(_ || _)
-    if (self.size == 2) {
-      val hits = self.map(condition(_))
-      (
-        hitValid,
-        {
-          Mux[UInt](
-            hits(0),
-            U"1'd0",
-            U"1'd1",
-          )
-        }
-      )
-    } else if (self.size == 3) {
-      val hits = self.map(condition(_))
-      (
-        hitValid,
-        {
-          Mux[UInt](
-            hits(0),
-            U"2'd0",
-            Mux[UInt](
-              hits(1),
-              U"2'd1",
-              U"2'd2",
-            )
-          )
-        }
-      )
-    } else if (self.size == 4) {
-      val hits = self.map(condition(_))
-      (
-        hitValid,
-        {
-          Mux[UInt](
-            hits(0),
-            U"2'd0",
-            Mux[UInt](
-              hits(1),
-              U"2'd1",
-              Mux[UInt](
-                hits(2),
-                U"2'd2",
-                U"2'd3",
-              )
-            )
-          )
-        }
-      )
-    } else {
-      (hitValid, self.sFindFirst(condition)._2)
-    }
-  }
 }
 case class PipeMemRmwDualRdTypeDisabled[
   WordT <: Data,
@@ -1184,7 +1196,7 @@ case class PipeMemRmwDoFwdArea[
               //.sFindFirst(
               //  _ === True
               //)
-              PipeMemRmw.mySFindFirst[Bool](
+              LcvSFindFirst[Bool](
                 fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxUp),
                 current => (current === True)
               )
@@ -1203,7 +1215,7 @@ case class PipeMemRmwDoFwdArea[
               //.sFindFirst(
               //  _ === True
               //)
-              PipeMemRmw.mySFindFirst[Bool](
+              LcvSFindFirst[Bool](
                 fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxSaved),
                 current => (current === True)
               )
@@ -3647,7 +3659,7 @@ extends Area {
               ),
             )
             when (
-              LcvFastAndR(
+              /*LcvFastAndR*/(
                 Vec[Bool](
                   RegNext(next=tempSharedEnable, init=False),
                   RegNext(
@@ -3657,7 +3669,7 @@ extends Area {
                     ),
                   ),
                   RegNext(mod.back.myWriteEnable(ydx))
-                ).asBits.asUInt
+                ).asBits.asUInt.andR
               )
             ) {
               //myNonFwdRdMemWord(ydx)(zdx) := modMem(ydx)(zdx).readAsync(
@@ -3880,9 +3892,10 @@ extends Area {
       .setName(s"${pipeName}_rPrevTxnWasHazardAny")
     )
     nextPrevTxnWasHazardAny := (
-      nextPrevTxnWasHazardVec.sFindFirst(
-        _ === True
-      )._1
+      //nextPrevTxnWasHazardVec.sFindFirst(
+      //  _ === True
+      //)._1
+      LcvFastOrR(nextPrevTxnWasHazardVec.asBits.asUInt)
     )
     for (ydx <- 0 until memArrSize) {
       rPrevTxnWasHazardVec(ydx).init(nextPrevTxnWasHazardVec(ydx).getZero)
