@@ -60,8 +60,15 @@ object LcvSFindFirst {
       myHitValidVec(idx) := myHitValidMap(idx) //self.map(condition(idx))
     }
     //val hitValid = Bool()
-    val hitValid = LcvFastOrR(
-      myHitValidVec.asBits.asUInt
+    val hitValid = (
+      if (self.size > 4) (
+        LcvFastOrR(
+          myHitValidVec.asBits.asUInt
+        )
+      ) else (
+        //myHitValidVec.orR
+        myHitValidVec.reduceBalancedTree(_ || _)
+      )
     )
     if (self.size == 2) {
       val hits = self.map(condition(_))
