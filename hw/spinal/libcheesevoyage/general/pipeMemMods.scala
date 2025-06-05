@@ -2460,54 +2460,62 @@ extends Area {
       ) = (
         if (!forceFalse) {
         //(upExt(1).memAddr === prev.memAddr)
-          (
-            if (!isPostDelay) (
-              (
-                if (!forFwd) (
-                  currMemAddr
-                  === prevMemAddr
-                ) else (
-                  currMemAddr(0)
-                  //currMemAddr =/= 0x0
+          if (forFwd) (
+            currMemAddr(0)
+            && prev.modMemWordValid(
+              //zdx
+              3
+            )
+          ) else (
+            (
+              if (!isPostDelay) (
+                (
+                  if (!forFwd) (
+                    currMemAddr
+                    === prevMemAddr
+                  ) else (
+                    currMemAddr(0)
+                    //currMemAddr =/= 0x0
+                  )
+                )
+                && (
+                  if (doPrevHazardCmpFunc) (
+                    myHazardCmpFunc(
+                      curr/*upExt(1)*/,
+                      prev,
+                      ydx,
+                      zdx,
+                      isPostDelay
+                    )
+                  ) else (
+                    True
+                  )
+                )
+              ) else (
+                myHazardCmpFunc(
+                  curr/*upExt(1)*/,
+                  prev,
+                  ydx,
+                  zdx,
+                  isPostDelay
                 )
               )
-              && (
-                if (doPrevHazardCmpFunc) (
-                  myHazardCmpFunc(
-                    curr/*upExt(1)*/,
-                    prev,
-                    ydx,
-                    zdx,
-                    isPostDelay
-                  )
+            ) && (
+              (
+                prev.modMemWordValid(
+                  //zdx
+                  3
+                )
+                //True
+              ) && (
+                if (doValidCheck) (
+                  prev.valid(2)
                 ) else (
                   True
                 )
               )
-            ) else (
-              myHazardCmpFunc(
-                curr/*upExt(1)*/,
-                prev,
-                ydx,
-                zdx,
-                isPostDelay
-              )
+              //curr.valid && prev.valid
             )
-          ) && (
-            (
-              prev.modMemWordValid(
-                //zdx
-                3
-              )
-              //True
-            ) && (
-              if (doValidCheck) (
-                prev.valid(2)
-              ) else (
-                True
-              )
-            )
-            //curr.valid && prev.valid
           )
         } else {
           False
