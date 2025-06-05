@@ -45,6 +45,20 @@ import libcheesevoyage.Config
 //](
 //) {
 //}
+object LcvPriorityMux {
+  def apply(
+    data: Vec[UInt],
+    select: UInt,
+  ): UInt = (
+    //Verilog: ((~data ^ select) + data) >> $bits(select)
+    // returns msb data[i] bit that have select[i] == 1.
+    //  if none select bits are high then returns 0
+    (
+      ((~data.asBits.asUInt ^ select) + data.asBits.asUInt)
+      >> select.getWidth
+    )
+  )
+}
 object LcvSFindFirst {
   def apply[
     T <: Data
@@ -66,8 +80,8 @@ object LcvSFindFirst {
           myHitValidVec.asBits.asUInt
         )
       ) else (
-        //myHitValidVec.orR
-        myHitValidVec.reduceBalancedTree(_ || _)
+        myHitValidVec.orR
+        //myHitValidVec.reduceBalancedTree(_ || _)
       )
     )
     if (self.size == 2) {
