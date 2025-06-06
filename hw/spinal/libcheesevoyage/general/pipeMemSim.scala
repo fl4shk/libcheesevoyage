@@ -4659,11 +4659,11 @@ case class PipeMemRmwTester(
         when (pastValidAfterReset) {
           val tempMyFindFirstUp = (
             pipeMem.cMid0FrontArea.myFindFirst_0(0)(0)(extIdxUp),
-            pipeMem.cMid0FrontArea.myFindFirst_1(0)(0)(extIdxUp),
+            //pipeMem.cMid0FrontArea.myFindFirst_1(0)(0)(extIdxUp),
           )
           val tempMyFindFirstSaved = (
             pipeMem.cMid0FrontArea.myFindFirst_0(0)(0)(extIdxSaved),
-            pipeMem.cMid0FrontArea.myFindFirst_1(0)(0)(extIdxSaved),
+            //pipeMem.cMid0FrontArea.myFindFirst_1(0)(0)(extIdxSaved),
           )
           val myUpExtDel = (
             pipeMem.mod.front.myUpExtDel
@@ -4753,10 +4753,10 @@ case class PipeMemRmwTester(
               !dut.myHaveSeenPipeToWrite
             )
             assert(
-              !tempMyFindFirstUp._1
+              !tempMyFindFirstUp//._1
             )
             assert(
-              !tempMyFindFirstSaved._1
+              !tempMyFindFirstSaved//._1
             )
             assert(
               !pipeMem.cMid0FrontArea.up.isValid
@@ -4801,10 +4801,10 @@ case class PipeMemRmwTester(
                 !midModPayload(extIdxUp).myExt(0).modMemWordValid(0)
               )
               assert(
-                !tempMyFindFirstUp._1
+                !tempMyFindFirstUp//._1
               )
               assert(
-                !tempMyFindFirstSaved._1
+                !tempMyFindFirstSaved//._1
               )
             }
             assert(

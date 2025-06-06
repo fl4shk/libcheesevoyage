@@ -59,6 +59,80 @@ object LcvPriorityMux {
     )
   )
 }
+object LcvSFindFirstElem {
+  def apply[
+    T <: Data
+  ](
+    self: Seq[T],
+    condition: T => Bool,
+  ): (Bool, T) = {
+    //val hitValid = self.map(condition(_)).reduceLeft(_ || _)
+    //val hitValid
+    val myHitValidMap = self.map(condition(_))
+    val myHitValidVec = Vec.fill(self.size)(Bool())
+    for (idx <- 0 until self.size) {
+      myHitValidVec(idx) := myHitValidMap(idx) //self.map(condition(idx))
+    }
+    //val hitValid = Bool()
+    val hitValid = (
+      if (self.size > 4) (
+        LcvFastOrR(
+          myHitValidVec.asBits.asUInt
+        )
+      ) else (
+        //myHitValidVec.orR
+        myHitValidVec.reduceBalancedTree(_ || _)
+      )
+    )
+    if (self.size == 2) {
+      val hits = self.map(condition(_))
+      (
+        hitValid,
+        Mux[T](
+          hits(0),
+          self(0),
+          self(1),
+        ),
+      )
+    } else if (self.size == 3) {
+      val hits = self.map(condition(_))
+      (
+        hitValid,
+        Mux[T](
+          hits(0),
+          self(0),
+          Mux[T](
+            hits(1),
+            self(1),
+            self(2),
+          )
+        ),
+      )
+    } else if (self.size == 4) {
+      val hits = self.map(condition(_))
+      (
+        hitValid,
+        {
+          Mux[T](
+            hits(0),
+            self(0),
+            Mux[T](
+              hits(1),
+              self(1),
+              Mux[T](
+                hits(2),
+                self(2),
+                self(3),
+              )
+            )
+          )
+        }
+      )
+    } else {
+      (hitValid, self(self.sFindFirst(condition)._2))
+    }
+  }
+}
 object LcvSFindFirst {
   def apply[
     T <: Data
@@ -80,8 +154,8 @@ object LcvSFindFirst {
           myHitValidVec.asBits.asUInt
         )
       ) else (
-        myHitValidVec.orR
-        //myHitValidVec.reduceBalancedTree(_ || _)
+        //myHitValidVec.orR
+        myHitValidVec.reduceBalancedTree(_ || _)
       )
     )
     if (self.size == 2) {
@@ -994,20 +1068,20 @@ extends Bundle {
     )
   )
   //--------
-  val myFindFirst_1 = (
-    /*KeepAttribute*/(
-      Vec.fill(memArrSize)(
-        Vec.fill(modRdPortCnt)(
-          Vec.fill(PipeMemRmw.extIdxLim)(
-            UInt(log2Up(
-              ////mod.front.myUpExtDel2.size
-              numMyUpExtDel2
-            ) bits)
-          )
-        )
-      )
-    )
-  )
+  //val myFindFirst_1 = (
+  //  /*KeepAttribute*/(
+  //    Vec.fill(memArrSize)(
+  //      Vec.fill(modRdPortCnt)(
+  //        Vec.fill(PipeMemRmw.extIdxLim)(
+  //          UInt(log2Up(
+  //            ////mod.front.myUpExtDel2.size
+  //            numMyUpExtDel2
+  //          ) bits)
+  //        )
+  //      )
+  //    )
+  //  )
+  //)
   //--------
   def numMyUpExtDel2 = (
     PipeMemRmw.numMyUpExtDel2(
@@ -1029,45 +1103,15 @@ extends Bundle {
   ]]] = {
     val ret = Vec.fill(memArrSize)(
       Vec.fill(PipeMemRmw.extIdxLim)(
-        //PipeMemRmwPayloadExt(
-        //  wordType=wordType(),
-        //  wordCount=wordCountMax,
-        //  hazardCmpType=hazardCmpType(),
-        //  modRdPortCnt=modRdPortCnt,
-        //  modStageCnt=modStageCnt,
-        //  memArrSize=memArrSize,
-        //  optModHazardKind=optModHazardKind,
-        //  optReorder=optReorder,
-        //  //myHaveFormalFwd=myHaveFormalFwd
-        //)
-        //mkFwdOneExtFunc(
-        //  //myVivadoDebug
-        //)
         PipeMemRmwPayloadExt[
           WordT,
           HazardCmpT,
         ](
           cfg=cfg,
-          //wordType=wordType(),
           wordCount=wordCount,
-          //hazardCmpType=hazardCmpType(),
-          //modRdPortCnt=modRdPortCnt,
-          //modStageCnt=modStageCnt,
-          //memArrSize=memArrSize,
-          //optModHazardKind=optModHazardKind,
-          //optReorder=optReorder,
         )
       )
     )
-    //if (vivadoDebug && myVivadoDebug) {
-    //  //ret.addAttribute("MARK_DEBUG", "TRUE")
-    //  //ret.memAddr.addAttribute("MARK_DEBUG", "TRUE")
-    //  //ret.hazardCmp.addAttribute("MARK_DEBUG", "TRUE")
-    //  //if (optEnableModDuplicate) {
-    //  //  ret.hazardId.addAttribute("MARK_DEBUG", "TRUE")
-    //  //}
-    //  //ret.modMemWord.addAttribute("MARK_DEBUG", "TRUE")
-    //}
     ret
   }
 
@@ -1119,7 +1163,8 @@ extends Bundle {
           Vec.fill(modRdPortCnt)(
             Vec.fill(PipeMemRmw.extIdxLim)(
               Vec.fill(numMyUpExtDel2 - 1)(
-                Bool()
+                //Bool()
+                Flow(cfg.wordType())
               )
             )
           )
@@ -1230,9 +1275,13 @@ case class PipeMemRmwDoFwdArea[
               //.sFindFirst(
               //  _ === True
               //)
-              LcvSFindFirst[Bool](
+              //LcvSFindFirst[Bool](
+              //  fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxUp),
+              //  current => (current === True)
+              //)
+              LcvSFindFirstElem[Flow[WordT]](
                 fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxUp),
-                current => (current === True)
+                current => (current.fire === True)
               )
             )
             .setName(s"${fwdAreaName}_myFindFirstUp_${ydx}_${zdx}")
@@ -1249,9 +1298,13 @@ case class PipeMemRmwDoFwdArea[
               //.sFindFirst(
               //  _ === True
               //)
-              LcvSFindFirst[Bool](
+              //LcvSFindFirst[Bool](
+              //  fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxSaved),
+              //  current => (current === True)
+              //)
+              LcvSFindFirstElem[Flow[WordT]](
                 fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxSaved),
-                current => (current === True)
+                current => (current.valid === True)
               )
             )
             .setName(s"${fwdAreaName}_myFindFirstDown_${ydx}_${zdx}")
@@ -1260,15 +1313,15 @@ case class PipeMemRmwDoFwdArea[
         def tempMyFindFirstUp_0 = (
           fwd.myFindFirst_0(ydx)(zdx)(extIdxUp)
         )
-        def tempMyFindFirstUp_1 = (
-          fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
-        )
+        //def tempMyFindFirstUp_1 = (
+        //  fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
+        //)
         def tempMyFindFirstSaved_0 = (
           fwd.myFindFirst_0(ydx)(zdx)(extIdxSaved)
         )
-        def tempMyFindFirstSaved_1 = (
-          fwd.myFindFirst_1(ydx)(zdx)(extIdxSaved)
-        )
+        //def tempMyFindFirstSaved_1 = (
+        //  fwd.myFindFirst_1(ydx)(zdx)(extIdxSaved)
+        //)
         def tempMyFwdData = (
           fwd.myFwdData(ydx)(zdx)
         )
@@ -1296,47 +1349,49 @@ case class PipeMemRmwDoFwdArea[
           )
           .setName(s"${fwdAreaName}_myFwdCondDown_${ydx}_${zdx}")
         )
-        val myFwdDataUp = (
-          firstFwd
-        ) generate (
-          /*KeepAttribute*/(
-            fwd.myUpExtDel2(
-              //myFindFirstUp._2
-              //fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
-              tempMyFindFirstUp_1
-            )(ydx)(
-              extIdxUp
-            ).modMemWord
-          )
-          .setName(s"${fwdAreaName}_myFwdDataUp_${ydx}_${zdx}")
-        )
-        val myFwdDataSaved = (
-          firstFwd
-        ) generate (
-          /*KeepAttribute*/(
-            fwd.myUpExtDel2(
-              //myFindFirstSaved._2
-              //fwd.myFindFirst_1(ydx)(zdx)(extIdxSaved)
-              tempMyFindFirstSaved_1
-            )(ydx)(
-              extIdxSaved
-            ).modMemWord
-          )
-          .setName(s"${fwdAreaName}_myFwdDataDown_${ydx}_${zdx}")
-        )
+        //val myFwdDataUp = (
+        //  firstFwd
+        //) generate (
+        //  /*KeepAttribute*/(
+        //  //  fwd.myUpExtDel2(
+        //  //    //myFindFirstUp._2
+        //  //    //fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
+        //  //    tempMyFindFirstUp_1
+        //  //  )(ydx)(
+        //  //    extIdxUp
+        //  //  ).modMemWord
+        //    tempMyFindFirstUp_1.payload
+        //  )
+        //  .setName(s"${fwdAreaName}_myFwdDataUp_${ydx}_${zdx}")
+        //)
+        //val myFwdDataSaved = (
+        //  firstFwd
+        //) generate (
+        //  /*KeepAttribute*/(
+        //    //fwd.myUpExtDel2(
+        //    //  //myFindFirstSaved._2
+        //    //  //fwd.myFindFirst_1(ydx)(zdx)(extIdxSaved)
+        //    //  tempMyFindFirstSaved_1
+        //    //)(ydx)(
+        //    //  extIdxSaved
+        //    //).modMemWord
+        //    tempMyFindFirstSaved_1.payload
+        //  )
+        //  .setName(s"${fwdAreaName}_myFwdDataDown_${ydx}_${zdx}")
+        //)
         if (firstFwd) {
           tempMyFindFirstUp_0 := (
             myFindFirstUp._1
           )
-          tempMyFindFirstUp_1 := (
-            (myFindFirstUp._2).resized
-          )
+          //tempMyFindFirstUp_1 := (
+          //  (myFindFirstUp._2.payload)//.resized
+          //)
           tempMyFindFirstSaved_0 := (
             myFindFirstSaved._1
           )
-          tempMyFindFirstSaved_1 := (
-            (myFindFirstSaved._2).resized
-          )
+          //tempMyFindFirstSaved_1 := (
+          //  (myFindFirstSaved._2.payload)//.resized
+          //)
         }
         if (
           //optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
@@ -1352,7 +1407,8 @@ case class PipeMemRmwDoFwdArea[
             //  zdx,
             //  myFwdDataUp
             //)
-            tempMyFwdData := myFwdDataUp
+            //tempMyFwdData := myFwdDataUp._2.payload
+            tempMyFwdData := myFindFirstUp._2.payload
           }
           def mySetToMyFwdSaved(): Unit = {
             //upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
@@ -1363,7 +1419,8 @@ case class PipeMemRmwDoFwdArea[
             //  zdx,
             //  myFwdDataSaved
             //)
-            tempMyFwdData := myFwdDataSaved
+            //tempMyFwdData := myFwdDataSaved
+            tempMyFwdData := myFindFirstSaved._2.payload
           }
           //def innerFunc(): Unit = {
           //  when (tempMyFindFirstUp_0) {
@@ -2470,71 +2527,76 @@ extends Area {
         //memAddr: UInt,
         forceFalse: Boolean=false,
         forFwd: Boolean=false,
-      ) = (
-        if (!forceFalse) {
-        //(upExt(1).memAddr === prev.memAddr)
-          if (forFwd) (
-            currMemAddr(0)
-            && prev.modMemWordValid(
-              //zdx
-              //3
-              zdx
-            )
-          ) else (
-            (
-              if (!isPostDelay) (
-                (
-                  if (!forFwd) (
-                    currMemAddr
-                    === prevMemAddr
-                  ) else (
-                    currMemAddr(0)
-                    //currMemAddr =/= 0x0
+      ): Flow[WordT] = {
+        val ret = Flow(cfg.wordType())
+        ret.valid := (
+          if (!forceFalse) {
+          //(upExt(1).memAddr === prev.memAddr)
+            if (forFwd) (
+              currMemAddr(0)
+              && prev.modMemWordValid(
+                //zdx
+                //3
+                zdx
+              )
+            ) else (
+              (
+                if (!isPostDelay) (
+                  (
+                    if (!forFwd) (
+                      currMemAddr
+                      === prevMemAddr
+                    ) else (
+                      currMemAddr(0)
+                      //currMemAddr =/= 0x0
+                    )
+                  )
+                  && (
+                    if (doPrevHazardCmpFunc) (
+                      myHazardCmpFunc(
+                        curr/*upExt(1)*/,
+                        prev,
+                        ydx,
+                        zdx,
+                        isPostDelay
+                      )
+                    ) else (
+                      True
+                    )
+                  )
+                ) else (
+                  myHazardCmpFunc(
+                    curr/*upExt(1)*/,
+                    prev,
+                    ydx,
+                    zdx,
+                    isPostDelay
                   )
                 )
-                && (
-                  if (doPrevHazardCmpFunc) (
-                    myHazardCmpFunc(
-                      curr/*upExt(1)*/,
-                      prev,
-                      ydx,
-                      zdx,
-                      isPostDelay
-                    )
+              ) && (
+                (
+                  prev.modMemWordValid(
+                    zdx
+                    //3
+                  )
+                  //True
+                ) && (
+                  if (doValidCheck) (
+                    prev.valid.last
                   ) else (
                     True
                   )
                 )
-              ) else (
-                myHazardCmpFunc(
-                  curr/*upExt(1)*/,
-                  prev,
-                  ydx,
-                  zdx,
-                  isPostDelay
-                )
+                //curr.valid && prev.valid
               )
-            ) && (
-              (
-                prev.modMemWordValid(
-                  zdx
-                  //3
-                )
-                //True
-              ) && (
-                if (doValidCheck) (
-                  prev.valid.last
-                ) else (
-                  True
-                )
-              )
-              //curr.valid && prev.valid
             )
-          )
-        } else {
-          False
-        }
-      )
+          } else {
+            False
+          }
+        )
+        ret.payload := prev.modMemWord
+        ret
+      }
       def inpPipePayload = io.frontPayload
       //val midPipePayloadArr = /*Array.fill(memArrSize)*/(Payload(modType()))
       //for (idx <- 0 until memArrSize) {
@@ -2687,7 +2749,8 @@ extends Area {
           Vec.fill(modRdPortCnt)(
             Vec.fill(extIdxLim)(
               Vec.fill(myUpExtDel.size)(
-                Bool()
+                //Bool()
+                Flow(cfg.wordType())
               )
             )
           )
@@ -3415,7 +3478,7 @@ extends Area {
               val toAdd = (
                 myUpExtDelFullFindFirstVecNotPostDelay(ydx)(zdx)(extIdx)
                 .sFindFirst(
-                  _ === True
+                  _.fire === True
                   //myFindFirstFunc(_)
                 )
               )
@@ -4332,11 +4395,11 @@ extends Area {
     ) generate (
       myFwd.myFindFirst_0
     )
-    val myFindFirst_1 = (
-      myHaveFwd
-    ) generate (
-      myFwd.myFindFirst_1
-    )
+    //val myFindFirst_1 = (
+    //  myHaveFwd
+    //) generate (
+    //  myFwd.myFindFirst_1
+    //)
 
     //if (io.myHaveFormalFwd) {
     //  //mod.front.myFwd.myUpExtDel2 := (
