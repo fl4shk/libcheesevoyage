@@ -1644,13 +1644,17 @@ case class PipeMemRmwIo[
   //  .setName(s"${pipeName}_${idx}_io_modFrontPayloadArr")
   //}
   //def modFrontPayload = modFrontPayloadArr//(memArrIdx)
-  val modFrontPayload = new ArrayBuffer[Payload[ModT]]()
-  for (fjIdx <- 0 until cfg.numForkJoin) {
-    modFrontPayload += (
-      Payload(modType())
-      .setName(s"${pipeName}_io_modFrontPayload_${fjIdx}")
-    )
-  }
+  val modFrontPayload = (
+    Payload(modType())
+    .setName(s"${pipeName}_io_modFrontPayload")
+  )
+  //val modFrontPayload = new ArrayBuffer[Payload[ModT]]()
+  //for (fjIdx <- 0 until cfg.numForkJoin) {
+  //  modFrontPayload += (
+  //    Payload(modType())
+  //    .setName(s"${pipeName}_io_modFrontPayload_${fjIdx}")
+  //  )
+  //}
   val tempModFrontPayload = Vec.fill(/*memArrSize*/ cfg.numForkJoin)(
     modType()
   )
@@ -2635,6 +2639,13 @@ extends Area {
         .setName(s"${pipeName}_io_midPipePayload")
       }
       //val outpPipePayload = Payload(modType())
+      val mid1PipePayload = new ArrayBuffer[Payload[ModT]]()
+      for (fjIdx <- 0 until cfg.numForkJoin) {
+        mid1PipePayload += (
+          Payload(modType())
+          .setName(s"${pipeName}_io_mid1PipePayload_${fjIdx}")
+        )
+      }
       def outpPipePayload = io.modFrontPayload
       val myRdMemWord = Vec.fill(memArrSize)(
         Vec.fill(modRdPortCnt)(
@@ -2879,8 +2890,8 @@ extends Area {
         downs=nfFrontArr,
         synchronous=(
           // TODO: determine correct value of `synchronous`
-          //true
-          false
+          true
+          //false
         ),
       )
       myLinkArr += fFront
@@ -3030,17 +3041,53 @@ extends Area {
           myLinkArr += s2mMid0Front(fjIdx)
         }
       }
-      val jMid0Front = (optIncludeModFrontStageLink) generate (
-        JoinLink(
-          ups=njMid0Front,
-          down=(
-            io.modFront
-          )
-        )
+      val njStmMid0Front = (
+        optIncludeModFrontStageLink
+      ) generate (
+        new ArrayBuffer[Stream[ModT]]()
+      )
+      val jStmMid0Front = (
+        optIncludeModFrontStageLink
+      ) generate (
+        Stream(modType())
+        .setName(f"${pipeName}_jStmMid0Front")
       )
       if (optIncludeModFrontStageLink) {
-        myLinkArr += jMid0Front
+        for (fjIdx <- 0 until cfg.numForkJoin) {
+          njStmMid0Front += (
+            Stream(modType())
+            .setName(f"${pipeName}_njMid0FrontStm_${fjIdx}")
+          )
+          njMid0Front(fjIdx).driveTo(
+            njStmMid0Front(fjIdx)
+          )(
+            (mod, node) => {
+              mod := node(mid1PipePayload(fjIdx))
+            }
+          )
+        }
+        jStmMid0Front.arbitrationFrom(StreamJoin(
+          sources=njStmMid0Front
+        ))
+        io.modFront.driveFrom(
+          jStmMid0Front
+        )(
+          (node, mod) => {
+            node(outpPipePayload) := mod
+          }
+        )
       }
+      //val jMid0Front = (optIncludeModFrontStageLink) generate (
+      //  JoinLink(
+      //    ups=njMid0Front,
+      //    down=(
+      //      io.modFront
+      //    )
+      //  )
+      //)
+      //if (optIncludeModFrontStageLink) {
+      //  myLinkArr += jMid0Front
+      //}
       // lack of `s2mMid0Front` (which would have been an `S2MLink`):
       //  needed to ensure it works with a second `PipeMemRmw`
       //  running in parallel with this pipeline stage,
@@ -4642,7 +4689,7 @@ extends Area {
             next=myTempUpMod,
             init=myTempUpMod.getZero,
           )
-          up(mod.front.outpPipePayload(fjIdx)) := tempUpMod(2)//myTempUpMod
+          up(mod.front.mid1PipePayload(fjIdx)) := tempUpMod(2)//myTempUpMod
           //when (up.isFiring) {
           //  myTempUpMod := tempUpMod(2)
           //  // := tempUpMod(2)
