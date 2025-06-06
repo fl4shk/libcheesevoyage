@@ -2997,22 +2997,37 @@ extends Area {
       val sMid0Front = (optIncludeModFrontStageLink) generate (
         new ArrayBuffer[StageLink]()
       )
-      var njMid0Front = (optIncludeModFrontStageLink) generate (
+      var njMid0Front = (
+        optIncludeModFrontStageLink
+        && cfg.numForkJoin > 1
+      ) generate (
         new ArrayBuffer[Node]()
       )
-      if (optIncludeModFrontStageLink) {
+      if (
+        optIncludeModFrontStageLink
+        && cfg.numForkJoin > 1
+      ) {
         for (fjIdx <- 0 until cfg.numForkJoin) {
           njMid0Front += (
             Node()
             .setName(s"${pipeName}_njMid0Front_${fjIdx}")
           )
+        }
+      }
+      if (optIncludeModFrontStageLink) {
+        for (fjIdx <- 0 until cfg.numForkJoin) {
           sMid0Front += StageLink(
             up=cMid0Front(fjIdx).down,
             down=(
               //Node()
               if (!myIncludeS2mMid0Front) (
-                //io.modFront
-                njMid0Front(fjIdx)
+                ////io.modFront
+                //njMid0Front(fjIdx)
+                if (cfg.numForkJoin > 1) (
+                  njMid0Front(fjIdx)
+                ) else (
+                  io.modFront
+                )
               ) else {
                 val temp = Node()
                 temp.setName(s"${pipeName}_sMid0Front_${fjIdx}_down")
@@ -3036,8 +3051,11 @@ extends Area {
           s2mMid0Front += S2MLink(
             up=sMid0Front(fjIdx).down,
             down={
-              //io.modFront
-              njMid0Front(fjIdx)
+              if (cfg.numForkJoin > 1) (
+                njMid0Front(fjIdx)
+              ) else (
+                io.modFront
+              )
             },
           )
           myLinkArr += s2mMid0Front(fjIdx)
@@ -3045,11 +3063,13 @@ extends Area {
       }
       val njStmMid0Front = (
         optIncludeModFrontStageLink
+        && cfg.numForkJoin > 1
       ) generate (
         new ArrayBuffer[Stream[ModT]]()
       )
       val jStmMid0Front = (
         optIncludeModFrontStageLink
+        && cfg.numForkJoin > 1
       ) generate (
         Stream(
           Vec.fill(cfg.numForkJoin)(
@@ -3058,7 +3078,10 @@ extends Area {
         )
         .setName(f"${pipeName}_jStmMid0Front")
       )
-      if (optIncludeModFrontStageLink) {
+      if (
+        optIncludeModFrontStageLink
+        && cfg.numForkJoin > 1
+      ) {
         for (fjIdx <- 0 until cfg.numForkJoin) {
           njStmMid0Front += (
             Stream(modType())
@@ -3075,25 +3098,41 @@ extends Area {
         //jStmMid0Front.arbitrationFrom(StreamJoin(
         //  sources=njStmMid0Front
         //))
-        jStmMid0Front << StreamJoin.vec(
+      }
+      val tempJoin = (
+        optIncludeModFrontStageLink
+        && cfg.numForkJoin > 1
+      ) generate (
+        StreamJoin.vec(
           sources=njStmMid0Front
         )
+        .setName(s"${pipeName}_tempJoin")
+      )
+      if (
+        optIncludeModFrontStageLink
+        && cfg.numForkJoin > 1
+      ) {
+        //jStmMid0Front << tempJoin
         io.modFront.driveFrom(
-          jStmMid0Front
+          //jStmMid0Front
+          tempJoin
         )(
           (node, mod) => {
-            val tempExt = mkOneExt()
+            val tempExt = (
+              mkOneExt()
+              .setName(s"${pipeName}_tempExt")
+            )
             mod.head.getPipeMemRmwExt(
               outpExt=tempExt,
               ydx=0,
               memArrIdx=cfg.memArrIdx,
             )
             node(outpPipePayload) := (
-              if (mod.size == 1) (
-                mod(0)
-              ) else (
+              //if (mod.size == 1) (
+              //  mod(0)
+              //) else (
                 mod(tempExt.joinIdx)
-              )
+              //)
             )
           }
         )
@@ -4710,7 +4749,14 @@ extends Area {
             next=myTempUpMod,
             init=myTempUpMod.getZero,
           )
-          up(io.modFrontBeforePayload(fjIdx)) := (
+          up(
+            if (cfg.numForkJoin > 1) (
+              io.modFrontBeforePayload(fjIdx)
+            ) else (
+              //io.modFrontAfterPayload
+              mod.front.outpPipePayload
+            )
+          ) := (
             tempUpMod(2)//myTempUpMod
           )
           //when (up.isFiring) {

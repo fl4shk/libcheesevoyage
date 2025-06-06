@@ -6199,6 +6199,7 @@ case class Gpu2d(
         memArrIdx: Int,
       ): Unit = {
         subLineMemEntryExt := inpExt
+        //subLineMemEntryExt.joinIdx := 0
       }
       def getPipeMemRmwExt(
         outpExt: PipeMemRmwPayloadExt[
