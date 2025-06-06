@@ -1644,11 +1644,14 @@ case class PipeMemRmwIo[
   //  .setName(s"${pipeName}_${idx}_io_modFrontPayloadArr")
   //}
   //def modFrontPayload = modFrontPayloadArr//(memArrIdx)
-  val modFrontPayload = (
-    Payload(modType())
-    .setName(s"${pipeName}_io_modFrontPayload")
-  )
-  val tempModFrontPayload = /*Vec.fill(memArrSize cfg.numForkJoin)*/(
+  val modFrontPayload = new ArrayBuffer[Payload[ModT]]()
+  for (fjIdx <- 0 until cfg.numForkJoin) {
+    modFrontPayload += (
+      Payload(modType())
+      .setName(s"${pipeName}_io_modFrontPayload_${fjIdx}")
+    )
+  }
+  val tempModFrontPayload = Vec.fill(/*memArrSize*/ cfg.numForkJoin)(
     modType()
   )
   val modBack = Node() //new ArrayBuffer[Node]()
@@ -4633,7 +4636,7 @@ extends Area {
             next=myTempUpMod,
             init=myTempUpMod.getZero,
           )
-          up(mod.front.outpPipePayload) := tempUpMod(2)//myTempUpMod
+          up(mod.front.outpPipePayload(fjIdx)) := tempUpMod(2)//myTempUpMod
           //when (up.isFiring) {
           //  myTempUpMod := tempUpMod(2)
           //  // := tempUpMod(2)
