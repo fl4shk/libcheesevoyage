@@ -2975,6 +2975,11 @@ extends Area {
         )
         //false
       )
+      println(
+        s"optIncludeModFrontStageLink:${optIncludeModFrontStageLink} "
+        + s"optIncludeModFrontS2MLink:${optIncludeModFrontS2MLink} "
+        + s"myIncludeS2mMid0Front:${myIncludeS2mMid0Front}"
+      )
       val sMid0Front = (optIncludeModFrontStageLink) generate (
         new ArrayBuffer[StageLink]()
       )
