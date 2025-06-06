@@ -2536,9 +2536,10 @@ extends Area {
             if (forFwd) (
               currMemAddr(0)
               && prev.modMemWordValid(
+                0
                 //zdx
                 //3
-                zdx
+                //zdx
               )
             ) else (
               (
@@ -2577,7 +2578,8 @@ extends Area {
               ) && (
                 (
                   prev.modMemWordValid(
-                    zdx
+                    0
+                    //zdx
                     //3
                   )
                   //True
