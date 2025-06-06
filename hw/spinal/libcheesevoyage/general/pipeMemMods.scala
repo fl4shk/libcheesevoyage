@@ -4393,7 +4393,7 @@ extends Area {
                 inp=tempUpMod(1),
                 cMid0Front=cMid0Front,
                 modFront=io.modFront,
-                tempModFrontPayload=io.tempModFrontPayload,
+                tempModFrontPayload=io.tempModFrontPayload(fjIdx),
                 getMyRdMemWordFunc=(
                   //someUpExtIdx: UInt,
                   someYdx: Int,

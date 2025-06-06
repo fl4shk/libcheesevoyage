@@ -403,7 +403,7 @@ extends Component
   )
   when (pipeMem.io.modFront.isValid) {
     tempModBackPayload := (
-      pipeMem.io.modFront(pipeMem.io.modFrontPayload)
+      pipeMem.io.modFront(pipeMem.io.modFrontPayload.head)
     )
   }
   //--------
