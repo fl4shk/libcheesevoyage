@@ -1079,7 +1079,7 @@ case class PipeMemRmwSimDut(
                 setOutpModMemWord(
                   someRdMemWord=someRdMemWord
                 )
-                for (kdx <- 0 until PipeMemRmw.modMemWordValidSize) {
+                for (kdx <- 0 until outp.myExt(0).valid.size) {
                   outp.myExt(0).valid(kdx) := (
                     outp.myExt(0).modMemWordValid(kdx)
                   )

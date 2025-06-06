@@ -279,6 +279,13 @@ case class PipeMemRmwConfig[
     )
   }
   def memArrSize = wordCountArr.size
+  def numMyUpExtDel2 = (
+    PipeMemRmw.numMyUpExtDel2(
+      optModHazardKind=optModHazardKind,
+      modStageCnt=modStageCnt,
+    )
+    //cfg.numMyUpExtDel2
+  )
   val (wordCountSum, wordCountMax): (Int, Int) = {
     var mySum: Int = 0
     var myMax: Int = 0
@@ -291,7 +298,10 @@ case class PipeMemRmwConfig[
     (mySum, myMax)
   }
 
-  val modMemWordValidSize: Int = PipeMemRmw.modMemWordValidSize
+  val modMemWordValidSize: Int = (
+    //PipeMemRmw.modMemWordValidSize
+    modRdPortCnt
+  )
 }
 //--------
 object PipeMemRmwPayloadExt {
@@ -314,7 +324,9 @@ object PipeMemRmwPayloadExt {
 case class PipeMemRmwPayloadExtPipeFlags(
 ) extends Bundle {
   val valid = /*KeepAttribute*/(Vec.fill(
-    PipeMemRmw.modMemWordValidSize
+    //PipeMemRmw.modMemWordValidSize
+    //4
+    1
   )(
     Bool()
   ))
@@ -489,10 +501,11 @@ case class PipeMemRmwPayloadExtMain[
   )
   def optReorder = cfg.optReorder 
   def numMyUpExtDel2 = (
-    PipeMemRmw.numMyUpExtDel2(
-      optModHazardKind=optModHazardKind,
-      modStageCnt=modStageCnt,
-    )
+    //PipeMemRmw.numMyUpExtDel2(
+    //  optModHazardKind=optModHazardKind,
+    //  modStageCnt=modStageCnt,
+    //)
+    cfg.numMyUpExtDel2
   )
   //myHaveFormalFwd: Boolean=false,
   //--------
@@ -769,7 +782,7 @@ trait PipeMemRmwPayloadBase[
   ////--------
 }
 object PipeMemRmw {
-  def modMemWordValidSize: Int = 4
+  //def modMemWordValidSize: Int = 4
   def extMainSize = 2
   def addrWidth(
     wordCount: Int,
@@ -2464,7 +2477,8 @@ extends Area {
             currMemAddr(0)
             && prev.modMemWordValid(
               //zdx
-              3
+              //3
+              zdx
             )
           ) else (
             (
@@ -2503,13 +2517,13 @@ extends Area {
             ) && (
               (
                 prev.modMemWordValid(
-                  //zdx
-                  3
+                  zdx
+                  //3
                 )
                 //True
               ) && (
                 if (doValidCheck) (
-                  prev.valid(2)
+                  prev.valid.last
                 ) else (
                   True
                 )
@@ -4626,11 +4640,13 @@ extends Area {
         })
         upExt(1)(ydx)(extIdxUp).ready := up.isReady
         upExt(1)(ydx)(extIdxUp).fire := up.isFiring
-        for (kdx <- 0 until cfg.modMemWordValidSize) {
-          when (
-            !upExt(1)(ydx)(extIdxUp).modMemWordValid(kdx)
-          ) {
-            upExt(1)(ydx)(extIdxUp).valid(kdx) := False
+        if (cfg.optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) {
+          for (kdx <- 0 until upExt(1)(ydx)(extIdxUp).valid.size) {
+            when (
+              !upExt(1)(ydx)(extIdxUp).modMemWordValid(kdx)
+            ) {
+              upExt(1)(ydx)(extIdxUp).valid(kdx) := False
+            }
           }
         }
       }
@@ -4766,9 +4782,11 @@ extends Area {
       })
       upExt(1)(ydx)(extIdxUp).ready := up.isReady
       upExt(1)(ydx)(extIdxUp).fire := up.isFiring
-      for (kdx <- 0 until cfg.modMemWordValidSize) {
-        when (!upExt(1)(ydx)(extIdxUp).modMemWordValid(kdx)) {
-          upExt(1)(ydx)(extIdxUp).valid(kdx) := False
+      if (cfg.optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) {
+        for (kdx <- 0 until upExt(1)(ydx)(extIdxUp).valid.size) {
+          when (!upExt(1)(ydx)(extIdxUp).modMemWordValid(kdx)) {
+            upExt(1)(ydx)(extIdxUp).valid(kdx) := False
+          }
         }
       }
     }
@@ -5062,7 +5080,7 @@ extends Area {
               )
             ),
             !ClockDomain.isResetActive,
-            upExt(1)(ydx)(extIdxUp).modMemWordValid(2),
+            upExt(1)(ydx)(extIdxUp).modMemWordValid.last,
           ).asBits.asUInt
         )
         //&& up.isValid
