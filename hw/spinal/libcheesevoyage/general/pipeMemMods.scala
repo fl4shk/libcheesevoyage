@@ -3072,9 +3072,12 @@ extends Area {
             }
           )
         }
-        jStmMid0Front.arbitrationFrom(StreamJoin(
+        //jStmMid0Front.arbitrationFrom(StreamJoin(
+        //  sources=njStmMid0Front
+        //))
+        jStmMid0Front << StreamJoin.vec(
           sources=njStmMid0Front
-        ))
+        )
         io.modFront.driveFrom(
           jStmMid0Front
         )(
