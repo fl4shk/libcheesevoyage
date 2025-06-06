@@ -6803,7 +6803,7 @@ case class Gpu2d(
             wrObjSubLineMemArr(
               jdx
             ).io.modFront(
-              wrObjSubLineMemArr(jdx).io.modFrontPayload
+              wrObjSubLineMemArr(jdx).io.modFrontAfterPayload
             )
           )
           if (vivadoDebug) {
@@ -7239,7 +7239,7 @@ case class Gpu2d(
             wrObjAffineSubLineMemArr(
               jdx
             ).io.modFront(
-              wrObjAffineSubLineMemArr(jdx).io.modFrontPayload
+              wrObjAffineSubLineMemArr(jdx).io.modFrontAfterPayload
             )
           )
           if (vivadoDebug) {

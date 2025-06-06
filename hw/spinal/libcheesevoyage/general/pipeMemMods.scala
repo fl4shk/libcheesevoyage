@@ -1644,9 +1644,16 @@ case class PipeMemRmwIo[
   //  .setName(s"${pipeName}_${idx}_io_modFrontPayloadArr")
   //}
   //def modFrontPayload = modFrontPayloadArr//(memArrIdx)
-  val modFrontPayload = (
+  val modFrontBeforePayload = new ArrayBuffer[Payload[ModT]]()
+  for (fjIdx <- 0 until cfg.numForkJoin) {
+    modFrontBeforePayload += (
+      Payload(modType())
+      .setName(s"${pipeName}_io_modFrontBeforePayload_${fjIdx}")
+    )
+  }
+  val modFrontAfterPayload = (
     Payload(modType())
-    .setName(s"${pipeName}_io_modFrontPayload")
+    .setName(s"${pipeName}_io_modFrontAfterPayload")
   )
   //val modFrontPayload = new ArrayBuffer[Payload[ModT]]()
   //for (fjIdx <- 0 until cfg.numForkJoin) {
@@ -2639,14 +2646,7 @@ extends Area {
         .setName(s"${pipeName}_io_midPipePayload")
       }
       //val outpPipePayload = Payload(modType())
-      val mid1PipePayload = new ArrayBuffer[Payload[ModT]]()
-      for (fjIdx <- 0 until cfg.numForkJoin) {
-        mid1PipePayload += (
-          Payload(modType())
-          .setName(s"${pipeName}_io_mid1PipePayload_${fjIdx}")
-        )
-      }
-      def outpPipePayload = io.modFrontPayload
+      def outpPipePayload = io.modFrontAfterPayload
       val myRdMemWord = Vec.fill(memArrSize)(
         Vec.fill(modRdPortCnt)(
           wordType()
@@ -3062,7 +3062,7 @@ extends Area {
             njStmMid0Front(fjIdx)
           )(
             (mod, node) => {
-              mod := node(mid1PipePayload(fjIdx))
+              mod := node(io.modFrontBeforePayload(fjIdx))
             }
           )
         }
@@ -4689,7 +4689,9 @@ extends Area {
             next=myTempUpMod,
             init=myTempUpMod.getZero,
           )
-          up(mod.front.mid1PipePayload(fjIdx)) := tempUpMod(2)//myTempUpMod
+          up(io.modFrontBeforePayload(fjIdx)) := (
+            tempUpMod(2)//myTempUpMod
+          )
           //when (up.isFiring) {
           //  myTempUpMod := tempUpMod(2)
           //  // := tempUpMod(2)
