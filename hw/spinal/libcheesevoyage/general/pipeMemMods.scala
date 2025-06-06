@@ -3085,7 +3085,13 @@ extends Area {
               ydx=0,
               memArrIdx=cfg.memArrIdx,
             )
-            node(outpPipePayload) := mod(tempExt.joinIdx)
+            node(outpPipePayload) := (
+              if (mod.size == 1) (
+                mod(0)
+              ) else (
+                mod(tempExt.joinIdx)
+              )
+            )
           }
         )
       }
