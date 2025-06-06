@@ -455,7 +455,7 @@ case class PipeMemRmwPayloadExtMainNonMemAddr[
     Bool()
   )
   val rdMemWord = Vec.fill(modRdPortCnt)(wordType())
-  val joinIdx = UInt(log2Up(cfg.numForkJoin + 1) bits)
+  val joinIdx = UInt(log2Up(cfg.numForkJoin) bits)
   //val (modMemWord, rdMemWord) = optSimpleIsWr match {
   //  case Some(myIsWr) => (
   //    if (myIsWr) (
