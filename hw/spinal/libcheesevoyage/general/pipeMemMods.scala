@@ -2991,7 +2991,7 @@ extends Area {
         for (fjIdx <- 0 until cfg.numForkJoin) {
           njMid0Front += (
             Node()
-            .setName(s"${pipeName}_njMid0Front_${fjIdx}")
+            //.setName(s"${pipeName}_njMid0Front_${fjIdx}")
           )
           sMid0Front += StageLink(
             up=cMid0Front(fjIdx).down,
