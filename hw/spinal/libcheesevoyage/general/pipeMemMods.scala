@@ -455,6 +455,7 @@ case class PipeMemRmwPayloadExtMainNonMemAddr[
     Bool()
   )
   val rdMemWord = Vec.fill(modRdPortCnt)(wordType())
+  val joinIdx = UInt(log2Up(cfg.numForkJoin + 1) bits)
   //val (modMemWord, rdMemWord) = optSimpleIsWr match {
   //  case Some(myIsWr) => (
   //    if (myIsWr) (
@@ -700,6 +701,7 @@ case class PipeMemRmwPayloadExt[
   def modMemWordValid = main.nonMemAddr.modMemWordValid
   //def modMemWordValidFwd = main.nonMemAddr.modMemWordValidFwd
   def rdMemWord = main.nonMemAddr.rdMemWord
+  def joinIdx = main.nonMemAddr.joinIdx
   //def reqReorderCommit = main.nonMemAddr.reqReorderCommit
   //def didReorderCommit = main.nonMemAddr.didReorderCommit
   def hazardCmp = main.nonMemAddr.hazardCmp
@@ -1996,7 +1998,7 @@ extends Area {
   def modStageCnt = cfg.modStageCnt
   def pipeName = cfg.pipeName 
   def linkArr = cfg.linkArr
-  def memArrIdx = cfg.memArrIdx 
+  def memArrIdx = cfg.memArrIdx
   //def dualRdType() = cfg.dualRdType()
   def optDualRd = cfg.optDualRd
   def optReorder = cfg.optReorder
@@ -3049,7 +3051,11 @@ extends Area {
       val jStmMid0Front = (
         optIncludeModFrontStageLink
       ) generate (
-        Stream(modType())
+        Stream(
+          Vec.fill(cfg.numForkJoin)(
+            modType()
+          )
+        )
         .setName(f"${pipeName}_jStmMid0Front")
       )
       if (optIncludeModFrontStageLink) {
@@ -3073,7 +3079,13 @@ extends Area {
           jStmMid0Front
         )(
           (node, mod) => {
-            node(outpPipePayload) := mod
+            val tempExt = mkOneExt()
+            mod.head.getPipeMemRmwExt(
+              outpExt=tempExt,
+              ydx=0,
+              memArrIdx=cfg.memArrIdx,
+            )
+            node(outpPipePayload) := mod(tempExt.joinIdx)
           }
         )
       }
