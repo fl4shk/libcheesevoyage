@@ -374,7 +374,8 @@ case class PipeMemRmwConfig[
 
   val modMemWordValidSize: Int = (
     //PipeMemRmw.modMemWordValidSize
-    modRdPortCnt
+    //modRdPortCnt
+    1
   )
 }
 //--------
