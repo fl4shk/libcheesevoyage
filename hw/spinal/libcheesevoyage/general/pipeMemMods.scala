@@ -3128,11 +3128,11 @@ extends Area {
               memArrIdx=cfg.memArrIdx,
             )
             node(outpPipePayload) := (
-              //if (mod.size == 1) (
-              //  mod(0)
-              //) else (
+              if (mod.size == 1) (
+                mod(0)
+              ) else (
                 mod(tempExt.joinIdx)
-              //)
+              )
             )
           }
         )
