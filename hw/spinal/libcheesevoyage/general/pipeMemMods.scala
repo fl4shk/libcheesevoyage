@@ -2879,7 +2879,8 @@ extends Area {
         downs=nfFrontArr,
         synchronous=(
           // TODO: determine correct value of `synchronous`
-          true
+          //true
+          false
         ),
       )
       myLinkArr += fFront
