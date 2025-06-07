@@ -1133,12 +1133,14 @@ extends Bundle {
     )
   )
   val myUpExtDel2FindFirstVec = (
-    Vec.fill(memArrSize)(
-      Vec.fill(modRdPortCnt)(
-        Vec.fill(PipeMemRmw.extIdxLim)(
-          Vec.fill(numMyUpExtDel2 - 1)(
-            //Bool()
-            Flow(cfg.wordType())
+    Vec.fill(cfg.numForkJoin)(
+      Vec.fill(memArrSize)(
+        Vec.fill(modRdPortCnt)(
+          Vec.fill(PipeMemRmw.extIdxLim)(
+            Vec.fill(numMyUpExtDel2 - 1)(
+              //Bool()
+              Flow(cfg.wordType())
+            )
           )
         )
       )
@@ -1164,6 +1166,7 @@ case class PipeMemRmwDoFwdArea[
   //DualRdT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
 ](
   //ydx: Int,
+  fjIdx: Int,
   fwdAreaName: String,
   fwd: PipeMemRmwFwd[
     WordT,
@@ -1237,11 +1240,13 @@ case class PipeMemRmwDoFwdArea[
               //  current => (current === True)
               //)
               LcvSFindFirstElem[Flow[WordT]](
-                fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxUp),
+                fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp),
                 current => (current.fire === True)
               )
             )
-            .setName(s"${fwdAreaName}_myFindFirstUp_${ydx}_${zdx}")
+            .setName(
+              s"${fwdAreaName}_myFindFirstUp_${fjIdx}_${ydx}_${zdx}"
+            )
           )
         )
         val myFindFirstSaved = /*KeepAttribute*/(
@@ -1260,7 +1265,7 @@ case class PipeMemRmwDoFwdArea[
               //  current => (current === True)
               //)
               LcvSFindFirstElem[Flow[WordT]](
-                fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxSaved),
+                fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxSaved),
                 current => (current.valid === True)
               )
             )
@@ -3671,7 +3676,9 @@ extends Area {
           for (idx <- 0 until mod.front.myUpExtDel2.size) {
             for (extIdx <- 0 until extIdxLim) {
               if (idx < mod.front.myUpExtDel2.size - 1) {
-                mod.front.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdx)(
+                mod.front.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+                  extIdx
+                )(
                   idx
                 ) := (
                   (
@@ -3793,6 +3800,7 @@ extends Area {
 
       val doFwd = (myHaveFwd) generate (
         PipeMemRmwDoFwdArea(
+          fjIdx=fjIdx,
           fwdAreaName=s"${pipeName}_cMid0FrontArea_doFwd",
           fwd=myFwd,
           setToMyFwdDataFunc=(
@@ -3838,6 +3846,7 @@ extends Area {
       }
       val doFormalFwdSaved = (myHaveFormalFwd) generate (
         PipeMemRmwDoFwdArea(
+          fjIdx=fjIdx,
           fwdAreaName=s"${pipeName}_cMid0FrontArea_doFwdFormalSaved",
           fwd=doFormalFwdSavedMyFwd,
           setToMyFwdDataFunc=(
