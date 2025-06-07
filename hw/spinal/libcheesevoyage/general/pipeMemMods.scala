@@ -3377,14 +3377,14 @@ extends Area {
                 Vec[Bool](
                   RegNext(next=tempSharedEnable, init=False),
                   RegNext(
-                    //LcvFastCmpEq(
-                    //  left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
-                    //  right=mod.back.myWriteAddr(ydx),
-                    //),
-                    next=(
-                      upExt(1)(ydx)(extIdxUp).memAddr(zdx)
-                      === mod.back.myWriteAddr(ydx)
+                    next=LcvFastCmpEq(
+                      left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
+                      right=mod.back.myWriteAddr(ydx),
                     ),
+                    //next=(
+                    //  upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+                    //  === mod.back.myWriteAddr(ydx)
+                    //),
                     init=False,
                   ),
                   RegNext(next=mod.back.myWriteEnable(ydx), init=False)
@@ -3590,22 +3590,30 @@ extends Area {
         .setName(s"${pipeName}_nextPrevTxnWasHazardAny_${fjIdx}")
       )
       val rPrevTxnWasHazardAny = (
-        /*KeepAttribute*/(
-          //Reg(Bool()) init(False)
-          RegNextWhen/*RegNext*/(
-            next=nextPrevTxnWasHazardAny,
-            cond=up.isFiring,
-            init=False,
+        //if (nextPrevTxnWasHazardVec.size > 0) {
+          /*KeepAttribute*/(
+            //Reg(Bool()) init(False)
+            RegNextWhen/*RegNext*/(
+              next=nextPrevTxnWasHazardAny,
+              cond=up.isFiring,
+              init=False,
+            )
           )
-        )
+        //} else {
+        //  False
+        //}
         .setName(s"${pipeName}_rPrevTxnWasHazardAny_${fjIdx}")
       )
-      nextPrevTxnWasHazardAny := (
-        nextPrevTxnWasHazardVec.sFindFirst(
-          _ === True
-        )._1
-        //LcvFastOrR(nextPrevTxnWasHazardVec.asBits.asUInt)
-      )
+      if (nextPrevTxnWasHazardVec.size > 0) {
+        nextPrevTxnWasHazardAny := (
+          nextPrevTxnWasHazardVec.sFindFirst(
+            _ === True
+          )._1
+          //LcvFastOrR(nextPrevTxnWasHazardVec.asBits.asUInt)
+        )
+      } else {
+        nextPrevTxnWasHazardAny := nextPrevTxnWasHazardVec.head
+      }
       for (ydx <- 0 until memArrSize) {
         rPrevTxnWasHazardVec(ydx).init(
           nextPrevTxnWasHazardVec(ydx).getZero
