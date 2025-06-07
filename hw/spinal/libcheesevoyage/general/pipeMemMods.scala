@@ -2421,43 +2421,67 @@ extends Area {
       //    //)
       //  )
       //)
+      def myIncludeForkJoin = (
+        optIncludeModFrontStageLink
+        && cfg.numForkJoin > 1
+      )
       val cFront = CtrlLink(
         up=io.front,
         down={
-          val temp = Node()
-          temp.setName(s"${pipeName}_cFront_down")
-          temp
+          //if (myIncludeForkJoin) {
+            val temp = Node()
+            temp.setName(s"${pipeName}_cFront_down")
+            temp
+          //} else {
+          //  
+          //}
         }
       )
         //.setName(s"${pipeName}_Front")
       myLinkArr += cFront
 
-      val nfFrontArr = new ArrayBuffer[Node]()
-      for (fjIdx <- 0 until cfg.numForkJoin) {
-        nfFrontArr += (
-          Node()
-          .setName(f"${pipeName}_nfFrontArr_${fjIdx}")
-        )
-      }
-      val fFront = ForkLink(
-        up=(
-          cFront.down,
-        ),
-        downs=nfFrontArr,
-        synchronous=(
-          // TODO: determine correct value of `synchronous`
-          true
-          //false
-        ),
+      val nfFrontArr = (
+        myIncludeForkJoin
+      ) generate (
+        new ArrayBuffer[Node]()
       )
-      myLinkArr += fFront
+      if (myIncludeForkJoin) (
+        for (fjIdx <- 0 until cfg.numForkJoin) {
+          nfFrontArr += (
+            Node()
+            .setName(f"${pipeName}_nfFrontArr_${fjIdx}")
+          )
+        }
+      )
+      val fFront = (
+        myIncludeForkJoin
+      ) generate (
+        ForkLink(
+          up=(
+            cFront.down,
+          ),
+          downs=nfFrontArr,
+          synchronous=(
+            // TODO: determine correct value of `synchronous`
+            true
+            //false
+          ),
+        )
+      )
+      if (myIncludeForkJoin) {
+        myLinkArr += fFront
+      }
 
       val sFront = new ArrayBuffer[StageLink]()
       for (fjIdx <- 0 until cfg.numForkJoin) {
         sFront += StageLink(
           up=(
             //cFront.down
-            nfFrontArr(fjIdx)
+            if (myIncludeForkJoin) (
+              nfFrontArr(fjIdx)
+            ) else (
+              cFront.down
+            )
           ),
           down={
             val temp = Node()
@@ -2552,14 +2576,16 @@ extends Area {
         new ArrayBuffer[StageLink]()
       )
       var njMid0Front = (
-        optIncludeModFrontStageLink
-        && cfg.numForkJoin > 1
+        //optIncludeModFrontStageLink
+        //&& cfg.numForkJoin > 1
+        myIncludeForkJoin
       ) generate (
         new ArrayBuffer[Node]()
       )
       if (
-        optIncludeModFrontStageLink
-        && cfg.numForkJoin > 1
+        //optIncludeModFrontStageLink
+        //&& cfg.numForkJoin > 1
+        myIncludeForkJoin
       ) {
         for (fjIdx <- 0 until cfg.numForkJoin) {
           njMid0Front += (
@@ -2616,14 +2642,16 @@ extends Area {
         }
       }
       val njStmMid0Front = (
-        optIncludeModFrontStageLink
-        && cfg.numForkJoin > 1
+        //optIncludeModFrontStageLink
+        //&& cfg.numForkJoin > 1
+        myIncludeForkJoin
       ) generate (
         new ArrayBuffer[Stream[ModT]]()
       )
       val jStmMid0Front = (
-        optIncludeModFrontStageLink
-        && cfg.numForkJoin > 1
+        //optIncludeModFrontStageLink
+        //&& cfg.numForkJoin > 1
+        myIncludeForkJoin
       ) generate (
         Stream(
           Vec.fill(cfg.numForkJoin)(
@@ -2633,8 +2661,9 @@ extends Area {
         .setName(f"${pipeName}_jStmMid0Front")
       )
       if (
-        optIncludeModFrontStageLink
-        && cfg.numForkJoin > 1
+        //optIncludeModFrontStageLink
+        //&& cfg.numForkJoin > 1
+        myIncludeForkJoin
       ) {
         for (fjIdx <- 0 until cfg.numForkJoin) {
           njStmMid0Front += (
@@ -2654,8 +2683,9 @@ extends Area {
         //))
       }
       val tempJoin = (
-        optIncludeModFrontStageLink
-        && cfg.numForkJoin > 1
+        //optIncludeModFrontStageLink
+        //&& cfg.numForkJoin > 1
+        myIncludeForkJoin
       ) generate (
         StreamJoin.vec(
           sources=njStmMid0Front
@@ -2663,8 +2693,9 @@ extends Area {
         .setName(s"${pipeName}_tempJoin")
       )
       if (
-        optIncludeModFrontStageLink
-        && cfg.numForkJoin > 1
+        //optIncludeModFrontStageLink
+        //&& cfg.numForkJoin > 1
+        myIncludeForkJoin
       ) {
         //jStmMid0Front << tempJoin
         io.modFront.driveFrom(
