@@ -101,9 +101,12 @@ object LcvSFindFirstElem {
         hitValid,
         {
           val data = Vec[UInt](
-            U"2'd2",
-            U"2'd1",
-            U"2'd0",
+            self(0).asBits.asUInt,
+            self(1).asBits.asUInt,
+            self(2).asBits.asUInt,
+            //U"2'd2",
+            //U"2'd1",
+            //U"2'd0",
           )
           val select = (
             Cat(hits(2), hits(1), hits(0)).asUInt
