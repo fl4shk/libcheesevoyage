@@ -1341,14 +1341,17 @@ case class PipeMemRmwDoFwdArea[
           firstFwd
         ) generate (
           /*KeepAttribute*/(
-            fwd.myUpExtDel2(
-              //myFindFirstUp._2
-              //fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
-              tempMyFindFirstUp_1
-            )(ydx)(
-              extIdxUp
-            ).modMemWord
+            //fwd.myUpExtDel2(
+            //  //myFindFirstUp._2
+            //  //fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
+            //  tempMyFindFirstUp_1
+            //)(ydx)(
+            //  extIdxUp
+            //).modMemWord
             //tempMyFindFirstUp_1.payload
+            fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)(
+              tempMyFindFirstUp_1
+            ).payload
           )
           .setName(s"${fwdAreaName}_myFwdDataUp_${ydx}_${zdx}")
         )
