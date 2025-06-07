@@ -166,10 +166,13 @@ object LcvSFindFirst {
   ): (Bool, UInt) = {
     //val hitValid = self.map(condition(_)).reduceLeft(_ || _)
     //val hitValid
-    val myHitValidMap = self.map(condition(_))
-    val myHitValidVec = Vec.fill(self.size)(Bool())
-    for (idx <- 0 until self.size) {
-      myHitValidVec(idx) := myHitValidMap(idx) //self.map(condition(idx))
+    //val myHitValidMap = self.map(condition(_))
+    val myHitValidVec = Vec.fill(self.size - 1)(Bool())
+    for (idx <- 0 until self.size - 1) {
+      myHitValidVec(idx) := (
+        condition(self(idx))
+        //myHitValidMap(idx) //self.map(condition(idx))
+      )
     }
     //val hitValid = Bool()
     val hitValid = (
@@ -1161,7 +1164,7 @@ extends Bundle {
       Vec.fill(memArrSize)(
         Vec.fill(modRdPortCnt)(
           Vec.fill(PipeMemRmw.extIdxLim)(
-            Vec.fill(numMyUpExtDel2/* - 1*/)(
+            Vec.fill(numMyUpExtDel2 + 1/* - 1*/)(
               //Bool()
               Flow(cfg.wordType())
             )
