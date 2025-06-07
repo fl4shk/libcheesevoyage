@@ -3339,7 +3339,9 @@ extends Area {
     //)
     val tempSharedEnable = /*KeepAttribute*/(
       //down.isReady
-      down.isFiring
+      Vec.fill(modRdPortCnt + 1)(
+        down.isFiring
+      )
     )
       .setName(s"${pipeName}_tempSharedEnable")
     tempCond := (
@@ -3354,7 +3356,7 @@ extends Area {
         )
       )
       //--------
-      && tempSharedEnable
+      && tempSharedEnable.last
       //--------
     )
 
@@ -3398,14 +3400,14 @@ extends Area {
                 //tempCond
                 //!mod.front.nextDidFwd(zdx)(0)
                 //&& 
-                tempSharedEnable
+                tempSharedEnable.last
                 //down.isReady
               ),
             )
             when (
               /*LcvFastAndR*/(
                 Vec[Bool](
-                  RegNext(next=tempSharedEnable, init=False),
+                  RegNext(next=tempSharedEnable.last, init=False),
                   RegNext(
                     next=LcvFastCmpEq(
                       left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
@@ -3816,13 +3818,17 @@ extends Area {
       }
       //--------
       for (ydx <- 0 until memArrSize) {
-        when (
-          RegNext(
-            next=cFrontArea.tempSharedEnable,
-            init=False,
-          )
-        ) {
-          upExt(1)(ydx)(extIdxSingle).rdMemWord := myRdMemWord(ydx)
+        for (zdx <- 0 until modRdPortCnt) {
+          when (
+            RegNext(
+              next=cFrontArea.tempSharedEnable(zdx),
+              init=False,
+            )
+          ) {
+            upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
+              myRdMemWord(ydx)(zdx)
+            )
+          }
         }
         upExt(1)(ydx)(extIdxSingle).modMemWordValid.foreach(current => {
           current := True
