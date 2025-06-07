@@ -1374,9 +1374,11 @@ case class PipeMemRmwDoFwdArea[
           tempMyFindFirstUp_0 := (
             myFindFirstUp._1
           )
-          //tempMyFindFirstUp_1 := (
-          //  (myFindFirstUp._2.payload)//.resized
-          //)
+          tempMyFindFirstUp_1 := (
+            (
+              myFindFirstUp._2//._2.payload
+            )//.resized
+          )
           //tempMyFindFirstSaved_0 := (
           //  myFindFirstSaved._1
           //)
