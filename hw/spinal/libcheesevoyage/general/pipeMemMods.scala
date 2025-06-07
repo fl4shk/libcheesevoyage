@@ -1120,57 +1120,25 @@ extends Bundle {
   }
 
   val myFwdData = (
-    //(
-    //  myHaveFormalFwd
-    //) generate 
-    (
-      /*KeepAttribute*/(
-        //Vec.fill(numMyUpExtDel2)(
-          Vec.fill(memArrSize)(
-            //Vec.fill(PipeMemRmw.extIdxLim)(
-            Vec.fill(modRdPortCnt)(
-              wordType()
-            )
-            //)
-          )
-        //)
+    Vec.fill(memArrSize)(
+      Vec.fill(modRdPortCnt)(
+        wordType()
       )
     )
   )
 
   val myUpExtDel2 = (
-    //(
-    //  myHaveFormalFwd
-    //) generate 
-    (
-      /*KeepAttribute*/(
-        Vec.fill(
-          numMyUpExtDel2
-        )(
-          //mkFwdExtFunc(
-          //  false
-          //)
-          mkExt(
-            //false
-          )
-        )
-      )
+    Vec.fill(numMyUpExtDel2)(
+      mkExt()
     )
   )
   val myUpExtDel2FindFirstVec = (
-    //(
-    //  myHaveFormalFwd
-    //) generate 
-    (
-      /*KeepAttribute*/(
-        Vec.fill(memArrSize)(
-          Vec.fill(modRdPortCnt)(
-            Vec.fill(PipeMemRmw.extIdxLim)(
-              Vec.fill(numMyUpExtDel2 - 1)(
-                //Bool()
-                Flow(cfg.wordType())
-              )
-            )
+    Vec.fill(memArrSize)(
+      Vec.fill(modRdPortCnt)(
+        Vec.fill(PipeMemRmw.extIdxLim)(
+          Vec.fill(numMyUpExtDel2 - 1)(
+            //Bool()
+            Flow(cfg.wordType())
           )
         )
       )
@@ -1194,27 +1162,12 @@ case class PipeMemRmwDoFwdArea[
   HazardCmpT <: Data,
   //ModT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
   //DualRdT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
-]
-//(
-//  //pipeName: String,
-//  //wordType: HardType[WordT],
-//  //wordCountMax: Int,
-//  //hazardCmpType: HardType[HazardCmpT],
-//  modRdPortCnt: Int,
-//  modStageCnt: Int,
-//  memArrSize: Int,
-//  //optModHazardKind: PipeMemRmw.ModHazardKind,
-//  //optReorder: Boolean,
-//  //optFormal: Boolean,
-//)
-(
+](
   //ydx: Int,
   fwdAreaName: String,
   fwd: PipeMemRmwFwd[
     WordT,
     HazardCmpT,
-    //ModT,
-    //DualRdT,
   ],
   setToMyFwdDataFunc: (
     Int,      // ydx
@@ -1482,31 +1435,10 @@ case class PipeMemRmwIo[
     WordT,
     HazardCmpT,
   ],
-  //wordType: HardType[WordT],
-  //wordCountMax: Int,
-  //hazardCmpType: HardType[HazardCmpT],
   modType: HardType[ModT],
-  //modRdPortCnt: Int,
-  //modStageCnt: Int,
-  ////optDualRdType: Option[HardType[DualRdT]]=None,
-  ////optDualRdType: Option[HardType[DualRdT]]={
-  ////  //Some(HardType[PipeMemRmwDualRdTypeDisabled[WordT]]())
-  ////},
-  //pipeName: String,
-  //memArrIdx: Int=0,
-  //memArrSize: Int=1,
   dualRdType: HardType[DualRdT]=PipeMemRmwDualRdTypeDisabled[
     WordT, HazardCmpT
   ](),
-  ////optDualRdSize: Option[Int]=None,
-  ////dualRdSize: Int=0,
-  //optDualRd: Boolean=false,
-  //optReorder: Boolean=false,
-  ////optEnableModDuplicate: Boolean=true,
-  //optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
-  //optEnableClear: Boolean=false,
-  //optFormal: Boolean=false,
-  //vivadoDebug: Boolean=false,
 ) extends Area {
   def wordType() = cfg.wordType()
   def wordCountMax = cfg.wordCountMax
@@ -1564,77 +1496,6 @@ case class PipeMemRmwIo[
     Payload(modType())
     .setName(s"${pipeName}_io_frontPayload")
   )
-  //--------
-  //--------
-  //val myFormalFwd = (
-  //  (
-  //    optFormal
-  //  ) && (
-  //    optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
-  //  )
-  //) generate (
-  //  Payload(FormalFwd())
-  //)
-  //def myHaveFormalFwd = (
-  //  (
-  //    optFormal
-  //  ) && (
-  //    optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
-  //  )
-  //)
-  //def mkFwd() = (
-  //  PipeMemRmwFwd[
-  //    WordT,
-  //    HazardCmpT,
-  //  ](
-  //    wordType=wordType(),
-  //    wordCountMax=wordCountMax,
-  //    optModHazardKind=optModHazardKind,
-  //    modRdPortCnt=modRdPortCnt,
-  //    modStageCnt=modStageCnt,
-  //    memArrSize=memArrSize,
-  //    myHaveFormalFwd=myHaveFormalFwd,
-  //  )(
-  //    mkExtFunc=mkExt
-  //  )
-  //)
-  //val myFormalFwdPayload = (
-  //  myHaveFormalFwd
-  //) generate (
-  //  Payload(mkFwd())
-  //  .setName(s"${pipeName}_io_myFormalFwdPayload")
-  //)
-  //--------
-  //def mkExt(myVivadoDebug: Boolean=false) = {
-  //  val ret = Vec.fill(memArrSize)(
-  //    Vec.fill(PipeMemRmw.extIdxLim)(
-  //      PipeMemRmwPayloadExt(
-  //        wordType=wordType(),
-  //        wordCount=wordCountMax,
-  //        hazardCmpType=hazardCmpType(),
-  //        modRdPortCnt=modRdPortCnt,
-  //        modStageCnt=modStageCnt,
-  //        //doModInModFront=doModInModFrontFunc match {
-  //        //  case Some(myDoModSingleStageFunc) => true
-  //        //  case None => false
-  //        //},
-  //        //optEnableModDuplicate=optEnableModDuplicate,
-  //        optModHazardKind=optModHazardKind,
-  //        optReorder=optReorder,
-  //      )
-  //    )
-  //  )
-  //  if (vivadoDebug && myVivadoDebug) {
-  //    //ret.addAttribute("MARK_DEBUG", "TRUE")
-  //    //ret.memAddr.addAttribute("MARK_DEBUG", "TRUE")
-  //    //ret.hazardCmp.addAttribute("MARK_DEBUG", "TRUE")
-  //    //if (optEnableModDuplicate) {
-  //    //  ret.hazardId.addAttribute("MARK_DEBUG", "TRUE")
-  //    //}
-  //    //ret.modMemWord.addAttribute("MARK_DEBUG", "TRUE")
-  //  }
-  //  ret
-  //}
   //--------
 
   // Use `modFront` and `modBack` to insert a pipeline stage for modifying
@@ -1784,36 +1645,8 @@ case class PipeMemRmwIo[
     Payload(dualRdType())
     .setName(s"${pipeName}_io_dualRdBackPayload")
   )
-  //if (optDualRd && vivadoDebug) {
-  //  dualRdFront(dualRdFrontPayload).addAttribute(
-  //    "MARK_DEBUG", "TRUE"
-  //  )
-  //  dualRdBack(dualRdBackPayload).addAttribute(
-  //    "MARK_DEBUG", "TRUE"
-  //  )
-  //}
   //--------
-  //val (dualRdPush, dualRdPop) = optDualRdType match {
-  //  case Some(myDualRdType) => {
-  //    (
-  //      slave(
-  //        Stream(myDualRdType())
-  //      ), // dualRdPush
-  //      master(
-  //        Stream(myDualRdType())
-  //      ) // dualRdPop
-  //    )
-  //  }
-  //  case None => (None, None)
-  //}
 }
-//case class PipeDuplicateItCnt[
-//  T <: Data
-//](
-//  dataType: HardType[T],
-//  cntWidth: Int,
-//  cntOverflow: 
-//)
 
 trait PipeMemRmwReorderFtable[
   WordT <: Data,
@@ -1881,7 +1714,7 @@ case class PipeMemRmwDoModInModFrontFuncParams[
   fjIdx: Int,
 ) {
 }
-// A Read-Modify-Write pipelined BRAM
+// A Read-Modify-Write pipelined BRAM (or LUTRAM)
 case class PipeMemRmw[
   WordT <: Data,
   HazardCmpT <: Data,
@@ -1891,46 +1724,11 @@ case class PipeMemRmw[
   cfg: PipeMemRmwConfig[
     WordT,
     HazardCmpT,
-    //ModT,
-    //DualRdT,
   ],
   modType: HardType[ModT],
   dualRdType: HardType[DualRdT]=PipeMemRmwDualRdTypeDisabled[
     WordT, HazardCmpT,
   ](),
-//(
-//  wordType: HardType[WordT],
-//  wordCountArr: Seq[Int],
-//  hazardCmpType: HardType[HazardCmpT],
-//  modType: HardType[ModT],
-//  modRdPortCnt: Int,
-//  modStageCnt: Int,
-//  pipeName: String,
-//  linkArr: Option[ArrayBuffer[Link]]=None,
-//  memArrIdx: Int=0,
-//  //memArrSize: Int=1,
-//  //optDualRdType: Option[HardType[DualRdT]]=None,
-//  dualRdType: HardType[DualRdT]=PipeMemRmwDualRdTypeDisabled[
-//    WordT, HazardCmpT,
-//  ](),
-//  optDualRd: Boolean=false,
-//  optReorder: Boolean=false,
-//  //dualRdSize: Int=0,
-//  init: Option[Seq[Seq[WordT]]]=None,
-//  initBigInt: Option[Seq[Seq[BigInt]]]=None,
-//  //forFmax: Boolean=false,
-//  //optExtraCycleLatency: Boolean=false,
-//  //optDisableModRd: Boolean=false,
-//  //optEnableModDuplicate: Boolean=true,
-//  optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
-//  //optModFwdToFront: Boolean=false,
-//  //optRegFileRdPorts: Int=0,
-//  optEnableClear: Boolean=false,
-//  memRamStyle: String="auto",
-//  vivadoDebug: Boolean=false,
-//  //optLinkFrontToModFront: Boolean=true,
-//  optIncludeModFrontS2MLink: Boolean=true,
-//  optFormal: Boolean=false,
 )(
   //--------
   doHazardCmpFunc: Option[
@@ -1954,9 +1752,6 @@ case class PipeMemRmw[
   ]=None,
   //--------
   doModInModFrontFunc: Option[
-    //[
-    //  ModT <: Data,
-    //]
     (
       PipeMemRmwDoModInModFrontFuncParams[
         WordT,
@@ -1966,14 +1761,6 @@ case class PipeMemRmw[
       ],
     ) => Area
   ]=None,
-  //doFwdFunc: Option[
-  //  (
-  //    //ModT, //
-  //    UInt, // stage index
-  //    Vec[PipeMemRmwPayloadExt[WordT, HazardCmpT]], // myUpExtDel
-  //    Int,  // zdx
-  //  ) => WordT
-  //]=None,
   //--------
   reorderFtable: Option[PipeMemRmwReorderFtable[WordT]]=None,
   //setReorderBusyFunc: Option[
@@ -1983,9 +1770,6 @@ case class PipeMemRmw[
   //  ) => Unit
   //]=None,
   //--------
-  //formalFwdStallKind: Int=0,
-  //formalFwdStallCnt: Int=0,
-  //formalFwdStallAddr: Option[UInt]=None,
   //--------
 )
 extends Area {
@@ -2017,12 +1801,6 @@ extends Area {
   }
   def optFormal = cfg.optFormal
   //--------
-  //def doHazardCmpFunc = cfg.doHazardCmpFunc
-  //def doPrevHazardCmpFunc = cfg.doPrevHazardCmpFunc 
-  //def doModInFrontFunc = cfg.doModInFrontFunc
-  //def doModInModFrontFunc = cfg.doModInModFrontFunc
-  //def reorderFtable = cfg.reorderFtable
-  //--------
   def memArrSize = cfg.memArrSize
   def extIdxUp = PipeMemRmw.extIdxUp
   def extIdxSaved = PipeMemRmw.extIdxSaved
@@ -2035,11 +1813,6 @@ extends Area {
     assert(memArrSize > 0)
   }
   //--------
-  //if (optModFwdToFront) {
-  //  assert(optModHazardKind == PipeMemRmw.ModHazardKind.Fwd)
-  //} else (
-  //  //assert(optModHazardKind != PipeMemRmw.ModHazardKind.Fwd)
-  //)
   //--------
   def debug: Boolean = {
     //GenerationFlags.formal {
@@ -2049,24 +1822,7 @@ extends Area {
     optFormal
   }
   def wordCountMax = cfg.wordCountMax
-  //var wordCountMax: Int = 0
-  //for (ydx <- 0 until memArrSize) {
-  //  if (wordCountMax < wordCountArr(ydx)) {
-  //    wordCountMax = wordCountArr(ydx)
-  //  }
-  //}
   //--------
-  //val io = slave(
-  //  PipeMemIo(
-  //    wordType=wordType(),
-  //    wordCount=wordCount,
-  //  )
-  //)
-  //val io = PipeMemRmwIo(
-  //  modType=modType(),
-  //  wordCount=wordCount,
-  //  optDualRdType=optDualRdType,
-  //)
   val io = PipeMemRmwIo[
     WordT,
     HazardCmpT,
@@ -2074,24 +1830,8 @@ extends Area {
     DualRdT,
   ](
     cfg=cfg,
-    //wordType=wordType(),
-    //wordCountMax=wordCountMax,
-    //hazardCmpType=hazardCmpType(),
     modType=modType(),
-    //modRdPortCnt=modRdPortCnt,
-    //modStageCnt=modStageCnt,
-    //pipeName=pipeName,
-    //memArrIdx=memArrIdx,
-    //memArrSize=memArrSize,
     dualRdType=dualRdType(),
-    ////dualRdSize=dualRdSize,
-    //optDualRd=optDualRd,
-    //optReorder=optReorder,
-    ////optEnableModDuplicate=optEnableModDuplicate,
-    //optModHazardKind=optModHazardKind,
-    //optEnableClear=optEnableClear,
-    //optFormal=optFormal,
-    //vivadoDebug=vivadoDebug,
   )
   //--------
   def mkMem(ydx: Int) = {
@@ -2128,9 +1868,6 @@ extends Area {
       }
     }
 
-    //if (vivadoDebug) {
-    //  ret.addAttribute("MARK_DEBUG", "TRUE")
-    //}
     ret
   }
 
@@ -2157,7 +1894,6 @@ extends Area {
     }
   }
   val modMem = (
-    //optEnableModDuplicate
     optModHazardKind != PipeMemRmw.ModHazardKind.Dont
   ) generate {
     val myArr = new ArrayBuffer[Array[Mem[WordT]]]()
@@ -2172,12 +1908,8 @@ extends Area {
     }
     myArr
   }
-  if (
-    optFormal
-  ) {
-    if (
-      optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
-    ) {
+  if (optFormal) {
+    if (optModHazardKind == PipeMemRmw.ModHazardKind.Fwd) {
       for (ydx <- 0 until memArrSize) {
         for (zdx <- 0 until modRdPortCnt) {
           for (idx <- 0 until wordCountArr(ydx)) {
@@ -2193,15 +1925,8 @@ extends Area {
       }
     }
   }
-  //val dualRdMemArr = new ArrayBuffer[Mem[WordT]]()
-  //for (idx <- 0 until dualRdSize) {
-  //  dualRdMemArr += mkMem()
-  //}
   val dualRdMem = (io.optDualRd) generate {
     val myArr = new ArrayBuffer[Mem[WordT]]()
-    //Array.fill(memArrSize)(
-    //  mkMem()
-    //)
     for (ydx <- 0 until memArrSize) {
       myArr += mkMem(ydx=ydx)
     }
@@ -2212,7 +1937,6 @@ extends Area {
     ydx: Int,
   ): Unit = {
     if (
-      //optEnableModDuplicate
       optModHazardKind != PipeMemRmw.ModHazardKind.Dont
     ) {
       for (zdx <- 0 until modRdPortCnt) {
@@ -2222,9 +1946,6 @@ extends Area {
     if (io.optDualRd) {
       writeFunc(dualRdMem(ydx))
     }
-    //for (idx <- 0 until dualRdSize) {
-    //  writeFunc(dualRdMemArr(idx))
-    //}
   }
   def memWriteAll(
     address: Vec[UInt],
@@ -2255,48 +1976,7 @@ extends Area {
       )
     }
   }
-  //def memIterate(
-  //  readFunc: (Mem[WordT]) => WordT
-  //): Unit = {
-  //  readFunc(modMem)
-  //  for (idx <- 0 until dualRdSize) {
-  //    readFunc(dualRdMemArr(idx))
-  //  }
-  //}
   //--------
-  //def mkExt(myVivadoDebug: Boolean=false) = {
-  //  //val ret = Vec.fill(memArrSize)(
-  //  //  Vec.fill(extIdxLim)(
-  //  //    PipeMemRmwPayloadExt(
-  //  //      wordType=wordType(),
-  //  //      wordCount=wordCountMax,
-  //  //      hazardCmpType=hazardCmpType(),
-  //  //      modRdPortCnt=modRdPortCnt,
-  //  //      modStageCnt=modStageCnt,
-  //  //      //doModInModFront=doModInModFrontFunc match {
-  //  //      //  case Some(myDoModSingleStageFunc) => true
-  //  //      //  case None => false
-  //  //      //},
-  //  //      //optEnableModDuplicate=optEnableModDuplicate,
-  //  //      optModHazardKind=optModHazardKind,
-  //  //      optReorder=optReorder,
-  //  //    )
-  //  //  )
-  //  //)
-  //  //if (vivadoDebug && myVivadoDebug) {
-  //  //  //ret.addAttribute("MARK_DEBUG", "TRUE")
-  //  //  //ret.memAddr.addAttribute("MARK_DEBUG", "TRUE")
-  //  //  //ret.hazardCmp.addAttribute("MARK_DEBUG", "TRUE")
-  //  //  //if (optEnableModDuplicate) {
-  //  //  //  ret.hazardId.addAttribute("MARK_DEBUG", "TRUE")
-  //  //  //}
-  //  //  //ret.modMemWord.addAttribute("MARK_DEBUG", "TRUE")
-  //  //}
-  //  //ret
-  //  io.mkExt(
-  //    myVivadoDebug=myVivadoDebug
-  //  )
-  //}
   def myHaveFwd = (
     optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
   )
@@ -2304,39 +1984,19 @@ extends Area {
     (
       optFormal
     ) && (
-      //optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
       myHaveFwd
     )
   )
   def mkFwd(): PipeMemRmwFwd[
     WordT,
     HazardCmpT,
-    //ModT,
-    //DualRdT,
   ] = (
     PipeMemRmwFwd[
       WordT,
       HazardCmpT,
-      //ModT,
-      //DualRdT,
     ](
-      //wordType=wordType(),
-      //wordCount=wordCountMax,
-      //hazardCmpType=hazardCmpType(),
-      //modRdPortCnt=modRdPortCnt,
-      //modStageCnt=modStageCnt,
-      //memArrSize=memArrSize,
-      //optModHazardKind=optModHazardKind,
-      //optReorder=optReorder,
-      ////myHaveFormalFwd=myHaveFormalFwd,
       cfg=cfg,
     )
-    //(
-    //  mkFwdOneExtFunc=(
-    //    //mkFwdExt
-    //    mkOneExt
-    //  )
-    //)
   )
   def mkOneExt(
     //myVivadoDebug: Boolean=false
@@ -2346,50 +2006,9 @@ extends Area {
   ] = (
     PipeMemRmwPayloadExt(
       cfg=cfg,
-      //wordType=wordType(),
       wordCount=wordCountMax,
-      //hazardCmpType=hazardCmpType(),
-      //modRdPortCnt=modRdPortCnt,
-      //modStageCnt=modStageCnt,
-      //memArrSize=memArrSize,
-      //optModHazardKind=optModHazardKind,
-      //optReorder=optReorder,
-      ////myHaveFormalFwd=myHaveFormalFwd
     )
   )
-  //def mkExt(
-  //  //myHaveFormalFwd: Boolean,
-  //  myVivadoDebug: Boolean=false,
-  //) = {
-  //  val ret = Vec.fill(memArrSize)(
-  //    Vec.fill(PipeMemRmw.extIdxLim)(
-  //      //PipeMemRmwPayloadExt(
-  //      //  wordType=wordType(),
-  //      //  wordCount=wordCountMax,
-  //      //  hazardCmpType=hazardCmpType(),
-  //      //  modRdPortCnt=modRdPortCnt,
-  //      //  modStageCnt=modStageCnt,
-  //      //  memArrSize=memArrSize,
-  //      //  optModHazardKind=optModHazardKind,
-  //      //  optReorder=optReorder,
-  //      //  //myHaveFormalFwd=myHaveFormalFwd
-  //      //)
-  //      mkOneExt(
-  //        myVivadoDebug=myVivadoDebug
-  //      )
-  //    )
-  //  )
-  //  if (vivadoDebug && myVivadoDebug) {
-  //    //ret.addAttribute("MARK_DEBUG", "TRUE")
-  //    //ret.memAddr.addAttribute("MARK_DEBUG", "TRUE")
-  //    //ret.hazardCmp.addAttribute("MARK_DEBUG", "TRUE")
-  //    //if (optEnableModDuplicate) {
-  //    //  ret.hazardId.addAttribute("MARK_DEBUG", "TRUE")
-  //    //}
-  //    //ret.modMemWord.addAttribute("MARK_DEBUG", "TRUE")
-  //  }
-  //  ret
-  //}
   def mkExt(
     //myVivadoDebug: Boolean=false
   ): Vec[Vec[PipeMemRmwPayloadExt[WordT, HazardCmpT]]] = {
@@ -2397,19 +2016,7 @@ extends Area {
 
     val ret = Vec.fill(memArrSize)(
       Vec.fill(PipeMemRmw.extIdxLim)(
-        //PipeMemRmwPayloadExt(
-        //  wordType=wordType(),
-        //  wordCount=wordCountMax,
-        //  hazardCmpType=hazardCmpType(),
-        //  modRdPortCnt=modRdPortCnt,
-        //  modStageCnt=modStageCnt,
-        //  memArrSize=memArrSize,
-        //  optModHazardKind=optModHazardKind,
-        //  optReorder=optReorder,
-        //  //myHaveFormalFwd=myHaveFormalFwd
-        //)
         mkOneExt(
-          //myVivadoDebug
         )
       )
     )
@@ -2424,58 +2031,8 @@ extends Area {
     //}
     ret
   }
-  //def mkFwdExt(
-  //  //myHaveFormalFwd: Boolean,
-  //  myVivadoDebug: Boolean=false,
-  //) = {
-  //  val ret = Vec.fill(memArrSize)(
-  //    Vec.fill(PipeMemRmw.extIdxLim)(
-  //      PipeMemRmwPayloadExt(
-  //        wordType=wordType(),
-  //        wordCount=wordCountMax,
-  //        hazardCmpType=hazardCmpType(),
-  //        modRdPortCnt=modRdPortCnt,
-  //        modStageCnt=modStageCnt,
-  //        memArrSize=memArrSize,
-  //        optModHazardKind=optModHazardKind,
-  //        optReorder=optReorder,
-  //        //myHaveFormalFwd=myHaveFormalFwd
-  //      )
-  //    )
-  //  )
-  //  //if (vivadoDebug && myVivadoDebug) {
-  //  //  //ret.addAttribute("MARK_DEBUG", "TRUE")
-  //  //  //ret.memAddr.addAttribute("MARK_DEBUG", "TRUE")
-  //  //  //ret.hazardCmp.addAttribute("MARK_DEBUG", "TRUE")
-  //  //  //if (optEnableModDuplicate) {
-  //  //  //  ret.hazardId.addAttribute("MARK_DEBUG", "TRUE")
-  //  //  //}
-  //  //  //ret.modMemWord.addAttribute("MARK_DEBUG", "TRUE")
-  //  //}
-  //  ret
-  //}
-  //def mkExt(
-  //  myVivadoDebug: Boolean=false
-  //) = mkExtRaw(
-  //  myHaveFormalFwd=false,
-  //  myVivadoDebug=myVivadoDebug,
-  //)
-  //def mkExtFormalFwd(
-  //  myVivadoDebug: Boolean=false
-  //) = mkExtRaw(
-  //  myHaveFormalFwd=myHaveFormalFwd,
-  //  myVivadoDebug=myVivadoDebug,
-  //)
   val myFwd = (
-  //(
-  //  //myHaveFwd
-  //) generate 
-    (
-      /*KeepAttribute*/(
-        mkFwd()
-        //myUpExtDel(0)(0)(0).fwd
-      )
-    )
+    mkFwd()
   )
   val myLinkArr = (
     linkArr match {
@@ -2661,17 +2218,6 @@ extends Area {
           )
         )
       )
-      //val myFwdRdMemWord = Vec.fill(memArrSize)(
-      //  Vec.fill(modRdPortCnt)(
-      //  //Vec.fill(extIdxLim)(
-      //    wordType()
-      //  //)
-      //  )
-      //)
-      //val rRdMemWord1 = Reg(wordType()) init(myRdMemWord.getZero)
-      //val dbgRdMemWord = (debug) generate (
-      //  Payload(wordType())
-      //)
       val myUpExtDel = /*KeepAttribute*/(
         Vec.fill(
           PipeMemRmw.numPostFrontStages
@@ -3148,11 +2694,11 @@ extends Area {
       //if (optIncludeModFrontStageLink) {
       //  myLinkArr += jMid0Front
       //}
+
       // lack of `s2mMid0Front` (which would have been an `S2MLink`):
       //  needed to ensure it works with a second `PipeMemRmw`
       //  running in parallel with this pipeline stage,
       //  such as the data cache of the Flare CPU
-
 
       val nextDidFwd = (
         (
@@ -3186,39 +2732,6 @@ extends Area {
         )
       )
       myRdMemWord := myNonFwdRdMemWord
-      //for (zdx <- 0 until modRdPortCnt) {
-      //  //myRdMemWord(zdx) := myNonFwdRdMemWord(zdx)
-      //  //myRdMemWord(zdx) := (
-      //  //  RegNext(myRdMemWord(zdx)) init(myRdMemWord(zdx).getZero)
-      //  //)
-      //  //when (RegNext(cFront.down.isFiring)) {
-      //    myRdMemWord(zdx) := /*Mux*/(
-      //      //!rDidFwd(zdx)(0),
-      //      //RegNext(!nextDidFwd(zdx)(0)) init(False),
-      //      //!(
-      //      //  //RegNext(nextDidFwd(zdx)(0)) init(False)
-      //      //  nextDidFwd(zdx)(0)
-      //      //),
-      //      myNonFwdRdMemWord(zdx),
-      //      //myFwdRdMemWord(zdx)
-      //      //Mux(
-      //      //  (
-      //      //    myUpExtDel(0)(extIdxUp).memAddr(zdx)
-      //      //    === myUpExtDel.last(extIdxUp).memAddr(PipeMemRmw.modWrIdx)
-      //      //  ),
-      //      //  myUpExtDel.last(extIdxUp).modMemWord,
-      //      //  Mux(
-      //      //    myUpExtDel(0)(extIdxUp).memAddr(zdx)
-      //      //    === myUpExtDel.last(extIdxSaved).memAddr(
-      //      //      PipeMemRmw.modWrIdx
-      //      //    ),
-      //      //    myUpExtDel.last(extIdxSaved).modMemWord,
-      //      //    myNonFwdRdMemWord(zdx)
-      //      //  )
-      //      //)
-      //    )
-      //  //}
-      //}
       if (
         optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
         //optModFwdToFront
@@ -3229,56 +2742,10 @@ extends Area {
           }
         }
       }
-      //myLinkArr += cIoFront
-      //val cMidMinus1Front = pipe.addStage(
-      //  name=pipeName + "_MidMinus1Front",
-      //  optIncludeS2M=false,
-      //)
-      //println(myUpExtDelFull.size)
       //--------
       val myUpExtDel2FindFirstVec = /*KeepAttribute*/(
         myFwd.myUpExtDel2FindFirstVec
-        //Vec.fill(memArrSize)(
-        //  Vec.fill(modRdPortCnt)(
-        //    Vec.fill(extIdxLim)(
-        //      Vec.fill(
-        //        //myUpExtDelFull.size
-        //        myUpExtDel2.size
-        //        //+ (
-        //        //  if (myUpExtDel2.size > 1) (
-        //        //    - 1
-        //        //  ) else (
-        //        //    0
-        //        //  )
-        //        //)
-        //        //- 1
-        //        //+ (
-        //        //  doModInModFrontFunc match {
-        //        //    //case Some(myDoModSingleStageFunc) => 0
-        //        //    //case None => -1
-        //        //    case Some(myDoModSingleStageFunc) => 0
-        //        //    case None => (
-        //        //      -1
-        //        //    )
-        //        //  }
-        //        //)
-        //      )(
-        //        Bool()
-        //      )
-        //    )
-        //  )
-        //)
       )
-      //--------
-      //val tempMyUpExtDelFrontFindFirstVec = /*KeepAttribute*/(
-      //  Vec.fill(modRdPortCnt)(
-      //    Vec.fill(1)(
-      //      //Vec.fill(extIdxLim)(
-      //        Bool()
-      //      //)
-      //    )
-      //  )
-      //)
       //--------
     }
     val back = new Area {
@@ -3316,10 +2783,6 @@ extends Area {
       //val pipePayload = Payload(modType())
       def pipePayload = io.modBackPayload
 
-      //val cBackPre = pipe.addStage(
-      //)
-
-      //val cModBack = pipe.addStage("ModBack")
       val cBack = pipe.addStage(
         name=pipeName + "_Back",
         //optIncludeStage=true,
@@ -3368,52 +2831,7 @@ extends Area {
         down=io.back,
       )
       myLinkArr += dIoBack
-      //val tempModBackPostUpExt = (
-      //  Vec.fill(2)(mkExt())
-      //)
-      //val tempModBackPostUpMod = (
-      //  Vec.fill(2)(
-      //    Vec.fill(memArrSize)(
-      //      modType()
-      //    )
-      //  )
-      //)
       dIoBack.up(io.backPayload) := dIoBack.up(pipePayload)
-      //for (ydx <- 0 until memArrSize) {
-      //  //tempModBackPostUpMod(0)(ydx) := (
-      //  //  dIoModBack.up(io.modBackPayload(ydx))
-      //  //)
-      //  //tempModBackPostUpMod(0)(ydx).getPipeMemRmwExt(
-      //  //  outpExt=tempModBackPostUpExt(0)(ydx)(extIdxSingle),
-      //  //  memArrIdx=memArrIdx,
-      //  //)
-      //  //when (ClockDomain.isResetActive) {
-      //  //  tempModBackPostUpExt(1)(ydx)(extIdxSingle) := (
-      //  //    tempModBackPostUpExt(0)(ydx)(extIdxSingle)
-      //  //  )
-      //  //  tempModBackPostUpExt(1)(ydx)(extIdxSingle).modMemWordValid := (
-      //  //    False
-      //  //  )
-      //  //  //dIoModBack.up(pipePayload(ydx)) := 
-      //  //  //dIoModBack.up(pipePayload(ydx)).setPipeMemRmwExt(
-      //  //  //)
-      //  //}
-      //  //tempModBackPostUpMod(1)(ydx) := tempModBackPostUpMod(0)(ydx)
-      //  //tempModBackPostUpMod(1)(ydx).allowOverride
-      //  //tempModBackPostUpMod(1)(ydx).setPipeMemRmwExt(
-      //  //  inpExt=tempModBackPostUpExt(1)(ydx)(extIdxSingle),
-      //  //  memArrIdx=memArrIdx,
-      //  //)
-      //  dIoBack.up(io.backPayload(ydx)) := dIoBack.up(pipePayload(ydx))
-      //  //when (ClockDomain.isResetActive) {
-      //  //  cIoBack.up(io.backPayload(ydx)).myExt.modMemWordValid := False
-      //  //}
-      //}
-      //pipe.first.up.driveFrom(io.modBack)(
-      //  con=(node, payload) => {
-      //    node(pipePayload) := payload 
-      //  }
-      //)
       val rTempWord = /*(debug) generate*/ /*KeepAttribute*/(
         Vec.fill(memArrSize)(
           Reg(
@@ -3432,20 +2850,6 @@ extends Area {
       if (vivadoDebug) {
         //rTempWord.addAttribute("MARK_DEBUG", "TRUE")
       }
-      //when (cBack.up.isValid) {
-      //}
-      //val tempBackStm = cloneOf(io.back)
-
-      //pipe.last.down.driveTo(io.back)(
-      //  con=(payload, node) => {
-      //    payload := node(pipePayload)
-      //  }
-      //)
-
-      //io.back <-/< tempBackStm.haltWhen(
-      //  !(RegNextWhen(True, io.front.fire) init(False))
-      //)
-      //io.back << tempBackStm
     }
     //--------
   }
@@ -3503,7 +2907,6 @@ extends Area {
       }
     }
     //--------
-    //--------
     val nextHazardId = (
       //optEnableModDuplicate
       optModHazardKind == PipeMemRmw.ModHazardKind.Dupl
@@ -3531,11 +2934,6 @@ extends Area {
       optModHazardKind == PipeMemRmw.ModHazardKind.Dupl
     ) {
       nextHazardId := rHazardId
-      //when (isValid) {
-          //upExt(1)(extIdxUp).hazardId := nextHazardId
-      //} otherwise {
-        //upExt(1).hazardId := rHazardId
-      //}
     }
     //--------
     val hazardIdMinusOne = (
@@ -3598,7 +2996,6 @@ extends Area {
       dataType=Bool(),
       init=False,
     )
-    //val myUpExtDelFull = mod.front.myUpExtDelFull
     val myUpExtDelFullFindFirstVecNotPostDelay = (
       mod.front.myUpExtDelFullFindFirstVecNotPostDelay
     )
@@ -3637,7 +3034,6 @@ extends Area {
 
     val tempMyUpExtDelFindFirstNotPostDelay = (
       (
-        //optEnableModDuplicate
         optModHazardKind == PipeMemRmw.ModHazardKind.Dupl
       ) generate (
         Array.fill(memArrSize)(
@@ -3652,17 +3048,10 @@ extends Area {
         for (extIdx <- 0 until extIdxLim) {
           for (zdx <- 0 until modRdPortCnt) {
             tempMyUpExtDelFindFirstNotPostDelay(ydx)(extIdx) += {
-              //def myFindFirstFunc(
-              //  toCmp: Vec[Bool]
-              //): Bool = (
-              //  toCmp(0) === True
-              //  || toCmp(1) === True
-              //)
               val toAdd = (
                 myUpExtDelFullFindFirstVecNotPostDelay(ydx)(zdx)(extIdx)
                 .sFindFirst(
                   _.fire === True
-                  //myFindFirstFunc(_)
                 )
               )
               toAdd.setName(
@@ -3712,10 +3101,7 @@ extends Area {
       upExt(1)(ydx)(extIdxUp).ready := up.isReady
       upExt(1)(ydx)(extIdxUp).fire := up.isFiring
     }
-    if (
-      //optEnableModDuplicate
-      optModHazardKind == PipeMemRmw.ModHazardKind.Dupl
-    ) {
+    if (optModHazardKind == PipeMemRmw.ModHazardKind.Dupl) {
       // BEGIN: stalling-based code; fix later
       nextState := rState
       switch (rState) {
@@ -3952,12 +3338,17 @@ extends Area {
                 Vec[Bool](
                   RegNext(next=tempSharedEnable, init=False),
                   RegNext(
-                    LcvFastCmpEq(
-                      left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
-                      right=mod.back.myWriteAddr(ydx),
+                    //LcvFastCmpEq(
+                    //  left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
+                    //  right=mod.back.myWriteAddr(ydx),
+                    //),
+                    next=(
+                      upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+                      === mod.back.myWriteAddr(ydx)
                     ),
+                    init=False,
                   ),
-                  RegNext(mod.back.myWriteEnable(ydx))
+                  RegNext(next=mod.back.myWriteEnable(ydx), init=False)
                 ).asBits.asUInt.andR
               )
             ) {
@@ -4003,8 +3394,6 @@ extends Area {
     val tempCondDown = (
       down.isFiring
     )
-    //--------
-    //--------
     //--------
     tempUpMod(1) := (
       RegNext(
@@ -4107,12 +3496,6 @@ extends Area {
         .setName(s"${pipeName}_cMid0FrontArea_dbgDownIsFiring_${fjIdx}")
       //--------
       //--------
-      //val upFwd = (
-      //  myHaveFormalFwd
-      //) generate (
-      //  Vec.fill(2)(mkFwd())
-      //  .setName(s"${pipeName}_cMid0FrontArea_upFwd")
-      //)
       val upExt = Vec.fill(3)(
         mkExt()
       ).setName(s"${pipeName}_cMid0FrontArea_upExt")
@@ -4143,27 +3526,23 @@ extends Area {
         upExt(2)(ydx).allowOverride
       }
       val nextPrevTxnWasHazardVec = (
-        //(PipeMemRmwSimDut.doAddrOneHaltIt) generate (
-          /*KeepAttribute*/(
-            Vec.fill(memArrSize)(
-              Bool()
-            )
+        /*KeepAttribute*/(
+          Vec.fill(memArrSize)(
+            Bool()
           )
-          .setName(s"${pipeName}_nextPrevTxnWasHazardVec")
-        //)
+        )
+        .setName(s"${pipeName}_nextPrevTxnWasHazardVec")
       )
       val rPrevTxnWasHazardVec = (
-        //(PipeMemRmwSimDut.doAddrOneHaltIt) generate (
-          /*KeepAttribute*/(
-            RegNextWhen/*RegNext*/(
-              next=nextPrevTxnWasHazardVec,
-              cond=up.isFiring,
-            )
-            //init(False)
-            //init(nextPrevTxnWasHazardVec.getZero)
+        /*KeepAttribute*/(
+          RegNextWhen/*RegNext*/(
+            next=nextPrevTxnWasHazardVec,
+            cond=up.isFiring,
           )
-          .setName(s"${pipeName}_rPrevTxnWasHazardVec")
-        //)
+          //init(False)
+          //init(nextPrevTxnWasHazardVec.getZero)
+        )
+        .setName(s"${pipeName}_rPrevTxnWasHazardVec")
       )
       val nextPrevTxnWasHazardAny = (
         /*KeepAttribute*/(
@@ -4189,7 +3568,9 @@ extends Area {
         LcvFastOrR(nextPrevTxnWasHazardVec.asBits.asUInt)
       )
       for (ydx <- 0 until memArrSize) {
-        rPrevTxnWasHazardVec(ydx).init(nextPrevTxnWasHazardVec(ydx).getZero)
+        rPrevTxnWasHazardVec(ydx).init(
+          nextPrevTxnWasHazardVec(ydx).getZero
+        )
         nextPrevTxnWasHazardVec(ydx) := rPrevTxnWasHazardVec(ydx)
         for (extIdx <- 0 until extIdxLim) {
           myUpExtDel(0)(ydx)(extIdx).valid.allowOverride
@@ -4210,7 +3591,6 @@ extends Area {
               )
             )
           }
-          //upExt(1)(ydx)(extIdxSingle).modMemWord := upExt(2)(ydx)(extIdxUp).modMemWord
         }
         myUpExtDel(0)(ydx)(extIdxUp) := (
           upExt(2)(ydx)(extIdxUp)
@@ -4238,18 +3618,10 @@ extends Area {
 
       val tempUpMod = (
         Vec.fill(3)(
-          //Vec.fill(extIdxLim)(
-          //Vec.fill(memArrSize)(
-            modType()
-          //)
-          //)
+          modType()
         )
         .setName(s"${pipeName}_cMid0FrontArea_tempUpMod")
       )
-      //tempUpMod(2) := (
-      //  RegNext(tempUpMod(2))
-      //  init(tempUpMod(2).getZero)
-      //)
       tempUpMod(2) := (
         RegNext(
           next=tempUpMod(2),
@@ -4261,14 +3633,6 @@ extends Area {
       val tempUpMod0a = modType() 
       tempUpMod0a := up(mod.front.midPipePayload)(1)
       for (ydx <- 0 until memArrSize) {
-        //tempUpMod(2) := (
-        //  RegNext(
-        //    next=tempUpMod(2),
-        //    init=tempUpMod(2).getZero,
-        //  )
-        //)
-        //tempUpMod(2).allowOverride
-        //tempUpMod(0) := up(mod.front.midPipePayload(ydx))
         for (extIdx <- 0 until extIdxLim) {
           val myMod = (
             if (extIdx == 0) {
@@ -4306,105 +3670,24 @@ extends Area {
         for (zdx <- 0 until modRdPortCnt) {
           for (idx <- 0 until mod.front.myUpExtDel2.size) {
             for (extIdx <- 0 until extIdxLim) {
-              //if (zdx == 0) {
-              //  val tempMemAddr = (
-              //    mod.front.myUpExtDel2MemAddr(idx)(ydx)(extIdx)
-              //  )
-              //  if (idx == 0) {
-              //    tempMemAddr := (
-              //      mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddr(
-              //        PipeMemRmw.modWrIdx
-              //      )(
-              //        PipeMemRmw.addrWidth(
-              //          wordCount=wordCountArr(ydx)
-              //        ) - 1
-              //          downto 0
-              //        )
-              //      //upExt(1)(ydx)(extIdxSingle).memAddr(zdx)
-              //    )
-              //  } else {
-              //    tempMemAddr := (
-              //      RegNext(tempMemAddr)
-              //      init(0x0)
-              //    )
-              //    when (
-              //      //if (idx == 1) (
-              //      //  down.isFiring
-              //      //) else (
-              //      //  up.isFiring
-              //      //)
-              //    ) {
-              //      val tempMemAddr1 = (
-              //        //mod.front.myUpExtDel2MemAddr(idx - 1)(ydx)(extIdx)
-              //        mod.front.myUpExtDel2(idx - 1)(ydx)(extIdx).memAddr(
-              //          PipeMemRmw.modWrIdx
-              //        )(
-              //          PipeMemRmw.addrWidth(
-              //            wordCount=wordCountArr(ydx)
-              //          ) - 1
-              //          downto 0
-              //        )
-              //      )
-              //      tempMemAddr := (
-              //        RegNext(tempMemAddr1)
-              //        init(0x0)
-              //      )
-              //    }
-              //  }
-              //}
               if (idx < mod.front.myUpExtDel2.size - 1) {
                 mod.front.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdx)(
                   idx
                 ) := (
-                  //(
-                  //  if (zdx == PipeMemRmw.modWrIdx) (
-                  //    True
-                  //  ) else (
-                  //    False
-                  //  )
-                  //) && 
                   (
                     mod.front.findFirstFunc(
                       currMemAddr=(
-                        ////if (extIdx == PipeMemRmw.extIdxUp) (
-                        //  upExt(1)(ydx)(extIdx).memAddr(zdx)(
-                        //    (
-                        //      PipeMemRmw.addrWidth(
-                        //        wordCount=wordCountArr(ydx)
-                        //      ) - 1
-                        //      downto 0
-                        //    )
-                        //  )
-                        ////) else (
-                        ////  upExt(1)(ydx)(extIdx).memAddrAlt(zdx)(
-                        ////    (
-                        ////      PipeMemRmw.addrWidth(
-                        ////        wordCount=wordCountArr(ydx)
-                        ////      ) - 1
-                        ////      downto 0
-                        ////    )
-                        ////  )
-                        ////)
                         upExt(1)(ydx)(extIdx).memAddrFwdCmp(zdx)(idx)
                       ),
                       prevMemAddr=(
-                        //if (idx > 0) {
-                        //  mod.front.myUpExtDel2MemAddr(idx)(ydx)(extIdx)(
-                        //    PipeMemRmw.addrWidth(
-                        //      wordCount=wordCountArr(ydx)
-                        //    ) - 1
-                        //    downto 0
-                        //  )
-                        //} else {
-                          mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddr(
-                            PipeMemRmw.modWrIdx
-                          )(
-                            PipeMemRmw.addrWidth(
-                              wordCount=wordCountArr(ydx)
-                            ) - 1
-                            downto 0
-                          )
-                        //}
+                        mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddr(
+                          PipeMemRmw.modWrIdx
+                        )(
+                          PipeMemRmw.addrWidth(
+                            wordCount=wordCountArr(ydx)
+                          ) - 1
+                          downto 0
+                        )
                       ),
                       curr=(
                         upExt(1)(ydx)(
@@ -4413,11 +3696,7 @@ extends Area {
                         )
                       ),
                       prev=(
-                        //mod.front.myUpExtDel2(idx)(ydx)
-                        //tempMyUpExtDel2
-                        //mod.front.myUpExtDel2(idx)(ydx)
                         mod.front.myUpExtDel2(idx)(ydx)(extIdx)
-                        //mod.front.myUpExtDel(idx + 1)
                       ),
                       ydx=ydx,
                       zdx=zdx,
@@ -4427,7 +3706,9 @@ extends Area {
                         //idx == 0 && extIdx == extIdxUp
                         false
                       ),
-                      forFwd=true,
+                      forFwd=(
+                        true
+                      ),
                     )
                   )
                 )
@@ -4437,59 +3718,18 @@ extends Area {
         }
       }
       //--------
-      //println(myUpExtDel.size)
-      //when (up.isFiring) {
-      //  upExt(1).rdMemWord := myRdMemWord
-      //}
       for (ydx <- 0 until memArrSize) {
-        //GenerationFlags.formal {
-          //when (
-          //  //past(cMid0Front.up.isFiring) init(False)
-          //  io.modFront.isValid
-          //) {
-          //  //for (zdx <- 0 until upExt(1)(ydx)(extIdxSingle).rdMemWord.size) {
-          //    val tempMyExt = mkExt(myVivadoDebug=true)
-          //    //io.tempModFrontPayload
-          //    io.tempModFrontPayload(ydx).getPipeMemRmwExt(
-          //      outpExt=tempMyExt(ydx)(extIdxUp),
-          //      memArrIdx=memArrIdx,
-          //    )
-          //    for (zdx <- 0 until modRdPortCnt) {
-          //      assert(
-          //        (
-          //          RegNextWhen(
-          //            //inp.myExt.rdMemWord(ydx),
-          //            upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx),
-          //            up.isFiring,
-          //          )
-          //          init(upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx).getZero)
-          //        ) === (
-          //          tempMyExt(ydx)(extIdxSingle).rdMemWord(zdx)
-          //          //io.tempModFrontPayload.myExt.rdMemWord(ydx)
-          //          //myRdMemWord(ydx)
-          //        )
-          //      )
-          //    }
-          //  //}
-          //}
-        //}
         when (
-          //RegNext(up.isReady)
           RegNext(
             next=cFrontArea.tempSharedEnable,
             init=False,
           )
         ) {
           upExt(1)(ydx)(extIdxSingle).rdMemWord := myRdMemWord(ydx)
-          //upExt(2)(ydx)(extIdxUp).rdMemWord := myRdMemWord(ydx)
         }
         upExt(1)(ydx)(extIdxSingle).modMemWordValid.foreach(current => {
           current := True
         })
-        //upExt(2)(ydx)(extIdxUp).rdMemWord := (
-        //  upExt(1)(ydx)(extIdxSingle).rdMemWord
-        //)
-
       }
       val myDoModInModFrontAreaArr = new ArrayBuffer[Area]()
       doModInModFrontFunc match {
@@ -4540,42 +3780,6 @@ extends Area {
           tempUpMod(2) := tempUpMod(1)
         }
       }
-      //for (ydx <- 0 until memArrSize) {
-      //  upExt(2)(ydx)(extIdxSingle).valid := up.isValid
-      //  upExt(2)(ydx)(extIdxSingle).ready := up.isReady
-      //  upExt(2)(ydx)(extIdxSingle).fire := up.isFiring
-      //}
-      //def myHaveFwd = (
-      //  mod.front.myHaveFwd
-      //)
-      //val myFindFirst_0 = (
-      //  myHaveFwd
-      //) generate (
-      //  /*KeepAttribute*/(
-      //    Vec.fill(memArrSize)(
-      //      Vec.fill(modRdPortCnt)(
-      //        Vec.fill(extIdxLim)(
-      //          Bool()
-      //        )
-      //      )
-      //    )
-      //  )
-      //  .setName(s"${pipeName}_myFindFirst_0")
-      //)
-      //val myFindFirst_1 = (
-      //  myHaveFwd
-      //) generate (
-      //  /*KeepAttribute*/(
-      //    Vec.fill(memArrSize)(
-      //      Vec.fill(modRdPortCnt)(
-      //        Vec.fill(extIdxLim)(
-      //          UInt(log2Up(mod.front.myUpExtDel2.size) bits)
-      //        )
-      //      )
-      //    )
-      //  )
-      //  .setName(s"${pipeName}_myFindFirst_1")
-      //)
       val myFindFirst_0 = (
         myHaveFwd
       ) generate (
@@ -4587,15 +3791,6 @@ extends Area {
       //  myFwd.myFindFirst_1
       //)
 
-      //if (io.myHaveFormalFwd) {
-      //  //mod.front.myFwd.myUpExtDel2 := (
-      //  //  mod.front.myUpExtDel2
-      //  //)
-      //  //mod.front.myFwd.myUpExtDel2FindFirstVec := (
-      //  //  mod.front.myUpExtDel2FindFirstVec
-      //  //)
-      //  up(io.myFormalFwdPayload) := mod.front.myFwd
-      //}
       val doFwd = (myHaveFwd) generate (
         PipeMemRmwDoFwdArea(
           fwdAreaName=s"${pipeName}_cMid0FrontArea_doFwd",
@@ -4716,33 +3911,7 @@ extends Area {
           )
         }
         //--------
-        //up(mod.front.outpPipePayload) := RegNextWhen(
-        //  next=tempUpMod(2),
-        //  cond=myDbgUpIsValid,
-        //  init=tempUpMod(2).getZero,
-        //)
-        //--------
-        //upExt(3)(ydx) := upExt(2)(ydx)
-        //tempUpMod(3)(ydx).setPipeMemRmwExt(
-        //  inpExt=upExt(3)
-        //)
-          //up(mod.front.outpPipePayload(ydx)) := tempUpMod(2)(ydx)
         if (ydx == 0) {
-          //up(mod.front.outpPipePayload) := RegNextWhen(
-          //  next=tempUpMod(2),
-          //  cond=myDbgUpIsValid,
-          //  init=tempUpMod(2).getZero,
-          //)
-          //up(mod.front.outpPipePayload) := RegNext(
-          //  next=tempUpMod(2),
-          //  //cond=myDbgUpIsValid,
-          //  init=tempUpMod(2).getZero,
-          //)
-          //when (myDbgUpIsValid) 
-          //val myTempPayload = 
-          //up(mod.front.outpPipePayload) := (
-          //  up(mod.front.outpPipePayload)
-          //)
           val myTempUpMod = modType()
           myTempUpMod := RegNext(
             //tempUpMod(2)
@@ -4759,10 +3928,6 @@ extends Area {
           ) := (
             tempUpMod(2)//myTempUpMod
           )
-          //when (up.isFiring) {
-          //  myTempUpMod := tempUpMod(2)
-          //  // := tempUpMod(2)
-          //}
           if (optFormal) {
             when (pastValidAfterReset) {
               when (past(up.isValid)) {
@@ -4775,41 +3940,6 @@ extends Area {
       //--------
     }
   }
-  //val cMid1Front = mod.front.cMid1Front
-  //val cMid1FrontArea = new cMid1Front.Area {
-  //  val upExt = /*KeepAttribute*/(
-  //    /*Vec.fill(2)*/(mkExt())
-  //    .setName("cMid1FrontArea_upExt")
-  //  )
-  //  up(mod.front.outpPipePayload).getPipeMemRmwExt(
-  //    outpExt=upExt,
-  //    memArrIdx=memArrIdx,
-  //  )
-  //  //myUpExtDel(1) := upExt
-  //  myUpExtDel(1) := (
-  //    RegNext(myUpExtDel(1)) init(myUpExtDel(1).getZero)
-  //  )
-  //  when (up.isValid) {
-  //    myUpExtDel(1) := upExt
-  //  }
-  //}
-  //val cMid2Front = mod.front.cMid2Front
-  //val cMid2FrontArea = new cMid2Front.Area {
-  //  val upExt = /*KeepAttribute*/(
-  //    /*Vec.fill(2)*/(mkExt())
-  //    .setName("cMid2FrontArea_upExt")
-  //  )
-  //  up(mod.front.outpPipePayload).getPipeMemRmwExt(
-  //    outpExt=upExt,
-  //    memArrIdx=memArrIdx,
-  //  )
-  //  myUpExtDel(2) := (
-  //    RegNext(myUpExtDel(2)) init(myUpExtDel(2).getZero)
-  //  )
-  //  when (up.isValid) {
-  //    myUpExtDel(2) := upExt
-  //  }
-  //}
   val cBackFwdArea = (
     optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
   ) generate {
@@ -4978,11 +4108,7 @@ extends Area {
     ).setName(s"${pipeName}_cBackArea_upExt")
     //--------
     val tempUpMod = Vec.fill(3)(
-      //Vec.fill(extIdxLim)(
-      //Vec.fill(memArrSize)(
-        modType()
-      //)
-      //)
+      modType()
     ).setName(s"${pipeName}_cBackArea_tempUpMod")
     //--------
     for (ydx <- 0 until memArrSize) {
@@ -4995,7 +4121,6 @@ extends Area {
           )
         )
         upExt(1)(ydx)(extIdx).allowOverride
-        //--------
         //--------
       }
       if (ydx == 0) {
@@ -5014,12 +4139,12 @@ extends Area {
           )
         )
       }
-      when (
-        up.isValid
-        //up.isFiring
-      ) {
+      //when (
+      //  up.isValid
+      //  //up.isFiring
+      //) {
         upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
-      }
+      //}
       if (ydx == 0) {
         if (myHaveFormalFwd) {
           tempUpMod(0).formalGetPipeMemRmwFwd(
