@@ -1415,12 +1415,13 @@ case class PipeMemRmwDoFwdArea[
           ////} otherwise {
           ////  innerFunc()
           ////}
-          tempMyFwdData := firstFwdRdMemWord._2
-          when (tempMyFindFirstUp_0) {
-            mySetToMyFwdUp()
-          } otherwise {
-            //tempMyFwdData := firstFwdRdMemWord._2
-          }
+          mySetToMyFwdUp()
+          //tempMyFwdData := firstFwdRdMemWord._2
+          //when (tempMyFindFirstUp_0) {
+          //  mySetToMyFwdUp()
+          //} otherwise {
+          //  //tempMyFwdData := firstFwdRdMemWord._2
+          //}
         }
         setToMyFwdDataFunc(
           ydx,
