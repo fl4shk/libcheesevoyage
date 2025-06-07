@@ -1133,12 +1133,14 @@ extends Bundle {
     )
   )
   val myUpExtDel2FindFirstVec = (
-    Vec.fill(memArrSize)(
-      Vec.fill(modRdPortCnt)(
-        Vec.fill(PipeMemRmw.extIdxLim)(
-          Vec.fill(numMyUpExtDel2 - 1)(
-            //Bool()
-            Flow(cfg.wordType())
+    Vec.fill(cfg.numForkJoin)(
+      Vec.fill(memArrSize)(
+        Vec.fill(modRdPortCnt)(
+          Vec.fill(PipeMemRmw.extIdxLim)(
+            Vec.fill(numMyUpExtDel2/* - 1*/)(
+              //Bool()
+              Flow(cfg.wordType())
+            )
           )
         )
       )
@@ -1164,6 +1166,7 @@ case class PipeMemRmwDoFwdArea[
   //DualRdT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
 ](
   //ydx: Int,
+  fjIdx: Int,
   fwdAreaName: String,
   fwd: PipeMemRmwFwd[
     WordT,
@@ -1237,45 +1240,49 @@ case class PipeMemRmwDoFwdArea[
               //  current => (current === True)
               //)
               LcvSFindFirstElem[Flow[WordT]](
-                fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxUp),
+                fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp),
                 current => (current.fire === True)
               )
             )
-            .setName(s"${fwdAreaName}_myFindFirstUp_${ydx}_${zdx}")
-          )
-        )
-        val myFindFirstSaved = /*KeepAttribute*/(
-          //(
-          //  //optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
-          //  doOverrideFindFirst
-          //) generate 
-          (
-            (
-              //fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxSaved)
-              //.sFindFirst(
-              //  _ === True
-              //)
-              //LcvSFindFirst[Bool](
-              //  fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxSaved),
-              //  current => (current === True)
-              //)
-              LcvSFindFirstElem[Flow[WordT]](
-                fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxSaved),
-                current => (current.valid === True)
-              )
+            .setName(
+              s"${fwdAreaName}_myFindFirstUp_${fjIdx}_${ydx}_${zdx}"
             )
-            .setName(s"${fwdAreaName}_myFindFirstDown_${ydx}_${zdx}")
           )
         )
+        //val myFindFirstSaved = /*KeepAttribute*/(
+        //  //(
+        //  //  //optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
+        //  //  doOverrideFindFirst
+        //  //) generate 
+        //  (
+        //    (
+        //      //fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxSaved)
+        //      //.sFindFirst(
+        //      //  _ === True
+        //      //)
+        //      //LcvSFindFirst[Bool](
+        //      //  fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxSaved),
+        //      //  current => (current === True)
+        //      //)
+        //      LcvSFindFirstElem[Flow[WordT]](
+        //        fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxSaved),
+        //        current => (current.fire === True)
+        //      )
+        //    )
+        //    .setName(
+        //      s"${fwdAreaName}_myFindFirstDown_${fjIdx}_${ydx}_${zdx}"
+        //    )
+        //  )
+        //)
         def tempMyFindFirstUp_0 = (
           fwd.myFindFirst_0(ydx)(zdx)(extIdxUp)
         )
         //def tempMyFindFirstUp_1 = (
         //  fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
         //)
-        def tempMyFindFirstSaved_0 = (
-          fwd.myFindFirst_0(ydx)(zdx)(extIdxSaved)
-        )
+        //def tempMyFindFirstSaved_0 = (
+        //  fwd.myFindFirst_0(ydx)(zdx)(extIdxSaved)
+        //)
         //def tempMyFindFirstSaved_1 = (
         //  fwd.myFindFirst_1(ydx)(zdx)(extIdxSaved)
         //)
@@ -1296,16 +1303,16 @@ case class PipeMemRmwDoFwdArea[
           )
           .setName(s"${fwdAreaName}_myFwdCondUp_${ydx}_${zdx}")
         )
-        val myFwdCondSaved = (
-          firstFwd
-        ) generate (
-          /*KeepAttribute*/(
-            //myFindFirstSaved._1
-            //fwd.myFindFirst_0(ydx)(zdx)(extIdxSaved)
-            tempMyFindFirstSaved_0
-          )
-          .setName(s"${fwdAreaName}_myFwdCondDown_${ydx}_${zdx}")
-        )
+        //val myFwdCondSaved = (
+        //  firstFwd
+        //) generate (
+        //  /*KeepAttribute*/(
+        //    //myFindFirstSaved._1
+        //    //fwd.myFindFirst_0(ydx)(zdx)(extIdxSaved)
+        //    tempMyFindFirstSaved_0
+        //  )
+        //  .setName(s"${fwdAreaName}_myFwdCondDown_${ydx}_${zdx}")
+        //)
         //val myFwdDataUp = (
         //  firstFwd
         //) generate (
@@ -1343,9 +1350,9 @@ case class PipeMemRmwDoFwdArea[
           //tempMyFindFirstUp_1 := (
           //  (myFindFirstUp._2.payload)//.resized
           //)
-          tempMyFindFirstSaved_0 := (
-            myFindFirstSaved._1
-          )
+          //tempMyFindFirstSaved_0 := (
+          //  myFindFirstSaved._1
+          //)
           //tempMyFindFirstSaved_1 := (
           //  (myFindFirstSaved._2.payload)//.resized
           //)
@@ -1367,18 +1374,18 @@ case class PipeMemRmwDoFwdArea[
             //tempMyFwdData := myFwdDataUp._2.payload
             tempMyFwdData := myFindFirstUp._2.payload
           }
-          def mySetToMyFwdSaved(): Unit = {
-            //upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
-            //  myFwdDataSaved
-            //)
-            //setToMyFwdDataFunc(
-            //  ydx,
-            //  zdx,
-            //  myFwdDataSaved
-            //)
-            //tempMyFwdData := myFwdDataSaved
-            tempMyFwdData := myFindFirstSaved._2.payload
-          }
+          //def mySetToMyFwdSaved(): Unit = {
+          //  //upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
+          //  //  myFwdDataSaved
+          //  //)
+          //  //setToMyFwdDataFunc(
+          //  //  ydx,
+          //  //  zdx,
+          //  //  myFwdDataSaved
+          //  //)
+          //  //tempMyFwdData := myFwdDataSaved
+          //  tempMyFwdData := myFindFirstSaved._2.payload
+          //}
           //def innerFunc(): Unit = {
           //  when (tempMyFindFirstUp_0) {
           //    mySetToMyFwdUp()
@@ -3498,7 +3505,7 @@ extends Area {
       //--------
       val upExt = Vec.fill(3)(
         mkExt()
-      ).setName(s"${pipeName}_cMid0FrontArea_upExt")
+      ).setName(s"${pipeName}_cMid0FrontArea_upExt_${fjIdx}")
       for (ydx <- 0 until memArrSize) {
         for (extIdx <- 0 until extIdxLim) {
           upExt(0)(ydx)(extIdx) := (
@@ -3531,7 +3538,7 @@ extends Area {
             Bool()
           )
         )
-        .setName(s"${pipeName}_nextPrevTxnWasHazardVec")
+        .setName(s"${pipeName}_nextPrevTxnWasHazardVec_${fjIdx}")
       )
       val rPrevTxnWasHazardVec = (
         /*KeepAttribute*/(
@@ -3542,13 +3549,13 @@ extends Area {
           //init(False)
           //init(nextPrevTxnWasHazardVec.getZero)
         )
-        .setName(s"${pipeName}_rPrevTxnWasHazardVec")
+        .setName(s"${pipeName}_rPrevTxnWasHazardVec_${fjIdx}")
       )
       val nextPrevTxnWasHazardAny = (
         /*KeepAttribute*/(
           Bool()
         )
-        .setName(s"${pipeName}_nextPrevTxnWasHazardAny")
+        .setName(s"${pipeName}_nextPrevTxnWasHazardAny_${fjIdx}")
       )
       val rPrevTxnWasHazardAny = (
         /*KeepAttribute*/(
@@ -3559,13 +3566,13 @@ extends Area {
             init=False,
           )
         )
-        .setName(s"${pipeName}_rPrevTxnWasHazardAny")
+        .setName(s"${pipeName}_rPrevTxnWasHazardAny_${fjIdx}")
       )
       nextPrevTxnWasHazardAny := (
-        //nextPrevTxnWasHazardVec.sFindFirst(
-        //  _ === True
-        //)._1
-        LcvFastOrR(nextPrevTxnWasHazardVec.asBits.asUInt)
+        nextPrevTxnWasHazardVec.sFindFirst(
+          _ === True
+        )._1
+        //LcvFastOrR(nextPrevTxnWasHazardVec.asBits.asUInt)
       )
       for (ydx <- 0 until memArrSize) {
         rPrevTxnWasHazardVec(ydx).init(
@@ -3620,7 +3627,7 @@ extends Area {
         Vec.fill(3)(
           modType()
         )
-        .setName(s"${pipeName}_cMid0FrontArea_tempUpMod")
+        .setName(s"${pipeName}_cMid0FrontArea_tempUpMod_${fjIdx}")
       )
       tempUpMod(2) := (
         RegNext(
@@ -3671,7 +3678,9 @@ extends Area {
           for (idx <- 0 until mod.front.myUpExtDel2.size) {
             for (extIdx <- 0 until extIdxLim) {
               if (idx < mod.front.myUpExtDel2.size - 1) {
-                mod.front.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdx)(
+                mod.front.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+                  extIdx
+                )(
                   idx
                 ) := (
                   (
@@ -3712,6 +3721,24 @@ extends Area {
                     )
                   )
                 )
+              } else {
+                mod.front.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+                  extIdx
+                )(
+                  idx
+                ) := {
+                  val temp = Flow(cfg.wordType())
+                  temp.valid := True
+                  temp.payload := (
+                    //upExt(1)(ydx)(
+                    //  //extIdxSingle
+                    //  extIdx
+                    //).modMemWord
+                    myRdMemWord(ydx)(zdx)
+                    //upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx)
+                  )
+                  temp
+                }
               }
             }
           }
@@ -3793,7 +3820,8 @@ extends Area {
 
       val doFwd = (myHaveFwd) generate (
         PipeMemRmwDoFwdArea(
-          fwdAreaName=s"${pipeName}_cMid0FrontArea_doFwd",
+          fjIdx=fjIdx,
+          fwdAreaName=s"${pipeName}_cMid0FrontArea_doFwd_${fjIdx}",
           fwd=myFwd,
           setToMyFwdDataFunc=(
             ydx: Int,
@@ -3810,77 +3838,77 @@ extends Area {
           ),
         )
       )
-      val doFormalFwdSavedMyFwd = (myHaveFormalFwd) generate (
-        /*KeepAttribute*/(
-          RegNextWhen(
-            next=myFwd,
-            cond=up.isFiring,
-            init=myFwd.getZero,
-          )
-        )
-        .setName(s"${pipeName}_doFormalFwdSavedMyFwd")
-      )
-      if (myHaveFormalFwd) {
-        when (pastValidAfterReset) {
-          when (
-            past(up.isFiring) init(False)
-          ) {
-            assert(
-              doFormalFwdSavedMyFwd
-              === past(myFwd)
-            )
-          } otherwise {
-            assert(
-              stable(doFormalFwdSavedMyFwd)
-            )
-          }
-        }
-      }
-      val doFormalFwdSaved = (myHaveFormalFwd) generate (
-        PipeMemRmwDoFwdArea(
-          fwdAreaName=s"${pipeName}_cMid0FrontArea_doFwdFormalSaved",
-          fwd=doFormalFwdSavedMyFwd,
-          setToMyFwdDataFunc=(
-            ydx: Int,
-            zdx: Int,
-            myFwdData: WordT,
-          ) => {
-            //upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
-            //  myFwdData
-            //)
-            val myTempUpExt2 = (
-              upExt(2)(ydx)(extIdxUp)//.rdMemWord(zdx)
-            )
-            val rTempSavedUpExt2 = (
-              RegNextWhen(
-                next=myTempUpExt2,
-                cond=up.isFiring,
-                init=myTempUpExt2.getZero,
-              )
-            )
-            when (pastValidAfterReset) {
-              assert(
-                rTempSavedUpExt2.rdMemWord(zdx)
-                === (
-                  myFwdData
-                )
-              )
-              when (
-                past(up.isFiring) init(False)
-              ) {
-                assert(
-                  rTempSavedUpExt2.main
-                  === (
-                    past(myTempUpExt2.main)
-                    //init(myTempSavedRdMemWord.getZero)
-                  )
-                )
-              }
-            }
-          },
-          //firstFwd=false,
-        )
-      )
+      //val doFormalFwdSavedMyFwd = (myHaveFormalFwd) generate (
+      //  /*KeepAttribute*/(
+      //    RegNextWhen(
+      //      next=myFwd,
+      //      cond=up.isFiring,
+      //      init=myFwd.getZero,
+      //    )
+      //  )
+      //  .setName(s"${pipeName}_doFormalFwdSavedMyFwd")
+      //)
+      //if (myHaveFormalFwd) {
+      //  when (pastValidAfterReset) {
+      //    when (
+      //      past(up.isFiring) init(False)
+      //    ) {
+      //      assert(
+      //        doFormalFwdSavedMyFwd
+      //        === past(myFwd)
+      //      )
+      //    } otherwise {
+      //      assert(
+      //        stable(doFormalFwdSavedMyFwd)
+      //      )
+      //    }
+      //  }
+      //}
+      //val doFormalFwdSaved = (myHaveFormalFwd) generate (
+      //  PipeMemRmwDoFwdArea(
+      //    fwdAreaName=s"${pipeName}_cMid0FrontArea_doFwdFormalSaved",
+      //    fwd=doFormalFwdSavedMyFwd,
+      //    setToMyFwdDataFunc=(
+      //      ydx: Int,
+      //      zdx: Int,
+      //      myFwdData: WordT,
+      //    ) => {
+      //      //upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
+      //      //  myFwdData
+      //      //)
+      //      val myTempUpExt2 = (
+      //        upExt(2)(ydx)(extIdxUp)//.rdMemWord(zdx)
+      //      )
+      //      val rTempSavedUpExt2 = (
+      //        RegNextWhen(
+      //          next=myTempUpExt2,
+      //          cond=up.isFiring,
+      //          init=myTempUpExt2.getZero,
+      //        )
+      //      )
+      //      when (pastValidAfterReset) {
+      //        assert(
+      //          rTempSavedUpExt2.rdMemWord(zdx)
+      //          === (
+      //            myFwdData
+      //          )
+      //        )
+      //        when (
+      //          past(up.isFiring) init(False)
+      //        ) {
+      //          assert(
+      //            rTempSavedUpExt2.main
+      //            === (
+      //              past(myTempUpExt2.main)
+      //              //init(myTempSavedRdMemWord.getZero)
+      //            )
+      //          )
+      //        }
+      //      }
+      //    },
+      //    //firstFwd=false,
+      //  )
+      //)
       //--------
       val myDbgUpIsValid = /*KeepAttribute*/(
         up.isValid
