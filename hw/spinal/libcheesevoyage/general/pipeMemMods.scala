@@ -110,7 +110,7 @@ object LcvSFindFirstElem {
               Cat(hits(1), hits(0)).asUInt
             )
           )
-          self(myMux)
+          self(myMux(log2Up(self.size) - 1 downto 0))
         }
         //Mux[T](
         //  hits(0),
