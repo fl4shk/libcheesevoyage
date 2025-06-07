@@ -10,10 +10,10 @@ ThisBuild / organization := "org.example"
 
 val spinalVersion = (
   //"1.9.4"
-  "dev"
+  //"dev"
   //"1.10.0"
   //"1.10.2a"
-  //"1.12.2"
+  "1.12.2"
 )
 val spinalCore = "com.github.spinalhdl" %% "spinalhdl-core" % spinalVersion
 val spinalLib = "com.github.spinalhdl" %% "spinalhdl-lib" % spinalVersion
