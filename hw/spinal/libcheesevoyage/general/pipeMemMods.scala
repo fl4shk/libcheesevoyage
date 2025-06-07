@@ -106,7 +106,7 @@ object LcvSFindFirstElem {
             U"2'd0",
           )
           val select = (
-            Cat(hits(1), hits(0)).asUInt
+            Cat(hits(2), hits(1), hits(0)).asUInt
           )
           val myMux = LcvPriorityMux(
             data=data,
