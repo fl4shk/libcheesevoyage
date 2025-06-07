@@ -99,38 +99,38 @@ object LcvSFindFirstElem {
       val hits = self.map(condition(_))
       (
         hitValid,
-        {
-          val data = Vec[UInt](
-            self(0).asBits.asUInt,
-            self(1).asBits.asUInt,
-            self(2).asBits.asUInt,
-            //U"2'd2",
-            //U"2'd1",
-            //U"2'd0",
-          )
-          val select = (
-            Cat(hits(2), hits(1), hits(0)).asUInt
-          )
-          val myMux = LcvPriorityMux(
-            data=data,
-            select=select,
-          )
-          println(
-            s"data.size: ${data.size} "
-            + s"select.getWidth: ${select.getWidth} "
-            + s"myMux.getWidth: ${myMux.getWidth}"
-          )
-          self(myMux.resized)
-        }
-        //Mux[T](
-        //  hits(0),
-        //  self(0),
-        //  Mux[T](
-        //    hits(1),
-        //    self(1),
-        //    self(2),
+        //{
+        //  val data = Vec[UInt](
+        //    //self(0).asBits.asUInt,
+        //    //self(1).asBits.asUInt,
+        //    //self(2).asBits.asUInt,
+        //    //U"2'd2",
+        //    //U"2'd1",
+        //    //U"2'd0",
         //  )
-        //),
+        //  val select = (
+        //    Cat(hits(2), hits(1), hits(0)).asUInt
+        //  )
+        //  val myMux = LcvPriorityMux(
+        //    data=data,
+        //    select=select,
+        //  )
+        //  println(
+        //    s"data.size: ${data.size} "
+        //    + s"select.getWidth: ${select.getWidth} "
+        //    + s"myMux.getWidth: ${myMux.getWidth}"
+        //  )
+        //  self(myMux.resized)
+        //}
+        Mux[T](
+          hits(0),
+          self(0),
+          Mux[T](
+            hits(1),
+            self(1),
+            self(2),
+          )
+        ),
       )
     } else if (self.size == 4) {
       val hits = self.map(condition(_))
@@ -1096,20 +1096,20 @@ extends Bundle {
     )
   )
   //--------
-  //val myFindFirst_1 = (
-  //  /*KeepAttribute*/(
-  //    Vec.fill(memArrSize)(
-  //      Vec.fill(modRdPortCnt)(
-  //        Vec.fill(PipeMemRmw.extIdxLim)(
-  //          UInt(log2Up(
-  //            ////mod.front.myUpExtDel2.size
-  //            numMyUpExtDel2
-  //          ) bits)
-  //        )
-  //      )
-  //    )
-  //  )
-  //)
+  val myFindFirst_1 = (
+    /*KeepAttribute*/(
+      Vec.fill(memArrSize)(
+        Vec.fill(modRdPortCnt)(
+          Vec.fill(PipeMemRmw.extIdxLim)(
+            UInt(log2Up(
+              ////mod.front.myUpExtDel2.size
+              numMyUpExtDel2
+            ) bits)
+          )
+        )
+      )
+    )
+  )
   //--------
   def numMyUpExtDel2 = (
     PipeMemRmw.numMyUpExtDel2(
@@ -1263,7 +1263,7 @@ case class PipeMemRmwDoFwdArea[
               //  fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxUp),
               //  current => (current === True)
               //)
-              LcvSFindFirstElem[Flow[WordT]](
+              LcvSFindFirst[Flow[WordT]](
                 fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp),
                 current => (current.fire === True)
               )
@@ -1301,9 +1301,9 @@ case class PipeMemRmwDoFwdArea[
         def tempMyFindFirstUp_0 = (
           fwd.myFindFirst_0(ydx)(zdx)(extIdxUp)
         )
-        //def tempMyFindFirstUp_1 = (
-        //  fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
-        //)
+        def tempMyFindFirstUp_1 = (
+          fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
+        )
         //def tempMyFindFirstSaved_0 = (
         //  fwd.myFindFirst_0(ydx)(zdx)(extIdxSaved)
         //)
@@ -1314,7 +1314,7 @@ case class PipeMemRmwDoFwdArea[
           fwd.myFwdData(ydx)(zdx)
         )
         //tempMyFindFirstUp_0.allowOverride
-        //tempMyFindFirstUp_1.allowOverride
+        tempMyFindFirstUp_1.allowOverride
         //tempMyFindFirstSaved_0.allowOverride
         //tempMyFindFirstSaved_1.allowOverride
         val myFwdCondUp = (
@@ -1337,21 +1337,21 @@ case class PipeMemRmwDoFwdArea[
         //  )
         //  .setName(s"${fwdAreaName}_myFwdCondDown_${ydx}_${zdx}")
         //)
-        //val myFwdDataUp = (
-        //  firstFwd
-        //) generate (
-        //  /*KeepAttribute*/(
-        //  //  fwd.myUpExtDel2(
-        //  //    //myFindFirstUp._2
-        //  //    //fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
-        //  //    tempMyFindFirstUp_1
-        //  //  )(ydx)(
-        //  //    extIdxUp
-        //  //  ).modMemWord
-        //    tempMyFindFirstUp_1.payload
-        //  )
-        //  .setName(s"${fwdAreaName}_myFwdDataUp_${ydx}_${zdx}")
-        //)
+        val myFwdDataUp = (
+          firstFwd
+        ) generate (
+          /*KeepAttribute*/(
+            fwd.myUpExtDel2(
+              //myFindFirstUp._2
+              //fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
+              tempMyFindFirstUp_1
+            )(ydx)(
+              extIdxUp
+            ).modMemWord
+            //tempMyFindFirstUp_1.payload
+          )
+          .setName(s"${fwdAreaName}_myFwdDataUp_${ydx}_${zdx}")
+        )
         //val myFwdDataSaved = (
         //  firstFwd
         //) generate (
@@ -1396,7 +1396,8 @@ case class PipeMemRmwDoFwdArea[
             //  myFwdDataUp
             //)
             //tempMyFwdData := myFwdDataUp._2.payload
-            tempMyFwdData := myFindFirstUp._2.payload
+            tempMyFwdData := myFwdDataUp//._2.payload
+            //tempMyFwdData := myFindFirstUp._2.payload
           }
           //def mySetToMyFwdSaved(): Unit = {
           //  //upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
