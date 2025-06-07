@@ -1120,9 +1120,11 @@ extends Bundle {
   }
 
   val myFwdData = (
-    Vec.fill(memArrSize)(
-      Vec.fill(modRdPortCnt)(
-        wordType()
+    Vec.fill(cfg.numForkJoin)(
+      Vec.fill(memArrSize)(
+        Vec.fill(modRdPortCnt)(
+          wordType()
+        )
       )
     )
   )
@@ -1285,7 +1287,7 @@ case class PipeMemRmwDoFwdArea[
         //  fwd.myFindFirst_1(ydx)(zdx)(extIdxSaved)
         //)
         def tempMyFwdData = (
-          fwd.myFwdData(ydx)(zdx)
+          fwd.myFwdData(fjIdx)(ydx)(zdx)
         )
         //tempMyFindFirstUp_0.allowOverride
         //tempMyFindFirstUp_1.allowOverride
