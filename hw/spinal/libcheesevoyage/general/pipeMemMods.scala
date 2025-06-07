@@ -1164,7 +1164,7 @@ extends Bundle {
       Vec.fill(memArrSize)(
         Vec.fill(modRdPortCnt)(
           Vec.fill(PipeMemRmw.extIdxLim)(
-            Vec.fill(numMyUpExtDel2 + 1/* - 1*/)(
+            Vec.fill(numMyUpExtDel2/* - 1*/)(
               //Bool()
               Flow(cfg.wordType())
             )
