@@ -3821,9 +3821,9 @@ extends Area {
         for (zdx <- 0 until modRdPortCnt) {
           when (
             RegNext(
-              next=cFrontArea.tempSharedEnable(zdx),
-              init=False,
-            )
+              next=cFrontArea.tempSharedEnable,
+              init=cFrontArea.tempSharedEnable.getZero//False,
+            )(zdx)
           ) {
             upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
               myRdMemWord(ydx)(zdx)
