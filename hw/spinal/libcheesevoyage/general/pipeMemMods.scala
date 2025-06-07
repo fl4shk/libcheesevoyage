@@ -100,17 +100,24 @@ object LcvSFindFirstElem {
       (
         hitValid,
         {
-          val myMux = LcvPriorityMux(
-            data=Vec[UInt](
-              U"2'd2",
-              U"2'd1",
-              U"2'd0",
-            ),
-            select=(
-              Cat(hits(1), hits(0)).asUInt
-            )
+          val data = Vec[UInt](
+            U"2'd2",
+            U"2'd1",
+            U"2'd0",
           )
-          self(myMux(log2Up(self.size) - 1 downto 0))
+          val select = (
+            Cat(hits(1), hits(0)).asUInt
+          )
+          val myMux = LcvPriorityMux(
+            data=data,
+            select=select,
+          )
+          println(
+            s"data.size: ${data.size} "
+            + s"select.getWidth: ${select.getWidth} "
+            + s"myMux.getWidth: ${myMux.getWidth}"
+          )
+          self(myMux.resized)
         }
         //Mux[T](
         //  hits(0),
