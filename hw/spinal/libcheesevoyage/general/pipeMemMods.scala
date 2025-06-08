@@ -2835,7 +2835,11 @@ extends Area {
       val myWriteAddr = /*KeepAttribute*/(
         Vec.fill(2)(
           Vec.fill(memArrSize)(
-            cloneOf(front.myUpExtDel(0)(0)(0).memAddr(PipeMemRmw.modWrIdx))
+            Vec.fill(modRdPortCnt)(
+              cloneOf(front.myUpExtDel(0)(0)(0).memAddr(
+                PipeMemRmw.modWrIdx
+              ))
+            )
           )
         )
       )
@@ -3419,11 +3423,11 @@ extends Area {
                   RegNext(
                     //next=LcvFastCmpEq(
                     //  left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
-                    //  right=mod.back.myWriteAddr(ydx),
+                    //  right=mod.back.myWriteAddr(ydx)(zdx),
                     //),
                     next=(
                       upExt(1)(ydx)(extIdxUp).memAddr(zdx)
-                      === mod.back.myWriteAddr(1)(ydx)
+                      === mod.back.myWriteAddr(1)(ydx)(zdx)
                     ),
                     init=False,
                   ),
@@ -3518,9 +3522,11 @@ extends Area {
           }
         }
         upExt(1)(ydx)(extIdxUp).memAddrAlt.allowOverride
-        upExt(1)(ydx)(extIdxUp).memAddrAlt := (
-          upExt(1)(ydx)(extIdxUp).memAddr
-        )
+        upExt(1)(ydx)(extIdxUp).memAddrAlt.foreach(current => {
+          current := (
+            upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)
+          )
+        })
         //when (up.isFiring) {
           tempUpMod(1).setPipeMemRmwExt(
             inpExt=upExt(1)(ydx)(extIdxUp),
@@ -4214,24 +4220,28 @@ extends Area {
       }
       val myWriteAddr = mod.back.myWriteAddr
       for (ydx <- 0 until memArrSize) {
-        if (optEnableClear) {
-          when (io.clear.fire) {
-            myWriteAddr(1)(ydx) := (
-              io.clear.payload
-            )
-          } otherwise { // when (!io.clear.fire)
-            myWriteAddr(1)(ydx) := (
+        for (zdx <- 0 until modRdPortCnt) {
+          if (optEnableClear) {
+            when (io.clear.fire) {
+              myWriteAddr(1)(ydx)(zdx) := (
+                io.clear.payload
+              )
+            } otherwise { // when (!io.clear.fire)
+              myWriteAddr(1)(ydx)(zdx) := (
+                upExt(0)(ydx)(extIdxSingle).memAddrAlt(
+                  //PipeMemRmw.modWrIdx
+                  zdx
+                ).resized
+              )
+            }
+          } else { // if (!optEnableClear)
+            myWriteAddr(1)(ydx)(zdx) := (
               upExt(0)(ydx)(extIdxSingle).memAddrAlt(
-                PipeMemRmw.modWrIdx
+                //PipeMemRmw.modWrIdx
+                zdx
               ).resized
             )
           }
-        } else { // if (!optEnableClear)
-          myWriteAddr(1)(ydx) := (
-            upExt(0)(ydx)(extIdxSingle).memAddrAlt(
-              PipeMemRmw.modWrIdx
-            ).resized
-          )
         }
         //myWriteAddr(ydx) := (
         //  if (optEnableClear) (
@@ -4540,24 +4550,28 @@ extends Area {
     //)
     //when (up.isValid) {
     for (ydx <- 0 until memArrSize) {
-      if (optEnableClear) {
-        when (io.clear.fire) {
-          myWriteAddr(0)(ydx) := (
-            io.clear.payload
-          )
-        } otherwise { // when (!io.clear.fire)
-          myWriteAddr(0)(ydx) := (
+      for (zdx <- 0 until modRdPortCnt) {
+        if (optEnableClear) {
+          when (io.clear.fire) {
+            myWriteAddr(0)(ydx)(zdx) := (
+              io.clear.payload
+            )
+          } otherwise { // when (!io.clear.fire)
+            myWriteAddr(0)(ydx)(zdx) := (
+              upExt(0)(ydx)(extIdxSingle).memAddrAlt(
+                //PipeMemRmw.modWrIdx
+                zdx
+              ).resized
+            )
+          }
+        } else { // if (!optEnableClear)
+          myWriteAddr(0)(ydx)(zdx) := (
             upExt(0)(ydx)(extIdxSingle).memAddrAlt(
-              PipeMemRmw.modWrIdx
+              //PipeMemRmw.modWrIdx
+              zdx
             ).resized
           )
         }
-      } else { // if (!optEnableClear)
-        myWriteAddr(0)(ydx) := (
-          upExt(0)(ydx)(extIdxSingle).memAddrAlt(
-            PipeMemRmw.modWrIdx
-          ).resized
-        )
       }
       //myWriteAddr(ydx) := (
       //  if (optEnableClear) (
@@ -4706,7 +4720,7 @@ extends Area {
     //  }
     //}
     memWriteAll(
-      address=myWriteAddr(0),
+      address=myWriteAddr(0).head,
       data=myWriteData(0),
       enable=myWriteEnable,
     )
