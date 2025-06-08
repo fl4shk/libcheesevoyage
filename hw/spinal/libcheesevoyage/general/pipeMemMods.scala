@@ -618,7 +618,17 @@ case class PipeMemRmwPayloadExtMain[
 
   val memAddrFwdCmp = Vec.fill(modRdPortCnt)(
     Vec.fill(numMyUpExtDel2 - 1)(
-      UInt(1 bits)
+      UInt(
+        1 bits
+        //if (
+        //  wordType().asBits.getWidth > 64
+        //  //|| optModHazardKind != PipeMemRmw.ModHazardKind.Fwd
+        //) {
+        //  64 bits
+        //} else {
+        //  wordType().asBits.getWidth bits
+        //}
+      )
       //Bool()
     )
   )
@@ -2169,9 +2179,20 @@ extends Area {
           if (!forceFalse) {
           //(upExt(1).memAddr === prev.memAddr)
             if (forFwd) (
-              currMemAddr(zdx)
+              currMemAddr({
+                //for (jdx <- 0 until currMemAddr.getWidth) {
+                //}
+                //{
+                //  if (zdx > 
+                //}
+                0
+              })
               && prev.modMemWordValid(
-                zdx
+                if (zdx < prev.modMemWordValid.size) (
+                  zdx
+                ) else (
+                  prev.modMemWordValid.size - 1
+                )
                 //zdx
                 //3
                 //zdx
@@ -3515,9 +3536,13 @@ extends Area {
         for (zdx <- 0 until modRdPortCnt) {
           for (idx <- 0 until myHistMemAddr.size) {
             if (idx > 0) {
-              myMemAddrFwdCmp(zdx)(idx - 1).allowOverride
-              for (jdx <- 0 until myMemAddrFwdCmp(zdx)(idx - 1).getWidth) {
-                myMemAddrFwdCmp(zdx)(idx - 1)(jdx) := (
+              def tempMemAddrFwdCmp = myMemAddrFwdCmp(zdx)(idx - 1)
+              tempMemAddrFwdCmp.allowOverride
+              for (jdx <- 0 until tempMemAddrFwdCmp.getWidth) {
+                tempMemAddrFwdCmp(
+                  jdx
+                  //0
+                ) := (
                   upExt(1)(ydx)(extIdxUp).memAddr(zdx)
                   === myHistMemAddr(idx)
                 )
