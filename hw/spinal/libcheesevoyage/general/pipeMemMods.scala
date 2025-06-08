@@ -2833,8 +2833,10 @@ extends Area {
         )
       )
       val myWriteAddr = /*KeepAttribute*/(
-        Vec.fill(memArrSize)(
-          cloneOf(front.myUpExtDel(0)(0)(0).memAddr(PipeMemRmw.modWrIdx))
+        Vec.fill(2)(
+          Vec.fill(memArrSize)(
+            cloneOf(front.myUpExtDel(0)(0)(0).memAddr(PipeMemRmw.modWrIdx))
+          )
         )
       )
       val myWriteData = /*KeepAttribute*/(
@@ -3415,14 +3417,14 @@ extends Area {
                 Vec[Bool](
                   RegNext(next=tempSharedEnable.last, init=False),
                   RegNext(
-                    next=LcvFastCmpEq(
-                      left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
-                      right=mod.back.myWriteAddr(ydx),
-                    ),
-                    //next=(
-                    //  upExt(1)(ydx)(extIdxUp).memAddr(zdx)
-                    //  === mod.back.myWriteAddr(ydx)
+                    //next=LcvFastCmpEq(
+                    //  left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
+                    //  right=mod.back.myWriteAddr(ydx),
                     //),
+                    next=(
+                      upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+                      === mod.back.myWriteAddr(1)(ydx)
+                    ),
                     init=False,
                   ),
                   RegNext(next=mod.back.myWriteEnable(ydx), init=False)
@@ -4210,6 +4212,45 @@ extends Area {
           )
         )
       }
+      val myWriteAddr = mod.back.myWriteAddr
+      for (ydx <- 0 until memArrSize) {
+        if (optEnableClear) {
+          when (io.clear.fire) {
+            myWriteAddr(1)(ydx) := (
+              io.clear.payload
+            )
+          } otherwise { // when (!io.clear.fire)
+            myWriteAddr(1)(ydx) := (
+              upExt(0)(ydx)(extIdxSingle).memAddrAlt(
+                PipeMemRmw.modWrIdx
+              ).resized
+            )
+          }
+        } else { // if (!optEnableClear)
+          myWriteAddr(1)(ydx) := (
+            upExt(0)(ydx)(extIdxSingle).memAddrAlt(
+              PipeMemRmw.modWrIdx
+            ).resized
+          )
+        }
+        //myWriteAddr(ydx) := (
+        //  if (optEnableClear) (
+        //    Mux[UInt](
+        //      io.clear.fire,
+        //      io.clear.payload,
+        //      upExt(0)(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)(
+        //        PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+        //        downto 0
+        //      ),
+        //    )
+        //  ) else (
+        //    upExt(0)(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)(
+        //      PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+        //      downto 0
+        //    )
+        //  )
+        //)
+      }
     }
   }
   val cBack = mod.back.cBack
@@ -4501,18 +4542,18 @@ extends Area {
     for (ydx <- 0 until memArrSize) {
       if (optEnableClear) {
         when (io.clear.fire) {
-          myWriteAddr(ydx) := (
+          myWriteAddr(0)(ydx) := (
             io.clear.payload
           )
         } otherwise { // when (!io.clear.fire)
-          myWriteAddr(ydx) := (
+          myWriteAddr(0)(ydx) := (
             upExt(0)(ydx)(extIdxSingle).memAddrAlt(
               PipeMemRmw.modWrIdx
             ).resized
           )
         }
       } else { // if (!optEnableClear)
-        myWriteAddr(ydx) := (
+        myWriteAddr(0)(ydx) := (
           upExt(0)(ydx)(extIdxSingle).memAddrAlt(
             PipeMemRmw.modWrIdx
           ).resized
@@ -4575,7 +4616,7 @@ extends Area {
 
     for (ydx <- 0 until memArrSize) {
       myWriteEnable(ydx) := (
-        LcvFastAndR(
+        /*LcvFastAndR*/(
           Vec[Bool](
             (
               dbgDoWrite(ydx)
@@ -4589,7 +4630,7 @@ extends Area {
             ),
             !ClockDomain.isResetActive,
             upExt(1)(ydx)(extIdxUp).modMemWordValid.last,
-          ).asBits.asUInt
+          ).asBits.asUInt.andR
         )
         //&& up.isValid
         //&& down.isReady
@@ -4665,7 +4706,7 @@ extends Area {
     //  }
     //}
     memWriteAll(
-      address=myWriteAddr,
+      address=myWriteAddr(0),
       data=myWriteData(0),
       enable=myWriteEnable,
     )
