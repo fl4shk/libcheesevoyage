@@ -2186,16 +2186,21 @@ extends Area {
                 //  if (zdx > 
                 //}
                 0
-              })
-              && prev.modMemWordValid(
-                if (zdx < prev.modMemWordValid.size) (
-                  zdx
+              }) && (
+                if (zdx < cfg.numMyUpExtDel2 - 1) (
+                  prev.modMemWordValid(
+                    if (zdx < prev.modMemWordValid.size) (
+                      zdx
+                    ) else (
+                      prev.modMemWordValid.size - 1
+                    )
+                    //zdx
+                    //3
+                    //zdx
+                  )
                 ) else (
-                  prev.modMemWordValid.size - 1
+                  True
                 )
-                //zdx
-                //3
-                //zdx
               )
             ) else (
               (
