@@ -2838,8 +2838,10 @@ extends Area {
         )
       )
       val myWriteData = /*KeepAttribute*/(
-        Vec.fill(memArrSize)(
-          cloneOf(front.myUpExtDel(0)(0)(0).modMemWord)
+        Vec.fill(2)(
+          Vec.fill(memArrSize)(
+            cloneOf(front.myUpExtDel(0)(0)(0).modMemWord)
+          )
         )
       )
       val myWriteEnable = /*KeepAttribute*/(
@@ -3409,7 +3411,7 @@ extends Area {
               ),
             )
             when (
-              LcvFastAndR(
+              /*LcvFastAndR*/(
                 Vec[Bool](
                   RegNext(next=tempSharedEnable.last, init=False),
                   RegNext(
@@ -3424,7 +3426,7 @@ extends Area {
                     init=False,
                   ),
                   RegNext(next=mod.back.myWriteEnable(ydx), init=False)
-                ).asBits.asUInt//.andR
+                ).asBits.asUInt.andR
               )
             ) {
               //myNonFwdRdMemWord(ydx)(zdx) := modMem(ydx)(zdx).readAsync(
@@ -3457,8 +3459,8 @@ extends Area {
               //) {
                 myNonFwdRdMemWord(ydx)(zdx) := RegNext(
                   //mod.back.myWriteData(ydx)
-                  next=mod.back.myWriteData(ydx),
-                  init=mod.back.myWriteData(ydx).getZero
+                  next=mod.back.myWriteData(1)(ydx),
+                  init=mod.back.myWriteData(1)(ydx).getZero
                 )
               //}
             }
@@ -4194,6 +4196,20 @@ extends Area {
           memArrIdx=memArrIdx,
         )
       }
+      for (ydx <- 0 until memArrSize) {
+        mod.back.myWriteData(1)(ydx) := (
+          //upExt(0)(ydx).modMemWord
+          if (optEnableClear) (
+            Mux[WordT](
+              io.clear.fire,
+              wordType().getZero,
+              upExt(0)(ydx)(extIdxSingle).modMemWord,
+            )
+          ) else (
+            upExt(0)(ydx)(extIdxSingle).modMemWord
+          )
+        )
+      }
     }
   }
   val cBack = mod.back.cBack
@@ -4527,7 +4543,7 @@ extends Area {
     //)
     //when (up.isValid) {
     for (ydx <- 0 until memArrSize) {
-      myWriteData(ydx) := (
+      myWriteData(0)(ydx) := (
         //upExt(0)(ydx).modMemWord
         if (optEnableClear) (
           Mux[WordT](
@@ -4650,7 +4666,7 @@ extends Area {
     //}
     memWriteAll(
       address=myWriteAddr,
-      data=myWriteData,
+      data=myWriteData(0),
       enable=myWriteEnable,
     )
     //--------
