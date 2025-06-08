@@ -3409,7 +3409,7 @@ extends Area {
               ),
             )
             when (
-              /*LcvFastAndR*/(
+              LcvFastAndR(
                 Vec[Bool](
                   RegNext(next=tempSharedEnable.last, init=False),
                   RegNext(
@@ -3424,7 +3424,7 @@ extends Area {
                     init=False,
                   ),
                   RegNext(next=mod.back.myWriteEnable(ydx), init=False)
-                ).asBits.asUInt.andR
+                ).asBits.asUInt//.andR
               )
             ) {
               //myNonFwdRdMemWord(ydx)(zdx) := modMem(ydx)(zdx).readAsync(
