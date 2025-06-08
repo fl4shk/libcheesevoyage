@@ -2169,9 +2169,9 @@ extends Area {
           if (!forceFalse) {
           //(upExt(1).memAddr === prev.memAddr)
             if (forFwd) (
-              currMemAddr(0)
+              currMemAddr(zdx)
               && prev.modMemWordValid(
-                0
+                zdx
                 //zdx
                 //3
                 //zdx
@@ -3516,10 +3516,12 @@ extends Area {
           for (idx <- 0 until myHistMemAddr.size) {
             if (idx > 0) {
               myMemAddrFwdCmp(zdx)(idx - 1).allowOverride
-              myMemAddrFwdCmp(zdx)(idx - 1)(0) := (
-                upExt(1)(ydx)(extIdxUp).memAddr(zdx)
-                === myHistMemAddr(idx)
-              )
+              for (jdx <- 0 until myMemAddrFwdCmp(zdx)(idx - 1).getWidth) {
+                myMemAddrFwdCmp(zdx)(idx - 1)(jdx) := (
+                  upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+                  === myHistMemAddr(idx)
+                )
+              }
             }
           }
         }
