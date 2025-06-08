@@ -2187,7 +2187,7 @@ extends Area {
                 //}
                 0
               }) && (
-                if (zdx < cfg.numMyUpExtDel2 - 1) (
+                //if (zdx < cfg.numMyUpExtDel2 - 1) (
                   prev.modMemWordValid(
                     if (zdx < prev.modMemWordValid.size) (
                       zdx
@@ -2198,9 +2198,9 @@ extends Area {
                     //3
                     //zdx
                   )
-                ) else (
-                  True
-                )
+                //) else (
+                //  True
+                //)
               )
             ) else (
               (
