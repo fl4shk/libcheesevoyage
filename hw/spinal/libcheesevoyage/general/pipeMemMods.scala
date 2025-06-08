@@ -1990,7 +1990,7 @@ extends Area {
     }
   }
   def memWriteAll(
-    address: Vec[UInt],
+    address: Vec[Vec[UInt]],
     data: Vec[WordT],
     enable: Vec[Bool]=null,
     //mask: Vec[Bits]=null,
@@ -2005,7 +2005,7 @@ extends Area {
           //ydx: Int,
         ) => {
           item.write(
-            address=address(ydx)(
+            address=address(ydx).head(
               PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
               downto 0
             ),
@@ -4720,7 +4720,7 @@ extends Area {
     //  }
     //}
     memWriteAll(
-      address=myWriteAddr(0).head,
+      address=myWriteAddr(0),
       data=myWriteData(0),
       enable=myWriteEnable,
     )
