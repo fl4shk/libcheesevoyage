@@ -1991,7 +1991,7 @@ extends Area {
   }
   def memWriteAll(
     address: Vec[Vec[UInt]],
-    data: Vec[WordT],
+    data: Vec[Vec[WordT]],
     enable: Vec[Bool]=null,
     //mask: Vec[Bits]=null,
   ): Unit = {
@@ -2009,7 +2009,7 @@ extends Area {
               PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
               downto 0
             ),
-            data=data(ydx),
+            data=data(ydx).head,
             enable=enable(ydx),
             //mask=mask(ydx),
           )
@@ -2846,7 +2846,9 @@ extends Area {
       val myWriteData = /*KeepAttribute*/(
         Vec.fill(2)(
           Vec.fill(memArrSize)(
-            cloneOf(front.myUpExtDel(0)(0)(0).modMemWord)
+            Vec.fill(modRdPortCnt)(
+              cloneOf(front.myUpExtDel(0)(0)(0).modMemWord)
+            )
           )
         )
       )
@@ -3465,8 +3467,8 @@ extends Area {
               //) {
                 myNonFwdRdMemWord(ydx)(zdx) := RegNext(
                   //mod.back.myWriteData(ydx)
-                  next=mod.back.myWriteData(1)(ydx),
-                  init=mod.back.myWriteData(1)(ydx).getZero
+                  next=mod.back.myWriteData(1)(ydx)(zdx),
+                  init=mod.back.myWriteData(1)(ydx)(zdx).getZero
                 )
               //}
             }
@@ -4205,18 +4207,20 @@ extends Area {
         )
       }
       for (ydx <- 0 until memArrSize) {
-        mod.back.myWriteData(1)(ydx) := (
-          //upExt(0)(ydx).modMemWord
-          if (optEnableClear) (
-            Mux[WordT](
-              io.clear.fire,
-              wordType().getZero,
-              upExt(0)(ydx)(extIdxSingle).modMemWord,
+        for (zdx <- 0 until modRdPortCnt) {
+          mod.back.myWriteData(1)(ydx)(zdx) := (
+            //upExt(0)(ydx).modMemWord
+            if (optEnableClear) (
+              Mux[WordT](
+                io.clear.fire,
+                wordType().getZero,
+                upExt(0)(ydx)(extIdxSingle).modMemWord,
+              )
+            ) else (
+              upExt(0)(ydx)(extIdxSingle).modMemWord
             )
-          ) else (
-            upExt(0)(ydx)(extIdxSingle).modMemWord
           )
-        )
+        }
       }
       val myWriteAddr = mod.back.myWriteAddr
       for (ydx <- 0 until memArrSize) {
@@ -4598,18 +4602,20 @@ extends Area {
     //)
     //when (up.isValid) {
     for (ydx <- 0 until memArrSize) {
-      myWriteData(0)(ydx) := (
-        //upExt(0)(ydx).modMemWord
-        if (optEnableClear) (
-          Mux[WordT](
-            io.clear.fire,
-            wordType().getZero,
-            upExt(0)(ydx)(extIdxSingle).modMemWord,
+      for (zdx <- 0 until modRdPortCnt) {
+        myWriteData(0)(ydx)(zdx) := (
+          //upExt(0)(ydx).modMemWord
+          if (optEnableClear) (
+            Mux[WordT](
+              io.clear.fire,
+              wordType().getZero,
+              upExt(0)(ydx)(extIdxSingle).modMemWord,
+            )
+          ) else (
+            upExt(0)(ydx)(extIdxSingle).modMemWord
           )
-        ) else (
-          upExt(0)(ydx)(extIdxSingle).modMemWord
         )
-      )
+      }
     }
     //}
     val myWriteEnable = mod.back.myWriteEnable
