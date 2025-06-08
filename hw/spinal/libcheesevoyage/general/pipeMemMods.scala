@@ -401,9 +401,10 @@ case class PipeMemRmwConfig[
   }
 
   val modMemWordValidSize: Int = (
-    //PipeMemRmw.modMemWordValidSize
+    PipeMemRmw.modMemWordValidSize
     //modRdPortCnt
-    1
+    //1
+    //2
   )
 }
 //--------
@@ -887,7 +888,7 @@ trait PipeMemRmwPayloadBase[
   ////--------
 }
 object PipeMemRmw {
-  //def modMemWordValidSize: Int = 4
+  def modMemWordValidSize: Int = 4
   def extMainSize = 2
   def addrWidth(
     wordCount: Int,
