@@ -354,7 +354,7 @@ case class FpgacpuRamSimpleDualPortImpl[
   }
   initBigInt match {
     case Some(_) => {
-      arr.initBigInt(initBigInt.get)
+      arr.initBigInt(initBigInt.get, allowNegative=true)
       assert(init == None)
     }
     case None => {
