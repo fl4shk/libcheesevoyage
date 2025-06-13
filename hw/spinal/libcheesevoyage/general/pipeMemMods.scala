@@ -3526,7 +3526,15 @@ extends Area {
         val myHistMemAddr = (
           /*KeepAttribute*/(
             History[UInt](
-              that=upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx),
+              that=(
+                RegNextWhen(
+                  next=upExt(1)(ydx)(extIdxUp).memAddr(
+                    PipeMemRmw.modWrIdx
+                  ),
+                  cond=up.isFiring,
+                )
+                init(0x0)
+              ),
               length=mod.front.myUpExtDel2.size /*- 1*/,
               when=up.isFiring,
               init=upExt(1)(ydx)(extIdxUp).memAddr(
@@ -3540,6 +3548,9 @@ extends Area {
         )
         for (zdx <- 0 until modRdPortCnt) {
           for (idx <- 0 until myHistMemAddr.size) {
+            println(
+              f"myHistMemAddr debug: ${zdx} ${idx} ${idx - 1}"
+            )
             if (idx > 0) {
               def tempMemAddrFwdCmp = myMemAddrFwdCmp(zdx)(idx - 1)
               tempMemAddrFwdCmp.allowOverride
@@ -3764,7 +3775,7 @@ extends Area {
       )
       tempUpMod(2).allowOverride
       tempUpMod(0) := up(mod.front.midPipePayload)(0)
-      val tempUpMod0a = modType() 
+      val tempUpMod0a = modType()
       tempUpMod0a := up(mod.front.midPipePayload)(1)
       for (ydx <- 0 until memArrSize) {
         for (extIdx <- 0 until extIdxLim) {
