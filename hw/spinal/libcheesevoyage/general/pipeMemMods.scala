@@ -3561,18 +3561,18 @@ extends Area {
             upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)
           )
         })
-        tempUpMod(1).setPipeMemRmwExt(
-          inpExt=RegNext(upExt(1)(ydx)(extIdxUp)),
-          ydx=ydx,
-          memArrIdx=memArrIdx,
-        )
-        when (up.isFiring) {
+        //tempUpMod(1).setPipeMemRmwExt(
+        //  inpExt=RegNextWhen(upExt(1)(ydx)(extIdxUp)),
+        //  ydx=ydx,
+        //  memArrIdx=memArrIdx,
+        //)
+        //when (up.isFiring) {
           tempUpMod(1).setPipeMemRmwExt(
             inpExt=upExt(1)(ydx)(extIdxUp),
             ydx=ydx,
             memArrIdx=memArrIdx,
           )
-        }
+        //}
       //}
       if (ydx == 0) {
         for (idx <- 0 until up(mod.front.midPipePayload).size) {
