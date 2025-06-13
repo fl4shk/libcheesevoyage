@@ -3543,8 +3543,8 @@ extends Area {
             println(
               f"myHistMemAddr debug: ${zdx} ${idx} ${idx - 1}"
             )
-            //if (idx > 0) {
-              def tempMemAddrFwdCmp = myMemAddrFwdCmp(zdx)(idx)
+            if (idx > 0) {
+              def tempMemAddrFwdCmp = myMemAddrFwdCmp(zdx)(idx - 1)
               tempMemAddrFwdCmp.allowOverride
               for (jdx <- 0 until tempMemAddrFwdCmp.getWidth) {
                 tempMemAddrFwdCmp(
@@ -3557,7 +3557,7 @@ extends Area {
                   === myHistMemAddr(idx)
                 )
               }
-            //}
+            }
           }
         }
         upExt(1)(ydx)(extIdxUp).memAddrAlt.allowOverride
