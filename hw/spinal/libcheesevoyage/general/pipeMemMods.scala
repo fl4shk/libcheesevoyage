@@ -3551,7 +3551,7 @@ extends Area {
                   upExt(1)(ydx)(extIdxUp).memAddr(
                     zdx
                   )
-                  === myHistMemAddr(idx - 1)
+                  === myHistMemAddr(idx)
                 )
               }
             }
