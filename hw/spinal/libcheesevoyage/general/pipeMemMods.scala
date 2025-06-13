@@ -3527,7 +3527,7 @@ extends Area {
           /*KeepAttribute*/(
             History[UInt](
               that=upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx),
-              length=mod.front.myUpExtDel2.size /*- 1*/,
+              length=mod.front.myUpExtDel2.size - 1,
               when=up.isFiring,
               init=upExt(1)(ydx)(extIdxUp).memAddr(
                 PipeMemRmw.modWrIdx
@@ -3543,8 +3543,8 @@ extends Area {
             println(
               f"myHistMemAddr debug: ${zdx} ${idx} ${idx - 1}"
             )
-            if (idx > 0) {
-              def tempMemAddrFwdCmp = myMemAddrFwdCmp(zdx)(idx - 1)
+            //if (idx > 0) {
+              def tempMemAddrFwdCmp = myMemAddrFwdCmp(zdx)(idx)
               tempMemAddrFwdCmp.allowOverride
               for (jdx <- 0 until tempMemAddrFwdCmp.getWidth) {
                 tempMemAddrFwdCmp(
@@ -3557,7 +3557,7 @@ extends Area {
                   === myHistMemAddr(idx)
                 )
               }
-            }
+            //}
           }
         }
         upExt(1)(ydx)(extIdxUp).memAddrAlt.allowOverride
