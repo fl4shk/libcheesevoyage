@@ -621,22 +621,25 @@ case class PipeMemRmwPayloadExtMain[
       UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
     )
   )
-  //val memAddrFwdCmp = Vec.fill(modRdPortCnt)(
-  //  Vec.fill(numMyUpExtDel2 - 1)(
-  //    UInt(
-  //      1 bits
-  //      //if (
-  //      //  wordType().asBits.getWidth > 64
-  //      //  //|| optModHazardKind != PipeMemRmw.ModHazardKind.Fwd
-  //      //) {
-  //      //  64 bits
-  //      //} else {
-  //      //  wordType().asBits.getWidth bits
-  //      //}
-  //    )
-  //    //Bool()
-  //  )
-  //)
+  val memAddrFwdCmp = Vec.fill(modRdPortCnt)(
+    Vec.fill(
+      //numMyUpExtDel2 - 1
+      1
+    )(
+      UInt(
+        1 bits
+        //if (
+        //  wordType().asBits.getWidth > 64
+        //  //|| optModHazardKind != PipeMemRmw.ModHazardKind.Fwd
+        //) {
+        //  64 bits
+        //} else {
+        //  wordType().asBits.getWidth bits
+        //}
+      )
+      //Bool()
+    )
+  )
   val memAddr = Vec.fill(modRdPortCnt)(
     UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
   )
@@ -736,7 +739,7 @@ case class PipeMemRmwPayloadExt[
       //optReorder=optReorder,
     )
   )
-  //def memAddrFwdCmp = main.memAddrFwdCmp
+  def memAddrFwdCmp = main.memAddrFwdCmp
   def memAddrFwd = main.memAddrFwd
   def memAddr = main.memAddr
   def memAddrAlt = main.memAddrAlt
@@ -3531,48 +3534,48 @@ extends Area {
       //for (extIdx <- 0 until extIdxLim) {
       //}
       //when (up.isFiring) {
-        //def myMemAddrFwdCmp = (
-        //  upExt(1)(ydx)(extIdxUp).memAddrFwdCmp
-        //)
-        //val myHistMemAddr = (
-        //  /*KeepAttribute*/(
-        //    History[UInt](
-        //      that=upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx),
-        //      length=mod.front.myUpExtDel2.size /*- 1*/,
-        //      when=up.isFiring,
-        //      init=upExt(1)(ydx)(extIdxUp).memAddr(
-        //        PipeMemRmw.modWrIdx
-        //      ).getZero,
-        //    )
-        //  )
-        //  .setName(
-        //    s"cFrontArea_myHistMemAddr_${ydx}"
-        //  )
-        //)
+        def myMemAddrFwdCmp = (
+          upExt(1)(ydx)(extIdxUp).memAddrFwdCmp
+        )
+        val myHistMemAddr = (
+          /*KeepAttribute*/(
+            History[UInt](
+              that=upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx),
+              length=1/*mod.front.myUpExtDel2.size*/ /*- 1*/,
+              when=up.isFiring,
+              init=upExt(1)(ydx)(extIdxUp).memAddr(
+                PipeMemRmw.modWrIdx
+              ).getZero,
+            )
+          )
+          .setName(
+            s"cFrontArea_myHistMemAddr_${ydx}"
+          )
+        )
         for (zdx <- 0 until modRdPortCnt) {
           upExt(1)(ydx)(extIdxUp).memAddrFwd(zdx).foreach(current => {
             current := upExt(1)(ydx)(extIdxUp).memAddr(zdx)
           })
-          //for (idx <- 0 until myHistMemAddr.size) {
-          //  println(
-          //    f"myHistMemAddr debug: ${zdx} ${idx} ${idx - 1}"
-          //  )
-          //  if (idx > 0) {
-          //    def tempMemAddrFwdCmp = myMemAddrFwdCmp(zdx)(idx - 1)
-          //    tempMemAddrFwdCmp.allowOverride
-          //    for (jdx <- 0 until tempMemAddrFwdCmp.getWidth) {
-          //      tempMemAddrFwdCmp(
-          //        jdx
-          //        //0
-          //      ) := (
-          //        upExt(1)(ydx)(extIdxUp).memAddr(
-          //          zdx
-          //        )
-          //        === myHistMemAddr(idx)
-          //      )
-          //    }
-          //  }
-          //}
+          for (idx <- 0 until myHistMemAddr.size) {
+            println(
+              f"myHistMemAddr debug: ${zdx} ${idx} ${idx - 1}"
+            )
+            if (idx > 0) {
+              def tempMemAddrFwdCmp = myMemAddrFwdCmp(zdx)(idx - 1)
+              tempMemAddrFwdCmp.allowOverride
+              for (jdx <- 0 until tempMemAddrFwdCmp.getWidth) {
+                tempMemAddrFwdCmp(
+                  jdx
+                  //0
+                ) := (
+                  upExt(1)(ydx)(extIdxUp).memAddr(
+                    zdx
+                  )
+                  === myHistMemAddr(idx)
+                )
+              }
+            }
+          }
         }
         upExt(1)(ydx)(extIdxUp).memAddrAlt.allowOverride
         upExt(1)(ydx)(extIdxUp).memAddrAlt.foreach(current => {
@@ -3830,12 +3833,15 @@ extends Area {
                   (
                     mod.front.findFirstFunc(
                       currMemAddr=(
-                        //upExt(1)(ydx)(extIdx).memAddrFwdCmp(zdx)(idx)
-                        upExt(1)(ydx)(extIdx).memAddrFwd(zdx)(idx)(
-                          PipeMemRmw.addrWidth(
-                            wordCount=wordCountArr(ydx)
-                          ) - 1
-                          downto 0
+                        if (idx == 0) (
+                          upExt(1)(ydx)(extIdx).memAddrFwdCmp(zdx)(idx)
+                        ) else (
+                          upExt(1)(ydx)(extIdx).memAddrFwd(zdx)(idx)(
+                            PipeMemRmw.addrWidth(
+                              wordCount=wordCountArr(ydx)
+                            ) - 1
+                            downto 0
+                          )
                         )
                       ),
                       prevMemAddr=(
