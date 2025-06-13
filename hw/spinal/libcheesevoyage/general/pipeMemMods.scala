@@ -2194,14 +2194,14 @@ extends Area {
                     0
                   }) 
                 ) else (
-                  (
-                    currMemAddr
-                    === prevMemAddr
-                  )
-                  //LcvFastCmpEq(
-                  //  left=currMemAddr,
-                  //  right=prevMemAddr,
+                  //(
+                  //  currMemAddr
+                  //  === prevMemAddr
                   //)
+                  LcvFastCmpEq(
+                    left=currMemAddr,
+                    right=prevMemAddr,
+                  )
                 )
               ) && (
                 //if (zdx < cfg.numMyUpExtDel2 - 1) (
