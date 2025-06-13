@@ -3526,15 +3526,7 @@ extends Area {
         val myHistMemAddr = (
           /*KeepAttribute*/(
             History[UInt](
-              that=(
-                RegNextWhen(
-                  next=upExt(1)(ydx)(extIdxUp).memAddr(
-                    PipeMemRmw.modWrIdx
-                  ),
-                  cond=up.isFiring,
-                )
-                init(0x0)
-              ),
+              that=upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx),
               length=mod.front.myUpExtDel2.size /*- 1*/,
               when=up.isFiring,
               init=upExt(1)(ydx)(extIdxUp).memAddr(
