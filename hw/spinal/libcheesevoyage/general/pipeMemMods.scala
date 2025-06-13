@@ -3548,7 +3548,10 @@ extends Area {
                   jdx
                   //0
                 ) := (
-                  upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+                  upExt(1)(ydx)(extIdxUp).memAddr(
+                    //zdx
+                    PipeMemRmw.modWrIdx
+                  )
                   === myHistMemAddr(idx)
                 )
               }
