@@ -2170,6 +2170,7 @@ extends Area {
         ],
         ydx: Int,
         zdx: Int,
+        idx: Int,
         isPostDelay: Boolean,
         doValidCheck: Boolean=(
           //false
@@ -2178,7 +2179,6 @@ extends Area {
         //down: Node,
         //extValidCond: Bool=False,
         //fireCnt: UInt,
-        //idx: Int,
         //memAddr: UInt,
         forceFalse: Boolean=false,
         forFwd: Boolean=false,
@@ -2188,18 +2188,17 @@ extends Area {
           if (!forceFalse) {
           //(upExt(1).memAddr === prev.memAddr)
             if (forFwd) (
-              //currMemAddr({
-              //  //for (jdx <- 0 until currMemAddr.getWidth) {
-              //  //}
-              //  //{
-              //  //  if (zdx > 
-              //  //}
-              //  0
-              //}) 
-
               (
-                currMemAddr
-                === prevMemAddr
+                if (idx == 0) (
+                  currMemAddr({
+                    0
+                  }) 
+                ) else (
+                  (
+                    currMemAddr
+                    === prevMemAddr
+                  )
+                )
               ) && (
                 //if (zdx < cfg.numMyUpExtDel2 - 1) (
                   prev.modMemWordValid(
@@ -2220,13 +2219,23 @@ extends Area {
               (
                 if (!isPostDelay) (
                   (
-                    //if (!forFwd) (
-                      currMemAddr
-                      === prevMemAddr
-                    //) else (
-                    //  currMemAddr(0)
-                    //  //currMemAddr =/= 0x0
-                    //)
+                    ////if (!forFwd) (
+                    //  currMemAddr
+                    //  === prevMemAddr
+                    ////) else (
+                    ////  currMemAddr(0)
+                    ////  //currMemAddr =/= 0x0
+                    ////)
+                    if (idx == 0) (
+                      currMemAddr({
+                        0
+                      }) 
+                    ) else (
+                      (
+                        currMemAddr
+                        === prevMemAddr
+                      )
+                    )
                   )
                   && (
                     if (doPrevHazardCmpFunc) (
@@ -3146,6 +3155,7 @@ extends Area {
                 prev=tempMyUpExt,
                 ydx=ydx,
                 zdx=zdx,
+                idx=idx,
                 isPostDelay=false,
                 //idx=idx,
               )
@@ -3865,6 +3875,7 @@ extends Area {
                       ),
                       ydx=ydx,
                       zdx=zdx,
+                      idx=idx,
                       isPostDelay=false,
                       doValidCheck=false,
                       forceFalse=(
