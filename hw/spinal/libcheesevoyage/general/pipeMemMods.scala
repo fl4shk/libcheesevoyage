@@ -2194,9 +2194,13 @@ extends Area {
                     0
                   }) 
                 ) else (
-                  (
-                    currMemAddr
-                    === prevMemAddr
+                  //(
+                  //  currMemAddr
+                  //  === prevMemAddr
+                  //)
+                  LcvFastCmpEq(
+                    left=currMemAddr,
+                    right=prevMemAddr,
                   )
                 )
               ) && (
