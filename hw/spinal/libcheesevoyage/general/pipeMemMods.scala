@@ -3551,7 +3551,7 @@ extends Area {
           /*KeepAttribute*/(
             History[UInt](
               that=upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx),
-              length=mod.front.myUpExtDel2.size /*- 1*/,
+              length=mod.front.myUpExtDel2.size - 1,
               when=up.isFiring,
               init=upExt(1)(ydx)(extIdxUp).memAddr(
                 PipeMemRmw.modWrIdx
