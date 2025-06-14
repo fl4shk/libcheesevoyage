@@ -307,7 +307,7 @@ case class PipeMemRmwConfig[
   init: Option[Seq[Seq[WordT]]]=None,
   initBigInt: Option[Seq[Seq[BigInt]]]=None,
   optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
-  optFwdUseMmwValid: Boolean=false,
+  optFwdUseMmwValidLaterStages: Boolean=false,
   optEnableClear: Boolean=false,
   memRamStyle: String="auto",
   vivadoDebug: Boolean=false,
@@ -481,11 +481,12 @@ case class PipeMemRmwPayloadExtMainNonMemAddr[
   //val modMemWordValidFwd = Bool()
   val modMemWord = wordType()
   val modMemWordValid = (
-    (
-      optModHazardKind != PipeMemRmw.ModHazardKind.Fwd
-    ) || (
-      cfg.optFwdUseMmwValid
-    )
+    //(
+    //  optModHazardKind != PipeMemRmw.ModHazardKind.Fwd
+    //) || (
+    //  cfg.optFwdUseMmwValidLaterStages
+    //)
+    true
   ) generate (
     Vec.fill(cfg.modMemWordValidSize)(
       Bool()
@@ -2221,7 +2222,7 @@ extends Area {
                   )
                 )
               ) else (
-                if (!cfg.optFwdUseMmwValid) (
+                if (!cfg.optFwdUseMmwValidLaterStages) (
                   currMemAddr === prevMemAddr
                 ) else (
                   (
