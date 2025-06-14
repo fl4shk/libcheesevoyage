@@ -307,6 +307,7 @@ case class PipeMemRmwConfig[
   init: Option[Seq[Seq[WordT]]]=None,
   initBigInt: Option[Seq[Seq[BigInt]]]=None,
   optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
+  optFwdUseMmwValid: Boolean=false,
   optEnableClear: Boolean=false,
   memRamStyle: String="auto",
   vivadoDebug: Boolean=false,
@@ -479,8 +480,16 @@ case class PipeMemRmwPayloadExtMainNonMemAddr[
   //val modMemWordFwd = wordType()
   //val modMemWordValidFwd = Bool()
   val modMemWord = wordType()
-  val modMemWordValid = Vec.fill(cfg.modMemWordValidSize)(
-    Bool()
+  val modMemWordValid = (
+    (
+      optModHazardKind != PipeMemRmw.ModHazardKind.Fwd
+    ) || (
+      cfg.optFwdUseMmwValid
+    )
+  ) generate (
+    Vec.fill(cfg.modMemWordValidSize)(
+      Bool()
+    )
   )
   val rdMemWord = Vec.fill(modRdPortCnt)(wordType())
   val joinIdx = UInt(log2Up(cfg.numForkJoin) bits)
@@ -2181,43 +2190,40 @@ extends Area {
         //fireCnt: UInt,
         //memAddr: UInt,
         forceFalse: Boolean=false,
-        forFwd: Boolean=false,
+        //forFwd: Boolean=false,
       ): Flow[WordT] = {
         val ret = Flow(cfg.wordType())
         ret.valid := (
           if (!forceFalse) {
           //(upExt(1).memAddr === prev.memAddr)
-            if (forFwd) (
-              (
-                if (idx == 0) (
-                  currMemAddr({
-                    0
-                  }) 
-                ) else (
-                  (
-                    currMemAddr
-                    === prevMemAddr
+            if (
+              //forFwd
+              cfg.optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
+            ) (
+              if (!cfg.optFwdUseMmwValid) (
+                (
+                  if (idx == 0) (
+                    currMemAddr(0)
+                  ) else (
+                    currMemAddr === prevMemAddr
                   )
-                  //LcvFastCmpEq(
-                  //  left=currMemAddr,
-                  //  right=prevMemAddr,
-                  //)
                 )
-              ) && (
-                //if (zdx < cfg.numMyUpExtDel2 - 1) (
+              ) else (
+                (
+                  if (idx == 0) (
+                    currMemAddr(0)
+                  ) else (
+                    currMemAddr === prevMemAddr
+                  )
+                ) && (
                   prev.modMemWordValid(
                     if (zdx < prev.modMemWordValid.size) (
                       zdx
                     ) else (
                       prev.modMemWordValid.size - 1
                     )
-                    //zdx
-                    //3
-                    //zdx
                   )
-                //) else (
-                //  True
-                //)
+                )
               )
             ) else (
               (
@@ -2231,9 +2237,7 @@ extends Area {
                     ////  //currMemAddr =/= 0x0
                     ////)
                     if (idx == 0) (
-                      currMemAddr({
-                        0
-                      }) 
+                      currMemAddr(0)
                     ) else (
                       (
                         currMemAddr
@@ -3886,9 +3890,9 @@ extends Area {
                         //idx == 0 && extIdx == extIdxUp
                         false
                       ),
-                      forFwd=(
-                        true
-                      ),
+                      //forFwd=(
+                      //  true
+                      //),
                     )
                   )
                 )
