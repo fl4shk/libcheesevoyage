@@ -307,7 +307,8 @@ case class PipeMemRmwConfig[
   init: Option[Seq[Seq[WordT]]]=None,
   initBigInt: Option[Seq[Seq[BigInt]]]=None,
   optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
-  optFwdUseMmwValidLaterStages: Boolean=false,
+  //optFwdUseMmwValidLaterStages: Boolean=false,
+  optFwdHaveZeroReg: Option[Int]=Some(0x0),
   optEnableClear: Boolean=false,
   memRamStyle: String="auto",
   vivadoDebug: Boolean=false,
@@ -2222,21 +2223,24 @@ extends Area {
                   )
                 )
               ) else (
-                if (!cfg.optFwdUseMmwValidLaterStages) (
-                  currMemAddr === prevMemAddr
-                ) else (
-                  (
+                cfg.optFwdHaveZeroReg match {
+                  case Some(myZeroRegIdx) => {
                     currMemAddr === prevMemAddr
-                  ) && (
-                    prev.modMemWordValid(
-                      if (zdx < prev.modMemWordValid.size) (
-                        zdx
-                      ) else (
-                        prev.modMemWordValid.size - 1
+                  }
+                  case None => {
+                    (
+                      currMemAddr === prevMemAddr
+                    ) && (
+                      prev.modMemWordValid(
+                        if (zdx < prev.modMemWordValid.size) (
+                          zdx
+                        ) else (
+                          prev.modMemWordValid.size - 1
+                        )
                       )
                     )
-                  )
-                )
+                  }
+                }
               )
             ) else (
               (
