@@ -748,6 +748,14 @@ case class PipeMemRmwPayloadExt[
       //optReorder=optReorder,
     )
   )
+  //def doEnableFwdIfHaveZeroReg(
+  //  ydx: Int,
+  //  zdx: Int,
+  //): Unit = {
+  //  modMemWordValid.foreach(current => {
+  //    current := True
+  //  })
+  //}
   def memAddrFwdCmp = main.memAddrFwdCmp
   def memAddrFwd = main.memAddrFwd
   def memAddr = main.memAddr
@@ -2200,27 +2208,31 @@ extends Area {
               //forFwd
               cfg.optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
             ) (
-              if (!cfg.optFwdUseMmwValid) (
+              if (idx == 0) (
                 (
-                  if (idx == 0) (
-                    currMemAddr(0)
-                  ) else (
-                    currMemAddr === prevMemAddr
-                  )
-                )
-              ) else (
-                (
-                  if (idx == 0) (
-                    currMemAddr(0)
-                  ) else (
-                    currMemAddr === prevMemAddr
-                  )
+                  currMemAddr(0)
                 ) && (
                   prev.modMemWordValid(
                     if (zdx < prev.modMemWordValid.size) (
                       zdx
                     ) else (
                       prev.modMemWordValid.size - 1
+                    )
+                  )
+                )
+              ) else (
+                if (!cfg.optFwdUseMmwValid) (
+                  currMemAddr === prevMemAddr
+                ) else (
+                  (
+                    currMemAddr === prevMemAddr
+                  ) && (
+                    prev.modMemWordValid(
+                      if (zdx < prev.modMemWordValid.size) (
+                        zdx
+                      ) else (
+                        prev.modMemWordValid.size - 1
+                      )
                     )
                   )
                 )
