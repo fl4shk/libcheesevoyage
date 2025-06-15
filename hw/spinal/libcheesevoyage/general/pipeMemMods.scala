@@ -3493,46 +3493,46 @@ extends Area {
                 //down.isReady
               ),
             )
-            def tempWidth = (
-              mod.back.myWriteAddr(1)(ydx)(zdx).getWidth
-            )
-            val rTempVec = (
-              Vec.fill(tempWidth + 2)(
-                Reg(Bool(), init=False)
-              )
-            )
-            for (kdx <- 0 until tempWidth) {
-              rTempVec(kdx) := (
-                upExt(1)(ydx)(extIdxUp).memAddr(zdx)(kdx)
-                === mod.back.myWriteAddr(1)(ydx)(zdx)(kdx)
-              )
-            }
-            rTempVec(rTempVec.size - 2) := (
-              tempSharedEnable.last
-            )
-            rTempVec(rTempVec.size - 1) := (
-              mod.back.myWriteEnable(ydx)
-            )
+            //def tempWidth = (
+            //  mod.back.myWriteAddr(1)(ydx)(zdx).getWidth
+            //)
+            //val rTempVec = (
+            //  Vec.fill(tempWidth + 2)(
+            //    Reg(Bool(), init=False)
+            //  )
+            //)
+            //for (kdx <- 0 until tempWidth) {
+            //  rTempVec(kdx) := (
+            //    upExt(1)(ydx)(extIdxUp).memAddr(zdx)(kdx)
+            //    === mod.back.myWriteAddr(1)(ydx)(zdx)(kdx)
+            //  )
+            //}
+            //rTempVec(rTempVec.size - 2) := (
+            //  tempSharedEnable.last
+            //)
+            //rTempVec(rTempVec.size - 1) := (
+            //  mod.back.myWriteEnable(ydx)
+            //)
             when (
-              /*LcvFastAndR*///(
-              //  Vec[Bool](
-              //    RegNext(next=tempSharedEnable.last, init=False),
-              //    RegNext(
-              //      //next=LcvFastCmpEq(
-              //      //  left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
-              //      //  right=mod.back.myWriteAddr(1)(ydx)(zdx),
-              //      //),
-              //      next=(
-              //        upExt(1)(ydx)(extIdxUp).memAddr(zdx)
-              //        === mod.back.myWriteAddr(1)(ydx)(zdx)
-              //      ),
-              //      init=False,
-              //    ),
-              //    RegNext(next=mod.back.myWriteEnable(ydx), init=False)
-              //  ).asBits.asUInt.andR
-              //)
+              /*LcvFastAndR*/(
+                Vec[Bool](
+                  RegNext(next=tempSharedEnable.last, init=False),
+                  RegNext(
+                    //next=LcvFastCmpEq(
+                    //  left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
+                    //  right=mod.back.myWriteAddr(1)(ydx)(zdx),
+                    //),
+                    next=(
+                      upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+                      === mod.back.myWriteAddr(1)(ydx)(zdx)
+                    ),
+                    init=False,
+                  ),
+                  RegNext(next=mod.back.myWriteEnable(ydx), init=False)
+                ).asBits.asUInt.andR
+              )
               //rTempVec.asBits.asUInt.andR
-              /*LcvFastAndR*/(rTempVec.asBits.asUInt.andR)
+              ///*LcvFastAndR*/(rTempVec.asBits.asUInt.andR)
             ) {
               //myNonFwdRdMemWord(ydx)(zdx) := modMem(ydx)(zdx).readAsync(
               //  address=(
