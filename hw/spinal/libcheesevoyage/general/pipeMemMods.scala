@@ -3532,7 +3532,7 @@ extends Area {
               //  ).asBits.asUInt.andR
               //)
               //rTempVec.asBits.asUInt.andR
-              LcvFastAndR(rTempVec.asBits.asUInt)
+              /*LcvFastAndR*/(rTempVec.asBits.asUInt.andR)
             ) {
               //myNonFwdRdMemWord(ydx)(zdx) := modMem(ydx)(zdx).readAsync(
               //  address=(
