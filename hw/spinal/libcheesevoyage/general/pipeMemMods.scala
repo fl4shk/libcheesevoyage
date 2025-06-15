@@ -3493,7 +3493,7 @@ extends Area {
                 //down.isReady
               ),
             )
-            val tempWidth = (
+            def tempWidth = (
               mod.back.myWriteAddr(1)(ydx)(zdx).getWidth
             )
             val rTempVec = (
@@ -3501,10 +3501,10 @@ extends Area {
                 Reg(Bool(), init=False)
               )
             )
-            for (idx <- 0 until tempWidth) {
-              rTempVec(idx) := (
-                upExt(1)(ydx)(extIdxUp).memAddr(zdx)(idx)
-                === mod.back.myWriteAddr(1)(ydx)(zdx)(idx)
+            for (kdx <- 0 until tempWidth) {
+              rTempVec(kdx) := (
+                upExt(1)(ydx)(extIdxUp).memAddr(zdx)(kdx)
+                === mod.back.myWriteAddr(1)(ydx)(zdx)(kdx)
               )
             }
             rTempVec(rTempVec.size - 2) := (
@@ -3514,7 +3514,7 @@ extends Area {
               mod.back.myWriteEnable(ydx)
             )
             when (
-              /*LcvFastAndR*/(
+              /*LcvFastAndR*///(
               //  Vec[Bool](
               //    RegNext(next=tempSharedEnable.last, init=False),
               //    RegNext(
@@ -3532,9 +3532,7 @@ extends Area {
               //  ).asBits.asUInt.andR
               //)
               //rTempVec.asBits.asUInt.andR
-              LcvFastAndR(
-                rTempVec.asBits.asUInt
-              )
+              LcvFastAndR(rTempVec.asBits.asUInt)
             ) {
               //myNonFwdRdMemWord(ydx)(zdx) := modMem(ydx)(zdx).readAsync(
               //  address=(
