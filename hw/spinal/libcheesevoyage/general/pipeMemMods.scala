@@ -3493,23 +3493,47 @@ extends Area {
                 //down.isReady
               ),
             )
+            val tempWidth = (
+              mod.back.myWriteAddr(1)(ydx)(zdx).getWidth
+            )
+            val rTempVec = (
+              Vec.fill(tempWidth + 2)(
+                Reg(Bool(), init=False)
+              )
+            )
+            for (idx <- 0 until tempWidth) {
+              rTempVec(idx) := (
+                upExt(1)(ydx)(extIdxUp).memAddr(zdx)(idx)
+                === mod.back.myWriteAddr(1)(ydx)(zdx)(idx)
+              )
+            }
+            rTempVec(rTempVec.size - 2) := (
+              tempSharedEnable.last
+            )
+            rTempVec(rTempVec.size - 1) := (
+              mod.back.myWriteEnable(ydx)
+            )
             when (
               /*LcvFastAndR*/(
-                Vec[Bool](
-                  RegNext(next=tempSharedEnable.last, init=False),
-                  RegNext(
-                    //next=LcvFastCmpEq(
-                    //  left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
-                    //  right=mod.back.myWriteAddr(1)(ydx)(zdx),
-                    //),
-                    next=(
-                      upExt(1)(ydx)(extIdxUp).memAddr(zdx)
-                      === mod.back.myWriteAddr(1)(ydx)(zdx)
-                    ),
-                    init=False,
-                  ),
-                  RegNext(next=mod.back.myWriteEnable(ydx), init=False)
-                ).asBits.asUInt.andR
+              //  Vec[Bool](
+              //    RegNext(next=tempSharedEnable.last, init=False),
+              //    RegNext(
+              //      //next=LcvFastCmpEq(
+              //      //  left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
+              //      //  right=mod.back.myWriteAddr(1)(ydx)(zdx),
+              //      //),
+              //      next=(
+              //        upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+              //        === mod.back.myWriteAddr(1)(ydx)(zdx)
+              //      ),
+              //      init=False,
+              //    ),
+              //    RegNext(next=mod.back.myWriteEnable(ydx), init=False)
+              //  ).asBits.asUInt.andR
+              //)
+              //rTempVec.asBits.asUInt.andR
+              LcvFastAndR(
+                rTempVec.asBits.asUInt
               )
             ) {
               //myNonFwdRdMemWord(ydx)(zdx) := modMem(ydx)(zdx).readAsync(
