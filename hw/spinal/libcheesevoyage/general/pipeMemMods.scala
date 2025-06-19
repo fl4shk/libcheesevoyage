@@ -3962,9 +3962,9 @@ extends Area {
       for (ydx <- 0 until memArrSize) {
         for (zdx <- 0 until modRdPortCnt) {
           when (
-            RegNextWhen(
+            RegNext/*When*/(
               next=cFrontArea.tempSharedEnable(zdx),
-              cond=down.isReady,
+              //cond=down.isReady,
               init=cFrontArea.tempSharedEnable(zdx).getZero//False,
             )//(zdx)
           ) {
