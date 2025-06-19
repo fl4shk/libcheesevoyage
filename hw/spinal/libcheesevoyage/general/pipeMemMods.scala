@@ -2211,7 +2211,7 @@ extends Area {
               //forFwd
               cfg.optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
             ) (
-              if (idx <= 1) (
+              //if (idx <= 1) (
                 (
                   currMemAddr(0)
                 ) && (
@@ -2223,26 +2223,26 @@ extends Area {
                     )
                   )
                 )
-              ) else (
-                cfg.optFwdHaveZeroReg match {
-                  case Some(myZeroRegIdx) => {
-                    currMemAddr === prevMemAddr
-                  }
-                  case None => {
-                    (
-                      currMemAddr === prevMemAddr
-                    ) && (
-                      prev.modMemWordValid(
-                        if (zdx < prev.modMemWordValid.size) (
-                          zdx
-                        ) else (
-                          prev.modMemWordValid.size - 1
-                        )
-                      )
-                    )
-                  }
-                }
-              )
+              //) else (
+              //  cfg.optFwdHaveZeroReg match {
+              //    case Some(myZeroRegIdx) => {
+              //      currMemAddr === prevMemAddr
+              //    }
+              //    case None => {
+              //      (
+              //        currMemAddr === prevMemAddr
+              //      ) && (
+              //        prev.modMemWordValid(
+              //          if (zdx < prev.modMemWordValid.size) (
+              //            zdx
+              //          ) else (
+              //            prev.modMemWordValid.size - 1
+              //          )
+              //        )
+              //      )
+              //    }
+              //  }
+              //)
             ) else (
               (
                 if (!isPostDelay) (
@@ -3909,16 +3909,16 @@ extends Area {
                   (
                     mod.front.findFirstFunc(
                       currMemAddr=(
-                        if (idx <= 1) (
+                        //if (idx <= 1) (
                           upExt(1)(ydx)(extIdx).memAddrFwdCmp(zdx)(idx)
-                        ) else (
-                          upExt(1)(ydx)(extIdx).memAddrFwd(zdx)(idx)(
-                            PipeMemRmw.addrWidth(
-                              wordCount=wordCountArr(ydx)
-                            ) - 1
-                            downto 0
-                          )
-                        )
+                        //) else (
+                        //  upExt(1)(ydx)(extIdx).memAddrFwd(zdx)(idx)(
+                        //    PipeMemRmw.addrWidth(
+                        //      wordCount=wordCountArr(ydx)
+                        //    ) - 1
+                        //    downto 0
+                        //  )
+                        //)
                       ),
                       prevMemAddr=(
                         mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddr(
