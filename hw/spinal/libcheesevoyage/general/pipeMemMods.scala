@@ -2210,7 +2210,7 @@ extends Area {
               //forFwd
               cfg.optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
             ) (
-              if (idx == 0) (
+              if (idx <= 1) (
                 (
                   currMemAddr(0)
                 ) && (
@@ -3890,7 +3890,7 @@ extends Area {
                   (
                     mod.front.findFirstFunc(
                       currMemAddr=(
-                        if (idx == 0) (
+                        if (idx <= 1) (
                           upExt(1)(ydx)(extIdx).memAddrFwdCmp(zdx)(idx)
                         ) else (
                           upExt(1)(ydx)(extIdx).memAddrFwd(zdx)(idx)(
