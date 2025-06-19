@@ -3964,7 +3964,7 @@ extends Area {
           when (
             RegNextWhen(
               next=cFrontArea.tempSharedEnable(zdx),
-              cond=up.isReady,
+              cond=down.isReady,
               init=cFrontArea.tempSharedEnable(zdx).getZero//False,
             )//(zdx)
           ) {
