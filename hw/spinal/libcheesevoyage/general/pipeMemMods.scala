@@ -3644,7 +3644,7 @@ extends Area {
                       mod.front.myUpExtDel2(idx - 1)(ydx)(
                         extIdxUp
                       ).memAddr(
-                        zdx
+                        PipeMemRmw.modWrIdx
                       )
                     )
                   )
