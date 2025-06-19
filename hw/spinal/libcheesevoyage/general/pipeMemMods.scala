@@ -2127,7 +2127,8 @@ extends Area {
   )
   val mod = new Area {
     //--------
-    val rReorderCommitHead = (optReorder) generate (
+    else {
+              } val rReorderCommitHead = (optReorder) generate (
       Reg(UInt(PipeMemRmw.addrWidth(wordCount=wordCountMax) bits))
       init(0x0)
     )
@@ -3622,15 +3623,31 @@ extends Area {
               def tempMemAddrFwdCmp = myMemAddrFwdCmp(zdx)(idx - 1)
               tempMemAddrFwdCmp.allowOverride
               for (jdx <- 0 until tempMemAddrFwdCmp.getWidth) {
-                tempMemAddrFwdCmp(
-                  jdx
-                  //0
-                ) := (
-                  upExt(1)(ydx)(extIdxUp).memAddr(
-                    zdx
+                if (idx == 1) {
+                  tempMemAddrFwdCmp(
+                    jdx
+                    //0
+                  ) := (
+                    upExt(1)(ydx)(extIdxUp).memAddr(
+                      zdx
+                    )
+                    === myHistMemAddr(idx)
                   )
-                  === myHistMemAddr(idx)
-                )
+                } else {
+                  tempMemAddrFwdCmp(
+                    jdx
+                    //0
+                  ) := (
+                    upExt(1)(ydx)(extIdxUp).memAddr(
+                      zdx
+                    ) === (
+                      //myHistMemAddr(idx)
+                      mod.front.myUpExtDel2(idx)(ydx)(extIdxUp).memAddr(
+                        zdx
+                      )
+                    )
+                  )
+                }
               }
             }
           }
@@ -3728,55 +3745,6 @@ extends Area {
         upExt(0)(ydx).allowOverride
         upExt(1)(ydx).allowOverride
         upExt(2)(ydx).allowOverride
-      }
-      for (ydx <- 0 until memArrSize) {
-        //for (extIdx <- 0 until extIdxLim) {
-        //}
-        //when (up.isFiring) {
-          def myMemAddrFwdCmp = (
-            upExt(1)(ydx)(extIdxUp).memAddrFwdCmp
-          )
-          val myHistMemAddr = (
-            /*KeepAttribute*/(
-              History[UInt](
-                that=upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx),
-                length=mod.front.myUpExtDel2.size /*- 1*/,
-                when=up.isFiring,
-                init=upExt(1)(ydx)(extIdxUp).memAddr(
-                  PipeMemRmw.modWrIdx
-                ).getZero,
-              )
-            )
-            .setName(
-              s"cMid0FrontArea_myHistMemAddr_${ydx}"
-            )
-          )
-          for (zdx <- 0 until modRdPortCnt) {
-            //upExt(1)(ydx)(extIdxUp).memAddrFwd(zdx).foreach(current => {
-            //  current := upExt(1)(ydx)(extIdxUp).memAddr(zdx)
-            //})
-            for (idx <- 0 until myHistMemAddr.size) {
-              //println(
-              //  f"myHistMemAddr debug: ${zdx} ${idx} ${idx - 1}"
-              //)
-              if (idx > 0) {
-                def tempMemAddrFwdCmp = myMemAddrFwdCmp(zdx)(idx - 1)
-                tempMemAddrFwdCmp.allowOverride
-                for (jdx <- 0 until tempMemAddrFwdCmp.getWidth) {
-                  tempMemAddrFwdCmp(
-                    jdx
-                    //0
-                  ) := (
-                    upExt(1)(ydx)(extIdxUp).memAddr(
-                      zdx
-                    )
-                    === myHistMemAddr(idx)
-                  )
-                }
-              }
-            }
-          }
-        //}
       }
       val nextPrevTxnWasHazardVec = (
         /*KeepAttribute*/(
