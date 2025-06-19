@@ -634,8 +634,8 @@ case class PipeMemRmwPayloadExtMain[
   )
   val memAddrFwdCmp = Vec.fill(modRdPortCnt)(
     Vec.fill(
-      //numMyUpExtDel2 - 1
-      1
+      numMyUpExtDel2 - 1
+      //1
     )(
       UInt(
         1 bits
