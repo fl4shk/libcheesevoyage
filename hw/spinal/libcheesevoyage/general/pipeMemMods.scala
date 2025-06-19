@@ -2127,8 +2127,7 @@ extends Area {
   )
   val mod = new Area {
     //--------
-    else {
-              } val rReorderCommitHead = (optReorder) generate (
+    val rReorderCommitHead = (optReorder) generate (
       Reg(UInt(PipeMemRmw.addrWidth(wordCount=wordCountMax) bits))
       init(0x0)
     )
