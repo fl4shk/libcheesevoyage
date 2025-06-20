@@ -308,7 +308,7 @@ case class PipeMemRmwConfig[
   initBigInt: Option[Seq[Seq[BigInt]]]=None,
   optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
   //optFwdUseMmwValidLaterStages: Boolean=false,
-  optFwdHaveZeroReg: Option[Int]=Some(0x0),
+  //optFwdHaveZeroReg: Option[Int]=Some(0x0),
   optEnableClear: Boolean=false,
   memRamStyle: String="auto",
   vivadoDebug: Boolean=false,
