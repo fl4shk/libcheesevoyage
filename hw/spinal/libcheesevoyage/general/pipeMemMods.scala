@@ -2211,7 +2211,9 @@ extends Area {
               //forFwd
               cfg.optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
             ) (
-              //if (idx <= 1) (
+              if (idx == 0) (
+                currMemAddr(0)
+              ) else (
                 (
                   currMemAddr(0)
                 ) && (
@@ -2223,7 +2225,8 @@ extends Area {
                     )
                   )
                 )
-              //) else (
+              )
+              //else (
               //  cfg.optFwdHaveZeroReg match {
               //    case Some(myZeroRegIdx) => {
               //      currMemAddr === prevMemAddr
