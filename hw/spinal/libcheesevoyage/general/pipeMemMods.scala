@@ -3430,7 +3430,7 @@ extends Area {
     //  Reg(Bool())
     //  init(False)
     //)
-    val tempSharedEnable = /*KeepAttribute*/(
+    val tempSharedEnable = KeepAttribute(
       //down.isReady
       Vec.fill(modRdPortCnt + 1)(
         //down.isFiring
