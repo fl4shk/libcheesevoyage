@@ -3521,7 +3521,7 @@ extends Area {
             when (
               /*LcvFastAndR*/(
                 Vec[Bool](
-                  RegNext(/*next=*/tempSharedEnable.last/*, init=False*/),
+                  //RegNext(/*next=*/tempSharedEnable.last/*, init=False*/),
                   RegNext(
                     //next=LcvFastCmpEq(
                     //  left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
