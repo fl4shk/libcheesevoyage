@@ -3569,10 +3569,10 @@ extends Area {
               //  //&& tempSharedEnable
               //  //&& down.isReady
               //) {
-                myNonFwdRdMemWord(ydx)(zdx) := RegNext(
+                myNonFwdRdMemWord(ydx)(zdx) := /*RegNext*/(
                   //mod.back.myWriteData(ydx)
-                  next=mod.back.myWriteData(1)(ydx)(zdx),
-                  init=mod.back.myWriteData(1)(ydx)(zdx).getZero
+                  /*next=*/mod.back.myWriteData(1)(ydx)(zdx)//,
+                  //init=mod.back.myWriteData(1)(ydx)(zdx).getZero
                 )
               //}
             }
