@@ -2215,7 +2215,8 @@ extends Area {
                 currMemAddr(0)
               ) else (
                 (
-                  currMemAddr(0)
+                  //currMemAddr(0)
+                  currMemAddr === prevMemAddr
                 ) && (
                   prev.modMemWordValid(
                     if (zdx < prev.modMemWordValid.size) (
@@ -3919,16 +3920,16 @@ extends Area {
                   (
                     mod.front.findFirstFunc(
                       currMemAddr=(
-                        //if (idx <= 1) (
+                        if (idx == 0) (
                           upExt(1)(ydx)(extIdx).memAddrFwdCmp(zdx)(idx)
-                        //) else (
-                        //  upExt(1)(ydx)(extIdx).memAddrFwd(zdx)(idx)(
-                        //    PipeMemRmw.addrWidth(
-                        //      wordCount=wordCountArr(ydx)
-                        //    ) - 1
-                        //    downto 0
-                        //  )
-                        //)
+                        ) else (
+                          upExt(1)(ydx)(extIdx).memAddrFwd(zdx)(idx)(
+                            PipeMemRmw.addrWidth(
+                              wordCount=wordCountArr(ydx)
+                            ) - 1
+                            downto 0
+                          )
+                        )
                       ),
                       prevMemAddr=(
                         mod.front.myUpExtDel2(idx)(ydx)(extIdx).memAddr(
