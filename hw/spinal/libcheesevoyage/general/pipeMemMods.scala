@@ -3533,7 +3533,9 @@ extends Area {
                     )//,
                     //init=False,
                   ),
-                  RegNext(next=mod.back.myWriteEnable(ydx), init=False)
+                  /*RegNext*/(
+                    /*next=*/mod.back.myWriteEnable(ydx)/*, init=False*/
+                  )
                 ).asBits.asUInt.andR
               )
               //rTempVec.asBits.asUInt.andR
