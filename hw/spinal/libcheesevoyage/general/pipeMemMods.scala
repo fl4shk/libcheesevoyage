@@ -3629,7 +3629,7 @@ extends Area {
               def tempMemAddrFwdCmp = myMemAddrFwdCmp(zdx)(idx - 1)
               tempMemAddrFwdCmp.allowOverride
               for (jdx <- 0 until tempMemAddrFwdCmp.getWidth) {
-                //if (idx == 1) {
+                if (idx == 1) {
                   tempMemAddrFwdCmp(
                     jdx
                     //0
@@ -3639,24 +3639,26 @@ extends Area {
                     )
                     === myHistMemAddr(idx)
                   )
-                //} else {
-                //  tempMemAddrFwdCmp(
-                //    jdx
-                //    //0
-                //  ) := (
-                //    upExt(1)(ydx)(extIdxUp).memAddr(
-                //      zdx
-                //    ) === (
-                //      //myHistMemAddr(idx)
-                //      //mod.front.myUpExtDel2(idx)(ydx)(
-                //      //  extIdxUp
-                //      //).memAddr(
-                //      //  PipeMemRmw.modWrIdx
-                //      //)
-                //      mod.back.myWriteAddr(0)(0)(0)
-                //    )
-                //  )
-                //}
+                } else {
+                  tempMemAddrFwdCmp(
+                    jdx
+                    //0
+                  ) := (
+                    upExt(1)(ydx)(extIdxUp).memAddr(
+                      zdx
+                    ) === (
+                      //myHistMemAddr(idx)
+                      mod.front.myUpExtDel2(idx)(ydx)(
+                        extIdxUp
+                      ).memAddrFwd(
+                        PipeMemRmw.modWrIdx
+                      )(
+                        0
+                      )
+                      //mod.back.myWriteAddr(0)(0)(0)
+                    )
+                  )
+                }
               }
             }
           }
