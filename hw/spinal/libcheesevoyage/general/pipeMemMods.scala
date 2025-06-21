@@ -3648,11 +3648,12 @@ extends Area {
                       zdx
                     ) === (
                       //myHistMemAddr(idx)
-                      mod.front.myUpExtDel2(idx)(ydx)(
-                        extIdxUp
-                      ).memAddr(
-                        PipeMemRmw.modWrIdx
-                      )
+                      //mod.front.myUpExtDel2(idx)(ydx)(
+                      //  extIdxUp
+                      //).memAddr(
+                      //  PipeMemRmw.modWrIdx
+                      //)
+                      mod.back.myWriteAddr(0)(0)(0)
                     )
                   )
                 }
