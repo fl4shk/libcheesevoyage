@@ -3498,6 +3498,9 @@ extends Area {
                 tempSharedEnable.last
                 //down.isReady
               ),
+              readUnderWrite=(
+                writeFirst
+              )
             )
             //def tempWidth = (
             //  mod.back.myWriteAddr(1)(ydx)(zdx).getWidth
