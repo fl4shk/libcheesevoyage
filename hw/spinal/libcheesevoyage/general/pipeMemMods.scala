@@ -3529,7 +3529,7 @@ extends Area {
                     //),
                     next=(
                       upExt(1)(ydx)(extIdxUp).memAddr(zdx)
-                      === mod.back.myWriteAddr(1)(ydx)(zdx)
+                      === RegNext(mod.back.myWriteAddr(1)(ydx)(zdx))
                     ),
                     init=False,
                   ),
