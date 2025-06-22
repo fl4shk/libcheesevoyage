@@ -3952,10 +3952,10 @@ extends Area {
                       ),
                       prevMemAddr=(
                         mod.front.myUpExtDel2(idx)(ydx)(extIdx)
-                          .memAddr/*FwdMmw(zdx)*/
+                          .memAddrFwdMmw(zdx)
                         (
-                          PipeMemRmw.modWrIdx
-                          //idx
+                          //PipeMemRmw.modWrIdx
+                          idx
                         )(
                           PipeMemRmw.addrWidth(
                             wordCount=wordCountArr(ydx)
