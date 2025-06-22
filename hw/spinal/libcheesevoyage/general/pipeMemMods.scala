@@ -627,6 +627,11 @@ case class PipeMemRmwPayloadExtMain[
   //--------
   //val hadActiveUpFire = /*KeepAttribute*/(Bool())
 
+  val memAddrFwdMmw = Vec.fill(modRdPortCnt)(
+    Vec.fill(numMyUpExtDel2)(
+      UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
+    )
+  )
   val memAddrFwd = Vec.fill(modRdPortCnt)(
     Vec.fill(numMyUpExtDel2)(
       UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
@@ -758,8 +763,9 @@ case class PipeMemRmwPayloadExt[
   //    current := True
   //  })
   //}
-  def memAddrFwdCmp = main.memAddrFwdCmp
+  def memAddrFwdMmw = main.memAddrFwdMmw
   def memAddrFwd = main.memAddrFwd
+  def memAddrFwdCmp = main.memAddrFwdCmp
   def memAddr = main.memAddr
   def memAddrAlt = main.memAddrAlt
   def modMemWord = main.nonMemAddr.modMemWord
@@ -3627,6 +3633,11 @@ extends Area {
           )
         )
         for (zdx <- 0 until modRdPortCnt) {
+          upExt(1)(ydx)(extIdxUp).memAddrFwdMmw(zdx).foreach(current => {
+            current := (
+              upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)
+            )
+          })
           upExt(1)(ydx)(extIdxUp).memAddrFwd(zdx).foreach(current => {
             current := upExt(1)(ydx)(extIdxUp).memAddr(zdx)
           })
@@ -3941,7 +3952,7 @@ extends Area {
                       ),
                       prevMemAddr=(
                         mod.front.myUpExtDel2(idx)(ydx)(extIdx)
-                          .memAddrFwd(zdx)
+                          .memAddrFwdMmw(zdx)
                         (
                           //PipeMemRmw.modWrIdx
                           idx
