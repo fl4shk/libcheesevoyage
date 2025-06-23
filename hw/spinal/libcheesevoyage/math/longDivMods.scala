@@ -374,12 +374,9 @@ case class LongDivMultiCycle(
     val rDenomWasSgnLtz = RegNext(nextDenomWasSgnLtz, init=False)
     nextDenomWasSgnLtz := rDenomWasSgnLtz
     //val rCnt = Reg(UInt(log2Up(rTempNumer.getWidth) + 2 bits)) init(0x0)
-    val rCnt = (
-      Reg(SInt(log2Up(rTempNumer.size) + 2 bits)) 
-      init(-1)
-    )
+    val rCnt = Reg(UInt(log2Up(rTempNumer.size) + 2 bits)) init(0x0)
     object State
-    extends SpinalEnum(defaultEncoding=binarySequential) {
+    extends SpinalEnum(defaultEncoding=binaryOneHot) {
       val
         IDLE,
         CAPTURE_INPUTS_PIPE,
@@ -457,30 +454,28 @@ case class LongDivMultiCycle(
         rState := State.RUNNING
       }
       is (State.RUNNING) {
-        //rCnt := rCnt - 1
-        //when (!rCnt.msb) {
-        //  ////switch (rCnt) {
-        //  ////  for (myCnt <- 0 until rTempNumer.getWidth) {
-        //  ////    is (myCnt) {
-        //  //      val nextTempRema = Vec.fill(2)(
-        //  //        UInt(rTempRema.getWidth bits)
-        //  //      )
-        //  //      nextTempRema(0) := Cat(
-        //  //        rTempRema,
-        //  //        rTempNumer(rCnt.resized),
-        //  //      ).asUInt(rTempRema.bitsRange)
-        //  //      nextTempRema(1) := nextTempRema(0)
-        //  //      when (nextTempRema(0) >= rTempDenom) {
-        //  //        nextTempRema(1) := nextTempRema(0) - rTempDenom
-        //  //        rTempQuot(rCnt.resized) := True
-        //  //      }
-        //  //      rTempRema := nextTempRema(1)
-        //  ////    }
-        //  ////  }
-        //  ////}
-        //} otherwise {
-        //}
-        when (rCnt.msb) {
+        rCnt := rCnt - 1
+        when (!rCnt.msb) {
+          //switch (rCnt) {
+          //  for (myCnt <- 0 until rTempNumer.getWidth) {
+          //    is (myCnt) {
+                val nextTempRema = Vec.fill(2)(
+                  UInt(rTempRema.getWidth bits)
+                )
+                nextTempRema(0) := Cat(
+                  rTempRema,
+                  rTempNumer(rCnt.resized),
+                ).asUInt(rTempRema.bitsRange)
+                nextTempRema(1) := nextTempRema(0)
+                when (nextTempRema(0) >= rTempDenom) {
+                  nextTempRema(1) := nextTempRema(0) - rTempDenom
+                  rTempQuot(rCnt.resized) := True
+                }
+                rTempRema := nextTempRema(1)
+          //    }
+          //  }
+          //}
+        } otherwise {
           rState := State.YIELD_RESULT_PIPE_1
         }
       }
@@ -506,28 +501,6 @@ case class LongDivMultiCycle(
         outp.rema := rTempRema
         rState := State.IDLE
       }
-    }
-    when (!rCnt.msb) {
-      rCnt := rCnt - 1
-      //switch (rCnt) {
-      //  for (myCnt <- 0 until rTempNumer.getWidth) {
-      //    is (myCnt) {
-            val nextTempRema = Vec.fill(2)(
-              UInt(rTempRema.getWidth bits)
-            )
-            nextTempRema(0) := Cat(
-              rTempRema,
-              rTempNumer(rCnt.asUInt.resized),
-            ).asUInt(rTempRema.bitsRange)
-            nextTempRema(1) := nextTempRema(0)
-            when (nextTempRema(0) >= rTempDenom) {
-              nextTempRema(1) := nextTempRema(0) - rTempDenom
-              rTempQuot(rCnt.asUInt.resized) := True
-            }
-            rTempRema := nextTempRema(1)
-      //    }
-      //  }
-      //}
     }
   }
 
