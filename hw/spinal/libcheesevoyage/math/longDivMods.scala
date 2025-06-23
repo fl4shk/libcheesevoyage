@@ -392,6 +392,27 @@ case class LongDivMultiCycle(
       Reg(State())
       init(State.IDLE)
     )
+    //when (!rCnt.msb) {
+      //switch (rCnt) {
+      //  for (myCnt <- 0 until rTempNumer.getWidth) {
+      //    is (myCnt) {
+            val nextTempRema = Vec.fill(2)(
+              UInt(rTempRema.getWidth bits)
+            )
+            nextTempRema(0) := Cat(
+              rTempRema,
+              rTempNumer(rCnt.asUInt.resized),
+            ).asUInt(rTempRema.bitsRange)
+            nextTempRema(1) := nextTempRema(0)
+            when (nextTempRema(0) >= rTempDenom) {
+              nextTempRema(1) := nextTempRema(0) - rTempDenom
+              rTempQuot(rCnt.asUInt.resized) := True
+            }
+            rTempRema := nextTempRema(1)
+      //    }
+      //  }
+      //}
+    //}
     switch (rState) {
       is (State.IDLE) {
         when (inp.valid) {
@@ -507,27 +528,27 @@ case class LongDivMultiCycle(
         rState := State.IDLE
       }
     }
-    //when (!rCnt.msb) {
-      //switch (rCnt) {
-      //  for (myCnt <- 0 until rTempNumer.getWidth) {
-      //    is (myCnt) {
-            val nextTempRema = Vec.fill(2)(
-              UInt(rTempRema.getWidth bits)
-            )
-            nextTempRema(0) := Cat(
-              rTempRema,
-              rTempNumer(rCnt.asUInt.resized),
-            ).asUInt(rTempRema.bitsRange)
-            nextTempRema(1) := nextTempRema(0)
-            when (nextTempRema(0) >= rTempDenom) {
-              nextTempRema(1) := nextTempRema(0) - rTempDenom
-              rTempQuot(rCnt.asUInt.resized) := True
-            }
-            rTempRema := nextTempRema(1)
-      //    }
-      //  }
-      //}
-    //}
+    ////when (!rCnt.msb) {
+    //  //switch (rCnt) {
+    //  //  for (myCnt <- 0 until rTempNumer.getWidth) {
+    //  //    is (myCnt) {
+    //        val nextTempRema = Vec.fill(2)(
+    //          UInt(rTempRema.getWidth bits)
+    //        )
+    //        nextTempRema(0) := Cat(
+    //          rTempRema,
+    //          rTempNumer(rCnt.asUInt.resized),
+    //        ).asUInt(rTempRema.bitsRange)
+    //        nextTempRema(1) := nextTempRema(0)
+    //        when (nextTempRema(0) >= rTempDenom) {
+    //          nextTempRema(1) := nextTempRema(0) - rTempDenom
+    //          rTempQuot(rCnt.asUInt.resized) := True
+    //        }
+    //        rTempRema := nextTempRema(1)
+    //  //    }
+    //  //  }
+    //  //}
+    ////}
   }
 
   val multiChunkWidthArea = (
