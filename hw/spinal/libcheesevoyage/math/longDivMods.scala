@@ -379,7 +379,7 @@ case class LongDivMultiCycle(
       init(-1)
     )
     object State
-    extends SpinalEnum(defaultEncoding=binaryOneHot) {
+    extends SpinalEnum(defaultEncoding=binarySequential) {
       val
         IDLE,
         CAPTURE_INPUTS_PIPE,
