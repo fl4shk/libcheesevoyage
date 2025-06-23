@@ -457,7 +457,7 @@ case class LongDivMultiCycle(
         rState := State.RUNNING
       }
       is (State.RUNNING) {
-        rCnt := rCnt - 1
+        //rCnt := rCnt - 1
         //when (!rCnt.msb) {
         //  ////switch (rCnt) {
         //  ////  for (myCnt <- 0 until rTempNumer.getWidth) {
@@ -508,6 +508,7 @@ case class LongDivMultiCycle(
       }
     }
     when (!rCnt.msb) {
+      rCnt := rCnt - 1
       //switch (rCnt) {
       //  for (myCnt <- 0 until rTempNumer.getWidth) {
       //    is (myCnt) {
