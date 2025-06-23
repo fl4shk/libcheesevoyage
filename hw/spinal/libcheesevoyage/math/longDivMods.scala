@@ -507,7 +507,7 @@ case class LongDivMultiCycle(
         rState := State.IDLE
       }
     }
-    when (!rCnt.msb) {
+    //when (!rCnt.msb) {
       //switch (rCnt) {
       //  for (myCnt <- 0 until rTempNumer.getWidth) {
       //    is (myCnt) {
@@ -527,7 +527,7 @@ case class LongDivMultiCycle(
       //    }
       //  }
       //}
-    }
+    //}
   }
 
   val multiChunkWidthArea = (
