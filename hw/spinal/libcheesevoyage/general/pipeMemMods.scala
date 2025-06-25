@@ -3506,13 +3506,13 @@ extends Area {
                   downto 0
                 )
               ),
-              //enable=(
-              //  //tempCond
-              //  //!mod.front.nextDidFwd(zdx)(0)
-              //  //&& 
-              //  tempSharedEnable.last
-              //  //down.isReady
-              //),
+              enable=(
+                //tempCond
+                //!mod.front.nextDidFwd(zdx)(0)
+                //&& 
+                tempSharedEnable.last
+                //down.isReady
+              ),
               //readUnderWrite=(
               //  writeFirst
               //)
@@ -3540,14 +3540,14 @@ extends Area {
 
             when (
               /*LcvFastAndR*/
-              //tempSharedEnable.last
-              //&& 
+              tempSharedEnable.last
+              && 
               RegNext(
                 next=(
                   Vec[Bool](
-                    /*RegNext*/(
-                      /*next=*/tempSharedEnable.last/*, init=False*/
-                    ),
+                    ///*RegNext*/(
+                    //  /*next=*/tempSharedEnable.last/*, init=False*/
+                    //),
                     /*RegNext*/(
                       //next=LcvFastCmpEq(
                       //  left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
