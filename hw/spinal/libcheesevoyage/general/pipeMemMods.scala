@@ -3572,16 +3572,17 @@ extends Area {
               ////mod.front.myUpExtDel(0)(0)(0).ready
               //&&
 
-              up.isFiring
+              //up.isFiring
               //down.isReady
-              && RegNext(
+              //&&
+              RegNext(
                 next=(
                   Vec[Bool](
                     //up.isFiring,
-                    ///*RegNext*/(
-                    //  /*next=*/tempSharedEnable.last/*, init=False*/
-                    //  //down.isFiring
-                    //),
+                    /*RegNext*/(
+                      ///*next=*/tempSharedEnable.last/*, init=False*/
+                      down.isFiring
+                    ),
                     /*RegNext*/(
                       //next=LcvFastCmpEq(
                       //  left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
