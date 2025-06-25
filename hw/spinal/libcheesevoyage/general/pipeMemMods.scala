@@ -4148,7 +4148,7 @@ extends Area {
                 init=upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx).getZero,
               )
             )
-            when (down.isReady) {
+            when (up.isReady) {
               upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
                 myFwdData
               )
