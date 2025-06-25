@@ -3469,6 +3469,34 @@ extends Area {
       && tempSharedEnable.last
       //--------
     )
+    //val tempSharedEnable1 = KeepAttribute(
+    //  tempSharedEnable.last
+    //  && RegNext(
+    //    next=(
+    //      Vec[Bool](
+    //        ///*RegNext*/(
+    //        //  /*next=*/tempSharedEnable.last/*, init=False*/
+    //        //),
+    //        /*RegNext*/(
+    //          //next=LcvFastCmpEq(
+    //          //  left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
+    //          //  right=mod.back.myWriteAddr(1)(ydx)(zdx),
+    //          //),
+    //          /*next=*/(
+    //            (upExt(1)(ydx)(extIdxUp).memAddr(zdx))
+    //            === (mod.back.myWriteAddr(1)(ydx)(zdx))
+    //          )//,
+    //          //init=False,
+    //        ),
+    //        /*RegNext*/(
+    //          /*next=*/mod.back.myWriteEnable(ydx)/*, init=False*/
+    //        )
+    //      ).asBits.asUInt.andR
+    //    ),
+    //    init=False
+    //  )
+    //)
+    //  .setName(s"${pipeName}_tempSharedEnable1")
 
     if (
       //optEnableModDuplicate
@@ -3540,7 +3568,9 @@ extends Area {
 
             when (
               /*LcvFastAndR*/
-              tempSharedEnable.last
+              //tempSharedEnable.last
+              //&& 
+              mod.front.myUpExtDel2(0)(0)(0).ready
               && RegNext(
                 next=(
                   Vec[Bool](
