@@ -3575,7 +3575,8 @@ extends Area {
                 next=(
                   Vec[Bool](
                     /*RegNext*/(
-                      /*next=*/tempSharedEnable.last/*, init=False*/
+                      ///*next=*/tempSharedEnable.last/*, init=False*/
+                      down.isFiring
                     ),
                     /*RegNext*/(
                       //next=LcvFastCmpEq(
