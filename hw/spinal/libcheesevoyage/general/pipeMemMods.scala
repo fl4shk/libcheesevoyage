@@ -3575,14 +3575,14 @@ extends Area {
               //up.isFiring
               //down.isReady
               //&&
-              RegNext(
+              RegNextWhen(
                 next=(
                   Vec[Bool](
                     //up.isFiring,
-                    /*RegNext*/(
-                      ///*next=*/tempSharedEnable.last/*, init=False*/
-                      down.isFiring
-                    ),
+                    ///*RegNext*/(
+                    //  ///*next=*/tempSharedEnable.last/*, init=False*/
+                    //  down.isFiring
+                    //),
                     /*RegNext*/(
                       //next=LcvFastCmpEq(
                       //  left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
@@ -3599,6 +3599,7 @@ extends Area {
                     )
                   ).asBits.asUInt.andR
                 ),
+                cond=up.isFiring,
                 init=False
               )
               //rTempVec.asBits.asUInt.andR
