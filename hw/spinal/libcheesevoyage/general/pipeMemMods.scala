@@ -3506,13 +3506,13 @@ extends Area {
                   downto 0
                 )
               ),
-              enable=(
-                //tempCond
-                //!mod.front.nextDidFwd(zdx)(0)
-                //&& 
-                tempSharedEnable.last
-                //down.isReady
-              ),
+              //enable=(
+              //  //tempCond
+              //  //!mod.front.nextDidFwd(zdx)(0)
+              //  //&& 
+              //  tempSharedEnable.last
+              //  //down.isReady
+              //),
               //readUnderWrite=(
               //  writeFirst
               //)
