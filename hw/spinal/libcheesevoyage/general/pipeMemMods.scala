@@ -2219,6 +2219,15 @@ extends Area {
             ) (
               if (idx == 0) (
                 currMemAddr(0)
+                && (
+                  prev.modMemWordValid(
+                    if (zdx < prev.modMemWordValid.size) (
+                      zdx
+                    ) else (
+                      prev.modMemWordValid.size - 1
+                    )
+                  )
+                )
               ) else (
                 (
                   //currMemAddr(0)
