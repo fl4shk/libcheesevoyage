@@ -3575,8 +3575,8 @@ extends Area {
                 next=(
                   Vec[Bool](
                     /*RegNext*/(
-                      ///*next=*/tempSharedEnable.last/*, init=False*/
-                      down.isFiring
+                      /*next=*/tempSharedEnable.last/*, init=False*/
+                      //down.isFiring
                     ),
                     /*RegNext*/(
                       //next=LcvFastCmpEq(
@@ -4142,8 +4142,17 @@ extends Area {
             myFwdData: WordT,
           ) => {
             upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
-              myFwdData
+              //myFwdData
+              RegNext(
+                next=upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx),
+                init=upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx).getZero,
+              )
             )
+            when (down.isReady) {
+              upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
+                myFwdData
+              )
+            }
           },
           optFirstFwdRdMemWord=Some(
             //upExt(2)
