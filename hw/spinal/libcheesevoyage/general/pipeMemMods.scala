@@ -3567,16 +3567,16 @@ extends Area {
             //)
 
             when (
-              /*LcvFastAndR*/
+              ///*LcvFastAndR*/
               //tempSharedEnable.last
               ////mod.front.myUpExtDel(0)(0)(0).ready
-              //&& RegNext
-              (
-                /*next=*/(
+              //&&
+              RegNext(
+                next=(
                   Vec[Bool](
-                    ///*RegNext*/(
-                    //  /*next=*/tempSharedEnable.last/*, init=False*/
-                    //),
+                    /*RegNext*/(
+                      /*next=*/tempSharedEnable.last/*, init=False*/
+                    ),
                     /*RegNext*/(
                       //next=LcvFastCmpEq(
                       //  left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
@@ -3592,8 +3592,8 @@ extends Area {
                       /*next=*/mod.back.myWriteEnable(ydx)/*, init=False*/
                     )
                   ).asBits.asUInt.andR
-                )//,
-                //init=False
+                ),
+                init=False
               )
               //rTempVec.asBits.asUInt.andR
               ///*LcvFastAndR*/(rTempVec.asBits.asUInt.andR)
@@ -3626,10 +3626,9 @@ extends Area {
               //  //&& tempSharedEnable
               //  //&& down.isReady
               //) {
-                myNonFwdRdMemWord(ydx)(zdx) := RegNextWhen(
+                myNonFwdRdMemWord(ydx)(zdx) := RegNext(
                   //mod.back.myWriteData(ydx)
                   next=mod.back.myWriteData(1)(ydx)(zdx),
-                  tempSharedEnable.last,
                   init=mod.back.myWriteData(1)(ydx)(zdx).getZero,
                 )
               //}
