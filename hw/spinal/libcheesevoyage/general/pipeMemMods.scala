@@ -3573,15 +3573,16 @@ extends Area {
               //&&
 
               //up.isFiring
-              down.isReady
-              && RegNext(
+              //down.isReady
+              //&& 
+              RegNext(
                 next=(
                   Vec[Bool](
                     //up.isFiring,
-                    ///*RegNext*/(
-                    //  /*next=*/tempSharedEnable.last/*, init=False*/
-                    //  //down.isFiring
-                    //),
+                    /*RegNext*/(
+                      /*next=*/tempSharedEnable.last/*, init=False*/
+                      //down.isFiring
+                    ),
                     /*RegNext*/(
                       //next=LcvFastCmpEq(
                       //  left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
