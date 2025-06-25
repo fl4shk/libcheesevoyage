@@ -2591,8 +2591,8 @@ extends Area {
           downs=nfFrontArr,
           synchronous=(
             // TODO: determine correct value of `synchronous`
-            //true
-            false
+            true
+            //false
           ),
         )
       )
@@ -3568,10 +3568,11 @@ extends Area {
 
             when (
               /*LcvFastAndR*/
-              tempSharedEnable.last
-              //mod.front.myUpExtDel(0)(0)(0).ready
-              && RegNext(
-                next=(
+              //tempSharedEnable.last
+              ////mod.front.myUpExtDel(0)(0)(0).ready
+              //&& RegNext
+              (
+                /*next=*/(
                   Vec[Bool](
                     ///*RegNext*/(
                     //  /*next=*/tempSharedEnable.last/*, init=False*/
@@ -3591,8 +3592,8 @@ extends Area {
                       /*next=*/mod.back.myWriteEnable(ydx)/*, init=False*/
                     )
                   ).asBits.asUInt.andR
-                ),
-                init=False
+                )//,
+                //init=False
               )
               //rTempVec.asBits.asUInt.andR
               ///*LcvFastAndR*/(rTempVec.asBits.asUInt.andR)
@@ -3625,9 +3626,10 @@ extends Area {
               //  //&& tempSharedEnable
               //  //&& down.isReady
               //) {
-                myNonFwdRdMemWord(ydx)(zdx) := RegNext(
+                myNonFwdRdMemWord(ydx)(zdx) := RegNextWhen(
                   //mod.back.myWriteData(ydx)
                   next=mod.back.myWriteData(1)(ydx)(zdx),
+                  tempSharedEnable.last,
                   init=mod.back.myWriteData(1)(ydx)(zdx).getZero,
                 )
               //}
