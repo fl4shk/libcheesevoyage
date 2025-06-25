@@ -3572,7 +3572,8 @@ extends Area {
               ////mod.front.myUpExtDel(0)(0)(0).ready
               //&&
 
-              up.isFiring
+              //up.isFiring
+              down.isReady
               && RegNext(
                 next=(
                   Vec[Bool](
