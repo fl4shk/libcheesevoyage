@@ -2591,8 +2591,8 @@ extends Area {
           downs=nfFrontArr,
           synchronous=(
             // TODO: determine correct value of `synchronous`
-            true
-            //false
+            //true
+            false
           ),
         )
       )
