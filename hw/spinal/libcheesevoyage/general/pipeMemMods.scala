@@ -3568,9 +3568,8 @@ extends Area {
 
             when (
               /*LcvFastAndR*/
-              //tempSharedEnable.last
-              //&& 
-              mod.front.myUpExtDel2(0)(0)(0).ready
+              tempSharedEnable.last
+              //mod.front.myUpExtDel(0)(0)(0).ready
               && RegNext(
                 next=(
                   Vec[Bool](
