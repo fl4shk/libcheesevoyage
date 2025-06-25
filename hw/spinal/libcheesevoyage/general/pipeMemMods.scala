@@ -4141,18 +4141,18 @@ extends Area {
             zdx: Int,
             myFwdData: WordT,
           ) => {
-            upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
-              //myFwdData
-              RegNext(
-                next=upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx),
-                init=upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx).getZero,
-              )
-            )
-            when (up.isReady) {
+            //upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
+            //  //myFwdData
+            //  RegNext(
+            //    next=upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx),
+            //    init=upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx).getZero,
+            //  )
+            //)
+            //when (down.isReady) {
               upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
                 myFwdData
               )
-            }
+            //}
           },
           optFirstFwdRdMemWord=Some(
             //upExt(2)
