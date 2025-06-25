@@ -3540,9 +3540,8 @@ extends Area {
 
             when (
               /*LcvFastAndR*/
-              //tempSharedEnable.last
-              //&& 
-              RegNext(
+              tempSharedEnable.last
+              && RegNext(
                 next=(
                   Vec[Bool](
                     ///*RegNext*/(
@@ -3597,10 +3596,9 @@ extends Area {
               //  //&& tempSharedEnable
               //  //&& down.isReady
               //) {
-                myNonFwdRdMemWord(ydx)(zdx) := RegNextWhen(
+                myNonFwdRdMemWord(ydx)(zdx) := RegNext(
                   //mod.back.myWriteData(ydx)
                   next=mod.back.myWriteData(1)(ydx)(zdx),
-                  cond=tempSharedEnable.last,
                   init=mod.back.myWriteData(1)(ydx)(zdx).getZero,
                 )
               //}
