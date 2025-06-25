@@ -3572,10 +3572,12 @@ extends Area {
               ////mod.front.myUpExtDel(0)(0)(0).ready
               //&&
 
-              up.isFiring
-              && RegNext(
+              //up.isFiring
+              //&&
+              RegNext(
                 next=(
                   Vec[Bool](
+                    up.isFiring,
                     /*RegNext*/(
                       /*next=*/tempSharedEnable.last/*, init=False*/
                       //down.isFiring
