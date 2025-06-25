@@ -2219,15 +2219,15 @@ extends Area {
             ) (
               if (idx == 0) (
                 currMemAddr(0)
-                && (
-                  prev.modMemWordValid(
-                    if (zdx < prev.modMemWordValid.size) (
-                      zdx
-                    ) else (
-                      prev.modMemWordValid.size - 1
-                    )
-                  )
-                )
+                //&& (
+                //  prev.modMemWordValid(
+                //    if (zdx < prev.modMemWordValid.size) (
+                //      zdx
+                //    ) else (
+                //      prev.modMemWordValid.size - 1
+                //    )
+                //  )
+                //)
               ) else (
                 (
                   //currMemAddr(0)
@@ -3539,12 +3539,14 @@ extends Area {
             //)
 
             when (
-              /*LcvFastAndR*/RegNext(
+              /*LcvFastAndR*/
+              tempSharedEnable.last
+              && RegNext(
                 next=(
                   Vec[Bool](
-                    /*RegNext*/(
-                      /*next=*/tempSharedEnable.last/*, init=False*/
-                    ),
+                    ///*RegNext*/(
+                    //  /*next=*/tempSharedEnable.last/*, init=False*/
+                    //),
                     /*RegNext*/(
                       //next=LcvFastCmpEq(
                       //  left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
