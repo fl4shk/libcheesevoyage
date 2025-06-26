@@ -2301,15 +2301,16 @@ extends Area {
                 (
                   //currMemAddr(0)
                   currMemAddr === prevMemAddr
-                ) && (
-                  //prev.modMemWordValid(
-                  //  if (zdx < prev.modMemWordValid.size) (
-                  //    zdx
-                  //  ) else (
-                  //    prev.modMemWordValid.size - 1
-                  //  )
-                  //)
-                )
+                ) 
+                //&& (
+                //  //prev.modMemWordValid(
+                //  //  if (zdx < prev.modMemWordValid.size) (
+                //  //    zdx
+                //  //  ) else (
+                //  //    prev.modMemWordValid.size - 1
+                //  //  )
+                //  //)
+                //)
               )
               //else (
               //  cfg.optFwdHaveZeroReg match {
