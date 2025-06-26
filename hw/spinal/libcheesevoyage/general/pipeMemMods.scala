@@ -3612,35 +3612,35 @@ extends Area {
             val tempAddrWidth = (
               PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx))
             )
-            myModMem.io.cmpRdWrAddrEtc := (
-              //tempSharedEnable.last
-              //&& 
-              (
-                RegNext(
-                  upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
-                    tempAddrWidth - 1 downto 0
-                  ) === (
-                    //mod.back.myWriteAddr(1)(ydx)(zdx)
-                    mod.front.myUpExtDel2(
-                      //mod.front.myUpExtDel2.size - 3
-                      0
-                    )(ydx)(PipeMemRmw.extIdxUp).memAddr(
-                      PipeMemRmw.modWrIdx
-                    )(
-                      tempAddrWidth - 1 downto 0
-                    )
-                  )
-                  //&& (
-                  //  tempSharedEnable.last
-                  //)
-                  && mod.front.myUpExtDel2(
-                    0
-                  )(ydx)(PipeMemRmw.extIdxUp).modMemWordValid(0)
-                )
-                init(False)
-              )
-              //init(False)
-            )
+            //myModMem.io.cmpRdWrAddrEtc := (
+            //  //tempSharedEnable.last
+            //  //&& 
+            //  (
+            //    RegNext(
+            //      upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
+            //        tempAddrWidth - 1 downto 0
+            //      ) === (
+            //        //mod.back.myWriteAddr(1)(ydx)(zdx)
+            //        mod.front.myUpExtDel2(
+            //          //mod.front.myUpExtDel2.size - 3
+            //          0
+            //        )(ydx)(PipeMemRmw.extIdxUp).memAddr(
+            //          PipeMemRmw.modWrIdx
+            //        )(
+            //          tempAddrWidth - 1 downto 0
+            //        )
+            //      )
+            //      //&& (
+            //      //  tempSharedEnable.last
+            //      //)
+            //      && mod.front.myUpExtDel2(
+            //        0
+            //      )(ydx)(PipeMemRmw.extIdxUp).modMemWordValid(0)
+            //    )
+            //    init(False)
+            //  )
+            //  //init(False)
+            //)
             myNonFwdRdMemWord(ydx)(zdx) := (
               RegNext(
                 next=myNonFwdRdMemWord(ydx)(zdx),
@@ -3648,9 +3648,9 @@ extends Area {
               )
             )
             when (
-              RegNext(
-                next=tempSharedEnable.last,
-                init=tempSharedEnable.last.getZero,
+              /*RegNext*/(
+                /*next=*/tempSharedEnable.last//,
+                //init=tempSharedEnable.last.getZero,
               )
             ) {
               myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
