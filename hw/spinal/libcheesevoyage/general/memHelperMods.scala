@@ -18,7 +18,7 @@ case class RamSimpleDualPortWriteFirstIo[
     wordWidth=(wordType().asBits.getWidth),
     addrWidth=log2Up(depth),
   )
-  val cmpRdWrAddrEtc = in(Bool())
+  //val cmpRdWrAddrEtc = in(Bool())
 }
 
 case class RamSimpleDualPortWriteFirst[

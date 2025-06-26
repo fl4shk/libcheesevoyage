@@ -2261,15 +2261,15 @@ extends Area {
             ) (
               if (idx == 0) (
                 currMemAddr(0)
-                //&& (
-                //  prev.modMemWordValid(
-                //    if (zdx < prev.modMemWordValid.size) (
-                //      zdx
-                //    ) else (
-                //      prev.modMemWordValid.size - 1
-                //    )
-                //  )
-                //)
+                && (
+                  prev.modMemWordValid(
+                    if (zdx < prev.modMemWordValid.size) (
+                      zdx
+                    ) else (
+                      prev.modMemWordValid.size - 1
+                    )
+                  )
+                )
               ) else (
                 (
                   //currMemAddr(0)
@@ -3603,14 +3603,13 @@ extends Area {
             myModMem.io.ramIo.rdEn := (
               /*down.isFiring*/ tempSharedEnable.last
             )
-            myModMem.io.ramIo.rdAddr := (
-              upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
-                PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
-                downto 0
-              )
-            )
             val tempAddrWidth = (
               PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx))
+            )
+            myModMem.io.ramIo.rdAddr := (
+              upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
+                tempAddrWidth - 1 downto 0
+              )
             )
             //myModMem.io.cmpRdWrAddrEtc := (
             //  //tempSharedEnable.last
