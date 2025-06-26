@@ -3634,8 +3634,9 @@ extends Area {
                 //&& mod.front.myUpExtDel2(
                 //  0
                 //)(ydx)(PipeMemRmw.extIdxUp).modMemWordValid(0)
+                init(False)
               )
-              init(False)
+              //init(False)
             )
             myNonFwdRdMemWord(ydx)(zdx) := (
               RegNext(
