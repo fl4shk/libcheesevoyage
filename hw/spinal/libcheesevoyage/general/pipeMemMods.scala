@@ -3662,10 +3662,13 @@ extends Area {
                   tempAddrWidth - 1 downto 0
                 )
               )
-              myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
-                myModMem.io.ramIo.rdData
-              )
+              //myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
+              //  myModMem.io.ramIo.rdData
+              //)
             }
+            myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
+              myModMem.io.ramIo.rdData
+            )
             //myModMem.io.cmpRdWrAddrEtc := (
             //  //tempSharedEnable.last
             //  //&& 
