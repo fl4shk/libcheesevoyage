@@ -8,6 +8,19 @@ import spinal.lib.misc.pipeline._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
+case class RamSimpleDualPortWriteFirstIo[
+  WordT <: Data
+](
+  wordType: HardType[WordT],
+  depth: Int,
+) extends Bundle {
+  val ramIo = FpgacpuRamSimpleDualPortIo(
+    wordWidth=(wordType().asBits.getWidth),
+    addrWidth=log2Up(depth),
+  )
+  val cmpRdWrAddr = in(Bool())
+}
+
 case class RamSimpleDualPortWriteFirst[
   WordT <: Data
 ](
@@ -18,11 +31,11 @@ case class RamSimpleDualPortWriteFirst[
   arrRamStyle: String="block",
   //arrRwAddrCollision: String="",
 ) extends Component {
-  val io = FpgacpuRamSimpleDualPortIo(
-    wordWidth=(wordType().asBits.getWidth),
-    addrWidth=log2Up(depth),
+  //def addrWidth = io.addrWidth
+  val io = RamSimpleDualPortWriteFirstIo(
+    wordType=wordType(),
+    depth=depth,
   )
-  def addrWidth = io.addrWidth
   val myRam = FpgacpuRamSimpleDualPort(
     wordType=wordType(),
     depth=depth,
@@ -31,25 +44,28 @@ case class RamSimpleDualPortWriteFirst[
     arrRamStyle=arrRamStyle,
     arrRwAddrCollision="",
   )
-  myRam.io.wrEn := io.wrEn
-  myRam.io.wrAddr := io.wrAddr
-  myRam.io.wrData := io.wrData
-  myRam.io.rdEn := io.rdEn
-  myRam.io.rdAddr := io.rdAddr
-  io.rdData := myRam.io.rdData
+  myRam.io.wrEn := io.ramIo.wrEn
+  myRam.io.wrAddr := io.ramIo.wrAddr
+  myRam.io.wrData := io.ramIo.wrData
+  myRam.io.rdEn := io.ramIo.rdEn
+  myRam.io.rdAddr := io.ramIo.rdAddr
+  io.ramIo.rdData := myRam.io.rdData
 
-  //when (
-  //  /*RegNext*/(
-  //    RegNext(io.rdAddr) === io.wrAddr
-  //    && RegNext(io.rdEn, init=False)
-  //    && io.wrEn
-  //  )
-  //  //init(False)
-  //) {
-  //  io.rdData := /*RegNext*/(io.wrData) //init(io.wrData.getZero)
-  //} otherwise {
-  //  //io.rdData := myRam.io.rdData
-  //}
+  when (
+    /*RegNext*/(
+      //RegNext(io.rdAddr) === io.wrAddr
+      io.cmpRdWrAddr
+      && RegNext(io.ramIo.rdEn, init=False)
+      && io.ramIo.wrEn
+    )
+    //init(False)
+  ) {
+    io.ramIo.rdData := (
+      /*RegNext*/(io.ramIo.wrData) //init(io.wrData.getZero)
+    )
+  } otherwise {
+    //io.rdData := myRam.io.rdData
+  }
 }
 
 case class PipeSimpleDualPortMemDrivePayload[

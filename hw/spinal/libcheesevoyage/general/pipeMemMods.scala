@@ -2088,16 +2088,16 @@ extends Area {
           //  enable=enable(ydx),
           //  //mask=mask(ydx),
           //)
-          item.io.wrEn := (
+          item.io.ramIo.wrEn := (
             enable(ydx)
           )
-          item.io.wrAddr := (
+          item.io.ramIo.wrAddr := (
             address(ydx).head(
               PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
               downto 0
             )
           )
-          item.io.wrData := (
+          item.io.ramIo.wrData := (
             data(ydx).head.asBits
           )
         },
@@ -3564,8 +3564,8 @@ extends Area {
           //  )
           //)
           val myModMem = modMem(ydx)(PipeMemRmw.modWrIdx)
-          myModMem.io.rdEn := tempCond
-          myModMem.io.rdAddr := (
+          myModMem.io.ramIo.rdEn := tempCond
+          myModMem.io.ramIo.rdAddr := (
             //upExtRealMemAddr(PipeMemRmw.modWrIdx)
             upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)(
               PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
@@ -3573,7 +3573,7 @@ extends Area {
             )
           )
           myNonFwdRdMemWord(ydx)(PipeMemRmw.modWrIdx).assignFromBits(
-            myModMem.io.rdData.asBits
+            myModMem.io.ramIo.rdData.asBits
           )
         }
         // END: previous `duplicateIt` code; fix later
@@ -3600,11 +3600,23 @@ extends Area {
             //    writeFirst
             //  )
             //)
-            myModMem.io.rdEn := /*down.isFiring*/ tempSharedEnable.last
-            myModMem.io.rdAddr := (
+            myModMem.io.ramIo.rdEn := (
+              /*down.isFiring*/ tempSharedEnable.last
+            )
+            myModMem.io.ramIo.rdAddr := (
               upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
                 PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
                 downto 0
+              )
+            )
+            myModMem.io.cmpRdWrAddr := (
+              RegNext(
+                upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
+                  PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+                  downto 0
+                ) === (
+                  mod.back.myWriteAddr(1)(ydx)(zdx)
+                )
               )
             )
             myNonFwdRdMemWord(ydx)(zdx) := (
@@ -3620,7 +3632,7 @@ extends Area {
               )
             ) {
               myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
-                myModMem.io.rdData
+                myModMem.io.ramIo.rdData
               )
             }
 
@@ -5246,10 +5258,10 @@ extends Area {
         //  ),
         //  enable=up.isFiring,
         //)
-        dualRdMem(ydx).io.rdEn := (
+        dualRdMem(ydx).io.ramIo.rdEn := (
           up.isFiring
         )
-        dualRdMem(ydx).io.rdAddr := (
+        dualRdMem(ydx).io.ramIo.rdAddr := (
           myInpUpExt(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)(
             PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
             downto 0
@@ -5257,7 +5269,7 @@ extends Area {
         )
 
         myRdMemWord.assignFromBits(
-          dualRdMem(ydx).io.rdData
+          dualRdMem(ydx).io.ramIo.rdData
         )
       }
       //when (
