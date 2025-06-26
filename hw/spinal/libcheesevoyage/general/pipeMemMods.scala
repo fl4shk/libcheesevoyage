@@ -3662,7 +3662,8 @@ extends Area {
                     //up.isFiring,
                     /*RegNext*/(
                       ///*next=*/tempSharedEnable.last/*, init=False*/
-                      down.isFiring
+                      //down.isFiring
+                      down.isReady
                     ),
                     /*RegNext*/(
                       //next=LcvFastCmpEq(
