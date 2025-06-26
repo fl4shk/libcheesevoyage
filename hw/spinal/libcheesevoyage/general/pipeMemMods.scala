@@ -3631,22 +3631,24 @@ extends Area {
               ///*down.isFiring*/ tempSharedEnable.last
               //up.isFiring
               down.isReady
+              || RegNext(down.isReady, init=False)
               //down.isFiring
               //True
             )
             val tempAddrWidth = (
               PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx))
             )
-            myModMem.io.ramIo.rdAddr := (
-              RegNext(
-                next=myModMem.io.ramIo.rdAddr,
-                init=myModMem.io.ramIo.rdAddr.getZero,
-              )
-            )
+            //myModMem.io.ramIo.rdAddr := (
+            //  RegNext(
+            //    next=myModMem.io.ramIo.rdAddr,
+            //    init=myModMem.io.ramIo.rdAddr.getZero,
+            //  )
+            //)
             when (
               //tempSharedEnable.last
               //up.isFiring
               down.isReady
+              || RegNext(down.isReady, init=False)
             ) {
               myModMem.io.ramIo.rdAddr := (
                 upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
@@ -4224,19 +4226,19 @@ extends Area {
       }
       //--------
       for (ydx <- 0 until memArrSize) {
-        for (zdx <- 0 until modRdPortCnt) {
-          when (
-            RegNext/*When*/(
-              next=cFrontArea.tempSharedEnable(zdx),
-              //cond=down.isReady,
-              init=cFrontArea.tempSharedEnable(zdx).getZero//False,
-            )//(zdx)
-          ) {
-            upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
-              myRdMemWord(ydx)(zdx)
-            )
-          }
-        }
+        //for (zdx <- 0 until modRdPortCnt) {
+        //  when (
+        //    RegNext/*When*/(
+        //      next=cFrontArea.tempSharedEnable(zdx),
+        //      //cond=down.isReady,
+        //      init=cFrontArea.tempSharedEnable(zdx).getZero//False,
+        //    )//(zdx)
+        //  ) {
+        //    upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
+        //      myRdMemWord(ydx)(zdx)
+        //    )
+        //  }
+        //}
         upExt(1)(ydx)(extIdxSingle).modMemWordValid.foreach(current => {
           current := True
         })
