@@ -1297,6 +1297,21 @@ case class PipeMemRmwDoFwdArea[
           }
         )
         def firstFwd = firstFwdRdMemWord._1
+        val toFindFirstUp = (
+          Vec.fill(
+            fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp).size
+          )(
+            Bool()
+          )
+        )
+        for (kdx <- 0 until toFindFirstUp.size) {
+          toFindFirstUp(kdx) := (
+            fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)(
+              kdx
+            ).fire
+          )
+        }
+
         val myFindFirstUp = /*KeepAttribute*/(
           //(
           //  //optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
@@ -1304,21 +1319,26 @@ case class PipeMemRmwDoFwdArea[
           //) generate 
           (
             (
-              fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)
-              .sFindFirst(
-                //_ === True
-                current => {
-                  (current.fire === True)
-                }
-              )
+              //fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)
+              //.sFindFirst(
+              //  //_ === True
+              //  current => {
+              //    (current.fire === True)
+              //  }
+              //)
               //LcvSFindFirst[Bool](
               //  fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxUp),
               //  current => (current === True)
               //)
-              //LcvSFindFirst[Flow[WordT]](
-              //  fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp),
-              //  current => (current.fire === True)
-              //)
+              LcvSFindFirst[
+                //Flow[WordT]
+                Bool
+              ](
+                //fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp),
+                //current => (current.fire === True)
+                toFindFirstUp,
+                current => (current === True )
+              )
             )
             .setName(
               s"${fwdAreaName}_myFindFirstUp_${fjIdx}_${ydx}_${zdx}"
