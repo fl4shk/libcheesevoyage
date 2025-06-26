@@ -3613,7 +3613,8 @@ extends Area {
               PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx))
             )
             myModMem.io.cmpRdWrAddrEtc := (
-              RegNext(
+              tempSharedEnable.last
+              && RegNext(
                 upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
                   tempAddrWidth - 1 downto 0
                 ) === (
@@ -3626,12 +3627,13 @@ extends Area {
                   )(
                     tempAddrWidth - 1 downto 0
                   )
-                ) && (
-                  tempSharedEnable.last
                 )
-                && mod.front.myUpExtDel2(
-                  0
-                )(ydx)(PipeMemRmw.extIdxUp).modMemWordValid(0)
+                //&& (
+                //  tempSharedEnable.last
+                //)
+                //&& mod.front.myUpExtDel2(
+                //  0
+                //)(ydx)(PipeMemRmw.extIdxUp).modMemWordValid(0)
               )
               init(False)
             )
