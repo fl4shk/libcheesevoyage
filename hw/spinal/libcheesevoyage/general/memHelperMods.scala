@@ -36,15 +36,16 @@ case class RamSimpleDualPortWriteFirst[
   myRam.io.wrData := io.wrData
   myRam.io.rdEn := io.rdEn
   myRam.io.rdAddr := io.rdAddr
+  io.rdData := myRam.io.rdData
 
   when (
-    RegNext(io.rdAddr === io.wrAddr)
+    io.rdAddr === io.wrAddr
     && io.rdEn
     && io.wrEn
   ) {
-    io.rdData := RegNext(io.wrData) init(io.rdData.getZero)
+    io.rdData := io.wrData
   } otherwise {
-    io.rdData := myRam.io.rdData
+    //io.rdData := myRam.io.rdData
   }
 }
 
