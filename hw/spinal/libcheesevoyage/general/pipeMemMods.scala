@@ -3609,13 +3609,20 @@ extends Area {
                 downto 0
               )
             )
+            val tempAddrWidth = (
+              PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx))
+            )
             myModMem.io.cmpRdWrAddr := (
               RegNext(
                 upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
-                  PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
-                  downto 0
+                  tempAddrWidth - 1 downto 0
                 ) === (
-                  mod.back.myWriteAddr(1)(ydx)(zdx)
+                  //mod.back.myWriteAddr(1)(ydx)(zdx)
+                  mod.front.myUpExtDel2(
+                    mod.front.myUpExtDel2.size - 2
+                  )(ydx)(PipeMemRmw.extIdxUp).memAddrFwdMmw(zdx).last(
+                    tempAddrWidth - 1 downto 0
+                  )
                 )
               )
             )
