@@ -18,7 +18,7 @@ case class RamSimpleDualPortWriteFirstIo[
     wordWidth=(wordType().asBits.getWidth),
     addrWidth=log2Up(depth),
   )
-  val cmpRdWrAddr = in(Bool())
+  val cmpRdWrAddrEtc = in(Bool())
 }
 
 case class RamSimpleDualPortWriteFirst[
@@ -54,8 +54,8 @@ case class RamSimpleDualPortWriteFirst[
   when (
     /*RegNext*/(
       //RegNext(io.rdAddr) === io.wrAddr
-      io.cmpRdWrAddr
-      && RegNext(io.ramIo.rdEn, init=False)
+      io.cmpRdWrAddrEtc
+      //&& RegNext(io.ramIo.rdEn, init=False)
       && io.ramIo.wrEn
     )
     //init(False)
