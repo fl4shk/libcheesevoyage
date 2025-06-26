@@ -49,23 +49,31 @@ case class RamSimpleDualPort[
   myRam.io.wrData := io.ramIo.wrData
   myRam.io.rdEn := io.ramIo.rdEn
   myRam.io.rdAddr := io.ramIo.rdAddr
-  io.ramIo.rdData := myRam.io.rdData
-
-  when (
-    /*RegNext*/(
-      /*RegNext*/(io.ramIo.rdAddr) === io.ramIo.wrAddr
-      //io.cmpRdWrAddrEtc
-      && /*RegNext*/(io.ramIo.rdEn/*, init=False*/)
-      && io.ramIo.wrEn
+  io.ramIo.rdData := (
+    RegNext(
+      next=io.ramIo.rdData,
+      init=io.ramIo.rdData.getZero,
     )
-    //init(False)
-  ) {
-    io.ramIo.rdData := (
-      /*RegNext*/(io.ramIo.wrData) //init(io.wrData.getZero)
-    )
-  } otherwise {
+  )
+  when (io.ramIo.rdEn) {
+    io.ramIo.rdData := myRam.io.rdData
+    when (
+      /*RegNext*/(
+        /*RegNext*/(io.ramIo.rdAddr) === io.ramIo.wrAddr
+        //io.cmpRdWrAddrEtc
+        //&& /*RegNext*/(io.ramIo.rdEn/*, init=False*/)
+        && io.ramIo.wrEn
+      )
+      //init(False)
+    ) {
+      io.ramIo.rdData := (
+        /*RegNext*/(io.ramIo.wrData) //init(io.wrData.getZero)
+      )
+    } otherwise {
     //io.rdData := myRam.io.rdData
+    }
   }
+
 }
 
 case class PipeSimpleDualPortMemDrivePayload[
