@@ -3654,7 +3654,7 @@ extends Area {
               down.isReady
             ) {
               myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
-                myModMem.io.ramIo.rdData
+                RegNext(myModMem.io.ramIo.rdData)
               )
             }
 
