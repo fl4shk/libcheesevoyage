@@ -55,7 +55,7 @@ case class RamSimpleDualPortWriteFirst[
     /*RegNext*/(
       //RegNext(io.rdAddr) === io.wrAddr
       io.cmpRdWrAddrEtc
-      //&& RegNext(io.ramIo.rdEn, init=False)
+      && RegNext(io.ramIo.rdEn, init=False)
       && io.ramIo.wrEn
     )
     //init(False)
