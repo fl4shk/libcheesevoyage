@@ -1922,38 +1922,64 @@ extends Area {
   )
   //--------
   def mkMem(ydx: Int) = {
-    val ret = Mem(
+    val ret = RamSimpleDualPortWriteFirst(
       wordType=wordType(),
-      wordCount=wordCountArr(ydx),
+      depth=wordCountArr(ydx),
+      init=(
+        init match {
+          case Some(myInit) => {
+            Some(myInit(ydx))
+          }
+          case None => {
+            None
+          }
+        }
+      ),
+      initBigInt=(
+        initBigInt match {
+          case Some(myInitBigInt) => {
+            Some(myInitBigInt(ydx))
+          }
+          case None => {
+            None
+          }
+        }
+      ),
+      arrRamStyle=memRamStyle,
     )
-      .addAttribute("ram_style", memRamStyle)
-      .addAttribute("ramstyle", memRamStyle)
-    init match {
-      case Some(myInit) => {
-        //assert(myInit.size == wordCount)
-        assert(initBigInt == None)
-        ret.init(myInit(ydx))
-      }
-      case None => {
-      }
-    }
-    initBigInt match {
-      case Some(myInitBigInt) => {
-        //assert(myInitBigInt.size == wordCount)
-        assert(init == None)
-        ret.initBigInt(myInitBigInt(ydx))
-      }
-      case None => {
-        //ret.initBigInt({
-        //  //val tempArr = new ArrayBuffer[BigInt]()
-        //  //for (idx <- 0 until wordCount) {
-        //  //  tempArr += BigInt(0)
-        //  //}
-        //  //tempArr.toSeq
-        //  Array.fill(wordCount)(BigInt(0)).toSeq
-        //})
-      }
-    }
+
+    //val ret = Mem(
+    //  wordType=wordType(),
+    //  wordCount=wordCountArr(ydx),
+    //)
+    //  .addAttribute("ram_style", memRamStyle)
+    //  .addAttribute("ramstyle", memRamStyle)
+    //init match {
+    //  case Some(myInit) => {
+    //    //assert(myInit.size == wordCount)
+    //    assert(initBigInt == None)
+    //    ret.init(myInit(ydx))
+    //  }
+    //  case None => {
+    //  }
+    //}
+    //initBigInt match {
+    //  case Some(myInitBigInt) => {
+    //    //assert(myInitBigInt.size == wordCount)
+    //    assert(init == None)
+    //    ret.initBigInt(myInitBigInt(ydx))
+    //  }
+    //  case None => {
+    //    //ret.initBigInt({
+    //    //  //val tempArr = new ArrayBuffer[BigInt]()
+    //    //  //for (idx <- 0 until wordCount) {
+    //    //  //  tempArr += BigInt(0)
+    //    //  //}
+    //    //  //tempArr.toSeq
+    //    //  Array.fill(wordCount)(BigInt(0)).toSeq
+    //    //})
+    //  }
+    //}
 
     ret
   }
@@ -1983,7 +2009,9 @@ extends Area {
   val modMem = (
     optModHazardKind != PipeMemRmw.ModHazardKind.Dont
   ) generate {
-    val myArr = new ArrayBuffer[Array[Mem[WordT]]]()
+    val myArr = new ArrayBuffer[Array[
+      RamSimpleDualPortWriteFirst[WordT]
+    ]]()
     for (ydx <- 0 until memArrSize) {
       myArr += (
       //Array.fill(memArrSize)(
@@ -1995,32 +2023,33 @@ extends Area {
     }
     myArr
   }
-  if (optFormal) {
-    if (optModHazardKind == PipeMemRmw.ModHazardKind.Fwd) {
-      for (ydx <- 0 until memArrSize) {
-        for (zdx <- 0 until modRdPortCnt) {
-          for (idx <- 0 until wordCountArr(ydx)) {
-            assumeInitial(
-              modMem(ydx)(zdx).readAsync(
-                address=U(s"${log2Up(wordCountArr(ydx))}'d${idx}")
-              ) === (
-                wordType().getZero
-              )
-            )
-          }
-        }
-      }
-    }
-  }
+  //if (optFormal) {
+  //  if (optModHazardKind == PipeMemRmw.ModHazardKind.Fwd) {
+  //    for (ydx <- 0 until memArrSize) {
+  //      for (zdx <- 0 until modRdPortCnt) {
+  //        for (idx <- 0 until wordCountArr(ydx)) {
+  //          assumeInitial(
+  //            modMem(ydx)(zdx).readAsync(
+  //              address=U(s"${log2Up(wordCountArr(ydx))}'d${idx}")
+  //            ) === (
+  //              wordType().getZero
+  //            )
+  //          )
+  //        }
+  //      }
+  //    }
+  //  }
+  //}
+
   val dualRdMem = (io.optDualRd) generate {
-    val myArr = new ArrayBuffer[Mem[WordT]]()
+    val myArr = new ArrayBuffer[RamSimpleDualPortWriteFirst[WordT]]()
     for (ydx <- 0 until memArrSize) {
       myArr += mkMem(ydx=ydx)
     }
     myArr
   }
   def memWriteIterate(
-    writeFunc: (Mem[WordT]) => Unit,
+    writeFunc: (RamSimpleDualPortWriteFirst[WordT]) => Unit,
     ydx: Int,
   ): Unit = {
     if (
@@ -2046,17 +2075,30 @@ extends Area {
     for (ydx <- 0 until memArrSize) {
       memWriteIterate(
         writeFunc=(
-          item: Mem[WordT],
-          //ydx: Int,
+          //item: Mem[WordT],
+          ////ydx: Int,
+          item: RamSimpleDualPortWriteFirst[WordT],
         ) => {
-          item.write(
-            address=address(ydx).head(
+          //item.write(
+          //  address=address(ydx).head(
+          //    PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+          //    downto 0
+          //  ),
+          //  data=data(ydx).head,
+          //  enable=enable(ydx),
+          //  //mask=mask(ydx),
+          //)
+          item.io.wrEn := (
+            enable(ydx)
+          )
+          item.io.wrAddr := (
+            address(ydx).head(
               PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
               downto 0
-            ),
-            data=data(ydx).head,
-            enable=enable(ydx),
-            //mask=mask(ydx),
+            )
+          )
+          item.io.wrData := (
+            data(ydx).head.asBits
           )
         },
         ydx=ydx
@@ -3506,45 +3548,69 @@ extends Area {
       if (optModHazardKind == PipeMemRmw.ModHazardKind.Dupl) {
         for (ydx <- 0 until memArrSize) {
           // BEGIN: previous `duplicateIt` code; fix later
-          myNonFwdRdMemWord(ydx)(PipeMemRmw.modWrIdx) := (
-            modMem(ydx)(PipeMemRmw.modWrIdx).readSync(
-              address=(
-                //upExtRealMemAddr(PipeMemRmw.modWrIdx)
-                upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)(
-                  PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
-                  downto 0
-                )
-              ),
-              //address=myDownExt.memAddr,
-              enable=(
-                tempCond
-              ),
+          //myNonFwdRdMemWord(ydx)(PipeMemRmw.modWrIdx) := (
+          //  modMem(ydx)(PipeMemRmw.modWrIdx).readSync(
+          //    address=(
+          //      //upExtRealMemAddr(PipeMemRmw.modWrIdx)
+          //      upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)(
+          //        PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+          //        downto 0
+          //      )
+          //    ),
+          //    //address=myDownExt.memAddr,
+          //    enable=(
+          //      tempCond
+          //    ),
+          //  )
+          //)
+          val myModMem = modMem(ydx)(PipeMemRmw.modWrIdx)
+          myModMem.io.rdEn := tempCond
+          myModMem.io.rdAddr := (
+            //upExtRealMemAddr(PipeMemRmw.modWrIdx)
+            upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)(
+              PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+              downto 0
             )
+          )
+          myNonFwdRdMemWord(ydx)(PipeMemRmw.modWrIdx).assignFromBits(
+            myModMem.io.rdData.asBits
           )
         }
         // END: previous `duplicateIt` code; fix later
       } else { // if (optModHazardKind == PipeMemRmw.ModHazardKind.Fwd)
         for (ydx <- 0 until memArrSize) {
           for (zdx <- 0 until modRdPortCnt) {
-            myNonFwdRdMemWord(ydx)(zdx) := modMem(ydx)(zdx).readSync(
-              address=(
-                //upExtRealMemAddr(zdx)
-                upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
-                  PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
-                  downto 0
-                )
-              ),
-              enable=(
-                //tempCond
-                //!mod.front.nextDidFwd(zdx)(0)
-                //&& 
-                tempSharedEnable.last
-                //down.isReady
-              ),
-              readUnderWrite=(
-                writeFirst
+            val myModMem = modMem(ydx)(zdx)
+            //myNonFwdRdMemWord(ydx)(zdx) := modMem(ydx)(zdx).readSync(
+            //  address=(
+            //    //upExtRealMemAddr(zdx)
+            //    upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
+            //      PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+            //      downto 0
+            //    )
+            //  ),
+            //  enable=(
+            //    //tempCond
+            //    //!mod.front.nextDidFwd(zdx)(0)
+            //    //&& 
+            //    tempSharedEnable.last
+            //    //down.isReady
+            //  ),
+            //  readUnderWrite=(
+            //    writeFirst
+            //  )
+            //)
+            myModMem.io.rdEn := tempSharedEnable.last
+            myModMem.io.rdAddr := (
+              upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
+                PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+                downto 0
               )
             )
+            myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
+              myModMem.io.rdData
+            )
+
             //def tempWidth = (
             //  mod.back.myWriteAddr(1)(ydx)(zdx).getWidth
             //)
@@ -5158,14 +5224,27 @@ extends Area {
       //  enable=up.isFiring,
       //)
       for (ydx <- 0 until memArrSize) {
-        myRdMemWord := dualRdMem(ydx).readSync(
-          address=(
-            myInpUpExt(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)(
-              PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
-              downto 0
-            )
-          ),
-          enable=up.isFiring,
+        //myRdMemWord := dualRdMem(ydx).readSync(
+        //  address=(
+        //    myInpUpExt(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)(
+        //      PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+        //      downto 0
+        //    )
+        //  ),
+        //  enable=up.isFiring,
+        //)
+        dualRdMem(ydx).io.rdEn := (
+          up.isFiring
+        )
+        dualRdMem(ydx).io.rdAddr := (
+          myInpUpExt(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)(
+            PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+            downto 0
+          )
+        )
+
+        myRdMemWord.assignFromBits(
+          dualRdMem(ydx).io.rdData
         )
       }
       //when (

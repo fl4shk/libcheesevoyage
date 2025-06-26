@@ -8,6 +8,46 @@ import spinal.lib.misc.pipeline._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
+case class RamSimpleDualPortWriteFirst[
+  WordT <: Data
+](
+  wordType: HardType[WordT],
+  depth: Int,
+  init: Option[Seq[WordT]]=None,
+  initBigInt: Option[Seq[BigInt]]=None,
+  arrRamStyle: String="block",
+  //arrRwAddrCollision: String="",
+) extends Component {
+  val io = FpgacpuRamSimpleDualPortIo(
+    wordWidth=(wordType().asBits.getWidth),
+    addrWidth=log2Up(depth),
+  )
+  def addrWidth = io.addrWidth
+  val myRam = FpgacpuRamSimpleDualPort(
+    wordType=wordType(),
+    depth=depth,
+    init=init,
+    initBigInt=initBigInt,
+    arrRamStyle=arrRamStyle,
+    arrRwAddrCollision="",
+  )
+  myRam.io.wrEn := io.wrEn
+  myRam.io.wrAddr := io.wrAddr
+  myRam.io.wrData := io.wrData
+  myRam.io.rdEn := io.rdEn
+  myRam.io.rdAddr := io.rdAddr
+
+  when (
+    io.rdAddr === io.wrAddr
+    && io.rdEn
+    && io.wrEn
+  ) {
+    io.rdData := io.wrData
+  } otherwise {
+    io.rdData := myRam.io.rdData
+  }
+}
+
 case class PipeSimpleDualPortMemDrivePayload[
   //WordT <: Data
   T <: Data
