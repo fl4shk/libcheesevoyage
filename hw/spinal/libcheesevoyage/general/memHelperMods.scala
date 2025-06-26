@@ -34,7 +34,7 @@ case class RamSimpleDualPortWriteFirst[
   myRam.io.wrEn := io.wrEn
   myRam.io.wrAddr := io.wrAddr
   myRam.io.wrData := io.wrData
-  myRam.io.rdEn := io.rdEn
+  myRam.io.rdEn := True//io.rdEn
   myRam.io.rdAddr := io.rdAddr
   io.rdData := myRam.io.rdData
 
