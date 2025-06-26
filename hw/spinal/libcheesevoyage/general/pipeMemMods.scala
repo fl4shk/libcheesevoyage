@@ -3644,12 +3644,12 @@ extends Area {
                 init=myModMem.io.ramIo.rdAddr.getZero,
               )
             )
-            myNonFwdRdMemWord(ydx)(zdx) := (
-              RegNext(
-                next=myNonFwdRdMemWord(ydx)(zdx),
-                init=myNonFwdRdMemWord(ydx)(zdx).getZero,
-              )
-            )
+            //myNonFwdRdMemWord(ydx)(zdx) := (
+            //  RegNext(
+            //    next=myNonFwdRdMemWord(ydx)(zdx),
+            //    init=myNonFwdRdMemWord(ydx)(zdx).getZero,
+            //  )
+            //)
             when (
               //tempSharedEnable.last
               //up.isFiring
