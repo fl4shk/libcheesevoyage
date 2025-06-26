@@ -1922,7 +1922,7 @@ extends Area {
   )
   //--------
   def mkMem(ydx: Int) = {
-    val ret = RamSimpleDualPortWriteFirst(
+    val ret = RamSimpleDualPort(
       wordType=wordType(),
       depth=wordCountArr(ydx),
       init=(
@@ -2010,7 +2010,7 @@ extends Area {
     optModHazardKind != PipeMemRmw.ModHazardKind.Dont
   ) generate {
     val myArr = new ArrayBuffer[Array[
-      RamSimpleDualPortWriteFirst[WordT]
+      RamSimpleDualPort[WordT]
     ]]()
     for (ydx <- 0 until memArrSize) {
       myArr += (
@@ -2042,14 +2042,14 @@ extends Area {
   //}
 
   val dualRdMem = (io.optDualRd) generate {
-    val myArr = new ArrayBuffer[RamSimpleDualPortWriteFirst[WordT]]()
+    val myArr = new ArrayBuffer[RamSimpleDualPort[WordT]]()
     for (ydx <- 0 until memArrSize) {
       myArr += mkMem(ydx=ydx)
     }
     myArr
   }
   def memWriteIterate(
-    writeFunc: (RamSimpleDualPortWriteFirst[WordT]) => Unit,
+    writeFunc: (RamSimpleDualPort[WordT]) => Unit,
     ydx: Int,
   ): Unit = {
     if (
@@ -2077,7 +2077,7 @@ extends Area {
         writeFunc=(
           //item: Mem[WordT],
           ////ydx: Int,
-          item: RamSimpleDualPortWriteFirst[WordT],
+          item: RamSimpleDualPort[WordT],
         ) => {
           //item.write(
           //  address=address(ydx).head(
@@ -3647,80 +3647,80 @@ extends Area {
 
             //--------
             // BEIGN: old attempt at forwarding ahead of time
-            //when (
-            //  ///*LcvFastAndR*/
-            //  //tempSharedEnable.last
-            //  ////mod.front.myUpExtDel(0)(0)(0).ready
-            //  //&&
+            when (
+              ///*LcvFastAndR*/
+              //tempSharedEnable.last
+              ////mod.front.myUpExtDel(0)(0)(0).ready
+              //&&
 
-            //  //up.isFiring
-            //  //down.isReady
-            //  //&&
-            //  RegNextWhen(
-            //    next=(
-            //      Vec[Bool](
-            //        //up.isFiring,
-            //        ///*RegNext*/(
-            //        //  ///*next=*/tempSharedEnable.last/*, init=False*/
-            //        //  down.isFiring
-            //        //),
-            //        /*RegNext*/(
-            //          //next=LcvFastCmpEq(
-            //          //  left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
-            //          //  right=mod.back.myWriteAddr(1)(ydx)(zdx),
-            //          //),
-            //          /*next=*/(
-            //            (upExt(1)(ydx)(extIdxUp).memAddr(zdx))
-            //            === (mod.back.myWriteAddr(1)(ydx)(zdx))
-            //          )//,
-            //          //init=False,
-            //        ),
-            //        /*RegNext*/(
-            //          /*next=*/mod.back.myWriteEnable(ydx)/*, init=False*/
-            //        )
-            //      ).asBits.asUInt.andR
-            //    ),
-            //    cond=up.isFiring,
-            //    init=False
-            //  )
-            //  //rTempVec.asBits.asUInt.andR
-            //  ///*LcvFastAndR*/(rTempVec.asBits.asUInt.andR)
-            //) {
-            //  //myNonFwdRdMemWord(ydx)(zdx) := modMem(ydx)(zdx).readAsync(
-            //  //  address=(
-            //  //    //upExtRealMemAddr(zdx)
-            //  //    upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
-            //  //      PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
-            //  //      downto 0
-            //  //    )
-            //  //  ),
-            //  //  //enable=(
-            //  //  //  //tempCond
-            //  //  //  //!mod.front.nextDidFwd(zdx)(0)
-            //  //  //  //&& 
-            //  //  //  tempSharedEnable
-            //  //  //  //down.isReady
-            //  //  //),
-            //  //)
-            //  //when (
-            //  //  (
-            //  //    RegNext(
-            //  //      upExt(1)(ydx)(extIdxUp).memAddr(zdx)
-            //  //      === mod.back.myWriteAddr(ydx)
-            //  //    )
-            //  //  ) && (
-            //  //    RegNext(mod.back.myWriteEnable(ydx))
-            //  //  )
-            //  //  //&& tempSharedEnable
-            //  //  //&& down.isReady
-            //  //) {
-            //    myNonFwdRdMemWord(ydx)(zdx) := RegNext(
-            //      //mod.back.myWriteData(ydx)
-            //      next=mod.back.myWriteData(1)(ydx)(zdx),
-            //      init=mod.back.myWriteData(1)(ydx)(zdx).getZero,
-            //    )
-            //  //}
-            //}
+              //up.isFiring
+              //down.isReady
+              //&&
+              RegNextWhen(
+                next=(
+                  Vec[Bool](
+                    //up.isFiring,
+                    ///*RegNext*/(
+                    //  ///*next=*/tempSharedEnable.last/*, init=False*/
+                    //  down.isFiring
+                    //),
+                    /*RegNext*/(
+                      //next=LcvFastCmpEq(
+                      //  left=upExt(1)(ydx)(extIdxUp).memAddr(zdx),
+                      //  right=mod.back.myWriteAddr(1)(ydx)(zdx),
+                      //),
+                      /*next=*/(
+                        (upExt(1)(ydx)(extIdxUp).memAddr(zdx))
+                        === (mod.back.myWriteAddr(1)(ydx)(zdx))
+                      )//,
+                      //init=False,
+                    ),
+                    /*RegNext*/(
+                      /*next=*/mod.back.myWriteEnable(ydx)/*, init=False*/
+                    )
+                  ).asBits.asUInt.andR
+                ),
+                cond=up.isFiring,
+                init=False
+              )
+              //rTempVec.asBits.asUInt.andR
+              ///*LcvFastAndR*/(rTempVec.asBits.asUInt.andR)
+            ) {
+              //myNonFwdRdMemWord(ydx)(zdx) := modMem(ydx)(zdx).readAsync(
+              //  address=(
+              //    //upExtRealMemAddr(zdx)
+              //    upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
+              //      PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
+              //      downto 0
+              //    )
+              //  ),
+              //  //enable=(
+              //  //  //tempCond
+              //  //  //!mod.front.nextDidFwd(zdx)(0)
+              //  //  //&& 
+              //  //  tempSharedEnable
+              //  //  //down.isReady
+              //  //),
+              //)
+              //when (
+              //  (
+              //    RegNext(
+              //      upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+              //      === mod.back.myWriteAddr(ydx)
+              //    )
+              //  ) && (
+              //    RegNext(mod.back.myWriteEnable(ydx))
+              //  )
+              //  //&& tempSharedEnable
+              //  //&& down.isReady
+              //) {
+                myNonFwdRdMemWord(ydx)(zdx) := RegNext(
+                  //mod.back.myWriteData(ydx)
+                  next=mod.back.myWriteData(1)(ydx)(zdx),
+                  init=mod.back.myWriteData(1)(ydx)(zdx).getZero,
+                )
+              //}
+            }
             // END: old attempt at forwarding ahead of time
             //--------
           }
