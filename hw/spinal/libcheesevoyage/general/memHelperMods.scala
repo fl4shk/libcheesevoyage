@@ -40,7 +40,7 @@ case class RamSimpleDualPortWriteFirst[
 
   when (
     /*RegNext*/(
-      io.rdAddr === io.wrAddr
+      RegNext(io.rdAddr) === io.wrAddr
       && RegNext(io.rdEn, init=False)
       && io.wrEn
     )
