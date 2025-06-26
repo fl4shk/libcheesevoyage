@@ -3630,35 +3630,42 @@ extends Area {
             myModMem.io.ramIo.rdEn := (
               ///*down.isFiring*/ tempSharedEnable.last
               //up.isFiring
-              down.isReady
+              //down.isReady
               //|| RegNext(down.isReady, init=False)
-              //down.isFiring
+              down.isFiring
               //True
             )
             val tempAddrWidth = (
               PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx))
             )
-            //myModMem.io.ramIo.rdAddr := (
-            //  RegNext(
-            //    next=myModMem.io.ramIo.rdAddr,
-            //    init=myModMem.io.ramIo.rdAddr.getZero,
-            //  )
-            //)
-            //when (
-            //  //tempSharedEnable.last
-            //  //up.isFiring
-            //  down.isReady
-            //  //|| RegNext(down.isReady, init=False)
-            //) {
+            myModMem.io.ramIo.rdAddr := (
+              RegNext(
+                next=myModMem.io.ramIo.rdAddr,
+                init=myModMem.io.ramIo.rdAddr.getZero,
+              )
+            )
+            myNonFwdRdMemWord(ydx)(zdx) := (
+              RegNext(
+                next=myNonFwdRdMemWord(ydx)(zdx),
+                init=myNonFwdRdMemWord(ydx)(zdx).getZero,
+              )
+            )
+            when (
+              //tempSharedEnable.last
+              //up.isFiring
+              //down.isReady
+              down.isFiring
+              //|| RegNext(down.isReady, init=False)
+            ) {
               myModMem.io.ramIo.rdAddr := (
                 upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
                   tempAddrWidth - 1 downto 0
                 )
               )
-            //}
-            myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
-              myModMem.io.ramIo.rdData
-            )
+              myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
+                myModMem.io.ramIo.rdData
+              )
+            }
             //myModMem.io.cmpRdWrAddrEtc := (
             //  //tempSharedEnable.last
             //  //&& 
