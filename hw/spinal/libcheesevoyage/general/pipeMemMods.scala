@@ -1949,7 +1949,7 @@ extends Area {
   )
   //--------
   def mkMem(ydx: Int) = {
-    val ret = RamSimpleDualPortWriteFirst(
+    val ret = RamSimpleDualPort(
       wordType=wordType(),
       depth=wordCountArr(ydx),
       init=(
@@ -2037,7 +2037,7 @@ extends Area {
     optModHazardKind != PipeMemRmw.ModHazardKind.Dont
   ) generate {
     val myArr = new ArrayBuffer[Array[
-      RamSimpleDualPortWriteFirst[WordT]
+      RamSimpleDualPort[WordT]
     ]]()
     for (ydx <- 0 until memArrSize) {
       myArr += (
@@ -2069,14 +2069,14 @@ extends Area {
   //}
 
   val dualRdMem = (io.optDualRd) generate {
-    val myArr = new ArrayBuffer[RamSimpleDualPortWriteFirst[WordT]]()
+    val myArr = new ArrayBuffer[RamSimpleDualPort[WordT]]()
     for (ydx <- 0 until memArrSize) {
       myArr += mkMem(ydx=ydx)
     }
     myArr
   }
   def memWriteIterate(
-    writeFunc: (RamSimpleDualPortWriteFirst[WordT]) => Unit,
+    writeFunc: (RamSimpleDualPort[WordT]) => Unit,
     ydx: Int,
   ): Unit = {
     if (
@@ -2104,7 +2104,7 @@ extends Area {
         writeFunc=(
           //item: Mem[WordT],
           ////ydx: Int,
-          item: RamSimpleDualPortWriteFirst[WordT],
+          item: RamSimpleDualPort[WordT],
         ) => {
           //item.write(
           //  address=address(ydx).head(
@@ -3628,7 +3628,8 @@ extends Area {
             //  )
             //)
             myModMem.io.ramIo.rdEn := (
-              /*down.isFiring*/ tempSharedEnable.last
+              ///*down.isFiring*/ tempSharedEnable.last
+              up.isFiring
             )
             val tempAddrWidth = (
               PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx))
@@ -3639,13 +3640,19 @@ extends Area {
                 init=myModMem.io.ramIo.rdAddr.getZero,
               )
             )
-            when (tempSharedEnable.last) {
+            when (
+              //tempSharedEnable.last
+              up.isFiring
+            ) {
               myModMem.io.ramIo.rdAddr := (
                 upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
                   tempAddrWidth - 1 downto 0
                 )
               )
             }
+            myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
+              myModMem.io.ramIo.rdData
+            )
             //myModMem.io.cmpRdWrAddrEtc := (
             //  //tempSharedEnable.last
             //  //&& 
@@ -3693,9 +3700,6 @@ extends Area {
             //    RegNext(myModMem.io.ramIo.rdData)
             //  )
             //}
-            myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
-              myModMem.io.ramIo.rdData
-            )
 
             //def tempWidth = (
             //  mod.back.myWriteAddr(1)(ydx)(zdx).getWidth

@@ -8,7 +8,7 @@ import spinal.lib.misc.pipeline._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
-case class RamSimpleDualPortWriteFirstIo[
+case class RamSimpleDualPortIo[
   WordT <: Data
 ](
   wordType: HardType[WordT],
@@ -21,7 +21,7 @@ case class RamSimpleDualPortWriteFirstIo[
   //val cmpRdWrAddrEtc = in(Bool())
 }
 
-case class RamSimpleDualPortWriteFirst[
+case class RamSimpleDualPort[
   WordT <: Data
 ](
   wordType: HardType[WordT],
@@ -32,7 +32,7 @@ case class RamSimpleDualPortWriteFirst[
   //arrRwAddrCollision: String="",
 ) extends Component {
   //def addrWidth = io.addrWidth
-  val io = RamSimpleDualPortWriteFirstIo(
+  val io = RamSimpleDualPortIo(
     wordType=wordType(),
     depth=depth,
   )
@@ -55,7 +55,7 @@ case class RamSimpleDualPortWriteFirst[
     /*RegNext*/(
       /*RegNext*/(io.ramIo.rdAddr) === io.ramIo.wrAddr
       //io.cmpRdWrAddrEtc
-      //&& /*RegNext*/(io.ramIo.rdEn/*, init=False*/)
+      && /*RegNext*/(io.ramIo.rdEn/*, init=False*/)
       && io.ramIo.wrEn
     )
     //init(False)
