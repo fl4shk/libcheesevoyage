@@ -3625,6 +3625,7 @@ extends Area {
                   )
                 )
               )
+              init(False)
             )
             myNonFwdRdMemWord(ydx)(zdx) := (
               RegNext(
