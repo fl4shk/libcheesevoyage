@@ -75,7 +75,7 @@ case class RamSimpleDualPort[
     //init(False)
   )
   when (
-    fwdCond
+    RegNext(fwdCond, init=False)
   ) {
     rMyWrData.assignFromBits(io.ramIo.wrData)
     //io.ramIo.rdData := (
