@@ -3607,9 +3607,22 @@ extends Area {
                 downto 0
               )
             )
-            myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
-              myModMem.io.rdData
+            myNonFwdRdMemWord(ydx)(zdx) := (
+              RegNext(
+                next=myNonFwdRdMemWord(ydx)(zdx),
+                init=myNonFwdRdMemWord(ydx)(zdx).getZero
+              )
             )
+            when (
+              RegNext(
+                next=tempSharedEnable.last,
+                init=tempSharedEnable.last.getZero,
+              )
+            ) {
+              myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
+                myModMem.io.rdData
+              )
+            }
 
             //def tempWidth = (
             //  mod.back.myWriteAddr(1)(ydx)(zdx).getWidth
