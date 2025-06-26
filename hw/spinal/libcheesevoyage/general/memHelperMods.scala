@@ -60,15 +60,15 @@ case class RamSimpleDualPort[
   }
   when (
     /*RegNext*/(
-      /*RegNext*/(io.ramIo.rdAddr) === io.ramIo.wrAddr
+      RegNext(io.ramIo.rdAddr) === io.ramIo.wrAddr
       //io.cmpRdWrAddrEtc
-      && /*RegNext*/(io.ramIo.rdEn/*, init=False*/)
+      && RegNext(io.ramIo.rdEn, init=False)
       && io.ramIo.wrEn
     )
     //init(False)
   ) {
     io.ramIo.rdData := (
-      /*RegNext*/(io.ramIo.wrData) //init(io.wrData.getZero)
+      RegNext(io.ramIo.wrData) init(io.wrData.getZero)
     )
   } otherwise {
     //io.rdData := myRam.io.rdData
