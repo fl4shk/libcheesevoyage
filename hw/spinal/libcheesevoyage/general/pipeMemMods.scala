@@ -3633,9 +3633,9 @@ extends Area {
                   //&& (
                   //  tempSharedEnable.last
                   //)
-                  //&& mod.front.myUpExtDel2(
-                  //  0
-                  //)(ydx)(PipeMemRmw.extIdxUp).modMemWordValid(0)
+                  && mod.front.myUpExtDel2(
+                    0
+                  )(ydx)(PipeMemRmw.extIdxUp).modMemWordValid(0)
                 )
                 init(False)
               )
