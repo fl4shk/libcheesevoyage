@@ -1326,19 +1326,22 @@ case class PipeMemRmwDoFwdArea[
               //    (current.fire === True)
               //  }
               //)
+              toFindFirstUp.sFindFirst(
+                current => (current === True)
+              )
               //LcvSFindFirst[Bool](
               //  fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxUp),
               //  current => (current === True)
               //)
-              LcvSFindFirst[
-                //Flow[WordT]
-                Bool
-              ](
-                //fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp),
-                //current => (current.fire === True)
-                toFindFirstUp,
-                current => (current === True )
-              )
+              //LcvSFindFirst[
+              //  //Flow[WordT]
+              //  Bool
+              //](
+              //  //fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp),
+              //  //current => (current.fire === True)
+              //  toFindFirstUp,
+              //  current => (current === True )
+              //)
             )
             .setName(
               s"${fwdAreaName}_myFindFirstUp_${fjIdx}_${ydx}_${zdx}"
