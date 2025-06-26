@@ -58,7 +58,14 @@ case class RamSimpleDualPort[
   when (RegNext(io.ramIo.rdEn, init=False)) {
     io.ramIo.rdData := myRam.io.rdData
   }
-  when (
+  val rMyWrData = {
+    val temp = (
+      Reg(wordType())
+    )
+    temp.init(temp.getZero)
+    temp
+  }
+  val fwdCond = (
     /*RegNext*/(
       /*RegNext*/(io.ramIo.rdAddr) === io.ramIo.wrAddr
       //io.cmpRdWrAddrEtc
@@ -66,12 +73,19 @@ case class RamSimpleDualPort[
       && /*RegNext*/(io.ramIo.wrEn)
     )
     //init(False)
+  )
+  when (
+    fwdCond
   ) {
-    io.ramIo.rdData := (
-      RegNext(io.ramIo.wrData) //init(io.ramIo.wrData.getZero)
-    )
+    rMyWrData.assignFromBits(io.ramIo.wrData)
+    //io.ramIo.rdData := (
+    //  RegNext(io.ramIo.wrData) //init(io.ramIo.wrData.getZero)
+    //)
   } otherwise {
     //io.rdData := myRam.io.rdData
+  }
+  when (RegNext(next=fwdCond, init=fwdCond.getZero)) {
+    io.ramIo.rdData := rMyWrData.asBits
   }
 
 }
