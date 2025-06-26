@@ -3600,7 +3600,7 @@ extends Area {
             //    writeFirst
             //  )
             //)
-            myModMem.io.rdEn := tempSharedEnable.last
+            myModMem.io.rdEn := down.isFiring //tempSharedEnable.last
             myModMem.io.rdAddr := (
               upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
                 PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
