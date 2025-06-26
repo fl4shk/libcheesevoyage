@@ -41,12 +41,12 @@ case class RamSimpleDualPortWriteFirst[
   when (
     /*RegNext*/(
       io.rdAddr === io.wrAddr
-      //&& io.rdEn
+      && io.rdEn
       && io.wrEn
     )
     //init(False)
   ) {
-    io.rdData := /*RegNext*/(io.wrData) //init(io.wrData.getZero)
+    io.rdData := RegNext(io.wrData) init(io.wrData.getZero)
   } otherwise {
     //io.rdData := myRam.io.rdData
   }
