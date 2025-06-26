@@ -3619,7 +3619,8 @@ extends Area {
                 ) === (
                   //mod.back.myWriteAddr(1)(ydx)(zdx)
                   mod.front.myUpExtDel2(
-                    mod.front.myUpExtDel2.size - 3
+                    //mod.front.myUpExtDel2.size - 3
+                    0
                   )(ydx)(PipeMemRmw.extIdxUp).memAddr(
                     PipeMemRmw.modWrIdx
                   )(
