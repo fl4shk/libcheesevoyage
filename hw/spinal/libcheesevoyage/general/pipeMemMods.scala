@@ -3634,10 +3634,18 @@ extends Area {
               PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx))
             )
             myModMem.io.ramIo.rdAddr := (
-              upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
-                tempAddrWidth - 1 downto 0
+              RegNext(
+                next=myModMem.io.ramIo.rdAddr,
+                init=myModMem.io.ramIo.rdAddr.getZero,
               )
             )
+            when (tempSharedEnable.last) {
+              myModMem.io.ramIo.rdAddr := (
+                upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
+                  tempAddrWidth - 1 downto 0
+                )
+              )
+            }
             //myModMem.io.cmpRdWrAddrEtc := (
             //  //tempSharedEnable.last
             //  //&& 
