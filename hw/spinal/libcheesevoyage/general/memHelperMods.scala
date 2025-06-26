@@ -8,7 +8,7 @@ import spinal.lib.misc.pipeline._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
-case class RamSimpleDualPort[
+case class RamSimpleDualPortWriteFirst[
   WordT <: Data
 ](
   wordType: HardType[WordT],
