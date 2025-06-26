@@ -1300,7 +1300,7 @@ case class PipeMemRmwDoFwdArea[
         val toFindFirstUp = (
           Vec.fill(
             fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp).size
-            - 1 
+            //- 1 
           )(
             Bool()
           )
@@ -1521,13 +1521,13 @@ case class PipeMemRmwDoFwdArea[
           ////} otherwise {
           ////  innerFunc()
           ////}
-          //mySetToMyFwdUp()
+          mySetToMyFwdUp()
           //tempMyFwdData := firstFwdRdMemWord._2
-          when (tempMyFindFirstUp_0) {
-            mySetToMyFwdUp()
-          } otherwise {
-            tempMyFwdData := firstFwdRdMemWord._2
-          }
+          //when (tempMyFindFirstUp_0) {
+          //  mySetToMyFwdUp()
+          //} otherwise {
+          //  tempMyFwdData := firstFwdRdMemWord._2
+          //}
         }
         setToMyFwdDataFunc(
           ydx,
