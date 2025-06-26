@@ -3647,10 +3647,11 @@ extends Area {
               )
             )
             when (
-              RegNext(
-                next=tempSharedEnable.last,
-                init=tempSharedEnable.last.getZero,
-              )
+              //RegNext(
+              //  next=tempSharedEnable.last,
+              //  init=tempSharedEnable.last.getZero,
+              //)
+              down.isReady
             ) {
               myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
                 myModMem.io.ramIo.rdData
