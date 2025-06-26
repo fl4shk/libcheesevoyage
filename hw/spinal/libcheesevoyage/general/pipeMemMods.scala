@@ -3630,8 +3630,8 @@ extends Area {
             myModMem.io.ramIo.rdEn := (
               ///*down.isFiring*/ tempSharedEnable.last
               //up.isFiring
-              //down.isReady
-              down.isFiring
+              down.isReady
+              //down.isFiring
             )
             val tempAddrWidth = (
               PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx))
