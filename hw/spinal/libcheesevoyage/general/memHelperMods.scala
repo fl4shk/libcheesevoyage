@@ -68,7 +68,7 @@ case class RamSimpleDualPort[
     //init(False)
   ) {
     io.ramIo.rdData := (
-      RegNext(io.ramIo.wrData) init(io.wrData.getZero)
+      RegNext(io.ramIo.wrData) init(io.ramIo.wrData.getZero)
     )
   } otherwise {
     //io.rdData := myRam.io.rdData
