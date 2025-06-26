@@ -3634,22 +3634,22 @@ extends Area {
             val tempAddrWidth = (
               PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx))
             )
-            myModMem.io.ramIo.rdAddr := (
-              RegNext(
-                next=myModMem.io.ramIo.rdAddr,
-                init=myModMem.io.ramIo.rdAddr.getZero,
-              )
-            )
-            when (
-              //tempSharedEnable.last
-              up.isFiring
-            ) {
+            //myModMem.io.ramIo.rdAddr := (
+            //  RegNext(
+            //    next=myModMem.io.ramIo.rdAddr,
+            //    init=myModMem.io.ramIo.rdAddr.getZero,
+            //  )
+            //)
+            //when (
+            //  //tempSharedEnable.last
+            //  up.isFiring
+            //) {
               myModMem.io.ramIo.rdAddr := (
                 upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
                   tempAddrWidth - 1 downto 0
                 )
               )
-            }
+            //}
             myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
               myModMem.io.ramIo.rdData
             )
