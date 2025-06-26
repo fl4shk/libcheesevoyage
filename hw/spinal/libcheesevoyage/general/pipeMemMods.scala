@@ -3614,26 +3614,28 @@ extends Area {
             )
             myModMem.io.cmpRdWrAddrEtc := (
               tempSharedEnable.last
-              && RegNext(
-                upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
-                  tempAddrWidth - 1 downto 0
-                ) === (
-                  //mod.back.myWriteAddr(1)(ydx)(zdx)
-                  mod.front.myUpExtDel2(
-                    //mod.front.myUpExtDel2.size - 3
-                    0
-                  )(ydx)(PipeMemRmw.extIdxUp).memAddr(
-                    PipeMemRmw.modWrIdx
-                  )(
+              && (
+                RegNext(
+                  upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
                     tempAddrWidth - 1 downto 0
+                  ) === (
+                    //mod.back.myWriteAddr(1)(ydx)(zdx)
+                    mod.front.myUpExtDel2(
+                      //mod.front.myUpExtDel2.size - 3
+                      0
+                    )(ydx)(PipeMemRmw.extIdxUp).memAddr(
+                      PipeMemRmw.modWrIdx
+                    )(
+                      tempAddrWidth - 1 downto 0
+                    )
                   )
+                  //&& (
+                  //  tempSharedEnable.last
+                  //)
+                  //&& mod.front.myUpExtDel2(
+                  //  0
+                  //)(ydx)(PipeMemRmw.extIdxUp).modMemWordValid(0)
                 )
-                //&& (
-                //  tempSharedEnable.last
-                //)
-                //&& mod.front.myUpExtDel2(
-                //  0
-                //)(ydx)(PipeMemRmw.extIdxUp).modMemWordValid(0)
                 init(False)
               )
               //init(False)
