@@ -3620,7 +3620,9 @@ extends Area {
                   //mod.back.myWriteAddr(1)(ydx)(zdx)
                   mod.front.myUpExtDel2(
                     mod.front.myUpExtDel2.size - 2
-                  )(ydx)(PipeMemRmw.extIdxUp).memAddrFwdMmw(zdx).last(
+                  )(ydx)(PipeMemRmw.extIdxUp).memAddr(
+                    PipeMemRmw.modWrIdx
+                  )(
                     tempAddrWidth - 1 downto 0
                   )
                 )
