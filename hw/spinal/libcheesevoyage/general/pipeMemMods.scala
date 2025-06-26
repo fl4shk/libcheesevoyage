@@ -3678,7 +3678,8 @@ extends Area {
               //  next=tempSharedEnable.last,
               //  init=tempSharedEnable.last.getZero,
               //)
-              down.isReady
+              //down.isReady
+              down.isValid
             ) {
               myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
                 RegNext(myModMem.io.ramIo.rdData)
