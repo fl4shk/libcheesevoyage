@@ -3641,22 +3641,22 @@ extends Area {
             //  )
             //  //init(False)
             //)
-            myNonFwdRdMemWord(ydx)(zdx) := (
-              RegNext(
-                next=myNonFwdRdMemWord(ydx)(zdx),
-                init=myNonFwdRdMemWord(ydx)(zdx).getZero
-              )
-            )
-            when (
-              /*RegNext*/(
-                /*next=*/tempSharedEnable.last//,
-                //init=tempSharedEnable.last.getZero,
-              )
-            ) {
+            //myNonFwdRdMemWord(ydx)(zdx) := (
+            //  RegNext(
+            //    next=myNonFwdRdMemWord(ydx)(zdx),
+            //    init=myNonFwdRdMemWord(ydx)(zdx).getZero
+            //  )
+            //)
+            //when (
+            //  RegNext(
+            //    next=tempSharedEnable.last,
+            //    init=tempSharedEnable.last.getZero,
+            //  )
+            //) {
               myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
                 myModMem.io.ramIo.rdData
               )
-            }
+            //}
 
             //def tempWidth = (
             //  mod.back.myWriteAddr(1)(ydx)(zdx).getWidth
