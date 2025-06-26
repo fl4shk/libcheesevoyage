@@ -69,13 +69,13 @@ case class RamSimpleDualPort[
     /*RegNext*/(
       /*RegNext*/(io.ramIo.rdAddr) === io.ramIo.wrAddr
       //io.cmpRdWrAddrEtc
-      && /*RegNext*/(io.ramIo.rdEn/*, init=False*/)
+      //&& /*RegNext*/(io.ramIo.rdEn/*, init=False*/)
       && /*RegNext*/(io.ramIo.wrEn)
     )
     //init(False)
   )
   when (
-    RegNext(fwdCond, init=False)
+    fwdCond
   ) {
     rMyWrData.assignFromBits(io.ramIo.wrData)
     //io.ramIo.rdData := (
