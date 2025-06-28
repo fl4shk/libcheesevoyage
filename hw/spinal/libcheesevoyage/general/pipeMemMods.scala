@@ -2431,11 +2431,15 @@ extends Area {
           }
         )
         ret.payload.valid := (
-          prev.modMemWordValid(
-            if (zdx < prev.modMemWordValid.size) (
-              zdx
-            ) else (
-              prev.modMemWordValid.size - 1
+          if (idx == 0) (
+            True
+          ) else (
+            prev.modMemWordValid(
+              if (zdx < prev.modMemWordValid.size) (
+                zdx
+              ) else (
+                prev.modMemWordValid.size - 1
+              )
             )
           )
         )
