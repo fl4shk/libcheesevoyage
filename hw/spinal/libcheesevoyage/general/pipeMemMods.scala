@@ -1838,6 +1838,7 @@ case class PipeMemRmwDoModInModFrontFuncParams[
   //Vec[WordT],  // myRdMemWord
   //ydx: Int,                             // ydx
   fjIdx: Int,
+  doFwd: Option[PipeMemRmwDoFwdArea[WordT, HazardCmpT]],
 ) {
 }
 // A Read-Modify-Write pipelined BRAM (or LUTRAM)
@@ -4307,55 +4308,6 @@ extends Area {
           current := True
         })
       }
-      val myDoModInModFrontAreaArr = new ArrayBuffer[Area]()
-      doModInModFrontFunc match {
-        case Some(myDoModInModFrontFunc) => {
-          //assert(modStageCnt == 0)
-          myDoModInModFrontAreaArr += (
-            myDoModInModFrontFunc(
-              PipeMemRmwDoModInModFrontFuncParams(
-                pipeMemIo=io,
-                nextPrevTxnWasHazardVec=nextPrevTxnWasHazardVec,
-                rPrevTxnWasHazardVec=rPrevTxnWasHazardVec,
-                rPrevTxnWasHazardAny=rPrevTxnWasHazardAny,
-                outp=tempUpMod(2),
-                inp=tempUpMod(1),
-                cMid0Front=cMid0Front,
-                modFront=io.modFront,
-                tempModFrontPayload=io.tempModFrontPayload(fjIdx),
-                getMyRdMemWordFunc=(
-                  //someUpExtIdx: UInt,
-                  someYdx: Int,
-                  someModIdx: Int,
-                ) => (
-                  //upExt(1)(someYdx)(extIdxSingle).rdMemWord(
-                  //  PipeMemRmw.modWrIdx
-                  //)
-                  upExt(
-                    2
-                  )(someYdx)(extIdxSingle).rdMemWord(
-                    //PipeMemRmw.modWrIdx
-                    someModIdx
-                  )
-                ),
-                //myRdMemWord,
-                //ydx=ydx,                      // ydx
-                fjIdx=fjIdx
-              )
-            )
-              .setName(s"${pipeName}_myDoModInModFrontAreaArr")
-          )
-        }
-        case None => {
-          assert(
-            modStageCnt > 0
-            || !optIncludeModFrontStageLink
-          )
-          //tempUpMod(2)(ydx) := tempUpMod(1)(ydx)
-          //tempUpMod(2)(ydx) := tempUpMod(1)(ydx)
-          tempUpMod(2) := tempUpMod(1)
-        }
-      }
       val myFindFirst_0 = (
         myHaveFwd
       ) generate (
@@ -4396,6 +4348,56 @@ extends Area {
           ),
         )
       )
+      val myDoModInModFrontAreaArr = new ArrayBuffer[Area]()
+      doModInModFrontFunc match {
+        case Some(myDoModInModFrontFunc) => {
+          //assert(modStageCnt == 0)
+          myDoModInModFrontAreaArr += (
+            myDoModInModFrontFunc(
+              PipeMemRmwDoModInModFrontFuncParams(
+                pipeMemIo=io,
+                nextPrevTxnWasHazardVec=nextPrevTxnWasHazardVec,
+                rPrevTxnWasHazardVec=rPrevTxnWasHazardVec,
+                rPrevTxnWasHazardAny=rPrevTxnWasHazardAny,
+                outp=tempUpMod(2),
+                inp=tempUpMod(1),
+                cMid0Front=cMid0Front,
+                modFront=io.modFront,
+                tempModFrontPayload=io.tempModFrontPayload(fjIdx),
+                getMyRdMemWordFunc=(
+                  //someUpExtIdx: UInt,
+                  someYdx: Int,
+                  someModIdx: Int,
+                ) => (
+                  //upExt(1)(someYdx)(extIdxSingle).rdMemWord(
+                  //  PipeMemRmw.modWrIdx
+                  //)
+                  upExt(
+                    2
+                  )(someYdx)(extIdxSingle).rdMemWord(
+                    //PipeMemRmw.modWrIdx
+                    someModIdx
+                  )
+                ),
+                //myRdMemWord,
+                //ydx=ydx,                      // ydx
+                fjIdx=fjIdx,
+                doFwd=Some(doFwd),
+              )
+            )
+              .setName(s"${pipeName}_myDoModInModFrontAreaArr")
+          )
+        }
+        case None => {
+          assert(
+            modStageCnt > 0
+            || !optIncludeModFrontStageLink
+          )
+          //tempUpMod(2)(ydx) := tempUpMod(1)(ydx)
+          //tempUpMod(2)(ydx) := tempUpMod(1)(ydx)
+          tempUpMod(2) := tempUpMod(1)
+        }
+      }
       //val doFormalFwdSavedMyFwd = (myHaveFormalFwd) generate (
       //  /*KeepAttribute*/(
       //    RegNextWhen(
