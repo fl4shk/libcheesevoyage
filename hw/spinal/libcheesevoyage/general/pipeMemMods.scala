@@ -308,7 +308,7 @@ case class PipeMemRmwConfig[
   initBigInt: Option[Seq[Seq[BigInt]]]=None,
   optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
   //optFwdUseMmwValidLaterStages: Boolean=false,
-  //optFwdHaveZeroReg: Option[Int]=Some(0x0),
+  optFwdHaveZeroReg: Option[Int]=Some(0x0),
   optEnableClear: Boolean=false,
   memRamStyle: String="auto",
   vivadoDebug: Boolean=false,
@@ -3937,15 +3937,33 @@ extends Area {
               def tempMemAddrFwdCmp = myMemAddrFwdCmp(zdx)(idx - 1)
               tempMemAddrFwdCmp.allowOverride
               for (jdx <- 0 until tempMemAddrFwdCmp.getWidth) {
+                val myZeroRegCond = (
+                  cfg.optFwdHaveZeroReg match {
+                    case Some(myZeroRegIdx) => {
+                      (
+                        upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+                        =/= myZeroRegIdx
+                      )
+                    }
+                    case None => {
+                      True
+                    }
+                  }
+                )
                 if (idx == 1) {
                   tempMemAddrFwdCmp(
                     jdx
                     //0
                   ) := (
-                    upExt(1)(ydx)(extIdxUp).memAddr(
-                      zdx
+                    (
+                      upExt(1)(ydx)(extIdxUp).memAddr(
+                        zdx
+                      ) === (
+                        myHistMemAddr(idx)
+                      )
+                    ) && (
+                      myZeroRegCond
                     )
-                    === myHistMemAddr(idx)
                   )
                 } else {
                   val tempMyUpExtDel2 = (
@@ -3975,6 +3993,8 @@ extends Area {
                         )
                         //mod.back.myWriteAddr(0)(0)(0)
                       )
+                    ) && (
+                      myZeroRegCond
                     ) && (
                       tempMyUpExtDel2.modMemWordValid(0)
                     ) && (
