@@ -1859,6 +1859,7 @@ case class PipeMemRmwDoModInModFrontFuncParams[
   //Vec[WordT],  // myRdMemWord
   //ydx: Int,                             // ydx
   fjIdx: Int,
+  myFwd: PipeMemRmwFwd[WordT, HazardCmpT],
 ) {
 }
 // A Read-Modify-Write pipelined BRAM (or LUTRAM)
@@ -4361,7 +4362,8 @@ extends Area {
                 ),
                 //myRdMemWord,
                 //ydx=ydx,                      // ydx
-                fjIdx=fjIdx
+                fjIdx=fjIdx,
+                myFwd=myFwd,
               )
             )
               .setName(s"${pipeName}_myDoModInModFrontAreaArr")
