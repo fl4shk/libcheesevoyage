@@ -639,7 +639,7 @@ case class PipeMemRmwPayloadExtMain[
   )
   val memAddrFwdCmp = Vec.fill(modRdPortCnt)(
     Vec.fill(
-      numMyUpExtDel2 - 1
+      numMyUpExtDel2 //- 1
       //1
     )(
       UInt(
@@ -1209,7 +1209,7 @@ extends Bundle {
       Vec.fill(memArrSize)(
         Vec.fill(modRdPortCnt)(
           Vec.fill(PipeMemRmw.extIdxLim)(
-            Vec.fill(numMyUpExtDel2/* - 1*/)(
+            Vec.fill(numMyUpExtDel2 + 1)(
               //Bool()
               Flow(cfg.wordType())
             )
@@ -2299,9 +2299,10 @@ extends Area {
                 //)
               ) else (
                 (
-                  //currMemAddr(0)
-                  currMemAddr === prevMemAddr
-                ) && (
+                  currMemAddr(0)
+                  //currMemAddr === prevMemAddr
+                )
+                && (
                   prev.modMemWordValid(
                     if (zdx < prev.modMemWordValid.size) (
                       zdx
@@ -3633,8 +3634,9 @@ extends Area {
               //down.isReady
               //|| RegNext(down.isReady, init=False)
               //down.isFiring
-              //True
-              tempSharedEnable.last
+              True
+              //down.isReady
+              //tempSharedEnable.last
             )
             val tempAddrWidth = (
               PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx))
@@ -3667,9 +3669,14 @@ extends Area {
               //  myModMem.io.ramIo.rdData
               //)
             }
-            myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
-              myModMem.io.ramIo.rdData
-            )
+            //when (
+            //  //down.isFiring
+            //  tempSharedEnable.last
+            //) {
+              myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
+                myModMem.io.ramIo.rdData
+              )
+            //}
             //myModMem.io.cmpRdWrAddrEtc := (
             //  //tempSharedEnable.last
             //  //&& 
@@ -3846,7 +3853,10 @@ extends Area {
           /*KeepAttribute*/(
             History[UInt](
               that=upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx),
-              length=mod.front.myUpExtDel2.size /*- 1*/,
+              // `length=numMyUpExtDel2 + 1` because `History` includes the
+              // current value of `that`.
+              // This might not be relevant any more?
+              length=2,//mod.front.myUpExtDel2.size + 1, 
               when=up.isFiring,
               init=upExt(1)(ydx)(extIdxUp).memAddr(
                 PipeMemRmw.modWrIdx
@@ -3866,9 +3876,13 @@ extends Area {
           upExt(1)(ydx)(extIdxUp).memAddrFwd(zdx).foreach(current => {
             current := upExt(1)(ydx)(extIdxUp).memAddr(zdx)
           })
-          for (idx <- 0 until myHistMemAddr.size) {
+          for (
+            //idx <- 0 until myHistMemAddr.size
+            idx <- 0 until mod.front.myUpExtDel2.size + 1
+          ) {
             println(
-              f"myHistMemAddr debug: ${zdx} ${idx} ${idx - 1}"
+              f"myHistMemAddr debug: ${zdx} ${idx} ${idx - 1} "
+              + f"${mod.front.myUpExtDel2.size}"
             )
             if (idx > 0) {
               def tempMemAddrFwdCmp = myMemAddrFwdCmp(zdx)(idx - 1)
@@ -3885,22 +3899,37 @@ extends Area {
                     === myHistMemAddr(idx)
                   )
                 } else {
+                  val tempMyUpExtDel2 = (
+                    mod.front.myUpExtDel(idx - 1)(ydx)(
+                      extIdxUp
+                    )
+                  )
+                  println(
+                    s"tempMyUpExtDel2 debug: (${idx - 1})(${ydx})  "
+                    + s"${jdx}"
+                  )
                   tempMemAddrFwdCmp(
                     jdx
                     //0
                   ) := (
-                    upExt(1)(ydx)(extIdxUp).memAddr(
-                      zdx
-                    ) === (
-                      //myHistMemAddr(idx)
-                      mod.front.myUpExtDel2(idx)(ydx)(
-                        extIdxUp
-                      ).memAddrFwd(
-                        PipeMemRmw.modWrIdx
-                      )(
-                        0
+                    (
+                      upExt(1)(ydx)(extIdxUp).memAddr(
+                        zdx
+                      ) === (
+                        //myHistMemAddr(idx)
+                        // `idx - 1` is because we want the stage *before*
+                        // the one we're actually interested in.
+                        tempMyUpExtDel2.memAddrFwd(
+                          PipeMemRmw.modWrIdx
+                        )(
+                          0
+                        )
+                        //mod.back.myWriteAddr(0)(0)(0)
                       )
-                      //mod.back.myWriteAddr(0)(0)(0)
+                    ) && (
+                      tempMyUpExtDel2.modMemWordValid(0)
+                    ) && (
+                      tempMyUpExtDel2.valid(0)
                     )
                   )
                 }
@@ -4153,9 +4182,9 @@ extends Area {
       )
       for (ydx <- 0 until memArrSize) {
         for (zdx <- 0 until modRdPortCnt) {
-          for (idx <- 0 until mod.front.myUpExtDel2.size) {
+          for (idx <- 0 until mod.front.myUpExtDel2.size + 1) {
             for (extIdx <- 0 until extIdxLim) {
-              if (idx < mod.front.myUpExtDel2.size - 1) {
+              if (idx < mod.front.myUpExtDel2.size /*- 1*/) {
                 mod.front.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
                   extIdx
                 )(
@@ -4164,16 +4193,16 @@ extends Area {
                   (
                     mod.front.findFirstFunc(
                       currMemAddr=(
-                        if (idx == 0) (
+                        //if (idx == 0) (
                           upExt(1)(ydx)(extIdx).memAddrFwdCmp(zdx)(idx)
-                        ) else (
-                          upExt(1)(ydx)(extIdx).memAddrFwd(zdx)(idx)(
-                            PipeMemRmw.addrWidth(
-                              wordCount=wordCountArr(ydx)
-                            ) - 1
-                            downto 0
-                          )
-                        )
+                        //) else (
+                        //  upExt(1)(ydx)(extIdx).memAddrFwd(zdx)(idx)(
+                        //    PipeMemRmw.addrWidth(
+                        //      wordCount=wordCountArr(ydx)
+                        //    ) - 1
+                        //    downto 0
+                        //  )
+                        //)
                       ),
                       prevMemAddr=(
                         mod.front.myUpExtDel2(idx)(ydx)(extIdx)
