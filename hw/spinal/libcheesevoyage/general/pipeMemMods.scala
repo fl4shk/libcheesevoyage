@@ -1211,7 +1211,7 @@ extends Bundle {
           Vec.fill(PipeMemRmw.extIdxLim)(
             Vec.fill(numMyUpExtDel2 + 1)(
               //Bool()
-              Flow(cfg.wordType())
+              Flow(Flow(cfg.wordType()))
             )
           )
         )
@@ -1413,7 +1413,7 @@ case class PipeMemRmwDoFwdArea[
         //  )
         //  .setName(s"${fwdAreaName}_myFwdCondDown_${ydx}_${zdx}")
         //)
-        val myFwdDataUp = (
+        val myFwdFlowUp = (
           firstFwd
         ) generate (
           /*KeepAttribute*/(
@@ -1427,8 +1427,20 @@ case class PipeMemRmwDoFwdArea[
             //tempMyFindFirstUp_1.payload
             fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)(
               tempMyFindFirstUp_1
-            ).payload
+            ).payload//.payload
           )
+          .setName(s"${fwdAreaName}_myFwdFlowUp_${ydx}_${zdx}")
+        )
+        val myFwdValidUp = (
+          firstFwd
+        ) generate (
+          myFwdFlowUp.valid
+          .setName(s"${fwdAreaName}_myFwdDataUp_${ydx}_${zdx}")
+        )
+        val myFwdDataUp = (
+          firstFwd
+        ) generate (
+          myFwdFlowUp.payload
           .setName(s"${fwdAreaName}_myFwdDataUp_${ydx}_${zdx}")
         )
         //val myFwdDataSaved = (
@@ -2277,8 +2289,8 @@ extends Area {
         //memAddr: UInt,
         forceFalse: Boolean=false,
         //forFwd: Boolean=false,
-      ): Flow[WordT] = {
-        val ret = Flow(cfg.wordType())
+      ): Flow[Flow[WordT]] = {
+        val ret = Flow(Flow(cfg.wordType()))
         ret.valid := (
           if (!forceFalse) {
           //(upExt(1).memAddr === prev.memAddr)
@@ -2288,29 +2300,29 @@ extends Area {
             ) (
               if (idx == 0) (
                 currMemAddr(0)
-                && (
-                  prev.modMemWordValid(
-                    if (zdx < prev.modMemWordValid.size) (
-                      zdx
-                    ) else (
-                      prev.modMemWordValid.size - 1
-                    )
-                  )
-                )
+                //&& (
+                //  prev.modMemWordValid(
+                //    if (zdx < prev.modMemWordValid.size) (
+                //      zdx
+                //    ) else (
+                //      prev.modMemWordValid.size - 1
+                //    )
+                //  )
+                //)
               ) else (
                 (
                   currMemAddr(0)
                   //currMemAddr === prevMemAddr
                 )
-                && (
-                  prev.modMemWordValid(
-                    if (zdx < prev.modMemWordValid.size) (
-                      zdx
-                    ) else (
-                      prev.modMemWordValid.size - 1
-                    )
-                  )
-                )
+                //&& (
+                //  prev.modMemWordValid(
+                //    if (zdx < prev.modMemWordValid.size) (
+                //      zdx
+                //    ) else (
+                //      prev.modMemWordValid.size - 1
+                //    )
+                //  )
+                //)
               )
               //else (
               //  cfg.optFwdHaveZeroReg match {
@@ -2396,7 +2408,18 @@ extends Area {
             False
           }
         )
-        ret.payload := prev.modMemWord
+        ret.payload.valid := (
+          prev.modMemWordValid(
+            if (zdx < prev.modMemWordValid.size) (
+              zdx
+            ) else (
+              prev.modMemWordValid.size - 1
+            )
+          )
+        )
+        ret.payload.payload := (
+          prev.modMemWord
+        )
         ret
       }
       def inpPipePayload = io.frontPayload
@@ -2541,7 +2564,7 @@ extends Area {
             Vec.fill(extIdxLim)(
               Vec.fill(myUpExtDel.size)(
                 //Bool()
-                Flow(cfg.wordType())
+                Flow(Flow(cfg.wordType()))
               )
             )
           )
@@ -4247,9 +4270,10 @@ extends Area {
                 )(
                   idx
                 ) := {
-                  val temp = Flow(cfg.wordType())
+                  val temp = Flow(Flow(cfg.wordType()))
                   temp.valid := True
-                  temp.payload := (
+                  temp.payload.valid := True
+                  temp.payload.payload := (
                     //upExt(1)(ydx)(
                     //  //extIdxSingle
                     //  extIdx
