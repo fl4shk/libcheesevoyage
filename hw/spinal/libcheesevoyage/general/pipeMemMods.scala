@@ -1435,7 +1435,7 @@ case class PipeMemRmwDoFwdArea[
           firstFwd
         ) generate (
           myFwdFlowUp.valid
-          .setName(s"${fwdAreaName}_myFwdDataUp_${ydx}_${zdx}")
+          .setName(s"${fwdAreaName}_myFwdValidUp_${ydx}_${zdx}")
         )
         val myFwdDataUp = (
           firstFwd
