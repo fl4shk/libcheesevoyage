@@ -5252,7 +5252,7 @@ extends Area {
       mkExt()
     )
     for (ydx <- 0 until memArrSize) {
-      if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) {
+      //if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) {
         for (extIdx <- 0 until extIdxLim) {
           upExt(1)(ydx)(extIdx) := (
             RegNext(
@@ -5268,8 +5268,9 @@ extends Area {
         ) {
           upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
         }
-      }
-      upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
+      //} else {
+      //  upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
+      //}
       //val tempHadActiveUpFire = Bool()
       //when (
       //  //down.isFiring
@@ -5277,13 +5278,13 @@ extends Area {
       //) {
       //  upExt(1)(ydx)(extIdxSaved) := /*RegNext*/(upExt(1)(ydx)(extIdxUp))
       //}
-      upExt(1)(ydx)(extIdxSaved) := (
-        RegNextWhen(
-          next=upExt(1)(ydx)(extIdxUp),
-          cond=up.isFiring,
-          init=upExt(1)(ydx)(extIdxSaved).getZero,
-        )
-      )
+      //upExt(1)(ydx)(extIdxSaved) := (
+      //  RegNextWhen(
+      //    next=upExt(1)(ydx)(extIdxUp),
+      //    cond=up.isFiring,
+      //    init=upExt(1)(ydx)(extIdxSaved).getZero,
+      //  )
+      //)
       if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) {
         for (extIdx <- 0 until extIdxLim) {
           upExt(1)(ydx)(extIdx).modMemWordValid.foreach(current => {
