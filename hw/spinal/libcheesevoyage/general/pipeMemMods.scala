@@ -3986,7 +3986,13 @@ extends Area {
                         //myHistMemAddr(idx)
                         // `idx - 1` is because we want the stage *before*
                         // the one we're actually interested in.
-                        if (idx != mod.front.myUpExtDel2.size - 1) ( 
+                        if (idx == mod.front.myUpExtDel2.size) (
+                          tempMyUpExtDel.memAddrFwdMmw(
+                            zdx
+                          ).last
+                        ) else if (
+                          idx != mod.front.myUpExtDel2.size - 1
+                        ) ( 
                           tempMyUpExtDel.memAddrFwdMmw(
                             zdx
                           )(
