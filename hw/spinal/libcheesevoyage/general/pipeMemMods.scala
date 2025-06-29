@@ -5252,25 +5252,24 @@ extends Area {
       mkExt()
     )
     for (ydx <- 0 until memArrSize) {
-      for (extIdx <- 0 until extIdxLim) {
-        upExt(1)(ydx)(extIdx) := (
-          RegNext(
-            next=upExt(1)(ydx)(extIdx),
-            init=upExt(1)(ydx)(extIdx).getZero,
-          ) 
-        )
-        upExt(1)(ydx)(extIdx).allowOverride
-      }
-      when (
-        //up.isFiring
-        if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
+      if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) {
+        for (extIdx <- 0 until extIdxLim) {
+          upExt(1)(ydx)(extIdx) := (
+            RegNext(
+              next=upExt(1)(ydx)(extIdx),
+              init=upExt(1)(ydx)(extIdx).getZero,
+            ) 
+          )
+          upExt(1)(ydx)(extIdx).allowOverride
+        }
+        when (
+          //up.isFiring
           up.isValid
-        ) else (
-          True
-        )
-      ) {
-        upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
+        ) {
+          upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
+        }
       }
+      upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
       //val tempHadActiveUpFire = Bool()
       //when (
       //  //down.isFiring
