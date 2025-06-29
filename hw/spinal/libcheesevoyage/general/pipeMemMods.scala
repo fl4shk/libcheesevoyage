@@ -4020,9 +4020,9 @@ extends Area {
                     //    )
                     //  })
                     //)
-                    //&& (
-                    //  tempMyUpExtDel.valid(0)
-                    //)
+                    && (
+                      tempMyUpExtDel.valid(0)
+                    )
                   )
                 }
               }
