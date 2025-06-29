@@ -3999,9 +3999,9 @@ extends Area {
                     //&& (
                     //  tempMyUpExtDel2.modMemWordValid(0)
                     //)
-                    //&& (
-                    //  tempMyUpExtDel2.valid(0)
-                    //)
+                    && (
+                      tempMyUpExtDel2.valid(0)
+                    )
                   )
                 }
               }
