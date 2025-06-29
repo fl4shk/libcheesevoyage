@@ -3990,17 +3990,20 @@ extends Area {
                           tempMyUpExtDel.memAddrFwdMmw(
                             zdx
                           ).last
-                        ) else if (
-                          idx != mod.front.myUpExtDel2.size - 1
-                        ) ( 
+                        ) else
+                        //if (
+                        //  idx != mod.front.myUpExtDel2.size - 1
+                        //) 
+                        ( 
                           tempMyUpExtDel.memAddrFwdMmw(
                             zdx
                           )(
                             idx
                           )
-                        ) else (
-                          mod.back.myWriteAddr(1)(ydx)(zdx)
                         )
+                        //else (
+                        //  mod.back.myWriteAddr(1)(ydx)(zdx)
+                        //)
                         //mod.back.myWriteAddr(0)(0)(0)
                       )
                     ) && (
