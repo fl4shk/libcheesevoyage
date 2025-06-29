@@ -3966,13 +3966,13 @@ extends Area {
                     )
                   )
                 } else {
-                  val tempMyUpExtDel2 = (
+                  val tempMyUpExtDel = (
                     mod.front.myUpExtDel(idx - 1)(ydx)(
                       extIdxUp
                     )
                   )
                   println(
-                    s"tempMyUpExtDel2 debug: (${idx - 1})(${ydx})  "
+                    s"tempMyUpExtDel debug: (${idx - 1})(${ydx})  "
                     + s"${jdx}"
                   )
                   tempMemAddrFwdCmp(
@@ -3986,10 +3986,14 @@ extends Area {
                         //myHistMemAddr(idx)
                         // `idx - 1` is because we want the stage *before*
                         // the one we're actually interested in.
-                        tempMyUpExtDel2.memAddrFwd(
-                          PipeMemRmw.modWrIdx
-                        )(
-                          0
+                        if (idx != mod.front.myUpExtDel2.size - 1) ( 
+                          tempMyUpExtDel.memAddrFwdMmw(
+                            zdx
+                          )(
+                            idx
+                          )
+                        ) else (
+                          mod.back.myWriteAddr(1)(ydx)(zdx)
                         )
                         //mod.back.myWriteAddr(0)(0)(0)
                       )
@@ -3997,11 +4001,11 @@ extends Area {
                       myZeroRegCond
                     )
                     //&& (
-                    //  tempMyUpExtDel2.modMemWordValid(0)
+                    //  tempMyUpExtDel.modMemWordValid(0)
                     //)
-                    && (
-                      tempMyUpExtDel2.valid(0)
-                    )
+                    //&& (
+                    //  tempMyUpExtDel.valid(0)
+                    //)
                   )
                 }
               }
@@ -4637,9 +4641,9 @@ extends Area {
           )
         }
         when (
-          //up.isValid
+          up.isValid
           //up.isFiring
-          True
+          //True
         ) {
           upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
         }
@@ -4833,12 +4837,12 @@ extends Area {
           )
         )
       }
-      //when (
-      //  up.isValid
-      //  //up.isFiring
-      //) {
+      when (
+        up.isValid
+        //up.isFiring
+      ) {
         upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
-      //}
+      }
       if (ydx == 0) {
         if (myHaveFormalFwd) {
           tempUpMod(0).formalGetPipeMemRmwFwd(
@@ -5253,7 +5257,7 @@ extends Area {
       mkExt()
     )
     for (ydx <- 0 until memArrSize) {
-      if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) {
+      //if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) {
         for (extIdx <- 0 until extIdxLim) {
           upExt(1)(ydx)(extIdx) := (
             RegNext(
@@ -5269,9 +5273,9 @@ extends Area {
         ) {
           upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
         }
-      } else {
-        upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
-      }
+      //} else {
+      //  upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
+      //}
       //val tempHadActiveUpFire = Bool()
       //when (
       //  //down.isFiring
