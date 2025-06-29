@@ -5263,7 +5263,11 @@ extends Area {
       }
       when (
         //up.isFiring
-        up.isValid
+        if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
+          up.isValid
+        ) else (
+          True
+        )
       ) {
         upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
       }
