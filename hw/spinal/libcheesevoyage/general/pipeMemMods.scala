@@ -5162,7 +5162,7 @@ extends Area {
                 )
               )
             ),
-            !ClockDomain.isResetActive,
+            //!ClockDomain.isResetActive,
             upExt(1)(ydx)(extIdxUp).modMemWordValid.last,
           ).asBits.asUInt.andR
         )
@@ -5286,7 +5286,7 @@ extends Area {
       //  )
       //)
       if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) {
-        for (extIdx <- 0 until extIdxLim) {
+        for (extIdx <- 0 to extIdxLim) {
           upExt(1)(ydx)(extIdx).modMemWordValid.foreach(current => {
             current := False
           })
