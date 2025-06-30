@@ -1487,9 +1487,9 @@ case class PipeMemRmwDoFwdArea[
         def tempMyFindFirstUp_0 = (
           fwd.myFindFirst_0(ydx)(zdx)(extIdxUp)
         )
-        //def tempMyFindFirstUp_1 = (
-        //  fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
-        //)
+        def tempMyFindFirstUp_1 = (
+          fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
+        )
         //def tempMyFindFirstSaved_0 = (
         //  fwd.myFindFirst_0(ydx)(zdx)(extIdxSaved)
         //)
@@ -1500,7 +1500,7 @@ case class PipeMemRmwDoFwdArea[
           fwd.myFwdData(ydx)(zdx)
         )
         //tempMyFindFirstUp_0.allowOverride
-        //tempMyFindFirstUp_1.allowOverride
+        tempMyFindFirstUp_1.allowOverride
         //tempMyFindFirstSaved_0.allowOverride
         //tempMyFindFirstSaved_1.allowOverride
         val myFwdCondUp = (
@@ -1574,12 +1574,12 @@ case class PipeMemRmwDoFwdArea[
           tempMyFindFirstUp_0 := (
             myFindFirstUp._1
           )
-          //tempMyFindFirstUp_1 := (
-          //  (
-          //    //myFindFirstUp._2.resized//._2.payload
-          //    myFindFirstUp._2.payload.payload
-          //  )//.resized
-          //)
+          tempMyFindFirstUp_1 := (
+            (
+              myFindFirstUp._2.resized//._2.payload
+              //myFindFirstUp._2.payload.payload
+            )//.resized
+          )
           //tempMyFindFirstSaved_0 := (
           //  myFindFirstSaved._1
           //)
