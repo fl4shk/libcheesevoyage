@@ -1394,21 +1394,21 @@ case class PipeMemRmwDoFwdArea[
           }
         )
         def firstFwd = firstFwdRdMemWord._1
-        //val toFindFirstUp = (
-        //  Vec.fill(
-        //    fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp).size
-        //    //- 1 
-        //  )(
-        //    Bool()
-        //  )
-        //)
-        //for (kdx <- 0 until toFindFirstUp.size) {
-        //  toFindFirstUp(kdx) := (
-        //    fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)(
-        //      kdx
-        //    ).fire
-        //  )
-        //}
+        val toFindFirstUp = (
+          Vec.fill(
+            fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp).size
+            //- 1 
+          )(
+            Bool()
+          )
+        )
+        for (kdx <- 0 until toFindFirstUp.size) {
+          toFindFirstUp(kdx) := (
+            fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)(
+              kdx
+            ).fire
+          )
+        }
 
         val myFindFirstUp = /*KeepAttribute*/(
           //(
@@ -1425,17 +1425,17 @@ case class PipeMemRmwDoFwdArea[
               //  }
               //)
 
-              LcvSFindFirstElem[Flow[Flow[WordT]]](
-                self=(
-                  fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)
-                ),
-                condition=(item => {
-                  item.fire === True
-                })
-              )
-              //toFindFirstUp.sFindFirst(
-              //  current => (current === True)
+              //LcvSFindFirstElem[Flow[Flow[WordT]]](
+              //  self=(
+              //    fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)
+              //  ),
+              //  condition=(item => {
+              //    item.fire === True
+              //  })
               //)
+              toFindFirstUp.sFindFirst(
+                current => (current === True)
+              )
               //LcvSFindFirst[Bool](
               //  toFindFirstUp,
               //  current => (current === True)
@@ -1536,10 +1536,10 @@ case class PipeMemRmwDoFwdArea[
             //).modMemWord
             //tempMyFindFirstUp_1.payload
 
-            //fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)(
-            //  tempMyFindFirstUp_1
-            //).payload//.payload
-            myFindFirstUp._2.payload
+            fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)(
+              tempMyFindFirstUp_1
+            ).payload//.payload
+            //myFindFirstUp._2.payload
           )
           .setName(s"${fwdAreaName}_myFwdFlowUp_${ydx}_${zdx}")
         )
