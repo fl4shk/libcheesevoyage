@@ -65,30 +65,12 @@ object LcvSFindFirstElem {
   ](
     self: Seq[T],
     condition: T => Bool,
-    //includeLast: Boolean=false,
   ): (Bool, T) = {
-    //val hitValid = self.map(condition(_)).reduceLeft(_ || _)
-    //val hitValid
-    val myHitValidMap = self.map(condition(_))
-    val myHitValidVec = Vec.fill(self.size - 1)(Bool())
-    for (idx <- 0 until self.size - 1) {
-      myHitValidVec(idx) := myHitValidMap(idx) //self.map(condition(idx))
-    }
-    //val hitValid = Bool()
-    val hitValid = (
-      if (self.size > 4) (
-        LcvFastOrR(
-          myHitValidVec.asBits.asUInt
-        )
-      ) else (
-        //myHitValidVec.orR
-        myHitValidVec.reduceBalancedTree(_ || _)
-      )
-    )
     if (self.size == 2) {
       val hits = self.map(condition(_))
       (
-        hitValid,
+        //hitValid,
+        hits.sFindFirst(_ === True)._1,
         Mux[T](
           hits(0),
           self(0),
@@ -98,7 +80,8 @@ object LcvSFindFirstElem {
     } else if (self.size == 3) {
       val hits = self.map(condition(_))
       (
-        hitValid,
+        //hitValid,
+        hits.sFindFirst(_ === True)._1,
         //{
         //  val data = Vec[UInt](
         //    //self(0).asBits.asUInt,
@@ -135,7 +118,8 @@ object LcvSFindFirstElem {
     } else if (self.size == 4) {
       val hits = self.map(condition(_))
       (
-        hitValid,
+        //hitValid,
+        hits.sFindFirst(_ === True)._1,
         {
           Mux[T](
             hits(0),
@@ -153,9 +137,107 @@ object LcvSFindFirstElem {
         }
       )
     } else {
-      (hitValid, self(self.sFindFirst(condition)._2))
+      //(hitValid, self(self.sFindFirst(condition)._2))
+      val tempFindFirst = self.sFindFirst(condition)
+      (tempFindFirst._1, self(tempFindFirst._2))
     }
   }
+  //def apply[
+  //  T <: Data
+  //](
+  //  self: Seq[T],
+  //  condition: T => Bool,
+  //  //includeLast: Boolean=false,
+  //): (Bool, T) = {
+  //  //val hitValid = self.map(condition(_)).reduceLeft(_ || _)
+  //  //val hitValid
+  //  val myHitValidMap = self.map(condition(_))
+  //  val myHitValidVec = Vec.fill(self.size - 1)(Bool())
+  //  for (idx <- 0 until self.size - 1) {
+  //    myHitValidVec(idx) := myHitValidMap(idx) //self.map(condition(idx))
+  //  }
+  //  //val hitValid = Bool()
+  //  val hitValid = (
+  //    if (self.size > 4) (
+  //      LcvFastOrR(
+  //        myHitValidVec.asBits.asUInt
+  //      )
+  //    ) else (
+  //      //myHitValidVec.orR
+  //      myHitValidVec.reduceBalancedTree(_ || _)
+  //    )
+  //  )
+  //  if (self.size == 2) {
+  //    val hits = self.map(condition(_))
+  //    (
+  //      hitValid,
+  //      Mux[T](
+  //        hits(0),
+  //        self(0),
+  //        self(1),
+  //      ),
+  //    )
+  //  } else if (self.size == 3) {
+  //    val hits = self.map(condition(_))
+  //    (
+  //      hitValid,
+  //      //{
+  //      //  val data = Vec[UInt](
+  //      //    //self(0).asBits.asUInt,
+  //      //    //self(1).asBits.asUInt,
+  //      //    //self(2).asBits.asUInt,
+  //      //    //U"2'd2",
+  //      //    //U"2'd1",
+  //      //    //U"2'd0",
+  //      //  )
+  //      //  val select = (
+  //      //    Cat(hits(2), hits(1), hits(0)).asUInt
+  //      //  )
+  //      //  val myMux = LcvPriorityMux(
+  //      //    data=data,
+  //      //    select=select,
+  //      //  )
+  //      //  println(
+  //      //    s"data.size: ${data.size} "
+  //      //    + s"select.getWidth: ${select.getWidth} "
+  //      //    + s"myMux.getWidth: ${myMux.getWidth}"
+  //      //  )
+  //      //  self(myMux.resized)
+  //      //}
+  //      Mux[T](
+  //        hits(0),
+  //        self(0),
+  //        Mux[T](
+  //          hits(1),
+  //          self(1),
+  //          self(2),
+  //        )
+  //      ),
+  //    )
+  //  } else if (self.size == 4) {
+  //    val hits = self.map(condition(_))
+  //    (
+  //      hitValid,
+  //      {
+  //        Mux[T](
+  //          hits(0),
+  //          self(0),
+  //          Mux[T](
+  //            hits(1),
+  //            self(1),
+  //            Mux[T](
+  //              hits(2),
+  //              self(2),
+  //              self(3),
+  //            )
+  //          )
+  //        )
+  //      }
+  //    )
+  //  } else {
+  //    (hitValid, self(self.sFindFirst(condition)._2))
+  //  }
+  //}
 }
 object LcvSFindFirst {
   def apply[
@@ -1312,21 +1394,21 @@ case class PipeMemRmwDoFwdArea[
           }
         )
         def firstFwd = firstFwdRdMemWord._1
-        val toFindFirstUp = (
-          Vec.fill(
-            fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp).size
-            //- 1 
-          )(
-            Bool()
-          )
-        )
-        for (kdx <- 0 until toFindFirstUp.size) {
-          toFindFirstUp(kdx) := (
-            fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)(
-              kdx
-            ).fire
-          )
-        }
+        //val toFindFirstUp = (
+        //  Vec.fill(
+        //    fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp).size
+        //    //- 1 
+        //  )(
+        //    Bool()
+        //  )
+        //)
+        //for (kdx <- 0 until toFindFirstUp.size) {
+        //  toFindFirstUp(kdx) := (
+        //    fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)(
+        //      kdx
+        //    ).fire
+        //  )
+        //}
 
         val myFindFirstUp = /*KeepAttribute*/(
           //(
@@ -1342,13 +1424,22 @@ case class PipeMemRmwDoFwdArea[
               //    (current.fire === True)
               //  }
               //)
+
+              LcvSFindFirstElem[Flow[Flow[WordT]]](
+                self=(
+                  fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)
+                ),
+                condition=(item => {
+                  item.fire === True
+                })
+              )
               //toFindFirstUp.sFindFirst(
               //  current => (current === True)
               //)
-              LcvSFindFirst[Bool](
-                toFindFirstUp,
-                current => (current === True)
-              )
+              //LcvSFindFirst[Bool](
+              //  toFindFirstUp,
+              //  current => (current === True)
+              //)
               //LcvSFindFirst[Bool](
               //  fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxUp),
               //  current => (current === True)
@@ -1396,9 +1487,9 @@ case class PipeMemRmwDoFwdArea[
         def tempMyFindFirstUp_0 = (
           fwd.myFindFirst_0(ydx)(zdx)(extIdxUp)
         )
-        def tempMyFindFirstUp_1 = (
-          fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
-        )
+        //def tempMyFindFirstUp_1 = (
+        //  fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
+        //)
         //def tempMyFindFirstSaved_0 = (
         //  fwd.myFindFirst_0(ydx)(zdx)(extIdxSaved)
         //)
@@ -1409,7 +1500,7 @@ case class PipeMemRmwDoFwdArea[
           fwd.myFwdData(ydx)(zdx)
         )
         //tempMyFindFirstUp_0.allowOverride
-        tempMyFindFirstUp_1.allowOverride
+        //tempMyFindFirstUp_1.allowOverride
         //tempMyFindFirstSaved_0.allowOverride
         //tempMyFindFirstSaved_1.allowOverride
         val myFwdCondUp = (
@@ -1444,9 +1535,11 @@ case class PipeMemRmwDoFwdArea[
             //  extIdxUp
             //).modMemWord
             //tempMyFindFirstUp_1.payload
-            fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)(
-              tempMyFindFirstUp_1
-            ).payload//.payload
+
+            //fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)(
+            //  tempMyFindFirstUp_1
+            //).payload//.payload
+            myFindFirstUp._2.payload
           )
           .setName(s"${fwdAreaName}_myFwdFlowUp_${ydx}_${zdx}")
         )
@@ -1481,11 +1574,12 @@ case class PipeMemRmwDoFwdArea[
           tempMyFindFirstUp_0 := (
             myFindFirstUp._1
           )
-          tempMyFindFirstUp_1 := (
-            (
-              myFindFirstUp._2.resized//._2.payload
-            )//.resized
-          )
+          //tempMyFindFirstUp_1 := (
+          //  (
+          //    //myFindFirstUp._2.resized//._2.payload
+          //    myFindFirstUp._2.payload.payload
+          //  )//.resized
+          //)
           //tempMyFindFirstSaved_0 := (
           //  myFindFirstSaved._1
           //)
