@@ -329,8 +329,8 @@ case class LcvMulAccIo(
   val a = in(SInt(aWidth bits))
   val b = in(SInt(bWidth bits))
   val c = in(SInt(otherWidth bits))
-  val d = in(SInt(otherWidth bits))
-  val e = in(SInt(otherWidth bits))
+  //val d = in(SInt(otherWidth bits))
+  //val e = in(SInt(otherWidth bits))
   val outp = out(SInt(otherWidth bits))
 }
 case class LcvMulAcc(
@@ -344,9 +344,10 @@ case class LcvMulAcc(
     bWidth=bWidth,
     otherWidth=otherWidth,
   )
-  val pcout = SInt(otherWidth bits)
-  pcout := (io.a * io.b + io.c).resize(pcout.getWidth)
-  io.outp := (pcout + io.d + io.e).resize(io.outp.getWidth)
+  //val pcout = SInt(otherWidth bits)
+  //pcout := (io.a * io.b + io.c).resize(pcout.getWidth)
+  io.outp := (io.a * io.b + io.c).resize(io.outp.getWidth)
+  //io.outp := (pcout + io.d + io.e).resize(io.outp.getWidth)
 }
 
 object LcvFastOrR {
@@ -379,12 +380,12 @@ object LcvFastOrR {
       mulAcc.io.c := (
         Cat(False, temp1).asSInt
       )
-      mulAcc.io.d := (
-        0x0
-      )
-      mulAcc.io.e := (
-        0x0
-      )
+      //mulAcc.io.d := (
+      //  0x0
+      //)
+      //mulAcc.io.e := (
+      //  0x0
+      //)
       (q, unusedSumOut) := (
         mulAcc.io.outp.asUInt.resize(unusedSumOut.getWidth + 1)
       )
@@ -438,12 +439,12 @@ object LcvFastAndR {
       mulAcc.io.c := (
         Cat(False, temp1).asSInt
       )
-      mulAcc.io.d := (
-        0x0
-      )
-      mulAcc.io.e := (
-        0x0
-      )
+      //mulAcc.io.d := (
+      //  0x0
+      //)
+      //mulAcc.io.e := (
+      //  0x0
+      //)
       (q, unusedSumOut) := (
         mulAcc.io.outp.asUInt.resize(unusedSumOut.getWidth + 1)
       )
@@ -502,12 +503,12 @@ object LcvFastCmpEq {
       mulAcc.io.c := (
         Cat(False, temp1).asSInt
       )
-      mulAcc.io.d := (
-        0x0
-      )
-      mulAcc.io.e := (
-        0x0
-      )
+      //mulAcc.io.d := (
+      //  0x0
+      //)
+      //mulAcc.io.e := (
+      //  0x0
+      //)
       (q, unusedSumOut) := (
         mulAcc.io.outp.asUInt.resize(unusedSumOut.getWidth + 1)
       )
