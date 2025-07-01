@@ -323,26 +323,48 @@ object LcvSFindFirst {
 
 object LcvFastOrR {
   def apply(
-    self: UInt
+    self: UInt,
+    optDsp: Boolean=false,
   ): Bool = {
     val q = Bool()
     val unusedSumOut = UInt(self.getWidth bits)
-    (q, unusedSumOut) := (
+    val temp = (
       Cat(False, self).asUInt
       + U(self.getWidth bits, default -> True)
+    )
+    (q, unusedSumOut) := (
+      if (optDsp) (
+        (
+          U(s"${self.getWidth}'d1")
+          * temp
+        ).resized
+      ) else (
+        temp
+      )
     )
     q
   }
 }
 object LcvFastAndR {
   def apply(
-    self: UInt
+    self: UInt,
+    optDsp: Boolean=false,
   ): Bool = {
     val q = Bool()
     val unusedSumOut = UInt(self.getWidth bits)
-    (q, unusedSumOut) := (
+    val temp = (
       Cat(False, self).asUInt
       + U(self.getWidth + 1 bits, 0 -> True, default -> False)
+    )
+    (q, unusedSumOut) := (
+      if (optDsp) (
+        (
+          U(s"${self.getWidth}'d1")
+          * temp
+        ).resized
+      ) else (
+        temp
+      )
     )
     q
   }
@@ -351,6 +373,7 @@ object LcvFastCmpEq {
   def apply(
     left: UInt,
     right: UInt,
+    optDsp: Boolean=false,
   ): Bool = {
     assert(
       left.getWidth == right.getWidth,
@@ -358,9 +381,19 @@ object LcvFastCmpEq {
     )
     val q = Bool()
     val unusedSumOut = UInt(left.getWidth bits)
-    (q, unusedSumOut) := (
+    val temp = (
       Cat(False, left ^ (~right)).asUInt
       + U(left.getWidth + 1 bits, 0 -> True, default -> False)
+    )
+    (q, unusedSumOut) := (
+      if (optDsp) (
+        (
+          U(s"${left.getWidth}'d1")
+          * temp
+        ).resized
+      ) else (
+        temp
+      )
     )
     q
   }
