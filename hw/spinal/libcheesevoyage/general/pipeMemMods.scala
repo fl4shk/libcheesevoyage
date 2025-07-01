@@ -321,6 +321,34 @@ object LcvSFindFirst {
   }
 }
 
+case class LcvMulAccIo(
+  aWidth: Int=27,
+  bWidth: Int=18,
+  otherWidth: Int=48,
+) extends Bundle {
+  val a = in(SInt(aWidth bits))
+  val b = in(SInt(bWidth bits))
+  val c = in(SInt(otherWidth bits))
+  val d = in(SInt(otherWidth bits))
+  val e = in(SInt(otherWidth bits))
+  val outp = out(SInt(otherWidth bits))
+}
+case class LcvMulAcc(
+  aWidth: Int=27,
+  bWidth: Int=18,
+  otherWidth: Int=48,
+) extends Component {
+  this.addAttribute("use_dsp48", "yes")
+  val io = LcvMulAccIo(
+    aWidth=aWidth,
+    bWidth=bWidth,
+    otherWidth=otherWidth,
+  )
+  val pcout = SInt(otherWidth bits)
+  pcout := io.a * io.b + io.c
+  io.outp := pcout + io.d + io.e
+}
+
 object LcvFastOrR {
   def apply(
     self: UInt,
@@ -328,18 +356,22 @@ object LcvFastOrR {
   ): Bool = {
     val q = Bool()
     val unusedSumOut = UInt(self.getWidth bits)
-    val temp = (
+    val temp0 = (
       Cat(False, self).asUInt
-      + U(self.getWidth bits, default -> True)
+    )
+    val temp1 = (
+      U(self.getWidth bits, default -> True)
     )
     (q, unusedSumOut) := (
       if (optDsp) (
         (
           U(s"${self.getWidth}'d1")
-          * temp
+          * temp0
+          + temp1
         ).resized
       ) else (
-        temp
+        temp0
+        + temp1
       )
     )
     q
@@ -352,18 +384,22 @@ object LcvFastAndR {
   ): Bool = {
     val q = Bool()
     val unusedSumOut = UInt(self.getWidth bits)
-    val temp = (
+    val temp0 = (
       Cat(False, self).asUInt
-      + U(self.getWidth + 1 bits, 0 -> True, default -> False)
+    )
+    val temp1 = (
+      U(self.getWidth + 1 bits, 0 -> True, default -> False)
     )
     (q, unusedSumOut) := (
       if (optDsp) (
         (
           U(s"${self.getWidth}'d1")
-          * temp
+          * temp0
+          + temp1
         ).resized
       ) else (
-        temp
+        temp0
+        + temp1
       )
     )
     q
@@ -381,18 +417,22 @@ object LcvFastCmpEq {
     )
     val q = Bool()
     val unusedSumOut = UInt(left.getWidth bits)
-    val temp = (
+    val temp0 = (
       Cat(False, left ^ (~right)).asUInt
-      + U(left.getWidth + 1 bits, 0 -> True, default -> False)
+    )
+    val temp1 = (
+      U(left.getWidth + 1 bits, 0 -> True, default -> False)
     )
     (q, unusedSumOut) := (
       if (optDsp) (
         (
           U(s"${left.getWidth}'d1")
-          * temp
+          * temp0
+          + temp1
         ).resized
       ) else (
-        temp
+        temp0
+        + temp1
       )
     )
     q
