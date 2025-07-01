@@ -364,9 +364,9 @@ object LcvFastOrR {
     )
     val mulAcc = (optDsp) generate (
       LcvMulAcc(
-        aWidth=self.getWidth + 1,
-        bWidth=temp0.getWidth + 1,
-        otherWidth=unusedSumOut.getWidth + 2
+        aWidth=self.getWidth + 3,
+        bWidth=temp0.getWidth + 3,
+        otherWidth=unusedSumOut.getWidth + 3
       )
     )
     if (optDsp) {
@@ -423,9 +423,9 @@ object LcvFastAndR {
     )
     val mulAcc = (optDsp) generate (
       LcvMulAcc(
-        aWidth=self.getWidth + 1,
-        bWidth=temp0.getWidth + 1,
-        otherWidth=unusedSumOut.getWidth + 2
+        aWidth=self.getWidth + 3,
+        bWidth=temp0.getWidth + 3,
+        otherWidth=unusedSumOut.getWidth + 3
       )
     )
     if (optDsp) {
@@ -487,9 +487,9 @@ object LcvFastCmpEq {
     )
     val mulAcc = (optDsp) generate (
       LcvMulAcc(
-        aWidth=left.getWidth + 1,
-        bWidth=temp0.getWidth + 1,
-        otherWidth=unusedSumOut.getWidth + 2
+        aWidth=left.getWidth + 3,
+        bWidth=temp0.getWidth + 3,
+        otherWidth=unusedSumOut.getWidth + 3
       )
     )
     if (optDsp) {
