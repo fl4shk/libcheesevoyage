@@ -366,7 +366,7 @@ object LcvFastOrR {
       LcvMulAcc(
         aWidth=self.getWidth + 1,
         bWidth=temp0.getWidth + 1,
-        otherWidth=temp1.getWidth + 1
+        otherWidth=unusedSumOut.getWidth + 2
       )
     )
     if (optDsp) {
@@ -425,7 +425,7 @@ object LcvFastAndR {
       LcvMulAcc(
         aWidth=self.getWidth + 1,
         bWidth=temp0.getWidth + 1,
-        otherWidth=temp1.getWidth + 1
+        otherWidth=unusedSumOut.getWidth + 2
       )
     )
     if (optDsp) {
@@ -489,7 +489,7 @@ object LcvFastCmpEq {
       LcvMulAcc(
         aWidth=left.getWidth + 1,
         bWidth=temp0.getWidth + 1,
-        otherWidth=temp1.getWidth + 1
+        otherWidth=unusedSumOut.getWidth + 2
       )
     )
     if (optDsp) {
