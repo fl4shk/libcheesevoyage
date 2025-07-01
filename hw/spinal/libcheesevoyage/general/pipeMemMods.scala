@@ -4431,7 +4431,10 @@ extends Area {
         for (zdx <- 0 until modRdPortCnt) {
           for (idx <- 0 until mod.front.myUpExtDel2.size + 1) {
             for (extIdx <- 0 until extIdxLim) {
-              if (extIdx == extIdxUp) {
+              if (
+                idx == 0
+                && extIdx == extIdxUp
+              ) {
                 myFwd.myFwdIdx(ydx)(zdx) := (
                   upExt(1)(ydx)(extIdx).fwdIdx(zdx)
                 )
