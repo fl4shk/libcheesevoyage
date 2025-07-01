@@ -362,18 +362,49 @@ object LcvFastOrR {
     val temp1 = (
       U(self.getWidth bits, default -> True)
     )
-    (q, unusedSumOut) := (
-      if (optDsp) (
-        (
-          U(s"${self.getWidth}'d1")
-          * temp0
-          + temp1
-        ).resized
-      ) else (
-        temp0
-        + temp1
+    val mulAcc = (optDsp) generate (
+      LcvMulAcc(
+        aWidth=self.getWidth + 1,
+        bWidth=temp0.getWidth + 1,
+        otherWidth=temp1.getWidth + 1
       )
     )
+    if (optDsp) {
+      mulAcc.io.a := (
+        Cat(False, U(self.getWidth bits, default -> True)).asSInt
+      )
+      mulAcc.io.b := (
+        Cat(False, temp0).asSInt
+      )
+      mulAcc.io.c := (
+        Cat(False, temp1).asSInt
+      )
+      mulAcc.io.d := (
+        0x0
+      )
+      mulAcc.io.e := (
+        0x0
+      )
+      (q, unusedSumOut) := (
+        mulAcc.io.outp.asUInt.resize(unusedSumOut.getWidth + 1)
+      )
+    } else {
+      (q, unusedSumOut) := (
+        temp0 + temp1
+      )
+    }
+    //(q, unusedSumOut) := (
+    //  if (optDsp) (
+    //    (
+    //      U(s"${self.getWidth}'d1")
+    //      * temp0
+    //      + temp1
+    //    ).resized
+    //  ) else (
+    //    temp0
+    //    + temp1
+    //  )
+    //)
     q
   }
 }
@@ -390,18 +421,49 @@ object LcvFastAndR {
     val temp1 = (
       U(self.getWidth + 1 bits, 0 -> True, default -> False)
     )
-    (q, unusedSumOut) := (
-      if (optDsp) (
-        (
-          U(s"${self.getWidth}'d1")
-          * temp0
-          + temp1
-        ).resized
-      ) else (
-        temp0
-        + temp1
+    val mulAcc = (optDsp) generate (
+      LcvMulAcc(
+        aWidth=self.getWidth + 1,
+        bWidth=temp0.getWidth + 1,
+        otherWidth=temp1.getWidth + 1
       )
     )
+    if (optDsp) {
+      mulAcc.io.a := (
+        Cat(False, U(self.getWidth bits, default -> True)).asSInt
+      )
+      mulAcc.io.b := (
+        Cat(False, temp0).asSInt
+      )
+      mulAcc.io.c := (
+        Cat(False, temp1).asSInt
+      )
+      mulAcc.io.d := (
+        0x0
+      )
+      mulAcc.io.e := (
+        0x0
+      )
+      (q, unusedSumOut) := (
+        mulAcc.io.outp.asUInt.resize(unusedSumOut.getWidth + 1)
+      )
+    } else {
+      (q, unusedSumOut) := (
+        temp0 + temp1
+      )
+    }
+    //(q, unusedSumOut) := (
+    //  if (optDsp) (
+    //    (
+    //      U(s"${self.getWidth}'d1")
+    //      * temp0
+    //      + temp1
+    //    ).resized
+    //  ) else (
+    //    temp0
+    //    + temp1
+    //  )
+    //)
     q
   }
 }
@@ -423,18 +485,49 @@ object LcvFastCmpEq {
     val temp1 = (
       U(left.getWidth + 1 bits, 0 -> True, default -> False)
     )
-    (q, unusedSumOut) := (
-      if (optDsp) (
-        (
-          U(s"${left.getWidth}'d1")
-          * temp0
-          + temp1
-        ).resized
-      ) else (
-        temp0
-        + temp1
+    val mulAcc = (optDsp) generate (
+      LcvMulAcc(
+        aWidth=left.getWidth + 1,
+        bWidth=temp0.getWidth + 1,
+        otherWidth=temp1.getWidth + 1
       )
     )
+    if (optDsp) {
+      mulAcc.io.a := (
+        Cat(False, U(self.getWidth bits, default -> True)).asSInt
+      )
+      mulAcc.io.b := (
+        Cat(False, temp0).asSInt
+      )
+      mulAcc.io.c := (
+        Cat(False, temp1).asSInt
+      )
+      mulAcc.io.d := (
+        0x0
+      )
+      mulAcc.io.e := (
+        0x0
+      )
+      (q, unusedSumOut) := (
+        mulAcc.io.outp.asUInt.resize(unusedSumOut.getWidth + 1)
+      )
+    } else {
+      (q, unusedSumOut) := (
+        temp0 + temp1
+      )
+    }
+    //(q, unusedSumOut) := (
+    //  if (optDsp) (
+    //    (
+    //      U(s"${left.getWidth}'d1")
+    //      * temp0
+    //      + temp1
+    //    ).resized
+    //  ) else (
+    //    temp0
+    //    + temp1
+    //  )
+    //)
     q
   }
 }
