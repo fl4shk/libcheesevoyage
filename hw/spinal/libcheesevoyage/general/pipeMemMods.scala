@@ -4040,7 +4040,7 @@ extends Area {
           )
           for ((item, itemIdx) <- toFindFirst.view.zipWithIndex) {
             val tempMyUpExtDel = (
-              mod.front.myUpExtDel(itemIdx - 1)(ydx)(
+              mod.front.myUpExtDel(itemIdx)(ydx)(
                 extIdxUp
               )//.memAddrFwdMmw(zdx)
             )
@@ -4048,7 +4048,7 @@ extends Area {
               item.valid := (
                 //tempMyUpExtDel.memAddrFwdMmw(zdx)(itemIdx)
                 //=== 
-                myMemAddrFwdCmp(zdx)(itemIdx - 1)(0)
+                myMemAddrFwdCmp(zdx)(itemIdx)(0)
               )
               //item.payload := (
               //  tempMyUpExtDel.memAddrFwdMmw(zdx)
