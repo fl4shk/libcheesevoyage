@@ -364,14 +364,14 @@ object LcvFastOrR {
     )
     val mulAcc = (optDsp) generate (
       LcvMulAcc(
-        aWidth=self.getWidth + 3,
-        bWidth=temp0.getWidth + 3,
-        otherWidth=unusedSumOut.getWidth + 3
+        aWidth=self.getWidth + 1,
+        bWidth=temp0.getWidth + 1,
+        otherWidth=temp1.getWidth + 1
       )
     )
     if (optDsp) {
       mulAcc.io.a := (
-        Cat(False, U(self.getWidth bits, default -> True)).asSInt
+        Cat(False, U(s"${self.getWidth}'d1")).asSInt
       )
       mulAcc.io.b := (
         Cat(False, temp0).asSInt
@@ -423,14 +423,14 @@ object LcvFastAndR {
     )
     val mulAcc = (optDsp) generate (
       LcvMulAcc(
-        aWidth=self.getWidth + 3,
-        bWidth=temp0.getWidth + 3,
-        otherWidth=unusedSumOut.getWidth + 3
+        aWidth=self.getWidth + 1,
+        bWidth=temp0.getWidth + 1,
+        otherWidth=temp1.getWidth + 1
       )
     )
     if (optDsp) {
       mulAcc.io.a := (
-        Cat(False, U(self.getWidth bits, default -> True)).asSInt
+        Cat(False, U(s"${self.getWidth}'d1")).asSInt
       )
       mulAcc.io.b := (
         Cat(False, temp0).asSInt
@@ -487,14 +487,14 @@ object LcvFastCmpEq {
     )
     val mulAcc = (optDsp) generate (
       LcvMulAcc(
-        aWidth=left.getWidth + 3,
-        bWidth=temp0.getWidth + 3,
-        otherWidth=unusedSumOut.getWidth + 3
+        aWidth=left.getWidth + 1,
+        bWidth=temp0.getWidth + 1,
+        otherWidth=temp1.getWidth + 1
       )
     )
     if (optDsp) {
       mulAcc.io.a := (
-        Cat(False, U(left.getWidth bits, default -> True)).asSInt
+        Cat(False, U(s"${left.getWidth}'d1")).asSInt
       )
       mulAcc.io.b := (
         Cat(False, temp0).asSInt
