@@ -494,7 +494,7 @@ object LcvFastCmpEq {
     )
     if (optDsp) {
       mulAcc.io.a := (
-        Cat(False, U(self.getWidth bits, default -> True)).asSInt
+        Cat(False, U(left.getWidth bits, default -> True)).asSInt
       )
       mulAcc.io.b := (
         Cat(False, temp0).asSInt
