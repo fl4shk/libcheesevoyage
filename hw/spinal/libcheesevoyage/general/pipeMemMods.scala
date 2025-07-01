@@ -4053,14 +4053,17 @@ extends Area {
               //item.payload := (
               //  tempMyUpExtDel.memAddrFwdMmw(zdx)
               //)
+              item.payload := (
+                tempMyUpExtDel.memAddrFwdMmw(zdx)(itemIdx)
+              )
             } else {
               item.valid := True
               //item.payload := (
               //)
+              item.payload := (
+                upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+              )
             }
-            item.payload := (
-              tempMyUpExtDel.memAddrFwdMmw(zdx)(itemIdx)
-            )
           }
           myFwdIdx(zdx) := (
             toFindFirst.sFindFirst(
