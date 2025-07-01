@@ -562,6 +562,10 @@ case class PipeMemRmwPayloadExtMainNonMemAddr[
   //)
   //val modMemWordFwd = wordType()
   //val modMemWordValidFwd = Bool()
+  //val fwdIdx = UInt(log2Up(cfg.numMyUpExtDel2 + 1) bits)
+  val fwdIdx = Vec.fill(modRdPortCnt)(
+    UInt(log2Up(cfg.numMyUpExtDel2 + 1) bits)
+  )
   val modMemWord = wordType()
   val modMemWordValid = (
     //(
@@ -850,6 +854,7 @@ case class PipeMemRmwPayloadExt[
   def memAddrFwdCmp = main.memAddrFwdCmp
   def memAddr = main.memAddr
   def memAddrAlt = main.memAddrAlt
+  def fwdIdx = main.nonMemAddr.fwdIdx
   def modMemWord = main.nonMemAddr.modMemWord
   //def modMemWordFwd = main.nonMemAddr.modMemWordFwd
   def modMemWordValid = main.nonMemAddr.modMemWordValid
@@ -1241,6 +1246,13 @@ extends Bundle {
     )
   )
   //--------
+  val myFwdIdx = (
+    Vec.fill(memArrSize)(
+      Vec.fill(modRdPortCnt)(
+        UInt(log2Up(cfg.numMyUpExtDel2 + 1) bits)
+      )
+    )
+  )
   val myFwdMmwValidUp = (
     Vec.fill(memArrSize)(
       Vec.fill(modRdPortCnt)(
@@ -1436,10 +1448,11 @@ case class PipeMemRmwDoFwdArea[
               //toFindFirstUp.sFindFirst(
               //  current => (current === True)
               //)
-              LcvSFindFirst[Bool](
-                toFindFirstUp,
-                current => (current === True)
-              )
+              (True, fwd.myFwdIdx(ydx)(zdx))
+              //LcvSFindFirst[Bool](
+              //  toFindFirstUp,
+              //  current => (current === True)
+              //)
               //LcvSFindFirst[Bool](
               //  fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(extIdxUp),
               //  current => (current === True)
@@ -3996,6 +4009,9 @@ extends Area {
         def myMemAddrFwdCmp = (
           upExt(1)(ydx)(extIdxUp).memAddrFwdCmp
         )
+        def myFwdIdx = (
+          upExt(1)(ydx)(extIdxUp).fwdIdx
+        )
         val myHistMemAddr = (
           /*KeepAttribute*/(
             History[UInt](
@@ -4015,6 +4031,42 @@ extends Area {
           )
         )
         for (zdx <- 0 until modRdPortCnt) {
+          val toFindFirst = Vec.fill(
+            cfg.numMyUpExtDel2  + 1
+          )(
+            Flow(
+              UInt(PipeMemRmw.addrWidth(wordCountArr(ydx)) bits)
+            )
+          )
+          for ((item, itemIdx) <- toFindFirst.view.zipWithIndex) {
+            val tempMyUpExtDel = (
+              mod.front.myUpExtDel(itemIdx - 1)(ydx)(
+                extIdxUp
+              )//.memAddrFwdMmw(zdx)
+            )
+            if (itemIdx != cfg.numMyUpExtDel2) {
+              item.valid := (
+                //tempMyUpExtDel.memAddrFwdMmw(zdx)(itemIdx)
+                //=== 
+                myMemAddrFwdCmp(zdx)(itemIdx - 1)(0)
+              )
+              //item.payload := (
+              //  tempMyUpExtDel.memAddrFwdMmw(zdx)
+              //)
+            } else {
+              item.valid := True
+              //item.payload := (
+              //)
+            }
+            item.payload := (
+              tempMyUpExtDel.memAddrFwdMmw(zdx)(itemIdx)
+            )
+          }
+          myFwdIdx(zdx) := (
+            toFindFirst.sFindFirst(
+              current => (current.fire === True)
+            )._2
+          )
           upExt(1)(ydx)(extIdxUp).memAddrFwdMmw(zdx).foreach(current => {
             current := (
               upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)
@@ -4369,10 +4421,18 @@ extends Area {
           s"${pipeName}_cMid0FrontArea_tempMyUpExtDelFrontFindFirstV2d"
         )
       )
+      if (fjIdx != 0) {
+        assert(false, "temporarily, only support one `fjIdx`")
+      }
       for (ydx <- 0 until memArrSize) {
         for (zdx <- 0 until modRdPortCnt) {
           for (idx <- 0 until mod.front.myUpExtDel2.size + 1) {
             for (extIdx <- 0 until extIdxLim) {
+              if (extIdx == extIdxUp) {
+                myFwd.myFwdIdx(ydx)(zdx) := (
+                  upExt(1)(ydx)(extIdx).fwdIdx(zdx)
+                )
+              }
               if (idx < mod.front.myUpExtDel2.size /*- 1*/) {
                 mod.front.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
                   extIdx
