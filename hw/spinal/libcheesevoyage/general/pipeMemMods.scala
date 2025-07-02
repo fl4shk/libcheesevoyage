@@ -503,13 +503,15 @@ object LcvFastCmpEq {
     left: UInt,
     right: UInt,
     optDsp: Boolean=false,
-  ): Bool = {
+    optReg: Boolean=false,
+  ): (Bool, UInt) = {
     assert(
       left.getWidth == right.getWidth,
       f"leftWidth:${left.getWidth} != rightWidth:${right.getWidth}"
     )
-    val q = Bool()
-    val unusedSumOut = UInt(left.getWidth bits)
+    //val q = Bool()
+    //val unusedSumOut = UInt(left.getWidth bits)
+    val q = UInt((left.getWidth + 1) bits)
     val temp0 = (
       Cat(False, left ^ (~right)).asUInt
     )
@@ -553,12 +555,27 @@ object LcvFastCmpEq {
       mulAcc.io.e := (
         Cat(False, temp1).asSInt.resize(mulAcc.io.e.getWidth)
       )
-      (q, unusedSumOut) := (
-        mulAcc.io.outp.asUInt.resize(unusedSumOut.getWidth + 1)
+      val tempOutp = (
+        mulAcc.io.outp.asUInt.resize(q.getWidth)
+      )
+      //(q, unusedSumOut)
+      q := (
+        if (optReg) (
+          RegNext(next=tempOutp, init=tempOutp.getZero)
+        ) else (
+          tempOutp
+        )
       )
     } else {
-      (q, unusedSumOut) := (
+      val tempOutp = (
         temp0 + temp1
+      )
+      q := (
+        if (optReg) (
+          RegNext(next=tempOutp, init=tempOutp.getZero)
+        ) else (
+          tempOutp
+        )
       )
     }
     //(q, unusedSumOut) := (
@@ -573,7 +590,7 @@ object LcvFastCmpEq {
     //    + temp1
     //  )
     //)
-    q
+    (q.msb, q)
   }
 }
 
