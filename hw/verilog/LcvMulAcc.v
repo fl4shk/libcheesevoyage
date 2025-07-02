@@ -1,4 +1,3 @@
-`default_nettype none
 (* use_dsp48 = "yes" *)
 module LcvMulAcc(
 	input wire signed [26:0] a,
