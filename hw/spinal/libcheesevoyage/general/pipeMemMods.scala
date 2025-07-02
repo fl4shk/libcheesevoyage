@@ -385,10 +385,10 @@ object LcvFastOrR {
         0x0
       )
       mulAcc.io.d := (
-        Cat(False, temp0).asSInt
+        Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
       )
       mulAcc.io.e := (
-        Cat(False, temp1).asSInt
+        Cat(False, temp1).asSInt.resize(mulAcc.io.e.getWidth)
       )
       (q, unusedSumOut) := (
         mulAcc.io.outp.asUInt.resize(unusedSumOut.getWidth + 1)
@@ -448,10 +448,10 @@ object LcvFastAndR {
         0x0
       )
       mulAcc.io.d := (
-        Cat(False, temp0).asSInt
+        Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
       )
       mulAcc.io.e := (
-        Cat(False, temp1).asSInt
+        Cat(False, temp1).asSInt.resize(mulAcc.io.e.getWidth)
       )
       (q, unusedSumOut) := (
         mulAcc.io.outp.asUInt.resize(unusedSumOut.getWidth + 1)
@@ -516,10 +516,10 @@ object LcvFastCmpEq {
         0x0
       )
       mulAcc.io.d := (
-        Cat(False, temp0).asSInt
+        Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
       )
       mulAcc.io.e := (
-        Cat(False, temp1).asSInt
+        Cat(False, temp1).asSInt.resize(mulAcc.io.e.getWidth)
       )
       (q, unusedSumOut) := (
         mulAcc.io.outp.asUInt.resize(unusedSumOut.getWidth + 1)
