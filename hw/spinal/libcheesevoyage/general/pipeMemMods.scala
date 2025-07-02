@@ -321,25 +321,25 @@ object LcvSFindFirst {
   }
 }
 
-case class LcvMulAccIo(
+case class LcvMulAcc32Io(
   //aWidth: Int=27,
   //bWidth: Int=18,
   //otherWidth: Int=48,
 ) extends Bundle {
   val a = in(SInt(27 bits))
   val b = in(SInt(18 bits))
-  val c = in(SInt(48 bits))
-  val d = in(SInt(48 bits))
-  val e = in(SInt(48 bits))
-  val outp = out(SInt(48 bits))
+  val c = in(SInt(32 bits))
+  val d = in(SInt(32 bits))
+  val e = in(SInt(32 bits))
+  val outp = out(SInt(32 bits))
 }
-case class LcvMulAcc(
+case class LcvMulAcc32(
   //aWidth: Int=27,
   //bWidth: Int=18,
   //otherWidth: Int=48,
 ) extends BlackBox {
   //this.addAttribute("use_dsp", "yes")
-  val io = LcvMulAccIo(
+  val io = LcvMulAcc32Io(
     //aWidth=aWidth,
     //bWidth=bWidth,
     //otherWidth=otherWidth,
@@ -366,7 +366,7 @@ object LcvFastOrR {
       U(self.getWidth bits, default -> True)
     )
     val mulAcc = (optDsp) generate (
-      LcvMulAcc(
+      LcvMulAcc32(
         //aWidth=self.getWidth + 1,
         //bWidth=temp0.getWidth + 1,
         //otherWidth=temp1.getWidth + 1
@@ -376,18 +376,18 @@ object LcvFastOrR {
     if (optDsp) {
       mulAcc.io.a := (
         //0x0
-        //Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
-        //  mulAcc.io.a.getWidth
-        //)
-        Cat(True).asSInt.resize(mulAcc.io.a.getWidth)
+        Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
+          mulAcc.io.a.getWidth
+        )
+        //Cat(True).asSInt.resize(mulAcc.io.a.getWidth)
       )
       mulAcc.io.b := (
         //Cat(False, temp0).asSInt
         //0x0
-        //Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
-        //  mulAcc.io.b.getWidth
-        //)
-        Cat(True).asSInt.resize(mulAcc.io.b.getWidth)
+        Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
+          mulAcc.io.b.getWidth
+        )
+        //Cat(True).asSInt.resize(mulAcc.io.b.getWidth)
       )
       mulAcc.io.c := (
         //Cat(False, temp1).asSInt
@@ -439,7 +439,7 @@ object LcvFastAndR {
       U(self.getWidth + 1 bits, 0 -> True, default -> False)
     )
     val mulAcc = (optDsp) generate (
-      LcvMulAcc(
+      LcvMulAcc32(
         //aWidth=self.getWidth + 1,
         //bWidth=temp0.getWidth + 1,
         //otherWidth=temp1.getWidth + 1
@@ -449,18 +449,18 @@ object LcvFastAndR {
     if (optDsp) {
       mulAcc.io.a := (
         //0x0
-        //Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
-        //  mulAcc.io.a.getWidth
-        //)
-        Cat(True).asSInt.resize(mulAcc.io.a.getWidth)
+        Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
+          mulAcc.io.a.getWidth
+        )
+        //Cat(True).asSInt.resize(mulAcc.io.a.getWidth)
       )
       mulAcc.io.b := (
         //Cat(False, temp0).asSInt
         //0x0
-        //Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
-        //  mulAcc.io.b.getWidth
-        //)
-        Cat(True).asSInt.resize(mulAcc.io.b.getWidth)
+        Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
+          mulAcc.io.b.getWidth
+        )
+        //Cat(True).asSInt.resize(mulAcc.io.b.getWidth)
       )
       mulAcc.io.c := (
         //Cat(False, temp1).asSInt
@@ -517,7 +517,7 @@ object LcvFastCmpEq {
       U(left.getWidth + 1 bits, 0 -> True, default -> False)
     )
     val mulAcc = (optDsp) generate (
-      LcvMulAcc(
+      LcvMulAcc32(
         //aWidth=self.getWidth + 1,
         //bWidth=temp0.getWidth + 1,
         //otherWidth=temp1.getWidth + 1
@@ -527,18 +527,18 @@ object LcvFastCmpEq {
     if (optDsp) {
       mulAcc.io.a := (
         //0x0
-        //Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
-        //  mulAcc.io.a.getWidth
-        //)
-        Cat(True).asSInt.resize(mulAcc.io.a.getWidth)
+        Cat(False, U(s"${left.getWidth}'d1")).asSInt.resize(
+          mulAcc.io.a.getWidth
+        )
+        //Cat(True).asSInt.resize(mulAcc.io.a.getWidth)
       )
       mulAcc.io.b := (
         //Cat(False, temp0).asSInt
         //0x0
-        //Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
-        //  mulAcc.io.b.getWidth
-        //)
-        Cat(True).asSInt.resize(mulAcc.io.b.getWidth)
+        Cat(False, U(s"${left.getWidth}'d1")).asSInt.resize(
+          mulAcc.io.b.getWidth
+        )
+        //Cat(True).asSInt.resize(mulAcc.io.b.getWidth)
       )
       mulAcc.io.c := (
         //Cat(False, temp1).asSInt
