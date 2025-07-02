@@ -1,4 +1,4 @@
-(* use_dsp48 = "yes" *)
+(* use_dsp = "yes" *)
 module LcvMulAcc(
 	input wire signed [26:0] a,
 	input wire signed [17:0] b,
