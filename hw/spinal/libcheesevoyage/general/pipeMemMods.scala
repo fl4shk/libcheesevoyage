@@ -373,23 +373,26 @@ object LcvFastOrR {
     )
     if (optDsp) {
       mulAcc.io.a := (
+        //0x0
         Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
           mulAcc.io.a.getWidth
         )
-        //0x0
       )
       mulAcc.io.b := (
         //Cat(False, temp0).asSInt
-        0x0
+        //0x0
+        Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
+          mulAcc.io.b.getWidth
+        )
       )
       mulAcc.io.c := (
         //Cat(False, temp1).asSInt
         //0x0
-        Cat(False, temp0).asSInt.resize(mulAcc.io.c.getWidth)
+        S(mulAcc.io.c.getWidth bits, default -> True)
+        //Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
       )
       mulAcc.io.d := (
-        //Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
-        0x0
+        Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
       )
       mulAcc.io.e := (
         Cat(False, temp1).asSInt.resize(mulAcc.io.e.getWidth)
@@ -447,16 +450,19 @@ object LcvFastAndR {
       )
       mulAcc.io.b := (
         //Cat(False, temp0).asSInt
-        0x0
+        //0x0
+        Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
+          mulAcc.io.b.getWidth
+        )
       )
       mulAcc.io.c := (
         //Cat(False, temp1).asSInt
         //0x0
-        Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
+        S(mulAcc.io.c.getWidth bits, default -> True)
+        //Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
       )
       mulAcc.io.d := (
-        //Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
-        0x0
+        Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
       )
       mulAcc.io.e := (
         Cat(False, temp1).asSInt.resize(mulAcc.io.e.getWidth)
@@ -519,16 +525,19 @@ object LcvFastCmpEq {
       )
       mulAcc.io.b := (
         //Cat(False, temp0).asSInt
-        0x0
+        //0x0
+        Cat(False, U(s"${left.getWidth}'d1")).asSInt.resize(
+          mulAcc.io.b.getWidth
+        )
       )
       mulAcc.io.c := (
         //Cat(False, temp1).asSInt
         //0x0
-        Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
+        S(mulAcc.io.c.getWidth bits, default -> True)
+        //Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
       )
       mulAcc.io.d := (
-        //Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
-        0x0
+        Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
       )
       mulAcc.io.e := (
         Cat(False, temp1).asSInt.resize(mulAcc.io.e.getWidth)
