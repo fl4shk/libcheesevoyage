@@ -338,7 +338,7 @@ case class LcvMulAcc(
   bWidth: Int=18,
   otherWidth: Int=48,
 ) extends Component {
-  this.addAttribute("use_dsp48", "yes")
+  this.addAttribute("use_dsp", "yes")
   val io = LcvMulAccIo(
     aWidth=aWidth,
     bWidth=bWidth,
