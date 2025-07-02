@@ -1,12 +1,12 @@
 `default_nettype none
 (* use_dsp48 = "yes" *)
 module LcvMulAcc(
-	input signed [26:0] a,
-	input signed [17:0] b,
-	input signed [47:0] c,
-	input signed [47:0] d,
-	input signed [47:0] e,
-	output signed [47:0] outp
+	input wire signed [26:0] a,
+	input wire signed [17:0] b,
+	input wire signed [47:0] c,
+	input wire signed [47:0] d,
+	input wire signed [47:0] e,
+	output wire signed [47:0] outp
 );
 	wire signed [47:0] pcout;
 	assign pcout = a * b + c;
