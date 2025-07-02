@@ -328,10 +328,10 @@ case class LcvMulAcc32Io(
 ) extends Bundle {
   val a = in(SInt(27 bits))
   val b = in(SInt(18 bits))
-  val c = in(SInt(32 bits))
-  val d = in(SInt(32 bits))
-  val e = in(SInt(32 bits))
-  val outp = out(SInt(32 bits))
+  val c = in(SInt(48 bits))
+  val d = in(SInt(48 bits))
+  val e = in(SInt(48 bits))
+  val outp = out(SInt(48 bits))
 }
 case class LcvMulAcc32(
   //aWidth: Int=27,
