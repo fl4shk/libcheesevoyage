@@ -329,8 +329,8 @@ case class LcvMulAccIo(
   val a = in(SInt(aWidth bits))
   val b = in(SInt(bWidth bits))
   val c = in(SInt(otherWidth bits))
-  //val d = in(SInt(otherWidth bits))
-  //val e = in(SInt(otherWidth bits))
+  val d = in(SInt(otherWidth bits))
+  val e = in(SInt(otherWidth bits))
   val outp = out(SInt(otherWidth bits))
 }
 case class LcvMulAcc(
@@ -344,10 +344,10 @@ case class LcvMulAcc(
     bWidth=bWidth,
     otherWidth=otherWidth,
   )
-  //val pcout = SInt(otherWidth bits)
-  //pcout := (io.a * io.b + io.c).resize(pcout.getWidth)
-  io.outp := (io.a * io.b + io.c).resize(io.outp.getWidth)
-  //io.outp := (pcout + io.d + io.e).resize(io.outp.getWidth)
+  val pcout = SInt(otherWidth bits)
+  pcout := (io.a * io.b + io.c).resize(pcout.getWidth)
+  //io.outp := (io.a * io.b + io.c).resize(io.outp.getWidth)
+  io.outp := (pcout + io.d + io.e).resize(io.outp.getWidth)
 }
 
 object LcvFastOrR {
@@ -365,27 +365,31 @@ object LcvFastOrR {
     )
     val mulAcc = (optDsp) generate (
       LcvMulAcc(
-        aWidth=self.getWidth + 1,
-        bWidth=temp0.getWidth + 1,
-        otherWidth=temp1.getWidth + 1
+        //aWidth=self.getWidth + 1,
+        //bWidth=temp0.getWidth + 1,
+        //otherWidth=temp1.getWidth + 1
+        otherWidth=(temp1.getWidth + 1).max(48)
       )
     )
     if (optDsp) {
       mulAcc.io.a := (
-        Cat(False, U(s"${self.getWidth}'d1")).asSInt
+        //Cat(False, U(s"${self.getWidth}'d1")).asSInt
+        0x0
       )
       mulAcc.io.b := (
-        Cat(False, temp0).asSInt
+        //Cat(False, temp0).asSInt
+        0x0
       )
       mulAcc.io.c := (
+        //Cat(False, temp1).asSInt
+        0x0
+      )
+      mulAcc.io.d := (
+        Cat(False, temp0).asSInt
+      )
+      mulAcc.io.e := (
         Cat(False, temp1).asSInt
       )
-      //mulAcc.io.d := (
-      //  0x0
-      //)
-      //mulAcc.io.e := (
-      //  0x0
-      //)
       (q, unusedSumOut) := (
         mulAcc.io.outp.asUInt.resize(unusedSumOut.getWidth + 1)
       )
@@ -424,27 +428,31 @@ object LcvFastAndR {
     )
     val mulAcc = (optDsp) generate (
       LcvMulAcc(
-        aWidth=self.getWidth + 1,
-        bWidth=temp0.getWidth + 1,
-        otherWidth=temp1.getWidth + 1
+        //aWidth=self.getWidth + 1,
+        //bWidth=temp0.getWidth + 1,
+        //otherWidth=temp1.getWidth + 1
+        otherWidth=(temp1.getWidth + 1).max(48)
       )
     )
     if (optDsp) {
       mulAcc.io.a := (
-        Cat(False, U(s"${self.getWidth}'d1")).asSInt
+        //Cat(False, U(s"${self.getWidth}'d1")).asSInt
+        0x0
       )
       mulAcc.io.b := (
-        Cat(False, temp0).asSInt
+        //Cat(False, temp0).asSInt
+        0x0
       )
       mulAcc.io.c := (
+        //Cat(False, temp1).asSInt
+        0x0
+      )
+      mulAcc.io.d := (
+        Cat(False, temp0).asSInt
+      )
+      mulAcc.io.e := (
         Cat(False, temp1).asSInt
       )
-      //mulAcc.io.d := (
-      //  0x0
-      //)
-      //mulAcc.io.e := (
-      //  0x0
-      //)
       (q, unusedSumOut) := (
         mulAcc.io.outp.asUInt.resize(unusedSumOut.getWidth + 1)
       )
@@ -488,27 +496,31 @@ object LcvFastCmpEq {
     )
     val mulAcc = (optDsp) generate (
       LcvMulAcc(
-        aWidth=left.getWidth + 1,
-        bWidth=temp0.getWidth + 1,
-        otherWidth=temp1.getWidth + 1
+        //aWidth=self.getWidth + 1,
+        //bWidth=temp0.getWidth + 1,
+        //otherWidth=temp1.getWidth + 1
+        otherWidth=(temp1.getWidth + 1).max(48)
       )
     )
     if (optDsp) {
       mulAcc.io.a := (
-        Cat(False, U(s"${left.getWidth}'d1")).asSInt
+        //Cat(False, U(s"${self.getWidth}'d1")).asSInt
+        0x0
       )
       mulAcc.io.b := (
-        Cat(False, temp0).asSInt
+        //Cat(False, temp0).asSInt
+        0x0
       )
       mulAcc.io.c := (
+        //Cat(False, temp1).asSInt
+        0x0
+      )
+      mulAcc.io.d := (
+        Cat(False, temp0).asSInt
+      )
+      mulAcc.io.e := (
         Cat(False, temp1).asSInt
       )
-      //mulAcc.io.d := (
-      //  0x0
-      //)
-      //mulAcc.io.e := (
-      //  0x0
-      //)
       (q, unusedSumOut) := (
         mulAcc.io.outp.asUInt.resize(unusedSumOut.getWidth + 1)
       )
