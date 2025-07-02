@@ -345,6 +345,7 @@ case class LcvMulAcc(
     //otherWidth=otherWidth,
   )
   noIoPrefix()
+  addRTLPath("./hw/verilog/LcvMulAcc.v")
   //val pcout = SInt(48 bits)
   //pcout := ((io.a * io.b).resize(io.c.getWidth) + io.c)
   ////io.outp := (io.a * io.b + io.c).resize(io.outp.getWidth)
