@@ -375,24 +375,24 @@ object LcvFastOrR {
     )
     if (optDsp) {
       mulAcc.io.a := (
-        //0x0
-        Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
-          mulAcc.io.a.getWidth
-        )
+        0x0
+        //Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
+        //  mulAcc.io.a.getWidth
+        //)
         //Cat(True).asSInt.resize(mulAcc.io.a.getWidth)
       )
       mulAcc.io.b := (
         //Cat(False, temp0).asSInt
-        //0x0
-        Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
-          mulAcc.io.b.getWidth
-        )
+        0x0
+        //Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
+        //  mulAcc.io.b.getWidth
+        //)
         //Cat(True).asSInt.resize(mulAcc.io.b.getWidth)
       )
       mulAcc.io.c := (
         //Cat(False, temp1).asSInt
-        //0x0
-        S(mulAcc.io.c.getWidth bits, default -> True)
+        0x0
+        //S(mulAcc.io.c.getWidth bits, default -> True)
         //Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
       )
       mulAcc.io.d := (
@@ -448,24 +448,24 @@ object LcvFastAndR {
     )
     if (optDsp) {
       mulAcc.io.a := (
-        //0x0
-        Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
-          mulAcc.io.a.getWidth
-        )
+        0x0
+        //Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
+        //  mulAcc.io.a.getWidth
+        //)
         //Cat(True).asSInt.resize(mulAcc.io.a.getWidth)
       )
       mulAcc.io.b := (
         //Cat(False, temp0).asSInt
-        //0x0
-        Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
-          mulAcc.io.b.getWidth
-        )
+        0x0
+        //Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
+        //  mulAcc.io.b.getWidth
+        //)
         //Cat(True).asSInt.resize(mulAcc.io.b.getWidth)
       )
       mulAcc.io.c := (
         //Cat(False, temp1).asSInt
-        //0x0
-        S(mulAcc.io.c.getWidth bits, default -> True)
+        0x0
+        //S(mulAcc.io.c.getWidth bits, default -> True)
         //Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
       )
       mulAcc.io.d := (
@@ -526,24 +526,24 @@ object LcvFastCmpEq {
     )
     if (optDsp) {
       mulAcc.io.a := (
-        //0x0
-        Cat(False, U(s"${left.getWidth}'d1")).asSInt.resize(
-          mulAcc.io.a.getWidth
-        )
+        0x0
+        //Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
+        //  mulAcc.io.a.getWidth
+        //)
         //Cat(True).asSInt.resize(mulAcc.io.a.getWidth)
       )
       mulAcc.io.b := (
         //Cat(False, temp0).asSInt
-        //0x0
-        Cat(False, U(s"${left.getWidth}'d1")).asSInt.resize(
-          mulAcc.io.b.getWidth
-        )
+        0x0
+        //Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
+        //  mulAcc.io.b.getWidth
+        //)
         //Cat(True).asSInt.resize(mulAcc.io.b.getWidth)
       )
       mulAcc.io.c := (
         //Cat(False, temp1).asSInt
-        //0x0
-        S(mulAcc.io.c.getWidth bits, default -> True)
+        0x0
+        //S(mulAcc.io.c.getWidth bits, default -> True)
         //Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
       )
       mulAcc.io.d := (
