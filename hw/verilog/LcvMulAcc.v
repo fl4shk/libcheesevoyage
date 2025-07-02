@@ -7,7 +7,7 @@ module LcvMulAcc32(
 	input wire signed [31:0] e,
 	output wire signed [31:0] outp
 );
-	wire signed [31:0] pcout;
+	wire signed [47:0] pcout;
 	assign pcout = a * b + c;
 	assign outp = pcout + d + e;
 endmodule
