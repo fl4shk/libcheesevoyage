@@ -345,9 +345,9 @@ case class LcvMulAcc(
     otherWidth=otherWidth,
   )
   val pcout = SInt(otherWidth bits)
-  pcout := (io.a * io.b + io.c).resize(pcout.getWidth)
+  pcout := ((io.a * io.b).resized + io.c)//.resize(pcout.getWidth)
   //io.outp := (io.a * io.b + io.c).resize(io.outp.getWidth)
-  io.outp := (pcout + io.d + io.e).resize(io.outp.getWidth)
+  io.outp := (pcout + io.d + io.e)//.resize(io.outp.getWidth)
 }
 
 object LcvFastOrR {
