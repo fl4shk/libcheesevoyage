@@ -6,7 +6,7 @@ module LcvMulAcc(
 	input signed [47:0] c,
 	input signed [47:0] d,
 	input signed [47:0] e,
-	output signed [47:0] outp,
+	output signed [47:0] outp
 );
 	wire signed [47:0] pcout;
 	assign pcout = a * b + c;
