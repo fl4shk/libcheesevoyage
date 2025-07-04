@@ -352,6 +352,28 @@ case class LcvMulAcc32(
   //io.outp := (pcout + io.d + io.e)//.resize(io.outp.getWidth)
 }
 
+case class LcvMulAcc32Del1Io(
+  //aWidth: Int=27,
+  //bWidth: Int=18,
+  //otherWidth: Int=48,
+) extends Bundle {
+  val clk = in(Bool())
+  val a = in(SInt(/*27*/ 16 bits))
+  val b = in(SInt(/*18*/ 16 bits))
+  val c = in(SInt(/*48*/ 33 bits))
+  val d = in(SInt(/*48*/ 33 bits))
+  val e = in(SInt(/*48*/ 33 bits))
+  val outp = out(SInt(/*48*/ 33 bits))
+}
+
+case class LcvMulAcc32Del1(
+) extends BlackBox {
+  val io = LcvMulAcc32Del1Io()
+  noIoPrefix()
+  addRTLPath("./hw/verilog/LcvMulAcc.v")
+  mapCurrentClockDomain(io.clk)
+}
+
 object LcvFastOrR {
   def apply(
     self: UInt,
@@ -518,38 +540,34 @@ object LcvFastCmpEq {
     val temp1 = (
       U(left.getWidth + 1 bits, 0 -> True, default -> False)
     )
-    val mulAcc = (optDsp) generate (
-      LcvMulAcc32(
-        //aWidth=self.getWidth + 1,
-        //bWidth=temp0.getWidth + 1,
-        //otherWidth=temp1.getWidth + 1
-        //otherWidth=(temp1.getWidth + 1).max(48)
+    val mulAcc = (optDsp && !optReg) generate (
+      //if (!optReg) (
+        LcvMulAcc32(
+          //aWidth=self.getWidth + 1,
+          //bWidth=temp0.getWidth + 1,
+          //otherWidth=temp1.getWidth + 1
+          //otherWidth=(temp1.getWidth + 1).max(48)
+        )
+      //) else (
+      //  LcvMulAcc32Del1(
+      //  )
+      //)
+    )
+    val mulAccDel1 = (optDsp && optReg) generate (
+      LcvMulAcc32Del1(
       )
     )
-    if (optDsp) {
+    if (optDsp && !optReg) {
       mulAcc.io.a := (
         0x0
-        //Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
-        //  mulAcc.io.a.getWidth
-        //)
-        //Cat(True).asSInt.resize(mulAcc.io.a.getWidth)
       )
       mulAcc.io.b := (
-        //Cat(False, temp0).asSInt
         0x0
-        //Cat(False, U(s"${self.getWidth}'d1")).asSInt.resize(
-        //  mulAcc.io.b.getWidth
-        //)
-        //Cat(True).asSInt.resize(mulAcc.io.b.getWidth)
       )
       mulAcc.io.c := (
-        //Cat(False, temp1).asSInt
         0x0
-        //S(mulAcc.io.c.getWidth bits, default -> True)
-        //Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
       )
       mulAcc.io.d := (
-        //Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
         Cat(False, temp0).asSInt.resize(mulAcc.io.d.getWidth)
       )
       mulAcc.io.e := (
@@ -557,6 +575,33 @@ object LcvFastCmpEq {
       )
       val tempOutp = (
         mulAcc.io.outp.asUInt.resize(q.getWidth)
+      )
+      //(q, unusedSumOut)
+      q := (
+        if (optReg) (
+          RegNext(next=tempOutp, init=tempOutp.getZero)
+        ) else (
+          tempOutp
+        )
+      )
+    } else if (optDsp && optReg) {
+      mulAccDel1.io.a := (
+        0x0
+      )
+      mulAccDel1.io.b := (
+        0x0
+      )
+      mulAccDel1.io.c := (
+        0x0
+      )
+      mulAccDel1.io.d := (
+        Cat(False, temp0).asSInt.resize(mulAccDel1.io.d.getWidth)
+      )
+      mulAccDel1.io.e := (
+        Cat(False, temp1).asSInt.resize(mulAccDel1.io.e.getWidth)
+      )
+      val tempOutp = (
+        mulAccDel1.io.outp.asUInt.resize(q.getWidth)
       )
       //(q, unusedSumOut)
       q := (
