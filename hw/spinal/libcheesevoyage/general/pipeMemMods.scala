@@ -325,9 +325,12 @@ case class LcvMulAcc32Io(
   //aWidth: Int=27,
   //bWidth: Int=18,
   //otherWidth: Int=48,
-  optIncludeClk: Boolean,
+  optIncludeClkRst: Boolean,
 ) extends Bundle {
-  val clk = (optIncludeClk) generate (
+  val clk = (optIncludeClkRst) generate (
+    in(Bool())
+  )
+  val rst = (optIncludeClkRst) generate (
     in(Bool())
   )
   val a = in(SInt(/*27*/ 16 bits))
@@ -347,7 +350,7 @@ case class LcvMulAcc32(
     //aWidth=aWidth,
     //bWidth=bWidth,
     //otherWidth=otherWidth,
-    optIncludeClk=false,
+    optIncludeClkRst=false,
   )
   noIoPrefix()
   addRTLPath("./hw/verilog/LcvMulAcc.v")
@@ -373,10 +376,10 @@ case class LcvMulAcc32(
 
 case class LcvMulAcc32Del1(
 ) extends BlackBox {
-  val io = LcvMulAcc32Io(optIncludeClk=true)
+  val io = LcvMulAcc32Io(optIncludeClkRst=true)
   noIoPrefix()
   addRTLPath("./hw/verilog/LcvMulAcc.v")
-  mapCurrentClockDomain(io.clk)
+  mapCurrentClockDomain(io.clk, io.rst)
   //ClockDomainTag(this.clockDomain)(
   //  io.a,
   //  io.b,
