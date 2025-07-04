@@ -20,6 +20,7 @@ module LcvMulAcc32Del1(
 	input wire signed [15:0] b,
 	input wire signed [32:0] c,
 	input wire signed [32:0] d,
+	input wire signed [32:0] e,
 	output reg signed [32:0] outp
 );
 	//--------
