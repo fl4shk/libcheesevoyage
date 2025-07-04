@@ -27,7 +27,7 @@ module LcvMulAcc32Del1(
 	wire signed [35:0] pcout;
 	assign pcout = a * b + c;
 	//--------
-	always @(posedge clk)  begin
+	always @(posedge clk) begin
 		outp <= pcout + d + e;
 	end
 	//--------
