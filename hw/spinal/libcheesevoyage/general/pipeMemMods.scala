@@ -352,27 +352,37 @@ case class LcvMulAcc32(
   //io.outp := (pcout + io.d + io.e)//.resize(io.outp.getWidth)
 }
 
-case class LcvMulAcc32Del1Io(
-  //aWidth: Int=27,
-  //bWidth: Int=18,
-  //otherWidth: Int=48,
-) extends Bundle {
-  val clk = in(Bool())
-  val a = in(SInt(/*27*/ 16 bits))
-  val b = in(SInt(/*18*/ 16 bits))
-  val c = in(SInt(/*48*/ 33 bits))
-  val d = in(SInt(/*48*/ 33 bits))
-  val e = in(SInt(/*48*/ 33 bits))
-  val outp = out(SInt(/*48*/ 33 bits))
-}
+//case class LcvMulAcc32Del1Io(
+//  //aWidth: Int=27,
+//  //bWidth: Int=18,
+//  //otherWidth: Int=48,
+//) extends Bundle {
+//  val clk = in(Bool())
+//  val a = in(SInt(/*27*/ 16 bits))
+//  val b = in(SInt(/*18*/ 16 bits))
+//  val c = in(SInt(/*48*/ 33 bits))
+//  val d = in(SInt(/*48*/ 33 bits))
+//  val e = in(SInt(/*48*/ 33 bits))
+//  val outp = out(SInt(/*48*/ 33 bits))
+//}
 
 case class LcvMulAcc32Del1(
   clkDomain: ClockDomain
 ) extends BlackBox {
-  val io = LcvMulAcc32Del1Io()
+  //val io = LcvMulAcc32Del1Io()
+  val io = new Bundle {
+    val clk = in(Bool())
+    val a = in(SInt(/*27*/ 16 bits))
+    val b = in(SInt(/*18*/ 16 bits))
+    val c = in(SInt(/*48*/ 33 bits))
+    val d = in(SInt(/*48*/ 33 bits))
+    val e = in(SInt(/*48*/ 33 bits))
+    val outp = out(SInt(/*48*/ 33 bits))
+  }
   addRTLPath("./hw/verilog/LcvMulAcc.v")
   //mapCurrentClockDomain(io.clk)
-  mapCurrentClockDomain(
+  mapClockDomain(
+    clockDomain=clkDomain,
     clock=io.clk
   )
   //ClockDomainTag(this.clockDomain)(
