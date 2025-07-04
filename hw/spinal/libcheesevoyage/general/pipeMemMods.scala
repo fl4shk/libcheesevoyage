@@ -372,6 +372,14 @@ case class LcvMulAcc32Del1(
   noIoPrefix()
   addRTLPath("./hw/verilog/LcvMulAcc.v")
   mapCurrentClockDomain(io.clk)
+  ClockDomainTag(this.clockDomain)(
+    io.a,
+    io.b,
+    io.c,
+    io.d,
+    io.e,
+    io.outp
+  )
 }
 
 object LcvFastOrR {
@@ -578,13 +586,14 @@ object LcvFastCmpEq {
       )
       //(q, unusedSumOut)
       q := (
-        if (optReg) (
-          RegNext(next=tempOutp, init=tempOutp.getZero)
-        ) else (
+        //if (optReg) (
+        //  RegNext(next=tempOutp, init=tempOutp.getZero)
+        //) else (
           tempOutp
-        )
+        //)
       )
     } else if (optDsp && optReg) {
+      //mulAccDel1.mapCurrentClockDomain(mulAccDel1.io.clk)
       mulAccDel1.io.a := (
         0x0
       )
@@ -605,11 +614,11 @@ object LcvFastCmpEq {
       )
       //(q, unusedSumOut)
       q := (
-        if (optReg) (
-          RegNext(next=tempOutp, init=tempOutp.getZero)
-        ) else (
+        //if (optReg) (
+        //  RegNext(next=tempOutp, init=tempOutp.getZero)
+        //) else (
           tempOutp
-        )
+        //)
       )
     } else {
       val tempOutp = (
