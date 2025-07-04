@@ -371,15 +371,16 @@ case class LcvMulAcc32Del1(
   val io = LcvMulAcc32Del1Io()
   noIoPrefix()
   addRTLPath("./hw/verilog/LcvMulAcc.v")
-  mapCurrentClockDomain(io.clk)
-  ClockDomainTag(this.clockDomain)(
-    io.a,
-    io.b,
-    io.c,
-    io.d,
-    io.e,
-    io.outp
-  )
+  //mapCurrentClockDomain(io.clk)
+  //ClockDomainTag(this.clockDomain)(
+  //  io.a,
+  //  io.b,
+  //  io.c,
+  //  io.d,
+  //  io.e,
+  //  io.outp
+  //)
+  setIoCd()
 }
 
 object LcvFastOrR {
