@@ -367,11 +367,14 @@ case class LcvMulAcc32Del1Io(
 }
 
 case class LcvMulAcc32Del1(
+  clkDomain: ClockDomain
 ) extends BlackBox {
   val io = LcvMulAcc32Del1Io()
-  noIoPrefix()
   addRTLPath("./hw/verilog/LcvMulAcc.v")
   //mapCurrentClockDomain(io.clk)
+  mapCurrentClockDomain(
+    clock=io.clk
+  )
   //ClockDomainTag(this.clockDomain)(
   //  io.a,
   //  io.b,
@@ -381,6 +384,7 @@ case class LcvMulAcc32Del1(
   //  io.outp
   //)
   setIoCd()
+  noIoPrefix()
 }
 
 object LcvFastOrR {
@@ -531,6 +535,7 @@ object LcvFastAndR {
 }
 object LcvFastCmpEq {
   def apply(
+    clkDomain: ClockDomain,
     left: UInt,
     right: UInt,
     optDsp: Boolean=false,
@@ -564,6 +569,7 @@ object LcvFastCmpEq {
     )
     val mulAccDel1 = (optDsp && optReg) generate (
       LcvMulAcc32Del1(
+        clkDomain=clkDomain
       )
     )
     if (optDsp && !optReg) {
