@@ -538,9 +538,10 @@ object LcvFastCmpEq {
   def apply(
     left: UInt,
     right: UInt,
+    mulAccIo: LcvMulAcc32Io,
     optDsp: Boolean=false,
     optReg: Boolean=false,
-  ): (Bool, UInt, LcvMulAcc32Io) = {
+  ): (Bool, UInt) = {
     assert(
       left.getWidth == right.getWidth,
       f"leftWidth:${left.getWidth} != rightWidth:${right.getWidth}"
@@ -655,7 +656,7 @@ object LcvFastCmpEq {
     //    + temp1
     //  )
     //)
-    (q.msb, q, mulAccIo)
+    (q.msb, q)
   }
 }
 
