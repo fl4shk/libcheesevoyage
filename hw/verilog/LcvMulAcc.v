@@ -26,9 +26,10 @@ module LcvMulAcc32Del1(
 	//--------
 	reg signed [35:0] pcout;
 	always @(posedge clk) begin
-		if (rst) begin
-		end else begin
-		end
+		//if (rst) begin
+		//end else begin
+		//end
+		assign outp = pcout + d + e;
 	end
 	assign pcout = a * b + c;
 	assign outp = pcout + d + e;
