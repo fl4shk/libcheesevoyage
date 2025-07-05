@@ -52,10 +52,11 @@ module LcvAddDel1 #(
 
 	output /*reg*/ wire signed [WIDTH - 1:0] outp_sum
 );
-	wire signed [WIDTH - 1:0] temp_sum;
 	reg signed [WIDTH - 1:0] r_a;
 	reg signed [WIDTH - 1:0] r_b;
 	reg r_carry_in;
+
+	wire signed [WIDTH - 1:0] temp_sum;
 	assign temp_sum = r_a + r_b + $signed({{(WIDTH - 1){1'b0}}, r_carry_in});
 	assign outp_sum = (!do_inv) ? temp_sum : ~temp_sum;
 
