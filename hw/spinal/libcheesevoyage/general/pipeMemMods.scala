@@ -655,6 +655,7 @@ object LcvFastCmpEq {
       //)
     )
     val q = UInt(tempWidth bits)
+    //val q = UInt(tempWidth bits)
     val temp0 = (
       kind match {
         case Kind.UseFastCarryChain => {
@@ -737,7 +738,7 @@ object LcvFastCmpEq {
           tempOutp
         //)
       )
-    } 
+    }
     //else if (optDsp && optReg) {
     //  //mulAccDel1.mapCurrentClockDomain(mulAccDel1.io.clk)
     //  mulAccDel1.io.a := (
@@ -798,7 +799,14 @@ object LcvFastCmpEq {
     //    + temp1
     //  )
     //)
-    (q.msb, q)
+    kind match {
+      case Kind.UseFastCarryChain => {
+        (q.msb, q)
+      }
+      case Kind.SubOrR => {
+        (q(q.high - 1 downto 0).orR, q)
+      }
+    }
   }
 }
 
