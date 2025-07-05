@@ -1,27 +1,27 @@
 (* use_dsp48 = "yes" *)
 module LcvMulAcc32(
-	input wire signed [15:0] a,
-	input wire signed [15:0] b,
-	input wire signed [32:0] c,
-	input wire signed [32:0] d,
-	input wire signed [32:0] e,
-	output wire signed [32:0] outp
+	input logic signed [15:0] a,
+	input logic signed [15:0] b,
+	input logic signed [32:0] c,
+	input logic signed [32:0] d,
+	input logic signed [32:0] e,
+	output logic signed [32:0] outp
 );
-	wire signed [35:0] pcout;
+	logic signed [35:0] pcout;
 	assign pcout = a * b + c;
 	assign outp = pcout + d + e;
 endmodule
 
 (* use_dsp48 = "yes" *)
 module LcvMulAcc32Del1(
-	input wire clk,
-	input wire rst,
-	input wire signed [15:0] a,
-	input wire signed [15:0] b,
-	input wire signed [32:0] c,
-	input wire signed [32:0] d,
-	input wire signed [32:0] e,
-	output reg signed [32:0] outp
+	input logic clk,
+	input logic rst,
+	input logic signed [15:0] a,
+	input logic signed [15:0] b,
+	input logic signed [32:0] c,
+	input logic signed [32:0] d,
+	input logic signed [32:0] e,
+	output logic signed [32:0] outp
 );
 	//--------
 	wire signed [35:0] pcout;
@@ -43,27 +43,30 @@ endmodule
 module LcvAddDel1 #(
 	parameter WIDTH=33
 )(
-	input wire clk,
-	//input wire rst,
-	input wire signed [WIDTH - 1:0] a,
-	input wire signed [WIDTH - 1:0] b,
-	input wire carry_in,
-	input wire do_inv,
+	input logic clk,
+	//input logic rst,
+	input logic signed [WIDTH - 1:0] a,
+	input logic signed [WIDTH - 1:0] b,
+	input logic carry_in,
+	input logic do_inv,
 
-	output /*reg*/ wire signed [WIDTH - 1:0] outp_sum
+	output logic signed [WIDTH - 1:0] outp_sum
 );
-	reg signed [WIDTH - 1:0] r_a;
-	reg signed [WIDTH - 1:0] r_b;
-	reg r_carry_in;
+	//reg signed [WIDTH - 1:0] r_a;
+	//reg signed [WIDTH - 1:0] r_b;
+	//reg r_carry_in;
 
 	wire signed [WIDTH - 1:0] temp_sum;
-	assign temp_sum = r_a + r_b + $signed({{(WIDTH - 1){1'b0}}, r_carry_in});
-	assign outp_sum = (!do_inv) ? temp_sum : ~temp_sum;
+	assign temp_sum = (
+		a + b + $signed({{(WIDTH - 1){1'b0}}, carry_in})
+	);
+	//assign outp_sum = (!do_inv) ? temp_sum : ~temp_sum;
 
 	always @(posedge clk) begin
-		r_a <= a;
-		r_b <= b;
-		r_carry_in <= carry_in;
+		outp_sum <= (!do_inv) ? temp_sum : ~temp_sum;
+		//r_a <= a;
+		//r_b <= b;
+		//r_carry_in <= carry_in;
 		//if (rst) begin
 		//	outp <= 0;
 		//end else begin
