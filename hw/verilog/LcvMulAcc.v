@@ -50,20 +50,28 @@ module LcvAddDel1 #(
 	input wire carry_in,
 	input wire do_inv,
 
-	output reg signed [WIDTH - 1:0] outp_sum
+	output /*reg*/ wire signed [WIDTH - 1:0] outp_sum
 );
 	wire signed [WIDTH - 1:0] temp_sum;
-	assign temp_sum = a + b + $signed({{(WIDTH - 1){1'b0}}, carry_in});
+	reg signed [WIDTH - 1:0] r_a;
+	reg signed [WIDTH - 1:0] r_b;
+	reg r_carry_in;
+	assign temp_sum = r_a + r_b + $signed({{(WIDTH - 1){1'b0}}, r_carry_in});
+	assign outp_sum = (!do_inv) ? temp_sum : ~temp_sum;
 
 	always @(posedge clk) begin
+		r_a <= a;
+		r_b <= b;
+		r_carry_in <= carry_in;
 		//if (rst) begin
 		//	outp <= 0;
 		//end else begin
-		if (!do_inv) begin
-			outp_sum <= temp_sum;
-		end else begin
-			outp_sum <= ~temp_sum;
-		end
+		r_a
+		//if (!do_inv) begin
+		//	outp_sum <= temp_sum;
+		//end else begin
+		//	outp_sum <= ~temp_sum;
+		//end
 		//end
 	end
 endmodule
