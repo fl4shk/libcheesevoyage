@@ -397,6 +397,7 @@ case class LcvAddDel1Io(
   val clk = in(Bool())
   val a = in(SInt(wordWidth bits))
   val b = in(SInt(wordWidth bits))
+  val carry_in = in(Bool())
   val outp = out(SInt(wordWidth bits))
 }
 case class LcvAddDel1(
@@ -556,7 +557,75 @@ object LcvFastAndR {
     q
   }
 }
+//object LcvFastCmp {
+//  sealed trait Kind
+//}
+
+//case class LcvAddSubInp(
+//  wordWidth: Int=32
+//) extends Bundle {
+//  val a = UInt(wordWidth bits)
+//  val b = UInt(wordWidth bits)
+//  val carry = Bool()
+//}
+//case class LcvAddSubCmp(
+//) extends Bundle {
+//  val eq = Bool()
+//  val ne = Bool()
+//
+//  val ltu = Bool()
+//  val geu = Bool()
+//  val gtu = Bool()
+//  val leu = Bool()
+//
+//  val lts = Bool()
+//  val ges = Bool()
+//  val gts = Bool()
+//  val les = Bool()
+//}
+//
+//case class LcvAddSubOutp(
+//  wordWidth: Int=32
+//) extends Bundle {
+//  val sum = UInt(wordWidth bits)
+//  val cmp = LcvAddSubCmp()
+//}
+//case class LcvAddSubDel1Io(
+//  wordWidth: Int=32,
+//) extends Bundle {
+//  val inp = in(LcvAddSubInp(wordWidth=wordWidth))
+//  val outp = out(LcvAddSubOutp(wordWidth=wordWidth))
+//}
+//
+//object LcvCmpDel1 {
+//  sealed trait Kind
+//  object Kind {
+//    case object UseFastCarryChain extends Kind
+//    case object SubOrR extends Kind 
+//  }
+//}
+//
+//case class LcvCmpDel1(
+//  wordWidth: Int=32
+//) extends Component {
+//  val io = LcvAddSubDel1Io(
+//    wordWidth=wordWidth
+//  )
+//  def inp = io.inp
+//  def outp = io.outp
+//  val tempWidth = (
+//    wordWidth + 1
+//  )
+//  val addDel1 = LcvAddDel1(
+//    wordWidth=tempWidth
+//  )
+//}
 object LcvFastCmpEq {
+  sealed trait Kind
+  object Kind {
+    case object UseFastCarryChain extends Kind
+    case object SubOrR extends Kind 
+  }
   def apply(
     left: UInt,
     right: UInt,
@@ -564,6 +633,7 @@ object LcvFastCmpEq {
     addIo: LcvAddDel1Io,
     optDsp: Boolean=false,
     optReg: Boolean=false,
+    kind: Kind=Kind.SubOrR
   ): (Bool, UInt) = {
     assert(
       left.getWidth == right.getWidth,
@@ -571,12 +641,51 @@ object LcvFastCmpEq {
     )
     //val q = Bool()
     //val unusedSumOut = UInt(left.getWidth bits)
-    val q = UInt((left.getWidth + 1) bits)
+    val tempWidth = (
+      left.getWidth + 1
+      //+ (
+      //  kind match {
+      //    case Kind.UseFastCarryChain => (
+      //      1
+      //    )
+      //    case Kind.SubOrR => (
+      //      0
+      //    )
+      //  }
+      //)
+    )
+    val q = UInt(tempWidth bits)
     val temp0 = (
-      Cat(False, left ^ (~right)).asUInt
+      kind match {
+        case Kind.UseFastCarryChain => {
+          Cat(False, left ^ (~right)).asUInt
+        }
+        case Kind.SubOrR => {
+          Cat(False, left).asUInt
+          //left
+        }
+      }
     )
     val temp1 = (
-      U(left.getWidth + 1 bits, 0 -> True, default -> False)
+      kind match {
+        case Kind.UseFastCarryChain => {
+          U(tempWidth bits, 0 -> True, default -> False)
+        }
+        case Kind.SubOrR => {
+          Cat(False, ~right).asUInt
+          //~right
+        }
+      }
+    )
+    val tempCarryIn = (
+      kind match {
+        case Kind.UseFastCarryChain => {
+          False
+        }
+        case Kind.SubOrR => {
+          True
+        }
+      }
     )
     //val mulAcc = (optDsp && !optReg) generate (
     //  //if (!optReg) (
@@ -613,6 +722,9 @@ object LcvFastCmpEq {
       )
       addIo.b := (
         Cat(False, temp1).asSInt.resize(addIo.b.getWidth)
+      )
+      addIo.carry_in := (
+        tempCarryIn
       )
       val tempOutp = (
         addIo.outp.asUInt.resize(q.getWidth)
@@ -657,7 +769,14 @@ object LcvFastCmpEq {
     //}
     else {
       val tempOutp = (
-        temp0 + temp1
+        Cat(
+          U(s"${temp0.getWidth}'d0"),
+          (
+            temp0
+            + temp1
+            + Cat(False, tempCarryIn).asUInt.resize(temp0.getWidth)
+          )(temp0.getWidth - 1 downto 0).orR
+        ).asUInt
       )
       q := (
         if (optReg) (
@@ -3993,7 +4112,7 @@ extends Area {
     //  Reg(Bool())
     //  init(False)
     //)
-    val tempSharedEnable = KeepAttribute(
+    val tempSharedEnable = /*KeepAttribute*/(
       //down.isReady
       Vec.fill(modRdPortCnt + 1)(
         //down.isFiring
