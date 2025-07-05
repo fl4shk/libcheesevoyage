@@ -48,7 +48,6 @@ module LcvAddDel1 #(
 	input wire signed [WIDTH - 1:0] a,
 	input wire signed [WIDTH - 1:0] b,
 
-	(* keep *)
 	output reg signed [WIDTH - 1:0] outp 
 );
 	always @(posedge clk) begin
