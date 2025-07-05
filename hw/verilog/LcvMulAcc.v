@@ -24,13 +24,13 @@ module LcvMulAcc32Del1(
 	output wire signed [32:0] outp
 );
 	//--------
-	reg signed [35:0] pcout;
+	reg signed [35:0] pcout = 0;
 	always @(posedge clk) begin
-		if (rst) begin
-			pcout <= 36'd0;
-		end else begin
+		//if (rst) begin
+		//	pcout <= 36'd0;
+		//end else begin
 			pcout <= a * b + c;
-		end
+		//end
 	end
 	//assign pcout = 
 	assign outp = pcout + d + e;
