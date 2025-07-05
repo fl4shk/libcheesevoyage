@@ -24,7 +24,7 @@ module LcvMulAcc32Del1(
 	output reg signed [32:0] outp
 );
 	//--------
-	reg signed [35:0] pcout;
+	wire signed [35:0] pcout;
 	always @(posedge clk) begin
 		//if (rst) begin
 		//end else begin
