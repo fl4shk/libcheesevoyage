@@ -810,7 +810,7 @@ object LcvFastCmpEq {
         (q.msb, q)
       }
       case Kind.SubOrR => {
-        (q(q.high - 1 downto 0).orR, q)
+        (!q(q.high - 1 downto 0).orR, q)
       }
     }
   }
