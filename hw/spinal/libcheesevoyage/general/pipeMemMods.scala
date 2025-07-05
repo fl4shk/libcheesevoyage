@@ -391,6 +391,25 @@ case class LcvMulAcc32Del1(
   setIoCd()
 }
 
+case class LcvAddDel1Io(
+  wordWidth: Int=33,
+) extends Bundle {
+  val clk = in(Bool())
+  val a = in(SInt(wordWidth bits))
+  val b = in(SInt(wordWidth bits))
+  val outp = out(SInt(wordWidth bits))
+}
+case class LcvAddDel1(
+  wordWidth: Int=33,
+) extends BlackBox {
+  val io = LcvAddDel1Io()
+  addGeneric("WIDTH", wordWidth)
+  noIoPrefix()
+  addRTLPath("./hw/verilog/LcvMulAcc.v")
+  mapCurrentClockDomain(clock=io.clk/*, reset=io.rst*/)
+  setIoCd()
+}
+
 object LcvFastOrR {
   def apply(
     self: UInt,
@@ -541,7 +560,8 @@ object LcvFastCmpEq {
   def apply(
     left: UInt,
     right: UInt,
-    mulAccIo: LcvMulAcc32Io,
+    //mulAccIo: LcvMulAcc32Io,
+    addIo: LcvAddDel1Io,
     optDsp: Boolean=false,
     optReg: Boolean=false,
   ): (Bool, UInt) = {
@@ -579,23 +599,23 @@ object LcvFastCmpEq {
     //  LcvMulAcc32Io(optIncludeClk=optReg)
     //)
     if (optDsp) {
-      mulAccIo.a := (
-        0x0
+      //mulAccIo.a := (
+      //  0x0
+      //)
+      //mulAccIo.b := (
+      //  0x0
+      //)
+      //mulAccIo.c := (
+      //  0x0
+      //)
+      addIo.a := (
+        Cat(False, temp0).asSInt.resize(addIo.a.getWidth)
       )
-      mulAccIo.b := (
-        0x0
-      )
-      mulAccIo.c := (
-        0x0
-      )
-      mulAccIo.d := (
-        Cat(False, temp0).asSInt.resize(mulAccIo.d.getWidth)
-      )
-      mulAccIo.e := (
-        Cat(False, temp1).asSInt.resize(mulAccIo.e.getWidth)
+      addIo.b := (
+        Cat(False, temp1).asSInt.resize(addIo.b.getWidth)
       )
       val tempOutp = (
-        mulAccIo.outp.asUInt.resize(q.getWidth)
+        addIo.outp.asUInt.resize(q.getWidth)
       )
       //(q, unusedSumOut)
       q := (

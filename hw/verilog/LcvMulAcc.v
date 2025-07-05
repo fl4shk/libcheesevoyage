@@ -21,21 +21,40 @@ module LcvMulAcc32Del1(
 	input wire signed [32:0] c,
 	input wire signed [32:0] d,
 	input wire signed [32:0] e,
-	output wire signed [32:0] outp
+	output reg signed [32:0] outp
 );
 	//--------
-	reg signed [35:0] pcout = 0;
+	reg signed [35:0] pcout;
 	always @(posedge clk) begin
-		//if (rst) begin
-		//	pcout <= 36'd0;
-		//end else begin
-			pcout <= a * b + c;
-		//end
+		if (rst) begin
+		end else begin
+		end
 	end
-	//assign pcout = 
+	assign pcout = a * b + c;
 	assign outp = pcout + d + e;
 	//--------
 	//always @(posedge clk) begin
 	//end
 	//--------
+endmodule
+
+(* use_dsp48 = "yes" *)
+module LcvAddDel1 #(
+	parameter WIDTH = 33
+)(
+	input wire clk,
+	//input wire rst,
+	input wire signed [WIDTH - 1:0] a,
+	input wire signed [WIDTH - 1:0] b,
+
+	(* keep *)
+	output reg signed [WIDTH - 1:0] outp 
+);
+	always @(posedge clk) begin
+		//if (rst) begin
+		//	outp <= 0;
+		//end else begin
+			outp <= a + b;
+		//end
+	end
 endmodule
