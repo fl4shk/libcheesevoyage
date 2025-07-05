@@ -419,7 +419,7 @@ case class LcvCmpEqDel1Io(
   val b = in(SInt(wordWidth bits))
   //val carry_in = in(Bool())
   //val do_inv = in(Bool())
-  val outp_data = out(SInt(wordWidth + 1 bits))
+  val outp_data = out(SInt(wordWidth + 2 bits))
 }
 case class LcvCmpEqDel1(
   wordWidth: Int=32,
