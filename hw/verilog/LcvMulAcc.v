@@ -29,10 +29,10 @@ module LcvMulAcc32Del1(
 		//if (rst) begin
 		//end else begin
 		//end
-		assign outp = pcout + d + e;
+		outp <= pcout + d + e;
 	end
 	assign pcout = a * b + c;
-	assign outp = pcout + d + e;
+	//assign outp = pcout + d + e;
 	//--------
 	//always @(posedge clk) begin
 	//end
