@@ -685,36 +685,51 @@ object LcvFastCmpEq {
     val q = UInt(tempWidth bits)
     //val q = UInt(tempWidth bits)
     val temp0 = (
-      kind match {
-        case Kind.UseFastCarryChain => {
-          Cat(False, left ^ (~right)).asUInt
-        }
-        case Kind.SubOrR => {
-          Cat(False, left).asUInt
-          //left
-        }
-      }
+      if (optDsp) (
+        left
+      ) else (
+        Cat(False, left ^ (~right)).asUInt
+      )
+      //kind match {
+      //  case Kind.UseFastCarryChain => {
+      //  Cat(False, left ^ (~right)).asUInt
+      //  }
+      //  case Kind.SubOrR => {
+      //    Cat(False, left).asUInt
+      //    //left
+      //  }
+      //}
     )
     val temp1 = (
-      kind match {
-        case Kind.UseFastCarryChain => {
-          U(tempWidth bits, 0 -> True, default -> False)
-        }
-        case Kind.SubOrR => {
-          Cat(False, ~right).asUInt
-          //~right
-        }
-      }
+      if (optDsp) (
+        right
+      ) else (
+        U(tempWidth bits, 0 -> True, default -> False)
+      )
+      //kind match {
+      //  case Kind.UseFastCarryChain => {
+      //    U(tempWidth bits, 0 -> True, default -> False)
+      //  }
+      //  case Kind.SubOrR => {
+      //    Cat(False, ~right).asUInt
+      //    //~right
+      //  }
+      //}
     )
     val tempCarryIn = (
-      kind match {
-        case Kind.UseFastCarryChain => {
-          False
-        }
-        case Kind.SubOrR => {
-          True
-        }
-      }
+      if (optDsp) (
+        False
+      ) else (
+        True
+      )
+      //kind match {
+      //  case Kind.UseFastCarryChain => {
+      //    False
+      //  }
+      //  case Kind.SubOrR => {
+      //    True
+      //  }
+      //}
     )
     //val mulAcc = (optDsp && !optReg) generate (
     //  //if (!optReg) (
