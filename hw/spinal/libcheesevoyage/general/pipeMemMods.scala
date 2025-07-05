@@ -411,6 +411,26 @@ case class LcvAddDel1(
   mapCurrentClockDomain(clock=io.clk/*, reset=io.rst*/)
   setIoCd()
 }
+case class LcvCmpEqDel1Io(
+  wordWidth: Int=33,
+) extends Bundle {
+  val clk = in(Bool())
+  val a = in(SInt(wordWidth bits))
+  val b = in(SInt(wordWidth bits))
+  //val carry_in = in(Bool())
+  //val do_inv = in(Bool())
+  val outp_data = out(SInt(wordWidth + 1 bits))
+}
+case class LcvCmpEqDel1(
+  wordWidth: Int=33,
+) extends BlackBox {
+  val io = LcvCmpEqDel1Io()
+  addGeneric("WIDTH", wordWidth)
+  noIoPrefix()
+  addRTLPath("./hw/verilog/LcvMulAcc.sv")
+  mapCurrentClockDomain(clock=io.clk/*, reset=io.rst*/)
+  setIoCd()
+}
 
 object LcvFastOrR {
   def apply(
@@ -622,19 +642,20 @@ object LcvFastAndR {
 //  )
 //}
 object LcvFastCmpEq {
-  sealed trait Kind
-  object Kind {
-    case object UseFastCarryChain extends Kind
-    case object SubOrR extends Kind 
-  }
+  //sealed trait Kind
+  //object Kind {
+  //  case object UseFastCarryChain extends Kind
+  //  case object SubOrR extends Kind 
+  //}
   def apply(
     left: UInt,
     right: UInt,
     //mulAccIo: LcvMulAcc32Io,
-    addIo: LcvAddDel1Io,
+    //addIo: LcvAddDel1Io,
+    cmpEqIo: LcvCmpEqDel1Io,
     optDsp: Boolean=false,
     optReg: Boolean=false,
-    kind: Kind=Kind.SubOrR
+    //kind: Kind=Kind.SubOrR
   ): (Bool, UInt) = {
     assert(
       left.getWidth == right.getWidth,
@@ -725,17 +746,17 @@ object LcvFastCmpEq {
       //mulAccIo.c := (
       //  0x0
       //)
-      addIo.a := (
-        Cat(False, temp0).asSInt.resize(addIo.a.getWidth)
+      cmpEqIo.a := (
+        temp0.asSInt.resize(cmpEqIo.a.getWidth)
       )
-      addIo.b := (
-        Cat(False, temp1).asSInt.resize(addIo.b.getWidth)
+      cmpEqIo.b := (
+        temp1.asSInt.resize(cmpEqIo.b.getWidth)
       )
-      addIo.carry_in := (
-        tempCarryIn
-      )
+      //addIo.carry_in := (
+      //  tempCarryIn
+      //)
       val tempOutp = (
-        addIo.outp_sum.asUInt.resize(q.getWidth)
+        cmpEqIo.outp_data.asUInt.resize(q.getWidth)
       )
       //(q, unusedSumOut)
       q := (
@@ -808,14 +829,15 @@ object LcvFastCmpEq {
     //    + temp1
     //  )
     //)
-    kind match {
-      case Kind.UseFastCarryChain => {
-        (q.msb, q)
-      }
-      case Kind.SubOrR => {
-        (!q(q.high - 1 downto 0).orR, q)
-      }
-    }
+    (q.msb, q)
+    //kind match {
+    //  case Kind.UseFastCarryChain => {
+    //    (q.msb, q)
+    //  }
+    //  case Kind.SubOrR => {
+    //    (!q(q.high - 1 downto 0).orR, q)
+    //  }
+    //}
   }
 }
 

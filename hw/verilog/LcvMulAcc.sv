@@ -79,20 +79,23 @@ module LcvAddDel1 #(
 	end
 endmodule
 
-//(* use_dsp48 = "yes" *)
-//module LcvSvCmpEqDel1 #(
-//	parameter WIDTH=32
-//)(
-//	input wire clk,
-//	input wire signed [WIDTH - 1:0] a,
-//	input wire signed [WIDTH - 1:0] b,
-//	input wire do_cmp_ne,
-//	output wire signed [WIDTH - 1:0] outp_sum
-//);
-//	always @(posedge clk) begin
-//		outp_sum <= a + b;
-//	end
-//endmodule
+(* use_dsp48 = "yes" *)
+module LcvCmpEqDel1 #(
+	parameter WIDTH=32
+)(
+	input logic clk,
+	input logic signed [WIDTH - 1:0] a,
+	input logic signed [WIDTH - 1:0] b,
+	output logic signed [WIDTH:0] outp_data
+);
+	wire signed [WIDTH:0] my_a = {1'b0, a};
+	wire signed [WIDTH:0] my_b = {1'b0, b};
+	wire signed [WIDTH:0] my_carry_in = {{WIDTH{1'b0}}, 1'b1};
+	always @(posedge clk) begin
+		outp_data <= my_a ^ (~my_b) + my_carry_in;
+		//outp_sum <= a + b;
+	end
+endmodule
 
 //(* use_dsp48 = "yes" *)
 //module LcvCmpEqDel1 #(
