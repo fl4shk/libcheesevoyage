@@ -59,7 +59,7 @@ module LcvAddDel1 #(
 		//if (rst) begin
 		//	outp <= 0;
 		//end else begin
-		if (!do_cmp_ne) begin
+		if (!do_inv) begin
 			outp_sum <= temp_sum;
 		end else begin
 			outp_sum <= ~temp_sum;
