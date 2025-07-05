@@ -398,7 +398,7 @@ case class LcvAddDel1Io(
   val a = in(SInt(wordWidth bits))
   val b = in(SInt(wordWidth bits))
   val carry_in = in(Bool())
-  val outp = out(SInt(wordWidth bits))
+  val outp_sum = out(SInt(wordWidth bits))
 }
 case class LcvAddDel1(
   wordWidth: Int=33,
@@ -734,7 +734,7 @@ object LcvFastCmpEq {
         tempCarryIn
       )
       val tempOutp = (
-        addIo.outp.asUInt.resize(q.getWidth)
+        addIo.outp_sum.asUInt.resize(q.getWidth)
       )
       //(q, unusedSumOut)
       q := (
