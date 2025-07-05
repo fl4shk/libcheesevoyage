@@ -639,6 +639,12 @@ object LcvFastCmpEq {
       left.getWidth == right.getWidth,
       f"leftWidth:${left.getWidth} != rightWidth:${right.getWidth}"
     )
+    if (optDsp) {
+      assert(
+        optReg,
+        f"with `optDsp == true`, `optReg == true` is required"
+      )
+    }
     //val q = Bool()
     //val unusedSumOut = UInt(left.getWidth bits)
     val tempWidth = (
