@@ -49,13 +49,13 @@ module LcvAddDel1 #(
 	input wire signed [WIDTH - 1:0] b,
 	input wire carry_in,
 
-	output reg signed [WIDTH - 1:0] outp 
+	output reg signed [WIDTH - 1:0] outp_sum
 );
 	always @(posedge clk) begin
 		//if (rst) begin
 		//	outp <= 0;
 		//end else begin
-			outp <= a + b + $signed({{(WIDTH - 1){1'b0}}, carry_in});
+			outp_sum <= a + b + $signed({{(WIDTH - 1){1'b0}}, carry_in});
 		//end
 	end
 endmodule
