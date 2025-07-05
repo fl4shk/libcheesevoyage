@@ -89,7 +89,7 @@ module LcvCmpEqDel1 #(
 	output logic signed [WIDTH:0] outp_data
 );
 	wire signed [WIDTH:0] my_a = $signed({1'b0, a});
-	wire signed [WIDTH:0] my_b = $signed({1'b0, b});
+	wire signed [WIDTH:0] my_b = $signed({1'b1, b});
 	wire signed [WIDTH:0] my_carry_in = (
 		$signed({{(WIDTH){1'b0}}, 1'b1})
 	);
