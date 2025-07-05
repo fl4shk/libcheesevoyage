@@ -622,20 +622,10 @@ object LcvFastAndR {
 //  )
 //}
 object LcvFastCmpEq {
-  sealed trait Kind {
-    private[libcheesevoyage] def _doCmpNe: Bool
-  }
+  sealed trait Kind
   object Kind {
-    case class UseFastCarryChain(
-      doCmpNe: Bool
-    ) extends Kind {
-      private[libcheesevoyage] def _doCmpNe = doCmpNe
-    }
-    case class SubOrR(
-      doCmpNe: Bool
-    ) extends Kind {
-      private[libcheesevoyage] def _doCmpNe = doCmpNe
-    }
+    case object UseFastCarryChain extends Kind
+    case object SubOrR extends Kind 
   }
   def apply(
     left: UInt,
@@ -644,7 +634,7 @@ object LcvFastCmpEq {
     addIo: LcvAddDel1Io,
     optDsp: Boolean=false,
     optReg: Boolean=false,
-    kind: Kind,//=Kind.SubOrR
+    kind: Kind=Kind.SubOrR
   ): (Bool, UInt) = {
     assert(
       left.getWidth == right.getWidth,
@@ -675,10 +665,10 @@ object LcvFastCmpEq {
     //val q = UInt(tempWidth bits)
     val temp0 = (
       kind match {
-        case Kind.UseFastCarryChain(doCmpNe) => {
+        case Kind.UseFastCarryChain => {
           Cat(False, left ^ (~right)).asUInt
         }
-        case Kind.SubOrR(doCmpNe) => {
+        case Kind.SubOrR => {
           Cat(False, left).asUInt
           //left
         }
@@ -686,10 +676,10 @@ object LcvFastCmpEq {
     )
     val temp1 = (
       kind match {
-        case Kind.UseFastCarryChain(doCmpNe) => {
+        case Kind.UseFastCarryChain => {
           U(tempWidth bits, 0 -> True, default -> False)
         }
-        case Kind.SubOrR(doCmpNe) => {
+        case Kind.SubOrR => {
           Cat(False, ~right).asUInt
           //~right
         }
@@ -697,10 +687,10 @@ object LcvFastCmpEq {
     )
     val tempCarryIn = (
       kind match {
-        case Kind.UseFastCarryChain(doCmpNe) => {
+        case Kind.UseFastCarryChain => {
           False
         }
-        case Kind.SubOrR(doCmpNe) => {
+        case Kind.SubOrR => {
           True
         }
       }
@@ -819,10 +809,10 @@ object LcvFastCmpEq {
     //  )
     //)
     kind match {
-      case Kind.UseFastCarryChain(doCmpNe) => {
+      case Kind.UseFastCarryChain => {
         (q.msb, q)
       }
-      case Kind.SubOrR(doCmpNe) => {
+      case Kind.SubOrR => {
         (!q(q.high - 1 downto 0).orR, q)
       }
     }
