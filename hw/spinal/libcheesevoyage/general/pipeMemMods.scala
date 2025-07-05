@@ -398,6 +398,7 @@ case class LcvAddDel1Io(
   val a = in(SInt(wordWidth bits))
   val b = in(SInt(wordWidth bits))
   val carry_in = in(Bool())
+  val do_inv = in(Bool())
   val outp_sum = out(SInt(wordWidth bits))
 }
 case class LcvAddDel1(
@@ -621,10 +622,20 @@ object LcvFastAndR {
 //  )
 //}
 object LcvFastCmpEq {
-  sealed trait Kind
+  sealed trait Kind {
+    private[libcheesevoyage] def _doCmpNe: Bool
+  }
   object Kind {
-    case object UseFastCarryChain extends Kind
-    case object SubOrR extends Kind 
+    case class UseFastCarryChain(
+      doCmpNe: Bool
+    ) extends Kind {
+      private[libcheesevoyage] def _doCmpNe = doCmpNe
+    }
+    case class SubOrR(
+      doCmpNe: Bool
+    ) extends Kind {
+      private[libcheesevoyage] def _doCmpNe = doCmpNe
+    }
   }
   def apply(
     left: UInt,
@@ -633,7 +644,7 @@ object LcvFastCmpEq {
     addIo: LcvAddDel1Io,
     optDsp: Boolean=false,
     optReg: Boolean=false,
-    kind: Kind=Kind.SubOrR
+    kind: Kind,//=Kind.SubOrR
   ): (Bool, UInt) = {
     assert(
       left.getWidth == right.getWidth,
@@ -664,10 +675,10 @@ object LcvFastCmpEq {
     //val q = UInt(tempWidth bits)
     val temp0 = (
       kind match {
-        case Kind.UseFastCarryChain => {
+        case Kind.UseFastCarryChain(doCmpNe) => {
           Cat(False, left ^ (~right)).asUInt
         }
-        case Kind.SubOrR => {
+        case Kind.SubOrR(doCmpNe) => {
           Cat(False, left).asUInt
           //left
         }
@@ -675,10 +686,10 @@ object LcvFastCmpEq {
     )
     val temp1 = (
       kind match {
-        case Kind.UseFastCarryChain => {
+        case Kind.UseFastCarryChain(doCmpNe) => {
           U(tempWidth bits, 0 -> True, default -> False)
         }
-        case Kind.SubOrR => {
+        case Kind.SubOrR(doCmpNe) => {
           Cat(False, ~right).asUInt
           //~right
         }
@@ -686,10 +697,10 @@ object LcvFastCmpEq {
     )
     val tempCarryIn = (
       kind match {
-        case Kind.UseFastCarryChain => {
+        case Kind.UseFastCarryChain(doCmpNe) => {
           False
         }
-        case Kind.SubOrR => {
+        case Kind.SubOrR(doCmpNe) => {
           True
         }
       }
@@ -776,14 +787,16 @@ object LcvFastCmpEq {
     //}
     else {
       val tempOutp = (
-        Cat(
-          U(s"${temp0.getWidth}'d0"),
+        //Cat(
+          //U(s"${temp0.getWidth}'d0"),
           (
             temp0
             + temp1
             + Cat(False, tempCarryIn).asUInt.resize(temp0.getWidth)
-          )(temp0.getWidth - 1 downto 0).orR
-        ).asUInt
+          )(temp0.getWidth - 1 downto 0).orR.asSInt.resize(
+            q.getWidth
+          ).asUInt
+        //).asUInt
       )
       q := (
         if (optReg) (
@@ -806,10 +819,10 @@ object LcvFastCmpEq {
     //  )
     //)
     kind match {
-      case Kind.UseFastCarryChain => {
+      case Kind.UseFastCarryChain(doCmpNe) => {
         (q.msb, q)
       }
-      case Kind.SubOrR => {
+      case Kind.SubOrR(doCmpNe) => {
         (!q(q.high - 1 downto 0).orR, q)
       }
     }

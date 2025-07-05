@@ -41,21 +41,59 @@ endmodule
 
 (* use_dsp48 = "yes" *)
 module LcvAddDel1 #(
-	parameter WIDTH = 33
+	parameter WIDTH=33
 )(
 	input wire clk,
 	//input wire rst,
 	input wire signed [WIDTH - 1:0] a,
 	input wire signed [WIDTH - 1:0] b,
 	input wire carry_in,
+	input wire do_inv,
 
 	output reg signed [WIDTH - 1:0] outp_sum
 );
+	wire signed [WIDTH - 1:0] temp_sum;
+	assign temp_sum = a + b + $signed({{(WIDTH - 1){1'b0}}, carry_in});
+
 	always @(posedge clk) begin
 		//if (rst) begin
 		//	outp <= 0;
 		//end else begin
-			outp_sum <= a + b + $signed({{(WIDTH - 1){1'b0}}, carry_in});
+		if (!do_cmp_ne) begin
+			outp_sum <= temp_sum;
+		end else begin
+			outp_sum <= ~temp_sum;
+		end
 		//end
 	end
 endmodule
+
+//(* use_dsp48 = "yes" *)
+//module LcvSvCmpEqDel1 #(
+//	parameter WIDTH=32
+//)(
+//	input wire clk,
+//	input wire signed [WIDTH - 1:0] a,
+//	input wire signed [WIDTH - 1:0] b,
+//	input wire do_cmp_ne,
+//	output wire signed [WIDTH - 1:0] outp_sum
+//);
+//	always @(posedge clk) begin
+//		outp_sum <= a + b;
+//	end
+//endmodule
+
+//(* use_dsp48 = "yes" *)
+//module LcvCmpEqDel1 #(
+//	parameter WIDTH=32
+//)(
+//	input wire clk,
+//	input wire signed [WIDTH - 1:0] a,
+//	input wire signed [WIDTH - 1:0] b,
+//	input wire carry_in,
+//
+//	output reg signed [WIDTH - 1:0] outp_sum
+//);
+//	always @(posedge clk) begin
+//	end
+//endmodule
