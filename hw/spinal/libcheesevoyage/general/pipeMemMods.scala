@@ -412,7 +412,7 @@ case class LcvAddDel1(
   setIoCd()
 }
 case class LcvCmpEqDel1Io(
-  wordWidth: Int=33,
+  wordWidth: Int=32,
 ) extends Bundle {
   val clk = in(Bool())
   val a = in(SInt(wordWidth bits))
@@ -422,7 +422,7 @@ case class LcvCmpEqDel1Io(
   val outp_data = out(SInt(wordWidth + 1 bits))
 }
 case class LcvCmpEqDel1(
-  wordWidth: Int=33,
+  wordWidth: Int=32,
 ) extends BlackBox {
   val io = LcvCmpEqDel1Io()
   addGeneric("WIDTH", wordWidth)
