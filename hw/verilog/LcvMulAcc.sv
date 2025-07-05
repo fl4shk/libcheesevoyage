@@ -88,11 +88,18 @@ module LcvCmpEqDel1 #(
 	input logic signed [WIDTH - 1:0] b,
 	output logic signed [WIDTH + 1:0] outp_data
 );
-	wire signed [WIDTH + 1:0] my_a = {2'b0, a};
-	wire signed [WIDTH + 1:0] my_b = {2'b0, b};
-	wire signed [WIDTH + 1:0] my_carry_in = {{(WIDTH + 1){1'b0}}, 1'b1};
+	wire signed [WIDTH + 1:0] my_a = $signed({2'b0, a});
+	wire signed [WIDTH + 1:0] my_b = $signed({2'b0, b});
+	wire signed [WIDTH + 1:0] my_carry_in = (
+		$signed({{(WIDTH + 1){1'b0}}, 1'b1})
+	);
 	always @(posedge clk) begin
-		outp_data <= my_a ^ (~my_b) + my_carry_in;
+		outp_data <= (
+			$signed(
+				$signed(($signed(my_a) ^ (~$signed(my_b))))
+				+ my_carry_in
+			)
+		);
 		//outp_sum <= a + b;
 	end
 endmodule

@@ -692,7 +692,7 @@ object LcvFastCmpEq {
       )
       //kind match {
       //  case Kind.UseFastCarryChain => {
-      //  Cat(False, left ^ (~right)).asUInt
+      //    Cat(False, left ^ (~right)).asUInt
       //  }
       //  case Kind.SubOrR => {
       //    Cat(False, left).asUInt
