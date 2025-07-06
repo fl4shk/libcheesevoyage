@@ -455,7 +455,14 @@ case class LongDivMultiCycle(
       init(State.IDLE)
     )
     val nextTempRema = Vec.fill(2)(
-      UInt(rTempRema(0).getWidth bits)
+      UInt(
+        (
+          rTempRema(0).getWidth 
+          //+ log2Up(rTempNumer.size)
+          + 1
+        )
+        bits
+      )
     )
     nextTempRema.foreach(item => item := 0x0)
     switch (rState) {
@@ -550,79 +557,74 @@ case class LongDivMultiCycle(
         //    init=item.getZero,
         //  )
         //})
+        val myTempRange = (
+          nextTempRema(1).high downto log2Up(rTempNumer.size)
+        )
         val tempRemaMux = (
           Mux[UInt](
             !rCmpGeValid,
             RegNext(
               next=nextTempRema(1),
               init=nextTempRema(1).getZero,
-            ),
+            )(rTempRema(0).bitsRange),
             (
               RegNext(
                 next=nextTempRema(1),
                 init=nextTempRema(1).getZero,
-              ) - (
+              )(rTempRema(0).bitsRange) - (
                 rTempDenom
               )
             )
-            //RegNext(
-            //  next=(nextTempRema(1) - rTempDenom),
-            //  init=(nextTempRema(1) - rTempDenom).getZero
-            //),
-          ),
+          )
         )
         nextTempRema(1) := nextTempRema(0)
         rCmpGeValid := False
+        nextTempRema(0) := Cat(
+          tempRemaMux,
+          rTempNumer(
+            //RegNext(rCnt(0), init=rCnt(0).getZero)
+            //(rCnt(0) + 1)
+            rCnt(0)
+            .asUInt.resized
+          ),
+        ).asUInt//(nextTempRema(0).bitsRange)
+        //when (
+        //  //rCnt(0) < rTempNumer.size
+        //  //&& rCnt(0) >= 0
+        //  !rCnt(0).msb
+        //) {
+        //  nextTempRema(0) := Cat(
+        //    tempRemaMux,
+        //    rTempNumer(
+        //      //RegNext(rCnt(0), init=rCnt(0).getZero)
+        //      //(rCnt(0) + 1)
+        //      rCnt(0)
+        //      .asUInt.resized
+        //    ),
+        //  ).asUInt(nextTempRema(0).bitsRange)
+        //  //--------
+        //} otherwise {
+        //  nextTempRema(0) := tempRemaMux
+        //}
         when (
-          //rCnt(0) < rTempNumer.size
-          //&& rCnt(0) >= 0
-          !rCnt(0).msb
+          //RegNext(next=nextTempRema(1), init=nextTempRema(1).getZero)
+          nextTempRema(1)(
+            nextTempRema(1).high - log2Up(rTempNumer.size)
+            downto 0 //log2Up(rTempNumer.size)
+          )
+          >= rTempDenom
         ) {
-          nextTempRema(0) := Cat(
-            tempRemaMux,
-            rTempNumer(
-              //RegNext(rCnt(0), init=rCnt(0).getZero)
-              //(rCnt(0) + 1)
-              rCnt(0)
-              .asUInt.resized
-            ),
-          ).asUInt(nextTempRema(0).bitsRange)
-          when (
-            //RegNext(next=nextTempRema(1), init=nextTempRema(1).getZero)
-            nextTempRema(1)
-            >= rTempDenom
-          ) {
-            rCmpGeValid := True
-          }
-          //when (rCmpGeValid) {
-          //  rTempQuot(0)(
-          //    RegNext(rCnt(0), init=rCnt(0).getZero)
-          //    //rCnt(0)
-          //    .asUInt.resized
-          //  ) := True
-          //}
-          //--------
-          //when (rCnt(1).msb) {
-          //  rTempRema(0) := nextTempRema(1)
-          //}
-        } otherwise {
-          nextTempRema(0) := tempRemaMux
+          rCmpGeValid := True
         }
-        //when (rCnt(0).msb) {
-          //rTempRema(0) := nextTempRema(1)
-        //}
-        //when (rCmpGeValid) {
-        //  rTempQuot(0)(
-        //    RegNext(rCnt(0), init=rCnt(0).getZero)
-        //    //rCnt(0)
-        //    .asUInt.resized
-        //  ) := True
-        //}
         //--------
-        when (RegNext(rCnt(0).msb, init=False)) {
+        when (RegNext(next=rCnt(0).msb, init=False)) {
           rState := State.YIELD_RESULT_PIPE_2
         } otherwise {
-          rTempRema(0) := nextTempRema(1)
+          rTempRema(0) := (
+            nextTempRema(1)(
+              nextTempRema(1).high downto 1//log2Up(rTempNumer.size)
+            )
+          )
           when (rCmpGeValid) {
             rTempQuot(0)(
               RegNext(rCnt(0), init=rCnt(0).getZero)
