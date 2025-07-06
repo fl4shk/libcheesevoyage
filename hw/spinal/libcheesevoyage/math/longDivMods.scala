@@ -609,7 +609,7 @@ case class LongDivMultiCycle(
         when (
           //RegNext(next=nextTempRema(1), init=nextTempRema(1).getZero)
           nextTempRema(1)(
-            nextTempRema(1).high - log2Up(rTempNumer.size)
+            nextTempRema(1).high - 1
             downto 0 //log2Up(rTempNumer.size)
           )
           >= rTempDenom
