@@ -369,10 +369,10 @@ case class LongDivMultiCycle(
     for (idx <- 0 until cfg.tempShapeWidth) {
       rTempNumer(idx).init(rTempNumer(idx).getZero)
       //rTempDenom(idx).init(rTempDenom(idx).getZero)
-      rTempQuot(idx).foreach(_.init(_.getZero))
+      rTempQuot(idx).foreach(item => item.init(item.getZero))
       //rTempRema(idx).init(rTempRema(idx).getZero)
     }
-    rTempRema.foreach(_.init(_.getZero))
+    rTempRema.foreach(item => item.init(item.getZero))
     //tempNumer := RegNext(next=tempNumer, init=tempNumer.getZero)
     //tempDenom := RegNext(next=tempDenom, init=tempDenom.getZero)
     val rInpSigned = Reg(Bool(), init=False)
@@ -403,10 +403,10 @@ case class LongDivMultiCycle(
       is (State.IDLE) {
         when (inp.valid) {
           //rTempQuot := 0x0
-          rTempQuot.foreach(_.foreach(myQuotBit => {
+          rTempQuot.foreach(item => item.foreach(myQuotBit => {
             myQuotBit := False
           }))
-          rTempRema.foreach(_ := 0x0)
+          rTempRema.foreach(item => item := 0x0)
           rInpSigned := inp.signed
           //rTempNumer := inp.numer
           rTempNumer.assignFromBits(inp.numer.asBits)
