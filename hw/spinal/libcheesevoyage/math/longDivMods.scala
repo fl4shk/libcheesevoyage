@@ -301,7 +301,9 @@ case class LongDivMultiCycle(
   chunkWidth: Int,
   signedReset: BigInt=0x0,
   formal: Boolean=false,
+  optDsp: Boolean=false,
 ) extends Component {
+  addAttribute("use_dsp48", "yes")
   val cfg = LongDivConfig(
     mainWidth=mainWidth,
     denomWidth=denomWidth,
@@ -348,11 +350,17 @@ case class LongDivMultiCycle(
     //)
     //val rTempQuot = Reg(cfg.buildTempShape()) init(0x0)
     val rTempQuot = Reg(
-      Vec.fill(cfg.tempShapeWidth)(
-        Bool()
+      Vec.fill(2)(
+        Vec.fill(cfg.tempShapeWidth)(
+          Bool()
+        )
       )
     )
-    val rTempRema = Reg(cfg.buildTempShape()) init(0x0)
+    val rTempRema = Reg(
+      Vec.fill(2)(
+        cfg.buildTempShape() //init(0x0)
+      )
+    )
     //val rTempRema = Reg(
     //  Vec.fill(cfg.tempShapeWidth)(
     //    Bool()
@@ -361,9 +369,10 @@ case class LongDivMultiCycle(
     for (idx <- 0 until cfg.tempShapeWidth) {
       rTempNumer(idx).init(rTempNumer(idx).getZero)
       //rTempDenom(idx).init(rTempDenom(idx).getZero)
-      rTempQuot(idx).init(rTempQuot(idx).getZero)
+      rTempQuot(idx).foreach(_.init(_.getZero))
       //rTempRema(idx).init(rTempRema(idx).getZero)
     }
+    rTempRema.foreach(_.init(_.getZero))
     //tempNumer := RegNext(next=tempNumer, init=tempNumer.getZero)
     //tempDenom := RegNext(next=tempDenom, init=tempDenom.getZero)
     val rInpSigned = Reg(Bool(), init=False)
@@ -381,6 +390,7 @@ case class LongDivMultiCycle(
         IDLE,
         CAPTURE_INPUTS_PIPE,
         RUNNING,
+        YIELD_RESULT_PIPE_2,
         YIELD_RESULT_PIPE_1,
         YIELD_RESULT
         = newElement()
@@ -393,10 +403,10 @@ case class LongDivMultiCycle(
       is (State.IDLE) {
         when (inp.valid) {
           //rTempQuot := 0x0
-          rTempQuot.foreach(myQuotBit => {
+          rTempQuot.foreach(_.foreach(myQuotBit => {
             myQuotBit := False
-          })
-          rTempRema := 0x0
+          }))
+          rTempRema.foreach(_ := 0x0)
           rInpSigned := inp.signed
           //rTempNumer := inp.numer
           rTempNumer.assignFromBits(inp.numer.asBits)
@@ -460,18 +470,18 @@ case class LongDivMultiCycle(
           //  for (myCnt <- 0 until rTempNumer.getWidth) {
           //    is (myCnt) {
                 val nextTempRema = Vec.fill(2)(
-                  UInt(rTempRema.getWidth bits)
+                  UInt(rTempRema(0).getWidth bits)
                 )
                 nextTempRema(0) := Cat(
-                  rTempRema,
+                  rTempRema(0),
                   rTempNumer(rCnt.resized),
                 ).asUInt(rTempRema.bitsRange)
                 nextTempRema(1) := nextTempRema(0)
                 when (nextTempRema(0) >= rTempDenom) {
                   nextTempRema(1) := nextTempRema(0) - rTempDenom
-                  rTempQuot(rCnt.resized) := True
+                  rTempQuot(0)(rCnt.resized) := True
                 }
-                rTempRema := nextTempRema(1)
+                rTempRema(0) := nextTempRema(1)
           //    }
           //  }
           //}
@@ -479,26 +489,32 @@ case class LongDivMultiCycle(
           rState := State.YIELD_RESULT_PIPE_1
         }
       }
-      is (State.YIELD_RESULT_PIPE_1) {
+      is (State.YIELD_RESULT_PIPE_2) {
         when (rInpSigned) {
-          when (rNumerWasSgnLtz =/= rDenomWasSgnLtz) {
-            //rTempQuot := ((~rTempQuot) + 1).resized
-            rTempQuot.assignFromBits(
-              ((~rTempQuot.asBits.asUInt) + 1).resized.asBits
-            )
-          }
-          when (rNumerWasSgnLtz) {
-            // This is C's rule for signed remainder
-            rTempRema := ((~rTempRema) + 1).resized
-          }
+          rState := State.YIELD_RESULT_PIPE_1
+        } otherwise {
+          rState := State.YIELD_RESULT
         }
-        rState := State.YIELD_RESULT
+        rTempQuot(1).assignFromBits(rTempQuot(0).asBits)
+        rTempRema(1) := rTempRema(0)
+      }
+      is (State.YIELD_RESULT_PIPE_1) {
+        when (rNumerWasSgnLtz =/= rDenomWasSgnLtz) {
+          //rTempQuot := ((~rTempQuot) + 1).resized
+          rTempQuot(1).assignFromBits(
+            ((~rTempQuot(0).asBits.asUInt) + 1).resized.asBits
+          )
+        }
+        when (rNumerWasSgnLtz) {
+          // This is C's rule for signed remainder
+          rTempRema(1) := ((~rTempRema(0)) + 1).resized
+        }
       }
       is (State.YIELD_RESULT) {
         outp.ready := True
         //outp.quot := rTempQuot
-        outp.quot := rTempQuot.asBits.asUInt
-        outp.rema := rTempRema
+        outp.quot := rTempQuot(1).asBits.asUInt
+        outp.rema := rTempRema(1)
         rState := State.IDLE
       }
     }
