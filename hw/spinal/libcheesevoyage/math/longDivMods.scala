@@ -509,6 +509,7 @@ case class LongDivMultiCycle(
           // This is C's rule for signed remainder
           rTempRema(1) := ((~rTempRema(0)) + 1).resized
         }
+        rState := State.YIELD_RESULT
       }
       is (State.YIELD_RESULT) {
         outp.ready := True
