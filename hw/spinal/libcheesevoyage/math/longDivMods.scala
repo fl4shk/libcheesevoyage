@@ -369,7 +369,7 @@ case class LongDivMultiCycle(
     for (idx <- 0 until cfg.tempShapeWidth) {
       rTempNumer(idx).init(rTempNumer(idx).getZero)
       //rTempDenom(idx).init(rTempDenom(idx).getZero)
-      rTempQuot(idx).foreach(item => item.init(item.getZero))
+      rTempQuot.foreach(item => item(idx).init(item(idx).getZero))
       //rTempRema(idx).init(rTempRema(idx).getZero)
     }
     rTempRema.foreach(item => item.init(item.getZero))
