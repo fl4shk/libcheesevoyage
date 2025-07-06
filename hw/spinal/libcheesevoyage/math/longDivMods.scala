@@ -301,9 +301,9 @@ case class LongDivMultiCycle(
   chunkWidth: Int,
   signedReset: BigInt=0x0,
   formal: Boolean=false,
-  optDsp: Boolean=false,
+  //optDsp: Boolean=false,
 ) extends Component {
-  addAttribute("use_dsp48", "yes")
+  //addAttribute("use_dsp48", "yes")
   val cfg = LongDivConfig(
     mainWidth=mainWidth,
     denomWidth=denomWidth,
@@ -361,6 +361,13 @@ case class LongDivMultiCycle(
         cfg.buildTempShape() //init(0x0)
       )
     )
+    //rTempRema(0) := (
+    //  RegNext(
+    //    next=rTempRema(0),
+    //    init=rTempRema(0).getZero,
+    //  )
+    //)
+    //rTempRema(1).setAsReg() init(0x0)
     //val rTempRema = Reg(
     //  Vec.fill(cfg.tempShapeWidth)(
     //    Bool()
@@ -385,10 +392,53 @@ case class LongDivMultiCycle(
     //val rCnt = Reg(UInt(log2Up(rTempNumer.getWidth) + 2 bits)) init(0x0)
     val rCnt = Reg(
       Vec.fill(2)(
-        UInt(log2Up(rTempNumer.size) + 2 bits)
+        SInt(log2Up(rTempNumer.size) + 2 bits)
       )
     )
-    rCnt.foreach(item => item.init(0x0))
+    rCnt.foreach(item => {
+      item.init(0x0)
+      //if (optDsp) {
+      //  item.addAttribute("use_dsp48", "yes")
+      //}
+    })
+
+    //rCnt(0).init(
+    //  rTempNumer.size
+    //)
+    //rCnt(1).init(
+    //  rTempNumer.size - 1
+    //)
+
+    //val nextTempRema = Vec.fill(2)(
+    //  UInt(rTempRema(0).getWidth bits)
+    //)
+    //nextTempRema.foreach(item => {
+    //  item := (
+    //    RegNext(
+    //      next=item,
+    //      init=item.getZero,
+    //    )
+    //  )
+    //})
+    val rCmpGeValid = (
+      Reg(
+        Bool(),
+        init=False
+      )
+    )
+    //val myAddDel1 = LcvAddDel1(
+    //  wordWidth=cfg.tempShapeWidth
+    //)
+    //myAddDel1.io.inp.a := (
+    //  nextTempRema(0).asSInt
+    //)
+    //myAddDel1.io.inp.b := (
+    //  ~rTempDenom.asSInt
+    //)
+    //myAddDel1.io.inp.carry := (
+    //  True
+    //)
+    //myAddDel1.io.outp.sum_carry
     object State
     extends SpinalEnum(defaultEncoding=binaryOneHot) {
       val
@@ -404,6 +454,10 @@ case class LongDivMultiCycle(
       Reg(State())
       init(State.IDLE)
     )
+    val nextTempRema = Vec.fill(2)(
+      UInt(rTempRema(0).getWidth bits)
+    )
+    nextTempRema.foreach(item => item := 0x0)
     switch (rState) {
       is (State.IDLE) {
         when (inp.valid) {
@@ -420,15 +474,28 @@ case class LongDivMultiCycle(
           rState := State.CAPTURE_INPUTS_PIPE
           outp.ready := False
         }
-      }
-      is (State.CAPTURE_INPUTS_PIPE) {
         rCnt(0) := (
-          //rTempNumer.getWidth - 1
           rTempNumer.size - 1
         )
         rCnt(1) := (
+          //rTempNumer.getWidth - 1
           rTempNumer.size - 2
         )
+      }
+      is (State.CAPTURE_INPUTS_PIPE) {
+        //rCnt(0) := (
+        //  rTempNumer.size - 1
+        //)
+        //rCnt(1) := (
+        //  //rTempNumer.getWidth - 1
+        //  rTempNumer.size - 2
+        //)
+        //rCnt(2) := (
+        //  rTempNumer.size - 3
+        //)
+        //rCnt(2) := (
+        //  rTempNumer.size - 2
+        //)
         when (!rInpSigned) {
           //tempNumer := inp.numer.resized
           //tempDenom := inp.denom.resized
@@ -470,32 +537,101 @@ case class LongDivMultiCycle(
           //--------
         }
         rState := State.RUNNING
+        rCmpGeValid := False
+        //nextTempRema.foreach(item => item := 0x0)
       }
       is (State.RUNNING) {
+        //--------
         //rCnt(0) := rCnt(0) - 1
         rCnt.foreach(item => item := item - 1)
-        //switch (rCnt) {
-        //  for (myCnt <- 0 until rTempNumer.getWidth) {
-        //    is (myCnt) {
-              val nextTempRema = Vec.fill(2)(
-                UInt(rTempRema(0).getWidth bits)
+        //nextTempRema.foreach(item => {
+        //  item := RegNext(
+        //    next=item,
+        //    init=item.getZero,
+        //  )
+        //})
+        val tempRemaMux = (
+          Mux[UInt](
+            !rCmpGeValid,
+            RegNext(
+              next=nextTempRema(1),
+              init=nextTempRema(1).getZero,
+            ),
+            (
+              RegNext(
+                next=nextTempRema(1),
+                init=nextTempRema(1).getZero,
+              ) - (
+                rTempDenom
               )
-              nextTempRema(0) := Cat(
-                rTempRema(0),
-                rTempNumer(rCnt(0).resized),
-              ).asUInt(rTempRema(0).bitsRange)
-              nextTempRema(1) := nextTempRema(0)
-              when (nextTempRema(0) >= rTempDenom) {
-                nextTempRema(1) := nextTempRema(0) - rTempDenom
-                rTempQuot(0)(rCnt(0).resized) := True
-              }
-              rTempRema(0) := nextTempRema(1)
-        //    }
-        //  }
-        //}
-        when (rCnt(1).msb) {
-          rState := State.YIELD_RESULT_PIPE_2
+            )
+            //RegNext(
+            //  next=(nextTempRema(1) - rTempDenom),
+            //  init=(nextTempRema(1) - rTempDenom).getZero
+            //),
+          ),
+        )
+        nextTempRema(1) := nextTempRema(0)
+        rCmpGeValid := False
+        when (
+          //rCnt(0) < rTempNumer.size
+          //&& rCnt(0) >= 0
+          !rCnt(0).msb
+        ) {
+          nextTempRema(0) := Cat(
+            tempRemaMux,
+            rTempNumer(
+              //RegNext(rCnt(0), init=rCnt(0).getZero)
+              //(rCnt(0) + 1)
+              rCnt(0)
+              .asUInt.resized
+            ),
+          ).asUInt(nextTempRema(0).bitsRange)
+          when (
+            //RegNext(next=nextTempRema(1), init=nextTempRema(1).getZero)
+            nextTempRema(1)
+            >= rTempDenom
+          ) {
+            rCmpGeValid := True
+          }
+          //when (rCmpGeValid) {
+          //  rTempQuot(0)(
+          //    RegNext(rCnt(0), init=rCnt(0).getZero)
+          //    //rCnt(0)
+          //    .asUInt.resized
+          //  ) := True
+          //}
+          //--------
+          //when (rCnt(1).msb) {
+          //  rTempRema(0) := nextTempRema(1)
+          //}
+        } otherwise {
+          nextTempRema(0) := tempRemaMux
         }
+        //when (rCnt(0).msb) {
+          //rTempRema(0) := nextTempRema(1)
+        //}
+        //when (rCmpGeValid) {
+        //  rTempQuot(0)(
+        //    RegNext(rCnt(0), init=rCnt(0).getZero)
+        //    //rCnt(0)
+        //    .asUInt.resized
+        //  ) := True
+        //}
+        //--------
+        when (RegNext(rCnt(0).msb, init=False)) {
+          rState := State.YIELD_RESULT_PIPE_2
+        } otherwise {
+          rTempRema(0) := nextTempRema(1)
+          when (rCmpGeValid) {
+            rTempQuot(0)(
+              RegNext(rCnt(0), init=rCnt(0).getZero)
+              //rCnt(0)
+              .asUInt.resized
+            ) := True
+          }
+        }
+        //--------
       }
       is (State.YIELD_RESULT_PIPE_2) {
         when (rInpSigned) {
@@ -520,6 +656,12 @@ case class LongDivMultiCycle(
         rState := State.YIELD_RESULT
       }
       is (State.YIELD_RESULT) {
+        //rCnt(0) := (
+        //  rTempNumer.size
+        //)
+        //rCnt(1) := (
+        //  rTempNumer.size - 1
+        //)
         outp.ready := True
         //outp.quot := rTempQuot
         outp.quot := rTempQuot(1).asBits.asUInt

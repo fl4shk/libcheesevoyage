@@ -63,6 +63,8 @@ case class LongDivMultiCycleTester(
   dut.io.inp.valid := False
   dut.io.inp.numer := rNumerDenom(nextNumerDenom.high downto denomWidth)
   dut.io.inp.denom := rNumerDenom(denomWidth - 1 downto 0)
+  //dut.io.inp.numer := 0xc // 12
+  //dut.io.inp.denom := 0x4 // 4
   dut.io.inp.signed := False
 
   when (!rState) {
@@ -85,7 +87,7 @@ case class LongDivMultiCycleTester(
         } otherwise {
           rHaveCorrectQuot := 0x0
         }
-        when (dut.io.outp.quot === rOracleQuot) {
+        when (dut.io.outp.rema === rOracleRema) {
           rHaveCorrectRema := 0x1
         } otherwise {
           rHaveCorrectRema := 0x0
