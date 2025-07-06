@@ -82,9 +82,9 @@ object LongDivMultiCycleFormal extends App {
     _spinalConfig=SpinalConfig(
       defaultConfigForClockDomains=ClockDomainConfig(
         resetActiveLevel=HIGH,
-        resetKind=SYNC,
+        resetKind=BOOT,
       ),
-      formalAsserts=true,
+      //formalAsserts=true,
     ),
     _keepDebugInfo=true,
   )

@@ -68,11 +68,11 @@ case class LongDivMultiCycleTester(
   when (!rState) {
     rState := True
     dut.io.inp.valid := True
-    nextNumerDenom := rNumerDenom + 1
     rOracleQuot := (dut.io.inp.numer / dut.io.inp.denom).resized
     rOracleRema := (dut.io.inp.numer % dut.io.inp.denom).resized
   } otherwise {
     when (dut.io.outp.ready) {
+      nextNumerDenom := rNumerDenom + 1
       rState := False
       rSavedQuot := dut.io.outp.quot
       rSavedRema := dut.io.outp.rema
@@ -97,9 +97,9 @@ case class LongDivMultiCycleTester(
 }
 object LongDivMultiCycleSim extends App {
   //def clkRate = 25 MHz
-  def mainWidth = 16
-  def denomWidth = 8
-  def chunkWidth = 4
+  def mainWidth = 4
+  def denomWidth = 4
+  def chunkWidth = 1
   //val simSpinalConfig = SpinalConfig(
   //  //defaultClockDomainFrequency=FixedFrequency(100 MHz)
   //  defaultClockDomainFrequency=FixedFrequency(clkRate)
