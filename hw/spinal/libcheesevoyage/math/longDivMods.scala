@@ -486,7 +486,7 @@ case class LongDivMultiCycle(
           //  }
           //}
         } otherwise {
-          rState := State.YIELD_RESULT_PIPE_1
+          rState := State.YIELD_RESULT_PIPE_2
         }
       }
       is (State.YIELD_RESULT_PIPE_2) {
