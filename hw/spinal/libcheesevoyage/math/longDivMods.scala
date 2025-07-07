@@ -436,7 +436,7 @@ case class LongDivMultiCycle(
         bits
       )
     )
-    nextTempRema.foreach(item => item := 0x0)
+    //nextTempRema.foreach(item => item := 0x0)
     val myAddDel1 = LcvAddDel1(
       wordWidth=cfg.tempShapeWidth
     )
@@ -470,6 +470,52 @@ case class LongDivMultiCycle(
       nextTempRema(1)
       >= rTempDenom
     )
+    when (!RegNext(next=rCnt(0).msb, init=False)) {
+      rTempRema(0) := (
+        nextTempRema(1)(
+          nextTempRema(1).high downto 1//log2Up(rTempNumer.size)
+        )
+      )
+      when (rCmpGeValid) {
+        rTempQuot(0)(
+          RegNext(rCnt(0), init=rCnt(0).getZero)
+          //rCnt(0)
+          .asUInt.resized
+        ) := True
+      }
+    }
+    val tempRemaMux = (
+      Mux[UInt](
+        !rCmpGeValid,
+        RegNext(
+          next=nextTempRema(1),
+          init=nextTempRema(1).getZero,
+        )(rTempRema(0).bitsRange),
+        //(
+        //  RegNext(
+        //    next=nextTempRema(1),
+        //    init=nextTempRema(1).getZero,
+        //  )(rTempRema(0).bitsRange) - (
+        //    rTempDenom
+        //  )
+        //)
+        myAddDel1.io.outp.sum_carry(
+          cfg.tempShapeWidth - 1 downto 0
+        ).asUInt
+      )
+    )
+    nextTempRema(1) := nextTempRema(0)
+    //rCmpGeValid := False
+    nextTempRema(0) := Cat(
+      tempRemaMux,
+      rTempNumer(
+        //RegNext(rCnt(0), init=rCnt(0).getZero)
+        //(rCnt(0) + 1)
+        rCnt(0)
+        .asUInt.resized
+      ),
+    ).asUInt//(nextTempRema(0).bitsRange)
+
     switch (rState) {
       is (State.IDLE) {
         when (inp.valid) {
@@ -495,6 +541,10 @@ case class LongDivMultiCycle(
         )
       }
       is (State.CAPTURE_INPUTS_PIPE) {
+        rTempQuot.foreach(item => item.foreach(myQuotBit => {
+          myQuotBit := False
+        }))
+        rTempRema.foreach(item => item := 0x0)
         //rCnt(0) := (
         //  rTempNumer.size - 1
         //)
@@ -550,7 +600,7 @@ case class LongDivMultiCycle(
         }
         rState := State.RUNNING
         rCmpGeValid := False
-        //nextTempRema.foreach(item => item := 0x0)
+        nextTempRema.foreach(item => item := 0x0)
       }
       is (State.RUNNING) {
         //--------
@@ -562,40 +612,42 @@ case class LongDivMultiCycle(
         //    init=item.getZero,
         //  )
         //})
-        val myTempRange = (
-          nextTempRema(1).high downto log2Up(rTempNumer.size)
-        )
-        val tempRemaMux = (
-          Mux[UInt](
-            !rCmpGeValid,
-            RegNext(
-              next=nextTempRema(1),
-              init=nextTempRema(1).getZero,
-            )(rTempRema(0).bitsRange),
-            //(
-            //  RegNext(
-            //    next=nextTempRema(1),
-            //    init=nextTempRema(1).getZero,
-            //  )(rTempRema(0).bitsRange) - (
-            //    rTempDenom
-            //  )
-            //)
-            myAddDel1.io.outp.sum_carry(
-              cfg.tempShapeWidth - 1 downto 0
-            ).asUInt
-          )
-        )
-        nextTempRema(1) := nextTempRema(0)
-        //rCmpGeValid := False
-        nextTempRema(0) := Cat(
-          tempRemaMux,
-          rTempNumer(
-            //RegNext(rCnt(0), init=rCnt(0).getZero)
-            //(rCnt(0) + 1)
-            rCnt(0)
-            .asUInt.resized
-          ),
-        ).asUInt//(nextTempRema(0).bitsRange)
+        //val myTempRange = (
+        //  nextTempRema(1).high downto log2Up(rTempNumer.size)
+        //)
+
+        //val tempRemaMux = (
+        //  Mux[UInt](
+        //    !rCmpGeValid,
+        //    RegNext(
+        //      next=nextTempRema(1),
+        //      init=nextTempRema(1).getZero,
+        //    )(rTempRema(0).bitsRange),
+        //    //(
+        //    //  RegNext(
+        //    //    next=nextTempRema(1),
+        //    //    init=nextTempRema(1).getZero,
+        //    //  )(rTempRema(0).bitsRange) - (
+        //    //    rTempDenom
+        //    //  )
+        //    //)
+        //    myAddDel1.io.outp.sum_carry(
+        //      cfg.tempShapeWidth - 1 downto 0
+        //    ).asUInt
+        //  )
+        //)
+        //nextTempRema(1) := nextTempRema(0)
+        ////rCmpGeValid := False
+        //nextTempRema(0) := Cat(
+        //  tempRemaMux,
+        //  rTempNumer(
+        //    //RegNext(rCnt(0), init=rCnt(0).getZero)
+        //    //(rCnt(0) + 1)
+        //    rCnt(0)
+        //    .asUInt.resized
+        //  ),
+        //).asUInt//(nextTempRema(0).bitsRange)
+
         //when (
         //  //rCnt(0) < rTempNumer.size
         //  //&& rCnt(0) >= 0
@@ -628,19 +680,20 @@ case class LongDivMultiCycle(
         //--------
         when (RegNext(next=rCnt(0).msb, init=False)) {
           rState := State.YIELD_RESULT_PIPE_2
+          rCmpGeValid := False
         } otherwise {
-          rTempRema(0) := (
-            nextTempRema(1)(
-              nextTempRema(1).high downto 1//log2Up(rTempNumer.size)
-            )
-          )
-          when (rCmpGeValid) {
-            rTempQuot(0)(
-              RegNext(rCnt(0), init=rCnt(0).getZero)
-              //rCnt(0)
-              .asUInt.resized
-            ) := True
-          }
+          //rTempRema(0) := (
+          //  nextTempRema(1)(
+          //    nextTempRema(1).high downto 1//log2Up(rTempNumer.size)
+          //  )
+          //)
+          //when (rCmpGeValid) {
+          //  rTempQuot(0)(
+          //    RegNext(rCnt(0), init=rCnt(0).getZero)
+          //    //rCnt(0)
+          //    .asUInt.resized
+          //  ) := True
+          //}
         }
         //--------
       }
