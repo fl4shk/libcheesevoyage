@@ -436,7 +436,7 @@ case class LongDivMultiCycle(
         bits
       )
     )
-    //nextTempRema.foreach(item => item := 0x0)
+    nextTempRema.foreach(item => item := 0x0)
     val mySubDel1 = LcvSubDel1(
       wordWidth=cfg.tempShapeWidth
     )
@@ -506,17 +506,17 @@ case class LongDivMultiCycle(
         ).asUInt
       )
     )
-    nextTempRema(1) := nextTempRema(0)
-    //rCmpGeValid := False
-    nextTempRema(0) := Cat(
-      tempRemaMux,
-      rTempNumer(
-        //RegNext(rCnt(0), init=rCnt(0).getZero)
-        //(rCnt(0) + 1)
-        rCnt(0)
-        .asUInt.resized
-      ),
-    ).asUInt//(nextTempRema(0).bitsRange)
+    //nextTempRema(1) := nextTempRema(0)
+    ////rCmpGeValid := False
+    //nextTempRema(0) := Cat(
+    //  tempRemaMux,
+    //  rTempNumer(
+    //    //RegNext(rCnt(0), init=rCnt(0).getZero)
+    //    //(rCnt(0) + 1)
+    //    rCnt(0)
+    //    .asUInt.resized
+    //  ),
+    //).asUInt//(nextTempRema(0).bitsRange)
 
     switch (rState) {
       is (State.IDLE) {
@@ -679,6 +679,17 @@ case class LongDivMultiCycle(
         //) {
         //  rCmpGeValid := True
         //}
+        nextTempRema(1) := nextTempRema(0)
+        //rCmpGeValid := False
+        nextTempRema(0) := Cat(
+          tempRemaMux,
+          rTempNumer(
+            //RegNext(rCnt(0), init=rCnt(0).getZero)
+            //(rCnt(0) + 1)
+            rCnt(0)
+            .asUInt.resized
+          ),
+        ).asUInt//(nextTempRema(0).bitsRange)
         //--------
         when (RegNext(next=rCnt(0).msb, init=False)) {
           rState := State.YIELD_RESULT_PIPE_2
