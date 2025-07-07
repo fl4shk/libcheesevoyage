@@ -74,6 +74,7 @@ case class PipeMemRmwConfig[
   optEnableClear: Boolean=false,
   memRamStyle: String="auto",
   vivadoDebug: Boolean=false,
+  optIncludePreMid0Front: Boolean=true,
   optIncludeModFrontStageLink: Boolean=true,
   optIncludeModFrontS2MLink: Boolean=true,
   optFormal: Boolean=false,
@@ -785,11 +786,11 @@ object PipeMemRmw {
   }
   //--------
   // TODO (*Maybe*): Implement `FwdSubKind`
-  sealed trait FwdSubKind
-  object FwdSubKind {
-    case object Mid0FrontOnly extends FwdSubKind
-    case object UseLaterPipeStages extends FwdSubKind
-  }
+  //sealed trait FwdSubKind
+  //object FwdSubKind {
+  //  case object Mid0FrontOnly extends FwdSubKind
+  //  case object UseLaterPipeStages extends FwdSubKind
+  //}
   //--------
   //def modHazardKindDont = ModHazardKind.Dont
   //def modHazardKindDupl = ModHazardKind.Dupl
@@ -2571,13 +2572,44 @@ extends Area {
       //  ),
       //  //finish=true,
       //)
+      val cPreMid0Front = new ArrayBuffer[CtrlLink]()
+      val sPreMid0Front = new ArrayBuffer[StageLink]()
+      if (
+        cfg.optIncludePreMid0Front
+      ) {
+        for (fjIdx <- 0 until cfg.numForkJoin) {
+          cPreMid0Front += CtrlLink(
+            up=sFront(fjIdx).down,
+            down={
+              val temp = Node()
+              temp.setName(s"${pipeName}_cPreMid0Front_down_${fjIdx}")
+              temp
+            }
+          )
+          myLinkArr += cPreMid0Front(fjIdx)
+          sPreMid0Front += StageLink(
+            up=cPreMid0Front(fjIdx).down,
+            down={
+              val temp = Node()
+              temp.setName(s"${pipeName}_sPreMid0Front_down_${fjIdx}")
+              temp
+            }
+          )
+          myLinkArr += sPreMid0Front(fjIdx)
+        }
+      }
+
       val cMid0Front = new ArrayBuffer[CtrlLink]()
       for (fjIdx <- 0 until cfg.numForkJoin) {
         cMid0Front += CtrlLink(
           up=(
             //if (optLinkFrontToModFront) (
             //if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
+            if (!cfg.optIncludePreMid0Front) (
               sFront(fjIdx).down
+            ) else (
+              sPreMid0Front(fjIdx).down
+            )
             //) else (
             //  s2mFront.down
             //)
@@ -3513,8 +3545,15 @@ extends Area {
             //  //down.isFiring
             //  tempSharedEnable.last
             //) {
-              myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
+              val tempRdData = (
                 myModMem.io.ramIo.rdData
+              )
+              myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
+                if (cfg.optIncludePreMid0Front) (
+                  RegNext(next=tempRdData, init=tempRdData.getZero)
+                ) else (
+                  tempRdData
+                )
               )
             //}
             //myModMem.io.cmpRdWrAddrEtc := (
