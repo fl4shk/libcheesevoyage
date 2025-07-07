@@ -150,7 +150,6 @@ case class PipeMemRmwConfig[
     PipeMemRmw.numMyUpExtDel2(
       optModHazardKind=optModHazardKind,
       modStageCnt=modStageCnt,
-      optIncludePreMid0Front=optIncludePreMid0Front,
     )
     //cfg.numMyUpExtDel2
   )
@@ -318,7 +317,6 @@ case class PipeMemRmwPayloadExtMainNonMemAddr[
           optModHazardKind=optModHazardKind,
           //optModFwdToFront=false,
           modStageCnt=modStageCnt,
-          optIncludePreMid0Front=cfg.optIncludePreMid0Front,
         )
       ) + 4 bits)
       //UInt(log2Up(modStageCnt) bits)
@@ -714,14 +712,12 @@ object PipeMemRmw {
     optModHazardKind: PipeMemRmw.ModHazardKind,
     //optModFwdToFront: Boolean,
     modStageCnt: Int,
-    optIncludePreMid0Front: Boolean,
   ) = (
     numPostFrontPreWriteStages(
       //doModInModFront=doModInModFront,
       optModHazardKind=optModHazardKind,
       //optModFwdToFront=optModFwdToFront,
       modStageCnt=modStageCnt,
-      optIncludePreMid0Front=optIncludePreMid0Front,
     )
     + 1
     //+ (if (doModInModFront) (0) else (1))
@@ -731,8 +727,7 @@ object PipeMemRmw {
     //doModInModFront: Boolean,
     optModHazardKind: PipeMemRmw.ModHazardKind,
     //optModFwdToFront: Boolean,
-    modStageCnt: Int,
-    optIncludePreMid0Front: Boolean,
+    modStageCnt: Int
   ) = (
     //modStageCnt
     //3 + modStageCnt //+ 1
@@ -753,14 +748,7 @@ object PipeMemRmw {
       )
       //1
     )
-    + modStageCnt //+ 1
-    + (
-      if (optIncludePreMid0Front) (
-        1
-      ) else (
-        0
-      )
-    )
+      + modStageCnt //+ 1
     //(if (doModInModFront) (-1) else (1)) + modStageCnt //+ 1
     //- 1
     //+ 1
@@ -768,7 +756,6 @@ object PipeMemRmw {
   def numMyUpExtDel2(
     optModHazardKind: PipeMemRmw.ModHazardKind,
     modStageCnt: Int,
-    optIncludePreMid0Front: Boolean,
   ) = (
     PipeMemRmw.numPostFrontPreWriteStages
     //PipeMemRmw.numPostFrontPreWriteStages
@@ -779,7 +766,6 @@ object PipeMemRmw {
       //},
       optModHazardKind=optModHazardKind,
       modStageCnt=modStageCnt,
-      optIncludePreMid0Front=optIncludePreMid0Front,
     )
     + 1
     //+ (
@@ -967,7 +953,6 @@ extends Bundle {
     PipeMemRmw.numMyUpExtDel2(
       optModHazardKind=optModHazardKind,
       modStageCnt=modStageCnt,
-      optIncludePreMid0Front=cfg.optIncludePreMid0Front,
     )
   )
   //println(
@@ -1014,16 +999,7 @@ extends Bundle {
       Vec.fill(memArrSize)(
         Vec.fill(modRdPortCnt)(
           Vec.fill(PipeMemRmw.extIdxLim)(
-            Vec.fill(
-              numMyUpExtDel2 + 1
-              + (
-                if (cfg.optIncludePreMid0Front) (
-                  -1
-                ) else (
-                  0
-                )
-              )
-            )(
+            Vec.fill(numMyUpExtDel2 + 1)(
               //Bool()
               Flow(Flow(cfg.wordType()))
             )
@@ -1798,6 +1774,195 @@ extends Area {
     dualRdType=dualRdType(),
   )
   //--------
+  def mkPreFwdArea(
+    //up: CtrlLink,
+    upIsFiring: Bool,
+    upExt: Vec[Vec[Vec[PipeMemRmwPayloadExt[
+      WordT,
+      HazardCmpT,
+    ]]]]
+  ) = new Area {
+    def extIdxUp = PipeMemRmw.extIdxUp
+    for (ydx <- 0 until memArrSize) {
+      def myMemAddrFwdCmp = (
+        upExt(1)(ydx)(extIdxUp).memAddrFwdCmp
+      )
+      def myFwdIdx = (
+        upExt(1)(ydx)(extIdxUp).fwdIdx
+      )
+      val myHistMemAddr = (
+        /*KeepAttribute*/(
+          History[UInt](
+            that=upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx),
+            // `length=numMyUpExtDel2 + 1` because `History` includes the
+            // current value of `that`.
+            // This might not be relevant any more?
+            length=2,//mod.front.myUpExtDel2.size + 1, 
+            when=upIsFiring,
+            init=upExt(1)(ydx)(extIdxUp).memAddr(
+              PipeMemRmw.modWrIdx
+            ).getZero,
+          )
+        )
+        .setName(
+          s"${pipeName}_PreFwdArea_myHistMemAddr_${ydx}"
+        )
+      )
+      for (zdx <- 0 until modRdPortCnt) {
+        val toFindFirst = Vec.fill(
+          cfg.numMyUpExtDel2  + 1
+        )(
+          Flow(
+            UInt(PipeMemRmw.addrWidth(wordCountArr(ydx)) bits)
+          )
+        )
+        for ((item, itemIdx) <- toFindFirst.view.zipWithIndex) {
+          val tempMyUpExtDel = (
+            mod.front.myUpExtDel(itemIdx)(ydx)(
+              extIdxUp
+            )//.memAddrFwdMmw(zdx)
+          )
+          if (itemIdx != cfg.numMyUpExtDel2) {
+            item.valid := (
+              //tempMyUpExtDel.memAddrFwdMmw(zdx)(itemIdx)
+              //=== 
+              myMemAddrFwdCmp(zdx)(itemIdx)(0)
+            )
+            //item.payload := (
+            //  tempMyUpExtDel.memAddrFwdMmw(zdx)
+            //)
+            item.payload := (
+              tempMyUpExtDel.memAddrFwdMmw(zdx)(itemIdx)
+            )
+          } else {
+            item.valid := True
+            //item.payload := (
+            //)
+            item.payload := (
+              upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+            )
+          }
+        }
+        myFwdIdx(zdx) := (
+          toFindFirst.sFindFirst(
+            current => (current.fire === True)
+          )._2
+        )
+        upExt(1)(ydx)(extIdxUp).memAddrFwdMmw(zdx).foreach(current => {
+          current := (
+            upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)
+          )
+        })
+        upExt(1)(ydx)(extIdxUp).memAddrFwd(zdx).foreach(current => {
+          current := upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+        })
+        for (
+          //idx <- 0 until myHistMemAddr.size
+          idx <- 0 until mod.front.myUpExtDel2.size + 1
+        ) {
+          println(
+            f"myHistMemAddr debug: ${zdx} ${idx} ${idx - 1} "
+            + f"${mod.front.myUpExtDel2.size}"
+          )
+          if (idx > 0) {
+            def tempMemAddrFwdCmp = myMemAddrFwdCmp(zdx)(idx - 1)
+            tempMemAddrFwdCmp.allowOverride
+            for (jdx <- 0 until tempMemAddrFwdCmp.getWidth) {
+              val myZeroRegCond = (
+                cfg.optFwdHaveZeroReg match {
+                  case Some(myZeroRegIdx) => {
+                    (
+                      upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+                      =/= myZeroRegIdx
+                    )
+                  }
+                  case None => {
+                    True
+                  }
+                }
+              )
+              if (idx == 1) {
+                tempMemAddrFwdCmp(
+                  jdx
+                  //0
+                ) := (
+                  (
+                    upExt(1)(ydx)(extIdxUp).memAddr(
+                      zdx
+                    ) === (
+                      myHistMemAddr(idx)
+                    )
+                  ) && (
+                    myZeroRegCond
+                  )
+                )
+              } else {
+                val tempMyUpExtDel = (
+                  mod.front.myUpExtDel(idx - 1)(ydx)(
+                    extIdxUp
+                  )
+                )
+                println(
+                  s"tempMyUpExtDel debug: (${idx - 1})(${ydx})  "
+                  + s"${jdx}"
+                )
+                tempMemAddrFwdCmp(
+                  jdx
+                  //0
+                ) := (
+                  (
+                    upExt(1)(ydx)(extIdxUp).memAddr(
+                      zdx
+                    ) === (
+                      //myHistMemAddr(idx)
+                      // `idx - 1` is because we want the stage *before*
+                      // the one we're actually interested in.
+                      if (idx == mod.front.myUpExtDel2.size) (
+                        tempMyUpExtDel.memAddrFwdMmw(
+                          zdx
+                        ).last
+                      ) else
+                      //if (
+                      //  idx != mod.front.myUpExtDel2.size - 1
+                      //) 
+                      ( 
+                        tempMyUpExtDel.memAddrFwdMmw(
+                          zdx
+                        )(
+                          idx
+                        )
+                      )
+                      //else (
+                      //  mod.back.myWriteAddr(1)(ydx)(zdx)
+                      //)
+                      //mod.back.myWriteAddr(0)(0)(0)
+                    )
+                  ) && (
+                    myZeroRegCond
+                  ) && (
+                    tempMyUpExtDel.modMemWordValid({
+                      if (
+                        idx < tempMyUpExtDel.modMemWordValid.size
+                      ) (
+                        idx
+                      ) else (
+                        tempMyUpExtDel.modMemWordValid.size - 1 
+                      )
+                    })
+                  )
+                  //&& (
+                  //  tempMyUpExtDel.valid(0)
+                  //)
+                )
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+
   def mkMem(ydx: Int) = {
     val ret = RamSimpleDualPort(
       wordType=wordType(),
@@ -2272,8 +2437,14 @@ extends Area {
       //}
       //def midPipePayload = midPipePayloadArr//(memArrIdx)
       val midPipePayload = {
-        Payload(Vec.fill(2)(modType()))
-        .setName(s"${pipeName}_io_midPipePayload")
+        Array.fill(2)(
+          Payload(Vec.fill(2)(modType()))
+        )
+      }
+      for (idx <- 0 until midPipePayload.size) {
+        midPipePayload(idx).setName(
+          s"${pipeName}_io_midPipePayload_${idx}"
+        )
       }
       //val outpPipePayload = Payload(modType())
       def outpPipePayload = io.modFrontAfterPayload
@@ -2301,7 +2472,6 @@ extends Area {
             optModHazardKind=optModHazardKind,
             //optModFwdToFront=optModFwdToFront,
             modStageCnt=modStageCnt,
-            optIncludePreMid0Front=cfg.optIncludePreMid0Front,
           )
           + 1 
           //+ (
@@ -2441,8 +2611,7 @@ extends Area {
                   //},
                   optModHazardKind=optModHazardKind,
                   //optModFwdToFront=optModFwdToFront,
-                  modStageCnt=modStageCnt,
-                  optIncludePreMid0Front=cfg.optIncludePreMid0Front,
+                  modStageCnt=modStageCnt
                 )
                 - modStageCnt
                 //- 1
@@ -3751,181 +3920,6 @@ extends Area {
       //for (extIdx <- 0 until extIdxLim) {
       //}
       //when (up.isFiring) {
-        def myMemAddrFwdCmp = (
-          upExt(1)(ydx)(extIdxUp).memAddrFwdCmp
-        )
-        def myFwdIdx = (
-          upExt(1)(ydx)(extIdxUp).fwdIdx
-        )
-        val myHistMemAddr = (
-          /*KeepAttribute*/(
-            History[UInt](
-              that=upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx),
-              // `length=numMyUpExtDel2 + 1` because `History` includes the
-              // current value of `that`.
-              // This might not be relevant any more?
-              length=2,//mod.front.myUpExtDel2.size + 1, 
-              when=up.isFiring,
-              init=upExt(1)(ydx)(extIdxUp).memAddr(
-                PipeMemRmw.modWrIdx
-              ).getZero,
-            )
-          )
-          .setName(
-            s"cFrontArea_myHistMemAddr_${ydx}"
-          )
-        )
-        for (zdx <- 0 until modRdPortCnt) {
-          val toFindFirst = Vec.fill(
-            cfg.numMyUpExtDel2  + 1
-          )(
-            Flow(
-              UInt(PipeMemRmw.addrWidth(wordCountArr(ydx)) bits)
-            )
-          )
-          for ((item, itemIdx) <- toFindFirst.view.zipWithIndex) {
-            val tempMyUpExtDel = (
-              mod.front.myUpExtDel(itemIdx)(ydx)(
-                extIdxUp
-              )//.memAddrFwdMmw(zdx)
-            )
-            if (itemIdx != cfg.numMyUpExtDel2) {
-              item.valid := (
-                //tempMyUpExtDel.memAddrFwdMmw(zdx)(itemIdx)
-                //=== 
-                myMemAddrFwdCmp(zdx)(itemIdx)(0)
-              )
-              //item.payload := (
-              //  tempMyUpExtDel.memAddrFwdMmw(zdx)
-              //)
-              item.payload := (
-                tempMyUpExtDel.memAddrFwdMmw(zdx)(itemIdx)
-              )
-            } else {
-              item.valid := True
-              //item.payload := (
-              //)
-              item.payload := (
-                upExt(1)(ydx)(extIdxUp).memAddr(zdx)
-              )
-            }
-          }
-          myFwdIdx(zdx) := (
-            toFindFirst.sFindFirst(
-              current => (current.fire === True)
-            )._2
-          )
-          upExt(1)(ydx)(extIdxUp).memAddrFwdMmw(zdx).foreach(current => {
-            current := (
-              upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)
-            )
-          })
-          upExt(1)(ydx)(extIdxUp).memAddrFwd(zdx).foreach(current => {
-            current := upExt(1)(ydx)(extIdxUp).memAddr(zdx)
-          })
-          for (
-            //idx <- 0 until myHistMemAddr.size
-            idx <- 0 until mod.front.myUpExtDel2.size + 1
-          ) {
-            println(
-              f"myHistMemAddr debug: ${zdx} ${idx} ${idx - 1} "
-              + f"${mod.front.myUpExtDel2.size}"
-            )
-            if (idx > 0) {
-              def tempMemAddrFwdCmp = myMemAddrFwdCmp(zdx)(idx - 1)
-              tempMemAddrFwdCmp.allowOverride
-              for (jdx <- 0 until tempMemAddrFwdCmp.getWidth) {
-                val myZeroRegCond = (
-                  cfg.optFwdHaveZeroReg match {
-                    case Some(myZeroRegIdx) => {
-                      (
-                        upExt(1)(ydx)(extIdxUp).memAddr(zdx)
-                        =/= myZeroRegIdx
-                      )
-                    }
-                    case None => {
-                      True
-                    }
-                  }
-                )
-                if (idx == 1) {
-                  tempMemAddrFwdCmp(
-                    jdx
-                    //0
-                  ) := (
-                    (
-                      upExt(1)(ydx)(extIdxUp).memAddr(
-                        zdx
-                      ) === (
-                        myHistMemAddr(idx)
-                      )
-                    ) && (
-                      myZeroRegCond
-                    )
-                  )
-                } else {
-                  val tempMyUpExtDel = (
-                    mod.front.myUpExtDel(idx - 1)(ydx)(
-                      extIdxUp
-                    )
-                  )
-                  println(
-                    s"tempMyUpExtDel debug: (${idx - 1})(${ydx})  "
-                    + s"${jdx}"
-                  )
-                  tempMemAddrFwdCmp(
-                    jdx
-                    //0
-                  ) := (
-                    (
-                      upExt(1)(ydx)(extIdxUp).memAddr(
-                        zdx
-                      ) === (
-                        //myHistMemAddr(idx)
-                        // `idx - 1` is because we want the stage *before*
-                        // the one we're actually interested in.
-                        if (idx == mod.front.myUpExtDel2.size) (
-                          tempMyUpExtDel.memAddrFwdMmw(
-                            zdx
-                          ).last
-                        ) else
-                        //if (
-                        //  idx != mod.front.myUpExtDel2.size - 1
-                        //) 
-                        ( 
-                          tempMyUpExtDel.memAddrFwdMmw(
-                            zdx
-                          )(
-                            idx
-                          )
-                        )
-                        //else (
-                        //  mod.back.myWriteAddr(1)(ydx)(zdx)
-                        //)
-                        //mod.back.myWriteAddr(0)(0)(0)
-                      )
-                    ) && (
-                      myZeroRegCond
-                    ) && (
-                      tempMyUpExtDel.modMemWordValid({
-                        if (
-                          idx < tempMyUpExtDel.modMemWordValid.size
-                        ) (
-                          idx
-                        ) else (
-                          tempMyUpExtDel.modMemWordValid.size - 1 
-                        )
-                      })
-                    )
-                    //&& (
-                    //  tempMyUpExtDel.valid(0)
-                    //)
-                  )
-                }
-              }
-            }
-          }
-        }
         upExt(1)(ydx)(extIdxUp).memAddrAlt.allowOverride
         upExt(1)(ydx)(extIdxUp).memAddrAlt.foreach(current => {
           current := (
@@ -3946,8 +3940,8 @@ extends Area {
         //}
       //}
       if (ydx == 0) {
-        for (idx <- 0 until up(mod.front.midPipePayload).size) {
-          up(mod.front.midPipePayload)(idx) := tempUpMod(1)
+        for (idx <- 0 until up(mod.front.midPipePayload(0)).size) {
+          up(mod.front.midPipePayload(0))(idx) := tempUpMod(1)
         }
       }
       //--------
@@ -3959,6 +3953,52 @@ extends Area {
         upExt(1)(ydx)(extIdxUp).hazardId := nextHazardId
       }
     }
+    val myPreFwdArea = (
+      !cfg.optIncludePreMid0Front
+    ) generate (
+      mkPreFwdArea(
+        upIsFiring=up.isFiring,
+        upExt=upExt,
+      )
+    )
+  }
+  for (fjIdx <- 0 until mod.front.cPreMid0Front.size) {
+    val cPreMid0Front = mod.front.cPreMid0Front(fjIdx)
+    val cPreMid0FrontArea = (
+      cfg.optIncludePreMid0Front
+    ) generate (
+      new cPreMid0Front.Area {
+        val upExt = Vec.fill(2)(
+          mkExt()
+        )
+        val tempUpMod = Vec.fill(2)(
+          modType()
+        )
+        tempUpMod(0) := up(mod.front.midPipePayload(0))(0)
+        for (ydx <- 0 until memArrSize) {
+          tempUpMod(0).getPipeMemRmwExt(
+            outpExt=upExt(0)(ydx)(extIdxUp),
+            ydx=ydx,
+            memArrIdx=memArrIdx,
+          )
+          tempUpMod(1).setPipeMemRmwExt(
+            inpExt=upExt(1)(ydx)(extIdxUp),
+            ydx=ydx,
+            memArrIdx=memArrIdx,
+          )
+        }
+        for (idx <- 0 until up(mod.front.midPipePayload(1)).size) {
+          up(mod.front.midPipePayload(1))(idx) := tempUpMod(1)
+        }
+        //upExt(0) := up(mod.front.midPipePayload)(0)
+        val myPreFwdArea = (
+          mkPreFwdArea(
+            upIsFiring=up.isFiring,
+            upExt=upExt,
+          )
+        )
+      }
+    ) 
   }
   for (fjIdx <- 0 until mod.front.cMid0Front.size) {
     val cMid0Front = mod.front.cMid0Front(fjIdx)
@@ -4132,9 +4172,16 @@ extends Area {
         )
       )
       tempUpMod(2).allowOverride
-      tempUpMod(0) := up(mod.front.midPipePayload)(0)
+      def myMidPipePayloadIdx = (
+        if (!cfg.optIncludePreMid0Front) (
+          0
+        ) else (
+          1
+        )
+      )
+      tempUpMod(0) := up(mod.front.midPipePayload(myMidPipePayloadIdx))(0)
       val tempUpMod0a = modType()
-      tempUpMod0a := up(mod.front.midPipePayload)(1)
+      tempUpMod0a := up(mod.front.midPipePayload(myMidPipePayloadIdx))(1)
       for (ydx <- 0 until memArrSize) {
         for (extIdx <- 0 until extIdxLim) {
           val myMod = (
