@@ -3035,7 +3035,13 @@ extends Area {
           //init(nextDidFwd.getZero)
         )
       )
-      myRdMemWord := myNonFwdRdMemWord
+      myRdMemWord := RegNext(
+        next=myRdMemWord,
+        init=myRdMemWord.getZero,
+      )
+      when (cMid0Front(0).up.isReady) {
+        myRdMemWord := myNonFwdRdMemWord
+      }
       if (
         optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
         //optModFwdToFront
