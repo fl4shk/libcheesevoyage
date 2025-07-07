@@ -3978,6 +3978,12 @@ extends Area {
         tempUpMod(0).allowOverride
         tempUpMod(0) := up(mod.front.midPipePayload(0))(0)
         for (ydx <- 0 until memArrSize) {
+          upExt(1)(ydx)(extIdxUp) := (
+            RegNext(
+              next=upExt(1)(ydx)(extIdxUp),
+              init=upExt(1)(ydx)(extIdxUp).getZero,
+            )
+          )
           when (
             up.isValid
             //up.isFiring
