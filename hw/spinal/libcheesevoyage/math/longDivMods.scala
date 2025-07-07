@@ -472,20 +472,20 @@ case class LongDivMultiCycle(
       //>= rTempDenom
       !mySubDel1.io.outp.sum_carry.msb
     )
-    when (!RegNext(next=rCnt(0).msb, init=False)) {
-      rTempRema(0) := (
-        nextTempRema(1)(
-          nextTempRema(1).high downto 1//log2Up(rTempNumer.size)
-        )
-      )
-      when (myCmpGeValid) {
-        rTempQuot(0)(
-          RegNext(rCnt(0), init=rCnt(0).getZero)
-          //rCnt(0)
-          .asUInt.resized
-        ) := True
-      }
-    }
+    //when (!RegNext(next=rCnt(0).msb, init=False)) {
+    //  rTempRema(0) := (
+    //    nextTempRema(1)(
+    //      nextTempRema(1).high downto 1//log2Up(rTempNumer.size)
+    //    )
+    //  )
+    //  when (myCmpGeValid) {
+    //    rTempQuot(0)(
+    //      RegNext(rCnt(0), init=rCnt(0).getZero)
+    //      //rCnt(0)
+    //      .asUInt.resized
+    //    ) := True
+    //  }
+    //}
     val tempRemaMux = (
       Mux[UInt](
         !myCmpGeValid,
@@ -684,18 +684,18 @@ case class LongDivMultiCycle(
           rState := State.YIELD_RESULT_PIPE_2
           myCmpGeValid := False
         } otherwise {
-          //rTempRema(0) := (
-          //  nextTempRema(1)(
-          //    nextTempRema(1).high downto 1//log2Up(rTempNumer.size)
-          //  )
-          //)
-          //when (rCmpGeValid) {
-          //  rTempQuot(0)(
-          //    RegNext(rCnt(0), init=rCnt(0).getZero)
-          //    //rCnt(0)
-          //    .asUInt.resized
-          //  ) := True
-          //}
+          rTempRema(0) := (
+            nextTempRema(1)(
+              nextTempRema(1).high downto 1//log2Up(rTempNumer.size)
+            )
+          )
+          when (myCmpGeValid) {
+            rTempQuot(0)(
+              RegNext(rCnt(0), init=rCnt(0).getZero)
+              //rCnt(0)
+              .asUInt.resized
+            ) := True
+          }
         }
         //--------
       }
