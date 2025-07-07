@@ -133,7 +133,7 @@ object LongDivMultiCycleSim extends App {
       //}
       //simSuccess()
       val simAmount = (
-        (1 << mainWidth) * (1 << denomWidth) * 2
+        (1 << mainWidth) * (1 << denomWidth) * 16
       )
       for (i <- 0 until simAmount) {
         dut.clockDomain.waitSampling()
