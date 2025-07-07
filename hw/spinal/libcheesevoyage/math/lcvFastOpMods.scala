@@ -351,7 +351,7 @@ case class LcvMulAcc32Del1(
   setIoCd()
 }
 
-case class LcvAddDel1Io(
+case class LcvAdcDel1Io(
   wordWidth: Int=32,
 ) extends Bundle {
   val clk = in(Bool())
@@ -366,10 +366,35 @@ case class LcvAddDel1Io(
     //val carry = out(Bool())
   }
 }
-case class LcvAddDel1(
+case class LcvAdcDel1(
   wordWidth: Int=32,
 ) extends BlackBox {
-  val io = LcvAddDel1Io(wordWidth=wordWidth)
+  val io = LcvAdcDel1Io(wordWidth=wordWidth)
+  addGeneric("WIDTH", wordWidth)
+  noIoPrefix()
+  addRTLPath("./hw/verilog/LcvMulAcc.sv")
+  mapCurrentClockDomain(clock=io.clk/*, reset=io.rst*/)
+  setIoCd()
+}
+case class LcvSubDel1Io(
+  wordWidth: Int=32,
+) extends Bundle {
+  val clk = in(Bool())
+  val inp = new Bundle {
+    val a = in(SInt(wordWidth bits))
+    val b = in(SInt(wordWidth bits))
+    //val carry = in(Bool())
+  }
+  //val do_inv = in(Bool())
+  val outp = new Bundle {
+    val sum_carry = out(SInt(wordWidth + 1 bits))
+    //val carry = out(Bool())
+  }
+}
+case class LcvSubDel1(
+  wordWidth: Int=32,
+) extends BlackBox {
+  val io = LcvSubDel1Io(wordWidth=wordWidth)
   addGeneric("WIDTH", wordWidth)
   noIoPrefix()
   addRTLPath("./hw/verilog/LcvMulAcc.sv")

@@ -420,11 +420,11 @@ case class LongDivMultiCycle(
     //    )
     //  )
     //})
-    val rCmpGeValid = (
-      Reg(
-        Bool(),
-        init=False
-      )
+    val myCmpGeValid = (
+      //Reg(
+        Bool()//,
+      //  init=False
+      //)
     )
     val nextTempRema = Vec.fill(2)(
       UInt(
@@ -437,18 +437,19 @@ case class LongDivMultiCycle(
       )
     )
     //nextTempRema.foreach(item => item := 0x0)
-    val myAddDel1 = LcvAddDel1(
+    val mySubDel1 = LcvSubDel1(
       wordWidth=cfg.tempShapeWidth
     )
-    myAddDel1.io.inp.a := (
-      nextTempRema(0).asSInt.resize(myAddDel1.io.inp.a.getWidth)
+    mySubDel1.io.inp.a := (
+      nextTempRema(0).asSInt.resize(mySubDel1.io.inp.a.getWidth)
     )
-    myAddDel1.io.inp.b := (
-      ~rTempDenom.asSInt
+    mySubDel1.io.inp.b := (
+      //~rTempDenom.asSInt
+      rTempDenom.asSInt
     )
-    myAddDel1.io.inp.carry := (
-      True
-    )
+    //mySubDel1.io.inp.carry := (
+    //  True
+    //)
     //myAddDel1.io.outp.sum_carry
     object State
     extends SpinalEnum(defaultEncoding=binaryOneHot) {
@@ -466,9 +467,10 @@ case class LongDivMultiCycle(
       init(State.IDLE)
     )
 
-    rCmpGeValid := (
-      nextTempRema(1)
-      >= rTempDenom
+    myCmpGeValid := (
+      //nextTempRema(1)
+      //>= rTempDenom
+      !mySubDel1.io.outp.sum_carry.msb
     )
     when (!RegNext(next=rCnt(0).msb, init=False)) {
       rTempRema(0) := (
@@ -476,7 +478,7 @@ case class LongDivMultiCycle(
           nextTempRema(1).high downto 1//log2Up(rTempNumer.size)
         )
       )
-      when (rCmpGeValid) {
+      when (myCmpGeValid) {
         rTempQuot(0)(
           RegNext(rCnt(0), init=rCnt(0).getZero)
           //rCnt(0)
@@ -486,7 +488,7 @@ case class LongDivMultiCycle(
     }
     val tempRemaMux = (
       Mux[UInt](
-        !rCmpGeValid,
+        !myCmpGeValid,
         RegNext(
           next=nextTempRema(1),
           init=nextTempRema(1).getZero,
@@ -499,7 +501,7 @@ case class LongDivMultiCycle(
         //    rTempDenom
         //  )
         //)
-        myAddDel1.io.outp.sum_carry(
+        mySubDel1.io.outp.sum_carry(
           cfg.tempShapeWidth - 1 downto 0
         ).asUInt
       )
@@ -599,7 +601,7 @@ case class LongDivMultiCycle(
           //--------
         }
         rState := State.RUNNING
-        rCmpGeValid := False
+        myCmpGeValid := False
         nextTempRema.foreach(item => item := 0x0)
       }
       is (State.RUNNING) {
@@ -680,7 +682,7 @@ case class LongDivMultiCycle(
         //--------
         when (RegNext(next=rCnt(0).msb, init=False)) {
           rState := State.YIELD_RESULT_PIPE_2
-          rCmpGeValid := False
+          myCmpGeValid := False
         } otherwise {
           //rTempRema(0) := (
           //  nextTempRema(1)(

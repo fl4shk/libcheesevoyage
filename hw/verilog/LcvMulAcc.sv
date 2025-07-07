@@ -40,7 +40,7 @@ module LcvMulAcc32Del1(
 endmodule
 
 (* use_dsp48 = "yes" *)
-module LcvAddDel1 #(
+module LcvAdcDel1 #(
 	parameter WIDTH=32
 )(
 	input logic clk,
@@ -48,14 +48,9 @@ module LcvAddDel1 #(
 	input logic signed [WIDTH - 1:0] inp_a,
 	input logic signed [WIDTH - 1:0] inp_b,
 	input logic inp_carry,
-	//input logic do_inv,
 
 	output logic signed [WIDTH:0] outp_sum_carry
-	//output logic outp_carry 
 );
-	//reg signed [WIDTH - 1:0] r_a;
-	//reg signed [WIDTH - 1:0] r_b;
-	//reg r_carry_in;
 	wire signed [WIDTH:0] temp_a = {1'b0, inp_a};
 	wire signed [WIDTH:0] temp_b = {1'b0, inp_b};
 	wire signed [WIDTH:0] temp_carry = {{(WIDTH){1'b0}}, inp_carry};
@@ -63,24 +58,32 @@ module LcvAddDel1 #(
 	wire signed [WIDTH:0] temp_sum = (
 		temp_a + temp_b + temp_carry
 	);
-	//assign outp_sum = (!do_inv) ? temp_sum : ~temp_sum;
 
 	always @(posedge clk) begin
-		//{outp_carry, outp_sum} <= temp_sum;
 		outp_sum_carry <= temp_sum;
-		//outp_sum <= (!do_inv) ? temp_sum : ~temp_sum;
-		//r_a <= a;
-		//r_b <= b;
-		//r_carry_in <= carry_in;
-		//if (rst) begin
-		//	outp <= 0;
-		//end else begin
-		//if (!do_inv) begin
-		//	outp_sum <= temp_sum;
-		//end else begin
-		//	outp_sum <= ~temp_sum;
-		//end
-		//end
+	end
+endmodule
+
+(* use_dsp48 = "yes" *)
+module LcvSubDel1 #(
+	parameter WIDTH=32
+)(
+	input logic clk,
+	input logic signed [WIDTH - 1:0] inp_a,
+	input logic signed [WIDTH - 1:0] inp_b,
+	//input logic inp_carry,
+
+	output logic signed [WIDTH:0] outp_sum_carry
+);
+	wire signed [WIDTH:0] temp_a = {1'b0, inp_a};
+	wire signed [WIDTH:0] temp_b = {1'b0, inp_b};
+
+	wire signed [WIDTH:0] temp_sum = (
+		temp_a - temp_b //+ temp_carry
+	);
+
+	always @(posedge clk) begin
+		outp_sum_carry <= temp_sum;
 	end
 endmodule
 
