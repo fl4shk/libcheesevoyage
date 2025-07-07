@@ -436,7 +436,7 @@ case class LongDivMultiCycle(
         bits
       )
     )
-    nextTempRema.foreach(item => item := 0x0)
+    //nextTempRema.foreach(item => item := 0x0)
     val mySubDel1 = LcvSubDel1(
       wordWidth=cfg.tempShapeWidth
     )
@@ -472,23 +472,24 @@ case class LongDivMultiCycle(
       //>= rTempDenom
       !mySubDel1.io.outp.sum_carry.msb
     )
-    //when (!RegNext(next=rCnt(0).msb, init=False)) {
-    //  rTempRema(0) := (
-    //    nextTempRema(1)(
-    //      nextTempRema(1).high downto 1//log2Up(rTempNumer.size)
-    //    )
+    //nextTempRema(0) := (
+    //  //0x0
+    //  RegNext(
+    //    next=nextTempRema(0),
+    //    init=nextTempRema(0).getZero,
     //  )
-    //  when (myCmpGeValid) {
-    //    rTempQuot(0)(
-    //      RegNext(rCnt(0), init=rCnt(0).getZero)
-    //      //rCnt(0)
-    //      .asUInt.resized
-    //    ) := True
-    //  }
-    //}
+    //)
     val tempRemaMux = (
       Mux[UInt](
-        !myCmpGeValid,
+        //!myCmpGeValid,
+        //(rState =/= State.RUNNING) || (!mySubDel1.io.outp.sum_carry.msb),
+        (
+          //(RegNext(rState) =/= State.RUNNING)
+          //rState =/= State.RUNNING
+          //|| 
+          mySubDel1.io.outp.sum_carry.msb
+        ),
+        //myCmpGeValid,
         RegNext(
           next=nextTempRema(1),
           init=nextTempRema(1).getZero,
@@ -503,11 +504,45 @@ case class LongDivMultiCycle(
         //)
         mySubDel1.io.outp.sum_carry(
           cfg.tempShapeWidth - 1 downto 0
-        ).asUInt
+        ).asUInt,
       )
     )
-    //nextTempRema(1) := nextTempRema(0)
-    ////rCmpGeValid := False
+    //when (!rCnt(0).msb) {
+    //  nextTempRema(0) := Cat(
+    //    tempRemaMux,
+    //    rTempNumer(
+    //      //RegNext(rCnt(0), init=rCnt(0).getZero)
+    //      //(rCnt(0) + 1)
+    //      rCnt(0)
+    //      .asUInt.resized
+    //    ),
+    //  ).asUInt//(nextTempRema(0).bitsRange)
+    //}
+    nextTempRema(0) := Cat(
+      tempRemaMux,
+      rTempNumer(
+        //RegNext(rCnt(0), init=rCnt(0).getZero)
+        //(rCnt(0) + 1)
+        rCnt(0)
+        .asUInt.resized
+      ),
+    ).asUInt//(nextTempRema(0).bitsRange)
+    when (!RegNext(next=rCnt(0).msb, init=False)) {
+      rTempRema(0) := (
+        nextTempRema(1)(
+          nextTempRema(1).high downto 1//log2Up(rTempNumer.size)
+        )
+      )
+      when (myCmpGeValid) {
+        rTempQuot(0)(
+          RegNext(rCnt(0), init=rCnt(0).getZero)
+          //rCnt(0)
+          .asUInt.resized
+        ) := True
+      }
+    }
+    nextTempRema(1) := nextTempRema(0)
+    //rCmpGeValid := False
     //nextTempRema(0) := Cat(
     //  tempRemaMux,
     //  rTempNumer(
@@ -679,34 +714,23 @@ case class LongDivMultiCycle(
         //) {
         //  rCmpGeValid := True
         //}
-        nextTempRema(1) := nextTempRema(0)
-        //rCmpGeValid := False
-        nextTempRema(0) := Cat(
-          tempRemaMux,
-          rTempNumer(
-            //RegNext(rCnt(0), init=rCnt(0).getZero)
-            //(rCnt(0) + 1)
-            rCnt(0)
-            .asUInt.resized
-          ),
-        ).asUInt//(nextTempRema(0).bitsRange)
         //--------
         when (RegNext(next=rCnt(0).msb, init=False)) {
           rState := State.YIELD_RESULT_PIPE_2
           myCmpGeValid := False
         } otherwise {
-          rTempRema(0) := (
-            nextTempRema(1)(
-              nextTempRema(1).high downto 1//log2Up(rTempNumer.size)
-            )
-          )
-          when (myCmpGeValid) {
-            rTempQuot(0)(
-              RegNext(rCnt(0), init=rCnt(0).getZero)
-              //rCnt(0)
-              .asUInt.resized
-            ) := True
-          }
+          //rTempRema(0) := (
+          //  nextTempRema(1)(
+          //    nextTempRema(1).high downto 1//log2Up(rTempNumer.size)
+          //  )
+          //)
+          //when (rCmpGeValid) {
+          //  rTempQuot(0)(
+          //    RegNext(rCnt(0), init=rCnt(0).getZero)
+          //    //rCnt(0)
+          //    .asUInt.resized
+          //  ) := True
+          //}
         }
         //--------
       }
