@@ -3984,6 +3984,7 @@ extends Area {
               init=upExt(1)(ydx)(extIdxUp).getZero,
             )
           )
+          upExt(1)(ydx)(extIdxUp).allowOverride
           when (
             up.isValid
             //up.isFiring
