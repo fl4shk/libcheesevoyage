@@ -465,6 +465,11 @@ case class LongDivMultiCycle(
       Reg(State())
       init(State.IDLE)
     )
+
+    rCmpGeValid := (
+      nextTempRema(1)
+      >= rTempDenom
+    )
     switch (rState) {
       is (State.IDLE) {
         when (inp.valid) {
@@ -581,7 +586,7 @@ case class LongDivMultiCycle(
           )
         )
         nextTempRema(1) := nextTempRema(0)
-        rCmpGeValid := False
+        //rCmpGeValid := False
         nextTempRema(0) := Cat(
           tempRemaMux,
           rTempNumer(
@@ -609,17 +614,17 @@ case class LongDivMultiCycle(
         //} otherwise {
         //  nextTempRema(0) := tempRemaMux
         //}
-        when (
-          //RegNext(next=nextTempRema(1), init=nextTempRema(1).getZero)
-          //nextTempRema(1)(
-          //  nextTempRema(1).high - 1
-          //  downto 0 //log2Up(rTempNumer.size)
-          //)
-          nextTempRema(1)
-          >= rTempDenom
-        ) {
-          rCmpGeValid := True
-        }
+        //when (
+        //  //RegNext(next=nextTempRema(1), init=nextTempRema(1).getZero)
+        //  //nextTempRema(1)(
+        //  //  nextTempRema(1).high - 1
+        //  //  downto 0 //log2Up(rTempNumer.size)
+        //  //)
+        //  nextTempRema(1)
+        //  >= rTempDenom
+        //) {
+        //  rCmpGeValid := True
+        //}
         //--------
         when (RegNext(next=rCnt(0).msb, init=False)) {
           rState := State.YIELD_RESULT_PIPE_2
