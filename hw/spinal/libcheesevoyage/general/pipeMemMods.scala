@@ -150,6 +150,7 @@ case class PipeMemRmwConfig[
     PipeMemRmw.numMyUpExtDel2(
       optModHazardKind=optModHazardKind,
       modStageCnt=modStageCnt,
+      optIncludePreMid0Front=optIncludePreMid0Front,
     )
     //cfg.numMyUpExtDel2
   )
@@ -317,6 +318,7 @@ case class PipeMemRmwPayloadExtMainNonMemAddr[
           optModHazardKind=optModHazardKind,
           //optModFwdToFront=false,
           modStageCnt=modStageCnt,
+          optIncludePreMid0Front=cfg.optIncludePreMid0Front,
         )
       ) + 4 bits)
       //UInt(log2Up(modStageCnt) bits)
@@ -712,12 +714,14 @@ object PipeMemRmw {
     optModHazardKind: PipeMemRmw.ModHazardKind,
     //optModFwdToFront: Boolean,
     modStageCnt: Int,
+    optIncludePreMid0Front: Boolean,
   ) = (
     numPostFrontPreWriteStages(
       //doModInModFront=doModInModFront,
       optModHazardKind=optModHazardKind,
       //optModFwdToFront=optModFwdToFront,
       modStageCnt=modStageCnt,
+      optIncludePreMid0Front=optIncludePreMid0Front,
     )
     + 1
     //+ (if (doModInModFront) (0) else (1))
@@ -727,7 +731,8 @@ object PipeMemRmw {
     //doModInModFront: Boolean,
     optModHazardKind: PipeMemRmw.ModHazardKind,
     //optModFwdToFront: Boolean,
-    modStageCnt: Int
+    modStageCnt: Int,
+    optIncludePreMid0Front: Boolean,
   ) = (
     //modStageCnt
     //3 + modStageCnt //+ 1
@@ -748,7 +753,14 @@ object PipeMemRmw {
       )
       //1
     )
-      + modStageCnt //+ 1
+    + modStageCnt //+ 1
+    + (
+      if (optIncludePreMid0Front) (
+        1
+      ) else (
+        0
+      )
+    )
     //(if (doModInModFront) (-1) else (1)) + modStageCnt //+ 1
     //- 1
     //+ 1
@@ -756,6 +768,7 @@ object PipeMemRmw {
   def numMyUpExtDel2(
     optModHazardKind: PipeMemRmw.ModHazardKind,
     modStageCnt: Int,
+    optIncludePreMid0Front: Boolean,
   ) = (
     PipeMemRmw.numPostFrontPreWriteStages
     //PipeMemRmw.numPostFrontPreWriteStages
@@ -766,6 +779,7 @@ object PipeMemRmw {
       //},
       optModHazardKind=optModHazardKind,
       modStageCnt=modStageCnt,
+      optIncludePreMid0Front=optIncludePreMid0Front,
     )
     + 1
     //+ (
@@ -953,6 +967,7 @@ extends Bundle {
     PipeMemRmw.numMyUpExtDel2(
       optModHazardKind=optModHazardKind,
       modStageCnt=modStageCnt,
+      optIncludePreMid0Front=cfg.optIncludePreMid0Front,
     )
   )
   //println(
@@ -2277,6 +2292,7 @@ extends Area {
             optModHazardKind=optModHazardKind,
             //optModFwdToFront=optModFwdToFront,
             modStageCnt=modStageCnt,
+            optIncludePreMid0Front=cfg.optIncludePreMid0Front,
           )
           + 1 
           //+ (
@@ -2416,7 +2432,8 @@ extends Area {
                   //},
                   optModHazardKind=optModHazardKind,
                   //optModFwdToFront=optModFwdToFront,
-                  modStageCnt=modStageCnt
+                  modStageCnt=modStageCnt,
+                  optIncludePreMid0Front=cfg.optIncludePreMid0Front,
                 )
                 - modStageCnt
                 //- 1
