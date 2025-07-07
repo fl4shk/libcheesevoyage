@@ -3039,8 +3039,20 @@ extends Area {
         next=myRdMemWord,
         init=myRdMemWord.getZero,
       )
-      when (cMid0Front(0).up.isReady) {
+      val rMyNonFwdRdMemWordState = Reg(Bool(), init=False)
+      //when (cMid0Front(0).up.isReady) {
+      //  myRdMemWord := myNonFwdRdMemWord
+      //}
+      when (
+        cMid0Front(0).up.isValid
+      ) {
         myRdMemWord := myNonFwdRdMemWord
+        rMyNonFwdRdMemWordState := True
+      }
+      when (
+        cMid0Front(0).up.isFiring
+      ) {
+        rMyNonFwdRdMemWordState := False
       }
       if (
         optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
