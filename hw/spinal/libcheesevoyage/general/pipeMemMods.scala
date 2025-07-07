@@ -3968,12 +3968,14 @@ extends Area {
       cfg.optIncludePreMid0Front
     ) generate (
       new cPreMid0Front.Area {
-        val upExt = Vec.fill(2)(
-          mkExt()
+        val upExt = (
+          Vec.fill(2)(mkExt())
+          .setName(s"${pipeName}_cPreMid0FrontArea_upExt")
         )
         val tempUpMod = Vec.fill(2)(
           modType()
         )
+        tempUpMod(0).allowOverride
         tempUpMod(0) := up(mod.front.midPipePayload(0))(0)
         for (ydx <- 0 until memArrSize) {
           tempUpMod(0).getPipeMemRmwExt(
