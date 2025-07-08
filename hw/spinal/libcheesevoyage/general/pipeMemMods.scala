@@ -1914,6 +1914,11 @@ extends Area {
                 }
               )
               if (idx == 1) {
+                val tempMyUpExtDel = (
+                  mod.front.myUpExtDel(idx - 1)(ydx)(
+                    extIdxUp
+                  )
+                )
                 tempMemAddrFwdCmp(
                   jdx
                   //0
@@ -1926,6 +1931,16 @@ extends Area {
                     )
                   ) && (
                     myZeroRegCond
+                  ) && (
+                    tempMyUpExtDel.modMemWordValid({
+                      if (
+                        idx < tempMyUpExtDel.modMemWordValid.size
+                      ) (
+                        idx
+                      ) else (
+                        tempMyUpExtDel.modMemWordValid.size - 1 
+                      )
+                    })
                   )
                 )
               } else {
