@@ -4018,7 +4018,7 @@ extends Area {
       new cPreMid0Front.Area {
         setName(s"${pipeName}_cPreMid0FrontArea_${fjIdx}")
         val upExt = (
-          Vec.fill(3)(mkExt())
+          Vec.fill(2)(mkExt())
           .setName(s"${pipeName}_cPreMid0FrontArea_${fjIdx}_upExt")
         )
         val tempUpMod = (
@@ -4052,17 +4052,17 @@ extends Area {
                 init=upExt(1)(ydx)(extIdx).getZero,
               )
             )
-            upExt(2)(ydx)(extIdx) := (
-              RegNext(
-                next=upExt(2)(ydx)(extIdx),
-                init=upExt(2)(ydx)(extIdx).getZero,
-              )
-            )
+            //upExt(2)(ydx)(extIdx) := (
+            //  RegNext(
+            //    next=upExt(2)(ydx)(extIdx),
+            //    init=upExt(2)(ydx)(extIdx).getZero,
+            //  )
+            //)
           }
           //upExt(1)(ydx) := upExt(0)(ydx)
           upExt(0)(ydx).allowOverride
           upExt(1)(ydx).allowOverride
-          upExt(2)(ydx).allowOverride
+          //upExt(2)(ydx).allowOverride
         }
         for (ydx <- 0 until memArrSize) {
           upExt(1)(ydx)(extIdxUp) := (
@@ -4102,11 +4102,11 @@ extends Area {
             ydx=ydx,
             memArrIdx=memArrIdx,
           )
-          tempUpMod(2).getPipeMemRmwExt(
-            outpExt=upExt(2)(ydx)(extIdxUp),
-            ydx=ydx,
-            memArrIdx=memArrIdx,
-          )
+          //tempUpMod(2).getPipeMemRmwExt(
+          //  outpExt=upExt(2)(ydx)(extIdxUp),
+          //  ydx=ydx,
+          //  memArrIdx=memArrIdx,
+          //)
         }
         for (idx <- 0 until up(mod.front.midPipePayload(1)).size) {
           up(mod.front.midPipePayload(1))(idx) := tempUpMod(2)
