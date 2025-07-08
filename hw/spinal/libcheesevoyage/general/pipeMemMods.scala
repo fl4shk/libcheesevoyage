@@ -74,7 +74,7 @@ case class PipeMemRmwConfig[
   optEnableClear: Boolean=false,
   memRamStyle: String="auto",
   vivadoDebug: Boolean=false,
-  optIncludePreMid0Front: Boolean=true,
+  //optIncludePreMid0Front: Boolean=true,
   optIncludeModFrontStageLink: Boolean=true,
   optIncludeModFrontS2MLink: Boolean=true,
   optFormal: Boolean=false,
@@ -1620,7 +1620,24 @@ trait PipeMemRmwReorderFtable[
   //): Bool
   //--------
 }
-case class PipeMemRmwDoModInModFrontFuncParams[
+case class PipeMemRmwDoModInPreMid0FrontFuncParams[
+  WordT <: Data,
+  HazardCmpT <: Data,
+  ModT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
+  DualRdT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
+](
+  pipeMemIo: PipeMemRmwIo[
+    WordT,
+    HazardCmpT,
+    ModT,
+    DualRdT,
+  ],
+  outp: ModT,                 // tempUpMod(2)
+  inp: ModT,                  // tempUpMod(1)
+  cPreMid0Front: CtrlLink,    // mod.front.cPreMid0Front
+) {
+}
+case class PipeMemRmwDoModInMid0FrontFuncParams[
   WordT <: Data,
   HazardCmpT <: Data,
   ModT <: PipeMemRmwPayloadBase[WordT, HazardCmpT],
@@ -1637,11 +1654,11 @@ case class PipeMemRmwDoModInModFrontFuncParams[
   nextPrevTxnWasHazardVec: Vec[Bool],   // nextPrevTxnWasHazardVec
   rPrevTxnWasHazardVec: Vec[Bool],      // rPrevTxnWasHazardVec
   rPrevTxnWasHazardAny: Bool,           // rPrevTxnWasHazardAny
-  outp: ModT,                   // tempUpMod(2),
-  inp: ModT,                    // tempUpMod(1),
+  outp: ModT,                           // tempUpMod(2),
+  inp: ModT,                            // tempUpMod(1),
   cMid0Front: CtrlLink,                 // mod.front.cMid0Front
   modFront: Node,                       // io.modFront
-  tempModFrontPayload: ModT,    // io.tempModFrontPayload
+  tempModFrontPayload: ModT,            // io.tempModFrontPayload
   //myModMemWord: WordT,                // myModMemWord
   getMyRdMemWordFunc: (
     //UInt,
@@ -1691,9 +1708,20 @@ case class PipeMemRmw[
     ) => Area
   ]=None,
   //--------
-  doModInModFrontFunc: Option[
+  doModInPreMid0FrontFunc: Option[
     (
-      PipeMemRmwDoModInModFrontFuncParams[
+      PipeMemRmwDoModInPreMid0FrontFuncParams[
+        WordT,
+        HazardCmpT,
+        ModT,
+        DualRdT,
+      ],
+    ) => Area
+  ]=None,
+  //--------
+  doModInMid0FrontFunc: Option[
+    (
+      PipeMemRmwDoModInMid0FrontFuncParams[
         WordT,
         HazardCmpT,
         ModT,
@@ -1732,6 +1760,10 @@ extends Area {
   def optEnableClear = cfg.optEnableClear 
   def memRamStyle = cfg.memRamStyle 
   def vivadoDebug = cfg.vivadoDebug 
+  //def optIncludePreMid0Front = cfg.optIncludePreMid0Front
+  def optIncludePreMid0Front = (
+    doModInPreMid0FrontFunc != None
+  )
   def optIncludeModFrontStageLink = cfg.optIncludeModFrontStageLink
   def optIncludeModFrontS2MLink = cfg.optIncludeModFrontS2MLink
   if (optIncludeModFrontS2MLink) {
@@ -2770,7 +2802,7 @@ extends Area {
       val cPreMid0Front = new ArrayBuffer[CtrlLink]()
       val sPreMid0Front = new ArrayBuffer[StageLink]()
       if (
-        cfg.optIncludePreMid0Front
+        optIncludePreMid0Front
       ) {
         for (fjIdx <- 0 until cfg.numForkJoin) {
           cPreMid0Front += CtrlLink(
@@ -2800,7 +2832,7 @@ extends Area {
           up=(
             //if (optLinkFrontToModFront) (
             //if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
-            if (!cfg.optIncludePreMid0Front) (
+            if (!optIncludePreMid0Front) (
               sFront(fjIdx).down
             ) else (
               sPreMid0Front(fjIdx).down
@@ -3760,7 +3792,7 @@ extends Area {
                 myModMem.io.ramIo.rdData
               )
               myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
-                if (cfg.optIncludePreMid0Front) (
+                if (optIncludePreMid0Front) (
                   RegNext(next=tempRdData, init=tempRdData.getZero)
                 ) else (
                   tempRdData
@@ -3970,7 +4002,7 @@ extends Area {
       }
     }
     val myPreFwdArea = (
-      !cfg.optIncludePreMid0Front
+      !optIncludePreMid0Front
     ) generate (
       mkPreFwdArea(
         upIsFiring=up.isFiring,
@@ -3981,20 +4013,57 @@ extends Area {
   for (fjIdx <- 0 until mod.front.cPreMid0Front.size) {
     val cPreMid0Front = mod.front.cPreMid0Front(fjIdx)
     val cPreMid0FrontArea = (
-      cfg.optIncludePreMid0Front
+      optIncludePreMid0Front
     ) generate (
       new cPreMid0Front.Area {
+        setName(s"${pipeName}_cPreMid0FrontArea_${fjIdx}")
         val upExt = (
-          Vec.fill(2)(mkExt())
-          .setName(s"${pipeName}_cPreMid0FrontArea_upExt")
+          Vec.fill(3)(mkExt())
+          .setName(s"${pipeName}_cPreMid0FrontArea_${fjIdx}_upExt")
         )
-        val tempUpMod = Vec.fill(2)(
-          modType()
+        val tempUpMod = (
+          Vec.fill(3)(
+            modType()
+          )
+          .setName(s"${pipeName}_cPreMid0FrontArea_${fjIdx}_tempUpMod")
         )
         tempUpMod(0).allowOverride
         tempUpMod(0) := up(mod.front.midPipePayload(0))(0)
         tempUpMod(1).allowOverride
         tempUpMod(1) := tempUpMod(0)
+        tempUpMod(2).allowOverride
+        tempUpMod(2) := (
+          RegNext(
+            next=tempUpMod(2),
+            init=tempUpMod(2).getZero
+          )
+        )
+        for (ydx <- 0 until memArrSize) {
+          for (extIdx <- 0 until extIdxLim) {
+            upExt(0)(ydx)(extIdx) := (
+              RegNext(
+                next=upExt(0)(ydx)(extIdx),
+                init=upExt(0)(ydx)(extIdx).getZero,
+              )
+            )
+            upExt(1)(ydx)(extIdx) := (
+              RegNext(
+                next=upExt(1)(ydx)(extIdx),
+                init=upExt(1)(ydx)(extIdx).getZero,
+              )
+            )
+            upExt(2)(ydx)(extIdx) := (
+              RegNext(
+                next=upExt(2)(ydx)(extIdx),
+                init=upExt(2)(ydx)(extIdx).getZero,
+              )
+            )
+          }
+          //upExt(1)(ydx) := upExt(0)(ydx)
+          upExt(0)(ydx).allowOverride
+          upExt(1)(ydx).allowOverride
+          upExt(2)(ydx).allowOverride
+        }
         for (ydx <- 0 until memArrSize) {
           upExt(1)(ydx)(extIdxUp) := (
             RegNext(
@@ -4028,14 +4097,14 @@ extends Area {
             ydx=ydx,
             memArrIdx=memArrIdx,
           )
-          tempUpMod(1).setPipeMemRmwExt(
-            inpExt=upExt(1)(ydx)(extIdxUp),
+          tempUpMod(2).setPipeMemRmwExt(
+            inpExt=upExt(2)(ydx)(extIdxUp),
             ydx=ydx,
             memArrIdx=memArrIdx,
           )
         }
         for (idx <- 0 until up(mod.front.midPipePayload(1)).size) {
-          up(mod.front.midPipePayload(1))(idx) := tempUpMod(1)
+          up(mod.front.midPipePayload(1))(idx) := tempUpMod(2)
         }
         //upExt(0) := up(mod.front.midPipePayload)(0)
         val myPreFwdArea = (
@@ -4044,8 +4113,30 @@ extends Area {
             upExt=upExt,
           )
         )
+        val myDoModInPreMid0FrontAreaArr = new ArrayBuffer[Area]()
+        doModInPreMid0FrontFunc match {
+          case Some(myDoModInPreMid0FrontFunc) => {
+            myDoModInPreMid0FrontAreaArr += (
+              myDoModInPreMid0FrontFunc(
+                PipeMemRmwDoModInPreMid0FrontFuncParams(
+                  pipeMemIo=io,
+                  outp=tempUpMod(2),
+                  inp=tempUpMod(1),
+                  cPreMid0Front=cPreMid0Front,
+                )
+              )
+              .setName(s"${pipeName}_myDoModInPreMid0FrontAreaArr")
+            )
+          }
+          case None => {
+            assert(
+              false,
+              "eek!"
+            )
+          }
+        }
       }
-    ) 
+    )
   }
   for (fjIdx <- 0 until mod.front.cMid0Front.size) {
     val cMid0Front = mod.front.cMid0Front(fjIdx)
@@ -4220,7 +4311,7 @@ extends Area {
       )
       tempUpMod(2).allowOverride
       def myMidPipePayloadIdx = (
-        if (!cfg.optIncludePreMid0Front) (
+        if (!optIncludePreMid0Front) (
           0
         ) else (
           1
@@ -4378,13 +4469,13 @@ extends Area {
           current := True
         })
       }
-      val myDoModInModFrontAreaArr = new ArrayBuffer[Area]()
-      doModInModFrontFunc match {
-        case Some(myDoModInModFrontFunc) => {
+      val myDoModInMid0FrontAreaArr = new ArrayBuffer[Area]()
+      doModInMid0FrontFunc match {
+        case Some(myDoModInMid0FrontFunc) => {
           //assert(modStageCnt == 0)
-          myDoModInModFrontAreaArr += (
-            myDoModInModFrontFunc(
-              PipeMemRmwDoModInModFrontFuncParams(
+          myDoModInMid0FrontAreaArr += (
+            myDoModInMid0FrontFunc(
+              PipeMemRmwDoModInMid0FrontFuncParams(
                 pipeMemIo=io,
                 nextPrevTxnWasHazardVec=nextPrevTxnWasHazardVec,
                 rPrevTxnWasHazardVec=rPrevTxnWasHazardVec,
@@ -4415,7 +4506,7 @@ extends Area {
                 myFwd=myFwd,
               )
             )
-              .setName(s"${pipeName}_myDoModInModFrontAreaArr")
+            .setName(s"${pipeName}_myDoModInMid0FrontAreaArr")
           )
         }
         case None => {
