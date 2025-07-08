@@ -3635,11 +3635,11 @@ extends Area {
     val tempSharedEnable = /*KeepAttribute*/(
       //down.isReady
       Vec.fill(modRdPortCnt + 1)(
-        if (optIncludePreMid0Front) (
-          down.isFiring
-        ) else (
+        //if (optIncludePreMid0Front) (
+        //  down.isFiring
+        //) else (
           down.isReady
-        )
+        //)
       )
     )
       .setName(s"${pipeName}_tempSharedEnable")
