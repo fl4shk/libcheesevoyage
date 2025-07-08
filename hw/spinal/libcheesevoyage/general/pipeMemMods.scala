@@ -3092,8 +3092,8 @@ extends Area {
       ) {
         when (!rMyNonFwdRdMemWordState) {
           myRdMemWord := myNonFwdRdMemWord
+          rMyNonFwdRdMemWordState := True
         }
-        //rMyNonFwdRdMemWordState := True
       }
       when (cMid0Front(0).up.isFiring) {
         rMyNonFwdRdMemWordState := False
