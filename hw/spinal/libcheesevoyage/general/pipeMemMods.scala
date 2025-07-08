@@ -3067,13 +3067,13 @@ extends Area {
           //init(nextDidFwd.getZero)
         )
       )
-      //myRdMemWord := RegNext(
-      //  next=myRdMemWord,
-      //  init=myRdMemWord.getZero,
-      //)
+      myRdMemWord := RegNext(
+        next=myRdMemWord,
+        init=myRdMemWord.getZero,
+      )
       val rMyNonFwdRdMemWordState = Reg(Bool(), init=False)
       //when (cMid0Front(0).up.isReady) {
-        myRdMemWord := myNonFwdRdMemWord
+      //  myRdMemWord := myNonFwdRdMemWord
       //}
       when (cMid0Front(0).up.isValid) {
         when (!rMyNonFwdRdMemWordState) {
