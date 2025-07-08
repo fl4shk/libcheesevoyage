@@ -3077,14 +3077,14 @@ extends Area {
       //  myRdMemWord := myNonFwdRdMemWord
       //}
       when (cMid0Front(0).up.isValid) {
-        when (!rMyNonFwdRdMemWordState) {
+        //when (!rMyNonFwdRdMemWordState) {
           myRdMemWord := myNonFwdRdMemWord
-        }
-        rMyNonFwdRdMemWordState := True
+        //}
+        //rMyNonFwdRdMemWordState := True
       }
-      when (cMid0Front(0).up.isFiring) {
-        rMyNonFwdRdMemWordState := False
-      }
+      //when (cMid0Front(0).up.isFiring) {
+      //  rMyNonFwdRdMemWordState := False
+      //}
       if (
         optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
         //optModFwdToFront
