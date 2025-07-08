@@ -3087,17 +3087,17 @@ extends Area {
       //}
       when (
         cMid0Front(0).up.isValid
-        && cMid0Front(0).down.isReady
+        //&& cMid0Front(0).down.isReady
         //cMid0Front(0).up.isReady
       ) {
-        //when (!rMyNonFwdRdMemWordState) {
+        when (!rMyNonFwdRdMemWordState) {
           myRdMemWord := myNonFwdRdMemWord
-        //}
+        }
         //rMyNonFwdRdMemWordState := True
       }
-      //when (cMid0Front(0).up.isFiring) {
-      //  rMyNonFwdRdMemWordState := False
-      //}
+      when (cMid0Front(0).up.isFiring) {
+        rMyNonFwdRdMemWordState := False
+      }
       if (
         optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
         //optModFwdToFront
