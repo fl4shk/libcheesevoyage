@@ -3078,6 +3078,7 @@ extends Area {
       //}
       when (
         cMid0Front(0).up.isValid
+        && cMid0Front(0).down.isReady
         //cMid0Front(0).up.isReady
       ) {
         //when (!rMyNonFwdRdMemWordState) {
