@@ -4125,6 +4125,9 @@ extends Area {
             ydx=ydx,
             memArrIdx=memArrIdx,
           )
+          upExt(2)(ydx)(extIdxUp) := (
+            upExt(1)(ydx)(extIdxUp)
+          )
           //tempUpMod(2).getPipeMemRmwExt(
           //  outpExt=upExt(2)(ydx)(extIdxUp),
           //  ydx=ydx,
