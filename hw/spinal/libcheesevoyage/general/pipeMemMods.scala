@@ -1809,29 +1809,29 @@ extends Area {
   def mkPreFwdArea(
     //up: CtrlLink,
     upIsFiring: Bool,
-    upExt: Vec[Vec[Vec[PipeMemRmwPayloadExt[
+    upExtElem: /*Vec[*/Vec[Vec[PipeMemRmwPayloadExt[
       WordT,
       HazardCmpT,
-    ]]]]
+    ]]]//]
   ) = new Area {
     def extIdxUp = PipeMemRmw.extIdxUp
     for (ydx <- 0 until memArrSize) {
       def myMemAddrFwdCmp = (
-        upExt(1)(ydx)(extIdxUp).memAddrFwdCmp
+        upExtElem(ydx)(extIdxUp).memAddrFwdCmp
       )
       def myFwdIdx = (
-        upExt(1)(ydx)(extIdxUp).fwdIdx
+        upExtElem(ydx)(extIdxUp).fwdIdx
       )
       val myHistMemAddr = (
         /*KeepAttribute*/(
           History[UInt](
-            that=upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx),
+            that=upExtElem(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx),
             // `length=numMyUpExtDel2 + 1` because `History` includes the
             // current value of `that`.
             // This might not be relevant any more?
             length=2,//mod.front.myUpExtDel2.size + 1, 
             when=upIsFiring,
-            init=upExt(1)(ydx)(extIdxUp).memAddr(
+            init=upExtElem(ydx)(extIdxUp).memAddr(
               PipeMemRmw.modWrIdx
             ).getZero,
           )
@@ -1871,7 +1871,7 @@ extends Area {
             //item.payload := (
             //)
             item.payload := (
-              upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+              upExtElem(ydx)(extIdxUp).memAddr(zdx)
             )
           }
         }
@@ -1880,13 +1880,13 @@ extends Area {
             current => (current.fire === True)
           )._2
         )
-        upExt(1)(ydx)(extIdxUp).memAddrFwdMmw(zdx).foreach(current => {
+        upExtElem(ydx)(extIdxUp).memAddrFwdMmw(zdx).foreach(current => {
           current := (
-            upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)
+            upExtElem(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)
           )
         })
-        upExt(1)(ydx)(extIdxUp).memAddrFwd(zdx).foreach(current => {
-          current := upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+        upExtElem(ydx)(extIdxUp).memAddrFwd(zdx).foreach(current => {
+          current := upExtElem(ydx)(extIdxUp).memAddr(zdx)
         })
         for (
           //idx <- 0 until myHistMemAddr.size
@@ -1904,7 +1904,7 @@ extends Area {
                 cfg.optFwdHaveZeroReg match {
                   case Some(myZeroRegIdx) => {
                     (
-                      upExt(1)(ydx)(extIdxUp).memAddr(zdx)
+                      upExtElem(ydx)(extIdxUp).memAddr(zdx)
                       =/= myZeroRegIdx
                     )
                   }
@@ -1919,7 +1919,7 @@ extends Area {
                   //0
                 ) := (
                   (
-                    upExt(1)(ydx)(extIdxUp).memAddr(
+                    upExtElem(ydx)(extIdxUp).memAddr(
                       zdx
                     ) === (
                       myHistMemAddr(idx)
@@ -1943,7 +1943,7 @@ extends Area {
                   //0
                 ) := (
                   (
-                    upExt(1)(ydx)(extIdxUp).memAddr(
+                    upExtElem(ydx)(extIdxUp).memAddr(
                       zdx
                     ) === (
                       //myHistMemAddr(idx)
@@ -4006,7 +4006,7 @@ extends Area {
     ) generate (
       mkPreFwdArea(
         upIsFiring=up.isFiring,
-        upExt=upExt,
+        upExtElem=upExt(1),
       )
     )
   }
@@ -4018,7 +4018,7 @@ extends Area {
       new cPreMid0Front.Area {
         setName(s"${pipeName}_cPreMid0FrontArea_${fjIdx}")
         val upExt = (
-          Vec.fill(2)(mkExt())
+          Vec.fill(3)(mkExt())
           .setName(s"${pipeName}_cPreMid0FrontArea_${fjIdx}_upExt")
         )
         val tempUpMod = (
@@ -4052,17 +4052,17 @@ extends Area {
                 init=upExt(1)(ydx)(extIdx).getZero,
               )
             )
-            //upExt(2)(ydx)(extIdx) := (
-            //  RegNext(
-            //    next=upExt(2)(ydx)(extIdx),
-            //    init=upExt(2)(ydx)(extIdx).getZero,
-            //  )
-            //)
+            upExt(2)(ydx)(extIdx) := (
+              RegNext(
+                next=upExt(2)(ydx)(extIdx),
+                init=upExt(2)(ydx)(extIdx).getZero,
+              )
+            )
           }
           //upExt(1)(ydx) := upExt(0)(ydx)
           upExt(0)(ydx).allowOverride
           upExt(1)(ydx).allowOverride
-          //upExt(2)(ydx).allowOverride
+          upExt(2)(ydx).allowOverride
         }
         for (ydx <- 0 until memArrSize) {
           upExt(1)(ydx)(extIdxUp) := (
@@ -4102,11 +4102,11 @@ extends Area {
             ydx=ydx,
             memArrIdx=memArrIdx,
           )
-          //tempUpMod(2).getPipeMemRmwExt(
-          //  outpExt=upExt(2)(ydx)(extIdxUp),
-          //  ydx=ydx,
-          //  memArrIdx=memArrIdx,
-          //)
+          tempUpMod(2).getPipeMemRmwExt(
+            outpExt=upExt(2)(ydx)(extIdxUp),
+            ydx=ydx,
+            memArrIdx=memArrIdx,
+          )
         }
         for (idx <- 0 until up(mod.front.midPipePayload(1)).size) {
           up(mod.front.midPipePayload(1))(idx) := tempUpMod(2)
@@ -4115,7 +4115,7 @@ extends Area {
         val myPreFwdArea = (
           mkPreFwdArea(
             upIsFiring=up.isFiring,
-            upExt=upExt,
+            upExtElem=upExt(2),
           )
         )
         val myDoModInPreMid0FrontAreaArr = new ArrayBuffer[Area]()
