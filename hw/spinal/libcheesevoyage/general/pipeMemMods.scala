@@ -4091,7 +4091,30 @@ extends Area {
           })
           upExt(1)(ydx)(extIdxUp).ready := up.isReady
           upExt(1)(ydx)(extIdxUp).fire := up.isFiring
-
+        }
+        val myDoModInPreMid0FrontAreaArr = new ArrayBuffer[Area]()
+        doModInPreMid0FrontFunc match {
+          case Some(myDoModInPreMid0FrontFunc) => {
+            myDoModInPreMid0FrontAreaArr += (
+              myDoModInPreMid0FrontFunc(
+                PipeMemRmwDoModInPreMid0FrontFuncParams(
+                  pipeMemIo=io,
+                  outp=tempUpMod(2),
+                  inp=tempUpMod(1),
+                  cPreMid0Front=cPreMid0Front,
+                )
+              )
+              .setName(s"${pipeName}_myDoModInPreMid0FrontAreaArr")
+            )
+          }
+          case None => {
+            assert(
+              false,
+              "eek!"
+            )
+          }
+        }
+        for (ydx <- 0 until memArrSize) {
           tempUpMod(0).getPipeMemRmwExt(
             outpExt=upExt(0)(ydx)(extIdxUp),
             ydx=ydx,
@@ -4118,28 +4141,6 @@ extends Area {
             upExtElem=upExt(2),
           )
         )
-        val myDoModInPreMid0FrontAreaArr = new ArrayBuffer[Area]()
-        doModInPreMid0FrontFunc match {
-          case Some(myDoModInPreMid0FrontFunc) => {
-            myDoModInPreMid0FrontAreaArr += (
-              myDoModInPreMid0FrontFunc(
-                PipeMemRmwDoModInPreMid0FrontFuncParams(
-                  pipeMemIo=io,
-                  outp=tempUpMod(2),
-                  inp=tempUpMod(1),
-                  cPreMid0Front=cPreMid0Front,
-                )
-              )
-              .setName(s"${pipeName}_myDoModInPreMid0FrontAreaArr")
-            )
-          }
-          case None => {
-            assert(
-              false,
-              "eek!"
-            )
-          }
-        }
       }
     )
   }
