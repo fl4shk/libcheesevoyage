@@ -4141,7 +4141,7 @@ extends Area {
         val myPreFwdArea = (
           mkPreFwdArea(
             upIsFiring=up.isFiring,
-            upExtElem=upExt(2),
+            upExtElem=upExt(1),
           )
         )
       }
