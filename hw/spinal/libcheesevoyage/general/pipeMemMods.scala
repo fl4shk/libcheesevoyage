@@ -1056,7 +1056,7 @@ case class PipeMemRmwDoFwdArea[
   //  Int,      // zdx
   //  WordT,    // modMemWord
   //) => Unit,
-  link: CtrlLink,
+  //link: CtrlLink,
 ) extends Area {
   //def myHaveFwd = (
   //  optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
