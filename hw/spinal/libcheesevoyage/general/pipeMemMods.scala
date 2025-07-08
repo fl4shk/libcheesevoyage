@@ -1931,7 +1931,16 @@ extends Area {
               //  )
               //} else {
                 val tempMyUpExtDel = (
-                  mod.front.myUpExtDel(idx - 1)(ydx)(
+                  mod.front.myUpExtDel(
+                    idx - 1
+                    + (
+                      if (!optIncludePreMid0Front) (
+                        0
+                      ) else (
+                        1
+                      )
+                    )
+                  )(ydx)(
                     extIdxUp
                   )
                 )
