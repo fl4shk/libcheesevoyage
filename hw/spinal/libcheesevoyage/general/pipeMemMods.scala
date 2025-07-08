@@ -3808,7 +3808,11 @@ extends Area {
               )
               myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
                 if (optIncludePreMid0Front) (
-                  RegNext(next=tempRdData, init=tempRdData.getZero)
+                  RegNextWhen(
+                    next=tempRdData,
+                    cond=down.isFiring,
+                    init=tempRdData.getZero
+                  )
                 ) else (
                   tempRdData
                 )
