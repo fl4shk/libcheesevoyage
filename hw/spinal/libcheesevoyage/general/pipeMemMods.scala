@@ -4097,8 +4097,13 @@ extends Area {
             ydx=ydx,
             memArrIdx=memArrIdx,
           )
-          tempUpMod(2).setPipeMemRmwExt(
-            inpExt=upExt(2)(ydx)(extIdxUp),
+          tempUpMod(1).setPipeMemRmwExt(
+            inpExt=upExt(1)(ydx)(extIdxUp),
+            ydx=ydx,
+            memArrIdx=memArrIdx,
+          )
+          tempUpMod(2).getPipeMemRmwExt(
+            outpExt=upExt(2)(ydx)(extIdxUp),
             ydx=ydx,
             memArrIdx=memArrIdx,
           )
