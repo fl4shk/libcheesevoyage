@@ -3076,7 +3076,10 @@ extends Area {
       //when (cMid0Front(0).up.isReady) {
       //  myRdMemWord := myNonFwdRdMemWord
       //}
-      when (cMid0Front(0).up.isValid) {
+      when (
+        //cMid0Front(0).up.isValid
+        cMid0Front(0).up.isReady
+      ) {
         //when (!rMyNonFwdRdMemWordState) {
           myRdMemWord := myNonFwdRdMemWord
         //}
