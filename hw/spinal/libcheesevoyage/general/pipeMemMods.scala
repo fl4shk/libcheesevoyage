@@ -4125,11 +4125,11 @@ extends Area {
             ydx=ydx,
             memArrIdx=memArrIdx,
           )
-          tempUpMod(2).getPipeMemRmwExt(
-            outpExt=upExt(2)(ydx)(extIdxUp),
-            ydx=ydx,
-            memArrIdx=memArrIdx,
-          )
+          //tempUpMod(2).getPipeMemRmwExt(
+          //  outpExt=upExt(2)(ydx)(extIdxUp),
+          //  ydx=ydx,
+          //  memArrIdx=memArrIdx,
+          //)
         }
         for (idx <- 0 until up(mod.front.midPipePayload(1)).size) {
           up(mod.front.midPipePayload(1))(idx) := tempUpMod(2)
@@ -4138,7 +4138,7 @@ extends Area {
         val myPreFwdArea = (
           mkPreFwdArea(
             upIsFiring=up.isFiring,
-            upExtElem=upExt(0),
+            upExtElem=upExt(2),
           )
         )
       }
