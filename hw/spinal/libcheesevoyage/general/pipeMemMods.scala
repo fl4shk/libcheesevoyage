@@ -1056,6 +1056,7 @@ case class PipeMemRmwDoFwdArea[
   //  Int,      // zdx
   //  WordT,    // modMemWord
   //) => Unit,
+  link: CtrlLink,
 ) extends Area {
   //def myHaveFwd = (
   //  optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
@@ -1346,7 +1347,17 @@ case class PipeMemRmwDoFwdArea[
           ////} otherwise {
           ////  innerFunc()
           ////}
-          mySetToMyFwdUp()
+          tempMyFwdData := (
+            RegNext(
+              next=tempMyFwdData,
+              init=tempMyFwdData.getZero,
+            )
+          )
+          when (
+            myFwdMmwValidUp
+          ) {
+            mySetToMyFwdUp()
+          }
           //tempMyFwdData := firstFwdRdMemWord._2
           //when (tempMyFindFirstUp_0) {
           //  mySetToMyFwdUp()
@@ -3076,7 +3087,13 @@ extends Area {
           (
             next=nextDidFwd,
             //cFront.down.isReady
-            cond=cFront.down.isFiring
+            cond=(
+              if (!optIncludePreMid0Front) (
+                cFront.down.isFiring
+              ) else (
+                cPreMid0Front(0).down.isFiring
+              )
+            )
             ////cFront.down.isValid
             ////cMid0Front.up.isValid
           )
@@ -3097,13 +3114,14 @@ extends Area {
       //  && cMid0Front(0).up.isReady
       //) {
         //when (!rMyNonFwdRdMemWordState) {
-          myRdMemWord := myNonFwdRdMemWord.last
+          myRdMemWord := myNonFwdRdMemWord.last//(0)
       //  //  rMyNonFwdRdMemWordState := True
       //  //}
       //}
       //when (cMid0Front(0).up.isFiring) {
       //  rMyNonFwdRdMemWordState := False
       //}
+
       if (
         optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
         //optModFwdToFront
