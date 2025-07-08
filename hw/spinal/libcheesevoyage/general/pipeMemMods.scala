@@ -2493,10 +2493,18 @@ extends Area {
           wordType()
         )
       )
-      val myNonFwdRdMemWord = Vec.fill(memArrSize)(
-        Vec.fill(modRdPortCnt)(
-          /*Reg*/(
-            wordType()
+      val myNonFwdRdMemWord = Vec.fill(
+        if (optIncludePreMid0Front) (
+          2
+        ) else (
+          1
+        )
+      )(
+        Vec.fill(memArrSize)(
+          Vec.fill(modRdPortCnt)(
+            /*Reg*/(
+              wordType()
+            )
           )
         )
       )
@@ -3089,7 +3097,7 @@ extends Area {
       //  && cMid0Front(0).up.isReady
       //) {
         //when (!rMyNonFwdRdMemWordState) {
-          myRdMemWord := myNonFwdRdMemWord
+          myRdMemWord := myNonFwdRdMemWord.last
       //  //  rMyNonFwdRdMemWordState := True
       //  //}
       //}
@@ -3730,7 +3738,7 @@ extends Area {
               downto 0
             )
           )
-          myNonFwdRdMemWord(ydx)(PipeMemRmw.modWrIdx).assignFromBits(
+          myNonFwdRdMemWord.head(ydx)(PipeMemRmw.modWrIdx).assignFromBits(
             myModMem.io.ramIo.rdData.asBits
           )
         }
@@ -3806,17 +3814,20 @@ extends Area {
               val tempRdData = (
                 myModMem.io.ramIo.rdData
               )
-              myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
-                if (optIncludePreMid0Front) (
-                  RegNextWhen(
-                    next=tempRdData,
-                    cond=down.isFiring,
-                    init=tempRdData.getZero
-                  )
-                ) else (
-                  tempRdData
+              //if (optIncludePreMid0Front) {
+              //} else {
+                myNonFwdRdMemWord.head(ydx)(zdx).assignFromBits(
+                  //if (optIncludePreMid0Front) (
+                  //  RegNext/*When*/(
+                  //    next=tempRdData,
+                  //    //cond=down.isFiring,
+                  //    init=tempRdData.getZero
+                  //  )
+                  //) else (
+                    tempRdData
+                  //)
                 )
-              )
+              //}
             //}
             //myModMem.io.cmpRdWrAddrEtc := (
             //  //tempSharedEnable.last
@@ -4083,6 +4094,24 @@ extends Area {
           upExt(1)(ydx).allowOverride
           upExt(2)(ydx).allowOverride
         }
+        //mod.front.myNonFwdRdMemWord(1) := (
+        //  RegNext(
+        //    next=mod.front.myNonFwdRdMemWord(1),
+        //    init=mod.front.myNonFwdRdMemWord(1).getZero,
+        //  )
+        //)
+        //when (
+        //  //up.isValid
+        //  down.isReady
+        //) {
+        //}
+        mod.front.myNonFwdRdMemWord(1) := (
+          RegNextWhen(
+            next=mod.front.myNonFwdRdMemWord(0),
+            cond=down.isReady,
+            init=mod.front.myNonFwdRdMemWord(0).getZero,
+          )
+        )
         for (ydx <- 0 until memArrSize) {
           upExt(1)(ydx)(extIdxUp) := (
             RegNext(
@@ -4096,6 +4125,14 @@ extends Area {
             //up.isFiring
           ) {
             upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
+            //for (zdx <- 0 until modRdPortCnt) {
+            //  upExt(1)(ydx)(extIdxUp).rdMemWord(zdx) := (
+            //    RegNext(
+            //      next=upExt(1)(ydx)(extIdxUp).rdMemWord(zdx),
+            //      init=upExt(1)(ydx)(extIdxUp).rdMemWord(zdx).getZero,
+            //    )
+            //  )
+            //}
           }
           upExt(1)(ydx)(extIdxSaved) := (
             RegNextWhen(
