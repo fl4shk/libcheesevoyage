@@ -3067,23 +3067,23 @@ extends Area {
           //init(nextDidFwd.getZero)
         )
       )
-      myRdMemWord := RegNext(
-        next=myRdMemWord,
-        init=myRdMemWord.getZero,
-      )
-      val rMyNonFwdRdMemWordState = Reg(Bool(), init=False)
+      //myRdMemWord := RegNext(
+      //  next=myRdMemWord,
+      //  init=myRdMemWord.getZero,
+      //)
+      //val rMyNonFwdRdMemWordState = Reg(Bool(), init=False)
       //when (cMid0Front(0).up.isReady) {
-      //  myRdMemWord := myNonFwdRdMemWord
+        myRdMemWord := myNonFwdRdMemWord
       //}
-      when (cMid0Front(0).up.isValid) {
-        when (!rMyNonFwdRdMemWordState) {
-          myRdMemWord := myNonFwdRdMemWord
-        }
-        rMyNonFwdRdMemWordState := True
-      }
-      when (cMid0Front(0).up.isFiring) {
-        rMyNonFwdRdMemWordState := False
-      }
+      //when (cMid0Front(0).up.isValid) {
+      //  when (!rMyNonFwdRdMemWordState) {
+      //    myRdMemWord := myNonFwdRdMemWord
+      //  }
+      //  rMyNonFwdRdMemWordState := True
+      //}
+      //when (cMid0Front(0).up.isFiring) {
+      //  rMyNonFwdRdMemWordState := False
+      //}
       if (
         optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
         //optModFwdToFront
