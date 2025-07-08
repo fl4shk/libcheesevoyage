@@ -3793,11 +3793,11 @@ extends Area {
                 myModMem.io.ramIo.rdData
               )
               myNonFwdRdMemWord(ydx)(zdx).assignFromBits(
-                //if (optIncludePreMid0Front) (
-                //  RegNext(next=tempRdData, init=tempRdData.getZero)
-                //) else (
+                if (optIncludePreMid0Front) (
+                  RegNext(next=tempRdData, init=tempRdData.getZero)
+                ) else (
                   tempRdData
-                //)
+                )
               )
             //}
             //myModMem.io.cmpRdWrAddrEtc := (
