@@ -1348,17 +1348,19 @@ case class PipeMemRmwDoFwdArea[
           ////  innerFunc()
           ////}
 
-          tempMyFwdData := (
-            RegNext(
-              next=tempMyFwdData,
-              init=tempMyFwdData.getZero,
-            )
-          )
-          when (
-            myFwdMmwValidUp
-          ) {
+          //tempMyFwdData := (
+          //  RegNext(
+          //    next=tempMyFwdData,
+          //    init=tempMyFwdData.getZero,
+          //  )
+          //)
+          //when (
+          //  myFwdMmwValidUp
+          //) {
             mySetToMyFwdUp()
-          }
+          //}
+          //otherwise {
+          //}
 
           //tempMyFwdData := firstFwdRdMemWord._2
           //when (tempMyFindFirstUp_0) {
@@ -1367,11 +1369,13 @@ case class PipeMemRmwDoFwdArea[
           //  tempMyFwdData := firstFwdRdMemWord._2
           //}
         }
-        setToMyFwdDataFunc(
-          ydx,
-          zdx,
-          tempMyFwdData,
-        )
+        when (myFwdMmwValidUp) {
+          setToMyFwdDataFunc(
+            ydx,
+            zdx,
+            tempMyFwdData,
+          )
+        }
       }
     }
   //}
@@ -2495,7 +2499,8 @@ extends Area {
         )
         ret.payload.valid := (
           if (idx == 0) (
-            True
+            //True
+            False
           ) else (
             prev.modMemWordValid(
               if (zdx < prev.modMemWordValid.size) (
