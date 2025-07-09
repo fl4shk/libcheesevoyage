@@ -3873,15 +3873,6 @@ extends Area {
                   //)
                 )
               //}
-              if (optIncludePreMid0Front) {
-                myNonFwdRdMemWord.last(ydx)(zdx) := (
-                  RegNextWhen(
-                    next=myNonFwdRdMemWord.head(ydx)(zdx),
-                    cond=down.isFiring,
-                    init=myNonFwdRdMemWord.head(ydx)(zdx).getZero,
-                  )
-                )
-              }
             //}
             //myModMem.io.cmpRdWrAddrEtc := (
             //  //tempSharedEnable.last
@@ -4159,19 +4150,17 @@ extends Area {
         //  down.isReady
         //) {
         //}
-        //mod.front.myNonFwdRdMemWord(1) := (
-        //  RegNextWhen(
-        //    next=mod.front.myNonFwdRdMemWord(0),
-        //    cond=(
-        //      //down.isReady
-        //      //down.isFiring
-        //      up.isValid
-        //    ),
-        //    init=mod.front.myNonFwdRdMemWord(0).getZero,
-        //  )
-        //)
-        //mod.front.myNonFwdRdMemWord(1) := (
-        //)
+        mod.front.myNonFwdRdMemWord(1) := (
+          RegNext/*When*/(
+            next=mod.front.myNonFwdRdMemWord(0),
+            //cond=(
+            //  //down.isReady
+            //  //down.isFiring
+            //  up.isValid
+            //),
+            init=mod.front.myNonFwdRdMemWord(0).getZero,
+          )
+        )
         for (ydx <- 0 until memArrSize) {
           upExt(1)(ydx)(extIdxUp) := (
             RegNext(
