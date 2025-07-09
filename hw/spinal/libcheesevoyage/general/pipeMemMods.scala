@@ -1348,17 +1348,17 @@ case class PipeMemRmwDoFwdArea[
           ////  innerFunc()
           ////}
 
-          tempMyFwdData := (
-            RegNext(
-              next=tempMyFwdData,
-              init=tempMyFwdData.getZero,
-            )
-          )
-          when (
-            myFwdMmwValidUp
-          ) {
+          //tempMyFwdData := (
+          //  RegNext(
+          //    next=tempMyFwdData,
+          //    init=tempMyFwdData.getZero,
+          //  )
+          //)
+          //when (
+          //  myFwdMmwValidUp
+          //) {
             mySetToMyFwdUp()
-          }
+          //}
 
           //tempMyFwdData := firstFwdRdMemWord._2
           //when (tempMyFindFirstUp_0) {
