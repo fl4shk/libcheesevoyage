@@ -2027,9 +2027,10 @@ extends Area {
                         tempMyUpExtDel.modMemWordValid.size - 1 
                       )
                     })
-                  ) && (
-                    tempMyUpExtDel.valid(0)
                   )
+                  //&& (
+                  //  tempMyUpExtDel.valid(0)
+                  //)
                 )
               //}
             }
@@ -4152,8 +4153,11 @@ extends Area {
         mod.front.myNonFwdRdMemWord(1) := (
           RegNextWhen(
             next=mod.front.myNonFwdRdMemWord(0),
-            //cond=down.isReady,
-            cond=down.isFiring,
+            cond=(
+              //down.isReady
+              //down.isFiring
+              up.isValid
+            ),
             init=mod.front.myNonFwdRdMemWord(0).getZero,
           )
         )
