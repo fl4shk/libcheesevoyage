@@ -3136,27 +3136,27 @@ extends Area {
           //init(nextDidFwd.getZero)
         )
       )
-      //myRdMemWord := RegNext(
-      //  next=myRdMemWord,
-      //  init=myRdMemWord.getZero,
-      //)
-      //val rMyNonFwdRdMemWordState = Reg(Bool(), init=False)
-      ////////when (cMid0Front(0).up.isReady) {
-      ////////  myRdMemWord := myNonFwdRdMemWord
-      ////////}
-      //when (
-      //  cMid0Front(0).up.isValid
-      //  //&& cMid0Front(0).down.isReady
-      //  //&& cMid0Front(0).up.isReady
-      //) {
-      //  when (!rMyNonFwdRdMemWordState) {
+      myRdMemWord := RegNext(
+        next=myRdMemWord,
+        init=myRdMemWord.getZero,
+      )
+      val rMyNonFwdRdMemWordState = Reg(Bool(), init=False)
+      //////when (cMid0Front(0).up.isReady) {
+      //////  myRdMemWord := myNonFwdRdMemWord
+      //////}
+      when (
+        cMid0Front(0).up.isValid
+        //&& cMid0Front(0).down.isReady
+        //&& cMid0Front(0).up.isReady
+      ) {
+        when (!rMyNonFwdRdMemWordState) {
           myRdMemWord := myNonFwdRdMemWord.last//(0)
-      //    rMyNonFwdRdMemWordState := True
-      //  }
-      //}
-      //when (cMid0Front(0).up.isFiring) {
-      //  rMyNonFwdRdMemWordState := False
-      //}
+          rMyNonFwdRdMemWordState := True
+        }
+      }
+      when (cMid0Front(0).up.isFiring) {
+        rMyNonFwdRdMemWordState := False
+      }
 
       if (
         optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
@@ -4557,7 +4557,7 @@ extends Area {
                 ) := {
                   val temp = Flow(Flow(cfg.wordType()))
                   temp.valid := True
-                  temp.payload.valid := True
+                  temp.payload.valid := False//True
                   temp.payload.payload := (
                     //upExt(1)(ydx)(
                     //  //extIdxSingle
@@ -4575,19 +4575,22 @@ extends Area {
       }
       //--------
       for (ydx <- 0 until memArrSize) {
-        //for (zdx <- 0 until modRdPortCnt) {
-        //  when (
-        //    RegNext/*When*/(
-        //      next=cFrontArea.tempSharedEnable(zdx),
-        //      //cond=down.isReady,
-        //      init=cFrontArea.tempSharedEnable(zdx).getZero//False,
-        //    )//(zdx)
-        //  ) {
-        //    upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
-        //      myRdMemWord(ydx)(zdx)
-        //    )
-        //  }
-        //}
+        for (zdx <- 0 until modRdPortCnt) {
+          //when (
+          //  RegNext/*When*/(
+          //    next=cFrontArea.tempSharedEnable(zdx),
+          //    //cond=down.isReady,
+          //    init=cFrontArea.tempSharedEnable(zdx).getZero//False,
+          //  )//(zdx)
+          //) {
+          //  upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
+          //    myRdMemWord(ydx)(zdx)
+          //  )
+          //}
+          upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
+            myRdMemWord(ydx)(zdx)
+          )
+        }
         upExt(1)(ydx)(extIdxSingle).modMemWordValid.foreach(current => {
           current := True
         })
