@@ -3131,7 +3131,7 @@ extends Area {
       //  next=myRdMemWord,
       //  init=myRdMemWord.getZero,
       //)
-      val rMyNonFwdRdMemWordState = Reg(Bool(), init=False)
+      //val rMyNonFwdRdMemWordState = Reg(Bool(), init=False)
       //////when (cMid0Front(0).up.isReady) {
       //////  myRdMemWord := myNonFwdRdMemWord
       //////}
