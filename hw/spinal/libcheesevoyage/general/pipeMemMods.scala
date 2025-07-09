@@ -2018,15 +2018,19 @@ extends Area {
                   ) && (
                     myZeroRegCond
                   ) && (
-                    tempMyUpExtDel.modMemWordValid({
-                      if (
-                        idx < tempMyUpExtDel.modMemWordValid.size
-                      ) (
-                        idx
-                      ) else (
-                        tempMyUpExtDel.modMemWordValid.size - 1 
-                      )
-                    })
+                    if (idx == 1) (
+                      True
+                    ) else (
+                      tempMyUpExtDel.modMemWordValid({
+                        if (
+                          idx < tempMyUpExtDel.modMemWordValid.size
+                        ) (
+                          idx
+                        ) else (
+                          tempMyUpExtDel.modMemWordValid.size - 1 
+                        )
+                      })
+                    )
                   )
                   //&& (
                   //  tempMyUpExtDel.valid(0)
