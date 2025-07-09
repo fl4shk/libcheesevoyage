@@ -4156,8 +4156,7 @@ extends Area {
             cond=(
               //down.isReady
               //down.isFiring
-              //up.isValid
-              up.isFiring
+              up.isValid
             ),
             init=mod.front.myNonFwdRdMemWord(0).getZero,
           )
