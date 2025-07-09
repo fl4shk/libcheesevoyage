@@ -4151,13 +4151,14 @@ extends Area {
         //) {
         //}
         mod.front.myNonFwdRdMemWord(1) := (
-          RegNext/*When*/(
+          RegNextWhen(
             next=mod.front.myNonFwdRdMemWord(0),
-            //cond=(
-            //  //down.isReady
-            //  //down.isFiring
-            //  up.isValid
-            //),
+            cond=(
+              //down.isReady
+              //down.isFiring
+              //up.isValid
+              up.isFiring
+            ),
             init=mod.front.myNonFwdRdMemWord(0).getZero,
           )
         )
