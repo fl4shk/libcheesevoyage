@@ -2047,9 +2047,9 @@ extends Area {
                   ) && (
                     myZeroRegCond
                   ) && (
-                    //if (idx == 1) (
-                    //  True
-                    //) else (
+                    if (idx == 1) (
+                      True
+                    ) else (
                       tempMyUpExtDel.modMemWordValid({
                         if (
                           idx < tempMyUpExtDel.modMemWordValid.size
@@ -2059,7 +2059,7 @@ extends Area {
                           tempMyUpExtDel.modMemWordValid.size - 1 
                         )
                       })
-                    //)
+                    )
                   )
                   //&& (
                   //  tempMyUpExtDel.valid(0)
