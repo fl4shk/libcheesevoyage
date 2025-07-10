@@ -3185,7 +3185,7 @@ extends Area {
         //&& cMid0Front(0).up.isReady
       ) {
         when (!rMyNonFwdRdMemWordState) {
-          myRdMemWord := myNonFwdRdMemWord.last//(0)
+          myRdMemWord := RegNext(myNonFwdRdMemWord.last)//(0)
           rMyNonFwdRdMemWordState := True
         }
       }
