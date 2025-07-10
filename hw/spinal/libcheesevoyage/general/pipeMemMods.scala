@@ -3913,7 +3913,7 @@ extends Area {
               myNonFwdRdMemWord.last(ydx)(zdx) := (
                 RegNextWhen(
                   next=myNonFwdRdMemWord.head(ydx)(zdx),
-                  cond=down.isFiring,
+                  cond=RegNext(down.isReady, init=False),
                   init=myNonFwdRdMemWord.head(ydx)(zdx).getZero,
                 )
               )
