@@ -1377,7 +1377,7 @@ case class PipeMemRmwDoFwdArea[
           )
             .setName(s"${pipeName}_doFwd_rState_${ydx}_${zdx}")
         )
-        when (link.up.isValid) {
+        //when (link.up.isValid) {
           when (!rState) {
             //setToMyFwdDataFunc(
             //  ydx,
@@ -1395,7 +1395,7 @@ case class PipeMemRmwDoFwdArea[
               )
             //}
           }
-        }
+        //}
         when (link.up.isFiring) {
           rState := False
         }
@@ -2413,29 +2413,29 @@ extends Area {
             ) (
               if (idx == 0) (
                 currMemAddr(0)
-                && (
-                  prev.modMemWordValid(
-                    if (zdx < prev.modMemWordValid.size) (
-                      zdx
-                    ) else (
-                      prev.modMemWordValid.size - 1
-                    )
-                  )
-                )
+                //&& (
+                //  prev.modMemWordValid(
+                //    if (zdx < prev.modMemWordValid.size) (
+                //      zdx
+                //    ) else (
+                //      prev.modMemWordValid.size - 1
+                //    )
+                //  )
+                //)
               ) else (
                 (
                   currMemAddr(0)
                   //currMemAddr === prevMemAddr
                 )
-                && (
-                  prev.modMemWordValid(
-                    if (zdx < prev.modMemWordValid.size) (
-                      zdx
-                    ) else (
-                      prev.modMemWordValid.size - 1
-                    )
-                  )
-                )
+                //&& (
+                //  prev.modMemWordValid(
+                //    if (zdx < prev.modMemWordValid.size) (
+                //      zdx
+                //    ) else (
+                //      prev.modMemWordValid.size - 1
+                //    )
+                //  )
+                //)
               )
               //else (
               //  cfg.optFwdHaveZeroReg match {
