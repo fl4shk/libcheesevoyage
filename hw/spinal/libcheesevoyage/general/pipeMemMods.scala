@@ -4186,19 +4186,19 @@ extends Area {
         //) {
         //}
         mod.front.myNonFwdRdMemWord(1) := (
-          //RegNextWhen(
-          //  next=mod.front.myNonFwdRdMemWord(0),
-          //  cond=(
-          //    //down.isReady
-          //    //down.isFiring
-          //    up.isValid
-          //  ),
-          //  init=mod.front.myNonFwdRdMemWord(0).getZero,
-          //)
-          RegNext(
+          RegNextWhen(
             next=mod.front.myNonFwdRdMemWord(0),
+            cond=(
+              //down.isReady
+              //down.isFiring
+              up.isValid
+            ),
             init=mod.front.myNonFwdRdMemWord(0).getZero,
           )
+          //RegNext(
+          //  next=mod.front.myNonFwdRdMemWord(0),
+          //  init=mod.front.myNonFwdRdMemWord(0).getZero,
+          //)
         )
         for (ydx <- 0 until memArrSize) {
           upExt(1)(ydx)(extIdxUp) := (
