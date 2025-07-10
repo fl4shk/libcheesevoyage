@@ -2504,10 +2504,10 @@ extends Area {
           }
         )
         ret.payload.valid := (
-          if (idx == 0) (
-            True
-            //False
-          ) else (
+          //if (idx == 0) (
+          //  True
+          //  //False
+          //) else (
             prev.modMemWordValid(
               if (zdx < prev.modMemWordValid.size) (
                 zdx
@@ -2515,7 +2515,7 @@ extends Area {
                 prev.modMemWordValid.size - 1
               )
             )
-          )
+          //)
         )
         ret.payload.payload := (
           prev.modMemWord
