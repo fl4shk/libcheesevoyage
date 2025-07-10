@@ -1377,7 +1377,7 @@ case class PipeMemRmwDoFwdArea[
           )
             .setName(s"${pipeName}_doFwd_rState_${ydx}_${zdx}")
         )
-        when (link.up.isValid) {
+        //when (link.up.isValid) {
           when (!rState) {
             setToMyFwdDataFunc(
               ydx,
@@ -1395,7 +1395,7 @@ case class PipeMemRmwDoFwdArea[
               )
             }
           }
-        }
+        //}
         when (link.up.isFiring) {
           rState := False
         }
