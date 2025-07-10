@@ -3163,11 +3163,11 @@ extends Area {
         )
       )
       val cTempMid0Front = (
-        //if (optIncludePreMid0Front) (
-        //  cPreMid0Front(0)
-        //) else (
+        if (optIncludePreMid0Front) (
+          cPreMid0Front(0)
+        ) else (
           cMid0Front(0)
-        //)
+        )
       )
       myRdMemWord := RegNext(
         next=myRdMemWord,
@@ -3178,7 +3178,8 @@ extends Area {
       //////  myRdMemWord := myNonFwdRdMemWord
       //////}
       when (
-        cTempMid0Front.up.isValid
+        //cTempMid0Front.up.isValid
+        cTempMid0Front.up.isFiring
         //|| cMid0Front(0).up.isReady
         //&& cMid0Front(0).down.isReady
         //&& cMid0Front(0).up.isReady
