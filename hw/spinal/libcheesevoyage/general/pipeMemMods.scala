@@ -1384,10 +1384,10 @@ case class PipeMemRmwDoFwdArea[
             //  zdx,
             //  firstFwdRdMemWord._2
             //)
-            rState := True
             when (
               myFwdMmwValidUp
             ) {
+              rState := True
               setToMyFwdDataFunc(
                 ydx,
                 zdx,
