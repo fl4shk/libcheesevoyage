@@ -1375,6 +1375,12 @@ case class PipeMemRmwDoFwdArea[
             zdx,
             tempMyFwdData,
           )
+        } otherwise {
+          setToMyFwdDataFunc(
+            ydx,
+            zdx,
+            firstFwdRdMemWord._2
+          )
         }
       }
     }
@@ -2499,8 +2505,8 @@ extends Area {
         )
         ret.payload.valid := (
           if (idx == 0) (
-            //True
-            False
+            True
+            //False
           ) else (
             prev.modMemWordValid(
               if (zdx < prev.modMemWordValid.size) (
@@ -4557,7 +4563,7 @@ extends Area {
                 ) := {
                   val temp = Flow(Flow(cfg.wordType()))
                   temp.valid := True
-                  temp.payload.valid := False//True
+                  temp.payload.valid := True//False//True
                   temp.payload.payload := (
                     //upExt(1)(ydx)(
                     //  //extIdxSingle
@@ -4587,9 +4593,9 @@ extends Area {
           //    myRdMemWord(ydx)(zdx)
           //  )
           //}
-          upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
-            myRdMemWord(ydx)(zdx)
-          )
+          //upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
+          //  myRdMemWord(ydx)(zdx)
+          //)
         }
         upExt(1)(ydx)(extIdxSingle).modMemWordValid.foreach(current => {
           current := True
