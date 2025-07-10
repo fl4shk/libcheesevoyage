@@ -1379,11 +1379,11 @@ case class PipeMemRmwDoFwdArea[
         )
         when (link.up.isValid) {
           when (!rState) {
-            setToMyFwdDataFunc(
-              ydx,
-              zdx,
-              firstFwdRdMemWord._2
-            )
+            //setToMyFwdDataFunc(
+            //  ydx,
+            //  zdx,
+            //  firstFwdRdMemWord._2
+            //)
             when (
               myFwdMmwValidUp
             ) {
@@ -2523,10 +2523,10 @@ extends Area {
           }
         )
         ret.payload.valid := (
-          //if (idx == 0) (
-          //  True
-          //  //False
-          //) else (
+          if (idx == 0) (
+            True
+            //False
+          ) else (
             prev.modMemWordValid(
               if (zdx < prev.modMemWordValid.size) (
                 zdx
@@ -2534,7 +2534,7 @@ extends Area {
                 prev.modMemWordValid.size - 1
               )
             )
-          //)
+          )
         )
         ret.payload.payload := (
           prev.modMemWord
