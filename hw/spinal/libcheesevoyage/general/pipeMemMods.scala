@@ -3178,8 +3178,8 @@ extends Area {
       //////  myRdMemWord := myNonFwdRdMemWord
       //////}
       when (
-        //cTempMid0Front.up.isValid
-        cTempMid0Front.up.isFiring
+        cTempMid0Front.up.isValid
+        //cTempMid0Front.up.isFiring
         //|| cMid0Front(0).up.isReady
         //&& cMid0Front(0).down.isReady
         //&& cMid0Front(0).up.isReady
