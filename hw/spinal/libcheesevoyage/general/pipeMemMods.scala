@@ -4603,9 +4603,9 @@ extends Area {
                     //  //extIdxSingle
                     //  extIdx
                     //).modMemWord
-                    RegNext(
-                      next=myRdMemWord(ydx)(zdx),
-                      init=myRdMemWord(ydx)(zdx).getZero,
+                    /*RegNext*/(
+                      /*next=*/myRdMemWord(ydx)(zdx)//,
+                      //init=myRdMemWord(ydx)(zdx).getZero,
                     )
                     //upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx)
                   )
