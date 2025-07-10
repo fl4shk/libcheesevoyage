@@ -2048,17 +2048,17 @@ extends Area {
                     myZeroRegCond
                   ) && (
                     //if (idx == 1) (
-                    //  True
+                      True
                     //) else (
-                      tempMyUpExtDel.modMemWordValid({
-                        if (
-                          idx < tempMyUpExtDel.modMemWordValid.size
-                        ) (
-                          idx
-                        ) else (
-                          tempMyUpExtDel.modMemWordValid.size - 1 
-                        )
-                      })
+                    //  tempMyUpExtDel.modMemWordValid({
+                    //    if (
+                    //      idx < tempMyUpExtDel.modMemWordValid.size
+                    //    ) (
+                    //      idx
+                    //    ) else (
+                    //      tempMyUpExtDel.modMemWordValid.size - 1 
+                    //    )
+                    //  })
                     //)
                   )
                   //&& (
