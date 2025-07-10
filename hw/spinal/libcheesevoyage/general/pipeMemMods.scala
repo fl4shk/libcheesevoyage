@@ -1372,11 +1372,11 @@ case class PipeMemRmwDoFwdArea[
         }
         val rState = Reg(Bool(), init=False)
         when (!rState) {
-          setToMyFwdDataFunc(
-            ydx,
-            zdx,
-            firstFwdRdMemWord._2
-          )
+          //setToMyFwdDataFunc(
+          //  ydx,
+          //  zdx,
+          //  firstFwdRdMemWord._2
+          //)
           when (
             myFwdMmwValidUp
           ) {
