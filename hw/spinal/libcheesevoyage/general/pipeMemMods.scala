@@ -3181,7 +3181,7 @@ extends Area {
         //}
         myRdMemWord := RegNextWhen(
           next=myNonFwdRdMemWord.last,
-          cond=cPreMid0Front(0).down.isFiring,
+          cond=cPreMid0Front(0).up.isFiring,
           init=myNonFwdRdMemWord.last.getZero,
         )
       } else {
