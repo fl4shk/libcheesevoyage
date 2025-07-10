@@ -51,9 +51,9 @@ case class RamSimpleDualPort[
   myRam.io.rdEn := io.ramIo.rdEn
   myRam.io.rdAddr := io.ramIo.rdAddr
   //val dontFwdDel1Area = (!doFwdDel1) generate (
-    new Area {
+    //new Area {
       io.ramIo.rdData := myRam.io.rdData
-    }
+    //}
   //)
   //val doFwdDel1Area = (doFwdDel1) generate (
   //  new Area {
