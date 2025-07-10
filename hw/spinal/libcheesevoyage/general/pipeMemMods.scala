@@ -262,6 +262,11 @@ case class PipeMemRmwPayloadExtMainNonMemAddr[
   )
   val rdMemWord = Vec.fill(modRdPortCnt)(wordType())
   val joinIdx = UInt(log2Up(cfg.numForkJoin) bits)
+  val fwdCanDoIt = Vec.fill(
+    modRdPortCnt
+  )(
+    Bool()
+  )
   //val (modMemWord, rdMemWord) = optSimpleIsWr match {
   //  case Some(myIsWr) => (
   //    if (myIsWr) (
@@ -541,6 +546,7 @@ case class PipeMemRmwPayloadExt[
   def modMemWordValid = main.nonMemAddr.modMemWordValid
   //def modMemWordValidFwd = main.nonMemAddr.modMemWordValidFwd
   def rdMemWord = main.nonMemAddr.rdMemWord
+  def fwdCanDoIt = main.nonMemAddr.fwdCanDoIt
   def joinIdx = main.nonMemAddr.joinIdx
   //def reqReorderCommit = main.nonMemAddr.reqReorderCommit
   //def didReorderCommit = main.nonMemAddr.didReorderCommit
@@ -2045,20 +2051,25 @@ extends Area {
                   ) && (
                     myZeroRegCond
                   ) && (
-                    //if (idx == 1) (
-                      True
-                    //) else (
-                    //  tempMyUpExtDel.modMemWordValid({
-                    //    if (
-                    //      idx < tempMyUpExtDel.modMemWordValid.size
-                    //    ) (
-                    //      idx
-                    //    ) else (
-                    //      tempMyUpExtDel.modMemWordValid.size - 1 
-                    //    )
-                    //  })
-                    //)
+                    tempMyUpExtDel.fwdCanDoIt(
+                      zdx
+                    )
                   )
+                  //&& (
+                  //  //if (idx == 1) (
+                  //    True
+                  //  //) else (
+                  //  //  tempMyUpExtDel.modMemWordValid({
+                  //  //    if (
+                  //  //      idx < tempMyUpExtDel.modMemWordValid.size
+                  //  //    ) (
+                  //  //      idx
+                  //  //    ) else (
+                  //  //      tempMyUpExtDel.modMemWordValid.size - 1 
+                  //  //    )
+                  //  //  })
+                  //  //)
+                  //)
                   //&& (
                   //  tempMyUpExtDel.valid(0)
                   //)
