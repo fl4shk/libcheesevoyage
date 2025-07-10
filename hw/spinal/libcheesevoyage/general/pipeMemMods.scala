@@ -1371,21 +1371,23 @@ case class PipeMemRmwDoFwdArea[
           //}
         }
         val rState = Reg(Bool(), init=False)
-        when (!rState) {
-          //setToMyFwdDataFunc(
-          //  ydx,
-          //  zdx,
-          //  firstFwdRdMemWord._2
-          //)
-          when (
-            myFwdMmwValidUp
-          ) {
-            rState := True
-            setToMyFwdDataFunc(
-              ydx,
-              zdx,
-              tempMyFwdData,
-            )
+        when (link.up.isValid) {
+          setToMyFwdDataFunc(
+            ydx,
+            zdx,
+            firstFwdRdMemWord._2
+          )
+          when (!rState) {
+            when (
+              myFwdMmwValidUp
+            ) {
+              rState := True
+              setToMyFwdDataFunc(
+                ydx,
+                zdx,
+                tempMyFwdData,
+              )
+            }
           }
         }
         when (link.up.isFiring) {
