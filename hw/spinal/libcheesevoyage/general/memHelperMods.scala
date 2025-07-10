@@ -57,12 +57,12 @@ case class RamSimpleDualPort[
   )
   val doFwdDel1Area = (doFwdDel1) generate (
     new Area {
-      io.ramIo.rdData := (
-        RegNext(
-          next=io.ramIo.rdData,
-          init=io.ramIo.rdData.getZero,
-        )
-      )
+      //io.ramIo.rdData := (
+      //  RegNext(
+      //    next=io.ramIo.rdData,
+      //    init=io.ramIo.rdData.getZero,
+      //  )
+      //)
       //when (RegNext(io.ramIo.rdEn, init=False)) {
       //  io.ramIo.rdData := myRam.io.rdData
       //}
