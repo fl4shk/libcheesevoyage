@@ -3911,9 +3911,9 @@ extends Area {
             //}
             if (optIncludePreMid0Front) {
               myNonFwdRdMemWord.last(ydx)(zdx) := (
-                RegNextWhen(
+                RegNext/*When*/(
                   next=myNonFwdRdMemWord.head(ydx)(zdx),
-                  cond=down.isReady,//RegNext(down.isReady, init=False),
+                  //cond=down.isReady,//RegNext(down.isReady, init=False),
                   init=myNonFwdRdMemWord.head(ydx)(zdx).getZero,
                 )
               )
