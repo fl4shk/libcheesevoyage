@@ -3171,6 +3171,7 @@ extends Area {
       //////}
       when (
         cMid0Front(0).up.isValid
+        //|| cMid0Front(0).up.isReady
         //&& cMid0Front(0).down.isReady
         //&& cMid0Front(0).up.isReady
       ) {
@@ -4185,13 +4186,17 @@ extends Area {
         //) {
         //}
         mod.front.myNonFwdRdMemWord(1) := (
-          RegNextWhen(
+          //RegNextWhen(
+          //  next=mod.front.myNonFwdRdMemWord(0),
+          //  cond=(
+          //    //down.isReady
+          //    //down.isFiring
+          //    up.isValid
+          //  ),
+          //  init=mod.front.myNonFwdRdMemWord(0).getZero,
+          //)
+          RegNext(
             next=mod.front.myNonFwdRdMemWord(0),
-            cond=(
-              //down.isReady
-              //down.isFiring
-              up.isValid
-            ),
             init=mod.front.myNonFwdRdMemWord(0).getZero,
           )
         )
