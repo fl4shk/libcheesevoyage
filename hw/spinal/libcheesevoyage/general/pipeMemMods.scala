@@ -1056,7 +1056,8 @@ case class PipeMemRmwDoFwdArea[
   //  Int,      // zdx
   //  WordT,    // modMemWord
   //) => Unit,
-  //link: CtrlLink,
+  link: CtrlLink,
+  //upIsFiring: Bool
 ) extends Area {
   //def myHaveFwd = (
   //  optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
@@ -1369,19 +1370,29 @@ case class PipeMemRmwDoFwdArea[
           //  tempMyFwdData := firstFwdRdMemWord._2
           //}
         }
-        when (myFwdMmwValidUp) {
-          setToMyFwdDataFunc(
-            ydx,
-            zdx,
-            tempMyFwdData,
-          )
-        } otherwise {
+        val rState = Reg(Bool(), init=False)
+        when (!rState) {
           setToMyFwdDataFunc(
             ydx,
             zdx,
             firstFwdRdMemWord._2
           )
+          when (
+            myFwdMmwValidUp
+          ) {
+            rState := True
+            setToMyFwdDataFunc(
+              ydx,
+              zdx,
+              tempMyFwdData,
+            )
+          }
         }
+        when (link.up.isFiring) {
+          rState := False
+        }
+        //otherwise {
+        //}
       }
     }
   //}
@@ -4689,6 +4700,7 @@ extends Area {
             //upExt(2)
             myRdMemWord
           ),
+          link=cMid0Front,
         )
       )
       //val doFormalFwdSavedMyFwd = (myHaveFormalFwd) generate (
