@@ -3162,37 +3162,55 @@ extends Area {
           //init(nextDidFwd.getZero)
         )
       )
-      val cTempMid0Front = (
-        if (optIncludePreMid0Front) (
-          cPreMid0Front(0)
-        ) else (
-          cMid0Front(0)
+      //val cTempMid0Front = (
+      //  if (optIncludePreMid0Front) (
+      //    cPreMid0Front(0)
+      //  ) else (
+      //    cMid0Front(0)
+      //  )
+      //)
+      if (optIncludePreMid0Front) {
+        //for (ydx <- 0 until memArrSize) {
+        //  for (zdx <- 0 until modRdPortCnt) {
+        //    myRdMemWord(ydx)(zdx) := RegNextWhen(
+        //      next=myNonFwdRdMemWord.last(ydx)(zdx),
+        //      cond=cPreMid0Front(0).down.isFiring,
+        //      init=myNonFwdRdMemWord.last(ydx)(zdx).getZero,
+        //    )
+        //  }
+        //}
+        myRdMemWord := RegNextWhen(
+          next=myNonFwdRdMemWord.last,
+          cond=cPreMid0Front(0).down.isFiring,
+          init=myNonFwdRdMemWord.last.getZero,
         )
-      )
-      myRdMemWord := RegNext(
-        next=myRdMemWord,
-        init=myRdMemWord.getZero,
-      )
-      val rMyNonFwdRdMemWordState = Reg(Bool(), init=False)
-      //////when (cMid0Front(0).up.isReady) {
-      //////  myRdMemWord := myNonFwdRdMemWord
-      //////}
-      when (
-        //cTempMid0Front.up.isValid
-        //cTempMid0Front.up.isFiring
-        //|| cMid0Front(0).up.isReady
-        //&& cMid0Front(0).down.isReady
-        //&& cMid0Front(0).up.isReady
-        cTempMid0Front.down.isReady
-      ) {
-        when (!rMyNonFwdRdMemWordState) {
-          myRdMemWord := /*RegNext*/(myNonFwdRdMemWord.last)//(0)
-          rMyNonFwdRdMemWordState := True
-        }
+      } else {
+        myRdMemWord := /*RegNext*/(myNonFwdRdMemWord.last)//(0)
       }
-      when (cTempMid0Front.up.isFiring) {
-        rMyNonFwdRdMemWordState := False
-      }
+      //myRdMemWord := RegNext(
+      //  next=myRdMemWord,
+      //  init=myRdMemWord.getZero,
+      //)
+      //val rMyNonFwdRdMemWordState = Reg(Bool(), init=False)
+      ////////when (cMid0Front(0).up.isReady) {
+      ////////  myRdMemWord := myNonFwdRdMemWord
+      ////////}
+      //when (
+      //  //cTempMid0Front.up.isValid
+      //  //cTempMid0Front.up.isFiring
+      //  //|| cMid0Front(0).up.isReady
+      //  //&& cMid0Front(0).down.isReady
+      //  //&& cMid0Front(0).up.isReady
+      //  cTempMid0Front.down.isReady
+      //) {
+      //  when (!rMyNonFwdRdMemWordState) {
+      //    myRdMemWord := /*RegNext*/(myNonFwdRdMemWord.last)//(0)
+      //    rMyNonFwdRdMemWordState := True
+      //  }
+      //}
+      //when (cTempMid0Front.up.isFiring) {
+      //  rMyNonFwdRdMemWordState := False
+      //}
 
       if (
         optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
