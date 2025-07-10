@@ -98,7 +98,7 @@ case class RamSimpleDualPort[
       //io.ramIo.rdData := /*rMyWrData*/(
       //  Cat(RegNext(next=fwdCond, init=False)).asUInt
       //).asBits
-      when (fwdCond) {
+      when (RegNext(fwdCond)) {
         io.ramIo.rdData := (
           RegNext(io.ramIo.wrData)
         )
