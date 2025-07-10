@@ -1385,15 +1385,15 @@ case class PipeMemRmwDoFwdArea[
             //  firstFwdRdMemWord._2
             //)
             rState := True
-            //when (
-            //  myFwdMmwValidUp
-            //) {
+            when (
+              myFwdMmwValidUp
+            ) {
               setToMyFwdDataFunc(
                 ydx,
                 zdx,
                 tempMyFwdData,
               )
-            //}
+            }
           }
         }
         when (link.up.isFiring) {
