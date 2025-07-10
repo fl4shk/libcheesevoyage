@@ -2099,6 +2099,7 @@ extends Area {
         }
       ),
       arrRamStyle=memRamStyle,
+      doFwdDel1=optIncludePreMid0Front,
     )
 
     //val ret = Mem(
@@ -2566,11 +2567,11 @@ extends Area {
         )
       )
       val myNonFwdRdMemWord = Vec.fill(
-        if (optIncludePreMid0Front) (
-          2
-        ) else (
+        //if (optIncludePreMid0Front) (
+        //  2
+        //) else (
           1
-        )
+        //)
       )(
         Vec.fill(memArrSize)(
           Vec.fill(modRdPortCnt)(
@@ -3909,15 +3910,15 @@ extends Area {
                 )
               //}
             //}
-            if (optIncludePreMid0Front) {
-              myNonFwdRdMemWord.last(ydx)(zdx) := (
-                RegNext/*When*/(
-                  next=myNonFwdRdMemWord.head(ydx)(zdx),
-                  //cond=down.isReady,//RegNext(down.isReady, init=False),
-                  init=myNonFwdRdMemWord.head(ydx)(zdx).getZero,
-                )
-              )
-            }
+            //if (optIncludePreMid0Front) {
+            //  myNonFwdRdMemWord.last(ydx)(zdx) := (
+            //    RegNext/*When*/(
+            //      next=myNonFwdRdMemWord.head(ydx)(zdx),
+            //      //cond=down.isReady,//RegNext(down.isReady, init=False),
+            //      init=myNonFwdRdMemWord.head(ydx)(zdx).getZero,
+            //    )
+            //  )
+            //}
             //myModMem.io.cmpRdWrAddrEtc := (
             //  //tempSharedEnable.last
             //  //&& 

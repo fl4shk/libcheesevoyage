@@ -30,6 +30,7 @@ case class RamSimpleDualPort[
   initBigInt: Option[Seq[BigInt]]=None,
   arrRamStyle: String="block",
   //arrRwAddrCollision: String="",
+  doFwdDel1: Boolean=false,
 ) extends Component {
   //def addrWidth = io.addrWidth
   val io = RamSimpleDualPortIo(
@@ -49,43 +50,63 @@ case class RamSimpleDualPort[
   myRam.io.wrData := io.ramIo.wrData
   myRam.io.rdEn := io.ramIo.rdEn
   myRam.io.rdAddr := io.ramIo.rdAddr
-  io.ramIo.rdData := myRam.io.rdData
-  //io.ramIo.rdData := (
-  //  RegNext(
-  //    next=io.ramIo.rdData,
-  //    init=io.ramIo.rdData.getZero,
-  //  )
-  //)
-  //when (RegNext(io.ramIo.rdEn, init=False)) {
-  //  io.ramIo.rdData := myRam.io.rdData
-  //}
-  //val rMyWrData = {
-  //  val temp = (
-  //    Reg(wordType())
-  //  )
-  //  temp.init(temp.getZero)
-  //  temp
-  //}
-  //val fwdCond = (
-  //  /*RegNext*/(
-  //    /*RegNext*/(io.ramIo.rdAddr) === io.ramIo.wrAddr
-  //    //io.cmpRdWrAddrEtc
-  //    //&& /*RegNext*/(io.ramIo.rdEn/*, init=False*/)
-  //    && /*RegNext*/(io.ramIo.wrEn)
-  //  )
-  //  //init(False)
-  //)
-  //when (
-  //  fwdCond
-  //) {
-  //  rMyWrData.assignFromBits(io.ramIo.wrData)
-  //  //io.ramIo.rdData := io.ramIo.wrData
-  //  //io.ramIo.rdData := (
-  //  //  RegNext(io.ramIo.wrData) //init(io.ramIo.wrData.getZero)
-  //  //)
-  //} otherwise {
-  //  //io.rdData := myRam.io.rdData
-  //}
+  val dontFwdDel1Area = (!doFwdDel1) generate (
+    new Area {
+      io.ramIo.rdData := myRam.io.rdData
+    }
+  )
+  val doFwdDel1Area = (doFwdDel1) generate (
+    new Area {
+      io.ramIo.rdData := (
+        RegNext(
+          next=io.ramIo.rdData,
+          init=io.ramIo.rdData.getZero,
+        )
+      )
+      //when (RegNext(io.ramIo.rdEn, init=False)) {
+      //  io.ramIo.rdData := myRam.io.rdData
+      //}
+      val rMyWrData = {
+        val temp = (
+          Reg(Vec.fill(2)(wordType()))
+        )
+        //temp.init(temp.getZero)
+        temp.foreach(item => item.init(item.getZero))
+        temp
+      }
+      val fwdCond = (
+        /*RegNext*/(
+          /*RegNext*/(io.ramIo.rdAddr) === io.ramIo.wrAddr
+          //io.cmpRdWrAddrEtc
+          //&& /*RegNext*/(io.ramIo.rdEn/*, init=False*/)
+          && /*RegNext*/(io.ramIo.wrEn)
+        )
+        //init(False)
+      )
+      //when (
+      //  !fwdCond
+      //) {
+        rMyWrData(0).assignFromBits(myRam.io.rdData)
+        //io.ramIo.rdData := io.ramIo.wrData
+        //io.ramIo.rdData := (
+        //  RegNext(io.ramIo.wrData) //init(io.ramIo.wrData.getZero)
+        //)
+      //} otherwise {
+        rMyWrData(1).assignFromBits(io.ramIo.wrData)
+        //io.rdData := myRam.io.rdData
+      //}
+      io.ramIo.rdData := rMyWrData(
+        Cat(RegNext(next=fwdCond, init=False)).asUInt
+      ).asBits
+      //when (
+      //  RegNext(next=fwdCond, init=False)
+      //) {
+      //  io.ramIo.rdData := rMyWrData(0).asBits
+      //} otherwise {
+      //  io.ramIo.rdData := rMyWrData(1).asBits
+      //}
+    }
+  )
   //when (RegNext(next=fwdCond, init=fwdCond.getZero)) {
   //  io.ramIo.rdData := rMyWrData.asBits
   //}
