@@ -2108,7 +2108,7 @@ extends Area {
         }
       ),
       arrRamStyle=memRamStyle,
-      doFwdDel1=optIncludePreMid0Front,
+      //doFwdDel1=optIncludePreMid0Front,
     )
 
     //val ret = Mem(
