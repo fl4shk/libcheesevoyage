@@ -5080,11 +5080,16 @@ extends Area {
         myUpExtDel(
           myUpExtDel.size
           - (
-            if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
-              2
+            if (optIncludePreMid0Front) (
+              3
             ) else (
-              2//1
+              2
             )
+            //if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
+            //  2
+            //) else (
+            //  2//1
+            //)
           )
         )
         //myUpExtDel(myUpExtDel.size - 2)
