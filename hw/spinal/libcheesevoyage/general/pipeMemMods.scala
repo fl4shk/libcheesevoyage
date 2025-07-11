@@ -2782,7 +2782,7 @@ extends Area {
                 //- 1
                 ////+ 1
                 + idx 
-                + (
+                - (
                   if (optIncludePreMid0Front) (
                     1
                   ) else (
