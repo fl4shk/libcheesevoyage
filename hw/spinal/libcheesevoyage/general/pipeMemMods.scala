@@ -934,7 +934,7 @@ extends Bundle {
           Vec.fill(PipeMemRmw.extIdxLim)(
             UInt(log2Up(
               ////mod.front.myUpExtDel2.size
-              numMyUpExtDel2
+              numMyUpExtDel2 + 1
             ) bits)
           )
         )
