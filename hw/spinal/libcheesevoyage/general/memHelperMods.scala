@@ -18,6 +18,8 @@ case class RamSimpleDualPortIo[
     wordWidth=(wordType().asBits.getWidth),
     addrWidth=log2Up(depth),
   )
+  val fwdCondDel1 = out(Bool())
+  val fwdDataDel1 = out(Bits(wordType().asBits.getWidth bits))
   //val cmpRdWrAddrEtc = in(Bool())
 }
 
@@ -30,7 +32,7 @@ case class RamSimpleDualPort[
   initBigInt: Option[Seq[BigInt]]=None,
   arrRamStyle: String="block",
   //arrRwAddrCollision: String="",
-  doFwdDel1: Boolean=false,
+  //doFwdDel1: Boolean=false,
 ) extends Component {
   //def addrWidth = io.addrWidth
   val io = RamSimpleDualPortIo(
@@ -74,15 +76,29 @@ case class RamSimpleDualPort[
       //  temp.foreach(item => item.init(item.getZero))
       //  temp
       //}
-      val fwdCond = (
-        /*RegNext*/(
-          /*RegNext*/(io.ramIo.rdAddr) === io.ramIo.wrAddr
-          //io.cmpRdWrAddrEtc
-          //&& /*RegNext*/(io.ramIo.rdEn/*, init=False*/)
-          && /*RegNext*/(io.ramIo.wrEn)
+      io.fwdCondDel1 := (
+        RegNext(
+          next=(
+            /*RegNext*/(io.ramIo.rdAddr) === io.ramIo.wrAddr
+            //io.cmpRdWrAddrEtc
+            //&& /*RegNext*/(io.ramIo.rdEn/*, init=False*/)
+            && /*RegNext*/(io.ramIo.wrEn)
+          ),
+          init=io.fwdCondDel1.getZero
         )
-        //init(False)
       )
+      io.fwdDataDel1 := (
+        RegNext(
+          next=io.ramIo.wrData,
+          init=io.ramIo.wrData.getZero,
+        )
+      )
+      //when (RegNext(io.fwdCond)) {
+      //  io.ramIo.rdData := (
+      //    RegNext(io.ramIo.wrData)
+      //  )
+      //}
+
       //when (
       //  !fwdCond
       //) {
@@ -98,11 +114,6 @@ case class RamSimpleDualPort[
       //io.ramIo.rdData := /*rMyWrData*/(
       //  Cat(RegNext(next=fwdCond, init=False)).asUInt
       //).asBits
-      when (RegNext(fwdCond)) {
-        io.ramIo.rdData := (
-          RegNext(io.ramIo.wrData)
-        )
-      }
       //when (
       //  RegNext(next=fwdCond, init=False)
       //) {

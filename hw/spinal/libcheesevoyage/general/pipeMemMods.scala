@@ -3179,20 +3179,59 @@ extends Area {
       //  )
       //)
       if (optIncludePreMid0Front) {
-        //for (ydx <- 0 until memArrSize) {
-        //  for (zdx <- 0 until modRdPortCnt) {
-        //    myRdMemWord(ydx)(zdx) := RegNextWhen(
-        //      next=myNonFwdRdMemWord.last(ydx)(zdx),
-        //      cond=cPreMid0Front(0).down.isFiring,
-        //      init=myNonFwdRdMemWord.last(ydx)(zdx).getZero,
-        //    )
-        //  }
-        //}
-        myRdMemWord := RegNextWhen(
-          next=myNonFwdRdMemWord.last,
-          cond=cPreMid0Front(0).down.isFiring,
-          init=myNonFwdRdMemWord.last.getZero,
-        )
+        for (ydx <- 0 until memArrSize) {
+          for (zdx <- 0 until modRdPortCnt) {
+            //myRdMemWord(ydx)(zdx) := RegNextWhen(
+            //  next=myNonFwdRdMemWord.last(ydx)(zdx),
+            //  cond=cPreMid0Front(0).down.isFiring,
+            //  init=myNonFwdRdMemWord.last(ydx)(zdx).getZero,
+            //)
+            val myModMem = modMem(ydx)(zdx)
+            val rTempRdData = (
+              RegNext(
+                next=myModMem.io.ramIo.rdData,
+                init=myModMem.io.ramIo.rdData.getZero,
+              )
+
+            )
+            val rTempFwdCond = (
+              RegNext(
+                next=myModMem.io.fwdCondDel1,
+                init=myModMem.io.fwdCondDel1.getZero,
+              )
+            )
+            val rTempFwdData = (
+              RegNext(
+                next=myModMem.io.fwdDataDel1,
+                init=myModMem.io.fwdDataDel1.getZero,
+              )
+            )
+            myRdMemWord(ydx)(zdx) := (
+              RegNext(
+                next=myRdMemWord(ydx)(zdx),
+                init=myRdMemWord(ydx)(zdx).getZero,
+              )
+            )
+            when (cPreMid0Front(0).down.isFiring) {
+              myRdMemWord(ydx)(zdx).assignFromBits(
+                rTempRdData
+              )
+              when (rTempFwdCond) {
+                myRdMemWord(ydx)(zdx).assignFromBits(
+                  rTempFwdData
+                )
+              }
+            }
+            //myRdMemWord(ydx)(zdx) := (
+            //  RegNextWhen
+            //)
+          }
+        }
+        //myRdMemWord := RegNextWhen(
+        //  next=myNonFwdRdMemWord.last,
+        //  cond=cPreMid0Front(0).down.isFiring,
+        //  init=myNonFwdRdMemWord.last.getZero,
+        //)
       } else {
         myRdMemWord := /*RegNext*/(myNonFwdRdMemWord.last)//(0)
       }
@@ -3928,11 +3967,13 @@ extends Area {
             //  //down.isFiring
             //  tempSharedEnable.last
             //) {
+              //--------
+              // BEGIN: working, non-two-cycle-read BRAM
               val tempRdData = (
                 myModMem.io.ramIo.rdData
               )
-              //if (optIncludePreMid0Front) {
-              //} else {
+              if (optIncludePreMid0Front) {
+              } else {
                 myNonFwdRdMemWord.head(ydx)(zdx).assignFromBits(
                   //if (optIncludePreMid0Front) (
                   //  RegNext/*When*/(
@@ -3944,7 +3985,9 @@ extends Area {
                     tempRdData
                   //)
                 )
-              //}
+              }
+              // END: working, non-two-cycle-read BRAM
+              //--------
             //}
             //if (optIncludePreMid0Front) {
             //  myNonFwdRdMemWord.last(ydx)(zdx) := (
