@@ -25,7 +25,7 @@ module LcvMulAcc32Del1(
 );
 	//--------
 	wire signed [35:0] pcout;
-	always @(posedge clk) begin
+	always_ff @(posedge clk) begin
 		//if (rst) begin
 		//end else begin
 		//end
@@ -34,7 +34,7 @@ module LcvMulAcc32Del1(
 	assign pcout = a * b + c;
 	//assign outp = pcout + d + e;
 	//--------
-	//always @(posedge clk) begin
+	//always_ff @(posedge clk) begin
 	//end
 	//--------
 endmodule
@@ -59,7 +59,7 @@ module LcvAdcDel1 #(
 		temp_a + temp_b + temp_carry
 	);
 
-	always @(posedge clk) begin
+	always_ff @(posedge clk) begin
 		outp_sum_carry <= temp_sum;
 	end
 endmodule
@@ -82,7 +82,7 @@ module LcvSubDel1 #(
 		temp_a - temp_b //+ temp_carry
 	);
 
-	always @(posedge clk) begin
+	always_ff @(posedge clk) begin
 		outp_sum_carry <= temp_sum;
 	end
 endmodule
@@ -125,6 +125,6 @@ endmodule
 //
 //	output reg signed [WIDTH - 1:0] outp_sum
 //);
-//	always @(posedge clk) begin
+//	always_ff @(posedge clk) begin
 //	end
 //endmodule
