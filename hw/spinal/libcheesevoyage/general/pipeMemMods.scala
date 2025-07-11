@@ -3405,6 +3405,7 @@ extends Area {
       )
       val cLastBack = pipe.addStage(
         name=pipeName + "_cLastBack",
+        optIncludeStage=false,
         optIncludeS2M=(
           //!optIncludePreMid0Front
           //&& optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
