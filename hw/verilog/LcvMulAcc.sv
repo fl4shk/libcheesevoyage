@@ -102,14 +102,14 @@ module LcvCmpEqDel1 #(
 	//	$signed({{(WIDTH){1'b0}}, 1'b1})
 	//);
 	always_ff @(posedge clk) begin
-		outp_data <= $signed({
+		outp_data <= {
 			//$signed(
 			//	$signed(($signed(my_a) ^ (~$signed(my_b))))
 			//	+ my_carry_in
 			//)
 			a === b,
 			{WIDTH{1'b0}},
-		});
+		};
 		//outp_sum <= a + b;
 	end
 endmodule
