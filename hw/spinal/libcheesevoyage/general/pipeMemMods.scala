@@ -2005,9 +2005,9 @@ extends Area {
                       myHistMemAddr(idx)
                     )
                   )
-                  //&& (
-                  //  myZeroRegCond
-                  //)
+                  && (
+                    myZeroRegCond
+                  )
                   //&& (
                   //  //tempMyUpExtDel.modMemWordValid({
                   //  //  if (
@@ -2076,9 +2076,9 @@ extends Area {
                       //mod.back.myWriteAddr(0)(0)(0)
                     )
                   )
-                  //&& (
-                  //  myZeroRegCond
-                  //)
+                  && (
+                    myZeroRegCond
+                  )
                   && (
                     //if (idx == 1) (
                     //  True
