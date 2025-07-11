@@ -3188,31 +3188,34 @@ extends Area {
             //)
             val myModMem = modMem(ydx)(zdx)
             val rTempRdData = (
-              RegNext(
+              RegNextWhen(
                 next=myModMem.io.ramIo.rdData,
+                cond=cPreMid0Front(0).down.isFiring,
                 init=myModMem.io.ramIo.rdData.getZero,
               )
 
             )
             val rTempFwdCond = (
-              RegNext(
+              RegNextWhen(
                 next=myModMem.io.fwdCondDel1,
+                cond=cPreMid0Front(0).down.isFiring,
                 init=myModMem.io.fwdCondDel1.getZero,
               )
             )
             val rTempFwdData = (
-              RegNext(
+              RegNextWhen(
                 next=myModMem.io.fwdDataDel1,
+                cond=cPreMid0Front(0).down.isFiring,
                 init=myModMem.io.fwdDataDel1.getZero,
               )
             )
-            myRdMemWord(ydx)(zdx) := (
-              RegNext(
-                next=myRdMemWord(ydx)(zdx),
-                init=myRdMemWord(ydx)(zdx).getZero,
-              )
-            )
-            when (cPreMid0Front(0).down.isFiring) {
+            //myRdMemWord(ydx)(zdx) := (
+            //  RegNext(
+            //    next=myRdMemWord(ydx)(zdx),
+            //    init=myRdMemWord(ydx)(zdx).getZero,
+            //  )
+            //)
+            //when (cPreMid0Front(0).down.isFiring) {
               myRdMemWord(ydx)(zdx).assignFromBits(
                 rTempRdData
               )
@@ -3221,7 +3224,7 @@ extends Area {
                   rTempFwdData
                 )
               }
-            }
+            //}
             //myRdMemWord(ydx)(zdx) := (
             //  RegNextWhen
             //)
