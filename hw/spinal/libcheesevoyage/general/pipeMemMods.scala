@@ -1959,46 +1959,53 @@ extends Area {
                   }
                 }
               )
-              //if (idx == 1) {
-              //  val tempMyUpExtDel = (
-              //    mod.front.myUpExtDel(
-              //      idx - 1
-              //      //+ (
-              //      //  if (!optIncludePreMid0Front) (
-              //      //    0
-              //      //  ) else (
-              //      //    1
-              //      //  )
-              //      //)
-              //    )(ydx)(
-              //      extIdxUp
-              //    )
-              //  )
-              //  tempMemAddrFwdCmp(
-              //    jdx
-              //    //0
-              //  ) := (
-              //    (
-              //      upExtElem(ydx)(extIdxUp).memAddr(
-              //        zdx
-              //      ) === (
-              //        myHistMemAddr(idx)
-              //      )
-              //    ) && (
-              //      myZeroRegCond
-              //    ) && (
-              //      tempMyUpExtDel.modMemWordValid({
-              //        if (
-              //          idx < tempMyUpExtDel.modMemWordValid.size
-              //        ) (
-              //          idx
-              //        ) else (
-              //          tempMyUpExtDel.modMemWordValid.size - 1 
-              //        )
-              //      })
-              //    )
-              //  )
-              //} else {
+              if (idx == 1) {
+                val tempMyUpExtDel = (
+                  mod.front.myUpExtDel(
+                    idx - 1
+                    //+ (
+                    //  if (!optIncludePreMid0Front) (
+                    //    0
+                    //  ) else (
+                    //    1
+                    //  )
+                    //)
+                  )(ydx)(
+                    extIdxUp
+                  )
+                )
+                tempMemAddrFwdCmp(
+                  jdx
+                  //0
+                ) := (
+                  (
+                    upExtElem(ydx)(extIdxUp).memAddr(
+                      zdx
+                    ) === (
+                      myHistMemAddr(idx)
+                    )
+                  )
+                  //&& (
+                  //  myZeroRegCond
+                  //)
+                  //&& (
+                  //  //tempMyUpExtDel.modMemWordValid({
+                  //  //  if (
+                  //  //    idx < tempMyUpExtDel.modMemWordValid.size
+                  //  //  ) (
+                  //  //    idx
+                  //  //  ) else (
+                  //  //    tempMyUpExtDel.modMemWordValid.size - 1 
+                  //  //  )
+                  //  //})
+                  //)
+                  && (
+                    tempMyUpExtDel.fwdCanDoIt(
+                      zdx
+                    )
+                  )
+                )
+              } else {
                 val tempMyUpExtDel = (
                   mod.front.myUpExtDel(
                     idx - 1
@@ -2048,17 +2055,18 @@ extends Area {
                       //)
                       //mod.back.myWriteAddr(0)(0)(0)
                     )
-                  ) && (
-                    myZeroRegCond
                   )
+                  //&& (
+                  //  myZeroRegCond
+                  //)
                   && (
-                    if (idx == 1) (
-                      True
-                    ) else (
+                    //if (idx == 1) (
+                    //  True
+                    //) else (
                       tempMyUpExtDel.fwdCanDoIt(
                         zdx
                       )
-                    )
+                    //)
                   )
                   //&& (
                   //  //if (idx == 1) (
@@ -2079,7 +2087,7 @@ extends Area {
                   //  tempMyUpExtDel.valid(0)
                   //)
                 )
-              //}
+              }
             }
           }
         }
