@@ -3206,7 +3206,6 @@ extends Area {
                 cond=cPreMid0Front(0).down.isFiring,
                 init=myModMem.io.ramIo.rdData.getZero,
               )
-
             )
             val rTempFwdCond = (
               RegNextWhen(
