@@ -18,8 +18,8 @@ case class RamSimpleDualPortIo[
     wordWidth=(wordType().asBits.getWidth),
     addrWidth=log2Up(depth),
   )
-  val fwdCondDel1 = out(Bool())
-  val fwdDataDel1 = out(Bits(wordType().asBits.getWidth bits))
+  //val fwdCondDel1 = out(Bool())
+  //val fwdDataDel1 = out(Bits(wordType().asBits.getWidth bits))
   //val cmpRdWrAddrEtc = in(Bool())
 }
 
@@ -76,23 +76,27 @@ case class RamSimpleDualPort[
       //  temp.foreach(item => item.init(item.getZero))
       //  temp
       //}
-      io.fwdCondDel1 := (
-        RegNext(
-          next=(
-            /*RegNext*/(io.ramIo.rdAddr) === io.ramIo.wrAddr
-            //io.cmpRdWrAddrEtc
-            //&& /*RegNext*/(io.ramIo.rdEn/*, init=False*/)
-            && /*RegNext*/(io.ramIo.wrEn)
-          ),
-          init=io.fwdCondDel1.getZero
-        )
-      )
-      io.fwdDataDel1 := (
-        RegNext(
-          next=io.ramIo.wrData,
-          init=io.ramIo.wrData.getZero,
-        )
-      )
+      //--------
+      // BEGIN: old `fwdDel1`
+      //io.fwdCondDel1 := (
+      //  RegNext(
+      //    next=(
+      //      /*RegNext*/(io.ramIo.rdAddr) === io.ramIo.wrAddr
+      //      //io.cmpRdWrAddrEtc
+      //      //&& /*RegNext*/(io.ramIo.rdEn/*, init=False*/)
+      //      && /*RegNext*/(io.ramIo.wrEn)
+      //    ),
+      //    init=io.fwdCondDel1.getZero
+      //  )
+      //)
+      //io.fwdDataDel1 := (
+      //  RegNext(
+      //    next=io.ramIo.wrData,
+      //    init=io.ramIo.wrData.getZero,
+      //  )
+      //)
+      // END: old `fwdDel1`
+      //--------
       //when (RegNext(io.fwdCond)) {
       //  io.ramIo.rdData := (
       //    RegNext(io.ramIo.wrData)
@@ -405,6 +409,7 @@ extends Component
     modRdPortCnt=modRdPortCnt,
     modStageCnt=modStageCnt,
     pipeName=pipeName,
+    optIncludePreMid0Front=false,
     //linkArr=Some(PipeMemRmw.mkLinkArr()),
     linkArr=linkArr,
     memArrIdx=0,

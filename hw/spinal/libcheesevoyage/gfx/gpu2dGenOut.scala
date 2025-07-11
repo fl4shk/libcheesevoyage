@@ -535,6 +535,7 @@ object Gpu2dInterfaceTestToVerilog extends App {
     modRdPortCnt=1,
     modStageCnt=1,
     pipeName="pipeMem_InterfaceDebug",
+    optIncludePreMid0Front=false,
   )
   def mkTestExt[
     WordT <: Data

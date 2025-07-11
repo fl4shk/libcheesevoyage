@@ -371,6 +371,7 @@ case class PipeMemRmwSimDut(
     modRdPortCnt=modRdPortCnt,
     modStageCnt=modStageCnt,
     pipeName=pipeName,
+    optIncludePreMid0Front=false,
     //dualRdType=(
     //  //modType()
     //  PipeMemRmwDualRdTypeDisabled[UInt, UInt](),

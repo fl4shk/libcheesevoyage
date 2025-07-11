@@ -59,6 +59,7 @@ case class PipeMemRmwConfig[
   modRdPortCnt: Int,
   modStageCnt: Int,
   pipeName: String,
+  optIncludePreMid0Front: Boolean,
   var linkArr: Option[ArrayBuffer[Link]]=None,
   memArrIdx: Int=0,
   //dualRdType: HardType[DualRdT]=PipeMemRmwDualRdTypeDisabled[
@@ -74,7 +75,6 @@ case class PipeMemRmwConfig[
   optEnableClear: Boolean=false,
   memRamStyle: String="auto",
   vivadoDebug: Boolean=false,
-  //optIncludePreMid0Front: Boolean=true,
   optIncludeModFrontStageLink: Boolean=true,
   optIncludeModFrontS2MLink: Boolean=true,
   optFormal: Boolean=false,
@@ -150,6 +150,7 @@ case class PipeMemRmwConfig[
     PipeMemRmw.numMyUpExtDel2(
       optModHazardKind=optModHazardKind,
       modStageCnt=modStageCnt,
+      optIncludePreMid0Front=optIncludePreMid0Front,
     )
     //cfg.numMyUpExtDel2
   )
@@ -322,6 +323,7 @@ case class PipeMemRmwPayloadExtMainNonMemAddr[
           optModHazardKind=optModHazardKind,
           //optModFwdToFront=false,
           modStageCnt=modStageCnt,
+          optIncludePreMid0Front=cfg.optIncludePreMid0Front,
         )
       ) + 4 bits)
       //UInt(log2Up(modStageCnt) bits)
@@ -718,12 +720,14 @@ object PipeMemRmw {
     optModHazardKind: PipeMemRmw.ModHazardKind,
     //optModFwdToFront: Boolean,
     modStageCnt: Int,
+    optIncludePreMid0Front: Boolean,
   ) = (
     numPostFrontPreWriteStages(
       //doModInModFront=doModInModFront,
       optModHazardKind=optModHazardKind,
       //optModFwdToFront=optModFwdToFront,
       modStageCnt=modStageCnt,
+      optIncludePreMid0Front=optIncludePreMid0Front,
     )
     + 1
     //+ (if (doModInModFront) (0) else (1))
@@ -733,7 +737,8 @@ object PipeMemRmw {
     //doModInModFront: Boolean,
     optModHazardKind: PipeMemRmw.ModHazardKind,
     //optModFwdToFront: Boolean,
-    modStageCnt: Int
+    modStageCnt: Int,
+    optIncludePreMid0Front: Boolean
   ) = (
     //modStageCnt
     //3 + modStageCnt //+ 1
@@ -755,6 +760,8 @@ object PipeMemRmw {
       //1
     )
       + modStageCnt //+ 1
+
+      + (if (optIncludePreMid0Front) (1) else (0))
     //(if (doModInModFront) (-1) else (1)) + modStageCnt //+ 1
     //- 1
     //+ 1
@@ -762,6 +769,7 @@ object PipeMemRmw {
   def numMyUpExtDel2(
     optModHazardKind: PipeMemRmw.ModHazardKind,
     modStageCnt: Int,
+    optIncludePreMid0Front: Boolean,
   ) = (
     PipeMemRmw.numPostFrontPreWriteStages
     //PipeMemRmw.numPostFrontPreWriteStages
@@ -772,6 +780,7 @@ object PipeMemRmw {
       //},
       optModHazardKind=optModHazardKind,
       modStageCnt=modStageCnt,
+      optIncludePreMid0Front=optIncludePreMid0Front,
     )
     + 1
     //+ (
@@ -959,6 +968,7 @@ extends Bundle {
     PipeMemRmw.numMyUpExtDel2(
       optModHazardKind=optModHazardKind,
       modStageCnt=modStageCnt,
+      optIncludePreMid0Front=cfg.optIncludePreMid0Front,
     )
   )
   //println(
@@ -1808,8 +1818,18 @@ extends Area {
   def vivadoDebug = cfg.vivadoDebug 
   //def optIncludePreMid0Front = cfg.optIncludePreMid0Front
   def optIncludePreMid0Front = (
-    doModInPreMid0FrontFunc != None
+    //doModInPreMid0FrontFunc != None
+    cfg.optIncludePreMid0Front
   )
+  if (optIncludePreMid0Front) {
+    assert(
+      doModInPreMid0FrontFunc != None,
+      (
+        s"`doModInPreMid0FrontFunc` must *not* be `None` "
+        + s"if `cfg.optIncludePreMid0Front == true`"
+      )
+    )
+  }
   def optIncludeModFrontStageLink = cfg.optIncludeModFrontStageLink
   def optIncludeModFrontS2MLink = cfg.optIncludeModFrontS2MLink
   if (optIncludeModFrontS2MLink) {
@@ -2615,6 +2635,7 @@ extends Area {
             optModHazardKind=optModHazardKind,
             //optModFwdToFront=optModFwdToFront,
             modStageCnt=modStageCnt,
+            optIncludePreMid0Front=optIncludePreMid0Front,
           )
           + 1 
           //+ (
@@ -2754,7 +2775,8 @@ extends Area {
                   //},
                   optModHazardKind=optModHazardKind,
                   //optModFwdToFront=optModFwdToFront,
-                  modStageCnt=modStageCnt
+                  modStageCnt=modStageCnt,
+                  optIncludePreMid0Front=optIncludePreMid0Front,
                 )
                 - modStageCnt
                 //- 1
@@ -3207,20 +3229,20 @@ extends Area {
                 init=myModMem.io.ramIo.rdData.getZero,
               )
             )
-            val rTempFwdCond = (
-              RegNextWhen(
-                next=myModMem.io.fwdCondDel1,
-                cond=cPreMid0Front(0).down.isFiring,
-                init=myModMem.io.fwdCondDel1.getZero,
-              )
-            )
-            val rTempFwdData = (
-              RegNextWhen(
-                next=myModMem.io.fwdDataDel1,
-                cond=cPreMid0Front(0).down.isFiring,
-                init=myModMem.io.fwdDataDel1.getZero,
-              )
-            )
+            //val rTempFwdCond = (
+            //  RegNextWhen(
+            //    next=myModMem.io.fwdCondDel1,
+            //    cond=cPreMid0Front(0).down.isFiring,
+            //    init=myModMem.io.fwdCondDel1.getZero,
+            //  )
+            //)
+            //val rTempFwdData = (
+            //  RegNextWhen(
+            //    next=myModMem.io.fwdDataDel1,
+            //    cond=cPreMid0Front(0).down.isFiring,
+            //    init=myModMem.io.fwdDataDel1.getZero,
+            //  )
+            //)
             //myRdMemWord(ydx)(zdx) := (
             //  RegNext(
             //    next=myRdMemWord(ydx)(zdx),
@@ -3231,11 +3253,11 @@ extends Area {
               myRdMemWord(ydx)(zdx).assignFromBits(
                 rTempRdData
               )
-              when (rTempFwdCond) {
-                myRdMemWord(ydx)(zdx).assignFromBits(
-                  rTempFwdData
-                )
-              }
+              //when (rTempFwdCond) {
+              //  myRdMemWord(ydx)(zdx).assignFromBits(
+              //    rTempFwdData
+              //  )
+              //}
             //}
             //myRdMemWord(ydx)(zdx) := (
             //  RegNextWhen
@@ -5631,6 +5653,7 @@ extends Area {
     val upExt = Vec.fill(2)(
       mkExt()
     )
+    val myUpExtDel = mod.front.myUpExtDel
     for (ydx <- 0 until memArrSize) {
       if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) {
         for (extIdx <- 0 until extIdxLim) {
@@ -5674,7 +5697,14 @@ extends Area {
       }
       //--------
       //if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) {
-        mod.front.myUpExtDel.last(ydx) := upExt(1)(ydx)
+      if (optIncludePreMid0Front) {
+        myUpExtDel(myUpExtDel.size - 2)(ydx) := upExt(1)(ydx)
+        when (up.isFiring) {
+          myUpExtDel.last(ydx) := myUpExtDel(myUpExtDel.size - 2)(ydx)
+        }
+      } else {
+        myUpExtDel.last(ydx) := upExt(1)(ydx)
+      }
       //}
     }
 
@@ -5694,6 +5724,7 @@ extends Area {
         memArrIdx=memArrIdx,
       )
     }
+    //myUpExtDel.last
   }
   //--------
   //--------
