@@ -5699,6 +5699,12 @@ extends Area {
       //if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) {
       if (optIncludePreMid0Front) {
         myUpExtDel(myUpExtDel.size - 2)(ydx) := upExt(1)(ydx)
+        myUpExtDel.last(ydx) := (
+          RegNext(
+            next=myUpExtDel.last(ydx),
+            init=myUpExtDel.last(ydx).getZero,
+          )
+        )
         when (up.isFiring) {
           myUpExtDel.last(ydx) := myUpExtDel(myUpExtDel.size - 2)(ydx)
         }
