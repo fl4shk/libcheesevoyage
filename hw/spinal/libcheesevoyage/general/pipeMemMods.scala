@@ -2783,13 +2783,18 @@ extends Area {
                 ////+ 1
                 + idx 
                 + (
-                  if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
-                    0
-                    //1
+                  if (optIncludePreMid0Front) (
+                    1
                   ) else (
-                    //1
                     0
                   )
+                  //if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) (
+                  //  0
+                  //  //1
+                  //) else (
+                  //  //1
+                  //  0
+                  //)
                 )
               )
               //println(
