@@ -5710,14 +5710,15 @@ extends Area {
       if (optIncludePreMid0Front) {
         myUpExtDel(myUpExtDel.size - 2)(ydx) := upExt(1)(ydx)
         myUpExtDel.last(ydx) := (
-          RegNext(
+          RegNextWhen(
             next=myUpExtDel.last(ydx),
+            cond=up.isFiring,
             init=myUpExtDel.last(ydx).getZero,
           )
         )
-        when (up.isFiring) {
-          myUpExtDel.last(ydx) := myUpExtDel(myUpExtDel.size - 2)(ydx)
-        }
+        //when (up.isFiring) {
+        //  myUpExtDel.last(ydx) := myUpExtDel(myUpExtDel.size - 2)(ydx)
+        //}
       } else {
         myUpExtDel.last(ydx) := upExt(1)(ydx)
       }
