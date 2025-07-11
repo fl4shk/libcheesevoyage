@@ -3399,54 +3399,13 @@ extends Area {
         down=cBack.up,
       )
       myLinkArr += dIoModBack
-      val myLastBackFinishCond = (
-        !optIncludePreMid0Front
-        && optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
-      )
       val cLastBack = pipe.addStage(
-        name=pipeName + "_cLastBack",
-        optIncludeStage=(
-          //false
-          !myLastBackFinishCond
-        ),
-        optIncludeS2M=(
-          //!optIncludePreMid0Front
-          //&& optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
-          false
-        ),
-        finish=(
-          //true
-          myLastBackFinishCond
-        ),
+        name=pipeName + "_LastBack",
+        finish=true,
       )
-      //val sLastBack = (myLastBackFinishCond) generate (
-      //  pipe.addStage(
-      //    name=pipeName + "_sLastBack",
-      //    optIncludeS2M=false,
-      //    finish=true,
-      //  )
-      //)
-      val sLastBack = (!myLastBackFinishCond) generate (
-        StageLink(
-          up=cLastBack.down,
-          down={
-            val temp = Node()
-            temp.setName(s"pipeName_sLastBack_down")
-            temp
-          },
-        )
-      )
-      if (!myLastBackFinishCond) {
-        //sLastBack.down.ready := True
-        myLinkArr += sLastBack
-      }
       val dIoBack = DirectLink(
         up=(
-          if (myLastBackFinishCond) (
-            cLastBack.down
-          ) else (
-            sLastBack.down
-          )
+          cLastBack.down
           //cBack.down
         ),
         down=io.back,
@@ -5752,9 +5711,9 @@ extends Area {
         myUpExtDel(myUpExtDel.size - 2)(ydx) := upExt(1)(ydx)
         myUpExtDel.last(ydx) := (
           RegNextWhen(
-            next=myUpExtDel.last(ydx),
+            next=myUpExtDel(myUpExtDel.size - 2)(ydx),
             cond=up.isFiring,
-            init=myUpExtDel.last(ydx).getZero,
+            init=myUpExtDel(myUpExtDel.size - 2)(ydx).getZero,
           )
         )
         //when (up.isFiring) {
