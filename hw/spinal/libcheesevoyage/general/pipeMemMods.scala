@@ -3399,13 +3399,50 @@ extends Area {
         down=cBack.up,
       )
       myLinkArr += dIoModBack
-      val cLastBack = pipe.addStage(
-        name=pipeName + "_LastBack",
-        finish=true,
+      val myLastBackFinishCond = (
+        !optIncludePreMid0Front
+        && optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
       )
+      val cLastBack = pipe.addStage(
+        name=pipeName + "_cLastBack",
+        optIncludeS2M=(
+          //!optIncludePreMid0Front
+          //&& optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
+          false
+        ),
+        finish=(
+          //true
+          myLastBackFinishCond
+        ),
+      )
+      //val sLastBack = (myLastBackFinishCond) generate (
+      //  pipe.addStage(
+      //    name=pipeName + "_sLastBack",
+      //    optIncludeS2M=false,
+      //    finish=true,
+      //  )
+      //)
+      val sLastBack = (!myLastBackFinishCond) generate (
+        StageLink(
+          up=cLastBack.down,
+          down={
+            val temp = Node()
+            temp.setName(s"pipeName_sLastBack_down")
+            temp
+          },
+        )
+      )
+      if (!myLastBackFinishCond) {
+        //sLastBack.down.ready := True
+        myLinkArr += sLastBack
+      }
       val dIoBack = DirectLink(
         up=(
-          cLastBack.down
+          if (myLastBackFinishCond) (
+            cLastBack.down
+          ) else (
+            sLastBack.down
+          )
           //cBack.down
         ),
         down=io.back,
