@@ -101,7 +101,7 @@ module LcvCmpEqDel1 #(
 	wire signed [WIDTH:0] my_carry_in = (
 		$signed({{(WIDTH){1'b0}}, 1'b1})
 	);
-	always @(posedge clk) begin
+	always_ff @(posedge clk) begin
 		outp_data <= (
 			$signed(
 				$signed(($signed(my_a) ^ (~$signed(my_b))))

@@ -2050,11 +2050,12 @@ extends Area {
                     )
                   ) && (
                     myZeroRegCond
-                  ) && (
-                    tempMyUpExtDel.fwdCanDoIt(
-                      zdx
-                    )
                   )
+                  //&& (
+                  //  tempMyUpExtDel.fwdCanDoIt(
+                  //    zdx
+                  //  )
+                  //)
                   //&& (
                   //  //if (idx == 1) (
                   //    True
