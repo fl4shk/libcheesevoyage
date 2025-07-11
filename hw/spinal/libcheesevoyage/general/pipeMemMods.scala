@@ -1377,14 +1377,14 @@ case class PipeMemRmwDoFwdArea[
           //  tempMyFwdData := firstFwdRdMemWord._2
           //}
         }
-        val rState = (
-          KeepAttribute(
-            Reg(Bool(), init=False)
-          )
-            .setName(s"${pipeName}_doFwd_rState_${ydx}_${zdx}")
-        )
+        //val rState = (
+        //  KeepAttribute(
+        //    Reg(Bool(), init=False)
+        //  )
+        //    .setName(s"${pipeName}_doFwd_rState_${ydx}_${zdx}")
+        //)
         //when (link.up.isValid) {
-          when (!rState) {
+        //  when (!rState) {
             //setToMyFwdDataFunc(
             //  ydx,
             //  zdx,
@@ -1400,11 +1400,11 @@ case class PipeMemRmwDoFwdArea[
                 tempMyFwdData,
               )
             //}
-          }
+        //  }
         //}
-        when (link.up.isFiring) {
-          rState := False
-        }
+        //when (link.up.isFiring) {
+        //  rState := False
+        //}
       }
     }
   //}
