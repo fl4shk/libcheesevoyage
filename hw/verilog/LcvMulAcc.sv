@@ -96,20 +96,20 @@ module LcvCmpEqDel1 #(
 	input logic signed [WIDTH - 1:0] b,
 	output logic signed [WIDTH:0] outp_data
 );
-	wire signed [WIDTH:0] my_a = $signed({1'b0, a});
-	wire signed [WIDTH:0] my_b = $signed({1'b1, b});
+	//wire signed [WIDTH:0] my_a = $signed({1'b0, a});
+	//wire signed [WIDTH:0] my_b = $signed({1'b1, b});
 	//wire signed [WIDTH:0] my_carry_in = (
 	//	$signed({{(WIDTH){1'b0}}, 1'b1})
 	//);
 	always_ff @(posedge clk) begin
-		outp_data <= {
+		outp_data <= $signed({
 			//$signed(
 			//	$signed(($signed(my_a) ^ (~$signed(my_b))))
 			//	+ my_carry_in
 			//)
 			a === b,
-			{WIDTH{1'b0}},
-		};
+			{WIDTH{1'b0}}
+		});
 		//outp_sum <= a + b;
 	end
 endmodule
