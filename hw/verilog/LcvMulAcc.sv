@@ -1,4 +1,4 @@
-(* use_dsp48 = "yes" *)
+(* use_dsp = "yes" *)
 module LcvMulAcc32(
 	input logic signed [15:0] a,
 	input logic signed [15:0] b,
@@ -12,7 +12,7 @@ module LcvMulAcc32(
 	assign outp = pcout + d + e;
 endmodule
 
-(* use_dsp48 = "yes" *)
+(* use_dsp = "yes" *)
 module LcvMulAcc32Del1(
 	input logic clk,
 	input logic rst,
@@ -39,7 +39,7 @@ module LcvMulAcc32Del1(
 	//--------
 endmodule
 
-(* use_dsp48 = "yes" *)
+(* use_dsp = "yes" *)
 module LcvAdcDel1 #(
 	parameter WIDTH=32
 )(
@@ -64,7 +64,7 @@ module LcvAdcDel1 #(
 	end
 endmodule
 
-(* use_dsp48 = "yes" *)
+(* use_dsp = "yes" *)
 module LcvSubDel1 #(
 	parameter WIDTH=32
 )(
@@ -87,7 +87,7 @@ module LcvSubDel1 #(
 	end
 endmodule
 
-(* use_dsp48 = "yes" *)
+(* use_dsp = "yes" *)
 module LcvCmpEqDel1 #(
 	parameter WIDTH=32
 )(
@@ -114,7 +114,7 @@ module LcvCmpEqDel1 #(
 	end
 endmodule
 
-//(* use_dsp48 = "yes" *)
+//(* use_dsp = "yes" *)
 //module LcvCmpEqDel1 #(
 //	parameter WIDTH=32
 //)(

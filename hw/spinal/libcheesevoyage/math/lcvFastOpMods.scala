@@ -3,6 +3,7 @@ import libcheesevoyage.general._
 
 import spinal.core._
 import spinal.lib._
+import spinal.core.sim._
 import scala.collection.mutable.ArrayBuffer
 
 object LcvPriorityMux {
@@ -420,6 +421,61 @@ case class LcvCmpEqDel1(
   addRTLPath("./hw/verilog/LcvMulAcc.sv")
   mapCurrentClockDomain(clock=io.clk/*, reset=io.rst*/)
   setIoCd()
+}
+case class LcvCmpEqDel1SimDut(
+  wordWidth: Int
+) extends Component {
+  val io = new Bundle {
+    val a = in(UInt(wordWidth bits))
+    val b = in(UInt(wordWidth bits))
+    val a_del1 = out(UInt(wordWidth bits))
+    val b_del1 = out(UInt(wordWidth bits))
+    val outp_data = out(SInt(wordWidth + 1 bits))
+  }
+  val dut = LcvCmpEqDel1(wordWidth=wordWidth)
+  dut.io.a := io.a.asSInt
+  dut.io.b := io.b.asSInt
+  io.a_del1.setAsReg() init(0x0)
+  io.b_del1.setAsReg() init(0x0)
+  io.a_del1 := io.a
+  io.b_del1 := io.b
+  io.outp_data := dut.io.outp_data
+}
+object LcvCmpEqDel1Sim extends App {
+  def clkRate = 25.0 MHz
+
+  val simSpinalConfig = SpinalConfig(
+    //defaultClockDomainFrequency=FixedFrequency(100 MHz)
+    defaultClockDomainFrequency=FixedFrequency(clkRate)
+  )
+  SimConfig
+    .withConfig(config=simSpinalConfig)
+    .withFstWave
+    .compile(LcvCmpEqDel1SimDut(
+      wordWidth=4
+    ))
+    .doSim { dut => 
+      dut.clockDomain.forkStimulus(period=10)
+      def simNumClks = (
+        4 * 4 * 4 * 4 + 2
+      )
+      for (idx <- 0 until simNumClks) {
+        if (idx > 0) {
+          println(
+            //s"${idx & 0xf} === ${(idx >> 4) & 0xf} ? "
+            s"${dut.io.a_del1.toLong} === ${dut.io.b_del1.toLong} ? "
+            + s"${(dut.io.outp_data.toLong >> 4) & 0x1}; "
+            //+ s"${(dut.io.outp_data.toLong)}; "
+            //+ s"${(idx & 0xf) == ((idx >> 4) & 0xf)}"
+            + s"${dut.io.a_del1.toLong == dut.io.b_del1.toLong}"
+          )
+        }
+        dut.io.a #= (idx >> 4) & 0xf
+        dut.io.b #= (idx & 0xf)
+        dut.clockDomain.waitRisingEdge()
+      }
+      simSuccess()
+    }
 }
 
 object LcvFastOrR {
