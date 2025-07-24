@@ -63,6 +63,30 @@ module LcvAdcDel1 #(
 		outp_sum_carry <= temp_sum;
 	end
 endmodule
+(* use_dsp = "yes" *)
+module LcvAddDel1 #(
+	parameter WIDTH=32
+)(
+	input logic clk,
+	//input logic rst,
+	input logic signed [WIDTH - 1:0] inp_a,
+	input logic signed [WIDTH - 1:0] inp_b,
+	//input logic inp_carry,
+
+	output logic signed [WIDTH:0] outp_sum_carry
+);
+	wire signed [WIDTH:0] temp_a = {1'b0, inp_a};
+	wire signed [WIDTH:0] temp_b = {1'b0, inp_b};
+	//wire signed [WIDTH:0] temp_carry = {{(WIDTH){1'b0}}, inp_carry};
+
+	wire signed [WIDTH:0] temp_sum = (
+		temp_a + temp_b //+ temp_carry
+	);
+
+	always_ff @(posedge clk) begin
+		outp_sum_carry <= temp_sum;
+	end
+endmodule
 
 (* use_dsp = "yes" *)
 module LcvSubDel1 #(
