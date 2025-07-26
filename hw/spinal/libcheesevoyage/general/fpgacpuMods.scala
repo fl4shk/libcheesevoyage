@@ -326,6 +326,7 @@ case class FpgacpuRamSimpleDualPortImpl[
   initBigInt: Option[Seq[BigInt]]=None,
   arrRamStyle: String="block",
   arrRwAddrCollision: String="",
+  optDblRdReg: Boolean=false,
 ) extends Area {
   //val io = FpgacpuRamSimpleDualPortIo(
   //  //wordType=Bits(wordWidth bits),
@@ -372,12 +373,22 @@ case class FpgacpuRamSimpleDualPortImpl[
     },
     enable=io.wrEn,
   )
+  if (optDblRdReg) {
+    io.rdData.setAsReg() init(io.rdData.getZero)
+  }
   io.rdData := {
     val tempRdData = arr.readSync(
       address=io.rdAddr,
       enable=io.rdEn,
     )
-    tempRdData.asBits
+    //if (!optDblRdReg) (
+      tempRdData.asBits
+    //) else (
+    //  RegNext(
+    //    next=tempRdData.asBits,
+    //    init=tempRdData.asBits.getZero,
+    //  )
+    //)
   }
 }
 case class FpgacpuRamSimpleDualPort[
@@ -389,6 +400,7 @@ case class FpgacpuRamSimpleDualPort[
   initBigInt: Option[Seq[BigInt]]=None,
   arrRamStyle: String="block",
   arrRwAddrCollision: String="",
+  optDblRdReg: Boolean=false,
 ) extends Component {
   //--------
   val io = FpgacpuRamSimpleDualPortIo(
@@ -458,6 +470,7 @@ case class FpgacpuRamSimpleDualPort[
     },
     arrRamStyle=arrRamStyle,
     arrRwAddrCollision=arrRwAddrCollision,
+    optDblRdReg=optDblRdReg,
   )
   //--------
   //impl.io.wrEn := io.wrEn
