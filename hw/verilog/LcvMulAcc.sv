@@ -91,6 +91,30 @@ module LcvAddJustCarryDel1 #(
 endmodule
 
 (* use_dsp = "yes" *)
+module LcvCondAddJustCarryDel1 #(
+	parameter WIDTH=32
+)(
+	input logic clk,
+	input logic signed [WIDTH - 1:0] inp_a,
+	input logic inp_carry,
+	input logic inp_cond,
+	output logic signed [WIDTH:0] outp_sum_carry
+);
+	wire signed [WIDTH:0] temp_a = {1'b0, inp_a};
+	wire signed [WIDTH:0] temp_carry = {{(WIDTH){1'b0}}, inp_carry};
+
+	wire signed [WIDTH:0] temp_sum = (
+		temp_a + temp_carry
+	);
+
+	always_ff @(posedge clk) begin
+		if (inp_cond) begin
+			outp_sum_carry <= temp_sum;
+		end
+	end
+endmodule
+
+(* use_dsp = "yes" *)
 module LcvAddDel1 #(
 	parameter WIDTH=32
 )(
@@ -137,6 +161,33 @@ module LcvSubDel1 #(
 		outp_sum_carry <= temp_sum;
 	end
 endmodule
+
+(* use_dsp = "yes" *)
+module LcvCondSubDel1 #(
+	parameter WIDTH=32
+)(
+	input logic clk,
+	input logic signed [WIDTH - 1:0] inp_a,
+	input logic signed [WIDTH - 1:0] inp_b,
+	input logic inp_cond,
+	output logic signed [WIDTH:0] outp_sum_carry
+);
+	wire signed [WIDTH:0] temp_a = {1'b0, inp_a};
+	wire signed [WIDTH:0] temp_b = {1'b0, inp_b};
+	//wire signed [WIDTH:0] temp_carry = {{(WIDTH){1'b0}}, inp_carry};
+
+	wire signed [WIDTH:0] temp_sum = (
+		//temp_a + temp_carry
+		temp_a - temp_b
+	);
+
+	always_ff @(posedge clk) begin
+		if (inp_cond) begin
+			outp_sum_carry <= temp_sum;
+		end
+	end
+endmodule
+
 
 (* use_dsp = "yes" *)
 module LcvCmpEqDel1 #(
