@@ -8,6 +8,115 @@ import spinal.lib.misc.pipeline._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 
+case class RamSdpPipeIo[
+  WordT <: Data
+](
+  wordType: HardType[WordT],
+  depth: Int,
+) extends Bundle {
+  //val wrEnReg = in(Bool())
+  val wrEn = in(Bool())
+  val wrAddr = in(UInt(log2Up(depth) bits))
+  val wrData = in(Bits(wordType().asBits.getWidth bits))
+
+  //val rdEnReg = in(Bool())
+  val rdEnForWr = in(Bool())
+  val rdEn = in(Bool())
+  val rdAddr = in(UInt(log2Up(depth) bits))
+  val rdData = out(Bits(wordType().asBits.getWidth bits))
+  val rdDataFromWrAddr = out(Bits(wordType().asBits.getWidth bits))
+}
+case class RamSdpPipe[
+  WordT <: Data
+](
+  wordType: HardType[WordT],
+  depth: Int,
+  init: Option[Seq[WordT]]=None,
+  initBigInt: Option[Seq[BigInt]]=None,
+  arrRamStyle: String="block",
+  arrRwAddrCollision: String="",
+) extends Component {
+  val io = RamSdpPipeIo(
+    wordType=wordType(),
+    depth=depth,
+  )
+  val arr = Mem(
+    wordType=wordType(),
+    wordCount=depth,
+  )
+    .addAttribute("ram_style", arrRamStyle)
+    .addAttribute("rw_addr_collision", arrRwAddrCollision)
+
+  init match {
+    case Some(_) => {
+      arr.init(init.get)
+      assert(initBigInt == None)
+    }
+    case None => {
+    }
+  }
+  initBigInt match {
+    case Some(_) => {
+      arr.initBigInt(initBigInt.get, allowNegative=true)
+      assert(init == None)
+    }
+    case None => {
+    }
+  }
+
+  arr.write(
+    address=io.wrAddr,
+    data={
+      val tempWrData = wordType()
+      tempWrData.assignFromBits(
+        io.wrData.asBits
+      )
+      tempWrData
+    },
+    enable=io.wrEn,
+  )
+
+  // do1
+  val rDataOutFromWr = Reg(Bits(io.rdData.getWidth bits))
+
+  rDataOutFromWr := (
+    arr.readSync(
+      address=io.wrAddr,
+    ).asBits
+  )
+  io.rdDataFromWrAddr.setAsReg()
+  when (io.rdEnForWr) {
+    io.rdDataFromWrAddr := rDataOutFromWr
+  }
+
+  // do2
+  val rDataOutFromRd = Reg(Bits(io.rdData.getWidth bits))
+  rDataOutFromRd := (
+    arr.readSync(
+      address=io.rdAddr,
+      //enable=io.rdEn,
+    ).asBits
+  )
+
+  io.rdData.setAsReg()
+  when (io.rdEn) {
+    io.rdData := rDataOutFromRd
+  }
+
+  //if (optDblRdReg) {
+  //  io.rdData.setAsReg() //init(io.rdData.getZero)
+  //}
+  //io.rdData := {
+  //  val tempRdData = (
+  //      arr.readSync(
+  //        address=io.rdAddr,
+  //        enable=io.rdEn,
+  //      )
+  //  )
+  //  tempRdData.asBits
+  //}
+}
+
 case class RamSimpleDualPortIo[
   WordT <: Data
 ](
@@ -22,7 +131,6 @@ case class RamSimpleDualPortIo[
   //val fwdDataDel1 = out(Bits(wordType().asBits.getWidth bits))
   //val cmpRdWrAddrEtc = in(Bool())
 }
-
 case class RamSimpleDualPort[
   WordT <: Data
 ](

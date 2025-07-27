@@ -259,10 +259,14 @@ case class FpgacpuRamSimpleDualPortIo
   //addrWidth: Int,
   //depth: Int,
   addrWidth: Int,
+  //optDblRdReg: Boolean=false,
 ) extends Bundle {
   //val addrWidth = log2Up(depth)
   //--------
   // Writes
+  //val wrEnReg = (optDblRdReg) generate (
+  //  in Bool()
+  //)
   val wrEn = in Bool()
   val wrAddr = in UInt(addrWidth bits)
   val wrData = in(
@@ -274,6 +278,9 @@ case class FpgacpuRamSimpleDualPortIo
   )
   //--------
   // Reads
+  //val rdEnReg = (optDblRdReg) generate (
+  //  in Bool()
+  //)
   val rdEn = in Bool()
   val rdAddr = in UInt(addrWidth bits)
   val rdData = out(
@@ -326,7 +333,7 @@ case class FpgacpuRamSimpleDualPortImpl[
   initBigInt: Option[Seq[BigInt]]=None,
   arrRamStyle: String="block",
   arrRwAddrCollision: String="",
-  optDblRdReg: Boolean=false,
+  //optDblRdReg: Boolean=false,
 ) extends Area {
   //val io = FpgacpuRamSimpleDualPortIo(
   //  //wordType=Bits(wordWidth bits),
@@ -378,17 +385,17 @@ case class FpgacpuRamSimpleDualPortImpl[
   //}
   io.rdData := {
     val tempRdData = (
-      if (optDblRdReg) (
-        arr.readSync(
-          address=RegNext(io.rdAddr),
-          enable=RegNext(io.rdEn),
-        )
-      ) else (
+      //if (optDblRdReg) (
+      //  arr.readSync(
+      //    address=RegNext(io.rdAddr),
+      //    enable=RegNext(io.rdEn),
+      //  )
+      //) else (
         arr.readSync(
           address=io.rdAddr,
           enable=io.rdEn,
         )
-      )
+      //)
     )
     //if (!optDblRdReg) (
       tempRdData.asBits
@@ -409,7 +416,7 @@ case class FpgacpuRamSimpleDualPort[
   initBigInt: Option[Seq[BigInt]]=None,
   arrRamStyle: String="block",
   arrRwAddrCollision: String="",
-  optDblRdReg: Boolean=false,
+  //optDblRdReg: Boolean=false,
 ) extends Component {
   //--------
   val io = FpgacpuRamSimpleDualPortIo(
@@ -479,7 +486,7 @@ case class FpgacpuRamSimpleDualPort[
     },
     arrRamStyle=arrRamStyle,
     arrRwAddrCollision=arrRwAddrCollision,
-    optDblRdReg=optDblRdReg,
+    //optDblRdReg=optDblRdReg,
   )
   //--------
   //impl.io.wrEn := io.wrEn
