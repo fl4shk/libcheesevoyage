@@ -77,21 +77,29 @@ case class RamSdpPipe[
   )
 
   // do1
-  val rDataOutFromWr = Reg(Bits(io.rdData.getWidth bits))
+  val myDataOutFromWr = (
+    /*Reg*/(
+      Bits(io.rdData.getWidth bits)
+    )
+  )
 
-  rDataOutFromWr := (
+  myDataOutFromWr := (
     arr.readSync(
       address=io.wrAddr,
     ).asBits
   )
   io.rdDataFromWrAddr.setAsReg()
   when (io.rdEnForWr) {
-    io.rdDataFromWrAddr := rDataOutFromWr
+    io.rdDataFromWrAddr := myDataOutFromWr
   }
 
   // do2
-  val rDataOutFromRd = Reg(Bits(io.rdData.getWidth bits))
-  rDataOutFromRd := (
+  val myDataOutFromRd = (
+    /*Reg*/(
+      Bits(io.rdData.getWidth bits)
+    )
+  )
+  myDataOutFromRd := (
     arr.readSync(
       address=io.rdAddr,
       //enable=io.rdEn,
@@ -100,7 +108,7 @@ case class RamSdpPipe[
 
   io.rdData.setAsReg()
   when (io.rdEn) {
-    io.rdData := rDataOutFromRd
+    io.rdData := myDataOutFromRd
   }
 
   //if (optDblRdReg) {
