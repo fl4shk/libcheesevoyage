@@ -373,13 +373,22 @@ case class FpgacpuRamSimpleDualPortImpl[
     },
     enable=io.wrEn,
   )
-  if (optDblRdReg) {
-    io.rdData.setAsReg() //init(io.rdData.getZero)
-  }
+  //if (optDblRdReg) {
+  //  io.rdData.setAsReg() //init(io.rdData.getZero)
+  //}
   io.rdData := {
-    val tempRdData = arr.readSync(
-      address=io.rdAddr,
-      enable=io.rdEn,
+    val tempRdData = (
+      if (optDblRdReg) (
+        arr.readSync(
+          address=RegNext(io.rdAddr),
+          enable=RegNext(io.rdEn),
+        )
+      ) else (
+        arr.readSync(
+          address=io.rdAddr,
+          enable=io.rdEn,
+        )
+      )
     )
     //if (!optDblRdReg) (
       tempRdData.asBits
