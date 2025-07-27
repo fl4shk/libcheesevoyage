@@ -20,11 +20,11 @@ case class RamSdpPipeIo[
   val wrData = in(Bits(wordType().asBits.getWidth bits))
 
   //val rdEnReg = in(Bool())
-  val rdEnForWr = in(Bool())
+  //val rdEnForWr = in(Bool())
   val rdEn = in(Bool())
   val rdAddr = in(UInt(log2Up(depth) bits))
   val rdData = out(Bits(wordType().asBits.getWidth bits))
-  val rdDataFromWrAddr = out(Bits(wordType().asBits.getWidth bits))
+  //val rdDataFromWrAddr = out(Bits(wordType().asBits.getWidth bits))
 }
 case class RamSdpPipe[
   WordT <: Data
@@ -88,10 +88,10 @@ case class RamSdpPipe[
       address=io.wrAddr,
     ).asBits
   )
-  io.rdDataFromWrAddr.setAsReg()
-  when (io.rdEnForWr) {
-    io.rdDataFromWrAddr := myDataOutFromWr
-  }
+  //io.rdDataFromWrAddr.setAsReg()
+  //when (io.rdEnForWr) {
+  //  io.rdDataFromWrAddr := myDataOutFromWr
+  //}
 
   // do2
   val myDataOutFromRd = (
