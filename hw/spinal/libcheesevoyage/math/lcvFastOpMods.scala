@@ -837,7 +837,9 @@ object LcvFastCmpEq {
       if (optDsp) (
         left
       ) else (
-        Cat(False, left ^ (~right)).asUInt
+        //Cat(False, left ^ (~right)).asUInt
+        Cat(False, left).asUInt
+        ^ Cat(False, ~right).asUInt
       )
       //kind match {
       //  case Kind.UseFastCarryChain => {
@@ -964,13 +966,14 @@ object LcvFastCmpEq {
       val tempOutp = (
         //Cat(
           //U(s"${temp0.getWidth}'d0"),
-          (
-            temp0
-            + temp1
-            + Cat(False, tempCarryIn).asUInt.resize(temp0.getWidth)
-          )(temp0.getWidth - 1 downto 0).orR.asSInt.resize(
-            q.getWidth
-          ).asUInt
+          //(
+          //  temp0
+          //  + temp1
+          //  + Cat(False, tempCarryIn).asUInt.resize(temp0.getWidth)
+          //)(temp0.getWidth - 1 downto 0).orR.asSInt.resize(
+          //  q.getWidth
+          //).asUInt
+          temp0 + temp1
         //).asUInt
       )
       q := (
