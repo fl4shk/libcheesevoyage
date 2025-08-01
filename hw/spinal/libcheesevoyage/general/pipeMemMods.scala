@@ -69,6 +69,7 @@ case class PipeMemRmwConfig[
   optReorder: Boolean=false,
   init: Option[Seq[Seq[WordT]]]=None,
   initBigInt: Option[Seq[Seq[BigInt]]]=None,
+  optIncludeOtherMmw: Boolean=false,
   optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
   //optFwdUseMmwValidLaterStages: Boolean=false,
   optFwdHaveZeroReg: Option[Int]=Some(0x0),
@@ -249,8 +250,9 @@ case class PipeMemRmwPayloadExtMainNonMemAddr[
     UInt(log2Up(cfg.numMyUpExtDel2 + 1) bits)
   )
   val modMemWord = wordType()
-  val fwdCantDoItMmw = (
-    cfg.optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
+  val otherModMemWord = (
+    //cfg.optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
+    cfg.optIncludeOtherMmw
   ) generate (
     wordType()
   )
@@ -549,7 +551,7 @@ case class PipeMemRmwPayloadExt[
   def memAddrAlt = main.memAddrAlt
   def fwdIdx = main.nonMemAddr.fwdIdx
   def modMemWord = main.nonMemAddr.modMemWord
-  def fwdCantDoItMmw = main.nonMemAddr.fwdCantDoItMmw
+  def otherModMemWord = main.nonMemAddr.otherModMemWord
   //def modMemWordFwd = main.nonMemAddr.modMemWordFwd
   def modMemWordValid = main.nonMemAddr.modMemWordValid
   //def modMemWordValidFwd = main.nonMemAddr.modMemWordValidFwd
@@ -5140,26 +5142,31 @@ extends Area {
       }
       for (ydx <- 0 until memArrSize) {
         for (zdx <- 0 until modRdPortCnt) {
-          mod.back.myWriteData(1)(ydx)(zdx) := (
+          mod.back.myWriteData(1)(ydx)(zdx).assignFromBits(
             //upExt(0)(ydx).modMemWord
             if (optEnableClear) (
               Mux[WordT](
                 io.clear.fire,
                 wordType().getZero,
                 upExt(0)(ydx)(extIdxSingle).modMemWord,
-              )
+              ).asBits
             ) else if (
-              cfg.optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
+              //cfg.optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
+              cfg.optIncludeOtherMmw
             ) (
-              Mux[WordT](
-                upExt(0)(ydx)(extIdxSingle).fwdCanDoIt(
-                  PipeMemRmw.modWrIdx
-                ),
-                upExt(0)(ydx)(extIdxSingle).modMemWord,
-                upExt(0)(ydx)(extIdxSingle).fwdCantDoItMmw,
+              //Mux[WordT](
+              //  upExt(0)(ydx)(extIdxSingle).fwdCanDoIt(
+              //    PipeMemRmw.modWrIdx
+              //  ),
+              //  upExt(0)(ydx)(extIdxSingle).modMemWord,
+              //  upExt(0)(ydx)(extIdxSingle).otherModMemWord,
+              //)
+              (
+                upExt(0)(ydx)(extIdxSingle).modMemWord.asBits
+                | upExt(0)(ydx)(extIdxSingle).otherModMemWord.asBits
               )
             ) else (
-              upExt(0)(ydx)(extIdxSingle).modMemWord
+              upExt(0)(ydx)(extIdxSingle).modMemWord.asBits
             )
           )
         }
@@ -5545,24 +5552,29 @@ extends Area {
     //when (up.isValid) {
     for (ydx <- 0 until memArrSize) {
       for (zdx <- 0 until modRdPortCnt) {
-        myWriteData(0)(ydx)(zdx) := (
+        myWriteData(0)(ydx)(zdx).assignFromBits(
           //upExt(0)(ydx).modMemWord
           if (optEnableClear) (
             Mux[WordT](
               io.clear.fire,
               wordType().getZero,
               upExt(0)(ydx)(extIdxSingle).modMemWord,
-            )
+            ).asBits
           ) else if (
-            cfg.optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
+            //cfg.optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
+            cfg.optIncludeOtherMmw
           ) (
-            Mux[WordT](
-              upExt(0)(ydx)(extIdxSingle).fwdCanDoIt(PipeMemRmw.modWrIdx),
-              upExt(0)(ydx)(extIdxSingle).modMemWord,
-              upExt(0)(ydx)(extIdxSingle).fwdCantDoItMmw,
+            //Mux[WordT](
+            //  upExt(0)(ydx)(extIdxSingle).fwdCanDoIt(PipeMemRmw.modWrIdx),
+            //  upExt(0)(ydx)(extIdxSingle).modMemWord,
+            //  upExt(0)(ydx)(extIdxSingle).otherModMemWord,
+            //)
+            (
+              upExt(0)(ydx)(extIdxSingle).modMemWord.asBits
+              | upExt(0)(ydx)(extIdxSingle).otherModMemWord.asBits
             )
           ) else (
-            upExt(0)(ydx)(extIdxSingle).modMemWord
+            upExt(0)(ydx)(extIdxSingle).modMemWord.asBits
           )
         )
       }
