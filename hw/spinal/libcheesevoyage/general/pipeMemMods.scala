@@ -249,6 +249,11 @@ case class PipeMemRmwPayloadExtMainNonMemAddr[
     UInt(log2Up(cfg.numMyUpExtDel2 + 1) bits)
   )
   val modMemWord = wordType()
+  val fwdCantDoItMmw = (
+    cfg.optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
+  ) generate (
+    wordType()
+  )
   val modMemWordValid = (
     //(
     //  optModHazardKind != PipeMemRmw.ModHazardKind.Fwd
@@ -544,6 +549,7 @@ case class PipeMemRmwPayloadExt[
   def memAddrAlt = main.memAddrAlt
   def fwdIdx = main.nonMemAddr.fwdIdx
   def modMemWord = main.nonMemAddr.modMemWord
+  def fwdCantDoItMmw = main.nonMemAddr.fwdCantDoItMmw
   //def modMemWordFwd = main.nonMemAddr.modMemWordFwd
   def modMemWordValid = main.nonMemAddr.modMemWordValid
   //def modMemWordValidFwd = main.nonMemAddr.modMemWordValidFwd
@@ -5142,6 +5148,16 @@ extends Area {
                 wordType().getZero,
                 upExt(0)(ydx)(extIdxSingle).modMemWord,
               )
+            ) else if (
+              cfg.optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
+            ) (
+              Mux[WordT](
+                upExt(0)(ydx)(extIdxSingle).fwdCanDoIt(
+                  PipeMemRmw.modWrIdx
+                ),
+                upExt(0)(ydx)(extIdxSingle).modMemWord,
+                upExt(0)(ydx)(extIdxSingle).fwdCantDoItMmw,
+              )
             ) else (
               upExt(0)(ydx)(extIdxSingle).modMemWord
             )
@@ -5536,6 +5552,14 @@ extends Area {
               io.clear.fire,
               wordType().getZero,
               upExt(0)(ydx)(extIdxSingle).modMemWord,
+            )
+          ) else if (
+            cfg.optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
+          ) (
+            Mux[WordT](
+              upExt(0)(ydx)(extIdxSingle).fwdCanDoIt(PipeMemRmw.modWrIdx),
+              upExt(0)(ydx)(extIdxSingle).modMemWord,
+              upExt(0)(ydx)(extIdxSingle).fwdCantDoItMmw,
             )
           ) else (
             upExt(0)(ydx)(extIdxSingle).modMemWord
