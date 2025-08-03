@@ -43,9 +43,5 @@ case class LcvStallBusRecvPayload(
   cfg: LcvStallBusConfig
 ) extends Bundle {
   val data = UInt(cfg.dataWidth bits)
+  val burstSize = UInt(cfg.burstSizeWidth bits)
 }
-
-//case class LcvStallBusSlice(
-//  cfg: LcvStallBusConfig
-//) extends Component {
-//}

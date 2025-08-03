@@ -27,6 +27,7 @@ case class LcvStallXbarDevPayload(
 ) extends Bundle {
   val data = UInt(cfg.dataWidth bits)
 }
+
 //case class LcvStallXbarIo(
 //  cfg: LcvStallXbarConfig
 //) extends Bundle {
