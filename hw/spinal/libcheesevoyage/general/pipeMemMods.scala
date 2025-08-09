@@ -60,6 +60,7 @@ case class PipeMemRmwConfig[
   modStageCnt: Int,
   pipeName: String,
   optIncludePreMid0Front: Boolean,
+  //optMmwHasRdPort: Boolean=true,
   var linkArr: Option[ArrayBuffer[Link]]=None,
   memArrIdx: Int=0,
   //dualRdType: HardType[DualRdT]=PipeMemRmwDualRdTypeDisabled[
@@ -437,7 +438,7 @@ case class PipeMemRmwPayloadExtMain[
       //Bool()
     )
   )
-  val memAddr = Vec.fill(modRdPortCnt)(
+  val memAddr = Vec.fill(modRdPortCnt + 1)(
     UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
   )
   val memAddrAlt = Vec.fill(modRdPortCnt)(
@@ -819,8 +820,8 @@ object PipeMemRmw {
   //def modHazardKindDupl = ModHazardKind.Dupl
   //def modHazardKindFwd = ModHazardKind.Fwd
   //--------
-  def modWrIdx = 0
-  def modRdIdxStart = 1
+  //def modWrIdx = 0
+  //def modRdIdxStart = 1
   //--------
   def extIdxUp = 0
   def extIdxSaved = 1
@@ -1899,15 +1900,13 @@ extends Area {
       val myHistMemAddr = (
         /*KeepAttribute*/(
           History[UInt](
-            that=upExtElem(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx),
+            that=upExtElem(ydx)(extIdxUp).memAddr.last,
             // `length=numMyUpExtDel2 + 1` because `History` includes the
             // current value of `that`.
             // This might not be relevant any more?
             length=2,//mod.front.myUpExtDel2.size + 1, 
             when=upIsFiring,
-            init=upExtElem(ydx)(extIdxUp).memAddr(
-              PipeMemRmw.modWrIdx
-            ).getZero,
+            init=upExtElem(ydx)(extIdxUp).memAddr.last.getZero,
           )
         )
         .setName(
@@ -1956,7 +1955,7 @@ extends Area {
         )
         upExtElem(ydx)(extIdxUp).memAddrFwdMmw(zdx).foreach(current => {
           current := (
-            upExtElem(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)
+            upExtElem(ydx)(extIdxUp).memAddr.last
           )
         })
         upExtElem(ydx)(extIdxUp).memAddrFwd(zdx).foreach(current => {
@@ -3341,9 +3340,7 @@ extends Area {
         Vec.fill(2)(
           Vec.fill(memArrSize)(
             Vec.fill(modRdPortCnt)(
-              cloneOf(front.myUpExtDel(0)(0)(0).memAddr(
-                PipeMemRmw.modWrIdx
-              ))
+              cloneOf(front.myUpExtDel(0)(0)(0).memAddr.last)
             )
           )
         )
@@ -3935,16 +3932,16 @@ extends Area {
           //    ),
           //  )
           //)
-          val myModMem = modMem(ydx)(PipeMemRmw.modWrIdx)
+          val myModMem = modMem(ydx).last//(PipeMemRmw.modWrIdx)
           myModMem.io.ramIo.rdEn := tempCond
           myModMem.io.ramIo.rdAddr := (
             //upExtRealMemAddr(PipeMemRmw.modWrIdx)
-            upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)(
+            upExt(1)(ydx)(extIdxUp).memAddr.last(
               PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
               downto 0
             )
           )
-          myNonFwdRdMemWord.head(ydx)(PipeMemRmw.modWrIdx).assignFromBits(
+          myNonFwdRdMemWord.head(ydx).last.assignFromBits(
             myModMem.io.ramIo.rdData.asBits
           )
         }
@@ -4220,7 +4217,7 @@ extends Area {
         upExt(1)(ydx)(extIdxUp).memAddrAlt.allowOverride
         upExt(1)(ydx)(extIdxUp).memAddrAlt.foreach(current => {
           current := (
-            upExt(1)(ydx)(extIdxUp).memAddr(PipeMemRmw.modWrIdx)
+            upExt(1)(ydx)(extIdxUp).memAddr.last
           )
         })
         //tempUpMod(1).setPipeMemRmwExt(
@@ -5913,7 +5910,7 @@ extends Area {
           up.isFiring
         )
         dualRdMem(ydx).io.ramIo.rdAddr := (
-          myInpUpExt(ydx)(extIdxSingle).memAddr(PipeMemRmw.modWrIdx)(
+          myInpUpExt(ydx)(extIdxSingle).memAddr.last(
             PipeMemRmw.addrWidth(wordCount=wordCountArr(ydx)) - 1
             downto 0
           )
@@ -5992,20 +5989,18 @@ extends Area {
           dataType=Bool(),
           init=False,
         ) 
-        myOutpUpExt(ydx)(extIdxSingle).rdMemWord(PipeMemRmw.modWrIdx) := (
+        myOutpUpExt(ydx)(extIdxSingle).rdMemWord.last := (
           RegNext(
             next=(
-              myOutpUpExt(ydx)(extIdxSingle).rdMemWord(PipeMemRmw.modWrIdx)
+              myOutpUpExt(ydx)(extIdxSingle).rdMemWord.last
             ),
             init=(
-              myOutpUpExt(ydx)(extIdxSingle).rdMemWord(
-                PipeMemRmw.modWrIdx
-              ).getZero
+              myOutpUpExt(ydx)(extIdxSingle).rdMemWord.last.getZero
             ),
           )
         )
         myOutpUpExt(ydx)(extIdxSingle).modMemWord := (
-          myOutpUpExt(ydx)(extIdxSingle).rdMemWord(PipeMemRmw.modWrIdx)
+          myOutpUpExt(ydx)(extIdxSingle).rdMemWord.last
         )
         if (ydx == 0) {
           up(outpPipePayload) := myOutpDualRd
@@ -6015,9 +6010,7 @@ extends Area {
           && !rDoIt
         ) {
           rDoIt := True
-          myOutpUpExt(ydx)(extIdxSingle).rdMemWord(
-            PipeMemRmw.modWrIdx
-          ) := (
+          myOutpUpExt(ydx)(extIdxSingle).rdMemWord.last := (
             myRdMemWord
             //rPrevMyRdMemWord
           )

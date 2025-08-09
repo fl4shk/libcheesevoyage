@@ -9,121 +9,67 @@ import spinal.lib._
 import spinal.lib.misc.pipeline._
 
 case class LcvStallBusSlicerConfig(
-  busCfg: LcvStallBusConfig,
+  //busCfg: LcvStallBusConfig,
   //addrSliceWidth: Int,
-  addrSliceStart: Int,
-  addrSliceEnd: Int,
-  optAddrSliceSize: Option[Int]=None,
+  mmapCfg: LcvStallBusMemMapConfig,
+  //addrSliceStart: Int,
+  //addrSliceEnd: Int,
+  //optNumDevs: Option[Int]=None,
 ) {
-  //def addrSliceEnd = addrSliceStart + addrSliceWidth - 1
-  def addrSliceWidth = addrSliceEnd - addrSliceStart + 1
-  def addrSliceSize = (
-    optAddrSliceSize match {
-      case Some(myAddrSliceSize) => {
-        assert(
-          myAddrSliceSize > 0
-        )
-        assert(
-          myAddrSliceSize <= (1 << addrSliceWidth)
-        )
-        myAddrSliceSize
-      }
-      case None => {
-        (1 << addrSliceWidth)
-      }
-    }
-  )
-
-
-  def addrSliceRange = addrSliceEnd downto addrSliceStart
-
-  assert(
-    addrSliceWidth > 0
-  )
-  assert(
-    addrSliceWidth <= busCfg.addrWidth
-  )
-  assert(
-    addrSliceStart >= 0
-  )
-  assert(
-    addrSliceStart < busCfg.addrWidth
-  )
-  assert(
-    addrSliceEnd >= 0
-  )
-  assert(
-    addrSliceEnd < busCfg.addrWidth
-  )
+  def busCfg = mmapCfg.busCfg
+  def numDevs = mmapCfg.addrSliceSize
+  def addrSliceStart = mmapCfg.addrSliceStart
+  def addrSliceEnd = mmapCfg.addrSliceEnd
+  def addrSliceRange = mmapCfg.addrSliceRange
 }
 
 case class LcvStallBusSlicerIo(
   cfg: LcvStallBusSlicerConfig,
 ) extends Bundle /*with IMasterSlave*/ {
-  val hostBus = (
-    slave(new LcvStallIo[
-      LcvStallBusSendPayload,
-      LcvStallBusRecvPayload,
-    ](
-      sendPayloadType=Some(
-        LcvStallBusSendPayload(cfg=cfg.busCfg)
-      ),
-      recvPayloadType=Some(
-        LcvStallBusRecvPayload(cfg=cfg.busCfg)
-      ),
-    ))
-  )
-  val connBusVec = (
-    Vec[LcvStallIo[
-      LcvStallBusSendPayload,
-      LcvStallBusRecvPayload,
-    ]]{
-      val tempArr = new ArrayBuffer[LcvStallIo[
-        LcvStallBusSendPayload,
-        LcvStallBusRecvPayload,
-      ]]()
-
-      for (idx <- 0 until cfg.addrSliceSize) {
-        tempArr += new LcvStallIo[
-          LcvStallBusSendPayload,
-          LcvStallBusRecvPayload
-        ](
-          sendPayloadType=Some(
-            LcvStallBusSendPayload(cfg=cfg.busCfg)
-          ),
-          recvPayloadType=Some(
-            LcvStallBusRecvPayload(cfg=cfg.busCfg)
-          ),
-        )
+  val host = slave(LcvStallBusIo(cfg=cfg.busCfg))
+  val devVec = (
+    Vec[LcvStallBusIo]{
+      val tempArr = new ArrayBuffer[LcvStallBusIo]()
+      for (idx <- 0 until cfg.numDevs) {
+        tempArr += LcvStallBusIo(cfg=cfg.busCfg)
       }
       tempArr
     }
   )
-  for (connBus <- connBusVec) {
-    master(connBus)
+  for (dev <- devVec.view) {
+    master(dev)
   }
-  //def asMaster(): Unit = {
-  //  master(hostBus)
-  //  for (connBus <- connBusArr.view) {
-  //    slave(connBus)
-  //  }
-  //}
 }
 case class LcvStallBusSlicer(
   cfg: LcvStallBusSlicerConfig,
 ) extends Component {
   val io = LcvStallBusSlicerIo(cfg=cfg)
 
+  for (devIdx <- 0 until cfg.numDevs) {
+    io.host.h2dBus.ready := False
+    io.host.d2hBus.nextValid := False
+    io.host.d2hBus.sendData := (
+      io.host.d2hBus.sendData.getZero
+    )
+
+    val myDevH2dBus = io.devVec(devIdx).h2dBus
+    val myDevD2hBus = io.devVec(devIdx).d2hBus
+    myDevH2dBus.nextValid := False
+    myDevH2dBus.sendData := (
+      myDevH2dBus.sendData.getZero
+    )
+    myDevD2hBus.ready := False
+  }
   switch (
-    io.hostBus.sendData.addr(cfg.addrSliceRange)
+    io.host.h2dBus.sendData.addr(cfg.addrSliceRange)
   ) {
-    for (connIdx <- 0 until cfg.addrSliceSize) {
-      is (connIdx) {
-        val myConnBus = io.connBusVec(connIdx)
-        myConnBus.nextValid := io.hostBus.nextValid
-        myConnBus.sendData := io.hostBus.sendData
-        io.hostBus.recvData := myConnBus.recvData
-        io.hostBus.ready := myConnBus.ready
+    for (devIdx <- 0 until cfg.numDevs) {
+      is (devIdx) {
+        val myDevH2dBus = io.devVec(devIdx).h2dBus
+        myDevH2dBus << io.host.h2dBus
+
+        val myDevD2hBus = io.devVec(devIdx).d2hBus
+        io.host.d2hBus << myDevD2hBus
       }
     }
   }

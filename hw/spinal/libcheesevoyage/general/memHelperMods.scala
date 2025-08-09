@@ -7,17 +7,26 @@ import spinal.lib.sim._
 import spinal.lib.misc.pipeline._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
+import scala.math._
 
 case class RamSdpPipeIo[
   WordT <: Data
 ](
   wordType: HardType[WordT],
   depth: Int,
+  optIncludeWrByteEn: Boolean=false
 ) extends Bundle {
   //val wrEnReg = in(Bool())
   val wrEn = in(Bool())
   val wrAddr = in(UInt(log2Up(depth) bits))
   val wrData = in(Bits(wordType().asBits.getWidth bits))
+  val wrByteEn = (
+    optIncludeWrByteEn
+  ) generate (
+    in(
+      Bits(ceil(wordType().asBits.getWidth.toDouble / 8).toInt bits)
+    )
+  )
 
   //val rdEnReg = in(Bool())
   //val rdEnForWr = in(Bool())
@@ -31,6 +40,7 @@ case class RamSdpPipe[
 ](
   wordType: HardType[WordT],
   depth: Int,
+  optIncludeWrByteEn: Boolean=false,
   init: Option[Seq[WordT]]=None,
   initBigInt: Option[Seq[BigInt]]=None,
   arrRamStyle: String="block",
@@ -74,6 +84,13 @@ case class RamSdpPipe[
       tempWrData
     },
     enable=io.wrEn,
+    mask=(
+      if (optIncludeWrByteEn) (
+        io.wrByteEn
+      ) else (
+        null.asInstanceOf[Bits]
+      )
+    )
   )
 
   // do1
@@ -431,6 +448,7 @@ case class PipeSimpleDualPortMemDrivePayload[
 //  val addr = UInt(addrWidth bits)
 //  val data = dataType()
 //}
+
 case class WrPulseRdPipeSimpleDualPortMemIo[
   T <: Data,
   WordT <: Data,
@@ -659,10 +677,10 @@ extends Component
       wrPipePayload := wrPipePayload.getZero
       wrPipePayload.allowOverride
       //wrPipePayload.data := io.wrPulse
-      wrPipePayload.myExt.memAddr(PipeMemRmw.modWrIdx) := (
+      wrPipePayload.myExt.memAddr.last := (
         wrPulsePayload.addr
       )
-      wrPipePayload.myExt.rdMemWord(PipeMemRmw.modWrIdx) := (
+      wrPipePayload.myExt.rdMemWord.last := (
         wrPulsePayload.data
       )
       wrPipePayload.myExt.modMemWord := wrPulsePayload.data //wrPipePayload.myExt.rdMemWord
@@ -678,7 +696,7 @@ extends Component
       dualRdPipePayload := dualRdPipePayload.getZero
       dualRdPipePayload.allowOverride
       dualRdPipePayload.data := rdAddrPipePayload.data
-      dualRdPipePayload.myExt.memAddr(PipeMemRmw.modWrIdx) := (
+      dualRdPipePayload.myExt.memAddr.last := (
         rdAddrPipePayload.addr
       )
     }
@@ -698,7 +716,7 @@ extends Component
         io.unionIdx,
         rdDataPipePayload,
         dualRdPipePayload.data,
-        dualRdPipePayload.myExt.rdMemWord(PipeMemRmw.modWrIdx)
+        dualRdPipePayload.myExt.rdMemWord.last
       )
       //rdDataPipePayload := dualRdPipePayload.myExt.modMemWord
     }

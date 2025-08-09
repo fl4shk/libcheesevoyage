@@ -69,6 +69,31 @@ class LcvStallIo[
     }
     //--------
   }
+  def <<(
+    that: LcvStallIo[SendPayloadT, RecvPayloadT],
+  ): Unit = {
+    assert(
+      mySendPayloadType._1 == that.mySendPayloadType._1,
+      s"${mySendPayloadType._1} != ${that.mySendPayloadType._1}"
+    )
+    assert(
+      myRecvPayloadType._1 == that.myRecvPayloadType._1,
+      s"${myRecvPayloadType._1} != ${that.myRecvPayloadType._1}"
+    )
+    that.nextValid := this.nextValid
+    if (mySendPayloadType._1) {
+      that.sendData := this.sendData
+    }
+    if (myRecvPayloadType._1) {
+      this.recvData := that.recvData
+    }
+    this.ready := that.ready
+  }
+  def >>(
+    that: LcvStallIo[SendPayloadT, RecvPayloadT],
+  ): Unit = {
+    that << this
+  }
 }
 //--------
 case class LcvStallHost[
