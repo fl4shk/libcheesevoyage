@@ -910,7 +910,6 @@ case class PipeMemRmwFwd[
 //  ]/*]]*/
 //) 
 extends Bundle {
-  
   def wordType() = cfg.wordType()
   def wordCount = cfg.wordCountMax
   def memArrSize = cfg.memArrSize
@@ -971,6 +970,22 @@ extends Bundle {
         cfg.wordType()
       )
     )
+  )
+  val myUpIsValid = (
+    Bool()
+    //Vec.fill(memArrSize)(
+    //  Vec.fill(modRdPortCnt)(
+    //    Bool()
+    //  )
+    //)
+  )
+  val myUpIsFiring = (
+    Bool()
+    //Vec.fill(memArrSize)(
+    //  Vec.fill(modRdPortCnt)(
+    //    Bool()
+    //  )
+    //)
   )
   //--------
   def numMyUpExtDel2 = (
@@ -1097,6 +1112,25 @@ case class PipeMemRmwDoFwdArea[
   def extIdxSingle = (
     PipeMemRmw.extIdxSingle
   )
+  val rFwdState = {
+    val temp = Reg(
+      Vec.fill(fwd.memArrSize)(
+        Vec.fill(fwd.modRdPortCnt)(
+          Bool()
+        )
+      )
+    )
+    for (ydx <- 0 until fwd.memArrSize) {
+      for (zdx <- 0 until fwd.modRdPortCnt) {
+        temp(ydx)(zdx).init(temp(ydx)(zdx).getZero)
+      }
+    }
+    temp.setName(
+      fwdAreaName
+      + s"_rFwdState"
+    )
+    temp
+  }
   //if (myHaveFwd) {
     for (ydx <- 0 until fwd.memArrSize) {
       for (zdx <- 0 until fwd.modRdPortCnt) {
@@ -1330,7 +1364,33 @@ case class PipeMemRmwDoFwdArea[
             //  myFwdDataUp
             //)
             //tempMyFwdData := myFwdDataUp._2.payload
-            tempMyFwdData := myFwdDataUp//._2.payload
+            tempMyFwdData := (
+              RegNext(
+                next=tempMyFwdData,
+                init=tempMyFwdData.getZero,
+              )
+            )
+            when (
+              fwd.myUpIsValid
+            ) {
+              when (
+                !rFwdState(ydx)(zdx)
+                && myFwdMmwValidUp
+              ) {
+                rFwdState(ydx)(zdx) := True
+                tempMyFwdData := myFwdDataUp
+              }
+              when (fwd.myUpIsFiring) {
+                rFwdState(ydx)(zdx) := False
+              }
+            }
+            //when (!rFwdState(ydx)(zdx)) {
+            //}
+            //when (
+            //  myFwdMmwValidUp
+            //) {
+            //  tempMyFwdData := myFwdDataUp//._2.payload
+            //}
             //tempMyFwdData := myFindFirstUp._2.payload
           }
           //def mySetToMyFwdSaved(): Unit = {
@@ -4658,6 +4718,10 @@ extends Area {
                   upExt(1)(ydx)(extIdx).fwdIdx(zdx)
                 )
               }
+              //println(
+              //  s"mod.front.myUpExtDel2.size: "
+              //  + s"${mod.front.myUpExtDel2.size}"
+              //)
               if (idx < mod.front.myUpExtDel2.size /*- 1*/) {
                 mod.front.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
                   extIdx
@@ -4824,6 +4888,8 @@ extends Area {
       //) generate (
       //  myFwd.myFindFirst_1
       //)
+      myFwd.myUpIsValid := cMid0Front.up.isValid
+      myFwd.myUpIsFiring := cMid0Front.up.isFiring
 
       val doFwd = (myHaveFwd) generate (
         PipeMemRmwDoFwdArea(
