@@ -1370,20 +1370,23 @@ case class PipeMemRmwDoFwdArea[
                 init=tempMyFwdData.getZero,
               )
             )
-            when (
-              fwd.myUpIsValid
-            ) {
+            //when (
+            //  fwd.myUpIsValid
+            //) {
+              when (!rFwdState(ydx)(zdx)) {
+                tempMyFwdData := myFwdDataUp
+              }
               when (
-                !rFwdState(ydx)(zdx)
+                fwd.myUpIsValid
+                //&& !rFwdState(ydx)(zdx)
                 && myFwdMmwValidUp
               ) {
                 rFwdState(ydx)(zdx) := True
-                tempMyFwdData := myFwdDataUp
               }
               when (fwd.myUpIsFiring) {
                 rFwdState(ydx)(zdx) := False
               }
-            }
+            //}
             //when (!rFwdState(ydx)(zdx)) {
             //}
             //when (
