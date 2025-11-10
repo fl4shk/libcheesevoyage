@@ -1029,6 +1029,16 @@ extends Bundle {
     )
   )
 
+  val myFwdStateData = (
+    Vec.fill(memArrSize)(
+      Vec.fill(modRdPortCnt)(
+        Vec.fill(numMyUpExtDel2 + 1)(
+          cfg.wordType()
+        )
+      )
+    )
+  )
+
   val myUpExtDel2 = (
     Vec.fill(numMyUpExtDel2)(
       mkExt()
@@ -1112,17 +1122,21 @@ case class PipeMemRmwDoFwdArea[
   def extIdxSingle = (
     PipeMemRmw.extIdxSingle
   )
-  val rFwdState = {
+  val rFwdStateValid = {
     val temp = Reg(
       Vec.fill(fwd.memArrSize)(
         Vec.fill(fwd.modRdPortCnt)(
-          Bool()
+          Vec.fill(fwd.numMyUpExtDel2 + 1)(
+            Bool()
+          )
         )
       )
     )
     for (ydx <- 0 until fwd.memArrSize) {
       for (zdx <- 0 until fwd.modRdPortCnt) {
-        temp(ydx)(zdx).init(temp(ydx)(zdx).getZero)
+        for (kdx <- 0 until fwd.numMyUpExtDel2 + 1) {
+          temp(ydx)(zdx)(kdx).init(temp(ydx)(zdx)(kdx).getZero)
+        }
       }
     }
     temp.setName(
@@ -1131,6 +1145,10 @@ case class PipeMemRmwDoFwdArea[
     )
     temp
   }
+  //val rFwdStateData = {
+  //  val temp = Reg(cloneOf(fwd.myFwdStateData))
+  //  temp
+  //}
   //if (myHaveFwd) {
     for (ydx <- 0 until fwd.memArrSize) {
       for (zdx <- 0 until fwd.modRdPortCnt) {
@@ -1149,21 +1167,21 @@ case class PipeMemRmwDoFwdArea[
           }
         )
         def firstFwd = firstFwdRdMemWord._1
-        val toFindFirstUp = (
-          Vec.fill(
-            fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp).size
-            //- 1 
-          )(
-            Bool()
-          )
-        )
-        for (kdx <- 0 until toFindFirstUp.size) {
-          toFindFirstUp(kdx) := (
-            fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)(
-              kdx
-            ).fire
-          )
-        }
+        //val toFindFirstUp = (
+        //  Vec.fill(
+        //    fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp).size
+        //    //- 1 
+        //  )(
+        //    Bool()
+        //  )
+        //)
+        //for (kdx <- 0 until toFindFirstUp.size) {
+        //  toFindFirstUp(kdx) := (
+        //    fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)(
+        //      kdx
+        //    ).fire
+        //  )
+        //}
 
         val myFindFirstUp = /*KeepAttribute*/(
           //(
@@ -1279,38 +1297,40 @@ case class PipeMemRmwDoFwdArea[
         //  )
         //  .setName(s"${fwdAreaName}_myFwdCondDown_${ydx}_${zdx}")
         //)
-        val myFwdFlowUp = (
-          firstFwd
-        ) generate (
-          /*KeepAttribute*/(
-            //fwd.myUpExtDel2(
-            //  //myFindFirstUp._2
-            //  //fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
-            //  tempMyFindFirstUp_1
-            //)(ydx)(
-            //  extIdxUp
-            //).modMemWord
-            //tempMyFindFirstUp_1.payload
 
-            fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)(
-              tempMyFindFirstUp_1
-            ).payload//.payload
-            //myFindFirstUp._2.payload
-          )
-          .setName(s"${fwdAreaName}_myFwdFlowUp_${ydx}_${zdx}")
-        )
-        val myFwdMmwValidUp = (
-          firstFwd
-        ) generate (
-          myFwdFlowUp.valid
-          .setName(s"${fwdAreaName}_myFwdMmwValidUp_${ydx}_${zdx}")
-        )
-        val myFwdDataUp = (
-          firstFwd
-        ) generate (
-          myFwdFlowUp.payload
-          .setName(s"${fwdAreaName}_myFwdDataUp_${ydx}_${zdx}")
-        )
+        //val myFwdFlowUp = (
+        //  firstFwd
+        //) generate (
+        //  /*KeepAttribute*/(
+        //    //fwd.myUpExtDel2(
+        //    //  //myFindFirstUp._2
+        //    //  //fwd.myFindFirst_1(ydx)(zdx)(extIdxUp)
+        //    //  tempMyFindFirstUp_1
+        //    //)(ydx)(
+        //    //  extIdxUp
+        //    //).modMemWord
+        //    //tempMyFindFirstUp_1.payload
+
+        //    fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(extIdxUp)(
+        //      tempMyFindFirstUp_1
+        //    ).payload//.payload
+        //    //myFindFirstUp._2.payload
+        //  )
+        //  .setName(s"${fwdAreaName}_myFwdFlowUp_${ydx}_${zdx}")
+        //)
+        //val myFwdMmwValidUp = (
+        //  firstFwd
+        //) generate (
+        //  myFwdFlowUp.valid
+        //  .setName(s"${fwdAreaName}_myFwdMmwValidUp_${ydx}_${zdx}")
+        //)
+        //val myFwdDataUp = (
+        //  firstFwd
+        //) generate (
+        //  myFwdFlowUp.payload
+        //  .setName(s"${fwdAreaName}_myFwdDataUp_${ydx}_${zdx}")
+        //)
+
         //val myFwdDataSaved = (
         //  firstFwd
         //) generate (
@@ -1336,24 +1356,20 @@ case class PipeMemRmwDoFwdArea[
               //myFindFirstUp._2.payload.payload
             )//.resized
           )
-          //tempMyFindFirstSaved_0 := (
-          //  myFindFirstSaved._1
+          ////tempMyFindFirstSaved_0 := (
+          ////  myFindFirstSaved._1
+          ////)
+          ////tempMyFindFirstSaved_1 := (
+          ////  (myFindFirstSaved._2.payload)//.resized
+          ////)
+          //fwd.myFwdMmwValidUp(ydx)(zdx) := (
+          //  myFwdMmwValidUp
           //)
-          //tempMyFindFirstSaved_1 := (
-          //  (myFindFirstSaved._2.payload)//.resized
+          //fwd.myFwdDataUp(ydx)(zdx) := (
+          //  myFwdDataUp
           //)
-          fwd.myFwdMmwValidUp(ydx)(zdx) := (
-            myFwdMmwValidUp
-          )
-          fwd.myFwdDataUp(ydx)(zdx) := (
-            myFwdDataUp
-          )
         }
-        if (
-          //optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
-          //myHaveFwd
-          firstFwd
-        ) {
+        if (firstFwd) {
           def mySetToMyFwdUp(): Unit = {
             //upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
             //  myFwdDataUp
@@ -1364,37 +1380,61 @@ case class PipeMemRmwDoFwdArea[
             //  myFwdDataUp
             //)
             //tempMyFwdData := myFwdDataUp._2.payload
+
+            //tempMyFwdData := (
+            //  RegNext(
+            //    next=tempMyFwdData,
+            //    init=tempMyFwdData.getZero,
+            //  )
+            //)
             tempMyFwdData := (
-              RegNext(
-                next=tempMyFwdData,
-                init=tempMyFwdData.getZero,
-              )
+              fwd.myFwdStateData(ydx)(zdx)(tempMyFindFirstUp_1)
             )
-            //when (
-            //  fwd.myUpIsValid
-            //) {
-              when (!rFwdState(ydx)(zdx)) {
-                tempMyFwdData := myFwdDataUp
-              }
-              when (
-                fwd.myUpIsValid
-                //&& !rFwdState(ydx)(zdx)
-                && myFwdMmwValidUp
-              ) {
-                rFwdState(ydx)(zdx) := True
-              }
-              when (fwd.myUpIsFiring) {
-                rFwdState(ydx)(zdx) := False
-              }
-            //}
-            //when (!rFwdState(ydx)(zdx)) {
-            //}
-            //when (
-            //  myFwdMmwValidUp
-            //) {
-            //  tempMyFwdData := myFwdDataUp//._2.payload
-            //}
-            //tempMyFwdData := myFindFirstUp._2.payload
+            for (kdx <- 0 until fwd.numMyUpExtDel2 + 1) {
+              fwd.myFwdStateData(ydx)(zdx)(kdx) := (
+                RegNext(
+                  next=fwd.myFwdStateData(ydx)(zdx)(kdx),
+                  init=fwd.myFwdStateData(ydx)(zdx)(kdx).getZero,
+                )
+              )
+              //when (
+              //  fwd.myUpIsValid
+              //) {
+                when (!rFwdStateValid(ydx)(zdx)(kdx)) {
+                  //tempMyFwdData := myFwdDataUp
+                  fwd.myFwdStateData(ydx)(zdx)(kdx) := (
+                    fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+                      extIdxUp
+                    )(
+                      kdx
+                    ).payload.payload
+                  )
+                }
+                when (
+                  fwd.myUpIsValid
+                  //&& !rFwdStateValid(ydx)(zdx)(kdx)
+                  //&& myFwdMmwValidUp
+                  && fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+                    extIdxUp
+                  )(
+                    kdx
+                  ).payload.valid
+                ) {
+                  rFwdStateValid(ydx)(zdx)(kdx) := True
+                }
+                when (fwd.myUpIsFiring) {
+                  rFwdStateValid(ydx)(zdx)(kdx) := False
+                }
+              //}
+              //when (!rFwdState(ydx)(zdx)) {
+              //}
+              //when (
+              //  myFwdMmwValidUp
+              //) {
+              //  tempMyFwdData := myFwdDataUp//._2.payload
+              //}
+              //tempMyFwdData := myFindFirstUp._2.payload
+            }
           }
           //def mySetToMyFwdSaved(): Unit = {
           //  //upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
