@@ -1411,9 +1411,14 @@ case class PipeMemRmwDoFwdArea[
                   )
                 }
                 when (
-                  fwd.myUpIsValid
+                  //RegNextWhen(
+                  //  next=True,
+                  //  cond=fwd.myUpIsValid,
+                  //  init=False
+                  //)
                   //&& !rFwdStateValid(ydx)(zdx)(kdx)
                   //&& myFwdMmwValidUp
+                  fwd.myUpIsValid
                   && fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
                     extIdxUp
                   )(
