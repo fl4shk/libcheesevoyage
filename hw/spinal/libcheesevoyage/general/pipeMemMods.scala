@@ -1489,61 +1489,7 @@ case class PipeMemRmwDoFwdArea[
               ////tempMyFwdData := myFindFirstUp._2.payload
             }
           }
-          //def mySetToMyFwdSaved(): Unit = {
-          //  //upExt(1)(ydx)(extIdxSingle).rdMemWord(zdx) := (
-          //  //  myFwdDataSaved
-          //  //)
-          //  //setToMyFwdDataFunc(
-          //  //  ydx,
-          //  //  zdx,
-          //  //  myFwdDataSaved
-          //  //)
-          //  //tempMyFwdData := myFwdDataSaved
-          //  tempMyFwdData := myFindFirstSaved._2.payload
-          //}
-          //def innerFunc(): Unit = {
-          //  when (tempMyFindFirstUp_0) {
-          //    mySetToMyFwdUp()
-          //  } elsewhen (tempMyFindFirstSaved_0) {
-          //    mySetToMyFwdSaved()
-          //  } otherwise {
-          //    tempMyFwdData := firstFwdRdMemWord._2
-          //  }
-          //}
-          ////when (
-          ////  tempMyFindFirstUp_0
-          ////  && tempMyFindFirstSaved_0
-          ////) {
-          ////  when (
-          ////    //myFindFirstUp._2 < myFindFirstSaved._2
-          ////    tempMyFindFirstUp_1 < tempMyFindFirstSaved_1
-          ////  ) {
-          ////    mySetToMyFwdUp()
-          ////  } elsewhen (
-          ////    //myFindFirstSaved._2 < myFindFirstUp._2
-          ////    tempMyFindFirstSaved_1 < tempMyFindFirstUp_1
-          ////  ) {
-          ////    mySetToMyFwdSaved()
-          ////  } otherwise {
-          ////    innerFunc()
-          ////  }
-          ////} otherwise {
-          ////  innerFunc()
-          ////}
-
-          //tempMyFwdData := (
-          //  RegNext(
-          //    next=tempMyFwdData,
-          //    init=tempMyFwdData.getZero,
-          //  )
-          //)
-          //when (
-          //  myFwdMmwValidUp
-          //) {
-            mySetToMyFwdUp()
-          //}
-          //otherwise {
-          //}
+          mySetToMyFwdUp()
 
           //tempMyFwdData := firstFwdRdMemWord._2
           //when (tempMyFindFirstUp_0) {
