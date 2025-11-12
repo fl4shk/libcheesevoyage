@@ -205,7 +205,70 @@ case class PipeMemRmwPayloadExtPipeFlags(
   val ready = /*KeepAttribute*/(Bool())
   val fire = /*KeepAttribute*/(Bool())
 }
-case class PipeMemRmwPayloadExtMainNonMemAddr[
+case class PipeMemRmwPayloadExtMainMemAddr[
+  WordT <: Data,
+  HazardCmpT <: Data
+](
+  cfg: PipeMemRmwConfig[
+    WordT,
+    HazardCmpT,
+  ],
+  wordCount: Int,
+) extends Bundle {
+  def wordType() = cfg.wordType()
+  //def wordCount = cfg.wordCount
+  def hazardCmpType() = cfg.hazardCmpType()
+  def modRdPortCnt = cfg.modRdPortCnt
+  def modStageCnt = cfg.modStageCnt
+  def memArrSize = cfg.memArrSize
+  def optModHazardKind: PipeMemRmw.ModHazardKind = (
+    cfg.optModHazardKind
+  )
+  def optReorder = cfg.optReorder 
+  def numMyUpExtDel2 = (
+    //PipeMemRmw.numMyUpExtDel2(
+    //  optModHazardKind=optModHazardKind,
+    //  modStageCnt=modStageCnt,
+    //)
+    cfg.numMyUpExtDel2
+  )
+  val memAddrFwdMmw = Vec.fill(modRdPortCnt)(
+    Vec.fill(numMyUpExtDel2)(
+      UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
+    )
+  )
+  val memAddrFwd = Vec.fill(modRdPortCnt)(
+    Vec.fill(numMyUpExtDel2)(
+      UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
+    )
+  )
+  val memAddrFwdCmp = Vec.fill(modRdPortCnt)(
+    Vec.fill(
+      numMyUpExtDel2 //- 1
+      //1
+    )(
+      UInt(
+        1 bits
+        //if (
+        //  wordType().asBits.getWidth > 64
+        //  //|| optModHazardKind != PipeMemRmw.ModHazardKind.Fwd
+        //) {
+        //  64 bits
+        //} else {
+        //  wordType().asBits.getWidth bits
+        //}
+      )
+      //Bool()
+    )
+  )
+  val memAddr = Vec.fill(modRdPortCnt + 1)(
+    UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
+  )
+  val memAddrAlt = Vec.fill(modRdPortCnt)(
+    UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
+  )
+}
+case class PipeMemRmwPayloadExtMainNonMemAddrMost[
   WordT <: Data,
   HazardCmpT <: Data
 ](
@@ -250,7 +313,7 @@ case class PipeMemRmwPayloadExtMainNonMemAddr[
   val fwdIdx = Vec.fill(modRdPortCnt)(
     UInt(log2Up(cfg.numMyUpExtDel2 + 1) bits)
   )
-  val modMemWord = wordType()
+  //val modMemWord = wordType()
   val otherModMemWord = (
     //cfg.optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
     cfg.optIncludeOtherMmw
@@ -409,41 +472,6 @@ case class PipeMemRmwPayloadExtMain[
   //--------
   //val hadActiveUpFire = /*KeepAttribute*/(Bool())
 
-  val memAddrFwdMmw = Vec.fill(modRdPortCnt)(
-    Vec.fill(numMyUpExtDel2)(
-      UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
-    )
-  )
-  val memAddrFwd = Vec.fill(modRdPortCnt)(
-    Vec.fill(numMyUpExtDel2)(
-      UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
-    )
-  )
-  val memAddrFwdCmp = Vec.fill(modRdPortCnt)(
-    Vec.fill(
-      numMyUpExtDel2 //- 1
-      //1
-    )(
-      UInt(
-        1 bits
-        //if (
-        //  wordType().asBits.getWidth > 64
-        //  //|| optModHazardKind != PipeMemRmw.ModHazardKind.Fwd
-        //) {
-        //  64 bits
-        //} else {
-        //  wordType().asBits.getWidth bits
-        //}
-      )
-      //Bool()
-    )
-  )
-  val memAddr = Vec.fill(modRdPortCnt + 1)(
-    UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
-  )
-  val memAddrAlt = Vec.fill(modRdPortCnt)(
-    UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
-  )
   //def modMemAddr = memAddr(0)
   //val didReorderCommit = (optReorder) generate (
   //  Bool()
@@ -464,10 +492,15 @@ case class PipeMemRmwPayloadExtMain[
   //  Bool()
   //)
   //--------
-  val nonMemAddr = PipeMemRmwPayloadExtMainNonMemAddr(
+  val memAddr = PipeMemRmwPayloadExtMainMemAddr(
     cfg=cfg,
     wordCount=wordCount,
   )
+  val nonMemAddrMost = PipeMemRmwPayloadExtMainNonMemAddrMost(
+    cfg=cfg,
+    wordCount=wordCount,
+  )
+  val modMemWord = wordType()
 }
 
 case class PipeMemRmwPayloadExt[
@@ -545,24 +578,24 @@ case class PipeMemRmwPayloadExt[
   //    current := True
   //  })
   //}
-  def memAddrFwdMmw = main.memAddrFwdMmw
-  def memAddrFwd = main.memAddrFwd
-  def memAddrFwdCmp = main.memAddrFwdCmp
-  def memAddr = main.memAddr
-  def memAddrAlt = main.memAddrAlt
-  def fwdIdx = main.nonMemAddr.fwdIdx
-  def modMemWord = main.nonMemAddr.modMemWord
-  def otherModMemWord = main.nonMemAddr.otherModMemWord
-  //def modMemWordFwd = main.nonMemAddr.modMemWordFwd
-  def modMemWordValid = main.nonMemAddr.modMemWordValid
-  //def modMemWordValidFwd = main.nonMemAddr.modMemWordValidFwd
-  def rdMemWord = main.nonMemAddr.rdMemWord
-  def fwdCanDoIt = main.nonMemAddr.fwdCanDoIt
-  def joinIdx = main.nonMemAddr.joinIdx
-  //def reqReorderCommit = main.nonMemAddr.reqReorderCommit
-  //def didReorderCommit = main.nonMemAddr.didReorderCommit
-  def hazardCmp = main.nonMemAddr.hazardCmp
-  def hazardId = main.nonMemAddr.hazardId
+  def memAddrFwdMmw = main.memAddr.memAddrFwdMmw
+  def memAddrFwd = main.memAddr.memAddrFwd
+  def memAddrFwdCmp = main.memAddr.memAddrFwdCmp
+  def memAddr = main.memAddr.memAddr
+  def memAddrAlt = main.memAddr.memAddrAlt
+  def fwdIdx = main.nonMemAddrMost.fwdIdx
+  def modMemWord = main.modMemWord
+  def otherModMemWord = main.nonMemAddrMost.otherModMemWord
+  //def modMemWordFwd = main.nonMemAddrMost.modMemWordFwd
+  def modMemWordValid = main.nonMemAddrMost.modMemWordValid
+  //def modMemWordValidFwd = main.nonMemAddrMost.modMemWordValidFwd
+  def rdMemWord = main.nonMemAddrMost.rdMemWord
+  def fwdCanDoIt = main.nonMemAddrMost.fwdCanDoIt
+  def joinIdx = main.nonMemAddrMost.joinIdx
+  //def reqReorderCommit = main.nonMemAddrMost.reqReorderCommit
+  //def didReorderCommit = main.nonMemAddrMost.didReorderCommit
+  def hazardCmp = main.nonMemAddrMost.hazardCmp
+  def hazardId = main.nonMemAddrMost.hazardId
   def getHazardIdIdleVal() = (
     -1
   )
@@ -1404,12 +1437,6 @@ case class PipeMemRmwDoFwdArea[
               fwd.myFwdStateData(ydx)(zdx)(tempMyFindFirstUp_1)
             )
             for (kdx <- 0 until fwd.numMyUpExtDel2 + 1) {
-              fwd.myFwdStateData(ydx)(zdx)(kdx) := (
-                RegNext(
-                  next=fwd.myFwdStateData(ydx)(zdx)(kdx),
-                  init=fwd.myFwdStateData(ydx)(zdx)(kdx).getZero,
-                )
-              )
               //when (
               //  fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
               //    extIdxUp
@@ -1439,7 +1466,16 @@ case class PipeMemRmwDoFwdArea[
                 //) {
                 //  rFwdState(ydx)(zdx)(kdx) := FwdState.WAIT_DATA
                 //}
+              if (kdx < fwd.numMyUpExtDel2 /*- 1*/) {
+                fwd.myFwdStateData(ydx)(zdx)(kdx) := (
+                  RegNext(
+                    next=fwd.myFwdStateData(ydx)(zdx)(kdx),
+                    init=fwd.myFwdStateData(ydx)(zdx)(kdx).getZero,
+                  )
+                )
                 when (
+                  //fwd.myUpIsValid
+                  //&&
                   rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
                 ) {
                   //tempMyFwdData := myFwdDataUp
@@ -1477,6 +1513,15 @@ case class PipeMemRmwDoFwdArea[
                   //rFwdStateValid(ydx)(zdx)(kdx) := False
                   rFwdState(ydx)(zdx)(kdx) := FwdState.WAIT_DATA
                 }
+              } else {
+                fwd.myFwdStateData(ydx)(zdx)(kdx) := (
+                  fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+                    extIdxUp
+                  )(
+                    kdx
+                  ).payload.payload
+                )
+              }
               //}
               ////when (!rFwdState(ydx)(zdx)) {
               ////}
@@ -2673,7 +2718,7 @@ extends Area {
             False
           }
         )
-        ret.payload.valid := (
+        ret.payload.valid := {
           //if (idx == 0) (
           //  True
           //  //False
@@ -2686,7 +2731,7 @@ extends Area {
               )
             )
           //)
-        )
+        }
         ret.payload.payload := (
           prev.modMemWord
         )
@@ -5154,6 +5199,12 @@ extends Area {
             )
           )
         }
+        //upExt(1)(ydx)(extIdxUp) := (
+        //  RegNext(
+        //    next=upExt(1)(ydx)(extIdxUp),
+        //    init=upExt(1)(ydx)(extIdxUp).getZero,
+        //  )
+        //)
         //when (
         //  up.isValid
         //  //up.isFiring
@@ -5190,6 +5241,7 @@ extends Area {
               upExt(1)(ydx)(extIdxUp).valid(kdx) := False
             }
           }
+        } else {
         }
       }
       //--------
@@ -5238,11 +5290,20 @@ extends Area {
           //}
           tempUpMod(1).allowOverride
         }
-        tempUpMod(1).setPipeMemRmwExt(
-          inpExt=upExt(1)(ydx)(extIdxUp),
-          ydx=ydx,
-          memArrIdx=memArrIdx,
-        )
+        //when (up.isValid) {
+          tempUpMod(1).setPipeMemRmwExt(
+            inpExt=upExt(1)(ydx)(extIdxUp),
+            ydx=ydx,
+            memArrIdx=memArrIdx,
+          )
+        //}
+        //if (cfg.optModHazardKind == PipeMemRmw.ModHazardKind.Fwd) {
+        //  when (
+        //    !up.isValid
+        //  ) {
+        //    upExt(1)(ydx)(extIdxUp).modMemWordValid.foreach(_ := False)
+        //  }
+        //}
       }
       for (ydx <- 0 until memArrSize) {
         for (zdx <- 0 until modRdPortCnt) {
