@@ -637,10 +637,10 @@ object LcvAluDel1InpOpEnum {
   def OR_UINT = U(s"${OP_WIDTH}'d${OR}")
   def XOR = 4
   def XOR_UINT = U(s"${OP_WIDTH}'d${XOR}")
-  def SLTU = 5
-  def SLTU_UINT = U(s"${OP_WIDTH}'d${SLTU}")
-  def SLTS = 6
-  def SLTS_UINT = U(s"${OP_WIDTH}'d${SLTS}")
+  //def SLTU = 5
+  //def SLTU_UINT = U(s"${OP_WIDTH}'d${SLTU}")
+  //def SLTS = 6
+  //def SLTS_UINT = U(s"${OP_WIDTH}'d${SLTS}")
   def ZERO = 7
   def ZERO_UINT = U(s"${OP_WIDTH}'d${ZERO}")
 }
