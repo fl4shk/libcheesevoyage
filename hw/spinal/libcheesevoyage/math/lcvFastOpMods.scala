@@ -581,6 +581,81 @@ object LcvCmpEqDel1Sim extends App {
     }
 }
 
+//(* use_dsp = "yes" *)
+//module LcvAluDel1 #(
+//	parameter WIDTH=32
+//)(
+//	input logic clk,
+//	input logic signed [WIDTH - 1:0] inp_a,
+//	input logic signed [WIDTH - 1:0] inp_b,
+//	input logic [2:0] inp_op,
+//	output logic signed [WIDTH - 1:0] outp_data
+//);
+//	always_ff @(posedge clk) begin
+//		case (inp_op)
+//		//--------
+//		3'h0: begin
+//			outp_data <= inp_a + inp_b;
+//		end
+//		3'h1: begin
+//			outp_data <= inp_a - inp_b;
+//		end
+//		3'h2: begin
+//			outp_data <= inp_a & inp_b;
+//		end
+//		3'h3: begin
+//			outp_data <= inp_a | inp_b;
+//		end
+//		3'h4: begin
+//			outp_data <= inp_a ^ inp_b;
+//		end
+//		3'h5: begin
+//			outp_data[0] <= $unsigned(inp_a) < $unsigned(inp_b);
+//			outp_data[WIDTH - 1:1] <= 'h0;
+//		end
+//		3'h6: begin
+//			outp_data[0] <= $signed(inp_a) < $signed(inp_b);
+//			outp_data[WIDTH - 1:1] <= 'h0;
+//		end
+//		3'h7: begin
+//			outp_data <= 'h0;
+//		end
+//		//--------
+//		endcase
+//	end
+//endmodule
+
+object LcvAluDel1InpOpEnum {
+  def ADD = U"3'h0"
+  def SUB = U"3'h1"
+  def AND = U"3'h2"
+  def OR = U"3'h3"
+  def XOR = U"3'h4"
+  def SLTU = U"3'h5"
+  def SLTS = U"3'h6"
+  def ZERO = U"3'h7"
+}
+case class LcvAluDel1Io(
+  wordWidth: Int=32,
+) extends Bundle {
+	val clk = in(Bool())
+	val inp_a = in(SInt(wordWidth bits))
+	val inp_b = in(SInt(wordWidth bits))
+	val inp_op = in(UInt(3 bits))
+	val outp_data = out(SInt(wordWidth bits))
+}
+
+case class LcvAluDel1(
+  wordWidth: Int=32,
+) extends BlackBox {
+  val io = LcvAluDel1Io(wordWidth=wordWidth)
+  addGeneric("WIDTH", wordWidth)
+  noIoPrefix()
+  addRTLPath("./hw/verilog/LcvMulAcc.sv")
+  mapCurrentClockDomain(clock=io.clk/*, reset=io.rst*/)
+  setIoCd()
+}
+
 object LcvFastOrR {
   def apply(
     self: UInt,
