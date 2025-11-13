@@ -626,14 +626,15 @@ object LcvCmpEqDel1Sim extends App {
 //endmodule
 
 object LcvAluDel1InpOpEnum {
-  def ADD = U"3'h0"
-  def SUB = U"3'h1"
-  def AND = U"3'h2"
-  def OR = U"3'h3"
-  def XOR = U"3'h4"
-  def SLTU = U"3'h5"
-  def SLTS = U"3'h6"
-  def ZERO = U"3'h7"
+  def OP_WIDTH = 3
+  def ADD = U(s"${OP_WIDTH}'h0")
+  def SUB = U(s"${OP_WIDTH}'h1")
+  def AND = U(s"${OP_WIDTH}'h2")
+  def OR = U(s"${OP_WIDTH}'h3")
+  def XOR = U(s"${OP_WIDTH}'h4")
+  def SLTU = U(s"${OP_WIDTH}'h5")
+  def SLTS = U(s"${OP_WIDTH}'h6")
+  def ZERO = U(s"${OP_WIDTH}'h7")
 }
 case class LcvAluDel1Io(
   wordWidth: Int=32,
