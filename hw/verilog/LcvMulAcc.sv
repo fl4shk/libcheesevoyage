@@ -259,15 +259,16 @@ module LcvAluDel1 #(
 		3'h4: begin
 			outp_data <= inp_a ^ inp_b;
 		end
-		3'h5: begin
-			outp_data[0] <= $unsigned(inp_a) < $unsigned(inp_b);
-			outp_data[WIDTH - 1:1] <= 'h0;
-		end
-		3'h6: begin
-			outp_data[0] <= $signed(inp_a) < $signed(inp_b);
-			outp_data[WIDTH - 1:1] <= 'h0;
-		end
-		3'h7: begin
+		//3'h5: begin
+		//	outp_data[0] <= $unsigned(inp_a) < $unsigned(inp_b);
+		//	outp_data[WIDTH - 1:1] <= 'h0;
+		//end
+		//3'h6: begin
+		//	outp_data[0] <= $signed(inp_a) < $signed(inp_b);
+		//	outp_data[WIDTH - 1:1] <= 'h0;
+		//end
+		//3'h7: 
+		default: begin
 			outp_data <= 'h0;
 		end
 		//--------
