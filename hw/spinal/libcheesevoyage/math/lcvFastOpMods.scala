@@ -627,14 +627,22 @@ object LcvCmpEqDel1Sim extends App {
 
 object LcvAluDel1InpOpEnum {
   def OP_WIDTH = 3
-  def ADD = U(s"${OP_WIDTH}'h0")
-  def SUB = U(s"${OP_WIDTH}'h1")
-  def AND = U(s"${OP_WIDTH}'h2")
-  def OR = U(s"${OP_WIDTH}'h3")
-  def XOR = U(s"${OP_WIDTH}'h4")
-  def SLTU = U(s"${OP_WIDTH}'h5")
-  def SLTS = U(s"${OP_WIDTH}'h6")
-  def ZERO = U(s"${OP_WIDTH}'h7")
+  def ADD = 0x0
+  def ADD_UINT = U(s"${OP_WIDTH}'d${ADD}")
+  def SUB = 1
+  def SUB_UINT = U(s"${OP_WIDTH}'d${SUB}")
+  def AND = 2
+  def AND_UINT = U(s"${OP_WIDTH}'d${AND}")
+  def OR = 3
+  def OR_UINT = U(s"${OP_WIDTH}'d${OR}")
+  def XOR = 4
+  def XOR_UINT = U(s"${OP_WIDTH}'d${XOR}")
+  def SLTU = 5
+  def SLTU_UINT = U(s"${OP_WIDTH}'d${SLTU}")
+  def SLTS = 6
+  def SLTS_UINT = U(s"${OP_WIDTH}'d${SLTS}")
+  def ZERO = 7
+  def ZERO_UINT = U(s"${OP_WIDTH}'d${ZERO}")
 }
 case class LcvAluDel1Io(
   wordWidth: Int=32,
