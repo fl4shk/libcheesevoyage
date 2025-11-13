@@ -641,7 +641,8 @@ object LcvAluDel1InpOpEnum {
   //def SLTU_UINT = U(s"${OP_WIDTH}'d${SLTU}")
   //def SLTS = 6
   //def SLTS_UINT = U(s"${OP_WIDTH}'d${SLTS}")
-  def ZERO = 7
+  //def ZERO = 7
+  def ZERO = 5
   def ZERO_UINT = U(s"${OP_WIDTH}'d${ZERO}")
 }
 case class LcvAluDel1Io(
