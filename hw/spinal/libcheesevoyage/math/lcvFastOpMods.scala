@@ -626,7 +626,7 @@ object LcvCmpEqDel1Sim extends App {
 //endmodule
 
 object LcvAluDel1InpOpEnum {
-  def OP_WIDTH = 2//1//3
+  def OP_WIDTH = 1//1//3
   def ADD = 0x0
   def ADD_UINT = U(s"${OP_WIDTH}'d${ADD}")
   def SUB = 1
