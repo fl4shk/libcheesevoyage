@@ -626,21 +626,34 @@ object LcvCmpEqDel1Sim extends App {
 //endmodule
 
 object LcvAluDel1InpOpEnum {
-  def OP_WIDTH = 1//1//3
+	// localparam int OP_WIDTH = 3;
+	// localparam [OP_WIDTH - 1:0] OP_ADD = 'h0;
+	// localparam [OP_WIDTH - 1:0] OP_SUB = 'h1;
+	// localparam [OP_WIDTH - 1:0] OP_SLTU = 'h2;
+	// localparam [OP_WIDTH - 1:0] OP_SLTS = 'h3;
+	// localparam [OP_WIDTH - 1:0] OP_AND = 'h4;
+	// localparam [OP_WIDTH - 1:0] OP_OR = 'h5;
+	// localparam [OP_WIDTH - 1:0] OP_XOR = 'h6;
+	// localparam [OP_WIDTH - 1:0] OP_NOR = 'h7;
+
+  def OP_WIDTH = 3//1//1//3
   def ADD = 0x0
   def ADD_UINT = U(s"${OP_WIDTH}'d${ADD}")
   def SUB = 1
   def SUB_UINT = U(s"${OP_WIDTH}'d${SUB}")
-  //def AND = 2
-  //def AND_UINT = U(s"${OP_WIDTH}'d${AND}")
-  //def OR = 3
-  //def OR_UINT = U(s"${OP_WIDTH}'d${OR}")
-  //def XOR = 4
-  //def XOR_UINT = U(s"${OP_WIDTH}'d${XOR}")
-  //def SLTU = 5
-  //def SLTU_UINT = U(s"${OP_WIDTH}'d${SLTU}")
-  //def SLTS = 6
-  //def SLTS_UINT = U(s"${OP_WIDTH}'d${SLTS}")
+  def SLTU = 2
+  def SLTU_UINT = U(s"${OP_WIDTH}'d${SLTU}")
+  def SLTS = 3
+  def SLTS_UINT = U(s"${OP_WIDTH}'d${SLTS}")
+  def AND = 4
+  def AND_UINT = U(s"${OP_WIDTH}'d${AND}")
+  def OR = 5
+  def OR_UINT = U(s"${OP_WIDTH}'d${OR}")
+  def XOR = 6
+  def XOR_UINT = U(s"${OP_WIDTH}'d${XOR}")
+  def NOR = 7
+  def NOR_UINT = U(s"${OP_WIDTH}'d${NOR}")
+
   //def ZERO = 7
   //def ZERO = 5
   //def ZERO_UINT = U(s"${OP_WIDTH}'d${ZERO}")

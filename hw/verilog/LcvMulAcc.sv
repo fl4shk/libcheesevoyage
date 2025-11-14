@@ -231,63 +231,209 @@ endmodule
 //	end
 //endmodule
 
-(* use_dsp = "yes" *)
+
+// now let's try not having `use_dsp = "yes"`, as it seems you really need
+// two pipeline stages for the DSP48 blocks
 module LcvAluDel1 #(
 	parameter int WIDTH=32
-	//parameter int USE_DSP48=1
 )(
 	input logic clk,
 	input logic signed [WIDTH - 1:0] inp_a,
 	input logic signed [WIDTH - 1:0] inp_b_0,
 	input logic signed [WIDTH - 1:0] inp_b_1,
-	input logic inp_b_sel,
-	input logic [/*2*/0/*1*/:0] inp_op,
-	output logic signed [WIDTH - 1:0] outp_data
+	input logic [0:0] inp_b_sel,
+	input logic [2:0] inp_op,
+	output logic signed [WIDTH - 1:0] outp_data 
 );
-	//wire signed [WIDTH - 1:0] temp_inp_b = inp_b_sel ? inp_b_0 : inp_b_1;
-	localparam int SEL_SIZE = 2;
-	//localparam int SEL_WIDTH = $clog2(SEL_SIZE);
-	logic signed [WIDTH - 1:0] r_outp_data_vec[SEL_SIZE];
-	logic r_inp_b_sel;
-
-	wire signed [WIDTH - 1:0] temp_inp_b_vec[SEL_SIZE];
-
-	generate
-		for (genvar i=0; i<SEL_SIZE; i+=1) begin
-			if (i == 0) begin
-				assign temp_inp_b_vec[i] = inp_b_0;
-			end else begin
-				assign temp_inp_b_vec[i] = inp_b_1;
-			end
-		end
-	endgenerate
-
-	initial begin
-		for (int i=0; i<SEL_SIZE; i+=1) begin
-			r_outp_data_vec[i] = 'h0;
-		end
-		r_inp_b_sel = 'h0;
-		outp_data = 'h0;
-	end
-
-	always_ff @(posedge clk) begin
-		r_inp_b_sel <= inp_b_sel;
-		for (int i=0; i<SEL_SIZE; i+=1) begin
-			case (inp_op)
-			//--------
-			1'h0: begin
-				r_outp_data_vec[i] <= inp_a + temp_inp_b_vec[i];
-			end
-			1'h1: begin
-				r_outp_data_vec[i] <= inp_a - temp_inp_b_vec[i];
-			end
-			endcase
-		end
-	end
-	assign outp_data = (
-		r_inp_b_sel ? r_outp_data_vec[1] : r_outp_data_vec[0]
+	//--------
+	//localparam int SEL_SIZE = 2;
+	localparam int OP_WIDTH = 3;
+	localparam [OP_WIDTH - 1:0] OP_ADD = 'h0;
+	localparam [OP_WIDTH - 1:0] OP_SUB = 'h1;
+	localparam [OP_WIDTH - 1:0] OP_SLTU = 'h2;
+	localparam [OP_WIDTH - 1:0] OP_SLTS = 'h3;
+	localparam [OP_WIDTH - 1:0] OP_AND = 'h4;
+	localparam [OP_WIDTH - 1:0] OP_OR = 'h5;
+	localparam [OP_WIDTH - 1:0] OP_XOR = 'h6;
+	localparam [OP_WIDTH - 1:0] OP_NOR = 'h7;
+	//--------
+	wire signed [WIDTH - 1:0] temp_inp_b = (
+		inp_b_sel ? inp_b_1 : inp_b_0
 	);
+	wire unsigned [WIDTH:0] temp_sum_u_inp_a = (
+		$unsigned({1'b0, inp_a})
+	);
+	wire unsigned [WIDTH:0] temp_sum_u_inp_b = (
+		$unsigned({1'b0, ~temp_inp_b})
+	);
+	wire unsigned [WIDTH:0] temp_sum_s_inp_a = (
+		$unsigned({1'b0, ~inp_a[WIDTH - 1], inp_a[WIDTH - 2:0]})
+	);
+	wire unsigned [WIDTH:0] temp_sum_s_inp_b = (
+		$unsigned({1'b0, ~temp_inp_b[WIDTH - 1], temp_inp_b[WIDTH - 2:0]})
+	);
+	wire unsigned [WIDTH:0] temp_sum_inp_carry = (
+		$unsigned({{WIDTH{1'b0}}, 1'b1})
+	);
+	wire unsigned [WIDTH:0] temp_sum_u = (
+		temp_sum_u_inp_a + temp_sum_u_inp_b + temp_sum_inp_carry
+	);
+	wire unsigned [WIDTH:0] temp_sum_s = (
+		temp_sum_s_inp_a + temp_sum_s_inp_b + temp_sum_inp_carry
+	);
+	//--------
+	always_ff @(posedge clk) begin
+		case (inp_op)
+		OP_ADD: begin
+			outp_data <= inp_a + temp_inp_b;
+		end
+		OP_SUB: begin
+			outp_data <= inp_a - temp_inp_b;
+		end
+		OP_SLTU: begin
+			//outp_data[0] <= $unsigned(inp_a) < $unsigned(temp_inp_b);
+			//outp_data[WIDTH - 1:1] <= 'h0;
+			outp_data[0] <= ~temp_sum_u[WIDTH];
+			outp_data[WIDTH - 1:1] <= 'h0;
+		end
+		OP_SLTS: begin
+			//outp_data[0] <= $signed(inp_a) < $signed(temp_inp_b);
+			//outp_data[WIDTH - 1:1] <= 'h0;
+			outp_data[0] <= ~temp_sum_s[WIDTH];
+			outp_data[WIDTH - 1:1] <= 'h0;
+		end
+		OP_AND: begin
+			outp_data <= inp_a & temp_inp_b;
+		end
+		OP_OR: begin
+			outp_data <= inp_a | temp_inp_b;
+		end
+		OP_XOR: begin
+			outp_data <= inp_a ^ temp_inp_b;
+		end
+		OP_NOR: begin
+			outp_data <= inp_a ~| temp_inp_b;
+		end
+		endcase
+	end
+	//--------
 endmodule
+
+//(* use_dsp = "yes" *)
+//module LcvAluDel1 #(
+//	parameter int WIDTH=32
+//	//parameter int USE_DSP48=1
+//)(
+//	input logic clk,
+//	input logic signed [WIDTH - 1:0] inp_a,
+//	input logic signed [WIDTH - 1:0] inp_b_0,
+//	input logic signed [WIDTH - 1:0] inp_b_1,
+//	input logic inp_b_sel,
+//	input logic [/*2*/0/*1*/:0] inp_op,
+//	output logic signed [WIDTH - 1:0] outp_data
+//);
+//	//wire signed [WIDTH - 1:0] temp_inp_b = inp_b_sel ? inp_b_0 : inp_b_1;
+//	localparam int SEL_SIZE = 2;
+//	//localparam int SEL_WIDTH = $clog2(SEL_SIZE);
+//	logic signed [WIDTH - 1:0] r_outp_data_vec[SEL_SIZE];
+//	logic r_inp_b_sel;
+//
+//	wire signed [WIDTH - 1:0] temp_inp_b_vec[SEL_SIZE];
+//
+//	generate
+//		for (genvar i=0; i<SEL_SIZE; i+=1) begin
+//			if (i == 0) begin
+//				assign temp_inp_b_vec[i] = inp_b_0;
+//			end else begin
+//				assign temp_inp_b_vec[i] = inp_b_1;
+//			end
+//		end
+//	endgenerate
+//
+//	initial begin
+//		for (int i=0; i<SEL_SIZE; i+=1) begin
+//			r_outp_data_vec[i] = 'h0;
+//		end
+//		r_inp_b_sel = 'h0;
+//		outp_data = 'h0;
+//	end
+//
+//	always_ff @(posedge clk) begin
+//		r_inp_b_sel <= inp_b_sel;
+//		for (int i=0; i<SEL_SIZE; i+=1) begin
+//			case (inp_op)
+//			//--------
+//			1'h0: begin
+//				r_outp_data_vec[i] <= inp_a + temp_inp_b_vec[i];
+//			end
+//			1'h1: begin
+//				r_outp_data_vec[i] <= inp_a - temp_inp_b_vec[i];
+//			end
+//			endcase
+//		end
+//	end
+//	assign outp_data = (
+//		r_inp_b_sel ? r_outp_data_vec[1] : r_outp_data_vec[0]
+//	);
+//endmodule
+
+//(* use_dsp = "yes" *)
+//module LcvAluDel1 #(
+//	parameter int WIDTH=32
+//	//parameter int USE_DSP48=1
+//)(
+//	input logic clk,
+//	input logic signed [WIDTH - 1:0] inp_a,
+//	input logic signed [WIDTH - 1:0] inp_b_0,
+//	input logic signed [WIDTH - 1:0] inp_b_1,
+//	input logic inp_b_sel,
+//	input logic [/*2*/0/*1*/:0] inp_op,
+//	output logic signed [WIDTH - 1:0] outp_data
+//);
+//	//wire signed [WIDTH - 1:0] temp_inp_b = inp_b_sel ? inp_b_0 : inp_b_1;
+//	localparam int SEL_SIZE = 2;
+//	//localparam int SEL_WIDTH = $clog2(SEL_SIZE);
+//	logic signed [WIDTH - 1:0] r_outp_data_vec[SEL_SIZE];
+//	logic r_inp_b_sel;
+//
+//	wire signed [WIDTH - 1:0] temp_inp_b_vec[SEL_SIZE];
+//
+//	generate
+//		for (genvar i=0; i<SEL_SIZE; i+=1) begin
+//			if (i == 0) begin
+//				assign temp_inp_b_vec[i] = inp_b_0;
+//			end else begin
+//				assign temp_inp_b_vec[i] = inp_b_1;
+//			end
+//		end
+//	endgenerate
+//
+//	initial begin
+//		for (int i=0; i<SEL_SIZE; i+=1) begin
+//			r_outp_data_vec[i] = 'h0;
+//		end
+//		r_inp_b_sel = 'h0;
+//		outp_data = 'h0;
+//	end
+//
+//	always_ff @(posedge clk) begin
+//		r_inp_b_sel <= inp_b_sel;
+//		for (int i=0; i<SEL_SIZE; i+=1) begin
+//			case (inp_op)
+//			//--------
+//			1'h0: begin
+//				r_outp_data_vec[i] <= inp_a + temp_inp_b_vec[i];
+//			end
+//			1'h1: begin
+//				r_outp_data_vec[i] <= inp_a - temp_inp_b_vec[i];
+//			end
+//			endcase
+//		end
+//	end
+//	assign outp_data = (
+//		r_inp_b_sel ? r_outp_data_vec[1] : r_outp_data_vec[0]
+//	);
+//endmodule
 
 //(* use_dsp = "yes" *)
 //module LcvAluDel1 #(
