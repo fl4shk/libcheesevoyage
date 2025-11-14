@@ -258,7 +258,7 @@ module LcvAluDel1 #(
 			outp_data <= inp_a & temp_inp_b;
 		end
 		2'h3: begin
-			outp_data <= inp_a | temp_in_b;
+			outp_data <= inp_a | temp_inp_b;
 		end
 		//3'h2: begin
 		//	outp_data <= inp_a & temp_inp_b;
