@@ -626,17 +626,17 @@ object LcvCmpEqDel1Sim extends App {
 //endmodule
 
 object LcvAluDel1InpOpEnum {
-  def OP_WIDTH = 3
+  def OP_WIDTH = 1//3
   def ADD = 0x0
   def ADD_UINT = U(s"${OP_WIDTH}'d${ADD}")
   def SUB = 1
   def SUB_UINT = U(s"${OP_WIDTH}'d${SUB}")
-  def AND = 2
-  def AND_UINT = U(s"${OP_WIDTH}'d${AND}")
-  def OR = 3
-  def OR_UINT = U(s"${OP_WIDTH}'d${OR}")
-  def XOR = 4
-  def XOR_UINT = U(s"${OP_WIDTH}'d${XOR}")
+  //def AND = 2
+  //def AND_UINT = U(s"${OP_WIDTH}'d${AND}")
+  //def OR = 3
+  //def OR_UINT = U(s"${OP_WIDTH}'d${OR}")
+  //def XOR = 4
+  //def XOR_UINT = U(s"${OP_WIDTH}'d${XOR}")
   //def SLTU = 5
   //def SLTU_UINT = U(s"${OP_WIDTH}'d${SLTU}")
   //def SLTS = 6
@@ -651,7 +651,7 @@ case class LcvAluDel1Io(
 	val clk = in(Bool())
 	val inp_a = in(SInt(wordWidth bits))
 	val inp_b = in(SInt(wordWidth bits))
-	val inp_op = in(UInt(3 bits))
+	val inp_op = in(UInt(LcvAluDel1InpOpEnum.OP_WIDTH bits))
 	val outp_data = out(SInt(wordWidth bits))
 }
 

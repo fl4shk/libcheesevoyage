@@ -238,40 +238,40 @@ module LcvAluDel1 #(
 	input logic clk,
 	input logic signed [WIDTH - 1:0] inp_a,
 	input logic signed [WIDTH - 1:0] inp_b,
-	input logic [2:0] inp_op,
+	input logic [/*2*/0:0] inp_op,
 	output logic signed [WIDTH - 1:0] outp_data
 );
 	always_ff @(posedge clk) begin
 		case (inp_op)
 		//--------
-		3'h0: begin
+		1'h0: begin
 			outp_data <= inp_a + inp_b;
 		end
-		3'h1: begin
+		1'h1: begin
 			outp_data <= inp_a - inp_b;
 		end
-		3'h2: begin
-			outp_data <= inp_a & inp_b;
-		end
-		3'h3: begin
-			outp_data <= inp_a | inp_b;
-		end
-		3'h4: begin
-			outp_data <= inp_a ^ inp_b;
-		end
-		//3'h5: begin
-		//	outp_data[0] <= $unsigned(inp_a) < $unsigned(inp_b);
-		//	outp_data[WIDTH - 1:1] <= 'h0;
+		//3'h2: begin
+		//	outp_data <= inp_a & inp_b;
 		//end
-		//3'h6: begin
-		//	outp_data[0] <= $signed(inp_a) < $signed(inp_b);
-		//	outp_data[WIDTH - 1:1] <= 'h0;
+		//3'h3: begin
+		//	outp_data <= inp_a | inp_b;
 		//end
-		//3'h7: 
-		default: begin
-			//outp_data <= 'h0;
-			outp_data <= inp_a & inp_b;
-		end
+		//3'h4: begin
+		//	outp_data <= inp_a ^ inp_b;
+		//end
+		////3'h5: begin
+		////	outp_data[0] <= $unsigned(inp_a) < $unsigned(inp_b);
+		////	outp_data[WIDTH - 1:1] <= 'h0;
+		////end
+		////3'h6: begin
+		////	outp_data[0] <= $signed(inp_a) < $signed(inp_b);
+		////	outp_data[WIDTH - 1:1] <= 'h0;
+		////end
+		////3'h7: 
+		//default: begin
+		//	//outp_data <= 'h0;
+		//	outp_data <= inp_a & inp_b;
+		//end
 		//--------
 		endcase
 	end
