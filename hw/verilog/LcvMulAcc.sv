@@ -247,10 +247,10 @@ module LcvAluDel1 #(
 	//wire signed [WIDTH - 1:0] temp_inp_b = inp_b_sel ? inp_b_0 : inp_b_1;
 	localparam int SEL_SIZE = 2;
 	localparam int SEL_WIDTH = $clog2(SEL_SIZE);
-	logic signed [WIDTH - 1:0][SEL_WIDTH - 1:0] r_outp_data_vec;
+	logic signed [WIDTH - 1:0] r_outp_data_vec[SEL_WIDTH - 1:0];
 	logic r_inp_b_sel;
 
-	wire signed [WIDTH - 1:0][SEL_WIDTH - 1:0] temp_inp_b_vec;
+	wire signed [WIDTH - 1:0] temp_inp_b_vec[SEL_WIDTH - 1:0];
 
 	generate
 		for (genvar i=0; i<SEL_SIZE; i+=1) begin
@@ -264,7 +264,7 @@ module LcvAluDel1 #(
 
 	initial begin
 		for (int i=0; i<SEL_SIZE; i+=1) begin
-			r_outp_data_vec = 'h0;
+			r_outp_data_vec[i] = 'h0;
 		end
 		r_inp_b_sel = 'h0;
 	end
@@ -282,6 +282,9 @@ module LcvAluDel1 #(
 			end
 			endcase
 		end
+		outp_data <= (
+			r_inp_b_sel ? r_outp_data_vec[1] : r_outp_data_vec[0]
+		);
 	end
 endmodule
 
