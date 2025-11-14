@@ -270,7 +270,7 @@ module LcvAluDel1 #(
 		$unsigned({1'b0, ~inp_a[WIDTH - 1], inp_a[WIDTH - 2:0]})
 	);
 	wire unsigned [WIDTH:0] temp_sum_s_inp_b = (
-		$unsigned({1'b0, ~temp_inp_b[WIDTH - 1], temp_inp_b[WIDTH - 2:0]})
+		$unsigned({1'b0, temp_inp_b[WIDTH - 1], ~temp_inp_b[WIDTH - 2:0]})
 	);
 	wire unsigned [WIDTH:0] temp_sum_inp_carry = (
 		$unsigned({{WIDTH{1'b0}}, 1'b1})
