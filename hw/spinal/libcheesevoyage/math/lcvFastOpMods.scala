@@ -642,8 +642,8 @@ object LcvAluDel1InpOpEnum {
   //def SLTS = 6
   //def SLTS_UINT = U(s"${OP_WIDTH}'d${SLTS}")
   //def ZERO = 7
-  def ZERO = 5
-  def ZERO_UINT = U(s"${OP_WIDTH}'d${ZERO}")
+  //def ZERO = 5
+  //def ZERO_UINT = U(s"${OP_WIDTH}'d${ZERO}")
 }
 case class LcvAluDel1Io(
   wordWidth: Int=32,

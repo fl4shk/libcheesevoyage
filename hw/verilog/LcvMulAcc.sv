@@ -269,7 +269,8 @@ module LcvAluDel1 #(
 		//end
 		//3'h7: 
 		default: begin
-			outp_data <= 'h0;
+			//outp_data <= 'h0;
+			outp_data <= inp_a & inp_b;
 		end
 		//--------
 		endcase
