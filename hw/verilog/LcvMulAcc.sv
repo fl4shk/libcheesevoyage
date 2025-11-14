@@ -283,10 +283,10 @@ module LcvAluDel1 #(
 			end
 			endcase
 		end
-		outp_data <= (
-			r_inp_b_sel ? r_outp_data_vec[1] : r_outp_data_vec[0]
-		);
 	end
+	assign outp_data = (
+		r_inp_b_sel ? r_outp_data_vec[1] : r_outp_data_vec[0]
+	);
 endmodule
 
 //(* use_dsp = "yes" *)
