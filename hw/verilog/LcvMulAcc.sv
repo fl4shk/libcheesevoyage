@@ -231,80 +231,34 @@ endmodule
 //	end
 //endmodule
 
-//(* use_dsp = "yes" *)
-//module LcvAluDel1 #(
-//	parameter WIDTH=32
-//)(
-//	input logic clk,
-//	input logic signed [WIDTH - 1:0] inp_a,
-//	input logic signed [WIDTH - 1:0] inp_b_0,
-//	input logic signed [WIDTH - 1:0] inp_b_1,
-//	input logic inp_b_sel,
-//	input logic [/*2*/0:0] inp_op,
-//	output logic signed [WIDTH - 1:0] outp_data
-//);
-//	wire signed [WIDTH - 1:0] temp_inp_b = inp_b_sel ? inp_b_0 : inp_b_1;
-//	always_ff @(posedge clk) begin
-//		case (inp_op)
-//		//--------
-//		1'h0: begin
-//			outp_data <= inp_a + temp_inp_b;
-//		end
-//		1'h1: begin
-//			outp_data <= inp_a - temp_inp_b;
-//		end
-//		//3'h2: begin
-//		//	outp_data <= inp_a & temp_inp_b;
-//		//end
-//		//3'h3: begin
-//		//	outp_data <= inp_a | temp_inp_b;
-//		//end
-//		//3'h4: begin
-//		//	outp_data <= inp_a ^ temp_inp_b;
-//		//end
-//		////3'h5: begin
-//		////	outp_data[0] <= $unsigned(inp_a) < $unsigned(temp_inp_b);
-//		////	outp_data[WIDTH - 1:1] <= 'h0;
-//		////end
-//		////3'h6: begin
-//		////	outp_data[0] <= $signed(inp_a) < $signed(temp_inp_b);
-//		////	outp_data[WIDTH - 1:1] <= 'h0;
-//		////end
-//		////3'h7: 
-//		//default: begin
-//		//	//outp_data <= 'h0;
-//		//	outp_data <= inp_a & temp_inp_b;
-//		//end
-//		//--------
-//		endcase
-//	end
-//endmodule
-
 (* use_dsp = "yes" *)
 module LcvAluDel1 #(
-	parameter WIDTH=32
+	parameter int WIDTH=32
+	//parameter int USE_DSP48=1
 )(
 	input logic clk,
 	input logic signed [WIDTH - 1:0] inp_a,
-	input logic signed [WIDTH - 1:0] inp_b,
-	input logic signed [WIDTH - 1:0] inp_c,
-	input logic [1:0] inp_op,
+	input logic signed [WIDTH - 1:0] inp_b_0,
+	input logic signed [WIDTH - 1:0] inp_b_1,
+	input logic inp_b_sel,
+	input logic [/*2*//*0*/1:0] inp_op,
 	output logic signed [WIDTH - 1:0] outp_data
 );
+	wire signed [WIDTH - 1:0] temp_inp_b = inp_b_sel ? inp_b_0 : inp_b_1;
 	always_ff @(posedge clk) begin
 		case (inp_op)
 		//--------
 		2'h0: begin
-			outp_data <= inp_a + (inp_b + inp_c);
+			outp_data <= inp_a + temp_inp_b;
 		end
 		2'h1: begin
-			outp_data <= inp_a - (inp_b + inp_c);
+			outp_data <= inp_a - temp_inp_b;
 		end
 		2'h2: begin
-			outp_data <= inp_a & (inp_b + inp_c);
+			outp_data <= inp_a & temp_inp_b;
 		end
 		2'h3: begin
-			outp_data <= inp_a | (inp_b + inp_c);
+			outp_data <= inp_a | temp_in_b;
 		end
 		//3'h2: begin
 		//	outp_data <= inp_a & temp_inp_b;
@@ -332,3 +286,56 @@ module LcvAluDel1 #(
 		endcase
 	end
 endmodule
+
+//(* use_dsp = "yes" *)
+//module LcvAluDel1 #(
+//	parameter WIDTH=32
+//)(
+//	input logic clk,
+//	input logic signed [WIDTH - 1:0] inp_a,
+//	input logic signed [WIDTH - 1:0] inp_b,
+//	input logic signed [WIDTH - 1:0] inp_c,
+//	input logic [1:0] inp_op,
+//	output logic signed [WIDTH - 1:0] outp_data
+//);
+//	always_ff @(posedge clk) begin
+//		case (inp_op)
+//		//--------
+//		2'h0: begin
+//			outp_data <= inp_a + (inp_b + inp_c);
+//		end
+//		2'h1: begin
+//			outp_data <= inp_a - (inp_b + inp_c);
+//		end
+//		2'h2: begin
+//			outp_data <= inp_a & (inp_b + inp_c);
+//		end
+//		2'h3: begin
+//			outp_data <= inp_a | (inp_b + inp_c);
+//		end
+//		//3'h2: begin
+//		//	outp_data <= inp_a & temp_inp_b;
+//		//end
+//		//3'h3: begin
+//		//	outp_data <= inp_a | temp_inp_b;
+//		//end
+//		//3'h4: begin
+//		//	outp_data <= inp_a ^ temp_inp_b;
+//		//end
+//		////3'h5: begin
+//		////	outp_data[0] <= $unsigned(inp_a) < $unsigned(temp_inp_b);
+//		////	outp_data[WIDTH - 1:1] <= 'h0;
+//		////end
+//		////3'h6: begin
+//		////	outp_data[0] <= $signed(inp_a) < $signed(temp_inp_b);
+//		////	outp_data[WIDTH - 1:1] <= 'h0;
+//		////end
+//		////3'h7: 
+//		//default: begin
+//		//	//outp_data <= 'h0;
+//		//	outp_data <= inp_a & temp_inp_b;
+//		//end
+//		//--------
+//		endcase
+//	end
+//endmodule

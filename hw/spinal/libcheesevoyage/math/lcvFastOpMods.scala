@@ -645,14 +645,24 @@ object LcvAluDel1InpOpEnum {
   //def ZERO = 5
   //def ZERO_UINT = U(s"${OP_WIDTH}'d${ZERO}")
 }
+object LcvAluDel1Info {
+  def inpBSize = 2 
+  def inpOpWidth = LcvAluDel1InpOpEnum.OP_WIDTH
+}
 case class LcvAluDel1Io(
   wordWidth: Int=32,
 ) extends Bundle {
 	val clk = in(Bool())
 	val inp_a = in(SInt(wordWidth bits))
-	val inp_b = in(SInt(wordWidth bits))
-	val inp_c = in(SInt(wordWidth bits))
-	val inp_op = in(UInt(LcvAluDel1InpOpEnum.OP_WIDTH bits))
+	//val inp_b = in(SInt(wordWidth bits))
+	val inp_b = in(
+	  Vec.fill(LcvAluDel1Info.inpBSize)(
+      SInt(wordWidth bits)
+    )
+	)
+	val inp_b_sel = in(Bool())
+	//val inp_c = in(SInt(wordWidth bits))
+	val inp_op = in(UInt(LcvAluDel1Info.inpOpWidth bits))
 	val outp_data = out(SInt(wordWidth bits))
 }
 
