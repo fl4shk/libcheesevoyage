@@ -631,10 +631,10 @@ object LcvAluDel1InpOpEnum {
   def ADD_UINT = U(s"${OP_WIDTH}'d${ADD}")
   def SUB = 1
   def SUB_UINT = U(s"${OP_WIDTH}'d${SUB}")
-  def AND = 2
-  def AND_UINT = U(s"${OP_WIDTH}'d${AND}")
-  def OR = 3
-  def OR_UINT = U(s"${OP_WIDTH}'d${OR}")
+  //def AND = 2
+  //def AND_UINT = U(s"${OP_WIDTH}'d${AND}")
+  //def OR = 3
+  //def OR_UINT = U(s"${OP_WIDTH}'d${OR}")
   //def XOR = 4
   //def XOR_UINT = U(s"${OP_WIDTH}'d${XOR}")
   //def SLTU = 5

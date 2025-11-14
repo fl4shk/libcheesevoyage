@@ -241,25 +241,25 @@ module LcvAluDel1 #(
 	input logic signed [WIDTH - 1:0] inp_b_0,
 	input logic signed [WIDTH - 1:0] inp_b_1,
 	input logic inp_b_sel,
-	input logic [/*2*//*0*/1:0] inp_op,
+	input logic [/*2*/0/*1*/:0] inp_op,
 	output logic signed [WIDTH - 1:0] outp_data
 );
 	wire signed [WIDTH - 1:0] temp_inp_b = inp_b_sel ? inp_b_0 : inp_b_1;
 	always_ff @(posedge clk) begin
 		case (inp_op)
 		//--------
-		2'h0: begin
+		1'h0: begin
 			outp_data <= inp_a + temp_inp_b;
 		end
-		2'h1: begin
+		1'h1: begin
 			outp_data <= inp_a - temp_inp_b;
 		end
-		2'h2: begin
-			outp_data <= inp_a & temp_inp_b;
-		end
-		2'h3: begin
-			outp_data <= inp_a | temp_inp_b;
-		end
+		//2'h2: begin
+		//	outp_data <= inp_a & temp_inp_b;
+		//end
+		//2'h3: begin
+		//	outp_data <= inp_a | temp_inp_b;
+		//end
 		//3'h2: begin
 		//	outp_data <= inp_a & temp_inp_b;
 		//end
