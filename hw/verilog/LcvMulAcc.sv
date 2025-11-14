@@ -244,46 +244,44 @@ module LcvAluDel1 #(
 	input logic [/*2*/0/*1*/:0] inp_op,
 	output logic signed [WIDTH - 1:0] outp_data
 );
-	wire signed [WIDTH - 1:0] temp_inp_b = inp_b_sel ? inp_b_0 : inp_b_1;
+	//wire signed [WIDTH - 1:0] temp_inp_b = inp_b_sel ? inp_b_0 : inp_b_1;
+	localparam int SEL_SIZE = 2;
+	localparam int SEL_WIDTH = $clog2(SEL_SIZE);
+	logic signed [WIDTH - 1:0][SEL_WIDTH - 1:0] r_outp_data_vec;
+	logic r_inp_b_sel;
+
+	wire signed [WIDTH - 1:0][SEL_WIDTH - 1:0] temp_inp_b_vec;
+
+	generate
+		for (genvar i=0; i<SEL_SIZE; i+=1) begin
+			if (i == 0) begin
+				assign temp_inp_b_vec[i] = inp_b_0;
+			end else begin
+				assign temp_inp_b_vec[i] = inp_b_1;
+			end
+		end
+	endgenerate
+
+	initial begin
+		for (int i=0; i<SEL_SIZE; i+=1) begin
+			r_outp_data_vec = 'h0;
+		end
+		r_inp_b_sel = 'h0;
+	end
+
 	always_ff @(posedge clk) begin
-		case (inp_op)
-		//--------
-		1'h0: begin
-			outp_data <= inp_a + temp_inp_b;
+		r_inp_b_sel <= inp_b_sel;
+		for (int i=0; i<SEL_SIZE; i+=1) begin
+			case (inp_op)
+			//--------
+			1'h0: begin
+				r_outp_data_vec[i] <= inp_a + temp_inp_b_vec[i];
+			end
+			1'h1: begin
+				r_outp_data_vec[i] <= inp_a - temp_inp_b_vec[i];
+			end
+			endcase
 		end
-		1'h1: begin
-			outp_data <= inp_a - temp_inp_b;
-		end
-		//2'h2: begin
-		//	outp_data <= inp_a & temp_inp_b;
-		//end
-		//2'h3: begin
-		//	outp_data <= inp_a | temp_inp_b;
-		//end
-		//3'h2: begin
-		//	outp_data <= inp_a & temp_inp_b;
-		//end
-		//3'h3: begin
-		//	outp_data <= inp_a | temp_inp_b;
-		//end
-		//3'h4: begin
-		//	outp_data <= inp_a ^ temp_inp_b;
-		//end
-		////3'h5: begin
-		////	outp_data[0] <= $unsigned(inp_a) < $unsigned(temp_inp_b);
-		////	outp_data[WIDTH - 1:1] <= 'h0;
-		////end
-		////3'h6: begin
-		////	outp_data[0] <= $signed(inp_a) < $signed(temp_inp_b);
-		////	outp_data[WIDTH - 1:1] <= 'h0;
-		////end
-		////3'h7: 
-		//default: begin
-		//	//outp_data <= 'h0;
-		//	outp_data <= inp_a & temp_inp_b;
-		//end
-		//--------
-		endcase
 	end
 endmodule
 
