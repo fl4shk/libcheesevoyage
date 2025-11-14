@@ -255,7 +255,7 @@ module LcvAluDel1 #(
 	localparam [OP_WIDTH - 1:0] OP_AND = 'h4;
 	localparam [OP_WIDTH - 1:0] OP_OR = 'h5;
 	localparam [OP_WIDTH - 1:0] OP_XOR = 'h6;
-	localparam [OP_WIDTH - 1:0] OP_NOR = 'h7;
+	localparam [OP_WIDTH - 1:0] /*OP_NOR*/ OP_ZERO = 'h7;
 	//--------
 	wire signed [WIDTH - 1:0] temp_inp_b = (
 		inp_b_sel ? inp_b_1 : inp_b_0
@@ -311,8 +311,11 @@ module LcvAluDel1 #(
 		OP_XOR: begin
 			outp_data <= inp_a ^ temp_inp_b;
 		end
-		OP_NOR: begin
-			outp_data <= ~(inp_a | temp_inp_b);
+		//OP_NOR: begin
+		//	outp_data <= ~(inp_a | temp_inp_b);
+		//end
+		OP_ZERO: begin
+			outp_data <= 'h0;
 		end
 		endcase
 	end

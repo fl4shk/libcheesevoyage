@@ -651,12 +651,12 @@ object LcvAluDel1InpOpEnum {
   def OR_UINT = U(s"${OP_WIDTH}'d${OR}")
   def XOR = 6
   def XOR_UINT = U(s"${OP_WIDTH}'d${XOR}")
-  def NOR = 7
-  def NOR_UINT = U(s"${OP_WIDTH}'d${NOR}")
+  //def NOR = 7
+  //def NOR_UINT = U(s"${OP_WIDTH}'d${NOR}")
 
-  //def ZERO = 7
+  def ZERO = 7
   //def ZERO = 5
-  //def ZERO_UINT = U(s"${OP_WIDTH}'d${ZERO}")
+  def ZERO_UINT = U(s"${OP_WIDTH}'d${ZERO}")
 }
 object LcvAluDel1Info {
   def inpBSize = 2 
