@@ -312,7 +312,7 @@ module LcvAluDel1 #(
 			outp_data <= inp_a ^ temp_inp_b;
 		end
 		OP_NOR: begin
-			outp_data <= inp_a ~| temp_inp_b;
+			outp_data <= ~(inp_a | temp_inp_b);
 		end
 		endcase
 	end
