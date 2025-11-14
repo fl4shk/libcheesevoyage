@@ -267,6 +267,7 @@ module LcvAluDel1 #(
 			r_outp_data_vec[i] = 'h0;
 		end
 		r_inp_b_sel = 'h0;
+		outp_data = 'h0;
 	end
 
 	always_ff @(posedge clk) begin
