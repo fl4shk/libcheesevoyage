@@ -291,16 +291,16 @@ module LcvAluDel1 #(
 			outp_data <= inp_a - temp_inp_b;
 		end
 		OP_SLTU: begin
-			//outp_data[0] <= $unsigned(inp_a) < $unsigned(temp_inp_b);
-			//outp_data[WIDTH - 1:1] <= 'h0;
-			outp_data[0] <= ~temp_sum_u[WIDTH];
+			outp_data[0] <= $unsigned(inp_a) < $unsigned(temp_inp_b);
 			outp_data[WIDTH - 1:1] <= 'h0;
+			//outp_data[0] <= ~temp_sum_u[WIDTH];
+			//outp_data[WIDTH - 1:1] <= 'h0;
 		end
 		OP_SLTS: begin
-			//outp_data[0] <= $signed(inp_a) < $signed(temp_inp_b);
-			//outp_data[WIDTH - 1:1] <= 'h0;
-			outp_data[0] <= ~temp_sum_s[WIDTH];
+			outp_data[0] <= $signed(inp_a) < $signed(temp_inp_b);
 			outp_data[WIDTH - 1:1] <= 'h0;
+			//outp_data[0] <= ~temp_sum_s[WIDTH];
+			//outp_data[WIDTH - 1:1] <= 'h0;
 		end
 		OP_AND: begin
 			outp_data <= inp_a & temp_inp_b;
