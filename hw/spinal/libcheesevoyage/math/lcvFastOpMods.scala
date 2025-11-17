@@ -627,34 +627,34 @@ object LcvCmpEqDel1Sim extends App {
 
 object LcvAluDel1InpOpEnum {
 	// localparam int OP_WIDTH = 3;
-	// localparam [OP_WIDTH - 1:0] OP_ADD = 'h0;
-	// localparam [OP_WIDTH - 1:0] OP_SUB = 'h1;
-	// localparam [OP_WIDTH - 1:0] /*OP_SLTU*/ OP_GET_INP_A = 'h2;
-	// localparam [OP_WIDTH - 1:0] /*OP_SLTS*/ OP_GET_INP_B = 'h3;
-	// localparam [OP_WIDTH - 1:0] OP_AND = 'h4;
-	// localparam [OP_WIDTH - 1:0] OP_OR = 'h5;
-	// localparam [OP_WIDTH - 1:0] OP_XOR = 'h6;
-	// localparam [OP_WIDTH - 1:0] OP_NOR = 'h7;
+	// localparam [OP_WIDTH - 1:0] OP_ADD = 1 << 'h0;
+	// localparam [OP_WIDTH - 1:0] OP_SUB = 1 << 'h1;
+	// localparam [OP_WIDTH - 1:0] /*OP_SLTU*/ OP_GET_INP_A = 1 << 'h2;
+	// localparam [OP_WIDTH - 1:0] /*OP_SLTS*/ OP_GET_INP_B = 1 << 'h3;
+	// localparam [OP_WIDTH - 1:0] OP_AND = 1 << 'h4;
+	// localparam [OP_WIDTH - 1:0] OP_OR = 1 << 'h5;
+	// localparam [OP_WIDTH - 1:0] OP_XOR = 1 << 'h6;
+	// localparam [OP_WIDTH - 1:0] OP_NOR = 1 << 'h7;
 
-  def OP_WIDTH = 3//1//1//3
-  def ADD = 0x0
+  def OP_WIDTH = 8//1//1//3
+  def ADD = 1 << 0
   def ADD_UINT = U(s"${OP_WIDTH}'d${ADD}")
-  def SUB = 1
+  def SUB = 1 << 1
   def SUB_UINT = U(s"${OP_WIDTH}'d${SUB}")
-  def OP_GET_INP_A = 2
+  def OP_GET_INP_A = 1 << 2
   def OP_GET_INP_A_UINT = U(s"${OP_WIDTH}'d${OP_GET_INP_A}")
-  def OP_GET_INP_B = 3
+  def OP_GET_INP_B = 1 << 3
   def OP_GET_INP_B_UINT = U(s"${OP_WIDTH}'d${OP_GET_INP_B}")
-  def AND = 4
+  def AND = 1 << 4
   def AND_UINT = U(s"${OP_WIDTH}'d${AND}")
-  def OR = 5
+  def OR = 1 << 5
   def OR_UINT = U(s"${OP_WIDTH}'d${OR}")
-  def XOR = 6
+  def XOR = 1 << 6
   def XOR_UINT = U(s"${OP_WIDTH}'d${XOR}")
   //def NOR = 7
   //def NOR_UINT = U(s"${OP_WIDTH}'d${NOR}")
 
-  def ZERO = 7
+  def ZERO = 1 << 7
   //def ZERO = 5
   def ZERO_UINT = U(s"${OP_WIDTH}'d${ZERO}")
 }

@@ -242,20 +242,20 @@ module LcvAluDel1 #(
 	input logic signed [WIDTH - 1:0] inp_b_0,
 	input logic signed [WIDTH - 1:0] inp_b_1,
 	input logic [0:0] inp_b_sel,
-	input logic [2:0] inp_op,
+	input logic [7:0] inp_op,
 	output logic signed [WIDTH - 1:0] outp_data 
 );
 	//--------
 	//localparam int SEL_SIZE = 2;
-	localparam int OP_WIDTH = 3;
-	localparam [OP_WIDTH - 1:0] OP_ADD = 'h0;
-	localparam [OP_WIDTH - 1:0] OP_SUB = 'h1;
-	localparam [OP_WIDTH - 1:0] /*OP_SLTU*/ OP_GET_INP_A = 'h2;
-	localparam [OP_WIDTH - 1:0] /*OP_SLTS*/ OP_GET_INP_B = 'h3;
-	localparam [OP_WIDTH - 1:0] OP_AND = 'h4;
-	localparam [OP_WIDTH - 1:0] OP_OR = 'h5;
-	localparam [OP_WIDTH - 1:0] OP_XOR = 'h6;
-	localparam [OP_WIDTH - 1:0] /*OP_NOR*/ OP_ZERO = 'h7;
+	localparam int OP_WIDTH = 8;
+	localparam [OP_WIDTH - 1:0] OP_ADD = 'b1;
+	localparam [OP_WIDTH - 1:0] OP_SUB = 'b10;
+	localparam [OP_WIDTH - 1:0] /*OP_SLTU*/ OP_GET_INP_A = 'b100;
+	localparam [OP_WIDTH - 1:0] /*OP_SLTS*/ OP_GET_INP_B = 'b1000;
+	localparam [OP_WIDTH - 1:0] OP_AND = 'b10000;
+	localparam [OP_WIDTH - 1:0] OP_OR = 'b100000;
+	localparam [OP_WIDTH - 1:0] OP_XOR = 'b1000000;
+	localparam [OP_WIDTH - 1:0] /*OP_NOR*/ OP_ZERO = 'b10000000;
 	//--------
 	wire signed [WIDTH - 1:0] temp_inp_b = (
 		inp_b_sel ? inp_b_1 : inp_b_0
@@ -320,7 +320,8 @@ module LcvAluDel1 #(
 		//OP_NOR: begin
 		//	outp_data <= ~(inp_a | temp_inp_b);
 		//end
-		OP_ZERO: begin
+		//OP_ZERO: 
+		default: begin
 			outp_data <= 'h0;
 		end
 		endcase
