@@ -629,8 +629,8 @@ object LcvAluDel1InpOpEnum {
 	// localparam int OP_WIDTH = 3;
 	// localparam [OP_WIDTH - 1:0] OP_ADD = 'h0;
 	// localparam [OP_WIDTH - 1:0] OP_SUB = 'h1;
-	// localparam [OP_WIDTH - 1:0] OP_SLTU = 'h2;
-	// localparam [OP_WIDTH - 1:0] OP_SLTS = 'h3;
+	// localparam [OP_WIDTH - 1:0] /*OP_SLTU*/ OP_GET_INP_A = 'h2;
+	// localparam [OP_WIDTH - 1:0] /*OP_SLTS*/ OP_GET_INP_B = 'h3;
 	// localparam [OP_WIDTH - 1:0] OP_AND = 'h4;
 	// localparam [OP_WIDTH - 1:0] OP_OR = 'h5;
 	// localparam [OP_WIDTH - 1:0] OP_XOR = 'h6;
@@ -641,10 +641,10 @@ object LcvAluDel1InpOpEnum {
   def ADD_UINT = U(s"${OP_WIDTH}'d${ADD}")
   def SUB = 1
   def SUB_UINT = U(s"${OP_WIDTH}'d${SUB}")
-  def SLTU = 2
-  def SLTU_UINT = U(s"${OP_WIDTH}'d${SLTU}")
-  def SLTS = 3
-  def SLTS_UINT = U(s"${OP_WIDTH}'d${SLTS}")
+  def OP_GET_INP_A = 2
+  def OP_GET_INP_A_UINT = U(s"${OP_WIDTH}'d${OP_GET_INP_A}")
+  def OP_GET_INP_B = 3
+  def OP_GET_INP_B_UINT = U(s"${OP_WIDTH}'d${OP_GET_INP_B}")
   def AND = 4
   def AND_UINT = U(s"${OP_WIDTH}'d${AND}")
   def OR = 5
