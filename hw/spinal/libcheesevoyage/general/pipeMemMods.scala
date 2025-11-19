@@ -4811,7 +4811,8 @@ extends Area {
                 && extIdx == extIdxUp
               ) {
                 myFwd.myFwdIdx(ydx)(zdx) := (
-                  upExt(1)(ydx)(extIdx).fwdIdx(zdx)
+                  //upExt(1)(ydx)(extIdx).fwdIdx(zdx)
+                  upExt(0)(ydx)(extIdx).fwdIdx(zdx)
                 )
               }
               //println(
