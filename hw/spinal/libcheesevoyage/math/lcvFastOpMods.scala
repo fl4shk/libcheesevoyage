@@ -626,35 +626,49 @@ object LcvCmpEqDel1Sim extends App {
 //endmodule
 
 object LcvAluDel1InpOpEnum {
-	// localparam int OP_WIDTH = 3;
-	// localparam [OP_WIDTH - 1:0] OP_ADD = 1 << 'h0;
-	// localparam [OP_WIDTH - 1:0] OP_SUB = 1 << 'h1;
-	// localparam [OP_WIDTH - 1:0] /*OP_SLTU*/ OP_GET_INP_A = 1 << 'h2;
-	// localparam [OP_WIDTH - 1:0] /*OP_SLTS*/ OP_GET_INP_B = 1 << 'h3;
-	// localparam [OP_WIDTH - 1:0] OP_AND = 1 << 'h4;
-	// localparam [OP_WIDTH - 1:0] OP_OR = 1 << 'h5;
-	// localparam [OP_WIDTH - 1:0] OP_XOR = 1 << 'h6;
-	// localparam [OP_WIDTH - 1:0] OP_NOR = 1 << 'h7;
+  // localparam OP_WIDTH = 11;
+	// localparam [OP_WIDTH - 1:0] OP_ADD = 1 << 0;
+	// localparam [OP_WIDTH - 1:0] OP_SUB = 1 << 1;
+	// localparam [OP_WIDTH - 1:0] OP_SLTU /*OP_GET_INP_A*/ = 1 << 2;
+	// localparam [OP_WIDTH - 1:0] OP_SLTS /*OP_GET_INP_B*/ = 1 << 3;
+	// localparam [OP_WIDTH - 1:0] OP_AND = 1 << 4;
+	// localparam [OP_WIDTH - 1:0] OP_OR = 1 << 5;
+	// localparam [OP_WIDTH - 1:0] OP_XOR = 1 << 6;
+	// localparam [OP_WIDTH - 1:0] OP_LSL = 1 << 7;
+	// localparam [OP_WIDTH - 1:0] OP_LSR = 1 << 8;
+	// localparam [OP_WIDTH - 1:0] OP_ASR = 1 << 9;
+	// localparam [OP_WIDTH - 1:0] /*OP_NOR*/ /*OP_ZERO*/ OP_ZERO = 1 << 10;
 
-  def OP_WIDTH = 8//1//1//3
+
+  def OP_WIDTH = 11//8//1//1//3
   def ADD = 1 << 0
   def ADD_UINT = U(s"${OP_WIDTH}'d${ADD}")
   def SUB = 1 << 1
   def SUB_UINT = U(s"${OP_WIDTH}'d${SUB}")
-  def OP_GET_INP_A = 1 << 2
-  def OP_GET_INP_A_UINT = U(s"${OP_WIDTH}'d${OP_GET_INP_A}")
-  def OP_GET_INP_B = 1 << 3
-  def OP_GET_INP_B_UINT = U(s"${OP_WIDTH}'d${OP_GET_INP_B}")
+  //def OP_GET_INP_A = 1 << 2
+  //def OP_GET_INP_A_UINT = U(s"${OP_WIDTH}'d${OP_GET_INP_A}")
+  //def OP_GET_INP_B = 1 << 3
+  //def OP_GET_INP_B_UINT = U(s"${OP_WIDTH}'d${OP_GET_INP_B}")
+  def SLTU = 1 << 2
+  def SLTU_UINT = U(s"${OP_WIDTH}'d${SLTU}")
+  def SLTS = 1 << 3
+  def SLTS_UINT = U(s"${OP_WIDTH}'d${SLTS}")
   def AND = 1 << 4
   def AND_UINT = U(s"${OP_WIDTH}'d${AND}")
   def OR = 1 << 5
   def OR_UINT = U(s"${OP_WIDTH}'d${OR}")
   def XOR = 1 << 6
   def XOR_UINT = U(s"${OP_WIDTH}'d${XOR}")
+  def LSL = 1 << 7
+  def LSL_UINT = U(s"${OP_WIDTH}'d${LSL}")
+  def LSR = 1 << 8
+  def LSR_UINT = U(s"${OP_WIDTH}'d${LSR}")
+  def ASR = 1 << 9
+  def ASR_UINT = U(s"${OP_WIDTH}'d${ASR}")
   //def NOR = 7
   //def NOR_UINT = U(s"${OP_WIDTH}'d${NOR}")
 
-  def ZERO = 1 << 7
+  def ZERO = 1 << 10
   //def ZERO = 5
   def ZERO_UINT = U(s"${OP_WIDTH}'d${ZERO}")
 }
