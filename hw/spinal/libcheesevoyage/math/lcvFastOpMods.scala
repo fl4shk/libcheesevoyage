@@ -581,49 +581,6 @@ object LcvCmpEqDel1Sim extends App {
     }
 }
 
-//(* use_dsp = "yes" *)
-//module LcvAluDel1 #(
-//	parameter WIDTH=32
-//)(
-//	input logic clk,
-//	input logic signed [WIDTH - 1:0] inp_a,
-//	input logic signed [WIDTH - 1:0] inp_b,
-//	input logic [2:0] inp_op,
-//	output logic signed [WIDTH - 1:0] outp_data
-//);
-//	always_ff @(posedge clk) begin
-//		case (inp_op)
-//		//--------
-//		3'h0: begin
-//			outp_data <= inp_a + inp_b;
-//		end
-//		3'h1: begin
-//			outp_data <= inp_a - inp_b;
-//		end
-//		3'h2: begin
-//			outp_data <= inp_a & inp_b;
-//		end
-//		3'h3: begin
-//			outp_data <= inp_a | inp_b;
-//		end
-//		3'h4: begin
-//			outp_data <= inp_a ^ inp_b;
-//		end
-//		3'h5: begin
-//			outp_data[0] <= $unsigned(inp_a) < $unsigned(inp_b);
-//			outp_data[WIDTH - 1:1] <= 'h0;
-//		end
-//		3'h6: begin
-//			outp_data[0] <= $signed(inp_a) < $signed(inp_b);
-//			outp_data[WIDTH - 1:1] <= 'h0;
-//		end
-//		3'h7: begin
-//			outp_data <= 'h0;
-//		end
-//		//--------
-//		endcase
-//	end
-//endmodule
 
 object LcvAluDel1InpOpEnum {
   // localparam OP_WIDTH = 11;
@@ -640,7 +597,7 @@ object LcvAluDel1InpOpEnum {
 	// localparam [OP_WIDTH - 1:0] /*OP_NOR*/ /*OP_ZERO*/ OP_ZERO = 1 << 10;
 
 
-  def OP_WIDTH = 11//8//1//1//3
+  def OP_WIDTH = 8//11//8//1//1//3
   def ADD = 1 << 0
   def ADD_UINT = U(s"${OP_WIDTH}'d${ADD}")
   def SUB = 1 << 1
@@ -659,16 +616,16 @@ object LcvAluDel1InpOpEnum {
   def OR_UINT = U(s"${OP_WIDTH}'d${OR}")
   def XOR = 1 << 6
   def XOR_UINT = U(s"${OP_WIDTH}'d${XOR}")
-  def LSL = 1 << 7
-  def LSL_UINT = U(s"${OP_WIDTH}'d${LSL}")
-  def LSR = 1 << 8
-  def LSR_UINT = U(s"${OP_WIDTH}'d${LSR}")
-  def ASR = 1 << 9
-  def ASR_UINT = U(s"${OP_WIDTH}'d${ASR}")
+  //def LSL = 1 << 7
+  //def LSL_UINT = U(s"${OP_WIDTH}'d${LSL}")
+  //def LSR = 1 << 8
+  //def LSR_UINT = U(s"${OP_WIDTH}'d${LSR}")
+  //def ASR = 1 << 9
+  //def ASR_UINT = U(s"${OP_WIDTH}'d${ASR}")
   //def NOR = 7
   //def NOR_UINT = U(s"${OP_WIDTH}'d${NOR}")
 
-  def ZERO = 1 << 10
+  def ZERO = 1 << 7//10
   //def ZERO = 5
   def ZERO_UINT = U(s"${OP_WIDTH}'d${ZERO}")
 }

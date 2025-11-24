@@ -242,12 +242,12 @@ module LcvAluDel1 #(
 	input logic signed [WIDTH - 1:0] inp_b_0,
 	input logic signed [WIDTH - 1:0] inp_b_1,
 	input logic [0:0] inp_b_sel,
-	input logic [10:0] inp_op,
+	input logic [7:0] inp_op,
 	output logic signed [WIDTH - 1:0] outp_data 
 );
 	//--------
 	//localparam int SEL_SIZE = 2;
-	localparam int OP_WIDTH = 11;
+	localparam int OP_WIDTH = 8/*11*/;
 	localparam [OP_WIDTH - 1:0] OP_ADD = 1 << 0;
 	localparam [OP_WIDTH - 1:0] OP_SUB = 1 << 1;
 	localparam [OP_WIDTH - 1:0] OP_SLTU /*OP_GET_INP_A*/ = 1 << 2;
@@ -255,10 +255,10 @@ module LcvAluDel1 #(
 	localparam [OP_WIDTH - 1:0] OP_AND = 1 << 4;
 	localparam [OP_WIDTH - 1:0] OP_OR = 1 << 5;
 	localparam [OP_WIDTH - 1:0] OP_XOR = 1 << 6;
-	localparam [OP_WIDTH - 1:0] OP_LSL = 1 << 7;
-	localparam [OP_WIDTH - 1:0] OP_LSR = 1 << 8;
-	localparam [OP_WIDTH - 1:0] OP_ASR = 1 << 9;
-	localparam [OP_WIDTH - 1:0] /*OP_NOR*/ /*OP_ZERO*/ OP_ZERO = 1 << 10;
+	//localparam [OP_WIDTH - 1:0] OP_LSL = 1 << 7;
+	//localparam [OP_WIDTH - 1:0] OP_LSR = 1 << 8;
+	//localparam [OP_WIDTH - 1:0] OP_ASR = 1 << 9;
+	localparam [OP_WIDTH - 1:0] /*OP_NOR*/ /*OP_ZERO*/ OP_ZERO = 1 << 7;
 	//--------
 	wire signed [WIDTH - 1:0] temp_inp_b = (
 		inp_b_sel ? inp_b_1 : inp_b_0
@@ -314,21 +314,21 @@ module LcvAluDel1 #(
 		OP_XOR: begin
 			outp_data <= inp_a ^ temp_inp_b;
 		end
-		OP_LSL: begin
-			outp_data <= $unsigned(
-				$unsigned(inp_a) << $unsigned(temp_inp_b)
-			);
-		end
-		OP_LSR: begin
-			outp_data <= $unsigned(
-				$unsigned(inp_a) >> $unsigned(temp_inp_b)
-			);
-		end
-		OP_ASR: begin
-			outp_data <= $signed(
-				$signed(inp_a) >>> $unsigned(temp_inp_b)
-			);
-		end
+		//OP_LSL: begin
+		//	outp_data <= $unsigned(
+		//		$unsigned(inp_a) << $unsigned(temp_inp_b)
+		//	);
+		//end
+		//OP_LSR: begin
+		//	outp_data <= $unsigned(
+		//		$unsigned(inp_a) >> $unsigned(temp_inp_b)
+		//	);
+		//end
+		//OP_ASR: begin
+		//	outp_data <= $signed(
+		//		$signed(inp_a) >>> $unsigned(temp_inp_b)
+		//	);
+		//end
 		//OP_NOR: begin
 		//	outp_data <= ~(inp_a | temp_inp_b);
 		//end
