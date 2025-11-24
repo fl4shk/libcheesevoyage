@@ -650,15 +650,102 @@ case class LcvAluDel1Io(
 	val outp_data = out(SInt(wordWidth bits))
 }
 
+//case class LcvAluDel1(
+//  wordWidth: Int=32,
+//  sltUseCarryChain: Int=1,
+//) extends BlackBox {
+//  val io = LcvAluDel1Io(wordWidth=wordWidth)
+//  addGeneric("WIDTH", wordWidth)
+//  addGeneric("SLT_USE_CARRY_CHAIN", sltUseCarryChain)
+//  noIoPrefix()
+//  addRTLPath("./hw/verilog/LcvMulAcc.sv")
+//  mapCurrentClockDomain(clock=io.clk/*, reset=io.rst*/)
+//  setIoCd()
+//}
 case class LcvAluDel1(
   wordWidth: Int=32,
-) extends BlackBox {
+  sltUseCarryChain: Boolean=true,
+) extends Component {
+  //--------
   val io = LcvAluDel1Io(wordWidth=wordWidth)
-  addGeneric("WIDTH", wordWidth)
-  noIoPrefix()
-  addRTLPath("./hw/verilog/LcvMulAcc.sv")
-  mapCurrentClockDomain(clock=io.clk/*, reset=io.rst*/)
-  setIoCd()
+  //--------
+  io.outp_data.setAsReg() init(io.outp_data.getZero)
+
+  val temp_inp_b = Mux[SInt](
+    io.inp_b_sel,
+    io.inp_b(1),
+    io.inp_b(0),
+  )
+
+  val mySltArea = (
+    sltUseCarryChain
+  ) generate new Area {
+    val temp_sum_u_inp_a = (
+      (U"1'b0" ## io.inp_a).asUInt
+    )
+    val temp_sum_u_inp_b = (
+      (U"1'b0" ## ~temp_inp_b).asUInt
+    );
+    val temp_sum_s_inp_a = (
+      (
+        U"1'b0"
+        ## ~io.inp_a(wordWidth - 1)
+        ## io.inp_a(wordWidth - 2 downto 0)
+      ).asUInt
+    )
+    val temp_sum_s_inp_b = (
+      (
+        U"1'b0"
+        ## temp_inp_b(wordWidth - 1)
+        ## ~temp_inp_b(wordWidth - 2 downto 0)
+      ).asUInt
+    )
+    val temp_sum_inp_carry = (
+      U"1'b1".resize(wordWidth + 1)
+    );
+    val temp_sum_u = (
+      temp_sum_u_inp_a + temp_sum_u_inp_b + temp_sum_inp_carry
+    );
+    val temp_sum_s = (
+      temp_sum_s_inp_a + temp_sum_s_inp_b + temp_sum_inp_carry
+    );
+  }
+  switch (io.inp_op) {
+    is (LcvAluDel1InpOpEnum.ADD) {
+			io.outp_data := io.inp_a + temp_inp_b;
+    }
+    is (LcvAluDel1InpOpEnum.SUB) {
+      io.outp_data := io.inp_a - temp_inp_b;
+    }
+    is (LcvAluDel1InpOpEnum.SLTU) {
+      if (sltUseCarryChain) {
+        io.outp_data(0) := ~mySltArea.temp_sum_u(wordWidth)
+      } else {
+        io.outp_data(0) := io.inp_a.asUInt < temp_inp_b.asUInt
+      }
+      io.outp_data(wordWidth - 1 downto 1) := 0
+    }
+    is (LcvAluDel1InpOpEnum.SLTS) {
+      if (sltUseCarryChain) {
+        io.outp_data(0) := ~mySltArea.temp_sum_s(wordWidth)
+      } else {
+			  io.outp_data(0) := io.inp_a < temp_inp_b
+      }
+      io.outp_data(wordWidth - 1 downto 1) := 0x0
+    }
+    is (LcvAluDel1InpOpEnum.AND) {
+      io.outp_data := io.inp_a & temp_inp_b
+    }
+    is (LcvAluDel1InpOpEnum.OR) {
+      io.outp_data := io.inp_a | temp_inp_b
+    }
+    is (LcvAluDel1InpOpEnum.XOR) {
+      io.outp_data := io.inp_a ^ temp_inp_b
+    }
+    default {
+      io.outp_data := 0x0
+    }
+  }
 }
 
 object LcvFastOrR {
