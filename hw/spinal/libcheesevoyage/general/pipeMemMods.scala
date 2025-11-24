@@ -1467,7 +1467,7 @@ case class PipeMemRmwDoFwdArea[
                 //  rFwdState(ydx)(zdx)(kdx) := FwdState.WAIT_DATA
                 //}
               if (kdx < fwd.numMyUpExtDel2 /*- 1*/) {
-                //if (kdx == 0) {
+                if (kdx <= 1) {
                   fwd.myFwdStateData(ydx)(zdx)(kdx) := (
                     fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
                       extIdxUp
@@ -1475,57 +1475,57 @@ case class PipeMemRmwDoFwdArea[
                       kdx
                     ).payload.payload
                   )
-                //} else {
-                //  println(
-                //    s"find me: kdx != 0: ${kdx} ${fwd.numMyUpExtDel2}"
-                //  )
-                //  fwd.myFwdStateData(ydx)(zdx)(kdx) := (
-                //    RegNext(
-                //      next=fwd.myFwdStateData(ydx)(zdx)(kdx),
-                //      init=fwd.myFwdStateData(ydx)(zdx)(kdx).getZero,
-                //    )
-                //  )
-                //  when (
-                //    //fwd.myUpIsValid
-                //    //&&
-                //    rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
-                //  ) {
-                //    //tempMyFwdData := myFwdDataUp
-                //    fwd.myFwdStateData(ydx)(zdx)(kdx) := (
-                //      fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
-                //        extIdxUp
-                //      )(
-                //        kdx
-                //      ).payload.payload
-                //    )
-                //  }
-                //}
-                //when (
-                //  fwd.myUpIsValid
-                //  //&& rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
-                //  && fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
-                //    extIdxUp
-                //  )(
-                //    kdx
-                //  ).payload.valid
-                //) {
-                //  //rFwdStateValid(ydx)(zdx)(kdx) := True
-                //  rFwdState(ydx)(zdx)(kdx) := FwdState.WAIT_UP_FIRE
-                //  //fwd.myFwdStateData(ydx)(zdx)(kdx) := (
-                //  //  fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
-                //  //    extIdxUp
-                //  //  )(
-                //  //    kdx
-                //  //  ).payload.payload
-                //  //)
-                //}
-                //when (
-                //  fwd.myUpIsFiring
-                //  //&& rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_UP_FIRE
-                //) {
-                //  //rFwdStateValid(ydx)(zdx)(kdx) := False
-                //  rFwdState(ydx)(zdx)(kdx) := FwdState.WAIT_DATA
-                //}
+                } else {
+                  println(
+                    s"find me: kdx != 0: ${kdx} ${fwd.numMyUpExtDel2}"
+                  )
+                  fwd.myFwdStateData(ydx)(zdx)(kdx) := (
+                    RegNext(
+                      next=fwd.myFwdStateData(ydx)(zdx)(kdx),
+                      init=fwd.myFwdStateData(ydx)(zdx)(kdx).getZero,
+                    )
+                  )
+                  when (
+                    //fwd.myUpIsValid
+                    //&&
+                    rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
+                  ) {
+                    //tempMyFwdData := myFwdDataUp
+                    fwd.myFwdStateData(ydx)(zdx)(kdx) := (
+                      fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+                        extIdxUp
+                      )(
+                        kdx
+                      ).payload.payload
+                    )
+                  }
+                }
+                when (
+                  fwd.myUpIsValid
+                  //&& rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
+                  && fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+                    extIdxUp
+                  )(
+                    kdx
+                  ).payload.valid
+                ) {
+                  //rFwdStateValid(ydx)(zdx)(kdx) := True
+                  rFwdState(ydx)(zdx)(kdx) := FwdState.WAIT_UP_FIRE
+                  //fwd.myFwdStateData(ydx)(zdx)(kdx) := (
+                  //  fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+                  //    extIdxUp
+                  //  )(
+                  //    kdx
+                  //  ).payload.payload
+                  //)
+                }
+                when (
+                  fwd.myUpIsFiring
+                  //&& rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_UP_FIRE
+                ) {
+                  //rFwdStateValid(ydx)(zdx)(kdx) := False
+                  rFwdState(ydx)(zdx)(kdx) := FwdState.WAIT_DATA
+                }
               } else {
                 fwd.myFwdStateData(ydx)(zdx)(kdx) := (
                   fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
