@@ -334,7 +334,8 @@ module LcvAluDel1 #(
 		//	outp_data <= ~(inp_a | temp_inp_b);
 		//end
 		//OP_ZERO: 
-		OP_ZERO: begin
+		//OP_ZERO: begin
+		default: begin
 			outp_data <= 'h0;
 		end
 		//OP_GET_INP_A: begin
