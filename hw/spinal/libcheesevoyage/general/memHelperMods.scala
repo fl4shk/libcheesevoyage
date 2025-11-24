@@ -94,17 +94,17 @@ case class RamSdpPipe[
   )
 
   // do1
-  val myDataOutFromWr = (
-    /*Reg*/(
-      Bits(io.rdData.getWidth bits)
-    )
-  )
+  //val myDataOutFromWr = (
+  //  /*Reg*/(
+  //    Bits(io.rdData.getWidth bits)
+  //  )
+  //)
 
-  myDataOutFromWr := (
-    arr.readSync(
-      address=io.wrAddr,
-    ).asBits
-  )
+  //myDataOutFromWr := (
+  //  arr.readSync(
+  //    address=io.wrAddr,
+  //  ).asBits
+  //)
   //io.rdDataFromWrAddr.setAsReg()
   //when (io.rdEnForWr) {
   //  io.rdDataFromWrAddr := myDataOutFromWr
