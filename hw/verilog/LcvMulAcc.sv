@@ -264,27 +264,27 @@ module LcvAluDel1 #(
 	wire signed [WIDTH - 1:0] temp_inp_b = (
 		inp_b_sel ? inp_b_1 : inp_b_0
 	);
-	wire unsigned [WIDTH:0] temp_sum_u_inp_a = (
-		$unsigned({1'b0, inp_a})
-	);
-	wire unsigned [WIDTH:0] temp_sum_u_inp_b = (
-		$unsigned({1'b0, ~temp_inp_b})
-	);
-	wire unsigned [WIDTH:0] temp_sum_s_inp_a = (
-		$unsigned({1'b0, ~inp_a[WIDTH - 1], inp_a[WIDTH - 2:0]})
-	);
-	wire unsigned [WIDTH:0] temp_sum_s_inp_b = (
-		$unsigned({1'b0, temp_inp_b[WIDTH - 1], ~temp_inp_b[WIDTH - 2:0]})
-	);
-	wire unsigned [WIDTH:0] temp_sum_inp_carry = (
-		$unsigned({{WIDTH{1'b0}}, 1'b1})
-	);
-	wire unsigned [WIDTH:0] temp_sum_u = (
-		temp_sum_u_inp_a + temp_sum_u_inp_b + temp_sum_inp_carry
-	);
-	wire unsigned [WIDTH:0] temp_sum_s = (
-		temp_sum_s_inp_a + temp_sum_s_inp_b + temp_sum_inp_carry
-	);
+	//wire unsigned [WIDTH:0] temp_sum_u_inp_a = (
+	//	$unsigned({1'b0, inp_a})
+	//);
+	//wire unsigned [WIDTH:0] temp_sum_u_inp_b = (
+	//	$unsigned({1'b0, ~temp_inp_b})
+	//);
+	//wire unsigned [WIDTH:0] temp_sum_s_inp_a = (
+	//	$unsigned({1'b0, ~inp_a[WIDTH - 1], inp_a[WIDTH - 2:0]})
+	//);
+	//wire unsigned [WIDTH:0] temp_sum_s_inp_b = (
+	//	$unsigned({1'b0, temp_inp_b[WIDTH - 1], ~temp_inp_b[WIDTH - 2:0]})
+	//);
+	//wire unsigned [WIDTH:0] temp_sum_inp_carry = (
+	//	$unsigned({{WIDTH{1'b0}}, 1'b1})
+	//);
+	//wire unsigned [WIDTH:0] temp_sum_u = (
+	//	temp_sum_u_inp_a + temp_sum_u_inp_b + temp_sum_inp_carry
+	//);
+	//wire unsigned [WIDTH:0] temp_sum_s = (
+	//	temp_sum_s_inp_a + temp_sum_s_inp_b + temp_sum_inp_carry
+	//);
 	//--------
 	always_ff @(posedge clk) begin
 		casez (inp_op)
@@ -295,16 +295,16 @@ module LcvAluDel1 #(
 			outp_data <= inp_a - temp_inp_b;
 		end
 		OP_SLTU: begin
-			//outp_data[0] <= $unsigned(inp_a) < $unsigned(temp_inp_b);
-			//outp_data[WIDTH - 1:1] <= 'h0;
-			outp_data[0] <= ~temp_sum_u[WIDTH];
+			outp_data[0] <= $unsigned(inp_a) < $unsigned(temp_inp_b);
 			outp_data[WIDTH - 1:1] <= 'h0;
+			//outp_data[0] <= ~temp_sum_u[WIDTH];
+			//outp_data[WIDTH - 1:1] <= 'h0;
 		end
 		OP_SLTS: begin
-			//outp_data[0] <= $signed(inp_a) < $signed(temp_inp_b);
-			//outp_data[WIDTH - 1:1] <= 'h0;
-			outp_data[0] <= ~temp_sum_s[WIDTH];
+			outp_data[0] <= $signed(inp_a) < $signed(temp_inp_b);
 			outp_data[WIDTH - 1:1] <= 'h0;
+			//outp_data[0] <= ~temp_sum_s[WIDTH];
+			//outp_data[WIDTH - 1:1] <= 'h0;
 		end
 		OP_AND: begin
 			outp_data <= inp_a & temp_inp_b;
