@@ -54,6 +54,7 @@ case class RamSdpPipe[
     wordType=wordType(),
     wordCount=depth,
   )
+    .addAttribute("ramstyle", arrRamStyle)
     .addAttribute("ram_style", arrRamStyle)
     .addAttribute("rw_addr_collision", arrRwAddrCollision)
 
