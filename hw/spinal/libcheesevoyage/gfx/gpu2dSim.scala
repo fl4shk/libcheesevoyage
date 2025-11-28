@@ -136,7 +136,7 @@ case class Gpu2dSimDut(
     vivadoDebug=vivadoDebug,
   )
   //val gpu2dScaleX = Gpu2dScaleX(
-  //  cfg=gpu2dParams,
+  //  cfg=gpu2dCfg,
   //)
   val gpu2dTest = Gpu2dTest(
     clkRate=clkRate,
@@ -246,7 +246,7 @@ case class Gpu2dSimDut(
   //)
   //--------
   //val gpu2dBlanking = Gpu2dBlanking(
-  //  cfg=gpu2dParams,
+  //  cfg=gpu2dCfg,
   //  vgaTimingInfo=vgaTimingInfo,
   //)
   //--------
@@ -468,7 +468,7 @@ object Gpu2dSim extends App {
       x=fbSize2d.x / gpu2dPhysFbSize2dScale.x,
       y=fbSize2d.y / gpu2dPhysFbSize2dScale.y,
     )
-  def gpu2dParams = DefaultGpu2dConfig(
+  def gpu2dCfg = DefaultGpu2dConfig(
     rgbConfig=rgbConfig,
     intnlFbSize2d=gpu2dIntnlFbSize2d,
     physFbSize2dScale=gpu2dPhysFbSize2dScale,
@@ -620,7 +620,7 @@ object Gpu2dSim extends App {
       clkRate=clkRate,
       rgbConfig=rgbConfig,
       vgaTimingInfo=vgaTimingInfo,
-      gpu2dCfg=gpu2dParams,
+      gpu2dCfg=gpu2dCfg,
       ctrlFifoDepth=ctrlFifoDepth,
       optRawSnesButtons=true,
       optUseLcvVgaCtrl=(
@@ -636,7 +636,7 @@ object Gpu2dSim extends App {
       //  clkRate=Gpu2dSimDutParams.clkRate,
       //  rgbConfig=Gpu2dSimDutParams.rgbConfig,
       //  vgaTimingInfo=Gpu2dSimDutParams.vgaTimingInfo,
-      //  gpu2dParams=Gpu2dSimDutParams.gpu2dParams,
+      //  gpu2dCfg=Gpu2dSimDutParams.gpu2dCfg,
       //  ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
       //  optRawSnesButtons=true,
       //  dbgPipeMemRmw=(
