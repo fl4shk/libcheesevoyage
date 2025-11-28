@@ -612,7 +612,7 @@ case class LcvStallBusSdramCtrl(
     )
   )
 
-  object State extends SpinalEnum(defaultEncoding=binarySequential) {
+  object State extends SpinalEnum(defaultEncoding=binaryOneHot) {
     val
       PWR_ON_INIT,
       PWR_ON_CNT_DO_CKE_HI,
