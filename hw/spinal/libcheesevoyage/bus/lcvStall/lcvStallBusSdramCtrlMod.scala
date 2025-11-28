@@ -379,6 +379,8 @@ case class LcvStallBusSdramIo(
     ba := bank
     a(9 downto 0) := column
     a(10) := autoPrecharge
+    dqmh := False
+    dqml := False
     someDqTriState.writeEnable := False
   }
   private[libcheesevoyage] def sendCmdWrite(
@@ -388,15 +390,20 @@ case class LcvStallBusSdramIo(
     someDqTriState: TriState[UInt],
     wrData: UInt,
     wrByteEn: UInt,
+    firstWrite: Boolean,
   ): Unit = {
-    this._sendCmdBase(U"4'b0100")
-    ba := bank
-    a(9 downto 0) := column
-    a(10) := autoPrecharge
-    someDqTriState.writeEnable := True
-    someDqTriState.write := wrData
+    if (firstWrite) {
+      this._sendCmdBase(U"4'b0100")
+      ba := bank
+      a(9 downto 0) := column
+      a(10) := autoPrecharge
+    } else {
+      this.sendCmdNop()
+    }
     dqmh := ~wrByteEn(1)
     dqml := ~wrByteEn(0)
+    someDqTriState.writeEnable := True
+    someDqTriState.write := wrData
   }
   private[libcheesevoyage] def sendCmdActive(
     bank: UInt,
@@ -602,6 +609,7 @@ case class LcvStallBusSdramCtrl(
     cfg.casLatency._2
     + cfg.burstLen
     + 1
+    //+ 1
   )
   val rRdCasLatencyCnt = (
     Reg(SInt((log2Up(myRdCasLatencyCntNumCycles) + 3) bits))
@@ -759,8 +767,8 @@ case class LcvStallBusSdramCtrl(
     }
     is (State.SEND_ACTIVE) {
       io.sdram.sendCmdActive(
-        bank=rSavedH2dSendData.addr(24 downto 23),
-        row=rSavedH2dSendData.addr(22 downto 10),
+        bank=rSavedH2dSendData.addr(25 downto 24),
+        row=rSavedH2dSendData.addr(23 downto 11),
       )
       rState := State.ACTIVE_POST_NOPS
     }
@@ -783,8 +791,8 @@ case class LcvStallBusSdramCtrl(
     }
     is (State.SEND_READ) {
       io.sdram.sendCmdRead(
-        bank=rSavedH2dSendData.addr(24 downto 23),
-        column=rSavedH2dSendData.addr(9 downto 0),
+        bank=rSavedH2dSendData.addr(25 downto 24),
+        column=rSavedH2dSendData.addr(10 downto 1),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
       )
@@ -794,19 +802,42 @@ case class LcvStallBusSdramCtrl(
         myRdCasLatencyCntNumCycles - 1
       )
       rRdNopWaitCnt := myRdNopWaitCntNumCycles
+      //when (!rRdCasLatencyCnt.msb) {
+      //  rRdCasLatencyCnt := rRdCasLatencyCnt - 1
+      //  when (rRdCasLatencyCnt === 0) {
+      //    rD2hSendData.data(31 downto 16) := rDqTriState.read
+      //  } elsewhen (rRdCasLatencyCnt === 1) {
+      //    rD2hSendData.data(15 downto 0) := rDqTriState.read
+      //  }
+      //  //switch (rRdCasLatencyCnt.lsb) {
+      //  //  is (False) {
+      //  //    rD2hSendData.data(15 downto 0) := rDqTriState.read
+      //  //  }
+      //  //  is (True) {
+      //  //    rD2hSendData.data(31 downto 16) := rDqTriState.read
+      //  //  }
+      //  //}
+      //} otherwise {
+      //  rState := State.READ_POST_NOPS
+      //}
     }
     is (State.READ_POST_NOPS) {
       io.sdram.sendCmdNop()
       when (!rRdCasLatencyCnt.msb) {
         rRdCasLatencyCnt := rRdCasLatencyCnt - 1
-        switch (rRdCasLatencyCnt.lsb) {
-          is (False) {
-            rD2hSendData.data(15 downto 0) := rDqTriState.read
-          }
-          is (True) {
-            rD2hSendData.data(31 downto 16) := rDqTriState.read
-          }
+        when (rRdCasLatencyCnt === 0) {
+          rD2hSendData.data(31 downto 16) := rDqTriState.read
+        } elsewhen (rRdCasLatencyCnt === 1) {
+          rD2hSendData.data(15 downto 0) := rDqTriState.read
         }
+        //switch (rRdCasLatencyCnt.lsb) {
+        //  is (False) {
+        //    rD2hSendData.data(15 downto 0) := rDqTriState.read
+        //  }
+        //  is (True) {
+        //    rD2hSendData.data(31 downto 16) := rDqTriState.read
+        //  }
+        //}
       }
       when (!rRdNopWaitCnt.msb) {
         rRdNopWaitCnt := rRdNopWaitCnt - 1
@@ -822,24 +853,26 @@ case class LcvStallBusSdramCtrl(
     }
     is (State.SEND_WRITE_0) {
       io.sdram.sendCmdWrite(
-        bank=rSavedH2dSendData.addr(24 downto 23),
-        column=rSavedH2dSendData.addr(9 downto 0),
+        bank=rSavedH2dSendData.addr(25 downto 24),
+        column=rSavedH2dSendData.addr(10 downto 1),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(15 downto 0),
         wrByteEn=rSavedH2dSendData.byteEn(1 downto 0),
+        firstWrite=true,
       )
       rWrNopWaitCnt := myWrNopWaitCntNumCycles
       rState := State.SEND_WRITE_1
     }
     is (State.SEND_WRITE_1) {
       io.sdram.sendCmdWrite(
-        bank=rSavedH2dSendData.addr(24 downto 23),
-        column=rSavedH2dSendData.addr(9 downto 0),
+        bank=rSavedH2dSendData.addr(25 downto 24),
+        column=rSavedH2dSendData.addr(10 downto 1),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(31 downto 16),
         wrByteEn=rSavedH2dSendData.byteEn(3 downto 2),
+        firstWrite=true,
       )
       rState := State.WRITE_POST_NOPS
       rD2hValid := True
@@ -979,16 +1012,43 @@ case class LcvSdramCtrlSimDut(
   val rPrngArea = new Area {
     // credit:
     // http://www.retroprogramming.com/2017/07/xorshift-pseudorandom-numbers-in-z80.html
-    val rXs = (
-      Reg(UInt(32 bits))
-      init(1)
+    def myXsWidth = 32
+    //def myCntWidth = 3
+    def myCntMax = 2
+    def myCntWidth = log2Up(myCntMax + 1) + 1
+    val rCnt = (
+      Reg(SInt(myCntWidth bits))
+      init(myCntMax)
     )
+    val rXs = (
+      Vec.fill(3)(
+        Reg(UInt(myXsWidth bits))
+        init(1)
+      )
+    )
+
+    rXs(2) := (
+      (rXs(0) ^ ((rXs(0) << 7)(rXs(0).bitsRange))).resize(myXsWidth)
+    )
+    rXs(1) := (
+      (rXs(2) ^ (rXs(2) >> 9).resize(myXsWidth)).resize(myXsWidth)
+    )
+    when (!rCnt.msb) {
+      rCnt := rCnt - 1
+    } otherwise {
+      rXs(0) := (
+        (rXs(1) ^ ((rXs(1) << 8)(rXs(0).bitsRange))).resize(myXsWidth)
+      )
+      rCnt := myCntMax
+    }
     def rand(): UInt = {
-      val a = (rXs ^ ((rXs << 7)(rXs.bitsRange))).resize(rXs.getWidth)
-      val b = (a ^ (a >> 9).resize(rXs.getWidth)).resize(rXs.getWidth)
-      val c = (b ^ ((b << 8)(rXs.bitsRange))).resize(rXs.getWidth)
-      rXs := c
-      c(15 downto 0)
+      //val a = (rXs ^ ((rXs << 7)(rXs.bitsRange))).resize(rXs.getWidth)
+      //val b = (a ^ (a >> 9).resize(rXs.getWidth)).resize(rXs.getWidth)
+      //val c = (b ^ ((b << 8)(rXs.bitsRange))).resize(rXs.getWidth)
+      //rXs := c
+      //rXs(0) := r
+      //c(15 downto 0)
+      rXs(0)(15 downto 0)
     }
   }
   def myMaxAddr = 8
@@ -1003,7 +1063,7 @@ case class LcvSdramCtrlSimDut(
       //when (rHadFirstTxn) {
       //  rH2dSendData.addr := rH2dSendData.addr + 1
       //}
-      rH2dSendData.data(31 downto 16) := rPrngArea.rXs(15 downto 0)
+      rH2dSendData.data(31 downto 16) := rPrngArea.rXs(0)(31 downto 16)
       rH2dSendData.data(15 downto 0) := rPrngArea.rand()
       rH2dSendData.byteEn := U(
         rH2dSendData.byteEn.getWidth bits, default -> True
@@ -1028,7 +1088,7 @@ case class LcvSdramCtrlSimDut(
       when (rHadH2dFire && rHadD2hFire) {
         when (rH2dSendData.addr < myMaxAddr) {
           rState := State.WRITE_START
-          rH2dSendData.addr := rH2dSendData.addr + 1
+          rH2dSendData.addr := rH2dSendData.addr + 4
         } otherwise {
           rState := State.READ_START
           rH2dSendData.addr := 0x0
@@ -1058,7 +1118,7 @@ case class LcvSdramCtrlSimDut(
       when (rHadH2dFire && rHadD2hFire) {
         when (rH2dSendData.addr < myMaxAddr) {
           rState := State.READ_START
-          rH2dSendData.addr := rH2dSendData.addr + 1
+          rH2dSendData.addr := rH2dSendData.addr + 4
         } otherwise {
           rState := State.WRITE_START
           rH2dSendData.addr := 0x0
