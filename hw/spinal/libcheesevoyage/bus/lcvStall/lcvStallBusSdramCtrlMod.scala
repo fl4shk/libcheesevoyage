@@ -283,7 +283,7 @@ case class LcvStallBusSdramCtrlConfig(
 
     def tAC = (
       Array[(Option[BigDecimal], Option[BigDecimal])](
-        // Access time form CLK (positive edge)
+        // Access time from CLK (positive edge)
         (
           // CAS Latency == 2
           Some((6 ns) * clkRate),
@@ -918,17 +918,24 @@ case class as4c32m16sb(
   addRTLPath("./hw/verilog/as4c32m16sb.sv")
 }
 
-case class LcvSdramSimDut(
+//case class LcvSdramCtrlSimDutIo(
+//  clkRate: HertzNumber,
+//) extends Bundle {
+//}
+case class LcvSdramCtrlSimDut(
   clkRate: HertzNumber,
+  useAltddioOut: Boolean,
 ) extends Component {
   //--------
-  val io = new Bundle {
-  }
-  //--------
-  val mySdramCtrl = LcvStallBusSdramCtrl(cfg=LcvStallBusSdramCtrlConfig(
+  //val io = LcvSdramCtrlSimDutIo(clkRate=clkRate)
+  val cfg = LcvStallBusSdramCtrlConfig(
     clkRate=clkRate,
-    useAltddioOut=false,
-  ))
+    useAltddioOut=useAltddioOut,
+  )
+  val io = LcvStallBusSdramIo(cfg=cfg)
+  //--------
+  val mySdramCtrl = LcvStallBusSdramCtrl(cfg=cfg)
+  io <> mySdramCtrl.io.sdram
   val rH2dValid = Reg(Bool(), init=False)
   val rH2dSendData = {
     val temp = Reg(cloneOf(mySdramCtrl.io.bus.h2dBus.sendData))
@@ -941,19 +948,6 @@ case class LcvSdramSimDut(
   mySdramCtrl.io.bus.h2dBus.nextValid := rH2dValid
   mySdramCtrl.io.bus.h2dBus.sendData := rH2dSendData
   mySdramCtrl.io.bus.d2hBus.ready := myD2hReady //rD2hReady
-
-  val mySdram = as4c32m16sb()
-  mySdram.io.DQ <> mySdramCtrl.io.sdram.dq
-  mySdram.io.A := mySdramCtrl.io.sdram.a
-  mySdram.io.DQML := mySdramCtrl.io.sdram.dqml
-  mySdram.io.DQMH := mySdramCtrl.io.sdram.dqmh
-  mySdram.io.BA := mySdramCtrl.io.sdram.ba
-  mySdram.io.nCS := mySdramCtrl.io.sdram.nCs
-  mySdram.io.nWE := mySdramCtrl.io.sdram.nWe
-  mySdram.io.nRAS := mySdramCtrl.io.sdram.nRas
-  mySdram.io.nCAS := mySdramCtrl.io.sdram.nCas
-  mySdram.io.CLK := mySdramCtrl.io.sdram.clk
-  mySdram.io.CKE := mySdramCtrl.io.sdram.cke
   //--------
   object State extends SpinalEnum(defaultEncoding=binarySequential) {
     val
@@ -1072,6 +1066,43 @@ case class LcvSdramSimDut(
       }
     }
   }
+}
+case class LcvSdramSimDut(
+  clkRate: HertzNumber,
+) extends Component {
+  //--------
+  val io = new Bundle {
+  }
+  //--------
+  val mySdramCtrlSimDut = LcvSdramCtrlSimDut(
+    clkRate=clkRate,
+    useAltddioOut=false,
+  )
+  //--------
+  val mySdram = as4c32m16sb()
+  //mySdram.io.DQ <> mySdramCtrl.io.sdram.dq
+  //mySdram.io.A := mySdramCtrl.io.sdram.a
+  //mySdram.io.DQML := mySdramCtrl.io.sdram.dqml
+  //mySdram.io.DQMH := mySdramCtrl.io.sdram.dqmh
+  //mySdram.io.BA := mySdramCtrl.io.sdram.ba
+  //mySdram.io.nCS := mySdramCtrl.io.sdram.nCs
+  //mySdram.io.nWE := mySdramCtrl.io.sdram.nWe
+  //mySdram.io.nRAS := mySdramCtrl.io.sdram.nRas
+  //mySdram.io.nCAS := mySdramCtrl.io.sdram.nCas
+  //mySdram.io.CLK := mySdramCtrl.io.sdram.clk
+  //mySdram.io.CKE := mySdramCtrl.io.sdram.cke
+  mySdram.io.DQ <> mySdramCtrlSimDut.io.dq
+  mySdram.io.A := mySdramCtrlSimDut.io.a
+  mySdram.io.DQML := mySdramCtrlSimDut.io.dqml
+  mySdram.io.DQMH := mySdramCtrlSimDut.io.dqmh
+  mySdram.io.BA := mySdramCtrlSimDut.io.ba
+  mySdram.io.nCS := mySdramCtrlSimDut.io.nCs
+  mySdram.io.nWE := mySdramCtrlSimDut.io.nWe
+  mySdram.io.nRAS := mySdramCtrlSimDut.io.nRas
+  mySdram.io.nCAS := mySdramCtrlSimDut.io.nCas
+  mySdram.io.CLK := mySdramCtrlSimDut.io.clk
+  mySdram.io.CKE := mySdramCtrlSimDut.io.cke
+  //--------
 }
 
 object LcvSdramSim extends App {
