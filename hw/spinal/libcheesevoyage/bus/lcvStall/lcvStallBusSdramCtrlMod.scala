@@ -362,12 +362,18 @@ case class LcvStallBusSdramIo(
   private[libcheesevoyage] def sendCmdInhibit(
   ): Unit = {
     nCs := True
+    dqmh := False
+    dqml := False
   }
   private[libcheesevoyage] def sendCmdNop(): Unit = {
     this._sendCmdBase(U"4'b0111")
+    dqmh := False
+    dqml := False
   }
   private[libcheesevoyage] def sendCmdBurstTerm(): Unit = {
     this._sendCmdBase(U"4'b0110")
+    dqmh := False
+    dqml := False
   }
   private[libcheesevoyage] def sendCmdRead(
     bank: UInt,
@@ -412,6 +418,8 @@ case class LcvStallBusSdramIo(
     this._sendCmdBase(U"4'b0011")
     ba := bank
     a := row
+    dqmh := False
+    dqml := False
   }
   private[libcheesevoyage] def sendCmdPrecharge(
     bank: UInt,
@@ -422,16 +430,22 @@ case class LcvStallBusSdramIo(
       // we can do this even when `prechargeAll === True`
       // because `ba` is ignored in that case
     a(10) := prechargeAll
+    dqmh := False
+    dqml := False
   }
   private[libcheesevoyage] def sendCmdAutoRefresh(
   ): Unit = {
     this._sendCmdBase(U"4'b0001")
+    dqmh := False
+    dqml := False
   }
   private[libcheesevoyage] def sendCmdLoadMode(
   ): Unit = {
     this._sendCmdBase(U"4'b0000")
     ba := ba.getZero
     a := cfg.mode
+    dqmh := False
+    dqml := False
   }
 }
 
