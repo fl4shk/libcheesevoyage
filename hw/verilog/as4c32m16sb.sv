@@ -39,7 +39,7 @@ localparam CMD_PRECHARGE       = 3'b010;
 localparam CMD_AUTO_REFRESH    = 3'b001;
 localparam CMD_LOAD_MODE       = 3'b000;
 
-int 			bl;
+int 			rbl, wbl;
 int             cas_latency;
 int             cas_cnt, rd_cnt, wr_cnt;
 
@@ -51,6 +51,7 @@ logic [15:0]    din, dout;
 logic           rden;
 logic [15:0]    wr_din;
 logic           dqml, dqmh;
+logic [1:0]     wr_dqm;
 logic           dqloe, dqhoe;
 
 logic [1:0] 	bank;
@@ -84,12 +85,13 @@ always @(posedge CLK) if (cke & ~cmd[3]) begin
         CMD_LOAD_MODE: begin
             // A[2:0] = burst length: 0-3=2^N, 7=512 (full page)
             if (A[2:0] < 3'd7)
-                bl = 1 << a[2:0];
+                rbl = 1 << a[2:0];
             else
-                bl = 512;
+                rbl = 512;
             // A[6:4] = CAS latency
             cas_latency = int'(a[6:4]);
-            // TODO: Write Burst Length, Burst Type
+            wbl = a[9] ? 1 : rbl;
+            // TODO: Burst Type
         end
         CMD_ACTIVE: begin
             row <= a[12:0];
@@ -99,13 +101,12 @@ always @(posedge CLK) if (cke & ~cmd[3]) begin
             col <= a[9:0];
             bank <= ba;
             cas_cnt <= cas_latency - 2;
-            rd_cnt <= bl;
+            rd_cnt <= rbl;
         end
         CMD_WRITE: begin
             col <= a[9:0];
             bank <= ba;
-            wr_din <= din;
-            wr_cnt <= bl;
+            wr_cnt <= wbl;
         end
         default: ;
     endcase
@@ -124,10 +125,13 @@ always @(posedge CLK) if (cke) begin
 end
 
 always @(posedge CLK) if (cke) begin
+    wr_din <= din;
+    wr_dqm <= {dqmh, dqml};
+
     if (wr_cnt != 0) begin
-        if (~dqmh)
+        if (~wr_dqm[1])
             mem[bank][row][col][15:8] <= wr_din[15:8];
-        if (~dqml)
+        if (~wr_dqm[0])
             mem[bank][row][col][7:0] <= wr_din[7:0];
         col <= col + 1'd1;
         wr_cnt <= wr_cnt - 1;
