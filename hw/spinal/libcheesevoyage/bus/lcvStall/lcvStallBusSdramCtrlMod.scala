@@ -995,7 +995,8 @@ case class LcvSdramCtrlSimDut(
       WRITE_WAIT_TXN,
       READ_START,
       READ_WAIT_TXN,
-      DO_COMPARE_TEST_DATA
+      DO_COMPARE_TEST_DATA,
+      FAILED_TEST
       = newElement();
   }
   val rState = (
@@ -1186,10 +1187,19 @@ case class LcvSdramCtrlSimDut(
         rH2dSendData.addr := 0x0
         rState := State.WRITE_START
       }
+      val failure = (
+        rTestData(tempCnt).payload.head
+        =/= rTestData(tempCnt).payload.last
+      )
+      when (failure) {
+        rState := State.FAILED_TEST
+      }
       rTestData(tempCnt).valid := (
         rTestData(tempCnt).payload.head
         === rTestData(tempCnt).payload.last
       )
+    }
+    is (State.FAILED_TEST) {
     }
   }
 }
