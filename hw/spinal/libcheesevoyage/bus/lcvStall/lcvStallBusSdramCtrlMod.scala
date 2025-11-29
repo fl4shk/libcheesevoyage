@@ -366,10 +366,10 @@ case class LcvStallBusSdramIo(
     dqml := False
   }
   private[libcheesevoyage] def sendCmdNop(
-    inWriteBurst: Boolean=false
+    inPostFirstBurstElem: Boolean=false
   ): Unit = {
     this._sendCmdBase(U"4'b0111")
-    if (!inWriteBurst) {
+    if (!inPostFirstBurstElem) {
       dqmh := False
       dqml := False
     }
@@ -384,11 +384,16 @@ case class LcvStallBusSdramIo(
     column: UInt,
     autoPrecharge: Bool,
     someDqTriState: TriState[UInt],
+    firstRead: Boolean,
   ): Unit = {
-    this._sendCmdBase(U"4'b0101")
-    ba := bank
-    a(9 downto 0) := column
-    a(10) := autoPrecharge
+    if (firstRead) {
+      this._sendCmdBase(U"4'b0101")
+      ba := bank
+      a(9 downto 0) := column
+      a(10) := autoPrecharge
+    } else {
+      this.sendCmdNop(inPostFirstBurstElem=true)
+    }
     dqmh := False
     dqml := False
     someDqTriState.writeEnable := False
@@ -408,7 +413,7 @@ case class LcvStallBusSdramIo(
       a(9 downto 0) := column
       a(10) := autoPrecharge
     } else {
-      this.sendCmdNop(inWriteBurst=true)
+      this.sendCmdNop(inPostFirstBurstElem=true)
     }
     dqmh := ~wrByteEn(1)
     dqml := ~wrByteEn(0)
@@ -816,6 +821,7 @@ case class LcvStallBusSdramCtrl(
         column=rSavedH2dSendData.addr(10 downto 1),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
+        firstRead=true,
       )
       //rState := State.READ_POST_NOPS
       rState := State.SEND_READ_1
@@ -849,6 +855,7 @@ case class LcvStallBusSdramCtrl(
         column=rSavedH2dSendData.addr(10 downto 1),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
+        firstRead=false,
       )
       rState := State.READ_POST_NOPS
       when (!rRdCasLatencyCnt.msb) {
