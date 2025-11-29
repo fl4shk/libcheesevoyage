@@ -1086,7 +1086,7 @@ case class LcvSdramCtrlSimDut(
         )
       ))
       temp.init(temp.getZero)
-      temp
+      KeepAttribute(temp)
     })
   )
   val tempCnt = (
