@@ -643,7 +643,8 @@ case class LcvStallBusSdramCtrl(
       SEND_ACTIVE,
       ACTIVE_POST_NOPS,
       PRE_READ_WRITE,
-      SEND_READ,
+      SEND_READ_0,
+      SEND_READ_1,
       READ_POST_NOPS,
       SEND_WRITE_0,
       SEND_WRITE_1,
@@ -784,19 +785,20 @@ case class LcvStallBusSdramCtrl(
     is (State.PRE_READ_WRITE) {
       io.sdram.sendCmdNop()
       when (!rSavedH2dSendData.isWrite) {
-        rState := State.SEND_READ
+        rState := State.SEND_READ_0
       } otherwise {
         rState := State.SEND_WRITE_0
       }
     }
-    is (State.SEND_READ) {
+    is (State.SEND_READ_0) {
       io.sdram.sendCmdRead(
         bank=rSavedH2dSendData.addr(25 downto 24),
         column=rSavedH2dSendData.addr(10 downto 1),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
       )
-      rState := State.READ_POST_NOPS
+      //rState := State.READ_POST_NOPS
+      rState := State.SEND_READ_1
       rRdCasLatencyCnt := (
         //cfg.casLatency._2 - 1
         myRdCasLatencyCntNumCycles - 1
@@ -821,6 +823,26 @@ case class LcvStallBusSdramCtrl(
       //  rState := State.READ_POST_NOPS
       //}
     }
+    is (State.SEND_READ_1) {
+      io.sdram.sendCmdRead(
+        bank=rSavedH2dSendData.addr(25 downto 24),
+        column=rSavedH2dSendData.addr(10 downto 1),
+        autoPrecharge=True,
+        someDqTriState=rDqTriState,
+      )
+      rState := State.READ_POST_NOPS
+      when (!rRdCasLatencyCnt.msb) {
+        rRdCasLatencyCnt := rRdCasLatencyCnt - 1
+        when (rRdCasLatencyCnt === 0) {
+          rD2hSendData.data(31 downto 16) := rDqTriState.read
+        } elsewhen (rRdCasLatencyCnt === 1) {
+          rD2hSendData.data(15 downto 0) := rDqTriState.read
+        }
+      }
+      //when (!rRdNopWaitCnt.msb) {
+      //  rRdNopWaitCnt := rRdNopWaitCnt - 1
+      //}
+    }
     is (State.READ_POST_NOPS) {
       io.sdram.sendCmdNop()
       when (!rRdCasLatencyCnt.msb) {
@@ -830,14 +852,6 @@ case class LcvStallBusSdramCtrl(
         } elsewhen (rRdCasLatencyCnt === 1) {
           rD2hSendData.data(15 downto 0) := rDqTriState.read
         }
-        //switch (rRdCasLatencyCnt.lsb) {
-        //  is (False) {
-        //    rD2hSendData.data(15 downto 0) := rDqTriState.read
-        //  }
-        //  is (True) {
-        //    rD2hSendData.data(31 downto 16) := rDqTriState.read
-        //  }
-        //}
       }
       when (!rRdNopWaitCnt.msb) {
         rRdNopWaitCnt := rRdNopWaitCnt - 1
