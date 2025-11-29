@@ -667,8 +667,10 @@ case class LcvStallBusSdramCtrl(
       = newElement();
   }
   val rState = (
-    Reg(State())
-    init(State.PWR_ON_INIT)
+    KeepAttribute(
+      Reg(State())
+      init(State.PWR_ON_INIT)
+    )
   )
   switch (rState) {
     is (State.PWR_ON_INIT) {
