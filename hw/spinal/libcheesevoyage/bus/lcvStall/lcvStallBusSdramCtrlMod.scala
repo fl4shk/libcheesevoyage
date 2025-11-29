@@ -140,8 +140,8 @@ case class LcvStallBusSdramCtrlConfig(
   //--------
 
   //def burstLen = 4
-  def burstLen = 2
-  //def burstLen = 1
+  //def burstLen = 2
+  def burstLen = 1
   def burstCode: UInt = (
     // 000=1, 001=2, 010=4, 011=8
     if (burstLen == 8) (
@@ -658,10 +658,10 @@ case class LcvStallBusSdramCtrl(
       ACTIVE_POST_NOPS,
       PRE_READ_WRITE,
       SEND_READ_0,
-      SEND_READ_1,
+      //SEND_READ_1,
       READ_POST_NOPS,
       SEND_WRITE_0,
-      SEND_WRITE_1,
+      //SEND_WRITE_1,
       WRITE_POST_NOPS
 
       = newElement();
@@ -813,8 +813,8 @@ case class LcvStallBusSdramCtrl(
         autoPrecharge=True,
         someDqTriState=rDqTriState,
       )
-      //rState := State.READ_POST_NOPS
-      rState := State.SEND_READ_1
+      rState := State.READ_POST_NOPS
+      //rState := State.SEND_READ_1
       rRdCasLatencyCnt := (
         //cfg.casLatency._2 - 1
         myRdCasLatencyCntNumCycles - 1
@@ -839,35 +839,37 @@ case class LcvStallBusSdramCtrl(
       //  rState := State.READ_POST_NOPS
       //}
     }
-    is (State.SEND_READ_1) {
-      io.sdram.sendCmdRead(
-        bank=rSavedH2dSendData.addr(25 downto 24),
-        column=rSavedH2dSendData.addr(10 downto 1),
-        autoPrecharge=True,
-        someDqTriState=rDqTriState,
-      )
-      rState := State.READ_POST_NOPS
-      when (!rRdCasLatencyCnt.msb) {
-        rRdCasLatencyCnt := rRdCasLatencyCnt - 1
-        when (rRdCasLatencyCnt === 0) {
-          rD2hSendData.data(31 downto 16) := rDqTriState.read
-        } elsewhen (rRdCasLatencyCnt === 1) {
-          rD2hSendData.data(15 downto 0) := rDqTriState.read
-        }
-      }
-      //when (!rRdNopWaitCnt.msb) {
-      //  rRdNopWaitCnt := rRdNopWaitCnt - 1
-      //}
-    }
+    //is (State.SEND_READ_1) {
+    //  io.sdram.sendCmdRead(
+    //    bank=rSavedH2dSendData.addr(25 downto 24),
+    //    column=rSavedH2dSendData.addr(10 downto 1),
+    //    autoPrecharge=True,
+    //    someDqTriState=rDqTriState,
+    //  )
+    //  rState := State.READ_POST_NOPS
+    //  when (!rRdCasLatencyCnt.msb) {
+    //    rRdCasLatencyCnt := rRdCasLatencyCnt - 1
+    //    when (rRdCasLatencyCnt === 0) {
+    //      rD2hSendData.data(31 downto 16) := rDqTriState.read
+    //    } elsewhen (rRdCasLatencyCnt === 1) {
+    //      rD2hSendData.data(15 downto 0) := rDqTriState.read
+    //    }
+    //  }
+    //  //when (!rRdNopWaitCnt.msb) {
+    //  //  rRdNopWaitCnt := rRdNopWaitCnt - 1
+    //  //}
+    //}
     is (State.READ_POST_NOPS) {
       io.sdram.sendCmdNop()
       when (!rRdCasLatencyCnt.msb) {
         rRdCasLatencyCnt := rRdCasLatencyCnt - 1
         when (rRdCasLatencyCnt === 0) {
-          rD2hSendData.data(31 downto 16) := rDqTriState.read
-        } elsewhen (rRdCasLatencyCnt === 1) {
+          //rD2hSendData.data(31 downto 16) := rDqTriState.read
           rD2hSendData.data(15 downto 0) := rDqTriState.read
         }
+        //elsewhen (rRdCasLatencyCnt === 1) {
+        //  rD2hSendData.data(15 downto 0) := rDqTriState.read
+        //}
       }
       when (!rRdNopWaitCnt.msb) {
         rRdNopWaitCnt := rRdNopWaitCnt - 1
@@ -892,22 +894,25 @@ case class LcvStallBusSdramCtrl(
         firstWrite=true,
       )
       rWrNopWaitCnt := myWrNopWaitCntNumCycles
-      rState := State.SEND_WRITE_1
-    }
-    is (State.SEND_WRITE_1) {
-      io.sdram.sendCmdWrite(
-        bank=rSavedH2dSendData.addr(25 downto 24),
-        column=rSavedH2dSendData.addr(10 downto 1),
-        autoPrecharge=True,
-        someDqTriState=rDqTriState,
-        wrData=rSavedH2dSendData.data(31 downto 16),
-        wrByteEn=rSavedH2dSendData.byteEn(3 downto 2),
-        firstWrite=true,
-      )
+      //rState := State.SEND_WRITE_1
       rState := State.WRITE_POST_NOPS
       rD2hValid := True
     }
+    //is (State.SEND_WRITE_1) {
+    //  io.sdram.sendCmdWrite(
+    //    bank=rSavedH2dSendData.addr(25 downto 24),
+    //    column=rSavedH2dSendData.addr(10 downto 1),
+    //    autoPrecharge=True,
+    //    someDqTriState=rDqTriState,
+    //    wrData=rSavedH2dSendData.data(31 downto 16),
+    //    wrByteEn=rSavedH2dSendData.byteEn(3 downto 2),
+    //    firstWrite=true,
+    //  )
+    //  rState := State.WRITE_POST_NOPS
+    //  rD2hValid := True
+    //}
     is (State.WRITE_POST_NOPS) {
+      
       io.sdram.sendCmdNop()
       when (!rWrNopWaitCnt.msb) {
         rWrNopWaitCnt := rWrNopWaitCnt - 1
@@ -1096,7 +1101,8 @@ case class LcvSdramCtrlSimDut(
       //rXs(0) := r
       //c(15 downto 0)
       Cat(
-        rXsVec.head(0)(15 downto 0),
+        //rXsVec.head(0)(15 downto 0),
+        U"16'h0",
         rXsVec.last(0)(15 downto 0),
       ).asUInt
     }
