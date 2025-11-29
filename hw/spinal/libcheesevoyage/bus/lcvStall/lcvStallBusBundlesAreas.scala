@@ -30,6 +30,7 @@ case class LcvStallBusConfig(
   def dataWidth = mainCfg.dataWidth
   def addrWidth = mainCfg.addrWidth
   def burstSizeWidth = mainCfg.burstSizeWidth
+  def maxBurstSize = (1 << burstSizeWidth) - 1
   def srcWidth = mainCfg.srcWidth
 
   def byteEnWidth: Int = (dataWidth / 8).toInt
@@ -170,7 +171,7 @@ case class LcvStallBusD2hSendPayload(
 }
 
 case class LcvStallBusIo(
-  cfg: LcvStallBusConfig
+  cfg: LcvStallBusConfig,
 ) extends Bundle with IMasterSlave {
   val h2dBus = (
     slave(new LcvStallIo[LcvStallBusH2dSendPayload, Bool](

@@ -981,13 +981,21 @@ case class LcvSdramCtrlSimDut(
   mySdramCtrl.io.bus.h2dBus.nextValid := rH2dValid
   mySdramCtrl.io.bus.h2dBus.sendData := rH2dSendData
   mySdramCtrl.io.bus.d2hBus.ready := myD2hReady //rD2hReady
+
+  //val rD2hSendData = {
+  //  val temp = Reg(cloneOf(mySdramCtrl.io.bus.d2hBus.sendData))
+  //  temp.init(temp.getZero)
+  //  temp
+  //}
+
   //--------
   object State extends SpinalEnum(defaultEncoding=binarySequential) {
     val
       WRITE_START,
       WRITE_WAIT_TXN,
       READ_START,
-      READ_WAIT_TXN
+      READ_WAIT_TXN,
+      DO_COMPARE_TEST_DATA
       = newElement();
   }
   val rState = (
@@ -1009,10 +1017,12 @@ case class LcvSdramCtrlSimDut(
     Reg(Bool(), init=False)
   )
 
-  val rPrngArea = new Area {
+  val myPrngArea = new Area {
     // credit:
     // http://www.retroprogramming.com/2017/07/xorshift-pseudorandom-numbers-in-z80.html
-    def myXsWidth = 32
+    def myXsWidth = (
+      32
+    )
     //def myCntWidth = 3
     def myCntMax = 2
     def myCntWidth = log2Up(myCntMax + 1) + 1
@@ -1020,38 +1030,70 @@ case class LcvSdramCtrlSimDut(
       Reg(SInt(myCntWidth bits))
       init(myCntMax)
     )
-    val rXs = (
-      Vec.fill(3)(
-        Reg(UInt(myXsWidth bits))
-        init(1)
+    val rXsVec = (
+      Vec.fill(2)(
+        Vec.fill(3)(
+          Reg(UInt(myXsWidth bits))
+          //init(1)
+        )
       )
     )
-
-    rXs(2) := (
-      (rXs(0) ^ ((rXs(0) << 7)(rXs(0).bitsRange))).resize(myXsWidth)
-    )
-    rXs(1) := (
-      (rXs(2) ^ (rXs(2) >> 9).resize(myXsWidth)).resize(myXsWidth)
-    )
-    when (!rCnt.msb) {
-      rCnt := rCnt - 1
-    } otherwise {
-      rXs(0) := (
-        (rXs(1) ^ ((rXs(1) << 8)(rXs(0).bitsRange))).resize(myXsWidth)
-      )
-      rCnt := myCntMax
+    for (idx <- 0 until rXsVec.size) {
+      rXsVec(idx).foreach(item => item.init(idx + 1))
     }
-    def rand(): UInt = {
+    rXsVec.foreach(rXs => {
+      rXs(2) := (
+        (rXs(0) ^ ((rXs(0) << 7)(rXs(0).bitsRange))).resize(myXsWidth)
+      )
+      rXs(1) := (
+        (rXs(2) ^ (rXs(2) >> 9).resize(myXsWidth)).resize(myXsWidth)
+      )
+      when (!rCnt.msb) {
+        rCnt := rCnt - 1
+      } otherwise {
+        rXs(0) := (
+          (rXs(1) ^ ((rXs(1) << 8)(rXs(0).bitsRange))).resize(myXsWidth)
+        )
+        rCnt := myCntMax
+      }
+    })
+    def getCurrRand(): UInt = {
       //val a = (rXs ^ ((rXs << 7)(rXs.bitsRange))).resize(rXs.getWidth)
       //val b = (a ^ (a >> 9).resize(rXs.getWidth)).resize(rXs.getWidth)
       //val c = (b ^ ((b << 8)(rXs.bitsRange))).resize(rXs.getWidth)
       //rXs := c
       //rXs(0) := r
       //c(15 downto 0)
-      rXs(0)(15 downto 0)
+      Cat(
+        rXsVec.head(0)(15 downto 0),
+        rXsVec.last(0)(15 downto 0),
+      ).asUInt
     }
   }
-  def myMaxAddr = 8
+  def myMaxAddr = (
+    //8
+    //0x10
+    8 << 2
+  )
+  val rTestData = (
+    Vec.fill(
+      //(myMaxAddr >> 2) + 1
+      (myMaxAddr >> 1) // intentionally leave some always-zero elements
+    )({
+      val temp = Reg(Flow(
+        Vec.fill(2)(
+          UInt(myPrngArea.myXsWidth bits)
+        )
+      ))
+      temp.init(temp.getZero)
+      temp
+    })
+  )
+  val tempCnt = (
+    (rH2dSendData.addr(rH2dSendData.addr.high downto 2))(
+      log2Up(rTestData.size) - 1 downto 0
+    )
+  )
 
   switch (rState) {
     is (State.WRITE_START) {
@@ -1063,8 +1105,16 @@ case class LcvSdramCtrlSimDut(
       //when (rHadFirstTxn) {
       //  rH2dSendData.addr := rH2dSendData.addr + 1
       //}
-      rH2dSendData.data(31 downto 16) := rPrngArea.rXs(0)(31 downto 16)
-      rH2dSendData.data(15 downto 0) := rPrngArea.rand()
+      //rH2dSendData.data(31 downto 16) := myPrngArea.rXs(0)(31 downto 16)
+      //rH2dSendData.data(15 downto 0) := myPrngArea.rand()
+      rH2dSendData.data := myPrngArea.getCurrRand()
+      //rTestData(tempCnt).valid := False
+      rTestData(tempCnt).payload.head := (
+        myPrngArea.getCurrRand()
+      )
+      rTestData(tempCnt).payload.last := (
+        U(s"${myPrngArea.myXsWidth}'d0")
+      )
       rH2dSendData.byteEn := U(
         rH2dSendData.byteEn.getWidth bits, default -> True
       )
@@ -1120,10 +1170,26 @@ case class LcvSdramCtrlSimDut(
           rState := State.READ_START
           rH2dSendData.addr := rH2dSendData.addr + 4
         } otherwise {
-          rState := State.WRITE_START
+          //rState := State.WRITE_START
+          rState := State.DO_COMPARE_TEST_DATA
           rH2dSendData.addr := 0x0
         }
       }
+      rTestData(tempCnt).payload.last := (
+        mySdramCtrl.io.bus.d2hBus.sendData.data
+      )
+    }
+    is (State.DO_COMPARE_TEST_DATA) {
+      when (rH2dSendData.addr < myMaxAddr) {
+        rH2dSendData.addr := rH2dSendData.addr + 4
+      } otherwise {
+        rH2dSendData.addr := 0x0
+        rState := State.WRITE_START
+      }
+      rTestData(tempCnt).valid := (
+        rTestData(tempCnt).payload.head
+        === rTestData(tempCnt).payload.last
+      )
     }
   }
 }
