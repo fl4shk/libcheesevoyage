@@ -68,7 +68,7 @@ case class LcvStallBusMem(
   def myD2hBusNextValid = io.bus.d2hBus.nextValid
   myH2dBusReady.setAsReg() init(False)
 
-  val rSavedBurstSize = Reg(cloneOf(myH2dSendData.burstSize))
+  //val rSavedBurstSize = Reg(cloneOf(myH2dSendData.burstSize))
 
   switch (rState) {
     is (State.IDLE) {
@@ -79,13 +79,13 @@ case class LcvStallBusMem(
           rState := State.RD_MAIN
         }
       }
-      rSavedBurstSize := (
-        RegNext(
-          next=myH2dSendData.burstSize,
-          init=myH2dSendData.burstSize.getZero,
-        )
-      )
-      myD2hSendData.burstSize := 0x0
+      //rSavedBurstSize := (
+      //  RegNext(
+      //    next=myH2dSendData.burstSize,
+      //    init=myH2dSendData.burstSize.getZero,
+      //  )
+      //)
+      //myD2hSendData.burstSize := 0x0
       myH2dBusReady := False
     }
     is (State.RD_MAIN) {

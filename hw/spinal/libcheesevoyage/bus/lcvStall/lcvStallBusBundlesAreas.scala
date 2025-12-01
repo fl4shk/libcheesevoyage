@@ -18,8 +18,9 @@ extends SpinalEnum(defaultEncoding=binaryOneHot) {
 case class LcvStallBusMainConfig(
   dataWidth: Int,
   addrWidth: Int,
-  burstSizeWidth: Int,
-  srcWidth: Int,
+  //burstSizeWidth: Int,
+  burstCntWidth: Int,//Option[Int],
+  srcWidth: Int, //Option[Int],
 ) {
 }
 
@@ -29,20 +30,33 @@ case class LcvStallBusConfig(
 ) {
   def dataWidth = mainCfg.dataWidth
   def addrWidth = mainCfg.addrWidth
-  def burstSizeWidth = mainCfg.burstSizeWidth
-  def maxBurstSize = (1 << burstSizeWidth) - 1
+  //def burstSizeWidth = mainCfg.burstSizeWidth
+  def burstCntWidth = mainCfg.burstCntWidth
+  def maxBurstSize = (
+    (1 << burstCntWidth) - 1
+  )
+  //def burstSize: Option[Int] = (
+  //  burstCntWidth match {
+  //    case Some(burstCntWidth) => {
+  //      Some(1 << burstCntWidth)
+  //    }
+  //    case None => {
+  //      None
+  //    }
+  //  }
+  //)
   def srcWidth = mainCfg.srcWidth
 
   def byteEnWidth: Int = (dataWidth / 8).toInt
   def addrByteWidth: Int = (addrWidth / 8).toInt
-  assert(
+  require(
     (byteEnWidth * 8) == dataWidth,
     (
       f"It is required that "
       + f"(byteEnWidth:${byteEnWidth}) * 8 == dataWidth:${dataWidth}"
     )
   )
-  assert(
+  require(
     (addrByteWidth * 8) == addrWidth,
     (
       f"It is required that "
@@ -52,7 +66,7 @@ case class LcvStallBusConfig(
   def needSameDataWidth(
     that: LcvStallBusConfig
   ): Unit = {
-    assert(
+    require(
       this.dataWidth == that.dataWidth,
       s"It is required that "
       + s"dataWidth:${this.dataWidth} == that.dataWidth:${that.dataWidth}"
@@ -61,26 +75,36 @@ case class LcvStallBusConfig(
   def needSameAddrWidth(
     that: LcvStallBusConfig
   ): Unit = {
-    assert(
+    require(
       this.addrWidth == that.addrWidth,
       s"It is required that "
       + s"addrWidth:${this.addrWidth} == that.addrWidth:${that.addrWidth}"
     )
   }
-  def needSameBurstSizeWidth(
+  def needSameBurstCntWidth(
     that: LcvStallBusConfig
   ): Unit = {
-    assert(
-      this.burstSizeWidth == that.burstSizeWidth,
+    require(
+      this.burstCntWidth == that.burstCntWidth,
       s"It is required that "
-      + s"burstSizeWidth:${this.burstSizeWidth} "
-      + s"== that.burstSizeWidth:${that.burstSizeWidth}"
+      + s"burstCntWidth:${this.burstCntWidth} "
+      + s"== that.burstCntWidth:${that.burstCntWidth}"
     )
   }
+  //def needSameBurstSizeWidth(
+  //  that: LcvStallBusConfig
+  //): Unit = {
+  //  require(
+  //    this.burstSizeWidth == that.burstSizeWidth,
+  //    s"It is required that "
+  //    + s"burstSizeWidth:${this.burstSizeWidth} "
+  //    + s"== that.burstSizeWidth:${that.burstSizeWidth}"
+  //  )
+  //}
   def needSameSrcWidth(
     that: LcvStallBusConfig
   ): Unit = {
-    assert(
+    require(
       this.srcWidth == that.srcWidth,
       s"It is required that "
       + s"srcWidth:${this.srcWidth} == that.srcWidth:${that.srcWidth}"
@@ -100,10 +124,10 @@ case class LcvStallBusMemMapConfig(
   def addrSliceSize = (
     optSliceSize match {
       case Some(mySliceSize) => {
-        assert(
+        require(
           mySliceSize > 0
         )
-        assert(
+        require(
           mySliceSize <= (1 << addrSliceWidth)
         )
         mySliceSize
@@ -117,29 +141,29 @@ case class LcvStallBusMemMapConfig(
 
   def addrSliceRange = addrSliceEnd downto addrSliceStart
 
-  assert(
+  require(
     addrSliceWidth > 0,
     s"need addrSliceWidth:${addrSliceWidth} > 0"
   )
-  assert(
+  require(
     addrSliceWidth <= busCfg.addrWidth,
     s"need addrSliceWidth:${addrSliceWidth} "
     + s"<= busCfg.addrWidth:${busCfg.addrWidth}"
   )
-  assert(
+  require(
     addrSliceStart >= 0,
     s"need addrSliceStart:${addrSliceStart} >= 0"
   )
-  assert(
+  require(
     addrSliceStart < busCfg.addrWidth,
     s"need addrSliceStart:${addrSliceStart} "
     + s"< busCfg.addrWidth:${busCfg.addrWidth}"
   )
-  assert(
+  require(
     addrSliceEnd >= 0,
     s"need addrSliceEnd:${addrSliceEnd} >= 0"
   )
-  assert(
+  require(
     addrSliceEnd < busCfg.addrWidth,
     s"need addrSliceEnd:${addrSliceEnd} "
     + s"< busCfg.addrWidth:${busCfg.addrWidth}"
@@ -149,25 +173,85 @@ case class LcvStallBusMemMapConfig(
 case class LcvStallBusH2dMesiInfo(
   cfg: LcvStallBusConfig,
 ) extends Bundle {
-  //assert(cfg.coherent)
+  //require(cfg.coherent)
 }
 
-case class LcvStallBusH2dSendPayload(
-  cfg: LcvStallBusConfig,
+
+case class LcvStallBusH2dSendPayloadNonBurstInfo(
+  cfg: LcvStallBusConfig
 ) extends Bundle {
   val addr = UInt(cfg.addrWidth bits)
   val data = UInt(cfg.dataWidth bits)
   val byteEn = UInt(cfg.byteEnWidth bits)
-  val burstSize = UInt(cfg.burstSizeWidth bits)
   val isWrite = Bool()
   val src = UInt(cfg.srcWidth bits)
 }
+case class LcvStallBusH2dSendPayloadBurstInfo(
+  cfg: LcvStallBusConfig,
+) extends Bundle {
+  val burstCnt = UInt(cfg.burstCntWidth bits)
+  val burstFirst = Bool()
+  val burstLast = Bool()
+}
+case class LcvStallBusH2dSendPayload(
+  cfg: LcvStallBusConfig,
+) extends Bundle {
+  //--------
+  val nonBurstInfo = LcvStallBusH2dSendPayloadNonBurstInfo(cfg=cfg)
+  def addr = nonBurstInfo.addr
+  def data = nonBurstInfo.data
+  def byteEn = nonBurstInfo.byteEn
+  def isWrite = nonBurstInfo.isWrite
+  def src = nonBurstInfo.src
+  //--------
+  val burstInfo = (cfg.burstCntWidth > 0) generate (
+    LcvStallBusH2dSendPayloadBurstInfo(cfg=cfg)
+  )
+  //def burstSize = burstInfo.burstSize
+  def burstCnt = burstInfo.burstCnt
+  def burstFirst = burstInfo.burstFirst
+  def burstLast = burstInfo.burstLast
+  //--------
+  def burstAddr(
+    someBurstCnt: UInt,
+  ) = (
+    Cat(
+      addr(addr.high downto someBurstCnt.getWidth),
+      someBurstCnt,
+    ).asUInt
+  )
+  //def selfBurstAddr() = this.burstAddr(someBurstCnt=burstCnt)
+  //--------
+}
 
-case class LcvStallBusD2hSendPayload(
+case class LcvStallBusD2hSendPayloadNonBurstInfo(
   cfg: LcvStallBusConfig,
 ) extends Bundle {
   val data = UInt(cfg.dataWidth bits)
-  val burstSize = UInt(cfg.burstSizeWidth bits)
+  val src = UInt(cfg.srcWidth bits)
+}
+case class LcvStallBusD2hSendPayloadBurstInfo(
+  cfg: LcvStallBusConfig,
+) extends Bundle {
+  val burstCnt = UInt(cfg.burstCntWidth bits)
+  val burstFirst = Bool()
+  val burstLast = Bool()
+}
+case class LcvStallBusD2hSendPayload(
+  cfg: LcvStallBusConfig,
+) extends Bundle {
+  //--------
+  val nonBurstInfo = LcvStallBusD2hSendPayloadNonBurstInfo(cfg=cfg)
+  def data = nonBurstInfo.data
+  def src = nonBurstInfo.src
+  //--------
+  val burstInfo = (cfg.burstCntWidth > 0) generate (
+    LcvStallBusD2hSendPayloadBurstInfo(cfg=cfg)
+  )
+  def burstCnt = burstInfo.burstCnt
+  def burstFirst = burstInfo.burstFirst
+  def burstLast = burstInfo.burstLast
+  //--------
 }
 
 case class LcvStallBusIo(

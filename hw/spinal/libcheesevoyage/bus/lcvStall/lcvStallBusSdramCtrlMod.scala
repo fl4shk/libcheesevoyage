@@ -115,10 +115,18 @@ case class LcvStallBusSdramCtrlConfig(
         //27
         32
       ),
-      burstSizeWidth=(
-        1
+      //burstSizeWidth=(
+      //  1
+      //),
+      burstCntWidth=(
+        0
+        //1
+        //None
+        //Some(log2Up(64))
       ),
       srcWidth=(
+        //1
+        //None
         1
       ),
     ),
@@ -830,24 +838,6 @@ case class LcvStallBusSdramCtrl(
         myRdCasLatencyCntNumCycles - 1
       )
       rRdNopWaitCnt := myRdNopWaitCntNumCycles
-      //when (!rRdCasLatencyCnt.msb) {
-      //  rRdCasLatencyCnt := rRdCasLatencyCnt - 1
-      //  when (rRdCasLatencyCnt === 0) {
-      //    rD2hSendData.data(31 downto 16) := rDqTriState.read
-      //  } elsewhen (rRdCasLatencyCnt === 1) {
-      //    rD2hSendData.data(15 downto 0) := rDqTriState.read
-      //  }
-      //  //switch (rRdCasLatencyCnt.lsb) {
-      //  //  is (False) {
-      //  //    rD2hSendData.data(15 downto 0) := rDqTriState.read
-      //  //  }
-      //  //  is (True) {
-      //  //    rD2hSendData.data(31 downto 16) := rDqTriState.read
-      //  //  }
-      //  //}
-      //} otherwise {
-      //  rState := State.READ_POST_NOPS
-      //}
     }
     is (State.SEND_READ_1) {
       io.sdram.sendCmdRead(
@@ -866,9 +856,6 @@ case class LcvStallBusSdramCtrl(
           rD2hSendData.data(15 downto 0) := rDqTriState.read
         }
       }
-      //when (!rRdNopWaitCnt.msb) {
-      //  rRdNopWaitCnt := rRdNopWaitCnt - 1
-      //}
     }
     is (State.READ_POST_NOPS) {
       io.sdram.sendCmdNop()
@@ -927,11 +914,6 @@ case class LcvStallBusSdramCtrl(
       }
     }
   }
-  //elsewhen () {
-  //}
-  //otherwise {
-  //  rD2hValid := True
-  //}
 
   when (
     rD2hValid
@@ -1011,24 +993,88 @@ case class LcvSdramCtrlSimDut(
   val mySdramCtrl = LcvStallBusSdramCtrl(cfg=cfg)
   io <> mySdramCtrl.io.sdram
   val rH2dValid = Reg(Bool(), init=False)
-  val rH2dSendData = {
-    val temp = Reg(cloneOf(mySdramCtrl.io.bus.h2dBus.sendData))
-    temp.init(temp.getZero)
-    temp
-  }
-  //val rD2hReady = Reg(Bool(), init=False)
-  val myD2hReady = Bool()
-  myD2hReady := False
-  mySdramCtrl.io.bus.h2dBus.nextValid := rH2dValid
-  mySdramCtrl.io.bus.h2dBus.sendData := rH2dSendData
-  mySdramCtrl.io.bus.d2hBus.ready := myD2hReady //rD2hReady
-
-  //val rD2hSendData = {
-  //  val temp = Reg(cloneOf(mySdramCtrl.io.bus.d2hBus.sendData))
+  //val rH2dSendData = {
+  //  val temp = Reg(cloneOf(mySdramCtrl.io.bus.h2dBus.sendData))
   //  temp.init(temp.getZero)
   //  temp
   //}
 
+  def devBusCfg = (
+    cfg.busCfg
+  )
+  val hostBusCfg = LcvStallBusConfig(
+    mainCfg=LcvStallBusMainConfig(
+      dataWidth=(
+        devBusCfg.dataWidth
+      ),
+      addrWidth=(
+        //27
+        devBusCfg.addrWidth
+      ),
+      //burstSizeWidth=(
+      //  1
+      //),
+      burstCntWidth=(
+        //0
+        //1
+        //None
+        //Some(log2Up(64))
+        2
+      ),
+      srcWidth=(
+        //1
+        //None
+        //1
+        devBusCfg.srcWidth
+      ),
+    ),
+    mesiCfg=(
+      devBusCfg.mesiCfg
+      //LcvStallBusMesiConfig(
+      //  numCpus=1
+      //)
+    )
+  )
+  val rH2dSendData = {
+    val temp = Reg(LcvStallBusH2dSendPayload(cfg=hostBusCfg))
+    temp.init(temp.getZero)
+    temp
+  }
+
+  //val rD2hReady = Reg(Bool(), init=False)
+  val myD2hReady = Bool()
+  myD2hReady := False
+  //--------
+  //mySdramCtrl.io.bus.h2dBus.nextValid := rH2dValid
+  //mySdramCtrl.io.bus.h2dBus.sendData := (
+  //  rH2dSendData
+  //)
+  //mySdramCtrl.io.bus.d2hBus.ready := myD2hReady //rD2hReady
+  val myBurstAdapter = LcvStallBusBurstAdapter(
+    cfg=LcvStallBusBurstAdapterConfig(
+      hostBusCfg=hostBusCfg,
+      devBusCfg=devBusCfg,
+    ),
+  )
+  mySdramCtrl.io.bus.h2dBus <> myBurstAdapter.io.devBus.h2dBus
+  mySdramCtrl.io.bus.d2hBus <> myBurstAdapter.io.devBus.d2hBus
+
+
+  //mySdramCtrl.io.bus.h2dBus.nextValid := (
+  //  myBurstAdapter.io.devBus.h2dBus.nextValid
+  //)
+  //myBurstAdapter.io.devBus.h2dBus.ready := (
+  //  mySdramCtrl.io.bus.h2dBus.ready
+  //)
+  //myBurstAdapter.io.devBus.d2hBus.sendData := (
+  //  mySdramCtrl.io.bus.d2hBus.sendData
+  //)
+  //--------
+  myBurstAdapter.io.hostBus.h2dBus.nextValid := rH2dValid
+  myBurstAdapter.io.hostBus.h2dBus.sendData := (
+    rH2dSendData
+  )
+  myBurstAdapter.io.hostBus.d2hBus.ready := myD2hReady //rD2hReady
   //--------
   object State extends SpinalEnum(defaultEncoding=binarySequential) {
     val
@@ -1048,9 +1094,6 @@ case class LcvSdramCtrlSimDut(
   //val rCnt = (
   //  Reg(UInt((mySdram.io.DQ.getWidth + 1) bits))
   //  init(0x0)
-  //)
-  //val rHadFirstTxn = (
-  //  Reg(Bool(), init=False)
   //)
   val rHadH2dFire = (
     Reg(Bool(), init=False)
@@ -1144,13 +1187,7 @@ case class LcvSdramCtrlSimDut(
       rHadD2hFire := False
       //--------
       rH2dValid := True
-      //when (rHadFirstTxn) {
-      //  rH2dSendData.addr := rH2dSendData.addr + 1
-      //}
-      //rH2dSendData.data(31 downto 16) := myPrngArea.rXs(0)(31 downto 16)
-      //rH2dSendData.data(15 downto 0) := myPrngArea.rand()
       rH2dSendData.data := myPrngArea.getCurrRand()
-      //rTestData(tempCnt).valid := False
       rTestData(tempCnt).payload.head := (
         myPrngArea.getCurrRand()
       )
@@ -1160,7 +1197,7 @@ case class LcvSdramCtrlSimDut(
       rH2dSendData.byteEn := U(
         rH2dSendData.byteEn.getWidth bits, default -> True
       )
-      rH2dSendData.burstSize := 1
+      //rH2dSendData.burstCnt := 1
       rH2dSendData.isWrite := True
       rH2dSendData.src := 0x0
       //--------
@@ -1168,7 +1205,6 @@ case class LcvSdramCtrlSimDut(
       //--------
     }
     is (State.WRITE_WAIT_TXN) {
-      //rHadFirstTxn := True
       when (mySdramCtrl.io.bus.h2dBus.fire) {
         rH2dValid := False
         rHadH2dFire := True
@@ -1304,520 +1340,7 @@ object LcvSdramSim extends App {
       simSuccess()
     }
 }
-//case class LcvStallBusSdramCtrlH2dPayload(
-//  cfg: LcvStallBusSdramCtrlConfig,
-//) extends Bundle {
-//  val isWrite = Bool()
-//  val addr = UInt(cfg.addrWidth bits)
-//  val data = UInt(cfg.wordWidth bits)
-//  val byteEn = UInt(((cfg.wordWidth / 8).toInt) bits)
-//}
-//case class LcvStallBusSdramCtrlD2hPayload(
-//  cfg: LcvStallBusSdramCtrlConfig,
-//) extends Bundle {
-//  val data = UInt(cfg.wordWidth bits)
-//}
 
-//case class LcvStallBusSdramCtrlIo(
-//  cfg: LcvStallBusSdramCtrlConfig,
-//) extends Bundle /*with IMasterSlave*/ {
-//  val lcvStall = slave(new LcvStallIo[
-//    LcvStallBusH2dSendPayload,
-//    LcvStallBusD2hSendPayload,
-//  ](
-//    sendPayloadType=Some(LcvStallBusSendPayload(cfg=cfg.busCfg)),
-//    recvPayloadType=Some(LcvStallBusD2hSendPayload(cfg=cfg.busCfg)),
-//  ))
-//  //val doRefresh = in(Bool())
-//  val sdram = LcvStallBusSdramIo(cfg=cfg)
-//  //def asMaster(): Unit = {
-//  //  master(lcvStall)
-//  //}
-//}
-//
-////case class LcvStallBusSdramCtrl(
-////  cfg: LcvStallBusSdramCtrlConfig,
-////) extends Component {
-////  assert(cfg.clkRate >= (99.2 MHz))
-////  assert(cfg.clkRate <= (100.7 MHz))
-////  //--------
-////  val io = LcvStallBusSdramCtrlIo(cfg=cfg)
-////
-////  io.lcvStall.ready.setAsReg() init(io.lcvStall.ready.getZero)
-////    // copy the MiSTer SDRAM controllers for the above ^
-////
-////  io.lcvStall.recvData.setAsReg() init(io.lcvStall.recvData.getZero)
-////  //io.sdram.dq.setAsReg()
-////    // I'm not sure how SpinalHDL deals with `inout`
-////    // registers, so see the set of signals called `rDqTriState` instead.
-////  //io.sdram.a.setAsReg() init(io.sdram.a.getZero)
-////  //io.sdram.ba.setAsReg() init(io.sdram.ba.getZero)
-////  //val rSdramA = Reg(cloneOf(io.sdram.a)) init(io.sdram.a.getZero)
-////  //val rSdramBa = Reg(cloneOf(io.sdram.ba)) init(io.sdram.ba.getZero)
-////  val rSdramA = Vec.fill(2)(
-////    Reg(cloneOf(io.sdram.a))
-////    init(io.sdram.a.getZero)
-////  )
-////  val rSdramBa = Vec.fill(2)(
-////    Reg(cloneOf(io.sdram.ba))
-////    init(io.sdram.ba.getZero)
-////  )
-////  io.sdram.a := rSdramA.last
-////  io.sdram.ba := rSdramBa.last
-////  rSdramA.last := rSdramA.head
-////  rSdramBa.last := rSdramBa.head
-////
-////  //--------
-////  object State extends SpinalEnum(defaultEncoding=binaryOneHot) {
-////    val
-////      Startup,
-////      //StartRdWr,
-////      WaitRdWr,
-////      DoRdWr0,
-////      DoWr1,
-////      WaitIdleCnt,
-////      Idle,
-////      Rfsh
-////      = newElement()
-////  }
-////
-////  //val rSavedWr = Reg(Bool()) init(False)
-////  val rSavedH2d = Reg(
-////    //LcvStallBusSdramCtrlH2dPayload(cfg=cfg)
-////    LcvStallBusSendPayload(cfg=cfg.busCfg)
-////  )
-////  rSavedH2d.init(rSavedH2d.getZero)
-////
-////  val rCasAddr = Reg(UInt(cfg.sdramAWidth bits)) init(0x0)
-////
-////  val rDqTriState = {
-////    val temp = Reg(TriState(UInt(cfg.sdramDqWidth bits)))
-////    temp.init(temp.getZero)
-////    temp
-////  }
-////  rDqTriState.writeEnable.setAsReg() init(rDqTriState.writeEnable.getZero)
-////
-////  rDqTriState.read := io.sdram.dq
-////  when (rDqTriState.writeEnable) {
-////    //io.dq
-////    io.sdram.dq := rDqTriState.write
-////  }
-////
-////  def rFullAddr = (
-////    rCasAddr(12 downto 9),
-////    rSdramBa.head,
-////    rSdramA.head,
-////    rCasAddr(8 downto 0)
-////  )
-////
-////  val rState = Reg(State()) init(State.Startup)
-////  val rHaveValid = Reg(Vec.fill(2)(Bool())) //init(False)
-////  for (idx <- 0 until rHaveValid.size) {
-////    rHaveValid(idx).init(False)
-////  }
-////
-////  val rRfshCnt = (
-////    Reg(UInt(cfg.rfshCntWidth bits))
-////    init(cfg.rfshCntInit)
-////  )
-////  //val temp = UInt(3 bits)
-////  val rIdleCnt = (
-////    Reg(SInt(log2Up(cfg.idleCntMax + 1) + 1 bits))
-////    init(cfg.idleCntMax)
-////  )
-////  val rCmd = Reg(SdramCmd()) init(SdramCmd.Nop)
-////  val rChip = Reg(Bool()) init(False)
-////  val rDataReadyDelay = (
-////    Reg(
-////      UInt(
-////        (cfg.casLatency._2 + cfg.burstLen + cfg.casLatency._3 + 2) bits
-////      )
-////    )
-////    init(0x0)
-////  )
-////  //--------
-////  io.sdram.nCs := rChip
-////  io.sdram.nRas := rCmd.asBits(2)
-////  io.sdram.nCas := rCmd.asBits(1)
-////  io.sdram.nWe := rCmd.asBits(0)
-////  io.sdram.cke := True
-////  (io.sdram.dqmh, io.sdram.dqml) := rSdramA.last(12 downto 11)
-////
-////  rHaveValid.head := RegNext(io.lcvStall.nextValid) init(False)
-////  when (RegNext(io.lcvStall.nextValid) =/= rHaveValid.head) {
-////    rHaveValid.last := True
-////  }
-////
-////  rRfshCnt := rRfshCnt + 1
-////  rDqTriState.writeEnable := False
-////  rDataReadyDelay := Cat(False, (rDataReadyDelay >> 1)).asUInt
-////
-////  for (burstIdx <- 0 until cfg.burstLen) {
-////    when (rDataReadyDelay(cfg.burstLen - burstIdx)) {
-////      io.lcvStall.recvData.data(
-////        (
-////          (cfg.sdramDqWidth * (burstIdx + 1)) - 1
-////        ) downto (
-////          cfg.sdramDqWidth * burstIdx
-////        )
-////      ) := (
-////        RegNext(rDqTriState.read) init(rDqTriState.read.getZero)
-////      )
-////    }
-////  }
-////  io.lcvStall.ready := False
-////  when (rDataReadyDelay(1)) {
-////    io.lcvStall.ready := True
-////  }
-////  val mode = cfg.mode
-////
-////  switch (rState) {
-////    is (State.Startup) {
-////      rSdramA.head := 0x0
-////      rSdramBa.head := 0x0
-////      when (rRfshCnt === cfg.startupRfshMax - 64) {
-////        rChip := False
-////      }
-////      when (rRfshCnt === cfg.startupRfshMax - 32) {
-////        rChip := True
-////      }
-////      // All the commands during the startup are NOPs, except these
-////      when (
-////        (
-////          rRfshCnt === cfg.startupRfshMax - 63
-////        ) || (
-////          rRfshCnt === cfg.startupRfshMax - 31
-////        )
-////      ) {
-////        // Ensure all rows are closed.
-////        rCmd := SdramCmd.Precharge
-////        rSdramA.head(10) := True // all banks
-////        rSdramBa.head := 0x0
-////      }
-////      when (
-////        (
-////          rRfshCnt === cfg.startupRfshMax - 55
-////        ) || (
-////          rRfshCnt === cfg.startupRfshMax - 23
-////        )
-////      ) {
-////        // These refreshes need to be at least tREF (66ns) apart.
-////        rCmd := SdramCmd.AutoRefresh
-////      }
-////      when (
-////        (
-////          rRfshCnt === cfg.startupRfshMax - 47
-////        ) || (
-////          rRfshCnt === cfg.startupRfshMax - 15
-////        )
-////      ) {
-////        rCmd := SdramCmd.AutoRefresh
-////      }
-////      when (
-////        (
-////          rRfshCnt === cfg.startupRfshMax - 39
-////        ) || (
-////          rRfshCnt === cfg.startupRfshMax - 7
-////        )
-////      ) {
-////        rCmd := SdramCmd.LoadMode
-////        rSdramA.head := mode
-////      }
-////      when (rRfshCnt === 0x0) {
-////        rState := State.Idle
-////        rRfshCnt := 0x0
-////      }
-////    }
-////    is (State.WaitRdWr) {
-////      rState := State.DoRdWr0
-////    }
-////    is (State.DoRdWr0) {
-////      rSdramA.head := rCasAddr
-////      when (rSavedH2d.isWrite) {
-////        rCmd := SdramCmd.Write
-////        rDqTriState.writeEnable := True
-////        rDqTriState.write := rSavedH2d.data(15 downto 0)
-////        rState := State.DoWr1
-////      } otherwise {
-////        rCmd := SdramCmd.Read
-////        rIdleCnt := cfg.idleCntMax
-////        rState := State.WaitIdleCnt
-////
-////        //rDataReadyDelay(
-////        //  cfg.casLatency._2 + cfg.burstLen + cfg.casLatency._3
-////        //) := True
-////        rDataReadyDelay.msb := True
-////      }
-////    }
-////    is (State.DoWr1) {
-////      rState := State.WaitIdleCnt
-////
-////      rSdramA.head(10) := True
-////      rSdramA.head(0) := True
-////      rCmd := SdramCmd.Write
-////      rDqTriState.writeEnable := True
-////      rDqTriState.write := rSavedH2d.data(31 downto 16)
-////      rCasAddr(rCasAddr.high downto rCasAddr.high - 1) := (
-////        ~rSavedH2d.byteEn(3 downto 2)
-////      )
-////      rIdleCnt := 2
-////
-////      io.lcvStall.ready := True
-////    }
-////    is (State.WaitIdleCnt) {
-////      when ((rIdleCnt - 1).msb) {
-////        rIdleCnt := cfg.idleCntMax
-////        rState := State.Idle
-////      } otherwise {
-////        rIdleCnt := rIdleCnt - 1
-////      }
-////    }
-////    is (State.Idle) {
-////      when (rRfshCnt > cfg.cyclesPerRefresh) {
-////        // This SDRAM controller's main way of doing refresh
-////        rState := State.Rfsh
-////        rCmd := SdramCmd.AutoRefresh
-////        rRfshCnt := rRfshCnt - cfg.cyclesPerRefresh + 1
-////        rChip := False
-////      } elsewhen (
-////        //io.lcvStall.rValid
-////        rHaveValid.last
-////      ) {
-////        //(
-////        //  rCasAddr(12 downto 9),
-////        //  rSdramBa,
-////        //  rSdramA,
-////        //  rCasAddr(8 downto 0),
-////        //)
-////        rFullAddr := Cat(
-////          List(
-////            //U"2'b00",
-////            Mux[UInt](
-////              io.lcvStall.sendData.isWrite,
-////              ~io.lcvStall.sendData.byteEn(1 downto 0),
-////              U"2'b00",
-////            ),
-////            ~io.lcvStall.sendData.isWrite, 
-////            //io.lcvStall.sendData.addr(25 downto 1),
-////            io.lcvStall.sendData.addr(25 downto 2),
-////            U"1'b0"
-////          ).reverse
-////        )
-////        rSavedH2d := io.lcvStall.sendData
-////        rChip := io.lcvStall.sendData.addr(26)
-////        rHaveValid.last := False
-////        rCmd := SdramCmd.Active
-////        rState := State.WaitRdWr
-////      }
-////    }
-////    is (State.Rfsh) {
-////      rState := State.WaitIdleCnt
-////      rCmd := SdramCmd.AutoRefresh
-////      rChip := True
-////    }
-////  }
-////  //--------
-////  //.datain_h(1'b0),
-////  //.datain_l(1'b1),
-////  //.outclock(clk),
-////  //.dataout(SDRAM_CLK),
-////  //.aclr(1'b0),
-////  //.aset(1'b0),
-////  //.oe(1'b1),
-////  //.outclocken(1'b1),
-////  //.sclr(1'b0),
-////  //.sset(1'b0)
-////  val sdramclkDdr = altddio_out(
-////    cfg=cfg.altddioOutCfg
-////  )
-////  sdramclkDdr.io.datain_h := 0x0
-////  sdramclkDdr.io.datain_l := 0x1
-////  sdramclkDdr.io.outclock := ClockDomain.current.readClockWire
-////  io.sdram.clk := sdramclkDdr.io.dataout.lsb
-////  sdramclkDdr.io.aclr := False
-////  sdramclkDdr.io.aset := False
-////  sdramclkDdr.io.oe := True
-////  sdramclkDdr.io.outclocken := True
-////  sdramclkDdr.io.sclr := False
-////  sdramclkDdr.io.sset := False
-////  //--------
-////}
-//
-////case class LcvSdramWrapIo(
-////  cfg: LcvStallBusSdramCtrlConfig,
-////) extends Bundle {
-////  val start = in(Bool())
-////  val done = out(Bool())
-////  val isWrite = in(Bool())
-////  val ready = out(Bool())
-////    // strobe. when writing, one means that data from wdat written to 
-////    // memory
-////    //
-////    // when reading, one means that data read from memroy is on rdat
-////    // output
-////  val wdat = in(UInt(16 bits)) // input, data to be written to memory
-////  val rdat = out(UInt(16 bits)) // output, data last read from memory 
-////  val sz = in(UInt(2 bits))
-////  val chip = in(UInt(2 bits))
-////
-////  val sdram = LcvStallBusSdramIo(cfg=cfg)
-////}
-//
-////case class LcvSdramWrap(
-////  cfg: LcvStallBusSdramCtrlConfig
-////) extends Component {
-////  val io = LcvSdramWrapIo(cfg=cfg)
-////
-////  io.done.setAsReg() init(io.done.getZero)
-////  io.ready.setAsReg() init(io.ready.getZero)
-////  io.rdat.setAsReg() init(io.rdat.getZero)
-////  //io.sdram.dq.setAsReg() init(io.sdram.dq.getZero)
-////
-////  val sdramCtrl = LcvStallBusSdramCtrl(cfg=cfg)
-////  io.sdram <> sdramCtrl.io.sdram
-////
-////  def scLcvStall = sdramCtrl.io.lcvStall
-////  //scLcvStall.nextValid := True
-////  //scLcvStall.sendData.setAsReg() init(scLcvStall.sendData.getZero)
-////  val rSendData = {
-////    val temp = Reg(
-////      //LcvStallBusSdramCtrlH2dPayload(cfg=cfg)
-////      LcvStallBusSendPayload(cfg=cfg.busCfg)
-////    )
-////    temp.init(temp.getZero)
-////    temp
-////  }
-////  scLcvStall.sendData := rSendData
-////  io.ready := (
-////    RegNext(scLcvStall.nextValid, init=False)
-////    && scLcvStall.ready
-////  )
-////  when (!rSendData.addr(1)) {
-////    io.rdat := scLcvStall.recvData.data(15 downto 0)
-////  } otherwise {
-////    io.rdat := scLcvStall.recvData.data(31 downto 16)
-////  }
-////  def szUnset = U"2'b00"
-////  def sz32M = U"2'b01"
-////  def sz64M = U"2'b10"
-////  def sz128M = U"2'b11"
-////
-////  //object State extends SpinalEnum(defaultEncoding=binarySequential) {
-////  //  val
-////  //    //Startup,
-////  //    Idle,
-////  //    Running
-////  //    = newElement()
-////  //}
-////  //val rState = Reg(State()) init(State.Idle)
-////
-////  //switch (rState) {
-////  //  //is (State.Startup) {
-////  //  //}
-////  //  is (State.Idle) {
-////  //    io.done := False
-////  //  }
-////  //  is (State.Running) {
-////  //  }
-////  //}
-////  //val rDone3 = Reg(Bool()) init(False)
-////  val nextDone3 = Bool()
-////  val rDone3 = RegNext(nextDone3) init(nextDone3.getZero)
-////  nextDone3 := rDone3
-////
-////  rSendData.byteEn := U(rSendData.byteEn.getWidth bits, default -> True)
-////
-////  scLcvStall.nextValid := False
-////  when (
-////    io.start
-////    || io.done
-////  ) {
-////    io.done := False
-////    nextDone3 := False
-////    //rState := State.Idle
-////    rSendData.addr := 0x0
-////    rSendData.isWrite := io.isWrite
-////    //io.ready := False
-////  } otherwise {
-////    rSendData.isWrite := io.isWrite
-////    when (
-////      (io.chip === 0)
-////      && (io.sz === sz128M)
-////      && rSendData.addr(
-////        25 downto 2
-////      ).andR
-////    ) {
-////      scLcvStall.nextValid := False
-////      nextDone3 := True
-////    }
-////    when (
-////      (io.chip === 1)
-////      && (io.sz === sz128M)
-////      && rSendData.addr(
-////        //rSendData.addr.high - 1 downto 2
-////        27 downto 2
-////      ).andR
-////    ) {
-////      scLcvStall.nextValid := False
-////      nextDone3 := True
-////    }
-////    when (
-////      (io.chip === 2)
-////      && (io.sz === sz128M)
-////      && rSendData.addr(
-////        //rSendData.addr.high downto 2
-////        27 downto 2
-////      ).andR
-////    ) {
-////      scLcvStall.nextValid := False
-////      nextDone3 := True
-////      //io.done := 
-////    }
-////    when (
-////      (io.sz === sz64M)
-////      && rSendData.addr(
-////        //rSendData.addr.high - 1 downto 2
-////        26 downto 2
-////      ).andR
-////    ) {
-////      scLcvStall.nextValid := False
-////      nextDone3 := True
-////    }
-////    when (
-////      (io.sz === sz32M)
-////      && rSendData.addr(
-////        //rSendData.addr.high - 2 downto 2
-////        25 downto 2
-////      ).andR
-////    ) {
-////      scLcvStall.nextValid := False
-////      nextDone3 := True
-////    }
-////    //when (nextDone3) {
-////    //  scLcvStall.nextValid := False
-////    //}
-////    when (rDone3) {
-////      scLcvStall.nextValid := False
-////      io.done := True
-////    } otherwise {
-////      scLcvStall.nextValid := True
-////      when (
-////        RegNext(scLcvStall.nextValid, init=False)
-////        && scLcvStall.ready
-////      ) {
-////        rSendData.data := io.wdat.resize(rSendData.data.getWidth)
-////        val myAddrRangeLo = 2
-////        val myAddrRange = (
-////          //rSendData.addr.high downto myAddrRangeLo
-////          27 downto myAddrRangeLo
-////        )
-////        rSendData.addr(myAddrRange) := rSendData.addr(myAddrRange) + 1
-////      }
-////    }
-////  }
-////  //val rAddr = Reg(UInt(cfg.addrWidth bits)) init(0x0)
-////}
-//
 object LcvStallBusSdramCtrlConfig {
   def spinal = SpinalConfig(
     targetDirectory="hw/gen",
@@ -1838,18 +1361,3 @@ object LcvStallBusSdramCtrlToVerilog extends App {
     top
   }
 }
-
-////object LcvSdramWrapToVerilog extends App {
-////  LcvStallBusSdramCtrlConfig.spinal.generateVerilog{
-////    val top = LcvSdramWrap(
-////      cfg=LcvStallBusSdramCtrlConfig(
-////        clkRate=(
-////          //167.0 MHz
-////          //120.0 MHz
-////          100.0 MHz
-////        )
-////      )
-////    )
-////    top
-////  }
-////}
