@@ -32,7 +32,7 @@ case class LcvStallBusConfig(
   def addrWidth = mainCfg.addrWidth
   //def burstSizeWidth = mainCfg.burstSizeWidth
   def burstCntWidth = mainCfg.burstCntWidth
-  def maxBurstSize = (
+  def maxBurstSizeMinus1 = (
     (1 << burstCntWidth) - 1
   )
   //def burstSize: Option[Int] = (
@@ -216,8 +216,12 @@ case class LcvStallBusH2dSendPayload(
     someBurstCnt: UInt,
   ) = (
     Cat(
-      addr(addr.high downto someBurstCnt.getWidth),
+      addr(
+        addr.high
+        downto someBurstCnt.getWidth + log2Up(data.getWidth / 8)
+      ),
       someBurstCnt,
+      U(s"${log2Up(data.getWidth / 8)}'d0"),
     ).asUInt
   )
   //def selfBurstAddr() = this.burstAddr(someBurstCnt=burstCnt)

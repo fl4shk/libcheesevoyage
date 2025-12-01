@@ -1040,6 +1040,10 @@ case class LcvSdramCtrlSimDut(
     temp.init(temp.getZero)
     temp
   }
+  val rSavedH2dSendAddr = (
+    Reg(cloneOf(rH2dSendData.addr))
+    init(0x0)
+  )
 
   //val rD2hReady = Reg(Bool(), init=False)
   val myD2hReady = Bool()
@@ -1095,12 +1099,12 @@ case class LcvSdramCtrlSimDut(
   //  Reg(UInt((mySdram.io.DQ.getWidth + 1) bits))
   //  init(0x0)
   //)
-  val rHadH2dFire = (
-    Reg(Bool(), init=False)
-  )
-  val rHadD2hFire = (
-    Reg(Bool(), init=False)
-  )
+  //val rHadH2dFire = (
+  //  Reg(Bool(), init=False)
+  //)
+  //val rHadD2hFire = (
+  //  Reg(Bool(), init=False)
+  //)
 
   val myPrngArea = new Area {
     // credit:
@@ -1117,32 +1121,48 @@ case class LcvSdramCtrlSimDut(
     )
     val rXsVec = (
       Vec.fill(2)(
-        Vec.fill(3)(
-          Reg(UInt(myXsWidth bits))
-          //init(1)
-        )
+        //Vec.fill(hostBusCfg.maxBurstSizeMinus1 + 1)(
+          Vec.fill(3)(
+            Reg(UInt(myXsWidth bits))
+            //init(1)
+          )
+        //)
       )
     )
     for (idx <- 0 until rXsVec.size) {
-      rXsVec(idx).foreach(item => item.init(idx + 1))
+      rXsVec(idx).foreach(
+        item => item.init(idx + 1)
+        //outerItem => outerItem.foreach(
+        //  item => item.init(idx + 1)
+        //)
+      )
+      //for (jdx <- 0 until rXsVec(idx).size) {
+      //  rXsVec(idx)(jdx).foreach(item => {
+      //    item.init(idx * rXsVec(idx).size + jdx + 1)
+      //  })
+      //}
     }
-    rXsVec.foreach(rXs => {
-      rXs(2) := (
-        (rXs(0) ^ ((rXs(0) << 7)(rXs(0).bitsRange))).resize(myXsWidth)
-      )
-      rXs(1) := (
-        (rXs(2) ^ (rXs(2) >> 9).resize(myXsWidth)).resize(myXsWidth)
-      )
-      when (!rCnt.msb) {
-        rCnt := rCnt - 1
-      } otherwise {
-        rXs(0) := (
-          (rXs(1) ^ ((rXs(1) << 8)(rXs(0).bitsRange))).resize(myXsWidth)
+    rXsVec.foreach(
+      //outerXs => outerXs.foreach(
+      rXs => {
+        rXs(2) := (
+          (rXs(0) ^ ((rXs(0) << 7)(rXs(0).bitsRange))).resize(myXsWidth)
         )
-        rCnt := myCntMax
+        rXs(1) := (
+          (rXs(2) ^ (rXs(2) >> 9).resize(myXsWidth)).resize(myXsWidth)
+        )
+        when (!rCnt.msb) {
+          rCnt := rCnt - 1
+        } otherwise {
+          rXs(0) := (
+            (rXs(1) ^ ((rXs(1) << 8)(rXs(0).bitsRange))).resize(myXsWidth)
+          )
+          rCnt := myCntMax
+        }
       }
-    })
-    def getCurrRand(): UInt = {
+      //)
+    )
+    def getCurrRand(/*idx: UInt*/): UInt = {
       //val a = (rXs ^ ((rXs << 7)(rXs.bitsRange))).resize(rXs.getWidth)
       //val b = (a ^ (a >> 9).resize(rXs.getWidth)).resize(rXs.getWidth)
       //val c = (b ^ ((b << 8)(rXs.bitsRange))).resize(rXs.getWidth)
@@ -1150,135 +1170,319 @@ case class LcvSdramCtrlSimDut(
       //rXs(0) := r
       //c(15 downto 0)
       Cat(
+        //rXsVec(0)(idx)(0)(15 downto 0),
+        //rXsVec(1)(idx)(0)(15 downto 0),
         rXsVec.head(0)(15 downto 0),
         rXsVec.last(0)(15 downto 0),
       ).asUInt
     }
   }
-  def myMaxAddr = (
+  def myNumTests = (
+    // 8
+    4
+  )
+  def myMaxBaseAddr = (
     //8
     //0x10
-    8 << 2
+    //myNumTests << 2 // NOTE: this was for the burst-less accessess
+    //(myNumTests * (hostBusCfg.maxBurstSizeMinus1 + 1)) << 2
+    (hostBusCfg.maxBurstSizeMinus1 + 1) << 2
   )
   val rTestData = (
     Vec.fill(
-      //(myMaxAddr >> 2) + 1
-      (myMaxAddr >> 1) // intentionally leave some always-zero elements
-    )({
-      val temp = Reg(Flow(
-        Vec.fill(2)(
-          UInt(myPrngArea.myXsWidth bits)
-        )
-      ))
-      temp.init(temp.getZero)
-      KeepAttribute(temp)
-    })
-  )
-  val tempCnt = (
-    (rH2dSendData.addr(rH2dSendData.addr.high downto 2))(
-      log2Up(rTestData.size) - 1 downto 0
+      //(myMaxBaseAddr >> 2) + 1
+      //(myMaxBaseAddr >> 1) // intentionally leave some always-zero elements
+      //myNumTests
+      hostBusCfg.maxBurstSizeMinus1 + 1
+    )(
+      {
+        val temp = Reg(Flow(
+          //Vec.fill(hostBusCfg.maxBurstSizeMinus1 + 1)(
+            Vec.fill(2)(
+              UInt(myPrngArea.myXsWidth bits)
+            )
+          //)
+        ))
+        temp.init(temp.getZero)
+        KeepAttribute(temp)
+      }
     )
   )
+  //--------
+  // BEGIN: state machine that lacks write bursts but has read bursts
+  val myHadH2dFire = (
+    Bool()
+  )
+  myHadH2dFire := False
 
+  val rSavedHadH2dFire = (
+    Reg(Bool(), init=False)
+  )
+  when (myHadH2dFire) {
+    rSavedHadH2dFire := True
+  }
+
+  val stickyHadH2dFire = (
+    myHadH2dFire
+    || rSavedHadH2dFire
+  )
+
+
+  val myHadD2hFire = (
+    Bool()
+  )
+  myHadD2hFire := False
+
+  val rSavedHadD2hFire = (
+    Reg(Bool(), init=False)
+  )
+  when (myHadD2hFire) {
+    rSavedHadD2hFire := True
+  }
+
+  val stickyHadD2hFire = (
+    myHadD2hFire
+    || rSavedHadD2hFire
+  )
+
+
+  val wrTempCnt = (
+    (rH2dSendData.addr(
+      //rH2dSendData.addr.high 
+      hostBusCfg.burstCntWidth + 2 - 1
+      downto 2
+    ))
+    //(
+    //  log2Up(rTestData.size) - 1 downto 0
+    //)
+  )
+  val rWrPseudoBurstCnt = (
+    Reg(UInt((hostBusCfg.burstCntWidth + 1) bits))
+    init(0x0)
+  )
+  //val wrTestDataCnt = (
+  //  wrTempCnt(wrTempCnt.high - 1 downto 0)
+  //)
+  val rRdTempCnt = (
+    Reg(UInt((hostBusCfg.burstCntWidth + 1) bits))
+    init(0x0)
+  )
   switch (rState) {
     is (State.WRITE_START) {
-      //--------
-      rHadH2dFire := False
-      rHadD2hFire := False
-      //--------
+
+      //myHadH2dFire := False
+      //myHadD2hFire := False
+      rSavedHadH2dFire := False
+      rSavedHadD2hFire := False
+
       rH2dValid := True
+
+      rTestData(wrTempCnt).payload.head := myPrngArea.getCurrRand()
+      rTestData(wrTempCnt).payload.last := (
+        //0x0
+        rTestData(wrTempCnt).payload.last.getZero
+      )
       rH2dSendData.data := myPrngArea.getCurrRand()
-      rTestData(tempCnt).payload.head := (
-        myPrngArea.getCurrRand()
+      rH2dSendData.byteEn := (
+        U(rH2dSendData.byteEn.getWidth bits, default -> True)
       )
-      rTestData(tempCnt).payload.last := (
-        U(s"${myPrngArea.myXsWidth}'d0")
-      )
-      rH2dSendData.byteEn := U(
-        rH2dSendData.byteEn.getWidth bits, default -> True
-      )
+
+      rH2dSendData.addr := rSavedH2dSendAddr
+
       //rH2dSendData.burstCnt := 1
+      //rH2dSendData.burstCnt := hostBusCfg.maxBurstSizeMinus1
+      //rH2dSendData.burstFirst := True
+      //rH2dSendData.burstLast := False
+      rH2dSendData.burstCnt := 0x0
+      rH2dSendData.burstFirst := False
+      rH2dSendData.burstLast := False
+
       rH2dSendData.isWrite := True
       rH2dSendData.src := 0x0
-      //--------
+
       rState := State.WRITE_WAIT_TXN
-      //--------
     }
     is (State.WRITE_WAIT_TXN) {
-      when (mySdramCtrl.io.bus.h2dBus.fire) {
+      when (myBurstAdapter.io.hostBus.h2dBus.fire) {
         rH2dValid := False
-        rHadH2dFire := True
+        myHadH2dFire := True
       }
-      when (mySdramCtrl.io.bus.d2hBus.rValid) {
-        rHadD2hFire := True
+      when (myBurstAdapter.io.hostBus.d2hBus.rValid) {
+        myHadD2hFire := True
         myD2hReady := True
       }
-      when (rHadH2dFire && rHadD2hFire) {
-        when (rH2dSendData.addr < myMaxAddr) {
+      when (stickyHadH2dFire && stickyHadD2hFire) {
+        rSavedHadH2dFire := False
+        rSavedHadD2hFire := False
+        rSavedH2dSendAddr := rH2dSendData.addr + 4
+        when (
+          //rH2dSendData.addr < myMaxBaseAddr
+          //wrTempCnt(hostBusCfg.burstCntWidth - 1 downto 0)
+          //wrTempCnt
+          rWrPseudoBurstCnt < hostBusCfg.maxBurstSizeMinus1 + 1
+        ) {
           rState := State.WRITE_START
+          rWrPseudoBurstCnt := rWrPseudoBurstCnt + 1
           rH2dSendData.addr := rH2dSendData.addr + 4
         } otherwise {
           rState := State.READ_START
+          rWrPseudoBurstCnt := 0x0
           rH2dSendData.addr := 0x0
         }
       }
     }
     is (State.READ_START) {
       //--------
-      rHadH2dFire := False
-      rHadD2hFire := False
+      //myHadH2dFire := False
+      //myHadD2hFire := False
+      rSavedHadH2dFire := False
+      rSavedHadD2hFire := False
       //--------
       rH2dValid := True
+      rH2dSendData.burstCnt := hostBusCfg.maxBurstSizeMinus1
+      rH2dSendData.burstFirst := True
+      rH2dSendData.burstLast := False
       rH2dSendData.isWrite := False
       //--------
       rState := State.READ_WAIT_TXN
       //--------
     }
     is (State.READ_WAIT_TXN) {
-      when (mySdramCtrl.io.bus.h2dBus.fire) {
-        rH2dValid := False
-        rHadH2dFire := True
-      }
-      when (mySdramCtrl.io.bus.d2hBus.rValid) {
-        rHadD2hFire := True
+      rH2dSendData.burstFirst := False
+      rH2dSendData.burstLast := False
+      when (
+        RegNext(
+          next=myBurstAdapter.io.hostBus.d2hBus.nextValid,
+          init=False,
+        )
+      ) {
         myD2hReady := True
       }
-      when (rHadH2dFire && rHadD2hFire) {
-        when (rH2dSendData.addr < myMaxAddr) {
-          rState := State.READ_START
-          rH2dSendData.addr := rH2dSendData.addr + 4
-        } otherwise {
-          //rState := State.WRITE_START
-          rState := State.DO_COMPARE_TEST_DATA
-          rH2dSendData.addr := 0x0
-        }
-      }
-      rTestData(tempCnt).payload.last := (
-        mySdramCtrl.io.bus.d2hBus.sendData.data
-      )
     }
     is (State.DO_COMPARE_TEST_DATA) {
-      when (rH2dSendData.addr < myMaxAddr) {
-        rH2dSendData.addr := rH2dSendData.addr + 4
-      } otherwise {
-        rH2dSendData.addr := 0x0
-        rState := State.WRITE_START
-      }
-      val failure = (
-        rTestData(tempCnt).payload.head
-        =/= rTestData(tempCnt).payload.last
-      )
-      when (failure) {
-        rState := State.FAILED_TEST
-      }
-      rTestData(tempCnt).valid := (
-        rTestData(tempCnt).payload.head
-        === rTestData(tempCnt).payload.last
-      )
     }
     is (State.FAILED_TEST) {
     }
   }
+  // END: state machine that lacks write bursts but has read bursts
+  //--------
+
+  //--------
+  // BEGIN: previous state machine, which lacks bursts
+  //val rHadH2dFire = (
+  //  Reg(Bool(), init=False)
+  //)
+  //val rHadD2hFire = (
+  //  Reg(Bool(), init=False)
+  //)
+  //
+  //val tempCnt = (
+  //  (rH2dSendData.addr(rH2dSendData.addr.high downto 2))(
+  //    log2Up(rTestData.size) - 1 downto 0
+  //  )
+  //)
+  //
+  //switch (rState) {
+  //  is (State.WRITE_START) {
+  //    //--------
+  //    rHadH2dFire := False
+  //    rHadD2hFire := False
+  //    //--------
+  //    rH2dValid := True
+  //    rH2dSendData.data := myPrngArea.getCurrRand()
+  //    rTestData(tempCnt).payload.head := (
+  //      myPrngArea.getCurrRand()
+  //    )
+  //    rTestData(tempCnt).payload.last := (
+  //      U(s"${myPrngArea.myXsWidth}'d0")
+  //    )
+  //    rH2dSendData.byteEn := U(
+  //      rH2dSendData.byteEn.getWidth bits, default -> True
+  //    )
+  //    //rH2dSendData.burstCnt := 1
+  //    rH2dSendData.isWrite := True
+  //    rH2dSendData.src := 0x0
+  //    //--------
+  //    rState := State.WRITE_WAIT_TXN
+  //    //--------
+  //  }
+  //  is (State.WRITE_WAIT_TXN) {
+  //    when (mySdramCtrl.io.bus.h2dBus.fire) {
+  //      rH2dValid := False
+  //      rHadH2dFire := True
+  //    }
+  //    when (mySdramCtrl.io.bus.d2hBus.rValid) {
+  //      rHadD2hFire := True
+  //      myD2hReady := True
+  //    }
+  //    when (rHadH2dFire && rHadD2hFire) {
+  //      when (rH2dSendData.addr < myMaxBaseAddr) {
+  //        rState := State.WRITE_START
+  //        rH2dSendData.addr := rH2dSendData.addr + 4
+  //      } otherwise {
+  //        rState := State.READ_START
+  //        rH2dSendData.addr := 0x0
+  //      }
+  //    }
+  //  }
+  //  is (State.READ_START) {
+  //    //--------
+  //    rHadH2dFire := False
+  //    rHadD2hFire := False
+  //    //--------
+  //    rH2dValid := True
+  //    rH2dSendData.isWrite := False
+  //    //--------
+  //    rState := State.READ_WAIT_TXN
+  //    //--------
+  //  }
+  //  is (State.READ_WAIT_TXN) {
+  //    when (mySdramCtrl.io.bus.h2dBus.fire) {
+  //      rH2dValid := False
+  //      rHadH2dFire := True
+  //    }
+  //    when (mySdramCtrl.io.bus.d2hBus.rValid) {
+  //      rHadD2hFire := True
+  //      myD2hReady := True
+  //    }
+  //    when (rHadH2dFire && rHadD2hFire) {
+  //      when (rH2dSendData.addr < myMaxBaseAddr) {
+  //        rState := State.READ_START
+  //        rH2dSendData.addr := rH2dSendData.addr + 4
+  //      } otherwise {
+  //        //rState := State.WRITE_START
+  //        rState := State.DO_COMPARE_TEST_DATA
+  //        rH2dSendData.addr := 0x0
+  //      }
+  //    }
+  //    rTestData(tempCnt).payload.last := (
+  //      mySdramCtrl.io.bus.d2hBus.sendData.data
+  //    )
+  //  }
+  //  is (State.DO_COMPARE_TEST_DATA) {
+  //    when (rH2dSendData.addr < myMaxBaseAddr) {
+  //      rH2dSendData.addr := rH2dSendData.addr + 4
+  //    } otherwise {
+  //      rH2dSendData.addr := 0x0
+  //      rState := State.WRITE_START
+  //    }
+  //    val failure = (
+  //      rTestData(tempCnt).payload.head
+  //      =/= rTestData(tempCnt).payload.last
+  //    )
+  //    when (failure) {
+  //      rState := State.FAILED_TEST
+  //    }
+  //    rTestData(tempCnt).valid := (
+  //      rTestData(tempCnt).payload.head
+  //      === rTestData(tempCnt).payload.last
+  //    )
+  //  }
+  //  is (State.FAILED_TEST) {
+  //  }
+  //}
+  // END: previous state machine, which lacks bursts
+  //--------
 }
 case class LcvSdramSimDut(
   clkRate: HertzNumber,

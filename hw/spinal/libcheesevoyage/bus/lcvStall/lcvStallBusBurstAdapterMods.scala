@@ -149,6 +149,7 @@ case class LcvStallBusBurstAdapter(
     cfg.devBusCfg.burstCntWidth == 0
   ) generate (
   new Area {
+    io.devBus.h2dBus.sendData.nonBurstInfo.addr.allowOverride
     val rSavedH2dSendData = {
       val temp = (
         //Reg(Flow(LcvStallBusH2dSendPayloadBurstInfo(cfg=cfg.hostBusCfg)))
@@ -172,53 +173,69 @@ case class LcvStallBusBurstAdapter(
         init=myHostD2hBurstInfo.getZero,
       )
     )
-    val rSavedBurstCnt = (
-      Reg(cloneOf(myHostD2hBurstInfo.burstCnt))
+    val rSavedBurstCntForH2d = (
+      Reg(
+        //cloneOf(myHostD2hBurstInfo.burstCnt)
+        UInt((myHostD2hBurstInfo.burstCnt.getWidth + 1) bits)
+      )
+      init(0x0)
+    )
+    val rSavedBurstCntForD2h = (
+      Reg(
+        //cloneOf(myHostD2hBurstInfo.burstCnt)
+        UInt((myHostD2hBurstInfo.burstCnt.getWidth + 1) bits)
+      )
       init(0x0)
     )
     val rMyH2dCnt = (
-      Reg(cloneOf(myHostD2hBurstInfo.burstCnt))
+      Reg(
+        //cloneOf(myHostD2hBurstInfo.burstCnt)
+        UInt((myHostD2hBurstInfo.burstCnt.getWidth + 1) bits)
+      )
       init(0x0)
     )
     val rMyD2hCnt = (
-      Reg(cloneOf(myHostD2hBurstInfo.burstCnt))
+      Reg(
+        //cloneOf(myHostD2hBurstInfo.burstCnt)
+        UInt((myHostD2hBurstInfo.burstCnt.getWidth + 1) bits)
+      )
       init(0x0)
     )
 
     //myHostD2hBurstInfo := rPrevHostD2hBurstInfo
     //--------
-    val myNonBurstHadH2dFire = (
+    val myHadH2dFire = (
       Bool()
     )
-    myNonBurstHadH2dFire := False
+    myHadH2dFire := False
 
-    val rSavedNonBurstHadH2dFire = (
+    val rSavedHadH2dFire = (
       Reg(Bool(), init=False)
     )
-    when (myNonBurstHadH2dFire) {
-      rSavedNonBurstHadH2dFire := True
+    when (myHadH2dFire) {
+      rSavedHadH2dFire := True
     }
 
-    val stickyNonBurstHadH2dFire = (
-      myNonBurstHadH2dFire
-      || rSavedNonBurstHadH2dFire
+    val stickyHadH2dFire = (
+      myHadH2dFire
+      || rSavedHadH2dFire
     )
     //--------
-    val myNonBurstHadD2hFire = (
+    val myHadD2hFire = (
       Bool()
     )
-    myNonBurstHadD2hFire := False
+    myHadD2hFire := False
 
-    val rSavedNonBurstHadD2hFire = (
+    val rSavedHadD2hFire = (
       Reg(Bool(), init=False)
     )
-    when (myNonBurstHadD2hFire) {
-      rSavedNonBurstHadD2hFire := True
+    when (myHadD2hFire) {
+      rSavedHadD2hFire := True
     }
 
-    val stickyNonBurstHadD2hFire = (
-      myNonBurstHadD2hFire
-      || rSavedNonBurstHadD2hFire
+    val stickyHadD2hFire = (
+      myHadD2hFire
+      || rSavedHadD2hFire
     )
     //--------
     val rState = (
@@ -237,16 +254,27 @@ case class LcvStallBusBurstAdapter(
         io.hostBus.d2hBus.nextValid := False
         io.devBus.d2hBus.ready := False
 
-        rSavedNonBurstHadH2dFire := False
-        rSavedNonBurstHadD2hFire := False
-        rSavedBurstCnt := (
-          myHostH2dBurstInfo.burstCnt
+        rSavedHadH2dFire := False
+        rSavedHadD2hFire := False
+        rSavedBurstCntForH2d := (
+          myHostH2dBurstInfo.burstCnt.resize(rSavedBurstCntForH2d.getWidth)
+        )
+        rSavedBurstCntForD2h := (
+          myHostH2dBurstInfo.burstCnt.resize(rSavedBurstCntForD2h.getWidth)
         )
         rMyH2dCnt := (
-          myHostH2dBurstInfo.burstCnt
+          //myHostH2dBurstInfo.burstCnt
+          0x0
         )
         rMyD2hCnt := (
-          myHostH2dBurstInfo.burstCnt
+          //myHostH2dBurstInfo.burstCnt
+          0x0
+        )
+        rSavedH2dSendData := io.hostBus.h2dBus.sendData
+
+        io.devBus.h2dBus.sendData.addr := (
+          //io.devBus.h2dBus.sendData.burstAddr(someBurstCnt=rMyH2dCnt)
+          rSavedH2dSendData.burstAddr(someBurstCnt=rMyH2dCnt.getZero)
         )
 
         switch (
@@ -265,8 +293,8 @@ case class LcvStallBusBurstAdapter(
             //io.devBus.d2hBus.ready := io.hostBus.d2hBus.ready
 
             //rMyCnt := 1
-            rSavedNonBurstHadH2dFire := False
-            rSavedNonBurstHadD2hFire := False
+            rSavedHadH2dFire := False
+            rSavedHadD2hFire := False
           }
           is (B"101") {
             // !isWrite, burstFirst
@@ -304,32 +332,90 @@ case class LcvStallBusBurstAdapter(
           RegNext(
             next=io.hostBus.h2dBus.nextValid,
             init=False,
-          ) && (
-            io.hostBus.h2dBus.ready
           )
+          && io.hostBus.h2dBus.ready
         ) {
-          myNonBurstHadH2dFire := True
+          myHadH2dFire := True
         }
 
         when (
           RegNext(
             next=io.devBus.d2hBus.nextValid,
             init=False,
-          ) && (
-            io.devBus.d2hBus.ready
           )
+          && io.devBus.d2hBus.ready
         ) {
-          myNonBurstHadD2hFire := True
+          myHadD2hFire := True
         }
 
         when (
-          stickyNonBurstHadH2dFire
-          && stickyNonBurstHadD2hFire
+          stickyHadH2dFire
+          && stickyHadD2hFire
         ) {
           rState := DevBurstlessState.IDLE
         }
       }
       is (DevBurstlessState.READ_BURST) {
+        io.hostBus.h2dBus.ready := False
+
+        io.devBus.h2dBus.sendData := io.hostBus.h2dBus.sendData
+
+        io.hostBus.d2hBus.nextValid := io.devBus.d2hBus.nextValid
+        io.hostBus.d2hBus.sendData.nonBurstInfo := (
+          io.devBus.d2hBus.sendData.nonBurstInfo
+        )
+        io.devBus.d2hBus.ready := io.hostBus.d2hBus.ready
+
+        io.devBus.h2dBus.nextValid := True
+        io.devBus.h2dBus.sendData.addr := (
+          //io.devBus.h2dBus.sendData.burstAddr(someBurstCnt=rMyH2dCnt)
+          rSavedH2dSendData.burstAddr(someBurstCnt=rMyH2dCnt)
+        )
+        when (
+          RegNext(
+            next=io.devBus.h2dBus.nextValid,
+            init=False,
+          )
+          && io.devBus.h2dBus.ready
+        ) {
+          when (rMyH2dCnt < rSavedBurstCntForH2d) {
+            rMyH2dCnt := rMyH2dCnt + 1
+          } otherwise {
+            myHadH2dFire := True
+          }
+        }
+
+        when (rose(
+          RegNext(
+            next=stickyHadH2dFire,
+            init=False,
+          )
+        )) {
+          io.hostBus.h2dBus.ready := True
+        }
+
+        when (stickyHadH2dFire) {
+          io.devBus.h2dBus.nextValid := False
+        }
+
+        when (
+          RegNext(
+            next=io.devBus.d2hBus.nextValid,
+            init=False,
+          )
+          && io.devBus.d2hBus.ready
+        ) {
+          when (rMyD2hCnt < rSavedBurstCntForD2h) {
+            rMyD2hCnt := rMyD2hCnt + 1
+          } otherwise {
+            myHadD2hFire := True
+          }
+        }
+
+        when (stickyHadH2dFire && stickyHadD2hFire) {
+          rState := DevBurstlessState.IDLE
+        }
+
         //when (
         //  RegNext(
         //    next=io.devBus.d2hBus.nextValid,
