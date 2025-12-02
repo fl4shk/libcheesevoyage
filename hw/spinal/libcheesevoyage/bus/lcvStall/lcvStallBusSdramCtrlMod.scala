@@ -884,17 +884,22 @@ case class LcvStallBusSdramCtrl(
       } elsewhen (
         // wait for the d2hFifo to be emptied so that any urst is
         // guaranteed to be completed
-        d2hFifo.io.occupancy === 0
-        //&& h2dFifo.io.availability === 0
+        RegNext(
+          next=(
+            d2hFifo.io.occupancy === 0
+            //&& h2dFifo.io.availability === 0
 
-        && h2dFifo.io.pop.valid
-        && (
-          !h2dFifo.io.pop.isWrite
-          //!rSavedH2dSendData.isWrite
-          //|| h2dFifo.io.availability === 0
-          || h2dFifo.io.occupancy === cfg.busCfg.maxBurstSizeMinus1 + 1
+            && h2dFifo.io.pop.valid
+            && (
+              !h2dFifo.io.pop.isWrite
+              //!rSavedH2dSendData.isWrite
+              //|| h2dFifo.io.availability === 0
+              || h2dFifo.io.occupancy === cfg.busCfg.maxBurstSizeMinus1 + 1
+            )
+            //&& h2dFifo.io.occupancy === cfg.busCfg.maxBurstSizeMinus1 + 1
+          ),
+          init=False
         )
-        //&& h2dFifo.io.occupancy === cfg.busCfg.maxBurstSizeMinus1 + 1
       ) {
         //io.bus.h2dBus.ready := True
         //h2dFifo.io.pop.ready := True
