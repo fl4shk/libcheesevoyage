@@ -20,6 +20,8 @@ case class LcvStallBusMainConfig(
   addrWidth: Int,
   //burstSizeWidth: Int,
   burstCntWidth: Int,//Option[Int],
+  alwaysDoBurst: Boolean,
+  burstAlwaysMaxSize: Boolean,
   srcWidth: Int, //Option[Int],
 ) {
 }

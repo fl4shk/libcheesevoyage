@@ -119,10 +119,18 @@ case class LcvStallBusSdramCtrlConfig(
       //  1
       //),
       burstCntWidth=(
-        0
+        log2Up(((16 / 8) * burstLen /*64*/) / 4)
+          // the div by 4 is because of 32-bit `dataWidth`
+        //0
         //1
         //None
         //Some(log2Up(64))
+      ),
+      alwaysDoBurst=(
+        true
+      ),
+      burstAlwaysMaxSize=(
+        true
       ),
       srcWidth=(
         //1
@@ -147,8 +155,9 @@ case class LcvStallBusSdramCtrlConfig(
   val altddioOutCfg: AltddioOutConfig = AltddioOutConfig() 
   //--------
 
+  def burstLen = 8
   //def burstLen = 4
-  def burstLen = 2
+  //def burstLen = 2
   //def burstLen = 1
   def burstCode: UInt = (
     // 000=1, 001=2, 010=4, 011=8
@@ -317,7 +326,8 @@ case class LcvStallBusSdramCtrlConfig(
       None,
     )
     def tREFIthresh = (
-      (7 us) * clkRate
+      //(7 us) * clkRate
+      (6.75 us) * clkRate
     )
   }
 
@@ -477,8 +487,8 @@ case class LcvStallBusSdramCtrl(
 ) extends Component {
   //--------
   val io = LcvStallBusSdramCtrlIo(cfg=cfg)
-  io.bus.h2dBus.ready.setAsReg() init(False)
-  io.bus.h2dBus.ready := False
+  //io.bus.h2dBus.ready.setAsReg() init(False)
+  //io.bus.h2dBus.ready := False
   val rSavedH2dSendData = (
     Reg(cloneOf(io.bus.h2dBus.sendData))
     init(io.bus.h2dBus.sendData.getZero)
@@ -492,7 +502,11 @@ case class LcvStallBusSdramCtrl(
   //  io.bus.d2hBus.sendData
   //)
   //myD2hSendData.setAsReg() init(myD2hSendData.getZero)
-  val rD2hValid = (
+  val rD2hFifoPushValid = (
+    Reg(cloneOf(io.bus.d2hBus.nextValid))
+    init(io.bus.d2hBus.nextValid.getZero)
+  )
+  val rD2hWriteValid = (
     Reg(cloneOf(io.bus.d2hBus.nextValid))
     init(io.bus.d2hBus.nextValid.getZero)
   )
@@ -500,8 +514,61 @@ case class LcvStallBusSdramCtrl(
     Reg(cloneOf(io.bus.d2hBus.sendData))
     init(io.bus.d2hBus.sendData.getZero)
   )
-  io.bus.d2hBus.nextValid := rD2hValid
-  io.bus.d2hBus.sendData := rD2hSendData
+  //io.bus.d2hBus.nextValid := rD2hValid
+  //io.bus.d2hBus.sendData := rD2hSendData
+
+  val h2dFifo = StreamFifo(
+    dataType=cloneOf(io.bus.h2dBus.sendData),
+    depth=(
+      //cfg.burstLen
+      cfg.busCfg.maxBurstSizeMinus1 + 1
+    ),
+    latency=(
+      2
+      //0
+      //1
+    ),
+    forFMax=(
+      true
+      //false
+    ),
+  )
+  h2dFifo.io.push.valid := (
+    io.bus.h2dBus.nextValid
+    //&& io.bus.h2dBus.sendData.isWrite
+  )
+  //h2dFifo.io.push.valid := io.bus.h2dBus.nextValid
+  h2dFifo.io.push.payload := io.bus.h2dBus.sendData
+  io.bus.h2dBus.ready := h2dFifo.io.push.ready
+  val rH2dFifoPopReady = Reg(Bool(), init=False)
+  //h2dFifo.io.pop.ready.setAsReg() init(False)
+  h2dFifo.io.pop.ready := rH2dFifoPopReady //False
+
+  val d2hFifo = StreamFifo(
+    dataType=cloneOf(io.bus.d2hBus.sendData),
+    depth=(
+      //cfg.burstLen
+      cfg.busCfg.maxBurstSizeMinus1 + 1
+    ),
+    latency=(
+      //2
+      //0
+      1
+    ),
+    forFMax=(
+      true
+      //false
+    ),
+  )
+  d2hFifo.io.push.valid := rD2hFifoPushValid
+  d2hFifo.io.push.payload := rD2hSendData
+
+  io.bus.d2hBus.nextValid := (
+    d2hFifo.io.pop.valid
+    || rD2hWriteValid
+  )
+  io.bus.d2hBus.sendData := d2hFifo.io.pop.payload
+  d2hFifo.io.pop.ready := io.bus.d2hBus.ready
 
   //--------
   // Power up Sequence:
@@ -651,6 +718,36 @@ case class LcvStallBusSdramCtrl(
     )
   )
 
+  //def STATE_PWR_ON_INIT = 0x0
+
+  //def STATE_PWR_ON_CNT_DO_CKE_HI = 0x1
+
+  //def STATE_PWR_ON_SEND_PRECHARGE_ALL = 0x2
+  //def STATE_PWR_ON_WAIT_T_RP = 0x3    // send NOPs
+
+  //def STATE_PWR_ON_SEND_AUTO_REFRESH_0 = 0x4
+  //def STATE_PWR_ON_WAIT_T_RFC_0 = 0x5  // send NOPs or CMD INHIBITs
+
+  //def STATE_PWR_ON_SEND_AUTO_REFRESH_1 = 0x6
+  //def STATE_PWR_ON_WAIT_T_RFC_1 = 0x7   // send NOPs or CMD INHIBITs
+
+  //def STATE_PWR_ON_LOAD_MODE_REGISTER = 0x8
+  //def STATE_PWR_ON_WAIT_T_MRD = 0x9     // send NOPs
+
+  //def STATE_IDLE = 0x10
+  //def STATE_SEND_RFSH = 0x11
+  //def STATE_RFSH_POST_NOPS = 0x12
+  //def STATE_SEND_ACTIVE = 0x13
+  //def STATE_ACTIVE_POST_NOPS = 0x14
+  //def STATE_PRE_READ_WRITE = 0x15
+  //def STATE_SEND_READ_0 = 0x16
+  //def STATE_SEND_READ_N = STATE_SEND_READ_0 + cfg.burstLen - 1 + 1
+  //def STATE_READ_POST_NOPS = STATE_SEND_READ_N + 0x1
+  //def STATE_SEND_WRITE_0 = STATE_READ_POST_NOPS + 0x1
+  //def STATE_SEND_WRITE_N = STATE_SEND_WRITE_0 + cfg.burstLen - 1 + 1
+  //def STATE_WRITE_POST_NOPS = STATE_SEND_WRITE_N + 1
+  //def LIM_STATE = STATE_WRITE_POST_NOPS + 1
+
   object State extends SpinalEnum(defaultEncoding=binarySequential) {
     val
       PWR_ON_INIT,
@@ -675,18 +772,26 @@ case class LcvStallBusSdramCtrl(
       ACTIVE_POST_NOPS,
       PRE_READ_WRITE,
       SEND_READ_0,
-      SEND_READ_1,
+      SEND_READ_N,
       READ_POST_NOPS,
       SEND_WRITE_0,
-      SEND_WRITE_1,
+      SEND_WRITE_HI_N,
+      SEND_WRITE_LO_N,
       WRITE_POST_NOPS
 
       = newElement();
   }
+
   val rState = (
     KeepAttribute(
-      Reg(State())
-      init(State.PWR_ON_INIT)
+      Reg(
+        State()
+        //UInt(log2Up(LIM_STATE) bits)
+      )
+      init(
+        //STATE_PWR_ON_INIT
+        State.PWR_ON_INIT
+      )
     )
   )
   switch (rState) {
@@ -772,17 +877,32 @@ case class LcvStallBusSdramCtrl(
     }
 
     is (State.IDLE) {
+      rH2dFifoPopReady := False
       when (rNeedRfshCnt.msb) {
         rNeedRfshCnt := cfg.Cycles.tREFIthresh.toInt
         rState := State.SEND_RFSH
       } elsewhen (
-        RegNext(
-          next=io.bus.h2dBus.nextValid,
-          init=io.bus.h2dBus.nextValid.getZero,
+        // wait for the d2hFifo to be emptied so that any urst is
+        // guaranteed to be completed
+        d2hFifo.io.occupancy === 0
+        //&& h2dFifo.io.availability === 0
+
+        && h2dFifo.io.pop.valid
+        && (
+          !h2dFifo.io.pop.isWrite
+          //!rSavedH2dSendData.isWrite
+          //|| h2dFifo.io.availability === 0
+          || h2dFifo.io.occupancy === cfg.busCfg.maxBurstSizeMinus1 + 1
         )
+        //&& h2dFifo.io.occupancy === cfg.busCfg.maxBurstSizeMinus1 + 1
       ) {
-        io.bus.h2dBus.ready := True
-        rSavedH2dSendData := io.bus.h2dBus.sendData
+        //io.bus.h2dBus.ready := True
+        //h2dFifo.io.pop.ready := True
+        rH2dFifoPopReady := True
+        rSavedH2dSendData := (
+          //io.bus.h2dBus.sendData
+          h2dFifo.io.pop.payload
+        )
         rState := State.SEND_ACTIVE
       }
     }
@@ -800,89 +920,198 @@ case class LcvStallBusSdramCtrl(
       }
     }
     is (State.SEND_ACTIVE) {
+      rH2dFifoPopReady := False
       io.sdram.sendCmdActive(
-        bank=rSavedH2dSendData.addr(25 downto 24),
-        row=rSavedH2dSendData.addr(23 downto 11),
+        bank=rSavedH2dSendData.addr(
+          //25 downto 24
+          2 downto 1
+        ),
+        row=rSavedH2dSendData.addr(
+          //23 downto 11
+          25 downto 13
+        ),
       )
       rState := State.ACTIVE_POST_NOPS
     }
     is (State.ACTIVE_POST_NOPS) {
       io.sdram.sendCmdNop()
+
+      rH2dFifoPopReady := (
+        False
+        //True
+      )
+
       when (!rActiveNopWaitCnt.msb) {
         rActiveNopWaitCnt := rActiveNopWaitCnt - 1
       } otherwise {
         rActiveNopWaitCnt := cfg.Cycles.tRCD._1.get.toInt
         rState := State.PRE_READ_WRITE
+        //rH2dFifoPopReady := (
+        //  False
+        //  //True
+        //)
       }
     }
     is (State.PRE_READ_WRITE) {
       io.sdram.sendCmdNop()
+
+      rH2dFifoPopReady := False
+      //rSavedH2dSendData := (
+      //  //io.bus.h2dBus.sendData
+      //  h2dFifo.io.pop.payload
+      //)
       when (!rSavedH2dSendData.isWrite) {
         rState := State.SEND_READ_0
       } otherwise {
+        //rH2dFifoPopReady := True
+        //rSavedH2dSendData := (
+        //  //io.bus.h2dBus.sendData
+        //  h2dFifo.io.pop.payload
+        //)
         rState := State.SEND_WRITE_0
       }
     }
     is (State.SEND_READ_0) {
+      rH2dFifoPopReady := False
       io.sdram.sendCmdRead(
-        bank=rSavedH2dSendData.addr(25 downto 24),
-        column=rSavedH2dSendData.addr(10 downto 1),
+        bank=rSavedH2dSendData.addr(
+          //25 downto 24
+          2 downto 1
+        ),
+        column=rSavedH2dSendData.addr(
+          //10 downto 1
+          12 downto 3
+        ),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         firstRead=true,
       )
       //rState := State.READ_POST_NOPS
-      rState := State.SEND_READ_1
+      rState := State.SEND_READ_N
       rRdCasLatencyCnt := (
         //cfg.casLatency._2 - 1
         myRdCasLatencyCntNumCycles - 1
       )
       rRdNopWaitCnt := myRdNopWaitCntNumCycles
+
+      rD2hFifoPushValid := False//True
+      rD2hSendData.burstCnt := (
+        //cfg.burstLen - 1
+        cfg.busCfg.maxBurstSizeMinus1 //+ 1
+      )
+      rD2hSendData.burstFirst := True
+      rD2hSendData.burstLast := False
     }
-    is (State.SEND_READ_1) {
+    //for (myStateReadIdx <- State.SEND_READ_0 + 1 to State.SEND_READ_N) {
+    //  is (myStateReadIdx) {
+    //    io.sdram.sendCmdRead(
+    //      bank=rSavedH2dSendData.addr(25 downto 24),
+    //      column=rSavedH2dSendData.addr(10 downto 1),
+    //      autoPrecharge=True,
+    //      someDqTriState=rDqTriState,
+    //      firstRead=false,
+    //    )
+    //    //rState := State.READ_POST_NOPS
+    //    rState := myStateReadIdx + 1
+    //    rD2hValid := False
+    //    when (!rRdCasLatencyCnt.msb) {
+    //      rRdCasLatencyCnt := rRdCasLatencyCnt - 1
+    //    }
+    //    when (rRdCasLatencyCnt(0) === False) {
+    //      rD2hValid := (rRdCasLatencyCnt.asUInt < cfg.burstLen)
+    //      rD2hSendData.burstCnt := rD2hSendData.burstCnt - 1
+    //      rD2hSendData.data(31 downto 16) := rDqTriState.read
+    //    } elsewhen (rRdCasLatencyCnt(0) === True) {
+    //      rD2hSendData.data(15 downto 0) := rDqTriState.read
+    //    }
+    //  }
+    //}
+    is (State.SEND_READ_N) {
       io.sdram.sendCmdRead(
-        bank=rSavedH2dSendData.addr(25 downto 24),
-        column=rSavedH2dSendData.addr(10 downto 1),
+        bank=rSavedH2dSendData.addr(
+          //25 downto 24
+          2 downto 1
+        ),
+        column=rSavedH2dSendData.addr(
+          //10 downto 1
+          12 downto 3
+        ),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         firstRead=false,
       )
-      rState := State.READ_POST_NOPS
+      //rState := State.READ_POST_NOPS
+      //rState := myStateReadIdx + 1
+      //rD2hSendData.burstFirst := False
+      rD2hFifoPushValid := False
       when (!rRdCasLatencyCnt.msb) {
         rRdCasLatencyCnt := rRdCasLatencyCnt - 1
-        when (rRdCasLatencyCnt === 0) {
+        when (rRdCasLatencyCnt(0) === False) {
+          val nextD2hValid = (
+            rRdCasLatencyCnt.asUInt <= cfg.busCfg.maxBurstSizeMinus1 * 2
+          )
+          rD2hFifoPushValid := (
+            //rRdCasLatencyCnt.asUInt < cfg.burstLen
+            //rRdCasLatencyCnt.asUInt <= cfg.busCfg.maxBurstSizeMinus1 * 2//+ 1
+            nextD2hValid
+          )
+          when (nextD2hValid && !rD2hSendData.burstFirst) {
+            rD2hSendData.burstCnt := rD2hSendData.burstCnt - 1
+          }
           rD2hSendData.data(31 downto 16) := rDqTriState.read
-        } elsewhen (rRdCasLatencyCnt === 1) {
+        } elsewhen (rRdCasLatencyCnt(0) === True) {
+          when (rD2hFifoPushValid) {
+            rD2hSendData.burstFirst := False
+          }
+          //rD2hValid := (
+          //  //rRdCasLatencyCnt.asUInt < cfg.burstLen
+          //  rRdCasLatencyCnt.asUInt < cfg.busCfg.maxBurstSizeMinus1 //+ 1
+          //)
           rD2hSendData.data(15 downto 0) := rDqTriState.read
         }
-      }
-    }
-    is (State.READ_POST_NOPS) {
-      io.sdram.sendCmdNop()
-      when (!rRdCasLatencyCnt.msb) {
-        rRdCasLatencyCnt := rRdCasLatencyCnt - 1
         when (rRdCasLatencyCnt === 0) {
-          rD2hSendData.data(31 downto 16) := rDqTriState.read
-        } elsewhen (rRdCasLatencyCnt === 1) {
-          rD2hSendData.data(15 downto 0) := rDqTriState.read
+          rD2hSendData.burstLast := True
         }
+      } otherwise {
+        rD2hFifoPushValid := False
+        rState := State.READ_POST_NOPS
       }
       when (!rRdNopWaitCnt.msb) {
         rRdNopWaitCnt := rRdNopWaitCnt - 1
       }
+      when (rRdCasLatencyCnt.msb && rRdNopWaitCnt.msb) {
+        rD2hFifoPushValid := False
+        rState := State.IDLE
+      }
+    }
+    is (State.READ_POST_NOPS) {
+      io.sdram.sendCmdNop()
+      rD2hFifoPushValid := False
+
+      when (!rRdNopWaitCnt.msb) {
+        rRdNopWaitCnt := rRdNopWaitCnt - 1
+      }
       when (
-        rRdCasLatencyCnt.msb 
-        && rRdNopWaitCnt.msb
+        //rRdCasLatencyCnt.msb 
+        //&& 
+        rRdNopWaitCnt.msb
       ) {
         //rRdCasLatencyCnt := myRdCasLatencyCntNumCycles - 1
         rState := State.IDLE
-        rD2hValid := True
+        //rD2hValid := True
+        //rD2hValid := False
       }
     }
     is (State.SEND_WRITE_0) {
       io.sdram.sendCmdWrite(
-        bank=rSavedH2dSendData.addr(25 downto 24),
-        column=rSavedH2dSendData.addr(10 downto 1),
+        bank=rSavedH2dSendData.addr(
+          //25 downto 24
+          2 downto 1
+        ),
+        column=rSavedH2dSendData.addr(
+          //10 downto 1
+          12 downto 3
+        ),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(15 downto 0),
@@ -890,37 +1119,94 @@ case class LcvStallBusSdramCtrl(
         firstWrite=true,
       )
       rWrNopWaitCnt := myWrNopWaitCntNumCycles
-      rState := State.SEND_WRITE_1
+      rState := State.SEND_WRITE_HI_N
+
+      //rH2dFifoPopReady := (
+      //  True
+      //  //False
+      //)
+      //rSavedH2dSendData := (
+      //  //io.bus.h2dBus.sendData
+      //  h2dFifo.io.pop.payload
+      //)
     }
-    is (State.SEND_WRITE_1) {
+    is (State.SEND_WRITE_HI_N) {
       io.sdram.sendCmdWrite(
-        bank=rSavedH2dSendData.addr(25 downto 24),
-        column=rSavedH2dSendData.addr(10 downto 1),
+        bank=rSavedH2dSendData.addr(
+          //25 downto 24
+          2 downto 1
+        ),
+        column=rSavedH2dSendData.addr(
+          //10 downto 1
+          12 downto 3
+        ),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(31 downto 16),
         wrByteEn=rSavedH2dSendData.byteEn(3 downto 2),
         firstWrite=false,
       )
-      rState := State.WRITE_POST_NOPS
-      rD2hValid := True
+      when (rSavedH2dSendData.burstLast) {
+        rState := State.WRITE_POST_NOPS
+        //rD2hFifoPushValid := True
+        rD2hWriteValid := True
+        rH2dFifoPopReady := (
+          //True
+          False
+        )
+      } otherwise {
+        //rH2dFifoPopReady := False
+        rH2dFifoPopReady := (
+          True
+          //False
+        )
+        rState := State.SEND_WRITE_LO_N
+      }
+      rSavedH2dSendData := (
+        //io.bus.h2dBus.sendData
+        h2dFifo.io.pop.payload
+      )
+    }
+    is (State.SEND_WRITE_LO_N) {
+      io.sdram.sendCmdWrite(
+        bank=rSavedH2dSendData.addr(
+          //25 downto 24
+          2 downto 1
+        ),
+        column=rSavedH2dSendData.addr(
+          //10 downto 1
+          12 downto 3
+        ),
+        autoPrecharge=True,
+        someDqTriState=rDqTriState,
+        wrData=rSavedH2dSendData.data(15 downto 0),
+        wrByteEn=rSavedH2dSendData.byteEn(1 downto 0),
+        firstWrite=false,
+      )
+      rH2dFifoPopReady := False
+      rState := State.SEND_WRITE_HI_N
     }
     is (State.WRITE_POST_NOPS) {
       io.sdram.sendCmdNop()
+      when (
+        //rD2hFifoPushValid
+        rD2hWriteValid
+        //&& io.bus.d2hBus.ready
+        && d2hFifo.io.push.ready
+      ) {
+        //rD2hFifoPushValid := False
+        rD2hWriteValid := False
+      }
       when (!rWrNopWaitCnt.msb) {
         rWrNopWaitCnt := rWrNopWaitCnt - 1
       } otherwise {
-        rState := State.IDLE
+        when (!rD2hFifoPushValid) {
+          rState := State.IDLE
+        }
       }
     }
   }
 
-  when (
-    rD2hValid
-    && io.bus.d2hBus.ready
-  ) {
-    rD2hValid := False
-  }
 
 
   //--------
@@ -999,69 +1285,76 @@ case class LcvSdramCtrlSimDut(
   //  temp
   //}
 
-  def devBusCfg = (
-    cfg.busCfg
-  )
-  val hostBusCfg = LcvStallBusConfig(
-    mainCfg=LcvStallBusMainConfig(
-      dataWidth=(
-        devBusCfg.dataWidth
-      ),
-      addrWidth=(
-        //27
-        devBusCfg.addrWidth
-      ),
-      //burstSizeWidth=(
-      //  1
-      //),
-      burstCntWidth=(
-        //0
-        //1
-        //None
-        //Some(log2Up(64))
-        2
-      ),
-      srcWidth=(
-        //1
-        //None
-        //1
-        devBusCfg.srcWidth
-      ),
-    ),
-    mesiCfg=(
-      devBusCfg.mesiCfg
-      //LcvStallBusMesiConfig(
-      //  numCpus=1
-      //)
-    )
-  )
+  //def devBusCfg = (
+  //  cfg.busCfg
+  //)
+  //val hostBusCfg = LcvStallBusConfig(
+  //  mainCfg=LcvStallBusMainConfig(
+  //    dataWidth=(
+  //      devBusCfg.dataWidth
+  //    ),
+  //    addrWidth=(
+  //      //27
+  //      devBusCfg.addrWidth
+  //    ),
+  //    //burstSizeWidth=(
+  //    //  1
+  //    //),
+  //    burstCntWidth=(
+  //      //0
+  //      //1
+  //      //None
+  //      //Some(log2Up(64))
+  //      2
+  //    ),
+  //    srcWidth=(
+  //      //1
+  //      //None
+  //      //1
+  //      devBusCfg.srcWidth
+  //    ),
+  //  ),
+  //  mesiCfg=(
+  //    devBusCfg.mesiCfg
+  //    //LcvStallBusMesiConfig(
+  //    //  numCpus=1
+  //    //)
+  //  )
+  //)
   val rH2dSendData = {
-    val temp = Reg(LcvStallBusH2dSendPayload(cfg=hostBusCfg))
+    val temp = Reg(LcvStallBusH2dSendPayload(cfg=cfg.busCfg))
     temp.init(temp.getZero)
     temp
   }
-  val rSavedH2dSendAddr = (
-    Reg(cloneOf(rH2dSendData.addr))
-    init(0x0)
-  )
+  //val rSavedH2dSendAddr = (
+  //  Reg(cloneOf(rH2dSendData.addr))
+  //  init(0x0)
+  //)
 
-  //val rD2hReady = Reg(Bool(), init=False)
+  //val myD2hReady = Reg(Bool(), init=False)
   val myD2hReady = Bool()
   myD2hReady := False
-  //--------
-  //mySdramCtrl.io.bus.h2dBus.nextValid := rH2dValid
-  //mySdramCtrl.io.bus.h2dBus.sendData := (
-  //  rH2dSendData
-  //)
-  //mySdramCtrl.io.bus.d2hBus.ready := myD2hReady //rD2hReady
-  val myBurstAdapter = LcvStallBusBurstAdapter(
-    cfg=LcvStallBusBurstAdapterConfig(
-      hostBusCfg=hostBusCfg,
-      devBusCfg=devBusCfg,
-    ),
+  val myD2hSendData = (
+    //RegNext(
+    //  next=mySdramCtrl.io.bus.d2hBus.sendData,
+    //  init=mySdramCtrl.io.bus.d2hBus.sendData.getZero,
+    //)
+    mySdramCtrl.io.bus.d2hBus.sendData
   )
-  mySdramCtrl.io.bus.h2dBus <> myBurstAdapter.io.devBus.h2dBus
-  mySdramCtrl.io.bus.d2hBus <> myBurstAdapter.io.devBus.d2hBus
+  //--------
+  mySdramCtrl.io.bus.h2dBus.nextValid := rH2dValid
+  mySdramCtrl.io.bus.h2dBus.sendData := (
+    rH2dSendData
+  )
+  mySdramCtrl.io.bus.d2hBus.ready := myD2hReady //rD2hReady
+  //val myBurstAdapter = LcvStallBusBurstAdapter(
+  //  cfg=LcvStallBusBurstAdapterConfig(
+  //    hostBusCfg=hostBusCfg,
+  //    devBusCfg=devBusCfg,
+  //  ),
+  //)
+  //mySdramCtrl.io.bus.h2dBus <> myBurstAdapter.io.devBus.h2dBus
+  //mySdramCtrl.io.bus.d2hBus <> myBurstAdapter.io.devBus.d2hBus
 
 
   //mySdramCtrl.io.bus.h2dBus.nextValid := (
@@ -1074,11 +1367,11 @@ case class LcvSdramCtrlSimDut(
   //  mySdramCtrl.io.bus.d2hBus.sendData
   //)
   //--------
-  myBurstAdapter.io.hostBus.h2dBus.nextValid := rH2dValid
-  myBurstAdapter.io.hostBus.h2dBus.sendData := (
-    rH2dSendData
-  )
-  myBurstAdapter.io.hostBus.d2hBus.ready := myD2hReady //rD2hReady
+  //myBurstAdapter.io.hostBus.h2dBus.nextValid := rH2dValid
+  //myBurstAdapter.io.hostBus.h2dBus.sendData := (
+  //  rH2dSendData
+  //)
+  //myBurstAdapter.io.hostBus.d2hBus.ready := myD2hReady //rD2hReady
   //--------
   object State extends SpinalEnum(defaultEncoding=binarySequential) {
     val
@@ -1099,12 +1392,16 @@ case class LcvSdramCtrlSimDut(
   //  Reg(UInt((mySdram.io.DQ.getWidth + 1) bits))
   //  init(0x0)
   //)
-  //val rHadH2dFire = (
-  //  Reg(Bool(), init=False)
-  //)
-  //val rHadD2hFire = (
-  //  Reg(Bool(), init=False)
-  //)
+  val rBurstCnt = (
+    Reg(UInt(log2Up(cfg.busCfg.maxBurstSizeMinus1 + 1) bits))
+    init(0x0)
+  )
+  val rHadH2dFinish = (
+    Reg(Bool(), init=False)
+  )
+  val rHadD2hFinish = (
+    Reg(Bool(), init=False)
+  )
 
   val myPrngArea = new Area {
     // credit:
@@ -1121,29 +1418,31 @@ case class LcvSdramCtrlSimDut(
     )
     val rXsVec = (
       Vec.fill(2)(
-        //Vec.fill(hostBusCfg.maxBurstSizeMinus1 + 1)(
+        Vec.fill(
+          //hostBusCfg.maxBurstSizeMinus1 + 1
+          cfg.busCfg.maxBurstSizeMinus1 + 1
+        )(
           Vec.fill(3)(
             Reg(UInt(myXsWidth bits))
             //init(1)
           )
-        //)
+        )
       )
     )
     for (idx <- 0 until rXsVec.size) {
-      rXsVec(idx).foreach(
-        item => item.init(idx + 1)
-        //outerItem => outerItem.foreach(
-        //  item => item.init(idx + 1)
-        //)
-      )
-      //for (jdx <- 0 until rXsVec(idx).size) {
-      //  rXsVec(idx)(jdx).foreach(item => {
-      //    item.init(idx * rXsVec(idx).size + jdx + 1)
-      //  })
-      //}
+      //rXsVec(idx).foreach(
+      //  item => item.init(idx + 1)
+      //  //outerItem => outerItem.foreach(
+      //  //  item => item.init(idx + 1)
+      //  //)
+      //)
+      for (jdx <- 0 until rXsVec(idx).size) {
+        rXsVec(idx)(jdx).foreach(item => {
+          item.init(idx * rXsVec(idx).size + jdx + 1)
+        })
+      }
     }
-    rXsVec.foreach(
-      //outerXs => outerXs.foreach(
+    rXsVec.foreach(outerXs => outerXs.foreach(
       rXs => {
         rXs(2) := (
           (rXs(0) ^ ((rXs(0) << 7)(rXs(0).bitsRange))).resize(myXsWidth)
@@ -1160,9 +1459,8 @@ case class LcvSdramCtrlSimDut(
           rCnt := myCntMax
         }
       }
-      //)
-    )
-    def getCurrRand(/*idx: UInt*/): UInt = {
+    ))
+    def getCurrRand(idx: Int): UInt = {
       //val a = (rXs ^ ((rXs << 7)(rXs.bitsRange))).resize(rXs.getWidth)
       //val b = (a ^ (a >> 9).resize(rXs.getWidth)).resize(rXs.getWidth)
       //val c = (b ^ ((b << 8)(rXs.bitsRange))).resize(rXs.getWidth)
@@ -1172,8 +1470,8 @@ case class LcvSdramCtrlSimDut(
       Cat(
         //rXsVec(0)(idx)(0)(15 downto 0),
         //rXsVec(1)(idx)(0)(15 downto 0),
-        rXsVec.head(0)(15 downto 0),
-        rXsVec.last(0)(15 downto 0),
+        rXsVec.head(idx)(0)(15 downto 0),
+        rXsVec.last(idx)(0)(15 downto 0),
       ).asUInt
     }
   }
@@ -1186,14 +1484,16 @@ case class LcvSdramCtrlSimDut(
     //0x10
     //myNumTests << 2 // NOTE: this was for the burst-less accessess
     //(myNumTests * (hostBusCfg.maxBurstSizeMinus1 + 1)) << 2
-    (hostBusCfg.maxBurstSizeMinus1 + 1) << 2
+    //(hostBusCfg.maxBurstSizeMinus1 + 1) << 2
+    (cfg.busCfg.maxBurstSizeMinus1 + 1) << 2
   )
   val rTestData = (
     Vec.fill(
       //(myMaxBaseAddr >> 2) + 1
       //(myMaxBaseAddr >> 1) // intentionally leave some always-zero elements
       //myNumTests
-      hostBusCfg.maxBurstSizeMinus1 + 1
+      //hostBusCfg.maxBurstSizeMinus1 + 1
+      cfg.busCfg.maxBurstSizeMinus1 + 1
     )(
       {
         val temp = Reg(Flow(
@@ -1209,170 +1509,318 @@ case class LcvSdramCtrlSimDut(
     )
   )
   //--------
-  // BEGIN: state machine that lacks write bursts but has read bursts
-  val myHadH2dFire = (
-    Bool()
-  )
-  myHadH2dFire := False
-
-  val rSavedHadH2dFire = (
-    Reg(Bool(), init=False)
-  )
-  when (myHadH2dFire) {
-    rSavedHadH2dFire := True
-  }
-
-  val stickyHadH2dFire = (
-    myHadH2dFire
-    || rSavedHadH2dFire
-  )
-
-
-  val myHadD2hFire = (
-    Bool()
-  )
-  myHadD2hFire := False
-
-  val rSavedHadD2hFire = (
-    Reg(Bool(), init=False)
-  )
-  when (myHadD2hFire) {
-    rSavedHadD2hFire := True
-  }
-
-  val stickyHadD2hFire = (
-    myHadD2hFire
-    || rSavedHadD2hFire
-  )
-
-
-  val wrTempCnt = (
-    (rH2dSendData.addr(
-      //rH2dSendData.addr.high 
-      hostBusCfg.burstCntWidth + 2 - 1
-      downto 2
-    ))
-    //(
-    //  log2Up(rTestData.size) - 1 downto 0
-    //)
-  )
-  val rWrPseudoBurstCnt = (
-    Reg(UInt((hostBusCfg.burstCntWidth + 1) bits))
-    init(0x0)
-  )
-  //val wrTestDataCnt = (
-  //  wrTempCnt(wrTempCnt.high - 1 downto 0)
-  //)
-  val rRdTempCnt = (
-    Reg(UInt((hostBusCfg.burstCntWidth + 1) bits))
-    init(0x0)
-  )
+  // BEGIN: state machine that does 16-byte bursts
+  // (the same amount of bytes as the maximum number of bytes that can be
+  // done in one non-full-page burst by the SDRAM chip itself)
   switch (rState) {
     is (State.WRITE_START) {
+      rHadH2dFinish := False
+      rHadD2hFinish := False
 
-      //myHadH2dFire := False
-      //myHadD2hFire := False
-      rSavedHadH2dFire := False
-      rSavedHadD2hFire := False
+      for (testIdx <- 0 until cfg.busCfg.maxBurstSizeMinus1 + 1) {
+        rTestData(testIdx).payload.head := (
+          myPrngArea.getCurrRand(idx=testIdx)
+        )
+        rTestData(testIdx).payload.last := 0x0
+      }
 
       rH2dValid := True
-
-      rTestData(wrTempCnt).payload.head := myPrngArea.getCurrRand()
-      rTestData(wrTempCnt).payload.last := (
-        //0x0
-        rTestData(wrTempCnt).payload.last.getZero
+      rH2dSendData.data := (
+        //rTestData.head.payload.head
+        myPrngArea.getCurrRand(idx=0)
       )
-      rH2dSendData.data := myPrngArea.getCurrRand()
-      rH2dSendData.byteEn := (
-        U(rH2dSendData.byteEn.getWidth bits, default -> True)
+      rH2dSendData.addr := 0x0
+      rH2dSendData.byteEn := U(
+        rH2dSendData.byteEn.getWidth bits, default -> True
       )
-
-      rH2dSendData.addr := rSavedH2dSendAddr
-
-      //rH2dSendData.burstCnt := 1
-      //rH2dSendData.burstCnt := hostBusCfg.maxBurstSizeMinus1
-      //rH2dSendData.burstFirst := True
-      //rH2dSendData.burstLast := False
-      rH2dSendData.burstCnt := 0x0
-      rH2dSendData.burstFirst := False
-      rH2dSendData.burstLast := False
-
       rH2dSendData.isWrite := True
       rH2dSendData.src := 0x0
+
+      rH2dSendData.burstCnt := cfg.busCfg.maxBurstSizeMinus1
+      rH2dSendData.burstFirst := True
+      rH2dSendData.burstLast := False
+      rBurstCnt := (
+        //0x0
+        0x1
+      )
 
       rState := State.WRITE_WAIT_TXN
     }
     is (State.WRITE_WAIT_TXN) {
-      when (myBurstAdapter.io.hostBus.h2dBus.fire) {
-        rH2dValid := False
-        myHadH2dFire := True
-      }
-      when (myBurstAdapter.io.hostBus.d2hBus.rValid) {
-        myHadD2hFire := True
-        myD2hReady := True
-      }
-      when (stickyHadH2dFire && stickyHadD2hFire) {
-        rSavedHadH2dFire := False
-        rSavedHadD2hFire := False
-        rSavedH2dSendAddr := rH2dSendData.addr + 4
-        when (
-          //rH2dSendData.addr < myMaxBaseAddr
-          //wrTempCnt(hostBusCfg.burstCntWidth - 1 downto 0)
-          //wrTempCnt
-          rWrPseudoBurstCnt < hostBusCfg.maxBurstSizeMinus1 + 1
-        ) {
-          rState := State.WRITE_START
-          rWrPseudoBurstCnt := rWrPseudoBurstCnt + 1
-          rH2dSendData.addr := rH2dSendData.addr + 4
-        } otherwise {
-          rState := State.READ_START
-          rWrPseudoBurstCnt := 0x0
-          rH2dSendData.addr := 0x0
+      when (
+        rH2dValid
+        && mySdramCtrl.io.bus.h2dBus.ready
+      ) {
+        rH2dSendData.data := rTestData(rBurstCnt).payload.head
+        rBurstCnt := rBurstCnt + 1
+
+        rH2dSendData.burstFirst := False
+        rH2dSendData.burstCnt := rH2dSendData.burstCnt - 1
+        when (rH2dSendData.burstCnt === 1) {
+          rH2dSendData.burstLast := True
         }
+        when (rH2dSendData.burstLast) {
+          rH2dValid := False
+          rH2dSendData.burstLast := False
+          //rState := State.READ_START
+          rHadH2dFinish := True
+        }
+      }
+      when (
+        //RegNext(
+        //  next=mySdramCtrl.io.bus.d2hBus.nextValid,
+        //  init=False
+        //)
+        mySdramCtrl.io.bus.d2hBus.nextValid
+      ) {
+        myD2hReady := True
+        rHadD2hFinish := True
+      }
+      when (rHadH2dFinish && rHadD2hFinish) {
+        rState := State.READ_START
       }
     }
     is (State.READ_START) {
-      //--------
-      //myHadH2dFire := False
-      //myHadD2hFire := False
-      rSavedHadH2dFire := False
-      rSavedHadD2hFire := False
-      //--------
+      rBurstCnt := 0x0
+      rHadH2dFinish := False
+      rHadD2hFinish := False
+
       rH2dValid := True
-      rH2dSendData.burstCnt := hostBusCfg.maxBurstSizeMinus1
+
+      rH2dSendData.addr := 0x0
+      rH2dSendData.byteEn := U(
+        rH2dSendData.byteEn.getWidth bits, default -> True
+      )
+      rH2dSendData.isWrite := False
+      rH2dSendData.src := 0x0
+
+      rH2dSendData.burstCnt := cfg.busCfg.maxBurstSizeMinus1
       rH2dSendData.burstFirst := True
       rH2dSendData.burstLast := False
-      rH2dSendData.isWrite := False
-      //--------
+
       rState := State.READ_WAIT_TXN
-      //--------
     }
     is (State.READ_WAIT_TXN) {
-      rH2dSendData.burstFirst := False
-      rH2dSendData.burstLast := False
       when (
-        RegNext(
-          next=myBurstAdapter.io.hostBus.d2hBus.nextValid,
-          init=False,
-        )
+        rH2dValid
+        && mySdramCtrl.io.bus.h2dBus.ready
+      ) {
+        rH2dValid := False
+        rH2dSendData.burstFirst := False
+        rHadH2dFinish := True
+      }
+      when (
+        //RegNext(
+        //  next=mySdramCtrl.io.bus.d2hBus.nextValid,
+        //  init=False,
+        //)
+        mySdramCtrl.io.bus.d2hBus.nextValid
       ) {
         myD2hReady := True
+        rBurstCnt := rBurstCnt + 1
+        rTestData(rBurstCnt).payload.last := myD2hSendData.data
+        when (myD2hSendData.burstLast) {
+          rHadD2hFinish := True
+        }
+      }
+      when (rHadH2dFinish && rHadD2hFinish) {
+        rState := State.DO_COMPARE_TEST_DATA
       }
     }
     is (State.DO_COMPARE_TEST_DATA) {
+      val cmpVec = (
+        Vec.fill(cfg.busCfg.maxBurstSizeMinus1 + 1)(
+          Bool()
+        )
+      )
+      for (testIdx <- 0 until cfg.busCfg.maxBurstSizeMinus1 + 1) {
+        cmpVec(testIdx) := (
+          rTestData(testIdx).payload.head
+          =/= rTestData(testIdx).payload.last
+        )
+      }
+      when (cmpVec.orR) {
+        rState := State.FAILED_TEST
+      } otherwise {
+        rState := State.WRITE_START
+      }
     }
     is (State.FAILED_TEST) {
     }
   }
+  // END: state machine that does 16-byte bursts
+  // (the same amount of bytes as the maximum number of bytes that can be
+  // done in one non-full-page burst by the SDRAM chip itself)
+  //--------
+  // BEGIN: state machine that lacks write bursts but has read bursts
+  //val myHadH2dFire = (
+  //  Bool()
+  //)
+  //myHadH2dFire := False
+
+  //val rSavedHadH2dFire = (
+  //  Reg(Bool(), init=False)
+  //)
+  //when (myHadH2dFire) {
+  //  rSavedHadH2dFire := True
+  //}
+
+  //val stickyHadH2dFire = (
+  //  myHadH2dFire
+  //  || rSavedHadH2dFire
+  //)
+
+
+  //val myHadD2hFire = (
+  //  Bool()
+  //)
+  //myHadD2hFire := False
+
+  //val rSavedHadD2hFire = (
+  //  Reg(Bool(), init=False)
+  //)
+  //when (myHadD2hFire) {
+  //  rSavedHadD2hFire := True
+  //}
+
+  //val stickyHadD2hFire = (
+  //  myHadD2hFire
+  //  || rSavedHadD2hFire
+  //)
+
+
+  //val wrTempCnt = (
+  //  (rH2dSendData.addr(
+  //    //rH2dSendData.addr.high 
+  //    hostBusCfg.burstCntWidth + 2 - 1
+  //    downto 2
+  //  ))
+  //  //(
+  //  //  log2Up(rTestData.size) - 1 downto 0
+  //  //)
+  //)
+  //val rWrPseudoBurstCnt = (
+  //  Reg(UInt((hostBusCfg.burstCntWidth + 1) bits))
+  //  init(0x0)
+  //)
+  ////val wrTestDataCnt = (
+  ////  wrTempCnt(wrTempCnt.high - 1 downto 0)
+  ////)
+  //val rRdTempCnt = (
+  //  Reg(UInt((hostBusCfg.burstCntWidth + 1) bits))
+  //  init(0x0)
+  //)
+  //switch (rState) {
+  //  is (State.WRITE_START) {
+
+  //    //myHadH2dFire := False
+  //    //myHadD2hFire := False
+  //    rSavedHadH2dFire := False
+  //    rSavedHadD2hFire := False
+
+  //    rH2dValid := True
+
+  //    rTestData(wrTempCnt).payload.head := myPrngArea.getCurrRand()
+  //    rTestData(wrTempCnt).payload.last := (
+  //      //0x0
+  //      rTestData(wrTempCnt).payload.last.getZero
+  //    )
+  //    rH2dSendData.data := myPrngArea.getCurrRand()
+  //    rH2dSendData.byteEn := (
+  //      U(rH2dSendData.byteEn.getWidth bits, default -> True)
+  //    )
+
+  //    rH2dSendData.addr := rSavedH2dSendAddr
+
+  //    //rH2dSendData.burstCnt := 1
+  //    //rH2dSendData.burstCnt := hostBusCfg.maxBurstSizeMinus1
+  //    //rH2dSendData.burstFirst := True
+  //    //rH2dSendData.burstLast := False
+  //    rH2dSendData.burstCnt := 0x0
+  //    rH2dSendData.burstFirst := False
+  //    rH2dSendData.burstLast := False
+
+  //    rH2dSendData.isWrite := True
+  //    rH2dSendData.src := 0x0
+
+  //    rState := State.WRITE_WAIT_TXN
+  //  }
+  //  is (State.WRITE_WAIT_TXN) {
+  //    when (mySdramCtrl.io.bus.h2dBus.fire) {
+  //      rH2dValid := False
+  //      myHadH2dFire := True
+  //    }
+  //    when (mySdramCtrl.io.bus.d2hBus.rValid) {
+  //      myHadD2hFire := True
+  //      myD2hReady := True
+  //    }
+  //    when (stickyHadH2dFire && stickyHadD2hFire) {
+  //      rSavedHadH2dFire := False
+  //      rSavedHadD2hFire := False
+  //      rSavedH2dSendAddr := rH2dSendData.addr + 4
+  //      when (
+  //        //rH2dSendData.addr < myMaxBaseAddr
+  //        //wrTempCnt(hostBusCfg.burstCntWidth - 1 downto 0)
+  //        //wrTempCnt
+  //        rWrPseudoBurstCnt < hostBusCfg.maxBurstSizeMinus1 + 1
+  //      ) {
+  //        rState := State.WRITE_START
+  //        rWrPseudoBurstCnt := rWrPseudoBurstCnt + 1
+  //        rH2dSendData.addr := rH2dSendData.addr + 4
+  //      } otherwise {
+  //        rState := State.READ_START
+  //        rWrPseudoBurstCnt := 0x0
+  //        rH2dSendData.addr := 0x0
+  //      }
+  //    }
+  //  }
+  //  is (State.READ_START) {
+  //    //--------
+  //    //myHadH2dFire := False
+  //    //myHadD2hFire := False
+  //    rSavedHadH2dFire := False
+  //    rSavedHadD2hFire := False
+  //    //--------
+  //    rH2dValid := True
+  //    rH2dSendData.burstCnt := hostBusCfg.maxBurstSizeMinus1
+  //    rH2dSendData.burstFirst := True
+  //    rH2dSendData.burstLast := False
+  //    rH2dSendData.isWrite := False
+  //    //--------
+  //    rState := State.READ_WAIT_TXN
+  //    //--------
+  //  }
+  //  is (State.READ_WAIT_TXN) {
+  //    rH2dSendData.burstFirst := False
+  //    rH2dSendData.burstLast := False
+
+  //    when (mySdramCtrl.io.bus.h2dBus.ready) {
+  //      rH2dValid := False
+  //    }
+
+  //    when (
+  //      RegNext(
+  //        next=mySdramCtrl.io.bus.d2hBus.nextValid,
+  //        init=False,
+  //      )
+  //    ) {
+  //      myD2hReady := True
+  //    }
+  //  }
+  //  is (State.DO_COMPARE_TEST_DATA) {
+  //  }
+  //  is (State.FAILED_TEST) {
+  //  }
+  //}
   // END: state machine that lacks write bursts but has read bursts
   //--------
 
   //--------
   // BEGIN: previous state machine, which lacks bursts
-  //val rHadH2dFire = (
+  //val rHadH2dFinish = (
   //  Reg(Bool(), init=False)
   //)
-  //val rHadD2hFire = (
+  //val rHadD2hFinish = (
   //  Reg(Bool(), init=False)
   //)
   //
@@ -1385,8 +1833,8 @@ case class LcvSdramCtrlSimDut(
   //switch (rState) {
   //  is (State.WRITE_START) {
   //    //--------
-  //    rHadH2dFire := False
-  //    rHadD2hFire := False
+  //    rHadH2dFinish := False
+  //    rHadD2hFinish := False
   //    //--------
   //    rH2dValid := True
   //    rH2dSendData.data := myPrngArea.getCurrRand()
@@ -1409,13 +1857,13 @@ case class LcvSdramCtrlSimDut(
   //  is (State.WRITE_WAIT_TXN) {
   //    when (mySdramCtrl.io.bus.h2dBus.fire) {
   //      rH2dValid := False
-  //      rHadH2dFire := True
+  //      rHadH2dFinish := True
   //    }
   //    when (mySdramCtrl.io.bus.d2hBus.rValid) {
-  //      rHadD2hFire := True
+  //      rHadD2hFinish := True
   //      myD2hReady := True
   //    }
-  //    when (rHadH2dFire && rHadD2hFire) {
+  //    when (rHadH2dFinish && rHadD2hFinish) {
   //      when (rH2dSendData.addr < myMaxBaseAddr) {
   //        rState := State.WRITE_START
   //        rH2dSendData.addr := rH2dSendData.addr + 4
@@ -1427,8 +1875,8 @@ case class LcvSdramCtrlSimDut(
   //  }
   //  is (State.READ_START) {
   //    //--------
-  //    rHadH2dFire := False
-  //    rHadD2hFire := False
+  //    rHadH2dFinish := False
+  //    rHadD2hFinish := False
   //    //--------
   //    rH2dValid := True
   //    rH2dSendData.isWrite := False
@@ -1439,13 +1887,13 @@ case class LcvSdramCtrlSimDut(
   //  is (State.READ_WAIT_TXN) {
   //    when (mySdramCtrl.io.bus.h2dBus.fire) {
   //      rH2dValid := False
-  //      rHadH2dFire := True
+  //      rHadH2dFinish := True
   //    }
   //    when (mySdramCtrl.io.bus.d2hBus.rValid) {
-  //      rHadD2hFire := True
+  //      rHadD2hFinish := True
   //      myD2hReady := True
   //    }
-  //    when (rHadH2dFire && rHadD2hFire) {
+  //    when (rHadH2dFinish && rHadD2hFinish) {
   //      when (rH2dSendData.addr < myMaxBaseAddr) {
   //        rState := State.READ_START
   //        rH2dSendData.addr := rH2dSendData.addr + 4
