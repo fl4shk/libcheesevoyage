@@ -551,9 +551,9 @@ case class LcvStallBusSdramCtrl(
       cfg.busCfg.maxBurstSizeMinus1 + 1
     ),
     latency=(
-      //2
+      2
       //0
-      1
+      //1
     ),
     forFMax=(
       true
