@@ -958,6 +958,9 @@ case class LcvStallBusSdramCtrl(
       ) {
         //io.bus.h2dBus.ready := True
         //h2dFifo.io.pop.ready := True
+
+        rStartBusBurst := False
+
         when (
           rBusBurstOuterCnt.msb
           ////&& rHaveBurst
@@ -966,10 +969,19 @@ case class LcvStallBusSdramCtrl(
           rH2dFifoPopReady := True
           rSavedH2dSendData := (
             //io.bus.h2dBus.sendData
-            h2dFifo.io.pop.payload
+            RegNext(
+              next=h2dFifo.io.pop.payload,
+              init=h2dFifo.io.pop.payload.getZero,
+            ),
+          )
+          rHaveBurst := (
+            //rSavedH2dSendData.burstFirst
+            RegNext(
+              next=h2dFifo.io.pop.burstFirst,
+              init=False,
+            )
           )
         }
-        rStartBusBurst := False
         when (
           rBusBurstOuterCnt.msb
           && RegNext(
@@ -1054,10 +1066,13 @@ case class LcvStallBusSdramCtrl(
       //    // burstFirst, isWrite
       //  }
       //}
-      rHaveBurst := rSavedH2dSendData.burstFirst
+      //rHaveBurst := rSavedH2dSendData.burstFirst
       when (!rSavedH2dSendData.isWrite) {
         rState := State.SEND_READ_0
       } otherwise {
+        //when (!rBusBurstOuterCnt.msb) {
+        //  rH2dFifoPopReady := True
+        //}
         //rH2dFifoPopReady := True
         //rSavedH2dSendData := (
         //  //io.bus.h2dBus.sendData
@@ -1094,7 +1109,7 @@ case class LcvStallBusSdramCtrl(
         rD2hSendData.burstFirst := False
       }
       rD2hSendData.burstLast := False
-      rChipBurstCnt := cfg.burstLen - 2
+      //rChipBurstCnt := cfg.burstLen - 2
     }
     is (State.SEND_READ_N) {
       io.sdram.sendCmdRead(
@@ -1178,9 +1193,20 @@ case class LcvStallBusSdramCtrl(
       rWrNopWaitCnt := myWrNopWaitCntNumCycles
       rState := State.SEND_WRITE_HI_N
       rChipBurstCnt := (
-        cfg.burstLen - 5
+        //cfg.burstLen - 6//- 4 //- 2
+        //cfg.burstLen - 5
+        cfg.burstLen - 2
         //(cfg.burstLen / 2) - 2
       )
+      //when (rStartBusBurst) {
+        rBusBurstInnerCnt := (
+          (cfg.burstLen / 2) - 3
+        )
+      //} otherwise {
+      //  rBusBurstInnerCnt := (
+      //    (cfg.burstLen / 2) - 2
+      //  )
+      //}
       rTempBurstLast := False
     }
     is (State.SEND_WRITE_HI_N) {
@@ -1194,18 +1220,23 @@ case class LcvStallBusSdramCtrl(
         firstWrite=false,
       )
       when (
-        //rSavedH2dSendData.burstLast
+        rSavedH2dSendData.burstLast
+        || rTempBurstLast
         //|| 
-        rTempBurstLast
+        //(!rHaveBurst && rTempBurstLast)
+        //|| (rHaveBurst && rChipBurstCnt.msb)
+        //|| (rHaveBurst && RegNext(rChipBurstCnt === 0)
       ) {
         rState := State.WRITE_POST_NOPS
-        rD2hWriteValid := True
+        when (rBusBurstOuterCnt.msb) {
+          rD2hWriteValid := True
+        }
         rH2dFifoPopReady := False
       } otherwise {
-        when (rHaveBurst) {
-          rH2dFifoPopReady := True
-        }
         rState := State.SEND_WRITE_LO_N
+      }
+      when (rHaveBurst) {
+        rH2dFifoPopReady := True
       }
       rSavedH2dSendData := (
         //io.bus.h2dBus.sendData
@@ -1217,11 +1248,16 @@ case class LcvStallBusSdramCtrl(
         //  //rSavedH2dSendData.burstLast := True
         //  rTempBurstLast := True
         //}
+        when (rChipBurstCnt.msb) {
+          rSavedH2dSendData.burstLast := True
+          //rTempBurstLast := True
+        }
+      } otherwise { // when (rHaveBurst)
       }
-      when (rChipBurstCnt.msb) {
-        //rSavedH2dSendData.burstLast := True
-        rTempBurstLast := True
-      }
+      //when (rChipBurstCnt.msb) {
+      //  //rSavedH2dSendData.burstLast := True
+      //  rTempBurstLast := True
+      //}
     }
     is (State.SEND_WRITE_LO_N) {
       io.sdram.sendCmdWrite(
@@ -1235,8 +1271,16 @@ case class LcvStallBusSdramCtrl(
       )
       rH2dFifoPopReady := False
       rState := State.SEND_WRITE_HI_N
+      when (rHaveBurst) {
+        when (!rBusBurstInnerCnt.msb) {
+          rBusBurstInnerCnt := rBusBurstInnerCnt - 1
+        } otherwise {
+          rTempBurstLast := True
+        }
+      }
     }
     is (State.WRITE_POST_NOPS) {
+      rH2dFifoPopReady := False
       io.sdram.sendCmdNop()
       when (
         //rD2hFifoPushValid
