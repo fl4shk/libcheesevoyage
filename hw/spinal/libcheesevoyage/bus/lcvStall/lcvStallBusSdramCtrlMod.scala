@@ -492,6 +492,10 @@ case class LcvStallBusSdramCtrl(
     Reg(cloneOf(io.bus.h2dBus.sendData))
     init(io.bus.h2dBus.sendData.getZero)
   )
+  val rTempAddr = (
+    Reg(cloneOf(rSavedH2dSendData.addr))
+    init(rSavedH2dSendData.addr.getZero)
+  )
   val rSavedHaveBusWrite = (
     Reg(Bool(), init=False)
   )
@@ -953,7 +957,10 @@ case class LcvStallBusSdramCtrl(
           ),
           init=False
         ) || (
-          !rBusBurstOuterCnt.msb
+          RegNext(
+            next=(!rBusBurstOuterCnt.msb),
+            init=False
+          )
         )
       ) {
         //io.bus.h2dBus.ready := True
@@ -967,6 +974,12 @@ case class LcvStallBusSdramCtrl(
           //|| rSavedH2dSendData.isWrite
         ) {
           rH2dFifoPopReady := True
+          rTempAddr := (
+            RegNext(
+              next=h2dFifo.io.pop.addr,
+              init=h2dFifo.io.pop.addr.getZero,
+            ),
+          )
           rSavedH2dSendData := (
             //io.bus.h2dBus.sendData
             RegNext(
@@ -981,12 +994,22 @@ case class LcvStallBusSdramCtrl(
               init=False,
             )
           )
+        } otherwise {
+          rTempAddr := (
+            rTempAddr + ((cfg.burstLen / 2) * 4)
+          )
         }
         when (
           rBusBurstOuterCnt.msb
-          && RegNext(
-            next=h2dFifo.io.pop.burstFirst,
-            init=False,
+          && (
+            RegNext(
+              next=(
+                h2dFifo.io.pop.burstFirst
+                || !h2dFifo.io.pop.isWrite
+              ),
+              init=False,
+            )
+            //|| !rSavedH2dSendData.isWrite
           )
         ) {
           rBusBurstOuterCnt := (
@@ -1017,8 +1040,8 @@ case class LcvStallBusSdramCtrl(
     is (State.SEND_ACTIVE) {
       rH2dFifoPopReady := False
       io.sdram.sendCmdActive(
-        bank=rSavedH2dSendData.addr(myBankSliceRange),
-        row=rSavedH2dSendData.addr(myRowSliceRange),
+        bank=rTempAddr(myBankSliceRange),
+        row=rTempAddr(myRowSliceRange),
       )
       rState := State.ACTIVE_POST_NOPS
     }
@@ -1084,8 +1107,8 @@ case class LcvStallBusSdramCtrl(
     is (State.SEND_READ_0) {
       rH2dFifoPopReady := False
       io.sdram.sendCmdRead(
-        bank=rSavedH2dSendData.addr(myBankSliceRange),
-        column=rSavedH2dSendData.addr(myColumnSliceRange),
+        bank=rTempAddr(myBankSliceRange),
+        column=rTempAddr(myColumnSliceRange),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         firstRead=true,
@@ -1113,8 +1136,8 @@ case class LcvStallBusSdramCtrl(
     }
     is (State.SEND_READ_N) {
       io.sdram.sendCmdRead(
-        bank=rSavedH2dSendData.addr(myBankSliceRange),
-        column=rSavedH2dSendData.addr(myColumnSliceRange),
+        bank=rTempAddr(myBankSliceRange),
+        column=rTempAddr(myColumnSliceRange),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         firstRead=false,
@@ -1127,7 +1150,8 @@ case class LcvStallBusSdramCtrl(
         when (rRdCasLatencyCnt(0) === False) {
           when (rHaveBurst) {
             nextD2hValid := (
-              rRdCasLatencyCnt.asUInt <= cfg.busCfg.maxBurstSizeMinus1 * 2
+              //rRdCasLatencyCnt.asUInt <= cfg.busCfg.maxBurstSizeMinus1 * 2
+              rRdCasLatencyCnt.asUInt <= cfg.burstLen - 1//* 2
             )
             when (nextD2hValid && !rD2hSendData.burstFirst) {
               rD2hSendData.burstCnt := rD2hSendData.burstCnt - 1
@@ -1135,7 +1159,8 @@ case class LcvStallBusSdramCtrl(
           } otherwise {
             nextD2hValid := (
               rRdCasLatencyCnt.asUInt === (
-                cfg.busCfg.maxBurstSizeMinus1 * 2
+                //cfg.busCfg.maxBurstSizeMinus1 * 2
+                cfg.burstLen - 1
               )
             )
           }
@@ -1182,8 +1207,8 @@ case class LcvStallBusSdramCtrl(
     }
     is (State.SEND_WRITE_0) {
       io.sdram.sendCmdWrite(
-        bank=rSavedH2dSendData.addr(myBankSliceRange),
-        column=rSavedH2dSendData.addr(myColumnSliceRange),
+        bank=rTempAddr(myBankSliceRange),
+        column=rTempAddr(myColumnSliceRange),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(15 downto 0),
@@ -1211,8 +1236,8 @@ case class LcvStallBusSdramCtrl(
     }
     is (State.SEND_WRITE_HI_N) {
       io.sdram.sendCmdWrite(
-        bank=rSavedH2dSendData.addr(myBankSliceRange),
-        column=rSavedH2dSendData.addr(myColumnSliceRange),
+        bank=rTempAddr(myBankSliceRange),
+        column=rTempAddr(myColumnSliceRange),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(31 downto 16),
@@ -1261,8 +1286,8 @@ case class LcvStallBusSdramCtrl(
     }
     is (State.SEND_WRITE_LO_N) {
       io.sdram.sendCmdWrite(
-        bank=rSavedH2dSendData.addr(myBankSliceRange),
-        column=rSavedH2dSendData.addr(myColumnSliceRange),
+        bank=rTempAddr(myBankSliceRange),
+        column=rTempAddr(myColumnSliceRange),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(15 downto 0),
@@ -1600,9 +1625,7 @@ case class LcvSdramCtrlSimDut(
     )
   )
   //--------
-  // BEGIN: state machine that does 16-byte bursts
-  // (the same amount of bytes as the maximum number of bytes that can be
-  // done in one non-full-page burst by the SDRAM chip itself)
+  // BEGIN: state machine that does maximum-byte-amount bus bursts
   switch (rState) {
     is (State.WRITE_START) {
       rHadH2dFinish := False
@@ -1739,9 +1762,7 @@ case class LcvSdramCtrlSimDut(
     is (State.FAILED_TEST) {
     }
   }
-  // END: state machine that does 16-byte bursts
-  // (the same amount of bytes as the maximum number of bytes that can be
-  // done in one non-full-page burst by the SDRAM chip itself)
+  // END: state machine that does maximum-byte-amount bus bursts
   //--------
   // BEGIN: state machine that lacks write bursts but has read bursts
   //val myHadH2dFire = (
