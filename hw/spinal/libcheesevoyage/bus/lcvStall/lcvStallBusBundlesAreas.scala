@@ -19,11 +19,12 @@ case class LcvStallBusMainConfig(
   dataWidth: Int,
   addrWidth: Int,
   //burstSizeWidth: Int,
-  burstCntWidth: Int,//Option[Int],
-  alwaysDoBurst: Boolean,
+  //burstCntWidth: Int,//Option[Int],
+  //alwaysDoBurst: Boolean,
   burstAlwaysMaxSize: Boolean,
   srcWidth: Int, //Option[Int],
 ) {
+  val burstCntWidth = log2Up(64 / (dataWidth / 8))
 }
 
 case class LcvStallBusConfig(
