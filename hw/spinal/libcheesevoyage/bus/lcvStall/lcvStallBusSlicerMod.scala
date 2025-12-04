@@ -60,9 +60,7 @@ case class LcvStallBusSlicer(
     )
     myDevD2hBus.ready := False
   }
-  switch (
-    io.host.h2dBus.sendData.addr(cfg.addrSliceRange)
-  ) {
+  switch (io.host.h2dBus.sendData.addr(cfg.addrSliceRange)) {
     for (devIdx <- 0 until cfg.numDevs) {
       is (devIdx) {
         val myDevH2dBus = io.devVec(devIdx).h2dBus

@@ -137,9 +137,9 @@ case class LcvStallBusSdramCtrlConfig(
         1
       ),
     ),
-    mesiCfg=LcvStallBusMesiConfig(
-      numCpus=1
-    )
+    //mesiCfg=LcvStallBusMesiConfig(
+    //  numCpus=1
+    //)
   )
   def addrWidth: Int = (
     //busCfg
