@@ -1,4 +1,4 @@
-//package libcheesevoyage.bus.lcvStall
+//package libcheesevoyage.bus.lcvBus
 //
 //import spinal.core._
 //import spinal.core.formal._
@@ -8,7 +8,7 @@
 //import spinal.lib.bus.tilelink
 //import libcheesevoyage.bus.tilelink.TlOpcode
 //
-//case class LcvStallBusToTilelinkConfig(
+//case class LcvBusToTilelinkConfig(
 //  //addrWidth: Int,
 //  //dataWidth: Int,
 //  //sizeBytes: Int,
@@ -18,7 +18,7 @@
 //  ////optMemCoherency: Boolean=false,
 //  ////withBCE: Boolean=false,
 //  ////optAtomic: Boolean=false,
-//  busCfg: LcvStallBusConfig,
+//  busCfg: LcvBusConfig,
 //) {
 //  // TODO: support full TL-C
 //  val tlCfg = tilelink.BusParameter.simple(

@@ -22,7 +22,7 @@
 // You should have received a copy of the GNU General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-package libcheesevoyage.bus.lcvStall
+package libcheesevoyage.bus.lcvBus
 
 import spinal.core._
 import spinal.core.sim._
@@ -94,20 +94,20 @@ case class altddio_out(
 //    = newElement()
 //}
 
-case class LcvStallBusSdramCtrlConfig(
+case class LcvBusSdramCtrlConfig(
   clkRate: HertzNumber,
   //burstLen: Int=2, // 32-bit
   useAltddioOut: Boolean=true,
 ) {
   //--------
   // idea for later: change these to *parameters* of
-  // `LcvStallBusSdramCtrlConfig`
+  // `LcvBusSdramCtrlConfig`
   def sdramDqWidth: Int = 16
   def sdramAWidth: Int = 13
   def sdramBaWidth: Int = 2
   def idleCntMax: Int = 5
-  val busCfg = LcvStallBusConfig(
-    mainCfg=LcvStallBusMainConfig(
+  val busCfg = LcvBusConfig(
+    mainCfg=LcvBusMainConfig(
       dataWidth=32,
       addrWidth=(
         //27
@@ -137,7 +137,7 @@ case class LcvStallBusSdramCtrlConfig(
         1
       ),
     ),
-    //mesiCfg=LcvStallBusMesiConfig(
+    //mesiCfg=LcvBusMesiConfig(
     //  numCpus=1
     //)
   )
@@ -333,8 +333,8 @@ case class LcvStallBusSdramCtrlConfig(
 }
 
 
-case class LcvStallBusSdramIo(
-  cfg: LcvStallBusSdramCtrlConfig,
+case class LcvBusSdramIo(
+  cfg: LcvBusSdramCtrlConfig,
 ) extends Bundle {
   //val dq = master(TriState(UInt(cfg.sdramDqWidth bits)))
   //  // bidirectional data bus
@@ -475,22 +475,22 @@ case class LcvStallBusSdramIo(
   }
 }
 
-case class LcvStallBusSdramCtrlIo(
-  cfg: LcvStallBusSdramCtrlConfig,
+case class LcvBusSdramCtrlIo(
+  cfg: LcvBusSdramCtrlConfig,
 ) extends Bundle {
-  val bus = slave(LcvStallBusIo(cfg=cfg.busCfg))
-  val sdram = LcvStallBusSdramIo(cfg=cfg)
+  val bus = slave(LcvBusIo(cfg=cfg.busCfg))
+  val sdram = LcvBusSdramIo(cfg=cfg)
 }
-case class LcvStallBusSdramCtrl(
-  cfg: LcvStallBusSdramCtrlConfig,
+case class LcvBusSdramCtrl(
+  cfg: LcvBusSdramCtrlConfig,
 ) extends Component {
   //--------
-  val io = LcvStallBusSdramCtrlIo(cfg=cfg)
+  val io = LcvBusSdramCtrlIo(cfg=cfg)
   //io.bus.h2dBus.ready.setAsReg() init(False)
   //io.bus.h2dBus.ready := False
   val rSavedH2dSendData = (
-    Reg(cloneOf(io.bus.h2dBus.sendData))
-    init(io.bus.h2dBus.sendData.getZero)
+    Reg(cloneOf(io.bus.h2dBus.payload))
+    init(io.bus.h2dBus.payload.getZero)
   )
   val rTempAddr = (
     Reg(cloneOf(rSavedH2dSendData.addr))
@@ -516,30 +516,30 @@ case class LcvStallBusSdramCtrl(
   )
 
   //def myD2hNextValid = (
-  //  io.bus.d2hBus.nextValid
+  //  io.bus.d2hBus.valid
   //)
   //myD2hNextValid.setAsReg() init(myD2hNextValid.getZero)
   //def myD2hSendData = (
-  //  io.bus.d2hBus.sendData
+  //  io.bus.d2hBus.payload
   //)
   //myD2hSendData.setAsReg() init(myD2hSendData.getZero)
   val rD2hFifoPushValid = (
-    Reg(cloneOf(io.bus.d2hBus.nextValid))
-    init(io.bus.d2hBus.nextValid.getZero)
+    Reg(cloneOf(io.bus.d2hBus.valid))
+    init(io.bus.d2hBus.valid.getZero)
   )
   val rD2hWriteValid = (
-    Reg(cloneOf(io.bus.d2hBus.nextValid))
-    init(io.bus.d2hBus.nextValid.getZero)
+    Reg(cloneOf(io.bus.d2hBus.valid))
+    init(io.bus.d2hBus.valid.getZero)
   )
   val rD2hSendData = (
-    Reg(cloneOf(io.bus.d2hBus.sendData))
-    init(io.bus.d2hBus.sendData.getZero)
+    Reg(cloneOf(io.bus.d2hBus.payload))
+    init(io.bus.d2hBus.payload.getZero)
   )
-  //io.bus.d2hBus.nextValid := rD2hValid
-  //io.bus.d2hBus.sendData := rD2hSendData
+  //io.bus.d2hBus.valid := rD2hValid
+  //io.bus.d2hBus.payload := rD2hSendData
 
   val h2dFifo = StreamFifo(
-    dataType=cloneOf(io.bus.h2dBus.sendData),
+    dataType=cloneOf(io.bus.h2dBus.payload),
     depth=(
       //cfg.burstLen
       cfg.busCfg.maxBurstSizeMinus1 + 1
@@ -555,18 +555,18 @@ case class LcvStallBusSdramCtrl(
     ),
   )
   h2dFifo.io.push.valid := (
-    io.bus.h2dBus.nextValid
-    //&& io.bus.h2dBus.sendData.isWrite
+    io.bus.h2dBus.valid
+    //&& io.bus.h2dBus.payload.isWrite
   )
-  //h2dFifo.io.push.valid := io.bus.h2dBus.nextValid
-  h2dFifo.io.push.payload := io.bus.h2dBus.sendData
+  //h2dFifo.io.push.valid := io.bus.h2dBus.valid
+  h2dFifo.io.push.payload := io.bus.h2dBus.payload
   io.bus.h2dBus.ready := h2dFifo.io.push.ready
   val rH2dFifoPopReady = Reg(Bool(), init=False)
   //h2dFifo.io.pop.ready.setAsReg() init(False)
   h2dFifo.io.pop.ready := rH2dFifoPopReady //False
 
   val d2hFifo = StreamFifo(
-    dataType=cloneOf(io.bus.d2hBus.sendData),
+    dataType=cloneOf(io.bus.d2hBus.payload),
     depth=(
       //cfg.burstLen
       cfg.busCfg.maxBurstSizeMinus1 + 1
@@ -584,11 +584,11 @@ case class LcvStallBusSdramCtrl(
   d2hFifo.io.push.valid := rD2hFifoPushValid
   d2hFifo.io.push.payload := rD2hSendData
 
-  io.bus.d2hBus.nextValid := (
+  io.bus.d2hBus.valid := (
     d2hFifo.io.pop.valid
     || rD2hWriteValid
   )
-  io.bus.d2hBus.sendData := d2hFifo.io.pop.payload
+  io.bus.d2hBus.payload := d2hFifo.io.pop.payload
   d2hFifo.io.pop.ready := io.bus.d2hBus.ready
 
   //--------
@@ -981,7 +981,7 @@ case class LcvStallBusSdramCtrl(
             ),
           )
           rSavedH2dSendData := (
-            //io.bus.h2dBus.sendData
+            //io.bus.h2dBus.payload
             RegNext(
               next=h2dFifo.io.pop.payload,
               init=h2dFifo.io.pop.payload.getZero,
@@ -1069,7 +1069,7 @@ case class LcvStallBusSdramCtrl(
 
       rH2dFifoPopReady := False
       //rSavedH2dSendData := (
-      //  //io.bus.h2dBus.sendData
+      //  //io.bus.h2dBus.payload
       //  h2dFifo.io.pop.payload
       //)
       //switch (
@@ -1098,7 +1098,7 @@ case class LcvStallBusSdramCtrl(
         //}
         //rH2dFifoPopReady := True
         //rSavedH2dSendData := (
-        //  //io.bus.h2dBus.sendData
+        //  //io.bus.h2dBus.payload
         //  h2dFifo.io.pop.payload
         //)
         rState := State.SEND_WRITE_0
@@ -1264,7 +1264,7 @@ case class LcvStallBusSdramCtrl(
         rH2dFifoPopReady := True
       }
       rSavedH2dSendData := (
-        //io.bus.h2dBus.sendData
+        //io.bus.h2dBus.payload
         h2dFifo.io.pop.payload
       )
       when (!rHaveBurst) {
@@ -1386,17 +1386,17 @@ case class LcvSdramCtrlSimDut(
 ) extends Component {
   //--------
   //val io = LcvSdramCtrlSimDutIo(clkRate=clkRate)
-  val cfg = LcvStallBusSdramCtrlConfig(
+  val cfg = LcvBusSdramCtrlConfig(
     clkRate=clkRate,
     useAltddioOut=useAltddioOut,
   )
-  val io = LcvStallBusSdramIo(cfg=cfg)
+  val io = LcvBusSdramIo(cfg=cfg)
   //--------
-  val mySdramCtrl = LcvStallBusSdramCtrl(cfg=cfg)
+  val mySdramCtrl = LcvBusSdramCtrl(cfg=cfg)
   io <> mySdramCtrl.io.sdram
   val rH2dValid = Reg(Bool(), init=False)
   //val rH2dSendData = {
-  //  val temp = Reg(cloneOf(mySdramCtrl.io.bus.h2dBus.sendData))
+  //  val temp = Reg(cloneOf(mySdramCtrl.io.bus.h2dBus.payload))
   //  temp.init(temp.getZero)
   //  temp
   //}
@@ -1404,8 +1404,8 @@ case class LcvSdramCtrlSimDut(
   //def devBusCfg = (
   //  cfg.busCfg
   //)
-  //val hostBusCfg = LcvStallBusConfig(
-  //  mainCfg=LcvStallBusMainConfig(
+  //val hostBusCfg = LcvBusConfig(
+  //  mainCfg=LcvBusMainConfig(
   //    dataWidth=(
   //      devBusCfg.dataWidth
   //    ),
@@ -1432,13 +1432,13 @@ case class LcvSdramCtrlSimDut(
   //  ),
   //  mesiCfg=(
   //    devBusCfg.mesiCfg
-  //    //LcvStallBusMesiConfig(
+  //    //LcvBusMesiConfig(
   //    //  numCpus=1
   //    //)
   //  )
   //)
   val rH2dSendData = {
-    val temp = Reg(LcvStallBusH2dSendPayload(cfg=cfg.busCfg))
+    val temp = Reg(LcvBusH2dSendPayload(cfg=cfg.busCfg))
     temp.init(temp.getZero)
     temp
   }
@@ -1452,19 +1452,19 @@ case class LcvSdramCtrlSimDut(
   myD2hReady := False
   val myD2hSendData = (
     //RegNext(
-    //  next=mySdramCtrl.io.bus.d2hBus.sendData,
-    //  init=mySdramCtrl.io.bus.d2hBus.sendData.getZero,
+    //  next=mySdramCtrl.io.bus.d2hBus.payload,
+    //  init=mySdramCtrl.io.bus.d2hBus.payload.getZero,
     //)
-    mySdramCtrl.io.bus.d2hBus.sendData
+    mySdramCtrl.io.bus.d2hBus.payload
   )
   //--------
-  mySdramCtrl.io.bus.h2dBus.nextValid := rH2dValid
-  mySdramCtrl.io.bus.h2dBus.sendData := (
+  mySdramCtrl.io.bus.h2dBus.valid := rH2dValid
+  mySdramCtrl.io.bus.h2dBus.payload := (
     rH2dSendData
   )
   mySdramCtrl.io.bus.d2hBus.ready := myD2hReady //rD2hReady
-  //val myBurstAdapter = LcvStallBusBurstAdapter(
-  //  cfg=LcvStallBusBurstAdapterConfig(
+  //val myBurstAdapter = LcvBusBurstAdapter(
+  //  cfg=LcvBusBurstAdapterConfig(
   //    hostBusCfg=hostBusCfg,
   //    devBusCfg=devBusCfg,
   //  ),
@@ -1473,18 +1473,18 @@ case class LcvSdramCtrlSimDut(
   //mySdramCtrl.io.bus.d2hBus <> myBurstAdapter.io.devBus.d2hBus
 
 
-  //mySdramCtrl.io.bus.h2dBus.nextValid := (
-  //  myBurstAdapter.io.devBus.h2dBus.nextValid
+  //mySdramCtrl.io.bus.h2dBus.valid := (
+  //  myBurstAdapter.io.devBus.h2dBus.valid
   //)
   //myBurstAdapter.io.devBus.h2dBus.ready := (
   //  mySdramCtrl.io.bus.h2dBus.ready
   //)
-  //myBurstAdapter.io.devBus.d2hBus.sendData := (
-  //  mySdramCtrl.io.bus.d2hBus.sendData
+  //myBurstAdapter.io.devBus.d2hBus.payload := (
+  //  mySdramCtrl.io.bus.d2hBus.payload
   //)
   //--------
-  //myBurstAdapter.io.hostBus.h2dBus.nextValid := rH2dValid
-  //myBurstAdapter.io.hostBus.h2dBus.sendData := (
+  //myBurstAdapter.io.hostBus.h2dBus.valid := rH2dValid
+  //myBurstAdapter.io.hostBus.h2dBus.payload := (
   //  rH2dSendData
   //)
   //myBurstAdapter.io.hostBus.d2hBus.ready := myD2hReady //rD2hReady
@@ -1682,10 +1682,10 @@ case class LcvSdramCtrlSimDut(
       }
       when (
         //RegNext(
-        //  next=mySdramCtrl.io.bus.d2hBus.nextValid,
+        //  next=mySdramCtrl.io.bus.d2hBus.valid,
         //  init=False
         //)
-        mySdramCtrl.io.bus.d2hBus.nextValid
+        mySdramCtrl.io.bus.d2hBus.valid
       ) {
         myD2hReady := True
         rHadD2hFinish := True
@@ -1725,10 +1725,10 @@ case class LcvSdramCtrlSimDut(
       }
       when (
         //RegNext(
-        //  next=mySdramCtrl.io.bus.d2hBus.nextValid,
+        //  next=mySdramCtrl.io.bus.d2hBus.valid,
         //  init=False,
         //)
-        mySdramCtrl.io.bus.d2hBus.nextValid
+        mySdramCtrl.io.bus.d2hBus.valid
       ) {
         myD2hReady := True
         rBurstCnt := rBurstCnt + 1
@@ -1814,7 +1814,7 @@ case class LcvSdramCtrlSimDut(
   //      rH2dValid := False
   //      rHadH2dFinish := True
   //    }
-  //    when (mySdramCtrl.io.bus.d2hBus.nextValid) {
+  //    when (mySdramCtrl.io.bus.d2hBus.valid) {
   //      rHadD2hFinish := True
   //      myD2hReady := True
   //    }
@@ -1849,13 +1849,13 @@ case class LcvSdramCtrlSimDut(
   //      rHadH2dFinish := True
   //    }
   //    when (
-  //      mySdramCtrl.io.bus.d2hBus.nextValid
+  //      mySdramCtrl.io.bus.d2hBus.valid
   //      && !rHadD2hFinish
   //    ) {
   //      rHadD2hFinish := True
   //      myD2hReady := True
   //      rTestData(tempCnt).payload.last := (
-  //        mySdramCtrl.io.bus.d2hBus.sendData.data
+  //        mySdramCtrl.io.bus.d2hBus.payload.data
   //      )
   //    }
   //    when (rHadH2dFinish && rHadD2hFinish) {
@@ -1955,7 +1955,7 @@ object LcvSdramSim extends App {
     }
 }
 
-object LcvStallBusSdramCtrlConfig {
+object LcvBusSdramCtrlConfig {
   def spinal = SpinalConfig(
     targetDirectory="hw/gen",
     defaultConfigForClockDomains=ClockDomainConfig(
@@ -1965,10 +1965,10 @@ object LcvStallBusSdramCtrlConfig {
   )
 }
 
-object LcvStallBusSdramCtrlToVerilog extends App {
-  LcvStallBusSdramCtrlConfig.spinal.generateVerilog{
-    val top = LcvStallBusSdramCtrl(
-      cfg=LcvStallBusSdramCtrlConfig(
+object LcvBusSdramCtrlToVerilog extends App {
+  LcvBusSdramCtrlConfig.spinal.generateVerilog{
+    val top = LcvBusSdramCtrl(
+      cfg=LcvBusSdramCtrlConfig(
         clkRate=(100.0 MHz)
       )
     )

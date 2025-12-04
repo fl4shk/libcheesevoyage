@@ -1,4 +1,4 @@
-package libcheesevoyage.bus.lcvStall
+package libcheesevoyage.bus.lcvBus
 
 import spinal.core._
 import spinal.core.formal._
@@ -6,12 +6,12 @@ import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.misc.pipeline._
 
-case class LcvStallBusMesiConfig(
+case class LcvBusMesiConfig(
   numCpus: Int,
 ) {
 }
 
-//object LcvStallBusMesiMsg
+//object LcvBusMesiMsg
 //extends SpinalEnum(defaultEncoding=binaryOneHot) {
 //}
 
@@ -27,7 +27,7 @@ object LcvMesiState extends SpinalEnum(defaultEncoding=binarySequential) {
     = newElement();
 }
 
-case class LcvStallBusMainConfig(
+case class LcvBusMainConfig(
   dataWidth: Int,
   addrWidth: Int,
   //burstSizeWidth: Int,
@@ -44,6 +44,7 @@ case class LcvCacheConfig(
   isIcache: Boolean,
   lineSizeBytes: Int,
   depthWords: Int, // this is in number of words
+  numL1CacheHosts: Int,
   lineWordMemRamStyle: String=(
     //"auto"
     "block"
@@ -52,7 +53,7 @@ case class LcvCacheConfig(
     //"auto"
     "block"
   ),
-  private[libcheesevoyage] var busCfg: LcvStallBusConfig=null,
+  private[libcheesevoyage] var busCfg: LcvBusConfig=null,
 ) {
   def busMainCfg = busCfg.mainCfg
   //def busMesiCfg = busCfg.mesiCfg
@@ -134,9 +135,9 @@ case class LcvCacheConfig(
   )
 }
 
-case class LcvStallBusConfig(
-  mainCfg: LcvStallBusMainConfig,
-  //mesiCfg: LcvStallBusMesiConfig,
+case class LcvBusConfig(
+  mainCfg: LcvBusMainConfig,
+  //mesiCfg: LcvBusMesiConfig,
   var cacheCfg: Option[LcvCacheConfig]=None,
 ) {
   def dataWidth = mainCfg.dataWidth
@@ -193,7 +194,7 @@ case class LcvStallBusConfig(
     )
   )
   def needSameDataWidth(
-    that: LcvStallBusConfig
+    that: LcvBusConfig
   ): Unit = {
     require(
       this.dataWidth == that.dataWidth,
@@ -202,7 +203,7 @@ case class LcvStallBusConfig(
     )
   }
   def needSameAddrWidth(
-    that: LcvStallBusConfig
+    that: LcvBusConfig
   ): Unit = {
     require(
       this.addrWidth == that.addrWidth,
@@ -211,7 +212,7 @@ case class LcvStallBusConfig(
     )
   }
   def needSameBurstCntWidth(
-    that: LcvStallBusConfig
+    that: LcvBusConfig
   ): Unit = {
     require(
       this.burstCntWidth == that.burstCntWidth,
@@ -221,7 +222,7 @@ case class LcvStallBusConfig(
     )
   }
   //def needSameBurstSizeWidth(
-  //  that: LcvStallBusConfig
+  //  that: LcvBusConfig
   //): Unit = {
   //  require(
   //    this.burstSizeWidth == that.burstSizeWidth,
@@ -231,7 +232,7 @@ case class LcvStallBusConfig(
   //  )
   //}
   def needSameSrcWidth(
-    that: LcvStallBusConfig
+    that: LcvBusConfig
   ): Unit = {
     require(
       this.srcWidth == that.srcWidth,
@@ -241,8 +242,8 @@ case class LcvStallBusConfig(
   }
 }
 
-case class LcvStallBusMemMapConfig(
-  busCfg: LcvStallBusConfig,
+case class LcvBusMemMapConfig(
+  busCfg: LcvBusConfig,
   addrSliceStart: Int,
   addrSliceEnd: Int,
   //optNumDevs: Option[Int]=None,
@@ -299,15 +300,15 @@ case class LcvStallBusMemMapConfig(
   )
 }
 
-case class LcvStallBusH2dMesiInfo(
-  cfg: LcvStallBusConfig,
+case class LcvBusH2dMesiInfo(
+  cfg: LcvBusConfig,
 ) extends Bundle {
   //require(cfg.coherent)
 }
 
 
-case class LcvStallBusH2dSendPayloadNonBurstInfo(
-  cfg: LcvStallBusConfig
+case class LcvBusH2dSendPayloadNonBurstInfo(
+  cfg: LcvBusConfig
 ) extends Bundle {
   val addr = UInt(cfg.addrWidth bits)
   val data = UInt(cfg.dataWidth bits)
@@ -315,18 +316,18 @@ case class LcvStallBusH2dSendPayloadNonBurstInfo(
   val isWrite = Bool()
   val src = UInt(cfg.srcWidth bits)
 }
-case class LcvStallBusH2dSendPayloadBurstInfo(
-  cfg: LcvStallBusConfig,
+case class LcvBusH2dSendPayloadBurstInfo(
+  cfg: LcvBusConfig,
 ) extends Bundle {
   val burstCnt = UInt(cfg.burstCntWidth bits)
   val burstFirst = Bool()
   val burstLast = Bool()
 }
-case class LcvStallBusH2dSendPayload(
-  cfg: LcvStallBusConfig,
+case class LcvBusH2dSendPayload(
+  cfg: LcvBusConfig,
 ) extends Bundle {
   //--------
-  val nonBurstInfo = LcvStallBusH2dSendPayloadNonBurstInfo(cfg=cfg)
+  val nonBurstInfo = LcvBusH2dSendPayloadNonBurstInfo(cfg=cfg)
   def addr = nonBurstInfo.addr
   def data = nonBurstInfo.data
   def byteEn = nonBurstInfo.byteEn
@@ -334,7 +335,7 @@ case class LcvStallBusH2dSendPayload(
   def src = nonBurstInfo.src
   //--------
   val burstInfo = (cfg.burstCntWidth > 0) generate (
-    LcvStallBusH2dSendPayloadBurstInfo(cfg=cfg)
+    LcvBusH2dSendPayloadBurstInfo(cfg=cfg)
   )
   //def burstSize = burstInfo.burstSize
   def burstCnt = burstInfo.burstCnt
@@ -357,29 +358,29 @@ case class LcvStallBusH2dSendPayload(
   //--------
 }
 
-case class LcvStallBusD2hSendPayloadNonBurstInfo(
-  cfg: LcvStallBusConfig,
+case class LcvBusD2hSendPayloadNonBurstInfo(
+  cfg: LcvBusConfig,
 ) extends Bundle {
   val data = UInt(cfg.dataWidth bits)
   val src = UInt(cfg.srcWidth bits)
 }
-case class LcvStallBusD2hSendPayloadBurstInfo(
-  cfg: LcvStallBusConfig,
+case class LcvBusD2hSendPayloadBurstInfo(
+  cfg: LcvBusConfig,
 ) extends Bundle {
   val burstCnt = UInt(cfg.burstCntWidth bits)
   val burstFirst = Bool()
   val burstLast = Bool()
 }
-case class LcvStallBusD2hSendPayload(
-  cfg: LcvStallBusConfig,
+case class LcvBusD2hSendPayload(
+  cfg: LcvBusConfig,
 ) extends Bundle {
   //--------
-  val nonBurstInfo = LcvStallBusD2hSendPayloadNonBurstInfo(cfg=cfg)
+  val nonBurstInfo = LcvBusD2hSendPayloadNonBurstInfo(cfg=cfg)
   def data = nonBurstInfo.data
   def src = nonBurstInfo.src
   //--------
   val burstInfo = (cfg.burstCntWidth > 0) generate (
-    LcvStallBusD2hSendPayloadBurstInfo(cfg=cfg)
+    LcvBusD2hSendPayloadBurstInfo(cfg=cfg)
   )
   def burstCnt = burstInfo.burstCnt
   def burstFirst = burstInfo.burstFirst
@@ -387,28 +388,53 @@ case class LcvStallBusD2hSendPayload(
   //--------
 }
 
-case class LcvStallBusIo(
-  cfg: LcvStallBusConfig,
+case class LcvBusIo(
+  cfg: LcvBusConfig,
 ) extends Bundle with IMasterSlave {
   val h2dBus = (
-    slave(new LcvStallIo[LcvStallBusH2dSendPayload, Bool](
-      sendPayloadType=Some(
-        LcvStallBusH2dSendPayload(cfg=cfg)
-      ),
-      recvPayloadType=None,
-    ))
+    //slave(new Stream(
+    //  sendPayloadType=Some(
+    //    LcvBusH2dSendPayload(cfg=cfg)
+    //  ),
+    //  recvPayloadType=None,
+    //))
+    slave(Stream(LcvBusH2dSendPayload(cfg=cfg)))
   )
   val d2hBus = (
-    master(new LcvStallIo[LcvStallBusD2hSendPayload, Bool](
-      sendPayloadType=Some(
-        LcvStallBusD2hSendPayload(cfg=cfg)
-      ),
-      recvPayloadType=None,
-    ))
+    //master(new Stream(
+    //  sendPayloadType=Some(
+    //    LcvBusD2hSendPayload(cfg=cfg)
+    //  ),
+    //  recvPayloadType=None,
+    //))
+    master(Stream(LcvBusD2hSendPayload(cfg=cfg)))
+  )
+  val cacheH2dBus = (
+    cfg.cacheCfg != None
+  ) generate (
+    Bool()
+    //slave(new Stream(
+    //  sendPayloadType=Some(
+    //  ),
+    //  recvPayloadType=None,
+    //))
+  )
+  val cacheD2hBus = (
+    cfg.cacheCfg != None
+  ) generate (
+    Bool()
+    //master(new Stream(
+    //  sendPayloadType=Some(
+    //  ),
+    //  recvPayloadType=None,
+    //))
   )
 
   def asMaster(): Unit = {
     master(h2dBus)
     slave(d2hBus)
+    if (cfg.cacheCfg != None) {
+      
+    }
   }
 }

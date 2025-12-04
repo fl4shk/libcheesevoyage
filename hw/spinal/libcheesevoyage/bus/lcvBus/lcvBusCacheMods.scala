@@ -1,4 +1,4 @@
-package libcheesevoyage.bus.lcvStall
+package libcheesevoyage.bus.lcvBus
 
 import scala.collection.immutable
 import scala.collection.mutable._
@@ -8,14 +8,14 @@ import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.misc.pipeline._
 
-//case class LcvStallBusL1DataCacheIo(
+//case class LcvBusL1DataCacheIo(
 //)
 
 //case class LcvCacheDirectoryIo(
 //  cfg: LcvCacheConfig,
 //) extends Bundle {
 //  val hostBusVec = Vec.fill(cfg.busMesiCfg.numCpus)(
-//    slave(LcvStallBusIo(cfg=cfg.busCfg))
+//    slave(LcvBusIo(cfg=cfg.busCfg))
 //  )
 //}
 //case class LcvCacheDirectory(
@@ -24,8 +24,8 @@ import spinal.lib.misc.pipeline._
 //  val io = LcvCacheDirectoryIo(cfg=cfg)
 //}
 object LcvCacheConfigTest extends App {
-  val busCfg = LcvStallBusConfig(
-    mainCfg=LcvStallBusMainConfig(
+  val busCfg = LcvBusConfig(
+    mainCfg=LcvBusMainConfig(
       dataWidth=32,
       addrWidth=32,
       burstAlwaysMaxSize=false,
@@ -37,6 +37,7 @@ object LcvCacheConfigTest extends App {
         isIcache=false,
         lineSizeBytes=64,
         depthWords=1024,
+        numL1CacheHosts=4,
       )
     )
   )

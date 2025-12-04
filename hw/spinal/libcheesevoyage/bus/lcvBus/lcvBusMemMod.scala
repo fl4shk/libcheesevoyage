@@ -1,4 +1,4 @@
-package libcheesevoyage.bus.lcvStall
+package libcheesevoyage.bus.lcvBus
 
 import scala.collection.immutable
 import scala.collection.mutable._
@@ -13,9 +13,9 @@ import libcheesevoyage.general.RamSdpPipeIo
 import libcheesevoyage.general.RamSdpPipe
 
 // A bus-attached BRAM, LUTRAM, etc.
-case class LcvStallBusMemConfig(
-  //busCfg: LcvStallBusConfig,
-  mmapCfg: LcvStallBusMemMapConfig,
+case class LcvBusMemConfig(
+  //busCfg: LcvBusConfig,
+  mmapCfg: LcvBusMemMapConfig,
   //depth: Int,
   init: Option[Seq[Bits]]=None,
   initBigInt: Option[Seq[BigInt]]=None,
@@ -26,17 +26,17 @@ case class LcvStallBusMemConfig(
   def depth = mmapCfg.addrSliceSize
 }
 
-case class LcvStallBusMemIo(
-  cfg: LcvStallBusMemConfig,
+case class LcvBusMemIo(
+  cfg: LcvBusMemConfig,
 ) extends Bundle {
-  val bus = slave(LcvStallBusIo(cfg=cfg.busCfg))
+  val bus = slave(LcvBusIo(cfg=cfg.busCfg))
 }
 
-case class LcvStallBusMem(
-  cfg: LcvStallBusMemConfig,
+case class LcvBusMem(
+  cfg: LcvBusMemConfig,
 ) extends Component {
   //--------
-  val io = LcvStallBusMemIo(cfg=cfg)
+  val io = LcvBusMemIo(cfg=cfg)
   //--------
   val ramArr = RamSdpPipe(
     wordType=Bits(cfg.busCfg.dataWidth bits),
@@ -60,19 +60,19 @@ case class LcvStallBusMem(
     init(State.IDLE)
   )
   //--------
-  def myH2dSendData = io.bus.h2dBus.sendData
-  def myD2hSendData = io.bus.d2hBus.sendData
+  def myH2dSendData = io.bus.h2dBus.payload
+  def myD2hSendData = io.bus.d2hBus.payload
   myD2hSendData.setAsReg() init(myD2hSendData.getZero)
 
   def myH2dBusReady = io.bus.h2dBus.ready
-  def myD2hBusNextValid = io.bus.d2hBus.nextValid
+  def myD2hBusNextValid = io.bus.d2hBus.valid
   myH2dBusReady.setAsReg() init(False)
 
   //val rSavedBurstSize = Reg(cloneOf(myH2dSendData.burstSize))
 
   switch (rState) {
     is (State.IDLE) {
-      when (RegNext(next=io.bus.h2dBus.nextValid, init=False)) {
+      when (RegNext(next=io.bus.h2dBus.valid, init=False)) {
         when (RegNext(next=myH2dSendData.isWrite, init=False)) {
           rState := State.WR_MAIN
         } otherwise {

@@ -1,4 +1,4 @@
-package libcheesevoyage.bus.lcvStall
+package libcheesevoyage.bus.lcvBus
 
 import spinal.core._
 import spinal.core.formal._
@@ -8,59 +8,59 @@ import spinal.lib.misc.pipeline._
 
 // TODO: finish this
 
-//case class LcvStallXbarConfig(
+//case class LcvBusXbarConfig(
 //  addrWidth: Int,
 //  dataWidth: Int,
 //  numHosts: Int,
 //  numDevs: Int,
 //) {
 //}
-//case class LcvStallXbarHostPayload(
-//  cfg: LcvStallXbarConfig
+//case class LcvBusXbarHostPayload(
+//  cfg: LcvBusXbarConfig
 //) extends Bundle {
 //  val addr = UInt(cfg.addrWidth bits)
 //  val data = UInt(cfg.dataWidth bits)
 //  val isWrite = Bool()
 //}
-//case class LcvStallXbarDevPayload(
-//  cfg: LcvStallXbarConfig
+//case class LcvBusXbarDevPayload(
+//  cfg: LcvBusXbarConfig
 //) extends Bundle {
 //  val data = UInt(cfg.dataWidth bits)
 //}
 //
-////case class LcvStallXbarIo(
-////  cfg: LcvStallXbarConfig
+////case class LcvBusXbarIo(
+////  cfg: LcvBusXbarConfig
 ////) extends Bundle {
 ////  val h2dIo = Vec.fill(cfg.numHosts)(
 ////    slave(new LcvStallIo(
-////      hostPayloadType=Some(HardType(LcvStallXbarHostPayload(cfg=cfg))),
-////      devPayloadType=Some(HardType(LcvStallXbarDevPayload(cfg=cfg))),
+////      hostPayloadType=Some(HardType(LcvBusXbarHostPayload(cfg=cfg))),
+////      devPayloadType=Some(HardType(LcvBusXbarDevPayload(cfg=cfg))),
 ////    ))
 ////  )
 ////  val d2hIo = Vec.fill(cfg.numDevs)(
 ////    master(new LcvStallIo(
-////      hostPayloadType=Some(HardType(LcvStallXbarHostPayload(cfg=cfg))),
-////      devPayloadType=Some(HardType(LcvStallXbarDevPayload(cfg=cfg))),
+////      hostPayloadType=Some(HardType(LcvBusXbarHostPayload(cfg=cfg))),
+////      devPayloadType=Some(HardType(LcvBusXbarDevPayload(cfg=cfg))),
 ////    ))
 ////  )
 ////}
-case class LcvStallBusXbarConfig(
-  busCfg: LcvStallBusConfig,
+case class LcvBusXbarConfig(
+  busCfg: LcvBusConfig,
   numNonCpuHosts: Int,
   numDevs: Int,
 ) {
   //val numHosts = busCfg.mesiCfg.numCpus + numNonCpuHosts
 }
 
-case class LcvStallBusXbarIo(
-  cfg: LcvStallBusXbarConfig
+case class LcvBusXbarIo(
+  cfg: LcvBusXbarConfig
 ) extends Bundle {
 }
 
-case class LcvStallBusXbar(
-  cfg: LcvStallBusXbarConfig
+case class LcvBusXbar(
+  cfg: LcvBusXbarConfig
 ) extends Component {
   //--------
-  val io = LcvStallBusXbarIo(cfg=cfg)
+  val io = LcvBusXbarIo(cfg=cfg)
   //--------
 }

@@ -1,4 +1,4 @@
-package libcheesevoyage.bus.lcvStall
+package libcheesevoyage.bus.lcvBus
 
 import scala.collection.immutable
 import scala.collection.mutable._
@@ -8,10 +8,10 @@ import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.misc.pipeline._
 
-case class LcvStallBusSlicerConfig(
-  //busCfg: LcvStallBusConfig,
+case class LcvBusSlicerConfig(
+  //busCfg: LcvBusConfig,
   //addrSliceWidth: Int,
-  mmapCfg: LcvStallBusMemMapConfig,
+  mmapCfg: LcvBusMemMapConfig,
   //addrSliceStart: Int,
   //addrSliceEnd: Int,
   //optNumDevs: Option[Int]=None,
@@ -23,15 +23,15 @@ case class LcvStallBusSlicerConfig(
   def addrSliceRange = mmapCfg.addrSliceRange
 }
 
-case class LcvStallBusSlicerIo(
-  cfg: LcvStallBusSlicerConfig,
+case class LcvBusSlicerIo(
+  cfg: LcvBusSlicerConfig,
 ) extends Bundle /*with IMasterSlave*/ {
-  val host = slave(LcvStallBusIo(cfg=cfg.busCfg))
+  val host = slave(LcvBusIo(cfg=cfg.busCfg))
   val devVec = (
-    Vec[LcvStallBusIo]{
-      val tempArr = new ArrayBuffer[LcvStallBusIo]()
+    Vec[LcvBusIo]{
+      val tempArr = new ArrayBuffer[LcvBusIo]()
       for (idx <- 0 until cfg.numDevs) {
-        tempArr += LcvStallBusIo(cfg=cfg.busCfg)
+        tempArr += LcvBusIo(cfg=cfg.busCfg)
       }
       tempArr
     }
@@ -40,27 +40,27 @@ case class LcvStallBusSlicerIo(
     master(dev)
   }
 }
-case class LcvStallBusSlicer(
-  cfg: LcvStallBusSlicerConfig,
+case class LcvBusSlicer(
+  cfg: LcvBusSlicerConfig,
 ) extends Component {
-  val io = LcvStallBusSlicerIo(cfg=cfg)
+  val io = LcvBusSlicerIo(cfg=cfg)
 
   for (devIdx <- 0 until cfg.numDevs) {
     io.host.h2dBus.ready := False
-    io.host.d2hBus.nextValid := False
-    io.host.d2hBus.sendData := (
-      io.host.d2hBus.sendData.getZero
+    io.host.d2hBus.valid := False
+    io.host.d2hBus.payload := (
+      io.host.d2hBus.payload.getZero
     )
 
     val myDevH2dBus = io.devVec(devIdx).h2dBus
     val myDevD2hBus = io.devVec(devIdx).d2hBus
-    myDevH2dBus.nextValid := False
-    myDevH2dBus.sendData := (
-      myDevH2dBus.sendData.getZero
+    myDevH2dBus.valid := False
+    myDevH2dBus.payload := (
+      myDevH2dBus.payload.getZero
     )
     myDevD2hBus.ready := False
   }
-  switch (io.host.h2dBus.sendData.addr(cfg.addrSliceRange)) {
+  switch (io.host.h2dBus.payload.addr(cfg.addrSliceRange)) {
     for (devIdx <- 0 until cfg.numDevs) {
       is (devIdx) {
         val myDevH2dBus = io.devVec(devIdx).h2dBus

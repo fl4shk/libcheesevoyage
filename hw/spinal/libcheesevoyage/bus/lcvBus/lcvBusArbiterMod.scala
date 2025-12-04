@@ -1,4 +1,4 @@
-package libcheesevoyage.bus.lcvStall
+package libcheesevoyage.bus.lcvBus
 
 import scala.collection.immutable
 import scala.collection.mutable._
@@ -9,21 +9,21 @@ import spinal.lib._
 import spinal.lib.misc.pipeline._
 
 
-case class LcvStallBusArbiterConfig(
-  busCfg: LcvStallBusConfig,
+case class LcvBusArbiterConfig(
+  busCfg: LcvBusConfig,
   numHosts: Int,
   //isPriority: Boolean,
 ) {
 }
 
-case class LcvStallBusArbiterIo(
-  cfg: LcvStallBusArbiterConfig
+case class LcvBusArbiterIo(
+  cfg: LcvBusArbiterConfig
 ) extends Bundle {
   val hostVec = (
-    Vec[LcvStallBusIo]{
-      val tempArr = new ArrayBuffer[LcvStallBusIo]()
+    Vec[LcvBusIo]{
+      val tempArr = new ArrayBuffer[LcvBusIo]()
       for (idx <- 0 until cfg.numHosts) {
-        tempArr += LcvStallBusIo(cfg=cfg.busCfg)
+        tempArr += LcvBusIo(cfg=cfg.busCfg)
       }
       tempArr
     }
@@ -32,27 +32,27 @@ case class LcvStallBusArbiterIo(
     slave(host)
   }
   val dev = (
-    master(LcvStallBusIo(cfg=cfg.busCfg))
+    master(LcvBusIo(cfg=cfg.busCfg))
   )
 }
 
-case class LcvStallBusArbiter(
-  cfg: LcvStallBusArbiterConfig,
+case class LcvBusArbiter(
+  cfg: LcvBusArbiterConfig,
 ) extends Component {
   // (for now) round robin bus arbiter
-  val io = LcvStallBusArbiterIo(cfg=cfg)
+  val io = LcvBusArbiterIo(cfg=cfg)
 
   for (hostIdx <- 0 until cfg.numHosts) {
     io.dev.d2hBus.ready := False
-    io.dev.h2dBus.nextValid := False
-    io.dev.h2dBus.sendData := (
-      io.dev.h2dBus.sendData.getZero
+    io.dev.h2dBus.valid := False
+    io.dev.h2dBus.payload := (
+      io.dev.h2dBus.payload.getZero
     )
     val myHostH2dBus = io.hostVec(hostIdx).h2dBus
     val myHostD2hBus = io.hostVec(hostIdx).d2hBus
-    myHostH2dBus.nextValid := False
-    myHostH2dBus.sendData := (
-      myHostH2dBus.sendData.getZero
+    myHostH2dBus.valid := False
+    myHostH2dBus.payload := (
+      myHostH2dBus.payload.getZero
     )
     myHostD2hBus.ready := False
   }
@@ -76,7 +76,7 @@ case class LcvStallBusArbiter(
     }
   }
 
-  when (RegNext(next=myHostH2dBus.nextValid, init=False)) {
+  when (RegNext(next=myHostH2dBus.valid, init=False)) {
     io.dev.h2dBus << myHostH2dBus 
     myHostD2hBus << io.dev.d2hBus
     when (myHostH2dBus.ready) {
