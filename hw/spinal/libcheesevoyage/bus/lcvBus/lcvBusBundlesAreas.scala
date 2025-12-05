@@ -6,25 +6,33 @@ import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.misc.pipeline._
 
-case class LcvBusMesiConfig(
-  numCpus: Int,
-) {
-}
+//case class LcvBusMesiConfig(
+//  numCpus: Int,
+//) {
+//}
 
 //object LcvBusMesiMsg
 //extends SpinalEnum(defaultEncoding=binaryOneHot) {
 //}
 
-object LcvMesiState extends SpinalEnum(defaultEncoding=binarySequential) {
-  val
-    M,  // Modified (M) - Core has modified data; not yet written back
-        // (multicore "dirty")
-    E,  // Exclusive (E) - Cache line is the same as main memory and is the
-        // only cached copy
-    S,  // Shared (S) - Same as main memory but copies may exist in other
-        // caches
-    I   // Invalid (I) - Line data is not valid (as in simple cache)
-    = newElement();
+//object LcvMesiState extends SpinalEnum(defaultEncoding=binarySequential) {
+//  val
+//    M,  // Modified (M) - Core has modified data; not yet written back
+//        // (multicore "dirty")
+//    E,  // Exclusive (E) - Cache line is the same as main memory and is the
+//        // only cached copy
+//    S,  // Shared (S) - Same as main memory but copies may exist in other
+//        // caches
+//    I   // Invalid (I) - Line data is not valid (as in simple cache)
+//    = newElement();
+//}
+
+sealed trait LcvCacheKind
+object LcvCacheKind {
+  case object I extends LcvCacheKind
+  case object D extends LcvCacheKind
+  //case object Tlb extends LcvCacheKind
+  case object Shared extends LcvCacheKind
 }
 
 case class LcvBusMainConfig(
@@ -39,12 +47,13 @@ case class LcvBusMainConfig(
   val burstCntWidth = log2Up(64 / (dataWidth / 8))
 }
 
-case class LcvCacheConfig(
-  level: Int, 
-  isIcache: Boolean,
+case class LcvBusCacheConfig(
+  //level: Int, 
+  //isIcache: Boolean,
+  kind: LcvCacheKind,
   lineSizeBytes: Int,
   depthWords: Int, // this is in number of words
-  numL1CacheHosts: Int,
+  numCpus: Int,
   lineWordMemRamStyle: String=(
     //"auto"
     "block"
@@ -55,21 +64,17 @@ case class LcvCacheConfig(
   ),
   private[libcheesevoyage] var busCfg: LcvBusConfig=null,
 ) {
+  def seqlockWidth = 32
+  def seqlockGlobalCntWidth = 41
   def busMainCfg = busCfg.mainCfg
   //def busMesiCfg = busCfg.mesiCfg
 
   def wordWidth = busMainCfg.dataWidth
   def addrWidth = busMainCfg.addrWidth
+  def coherent: Boolean = (numCpus > 1)
 
   private[libcheesevoyage] def doRequires() {
-    require(
-      level >= 1
-    )
-    if (isIcache) {
-      require(
-        level == 1
-      )
-    }
+    require(numCpus >= 1)
 
     require(
       addrWidth == (1 << log2Up(addrWidth)),
@@ -138,7 +143,7 @@ case class LcvCacheConfig(
 case class LcvBusConfig(
   mainCfg: LcvBusMainConfig,
   //mesiCfg: LcvBusMesiConfig,
-  var cacheCfg: Option[LcvCacheConfig]=None,
+  var cacheCfg: Option[LcvBusCacheConfig]=None,
 ) {
   def dataWidth = mainCfg.dataWidth
   def addrWidth = mainCfg.addrWidth
@@ -153,7 +158,22 @@ case class LcvBusConfig(
       cacheCfg.doRequires()
 
       println(
-        s"isIcache:${cacheCfg.isIcache}: \n"
+        s"kind:"
+        //+ s"${cacheCfg.kind}cache
+        + (
+          cacheCfg.kind match {
+            case LcvCacheKind.I => {
+              s"Icache"
+            }
+            case LcvCacheKind.D => {
+              s"Dcache"
+            }
+            case _ => {
+              s"${cacheCfg.kind}"
+            }
+          }
+        )
+        + s": \n"
         + s"  tagWidth:${cacheCfg.tagWidth}\n"
         + s"  tagRange:${cacheCfg.tagRange}\n"
         + s"  nonCachedRange:${cacheCfg.nonCachedRange}\n"
@@ -244,13 +264,13 @@ case class LcvBusConfig(
 
 case class LcvBusMemMapConfig(
   busCfg: LcvBusConfig,
-  addrSliceStart: Int,
-  addrSliceEnd: Int,
+  addrSliceHi: Int,
+  addrSliceLo: Int,
   //optNumDevs: Option[Int]=None,
   optSliceSize: Option[Int]=None,
 ) {
   //def addrSliceEnd = addrSliceStart + addrSliceWidth - 1
-  def addrSliceWidth = addrSliceEnd - addrSliceStart + 1
+  def addrSliceWidth = addrSliceHi - addrSliceLo + 1
   def addrSliceSize = (
     optSliceSize match {
       case Some(mySliceSize) => {
@@ -269,7 +289,7 @@ case class LcvBusMemMapConfig(
   )
 
 
-  def addrSliceRange = addrSliceEnd downto addrSliceStart
+  def addrSliceRange = addrSliceHi downto addrSliceLo
 
   require(
     addrSliceWidth > 0,
@@ -281,33 +301,122 @@ case class LcvBusMemMapConfig(
     + s"<= busCfg.addrWidth:${busCfg.addrWidth}"
   )
   require(
-    addrSliceStart >= 0,
-    s"need addrSliceStart:${addrSliceStart} >= 0"
+    addrSliceLo >= 0,
+    s"need addrSliceStart:${addrSliceLo} >= 0"
   )
   require(
-    addrSliceStart < busCfg.addrWidth,
-    s"need addrSliceStart:${addrSliceStart} "
+    addrSliceLo < busCfg.addrWidth,
+    s"need addrSliceStart:${addrSliceLo} "
     + s"< busCfg.addrWidth:${busCfg.addrWidth}"
   )
   require(
-    addrSliceEnd >= 0,
-    s"need addrSliceEnd:${addrSliceEnd} >= 0"
+    addrSliceHi >= 0,
+    s"need addrSliceEnd:${addrSliceHi} >= 0"
   )
   require(
-    addrSliceEnd < busCfg.addrWidth,
-    s"need addrSliceEnd:${addrSliceEnd} "
+    addrSliceHi < busCfg.addrWidth,
+    s"need addrSliceEnd:${addrSliceHi} "
     + s"< busCfg.addrWidth:${busCfg.addrWidth}"
   )
 }
 
-case class LcvBusH2dMesiInfo(
+case class LcvBusCacheSeqlock(
   cfg: LcvBusConfig,
 ) extends Bundle {
-  //require(cfg.coherent)
+  require(
+    cfg.cacheCfg != None
+  )
+  require(
+    cfg.cacheCfg.get.coherent
+  )
+
+  val data = UInt(cfg.cacheCfg.get.seqlockWidth bits)
+
+  def isLocked(): Bool = data.lsb
+
+  def lock(
+    prev: UInt=data
+  ): Unit = {
+    // if not passing in `prev` at the call site,
+    // make sure to `setAsReg()`, etc.
+    data := prev | 0x1
+  }
+  def unlock(
+    prev: UInt=data
+  ): Unit = {
+    // if not passing in `prev` at the call site,
+    // make sure to `setAsReg()`, etc.
+    data := prev + 1
+  }
 }
 
+object LcvBusH2dCacheMsg //LcvBusH2dDataCacheMsg
+extends SpinalEnum(defaultEncoding=binarySequential) {
+  // this is from L1 to shared L2 
+  val
+    //--------
+    CMP_SEQLOCK,
+    //--------
+    // When you read a cache line from a lower tier cache, you check if
+    // your seqlock is the same as the next upper tier.
+    // If not, you fetch from the higher tier, provided it's not locked.
+    // FL4SHK NOTE: If it's locked, I'll just wait until it's unlocked
+    // (i.e. the other core finished its write)
+    //READ_CHECK_SEQLOCK,
+    START_READ_LINE,
+    FINISH_READ_LINE,
+    //--------
+    // Any access is guarded by the low-order bit of the seqlock.
+    // When it's 1, the lock is locked.
+    // When a write begins, you set this bit.
+    // When a write completes, you increment it (clearing the lock bit and
+    // updating the sequence number/marking the cache line as dirty).
+    //WRITE_CHECK_SEQLOCK,
+    START_WRITE_LINE,    // seqlock.lock()
+    FINISH_WRITE_LINE,   // seqlock.unlock()
+    //--------
+    // For an RMW, you either fail or retry if the sequence number from the
+    // read differs from the sequence number when you go to lock it.
+    ATOMIC_LL,
+    ATOMIC_SC
+    //--------
+    = newElement();
+}
 
-case class LcvBusH2dSendPayloadNonBurstInfo(
+//object LcvBusH2dInstrCacheMsg
+//extends SpinalEnum(defaultEncoding=binarySequential) {
+//  val
+//    READ_CHECK_SEQLOCK,
+//    START_READ_LINE,
+//    FINISH_READ_LINE
+//    = newElement();
+//}
+
+case class LcvBusH2dPayloadCacheInfo(
+  cfg: LcvBusConfig,
+) extends Bundle {
+  val seqlock = LcvBusCacheSeqlock(cfg=cfg)
+  val msg = LcvBusH2dCacheMsg()
+  //val dcacheMsg = (
+  //  cfg.cacheCfg.get.kind == LcvCacheKind.D
+  //  || cfg.cacheCfg.get.kind == LcvCacheKind.Shared
+  //) generate (
+  //  LcvBusH2dDataCacheMsg()
+  //)
+  //val icacheMsg = (
+  //  cfg.cacheCfg.get.kind == LcvCacheKind.I
+  //  || cfg.cacheCfg.get.kind == LcvCacheKind.Shared
+  //) generate (
+  //  LcvBusH2dInstrCacheMsg()
+  //)
+  //val tlbMsg = (
+  //  cfg.cacheCfg.get.kind == LcvCacheKind.Tlb
+  //  || cfg.cacheCfg.get.kind == LcvCacheKind.Shared
+  //) generate (
+  //  LcvBusH2dTlbCacheMsg()
+  //)
+}
+case class LcvBusH2dPayloadMainNonBurstInfo(
   cfg: LcvBusConfig
 ) extends Bundle {
   val addr = UInt(cfg.addrWidth bits)
@@ -316,31 +425,31 @@ case class LcvBusH2dSendPayloadNonBurstInfo(
   val isWrite = Bool()
   val src = UInt(cfg.srcWidth bits)
 }
-case class LcvBusH2dSendPayloadBurstInfo(
+case class LcvBusH2dPayloadMainBurstInfo(
   cfg: LcvBusConfig,
 ) extends Bundle {
   val burstCnt = UInt(cfg.burstCntWidth bits)
   val burstFirst = Bool()
   val burstLast = Bool()
 }
-case class LcvBusH2dSendPayload(
+case class LcvBusH2dPayload(
   cfg: LcvBusConfig,
 ) extends Bundle {
   //--------
-  val nonBurstInfo = LcvBusH2dSendPayloadNonBurstInfo(cfg=cfg)
-  def addr = nonBurstInfo.addr
-  def data = nonBurstInfo.data
-  def byteEn = nonBurstInfo.byteEn
-  def isWrite = nonBurstInfo.isWrite
-  def src = nonBurstInfo.src
+  val mainNonBurstInfo = LcvBusH2dPayloadMainNonBurstInfo(cfg=cfg)
+  def addr = mainNonBurstInfo.addr
+  def data = mainNonBurstInfo.data
+  def byteEn = mainNonBurstInfo.byteEn
+  def isWrite = mainNonBurstInfo.isWrite
+  def src = mainNonBurstInfo.src
   //--------
-  val burstInfo = (cfg.burstCntWidth > 0) generate (
-    LcvBusH2dSendPayloadBurstInfo(cfg=cfg)
+  val mainBurstInfo = (cfg.burstCntWidth > 0) generate (
+    LcvBusH2dPayloadMainBurstInfo(cfg=cfg)
   )
-  //def burstSize = burstInfo.burstSize
-  def burstCnt = burstInfo.burstCnt
-  def burstFirst = burstInfo.burstFirst
-  def burstLast = burstInfo.burstLast
+  //def burstSize = mainBurstInfo.burstSize
+  def burstCnt = mainBurstInfo.burstCnt
+  def burstFirst = mainBurstInfo.burstFirst
+  def burstLast = mainBurstInfo.burstLast
   //--------
   def burstAddr(
     someBurstCnt: UInt,
@@ -356,85 +465,70 @@ case class LcvBusH2dSendPayload(
   )
   //def selfBurstAddr() = this.burstAddr(someBurstCnt=burstCnt)
   //--------
+  def cacheInfo = (
+    cfg.cacheCfg != None
+    && cfg.cacheCfg.get.coherent
+  ) generate (
+    LcvBusH2dPayloadCacheInfo(cfg=cfg)
+  )
 }
 
-case class LcvBusD2hSendPayloadNonBurstInfo(
+case class LcvBusD2hPayloadCacheInfo(
+  cfg: LcvBusConfig,
+) extends Bundle {
+  val seqlock = LcvBusCacheSeqlock(cfg=cfg)
+}
+case class LcvBusD2hPayloadMainNonBurstInfo(
   cfg: LcvBusConfig,
 ) extends Bundle {
   val data = UInt(cfg.dataWidth bits)
   val src = UInt(cfg.srcWidth bits)
 }
-case class LcvBusD2hSendPayloadBurstInfo(
+case class LcvBusD2hPayloadMainBurstInfo(
   cfg: LcvBusConfig,
 ) extends Bundle {
   val burstCnt = UInt(cfg.burstCntWidth bits)
   val burstFirst = Bool()
   val burstLast = Bool()
 }
-case class LcvBusD2hSendPayload(
+case class LcvBusD2hPayload(
   cfg: LcvBusConfig,
 ) extends Bundle {
   //--------
-  val nonBurstInfo = LcvBusD2hSendPayloadNonBurstInfo(cfg=cfg)
-  def data = nonBurstInfo.data
-  def src = nonBurstInfo.src
+  val mainNonBurstInfo = LcvBusD2hPayloadMainNonBurstInfo(cfg=cfg)
+  def data = mainNonBurstInfo.data
+  def src = mainNonBurstInfo.src
   //--------
-  val burstInfo = (cfg.burstCntWidth > 0) generate (
-    LcvBusD2hSendPayloadBurstInfo(cfg=cfg)
+  val mainBurstInfo = (cfg.burstCntWidth > 0) generate (
+    LcvBusD2hPayloadMainBurstInfo(cfg=cfg)
   )
-  def burstCnt = burstInfo.burstCnt
-  def burstFirst = burstInfo.burstFirst
-  def burstLast = burstInfo.burstLast
+  def burstCnt = mainBurstInfo.burstCnt
+  def burstFirst = mainBurstInfo.burstFirst
+  def burstLast = mainBurstInfo.burstLast
   //--------
+  def cacheInfo = (
+    cfg.cacheCfg != None
+    && cfg.cacheCfg.get.coherent
+  ) generate (
+    LcvBusD2hPayloadCacheInfo(cfg=cfg)
+  )
 }
 
 case class LcvBusIo(
   cfg: LcvBusConfig,
 ) extends Bundle with IMasterSlave {
   val h2dBus = (
-    //slave(new Stream(
-    //  sendPayloadType=Some(
-    //    LcvBusH2dSendPayload(cfg=cfg)
-    //  ),
-    //  recvPayloadType=None,
-    //))
-    slave(Stream(LcvBusH2dSendPayload(cfg=cfg)))
+    slave(Stream(LcvBusH2dPayload(cfg=cfg)))
   )
   val d2hBus = (
-    //master(new Stream(
-    //  sendPayloadType=Some(
-    //    LcvBusD2hSendPayload(cfg=cfg)
-    //  ),
-    //  recvPayloadType=None,
-    //))
-    master(Stream(LcvBusD2hSendPayload(cfg=cfg)))
-  )
-  val cacheH2dBus = (
-    cfg.cacheCfg != None
-  ) generate (
-    Bool()
-    //slave(new Stream(
-    //  sendPayloadType=Some(
-    //  ),
-    //  recvPayloadType=None,
-    //))
-  )
-  val cacheD2hBus = (
-    cfg.cacheCfg != None
-  ) generate (
-    Bool()
-    //master(new Stream(
-    //  sendPayloadType=Some(
-    //  ),
-    //  recvPayloadType=None,
-    //))
+    master(Stream(LcvBusD2hPayload(cfg=cfg)))
   )
 
   def asMaster(): Unit = {
     master(h2dBus)
     slave(d2hBus)
-    if (cfg.cacheCfg != None) {
-      
-    }
+    //if (cfg.cacheCfg != None) {
+    //  
+    //}
   }
 }

@@ -1438,7 +1438,7 @@ case class LcvSdramCtrlSimDut(
   //  )
   //)
   val rH2dSendData = {
-    val temp = Reg(LcvBusH2dSendPayload(cfg=cfg.busCfg))
+    val temp = Reg(LcvBusH2dPayload(cfg=cfg.busCfg))
     temp.init(temp.getZero)
     temp
   }

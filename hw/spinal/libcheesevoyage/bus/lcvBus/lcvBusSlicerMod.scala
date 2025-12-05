@@ -18,14 +18,14 @@ case class LcvBusSlicerConfig(
 ) {
   def busCfg = mmapCfg.busCfg
   def numDevs = mmapCfg.addrSliceSize
-  def addrSliceStart = mmapCfg.addrSliceStart
-  def addrSliceEnd = mmapCfg.addrSliceEnd
+  def addrSliceStart = mmapCfg.addrSliceLo
+  def addrSliceEnd = mmapCfg.addrSliceHi
   def addrSliceRange = mmapCfg.addrSliceRange
 }
 
 case class LcvBusSlicerIo(
   cfg: LcvBusSlicerConfig,
-) extends Bundle /*with IMasterSlave*/ {
+) extends Bundle {
   val host = slave(LcvBusIo(cfg=cfg.busCfg))
   val devVec = (
     Vec[LcvBusIo]{

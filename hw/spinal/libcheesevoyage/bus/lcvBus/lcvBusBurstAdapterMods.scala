@@ -38,26 +38,26 @@
 //  //--------
 //  //val hostH2dBus = (
 //  //  slave(new Stream(
-//  //    sendPayloadType=Some(LcvBusH2dSendPayload(cfg=cfg.hostBusCfg)),
+//  //    sendPayloadType=Some(LcvBusH2dPayload(cfg=cfg.hostBusCfg)),
 //  //    recvPayloadType=None,
 //  //  ))
 //  //)
 //  //val hostD2hBus = (
 //  //  master(new Stream(
-//  //    sendPayloadType=Some(LcvBusD2hSendPayload(cfg=cfg.hostBusCfg)),
+//  //    sendPayloadType=Some(LcvBusD2hPayload(cfg=cfg.hostBusCfg)),
 //  //    recvPayloadType=None,
 //  //  ))
 //  //)
 //
 //  //val devH2dBus = (
 //  //  master(new Stream(
-//  //    sendPayloadType=Some(LcvBusH2dSendPayload(cfg=cfg.devBusCfg)),
+//  //    sendPayloadType=Some(LcvBusH2dPayload(cfg=cfg.devBusCfg)),
 //  //    recvPayloadType=None,
 //  //  ))
 //  //)
 //  //val devD2hBus = (
 //  //  slave(new Stream(
-//  //    sendPayloadType=Some(LcvBusD2hSendPayload(cfg=cfg.devBusCfg)),
+//  //    sendPayloadType=Some(LcvBusD2hPayload(cfg=cfg.devBusCfg)),
 //  //    recvPayloadType=None,
 //  //  ))
 //  //)
@@ -87,7 +87,7 @@
 //    )
 //  )
 //  io.devBus.h2dBus.payload := (
-//    //io.hostBus.h2dBus.payload.nonBurstInfo
+//    //io.hostBus.h2dBus.payload.mainNonBurstInfo
 //    RegNext(
 //      next=io.devBus.h2dBus.payload,
 //      init=io.devBus.h2dBus.payload.getZero,
@@ -109,7 +109,7 @@
 //    )
 //  )
 //  io.hostBus.d2hBus.payload := (
-//    //io.devBus.d2hBus.payload.nonBurstInfo
+//    //io.devBus.d2hBus.payload.mainNonBurstInfo
 //    RegNext(
 //      next=io.hostBus.d2hBus.payload,
 //      init=io.hostBus.d2hBus.payload.getZero,
@@ -118,23 +118,23 @@
 //  //--------
 //  //def myHostH2dNextValid = io.hostBus.h2dBus.valid
 //  //def myHostH2dReady = io.hostBus.h2dBus.ready
-//  def myHostH2dNonBurstInfo = io.hostBus.h2dBus.payload.nonBurstInfo
-//  def myHostH2dBurstInfo = io.hostBus.h2dBus.payload.burstInfo
+//  def myHostH2dNonBurstInfo = io.hostBus.h2dBus.payload.mainNonBurstInfo
+//  def myHostH2dBurstInfo = io.hostBus.h2dBus.payload.mainBurstInfo
 //
 //  //def myHostD2hNextValid = io.hostBus.d2hBus.valid
 //  //def myHostD2hReady = io.hostBus.d2hBus.ready
-//  def myHostD2hNonBurstInfo = io.hostBus.d2hBus.payload.nonBurstInfo
-//  def myHostD2hBurstInfo = io.hostBus.d2hBus.payload.burstInfo
+//  def myHostD2hNonBurstInfo = io.hostBus.d2hBus.payload.mainNonBurstInfo
+//  def myHostD2hBurstInfo = io.hostBus.d2hBus.payload.mainBurstInfo
 //  //--------
 //  //def myDevH2dNextValid = io.devBus.h2dBus.valid
 //  //def myDevH2dReady = io.devBus.h2dBus.ready
-//  def myDevH2dNonBurstInfo = io.devBus.h2dBus.payload.nonBurstInfo
-//  def myDevH2dBurstInfo = io.devBus.h2dBus.payload.burstInfo
+//  def myDevH2dNonBurstInfo = io.devBus.h2dBus.payload.mainNonBurstInfo
+//  def myDevH2dBurstInfo = io.devBus.h2dBus.payload.mainBurstInfo
 //
 //  //def myDevD2hNextValid = io.devBus.d2hBus.valid
 //  //def myDevD2hReady = io.devBus.d2hBus.ready
-//  def myDevD2hNonBurstInfo = io.devBus.d2hBus.payload.nonBurstInfo
-//  def myDevD2hBurstInfo = io.devBus.d2hBus.payload.burstInfo
+//  def myDevD2hNonBurstInfo = io.devBus.d2hBus.payload.mainNonBurstInfo
+//  def myDevD2hBurstInfo = io.devBus.d2hBus.payload.mainBurstInfo
 //  //--------
 //  object DevBurstlessState
 //  extends SpinalEnum(defaultEncoding=binarySequential) {
@@ -149,19 +149,19 @@
 //    cfg.devBusCfg.burstCntWidth == 0
 //  ) generate (
 //  new Area {
-//    io.devBus.h2dBus.payload.nonBurstInfo.addr.allowOverride
+//    io.devBus.h2dBus.payload.mainNonBurstInfo.addr.allowOverride
 //    val rSavedH2dSendData = {
 //      val temp = (
-//        //Reg(Flow(LcvBusH2dSendPayloadBurstInfo(cfg=cfg.hostBusCfg)))
-//        Reg(LcvBusH2dSendPayload(cfg=cfg.hostBusCfg))
+//        //Reg(Flow(LcvBusH2dPayloadMainBurstInfo(cfg=cfg.hostBusCfg)))
+//        Reg(LcvBusH2dPayload(cfg=cfg.hostBusCfg))
 //      )
 //      temp.init(temp.getZero)
 //      temp
 //    }
 //    //val rDevBurstInfo = {
 //    //  val temp = (
-//    //    //Reg(Flow(LcvBusD2hSendPayloadBurstInfo(cfg=cfg.hostBusCfg)))
-//    //    Reg(LcvBusD2hSendPayload(cfg=cfg.hostBusCfg))
+//    //    //Reg(Flow(LcvBusD2hPayloadMainBurstInfo(cfg=cfg.hostBusCfg)))
+//    //    Reg(LcvBusD2hPayload(cfg=cfg.hostBusCfg))
 //    //  )
 //    //  temp.init(temp.getZero)
 //    //  temp
@@ -254,8 +254,8 @@
 //        io.hostBus.d2hBus.valid := False
 //        io.devBus.d2hBus.ready := False
 //
-//        //io.hostBus.d2hBus.payload.burstInfo := (
-//        //  io.hostBus.d2hBus.payload.burstInfo.getZero
+//        //io.hostBus.d2hBus.payload.mainBurstInfo := (
+//        //  io.hostBus.d2hBus.payload.mainBurstInfo.getZero
 //        //)
 //
 //        rSavedHadH2dFire := False
@@ -327,8 +327,8 @@
 //        io.hostBus.h2dBus.ready := io.devBus.h2dBus.ready
 //
 //        io.hostBus.d2hBus.valid := io.devBus.d2hBus.valid
-//        io.hostBus.d2hBus.payload.nonBurstInfo := (
-//          io.devBus.d2hBus.payload.nonBurstInfo
+//        io.hostBus.d2hBus.payload.mainNonBurstInfo := (
+//          io.devBus.d2hBus.payload.mainNonBurstInfo
 //        )
 //        io.devBus.d2hBus.ready := io.hostBus.d2hBus.ready
 //
@@ -362,8 +362,8 @@
 //        io.devBus.h2dBus.payload := io.hostBus.h2dBus.payload
 //
 //        io.hostBus.d2hBus.valid := io.devBus.d2hBus.valid
-//        io.hostBus.d2hBus.payload.nonBurstInfo := (
-//          io.devBus.d2hBus.payload.nonBurstInfo
+//        io.hostBus.d2hBus.payload.mainNonBurstInfo := (
+//          io.devBus.d2hBus.payload.mainNonBurstInfo
 //        )
 //        io.devBus.d2hBus.ready := io.hostBus.d2hBus.ready
 //
@@ -414,14 +414,14 @@
 //        }
 //        when (
 //          RegNext(
-//            next=io.hostBus.d2hBus.payload.burstInfo.burstFirst,
+//            next=io.hostBus.d2hBus.payload.mainBurstInfo.burstFirst,
 //            init=False
 //          )
 //        ) {
-//          io.hostBus.d2hBus.payload.burstInfo.burstFirst := False
+//          io.hostBus.d2hBus.payload.mainBurstInfo.burstFirst := False
 //        }
 //        when (rMyD2hCnt >= rSavedBurstCntForD2h) {
-//          io.hostBus.d2hBus.payload.burstInfo.burstLast := True
+//          io.hostBus.d2hBus.payload.mainBurstInfo.burstLast := True
 //        }
 //
 //        when (stickyHadH2dFire && stickyHadD2hFire) {
