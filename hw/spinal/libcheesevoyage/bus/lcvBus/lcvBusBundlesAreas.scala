@@ -350,38 +350,45 @@ case class LcvBusCacheSeqlock(
   }
 }
 
-object LcvBusH2dCacheMsg //LcvBusH2dDataCacheMsg
-extends SpinalEnum(defaultEncoding=binarySequential) {
-  // this is from L1 to shared L2 
-  val
-    //--------
-    CMP_SEQLOCK,
-    //--------
-    // When you read a cache line from a lower tier cache, you check if
-    // your seqlock is the same as the next upper tier.
-    // If not, you fetch from the higher tier, provided it's not locked.
-    // FL4SHK NOTE: If it's locked, I'll just wait until it's unlocked
-    // (i.e. the other core finished its write)
-    //READ_CHECK_SEQLOCK,
-    START_READ_LINE,
-    FINISH_READ_LINE,
-    //--------
-    // Any access is guarded by the low-order bit of the seqlock.
-    // When it's 1, the lock is locked.
-    // When a write begins, you set this bit.
-    // When a write completes, you increment it (clearing the lock bit and
-    // updating the sequence number/marking the cache line as dirty).
-    //WRITE_CHECK_SEQLOCK,
-    START_WRITE_LINE,    // seqlock.lock()
-    FINISH_WRITE_LINE,   // seqlock.unlock()
-    //--------
-    // For an RMW, you either fail or retry if the sequence number from the
-    // read differs from the sequence number when you go to lock it.
-    ATOMIC_LL,
-    ATOMIC_SC
-    //--------
-    = newElement();
-}
+//object LcvBusH2dCacheMsg //LcvBusH2dDataCacheMsg
+//extends SpinalEnum(defaultEncoding=binarySequential) {
+//  // this is from L1 to shared L2 
+//  val
+//    //--------
+//    CMP_SEQLOCK,
+//    //--------
+//    // When you read a cache line from a lower tier cache, you check if
+//    // your seqlock is the same as the next upper tier.
+//    // If not, you fetch from the higher tier, provided it's not locked.
+//    // FL4SHK NOTE: If it's locked, I'll just wait until it's unlocked
+//    // (i.e. the other core finished its write)
+//    //READ_CHECK_SEQLOCK,
+//    START_READ_LINE,
+//    FINISH_READ_LINE,
+//    //--------
+//    // Any access is guarded by the low-order bit of the seqlock.
+//    // When it's 1, the lock is locked.
+//    // When a write begins, you set this bit.
+//    // When a write completes, you increment it (clearing the lock bit and
+//    // updating the sequence number/marking the cache line as dirty).
+//    //WRITE_CHECK_SEQLOCK,
+//    START_WRITE_LINE,    // seqlock.lock()
+//    FINISH_WRITE_LINE,   // seqlock.unlock()
+//    //--------
+//    // For an RMW, you either fail or retry if the sequence number from the
+//    // read differs from the sequence number when you go to lock it.
+//    ATOMIC_LL,
+//    ATOMIC_SC
+//    //--------
+//    = newElement();
+//}
+
+//object LcvBusD2hCacheMsg
+//extends SpinalEnum(defaultEncoding=binarySequential) {
+//  val
+//    A
+//    = newElement();
+//}
 
 //object LcvBusH2dInstrCacheMsg
 //extends SpinalEnum(defaultEncoding=binarySequential) {
@@ -392,30 +399,6 @@ extends SpinalEnum(defaultEncoding=binarySequential) {
 //    = newElement();
 //}
 
-case class LcvBusH2dPayloadCacheInfo(
-  cfg: LcvBusConfig,
-) extends Bundle {
-  val seqlock = LcvBusCacheSeqlock(cfg=cfg)
-  val msg = LcvBusH2dCacheMsg()
-  //val dcacheMsg = (
-  //  cfg.cacheCfg.get.kind == LcvCacheKind.D
-  //  || cfg.cacheCfg.get.kind == LcvCacheKind.Shared
-  //) generate (
-  //  LcvBusH2dDataCacheMsg()
-  //)
-  //val icacheMsg = (
-  //  cfg.cacheCfg.get.kind == LcvCacheKind.I
-  //  || cfg.cacheCfg.get.kind == LcvCacheKind.Shared
-  //) generate (
-  //  LcvBusH2dInstrCacheMsg()
-  //)
-  //val tlbMsg = (
-  //  cfg.cacheCfg.get.kind == LcvCacheKind.Tlb
-  //  || cfg.cacheCfg.get.kind == LcvCacheKind.Shared
-  //) generate (
-  //  LcvBusH2dTlbCacheMsg()
-  //)
-}
 case class LcvBusH2dPayloadMainNonBurstInfo(
   cfg: LcvBusConfig
 ) extends Bundle {
@@ -425,6 +408,7 @@ case class LcvBusH2dPayloadMainNonBurstInfo(
   val isWrite = Bool()
   val src = UInt(cfg.srcWidth bits)
 }
+
 case class LcvBusH2dPayloadMainBurstInfo(
   cfg: LcvBusConfig,
 ) extends Bundle {
@@ -432,6 +416,16 @@ case class LcvBusH2dPayloadMainBurstInfo(
   val burstFirst = Bool()
   val burstLast = Bool()
 }
+
+case class LcvBusH2dPayloadCacheInfo(
+  cfg: LcvBusConfig,
+) extends Bundle {
+  val seqlock = LcvBusCacheSeqlock(cfg=cfg)
+  val cacheFirst = Bool()       // starting cache-related operations
+  val cacheLast = Bool()        // ending cache-related operations
+  //val msg = LcvBusH2dCacheMsg()
+}
+
 case class LcvBusH2dPayload(
   cfg: LcvBusConfig,
 ) extends Bundle {
@@ -465,25 +459,26 @@ case class LcvBusH2dPayload(
   )
   //def selfBurstAddr() = this.burstAddr(someBurstCnt=burstCnt)
   //--------
-  def cacheInfo = (
+  val cacheInfo = (
     cfg.cacheCfg != None
     && cfg.cacheCfg.get.coherent
   ) generate (
     LcvBusH2dPayloadCacheInfo(cfg=cfg)
   )
+  def cacheSeqlock = cacheInfo.seqlock
+  def cacheFirst = cacheInfo.cacheFirst
+  def cacheLast = cacheInfo.cacheLast
+  //def cacheMsg = cacheInfo.msg
+  //--------
 }
 
-case class LcvBusD2hPayloadCacheInfo(
-  cfg: LcvBusConfig,
-) extends Bundle {
-  val seqlock = LcvBusCacheSeqlock(cfg=cfg)
-}
 case class LcvBusD2hPayloadMainNonBurstInfo(
   cfg: LcvBusConfig,
 ) extends Bundle {
   val data = UInt(cfg.dataWidth bits)
   val src = UInt(cfg.srcWidth bits)
 }
+
 case class LcvBusD2hPayloadMainBurstInfo(
   cfg: LcvBusConfig,
 ) extends Bundle {
@@ -491,6 +486,16 @@ case class LcvBusD2hPayloadMainBurstInfo(
   val burstFirst = Bool()
   val burstLast = Bool()
 }
+
+case class LcvBusD2hPayloadCacheInfo(
+  cfg: LcvBusConfig,
+) extends Bundle {
+  val seqlock = LcvBusCacheSeqlock(cfg=cfg)
+  val cacheFirst = Bool()       // starting cache-related operations
+  val cacheLast = Bool()        // ending cache-related operations
+  //val msg = LcvBusD2hCacheMsg()
+}
+
 case class LcvBusD2hPayload(
   cfg: LcvBusConfig,
 ) extends Bundle {
@@ -506,12 +511,17 @@ case class LcvBusD2hPayload(
   def burstFirst = mainBurstInfo.burstFirst
   def burstLast = mainBurstInfo.burstLast
   //--------
-  def cacheInfo = (
+  val cacheInfo = (
     cfg.cacheCfg != None
     && cfg.cacheCfg.get.coherent
   ) generate (
     LcvBusD2hPayloadCacheInfo(cfg=cfg)
   )
+  def cacheSeqlock = cacheInfo.seqlock
+  def cacheFirst = cacheInfo.cacheFirst
+  def cacheLast = cacheInfo.cacheLast
+  //def cacheMsg = cacheInfo.msg
+  //--------
 }
 
 case class LcvBusIo(
