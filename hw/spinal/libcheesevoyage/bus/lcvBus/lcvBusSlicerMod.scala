@@ -45,29 +45,33 @@ case class LcvBusSlicer(
 ) extends Component {
   val io = LcvBusSlicerIo(cfg=cfg)
 
-  for (devIdx <- 0 until cfg.numDevs) {
+  for (
+    //devIdx <- 0 until cfg.numDevs
+    dev <- io.devVec
+  ) {
     io.host.h2dBus.ready := False
     io.host.d2hBus.valid := False
     io.host.d2hBus.payload := (
       io.host.d2hBus.payload.getZero
     )
 
-    val myDevH2dBus = io.devVec(devIdx).h2dBus
-    val myDevD2hBus = io.devVec(devIdx).d2hBus
-    myDevH2dBus.valid := False
-    myDevH2dBus.payload := (
-      myDevH2dBus.payload.getZero
+    //val dev.h2dBus = io.devVec(devIdx).h2dBus
+    //val dev.d2hBus = io.devVec(devIdx).d2hBus
+    dev.h2dBus.valid := False
+    dev.h2dBus.payload := (
+      dev.h2dBus.payload.getZero
     )
-    myDevD2hBus.ready := False
+    dev.d2hBus.ready := False
   }
   switch (io.host.h2dBus.payload.addr(cfg.addrSliceRange)) {
     for (devIdx <- 0 until cfg.numDevs) {
       is (devIdx) {
-        val myDevH2dBus = io.devVec(devIdx).h2dBus
-        myDevH2dBus << io.host.h2dBus
+        //val dev.h2dBus = io.devVec(devIdx).h2dBus
+        def dev = io.devVec(devIdx)
+        dev.h2dBus << io.host.h2dBus
 
-        val myDevD2hBus = io.devVec(devIdx).d2hBus
-        io.host.d2hBus << myDevD2hBus
+        //val dev.d2hBus = io.devVec(devIdx).d2hBus
+        io.host.d2hBus << dev.d2hBus
       }
     }
   }

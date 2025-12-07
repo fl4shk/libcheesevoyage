@@ -72,6 +72,7 @@ case class LcvBusCacheConfig(
   def wordWidth = busMainCfg.dataWidth
   def addrWidth = busMainCfg.addrWidth
   def coherent: Boolean = (numCpus > 1)
+  def myLineRamAddrRshift = log2Up(wordSizeBytes)
 
   private[libcheesevoyage] def doRequires() {
     require(numCpus >= 1)
@@ -421,8 +422,10 @@ case class LcvBusH2dPayloadCacheInfo(
   cfg: LcvBusConfig,
 ) extends Bundle {
   val seqlock = LcvBusCacheSeqlock(cfg=cfg)
-  val cacheFirst = Bool()       // starting cache-related operations
+  //val cacheFirst = Bool()       // starting cache-related operations
   val cacheLast = Bool()        // ending cache-related operations
+  val lineValid = Bool()
+  val lineDirty = Bool()
   //val msg = LcvBusH2dCacheMsg()
 }
 
@@ -466,9 +469,12 @@ case class LcvBusH2dPayload(
     LcvBusH2dPayloadCacheInfo(cfg=cfg)
   )
   def cacheSeqlock = cacheInfo.seqlock
-  def cacheFirst = cacheInfo.cacheFirst
+  //def cacheFirst = cacheInfo.cacheFirst
   def cacheLast = cacheInfo.cacheLast
+  def cacheLineValid = cacheInfo.lineValid
+  def cacheLineDirty = cacheInfo.lineDirty
   //def cacheMsg = cacheInfo.msg
+  //--------
   //--------
 }
 
@@ -491,9 +497,11 @@ case class LcvBusD2hPayloadCacheInfo(
   cfg: LcvBusConfig,
 ) extends Bundle {
   val seqlock = LcvBusCacheSeqlock(cfg=cfg)
-  val cacheFirst = Bool()       // starting cache-related operations
+  //val cacheFirst = Bool()       // starting cache-related operations
   val cacheLast = Bool()        // ending cache-related operations
-  //val msg = LcvBusD2hCacheMsg()
+  val lineValid = Bool()
+  val lineDirty = Bool()
+  //val msg = LcvBusH2dCacheMsg()
 }
 
 case class LcvBusD2hPayload(
@@ -518,8 +526,10 @@ case class LcvBusD2hPayload(
     LcvBusD2hPayloadCacheInfo(cfg=cfg)
   )
   def cacheSeqlock = cacheInfo.seqlock
-  def cacheFirst = cacheInfo.cacheFirst
+  //def cacheFirst = cacheInfo.cacheFirst
   def cacheLast = cacheInfo.cacheLast
+  def cacheLineValid = cacheInfo.lineValid
+  def cacheLineDirty = cacheInfo.lineDirty
   //def cacheMsg = cacheInfo.msg
   //--------
 }

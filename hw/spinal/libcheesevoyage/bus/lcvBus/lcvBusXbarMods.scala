@@ -82,11 +82,11 @@ case class LcvBusXbarCoherent(
     //hostIdx <- 0 until cfg.numHosts
     host <- io.hostVec
   ) {
-    val myHostH2dBus = host.h2dBus
-    val myHostD2hBus = host.d2hBus
-    myHostD2hBus.valid := False
-    myHostD2hBus.payload := myHostD2hBus.payload.getZero
-    myHostH2dBus.ready := False
+    //val host.h2dBus = host.h2dBus
+    //val myHostD2hBus = host.d2hBus
+    host.d2hBus.valid := False
+    host.d2hBus.payload := host.d2hBus.payload.getZero
+    host.h2dBus.ready := False
   }
   //--------
   object State extends SpinalEnum(defaultEncoding=binarySequential) {
@@ -120,8 +120,9 @@ case class LcvBusXbarCoherent(
   for (devIdx <- 0 until cfg.numDevs) {
     val rArbitCnt = rArbitCntVec(devIdx)
 
-    val myHostH2dBus = io.hostVec(rArbitCnt).h2dBus
-    val myHostD2hBus = io.hostVec(rArbitCnt).d2hBus
+    //val host.h2dBus = io.hostVec(rArbitCnt).h2dBus
+    //val host.d2hBus = io.hostVec(rArbitCnt).d2hBus
+    def host = io.hostVec(rArbitCnt)
 
     val rState = rStateVec(devIdx)
     val dev = io.devVec(devIdx)
@@ -144,25 +145,27 @@ case class LcvBusXbarCoherent(
       }
     }
     val mySeenHostH2dCacheLast = (
-      RegNext(myHostH2dBus.valid, init=False)
-      && myHostH2dBus.ready
-      && RegNext(myHostH2dBus.cacheLast, init=False)
+      //RegNext(host.h2dBus.valid, init=False)
+      //&& host.h2dBus.ready
+      host.h2dBus.fire
+      //&& RegNext(host.h2dBus.cacheLast, init=False)
+      && host.h2dBus.cacheLast
     )
 
     switch (rState) {
       is (State.IDLE) {
         when (
-          RegNext(
-            next=(
-              myHostH2dBus.valid
-              && myHostH2dBus.addr(cfg.mmapCfg.addrSliceRange) === devIdx
-              && myHostH2dBus.cacheFirst
-            ),
-            init=False
-          )
+          //RegNext(
+          //  next=(
+              host.h2dBus.valid
+              && host.h2dBus.addr(cfg.mmapCfg.addrSliceRange) === devIdx
+              //&& host.h2dBus.cacheFirst
+          //  ),
+          //  init=False
+          //)
         ) {
-          dev.h2dBus << myHostH2dBus 
-          myHostD2hBus << dev.d2hBus
+          dev.h2dBus << host.h2dBus 
+          host.d2hBus << dev.d2hBus
 
           rState := State.ACTIVE
 
@@ -175,8 +178,8 @@ case class LcvBusXbarCoherent(
         }
       }
       is (State.ACTIVE) {
-        dev.h2dBus << myHostH2dBus 
-        myHostD2hBus << dev.d2hBus
+        dev.h2dBus << host.h2dBus 
+        host.d2hBus << dev.d2hBus
 
         when (mySeenHostH2dCacheLast) {
           rSeenHostH2dCacheLast := True
@@ -187,8 +190,9 @@ case class LcvBusXbarCoherent(
             mySeenHostH2dCacheLast
             || rSeenHostH2dCacheLast
           )
-          && RegNext(myHostD2hBus.valid, init=False)
-          && myHostD2hBus.ready
+          && host.d2hBus.fire
+          //&& RegNext(host.d2hBus.valid, init=False)
+          //&& host.d2hBus.ready
         ) {
           rState := State.IDLE
           doIncrCntEtc(true)
@@ -221,11 +225,11 @@ case class LcvBusXbarNonCoherent(
     //hostIdx <- 0 until cfg.numHosts
     host <- io.hostVec
   ) {
-    val myHostH2dBus = host.h2dBus
-    val myHostD2hBus = host.d2hBus
-    myHostD2hBus.valid := False
-    myHostD2hBus.payload := myHostD2hBus.payload.getZero
-    myHostH2dBus.ready := False
+    //val host.h2dBus = host.h2dBus
+    //val host.d2hBus = host.d2hBus
+    host.d2hBus.valid := False
+    host.d2hBus.payload := host.d2hBus.payload.getZero
+    host.h2dBus.ready := False
   }
 
   val rSeenHostH2dFireEtcVec = (
@@ -259,8 +263,9 @@ case class LcvBusXbarNonCoherent(
   for (devIdx <- 0 until cfg.numDevs) {
     val rArbitCnt = rArbitCntVec(devIdx)
 
-    val myHostH2dBus = io.hostVec(rArbitCnt).h2dBus
-    val myHostD2hBus = io.hostVec(rArbitCnt).d2hBus
+    //val host.h2dBus = io.hostVec(rArbitCnt).h2dBus
+    //val host.d2hBus = io.hostVec(rArbitCnt).d2hBus
+    def host = io.hostVec(rArbitCnt)
 
     val rState = rStateVec(devIdx)
     val dev = io.devVec(devIdx)
@@ -291,23 +296,23 @@ case class LcvBusXbarNonCoherent(
     ): Unit = {
       if (idx == 0) {
         when (
-          RegNext(myHostH2dBus.valid, init=False)
-          && myHostH2dBus.ready
+          RegNext(host.h2dBus.valid, init=False)
+          && host.h2dBus.ready
         ) {
           rSeenHostH2dFireEtc(idx) := True
         }
       } else if (idx == 1) {
         when (
-          RegNext(myHostH2dBus.valid, init=False)
-          && myHostH2dBus.ready
+          RegNext(host.h2dBus.valid, init=False)
+          && host.h2dBus.ready
         ) {
           rSeenHostH2dFireEtc(idx) := True
         }
       } else if (idx == 2) {
         when (
-          RegNext(myHostH2dBus.valid, init=False)
-          && myHostH2dBus.ready
-          && RegNext(myHostH2dBus.burstLast, init=False)
+          RegNext(host.h2dBus.valid, init=False)
+          && host.h2dBus.ready
+          && RegNext(host.h2dBus.burstLast, init=False)
         ) {
           rSeenHostH2dFireEtc(idx) := True
         }
@@ -322,34 +327,34 @@ case class LcvBusXbarNonCoherent(
         switch (
           RegNext(
             (
-              myHostH2dBus.valid
-              && myHostH2dBus.addr(cfg.mmapCfg.addrSliceRange) === devIdx
+              host.h2dBus.valid
+              && host.h2dBus.addr(cfg.mmapCfg.addrSliceRange) === devIdx
             )
-            ## myHostH2dBus.burstFirst
-            ## myHostH2dBus.isWrite
+            ## host.h2dBus.burstFirst
+            ## host.h2dBus.isWrite
           )
           init(0x0)
         ) {
           is (M"10-") {
             // either read or write, but *NOT* a burst
             rState := State.NON_BURST
-            dev.h2dBus << myHostH2dBus 
-            myHostD2hBus << dev.d2hBus
+            dev.h2dBus << host.h2dBus 
+            host.d2hBus << dev.d2hBus
             maybeSetSeenHostH2dFireEtc(0)
           }
           is (M"110") {
             // read burst
             rState := State.READ_BURST
-            dev.h2dBus << myHostH2dBus 
-            myHostD2hBus << dev.d2hBus
+            dev.h2dBus << host.h2dBus 
+            host.d2hBus << dev.d2hBus
 
             maybeSetSeenHostH2dFireEtc(1)
           }
           is (M"111") {
             // write burst
             rState := State.WRITE_BURST
-            dev.h2dBus << myHostH2dBus 
-            myHostD2hBus << dev.d2hBus
+            dev.h2dBus << host.h2dBus 
+            host.d2hBus << dev.d2hBus
 
             maybeSetSeenHostH2dFireEtc(2)
           }
@@ -360,12 +365,12 @@ case class LcvBusXbarNonCoherent(
         }
       }
       is (State.NON_BURST) {
-        dev.h2dBus << myHostH2dBus 
-        myHostD2hBus << dev.d2hBus
+        dev.h2dBus << host.h2dBus 
+        host.d2hBus << dev.d2hBus
 
         //when (
-        //  RegNext(myHostH2dBus.valid, init=False)
-        //  && myHostH2dBus.ready
+        //  RegNext(host.h2dBus.valid, init=False)
+        //  && host.h2dBus.ready
         //) {
         //  rSeenHostH2dFireEtc(0) := True
         //}
@@ -373,20 +378,20 @@ case class LcvBusXbarNonCoherent(
 
         when (
           rSeenHostH2dFireEtc(0)
-          && RegNext(myHostD2hBus.valid, init=False)
-          && myHostD2hBus.ready
+          && RegNext(host.d2hBus.valid, init=False)
+          && host.d2hBus.ready
         ) {
           rState := State.IDLE
           doIncrCntEtc(Some(0))
         }
       }
       is (State.READ_BURST) {
-        dev.h2dBus << myHostH2dBus 
-        myHostD2hBus << dev.d2hBus
+        dev.h2dBus << host.h2dBus 
+        host.d2hBus << dev.d2hBus
 
         //when (
-        //  RegNext(myHostH2dBus.valid, init=False)
-        //  && myHostH2dBus.ready
+        //  RegNext(host.h2dBus.valid, init=False)
+        //  && host.h2dBus.ready
         //) {
         //  rSeenHostH2dFireEtc(1) := True
         //}
@@ -394,22 +399,22 @@ case class LcvBusXbarNonCoherent(
 
         when (
           rSeenHostH2dFireEtc(1)
-          && RegNext(myHostD2hBus.valid, init=False)
-          && myHostD2hBus.ready
-          && RegNext(myHostD2hBus.burstLast)
+          && RegNext(host.d2hBus.valid, init=False)
+          && host.d2hBus.ready
+          && RegNext(host.d2hBus.burstLast)
         ) {
           rState := State.IDLE
           doIncrCntEtc(Some(1))
         }
       }
       is (State.WRITE_BURST) {
-        dev.h2dBus << myHostH2dBus 
-        myHostD2hBus << dev.d2hBus
+        dev.h2dBus << host.h2dBus 
+        host.d2hBus << dev.d2hBus
 
         //when (
-        //  RegNext(myHostH2dBus.valid, init=False)
-        //  && myHostH2dBus.ready
-        //  && RegNext(myHostH2dBus.burstLast, init=False)
+        //  RegNext(host.h2dBus.valid, init=False)
+        //  && host.h2dBus.ready
+        //  && RegNext(host.h2dBus.burstLast, init=False)
         //) {
         //  rSeenHostH2dFireEtc(2) := True
         //}
@@ -417,8 +422,8 @@ case class LcvBusXbarNonCoherent(
 
         when (
           rSeenHostH2dFireEtc(2)
-          && RegNext(myHostD2hBus.valid, init=False)
-          && myHostD2hBus.ready
+          && RegNext(host.d2hBus.valid, init=False)
+          && host.d2hBus.ready
         ) {
           rState := State.IDLE
           doIncrCntEtc(Some(2))

@@ -49,6 +49,7 @@ case class RamSdpPipe[
   val io = RamSdpPipeIo(
     wordType=wordType(),
     depth=depth,
+    optIncludeWrByteEn=optIncludeWrByteEn,
   )
   val arr = Mem(
     wordType=wordType(),

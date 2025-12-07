@@ -49,22 +49,26 @@ case class LcvBusArbiter(
   io.dev.h2dBus.payload := (
     io.dev.h2dBus.payload.getZero
   )
-  for (hostIdx <- 0 until cfg.numHosts) {
-    val myHostH2dBus = io.hostVec(hostIdx).h2dBus
-    val myHostD2hBus = io.hostVec(hostIdx).d2hBus
-    myHostD2hBus.valid := False
-    myHostD2hBus.payload := (
-      myHostD2hBus.payload.getZero
+  for (
+    //hostIdx <- 0 until cfg.numHosts
+    host <- io.hostVec
+  ) {
+    //val host.h2dBus = io.hostVec(hostIdx).h2dBus
+    //val host.d2hBus = io.hostVec(hostIdx).d2hBus
+    host.d2hBus.valid := False
+    host.d2hBus.payload := (
+      host.d2hBus.payload.getZero
     )
-    myHostH2dBus.ready := False
+    host.h2dBus.ready := False
   }
 
   val rArbitCnt = (
     Reg(UInt(log2Up(cfg.numHosts) bits))
     init(0x0)
   )
-  val myHostH2dBus = io.hostVec(rArbitCnt).h2dBus
-  val myHostD2hBus = io.hostVec(rArbitCnt).d2hBus
+  //val host.h2dBus = io.hostVec(rArbitCnt).h2dBus
+  //val host.d2hBus = io.hostVec(rArbitCnt).d2hBus
+  def host = io.hostVec(rArbitCnt)
 
   val rSeenHostH2dFireEtc = (
     Vec.fill(3)(
@@ -76,23 +80,23 @@ case class LcvBusArbiter(
   ): Unit = {
     if (idx == 0) {
       when (
-        RegNext(myHostH2dBus.valid, init=False)
-        && myHostH2dBus.ready
+        RegNext(host.h2dBus.valid, init=False)
+        && host.h2dBus.ready
       ) {
         rSeenHostH2dFireEtc(idx) := True
       }
     } else if (idx == 1) {
       when (
-        RegNext(myHostH2dBus.valid, init=False)
-        && myHostH2dBus.ready
+        RegNext(host.h2dBus.valid, init=False)
+        && host.h2dBus.ready
       ) {
         rSeenHostH2dFireEtc(idx) := True
       }
     } else if (idx == 2) {
       when (
-        RegNext(myHostH2dBus.valid, init=False)
-        && myHostH2dBus.ready
-        && RegNext(myHostH2dBus.burstLast, init=False)
+        RegNext(host.h2dBus.valid, init=False)
+        && host.h2dBus.ready
+        && RegNext(host.h2dBus.burstLast, init=False)
       ) {
         rSeenHostH2dFireEtc(idx) := True
       }
@@ -137,31 +141,31 @@ case class LcvBusArbiter(
       //rSeenHostH2dFireEtc.foreach(_ := False)
       switch (
         RegNext(
-          myHostH2dBus.valid
-          ## myHostH2dBus.burstFirst
-          ## myHostH2dBus.isWrite
+          host.h2dBus.valid
+          ## host.h2dBus.burstFirst
+          ## host.h2dBus.isWrite
         )
         init(0x0)
       ) {
         is (M"10-") {
           // either read or write, but *NOT* a burst
           rState := State.NON_BURST
-          io.dev.h2dBus << myHostH2dBus 
-          myHostD2hBus << io.dev.d2hBus
+          io.dev.h2dBus << host.h2dBus 
+          host.d2hBus << io.dev.d2hBus
           maybeSetSeenHostH2dFireEtc(0)
         }
         is (M"110") {
           // read burst
           rState := State.READ_BURST
-          io.dev.h2dBus << myHostH2dBus 
-          myHostD2hBus << io.dev.d2hBus
+          io.dev.h2dBus << host.h2dBus 
+          host.d2hBus << io.dev.d2hBus
           maybeSetSeenHostH2dFireEtc(1)
         }
         is (M"111") {
           // write burst
           rState := State.WRITE_BURST
-          io.dev.h2dBus << myHostH2dBus 
-          myHostD2hBus << io.dev.d2hBus
+          io.dev.h2dBus << host.h2dBus 
+          host.d2hBus << io.dev.d2hBus
           maybeSetSeenHostH2dFireEtc(2)
         }
         default {
@@ -171,31 +175,31 @@ case class LcvBusArbiter(
       }
     }
     is (State.NON_BURST) {
-      io.dev.h2dBus << myHostH2dBus 
-      myHostD2hBus << io.dev.d2hBus
+      io.dev.h2dBus << host.h2dBus 
+      host.d2hBus << io.dev.d2hBus
       //when (
-      //  RegNext(myHostH2dBus.valid, init=False)
-      //  && myHostH2dBus.ready
+      //  RegNext(host.h2dBus.valid, init=False)
+      //  && host.h2dBus.ready
       //) {
       //  rSeenHostH2dFireEtc(0) := True
       //}
       maybeSetSeenHostH2dFireEtc(0)
       when (
         rSeenHostH2dFireEtc(0)
-        && RegNext(myHostD2hBus.valid, init=False)
-        && myHostD2hBus.ready
+        && RegNext(host.d2hBus.valid, init=False)
+        && host.d2hBus.ready
       ) {
         rState := State.IDLE
         doIncrCntEtc(Some(0))
       }
     }
     is (State.READ_BURST) {
-      io.dev.h2dBus << myHostH2dBus 
-      myHostD2hBus << io.dev.d2hBus
+      io.dev.h2dBus << host.h2dBus 
+      host.d2hBus << io.dev.d2hBus
 
       //when (
-      //  RegNext(myHostH2dBus.valid, init=False)
-      //  && myHostH2dBus.ready
+      //  RegNext(host.h2dBus.valid, init=False)
+      //  && host.h2dBus.ready
       //) {
       //  rSeenHostH2dFireEtc(1) := True
       //}
@@ -203,22 +207,22 @@ case class LcvBusArbiter(
 
       when (
         rSeenHostH2dFireEtc(1)
-        && RegNext(myHostD2hBus.valid, init=False)
-        && myHostD2hBus.ready
-        && RegNext(myHostD2hBus.burstLast)
+        && RegNext(host.d2hBus.valid, init=False)
+        && host.d2hBus.ready
+        && RegNext(host.d2hBus.burstLast)
       ) {
         rState := State.IDLE
         doIncrCntEtc(Some(1))
       }
     }
     is (State.WRITE_BURST) {
-      io.dev.h2dBus << myHostH2dBus 
-      myHostD2hBus << io.dev.d2hBus
+      io.dev.h2dBus << host.h2dBus 
+      host.d2hBus << io.dev.d2hBus
 
       //when (
-      //  RegNext(myHostH2dBus.valid, init=False)
-      //  && myHostH2dBus.ready
-      //  && RegNext(myHostH2dBus.burstLast, init=False)
+      //  RegNext(host.h2dBus.valid, init=False)
+      //  && host.h2dBus.ready
+      //  && RegNext(host.h2dBus.burstLast, init=False)
       //) {
       //  rSeenHostH2dFireEtc(2) := True
       //}
@@ -226,9 +230,9 @@ case class LcvBusArbiter(
 
       when (
         rSeenHostH2dFireEtc(2)
-        && RegNext(myHostD2hBus.valid, init=False)
-        && myHostD2hBus.ready
-        //&& RegNext(myHostD2hBus.burstLast)
+        && RegNext(host.d2hBus.valid, init=False)
+        && host.d2hBus.ready
+        //&& RegNext(host.d2hBus.burstLast)
       ) {
         rState := State.IDLE
         doIncrCntEtc(Some(2))
