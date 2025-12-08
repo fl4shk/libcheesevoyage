@@ -41,10 +41,33 @@ case class LcvBusMainConfig(
   //burstSizeWidth: Int,
   //burstCntWidth: Int,//Option[Int],
   //alwaysDoBurst: Boolean,
+  allowBurst: Boolean,
   burstAlwaysMaxSize: Boolean,
   srcWidth: Int, //Option[Int],
 ) {
+  def mkCopyWithAllowingBurst(): LcvBusMainConfig = (
+    LcvBusMainConfig(
+      dataWidth=this.dataWidth,
+      addrWidth=this.addrWidth,
+      allowBurst=true,
+      burstAlwaysMaxSize=true,
+      srcWidth=this.srcWidth
+    )
+  )
+  def mkCopyWithoutAllowingBurst(): LcvBusMainConfig = (
+    LcvBusMainConfig(
+      dataWidth=this.dataWidth,
+      addrWidth=this.addrWidth,
+      allowBurst=false,
+      burstAlwaysMaxSize=false,
+      srcWidth=this.srcWidth
+    )
+  )
+
   val burstCntWidth = log2Up(64 / (dataWidth / 8))
+  if (!allowBurst) {
+    require(!burstAlwaysMaxSize)
+  }
 }
 
 case class LcvBusCacheConfig(
@@ -115,7 +138,7 @@ case class LcvBusCacheConfig(
     // number of cache lines
     depthBytes / lineSizeBytes
   )
-  def numWordsPerLine = (
+  def lineSizeWords = (
     lineSizeBytes / wordSizeBytes
   )
   def tagWidth = (
@@ -124,7 +147,7 @@ case class LcvBusCacheConfig(
     //index bits = log2(lines)
     //offset bits = log2(words per line)
     //(assuming your addresses are word-based ofc) (edited)
-    addrWidth - log2Up(depthLines) - log2Up(numWordsPerLine) - 1
+    addrWidth - log2Up(depthLines) - log2Up(lineSizeWords) - 1
   )
   def tagRange = (
     addrWidth - 2 downto (addrWidth - 1 - tagWidth)
@@ -149,10 +172,29 @@ case class LcvBusConfig(
   def dataWidth = mainCfg.dataWidth
   def addrWidth = mainCfg.addrWidth
   //def burstSizeWidth = mainCfg.burstSizeWidth
+  def allowBurst = mainCfg.allowBurst
   def burstCntWidth = mainCfg.burstCntWidth
   def maxBurstSizeMinus1 = (
     (1 << burstCntWidth) - 1
   )
+
+  def burstAddr(
+    someAddr: UInt,
+    someBurstCnt: UInt,
+  ) = {
+    require(
+      someBurstCnt.getWidth == burstCntWidth
+    )
+    Cat(
+      someAddr(
+        someAddr.high
+        downto someBurstCnt.getWidth + log2Up(dataWidth / 8)
+      ),
+      someBurstCnt,
+      U(s"${log2Up(dataWidth / 8)}'d0"),
+    ).asUInt
+  }
+
   cacheCfg match {
     case Some(cacheCfg) => {
       cacheCfg.busCfg = this
@@ -440,7 +482,7 @@ case class LcvBusH2dPayload(
   def isWrite = mainNonBurstInfo.isWrite
   def src = mainNonBurstInfo.src
   //--------
-  val mainBurstInfo = (cfg.burstCntWidth > 0) generate (
+  val mainBurstInfo = (cfg.allowBurst) generate (
     LcvBusH2dPayloadMainBurstInfo(cfg=cfg)
   )
   //def burstSize = mainBurstInfo.burstSize
@@ -448,18 +490,28 @@ case class LcvBusH2dPayload(
   def burstFirst = mainBurstInfo.burstFirst
   def burstLast = mainBurstInfo.burstLast
   //--------
+  //def atLastBurstAddr(
+  //  someBurstCnt: UInt
+  //)
   def burstAddr(
     someBurstCnt: UInt,
-  ) = (
-    Cat(
-      addr(
-        addr.high
-        downto someBurstCnt.getWidth + log2Up(data.getWidth / 8)
-      ),
-      someBurstCnt,
-      U(s"${log2Up(data.getWidth / 8)}'d0"),
-    ).asUInt
-  )
+  ) = {
+    cfg.burstAddr(
+      someAddr=addr,
+      someBurstCnt=someBurstCnt,
+    )
+    //require(
+    //  someBurstCnt.getWidth == cfg.burstCntWidth
+    //)
+    //Cat(
+    //  addr(
+    //    addr.high
+    //    downto someBurstCnt.getWidth + log2Up(cfg.dataWidth / 8)
+    //  ),
+    //  someBurstCnt,
+    //  U(s"${log2Up(cfg.dataWidth / 8)}'d0"),
+    //).asUInt
+  }
   //def selfBurstAddr() = this.burstAddr(someBurstCnt=burstCnt)
   //--------
   val cacheInfo = (
@@ -512,7 +564,7 @@ case class LcvBusD2hPayload(
   def data = mainNonBurstInfo.data
   def src = mainNonBurstInfo.src
   //--------
-  val mainBurstInfo = (cfg.burstCntWidth > 0) generate (
+  val mainBurstInfo = (cfg.allowBurst) generate (
     LcvBusD2hPayloadMainBurstInfo(cfg=cfg)
   )
   def burstCnt = mainBurstInfo.burstCnt

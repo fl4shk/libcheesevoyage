@@ -467,6 +467,7 @@ object LcvBusXbarCoherentTestToVerilog extends App {
           mainCfg=LcvBusMainConfig(
             dataWidth=32,
             addrWidth=32,
+            allowBurst=true,
             burstAlwaysMaxSize=true,
             srcWidth=1,
           ),
@@ -510,6 +511,7 @@ object LcvBusXbarNonCoherentTestToVerilog extends App {
           mainCfg=LcvBusMainConfig(
             dataWidth=32,
             addrWidth=32,
+            allowBurst=true,
             burstAlwaysMaxSize=true,
             srcWidth=1,
           ),

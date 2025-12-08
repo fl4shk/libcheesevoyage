@@ -274,6 +274,7 @@ object LcvBusArbiterTestToVerilog extends App {
         mainCfg=LcvBusMainConfig(
           dataWidth=32,
           addrWidth=32,
+          allowBurst=true,
           burstAlwaysMaxSize=true,
           srcWidth=1,
         ),

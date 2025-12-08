@@ -125,7 +125,7 @@ case class RamSdpPipe[
     ).asBits
   )
 
-  io.rdData.setAsReg()
+  io.rdData.setAsReg() init(io.rdData.getZero)
   when (io.rdEn) {
     io.rdData := myDataOutFromRd
   }
