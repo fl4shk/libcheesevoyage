@@ -1,5 +1,7 @@
 package libcheesevoyage.bus.lcvBus
 
+//import scala.collection.immutable
+import scala.collection.mutable._
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
@@ -7,16 +9,137 @@ import spinal.lib.misc.pipeline._
 import spinal.lib.io._
 
 
-sealed trait LcvBusDeviceTesterKind
+sealed trait LcvBusDeviceTesterKind {
+  def hasRandData: Boolean  
+}
 object LcvBusDeviceTesterKind {
-  case object DualBurstRandData extends LcvBusDeviceTesterKind
-  case object NoBurstRandData extends LcvBusDeviceTesterKind
+  case object DualBurstRandData extends LcvBusDeviceTesterKind {
+    def hasRandData: Boolean = true
+  }
+  case object NoBurstRandData extends LcvBusDeviceTesterKind {
+    def hasRandData: Boolean = true
+  }
+  case object DualBurstRandAddr extends LcvBusDeviceTesterKind {
+    def hasRandData: Boolean = false
+  }
 }
 case class LcvBusDeviceTesterConfig(
   busCfg: LcvBusConfig,
   kind: LcvBusDeviceTesterKind,
 ) {
 }
+
+case class LcvXorShift16Config(
+  //xsWidthMul: Int=2,
+  xsInitS2d: Seq[Seq[BigInt]],
+  //xsVecSize: Int=1,
+  //includeInpCnt: Boolean=false,
+) {
+  def xsWidthMul = xsInitS2d.head.size
+  require(xsWidthMul >= 1)
+  def xsVecSize = xsInitS2d.size
+  require(xsVecSize >= 1)
+  def myXsWidth = 16 * xsWidthMul
+
+  for (idx <- 1 until xsInitS2d.size) {
+    require(
+      xsInitS2d(idx).size == xsInitS2d.head.size,
+      s"It is required that every element of `xsInitS2d` "
+      + s"is the same size. "
+      + s"This index is the first size different from `head`: "
+      + s"index:${idx} size:${xsInitS2d(idx).size}"
+    )
+  }
+
+  def myCntMax = 2
+  def myCntWidth = log2Up(myCntMax + 1) + 1
+}
+
+case class LcvXorShift16Io(
+  cfg: LcvXorShift16Config,
+) extends Bundle {
+
+  //val inpCnt = (
+  //  cfg.includeInpCnt
+  //) generate (
+  //  in(SInt(cfg.myCntWidth bits))
+  //)
+  val outpXs = out(
+    Vec.fill(cfg.xsVecSize)(
+      UInt(cfg.myXsWidth bits)
+    )
+  )
+}
+
+case class LcvXorShift16(
+  cfg: LcvXorShift16Config
+) extends Component {
+  //--------
+  val io = LcvXorShift16Io(cfg=cfg)
+  //--------
+  def myXsWidth = cfg.myXsWidth
+  def myCntWidth = cfg.myCntWidth
+  def myCntMax = cfg.myCntMax
+  val rCnt = (
+    Reg(SInt(cfg.myCntWidth bits)) init(cfg.myCntMax)
+  )
+  val rXsVec = (
+    Vec.fill(cfg.xsVecSize)(
+      Vec.fill(cfg.xsWidthMul)(
+        Vec.fill(3)(
+          Reg(UInt(32 bits))
+        )
+      )
+    )
+  )
+  for (idx <- 0 until rXsVec.size) {
+    for (jdx <- 0 until rXsVec(idx).size) {
+      //println(
+      //  s"debug: sizes: ${rXsVec.size} ${rXsVec(idx).size}"
+      //)
+      def rXs = rXsVec(idx)(jdx)
+      rXs.foreach(item => item.init(cfg.xsInitS2d(idx)(jdx)))
+
+      io.outpXs(idx)(
+        (jdx + 1) * 16 - 1
+        downto jdx * 16
+      ) := rXs(0)(15 downto 0)
+
+      rXs(2) := (
+        (rXs(0) ^ ((rXs(0) << 7)(rXs(0).bitsRange))).resize(
+          myXsWidth
+        )
+      )
+      rXs(1) := (
+        (rXs(2) ^ (rXs(2) >> 9).resize(myXsWidth)).resize(myXsWidth)
+      )
+      when (rCnt.msb) {
+        rXs(0) := (
+          (rXs(1) ^ ((rXs(1) << 8)(rXs(0).bitsRange))).resize(myXsWidth)
+        )
+      }
+    }
+  }
+  when (!rCnt.msb) {
+    rCnt := rCnt - 1
+  } otherwise {
+    rCnt := myCntMax
+  }
+}
+
+//case class LcvXorShift16ArrayIo(
+//  xsCfg: LcvXorShift16Config,
+//  arrSize: Int,
+//) extends Bundle {
+//  //val io = Vec.fill(arrSize)(
+//  //  LcvXorShift16Io(cfg=xsCfg)
+//  //)
+//}
+//case class LcvXorShift16Array(
+//  xsCfg: LcvXorShift16Config,
+//  arrSize: Int,
+//) extends Component {
+//}
 
 case class LcvBusDeviceTester(
   cfg: LcvBusDeviceTesterConfig,
@@ -74,78 +197,104 @@ case class LcvBusDeviceTester(
     Reg(Bool(), init=False)
   )
 
-  val myPrngArea = new Area {
-    // credit:
-    // http://www.retroprogramming.com/2017/07/xorshift-pseudorandom-numbers-in-z80.html
-    def myXsWidth = (
-      32
-    )
-    //def myCntWidth = 3
-    def myCntMax = 2
-    def myCntWidth = log2Up(myCntMax + 1) + 1
-    val rCnt = (
-      Reg(SInt(myCntWidth bits))
-      init(myCntMax)
-    )
-    val rXsVec = (
-      Vec.fill(2)(
-        Vec.fill(
-          //hostBusCfg.maxBurstSizeMinus1 + 1
-          cfg.busCfg.maxBurstSizeMinus1 + 1
-        )(
-          Vec.fill(3)(
-            Reg(UInt(myXsWidth bits))
-            //init(1)
+  val myPrngCfg = LcvXorShift16Config(
+    xsInitS2d={
+      val tempA2d = new ArrayBuffer[Seq[BigInt]]()
+      val outerSize = cfg.busCfg.maxBurstSizeMinus1 + 1
+      val innerSize = 2
+      for (idx <- 0 until outerSize) {
+        val tempArr = new ArrayBuffer[BigInt]()
+        for (jdx <- 0 until innerSize) {
+          tempArr += (
+            BigInt(idx) * BigInt(innerSize) + BigInt(jdx) + 1
           )
-        )
-      )
-    )
-    for (idx <- 0 until rXsVec.size) {
-      //rXsVec(idx).foreach(
-      //  item => item.init(idx + 1)
-      //  //outerItem => outerItem.foreach(
-      //  //  item => item.init(idx + 1)
-      //  //)
-      //)
-      for (jdx <- 0 until rXsVec(idx).size) {
-        rXsVec(idx)(jdx).foreach(item => {
-          item.init(idx * rXsVec(idx).size + jdx + 1)
-        })
-      }
-    }
-    rXsVec.foreach(outerXs => outerXs.foreach(
-      rXs => {
-        rXs(2) := (
-          (rXs(0) ^ ((rXs(0) << 7)(rXs(0).bitsRange))).resize(myXsWidth)
-        )
-        rXs(1) := (
-          (rXs(2) ^ (rXs(2) >> 9).resize(myXsWidth)).resize(myXsWidth)
-        )
-        when (!rCnt.msb) {
-          rCnt := rCnt - 1
-        } otherwise {
-          rXs(0) := (
-            (rXs(1) ^ ((rXs(1) << 8)(rXs(0).bitsRange))).resize(myXsWidth)
-          )
-          rCnt := myCntMax
+          //println(
+          //  s"${tempArr.last}"
+          //)
         }
+        tempA2d += tempArr
       }
-    ))
-    def getCurrRand(idx: Int): UInt = {
-      //val a = (rXs ^ ((rXs << 7)(rXs.bitsRange))).resize(rXs.getWidth)
-      //val b = (a ^ (a >> 9).resize(rXs.getWidth)).resize(rXs.getWidth)
-      //val c = (b ^ ((b << 8)(rXs.bitsRange))).resize(rXs.getWidth)
-      //rXs := c
-      //rXs(0) := r
-      //c(15 downto 0)
-      Cat(
-        //rXsVec(0)(idx)(0)(15 downto 0),
-        //rXsVec(1)(idx)(0)(15 downto 0),
-        rXsVec.head(idx)(0)(15 downto 0),
-        rXsVec.last(idx)(0)(15 downto 0),
-      ).asUInt
+      tempA2d
     }
-  }
+  )
+  val myPrng = LcvXorShift16(
+    cfg=myPrngCfg
+  )
+
+  //val myPrngArea = (
+  //  cfg.kind.hasRandData
+  //) generate (new Area {
+  //  // credit:
+  //  // http://www.retroprogramming.com/2017/07/xorshift-pseudorandom-numbers-in-z80.html
+  //  def myXsWidth = (
+  //    32
+  //  )
+  //  //def myCntWidth = 3
+  //  def myCntMax = 2
+  //  def myCntWidth = log2Up(myCntMax + 1) + 1
+  //  val rCnt = (
+  //    Reg(SInt(myCntWidth bits))
+  //    init(myCntMax)
+  //  )
+  //  val rXsVec = (
+  //    Vec.fill(2)(
+  //      Vec.fill(
+  //        //hostBusCfg.maxBurstSizeMinus1 + 1
+  //        cfg.busCfg.maxBurstSizeMinus1 + 1
+  //      )(
+  //        Vec.fill(3)(
+  //          Reg(UInt(myXsWidth bits))
+  //          //init(1)
+  //        )
+  //      )
+  //    )
+  //  )
+  //  for (idx <- 0 until rXsVec.size) {
+  //    //rXsVec(idx).foreach(
+  //    //  item => item.init(idx + 1)
+  //    //  //outerItem => outerItem.foreach(
+  //    //  //  item => item.init(idx + 1)
+  //    //  //)
+  //    //)
+  //    for (jdx <- 0 until rXsVec(idx).size) {
+  //      rXsVec(idx)(jdx).foreach(item => {
+  //        item.init(idx * rXsVec(idx).size + jdx + 1)
+  //      })
+  //    }
+  //  }
+  //  rXsVec.foreach(outerXs => outerXs.foreach(
+  //    rXs => {
+  //      rXs(2) := (
+  //        (rXs(0) ^ ((rXs(0) << 7)(rXs(0).bitsRange))).resize(myXsWidth)
+  //      )
+  //      rXs(1) := (
+  //        (rXs(2) ^ (rXs(2) >> 9).resize(myXsWidth)).resize(myXsWidth)
+  //      )
+  //      when (!rCnt.msb) {
+  //        rCnt := rCnt - 1
+  //      } otherwise {
+  //        rXs(0) := (
+  //          (rXs(1) ^ ((rXs(1) << 8)(rXs(0).bitsRange))).resize(myXsWidth)
+  //        )
+  //        rCnt := myCntMax
+  //      }
+  //    }
+  //  ))
+  //  def getCurrRand(idx: Int): UInt = {
+  //    //val a = (rXs ^ ((rXs << 7)(rXs.bitsRange))).resize(rXs.getWidth)
+  //    //val b = (a ^ (a >> 9).resize(rXs.getWidth)).resize(rXs.getWidth)
+  //    //val c = (b ^ ((b << 8)(rXs.bitsRange))).resize(rXs.getWidth)
+  //    //rXs := c
+  //    //rXs(0) := r
+  //    //c(15 downto 0)
+  //    Cat(
+  //      //rXsVec(0)(idx)(0)(15 downto 0),
+  //      //rXsVec(1)(idx)(0)(15 downto 0),
+  //      rXsVec.head(idx)(0)(15 downto 0),
+  //      rXsVec.last(idx)(0)(15 downto 0),
+  //    ).asUInt
+  //  }
+  //})
 
   def myNumTests = (
     // 8
@@ -171,7 +320,7 @@ case class LcvBusDeviceTester(
         val temp = Reg(Flow(
           //Vec.fill(hostBusCfg.maxBurstSizeMinus1 + 1)(
             Vec.fill(2)(
-              UInt(myPrngArea.myXsWidth bits)
+              UInt(myPrngCfg.myXsWidth bits)
             )
           //)
         ))
@@ -192,7 +341,8 @@ case class LcvBusDeviceTester(
 
         for (testIdx <- 0 until cfg.busCfg.maxBurstSizeMinus1 + 1) {
           rTestData(testIdx).payload.head := (
-            myPrngArea.getCurrRand(idx=testIdx)
+            //myPrngArea.getCurrRand(idx=testIdx)
+            myPrng.io.outpXs(testIdx)
           )
           rTestData(testIdx).payload.last := 0x0
         }
@@ -200,7 +350,8 @@ case class LcvBusDeviceTester(
         rH2dValid := True
         rH2dSendData.data := (
           //rTestData.head.payload.head
-          myPrngArea.getCurrRand(idx=0)
+          //myPrngArea.getCurrRand(idx=0)
+          myPrng.io.outpXs(0)
         )
         rH2dSendData.addr := 0x0
         rH2dSendData.byteEn := U(
@@ -346,15 +497,19 @@ case class LcvBusDeviceTester(
         switch (tempCnt) {
           for (testIdx <- 0 until rTestData.size) {
             is (testIdx) {
-              rH2dSendData.data := myPrngArea.getCurrRand(testIdx)
+              rH2dSendData.data := (
+                //myPrngArea.getCurrRand(testIdx)
+                myPrng.io.outpXs(testIdx)
+              )
               rTestData(tempCnt).payload.head := (
-                myPrngArea.getCurrRand(testIdx)
+                //myPrngArea.getCurrRand(testIdx)
+                myPrng.io.outpXs(testIdx)
               )
             }
           }
         }
         rTestData(tempCnt).payload.last := (
-          U(s"${myPrngArea.myXsWidth}'d0")
+          U(s"${myPrngCfg.myXsWidth}'d0")
         )
         rH2dSendData.byteEn := U(
           rH2dSendData.byteEn.getWidth bits, default -> True
