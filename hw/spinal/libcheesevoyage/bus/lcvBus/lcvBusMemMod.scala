@@ -388,7 +388,8 @@ case class LcvBusMemSimDut(
     cfg=LcvBusDeviceTesterConfig(
       busCfg=cfg.busCfg,
       kind=(
-        LcvBusDeviceTesterKind.DualBurstRandData
+        LcvBusDeviceTesterKind.DualBurstRandDataSemiRandAddr
+        //LcvBusDeviceTesterKind.DualBurstRandData
         //LcvBusDeviceTesterKind.NoBurstRandData
       ),
     )

@@ -1401,7 +1401,8 @@ case class LcvSdramCtrlSimDut(
       busCfg=cfg.busCfg,
       kind=(
         //LcvBusDeviceTesterKind.DualBurstRandData
-        LcvBusDeviceTesterKind.NoBurstRandData
+        //LcvBusDeviceTesterKind.NoBurstRandData
+        LcvBusDeviceTesterKind.DualBurstRandDataSemiRandAddr
       ),
     )
   )
