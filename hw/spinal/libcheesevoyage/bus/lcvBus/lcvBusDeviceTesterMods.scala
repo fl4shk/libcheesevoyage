@@ -8,6 +8,8 @@ import spinal.lib._
 import spinal.lib.misc.pipeline._
 import spinal.lib.io._
 
+import libcheesevoyage.general._
+
 
 sealed trait LcvBusDeviceTesterKind {
   def hasRandData: Boolean  
@@ -34,6 +36,7 @@ object LcvBusDeviceTesterKind {
 case class LcvBusDeviceTesterConfig(
   busCfg: LcvBusConfig,
   kind: LcvBusDeviceTesterKind,
+  testDataRamStyle: String="distributed",
 ) {
 }
 
@@ -349,6 +352,23 @@ case class LcvBusDeviceTester(
       )
     )
   )
+  val myTestDataRamArr = {
+    val depth = cfg.busCfg.maxBurstSizeMinus1 + 1
+    Array.fill(myTestDataVecOuterSize)(
+      FpgacpuRamSimpleDualPort(
+        wordType=Flow(
+          Vec.fill(2)(
+            UInt(myPrngCfg.myXsWidth bits)
+          )
+        ),
+        depth=depth,
+        initBigInt=Some(Array.fill(depth)(BigInt(0))),
+        arrRamStyle=cfg.testDataRamStyle,
+      )
+    )
+  }
+  //def doReadTestData(
+  //)
   //--------
   val dualBurstRandDataArea = (
     cfg.kind == LcvBusDeviceTesterKind.DualBurstRandData

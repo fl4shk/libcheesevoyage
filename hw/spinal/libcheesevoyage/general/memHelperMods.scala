@@ -9,33 +9,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 import scala.math._
 
-case class RamSdpPipeIo[
-  WordT <: Data
-](
-  wordType: HardType[WordT],
-  depth: Int,
-  optIncludeWrByteEn: Boolean=false
-) extends Bundle {
-  //val wrEnReg = in(Bool())
-  val wrEn = in(Bool())
-  val wrAddr = in(UInt(log2Up(depth) bits))
-  val wrData = in(Bits(wordType().asBits.getWidth bits))
-  val wrByteEn = (
-    optIncludeWrByteEn
-  ) generate (
-    in(
-      Bits(ceil(wordType().asBits.getWidth.toDouble / 8).toInt bits)
-    )
-  )
-
-  //val rdEnReg = in(Bool())
-  //val rdEnForWr = in(Bool())
-  val rdEn = in(Bool())
-  val rdAddr = in(UInt(log2Up(depth) bits))
-  val rdData = out(Bits(wordType().asBits.getWidth bits))
-  //val rdDataFromWrAddr = out(Bits(wordType().asBits.getWidth bits))
-}
-case class RamSdpPipe[
+case class RamSdpPipeConfig[
   WordT <: Data
 ](
   wordType: HardType[WordT],
@@ -45,11 +19,55 @@ case class RamSdpPipe[
   initBigInt: Option[Seq[BigInt]]=None,
   arrRamStyle: String="block",
   arrRwAddrCollision: String="",
+) {
+}
+
+case class RamSdpPipeIo[
+  WordT <: Data
+](
+  //wordType: HardType[WordT],
+  //depth: Int,
+  //optIncludeWrByteEn: Boolean=false
+  cfg: RamSdpPipeConfig[WordT],
+) extends Bundle {
+  //val wrEnReg = in(Bool())
+  val wrEn = in(Bool())
+  val wrAddr = in(UInt(log2Up(cfg.depth) bits))
+  val wrData = in(Bits(cfg.wordType().asBits.getWidth bits))
+  val wrByteEn = (
+    cfg.optIncludeWrByteEn
+  ) generate (
+    in(
+      Bits(ceil(cfg.wordType().asBits.getWidth.toDouble / 8).toInt bits)
+    )
+  )
+
+  //val rdEnReg = in(Bool())
+  //val rdEnForWr = in(Bool())
+  val rdEn = in(Bool())
+  val rdAddr = in(UInt(log2Up(cfg.depth) bits))
+  val rdData = out(Bits(cfg.wordType().asBits.getWidth bits))
+  //val rdDataFromWrAddr = out(Bits(wordType().asBits.getWidth bits))
+}
+case class RamSdpPipe[
+  WordT <: Data
+](
+  cfg: RamSdpPipeConfig[WordT],
 ) extends Component {
+  def wordType = cfg.wordType
+  def depth = cfg.depth
+  def optIncludeWrByteEn = cfg.optIncludeWrByteEn
+
+  def init = cfg.init
+  def initBigInt = cfg.initBigInt
+  def arrRamStyle = cfg.arrRamStyle
+  def arrRwAddrCollision = cfg.arrRwAddrCollision
+
   val io = RamSdpPipeIo(
-    wordType=wordType(),
-    depth=depth,
-    optIncludeWrByteEn=optIncludeWrByteEn,
+    //wordType=wordType(),
+    //depth=depth,
+    //optIncludeWrByteEn=optIncludeWrByteEn,
+    cfg=cfg,
   )
   val arr = Mem(
     wordType=wordType(),
@@ -144,21 +162,7 @@ case class RamSdpPipe[
   //}
 }
 
-case class RamSimpleDualPortIo[
-  WordT <: Data
-](
-  wordType: HardType[WordT],
-  depth: Int,
-) extends Bundle {
-  val ramIo = FpgacpuRamSimpleDualPortIo(
-    wordWidth=(wordType().asBits.getWidth),
-    addrWidth=log2Up(depth),
-  )
-  //val fwdCondDel1 = out(Bool())
-  //val fwdDataDel1 = out(Bits(wordType().asBits.getWidth bits))
-  //val cmpRdWrAddrEtc = in(Bool())
-}
-case class RamSimpleDualPort[
+case class RamSimpleDualPortConfig[
   WordT <: Data
 ](
   wordType: HardType[WordT],
@@ -168,11 +172,39 @@ case class RamSimpleDualPort[
   arrRamStyle: String="block",
   //arrRwAddrCollision: String="",
   //doFwdDel1: Boolean=false,
+) {
+}
+case class RamSimpleDualPortIo[
+  WordT <: Data
+](
+  //wordType: HardType[WordT],
+  //depth: Int,
+  cfg: RamSimpleDualPortConfig[WordT],
+) extends Bundle {
+  val ramIo = FpgacpuRamSimpleDualPortIo(
+    wordWidth=(cfg.wordType().asBits.getWidth),
+    addrWidth=log2Up(cfg.depth),
+  )
+  //val fwdCondDel1 = out(Bool())
+  //val fwdDataDel1 = out(Bits(wordType().asBits.getWidth bits))
+  //val cmpRdWrAddrEtc = in(Bool())
+}
+case class RamSimpleDualPort[
+  WordT <: Data
+](
+  cfg: RamSimpleDualPortConfig[WordT],
 ) extends Component {
-  //def addrWidth = io.addrWidth
+  
+  def wordType = cfg.wordType
+  def depth = cfg.depth
+  def init = cfg.init
+  def initBigInt = cfg.initBigInt
+  def arrRamStyle = cfg.arrRamStyle
+
   val io = RamSimpleDualPortIo(
-    wordType=wordType(),
-    depth=depth,
+    //wordType=wordType(),
+    //depth=depth,
+    cfg=cfg
   )
   val myRam = FpgacpuRamSimpleDualPort(
     wordType=wordType(),

@@ -9,6 +9,7 @@ import spinal.lib._
 import spinal.lib.misc.pipeline._
 
 
+import libcheesevoyage.general.RamSdpPipeConfig
 import libcheesevoyage.general.RamSdpPipeIo
 import libcheesevoyage.general.RamSdpPipe
 
@@ -22,6 +23,15 @@ case class LcvBusMemConfig(
   arrRamStyle: String="block",
   arrRwAddrCollision: String="",
 ) {
+  val ramCfg = RamSdpPipeConfig(
+    wordType=Bits(busCfg.dataWidth bits),
+    depth=depth,
+    optIncludeWrByteEn=true,
+    init=init,
+    initBigInt=initBigInt,
+    arrRamStyle=arrRamStyle,
+    arrRwAddrCollision=arrRwAddrCollision,
+  )
   //def busCfg = mmapCfg.busCfg
   //def depth = mmapCfg.addrSliceSize
 }
@@ -41,13 +51,7 @@ case class LcvBusMem(
   val io = LcvBusMemIo(cfg=cfg)
   //--------
   val ram = RamSdpPipe(
-    wordType=Bits(busCfg.dataWidth bits),
-    depth=cfg.depth,
-    optIncludeWrByteEn=true,
-    init=cfg.init,
-    initBigInt=cfg.initBigInt,
-    arrRamStyle=cfg.arrRamStyle,
-    arrRwAddrCollision=cfg.arrRwAddrCollision,
+    cfg=cfg.ramCfg
   )
   //--------
   object State

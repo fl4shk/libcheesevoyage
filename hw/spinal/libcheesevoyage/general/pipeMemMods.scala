@@ -2284,30 +2284,32 @@ extends Area {
 
   def mkMem(ydx: Int) = {
     val ret = RamSimpleDualPort(
-      wordType=wordType(),
-      depth=wordCountArr(ydx),
-      init=(
-        init match {
-          case Some(myInit) => {
-            Some(myInit(ydx))
+      cfg=RamSimpleDualPortConfig(
+        wordType=wordType(),
+        depth=wordCountArr(ydx),
+        init=(
+          init match {
+            case Some(myInit) => {
+              Some(myInit(ydx))
+            }
+            case None => {
+              None
+            }
           }
-          case None => {
-            None
+        ),
+        initBigInt=(
+          initBigInt match {
+            case Some(myInitBigInt) => {
+              Some(myInitBigInt(ydx))
+            }
+            case None => {
+              None
+            }
           }
-        }
-      ),
-      initBigInt=(
-        initBigInt match {
-          case Some(myInitBigInt) => {
-            Some(myInitBigInt(ydx))
-          }
-          case None => {
-            None
-          }
-        }
-      ),
-      arrRamStyle=memRamStyle,
-      //doFwdDel1=optIncludePreMid0Front,
+        ),
+        arrRamStyle=memRamStyle,
+        //doFwdDel1=optIncludePreMid0Front,
+      )
     )
 
     //val ret = Mem(

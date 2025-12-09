@@ -108,18 +108,24 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   def depthWords = loBusCacheCfg.depthWords
   def depthLines = loBusCacheCfg.depthLines
 
-  val lineWordRam = RamSdpPipe(
+  val lineWordRamCfg = RamSdpPipeConfig(
     wordType=UInt(wordWidth bits),
     depth=depthWords,
     optIncludeWrByteEn=true,
     initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
     arrRamStyle=cfg.loBusCacheCfg.lineWordMemRamStyle,
   )
-  val lineAttrsRam = RamSdpPipe(
+  val lineWordRam = RamSdpPipe(
+    cfg=lineWordRamCfg
+  )
+  val lineAttrsRamCfg = RamSdpPipeConfig(
     wordType=LcvBusCacheLineAttrs(cfg=loBusCfg),
     depth=depthLines,
     initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
     arrRamStyle=cfg.loBusCacheCfg.lineAttrsMemRamStyle,
+  )
+  val lineAttrsRam = RamSdpPipe(
+    cfg=lineAttrsRamCfg
   )
 
   val rdLineWord = UInt(wordWidth bits)
