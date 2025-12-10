@@ -11,31 +11,31 @@ import spinal.lib.io._
 import libcheesevoyage.general._
 
 
-sealed trait LcvBusDeviceTesterKind {
+sealed trait LcvBusDeviceRamTesterKind {
   def hasRandData: Boolean  
   def hasRandAddr: Boolean
 }
-object LcvBusDeviceTesterKind {
+object LcvBusDeviceRamTesterKind {
   case object DualBurstRandDataSemiRandAddr
-  extends LcvBusDeviceTesterKind {
+  extends LcvBusDeviceRamTesterKind {
     def hasRandData: Boolean = true
     def hasRandAddr: Boolean = true
   }
-  case object DualBurstRandData extends LcvBusDeviceTesterKind {
+  case object DualBurstRandData extends LcvBusDeviceRamTesterKind {
     def hasRandData: Boolean = true
     def hasRandAddr: Boolean = false
   }
-  case object NoBurstRandData extends LcvBusDeviceTesterKind {
+  case object NoBurstRandData extends LcvBusDeviceRamTesterKind {
     def hasRandData: Boolean = true
     def hasRandAddr: Boolean = false
   }
-  //case object DualBurstRandAddr extends LcvBusDeviceTesterKind {
+  //case object DualBurstRandAddr extends LcvBusDeviceRamTesterKind {
   //  def hasRandData: Boolean = false
   //}
 }
-case class LcvBusDeviceTesterConfig(
+case class LcvBusDeviceRamTesterConfig(
   busCfg: LcvBusConfig,
-  kind: LcvBusDeviceTesterKind,
+  kind: LcvBusDeviceRamTesterKind,
   testDataRamStyle: String="M10K",
 ) {
 }
@@ -152,8 +152,8 @@ case class LcvXorShift16(
 //) extends Component {
 //}
 
-case class LcvBusDeviceTester(
-  cfg: LcvBusDeviceTesterConfig,
+case class LcvBusDeviceRamTester(
+  cfg: LcvBusDeviceRamTesterConfig,
 ) extends Component {
   //--------
   def busCfg = cfg.busCfg
@@ -465,13 +465,13 @@ case class LcvBusDeviceTester(
   }
   //--------
   val dualBurstRandDataArea = (
-    cfg.kind == LcvBusDeviceTesterKind.DualBurstRandData
-    //|| cfg.kind == LcvBusDeviceTesterKind.DualBurstRandDataSemiRandAddr
+    cfg.kind == LcvBusDeviceRamTesterKind.DualBurstRandData
+    //|| cfg.kind == LcvBusDeviceRamTesterKind.DualBurstRandDataSemiRandAddr
   ) generate (new Area {
     //def rTestData = rTestDataVec.head
     //def testData = myTestDataRamArr.head
     //def myHaveSemiRandAddr = (
-    //  cfg.kind == LcvBusDeviceTesterKind.DualBurstRandDataSemiRandAddr
+    //  cfg.kind == LcvBusDeviceRamTesterKind.DualBurstRandDataSemiRandAddr
     //)
     //def doInitH2dSendAddr(): Unit = {
     //  rH2dPayload.addr := (
@@ -641,14 +641,14 @@ case class LcvBusDeviceTester(
   })
   //--------
   val dualBurstRandDataSemiRandAddrArea = (
-    cfg.kind == LcvBusDeviceTesterKind.DualBurstRandDataSemiRandAddr
+    cfg.kind == LcvBusDeviceRamTesterKind.DualBurstRandDataSemiRandAddr
   ) generate (new Area {
     // BEGIN: state machine that does maximum-byte-amount bus bursts
     // starting from semi-random addresses
 
     //def rTestData = rTestDataVec.head
     //def myHaveSemiRandAddr = (
-    //  cfg.kind == LcvBusDeviceTesterKind.DualBurstRandDataSemiRandAddr
+    //  cfg.kind == LcvBusDeviceRamTesterKind.DualBurstRandDataSemiRandAddr
     //)
 
     val nextSavedTestDataVecIdx = (
@@ -1173,7 +1173,7 @@ case class LcvBusDeviceTester(
   //--------
   //--------
   val noBurstRandDataArea = (
-    cfg.kind == LcvBusDeviceTesterKind.NoBurstRandData
+    cfg.kind == LcvBusDeviceRamTesterKind.NoBurstRandData
   ) generate (new Area {
     // BEGIN: previous state machine, which lacks bursts
     //def rTestData = rTestDataVec.head

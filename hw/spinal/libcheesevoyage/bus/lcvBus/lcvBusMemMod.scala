@@ -388,13 +388,13 @@ case class LcvBusMemSimDut(
   //val memCfg = LcvBusMemTestConfig.cfg
 
   val myMem = LcvBusMem(cfg=cfg)
-  val myMemTester = LcvBusDeviceTester(
-    cfg=LcvBusDeviceTesterConfig(
+  val myMemTester = LcvBusDeviceRamTester(
+    cfg=LcvBusDeviceRamTesterConfig(
       busCfg=cfg.busCfg,
       kind=(
-        LcvBusDeviceTesterKind.DualBurstRandDataSemiRandAddr
-        //LcvBusDeviceTesterKind.DualBurstRandData
-        //LcvBusDeviceTesterKind.NoBurstRandData
+        LcvBusDeviceRamTesterKind.DualBurstRandDataSemiRandAddr
+        //LcvBusDeviceRamTesterKind.DualBurstRandData
+        //LcvBusDeviceRamTesterKind.NoBurstRandData
       ),
     )
   )

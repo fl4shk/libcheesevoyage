@@ -1396,13 +1396,13 @@ case class LcvSdramCtrlSimDut(
   val mySdramCtrl = LcvBusSdramCtrl(cfg=cfg)
   io <> mySdramCtrl.io.sdram
   //--------
-  val sdramCtrlTester = LcvBusDeviceTester(
-    cfg=LcvBusDeviceTesterConfig(
+  val sdramCtrlTester = LcvBusDeviceRamTester(
+    cfg=LcvBusDeviceRamTesterConfig(
       busCfg=cfg.busCfg,
       kind=(
-        //LcvBusDeviceTesterKind.DualBurstRandData
-        //LcvBusDeviceTesterKind.NoBurstRandData
-        LcvBusDeviceTesterKind.DualBurstRandDataSemiRandAddr
+        //LcvBusDeviceRamTesterKind.DualBurstRandData
+        //LcvBusDeviceRamTesterKind.NoBurstRandData
+        LcvBusDeviceRamTesterKind.DualBurstRandDataSemiRandAddr
       ),
     )
   )
