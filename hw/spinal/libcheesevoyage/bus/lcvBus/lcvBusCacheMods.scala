@@ -83,6 +83,36 @@ case class LcvBusCacheBusPairConfig(
       }
     }
   }
+  def haveNonCoherentInstrCache = (
+    !loBusCacheCfg.coherent
+    && loBusCacheCfg.kind == LcvCacheKind.I
+    && hiBusCacheCfg == None
+  )
+  def haveNonCoherentDataCache = (
+    !loBusCacheCfg.coherent
+    && loBusCacheCfg.kind == LcvCacheKind.D
+    && hiBusCacheCfg == None
+  )
+  def haveCoherentInstrCache = (
+    loBusCacheCfg.coherent
+    && loBusCacheCfg.kind == LcvCacheKind.I
+    && hiBusCacheCfg != None
+    && hiBusCacheCfg.get.coherent
+    && hiBusCacheCfg.get.kind == LcvCacheKind.Shared
+  )
+  def haveCoherentDataCache = (
+    loBusCacheCfg.coherent
+    && loBusCacheCfg.kind == LcvCacheKind.D
+    && hiBusCacheCfg != None
+    && hiBusCacheCfg.get.coherent
+    && hiBusCacheCfg.get.kind == LcvCacheKind.Shared
+  )
+  def haveSharedCache = (
+    loBusCacheCfg.coherent
+    && loBusCacheCfg.kind == LcvCacheKind.Shared
+    && hiBusCacheCfg == None
+  )
+
 }
 
 case class LcvBusCacheIo(
@@ -672,70 +702,49 @@ case class LcvBusCache(
   //--------
   val io = LcvBusCacheIo(cfg=cfg)
   //--------
-  //def haveNonCoherentInstrCache = (
-  //  !cfg.loBusCacheCfg.coherent
-  //  && cfg.loBusCacheCfg.kind == LcvCacheKind.I
-  //  && cfg.hiBusCacheCfg == None
-  //)
-  def haveNonCoherentDataCache = (
-    !cfg.loBusCacheCfg.coherent
-    && cfg.loBusCacheCfg.kind == LcvCacheKind.D
-    && cfg.hiBusCacheCfg == None
-  )
-  def haveCoherentInstrCache = (
-    cfg.loBusCacheCfg.coherent
-    && cfg.loBusCacheCfg.kind == LcvCacheKind.I
-    && cfg.hiBusCacheCfg != None
-    && cfg.hiBusCacheCfg.get.coherent
-    && cfg.hiBusCacheCfg.get.kind == LcvCacheKind.Shared
-  )
-  def haveCoherentDataCache = (
-    cfg.loBusCacheCfg.coherent
-    && cfg.loBusCacheCfg.kind == LcvCacheKind.D
-    && cfg.hiBusCacheCfg != None
-    && cfg.hiBusCacheCfg.get.coherent
-    && cfg.hiBusCacheCfg.get.kind == LcvCacheKind.Shared
-  )
-  def haveSharedCache = (
-    cfg.loBusCacheCfg.coherent
-    && cfg.loBusCacheCfg.kind == LcvCacheKind.Shared
-    && cfg.hiBusCacheCfg == None
-  )
-
   val nonCoherentDataCache = (
-    haveNonCoherentDataCache
+    cfg.haveNonCoherentDataCache
   ) generate (
     LcvBusNonCoherentDataCache(cfg=cfg)
   )
   val coherentInstrCache = (
-    haveCoherentInstrCache
+    cfg.haveCoherentInstrCache
   ) generate (
     LcvBusCoherentInstrCache(cfg=cfg)
   )
   val coherentDataCache = (
-    haveCoherentDataCache
+    cfg.haveCoherentDataCache
   ) generate (
     LcvBusCoherentDataCache(cfg=cfg)
   )
   val sharedCache = (
-    haveSharedCache
+    cfg.haveSharedCache
   ) generate (
     LcvBusSharedCache(cfg=cfg)
   )
-  //if (haveNonCoherentInstrCache) {
+  //if (cfg.haveNonCoherentInstrCache) {
   //} else 
-  if (haveNonCoherentDataCache) {
+  if (cfg.haveNonCoherentDataCache) {
     io <> nonCoherentDataCache.io
-  } else if (haveCoherentInstrCache) {
+  } else if (cfg.haveCoherentInstrCache) {
     io <> coherentInstrCache.io
-  } else if (haveCoherentDataCache) {
+  } else if (cfg.haveCoherentDataCache) {
     io <> coherentDataCache.io
-  } else if (haveSharedCache) {
+  } else if (cfg.haveSharedCache) {
     io <> sharedCache.io
   } else {
     require(
       false
     )
+  }
+  //--------
+}
+
+case class LcvBusNonCoherentDataCacheSimDut(
+  cacheCfg: LcvBusCacheBusPairConfig,
+) extends Component {
+  //--------
+  val io = new Bundle {
   }
   //--------
 }
