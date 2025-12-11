@@ -263,12 +263,12 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
     )
     lineWord match {
       case Some(lineWord) => {
-        lineWordRam.io.wrData := lineWord.asBits
+        lineWordRam.io.wrData := lineWord
       }
       case None => {
         lineWordRam.io.wrData := (
           //myD2hBus.sendData.data.asBits
-          io.hiBus.d2hBus.data.asBits
+          io.hiBus.d2hBus.data
         )
       }
     }
@@ -307,7 +307,7 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
       (busAddr(busAddr.high downto log2Up(loBusCacheCfg.lineSizeBytes)))
       .resize(lineAttrsRam.io.wrAddr.getWidth)
     )
-    lineAttrsRam.io.wrData := lineAttrs.asBits
+    lineAttrsRam.io.wrData := lineAttrs
   }
   //--------
   doLineAttrsRamReadSync(

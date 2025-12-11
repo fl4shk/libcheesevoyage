@@ -531,7 +531,7 @@ private[libcheesevoyage] case class LcvBusDeviceRamTesterNonCoherent(
     myTestDataRam.io.rdAddr := 0x0
     myTestDataRam.io.wrEn := False
     myTestDataRam.io.wrAddr := 0x0
-    myTestDataRam.io.wrData := 0x0
+    myTestDataRam.io.wrData := myTestDataRam.io.wrData.getZero
     //myTestDataRam.io.wrByteEn := 0x0
     //val wrTestDataElem = TestDataElem()
     //wrTestDataElem := wrTestDataElem.getZero
@@ -579,7 +579,7 @@ private[libcheesevoyage] case class LcvBusDeviceRamTesterNonCoherent(
           ram.io.wrAddr(getRamIdxRange(ramIdx)) := ramIdx
         }
       }
-      ram.io.wrData := wrData.asBits
+      ram.io.wrData := wrData
       //doApplyTestDataRam(
       //  ramIdx,
       //  (ramIdx, ram) => {
@@ -663,7 +663,7 @@ private[libcheesevoyage] case class LcvBusDeviceRamTesterNonCoherent(
     ): Unit = {
       val ram = myTestDataRam
       //val ramIdx = rSavedTestDataVecIdx
-      rdData.assignFromBits(ram.io.rdData)
+      rdData.assignFromBits(ram.io.rdData.asBits)
       //doApplyTestDataRam(
       //  //ramIdx,
       //  rSavedTestDataVecIdx,

@@ -23,18 +23,14 @@ case class RamSdpPipeConfig[
 ) {
 }
 
-case class RamSdpPipeIo[
+private[libcheesevoyage] case class RamSdpPipeNonDataIo[
   WordT <: Data
 ](
-  //wordType: HardType[WordT],
-  //depth: Int,
-  //optIncludeWrByteEn: Boolean=false
   cfg: RamSdpPipeConfig[WordT],
 ) extends Bundle {
-  //val wrEnReg = in(Bool())
+  //--------
   val wrEn = in(Bool())
   val wrAddr = in(UInt(log2Up(cfg.depth) bits))
-  val wrData = in(Bits(cfg.wordType().asBits.getWidth bits))
   val wrByteEn = (
     cfg.optIncludeWrByteEn
   ) generate (
@@ -42,15 +38,55 @@ case class RamSdpPipeIo[
       Bits(ceil(cfg.wordType().asBits.getWidth.toDouble / 8).toInt bits)
     )
   )
-
+  //--------
   //val rdEnReg = in(Bool())
   //val rdEnForWr = in(Bool())
   val rdEn = in(Bool())
   val rdAddr = in(UInt(log2Up(cfg.depth) bits))
-  val rdData = out(Bits(cfg.wordType().asBits.getWidth bits))
+  //--------
+}
+case class RamSdpPipeIo[
+  WordT <: Data
+](
+  //wordType: HardType[WordT],
+  //depth: Int,
+  //optIncludeWrByteEn: Boolean=false
+  cfg: RamSdpPipeConfig[WordT],
+  useBitsData: Boolean,
+) extends Bundle {
+  //val wrEnReg = in(Bool())
+  val nonDataIo = RamSdpPipeNonDataIo(cfg=cfg)
+  def wrEn = nonDataIo.wrEn
+  def wrAddr = nonDataIo.wrAddr
+  def wrByteEn = nonDataIo.wrByteEn
+
+  val wrDataBits = (
+    useBitsData
+  ) generate (
+    in(Bits(cfg.wordType().asBits.getWidth bits))
+  )
+  val wrData = (
+    !useBitsData
+  ) generate (
+    in(cfg.wordType())
+  )
+
+  def rdEn = nonDataIo.rdEn
+  def rdAddr = nonDataIo.rdAddr
+  //val rdData = out(Bits(cfg.wordType().asBits.getWidth bits))
+  val rdDataBits = (
+    useBitsData
+  ) generate (
+    out(Bits(cfg.wordType().asBits.getWidth bits))
+  )
+  val rdData = (
+    !useBitsData
+  ) generate (
+    out(cfg.wordType())
+  )
   //val rdDataFromWrAddr = out(Bits(wordType().asBits.getWidth bits))
 }
-case class RamSdpPipe[
+case class RamSdpPipeImpl[
   WordT <: Data
 ](
   cfg: RamSdpPipeConfig[WordT],
@@ -66,10 +102,8 @@ case class RamSdpPipe[
   def arrRwAddrCollisionXilinx = cfg.arrRwAddrCollisionXilinx
 
   val io = RamSdpPipeIo(
-    //wordType=wordType(),
-    //depth=depth,
-    //optIncludeWrByteEn=optIncludeWrByteEn,
     cfg=cfg,
+    useBitsData=true,
   )
   val arr = Mem(
     wordType=wordType(),
@@ -101,7 +135,7 @@ case class RamSdpPipe[
     data={
       val tempWrData = wordType()
       tempWrData.assignFromBits(
-        io.wrData.asBits
+        io.wrDataBits.asBits
       )
       tempWrData
     },
@@ -135,7 +169,8 @@ case class RamSdpPipe[
   // do2
   val myDataOutFromRd = (
     /*Reg*/(
-      Bits(io.rdData.getWidth bits)
+      //Bits(io.rdData.getWidth bits)
+      Bits(io.rdDataBits.getWidth bits)
     )
   )
   myDataOutFromRd := (
@@ -145,9 +180,9 @@ case class RamSdpPipe[
     ).asBits
   )
 
-  io.rdData.setAsReg() init(io.rdData.getZero)
+  io.rdDataBits.setAsReg() init(io.rdDataBits.getZero)
   when (io.rdEn) {
-    io.rdData := myDataOutFromRd
+    io.rdDataBits := myDataOutFromRd
   }
 
   //if (optDblRdReg) {
@@ -163,6 +198,20 @@ case class RamSdpPipe[
   //  tempRdData.asBits
   //}
 }
+case class RamSdpPipe[
+  WordT <: Data,
+](
+  cfg: RamSdpPipeConfig[WordT]
+) extends Component {
+  val io = RamSdpPipeIo(
+    cfg=cfg,
+    useBitsData=false,
+  )
+  val ram = RamSdpPipeImpl(cfg=cfg)
+  ram.io.nonDataIo <> io.nonDataIo
+  ram.io.wrDataBits := io.wrData.asBits
+  io.rdData.assignFromBits(ram.io.rdDataBits)
+}
 
 case class RamSimpleDualPortConfig[
   WordT <: Data
@@ -173,7 +222,7 @@ case class RamSimpleDualPortConfig[
   initBigInt: Option[Seq[BigInt]]=None,
   arrRamStyleAltera: String="M10K",
   arrRamStyleXilinx: String="block",
-  //arrRwAddrCollisionXilinx: String="",
+  arrRwAddrCollisionXilinx: String="",
   //doFwdDel1: Boolean=false,
 ) {
 }
@@ -184,10 +233,29 @@ case class RamSimpleDualPortIo[
   //depth: Int,
   cfg: RamSimpleDualPortConfig[WordT],
 ) extends Bundle {
-  val ramIo = FpgacpuRamSimpleDualPortIo(
-    wordWidth=(cfg.wordType().asBits.getWidth),
-    addrWidth=log2Up(cfg.depth),
+  //val ramIo = FpgacpuRamSimpleDualPortIo(
+  //  wordWidth=(cfg.wordType().asBits.getWidth),
+  //  addrWidth=log2Up(cfg.depth),
+  //)
+  val ramIo = RamSdpPipeIo(
+    cfg=RamSdpPipeConfig(
+      wordType=cfg.wordType(),
+      depth=cfg.depth,
+      optIncludeWrByteEn=false,
+      init=cfg.init,
+      initBigInt=cfg.initBigInt,
+      arrRamStyleAltera=cfg.arrRamStyleAltera,
+      arrRamStyleXilinx=cfg.arrRamStyleXilinx,
+      arrRwAddrCollisionXilinx=cfg.arrRwAddrCollisionXilinx,
+    ),
+    useBitsData=false,
   )
+
+  //def setAggWrData(
+  //  aggWrData: WordT
+  //): Unit = {
+  //  ramIo
+  //}
   //val fwdCondDel1 = out(Bool())
   //val fwdDataDel1 = out(Bits(wordType().asBits.getWidth bits))
   //val cmpRdWrAddrEtc = in(Bool())
@@ -204,6 +272,7 @@ case class RamSimpleDualPort[
   def initBigInt = cfg.initBigInt
   def arrRamStyleAltera = cfg.arrRamStyleAltera
   def arrRamStyleXilinx = cfg.arrRamStyleXilinx
+  def arrRwAddrCollisionXilinx = cfg.arrRwAddrCollisionXilinx
 
   val io = RamSimpleDualPortIo(
     //wordType=wordType(),
@@ -218,17 +287,17 @@ case class RamSimpleDualPort[
       initBigInt=initBigInt,
       arrRamStyleAltera=arrRamStyleAltera,
       arrRamStyleXilinx=arrRamStyleXilinx,
-      arrRwAddrCollisionXilinx="",
+      arrRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
     )
   )
   myRam.io.wrEn := io.ramIo.wrEn
   myRam.io.wrAddr := io.ramIo.wrAddr
-  myRam.io.wrData := io.ramIo.wrData
+  myRam.io.wrData := io.ramIo.wrData.asBits
   myRam.io.rdEn := io.ramIo.rdEn
   myRam.io.rdAddr := io.ramIo.rdAddr
   //val dontFwdDel1Area = (!doFwdDel1) generate (
     //new Area {
-      io.ramIo.rdData := myRam.io.rdData
+      io.ramIo.rdData.assignFromBits(myRam.io.rdData)
     //}
   //)
   //val doFwdDel1Area = (doFwdDel1) generate (

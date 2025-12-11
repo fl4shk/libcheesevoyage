@@ -77,6 +77,7 @@ case class PipeMemRmwConfig[
   optEnableClear: Boolean=false,
   memRamStyleAltera: String="MLAB",
   memRamStyleXilinx: String="auto",
+  memRwAddrCollisionXilinx: String="",
   vivadoDebug: Boolean=false,
   optIncludeModFrontStageLink: Boolean=true,
   optIncludeModFrontS2MLink: Boolean=true,
@@ -1985,6 +1986,7 @@ extends Area {
   def optEnableClear = cfg.optEnableClear 
   def memRamStyleAltera = cfg.memRamStyleAltera
   def memRamStyleXilinx = cfg.memRamStyleXilinx
+  def memRwAddrCollisionXilinx = cfg.memRwAddrCollisionXilinx
   def vivadoDebug = cfg.vivadoDebug 
   //def optIncludePreMid0Front = cfg.optIncludePreMid0Front
   def optIncludePreMid0Front = (
@@ -2311,6 +2313,7 @@ extends Area {
         ),
         arrRamStyleAltera=memRamStyleAltera,
         arrRamStyleXilinx=memRamStyleXilinx,
+        arrRwAddrCollisionXilinx=memRwAddrCollisionXilinx,
         //doFwdDel1=optIncludePreMid0Front,
       )
     )
@@ -2465,7 +2468,7 @@ extends Area {
             )
           )
           item.io.ramIo.wrData := (
-            data(ydx).head.asBits
+            data(ydx).head
           )
         },
         ydx=ydx
@@ -3427,7 +3430,7 @@ extends Area {
             //)
             //when (cPreMid0Front(0).down.isFiring) {
               myRdMemWord(ydx)(zdx).assignFromBits(
-                rTempRdData
+                rTempRdData.asBits
               )
               //when (rTempFwdCond) {
               //  myRdMemWord(ydx)(zdx).assignFromBits(
@@ -4185,7 +4188,7 @@ extends Area {
               )
               if (optIncludePreMid0Front) {
               } else {
-                myNonFwdRdMemWord.head(ydx)(zdx).assignFromBits(
+                myNonFwdRdMemWord.head(ydx)(zdx) := (
                   //if (optIncludePreMid0Front) (
                   //  RegNext/*When*/(
                   //    next=tempRdData,
@@ -6103,7 +6106,7 @@ extends Area {
           )
         )
 
-        myRdMemWord.assignFromBits(
+        myRdMemWord := (
           dualRdMem(ydx).io.ramIo.rdData
         )
       }
