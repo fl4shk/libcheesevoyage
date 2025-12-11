@@ -1403,10 +1403,16 @@ case class LcvSdramCtrlSimDut(
         //LcvBusDeviceRamTesterKind.DualBurstRandData
         //LcvBusDeviceRamTesterKind.NoBurstRandData
         LcvBusDeviceRamTesterKind.DualBurstRandDataSemiRandAddr
+        //(
+        //  optNonCoherentCacheSetWidth=(
+        //    //None
+        //    Some(8)
+        //  )
+        //)
       ),
     )
   )
-  sdramCtrlTester.io <> mySdramCtrl.io.bus
+  sdramCtrlTester.io.busVec.head <> mySdramCtrl.io.bus
   //--------
 }
 case class LcvSdramSimDut(

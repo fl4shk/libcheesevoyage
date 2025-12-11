@@ -77,19 +77,33 @@ case class LcvBusCacheConfig(
   lineSizeBytes: Int,
   depthWords: Int, // this is in number of words
   numCpus: Int,
-  lineWordMemRamStyle: String=(
-    //"auto"
-    "block"
+  lineWordMemRamStyleAltera: String=(
+    //"MLAB"
+    "M10K"
   ),
-  lineAttrsMemRamStyle: String=(
+  lineWordMemRamStyleXilinx: String=(
     //"auto"
+    //"distributed"
     "block"
+    //"ultra"
   ),
-  private[libcheesevoyage] var busCfg: LcvBusConfig=null,
+  lineAttrsMemRamStyleAltera: String=(
+    //"MLAB"
+    "M10K"
+  ),
+  lineAttrsMemRamStyleXilinx: String=(
+    //"auto"
+    //"distributed"
+    "block"
+    //"ultra"
+  ),
+  //private[libcheesevoyage] var busCfg: LcvBusConfig=null,
+  private[libcheesevoyage] var busMainCfg: LcvBusMainConfig=null
 ) {
+  //private[libcheesevoyage] var busMainCfg: LcvBusMainConfig = 
   def seqlockWidth = 32
   def seqlockGlobalCntWidth = 41
-  def busMainCfg = busCfg.mainCfg
+  //def busMainCfg = busCfg.mainCfg
   //def busMesiCfg = busCfg.mesiCfg
 
   def wordWidth = busMainCfg.dataWidth
@@ -197,7 +211,7 @@ case class LcvBusConfig(
 
   cacheCfg match {
     case Some(cacheCfg) => {
-      cacheCfg.busCfg = this
+      cacheCfg.busMainCfg = mainCfg
       cacheCfg.doRequires()
 
       println(

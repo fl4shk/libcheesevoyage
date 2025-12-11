@@ -249,6 +249,20 @@ case class FpgacpuPulseToPipe[
 }
 //--------
 // http://fpgacpu.ca/fpga/RAM_Simple_Dual_Port.html
+case class FpgacpuRamSimpleDualPortConfig[
+  WordT <: Data,
+](
+  wordType: HardType[WordT],
+  depth: Int,
+  //init: Option[Seq[Bits]]=None,
+  init: Option[Seq[WordT]]=None,
+  initBigInt: Option[Seq[BigInt]]=None,
+  arrRamStyleAltera: String="M10K",
+  arrRamStyleXilinx: String="block",
+  arrRwAddrCollisionXilinx: String="",
+  //optDblRdReg: Boolean=false,
+) {
+}
 case class FpgacpuRamSimpleDualPortIo
 //[
 //  WordT <: Data
@@ -325,15 +339,16 @@ case class FpgacpuRamSimpleDualPortImpl[
   WordT <: Data
 ](
   //wordWidth: Int,
+  cfg: FpgacpuRamSimpleDualPortConfig[WordT],
   io: FpgacpuRamSimpleDualPortIo,
-  wordType: HardType[WordT],
-  depth: Int,
-  //init: Option[Seq[Bits]]=None,
-  init: Option[Seq[WordT]]=None,
-  initBigInt: Option[Seq[BigInt]]=None,
-  arrRamStyle: String="block",
-  arrRwAddrCollision: String="",
-  //optDblRdReg: Boolean=false,
+  //wordType: HardType[WordT],
+  //depth: Int,
+  ////init: Option[Seq[Bits]]=None,
+  //init: Option[Seq[WordT]]=None,
+  //initBigInt: Option[Seq[BigInt]]=None,
+  //arrRamStyle: String="block",
+  //arrRwAddrCollision: String="",
+  ////optDblRdReg: Boolean=false,
 ) extends Area {
   //val io = FpgacpuRamSimpleDualPortIo(
   //  //wordType=Bits(wordWidth bits),
@@ -342,28 +357,28 @@ case class FpgacpuRamSimpleDualPortImpl[
   //)
   val arr = Mem(
     //wordType=Bits(wordWidth bits),
-    wordType=wordType(),
-    wordCount=depth,
+    wordType=cfg.wordType(),
+    wordCount=cfg.depth,
   )
     //.initBigInt(Array.fill(depth)(BigInt(0)).toSeq)
-    .addAttribute("ramstyle", arrRamStyle)
-    .addAttribute("ram_style", arrRamStyle)
-    .addAttribute("rw_addr_collision", arrRwAddrCollision)
+    .addAttribute("ramstyle", cfg.arrRamStyleAltera)
+    .addAttribute("ram_style", cfg.arrRamStyleXilinx)
+    .addAttribute("rw_addr_collision", cfg.arrRwAddrCollisionXilinx)
     //.generateAsBlackBox()
   //arr.setTechnology(ramBlock)
 
-  init match {
+  cfg.init match {
     case Some(_) => {
-      arr.init(init.get)
-      assert(initBigInt == None)
+      arr.init(cfg.init.get)
+      assert(cfg.initBigInt == None)
     }
     case None => {
     }
   }
-  initBigInt match {
+  cfg.initBigInt match {
     case Some(_) => {
-      arr.initBigInt(initBigInt.get, allowNegative=true)
-      assert(init == None)
+      arr.initBigInt(cfg.initBigInt.get, allowNegative=true)
+      assert(cfg.init == None)
     }
     case None => {
     }
@@ -372,7 +387,7 @@ case class FpgacpuRamSimpleDualPortImpl[
   arr.write(
     address=io.wrAddr,
     data={
-      val tempWrData = wordType()
+      val tempWrData = cfg.wordType()
       tempWrData.assignFromBits(
         io.wrData
       )
@@ -410,83 +425,85 @@ case class FpgacpuRamSimpleDualPortImpl[
 case class FpgacpuRamSimpleDualPort[
   WordT <: Data
 ](
-  wordType: HardType[WordT],
-  depth: Int,
-  init: Option[Seq[WordT]]=None,
-  initBigInt: Option[Seq[BigInt]]=None,
-  arrRamStyle: String="block",
-  arrRwAddrCollision: String="",
-  //optDblRdReg: Boolean=false,
+  //wordType: HardType[WordT],
+  //depth: Int,
+  //init: Option[Seq[WordT]]=None,
+  //initBigInt: Option[Seq[BigInt]]=None,
+  //arrRamStyle: String="block",
+  //arrRwAddrCollision: String="",
+  ////optDblRdReg: Boolean=false,
+  cfg: FpgacpuRamSimpleDualPortConfig[WordT],
 ) extends Component {
   //--------
   val io = FpgacpuRamSimpleDualPortIo(
     //wordType=wordType(),
-    wordWidth=(wordType().asBits.getWidth),
+    wordWidth=(cfg.wordType().asBits.getWidth),
     //depth=depth,
-    addrWidth=log2Up(depth),
+    addrWidth=log2Up(cfg.depth),
   )
   def addrWidth = io.addrWidth
   //--------
   val impl = FpgacpuRamSimpleDualPortImpl(
+    cfg=cfg,
     io=io,
-    //wordWidth=wordType().asBits.getWidth,
-    wordType=wordType(),
-    depth=depth,
-    //initBigInt=initBigInt,
-    init={
-      init match {
-        case Some(_) => {
-          //val tempArr = new ArrayBuffer[WordT]()
-          //if (myInit.size < depth) {
-          //  for (idx <- 0 until myInit.size) {
-          //    tempArr += myInit(idx)//.asBits
-          //  }
-          //  for (idx <- myInit.size until depth) {
-          //    tempArr += tempArr.last.getZero 
-          //    //BigInt(0)//tempArr.last.getZero
-          //  }
-          //} else {
-          //  for (idx <- 0 until depth) {
-          //    tempArr += myInit(idx)//.asBits
-          //  }
-          //}
-          //Some(tempArr.toSeq)
-          //Some(myInit)
-          init
-        }
-        case None => {
-          None
-        }
-      }
-    },
-    initBigInt={
-      initBigInt match {
-        case Some(_) => {
-          //val tempArr = new ArrayBuffer[BigInt]()
-          //if (myInit.size < depth) {
-          //  for (idx <- 0 until myInit.size) {
-          //    tempArr += myInit(idx)//.asBits
-          //  }
-          //  for (idx <- myInit.size until depth) {
-          //    tempArr += BigInt(0)//tempArr.last.getZero
-          //  }
-          //} else {
-          //  for (idx <- 0 until depth) {
-          //    tempArr += myInit(idx)//.asBits
-          //  }
-          //}
-          //Some(tempArr.toSeq)
-          //Some(myInit)
-          initBigInt
-        }
-        case None => {
-          None
-        }
-      }
-    },
-    arrRamStyle=arrRamStyle,
-    arrRwAddrCollision=arrRwAddrCollision,
-    //optDblRdReg=optDblRdReg,
+    ////wordWidth=wordType().asBits.getWidth,
+    //wordType=wordType(),
+    //depth=depth,
+    ////initBigInt=initBigInt,
+    //init={
+    //  init match {
+    //    case Some(_) => {
+    //      //val tempArr = new ArrayBuffer[WordT]()
+    //      //if (myInit.size < depth) {
+    //      //  for (idx <- 0 until myInit.size) {
+    //      //    tempArr += myInit(idx)//.asBits
+    //      //  }
+    //      //  for (idx <- myInit.size until depth) {
+    //      //    tempArr += tempArr.last.getZero 
+    //      //    //BigInt(0)//tempArr.last.getZero
+    //      //  }
+    //      //} else {
+    //      //  for (idx <- 0 until depth) {
+    //      //    tempArr += myInit(idx)//.asBits
+    //      //  }
+    //      //}
+    //      //Some(tempArr.toSeq)
+    //      //Some(myInit)
+    //      init
+    //    }
+    //    case None => {
+    //      None
+    //    }
+    //  }
+    //},
+    //initBigInt={
+    //  initBigInt match {
+    //    case Some(_) => {
+    //      //val tempArr = new ArrayBuffer[BigInt]()
+    //      //if (myInit.size < depth) {
+    //      //  for (idx <- 0 until myInit.size) {
+    //      //    tempArr += myInit(idx)//.asBits
+    //      //  }
+    //      //  for (idx <- myInit.size until depth) {
+    //      //    tempArr += BigInt(0)//tempArr.last.getZero
+    //      //  }
+    //      //} else {
+    //      //  for (idx <- 0 until depth) {
+    //      //    tempArr += myInit(idx)//.asBits
+    //      //  }
+    //      //}
+    //      //Some(tempArr.toSeq)
+    //      //Some(myInit)
+    //      initBigInt
+    //    }
+    //    case None => {
+    //      None
+    //    }
+    //  }
+    //},
+    //arrRamStyle=arrRamStyle,
+    //arrRwAddrCollision=arrRwAddrCollision,
+    ////optDblRdReg=optDblRdReg,
   )
   //--------
   //impl.io.wrEn := io.wrEn

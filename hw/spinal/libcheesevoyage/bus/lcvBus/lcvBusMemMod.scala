@@ -20,8 +20,9 @@ case class LcvBusMemConfig(
   depth: Int,
   init: Option[Seq[Bits]]=None,
   initBigInt: Option[Seq[BigInt]]=None,
-  arrRamStyle: String="block",
-  arrRwAddrCollision: String="",
+  arrRamStyleAltera: String="M10K",
+  arrRamStyleXilinx: String="block",
+  arrRwAddrCollisionXilinx: String="",
 ) {
   val ramCfg = RamSdpPipeConfig(
     wordType=Bits(busCfg.dataWidth bits),
@@ -29,8 +30,9 @@ case class LcvBusMemConfig(
     optIncludeWrByteEn=true,
     init=init,
     initBigInt=initBigInt,
-    arrRamStyle=arrRamStyle,
-    arrRwAddrCollision=arrRwAddrCollision,
+    arrRamStyleAltera=arrRamStyleAltera,
+    arrRamStyleXilinx=arrRamStyleXilinx,
+    arrRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
   )
   //def busCfg = mmapCfg.busCfg
   //def depth = mmapCfg.addrSliceSize
@@ -393,12 +395,18 @@ case class LcvBusMemSimDut(
       busCfg=cfg.busCfg,
       kind=(
         LcvBusDeviceRamTesterKind.DualBurstRandDataSemiRandAddr
+        //(
+        //  optNonCoherentCacheSetWidth=(
+        //    //None
+        //    Some(8)
+        //  )
+        //)
         //LcvBusDeviceRamTesterKind.DualBurstRandData
         //LcvBusDeviceRamTesterKind.NoBurstRandData
       ),
     )
   )
-  myMem.io.bus <> myMemTester.io
+  myMem.io.bus <> myMemTester.io.busVec.head
 }
 
 object LcvBusMemTestConfig {

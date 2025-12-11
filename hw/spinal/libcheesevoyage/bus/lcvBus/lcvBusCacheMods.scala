@@ -143,7 +143,8 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
     depth=depthWords,
     optIncludeWrByteEn=true,
     initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
-    arrRamStyle=cfg.loBusCacheCfg.lineWordMemRamStyle,
+    arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
+    arrRamStyleXilinx=cfg.loBusCacheCfg.lineWordMemRamStyleXilinx,
   )
   val lineWordRam = RamSdpPipe(
     cfg=lineWordRamCfg
@@ -152,7 +153,8 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
     wordType=LcvBusCacheLineAttrs(cfg=loBusCfg),
     depth=depthLines,
     initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
-    arrRamStyle=cfg.loBusCacheCfg.lineAttrsMemRamStyle,
+    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
+    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
   )
   val lineAttrsRam = RamSdpPipe(
     cfg=lineAttrsRamCfg
@@ -230,11 +232,20 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   ): Unit = {
     lineWordRam.io.rdEn := True
     //rMyLineWordRamRdEn := True
-    lineWordRam.io.rdAddr := (
+    lineWordRam.io.rdAddr := {
       //(busAddr >> myLineRamAddrRshift)
-      (busAddr(busAddr.high downto myLineRamAddrRshift))
-      .resize(lineWordRam.io.rdAddr.getWidth)
-    )
+      println(
+        s"test info: busAddr("
+        + s"${busAddr.high} downto ${myLineRamAddrRshift}"
+        + s")"
+      )
+      (
+        (
+          busAddr(busAddr.high downto myLineRamAddrRshift)
+        )
+        .resize(lineWordRam.io.rdAddr.getWidth)
+      )
+    }
   }
   def doLineWordRamWrite(
     busAddr: UInt,
@@ -306,10 +317,13 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
     ),
   )
   doLineWordRamReadSync(
-    busAddr=(
+    busAddr={
       //rLoBusH2dPayload.addr
+      println(
+        s"testificate: ${io.loBus.h2dBus.addr.bitsRange}"
+      )
       io.loBus.h2dBus.addr
-    ),
+    },
   )
   doLineAttrsRamWrite(
     busAddr=(
@@ -564,9 +578,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     //}
     is (State.SEND_LINE_TO_HI_BUS_PIPE_2) {
       rState := State.SEND_LINE_TO_HI_BUS_PIPE_1
-      base.doLineWordRamReadSync(
-        busAddr=0
-      )
+      //base.doLineWordRamReadSync(
+      //  busAddr=0
+      //)
     }
     is (State.SEND_LINE_TO_HI_BUS_PIPE_1) {
       rState := State.SEND_LINE_TO_HI_BUS
@@ -741,12 +755,78 @@ case class LcvBusCache(
 }
 
 case class LcvBusNonCoherentDataCacheSimDut(
-  cacheCfg: LcvBusCacheBusPairConfig,
+  //cacheCfg: LcvBusCacheBusPairConfig,
 ) extends Component {
+  //--------
+  val cacheCfg = (
+    LcvBusCacheBusPairConfig(
+      mainCfg=LcvBusMainConfig(
+        dataWidth=32,
+        addrWidth=32,
+        allowBurst=false,
+        burstAlwaysMaxSize=false,
+        srcWidth=1,
+      ),
+      loBusCacheCfg=LcvBusCacheConfig(
+        kind=LcvCacheKind.D,
+        lineSizeBytes=64,
+        depthWords=1024,
+        numCpus=1,
+      ),
+      hiBusCacheCfg=(
+        //Some(LcvBusCacheConfig(
+        //  kind=LcvCacheKind.Shared,
+        //  lineSizeBytes=64,
+        //  depthWords=2048,
+        //  numCpus=2,
+        //))
+        None
+      )
+    )
+  )
+  //val testerCfg = (
+  //  LcvBusDeviceRamTesterConfig(
+  //    busCfg=cacheCfg.loBusCfg,
+  //    kind=LcvBusDeviceRamTesterKind.NoBurstRandDataSemiRandAddr(
+  //      optDirectMappedCacheTagLsbMinus1=Some(
+  //        //cacheCfg.loBusCacheCfg.lineSizeBytes
+  //        cacheCfg.loBusCacheCfg.setWidth
+  //      )
+  //    )
+  //  )
+  //)
   //--------
   val io = new Bundle {
   }
   //--------
+  val myCache = LcvBusCache(cfg=cacheCfg)
+  //val myCacheTester = LcvBusDeviceRamTester(cfg=testerCfg)
+  //--------
+}
+
+
+object LcvBusNonCoherentDataCacheSim extends App {
+  def clkRate = 100.0 MHz
+  val simSpinalConfig = SpinalConfig(
+    defaultClockDomainFrequency=FixedFrequency(clkRate)
+  )
+  SimConfig
+    .withConfig(config=simSpinalConfig)
+    .withFstWave
+    .compile(
+      //LcvSdramSimDut(clkRate=clkRate)
+      LcvBusNonCoherentDataCacheSimDut()
+    )
+    .doSim { dut =>
+      dut.clockDomain.forkStimulus(period=10)
+      def simNumClks = (
+        200000
+      )
+      for (idx <- 0 until simNumClks) {
+        dut.clockDomain.waitRisingEdge()
+      }
+      simSuccess()
+    }
 }
 
 object LcvBusCacheSpinalConfig {
@@ -762,7 +842,7 @@ object LcvBusCacheSpinalConfig {
 object LcvBusCacheToVerilog extends App {
   LcvBusCacheSpinalConfig.spinal.generateVerilog{
     val top = LcvBusCache(
-      LcvBusCacheBusPairConfig(
+      cfg=LcvBusCacheBusPairConfig(
         mainCfg=LcvBusMainConfig(
           dataWidth=32,
           addrWidth=32,

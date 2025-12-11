@@ -10,36 +10,6 @@ import spinal.lib.io._
 
 import libcheesevoyage.general._
 
-
-sealed trait LcvBusDeviceRamTesterKind {
-  def hasRandData: Boolean  
-  def hasRandAddr: Boolean
-}
-object LcvBusDeviceRamTesterKind {
-  case object DualBurstRandDataSemiRandAddr
-  extends LcvBusDeviceRamTesterKind {
-    def hasRandData: Boolean = true
-    def hasRandAddr: Boolean = true
-  }
-  case object DualBurstRandData extends LcvBusDeviceRamTesterKind {
-    def hasRandData: Boolean = true
-    def hasRandAddr: Boolean = false
-  }
-  case object NoBurstRandData extends LcvBusDeviceRamTesterKind {
-    def hasRandData: Boolean = true
-    def hasRandAddr: Boolean = false
-  }
-  //case object DualBurstRandAddr extends LcvBusDeviceRamTesterKind {
-  //  def hasRandData: Boolean = false
-  //}
-}
-case class LcvBusDeviceRamTesterConfig(
-  busCfg: LcvBusConfig,
-  kind: LcvBusDeviceRamTesterKind,
-  testDataRamStyle: String="M10K",
-) {
-}
-
 case class LcvXorShift16Config(
   //xsWidthMul: Int=2,
   xsInitS2d: Seq[Seq[BigInt]],
@@ -152,13 +122,94 @@ case class LcvXorShift16(
 //) extends Component {
 //}
 
-case class LcvBusDeviceRamTester(
+
+sealed trait LcvBusDeviceRamTesterKind {
+  def _hasRandData: Boolean  
+  def _hasRandAddr: Boolean
+  //def optCacheLineSizeBytes: Option[Int]
+  def _optDirectMappedCacheTagLsbMinus1: Option[Int]
+  //def _busVecSize: Int
+  //assert(
+  //  _busVecSize > 0
+  //)
+}
+object LcvBusDeviceRamTesterKind {
+  case class NoBurstRandDataSemiRandAddr(
+    optDirectMappedCacheTagLsbMinus1: Option[Int],
+    //busVecSize: Int=1,
+  ) extends LcvBusDeviceRamTesterKind {
+    def _hasRandData: Boolean = true
+    def _hasRandAddr: Boolean = true
+    def _optDirectMappedCacheTagLsbMinus1: Option[Int] = (
+      optDirectMappedCacheTagLsbMinus1
+    )
+    //def _busVecSize: Int = busVecSize
+  }
+  case object DualBurstRandDataSemiRandAddr
+  extends LcvBusDeviceRamTesterKind {
+    def _hasRandData: Boolean = true
+    def _hasRandAddr: Boolean = true
+    def _optDirectMappedCacheTagLsbMinus1: Option[Int] = None
+    //def _busVecSize: Int = 1
+  }
+  case object DualBurstRandData extends LcvBusDeviceRamTesterKind {
+    def _hasRandData: Boolean = true
+    def _hasRandAddr: Boolean = false
+    def _optDirectMappedCacheTagLsbMinus1: Option[Int] = None
+    //def _busVecSize: Int = 1
+  }
+  case object NoBurstRandData extends LcvBusDeviceRamTesterKind {
+    def _hasRandData: Boolean = true
+    def _hasRandAddr: Boolean = false
+    def _optDirectMappedCacheTagLsbMinus1: Option[Int] = None
+    //def _busVecSize: Int = 1
+  }
+}
+case class LcvBusDeviceRamTesterConfig(
+  busCfg: LcvBusConfig,
+  kind: LcvBusDeviceRamTesterKind,
+  testDataRamStyleAltera: String="M10K",
+  testDataRamStyleXilinx: String="block",
+) {
+  def busVecSize = (
+    busCfg.cacheCfg match {
+      case Some(cacheCfg) => (
+        cacheCfg.numCpus
+      )
+      case None => (
+        1
+      )
+    }
+  )
+}
+
+case class LcvBusDeviceRamTesterIo(
+  cfg: LcvBusDeviceRamTesterConfig,
+) extends Bundle {
+  val busVec = (
+    Vec.fill(
+      cfg.busVecSize
+    )(
+      master(LcvBusIo(cfg=cfg.busCfg))
+    )
+  )
+}
+
+private[libcheesevoyage] case class LcvBusDeviceRamTesterNonCoherent(
   cfg: LcvBusDeviceRamTesterConfig,
 ) extends Component {
   //--------
   def busCfg = cfg.busCfg
+  busCfg.cacheCfg match {
+    case Some(cacheCfg) => {
+      require(!cacheCfg.coherent)
+    }
+    case None => {
+    }
+  }
   //--------
   val io = master(LcvBusIo(cfg=busCfg))
+  //val io = LcvBusDeviceRamTesterIo(cfg=cfg)
   //--------
   val rH2dValid = Reg(Bool(), init=False)
   val rH2dPayload = {
@@ -167,7 +218,7 @@ case class LcvBusDeviceRamTester(
     temp
   }
   val myH2dSendFifo = (
-    cfg.kind.hasRandAddr
+    cfg.kind._hasRandAddr
   ) generate (
     StreamFifo(
       dataType=LcvBusH2dPayload(cfg=busCfg),
@@ -186,11 +237,9 @@ case class LcvBusDeviceRamTester(
     io.d2hBus.payload
   )
 
-  if (!cfg.kind.hasRandAddr) {
+  if (!cfg.kind._hasRandAddr) {
     io.h2dBus.valid := rH2dValid
-    io.h2dBus.payload := (
-      rH2dPayload
-    )
+    io.h2dBus.payload := rH2dPayload
   } else {
     io.h2dBus << myH2dSendFifo.io.pop
     myH2dSendFifo.io.push.valid := rH2dValid
@@ -210,7 +259,7 @@ case class LcvBusDeviceRamTester(
       = newElement();
   }
   val rStateIncrAddr = (
-    !cfg.kind.hasRandAddr
+    !cfg.kind._hasRandAddr
   ) generate(
     Reg(StateIncrAddr())
     init(StateIncrAddr.WRITE_START)
@@ -233,7 +282,7 @@ case class LcvBusDeviceRamTester(
       = newElement();
   }
   val rStateRandAddr = (
-    cfg.kind.hasRandAddr
+    cfg.kind._hasRandAddr
   ) generate (
     Reg(StateRandAddr())
     init(StateRandAddr.WRITE_START)
@@ -263,7 +312,7 @@ case class LcvBusDeviceRamTester(
       val tempA2d = new ArrayBuffer[Seq[BigInt]]()
       val outerSize = (
         cfg.busCfg.maxBurstSizeMinus1 + 1
-        + (if (cfg.kind.hasRandAddr) (1) else (0))
+        + (if (cfg.kind._hasRandAddr) (1) else (0))
       )
       val innerSize = 2
       for (idx <- 0 until outerSize) {
@@ -281,85 +330,7 @@ case class LcvBusDeviceRamTester(
       tempA2d
     }
   )
-  val myPrng = LcvXorShift16(
-    cfg=myPrngCfg
-  )
-
-  //val myPrngArea = (
-  //  cfg.kind.hasRandData
-  //) generate (new Area {
-  //  // credit:
-  //  // http://www.retroprogramming.com/2017/07/xorshift-pseudorandom-numbers-in-z80.html
-  //  def myXsWidth = (
-  //    32
-  //  )
-  //  //def myCntWidth = 3
-  //  def myCntMax = 2
-  //  def myCntWidth = log2Up(myCntMax + 1) + 1
-  //  val rCnt = (
-  //    Reg(SInt(myCntWidth bits))
-  //    init(myCntMax)
-  //  )
-  //  val rXsVec = (
-  //    Vec.fill(2)(
-  //      Vec.fill(
-  //        //hostBusCfg.maxBurstSizeMinus1 + 1
-  //        cfg.busCfg.maxBurstSizeMinus1 + 1
-  //      )(
-  //        Vec.fill(3)(
-  //          Reg(UInt(myXsWidth bits))
-  //          //init(1)
-  //        )
-  //      )
-  //    )
-  //  )
-  //  for (idx <- 0 until rXsVec.size) {
-  //    //rXsVec(idx).foreach(
-  //    //  item => item.init(idx + 1)
-  //    //  //outerItem => outerItem.foreach(
-  //    //  //  item => item.init(idx + 1)
-  //    //  //)
-  //    //)
-  //    for (jdx <- 0 until rXsVec(idx).size) {
-  //      rXsVec(idx)(jdx).foreach(item => {
-  //        item.init(idx * rXsVec(idx).size + jdx + 1)
-  //      })
-  //    }
-  //  }
-  //  rXsVec.foreach(outerXs => outerXs.foreach(
-  //    rXs => {
-  //      rXs(2) := (
-  //        (rXs(0) ^ ((rXs(0) << 7)(rXs(0).bitsRange))).resize(myXsWidth)
-  //      )
-  //      rXs(1) := (
-  //        (rXs(2) ^ (rXs(2) >> 9).resize(myXsWidth)).resize(myXsWidth)
-  //      )
-  //      when (!rCnt.msb) {
-  //        rCnt := rCnt - 1
-  //      } otherwise {
-  //        rXs(0) := (
-  //          (rXs(1) ^ ((rXs(1) << 8)(rXs(0).bitsRange))).resize(myXsWidth)
-  //        )
-  //        rCnt := myCntMax
-  //      }
-  //    }
-  //  ))
-  //  def getCurrRand(idx: Int): UInt = {
-  //    //val a = (rXs ^ ((rXs << 7)(rXs.bitsRange))).resize(rXs.getWidth)
-  //    //val b = (a ^ (a >> 9).resize(rXs.getWidth)).resize(rXs.getWidth)
-  //    //val c = (b ^ ((b << 8)(rXs.bitsRange))).resize(rXs.getWidth)
-  //    //rXs := c
-  //    //rXs(0) := r
-  //    //c(15 downto 0)
-  //    Cat(
-  //      //rXsVec(0)(idx)(0)(15 downto 0),
-  //      //rXsVec(1)(idx)(0)(15 downto 0),
-  //      rXsVec.head(idx)(0)(15 downto 0),
-  //      rXsVec.last(idx)(0)(15 downto 0),
-  //    ).asUInt
-  //  }
-  //})
-
+  val myPrng = LcvXorShift16(cfg=myPrngCfg)
   def myNumTests = (
     // 8
     4
@@ -373,8 +344,13 @@ case class LcvBusDeviceRamTester(
     (cfg.busCfg.maxBurstSizeMinus1 + 1) << 2
   )
   def myTestDataVecOuterSize = (
-    if (cfg.kind.hasRandAddr) (
-      4
+    if (cfg.kind._hasRandAddr) (
+      //if (cfg.kind._optDirectMappedCacheTagLsbMinus1 != None) (
+      //  
+      //) else (
+        //4
+      //)
+      16
     ) else (
       1
     )
@@ -391,7 +367,7 @@ case class LcvBusDeviceRamTester(
   }
 
   val rTestData = (
-    //!cfg.kind.hasRandAddr
+    //!cfg.kind._hasRandAddr
     true
   ) generate (
     //Vec.fill(myTestDataVecOuterSize)(
@@ -417,7 +393,9 @@ case class LcvBusDeviceRamTester(
       })
     //)
   )
-  val rRecvCmpData = (
+  val rRecvCmpDataIncrAddr = (
+    !cfg.kind._hasRandAddr
+  ) generate (
     Vec.fill(
       cfg.busCfg.maxBurstSizeMinus1 + 1
     )({
@@ -426,10 +404,30 @@ case class LcvBusDeviceRamTester(
       temp
     })
   )
+  case class RecvCmpDataRandAddr(
+  ) extends Bundle {
+    val recvDataVec = Vec.fill(
+      cfg.busCfg.maxBurstSizeMinus1 + 1
+    )(
+      UInt(myPrngCfg.myXsWidth bits)
+    )
+    val validVec = Vec.fill(
+      myTestDataVecOuterSize
+    )(
+      Bool()
+    )
+  }
+  val rRecvCmpDataRandAddr = (
+    cfg.kind._hasRandAddr
+  ) generate {
+    val temp = Reg(RecvCmpDataRandAddr())
+    temp.init(temp.getZero)
+    temp
+  }
   def myTestDataRamDepthInner = cfg.busCfg.maxBurstSizeMinus1 + 1
   def myTestDataRamDepthOuter = (1 << log2Up(myTestDataVecOuterSize))
   val myTestDataRam/*Arr*/ = (
-    cfg.kind.hasRandAddr
+    cfg.kind._hasRandAddr
   ) generate {
     val depthInner = myTestDataRamDepthInner
     val depthOuter = myTestDataRamDepthOuter
@@ -448,7 +446,8 @@ case class LcvBusDeviceRamTester(
           depth=depth,
           optIncludeWrByteEn=false,
           initBigInt=Some(Array.fill(depth)(BigInt(0))),
-          arrRamStyle=cfg.testDataRamStyle,
+          arrRamStyleAltera=cfg.testDataRamStyleAltera,
+          arrRamStyleXilinx=cfg.testDataRamStyleXilinx,
         )
       )
       //FpgacpuRamSimpleDualPort(
@@ -459,189 +458,32 @@ case class LcvBusDeviceRamTester(
       //  ),
       //  depth=depth,
       //  initBigInt=Some(Array.fill(depth)(BigInt(0))),
-      //  arrRamStyle=cfg.testDataRamStyle,
+      //  arrRamStyle=cfg.testDataRamStyleAltera,
       //)
     //)
   }
   //--------
-  val dualBurstRandDataArea = (
-    cfg.kind == LcvBusDeviceRamTesterKind.DualBurstRandData
-    //|| cfg.kind == LcvBusDeviceRamTesterKind.DualBurstRandDataSemiRandAddr
-  ) generate (new Area {
-    //def rTestData = rTestDataVec.head
-    //def testData = myTestDataRamArr.head
-    //def myHaveSemiRandAddr = (
-    //  cfg.kind == LcvBusDeviceRamTesterKind.DualBurstRandDataSemiRandAddr
-    //)
-    //def doInitH2dSendAddr(): Unit = {
-    //  rH2dPayload.addr := (
-    //    if (myHaveSemiRandAddr) (
-    //      myPrng.io.outpXs.last(
-    //        cfg.busCfg
-    //      ).resize(rH2dPayload.addr.getWidth)
-    //    ) else (
-    //      U(s"${rH2dPayload.addr.getWidth}'d0")
-    //    )
-    //  )
-    //}
-    // BEGIN: state machine that does maximum-byte-amount bus bursts
-    switch (rStateIncrAddr) {
-      is (StateIncrAddr.WRITE_START) {
-        rHadH2dFinish := False
-        rHadD2hFinish := False
-
-        for (testIdx <- 0 until cfg.busCfg.maxBurstSizeMinus1 + 1) {
-          rTestData(testIdx).sendData := (
-            //myPrngArea.getCurrRand(idx=testIdx)
-            myPrng.io.outpXs(testIdx)
-          )
-          rRecvCmpData(testIdx) := rRecvCmpData(testIdx).getZero
-          //rTestData(testIdx).recvData := 0x0
-        }
-
-        rH2dValid := True
-        rH2dPayload.data := (
-          //rTestData.head.sendData
-          //myPrngArea.getCurrRand(idx=0)
-          myPrng.io.outpXs(0)
-        )
-        //doInitH2dSendAddr()
-        rH2dPayload.addr := 0x0
-        //rH2dPayload.addr := (
-        //  //if (myHaveSemiRandAddr) (
-        //  //  myPrng.io.outpXs.last(
-        //  //    cfg.busCfg
-        //  //  ).resize(rH2dPayload.addr.getWidth)
-        //  //) else (
-        //  //  U(s"${rH2dPayload.addr.getWidth}'d0")
-        //  //)
-        //  0x0
-        //)
-        rH2dPayload.byteEn := U(
-          rH2dPayload.byteEn.getWidth bits, default -> True
-        )
-        rH2dPayload.isWrite := True
-        rH2dPayload.src := 0x0
-
-        rH2dPayload.burstCnt := cfg.busCfg.maxBurstSizeMinus1
-        rH2dPayload.burstFirst := True
-        rH2dPayload.burstLast := False
-        rBurstCnt := (
-          //0x0
-          0x1
-        )
-
-        rStateIncrAddr := StateIncrAddr.WRITE_WAIT_TXN
-      }
-      is (StateIncrAddr.WRITE_WAIT_TXN) {
-        when (
-          rH2dValid
-          && io.h2dBus.ready
-        ) {
-          rH2dPayload.data := rTestData(rBurstCnt).sendData
-          rBurstCnt := rBurstCnt + 1
-
-          rH2dPayload.burstFirst := False
-          rH2dPayload.burstCnt := rH2dPayload.burstCnt - 1
-          when (rH2dPayload.burstCnt === 1) {
-            rH2dPayload.burstLast := True
-          }
-          when (rH2dPayload.burstLast) {
-            rH2dValid := False
-            rH2dPayload.burstLast := False
-            //rState := State.READ_START
-            rHadH2dFinish := True
-          }
-        }
-        when (
-          //RegNext(
-          //  next=io.d2hBus.valid,
-          //  init=False
-          //)
-          io.d2hBus.valid
-        ) {
-          myD2hReady := True
-          rHadD2hFinish := True
-        }
-        when (rHadH2dFinish && rHadD2hFinish) {
-          rStateIncrAddr := StateIncrAddr.READ_START
-        }
-      }
-      is (StateIncrAddr.READ_START) {
-        rBurstCnt := 0x0
-        rHadH2dFinish := False
-        rHadD2hFinish := False
-
-        rH2dValid := True
-
-        rH2dPayload.addr := 0x0
-        rH2dPayload.byteEn := U(
-          rH2dPayload.byteEn.getWidth bits, default -> True
-        )
-        rH2dPayload.isWrite := False
-        rH2dPayload.src := 0x0
-
-        rH2dPayload.burstCnt := cfg.busCfg.maxBurstSizeMinus1
-        rH2dPayload.burstFirst := True
-        rH2dPayload.burstLast := False
-
-        rStateIncrAddr := StateIncrAddr.READ_WAIT_TXN
-      }
-      is (StateIncrAddr.READ_WAIT_TXN) {
-        when (
-          rH2dValid
-          && io.h2dBus.ready
-        ) {
-          rH2dValid := False
-          rH2dPayload.burstFirst := False
-          rHadH2dFinish := True
-        }
-        when (
-          //RegNext(
-          //  next=io.d2hBus.valid,
-          //  init=False,
-          //)
-          io.d2hBus.valid
-        ) {
-          myD2hReady := True
-          rBurstCnt := rBurstCnt + 1
-          //rTestData(rBurstCnt).recvData := myD2hSendData.data
-          rRecvCmpData(rBurstCnt).payload := myD2hSendData.data
-          when (myD2hSendData.burstLast) {
-            rHadD2hFinish := True
-          }
-        }
-        when (rHadH2dFinish && rHadD2hFinish) {
-          rStateIncrAddr := StateIncrAddr.DO_COMPARE_TEST_DATA
-        }
-      }
-      is (StateIncrAddr.DO_COMPARE_TEST_DATA) {
-        val cmpVec = (
-          Vec.fill(cfg.busCfg.maxBurstSizeMinus1 + 1)(
-            Bool()
-          )
-        )
-        for (testIdx <- 0 until cfg.busCfg.maxBurstSizeMinus1 + 1) {
-          cmpVec(testIdx) := (
-            rTestData(testIdx).sendData
-            //=/= rTestData(testIdx).recvData
-            =/= rRecvCmpData(testIdx).payload
-          )
-        }
-        when (cmpVec.orR) {
-          rStateIncrAddr := StateIncrAddr.FAILED_TEST
-        } otherwise {
-          rStateIncrAddr := StateIncrAddr.WRITE_START
-        }
-      }
-      is (StateIncrAddr.FAILED_TEST) {
-      }
+  val noBurstRandDataSemiRandAddrArea = (
+    cfg.kind match {
+      case LcvBusDeviceRamTesterKind.NoBurstRandDataSemiRandAddr(_) => (
+        true
+      )
+      case _ => (
+        false
+      )
     }
-    // END: state machine that does maximum-byte-amount bus bursts
+  ) generate (new Area {
   })
-  //--------
   val dualBurstRandDataSemiRandAddrArea = (
     cfg.kind == LcvBusDeviceRamTesterKind.DualBurstRandDataSemiRandAddr
+    //cfg.kind match {
+    //  case LcvBusDeviceRamTesterKind.DualBurstRandDataSemiRandAddr(_) => {
+    //    true
+    //  }
+    //  case _ => {
+    //    false
+    //  }
+    //}
   ) generate (new Area {
     // BEGIN: state machine that does maximum-byte-amount bus bursts
     // starting from semi-random addresses
@@ -832,7 +674,18 @@ case class LcvBusDeviceRamTester(
     }
 
     def myTempBurstCntEtcWidth = (
-      cfg.busCfg.burstCntWidth + log2Up(busCfg.dataWidth / 8)
+      cfg.busCfg.burstCntWidth
+      + log2Up(busCfg.dataWidth / 8)
+      + (cfg.kind._optDirectMappedCacheTagLsbMinus1 match {
+        case Some(cacheSetWidth) => (
+          // use `- 2` so that both cache hits and cache misses will be
+          // tested for direct-mapped caches
+          cacheSetWidth - 2
+        )
+        case None => (
+          0
+        )
+      })
     )
     def myPrngTestDataRange = (
       myTempBurstCntEtcWidth - 1 + log2Up(myTestDataVecOuterSize)
@@ -878,11 +731,17 @@ case class LcvBusDeviceRamTester(
         )
         //rRecvCmpData(0x0).payload := 0x0
         //rRecvCmpData(0x0).valid := True
-        rRecvCmpData.foreach(item => {
-          //item := item.getZero
-          item.payload := item.payload.getZero
-          item.valid := True
+        rRecvCmpDataRandAddr.recvDataVec.foreach(item => {
+          item := item.getZero
+          //item.payload := item.payload.getZero
+          //item.valid := True
         })
+        //rRecvCmpDataRandAddr.validVec.allowOverride
+        //rRecvCmpDataRandAddr.validVec.foreach(item => {
+        //  item := item.getZero
+        //})
+        rRecvCmpDataRandAddr.validVec(nextSavedTestDataVecIdx) := True
+
         rRamWrAddrCnt := 0x1 
         rRamRdAddrCnt := 0x0
 
@@ -1109,7 +968,7 @@ case class LcvBusDeviceRamTester(
           myD2hReady := True
           rBurstCnt := rBurstCnt + 1
           //rTestData(rBurstCnt).recvData := myD2hSendData.data
-          rRecvCmpData(rBurstCnt).payload := myD2hSendData.data
+          rRecvCmpDataRandAddr.recvDataVec(rBurstCnt) := myD2hSendData.data
 
           //val wrTestDataElem = TestDataElem()
           //wrTestDataElem.recvData.allowOverride
@@ -1149,10 +1008,18 @@ case class LcvBusDeviceRamTester(
           )
         )
         for (testIdx <- 0 until cfg.busCfg.maxBurstSizeMinus1 + 1) {
-          when (rRecvCmpData(testIdx).valid) {
+          //when (rRecvCmpDataRandAddr(testIdx).valid) {
+          //  cmpVec(testIdx) := (
+          //    rTestData(testIdx).sendData
+          //    =/= rRecvCmpDataRandAddr(testIdx).payload
+          //  )
+          //} otherwise {
+          //  cmpVec(testIdx) := False
+          //}
+          when (rRecvCmpDataRandAddr.validVec(rSavedTestDataVecIdx)) {
             cmpVec(testIdx) := (
               rTestData(testIdx).sendData
-              =/= rRecvCmpData(testIdx).payload
+              =/= rRecvCmpDataRandAddr.recvDataVec(testIdx)
             )
           } otherwise {
             cmpVec(testIdx) := False
@@ -1170,6 +1037,185 @@ case class LcvBusDeviceRamTester(
     // END: state machine that does maximum-byte-amount bus bursts
     // starting from semi-random addresses
   })
+  //--------
+  val dualBurstRandDataArea = (
+    cfg.kind == LcvBusDeviceRamTesterKind.DualBurstRandData
+    //|| cfg.kind == LcvBusDeviceRamTesterKind.DualBurstRandDataSemiRandAddr
+  ) generate (new Area {
+    //def rTestData = rTestDataVec.head
+    //def testData = myTestDataRamArr.head
+    //def myHaveSemiRandAddr = (
+    //  cfg.kind == LcvBusDeviceRamTesterKind.DualBurstRandDataSemiRandAddr
+    //)
+    //def doInitH2dSendAddr(): Unit = {
+    //  rH2dPayload.addr := (
+    //    if (myHaveSemiRandAddr) (
+    //      myPrng.io.outpXs.last(
+    //        cfg.busCfg
+    //      ).resize(rH2dPayload.addr.getWidth)
+    //    ) else (
+    //      U(s"${rH2dPayload.addr.getWidth}'d0")
+    //    )
+    //  )
+    //}
+    // BEGIN: state machine that does maximum-byte-amount bus bursts
+    switch (rStateIncrAddr) {
+      is (StateIncrAddr.WRITE_START) {
+        rHadH2dFinish := False
+        rHadD2hFinish := False
+
+        for (testIdx <- 0 until cfg.busCfg.maxBurstSizeMinus1 + 1) {
+          rTestData(testIdx).sendData := (
+            //myPrngArea.getCurrRand(idx=testIdx)
+            myPrng.io.outpXs(testIdx)
+          )
+          rRecvCmpDataIncrAddr(testIdx) := (
+            rRecvCmpDataIncrAddr(testIdx).getZero
+          )
+          //rTestData(testIdx).recvData := 0x0
+        }
+
+        rH2dValid := True
+        rH2dPayload.data := (
+          //rTestData.head.sendData
+          //myPrngArea.getCurrRand(idx=0)
+          myPrng.io.outpXs(0)
+        )
+        //doInitH2dSendAddr()
+        rH2dPayload.addr := 0x0
+        //rH2dPayload.addr := (
+        //  //if (myHaveSemiRandAddr) (
+        //  //  myPrng.io.outpXs.last(
+        //  //    cfg.busCfg
+        //  //  ).resize(rH2dPayload.addr.getWidth)
+        //  //) else (
+        //  //  U(s"${rH2dPayload.addr.getWidth}'d0")
+        //  //)
+        //  0x0
+        //)
+        rH2dPayload.byteEn := U(
+          rH2dPayload.byteEn.getWidth bits, default -> True
+        )
+        rH2dPayload.isWrite := True
+        rH2dPayload.src := 0x0
+
+        rH2dPayload.burstCnt := cfg.busCfg.maxBurstSizeMinus1
+        rH2dPayload.burstFirst := True
+        rH2dPayload.burstLast := False
+        rBurstCnt := (
+          //0x0
+          0x1
+        )
+
+        rStateIncrAddr := StateIncrAddr.WRITE_WAIT_TXN
+      }
+      is (StateIncrAddr.WRITE_WAIT_TXN) {
+        when (
+          rH2dValid
+          && io.h2dBus.ready
+        ) {
+          rH2dPayload.data := rTestData(rBurstCnt).sendData
+          rBurstCnt := rBurstCnt + 1
+
+          rH2dPayload.burstFirst := False
+          rH2dPayload.burstCnt := rH2dPayload.burstCnt - 1
+          when (rH2dPayload.burstCnt === 1) {
+            rH2dPayload.burstLast := True
+          }
+          when (rH2dPayload.burstLast) {
+            rH2dValid := False
+            rH2dPayload.burstLast := False
+            //rState := State.READ_START
+            rHadH2dFinish := True
+          }
+        }
+        when (
+          //RegNext(
+          //  next=io.d2hBus.valid,
+          //  init=False
+          //)
+          io.d2hBus.valid
+        ) {
+          myD2hReady := True
+          rHadD2hFinish := True
+        }
+        when (rHadH2dFinish && rHadD2hFinish) {
+          rStateIncrAddr := StateIncrAddr.READ_START
+        }
+      }
+      is (StateIncrAddr.READ_START) {
+        rBurstCnt := 0x0
+        rHadH2dFinish := False
+        rHadD2hFinish := False
+
+        rH2dValid := True
+
+        rH2dPayload.addr := 0x0
+        rH2dPayload.byteEn := U(
+          rH2dPayload.byteEn.getWidth bits, default -> True
+        )
+        rH2dPayload.isWrite := False
+        rH2dPayload.src := 0x0
+
+        rH2dPayload.burstCnt := cfg.busCfg.maxBurstSizeMinus1
+        rH2dPayload.burstFirst := True
+        rH2dPayload.burstLast := False
+
+        rStateIncrAddr := StateIncrAddr.READ_WAIT_TXN
+      }
+      is (StateIncrAddr.READ_WAIT_TXN) {
+        when (
+          rH2dValid
+          && io.h2dBus.ready
+        ) {
+          rH2dValid := False
+          rH2dPayload.burstFirst := False
+          rHadH2dFinish := True
+        }
+        when (
+          //RegNext(
+          //  next=io.d2hBus.valid,
+          //  init=False,
+          //)
+          io.d2hBus.valid
+        ) {
+          myD2hReady := True
+          rBurstCnt := rBurstCnt + 1
+          //rTestData(rBurstCnt).recvData := myD2hSendData.data
+          rRecvCmpDataIncrAddr(rBurstCnt).payload := myD2hSendData.data
+          when (myD2hSendData.burstLast) {
+            rHadD2hFinish := True
+          }
+        }
+        when (rHadH2dFinish && rHadD2hFinish) {
+          rStateIncrAddr := StateIncrAddr.DO_COMPARE_TEST_DATA
+        }
+      }
+      is (StateIncrAddr.DO_COMPARE_TEST_DATA) {
+        val cmpVec = (
+          Vec.fill(cfg.busCfg.maxBurstSizeMinus1 + 1)(
+            Bool()
+          )
+        )
+        for (testIdx <- 0 until cfg.busCfg.maxBurstSizeMinus1 + 1) {
+          cmpVec(testIdx) := (
+            rTestData(testIdx).sendData
+            //=/= rTestData(testIdx).recvData
+            =/= rRecvCmpDataIncrAddr(testIdx).payload
+          )
+        }
+        when (cmpVec.orR) {
+          rStateIncrAddr := StateIncrAddr.FAILED_TEST
+        } otherwise {
+          rStateIncrAddr := StateIncrAddr.WRITE_START
+        }
+      }
+      is (StateIncrAddr.FAILED_TEST) {
+      }
+    }
+    // END: state machine that does maximum-byte-amount bus bursts
+  })
+  //--------
   //--------
   //--------
   val noBurstRandDataArea = (
@@ -1206,7 +1252,7 @@ case class LcvBusDeviceRamTester(
             }
           }
         }
-        rRecvCmpData(tempCnt) := rRecvCmpData(tempCnt).getZero
+        rRecvCmpDataIncrAddr(tempCnt) := rRecvCmpDataIncrAddr(tempCnt).getZero
         //rTestData(tempCnt).recvData := (
         //  U(s"${myPrngCfg.myXsWidth}'d0")
         //)
@@ -1270,7 +1316,7 @@ case class LcvBusDeviceRamTester(
           rHadD2hFinish := True
           myD2hReady := True
           //rTestData(tempCnt).recvData := io.d2hBus.payload.data
-          rRecvCmpData(tempCnt).payload := io.d2hBus.payload.data
+          rRecvCmpDataIncrAddr(tempCnt).payload := io.d2hBus.payload.data
         }
         when (rHadH2dFinish && rHadD2hFinish) {
           when ((rH2dPayload.addr + 4) < myMaxBaseAddr) {
@@ -1293,15 +1339,15 @@ case class LcvBusDeviceRamTester(
         val failure = (
           rTestData(tempCnt).sendData
           //=/= rTestData(tempCnt).recvData
-          =/= rRecvCmpData(tempCnt).payload
+          =/= rRecvCmpDataIncrAddr(tempCnt).payload
         )
         when (failure) {
           rStateIncrAddr := StateIncrAddr.FAILED_TEST
         }
-        rRecvCmpData(tempCnt).valid := (
+        rRecvCmpDataIncrAddr(tempCnt).valid := (
           rTestData(tempCnt).sendData
           //=== rTestData(tempCnt).recvData
-          === rRecvCmpData(tempCnt).payload
+          === rRecvCmpDataIncrAddr(tempCnt).payload
         )
       }
       is (StateIncrAddr.FAILED_TEST) {
@@ -1310,4 +1356,17 @@ case class LcvBusDeviceRamTester(
     // END: previous state machine, which lacks bursts
   })
   //--------
+}
+case class LcvBusDeviceRamTester(
+  cfg: LcvBusDeviceRamTesterConfig,
+) extends Component {
+  def busCfg = cfg.busCfg
+  val io = LcvBusDeviceRamTesterIo(cfg=cfg)
+  val nonCoherentInnerTesterArea = (
+    busCfg.cacheCfg == None
+    || !busCfg.cacheCfg.get.coherent
+  ) generate (new Area {
+    val nonCoherentInnerTester = LcvBusDeviceRamTesterNonCoherent(cfg=cfg)
+    nonCoherentInnerTester.io <> io.busVec.head
+  })
 }

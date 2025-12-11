@@ -17,8 +17,9 @@ case class RamSdpPipeConfig[
   optIncludeWrByteEn: Boolean=false,
   init: Option[Seq[WordT]]=None,
   initBigInt: Option[Seq[BigInt]]=None,
-  arrRamStyle: String="block",
-  arrRwAddrCollision: String="",
+  arrRamStyleAltera: String="M10K",
+  arrRamStyleXilinx: String="block",
+  arrRwAddrCollisionXilinx: String="",
 ) {
 }
 
@@ -60,8 +61,9 @@ case class RamSdpPipe[
 
   def init = cfg.init
   def initBigInt = cfg.initBigInt
-  def arrRamStyle = cfg.arrRamStyle
-  def arrRwAddrCollision = cfg.arrRwAddrCollision
+  def arrRamStyleAltera = cfg.arrRamStyleAltera
+  def arrRamStyleXilinx = cfg.arrRamStyleXilinx
+  def arrRwAddrCollisionXilinx = cfg.arrRwAddrCollisionXilinx
 
   val io = RamSdpPipeIo(
     //wordType=wordType(),
@@ -73,9 +75,9 @@ case class RamSdpPipe[
     wordType=wordType(),
     wordCount=depth,
   )
-    .addAttribute("ramstyle", arrRamStyle)
-    .addAttribute("ram_style", arrRamStyle)
-    .addAttribute("rw_addr_collision", arrRwAddrCollision)
+    .addAttribute("ramstyle", arrRamStyleAltera)
+    .addAttribute("ram_style", arrRamStyleXilinx)
+    .addAttribute("rw_addr_collision", arrRwAddrCollisionXilinx)
 
   init match {
     case Some(_) => {
@@ -169,8 +171,9 @@ case class RamSimpleDualPortConfig[
   depth: Int,
   init: Option[Seq[WordT]]=None,
   initBigInt: Option[Seq[BigInt]]=None,
-  arrRamStyle: String="block",
-  //arrRwAddrCollision: String="",
+  arrRamStyleAltera: String="M10K",
+  arrRamStyleXilinx: String="block",
+  //arrRwAddrCollisionXilinx: String="",
   //doFwdDel1: Boolean=false,
 ) {
 }
@@ -199,7 +202,8 @@ case class RamSimpleDualPort[
   def depth = cfg.depth
   def init = cfg.init
   def initBigInt = cfg.initBigInt
-  def arrRamStyle = cfg.arrRamStyle
+  def arrRamStyleAltera = cfg.arrRamStyleAltera
+  def arrRamStyleXilinx = cfg.arrRamStyleXilinx
 
   val io = RamSimpleDualPortIo(
     //wordType=wordType(),
@@ -207,12 +211,15 @@ case class RamSimpleDualPort[
     cfg=cfg
   )
   val myRam = FpgacpuRamSimpleDualPort(
-    wordType=wordType(),
-    depth=depth,
-    init=init,
-    initBigInt=initBigInt,
-    arrRamStyle=arrRamStyle,
-    arrRwAddrCollision="",
+    cfg=FpgacpuRamSimpleDualPortConfig(
+      wordType=wordType(),
+      depth=depth,
+      init=init,
+      initBigInt=initBigInt,
+      arrRamStyleAltera=arrRamStyleAltera,
+      arrRamStyleXilinx=arrRamStyleXilinx,
+      arrRwAddrCollisionXilinx="",
+    )
   )
   myRam.io.wrEn := io.ramIo.wrEn
   myRam.io.wrAddr := io.ramIo.wrAddr
@@ -362,8 +369,8 @@ case class PipeSimpleDualPortMemDrivePayload[
 //  depth: Int,
 //  initBigInt: Option[ArrayBuffer[BigInt]]=None,
 //  //latency: Int=1,
-//  arrRamStyle: String="block",
-//  arrRwAddrCollision: String="",
+//  arrRamStyleXilinx: String="block",
+//  arrRwAddrCollisionXilinx: String="",
 //  unionIdxWidth: Int=1,
 //)(
 //  getWordFunc: (
@@ -423,8 +430,8 @@ case class PipeSimpleDualPortMemDrivePayload[
 //    wordType=wordType(),
 //    depth=depth,
 //    initBigInt=initBigInt,
-//    arrRamStyle=arrRamStyle,
-//    arrRwAddrCollision=arrRwAddrCollision,
+//    arrRamStyleXilinx=arrRamStyleXilinx,
+//    arrRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
 //  )
 //
 //  arr.io.wrEn := wrPipeToPulse.io.pulse.valid
@@ -530,8 +537,8 @@ case class WrPulseRdPipeSimpleDualPortMem[
   linkArr: Option[ArrayBuffer[Link]]=None,
   //latency: Int=1,
   pmRmwModTypeName: String,
-  arrRamStyle: String="block",
-  arrRwAddrCollision: String="",
+  arrRamStyleXilinx: String="block",
+  arrRwAddrCollisionXilinx: String="",
   unionIdxWidth: Int=1,
   vivadoDebug: Boolean=false,
 )
@@ -761,8 +768,8 @@ extends Component
   //  wordType=wordType(),
   //  wordCount=wordCount,
   //)
-  //  .addAttribute("ram_style", arrRamStyle)
-  //  .addAttribute("rw_addr_collision", arrRwAddrCollision)
+  //  .addAttribute("ram_style", arrRamStyleXilinx)
+  //  .addAttribute("rw_addr_collision", arrRwAddrCollisionXilinx)
   //initBigInt match {
   //  case Some(myInitBigInt) => {
   //    mem.initBigInt(myInitBigInt)
@@ -1114,8 +1121,8 @@ extends Component
   //  wordType=wordType(),
   //  depth=wordCount,
   //  initBigInt=initBigInt,
-  //  arrRamStyle=arrRamStyle,
-  //  arrRwAddrCollision=arrRwAddrCollision,
+  //  arrRamStyleXilinx=arrRamStyleXilinx,
+  //  arrRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
   //)
 
   ////arr.io.wrEn := wrPipeToPulse.io.pulse.valid
@@ -1188,8 +1195,8 @@ extends Component
 //  pipeName: String,
 //  initBigInt: Option[ArrayBuffer[BigInt]]=None,
 //  linkArr: Option[ArrayBuffer[Link]]=None,
-//  arrRamStyle: String="block",
-//  arrRwAddrCollision: String="",
+//  arrRamStyleXilinx: String="block",
+//  arrRwAddrCollisionXilinx: String="",
 //)(
 //  setWordFunc: (
 //    ModT,   // pass-through pipeline outp
@@ -1210,8 +1217,9 @@ case class WrPulseRdPipeSimpleDualPortMemFpgacpu[
   initBigInt: Option[Seq[BigInt]]=None,
   linkArr: Option[ArrayBuffer[Link]]=None,
   //latency: Int=1,
-  arrRamStyle: String="block",
-  arrRwAddrCollision: String="",
+  arrRamStyleAltera: String="M10K",
+  arrRamStyleXilinx: String="block",
+  arrRwAddrCollisionXilinx: String="",
   unionIdxWidth: Int=1,
   vivadoDebug: Boolean=false,
 )
@@ -1272,11 +1280,15 @@ extends Component
   rdAddrPipeToPulse.io.moduleReady := rdDataPulseToPipe.io.moduleReady
   //--------
   val mem = FpgacpuRamSimpleDualPort(
-    wordType=wordType(),
-    depth=wordCount,
-    initBigInt=initBigInt,
-    arrRamStyle=arrRamStyle,
-    arrRwAddrCollision=arrRwAddrCollision,
+    cfg=FpgacpuRamSimpleDualPortConfig(
+      wordType=wordType(),
+      depth=wordCount,
+      init=None,
+      initBigInt=initBigInt,
+      arrRamStyleAltera=arrRamStyleAltera,
+      arrRamStyleXilinx=arrRamStyleXilinx,
+      arrRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
+    )
   )
 
   //arr.io.wrEn := wrPipeToPulse.io.pulse.valid
@@ -1523,8 +1535,8 @@ extends Component
 //  numRd: Int,
 //  initBigInt: Option[ArrayBuffer[BigInt]]=None,
 //  latency: Int=1,
-//  arrRamStyle: String="block",
-//  arrRwAddrCollision: String="",
+//  arrRamStyleXilinx: String="block",
+//  arrRwAddrCollisionXilinx: String="",
 //  unionIdxWidth: Int=1,
 //)(
 //  //--------
@@ -1556,8 +1568,8 @@ extends Component
 //      depth=depth,
 //      initBigInt=initBigInt,
 //      latency=latency,
-//      arrRamStyle=arrRamStyle,
-//      arrRwAddrCollision=arrRwAddrCollision,
+//      arrRamStyleXilinx=arrRamStyleXilinx,
+//      arrRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
 //      unionIdxWidth=unionIdxWidth,
 //    )(
 //      setWordFunc=setWordFunc,
@@ -1591,8 +1603,8 @@ extends Component
 //  numMems: Int,
 //  initBigInt: Option[ArrayBuffer[BigInt]]=None,
 //  latency: Int=1,
-//  arrRamStyle: String="block",
-//  arrRwAddrCollision: String="",
+//  arrRamStyleXilinx: String="block",
+//  arrRwAddrCollisionXilinx: String="",
 //) extends Component {
 //}
 
@@ -1956,7 +1968,7 @@ extends Component
 ////  //  dataType=memWordType(),
 ////  //  //dataType=fifoWordType(),
 ////  //  depth=fifoDepth,
-////  //  arrRamStyle="auto",
+////  //  arrRamStyleXilinx="auto",
 ////  //)
 ////
 ////  //val myFifoPush = cloneOf(fifo.io.push)

@@ -75,7 +75,8 @@ case class PipeMemRmwConfig[
   //optFwdUseMmwValidLaterStages: Boolean=false,
   optFwdHaveZeroReg: Option[Int]=Some(0x0),
   optEnableClear: Boolean=false,
-  memRamStyle: String="auto",
+  memRamStyleAltera: String="MLAB",
+  memRamStyleXilinx: String="auto",
   vivadoDebug: Boolean=false,
   optIncludeModFrontStageLink: Boolean=true,
   optIncludeModFrontS2MLink: Boolean=true,
@@ -1982,7 +1983,8 @@ extends Area {
   def initBigInt = cfg.initBigInt
   def optModHazardKind = cfg.optModHazardKind
   def optEnableClear = cfg.optEnableClear 
-  def memRamStyle = cfg.memRamStyle 
+  def memRamStyleAltera = cfg.memRamStyleAltera
+  def memRamStyleXilinx = cfg.memRamStyleXilinx
   def vivadoDebug = cfg.vivadoDebug 
   //def optIncludePreMid0Front = cfg.optIncludePreMid0Front
   def optIncludePreMid0Front = (
@@ -2307,7 +2309,8 @@ extends Area {
             }
           }
         ),
-        arrRamStyle=memRamStyle,
+        arrRamStyleAltera=memRamStyleAltera,
+        arrRamStyleXilinx=memRamStyleXilinx,
         //doFwdDel1=optIncludePreMid0Front,
       )
     )
@@ -2316,8 +2319,8 @@ extends Area {
     //  wordType=wordType(),
     //  wordCount=wordCountArr(ydx),
     //)
-    //  .addAttribute("ram_style", memRamStyle)
-    //  .addAttribute("ramstyle", memRamStyle)
+    //  .addAttribute("ram_style", memRamStyleXilinx)
+    //  .addAttribute("ramstyle", memRamStyleXilinx)
     //init match {
     //  case Some(myInit) => {
     //    //assert(myInit.size == wordCount)
@@ -6799,7 +6802,7 @@ extends Area {
 //  initBigInt: Option[Seq[BigInt]]=None,
 //  optEnableModDuplicate: Boolean=true,
 //  optEnableClear: Boolean=false,
-//  memRamStyle: String="auto",
+//  memRamStyleXilinx: String="auto",
 //  vivadoDebug: Boolean=false,
 //) extends Component {
 //  //--------
