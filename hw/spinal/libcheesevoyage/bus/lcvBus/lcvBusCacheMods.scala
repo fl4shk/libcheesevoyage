@@ -806,7 +806,11 @@ case class LcvBusNonCoherentDataCacheSimDut(
   //val myCache = LcvBusCache(cfg=cacheCfg)
   val myCacheTester = LcvBusDeviceRamTester(cfg=testerCfg)
   val myBusMem = {
-    val tempDepth = cacheCfg.loBusCacheCfg.depthWords * 2
+    val tempDepth = (
+      cacheCfg.loBusCacheCfg.depthWords * 2
+      //cacheCfg.loBusCacheCfg.depthWords * 4
+      //cacheCfg.loBusCacheCfg.depthWords * 16
+    )
     //val tempDepth = 128
     LcvBusMem(
       //cfg=cacheCfg.loBusCfg
