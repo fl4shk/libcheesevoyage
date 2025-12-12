@@ -147,13 +147,13 @@ case class LcvBusCacheConfig(
   }
   //--------
   def wordSizeBytes = wordWidth / 8
-  def depthBytes = depthWords * wordSizeBytes
-  def depthLines = (
-    // number of cache lines
-    depthBytes / lineSizeBytes
-  )
   def lineSizeWords = (
     lineSizeBytes / wordSizeBytes
+  )
+  def depthBytes = depthWords * wordSizeBytes
+  def depthLines = (
+    // this is the number of cache lines
+    depthBytes / lineSizeBytes
   )
   def tagWidth = (
     //addrWidth - log2Up(depthBytes)
@@ -163,19 +163,12 @@ case class LcvBusCacheConfig(
     //(assuming your addresses are word-based ofc) (edited)
     addrWidth - log2Up(depthLines) - log2Up(lineSizeWords) - 1
   )
-  def tagRange = (
-    addrWidth - 2 downto (addrWidth - 1 - tagWidth)
-  )
-  def nonCachedRange = (
-    addrWidth - 1 downto addrWidth - 1
-  )
-  def setWidth = (
-    addrWidth - tagWidth - 1
-  )
-  def setRange = (
-    addrWidth - 1 - tagWidth - 1
-    downto log2Up(lineSizeBytes)
-  )
+  def tagRange = addrWidth - 2 downto (addrWidth - 1 - tagWidth)
+  def nonCachedRange = addrWidth - 1 downto addrWidth - 1
+  def setWidth = addrWidth - tagWidth - 1
+  def mySetRangeHi = addrWidth - 1 - tagWidth - 1
+  def mySetRangeLo = log2Up(lineSizeBytes)
+  def setRange = mySetRangeHi downto mySetRangeLo
 }
 
 case class LcvBusConfig(

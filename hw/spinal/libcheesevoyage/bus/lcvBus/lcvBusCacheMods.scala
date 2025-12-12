@@ -169,14 +169,15 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   val wrLineWord = UInt(wordWidth bits)
   val wrLineAttrs = LcvBusCacheLineAttrs(cfg=loBusCfg)
   wrLineAttrs := RegNext(wrLineAttrs, init=wrLineAttrs.getZero)
+  wrLineAttrs.allowOverride
 
   //val rMyLineAttrsRamRdEn = Reg(Bool(), init=False)
   //lineAttrsRam.io.rdEn := rMyLineAttrsRamRdEn
-  lineAttrsRam.io.rdEn := True
+  //lineAttrsRam.io.rdEn := True
 
   //val rMyLineWordRamRdEn = Reg(Bool(), init=False)
   //lineWordRam.io.rdEn := rMyLineWordRamRdEn
-  lineWordRam.io.rdEn := True
+  //lineWordRam.io.rdEn := True
 
   lineWordRam.io.wrEn := False
   lineAttrsRam.io.wrEn := False
@@ -784,23 +785,50 @@ case class LcvBusNonCoherentDataCacheSimDut(
       )
     )
   )
-  //val testerCfg = (
-  //  LcvBusDeviceRamTesterConfig(
-  //    busCfg=cacheCfg.loBusCfg,
-  //    kind=LcvBusDeviceRamTesterKind.NoBurstRandDataSemiRandAddr(
-  //      optDirectMappedCacheTagLsbMinus1=Some(
-  //        //cacheCfg.loBusCacheCfg.lineSizeBytes
-  //        cacheCfg.loBusCacheCfg.setWidth
-  //      )
-  //    )
-  //  )
-  //)
+  val testerCfg = (
+    LcvBusDeviceRamTesterConfig(
+      busCfg=cacheCfg.loBusCfg,
+      kind=LcvBusDeviceRamTesterKind.NoBurstRandDataSemiRandAddr(
+        optDirectMappedCacheSetRangeHi=Some(
+          //cacheCfg.loBusCacheCfg.lineSizeBytes
+          //cacheCfg.loBusCacheCfg.setWidth
+          //cacheCfg.loBusCacheCfg.setWidth
+          //cacheCfg.loBusCacheCfg.tagRange.end - 1
+          cacheCfg.loBusCacheCfg.setRange.start
+        )
+      )
+    )
+  )
   //--------
   val io = new Bundle {
   }
   //--------
-  val myCache = LcvBusCache(cfg=cacheCfg)
-  //val myCacheTester = LcvBusDeviceRamTester(cfg=testerCfg)
+  //val myCache = LcvBusCache(cfg=cacheCfg)
+  val myCacheTester = LcvBusDeviceRamTester(cfg=testerCfg)
+  val myBusMem = {
+    val tempDepth = cacheCfg.loBusCacheCfg.depthWords * 2
+    //val tempDepth = 128
+    LcvBusMem(
+      //cfg=cacheCfg.loBusCfg
+      cfg=LcvBusMemConfig(
+        busCfg=cacheCfg.hiBusCfg,
+        depth=tempDepth,
+        initBigInt=Some(Array.fill(tempDepth)(BigInt(0))),
+      )
+    )
+  }
+  //myCache.io.loBus <> myCacheTester.io.busVec.head
+  //myCache.io.hiBus <> myBusMem.io.bus
+  //myBusMem.io.bus <> myCacheTester.io.busVec.head
+  myBusMem.io.bus.h2dBus.mainBurstInfo := (
+    myBusMem.io.bus.h2dBus.mainBurstInfo.getZero
+  )
+  myBusMem.io.bus.h2dBus.mainNonBurstInfo := (
+    myCacheTester.io.busVec.head.h2dBus.mainNonBurstInfo
+  )
+  myBusMem.io.bus.h2dBus.valid := myCacheTester.io.busVec.head.h2dBus.valid
+  myCacheTester.io.busVec.head.h2dBus.ready := myBusMem.io.bus.h2dBus.ready 
+  myCacheTester.io.busVec.head.d2hBus << myBusMem.io.bus.d2hBus
   //--------
 }
 
