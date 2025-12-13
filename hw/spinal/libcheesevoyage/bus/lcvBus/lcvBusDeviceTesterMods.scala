@@ -126,6 +126,7 @@ case class LcvXorShift16(
 sealed trait LcvBusDeviceRamTesterKind {
   def _hasRandData: Boolean  
   def _hasRandAddr: Boolean
+  def _isCoherent: Boolean
   //def optCacheLineSizeBytes: Option[Int]
   def _optDirectMappedCacheSetRangeHi: Option[Int]
   //def _busVecSize: Int
@@ -140,6 +141,7 @@ object LcvBusDeviceRamTesterKind {
   ) extends LcvBusDeviceRamTesterKind {
     def _hasRandData: Boolean = true
     def _hasRandAddr: Boolean = true
+    def _isCoherent: Boolean = false
     def _optDirectMappedCacheSetRangeHi: Option[Int] = (
       optDirectMappedCacheSetRangeHi
     )
@@ -149,18 +151,21 @@ object LcvBusDeviceRamTesterKind {
   extends LcvBusDeviceRamTesterKind {
     def _hasRandData: Boolean = true
     def _hasRandAddr: Boolean = true
+    def _isCoherent: Boolean = false
     def _optDirectMappedCacheSetRangeHi: Option[Int] = None
     //def _busVecSize: Int = 1
   }
   case object DualBurstRandData extends LcvBusDeviceRamTesterKind {
     def _hasRandData: Boolean = true
     def _hasRandAddr: Boolean = false
+    def _isCoherent: Boolean = false
     def _optDirectMappedCacheSetRangeHi: Option[Int] = None
     //def _busVecSize: Int = 1
   }
   case object NoBurstRandData extends LcvBusDeviceRamTesterKind {
     def _hasRandData: Boolean = true
     def _hasRandAddr: Boolean = false
+    def _isCoherent: Boolean = false
     def _optDirectMappedCacheSetRangeHi: Option[Int] = None
     //def _busVecSize: Int = 1
   }
@@ -783,11 +788,7 @@ private[libcheesevoyage] case class LcvBusDeviceRamTesterNonCoherent(
             doInitWriteTestDataElem()
           }
         //}
-        when (
-          //rH2dValid
-          //&& io.h2dBus.ready
-          myH2dSendFifo.io.push.fire
-        ) {
+        when (myH2dSendFifo.io.push.fire) {
           doPipe1ReadTestDataElem(
             ramIdx=rSavedTestDataVecIdx,
             rdAddr=rRamRdAddrCnt,
@@ -796,9 +797,12 @@ private[libcheesevoyage] case class LcvBusDeviceRamTesterNonCoherent(
           doFinishReadTestDataElem(rdTestDataElem)
 
           rH2dPayload.data := rdTestDataElem.sendData
-          rH2dPayload.addr := rH2dPayload.burstAddr(rH2dBurstCnt)
+          rH2dPayload.addr := rH2dPayload.burstAddr(
+            rH2dBurstCnt,
+            incrBurstCnt=true
+          )
 
-          rH2dBurstCnt := rH2dBurstCnt + 1
+          //rH2dBurstCnt := rH2dBurstCnt + 1
 
           nextH2dMainBurstInfo.burstFirst := False
           nextH2dMainBurstInfo.burstCnt := rH2dMainBurstInfo.burstCnt - 1
@@ -830,10 +834,7 @@ private[libcheesevoyage] case class LcvBusDeviceRamTesterNonCoherent(
             rHadD2hFinish := True
           }
         }
-        when (
-          rHadH2dFinish && rHadD2hFinish
-          //&& myH2dSendFifo.io.occupancy === 0
-        ) {
+        when (rHadH2dFinish && rHadD2hFinish) {
           rStateRandAddr := StateRandAddr.READ_START_PIPE_3
         }
       }
@@ -916,7 +917,10 @@ private[libcheesevoyage] case class LcvBusDeviceRamTesterNonCoherent(
           myH2dSendFifo.io.push.fire
         ) {
           if (!busCfg.allowBurst) {
-            rH2dPayload.addr := rH2dPayload.burstAddr(rH2dBurstCnt + 1)
+            rH2dPayload.addr := rH2dPayload.burstAddr(
+              rH2dBurstCnt + 1,
+              incrBurstCnt=false,
+            )
             when ((rH2dBurstCnt + 1).orR) {
               rH2dBurstCnt := rH2dBurstCnt + 1
             } otherwise {
@@ -1365,8 +1369,11 @@ case class LcvBusDeviceRamTester(
   def busCfg = cfg.busCfg
   val io = LcvBusDeviceRamTesterIo(cfg=cfg)
   val nonCoherentInnerTesterArea = (
-    busCfg.cacheCfg == None
-    || !busCfg.cacheCfg.get.coherent
+    (
+      busCfg.cacheCfg == None
+      || !busCfg.cacheCfg.get.coherent
+    )
+    && !cfg.kind._isCoherent
   ) generate (new Area {
     val nonCoherentInnerTester = LcvBusDeviceRamTesterNonCoherent(cfg=cfg)
     nonCoherentInnerTester.io <> io.busVec.head

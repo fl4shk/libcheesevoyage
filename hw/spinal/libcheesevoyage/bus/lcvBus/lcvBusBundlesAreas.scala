@@ -64,7 +64,8 @@ case class LcvBusMainConfig(
     )
   )
 
-  val burstCntWidth = log2Up(64 / (dataWidth / 8))
+  val burstCntMaxNumBytes = 64
+  val burstCntWidth = log2Up(burstCntMaxNumBytes / (dataWidth / 8))
   if (!allowBurst) {
     require(!burstAlwaysMaxSize)
   }
@@ -180,6 +181,7 @@ case class LcvBusConfig(
   def addrWidth = mainCfg.addrWidth
   //def burstSizeWidth = mainCfg.burstSizeWidth
   def allowBurst = mainCfg.allowBurst
+  def burstCntMaxNumBytes = mainCfg.burstCntMaxNumBytes
   def burstCntWidth = mainCfg.burstCntWidth
   def maxBurstSizeMinus1 = (
     (1 << burstCntWidth) - 1
@@ -188,10 +190,14 @@ case class LcvBusConfig(
   def burstAddr(
     someAddr: UInt,
     someBurstCnt: UInt,
+    incrBurstCnt: Boolean,
   ) = {
     require(
       someBurstCnt.getWidth == burstCntWidth
     )
+    if (incrBurstCnt) {
+      someBurstCnt := someBurstCnt + 1
+    }
     Cat(
       someAddr(
         someAddr.high
@@ -502,10 +508,12 @@ case class LcvBusH2dPayload(
   //)
   def burstAddr(
     someBurstCnt: UInt,
+    incrBurstCnt: Boolean,
   ) = {
     cfg.burstAddr(
       someAddr=addr,
       someBurstCnt=someBurstCnt,
+      incrBurstCnt=incrBurstCnt,
     )
     //require(
     //  someBurstCnt.getWidth == cfg.burstCntWidth
@@ -609,5 +617,39 @@ case class LcvBusIo(
     //if (cfg.cacheCfg != None) {
     //  
     //}
+  }
+
+  def <<(
+    that: LcvBusIo,
+  ): Unit = {
+    this.h2dBus << that.h2dBus
+    that.d2hBus << this.d2hBus
+  }
+  def >>(
+    that: LcvBusIo,
+  ): Unit = {
+    that << this
+  }
+  def <-<(
+    that: LcvBusIo,
+  ): Unit = {
+    this.h2dBus <-< that.h2dBus
+    that.d2hBus <-< this.d2hBus
+  }
+  def >->(
+    that: LcvBusIo,
+  ): Unit = {
+    that <-< this
+  }
+  def <-/<(
+    that: LcvBusIo,
+  ): Unit = {
+    this.h2dBus <-/< that.h2dBus
+    that.d2hBus <-/< this.d2hBus
+  }
+  def >/->(
+    that: LcvBusIo,
+  ): Unit = {
+    that <-/< this
   }
 }

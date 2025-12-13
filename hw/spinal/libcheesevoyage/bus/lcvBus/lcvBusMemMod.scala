@@ -210,7 +210,10 @@ case class LcvBusMem(
           )
           //io.bus.h2dBus.ready := True
           ram.io.rdAddr := (
-            io.bus.h2dBus.burstAddr(rRdBurstCnt(1).getZero)(myRamAddrRange)
+            io.bus.h2dBus.burstAddr(
+              rRdBurstCnt(1).getZero,
+              incrBurstCnt=false,
+            )(myRamAddrRange)
           )
           //rRdBurstCnt := 1
           doIncrRdBurstCnt()
@@ -268,7 +271,10 @@ case class LcvBusMem(
 
       ram.io.rdEn := True
       ram.io.rdAddr := (
-        rSavedH2dPayload.burstAddr(rRdBurstCnt(1))(myRamAddrRange)
+        rSavedH2dPayload.burstAddr(
+          rRdBurstCnt(1),
+          incrBurstCnt=false
+        )(myRamAddrRange)
       )
       //rRdBurstCnt.foreach(item => item := item + 1)
 
@@ -279,7 +285,10 @@ case class LcvBusMem(
       rState := State.READ_BURST
       ram.io.rdEn := True
       ram.io.rdAddr := (
-        rSavedH2dPayload.burstAddr(rRdBurstCnt(1))(myRamAddrRange)
+        rSavedH2dPayload.burstAddr(
+          rRdBurstCnt(1),
+          incrBurstCnt=false,
+        )(myRamAddrRange)
       )
       //rRdBurstCnt := rRdBurstCnt + 1
       doIncrRdBurstCnt()
@@ -293,7 +302,10 @@ case class LcvBusMem(
       rH2dReady := False
       ram.io.rdEn := RegNext(ram.io.rdEn, init=ram.io.rdEn.getZero)
       ram.io.rdAddr := (
-        rSavedH2dPayload.burstAddr(rRdBurstCnt(1))(myRamAddrRange)
+        rSavedH2dPayload.burstAddr(
+          rRdBurstCnt(1),
+          incrBurstCnt=false,
+        )(myRamAddrRange)
       )
       //rD2hPayload.burstFirst := False
       //rRdBurstCnt := rRdBurstCnt + 1
@@ -335,7 +347,10 @@ case class LcvBusMem(
     is (State.WRITE_BURST) {
       rH2dReady := True
       ram.io.wrAddr := (
-        rSavedH2dPayload.burstAddr(rWrBurstCnt)(myRamAddrRange)
+        rSavedH2dPayload.burstAddr(
+          rWrBurstCnt,
+          incrBurstCnt=false,
+        )(myRamAddrRange)
       )
       ram.io.wrData := myH2dPayload.data.asBits
       ram.io.wrByteEn := myH2dPayload.byteEn.asBits
