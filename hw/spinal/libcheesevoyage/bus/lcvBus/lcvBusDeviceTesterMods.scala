@@ -369,6 +369,7 @@ private[libcheesevoyage] case class LcvBusDeviceRamTesterNonCoherent(
         4
       //)
       //16
+      //1
     ) else (
       1
     )
@@ -483,9 +484,11 @@ private[libcheesevoyage] case class LcvBusDeviceRamTesterNonCoherent(
   def myPrngDirectMappedCacheRangeWidth = (
     cfg.kind._optDirectMappedCacheSetRangeHi match {
       case Some(setRangeHi) => (
-        // use `- 2` so that both cache hits and cache misses will be
-        // tested for direct-mapped caches
-        setRangeHi - 2
+        //// use `+ 2` so that both cache hits and cache misses will be
+        //// tested for direct-mapped caches
+        setRangeHi + 2 //- 1
+        //cfg.busCfg.burstCntWidth
+        //+ log2Up(busCfg.dataWidth / 8)
       )
       case None => (
         cfg.busCfg.burstCntWidth
@@ -834,7 +837,15 @@ private[libcheesevoyage] case class LcvBusDeviceRamTesterNonCoherent(
             rHadD2hFinish := True
           }
         }
-        when (rHadH2dFinish && rHadD2hFinish) {
+        when (
+          RegNext(
+            (
+              rHadH2dFinish && rHadD2hFinish
+              && !myH2dSendFifo.io.occupancy.orR
+            ),
+            init=False
+          )
+        ) {
           rStateRandAddr := StateRandAddr.READ_START_PIPE_3
         }
       }
