@@ -1079,7 +1079,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       rHiH2dPayload.addr := (
         Cat(
           False,
-          RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag),
+          RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
           base.rSavedLoBusAddrSet,
           U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
         ).asUInt
@@ -1571,37 +1571,42 @@ object LcvBusCacheSpinalConfig {
     targetDirectory="hw/gen",
     defaultConfigForClockDomains=ClockDomainConfig(
       resetActiveLevel=HIGH,
-      //resetKind=BOOT,
+      resetKind=BOOT,
     )
   )
 }
 
 object LcvBusCacheToVerilog extends App {
   LcvBusCacheSpinalConfig.spinal.generateVerilog{
-    val top = LcvBusCache(
-      cfg=LcvBusCacheBusPairConfig(
-        mainCfg=LcvBusMainConfig(
-          dataWidth=32,
-          addrWidth=32,
-          allowBurst=false,
-          burstAlwaysMaxSize=false,
-          srcWidth=1,
-        ),
-        loBusCacheCfg=LcvBusCacheConfig(
-          kind=LcvCacheKind.D,
-          lineSizeBytes=64,
-          depthWords=1024,
-          numCpus=1,
-        ),
-        hiBusCacheCfg=(
-          //Some(LcvBusCacheConfig(
-          //  kind=LcvCacheKind.Shared,
-          //  lineSizeBytes=64,
-          //  depthWords=2048,
-          //  numCpus=2,
-          //))
-          None
-        )
+    //val top = LcvBusCache(
+    //  cfg=LcvBusCacheBusPairConfig(
+    //    mainCfg=LcvBusMainConfig(
+    //      dataWidth=32,
+    //      addrWidth=32,
+    //      allowBurst=false,
+    //      burstAlwaysMaxSize=false,
+    //      srcWidth=1,
+    //    ),
+    //    loBusCacheCfg=LcvBusCacheConfig(
+    //      kind=LcvCacheKind.D,
+    //      lineSizeBytes=64,
+    //      depthWords=1024,
+    //      numCpus=1,
+    //    ),
+    //    hiBusCacheCfg=(
+    //      //Some(LcvBusCacheConfig(
+    //      //  kind=LcvCacheKind.Shared,
+    //      //  lineSizeBytes=64,
+    //      //  depthWords=2048,
+    //      //  numCpus=2,
+    //      //))
+    //      None
+    //    )
+    //  )
+    //)
+    val top = LcvBusNonCoherentDataCacheWithSdramCtrl(
+      sdramCtrlCfg=LcvBusSdramCtrlConfig(
+        clkRate=100.0 MHz
       )
     )
     top
