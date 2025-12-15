@@ -1240,15 +1240,15 @@ extends Area {
   def optIncludePreMid0Front = (
     cfg.optIncludePreMid0Front
   )
-  if (optIncludePreMid0Front) {
-    assert(
-      doModInPreMid0FrontFunc != None,
-      (
-        s"`doModInPreMid0FrontFunc` must *not* be `None` "
-        + s"if `cfg.optIncludePreMid0Front == true`"
-      )
-    )
-  }
+  //if (optIncludePreMid0Front) {
+  //  assert(
+  //    doModInPreMid0FrontFunc != None,
+  //    (
+  //      s"`doModInPreMid0FrontFunc` must *not* be `None` "
+  //      + s"if `cfg.optIncludePreMid0Front == true`"
+  //    )
+  //  )
+  //}
   def optIncludeModFrontStageLink = cfg.optIncludeModFrontStageLink
   def optIncludeModFrontS2MLink = cfg.optIncludeModFrontS2MLink
   if (optIncludeModFrontS2MLink) {
@@ -3013,8 +3013,8 @@ extends Area {
       } else { // if (optModHazardKind == PipeMemRmw.ModHazardKind.Fwd)
         for (ydx <- 0 until memArrSize) {
           for (zdx <- 0 until modRdPortCnt) {
-            val myModMem = modMem(ydx)(zdx)
-            val myModMemSdpPipe = modMemSdpPipe(ydx)(zdx)
+            def myModMem = modMem(ydx)(zdx)
+            def myModMemSdpPipe = modMemSdpPipe(ydx)(zdx)
             val myRamIo = (
               if (!optIncludePreMid0Front) (
                 myModMem.io.ramIo
@@ -3289,58 +3289,40 @@ extends Area {
             init=tempUpMod(2).getZero
           )
         )
-        for (ydx <- 0 until memArrSize) {
-          for (extIdx <- 0 until extIdxLim) {
-            upExt(0)(ydx)(extIdx) := (
-              RegNext(
-                next=upExt(0)(ydx)(extIdx),
-                init=upExt(0)(ydx)(extIdx).getZero,
-              )
-            )
-            upExt(1)(ydx)(extIdx) := (
-              RegNext(
-                next=upExt(1)(ydx)(extIdx),
-                init=upExt(1)(ydx)(extIdx).getZero,
-              )
-            )
-            upExt(2)(ydx)(extIdx) := (
-              RegNext(
-                next=upExt(2)(ydx)(extIdx),
-                init=upExt(2)(ydx)(extIdx).getZero,
-              )
-            )
-          }
-          //upExt(1)(ydx) := upExt(0)(ydx)
-          upExt(0)(ydx).allowOverride
-          upExt(1)(ydx).allowOverride
-          upExt(2)(ydx).allowOverride
-        }
-        //mod.front.myNonFwdRdMemWord(1) := (
-        //  RegNext(
-        //    next=mod.front.myNonFwdRdMemWord(1),
-        //    init=mod.front.myNonFwdRdMemWord(1).getZero,
-        //  )
-        //)
-        //when (
-        //  //up.isValid
-        //  down.isReady
-        //) {
+        //for (ydx <- 0 until memArrSize) {
+        //  for (extIdx <- 0 until extIdxLim) {
+        //    upExt(0)(ydx)(extIdx) := (
+        //      RegNext(
+        //        next=upExt(0)(ydx)(extIdx),
+        //        init=upExt(0)(ydx)(extIdx).getZero,
+        //      )
+        //    )
+        //    upExt(1)(ydx)(extIdx) := (
+        //      RegNext(
+        //        next=upExt(1)(ydx)(extIdx),
+        //        init=upExt(1)(ydx)(extIdx).getZero,
+        //      )
+        //    )
+        //    upExt(2)(ydx)(extIdx) := (
+        //      RegNext(
+        //        next=upExt(2)(ydx)(extIdx),
+        //        init=upExt(2)(ydx)(extIdx).getZero,
+        //      )
+        //    )
+        //  }
+        //  //upExt(1)(ydx) := upExt(0)(ydx)
+        //  upExt(0)(ydx).allowOverride
+        //  upExt(1)(ydx).allowOverride
+        //  upExt(2)(ydx).allowOverride
         //}
-        //mod.front.myNonFwdRdMemWord(1) := (
-        //  RegNextWhen(
-        //    next=mod.front.myNonFwdRdMemWord(0),
-        //    cond=(
-        //      //down.isReady
-        //      //down.isFiring
-        //      up.isValid
-        //    ),
-        //    init=mod.front.myNonFwdRdMemWord(0).getZero,
-        //  )
-        //  //RegNext(
-        //  //  next=mod.front.myNonFwdRdMemWord(0),
-        //  //  init=mod.front.myNonFwdRdMemWord(0).getZero,
-        //  //)
-        //)
+        upExt.foreach(outerOuterItem => {
+          outerOuterItem.foreach(outerItem => {
+            outerItem.foreach(item => {
+              item := RegNext(item, init=item.getZero)
+              item.allowOverride
+            })
+          })
+        })
         for (ydx <- 0 until memArrSize) {
           upExt(1)(ydx)(extIdxUp) := (
             RegNext(
@@ -3393,10 +3375,12 @@ extends Area {
             )
           }
           case None => {
-            assert(
-              false,
-              "eek!"
-            )
+            tempUpMod(1) := tempUpMod(0)
+            tempUpMod(2) := tempUpMod(1)
+            //assert(
+            //  false,
+            //  "eek!"
+            //)
           }
         }
         for (ydx <- 0 until memArrSize) {
