@@ -237,8 +237,12 @@ case class LcvBusCacheMissFifoThing(
     }
     is (State.POST_CACHE_MISS) {
       rFifoCntSub := fifoCntSubMax
-
-      mainFifo.io.flush := True
+      
+      //when (rose(rState === State.POST_CACHE_MISS)) {
+        mainFifo.io.flush := True
+      //} otherwise {
+      //  mainFifo.io.push << io.push
+      //}
       io.pop << subFifo.io.pop
       when (
         !subFifo.io.pop.valid
