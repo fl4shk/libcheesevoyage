@@ -3107,9 +3107,9 @@ extends Area {
                 //down.isFiring
                 //up.isFiring
                 //down.isReady
-                //up.isFiring
+                up.isFiring
                 //down.isReady
-                True
+                //True
               )
               myFifoThing.io.push.payload := (
                 upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
@@ -3125,9 +3125,10 @@ extends Area {
               //) {
               myRamIo.rdAddr := myFifoThing.io.pop.payload
               //}
-              //myRamIo.rdEn := (
-              //  RegNext(myFifoThing.io.pop.valid, init=False)
-              //)
+              myRamIo.rdEn := (
+                //RegNext(myFifoThing.io.pop.valid, init=False)
+                RegNext(up.isFiring, init=False)
+              )
               //myFifoThing.io.pop.ready := up.isReady
               myFifoThing.io.pop.ready := (
                 True
