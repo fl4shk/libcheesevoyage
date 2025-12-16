@@ -3601,12 +3601,12 @@ extends Area {
             //  Reg(UInt(2 bits)) init(
             //)
             //val rPopState = Reg(Bool(), init=False)
-            myRdMemWord(ydx)(zdx) := (
-              RegNext(
-                myRdMemWord(ydx)(zdx),
-                init=myRdMemWord(ydx)(zdx).getZero
-              )
-            )
+            //myRdMemWord(ydx)(zdx) := (
+            //  RegNext(
+            //    myRdMemWord(ydx)(zdx),
+            //    init=myRdMemWord(ydx)(zdx).getZero
+            //  )
+            //)
             //when (
             //  RegNext(
             //    RegNext(
