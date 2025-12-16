@@ -3611,10 +3611,15 @@ extends Area {
               //  myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
               //}
             }
-            when (!rSaveMemRdDataState) {
-              myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
-              if (ydx == 0 && zdx == 0) {
-                rSaveMemRdDataState := True
+            when (
+              up.isValid
+              && RegNext(myModMemSdpPipe.io.rdEn, init=False)
+            ) {
+              when (!rSaveMemRdDataState) {
+                myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
+                if (ydx == 0 && zdx == 0) {
+                  rSaveMemRdDataState := True
+                }
               }
             }
             if (ydx == 0 && zdx == 0) {
