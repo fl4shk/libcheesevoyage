@@ -854,7 +854,10 @@ case class PipeMemRmwDoFwdArea[
           )
           for (kdx <- 0 until fwd.numMyUpExtDel2 + 1) {
             if (kdx < fwd.numMyUpExtDel2 /*- 1*/) {
-              if (kdx <= 1) {
+              if (
+                //kdx <= 1
+                false
+              ) {
                 fwd.myFwdStateData(ydx)(zdx)(kdx) := (
                   fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
                     extIdxUp
@@ -864,7 +867,8 @@ case class PipeMemRmwDoFwdArea[
                 )
               } else {
                 println(
-                  s"find me: kdx != 0: ${kdx} ${fwd.numMyUpExtDel2}"
+                  //s"find me: kdx != 0: ${kdx} ${fwd.numMyUpExtDel2}"
+                  s"find me: ${kdx} ${fwd.numMyUpExtDel2}"
                 )
                 fwd.myFwdStateData(ydx)(zdx)(kdx) := (
                   RegNext(
@@ -5678,9 +5682,9 @@ case class StmFwdPipeMemRmwDoFwdArea[
           for (kdx <- 0 until cfg.numMyUpExtDel2 + 1) {
             if (kdx < cfg.numMyUpExtDel2 /*- 1*/) {
               if (
-                //kdx <= 1
+                kdx <= 1
                 //kdx == 0
-                false
+                //false
               ) {
                 fwd.myFwdStateData(ydx)(zdx)(kdx) := (
                   fwd.myUpExtDel2FindFirstVec(ydx)(zdx)(
