@@ -80,7 +80,7 @@ case class LcvBusCacheConfig(
   numCpus: Int,
   lineWordMemRamStyleAltera: String=(
     //"MLAB"
-    "M10K"
+    "no_rw_check, M10K"
   ),
   lineWordMemRamStyleXilinx: String=(
     //"auto"
@@ -90,7 +90,7 @@ case class LcvBusCacheConfig(
   ),
   lineAttrsMemRamStyleAltera: String=(
     //"MLAB"
-    "M10K"
+    "no_rw_check, M10K"
   ),
   lineAttrsMemRamStyleXilinx: String=(
     //"auto"
