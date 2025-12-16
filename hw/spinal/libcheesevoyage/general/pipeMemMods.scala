@@ -1500,35 +1500,38 @@ extends Area {
     )
     ret
   }
+  def mkMemSdpPipeCfg(ydx: Int) = (
+    RamSdpPipeConfig(
+      wordType=wordType(),
+      depth=wordCountArr(ydx),
+      init=(
+        init match {
+          case Some(myInit) => {
+            Some(myInit(ydx))
+          }
+          case None => {
+            None
+          }
+        }
+      ),
+      initBigInt=(
+        initBigInt match {
+          case Some(myInitBigInt) => {
+            Some(myInitBigInt(ydx))
+          }
+          case None => {
+            None
+          }
+        }
+      ),
+      arrRamStyleAltera=memRamStyleAltera,
+      arrRamStyleXilinx=memRamStyleXilinx,
+      arrRwAddrCollisionXilinx=memRwAddrCollisionXilinx,
+    )
+  )
   def mkMemSdpPipe(ydx: Int) = {
     val ret = RamSdpPipe(
-      cfg=RamSdpPipeConfig(
-        wordType=wordType(),
-        depth=wordCountArr(ydx),
-        init=(
-          init match {
-            case Some(myInit) => {
-              Some(myInit(ydx))
-            }
-            case None => {
-              None
-            }
-          }
-        ),
-        initBigInt=(
-          initBigInt match {
-            case Some(myInitBigInt) => {
-              Some(myInitBigInt(ydx))
-            }
-            case None => {
-              None
-            }
-          }
-        ),
-        arrRamStyleAltera=memRamStyleAltera,
-        arrRamStyleXilinx=memRamStyleXilinx,
-        arrRwAddrCollisionXilinx=memRwAddrCollisionXilinx,
-      )
+      cfg=mkMemSdpPipeCfg(ydx=ydx)
     )
     ret
   }
@@ -1586,6 +1589,32 @@ extends Area {
           mkMemSdpPipe(ydx=ydx)
         )
       )
+    }
+    myArr
+  }
+  val modMemSdpPipeFifoThing = (
+    optModHazardKind != PipeMemRmw.ModHazardKind.Dont
+    && optIncludePreMid0Front
+  ) generate {
+    val myArr = new ArrayBuffer[ArrayBuffer[
+      RamSdpPipeReadFifoThing[WordT]
+    ]]()
+    for (ydx <- 0 until memArrSize) {
+      myArr += {
+        //Array.fill(modRdPortCnt)(
+        //  RamSdpPipeReadFifoThing
+        //)
+        val myInnerArr = new ArrayBuffer[RamSdpPipeReadFifoThing[WordT]]()
+        for (zdx <- 0 until modRdPortCnt) {
+          myInnerArr += RamSdpPipeReadFifoThing(
+            cfg=RamSdpPipeReadFifoThingConfig(
+              ramCfg=modMemSdpPipe(ydx)(zdx).cfg,
+              fifoDepthMain=8,
+            )
+          )
+        }
+        myInnerArr
+      }
     }
     myArr
   }
@@ -3023,6 +3052,7 @@ extends Area {
           for (zdx <- 0 until modRdPortCnt) {
             def myModMem = modMem(ydx)(zdx)
             def myModMemSdpPipe = modMemSdpPipe(ydx)(zdx)
+            def myFifoThing = modMemSdpPipeFifoThing(ydx)(zdx)
             val myRamIo = (
               if (!optIncludePreMid0Front) (
                 myModMem.io.ramIo
@@ -3030,6 +3060,7 @@ extends Area {
                 myModMemSdpPipe.io
               )
             )
+            val tempAddrWidth = log2Up(wordCountArr(ydx))
             if (!optIncludePreMid0Front) {
               myRamIo.rdEn := (
                 True
@@ -3037,7 +3068,6 @@ extends Area {
                 //RegNext(tempSharedEnable.last, init=False)
                 //True
               )
-              val tempAddrWidth = log2Up(wordCountArr(ydx))
               myRamIo.rdAddr := (
                 RegNext(myRamIo.rdAddr, init=myRamIo.rdAddr.getZero)
               )
@@ -3047,9 +3077,18 @@ extends Area {
                 )
               }
             } else {
-              val tempAddrWidth = log2Up(wordCountArr(ydx))
-              myRamIo.rdAddr := upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
-                tempAddrWidth - 1 downto 0
+              myFifoThing.io.push.valid := (
+                //tempSharedEnable.last
+                up.isFiring
+              )
+              myFifoThing.io.push.payload := (
+                upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
+                  tempAddrWidth - 1 downto 0
+                )
+              )
+              myRamIo.rdAddr := myFifoThing.io.pop.payload
+              myRamIo.rdEn := (
+                RegNext(myFifoThing.io.pop.valid, init=False)
               )
             }
             //--------
@@ -3410,9 +3449,9 @@ extends Area {
         for (zdx <- 0 until modRdPortCnt) {
           def myModMemSdpPipe = modMemSdpPipe(ydx)(zdx)
           val myRamIo = myModMemSdpPipe.io
-          myRamIo.rdEn := (
-            down.isReady
-          )
+          //myRamIo.rdEn := (
+          //  down.isReady
+          //)
         }
       }
     })
