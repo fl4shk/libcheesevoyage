@@ -236,7 +236,7 @@ case class RamSdpPipeReadFifoThingConfig[
   WordT <: Data
 ](
   ramCfg: RamSdpPipeConfig[WordT],
-  fifoDepthMain: Int=8,
+  //fifoDepthMain: Int=8,
   //fifoDepthSub: Int,
 ) {
 }
@@ -258,116 +258,125 @@ case class RamSdpPipeReadFifoThingConfig[
 //) extends Bundle {
 //}
 
-case class RamSdpPipeReadFifoThingIo[
-  WordT <: Data,
-](
-  cfg: RamSdpPipeReadFifoThingConfig[WordT]
-) extends Bundle {
-  //--------
-  val push = slave(Stream(UInt(log2Up(cfg.ramCfg.depth) bits)))
-  val pop = master(Stream(
-    //cfg.ramCfg.wordType()
-    UInt(log2Up(cfg.ramCfg.depth) bits)
-  ))
-  val delay = in(Bool())
-
-  //val ramRdEn = out(Bool())
-  //val ramRdAddr = out(UInt(log2Up(cfg.ramCfg.depth) bits))
-  //val ramRdData = in(cfg.ramCfg.wordType())
-  //--------
-}
-case class RamSdpPipeReadFifoThing[
-  WordT <: Data,
-](
-  cfg: RamSdpPipeReadFifoThingConfig[WordT]
-) extends Component {
-  //--------
-  val io = RamSdpPipeReadFifoThingIo(cfg=cfg)
-  //--------
-  def fifoDepthMain = cfg.fifoDepthMain
-  def fifoDepthSub = (
-    //cfg.fifoDepthSub
-    4
-  )
-
-  val mainFifo = StreamFifo(
-    dataType=UInt(log2Up(cfg.ramCfg.depth) bits),
-    depth=fifoDepthMain,
-    latency=0,
-    forFMax=true,
-  )
-  val subFifo = StreamFifo(
-    dataType=UInt(log2Up(cfg.ramCfg.depth) bits),
-    depth=fifoDepthSub,
-    latency=0,
-    forFMax=true,
-  )
-
-  def fifoCntSubMax = fifoDepthSub - 2 //- 1 //- 2 
-  val rFifoCntSub = (
-    Reg(SInt((log2Up(fifoDepthSub + 1) + 1) bits))
-    init(fifoCntSubMax)
-  )
-
-  mainFifo.io.push.valid := False
-  mainFifo.io.push.payload := mainFifo.io.push.payload.getZero
-  mainFifo.io.pop.ready := False
-  mainFifo.io.flush := False
-
-  subFifo.io.push.valid := False
-  subFifo.io.push.payload := subFifo.io.push.payload.getZero
-  subFifo.io.flush := False
-  //subFifo.io.pop.ready := False
-
-  io.push.ready := False
-
-  object State extends SpinalEnum(defaultEncoding=binaryOneHot) {
-    val
-      IDLE,
-      POST_DELAY
-      = newElement();
-  }
-  val rState = (
-    Reg(State())
-    init(State.IDLE)
-  )
-  switch (rState) {
-    is (State.IDLE) {
-      mainFifo.io.push << io.push //pushForkMain
-      io.pop << mainFifo.io.pop
-
-      subFifo.io.push.valid := True
-      subFifo.io.push.payload := io.push.payload
-      // This should make `subFifo` act like a circular FIFO that we
-      // keep only the most recent contents of
-      subFifo.io.pop.ready := False
-
-      when (subFifo.io.push.fire) {
-        when (!rFifoCntSub.msb) {
-          rFifoCntSub := rFifoCntSub - 1
-        } otherwise {
-          subFifo.io.pop.ready := True
-        }
-      }
-      when (io.delay) {
-        rState := State.POST_DELAY
-      }
-    }
-    is (State.POST_DELAY) {
-      rFifoCntSub := fifoCntSubMax
-      
-      mainFifo.io.flush := True
-      io.pop << subFifo.io.pop
-      when (
-        !subFifo.io.pop.valid
-        && !io.delay
-      ) {
-        rState := State.IDLE
-      }
-    }
-  }
-  //--------
-}
+//case class RamSdpPipeReadFifoThingIo[
+//  WordT <: Data,
+//](
+//  cfg: RamSdpPipeReadFifoThingConfig[WordT]
+//) extends Bundle {
+//  //--------
+//  val push = slave(Stream(
+//    //UInt(log2Up(cfg.ramCfg.depth) bits)
+//    cfg.ramCfg.wordType()
+//  ))
+//  val pop = master(Stream(
+//    cfg.ramCfg.wordType()
+//    //UInt(log2Up(cfg.ramCfg.depth) bits)
+//  ))
+//  val delay = in(Bool())
+//
+//  //val ramRdEn = out(Bool())
+//  //val ramRdAddr = out(UInt(log2Up(cfg.ramCfg.depth) bits))
+//  //val ramRdData = in(cfg.ramCfg.wordType())
+//  //--------
+//}
+//case class RamSdpPipeReadFifoThing[
+//  WordT <: Data,
+//](
+//  cfg: RamSdpPipeReadFifoThingConfig[WordT]
+//) extends Component {
+//  //--------
+//  val io = RamSdpPipeReadFifoThingIo(cfg=cfg)
+//  //--------
+//  //def fifoDepthMain = cfg.fifoDepthMain
+//  def fifoDepth = (
+//    //cfg.fifoDepth
+//    4
+//  )
+//
+//  //val mainFifo = StreamFifo(
+//  //  dataType=(
+//  //    //UInt(log2Up(cfg.ramCfg.depth) bits)
+//  //    cfg.ramCfg.wordType()
+//  //  ),
+//  //  depth=fifoDepthMain,
+//  //  latency=0,
+//  //  forFMax=true,
+//  //)
+//  val fifo = StreamFifo(
+//    dataType=(
+//      //UInt(log2Up(cfg.ramCfg.depth) bits)
+//      cfg.ramCfg.wordType()
+//    ),
+//    depth=fifoDepth,
+//    latency=0,
+//    forFMax=true,
+//  )
+//
+//  def fifoCntMax = fifoDepth - 2 //- 1 //- 2 
+//  val rFifoCnt = (
+//    Reg(SInt((log2Up(fifoDepth + 1) + 1) bits))
+//    init(fifoCntMax)
+//  )
+//
+//  //mainFifo.io.push.valid := False
+//  //mainFifo.io.push.payload := mainFifo.io.push.payload.getZero
+//  //mainFifo.io.pop.ready := False
+//  //mainFifo.io.flush := False
+//
+//  fifo.io.push.valid := False
+//  fifo.io.push.payload := fifo.io.push.payload.getZero
+//  fifo.io.flush := False
+//  //fifo.io.pop.ready := False
+//
+//  io.push.ready := False
+//
+//  object State extends SpinalEnum(defaultEncoding=binaryOneHot) {
+//    val
+//      IDLE,
+//      POST_DELAY
+//      = newElement();
+//  }
+//  val rState = (
+//    Reg(State())
+//    init(State.IDLE)
+//  )
+//  switch (rState) {
+//    is (State.IDLE) {
+//      //mainFifo.io.push << io.push //pushForkMain
+//      //io.pop << mainFifo.io.pop
+//
+//      fifo.io.push.valid := True
+//      fifo.io.push.payload := io.push.payload
+//      // This should make `fifo` act like a circular FIFO that we
+//      // keep only the most recent contents of
+//      fifo.io.pop.ready := False
+//
+//      when (fifo.io.push.fire) {
+//        when (!rFifoCnt.msb) {
+//          rFifoCnt := rFifoCnt - 1
+//        } otherwise {
+//          fifo.io.pop.ready := True
+//        }
+//      }
+//      when (io.delay) {
+//        rState := State.POST_DELAY
+//      }
+//    }
+//    is (State.POST_DELAY) {
+//      rFifoCnt := fifoCntMax
+//      
+//      //mainFifo.io.flush := True
+//      io.pop << fifo.io.pop
+//      when (
+//        !fifo.io.pop.valid
+//        && !io.delay
+//      ) {
+//        rState := State.IDLE
+//      }
+//    }
+//  }
+//  //--------
+//}
 
 case class RamSimpleDualPortConfig[
   WordT <: Data
