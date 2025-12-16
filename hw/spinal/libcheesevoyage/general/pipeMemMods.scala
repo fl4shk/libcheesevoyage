@@ -3107,7 +3107,8 @@ extends Area {
                 //down.isFiring
                 //up.isFiring
                 //down.isReady
-                up.isFiring
+                //up.isFiring
+                down.isReady
               )
               myFifoThing.io.push.payload := (
                 upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
@@ -3117,7 +3118,10 @@ extends Area {
               myRamIo.rdAddr := (
                 RegNext(myRamIo.rdAddr, init=myRamIo.rdAddr.getZero)
               )
-              when (up.isFiring) {
+              when (
+                //up.isFiring
+                down.isReady
+              ) {
                 myRamIo.rdAddr := myFifoThing.io.pop.payload
               }
               myRamIo.rdEn := (
