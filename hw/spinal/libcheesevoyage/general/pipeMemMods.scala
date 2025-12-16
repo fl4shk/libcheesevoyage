@@ -3105,7 +3105,8 @@ extends Area {
                 //tempSharedEnable.last
                 //up.isFiring
                 //down.isFiring
-                up.isFiring
+                //up.isFiring
+                down.isReady
               )
               myFifoThing.io.push.payload := (
                 upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
@@ -3116,7 +3117,11 @@ extends Area {
               myRamIo.rdEn := (
                 RegNext(myFifoThing.io.pop.valid, init=False)
               )
-              myFifoThing.io.pop.ready := up.isReady
+              //myFifoThing.io.pop.ready := up.isReady
+              myFifoThing.io.pop.ready := (
+                //True
+                down.isReady
+              )
               myFifoThing.io.delay := False
             }
             //--------
