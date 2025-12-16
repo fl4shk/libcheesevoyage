@@ -3574,7 +3574,11 @@ extends Area {
       )
         .setName(s"${pipeName}_cMid0FrontArea_dbgDownIsFiring_${fjIdx}")
       //--------
-      val rSaveMemRdDataState = Reg(Bool(), init=False)
+      val rSaveMemRdDataState = Vec.fill(memArrSize)(
+        Vec.fill(modRdPortCnt)(
+          Reg(Bool(), init=False)
+        )
+      )
       if (optIncludePreMid0Front) {
         val myRdMemWord = mod.front.myRdMemWord
         for (ydx <- 0 until memArrSize) {
@@ -3615,17 +3619,13 @@ extends Area {
               up.isValid
               && RegNext(myModMemSdpPipe.io.rdEn, init=False)
             ) {
-              when (!rSaveMemRdDataState) {
+              when (!rSaveMemRdDataState(ydx)(zdx)) {
                 myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
-                if (ydx == 0 && zdx == 0) {
-                  rSaveMemRdDataState := True
-                }
+                rSaveMemRdDataState(ydx)(zdx) := True
               }
             }
-            if (ydx == 0 && zdx == 0) {
-              when (up.isFiring) {
-                rSaveMemRdDataState := False
-              }
+            when (up.isFiring) {
+              rSaveMemRdDataState(ydx)(zdx) := False
             }
             //when (
             //  up.isReady
