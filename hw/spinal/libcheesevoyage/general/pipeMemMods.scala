@@ -3621,18 +3621,23 @@ extends Area {
               //  myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
               //}
             }
-            when (
-              up.isValid
-              && RegNext(myModMemSdpPipe.io.rdEn, init=False)
-            ) {
-              when (!rSaveMemRdDataState(ydx)(zdx)) {
-                myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
-                rSaveMemRdDataState(ydx)(zdx) := True
-              }
-            }
-            when (up.isFiring) {
-              rSaveMemRdDataState(ydx)(zdx) := False
-            }
+            myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
+            //when (
+            //  up.isValid
+            //  //down.isReady
+            //  && 
+            //  RegNext(myModMemSdpPipe.io.rdEn, init=False)
+            //) {
+            //  when (!rSaveMemRdDataState(ydx)(zdx)) {
+            //    myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
+            //    rSaveMemRdDataState(ydx)(zdx) := True
+            //  }
+            //}
+            //when (
+            //  up.isFiring
+            //) {
+            //  rSaveMemRdDataState(ydx)(zdx) := False
+            //}
             //when (
             //  up.isReady
             //) {
