@@ -3574,6 +3574,7 @@ extends Area {
       )
         .setName(s"${pipeName}_cMid0FrontArea_dbgDownIsFiring_${fjIdx}")
       //--------
+      val rSaveMemRdDataState = Reg(Bool(), init=False)
       if (optIncludePreMid0Front) {
         val myRdMemWord = mod.front.myRdMemWord
         for (ydx <- 0 until memArrSize) {
@@ -3600,17 +3601,28 @@ extends Area {
                 init=False,
               )
             ) {
-              when (up.isValid) {
+              when (!rSaveMemRdDataState) {
                 myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
+                if (ydx == 0 && zdx == 0) {
+                  rSaveMemRdDataState := True
+                }
               }
-              when (
-                up.isReady
-              ) {
-                //myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
-              } otherwise {
-                myFifoThing.io.pop.ready := False
-                //myFifoThing.io.delay := True
+              //when (up.isValid) {
+              //  myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
+              //}
+            }
+            if (ydx == 0 && zdx == 0) {
+              when (up.isFiring) {
+                rSaveMemRdDataState := False
               }
+            }
+            when (
+              up.isReady
+            ) {
+              //myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
+            } otherwise {
+              myFifoThing.io.pop.ready := False
+              //myFifoThing.io.delay := True
             }
             //myFifoThing.io.pop.ready := (
             //  up.isReady
