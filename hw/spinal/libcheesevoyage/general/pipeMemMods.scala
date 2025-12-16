@@ -853,7 +853,7 @@ case class PipeMemRmwDoFwdArea[
             fwd.myFwdStateData(ydx)(zdx)(tempMyFindFirstUp_1)
           )
           for (kdx <- 0 until fwd.numMyUpExtDel2 + 1) {
-            if (kdx < fwd.numMyUpExtDel2 /*- 1*/) {
+            //if (kdx < fwd.numMyUpExtDel2 /*- 1*/) {
               if (
                 //kdx <= 1
                 false
@@ -917,15 +917,15 @@ case class PipeMemRmwDoFwdArea[
                 //rFwdStateValid(ydx)(zdx)(kdx) := False
                 rFwdState(ydx)(zdx)(kdx) := FwdState.WAIT_DATA
               }
-            } else {
-              fwd.myFwdStateData(ydx)(zdx)(kdx) := (
-                fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
-                  extIdxUp
-                )(
-                  kdx
-                ).payload.payload
-              )
-            }
+            //} else {
+            //  fwd.myFwdStateData(ydx)(zdx)(kdx) := (
+            //    fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+            //      extIdxUp
+            //    )(
+            //      kdx
+            //    ).payload.payload
+            //  )
+            //}
           }
         }
         mySetToMyFwdUp()
