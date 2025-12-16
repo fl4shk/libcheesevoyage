@@ -2426,8 +2426,25 @@ extends Area {
             //myRdMemWord(ydx)(zdx).assignFromBits(
             //  rTempRdData.asBits
             //)
-            val myModMemSdpPipe = modMemSdpPipe(ydx)(zdx)
-            myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
+            def myModMemSdpPipe = modMemSdpPipe(ydx)(zdx)
+            def myFifoThing = modMemSdpPipeFifoThing(ydx)(zdx)
+            myRdMemWord(ydx)(zdx) := (
+              RegNext(
+                myRdMemWord(ydx)(zdx),
+                init=myRdMemWord(ydx)(zdx).getZero
+              )
+            )
+            when (
+              RegNext(
+                RegNext(
+                  next=myFifoThing.io.pop.valid,
+                  init=False,
+                ),
+                init=False,
+              )
+            ) {
+              myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
+            }
           }
         }
       } else {
