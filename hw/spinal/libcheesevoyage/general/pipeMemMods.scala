@@ -3108,7 +3108,8 @@ extends Area {
                 //up.isFiring
                 //down.isReady
                 //up.isFiring
-                down.isReady
+                //down.isReady
+                True
               )
               myFifoThing.io.push.payload := (
                 upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
