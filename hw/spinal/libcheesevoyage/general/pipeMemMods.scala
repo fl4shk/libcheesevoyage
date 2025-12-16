@@ -3486,6 +3486,20 @@ extends Area {
       )
         .setName(s"${pipeName}_cMid0FrontArea_dbgDownIsFiring_${fjIdx}")
       //--------
+      if (optIncludePreMid0Front) {
+        for (ydx <- 0 until memArrSize) {
+          for (zdx <- 0 until modRdPortCnt) {
+            def myModMemSdpPipe = modMemSdpPipe(ydx)(zdx)
+            def myFifoThing = modMemSdpPipeFifoThing(ydx)(zdx)
+            val myRamIo = myModMemSdpPipe.io
+            myFifoThing.io.pop.ready := True //up.isReady
+            myFifoThing.io.delay := !up.isReady
+            //myRamIo.rdEn := (
+            //  down.isReady
+            //)
+          }
+        }
+      }
       //--------
       val upExt = Vec.fill(3)(
         mkExt()
