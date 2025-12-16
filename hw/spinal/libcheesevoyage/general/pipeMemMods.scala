@@ -3079,7 +3079,8 @@ extends Area {
             } else {
               myFifoThing.io.push.valid := (
                 //tempSharedEnable.last
-                up.isFiring
+                //up.isFiring
+                down.isFiring
               )
               myFifoThing.io.push.payload := (
                 upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
