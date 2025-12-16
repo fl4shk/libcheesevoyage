@@ -3114,12 +3114,12 @@ extends Area {
                   tempAddrWidth - 1 downto 0
                 )
               )
-              //myRamIo.rdAddr := (
-              //  RegNext(myRamIo.rdAddr, init=myRamIo.rdAddr.getZero)
-              //)
-              //when (up.isFiring) {
+              myRamIo.rdAddr := (
+                RegNext(myRamIo.rdAddr, init=myRamIo.rdAddr.getZero)
+              )
+              when (up.isFiring) {
                 myRamIo.rdAddr := myFifoThing.io.pop.payload
-              //}
+              }
               myRamIo.rdEn := (
                 RegNext(myFifoThing.io.pop.valid, init=False)
               )
