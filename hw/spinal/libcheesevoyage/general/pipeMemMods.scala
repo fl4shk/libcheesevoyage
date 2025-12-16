@@ -3498,7 +3498,8 @@ extends Area {
             //)
             val rPopState = Reg(Bool(), init=False)
             myFifoThing.io.pop.ready := (
-              up.isValid
+              True
+              //up.isValid
               //up.isValid
               //up.isReady
               //!up.isValid
