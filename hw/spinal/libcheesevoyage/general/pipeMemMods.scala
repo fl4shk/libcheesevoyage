@@ -3631,11 +3631,12 @@ extends Area {
             myFifo.io.pop.ready := False
             when (myFifo.io.pop.valid) {
               when (!rSaveMemRdDataState(ydx)(zdx)) {
-                myFifo.io.pop.ready := True
+                //myFifo.io.pop.ready := True
                 rSaveMemRdDataState(ydx)(zdx) := True
               }
             }
             when (up.isFiring) {
+              myFifo.io.pop.ready := True
               rSaveMemRdDataState(ydx)(zdx) := False
             }
             //when (!up.isReady) {
