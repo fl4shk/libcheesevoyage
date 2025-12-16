@@ -3513,7 +3513,9 @@ extends Area {
         for (zdx <- 0 until modRdPortCnt) {
           def myModMemSdpPipe = modMemSdpPipe(ydx)(zdx)
           //def myFifoThing = modMemSdpPipeFifoThing(ydx)(zdx)
+          def myFifo = modMemSdpPipeFifo(ydx)(zdx)
           val myRamIo = myModMemSdpPipe.io
+          myFifo.io.push.valid := RegNext(up.isFiring, init=False)
           //val rReadyCnt = (
           //  Reg(UInt(2 bits)) init(
           //)
@@ -3626,7 +3628,9 @@ extends Area {
             //  //  myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
             //  //}
             //}
-            myFifo.io.push.valid := up.isValid
+            //myFifo.io.push.valid := (
+            //  up.isValid
+            //)
             myFifo.io.push.payload := myModMemSdpPipe.io.rdData
             myFifo.io.pop.ready := False
             when (myFifo.io.pop.valid) {
