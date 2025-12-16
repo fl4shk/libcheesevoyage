@@ -3115,15 +3115,15 @@ extends Area {
                   tempAddrWidth - 1 downto 0
                 )
               )
-              myRamIo.rdAddr := (
-                RegNext(myRamIo.rdAddr, init=myRamIo.rdAddr.getZero)
-              )
-              when (
-                //up.isFiring
-                down.isReady
-              ) {
-                myRamIo.rdAddr := myFifoThing.io.pop.payload
-              }
+              //myRamIo.rdAddr := (
+              //  RegNext(myRamIo.rdAddr, init=myRamIo.rdAddr.getZero)
+              //)
+              //when (
+              //  //up.isFiring
+              //  down.isReady
+              //) {
+              myRamIo.rdAddr := myFifoThing.io.pop.payload
+              //}
               //myRamIo.rdEn := (
               //  RegNext(myFifoThing.io.pop.valid, init=False)
               //)
@@ -3616,14 +3616,15 @@ extends Area {
                 rSaveMemRdDataState := False
               }
             }
-            when (
-              up.isReady
-            ) {
-              //myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
-            } otherwise {
-              myFifoThing.io.pop.ready := False
-              //myFifoThing.io.delay := True
-            }
+            //when (
+            //  up.isReady
+            //) {
+            //  //myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
+            //} otherwise {
+            //  myFifoThing.io.pop.ready := False
+            //  //myFifoThing.io.delay := True
+            //}
+
             //myFifoThing.io.pop.ready := (
             //  up.isReady
             //  //True
