@@ -2420,40 +2420,40 @@ extends Area {
       //  )
       //)
       if (optIncludePreMid0Front) {
-        for (ydx <- 0 until memArrSize) {
-          for (zdx <- 0 until modRdPortCnt) {
-            //val myModMem = modMem(ydx)(zdx)
-            //val rTempRdData = (
-            //  RegNextWhen(
-            //    next=myModMem.io.ramIo.rdData,
-            //    cond=cPreMid0Front(0).down.isFiring,
-            //    init=myModMem.io.ramIo.rdData.getZero,
-            //  )
-            //)
-            //myRdMemWord(ydx)(zdx).assignFromBits(
-            //  rTempRdData.asBits
-            //)
-            def myModMemSdpPipe = modMemSdpPipe(ydx)(zdx)
-            def myFifoThing = modMemSdpPipeFifoThing(ydx)(zdx)
-            myRdMemWord(ydx)(zdx) := (
-              RegNext(
-                myRdMemWord(ydx)(zdx),
-                init=myRdMemWord(ydx)(zdx).getZero
-              )
-            )
-            when (
-              RegNext(
-                RegNext(
-                  next=myFifoThing.io.pop.valid,
-                  init=False,
-                ),
-                init=False,
-              )
-            ) {
-              myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
-            }
-          }
-        }
+        //for (ydx <- 0 until memArrSize) {
+        //  for (zdx <- 0 until modRdPortCnt) {
+        //    //val myModMem = modMem(ydx)(zdx)
+        //    //val rTempRdData = (
+        //    //  RegNextWhen(
+        //    //    next=myModMem.io.ramIo.rdData,
+        //    //    cond=cPreMid0Front(0).down.isFiring,
+        //    //    init=myModMem.io.ramIo.rdData.getZero,
+        //    //  )
+        //    //)
+        //    //myRdMemWord(ydx)(zdx).assignFromBits(
+        //    //  rTempRdData.asBits
+        //    //)
+        //    def myModMemSdpPipe = modMemSdpPipe(ydx)(zdx)
+        //    def myFifoThing = modMemSdpPipeFifoThing(ydx)(zdx)
+        //    myRdMemWord(ydx)(zdx) := (
+        //      RegNext(
+        //        myRdMemWord(ydx)(zdx),
+        //        init=myRdMemWord(ydx)(zdx).getZero
+        //      )
+        //    )
+        //    when (
+        //      RegNext(
+        //        RegNext(
+        //          next=myFifoThing.io.pop.valid,
+        //          init=False,
+        //        ),
+        //        init=False,
+        //      )
+        //    ) {
+        //      myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
+        //    }
+        //  }
+        //}
       } else {
         myRdMemWord := /*RegNext*/(myNonFwdRdMemWord.last)//(0)
       }
@@ -3106,21 +3106,27 @@ extends Area {
                 //up.isFiring
                 //down.isFiring
                 //up.isFiring
-                down.isReady
+                //down.isReady
+                up.isFiring
               )
               myFifoThing.io.push.payload := (
                 upExt(1)(ydx)(extIdxUp).memAddr(zdx)(
                   tempAddrWidth - 1 downto 0
                 )
               )
-              myRamIo.rdAddr := myFifoThing.io.pop.payload
+              //myRamIo.rdAddr := (
+              //  RegNext(myRamIo.rdAddr, init=myRamIo.rdAddr.getZero)
+              //)
+              //when (up.isFiring) {
+                myRamIo.rdAddr := myFifoThing.io.pop.payload
+              //}
               myRamIo.rdEn := (
                 RegNext(myFifoThing.io.pop.valid, init=False)
               )
               //myFifoThing.io.pop.ready := up.isReady
               myFifoThing.io.pop.ready := (
-                //True
-                down.isReady
+                True
+                //down.isReady
               )
               myFifoThing.io.delay := False
             }
@@ -3553,41 +3559,63 @@ extends Area {
       )
         .setName(s"${pipeName}_cMid0FrontArea_dbgDownIsFiring_${fjIdx}")
       //--------
-      //if (optIncludePreMid0Front) {
-      //  for (ydx <- 0 until memArrSize) {
-      //    for (zdx <- 0 until modRdPortCnt) {
-      //      def myModMemSdpPipe = modMemSdpPipe(ydx)(zdx)
-      //      def myFifoThing = modMemSdpPipeFifoThing(ydx)(zdx)
-      //      val myRamIo = myModMemSdpPipe.io
-      //      //val rReadyCnt = (
-      //      //  Reg(UInt(2 bits)) init(
-      //      //)
-      //      val rPopState = Reg(Bool(), init=False)
-      //      myFifoThing.io.pop.ready := (
-      //        up.isReady
-      //        //True
-      //        //up.isValid
-      //        //up.isValid
-      //        //up.isReady
-      //        //!up.isValid
-      //        //|| !up.isReady
-      //        //True //up.isReady
-      //      )
-      //      myFifoThing.io.delay := (
-      //        False
-      //        //!up.isValid
-      //        //|| 
-      //        //!up.isReady
-      //        //False
-      //        //!up.isValid
-      //        //|| !up.isReady
-      //      )
-      //      //myRamIo.rdEn := (
-      //      //  down.isReady
-      //      //)
-      //    }
-      //  }
-      //}
+      if (optIncludePreMid0Front) {
+        for (ydx <- 0 until memArrSize) {
+          for (zdx <- 0 until modRdPortCnt) {
+            def myModMemSdpPipe = modMemSdpPipe(ydx)(zdx)
+            def myFifoThing = modMemSdpPipeFifoThing(ydx)(zdx)
+            val myRamIo = myModMemSdpPipe.io
+            //val rReadyCnt = (
+            //  Reg(UInt(2 bits)) init(
+            //)
+            //val rPopState = Reg(Bool(), init=False)
+            myRdMemWord(ydx)(zdx) := (
+              RegNext(
+                myRdMemWord(ydx)(zdx),
+                init=myRdMemWord(ydx)(zdx).getZero
+              )
+            )
+            when (
+              RegNext(
+                RegNext(
+                  next=myFifoThing.io.pop.valid,
+                  init=False,
+                ),
+                init=False,
+              )
+            ) {
+              when (up.isReady) {
+                myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
+              } otherwise {
+                myFifoThing.io.pop.ready := False
+                myFifoThing.io.delay := True
+              }
+            }
+            //myFifoThing.io.pop.ready := (
+            //  up.isReady
+            //  //True
+            //  //up.isValid
+            //  //up.isValid
+            //  //up.isReady
+            //  //!up.isValid
+            //  //|| !up.isReady
+            //  //True //up.isReady
+            //)
+            //myFifoThing.io.delay := (
+            //  False
+            //  //!up.isValid
+            //  //|| 
+            //  //!up.isReady
+            //  //False
+            //  //!up.isValid
+            //  //|| !up.isReady
+            //)
+            //myRamIo.rdEn := (
+            //  down.isReady
+            //)
+          }
+        }
+      }
       //--------
       val upExt = Vec.fill(3)(
         mkExt()
