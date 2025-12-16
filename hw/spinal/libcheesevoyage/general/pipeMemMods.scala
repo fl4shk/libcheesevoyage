@@ -1376,7 +1376,7 @@ extends Area {
               val tempMyUpExtDel = (
                 mod.front.myUpExtDel(
                   idx - 1
-                  + (if (optIncludePreMid0Front) (1) else (0))
+                  //+ (if (optIncludePreMid0Front) (1) else (0))
                 )(ydx)(extIdxUp)
               )
               if (idx == 1) {
