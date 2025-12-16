@@ -854,18 +854,18 @@ case class PipeMemRmwDoFwdArea[
           )
           for (kdx <- 0 until fwd.numMyUpExtDel2 + 1) {
             if (kdx < fwd.numMyUpExtDel2 /*- 1*/) {
-              //if (kdx <= 1) {
-              //  fwd.myFwdStateData(ydx)(zdx)(kdx) := (
-              //    fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
-              //      extIdxUp
-              //    )(
-              //      kdx
-              //    ).payload.payload
-              //  )
-              //} else {
-                //println(
-                //  s"find me: kdx != 0: ${kdx} ${fwd.numMyUpExtDel2}"
-                //)
+              if (kdx <= 1) {
+                fwd.myFwdStateData(ydx)(zdx)(kdx) := (
+                  fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+                    extIdxUp
+                  )(
+                    kdx
+                  ).payload.payload
+                )
+              } else {
+                println(
+                  s"find me: kdx != 0: ${kdx} ${fwd.numMyUpExtDel2}"
+                )
                 fwd.myFwdStateData(ydx)(zdx)(kdx) := (
                   RegNext(
                     next=fwd.myFwdStateData(ydx)(zdx)(kdx),
@@ -886,7 +886,7 @@ case class PipeMemRmwDoFwdArea[
                     ).payload.payload
                   )
                 }
-              //}
+              }
               when (
                 fwd.myUpIsValid
                 //&& rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
