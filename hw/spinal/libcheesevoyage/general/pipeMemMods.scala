@@ -3600,9 +3600,9 @@ extends Area {
                 init=False,
               )
             ) {
-              myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
+              //myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
               when (up.isReady) {
-                //myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
+                myRdMemWord(ydx)(zdx) := myModMemSdpPipe.io.rdData
               } otherwise {
                 myFifoThing.io.pop.ready := False
                 myFifoThing.io.delay := True
