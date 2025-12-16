@@ -3513,7 +3513,8 @@ extends Area {
               ),
               init=False,
             )
-            && down.isReady
+            //&& down.isReady
+            && up.isFiring
           )
           //val rPopState = Reg(Bool(), init=False)
           //myFifoThing.io.pop.ready := (
