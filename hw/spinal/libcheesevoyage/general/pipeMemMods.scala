@@ -3493,8 +3493,16 @@ extends Area {
             def myModMemSdpPipe = modMemSdpPipe(ydx)(zdx)
             def myFifoThing = modMemSdpPipeFifoThing(ydx)(zdx)
             val myRamIo = myModMemSdpPipe.io
-            myFifoThing.io.pop.ready := True //up.isReady
-            myFifoThing.io.delay := !up.isReady
+            myFifoThing.io.pop.ready := (
+              !up.isValid
+              || !up.isReady
+              //True //up.isReady
+            )
+            myFifoThing.io.delay := (
+              False
+              //!up.isValid
+              //|| !up.isReady
+            )
             //myRamIo.rdEn := (
             //  down.isReady
             //)
