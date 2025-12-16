@@ -3507,14 +3507,15 @@ extends Area {
           //  Reg(UInt(2 bits)) init(
           //)
           myModMemSdpPipe.io.rdEn := (
-            RegNext(
-              next=(
-                myFifoThing.io.pop.valid
-              ),
-              init=False,
-            )
-            //&& down.isReady
-            && up.isFiring
+            True
+            //RegNext(
+            //  next=(
+            //    myFifoThing.io.pop.valid
+            //  ),
+            //  init=False,
+            //)
+            ////&& down.isReady
+            //&& up.isFiring
           )
           //val rPopState = Reg(Bool(), init=False)
           //myFifoThing.io.pop.ready := (
