@@ -3560,6 +3560,7 @@ extends Area {
         .setName(s"${pipeName}_cMid0FrontArea_dbgDownIsFiring_${fjIdx}")
       //--------
       if (optIncludePreMid0Front) {
+        val myRdMemWord = mod.front.myRdMemWord
         for (ydx <- 0 until memArrSize) {
           for (zdx <- 0 until modRdPortCnt) {
             def myModMemSdpPipe = modMemSdpPipe(ydx)(zdx)
