@@ -1400,6 +1400,17 @@ extends Area {
                   //  //})
                   //)
                   && (
+                    tempMyUpExtDel.modMemWordValid({
+                      if (
+                        idx < tempMyUpExtDel.modMemWordValid.size
+                      ) (
+                        idx
+                      ) else (
+                        tempMyUpExtDel.modMemWordValid.size - 1 
+                      )
+                    })
+                  )
+                  && (
                     tempMyUpExtDel.fwdCanDoIt(
                       zdx
                     )
@@ -1441,21 +1452,22 @@ extends Area {
                       )
                     //)
                   )
-                  //&& (
-                  //  //if (idx == 1) (
-                  //    True
-                  //  //) else (
-                  //  //  tempMyUpExtDel.modMemWordValid({
-                  //  //    if (
-                  //  //      idx < tempMyUpExtDel.modMemWordValid.size
-                  //  //    ) (
-                  //  //      idx
-                  //  //    ) else (
-                  //  //      tempMyUpExtDel.modMemWordValid.size - 1 
-                  //  //    )
-                  //  //  })
-                  //  //)
-                  //)
+                  && (
+                    //if (idx == 1) (
+                    //  True
+                    //) else 
+                    (
+                      tempMyUpExtDel.modMemWordValid({
+                        if (
+                          idx < tempMyUpExtDel.modMemWordValid.size
+                        ) (
+                          idx
+                        ) else (
+                          tempMyUpExtDel.modMemWordValid.size - 1 
+                        )
+                      })
+                    )
+                  )
                   //&& (
                   //  tempMyUpExtDel.valid(0)
                   //)
@@ -1709,7 +1721,6 @@ extends Area {
     )
   )
   def mkExt(): Vec[Vec[PipeMemRmwPayloadExt[WordT, HazardCmpT]]] = {
-
     val ret = Vec.fill(memArrSize)(
       Vec.fill(PipeMemRmw.extIdxLim)(
         mkOneExt(
