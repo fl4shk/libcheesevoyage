@@ -1373,10 +1373,18 @@ extends Area {
                   }
                 }
               )
+              val tempMyUpExtDel = (
+                mod.front.myUpExtDel(
+                  idx - 1
+                  + (if (optIncludePreMid0Front) (1) else (0))
+                )(ydx)(extIdxUp)
+              )
               if (idx == 1) {
-                val tempMyUpExtDel = (
-                  mod.front.myUpExtDel(idx - 1)(ydx)(extIdxUp)
-                )
+                //val tempMyUpExtDel = (
+                //  mod.front.myUpExtDel(
+                //    idx - 1
+                //  )(ydx)(extIdxUp)
+                //)
                 tempMemAddrFwdCmp(jdx) := (
                   (
                     upExtElem(ydx)(extIdxUp).memAddr(
@@ -1400,26 +1408,15 @@ extends Area {
                   //  //})
                   //)
                   && (
-                    tempMyUpExtDel.modMemWordValid({
-                      if (
-                        idx < tempMyUpExtDel.modMemWordValid.size
-                      ) (
-                        idx
-                      ) else (
-                        tempMyUpExtDel.modMemWordValid.size - 1 
-                      )
-                    })
-                  )
-                  && (
                     tempMyUpExtDel.fwdCanDoIt(
                       zdx
                     )
                   )
                 )
               } else {
-                val tempMyUpExtDel = (
-                  mod.front.myUpExtDel(idx - 1)(ydx)(extIdxUp)
-                )
+                //val tempMyUpExtDel = (
+                //  mod.front.myUpExtDel(idx - 1)(ydx)(extIdxUp)
+                //)
                 println(
                   s"tempMyUpExtDel debug: (${idx - 1})(${ydx})  "
                   + s"${jdx}"
@@ -1452,22 +1449,21 @@ extends Area {
                       )
                     //)
                   )
-                  && (
-                    //if (idx == 1) (
-                    //  True
-                    //) else 
-                    (
-                      tempMyUpExtDel.modMemWordValid({
-                        if (
-                          idx < tempMyUpExtDel.modMemWordValid.size
-                        ) (
-                          idx
-                        ) else (
-                          tempMyUpExtDel.modMemWordValid.size - 1 
-                        )
-                      })
-                    )
-                  )
+                  //&& (
+                  //  //if (idx == 1) (
+                  //    True
+                  //  //) else (
+                  //  //  tempMyUpExtDel.modMemWordValid({
+                  //  //    if (
+                  //  //      idx < tempMyUpExtDel.modMemWordValid.size
+                  //  //    ) (
+                  //  //      idx
+                  //  //    ) else (
+                  //  //      tempMyUpExtDel.modMemWordValid.size - 1 
+                  //  //    )
+                  //  //  })
+                  //  //)
+                  //)
                   //&& (
                   //  tempMyUpExtDel.valid(0)
                   //)
