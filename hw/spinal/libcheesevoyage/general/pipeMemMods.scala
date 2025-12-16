@@ -3507,13 +3507,13 @@ extends Area {
           //  Reg(UInt(2 bits)) init(
           //)
           myModMemSdpPipe.io.rdEn := (
-            True
-            //RegNext(
-            //  next=(
-            //    myFifoThing.io.pop.valid
-            //  ),
-            //  init=False,
-            //)
+            //True
+            RegNext(
+              next=(
+                myFifoThing.io.pop.valid
+              ),
+              init=False,
+            )
             ////&& down.isReady
             //&& up.isFiring
           )
