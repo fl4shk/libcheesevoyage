@@ -153,16 +153,6 @@ case class LcvBusCacheMissFifoThing(
     forFMax=true,
   )
 
-  //val popMain = Stream(LcvBusH2dPayload(cfg=cfg.loBusCfg))
-  //val popSub = Stream(LcvBusH2dPayload(cfg=cfg.loBusCfg))
-
-  //val popArbiter = StreamArbiterFactory.lowerFirst.transactionLock.onArgs(
-  //  //subFifo.io.pop,
-  //  //mainFifo.io.pop
-  //  popSub,
-  //  popMain,
-  //)
-  //io.pop << popArbiter
   def fifoCntSubMax = fifoDepthSub - 2 //- 1 //- 2 
   val rFifoCntSub = (
     Reg(SInt((log2Up(fifoDepthSub + 1) + 1) bits))
@@ -178,9 +168,6 @@ case class LcvBusCacheMissFifoThing(
   subFifo.io.push.payload := subFifo.io.push.payload.getZero
   subFifo.io.flush := False
 
-  //val (pushForkMain, pushForkSub) = StreamFork2(io.push, synchronous=true)
-  //pushForkMain.ready := False
-  //pushForkSub.ready := False
   io.push.ready := False
 
   object State extends SpinalEnum(defaultEncoding=binaryOneHot) {

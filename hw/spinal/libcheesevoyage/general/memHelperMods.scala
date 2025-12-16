@@ -27,7 +27,7 @@ private[libcheesevoyage] case class RamSdpPipeNonDataIo[
   WordT <: Data
 ](
   cfg: RamSdpPipeConfig[WordT],
-) extends Bundle {
+) extends Bundle with IMasterSlave {
   //--------
   val wrEn = in(Bool())
   val wrAddr = in(UInt(log2Up(cfg.depth) bits))
@@ -44,6 +44,15 @@ private[libcheesevoyage] case class RamSdpPipeNonDataIo[
   val rdEn = in(Bool())
   val rdAddr = in(UInt(log2Up(cfg.depth) bits))
   //--------
+  def asMaster(): Unit = {
+    out(wrEn)
+    out(wrAddr)
+    if (cfg.optIncludeWrByteEn) {
+      out(wrByteEn)
+    }
+    out(rdEn)
+    out(rdAddr)
+  }
 }
 case class RamSdpPipeIo[
   WordT <: Data
@@ -53,7 +62,7 @@ case class RamSdpPipeIo[
   //optIncludeWrByteEn: Boolean=false
   cfg: RamSdpPipeConfig[WordT],
   useBitsData: Boolean,
-) extends Bundle {
+) extends Bundle with IMasterSlave {
   //val wrEnReg = in(Bool())
   val nonDataIo = RamSdpPipeNonDataIo(cfg=cfg)
   def wrEn = nonDataIo.wrEn
@@ -85,6 +94,16 @@ case class RamSdpPipeIo[
     out(cfg.wordType())
   )
   //val rdDataFromWrAddr = out(Bits(wordType().asBits.getWidth bits))
+  def asMaster(): Unit = {
+    master(nonDataIo)
+    if (useBitsData) {
+      out(wrDataBits)
+      in(rdDataBits)
+    } else {
+      out(wrData)
+      in(rdData)
+    }
+  }
 }
 case class RamSdpPipeImpl[
   WordT <: Data
@@ -211,6 +230,155 @@ case class RamSdpPipe[
   ram.io.nonDataIo <> io.nonDataIo
   ram.io.wrDataBits := io.wrData.asBits
   io.rdData.assignFromBits(ram.io.rdDataBits)
+}
+
+case class RamSdpPipeStmCtrlConfig[
+  WordT <: Data
+](
+  ramCfg: RamSdpPipeConfig[WordT],
+  fifoDepthMain: Int,
+  fifoDepthSub: Int,
+) {
+}
+
+//case class RamSdpPipeStmCtrlPayload[
+//  WordT <: Data
+//](
+//  cfg: RamSdpPipeStmCtrlConfig[WordT]
+//) extends Bundle {
+//  val ramIo = RamSdpPipeIo(
+//    cfg=cfg.ramCfg,
+//    useBitsData=false,
+//  )
+//}
+//case class RamSdpPipeStmCtrlPopPayload[
+//  WordT <: Data
+//](
+//  cfg: RamSdpPipeStmCtrlConfig[WordT]
+//) extends Bundle {
+//}
+case class RamSdpPipeStmCtrlIo[
+  WordT <: Data,
+](
+  cfg: RamSdpPipeStmCtrlConfig[WordT]
+) extends Bundle {
+  //--------
+  //val push = slave(Stream(RamSdpPipeIo(
+  //  cfg=cfg.ramCfg,
+  //  useBitsData=false,
+  //)))
+  //val pop = master(Stream(RamSdpPipeIo(
+  //  cfg=cfg.ramCfg,
+  //  useBitsData=false,
+  //)))
+  val push = slave(Stream(UInt(log2Up(cfg.ramCfg.depth) bits)))
+  val pop = master(Stream(cfg.ramCfg.wordType()))
+  val delay = in(Bool())
+
+  val ramIo = master(RamSdpPipeIo(
+    cfg=cfg.ramCfg,
+    useBitsData=false,
+  ))
+  //--------
+}
+case class RamSdpPipeStmCtrl[
+  WordT <: Data,
+](
+  cfg: RamSdpPipeStmCtrlConfig[WordT]
+) extends Component {
+  //--------
+  val io = RamSdpPipeStmCtrlIo(cfg=cfg)
+  //--------
+  def fifoDepthMain = cfg.fifoDepthMain
+  def fifoDepthSub = cfg.fifoDepthSub
+
+  val mainFifo = StreamFifo(
+    dataType=UInt(log2Up(cfg.ramCfg.depth) bits),
+    depth=fifoDepthMain,
+    latency=0,
+    forFMax=true,
+  )
+  val subFifo = StreamFifo(
+    dataType=UInt(log2Up(cfg.ramCfg.depth) bits),
+    depth=fifoDepthSub,
+    latency=0,
+    forFMax=true,
+  )
+
+  def fifoCntSubMax = fifoDepthSub //- 2 //- 1 //- 2 
+  val rFifoCntSub = (
+    Reg(SInt((log2Up(fifoDepthSub + 1) + 1) bits))
+    init(fifoCntSubMax)
+  )
+
+  mainFifo.io.push.valid := False
+  mainFifo.io.push.payload := mainFifo.io.push.payload.getZero
+  mainFifo.io.pop.ready := False
+  mainFifo.io.flush := False
+
+  subFifo.io.push.valid := False
+  subFifo.io.push.payload := subFifo.io.push.payload.getZero
+  subFifo.io.flush := False
+  subFifo.io.pop.ready := False
+
+  io.push.ready := False
+
+  object State extends SpinalEnum(defaultEncoding=binaryOneHot) {
+    val
+      IDLE,
+      POST_DELAY
+      = newElement();
+  }
+  val rState = (
+    Reg(State())
+    init(State.IDLE)
+  )
+  def doCtrlRamIo(
+    fifo: StreamFifo[UInt],
+  ): Unit = {
+    fifo.io.pop.ready := True
+    when (fifo.io.pop.fire) {
+      fifo.io.pop.payload
+    }
+  }
+  switch (rState) {
+    is (State.IDLE) {
+      mainFifo.io.push << io.push //pushForkMain
+      //io.pop << mainFifo.io.pop
+      doCtrlRamIo(mainFifo)
+
+      subFifo.io.push.valid := True
+      subFifo.io.push.payload := io.push.payload
+      // This should make `subFifo` act like a circular FIFO that we
+      // keep only the most recent contents of
+      subFifo.io.pop.ready := False
+
+      when (subFifo.io.push.fire) {
+        when (!rFifoCntSub.msb) {
+          rFifoCntSub := rFifoCntSub - 1
+        } otherwise {
+          subFifo.io.pop.ready := True
+        }
+      }
+      when (io.delay) {
+        rState := State.POST_DELAY
+      }
+    }
+    is (State.POST_DELAY) {
+      rFifoCntSub := fifoCntSubMax
+      
+      mainFifo.io.flush := True
+      //io.pop << subFifo.io.pop
+      doCtrlRamIo(subFifo)
+      when (
+        !subFifo.io.pop.valid
+        && !io.delay
+      ) {
+        rState := State.IDLE
+      }
+    }
+  }
+  //--------
 }
 
 case class RamSimpleDualPortConfig[
