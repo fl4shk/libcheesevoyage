@@ -129,10 +129,10 @@ case class LcvBusCacheMissFifoPairIo(
 ) extends Bundle {
   val push = slave(Stream(LcvBusH2dPayload(cfg=cfg.loBusCfg)))
   val pop = master(Stream(LcvBusH2dPayload(cfg=cfg.loBusCfg)))
-  val cacheMiss = in(Bool())
+  val doStall = in(Bool())
 }
 
-case class LcvBusCacheMissFifoThing(
+case class LcvBusDoStallFifoThing(
   cfg: LcvBusCacheBusPairConfig
 ) extends Component {
   val io = LcvBusCacheMissFifoPairIo(cfg=cfg)
@@ -153,6 +153,7 @@ case class LcvBusCacheMissFifoThing(
     forFMax=true,
   )
 
+  //def fifoCntSubMax = fifoDepthSub - 2 //- 3//- 2 //- 1 //- 2 
   def fifoCntSubMax = fifoDepthSub - 2 //- 3//- 2 //- 1 //- 2 
   val rFifoCntSub = (
     Reg(SInt((log2Up(fifoDepthSub + 1) + 1) bits))
@@ -200,7 +201,7 @@ case class LcvBusCacheMissFifoThing(
           subFifo.io.pop.ready := True
         }
       }
-      when (io.cacheMiss) {
+      when (io.doStall) {
         rState := State.POST_CACHE_MISS
       }
     }
@@ -215,7 +216,7 @@ case class LcvBusCacheMissFifoThing(
       io.pop << subFifo.io.pop
       when (
         !subFifo.io.pop.valid
-        && !io.cacheMiss
+        && !io.doStall
       ) {
         rState := State.IDLE
       }
@@ -309,21 +310,21 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   //    forFMax=true,
   //  )
   //)
-  val loH2dCacheMissFifoThing = LcvBusCacheMissFifoThing(cfg=cfg)
-  loH2dCacheMissFifoThing.io.push << io.loBus.h2dBus
-  //loH2dCacheMissFifoThing.io.cacheMiss := False
-  val myFifoThingCacheMiss = (
+  val loH2dDoStallFifoThing = LcvBusDoStallFifoThing(cfg=cfg)
+  loH2dDoStallFifoThing.io.push << io.loBus.h2dBus
+  //loH2dDoStallFifoThing.io.doStall := False
+  val myFifoThingDoStall = (
     //Reg(Bool(), init=False)
     Bool()
   )
-  myFifoThingCacheMiss := RegNext(myFifoThingCacheMiss, init=False)
-  loH2dCacheMissFifoThing.io.cacheMiss := myFifoThingCacheMiss
+  myFifoThingDoStall := RegNext(myFifoThingDoStall, init=False)
+  loH2dDoStallFifoThing.io.doStall := myFifoThingDoStall
   //rFifoThingCacheMiss := False
 
   def loH2dPopStm = (
     //loH2dFifo.io.pop
     //io.loBus.h2dBus
-    loH2dCacheMissFifoThing.io.pop
+    loH2dDoStallFifoThing.io.pop
   )
   loH2dPopStm.ready := False
 
@@ -376,8 +377,15 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
       right=(
         //Mux[UInt](useDel2, rDel2LoBusAddrTag, rLoBusAddrTag)
         //rLoBusAddrTag
-        rDel2LoBusAddrTag
+        //rDel2LoBusAddrTag
         //loH2dPopStm.addr(loBusCacheCfg.tagRange)
+        (
+          RegNext(
+            RegNext(loH2dPopStm.addr(loBusCacheCfg.tagRange))
+            init(0x0)
+          )
+          init(0x0)
+        )
         //RegNext(
         //  RegNext(rSavedLoBusAddrTag, init=rSavedLoBusAddrTag.getZero),
         //  init=rSavedLoBusAddrTag.getZero,
@@ -406,9 +414,11 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   //}
   def doLineWordRamReadSync(
     busAddr: UInt,
-    setEn: Boolean=false,
+    setEn: Int=0,
   ): Unit = {
-    if (setEn) {
+    if (setEn == 1) {
+      lineWordRam.io.rdEn := True
+    } else if (setEn == 2) {
       lineWordRam.io.rdEn := (
         //True
         RegNext(
@@ -416,7 +426,7 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
           init=False,
         )
       )
-    }
+    } 
     //rMyLineWordRamRdEn := True
     lineWordRam.io.rdAddr := {
       //(busAddr >> myLineRamAddrRshift)
@@ -471,9 +481,11 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   }
   def doLineAttrsRamReadSync(
     busAddr: UInt,
-    setEn: Boolean=false,
+    setEn: Int=0,
   ): Unit = {
-    if (setEn) {
+    if (setEn == 1) {
+      lineAttrsRam.io.rdEn := True
+    } else if (setEn == 2) {
       lineAttrsRam.io.rdEn := (
         //True
         RegNext(
@@ -512,7 +524,7 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
       //io.loBus.h2dBus.addr
       loH2dPopStm.addr
     ),
-    setEn=true,
+    setEn=2,
   )
   doLineWordRamReadSync(
     busAddr={
@@ -523,11 +535,15 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
       //io.loBus.h2dBus.addr
       loH2dPopStm.addr
     },
-    setEn=true,
+    setEn=2,
   )
   doLineAttrsRamWrite(
     busAddr=(
-      loH2dPopStm.addr
+      //loH2dPopStm.addr
+      RegNext(
+        RegNext(loH2dPopStm.addr, init=loH2dPopStm.addr.getZero),
+        init=loH2dPopStm.addr.getZero,
+      )
       //RegNext(
       //  rDel2LoBusAddr
       //)
@@ -538,7 +554,11 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   )
   doLineWordRamWrite(
     busAddr=(
-      loH2dPopStm.addr
+      //loH2dPopStm.addr
+      RegNext(
+        RegNext(loH2dPopStm.addr, init=loH2dPopStm.addr.getZero),
+        init=loH2dPopStm.addr.getZero,
+      )
       //RegNext(
       //  rDel2LoBusAddr
       //)
@@ -550,14 +570,24 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
       //RegNext(
       //  rDel2LoH2dPayload.data
       //)
-      loH2dPopStm.data
+      //loH2dPopStm.data
+      //loH2dPopStm.data
+      RegNext(
+        RegNext(loH2dPopStm.data, init=loH2dPopStm.data.getZero),
+        init=loH2dPopStm.data.getZero,
+      )
     ),
     byteEn=Some(
       //rSavedLoH2dPayload.byteEn
       //RegNext(
       //  rDel2LoH2dPayload.byteEn
       //)
-      loH2dPopStm.byteEn
+      //loH2dPopStm.byteEn
+      //loH2dPopStm.byteEn
+      RegNext(
+        RegNext(loH2dPopStm.byteEn, init=loH2dPopStm.byteEn.getZero),
+        init=loH2dPopStm.byteEn.getZero,
+      ),
     ),
     setEn=false,
   )
@@ -642,7 +672,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   def rdLineAttrs = base.rdLineAttrs
   def wrLineAttrs = base.wrLineAttrs
   //def loH2dFifo = base.loH2dFifo
-  def loH2dCacheMissFifoThing = base.loH2dCacheMissFifoThing
+  def loH2dDoStallFifoThing = base.loH2dDoStallFifoThing
   def loH2dPopStm = base.loH2dPopStm
   def hiH2dFifo = base.hiH2dFifo
   def rLoH2dPayload = base.rLoH2dPayload
@@ -687,7 +717,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       //SEND_LINE_TO_HI_BUS_PIPE_3,
       //SEND_LINE_TO_HI_BUS_PIPE_2,
       //SEND_LINE_TO_HI_BUS_PIPE_1,
-      SEND_LINE_TO_HI_BUS,
+      //SEND_LINE_TO_HI_BUS,
       RECV_LINE_FROM_HI_BUS_PIPE_1,
       RECV_LINE_FROM_HI_BUS,
       RECV_LINE_FROM_HI_BUS_POST_3,
@@ -749,7 +779,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   }
   switch (rState) {
     is (State.IDLE) {
-      base.myFifoThingCacheMiss := False
+      base.myFifoThingDoStall := False
       //--------
       //io.loBus.h2dBus.ready := True
       io.loBus.d2hBus.valid := False
@@ -782,7 +812,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         when (!base.haveHit) {
           // cache miss
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-          base.myFifoThingCacheMiss := True
+          base.myFifoThingDoStall := True
+          //loH2dPopStm.ready := False
           loH2dPopStm.ready := False
         } otherwise {
           // Here we try to reduce the number of cycles for a load hit
@@ -803,10 +834,12 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       //--------
     }
     is (State.LOAD_HIT_LO_BUS_STALL) {
+      when (rose(rState === State.LOAD_HIT_LO_BUS_STALL)) {
+        loH2dPopStm.ready := True
+      }
       io.loBus.d2hBus.valid := True
       when (io.loBus.d2hBus.fire) {
-        base.myFifoThingCacheMiss := False
-        loH2dPopStm.ready := True
+        base.myFifoThingDoStall := False
         rState := State.IDLE
       }
     }
@@ -871,7 +904,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     is (State.RECV_LINE_FROM_HI_BUS_POST_3) {
       //--------
       rState := State.RECV_LINE_FROM_HI_BUS_POST_2
-      base.myFifoThingCacheMiss := False
+      base.myFifoThingDoStall := False
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_2) {
       rState := State.RECV_LINE_FROM_HI_BUS_POST_1
@@ -950,7 +983,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   def rdLineAttrs = base.rdLineAttrs
   def wrLineAttrs = base.wrLineAttrs
   //def loH2dFifo = base.loH2dFifo
-  def loH2dCacheMissFifoThing = base.loH2dCacheMissFifoThing
+  def loH2dDoStallFifoThing = base.loH2dDoStallFifoThing
   def loH2dPopStm = base.loH2dPopStm
   def hiH2dFifo = base.hiH2dFifo
   def rLoH2dPayload = base.rLoH2dPayload
@@ -988,8 +1021,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   ) {
     val
       IDLE,
-      LOAD_HIT_LO_BUS_STALL,
-      STORE_HIT,
+      LOAD_HIT_DO_STALL_PIPE_1,
+      LOAD_HIT_DO_STALL,
+      STORE_HIT_DO_STALL_PIPE_1,
+      STORE_HIT_DO_STALL,
       SEND_LINE_TO_HI_BUS_PIPE_3,
       SEND_LINE_TO_HI_BUS_PIPE_2,
       SEND_LINE_TO_HI_BUS_PIPE_1,
@@ -1010,12 +1045,12 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     init(State.IDLE)
   )
 
-  when (rose(rState === State.STORE_HIT)) {
-    wrLineAttrs := RegNext(rdLineAttrs, init=rdLineAttrs.getZero)
-    wrLineAttrs.dirty := True
-    lineAttrsRam.io.wrEn := True
-    lineWordRam.io.wrEn := True
-  }
+  //when (rose(rState === State.STORE_HIT)) {
+  //  wrLineAttrs := RegNext(rdLineAttrs, init=rdLineAttrs.getZero)
+  //  wrLineAttrs.dirty := True
+  //  lineAttrsRam.io.wrEn := True
+  //  lineWordRam.io.wrEn := True
+  //}
 
   rHiD2hReady := False
   val rTempBurstAddr = (
@@ -1034,14 +1069,14 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   def doPopLoH2dFifo(): Unit = {
     when (
       loH2dPopStm.valid
-      && !loH2dPopStm.isWrite
+      //&& !loH2dPopStm.isWrite
     ) {
       loH2dPopStm.ready := True
     }
   }
   switch (rState) {
     is (State.IDLE) {
-      base.myFifoThingCacheMiss := False
+      base.myFifoThingDoStall := False
       //--------
       io.loBus.d2hBus.valid := False
 
@@ -1063,32 +1098,84 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         //loH2dPopStm.valid
         //&& RegNext(loH2dPopStm.valid, init=False)
         //&& 
-        loH2dPopStm.valid
-        && RegNext(loH2dPopStm.fire, init=False)
-        && RegNext(
-          RegNext(loH2dPopStm.fire, init=False),
-          init=False
+        //loH2dPopStm.valid
+        //&& RegNext(
+        //  (
+        //    //loH2dPopStm.fire
+        //    //|| (loH2dPopStm.valid && !base.myFifoThingDoStall)
+        //    //|| (loH2dPopStm.valid && rState === State.IDLE)
+        //    //|| (loH2dPopStm.valid && loH2dPopStm.isWrite)
+        //  ),
+        //  init=False
+        //)
+        //&& 
+        //RegNext(
+        //  RegNext(
+        //    (
+        //      loH2dPopStm.fire
+        //      || (loH2dPopStm.valid && !base.myFifoThingDoStall)
+        //      //|| (loH2dPopStm.valid && loH2dPopStm.isWrite)
+        //      //|| (loH2dPopStm.valid && rState === State.IDLE)
+        //    ),
+        //    init=False
+        //  ),
+        //  init=False
+        //)
+        RegNext(
+          next=(
+            lineAttrsRam.io.rdEn
+          ),
+          init=False,
+        ) && (
+          RegNext(
+            (rState === State.IDLE),
+            init=False
+          )
+        ) && (
+          RegNext(
+            RegNext(
+              (rState === State.IDLE),
+              init=False
+            ),
+            init=False
+          )
         )
       ) {
-        rSavedLoH2dPayload := rDel2LoH2dPayload
+        rSavedLoH2dPayload := (
+          //rDel2LoH2dPayload
+          RegNext(
+            RegNext(
+              loH2dPopStm.payload,
+              init=loH2dPopStm.payload.getZero,
+            ),
+            init=loH2dPopStm.payload.getZero,
+          )
+        )
 
         switch (
           base.haveHit
           ## rdLineAttrs.dirty
-          ## rDel2LoH2dPayload.isWrite
+          //## rDel2LoH2dPayload.isWrite
+
+          ## RegNext(
+            RegNext(
+              loH2dPopStm.isWrite,
+              init=loH2dPopStm.isWrite.getZero,
+            ),
+            init=loH2dPopStm.isWrite.getZero,
+          )
         ) {
           is (M"00-") {
             // cache miss, and line isn't dirty
             rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-
-            base.myFifoThingCacheMiss := True
-            loH2dPopStm.ready := False
+            base.myFifoThingDoStall := True
+            loH2dPopStm.ready := True
           }
           is (M"01-") {
             // cache miss, and line is dirty 
             rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
-            base.myFifoThingCacheMiss := True
-            loH2dPopStm.ready := False
+            base.myFifoThingDoStall := True
+            loH2dPopStm.ready := True
           }
           is (M"1-0") {
             // cache hit, and we have a load 
@@ -1101,49 +1188,115 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             io.loBus.d2hBus.valid := True
             io.loBus.d2hBus.data := rdLineWord
             //rSavedLoH2dPayload := rDel2LoH2dPayload
-            when (!io.loBus.d2hBus.fire) {
-              rState := (
-                State.LOAD_HIT_LO_BUS_STALL
-                //State.LOAD_HIT
+            when (
+              RegNext(
+                (
+                  //rState === State.STORE_HIT_DO_STALL
+                  //|| 
+                  lineWordRam.io.wrEn
+                ),
+                init=False
               )
+              || !io.loBus.d2hBus.ready
+            ) {
+              //loH2dPopStm.ready := False
+              //io.loBus.d2hBus.valid := False
+              base.myFifoThingDoStall := True
+              rState := State.LOAD_HIT_DO_STALL_PIPE_1
             }
           }
           default {
             // cache hit, and we have a store
-            rState := State.STORE_HIT
-            loH2dPopStm.ready := False
+            wrLineAttrs := (
+              //RegNext(rdLineAttrs, init=rdLineAttrs.getZero)
+              rdLineAttrs
+            )
+            wrLineAttrs.dirty := True
+            lineAttrsRam.io.wrEn := True
+            lineWordRam.io.wrEn := True
+
+            loH2dPopStm.ready := True
+            io.loBus.d2hBus.valid := True
+            when (
+              //!io.loBus.d2hBus.fire
+              !io.loBus.d2hBus.ready
+            ) {
+              loH2dPopStm.ready := False
+              //io.loBus.d2hBus.valid := False
+              base.myFifoThingDoStall := True
+              rState := State.STORE_HIT_DO_STALL_PIPE_1
+            }
+            //rState := State.STORE_HIT
+            //loH2dPopStm.ready := (
+            //  True
+            //  //False
+            //)
           }
         }
       }
       //--------
     }
-    is (State.LOAD_HIT_LO_BUS_STALL) {
+    is (State.LOAD_HIT_DO_STALL_PIPE_1) {
+      //when (
+      //  RegNext(
+      //    RegNext(
+      //      lineWordRam.io.wrAddr, init=lineWordRam.io.wrAddr.getZero
+      //    ),
+      //    init=lineWordRam.io.wrAddr.getZero,
+      //  ) === (
+      //    RegNext(loH2dPopStm.addr)
+      //  )
+      //) {
+      //}
+      io.loBus.d2hBus.valid := False
+      loH2dPopStm.ready := False
+      rState := State.LOAD_HIT_DO_STALL
+    }
+    is (State.LOAD_HIT_DO_STALL) {
+      //when (rose(rState === State.LOAD_HIT_LO_BUS_STALL)) {
+      //  loH2dPopStm.ready := True
+      //}
+      io.loBus.d2hBus.data := rdLineWord
       io.loBus.d2hBus.valid := True
       when (io.loBus.d2hBus.fire) {
-        base.myFifoThingCacheMiss := False
+        base.myFifoThingDoStall := False
         rState := State.IDLE
         //rSeenStateIdle := False
       }
     }
-    is (State.STORE_HIT) {
-      when (rose(rState === State.STORE_HIT)) {
-        //io.loBus.h2dBus.ready := True
-        loH2dPopStm.ready := True
-      }
+    is (State.STORE_HIT_DO_STALL_PIPE_1) {
+      io.loBus.d2hBus.valid := False
+      loH2dPopStm.ready := False
+      rState := State.STORE_HIT_DO_STALL
+    }
+    is (State.STORE_HIT_DO_STALL) {
       io.loBus.d2hBus.valid := True
-      //--------
       when (io.loBus.d2hBus.fire) {
-        base.myFifoThingCacheMiss := False
+        base.myFifoThingDoStall := False
         rState := State.IDLE
+        //rSeenStateIdle := False
       }
     }
+    //is (State.STORE_HIT) {
+    //  //when (rose(rState === State.STORE_HIT)) {
+    //  //  //io.loBus.h2dBus.ready := True
+    //  //  loH2dPopStm.ready := True
+    //  //}
+    //  io.loBus.d2hBus.valid := True
+    //  //--------
+    //  when (io.loBus.d2hBus.fire) {
+    //    base.myFifoThingDoStall := False
+    //    rState := State.IDLE
+    //  }
+    //}
     is (State.SEND_LINE_TO_HI_BUS_PIPE_3) {
       rState := State.SEND_LINE_TO_HI_BUS_PIPE_2
       base.doLineWordRamReadSync(
         busAddr=rSavedLoH2dPayload.burstAddr(
           someBurstCnt=rHiH2dBurstCnt(0),
           incrBurstCnt=true,
-        )
+        ),
+        setEn=0,
       )
     }
     is (State.SEND_LINE_TO_HI_BUS_PIPE_2) {
@@ -1152,7 +1305,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         busAddr=rSavedLoH2dPayload.burstAddr(
           someBurstCnt=rHiH2dBurstCnt(0),
           incrBurstCnt=true,
-        )
+        ),
+        setEn=1,
       )
       rHiH2dPayload.addr := (
         Cat(
@@ -1169,7 +1323,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         busAddr=rSavedLoH2dPayload.burstAddr(
           someBurstCnt=rHiH2dBurstCnt(0),
           incrBurstCnt=true,
-        )
+        ),
+        setEn=1,
       )
       rHiH2dValid := True
       rHiH2dPayload.addr := rHiH2dPayload.burstAddr(
@@ -1188,7 +1343,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         busAddr=rSavedLoH2dPayload.burstAddr(
           someBurstCnt=rHiH2dBurstCnt(0),
           incrBurstCnt=false,
-        )
+        ),
+        setEn=1,
       )
       rHiH2dPayload.burstFirst := False
 
@@ -1295,28 +1451,31 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_3) {
       rState := State.RECV_LINE_FROM_HI_BUS_POST_2
-      base.myFifoThingCacheMiss := False
+      //base.myFifoThingDoStall := False
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_2) {
       rState := State.RECV_LINE_FROM_HI_BUS_POST_1
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_1) {
       rState := State.RECV_LINE_FROM_HI_BUS_POST
-      when (
-        loH2dPopStm.valid
-        && !loH2dPopStm.isWrite
-      ) {
-        loH2dPopStm.ready := True
-      }
+      //loH2dPopStm.ready := True
+      //when (
+      //  loH2dPopStm.valid
+      //  && !loH2dPopStm.isWrite
+      //) {
+      //  loH2dPopStm.ready := True
+      //}
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST) {
       rState := State.IDLE
-      when (
-        RegNext(loH2dPopStm.fire, init=False)
-        && loH2dPopStm.valid
-      ) {
-        loH2dPopStm.ready := True
-      }
+      base.myFifoThingDoStall := False
+      //when (
+      //  RegNext(loH2dPopStm.fire, init=False)
+      //  && loH2dPopStm.valid
+      //) {
+      //  loH2dPopStm.ready := True
+      //}
+      //lineAttrsRam.io.rdEn := False
     }
   }
   //--------
@@ -1427,7 +1586,7 @@ case class LcvBusNonCoherentDataCacheWithSdramCtrl(
   //  )
   //}
   //val io = LcvBusSdramCtrlIo(cfg=sdramCtrlCfg)
-  val io = LcvBusSdramIo(cfg=sdramCtrlCfg)
+  //val io = LcvBusSdramIo(cfg=sdramCtrlCfg)
   //--------
   val cacheCfg = (
     LcvBusCacheBusPairConfig(
@@ -1476,34 +1635,34 @@ case class LcvBusNonCoherentDataCacheWithSdramCtrl(
   //--------
   val myCache = LcvBusCache(cfg=cacheCfg)
   val myCacheTester = LcvBusDeviceRamTester(cfg=testerCfg)
-  val mySdramCtrl = LcvBusSdramCtrl(cfg=sdramCtrlCfg)
-  io <> mySdramCtrl.io.sdram
-  //val myBusMem = {
-  //  val tempDepth = (
-  //    //cacheCfg.loBusCacheCfg.depthWords * 2
-  //    //cacheCfg.loBusCacheCfg.depthWords * 4
-  //    cacheCfg.loBusCacheCfg.depthWords * 16
-  //  )
-  //  //val tempDepth = 128
-  //  LcvBusMem(
-  //    //cfg=cacheCfg.loBusCfg
-  //    cfg=LcvBusMemConfig(
-  //      busCfg=cacheCfg.hiBusCfg,
-  //      depth=tempDepth,
-  //      initBigInt=Some({
-  //        //Array.fill(tempDepth)(BigInt(0))
-  //        val tempArr = new ArrayBuffer[BigInt]()
-  //        for (idx <- 0 until tempDepth) {
-  //          tempArr += BigInt(idx)
-  //        }
-  //        tempArr
-  //      }),
-  //    )
-  //  )
-  //}
+  //val mySdramCtrl = LcvBusSdramCtrl(cfg=sdramCtrlCfg)
+  //io <> mySdramCtrl.io.sdram
+  val myBusMem = {
+    val tempDepth = (
+      //cacheCfg.loBusCacheCfg.depthWords * 2
+      //cacheCfg.loBusCacheCfg.depthWords * 4
+      cacheCfg.loBusCacheCfg.depthWords * 16
+    )
+    //val tempDepth = 128
+    LcvBusMem(
+      //cfg=cacheCfg.loBusCfg
+      cfg=LcvBusMemConfig(
+        busCfg=cacheCfg.hiBusCfg,
+        depth=tempDepth,
+        initBigInt=Some({
+          //Array.fill(tempDepth)(BigInt(0))
+          val tempArr = new ArrayBuffer[BigInt]()
+          for (idx <- 0 until tempDepth) {
+            tempArr += BigInt(idx)
+          }
+          tempArr
+        }),
+      )
+    )
+  }
   myCache.io.loBus << myCacheTester.io.busVec.head
-  myCache.io.hiBus >> mySdramCtrl.io.bus
-  //myCache.io.hiBus >> myBusMem.io.bus
+  //myCache.io.hiBus >> mySdramCtrl.io.bus
+  myCache.io.hiBus >> myBusMem.io.bus
 
   //myBusMem.io.bus <> myCacheTester.io.busVec.head
   //myBusMem.io.bus.h2dBus.mainBurstInfo := (
@@ -1531,29 +1690,29 @@ case class LcvBusNonCoherentDataCacheSimDut(
       useAltddioOut=false,
     )
   )
-  val mySdram = as4c32m16sb()
-  //mySdram.io.DQ <> mySdramCtrl.io.sdram.dq
-  //mySdram.io.A := mySdramCtrl.io.sdram.a
-  //mySdram.io.DQML := mySdramCtrl.io.sdram.dqml
-  //mySdram.io.DQMH := mySdramCtrl.io.sdram.dqmh
-  //mySdram.io.BA := mySdramCtrl.io.sdram.ba
-  //mySdram.io.nCS := mySdramCtrl.io.sdram.nCs
-  //mySdram.io.nWE := mySdramCtrl.io.sdram.nWe
-  //mySdram.io.nRAS := mySdramCtrl.io.sdram.nRas
-  //mySdram.io.nCAS := mySdramCtrl.io.sdram.nCas
-  //mySdram.io.CLK := mySdramCtrl.io.sdram.clk
-  //mySdram.io.CKE := mySdramCtrl.io.sdram.cke
-  mySdram.io.DQ <> myCacheAndTester.io.dq
-  mySdram.io.A := myCacheAndTester.io.a
-  mySdram.io.DQML := myCacheAndTester.io.dqml
-  mySdram.io.DQMH := myCacheAndTester.io.dqmh
-  mySdram.io.BA := myCacheAndTester.io.ba
-  mySdram.io.nCS := myCacheAndTester.io.nCs
-  mySdram.io.nWE := myCacheAndTester.io.nWe
-  mySdram.io.nRAS := myCacheAndTester.io.nRas
-  mySdram.io.nCAS := myCacheAndTester.io.nCas
-  mySdram.io.CLK := myCacheAndTester.io.clk
-  mySdram.io.CKE := myCacheAndTester.io.cke
+  //val mySdram = as4c32m16sb()
+  ////mySdram.io.DQ <> mySdramCtrl.io.sdram.dq
+  ////mySdram.io.A := mySdramCtrl.io.sdram.a
+  ////mySdram.io.DQML := mySdramCtrl.io.sdram.dqml
+  ////mySdram.io.DQMH := mySdramCtrl.io.sdram.dqmh
+  ////mySdram.io.BA := mySdramCtrl.io.sdram.ba
+  ////mySdram.io.nCS := mySdramCtrl.io.sdram.nCs
+  ////mySdram.io.nWE := mySdramCtrl.io.sdram.nWe
+  ////mySdram.io.nRAS := mySdramCtrl.io.sdram.nRas
+  ////mySdram.io.nCAS := mySdramCtrl.io.sdram.nCas
+  ////mySdram.io.CLK := mySdramCtrl.io.sdram.clk
+  ////mySdram.io.CKE := mySdramCtrl.io.sdram.cke
+  //mySdram.io.DQ <> myCacheAndTester.io.dq
+  //mySdram.io.A := myCacheAndTester.io.a
+  //mySdram.io.DQML := myCacheAndTester.io.dqml
+  //mySdram.io.DQMH := myCacheAndTester.io.dqmh
+  //mySdram.io.BA := myCacheAndTester.io.ba
+  //mySdram.io.nCS := myCacheAndTester.io.nCs
+  //mySdram.io.nWE := myCacheAndTester.io.nWe
+  //mySdram.io.nRAS := myCacheAndTester.io.nRas
+  //mySdram.io.nCAS := myCacheAndTester.io.nCas
+  //mySdram.io.CLK := myCacheAndTester.io.clk
+  //mySdram.io.CKE := myCacheAndTester.io.cke
   //--------
 }
 

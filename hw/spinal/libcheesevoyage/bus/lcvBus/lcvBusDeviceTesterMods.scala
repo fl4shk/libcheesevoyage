@@ -366,6 +366,7 @@ private[libcheesevoyage] case class LcvBusDeviceRamTesterNonCoherent(
       //if (cfg.kind._optDirectMappedCacheSetRangeHi != None) (
       //  
       //) else (
+        //2
         //4
       //)
       16
