@@ -156,8 +156,10 @@ case class LcvBusDoStallFifoThing(
   //def fifoCntSubMax = fifoDepthSub - 2 //- 3//- 2 //- 1 //- 2 
   def fifoCntSubMax = fifoDepthSub - 2 //- 3//- 2 //- 1 //- 2 
   val rFifoCntSub = (
-    Reg(SInt((log2Up(fifoDepthSub + 1) + 1) bits))
-    init(fifoCntSubMax)
+    Vec.fill(2)(
+      Reg(SInt((log2Up(fifoDepthSub + 1) + 1) bits))
+      init(fifoCntSubMax)
+    )
   )
 
   mainFifo.io.push.valid := False
@@ -185,6 +187,7 @@ case class LcvBusDoStallFifoThing(
   //io.pop << mainFifo.io.pop
   switch (rState) {
     is (State.IDLE) {
+      rFifoCntSub(1) := fifoCntSubMax - 1
       mainFifo.io.push << io.push //pushForkMain
       io.pop << mainFifo.io.pop
 
@@ -195,8 +198,8 @@ case class LcvBusDoStallFifoThing(
       // keep only the most recent contents of
       subFifo.io.pop.ready := False
       when (subFifo.io.push.fire) {
-        when (!rFifoCntSub.msb) {
-          rFifoCntSub := rFifoCntSub - 1
+        when (!rFifoCntSub(0).msb) {
+          rFifoCntSub(0) := rFifoCntSub(0) - 1
         } otherwise {
           subFifo.io.pop.ready := True
         }
@@ -206,18 +209,49 @@ case class LcvBusDoStallFifoThing(
       }
     }
     is (State.POST_CACHE_MISS) {
-      rFifoCntSub := fifoCntSubMax
+      rFifoCntSub(0) := fifoCntSubMax
       
-      //when (rose(rState === State.POST_CACHE_MISS)) {
+      when (rose(rState === State.POST_CACHE_MISS)) {
+        //rFifoCntSub := fifoCntSubMax
         mainFifo.io.flush := True
-      //} otherwise {
-      //  mainFifo.io.push << io.push
-      //}
+      } otherwise {
+        //mainFifo.io.push << io.push
+      }
       io.pop << subFifo.io.pop
+
+      //when (rFifoCntSub.msb) {
+      //  rFifoCntSub := fifoCntSubMax
+      //}
+      //when (rFifoCntSub === fifoCntSubMax) {
+      //  mainFifo.io.push << io.push
+      //  subFifo.io.push.valid := True
+      //  subFifo.io.push.payload := io.push.payload
+      //  // This should make `subFifo` act like a circular FIFO that we
+      //  // keep only the most recent contents of
+      //  //subFifo.io.pop.ready := False
+      //  when (subFifo.io.push.fire) {
+      //    //when (!rFifoCntSub.msb) {
+      //    //  rFifoCntSub := rFifoCntSub - 1
+      //    //} otherwise {
+      //    //  //subFifo.io.pop.ready := True
+      //    //}
+      //    rFifoCntSub := fifoCntSubMax - 1
+      //  }
+      //}
       when (
-        !subFifo.io.pop.valid
+        subFifo.io.pop.fire
+        && !rFifoCntSub(1).msb
+      ) {
+        rFifoCntSub(1) := rFifoCntSub(1) - 1
+      }
+      when (
+        //!subFifo.io.pop.valid
+        rFifoCntSub(1).msb
         && !io.doStall
       ) {
+        //mainFifo.io.push << io.push
+        //subFifo.io.push.valid := True
+        //subFifo.io.push.payload := io.push.payload
         rState := State.IDLE
       }
     }
@@ -800,11 +834,22 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       doPopLoH2dFifo()
       //--------
       when (
-        loH2dPopStm.valid
-        && RegNext(loH2dPopStm.fire, init=False)
-        && RegNext(
-          RegNext(loH2dPopStm.fire, init=False),
-          init=False
+        //loH2dPopStm.valid
+        //&& RegNext(loH2dPopStm.fire, init=False)
+        //&& RegNext(
+        //  RegNext(loH2dPopStm.fire, init=False),
+        //  init=False
+        //)
+        RegNext(
+          next=(
+            lineAttrsRam.io.rdEn
+            && (rState === State.IDLE)
+            && RegNext(
+              (rState === State.IDLE),
+              init=False,
+            )
+          ),
+          init=False,
         )
       ) {
         rSavedLoH2dPayload := rDel2LoH2dPayload
@@ -1124,21 +1169,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         RegNext(
           next=(
             lineAttrsRam.io.rdEn
+            && (rState === State.IDLE)
+            && RegNext(
+              (rState === State.IDLE),
+              init=False,
+            )
           ),
           init=False,
-        ) && (
-          RegNext(
-            (rState === State.IDLE),
-            init=False
-          )
-        ) && (
-          RegNext(
-            RegNext(
-              (rState === State.IDLE),
-              init=False
-            ),
-            init=False
-          )
         )
       ) {
         rSavedLoH2dPayload := (
