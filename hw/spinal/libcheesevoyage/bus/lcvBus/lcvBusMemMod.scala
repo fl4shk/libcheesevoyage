@@ -20,7 +20,7 @@ case class LcvBusMemConfig(
   depth: Int,
   init: Option[Seq[Bits]]=None,
   initBigInt: Option[Seq[BigInt]]=None,
-  arrRamStyleAltera: String="M10K",
+  arrRamStyleAltera: String="no_rw_check, M10K",
   arrRamStyleXilinx: String="block",
   arrRwAddrCollisionXilinx: String="",
 ) {
