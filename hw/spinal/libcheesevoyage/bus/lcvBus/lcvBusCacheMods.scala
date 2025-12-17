@@ -153,7 +153,7 @@ case class LcvBusCacheMissFifoThing(
     forFMax=true,
   )
 
-  def fifoCntSubMax = fifoDepthSub - 2 //- 1 //- 2 
+  def fifoCntSubMax = fifoDepthSub - 2 //- 3//- 2 //- 1 //- 2 
   val rFifoCntSub = (
     Reg(SInt((log2Up(fifoDepthSub + 1) + 1) bits))
     init(fifoCntSubMax)
@@ -180,6 +180,8 @@ case class LcvBusCacheMissFifoThing(
     Reg(State())
     init(State.IDLE)
   )
+  //mainFifo.io.push << io.push //pushForkMain
+  //io.pop << mainFifo.io.pop
   switch (rState) {
     is (State.IDLE) {
       mainFifo.io.push << io.push //pushForkMain
@@ -768,8 +770,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       doPopLoH2dFifo()
       //--------
       when (
-        RegNext(
-          RegNext(loH2dPopStm.valid, init=False),
+        loH2dPopStm.valid
+        && RegNext(loH2dPopStm.fire, init=False)
+        && RegNext(
+          RegNext(loH2dPopStm.fire, init=False),
           init=False
         )
       ) {
@@ -779,6 +783,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
           // cache miss
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
           base.myFifoThingCacheMiss := True
+          loH2dPopStm.ready := False
         } otherwise {
           // Here we try to reduce the number of cycles for a load hit
           // to 2 total (but allowing pipelining load hits!)
@@ -790,6 +795,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
           io.loBus.d2hBus.valid := True
           io.loBus.d2hBus.data := rdLineWord
           when (!io.loBus.d2hBus.fire) {
+            loH2dPopStm.ready := False
             rState := State.LOAD_HIT_LO_BUS_STALL
           }
         }
@@ -800,6 +806,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       io.loBus.d2hBus.valid := True
       when (io.loBus.d2hBus.fire) {
         base.myFifoThingCacheMiss := False
+        loH2dPopStm.ready := True
         rState := State.IDLE
       }
     }
@@ -871,22 +878,22 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_1) {
       rState := State.RECV_LINE_FROM_HI_BUS_POST
-      when (
-        loH2dPopStm.valid
-        //&& !loH2dPopStm.isWrite
-      ) {
-        //io.loBus.h2dBus.ready := True
-        loH2dPopStm.ready := True
-      }
+      //when (
+      //  loH2dPopStm.valid
+      //  //&& !loH2dPopStm.isWrite
+      //) {
+      //  //io.loBus.h2dBus.ready := True
+      //  loH2dPopStm.ready := True
+      //}
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST) {
       rState := State.IDLE
-      when (
-        RegNext(loH2dPopStm.fire, init=False)
-        && loH2dPopStm.valid
-      ) {
-        loH2dPopStm.ready := True
-      }
+      //when (
+      //  RegNext(loH2dPopStm.fire, init=False)
+      //  && loH2dPopStm.valid
+      //) {
+      //  loH2dPopStm.ready := True
+      //}
     }
   }
   //--------
@@ -1053,8 +1060,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       doPopLoH2dFifo()
       //--------
       when (
-        RegNext(
-          RegNext(loH2dPopStm.valid, init=False),
+        //loH2dPopStm.valid
+        //&& RegNext(loH2dPopStm.valid, init=False)
+        //&& 
+        loH2dPopStm.valid
+        && RegNext(loH2dPopStm.fire, init=False)
+        && RegNext(
+          RegNext(loH2dPopStm.fire, init=False),
           init=False
         )
       ) {
@@ -1070,11 +1082,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
 
             base.myFifoThingCacheMiss := True
+            loH2dPopStm.ready := False
           }
           is (M"01-") {
             // cache miss, and line is dirty 
             rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
             base.myFifoThingCacheMiss := True
+            loH2dPopStm.ready := False
           }
           is (M"1-0") {
             // cache hit, and we have a load 
@@ -1097,6 +1111,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           default {
             // cache hit, and we have a store
             rState := State.STORE_HIT
+            loH2dPopStm.ready := False
           }
         }
       }
