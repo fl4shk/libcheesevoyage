@@ -238,15 +238,16 @@ case class LcvBusDoStallFifoThing(
       //    rFifoCntSub := fifoCntSubMax - 1
       //  }
       //}
+
+      //when (
+      //  subFifo.io.pop.fire
+      //  && !rFifoCntSub(1).msb
+      //) {
+      //  rFifoCntSub(1) := rFifoCntSub(1) - 1
+      //}
       when (
-        subFifo.io.pop.fire
-        && !rFifoCntSub(1).msb
-      ) {
-        rFifoCntSub(1) := rFifoCntSub(1) - 1
-      }
-      when (
-        //!subFifo.io.pop.valid
-        rFifoCntSub(1).msb
+        !subFifo.io.pop.valid
+        //rFifoCntSub(1).msb
         && !io.doStall
       ) {
         //mainFifo.io.push << io.push
