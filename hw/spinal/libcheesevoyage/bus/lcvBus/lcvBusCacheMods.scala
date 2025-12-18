@@ -963,22 +963,22 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_1) {
       rState := State.RECV_LINE_FROM_HI_BUS_POST
-      //when (
-      //  loH2dPopStm.valid
-      //  //&& !loH2dPopStm.isWrite
-      //) {
-      //  //io.loBus.h2dBus.ready := True
-      //  loH2dPopStm.ready := True
-      //}
+      when (
+        loH2dPopStm.valid
+        //&& !loH2dPopStm.isWrite
+      ) {
+        //io.loBus.h2dBus.ready := True
+        loH2dPopStm.ready := True
+      }
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST) {
       rState := State.IDLE
-      //when (
-      //  RegNext(loH2dPopStm.fire, init=False)
-      //  && loH2dPopStm.valid
-      //) {
-      //  loH2dPopStm.ready := True
-      //}
+      when (
+        RegNext(loH2dPopStm.fire, init=False)
+        && loH2dPopStm.valid
+      ) {
+        loH2dPopStm.ready := True
+      }
       base.myFifoThingDoStall := False
     }
   }
