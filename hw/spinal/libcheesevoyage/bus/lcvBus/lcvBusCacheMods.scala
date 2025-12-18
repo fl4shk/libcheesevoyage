@@ -963,6 +963,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_1) {
       rState := State.RECV_LINE_FROM_HI_BUS_POST
+      base.myFifoThingDoStall := False
       when (
         loH2dPopStm.valid
         //&& !loH2dPopStm.isWrite
@@ -979,7 +980,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       ) {
         loH2dPopStm.ready := True
       }
-      base.myFifoThingDoStall := False
+      //base.myFifoThingDoStall := False
     }
   }
   //--------
