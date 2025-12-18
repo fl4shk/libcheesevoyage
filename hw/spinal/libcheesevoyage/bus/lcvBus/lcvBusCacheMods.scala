@@ -456,7 +456,10 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
       lineWordRam.io.rdEn := (
         //True
         RegNext(
-          next=loH2dPopStm.valid,
+          next=(
+            //loH2dPopStm.valid
+            loH2dPopStm.fire
+          ),
           init=False,
         )
       )
@@ -523,7 +526,10 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
       lineAttrsRam.io.rdEn := (
         //True
         RegNext(
-          next=loH2dPopStm.valid,
+          next=(
+            //loH2dPopStm.valid
+            loH2dPopStm.fire
+          ),
           init=False,
         )
       )
@@ -843,11 +849,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         RegNext(
           next=(
             lineAttrsRam.io.rdEn
-            && (rState === State.IDLE)
-            && RegNext(
-              (rState === State.IDLE),
-              init=False,
-            )
+            //&& (rState === State.IDLE)
+            //&& RegNext(
+            //  (rState === State.IDLE),
+            //  init=False,
+            //)
           ),
           init=False,
         )
@@ -1171,11 +1177,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         RegNext(
           next=(
             lineAttrsRam.io.rdEn
-            && (rState === State.IDLE)
-            && RegNext(
-              (rState === State.IDLE),
-              init=False,
-            )
+            //&& (rState === State.IDLE)
+            //&& RegNext(
+            //  (rState === State.IDLE),
+            //  init=False,
+            //)
           ),
           init=False,
         )
