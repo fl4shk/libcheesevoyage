@@ -238,6 +238,7 @@ case class LcvBusDoStallFifoThing(
       //    rFifoCntSub := fifoCntSubMax - 1
       //  }
       //}
+      subFifo.io.push << io.push
       when (
         subFifo.io.pop.fire
         && !rFifoCntSub(1).msb
@@ -245,8 +246,8 @@ case class LcvBusDoStallFifoThing(
         rFifoCntSub(1) := rFifoCntSub(1) - 1
       }
       when (
-        //!subFifo.io.pop.valid
-        rFifoCntSub(1).msb
+        !subFifo.io.pop.valid
+        && rFifoCntSub(1).msb
         && !io.doStall
       ) {
         //mainFifo.io.push << io.push
