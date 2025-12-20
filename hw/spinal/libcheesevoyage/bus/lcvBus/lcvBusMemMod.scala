@@ -173,6 +173,7 @@ case class LcvBusMem(
     Reg(UInt(busCfg.burstCntWidth bits))
     init(0x0)
   )
+  rD2hPayload.src.allowOverride
 
   switch (rState) {
     is (State.IDLE) {
@@ -182,6 +183,7 @@ case class LcvBusMem(
 
       rD2hValid := False
       rD2hPayload := rD2hPayload.getZero
+      rD2hPayload.src := io.bus.h2dBus.src
 
       switch (
         io.bus.h2dBus.valid
