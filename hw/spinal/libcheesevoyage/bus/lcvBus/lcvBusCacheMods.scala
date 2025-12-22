@@ -921,6 +921,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       ) {
         rSavedLoH2dPayload := rDel2LoH2dPayload
 
+        io.loBus.d2hBus.src := rDel2LoH2dPayload.src
         when (!base.haveHit) {
           // cache miss
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
@@ -937,7 +938,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
           loH2dPopStm.ready := True
           io.loBus.d2hBus.valid := True
           io.loBus.d2hBus.data := rdLineWord
-          io.loBus.d2hBus.src := rDel2LoH2dPayload.src
+          //io.loBus.d2hBus.src := rDel2LoH2dPayload.src
           when (!io.loBus.d2hBus.fire) {
             loH2dPopStm.ready := False
             //base.myFifoThingDoStall := True
@@ -1019,14 +1020,17 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     is (State.RECV_LINE_FROM_HI_BUS_POST_3) {
       //--------
       rState := State.RECV_LINE_FROM_HI_BUS_POST_2
-      //base.myFifoThingDoStall := False
+      base.myFifoThingDoStall := False
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_2) {
-      rState := State.RECV_LINE_FROM_HI_BUS_POST_1
+      io.loBus.d2hBus.valid := True
+      when (io.loBus.d2hBus.fire) {
+        rState := State.RECV_LINE_FROM_HI_BUS_POST_1
+      }
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_1) {
       rState := State.RECV_LINE_FROM_HI_BUS_POST
-      base.myFifoThingDoStall := False
+      //base.myFifoThingDoStall := False
       when (
         loH2dPopStm.valid
         //&& !loH2dPopStm.isWrite

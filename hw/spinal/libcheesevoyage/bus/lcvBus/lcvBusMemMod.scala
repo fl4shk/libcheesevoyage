@@ -183,7 +183,6 @@ case class LcvBusMem(
 
       rD2hValid := False
       rD2hPayload := rD2hPayload.getZero
-      rD2hPayload.src := io.bus.h2dBus.src
 
       switch (
         io.bus.h2dBus.valid
@@ -250,9 +249,13 @@ case class LcvBusMem(
     }
     is (State.NON_BURST) {
       //io.bus.h2dBus.ready := False
+      //when (io.bus.h2dBus.fire) {
+      //  rD2hPayload.src := io.bus.h2dBus.src
+      //}
       ram.io.rdEn := False
       ram.io.wrEn := False
       when (io.bus.h2dBus.fire) {
+        rD2hPayload.src := io.bus.h2dBus.src
         rH2dReady := False
       }
       when (
