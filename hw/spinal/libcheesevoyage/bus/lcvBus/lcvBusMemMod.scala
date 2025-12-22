@@ -183,6 +183,9 @@ case class LcvBusMem(
 
       rD2hValid := False
       rD2hPayload := rD2hPayload.getZero
+      when (io.bus.h2dBus.valid) {
+        rD2hPayload.src := io.bus.h2dBus.src
+      }
 
       switch (
         io.bus.h2dBus.valid
