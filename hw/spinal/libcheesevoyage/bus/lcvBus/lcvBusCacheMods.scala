@@ -157,7 +157,7 @@ case class LcvBusDoStallFifoThing(
   )
 
   //def fifoCntSubMax = fifoDepthSub - 2 //- 3//- 2 //- 1 //- 2 
-  def fifoCntSubMax = fifoDepthSub - 2 //- 3//- 2 //- 1 //- 2 
+  def fifoCntSubMax = 1 //fifoDepthSub //- 2 //- 3//- 2 //- 1 //- 2 
   val rFifoCntSub = (
     Vec.fill(1)(
       Reg(SInt((log2Up(fifoDepthSub + 1) + 1) bits))
@@ -216,6 +216,13 @@ case class LcvBusDoStallFifoThing(
         }
       }
       when (io.doStall) {
+        io.push.ready := False
+        io.pop.valid := False
+        mainFifo.io.push.valid := False
+        mainFifo.io.pop.ready := False
+        subFifo.io.pop.ready := False
+        subFifo.io.push.valid := False
+
         rState := State.POST_CACHE_MISS
         //rCurrMainFifo(0) := !rCurrMainFifo(0)
       }
@@ -223,7 +230,7 @@ case class LcvBusDoStallFifoThing(
     is (State.POST_CACHE_MISS) {
       rFifoCntSub(0) := fifoCntSubMax
       
-      mainFifo.io.flush := True
+      //mainFifo.io.flush := True
       io.pop << subFifo.io.pop
 
       when (
@@ -945,10 +952,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       //base.myFifoThingDoStall := False
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_2) {
-      io.loBus.d2hBus.valid := True
-      when (io.loBus.d2hBus.fire) {
+      //io.loBus.d2hBus.valid := True
+      //when (io.loBus.d2hBus.fire) {
         rState := State.RECV_LINE_FROM_HI_BUS_POST_1
-      }
+      //}
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_1) {
       rState := State.RECV_LINE_FROM_HI_BUS_POST
