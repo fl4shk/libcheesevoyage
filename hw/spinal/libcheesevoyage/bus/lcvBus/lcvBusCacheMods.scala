@@ -138,9 +138,9 @@ case class LcvBusDoStallFifoThing(
   val io = LcvBusCacheMissFifoPairIo(cfg=cfg)
 
   def fifoDepthMain = 2//8
-  def fifoDepthSub = 4//5 //fifoDepthMain 4
+  def fifoDepthSub = 4//5//4//5 //fifoDepthMain 4
 
-  val mainFifoArr = Array.fill(2)(
+  def mkMainFifo() = (
     StreamFifo(
       dataType=LcvBusH2dPayload(cfg=cfg.loBusCfg),
       depth=fifoDepthMain,
@@ -148,6 +148,7 @@ case class LcvBusDoStallFifoThing(
       forFMax=true,
     )
   )
+  val mainFifo = mkMainFifo()
   val subFifo = StreamFifo(
     dataType=LcvBusH2dPayload(cfg=cfg.loBusCfg),
     depth=fifoDepthSub,
@@ -158,21 +159,16 @@ case class LcvBusDoStallFifoThing(
   //def fifoCntSubMax = fifoDepthSub - 2 //- 3//- 2 //- 1 //- 2 
   def fifoCntSubMax = fifoDepthSub - 2 //- 3//- 2 //- 1 //- 2 
   val rFifoCntSub = (
-    Vec.fill(3)(
+    Vec.fill(1)(
       Reg(SInt((log2Up(fifoDepthSub + 1) + 1) bits))
       init(fifoCntSubMax)
     )
   )
 
-  mainFifoArr.foreach(mainFifo => {
-    mainFifo.io.push.valid := False
-    mainFifo.io.push.payload := mainFifo.io.push.payload.getZero
-    mainFifo.io.pop.ready := False
-    mainFifo.io.flush := False
-  })
-  val rCurrMainFifo = (
-    Reg(UInt(1 bits)) init(0x0)
-  )
+  mainFifo.io.push.valid := False
+  mainFifo.io.push.payload := mainFifo.io.push.payload.getZero
+  mainFifo.io.pop.ready := False
+  mainFifo.io.flush := False
 
   subFifo.io.push.valid := False
   subFifo.io.push.payload := subFifo.io.push.payload.getZero
@@ -191,33 +187,24 @@ case class LcvBusDoStallFifoThing(
     init(State.IDLE)
   )
 
-  def doApplyMainFifo(
-    func: (StreamFifo[LcvBusH2dPayload]) => Unit,
-    invertCurr: Boolean=false,
-  ) = {
-    val myCurrIdx = if (!invertCurr) (0) else (1)
-    when (!rCurrMainFifo(0)) {
-      func(mainFifoArr(myCurrIdx))
-    } otherwise {
-      func(mainFifoArr((myCurrIdx + 1) % 2))
-    }
-  }
   //mainFifo.io.push << io.push //pushForkMain
   //io.pop << mainFifo.io.pop
   switch (rState) {
     is (State.IDLE) {
-      rFifoCntSub(1) := fifoCntSubMax - 1
-      rFifoCntSub(2) := fifoCntSubMax
-      doApplyMainFifo(
-        func=(mainFifo) => {
-          mainFifo.io.push << io.push //pushForkMain
-          io.pop << mainFifo.io.pop
-        }
-      )
+      mainFifo.io.push << io.push //pushForkMain
+      io.pop << mainFifo.io.pop
 
       //subFifo.io.push << pushForkSub
-      subFifo.io.push.valid := io.push.valid
-      subFifo.io.push.payload := io.push.payload
+
+      subFifo.io.push.valid := (
+        io.push.fire
+        //io.push.valid
+        //io.pop.fire
+      )
+      subFifo.io.push.payload := (
+        io.push.payload
+        //io.pop.payload
+      )
       // This should make `subFifo` act like a circular FIFO that we
       // keep only the most recent contents of
       subFifo.io.pop.ready := False
@@ -236,74 +223,9 @@ case class LcvBusDoStallFifoThing(
     is (State.POST_CACHE_MISS) {
       rFifoCntSub(0) := fifoCntSubMax
       
-      //when (rose(rState === State.POST_CACHE_MISS)) {
-        //rFifoCntSub(0) := fifoCntSubMax
-        doApplyMainFifo(
-          func=(mainFifo) => {
-            mainFifo.io.flush := True
-          },
-          //invertCurr=true,
-        )
-      //} otherwise {
-      //  //mainFifo.io.push << io.push
-      //}
+      mainFifo.io.flush := True
       io.pop << subFifo.io.pop
 
-      //when (rFifoCntSub.msb) {
-      //  rFifoCntSub := fifoCntSubMax
-      //}
-      //when (rFifoCntSub === fifoCntSubMax) {
-      //  mainFifo.io.push << io.push
-      //  subFifo.io.push.valid := True
-      //  subFifo.io.push.payload := io.push.payload
-      //  // This should make `subFifo` act like a circular FIFO that we
-      //  // keep only the most recent contents of
-      //  //subFifo.io.pop.ready := False
-      //  when (subFifo.io.push.fire) {
-      //    //when (!rFifoCntSub.msb) {
-      //    //  rFifoCntSub := rFifoCntSub - 1
-      //    //} otherwise {
-      //    //  //subFifo.io.pop.ready := True
-      //    //}
-      //    rFifoCntSub := fifoCntSubMax - 1
-      //  }
-      //}
-      //subFifo.io.push << io.push
-      //when (
-      //  subFifo.io.pop.fire
-      //  && !rFifoCntSub(1).msb
-      //) {
-      //  //when ((rFifoCntSub(1) - 1).msb) {
-      //  //  mainFifo.io.push << io.push
-      //  //}
-      //  rFifoCntSub(1) := rFifoCntSub(1) - 1
-      //}
-      ////when (!rFifoCntSub(2).msb) {
-      //  doApplyMainFifo(
-      //    func=(mainFifo) => {
-      //      mainFifo.io.push << io.push
-      //    }
-      //  )
-      //  subFifo.io.push.valid := io.push.valid
-      //  subFifo.io.push.payload := io.push.payload
-      //  //when (mainFifo.io.push.fire) {
-      //  //}
-      //  // This should make `subFifo` act like a circular FIFO that we
-      //  // keep only the most recent contents of
-      //  //subFifo.io.pop.ready := False
-      //  //when (subFifo.io.push.fire) {
-      //  //  when (!rFifoCntSub(0).msb) {
-      //  //    rFifoCntSub(0) := rFifoCntSub(0) - 1
-      //  //  } otherwise {
-      //  //    subFifo.io.pop.ready := True
-      //  //  }
-      //  //}
-      ////}
-      //when (
-      //  (rFifoCntSub(1) - 1).msb
-      //) {
-      //  mainFifo.io.push << io.push
-      //}
       when (
         !subFifo.io.pop.valid
         //&& 
@@ -430,8 +352,8 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
         loH2dPopStm.payload
       ),
       cond=(
-        loH2dPopStm.valid
-        //loH2dPopStm.fire
+        //loH2dPopStm.valid
+        loH2dPopStm.fire
       ),
       init=(
         //io.loBus.h2dBus.payload.getZero
@@ -1020,7 +942,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     is (State.RECV_LINE_FROM_HI_BUS_POST_3) {
       //--------
       rState := State.RECV_LINE_FROM_HI_BUS_POST_2
-      base.myFifoThingDoStall := False
+      //base.myFifoThingDoStall := False
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_2) {
       io.loBus.d2hBus.valid := True
