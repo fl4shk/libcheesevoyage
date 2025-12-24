@@ -137,8 +137,8 @@ case class LcvBusDoStallFifoThing(
 ) extends Component {
   val io = LcvBusCacheMissFifoPairIo(cfg=cfg)
 
-  def fifoDepthMain = 8//2//8
-  def fifoDepthSub = 8//4//5//4//5 //fifoDepthMain 4
+  def fifoDepthMain = 2//8//2//8
+  def fifoDepthSub = 4//8//4//5//4//5 //fifoDepthMain 4
 
   def mkMainFifo() = (
     StreamFifo(
@@ -160,7 +160,7 @@ case class LcvBusDoStallFifoThing(
   )
 
   //def fifoCntSubMax = fifoDepthSub - 2 //- 3//- 2 //- 1 //- 2 
-  def fifoCntSubMax = 3 //1 //fifoDepthSub //- 2 //- 3//- 2 //- 1 //- 2 
+  def fifoCntSubMax = fifoDepthSub - 4//- 4//3 //1 //fifoDepthSub //- 2 //- 3//- 2 //- 1 //- 2 
   val rFifoCntSub = (
     Vec.fill(1)(
       Reg(SInt((log2Up(fifoDepthSub + 1) + 1) bits))
@@ -221,7 +221,7 @@ case class LcvBusDoStallFifoThing(
   //io.pop << mainFifo.io.pop
   switch (rState) {
     is (State.IDLE) {
-      //when (!io.doStall) {
+      when (!io.doStall) {
         doApplyMainFifo(
           func=(mainFifo) => {
             mainFifo.io.push << io.push //pushForkMain
@@ -242,31 +242,33 @@ case class LcvBusDoStallFifoThing(
         )
         // This should make `subFifo` act like a circular FIFO that we
         // keep only the most recent contents of
-        subFifo.io.pop.ready := False
-        when (subFifo.io.push.fire) {
-          when (!rFifoCntSub(0).msb) {
-            rFifoCntSub(0) := rFifoCntSub(0) - 1
-          } otherwise {
-            subFifo.io.pop.ready := True
-          }
-        }
-      //}
-      when (io.doStall) {
-        //io.push.ready := False
-        io.pop.valid := False
-        doApplyMainFifo(
-          func=(mainFifo) => {
-            mainFifo.io.push.valid := False
-            mainFifo.io.pop.ready := False
-          }
-        )
-        //subFifo.io.pop.ready := False
-        //subFifo.io.push.valid := False
-        //subFifo.io.push << io.push
+      } otherwise {
+        subFifo.io.push << io.push
+        //when (io.doStall) {
+          //io.push.ready := False
+          io.pop.valid := False
+          doApplyMainFifo(
+            func=(mainFifo) => {
+              mainFifo.io.push.valid := False
+              mainFifo.io.pop.ready := False
+            }
+          )
+          //subFifo.io.pop.ready := False
+          //subFifo.io.push.valid := False
+          //subFifo.io.push << io.push
 
-        rState := State.POST_CACHE_MISS
-        //rCurrMainFifo(0) := !rCurrMainFifo(0)
-        //rWhichMainFifo := rWhichMainFifo + 1
+          rState := State.POST_CACHE_MISS
+          //rCurrMainFifo(0) := !rCurrMainFifo(0)
+          //rWhichMainFifo := rWhichMainFifo + 1
+        //}
+      }
+      subFifo.io.pop.ready := False
+      when (subFifo.io.push.fire) {
+        when (!rFifoCntSub(0).msb) {
+          rFifoCntSub(0) := rFifoCntSub(0) - 1
+        } otherwise {
+          subFifo.io.pop.ready := True
+        }
       }
     }
     is (State.POST_CACHE_MISS) {
