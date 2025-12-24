@@ -160,7 +160,7 @@ case class LcvBusDoStallFifoThing(
   )
 
   //def fifoCntSubMax = fifoDepthSub - 2 //- 3//- 2 //- 1 //- 2 
-  def fifoCntSubMax = fifoDepthSub - 4//- 4//3 //1 //fifoDepthSub //- 2 //- 3//- 2 //- 1 //- 2 
+  def fifoCntSubMax = fifoDepthSub - 3//4//- 4//3 //1 //fifoDepthSub //- 2 //- 3//- 2 //- 1 //- 2 
   val rFifoCntSub = (
     Vec.fill(1)(
       Reg(SInt((log2Up(fifoDepthSub + 1) + 1) bits))
@@ -209,6 +209,7 @@ case class LcvBusDoStallFifoThing(
   object State extends SpinalEnum(defaultEncoding=binaryOneHot) {
     val
       IDLE,
+      POST_CACHE_MISS_PRE,
       POST_CACHE_MISS
       = newElement();
   }
@@ -251,13 +252,15 @@ case class LcvBusDoStallFifoThing(
             func=(mainFifo) => {
               mainFifo.io.push.valid := False
               mainFifo.io.pop.ready := False
+              //mainFifo.io.push << io.push //pushForkMain
+              //io.pop << mainFifo.io.pop
             }
           )
           //subFifo.io.pop.ready := False
           //subFifo.io.push.valid := False
           //subFifo.io.push << io.push
 
-          rState := State.POST_CACHE_MISS
+          rState := State.POST_CACHE_MISS_PRE
           //rCurrMainFifo(0) := !rCurrMainFifo(0)
           //rWhichMainFifo := rWhichMainFifo + 1
         //}
@@ -270,6 +273,22 @@ case class LcvBusDoStallFifoThing(
           subFifo.io.pop.ready := True
         }
       }
+    }
+    is (State.POST_CACHE_MISS_PRE) {
+      when (
+        subFifo.io.pop.valid
+        && (
+          subFifo.io.pop.src
+          === RegNextWhen(
+            next=io.pop.src,
+            cond=io.pop.fire,
+            init=io.pop.src.getZero,
+          )
+        )
+      ) {
+        subFifo.io.pop.ready := True
+      }
+      rState := State.POST_CACHE_MISS
     }
     is (State.POST_CACHE_MISS) {
       rFifoCntSub(0) := fifoCntSubMax
