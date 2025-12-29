@@ -431,9 +431,15 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   //loH2dDoStallFifoThing.io.doStallCacheMiss := False
   val myFifoThingDoStall = (
     //Reg(Bool(), init=False)
-    Vec.fill(2)(
-      Bool()
-    )
+    //Vec.fill(2)(
+    //  Bool()
+    //)
+    Vec[Bool]{
+      List(
+        Bool(),
+        Reg(Bool(), init=False)
+      )
+    }
   )
   myFifoThingDoStall := (
     RegNext(myFifoThingDoStall, init=myFifoThingDoStall.getZero)
