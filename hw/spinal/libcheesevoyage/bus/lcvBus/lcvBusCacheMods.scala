@@ -216,7 +216,7 @@ case class LcvBusDoStallFifoThing(
     val
       IDLE,
       //POST_NOT_YET_D2H_FIRE,
-      POST_CACHE_MISS_PRE,
+      //POST_CACHE_MISS_PRE,
       POST_DO_STALL
       = newElement();
   }
@@ -251,15 +251,15 @@ case class LcvBusDoStallFifoThing(
         // This should make `subFifo` act like a circular FIFO that we
         // keep only the most recent contents of
       } otherwise {
-        subFifo.io.push << io.push
+        //subFifo.io.push << io.push
         //when (io.doStallCacheMiss) {
           //io.push.ready := False
           io.pop.valid := False
           doApplyMainFifo(
             func=(mainFifo) => {
-              mainFifo.io.push.valid := False
-              mainFifo.io.pop.ready := False
-              //mainFifo.io.push << io.push //pushForkMain
+              //mainFifo.io.push.valid := False
+              //mainFifo.io.pop.ready := False
+              mainFifo.io.push << io.push //pushForkMain
               //io.pop << mainFifo.io.pop
             }
           )
@@ -267,18 +267,18 @@ case class LcvBusDoStallFifoThing(
           //subFifo.io.push.valid := False
           //subFifo.io.push << io.push
 
-          when (io.doStallCacheMiss) {
-            rState := State.POST_CACHE_MISS_PRE
-          } otherwise {
+          //when (io.doStallCacheMiss) {
+          //  rState := State.POST_CACHE_MISS_PRE
+          //} otherwise {
             //rState := State.POST_NOT_YET_D2H_FIRE
             rState := State.POST_DO_STALL
-          }
+          //}
           //rCurrMainFifo(0) := !rCurrMainFifo(0)
           //rWhichMainFifo := rWhichMainFifo + 1
         //}
       }
       subFifo.io.pop.ready := False
-      when (!io.doStallCacheMiss && !io.doStallNotYetD2hFire) {
+      //when (!io.doStallCacheMiss && !io.doStallNotYetD2hFire) {
         when (subFifo.io.push.fire) {
           when (!rFifoCntSub(0).msb) {
             rFifoCntSub(0) := rFifoCntSub(0) - 1
@@ -286,37 +286,50 @@ case class LcvBusDoStallFifoThing(
             subFifo.io.pop.ready := True
           }
         }
-      }
+      //}
     }
     //is (State.POST_NOT_YET_D2H_FIRE) {
     //}
-    is (State.POST_CACHE_MISS_PRE) {
-      when (
-        subFifo.io.pop.valid
-        && (
-          subFifo.io.pop.src
-          === RegNextWhen(
-            next=io.pop.src,
-            cond=io.pop.fire,
-            init=io.pop.src.getZero,
-          )
-        )
-      ) {
-        subFifo.io.pop.ready := True
-      }
-      rState := State.POST_DO_STALL
-    }
+    //is (State.POST_CACHE_MISS_PRE) {
+    //  when (
+    //    subFifo.io.pop.valid
+    //    && (
+    //      subFifo.io.pop.src
+    //      === RegNextWhen(
+    //        next=io.pop.src,
+    //        cond=io.pop.fire,
+    //        init=io.pop.src.getZero,
+    //      )
+    //    )
+    //  ) {
+    //    subFifo.io.pop.ready := True
+    //  }
+    //  rState := State.POST_DO_STALL
+    //}
     is (State.POST_DO_STALL) {
       rFifoCntSub(0) := fifoCntSubMax
       
-      //when (rose(rState === State.POST_DO_STALL)) {
-      doApplyMainFifo(
-        func=(mainFifo) => {
-          mainFifo.io.flush := True
-        },
-        //useOtherMainFifo=true
-      )
+      when (rose(rState === State.POST_DO_STALL)) {
+        doApplyMainFifo(
+          func=(mainFifo) => {
+            mainFifo.io.flush := True
+          },
+          //useOtherMainFifo=true
+        )
         //subFifo.io.push << io.push
+      } otherwise {
+      }
+      //when (rose(
+      //  RegNext(
+      //    (rState === State.POST_DO_STALL),
+      //    init=False
+      //  )
+      //)) {
+      //  doApplyMainFifo(
+      //    func=(mainFifo) => {
+      //      mainFifo.io.push << io.push
+      //    }
+      //  )
       //}
       //doApplyMainFifo(
       //  func=(mainFifo) => {
@@ -329,9 +342,8 @@ case class LcvBusDoStallFifoThing(
         !subFifo.io.pop.valid
         //&& 
         //rFifoCntSub(1).msb
-        && !io.doStallCacheMiss
+        //&& !io.doStallCacheMiss
       ) {
-        //mainFifo.io.push << io.push
         //subFifo.io.push.valid := True
         //subFifo.io.push.payload := io.push.payload
         rState := State.IDLE
