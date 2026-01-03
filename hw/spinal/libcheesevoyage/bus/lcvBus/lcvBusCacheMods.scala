@@ -278,7 +278,7 @@ case class LcvBusDoStallFifoThing(
         //}
       }
       subFifo.io.pop.ready := False
-      when (!io.doStallNotYetD2hFire) {
+      when (!io.doStallCacheMiss && !io.doStallNotYetD2hFire) {
         when (subFifo.io.push.fire) {
           when (!rFifoCntSub(0).msb) {
             rFifoCntSub(0) := rFifoCntSub(0) - 1
