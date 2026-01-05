@@ -124,7 +124,7 @@ case class LcvBusCacheIo(
   val hiBus = master(LcvBusIo(cfg=cfg.hiBusCfg))
 }
 
-case class LcvBusCacheMissFifoPairIo(
+case class LcvBusCacheMissFifoThingIo(
   cfg: LcvBusCacheBusPairConfig
 ) extends Bundle {
   val push = slave(Stream(LcvBusH2dPayload(cfg=cfg.loBusCfg)))
@@ -141,7 +141,7 @@ case class LcvBusCacheMissFifoPairIo(
 case class LcvBusDoStallFifoThing(
   cfg: LcvBusCacheBusPairConfig
 ) extends Component {
-  val io = LcvBusCacheMissFifoPairIo(cfg=cfg)
+  val io = LcvBusCacheMissFifoThingIo(cfg=cfg)
 
   def fifoDepthMain = 2//8//2//8
   def fifoDepthSub = 4//8//4//5//4//5 //fifoDepthMain 4
@@ -166,7 +166,7 @@ case class LcvBusDoStallFifoThing(
   )
 
   //def fifoCntSubMax = fifoDepthSub - 2 //- 3//- 2 //- 1 //- 2 
-  def fifoCntSubMax = fifoDepthSub - 3//4//- 4//3 //1 //fifoDepthSub //- 2 //- 3//- 2 //- 1 //- 2 
+  def fifoCntSubMax = fifoDepthSub - 2//3//4//- 4//3 //1 //fifoDepthSub //- 2 //- 3//- 2 //- 1 //- 2 
   val rFifoCntSub = (
     Vec.fill(1)(
       Reg(SInt((log2Up(fifoDepthSub + 1) + 1) bits))
@@ -340,6 +340,8 @@ case class LcvBusDoStallFifoThing(
 
       when (
         !subFifo.io.pop.valid
+        && !io.doStallCacheMiss
+        && !io.doStallNotYetD2hFire
         //&& 
         //rFifoCntSub(1).msb
         //&& !io.doStallCacheMiss
@@ -453,8 +455,11 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
       )
     }
   )
-  myFifoThingDoStall := (
-    RegNext(myFifoThingDoStall, init=myFifoThingDoStall.getZero)
+  //myFifoThingDoStall := (
+  //  RegNext(myFifoThingDoStall, init=myFifoThingDoStall.getZero)
+  //)
+  myFifoThingDoStall.head := (
+    RegNext(myFifoThingDoStall.head, init=False)
   )
   loH2dDoStallFifoThing.io.doStall := myFifoThingDoStall
   //rFifoThingCacheMiss := False
@@ -486,8 +491,9 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   def rLoBusAddrTag = rLoBusAddr(loBusCacheCfg.tagRange)
   def rLoBusAddrSet = rLoBusAddr(loBusCacheCfg.setRange)
   val rDel2LoH2dPayload = (
-    RegNext(
+    RegNext/*When*/(
       next=rLoH2dPayload,
+      //cond=loH2dPopStm.fire,
       init=rLoH2dPayload.getZero,
     )
   )
