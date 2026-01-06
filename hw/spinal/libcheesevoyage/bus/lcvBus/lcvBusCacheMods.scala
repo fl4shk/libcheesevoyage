@@ -166,7 +166,7 @@ case class LcvBusDoStallFifoThing(
   )
 
   //def fifoCntSubMax = fifoDepthSub - 2 //- 3//- 2 //- 1 //- 2 
-  def fifoCntSubMax = fifoDepthSub - 2//3//4//- 4//3 //1 //fifoDepthSub //- 2 //- 3//- 2 //- 1 //- 2 
+  def fifoCntSubMax = fifoDepthSub - 3//2//3//4//- 4//3 //1 //fifoDepthSub //- 2 //- 3//- 2 //- 1 //- 2 
   val rFifoCntSub = (
     Vec.fill(1)(
       Reg(SInt((log2Up(fifoDepthSub + 1) + 1) bits))
