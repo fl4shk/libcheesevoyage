@@ -509,6 +509,34 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   def rSavedLoBusAddrTag = rSavedLoBusAddr(loBusCacheCfg.tagRange)
   def rSavedLoBusAddrSet = rSavedLoBusAddr(loBusCacheCfg.setRange)
 
+  //val temp
+  val myTempHaveHitCmpEqLeft = rdLineAttrs.tag
+  val myTempHaveHitCmpEqRight = (
+    //Mux[UInt](useDel2, rDel2LoBusAddrTag, rLoBusAddrTag)
+    //rLoBusAddrTag
+    //rDel2LoBusAddrTag
+    //loH2dPopStm.addr(loBusCacheCfg.tagRange)
+    (
+      RegNext(
+        RegNext(loH2dPopStm.addr(loBusCacheCfg.tagRange))
+        init(0x0)
+      )
+      init(0x0)
+    )
+    //RegNext(
+    //  RegNext(rSavedLoBusAddrTag, init=rSavedLoBusAddrTag.getZero),
+    //  init=rSavedLoBusAddrTag.getZero,
+    //)
+  )
+  val tempHaveHitCmpEq = (
+    myTempHaveHitCmpEqLeft
+    === myTempHaveHitCmpEqRight
+    //LcvFastCmpEq(
+    //  left=myTempHaveHitCmpEqLeft,
+    //  right=myTempHaveHitCmpEqRight,
+    //  cmpEqIo=null,
+    //)._1
+  )
   val haveHit
   //(
   //  //useDel2: Bool,
@@ -516,27 +544,7 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   = (
     rdLineAttrs.fire
     //&& rdLineAttrs.tag === rDel2LoBusAddrTag
-    && LcvFastCmpEq(
-      left=rdLineAttrs.tag,
-      right=(
-        //Mux[UInt](useDel2, rDel2LoBusAddrTag, rLoBusAddrTag)
-        //rLoBusAddrTag
-        //rDel2LoBusAddrTag
-        //loH2dPopStm.addr(loBusCacheCfg.tagRange)
-        (
-          RegNext(
-            RegNext(loH2dPopStm.addr(loBusCacheCfg.tagRange))
-            init(0x0)
-          )
-          init(0x0)
-        )
-        //RegNext(
-        //  RegNext(rSavedLoBusAddrTag, init=rSavedLoBusAddrTag.getZero),
-        //  init=rSavedLoBusAddrTag.getZero,
-        //)
-      ),
-      cmpEqIo=null,
-    )._1
+    && tempHaveHitCmpEq
   )
   //--------
   val rHiH2dBurstCnt = (
@@ -950,34 +958,37 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       doPopLoH2dFifo()
       //--------
       when (
-        //loH2dPopStm.valid
-        //&& RegNext(loH2dPopStm.fire, init=False)
-        //&& RegNext(
-        //  RegNext(loH2dPopStm.fire, init=False),
-        //  init=False
-        //)
         RegNext(
-          next=(
-            lineAttrsRam.io.rdEn
-            //&& (rState === State.IDLE)
-            //&& RegNext(
-            //  (rState === State.IDLE),
-            //  init=False,
-            //)
-          ),
+          next=lineAttrsRam.io.rdEn,
           init=False,
         )
       ) {
         rSavedLoH2dPayload := rDel2LoH2dPayload
-
         io.loBus.d2hBus.src := rDel2LoH2dPayload.src
-        when (!base.haveHit) {
+      }
+
+      switch (
+        RegNext(
+          next=lineAttrsRam.io.rdEn,
+          init=False,
+        )
+        ## base.haveHit
+        //## (
+        //  //io.loBus.d2hBus.fire
+        //  io.loBus.d2hBus.ready
+        //)
+      ) {
+        is (M"10") {
+          // past(rdEn), !base.haveHit
           // cache miss
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
           base.myFifoThingDoStall.head := True
           //loH2dPopStm.ready := False
           loH2dPopStm.ready := False
-        } otherwise {
+        }
+        is (M"11") {
+          // past(rdEn), base.haveHit
+          // cache hit
           // Here we try to reduce the number of cycles for a load hit
           // to 2 total (but allowing pipelining load hits!)
           // to allow for the `SnowHouse` module
@@ -995,7 +1006,87 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
             rState := State.LOAD_HIT_LO_BUS_STALL
           }
         }
+        default {
+          // !past(rdEn), ?base.haveHit
+        }
+        //is (M"10-") {
+        //  // past(rdEn), !base.haveHit, ?io.loBus.d2hBus.ready
+        //  // cache miss
+        //  rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+        //  base.myFifoThingDoStall.head := True
+        //  //loH2dPopStm.ready := False
+        //  loH2dPopStm.ready := False
+        //}
+        //is (M"110") {
+        //  // past(rdEn), base.haveHit, !io.loBus.d2hBus.ready
+
+        //  // Here we try to reduce the number of cycles for a load hit
+        //  // to 2 total (but allowing pipelining load hits!)
+        //  // to allow for the `SnowHouse` module
+        //  // to have a better best-case number of cycles 
+        //  // than the original `LcvStallIo`-based `SnowHouseInstrCache`
+        //  //io.loBus.h2dBus.ready := True
+        //  //loH2dPopStm.ready := True
+        //  io.loBus.d2hBus.valid := True
+        //  io.loBus.d2hBus.data := rdLineWord
+        //  //io.loBus.d2hBus.src := rDel2LoH2dPayload.src
+
+        //  base.myFifoThingDoStall.last := True
+        //  loH2dPopStm.ready := False
+        //  //base.myFifoThingDoStall := True
+        //  rState := State.LOAD_HIT_LO_BUS_STALL
+        //}
+        //is (M"111") {
+        //  // past(rdEn), base.haveHit, io.loBus.d2hBus.ready
+        //  // Here we try to reduce the number of cycles for a load hit
+        //  // to 2 total (but allowing pipelining load hits!)
+        //  // to allow for the `SnowHouse` module
+        //  // to have a better best-case number of cycles 
+        //  // than the original `LcvStallIo`-based `SnowHouseInstrCache`
+        //  //io.loBus.h2dBus.ready := True
+        //  loH2dPopStm.ready := True
+        //  io.loBus.d2hBus.valid := True
+        //  io.loBus.d2hBus.data := rdLineWord
+        //  //io.loBus.d2hBus.src := rDel2LoH2dPayload.src
+        //}
+        //default {
+        //  // !past(rdEn), ?base.haveHit, ?io.loBus.d2hBus.fire
+        //}
       }
+      //when (
+      //  RegNext(
+      //    next=lineAttrsRam.io.rdEn,
+      //    init=False,
+      //  )
+      //) {
+      //  rSavedLoH2dPayload := rDel2LoH2dPayload
+
+      //  io.loBus.d2hBus.src := rDel2LoH2dPayload.src
+      //  when (!base.haveHit) {
+      //    // cache miss
+      //    rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+      //    base.myFifoThingDoStall.head := True
+      //    //loH2dPopStm.ready := False
+      //    loH2dPopStm.ready := False
+      //  } otherwise {
+      //    // Here we try to reduce the number of cycles for a load hit
+      //    // to 2 total (but allowing pipelining load hits!)
+      //    // to allow for the `SnowHouse` module
+      //    // to have a better best-case number of cycles 
+      //    // than the original `LcvStallIo`-based `SnowHouseInstrCache`
+      //    //io.loBus.h2dBus.ready := True
+      //    loH2dPopStm.ready := True
+      //    io.loBus.d2hBus.valid := True
+      //    io.loBus.d2hBus.data := rdLineWord
+      //    //io.loBus.d2hBus.src := rDel2LoH2dPayload.src
+      //    when (!io.loBus.d2hBus.fire) {
+      //      base.myFifoThingDoStall.last := True
+      //      loH2dPopStm.ready := False
+      //      //base.myFifoThingDoStall := True
+      //      rState := State.LOAD_HIT_LO_BUS_STALL
+      //    }
+      //  }
+      //}
       //--------
     }
     is (State.LOAD_HIT_LO_BUS_STALL) {
