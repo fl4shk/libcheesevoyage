@@ -855,8 +855,9 @@ case class PipeMemRmwDoFwdArea[
           for (kdx <- 0 until fwd.numMyUpExtDel2 + 1) {
             //if (kdx < fwd.numMyUpExtDel2 /*- 1*/) {
               if (
+                kdx == 0
                 //kdx <= 1
-                false
+                //false
               ) {
                 fwd.myFwdStateData(ydx)(zdx)(kdx) := (
                   fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
