@@ -876,6 +876,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       //SEND_LINE_TO_HI_BUS_PIPE_2,
       //SEND_LINE_TO_HI_BUS_PIPE_1,
       //SEND_LINE_TO_HI_BUS,
+      RECV_LINE_FROM_HI_BUS_PIPE_2,
       RECV_LINE_FROM_HI_BUS_PIPE_1,
       RECV_LINE_FROM_HI_BUS,
       RECV_LINE_FROM_HI_BUS_POST_3,
@@ -981,7 +982,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         is (M"10") {
           // past(rdEn), !base.haveHit
           // cache miss
-          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_2
           base.myFifoThingDoStall.head := True
           //loH2dPopStm.ready := False
           loH2dPopStm.ready := False
@@ -1099,6 +1100,16 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         rState := State.IDLE
       }
     }
+    is (State.RECV_LINE_FROM_HI_BUS_PIPE_2) {
+      wrLineAttrs.tag := (
+        rSavedLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
+      )
+      base.doLineAttrsRamWrite(
+        busAddr=rSavedLoH2dPayload.addr,
+        setEn=true,
+      )
+      rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+    }
     is (State.RECV_LINE_FROM_HI_BUS_PIPE_1) {
       base.myFifoThingDoStall.head := False
       rHadHiH2dFinish := False
@@ -1120,13 +1131,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         rState := State.RECV_LINE_FROM_HI_BUS
       }
 
-      wrLineAttrs.tag := (
-        rSavedLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
-      )
-      base.doLineAttrsRamWrite(
-        busAddr=rSavedLoH2dPayload.addr,
-        setEn=true,
-      )
+      //wrLineAttrs.tag := (
+      //  rSavedLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
+      //)
+      //base.doLineAttrsRamWrite(
+      //  busAddr=rSavedLoH2dPayload.addr,
+      //  setEn=true,
+      //)
     }
     is (State.RECV_LINE_FROM_HI_BUS) {
       rHiH2dValid := False
