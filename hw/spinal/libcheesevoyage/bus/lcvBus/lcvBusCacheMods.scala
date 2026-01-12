@@ -1339,13 +1339,14 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         ## rdLineAttrs.dirty
         //## rDel2LoH2dPayload.isWrite
 
-        ## RegNext(
-          RegNext(
-            loH2dPopStm.isWrite,
-            init=loH2dPopStm.isWrite.getZero,
-          ),
-          init=loH2dPopStm.isWrite.getZero,
-        )
+        ## rDel2LoH2dPayload.isWrite
+        //RegNext(
+        //  RegNext(
+        //    loH2dPopStm.isWrite,
+        //    init=loH2dPopStm.isWrite.getZero,
+        //  ),
+        //  init=loH2dPopStm.isWrite.getZero,
+        //)
       ) {
         is (M"100-") {
           // cache miss, and line isn't dirty
