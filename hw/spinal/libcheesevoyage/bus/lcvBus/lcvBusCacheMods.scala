@@ -974,10 +974,6 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
           init=False,
         )
         ## base.haveHit
-        //## (
-        //  //io.loBus.d2hBus.fire
-        //  io.loBus.d2hBus.ready
-        //)
       ) {
         is (M"10") {
           // past(rdEn), !base.haveHit
@@ -1010,49 +1006,6 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         default {
           // !past(rdEn), ?base.haveHit
         }
-        //is (M"10-") {
-        //  // past(rdEn), !base.haveHit, ?io.loBus.d2hBus.ready
-        //  // cache miss
-        //  rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-        //  base.myFifoThingDoStall.head := True
-        //  //loH2dPopStm.ready := False
-        //  loH2dPopStm.ready := False
-        //}
-        //is (M"110") {
-        //  // past(rdEn), base.haveHit, !io.loBus.d2hBus.ready
-
-        //  // Here we try to reduce the number of cycles for a load hit
-        //  // to 2 total (but allowing pipelining load hits!)
-        //  // to allow for the `SnowHouse` module
-        //  // to have a better best-case number of cycles 
-        //  // than the original `LcvStallIo`-based `SnowHouseInstrCache`
-        //  //io.loBus.h2dBus.ready := True
-        //  //loH2dPopStm.ready := True
-        //  io.loBus.d2hBus.valid := True
-        //  io.loBus.d2hBus.data := rdLineWord
-        //  //io.loBus.d2hBus.src := rDel2LoH2dPayload.src
-
-        //  base.myFifoThingDoStall.last := True
-        //  loH2dPopStm.ready := False
-        //  //base.myFifoThingDoStall := True
-        //  rState := State.LOAD_HIT_LO_BUS_STALL
-        //}
-        //is (M"111") {
-        //  // past(rdEn), base.haveHit, io.loBus.d2hBus.ready
-        //  // Here we try to reduce the number of cycles for a load hit
-        //  // to 2 total (but allowing pipelining load hits!)
-        //  // to allow for the `SnowHouse` module
-        //  // to have a better best-case number of cycles 
-        //  // than the original `LcvStallIo`-based `SnowHouseInstrCache`
-        //  //io.loBus.h2dBus.ready := True
-        //  loH2dPopStm.ready := True
-        //  io.loBus.d2hBus.valid := True
-        //  io.loBus.d2hBus.data := rdLineWord
-        //  //io.loBus.d2hBus.src := rDel2LoH2dPayload.src
-        //}
-        //default {
-        //  // !past(rdEn), ?base.haveHit, ?io.loBus.d2hBus.fire
-        //}
       }
       //when (
       //  RegNext(
@@ -1368,135 +1321,100 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       doPopLoH2dFifo()
       //--------
       when (
-        //loH2dPopStm.valid
-        //&& RegNext(loH2dPopStm.valid, init=False)
-        //&& 
-        //loH2dPopStm.valid
-        //&& RegNext(
-        //  (
-        //    //loH2dPopStm.fire
-        //    //|| (loH2dPopStm.valid && !base.myFifoThingDoStall)
-        //    //|| (loH2dPopStm.valid && rState === State.IDLE)
-        //    //|| (loH2dPopStm.valid && loH2dPopStm.isWrite)
-        //  ),
-        //  init=False
-        //)
-        //&& 
-        //RegNext(
-        //  RegNext(
-        //    (
-        //      loH2dPopStm.fire
-        //      || (loH2dPopStm.valid && !base.myFifoThingDoStall)
-        //      //|| (loH2dPopStm.valid && loH2dPopStm.isWrite)
-        //      //|| (loH2dPopStm.valid && rState === State.IDLE)
-        //    ),
-        //    init=False
-        //  ),
-        //  init=False
-        //)
         RegNext(
-          next=(
-            lineAttrsRam.io.rdEn
-            //&& (rState === State.IDLE)
-            //&& RegNext(
-            //  (rState === State.IDLE),
-            //  init=False,
-            //)
-          ),
+          next=lineAttrsRam.io.rdEn,
           init=False,
         )
       ) {
-        rSavedLoH2dPayload := (
-          //rDel2LoH2dPayload
-          RegNext(
-            RegNext(
-              loH2dPopStm.payload,
-              init=loH2dPopStm.payload.getZero,
-            ),
-            init=loH2dPopStm.payload.getZero,
-          )
+        rSavedLoH2dPayload := rDel2LoH2dPayload
+        io.loBus.d2hBus.src := rDel2LoH2dPayload.src
+      }
+
+      switch (
+        RegNext(
+          next=lineAttrsRam.io.rdEn,
+          init=False,
         )
+        ## base.haveHit
+        ## rdLineAttrs.dirty
+        //## rDel2LoH2dPayload.isWrite
 
-        switch (
-          base.haveHit
-          ## rdLineAttrs.dirty
-          //## rDel2LoH2dPayload.isWrite
-
-          ## RegNext(
-            RegNext(
-              loH2dPopStm.isWrite,
-              init=loH2dPopStm.isWrite.getZero,
-            ),
+        ## RegNext(
+          RegNext(
+            loH2dPopStm.isWrite,
             init=loH2dPopStm.isWrite.getZero,
-          )
-        ) {
-          is (M"00-") {
-            // cache miss, and line isn't dirty
-            rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-            base.myFifoThingDoStall.head := True
-            loH2dPopStm.ready := True
-          }
-          is (M"01-") {
-            // cache miss, and line is dirty 
-            rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
-            base.myFifoThingDoStall.head := True
-            loH2dPopStm.ready := True
-          }
-          is (M"1-0") {
-            // cache hit, and we have a load 
-            // Here we try to reduce the number of cycles for a load hit
-            // to 2 total (but allowing pipelining load hits!)
-            // to allow for the `SnowHouse` module
-            // to have a better best-case number of cycles 
-            // than the original `LcvStallIo`-based `SnowHouseDataCache`
-            loH2dPopStm.ready := True
-            io.loBus.d2hBus.valid := True
-            io.loBus.d2hBus.data := rdLineWord
-            //rSavedLoH2dPayload := rDel2LoH2dPayload
-            when (
-              RegNext(
-                (
-                  //rState === State.STORE_HIT_DO_STALL
-                  //|| 
-                  lineWordRam.io.wrEn
-                ),
-                init=False
-              )
-              || !io.loBus.d2hBus.ready
-            ) {
-              //loH2dPopStm.ready := False
-              //io.loBus.d2hBus.valid := False
-              base.myFifoThingDoStall.last := True
-              rState := State.LOAD_HIT_DO_STALL_PIPE_1
-            }
-          }
-          default {
-            // cache hit, and we have a store
-            wrLineAttrs := (
-              //RegNext(rdLineAttrs, init=rdLineAttrs.getZero)
-              rdLineAttrs
+          ),
+          init=loH2dPopStm.isWrite.getZero,
+        )
+      ) {
+        is (M"100-") {
+          // cache miss, and line isn't dirty
+          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+          base.myFifoThingDoStall.head := True
+          loH2dPopStm.ready := True
+        }
+        is (M"101-") {
+          // cache miss, and line is dirty 
+          rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
+          base.myFifoThingDoStall.head := True
+          loH2dPopStm.ready := True
+        }
+        is (M"11-0") {
+          // cache hit, and we have a load 
+          // Here we try to reduce the number of cycles for a load hit
+          // to 2 total (but allowing pipelining load hits!)
+          // to allow for the `SnowHouse` module
+          // to have a better best-case number of cycles 
+          // than the original `LcvStallIo`-based `SnowHouseDataCache`
+          loH2dPopStm.ready := True
+          io.loBus.d2hBus.valid := True
+          io.loBus.d2hBus.data := rdLineWord
+          //rSavedLoH2dPayload := rDel2LoH2dPayload
+          when (
+            RegNext(
+              (
+                //rState === State.STORE_HIT_DO_STALL
+                //|| 
+                lineWordRam.io.wrEn
+              ),
+              init=False
             )
-            wrLineAttrs.dirty := True
-            lineAttrsRam.io.wrEn := True
-            lineWordRam.io.wrEn := True
-
-            loH2dPopStm.ready := True
-            io.loBus.d2hBus.valid := True
-            when (
-              //!io.loBus.d2hBus.fire
-              !io.loBus.d2hBus.ready
-            ) {
-              loH2dPopStm.ready := False
-              //io.loBus.d2hBus.valid := False
-              base.myFifoThingDoStall.last := True
-              rState := State.STORE_HIT_DO_STALL_PIPE_1
-            }
-            //rState := State.STORE_HIT
-            //loH2dPopStm.ready := (
-            //  True
-            //  //False
-            //)
+            || !io.loBus.d2hBus.ready
+          ) {
+            //loH2dPopStm.ready := False
+            //io.loBus.d2hBus.valid := False
+            base.myFifoThingDoStall.last := True
+            rState := State.LOAD_HIT_DO_STALL_PIPE_1
           }
+        }
+        is (M"11-1") {
+          // cache hit, and we have a store
+          wrLineAttrs := (
+            //RegNext(rdLineAttrs, init=rdLineAttrs.getZero)
+            rdLineAttrs
+          )
+          wrLineAttrs.dirty := True
+          lineAttrsRam.io.wrEn := True
+          lineWordRam.io.wrEn := True
+
+          loH2dPopStm.ready := True
+          io.loBus.d2hBus.valid := True
+          when (
+            //!io.loBus.d2hBus.fire
+            !io.loBus.d2hBus.ready
+          ) {
+            loH2dPopStm.ready := False
+            //io.loBus.d2hBus.valid := False
+            base.myFifoThingDoStall.last := True
+            rState := State.STORE_HIT_DO_STALL_PIPE_1
+          }
+          //rState := State.STORE_HIT
+          //loH2dPopStm.ready := (
+          //  True
+          //  //False
+          //)
+        }
+        default {
         }
       }
       //--------
