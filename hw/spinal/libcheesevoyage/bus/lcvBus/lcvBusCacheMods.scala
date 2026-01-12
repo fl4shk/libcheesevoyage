@@ -253,13 +253,18 @@ case class LcvBusDoStallFifoThing(
       } otherwise {
         //subFifo.io.push << io.push
         //when (io.doStallCacheMiss) {
-          //io.push.ready := False
+          io.push.ready := False
           io.pop.valid := False
           doApplyMainFifo(
             func=(mainFifo) => {
-              //mainFifo.io.push.valid := False
-              //mainFifo.io.pop.ready := False
-              mainFifo.io.push << io.push //pushForkMain
+              mainFifo.io.push.valid := False
+              mainFifo.io.pop.ready := False
+
+              //--------
+              // BEGIN: old code, potentially working for icache?
+              //mainFifo.io.push << io.push //pushForkMain
+              // END: old code, potentially working for icache?
+
               //io.pop << mainFifo.io.pop
             }
           )
