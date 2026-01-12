@@ -1404,9 +1404,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             //!io.loBus.d2hBus.fire
             !io.loBus.d2hBus.ready
           ) {
+            base.myFifoThingDoStall.last := True
             loH2dPopStm.ready := False
             //io.loBus.d2hBus.valid := False
-            base.myFifoThingDoStall.last := True
             rState := State.STORE_HIT_DO_STALL_PIPE_1
           }
           //rState := State.STORE_HIT
@@ -1572,6 +1572,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       }
     }
     is (State.RECV_LINE_FROM_HI_BUS_PIPE_1) {
+      base.myFifoThingDoStall.head := False
       rHadHiH2dFinish := False
       rHadHiD2hFinish := False
 
@@ -1652,7 +1653,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST) {
       rState := State.IDLE
-      base.myFifoThingDoStall.head := False
+      //base.myFifoThingDoStall.head := False
       //when (
       //  RegNext(loH2dPopStm.fire, init=False)
       //  && loH2dPopStm.valid
