@@ -183,9 +183,9 @@ case class LcvBusMem(
 
       rD2hValid := False
       rD2hPayload := rD2hPayload.getZero
-      when (io.bus.h2dBus.valid) {
-        rD2hPayload.src := io.bus.h2dBus.src
-      }
+      //when (io.bus.h2dBus.valid) {
+      //  rD2hPayload.src := io.bus.h2dBus.src
+      //}
 
       switch (
         io.bus.h2dBus.valid
@@ -222,6 +222,9 @@ case class LcvBusMem(
           //rRdBurstCnt := 1
           doIncrRdBurstCnt()
           rH2dReady := True
+          when (io.bus.h2dBus.valid) {
+            rD2hPayload.src := io.bus.h2dBus.src
+          }
           //rD2hPayload.burstFirst := False
         }
         is (B"110") {
@@ -229,6 +232,9 @@ case class LcvBusMem(
           rState := State.NON_BURST
           //io.bus.h2dBus.ready := True
           rH2dReady := True
+          //when (io.bus.h2dBus.valid) {
+          //  rD2hPayload.src := io.bus.h2dBus.src
+          //}
           ram.io.rdEn := False
           ram.io.wrEn := True
         }
@@ -237,6 +243,9 @@ case class LcvBusMem(
           rState := State.WRITE_BURST
           //io.bus.h2dBus.ready := False
           rH2dReady := False
+          //when (io.bus.h2dBus.valid) {
+          //  rD2hPayload.src := io.bus.h2dBus.src
+          //}
         }
         default {
           // no active transaction
@@ -276,6 +285,7 @@ case class LcvBusMem(
     }
     is (State.READ_BURST_PIPE_2) {
       rState := State.READ_BURST_PIPE_1
+      rH2dReady := False
 
       ram.io.rdEn := True
       ram.io.rdAddr := (
@@ -307,7 +317,7 @@ case class LcvBusMem(
     }
     is (State.READ_BURST) {
       //io.bus.h2dBus.ready := False
-      rH2dReady := False
+      //rH2dReady := False
       ram.io.rdEn := RegNext(ram.io.rdEn, init=ram.io.rdEn.getZero)
       ram.io.rdAddr := (
         rSavedH2dPayload.burstAddr(
@@ -353,6 +363,9 @@ case class LcvBusMem(
     //  
     //}
     is (State.WRITE_BURST) {
+      when (io.bus.h2dBus.fire) {
+        rD2hPayload.src := io.bus.h2dBus.src
+      }
       rH2dReady := True
       ram.io.wrAddr := (
         rSavedH2dPayload.burstAddr(
