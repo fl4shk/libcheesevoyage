@@ -1139,6 +1139,7 @@ case class PipeMemRmwDoModInMid0FrontFuncParams[
   rPrevTxnWasHazardAny: Bool,           // rPrevTxnWasHazardAny
   outp: ModT,                           // tempUpMod(2),
   inp: ModT,                            // tempUpMod(1),
+  midPipePayload: Array[Payload[Vec[ModT]]], // mod.front.midPipePayload
   cMid0Front: CtrlLink,                 // mod.front.cMid0Front
   modFront: Node,                       // io.modFront
   tempModFrontPayload: ModT,            // io.tempModFrontPayload
@@ -4030,6 +4031,7 @@ extends Area {
                 rPrevTxnWasHazardAny=rPrevTxnWasHazardAny,
                 outp=tempUpMod(2),
                 inp=tempUpMod(1),
+                midPipePayload=mod.front.midPipePayload,
                 cMid0Front=cMid0Front,
                 modFront=io.modFront,
                 tempModFrontPayload=io.tempModFrontPayload(fjIdx),
