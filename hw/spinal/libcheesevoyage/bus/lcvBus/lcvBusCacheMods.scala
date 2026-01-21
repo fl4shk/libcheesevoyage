@@ -1388,7 +1388,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             || !io.loBus.d2hBus.ready
           ) {
             loH2dPopStm.ready := False
-            //io.loBus.d2hBus.valid := False
+            io.loBus.d2hBus.valid := False
             base.myFifoThingDoStall.last := True
             rState := State.LOAD_HIT_DO_STALL_PIPE_1
           }
