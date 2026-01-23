@@ -1496,7 +1496,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           ) {
             loH2dPopStm.ready := False
             io.loBus.d2hBus.valid := False
-            //base.myFifoThingDoStall.last := True
+            base.myFifoThingDoStall.last := True
             rState := (
               State.LOAD_HIT_DO_STALL_PIPE_2
               //State.LOAD_HIT_DO_STALL_PIPE_1
@@ -1795,25 +1795,31 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     }
     def doRecvLineStateIgnoreInvalidSrc(
     ): Unit = {
-      //when (
-      //  base.loH2dDoStallFifoThing.io.pop.src
-      //  === (
-      //    RegNextWhen(
-      //      loH2dPopStm.src - 1,
-      //      cond=loH2dPopStm.fire,
-      //      init=loH2dPopStm.src.getZero,
-      //    )
-      //  )
-      //  && History[Bool](
-      //    that=True,
-      //    when=loH2dPopStm.fire,
-      //    length=2,
-      //    init=False,
-      //  ).last
-      //) {
-      //  loH2dPopStm.ready := True
-      //  base.myLoH2dPopThrowArea.myLoH2dThrowCond := True
-      //}
+      when (
+        base.loH2dDoStallFifoThing.io.pop.src.asSInt
+        =/= (
+          RegNextWhen(
+            //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
+            (io.loBus.d2hBus.src + 1).asSInt,
+            cond=io.loBus.d2hBus.fire,
+            //cond=base.loH2dDoStallFifoThing.io.pop.fire,
+            ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
+          )
+          init(-2)
+        )
+        && History[Bool](
+          that=True,
+          when=(
+            //loH2dPopStm.fire
+            io.loBus.d2hBus.fire
+          ),
+          length=2,
+          init=False,
+        ).last
+      ) {
+        //loH2dPopStm.ready := True
+        base.myLoH2dPopThrowArea.myLoH2dThrowCond := True
+      }
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_4) {
       //rState := State.RECV_LINE_FROM_HI_BUS_POST_2
