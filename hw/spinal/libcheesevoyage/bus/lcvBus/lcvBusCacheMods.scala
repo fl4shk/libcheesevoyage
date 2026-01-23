@@ -1344,13 +1344,14 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     //}
     loH2dPopStm.ready := True
   }
-  val myTempIdleCond = (
-    loH2dPopStm.valid
-    && RegNext(
-      rState === State.RECV_LINE_FROM_HI_BUS_POST,
-      init=False
-    )
-  )
+  //val myTempIdleCond = (
+  //  loH2dPopStm.valid
+  //  //&& rose(rState === State.IDLE)
+  //  && RegNext(
+  //    rState === State.RECV_LINE_FROM_HI_BUS_POST,
+  //    init=False
+  //  )
+  //)
   switch (rState) {
     is (State.IDLE) {
       base.myFifoThingDoStall.foreach(_ := False)
@@ -1371,32 +1372,32 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       rHiD2hBurstCnt := 0x0
       doPopLoH2dFifo()
       //--------
-      when (
-        //rose(rState === State.IDLE)
-        myTempIdleCond
-      ) {
-        base.doLineWordRamReadSync(
-          busAddr=rSavedLoH2dPayload.addr,
-          setEn=0,
-        )
-        base.doLineAttrsRamReadSync(
-          busAddr=rSavedLoH2dPayload.addr,
-          setEn=0,
-        )
-      }
-      when (
-        //RegNext(
-        //  rose(rState === State.IDLE),
-        //  init=False
-        //)
-        RegNext(
-          myTempIdleCond,
-          init=False
-        )
-      ) {
-        lineWordRam.io.rdEn := True
-        lineAttrsRam.io.rdEn := True
-      }
+      //when (
+      //  //rose(rState === State.IDLE)
+      //  myTempIdleCond
+      //) {
+      //  base.doLineWordRamReadSync(
+      //    busAddr=rSavedLoH2dPayload.addr,
+      //    setEn=0,
+      //  )
+      //  base.doLineAttrsRamReadSync(
+      //    busAddr=rSavedLoH2dPayload.addr,
+      //    setEn=0,
+      //  )
+      //}
+      //when (
+      //  //RegNext(
+      //  //  rose(rState === State.IDLE),
+      //  //  init=False
+      //  //)
+      //  RegNext(
+      //    myTempIdleCond,
+      //    init=False
+      //  )
+      //) {
+      //  lineWordRam.io.rdEn := True
+      //  lineAttrsRam.io.rdEn := True
+      //}
       when (
         RegNext(
           next=lineAttrsRam.io.rdEn,
@@ -1419,13 +1420,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         ## (
           base.haveHit
         )
-        ## RegNext(
-          RegNext(
-            myTempIdleCond,
-            init=False
-          ),
-          init=False
-        )
+        //## RegNext(
+        //  RegNext(
+        //    myTempIdleCond,
+        //    init=False
+        //  ),
+        //  init=False
+        //)
         ## rdLineAttrs.dirty
         //## rDel2LoH2dPayload.isWrite
 
@@ -1438,7 +1439,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         //  init=loH2dPopStm.isWrite.getZero,
         //)
       ) {
-        is (M"1000-") {
+        is (
+          //M"1000-"
+          M"100-"
+        ) {
           // cache miss, and line isn't dirty
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
           base.myFifoThingDoStall.head := True
@@ -1447,7 +1451,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             False
           )
         }
-        is (M"1001-") {
+        is (
+          //M"1001-"
+          M"101-"
+        ) {
           // cache miss, and line is dirty 
           rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
           base.myFifoThingDoStall.head := True
@@ -1456,7 +1463,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             False
           )
         }
-        is (M"11--0") {
+        is (
+          //M"11--0"
+          M"11-0"
+        ) {
           // cache hit, and we have a load 
           // Here we try to reduce the number of cycles for a load hit
           // to 2 total (but allowing pipelining load hits!)
@@ -1493,7 +1503,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             )
           }
         }
-        is (M"11--1") {
+        is (
+          //M"11--1"
+          M"11-1"
+        ) {
           // cache hit, and we have a store
           wrLineAttrs := (
             //RegNext(rdLineAttrs, init=rdLineAttrs.getZero)
