@@ -1492,7 +1492,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         //loH2dPopStm.fire
         io.loBus.d2hBus.fire
       ),
-      length=2,
+      length=(
+        //2
+        4
+      ),
       init=False,
     ).last
   )
