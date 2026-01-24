@@ -1631,6 +1631,14 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           //rSavedLoH2dPayload := rDel2LoH2dPayload
           when (
             RegNext(
+              lineWordRam.io.wrEn,
+              init=False
+            )
+          ) {
+            io.loBus.d2hBus.valid := False
+          }
+          when (
+            RegNext(
               (
                 //RegNext(
                 //  (
