@@ -1481,10 +1481,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     //    init(-2)
     //  )
     //)
-    && (
-      myTempIgnoreDupSrcCond
-      //&& RegNext(myTempIgnoreDupSrcCond, init=False)
-    )
+
+    //&& (
+    //  myTempIgnoreDupSrcCond
+    //  //&& RegNext(myTempIgnoreDupSrcCond, init=False)
+    //)
     && History[Bool](
       that=True,
       when=(
