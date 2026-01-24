@@ -1693,7 +1693,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     is (State.LOAD_HIT_DO_STALL_PIPE_2) {
       io.loBus.d2hBus.valid := False
       rState := State.LOAD_HIT_DO_STALL_PIPE_1
-      io.loBus.d2hBus.valid := False
+      //io.loBus.d2hBus.valid := False
       loH2dPopStm.ready := (
         //True
         False
@@ -1768,7 +1768,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       io.loBus.d2hBus.valid := False
       lineAttrsRam.io.rdEn := False
       loH2dPopStm.ready := False
-      io.loBus.d2hBus.valid := False
+      //io.loBus.d2hBus.valid := False
       rState := State.STORE_HIT_DO_STALL
     }
     is (State.STORE_HIT_DO_STALL) {
