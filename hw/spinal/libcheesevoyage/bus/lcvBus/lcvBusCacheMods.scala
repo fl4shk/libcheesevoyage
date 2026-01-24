@@ -869,7 +869,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   )
 
   //--------
-  val base = LcvBusCacheBaseArea(io=io, optIncludeLoH2dPopThrow=false)
+  val base = LcvBusCacheBaseArea(io=io, optIncludeLoH2dPopThrow=true)
   //io.loBus.h2dBus.ready.setAsReg() init(False)
   //io.loBus.h2dBus.ready := False
   //loH2dPopStm.ready := False
@@ -947,7 +947,6 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     Reg(State())
     init(State.IDLE)
   )
-
   //when (
   //  //(RegNext(rState) init(State.IDLE)) === State.IDLE
   //  rose(rState === State.STORE_HIT)
@@ -983,10 +982,80 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     )
   )
   def doPopLoH2dFifo(): Unit = {
-    when (loH2dPopStm.valid) {
-      loH2dPopStm.ready := True
+    //when (loH2dPopStm.valid) {
+    //  loH2dPopStm.ready := True
+    //}
+    loH2dPopStm.ready := True
+  }
+  val myTempIgnoreDupSrcCond = (
+    Mux[Bool](
+      rState === State.IDLE,
+      RegNext(
+        (
+          rState === State.RECV_LINE_FROM_HI_BUS_POST
+          //rState =/= State.IDLE
+        ),
+        init=False
+      ),
+      True//False
+    )
+  )
+  val myFullTempIgnoreDupSrcCond = (
+    //(
+    //  base.myFifoThingDoStall.head
+    //  //|| base.myFifoThingDoStall.last
+    //)
+    //&& 
+    base.loH2dDoStallFifoThing.io.pop.valid
+    && (
+      base.loH2dDoStallFifoThing.io.pop.src.asSInt
+      =/= (
+        RegNextWhen(
+          //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
+          (io.loBus.d2hBus.src + 1).asSInt,
+          cond=io.loBus.d2hBus.fire,
+          //cond=base.loH2dDoStallFifoThing.io.pop.fire,
+          ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
+        )
+        init(-2)
+      )
+    )
+    //&& (
+    //  base.loH2dDoStallFifoThing.io.pop.src.asSInt
+    //  =/= (
+    //    RegNextWhen(
+    //      //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
+    //      (io.loBus.d2hBus.src - 1).asSInt,
+    //      cond=io.loBus.d2hBus.fire,
+    //      //cond=base.loH2dDoStallFifoThing.io.pop.fire,
+    //      ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
+    //    )
+    //    init(-2)
+    //  )
+    //)
+    && (
+      myTempIgnoreDupSrcCond
+      //&& RegNext(myTempIgnoreDupSrcCond, init=False)
+    )
+    && History[Bool](
+      that=True,
+      when=(
+        //loH2dPopStm.fire
+        io.loBus.d2hBus.fire
+      ),
+      length=2,
+      init=False,
+    ).last
+  )
+  def doIgnoreInvalidFifoThingPopSrc(
+  ): Unit = {
+    when (myFullTempIgnoreDupSrcCond) {
+      //loH2dPopStm.ready := True
+      base.myLoH2dPopThrowArea.myLoH2dThrowCond := True
     }
   }
+  doIgnoreInvalidFifoThingPopSrc()
+
   switch (rState) {
     is (State.IDLE) {
       base.myFifoThingDoStall.foreach(_ := False)
