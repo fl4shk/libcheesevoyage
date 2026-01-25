@@ -68,6 +68,7 @@ case class PipeMemRmwConfig[
   optModHazardKind: PipeMemRmw.ModHazardKind=PipeMemRmw.ModHazardKind.Dupl,
   //optFwdUseMmwValidLaterStages: Boolean=false,
   optFwdHaveZeroReg: Option[Int]=Some(0x0),
+  fwdForFmaxStageMax: Int=0x0,
   optEnableClear: Boolean=false,
   memRamStyleAltera: String="MLAB",
   memRamStyleXilinx: String="auto",
@@ -766,6 +767,7 @@ case class PipeMemRmwDoFwdArea[
   link: CtrlLink,
   //upIsFiring: Bool
   pipeName: String,
+  forFmaxStageMax: Int//=0,
 ) extends Area {
   def extIdxUp = (
     PipeMemRmw.extIdxUp
@@ -855,7 +857,8 @@ case class PipeMemRmwDoFwdArea[
           for (kdx <- 0 until fwd.numMyUpExtDel2 + 1) {
             //if (kdx < fwd.numMyUpExtDel2 /*- 1*/) {
               if (
-                kdx == 0
+                //kdx == 0
+                kdx <= forFmaxStageMax
                 //kdx <= 1
                 //false
               ) {
@@ -4119,6 +4122,7 @@ extends Area {
           ),
           link=cMid0Front,
           pipeName=pipeName,
+          forFmaxStageMax=cfg.fwdForFmaxStageMax,
         )
       )
       //val doFormalFwdSavedMyFwd = (myHaveFormalFwd) generate (
