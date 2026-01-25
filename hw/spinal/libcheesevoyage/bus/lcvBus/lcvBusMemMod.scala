@@ -141,15 +141,20 @@ case class LcvBusMem(
   //ram.io.wrData := rRamWrData
   //ram.io.wrByteEn := rRamWrByteEn
 
-  def myRdBurstCnt0InitVal: UInt = (
+  //println(
+  //  s"testificate: ${busCfg.burstCntWidth}"
+  //)
+  def myRdBurstCnt0InitVal = (
     // -2
     //U(rRdBurstCnt(1).getWidth bits, 0 -> False, default -> True)
-    (-S(s"${busCfg.burstCntWidth}'d2")).asUInt
+    //U(busCfg.burstCntWidth bits, 0 -> False, default -> True)
+    //(-S(s"${busCfg.burstCntWidth}'d2")).asUInt
+    -2
   )
   val rRdBurstCnt = (
-    Vec[UInt](List(
-      (Reg(UInt(busCfg.burstCntWidth bits)) init(myRdBurstCnt0InitVal)),
-      (Reg(UInt(busCfg.burstCntWidth bits)) init(0x0))
+    Vec[SInt](List(
+      (Reg(SInt(busCfg.burstCntWidth bits)) init(myRdBurstCnt0InitVal)),
+      (Reg(SInt(busCfg.burstCntWidth bits)) init(0x0)),
     ))
   )
   def doInitRdBurstCnt(): Unit = {
@@ -215,7 +220,7 @@ case class LcvBusMem(
           //io.bus.h2dBus.ready := True
           ram.io.rdAddr := (
             io.bus.h2dBus.burstAddr(
-              rRdBurstCnt(1).getZero,
+              rRdBurstCnt(1).asUInt.getZero,
               incrBurstCnt=false,
             )(myRamAddrRange)
           )
@@ -290,7 +295,7 @@ case class LcvBusMem(
       ram.io.rdEn := True
       ram.io.rdAddr := (
         rSavedH2dPayload.burstAddr(
-          rRdBurstCnt(1),
+          rRdBurstCnt(1).asUInt,
           incrBurstCnt=false
         )(myRamAddrRange)
       )
@@ -304,7 +309,7 @@ case class LcvBusMem(
       ram.io.rdEn := True
       ram.io.rdAddr := (
         rSavedH2dPayload.burstAddr(
-          rRdBurstCnt(1),
+          rRdBurstCnt(1).asUInt,
           incrBurstCnt=false,
         )(myRamAddrRange)
       )
@@ -321,7 +326,7 @@ case class LcvBusMem(
       ram.io.rdEn := RegNext(ram.io.rdEn, init=ram.io.rdEn.getZero)
       ram.io.rdAddr := (
         rSavedH2dPayload.burstAddr(
-          rRdBurstCnt(1),
+          rRdBurstCnt(1).asUInt,
           incrBurstCnt=false,
         )(myRamAddrRange)
       )
