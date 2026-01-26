@@ -1728,29 +1728,48 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           myLoD2hStm.valid := True
           myLoD2hPayload.data := rdLineWord
           //rSavedLoH2dPayload := rDel2LoH2dPayload
-          when (
+          val rHadLineWordRamWritePastTwoCycles = Vec.fill(2)(
             RegNext(
-              lineWordRam.io.wrEn,
+              lineWordRam.io.wrEn
+              || RegNext(
+                lineWordRam.io.wrEn,
+                init=False
+              ),
               init=False
             )
+          )
+          when (
+            rHadLineWordRamWritePastTwoCycles.head
           ) {
             myLoD2hStm.valid := False
           }
           when (
-            RegNext(
-              (
-                //RegNext(
-                //  (
-                //    rState === State.STORE_HIT_DO_STALL
-                //  ),
-                //  init=False
-                //)
-                //|| rState === State.STORE_HIT_DO_STALL
-                //|| 
-                lineWordRam.io.wrEn
-              ),
-              init=False
-            )
+            //RegNext(
+            //  (
+            //    //RegNext(
+            //    //  (
+            //    //    rState === State.STORE_HIT_DO_STALL
+            //    //  ),
+            //    //  init=False
+            //    //)
+            //    //|| rState === State.STORE_HIT_DO_STALL
+            //    //|| 
+            //    lineWordRam.io.wrEn
+            //  ),
+            //  init=False
+            //)
+            //RegNext(
+            //  lineWordRam.io.wrEn,
+            //  init=False
+            //)
+            //|| RegNext(
+            //  RegNext(
+            //    lineWordRam.io.wrEn,
+            //    init=False
+            //  ),
+            //  init=False
+            //)
+            rHadLineWordRamWritePastTwoCycles.last
             || !myLoD2hStm.ready
           ) {
             loH2dPopStm.ready := False
