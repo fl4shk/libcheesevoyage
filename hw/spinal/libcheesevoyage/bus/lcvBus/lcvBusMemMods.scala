@@ -44,6 +44,204 @@ case class LcvBusMemIo(
   val bus = slave(LcvBusIo(cfg=cfg.busCfg))
 }
 
+//case class LcvBusMem(
+//  cfg: LcvBusMemConfig
+//) extends Component {
+//  //--------
+//  def busCfg = cfg.busCfg
+//  //--------
+//  val io = LcvBusMemIo(cfg=cfg)
+//  //--------
+//  val ram = RamSdpPipe(
+//    cfg=cfg.ramCfg
+//  )
+//  //--------
+//  val rdLineWord = UInt(busCfg.dataWidth bits)
+//  rdLineWord := ram.io.rdData.asUInt
+//
+//  ram.io.wrEn := False
+//  def myH2dStm = io.bus.h2dBus
+//  def myD2hStm = io.bus.d2hBus
+//  myH2dStm.ready := False
+//  myD2hStm.valid := False
+//
+//  val rH2dPayload = (
+//    RegNextWhen(
+//      myH2dStm.payload,
+//      cond=myH2dStm.fire,
+//      init=myH2dStm.payload.getZero,
+//    )
+//  )
+//  def rBusAddr = rH2dPayload.addr
+//  val rDel2H2dPayload = (
+//    RegNext/*When*/(
+//      next=rH2dPayload,
+//      //cond=loH2dPopStm.fire,
+//      init=rH2dPayload.getZero,
+//    )
+//  )
+//  def rDel2BusAddr = rDel2H2dPayload.addr
+//
+//  val rSavedH2dPayload = (
+//    Reg(cloneOf(rH2dPayload))
+//    init(rH2dPayload.getZero)
+//  )
+//  def rSavedBusAddr = rSavedH2dPayload.addr
+//  def myRamAddrRshift = log2Up(busCfg.dataWidth / 8)
+//  def doRamReadSync(
+//    busAddr: UInt,
+//    setEn: Int=0,
+//  ): Unit = {
+//    if (setEn == 1) {
+//      ram.io.rdEn := True
+//    } else if (setEn == 2) {
+//      ram.io.rdEn := (
+//        //True
+//        RegNext(
+//          next=(
+//            //myH2dStm.valid
+//            myH2dStm.fire
+//          ),
+//          init=False,
+//        )
+//      )
+//    } 
+//    //rMyRamRdEn := True
+//    ram.io.rdAddr := {
+//      //(busAddr >> myRamAddrRshift)
+//      println(
+//        s"test info: busAddr("
+//        + s"${busAddr.high} downto ${myRamAddrRshift}"
+//        + s")"
+//      )
+//      (
+//        (
+//          busAddr(busAddr.high downto myRamAddrRshift)
+//        )
+//        .resize(ram.io.rdAddr.getWidth)
+//      )
+//    }
+//  }
+//  def doRamWrite(
+//    busAddr: UInt,
+//    lineWord: UInt,
+//    byteEn: Option[UInt],
+//    setEn: Boolean=true,
+//  ): Unit = {
+//    if (setEn) {
+//      ram.io.wrEn := True
+//    }
+//    ram.io.wrAddr := (
+//      //(busAddr >> myRamAddrRshift)
+//      (busAddr(busAddr.high downto myRamAddrRshift))
+//      .resize(ram.io.wrAddr.getWidth)
+//    )
+//    ram.io.wrData := lineWord.asBits
+//    //lineWord match {
+//    //  case Some(lineWord) => {
+//    //    ram.io.wrData := lineWord.asBits
+//    //  }
+//    //  case None => {
+//    //    ram.io.wrData := (
+//    //      //myD2hBus.sendData.data.asBits
+//    //      io.hiBus.d2hBus.data
+//    //    )
+//    //  }
+//    //}
+//    byteEn match {
+//      case Some(byteEn) => {
+//        ram.io.wrByteEn := byteEn.asBits
+//      }
+//      case None => {
+//        ram.io.wrByteEn := (
+//          B(ram.io.wrByteEn.getWidth bits, default -> True)
+//        )
+//      }
+//    }
+//  }
+//  doRamReadSync(
+//    busAddr={
+//      //rLoH2dPayload.addr
+//      //println(
+//      //  s"testificate: ${io.loBus.h2dBus.addr.bitsRange}"
+//      //)
+//      //io.loBus.h2dBus.addr
+//      myH2dStm.addr
+//    },
+//    setEn=2,
+//  )
+//  doRamWrite(
+//    busAddr=(
+//      RegNext(
+//        RegNext(myH2dStm.addr, init=myH2dStm.addr.getZero),
+//        init=myH2dStm.addr.getZero,
+//      )
+//    ),
+//    lineWord=(
+//      RegNext(
+//        RegNext(myH2dStm.data, init=myH2dStm.data.getZero),
+//        init=myH2dStm.data.getZero,
+//      )
+//    ),
+//    byteEn=Some(
+//      RegNext(
+//        RegNext(myH2dStm.byteEn, init=myH2dStm.byteEn.getZero),
+//        init=myH2dStm.byteEn.getZero,
+//      ),
+//    ),
+//    setEn=false,
+//  )
+//  object State extends SpinalEnum(
+//    defaultEncoding=(
+//      //binarySequential
+//      binaryOneHot
+//    )
+//  ) {
+//    val
+//      IDLE,
+//      LOAD_NON_BURST_DO_STALL_PIPE_2,
+//      LOAD_NON_BURST_DO_STALL_PIPE_1,
+//      LOAD_NON_BURST_DO_STALL,
+//      LOAD_NON_BURST_DO_STALL_POST,
+//      STORE_NON_BURST_DO_STALL_PIPE_1,
+//      STORE_NON_BURST_DO_STALL
+//      = newElement();
+//  }
+//  val rState = (
+//    Reg(State())
+//    init(State.IDLE)
+//  )
+//
+//  def doPopLoH2dFifo(): Unit = {
+//    myH2dStm.ready := True
+//  }
+//
+//  switch (rState) {
+//    is (State.IDLE) {
+//      myD2hStm.valid := False
+//      doPopLoH2dFifo()
+//
+//      rSavedH2dPayload := rDel2H2dPayload
+//      myD2hStm.src := rDel2H2dPayload.src
+//
+//      //when (
+//      //  RegNext(ram.io.rdEn, init=False)
+//      //) {
+//      //  rSavedH2dPayload := rDel2H2dPayload
+//      //  myD2hStm.src := rDel2H2dPayload.src
+//      //}
+//      switch (
+//        rDel2H2dPayload.isWrite
+//      ) {
+//        is (False) {
+//        }
+//        is (True) {
+//        }
+//      }
+//    }
+//  }
+//}
+
 case class LcvBusMem(
   cfg: LcvBusMemConfig,
 ) extends Component {
