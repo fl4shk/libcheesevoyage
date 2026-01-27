@@ -1491,7 +1491,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       LOAD_HIT_DO_STALL_PIPE_2,
       LOAD_HIT_DO_STALL_PIPE_1,
       LOAD_HIT_DO_STALL,
-      LOAD_HIT_DO_STALL_POST,
+      //LOAD_HIT_DO_STALL_POST,
       STORE_HIT_DO_STALL_PIPE_1,
       STORE_HIT_DO_STALL,
       SEND_LINE_TO_HI_BUS_PIPE_3,
@@ -1894,17 +1894,17 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         //base.myFifoThingDoStall.last := False
         base.myFifoThingDoStall := False
         rState := (
-          //State.IDLE
-          State.LOAD_HIT_DO_STALL_POST
+          State.IDLE
+          //State.LOAD_HIT_DO_STALL_POST
         )
         //doPopLoH2dFifo()
         //rSeenStateIdle := False
       }
     }
-    is (State.LOAD_HIT_DO_STALL_POST) {
-      //doPopLoH2dFifo()
-      rState := State.IDLE
-    }
+    //is (State.LOAD_HIT_DO_STALL_POST) {
+    //  //doPopLoH2dFifo()
+    //  rState := State.IDLE
+    //}
     //is (State.LOAD_HIT_DO_STALL_PIPE_1) {
     //}
     //is (State.LOAD_HIT_DO_STALL) {
