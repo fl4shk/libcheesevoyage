@@ -306,14 +306,21 @@ case class LcvBusMem(
       LOAD_NON_BURST_DO_STALL,
       LOAD_NON_BURST_DO_STALL_POST,
       STORE_NON_BURST_DO_STALL_PIPE_1,
-      STORE_NON_BURST_DO_STALL,
+      STORE_NON_BURST_DO_STALL
 
-      LOAD_BURST_PIPE_2,
-      LOAD_BURST_PIPE_1,
-      LOAD_BURST,
-      LOAD_BURST_POST,
-      STORE_BURST_PIPE_1,
-      STORE_BURST
+      //LOAD_BURST_PIPE_2,
+      //LOAD_BURST_PIPE_1,
+      //LOAD_BURST,
+      //LOAD_BURST_POST,
+      //STORE_BURST_PIPE_1,
+      //STORE_BURST
+
+      //LOAD_BURST_PIPE_2,
+      //LOAD_BURST_PIPE_1,
+      //LOAD_BURST,
+      //LOAD_BURST_POST_1,
+      //STORE_BURST,
+      //STORE_BURST_POST_1,
       = newElement();
   }
   val rState = (
@@ -324,6 +331,79 @@ case class LcvBusMem(
   def doPopH2dFifo(): Unit = {
     myH2dPopStm.ready := True
   }
+  val myTempIgnoreDupCntCond = (
+    Mux[Bool](
+      rState === State.IDLE,
+      RegNext(
+        (
+          //rState === State.RECV_LINE_FROM_HI_BUS_POST
+          rState =/= State.IDLE
+        ),
+        init=False
+      ),
+      True//False
+    )
+  )
+  val myFullTempIgnoreDupCntCond = (
+    //(
+    //  base.myFifoThingDoStall.head
+    //  //|| base.myFifoThingDoStall.last
+    //)
+    //&& 
+    myH2dDoStallFifoThing.io.pop.valid
+    && (
+      myH2dDoStallFifoThing.io.pop.cnt.asSInt
+      =/= (
+        RegNextWhen(
+          //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
+          (myD2hStm.cnt + 1).asSInt,
+          cond=myD2hStm.fire,
+          //cond=base.loH2dDoStallFifoThing.io.pop.fire,
+          ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
+        )
+        init(-2)
+      )
+    )
+    //&& (
+    //  base.loH2dDoStallFifoThing.io.pop.src.asSInt
+    //  =/= (
+    //    RegNextWhen(
+    //      //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
+    //      (myLoD2hStm.src - 1).asSInt,
+    //      cond=myLoD2hStm.fire,
+    //      //cond=base.loH2dDoStallFifoThing.io.pop.fire,
+    //      ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
+    //    )
+    //    init(-2)
+    //  )
+    //)
+
+    && (
+      myTempIgnoreDupCntCond
+      //&& RegNext(myTempIgnoreDupCntCond, init=False)
+    )
+    && History[Bool](
+      that=True,
+      when=(
+        //loH2dPopStm.fire
+        myD2hStm.fire
+      ),
+      length=(
+        //2
+        //4
+        3
+      ),
+      init=False,
+    ).last
+  )
+  def doIgnoreInvalidFifoThingPopCnt(
+  ): Unit = {
+    when (myFullTempIgnoreDupCntCond) {
+      //loH2dPopStm.ready := True
+      myH2dPopThrowArea.myH2dThrowCond := True
+    }
+  }
+  doIgnoreInvalidFifoThingPopCnt()
 
   switch (rState) {
     is (State.IDLE) {
@@ -334,12 +414,24 @@ case class LcvBusMem(
       rSavedH2dPayload := rDel2H2dPayload
       myD2hStm.busPayload.src := rDel2H2dPayload.busPayload.src
 
-      when (RegNext(ram.io.rdEn, init=False)) {
+      when (
+        //RegNext(ram.io.rdEn, init=False)
+        RegNext(
+          RegNext(myH2dPopStm.fire, init=False),
+          init=False
+        )
+      ) {
         rSavedH2dPayload := rDel2H2dPayload
         myD2hStm.busPayload.src := rDel2H2dPayload.busPayload.src
+        myD2hStm.cnt := rDel2H2dPayload.cnt
       }
       switch (
-        RegNext(ram.io.rdEn, init=False)
+        //RegNext(ram.io.rdEn, init=False)
+        //RegNext(myH2dPopStm.fire, init=False)
+        RegNext(
+          RegNext(myH2dPopStm.fire, init=False),
+          init=False
+        )
         ## rDel2H2dPayload.busPayload.burstFirst
         ## rDel2H2dPayload.busPayload.isWrite
       ) {
@@ -374,23 +466,82 @@ case class LcvBusMem(
           myD2hStm.valid := True
 
           when (!myD2hStm.ready) {
-            myFifoThingDoStall := True
             myH2dPopStm.ready := False
+            myFifoThingDoStall := True
             rState := State.STORE_NON_BURST_DO_STALL_PIPE_1
           }
         }
         is (M"110") {
           // burst, load
-          rState := State.LOAD_BURST_PIPE_2
+          //rState := State.LOAD_BURST_PIPE_2
           myFifoThingDoStall := True
         }
         is (M"111") {
           // burst, store
-          rState := State.STORE_BURST_PIPE_1
+          //rState := State.STORE_BURST_PIPE_1
           myFifoThingDoStall := True
         }
         default {
         }
+      }
+    }
+    is (State.LOAD_NON_BURST_DO_STALL_PIPE_2) {
+      rState := State.LOAD_NON_BURST_DO_STALL_PIPE_1
+      myD2hStm.valid := False
+      //myLoD2hStm.valid := False
+      myH2dPopStm.ready := False
+      //lineAttrsRam.io.rdEn := False
+      //base.myFifoThingDoStall.last := False
+      doRamReadSync(
+        busAddr=rSavedH2dPayload.busPayload.addr,
+        setEn=0,
+      )
+    }
+    is (State.LOAD_NON_BURST_DO_STALL_PIPE_1) {
+      rState := State.LOAD_NON_BURST_DO_STALL
+      //lineAttrsRam.io.rdEn := False
+      ram.io.rdEn := True
+      myD2hStm.valid := False
+      myH2dPopStm.ready := False
+    }
+    is (State.LOAD_NON_BURST_DO_STALL) {
+      //lineAttrsRam.io.rdEn := False
+      ram.io.rdEn := False
+      myH2dPopStm.ready := False
+      myD2hStm.busPayload.data := rdLineWord
+      myD2hStm.valid := True
+      when (myD2hStm.fire) {
+        //base.myFifoThingDoStall.last := False
+        myFifoThingDoStall := False
+        rState := (
+          //State.IDLE
+          State.LOAD_NON_BURST_DO_STALL_POST
+        )
+        //doPopLoH2dFifo()
+        //rSeenStateIdle := False
+      }
+    }
+    is (State.LOAD_NON_BURST_DO_STALL_POST) {
+      ram.io.rdEn := False
+      rState := State.IDLE
+    }
+    is (State.STORE_NON_BURST_DO_STALL_PIPE_1) {
+      myD2hStm.valid := False
+      //lineAttrsRam.io.rdEn := False
+      ram.io.rdEn := False
+      myH2dPopStm.ready := False
+      //myLoD2hStm.valid := False
+      rState := State.STORE_NON_BURST_DO_STALL
+    }
+    is (State.STORE_NON_BURST_DO_STALL) {
+      //lineAttrsRam.io.rdEn := False
+      ram.io.rdEn := False
+      myH2dPopStm.ready := False
+      myD2hStm.valid := True
+      when (myD2hStm.ready) {
+        //base.myFifoThingDoStall.last := False
+        rState := State.IDLE
+        //rSeenStateIdle := False
       }
     }
   }

@@ -1096,7 +1096,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     //}
     loH2dPopStm.ready := True
   }
-  val myTempIgnoreDupSrcCond = (
+  val myTempIgnoreDupCntCond = (
     Mux[Bool](
       rState === State.IDLE,
       RegNext(
@@ -1109,7 +1109,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       True//False
     )
   )
-  //val myFullTempIgnoreDupSrcCond = (
+  //val myFullTempIgnoreDupCntCond = (
   //  //(
   //  //  base.myFifoThingDoStall.head
   //  //  //|| base.myFifoThingDoStall.last
@@ -1143,8 +1143,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   //  //  )
   //  //)
   //  && (
-  //    myTempIgnoreDupSrcCond
-  //    //&& RegNext(myTempIgnoreDupSrcCond, init=False)
+  //    myTempIgnoreDupCntCond
+  //    //&& RegNext(myTempIgnoreDupCntCond, init=False)
   //  )
   //  && History[Bool](
   //    that=True,
@@ -1156,14 +1156,14 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   //    init=False,
   //  ).last
   //)
-  //def doIgnoreInvalidFifoThingPopSrc(
+  //def doIgnoreInvalidFifoThingPopCnt(
   //): Unit = {
-  //  when (myFullTempIgnoreDupSrcCond) {
+  //  when (myFullTempIgnoreDupCntCond) {
   //    //loH2dPopStm.ready := True
   //    base.myLoH2dPopThrowArea.myLoH2dThrowCond := True
   //  }
   //}
-  //doIgnoreInvalidFifoThingPopSrc()
+  //doIgnoreInvalidFifoThingPopCnt()
 
   switch (rState) {
     is (State.IDLE) {
@@ -1553,7 +1553,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   //    init=False
   //  )
   //)
-  val myTempIgnoreDupSrcCond = (
+  val myTempIgnoreDupCntCond = (
     Mux[Bool](
       rState === State.IDLE,
       RegNext(
@@ -1566,7 +1566,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       True//False
     )
   )
-  val myFullTempIgnoreDupSrcCond = (
+  val myFullTempIgnoreDupCntCond = (
     //(
     //  base.myFifoThingDoStall.head
     //  //|| base.myFifoThingDoStall.last
@@ -1601,8 +1601,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     //)
 
     && (
-      myTempIgnoreDupSrcCond
-      //&& RegNext(myTempIgnoreDupSrcCond, init=False)
+      myTempIgnoreDupCntCond
+      //&& RegNext(myTempIgnoreDupCntCond, init=False)
     )
     && History[Bool](
       that=True,
@@ -1614,14 +1614,14 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       init=False,
     ).last
   )
-  def doIgnoreInvalidFifoThingPopSrc(
+  def doIgnoreInvalidFifoThingPopCnt(
   ): Unit = {
-    when (myFullTempIgnoreDupSrcCond) {
+    when (myFullTempIgnoreDupCntCond) {
       //loH2dPopStm.ready := True
       base.myLoH2dPopThrowArea.myLoH2dThrowCond := True
     }
   }
-  doIgnoreInvalidFifoThingPopSrc()
+  doIgnoreInvalidFifoThingPopCnt()
   switch (rState) {
     is (State.IDLE) {
       //base.myFifoThingDoStall.foreach(_ := False)
@@ -1928,7 +1928,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       lineAttrsRam.io.rdEn := False
       loH2dPopStm.ready := False
       myLoD2hStm.valid := True
-      when (myLoD2hStm.fire) {
+      when (myLoD2hStm.ready) {
         //base.myFifoThingDoStall.last := False
         rState := State.IDLE
         //rSeenStateIdle := False
@@ -2114,7 +2114,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     is (State.RECV_LINE_FROM_HI_BUS_POST_4) {
       //rState := State.RECV_LINE_FROM_HI_BUS_POST_2
       //base.myFifoThingDoStall.head := False
-      //doIgnoreInvalidFifoThingPopSrc()
+      //doIgnoreInvalidFifoThingPopCnt()
 
 
       //loH2dPopStm.ready := True
@@ -2126,7 +2126,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       //loH2dPopStm.ready := True
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_3) {
-      //doIgnoreInvalidFifoThingPopSrc()
+      //doIgnoreInvalidFifoThingPopCnt()
       myLoD2hStm.valid := False
       //base.myFifoThingDoStall.head := False
 
@@ -2139,7 +2139,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       rState := State.RECV_LINE_FROM_HI_BUS_POST_2
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_2) {
-      //doIgnoreInvalidFifoThingPopSrc()
+      //doIgnoreInvalidFifoThingPopCnt()
       //loH2dPopStm.ready := True
       //when (loH2dPopStm.fire) {
       //  //base.myFifoThingDoStall.head := False
@@ -2152,7 +2152,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       rState := State.RECV_LINE_FROM_HI_BUS_POST_1
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_1) {
-      //doIgnoreInvalidFifoThingPopSrc()
+      //doIgnoreInvalidFifoThingPopCnt()
 
       //base.myFifoThingDoStall.head := False
       //loH2dPopStm.ready := False
@@ -2176,7 +2176,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       //  setEn=0,
       //)
       //base.myFifoThingDoStall.head := False
-      //doIgnoreInvalidFifoThingPopSrc()
+      //doIgnoreInvalidFifoThingPopCnt()
       rState := State.IDLE
       //loH2dPopStm.ready := False
       //loH2dPopStm.ready := True
