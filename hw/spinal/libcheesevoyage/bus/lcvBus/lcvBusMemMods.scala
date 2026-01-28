@@ -44,11 +44,13 @@ case class LcvBusMemIo(
   val bus = slave(LcvBusIo(cfg=cfg.busCfg))
 }
 
-case class LcvBusMem(
-  cfg: LcvBusMemConfig
+private[libcheesevoyage] case class LcvBusMemImpl(
+  cfg: LcvBusMemConfig,
+  //io: LcvBusMemIo
 ) extends Component {
   //--------
   def busCfg = cfg.busCfg
+  //require(!busCfg.allowBurst)
   //--------
   val io = LcvBusMemIo(cfg=cfg)
   //--------
@@ -432,10 +434,13 @@ case class LcvBusMem(
           RegNext(myH2dPopStm.fire, init=False),
           init=False
         )
-        ## rDel2H2dPayload.busPayload.burstFirst
+        //## rDel2H2dPayload.busPayload.burstFirst
         ## rDel2H2dPayload.busPayload.isWrite
       ) {
-        is (M"100") {
+        is (
+          //M"100"
+          M"10"
+        ) {
           // non-burst, load
           myH2dPopStm.ready := True
           myD2hStm.valid := True
@@ -460,7 +465,10 @@ case class LcvBusMem(
             rState := State.LOAD_NON_BURST_DO_STALL_PIPE_2
           }
         }
-        is (M"101") {
+        is (
+          //M"101"
+          M"11"
+        ) {
           // non-burst, store
           ram.io.wrEn := True
           myD2hStm.valid := True
@@ -471,16 +479,16 @@ case class LcvBusMem(
             rState := State.STORE_NON_BURST_DO_STALL_PIPE_1
           }
         }
-        is (M"110") {
-          // burst, load
-          //rState := State.LOAD_BURST_PIPE_2
-          myFifoThingDoStall := True
-        }
-        is (M"111") {
-          // burst, store
-          //rState := State.STORE_BURST_PIPE_1
-          myFifoThingDoStall := True
-        }
+        //is (M"110") {
+        //  // burst, load
+        //  //rState := State.LOAD_BURST_PIPE_2
+        //  myFifoThingDoStall := True
+        //}
+        //is (M"111") {
+        //  // burst, store
+        //  //rState := State.STORE_BURST_PIPE_1
+        //  myFifoThingDoStall := True
+        //}
         default {
         }
       }
@@ -546,12 +554,20 @@ case class LcvBusMem(
     }
   }
 }
+case class LcvBusMem(
+  cfg: LcvBusMemConfig
+) extends Component {
+  val io = LcvBusMemIo(cfg=cfg)
+  val impl = LcvBusMemImpl(cfg=cfg)
+  io.bus <> impl.io.bus
+}
 
 case class LcvBusMemSlowNonBurst(
   cfg: LcvBusMemConfig,
 ) extends Component {
   //--------
   def busCfg = cfg.busCfg
+  require(busCfg.allowBurst)
   //--------
   val io = LcvBusMemIo(cfg=cfg)
   //--------
