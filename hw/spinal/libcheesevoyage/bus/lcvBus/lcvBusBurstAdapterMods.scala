@@ -169,6 +169,14 @@ case class LcvBusDeburster(
       //  item := io.loBus.h2dBus.burstCnt.resize(item.getWidth) - 1
       //  //0x0
       //})
+      when (!io.loBus.h2dBus.burstFirst) {
+        io.loBus.h2dBus.translateInto(io.hiBus.h2dBus)(
+          dataAssignment=myNonBurstH2dDataAssignmentFunc
+        )
+        io.hiBus.d2hBus.translateInto(io.loBus.d2hBus)(
+          dataAssignment=myNonBurstD2hDataAssignmentFunc
+        )
+      }
       switch (
         io.loBus.h2dBus.valid
         ## io.loBus.h2dBus.burstFirst
@@ -189,12 +197,6 @@ case class LcvBusDeburster(
           //io.hiBus << io.loBus
           //doTranslateH2d()
           //doTranslateD2h()
-          io.loBus.h2dBus.translateInto(io.hiBus.h2dBus)(
-            dataAssignment=myNonBurstH2dDataAssignmentFunc
-          )
-          io.hiBus.d2hBus.translateInto(io.loBus.d2hBus)(
-            dataAssignment=myNonBurstD2hDataAssignmentFunc
-          )
         }
       }
     }
@@ -245,43 +247,10 @@ case class LcvBusDeburster(
       rState := State.READ_BURST
     }
     is (State.READ_BURST) {
-      io.hiBus.h2dBus.valid := True
 
       def rHiH2dBurstCnt = rRdBurstCnt(0)
       def rHiD2hBurstCnt = rRdBurstCnt(1)
       //def rHiD2hRevBurstCnt = rRdBurstCnt(2)
-
-      //when (io.hiBus.h2dBus.fire) {
-      //  rHiH2dBurstCnt := rHiH2dBurstCnt - 1
-      //}
-      //when (io.hiBus.d2hBus.fire) {
-      //  rHiD2hBurstCnt := rHiD2hBurstCnt - 1
-      //}
-
-      //when (rHiD2hBurstCnt === 0x0) {
-      //  io.loBus.d2hBus.burstFirst := True
-      //} otherwise {
-      //  io.loBus.d2hBus.burstFirst := False
-      //}
-      //when (rHiD2hBurstCnt === rSavedRdLoH2dPayload.burstCnt) {
-      //  io.loBus.d2hBus.burstLast := True
-      //} otherwise {
-      //  io.loBus.d2hBus.burstLast := False
-      //}
-
-      //switch (
-      //  io.loBus.h2dBus.valid
-      //  ## io.hiBus.h2dBus.ready
-      //  //## rRdBurstCnt.head.msb
-      //  //## rRdBurstCnt.last.msb
-      //) {
-      //  io.hiBus.h2dBus.valid := True
-      //}
-
-      //when () {
-      //} otherwise {
-      //}
-
 
       when (!rHiH2dBurstCnt.msb) {
         when (io.hiBus.h2dBus.fire) {
@@ -387,22 +356,6 @@ case class LcvBusDeburster(
       def rHiH2dBurstCnt = rWrBurstCnt(0)
       def rHiD2hBurstCnt = rWrBurstCnt(1)
       //def rHiD2hRevBurstCnt = rWrBurstCnt(2)
-
-      //switch (
-      //  io.loBus.h2dBus.valid
-      //  ## io.hiBus.h2dBus.ready
-      //  ## rWrBurstCnt.msb
-      //) {
-      //}
-
-      //io.hiBus.d2hBus.ready := True 
-      //when (io.hiBus.d2hBus.valid) {
-      //}
-
-      //myD2hWrBurstStm << io.hiBus.d2hBus.throwWhen(
-      //  !rHiD2hBurstCnt.msb
-      //)
-      //io.hiBus.h2dBus << io.loBus.h2dBus
 
       when (!rHiH2dBurstCnt.msb) {
         when (io.hiBus.h2dBus.fire) {

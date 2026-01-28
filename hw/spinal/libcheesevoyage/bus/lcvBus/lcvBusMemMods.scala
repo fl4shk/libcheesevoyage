@@ -63,7 +63,10 @@ private[libcheesevoyage] case class LcvBusMemImpl(
 
   ram.io.wrEn := False
 
-  val myH2dDoStallFifoThing = LcvBusDoStallFifoThing(busCfg=busCfg)
+  val myH2dDoStallFifoThing = LcvBusDoStallFifoThing(
+    busCfg=busCfg,
+    cntWidth=2,
+  )
   //myH2dDoStallFifoThing.io.push << io.bus.h2dBus
   io.bus.h2dBus.translateInto(
     myH2dDoStallFifoThing.io.push
@@ -83,14 +86,25 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       outp.busPayload := inp
     }
   )
-  val myD2hStm = Stream(
+  val myD2hPushStm = Stream(
     LcvBusDoStallFifoThingPayload(
-      LcvBusD2hPayload(cfg=busCfg)
+      LcvBusD2hPayload(cfg=busCfg),
+      cntWidth=myH2dDoStallFifoThing.cntWidth,
     )
   )
-  myD2hStm.translateInto(
+  val myD2hFifo = StreamFifo(
+    dataType=(
+      cloneOf(io.bus.d2hBus.payload)
+    ),
+    depth=(busCfg.maxBurstSizeMinus1 + 1),
+    latency=2,
+    forFMax=true,
+  )
+  io.bus.d2hBus << myD2hFifo.io.pop 
+  myD2hPushStm.translateInto(
     //io.bus.d2hBus
-    io.bus.d2hBus
+    //io.bus.d2hBus
+    myD2hFifo.io.push
   )(
     dataAssignment=(
       outp, inp
@@ -142,9 +156,9 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   )
 
   //def myH2dPopStm = io.bus.h2dBus
-  //def myD2hStm = io.bus.d2hBus
+  //def myD2hPushStm = io.bus.d2hBus
   myH2dPopStm.ready := False
-  myD2hStm.valid := False
+  myD2hPushStm.valid := False
 
   val myH2dPopThrowArea = new Area {
     val myH2dThrowCond = Bool()
@@ -291,8 +305,8 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     setEn=false,
   )
   //--------
-  myD2hStm.payload := (
-    RegNext(myD2hStm.payload, init=myD2hStm.payload.getZero)
+  myD2hPushStm.payload := (
+    RegNext(myD2hPushStm.payload, init=myD2hPushStm.payload.getZero)
   )
   //--------
   object State extends SpinalEnum(
@@ -308,7 +322,8 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       LOAD_NON_BURST_DO_STALL,
       LOAD_NON_BURST_DO_STALL_POST,
       STORE_NON_BURST_DO_STALL_PIPE_1,
-      STORE_NON_BURST_DO_STALL
+      STORE_NON_BURST_DO_STALL,
+      WAIT_D2H_FIFO_EMPTY
 
       //LOAD_BURST_PIPE_2,
       //LOAD_BURST_PIPE_1,
@@ -346,6 +361,27 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       True//False
     )
   )
+  val myOtherFullTempIgnoreDupCntCond = (
+    myH2dDoStallFifoThing.io.pop.valid
+    //myH2dDoStallFifoThing.io.pop.fire
+    && (
+      myH2dDoStallFifoThing.io.pop.cnt.asSInt
+      =/= (
+        RegNextWhen(
+          (myH2dDoStallFifoThing.io.pop.cnt + 1).asSInt,
+          //(myD2hPushStm.cnt + 1).asSInt,
+          cond=(
+            //myD2hPushStm.fire
+            myH2dDoStallFifoThing.io.pop.fire
+            //&& !myH2dPopThrowArea.myH2dThrowCond
+          ),
+          //cond=base.loH2dDoStallFifoThing.io.pop.fire,
+          ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
+        )
+        init(-2)
+      )
+    )
+  )
   val myFullTempIgnoreDupCntCond = (
     //(
     //  base.myFifoThingDoStall.head
@@ -353,13 +389,19 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     //)
     //&& 
     myH2dDoStallFifoThing.io.pop.valid
+    //myH2dDoStallFifoThing.io.pop.fire
     && (
       myH2dDoStallFifoThing.io.pop.cnt.asSInt
       =/= (
         RegNextWhen(
-          //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
-          (myD2hStm.cnt + 1).asSInt,
-          cond=myD2hStm.fire,
+          (myH2dDoStallFifoThing.io.pop.cnt + 1).asSInt,
+          //(myD2hPushStm.cnt + 1).asSInt,
+          cond=(
+            //myD2hPushStm.fire
+            myH2dDoStallFifoThing.io.pop.fire
+            //&& !myH2dPopThrowArea.myH2dThrowCond
+            && !myOtherFullTempIgnoreDupCntCond
+          ),
           //cond=base.loH2dDoStallFifoThing.io.pop.fire,
           ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
         )
@@ -380,23 +422,26 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     //  )
     //)
 
-    && (
-      myTempIgnoreDupCntCond
-      //&& RegNext(myTempIgnoreDupCntCond, init=False)
-    )
-    //&& History[Bool](
-    //  that=True,
-    //  when=(
-    //    //loH2dPopStm.fire
-    //    myD2hStm.fire
-    //  ),
-    //  length=(
-    //    2
-    //    //4
-    //    //3
-    //  ),
-    //  init=False,
-    //).last
+    //&& (
+    //  myTempIgnoreDupCntCond
+    //  //&& RegNext(myTempIgnoreDupCntCond, init=False)
+    //)
+    && History[Bool](
+      that=True,
+      when=(
+        myH2dPopStm.fire
+        //myD2hPushStm.fire
+        //myH2dDoStallFifoThing.io.pop.fire
+        //&& !myH2dPopThrowArea.myH2dThrowCond
+      ),
+      length=(
+        //2
+        //4
+        //3
+        5
+      ),
+      init=False,
+    ).last
   )
   def doIgnoreInvalidFifoThingPopCnt(
   ): Unit = {
@@ -405,27 +450,86 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       myH2dPopThrowArea.myH2dThrowCond := True
     }
   }
-  doIgnoreInvalidFifoThingPopCnt()
+  //doIgnoreInvalidFifoThingPopCnt()
+
+  def doNotIgnoreInvalidFifoThingPopCnt(
+  ): Unit = {
+    myH2dPopThrowArea.myH2dThrowCond := False
+  }
+
+  val rMyTempDoSaveCond = (
+    RegNext(
+      RegNext(
+        (
+          myH2dPopStm.fire
+          //&& !myFullTempIgnoreDupCntCond
+        ),
+        init=False
+      ),
+      init=False
+    )
+  )
+  val rHadRamWritePastTwoCycles = Vec.fill(2)(
+    RegNext(
+      ram.io.wrEn
+      || RegNext(ram.io.wrEn, init=False),
+      init=False
+    )
+  )
 
   switch (rState) {
     is (State.IDLE) {
+      doIgnoreInvalidFifoThingPopCnt()
       myFifoThingDoStall := False
-      myD2hStm.valid := False
+      myD2hPushStm.valid := False
       doPopH2dFifo()
 
-      rSavedH2dPayload := rDel2H2dPayload
-      myD2hStm.busPayload.src := rDel2H2dPayload.busPayload.src
+      //rSavedH2dPayload := rDel2H2dPayload
+      //myD2hPushStm.busPayload.src := rDel2H2dPayload.busPayload.src
 
       when (
         //RegNext(ram.io.rdEn, init=False)
+        //RegNext(
+        //  RegNext(
+        //    (
+        //      myH2dPopStm.fire
+        //      && !myFullTempIgnoreDupCntCond
+        //    ),
+        //    init=False
+        //  ),
+        //  init=False
+        //)
+        rMyTempDoSaveCond
+      ) {
+        rSavedH2dPayload := (
+          rH2dPayload
+          //rDel2H2dPayload
+          //RegNext(
+          //  rDel2H2dPayload,
+          //  init=rDel2H2dPayload.getZero
+          //)
+        )
+      }
+      when (
         RegNext(
           RegNext(myH2dPopStm.fire, init=False),
           init=False
         )
       ) {
-        rSavedH2dPayload := rDel2H2dPayload
-        myD2hStm.busPayload.src := rDel2H2dPayload.busPayload.src
-        myD2hStm.cnt := rDel2H2dPayload.cnt
+        myD2hPushStm.busPayload.src := (
+          //RegNext(
+            rH2dPayload.busPayload.src
+            //rDel2H2dPayload.busPayload.src//,
+          //  init=rDel2H2dPayload.busPayload.src.getZero
+          //)
+        )
+        myD2hPushStm.cnt := (
+          //RegNext(
+            rDel2H2dPayload.cnt//,
+            //rH2dPayload.cnt
+          //  init=rDel2H2dPayload.cnt.getZero,
+          //)
+        )
       }
       switch (
         //RegNext(ram.io.rdEn, init=False)
@@ -443,22 +547,15 @@ private[libcheesevoyage] case class LcvBusMemImpl(
         ) {
           // non-burst, load
           myH2dPopStm.ready := True
-          myD2hStm.valid := True
-          myD2hStm.busPayload.data := rdLineWord
+          myD2hPushStm.valid := True
+          myD2hPushStm.busPayload.data := rdLineWord
 
-          val rHadRamWritePastTwoCycles = Vec.fill(2)(
-            RegNext(
-              ram.io.wrEn
-              || RegNext(ram.io.wrEn, init=False),
-              init=False
-            )
-          )
           when (rHadRamWritePastTwoCycles.head) {
-            myD2hStm.valid := False
+            myD2hPushStm.valid := False
           }
           when (
             rHadRamWritePastTwoCycles.last
-            || !myD2hStm.ready
+            || !myD2hPushStm.ready
           ) {
             myH2dPopStm.ready := False
             myFifoThingDoStall := True
@@ -471,9 +568,9 @@ private[libcheesevoyage] case class LcvBusMemImpl(
         ) {
           // non-burst, store
           ram.io.wrEn := True
-          myD2hStm.valid := True
+          myD2hPushStm.valid := True
 
-          when (!myD2hStm.ready) {
+          when (!myD2hPushStm.ready) {
             myH2dPopStm.ready := False
             myFifoThingDoStall := True
             rState := State.STORE_NON_BURST_DO_STALL_PIPE_1
@@ -495,7 +592,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     }
     is (State.LOAD_NON_BURST_DO_STALL_PIPE_2) {
       rState := State.LOAD_NON_BURST_DO_STALL_PIPE_1
-      myD2hStm.valid := False
+      myD2hPushStm.valid := False
       //myLoD2hStm.valid := False
       myH2dPopStm.ready := False
       //lineAttrsRam.io.rdEn := False
@@ -509,16 +606,16 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       rState := State.LOAD_NON_BURST_DO_STALL
       //lineAttrsRam.io.rdEn := False
       ram.io.rdEn := True
-      myD2hStm.valid := False
+      myD2hPushStm.valid := False
       myH2dPopStm.ready := False
     }
     is (State.LOAD_NON_BURST_DO_STALL) {
       //lineAttrsRam.io.rdEn := False
       ram.io.rdEn := False
       myH2dPopStm.ready := False
-      myD2hStm.busPayload.data := rdLineWord
-      myD2hStm.valid := True
-      when (myD2hStm.fire) {
+      myD2hPushStm.busPayload.data := rdLineWord
+      myD2hPushStm.valid := True
+      when (myD2hPushStm.fire) {
         //base.myFifoThingDoStall.last := False
         myFifoThingDoStall := False
         rState := (
@@ -531,10 +628,11 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     }
     is (State.LOAD_NON_BURST_DO_STALL_POST) {
       ram.io.rdEn := False
-      rState := State.IDLE
+      //rState := State.IDLE
+      rState := State.WAIT_D2H_FIFO_EMPTY
     }
     is (State.STORE_NON_BURST_DO_STALL_PIPE_1) {
-      myD2hStm.valid := False
+      myD2hPushStm.valid := False
       //lineAttrsRam.io.rdEn := False
       ram.io.rdEn := False
       myH2dPopStm.ready := False
@@ -545,11 +643,18 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       //lineAttrsRam.io.rdEn := False
       ram.io.rdEn := False
       myH2dPopStm.ready := False
-      myD2hStm.valid := True
-      when (myD2hStm.ready) {
+      myD2hPushStm.valid := True
+      when (myD2hPushStm.ready) {
         //base.myFifoThingDoStall.last := False
-        rState := State.IDLE
+        //rState := State.IDLE
         //rSeenStateIdle := False
+        rState := State.WAIT_D2H_FIFO_EMPTY
+      }
+    }
+    is (State.WAIT_D2H_FIFO_EMPTY) {
+      ram.io.rdEn := False
+      when (!myD2hFifo.io.pop.valid) {
+        rState := State.IDLE
       }
     }
   }
