@@ -1,0 +1,161 @@
+package libcheesevoyage.bus.lcvBus
+
+import scala.collection.immutable
+import scala.collection.mutable._
+import spinal.core._
+import spinal.core.formal._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.lib.misc.pipeline._
+
+case class LcvBusDebursterConfig(
+  //mainCfg: LcvBusMainConfig,
+  //cacheCfg: Option[LcvBusCacheConfig],
+  loBusCfg: LcvBusConfig
+) {
+  require(loBusCfg.mainCfg.allowBurst)
+
+  //val loBusCfg = LcvBusConfig(
+  //  mainCfg=mainCfg,
+  //  cacheCfg=cacheCfg,
+  //)
+  val hiBusCfg = LcvBusConfig(
+    mainCfg=loBusCfg.mainCfg.mkCopyWithoutAllowingBurst(),
+    cacheCfg=loBusCfg.cacheCfg
+  )
+}
+
+
+case class LcvBusDebursterIo(
+  cfg: LcvBusDebursterConfig
+) extends Bundle {
+  val loBus = slave(LcvBusIo(cfg=cfg.loBusCfg))
+  val hiBus = master(LcvBusIo(cfg=cfg.hiBusCfg))
+}
+
+case class LcvBusDeburster(
+  cfg: LcvBusDebursterConfig
+) extends Component {
+  //--------
+  val io = LcvBusDebursterIo(cfg=cfg)
+  def loBusCfg = cfg.loBusCfg
+  //--------
+  object State
+  extends SpinalEnum(defaultEncoding=binaryOneHot) {
+    val
+      IDLE_OR_NON_BURST,
+      READ_BURST,
+      WRITE_BURST
+      = newElement();
+  }
+  val rState = (
+    Reg(State())
+    init(State.IDLE_OR_NON_BURST)
+  )
+  val rRdBurstCnt = (
+    Vec.fill(2)(
+      Reg(UInt(loBusCfg.burstCntWidth bits))
+      init(0x0)
+    )
+  )
+  val rWrBurstCnt = (
+    Vec.fill(2)(
+      Reg(UInt(loBusCfg.burstCntWidth bits))
+      init(0x0)
+    )
+  )
+  val rSavedRdBurstCnt = (
+    Vec.fill(2)(
+      Reg(UInt(loBusCfg.burstCntWidth bits))
+      init(0x0)
+    )
+  )
+  val rSavedWrBurstCnt = (
+    Vec.fill(2)(
+      Reg(UInt(loBusCfg.burstCntWidth bits))
+      init(0x0)
+    )
+  )
+
+  io.loBus.h2dBus.ready := False
+  io.loBus.d2hBus.valid := False
+  io.loBus.d2hBus.payload := (
+    RegNext(io.loBus.d2hBus.payload, init=io.loBus.d2hBus.payload.getZero)
+  )
+  io.hiBus.d2hBus.ready := False
+  io.hiBus.h2dBus.valid := False
+  io.hiBus.h2dBus.payload := (
+    RegNext(io.hiBus.h2dBus.payload, init=io.hiBus.h2dBus.payload.getZero)
+  )
+
+  switch (rState) {
+    is (State.IDLE_OR_NON_BURST) {
+      rSavedRdBurstCnt.foreach(item => {
+        item := io.loBus.h2dBus.burstCnt
+      })
+      rSavedWrBurstCnt.foreach(item => {
+        item := io.loBus.h2dBus.burstCnt
+      })
+      switch (
+        io.loBus.h2dBus.valid
+        ## io.loBus.h2dBus.burstFirst
+        ## io.loBus.h2dBus.isWrite
+      ) {
+        //is (M"10-") {
+        //  io.hiBus << io.loBus
+        //}
+        is (M"110") {
+          // io.loBus.h2dBus.valid, burstFirst, !isWrite
+          rState := State.READ_BURST
+        }
+        is (M"111") {
+          // io.loBus.h2dBus.valid, burstFirst, isWrite
+          rState := State.WRITE_BURST
+        }
+        default {
+          //io.hiBus << io.loBus
+          io.loBus.h2dBus.translateInto(
+            io.hiBus.h2dBus
+          )(
+            dataAssignment=(
+              outp, inp
+            ) => {
+              outp.mainNonBurstInfo := inp.mainNonBurstInfo
+            }
+          )
+          io.hiBus.d2hBus.translateInto(
+            io.loBus.d2hBus
+          )(
+            dataAssignment=(
+              outp, inp
+            ) => {
+              outp.mainNonBurstInfo := inp.mainNonBurstInfo
+              outp.mainBurstInfo := outp.mainBurstInfo.getZero
+            }
+          )
+        }
+      }
+    }
+    is (State.READ_BURST) {
+      switch (
+        io.loBus.h2dBus.valid
+        ## io.hiBus.h2dBus.ready
+        //## rRdBurstCnt.head.msb
+        //## rRdBurstCnt.last.msb
+      ) {
+        io.hiBus.h2dBus.valid := True
+      }
+      //when () {
+      //} otherwise {
+      //}
+    }
+    is (State.WRITE_BURST) {
+      //switch (
+      //  io.loBus.h2dBus.valid
+      //  ## io.hiBus.h2dBus.ready
+      //  ## rWrBurstCnt.msb
+      //) {
+      //}
+    }
+  }
+}

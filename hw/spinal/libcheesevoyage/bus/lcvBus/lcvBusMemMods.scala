@@ -50,7 +50,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
 ) extends Component {
   //--------
   def busCfg = cfg.busCfg
-  require(!busCfg.allowBurst)
+  //require(!busCfg.allowBurst)
   //--------
   val io = LcvBusMemIo(cfg=cfg)
   //--------
@@ -384,19 +384,19 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       myTempIgnoreDupCntCond
       //&& RegNext(myTempIgnoreDupCntCond, init=False)
     )
-    && History[Bool](
-      that=True,
-      when=(
-        //loH2dPopStm.fire
-        myD2hStm.fire
-      ),
-      length=(
-        //2
-        //4
-        3
-      ),
-      init=False,
-    ).last
+    //&& History[Bool](
+    //  that=True,
+    //  when=(
+    //    //loH2dPopStm.fire
+    //    myD2hStm.fire
+    //  ),
+    //  length=(
+    //    2
+    //    //4
+    //    //3
+    //  ),
+    //  init=False,
+    //).last
   )
   def doIgnoreInvalidFifoThingPopCnt(
   ): Unit = {
@@ -563,6 +563,27 @@ case class LcvBusMem(
   val myDeburster = LcvBusDeburster(cfg=LcvBusDebursterConfig(
     loBusCfg=cfg.busCfg
   ))
+  io.bus <> myDeburster.io.loBus
+  //myDeburster.io.hiBus <> myMemImpl.io.bus
+  myDeburster.io.hiBus.h2dBus.translateInto(
+    myMemImpl.io.bus.h2dBus
+  )(
+    dataAssignment=(
+      outp, inp
+    ) => {
+      outp.mainNonBurstInfo := inp.mainNonBurstInfo
+      outp.mainBurstInfo := outp.mainBurstInfo.getZero
+    }
+  )
+  myMemImpl.io.bus.d2hBus.translateInto(
+    myDeburster.io.hiBus.d2hBus
+  )(
+    dataAssignment=(
+      outp, inp
+    ) => {
+      outp.mainNonBurstInfo := inp.mainNonBurstInfo
+    }
+  )
   //io.bus <> impl.io.bus
 }
 
