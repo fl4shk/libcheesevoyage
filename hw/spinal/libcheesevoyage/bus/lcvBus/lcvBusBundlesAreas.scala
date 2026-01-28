@@ -50,7 +50,7 @@ case class LcvBusMainConfig(
       dataWidth=this.dataWidth,
       addrWidth=this.addrWidth,
       allowBurst=true,
-      burstAlwaysMaxSize=true,
+      burstAlwaysMaxSize=this.burstAlwaysMaxSize,
       srcWidth=this.srcWidth
     )
   )

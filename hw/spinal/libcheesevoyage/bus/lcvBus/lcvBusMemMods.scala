@@ -50,7 +50,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
 ) extends Component {
   //--------
   def busCfg = cfg.busCfg
-  //require(!busCfg.allowBurst)
+  require(!busCfg.allowBurst)
   //--------
   val io = LcvBusMemIo(cfg=cfg)
   //--------
@@ -554,12 +554,16 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     }
   }
 }
+
 case class LcvBusMem(
   cfg: LcvBusMemConfig
 ) extends Component {
   val io = LcvBusMemIo(cfg=cfg)
-  val impl = LcvBusMemImpl(cfg=cfg)
-  io.bus <> impl.io.bus
+  val myMemImpl = LcvBusMemImpl(cfg=cfg)
+  val myDeburster = LcvBusDeburster(cfg=LcvBusDebursterConfig(
+    loBusCfg=cfg.busCfg
+  ))
+  //io.bus <> impl.io.bus
 }
 
 case class LcvBusMemSlowNonBurst(
