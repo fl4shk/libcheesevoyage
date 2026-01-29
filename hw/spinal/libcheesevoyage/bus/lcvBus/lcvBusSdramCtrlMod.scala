@@ -494,6 +494,20 @@ case class LcvBusSdramCtrl(
     Reg(cloneOf(io.bus.h2dBus.payload))
     init(io.bus.h2dBus.payload.getZero)
   )
+  val myCalcWrShiftedDataAndByteEn = LcvBusCalcWrShiftedDataAndByteEn(
+    busCfg=cfg.busCfg
+  )
+  myCalcWrShiftedDataAndByteEn.io.h2dPayload := (
+    myCalcWrShiftedDataAndByteEn.io.h2dPayload.getZero
+  )
+  val rSavedWrByteEn = (
+    Reg(UInt(cfg.busCfg.byteEnWidth bits))
+    init(0x0)
+  )
+  val rSavedWrShiftedData = (
+    Reg(UInt(cfg.busCfg.dataWidth bits))
+    init(0x0)
+  )
   val rTempAddr = (
     Reg(cloneOf(rSavedH2dSendData.addr))
     init(rSavedH2dSendData.addr.getZero)
@@ -989,6 +1003,18 @@ case class LcvBusSdramCtrl(
               init=h2dFifo.io.pop.payload.getZero,
             ),
           )
+          myCalcWrShiftedDataAndByteEn.io.h2dPayload := (
+            RegNext(
+              next=h2dFifo.io.pop.payload,
+              init=h2dFifo.io.pop.payload.getZero,
+            ),
+          )
+          rSavedWrByteEn := (
+            myCalcWrShiftedDataAndByteEn.io.byteEn
+          )
+          rSavedWrShiftedData := (
+            myCalcWrShiftedDataAndByteEn.io.shiftedData
+          )
           rHaveBurst := (
             //rSavedH2dSendData.burstFirst
             RegNext(
@@ -1070,39 +1096,9 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdNop()
 
       rH2dFifoPopReady := False
-      //rSavedH2dSendData := (
-      //  //io.bus.h2dBus.payload
-      //  h2dFifo.io.pop.payload
-      //)
-      //switch (
-      //  rSavedH2dSendData.burstFirst
-      //  ## rSavedH2dSendData.isWrite
-      //) {
-      //  is (B"00") {
-      //    // !burstFirst, !isWrite
-      //  }
-      //  is (B"01") {
-      //    // !burstFirst, isWrite
-      //  }
-      //  is (B"10") {
-      //    // burstFirst, !isWrite
-      //  }
-      //  is (B"11") {
-      //    // burstFirst, isWrite
-      //  }
-      //}
-      //rHaveBurst := rSavedH2dSendData.burstFirst
       when (!rSavedH2dSendData.isWrite) {
         rState := State.SEND_READ_0
       } otherwise {
-        //when (!rBusBurstOuterCnt.msb) {
-        //  rH2dFifoPopReady := True
-        //}
-        //rH2dFifoPopReady := True
-        //rSavedH2dSendData := (
-        //  //io.bus.h2dBus.payload
-        //  h2dFifo.io.pop.payload
-        //)
         rState := State.SEND_WRITE_0
       }
     }
@@ -1213,10 +1209,14 @@ case class LcvBusSdramCtrl(
         column=rTempAddr(myColumnSliceRange),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
-        wrData=rSavedH2dSendData.data(15 downto 0),
+        wrData=(
+          //rSavedH2dSendData.data(15 downto 0)
+          rSavedWrShiftedData(15 downto 0)
+        ),
         wrByteEn=(
           //rSavedH2dSendData.byteEn(1 downto 0)
-          U"2'b11"
+          //U"2'b11"
+          rSavedWrByteEn(1 downto 0)
         ),
         firstWrite=true,
       )
@@ -1245,10 +1245,14 @@ case class LcvBusSdramCtrl(
         column=rTempAddr(myColumnSliceRange),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
-        wrData=rSavedH2dSendData.data(31 downto 16),
+        wrData=(
+          //rSavedH2dSendData.data(31 downto 16)
+          rSavedWrShiftedData(31 downto 16)
+        ),
         wrByteEn=(
           //rSavedH2dSendData.byteEn(3 downto 2)
-          U"2'b11"
+          //U"2'b11"
+          rSavedWrByteEn(1 downto 0)
         ),
         firstWrite=false,
       )
@@ -1275,6 +1279,9 @@ case class LcvBusSdramCtrl(
         //io.bus.h2dBus.payload
         h2dFifo.io.pop.payload
       )
+      myCalcWrShiftedDataAndByteEn.io.h2dPayload := h2dFifo.io.pop.payload
+      rSavedWrByteEn := myCalcWrShiftedDataAndByteEn.io.byteEn
+      rSavedWrShiftedData := myCalcWrShiftedDataAndByteEn.io.shiftedData
       when (!rHaveBurst) {
         //rSavedH2dSendData.byteEn := 0x0
         ////when (rChipBurstCnt.msb) {
@@ -1298,10 +1305,14 @@ case class LcvBusSdramCtrl(
         column=rTempAddr(myColumnSliceRange),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
-        wrData=rSavedH2dSendData.data(15 downto 0),
+        wrData=(
+          //rSavedH2dSendData.data(15 downto 0)
+          rSavedWrShiftedData(15 downto 0)
+        ),
         wrByteEn=(
           //rSavedH2dSendData.byteEn(1 downto 0)
-          U"2'b11"
+          //U"2'b11"
+          rSavedWrByteEn(1 downto 0)
         ),
         firstWrite=false,
       )

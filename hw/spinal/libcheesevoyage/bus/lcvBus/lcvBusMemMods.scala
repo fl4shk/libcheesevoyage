@@ -777,10 +777,20 @@ case class LcvBusMemSlowNonBurst(
 
   ram.io.wrEn := False
   ram.io.wrAddr := io.bus.h2dBus.addr(myRamAddrRange)
-  ram.io.wrData := io.bus.h2dBus.data.asBits
+
+  val myCalcWrShiftedDataAndByteEn = LcvBusCalcWrShiftedDataAndByteEn(
+    busCfg=busCfg
+  )
+  myCalcWrShiftedDataAndByteEn.io.h2dPayload := io.bus.h2dBus.payload
+
+  ram.io.wrData := (
+    //io.bus.h2dBus.data.asBits
+    myCalcWrShiftedDataAndByteEn.io.shiftedData.asBits
+  )
   ram.io.wrByteEn := (
     //io.bus.h2dBus.byteEn.asBits
-    B(ram.io.wrByteEn.getWidth bits, default -> True)
+    //B(ram.io.wrByteEn.getWidth bits, default -> True)
+    myCalcWrShiftedDataAndByteEn.io.byteEn.asBits
   )
   //val rRamWrEn = Reg(Bool(), init=False)
   //val rRamWrAddr = (
