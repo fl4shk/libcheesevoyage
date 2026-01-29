@@ -344,7 +344,7 @@ case class LcvBusDeburster(
         rSavedWrLoH2dPayload.mainNonBurstInfo 
       )
       def rHiH2dBurstCnt = rWrBurstCnt(0)
-      io.hiBus.h2dBus.addr := rSavedRdLoH2dPayload.burstAddr(
+      io.hiBus.h2dBus.addr := rSavedWrLoH2dPayload.burstAddr(
         rHiH2dBurstCnt(rHiH2dBurstCnt.high - 1 downto 0).getZero,
         incrBurstCnt=false,
       )
@@ -364,7 +364,7 @@ case class LcvBusDeburster(
         io.loBus.h2dBus.translateInto(io.hiBus.h2dBus)(
           dataAssignment=(outp, inp) => {
             outp.mainNonBurstInfo := inp.mainNonBurstInfo
-            outp.addr := rSavedRdLoH2dPayload.burstAddr(
+            outp.addr := rSavedWrLoH2dPayload.burstAddr(
               rHiH2dBurstCnt(rHiH2dBurstCnt.high - 1 downto 0),
               incrBurstCnt=false,
             )
