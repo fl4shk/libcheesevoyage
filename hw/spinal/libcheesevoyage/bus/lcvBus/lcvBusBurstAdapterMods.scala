@@ -52,7 +52,6 @@ case class LcvBusDeburster(
       WRITE_BURST_WAIT_FIRST_LO_H2D_FIRE,
       WRITE_BURST_WAIT_FIRST_LO_H2D_FIRE_POST,
       WRITE_BURST_WAIT_FIRST_HI_H2D_FIRE,
-      //WRITE_BURST_PIPE_1,
       WRITE_BURST
       = newElement();
   }

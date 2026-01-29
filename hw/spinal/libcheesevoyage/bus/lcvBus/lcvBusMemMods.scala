@@ -89,6 +89,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   val myD2hPushStm = Stream(
     LcvBusDoStallFifoThingPayload(
       LcvBusD2hPayload(cfg=busCfg),
+      byteEnWidth=cfg.busCfg.byteEnWidth,
     )
   )
   val myD2hFifo = StreamFifo(
@@ -294,13 +295,15 @@ private[libcheesevoyage] case class LcvBusMemImpl(
         init=myH2dPopPayload.data.getZero,
       )
     ),
-    byteEn=Some(
-      RegNext(
+    byteEn=(
+      Some(
         RegNext(
-          myH2dPopPayload.byteEn,
-          init=myH2dPopPayload.byteEn.getZero
-        ),
-        init=myH2dPopPayload.byteEn.getZero,
+          RegNext(
+            myH2dPopStm.byteEn,
+            init=myH2dPopStm.byteEn.getZero
+          ),
+          init=myH2dPopStm.byteEn.getZero,
+        )
       ),
     ),
     setEn=false,
@@ -775,7 +778,10 @@ case class LcvBusMemSlowNonBurst(
   ram.io.wrEn := False
   ram.io.wrAddr := io.bus.h2dBus.addr(myRamAddrRange)
   ram.io.wrData := io.bus.h2dBus.data.asBits
-  ram.io.wrByteEn := io.bus.h2dBus.byteEn.asBits
+  ram.io.wrByteEn := (
+    //io.bus.h2dBus.byteEn.asBits
+    B(ram.io.wrByteEn.getWidth bits, default -> True)
+  )
   //val rRamWrEn = Reg(Bool(), init=False)
   //val rRamWrAddr = (
   //  Reg(cloneOf(ram.io.wrAddr), init=ram.io.wrAddr.getZero)
@@ -1029,7 +1035,10 @@ case class LcvBusMemSlowNonBurst(
         )(myRamAddrRange)
       )
       ram.io.wrData := myH2dPayload.data.asBits
-      ram.io.wrByteEn := myH2dPayload.byteEn.asBits
+      ram.io.wrByteEn := (
+        //myH2dPayload.byteEn.asBits
+        B(ram.io.wrByteEn.getWidth bits, default -> True)
+      )
 
       when (io.bus.h2dBus.fire) {
         ram.io.wrEn := True
@@ -1110,6 +1119,7 @@ object LcvBusMemTestConfig {
         allowBurst=true,
         burstAlwaysMaxSize=true,
         srcWidth=1,
+        //haveByteEn=true,
       ),
       cacheCfg=None,
     ),

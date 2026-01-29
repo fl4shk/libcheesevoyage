@@ -137,6 +137,7 @@ case class LcvBusSdramCtrlConfig(
         //None
         1
       ),
+      //haveByteEn=true,
     ),
     //mesiCfg=LcvBusMesiConfig(
     //  numCpus=1
@@ -1213,7 +1214,10 @@ case class LcvBusSdramCtrl(
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(15 downto 0),
-        wrByteEn=rSavedH2dSendData.byteEn(1 downto 0),
+        wrByteEn=(
+          //rSavedH2dSendData.byteEn(1 downto 0)
+          U"2'b11"
+        ),
         firstWrite=true,
       )
       rWrNopWaitCnt := myWrNopWaitCntNumCycles
@@ -1242,7 +1246,10 @@ case class LcvBusSdramCtrl(
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(31 downto 16),
-        wrByteEn=rSavedH2dSendData.byteEn(3 downto 2),
+        wrByteEn=(
+          //rSavedH2dSendData.byteEn(3 downto 2)
+          U"2'b11"
+        ),
         firstWrite=false,
       )
       when (
@@ -1269,11 +1276,11 @@ case class LcvBusSdramCtrl(
         h2dFifo.io.pop.payload
       )
       when (!rHaveBurst) {
-        rSavedH2dSendData.byteEn := 0x0
-        //when (rChipBurstCnt.msb) {
-        //  //rSavedH2dSendData.burstLast := True
-        //  rTempBurstLast := True
-        //}
+        //rSavedH2dSendData.byteEn := 0x0
+        ////when (rChipBurstCnt.msb) {
+        ////  //rSavedH2dSendData.burstLast := True
+        ////  rTempBurstLast := True
+        ////}
         when (rChipBurstCnt.msb) {
           rSavedH2dSendData.burstLast := True
           //rTempBurstLast := True
@@ -1292,7 +1299,10 @@ case class LcvBusSdramCtrl(
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(15 downto 0),
-        wrByteEn=rSavedH2dSendData.byteEn(1 downto 0),
+        wrByteEn=(
+          //rSavedH2dSendData.byteEn(1 downto 0)
+          U"2'b11"
+        ),
         firstWrite=false,
       )
       rH2dFifoPopReady := False
