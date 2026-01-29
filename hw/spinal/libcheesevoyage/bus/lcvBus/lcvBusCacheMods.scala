@@ -143,7 +143,7 @@ case class LcvBusCalcWrShiftedDataAndByteEn(
           )
         ) >> busCfg.byteSizeWidth
       )
-      // myByteSize represents the value of `byteSize`
+      // myByteSize represents the value of `byteSize + 1`
       val myByteSizeMask = (
         (1 << (myByteSize + 1)) - 1
       )
@@ -210,12 +210,16 @@ case class LcvBusDoStallFifoThingPayload[
   BusPayloadT <: Data
 ](
   busPayloadType: HardType[BusPayloadT],
-  byteEnWidth: Int,
+  optByteEnWidth: Option[Int],
   //cfg: LcvBusCacheBusPairConfig,
 ) extends Bundle {
   def myCntWidth = 2
   val cnt = UInt(myCntWidth bits)
-  val byteEn = UInt(byteEnWidth bits)
+  val byteEn = (
+    optByteEnWidth != None
+  ) generate (
+    UInt(optByteEnWidth.get bits)
+  )
   val busPayload = busPayloadType()
   //val h2dPayload = LcvBusH2dPayload(cfg=cfg.loBusCfg)
   //def addr = h2dPayload.addr
@@ -233,14 +237,14 @@ case class LcvBusDoStallFifoThingIo(
     //LcvBusH2dPayload(cfg=cfg.loBusCfg)
     LcvBusDoStallFifoThingPayload(
       LcvBusH2dPayload(cfg=busCfg),
-      byteEnWidth=busCfg.byteEnWidth,
+      optByteEnWidth=None,
     )
   ))
   val pop = master(Stream(
     //LcvBusH2dPayload(cfg=cfg.loBusCfg)
     LcvBusDoStallFifoThingPayload(
       LcvBusH2dPayload(cfg=busCfg),
-      byteEnWidth=busCfg.byteEnWidth,
+      optByteEnWidth=Some(busCfg.byteEnWidth),
     )
   ))
   //val doStallCacheMiss = in(Bool())
@@ -266,7 +270,7 @@ case class LcvBusDoStallFifoThing(
     StreamFifo(
       dataType=LcvBusDoStallFifoThingPayload(
         LcvBusH2dPayload(cfg=busCfg),
-        byteEnWidth=busCfg.byteEnWidth,
+        optByteEnWidth=None,
       ),
       depth=fifoDepthMain,
       latency=(
@@ -283,7 +287,7 @@ case class LcvBusDoStallFifoThing(
   val subFifo = StreamFifo(
     dataType=LcvBusDoStallFifoThingPayload(
       LcvBusH2dPayload(cfg=busCfg),
-      byteEnWidth=busCfg.byteEnWidth,
+      optByteEnWidth=None,
     ),
     depth=fifoDepthSub,
     latency=(
@@ -344,12 +348,22 @@ case class LcvBusDoStallFifoThing(
     busCfg=busCfg
   )
 
-  val myPopStm = cloneOf(io.pop)
+  val myPopStm = (
+    Stream(
+      LcvBusDoStallFifoThingPayload(
+        LcvBusH2dPayload(cfg=busCfg),
+        optByteEnWidth=None,
+      )
+    )
+    //cloneOf(io.pop)
+  )
   myPopStm.valid := False
   myPopStm.payload := myPopStm.payload.getZero
   myPopStm.translateInto(io.pop)(
     dataAssignment=(outp, inp) => {
-      outp := inp
+      //outp := inp
+      outp.cnt := inp.cnt
+      outp.busPayload := inp.busPayload
       outp.busPayload.data.allowOverride
       outp.byteEn.allowOverride
       myCalcWrShiftedDataAndByteEn.io.h2dPayload := inp.busPayload
@@ -633,7 +647,7 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   val myLoD2hStm = Stream(
     LcvBusDoStallFifoThingPayload(
       LcvBusD2hPayload(cfg=cfg.loBusCfg),
-      byteEnWidth=cfg.loBusCfg.byteEnWidth,
+      optByteEnWidth=None,
     )
   )
   myLoD2hStm.translateInto(

@@ -89,7 +89,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   val myD2hPushStm = Stream(
     LcvBusDoStallFifoThingPayload(
       LcvBusD2hPayload(cfg=busCfg),
-      byteEnWidth=cfg.busCfg.byteEnWidth,
+      optByteEnWidth=None,
     )
   )
   val myD2hFifo = StreamFifo(
@@ -1044,11 +1044,13 @@ case class LcvBusMemSlowNonBurst(
           incrBurstCnt=false,
         )(myRamAddrRange)
       )
-      ram.io.wrData := myH2dPayload.data.asBits
-      ram.io.wrByteEn := (
-        //myH2dPayload.byteEn.asBits
-        B(ram.io.wrByteEn.getWidth bits, default -> True)
-      )
+      //ram.io.wrData := (
+      //  myH2dPayload.data.asBits
+      //)
+      //ram.io.wrByteEn := (
+      //  //myH2dPayload.byteEn.asBits
+      //  //B(ram.io.wrByteEn.getWidth bits, default -> True)
+      //)
 
       when (io.bus.h2dBus.fire) {
         ram.io.wrEn := True

@@ -44,28 +44,28 @@ case class LcvBusMainConfig(
   allowBurst: Boolean,
   burstAlwaysMaxSize: Boolean,
   srcWidth: Int, //Option[Int],
-  //haveByteEn: Boolean,
+  haveByteEn: Boolean,
 ) {
-  //def mkCopyWithByteEn(): LcvBusMainConfig = (
-  //  LcvBusMainConfig(
-  //    dataWidth=this.dataWidth,
-  //    addrWidth=this.addrWidth,
-  //    allowBurst=this.allowBurst,
-  //    burstAlwaysMaxSize=this.burstAlwaysMaxSize,
-  //    srcWidth=this.srcWidth,
-  //    haveByteEn=true,
-  //  )
-  //)
-  //def mkCopyWithoutByteEn(): LcvBusMainConfig = (
-  //  LcvBusMainConfig(
-  //    dataWidth=this.dataWidth,
-  //    addrWidth=this.addrWidth,
-  //    allowBurst=this.allowBurst,
-  //    burstAlwaysMaxSize=this.burstAlwaysMaxSize,
-  //    srcWidth=this.srcWidth,
-  //    haveByteEn=false,
-  //  )
-  //)
+  def mkCopyWithByteEn(): LcvBusMainConfig = (
+    LcvBusMainConfig(
+      dataWidth=this.dataWidth,
+      addrWidth=this.addrWidth,
+      allowBurst=this.allowBurst,
+      burstAlwaysMaxSize=this.burstAlwaysMaxSize,
+      srcWidth=this.srcWidth,
+      haveByteEn=true,
+    )
+  )
+  def mkCopyWithoutByteEn(): LcvBusMainConfig = (
+    LcvBusMainConfig(
+      dataWidth=this.dataWidth,
+      addrWidth=this.addrWidth,
+      allowBurst=this.allowBurst,
+      burstAlwaysMaxSize=this.burstAlwaysMaxSize,
+      srcWidth=this.srcWidth,
+      haveByteEn=false,
+    )
+  )
   def mkCopyWithAllowingBurst(): LcvBusMainConfig = (
     LcvBusMainConfig(
       dataWidth=this.dataWidth,
@@ -73,7 +73,7 @@ case class LcvBusMainConfig(
       allowBurst=true,
       burstAlwaysMaxSize=this.burstAlwaysMaxSize,
       srcWidth=this.srcWidth,
-      //haveByteEn=this.haveByteEn,
+      haveByteEn=this.haveByteEn,
     )
   )
   def mkCopyWithoutAllowingBurst(): LcvBusMainConfig = (
@@ -83,7 +83,7 @@ case class LcvBusMainConfig(
       allowBurst=false,
       burstAlwaysMaxSize=false,
       srcWidth=this.srcWidth,
-      //haveByteEn=this.haveByteEn,
+      haveByteEn=this.haveByteEn,
     )
   )
 
@@ -211,7 +211,7 @@ case class LcvBusConfig(
   def maxBurstSizeMinus1 = (
     (1 << burstCntWidth) - 1
   )
-  //def haveByteEn = mainCfg.haveByteEn
+  def haveByteEn = mainCfg.haveByteEn
 
   def burstAddr(
     someAddr: UInt,
@@ -487,12 +487,12 @@ case class LcvBusH2dPayloadMainNonBurstInfo(
 ) extends Bundle {
   val addr = UInt(cfg.addrWidth bits)
   val data = UInt(cfg.dataWidth bits)
-  //val byteEn = (cfg.haveByteEn) generate (UInt(cfg.byteEnWidth bits))
+  val byteEn = (cfg.haveByteEn) generate (UInt(cfg.byteEnWidth bits))
   //val byteShift = (!cfg.haveByteEn) generate (UInt(cfg.byteEnWidth bits))
   //val byteMask = (!cfg.haveByteEn) generate (UInt(cfg.byteEnWidth bits))
   //val haveFullWord = (!cfg.haveByteEn) generate (Bool())
-  val byteSize = UInt(cfg.byteSizeWidth bits)
-  val haveFullWord = Bool()
+  val byteSize = (!cfg.haveByteEn) generate (UInt(cfg.byteSizeWidth bits))
+  val haveFullWord = (!cfg.haveByteEn) generate (Bool())
   val isWrite = Bool()
   val src = UInt(cfg.srcWidth bits)
 }
@@ -523,7 +523,7 @@ case class LcvBusH2dPayload(
   val mainNonBurstInfo = LcvBusH2dPayloadMainNonBurstInfo(cfg=cfg)
   def addr = mainNonBurstInfo.addr
   def data = mainNonBurstInfo.data
-  //def byteEn = mainNonBurstInfo.byteEn
+  def byteEn = mainNonBurstInfo.byteEn
   def byteSize = mainNonBurstInfo.byteSize
   def haveFullWord = mainNonBurstInfo.haveFullWord
   def isWrite = mainNonBurstInfo.isWrite
