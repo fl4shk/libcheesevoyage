@@ -129,10 +129,9 @@ case class LcvBusDoStallFifoThingPayload[
 ](
   busPayloadType: HardType[BusPayloadT],
   //cfg: LcvBusCacheBusPairConfig,
-  cntWidth: Int,
 ) extends Bundle {
-  //def myCntWidth = 2
-  val cnt = UInt(cntWidth bits)
+  def myCntWidth = 2
+  val cnt = UInt(myCntWidth bits)
   val busPayload = busPayloadType()
   //val h2dPayload = LcvBusH2dPayload(cfg=cfg.loBusCfg)
   //def addr = h2dPayload.addr
@@ -144,22 +143,15 @@ case class LcvBusDoStallFifoThingPayload[
 
 case class LcvBusDoStallFifoThingIo(
   //cfg: LcvBusCacheBusPairConfig
-  busCfg: LcvBusConfig,
-  cntWidth: Int,
+  busCfg: LcvBusConfig
 ) extends Bundle {
   val push = slave(Stream(
     //LcvBusH2dPayload(cfg=cfg.loBusCfg)
-    LcvBusDoStallFifoThingPayload(
-      LcvBusH2dPayload(cfg=busCfg),
-      cntWidth=cntWidth,
-    )
+    LcvBusDoStallFifoThingPayload(LcvBusH2dPayload(cfg=busCfg))
   ))
   val pop = master(Stream(
     //LcvBusH2dPayload(cfg=cfg.loBusCfg)
-    LcvBusDoStallFifoThingPayload(
-      LcvBusH2dPayload(cfg=busCfg),
-      cntWidth=cntWidth,
-    )
+    LcvBusDoStallFifoThingPayload(LcvBusH2dPayload(cfg=busCfg))
   ))
   //val doStallCacheMiss = in(Bool())
   //val doStallNotYetD2hFire = in(Bool())
@@ -174,12 +166,8 @@ case class LcvBusDoStallFifoThingIo(
 case class LcvBusDoStallFifoThing(
   //cfg: LcvBusCacheBusPairConfig
   busCfg: LcvBusConfig,
-  cntWidth: Int=2,
 ) extends Component {
-  val io = LcvBusDoStallFifoThingIo(
-    busCfg=busCfg,
-    cntWidth=cntWidth,
-  )
+  val io = LcvBusDoStallFifoThingIo(busCfg=busCfg)
 
   def fifoDepthMain = 2//8//2//8
   def fifoDepthSub = 4//8//4//5//4//5 //fifoDepthMain 4
@@ -187,8 +175,7 @@ case class LcvBusDoStallFifoThing(
   def mkMainFifo() = (
     StreamFifo(
       dataType=LcvBusDoStallFifoThingPayload(
-        LcvBusH2dPayload(cfg=busCfg),
-        cntWidth=cntWidth,
+        LcvBusH2dPayload(cfg=busCfg)
       ),
       depth=fifoDepthMain,
       latency=(
@@ -204,8 +191,7 @@ case class LcvBusDoStallFifoThing(
   )
   val subFifo = StreamFifo(
     dataType=LcvBusDoStallFifoThingPayload(
-      LcvBusH2dPayload(cfg=busCfg),
-      cntWidth=cntWidth,
+      LcvBusH2dPayload(cfg=busCfg)
     ),
     depth=fifoDepthSub,
     latency=(
@@ -529,8 +515,7 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   )
   val myLoD2hStm = Stream(
     LcvBusDoStallFifoThingPayload(
-      LcvBusD2hPayload(cfg=cfg.loBusCfg),
-      cntWidth=loH2dDoStallFifoThing.cntWidth,
+      LcvBusD2hPayload(cfg=cfg.loBusCfg)
     )
   )
   myLoD2hStm.translateInto(
@@ -2057,8 +2042,6 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       }
       when (io.hiBus.d2hBus.valid) {
         rHiD2hReady := True
-      }
-      when (io.hiBus.d2hBus.fire) {
         rHadHiD2hFinish := True
       }
       when (rHadHiH2dFinish && rHadHiD2hFinish) {

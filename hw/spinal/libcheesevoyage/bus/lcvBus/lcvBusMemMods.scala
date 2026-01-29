@@ -66,7 +66,6 @@ private[libcheesevoyage] case class LcvBusMemImpl(
 
   val myH2dDoStallFifoThing = LcvBusDoStallFifoThing(
     busCfg=busCfg,
-    cntWidth=2,
   )
   //myH2dDoStallFifoThing.io.push << io.bus.h2dBus
   io.bus.h2dBus.translateInto(
@@ -90,7 +89,6 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   val myD2hPushStm = Stream(
     LcvBusDoStallFifoThingPayload(
       LcvBusD2hPayload(cfg=busCfg),
-      cntWidth=myH2dDoStallFifoThing.cntWidth,
     )
   )
   val myD2hFifo = StreamFifo(
