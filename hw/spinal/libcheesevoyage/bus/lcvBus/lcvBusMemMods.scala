@@ -23,6 +23,7 @@ case class LcvBusMemConfig(
   arrRamStyleAltera: String="no_rw_check, M10K",
   arrRamStyleXilinx: String="block",
   arrRwAddrCollisionXilinx: String="",
+  busD2hFifoLatency: Int=2,
 ) {
   val ramCfg = RamSdpPipeConfig(
     wordType=Bits(busCfg.dataWidth bits),
@@ -96,8 +97,10 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     dataType=(
       cloneOf(io.bus.d2hBus.payload)
     ),
-    depth=(busCfg.maxBurstSizeMinus1 + 1),
-    latency=2,
+    depth=(
+      busCfg.maxBurstSizeMinus1 + 1
+    ),
+    latency=cfg.busD2hFifoLatency,
     forFMax=true,
   )
   io.bus.d2hBus << myD2hFifo.io.pop 
@@ -452,10 +455,10 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   }
   //doIgnoreInvalidFifoThingPopCnt()
 
-  def doNotIgnoreInvalidFifoThingPopCnt(
-  ): Unit = {
-    myH2dPopThrowArea.myH2dThrowCond := False
-  }
+  //def doNotIgnoreInvalidFifoThingPopCnt(
+  //): Unit = {
+  //  myH2dPopThrowArea.myH2dThrowCond := False
+  //}
 
   val rMyTempDoSaveCond = (
     RegNext(
