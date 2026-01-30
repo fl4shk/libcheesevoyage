@@ -288,11 +288,11 @@ case class LcvBusDoStallFifoThing(
   myPopStm.valid := False
   myPopStm.payload := myPopStm.payload.getZero
   if (!busCfg.haveByteEn) {
-     myPopStm.translateInto(myH2dToWrByteEnStmAdapter.io.loH2dBus)(
+    myPopStm.translateInto(myH2dToWrByteEnStmAdapter.io.loH2dBus)(
       dataAssignment=(outp, inp) => {
         outp := inp.busPayload
       }
-     )
+    )
     myH2dToWrByteEnStmAdapter.io.hiH2dBus.translateInto(io.pop)(
       dataAssignment=(outp, inp) => {
         outp.busPayload := inp

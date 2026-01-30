@@ -21,11 +21,12 @@ case class CalcLcvBusH2dWrShiftedDataAndByteEn(
   busCfg: LcvBusConfig
 ) extends Component {
   val io = CalcLcvBusH2dWrShiftedDataAndByteEnIoIo(busCfg=busCfg)
-  io.byteEn := U(io.byteEn.getWidth bits, default -> True)
-  io.shiftedData := io.h2dPayload.data
+  //io.byteEn := U(io.byteEn.getWidth bits, default -> True)
+  //io.shiftedData := io.h2dPayload.data
   switch (
-    io.h2dPayload.haveFullWord
-    ## io.h2dPayload.byteSize
+    //io.h2dPayload.haveFullWord
+    //## 
+    io.h2dPayload.byteSize
     ## io.h2dPayload.addr(busCfg.byteSizeWidth - 1 downto 0)
   ) {
     for (idx <- 0 until (1 << (busCfg.byteSizeWidth * 2))) {
@@ -40,8 +41,12 @@ case class CalcLcvBusH2dWrShiftedDataAndByteEn(
         ) >> busCfg.byteSizeWidth
       )
       // myByteSize represents the value of `byteSize + 1`
+      val tempByteSizeMask = (
+        //(1 << (myByteSize + 1)) - 1
+        ((1 << (myByteSize + 3)) / 8).toInt
+      )
       val myByteSizeMask = (
-        (1 << (myByteSize + 1)) - 1
+        tempByteSizeMask | ((1 << tempByteSizeMask) - 1)
       )
       val myByteSizeShiftedMask = (
         myByteSizeMask << myAddrLo
@@ -76,15 +81,16 @@ case class CalcLcvBusH2dWrShiftedDataAndByteEn(
         //).asUInt.resize(io.shiftedData.getWidth)
       }
     }
-    default {
-      //io.byteEn := 0x0
-      io.byteEn := U(io.byteEn.getWidth bits, default -> True)
-      //io.shiftedData := io.h2dPayload.data
-    }
+    //default {
+    //  //io.byteEn := 0x0
+    //  io.byteEn := U(io.byteEn.getWidth bits, default -> True)
+    //  //io.shiftedData := io.h2dPayload.data
+    //}
   }
   switch (
-    io.h2dPayload.haveFullWord
-    ## io.h2dPayload.addr(busCfg.byteSizeWidth - 1 downto 0)
+    //io.h2dPayload.haveFullWord
+    //## 
+    io.h2dPayload.addr(busCfg.byteSizeWidth - 1 downto 0)
   ) {
     for (idx <- 0 until (1 << busCfg.byteSizeWidth)) {
       val myAddrLo = idx & ((1 << busCfg.byteSizeWidth) - 1)
@@ -96,9 +102,9 @@ case class CalcLcvBusH2dWrShiftedDataAndByteEn(
         ).asUInt.resize(io.shiftedData.getWidth)
       }
     }
-    default {
-      io.shiftedData := io.h2dPayload.data
-    }
+    //default {
+    //  io.shiftedData := io.h2dPayload.data
+    //}
   }
 }
 

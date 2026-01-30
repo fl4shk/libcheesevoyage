@@ -280,7 +280,10 @@ case class LcvBusConfig(
   def srcWidth = mainCfg.srcWidth
 
   def byteEnWidth: Int = (dataWidth / 8).toInt
-  def byteSizeWidth: Int = log2Up(byteEnWidth)
+  def byteSizeWidth: Int = 2
+    // we go up to 64-bit
+    // This is the `log2` of the number of bytes
+
   def addrByteWidth: Int = (addrWidth / 8).toInt
   require(
     (byteEnWidth * 8) == dataWidth,
@@ -499,7 +502,7 @@ case class LcvBusPayloadMainNonBurstInfoByteSizeEtc(
   cfg: LcvBusConfig
 ) extends Bundle {
   val byteSize = UInt(cfg.byteSizeWidth bits)
-  val haveFullWord = Bool()
+  //val haveFullWord = Bool()
 }
 case class LcvBusH2dPayloadMainNonBurstInfo(
   cfg: LcvBusConfig
@@ -519,7 +522,7 @@ case class LcvBusH2dPayloadMainNonBurstInfo(
     LcvBusPayloadMainNonBurstInfoByteSizeEtc(cfg=cfg)
   )
   def byteSize = infoByteSizeEtc.byteSize
-  def haveFullWord = infoByteSizeEtc.haveFullWord
+  //def haveFullWord = infoByteSizeEtc.haveFullWord
   //val byteEn = (cfg.haveByteEn) generate (UInt(cfg.byteEnWidth bits))
   ////val byteShift = (!cfg.haveByteEn) generate (UInt(cfg.byteEnWidth bits))
   ////val byteMask = (!cfg.haveByteEn) generate (UInt(cfg.byteEnWidth bits))
@@ -558,7 +561,7 @@ case class LcvBusH2dPayload(
   def src = mainNonBurstInfo.src
   def byteEn = mainNonBurstInfo.byteEn
   def byteSize = mainNonBurstInfo.byteSize
-  def haveFullWord = mainNonBurstInfo.haveFullWord
+  //def haveFullWord = mainNonBurstInfo.haveFullWord
   //--------
   val mainBurstInfo = (cfg.allowBurst) generate (
     LcvBusH2dPayloadMainBurstInfo(cfg=cfg)
@@ -628,7 +631,7 @@ case class LcvBusD2hPayloadMainNonBurstInfo(
     LcvBusPayloadMainNonBurstInfoByteSizeEtc(cfg=cfg)
   )
   def byteSize = infoByteSizeEtc.byteSize
-  def haveFullWord = infoByteSizeEtc.haveFullWord
+  //def haveFullWord = infoByteSizeEtc.haveFullWord
   //--------
 }
 
