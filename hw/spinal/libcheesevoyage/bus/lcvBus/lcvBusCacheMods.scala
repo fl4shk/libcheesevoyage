@@ -114,112 +114,20 @@ case class LcvBusCacheBusPairConfig(
   )
 }
 
-case class LcvBusCalcWrShiftedDataAndByteEnIo(
-  busCfg: LcvBusConfig
-) extends Bundle {
-  val h2dPayload = in(LcvBusH2dPayload(cfg=busCfg))
-  val byteEn = out(UInt(busCfg.byteEnWidth bits))
-  val shiftedData = out(UInt(busCfg.dataWidth bits))
-}
-case class LcvBusCalcWrShiftedDataAndByteEn(
-  busCfg: LcvBusConfig
-) extends Component {
-  val io = LcvBusCalcWrShiftedDataAndByteEnIo(busCfg=busCfg)
-  io.byteEn := U(io.byteEn.getWidth bits, default -> True)
-  io.shiftedData := io.h2dPayload.data
-  switch (
-    io.h2dPayload.haveFullWord
-    ## io.h2dPayload.byteSize
-    ## io.h2dPayload.addr(busCfg.byteSizeWidth - 1 downto 0)
-  ) {
-    for (idx <- 0 until (1 << (busCfg.byteSizeWidth * 2))) {
-      val myAddrLo = idx & ((1 << busCfg.byteSizeWidth) - 1)
-      // myAddrLo represents the low bits of the address 
-      val myByteSize = (
-        (
-          idx & (
-            ((1 << busCfg.byteSizeWidth) - 1)
-            << busCfg.byteSizeWidth
-          )
-        ) >> busCfg.byteSizeWidth
-      )
-      // myByteSize represents the value of `byteSize + 1`
-      val myByteSizeMask = (
-        (1 << (myByteSize + 1)) - 1
-      )
-      val myByteSizeShiftedMask = (
-        myByteSizeMask << myAddrLo
-      )
-      println(
-        s"idx:${idx} myByteSize:${myByteSize} myAddrLo:${myAddrLo} "
-        + s"myByteSizeMask:${myByteSizeMask} "
-        + s"myByteSizeShiftedMask:${myByteSizeShiftedMask}"
-      )
-      is (idx) {
-        io.byteEn := (
-          U(s"32'd${myByteSizeShiftedMask}")
-          .resize(io.byteEn.getWidth)
-        )
-        ////switch (io.h2dPayload.addr(idx downto 0)) {
-        ////  for (jdx <- 0 until busCfg.byteEnWidth) {
-        ////  }
-        ////}
-        //val tempByteEn = cloneOf(io.byteEn)
-        //tempByteEn := (1 << (idx + 1)) - 1
-        //io.byteEn := Cat(
-        //  tempByteEn,
-        //  U(s"${idx}'d0")
-        //).asUInt.resize(io.byteEn.getWidth)
-        ////io.shiftedData := (
-        ////  io.h2dPayload.data << (8 * idx)
-        ////).resize(io.shiftedData.getWidth)
-
-        //io.shiftedData := Cat(
-        //  io.h2dPayload.data,
-        //  U(s"${8 * idx}'d0")
-        //).asUInt.resize(io.shiftedData.getWidth)
-      }
-    }
-    default {
-      //io.byteEn := 0x0
-      io.byteEn := U(io.byteEn.getWidth bits, default -> True)
-      //io.shiftedData := io.h2dPayload.data
-    }
-  }
-  switch (
-    io.h2dPayload.haveFullWord
-    ## io.h2dPayload.addr(busCfg.byteSizeWidth - 1 downto 0)
-  ) {
-    for (idx <- 0 until (1 << busCfg.byteSizeWidth)) {
-      val myAddrLo = idx & ((1 << busCfg.byteSizeWidth) - 1)
-      // myAddrLo represents the low bits of the address 
-      is (idx) {
-        io.shiftedData := Cat(
-          io.h2dPayload.data,
-          U(s"${8 * idx}'d0")
-        ).asUInt.resize(io.shiftedData.getWidth)
-      }
-    }
-    default {
-      io.shiftedData := io.h2dPayload.data
-    }
-  }
-}
-
 case class LcvBusDoStallFifoThingPayload[
   BusPayloadT <: Data
 ](
   busPayloadType: HardType[BusPayloadT],
-  optByteEnWidth: Option[Int],
+  //optByteEnWidth: Option[Int],
   //cfg: LcvBusCacheBusPairConfig,
 ) extends Bundle {
   def myCntWidth = 2
   val cnt = UInt(myCntWidth bits)
-  val byteEn = (
-    optByteEnWidth != None
-  ) generate (
-    UInt(optByteEnWidth.get bits)
-  )
+  //val byteEn = (
+  //  optByteEnWidth != None
+  //) generate (
+  //  UInt(optByteEnWidth.get bits)
+  //)
   val busPayload = busPayloadType()
   //val h2dPayload = LcvBusH2dPayload(cfg=cfg.loBusCfg)
   //def addr = h2dPayload.addr
@@ -237,14 +145,14 @@ case class LcvBusDoStallFifoThingIo(
     //LcvBusH2dPayload(cfg=cfg.loBusCfg)
     LcvBusDoStallFifoThingPayload(
       LcvBusH2dPayload(cfg=busCfg),
-      optByteEnWidth=None,
+      //optByteEnWidth=None,
     )
   ))
   val pop = master(Stream(
     //LcvBusH2dPayload(cfg=cfg.loBusCfg)
     LcvBusDoStallFifoThingPayload(
       LcvBusH2dPayload(cfg=busCfg),
-      optByteEnWidth=Some(busCfg.byteEnWidth),
+      //optByteEnWidth=Some(busCfg.byteEnWidth),
     )
   ))
   //val doStallCacheMiss = in(Bool())
@@ -270,7 +178,7 @@ case class LcvBusDoStallFifoThing(
     StreamFifo(
       dataType=LcvBusDoStallFifoThingPayload(
         LcvBusH2dPayload(cfg=busCfg),
-        optByteEnWidth=None,
+        //optByteEnWidth=None,
       ),
       depth=fifoDepthMain,
       latency=(
@@ -287,7 +195,7 @@ case class LcvBusDoStallFifoThing(
   val subFifo = StreamFifo(
     dataType=LcvBusDoStallFifoThingPayload(
       LcvBusH2dPayload(cfg=busCfg),
-      optByteEnWidth=None,
+      //optByteEnWidth=None,
     ),
     depth=fifoDepthSub,
     latency=(
@@ -344,15 +252,18 @@ case class LcvBusDoStallFifoThing(
 
   io.push.ready := False
   //io.pop.valid := False
-  val myCalcWrShiftedDataAndByteEn = LcvBusCalcWrShiftedDataAndByteEn(
-    busCfg=busCfg
-  )
+
+  //val myCalcWrShiftedDataAndByteEn = (
+  //  busCfg.haveByteEn
+  //) generate (CalcLcvBusH2dWrShiftedDataAndByteEnIo(
+  //  busCfg=busCfg
+  //))
 
   val myPopStm = (
     Stream(
       LcvBusDoStallFifoThingPayload(
         LcvBusH2dPayload(cfg=busCfg),
-        optByteEnWidth=None,
+        //optByteEnWidth=None,
       )
     )
     //cloneOf(io.pop)
@@ -361,14 +272,14 @@ case class LcvBusDoStallFifoThing(
   myPopStm.payload := myPopStm.payload.getZero
   myPopStm.translateInto(io.pop)(
     dataAssignment=(outp, inp) => {
-      //outp := inp
-      outp.cnt := inp.cnt
-      outp.busPayload := inp.busPayload
-      outp.busPayload.data.allowOverride
-      outp.byteEn.allowOverride
-      myCalcWrShiftedDataAndByteEn.io.h2dPayload := inp.busPayload
-      outp.busPayload.data := myCalcWrShiftedDataAndByteEn.io.shiftedData
-      outp.byteEn := myCalcWrShiftedDataAndByteEn.io.byteEn
+      outp := inp
+      //outp.cnt := inp.cnt
+      //outp.busPayload := inp.busPayload
+      //outp.busPayload.data.allowOverride
+      //outp.byteEn.allowOverride
+      //myCalcWrShiftedDataAndByteEn.io.h2dPayload := inp.busPayload
+      //outp.busPayload.data := myCalcWrShiftedDataAndByteEn.io.shiftedData
+      //outp.byteEn := myCalcWrShiftedDataAndByteEn.io.byteEn
     }
   )
 
@@ -647,7 +558,7 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   val myLoD2hStm = Stream(
     LcvBusDoStallFifoThingPayload(
       LcvBusD2hPayload(cfg=cfg.loBusCfg),
-      optByteEnWidth=None,
+      //optByteEnWidth=None,
     )
   )
   myLoD2hStm.translateInto(
@@ -1028,10 +939,10 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
       //loH2dPopStm.byteEn
       RegNext(
         RegNext(
-          loH2dPopStm.byteEn,
-          init=loH2dPopStm.byteEn.getZero
+          loH2dPopStm.busPayload.byteEn,
+          init=loH2dPopStm.busPayload.byteEn.getZero
         ),
-        init=loH2dPopStm.byteEn.getZero,
+        init=loH2dPopStm.busPayload.byteEn.getZero,
       ),
     ),
     setEn=false,
@@ -1146,13 +1057,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   hiH2dFifo.io.push.payload := rHiH2dPayload
   io.hiBus.d2hBus.ready := rHiD2hReady
 
-  //rHiH2dPayload.byteEn := (
-  //  U(hiBusCfg.byteEnWidth bits, default -> True)
-  //)
-  rHiH2dPayload.byteSize := (
-    U(rHiH2dPayload.byteSize.getWidth bits, default -> True)
+  rHiH2dPayload.byteEn := (
+    U(hiBusCfg.byteEnWidth bits, default -> True)
   )
-  rHiH2dPayload.haveFullWord := True
+  //rHiH2dPayload.byteSize := (
+  //  U(rHiH2dPayload.byteSize.getWidth bits, default -> True)
+  //)
+  //rHiH2dPayload.haveFullWord := True
   io.hiBus.h2dBus <-/< hiH2dFifo.io.pop
   //--------
   //--------
@@ -1478,7 +1389,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
             busAddr=rTempBurstAddr,
             lineWord=Some(rSavedLoH2dPayload.data),
             byteEn=Some(
-              base.rSavedLoH2dPayload.byteEn
+              rSavedLoH2dPayload.byteEn
             ),
             setEn=true,
           )
@@ -1612,13 +1523,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   hiH2dFifo.io.push.payload := rHiH2dPayload
   io.hiBus.d2hBus.ready := rHiD2hReady
 
-  //rHiH2dPayload.byteEn := (
-  //  U(hiBusCfg.byteEnWidth bits, default -> True)
-  //)
-  rHiH2dPayload.byteSize := (
-    U(rHiH2dPayload.byteSize.getWidth bits, default -> True)
+  rHiH2dPayload.byteEn := (
+    U(hiBusCfg.byteEnWidth bits, default -> True)
   )
-  rHiH2dPayload.haveFullWord := True
+  //rHiH2dPayload.byteSize := (
+  //  U(rHiH2dPayload.byteSize.getWidth bits, default -> True)
+  //)
+  //rHiH2dPayload.haveFullWord := True
   io.hiBus.h2dBus <-/< hiH2dFifo.io.pop
   //--------
   //--------
@@ -2237,7 +2148,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           base.doLineWordRamWrite(
             busAddr=rTempBurstAddr,
             lineWord=Some(rSavedLoH2dPayload.data),
-            byteEn=Some(base.rSavedLoH2dPayload.byteEn),
+            byteEn=Some(rSavedLoH2dPayload.byteEn),
             setEn=true,
           )
         } otherwise {
@@ -2452,7 +2363,7 @@ case class LcvBusNonCoherentDataCacheWithSdramCtrl(
         allowBurst=false,
         burstAlwaysMaxSize=false,
         srcWidth=2,
-        //haveByteEn=true,
+        haveByteEn=true,
       ),
       loBusCacheCfg=LcvBusCacheConfig(
         kind=LcvCacheKind.D,

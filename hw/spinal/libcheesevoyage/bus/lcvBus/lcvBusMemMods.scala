@@ -89,7 +89,6 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   val myD2hPushStm = Stream(
     LcvBusDoStallFifoThingPayload(
       LcvBusD2hPayload(cfg=busCfg),
-      optByteEnWidth=None,
     )
   )
   val myD2hFifo = StreamFifo(
@@ -295,15 +294,13 @@ private[libcheesevoyage] case class LcvBusMemImpl(
         init=myH2dPopPayload.data.getZero,
       )
     ),
-    byteEn=(
-      Some(
+    byteEn=Some(
+      RegNext(
         RegNext(
-          RegNext(
-            myH2dPopStm.byteEn,
-            init=myH2dPopStm.byteEn.getZero
-          ),
-          init=myH2dPopStm.byteEn.getZero,
-        )
+          myH2dPopPayload.byteEn,
+          init=myH2dPopPayload.byteEn.getZero
+        ),
+        init=myH2dPopPayload.byteEn.getZero,
       ),
     ),
     setEn=false,
@@ -777,21 +774,8 @@ case class LcvBusMemSlowNonBurst(
 
   ram.io.wrEn := False
   ram.io.wrAddr := io.bus.h2dBus.addr(myRamAddrRange)
-
-  val myCalcWrShiftedDataAndByteEn = LcvBusCalcWrShiftedDataAndByteEn(
-    busCfg=busCfg
-  )
-  myCalcWrShiftedDataAndByteEn.io.h2dPayload := io.bus.h2dBus.payload
-
-  ram.io.wrData := (
-    //io.bus.h2dBus.data.asBits
-    myCalcWrShiftedDataAndByteEn.io.shiftedData.asBits
-  )
-  ram.io.wrByteEn := (
-    //io.bus.h2dBus.byteEn.asBits
-    //B(ram.io.wrByteEn.getWidth bits, default -> True)
-    myCalcWrShiftedDataAndByteEn.io.byteEn.asBits
-  )
+  ram.io.wrData := io.bus.h2dBus.data.asBits
+  ram.io.wrByteEn := io.bus.h2dBus.byteEn.asBits
   //val rRamWrEn = Reg(Bool(), init=False)
   //val rRamWrAddr = (
   //  Reg(cloneOf(ram.io.wrAddr), init=ram.io.wrAddr.getZero)
@@ -1044,13 +1028,8 @@ case class LcvBusMemSlowNonBurst(
           incrBurstCnt=false,
         )(myRamAddrRange)
       )
-      //ram.io.wrData := (
-      //  myH2dPayload.data.asBits
-      //)
-      //ram.io.wrByteEn := (
-      //  //myH2dPayload.byteEn.asBits
-      //  //B(ram.io.wrByteEn.getWidth bits, default -> True)
-      //)
+      ram.io.wrData := myH2dPayload.data.asBits
+      ram.io.wrByteEn := myH2dPayload.byteEn.asBits
 
       when (io.bus.h2dBus.fire) {
         ram.io.wrEn := True
@@ -1131,7 +1110,7 @@ object LcvBusMemTestConfig {
         allowBurst=true,
         burstAlwaysMaxSize=true,
         srcWidth=1,
-        //haveByteEn=true,
+        haveByteEn=true,
       ),
       cacheCfg=None,
     ),

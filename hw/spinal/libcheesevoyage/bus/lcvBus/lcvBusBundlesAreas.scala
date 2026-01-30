@@ -482,19 +482,50 @@ case class LcvBusCacheSeqlock(
 //    = newElement();
 //}
 
-case class LcvBusH2dPayloadMainNonBurstInfo(
+case class LcvBusH2dPayloadMainNonBurstInfoShared(
   cfg: LcvBusConfig
 ) extends Bundle {
   val addr = UInt(cfg.addrWidth bits)
   val data = UInt(cfg.dataWidth bits)
-  val byteEn = (cfg.haveByteEn) generate (UInt(cfg.byteEnWidth bits))
-  //val byteShift = (!cfg.haveByteEn) generate (UInt(cfg.byteEnWidth bits))
-  //val byteMask = (!cfg.haveByteEn) generate (UInt(cfg.byteEnWidth bits))
-  //val haveFullWord = (!cfg.haveByteEn) generate (Bool())
-  val byteSize = (!cfg.haveByteEn) generate (UInt(cfg.byteSizeWidth bits))
-  val haveFullWord = (!cfg.haveByteEn) generate (Bool())
   val isWrite = Bool()
   val src = UInt(cfg.srcWidth bits)
+}
+case class LcvBusH2dPayloadMainNonBurstInfoByteEn(
+  cfg: LcvBusConfig
+) extends Bundle {
+  val byteEn = UInt(cfg.byteEnWidth bits)
+}
+case class LcvBusH2dPayloadMainNonBurstInfoByteSizeEtc(
+  cfg: LcvBusConfig
+) extends Bundle {
+  val byteSize = UInt(cfg.byteSizeWidth bits)
+  val haveFullWord = Bool()
+}
+case class LcvBusH2dPayloadMainNonBurstInfo(
+  cfg: LcvBusConfig
+) extends Bundle {
+  val infoShared = LcvBusH2dPayloadMainNonBurstInfoShared(cfg=cfg)
+  def addr = infoShared.addr
+  def data = infoShared.data
+  def isWrite = infoShared.isWrite
+  def src = infoShared.src
+
+  val infoByteEn = (cfg.haveByteEn) generate (
+    LcvBusH2dPayloadMainNonBurstInfoByteEn(cfg=cfg)
+  )
+  def byteEn = infoByteEn.byteEn
+
+  val infoByteSizeEtc = (!cfg.haveByteEn) generate (
+    LcvBusH2dPayloadMainNonBurstInfoByteSizeEtc(cfg=cfg)
+  )
+  def byteSize = infoByteSizeEtc.byteSize
+  def haveFullWord = infoByteSizeEtc.haveFullWord
+  //val byteEn = (cfg.haveByteEn) generate (UInt(cfg.byteEnWidth bits))
+  ////val byteShift = (!cfg.haveByteEn) generate (UInt(cfg.byteEnWidth bits))
+  ////val byteMask = (!cfg.haveByteEn) generate (UInt(cfg.byteEnWidth bits))
+  ////val haveFullWord = (!cfg.haveByteEn) generate (Bool())
+  //val byteSize = (!cfg.haveByteEn) generate (UInt(cfg.byteSizeWidth bits))
+  //val haveFullWord = (!cfg.haveByteEn) generate (Bool())
 }
 
 case class LcvBusH2dPayloadMainBurstInfo(
@@ -523,11 +554,11 @@ case class LcvBusH2dPayload(
   val mainNonBurstInfo = LcvBusH2dPayloadMainNonBurstInfo(cfg=cfg)
   def addr = mainNonBurstInfo.addr
   def data = mainNonBurstInfo.data
+  def isWrite = mainNonBurstInfo.isWrite
+  def src = mainNonBurstInfo.src
   def byteEn = mainNonBurstInfo.byteEn
   def byteSize = mainNonBurstInfo.byteSize
   def haveFullWord = mainNonBurstInfo.haveFullWord
-  def isWrite = mainNonBurstInfo.isWrite
-  def src = mainNonBurstInfo.src
   //--------
   val mainBurstInfo = (cfg.allowBurst) generate (
     LcvBusH2dPayloadMainBurstInfo(cfg=cfg)
