@@ -98,6 +98,7 @@ case class LcvBusSdramCtrlConfig(
   clkRate: HertzNumber,
   //burstLen: Int=2, // 32-bit
   useAltddioOut: Boolean=true,
+  srcWidth: Int=2,
 ) {
   //--------
   // idea for later: change these to *parameters* of
@@ -135,7 +136,8 @@ case class LcvBusSdramCtrlConfig(
       srcWidth=(
         //1
         //None
-        1
+        //1
+        srcWidth
       ),
       haveByteEn=true,
     ),

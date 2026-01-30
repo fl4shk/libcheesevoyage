@@ -710,8 +710,15 @@ private[libcheesevoyage] case class LcvBusDeviceRamTesterNonCoherent(
           myPrng.io.outpXs(0)
         )
         doInitH2dSendAddr()
-        rH2dPayload.byteEn := U(
-          rH2dPayload.byteEn.getWidth bits, default -> True
+        //rH2dPayload.byteEn := U(
+        //  rH2dPayload.byteEn.getWidth bits, default -> True
+        //)
+        //rH2dPayload.byteSize := (
+        //  0x0
+        //)
+        rH2dPayload.haveFullWord := (
+          True
+          //False
         )
         rH2dPayload.isWrite := True
         rH2dPayload.src := 0x0
@@ -882,8 +889,15 @@ private[libcheesevoyage] case class LcvBusDeviceRamTesterNonCoherent(
         rH2dValid := True
 
         //rH2dPayload.addr := 0x0
-        rH2dPayload.byteEn := (
-          U(rH2dPayload.byteEn.getWidth bits, default -> True)
+        //rH2dPayload.byteEn := (
+        //  U(rH2dPayload.byteEn.getWidth bits, default -> True)
+        //)
+        //rH2dPayload.byteSize := (
+        //  0x0
+        //)
+        rH2dPayload.haveFullWord := (
+          True
+          //False
         )
         rH2dPayload.isWrite := False
         rH2dPayload.src := 0x0
@@ -1110,9 +1124,10 @@ private[libcheesevoyage] case class LcvBusDeviceRamTesterNonCoherent(
         //  //)
         //  0x0
         //)
-        rH2dPayload.byteEn := U(
-          rH2dPayload.byteEn.getWidth bits, default -> True
-        )
+        //rH2dPayload.byteEn := U(
+        //  rH2dPayload.byteEn.getWidth bits, default -> True
+        //)
+        rH2dPayload.haveFullWord := True
         rH2dPayload.isWrite := True
         rH2dPayload.src := 0x0
 
@@ -1168,9 +1183,10 @@ private[libcheesevoyage] case class LcvBusDeviceRamTesterNonCoherent(
         rH2dValid := True
 
         rH2dPayload.addr := 0x0
-        rH2dPayload.byteEn := U(
-          rH2dPayload.byteEn.getWidth bits, default -> True
-        )
+        //rH2dPayload.byteEn := U(
+        //  rH2dPayload.byteEn.getWidth bits, default -> True
+        //)
+        rH2dPayload.haveFullWord := True
         rH2dPayload.isWrite := False
         rH2dPayload.src := 0x0
 
@@ -1276,9 +1292,10 @@ private[libcheesevoyage] case class LcvBusDeviceRamTesterNonCoherent(
         //rTestData(tempCnt).recvData := (
         //  U(s"${myPrngCfg.myXsWidth}'d0")
         //)
-        rH2dPayload.byteEn := U(
-          rH2dPayload.byteEn.getWidth bits, default -> True
-        )
+        //rH2dPayload.byteEn := U(
+        //  rH2dPayload.byteEn.getWidth bits, default -> True
+        //)
+        rH2dPayload.haveFullWord := True
         //nextH2dMainBurstInfo.burstCnt := 1
         rH2dPayload.isWrite := True
         rH2dPayload.src := 0x0

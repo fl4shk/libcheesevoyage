@@ -61,7 +61,7 @@ case class LcvBusCacheBusPairConfig(
     cacheCfg=Some(loBusCacheCfg),
   )
   val hiBusCfg = LcvBusConfig(
-    mainCfg=mainCfg.mkCopyWithAllowingBurst(),
+    mainCfg=mainCfg.mkCopyWithAllowingBurst().mkCopyWithByteEn(),
     cacheCfg=hiBusCacheCfg,
   )
   hiBusCacheCfg match {
@@ -148,10 +148,20 @@ case class LcvBusDoStallFifoThingIo(
       //optByteEnWidth=None,
     )
   ))
+  val myPopCfg = (
+    if (!busCfg.haveByteEn) (
+      LcvBusConfig(
+        mainCfg=busCfg.mainCfg.mkCopyWithByteEn(),
+        cacheCfg=busCfg.cacheCfg,
+      )
+    ) else (
+      busCfg
+    )
+  )
   val pop = master(Stream(
     //LcvBusH2dPayload(cfg=cfg.loBusCfg)
     LcvBusDoStallFifoThingPayload(
-      LcvBusH2dPayload(cfg=busCfg),
+      LcvBusH2dPayload(cfg=myPopCfg),
       //optByteEnWidth=Some(busCfg.byteEnWidth),
     )
   ))
@@ -254,10 +264,17 @@ case class LcvBusDoStallFifoThing(
   //io.pop.valid := False
 
   //val myCalcWrShiftedDataAndByteEn = (
-  //  busCfg.haveByteEn
+  //  !busCfg.haveByteEn
   //) generate (CalcLcvBusH2dWrShiftedDataAndByteEnIo(
   //  busCfg=busCfg
   //))
+  val myH2dToWrByteEnStmAdapter = (
+    !busCfg.haveByteEn
+  ) generate (LcvBusH2dToWrByteEnStreamAdapter(
+    cfg=LcvBusH2dToWrByteEnStreamAdapterConfig(
+      loBusCfg=busCfg,
+    )
+  ))
 
   val myPopStm = (
     Stream(
@@ -270,18 +287,33 @@ case class LcvBusDoStallFifoThing(
   )
   myPopStm.valid := False
   myPopStm.payload := myPopStm.payload.getZero
-  myPopStm.translateInto(io.pop)(
-    dataAssignment=(outp, inp) => {
-      outp := inp
-      //outp.cnt := inp.cnt
-      //outp.busPayload := inp.busPayload
-      //outp.busPayload.data.allowOverride
-      //outp.byteEn.allowOverride
-      //myCalcWrShiftedDataAndByteEn.io.h2dPayload := inp.busPayload
-      //outp.busPayload.data := myCalcWrShiftedDataAndByteEn.io.shiftedData
-      //outp.byteEn := myCalcWrShiftedDataAndByteEn.io.byteEn
-    }
-  )
+  if (!busCfg.haveByteEn) {
+     myPopStm.translateInto(myH2dToWrByteEnStmAdapter.io.loH2dBus)(
+      dataAssignment=(outp, inp) => {
+        outp := inp.busPayload
+      }
+     )
+    myH2dToWrByteEnStmAdapter.io.hiH2dBus.translateInto(io.pop)(
+      dataAssignment=(outp, inp) => {
+        outp.busPayload := inp
+        outp.cnt := myPopStm.cnt
+      }
+    )
+  } else {
+    io.pop << myPopStm
+  }
+  //myPopStm.translateInto(io.pop)(
+  //  dataAssignment=(outp, inp) => {
+  //    outp := inp
+  //    //outp.cnt := inp.cnt
+  //    //outp.busPayload := inp.busPayload
+  //    //outp.busPayload.data.allowOverride
+  //    //outp.byteEn.allowOverride
+  //    //myCalcWrShiftedDataAndByteEn.io.h2dPayload := inp.busPayload
+  //    //outp.busPayload.data := myCalcWrShiftedDataAndByteEn.io.shiftedData
+  //    //outp.byteEn := myCalcWrShiftedDataAndByteEn.io.byteEn
+  //  }
+  //)
 
 
   object State extends SpinalEnum(defaultEncoding=binaryOneHot) {
@@ -611,8 +643,20 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
     //io.loBus.h2dBus
     //loH2dDoStallFifoThing.io.pop
     cloneOf(loH2dDoStallFifoThing.io.pop)
+    //Stream(LcvBusH2dPayload(cfg=LcvBusConfig(
+    //  mainCfg=loBusCfg.mainCfg.mkCopyWithByteEn(),
+    //  cacheCfg=loBusCfg.cacheCfg,
+    //)))
     //cloneOf(io.loBus.h2dBus)
   )
+  //val myH2dToWrByteEnStmAdapter = (
+  //  LcvBusH2dToWrByteEnStreamAdapter(
+  //    cfg=LcvBusH2dToWrByteEnStreamAdapterConfig(
+  //      loBusCfg=loBusCfg,
+  //    )
+  //  )
+  //)
+  //myH2dToWrByteEnStmAdapter.io.loH2dBus << loH2dDoStallFifoThing.io.pop
 
   val myLoH2dPopNoThrowArea = (
     !optIncludeLoH2dPopThrow
@@ -2342,19 +2386,7 @@ case class LcvBusCache(
   //--------
 }
 
-case class LcvBusNonCoherentDataCacheWithSdramCtrl(
-  //cacheCfg: LcvBusCacheBusPairConfig,
-  sdramCtrlCfg: LcvBusSdramCtrlConfig,
-) extends Component {
-  //--------
-  //val io = new Bundle {
-  //  val sdram = LcvBusSdramIo(
-  //    cfg=sdramCtrlCfg
-  //  )
-  //}
-  //val io = LcvBusSdramCtrlIo(cfg=sdramCtrlCfg)
-  //val io = LcvBusSdramIo(cfg=sdramCtrlCfg)
-  //--------
+object LcvBusNonCoherentDataCacheWithSdramCtrl {
   val cacheCfg = (
     LcvBusCacheBusPairConfig(
       mainCfg=LcvBusMainConfig(
@@ -2363,7 +2395,7 @@ case class LcvBusNonCoherentDataCacheWithSdramCtrl(
         allowBurst=false,
         burstAlwaysMaxSize=false,
         srcWidth=2,
-        haveByteEn=true,
+        haveByteEn=false,
       ),
       loBusCacheCfg=LcvBusCacheConfig(
         kind=LcvCacheKind.D,
@@ -2382,6 +2414,21 @@ case class LcvBusNonCoherentDataCacheWithSdramCtrl(
       )
     )
   )
+}
+case class LcvBusNonCoherentDataCacheWithSdramCtrl(
+  //cacheCfg: LcvBusCacheBusPairConfig,
+  sdramCtrlCfg: LcvBusSdramCtrlConfig,
+) extends Component {
+  //--------
+  val io = new Bundle {
+    val sdram = LcvBusSdramIo(
+      cfg=sdramCtrlCfg
+    )
+  }
+  //val io = LcvBusSdramCtrlIo(cfg=sdramCtrlCfg)
+  //val io = LcvBusSdramIo(cfg=sdramCtrlCfg)
+  val cacheCfg = LcvBusNonCoherentDataCacheWithSdramCtrl.cacheCfg
+  //--------
   val testerCfg = (
     LcvBusDeviceRamTesterConfig(
       busCfg=cacheCfg.loBusCfg,
@@ -2403,34 +2450,34 @@ case class LcvBusNonCoherentDataCacheWithSdramCtrl(
   //--------
   val myCache = LcvBusCache(cfg=cacheCfg)
   val myCacheTester = LcvBusDeviceRamTester(cfg=testerCfg)
-  //val mySdramCtrl = LcvBusSdramCtrl(cfg=sdramCtrlCfg)
-  //io <> mySdramCtrl.io.sdram
-  val myBusMem = {
-    val tempDepth = (
-      //cacheCfg.loBusCacheCfg.depthWords * 2
-      //cacheCfg.loBusCacheCfg.depthWords * 4
-      cacheCfg.loBusCacheCfg.depthWords * 16
-    )
-    //val tempDepth = 128
-    LcvBusMem(
-      //cfg=cacheCfg.loBusCfg
-      cfg=LcvBusMemConfig(
-        busCfg=cacheCfg.hiBusCfg,
-        depth=tempDepth,
-        initBigInt=Some({
-          //Array.fill(tempDepth)(BigInt(0))
-          val tempArr = new ArrayBuffer[BigInt]()
-          for (idx <- 0 until tempDepth) {
-            tempArr += BigInt(idx)
-          }
-          tempArr
-        }),
-      )
-    )
-  }
+  val mySdramCtrl = LcvBusSdramCtrl(cfg=sdramCtrlCfg)
+  io.sdram <> mySdramCtrl.io.sdram
+  //val myBusMem = {
+  //  val tempDepth = (
+  //    //cacheCfg.loBusCacheCfg.depthWords * 2
+  //    //cacheCfg.loBusCacheCfg.depthWords * 4
+  //    cacheCfg.loBusCacheCfg.depthWords * 16
+  //  )
+  //  //val tempDepth = 128
+  //  LcvBusMem(
+  //    //cfg=cacheCfg.loBusCfg
+  //    cfg=LcvBusMemConfig(
+  //      busCfg=cacheCfg.hiBusCfg,
+  //      depth=tempDepth,
+  //      initBigInt=Some({
+  //        //Array.fill(tempDepth)(BigInt(0))
+  //        val tempArr = new ArrayBuffer[BigInt]()
+  //        for (idx <- 0 until tempDepth) {
+  //          tempArr += BigInt(idx)
+  //        }
+  //        tempArr
+  //      }),
+  //    )
+  //  )
+  //}
   myCache.io.loBus << myCacheTester.io.busVec.head
-  //myCache.io.hiBus >> mySdramCtrl.io.bus
-  myCache.io.hiBus >> myBusMem.io.bus
+  myCache.io.hiBus >> mySdramCtrl.io.bus
+  //myCache.io.hiBus >> myBusMem.io.bus
 
   //myBusMem.io.bus <> myCacheTester.io.busVec.head
   //myBusMem.io.bus.h2dBus.mainBurstInfo := (
@@ -2447,41 +2494,46 @@ case class LcvBusNonCoherentDataCacheWithSdramCtrl(
 
 case class LcvBusNonCoherentDataCacheSimDut(
   clkRate: HertzNumber,
+  haveSdram: Boolean,
 ) extends Component {
   //--------
-  val io = new Bundle {
-  }
+  //val io = new Bundle {
+  //}
   //--------
-  val myCacheAndTester = LcvBusNonCoherentDataCacheWithSdramCtrl(
-    sdramCtrlCfg=LcvBusSdramCtrlConfig(
-      clkRate=clkRate,
-      useAltddioOut=false,
+  val myHaveSdramArea = (
+    haveSdram
+  ) generate (new Area {
+    val myCacheAndTester = LcvBusNonCoherentDataCacheWithSdramCtrl(
+      sdramCtrlCfg=LcvBusSdramCtrlConfig(
+        clkRate=clkRate,
+        useAltddioOut=false,
+      )
     )
-  )
-  //val mySdram = as4c32m16sb()
-  ////mySdram.io.DQ <> mySdramCtrl.io.sdram.dq
-  ////mySdram.io.A := mySdramCtrl.io.sdram.a
-  ////mySdram.io.DQML := mySdramCtrl.io.sdram.dqml
-  ////mySdram.io.DQMH := mySdramCtrl.io.sdram.dqmh
-  ////mySdram.io.BA := mySdramCtrl.io.sdram.ba
-  ////mySdram.io.nCS := mySdramCtrl.io.sdram.nCs
-  ////mySdram.io.nWE := mySdramCtrl.io.sdram.nWe
-  ////mySdram.io.nRAS := mySdramCtrl.io.sdram.nRas
-  ////mySdram.io.nCAS := mySdramCtrl.io.sdram.nCas
-  ////mySdram.io.CLK := mySdramCtrl.io.sdram.clk
-  ////mySdram.io.CKE := mySdramCtrl.io.sdram.cke
-  //mySdram.io.DQ <> myCacheAndTester.io.dq
-  //mySdram.io.A := myCacheAndTester.io.a
-  //mySdram.io.DQML := myCacheAndTester.io.dqml
-  //mySdram.io.DQMH := myCacheAndTester.io.dqmh
-  //mySdram.io.BA := myCacheAndTester.io.ba
-  //mySdram.io.nCS := myCacheAndTester.io.nCs
-  //mySdram.io.nWE := myCacheAndTester.io.nWe
-  //mySdram.io.nRAS := myCacheAndTester.io.nRas
-  //mySdram.io.nCAS := myCacheAndTester.io.nCas
-  //mySdram.io.CLK := myCacheAndTester.io.clk
-  //mySdram.io.CKE := myCacheAndTester.io.cke
-  //--------
+    val mySdram = as4c32m16sb()
+    //mySdram.io.DQ <> mySdramCtrl.io.sdram.dq
+    //mySdram.io.A := mySdramCtrl.io.sdram.a
+    //mySdram.io.DQML := mySdramCtrl.io.sdram.dqml
+    //mySdram.io.DQMH := mySdramCtrl.io.sdram.dqmh
+    //mySdram.io.BA := mySdramCtrl.io.sdram.ba
+    //mySdram.io.nCS := mySdramCtrl.io.sdram.nCs
+    //mySdram.io.nWE := mySdramCtrl.io.sdram.nWe
+    //mySdram.io.nRAS := mySdramCtrl.io.sdram.nRas
+    //mySdram.io.nCAS := mySdramCtrl.io.sdram.nCas
+    //mySdram.io.CLK := mySdramCtrl.io.sdram.clk
+    //mySdram.io.CKE := mySdramCtrl.io.sdram.cke
+    mySdram.io.DQ <> myCacheAndTester.io.sdram.dq
+    mySdram.io.A := myCacheAndTester.io.sdram.a
+    mySdram.io.DQML := myCacheAndTester.io.sdram.dqml
+    mySdram.io.DQMH := myCacheAndTester.io.sdram.dqmh
+    mySdram.io.BA := myCacheAndTester.io.sdram.ba
+    mySdram.io.nCS := myCacheAndTester.io.sdram.nCs
+    mySdram.io.nWE := myCacheAndTester.io.sdram.nWe
+    mySdram.io.nRAS := myCacheAndTester.io.sdram.nRas
+    mySdram.io.nCAS := myCacheAndTester.io.sdram.nCas
+    mySdram.io.CLK := myCacheAndTester.io.sdram.clk
+    mySdram.io.CKE := myCacheAndTester.io.sdram.cke
+    //--------
+  })
 }
 
 object LcvBusNonCoherentDataCacheSim extends App {
@@ -2494,7 +2546,13 @@ object LcvBusNonCoherentDataCacheSim extends App {
     .withFstWave
     .compile(
       //LcvSdramSimDut(clkRate=clkRate)
-      LcvBusNonCoherentDataCacheSimDut(clkRate=clkRate)
+      LcvBusNonCoherentDataCacheSimDut(
+        clkRate=clkRate,
+        haveSdram=(
+          true
+          //false
+        ),
+      )
     )
     .doSim { dut =>
       dut.clockDomain.forkStimulus(period=10)
