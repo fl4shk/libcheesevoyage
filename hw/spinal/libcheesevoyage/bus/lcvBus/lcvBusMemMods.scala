@@ -1111,6 +1111,7 @@ object LcvBusMemTestConfig {
         burstAlwaysMaxSize=true,
         srcWidth=1,
         haveByteEn=true,
+        keepByteSize=false,
       ),
       cacheCfg=None,
     ),

@@ -45,8 +45,11 @@ case class LcvBusMainConfig(
   burstAlwaysMaxSize: Boolean,
   srcWidth: Int, //Option[Int],
   haveByteEn: Boolean,
+  keepByteSize: Boolean,
 ) {
-  def mkCopyWithByteEn(): LcvBusMainConfig = (
+  def mkCopyWithByteEn(
+    optKeepByteSize: Option[Boolean]=None,
+  ): LcvBusMainConfig = (
     LcvBusMainConfig(
       dataWidth=this.dataWidth,
       addrWidth=this.addrWidth,
@@ -54,9 +57,21 @@ case class LcvBusMainConfig(
       burstAlwaysMaxSize=this.burstAlwaysMaxSize,
       srcWidth=this.srcWidth,
       haveByteEn=true,
+      keepByteSize=(
+        optKeepByteSize match {
+          case Some(keepByteSize) => {
+            keepByteSize
+          }
+          case None => {
+            this.keepByteSize
+          }
+        }
+      ),
     )
   )
-  def mkCopyWithoutByteEn(): LcvBusMainConfig = (
+  def mkCopyWithoutByteEn(
+    optKeepByteSize: Option[Boolean]=None,
+  ): LcvBusMainConfig = (
     LcvBusMainConfig(
       dataWidth=this.dataWidth,
       addrWidth=this.addrWidth,
@@ -64,6 +79,16 @@ case class LcvBusMainConfig(
       burstAlwaysMaxSize=this.burstAlwaysMaxSize,
       srcWidth=this.srcWidth,
       haveByteEn=false,
+      keepByteSize=(
+        optKeepByteSize match {
+          case Some(keepByteSize) => {
+            keepByteSize
+          }
+          case None => {
+            this.keepByteSize
+          }
+        }
+      ),
     )
   )
   def mkCopyWithAllowingBurst(): LcvBusMainConfig = (
@@ -74,6 +99,7 @@ case class LcvBusMainConfig(
       burstAlwaysMaxSize=this.burstAlwaysMaxSize,
       srcWidth=this.srcWidth,
       haveByteEn=this.haveByteEn,
+      keepByteSize=this.keepByteSize,
     )
   )
   def mkCopyWithoutAllowingBurst(): LcvBusMainConfig = (
@@ -84,6 +110,7 @@ case class LcvBusMainConfig(
       burstAlwaysMaxSize=false,
       srcWidth=this.srcWidth,
       haveByteEn=this.haveByteEn,
+      keepByteSize=this.keepByteSize,
     )
   )
 
@@ -212,6 +239,7 @@ case class LcvBusConfig(
     (1 << burstCntWidth) - 1
   )
   def haveByteEn = mainCfg.haveByteEn
+  def keepByteSize = mainCfg.keepByteSize
 
   def burstAddr(
     someAddr: UInt,
@@ -506,6 +534,7 @@ case class LcvBusH2dPayloadMainNonBurstInfoByteEn(
 case class LcvBusPayloadMainNonBurstInfoByteSizeEtc(
   cfg: LcvBusConfig
 ) extends Bundle {
+  // `byteSize` is the `log2Up` of the actual operation size
   val byteSize = UInt(cfg.byteSizeWidth bits)
   //val haveFullWord = Bool()
 }
@@ -523,7 +552,10 @@ case class LcvBusH2dPayloadMainNonBurstInfo(
   )
   def byteEn = infoByteEn.byteEn
 
-  val infoByteSizeEtc = (!cfg.haveByteEn) generate (
+  val infoByteSizeEtc = (
+    !cfg.haveByteEn
+    || cfg.keepByteSize
+  ) generate (
     LcvBusPayloadMainNonBurstInfoByteSizeEtc(cfg=cfg)
   )
   def byteSize = infoByteSizeEtc.byteSize
@@ -632,11 +664,11 @@ case class LcvBusD2hPayloadMainNonBurstInfo(
   def data = infoShared.data
   def src = infoShared.src
   //--------
-  val infoByteSizeEtc = (!cfg.haveByteEn) generate (
-    LcvBusPayloadMainNonBurstInfoByteSizeEtc(cfg=cfg)
-  )
-  def byteSize = infoByteSizeEtc.byteSize
-  //def haveFullWord = infoByteSizeEtc.haveFullWord
+  //val infoByteSizeEtc = (!cfg.haveByteEn) generate (
+  //  LcvBusPayloadMainNonBurstInfoByteSizeEtc(cfg=cfg)
+  //)
+  //def byteSize = infoByteSizeEtc.byteSize
+  ////def haveFullWord = infoByteSizeEtc.haveFullWord
   //--------
 }
 

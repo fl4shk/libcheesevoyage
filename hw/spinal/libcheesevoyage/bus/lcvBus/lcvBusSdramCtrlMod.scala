@@ -140,6 +140,7 @@ case class LcvBusSdramCtrlConfig(
         srcWidth
       ),
       haveByteEn=true,
+      keepByteSize=false,
     ),
     //mesiCfg=LcvBusMesiConfig(
     //  numCpus=1

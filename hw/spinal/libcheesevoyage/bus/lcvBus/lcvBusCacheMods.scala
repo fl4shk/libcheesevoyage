@@ -61,7 +61,7 @@ case class LcvBusCacheBusPairConfig(
     cacheCfg=Some(loBusCacheCfg),
   )
   val hiBusCfg = LcvBusConfig(
-    mainCfg=mainCfg.mkCopyWithAllowingBurst().mkCopyWithByteEn(),
+    mainCfg=mainCfg.mkCopyWithAllowingBurst().mkCopyWithByteEn(None),
     cacheCfg=hiBusCacheCfg,
   )
   hiBusCacheCfg match {
@@ -151,7 +151,7 @@ case class LcvBusDoStallFifoThingIo(
   val myPopCfg = (
     if (!busCfg.haveByteEn) (
       LcvBusConfig(
-        mainCfg=busCfg.mainCfg.mkCopyWithByteEn(),
+        mainCfg=busCfg.mainCfg.mkCopyWithByteEn(Some(true)),
         cacheCfg=busCfg.cacheCfg,
       )
     ) else (
@@ -264,14 +264,14 @@ case class LcvBusDoStallFifoThing(
   //io.pop.valid := False
 
   //val myCalcWrShiftedDataAndByteEn = (
-  //  !busCfg.haveByteEn
+  //  !io.myPopCfg.haveByteEn
   //) generate (CalcLcvBusH2dWrShiftedDataAndByteEnIo(
-  //  busCfg=busCfg
+  //  io.myPopCfg=io.myPopCfg
   //))
   val myH2dToWrByteEnStmAdapter = (
     !busCfg.haveByteEn
-  ) generate (LcvBusH2dToWrByteEnStreamAdapter(
-    cfg=LcvBusH2dToWrByteEnStreamAdapterConfig(
+  ) generate (LcvBusH2dShiftedDataEtcStreamAdapter(
+    cfg=LcvBusH2dShiftedDataEtcStreamAdapterConfig(
       loBusCfg=busCfg,
     )
   ))
@@ -572,9 +572,7 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   io.loBus.h2dBus.translateInto(
     loH2dDoStallFifoThing.io.push
   )(
-    dataAssignment=(
-      outp, inp
-    ) => {
+    dataAssignment=(outp, inp) => {
       outp.cnt := (
         (
           RegNextWhen(
@@ -585,21 +583,6 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
         ).asUInt
       )
       outp.busPayload := inp
-    }
-  )
-  val myLoD2hStm = Stream(
-    LcvBusDoStallFifoThingPayload(
-      LcvBusD2hPayload(cfg=cfg.loBusCfg),
-      //optByteEnWidth=None,
-    )
-  )
-  myLoD2hStm.translateInto(
-    io.loBus.d2hBus
-  )(
-    dataAssignment=(
-      outp, inp
-    ) => {
-      outp := inp.busPayload
     }
   )
   //loH2dDoStallFifoThing.io.push << 
@@ -665,9 +648,7 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
     //loH2dDoStallFifoThing.io.pop.translateInto(
     //  loH2dPopStm
     //)(
-    //  dataAssignment=(
-    //    outp, inp,
-    //  ) => {
+    //  dataAssignment=(outp, inp) => {
     //    outp.
     //  }
     //)
@@ -735,6 +716,41 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   def rSavedLoBusAddr = rSavedLoH2dPayload.busPayload.addr
   def rSavedLoBusAddrTag = rSavedLoBusAddr(loBusCacheCfg.tagRange)
   def rSavedLoBusAddrSet = rSavedLoBusAddr(loBusCacheCfg.setRange)
+
+
+  val myLoD2hShiftedDataStmAdapter = (
+    !cfg.loBusCfg.haveByteEn
+  ) generate(
+    LcvBusD2hShiftedDataEtcStreamAdapter(
+      cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(busCfg=cfg.loBusCfg)
+    )
+  )
+  val myLoD2hStm = Stream(
+    LcvBusDoStallFifoThingPayload(
+      LcvBusD2hPayload(cfg=cfg.loBusCfg),
+      //optByteEnWidth=None,
+    )
+  )
+  myLoD2hStm.translateInto(
+    if (cfg.loBusCfg.haveByteEn) (
+      io.loBus.d2hBus
+    ) else (
+      myLoD2hShiftedDataStmAdapter.io.loD2hBus
+    )
+  )(
+    dataAssignment=(outp, inp) => {
+      outp := inp.busPayload
+    }
+  )
+  if (!cfg.loBusCfg.haveByteEn) {
+    myLoD2hShiftedDataStmAdapter.io.byteSize := (
+      rDel2LoH2dPayload.busPayload.byteSize
+    )
+    myLoD2hShiftedDataStmAdapter.io.addr := (
+      rDel2LoH2dPayload.busPayload.addr
+    )
+    io.loBus.d2hBus << myLoD2hShiftedDataStmAdapter.io.hiD2hBus
+  }
 
   //val temp
   val myTempHaveHitCmpEqLeft = rdLineAttrs.tag
@@ -2396,6 +2412,7 @@ object LcvBusNonCoherentDataCacheWithSdramCtrl {
         burstAlwaysMaxSize=false,
         srcWidth=2,
         haveByteEn=false,
+        keepByteSize=false,
       ),
       loBusCacheCfg=LcvBusCacheConfig(
         kind=LcvCacheKind.D,
