@@ -734,12 +734,13 @@ case class LcvBusMem(
   //io.bus <> impl.io.bus
 }
 
-case class LcvBusMemSlowNonBurst(
+case class LcvBusMemSlowWhenBurst(
   cfg: LcvBusMemConfig,
 ) extends Component {
   //--------
   def busCfg = cfg.busCfg
   require(busCfg.allowBurst)
+  require(busCfg.haveByteEn)
   //--------
   val io = LcvBusMemIo(cfg=cfg)
   //--------
