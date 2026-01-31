@@ -168,7 +168,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
 
   val myD2hShiftedDataStmAdapter = (
     !cfg.busCfg.haveByteEn
-  ) generate(
+  ) generate (
     LcvBusD2hShiftedDataEtcStreamAdapter(
       cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(busCfg=cfg.busCfg)
     )
