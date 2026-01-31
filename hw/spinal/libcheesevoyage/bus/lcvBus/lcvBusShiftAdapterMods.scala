@@ -54,7 +54,8 @@ case class CalcLcvBusShiftedDataEtc(
         // myAddrLo represents the low bits of the address 
         val myByteSize = (
           (
-            idx & (
+            idx
+            & (
               ((1 << busCfg.byteSizeWidth) - 1)
               << busCfg.byteSizeWidth
             )
@@ -83,6 +84,7 @@ case class CalcLcvBusShiftedDataEtc(
           )
         }
       }
+      println(" ")
       //default {
       //  //io.byteEn := 0x0
       //  io.byteEn := U(io.byteEn.getWidth bits, default -> True)
@@ -120,16 +122,41 @@ case class CalcLcvBusShiftedDataEtc(
       for (idx <- 0 until (1 << (busCfg.byteSizeWidth * 2))) {
         val myAddrLo = idx & ((1 << busCfg.byteSizeWidth) - 1)
         // myAddrLo represents the low bits of the address 
+
         val myByteSize = (
           (
-            idx & (
+            idx
+            & (
               ((1 << busCfg.byteSizeWidth) - 1)
               << busCfg.byteSizeWidth
             )
           ) >> busCfg.byteSizeWidth
         )
-        // myByteSize represents the value of `byteSize + 1`
+        // myByteSize represents the value of `num bytes + 1`
+
+        val myBitSize = 1 << (myByteSize + 3)
+
+        //val myAddrShift = log2Up(myByteSize + 1)
+        val myDataShift = (
+          (myAddrLo & (~((1 << myByteSize) - 1))) << 3
+        )
+        println(
+          s"idx:${idx} myByteSize:${myByteSize} myAddrLo:${myAddrLo} "
+          + s"myBitSize:${myBitSize} "
+          + s"myDataShift:${myDataShift} "
+        )
+
+        is (idx) {
+          io.shiftedData := (
+            io.data(
+              io.data.high downto myDataShift
+            )(
+              (myBitSize.min(busCfg.dataWidth)) - 1 downto 0
+            ).resize(io.shiftedData.getWidth)
+          )
+        }
       }
+      println(" ")
     }
   })
 }
