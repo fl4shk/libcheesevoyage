@@ -2997,25 +2997,6 @@ extends Area {
       // END: no hazard resolution code; fix later 
       //--------
     }
-    val myDoModInFrontAreaArr = new ArrayBuffer[Area]()
-    //for (ydx <- 0 until memArrSize) {
-      doModInFrontFunc match {
-        case Some(myDoModInFrontFunc) => {
-          myDoModInFrontAreaArr += (
-            myDoModInFrontFunc(
-              tempUpMod(1)/*(ydx)*/,
-              tempUpMod(0)/*(ydx)*/,
-              cFront,
-              //ydx,
-            )
-            //.setName(s"${pipeName}_myDoModInFrontAreaArr_${ydx}")
-            .setName(s"${pipeName}_myDoModInFrontAreaArr")
-          )
-        }
-        case None => {
-        }
-      }
-    //}
 
     val rSetRdId = Reg(
       dataType=Bool(),
@@ -3339,6 +3320,26 @@ extends Area {
       tempUpMod(1) := tempUpMod(0)
     //}
     tempUpMod(1).allowOverride
+    val myDoModInFrontAreaArr = new ArrayBuffer[Area]()
+
+    //for (ydx <- 0 until memArrSize) {
+      doModInFrontFunc match {
+        case Some(myDoModInFrontFunc) => {
+          myDoModInFrontAreaArr += (
+            myDoModInFrontFunc(
+              tempUpMod(1)/*(ydx)*/,
+              tempUpMod(0)/*(ydx)*/,
+              cFront,
+              //ydx,
+            )
+            //.setName(s"${pipeName}_myDoModInFrontAreaArr_${ydx}")
+            .setName(s"${pipeName}_myDoModInFrontAreaArr")
+          )
+        }
+        case None => {
+        }
+      }
+    //}
     for (ydx <- 0 until memArrSize) {
       //for (extIdx <- 0 until extIdxLim) {
       //}
