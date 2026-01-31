@@ -86,33 +86,6 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       outp.busPayload := inp
     }
   )
-  val myD2hPushStm = Stream(
-    LcvBusDoStallFifoThingPayload(
-      LcvBusD2hPayload(cfg=busCfg),
-    )
-  )
-  val myD2hFifo = StreamFifo(
-    dataType=(
-      cloneOf(io.bus.d2hBus.payload)
-    ),
-    depth=(
-      busCfg.maxBurstSizeMinus1 + 1
-    ),
-    latency=cfg.busD2hFifoLatency,
-    forFMax=true,
-  )
-  io.bus.d2hBus << myD2hFifo.io.pop 
-  myD2hPushStm.translateInto(
-    //io.bus.d2hBus
-    //io.bus.d2hBus
-    myD2hFifo.io.push
-  )(
-    dataAssignment=(
-      outp, inp
-    ) => {
-      outp := inp.busPayload
-    }
-  )
   //myH2dDoStallFifoThing.io.push << 
   //myH2dDoStallFifoThing.io.doStallCacheMiss := False
   val myFifoThingDoStall = (
@@ -159,7 +132,6 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   //def myH2dPopStm = io.bus.h2dBus
   //def myD2hPushStm = io.bus.d2hBus
   myH2dPopStm.ready := False
-  myD2hPushStm.valid := False
 
   val myH2dPopThrowArea = new Area {
     val myH2dThrowCond = Bool()
@@ -193,6 +165,75 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     init(rH2dPayload.getZero)
   )
   def rSavedBusAddr = rSavedH2dPayload.busPayload.addr
+
+  val myD2hShiftedDataStmAdapter = (
+    !cfg.busCfg.haveByteEn
+  ) generate(
+    LcvBusD2hShiftedDataEtcStreamAdapter(
+      cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(busCfg=cfg.busCfg)
+    )
+  )
+  val myD2hPushStm = Stream(
+    LcvBusDoStallFifoThingPayload(
+      LcvBusD2hPayload(cfg=cfg.busCfg),
+      //optByteEnWidth=None,
+    )
+  )
+
+  myD2hPushStm.valid := False
+  myD2hPushStm.translateInto(
+    if (cfg.busCfg.haveByteEn) (
+      io.bus.d2hBus
+    ) else (
+      myD2hShiftedDataStmAdapter.io.loD2hBus
+    )
+  )(
+    dataAssignment=(outp, inp) => {
+      outp := inp.busPayload
+    }
+  )
+
+  //val myD2hPushStm = Stream(
+  //  LcvBusDoStallFifoThingPayload(
+  //    LcvBusD2hPayload(cfg=busCfg),
+  //  )
+  //)
+  val myD2hFifo = StreamFifo(
+    dataType=(
+      cloneOf(io.bus.d2hBus.payload)
+    ),
+    depth=(
+      busCfg.maxBurstSizeMinus1 + 1
+    ),
+    latency=cfg.busD2hFifoLatency,
+    forFMax=true,
+  )
+  io.bus.d2hBus << myD2hFifo.io.pop 
+
+  if (!cfg.busCfg.haveByteEn) {
+    myD2hShiftedDataStmAdapter.io.byteSize := (
+      rDel2H2dPayload.busPayload.byteSize
+    )
+    myD2hShiftedDataStmAdapter.io.addr := (
+      rDel2H2dPayload.busPayload.addr
+    )
+    //io.bus.d2hBus << myD2hShiftedDataStmAdapter.io.hiD2hBus
+    myD2hFifo.io.push << myD2hShiftedDataStmAdapter.io.hiD2hBus
+  }
+
+  //myD2hPushStm.translateInto(
+  //  //io.bus.d2hBus
+  //  //io.bus.d2hBus
+  //  myD2hFifo.io.push
+  //)(
+  //  dataAssignment=(
+  //    outp, inp
+  //  ) => {
+  //    outp := inp.busPayload
+  //  }
+  //)
+
+
   def myRamAddrRshift = log2Up(busCfg.dataWidth / 8)
   def doRamReadSync(
     busAddr: UInt,
@@ -1110,7 +1151,7 @@ object LcvBusMemTestConfig {
         allowBurst=true,
         burstAlwaysMaxSize=true,
         srcWidth=1,
-        haveByteEn=true,
+        haveByteEn=false,
         keepByteSize=false,
       ),
       cacheCfg=None,
@@ -1121,9 +1162,7 @@ object LcvBusMemTestConfig {
 }
 object LcvBusMemToVerilog extends App {
   LcvBusMemSpinalConfig.spinal.generateVerilog{
-    LcvBusMem(
-      cfg=LcvBusMemTestConfig.cfg
-    )
+    LcvBusMem(cfg=LcvBusMemTestConfig.cfg)
   }
 }
 
