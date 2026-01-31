@@ -181,17 +181,6 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   )
 
   myD2hPushStm.valid := False
-  myD2hPushStm.translateInto(
-    if (cfg.busCfg.haveByteEn) (
-      io.bus.d2hBus
-    ) else (
-      myD2hShiftedDataStmAdapter.io.loD2hBus
-    )
-  )(
-    dataAssignment=(outp, inp) => {
-      outp := inp.busPayload
-    }
-  )
 
   //val myD2hPushStm = Stream(
   //  LcvBusDoStallFifoThingPayload(
@@ -209,6 +198,18 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     forFMax=true,
   )
   io.bus.d2hBus << myD2hFifo.io.pop 
+  myD2hPushStm.translateInto(
+    if (cfg.busCfg.haveByteEn) (
+      //io.bus.d2hBus
+      myD2hFifo.io.push
+    ) else (
+      myD2hShiftedDataStmAdapter.io.loD2hBus
+    )
+  )(
+    dataAssignment=(outp, inp) => {
+      outp := inp.busPayload
+    }
+  )
 
   if (!cfg.busCfg.haveByteEn) {
     myD2hShiftedDataStmAdapter.io.byteSize := (
@@ -560,7 +561,8 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       ) {
         myD2hPushStm.busPayload.src := (
           //RegNext(
-            rH2dPayload.busPayload.src
+            //rH2dPayload.busPayload.src
+            rDel2H2dPayload.busPayload.src
             //rDel2H2dPayload.busPayload.src//,
           //  init=rDel2H2dPayload.busPayload.src.getZero
           //)
@@ -707,31 +709,36 @@ case class LcvBusMem(
 ) extends Component {
   val io = LcvBusMemIo(cfg=cfg)
   val myMemImpl = LcvBusMemImpl(cfg=cfg)
-  val myDeburster = LcvBusDeburster(cfg=LcvBusDebursterConfig(
+  val myDeburster = (
+    cfg.busCfg.allowBurst
+  ) generate (LcvBusDeburster(cfg=LcvBusDebursterConfig(
     loBusCfg=cfg.busCfg
-  ))
-  io.bus <> myDeburster.io.loBus
-  //myDeburster.io.hiBus <> myMemImpl.io.bus
-  myDeburster.io.hiBus.h2dBus.translateInto(
-    myMemImpl.io.bus.h2dBus
-  )(
-    dataAssignment=(
-      outp, inp
-    ) => {
-      outp.mainNonBurstInfo := inp.mainNonBurstInfo
-      outp.mainBurstInfo := outp.mainBurstInfo.getZero
-    }
-  )
-  myMemImpl.io.bus.d2hBus.translateInto(
-    myDeburster.io.hiBus.d2hBus
-  )(
-    dataAssignment=(
-      outp, inp
-    ) => {
-      outp.mainNonBurstInfo := inp.mainNonBurstInfo
-    }
-  )
-  //io.bus <> impl.io.bus
+  )))
+  if (cfg.busCfg.allowBurst) {
+    io.bus <> myDeburster.io.loBus
+    //myDeburster.io.hiBus <> myMemImpl.io.bus
+    myDeburster.io.hiBus.h2dBus.translateInto(
+      myMemImpl.io.bus.h2dBus
+    )(
+      dataAssignment=(
+        outp, inp
+      ) => {
+        outp.mainNonBurstInfo := inp.mainNonBurstInfo
+        outp.mainBurstInfo := outp.mainBurstInfo.getZero
+      }
+    )
+    myMemImpl.io.bus.d2hBus.translateInto(
+      myDeburster.io.hiBus.d2hBus
+    )(
+      dataAssignment=(
+        outp, inp
+      ) => {
+        outp.mainNonBurstInfo := inp.mainNonBurstInfo
+      }
+    )
+  } else {
+    io.bus <> myMemImpl.io.bus
+  }
 }
 
 case class LcvBusMemSlowWhenBurst(
