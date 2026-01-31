@@ -747,7 +747,7 @@ case class LcvBusMemSlowWhenBurst(
   //--------
   def busCfg = cfg.busCfg
   require(busCfg.allowBurst)
-  require(busCfg.haveByteEn)
+  //require(busCfg.haveByteEn)
   //--------
   val io = LcvBusMemIo(cfg=cfg)
   //--------
@@ -778,12 +778,26 @@ case class LcvBusMemSlowWhenBurst(
   //val rH2dPayload = (
   //  RegNext(io.bus.h2dBus.payload, init=io.bus.h2dBus.payload.getZero)
   //)
-  def myH2dPayload = io.bus.h2dBus.payload
-  val rSavedH2dPayload = (
-    Reg(cloneOf(io.bus.h2dBus.payload))
-    init(io.bus.h2dBus.payload.getZero)
+  val myTempBusCfg = (
+    if (!busCfg.haveByteEn) (
+      LcvBusConfig(
+        mainCfg=busCfg.mainCfg.mkCopyWithByteEn(Some(true)),
+        cacheCfg=busCfg.cacheCfg,
+      )
+    ) else (
+      busCfg
+    )
   )
-  //io.bus.h2dBus.ready.setAsReg() init(False)
+  val myH2dStm = (
+    //cloneOf(io.bus.h2dBus)
+    Stream(LcvBusH2dPayload(cfg=myTempBusCfg))
+  )
+  //def myH2dPayload = myH2dStm.payload
+  val rSavedH2dPayload = (
+    Reg(cloneOf(myH2dStm.payload))
+    init(myH2dStm.payload.getZero)
+  )
+  //myH2dStm.ready.setAsReg() init(False)
   //io.bus.d2hBus.valid.setAsReg() init(False)
   //io.bus.d2hBus.payload.setAsReg() init(io.bus.d2hBus.payload.getZero)
   val rH2dReady = Reg(Bool(), init=False)
@@ -791,9 +805,27 @@ case class LcvBusMemSlowWhenBurst(
   val rD2hPayload = (
     Reg(cloneOf(io.bus.d2hBus.payload), init=io.bus.d2hBus.payload.getZero)
   )
-  io.bus.h2dBus.ready := rH2dReady
+  myH2dStm.ready := rH2dReady
   //io.bus.d2hBus.valid := rD2hValid
   //io.bus.d2hBus.payload := rD2hPayload
+  val myH2dShiftedDataStmAdapter = (
+    !busCfg.haveByteEn
+  ) generate (
+    LcvBusH2dShiftedDataEtcStreamAdapter(
+      cfg=LcvBusH2dShiftedDataEtcStreamAdapterConfig(
+        loBusCfg=busCfg
+      )
+    )
+  )
+  val myD2hShiftedDataStmAdapter = (
+    !busCfg.haveByteEn
+  ) generate (
+    LcvBusD2hShiftedDataEtcStreamAdapter(
+      cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(
+        busCfg=busCfg
+      )
+    )
+  )
 
   val myD2hFifo = (
     StreamFifo(
@@ -802,13 +834,29 @@ case class LcvBusMemSlowWhenBurst(
         cloneOf(io.bus.d2hBus.payload)
       ),
       depth=(busCfg.maxBurstSizeMinus1 + 1),
-      latency=2,
+      latency=cfg.busD2hFifoLatency,
       forFMax=true,
     )
   )
   io.bus.d2hBus << myD2hFifo.io.pop
-  myD2hFifo.io.push.valid := rD2hValid
-  myD2hFifo.io.push.payload := rD2hPayload
+  val myD2hStm = cloneOf(myD2hFifo.io.push)
+
+  myD2hStm.valid := rD2hValid
+  myD2hStm.payload := rD2hPayload
+  if (!busCfg.haveByteEn) {
+    //myH2dShiftedDataStmAdapter
+    myH2dShiftedDataStmAdapter.io.loH2dBus << io.bus.h2dBus
+    myH2dStm << myH2dShiftedDataStmAdapter.io.hiH2dBus
+
+    myD2hShiftedDataStmAdapter.io.addr := rSavedH2dPayload.addr
+    myD2hShiftedDataStmAdapter.io.byteSize := rSavedH2dPayload.byteSize
+    myD2hShiftedDataStmAdapter.io.loD2hBus << myD2hStm
+    myD2hFifo.io.push << myD2hShiftedDataStmAdapter.io.hiD2hBus
+  } else {
+    myH2dStm << io.bus.h2dBus
+    myD2hFifo.io.push.valid := rD2hValid
+    myD2hFifo.io.push.payload := rD2hPayload
+  }
 
   def myRamAddrRshift = log2Up(busCfg.dataWidth / 8)
   def myRamAddrRange = (
@@ -819,12 +867,12 @@ case class LcvBusMemSlowWhenBurst(
   //ram.io.rdEn := rRamRdEn
 
   ram.io.rdEn := False
-  ram.io.rdAddr := io.bus.h2dBus.addr(myRamAddrRange)
+  ram.io.rdAddr := myH2dStm.addr(myRamAddrRange)
 
   ram.io.wrEn := False
-  ram.io.wrAddr := io.bus.h2dBus.addr(myRamAddrRange)
-  ram.io.wrData := io.bus.h2dBus.data.asBits
-  ram.io.wrByteEn := io.bus.h2dBus.byteEn.asBits
+  ram.io.wrAddr := myH2dStm.addr(myRamAddrRange)
+  ram.io.wrData := myH2dStm.data.asBits
+  ram.io.wrByteEn := myH2dStm.byteEn.asBits
   //val rRamWrEn = Reg(Bool(), init=False)
   //val rRamWrAddr = (
   //  Reg(cloneOf(ram.io.wrAddr), init=ram.io.wrAddr.getZero)
@@ -881,25 +929,25 @@ case class LcvBusMemSlowWhenBurst(
 
   switch (rState) {
     is (State.IDLE) {
-      rSavedH2dPayload := io.bus.h2dBus.payload
+      rSavedH2dPayload := myH2dStm.payload
 
       rWrBurstCnt := 0x0
 
       rD2hValid := False
       rD2hPayload := rD2hPayload.getZero
-      //when (io.bus.h2dBus.valid) {
-      //  rD2hPayload.src := io.bus.h2dBus.src
+      //when (myH2dStm.valid) {
+      //  rD2hPayload.src := myH2dStm.src
       //}
 
       switch (
-        io.bus.h2dBus.valid
-        ## io.bus.h2dBus.isWrite
-        ## io.bus.h2dBus.burstFirst
+        myH2dStm.valid
+        ## myH2dStm.isWrite
+        ## myH2dStm.burstFirst
       ) {
         is (B"100") {
           // read, non-burst
           rState := State.NON_BURST_READ_PIPE_1
-          //io.bus.h2dBus.ready := True
+          //myH2dStm.ready := True
           //ram.io.rdEn := (
           //  //False
           //  //True
@@ -916,9 +964,9 @@ case class LcvBusMemSlowWhenBurst(
             State.READ_BURST_PIPE_2
             //State.READ_BURST_PIPE_1
           )
-          //io.bus.h2dBus.ready := True
+          //myH2dStm.ready := True
           ram.io.rdAddr := (
-            io.bus.h2dBus.burstAddr(
+            myH2dStm.burstAddr(
               rRdBurstCnt(1).asUInt.getZero,
               incrBurstCnt=false,
             )(myRamAddrRange)
@@ -926,18 +974,18 @@ case class LcvBusMemSlowWhenBurst(
           //rRdBurstCnt := 1
           doIncrRdBurstCnt()
           rH2dReady := True
-          when (io.bus.h2dBus.valid) {
-            rD2hPayload.src := io.bus.h2dBus.src
+          when (myH2dStm.valid) {
+            rD2hPayload.src := myH2dStm.src
           }
           //rD2hPayload.burstFirst := False
         }
         is (B"110") {
           // write, non-burst
           rState := State.NON_BURST
-          //io.bus.h2dBus.ready := True
+          //myH2dStm.ready := True
           rH2dReady := True
-          //when (io.bus.h2dBus.valid) {
-          //  rD2hPayload.src := io.bus.h2dBus.src
+          //when (myH2dStm.valid) {
+          //  rD2hPayload.src := myH2dStm.src
           //}
           ram.io.rdEn := False
           ram.io.wrEn := True
@@ -945,15 +993,15 @@ case class LcvBusMemSlowWhenBurst(
         is (B"111") {
           // write, burst
           rState := State.WRITE_BURST
-          //io.bus.h2dBus.ready := False
+          //myH2dStm.ready := False
           rH2dReady := False
-          //when (io.bus.h2dBus.valid) {
-          //  rD2hPayload.src := io.bus.h2dBus.src
+          //when (myH2dStm.valid) {
+          //  rD2hPayload.src := myH2dStm.src
           //}
         }
         default {
           // no active transaction
-          //io.bus.h2dBus.ready := False
+          //myH2dStm.ready := False
           rH2dReady := False
         }
       }
@@ -964,20 +1012,20 @@ case class LcvBusMemSlowWhenBurst(
       rState := State.NON_BURST
     }
     is (State.NON_BURST) {
-      //io.bus.h2dBus.ready := False
-      //when (io.bus.h2dBus.fire) {
-      //  rD2hPayload.src := io.bus.h2dBus.src
+      //myH2dStm.ready := False
+      //when (myH2dStm.fire) {
+      //  rD2hPayload.src := myH2dStm.src
       //}
       ram.io.rdEn := False
       ram.io.wrEn := False
-      when (io.bus.h2dBus.fire) {
-        rD2hPayload.src := io.bus.h2dBus.src
+      when (myH2dStm.fire) {
+        rD2hPayload.src := myH2dStm.src
         rH2dReady := False
       }
       when (
         //!rH2dReady
         //||
-        io.bus.h2dBus.fire
+        myH2dStm.fire
       ) {
         rD2hValid := True
         rD2hPayload.data.assignFromBits(ram.io.rdData)
@@ -1003,7 +1051,7 @@ case class LcvBusMemSlowWhenBurst(
       doIncrRdBurstCnt()
     }
     is (State.READ_BURST_PIPE_1) {
-      //io.bus.h2dBus.ready := False
+      //myH2dStm.ready := False
       rState := State.READ_BURST
       ram.io.rdEn := True
       ram.io.rdAddr := (
@@ -1020,7 +1068,7 @@ case class LcvBusMemSlowWhenBurst(
       rD2hPayload.data := ram.io.rdData.asUInt
     }
     is (State.READ_BURST) {
-      //io.bus.h2dBus.ready := False
+      //myH2dStm.ready := False
       //rH2dReady := False
       ram.io.rdEn := RegNext(ram.io.rdEn, init=ram.io.rdEn.getZero)
       ram.io.rdAddr := (
@@ -1067,8 +1115,8 @@ case class LcvBusMemSlowWhenBurst(
     //  
     //}
     is (State.WRITE_BURST) {
-      when (io.bus.h2dBus.fire) {
-        rD2hPayload.src := io.bus.h2dBus.src
+      when (myH2dStm.fire) {
+        rD2hPayload.src := myH2dStm.src
       }
       rH2dReady := True
       ram.io.wrAddr := (
@@ -1077,20 +1125,20 @@ case class LcvBusMemSlowWhenBurst(
           incrBurstCnt=false,
         )(myRamAddrRange)
       )
-      ram.io.wrData := myH2dPayload.data.asBits
-      ram.io.wrByteEn := myH2dPayload.byteEn.asBits
+      ram.io.wrData := myH2dStm.data.asBits
+      ram.io.wrByteEn := myH2dStm.byteEn.asBits
 
-      when (io.bus.h2dBus.fire) {
+      when (myH2dStm.fire) {
         ram.io.wrEn := True
         rWrBurstCnt := rWrBurstCnt + 1
-        when (myH2dPayload.burstLast) {
+        when (myH2dStm.burstLast) {
           rState := State.WRITE_BURST_POST_1
           rH2dReady := False
         }
       }
     }
     is (State.WRITE_BURST_POST_1) {
-      //io.bus.h2dBus.ready := False
+      //myH2dStm.ready := False
       rH2dReady := False
       rD2hValid := True
       rWrBurstCnt := 0x0
