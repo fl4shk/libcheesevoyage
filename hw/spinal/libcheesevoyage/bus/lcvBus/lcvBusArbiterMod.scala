@@ -38,7 +38,6 @@ case class LcvBusArbiterIo(
   )
 }
 
-// TODO: *maybe* remove `RegNext(...valid)`, `RegNext(...payload)`
 case class LcvBusArbiter(
   cfg: LcvBusArbiterConfig,
 ) extends Component {
@@ -70,6 +69,7 @@ case class LcvBusArbiter(
   //val host.h2dBus = io.hostVec(rArbitCnt).h2dBus
   //val host.d2hBus = io.hostVec(rArbitCnt).d2hBus
   def host = io.hostVec(rArbitCnt)
+  def prevHost = io.hostVec(RegNext(rArbitCnt, init=rArbitCnt.getZero))
 
   val rSeenHostH2dFireEtc = (
     Vec.fill(3)(
@@ -81,23 +81,27 @@ case class LcvBusArbiter(
   ): Unit = {
     if (idx == 0) {
       when (
-        RegNext(host.h2dBus.valid, init=False)
+        //RegNext(host.h2dBus.valid, init=False)
+        host.h2dBus.valid
         && host.h2dBus.ready
       ) {
         rSeenHostH2dFireEtc(idx) := True
       }
     } else if (idx == 1) {
       when (
-        RegNext(host.h2dBus.valid, init=False)
+        //RegNext(host.h2dBus.valid, init=False)
+        host.h2dBus.valid
         && host.h2dBus.ready
       ) {
         rSeenHostH2dFireEtc(idx) := True
       }
     } else if (idx == 2) {
       when (
-        RegNext(host.h2dBus.valid, init=False)
+        //RegNext(host.h2dBus.valid, init=False)
+        host.h2dBus.valid
         && host.h2dBus.ready
-        && RegNext(host.h2dBus.burstLast, init=False)
+        //&& RegNext(host.h2dBus.burstLast, init=False)
+        && host.h2dBus.burstLast
       ) {
         rSeenHostH2dFireEtc(idx) := True
       }
@@ -141,12 +145,12 @@ case class LcvBusArbiter(
     is (State.IDLE) {
       //rSeenHostH2dFireEtc.foreach(_ := False)
       switch (
-        RegNext(
+        //RegNext(
           host.h2dBus.valid
           ## host.h2dBus.burstFirst
           ## host.h2dBus.isWrite
-        )
-        init(0x0)
+        //)
+        //init(0x0)
       ) {
         is (M"10-") {
           // either read or write, but *NOT* a burst
@@ -187,7 +191,8 @@ case class LcvBusArbiter(
       maybeSetSeenHostH2dFireEtc(0)
       when (
         rSeenHostH2dFireEtc(0)
-        && RegNext(host.d2hBus.valid, init=False)
+        //&& RegNext(host.d2hBus.valid, init=False)
+        && host.d2hBus.valid
         && host.d2hBus.ready
       ) {
         rState := State.IDLE
@@ -208,9 +213,11 @@ case class LcvBusArbiter(
 
       when (
         rSeenHostH2dFireEtc(1)
-        && RegNext(host.d2hBus.valid, init=False)
+        //&& RegNext(host.d2hBus.valid, init=False)
+        && host.d2hBus.valid
         && host.d2hBus.ready
-        && RegNext(host.d2hBus.burstLast)
+        //&& RegNext(host.d2hBus.burstLast, init=False)
+        && host.d2hBus.burstLast
       ) {
         rState := State.IDLE
         doIncrCntEtc(Some(1))
@@ -231,9 +238,10 @@ case class LcvBusArbiter(
 
       when (
         rSeenHostH2dFireEtc(2)
-        && RegNext(host.d2hBus.valid, init=False)
+        //&& RegNext(host.d2hBus.valid, init=False)
+        && host.d2hBus.valid
         && host.d2hBus.ready
-        //&& RegNext(host.d2hBus.burstLast)
+        //&& RegNext(host.d2hBus.burstLast, init=False)
       ) {
         rState := State.IDLE
         doIncrCntEtc(Some(2))
