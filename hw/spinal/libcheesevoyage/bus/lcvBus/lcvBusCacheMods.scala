@@ -743,12 +743,14 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
     }
   )
   if (!cfg.loBusCfg.haveByteEn) {
-    myLoD2hShiftedDataStmAdapter.io.byteSize := (
-      rDel2LoH2dPayload.busPayload.byteSize
-    )
-    myLoD2hShiftedDataStmAdapter.io.addr := (
-      rDel2LoH2dPayload.busPayload.addr
-    )
+    //myLoD2hShiftedDataStmAdapter.io.byteSize := (
+    //  rDel2LoH2dPayload.busPayload.byteSize
+    //  //rSavedLoH2dPayload.busPayload.byteSize
+    //)
+    //myLoD2hShiftedDataStmAdapter.io.addr := (
+    //  rDel2LoH2dPayload.busPayload.addr
+    //  //rSavedLoH2dPayload.busPayload.addr
+    //)
     io.loBus.d2hBus << myLoD2hShiftedDataStmAdapter.io.hiD2hBus
   }
 
