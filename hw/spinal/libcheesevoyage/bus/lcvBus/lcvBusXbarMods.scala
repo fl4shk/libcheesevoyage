@@ -58,7 +58,7 @@ case class LcvBusXbarIo(
 }
 
 // this is incomplete I think, so I'll come back to it later!
-// TODO: remove `RegNext(...valid)`, `RegNext(...payload)`
+// TODO: *maybe* remove `RegNext(...valid)`, `RegNext(...payload)`
 //case class LcvBusXbarCoherent(
 //  cfg: LcvBusXbarConfig,
 //) extends Component {
@@ -204,237 +204,237 @@ case class LcvBusXbarIo(
 //  }
 //}
 
-// TODO: remove `RegNext(...valid)`, `RegNext(...payload)`
-//case class LcvBusXbarNonCoherent(
-//  cfg: LcvBusXbarConfig,
-//) extends Component {
-//  //--------
-//  // round robin bus multi-arbiter, non-cache-coherent
-//  //--------
-//  def busCfg = cfg.busCfg
-//  def cacheCfg = cfg.busCfg.cacheCfg
-//  require(
-//    cfg.busCfg.cacheCfg == None
-//  )
-//  //--------
-//  val io = LcvBusXbarIo(cfg=cfg)
-//
-//  for (dev <- io.devVec) {
-//    dev.d2hBus.ready := False
-//    dev.h2dBus.valid := False
-//    dev.h2dBus.payload := dev.h2dBus.payload.getZero
-//  }
-//  for (
-//    //hostIdx <- 0 until cfg.numHosts
-//    host <- io.hostVec
-//  ) {
-//    //val host.h2dBus = host.h2dBus
-//    //val host.d2hBus = host.d2hBus
-//    host.d2hBus.valid := False
-//    host.d2hBus.payload := host.d2hBus.payload.getZero
-//    host.h2dBus.ready := False
-//  }
-//
-//  val rSeenHostH2dFireEtcVec = (
-//    Vec.fill(cfg.numDevs) {
-//      Vec.fill(3)(
-//        Reg(Bool(), init=False)
-//      )
-//    }
-//  )
-//
-//  object State extends SpinalEnum(defaultEncoding=binarySequential) {
-//    val
-//      IDLE,
-//      NON_BURST,
-//      READ_BURST,
-//      WRITE_BURST
-//      = newElement();
-//  }
-//  val rStateVec = (
-//    Vec.fill(cfg.numDevs)(
-//      Reg(State())
-//      init(State.IDLE)
-//    )
-//  )
-//  val rArbitCntVec = (
-//    Vec.fill(cfg.numDevs)(
-//      Reg(UInt(log2Up(cfg.numHosts) bits))
-//      init(0x0)
-//    )
-//  )
-//  for (devIdx <- 0 until cfg.numDevs) {
-//    val rArbitCnt = rArbitCntVec(devIdx)
-//
-//    //val host.h2dBus = io.hostVec(rArbitCnt).h2dBus
-//    //val host.d2hBus = io.hostVec(rArbitCnt).d2hBus
-//    def host = io.hostVec(rArbitCnt)
-//
-//    val rState = rStateVec(devIdx)
-//    val dev = io.devVec(devIdx)
-//    val rSeenHostH2dFireEtc = rSeenHostH2dFireEtcVec(devIdx)
-//
-//    def doIncrCntEtc(
-//      seenHostH2dFireEtcIdx: Option[Int]
-//    ): Unit = {
-//      seenHostH2dFireEtcIdx match {
-//        case Some(myIdx) => {
-//          rSeenHostH2dFireEtcVec(devIdx)(myIdx) := False
-//        }
-//        case None => {
-//        }
-//      }
-//      if ((1 << log2Up(cfg.numHosts)) == cfg.numHosts) {
-//        rArbitCnt := rArbitCnt + 1
-//      } else {
-//        when (rArbitCnt + 1 < cfg.numHosts) {
-//          rArbitCnt := rArbitCnt + 1
-//        } otherwise {
-//          rArbitCnt := 0x0
-//        }
-//      }
-//    }
-//    def maybeSetSeenHostH2dFireEtc(
-//      idx: Int
-//    ): Unit = {
-//      if (idx == 0) {
-//        when (
-//          RegNext(host.h2dBus.valid, init=False)
-//          && host.h2dBus.ready
-//        ) {
-//          rSeenHostH2dFireEtc(idx) := True
-//        }
-//      } else if (idx == 1) {
-//        when (
-//          RegNext(host.h2dBus.valid, init=False)
-//          && host.h2dBus.ready
-//        ) {
-//          rSeenHostH2dFireEtc(idx) := True
-//        }
-//      } else if (idx == 2) {
-//        when (
-//          RegNext(host.h2dBus.valid, init=False)
-//          && host.h2dBus.ready
-//          && RegNext(host.h2dBus.burstLast, init=False)
-//        ) {
-//          rSeenHostH2dFireEtc(idx) := True
-//        }
-//      } else {
-//        require(false)
-//      }
-//    }
-//
-//    switch (rState) {
-//      is (State.IDLE) {
-//        //rSeenHostH2dFireEtc.foreach(_ := False)
-//        switch (
-//          RegNext(
-//            (
-//              host.h2dBus.valid
-//              && host.h2dBus.addr(cfg.mmapCfg.addrSliceRange) === devIdx
-//            )
-//            ## host.h2dBus.burstFirst
-//            ## host.h2dBus.isWrite
-//          )
-//          init(0x0)
-//        ) {
-//          is (M"10-") {
-//            // either read or write, but *NOT* a burst
-//            rState := State.NON_BURST
-//            dev.h2dBus << host.h2dBus 
-//            host.d2hBus << dev.d2hBus
-//            maybeSetSeenHostH2dFireEtc(0)
-//          }
-//          is (M"110") {
-//            // read burst
-//            rState := State.READ_BURST
-//            dev.h2dBus << host.h2dBus 
-//            host.d2hBus << dev.d2hBus
-//
-//            maybeSetSeenHostH2dFireEtc(1)
-//          }
-//          is (M"111") {
-//            // write burst
-//            rState := State.WRITE_BURST
-//            dev.h2dBus << host.h2dBus 
-//            host.d2hBus << dev.d2hBus
-//
-//            maybeSetSeenHostH2dFireEtc(2)
-//          }
-//          default {
-//            // the current host is not requesting a transaction
-//            doIncrCntEtc(None)
-//          }
-//        }
-//      }
-//      is (State.NON_BURST) {
-//        dev.h2dBus << host.h2dBus 
-//        host.d2hBus << dev.d2hBus
-//
-//        //when (
-//        //  RegNext(host.h2dBus.valid, init=False)
-//        //  && host.h2dBus.ready
-//        //) {
-//        //  rSeenHostH2dFireEtc(0) := True
-//        //}
-//        maybeSetSeenHostH2dFireEtc(0)
-//
-//        when (
-//          rSeenHostH2dFireEtc(0)
-//          && RegNext(host.d2hBus.valid, init=False)
-//          && host.d2hBus.ready
-//        ) {
-//          rState := State.IDLE
-//          doIncrCntEtc(Some(0))
-//        }
-//      }
-//      is (State.READ_BURST) {
-//        dev.h2dBus << host.h2dBus 
-//        host.d2hBus << dev.d2hBus
-//
-//        //when (
-//        //  RegNext(host.h2dBus.valid, init=False)
-//        //  && host.h2dBus.ready
-//        //) {
-//        //  rSeenHostH2dFireEtc(1) := True
-//        //}
-//        maybeSetSeenHostH2dFireEtc(1)
-//
-//        when (
-//          rSeenHostH2dFireEtc(1)
-//          && RegNext(host.d2hBus.valid, init=False)
-//          && host.d2hBus.ready
-//          && RegNext(host.d2hBus.burstLast)
-//        ) {
-//          rState := State.IDLE
-//          doIncrCntEtc(Some(1))
-//        }
-//      }
-//      is (State.WRITE_BURST) {
-//        dev.h2dBus << host.h2dBus 
-//        host.d2hBus << dev.d2hBus
-//
-//        //when (
-//        //  RegNext(host.h2dBus.valid, init=False)
-//        //  && host.h2dBus.ready
-//        //  && RegNext(host.h2dBus.burstLast, init=False)
-//        //) {
-//        //  rSeenHostH2dFireEtc(2) := True
-//        //}
-//        maybeSetSeenHostH2dFireEtc(2)
-//
-//        when (
-//          rSeenHostH2dFireEtc(2)
-//          && RegNext(host.d2hBus.valid, init=False)
-//          && host.d2hBus.ready
-//        ) {
-//          rState := State.IDLE
-//          doIncrCntEtc(Some(2))
-//        }
-//      }
-//    }
-//  }
-//}
+// TODO: *maybe* remove `RegNext(...valid)`, `RegNext(...payload)`
+case class LcvBusXbarNonCoherent(
+  cfg: LcvBusXbarConfig,
+) extends Component {
+  //--------
+  // round robin bus multi-arbiter, non-cache-coherent
+  //--------
+  def busCfg = cfg.busCfg
+  def cacheCfg = cfg.busCfg.cacheCfg
+  require(
+    cfg.busCfg.cacheCfg == None
+  )
+  //--------
+  val io = LcvBusXbarIo(cfg=cfg)
+
+  for (dev <- io.devVec) {
+    dev.d2hBus.ready := False
+    dev.h2dBus.valid := False
+    dev.h2dBus.payload := dev.h2dBus.payload.getZero
+  }
+  for (
+    //hostIdx <- 0 until cfg.numHosts
+    host <- io.hostVec
+  ) {
+    //val host.h2dBus = host.h2dBus
+    //val host.d2hBus = host.d2hBus
+    host.d2hBus.valid := False
+    host.d2hBus.payload := host.d2hBus.payload.getZero
+    host.h2dBus.ready := False
+  }
+
+  val rSeenHostH2dFireEtcVec = (
+    Vec.fill(cfg.numDevs) {
+      Vec.fill(3)(
+        Reg(Bool(), init=False)
+      )
+    }
+  )
+
+  object State extends SpinalEnum(defaultEncoding=binarySequential) {
+    val
+      IDLE,
+      NON_BURST,
+      READ_BURST,
+      WRITE_BURST
+      = newElement();
+  }
+  val rStateVec = (
+    Vec.fill(cfg.numDevs)(
+      Reg(State())
+      init(State.IDLE)
+    )
+  )
+  val rArbitCntVec = (
+    Vec.fill(cfg.numDevs)(
+      Reg(UInt(log2Up(cfg.numHosts) bits))
+      init(0x0)
+    )
+  )
+  for (devIdx <- 0 until cfg.numDevs) {
+    val rArbitCnt = rArbitCntVec(devIdx)
+
+    //val host.h2dBus = io.hostVec(rArbitCnt).h2dBus
+    //val host.d2hBus = io.hostVec(rArbitCnt).d2hBus
+    def host = io.hostVec(rArbitCnt)
+
+    val rState = rStateVec(devIdx)
+    val dev = io.devVec(devIdx)
+    val rSeenHostH2dFireEtc = rSeenHostH2dFireEtcVec(devIdx)
+
+    def doIncrCntEtc(
+      seenHostH2dFireEtcIdx: Option[Int]
+    ): Unit = {
+      seenHostH2dFireEtcIdx match {
+        case Some(myIdx) => {
+          rSeenHostH2dFireEtcVec(devIdx)(myIdx) := False
+        }
+        case None => {
+        }
+      }
+      if ((1 << log2Up(cfg.numHosts)) == cfg.numHosts) {
+        rArbitCnt := rArbitCnt + 1
+      } else {
+        when (rArbitCnt + 1 < cfg.numHosts) {
+          rArbitCnt := rArbitCnt + 1
+        } otherwise {
+          rArbitCnt := 0x0
+        }
+      }
+    }
+    def maybeSetSeenHostH2dFireEtc(
+      idx: Int
+    ): Unit = {
+      if (idx == 0) {
+        when (
+          RegNext(host.h2dBus.valid, init=False)
+          && host.h2dBus.ready
+        ) {
+          rSeenHostH2dFireEtc(idx) := True
+        }
+      } else if (idx == 1) {
+        when (
+          RegNext(host.h2dBus.valid, init=False)
+          && host.h2dBus.ready
+        ) {
+          rSeenHostH2dFireEtc(idx) := True
+        }
+      } else if (idx == 2) {
+        when (
+          RegNext(host.h2dBus.valid, init=False)
+          && host.h2dBus.ready
+          && RegNext(host.h2dBus.burstLast, init=False)
+        ) {
+          rSeenHostH2dFireEtc(idx) := True
+        }
+      } else {
+        require(false)
+      }
+    }
+
+    switch (rState) {
+      is (State.IDLE) {
+        //rSeenHostH2dFireEtc.foreach(_ := False)
+        switch (
+          RegNext(
+            (
+              host.h2dBus.valid
+              && host.h2dBus.addr(cfg.mmapCfg.addrSliceRange) === devIdx
+            )
+            ## host.h2dBus.burstFirst
+            ## host.h2dBus.isWrite
+          )
+          init(0x0)
+        ) {
+          is (M"10-") {
+            // either read or write, but *NOT* a burst
+            rState := State.NON_BURST
+            dev.h2dBus << host.h2dBus 
+            host.d2hBus << dev.d2hBus
+            maybeSetSeenHostH2dFireEtc(0)
+          }
+          is (M"110") {
+            // read burst
+            rState := State.READ_BURST
+            dev.h2dBus << host.h2dBus 
+            host.d2hBus << dev.d2hBus
+
+            maybeSetSeenHostH2dFireEtc(1)
+          }
+          is (M"111") {
+            // write burst
+            rState := State.WRITE_BURST
+            dev.h2dBus << host.h2dBus 
+            host.d2hBus << dev.d2hBus
+
+            maybeSetSeenHostH2dFireEtc(2)
+          }
+          default {
+            // the current host is not requesting a transaction
+            doIncrCntEtc(None)
+          }
+        }
+      }
+      is (State.NON_BURST) {
+        dev.h2dBus << host.h2dBus 
+        host.d2hBus << dev.d2hBus
+
+        //when (
+        //  RegNext(host.h2dBus.valid, init=False)
+        //  && host.h2dBus.ready
+        //) {
+        //  rSeenHostH2dFireEtc(0) := True
+        //}
+        maybeSetSeenHostH2dFireEtc(0)
+
+        when (
+          rSeenHostH2dFireEtc(0)
+          && RegNext(host.d2hBus.valid, init=False)
+          && host.d2hBus.ready
+        ) {
+          rState := State.IDLE
+          doIncrCntEtc(Some(0))
+        }
+      }
+      is (State.READ_BURST) {
+        dev.h2dBus << host.h2dBus 
+        host.d2hBus << dev.d2hBus
+
+        //when (
+        //  RegNext(host.h2dBus.valid, init=False)
+        //  && host.h2dBus.ready
+        //) {
+        //  rSeenHostH2dFireEtc(1) := True
+        //}
+        maybeSetSeenHostH2dFireEtc(1)
+
+        when (
+          rSeenHostH2dFireEtc(1)
+          && RegNext(host.d2hBus.valid, init=False)
+          && host.d2hBus.ready
+          && RegNext(host.d2hBus.burstLast)
+        ) {
+          rState := State.IDLE
+          doIncrCntEtc(Some(1))
+        }
+      }
+      is (State.WRITE_BURST) {
+        dev.h2dBus << host.h2dBus 
+        host.d2hBus << dev.d2hBus
+
+        //when (
+        //  RegNext(host.h2dBus.valid, init=False)
+        //  && host.h2dBus.ready
+        //  && RegNext(host.h2dBus.burstLast, init=False)
+        //) {
+        //  rSeenHostH2dFireEtc(2) := True
+        //}
+        maybeSetSeenHostH2dFireEtc(2)
+
+        when (
+          rSeenHostH2dFireEtc(2)
+          && RegNext(host.d2hBus.valid, init=False)
+          && host.d2hBus.ready
+        ) {
+          rState := State.IDLE
+          doIncrCntEtc(Some(2))
+        }
+      }
+    }
+  }
+}
 
 object LcvBusXbarTestSpinalConfig {
   def spinal = SpinalConfig(
