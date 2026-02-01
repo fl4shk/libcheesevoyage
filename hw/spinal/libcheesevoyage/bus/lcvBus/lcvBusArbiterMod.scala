@@ -155,23 +155,23 @@ case class LcvBusArbiter(
         is (M"10-") {
           // either read or write, but *NOT* a burst
           rState := State.NON_BURST
-          io.dev.h2dBus << host.h2dBus 
-          host.d2hBus << io.dev.d2hBus
-          maybeSetSeenHostH2dFireEtc(0)
+          //io.dev.h2dBus << host.h2dBus 
+          ////host.d2hBus << io.dev.d2hBus
+          //maybeSetSeenHostH2dFireEtc(0)
         }
         is (M"110") {
           // read burst
           rState := State.READ_BURST
-          io.dev.h2dBus << host.h2dBus 
-          host.d2hBus << io.dev.d2hBus
-          maybeSetSeenHostH2dFireEtc(1)
+          //io.dev.h2dBus << host.h2dBus 
+          ////host.d2hBus << io.dev.d2hBus
+          //maybeSetSeenHostH2dFireEtc(1)
         }
         is (M"111") {
           // write burst
           rState := State.WRITE_BURST
-          io.dev.h2dBus << host.h2dBus 
-          host.d2hBus << io.dev.d2hBus
-          maybeSetSeenHostH2dFireEtc(2)
+          //io.dev.h2dBus << host.h2dBus 
+          ////host.d2hBus << io.dev.d2hBus
+          //maybeSetSeenHostH2dFireEtc(2)
         }
         default {
           // the current host is not requesting a transaction
@@ -180,7 +180,10 @@ case class LcvBusArbiter(
       }
     }
     is (State.NON_BURST) {
-      io.dev.h2dBus << host.h2dBus 
+      when (!rSeenHostH2dFireEtc(0)) {
+        io.dev.h2dBus << host.h2dBus 
+        maybeSetSeenHostH2dFireEtc(0)
+      }
       host.d2hBus << io.dev.d2hBus
       //when (
       //  RegNext(host.h2dBus.valid, init=False)
@@ -188,7 +191,6 @@ case class LcvBusArbiter(
       //) {
       //  rSeenHostH2dFireEtc(0) := True
       //}
-      maybeSetSeenHostH2dFireEtc(0)
       when (
         rSeenHostH2dFireEtc(0)
         //&& RegNext(host.d2hBus.valid, init=False)
@@ -200,7 +202,10 @@ case class LcvBusArbiter(
       }
     }
     is (State.READ_BURST) {
-      io.dev.h2dBus << host.h2dBus 
+      when (!rSeenHostH2dFireEtc(1)) {
+        io.dev.h2dBus << host.h2dBus 
+        maybeSetSeenHostH2dFireEtc(1)
+      }
       host.d2hBus << io.dev.d2hBus
 
       //when (
@@ -209,7 +214,6 @@ case class LcvBusArbiter(
       //) {
       //  rSeenHostH2dFireEtc(1) := True
       //}
-      maybeSetSeenHostH2dFireEtc(1)
 
       when (
         rSeenHostH2dFireEtc(1)
@@ -224,7 +228,10 @@ case class LcvBusArbiter(
       }
     }
     is (State.WRITE_BURST) {
-      io.dev.h2dBus << host.h2dBus 
+      when (!rSeenHostH2dFireEtc(2)) {
+        io.dev.h2dBus << host.h2dBus 
+        maybeSetSeenHostH2dFireEtc(2)
+      }
       host.d2hBus << io.dev.d2hBus
 
       //when (
@@ -234,7 +241,6 @@ case class LcvBusArbiter(
       //) {
       //  rSeenHostH2dFireEtc(2) := True
       //}
-      maybeSetSeenHostH2dFireEtc(2)
 
       when (
         rSeenHostH2dFireEtc(2)
