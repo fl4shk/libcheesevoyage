@@ -727,7 +727,10 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   )
   val myLoD2hStm = Stream(
     LcvBusDoStallFifoThingPayload(
-      LcvBusD2hPayload(cfg=cfg.loBusCfg),
+      LcvBusD2hPayload(
+        cfg=cfg.loBusCfg,
+        includeByteSizeEtc=(!cfg.loBusCfg.haveByteEn)
+      ),
       //optByteEnWidth=None,
     )
   )
@@ -1336,6 +1339,12 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
           loH2dPopStm.ready := True
           myLoD2hStm.valid := True
           myLoD2hPayload.data := rdLineWord
+          if (!loBusCfg.haveByteEn) {
+            myLoD2hPayload.byteSize := rDel2LoH2dPayload.byteSize
+            myLoD2hPayload.addrLo := rDel2LoH2dPayload.addr(
+              loBusCfg.byteSizeWidth - 1 downto 0
+            )
+          }
           //myLoD2hPayload.src := rDel2LoH2dPayload.src
           when (!myLoD2hStm.fire) {
             //base.myFifoThingDoStall.last := True
@@ -1445,6 +1454,12 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         rHiD2hBurstCnt := rHiD2hBurstCnt + 1
         when (tempBurstCntCmpEq) {
           myLoD2hPayload.data := (io.hiBus.d2hBus.data)
+          if (!loBusCfg.haveByteEn) {
+            myLoD2hPayload.byteSize := rSavedLoH2dPayload.byteSize
+            myLoD2hPayload.addrLo := rSavedLoH2dPayload.addr(
+              loBusCfg.byteSizeWidth - 1 downto 0
+            )
+          }
         }
         when (tempBurstCntCmpEq && rSavedLoH2dPayload.isWrite) {
           base.doLineWordRamWrite(
@@ -1865,6 +1880,12 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           loH2dPopStm.ready := True
           myLoD2hStm.valid := True
           myLoD2hPayload.data := rdLineWord
+          if (!loBusCfg.haveByteEn) {
+            myLoD2hPayload.byteSize := rDel2LoH2dPayload.byteSize
+            myLoD2hPayload.addrLo := rDel2LoH2dPayload.addr(
+              loBusCfg.byteSizeWidth - 1 downto 0
+            )
+          }
           //rSavedLoH2dPayload := rDel2LoH2dPayload
           val rHadLineWordRamWritePastTwoCycles = Vec.fill(2)(
             RegNext(
@@ -2004,6 +2025,12 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       lineAttrsRam.io.rdEn := False
       loH2dPopStm.ready := False
       myLoD2hPayload.data := rdLineWord
+      if (!loBusCfg.haveByteEn) {
+        myLoD2hPayload.byteSize := rSavedLoH2dPayload.byteSize
+        myLoD2hPayload.addrLo := rSavedLoH2dPayload.addr(
+          loBusCfg.byteSizeWidth - 1 downto 0
+        )
+      }
       myLoD2hStm.valid := True
       when (myLoD2hStm.fire) {
         //base.myFifoThingDoStall.last := False
@@ -2205,6 +2232,12 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         rHiD2hBurstCnt := rHiD2hBurstCnt + 1
         when (tempBurstCntCmpEq) {
           myLoD2hPayload.data := (io.hiBus.d2hBus.data)
+          if (!loBusCfg.haveByteEn) {
+            myLoD2hPayload.byteSize := rSavedLoH2dPayload.byteSize
+            myLoD2hPayload.addrLo := rSavedLoH2dPayload.addr(
+              loBusCfg.byteSizeWidth - 1 downto 0
+            )
+          }
         }
         when (tempBurstCntCmpEq && rSavedLoH2dPayload.isWrite) {
           base.doLineWordRamWrite(
