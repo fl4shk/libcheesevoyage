@@ -16,7 +16,7 @@ case class CalcLcvBusShiftedDataEtcIo(
   //--------
   //val h2dPayload = in(LcvBusH2dPayload(cfg=busCfg))
   //val addr = in(UInt(busCfg.addrWidth bits))
-  val addrLoBits = in(UInt(busCfg.byteSizeWidth bits))
+  val addrLo = in(UInt(busCfg.byteSizeWidth bits))
   val data = in(UInt(busCfg.dataWidth bits))
   val byteSize = in(UInt(busCfg.byteSizeWidth bits))
 
@@ -47,7 +47,7 @@ case class CalcLcvBusShiftedDataEtc(
       //## 
       io.byteSize
       //## io.addr(busCfg.byteSizeWidth - 1 downto 0)
-      ## io.addrLoBits
+      ## io.addrLo
     ) {
       for (idx <- 0 until (1 << (busCfg.byteSizeWidth * 2))) {
         val myAddrLo = idx & ((1 << busCfg.byteSizeWidth) - 1)
@@ -95,7 +95,7 @@ case class CalcLcvBusShiftedDataEtc(
       //io.haveFullWord
       //## 
       //io.addr(busCfg.byteSizeWidth - 1 downto 0)
-      io.addrLoBits
+      io.addrLo
     ) {
       for (idx <- 0 until (1 << busCfg.byteSizeWidth)) {
         val myAddrLo = idx & ((1 << busCfg.byteSizeWidth) - 1)
@@ -117,7 +117,7 @@ case class CalcLcvBusShiftedDataEtc(
   ) generate (new Area {
     switch (
       io.byteSize
-      ## io.addrLoBits
+      ## io.addrLo
     ) {
       for (idx <- 0 until (1 << (busCfg.byteSizeWidth * 2))) {
         val myAddrLo = idx & ((1 << busCfg.byteSizeWidth) - 1)
@@ -195,7 +195,7 @@ case class LcvBusH2dShiftedDataEtcStreamAdapter(
   io.loH2dBus.translateInto(io.hiH2dBus)(
     dataAssignment=(outp, inp) => {
       //myCalc.io.h2dPayload := inp
-      myCalc.io.addrLoBits := inp.addr(
+      myCalc.io.addrLo := inp.addr(
         cfg.loBusCfg.byteSizeWidth - 1 downto 0
       )
       myCalc.io.data := inp.data
@@ -232,10 +232,13 @@ case class LcvBusD2hShiftedDataEtcStreamAdapterConfig(
 case class LcvBusD2hShiftedDataEtcStreamAdapterIo(
   cfg: LcvBusD2hShiftedDataEtcStreamAdapterConfig
 ) extends Bundle {
-  //val addrLoBits = in(UInt(cfg.busCfg.byteSizeWidth bits))
-  val addr = in(UInt(cfg.busCfg.addrWidth bits))
-  val byteSize = in(UInt(cfg.busCfg.byteSizeWidth bits))
-  val loD2hBus = slave(Stream(LcvBusD2hPayload(cfg=cfg.busCfg)))
+  //val addrLo = in(UInt(cfg.busCfg.byteSizeWidth bits))
+  //val addr = in(UInt(cfg.busCfg.addrWidth bits))
+  //val byteSize = in(UInt(cfg.busCfg.byteSizeWidth bits))
+  val loD2hBus = slave(Stream(LcvBusD2hPayload(
+    cfg=cfg.busCfg,
+    includeByteSizeEtc=true,
+  )))
   val hiD2hBus = master(Stream(LcvBusD2hPayload(cfg=cfg.busCfg)))
 }
 
@@ -253,12 +256,13 @@ case class LcvBusD2hShiftedDataEtcStreamAdapter(
   io.loD2hBus.translateInto(io.hiD2hBus)(
     dataAssignment=(outp, inp) => {
       //myCalc.io.h2dPayload := inp
-      myCalc.io.addrLoBits := io.addr(
-        //inp.addr
-        cfg.busCfg.byteSizeWidth - 1 downto 0
-      )
+      //myCalc.io.addrLo := io.addr(
+      //  //inp.addr
+      //  cfg.busCfg.byteSizeWidth - 1 downto 0
+      //)
       myCalc.io.data := inp.data
-      myCalc.io.byteSize := io.byteSize //inp.byteSize
+      myCalc.io.byteSize := inp.byteSize //inp.byteSize
+      myCalc.io.addrLo := inp.addrLo
       //outp := inp
       outp.mainNonBurstInfo.infoShared := inp.mainNonBurstInfo.infoShared
 

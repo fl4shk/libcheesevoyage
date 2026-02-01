@@ -212,12 +212,12 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   )
 
   if (!cfg.busCfg.haveByteEn) {
-    myD2hShiftedDataStmAdapter.io.byteSize := (
-      rDel2H2dPayload.busPayload.byteSize
-    )
-    myD2hShiftedDataStmAdapter.io.addr := (
-      rDel2H2dPayload.busPayload.addr
-    )
+    //myD2hShiftedDataStmAdapter.io.byteSize := (
+    //  rDel2H2dPayload.busPayload.byteSize
+    //)
+    //myD2hShiftedDataStmAdapter.io.addr := (
+    //  rDel2H2dPayload.busPayload.addr
+    //)
     //io.bus.d2hBus << myD2hShiftedDataStmAdapter.io.hiD2hBus
     myD2hFifo.io.push << myD2hShiftedDataStmAdapter.io.hiD2hBus
   }
@@ -848,8 +848,8 @@ case class LcvBusMemSlowWhenBurst(
     myH2dShiftedDataStmAdapter.io.loH2dBus << io.bus.h2dBus
     myH2dStm << myH2dShiftedDataStmAdapter.io.hiH2dBus
 
-    myD2hShiftedDataStmAdapter.io.addr := rSavedH2dPayload.addr
-    myD2hShiftedDataStmAdapter.io.byteSize := rSavedH2dPayload.byteSize
+    //myD2hShiftedDataStmAdapter.io.addr := rSavedH2dPayload.addr
+    //myD2hShiftedDataStmAdapter.io.byteSize := rSavedH2dPayload.byteSize
     myD2hShiftedDataStmAdapter.io.loD2hBus << myD2hStm
     myD2hFifo.io.push << myD2hShiftedDataStmAdapter.io.hiD2hBus
   } else {

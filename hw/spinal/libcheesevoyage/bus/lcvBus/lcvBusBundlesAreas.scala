@@ -531,10 +531,18 @@ case class LcvBusH2dPayloadMainNonBurstInfoByteEn(
 ) extends Bundle {
   val byteEn = UInt(cfg.byteEnWidth bits)
 }
-case class LcvBusPayloadMainNonBurstInfoByteSizeEtc(
+case class LcvBusH2dPayloadMainNonBurstInfoByteSizeEtc(
   cfg: LcvBusConfig
 ) extends Bundle {
-  // `byteSize` is the `log2Up` of the actual operation size
+  // `byteSize` should be fed into this formula
+  // to calculate the actual number of bytes of the operation:
+  // `1 << byteSize`,
+  //
+  // To get the number of bits of the operation, use this formula:
+  // `(1 << byteSize) * 8`
+  //
+  // >>> [(x, (1 << x), ((1 << x) * 8)) for x in range(5)]
+  // [(0, 1, 8), (1, 2, 16), (2, 4, 32), (3, 8, 64), (4, 16, 128)]
   val byteSize = UInt(cfg.byteSizeWidth bits)
   //val haveFullWord = Bool()
 }
@@ -556,7 +564,7 @@ case class LcvBusH2dPayloadMainNonBurstInfo(
     !cfg.haveByteEn
     || cfg.keepByteSize
   ) generate (
-    LcvBusPayloadMainNonBurstInfoByteSizeEtc(cfg=cfg)
+    LcvBusH2dPayloadMainNonBurstInfoByteSizeEtc(cfg=cfg)
   )
   def byteSize = infoByteSizeEtc.byteSize
   //def haveFullWord = infoByteSizeEtc.haveFullWord
@@ -656,18 +664,39 @@ case class LcvBusD2hPayloadMainNonBurstInfoShared(
   val data = UInt(cfg.dataWidth bits)
   val src = UInt(cfg.srcWidth bits)
 }
+case class LcvBusD2hPayloadMainNonBurstInfoByteSizeEtc(
+  cfg: LcvBusConfig,
+) extends Bundle {
+  // `byteSize` should be fed into this formula
+  // to calculate the actual number of bytes of the operation:
+  // `1 << byteSize`,
+  //
+  // To get the number of bits of the operation, use this formula:
+  // `(1 << byteSize) * 8`
+  //
+  // >>> [(x, (1 << x), ((1 << x) * 8)) for x in range(5)]
+  // [(0, 1, 8), (1, 2, 16), (2, 4, 32), (3, 8, 64), (4, 16, 128)]
+  val byteSize = UInt(cfg.byteSizeWidth bits)
+
+  // the low `cfg.byteSizeWidth` bits of the address being accessed.
+  val addrLo = UInt(cfg.byteSizeWidth bits)
+
+  //val haveFullWord = Bool()
+}
 case class LcvBusD2hPayloadMainNonBurstInfo(
-  cfg: LcvBusConfig
+  cfg: LcvBusConfig,
+  includeByteSizeEtc: Boolean,
 ) extends Bundle {
   //--------
   val infoShared = LcvBusD2hPayloadMainNonBurstInfoShared(cfg=cfg)
   def data = infoShared.data
   def src = infoShared.src
   //--------
-  //val infoByteSizeEtc = (!cfg.haveByteEn) generate (
-  //  LcvBusPayloadMainNonBurstInfoByteSizeEtc(cfg=cfg)
-  //)
-  //def byteSize = infoByteSizeEtc.byteSize
+  val infoByteSizeEtc = (includeByteSizeEtc) generate (
+    LcvBusD2hPayloadMainNonBurstInfoByteSizeEtc(cfg=cfg)
+  )
+  def byteSize = infoByteSizeEtc.byteSize
+  def addrLo = infoByteSizeEtc.addrLo
   ////def haveFullWord = infoByteSizeEtc.haveFullWord
   //--------
 }
@@ -693,11 +722,17 @@ case class LcvBusD2hPayloadCacheInfo(
 
 case class LcvBusD2hPayload(
   cfg: LcvBusConfig,
+  includeByteSizeEtc: Boolean=false,
 ) extends Bundle {
   //--------
-  val mainNonBurstInfo = LcvBusD2hPayloadMainNonBurstInfo(cfg=cfg)
+  val mainNonBurstInfo = LcvBusD2hPayloadMainNonBurstInfo(
+    cfg=cfg,
+    includeByteSizeEtc=includeByteSizeEtc,
+  )
   def data = mainNonBurstInfo.data
   def src = mainNonBurstInfo.src
+  def byteSize = mainNonBurstInfo.byteSize
+  def addrLo = mainNonBurstInfo.addrLo
   //--------
   val mainBurstInfo = (cfg.allowBurst) generate (
     LcvBusD2hPayloadMainBurstInfo(cfg=cfg)
