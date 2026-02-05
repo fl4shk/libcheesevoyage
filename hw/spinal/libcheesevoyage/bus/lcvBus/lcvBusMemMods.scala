@@ -71,9 +71,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   io.bus.h2dBus.translateInto(
     myH2dDoStallFifoThing.io.push
   )(
-    dataAssignment=(
-      outp, inp
-    ) => {
+    dataAssignment=(outp, inp) => {
       outp.cnt := (
         (
           RegNextWhen(
