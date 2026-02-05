@@ -72,11 +72,11 @@ case class CalcLcvBusShiftedDataEtc(
         val myByteSizeShiftedMask = (
           myByteSizeMask << myAddrLo
         )
-        println(
-          s"idx:${idx} myByteSize:${myByteSize} myAddrLo:${myAddrLo} "
-          + s"myByteSizeMask:${myByteSizeMask} "
-          + s"myByteSizeShiftedMask:${myByteSizeShiftedMask}"
-        )
+        //println(
+        //  s"idx:${idx} myByteSize:${myByteSize} myAddrLo:${myAddrLo} "
+        //  + s"myByteSizeMask:${myByteSizeMask} "
+        //  + s"myByteSizeShiftedMask:${myByteSizeShiftedMask}"
+        //)
         is (idx) {
           io.byteEn := (
             U(s"32'd${myByteSizeShiftedMask}")
@@ -84,7 +84,7 @@ case class CalcLcvBusShiftedDataEtc(
           )
         }
       }
-      println(" ")
+      //println(" ")
       //default {
       //  //io.byteEn := 0x0
       //  io.byteEn := U(io.byteEn.getWidth bits, default -> True)
@@ -140,11 +140,11 @@ case class CalcLcvBusShiftedDataEtc(
         val myDataShift = (
           (myAddrLo & (~((1 << myByteSize) - 1))) << 3
         )
-        println(
-          s"idx:${idx} myByteSize:${myByteSize} myAddrLo:${myAddrLo} "
-          + s"myBitSize:${myBitSize} "
-          + s"myDataShift:${myDataShift} "
-        )
+        //println(
+        //  s"idx:${idx} myByteSize:${myByteSize} myAddrLo:${myAddrLo} "
+        //  + s"myBitSize:${myBitSize} "
+        //  + s"myDataShift:${myDataShift} "
+        //)
 
         is (idx) {
           io.shiftedData := (
@@ -156,7 +156,7 @@ case class CalcLcvBusShiftedDataEtc(
           )
         }
       }
-      println(" ")
+      //println(" ")
     }
   })
 }
