@@ -97,13 +97,13 @@ case class LcvBusFramebufferCtrlDualCntNonBurstBasic(
   //--------
   val io = LcvBusFramebufferCtrlIo(cfg=cfg)
   //--------
-  val rD2hCnt = {
-    val temp = Reg(
-      UInt(log2Up(cfg.myAlignedFbCntMax + 1) bits)
-    )
-    temp.init(temp.getZero)
-    temp
-  }
+  //val rD2hCnt = {
+  //  val temp = Reg(
+  //    UInt(log2Up(cfg.myAlignedFbCntMax + 1) bits)
+  //  )
+  //  temp.init(temp.getZero)
+  //  temp
+  //}
   val rH2dRawCnt2d = {
     //Vec.fill(2)({
       val temp = Reg(
@@ -254,47 +254,48 @@ case class LcvBusFramebufferCtrlDualCntNonBurstBasic(
   io.pop <-/< myRgbFifo.io.pop //myPopStm
   //--------
   //--------
-  val myD2hThrowCond = (
-    cfg.myFbSize2dMult != cfg.myAlignedFbCntMax
-  ) generate (
-    Bool()
-  )
-  if (cfg.myFbSize2dMult == cfg.myAlignedFbCntMax) {
-    // no alignment needed for burst reads
-    myD2hStm.last << myD2hStm.head
-    when (myD2hStm.last.fire) {
-      rD2hCnt := rD2hCnt + 1
-    }
-  } else {
-    // alignment needed for burst reads
-    myD2hStm.last << myD2hStm.head.throwWhen(myD2hThrowCond)
-    switch (
-      myD2hStm.head.fire
-      ## (rD2hCnt >= cfg.myFbSize2dMult - 1)
-      ## (rD2hCnt >= cfg.myAlignedFbCntMax - 1)
-    ) {
-      is (M"100") {
-        rD2hCnt := rD2hCnt + 1
-        myD2hThrowCond := False
-      }
-      is (M"110") {
-        rD2hCnt := rD2hCnt + 1
-        myD2hThrowCond := True
-      }
-      is (M"111") {
-        rD2hCnt := 0x0
-        myD2hThrowCond := True
-      }
-      default {
-        myD2hThrowCond := False
-      }
-    }
-    //when (myD2hStm.fire) {
-    //  when  {
-    //  } elsewhen  {
-    //  }
-    //}
-  }
+  //val myD2hThrowCond = (
+  //  cfg.myFbSize2dMult != cfg.myAlignedFbCntMax
+  //) generate (
+  //  Bool()
+  //)
+  myD2hStm.last << myD2hStm.head
+  //if (cfg.myFbSize2dMult == cfg.myAlignedFbCntMax) {
+  //  // no alignment needed for burst reads
+  //  myD2hStm.last << myD2hStm.head
+  //  when (myD2hStm.last.fire) {
+  //    rD2hCnt := rD2hCnt + 1
+  //  }
+  //} else {
+  //  // alignment needed for burst reads
+  //  myD2hStm.last << myD2hStm.head.throwWhen(myD2hThrowCond)
+  //  switch (
+  //    myD2hStm.head.fire
+  //    ## (rD2hCnt >= cfg.myFbSize2dMult - 1)
+  //    ## (rD2hCnt >= cfg.myAlignedFbCntMax - 1)
+  //  ) {
+  //    is (M"100") {
+  //      rD2hCnt := rD2hCnt + 1
+  //      myD2hThrowCond := False
+  //    }
+  //    is (M"110") {
+  //      rD2hCnt := rD2hCnt + 1
+  //      myD2hThrowCond := True
+  //    }
+  //    is (M"111") {
+  //      rD2hCnt := 0x0
+  //      myD2hThrowCond := True
+  //    }
+  //    default {
+  //      myD2hThrowCond := False
+  //    }
+  //  }
+  //  //when (myD2hStm.fire) {
+  //  //  when  {
+  //  //  } elsewhen  {
+  //  //  }
+  //  //}
+  //}
 }
 
 case class LcvBusFramebufferCtrlSingleCntBasic(
