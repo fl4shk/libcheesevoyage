@@ -387,9 +387,14 @@ case class LcvBusMemMapConfig(
   addrSliceLo: Int,
   //optNumDevs: Option[Int]=None,
   optSliceSize: Option[Int]=None,
+  optAddrSliceVal: Option[Int]=None,
 ) {
   //def addrSliceEnd = addrSliceStart + addrSliceWidth - 1
   def addrSliceWidth = addrSliceHi - addrSliceLo + 1
+  def addrSliceValUInt = {
+    require(optAddrSliceVal != None)
+    U(s"${addrSliceWidth}'d${optAddrSliceVal.get}")
+  }
   def addrSliceSize = (
     optSliceSize match {
       case Some(mySliceSize) => {

@@ -16,10 +16,18 @@ import libcheesevoyage.general._
 import libcheesevoyage.gfx._
 
 case class LcvBusFramebufferConfig(
-  busCfg: LcvBusConfig,
+  //busCfg: LcvBusConfig,
+  fbMmapCfg: LcvBusMemMapConfig,
   rgbCfg: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
 ) {
+  require(
+    fbMmapCfg.optSliceSize == None
+  )
+  require(
+    fbMmapCfg.optAddrSliceVal != None
+  )
+  def busCfg = fbMmapCfg.busCfg
   def fbSize2d = vgaTimingInfo.fbSize2d
   val myFbSize2dMult = fbSize2d.x * fbSize2d.y
 
@@ -73,6 +81,7 @@ case class LcvBusFramebufferCtrl(
   myH2dStm.valid := True
   myH2dStm.addr := (
     Cat(
+      cfg.fbMmapCfg.addrSliceValUInt,
       rCnt.head,
       U(s"${cfg.busCfg.dataWidth / 8}'d0"),
     ).asUInt.resize(myH2dStm.addr.getWidth)
