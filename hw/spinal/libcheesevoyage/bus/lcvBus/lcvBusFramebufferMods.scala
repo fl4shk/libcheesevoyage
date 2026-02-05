@@ -20,6 +20,7 @@ case class LcvBusFramebufferConfig(
   fbMmapCfg: LcvBusMemMapConfig,
   rgbCfg: RgbConfig,
   vgaTimingInfo: LcvVgaTimingInfo,
+  dblBuf: Boolean,
 ) {
   require(
     fbMmapCfg.optSliceSize == None
@@ -29,7 +30,12 @@ case class LcvBusFramebufferConfig(
   )
   def busCfg = fbMmapCfg.busCfg
   def fbSize2d = vgaTimingInfo.fbSize2d
-  val myFbSize2dMult = fbSize2d.x * fbSize2d.y
+  val myFbSize2dMult = (
+    fbSize2d.x * fbSize2d.y
+    * (
+      if (dblBuf) (2) else (1)
+    )
+  )
 
   //val myFbCntOverflow = myFbSize2dMult
   val myBusBurstSizeMax = busCfg.maxBurstSizeMinus1 + 1
