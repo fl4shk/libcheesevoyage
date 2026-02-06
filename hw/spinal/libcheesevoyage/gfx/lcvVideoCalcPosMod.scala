@@ -1,4 +1,6 @@
 package libcheesevoyage.gfx
+import libcheesevoyage.general.WrPulseRdPipeSimpleDualPortMemIo
+import libcheesevoyage.general.WrPulseRdPipeSimpleDualPortMem
 import libcheesevoyage.general.DualTypeNumVec2
 import libcheesevoyage.general.Vec2
 import libcheesevoyage.general.MkVec2
@@ -6,6 +8,9 @@ import libcheesevoyage.general.ElabVec2
 
 import spinal.core._
 import spinal.lib._
+
+import spinal.lib.graphic.Rgb
+import spinal.lib.graphic.RgbConfig
 
 object LcvVideoPosInfo {
   def coordElemT(
@@ -206,9 +211,9 @@ case class LcvVideoCalcPos(
     //dithConcat(1) := rPosWillOverflow.y
     switch (dithConcat) {
       // overflowX=0, overflowY=don't care
-      //is (B"-0") 
-      //is(M"1-0") 
-      is(M"-0") {
+      //is (B"-0")
+      //is (M"1-0")
+      is (M"-0") {
         info.nextPos.x := info.pos.x + 1
         info.nextPos.y := info.pos.y
         rPosWillOverflow.x := info.pos.x === someSize2d.x - 2
@@ -270,3 +275,44 @@ case class LcvVideoCalcPos(
     io.info := rPastInfo
   }
 }
+
+case class LcvVideoLineBufWithCalcPosConfig(
+  someSize2d: ElabVec2[Int],
+  rgbCfg: RgbConfig,
+  cnt2dShift: ElabVec2[Int],
+) {
+}
+
+case class LcvVideoLineBufWithCalcPosIo(
+  cfg: LcvVideoLineBufWithCalcPosConfig
+) extends Bundle {
+  //val wrEn = in(Bool())
+  //val wrData = in(Rgb(cfg.rgbCfg))
+
+  val push = slave(Flow(Rgb(cfg.rgbCfg)))
+  val pop = master(Stream(Rgb(cfg.rgbCfg)))
+
+  val info = out(LcvVideoPosInfo(someSize2d=cfg.someSize2d))
+}
+
+case class LcvVideoLineBufWithCalcPos(
+  cfg: LcvVideoLineBufWithCalcPosConfig
+) extends Component {
+  val io = LcvVideoLineBufWithCalcPosIo(cfg=cfg)
+
+  //val mem = (
+  //  WrPulseRdPipeSimpleDualPortMem(
+  //    dataType=Rgb(cfg.rgbCfg),
+  //    wordType=Rgb(cfg.rgbCfg),
+  //    wordCount=(
+  //      cfg.someSize2d.x * (1 << cfg.cnt2dShift.x)
+  //    ),
+  //    pipeName="LcvVideoLineBufWithCalcPos"
+  //  )(
+  //    setWordFunc=(myUnionIdx, outp, inp, rdMemWord) => {
+  //      outp := rdMemWord
+  //    }
+  //  )
+  //)
+}
+

@@ -2214,7 +2214,7 @@ extends Area {
         optIncludeModFrontStageLink
         && optIncludeModFrontS2MLink
         && (
-          optModHazardKind == PipeMemRmw.ModHazardKind.Fwd
+          optModHazardKind != PipeMemRmw.ModHazardKind.Fwd
         )
         //false
       )

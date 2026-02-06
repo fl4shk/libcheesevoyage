@@ -682,6 +682,10 @@ case class WrPulseRdPipeSimpleDualPortMemIo[
   )
   //--------
 }
+
+//--------
+// TODO: rework this to not use PipeMemRmw's "dual read" stuff as that is
+// mostly not a thing any mroe
 case class WrPulseRdPipeSimpleDualPortMem[
   T <: Data,
   WordT <: Data
@@ -693,7 +697,8 @@ case class WrPulseRdPipeSimpleDualPortMem[
   initBigInt: Option[Seq[Seq[BigInt]]]=None,
   linkArr: Option[ArrayBuffer[Link]]=None,
   //latency: Int=1,
-  pmRmwModTypeName: String,
+  //pmRmwModTypeName: String,
+  arrRamStyleAltera: String="M10K",
   arrRamStyleXilinx: String="block",
   arrRwAddrCollisionXilinx: String="",
   unionIdxWidth: Int=1,
@@ -741,7 +746,10 @@ extends Component
     modRdPortCnt=modRdPortCnt,
     modStageCnt=modStageCnt,
     pipeName=pipeName,
-    optIncludePreMid0Front=false,
+    optIncludePreMid0Front=(
+      //false
+      true
+    ),
     //linkArr=Some(PipeMemRmw.mkLinkArr()),
     linkArr=linkArr,
     memArrIdx=0,
@@ -751,8 +759,12 @@ extends Component
     //optEnableModDuplicate=false,
     optModHazardKind=(
       PipeMemRmw.ModHazardKind.Dont
+      //PipeMemRmw.ModHazardKind.Dupl
     ),
     vivadoDebug=vivadoDebug,
+    memRamStyleAltera=arrRamStyleAltera,
+    memRamStyleXilinx=arrRamStyleXilinx,
+    memRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
   )
   //--------
   def modRdPortCnt = 1

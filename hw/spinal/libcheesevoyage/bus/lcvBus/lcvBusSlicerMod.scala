@@ -45,15 +45,19 @@ case class LcvBusSlicer(
 ) extends Component {
   val io = LcvBusSlicerIo(cfg=cfg)
 
+  io.host.h2dBus.ready := False
+  io.host.d2hBus.valid := False
+  io.host.d2hBus.payload := io.host.d2hBus.payload.getZero
+
   for (
     //devIdx <- 0 until cfg.numDevs
     dev <- io.devVec
   ) {
-    io.host.h2dBus.ready := False
-    io.host.d2hBus.valid := False
-    io.host.d2hBus.payload := (
-      io.host.d2hBus.payload.getZero
-    )
+    //io.host.h2dBus.ready := False
+    //io.host.d2hBus.valid := False
+    //io.host.d2hBus.payload := (
+    //  io.host.d2hBus.payload.getZero
+    //)
 
     //val dev.h2dBus = io.devVec(devIdx).h2dBus
     //val dev.d2hBus = io.devVec(devIdx).d2hBus
