@@ -16,6 +16,7 @@ import libcheesevoyage.general.HandleDualPipe
 //import libcheesevoyage.general.MultiMemReadSync
 //import libcheesevoyage.general.MemReadSyncIntoPipe
 import libcheesevoyage.general.WrPulseRdPipeSimpleDualPortMem
+import libcheesevoyage.general.WrPulseRdPipeSimpleDualPortMemFpgacpu
 import libcheesevoyage.general.WrPulseRdPipeSimpleDualPortMemIo
 //import libcheesevoyage.general.MemReadSyncIntoStreamHaltVecs
 //import libcheesevoyage.general.MemReadSyncIntoStream
@@ -24,6 +25,7 @@ import libcheesevoyage.general.WrPulseRdPipeSimpleDualPortMemIo
 //import libcheesevoyage.general.FpgacpuPipeForkEager
 //import libcheesevoyage.general.FpgacpuPipeJoin
 import libcheesevoyage.general.FpgacpuRamSimpleDualPort
+import libcheesevoyage.general.FpgacpuRamSimpleDualPortConfig
 //import libcheesevoyage.general.PipeMemSimpleDualPort
 //import libcheesevoyage.general.PipeMemSimpleDualPortIo
 import libcheesevoyage.general.PipeMemRmw
@@ -2546,58 +2548,60 @@ case class Gpu2d(
   //      //1 << cfg.bgTileGridMemIdxWidth
   //    )
   //    bgTileMemArr += FpgacpuRamSimpleDualPort(
-  //      //wordType=Gpu2dTileFull(
-  //      //  cfg=cfg,
-  //      //  isObj=false,
-  //      //  isAffine=false,
-  //      //),
-  //      wordType=Gpu2dTileSlice(
-  //        cfg=cfg,
-  //        isObj=false,
-  //        isAffine=false,
-  //      ),
-  //      depth=(
-  //        //cfg.numBgTiles
-  //        tempNumBgTileSlices
-  //      ),
-  //      //initBigInt=(
-  //      //  Some(
-  //      //    Array.fill(tempNumBgTileSlices)(
-  //      //      //Gpu2dTileSlice(
-  //      //      //  cfg=cfg,
-  //      //      //  isObj=false,
-  //      //      //  isAffine=false
-  //      //      //).getZero
-  //      //      BigInt(0)
-  //      //    )
-  //      //  )
-  //      //),
-  //      init={
-  //        cfg.bgTileMemInit match {
-  //          case Some(bgTileMemInit) => {
-  //            Some(bgTileMemInit/*(jdx)*/)
+  //      cfg=FpgacpuRamSimpleDualPortConfig(
+  //        //wordType=Gpu2dTileFull(
+  //        //  cfg=cfg,
+  //        //  isObj=false,
+  //        //  isAffine=false,
+  //        //),
+  //        wordType=Gpu2dTileSlice(
+  //          cfg=cfg,
+  //          isObj=false,
+  //          isAffine=false,
+  //        ),
+  //        depth=(
+  //          //cfg.numBgTiles
+  //          tempNumBgTileSlices
+  //        ),
+  //        //initBigInt=(
+  //        //  Some(
+  //        //    Array.fill(tempNumBgTileSlices)(
+  //        //      //Gpu2dTileSlice(
+  //        //      //  cfg=cfg,
+  //        //      //  isObj=false,
+  //        //      //  isAffine=false
+  //        //      //).getZero
+  //        //      BigInt(0)
+  //        //    )
+  //        //  )
+  //        //),
+  //        init={
+  //          cfg.bgTileMemInit match {
+  //            case Some(bgTileMemInit) => {
+  //              Some(bgTileMemInit/*(jdx)*/)
+  //            }
+  //            case None => {
+  //              Some(
+  //                myBgTileMemInit//(jdx)
+  //                ////Gpu2dTest.doSplitBgTileMemInit(
+  //                ////  cfg=cfg,
+  //                ////  //gridIdx=jdx,
+  //                ////  //isColorMath=false,
+  //                ////)(jdx)
+  //                //Array.fill(tempNumBgTileSlices)(
+  //                //  Gpu2dTileSlice(
+  //                //    cfg=cfg,
+  //                //    isObj=false,
+  //                //    isAffine=false
+  //                //  ).getZero
+  //                //)
+  //              )
+  //              //None
+  //            }
   //          }
-  //          case None => {
-  //            Some(
-  //              myBgTileMemInit//(jdx)
-  //              ////Gpu2dTest.doSplitBgTileMemInit(
-  //              ////  cfg=cfg,
-  //              ////  //gridIdx=jdx,
-  //              ////  //isColorMath=false,
-  //              ////)(jdx)
-  //              //Array.fill(tempNumBgTileSlices)(
-  //              //  Gpu2dTileSlice(
-  //              //    cfg=cfg,
-  //              //    isObj=false,
-  //              //    isAffine=false
-  //              //  ).getZero
-  //              //)
-  //            )
-  //            //None
-  //          }
-  //        }
-  //      },
-  //      arrRamStyle=cfg.bgTileArrRamStyle,
+  //        },
+  //        arrRamStyleXilinx=cfg.bgTileArrRamStyle,
+  //      )
   //    )
   //      .setName(f"bgTileMemArr_$jdx")
   //    bgTileMemArr(jdx).io.wrEn := bgTilePush.fire
@@ -2681,44 +2685,46 @@ case class Gpu2d(
   //      //}
   //    )
   //    objTileMemArr += FpgacpuRamSimpleDualPort(
-  //      //wordType=Gpu2dTileFull(
-  //      //  cfg=cfg,
-  //      //  isObj=true,
-  //      //  isAffine=idx != 0,
-  //      //),
-  //      wordType=Gpu2dTileSlice(
-  //        cfg=cfg,
-  //        isObj=true,
-  //        isAffine=idx != 0,
-  //      ),
-  //      depth=tempNumObjTileSlices,
-  //      init={
-  //        //val temp = new ArrayBuffer[]()
-  //        //for (_ <- 0 until tempNumObjTileSlices) {
-  //        //  temp += (0)
-  //        //}
-  //        //Some(temp)
-  //        cfg.objTileMemInit match {
-  //          case Some(objTileMemInit) => {
-  //            Some(objTileMemInit)
+  //      cfg=FpgacpuRamSimpleDualPortConfig(
+  //        //wordType=Gpu2dTileFull(
+  //        //  cfg=cfg,
+  //        //  isObj=true,
+  //        //  isAffine=idx != 0,
+  //        //),
+  //        wordType=Gpu2dTileSlice(
+  //          cfg=cfg,
+  //          isObj=true,
+  //          isAffine=idx != 0,
+  //        ),
+  //        depth=tempNumObjTileSlices,
+  //        init={
+  //          //val temp = new ArrayBuffer[]()
+  //          //for (_ <- 0 until tempNumObjTileSlices) {
+  //          //  temp += (0)
+  //          //}
+  //          //Some(temp)
+  //          cfg.objTileMemInit match {
+  //            case Some(objTileMemInit) => {
+  //              Some(objTileMemInit)
+  //            }
+  //            case None => {
+  //              //val tempArr = new ArrayBuffer[Gpu2dTileSlice]()
+  //              //for (kdx <- 0 until tempNumObjTileSlices) {
+  //              //  tempArr += Gpu2dTileSlice(
+  //              //    cfg=cfg,
+  //              //    isObj=true,
+  //              //    isAffine=idx != 0,
+  //              //  ).getZero
+  //              //}
+  //              //Some(tempArr)
+  //              //Some(Array.fill(tempNumObjTileSlices)((0)).toSeq)
+  //              Some(Gpu2dTest.objTileMemInit(cfg=cfg))
+  //              //None
+  //            }
   //          }
-  //          case None => {
-  //            //val tempArr = new ArrayBuffer[Gpu2dTileSlice]()
-  //            //for (kdx <- 0 until tempNumObjTileSlices) {
-  //            //  tempArr += Gpu2dTileSlice(
-  //            //    cfg=cfg,
-  //            //    isObj=true,
-  //            //    isAffine=idx != 0,
-  //            //  ).getZero
-  //            //}
-  //            //Some(tempArr)
-  //            //Some(Array.fill(tempNumObjTileSlices)((0)).toSeq)
-  //            Some(Gpu2dTest.objTileMemInit(cfg=cfg))
-  //            //None
-  //          }
-  //        }
-  //      },
-  //      arrRamStyle=cfg.objTileArrRamStyle,
+  //        },
+  //        arrRamStyleXilinx=cfg.objTileArrRamStyle,
+  //      )
   //    )
   //      .setName(f"objTileMemArr_$idx")
   //    //val rdAddrObjTileMem = UInt(cfg.numObjTilesPow bits)
@@ -3239,76 +3245,78 @@ case class Gpu2d(
   //      //}
   //    )
   //    objAffineTileMemArr += FpgacpuRamSimpleDualPort(
-  //      wordType=UInt(cfg.objPalEntryMemIdxWidth bits),
-  //      depth=tempNumObjTileSlices,
+  //      cfg=FpgacpuRamSimpleDualPortConfig(
+  //        wordType=UInt(cfg.objPalEntryMemIdxWidth bits),
+  //        depth=tempNumObjTileSlices,
 
-  //      //initBigInt={
-  //      //  Some(Array.fill(tempNumObjTileSlices)(BigInt(0)).toSeq)
-  //      //},
-  //      initBigInt={
-  //        if (!cfg.noAffineObjs) {
-  //          cfg.objAffineTileMemInit match {
-  //            case Some(objAffineTileMemInit) => {
-  //              Some(objAffineTileMemInit)
+  //        //initBigInt={
+  //        //  Some(Array.fill(tempNumObjTileSlices)(BigInt(0)).toSeq)
+  //        //},
+  //        initBigInt={
+  //          if (!cfg.noAffineObjs) {
+  //            cfg.objAffineTileMemInit match {
+  //              case Some(objAffineTileMemInit) => {
+  //                Some(objAffineTileMemInit)
+  //              }
+  //              case None => {
+  //                //val tempArr = new ArrayBuffer[Gpu2dTileSlice]()
+  //                //for (kdx <- 0 until tempNumObjTileSlices) {
+  //                //  tempArr += Gpu2dTileSlice(
+  //                //    cfg=cfg,
+  //                //    isObj=true,
+  //                //    isAffine=idx != 0,
+  //                //  ).getZero
+  //                //}
+  //                //Some(tempArr)
+  //                //Some(Array.fill(tempNumObjTileSlices)((0)).toSeq)
+  //                Some(Gpu2dTest.objAffineTileMemInit(cfg=cfg))
+  //                //None
+  //                //cfg.objAffineTileMemInit
+  //              }
   //            }
-  //            case None => {
-  //              //val tempArr = new ArrayBuffer[Gpu2dTileSlice]()
-  //              //for (kdx <- 0 until tempNumObjTileSlices) {
-  //              //  tempArr += Gpu2dTileSlice(
-  //              //    cfg=cfg,
-  //              //    isObj=true,
-  //              //    isAffine=idx != 0,
-  //              //  ).getZero
-  //              //}
-  //              //Some(tempArr)
-  //              //Some(Array.fill(tempNumObjTileSlices)((0)).toSeq)
-  //              Some(Gpu2dTest.objAffineTileMemInit(cfg=cfg))
-  //              //None
-  //              //cfg.objAffineTileMemInit
-  //            }
+  //          } else {
+  //            cfg.objAffineTileMemInit
   //          }
-  //        } else {
-  //          cfg.objAffineTileMemInit
-  //        }
-  //      },
+  //        },
 
-  //      //init={
-  //      //  //val temp = new ArrayBuffer[]()
-  //      //  //for (_ <- 0 until tempNumObjTileSlices) {
-  //      //  //  temp += (0)
-  //      //  //}
-  //      //  //Some(temp)
-  //      //  cfg.objAffineTileMemInit match {
-  //      //    case Some(objAffineTileMemInit) => {
-  //      //      Some(objAffineTileMemInit)
-  //      //    }
-  //      //    case None => {
-  //      //      //Some(Array.fill(tempNumObjTileSlices)(
-  //      //      //  (0)
-  //      //      //).toSeq)
-  //      //      //Gpu2dTest.objTileMemInit(cfg=cfg)
-  //      //      val tempArr = new ArrayBuffer[UInt]()
-  //      //      for (
-  //      //        jdx <- 0
-  //      //        until (
-  //      //          cfg.objPalEntryMemIdxWidth
-  //      //        )
-  //      //      ) {
-  //      //        for (
-  //      //          kdx <- 0 until cfg.objPalEntryMemIdxWidth
-  //      //        ) {
-  //      //        }
-  //      //      }
-  //      //      Some(tempArr.toSeq)
-  //      //    }
-  //      //  }
-  //      //  //Some(
-  //      //  //  Array.fill(tempNumObjTileSlices)(
-  //      //  //    U(s"${cfg.objPalEntryMemIdxWidth}'d0")
-  //      //  //  ).toSeq
-  //      //  //)
-  //      //},
-  //      arrRamStyle=cfg.objAffineTileArrRamStyle,
+  //        //init={
+  //        //  //val temp = new ArrayBuffer[]()
+  //        //  //for (_ <- 0 until tempNumObjTileSlices) {
+  //        //  //  temp += (0)
+  //        //  //}
+  //        //  //Some(temp)
+  //        //  cfg.objAffineTileMemInit match {
+  //        //    case Some(objAffineTileMemInit) => {
+  //        //      Some(objAffineTileMemInit)
+  //        //    }
+  //        //    case None => {
+  //        //      //Some(Array.fill(tempNumObjTileSlices)(
+  //        //      //  (0)
+  //        //      //).toSeq)
+  //        //      //Gpu2dTest.objTileMemInit(cfg=cfg)
+  //        //      val tempArr = new ArrayBuffer[UInt]()
+  //        //      for (
+  //        //        jdx <- 0
+  //        //        until (
+  //        //          cfg.objPalEntryMemIdxWidth
+  //        //        )
+  //        //      ) {
+  //        //        for (
+  //        //          kdx <- 0 until cfg.objPalEntryMemIdxWidth
+  //        //        ) {
+  //        //        }
+  //        //      }
+  //        //      Some(tempArr.toSeq)
+  //        //    }
+  //        //  }
+  //        //  //Some(
+  //        //  //  Array.fill(tempNumObjTileSlices)(
+  //        //  //    U(s"${cfg.objPalEntryMemIdxWidth}'d0")
+  //        //  //  ).toSeq
+  //        //  //)
+  //        //},
+  //        arrRamStyleXilinx=cfg.objAffineTileArrRamStyle,
+  //      )
   //    )
   //      .setName(f"objAffineTileMemArr_$idx")
   //    objAffineTileMemArr(idx).io.wrEn := (
@@ -3357,66 +3365,68 @@ case class Gpu2d(
   //      jdx <- 0 until cfg.numBgMemsPerNonPalKind
   //    ) {
   //      colorMathTileMemArr += FpgacpuRamSimpleDualPort(
-  //        //dataType=CombinePipePayload(),
-  //          //wordType=Gpu2dTileFull(
-  //          //  cfg=cfg,
-  //          //  isObj=false,
-  //          //  isAffine=false,
-  //          //),
-  //          wordType=Gpu2dTileSlice(
-  //            cfg=cfg,
-  //            isObj=false,
-  //            isAffine=false,
-  //          ),
-  //          depth=(
-  //            //cfg.numColorMathTiles
-  //            tempNumColorMathTileSlices
-  //          ),
-  //          init={
-  //            //val temp = new ArrayBuffer[]()
-  //            //for (
-  //            //  //idx <- 0 until cfg.numColorMathTiles
-  //            //  idx <- 0 until tempNumColorMathTileSlices
-  //            //) {
-  //            //  temp += (0)
-  //            //}
-  //            //Some(temp)
-  //            //Some(Gpu2dTest.bgTileMemInit(cfg=cfg))
-  //            cfg.colorMathTileMemInit match {
-  //              case Some(colorMathTileMemInit) => {
-  //                Some(colorMathTileMemInit/*(jdx)*/)
-  //              }
-  //              case None => {
-  //                //Some(Array.fill(tempNumColorMathTileSlices)(
-  //                //  BigInt(0)
-  //                //))
-  //                //Some(Gpu2dTest.bgTileMemInit(cfg=cfg))
-  //                //Some(
-  //                //  //Gpu2dTest.doSplitBgTileMemInit(
-  //                //  //  cfg=cfg,
-  //                //  //  gridIdx=jdx,
-  //                //  //  //isColorMath=true,
-  //                //  //)
-  //                //  myBgTileMemInit//(jdx)
-  //                //)
-  //                //None
-  //                val temp = new ArrayBuffer[Gpu2dTileSlice]()
-  //                for (
-  //                  //idx <- 0 until cfg.numColorMathTiles
-  //                  idx <- 0 until tempNumColorMathTileSlices
-  //                ) {
-  //                  //temp += BigInt(0)
-  //                  temp += Gpu2dTileSlice(
-  //                    cfg=cfg,
-  //                    isObj=false,
-  //                    isAffine=false,
-  //                  ).getZero
+  //        cfg=FpgacpuRamSimpleDualPortConfig(
+  //          //dataType=CombinePipePayload(),
+  //            //wordType=Gpu2dTileFull(
+  //            //  cfg=cfg,
+  //            //  isObj=false,
+  //            //  isAffine=false,
+  //            //),
+  //            wordType=Gpu2dTileSlice(
+  //              cfg=cfg,
+  //              isObj=false,
+  //              isAffine=false,
+  //            ),
+  //            depth=(
+  //              //cfg.numColorMathTiles
+  //              tempNumColorMathTileSlices
+  //            ),
+  //            init={
+  //              //val temp = new ArrayBuffer[]()
+  //              //for (
+  //              //  //idx <- 0 until cfg.numColorMathTiles
+  //              //  idx <- 0 until tempNumColorMathTileSlices
+  //              //) {
+  //              //  temp += (0)
+  //              //}
+  //              //Some(temp)
+  //              //Some(Gpu2dTest.bgTileMemInit(cfg=cfg))
+  //              cfg.colorMathTileMemInit match {
+  //                case Some(colorMathTileMemInit) => {
+  //                  Some(colorMathTileMemInit/*(jdx)*/)
   //                }
-  //                Some(temp)
+  //                case None => {
+  //                  //Some(Array.fill(tempNumColorMathTileSlices)(
+  //                  //  BigInt(0)
+  //                  //))
+  //                  //Some(Gpu2dTest.bgTileMemInit(cfg=cfg))
+  //                  //Some(
+  //                  //  //Gpu2dTest.doSplitBgTileMemInit(
+  //                  //  //  cfg=cfg,
+  //                  //  //  gridIdx=jdx,
+  //                  //  //  //isColorMath=true,
+  //                  //  //)
+  //                  //  myBgTileMemInit//(jdx)
+  //                  //)
+  //                  //None
+  //                  val temp = new ArrayBuffer[Gpu2dTileSlice]()
+  //                  for (
+  //                    //idx <- 0 until cfg.numColorMathTiles
+  //                    idx <- 0 until tempNumColorMathTileSlices
+  //                  ) {
+  //                    //temp += BigInt(0)
+  //                    temp += Gpu2dTileSlice(
+  //                      cfg=cfg,
+  //                      isObj=false,
+  //                      isAffine=false,
+  //                    ).getZero
+  //                  }
+  //                  Some(temp)
+  //                }
   //              }
-  //            }
-  //          },
-  //          arrRamStyle=cfg.bgTileArrRamStyle,
+  //            },
+  //            arrRamStyleXilinx=cfg.bgTileArrRamStyle,
+  //          )
   //        )
   //          .setName(f"colorMathTileMemArr_$jdx")
   //      //(
@@ -3447,45 +3457,47 @@ case class Gpu2d(
   //  if (!noColorMath) {
   //    for (jdx <- 0 until cfg.bgTileSize2d.x) {
   //      colorMathPalEntryMemArr += FpgacpuRamSimpleDualPort(
-  //        //dataType=CombinePipePayload(),
-  //        wordType=Gpu2dPalEntry(cfg=cfg),
-  //        depth=cfg.numColsInBgPal,
-  //        //initBigInt={
-  //        //  val temp = new ArrayBuffer[BigInt]()
-  //        //  for (idx <- 0 until cfg.numColsInBgPal) {
-  //        //    temp += BigInt(0)
-  //        //  }
-  //        //  Some(temp)
-  //        //},
-  //        initBigInt={
-  //          cfg.colorMathPalEntryMemInitBigInt match {
-  //            case Some(colorMathPalEntryMemInitBigInt) => {
-  //              Some(colorMathPalEntryMemInitBigInt)
+  //        cfg=FpgacpuRamSimpleDualPortConfig(
+  //          //dataType=CombinePipePayload(),
+  //          wordType=Gpu2dPalEntry(cfg=cfg),
+  //          depth=cfg.numColsInBgPal,
+  //          //initBigInt={
+  //          //  val temp = new ArrayBuffer[BigInt]()
+  //          //  for (idx <- 0 until cfg.numColsInBgPal) {
+  //          //    temp += BigInt(0)
+  //          //  }
+  //          //  Some(temp)
+  //          //},
+  //          initBigInt={
+  //            cfg.colorMathPalEntryMemInitBigInt match {
+  //              case Some(colorMathPalEntryMemInitBigInt) => {
+  //                Some(colorMathPalEntryMemInitBigInt)
+  //              }
+  //              case None => {
+  //                //Some(Array.fill(cfg.numColsInBgPal)(
+  //                //  (0)
+  //                //).toSeq)
+  //                Some(Gpu2dTest.bgPalMemInitBigInt(cfg=cfg))
+  //                //Some(Gpu2dTest.somePalMemInit(
+  //                //  cfg=cfg,
+  //                //  someBigIntArr=(
+  //                //    Gpu2dTest.bgPalMemInitBigInt(cfg=cfg)
+  //                //  ),
+  //                //))
+  //                //match {
+  //                //  case Some(mySeq) => {
+  //                //    Some(mySeq)
+  //                //  }
+  //                //  case None => {
+  //                //    None
+  //                //  }
+  //                //}
+  //                //None
+  //              }
   //            }
-  //            case None => {
-  //              //Some(Array.fill(cfg.numColsInBgPal)(
-  //              //  (0)
-  //              //).toSeq)
-  //              Some(Gpu2dTest.bgPalMemInitBigInt(cfg=cfg))
-  //              //Some(Gpu2dTest.somePalMemInit(
-  //              //  cfg=cfg,
-  //              //  someBigIntArr=(
-  //              //    Gpu2dTest.bgPalMemInitBigInt(cfg=cfg)
-  //              //  ),
-  //              //))
-  //              //match {
-  //              //  case Some(mySeq) => {
-  //              //    Some(mySeq)
-  //              //  }
-  //              //  case None => {
-  //              //    None
-  //              //  }
-  //              //}
-  //              //None
-  //            }
-  //          }
-  //        },
-  //        arrRamStyle=cfg.bgPalEntryArrRamStyle,
+  //          },
+  //          arrRamStyleXilinx=cfg.bgPalEntryArrRamStyle,
+  //        )
   //      )
   //        .setName(f"colorMathPalEntryMemArr_$jdx")
   //      //(
@@ -3530,23 +3542,25 @@ case class Gpu2d(
   //      jdx <- 0 until cfg.numBgMemsPerNonPalKind
   //    ) {
   //      colorMathEntryMemArr += FpgacpuRamSimpleDualPort(
-  //        //dataType=CombinePipePayload(),
-  //        wordType=Gpu2dBgEntry(
-  //          cfg=cfg,
-  //          isColorMath=true,
-  //        ),
-  //        depth=(
-  //          cfg.numTilesPerBg >> 1
-  //        ),
-  //        initBigInt={
-  //          val temp = new ArrayBuffer[BigInt]()
-  //          for (_ <- 0 until (cfg.numTilesPerBg >> 1)) {
-  //            temp += BigInt(0)
-  //          }
-  //          Some(temp)
-  //          //Some(Array.fill(cfg.numTilesPerBg)(BigInt(0)).toSeq)
-  //        },
-  //        arrRamStyle=cfg.bgEntryArrRamStyle,
+  //        cfg=FpgacpuRamSimpleDualPortConfig(
+  //          //dataType=CombinePipePayload(),
+  //          wordType=Gpu2dBgEntry(
+  //            cfg=cfg,
+  //            isColorMath=true,
+  //          ),
+  //          depth=(
+  //            cfg.numTilesPerBg >> 1
+  //          ),
+  //          initBigInt={
+  //            val temp = new ArrayBuffer[BigInt]()
+  //            for (_ <- 0 until (cfg.numTilesPerBg >> 1)) {
+  //              temp += BigInt(0)
+  //            }
+  //            Some(temp)
+  //            //Some(Array.fill(cfg.numTilesPerBg)(BigInt(0)).toSeq)
+  //          },
+  //          arrRamStyleXilinx=cfg.bgEntryArrRamStyle,
+  //        )
   //      )
   //        .setName(f"colorMathEntryMemArr_$jdx")
   //      //(
@@ -3632,20 +3646,22 @@ case class Gpu2d(
   //    ) {
   //      def bgEntryMemArr = bgEntryMemA2d(idx)
   //      bgEntryMemArr += FpgacpuRamSimpleDualPort(
-  //        wordType=Gpu2dBgEntry(
-  //          cfg=cfg,
-  //          isColorMath=false,
-  //        ),
-  //        depth=(cfg.numTilesPerBg >> 1),
-  //        initBigInt={
-  //          //val temp = new ArrayBuffer[BigInt]()
-  //          //for (_ <- 0 until (cfg.numTilesPerBg >> 1)) {
-  //          //  temp += BigInt(0)
-  //          //}
-  //          //Some(temp)
-  //          Some(Array.fill(cfg.numTilesPerBg >> 1)(BigInt(0)).toSeq)
-  //        },
-  //        arrRamStyle=cfg.bgEntryArrRamStyle,
+  //        cfg=FpgacpuRamSimpleDualPortConfig(
+  //          wordType=Gpu2dBgEntry(
+  //            cfg=cfg,
+  //            isColorMath=false,
+  //          ),
+  //          depth=(cfg.numTilesPerBg >> 1),
+  //          initBigInt={
+  //            //val temp = new ArrayBuffer[BigInt]()
+  //            //for (_ <- 0 until (cfg.numTilesPerBg >> 1)) {
+  //            //  temp += BigInt(0)
+  //            //}
+  //            //Some(temp)
+  //            Some(Array.fill(cfg.numTilesPerBg >> 1)(BigInt(0)).toSeq)
+  //          },
+  //          arrRamStyleXilinx=cfg.bgEntryArrRamStyle,
+  //        )
   //      )
   //        .setName(f"bgEntryMemA2d_$idx" + f"_$jdx")
   //      when (bgEntryPushArr(idx).payload.memIdx(0 downto 0) === jdx) {
@@ -3716,20 +3732,22 @@ case class Gpu2d(
   //      }
   //    )
   //    objAttrsMemArr += FpgacpuRamSimpleDualPort(
-  //      wordType=Gpu2dObjAttrs(
-  //        cfg=cfg,
-  //        isAffine=idx != 0,
-  //      ),
-  //      depth=tempNumObjs,
-  //      //initBigInt={
-  //      //  //val temp = new ArrayBuffer[BigInt]()
-  //      //  //for (_ <- 0 until tempNumObjs) {
-  //      //  //  temp += BigInt(0)
-  //      //  //}
-  //      //  //Some(temp)
-  //      //  Some(Array.fill(tempNumObjs)(BigInt(0)).toSeq)
-  //      //},
-  //      arrRamStyle=cfg.objAttrsArrRamStyle,
+  //      cfg=FpgacpuRamSimpleDualPortConfig(
+  //        wordType=Gpu2dObjAttrs(
+  //          cfg=cfg,
+  //          isAffine=idx != 0,
+  //        ),
+  //        depth=tempNumObjs,
+  //        //initBigInt={
+  //        //  //val temp = new ArrayBuffer[BigInt]()
+  //        //  //for (_ <- 0 until tempNumObjs) {
+  //        //  //  temp += BigInt(0)
+  //        //  //}
+  //        //  //Some(temp)
+  //        //  Some(Array.fill(tempNumObjs)(BigInt(0)).toSeq)
+  //        //},
+  //        arrRamStyleXilinx=cfg.objAttrsArrRamStyle,
+  //      )
   //    )
   //      .setName(f"objAttrsMemArr_$idx")
   //    //object RdObjAttrsMemInfo {
@@ -3779,31 +3797,33 @@ case class Gpu2d(
   //  ]()
   //  for (jdx <- 0 until cfg.bgTileSize2d.x) {
   //    bgPalEntryMemArr += FpgacpuRamSimpleDualPort(
-  //      wordType=Gpu2dPalEntry(cfg=cfg),
-  //      depth=cfg.numColsInBgPal,
-  //      initBigInt={
-  //        //val temp = new ArrayBuffer[]()
-  //        //for (idx <- 0 until cfg.numColsInBgPal) {
-  //        //  temp += (0)
-  //        //}
-  //        //Some(temp)
-  //        cfg.bgPalEntryMemInitBigInt match {
-  //          case Some(bgPalEntryMemInitBigInt) => {
-  //            Some(bgPalEntryMemInitBigInt)
+  //      cfg=FpgacpuRamSimpleDualPortConfig(
+  //        wordType=Gpu2dPalEntry(cfg=cfg),
+  //        depth=cfg.numColsInBgPal,
+  //        initBigInt={
+  //          //val temp = new ArrayBuffer[]()
+  //          //for (idx <- 0 until cfg.numColsInBgPal) {
+  //          //  temp += (0)
+  //          //}
+  //          //Some(temp)
+  //          cfg.bgPalEntryMemInitBigInt match {
+  //            case Some(bgPalEntryMemInitBigInt) => {
+  //              Some(bgPalEntryMemInitBigInt)
+  //            }
+  //            case None => {
+  //              //Some(Array.fill(cfg.numColsInBgPal)((0)).toSeq)
+  //              //Some(Gpu2dTest.somePalMemInit(
+  //              //  cfg=cfg,
+  //              //  someBigIntArr=Gpu2dTest.bgPalMemInitBigInt(
+  //              //    cfg=cfg,
+  //              //  )
+  //              //))
+  //              Some(Gpu2dTest.bgPalMemInitBigInt(cfg=cfg).toSeq)
+  //            }
   //          }
-  //          case None => {
-  //            //Some(Array.fill(cfg.numColsInBgPal)((0)).toSeq)
-  //            //Some(Gpu2dTest.somePalMemInit(
-  //            //  cfg=cfg,
-  //            //  someBigIntArr=Gpu2dTest.bgPalMemInitBigInt(
-  //            //    cfg=cfg,
-  //            //  )
-  //            //))
-  //            Some(Gpu2dTest.bgPalMemInitBigInt(cfg=cfg).toSeq)
-  //          }
-  //        }
-  //      },
-  //      arrRamStyle=cfg.bgPalEntryArrRamStyle,
+  //        },
+  //        arrRamStyleXilinx=cfg.bgPalEntryArrRamStyle,
+  //      )
   //    )
   //      .setName(f"bgPalEntryMemArr_$jdx")
   //    bgPalEntryMemArr(jdx).io.wrEn := bgPalEntryPush.fire
@@ -3857,32 +3877,34 @@ case class Gpu2d(
   //      )
   //    ) {
   //      objPalEntryMemArr += FpgacpuRamSimpleDualPort(
-  //        wordType=Gpu2dPalEntry(cfg=cfg),
-  //        depth=cfg.numColsInObjPal,
-  //        initBigInt={
-  //          //val temp = new ArrayBuffer[]()
-  //          //for (idx <- 0 until cfg.numColsInObjPal) {
-  //          //  temp += (0)
-  //          //}
-  //          //Some(temp)
-  //          cfg.objPalEntryMemInitBigInt match {
-  //            case Some(objPalEntryMemInitBigInt) => {
-  //              Some(objPalEntryMemInitBigInt)
+  //        cfg=FpgacpuRamSimpleDualPortConfig(
+  //          wordType=Gpu2dPalEntry(cfg=cfg),
+  //          depth=cfg.numColsInObjPal,
+  //          initBigInt={
+  //            //val temp = new ArrayBuffer[]()
+  //            //for (idx <- 0 until cfg.numColsInObjPal) {
+  //            //  temp += (0)
+  //            //}
+  //            //Some(temp)
+  //            cfg.objPalEntryMemInitBigInt match {
+  //              case Some(objPalEntryMemInitBigInt) => {
+  //                Some(objPalEntryMemInitBigInt)
+  //              }
+  //              case None => {
+  //                //Some(Array.fill(cfg.numColsInObjPal)(BigInt(0)).toSeq)
+  //                //Some(Array.fill(cfg.numColsInBgPal)((0)).toSeq)
+  //                //Some(Gpu2dTest.somePalMemInit(
+  //                //  cfg=cfg,
+  //                //  someBigIntArr=Gpu2dTest.objPalMemInitBigInt(
+  //                //    cfg=cfg,
+  //                //  )
+  //                //))
+  //                Some(Gpu2dTest.objPalMemInitBigInt(cfg=cfg).toSeq)
+  //              }
   //            }
-  //            case None => {
-  //              //Some(Array.fill(cfg.numColsInObjPal)(BigInt(0)).toSeq)
-  //              //Some(Array.fill(cfg.numColsInBgPal)((0)).toSeq)
-  //              //Some(Gpu2dTest.somePalMemInit(
-  //              //  cfg=cfg,
-  //              //  someBigIntArr=Gpu2dTest.objPalMemInitBigInt(
-  //              //    cfg=cfg,
-  //              //  )
-  //              //))
-  //              Some(Gpu2dTest.objPalMemInitBigInt(cfg=cfg).toSeq)
-  //            }
-  //          }
-  //        },
-  //        arrRamStyle=cfg.objPalEntryArrRamStyle,
+  //          },
+  //          arrRamStyleXilinx=cfg.objPalEntryArrRamStyle,
+  //        )
   //      )
   //        .setName(f"objPalEntryMemArr_$idx" + f"_$x")
   //      objPalEntryMemArr(x).io.wrEn := objPalEntryPush.fire
@@ -4616,9 +4638,9 @@ case class Gpu2d(
   //        wordCount=cfg.bgSubLineMemArrSize,
   //        pipeName=s"combineBgSubLineMemArr_${idx}",
   //        initBigInt=Some(Array.fill(1)(bgSubLineMemInitBigInt).toSeq),
-  //        pmRmwModTypeName=(
-  //          s"Gpu2dCombinePipePayload_Bg_PmRmwModType"
-  //        ),
+  //        //pmRmwModTypeName=(
+  //        //  s"Gpu2dCombinePipePayload_Bg_PmRmwModType"
+  //        //),
   //        vivadoDebug=vivadoDebug,
   //      )(
   //        setWordFunc=(
@@ -4669,6 +4691,7 @@ case class Gpu2d(
   //        modRdPortCnt=wrObjPipeSlmRmwModRdPortCnt,
   //        modStageCnt=wrObjPipeSlmRmwModStageCnt,
   //        pipeName=s"wrObjSubLineMemArr_${idx}",
+  //        optIncludePreMid0Front=false,
   //        linkArr=Some(linkArr),
   //        memArrIdx=0,
   //        optDualRd=false,
@@ -4736,9 +4759,9 @@ case class Gpu2d(
   //      wordCount=cfg.objSubLineMemArrSize,
   //      pipeName=s"combineObjSubLineMemArr_${idx}",
   //      initBigInt=Some(Array.fill(1)(objSubLineMemInitBigInt).toSeq),
-  //      pmRmwModTypeName=(
-  //        s"Gpu2dCombinePipePayload_Obj_PmRmwModType"
-  //      ),
+  //      //pmRmwModTypeName=(
+  //      //  s"Gpu2dCombinePipePayload_Obj_PmRmwModType"
+  //      //),
   //      vivadoDebug=(
   //        if (idx == 0) (
   //          vivadoDebug
@@ -4775,6 +4798,7 @@ case class Gpu2d(
   //          modRdPortCnt=wrObjPipeSlmRmwModRdPortCnt,
   //          modStageCnt=wrObjPipeSlmRmwModStageCnt,
   //          pipeName=s"wrObjAffineSubLineMemArr_${idx}",
+  //          optIncludePreMid0Front=false,
   //          linkArr=Some(linkArr),
   //          memArrIdx=0,
   //          optDualRd=false,
@@ -4856,9 +4880,9 @@ case class Gpu2d(
   //        initBigInt=Some(
   //          Array.fill(1)(objAffineSubLineMemInitBigInt).toSeq
   //        ),
-  //        pmRmwModTypeName=(
-  //          s"Gpu2dCombinePipePayload_ObjAffine_PmRmwModType"
-  //        ),
+  //        //pmRmwModTypeName=(
+  //        //  s"Gpu2dCombinePipePayload_ObjAffine_PmRmwModType"
+  //        //),
   //        vivadoDebug=false,
   //      )(
   //        setWordFunc=(
@@ -6167,6 +6191,7 @@ case class Gpu2d(
   //            f"WrObjPipePayload_Affine"
   //          )
   //        ),
+  //        optIncludePreMid0Front=false,
   //        linkArr=None,
   //        memArrIdx=0,
   //        optDualRd=false,
@@ -6734,8 +6759,8 @@ case class Gpu2d(
   //      linkArr += cWrObjArr.last
   //    }
   //    if (idx == wrObjPipeIdxSlmRmwFront) {
-  //      //println("wrObjPipeIdxSlmRmwFront")
-  //      //println(s"idx == front: $idx")
+  //      println("wrObjPipeIdxSlmRmwFront")
+  //      println(s"idx == front: $idx")
   //      val down = Node()
   //        .setName(s"wrObjPipeSlmRmw_front_down_$idx")
 
@@ -6748,7 +6773,7 @@ case class Gpu2d(
   //        nfMyArr += (
   //          Node()
   //        )
-  //        nfMyArr.last.setName(s"nfMyArr_front_$jdx")
+  //        nfMyArr.last.setName(s"wrObj_nfMyArr_front_$jdx")
   //      }
   //      val fMyDown = ForkLink(
   //        up=down,
@@ -6760,7 +6785,11 @@ case class Gpu2d(
   //      for (jdx <- 0 until nfMyArr.size) {
   //        val sLink = StageLink(
   //          up=nfMyArr(jdx),
-  //          down=Node(),
+  //          down={
+  //            val temp = Node()
+  //            temp.setName(s"wrObjPipeIdxSlmRmwFront_sLink_down_${jdx}")
+  //            temp
+  //          },
   //        )
   //        linkArr += sLink
   //        val s2mLink = S2MLink(
@@ -6779,7 +6808,7 @@ case class Gpu2d(
   //        )
   //      }
   //    } else if (idx == wrObjPipeIdxSlmRmwModFront) {
-  //      //println(s"idx == modFront: $idx")
+  //      println(s"idx == modFront: $idx")
   //      val njMyArr = new ArrayBuffer[Node]()
   //      for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
   //        njMyArr += (
@@ -6790,10 +6819,11 @@ case class Gpu2d(
   //      }
   //      val jMyWrObj = JoinLink(
   //        ups=njMyArr.toSeq,
-  //        down=(
-  //          Node()
-  //          .setName("jMyWrObj_modFront_down")
-  //        ),
+  //        down={
+  //          val temp = Node()
+  //          temp.setName("jMyWrObj_modFront_down")
+  //          temp
+  //        },
   //      )
   //        .setName("jMyWrObj_modFront")
   //      linkArr += jMyWrObj 
@@ -6815,10 +6845,11 @@ case class Gpu2d(
   //      }
   //      val dMyWrObj = DirectLink(
   //        up=jMyWrObj.down,
-  //        down=(
-  //          Node()
-  //            .setName(s"dMyWrObj_modFront_down_$idx")
-  //        ),
+  //        down={
+  //          val temp = Node()
+  //          temp.setName(s"dMyWrObj_modFront_down_$idx")
+  //          temp
+  //        },
   //      )
   //        .setName(s"dMyWrObj_modFront_$idx")
   //      linkArr += dMyWrObj
@@ -6853,7 +6884,7 @@ case class Gpu2d(
   //            wrObjSubLineMemArr(
   //              jdx
   //            ).io.midModStages(0)(PipeMemRmw.extIdxUp),
-  //            dMyWrObj.up.isFiring
+  //            cond=dMyWrObj.up.isFiring,
   //          )
   //          init(
   //            wrObjSubLineMemArr(jdx).io.midModStages(0)(
@@ -6875,13 +6906,24 @@ case class Gpu2d(
   //            )
   //          }
   //        }
+  //        //default {
+  //        //  dMyWrObj.down(
+  //        //    wrObjPipePayloadSlmRmwModFrontOutp
+  //        //  ) := (
+  //        //    RegNext(
+  //        //      dMyWrObj.up(
+  //        //        wrObjPipePayloadSlmRmwModFrontInp.last
+  //        //      )
+  //        //    )
+  //        //  )
+  //        //}
   //      }
   //      addMainLinks(
   //        up=Some(dMyWrObj.down),
   //        down=None,
   //      )
   //    } else if (idx == wrObjPipeIdxSlmRmwModFront + 1) {
-  //      //println(s"idx == modFront + 1: ${idx}")
+  //      println(s"idx == modFront + 1: ${idx}")
   //      for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
   //        wrObjSubLineMemArr(jdx).io.midModStages(1)(
   //          PipeMemRmw.extIdxUp
@@ -6922,8 +6964,8 @@ case class Gpu2d(
   //        down=None,
   //      )
   //    } else if (idx == wrObjPipeIdxSlmRmwModBack) {
-  //      //println("wrObjPipeIdxSlmRmwModBack")
-  //      //println(s"idx == modBack: $idx")
+  //      println("wrObjPipeIdxSlmRmwModBack")
+  //      println(s"idx == modBack: $idx")
   //      val down = Node()
   //        .setName(s"wrObjPipeSlmRmw_modBack_down_$idx")
   //      addMainLinks(
@@ -6988,8 +7030,8 @@ case class Gpu2d(
   //        //--------
   //      }
   //    } else if (idx == wrObjPipeIdxSlmRmwBack) {
-  //      //println(s"idx == back: $idx")
-  //      //println("wrObjPipeIdxSlmRmwBack")
+  //      println(s"idx == back: $idx")
+  //      println("wrObjPipeIdxSlmRmwBack")
 
   //      val njMyArr = new ArrayBuffer[Node]()
   //      for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
@@ -7064,21 +7106,26 @@ case class Gpu2d(
   //    idx: Int,
   //  ): (WrObjPipePayload, WrObjPipePayload) = {
   //    // This function returns `(tempInp, tempOutp)`
-  //    def pipeIn = (
+  //    val pipeIn = (
   //      if (idx == wrObjPipeIdxSlmRmwModFront) {
   //        cWrObjArr(idx).up(wrObjPipePayloadSlmRmwModFrontOutp)
-  //      } 
-  //      else if (idx == wrObjPipeIdxSlmRmwBack) {
+  //      } else if (idx == wrObjPipeIdxSlmRmwBack) {
   //        cWrObjArr(idx).up(wrObjPipePayloadSlmRmwBackOutp)
   //      } else {
   //        cWrObjArr(idx).up(wrObjPipePayloadMain(idx))
   //      }
   //    )
-  //    def pipeOut = wrObjPipeOutArr(idx)
+  //    val pipeOut = (
+  //      wrObjPipeOutArr(idx)
+  //      .setName(s"wrObj_pipeOut_${idx}")
+  //    )
   //    pipeOut := pipeIn
   //    pipeOut.allowOverride
 
-  //    def tempPipeOut = tempWrObjPipeOutArr(idx)
+  //    val tempPipeOut = (
+  //      tempWrObjPipeOutArr(idx)
+  //      .setName(s"wrObj_tempPipeOut_${idx}")
+  //    )
   //    tempPipeOut := (
   //      RegNext(tempPipeOut) init(tempPipeOut.getZero)
   //    )
@@ -7117,381 +7164,383 @@ case class Gpu2d(
   //    Payload[WrObjPipePayload]
   //  ]()
 
-  //  for (idx <- 0 until wrBgObjPipeNumStages + 1) {
-  //    wrObjAffinePipePayloadMain += (
-  //      Payload(WrObjPipePayload(isAffine=true))
-  //      .setName(s"wrObjAffinePipePayloadMain_${idx}")
-  //    )
-  //  }
-  //  for (idx <- 0 until nWrObjAffineArr.size - 1) {
-  //    //sWrObjAffineArr += StageLink(
-  //    //  up=nWrObjAffineArr(idx),
-  //    //  down=Node(),
-  //    //)
-  //    //linkArr += sWrObjAffineArr.last
-
-  //    //cWrObjAffineArr += CtrlLink(
-  //    //  up=sWrObjAffineArr.last.down,
-  //    //  down=nWrObjAffineArr(idx + 1),
-  //    //)
-  //    //linkArr += cWrObjAffineArr.last
-  //    def addMainLinks(
-  //      up: Option[Node]=None,
-  //      down: Option[Node]=None,
-  //    ): Unit = {
-  //      sWrObjAffineArr += StageLink(
-  //        up={
-  //          up match {
-  //            case Some(myUp) => {
-  //              myUp
-  //            }
-  //            case None => {
-  //              nWrObjAffineArr(idx)
-  //            }
-  //          }
-  //        },
-  //        down=Node(),
+  //  if (!cfg.noAffineObjs) {
+  //    for (idx <- 0 until wrBgObjPipeNumStages + 1) {
+  //      wrObjAffinePipePayloadMain += (
+  //        Payload(WrObjPipePayload(isAffine=true))
+  //        .setName(s"wrObjAffinePipePayloadMain_${idx}")
   //      )
-  //      linkArr += sWrObjAffineArr.last
-
-  //      cWrObjAffineArr += CtrlLink(
-  //        up=sWrObjAffineArr.last.down,
-  //        down={
-  //          down match {
-  //            case Some(myDown) => {
-  //              myDown
-  //            }
-  //            case None => {
-  //              nWrObjAffineArr(idx + 1),
-  //            }
-  //          }
-  //        },
-  //      )
-  //      linkArr += cWrObjAffineArr.last
   //    }
-  //    if (idx == wrObjPipeIdxSlmRmwFront) {
-  //      //println("wrObjAffinePipeIdxSlmRmwFront")
-  //      //println(s"idx == front: $idx")
-  //      val down = Node()
-  //        .setName(s"wrObjAffinePipeSlmRmw_front_down_$idx")
+  //    for (idx <- 0 until nWrObjAffineArr.size - 1) {
+  //      //sWrObjAffineArr += StageLink(
+  //      //  up=nWrObjAffineArr(idx),
+  //      //  down=Node(),
+  //      //)
+  //      //linkArr += sWrObjAffineArr.last
 
-  //      addMainLinks(
-  //        up=None,
-  //        down=Some(down),
-  //      )
-  //      val nfMyArr = new ArrayBuffer[Node]()
-  //      for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
-  //        nfMyArr += (
-  //          Node()
-  //        )
-  //        nfMyArr.last.setName(s"nfMyArr_Affine_front_$jdx")
-  //      }
-  //      val fMyDown = ForkLink(
-  //        up=down,
-  //        downs=nfMyArr.toSeq,
-  //        synchronous=true,
-  //      )
-  //        .setName("fMyDown_Affine_front")
-  //      linkArr += fMyDown
-  //      for (jdx <- 0 until nfMyArr.size) {
-  //        val sLink = StageLink(
-  //          up=nfMyArr(jdx),
+  //      //cWrObjAffineArr += CtrlLink(
+  //      //  up=sWrObjAffineArr.last.down,
+  //      //  down=nWrObjAffineArr(idx + 1),
+  //      //)
+  //      //linkArr += cWrObjAffineArr.last
+  //      def addMainLinks(
+  //        up: Option[Node]=None,
+  //        down: Option[Node]=None,
+  //      ): Unit = {
+  //        sWrObjAffineArr += StageLink(
+  //          up={
+  //            up match {
+  //              case Some(myUp) => {
+  //                myUp
+  //              }
+  //              case None => {
+  //                nWrObjAffineArr(idx)
+  //              }
+  //            }
+  //          },
   //          down=Node(),
   //        )
-  //        linkArr += sLink
-  //        val s2mLink = S2MLink(
-  //          up=sLink.down,
+  //        linkArr += sWrObjAffineArr.last
+
+  //        cWrObjAffineArr += CtrlLink(
+  //          up=sWrObjAffineArr.last.down,
+  //          down={
+  //            down match {
+  //              case Some(myDown) => {
+  //                myDown
+  //              }
+  //              case None => {
+  //                nWrObjAffineArr(idx + 1),
+  //              }
+  //            }
+  //          },
+  //        )
+  //        linkArr += cWrObjAffineArr.last
+  //      }
+  //      if (idx == wrObjPipeIdxSlmRmwFront) {
+  //        //println("wrObjAffinePipeIdxSlmRmwFront")
+  //        //println(s"idx == front: $idx")
+  //        val down = Node()
+  //          .setName(s"wrObjAffinePipeSlmRmw_front_down_$idx")
+
+  //        addMainLinks(
+  //          up=None,
+  //          down=Some(down),
+  //        )
+  //        val nfMyArr = new ArrayBuffer[Node]()
+  //        for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
+  //          nfMyArr += (
+  //            Node()
+  //          )
+  //          nfMyArr.last.setName(s"nfMyArr_Affine_front_$jdx")
+  //        }
+  //        val fMyDown = ForkLink(
+  //          up=down,
+  //          downs=nfMyArr.toSeq,
+  //          synchronous=true,
+  //        )
+  //          .setName("fMyDown_Affine_front")
+  //        linkArr += fMyDown
+  //        for (jdx <- 0 until nfMyArr.size) {
+  //          val sLink = StageLink(
+  //            up=nfMyArr(jdx),
+  //            down=Node(),
+  //          )
+  //          linkArr += sLink
+  //          val s2mLink = S2MLink(
+  //            up=sLink.down,
+  //            down=(
+  //              //Node()
+  //              wrObjAffineSubLineMemArr(jdx).io.front
+  //            ),
+  //          )
+  //          linkArr += s2mLink
+
+  //          wrObjAffineSubLineMemArr(jdx).io.front(
+  //            wrObjAffineSubLineMemArr(jdx).io.frontPayload
+  //          ) := (
+  //            s2mLink.down(wrObjAffinePipePayloadMain(idx + 1))
+  //          )
+  //        }
+  //      } else if (idx == wrObjPipeIdxSlmRmwModFront) {
+  //        //println(s"idx == modFront: $idx")
+  //        val njMyArr = new ArrayBuffer[Node]()
+  //        for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
+  //          njMyArr += (
+  //            Node()
+  //          )
+  //          njMyArr.last.setName(s"njMyArr_Affine_modFront_$jdx")
+  //          //println(njMyArr.last.getName())
+  //        }
+  //        val jMyWrObjAffine = JoinLink(
+  //          ups=njMyArr.toSeq,
   //          down=(
-  //            //Node()
-  //            wrObjAffineSubLineMemArr(jdx).io.front
+  //            Node()
+  //            .setName("jMyWrObjAffine_modFront_down")
   //          ),
   //        )
-  //        linkArr += s2mLink
-
-  //        wrObjAffineSubLineMemArr(jdx).io.front(
-  //          wrObjAffineSubLineMemArr(jdx).io.frontPayload
-  //        ) := (
-  //          s2mLink.down(wrObjAffinePipePayloadMain(idx + 1))
-  //        )
-  //      }
-  //    } else if (idx == wrObjPipeIdxSlmRmwModFront) {
-  //      //println(s"idx == modFront: $idx")
-  //      val njMyArr = new ArrayBuffer[Node]()
-  //      for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
-  //        njMyArr += (
-  //          Node()
-  //        )
-  //        njMyArr.last.setName(s"njMyArr_Affine_modFront_$jdx")
-  //        //println(njMyArr.last.getName())
-  //      }
-  //      val jMyWrObjAffine = JoinLink(
-  //        ups=njMyArr.toSeq,
-  //        down=(
-  //          Node()
-  //          .setName("jMyWrObjAffine_modFront_down")
-  //        ),
-  //      )
-  //        .setName("jMyWrObjAffine_modFront")
-  //      linkArr += jMyWrObjAffine 
-  //      for (jdx <- 0 until njMyArr.size) {
-  //        njMyArr(jdx)(
-  //          wrObjAffinePipePayloadSlmRmwModFrontInp(jdx)
-  //        ) := (
-  //          wrObjAffineSubLineMemArr(
-  //            jdx
-  //          ).io.modFront(
-  //            wrObjAffineSubLineMemArr(jdx).io.modFrontAfterPayload
-  //          )
-  //        )
-  //        if (vivadoDebug) {
-  //          //njMyArr(jdx)(
-  //          //  wrObjAffinePipePayloadSlmRmwModFrontInp(jdx)
-  //          //).addAttribute("MARK_DEBUG", "TRUE")
-  //        }
-  //      }
-  //      val dMyWrObjAffine = DirectLink(
-  //        up=jMyWrObjAffine.down,
-  //        down=(
-  //          Node()
-  //            .setName(s"dMyWrObjAffine_modFront_down_$idx")
-  //        ),
-  //      )
-  //        .setName(s"dMyWrObjAffine_modFront_$idx")
-  //      linkArr += dMyWrObjAffine
-  //      for (jdx <- 0 until njMyArr.size) {
-  //        wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
-  //          PipeMemRmw.extIdxUp
-  //        ) := (
-  //          RegNext(
-  //            wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
-  //              PipeMemRmw.extIdxUp
-  //            )
-  //          )
-  //          init(
-  //            wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
-  //              PipeMemRmw.extIdxUp
-  //            ).getZero
-  //          )
-  //        )
-  //        when (dMyWrObjAffine.up.isValid) {
-  //          wrObjAffineSubLineMemArr(
-  //            jdx
-  //          ).io.midModStages(0)(PipeMemRmw.extIdxUp) := (
-  //            dMyWrObjAffine.up(wrObjAffinePipePayloadSlmRmwModFrontInp(
-  //              jdx
-  //            ))
-  //          )
-  //        }
-  //        wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
-  //          PipeMemRmw.extIdxSaved
-  //        ) := (
-  //          RegNextWhen(
+  //          .setName("jMyWrObjAffine_modFront")
+  //        linkArr += jMyWrObjAffine 
+  //        for (jdx <- 0 until njMyArr.size) {
+  //          njMyArr(jdx)(
+  //            wrObjAffinePipePayloadSlmRmwModFrontInp(jdx)
+  //          ) := (
   //            wrObjAffineSubLineMemArr(
   //              jdx
-  //            ).io.midModStages(0)(PipeMemRmw.extIdxUp),
-  //            dMyWrObjAffine.up.isFiring
-  //          )
-  //          init(
-  //            wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
-  //              PipeMemRmw.extIdxSaved
+  //            ).io.modFront(
+  //              wrObjAffineSubLineMemArr(jdx).io.modFrontAfterPayload
   //            )
-  //            .getZero
   //          )
-  //        )
-  //      }
-  //      switch (
-  //        (wrObjPipeLineMemArrIdx(4) + 0)(0 downto 0)
-  //      ) {
-  //        for (
-  //          jdx <- 0
-  //          until (1 << wrObjPipeLineMemArrIdx(4).getWidth)
-  //        ) {
-  //          is (jdx) {
-  //            dMyWrObjAffine.down(
-  //              wrObjAffinePipePayloadSlmRmwModFrontOutp
-  //            ) := (
-  //              dMyWrObjAffine.up(
-  //                wrObjAffinePipePayloadSlmRmwModFrontInp(jdx)
-  //              )
-  //            )
+  //          if (vivadoDebug) {
+  //            //njMyArr(jdx)(
+  //            //  wrObjAffinePipePayloadSlmRmwModFrontInp(jdx)
+  //            //).addAttribute("MARK_DEBUG", "TRUE")
   //          }
   //        }
-  //      }
-  //      addMainLinks(
-  //        up=Some(dMyWrObjAffine.down),
-  //        down=None,
-  //      )
-  //    } else if (idx == wrObjPipeIdxSlmRmwModFront + 1) {
-  //      //println(s"idx == modFront + 1: ${idx}")
-  //      for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
-  //        wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
-  //          PipeMemRmw.extIdxUp
-  //        ) := (
-  //          RegNext(wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
-  //            PipeMemRmw.extIdxUp
-  //          ))
-  //          init(
-  //            wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
-  //              PipeMemRmw.extIdxUp
-  //            )
-  //            .getZero
-  //          )
+  //        val dMyWrObjAffine = DirectLink(
+  //          up=jMyWrObjAffine.down,
+  //          down=(
+  //            Node()
+  //              .setName(s"dMyWrObjAffine_modFront_down_$idx")
+  //          ),
   //        )
-  //        when (nWrObjAffineArr(idx).isValid) {
+  //          .setName(s"dMyWrObjAffine_modFront_$idx")
+  //        linkArr += dMyWrObjAffine
+  //        for (jdx <- 0 until njMyArr.size) {
+  //          wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
+  //            PipeMemRmw.extIdxUp
+  //          ) := (
+  //            RegNext(
+  //              wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
+  //                PipeMemRmw.extIdxUp
+  //              )
+  //            )
+  //            init(
+  //              wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
+  //                PipeMemRmw.extIdxUp
+  //              ).getZero
+  //            )
+  //          )
+  //          when (dMyWrObjAffine.up.isValid) {
+  //            wrObjAffineSubLineMemArr(
+  //              jdx
+  //            ).io.midModStages(0)(PipeMemRmw.extIdxUp) := (
+  //              dMyWrObjAffine.up(wrObjAffinePipePayloadSlmRmwModFrontInp(
+  //                jdx
+  //              ))
+  //            )
+  //          }
+  //          wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
+  //            PipeMemRmw.extIdxSaved
+  //          ) := (
+  //            RegNextWhen(
+  //              wrObjAffineSubLineMemArr(
+  //                jdx
+  //              ).io.midModStages(0)(PipeMemRmw.extIdxUp),
+  //              dMyWrObjAffine.up.isFiring
+  //            )
+  //            init(
+  //              wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
+  //                PipeMemRmw.extIdxSaved
+  //              )
+  //              .getZero
+  //            )
+  //          )
+  //        }
+  //        switch (
+  //          (wrObjPipeLineMemArrIdx(4) + 0)(0 downto 0)
+  //        ) {
+  //          for (
+  //            jdx <- 0
+  //            until (1 << wrObjPipeLineMemArrIdx(4).getWidth)
+  //          ) {
+  //            is (jdx) {
+  //              dMyWrObjAffine.down(
+  //                wrObjAffinePipePayloadSlmRmwModFrontOutp
+  //              ) := (
+  //                dMyWrObjAffine.up(
+  //                  wrObjAffinePipePayloadSlmRmwModFrontInp(jdx)
+  //                )
+  //              )
+  //            }
+  //          }
+  //        }
+  //        addMainLinks(
+  //          up=Some(dMyWrObjAffine.down),
+  //          down=None,
+  //        )
+  //      } else if (idx == wrObjPipeIdxSlmRmwModFront + 1) {
+  //        //println(s"idx == modFront + 1: ${idx}")
+  //        for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
   //          wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
   //            PipeMemRmw.extIdxUp
   //          ) := (
-  //            nWrObjAffineArr(idx)
-  //            (
-  //              wrObjAffinePipePayloadMain(idx /*+ 1*/)
+  //            RegNext(wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
+  //              PipeMemRmw.extIdxUp
+  //            ))
+  //            init(
+  //              wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
+  //                PipeMemRmw.extIdxUp
+  //              )
+  //              .getZero
   //            )
   //          )
-  //        }
-  //        wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
-  //          PipeMemRmw.extIdxSaved
-  //        ) := (
-  //          RegNextWhen(
+  //          when (nWrObjAffineArr(idx).isValid) {
   //            wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
   //              PipeMemRmw.extIdxUp
-  //            ),
-  //            nWrObjAffineArr(idx).isFiring
-  //          )
-  //        )
-  //      }
-  //      addMainLinks(
-  //        up=None,
-  //        down=None,
-  //      )
-  //    } else if (idx == wrObjPipeIdxSlmRmwModBack) {
-  //      //println("wrObjAffinePipeIdxSlmRmwModBack")
-  //      //println(s"idx == modBack: $idx")
-  //      val down = Node()
-  //        .setName(s"wrObjAffinePipeSlmRmw_modBack_down_$idx")
-  //      addMainLinks(
-  //        up=None,
-  //        down=Some(down),
-  //      )
-  //      val nfMyArr = new ArrayBuffer[Node]()
-  //      for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
-  //        nfMyArr += (
-  //          wrObjAffineSubLineMemArr(jdx).io.modBack
-  //        )
-  //        nfMyArr.last.setName(s"nfMyArr_Affine_modBack_$jdx")
-  //      }
-  //      val fMyDown = ForkLink(
-  //        up=down,
-  //        downs=nfMyArr.toSeq,
-  //        synchronous=true,
-  //      )
-  //      linkArr += fMyDown
-  //      for (jdx <- 0 until nfMyArr.size) {
-  //        wrObjAffineSubLineMemArr(jdx).io.modBack(
-  //          wrObjAffineSubLineMemArr(jdx).io.modBackPayload
-  //        ) := (
-  //          nfMyArr(jdx)(
-  //            wrObjAffinePipePayloadMain(idx + 1)
-  //          )
-  //        )
-  //        wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
-  //            PipeMemRmw.extIdxUp
-  //        ):= (
-  //          RegNext(
-  //            wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
-  //              PipeMemRmw.extIdxUp
-  //            )
-  //          )
-  //          init(
-  //            wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
-  //              PipeMemRmw.extIdxUp
-  //            )
-  //            .getZero
-  //          )
-  //        )
-  //        when (nWrObjAffineArr(idx).isValid) {
-  //          wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
-  //            PipeMemRmw.extIdxUp
-  //          ) := (
-  //            nWrObjAffineArr(idx)(
-  //              wrObjAffinePipePayloadMain(idx /*+ 1*/)
-  //            )
-  //          )
-  //        }
-  //        wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
-  //          PipeMemRmw.extIdxSaved
-  //        ) := (
-  //          RegNextWhen(
-  //            wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
-  //              PipeMemRmw.extIdxUp
-  //            ),
-  //            nWrObjAffineArr(idx).isFiring
-  //          )
-  //        )
-  //        //--------
-  //      }
-  //    } else if (idx == wrObjPipeIdxSlmRmwBack) {
-  //      //println(s"idx == back: $idx")
-  //      //println("wrObjAffinePipeIdxSlmRmwBack")
-
-  //      val njMyArr = new ArrayBuffer[Node]()
-  //      for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
-  //        njMyArr += (
-  //          Node()
-  //        )
-  //        njMyArr.last.setName(s"njMyArr_Affine_back_$jdx")
-  //      }
-  //      val jMyWrObjAffine = JoinLink(
-  //        ups=njMyArr.toSeq,
-  //        down=(
-  //          Node()
-  //          .setName("jMyWrObjAffine_back_down")
-  //        ),
-  //      )
-  //        .setName("jMyWrObjAffine_back")
-  //      linkArr += jMyWrObjAffine 
-  //      for (jdx <- 0 until njMyArr.size) {
-  //        njMyArr(jdx)(
-  //          wrObjAffinePipePayloadSlmRmwBackInp(jdx)
-  //        ) := (
-  //          wrObjAffineSubLineMemArr(jdx).io.back(
-  //            wrObjAffineSubLineMemArr(jdx).io.backPayload
-  //          )
-  //        )
-  //      }
-  //      val dMyWrObjAffine = DirectLink(
-  //        up=jMyWrObjAffine.down,
-  //        down=(
-  //          Node()
-  //            .setName(s"dMyWrObjAffine_back_down_$idx")
-  //        ),
-  //      )
-  //        .setName(s"dMyWrObjAffine_back_$idx")
-  //      linkArr += dMyWrObjAffine
-  //      switch ((wrObjPipeLineMemArrIdx(5) + 0)(0 downto 0)) {
-  //        for (
-  //          jdx <- 0
-  //          until (1 << wrObjPipeLineMemArrIdx(5).getWidth)
-  //        ) {
-  //          is (jdx) {
-  //            //println(s"is (${jdx})")
-  //            dMyWrObjAffine.down(
-  //              wrObjAffinePipePayloadSlmRmwBackOutp
   //            ) := (
-  //              dMyWrObjAffine.up(
-  //                wrObjAffinePipePayloadSlmRmwBackInp(jdx)
+  //              nWrObjAffineArr(idx)
+  //              (
+  //                wrObjAffinePipePayloadMain(idx /*+ 1*/)
   //              )
   //            )
   //          }
-  //          default {
-  //            //println(s"default ${jdx}")
+  //          wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
+  //            PipeMemRmw.extIdxSaved
+  //          ) := (
+  //            RegNextWhen(
+  //              wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
+  //                PipeMemRmw.extIdxUp
+  //              ),
+  //              nWrObjAffineArr(idx).isFiring
+  //            )
+  //          )
+  //        }
+  //        addMainLinks(
+  //          up=None,
+  //          down=None,
+  //        )
+  //      } else if (idx == wrObjPipeIdxSlmRmwModBack) {
+  //        //println("wrObjAffinePipeIdxSlmRmwModBack")
+  //        //println(s"idx == modBack: $idx")
+  //        val down = Node()
+  //          .setName(s"wrObjAffinePipeSlmRmw_modBack_down_$idx")
+  //        addMainLinks(
+  //          up=None,
+  //          down=Some(down),
+  //        )
+  //        val nfMyArr = new ArrayBuffer[Node]()
+  //        for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
+  //          nfMyArr += (
+  //            wrObjAffineSubLineMemArr(jdx).io.modBack
+  //          )
+  //          nfMyArr.last.setName(s"nfMyArr_Affine_modBack_$jdx")
+  //        }
+  //        val fMyDown = ForkLink(
+  //          up=down,
+  //          downs=nfMyArr.toSeq,
+  //          synchronous=true,
+  //        )
+  //        linkArr += fMyDown
+  //        for (jdx <- 0 until nfMyArr.size) {
+  //          wrObjAffineSubLineMemArr(jdx).io.modBack(
+  //            wrObjAffineSubLineMemArr(jdx).io.modBackPayload
+  //          ) := (
+  //            nfMyArr(jdx)(
+  //              wrObjAffinePipePayloadMain(idx + 1)
+  //            )
+  //          )
+  //          wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
+  //              PipeMemRmw.extIdxUp
+  //          ):= (
+  //            RegNext(
+  //              wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
+  //                PipeMemRmw.extIdxUp
+  //              )
+  //            )
+  //            init(
+  //              wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
+  //                PipeMemRmw.extIdxUp
+  //              )
+  //              .getZero
+  //            )
+  //          )
+  //          when (nWrObjAffineArr(idx).isValid) {
+  //            wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
+  //              PipeMemRmw.extIdxUp
+  //            ) := (
+  //              nWrObjAffineArr(idx)(
+  //                wrObjAffinePipePayloadMain(idx /*+ 1*/)
+  //              )
+  //            )
+  //          }
+  //          wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
+  //            PipeMemRmw.extIdxSaved
+  //          ) := (
+  //            RegNextWhen(
+  //              wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
+  //                PipeMemRmw.extIdxUp
+  //              ),
+  //              nWrObjAffineArr(idx).isFiring
+  //            )
+  //          )
+  //          //--------
+  //        }
+  //      } else if (idx == wrObjPipeIdxSlmRmwBack) {
+  //        //println(s"idx == back: $idx")
+  //        //println("wrObjAffinePipeIdxSlmRmwBack")
+
+  //        val njMyArr = new ArrayBuffer[Node]()
+  //        for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
+  //          njMyArr += (
+  //            Node()
+  //          )
+  //          njMyArr.last.setName(s"njMyArr_Affine_back_$jdx")
+  //        }
+  //        val jMyWrObjAffine = JoinLink(
+  //          ups=njMyArr.toSeq,
+  //          down=(
+  //            Node()
+  //            .setName("jMyWrObjAffine_back_down")
+  //          ),
+  //        )
+  //          .setName("jMyWrObjAffine_back")
+  //        linkArr += jMyWrObjAffine 
+  //        for (jdx <- 0 until njMyArr.size) {
+  //          njMyArr(jdx)(
+  //            wrObjAffinePipePayloadSlmRmwBackInp(jdx)
+  //          ) := (
+  //            wrObjAffineSubLineMemArr(jdx).io.back(
+  //              wrObjAffineSubLineMemArr(jdx).io.backPayload
+  //            )
+  //          )
+  //        }
+  //        val dMyWrObjAffine = DirectLink(
+  //          up=jMyWrObjAffine.down,
+  //          down=(
+  //            Node()
+  //              .setName(s"dMyWrObjAffine_back_down_$idx")
+  //          ),
+  //        )
+  //          .setName(s"dMyWrObjAffine_back_$idx")
+  //        linkArr += dMyWrObjAffine
+  //        switch ((wrObjPipeLineMemArrIdx(5) + 0)(0 downto 0)) {
+  //          for (
+  //            jdx <- 0
+  //            until (1 << wrObjPipeLineMemArrIdx(5).getWidth)
+  //          ) {
+  //            is (jdx) {
+  //              //println(s"is (${jdx})")
+  //              dMyWrObjAffine.down(
+  //                wrObjAffinePipePayloadSlmRmwBackOutp
+  //              ) := (
+  //                dMyWrObjAffine.up(
+  //                  wrObjAffinePipePayloadSlmRmwBackInp(jdx)
+  //                )
+  //              )
+  //            }
+  //            default {
+  //              //println(s"default ${jdx}")
+  //            }
   //          }
   //        }
+  //        addMainLinks(
+  //          up=Some(dMyWrObjAffine.down),
+  //          down=None,
+  //        )
+  //      } else {
+  //        addMainLinks()
   //      }
-  //      addMainLinks(
-  //        up=Some(dMyWrObjAffine.down),
-  //        down=None,
-  //      )
-  //    } else {
-  //      addMainLinks()
   //    }
   //  }
   //  val nWrObjAffinePipeLast = nWrObjAffineArr.last
@@ -7530,23 +7579,28 @@ case class Gpu2d(
   //    idx: Int,
   //  ): (WrObjPipePayload, WrObjPipePayload) = {
   //    // This function returns `(tempInp, tempOutp)`
-  //    def pipeIn = (
+  //    val pipeIn = (
   //      if (idx == wrObjPipeIdxSlmRmwModFront) {
   //        cWrObjAffineArr(idx).up(
   //          wrObjAffinePipePayloadSlmRmwModFrontOutp
   //        )
-  //      } 
-  //      else if (idx == wrObjPipeIdxSlmRmwBack) {
+  //      } else if (idx == wrObjPipeIdxSlmRmwBack) {
   //        cWrObjAffineArr(idx).up(wrObjAffinePipePayloadSlmRmwBackOutp)
   //      } else {
   //        cWrObjAffineArr(idx).up(wrObjAffinePipePayloadMain(idx))
   //      }
   //    )
-  //    def pipeOut = wrObjAffinePipeOutArr(idx)
+  //    val pipeOut = (
+  //      wrObjAffinePipeOutArr(idx)
+  //      .setName(s"wrObjAffinePipeOutArr_${idx}")
+  //    )
   //    pipeOut := pipeIn
   //    pipeOut.allowOverride
 
-  //    def tempPipeOut = tempWrObjAffinePipeOutArr(idx)
+  //    val tempPipeOut = (
+  //      tempWrObjAffinePipeOutArr(idx)
+  //      .setName(s"tempWrObjAffinePipeOutArr_${idx}")
+  //    )
   //    tempPipeOut := (
   //      RegNext(tempPipeOut) init(tempPipeOut.getZero)
   //    )
@@ -8022,8 +8076,12 @@ case class Gpu2d(
   //    // This function returns `(tempInp, tempOutp)`
   //    val pipeIn = (
   //      cCombineArr(idx).up(payload)
+  //      .setName(s"combinePipeIn_${idx}")
   //    )
-  //    val pipeOut = CombinePipePayload()
+  //    val pipeOut = (
+  //      CombinePipePayload()
+  //      .setName(s"combinePipeOut_${idx}")
+  //    )
 
   //    pipeOut := pipeIn
   //    pipeOut.allowOverride
@@ -10244,9 +10302,9 @@ case class Gpu2d(
   //            //--------
   //            val tempRdAddr = (
   //              if (kind == 0) {
-  //                tempOutp.subLineMemEntryExt.memAddr(PipeMemRmw.modWrIdx)
+  //                tempOutp.subLineMemEntryExt.memAddr.last
   //              } else {
-  //                tempOutp.subLineMemEntryExt.memAddr(PipeMemRmw.modWrIdx)
+  //                tempOutp.subLineMemEntryExt.memAddr.last
   //                //wrObjAffineSubLineMemArr(jdx).io.rdAddr
   //              }
   //            )
@@ -10351,13 +10409,9 @@ case class Gpu2d(
   //            val tempRdData: Bits = KeepAttribute(
   //              if (kind == 0) {
   //                //wrObjSubLineMemArr(jdx)
-  //                tempInp.subLineMemEntryExt.rdMemWord(
-  //                  PipeMemRmw.modWrIdx
-  //                ).asBits
+  //                tempInp.subLineMemEntryExt.rdMemWord.last.asBits
   //              } else {
-  //                tempInp.subLineMemEntryExt.rdMemWord(
-  //                  PipeMemRmw.modWrIdx
-  //                ).asBits
+  //                tempInp.subLineMemEntryExt.rdMemWord.last.asBits
   //                //wrObjAffineSubLineMemArr(jdx).io.rdData.asBits
   //              }
   //            )
@@ -11558,9 +11612,11 @@ case class Gpu2d(
   //      } otherwise {
   //        val tempCmathInfo = (!noColorMath) generate (
   //          tempInp.stage7.combineWrLineMemEntry.colorMathInfo
+  //          .setName(s"tempCmathInfo")
   //        )
   //        val tempCmathCol = (!noColorMath) generate (
   //          tempInp.stage7.combineWrLineMemEntry.colorMathCol
+  //          .setName(s"tempCmathCol")
   //        )
   //        def inpWrLineMemEntry = tempInp.stage7.combineWrLineMemEntry
   //        def outpWrLineMemEntry = tempOutp.combineWrLineMemEntry
@@ -11573,6 +11629,7 @@ case class Gpu2d(
   //          bWidth=cfg.rgbConfig.bWidth + extraWidth,
   //        )
   //        val tempCol = Rgb(tempRgbConfig)
+  //        tempCol.setName("tempCol")
   //        tempCol := tempCol.getZero
   //        tempCol.allowOverride
   //        if (!noColorMath) {

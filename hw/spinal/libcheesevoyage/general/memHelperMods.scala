@@ -747,8 +747,8 @@ extends Component
     modStageCnt=modStageCnt,
     pipeName=pipeName,
     optIncludePreMid0Front=(
-      //false
-      true
+      false
+      //true
     ),
     //linkArr=Some(PipeMemRmw.mkLinkArr()),
     linkArr=linkArr,

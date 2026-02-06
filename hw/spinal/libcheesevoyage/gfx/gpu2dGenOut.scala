@@ -277,10 +277,10 @@ object Gpu2dSimDutParams {
       gpu2dBgTileSize2dPow
     ),
     objTileSize2dPow=ElabVec2[Int](
-      x=log2Up(16),
-      y=log2Up(16),
-      //x=log2Up(8),
-      //y=log2Up(8),
+      //x=log2Up(16),
+      //y=log2Up(16),
+      x=log2Up(8),
+      y=log2Up(8),
       //x=log2Up(4),
       //y=log2Up(4),
       //x=log2Up(2),
@@ -297,10 +297,10 @@ object Gpu2dSimDutParams {
       //y=log2Up(64),
       //x=log2Up(32),
       //y=log2Up(32),
-      x=log2Up(16),
-      y=log2Up(16),
-      //x=log2Up(8),
-      //y=log2Up(8),
+      //x=log2Up(16),
+      //y=log2Up(16),
+      x=log2Up(8),
+      y=log2Up(8),
       //x=log2Up(4),
       //y=log2Up(4),
       //x=log2Up(2),
@@ -383,7 +383,9 @@ object Gpu2dSimDutParams {
     ),
     numObjAffineTiles=(
       //Some(16)
-      Some(32)
+      //Some(32)
+      //Some(64)
+      Some(128)
     ),
     numColsInBgPalPow=(
       log2Up(64)
@@ -401,8 +403,8 @@ object Gpu2dSimDutParams {
       true
     ),
     noAffineObjs=(
-      //true
-      false
+      true
+      //false
     ),
     fancyObjPrio=(
       //false

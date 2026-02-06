@@ -870,10 +870,10 @@ case class PipeMemRmwDoFwdArea[
                   ).payload.payload
                 )
               } else {
-                println(
-                  //s"find me: kdx != 0: ${kdx} ${fwd.numMyUpExtDel2}"
-                  s"find me: ${kdx} ${fwd.numMyUpExtDel2}"
-                )
+                //println(
+                //  //s"find me: kdx != 0: ${kdx} ${fwd.numMyUpExtDel2}"
+                //  s"find me: ${kdx} ${fwd.numMyUpExtDel2}"
+                //)
                 fwd.myFwdStateData(ydx)(zdx)(kdx) := (
                   RegNext(
                     next=fwd.myFwdStateData(ydx)(zdx)(kdx),
@@ -1367,10 +1367,10 @@ extends Area {
           current := upExtElem(ydx)(extIdxUp).memAddr(zdx)
         })
         for (idx <- 0 until mod.front.myUpExtDel2.size + 1) {
-          println(
-            f"myHistMemAddr debug: ${zdx} ${idx} ${idx - 1} "
-            + f"${mod.front.myUpExtDel2.size}"
-          )
+          //println(
+          //  f"myHistMemAddr debug: ${zdx} ${idx} ${idx - 1} "
+          //  + f"${mod.front.myUpExtDel2.size}"
+          //)
           if (idx > 0) {
             def tempMemAddrFwdCmp = myMemAddrFwdCmp(zdx)(idx - 1)
             tempMemAddrFwdCmp.allowOverride
@@ -1432,10 +1432,10 @@ extends Area {
                 //val tempMyUpExtDel = (
                 //  mod.front.myUpExtDel(idx - 1)(ydx)(extIdxUp)
                 //)
-                println(
-                  s"tempMyUpExtDel debug: (${idx - 1})(${ydx})  "
-                  + s"${jdx}"
-                )
+                //println(
+                //  s"tempMyUpExtDel debug: (${idx - 1})(${ydx})  "
+                //  + s"${jdx}"
+                //)
                 tempMemAddrFwdCmp(
                   jdx
                   //0
@@ -2015,17 +2015,17 @@ extends Area {
           mkExt()
         )
       )
-      println(
-        s"myUpExtDel.size: ${myUpExtDel.size}"
-      )
+      //println(
+      //  s"myUpExtDel.size: ${myUpExtDel.size}"
+      //)
       //--------
       val myUpExtDel2 = (
         myFwd.myUpExtDel2
         //.setName(s"${pipeName}_mod_front_myUpExtDel2")
       )
-      println(
-        s"myUpExtDel2.size: ${myUpExtDel2.size}"
-      )
+      //println(
+      //  s"myUpExtDel2.size: ${myUpExtDel2.size}"
+      //)
       //println(
       //  s"myUpExtDel2: ${myUpExtDel2.size}"
       //)
@@ -2218,11 +2218,11 @@ extends Area {
         )
         //false
       )
-      println(
-        s"optIncludeModFrontStageLink:${optIncludeModFrontStageLink} "
-        + s"optIncludeModFrontS2MLink:${optIncludeModFrontS2MLink} "
-        + s"myIncludeS2mMid0Front:${myIncludeS2mMid0Front}"
-      )
+      //println(
+      //  s"optIncludeModFrontStageLink:${optIncludeModFrontStageLink} "
+      //  + s"optIncludeModFrontS2MLink:${optIncludeModFrontS2MLink} "
+      //  + s"myIncludeS2mMid0Front:${myIncludeS2mMid0Front}"
+      //)
       val sMid0Front = (optIncludeModFrontStageLink) generate (
         new ArrayBuffer[StageLink]()
       )
@@ -2611,7 +2611,7 @@ extends Area {
     //--------
   }
   val myUpExtDel = mod.front.myUpExtDel
-  println(myUpExtDel.size, myUpExtDel(0).size)
+  //println(myUpExtDel.size, myUpExtDel(0).size)
   val cFront = mod.front.cFront
   //--------
   val cFrontArea = new cFront.Area {
@@ -5087,7 +5087,7 @@ extends Area {
         upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
       }
       if (optModHazardKind != PipeMemRmw.ModHazardKind.Fwd) {
-        for (extIdx <- 0 to extIdxLim) {
+        for (extIdx <- 0 until extIdxLim) {
           upExt(1)(ydx)(extIdx).modMemWordValid.foreach(current => {
             current := False
           })
@@ -5964,16 +5964,16 @@ case class StmFwdPipeMemRmw[
       mkExt()
     )
   )
-  println(
-    s"myUpExtDel.size: ${myUpExtDel.size}"
-  )
+  //println(
+  //  s"myUpExtDel.size: ${myUpExtDel.size}"
+  //)
   def myUpExtDel2 = (
     myFwd.myUpExtDel2
     //.setName(s"${pipeName}_mod_front_myUpExtDel2")
   )
-  println(
-    s"myUpExtDel2.size: ${myUpExtDel2.size}"
-  )
+  //println(
+  //  s"myUpExtDel2.size: ${myUpExtDel2.size}"
+  //)
 
   def mkPreFwdArea(
     upIsFiring: Bool,
@@ -6026,10 +6026,10 @@ case class StmFwdPipeMemRmw[
           current := upExtElem(ydx).memAddr(zdx)
         })
         for (idx <- 0 until myUpExtDel2.size + 1) {
-          println(
-            f"myHistMemAddr debug: ${zdx} ${idx} ${idx - 1} "
-            + f"${myUpExtDel2.size}"
-          )
+          //println(
+          //  f"myHistMemAddr debug: ${zdx} ${idx} ${idx - 1} "
+          //  + f"${myUpExtDel2.size}"
+          //)
           if (idx > 0) {
             def tempMemAddrFwdCmp = myMemAddrFwdCmp(zdx)(idx - 1)
             tempMemAddrFwdCmp.allowOverride
@@ -6083,10 +6083,10 @@ case class StmFwdPipeMemRmw[
                 val tempMyUpExtDel = (
                   myUpExtDel(idx - 1)(ydx)
                 )
-                println(
-                  s"tempMyUpExtDel debug: (${idx - 1})(${ydx})  "
-                  + s"${jdx}"
-                )
+                //println(
+                //  s"tempMyUpExtDel debug: (${idx - 1})(${ydx})  "
+                //  + s"${jdx}"
+                //)
                 tempMemAddrFwdCmp(
                   jdx
                   //0
