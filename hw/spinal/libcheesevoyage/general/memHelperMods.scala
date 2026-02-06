@@ -654,16 +654,15 @@ case class WrPulseRdPipeRamSdpPipeConfig[
   wordType: HardType[WordT],
   wordCount: Int,
   pipeName: String,
-  initBigInt: Option[Seq[Seq[BigInt]]]=None,
-  arrRamStyleAltera: String="M10K",
-  arrRamStyleXilinx: String="block",
-  arrRwAddrCollisionXilinx: String="",
-)(
   setWordFunc: (
     ModT,      // pass through pipeline payload (output)
     ModT,      // pass through pipeline payload (input)
     WordT,  // data read from the RAM
   ) => Unit,
+  initBigInt: Option[Seq[Seq[BigInt]]]=None,
+  arrRamStyleAltera: String="M10K",
+  arrRamStyleXilinx: String="block",
+  arrRwAddrCollisionXilinx: String="",
 ) {
   def addrWidth = log2Up(wordCount)
   def modRdPortCnt = 1
@@ -698,9 +697,12 @@ case class WrPulseRdPipeRamSdpPipeConfig[
       //PipeMemRmw.ModHazardKind.Dupl
     ),
     vivadoDebug=false,
+    optEnableWrPulse=true,
     memRamStyleAltera=arrRamStyleAltera,
     memRamStyleXilinx=arrRamStyleXilinx,
     memRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
+    optIncludeModFrontStageLink=false,
+    optIncludeModFrontS2MLink=false,
   )
 }
 
@@ -737,6 +739,92 @@ case class WrPulseRdPipeRamSdpPipe[
   //--------
   val io = WrPulseRdPipeRamSdpPipeIo(cfg=cfg)
   //--------
+  def mkExt() = {
+    val ret = PipeMemRmwPayloadExt(
+      cfg=cfg.pmCfg,
+      wordCount=cfg.wordCount,
+    )
+    ret
+  }
+  case class PmRmwModType(
+  ) extends Bundle with PipeMemRmwPayloadBase[WordT, Bool] {
+    //setName(
+    //  name=pmRmwModTypeName,
+    //)
+    val data = cfg.modType()
+    val myExt = mkExt()
+    /*override*/ def setPipeMemRmwExt(
+      inpExt: PipeMemRmwPayloadExt[WordT, Bool],
+      ydx: Int,
+      memArrIdx: Int,
+    ): Unit = {
+      myExt := inpExt
+    }
+    /*override*/ def getPipeMemRmwExt(
+      outpExt: PipeMemRmwPayloadExt[WordT, Bool],
+      ydx: Int,
+      memArrIdx: Int,
+    ): Unit = {
+      outpExt := myExt
+    }
+    //def optFormalFwdFuncs(
+    //): Option[PipeMemRmwPayloadBaseFormalFwdFuncs[WordT, Bool]] = (
+    //  None
+    //)
+    /*override*/ def formalSetPipeMemRmwFwd(
+      outpFwd: PipeMemRmwFwd[WordT, Bool],
+      memArrIdx: Int,
+    ): Unit = {
+    }
+
+    /*override*/ def formalGetPipeMemRmwFwd(
+      inpFwd: PipeMemRmwFwd[WordT, Bool],
+      memArrIdx: Int,
+    ): Unit = {
+    }
+  }
+  val pipeMem = PipeMemRmw[
+    WordT,
+    Bool,
+    PmRmwModType,
+    PipeMemRmwDualRdTypeDisabled[
+      WordT, Bool,
+    ]
+  ](
+    cfg=cfg.pmCfg,
+    modType=PmRmwModType(),
+  )(
+    doHazardCmpFunc=None,
+  )
+  pipeMem.io.front.driveFrom(io.rdAddrPipe)(
+    con=(node, inp) => {
+      def rdAddrPayload = node(pipeMem.io.frontPayload)
+      rdAddrPayload := rdAddrPayload.getZero
+      rdAddrPayload.allowOverride
+      //rdAddrPayload.data := io.rdAddrPipe
+      rdAddrPayload.myExt.memAddr.last := inp.addr
+      rdAddrPayload.data := inp.data
+
+      //rdAddrPayload.myExt.rdMemWord.last := (
+      //  rdAddrPipePayload.data
+      //)
+      //rdAddrPayload.myExt.modMemWord := rdAddrPipePayload.data //rdAddrPayload.myExt.rdMemWord
+
+    }
+  )
+  pipeMem.io.back.driveTo(io.rdDataPipe)(
+    con=(outp, node) => {
+      //rdDataPipePayload := node(pipeMem.io.backPayload).myExt.modMemWord
+      cfg.setWordFunc(
+        outp,
+        node(pipeMem.io.backPayload).data,
+        node(pipeMem.io.backPayload).myExt.rdMemWord.last,
+      )
+    }
+  )
+  pipeMem.io.wrPulse.valid := io.wrPulse.valid
+  pipeMem.io.wrPulse.addr := io.wrPulse.addr
+  pipeMem.io.wrPulse.modMemWord := io.wrPulse.data
   //--------
 }
 
@@ -796,8 +884,7 @@ case class WrPulseRdPipeSimpleDualPortMem[
   arrRwAddrCollisionXilinx: String="",
   unionIdxWidth: Int=1,
   vivadoDebug: Boolean=false,
-)
-(
+)(
   //getWordFunc: (
   //  T           // input pipeline payload
   //) => WordT,   // 

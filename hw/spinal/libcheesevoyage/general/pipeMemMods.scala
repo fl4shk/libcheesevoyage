@@ -3918,7 +3918,7 @@ extends Area {
         )
       )
       if (fjIdx != 0) {
-        assert(false, "temporarily, only support one `fjIdx`")
+        require(false, "temporarily, only support one `fjIdx`")
       }
       for (ydx <- 0 until memArrSize) {
         for (zdx <- 0 until modRdPortCnt) {
@@ -4087,7 +4087,7 @@ extends Area {
           )
         }
         case None => {
-          assert(
+          require(
             modStageCnt > 0
             || !optIncludeModFrontStageLink
           )
