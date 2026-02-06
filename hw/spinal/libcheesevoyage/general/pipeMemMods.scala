@@ -4087,10 +4087,10 @@ extends Area {
           )
         }
         case None => {
-          require(
-            modStageCnt > 0
-            || !optIncludeModFrontStageLink
-          )
+          //require(
+          //  modStageCnt > 0
+          //  || !optIncludeModFrontStageLink
+          //)
           //tempUpMod(2)(ydx) := tempUpMod(1)(ydx)
           //tempUpMod(2)(ydx) := tempUpMod(1)(ydx)
           tempUpMod(2) := tempUpMod(1)
@@ -4252,10 +4252,13 @@ extends Area {
           up(
             if (cfg.numForkJoin > 1) (
               io.modFrontBeforePayload(fjIdx)
-            ) else (
+            ) else {
+              println(
+                "testificate: mod.front.outpPipePayload"
+              )
               //io.modFrontAfterPayload
               mod.front.outpPipePayload
-            )
+            }
           ) := (
             tempUpMod(2)//myTempUpMod
           )

@@ -695,6 +695,7 @@ case class WrPulseRdPipeRamSdpPipeConfig[
     optModHazardKind=(
       PipeMemRmw.ModHazardKind.Dont
       //PipeMemRmw.ModHazardKind.Dupl
+      //PipeMemRmw.ModHazardKind.Fwd
     ),
     vivadoDebug=false,
     optEnableWrPulse=true,
@@ -795,6 +796,24 @@ case class WrPulseRdPipeRamSdpPipe[
     modType=PmRmwModType(),
   )(
     doHazardCmpFunc=None,
+    doModInMid0FrontFunc={
+      //def myFunc(
+      //  params: PipeMemRmwDoModInMid0FrontFuncParams[
+      //    WordT,
+      //    Bool,
+      //    PmRmwModType,
+      //    PipeMemRmwDualRdTypeDisabled[
+      //      WordT, Bool,
+      //    ]
+      //  ]
+      //): Area = new Area {
+      //  when (params.cMid0Front.up.isValid) {
+      //    params.outp := params.inp
+      //  }
+      //}
+      //Some(myFunc)
+      None
+    }
   )
   pipeMem.io.front.driveFrom(io.rdAddrPipe)(
     con=(node, inp) => {
@@ -803,6 +822,9 @@ case class WrPulseRdPipeRamSdpPipe[
       rdAddrPayload.allowOverride
       //rdAddrPayload.data := io.rdAddrPipe
       rdAddrPayload.myExt.memAddr.last := inp.addr
+      rdAddrPayload.myExt.rdMemWord.foreach(rdMemWord => {
+        rdMemWord := rdMemWord.getZero
+      })
       rdAddrPayload.data := inp.data
 
       //rdAddrPayload.myExt.rdMemWord.last := (
@@ -812,6 +834,19 @@ case class WrPulseRdPipeRamSdpPipe[
 
     }
   )
+  val dMid0FrontToModFront = DirectLink(
+    up=pipeMem.mod.front.cMid0Front.head.down,
+    down=pipeMem.io.modFront,
+  )
+  pipeMem.myLinkArr += dMid0FrontToModFront
+  pipeMem.io.modFront(pipeMem.io.modBackPayload) := (
+    pipeMem.io.modFront(pipeMem.mod.front.outpPipePayload)
+  )
+  val dModFrontToModBack = DirectLink(
+    up=pipeMem.io.modFront,
+    down=pipeMem.io.modBack,
+  )
+  pipeMem.myLinkArr += dModFrontToModBack
   pipeMem.io.back.driveTo(io.rdDataPipe)(
     con=(outp, node) => {
       //rdDataPipePayload := node(pipeMem.io.backPayload).myExt.modMemWord
@@ -825,6 +860,7 @@ case class WrPulseRdPipeRamSdpPipe[
   pipeMem.io.wrPulse.valid := io.wrPulse.valid
   pipeMem.io.wrPulse.addr := io.wrPulse.addr
   pipeMem.io.wrPulse.modMemWord := io.wrPulse.data
+  Builder(pipeMem.myLinkArr.toSeq)
   //--------
 }
 
