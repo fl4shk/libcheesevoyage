@@ -300,19 +300,19 @@ case class LcvVideoLineBufWithCalcPos(
 ) extends Component {
   val io = LcvVideoLineBufWithCalcPosIo(cfg=cfg)
 
-  //val mem = (
-  //  WrPulseRdPipeSimpleDualPortMem(
-  //    dataType=Rgb(cfg.rgbCfg),
-  //    wordType=Rgb(cfg.rgbCfg),
-  //    wordCount=(
-  //      cfg.someSize2d.x * (1 << cfg.cnt2dShift.x)
-  //    ),
-  //    pipeName="LcvVideoLineBufWithCalcPos"
-  //  )(
-  //    setWordFunc=(myUnionIdx, outp, inp, rdMemWord) => {
-  //      outp := rdMemWord
-  //    }
-  //  )
-  //)
+  val mem = (
+    WrPulseRdPipeSimpleDualPortMem(
+      dataType=Rgb(cfg.rgbCfg),
+      wordType=Rgb(cfg.rgbCfg),
+      wordCount=(
+        cfg.someSize2d.x * (1 << cfg.cnt2dShift.x)
+      ),
+      pipeName="LcvVideoLineBufWithCalcPos"
+    )(
+      setWordFunc=(myUnionIdx, outp, inp, rdMemWord) => {
+        outp := rdMemWord
+      }
+    )
+  )
 }
 

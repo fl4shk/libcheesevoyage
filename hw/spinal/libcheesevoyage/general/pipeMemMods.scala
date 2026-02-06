@@ -69,7 +69,7 @@ case class PipeMemRmwConfig[
   //optFwdUseMmwValidLaterStages: Boolean=false,
   optFwdHaveZeroReg: Option[Int]=Some(0x0),
   fwdForFmaxStageMax: Int=0x0,
-  optEnableClear: Boolean=false,
+  optEnableWrPulse: Boolean=false,
   memRamStyleAltera: String="MLAB",
   memRamStyleXilinx: String="auto",
   memRwAddrCollisionXilinx: String="",
@@ -939,6 +939,18 @@ case class PipeMemRmwDoFwdArea[
   }
 }
 //--------
+case class PipeMemRmwWrPulsePayload[
+  WordT <: Data,
+  HazardCmpT <: Data,
+](
+  cfg: PipeMemRmwConfig[
+    WordT,
+    HazardCmpT,
+  ]
+) extends Bundle {
+  val addr = UInt(PipeMemRmw.addrWidth(wordCount=cfg.wordCountMax) bits)
+  val modMemWord = cfg.wordType()
+}
 case class PipeMemRmwIo[
   WordT <: Data,
   HazardCmpT <: Data,
@@ -967,17 +979,20 @@ case class PipeMemRmwIo[
   def optModHazardKind: PipeMemRmw.ModHazardKind = (
     cfg.optModHazardKind
   )
-  def optEnableClear = cfg.optEnableClear
+  def optEnableWrPulse = cfg.optEnableWrPulse
   def optFormal = cfg.optFormal 
   def vivadoDebug = cfg.vivadoDebug 
   //--------
-  val clear = (optEnableClear) generate (
-    (Flow(
-      /*Vec.fill(modRdPortCnt)*/(
-        UInt(PipeMemRmw.addrWidth(wordCount=wordCountMax) bits)
-      )
-    ))
+  val wrPulse = (optEnableWrPulse) generate (
+    Flow(PipeMemRmwWrPulsePayload(cfg=cfg))
   )
+  //val clear = (optEnableWrPulse) generate (
+  //  (Flow(
+  //    /*Vec.fill(modRdPortCnt)*/(
+  //      UInt(PipeMemRmw.addrWidth(wordCount=wordCountMax) bits)
+  //    )
+  //  ))
+  //)
 
   // the commit head
   val reorderCommitHead = (optReorder) generate (
@@ -1248,7 +1263,7 @@ extends Area {
   def init = cfg.init 
   def initBigInt = cfg.initBigInt
   def optModHazardKind = cfg.optModHazardKind
-  def optEnableClear = cfg.optEnableClear 
+  def optEnableWrPulse = cfg.optEnableWrPulse 
   def memRamStyleAltera = cfg.memRamStyleAltera
   def memRamStyleXilinx = cfg.memRamStyleXilinx
   def memRwAddrCollisionXilinx = cfg.memRwAddrCollisionXilinx
@@ -2490,7 +2505,7 @@ extends Area {
       //--------
     }
     val back = new Area {
-      //val dbgDoClear = (optEnableClear) generate (
+      //val dbgDoClear = (optEnableWrPulse) generate (
       //  /*KeepAttribute*/(Bool())
       //)
       val dbgDoWrite = /*(debug) generate*/ (
@@ -4427,10 +4442,15 @@ extends Area {
         for (zdx <- 0 until modRdPortCnt) {
           mod.back.myWriteData(1)(ydx)(zdx).assignFromBits(
             //upExt(0)(ydx).modMemWord
-            if (optEnableClear) (
+            if (optEnableWrPulse) (
+              //Mux[WordT](
+              //  io.clear.fire,
+              //  wordType().getZero,
+              //  upExt(0)(ydx)(extIdxSingle).modMemWord,
+              //).asBits
               Mux[WordT](
-                io.clear.fire,
-                wordType().getZero,
+                io.wrPulse.fire,
+                io.wrPulse.modMemWord,
                 upExt(0)(ydx)(extIdxSingle).modMemWord,
               ).asBits
             ) else if (
@@ -4457,10 +4477,14 @@ extends Area {
       val myWriteAddr = mod.back.myWriteAddr
       for (ydx <- 0 until memArrSize) {
         for (zdx <- 0 until modRdPortCnt) {
-          if (optEnableClear) {
-            when (io.clear.fire) {
+          if (optEnableWrPulse) {
+            when (
+              //io.clear.fire
+              io.wrPulse.fire
+            ) {
               myWriteAddr(1)(ydx)(zdx) := (
-                io.clear.payload
+                //io.clear.payload
+                io.wrPulse.addr
               )
             } otherwise { // when (!io.clear.fire)
               myWriteAddr(1)(ydx)(zdx) := (
@@ -4470,7 +4494,7 @@ extends Area {
                 ).resized
               )
             }
-          } else { // if (!optEnableClear)
+          } else { // if (!optEnableWrPulse)
             myWriteAddr(1)(ydx)(zdx) := (
               upExt(0)(ydx)(extIdxSingle).memAddrAlt(
                 //PipeMemRmw.modWrIdx
@@ -4480,7 +4504,7 @@ extends Area {
           }
         }
         //myWriteAddr(ydx) := (
-        //  if (optEnableClear) (
+        //  if (optEnableWrPulse) (
         //    Mux[UInt](
         //      io.clear.fire,
         //      io.clear.payload,
@@ -4779,7 +4803,7 @@ extends Area {
         )
       )
       //|| (
-      //  if (optEnableClear) (
+      //  if (optEnableWrPulse) (
       //    io.clear.valid
       //  ) else (
       //    False
@@ -4794,10 +4818,14 @@ extends Area {
     //when (up.isValid) {
     for (ydx <- 0 until memArrSize) {
       for (zdx <- 0 until modRdPortCnt) {
-        if (optEnableClear) {
-          when (io.clear.fire) {
+        if (optEnableWrPulse) {
+          when (
+            //io.clear.fire
+            io.wrPulse.fire
+          ) {
             myWriteAddr(0)(ydx)(zdx) := (
-              io.clear.payload
+              //io.clear.payload
+              io.wrPulse.addr
             )
           } otherwise { // when (!io.clear.fire)
             myWriteAddr(0)(ydx)(zdx) := (
@@ -4807,7 +4835,7 @@ extends Area {
               ).resized
             )
           }
-        } else { // if (!optEnableClear)
+        } else { // if (!optEnableWrPulse)
           myWriteAddr(0)(ydx)(zdx) := (
             upExt(0)(ydx)(extIdxSingle).memAddrAlt(
               //PipeMemRmw.modWrIdx
@@ -4817,7 +4845,7 @@ extends Area {
         }
       }
       //myWriteAddr(ydx) := (
-      //  if (optEnableClear) (
+      //  if (optEnableWrPulse) (
       //    Mux[UInt](
       //      io.clear.fire,
       //      io.clear.payload,
@@ -4844,10 +4872,15 @@ extends Area {
       for (zdx <- 0 until modRdPortCnt) {
         myWriteData(0)(ydx)(zdx).assignFromBits(
           //upExt(0)(ydx).modMemWord
-          if (optEnableClear) (
+          if (optEnableWrPulse) (
+            //Mux[WordT](
+            //  io.clear.fire,
+            //  wordType().getZero,
+            //  upExt(0)(ydx)(extIdxSingle).modMemWord,
+            //).asBits
             Mux[WordT](
-              io.clear.fire,
-              wordType().getZero,
+              io.wrPulse.fire,
+              io.wrPulse.modMemWord,
               upExt(0)(ydx)(extIdxSingle).modMemWord,
             ).asBits
           ) else if (
@@ -4893,8 +4926,9 @@ extends Area {
             (
               dbgDoWrite(ydx)
               || (
-                if (optEnableClear) (
-                  io.clear.fire
+                if (optEnableWrPulse) (
+                  //io.clear.fire
+                  io.wrPulse.fire
                 ) else (
                   False
                 )
@@ -6427,10 +6461,10 @@ case class StmFwdPipeMemRmw[
 //    modStageCnt: Int,
 //    dualRdType: HardType[DualRdT],
 //    optEnableModDuplicate: Boolean=true,
-//    optEnableClear: Boolean=false,
+//    optEnableWrPulse: Boolean=false,
 //    vivadoDebug: Boolean=false,
 //  ) /*extends Interface*/ = {
-//    //val clear = (optEnableClear) generate (
+//    //val clear = (optEnableWrPulse) generate (
 //    //  /*slave*/(Flow(
 //    //    UInt(PipeMemRmw.addrWidth(wordCount=wordCount) bits)
 //    //  ))
@@ -6449,7 +6483,7 @@ case class StmFwdPipeMemRmw[
 //      optDualRd=true,
 //      optReorder=true,
 //      optEnableModDuplicate=optEnableModDuplicate,
-//      optEnableClear=optEnableClear,
+//      optEnableWrPulse=optEnableWrPulse,
 //      vivadoDebug=vivadoDebug,
 //    )
 //    //val front = Node()
@@ -6573,7 +6607,7 @@ case class StmFwdPipeMemRmw[
 //  init: Option[Seq[WordT]]=None,
 //  initBigInt: Option[Seq[BigInt]]=None,
 //  optEnableModDuplicate: Boolean=true,
-//  optEnableClear: Boolean=false,
+//  optEnableWrPulse: Boolean=false,
 //  memRamStyleXilinx: String="auto",
 //  vivadoDebug: Boolean=false,
 //) extends Component {
@@ -6590,7 +6624,7 @@ case class StmFwdPipeMemRmw[
 //    modStageCnt=modStageCnt,
 //    dualRdType=dualRdType(),
 //    optEnableModDuplicate=optEnableModDuplicate,
-//    optEnableClear=optEnableClear,
+//    optEnableWrPulse=optEnableWrPulse,
 //    vivadoDebug=vivadoDebug
 //  )
 //  //--------

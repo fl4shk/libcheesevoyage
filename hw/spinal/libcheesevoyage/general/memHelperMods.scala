@@ -646,6 +646,99 @@ case class PipeSimpleDualPortMemDrivePayload[
 //  val addr = UInt(addrWidth bits)
 //  val data = dataType()
 //}
+case class WrPulseRdPipeRamSdpPipeConfig[
+  ModT <: Data,
+  WordT <: Data,
+](
+  modType: HardType[ModT],
+  wordType: HardType[WordT],
+  wordCount: Int,
+  pipeName: String,
+  initBigInt: Option[Seq[Seq[BigInt]]]=None,
+  arrRamStyleAltera: String="M10K",
+  arrRamStyleXilinx: String="block",
+  arrRwAddrCollisionXilinx: String="",
+)(
+  setWordFunc: (
+    ModT,      // pass through pipeline payload (output)
+    ModT,      // pass through pipeline payload (input)
+    WordT,  // data read from the RAM
+  ) => Unit,
+) {
+  def addrWidth = log2Up(wordCount)
+  def modRdPortCnt = 1
+  def modStageCnt = 0//1
+
+  val pmCfg = PipeMemRmwConfig[
+    WordT,
+    Bool,
+  ](
+    wordType=wordType(),
+    wordCountArr=Array.fill(1)(wordCount).toSeq,
+    hazardCmpType=Bool(),
+    modRdPortCnt=modRdPortCnt,
+    modStageCnt=modStageCnt,
+    pipeName=pipeName,
+    optIncludePreMid0Front=(
+      false
+      //true
+    ),
+    linkArr=(
+      //Some(PipeMemRmw.mkLinkArr()),
+      //linkArr
+      None
+    ),
+    memArrIdx=0,
+    //dualRdType=PmRmwModType(),
+    optDualRd=false,
+    initBigInt=initBigInt,
+    //optEnableModDuplicate=false,
+    optModHazardKind=(
+      PipeMemRmw.ModHazardKind.Dont
+      //PipeMemRmw.ModHazardKind.Dupl
+    ),
+    vivadoDebug=false,
+    memRamStyleAltera=arrRamStyleAltera,
+    memRamStyleXilinx=arrRamStyleXilinx,
+    memRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
+  )
+}
+
+case class WrPulseRdPipeRamSdpPipeIo[
+  ModT <: Data,
+  WordT <: Data,
+](
+  cfg: WrPulseRdPipeRamSdpPipeConfig[ModT, WordT],
+) extends Bundle {
+  val wrPulse = slave Flow(
+    PipeSimpleDualPortMemDrivePayload(
+      dataType=cfg.wordType(),
+      wordCount=cfg.wordCount,
+    )
+  )
+  //val rdAddrPipe = Stream(UInt(addrWidth bits))
+  val rdAddrPipe = slave Stream(
+    PipeSimpleDualPortMemDrivePayload(
+      dataType=cfg.modType(),
+      wordCount=cfg.wordCount,
+    )
+  )
+  val rdDataPipe = master Stream(
+    //wordType()
+    cfg.modType()
+  )
+}
+case class WrPulseRdPipeRamSdpPipe[
+  ModT <: Data,
+  WordT <: Data,
+](
+  cfg: WrPulseRdPipeRamSdpPipeConfig[ModT, WordT],
+) extends Component {
+  //--------
+  val io = WrPulseRdPipeRamSdpPipeIo(cfg=cfg)
+  //--------
+  //--------
+}
 
 case class WrPulseRdPipeSimpleDualPortMemIo[
   T <: Data,
