@@ -365,8 +365,8 @@ case class LcvVideoDblLineBufWithCalcPosIo(
   def rgbCfg = cfg.rgbCfg
 
   val push = slave(
-    Flow(Rgb(rgbCfg))
-    //Stream(Rgb(rgbCfg))
+    //Flow(Rgb(rgbCfg))
+    Stream(Rgb(rgbCfg))
   )
   val pop = master(Stream(Rgb(rgbCfg)))
 
@@ -398,13 +398,25 @@ case class LcvVideoDblLineBufWithCalcPos(
   io.infoPop << calcPosStmAdapter.io.infoPop
   //--------
   val mem = WrPulseRdPipeRamSdpPipe(cfg=cfg.myMemCfg)
-  val myWrPulseStm = cloneOf(mem.io.wrPulse)
+  val myWrPulse = cloneOf(mem.io.wrPulse)
 
-  myWrPulseStm.valid := (
-    //io.push.valid
-    io.push.fire
+  val myForkStmVec = StreamFork(
+    input=io.push,
+    portCount=2,
+    synchronous=false,
   )
-  myWrPulseStm.data := io.push.payload
+
+  myForkStmVec.head.ready := True
+
+  myWrPulse.valid := (
+    //io.push.valid
+    //io.push.fire
+    myForkStmVec.head.valid
+  )
+  myWrPulse.data := (
+    //io.push.payload
+    myForkStmVec.head.payload
+  )
   //println(
   //  s"test: "
   //  + s"${someSize2d} ${log2Up(someSize2d.x)} "
@@ -414,7 +426,7 @@ case class LcvVideoDblLineBufWithCalcPos(
   //  + s"${calcPos.io.info.pos.y.getWidth} "
   //  + s"${mem.io.wrPulse.addr.getWidth}"
   //)
-  myWrPulseStm.addr := (
+  myWrPulse.addr := (
     //Cat(
     //  calcPos.io.info.pos.y(cnt2dShift.y),
     //  calcPos.io.info.pos.x(
@@ -433,37 +445,71 @@ case class LcvVideoDblLineBufWithCalcPos(
     ).asUInt//.resize(myWrPulseStm.addr.getWidth)
   )
 
-  mem.io.wrPulse <-< myWrPulseStm
+  mem.io.wrPulse <-< myWrPulse
 
-  val myRdAddrPipeStm = cloneOf(mem.io.rdAddrPipe)
-  mem.io.rdAddrPipe <-/< myRdAddrPipeStm
+  val myRdAddrPipeStm = Vec.fill(2)(
+    cloneOf(mem.io.rdAddrPipe)
+  )
+  if (cnt2dShift.x > 0) {
+    myRdAddrPipeStm.last <-/< myRdAddrPipeStm.head.repeat(
+      times=((1 << cnt2dShift.x) - 1)
+    )._1
+  } else {
+    myRdAddrPipeStm.last << myRdAddrPipeStm.head
+  }
+  mem.io.rdAddrPipe <-/< myRdAddrPipeStm.last
+  myForkStmVec.last.translateInto(myRdAddrPipeStm.head)(
+    dataAssignment=(outp, inp) => {
+      outp.data := outp.data.getZero
+      outp.addr := (
+        //Cat(
+        //  (!calcPos.io.info.pos.y(cnt2dShift.y)),
+        //  calcPos.io.info.pos.x(
+        //    //calcPos.io.info.pos.x.high
+        //    log2Up(someSize2d.x) + cnt2dShift.x - 1
+        //    downto cnt2dShift.x
+        //  ),
+        //).asUInt//.resize(myRdAddrPipeStm.addr.getWidth)
+        Cat(
+          (!calcPosStmAdapter.io.infoPop.pos.y(cnt2dShift.y)),
+          calcPosStmAdapter.io.infoPop.pos.x(
+            //calcPos.io.info.pos.x.high
+            log2Up(someSize2d.x) + cnt2dShift.x - 1
+            downto cnt2dShift.x
+          ),
+        ).asUInt//.resize(myWrPulseStm.addr.getWidth)
+      )
+    }
+  )
+  io.pop <-/< mem.io.rdDataPipe
 
   //myRdAddrPipeStm.valid := (
   //  //io.push.valid
   //  //|| calcPos.io.en
+  //  io.push.fire
   //)
 
-  myRdAddrPipeStm.data := myRdAddrPipeStm.data.getZero
-  myRdAddrPipeStm.addr := (
-    //Cat(
-    //  (!calcPos.io.info.pos.y(cnt2dShift.y)),
-    //  calcPos.io.info.pos.x(
-    //    //calcPos.io.info.pos.x.high
-    //    log2Up(someSize2d.x) + cnt2dShift.x - 1
-    //    downto cnt2dShift.x
-    //  ),
-    //).asUInt//.resize(myRdAddrPipeStm.addr.getWidth)
-    Cat(
-      (!calcPosStmAdapter.io.infoPop.pos.y(cnt2dShift.y)),
-      calcPosStmAdapter.io.infoPop.pos.x(
-        //calcPos.io.info.pos.x.high
-        log2Up(someSize2d.x) + cnt2dShift.x - 1
-        downto cnt2dShift.x
-      ),
-    ).asUInt//.resize(myWrPulseStm.addr.getWidth)
-  )
+  //myRdAddrPipeStm.data := myRdAddrPipeStm.data.getZero
+  //myRdAddrPipeStm.addr := (
+  //  //Cat(
+  //  //  (!calcPos.io.info.pos.y(cnt2dShift.y)),
+  //  //  calcPos.io.info.pos.x(
+  //  //    //calcPos.io.info.pos.x.high
+  //  //    log2Up(someSize2d.x) + cnt2dShift.x - 1
+  //  //    downto cnt2dShift.x
+  //  //  ),
+  //  //).asUInt//.resize(myRdAddrPipeStm.addr.getWidth)
+  //  Cat(
+  //    (!calcPosStmAdapter.io.infoPop.pos.y(cnt2dShift.y)),
+  //    calcPosStmAdapter.io.infoPop.pos.x(
+  //      //calcPos.io.info.pos.x.high
+  //      log2Up(someSize2d.x) + cnt2dShift.x - 1
+  //      downto cnt2dShift.x
+  //    ),
+  //  ).asUInt//.resize(myWrPulseStm.addr.getWidth)
+  //)
 
-  io.pop <-/< mem.io.rdDataPipe
+  //io.pop <-/< mem.io.rdDataPipe
   //--------
   //val mySeenWrPulseFire = Bool()
   //val rSavedSeenWrPulseFire = Reg(Bool(), init=False)

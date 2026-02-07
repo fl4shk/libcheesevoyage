@@ -182,12 +182,30 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
   //)
 
   //--------
-  val myH2dStm = Vec.fill(3)(
+  val myH2dStm = Vec.fill(4)(
     cloneOf(io.bus.h2dBus)
+  )
+  val myHistH2dFire = History[Bool](
+    that=False,
+    when=myH2dStm.head.fire,
+    length=2,
+    init=True,
+  )
+  val myLongerHistH2dFire = History[Bool](
+    that=False,
+    when=myH2dStm.head.fire,
+    length=3,
+    init=True,
+  )
+  val myH2dThrowCond = Bool()
+  myH2dThrowCond := (
+    myHistH2dFire.last
+    //myLongerHistH2dFire.last
   )
   io.bus.h2dBus <-/< myH2dStm.last
   myH2dStm(1) <-/< myH2dStm.head
-  myH2dStm(1).translateInto(myH2dStm.last)(
+  myH2dStm(2) <-/< myH2dStm(1).throwWhen(myH2dThrowCond)
+  myH2dStm(2).translateInto(myH2dStm.last)(
     dataAssignment=(outp, inp) => {
       outp := inp
       outp.addr.allowOverride
@@ -217,19 +235,18 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
     ),
     init=myH2dAddrMult.getZero,
   )
-  val myHistH2dFire = History[Bool](
-    that=False,
-    when=myH2dStm.head.fire,
-    length=2,
-    init=True,
-  )
   val myCntH2dFireRstVal = (
     //fbSize2d.x + 1 //- 2 //- 2
-    fbSize2d.x - 2 //+ (1 << cnt2dShift.x) //- 2 //- 2
+    //fbSize2d.x - 1 //2 //+ (1 << cnt2dShift.x) //- 2 //- 2
+    fbSize2d.x - 1//2//1//2 //+ (1 << cnt2dShift.x) //- 2 //- 2
   )
   val rCntH2dFire = (
     Reg(UInt(log2Up(fbSize2d.x + 1) + 1 bits))
-    init(myCntH2dFireRstVal)
+    init(
+      myCntH2dFireRstVal
+      //fbSize2d.x - 1
+      //fbSize2d.x - 2
+    )
   )
   val myHistInfoPopFire = (
     History[Bool](
@@ -255,7 +272,7 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
     mySeenH2dFire
     || rSavedSeenH2dFire
   )
-  mySeenH2dFire := myH2dStm.head.fire
+  mySeenH2dFire := myH2dStm.head.fire//io.bus.h2dBus.fire //
   when (mySeenH2dFire) {
     rSavedSeenH2dFire := True
   }
@@ -268,6 +285,17 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
   mySeenInfoPopFire := myDblLineBufEtc.io.infoPop.fire
   when (mySeenInfoPopFire) {
     rSavedSeenInfoPopFire := True
+  }
+
+  val mySeenPopFire = Bool()
+  val rSavedSeenPopFire = Reg(Bool(), init=False)
+  val stickySeenPopFire = (
+    mySeenPopFire
+    || rSavedSeenPopFire
+  )
+  mySeenPopFire := io.pop.fire
+  when (mySeenPopFire) {
+    rSavedSeenPopFire := True
   }
 
   when (  
@@ -333,7 +361,7 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
     //)
     myHistH2dFire.last
     //!rCntH2dFire.msb
-    || 
+    ||
     (
       (
         !rCntH2dFire.msb
@@ -344,10 +372,35 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
       //&& myTempH2dValidMux
     )
   )
+  //--------
+  val myD2hStm = Vec.fill(2)(
+    cloneOf(io.bus.d2hBus)
+  )
+  //val myHistD2hLastFire = (
+  //  History[Bool](
+  //    that=True
+  //    when=myD2hStm.last.fire,
+  //    length=2
+  //  )
+  //)
+  val myHistD2hFire = (
+    History[Bool](
+      that=False,
+      when=myD2hStm.head.fire,
+      length=2,
+      init=True,
+    )
+  )
+  //--------
   myDblLineBufEtc.io.infoPop.ready := (
     //myH2dStm.head.fire
-    io.pop.fire
+    //io.pop.fire
+    myHistD2hFire.last
+    || stickySeenPopFire
   )
+  when (myDblLineBufEtc.io.infoPop.fire) {
+    rSavedSeenPopFire := False
+  }
 
   myH2dStm.head.addr := (
     Cat(
@@ -378,12 +431,18 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
     myH2dStm.head.burstLast := False
   }
   //--------
-  val myD2hStm = cloneOf(io.bus.d2hBus)
-  myD2hStm <-< io.bus.d2hBus
-  myD2hStm.ready := True
-  myDblLineBufEtc.io.push.valid := myD2hStm.valid
+  myD2hStm.head <-/< io.bus.d2hBus
+  //myD2hStm.ready := True
+
+  val myD2hThrowCond = Bool()
+  myD2hStm.last <-/< myD2hStm.head.throwWhen(myD2hThrowCond)
+  myD2hStm.last.ready := True
+
+  myD2hThrowCond := myHistD2hFire.last
+
+  myDblLineBufEtc.io.push.valid := myD2hStm.last.valid
   myDblLineBufEtc.io.push.payload.assignFromBits(
-    myD2hStm.data.resize(
+    myD2hStm.last.data.resize(
       myDblLineBufEtc.io.push.payload.asBits.getWidth
     ).asBits
   )
