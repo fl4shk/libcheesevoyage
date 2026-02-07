@@ -162,6 +162,7 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
   //  //})
   //}
   val myH2dRawCnt2d = myDblLineBufEtc.io.infoPop.pos
+  val myH2dNextCnt2d = myDblLineBufEtc.io.infoPop.nextPos
   val myCnt2dRange = (
     ElabVec2(
       x=(myH2dRawCnt2d.x.high downto cnt2dShift.x),
@@ -175,6 +176,10 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
   val myH2dMainCnt = ElabDualTypeVec2(
     x=myH2dRawCnt2d.x(myCnt2dRange.x),
     y=myH2dRawCnt2d.y(myCnt2dRange.y),
+  )
+  val myH2dMainNextCnt = ElabDualTypeVec2(
+    x=myH2dNextCnt2d.x(myCnt2dRange.x),
+    y=myH2dNextCnt2d.y(myCnt2dRange.y),
   )
   //val rH2dMainCnt = ElabDualTypeVec2(
   //  x=rH2dRawCnt2d.x(myCnt2dRange.x),
@@ -266,12 +271,23 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
     )
   )
   val myCntH2dFireRstCond = (
-    myH2dMainCnt.y
-    === RegNextWhen(
-      (myH2dMainCnt.y + 1),
-      cond=myDblLineBufEtc.io.infoPop.fire,
-      init=myH2dMainCnt.y.getZero,
+    //myH2dMainCnt.y
+    //=== RegNextWhen(
+    //  (myH2dMainCnt.y + 1),
+    //  cond=myDblLineBufEtc.io.infoPop.fire,
+    //  init=myH2dMainCnt.y.getZero,
+    //)
+    (
+      myH2dMainNextCnt.y
+      === RegNextWhen(
+        (myH2dMainNextCnt.y + 1),
+        cond=myDblLineBufEtc.io.infoPop.fire,
+        init=myH2dMainNextCnt.y.getZero,
+      )
+      || myDblLineBufEtc.io.infoPop.posWillOverflow.y
     )
+    && myDblLineBufEtc.io.infoPop.valid
+    //&& myDblLineBufEtc.io.infoPop.posWillOverflow.x
     && myHistInfoPopFire.last
   )
 

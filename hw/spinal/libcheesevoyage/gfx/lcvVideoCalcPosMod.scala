@@ -541,7 +541,8 @@ case class LcvVideoDblLineBufWithCalcPos(
         //  ),
         //).asUInt//.resize(myRdAddrPipeStm.addr.getWidth)
         Cat(
-          (!calcPosStmAdapterArr.last.io.infoPop.pos.y(cnt2dShift.y)),
+          //(!calcPosStmAdapterArr.last.io.infoPop.pos.y(cnt2dShift.y)),
+          (calcPosStmAdapterArr.last.io.infoPop.pastPos.y(cnt2dShift.y)),
           calcPosStmAdapterArr.last.io.infoPop.pos.x(
             //calcPos.io.info.pos.x.high
             log2Up(someSize2d.x) + cnt2dShift.x - 1
