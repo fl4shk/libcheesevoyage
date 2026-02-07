@@ -301,6 +301,7 @@ case class LcvVideoDblLineBufWithCalcPosIo(
   val infoPop = master(
     Stream(LcvVideoPosInfo(someSize2d=cfg.myCalcPosSize2d))
   )
+  //val info = out(LcvVideoPosInfo(someSize2d=cfg.myCalcPosSize2d))
 }
 
 case class LcvVideoDblLineBufWithCalcPos(
@@ -338,7 +339,6 @@ case class LcvVideoDblLineBufWithCalcPos(
         //    though. That's a big chunk of block RAM I guess? On the other
         //    hand, you probably only need one of these double-buffered
         //    line buffers.
-        
         (1 << log2Up(someSize2d.x))
         * 2
       ),
@@ -356,14 +356,24 @@ case class LcvVideoDblLineBufWithCalcPos(
 
   myWrPulseStm.valid := io.push.valid
   myWrPulseStm.data := io.push.payload
+  println(
+    s"test: "
+    + s"${someSize2d} ${log2Up(someSize2d.x)} "
+    + s"${mem.cfg.wordCount} "
+    + s"${calcPos.io.info.pos.x.getWidth} "
+    + s"${calcPos.io.info.pos.x.getWidth - cnt2dShift.x} "
+    + s"${calcPos.io.info.pos.y.getWidth} "
+    + s"${mem.io.wrPulse.addr.getWidth}"
+  )
   myWrPulseStm.addr := (
     Cat(
       calcPos.io.info.pos.y(cnt2dShift.y),
       calcPos.io.info.pos.x(
-        calcPos.io.info.pos.x.high
+        //calcPos.io.info.pos.x.high
+        log2Up(someSize2d.x) + cnt2dShift.x - 1
         downto cnt2dShift.x
       ),
-    ).asUInt.resize(myWrPulseStm.addr.getWidth)
+    ).asUInt//.resize(myWrPulseStm.addr.getWidth)
   )
 
   mem.io.wrPulse <-< myWrPulseStm
@@ -376,10 +386,11 @@ case class LcvVideoDblLineBufWithCalcPos(
     Cat(
       (!calcPos.io.info.pos.y(cnt2dShift.y)),
       calcPos.io.info.pos.x(
-        calcPos.io.info.pos.x.high
+        //calcPos.io.info.pos.x.high
+        log2Up(someSize2d.x) + cnt2dShift.x - 1
         downto cnt2dShift.x
       ),
-    ).asUInt.resize(myWrPulseStm.addr.getWidth)
+    ).asUInt//.resize(myRdAddrPipeStm.addr.getWidth)
   )
 
   io.pop <-/< mem.io.rdDataPipe
@@ -410,13 +421,24 @@ case class LcvVideoDblLineBufWithCalcPos(
   val myInfoPopStm = cloneOf(io.infoPop)
 
   myInfoPopStm.valid := (
-    stickySeenWrPulseFire
-    && stickySeenRdAddrPipeFire
+    //stickySeenWrPulseFire
+    //&& 
+    stickySeenRdAddrPipeFire
   )
   myInfoPopStm.payload := calcPos.io.info
   io.infoPop <-/< myInfoPopStm
+  //io.infoPop << myInfoPopStm
 
   calcPos.io.en := io.infoPop.fire
+  //calcPos.io.en := (
+  //  RegNext(
+  //    (
+  //      stickySeenWrPulseFire
+  //      && stickySeenRdAddrPipeFire
+  //    ),
+  //    init=False
+  //  )
+  //)
 
   when (calcPos.io.en) {
     rSavedSeenWrPulseFire := False
