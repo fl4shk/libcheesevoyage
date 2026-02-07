@@ -22,8 +22,12 @@ case class LcvBusFramebufferConfig(
   //vgaTimingInfo: LcvVgaTimingInfo,
   fbSize2d: ElabVec2[Int],
   dblBuf: Boolean,
-  cnt2dShift: ElabVec2[Int], // for line/pixel doubling
+  cnt2dShiftOne: ElabVec2[Boolean], // for line/pixel doubling
 ) {
+  val cnt2dShift = ElabVec2[Int](
+    x=(if (cnt2dShiftOne.x) (1) else (0)),
+    y=(if (cnt2dShiftOne.y) (1) else (0)),
+  )
   require(
     fbMmapCfg.optSliceSize == None
   )
@@ -138,7 +142,7 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
         x=fbSize2d.x,
         y=(fbSize2d.y * (if (cfg.dblBuf) (2) else (1))),
       ),
-      cnt2dShift=cnt2dShift
+      cnt2dShiftOne=cfg.cnt2dShiftOne
     )
   )
   //val rH2dRawCnt2d = {
