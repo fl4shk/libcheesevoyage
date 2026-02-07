@@ -454,6 +454,7 @@ case class LcvVideoDblLineBufWithCalcPos(
   //  + s"${calcPos.io.info.pos.y.getWidth} "
   //  + s"${mem.io.wrPulse.addr.getWidth}"
   //)
+  val rMyDblLineBufIdx = Reg(Bool(), init=False)
   myWrPulse.addr := (
     //Cat(
     //  calcPos.io.info.pos.y(cnt2dShift.y),
@@ -464,7 +465,8 @@ case class LcvVideoDblLineBufWithCalcPos(
     //  ),
     //).asUInt//.resize(myWrPulseStm.addr.getWidth)
     Cat(
-      calcPosStmAdapterArr.last.io.infoPop.pos.y(cnt2dShift.y),
+      //calcPosStmAdapterArr.last.io.infoPop.pos.y(cnt2dShift.y),
+      rMyDblLineBufIdx,
       calcPosStmAdapterArr.last.io.infoPop.pos.x(
         //calcPos.io.info.pos.x.high
         log2Up(someSize2d.x) + cnt2dShift.x - 1
@@ -509,19 +511,40 @@ case class LcvVideoDblLineBufWithCalcPos(
   mem.io.rdAddrPipe <-/< myRdAddrPipeStm.last
   val myReptRdAddrPipeStm = cloneOf(myForkStmVec.last)
   myReptRdAddrPipeStm.valid := True
+  val rMyMuxSel = (
+    RegNextWhen(
+      (
+        calcPosStmAdapterArr.last.io.infoPop.nextPos.y(
+          cnt2dShift.y - 1 downto 0
+        )
+        //> 0
+        === ((1 << cnt2dShift.y) - 1)
+      ),
+      cond=calcPosStmAdapterArr.last.io.infoPop.fire,
+      init=False,
+    )
+  )
+  when (
+    //rMyMuxSel
+    //RegNextWhen(
+      (
+        calcPosStmAdapterArr.last.io.infoPop.nextPos.y(
+          cnt2dShift.y - 1 downto 0
+        )
+        //> 0
+        === ((1 << cnt2dShift.y) - 1)
+      )//,
+    //  cond=calcPosStmAdapterArr.last.io.infoPop.fire,
+    //  init=False,
+    //)
+    && calcPosStmAdapterArr.last.io.infoPop.posWillOverflow.x
+    && calcPosStmAdapterArr.last.io.infoPop.fire
+  ) {
+    rMyDblLineBufIdx := !rMyDblLineBufIdx
+  }
   val myMuxStm = StreamMux(
     select=Cat(
-      RegNextWhen(
-        (
-          calcPosStmAdapterArr.last.io.infoPop.nextPos.y(
-            cnt2dShift.y - 1 downto 0
-          )
-          //> 0
-          === ((1 << cnt2dShift.y) - 1)
-        ),
-        cond=calcPosStmAdapterArr.last.io.infoPop.fire,
-        init=False,
-      )
+      rMyMuxSel
     ).asUInt,
     inputs=List(
       myForkStmVec.last,
@@ -542,7 +565,8 @@ case class LcvVideoDblLineBufWithCalcPos(
         //).asUInt//.resize(myRdAddrPipeStm.addr.getWidth)
         Cat(
           //(!calcPosStmAdapterArr.last.io.infoPop.pos.y(cnt2dShift.y)),
-          (calcPosStmAdapterArr.last.io.infoPop.pastPos.y(cnt2dShift.y)),
+          //(calcPosStmAdapterArr.last.io.infoPop.pastPos.y(cnt2dShift.y)),
+          !rMyDblLineBufIdx,
           calcPosStmAdapterArr.last.io.infoPop.pos.x(
             //calcPos.io.info.pos.x.high
             log2Up(someSize2d.x) + cnt2dShift.x - 1

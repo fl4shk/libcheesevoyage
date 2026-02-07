@@ -1170,8 +1170,8 @@ case class PipeMemRmwDoModInMid0FrontFuncParams[
   //myModMemWord: WordT,                // myModMemWord
   getMyRdMemWordFunc: (
     //UInt,
-    Int,
-    Int,
+    Int,  // someYdx
+    Int,  // someModIdx
   ) => WordT,  // getMyRdMemWordFunc
   //Vec[WordT],  // myRdMemWord
   //ydx: Int,                             // ydx
@@ -4930,18 +4930,19 @@ extends Area {
           Vec[Bool](
             (
               dbgDoWrite(ydx)
-              || (
-                if (optEnableWrPulse) (
-                  //io.clear.fire
-                  io.wrPulse.fire
-                ) else (
-                  False
-                )
-              )
+              && upExt(1)(ydx)(extIdxUp).modMemWordValid.last
             ),
+            (
+              if (optEnableWrPulse) (
+                //io.clear.fire
+                io.wrPulse.fire
+              ) else (
+                False
+              )
+            )
             //!ClockDomain.isResetActive,
-            upExt(1)(ydx)(extIdxUp).modMemWordValid.last,
-          ).asBits.asUInt.andR
+            //upExt(1)(ydx)(extIdxUp).modMemWordValid.last,
+          ).asBits.asUInt.orR//andR
         )
         //&& up.isValid
         //&& down.isReady

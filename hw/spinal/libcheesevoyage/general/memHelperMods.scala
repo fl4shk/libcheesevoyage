@@ -797,22 +797,26 @@ case class WrPulseRdPipeRamSdpPipe[
   )(
     doHazardCmpFunc=None,
     doModInMid0FrontFunc={
-      //def myFunc(
-      //  params: PipeMemRmwDoModInMid0FrontFuncParams[
-      //    WordT,
-      //    Bool,
-      //    PmRmwModType,
-      //    PipeMemRmwDualRdTypeDisabled[
-      //      WordT, Bool,
-      //    ]
-      //  ]
-      //): Area = new Area {
-      //  when (params.cMid0Front.up.isValid) {
-      //    params.outp := params.inp
-      //  }
-      //}
-      //Some(myFunc)
-      None
+      def myFunc(
+        params: PipeMemRmwDoModInMid0FrontFuncParams[
+          WordT,
+          Bool,
+          PmRmwModType,
+          PipeMemRmwDualRdTypeDisabled[
+            WordT, Bool,
+          ]
+        ]
+      ): Area = new Area {
+        when (params.cMid0Front.up.isValid) {
+          params.outp := params.inp
+        }
+        //params.outp.myExt.modMemWord := params.getMyRdMemWordFunc(0, 0)
+        params.outp.myExt.modMemWordValid.foreach(mmwValidItem => {
+          mmwValidItem := False
+        })
+      }
+      Some(myFunc)
+      //None
     }
   )
   pipeMem.io.front.driveFrom(io.rdAddrPipe)(
