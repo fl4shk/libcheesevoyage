@@ -452,6 +452,7 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
   myDblLineBufEtc.io.push.valid := (
     myD2hStm.last.valid
   )
+
   myDblLineBufEtc.io.push.payload.assignFromBits(
     myD2hStm.last.data.resize(
       myDblLineBufEtc.io.push.payload.asBits.getWidth

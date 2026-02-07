@@ -8,6 +8,7 @@ import libcheesevoyage.general.DualTypeNumVec2
 import libcheesevoyage.general.Vec2
 import libcheesevoyage.general.MkVec2
 import libcheesevoyage.general.ElabVec2
+import libcheesevoyage.general.ElabDualTypeVec2
 
 import spinal.core._
 import spinal.lib._
@@ -397,8 +398,25 @@ case class LcvVideoDblLineBufWithCalcPos(
       )
     )
   )
+  //val myRawCnt2d = io.infoPop.pos
+  //val myCnt2dRange = (
+  //  ElabVec2(
+  //    x=(myRawCnt2d.x.high downto cnt2dShift.x),
+  //    y=(myRawCnt2d.y.high downto cnt2dShift.y),
+  //  )
+  //  //ElabVec2(
+  //  //  x=(rRawCnt2d.x.high downto cnt2dShift.x),
+  //  //  y=(rRawCnt2d.y.high downto cnt2dShift.y),
+  //  //)
+  //)
+  //val myMainCnt = ElabDualTypeVec2(
+  //  x=myRawCnt2d.x(myCnt2dRange.x),
+  //  y=myRawCnt2d.y(myCnt2dRange.y),
+  //)
   io.infoPop << calcPosStmAdapterArr.head.io.infoPop
-  calcPosStmAdapterArr.last.io.infoPop.ready := io.push.fire
+  //calcPosStmAdapterArr.last.io.infoPop.ready := (
+  //  io.push.fire
+  //)
   //--------
   val mem = WrPulseRdPipeRamSdpPipe(cfg=cfg.myMemCfg)
   val myWrPulse = cloneOf(mem.io.wrPulse)
@@ -413,6 +431,10 @@ case class LcvVideoDblLineBufWithCalcPos(
   )
 
   myForkStmVec.head.ready := True
+  //calcPosStmAdapterArr.last.io.infoPop.ready := (
+  //  //io.push.fire
+  //  myForkStmVec.last.fire
+  //)
 
   myWrPulse.valid := (
     //io.push.valid
@@ -464,8 +486,49 @@ case class LcvVideoDblLineBufWithCalcPos(
     myRdAddrPipeStm.last << myRdAddrPipeStm.head
   //}
 
+  //object State extends SpinalEnum(defaultEncoding=binaryOneHot) {
+  //  val
+  //    NO_DUPL,
+  //    WITH_DUPL
+  //    = newElement();
+  //}
+  //val rState = (
+  //  Reg(State())
+  //  init(State.NO_DUPL)
+  //)
+  val myJoinStm = 
+  calcPosStmAdapterArr.last.io.infoPop.ready := (
+    myRdAddrPipeStm.head.fire
+    //Mux(
+    //  rState === State.NO_DUPL,
+    //  io.push.fire,
+    //  myRdAddrPipeStm.head.fire
+    //)
+  )
+
   mem.io.rdAddrPipe <-/< myRdAddrPipeStm.last
-  myForkStmVec.last.translateInto(myRdAddrPipeStm.head)(
+  val myReptRdAddrPipeStm = cloneOf(myForkStmVec.last)
+  myReptRdAddrPipeStm.valid := True
+  val myMuxStm = StreamMux(
+    select=Cat(
+      RegNextWhen(
+        (
+          calcPosStmAdapterArr.last.io.infoPop.nextPos.y(
+            cnt2dShift.y - 1 downto 0
+          )
+          //> 0
+          === ((1 << cnt2dShift.y) - 1)
+        ),
+        cond=calcPosStmAdapterArr.last.io.infoPop.fire,
+        init=False,
+      )
+    ).asUInt,
+    inputs=List(
+      myForkStmVec.last,
+      myReptRdAddrPipeStm,
+    )
+  )
+  myMuxStm.translateInto(myRdAddrPipeStm.head)(
     dataAssignment=(outp, inp) => {
       outp.data := outp.data.getZero
       outp.addr := (
