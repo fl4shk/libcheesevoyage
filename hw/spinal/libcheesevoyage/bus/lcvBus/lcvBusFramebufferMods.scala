@@ -434,11 +434,11 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
   myD2hStm.head <-/< io.bus.d2hBus
   //myD2hStm.ready := True
 
-  val myD2hThrowCond = Bool()
-  myD2hStm.last <-/< myD2hStm.head.throwWhen(myD2hThrowCond)
+  //val myD2hThrowCond = Bool()
+  myD2hStm.last <-/< myD2hStm.head//.throwWhen(myD2hThrowCond)
   myD2hStm.last.ready := True
 
-  myD2hThrowCond := myHistD2hFire.last
+  //myD2hThrowCond := myHistD2hFire.last
 
   myDblLineBufEtc.io.push.valid := myD2hStm.last.valid
   myDblLineBufEtc.io.push.payload.assignFromBits(

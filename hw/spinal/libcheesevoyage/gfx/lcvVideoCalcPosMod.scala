@@ -389,13 +389,16 @@ case class LcvVideoDblLineBufWithCalcPos(
   //val calcPos = LcvVideoCalcPos(
   //  someSize2d=myCalcPosSize2d
   //)
-  val calcPosStmAdapter = LcvVideoCalcPosStreamAdapter(
-    someSize2d=(
-      //someSize2d
-      cfg.myCalcPosSize2d
+  val calcPosStmAdapterArr = Array.fill(2)(
+    LcvVideoCalcPosStreamAdapter(
+      someSize2d=(
+        //someSize2d
+        cfg.myCalcPosSize2d
+      )
     )
   )
-  io.infoPop << calcPosStmAdapter.io.infoPop
+  io.infoPop << calcPosStmAdapterArr.head.io.infoPop
+  calcPosStmAdapterArr.last.io.infoPop.ready := io.push.fire
   //--------
   val mem = WrPulseRdPipeRamSdpPipe(cfg=cfg.myMemCfg)
   val myWrPulse = cloneOf(mem.io.wrPulse)
@@ -403,7 +406,7 @@ case class LcvVideoDblLineBufWithCalcPos(
   val myForkStmVec = StreamFork(
     input=io.push,
     portCount=2,
-    synchronous=false,
+    synchronous=true,
   )
 
   myForkStmVec.head.ready := True
@@ -436,8 +439,8 @@ case class LcvVideoDblLineBufWithCalcPos(
     //  ),
     //).asUInt//.resize(myWrPulseStm.addr.getWidth)
     Cat(
-      calcPosStmAdapter.io.infoPop.pos.y(cnt2dShift.y),
-      calcPosStmAdapter.io.infoPop.pos.x(
+      calcPosStmAdapterArr.last.io.infoPop.pos.y(cnt2dShift.y),
+      calcPosStmAdapterArr.last.io.infoPop.pos.x(
         //calcPos.io.info.pos.x.high
         log2Up(someSize2d.x) + cnt2dShift.x - 1
         downto cnt2dShift.x
@@ -450,13 +453,14 @@ case class LcvVideoDblLineBufWithCalcPos(
   val myRdAddrPipeStm = Vec.fill(2)(
     cloneOf(mem.io.rdAddrPipe)
   )
-  if (cnt2dShift.x > 0) {
-    myRdAddrPipeStm.last <-/< myRdAddrPipeStm.head.repeat(
-      times=((1 << cnt2dShift.x) - 1)
-    )._1
-  } else {
+  //if (cnt2dShift.x > 0) {
+  //  myRdAddrPipeStm.last <-/< myRdAddrPipeStm.head.repeat(
+  //    times=((1 << cnt2dShift.x) - 1)
+  //  )._1
+  //} else {
     myRdAddrPipeStm.last << myRdAddrPipeStm.head
-  }
+  //}
+
   mem.io.rdAddrPipe <-/< myRdAddrPipeStm.last
   myForkStmVec.last.translateInto(myRdAddrPipeStm.head)(
     dataAssignment=(outp, inp) => {
@@ -471,8 +475,8 @@ case class LcvVideoDblLineBufWithCalcPos(
         //  ),
         //).asUInt//.resize(myRdAddrPipeStm.addr.getWidth)
         Cat(
-          (!calcPosStmAdapter.io.infoPop.pos.y(cnt2dShift.y)),
-          calcPosStmAdapter.io.infoPop.pos.x(
+          (!calcPosStmAdapterArr.last.io.infoPop.pos.y(cnt2dShift.y)),
+          calcPosStmAdapterArr.last.io.infoPop.pos.x(
             //calcPos.io.info.pos.x.high
             log2Up(someSize2d.x) + cnt2dShift.x - 1
             downto cnt2dShift.x
@@ -500,8 +504,7 @@ case class LcvVideoDblLineBufWithCalcPos(
   //  //  ),
   //  //).asUInt//.resize(myRdAddrPipeStm.addr.getWidth)
   //  Cat(
-  //    (!calcPosStmAdapter.io.infoPop.pos.y(cnt2dShift.y)),
-  //    calcPosStmAdapter.io.infoPop.pos.x(
+  //    (!calcPosStmAdapter.io.infoPop.pos.y(cnt2dShift.y)), //    calcPosStmAdapter.io.infoPop.pos.x(
   //      //calcPos.io.info.pos.x.high
   //      log2Up(someSize2d.x) + cnt2dShift.x - 1
   //      downto cnt2dShift.x
