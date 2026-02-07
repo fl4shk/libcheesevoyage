@@ -406,7 +406,10 @@ case class LcvVideoDblLineBufWithCalcPos(
   val myForkStmVec = StreamFork(
     input=io.push,
     portCount=2,
-    synchronous=true,
+    synchronous=(
+      //true
+      false
+    ),
   )
 
   myForkStmVec.head.ready := True

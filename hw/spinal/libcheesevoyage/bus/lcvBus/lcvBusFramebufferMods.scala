@@ -235,13 +235,22 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
     ),
     init=myH2dAddrMult.getZero,
   )
+  val myCntH2dMax = (
+    fbSize2d.x * (1 << cnt2dShift.x)
+  )
   val myCntH2dFireRstVal = (
     //fbSize2d.x + 1 //- 2 //- 2
     //fbSize2d.x - 1 //2 //+ (1 << cnt2dShift.x) //- 2 //- 2
-    fbSize2d.x - 1//2//1//2 //+ (1 << cnt2dShift.x) //- 2 //- 2
+    //fbSize2d.x - 1//2//1//2 //+ (1 << cnt2dShift.x) //- 2 //- 2
+    myCntH2dMax - 1
   )
   val rCntH2dFire = (
-    Reg(UInt(log2Up(fbSize2d.x + 1) + 1 bits))
+    Reg(UInt(
+      log2Up(
+      //fbSize2d.x + 1
+        myCntH2dMax
+      ) + 1 bits
+    ))
     init(
       myCntH2dFireRstVal
       //fbSize2d.x - 1
@@ -440,7 +449,9 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
 
   //myD2hThrowCond := myHistD2hFire.last
 
-  myDblLineBufEtc.io.push.valid := myD2hStm.last.valid
+  myDblLineBufEtc.io.push.valid := (
+    myD2hStm.last.valid
+  )
   myDblLineBufEtc.io.push.payload.assignFromBits(
     myD2hStm.last.data.resize(
       myDblLineBufEtc.io.push.payload.asBits.getWidth
