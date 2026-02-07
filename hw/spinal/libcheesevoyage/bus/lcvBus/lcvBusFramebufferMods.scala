@@ -182,60 +182,6 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
   //)
 
   //--------
-  //val lineBuf = StreamFifo(
-  //  dataType=Rgb(cfg.rgbCfg),
-  //  depth=fbSize2d.x,
-  //  latency=2,
-  //  forFMax=true,
-  //)
-  //val lineBuf = Mem(
-  //  wordType=Rgb(cfg.rgbCfg),
-  //  wordCount=fbSize2d.x,
-  //)
-
-  //val myLineBufDepth = (
-  //  //fbSize2d.x
-  //  cfg.calcAlignedFbCntMax(fbSize2d.x)
-  //)
-  //val lineBuf = RamSdpPipe(
-  //  cfg=RamSdpPipeConfig(
-  //    wordType=Rgb(cfg.rgbCfg),
-  //    depth=myLineBufDepth,
-  //    optIncludeWrByteEn=false,
-  //    initBigInt={
-  //      val tempArr = new ArrayBuffer[BigInt]()
-  //      for (idx <- 0 until myLineBufDepth) {
-  //        tempArr += BigInt(0)
-  //      }
-  //      Some(tempArr)
-  //    },
-  //  )
-  //)
-
-  ////--------
-  //lineBuf.io.rdEn := False
-  //lineBuf.io.rdAddr := lineBuf.io.rdAddr.getZero
-
-  //lineBuf.io.wrEn := False
-  //lineBuf.io.wrAddr := lineBuf.io.wrAddr.getZero
-  //lineBuf.io.wrData := lineBuf.io.wrData.getZero
-  //--------
-  //val rgbFifo = StreamFifo(
-  //  dataType=Rgb(cfg.rgbCfg),
-  //  depth=(
-  //    //myLineBufDepth
-  //    cfg.myBusBurstSizeMax
-  //  ),
-  //  latency=2,
-  //  forFMax=true,
-  //)
-
-  //val myRgbPushStm = cloneOf(rgbFifo.io.push)
-  //myRgbPushStm.valid := False
-  //myRgbPushStm.payload := myRgbPushStm.payload.getZero
-  //rgbFifo.io.push <-/< myRgbPushStm
-  //io.pop <-/< rgbFifo.io.pop
-  //--------
   val myH2dStm = Vec.fill(3)(
     cloneOf(io.bus.h2dBus)
   )

@@ -365,8 +365,8 @@ case class LcvVideoDblLineBufWithCalcPosIo(
   def rgbCfg = cfg.rgbCfg
 
   val push = slave(
-    //Flow(Rgb(rgbCfg))
-    Stream(Rgb(rgbCfg))
+    Flow(Rgb(rgbCfg))
+    //Stream(Rgb(rgbCfg))
   )
   val pop = master(Stream(Rgb(rgbCfg)))
 
@@ -390,8 +390,12 @@ case class LcvVideoDblLineBufWithCalcPos(
   //  someSize2d=myCalcPosSize2d
   //)
   val calcPosStmAdapter = LcvVideoCalcPosStreamAdapter(
-    someSize2d=someSize2d
+    someSize2d=(
+      //someSize2d
+      cfg.myCalcPosSize2d
+    )
   )
+  io.infoPop << calcPosStmAdapter.io.infoPop
   //--------
   val mem = WrPulseRdPipeRamSdpPipe(cfg=cfg.myMemCfg)
   val myWrPulseStm = cloneOf(mem.io.wrPulse)
