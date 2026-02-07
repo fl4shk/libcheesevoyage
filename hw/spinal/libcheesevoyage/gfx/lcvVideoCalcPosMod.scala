@@ -1,4 +1,7 @@
 package libcheesevoyage.gfx
+
+import scala.collection.mutable._
+
 import libcheesevoyage.general.WrPulseRdPipeRamSdpPipeConfig
 import libcheesevoyage.general.WrPulseRdPipeRamSdpPipe
 import libcheesevoyage.general.DualTypeNumVec2
@@ -276,6 +279,32 @@ case class LcvVideoCalcPos(
   }
 }
 
+case class LcvVideoCalcPosStreamAdapterIo(
+  someSize2d: ElabVec2[Int]
+) extends Bundle {
+  val infoPop = master(
+    Stream(LcvVideoPosInfo(someSize2d=someSize2d))
+  )
+}
+case class LcvVideoCalcPosStreamAdapter(
+  someSize2d: ElabVec2[Int]
+) extends Component {
+  //--------
+  val io = LcvVideoCalcPosStreamAdapterIo(someSize2d=someSize2d)
+  //--------
+  val calcPos = LcvVideoCalcPos(someSize2d=someSize2d)
+  //--------
+  io.infoPop.valid := True
+  calcPos.io.en := io.infoPop.ready
+  io.infoPop.payload := (
+    calcPos.io.info
+    //RegNext(
+    //  io.infoPop.payload,
+    //  init=io.infoPop.payload.getZero
+    //)
+  )
+}
+
 case class LcvVideoDblLineBufWithCalcPosConfig(
   rgbCfg: RgbConfig,
   someSize2d: ElabVec2[Int],
@@ -286,6 +315,46 @@ case class LcvVideoDblLineBufWithCalcPosConfig(
     x=(someSize2d.x * (1 << cnt2dShift.x)),
     y=(someSize2d.y * (1 << cnt2dShift.y)),
   )
+  val myMemWordCnt = (
+    //someSize2d.x //* (1 << cnt2dShift.x)
+    //* 2
+
+    // This *may* waste space but maybe not? It does round up to the
+    // nearest power of two, but I have a few comments about that:
+    // (1) It allows us to avoid using a multiplier for the address
+    //    calculation
+    // (2) FPGA Block RAM primitives are large enough
+    //    that maybe it's not a problem anyway?
+    // (3) I did some math, and even with a 1920x1080 resolution
+    //    (i.e. 1080p widescreen),
+    //    the calculation for a double-buffered line buffer only uses
+    //    4096 addresses. This becomes 16 kiB with 32 bpp colors
+    //    though. That's a big chunk of block RAM I guess? On the other
+    //    hand, you probably only need one of these double-buffered
+    //    line buffers.
+    (1 << log2Up(someSize2d.x))
+    * 2
+  )
+  val myMemCfg = WrPulseRdPipeRamSdpPipeConfig(
+    modType=Rgb(rgbCfg),
+    wordType=Rgb(rgbCfg),
+    wordCount=myMemWordCnt,
+    pipeName="LcvVideoDblLineBufWithCalcPos",
+    initBigInt={
+      val tempArr = new ArrayBuffer[BigInt]()
+      for (idx <- 0 until myMemWordCnt) {
+        tempArr += BigInt(0)
+      }
+      Some(Array.fill(1)(tempArr))
+    },
+    setWordFunc=(
+      outp: Rgb,
+      inp: Rgb,
+      rdMemWord: Rgb,
+    ) => {
+      outp := rdMemWord
+    }
+  )
 }
 
 case class LcvVideoDblLineBufWithCalcPosIo(
@@ -295,7 +364,10 @@ case class LcvVideoDblLineBufWithCalcPosIo(
   //val wrData = in(Rgb(cfg.rgbCfg))
   def rgbCfg = cfg.rgbCfg
 
-  val push = slave(Flow(Rgb(rgbCfg)))
+  val push = slave(
+    //Flow(Rgb(rgbCfg))
+    Stream(Rgb(rgbCfg))
+  )
   val pop = master(Stream(Rgb(rgbCfg)))
 
   val infoPop = master(
@@ -314,61 +386,42 @@ case class LcvVideoDblLineBufWithCalcPos(
   //--------
   val io = LcvVideoDblLineBufWithCalcPosIo(cfg=cfg)
   //--------
-  val calcPos = LcvVideoCalcPos(
-    someSize2d=myCalcPosSize2d
+  //val calcPos = LcvVideoCalcPos(
+  //  someSize2d=myCalcPosSize2d
+  //)
+  val calcPosStmAdapter = LcvVideoCalcPosStreamAdapter(
+    someSize2d=someSize2d
   )
   //--------
-  val mem = WrPulseRdPipeRamSdpPipe(
-    cfg=WrPulseRdPipeRamSdpPipeConfig(
-      modType=Rgb(rgbCfg),
-      wordType=Rgb(rgbCfg),
-      wordCount=(
-        //someSize2d.x //* (1 << cnt2dShift.x)
-        //* 2
-
-        // This *may* waste space but maybe not? It does round up to the
-        // nearest power of two, but I have a few comments about that:
-        // (1) It allows us to avoid using a multiplier for the address
-        //    calculation
-        // (2) FPGA Block RAM primitives are large enough
-        //    that maybe it's not a problem anyway?
-        // (3) I did some math, and even with a 1920x1080 resolution
-        //    (i.e. 1080p widescreen),
-        //    the calculation for a double-buffered line buffer only uses
-        //    4096 addresses. This becomes 16 kiB with 32 bpp colors
-        //    though. That's a big chunk of block RAM I guess? On the other
-        //    hand, you probably only need one of these double-buffered
-        //    line buffers.
-        (1 << log2Up(someSize2d.x))
-        * 2
-      ),
-      pipeName="LcvVideoDblLineBufWithCalcPos",
-      setWordFunc=(
-        outp: Rgb,
-        inp: Rgb,
-        rdMemWord: Rgb,
-      ) => {
-        outp := rdMemWord
-      }
-    )
-  )
+  val mem = WrPulseRdPipeRamSdpPipe(cfg=cfg.myMemCfg)
   val myWrPulseStm = cloneOf(mem.io.wrPulse)
 
-  myWrPulseStm.valid := io.push.valid
-  myWrPulseStm.data := io.push.payload
-  println(
-    s"test: "
-    + s"${someSize2d} ${log2Up(someSize2d.x)} "
-    + s"${mem.cfg.wordCount} "
-    + s"${calcPos.io.info.pos.x.getWidth} "
-    + s"${calcPos.io.info.pos.x.getWidth - cnt2dShift.x} "
-    + s"${calcPos.io.info.pos.y.getWidth} "
-    + s"${mem.io.wrPulse.addr.getWidth}"
+  myWrPulseStm.valid := (
+    //io.push.valid
+    io.push.fire
   )
+  myWrPulseStm.data := io.push.payload
+  //println(
+  //  s"test: "
+  //  + s"${someSize2d} ${log2Up(someSize2d.x)} "
+  //  + s"${mem.cfg.wordCount} "
+  //  + s"${calcPos.io.info.pos.x.getWidth} "
+  //  + s"${calcPos.io.info.pos.x.getWidth - cnt2dShift.x} "
+  //  + s"${calcPos.io.info.pos.y.getWidth} "
+  //  + s"${mem.io.wrPulse.addr.getWidth}"
+  //)
   myWrPulseStm.addr := (
+    //Cat(
+    //  calcPos.io.info.pos.y(cnt2dShift.y),
+    //  calcPos.io.info.pos.x(
+    //    //calcPos.io.info.pos.x.high
+    //    log2Up(someSize2d.x) + cnt2dShift.x - 1
+    //    downto cnt2dShift.x
+    //  ),
+    //).asUInt//.resize(myWrPulseStm.addr.getWidth)
     Cat(
-      calcPos.io.info.pos.y(cnt2dShift.y),
-      calcPos.io.info.pos.x(
+      calcPosStmAdapter.io.infoPop.pos.y(cnt2dShift.y),
+      calcPosStmAdapter.io.infoPop.pos.x(
         //calcPos.io.info.pos.x.high
         log2Up(someSize2d.x) + cnt2dShift.x - 1
         downto cnt2dShift.x
@@ -380,70 +433,92 @@ case class LcvVideoDblLineBufWithCalcPos(
 
   val myRdAddrPipeStm = cloneOf(mem.io.rdAddrPipe)
   mem.io.rdAddrPipe <-/< myRdAddrPipeStm
-  myRdAddrPipeStm.valid := io.push.valid
+
+  //myRdAddrPipeStm.valid := (
+  //  //io.push.valid
+  //  //|| calcPos.io.en
+  //)
+
   myRdAddrPipeStm.data := myRdAddrPipeStm.data.getZero
   myRdAddrPipeStm.addr := (
+    //Cat(
+    //  (!calcPos.io.info.pos.y(cnt2dShift.y)),
+    //  calcPos.io.info.pos.x(
+    //    //calcPos.io.info.pos.x.high
+    //    log2Up(someSize2d.x) + cnt2dShift.x - 1
+    //    downto cnt2dShift.x
+    //  ),
+    //).asUInt//.resize(myRdAddrPipeStm.addr.getWidth)
     Cat(
-      (!calcPos.io.info.pos.y(cnt2dShift.y)),
-      calcPos.io.info.pos.x(
+      (!calcPosStmAdapter.io.infoPop.pos.y(cnt2dShift.y)),
+      calcPosStmAdapter.io.infoPop.pos.x(
         //calcPos.io.info.pos.x.high
         log2Up(someSize2d.x) + cnt2dShift.x - 1
         downto cnt2dShift.x
       ),
-    ).asUInt//.resize(myRdAddrPipeStm.addr.getWidth)
+    ).asUInt//.resize(myWrPulseStm.addr.getWidth)
   )
 
   io.pop <-/< mem.io.rdDataPipe
   //--------
-  val mySeenWrPulseFire = Bool()
-  val rSavedSeenWrPulseFire = Reg(Bool(), init=False)
-  val stickySeenWrPulseFire = (
-    mySeenWrPulseFire
-    || rSavedSeenWrPulseFire
-  )
-
-  mySeenWrPulseFire := mem.io.wrPulse.fire //io.push.fire
-  when (mySeenWrPulseFire) {
-    rSavedSeenWrPulseFire := True
-  }
-
-  val mySeenRdAddrPipeFire = Bool()
-  val rSavedSeenRdAddrPipeFire = Reg(Bool(), init=False)
-  val stickySeenRdAddrPipeFire = (
-    mySeenRdAddrPipeFire
-    || rSavedSeenRdAddrPipeFire
-  )
-
-  mySeenRdAddrPipeFire := mem.io.rdAddrPipe.fire
-  when (mySeenRdAddrPipeFire) {
-    rSavedSeenRdAddrPipeFire := True
-  }
-  val myInfoPopStm = cloneOf(io.infoPop)
-
-  myInfoPopStm.valid := (
-    //stickySeenWrPulseFire
-    //&& 
-    stickySeenRdAddrPipeFire
-  )
-  myInfoPopStm.payload := calcPos.io.info
-  io.infoPop <-/< myInfoPopStm
-  //io.infoPop << myInfoPopStm
-
-  calcPos.io.en := io.infoPop.fire
-  //calcPos.io.en := (
-  //  RegNext(
-  //    (
-  //      stickySeenWrPulseFire
-  //      && stickySeenRdAddrPipeFire
-  //    ),
-  //    init=False
-  //  )
+  //val mySeenWrPulseFire = Bool()
+  //val rSavedSeenWrPulseFire = Reg(Bool(), init=False)
+  //val stickySeenWrPulseFire = (
+  //  mySeenWrPulseFire
+  //  || rSavedSeenWrPulseFire
   //)
 
-  when (calcPos.io.en) {
-    rSavedSeenWrPulseFire := False
-    rSavedSeenRdAddrPipeFire := False
-  }
+  //mySeenWrPulseFire := mem.io.wrPulse.fire //io.push.fire
+  //when (mySeenWrPulseFire) {
+  //  rSavedSeenWrPulseFire := True
+  //}
+
+  //val mySeenRdAddrPipeFire = Bool()
+  //val rSavedSeenRdAddrPipeFire = Reg(Bool(), init=False)
+  //val stickySeenRdAddrPipeFire = (
+  //  mySeenRdAddrPipeFire
+  //  || rSavedSeenRdAddrPipeFire
+  //)
+
+  //mySeenRdAddrPipeFire := mem.io.rdAddrPipe.fire
+  //when (mySeenRdAddrPipeFire) {
+  //  rSavedSeenRdAddrPipeFire := True
+  //}
+  //val myInfoPopStm = cloneOf(io.infoPop)
+
+  //myInfoPopStm.valid := (
+  //  //stickySeenWrPulseFire
+  //  //&& 
+  //  stickySeenRdAddrPipeFire
+  //)
+  //myInfoPopStm.payload := calcPos.io.info
+  //io.infoPop <-/< myInfoPopStm
+  ////io.infoPop << myInfoPopStm
+
+  //calcPos.io.en := (
+  //  //History[Bool](
+  //  //  that=False,
+  //  //  length=3,
+  //  //  when=stickySeenWrPulseFire,
+  //  //  init=True,
+  //  //).last
+  //  //|| 
+  //  io.infoPop.fire
+  //)
+  ////calcPos.io.en := (
+  ////  RegNext(
+  ////    (
+  ////      stickySeenWrPulseFire
+  ////      && stickySeenRdAddrPipeFire
+  ////    ),
+  ////    init=False
+  ////  )
+  ////)
+
+  //when (calcPos.io.en) {
+  //  rSavedSeenWrPulseFire := False
+  //  rSavedSeenRdAddrPipeFire := False
+  //}
   //--------
   //--------
 }

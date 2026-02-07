@@ -1657,7 +1657,9 @@ extends Area {
     myArr
   }
 
-  val dualRdMem = (io.optDualRd) generate {
+  val dualRdMem = (
+    io.optDualRd
+  ) generate {
     val myArr = new ArrayBuffer[RamSimpleDualPort[WordT]]()
     for (ydx <- 0 until memArrSize) {
       myArr += mkMem(ydx=ydx)

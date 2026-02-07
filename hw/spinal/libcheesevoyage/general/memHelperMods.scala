@@ -679,8 +679,8 @@ case class WrPulseRdPipeRamSdpPipeConfig[
     modStageCnt=modStageCnt,
     pipeName=pipeName,
     optIncludePreMid0Front=(
-      false
-      //true
+      //false
+      true
     ),
     linkArr=(
       //Some(PipeMemRmw.mkLinkArr()),
@@ -693,9 +693,9 @@ case class WrPulseRdPipeRamSdpPipeConfig[
     initBigInt=initBigInt,
     //optEnableModDuplicate=false,
     optModHazardKind=(
-      PipeMemRmw.ModHazardKind.Dont
+      //PipeMemRmw.ModHazardKind.Dont
       //PipeMemRmw.ModHazardKind.Dupl
-      //PipeMemRmw.ModHazardKind.Fwd
+      PipeMemRmw.ModHazardKind.Fwd
     ),
     vivadoDebug=false,
     optEnableWrPulse=true,
@@ -821,7 +821,7 @@ case class WrPulseRdPipeRamSdpPipe[
       rdAddrPayload := rdAddrPayload.getZero
       rdAddrPayload.allowOverride
       //rdAddrPayload.data := io.rdAddrPipe
-      rdAddrPayload.myExt.memAddr.last := inp.addr
+      rdAddrPayload.myExt.memAddr.head := inp.addr
       rdAddrPayload.myExt.rdMemWord.foreach(rdMemWord => {
         rdMemWord := rdMemWord.getZero
       })

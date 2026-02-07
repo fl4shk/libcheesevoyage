@@ -266,8 +266,8 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
   val myHistH2dAddrMult = History[UInt](
     that=myH2dAddrMult,
     length=(
-      3
-      //1
+      //3
+      1
     ),
     init=myH2dAddrMult.getZero,
   )
@@ -389,7 +389,9 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
     //!rCntH2dFire.msb
     || 
     (
-      !rCntH2dFire.msb
+      (
+        !rCntH2dFire.msb
+      )
       && stickySeenInfoPopFire//myDblLineBufEtc.io.infoPop.valid
       && myTempH2dValidCond
       //&& myDblLineBufEtc.io.infoPop.fire
@@ -439,7 +441,8 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
       myDblLineBufEtc.io.push.payload.asBits.getWidth
     ).asBits
   )
-  io.pop <-/< myDblLineBufEtc.io.pop
+  //io.pop <-/< myDblLineBufEtc.io.pop
+  io.pop << myDblLineBufEtc.io.pop
   //--------
 }
 
