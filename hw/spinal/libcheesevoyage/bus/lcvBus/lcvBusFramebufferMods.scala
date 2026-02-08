@@ -246,11 +246,12 @@ case class LcvBusFramebufferCtrl(
       //)
       //when (myH2dStm.head.fire) {
       //}
+      outp.src := 0x0
       outp.addr := (
         Cat(
           rFbAddrCnt(
             rFbAddrCnt.high
-            downto cnt2dShift.x + cnt2dShift.y
+            downto cnt2dShift.x //+ cnt2dShift.y
           ),
           U(s"${log2Up(rgbUpWidth / 8)}'d0"),
         ).asUInt.resize(outp.addr.getWidth)
