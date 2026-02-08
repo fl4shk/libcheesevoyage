@@ -182,7 +182,8 @@ case class LcvBusFramebufferCtrl(
   }
 
   io.bus.h2dBus << myH2dStm.last
-  val myH2dMaybeThrownStm = myH2dStm.head//.throwWhen
+  val myH2dThrowCond = Bool()
+  val myH2dMaybeThrownStm = myH2dStm.head//.throwWhen(myH2dThrowCond)
   myH2dStm(1) <-/< myH2dMaybeThrownStm //myH2dStm.head
   myH2dStm(1).translateInto(myH2dStm.last)(
     dataAssignment=(outp, inp) => {
@@ -201,7 +202,8 @@ case class LcvBusFramebufferCtrl(
         (
           (
             myVideoCfg.someSize2d.y * myVideoCfg.someSize2d.x
-          ) << (cnt2dShift.x + cnt2dShift.y)
+          ) //<< (cnt2dShift.x + cnt2dShift.y)
+          + 1
         )
         + 1
       ) bits
@@ -215,7 +217,7 @@ case class LcvBusFramebufferCtrl(
         (
           (
             myVideoCfg.someSize2d.y * myVideoCfg.someSize2d.x
-          ) << (cnt2dShift.x + cnt2dShift.y)
+          ) //<< (cnt2dShift.x + cnt2dShift.y)
         ) - 1
       )
     ) {
@@ -224,6 +226,8 @@ case class LcvBusFramebufferCtrl(
       rFbAddrCnt := 0x0
     }
   }
+  val rMyDblLineBufIdx = Reg(Bool(), init=False)
+
   myInfoPopStm.head.translateInto(myH2dStm.head)(
     dataAssignment=(outp, inp) => {
       //myH2dStm.head.valid := (
@@ -246,15 +250,20 @@ case class LcvBusFramebufferCtrl(
       //)
       //when (myH2dStm.head.fire) {
       //}
-      outp.src := 0x0
       outp.addr := (
         Cat(
           rFbAddrCnt(
             rFbAddrCnt.high
-            downto cnt2dShift.x //+ cnt2dShift.y
+            downto 0 //cnt2dShift.x + cnt2dShift.y
           ),
           U(s"${log2Up(rgbUpWidth / 8)}'d0"),
         ).asUInt.resize(outp.addr.getWidth)
+      )
+      outp.src := (
+        //0x0
+        Cat(
+          rMyDblLineBufIdx
+        ).asUInt.resize(outp.src.getWidth)
       )
       outp.data := 0x0
       outp.byteSize := (
@@ -271,18 +280,81 @@ case class LcvBusFramebufferCtrl(
       }
     }
   )
-  val myD2hStm = Vec.fill(
-    2
-  )(
+  //--------
+  //val myPushStm = Stream(Rgb(rgbCfg))
+  val myD2hStm = Vec.fill(2)(
     cloneOf(io.bus.d2hBus)
   )
   myD2hStm.head <-/< io.bus.d2hBus
-  myD2hStm.last << myD2hStm.head
-  myD2hStm.last.translateInto(io.pop)(
+  myD2hStm.last <-/< myD2hStm.head.repeat(
+    times=(
+      (1 << cnt2dShift.x) //- 1
+    )
+  )._1
+  myD2hStm.last.translateInto(
+    io.pop
+    //myPushStm
+  )(
     dataAssignment=(outp, inp) => {
       outp.assignFromBits(inp.data.asBits.resize(outp.asBits.getWidth))
     }
   )
+  //--------
+  //val myDblLineBuf = WrPulseRdPipeRamSdpPipe(cfg=myVideoCfg.myMemCfg)
+  //val myWrPulse = cloneOf(myDblLineBuf.io.wrPulse)
+
+  //val myForkStmVec = StreamFork(
+  //  input=(
+  //    //io.push
+  //    myPushStm
+  //  ),
+  //  portCount=2,
+  //  synchronous=(
+  //    //true
+  //    false
+  //  ),
+  //)
+
+  ////myForkStmVec.head.ready := True
+  ////calcPosStmAdapterArr.last.io.infoPop.ready := (
+  ////  //io.push.fire
+  ////  myForkStmVec.last.fire
+  ////)
+
+  //myWrPulse.valid := (
+  //  //io.push.valid
+  //  //io.push.fire
+  //  myForkStmVec.head.valid
+  //)
+  //myWrPulse.data := (
+  //  //io.push.payload
+  //  myForkStmVec.head.payload
+  //)
+  ////println(
+  ////  s"test: "
+  ////  + s"${someSize2d} ${log2Up(someSize2d.x)} "
+  ////  + s"${myDblLineBuf.cfg.wordCount} "
+  ////  + s"${calcPos.io.info.pos.x.getWidth} "
+  ////  + s"${calcPos.io.info.pos.x.getWidth - cnt2dShift.x} "
+  ////  + s"${calcPos.io.info.pos.y.getWidth} "
+  ////  + s"${myDblLineBuf.io.wrPulse.addr.getWidth}"
+  ////)
+  //myWrPulse.addr := (
+  //  Cat(
+  //    //calcPosStmAdapterArr.last.io.infoPop.pos.y(cnt2dShift.y),
+  //    //(!rMyDblLineBufIdx),
+  //    //rMyDblLineBufIdx,
+  //    myInfoPopStm.last.pos.y(cnt2dShift.y),
+  //    myInfoPopStm.last.pos.x(
+  //      //calcPos.io.info.pos.x.high
+  //      //log2Up(someSize2d.x) + cnt2dShift.x - 1
+  //      log2Up(fbSize2d.x) + cnt2dShift.x - 1
+  //      downto cnt2dShift.x
+  //    ),
+  //  ).asUInt//.resize(myWrPulseStm.addr.getWidth)
+  //)
+  //myDblLineBuf.io.wrPulse <-< myWrPulse
+  //--------
 
 }
 
