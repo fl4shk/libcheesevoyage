@@ -1441,14 +1441,6 @@ extends Area {
                     tempMyUpExtDel.fwdCanDoIt(
                       zdx
                     )
-                  ) 
-                  && (
-                    History[Bool](
-                      that=True,
-                      when=upIsFiring,
-                      length=2,
-                      init=False,
-                    ).last
                   )
                 )
               } else {
@@ -1505,14 +1497,6 @@ extends Area {
                   //&& (
                   //  tempMyUpExtDel.valid(0)
                   //)
-                  && (
-                    History[Bool](
-                      that=True,
-                      when=upIsFiring,
-                      length=2,
-                      init=False,
-                    ).last
-                  )
                 )
               }
             }

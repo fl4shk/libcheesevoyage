@@ -810,7 +810,7 @@ case class WrPulseRdPipeRamSdpPipe[
         when (params.cMid0Front.up.isValid) {
           params.outp := params.inp
         }
-        //params.outp.myExt.modMemWord := params.getMyRdMemWordFunc(0, 0)
+        params.outp.myExt.modMemWord := params.getMyRdMemWordFunc(0, 0)
         params.outp.myExt.fwdCanDoIt.foreach(item => {
           item := False
         })
@@ -829,6 +829,9 @@ case class WrPulseRdPipeRamSdpPipe[
       rdAddrPayload.allowOverride
       //rdAddrPayload.data := io.rdAddrPipe
       rdAddrPayload.myExt.memAddr.head := inp.addr
+      //rdAddrPayload.myExt.memAddrFwdMmw.head.foreach(item => {
+      //  item := inp.addr
+      //})
       rdAddrPayload.myExt.rdMemWord.foreach(rdMemWord => {
         rdMemWord := rdMemWord.getZero
       })
@@ -841,19 +844,22 @@ case class WrPulseRdPipeRamSdpPipe[
 
     }
   )
-  val dMid0FrontToModFront = DirectLink(
+  val sMid0FrontToModFront = StageLink(
     up=pipeMem.mod.front.cMid0Front.head.down,
     down=pipeMem.io.modFront,
   )
-  pipeMem.myLinkArr += dMid0FrontToModFront
+  pipeMem.myLinkArr += sMid0FrontToModFront
   pipeMem.io.modFront(pipeMem.io.modBackPayload) := (
     pipeMem.io.modFront(pipeMem.mod.front.outpPipePayload)
   )
-  val dModFrontToModBack = DirectLink(
+  val fModFrontToModBack = ForkLink(
     up=pipeMem.io.modFront,
-    down=pipeMem.io.modBack,
+    downs=List(
+      pipeMem.io.modBack,
+      pipeMem.io.modBackFwd,
+    ),
   )
-  pipeMem.myLinkArr += dModFrontToModBack
+  pipeMem.myLinkArr += fModFrontToModBack
   pipeMem.io.back.driveTo(io.rdDataPipe)(
     con=(outp, node) => {
       //rdDataPipePayload := node(pipeMem.io.backPayload).myExt.modMemWord

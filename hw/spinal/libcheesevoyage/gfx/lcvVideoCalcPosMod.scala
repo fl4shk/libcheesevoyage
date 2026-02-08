@@ -321,24 +321,25 @@ case class LcvVideoDblLineBufWithCalcPosConfig(
     y=(someSize2d.y * (1 << cnt2dShift.y)),
   )
   val myMemWordCnt = (
-    //someSize2d.x //* (1 << cnt2dShift.x)
-    //* 2
+    ////someSize2d.x //* (1 << cnt2dShift.x)
+    ////* 2
 
-    // This *may* waste space but maybe not? It does round up to the
-    // nearest power of two, but I have a few comments about that:
-    // (1) It allows us to avoid using a multiplier for the address
-    //    calculation
-    // (2) FPGA Block RAM primitives are large enough
-    //    that maybe it's not a problem anyway?
-    // (3) I did some math, and even with a 1920x1080 resolution
-    //    (i.e. 1080p widescreen),
-    //    the calculation for a double-buffered line buffer only uses
-    //    4096 addresses. This becomes 16 kiB with 32 bpp colors
-    //    though. That's a big chunk of block RAM I guess? On the other
-    //    hand, you probably only need one of these double-buffered
-    //    line buffers.
-    (1 << log2Up(someSize2d.x))
-    * 2
+    //// This *may* waste space but maybe not? It does round up to the
+    //// nearest power of two, but I have a few comments about that:
+    //// (1) It allows us to avoid using a multiplier for the address
+    ////    calculation
+    //// (2) FPGA Block RAM primitives are large enough
+    ////    that maybe it's not a problem anyway?
+    //// (3) I did some math, and even with a 1920x1080 resolution
+    ////    (i.e. 1080p widescreen),
+    ////    the calculation for a double-buffered line buffer only uses
+    ////    4096 addresses. This becomes 16 kiB with 32 bpp colors
+    ////    though. That's a big chunk of block RAM I guess? On the other
+    ////    hand, you probably only need one of these double-buffered
+    ////    line buffers (i.e. two line buffers).
+    //(1 << log2Up(someSize2d.x))
+    //* 2
+    someSize2d.x
   )
   val myMemCfg = WrPulseRdPipeRamSdpPipeConfig(
     modType=Rgb(rgbCfg),
