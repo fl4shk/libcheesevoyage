@@ -108,65 +108,53 @@ case class LcvBusFramebufferCtrlIo(
   //--------
 }
 
-case class LcvBusFramebufferCtrlWithDblLineBuf(
+case class LcvBusFramebufferCtrl(
   cfg: LcvBusFramebufferConfig
 ) extends Component {
-  //--------
   def rgbCfg = cfg.rgbCfg
   def busCfg = cfg.busCfg
   def fbSize2d = cfg.fbSize2d
   def cnt2dShift = cfg.cnt2dShift
   def rgbUpWidth = 1 << log2Up(Rgb(c=rgbCfg).asBits.getWidth)
-  require(
-    busCfg.allowBurst
+  val myVideoCfg = LcvVideoDblLineBufWithCalcPosConfig(
+    rgbCfg=rgbCfg,
+    someSize2d=ElabVec2[Int](
+      x=fbSize2d.x,
+      y=(fbSize2d.y * (if (cfg.dblBuf) (2) else (1))),
+    ),
+    cnt2dShiftOne=cfg.cnt2dShiftOne
   )
+
+  //require(
+  //  busCfg.allowBurst
+  //)
   require(
     busCfg.dataWidth
     >= rgbUpWidth
   )
-  //require(
-  //  (fbSize2d.x % cfg.myBusBurstSizeMax) == 0,
-  //  s"fbSize2d.x:${fbSize2d.x} must be an exact integer multiple "
-  //  + s"of cfg.myBusBurstSizeMax:${cfg.myBusBurstSizeMax}"
-  //)
-  //--------
+
   val io = LcvBusFramebufferCtrlIo(cfg=cfg)
-  //--------
-  //val myH2dCalcPos = LcvVideoCalcPos(
-  //  someSize2d=fbSize2d
-  //)
-  val myDblLineBufEtc = LcvVideoDblLineBufWithCalcPos(
-    cfg=LcvVideoDblLineBufWithCalcPosConfig(
-      rgbCfg=rgbCfg,
-      someSize2d=ElabVec2[Int](
-        x=fbSize2d.x,
-        y=(fbSize2d.y * (if (cfg.dblBuf) (2) else (1))),
-      ),
-      cnt2dShiftOne=cfg.cnt2dShiftOne
+
+  val myH2dStm = Vec.fill(3)(
+    cloneOf(io.bus.h2dBus)
+  )
+
+  val calcPosStmAdapterArr = Array.fill(
+    //2 // maybe add this back when there's a line buffer?
+    1
+  )(
+    LcvVideoCalcPosStreamAdapter(
+      someSize2d=(
+        //someSize2d
+        myVideoCfg.myCalcPosSize2d
+      )
     )
   )
-  //val rH2dRawCnt2d = {
-  //  //Vec.fill(2)({
-  //    val temp = Reg(
-  //      DualTypeNumVec2(
-  //        dataTypeX=UInt(log2Up(fbSize2d.x + 1) + cnt2dShift.x bits),
-  //        dataTypeY=(
-  //          UInt(
-  //            (if (cfg.dblBuf) (1) else (0))
-  //            + (
-  //              log2Up(fbSize2d.y + 1) + cnt2dShift.y 
-  //            )
-  //            bits
-  //          )
-  //        ),
-  //      )
-  //    )
-  //    temp.init(temp.getZero)
-  //    temp
-  //  //})
-  //}
-  val myH2dRawCnt2d = myDblLineBufEtc.io.infoPop.pos
-  val myH2dNextCnt2d = myDblLineBufEtc.io.infoPop.nextPos
+  val myInfoPopStm = Vec.fill(calcPosStmAdapterArr.size)(
+    cloneOf(calcPosStmAdapterArr.head.io.infoPop)
+  )
+  val myH2dRawCnt2d = calcPosStmAdapterArr.head.io.infoPop.pos
+  val myH2dNextCnt2d = calcPosStmAdapterArr.head.io.infoPop.nextPos
   val myCnt2dRange = (
     ElabVec2(
       x=(myH2dRawCnt2d.x.high downto cnt2dShift.x),
@@ -189,32 +177,14 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
   //  x=rH2dRawCnt2d.x(myCnt2dRange.x),
   //  y=rH2dRawCnt2d.y(myCnt2dRange.y),
   //)
+  for (idx <- 0 until calcPosStmAdapterArr.size) {
+    myInfoPopStm(idx) <-/< calcPosStmAdapterArr(idx).io.infoPop
+  }
 
-  //--------
-  val myH2dStm = Vec.fill(4)(
-    cloneOf(io.bus.h2dBus)
-  )
-  val myHistH2dFire = History[Bool](
-    that=False,
-    when=myH2dStm.head.fire,
-    length=2,
-    init=True,
-  )
-  val myLongerHistH2dFire = History[Bool](
-    that=False,
-    when=myH2dStm.head.fire,
-    length=3,
-    init=True,
-  )
-  val myH2dThrowCond = Bool()
-  myH2dThrowCond := (
-    myHistH2dFire.last
-    //myLongerHistH2dFire.last
-  )
-  io.bus.h2dBus <-/< myH2dStm.last
-  myH2dStm(1) <-/< myH2dStm.head
-  myH2dStm(2) <-/< myH2dStm(1).throwWhen(myH2dThrowCond)
-  myH2dStm(2).translateInto(myH2dStm.last)(
+  io.bus.h2dBus << myH2dStm.last
+  val myH2dMaybeThrownStm = myH2dStm.head//.throwWhen
+  myH2dStm(1) <-/< myH2dMaybeThrownStm //myH2dStm.head
+  myH2dStm(1).translateInto(myH2dStm.last)(
     dataAssignment=(outp, inp) => {
       outp := inp
       outp.addr.allowOverride
@@ -225,263 +195,470 @@ case class LcvBusFramebufferCtrlWithDblLineBuf(
       //)
     }
   )
-  val myH2dAddrMult = (
-    //(rH2dMainCnt.y * fbSize2d.x) + rH2dMainCnt.x
-    (myH2dMainCnt.y * fbSize2d.x) + myH2dMainCnt.x
-    //(
-    //  myDblLineBufEtc.io.infoPop.pos.y * fbSize2d.y
-    //)
-    //+ myDblLineBufEtc.io.infoPop.pos.x
-  )
-  //val rSavedH2dAddrMult = (
-  //  Reg(cloneOf(myH2dAddrMult), init=myH2dAddrMult.getZero)
-  //)
-  val myHistH2dAddrMult = History[UInt](
-    that=myH2dAddrMult,
-    length=(
-      //3
-      1
-    ),
-    init=myH2dAddrMult.getZero,
-  )
-  val myCntH2dMax = (
-    fbSize2d.x * (1 << cnt2dShift.x)
-  )
-  val myCntH2dFireRstVal = (
-    //fbSize2d.x + 1 //- 2 //- 2
-    //fbSize2d.x - 1 //2 //+ (1 << cnt2dShift.x) //- 2 //- 2
-    //fbSize2d.x - 1//2//1//2 //+ (1 << cnt2dShift.x) //- 2 //- 2
-    myCntH2dMax - 1
-  )
-  val rCntH2dFire = (
+  val rFbAddrCnt = (
     Reg(UInt(
       log2Up(
-      //fbSize2d.x + 1
-        myCntH2dMax
-      ) + 1 bits
+        (
+          (
+            myVideoCfg.someSize2d.y * myVideoCfg.someSize2d.x
+          ) << (cnt2dShift.x + cnt2dShift.y)
+        )
+        + 1
+      ) bits
     ))
-    init(
-      myCntH2dFireRstVal
-      //fbSize2d.x - 1
-      //fbSize2d.x - 2
-    )
+    init(0x0)
   )
-  val myHistInfoPopFire = (
-    History[Bool](
-      that=True,
-      when=myDblLineBufEtc.io.infoPop.fire,
-      length=2,
-      init=False,
-    )
-  )
-  val myCntH2dFireRstCond = (
-    //myH2dMainCnt.y
-    //=== RegNextWhen(
-    //  (myH2dMainCnt.y + 1),
-    //  cond=myDblLineBufEtc.io.infoPop.fire,
-    //  init=myH2dMainCnt.y.getZero,
-    //)
-    (
-      myH2dMainNextCnt.y
-      === RegNextWhen(
-        (myH2dMainNextCnt.y + 1),
-        cond=myDblLineBufEtc.io.infoPop.fire,
-        init=myH2dMainNextCnt.y.getZero,
+  when (myH2dStm.head.fire) {
+    when (
+      rFbAddrCnt
+      < (
+        (
+          (
+            myVideoCfg.someSize2d.y * myVideoCfg.someSize2d.x
+          ) << (cnt2dShift.x + cnt2dShift.y)
+        ) - 1
       )
-      || myDblLineBufEtc.io.infoPop.posWillOverflow.y
-    )
-    && myDblLineBufEtc.io.infoPop.valid
-    //&& myDblLineBufEtc.io.infoPop.posWillOverflow.x
-    && myHistInfoPopFire.last
-  )
-
-  val mySeenH2dFire = Bool()
-  val rSavedSeenH2dFire = Reg(Bool(), init=False)
-  val stickySeenH2dFire = (
-    mySeenH2dFire
-    || rSavedSeenH2dFire
-  )
-  mySeenH2dFire := myH2dStm.head.fire//io.bus.h2dBus.fire //
-  when (mySeenH2dFire) {
-    rSavedSeenH2dFire := True
+    ) {
+      rFbAddrCnt := rFbAddrCnt + 1
+    } otherwise {
+      rFbAddrCnt := 0x0
+    }
   }
-  val mySeenInfoPopFire = Bool()
-  val rSavedSeenInfoPopFire = Reg(Bool(), init=False)
-  val stickySeenInfoPopFire = (
-    mySeenInfoPopFire
-    || rSavedSeenInfoPopFire
-  )
-  mySeenInfoPopFire := myDblLineBufEtc.io.infoPop.fire
-  when (mySeenInfoPopFire) {
-    rSavedSeenInfoPopFire := True
-  }
-
-  val mySeenPopFire = Bool()
-  val rSavedSeenPopFire = Reg(Bool(), init=False)
-  val stickySeenPopFire = (
-    mySeenPopFire
-    || rSavedSeenPopFire
-  )
-  mySeenPopFire := io.pop.fire
-  when (mySeenPopFire) {
-    rSavedSeenPopFire := True
-  }
-
-  when (  
-    //myH2dStm.head.fire
-    stickySeenH2dFire
-    && stickySeenInfoPopFire
-    && !rCntH2dFire.msb
-  ) {
-    rSavedSeenH2dFire := False
-    rSavedSeenInfoPopFire := False
-    rCntH2dFire := rCntH2dFire - 1
-  }
-  when (
-    myCntH2dFireRstCond
-    && myDblLineBufEtc.io.infoPop.fire
-  ) {
-    //rSavedSeenH2dFire := False
-    //rSavedSeenInfoPopFire := False
-    rCntH2dFire := myCntH2dFireRstVal //fbSize2d.x - 2//1
-  }
-
-  //val myTempH2dValidCond = (
-  //  myH2d
-  //)
-
-  val myTempH2dValidCond = (
-    myH2dMainCnt.x
-    === RegNextWhen(
-      myH2dMainCnt.x + 1,
-      cond=myDblLineBufEtc.io.infoPop.fire,
-      init=myH2dMainCnt.x.getZero,
-    )
-    || myH2dMainCnt.x === 0x0
-    || myHistInfoPopFire.last
-  )
-
-  val myTempH2dValidMux = (
-    Mux[Bool](
-      myDblLineBufEtc.io.infoPop.valid,
-      myCntH2dFireRstCond,
-      True
-      //False
-    )
-  )
-  myH2dStm.head.valid := (
-    //(
-    //  //True//False
-    //  //rose(
-    //    //myDblLineBufEtc.io.infoPop.valid
-    //    myDblLineBufEtc.io.infoPop.fire
-    //  //)
-    //  //|| (
-    //  //  myDblLineBufEtc.io.infoPop.valid
-    //  //  && !myH2dStm.head.ready
-    //  //)
-    //  || 
-    //  History[Bool](
-    //    that=False,
-    //    when=myH2dStm.head.fire,
-    //    length=2,
-    //    init=True,
-    //  ).last
-    //)
-    myHistH2dFire.last
-    //!rCntH2dFire.msb
-    ||
-    (
-      (
-        !rCntH2dFire.msb
+  myInfoPopStm.head.translateInto(myH2dStm.head)(
+    dataAssignment=(outp, inp) => {
+      //myH2dStm.head.valid := (
+      //  True // temporary!
+      //)
+      //outp.addr := (
+      //  Cat(
+      //    //(rCnt2d.head.y(myCnt2dRange.y) * fbSize2d.x)
+      //    //+ rCnt2d.head.x(myCnt2dRange.x)
+      //    myHistH2dAddrMult.last,
+      //    //U(s"${log2Up(busCfg.dataWidth / 8)}'d0"),
+      //    //U(s"${log2Up(Rgb(rgbCfg).asBits.getWidth / 8)}'d0"),
+      //    U(s"${log2Up(rgbUpWidth / 8)}'d0"),
+      //  ).asUInt.resize(myH2dStm.head.addr.getWidth)
+      //  //Cat(
+      //  //  cfg.fbMmapCfg.addrSliceValUInt,
+      //  //  rCnt.x,
+      //  //  U(s"${busCfg.dataWidth / 8}'d0"),
+      //  //).asUInt.resize(myH2dStm.head.addr.getWidth)
+      //)
+      //when (myH2dStm.head.fire) {
+      //}
+      outp.addr := (
+        Cat(
+          rFbAddrCnt(
+            rFbAddrCnt.high
+            downto cnt2dShift.x + cnt2dShift.y
+          ),
+          U(s"${log2Up(rgbUpWidth / 8)}'d0"),
+        ).asUInt.resize(outp.addr.getWidth)
       )
-      && stickySeenInfoPopFire//myDblLineBufEtc.io.infoPop.valid
-      && myTempH2dValidCond
-      //&& myDblLineBufEtc.io.infoPop.fire
-      //&& myTempH2dValidMux
-    )
+      outp.data := 0x0
+      outp.byteSize := (
+        //log2Up(busCfg.dataWidth / 8)
+        //log2Up(Rgb(rgbCfg).asBits.getWidth / 8)
+        log2Up(rgbUpWidth / 8)
+      )
+      outp.isWrite := False
+
+      if (busCfg.allowBurst) {
+        outp.burstFirst := False//True
+        outp.burstCnt := 0x0//busCfg.maxBurstSizeMinus1
+        outp.burstLast := False
+      }
+    }
   )
-  //--------
-  val myD2hStm = Vec.fill(2)(
+  val myD2hStm = Vec.fill(
+    2
+  )(
     cloneOf(io.bus.d2hBus)
   )
-  //val myHistD2hLastFire = (
-  //  History[Bool](
-  //    that=True
-  //    when=myD2hStm.last.fire,
-  //    length=2
-  //  )
-  //)
-  val myHistD2hFire = (
-    History[Bool](
-      that=False,
-      when=myD2hStm.head.fire,
-      length=2,
-      init=True,
-    )
-  )
-  //--------
-  myDblLineBufEtc.io.infoPop.ready := (
-    //myH2dStm.head.fire
-    //io.pop.fire
-    myHistD2hFire.last
-    || stickySeenPopFire
-  )
-  when (myDblLineBufEtc.io.infoPop.fire) {
-    rSavedSeenPopFire := False
-  }
-
-  myH2dStm.head.addr := (
-    Cat(
-      //(rCnt2d.head.y(myCnt2dRange.y) * fbSize2d.x)
-      //+ rCnt2d.head.x(myCnt2dRange.x)
-      myHistH2dAddrMult.last,
-      //U(s"${log2Up(busCfg.dataWidth / 8)}'d0"),
-      //U(s"${log2Up(Rgb(rgbCfg).asBits.getWidth / 8)}'d0"),
-      U(s"${log2Up(rgbUpWidth / 8)}'d0"),
-    ).asUInt.resize(myH2dStm.head.addr.getWidth)
-    //Cat(
-    //  cfg.fbMmapCfg.addrSliceValUInt,
-    //  rCnt.x,
-    //  U(s"${busCfg.dataWidth / 8}'d0"),
-    //).asUInt.resize(myH2dStm.head.addr.getWidth)
-  )
-  myH2dStm.head.data := 0x0
-  myH2dStm.head.byteSize := (
-    //log2Up(busCfg.dataWidth / 8)
-    //log2Up(Rgb(rgbCfg).asBits.getWidth / 8)
-    log2Up(rgbUpWidth / 8)
-  )
-  myH2dStm.head.isWrite := False
-
-  if (busCfg.allowBurst) {
-    myH2dStm.head.burstFirst := False//True
-    myH2dStm.head.burstCnt := 0x0//busCfg.maxBurstSizeMinus1
-    myH2dStm.head.burstLast := False
-  }
-  //--------
   myD2hStm.head <-/< io.bus.d2hBus
-  //myD2hStm.ready := True
-
-  //val myD2hThrowCond = Bool()
-  myD2hStm.last <-/< myD2hStm.head//.throwWhen(myD2hThrowCond)
-  myD2hStm.last.ready := True
-
-  //myD2hThrowCond := myHistD2hFire.last
-
-  myDblLineBufEtc.io.push.valid := (
-    myD2hStm.last.valid
+  myD2hStm.last << myD2hStm.head
+  myD2hStm.last.translateInto(io.pop)(
+    dataAssignment=(outp, inp) => {
+      outp.assignFromBits(inp.data.asBits.resize(outp.asBits.getWidth))
+    }
   )
 
-  myDblLineBufEtc.io.push.payload.assignFromBits(
-    myD2hStm.last.data.resize(
-      myDblLineBufEtc.io.push.payload.asBits.getWidth
-    ).asBits
-  )
-  //io.pop <-/< myDblLineBufEtc.io.pop
-  io.pop << myDblLineBufEtc.io.pop
-  //--------
 }
+
+//case class LcvBusFramebufferCtrlWithDblLineBuf(
+//  cfg: LcvBusFramebufferConfig
+//) extends Component {
+//  //--------
+//  def rgbCfg = cfg.rgbCfg
+//  def busCfg = cfg.busCfg
+//  def fbSize2d = cfg.fbSize2d
+//  def cnt2dShift = cfg.cnt2dShift
+//  def rgbUpWidth = 1 << log2Up(Rgb(c=rgbCfg).asBits.getWidth)
+//  require(
+//    busCfg.allowBurst
+//  )
+//  require(
+//    busCfg.dataWidth
+//    >= rgbUpWidth
+//  )
+//  //require(
+//  //  (fbSize2d.x % cfg.myBusBurstSizeMax) == 0,
+//  //  s"fbSize2d.x:${fbSize2d.x} must be an exact integer multiple "
+//  //  + s"of cfg.myBusBurstSizeMax:${cfg.myBusBurstSizeMax}"
+//  //)
+//  //--------
+//  val io = LcvBusFramebufferCtrlIo(cfg=cfg)
+//  //--------
+//  //val myH2dCalcPos = LcvVideoCalcPos(
+//  //  someSize2d=fbSize2d
+//  //)
+//  val myDblLineBufEtc = LcvVideoDblLineBufWithCalcPos(
+//    cfg=LcvVideoDblLineBufWithCalcPosConfig(
+//      rgbCfg=rgbCfg,
+//      someSize2d=ElabVec2[Int](
+//        x=fbSize2d.x,
+//        y=(fbSize2d.y * (if (cfg.dblBuf) (2) else (1))),
+//      ),
+//      cnt2dShiftOne=cfg.cnt2dShiftOne
+//    )
+//  )
+//  //val rH2dRawCnt2d = {
+//  //  //Vec.fill(2)({
+//  //    val temp = Reg(
+//  //      DualTypeNumVec2(
+//  //        dataTypeX=UInt(log2Up(fbSize2d.x + 1) + cnt2dShift.x bits),
+//  //        dataTypeY=(
+//  //          UInt(
+//  //            (if (cfg.dblBuf) (1) else (0))
+//  //            + (
+//  //              log2Up(fbSize2d.y + 1) + cnt2dShift.y 
+//  //            )
+//  //            bits
+//  //          )
+//  //        ),
+//  //      )
+//  //    )
+//  //    temp.init(temp.getZero)
+//  //    temp
+//  //  //})
+//  //}
+//  val myH2dRawCnt2d = myDblLineBufEtc.io.infoPop.pos
+//  val myH2dNextCnt2d = myDblLineBufEtc.io.infoPop.nextPos
+//  val myCnt2dRange = (
+//    ElabVec2(
+//      x=(myH2dRawCnt2d.x.high downto cnt2dShift.x),
+//      y=(myH2dRawCnt2d.y.high downto cnt2dShift.y),
+//    )
+//    //ElabVec2(
+//    //  x=(rH2dRawCnt2d.x.high downto cnt2dShift.x),
+//    //  y=(rH2dRawCnt2d.y.high downto cnt2dShift.y),
+//    //)
+//  )
+//  val myH2dMainCnt = ElabDualTypeVec2(
+//    x=myH2dRawCnt2d.x(myCnt2dRange.x),
+//    y=myH2dRawCnt2d.y(myCnt2dRange.y),
+//  )
+//  val myH2dMainNextCnt = ElabDualTypeVec2(
+//    x=myH2dNextCnt2d.x(myCnt2dRange.x),
+//    y=myH2dNextCnt2d.y(myCnt2dRange.y),
+//  )
+//  //val rH2dMainCnt = ElabDualTypeVec2(
+//  //  x=rH2dRawCnt2d.x(myCnt2dRange.x),
+//  //  y=rH2dRawCnt2d.y(myCnt2dRange.y),
+//  //)
+//
+//  //--------
+//  val myH2dStm = Vec.fill(4)(
+//    cloneOf(io.bus.h2dBus)
+//  )
+//  val myHistH2dFire = History[Bool](
+//    that=False,
+//    when=myH2dStm.head.fire,
+//    length=2,
+//    init=True,
+//  )
+//  val myLongerHistH2dFire = History[Bool](
+//    that=False,
+//    when=myH2dStm.head.fire,
+//    length=3,
+//    init=True,
+//  )
+//  val myH2dThrowCond = Bool()
+//  myH2dThrowCond := (
+//    myHistH2dFire.last
+//    //myLongerHistH2dFire.last
+//  )
+//  io.bus.h2dBus <-/< myH2dStm.last
+//  myH2dStm(1) <-/< myH2dStm.head
+//  myH2dStm(2) <-/< myH2dStm(1).throwWhen(myH2dThrowCond)
+//  myH2dStm(2).translateInto(myH2dStm.last)(
+//    dataAssignment=(outp, inp) => {
+//      outp := inp
+//      outp.addr.allowOverride
+//      outp.addr(cfg.fbMmapCfg.addrSliceRange) := (
+//        cfg.fbMmapCfg.addrSliceValUInt
+//      )
+//      //outp.addr(
+//      //)
+//    }
+//  )
+//  val myH2dAddrMult = (
+//    //(rH2dMainCnt.y * fbSize2d.x) + rH2dMainCnt.x
+//    (myH2dMainCnt.y * fbSize2d.x) + myH2dMainCnt.x
+//    //(
+//    //  myDblLineBufEtc.io.infoPop.pos.y * fbSize2d.y
+//    //)
+//    //+ myDblLineBufEtc.io.infoPop.pos.x
+//  )
+//  //val rSavedH2dAddrMult = (
+//  //  Reg(cloneOf(myH2dAddrMult), init=myH2dAddrMult.getZero)
+//  //)
+//  val myHistH2dAddrMult = History[UInt](
+//    that=myH2dAddrMult,
+//    length=(
+//      //3
+//      1
+//    ),
+//    init=myH2dAddrMult.getZero,
+//  )
+//  val myCntH2dMax = (
+//    fbSize2d.x * (1 << cnt2dShift.x)
+//  )
+//  val myCntH2dFireRstVal = (
+//    //fbSize2d.x + 1 //- 2 //- 2
+//    //fbSize2d.x - 1 //2 //+ (1 << cnt2dShift.x) //- 2 //- 2
+//    //fbSize2d.x - 1//2//1//2 //+ (1 << cnt2dShift.x) //- 2 //- 2
+//    myCntH2dMax - 1
+//  )
+//  val rCntH2dFire = (
+//    Reg(UInt(
+//      log2Up(
+//      //fbSize2d.x + 1
+//        myCntH2dMax
+//      ) + 1 bits
+//    ))
+//    init(
+//      myCntH2dFireRstVal
+//      //fbSize2d.x - 1
+//      //fbSize2d.x - 2
+//    )
+//  )
+//  val myHistInfoPopFire = (
+//    History[Bool](
+//      that=True,
+//      when=myDblLineBufEtc.io.infoPop.fire,
+//      length=2,
+//      init=False,
+//    )
+//  )
+//  val myCntH2dFireRstCond = (
+//    //myH2dMainCnt.y
+//    //=== RegNextWhen(
+//    //  (myH2dMainCnt.y + 1),
+//    //  cond=myDblLineBufEtc.io.infoPop.fire,
+//    //  init=myH2dMainCnt.y.getZero,
+//    //)
+//    (
+//      myH2dMainNextCnt.y
+//      === RegNextWhen(
+//        (myH2dMainNextCnt.y + 1),
+//        cond=myDblLineBufEtc.io.infoPop.fire,
+//        init=myH2dMainNextCnt.y.getZero,
+//      )
+//      || myDblLineBufEtc.io.infoPop.posWillOverflow.y
+//    )
+//    && myDblLineBufEtc.io.infoPop.valid
+//    //&& myDblLineBufEtc.io.infoPop.posWillOverflow.x
+//    && myHistInfoPopFire.last
+//  )
+//
+//  val mySeenH2dFire = Bool()
+//  val rSavedSeenH2dFire = Reg(Bool(), init=False)
+//  val stickySeenH2dFire = (
+//    mySeenH2dFire
+//    || rSavedSeenH2dFire
+//  )
+//  mySeenH2dFire := myH2dStm.head.fire//io.bus.h2dBus.fire //
+//  when (mySeenH2dFire) {
+//    rSavedSeenH2dFire := True
+//  }
+//  val mySeenInfoPopFire = Bool()
+//  val rSavedSeenInfoPopFire = Reg(Bool(), init=False)
+//  val stickySeenInfoPopFire = (
+//    mySeenInfoPopFire
+//    || rSavedSeenInfoPopFire
+//  )
+//  mySeenInfoPopFire := myDblLineBufEtc.io.infoPop.fire
+//  when (mySeenInfoPopFire) {
+//    rSavedSeenInfoPopFire := True
+//  }
+//
+//  val mySeenPopFire = Bool()
+//  val rSavedSeenPopFire = Reg(Bool(), init=False)
+//  val stickySeenPopFire = (
+//    mySeenPopFire
+//    || rSavedSeenPopFire
+//  )
+//  mySeenPopFire := io.pop.fire
+//  when (mySeenPopFire) {
+//    rSavedSeenPopFire := True
+//  }
+//
+//  when (  
+//    //myH2dStm.head.fire
+//    stickySeenH2dFire
+//    && stickySeenInfoPopFire
+//    && !rCntH2dFire.msb
+//  ) {
+//    rSavedSeenH2dFire := False
+//    rSavedSeenInfoPopFire := False
+//    rCntH2dFire := rCntH2dFire - 1
+//  }
+//  when (
+//    myCntH2dFireRstCond
+//    && myDblLineBufEtc.io.infoPop.fire
+//  ) {
+//    //rSavedSeenH2dFire := False
+//    //rSavedSeenInfoPopFire := False
+//    rCntH2dFire := myCntH2dFireRstVal //fbSize2d.x - 2//1
+//  }
+//
+//  //val myTempH2dValidCond = (
+//  //  myH2d
+//  //)
+//
+//  val myTempH2dValidCond = (
+//    myH2dMainCnt.x
+//    === RegNextWhen(
+//      myH2dMainCnt.x + 1,
+//      cond=myDblLineBufEtc.io.infoPop.fire,
+//      init=myH2dMainCnt.x.getZero,
+//    )
+//    //|| myH2dMainCnt.x === 0x0
+//    || myHistInfoPopFire.last
+//  )
+//
+//  val myTempH2dValidMux = (
+//    Mux[Bool](
+//      myDblLineBufEtc.io.infoPop.valid,
+//      myCntH2dFireRstCond,
+//      True
+//      //False
+//    )
+//  )
+//  myH2dStm.head.valid := (
+//    //(
+//    //  //True//False
+//    //  //rose(
+//    //    //myDblLineBufEtc.io.infoPop.valid
+//    //    myDblLineBufEtc.io.infoPop.fire
+//    //  //)
+//    //  //|| (
+//    //  //  myDblLineBufEtc.io.infoPop.valid
+//    //  //  && !myH2dStm.head.ready
+//    //  //)
+//    //  || 
+//    //  History[Bool](
+//    //    that=False,
+//    //    when=myH2dStm.head.fire,
+//    //    length=2,
+//    //    init=True,
+//    //  ).last
+//    //)
+//    myHistH2dFire.last
+//    //!rCntH2dFire.msb
+//    ||
+//    (
+//      (
+//        !rCntH2dFire.msb
+//      )
+//      && stickySeenInfoPopFire//myDblLineBufEtc.io.infoPop.valid
+//      && myTempH2dValidCond
+//      //&& myDblLineBufEtc.io.infoPop.fire
+//      //&& myTempH2dValidMux
+//    )
+//  )
+//  //--------
+//  val myD2hStm = Vec.fill(2)(
+//    cloneOf(io.bus.d2hBus)
+//  )
+//  //val myHistD2hLastFire = (
+//  //  History[Bool](
+//  //    that=True
+//  //    when=myD2hStm.last.fire,
+//  //    length=2
+//  //  )
+//  //)
+//  val myHistD2hFire = (
+//    History[Bool](
+//      that=False,
+//      when=myD2hStm.head.fire,
+//      length=2,
+//      init=True,
+//    )
+//  )
+//  //--------
+//  myDblLineBufEtc.io.infoPop.ready := (
+//    //myH2dStm.head.fire
+//    //io.pop.fire
+//    myHistD2hFire.last
+//    || stickySeenPopFire
+//  )
+//  when (myDblLineBufEtc.io.infoPop.fire) {
+//    rSavedSeenPopFire := False
+//  }
+//
+//  myH2dStm.head.addr := (
+//    Cat(
+//      //(rCnt2d.head.y(myCnt2dRange.y) * fbSize2d.x)
+//      //+ rCnt2d.head.x(myCnt2dRange.x)
+//      myHistH2dAddrMult.last,
+//      //U(s"${log2Up(busCfg.dataWidth / 8)}'d0"),
+//      //U(s"${log2Up(Rgb(rgbCfg).asBits.getWidth / 8)}'d0"),
+//      U(s"${log2Up(rgbUpWidth / 8)}'d0"),
+//    ).asUInt.resize(myH2dStm.head.addr.getWidth)
+//    //Cat(
+//    //  cfg.fbMmapCfg.addrSliceValUInt,
+//    //  rCnt.x,
+//    //  U(s"${busCfg.dataWidth / 8}'d0"),
+//    //).asUInt.resize(myH2dStm.head.addr.getWidth)
+//  )
+//  myH2dStm.head.data := 0x0
+//  myH2dStm.head.byteSize := (
+//    //log2Up(busCfg.dataWidth / 8)
+//    //log2Up(Rgb(rgbCfg).asBits.getWidth / 8)
+//    log2Up(rgbUpWidth / 8)
+//  )
+//  myH2dStm.head.isWrite := False
+//
+//  if (busCfg.allowBurst) {
+//    myH2dStm.head.burstFirst := False//True
+//    myH2dStm.head.burstCnt := 0x0//busCfg.maxBurstSizeMinus1
+//    myH2dStm.head.burstLast := False
+//  }
+//  //--------
+//  myD2hStm.head <-/< io.bus.d2hBus
+//  //myD2hStm.ready := True
+//
+//  //val myD2hThrowCond = Bool()
+//  myD2hStm.last <-/< myD2hStm.head//.throwWhen(myD2hThrowCond)
+//  myD2hStm.last.ready := True
+//
+//  //myD2hThrowCond := myHistD2hFire.last
+//
+//  myDblLineBufEtc.io.push.valid := (
+//    myD2hStm.last.valid
+//  )
+//
+//  myDblLineBufEtc.io.push.payload.assignFromBits(
+//    myD2hStm.last.data.resize(
+//      myDblLineBufEtc.io.push.payload.asBits.getWidth
+//    ).asBits
+//  )
+//  //io.pop <-/< myDblLineBufEtc.io.pop
+//  io.pop << myDblLineBufEtc.io.pop
+//  //--------
+//}
 
 //case class LcvBusFramebufferCtrlDualCntWithBurstWithLineBuf(
 //  cfg: LcvBusFramebufferConfig

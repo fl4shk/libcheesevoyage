@@ -811,6 +811,9 @@ case class WrPulseRdPipeRamSdpPipe[
           params.outp := params.inp
         }
         //params.outp.myExt.modMemWord := params.getMyRdMemWordFunc(0, 0)
+        params.outp.myExt.fwdCanDoIt.foreach(item => {
+          item := False
+        })
         params.outp.myExt.modMemWordValid.foreach(mmwValidItem => {
           mmwValidItem := False
         })

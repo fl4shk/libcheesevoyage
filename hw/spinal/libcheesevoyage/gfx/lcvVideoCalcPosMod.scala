@@ -362,312 +362,312 @@ case class LcvVideoDblLineBufWithCalcPosConfig(
   )
 }
 
-case class LcvVideoDblLineBufWithCalcPosIo(
-  cfg: LcvVideoDblLineBufWithCalcPosConfig
-) extends Bundle {
-  //val wrEn = in(Bool())
-  //val wrData = in(Rgb(cfg.rgbCfg))
-  def rgbCfg = cfg.rgbCfg
-
-  val push = slave(
-    //Flow(Rgb(rgbCfg))
-    Stream(Rgb(rgbCfg))
-  )
-  val pop = master(Stream(Rgb(rgbCfg)))
-
-  val infoPop = master(
-    Stream(LcvVideoPosInfo(someSize2d=cfg.myCalcPosSize2d))
-  )
-  //val info = out(LcvVideoPosInfo(someSize2d=cfg.myCalcPosSize2d))
-}
-
-case class LcvVideoDblLineBufWithCalcPos(
-  cfg: LcvVideoDblLineBufWithCalcPosConfig
-) extends Component {
-  def rgbCfg = cfg.rgbCfg
-  def someSize2d = cfg.someSize2d
-  def cnt2dShift = cfg.cnt2dShift
-  def myCalcPosSize2d = cfg.myCalcPosSize2d
-  //--------
-  val io = LcvVideoDblLineBufWithCalcPosIo(cfg=cfg)
-  //--------
-  //val calcPos = LcvVideoCalcPos(
-  //  someSize2d=myCalcPosSize2d
-  //)
-  val calcPosStmAdapterArr = Array.fill(2)(
-    LcvVideoCalcPosStreamAdapter(
-      someSize2d=(
-        //someSize2d
-        cfg.myCalcPosSize2d
-      )
-    )
-  )
-  //val myRawCnt2d = io.infoPop.pos
-  //val myCnt2dRange = (
-  //  ElabVec2(
-  //    x=(myRawCnt2d.x.high downto cnt2dShift.x),
-  //    y=(myRawCnt2d.y.high downto cnt2dShift.y),
-  //  )
-  //  //ElabVec2(
-  //  //  x=(rRawCnt2d.x.high downto cnt2dShift.x),
-  //  //  y=(rRawCnt2d.y.high downto cnt2dShift.y),
-  //  //)
-  //)
-  //val myMainCnt = ElabDualTypeVec2(
-  //  x=myRawCnt2d.x(myCnt2dRange.x),
-  //  y=myRawCnt2d.y(myCnt2dRange.y),
-  //)
-  io.infoPop << calcPosStmAdapterArr.head.io.infoPop
-  //calcPosStmAdapterArr.last.io.infoPop.ready := (
-  //  io.push.fire
-  //)
-  //--------
-  val mem = WrPulseRdPipeRamSdpPipe(cfg=cfg.myMemCfg)
-  val myWrPulse = cloneOf(mem.io.wrPulse)
-
-  val myForkStmVec = StreamFork(
-    input=io.push,
-    portCount=2,
-    synchronous=(
-      //true
-      false
-    ),
-  )
-
-  myForkStmVec.head.ready := True
-  //calcPosStmAdapterArr.last.io.infoPop.ready := (
-  //  //io.push.fire
-  //  myForkStmVec.last.fire
-  //)
-
-  myWrPulse.valid := (
-    //io.push.valid
-    //io.push.fire
-    myForkStmVec.head.valid
-  )
-  myWrPulse.data := (
-    //io.push.payload
-    myForkStmVec.head.payload
-  )
-  //println(
-  //  s"test: "
-  //  + s"${someSize2d} ${log2Up(someSize2d.x)} "
-  //  + s"${mem.cfg.wordCount} "
-  //  + s"${calcPos.io.info.pos.x.getWidth} "
-  //  + s"${calcPos.io.info.pos.x.getWidth - cnt2dShift.x} "
-  //  + s"${calcPos.io.info.pos.y.getWidth} "
-  //  + s"${mem.io.wrPulse.addr.getWidth}"
-  //)
-  val rMyDblLineBufIdx = Reg(Bool(), init=False)
-  myWrPulse.addr := (
-    //Cat(
-    //  calcPos.io.info.pos.y(cnt2dShift.y),
-    //  calcPos.io.info.pos.x(
-    //    //calcPos.io.info.pos.x.high
-    //    log2Up(someSize2d.x) + cnt2dShift.x - 1
-    //    downto cnt2dShift.x
-    //  ),
-    //).asUInt//.resize(myWrPulseStm.addr.getWidth)
-    Cat(
-      //calcPosStmAdapterArr.last.io.infoPop.pos.y(cnt2dShift.y),
-      rMyDblLineBufIdx,
-      calcPosStmAdapterArr.last.io.infoPop.pos.x(
-        //calcPos.io.info.pos.x.high
-        log2Up(someSize2d.x) + cnt2dShift.x - 1
-        downto cnt2dShift.x
-      ),
-    ).asUInt//.resize(myWrPulseStm.addr.getWidth)
-  )
-
-  mem.io.wrPulse <-< myWrPulse
-
-  val myRdAddrPipeStm = Vec.fill(2)(
-    cloneOf(mem.io.rdAddrPipe)
-  )
-  //if (cnt2dShift.x > 0) {
-  //  myRdAddrPipeStm.last <-/< myRdAddrPipeStm.head.repeat(
-  //    times=((1 << cnt2dShift.x) - 1)
-  //  )._1
-  //} else {
-    myRdAddrPipeStm.last << myRdAddrPipeStm.head
-  //}
-
-  //object State extends SpinalEnum(defaultEncoding=binaryOneHot) {
-  //  val
-  //    NO_DUPL,
-  //    WITH_DUPL
-  //    = newElement();
-  //}
-  //val rState = (
-  //  Reg(State())
-  //  init(State.NO_DUPL)
-  //)
-  val myJoinStm = 
-  calcPosStmAdapterArr.last.io.infoPop.ready := (
-    myRdAddrPipeStm.head.fire
-    //Mux(
-    //  rState === State.NO_DUPL,
-    //  io.push.fire,
-    //  myRdAddrPipeStm.head.fire
-    //)
-  )
-
-  mem.io.rdAddrPipe <-/< myRdAddrPipeStm.last
-  val myReptRdAddrPipeStm = cloneOf(myForkStmVec.last)
-  myReptRdAddrPipeStm.valid := True
-  val rMyMuxSel = (
-    RegNextWhen(
-      (
-        calcPosStmAdapterArr.last.io.infoPop.nextPos.y(
-          cnt2dShift.y - 1 downto 0
-        )
-        //> 0
-        === ((1 << cnt2dShift.y) - 1)
-      ),
-      cond=calcPosStmAdapterArr.last.io.infoPop.fire,
-      init=False,
-    )
-  )
-  when (
-    //rMyMuxSel
-    //RegNextWhen(
-      (
-        calcPosStmAdapterArr.last.io.infoPop.nextPos.y(
-          cnt2dShift.y - 1 downto 0
-        )
-        //> 0
-        === ((1 << cnt2dShift.y) - 1)
-      )//,
-    //  cond=calcPosStmAdapterArr.last.io.infoPop.fire,
-    //  init=False,
-    //)
-    && calcPosStmAdapterArr.last.io.infoPop.posWillOverflow.x
-    && calcPosStmAdapterArr.last.io.infoPop.fire
-  ) {
-    rMyDblLineBufIdx := !rMyDblLineBufIdx
-  }
-  val myMuxStm = StreamMux(
-    select=Cat(
-      rMyMuxSel
-    ).asUInt,
-    inputs=List(
-      myForkStmVec.last,
-      myReptRdAddrPipeStm,
-    )
-  )
-  myMuxStm.translateInto(myRdAddrPipeStm.head)(
-    dataAssignment=(outp, inp) => {
-      outp.data := outp.data.getZero
-      outp.addr := (
-        //Cat(
-        //  (!calcPos.io.info.pos.y(cnt2dShift.y)),
-        //  calcPos.io.info.pos.x(
-        //    //calcPos.io.info.pos.x.high
-        //    log2Up(someSize2d.x) + cnt2dShift.x - 1
-        //    downto cnt2dShift.x
-        //  ),
-        //).asUInt//.resize(myRdAddrPipeStm.addr.getWidth)
-        Cat(
-          //(!calcPosStmAdapterArr.last.io.infoPop.pos.y(cnt2dShift.y)),
-          //(calcPosStmAdapterArr.last.io.infoPop.pastPos.y(cnt2dShift.y)),
-          !rMyDblLineBufIdx,
-          calcPosStmAdapterArr.last.io.infoPop.pos.x(
-            //calcPos.io.info.pos.x.high
-            log2Up(someSize2d.x) + cnt2dShift.x - 1
-            downto cnt2dShift.x
-          ),
-        ).asUInt//.resize(myWrPulseStm.addr.getWidth)
-      )
-    }
-  )
-  io.pop <-/< mem.io.rdDataPipe
-
-  //myRdAddrPipeStm.valid := (
-  //  //io.push.valid
-  //  //|| calcPos.io.en
-  //  io.push.fire
-  //)
-
-  //myRdAddrPipeStm.data := myRdAddrPipeStm.data.getZero
-  //myRdAddrPipeStm.addr := (
-  //  //Cat(
-  //  //  (!calcPos.io.info.pos.y(cnt2dShift.y)),
-  //  //  calcPos.io.info.pos.x(
-  //  //    //calcPos.io.info.pos.x.high
-  //  //    log2Up(someSize2d.x) + cnt2dShift.x - 1
-  //  //    downto cnt2dShift.x
-  //  //  ),
-  //  //).asUInt//.resize(myRdAddrPipeStm.addr.getWidth)
-  //  Cat(
-  //    (!calcPosStmAdapter.io.infoPop.pos.y(cnt2dShift.y)), //    calcPosStmAdapter.io.infoPop.pos.x(
-  //      //calcPos.io.info.pos.x.high
-  //      log2Up(someSize2d.x) + cnt2dShift.x - 1
-  //      downto cnt2dShift.x
-  //    ),
-  //  ).asUInt//.resize(myWrPulseStm.addr.getWidth)
-  //)
-
-  //io.pop <-/< mem.io.rdDataPipe
-  //--------
-  //val mySeenWrPulseFire = Bool()
-  //val rSavedSeenWrPulseFire = Reg(Bool(), init=False)
-  //val stickySeenWrPulseFire = (
-  //  mySeenWrPulseFire
-  //  || rSavedSeenWrPulseFire
-  //)
-
-  //mySeenWrPulseFire := mem.io.wrPulse.fire //io.push.fire
-  //when (mySeenWrPulseFire) {
-  //  rSavedSeenWrPulseFire := True
-  //}
-
-  //val mySeenRdAddrPipeFire = Bool()
-  //val rSavedSeenRdAddrPipeFire = Reg(Bool(), init=False)
-  //val stickySeenRdAddrPipeFire = (
-  //  mySeenRdAddrPipeFire
-  //  || rSavedSeenRdAddrPipeFire
-  //)
-
-  //mySeenRdAddrPipeFire := mem.io.rdAddrPipe.fire
-  //when (mySeenRdAddrPipeFire) {
-  //  rSavedSeenRdAddrPipeFire := True
-  //}
-  //val myInfoPopStm = cloneOf(io.infoPop)
-
-  //myInfoPopStm.valid := (
-  //  //stickySeenWrPulseFire
-  //  //&& 
-  //  stickySeenRdAddrPipeFire
-  //)
-  //myInfoPopStm.payload := calcPos.io.info
-  //io.infoPop <-/< myInfoPopStm
-  ////io.infoPop << myInfoPopStm
-
-  //calcPos.io.en := (
-  //  //History[Bool](
-  //  //  that=False,
-  //  //  length=3,
-  //  //  when=stickySeenWrPulseFire,
-  //  //  init=True,
-  //  //).last
-  //  //|| 
-  //  io.infoPop.fire
-  //)
-  ////calcPos.io.en := (
-  ////  RegNext(
-  ////    (
-  ////      stickySeenWrPulseFire
-  ////      && stickySeenRdAddrPipeFire
-  ////    ),
-  ////    init=False
-  ////  )
-  ////)
-
-  //when (calcPos.io.en) {
-  //  rSavedSeenWrPulseFire := False
-  //  rSavedSeenRdAddrPipeFire := False
-  //}
-  //--------
-  //--------
-}
+//case class LcvVideoDblLineBufWithCalcPosIo(
+//  cfg: LcvVideoDblLineBufWithCalcPosConfig
+//) extends Bundle {
+//  //val wrEn = in(Bool())
+//  //val wrData = in(Rgb(cfg.rgbCfg))
+//  def rgbCfg = cfg.rgbCfg
+//
+//  val push = slave(
+//    //Flow(Rgb(rgbCfg))
+//    Stream(Rgb(rgbCfg))
+//  )
+//  val pop = master(Stream(Rgb(rgbCfg)))
+//
+//  val infoPop = master(
+//    Stream(LcvVideoPosInfo(someSize2d=cfg.myCalcPosSize2d))
+//  )
+//  //val info = out(LcvVideoPosInfo(someSize2d=cfg.myCalcPosSize2d))
+//}
+//
+//case class LcvVideoDblLineBufWithCalcPos(
+//  cfg: LcvVideoDblLineBufWithCalcPosConfig
+//) extends Component {
+//  def rgbCfg = cfg.rgbCfg
+//  def someSize2d = cfg.someSize2d
+//  def cnt2dShift = cfg.cnt2dShift
+//  def myCalcPosSize2d = cfg.myCalcPosSize2d
+//  //--------
+//  val io = LcvVideoDblLineBufWithCalcPosIo(cfg=cfg)
+//  //--------
+//  //val calcPos = LcvVideoCalcPos(
+//  //  someSize2d=myCalcPosSize2d
+//  //)
+//  val calcPosStmAdapterArr = Array.fill(2)(
+//    LcvVideoCalcPosStreamAdapter(
+//      someSize2d=(
+//        //someSize2d
+//        cfg.myCalcPosSize2d
+//      )
+//    )
+//  )
+//  //val myRawCnt2d = io.infoPop.pos
+//  //val myCnt2dRange = (
+//  //  ElabVec2(
+//  //    x=(myRawCnt2d.x.high downto cnt2dShift.x),
+//  //    y=(myRawCnt2d.y.high downto cnt2dShift.y),
+//  //  )
+//  //  //ElabVec2(
+//  //  //  x=(rRawCnt2d.x.high downto cnt2dShift.x),
+//  //  //  y=(rRawCnt2d.y.high downto cnt2dShift.y),
+//  //  //)
+//  //)
+//  //val myMainCnt = ElabDualTypeVec2(
+//  //  x=myRawCnt2d.x(myCnt2dRange.x),
+//  //  y=myRawCnt2d.y(myCnt2dRange.y),
+//  //)
+//  io.infoPop << calcPosStmAdapterArr.head.io.infoPop
+//  //calcPosStmAdapterArr.last.io.infoPop.ready := (
+//  //  io.push.fire
+//  //)
+//  //--------
+//  val mem = WrPulseRdPipeRamSdpPipe(cfg=cfg.myMemCfg)
+//  val myWrPulse = cloneOf(mem.io.wrPulse)
+//
+//  val myForkStmVec = StreamFork(
+//    input=io.push,
+//    portCount=2,
+//    synchronous=(
+//      true
+//      //false
+//    ),
+//  )
+//
+//  myForkStmVec.head.ready := True
+//  //calcPosStmAdapterArr.last.io.infoPop.ready := (
+//  //  //io.push.fire
+//  //  myForkStmVec.last.fire
+//  //)
+//
+//  myWrPulse.valid := (
+//    //io.push.valid
+//    //io.push.fire
+//    myForkStmVec.head.valid
+//  )
+//  myWrPulse.data := (
+//    //io.push.payload
+//    myForkStmVec.head.payload
+//  )
+//  //println(
+//  //  s"test: "
+//  //  + s"${someSize2d} ${log2Up(someSize2d.x)} "
+//  //  + s"${mem.cfg.wordCount} "
+//  //  + s"${calcPos.io.info.pos.x.getWidth} "
+//  //  + s"${calcPos.io.info.pos.x.getWidth - cnt2dShift.x} "
+//  //  + s"${calcPos.io.info.pos.y.getWidth} "
+//  //  + s"${mem.io.wrPulse.addr.getWidth}"
+//  //)
+//  val rMyDblLineBufIdx = Reg(Bool(), init=False)
+//  myWrPulse.addr := (
+//    //Cat(
+//    //  calcPos.io.info.pos.y(cnt2dShift.y),
+//    //  calcPos.io.info.pos.x(
+//    //    //calcPos.io.info.pos.x.high
+//    //    log2Up(someSize2d.x) + cnt2dShift.x - 1
+//    //    downto cnt2dShift.x
+//    //  ),
+//    //).asUInt//.resize(myWrPulseStm.addr.getWidth)
+//    Cat(
+//      //calcPosStmAdapterArr.last.io.infoPop.pos.y(cnt2dShift.y),
+//      rMyDblLineBufIdx,
+//      calcPosStmAdapterArr.last.io.infoPop.pos.x(
+//        //calcPos.io.info.pos.x.high
+//        log2Up(someSize2d.x) + cnt2dShift.x - 1
+//        downto cnt2dShift.x
+//      ),
+//    ).asUInt//.resize(myWrPulseStm.addr.getWidth)
+//  )
+//
+//  mem.io.wrPulse <-< myWrPulse
+//
+//  val myRdAddrPipeStm = Vec.fill(2)(
+//    cloneOf(mem.io.rdAddrPipe)
+//  )
+//  //if (cnt2dShift.x > 0) {
+//  //  myRdAddrPipeStm.last <-/< myRdAddrPipeStm.head.repeat(
+//  //    times=((1 << cnt2dShift.x) - 1)
+//  //  )._1
+//  //} else {
+//    myRdAddrPipeStm.last << myRdAddrPipeStm.head
+//  //}
+//
+//  //object State extends SpinalEnum(defaultEncoding=binaryOneHot) {
+//  //  val
+//  //    NO_DUPL,
+//  //    WITH_DUPL
+//  //    = newElement();
+//  //}
+//  //val rState = (
+//  //  Reg(State())
+//  //  init(State.NO_DUPL)
+//  //)
+//  val myJoinStm = 
+//  calcPosStmAdapterArr.last.io.infoPop.ready := (
+//    myRdAddrPipeStm.head.fire
+//    //Mux(
+//    //  rState === State.NO_DUPL,
+//    //  io.push.fire,
+//    //  myRdAddrPipeStm.head.fire
+//    //)
+//  )
+//
+//  mem.io.rdAddrPipe <-/< myRdAddrPipeStm.last
+//  val myReptRdAddrPipeStm = cloneOf(myForkStmVec.last)
+//  myReptRdAddrPipeStm.valid := True
+//  val rMyMuxSel = (
+//    RegNextWhen(
+//      (
+//        calcPosStmAdapterArr.last.io.infoPop.nextPos.y(
+//          cnt2dShift.y - 1 downto 0
+//        )
+//        //> 0
+//        === ((1 << cnt2dShift.y) - 1)
+//      ),
+//      cond=calcPosStmAdapterArr.last.io.infoPop.fire,
+//      init=False,
+//    )
+//  )
+//  when (
+//    //rMyMuxSel
+//    //RegNextWhen(
+//      (
+//        calcPosStmAdapterArr.last.io.infoPop.nextPos.y(
+//          cnt2dShift.y - 1 downto 0
+//        )
+//        //> 0
+//        === ((1 << cnt2dShift.y) - 1)
+//      )//,
+//    //  cond=calcPosStmAdapterArr.last.io.infoPop.fire,
+//    //  init=False,
+//    //)
+//    && calcPosStmAdapterArr.last.io.infoPop.posWillOverflow.x
+//    && calcPosStmAdapterArr.last.io.infoPop.fire
+//  ) {
+//    rMyDblLineBufIdx := !rMyDblLineBufIdx
+//  }
+//  val myMuxStm = StreamMux(
+//    select=Cat(
+//      rMyMuxSel
+//    ).asUInt,
+//    inputs=List(
+//      myForkStmVec.last,
+//      myReptRdAddrPipeStm,
+//    )
+//  )
+//  myMuxStm.translateInto(myRdAddrPipeStm.head)(
+//    dataAssignment=(outp, inp) => {
+//      outp.data := outp.data.getZero
+//      outp.addr := (
+//        //Cat(
+//        //  (!calcPos.io.info.pos.y(cnt2dShift.y)),
+//        //  calcPos.io.info.pos.x(
+//        //    //calcPos.io.info.pos.x.high
+//        //    log2Up(someSize2d.x) + cnt2dShift.x - 1
+//        //    downto cnt2dShift.x
+//        //  ),
+//        //).asUInt//.resize(myRdAddrPipeStm.addr.getWidth)
+//        Cat(
+//          //(!calcPosStmAdapterArr.last.io.infoPop.pos.y(cnt2dShift.y)),
+//          //(calcPosStmAdapterArr.last.io.infoPop.pastPos.y(cnt2dShift.y)),
+//          !rMyDblLineBufIdx,
+//          calcPosStmAdapterArr.last.io.infoPop.pos.x(
+//            //calcPos.io.info.pos.x.high
+//            log2Up(someSize2d.x) + cnt2dShift.x - 1
+//            downto cnt2dShift.x
+//          ),
+//        ).asUInt//.resize(myWrPulseStm.addr.getWidth)
+//      )
+//    }
+//  )
+//  io.pop <-/< mem.io.rdDataPipe
+//
+//  //myRdAddrPipeStm.valid := (
+//  //  //io.push.valid
+//  //  //|| calcPos.io.en
+//  //  io.push.fire
+//  //)
+//
+//  //myRdAddrPipeStm.data := myRdAddrPipeStm.data.getZero
+//  //myRdAddrPipeStm.addr := (
+//  //  //Cat(
+//  //  //  (!calcPos.io.info.pos.y(cnt2dShift.y)),
+//  //  //  calcPos.io.info.pos.x(
+//  //  //    //calcPos.io.info.pos.x.high
+//  //  //    log2Up(someSize2d.x) + cnt2dShift.x - 1
+//  //  //    downto cnt2dShift.x
+//  //  //  ),
+//  //  //).asUInt//.resize(myRdAddrPipeStm.addr.getWidth)
+//  //  Cat(
+//  //    (!calcPosStmAdapter.io.infoPop.pos.y(cnt2dShift.y)), //    calcPosStmAdapter.io.infoPop.pos.x(
+//  //      //calcPos.io.info.pos.x.high
+//  //      log2Up(someSize2d.x) + cnt2dShift.x - 1
+//  //      downto cnt2dShift.x
+//  //    ),
+//  //  ).asUInt//.resize(myWrPulseStm.addr.getWidth)
+//  //)
+//
+//  //io.pop <-/< mem.io.rdDataPipe
+//  //--------
+//  //val mySeenWrPulseFire = Bool()
+//  //val rSavedSeenWrPulseFire = Reg(Bool(), init=False)
+//  //val stickySeenWrPulseFire = (
+//  //  mySeenWrPulseFire
+//  //  || rSavedSeenWrPulseFire
+//  //)
+//
+//  //mySeenWrPulseFire := mem.io.wrPulse.fire //io.push.fire
+//  //when (mySeenWrPulseFire) {
+//  //  rSavedSeenWrPulseFire := True
+//  //}
+//
+//  //val mySeenRdAddrPipeFire = Bool()
+//  //val rSavedSeenRdAddrPipeFire = Reg(Bool(), init=False)
+//  //val stickySeenRdAddrPipeFire = (
+//  //  mySeenRdAddrPipeFire
+//  //  || rSavedSeenRdAddrPipeFire
+//  //)
+//
+//  //mySeenRdAddrPipeFire := mem.io.rdAddrPipe.fire
+//  //when (mySeenRdAddrPipeFire) {
+//  //  rSavedSeenRdAddrPipeFire := True
+//  //}
+//  //val myInfoPopStm = cloneOf(io.infoPop)
+//
+//  //myInfoPopStm.valid := (
+//  //  //stickySeenWrPulseFire
+//  //  //&& 
+//  //  stickySeenRdAddrPipeFire
+//  //)
+//  //myInfoPopStm.payload := calcPos.io.info
+//  //io.infoPop <-/< myInfoPopStm
+//  ////io.infoPop << myInfoPopStm
+//
+//  //calcPos.io.en := (
+//  //  //History[Bool](
+//  //  //  that=False,
+//  //  //  length=3,
+//  //  //  when=stickySeenWrPulseFire,
+//  //  //  init=True,
+//  //  //).last
+//  //  //|| 
+//  //  io.infoPop.fire
+//  //)
+//  ////calcPos.io.en := (
+//  ////  RegNext(
+//  ////    (
+//  ////      stickySeenWrPulseFire
+//  ////      && stickySeenRdAddrPipeFire
+//  ////    ),
+//  ////    init=False
+//  ////  )
+//  ////)
+//
+//  //when (calcPos.io.en) {
+//  //  rSavedSeenWrPulseFire := False
+//  //  rSavedSeenRdAddrPipeFire := False
+//  //}
+//  //--------
+//  //--------
+//}
 
