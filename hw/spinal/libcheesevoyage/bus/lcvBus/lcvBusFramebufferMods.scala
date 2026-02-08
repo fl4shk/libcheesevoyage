@@ -414,14 +414,17 @@ case class LcvBusFramebufferCtrl(
 
         switch (
           myPushStm.fire
-          ## (rWrLineBufAddrCnt < myVideoCfg.someSize2d.x - 1)
+          ## (
+            rWrLineBufAddrCnt
+            < ((myVideoCfg.someSize2d.x << cnt2dShift.x) - 1)
+          )
         ) {
           is (M"11") {
-            // fire, rWrLineBufAddrCnt < myVideoCfg.someSize2d.x - 1
+            // fire, rWrLineBufAddrCnt < width
             rWrLineBufAddrCnt := rWrLineBufAddrCnt + 1
           }
           is (M"10") {
-            // fire, !(rWrLineBufAddrCnt < myVideoCfg.someSize2d.x - 1)
+            // fire, !(rWrLineBufAddrCnt < width)
             rWrLineBufAddrCnt := 0x0
             rMyPopState := MyPopState.READ_LINE_BUF
           }
@@ -447,21 +450,25 @@ case class LcvBusFramebufferCtrl(
         //io.pop <-/< myRdDataPipeStm
         myPushStm.ready := False
         myRdAddrPipeStm.valid := (
-          rRdLineBufAddrCnt.head < myVideoCfg.someSize2d.x - 1
+          rRdLineBufAddrCnt.head
+          < (myVideoCfg.someSize2d.x << cnt2dShift.x) - 1
         )
 
         switch (
           //myPushStm.fire
           //myDblLineBuf.io.rdAddrPipe.fire
           myRdAddrPipeStm.fire
-          ## (rRdLineBufAddrCnt.head < myVideoCfg.someSize2d.x - 1)
+          ## (
+            rRdLineBufAddrCnt.head
+            < (myVideoCfg.someSize2d.x << cnt2dShift.x) - 1
+          )
         ) {
           is (M"11") {
-            // fire, rRdLineBufAddrCnt.head < myVideoCfg.someSize2d.x - 1
+            // fire, rRdLineBufAddrCnt.head < width
             rRdLineBufAddrCnt.head := rRdLineBufAddrCnt.head + 1
           }
           is (M"10") {
-            // fire, !(rRdLineBufAddrCnt < myVideoCfg.someSize2d.x - 1)
+            // fire, !(rRdLineBufAddrCnt < width)
             //rRdLineBufAddrCnt := 0x0
             //rMyPopState := MyPopState.READ_LINE_BUF
             rSeenRdAddrPipeFinish := True
@@ -484,14 +491,17 @@ case class LcvBusFramebufferCtrl(
           //myPushStm.fire
           //myDblLineBuf.io.rdDataPipe.fire
           myRdDataPipeStm.fire
-          ## (rRdLineBufAddrCnt.last < myVideoCfg.someSize2d.x - 1)
+          ## (
+            rRdLineBufAddrCnt.last
+            < (myVideoCfg.someSize2d.x << cnt2dShift.x) - 1
+          )
         ) {
           is (M"11") {
-            // fire, rRdLineBufAddrCnt.last < myVideoCfg.someSize2d.x - 1
+            // fire, rRdLineBufAddrCnt.last < width
             rRdLineBufAddrCnt.last := rRdLineBufAddrCnt.last + 1
           }
           is (M"10") {
-            // fire, !(rRdLineBufAddrCnt < myVideoCfg.someSize2d.x - 1)
+            // fire, !(rRdLineBufAddrCnt < width)
             //rRdLineBufAddrCnt := 0x0
             //rMyPopState := MyPopState.READ_LINE_BUF
             rSeenRdDataPipeFinish := True
