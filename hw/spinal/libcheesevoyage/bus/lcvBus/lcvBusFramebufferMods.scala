@@ -338,9 +338,10 @@ case class LcvBusFramebufferCtrl(
       init(0x0)
     )
     val myMaybeReptPushStm = cloneOf(myPushStm)
-    myMaybeReptPushStm.valid := False
-    myMaybeReptPushStm.payload := myMaybeReptPushStm.payload.getZero
-    myMaybeReptPushStm.ready := False
+    //myMaybeReptPushStm.valid := False
+    //myMaybeReptPushStm.payload := myMaybeReptPushStm.payload.getZero
+    //myMaybeReptPushStm.ready := False
+    myMaybeReptPushStm := myMaybeReptPushStm.getZero
 
     myWrPulse.valid := (
       if (cnt2dShift.x == 0) (
@@ -385,6 +386,10 @@ case class LcvBusFramebufferCtrl(
     )
     val myRdAddrPipeStm = cloneOf(myDblLineBuf.io.rdAddrPipe)
     val myRdDataPipeStm = cloneOf(myDblLineBuf.io.rdDataPipe)
+
+    val myMaybeReptRdDataPipeStm = cloneOf(myRdDataPipeStm)
+    myMaybeReptRdDataPipeStm := myMaybeReptRdDataPipeStm.getZero
+
     myRdAddrPipeStm.valid := False
     myRdAddrPipeStm.payload := (
       //RegNext(
@@ -490,9 +495,10 @@ case class LcvBusFramebufferCtrl(
         //io.pop <-/< myRdDataPipeStm
         myPushStm.ready := False
         myRdAddrPipeStm.valid := (
-          rRdLineBufAddrCnt.head
-          //< (myVideoCfg.someSize2d.x << cnt2dShift.x) - 1
-          < myVideoCfg.someSize2d.x  - 1
+          //rRdLineBufAddrCnt.head
+          ////< (myVideoCfg.someSize2d.x << cnt2dShift.x) - 1
+          //< myVideoCfg.someSize2d.x  - 1
+          !rSeenRdAddrPipeFinish
         )
 
         switch (
@@ -502,7 +508,7 @@ case class LcvBusFramebufferCtrl(
           ## (
             rRdLineBufAddrCnt.head
             //< (myVideoCfg.someSize2d.x << cnt2dShift.x) - 1
-            < myVideoCfg.someSize2d.x  - 1
+            < myVideoCfg.someSize2d.x - 1
           )
         ) {
           is (M"11") {
@@ -519,25 +525,24 @@ case class LcvBusFramebufferCtrl(
           default {
           }
         }
-        val myMaybeReptRdDataPipeStm = cloneOf(myRdDataPipeStm)
 
-        //if (cnt2dShift.x == 0) {
+        if (cnt2dShift.x == 0) {
           //io.pop <-/< myRdDataPipeStm
           myMaybeReptRdDataPipeStm <-/< myRdDataPipeStm
           io.pop << myMaybeReptRdDataPipeStm
-        //} else {
-        //  //io.pop <-/< myRdDataPipeStm.repeat(
-        //  //  times=(
-        //  //    (1 << cnt2dShift.x) //- 1
-        //  //  )
-        //  //)._1
-        //  myMaybeReptRdDataPipeStm <-/< myRdDataPipeStm.repeat(
-        //    times=(
-        //      (1 << cnt2dShift.x) //- 1
-        //    )
-        //  )._1
-        //  io.pop << myMaybeReptRdDataPipeStm
-        //}
+        } else {
+          //io.pop <-/< myRdDataPipeStm.repeat(
+          //  times=(
+          //    (1 << cnt2dShift.x) //- 1
+          //  )
+          //)._1
+          myMaybeReptRdDataPipeStm <-/< myRdDataPipeStm.repeat(
+            times=(
+              (1 << cnt2dShift.x) //- 1
+            )
+          )._1
+          io.pop << myMaybeReptRdDataPipeStm
+        }
 
         switch (
           //myPushStm.fire
@@ -557,13 +562,15 @@ case class LcvBusFramebufferCtrl(
             // fire, !(rRdLineBufAddrCnt < width)
             //rRdLineBufAddrCnt := 0x0
             //rMyPopState := MyPopState.READ_LINE_BUF
-            rRdLineBufAddrCnt.last := rRdLineBufAddrCnt.last + 1
+            //rRdLineBufAddrCnt.last := rRdLineBufAddrCnt.last + 1
             rSeenRdDataPipeFinish := True
           }
           default {
           }
         }
         when (rSeenRdAddrPipeFinish && rSeenRdDataPipeFinish) {
+          rSeenRdAddrPipeFinish := False
+          rSeenRdDataPipeFinish := False
           rRdLineBufAddrCnt.foreach(item => {
             item := 0
           })
