@@ -440,7 +440,7 @@ case class LcvBusFramebufferCtrl(
         myRdDataPipeStm.ready := False
         if (cnt2dShift.x == 0) {
           //io.pop <-/< myPushStm
-          myMaybeReptPushStm <-/< myPushStm
+          myMaybeReptPushStm << myPushStm
           io.pop << myMaybeReptPushStm
         } else {
           //io.pop <-/< myPushStm.repeat(
@@ -448,12 +448,12 @@ case class LcvBusFramebufferCtrl(
           //    (1 << cnt2dShift.x) //- 1
           //  )
           //)._1
-          myMaybeReptPushStm <-/< myPushStm.repeat(
+          myMaybeReptPushStm << myPushStm.repeat(
             times=(
               (1 << cnt2dShift.x) //- 1
             )
           )._1
-          io.pop <-/< myMaybeReptPushStm
+          io.pop << myMaybeReptPushStm
         }
 
         switch (
@@ -493,6 +493,7 @@ case class LcvBusFramebufferCtrl(
       }
       is (MyPopState.READ_LINE_BUF) {
         //io.pop <-/< myRdDataPipeStm
+        myRdDataPipeStm.ready := False
         myPushStm.ready := False
         myRdAddrPipeStm.valid := (
           //rRdLineBufAddrCnt.head
@@ -519,29 +520,11 @@ case class LcvBusFramebufferCtrl(
             // fire, !(rRdLineBufAddrCnt < width)
             //rRdLineBufAddrCnt := 0x0
             //rMyPopState := MyPopState.READ_LINE_BUF
-            rRdLineBufAddrCnt.head := rRdLineBufAddrCnt.head + 1
+            //rRdLineBufAddrCnt.head := rRdLineBufAddrCnt.head + 1
             rSeenRdAddrPipeFinish := True
           }
           default {
           }
-        }
-
-        if (cnt2dShift.x == 0) {
-          //io.pop <-/< myRdDataPipeStm
-          myMaybeReptRdDataPipeStm <-/< myRdDataPipeStm
-          io.pop << myMaybeReptRdDataPipeStm
-        } else {
-          //io.pop <-/< myRdDataPipeStm.repeat(
-          //  times=(
-          //    (1 << cnt2dShift.x) //- 1
-          //  )
-          //)._1
-          myMaybeReptRdDataPipeStm <-/< myRdDataPipeStm.repeat(
-            times=(
-              (1 << cnt2dShift.x) //- 1
-            )
-          )._1
-          io.pop << myMaybeReptRdDataPipeStm
         }
 
         switch (
@@ -575,6 +558,25 @@ case class LcvBusFramebufferCtrl(
             item := 0
           })
           rMyPopState := MyPopState.USE_D2H_BUS
+        } otherwise {
+          if (cnt2dShift.x == 0) {
+            //io.pop <-/< myRdDataPipeStm
+            myMaybeReptRdDataPipeStm << myRdDataPipeStm
+            io.pop << myMaybeReptRdDataPipeStm
+          } else {
+            //io.pop <-/< myRdDataPipeStm.repeat(
+            //  times=(
+            //    (1 << cnt2dShift.x) //- 1
+            //  )
+            //)._1
+            myMaybeReptRdDataPipeStm << myRdDataPipeStm.repeat(
+              times=(
+                (1 << cnt2dShift.x) //- 1
+              )
+            )._1
+            io.pop << myMaybeReptRdDataPipeStm
+          }
+
         }
       }
     }
