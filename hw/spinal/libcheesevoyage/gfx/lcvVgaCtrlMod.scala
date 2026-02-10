@@ -253,8 +253,8 @@ class LcvVgaPipe(
         rVisibPipe(idx - 1) := rVisibPipe(idx)
       }
       when (
-        //rCPipe2.resized + U(f"$cntWidth'd1")
-        //>= U(f"$cntWidth'd$stateSize")
+        //rCPipe2.resized //+ U(f"$cntWidth'd1")
+        //>= stateSize - 1 //U(f"$cntWidth'd$stateSize")
 
         //rCPipe3Plus1GeStateSize
         rCPipe2Plus1GeStateSize
@@ -262,15 +262,15 @@ class LcvVgaPipe(
         sToDrive := nextState
         cToDrive := cToDrive.getZero
         //rCPipe2Plus1 := 1
-        visibToDrive := (
-          if (currState == LcvVgaState.back) {True} else {False}
-        )
+        //visibToDrive := (
+        //  if (currState == LcvVgaState.back) {True} else {False}
+        //)
       } otherwise {
         sToDrive := rSPipe.last
         cToDrive := rCPipe2Plus1
-        visibToDrive := (
-          if (currState == LcvVgaState.visib) {True} else {False}
-        )
+        //visibToDrive := (
+        //  if (currState == LcvVgaState.visib) {True} else {False}
+        //)
       }
     }
 
@@ -278,9 +278,15 @@ class LcvVgaPipe(
       vgaTimingHv=vgaTimingHv,
       //somePixelEn=somePixelEn,
       //someState=s,
-      someState=rSPipe.last
+      someState=(
+        rSPipe.last
+      )
     )(
       mkCaseFunc=mkCase
+    )
+    visibToDrive := (
+      //rSPipe.last === LcvVgaState.visib
+      sToDrive === LcvVgaState.visib
     )
   }
 }
@@ -547,7 +553,6 @@ case class LcvVgaCtrl(
   //fifoArrRamStyle: String="block",
   vivadoDebug: Boolean=false,
 ) extends Component {
-  //--------
   val io = LcvVgaCtrlIo(
     clkRate=clkRate,
     rgbConfig=rgbConfig,
@@ -555,17 +560,6 @@ case class LcvVgaCtrl(
     fifoDepth=fifoDepth,
     //vivadoDebug=vivadoDebug,
   )
-  val push = io.push
-  //val inpCol = io.inpCol
-  val phys = io.phys
-  val misc = io.misc
-  //--------
-  // Clocks per pixel
-  //def cpp: Int = {
-  //  return scala.math.floor(
-  //    clkRate / vgaTimingInfo.pixelClk
-  //  ).toInt
-  //}
   def cpp = LcvVgaCtrl.cpp(clkRate=clkRate, vgaTimingInfo=vgaTimingInfo)
   def htiming: LcvVgaTimingHv = {
     return vgaTimingInfo.htiming
@@ -593,87 +587,38 @@ case class LcvVgaCtrl(
     clkRate=clkRate,
     vgaTimingInfo=vgaTimingInfo
   )
+  val myVideoCfg = LcvVideoDblLineBufWithCalcPosConfig(
+    rgbCfg=rgbConfig,
+    someSize2d=fbSize2d,
+    cnt2dShiftOne=ElabVec2[Boolean](
+      x=false,
+      y=false,
+    ),
+  )
   //--------
-  misc.pastPixelEn := RegNext(misc.pixelEn) init(misc.pixelEn.getZero)
+  io.misc.allowOverride
+  io.misc := io.misc.getZero
+  io.misc.pastPixelEn := (
+    RegNext(io.misc.pixelEn, init=io.misc.pixelEn.getZero)
+  )
   //--------
   //val fifo = Fifo
-  val fifo = AsyncReadFifo(
-    dataType=Rgb(rgbConfig),
-    depth=fifoDepth,
-    arrRamStyle=fifoArrRamStyle,
-  )
-  //val fifo = StreamFifo(
+  //val fifo = AsyncReadFifo(
   //  dataType=Rgb(rgbConfig),
   //  depth=fifoDepth,
-  //  latency=2,
-  //  //latency=1,
-  //  //latency=0,
-  //  forFMax=true,
+  //  arrRamStyle=fifoArrRamStyle,
   //)
-  val fifoPush = fifo.io.push
-  val fifoPop = fifo.io.pop
-  val fifoEmpty = fifo.io.misc.empty
-  val fifoFull = fifo.io.misc.full
-  val fifoAmountCanPush = fifo.io.misc.amountCanPush
-  val fifoAmountCanPop = fifo.io.misc.amountCanPop
-  //val fifoEmpty = fifo.io.availability === fifoDepth
-  //val fifoFull = fifo.io.occupancy === fifoDepth
-  //val fifoAmountCanPush = fifo.io.availability
-  //val fifoAmountCanPop = fifo.io.occupancy
-  
-  //val tempFifoPush = fifoPush.haltWhen(fifoAmountCanPush <= 1)
-  //tempFifoPush << push
-  //val tempPush = push.haltWhen(fifoAmountCanPush <= 1)
-  //fifoPush << tempPush
-
-  //fifoPush << push
-
-  fifoPush <-/< push
-
-  //fifoPush.valid := push.valid
-  //push.ready := fifoPush.ready
-  //push.ready := fifo.amountCanPush > 0
-  //--------
-  //val tempCol = Rgb(rgbConfig) addAttribute("keep")
-  ////val tempCol = cloneOf(fifoPop.payload) addAttribute("keep")
-  //tempCol := fifoPop.payload
-  val tempCol = fifoPop.payload
-  //val rPastFifoPopFire = Reg(Bool()) init(False)
-  //rPastFifoPopFire := fifoPop.fire
-  val rPastFifoPopReady = Reg(Bool()) init(False)
-  rPastFifoPopReady := fifoPop.ready
-  //val rTempColBuf = Reg(Rgb(rgbConfig))
-  val rTempColBuf = Reg(cloneOf(tempCol))
-  rTempColBuf.init(rTempColBuf.getZero)
-  when (
-    //rPastFifoPopFire
-    //fifoPop.valid
-    rPastFifoPopReady
-  ) {
-  //when (misc.pixelEn)
-  //when (misc.pixelEnPipe1) 
-  //when (fifoPop.fire) 
-  //when (misc.pixelEnPipe1)
-  //when (misc.pixelEn) 
-  //when (fifoPop.fire)
-    rTempColBuf := tempCol
-  }
-  //--------
-  val rPhys = Reg(LcvVgaPhys(rgbConfig=rgbConfig))
-  rPhys.init(rPhys.getZero)
-  if (vivadoDebug) {
-    rPhys.addAttribute("MARK_DEBUG", "TRUE")
-  }
-  //val rPastPhys = Reg(LcvVgaPhys(rgbConfig=rgbConfig))
-  //rPastPhys.init(rPastPhys.getZero)
-  //rPastPhys := phys
-  phys := rPhys
-  //val rHsync = Reg(Bool()) init(False)
-  //val rVsync = Reg(Bool()) init(False)
-  //phys.hsync := rHsync
-  //phys.vsync := rHsync
-  val rHsync = rPhys.hsync
-  val rVsync = rPhys.vsync
+  val fifo = StreamFifo(
+    dataType=Rgb(rgbConfig),
+    depth=fifoDepth,
+    latency=0,
+    forFMax=true,
+  )
+  fifo.io.push << io.push
+  val myFifoPopReady = Bool() //Reg(Bool(), init=False)
+  //myFifoPopReady := False
+  fifo.io.pop.ready := myFifoPopReady
+  io.phys.setAsReg() init(io.phys.getZero)
 
   // Implement the clock enable
   //val clkCnt = Reg(UInt(clkCntWidth bits)) init(0x0)
@@ -691,596 +636,1065 @@ case class LcvVgaCtrl(
   val clkCntP1Width = clkCntWidth + 1
   val clkCntP1 = UInt(clkCntP1Width bits)
   clkCntP1 := clkCnt.resized + U(f"$clkCntP1Width'd1")
-  misc.clkCnt := clkCnt
-  misc.nextClkCnt := nextClkCnt
+  io.misc.clkCnt := clkCnt
+  io.misc.nextClkCnt := nextClkCnt
 
   // Implement wrap-around for the clock counter
   when (io.en) {
     when (clkCntP1 < cpp) {
-      //m.d.sync += 
       nextClkCnt := clkCntP1(clkCnt.bitsRange)
     } otherwise {
-      //m.d.sync +=
       nextClkCnt := 0x0
     }
   } otherwise { // when (!io.en)
     nextClkCnt := clkCnt
   }
-  //clkCnt := nextClkCnt
-  // Since this is an alias, use ALL_CAPS for its name.
-  // outp.pixelEn = (clkCnt == 0x0)
-  //m.d.comb += 
-  //misc.pixelEn := clkCnt === 0x0
   val pixelEnNextCycle = Bool()
   pixelEnNextCycle := clkCntP1.resized === cpp
   val rPixelEn = Reg(Bool()) init(False)
   rPixelEn := pixelEnNextCycle
-  misc.pixelEn := rPixelEn
+  io.misc.pixelEn := rPixelEn
 
   //val pixelEnPipe1 = Bool()
   //misc.pixelEnPipe1 := nextClkCnt === 0x0
   val rPixelEnPipe1 = Reg(Bool()) init(False)
   rPixelEnPipe1 := nextClkCnt === cpp - 1
-  misc.pixelEnPipe1 := rPixelEnPipe1
+  io.misc.pixelEnPipe1 := rPixelEnPipe1
 
-  //val rPixelEnPipe2 = Reg(Bool()) init(False)
-  //val nextPixelEnPipe2 = Bool()
-  //nextPixelEnPipe2 := nextClkCnt === cpp - 2
-  //rPixelEnPipe2 := nextPixelEnPipe2
-  //misc.pixelEnPipe2 := rPixelEnPipe2
-
-  ////val rPixelEnPipe3 = Reg(Bool()) init(False)
-  //// "- 3": with this basic solution, this means there will be a minimum of
-  //// a 100 MHz `clk` rate for a 25 MHz pixel clock  
-  //val nextPixelEnPipe3 = nextClkCnt === cpp - 3
-  //rPixelEnPipe3 := nextClkCnt === cpp - 3 
-  //rPixelEnPipe3 := nextPixelEnPipe3
-  //misc.pixelEnPipe3 := rPixelEnPipe3
-  if (vivadoDebug) {
-    rPixelEn.addAttribute("MARK_DEBUG", "TRUE")
-    rPixelEnPipe1.addAttribute("MARK_DEBUG", "TRUE")
-    //rPixelEnPipe2.addAttribute("MARK_DEBUG", "TRUE")
-    //rPixelEnPipe3.addAttribute("MARK_DEBUG", "TRUE")
-  }
-  //--------
-  // Implement the State/Counter stuff
-  //loc.Tstate = VgaTiming.jkState
-  //loc.hpipe = {
-  //  "s": Signal(width_from_len(loc.Tstate)),
-  //  "c": Signal(self.HTIMING().COUNTER_WIDTH()),
-  //  "_sPipe1": Signal(width_from_len(loc.Tstate)),
-  //}
-  //loc.vpipe = {
-  //  "s": Signal(width_from_len(loc.Tstate)),
-  //  "c": Signal(self.VTIMING().COUNTER_WIDTH()),
-  //  "_sPipe1": Signal(width_from_len(loc.Tstate)),
-  //}
-  val hpipe = new LcvVgaPipe(
-    vgaTimingHv=htiming,
-    isVert=false,
-    vivadoDebug=vivadoDebug,
+  val rHCntFront = (
+    Reg(UInt(log2Up(htiming.front + 1) bits))
+    init(0x0)
   )
-  val vpipe = new LcvVgaPipe(
-    vgaTimingHv=vtiming,
-    isVert=true,
-    vivadoDebug=vivadoDebug,
+  val rHCntSync = (
+    Reg(UInt(log2Up(htiming.sync + 1) bits))
+    init(0x0)
+  )
+  val rHCntBack = (
+    Reg(UInt(log2Up(htiming.back + 1) bits))
+    init(0x0)
+  )
+  val rHCntVisib = (
+    Reg(UInt(log2Up(htiming.visib + 1) bits))
+    init(0x0)
+  )
+  val rHState = Reg(LcvVgaState(), init=LcvVgaState.front)
+
+  val rVCntFront = (
+    Reg(UInt(log2Up(vtiming.front + 1) bits))
+    init(0x0)
+  )
+  val rVCntSync = (
+    Reg(UInt(log2Up(vtiming.sync + 1) bits))
+    init(0x0)
+  )
+  val rVCntBack = (
+    Reg(UInt(log2Up(vtiming.back + 1) bits))
+    init(0x0)
+  )
+  val rVCntVisib = (
+    Reg(UInt(log2Up(vtiming.visib + 1) bits))
+    init(0x0)
   )
 
-  misc.hpipeS := hpipe.s
-  misc.hpipeC := hpipe.c
-  misc.hpipeSPipe1 := hpipe.rSPipe1
-  misc.hpipeSPipe2 := hpipe.rSPipe2
-  misc.vpipeS := vpipe.s
-  misc.vpipeC := vpipe.c
-  misc.vpipeSPipe1 := vpipe.rSPipe1
-  misc.vpipeSPipe2 := vpipe.rSPipe2
-
-  //misc.visibPipe3 := (
-  //  hpipe.rVisibPipe3 && vpipe.rVisibPipe3
-  //)
-  //--------
-
-  //val rPastFifoPopReady = Reg(Bool()) init(False)
-  //rPastFifoPopReady := fifoPop.ready
-  //fifoPop.ready := misc.pixelEnPipe1 & misc.visibPipe1 & ~rPastFifoPopReady
-  //fifoPop.ready := misc.pixelEnPipe1 & misc.visibPipe1 & ~rPastFifoPopReady
-  //fifoPop.ready := misc.pixelEnPipe1 & misc.visibPipe1
-  val rFifoPopReady = Reg(Bool()) init(False)
-  //val rFifoPopReady = Reg(Bool()) init(True)
-
-  //fifoPop.ready := (
-  //  //pixelEnNextCycle
-  //  //&& (misc.drawPosPipe1.x === 0)
-  //  misc.pixelEnPipe1 && misc.visibPipe1
-  //  && !misc.fifoEmpty
-  //)
-  //fifoPop.ready 
-  //fifoPop.ready := rFifoPopReady
-  //misc.fifoPopReady := rFifoPopReady
-  val rPastPixelEn = Reg(Bool()) init(False)
-  rPastPixelEn := misc.pixelEn
-  //fifoPop.ready := (
-  //  //rPastPixelEn && misc.pastVisib && !fifoEmpty
-  //  //misc.pixelEn && misc.visib && !fifoEmpty
-  //  misc.pixelEnPipe1 && misc.visibPipe1 && !fifoEmpty
-  //  //misc.pixelEnPipe2 && misc.visibPipe2 && !fifoEmpty
-  //)
-  //val rFifoPopReady = Reg(Bool()) init(False)
-  //rFifoPopReady := (
-  //  //misc.pixelEn
-  //  misc.pixelEnPipe1
-  //  && misc.visib
-  //  && !fifoEmpty
-  //)
-  // BEGIN: pipelined working (?)
-  //rFifoPopReady := 
-
-  //fifoPop.ready :=
-
-  //fifoPop.ready := (
-  //  //misc.pixelEnPipe2 && misc.visibPipe2 && !fifoEmpty
-  //  //misc.pixelEnPipe3 && misc.visibPipe3 && !fifoEmpty
-  //  //hpipe.visibToDrive
-  //  //misc.pixelEnPipe1 && misc.visibPipe1 && !fifoEmpty
-  //  //misc.pixelEn && misc.visib && !fifoEmpty
-  //  //misc.pixelEnPipe1 && misc.visib && !fifoEmpty
-  //  //misc.pixelEnPipe1
-  //  //(nextClkCnt === cpp - 3) && misc.visib && !fifoEmpty
-  //  //rPastPixelEn &&
-  //  misc.visib && !fifoEmpty
+  val rVState = Reg(LcvVgaState(), init=LcvVgaState.front)
+  val rVisib = Reg(Bool(), init=False)
+  io.misc.visib := rVisib
+  //io.misc.visib.setAsReg() init(False)
+  //io.misc.visib := (
+  //  rHState === LcvVgaState.visib
+  //  && rVState === LcvVgaState.visib
   //)
 
-  //when (misc.pixelEnPipe1 && misc.visib && !fifoEmpty) {
-  //  rFifoPopReady := True
+  //io.misc.visib := False
+  myFifoPopReady := False
+  //def doPopFifoEtc(): Unit = {
   //}
-  //when (fifoPop.fire) {
-  //  //fifoPop.ready := 
-  //  rFifoPopReady := False
-  //}
-
-  when (
-    //fifoPop.valid
-    //&& 
-    //misc.pixelEnPipe1
-    //&& rPastPixelEn
-    //--------
-    misc.pixelEn
-    && misc.visib
-    //&& hpipe.rVisibPrev1 && vpipe.rVisib
-    //--------
-    //&& misc.pastVisib
-    //&& hpipe.rVisibPipe1 && vpipe.rVisib
-    //&& hpipe.rVisib && vpipe.rVisib
-    //&& !fifoEmpty
+  switch (
+    io.misc.pixelEn
+    ## rHState
   ) {
-    //rFifoPopReady := True
-    fifoPop.ready := True
-  } otherwise {
-    //rFifoPopReady := False
-    fifoPop.ready := False
-  }
-  //fifoPop.ready := rFifoPopReady
-  //fifoPop.ready := (
-  //  //misc.pixelEnPipe1
-  //  misc.pixelEn
-  //  && misc.visib
-  //  && !fifoEmpty
-  //)
-
-  //fifoPop.ready := True
-  //fifoPop.ready := rFifoPopReady
-  //fifoPop.ready := 
-  //rFifoPopReady := (
-  //  misc.pixelEnPipe2
-  //  //misc.pixelEn
-  //  //&& misc.visibPipe2
-  //  //&& misc.visibPipe1
-  //  //&& misc.visib
-  //  //&& hpipe.rSPipe1 === LcvVgaState.visib
-  //  //&& vpipe.s === LcvVgaState.visib
-  //  && (
-  //    //hpipe.rVisib
-  //    //|| 
-  //    //hpipe.rVisibPipe1
-  //    //hpipe.rVisib
-  //    hpipe.rVisibPipe1
-  //  )
-  //  && vpipe.rVisib
-  //  && !fifoEmpty
-  //)
-  // END: pipelined working (?)
-  //fifoPop.ready := rFifoPopReady
-  //fifoPop.ready := (
-  //  misc.pixelEnPipe1 && misc.visibPipe1 && !fifoEmpty
-  //)
-  // BEGIN: working
-  //fifoPop.ready := (
-  //  misc.pixelEnPipe1 && misc.visibPipe1 && !fifoEmpty
-  //)
-  //fifoPop.ready := (
-  //  rTempNextPixelEn && misc.visibPipe1 && !fifoEmpty
-  //)
-  // END: working
-  // BEGIN: test
-
-  //fifoPop.ready := (
-  //  //rTempNextPixelEn && rTempNextVisib && !fifoEmpty
-  //  //rPixelEnPipe1 && rVisibPipe1 && !fifoEmpty
-  //  rPixelEnPipe1 && misc.visibPipe1 && !fifoEmpty
-  //)
-
-  // END: test
-  //rFifoPopReady := (
-  //  //misc.pixelEnPipe2 && misc.visibPipe2 && !fifoEmpty
-  //  //rTempNextVisib && rTempNextPixelEn && !fifoEmpty
-  //)
-  //fifoPop.ready := rFifoPopReady
-  misc.fifoPopReady := fifoPop.ready
-  //misc.pixelEnPipe2 := clkCntP1 === cpp - 2
-  //val rPixelEnPipe2 = Reg(Bool()) init(False)
-  //rPixelEnPipe2 := nextClkCnt === cpp - 2
-  //misc.pixelEnPipe2 := rPixelEnPipe2
-  //misc.visibPipe2 := rVisibPipe2
-
-  //misc.visibPipe2 := (
-  //  (
-  //    (
-  //      //(misc.hpipeC + 1 === vgaTimingInfo.htiming.back)
-  //      (misc.hpipeC + 2 === vgaTimingInfo.htiming.back)
-  //      && (misc.hpipeS === LcvVgaState.back)
-  //    ) || (
-  //      misc.hpipeS === LcvVgaState.visib
-  //    )
-  //  ) && (
-  //    //(
-  //    //  ((misc.vpipeC + 2) >= vgaTimingInfo.vtiming.back)
-  //    //  && (misc.vpipeS === LcvVgaState.back)
-  //    //)
-  //    //||
-  //    misc.vpipeS === LcvVgaState.visib
-  //  )
-  //  //|| misc.visib
-  //)
-
-  //rFifoPopReady := (
-  ////fifoPop.ready 
-  //  //misc.pixelEnPipe1
-  //  //misc.pixelEnPipe2 && misc.visibPipe2
-  //  //fifoPop.valid 
-  //  //(clkCnt === (cpp - 3))
-  //  //(nextClkCnt === (cpp - 3))
-  //  //(nextClkCnt === cpp - 1)
-  //  //(clkCntP1 === cpp)
-  //  misc.pixelEnPipe2
-  //  && misc.visibPipe2
-  //)
-  //rFifoPopReady := (
-  //  misc.pixelEnPipe1 && misc.visibPipe1
-  //)
-  //fifoPop.ready := rFifoPopReady
-
-  //fifoPop.ready := rFifoPopReady
-  //rFifoPopReady := False
-  //when (fifoPop.valid) {
-  //  when (misc.pixelEnPipe1) {
-  //    rFifoPopReady := True
-  //  }
-  //}
-  misc.fifoEmpty := fifoEmpty
-  misc.fifoFull := fifoFull
-  misc.fifoAmountCanPush := fifoAmountCanPush
-  misc.fifoAmountCanPop := fifoAmountCanPop
-  //--------
-  // Implement HSYNC and VSYNC logic
-  hpipe.updateCPipe2Plus1Etc(vgaTimingHv=htiming)
-  vpipe.updateCPipe2Plus1Etc(vgaTimingHv=vtiming)
-
-  // This assumes the FPGA is running at a higher clock rate than the pixel
-  // clock, but that is required anyway.
-  val rUpdateVpipe = Reg(Bool()) init(False)
-  rUpdateVpipe := (
-    misc.pixelEnPipe1
-    && hpipe.c + 1 >= fbSize2d.x
-    && hpipe.rVisib
-  )
-  when (rUpdateVpipe) {
-    vpipe.updateStateCnt(vgaTimingHv=vtiming)
-  } otherwise {
-    vpipe.noChangeUpdateToDrive()
-  }
-  when (misc.pixelEn) {
-    hpipe.updateStateCnt(vgaTimingHv=htiming)
-    //when (
-    //  //hpipe.s === LcvVgaState.visib
-    //  //&& hpipe.c + 1 >= fbSize2d.x
-    //  //hpipe.rVisib
-    //) {
-    //  vpipe.updateStateCnt(vgaTimingHv=vtiming)
-    //} otherwise {
-    //  vpipe.noChangeUpdateToDrive()
-    //}
-  } otherwise {
-    hpipe.noChangeUpdateToDrive()
-    //vpipe.noChangeUpdateToDrive()
-  }
-  when (misc.pixelEn) {
-    //hpipe.updateNextNextS(vgaTimingHv=htiming)
-    //htiming.updateStateCnt(m, hpipe)
-    //hpipe.updateStateCnt(vgaTimingHv=htiming)
-
-    //hpipe.updateStateCnt(vgaTimingHv=htiming)
-
-    switch (hpipe.s) {
-      is (LcvVgaState.front) {
-        //m.d.sync += outp.hsync := (0b1)
-        rHsync := True
-        ////vtiming.noChangeUpdateNextS(m, vpipe)
-        //vpipe.noChangeUpdateNextS()
+    is (B"1" ## LcvVgaState.front) {
+      //io.misc.visib := False
+      rVisib := False
+      io.phys.hsync := True
+      io.phys.col := io.phys.col.getZero
+      when (rHCntFront < htiming.front - 1) {
+        rHCntFront := rHCntFront + 1
+      } otherwise {
+        rHCntFront := 0x0
+        rHState := LcvVgaState.sync
       }
-      is (LcvVgaState.sync) {
-        //m.d.sync += outp.hsync := (0b0)
-        rHsync := False
-        ////vtiming.noChangeUpdateNextS(m, vpipe)
-        //vpipe.noChangeUpdateNextS()
+    }
+    is (B"1" ## LcvVgaState.sync) {
+      //io.misc.visib := False
+      rVisib := False
+      io.phys.hsync := False
+      io.phys.col := io.phys.col.getZero
+      when (rHCntSync < htiming.sync - 1) {
+        rHCntSync := rHCntSync + 1
+      } otherwise {
+        rHCntSync := 0x0
+        rHState := LcvVgaState.back
       }
-      is (LcvVgaState.back) {
-        //m.d.sync += outp.hsync := (0b1)
-        rHsync := True
-        ////vtiming.noChangeUpdateNextS(m, vpipe)
-        //vpipe.noChangeUpdateNextS()
+    }
+    is (B"1" ## LcvVgaState.back) {
+      //io.misc.visib := False
+      rVisib := False
+      io.phys.hsync := True
+      io.phys.col := io.phys.col.getZero
+      when (rHCntBack < htiming.back - 1) {
+        rHCntBack := rHCntBack + 1
+      } otherwise {
+        rHCntBack := 0x0
+        rHState := LcvVgaState.visib
+        rVisib := (
+          rVState === LcvVgaState.visib
+        )
       }
-      is (LcvVgaState.visib) {
-        //m.d.sync += outp.hsync := (0b1)
-        rHsync := True
-        //when ((hpipe["c"] + 0x1) >= FB_SIZE().x) 
-        //when ((hpipe.c + 0x1) >= fbSize2d.x)
-        //when ((hpipe.c + 0x1) >= fbSize2d.x) 
-        //when (hpipe.rCPipe1 >= fbSize2d.x) 
-        // BEGIN: old, non-pipelined version
-        //when (hpipe.rCPipe1 >= fbSize2d.x) {
-        //  //vtiming.updateStateCnt(m, vpipe)
-        //  vpipe.updateStateCnt(vgaTimingHv=vtiming)
+      when (
+        rHCntBack >= htiming.back - 1
+        && rVState === LcvVgaState.visib
+      ) {
+        io.phys.col := fifo.io.pop.payload //io.phys.col
+        //when (rose(io.misc.pixelEn)) {
+          myFifoPopReady := True
         //}
-        // END: old, non-pipelined version
-        //otherwise {
-        //  //vtiming.noChangeUpdateNextS(m, vpipe)
-        //  //vpipe.noChangeUpdateNextS()
-        //  vpipe.noChange
-        //}
+        //io.misc.visib := False
       }
     }
-
-    switch (vpipe.s) {
-      is (LcvVgaState.front) {
-        //m.d.sync += outp.vsync := (0b1)
-        rVsync := True
-      }
-      is (LcvVgaState.sync) {
-        //m.d.sync += outp.vsync := (0b0)
-        rVsync := False
-      }
-      is (LcvVgaState.back) {
-        //m.d.sync += outp.vsync := (0b1)
-        rVsync := True
-      }
-      is (LcvVgaState.visib) {
-        //m.d.sync += outp.vsync := (0b1)
-        rVsync := True
-      }
-    }
-  }
-  //.otherwise { // when (~misc.pixelEn)
-  //  //htiming.noChangeUpdateNextS(m, hpipe)
-  //  //vtiming.noChangeUpdateNextS(m, vpipe)
-  //  //hpipe.noChangeUpdateNextS()
-  //  //vpipe.noChangeUpdateNextS()
-  //}
-  //--------
-  // Implement drawing the picture
-
-  //val rHpipeCWillBe0 = Reg(Bool()) init(False)
-  //rHpipeCWillBe0 := hpipe.rCPipe1 === 0x0
-  val rPhysColGPipe1 = Reg(UInt(rgbConfig.gWidth bits)) init(0x0)
-  when (rPastPixelEn) {
-    when (hpipe.rCPipe1 === 0x0) {
-      rPhysColGPipe1 := 0x0
-    } otherwise {
-      rPhysColGPipe1 := rPhys.col.g + 1
-    }
-  }
-  //when (fifoPop.fire) {
-  //  rPhys.col := tempCol
-  //}
-  when (misc.pixelEn) {
-    // Visible area
-    when (
-      //--------
-      misc.visib
-      //hpipe.rVisibPrev1 && vpipe.rVisib
-      //--------
-      //hpipe.rVisibPipe2 && vpipe.rVisib
-    ) {
-      //when (~io.en) {
-      //  //m.d.sync += [
-      //    //phys.col.r := (0xf),
-      //    //phys.col.g := (0xf),
-      //    //phys.col.b := (0xf),
-      //  //]
-      //  rPhys.col.r := (default -> True)
-      //  rPhys.col.g := (default -> True)
-      //  rPhys.col.b := (default -> True)
-      //} otherwise { // when (io.en)
-        //m.d.sync += [
-          //--------
-          rPhys.col := /*RegNext*/(tempCol)
-          //--------
-          //rPhys.col := rTempColBuf
-          //rPhys.col.r := (default -> True)
-          ////when (hpipe.c === 0x0) {
-          ////  rPhys.col.g := 0x0
-          ////} otherwise {
-          ////  rPhys.col.g := rPhys.col.g + 1
-          ////}
-          //rPhys.col.g := rPhysColGPipe1
-          //rPhys.col.b := 0x0
-        //]
+    is (B"1" ## LcvVgaState.visib) {
+      //io.misc.visib := False
+      io.phys.hsync := True
+      //io.phys.col := io.phys.col.getZero
+      //when (rVState === LcvVgaState.visib) {
+      //  //io.phys.col := io.phys.col.getZero
+      //  io.phys.col := fifo.io.pop.payload //io.phys.col
+      //  //when (rose(io.misc.pixelEn)) {
+      //    myFifoPopReady := True
+      //  //}
+      //  //io.misc.visib := False
+      //} 
+      //otherwise {
       //}
-    // Black border
-    } otherwise { // when (~misc.visib)
-      //m.d.sync += [
-        //phys.col.r := 0x0
-        //phys.col.g := 0x0
-        //phys.col.b := 0x0
-        rPhys.col := rPhys.col.getZero
-      //]
+      //io.misc.visib := rVState 
+      when (
+        rHCntVisib < htiming.visib - 1
+        && rVState === LcvVgaState.visib
+      ) {
+        io.phys.col := fifo.io.pop.payload //io.phys.col
+        //when (rose(io.misc.pixelEn)) {
+          myFifoPopReady := True
+        //}
+        //io.misc.visib := False
+      }
+      when (rHCntVisib < htiming.visib - 1) {
+        //io.phys.col := io.phys.col.getZero
+        rHCntVisib := rHCntVisib + 1
+        //io.misc.visib := (
+        //  rVState === LcvVgaState.visib
+        //)
+        rVisib := (
+          rVState === LcvVgaState.visib
+        )
+      } otherwise {
+        rVisib := False
+        rHCntVisib := 0x0
+        rHState := LcvVgaState.front
+        switch (rVState) {
+          is (LcvVgaState.front) {
+            //rVisib := False
+            //io.phys.vsync := True
+            //io.phys.col := io.phys.col.getZero
+            when (rVCntFront < vtiming.front - 1) {
+              rVCntFront := rVCntFront + 1
+            } otherwise {
+              rVCntFront := 0x0
+              rVState := LcvVgaState.sync
+            }
+          }
+          is (LcvVgaState.sync) {
+            //rVisib := False
+            //io.phys.vsync := False
+            //io.phys.col := io.phys.col.getZero
+            when (rVCntSync < vtiming.sync - 1) {
+              rVCntSync := rVCntSync + 1
+            } otherwise {
+              rVCntSync := 0x0
+              rVState := LcvVgaState.back
+            }
+          }
+          is (LcvVgaState.back) {
+            //io.phys.vsync := True
+            //io.phys.col := io.phys.col.getZero
+            //rVisib := False
+            when (rVCntBack < vtiming.back - 1) {
+              rVCntBack := rVCntBack + 1
+            } otherwise {
+              rVCntBack := 0x0
+              rVState := LcvVgaState.visib
+              //rVisib := True
+            }
+          }
+          is (LcvVgaState.visib) {
+            //io.phys.vsync := True
+            //io.phys.col := fifo.io.pop.payload
+            //when (rose(io.misc.pixelEn)) {
+            //  rFifoPopReady := True
+            //}
+            when (rVCntVisib < vtiming.visib - 1) {
+              rVCntVisib := rVCntVisib + 1
+              //rVisib := True
+            } otherwise {
+              //rVisib := False
+              rVCntVisib := 0x0
+              rVState := LcvVgaState.front
+            }
+          }
+        }
+      }
+
     }
-  } //otherwise {
-  //  rPhys.col := rPastPhys.col
-  //}
-  //--------
-  //val rMisc = Reg(LcvVgaCtrlMiscIo())
-  //rMisc.init(rMisc.getZero)
-  //misc := rMisc
-    //m.d.comb += [
-      //misc.visib := ((hpipe.s == Tstate.VISIB)
-      // & (vpipe.s == Tstate.VISIB)),
-    misc.drawPos.x := hpipe.c.resized
-    misc.drawPos.y := vpipe.c.resized
-    misc.size.x := fbSize2d.x
-    misc.size.y := fbSize2d.y
-    //]
-    //m.d.sync += [
-    //val rVisibPipe1 = Reg(Bool()) init(False)
-    //rVisibPipe1 := ((hpipe.sPipe1 === LcvVgaState.visib)
-    //  & (vpipe.sPipe1 === LcvVgaState.visib))
-    //rVisibPipe1 := ((hpipe.rSPipe2 === LcvVgaState.visib)
-    //  && (vpipe.rSPipe2 === LcvVgaState.visib))
-    //rVisibPipe1 := ((hpipe.sPipe2 === LcvVgaState.visib)
-    //  && (vpipe.sPipe2 === LcvVgaState.visib))
-    //rVisibPipe1 := hpipe.rVisibPipe2 && vpipe.rVisibPipe2
-    //rVisibPipe1 := hpipe.rVisibPipe1 && vpipe.rVisibPipe1
-
-    //misc.visibPipe1 := rVisibPipe1
-    // BEGIN: stuff
-    //misc.visibPipe1 := hpipe.rVisibPipe1 && vpipe.rVisibPipe1
-    //misc.visibPipe2 := hpipe.rVisibPipe2 && vpipe.rVisibPipe2
-
-    //misc.visib := hpipe.rVisib && vpipe.rVisib
-    //misc.visibPipe1 := hpipe.rVisibPipe1 && vpipe.rVisibPipe1
-    //misc.visibPipe2 := hpipe.rVisibPipe2 && vpipe.rVisibPipe2
-    //rVisib := hpipe.rVisibPipe
-    //val rVisibPipe = new ArrayBuffer[Bool]()
-    //val visibToDrive = Bool()
-    //for (idx <- 0 to hpipe.pipeSize - 1) {
-    //  rVisibPipe += Reg(Bool()) init(False)
+    //default {
+    //  // pixelEn === False
+    //  when (past(io.misc.pixelEn)) {
+    //    //fifo.io.pop.ready := False
+    //    rFifoPopReady := True
+    //  } otherwise {
+    //    rFifoPopReady := False
+    //  }
+    //  //when (!rFifoPopReady) {
+    //  //  rFifoPopReady
+    //  //}
     //}
-    //for (idx <- 1 to hpipe.pipeSize - 1) {
-    //  rVisibPipe(idx - 1) := rVisibPipe(idx)
-    //}
-    //rVisibPipe.last := visibToDrive
-    //visibToDrive := hpipe.visibToDrive && vpipe.visibToDrive
-    //misc.visib := rVisibPipe(hpipe.currIdx)
-    //misc.visibPipe1 := rVisibPipe(hpipe.pipe1Idx)
-    //misc.visibPipe2 := rVisibPipe(hpipe.pipe2Idx)
-    //misc.visibPipe3 := rVisibPipe(hpipe.pipe3Idx)
+  }
 
-    //misc.visib := hpipe.rVisib && vpipe.rVisib
-    //misc.visib := (
-    //  hpipe.s === LcvVgaState.visib
-    //  && vpipe.s === LcvVgaState.visib
-    //)
-    //misc.visibPipe1 := hpipe.rVisibPipe1 && vpipe.rVisib
-    misc.visib := hpipe.rVisib && vpipe.rVisib
-    misc.visibPipe1 := hpipe.rVisibPipe1 && vpipe.rVisibPipe1
-    //misc.visibPipe2 := False
-    //misc.visibPipe2 := hpipe.rVisibPipe2 && vpipe.rVisibPipe2
-    //misc.visibPipe3 := False
-    //val rVisib = Reg(Bool()) init(False)
-    //rVisib := hpipe.rVisib && 
+  switch (
+    io.misc.pixelEn
+    ## rVState
+  ) {
+    is (B"1" ## LcvVgaState.front) {
+      io.phys.vsync := True
+      //io.phys.col := io.phys.col.getZero
+      //when (rVCntFront < vtiming.front - 1) {
+      //  rVCntFront := rVCntFront + 1
+      //} otherwise {
+      //  rVCntFront := 0x0
+      //  rVState := LcvVgaState.sync
+      //}
+    }
+    is (B"1" ## LcvVgaState.sync) {
+      io.phys.vsync := False
+      //io.phys.col := io.phys.col.getZero
+      //when (rVCntSync < vtiming.sync - 1) {
+      //  rVCntSync := rVCntSync + 1
+      //} otherwise {
+      //  rVCntSync := 0x0
+      //  rVState := LcvVgaState.back
+      //}
+    }
+    is (B"1" ## LcvVgaState.back) {
+      io.phys.vsync := True
+      //io.phys.col := io.phys.col.getZero
+      //when (rVCntBack < vtiming.back - 1) {
+      //  rVCntBack := rVCntBack + 1
+      //} otherwise {
+      //  rVCntBack := 0x0
+      //  rVState := LcvVgaState.visib
+      //}
+    }
+    is (B"1" ## LcvVgaState.visib) {
+      io.phys.vsync := True
+      //io.phys.col := fifo.io.pop.payload
+      //when (rVCntVisib < vtiming.visib - 1) {
+      //  rVCntVisib := rVCntVisib + 1
+      //} otherwise {
+      //  rVCntVisib := 0x0
+      //  rVState := LcvVgaState.front
+      //}
+    }
+    default {
+    }
+  }
 
-    //misc.visib := hpipe.rVisib && vpipe.rVisib
-    //val rVisib = Reg(Bool()) init(False)
-    //rVisib := 
-    //misc.visib := (
-    //  hpipe.s === LcvVgaState.visib
-    //  && vpipe.s === LcvVgaState.visib
-    //)
-    //val rVisibPipe1 = Reg(Bool()) init(False)
-    //rVisibPipe1 := (
-    //  hpipe.rSPipe1 === LcvVgaState.visib
-    //  //&& vpipe.rSPipe1 === LcvVgaState.visib
-    //  && vpipe.s === LcvVgaState.visib
-    //)
-    //val rVisib = Reg(Bool()) init(False)
-    //rVisib := rVisibPipe1
-    //misc.visib := rVisib
-    //misc.visibPipe1 := rVisibPipe1
-    //misc.visibPipe2 := False
-    //misc.visibPipe3 := False
 
-    //misc.visibPipe1 := 
-    //misc.visib := hpipe.rVisib && vpipe.rVisib
-    //misc.visibPipe1 := hpipe.rVisibPipe1 && vpipe.rVisib
+  //when (io.misc.pixelEn) {
+  //  switch (rHState) {
+  //    is (LcvVgaState.front) {
+  //      io.phys.hsync := True
+  //    }
+  //    is (LcvVgaState.sync) {
+  //      io.phys.hsync := False
+  //    }
+  //    is (LcvVgaState.back) {
+  //      io.phys.hsync := True
+  //    }
+  //    is (LcvVgaState.visib) {
+  //      io.phys.hsync := True
+  //    }
+  //  }
 
-    //misc.visibPipe2 := hpipe.rVisibPipe2 && vpipe.rVisib
-    //misc.visibPipe3 := hpipe.rVisibPipe3 && vpipe.rVisib
-
-    // END: stuff
-
-    //val rVisibPipe1 = Reg(Bool()) init(False)
-    //rVisibPipe1 := hpipe.visibPipe2 && vpipe.visibPipe2
-    //misc.visibPipe1 := rVisibPipe1
-
-    //misc.visibPipe1 := ((hpipe.rSPipe2 === LcvVgaState.visib)
-    //  && (vpipe.rSPipe2 === LcvVgaState.visib))
-    //misc.visibPipe1 := ((hpipe.sPipe1 === LcvVgaState.visib)
-    //  & (vpipe.sPipe1 === LcvVgaState.visib))
-    //misc.visibPipe1 := ((hpipe.rSPipe2 === LcvVgaState.visib)
-    //  && (vpipe.rSPipe2 === LcvVgaState.visib))
-    //misc.visibPipe1 := (
-    //  hpipe.sPipe1 === LcvVgaState.visib
-    //  && vpipe.sPipe1 === LcvVgaState.visib
-    //)
-    //cover(hpipe.sPipe1 === LcvVgaState.sync)
-
-    //val rVisib = Reg(Bool()) init(False)
-    //rVisib := misc.visibPipe1
-    //misc.visib := rVisib
-
-    val rPastVisib = Reg(Bool()) init(False)
-    rPastVisib := misc.visib
-    misc.pastVisib := rPastVisib
-    misc.visibPrev1 := (
-      hpipe.rVisibPrev1 && vpipe.rVisib
-    )
-
-    val rPastDrawPos = Reg(LcvVgaCtrlMiscIo.coordT(
-      fbSize2d=vgaTimingInfo.fbSize2d
-    ))
-    rPastDrawPos.init(rPastDrawPos.getZero)
-    rPastDrawPos := misc.drawPos
-    misc.pastDrawPos := rPastDrawPos
-    //]
-
-  //val hpipeNextSVisib = Bool() addAttribute("keep")
-  //hpipeNextSVisib := hpipe.sPipe1 === LcvVgaState.visib
-  //val vpipeNextSVisib = Bool() addAttribute("keep")
-  //vpipeNextSVisib := vpipe.sPipe1 === LcvVgaState.visib
-  ////--------
-  //GenerationFlags.formal {
-  //  when (pastValidAfterReset) {
-  //    when (
-  //      past(misc.pixelEn)
-  //      && hpipeNextSVisib
-  //      && vpipeNextSVisib
-  //      && misc.drawPos.x.resized < htiming.visib
-  //      && misc.drawPos.y.resized < vtiming.visib
-  //    ) {
-  //      assert(misc.visibPipe1)
+  //  switch (rVState) {
+  //    is (LcvVgaState.front) {
+  //      io.phys.vsync := True
+  //    }
+  //    is (LcvVgaState.sync) {
+  //      io.phys.vsync := False
+  //    }
+  //    is (LcvVgaState.back) {
+  //      io.phys.vsync := True
+  //    }
+  //    is (LcvVgaState.visib) {
+  //      io.phys.vsync := True
   //    }
   //  }
   //}
 }
+//case class LcvVgaCtrl(
+//  clkRate: HertzNumber,
+//  rgbConfig: RgbConfig,
+//  vgaTimingInfo: LcvVgaTimingInfo,
+//  fifoDepth: Int,
+//  fifoArrRamStyle: String="auto",
+//  //fifoArrRamStyle: String="block",
+//  vivadoDebug: Boolean=false,
+//) extends Component {
+//  //--------
+//  val io = LcvVgaCtrlIo(
+//    clkRate=clkRate,
+//    rgbConfig=rgbConfig,
+//    vgaTimingInfo=vgaTimingInfo,
+//    fifoDepth=fifoDepth,
+//    //vivadoDebug=vivadoDebug,
+//  )
+//  val push = io.push
+//  //val inpCol = io.inpCol
+//  val phys = io.phys
+//  val misc = io.misc
+//  //--------
+//  // Clocks per pixel
+//  //def cpp: Int = {
+//  //  return scala.math.floor(
+//  //    clkRate / vgaTimingInfo.pixelClk
+//  //  ).toInt
+//  //}
+//  def cpp = LcvVgaCtrl.cpp(clkRate=clkRate, vgaTimingInfo=vgaTimingInfo)
+//  def htiming: LcvVgaTimingHv = {
+//    return vgaTimingInfo.htiming
+//  }
+//  def vtiming: LcvVgaTimingHv = {
+//    return vgaTimingInfo.vtiming
+//  }
+//  //def numBufScanlines():
+//  //  return numBufScanlines
+//  //def fifoDepth():
+//  //  return (fbSize2d.x * numBufScanlines())
+//  //def fifoDepth():
+//  //  return fifoDepth
+//  //def fbSize2d: ElabVec2[Int] = {
+//  //  //ret = blank()
+//  //  //ret.x, ret.y = htiming.visib(), vtiming.visib()
+//  //  //return ret
+//  //  return ElabVec2(htiming.visib, vtiming.visib)
+//  //}
+//  def fbSize2d: ElabVec2[Int] = vgaTimingInfo.fbSize2d
+//  //def clkCntWidth: Int = {
+//  //  return log2Up(cpp)
+//  //}
+//  def clkCntWidth = LcvVgaCtrl.clkCntWidth(
+//    clkRate=clkRate,
+//    vgaTimingInfo=vgaTimingInfo
+//  )
+//  //--------
+//  misc.pastPixelEn := RegNext(misc.pixelEn) init(misc.pixelEn.getZero)
+//  //--------
+//  //val fifo = Fifo
+//  val fifo = AsyncReadFifo(
+//    dataType=Rgb(rgbConfig),
+//    depth=fifoDepth,
+//    arrRamStyle=fifoArrRamStyle,
+//  )
+//  //val fifo = StreamFifo(
+//  //  dataType=Rgb(rgbConfig),
+//  //  depth=fifoDepth,
+//  //  latency=2,
+//  //  //latency=1,
+//  //  //latency=0,
+//  //  forFMax=true,
+//  //)
+//
+//  val fifoPush = fifo.io.push
+//  val fifoPop = fifo.io.pop
+//  val fifoEmpty = fifo.io.misc.empty
+//  val fifoFull = fifo.io.misc.full
+//  val fifoAmountCanPush = fifo.io.misc.amountCanPush
+//  val fifoAmountCanPop = fifo.io.misc.amountCanPop
+//  //val fifoEmpty = fifo.io.availability === fifoDepth
+//  //val fifoFull = fifo.io.occupancy === fifoDepth
+//  //val fifoAmountCanPush = fifo.io.availability
+//  //val fifoAmountCanPop = fifo.io.occupancy
+//  
+//  //val tempFifoPush = fifoPush.haltWhen(fifoAmountCanPush <= 1)
+//  //tempFifoPush << push
+//  //val tempPush = push.haltWhen(fifoAmountCanPush <= 1)
+//  //fifoPush << tempPush
+//
+//  //fifoPush << push
+//
+//  fifoPush <-/< push
+//
+//
+//  //fifoPush.valid := push.valid
+//  //push.ready := fifoPush.ready
+//  //push.ready := fifo.amountCanPush > 0
+//  //--------
+//  //val tempCol = Rgb(rgbConfig) addAttribute("keep")
+//  ////val tempCol = cloneOf(fifoPop.payload) addAttribute("keep")
+//  //tempCol := fifoPop.payload
+//  val tempCol = fifoPop.payload
+//  //val rPastFifoPopFire = Reg(Bool()) init(False)
+//  //rPastFifoPopFire := fifoPop.fire
+//  val rPastFifoPopReady = Reg(Bool()) init(False)
+//  rPastFifoPopReady := fifoPop.ready
+//  //val rTempColBuf = Reg(Rgb(rgbConfig))
+//  val rTempColBuf = Reg(cloneOf(tempCol))
+//  rTempColBuf.init(rTempColBuf.getZero)
+//  when (
+//    //rPastFifoPopFire
+//    //fifoPop.valid
+//    rPastFifoPopReady
+//  ) {
+//  //when (misc.pixelEn)
+//  //when (misc.pixelEnPipe1) 
+//  //when (fifoPop.fire) 
+//  //when (misc.pixelEnPipe1)
+//  //when (misc.pixelEn) 
+//  //when (fifoPop.fire)
+//    rTempColBuf := tempCol
+//  }
+//  //--------
+//  val rPhys = Reg(LcvVgaPhys(rgbConfig=rgbConfig))
+//  rPhys.init(rPhys.getZero)
+//  if (vivadoDebug) {
+//    rPhys.addAttribute("MARK_DEBUG", "TRUE")
+//  }
+//  //val rPastPhys = Reg(LcvVgaPhys(rgbConfig=rgbConfig))
+//  //rPastPhys.init(rPastPhys.getZero)
+//  //rPastPhys := phys
+//  phys := rPhys
+//  //val rHsync = Reg(Bool()) init(False)
+//  //val rVsync = Reg(Bool()) init(False)
+//  //phys.hsync := rHsync
+//  //phys.vsync := rHsync
+//  val rHsync = rPhys.hsync
+//  val rVsync = rPhys.vsync
+//
+//  // Implement the clock enable
+//  //val clkCnt = Reg(UInt(clkCntWidth bits)) init(0x0)
+//  val nextClkCnt = UInt(clkCntWidth bits)
+//  val clkCnt = RegNext(nextClkCnt) init(0x0)
+//  //val nextClkCnt = clkCnt.wrapNext()
+//  //val nextClkCnt = UInt(clkCntWidth bits)
+//  //val nextClkCnt = clkCnt.wrapNext()
+//  if (vivadoDebug) {
+//    clkCnt.addAttribute("MARK_DEBUG", "TRUE")
+//    nextClkCnt.addAttribute("MARK_DEBUG", "TRUE")
+//  }
+//  // Force this addition to be of width `CLK_CNT_WIDTH + 1` to
+//  // prevent wrap-around
+//  val clkCntP1Width = clkCntWidth + 1
+//  val clkCntP1 = UInt(clkCntP1Width bits)
+//  clkCntP1 := clkCnt.resized + U(f"$clkCntP1Width'd1")
+//  misc.clkCnt := clkCnt
+//  misc.nextClkCnt := nextClkCnt
+//
+//  // Implement wrap-around for the clock counter
+//  when (io.en) {
+//    when (clkCntP1 < cpp) {
+//      //m.d.sync += 
+//      nextClkCnt := clkCntP1(clkCnt.bitsRange)
+//    } otherwise {
+//      //m.d.sync +=
+//      nextClkCnt := 0x0
+//    }
+//  } otherwise { // when (!io.en)
+//    nextClkCnt := clkCnt
+//  }
+//  //clkCnt := nextClkCnt
+//  // Since this is an alias, use ALL_CAPS for its name.
+//  // outp.pixelEn = (clkCnt == 0x0)
+//  //m.d.comb += 
+//  //misc.pixelEn := clkCnt === 0x0
+//  val pixelEnNextCycle = Bool()
+//  pixelEnNextCycle := clkCntP1.resized === cpp
+//  val rPixelEn = Reg(Bool()) init(False)
+//  rPixelEn := pixelEnNextCycle
+//  misc.pixelEn := rPixelEn
+//
+//  //val pixelEnPipe1 = Bool()
+//  //misc.pixelEnPipe1 := nextClkCnt === 0x0
+//  val rPixelEnPipe1 = Reg(Bool()) init(False)
+//  rPixelEnPipe1 := nextClkCnt === cpp - 1
+//  misc.pixelEnPipe1 := rPixelEnPipe1
+//
+//  //val rPixelEnPipe2 = Reg(Bool()) init(False)
+//  //val nextPixelEnPipe2 = Bool()
+//  //nextPixelEnPipe2 := nextClkCnt === cpp - 2
+//  //rPixelEnPipe2 := nextPixelEnPipe2
+//  //misc.pixelEnPipe2 := rPixelEnPipe2
+//
+//  ////val rPixelEnPipe3 = Reg(Bool()) init(False)
+//  //// "- 3": with this basic solution, this means there will be a minimum of
+//  //// a 100 MHz `clk` rate for a 25 MHz pixel clock  
+//  //val nextPixelEnPipe3 = nextClkCnt === cpp - 3
+//  //rPixelEnPipe3 := nextClkCnt === cpp - 3 
+//  //rPixelEnPipe3 := nextPixelEnPipe3
+//  //misc.pixelEnPipe3 := rPixelEnPipe3
+//  if (vivadoDebug) {
+//    rPixelEn.addAttribute("MARK_DEBUG", "TRUE")
+//    rPixelEnPipe1.addAttribute("MARK_DEBUG", "TRUE")
+//    //rPixelEnPipe2.addAttribute("MARK_DEBUG", "TRUE")
+//    //rPixelEnPipe3.addAttribute("MARK_DEBUG", "TRUE")
+//  }
+//  //--------
+//  // Implement the State/Counter stuff
+//  //loc.Tstate = VgaTiming.jkState
+//  //loc.hpipe = {
+//  //  "s": Signal(width_from_len(loc.Tstate)),
+//  //  "c": Signal(self.HTIMING().COUNTER_WIDTH()),
+//  //  "_sPipe1": Signal(width_from_len(loc.Tstate)),
+//  //}
+//  //loc.vpipe = {
+//  //  "s": Signal(width_from_len(loc.Tstate)),
+//  //  "c": Signal(self.VTIMING().COUNTER_WIDTH()),
+//  //  "_sPipe1": Signal(width_from_len(loc.Tstate)),
+//  //}
+//  val hpipe = new LcvVgaPipe(
+//    vgaTimingHv=htiming,
+//    isVert=false,
+//    vivadoDebug=vivadoDebug,
+//  )
+//  val vpipe = new LcvVgaPipe(
+//    vgaTimingHv=vtiming,
+//    isVert=true,
+//    vivadoDebug=vivadoDebug,
+//  )
+//
+//  misc.hpipeS := hpipe.s
+//  misc.hpipeC := hpipe.c
+//  misc.hpipeSPipe1 := hpipe.rSPipe1
+//  misc.hpipeSPipe2 := hpipe.rSPipe2
+//  misc.vpipeS := vpipe.s
+//  misc.vpipeC := vpipe.c
+//  misc.vpipeSPipe1 := vpipe.rSPipe1
+//  misc.vpipeSPipe2 := vpipe.rSPipe2
+//
+//  //misc.visibPipe3 := (
+//  //  hpipe.rVisibPipe3 && vpipe.rVisibPipe3
+//  //)
+//  //--------
+//
+//  //val rPastFifoPopReady = Reg(Bool()) init(False)
+//  //rPastFifoPopReady := fifoPop.ready
+//  //fifoPop.ready := misc.pixelEnPipe1 & misc.visibPipe1 & ~rPastFifoPopReady
+//  //fifoPop.ready := misc.pixelEnPipe1 & misc.visibPipe1 & ~rPastFifoPopReady
+//  //fifoPop.ready := misc.pixelEnPipe1 & misc.visibPipe1
+//  val rFifoPopReady = Reg(Bool()) init(False)
+//  //val rFifoPopReady = Reg(Bool()) init(True)
+//
+//  //fifoPop.ready := (
+//  //  //pixelEnNextCycle
+//  //  //&& (misc.drawPosPipe1.x === 0)
+//  //  misc.pixelEnPipe1 && misc.visibPipe1
+//  //  && !misc.fifoEmpty
+//  //)
+//  //fifoPop.ready 
+//  //fifoPop.ready := rFifoPopReady
+//  //misc.fifoPopReady := rFifoPopReady
+//  val rPastPixelEn = Reg(Bool()) init(False)
+//  rPastPixelEn := misc.pixelEn
+//  //fifoPop.ready := (
+//  //  //rPastPixelEn && misc.pastVisib && !fifoEmpty
+//  //  //misc.pixelEn && misc.visib && !fifoEmpty
+//  //  misc.pixelEnPipe1 && misc.visibPipe1 && !fifoEmpty
+//  //  //misc.pixelEnPipe2 && misc.visibPipe2 && !fifoEmpty
+//  //)
+//  //val rFifoPopReady = Reg(Bool()) init(False)
+//  //rFifoPopReady := (
+//  //  //misc.pixelEn
+//  //  misc.pixelEnPipe1
+//  //  && misc.visib
+//  //  && !fifoEmpty
+//  //)
+//  // BEGIN: pipelined working (?)
+//  //rFifoPopReady := 
+//
+//  //fifoPop.ready :=
+//
+//  //fifoPop.ready := (
+//  //  //misc.pixelEnPipe2 && misc.visibPipe2 && !fifoEmpty
+//  //  //misc.pixelEnPipe3 && misc.visibPipe3 && !fifoEmpty
+//  //  //hpipe.visibToDrive
+//  //  //misc.pixelEnPipe1 && misc.visibPipe1 && !fifoEmpty
+//  //  //misc.pixelEn && misc.visib && !fifoEmpty
+//  //  //misc.pixelEnPipe1 && misc.visib && !fifoEmpty
+//  //  //misc.pixelEnPipe1
+//  //  //(nextClkCnt === cpp - 3) && misc.visib && !fifoEmpty
+//  //  //rPastPixelEn &&
+//  //  misc.visib && !fifoEmpty
+//  //)
+//
+//  //when (misc.pixelEnPipe1 && misc.visib && !fifoEmpty) {
+//  //  rFifoPopReady := True
+//  //}
+//  //when (fifoPop.fire) {
+//  //  //fifoPop.ready := 
+//  //  rFifoPopReady := False
+//  //}
+//
+//  when (
+//    //fifoPop.valid
+//    //&& 
+//    //misc.pixelEnPipe1
+//    //&& rPastPixelEn
+//    //--------
+//    misc.pixelEn
+//    && misc.visib
+//    //&& hpipe.rVisibPrev1 && vpipe.rVisib
+//    //--------
+//    //&& misc.pastVisib
+//    //&& hpipe.rVisibPipe1 && vpipe.rVisib
+//    //&& hpipe.rVisib && vpipe.rVisib
+//    //&& !fifoEmpty
+//  ) {
+//    //rFifoPopReady := True
+//    fifoPop.ready := True
+//  } otherwise {
+//    //rFifoPopReady := False
+//    fifoPop.ready := False
+//  }
+//  //fifoPop.ready := rFifoPopReady
+//  //fifoPop.ready := (
+//  //  //misc.pixelEnPipe1
+//  //  misc.pixelEn
+//  //  && misc.visib
+//  //  && !fifoEmpty
+//  //)
+//
+//  //fifoPop.ready := True
+//  //fifoPop.ready := rFifoPopReady
+//  //fifoPop.ready := 
+//  //rFifoPopReady := (
+//  //  misc.pixelEnPipe2
+//  //  //misc.pixelEn
+//  //  //&& misc.visibPipe2
+//  //  //&& misc.visibPipe1
+//  //  //&& misc.visib
+//  //  //&& hpipe.rSPipe1 === LcvVgaState.visib
+//  //  //&& vpipe.s === LcvVgaState.visib
+//  //  && (
+//  //    //hpipe.rVisib
+//  //    //|| 
+//  //    //hpipe.rVisibPipe1
+//  //    //hpipe.rVisib
+//  //    hpipe.rVisibPipe1
+//  //  )
+//  //  && vpipe.rVisib
+//  //  && !fifoEmpty
+//  //)
+//  // END: pipelined working (?)
+//  //fifoPop.ready := rFifoPopReady
+//  //fifoPop.ready := (
+//  //  misc.pixelEnPipe1 && misc.visibPipe1 && !fifoEmpty
+//  //)
+//  // BEGIN: working
+//  //fifoPop.ready := (
+//  //  misc.pixelEnPipe1 && misc.visibPipe1 && !fifoEmpty
+//  //)
+//  //fifoPop.ready := (
+//  //  rTempNextPixelEn && misc.visibPipe1 && !fifoEmpty
+//  //)
+//  // END: working
+//  // BEGIN: test
+//
+//  //fifoPop.ready := (
+//  //  //rTempNextPixelEn && rTempNextVisib && !fifoEmpty
+//  //  //rPixelEnPipe1 && rVisibPipe1 && !fifoEmpty
+//  //  rPixelEnPipe1 && misc.visibPipe1 && !fifoEmpty
+//  //)
+//
+//  // END: test
+//  //rFifoPopReady := (
+//  //  //misc.pixelEnPipe2 && misc.visibPipe2 && !fifoEmpty
+//  //  //rTempNextVisib && rTempNextPixelEn && !fifoEmpty
+//  //)
+//  //fifoPop.ready := rFifoPopReady
+//  misc.fifoPopReady := fifoPop.ready
+//  //misc.pixelEnPipe2 := clkCntP1 === cpp - 2
+//  //val rPixelEnPipe2 = Reg(Bool()) init(False)
+//  //rPixelEnPipe2 := nextClkCnt === cpp - 2
+//  //misc.pixelEnPipe2 := rPixelEnPipe2
+//  //misc.visibPipe2 := rVisibPipe2
+//
+//  //misc.visibPipe2 := (
+//  //  (
+//  //    (
+//  //      //(misc.hpipeC + 1 === vgaTimingInfo.htiming.back)
+//  //      (misc.hpipeC + 2 === vgaTimingInfo.htiming.back)
+//  //      && (misc.hpipeS === LcvVgaState.back)
+//  //    ) || (
+//  //      misc.hpipeS === LcvVgaState.visib
+//  //    )
+//  //  ) && (
+//  //    //(
+//  //    //  ((misc.vpipeC + 2) >= vgaTimingInfo.vtiming.back)
+//  //    //  && (misc.vpipeS === LcvVgaState.back)
+//  //    //)
+//  //    //||
+//  //    misc.vpipeS === LcvVgaState.visib
+//  //  )
+//  //  //|| misc.visib
+//  //)
+//
+//  //rFifoPopReady := (
+//  ////fifoPop.ready 
+//  //  //misc.pixelEnPipe1
+//  //  //misc.pixelEnPipe2 && misc.visibPipe2
+//  //  //fifoPop.valid 
+//  //  //(clkCnt === (cpp - 3))
+//  //  //(nextClkCnt === (cpp - 3))
+//  //  //(nextClkCnt === cpp - 1)
+//  //  //(clkCntP1 === cpp)
+//  //  misc.pixelEnPipe2
+//  //  && misc.visibPipe2
+//  //)
+//  //rFifoPopReady := (
+//  //  misc.pixelEnPipe1 && misc.visibPipe1
+//  //)
+//  //fifoPop.ready := rFifoPopReady
+//
+//  //fifoPop.ready := rFifoPopReady
+//  //rFifoPopReady := False
+//  //when (fifoPop.valid) {
+//  //  when (misc.pixelEnPipe1) {
+//  //    rFifoPopReady := True
+//  //  }
+//  //}
+//  misc.fifoEmpty := fifoEmpty
+//  misc.fifoFull := fifoFull
+//  misc.fifoAmountCanPush := fifoAmountCanPush
+//  misc.fifoAmountCanPop := fifoAmountCanPop
+//  //--------
+//  // Implement HSYNC and VSYNC logic
+//  hpipe.updateCPipe2Plus1Etc(vgaTimingHv=htiming)
+//  vpipe.updateCPipe2Plus1Etc(vgaTimingHv=vtiming)
+//
+//  // This assumes the FPGA is running at a higher clock rate than the pixel
+//  // clock, but that is required anyway.
+//  val rUpdateVpipe = Reg(Bool()) init(False)
+//  rUpdateVpipe := (
+//    misc.pixelEnPipe1
+//    //&& hpipe.c + 1 >= fbSize2d.x
+//    && hpipe.c >= fbSize2d.x - 1
+//    //&& hpipe.rVisib
+//  )
+//  when (rUpdateVpipe) {
+//    vpipe.updateStateCnt(vgaTimingHv=vtiming)
+//  } otherwise {
+//    vpipe.noChangeUpdateToDrive()
+//  }
+//  when (misc.pixelEn) {
+//    hpipe.updateStateCnt(vgaTimingHv=htiming)
+//    //when (
+//    //  //hpipe.s === LcvVgaState.visib
+//    //  //&& hpipe.c + 1 >= fbSize2d.x
+//    //  //hpipe.rVisib
+//    //) {
+//    //  vpipe.updateStateCnt(vgaTimingHv=vtiming)
+//    //} otherwise {
+//    //  vpipe.noChangeUpdateToDrive()
+//    //}
+//  } otherwise {
+//    hpipe.noChangeUpdateToDrive()
+//    //vpipe.noChangeUpdateToDrive()
+//  }
+//  when (misc.pixelEn) {
+//    //hpipe.updateNextNextS(vgaTimingHv=htiming)
+//    //htiming.updateStateCnt(m, hpipe)
+//    //hpipe.updateStateCnt(vgaTimingHv=htiming)
+//
+//    //hpipe.updateStateCnt(vgaTimingHv=htiming)
+//
+//    switch (hpipe.s) {
+//      is (LcvVgaState.front) {
+//        //m.d.sync += outp.hsync := (0b1)
+//        rHsync := True
+//        ////vtiming.noChangeUpdateNextS(m, vpipe)
+//        //vpipe.noChangeUpdateNextS()
+//      }
+//      is (LcvVgaState.sync) {
+//        //m.d.sync += outp.hsync := (0b0)
+//        rHsync := False
+//        ////vtiming.noChangeUpdateNextS(m, vpipe)
+//        //vpipe.noChangeUpdateNextS()
+//      }
+//      is (LcvVgaState.back) {
+//        //m.d.sync += outp.hsync := (0b1)
+//        rHsync := True
+//        ////vtiming.noChangeUpdateNextS(m, vpipe)
+//        //vpipe.noChangeUpdateNextS()
+//      }
+//      is (LcvVgaState.visib) {
+//        //m.d.sync += outp.hsync := (0b1)
+//        rHsync := True
+//        //when ((hpipe["c"] + 0x1) >= FB_SIZE().x) 
+//        //when ((hpipe.c + 0x1) >= fbSize2d.x)
+//        //when ((hpipe.c + 0x1) >= fbSize2d.x) 
+//        //when (hpipe.rCPipe1 >= fbSize2d.x) 
+//        // BEGIN: old, non-pipelined version
+//        //when (hpipe.rCPipe1 >= fbSize2d.x) {
+//        //  //vtiming.updateStateCnt(m, vpipe)
+//        //  vpipe.updateStateCnt(vgaTimingHv=vtiming)
+//        //}
+//        // END: old, non-pipelined version
+//        //otherwise {
+//        //  //vtiming.noChangeUpdateNextS(m, vpipe)
+//        //  //vpipe.noChangeUpdateNextS()
+//        //  vpipe.noChange
+//        //}
+//      }
+//    }
+//
+//    switch (vpipe.s) {
+//      is (LcvVgaState.front) {
+//        //m.d.sync += outp.vsync := (0b1)
+//        rVsync := True
+//      }
+//      is (LcvVgaState.sync) {
+//        //m.d.sync += outp.vsync := (0b0)
+//        rVsync := False
+//      }
+//      is (LcvVgaState.back) {
+//        //m.d.sync += outp.vsync := (0b1)
+//        rVsync := True
+//      }
+//      is (LcvVgaState.visib) {
+//        //m.d.sync += outp.vsync := (0b1)
+//        rVsync := True
+//      }
+//    }
+//  }
+//  //.otherwise { // when (~misc.pixelEn)
+//  //  //htiming.noChangeUpdateNextS(m, hpipe)
+//  //  //vtiming.noChangeUpdateNextS(m, vpipe)
+//  //  //hpipe.noChangeUpdateNextS()
+//  //  //vpipe.noChangeUpdateNextS()
+//  //}
+//  //--------
+//  // Implement drawing the picture
+//
+//  //val rHpipeCWillBe0 = Reg(Bool()) init(False)
+//  //rHpipeCWillBe0 := hpipe.rCPipe1 === 0x0
+//  val rPhysColGPipe1 = Reg(UInt(rgbConfig.gWidth bits)) init(0x0)
+//  when (rPastPixelEn) {
+//    when (hpipe.rCPipe1 === 0x0) {
+//      rPhysColGPipe1 := 0x0
+//    } otherwise {
+//      rPhysColGPipe1 := rPhys.col.g + 1
+//    }
+//  }
+//  //when (fifoPop.fire) {
+//  //  rPhys.col := tempCol
+//  //}
+//  when (misc.pixelEn) {
+//    // Visible area
+//    when (
+//      //--------
+//      misc.visib
+//      //hpipe.rVisibPrev1 && vpipe.rVisib
+//      //--------
+//      //hpipe.rVisibPipe2 && vpipe.rVisib
+//    ) {
+//      //when (~io.en) {
+//      //  //m.d.sync += [
+//      //    //phys.col.r := (0xf),
+//      //    //phys.col.g := (0xf),
+//      //    //phys.col.b := (0xf),
+//      //  //]
+//      //  rPhys.col.r := (default -> True)
+//      //  rPhys.col.g := (default -> True)
+//      //  rPhys.col.b := (default -> True)
+//      //} otherwise { // when (io.en)
+//        //m.d.sync += [
+//          //--------
+//          rPhys.col := /*RegNext*/(tempCol)
+//          //--------
+//          //rPhys.col := rTempColBuf
+//          //rPhys.col.r := (default -> True)
+//          ////when (hpipe.c === 0x0) {
+//          ////  rPhys.col.g := 0x0
+//          ////} otherwise {
+//          ////  rPhys.col.g := rPhys.col.g + 1
+//          ////}
+//          //rPhys.col.g := rPhysColGPipe1
+//          //rPhys.col.b := 0x0
+//        //]
+//      //}
+//    // Black border
+//    } otherwise { // when (~misc.visib)
+//      //m.d.sync += [
+//        //phys.col.r := 0x0
+//        //phys.col.g := 0x0
+//        //phys.col.b := 0x0
+//        rPhys.col := rPhys.col.getZero
+//      //]
+//    }
+//  } //otherwise {
+//  //  rPhys.col := rPastPhys.col
+//  //}
+//  //--------
+//  //val rMisc = Reg(LcvVgaCtrlMiscIo())
+//  //rMisc.init(rMisc.getZero)
+//  //misc := rMisc
+//    //m.d.comb += [
+//      //misc.visib := ((hpipe.s == Tstate.VISIB)
+//      // & (vpipe.s == Tstate.VISIB)),
+//    misc.drawPos.x := hpipe.c.resized
+//    misc.drawPos.y := vpipe.c.resized
+//    misc.size.x := fbSize2d.x
+//    misc.size.y := fbSize2d.y
+//    //]
+//    //m.d.sync += [
+//    //val rVisibPipe1 = Reg(Bool()) init(False)
+//    //rVisibPipe1 := ((hpipe.sPipe1 === LcvVgaState.visib)
+//    //  & (vpipe.sPipe1 === LcvVgaState.visib))
+//    //rVisibPipe1 := ((hpipe.rSPipe2 === LcvVgaState.visib)
+//    //  && (vpipe.rSPipe2 === LcvVgaState.visib))
+//    //rVisibPipe1 := ((hpipe.sPipe2 === LcvVgaState.visib)
+//    //  && (vpipe.sPipe2 === LcvVgaState.visib))
+//    //rVisibPipe1 := hpipe.rVisibPipe2 && vpipe.rVisibPipe2
+//    //rVisibPipe1 := hpipe.rVisibPipe1 && vpipe.rVisibPipe1
+//
+//    //misc.visibPipe1 := rVisibPipe1
+//    // BEGIN: stuff
+//    //misc.visibPipe1 := hpipe.rVisibPipe1 && vpipe.rVisibPipe1
+//    //misc.visibPipe2 := hpipe.rVisibPipe2 && vpipe.rVisibPipe2
+//
+//    //misc.visib := hpipe.rVisib && vpipe.rVisib
+//    //misc.visibPipe1 := hpipe.rVisibPipe1 && vpipe.rVisibPipe1
+//    //misc.visibPipe2 := hpipe.rVisibPipe2 && vpipe.rVisibPipe2
+//    //rVisib := hpipe.rVisibPipe
+//    //val rVisibPipe = new ArrayBuffer[Bool]()
+//    //val visibToDrive = Bool()
+//    //for (idx <- 0 to hpipe.pipeSize - 1) {
+//    //  rVisibPipe += Reg(Bool()) init(False)
+//    //}
+//    //for (idx <- 1 to hpipe.pipeSize - 1) {
+//    //  rVisibPipe(idx - 1) := rVisibPipe(idx)
+//    //}
+//    //rVisibPipe.last := visibToDrive
+//    //visibToDrive := hpipe.visibToDrive && vpipe.visibToDrive
+//    //misc.visib := rVisibPipe(hpipe.currIdx)
+//    //misc.visibPipe1 := rVisibPipe(hpipe.pipe1Idx)
+//    //misc.visibPipe2 := rVisibPipe(hpipe.pipe2Idx)
+//    //misc.visibPipe3 := rVisibPipe(hpipe.pipe3Idx)
+//
+//    //misc.visib := hpipe.rVisib && vpipe.rVisib
+//    //misc.visib := (
+//    //  hpipe.s === LcvVgaState.visib
+//    //  && vpipe.s === LcvVgaState.visib
+//    //)
+//    //misc.visibPipe1 := hpipe.rVisibPipe1 && vpipe.rVisib
+//    misc.visib := hpipe.rVisib && vpipe.rVisib
+//    misc.visibPipe1 := hpipe.rVisibPipe1 && vpipe.rVisibPipe1
+//    //misc.visibPipe2 := False
+//    //misc.visibPipe2 := hpipe.rVisibPipe2 && vpipe.rVisibPipe2
+//    //misc.visibPipe3 := False
+//    //val rVisib = Reg(Bool()) init(False)
+//    //rVisib := hpipe.rVisib && 
+//
+//    //misc.visib := hpipe.rVisib && vpipe.rVisib
+//    //val rVisib = Reg(Bool()) init(False)
+//    //rVisib := 
+//    //misc.visib := (
+//    //  hpipe.s === LcvVgaState.visib
+//    //  && vpipe.s === LcvVgaState.visib
+//    //)
+//    //val rVisibPipe1 = Reg(Bool()) init(False)
+//    //rVisibPipe1 := (
+//    //  hpipe.rSPipe1 === LcvVgaState.visib
+//    //  //&& vpipe.rSPipe1 === LcvVgaState.visib
+//    //  && vpipe.s === LcvVgaState.visib
+//    //)
+//    //val rVisib = Reg(Bool()) init(False)
+//    //rVisib := rVisibPipe1
+//    //misc.visib := rVisib
+//    //misc.visibPipe1 := rVisibPipe1
+//    //misc.visibPipe2 := False
+//    //misc.visibPipe3 := False
+//
+//    //misc.visibPipe1 := 
+//    //misc.visib := hpipe.rVisib && vpipe.rVisib
+//    //misc.visibPipe1 := hpipe.rVisibPipe1 && vpipe.rVisib
+//
+//    //misc.visibPipe2 := hpipe.rVisibPipe2 && vpipe.rVisib
+//    //misc.visibPipe3 := hpipe.rVisibPipe3 && vpipe.rVisib
+//
+//    // END: stuff
+//
+//    //val rVisibPipe1 = Reg(Bool()) init(False)
+//    //rVisibPipe1 := hpipe.visibPipe2 && vpipe.visibPipe2
+//    //misc.visibPipe1 := rVisibPipe1
+//
+//    //misc.visibPipe1 := ((hpipe.rSPipe2 === LcvVgaState.visib)
+//    //  && (vpipe.rSPipe2 === LcvVgaState.visib))
+//    //misc.visibPipe1 := ((hpipe.sPipe1 === LcvVgaState.visib)
+//    //  & (vpipe.sPipe1 === LcvVgaState.visib))
+//    //misc.visibPipe1 := ((hpipe.rSPipe2 === LcvVgaState.visib)
+//    //  && (vpipe.rSPipe2 === LcvVgaState.visib))
+//    //misc.visibPipe1 := (
+//    //  hpipe.sPipe1 === LcvVgaState.visib
+//    //  && vpipe.sPipe1 === LcvVgaState.visib
+//    //)
+//    //cover(hpipe.sPipe1 === LcvVgaState.sync)
+//
+//    //val rVisib = Reg(Bool()) init(False)
+//    //rVisib := misc.visibPipe1
+//    //misc.visib := rVisib
+//
+//    val rPastVisib = Reg(Bool()) init(False)
+//    rPastVisib := misc.visib
+//    misc.pastVisib := rPastVisib
+//    misc.visibPrev1 := (
+//      hpipe.rVisibPrev1 && vpipe.rVisib
+//    )
+//
+//    val rPastDrawPos = Reg(LcvVgaCtrlMiscIo.coordT(
+//      fbSize2d=vgaTimingInfo.fbSize2d
+//    ))
+//    rPastDrawPos.init(rPastDrawPos.getZero)
+//    rPastDrawPos := misc.drawPos
+//    misc.pastDrawPos := rPastDrawPos
+//    //]
+//
+//  //val hpipeNextSVisib = Bool() addAttribute("keep")
+//  //hpipeNextSVisib := hpipe.sPipe1 === LcvVgaState.visib
+//  //val vpipeNextSVisib = Bool() addAttribute("keep")
+//  //vpipeNextSVisib := vpipe.sPipe1 === LcvVgaState.visib
+//  ////--------
+//  //GenerationFlags.formal {
+//  //  when (pastValidAfterReset) {
+//  //    when (
+//  //      past(misc.pixelEn)
+//  //      && hpipeNextSVisib
+//  //      && vpipeNextSVisib
+//  //      && misc.drawPos.x.resized < htiming.visib
+//  //      && misc.drawPos.y.resized < vtiming.visib
+//  //    ) {
+//  //      assert(misc.visibPipe1)
+//  //    }
+//  //  }
+//  //}
+//}
 //--------
 
 case class LcvVgaCtrlNoFifoIo(

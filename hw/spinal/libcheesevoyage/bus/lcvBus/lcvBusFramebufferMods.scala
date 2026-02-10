@@ -125,9 +125,9 @@ case class LcvBusFramebufferCtrl(
     cnt2dShiftOne=cfg.cnt2dShiftOne
   )
 
-  //require(
-  //  busCfg.allowBurst
-  //)
+  require(
+    busCfg.allowBurst
+  )
   require(
     busCfg.dataWidth
     >= rgbUpWidth
@@ -286,13 +286,13 @@ case class LcvBusFramebufferCtrl(
   val myD2hStm = Vec.fill(2)(
     cloneOf(io.bus.d2hBus)
   )
-  myD2hStm.head <-/< io.bus.d2hBus
+  myD2hStm.head << io.bus.d2hBus
   //myD2hStm.last <-/< myD2hStm.head.repeat(
   //  times=(
   //    (1 << cnt2dShift.x) //- 1
   //  )
   //)._1
-  myD2hStm.last <-/< myD2hStm.head
+  myD2hStm.last << myD2hStm.head
   myD2hStm.last.translateInto(
     //io.pop
     myPushStm
