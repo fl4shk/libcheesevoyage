@@ -590,10 +590,14 @@ case class LcvVgaCtrl(
   val myVideoCfg = LcvVideoDblLineBufWithCalcPosConfig(
     rgbCfg=rgbConfig,
     someSize2d=fbSize2d,
-    cnt2dShiftOne=ElabVec2[Boolean](
-      x=false,
-      y=false,
+    cnt2dShift=ElabVec2[Int](
+      x=0,
+      y=0,
     ),
+    //cnt2dShiftOne=ElabVec2[Boolean](
+    //  x=false,
+    //  y=false,
+    //),
   )
   //--------
   io.misc.allowOverride

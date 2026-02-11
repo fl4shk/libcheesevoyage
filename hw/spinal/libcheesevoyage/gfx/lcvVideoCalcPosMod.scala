@@ -309,13 +309,14 @@ case class LcvVideoCalcPosStreamAdapter(
 case class LcvVideoDblLineBufWithCalcPosConfig(
   rgbCfg: RgbConfig,
   someSize2d: ElabVec2[Int],
-  cnt2dShiftOne: ElabVec2[Boolean],
+  cnt2dShift: ElabVec2[Int],
+  //cnt2dShiftOne: ElabVec2[Boolean],
   //bufElemSize: Int=1,
 ) {
-  val cnt2dShift = ElabVec2[Int](
-    x=(if (cnt2dShiftOne.x) (1) else (0)),
-    y=(if (cnt2dShiftOne.y) (1) else (0)),
-  )
+  //val cnt2dShift = ElabVec2[Int](
+  //  x=(if (cnt2dShiftOne.x) (1) else (0)),
+  //  y=(if (cnt2dShiftOne.y) (1) else (0)),
+  //)
   val myCalcPosSize2d = ElabVec2[Int](
     x=(someSize2d.x * (1 << cnt2dShift.x)),
     y=(someSize2d.y * (1 << cnt2dShift.y)),
