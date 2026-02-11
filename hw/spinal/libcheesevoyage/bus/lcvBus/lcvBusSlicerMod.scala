@@ -67,7 +67,19 @@ case class LcvBusSlicer(
     )
     dev.d2hBus.ready := False
   }
-  switch (io.host.h2dBus.payload.addr(cfg.addrSliceRange)) {
+  val stickyH2dAddrSlice = (
+    UInt(cfg.mmapCfg.addrSliceWidth bits)
+  )
+  stickyH2dAddrSlice := (
+    RegNext(stickyH2dAddrSlice, init=stickyH2dAddrSlice.getZero)
+  )
+  when (io.host.h2dBus.valid) {
+    io.host.h2dBus.payload.addr(cfg.addrSliceRange)
+  }
+  switch (
+    //io.host.h2dBus.payload.addr(cfg.addrSliceRange)
+    stickyH2dAddrSlice
+  ) {
     for (devIdx <- 0 until cfg.numDevs) {
       is (devIdx) {
         //val dev.h2dBus = io.devVec(devIdx).h2dBus
