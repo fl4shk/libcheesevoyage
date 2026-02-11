@@ -709,6 +709,8 @@ case class LcvVgaCtrl(
   //  && rVState === LcvVgaState.visib
   //)
 
+  io.misc.hpipeS := rHState
+  io.misc.vpipeS := rVState
   //io.misc.visib := False
   myFifoPopReady := False
   //def doPopFifoEtc(): Unit = {
