@@ -99,7 +99,7 @@ case class LcvBusSlicer(
   extends SpinalEnum(defaultEncoding=binaryOneHot) {
     val
       START_NEW_ADDR_SLICE,
-      SAME_ADDR_SLICE,
+      MAIN,
       CHANGED_ADDR_SLICE_WAIT_REMAINING_D2H_RESPONSES
       = newElement();
   }
@@ -107,11 +107,91 @@ case class LcvBusSlicer(
     Reg(State())
     init(State.START_NEW_ADDR_SLICE)
   )
+  //switch (
+  //  (
+  //    rState === State.MAIN
+  //    //&& io.host.h2dBus.valid
+  //    //&& (rSavedH2dAddrSlice === io.host.h2dBus.addr(cfg.addrSliceRange))
+  //  )
+  //  ## io.host.h2dBus.fire
+  //  //## io.host.d2hBus.fire
+  //  ## io.devVec(rSavedH2dAddrSlice).d2hBus.fire
+  //) {
+  //  //is (B"100") {
+  //  //}
+  //  is (B"110") {
+  //    // io.host.h2dBus.fire, !io.host.d2hBus.fire
+  //    rTxnCnt := rTxnCnt + 1
+  //  }
+  //  is (B"101") {
+  //  }
+  //  is (B"111") {
+  //  }
+  //  default {
+  //  }
+  //}
 
+  def doConnect(
+    devIdx: Int,
+  ): Unit = {
+    //val dev.h2dBus = io.devVec(devIdx).h2dBus
+    def dev = io.devVec(devIdx)
+    dev.h2dBus << io.host.h2dBus
+
+    //val dev.d2hBus = io.devVec(devIdx).d2hBus
+    io.host.d2hBus << dev.d2hBus
+
+    // at this point, we can just check `dev.h2dBus.ready` to
+    // determine if an h2d bus request is being sent
+    // because we know that `io.host.h2dBus.valid === True`
+    // from the outer-`switch`.
+
+    // this math here gets rid of the `switch` statement and produces
+    // identical results to the `switch` statement.
+    // I am not sure this is actually that great of an option but it
+    // might be???
+    //rTxnCnt := (
+    //    rTxnCnt 
+    //    + U(
+    //      dev.h2dBus.ready
+    //    )
+    //    - U(
+    //      dev.d2hBus.fire
+    //    )
+    //  )
+
+    switch (
+      //dev.h2dBus.ready
+      dev.h2dBus.fire
+      ## dev.d2hBus.fire
+    ) {
+      is (B"10") {
+        // dev.h2dBus.fire, !dev.d2hBus.fire
+        rTxnCnt := rTxnCnt + 1
+      }
+      is (B"01") {
+        rTxnCnt := rTxnCnt - 1
+      }
+      default {
+      }
+    }
+
+    //when (
+    //  io.host.h2dBus.ready
+    //  =/= dev.d2hBus.fire 
+    //) {
+    //}
+  }
   switch (
     (
-      rState === State.SAME_ADDR_SLICE
-      && io.host.h2dBus.valid
+      rState === State.MAIN
+      //&& io.host.h2dBus.valid
+    )
+    ## (
+      //rState === State.MAIN
+      //&& 
+      //!io.host.h2dBus.valid
+      io.host.h2dBus.valid
     )
     ## (rSavedH2dAddrSlice === io.host.h2dBus.addr(cfg.addrSliceRange))
     ## rSavedH2dAddrSlice
@@ -128,22 +208,29 @@ case class LcvBusSlicer(
         //    temp
         //  }
         //)
-        B"11"
+        B"101"
         ## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
       ) {
-        //val dev.h2dBus = io.devVec(devIdx).h2dBus
-        def dev = io.devVec(devIdx)
-        dev.h2dBus << io.host.h2dBus
-
-        //val dev.d2hBus = io.devVec(devIdx).d2hBus
-        io.host.d2hBus << dev.d2hBus
+        doConnect(devIdx=devIdx)
+      }
+      is (
+        B"111"
+        ## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
+      ) {
+        doConnect(devIdx=devIdx)
+      }
+      is (
+        B"100"
+        ## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
+      ) {
+        doConnect(devIdx=devIdx)
       }
     }
     is (
       //M"110"
       MaskedLiteral(
         str={
-          var temp: String = "10"
+          var temp: String = "110"
           for (idx <- 0 until rSavedH2dAddrSlice.getWidth) {
             temp += "-"
           }
@@ -151,6 +238,9 @@ case class LcvBusSlicer(
         }
       )
     ) {
+      //when (io.host.h2dBus.valid) {
+        rState := State.CHANGED_ADDR_SLICE_WAIT_REMAINING_D2H_RESPONSES
+      //}
     }
     default {
     }
@@ -159,20 +249,39 @@ case class LcvBusSlicer(
     is (State.START_NEW_ADDR_SLICE) {
       when (io.host.h2dBus.valid) {
         rSavedH2dAddrSlice := io.host.h2dBus.addr(cfg.addrSliceRange)
+        rState := State.MAIN
       }
     }
-    is (State.SAME_ADDR_SLICE) {
+    is (State.MAIN) {
       //switch (
       //  rSavedH2dAddrSlice === io.host.h2dBus.addr(cfg.addrSliceRange)
       //) {
       //}
     }
     is (State.CHANGED_ADDR_SLICE_WAIT_REMAINING_D2H_RESPONSES) {
-      //switch (
-      //  //io.devVec()
-      //  ## (rTxnCnt > 0)
-      //) {
-      //}
+      //def dev = io.devVec(rSavedH2dAddrSlice)
+      switch (
+        //(rTxnCnt > 0)
+        rTxnCnt.orR // same as `rTxn =/= 0`
+        //rTxnCnt
+        ## rSavedH2dAddrSlice
+      ) {
+        for (devIdx <- 0 until cfg.numDevs) {
+          is (
+            B"1'b1"
+            ## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
+          ) {
+            def dev = io.devVec(devIdx)
+            io.host.d2hBus << dev.d2hBus
+            when (dev.d2hBus.fire) {
+              rTxnCnt := rTxnCnt - 1
+            }
+          }
+        }
+        default {
+          rState := State.START_NEW_ADDR_SLICE
+        }
+      }
       //when (rTxnCnt === 0) {
       //}
     }
