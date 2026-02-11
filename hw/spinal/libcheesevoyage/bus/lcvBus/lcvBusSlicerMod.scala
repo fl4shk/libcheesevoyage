@@ -74,21 +74,25 @@ case class LcvBusSlicer(
     RegNext(stickyH2dAddrSlice, init=stickyH2dAddrSlice.getZero)
   )
   when (io.host.h2dBus.valid) {
-    io.host.h2dBus.payload.addr(cfg.addrSliceRange)
+    stickyH2dAddrSlice := (
+      io.host.h2dBus.payload.addr(cfg.addrSliceRange)
+    )
   }
-  switch (
-    //io.host.h2dBus.payload.addr(cfg.addrSliceRange)
-    stickyH2dAddrSlice
-  ) {
-    for (devIdx <- 0 until cfg.numDevs) {
-      is (devIdx) {
-        //val dev.h2dBus = io.devVec(devIdx).h2dBus
-        def dev = io.devVec(devIdx)
-        dev.h2dBus << io.host.h2dBus
+  //when (io.host.h2dBus.valid) {
+    switch (
+      //io.host.h2dBus.payload.addr(cfg.addrSliceRange)
+      stickyH2dAddrSlice
+    ) {
+      for (devIdx <- 0 until cfg.numDevs) {
+        is (devIdx) {
+          //val dev.h2dBus = io.devVec(devIdx).h2dBus
+          def dev = io.devVec(devIdx)
+          dev.h2dBus << io.host.h2dBus
 
-        //val dev.d2hBus = io.devVec(devIdx).d2hBus
-        io.host.d2hBus << dev.d2hBus
+          //val dev.d2hBus = io.devVec(devIdx).d2hBus
+          io.host.d2hBus << dev.d2hBus
+        }
       }
     }
-  }
+  //}
 }
