@@ -117,6 +117,17 @@ case class LcvBusFramebufferCtrl(
   def fbSize2d = cfg.fbSize2d
   def cnt2dShift = cfg.cnt2dShift
   def rgbUpWidth = 1 << log2Up(Rgb(c=rgbCfg).asBits.getWidth)
+  def rgbBusRatio = (busCfg.dataWidth / rgbUpWidth).toInt
+  def myBusBurstSizeMaxMult = cfg.myBusBurstSizeMax * rgbBusRatio
+
+  val myD2hShiftedDataStmAdapter = (
+    rgbBusRatio > 1
+  ) generate (
+    LcvBusD2hShiftedDataEtcStreamAdapter(
+      cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(busCfg=cfg.busCfg)
+    )
+  )
+
   val myVideoCfg = LcvVideoDblLineBufWithCalcPosConfig(
     rgbCfg=rgbCfg,
     someSize2d=ElabVec2[Int](
@@ -126,19 +137,28 @@ case class LcvBusFramebufferCtrl(
     cnt2dShift=cfg.cnt2dShift,
     //cnt2dShiftOne=cfg.cnt2dShiftOne
   )
+  //val myVideoCfg = LcvVideoDblLineBufWithCalcPosConfig(
+  //  rgbCfg=rgbCfg,
+  //  someSize2d=ElabVec2[Int](
+  //    x=fbSize2d.x,
+  //    y=(fbSize2d.y * (if (cfg.dblBuf) (2) else (1))),
+  //  ),
+  //  cnt2dShift=cfg.cnt2dShift,
+  //  //cnt2dShiftOne=cfg.cnt2dShiftOne
+  //)
 
   require(
     busCfg.allowBurst
   )
   require(
     busCfg.dataWidth
-    //>= rgbUpWidth
-    == rgbUpWidth
+    >= rgbUpWidth
+    //== rgbUpWidth
   )
   require(
-    (fbSize2d.x % cfg.myBusBurstSizeMax) == 0,
+    (fbSize2d.x % myBusBurstSizeMaxMult) == 0,
     s"fbSize2d.x:${fbSize2d.x} must be an exact integer multiple "
-    + s"of cfg.myBusBurstSizeMax:${cfg.myBusBurstSizeMax}"
+    + s"of myBusBurstSizeMaxMult:${myBusBurstSizeMaxMult}"
   )
 
   val io = LcvBusFramebufferCtrlIo(cfg=cfg)
@@ -220,11 +240,15 @@ case class LcvBusFramebufferCtrl(
       //)
     }
   )
+
   val rFbRowCnt = (
     Reg(UInt(
       (
         log2Up(
-          myVideoCfg.someSize2d.x
+          (
+            myVideoCfg.someSize2d.x
+            // / rgbBusRatio
+          ) 
           + 1
         )
         + 1
@@ -239,6 +263,7 @@ case class LcvBusFramebufferCtrl(
         (
           (
             myVideoCfg.someSize2d.y * myVideoCfg.someSize2d.x
+            // / rgbBusRatio
           ) //<< (cnt2dShift.x + cnt2dShift.y)
           + 1
         )
@@ -255,13 +280,15 @@ case class LcvBusFramebufferCtrl(
       rFbRowCnt < (
         myVideoCfg.someSize2d.x
         //- 1
-        - cfg.myBusBurstSizeMax
+        //- cfg.myBusBurstSizeMax
+        - myBusBurstSizeMaxMult
       )
     ) {
       rFbRowCnt := (
         rFbRowCnt
         //+ 1
-        + cfg.myBusBurstSizeMax
+        //+ cfg.myBusBurstSizeMax
+        + myBusBurstSizeMaxMult
       )
     } otherwise {
       rMyDblLineBufIdx := True
@@ -295,16 +322,19 @@ case class LcvBusFramebufferCtrl(
         (
           (
             myVideoCfg.someSize2d.y * myVideoCfg.someSize2d.x
+            // / rgbBusRatio
           ) //<< (cnt2dShift.x + cnt2dShift.y)
         )
         //- 1
-        - cfg.myBusBurstSizeMax
+        //- cfg.myBusBurstSizeMax
+        - myBusBurstSizeMaxMult
       )
     ) {
       rFbAddrCnt := (
         rFbAddrCnt
         //+ 1
-        + cfg.myBusBurstSizeMax
+        //+ cfg.myBusBurstSizeMax
+         + myBusBurstSizeMaxMult
       )
     } otherwise {
       rFbAddrCnt := 0x0
@@ -374,7 +404,15 @@ case class LcvBusFramebufferCtrl(
   //--------
   val myPushStm = Stream(Rgb(rgbCfg))
   //myPushStm.ready := True
-  val myD2hStm = Vec.fill(2)(
+  val myD2hStm = Vec.fill(
+    //2
+    if (rgbBusRatio == 1) (
+      2
+    ) else (
+      //3
+      4
+    )
+  )(
     cloneOf(io.bus.d2hBus)
   )
   myD2hStm.head << io.bus.d2hBus
@@ -383,7 +421,41 @@ case class LcvBusFramebufferCtrl(
   //    (1 << cnt2dShift.x) //- 1
   //  )
   //)._1
-  myD2hStm.last << myD2hStm.head
+  val rMyD2hCnt = (
+    rgbBusRatio > 1
+  ) generate (
+    Reg(UInt(log2Up(rgbBusRatio) bits))
+    init(0x0)
+  )
+  if (rgbBusRatio == 1) {
+    myD2hStm.last << myD2hStm.head
+  } else {
+    myD2hStm(1) <-/< myD2hStm.head.repeat(
+      times=rgbBusRatio
+    )._1
+    myD2hStm(1).translateInto(myD2hShiftedDataStmAdapter.io.loD2hBus)(
+      dataAssignment=(outp, inp) => {
+        outp.data := inp.data
+        //outp.src := inp.src
+        outp.byteSize := log2Up(rgbUpWidth / 8)
+        outp.addrLo := 0x0
+        outp.addrLo.allowOverride
+        outp.addrLo(
+          outp.addrLo.high
+          downto rMyD2hCnt.getWidth
+        ) := rMyD2hCnt
+      }
+    )
+    when (myD2hStm(1).fire) {
+      rMyD2hCnt := rMyD2hCnt + 1
+    }
+    myD2hShiftedDataStmAdapter.io.hiD2hBus.translateInto(myD2hStm(2))(
+      dataAssignment=(outp, inp) => {
+        outp.data := inp.data
+      }
+    )
+    myD2hStm.last <-/< myD2hStm(2)
+  }
   myD2hStm.last.translateInto(
     //io.pop
     myPushStm
@@ -402,6 +474,7 @@ case class LcvBusFramebufferCtrl(
       io.pop <-/< myPushStm.repeat(
         times=(
           (1 << cnt2dShift.x) //- 1
+          //* rgbBusRatio
         )
       )._1
     }
@@ -413,11 +486,23 @@ case class LcvBusFramebufferCtrl(
       READ_LINE_BUF
       = newElement();
   }
+  //val myLineDuplArea = (
+  //  cnt2dShift.y == 1
+  //) generate (new Area {
+  //  val myDblLineBufArr = (
+  //  )
+  //})
   val myLineDoublingArea = (
     cnt2dShift.y == 1
   ) generate (new Area {
     //myPushStm.ready := True
-    val myDblLineBuf = WrPulseRdPipeRamSdpPipe(cfg=myVideoCfg.myMemCfg)
+    val myDblLineBuf = (
+      //Array.fill(rgbBusRatio)(
+        WrPulseRdPipeRamSdpPipe(
+          cfg=myVideoCfg.myMemCfg
+        )
+      //)
+    )
     val myWrPulse = cloneOf(myDblLineBuf.io.wrPulse)
     myDblLineBuf.io.wrPulse <-< myWrPulse
     val rWrLineBufAddrCnt = (
@@ -542,6 +627,7 @@ case class LcvBusFramebufferCtrl(
           myMaybeReptPushStm << myPushStm.repeat(
             times=(
               (1 << cnt2dShift.x) //- 1
+              //* rgbBusRatio
             )
           )._1
           io.pop << myMaybeReptPushStm
