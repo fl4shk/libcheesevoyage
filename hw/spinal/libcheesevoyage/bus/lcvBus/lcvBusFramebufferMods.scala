@@ -381,9 +381,9 @@ case class LcvBusFramebufferCtrl(
     )
     outp.data := 0x0
     outp.byteSize := (
-      //log2Up(busCfg.dataWidth / 8)
+      log2Up(busCfg.dataWidth / 8)
       //log2Up(Rgb(rgbCfg).asBits.getWidth / 8)
-      log2Up(rgbUpWidth / 8)
+      //log2Up(rgbUpWidth / 8)
     )
     outp.isWrite := False
 
