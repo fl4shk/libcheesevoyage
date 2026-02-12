@@ -402,7 +402,9 @@ case class LcvBusFramebufferCtrl(
   //  dataAssignment=myDataAssignmentH2d
   //)
   //--------
-  val myPushStm = Stream(Rgb(rgbCfg))
+  val myPushStm = (
+    Stream(Rgb(rgbCfg))
+  )
   //myPushStm.ready := True
   val myD2hStm = Vec.fill(
     //2
