@@ -322,7 +322,7 @@ case class LcvBusFramebufferCtrl(
         (
           (
             myVideoCfg.someSize2d.y * myVideoCfg.someSize2d.x
-            // / rgbBusRatio
+            / rgbBusRatio
           ) //<< (cnt2dShift.x + cnt2dShift.y)
         )
         //- 1
@@ -369,8 +369,12 @@ case class LcvBusFramebufferCtrl(
         rFbAddrCnt(
           rFbAddrCnt.high
           downto 0 //cnt2dShift.x + cnt2dShift.y
+          //downto log2Up(rgbBusRatio)
         ),
-        U(s"${log2Up(rgbUpWidth / 8)}'d0"),
+        //U(s"${log2Up(rgbUpWidth / 8)}'d0"),
+        U(
+          s"${log2Up(busCfg.dataWidth / 8)}'d0"
+        )
       ).asUInt.resize(outp.addr.getWidth)
     )
     outp.src := (
