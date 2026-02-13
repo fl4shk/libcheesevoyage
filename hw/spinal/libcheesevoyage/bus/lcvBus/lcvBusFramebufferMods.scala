@@ -1022,7 +1022,7 @@ case class LcvBusFramebufferCtrl(
             //println(
             //  "debug end:"
             //)
-            myMaybeReptRdDataPipeStm.last << (
+            myMaybeReptRdDataPipeStm.last <-/< (
               myMaybeReptRdDataPipeStm.head
               //.throwWhen(
               //  !rDidFirstIter
