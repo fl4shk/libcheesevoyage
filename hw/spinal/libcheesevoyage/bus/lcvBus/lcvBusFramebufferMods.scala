@@ -326,15 +326,15 @@ case class LcvBusFramebufferCtrl(
           ) //<< (cnt2dShift.x + cnt2dShift.y)
         )
         //- 1
-        //- cfg.myBusBurstSizeMax
-        - myBusBurstSizeMaxMult
+        - cfg.myBusBurstSizeMax
+        //- myBusBurstSizeMaxMult
       )
     ) {
       rFbAddrCnt := (
         rFbAddrCnt
         //+ 1
-        //+ cfg.myBusBurstSizeMax
-         + myBusBurstSizeMaxMult
+        + cfg.myBusBurstSizeMax
+        // + myBusBurstSizeMaxMult
       )
     } otherwise {
       rFbAddrCnt := 0x0
