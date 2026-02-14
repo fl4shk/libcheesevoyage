@@ -1032,7 +1032,7 @@ case class LcvBusFramebufferCtrl(
               dataAssignment=(outp, inp) => {
                 outp := inp(rMyPopVecIdx(
                   rMyPopVecIdx.high
-                  downto rMyPopVecIdx.getWidth - cnt2dShift.x
+                  downto rMyPopVecIdx.getWidth - log2Up(rgbBusRatio) //cnt2dShift.x
                 ))
               }
             )
