@@ -94,15 +94,15 @@ case class LcvVgaTimingInfo(
       vgaTimingInfo=this,
     )
     spinalVgaTimings.setAs(
-      hPixels=htiming.visib /* * cpp */,
-      hSync=htiming.sync /* * cpp */,
-      hFront=htiming.front /* * cpp */,
-      hBack=htiming.back /* * cpp */,
+      hPixels=htiming.visib * cpp,
+      hSync=htiming.sync * cpp,
+      hFront=htiming.front * cpp,
+      hBack=htiming.back * cpp,
       hPolarity=hPolarity,
-      vPixels=vtiming.visib /* * cpp */,
-      vSync=vtiming.sync /* * cpp */,
-      vFront=vtiming.front /* * cpp */,
-      vBack=vtiming.back /* * cpp */,
+      vPixels=vtiming.visib * cpp,
+      vSync=vtiming.sync * cpp,
+      vFront=vtiming.front * cpp,
+      vBack=vtiming.back * cpp,
       vPolarity=hPolarity,
     )
   }
