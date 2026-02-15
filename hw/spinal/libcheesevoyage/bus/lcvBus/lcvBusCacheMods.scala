@@ -1134,8 +1134,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   //--------
   object State extends SpinalEnum(
     defaultEncoding=(
-      //binarySequential
-      binaryOneHot
+      binarySequential
+      //binaryOneHot
     )
   ) {
     val
@@ -1612,8 +1612,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   //--------
   object State extends SpinalEnum(
     defaultEncoding=(
-      //binarySequential
-      binaryOneHot
+      binarySequential
+      //binaryOneHot
     )
   ) {
     val
