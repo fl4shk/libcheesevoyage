@@ -249,13 +249,13 @@ module LcvAluDel1 #(
 	//--------
 	//localparam int SEL_SIZE = 2;
 	localparam int OP_WIDTH = 8/*11*/;
-	localparam [OP_WIDTH - 1:0] OP_ADD = 8'b1;
-	localparam [OP_WIDTH - 1:0] OP_SUB = 8'b1z;
-	localparam [OP_WIDTH - 1:0] OP_SLTU /*OP_GET_INP_A*/ = 8'b1zz;
-	localparam [OP_WIDTH - 1:0] OP_SLTS /*OP_GET_INP_B*/ = 8'b1zzz;
-	localparam [OP_WIDTH - 1:0] OP_AND = 8'b1zzzz;
-	localparam [OP_WIDTH - 1:0] OP_OR = 8'b1zzzzz;
-	localparam [OP_WIDTH - 1:0] OP_XOR = 8'b1zzzzzz;
+	localparam [OP_WIDTH - 1:0] OP_ADD = 8'bzzzzzzz1;
+	localparam [OP_WIDTH - 1:0] OP_SUB = 8'bzzzzzz1z;
+	localparam [OP_WIDTH - 1:0] OP_SLTU /*OP_GET_INP_A*/ = 8'bzzzzz1zz;
+	localparam [OP_WIDTH - 1:0] OP_SLTS /*OP_GET_INP_B*/ = 8'bzzzz1zzz;
+	localparam [OP_WIDTH - 1:0] OP_AND = 8'bzzz1zzzz;
+	localparam [OP_WIDTH - 1:0] OP_OR = 8'bzz1zzzzz;
+	localparam [OP_WIDTH - 1:0] OP_XOR = 8'bz1zzzzzz;
 	//localparam [OP_WIDTH - 1:0] OP_LSL = 1 << 7;
 	//localparam [OP_WIDTH - 1:0] OP_LSR = 1 << 8;
 	//localparam [OP_WIDTH - 1:0] OP_ASR = 1 << 9;
