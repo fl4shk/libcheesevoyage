@@ -8,6 +8,9 @@ import spinal.core.sim._
 import spinal.lib._
 import spinal.lib.misc.pipeline._
 
+
+import libcheesevoyage.math._
+
 case class LcvBusSlicerConfig(
   //busCfg: LcvBusConfig,
   //addrSliceWidth: Int,
@@ -182,69 +185,113 @@ case class LcvBusSlicer(
     //) {
     //}
   }
+
+  //switch (
+  //  (rState === State.MAIN)
+  //  ## (
+  //    io.host.h2dBus.valid
+  //  )
+  //  ## (
+  //    rSavedH2dAddrSlice
+  //  )
+  //) {
+  //}
+  when (
+    rState === State.MAIN
+    && io.host.h2dBus.valid
+    //&& !LcvFastCmpEq(
+    //  rSavedH2dAddrSlice,
+    //  io.host.h2dBus.addr(cfg.addrSliceRange),
+    //)
+    && (
+      rSavedH2dAddrSlice
+      =/= io.host.h2dBus.addr(cfg.addrSliceRange)
+    )
+  ) {
+    rState := State.CHANGED_ADDR_SLICE_WAIT_REMAINING_D2H_RESPONSES
+  }
+
   switch (
     (
       rState === State.MAIN
       //&& io.host.h2dBus.valid
+      && (rSavedH2dAddrSlice === io.host.h2dBus.addr(cfg.addrSliceRange))
     )
-    ## (
-      //rState === State.MAIN
-      //&& 
-      //!io.host.h2dBus.valid
-      io.host.h2dBus.valid
-    )
-    ## (rSavedH2dAddrSlice === io.host.h2dBus.addr(cfg.addrSliceRange))
+    //## (
+    //  //rState === State.MAIN
+    //  //&& 
+    //  //!io.host.h2dBus.valid
+    //  io.host.h2dBus.valid
+    //)
+    //## (rSavedH2dAddrSlice === io.host.h2dBus.addr(cfg.addrSliceRange))
     ## rSavedH2dAddrSlice
   ) {
     for (devIdx <- 0 until cfg.numDevs) {
       is (
         //M"11"
-        //MaskedLiteral(
-        //  str={
-        //    var temp: String = "11"
-        //    for (idx <- 0 until rSavedH2dAddrSlice.getWidth) {
-        //      temp += "-"
-        //    }
-        //    temp
-        //  }
+        //new MaskedLiteral(
+        //  //str={
+        //  //  var temp: String = "11"
+        //  //  for (idx <- 0 until rSavedH2dAddrSlice.getWidth) {
+        //  //    temp += "-"
+        //  //  }
+        //  //  temp
+        //  //}
+        //  value=(
+        //    BigInt(
+        //      0x5 << rSavedH2dAddrSlice.getWidth
+        //    )
+        //    + BigInt(devIdx)
+        //  ),
+        //  careAbout=(
+        //  ),
+        //  width=(
+        //    1       // rState comparison
+        //    + 1     // io.host.h2dBus.valid
+        //    + 1     // addr slice comparison
+        //    + rSavedH2dAddrSlice.getWidth
+        //  )
         //)
-        B"101"
+        ////B"101"
+        ////## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
+        U"1"
         ## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
       ) {
         doConnect(devIdx=devIdx)
       }
-      is (
-        B"111"
-        ## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
-      ) {
-        doConnect(devIdx=devIdx)
-      }
-      is (
-        B"100"
-        ## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
-      ) {
-        doConnect(devIdx=devIdx)
-      }
-    }
-    is (
-      //M"110"
-      MaskedLiteral(
-        str={
-          var temp: String = "110"
-          for (idx <- 0 until rSavedH2dAddrSlice.getWidth) {
-            temp += "-"
-          }
-          temp
-        }
-      )
-    ) {
-      //when (io.host.h2dBus.valid) {
-        rState := State.CHANGED_ADDR_SLICE_WAIT_REMAINING_D2H_RESPONSES
+      //is (
+      //  B"111"
+      //  ## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
+      //) {
+      //  doConnect(devIdx=devIdx)
+      //}
+      //is (
+      //  B"100"
+      //  ## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
+      //) {
+      //  doConnect(devIdx=devIdx)
       //}
     }
+    //is (
+    //  //M"110"
+    //  MaskedLiteral(
+    //    str={
+    //      var temp: String = "110"
+    //      for (idx <- 0 until rSavedH2dAddrSlice.getWidth) {
+    //        temp += "-"
+    //      }
+    //      temp
+    //    }
+    //  )
+    //) {
+    //  //when (io.host.h2dBus.valid) {
+    //    rState := State.CHANGED_ADDR_SLICE_WAIT_REMAINING_D2H_RESPONSES
+    //  //}
+    //}
     default {
     }
   }
+
   switch (rState) {
     is (State.START_NEW_ADDR_SLICE) {
       when (io.host.h2dBus.valid) {
