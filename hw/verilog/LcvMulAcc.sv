@@ -249,21 +249,21 @@ module LcvAluDel1 #(
 	//--------
 	//localparam int SEL_SIZE = 2;
 	localparam int OP_WIDTH = 8/*11*/;
-	localparam [OP_WIDTH - 1:0] OP_ADD = 8'bzzzzzzz1;
-	localparam [OP_WIDTH - 1:0] OP_SUB = 8'bzzzzzz1z;
-	localparam [OP_WIDTH - 1:0] OP_SLTU /*OP_GET_INP_A*/ = 8'bzzzzz1zz;
-	localparam [OP_WIDTH - 1:0] OP_SLTS /*OP_GET_INP_B*/ = 8'bzzzz1zzz;
-	localparam [OP_WIDTH - 1:0] OP_AND = 8'bzzz1zzzz;
-	localparam [OP_WIDTH - 1:0] OP_OR = 8'bzz1zzzzz;
-	localparam [OP_WIDTH - 1:0] OP_XOR = 8'bz1zzzzzz;
+	localparam [OP_WIDTH - 1:0] OP_ADD = 8'b1;
+	localparam [OP_WIDTH - 1:0] OP_SUB = 8'b1z;
+	localparam [OP_WIDTH - 1:0] OP_SLTU /*OP_GET_INP_A*/ = 8'b1zz;
+	localparam [OP_WIDTH - 1:0] OP_SLTS /*OP_GET_INP_B*/ = 8'b1zzz;
+	localparam [OP_WIDTH - 1:0] OP_AND = 8'b1zzzz;
+	localparam [OP_WIDTH - 1:0] OP_OR = 8'b1zzzzz;
+	localparam [OP_WIDTH - 1:0] OP_XOR = 8'b1zzzzzz;
 	//localparam [OP_WIDTH - 1:0] OP_LSL = 1 << 7;
 	//localparam [OP_WIDTH - 1:0] OP_LSR = 1 << 8;
 	//localparam [OP_WIDTH - 1:0] OP_ASR = 1 << 9;
 	localparam [OP_WIDTH - 1:0] /*OP_NOR*/ /*OP_ZERO*/ OP_ZERO = 8'b1zzzzzzz;
 	//--------
-	wire signed [WIDTH - 1:0] temp_inp_b = (
-		inp_b_sel ? inp_b_1 : inp_b_0
-	);
+	//wire signed [WIDTH - 1:0] temp_inp_b = (
+	//	inp_b_sel ? inp_b_1 : inp_b_0
+	//);
 	//wire unsigned [WIDTH:0] temp_sum_u_inp_a = (
 	//	$unsigned({1'b0, inp_a})
 	//);
@@ -287,33 +287,73 @@ module LcvAluDel1 #(
 	//);
 	//--------
 	always_ff @(posedge clk) begin
-		casez (inp_op)
-		OP_ADD: begin
-			outp_data <= inp_a + temp_inp_b;
+		casez ({inp_op, inp_b_sel})
+		//--------
+		{OP_ADD, 1'b0}: begin
+			//outp_data <= inp_a + temp_inp_b;
+			outp_data <= inp_a + inp_b_0;
 		end
-		OP_SUB: begin
-			outp_data <= inp_a - temp_inp_b;
+		{OP_SUB, 1'b0}: begin
+			//outp_data <= inp_a - temp_inp_b;
+			outp_data <= inp_a - inp_b_0;
 		end
-		OP_SLTU: begin
-			outp_data[0] <= $unsigned(inp_a) < $unsigned(temp_inp_b);
+		{OP_SLTU, 1'b0}: begin
+			outp_data[0] <= $unsigned(inp_a) < $unsigned(inp_b_0);
 			outp_data[WIDTH - 1:1] <= 'h0;
+			//outp_data[0] <= $unsigned(inp_a) < $unsigned(temp_inp_b);
+			//outp_data[WIDTH - 1:1] <= 'h0;
 			//outp_data[0] <= ~temp_sum_u[WIDTH];
 			//outp_data[WIDTH - 1:1] <= 'h0;
 		end
-		OP_SLTS: begin
-			outp_data[0] <= $signed(inp_a) < $signed(temp_inp_b);
+		{OP_SLTS, 1'b0}: begin
+			//outp_data[0] <= $signed(inp_a) < $signed(temp_inp_b);
+			//outp_data[WIDTH - 1:1] <= 'h0;
+			outp_data[0] <= $signed(inp_a) < $signed(inp_b_0);
 			outp_data[WIDTH - 1:1] <= 'h0;
 			//outp_data[0] <= ~temp_sum_s[WIDTH];
 			//outp_data[WIDTH - 1:1] <= 'h0;
 		end
-		OP_AND: begin
-			outp_data <= inp_a & temp_inp_b;
+		{OP_AND, 1'b0}: begin
+			//outp_data <= inp_a & temp_inp_b;
+			outp_data <= inp_a & inp_b_0;
 		end
-		OP_OR: begin
-			outp_data <= inp_a | temp_inp_b;
+		{OP_OR, 1'b0}: begin
+			//outp_data <= inp_a | temp_inp_b;
+			outp_data <= inp_a | inp_b_0;
 		end
-		OP_XOR: begin
-			outp_data <= inp_a ^ temp_inp_b;
+		{OP_XOR, 1'b0}: begin
+			//outp_data <= inp_a ^ temp_inp_b;
+			outp_data <= inp_a ^ inp_b_0;
+		end
+		//--------
+		{OP_ADD, 1'b1}: begin
+			//outp_data <= inp_a + temp_inp_b;
+			outp_data <= inp_a + inp_b_1;
+		end
+		{OP_SUB, 1'b1}: begin
+			//outp_data <= inp_a - temp_inp_b;
+			outp_data <= inp_a - inp_b_1;
+		end
+		{OP_SLTU, 1'b1}: begin
+			outp_data[0] <= $unsigned(inp_a) < $unsigned(inp_b_1);
+			outp_data[WIDTH - 1:1] <= 'h0;
+			//outp_data[0] <= ~temp_sum_u[WIDTH];
+			//outp_data[WIDTH - 1:1] <= 'h0;
+		end
+		{OP_SLTS, 1'b1}: begin
+			outp_data[0] <= $signed(inp_a) < $signed(inp_b_1);
+			outp_data[WIDTH - 1:1] <= 'h0;
+			//outp_data[0] <= ~temp_sum_s[WIDTH];
+			//outp_data[WIDTH - 1:1] <= 'h0;
+		end
+		{OP_AND, 1'b1}: begin
+			outp_data <= inp_a & inp_b_1;
+		end
+		{OP_OR, 1'b1}: begin
+			outp_data <= inp_a | inp_b_1;
+		end
+		{OP_XOR, 1'b1}: begin
+			outp_data <= inp_a ^ inp_b_1;
 		end
 		//OP_LSL: begin
 		//	outp_data <= $unsigned(
