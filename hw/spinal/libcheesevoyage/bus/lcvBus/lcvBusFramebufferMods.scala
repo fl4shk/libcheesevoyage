@@ -781,8 +781,8 @@ case class LcvBusFramebufferCtrl(
         //myStickyD2hSrc,
         rMyLineBufArrIdxVec.last,
         rWrLineBufAddrCnt(
-          rWrLineBufAddrCnt.high
-          downto cnt2dShift.x
+          rWrLineBufAddrCnt.high - 1
+          downto 0//cnt2dShift.x
         ),
       ).asUInt
     )
