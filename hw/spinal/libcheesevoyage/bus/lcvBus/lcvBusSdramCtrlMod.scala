@@ -1282,6 +1282,7 @@ case class LcvBusSdramCtrl(
         when (rChipBurstCnt.msb) {
           rSavedH2dSendData.burstLast := True
           rState := State.WRITE_POST_NOPS
+          rD2hWriteValid := True
           //rTempBurstLast := True
         }
       } otherwise { // when (rHaveBurst)
