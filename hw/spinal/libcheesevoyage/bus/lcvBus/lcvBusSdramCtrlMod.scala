@@ -1225,7 +1225,8 @@ case class LcvBusSdramCtrl(
       rChipBurstCnt := (
         //cfg.burstLen - 6//- 4 //- 2
         //cfg.burstLen - 5
-        cfg.burstLen - 2
+        //cfg.burstLen - 2
+        cfg.burstLen - 3
         //(cfg.burstLen / 2) - 2
       )
       //when (rStartBusBurst) {
