@@ -27,6 +27,11 @@ case class LcvBusArbiterConfig(
 case class LcvBusArbiterIo(
   cfg: LcvBusArbiterConfig
 ) extends Bundle {
+  val en = (
+    cfg.kind == LcvBusArbiterKind.Priority
+  ) generate (
+    in(Bool())
+  )
   val hostVec = (
     Vec[LcvBusIo]{
       val tempArr = new ArrayBuffer[LcvBusIo]()
@@ -113,7 +118,11 @@ case class LcvBusArbiter(
   val rHostIdx = (
     RegNext(nextHostIdx, init=nextHostIdx.getZero)
   )
-  nextHostIdx := rHostIdx
+  when (io.en) {
+    nextHostIdx := rHostIdx
+  } otherwise {
+    nextHostIdx := 0x0
+  }
 
 
   val rHostIdxValid = (
@@ -175,9 +184,13 @@ case class LcvBusArbiter(
 
     cfg.kind match {
       case LcvBusArbiterKind.Priority => {
-        nextHostIdx := (
-          myPriorityVec.sFindFirst(_ === True)._2
-        )
+        when (io.en) {
+          nextHostIdx := (
+            myPriorityVec.sFindFirst(_ === True)._2
+          )
+        } otherwise {
+          nextHostIdx := 0x0
+        }
       }
       case LcvBusArbiterKind.RoundRobin => {
         if ((1 << log2Up(cfg.numHosts)) == cfg.numHosts) {
