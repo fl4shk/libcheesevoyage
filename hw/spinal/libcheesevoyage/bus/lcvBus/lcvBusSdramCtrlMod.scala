@@ -1163,9 +1163,13 @@ case class LcvBusSdramCtrl(
             }
           } otherwise {
             nextD2hValid := (
-              rRdCasLatencyCnt.asUInt === (
-                //cfg.busCfg.maxBurstSizeMinus1 * 2
-                cfg.burstLen - 2 //- 1
+              if (cfg.burstLen >= 2) (
+                rRdCasLatencyCnt.asUInt === (
+                  //cfg.busCfg.maxBurstSizeMinus1 * 2
+                  cfg.burstLen - 2 //- 1
+                )
+              ) else (
+                True
               )
             )
           }
