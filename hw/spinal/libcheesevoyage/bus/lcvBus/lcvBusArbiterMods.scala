@@ -118,10 +118,14 @@ case class LcvBusArbiter(
   val rHostIdx = (
     RegNext(nextHostIdx, init=nextHostIdx.getZero)
   )
-  when (io.en) {
+  if (cfg.kind == LcvBusArbiterKind.Priority) {
+    when (io.en) {
+      nextHostIdx := rHostIdx
+    } otherwise {
+      nextHostIdx := 0x0
+    }
+  } else {
     nextHostIdx := rHostIdx
-  } otherwise {
-    nextHostIdx := 0x0
   }
 
 
