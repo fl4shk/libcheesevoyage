@@ -161,8 +161,8 @@ case class LcvBusSdramCtrlConfig(
 
   //def burstLen = 8
   //def burstLen = 4
-  def burstLen = 2
-  //def burstLen = 1
+  //def burstLen = 2
+  def burstLen = 1
   def burstCode: UInt = (
     // 000=1, 001=2, 010=4, 011=8
     if (burstLen == 8) (
@@ -969,7 +969,7 @@ case class LcvBusSdramCtrl(
         )
       ) {
         //io.bus.h2dBus.ready := True
-        //h2dFifo.io.pop.ready := True
+        //h2dFifo.io.pop.ready := Tru
 
         rStartBusBurst := False
 
