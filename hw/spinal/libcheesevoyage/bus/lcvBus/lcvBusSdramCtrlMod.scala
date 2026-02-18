@@ -159,9 +159,9 @@ case class LcvBusSdramCtrlConfig(
   val altddioOutCfg: AltddioOutConfig = AltddioOutConfig() 
   //--------
 
-  def burstLen = 8
+  //def burstLen = 8
   //def burstLen = 4
-  //def burstLen = 2
+  def burstLen = 2
   //def burstLen = 1
   def burstCode: UInt = (
     // 000=1, 001=2, 010=4, 011=8
