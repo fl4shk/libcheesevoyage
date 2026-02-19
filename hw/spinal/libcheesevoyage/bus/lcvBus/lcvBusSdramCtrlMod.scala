@@ -1260,7 +1260,7 @@ case class LcvBusSdramCtrl(
         wrData=rSavedH2dSendData.data(31 downto 16),
         wrByteEn=(
           //rSavedH2dSendData.byteEn(3 downto 2)
-          U"2b11"
+          U"2'b11"
         ),
         firstWrite=false,
       )
