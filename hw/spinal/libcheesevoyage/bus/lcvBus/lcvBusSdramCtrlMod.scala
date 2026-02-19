@@ -390,11 +390,17 @@ case class LcvBusSdramIo(
   private[libcheesevoyage] def sendCmdNop(
     inPostFirstBurstElem: Boolean=false,
     optSomeDqTriState: Option[TriState[UInt]]=None,
+    inPwrOnSeq: Boolean=false
   ): Unit = {
     this._sendCmdBase(U"4'b0111")
-    if (!inPostFirstBurstElem) {
-      dqmh := False
-      dqml := False
+    if (!inPwrOnSeq) {
+      if (!inPostFirstBurstElem) {
+        dqmh := False
+        dqml := False
+      }
+    } else {
+      dqmh := True
+      dqml := True
     }
     optSomeDqTriState match {
       case Some(someDqTriState) => {
@@ -463,28 +469,32 @@ case class LcvBusSdramIo(
   private[libcheesevoyage] def sendCmdPrecharge(
     bank: UInt,
     prechargeAll: Bool,
+    inPwrOnSeq: Boolean=false,
   ): Unit = {
     this._sendCmdBase(U"4'b0010")
     ba := bank
       // we can do this even when `prechargeAll === True`
       // because `ba` is ignored in that case
     a(10) := prechargeAll
-    dqmh := False
-    dqml := False
+    dqmh := (if (!inPwrOnSeq) (False) else (True))
+    dqml := (if (!inPwrOnSeq) (False) else (True))
   }
   private[libcheesevoyage] def sendCmdAutoRefresh(
+    inPwrOnSeq: Boolean=false,
   ): Unit = {
     this._sendCmdBase(U"4'b0001")
-    dqmh := False
-    dqml := False
+    //dqmh := inPwrOnSeq//False
+    //dqml := inPwrOnSeq//False
+    dqmh := (if (!inPwrOnSeq) (False) else (True))
+    dqml := (if (!inPwrOnSeq) (False) else (True))
   }
   private[libcheesevoyage] def sendCmdLoadMode(
   ): Unit = {
     this._sendCmdBase(U"4'b0000")
     ba := ba.getZero
     a := cfg.mode
-    dqmh := False
-    dqml := False
+    dqmh := True//False
+    dqml := True//False
   }
 }
 
@@ -873,18 +883,18 @@ case class LcvBusSdramCtrl(
   )
   switch (rState) {
     is (State.PWR_ON_INIT) {
-      io.sdram.sendCmdNop()
+      io.sdram.sendCmdNop(inPwrOnSeq=true)
       when (!rPwrOnInitCnt(0).msb) {
         rPwrOnInitCnt(0) := rPwrOnInitCnt(0) - 1
         io.sdram.cke := False
-        io.sdram.dqml := True
-        io.sdram.dqmh := True
+        //io.sdram.dqml := True
+        //io.sdram.dqmh := True
       } otherwise {
         rState := State.PWR_ON_CNT_DO_CKE_HI
       }
     }
     is (State.PWR_ON_CNT_DO_CKE_HI) {
-      io.sdram.sendCmdNop()
+      io.sdram.sendCmdNop(inPwrOnSeq=true)
       when (!rPwrOnInitCnt(1).msb) {
         rPwrOnInitCnt(1) := rPwrOnInitCnt(1) - 1
         io.sdram.cke := True
@@ -900,12 +910,13 @@ case class LcvBusSdramCtrl(
     is (State.PWR_ON_SEND_PRECHARGE_ALL) {
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
-        prechargeAll=True
+        prechargeAll=True,
+        inPwrOnSeq=true,
       )
       rState := State.PWR_ON_WAIT_T_RP
     }
     is (State.PWR_ON_WAIT_T_RP) { // send NOPs
-      io.sdram.sendCmdNop()
+      io.sdram.sendCmdNop(inPwrOnSeq=true)
       when (!rPwrOnRpCnt.msb) {
         rPwrOnRpCnt := rPwrOnRpCnt - 1
       } otherwise {
@@ -914,11 +925,11 @@ case class LcvBusSdramCtrl(
     }
 
     is (State.PWR_ON_SEND_AUTO_REFRESH_0) {
-      io.sdram.sendCmdAutoRefresh()
+      io.sdram.sendCmdAutoRefresh(inPwrOnSeq=true)
       rState := State.PWR_ON_WAIT_T_RFC_0
     }
     is (State.PWR_ON_WAIT_T_RFC_0) { // send NOPs or CMD INHIBITs
-      io.sdram.sendCmdNop()
+      io.sdram.sendCmdNop(inPwrOnSeq=true)
       when (!rPwrOnRfcCnt(0).msb) {
         rPwrOnRfcCnt(0) := rPwrOnRfcCnt(0) - 1
       } otherwise {
@@ -927,11 +938,11 @@ case class LcvBusSdramCtrl(
     }
 
     is (State.PWR_ON_SEND_AUTO_REFRESH_1) {
-      io.sdram.sendCmdAutoRefresh()
+      io.sdram.sendCmdAutoRefresh(inPwrOnSeq=true)
       rState := State.PWR_ON_WAIT_T_RFC_1
     }
     is (State.PWR_ON_WAIT_T_RFC_1) { // send NOPs or CMD INHIBITs
-      io.sdram.sendCmdNop()
+      io.sdram.sendCmdNop(inPwrOnSeq=true)
       when (!rPwrOnRfcCnt(1).msb) {
         rPwrOnRfcCnt(1) := rPwrOnRfcCnt(1) - 1
       } otherwise {
@@ -944,7 +955,7 @@ case class LcvBusSdramCtrl(
       rState := State.PWR_ON_WAIT_T_MRD
     }
     is (State.PWR_ON_WAIT_T_MRD) {   // send NOPs
-      io.sdram.sendCmdNop()
+      io.sdram.sendCmdNop(inPwrOnSeq=true)
       when (!rPwrOnMrdCnt.msb) {
         rPwrOnMrdCnt := rPwrOnMrdCnt - 1
       } otherwise {
@@ -954,6 +965,8 @@ case class LcvBusSdramCtrl(
     }
 
     is (State.IDLE) {
+      io.sdram.dqml := False
+      io.sdram.dqmh := False
       rH2dFifoPopReady := False
       when (rNeedRfshCnt.msb) {
         rNeedRfshCnt := cfg.Cycles.tREFIthresh.toInt
