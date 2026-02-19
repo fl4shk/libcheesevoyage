@@ -101,6 +101,9 @@ case class LcvBusArbiter(
       Bool()
     )
   )
+  val myPriorityFindFirst = (
+    myPriorityVec.sFindFirst(_ === True)
+  )
   if (cfg.kind == LcvBusArbiterKind.Priority) {
     for (hostIdx <- 0 until io.hostVec.size) {
       myCurrHostValidVec(hostIdx) := io.hostVec(hostIdx).h2dBus.valid
@@ -188,10 +191,11 @@ case class LcvBusArbiter(
 
     cfg.kind match {
       case LcvBusArbiterKind.Priority => {
-        when (io.en) {
-          nextHostIdx := (
-            myPriorityVec.sFindFirst(_ === True)._2
-          )
+        when (
+          io.en
+          && myPriorityFindFirst._1
+        ) {
+          nextHostIdx := myPriorityFindFirst._2
         } otherwise {
           nextHostIdx := 0x0
         }
