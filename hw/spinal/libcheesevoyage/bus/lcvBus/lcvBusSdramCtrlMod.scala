@@ -1225,7 +1225,10 @@ case class LcvBusSdramCtrl(
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(15 downto 0),
-        wrByteEn=rSavedH2dSendData.byteEn(1 downto 0),
+        wrByteEn=(
+          //rSavedH2dSendData.byteEn(1 downto 0)
+          U"2'b11"
+        ),
         firstWrite=true,
       )
       rWrNopWaitCnt := myWrNopWaitCntNumCycles
@@ -1254,7 +1257,10 @@ case class LcvBusSdramCtrl(
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(31 downto 16),
-        wrByteEn=rSavedH2dSendData.byteEn(3 downto 2),
+        wrByteEn=(
+          //rSavedH2dSendData.byteEn(3 downto 2)
+          U"2'b11"
+        ),
         firstWrite=false,
       )
       when (
@@ -1304,7 +1310,10 @@ case class LcvBusSdramCtrl(
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(15 downto 0),
-        wrByteEn=rSavedH2dSendData.byteEn(1 downto 0),
+        wrByteEn=(
+          //rSavedH2dSendData.byteEn(1 downto 0)
+          U"2'b11"
+        ),
         firstWrite=false,
       )
       rH2dFifoPopReady := False
