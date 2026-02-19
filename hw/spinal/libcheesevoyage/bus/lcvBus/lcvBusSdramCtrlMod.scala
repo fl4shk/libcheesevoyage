@@ -1225,10 +1225,7 @@ case class LcvBusSdramCtrl(
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(15 downto 0),
-        wrByteEn=(
-          //rSavedH2dSendData.byteEn(1 downto 0)
-          U"2'b11"
-        ),
+        wrByteEn=rSavedH2dSendData.byteEn(1 downto 0),
         firstWrite=true,
       )
       rWrNopWaitCnt := myWrNopWaitCntNumCycles
@@ -1258,10 +1255,7 @@ case class LcvBusSdramCtrl(
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(31 downto 16),
-        wrByteEn=(
-          //rSavedH2dSendData.byteEn(3 downto 2)
-          U"2'b11"
-        ),
+        wrByteEn=rSavedH2dSendData.byteEn(3 downto 2),
         firstWrite=false,
       )
       when (
@@ -1296,6 +1290,7 @@ case class LcvBusSdramCtrl(
         when (rChipBurstCnt.msb) {
           rSavedH2dSendData.burstLast := True
           rState := State.WRITE_POST_NOPS
+          rD2hWriteValid := True
           //rTempBurstLast := True
         }
       } otherwise { // when (rHaveBurst)
@@ -1312,10 +1307,7 @@ case class LcvBusSdramCtrl(
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(15 downto 0),
-        wrByteEn=(
-          //rSavedH2dSendData.byteEn(1 downto 0)
-          U"2'b11"
-        ),
+        wrByteEn=rSavedH2dSendData.byteEn(1 downto 0),
         firstWrite=false,
       )
       rH2dFifoPopReady := False
@@ -1330,7 +1322,9 @@ case class LcvBusSdramCtrl(
     }
     is (State.WRITE_POST_NOPS) {
       rH2dFifoPopReady := False
-      io.sdram.sendCmdNop(optSomeDqTriState=Some(rDqTriState))
+      io.sdram.sendCmdNop(
+        optSomeDqTriState=Some(rDqTriState)
+      )
       when (
         //rD2hFifoPushValid
         rD2hWriteValid
