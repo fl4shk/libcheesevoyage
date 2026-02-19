@@ -35,6 +35,22 @@ object LcvCacheKind {
   case object Shared extends LcvCacheKind
 }
 
+//sealed trait LcvBusByteEnKind
+//object LcvBusByteEnKind {
+//  case class ArbitraryByteEn(
+//  ) extends LcvBusByteEnKind {
+//    // like BRAM
+//  }
+//  case class ConsecutiveByteEn(
+//  ) extends LcvBusByteEnKind {
+//    // like SDRAM
+//  }
+//  case class ByteSize(
+//  ) extends LcvBusByteEnKind {
+//    // CPU-style loads/stores stuff
+//  }
+//}
+
 case class LcvBusMainConfig(
   dataWidth: Int,
   addrWidth: Int,
