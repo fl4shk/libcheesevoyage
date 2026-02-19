@@ -1318,7 +1318,6 @@ case class LcvBusSdramCtrl(
       }
     }
     is (State.WRITE_POST_NOPS) {
-      rDqTriState.writeEnable := False
       rH2dFifoPopReady := False
       io.sdram.sendCmdNop(optSomeDqTriState=Some(rDqTriState))
       when (
