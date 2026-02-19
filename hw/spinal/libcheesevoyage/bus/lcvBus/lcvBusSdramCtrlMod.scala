@@ -161,8 +161,8 @@ case class LcvBusSdramCtrlConfig(
 
   //def burstLen = 8
   //def burstLen = 4
-  //def burstLen = 2
-  def burstLen = 1
+  def burstLen = 2
+  //def burstLen = 1
   def burstCode: UInt = (
     // 000=1, 001=2, 010=4, 011=8
     if (burstLen == 8) (
@@ -184,13 +184,13 @@ case class LcvBusSdramCtrlConfig(
     )
   )
   def opMode = U"2'b00" // only 00 (standard operation) allowed
-  //def noWriteBurst = U"1'b1"  // 0=write burst enable, 1=only single acc wr
-  def doWriteBurst = U"1'b0"
+  def noWriteBurst = U"1'b1"  // 0=write burst enable, 1=only single acc wr
+  //def doWriteBurst = U"1'b0"
   def mode = Cat(
     List(
       U"3'b000",
-      //noWriteBurst,
-      doWriteBurst,
+      noWriteBurst,
+      //doWriteBurst,
       opMode,
       casLatency._1,
       accessType,
@@ -498,8 +498,10 @@ case class LcvBusSdramCtrl(
     init(io.bus.h2dBus.payload.getZero)
   )
   val rTempAddr = (
-    Reg(cloneOf(rSavedH2dSendData.addr))
-    init(rSavedH2dSendData.addr.getZero)
+    Vec.fill(2)(
+      Reg(cloneOf(rSavedH2dSendData.addr))
+      init(rSavedH2dSendData.addr.getZero)
+    )
   )
   val rSavedHaveBusWrite = (
     Reg(Bool(), init=False)
@@ -743,16 +745,16 @@ case class LcvBusSdramCtrl(
       //- 1
     )
   )
-  val rChipBurstCnt = (
-    Reg(SInt((log2Up(cfg.burstLen) + 3) bits))
-    init(
-      //cfg.burstLen - 1
-      -1
-    )
-  )
-  when (!rChipBurstCnt.msb) {
-    rChipBurstCnt := rChipBurstCnt - 1
-  }
+  //val rChipBurstCnt = (
+  //  Reg(SInt((log2Up(cfg.burstLen) + 3) bits))
+  //  init(
+  //    //cfg.burstLen - 1
+  //    -1
+  //  )
+  //)
+  //when (!rChipBurstCnt.msb) {
+  //  rChipBurstCnt := rChipBurstCnt - 1
+  //}
   //def myBusBurstBankCntWidth = (
   //  //log2Up(
   //  //  (1 << cfg.busCfg.burstCntWidth)
@@ -761,13 +763,23 @@ case class LcvBusSdramCtrl(
   //  cfg.sdramBaWidth
   //)
   val rBusBurstOuterCnt = (
-    Reg(SInt((cfg.sdramBaWidth + 3) bits))
+    Reg(
+      SInt(
+        //(cfg.sdramBaWidth + 3) bits
+        (
+          cfg.busCfg.burstCntWidth + 2
+          //- log2Up(cfg.burstLen / 2)
+          //+ 3
+        )
+        bits
+      )
+    )
     init(-1)
   )
-  val rBusBurstInnerCnt = (
-    Reg(SInt((log2Up(cfg.burstLen / 2) + 3) bits))
-    init(-1)
-  )
+  //val rBusBurstInnerCnt = (
+  //  Reg(SInt((log2Up(cfg.burstLen / 2) + 3) bits))
+  //  init(-1)
+  //)
   val rStartBusBurst = (
     Reg(Bool(), init=False)
   )
@@ -835,10 +847,14 @@ case class LcvBusSdramCtrl(
       SEND_READ_0,
       SEND_READ_N,
       READ_POST_NOPS,
-      SEND_WRITE_0,
-      SEND_WRITE_HI_N,
-      SEND_WRITE_LO_N,
-      WRITE_POST_NOPS
+      SEND_WRITE_LO_16,
+      WRITE_LO_16_POST_NOPS,
+      SEND_WRITE_HI_16,
+      WRITE_HI_16_POST_NOPS
+      //SEND_WRITE_0,
+      //SEND_WRITE_HI_N,
+      //SEND_WRITE_LO_N,
+      //WRITE_POST_NOPS
 
       = newElement();
   }
@@ -979,11 +995,28 @@ case class LcvBusSdramCtrl(
           //|| rSavedH2dSendData.isWrite
         ) {
           rH2dFifoPopReady := True
-          rTempAddr := (
+          rTempAddr.head(rTempAddr.head.high downto 1) := (
             RegNext(
-              next=h2dFifo.io.pop.addr,
-              init=h2dFifo.io.pop.addr.getZero,
-            ),
+              h2dFifo.io.pop.addr(h2dFifo.io.pop.addr.high downto 1),
+              //init=h2dFifo.io.pop.addr.getZero,
+            )
+            init(0x0)
+          )
+          //rTempAddr.last := (
+          //  RegNext(
+          //    next=h2dFifo.io.pop.addr + 2,
+          //    init=h2dFifo.io.pop.addr.getZero,
+          //  ),
+          //)
+          rTempAddr.last(rTempAddr.last.high downto 1) := (
+            RegNext(
+              (
+                h2dFifo.io.pop.addr(h2dFifo.io.pop.addr.high downto 1)
+                + 1
+              ),
+              //init=h2dFifo.io.pop.addr.getZero,
+            )
+            init(0x0)
           )
           rSavedH2dSendData := (
             //io.bus.h2dBus.payload
@@ -1000,9 +1033,20 @@ case class LcvBusSdramCtrl(
             )
           )
         } otherwise {
-          rTempAddr := (
-            rTempAddr + ((cfg.burstLen / 2) * 4)
-          )
+          //rTempAddr.head := (
+          //  rTempAddr.head + ((cfg.burstLen / 2) * 4)
+          //)
+          //rTempAddr.last := (
+          //  rTempAddr.last + ((cfg.burstLen / 2) * 4)
+          //)
+          rTempAddr.foreach(item => {
+            item(item.high downto 2) := (
+              item(item.high downto 2) + 1
+            )
+          })
+          //rTempAddr(rTempAddr.high downto 2) := (
+          //  rTempAddr(rTempAddr.high downto 2)
+          //)
         }
         when (
           rBusBurstOuterCnt.msb
@@ -1019,7 +1063,8 @@ case class LcvBusSdramCtrl(
         ) {
           rBusBurstOuterCnt := (
             //cfg.busCfg.maxBurstSizeMinus1
-            (1 << cfg.sdramBaWidth) - 2
+            //(1 << cfg.sdramBaWidth) - 2
+            (1 << cfg.busCfg.burstCntWidth) - 2
           )
           rStartBusBurst := True
         }
@@ -1045,8 +1090,8 @@ case class LcvBusSdramCtrl(
     is (State.SEND_ACTIVE) {
       rH2dFifoPopReady := False
       io.sdram.sendCmdActive(
-        bank=rTempAddr(myBankSliceRange),
-        row=rTempAddr(myRowSliceRange),
+        bank=rTempAddr.head(myBankSliceRange),
+        row=rTempAddr.head(myRowSliceRange),
       )
       rState := State.ACTIVE_POST_NOPS
     }
@@ -1098,22 +1143,23 @@ case class LcvBusSdramCtrl(
       when (!rSavedH2dSendData.isWrite) {
         rState := State.SEND_READ_0
       } otherwise {
-        //when (!rBusBurstOuterCnt.msb) {
-        //  rH2dFifoPopReady := True
-        //}
-        //rH2dFifoPopReady := True
-        //rSavedH2dSendData := (
-        //  //io.bus.h2dBus.payload
-        //  h2dFifo.io.pop.payload
-        //)
-        rState := State.SEND_WRITE_0
+        ////when (!rBusBurstOuterCnt.msb) {
+        ////  rH2dFifoPopReady := True
+        ////}
+        ////rH2dFifoPopReady := True
+        ////rSavedH2dSendData := (
+        ////  //io.bus.h2dBus.payload
+        ////  h2dFifo.io.pop.payload
+        ////)
+        //rState := State.SEND_WRITE_0
+        rState := State.SEND_WRITE_LO_16
       }
     }
     is (State.SEND_READ_0) {
       rH2dFifoPopReady := False
       io.sdram.sendCmdRead(
-        bank=rTempAddr(myBankSliceRange),
-        column=rTempAddr(myColumnSliceRange),
+        bank=rTempAddr.head(myBankSliceRange),
+        column=rTempAddr.head(myColumnSliceRange),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         firstRead=true,
@@ -1141,8 +1187,8 @@ case class LcvBusSdramCtrl(
     }
     is (State.SEND_READ_N) {
       io.sdram.sendCmdRead(
-        bank=rTempAddr(myBankSliceRange),
-        column=rTempAddr(myColumnSliceRange),
+        bank=rTempAddr.head(myBankSliceRange),
+        column=rTempAddr.head(myColumnSliceRange),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         firstRead=false,
@@ -1214,29 +1260,29 @@ case class LcvBusSdramCtrl(
         rState := State.IDLE
       }
     }
-    is (State.SEND_WRITE_0) {
+    is (State.SEND_WRITE_LO_16) {
       io.sdram.sendCmdWrite(
-        bank=rTempAddr(myBankSliceRange),
-        column=rTempAddr(myColumnSliceRange),
-        autoPrecharge=True,
+        bank=rTempAddr.head(myBankSliceRange),
+        column=rTempAddr.head(myColumnSliceRange),
+        autoPrecharge=False,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(15 downto 0),
         wrByteEn=rSavedH2dSendData.byteEn(1 downto 0),
         firstWrite=true,
       )
       rWrNopWaitCnt := myWrNopWaitCntNumCycles
-      rState := State.SEND_WRITE_HI_N
-      rChipBurstCnt := (
-        //cfg.burstLen - 6//- 4 //- 2
-        //cfg.burstLen - 5
-        //cfg.burstLen - 2
-        cfg.burstLen - 3
-        //(cfg.burstLen / 2) - 2
-      )
+      rState := State.WRITE_LO_16_POST_NOPS
+      //rChipBurstCnt := (
+      //  //cfg.burstLen - 6//- 4 //- 2
+      //  //cfg.burstLen - 5
+      //  //cfg.burstLen - 2
+      //  cfg.burstLen - 3
+      //  //(cfg.burstLen / 2) - 2
+      //)
       //when (rStartBusBurst) {
-        rBusBurstInnerCnt := (
-          (cfg.burstLen / 2) - 3
-        )
+      //  rBusBurstInnerCnt := (
+      //    (cfg.burstLen / 2) - 3
+      //  )
       //} otherwise {
       //  rBusBurstInnerCnt := (
       //    (cfg.burstLen / 2) - 2
@@ -1244,81 +1290,104 @@ case class LcvBusSdramCtrl(
       //}
       rTempBurstLast := False
     }
-    is (State.SEND_WRITE_HI_N) {
+    is (State.WRITE_LO_16_POST_NOPS) {
+      rH2dFifoPopReady := False
+      io.sdram.sendCmdNop()
+      //when (
+      //  //rD2hFifoPushValid
+      //  rD2hWriteValid
+      //  //&& io.bus.d2hBus.ready
+      //  && d2hFifo.io.push.ready
+      //) {
+      //  rD2hWriteValid := False
+      //}
+      when (!rWrNopWaitCnt.msb) {
+        rWrNopWaitCnt := rWrNopWaitCnt - 1
+      } elsewhen (!rD2hFifoPushValid) {
+        rState := (
+          //State.IDLE
+          State.SEND_WRITE_HI_16
+        )
+      }
+    }
+    is (State.SEND_WRITE_HI_16) {
+      //rTempAddr(1 downto 1) := rTempAddr(1 downto 1) + 1
+      rWrNopWaitCnt := myWrNopWaitCntNumCycles
       io.sdram.sendCmdWrite(
-        bank=rTempAddr(myBankSliceRange),
-        column=rTempAddr(myColumnSliceRange),
+        bank=rTempAddr.last(myBankSliceRange),
+        column=rTempAddr.last(myColumnSliceRange),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(31 downto 16),
         wrByteEn=rSavedH2dSendData.byteEn(3 downto 2),
         firstWrite=false,
       )
+      rState := State.WRITE_HI_16_POST_NOPS
       when (
         rSavedH2dSendData.burstLast
-        || rTempBurstLast
-        //|| 
-        //(!rHaveBurst && rTempBurstLast)
-        //|| (rHaveBurst && rChipBurstCnt.msb)
-        //|| (rHaveBurst && RegNext(rChipBurstCnt === 0)
+        || !rHaveBurst
       ) {
-        rState := State.WRITE_POST_NOPS
-        when (rBusBurstOuterCnt.msb) {
-          rD2hWriteValid := True
-        }
         rH2dFifoPopReady := False
-      } otherwise {
-        rState := State.SEND_WRITE_LO_N
       }
-      when (rHaveBurst) {
-        rH2dFifoPopReady := True
+      when (
+        rSavedH2dSendData.burstLast
+        || !rHaveBurst
+      ) {
+        rD2hWriteValid := True
       }
+      when (
+        rSavedH2dSendData.burstLast
+      ) {
+      }
+      //when (
+      //  rSavedH2dSendData.burstLast
+      //  //|| rTempBurstLast
+      //  ////|| 
+      //  ////(!rHaveBurst && rTempBurstLast)
+      //  ////|| (rHaveBurst && rChipBurstCnt.msb)
+      //  ////|| (rHaveBurst && RegNext(rChipBurstCnt === 0)
+      //) {
+      //  //rState := State.WRITE_POST_NOPS
+      //  when (rBusBurstOuterCnt.msb) {
+      //    rD2hWriteValid := True
+      //  }
+      //  rH2dFifoPopReady := False
+      //} 
+      ////otherwise {
+      ////  rState := State.SEND_WRITE_LO_N
+      ////}
+      //when (rHaveBurst) {
+      //  rH2dFifoPopReady := True
+      //}
       rSavedH2dSendData := (
         //io.bus.h2dBus.payload
         h2dFifo.io.pop.payload
       )
-      when (!rHaveBurst) {
-        rSavedH2dSendData.byteEn := 0x0
-        //when (rChipBurstCnt.msb) {
-        //  //rSavedH2dSendData.burstLast := True
-        //  rTempBurstLast := True
-        //}
-        when (rChipBurstCnt.msb) {
-          rSavedH2dSendData.burstLast := True
-          rState := State.WRITE_POST_NOPS
-          rD2hWriteValid := True
-          //rTempBurstLast := True
-        }
-      } otherwise { // when (rHaveBurst)
-      }
+      //when (!rHaveBurst) {
+      //  rSavedH2dSendData.byteEn := 0x0
+      //  //when (rChipBurstCnt.msb) {
+      //  //  //rSavedH2dSendData.burstLast := True
+      //  //  rTempBurstLast := True
+      //  //}
+      //  when (rChipBurstCnt.msb) {
+      //    rSavedH2dSendData.burstLast := True
+      //    rState := State.WRITE_POST_NOPS
+      //    rD2hWriteValid := True
+      //    //rTempBurstLast := True
+      //  }
+      //} otherwise { // when (rHaveBurst)
+      //}
       //when (rChipBurstCnt.msb) {
       //  //rSavedH2dSendData.burstLast := True
       //  rTempBurstLast := True
       //}
     }
-    is (State.SEND_WRITE_LO_N) {
-      io.sdram.sendCmdWrite(
-        bank=rTempAddr(myBankSliceRange),
-        column=rTempAddr(myColumnSliceRange),
-        autoPrecharge=True,
-        someDqTriState=rDqTriState,
-        wrData=rSavedH2dSendData.data(15 downto 0),
-        wrByteEn=rSavedH2dSendData.byteEn(1 downto 0),
-        firstWrite=false,
-      )
-      rH2dFifoPopReady := False
-      rState := State.SEND_WRITE_HI_N
-      when (rHaveBurst) {
-        when (!rBusBurstInnerCnt.msb) {
-          rBusBurstInnerCnt := rBusBurstInnerCnt - 1
-        } otherwise {
-          rTempBurstLast := True
-        }
-      }
-    }
-    is (State.WRITE_POST_NOPS) {
+    is (State.WRITE_HI_16_POST_NOPS) {
       rH2dFifoPopReady := False
       io.sdram.sendCmdNop()
+
+      rDqTriState.writeEnable := False
+
       when (
         //rD2hFifoPushValid
         rD2hWriteValid
@@ -1333,6 +1402,126 @@ case class LcvBusSdramCtrl(
         rState := State.IDLE
       }
     }
+
+    //is (State.SEND_WRITE_0) {
+    //  io.sdram.sendCmdWrite(
+    //    bank=rTempAddr(myBankSliceRange),
+    //    column=rTempAddr(myColumnSliceRange),
+    //    autoPrecharge=True,
+    //    someDqTriState=rDqTriState,
+    //    wrData=rSavedH2dSendData.data(15 downto 0),
+    //    wrByteEn=rSavedH2dSendData.byteEn(1 downto 0),
+    //    firstWrite=true,
+    //  )
+    //  rWrNopWaitCnt := myWrNopWaitCntNumCycles
+    //  rState := State.SEND_WRITE_HI_N
+    //  rChipBurstCnt := (
+    //    //cfg.burstLen - 6//- 4 //- 2
+    //    //cfg.burstLen - 5
+    //    //cfg.burstLen - 2
+    //    cfg.burstLen - 3
+    //    //(cfg.burstLen / 2) - 2
+    //  )
+    //  //when (rStartBusBurst) {
+    //    rBusBurstInnerCnt := (
+    //      (cfg.burstLen / 2) - 3
+    //    )
+    //  //} otherwise {
+    //  //  rBusBurstInnerCnt := (
+    //  //    (cfg.burstLen / 2) - 2
+    //  //  )
+    //  //}
+    //  rTempBurstLast := False
+    //}
+    //is (State.SEND_WRITE_HI_N) {
+    //  io.sdram.sendCmdWrite(
+    //    bank=rTempAddr(myBankSliceRange),
+    //    column=rTempAddr(myColumnSliceRange),
+    //    autoPrecharge=True,
+    //    someDqTriState=rDqTriState,
+    //    wrData=rSavedH2dSendData.data(31 downto 16),
+    //    wrByteEn=rSavedH2dSendData.byteEn(3 downto 2),
+    //    firstWrite=false,
+    //  )
+    //  when (
+    //    rSavedH2dSendData.burstLast
+    //    || rTempBurstLast
+    //    //|| 
+    //    //(!rHaveBurst && rTempBurstLast)
+    //    //|| (rHaveBurst && rChipBurstCnt.msb)
+    //    //|| (rHaveBurst && RegNext(rChipBurstCnt === 0)
+    //  ) {
+    //    rState := State.WRITE_POST_NOPS
+    //    when (rBusBurstOuterCnt.msb) {
+    //      rD2hWriteValid := True
+    //    }
+    //    rH2dFifoPopReady := False
+    //  } otherwise {
+    //    rState := State.SEND_WRITE_LO_N
+    //  }
+    //  when (rHaveBurst) {
+    //    rH2dFifoPopReady := True
+    //  }
+    //  rSavedH2dSendData := (
+    //    //io.bus.h2dBus.payload
+    //    h2dFifo.io.pop.payload
+    //  )
+    //  when (!rHaveBurst) {
+    //    rSavedH2dSendData.byteEn := 0x0
+    //    //when (rChipBurstCnt.msb) {
+    //    //  //rSavedH2dSendData.burstLast := True
+    //    //  rTempBurstLast := True
+    //    //}
+    //    when (rChipBurstCnt.msb) {
+    //      rSavedH2dSendData.burstLast := True
+    //      rState := State.WRITE_POST_NOPS
+    //      rD2hWriteValid := True
+    //      //rTempBurstLast := True
+    //    }
+    //  } otherwise { // when (rHaveBurst)
+    //  }
+    //  //when (rChipBurstCnt.msb) {
+    //  //  //rSavedH2dSendData.burstLast := True
+    //  //  rTempBurstLast := True
+    //  //}
+    //}
+    //is (State.SEND_WRITE_LO_N) {
+    //  io.sdram.sendCmdWrite(
+    //    bank=rTempAddr(myBankSliceRange),
+    //    column=rTempAddr(myColumnSliceRange),
+    //    autoPrecharge=True,
+    //    someDqTriState=rDqTriState,
+    //    wrData=rSavedH2dSendData.data(15 downto 0),
+    //    wrByteEn=rSavedH2dSendData.byteEn(1 downto 0),
+    //    firstWrite=false,
+    //  )
+    //  rH2dFifoPopReady := False
+    //  rState := State.SEND_WRITE_HI_N
+    //  when (rHaveBurst) {
+    //    when (!rBusBurstInnerCnt.msb) {
+    //      rBusBurstInnerCnt := rBusBurstInnerCnt - 1
+    //    } otherwise {
+    //      rTempBurstLast := True
+    //    }
+    //  }
+    //}
+    //is (State.WRITE_POST_NOPS) {
+    //  rH2dFifoPopReady := False
+    //  io.sdram.sendCmdNop()
+    //  when (
+    //    //rD2hFifoPushValid
+    //    rD2hWriteValid
+    //    //&& io.bus.d2hBus.ready
+    //    && d2hFifo.io.push.ready
+    //  ) {
+    //    rD2hWriteValid := False
+    //  }
+    //  when (!rWrNopWaitCnt.msb) {
+    //    rWrNopWaitCnt := rWrNopWaitCnt - 1
+    //  } elsewhen (!rD2hFifoPushValid) {
+    //    rState := State.IDLE
+    //  }
+    //}
   }
 
 
