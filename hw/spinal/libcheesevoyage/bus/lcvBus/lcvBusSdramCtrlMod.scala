@@ -673,10 +673,18 @@ case class LcvBusSdramCtrl(
     (myPwrOnCntNumCycles / 2).toInt
   )
   val rPwrOnInitCnt = (
-    Vec.fill(2)(
-      Reg(UInt((log2Up(myPwrOnCntNumCyclesHalf.toInt) + 3) bits))
-      init(myPwrOnCntNumCyclesHalf.toInt)
-    )
+    Vec[UInt](List[UInt](
+      (
+        Reg(UInt((log2Up(myPwrOnCntNumCyclesHalf.toInt) + 3) bits))
+        init(myPwrOnCntNumCyclesHalf.toInt)
+      ),
+      (
+        Reg(UInt((log2Up(myPwrOnCntNumCycles.toInt) + 3) bits))
+        init(myPwrOnCntNumCycles.toInt)
+      ),
+    ))
+    //Vec.fill(2)(
+    //)
   )
   val rPwrOnRpCnt = (
     //Vec.fill(2)(
