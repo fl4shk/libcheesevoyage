@@ -102,6 +102,8 @@ case class LcvBusArbiter(
     )
   )
   val myPriorityFindFirst = (
+    cfg.kind == LcvBusArbiterKind.Priority
+  ) generate (
     myPriorityVec.sFindFirst(_ === True)
   )
   if (cfg.kind == LcvBusArbiterKind.Priority) {
@@ -132,11 +134,12 @@ case class LcvBusArbiter(
   }
 
 
-  val rHostIdxValid = (
-    cfg.kind == LcvBusArbiterKind.Priority
-  ) generate (
-    Reg(Bool(), init=False)
-  )
+  //val rHostIdxValid = (
+  //  cfg.kind == LcvBusArbiterKind.Priority
+  //) generate (
+  //  Reg(Bool(), init=False)
+  //)
+
   def host = io.hostVec(rHostIdx)
 
   //def prevHost = io.hostVec(RegNext(rArbitCnt, init=rArbitCnt.getZero))
@@ -197,7 +200,7 @@ case class LcvBusArbiter(
         ) {
           nextHostIdx := myPriorityFindFirst._2
         } otherwise {
-          nextHostIdx := 0x0
+          nextHostIdx := rHostIdx //0x0
         }
       }
       case LcvBusArbiterKind.RoundRobin => {
