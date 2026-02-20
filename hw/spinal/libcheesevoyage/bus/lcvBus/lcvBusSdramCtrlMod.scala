@@ -1058,8 +1058,9 @@ case class LcvBusSdramCtrl(
                 //downto log2Up(cfg.burstLen) + 1 - 1
                 downto myAlignedColumnSliceRangeHi(1)
               ),
-              init=h2dFifo.io.pop.addr.getZero,
-            ),
+              //init=h2dFifo.io.pop.addr.getZero,
+            )
+            init(0x0)
           )
           rSavedH2dSendData := (
             //io.bus.h2dBus.payload
@@ -1188,10 +1189,14 @@ case class LcvBusSdramCtrl(
         rState := State.SEND_WRITE_0
       }
       rChipBurstWithoutBusBurstCnt.head := (
-        rTempAddr.head(myAlignedColumnSliceRangeLo).asSInt - 2
+        rTempAddr.head(myAlignedColumnSliceRangeLo).asSInt.resize(
+          rChipBurstWithoutBusBurstCnt.head.getWidth
+        ) - 2
       )
       rChipBurstWithoutBusBurstCnt.last := (
-        rTempAddr.head(myAlignedColumnSliceRangeLo).asSInt - 3
+        rTempAddr.head(myAlignedColumnSliceRangeLo).asSInt.resize(
+          rChipBurstWithoutBusBurstCnt.last.getWidth
+        ) - 3
       )
     }
     is (State.SEND_READ_0) {
