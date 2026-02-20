@@ -671,13 +671,14 @@ case class LcvBusSdramCtrl(
   rDqTriState.writeEnable := (
     False
   )
+  io.sdram.dq := rDqTriState.write
   //rDqTriState.read := io.sdram.dq
-  when (rDqTriState.writeEnable) {
-    //io.dq
-    io.sdram.dq := rDqTriState.write
-  } otherwise {
-    //rDqTriState.read := io.sdram.dq
-  }
+  //when (rDqTriState.writeEnable) {
+  //  //io.dq
+  //  io.sdram.dq := rDqTriState.write
+  //} otherwise {
+  //  //rDqTriState.read := io.sdram.dq
+  //}
   def myPwrOnCntNumCycles = (
     ((200 us) * cfg.clkRate) + 10 // 10 extra cycles for good measure 
   )
