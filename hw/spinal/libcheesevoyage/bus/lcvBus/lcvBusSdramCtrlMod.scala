@@ -1356,12 +1356,12 @@ case class LcvBusSdramCtrl(
             ## fell(rChipBurstWithoutBusBurstCnt.last.orR)
           ) {
             is (B"10") {
-              rD2hSendData.data(31 downto 16) := (
+              rD2hSendData.data(15 downto 0) := (
                 RegNext(io.sdram.dq)
               )
             }
             is (B"01") {
-              rD2hSendData.data(15 downto 0) := (
+              rD2hSendData.data(31 downto 16) := (
                 RegNext(io.sdram.dq)
               )
               nextD2hValid := True
