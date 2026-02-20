@@ -542,10 +542,10 @@ case class LcvBusSdramCtrl(
     //12 downto 3
   )
   def myAlignedColumnSliceRangeHi = (
-    10 downto log2Up(cfg.burstLen) + 1
+    10, log2Up(cfg.burstLen) + 1
   )
   def myAlignedColumnSliceRangeLo = (
-    log2Up(cfg.burstLen) + 1 - 1 downto 1
+    log2Up(cfg.burstLen) + 1 - 1, 1
   )
 
   //def myD2hNextValid = (
@@ -1048,7 +1048,7 @@ case class LcvBusSdramCtrl(
           rTempAddr.last(
             rTempAddr.last.high
             //downto log2Up(cfg.burstLen) + 1 - 1
-            downto myAlignedColumnSliceRangeHi(1)
+            downto myAlignedColumnSliceRangeHi._2
           ) := (
             RegNext(
               h2dFifo.io.pop.addr(
@@ -1056,7 +1056,7 @@ case class LcvBusSdramCtrl(
                 //downto log2Up(cfg.burstLen) + 1 - 1
                 rTempAddr.last.high
                 //downto log2Up(cfg.burstLen) + 1 - 1
-                downto myAlignedColumnSliceRangeHi(1)
+                downto myAlignedColumnSliceRangeHi._2
               ),
               //init=h2dFifo.io.pop.addr.getZero,
             )
@@ -1080,8 +1080,14 @@ case class LcvBusSdramCtrl(
           //rTempAddr.last := (
           //  rTempAddr.last + ((cfg.burstLen / 2) * 4)
           //)
-          rTempAddr.last(myAlignedColumnSliceRangeHi) := (
-            rTempAddr.last(myAlignedColumnSliceRangeHi) + 1
+          rTempAddr.last(
+            myAlignedColumnSliceRangeHi._1
+            downto myAlignedColumnSliceRangeHi._2
+          ) := (
+            rTempAddr.last(
+              myAlignedColumnSliceRangeHi._1
+              downto myAlignedColumnSliceRangeHi._2
+            ) + 1
           )
         }
         when (
@@ -1190,14 +1196,20 @@ case class LcvBusSdramCtrl(
       }
       rChipBurstWithoutBusBurstCnt.head := (
         (
-          rTempAddr.head(myAlignedColumnSliceRangeLo).resize(
+          rTempAddr.head(
+            myAlignedColumnSliceRangeLo._1
+            downto myAlignedColumnSliceRangeLo._2
+          ).resize(
             rChipBurstWithoutBusBurstCnt.head.getWidth
           ) //- 2
         ).asSInt
       )
       rChipBurstWithoutBusBurstCnt.last := (
         (
-          rTempAddr.head(myAlignedColumnSliceRangeLo).resize(
+          rTempAddr.head(
+            myAlignedColumnSliceRangeLo._1
+            downto myAlignedColumnSliceRangeLo._2
+          ).resize(
             rChipBurstWithoutBusBurstCnt.last.getWidth
           ) + 1 //- 3
         ).asSInt
@@ -1257,10 +1269,11 @@ case class LcvBusSdramCtrl(
             }
           } otherwise {
             nextD2hValid := (
-              rRdCasLatencyCnt.asUInt === (
-                //cfg.busCfg.maxBurstSizeMinus1 * 2
-                cfg.burstLen - 2 //- 1
-              )
+              //rRdCasLatencyCnt.asUInt === (
+              //  //cfg.busCfg.maxBurstSizeMinus1 * 2
+              //  cfg.burstLen - 2 //- 1
+              //)
+              fell(rChipBurstWithoutBusBurstCnt.last.orR)
             )
           }
           rD2hFifoPushValid := (
