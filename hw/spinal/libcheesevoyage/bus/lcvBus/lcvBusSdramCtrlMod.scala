@@ -1191,12 +1191,12 @@ case class LcvBusSdramCtrl(
       rChipBurstWithoutBusBurstCnt.head := (
         rTempAddr.head(myAlignedColumnSliceRangeLo).asSInt.resize(
           rChipBurstWithoutBusBurstCnt.head.getWidth
-        ) - 2
+        ) //- 2
       )
       rChipBurstWithoutBusBurstCnt.last := (
         rTempAddr.head(myAlignedColumnSliceRangeLo).asSInt.resize(
           rChipBurstWithoutBusBurstCnt.last.getWidth
-        ) - 3
+        ) + 1 //- 3
       )
     }
     is (State.SEND_READ_0) {
