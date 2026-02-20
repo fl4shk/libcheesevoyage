@@ -671,10 +671,12 @@ case class LcvBusSdramCtrl(
   rDqTriState.writeEnable := (
     False
   )
-  rDqTriState.read := io.sdram.dq
+  //rDqTriState.read := io.sdram.dq
   when (rDqTriState.writeEnable) {
     //io.dq
     io.sdram.dq := rDqTriState.write
+  } otherwise {
+    //rDqTriState.read := io.sdram.dq
   }
   def myPwrOnCntNumCycles = (
     ((200 us) * cfg.clkRate) + 10 // 10 extra cycles for good measure 
@@ -1203,12 +1205,26 @@ case class LcvBusSdramCtrl(
             //rRdCasLatencyCnt.asUInt <= cfg.busCfg.maxBurstSizeMinus1 * 2//+ 1
             nextD2hValid
           )
-          rD2hSendData.data(31 downto 16) := rDqTriState.read
+          rD2hSendData.data(31 downto 16) := (
+            RegNext(
+              //rDqTriState.read
+              io.sdram.dq,
+              //init=io.sdram.dq.getZero,
+            )
+          )
         } elsewhen (rRdCasLatencyCnt(0) === True) {
           when (rD2hFifoPushValid) {
             rD2hSendData.burstFirst := False
           }
-          rD2hSendData.data(15 downto 0) := rDqTriState.read
+          rD2hSendData.data(15 downto 0) := (
+            //rDqTriState.read
+
+            RegNext(
+              //rDqTriState.read
+              io.sdram.dq,
+              //init=io.sdram.dq.getZero,
+            )
+          )
         }
         when (
           rRdCasLatencyCnt === 0
