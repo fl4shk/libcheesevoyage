@@ -1533,7 +1533,7 @@ object LcvSdramSim extends App {
     .withConfig(config=simSpinalConfig)
     .withFstWave
     .compile(
-      InOutWrapper(LcvSdramSimDut(clkRate=clkRate))
+      LcvSdramSimDut(clkRate=clkRate)
     )
     .doSim { dut =>
       dut.clockDomain.forkStimulus(period=10)
