@@ -453,7 +453,7 @@ case class LcvBusSdramIo(
     }
     dqmh := ~wrByteEn(1)
     dqml := ~wrByteEn(0)
-    someDqTriState.writeEnable := True
+    someDqTriState.writeEnable := wrByteEn.orR
     someDqTriState.write := wrData
   }
   private[libcheesevoyage] def sendCmdActive(
