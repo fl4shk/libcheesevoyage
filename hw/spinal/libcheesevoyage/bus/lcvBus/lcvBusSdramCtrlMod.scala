@@ -1190,7 +1190,10 @@ case class LcvBusSdramCtrl(
               downto myAlignedColumnSliceRangeLo._2
             ).resize(
               rChipBurstWithoutBusBurstCnt.head.getWidth
-            ) + cfg.casLatency._2 //- 2
+            ) + (
+              cfg.casLatency._2 //- 2
+              + 2 //1
+            )
           ).asSInt
         )
         rChipBurstWithoutBusBurstCnt.last := (
@@ -1200,7 +1203,12 @@ case class LcvBusSdramCtrl(
               downto myAlignedColumnSliceRangeLo._2
             ).resize(
               rChipBurstWithoutBusBurstCnt.last.getWidth
-            ) + (cfg.casLatency._2 + 1) //- 3
+            ) + (
+              cfg.casLatency._2
+              + 3 //2
+              //+ 1
+              //- 3
+            )
           ).asSInt
         )
       } otherwise {
