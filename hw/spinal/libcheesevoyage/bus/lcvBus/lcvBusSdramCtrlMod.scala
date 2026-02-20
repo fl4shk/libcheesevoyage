@@ -1330,8 +1330,8 @@ case class LcvBusSdramCtrl(
           Mux[UInt](
             (
               rHaveBurst
-              || rose(rChipBurstWithoutBusBurstCnt.head.msb)
-              || rose(rChipBurstWithoutBusBurstCnt.last.msb)
+              || fell(rChipBurstWithoutBusBurstCnt.head.orR)
+              || fell(rChipBurstWithoutBusBurstCnt.last.orR)
             ),
             rSavedH2dSendData.byteEn(1 downto 0),
             U"2'b00",
@@ -1371,8 +1371,8 @@ case class LcvBusSdramCtrl(
           Mux[UInt](
             (
               rHaveBurst
-              || rose(rChipBurstWithoutBusBurstCnt.head.msb)
-              || rose(rChipBurstWithoutBusBurstCnt.last.msb)
+              || fell(rChipBurstWithoutBusBurstCnt.head.orR)
+              || fell(rChipBurstWithoutBusBurstCnt.last.orR)
             ),
             rSavedH2dSendData.byteEn(3 downto 2),
             U"2'b00",
@@ -1433,8 +1433,8 @@ case class LcvBusSdramCtrl(
           Mux[UInt](
             (
               rHaveBurst
-              || rose(rChipBurstWithoutBusBurstCnt.head.msb)
-              || rose(rChipBurstWithoutBusBurstCnt.last.msb)
+              || fell(rChipBurstWithoutBusBurstCnt.head.orR)
+              || fell(rChipBurstWithoutBusBurstCnt.last.orR)
             ),
             rSavedH2dSendData.byteEn(1 downto 0),
             U"2'b00",
