@@ -2573,7 +2573,12 @@ case class LcvBusNonCoherentDataCacheSimDut(
     //mySdram.io.nCAS := mySdramCtrl.io.sdram.nCas
     //mySdram.io.CLK := mySdramCtrl.io.sdram.clk
     //mySdram.io.CKE := mySdramCtrl.io.sdram.cke
-    mySdram.io.DQ <> myCacheAndTester.io.sdram.dq
+    //mySdram.io.DQ <> myCacheAndTester.io.sdram.dq
+
+    myCacheAndTester.io.sdram.dq.read := mySdram.io.DQ
+    when (myCacheAndTester.io.sdram.dq.writeEnable) {
+      mySdram.io.DQ := myCacheAndTester.io.sdram.dq.write
+    }
     mySdram.io.A := myCacheAndTester.io.sdram.a
     mySdram.io.DQML := myCacheAndTester.io.sdram.dqml
     mySdram.io.DQMH := myCacheAndTester.io.sdram.dqmh

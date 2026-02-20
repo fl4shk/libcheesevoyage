@@ -340,10 +340,17 @@ case class LcvBusSdramCtrlConfig(
 
 case class LcvBusSdramIo(
   cfg: LcvBusSdramCtrlConfig,
+  //isSdramChip: Boolean=false
 ) extends Bundle {
-  //val dq = master(TriState(UInt(cfg.sdramDqWidth bits)))
-  //  // bidirectional data bus
-  val dq = inout(Analog(UInt(cfg.sdramDqWidth bits)))
+  //val dq = (
+  //  isSdramChip
+  //) generate (
+  //  inout(Analog(UInt(cfg.sdramDqWidth bits)))
+  //)
+  val dq = (
+    master(TriState(UInt(cfg.sdramDqWidth bits)))
+    // bidirectional data bus
+  )
   val a = out(UInt(cfg.sdramAWidth bits))     // addr bus
   val dqml = out(Bool())                      // \ two byte masks
   val dqmh = out(Bool())                      // /
@@ -662,16 +669,18 @@ case class LcvBusSdramCtrl(
   //val myDqTriState = (
   //  TriState(UInt(cfg.sdramDqWidth bits))
   //)
-  val rDqTriState = {
-    val temp = Reg(TriState(UInt(cfg.sdramDqWidth bits)))
-    temp.init(temp.getZero)
-    temp
-  }
-  //rDqTriState.writeEnable.setAsReg() init(rDqTriState.writeEnable.getZero)
-  rDqTriState.writeEnable := (
-    False
-  )
-  io.sdram.dq := rDqTriState.write
+
+  //val rDqTriState = {
+  //  val temp = Reg(TriState(UInt(cfg.sdramDqWidth bits)))
+  //  temp.init(temp.getZero)
+  //  temp
+  //}
+  ////rDqTriState.writeEnable.setAsReg() init(rDqTriState.writeEnable.getZero)
+  //rDqTriState.writeEnable := (
+  //  False
+  //)
+  //io.sdram.dq := rDqTriState.write
+
   //rDqTriState.read := io.sdram.dq
   //when (rDqTriState.writeEnable) {
   //  //io.dq
@@ -679,6 +688,8 @@ case class LcvBusSdramCtrl(
   //} otherwise {
   //  //rDqTriState.read := io.sdram.dq
   //}
+  io.sdram.dq.writeEnable.setAsReg() init(False)
+  io.sdram.dq.write.setAsReg() init(io.sdram.dq.write.getZero)
   def myPwrOnCntNumCycles = (
     ((200 us) * cfg.clkRate) + 10 // 10 extra cycles for good measure 
   )
@@ -1147,7 +1158,7 @@ case class LcvBusSdramCtrl(
         bank=rTempAddr(myBankSliceRange),
         column=rTempAddr(myColumnSliceRange),
         autoPrecharge=True,
-        someDqTriState=rDqTriState,
+        someDqTriState=io.sdram.dq,
         firstRead=true,
       )
       //rState := State.READ_POST_NOPS
@@ -1176,7 +1187,7 @@ case class LcvBusSdramCtrl(
         bank=rTempAddr(myBankSliceRange),
         column=rTempAddr(myColumnSliceRange),
         autoPrecharge=True,
-        someDqTriState=rDqTriState,
+        someDqTriState=io.sdram.dq,
         firstRead=false,
       )
       rD2hFifoPushValid := False
@@ -1209,7 +1220,7 @@ case class LcvBusSdramCtrl(
           rD2hSendData.data(31 downto 16) := (
             RegNext(
               //rDqTriState.read
-              io.sdram.dq,
+              io.sdram.dq.read,
               //init=io.sdram.dq.getZero,
             )
           )
@@ -1222,7 +1233,7 @@ case class LcvBusSdramCtrl(
 
             RegNext(
               //rDqTriState.read
-              io.sdram.dq,
+              io.sdram.dq.read,
               //init=io.sdram.dq.getZero,
             )
           )
@@ -1261,7 +1272,7 @@ case class LcvBusSdramCtrl(
         bank=rTempAddr(myBankSliceRange),
         column=rTempAddr(myColumnSliceRange),
         autoPrecharge=True,
-        someDqTriState=rDqTriState,
+        someDqTriState=io.sdram.dq,
         wrData=rSavedH2dSendData.data(15 downto 0),
         wrByteEn=rSavedH2dSendData.byteEn(1 downto 0),
         firstWrite=true,
@@ -1291,7 +1302,7 @@ case class LcvBusSdramCtrl(
         bank=rTempAddr(myBankSliceRange),
         column=rTempAddr(myColumnSliceRange),
         autoPrecharge=True,
-        someDqTriState=rDqTriState,
+        someDqTriState=io.sdram.dq,
         wrData=rSavedH2dSendData.data(31 downto 16),
         wrByteEn=rSavedH2dSendData.byteEn(3 downto 2),
         firstWrite=false,
@@ -1343,7 +1354,7 @@ case class LcvBusSdramCtrl(
         bank=rTempAddr(myBankSliceRange),
         column=rTempAddr(myColumnSliceRange),
         autoPrecharge=True,
-        someDqTriState=rDqTriState,
+        someDqTriState=io.sdram.dq,
         wrData=rSavedH2dSendData.data(15 downto 0),
         wrByteEn=rSavedH2dSendData.byteEn(1 downto 0),
         firstWrite=false,
@@ -1361,7 +1372,7 @@ case class LcvBusSdramCtrl(
     is (State.WRITE_POST_NOPS) {
       rH2dFifoPopReady := False
       io.sdram.sendCmdNop(
-        optSomeDqTriState=Some(rDqTriState)
+        optSomeDqTriState=Some(io.sdram.dq)
       )
       when (
         //rD2hFifoPushValid
@@ -1494,7 +1505,11 @@ case class LcvSdramSimDut(
   //mySdram.io.nCAS := mySdramCtrl.io.sdram.nCas
   //mySdram.io.CLK := mySdramCtrl.io.sdram.clk
   //mySdram.io.CKE := mySdramCtrl.io.sdram.cke
-  mySdram.io.DQ <> mySdramCtrlSimDut.io.dq
+  //mySdram.io.DQ <> mySdramCtrlSimDut.io.dq
+  mySdramCtrlSimDut.io.dq.read := mySdram.io.DQ
+  when (mySdramCtrlSimDut.io.dq.writeEnable) {
+    mySdram.io.DQ := mySdramCtrlSimDut.io.dq.write
+  }
   mySdram.io.A := mySdramCtrlSimDut.io.a
   mySdram.io.DQML := mySdramCtrlSimDut.io.dqml
   mySdram.io.DQMH := mySdramCtrlSimDut.io.dqmh
