@@ -1183,6 +1183,26 @@ case class LcvBusSdramCtrl(
       //rHaveBurst := rSavedH2dSendData.burstFirst
       when (!rSavedH2dSendData.isWrite) {
         rState := State.SEND_READ_0
+        rChipBurstWithoutBusBurstCnt.head := (
+          (
+            rTempAddr.head(
+              myAlignedColumnSliceRangeLo._1
+              downto myAlignedColumnSliceRangeLo._2
+            ).resize(
+              rChipBurstWithoutBusBurstCnt.head.getWidth
+            ) + cfg.casLatency._2 //- 2
+          ).asSInt
+        )
+        rChipBurstWithoutBusBurstCnt.last := (
+          (
+            rTempAddr.head(
+              myAlignedColumnSliceRangeLo._1
+              downto myAlignedColumnSliceRangeLo._2
+            ).resize(
+              rChipBurstWithoutBusBurstCnt.last.getWidth
+            ) + (cfg.casLatency._2 + 1) //- 3
+          ).asSInt
+        )
       } otherwise {
         //when (!rBusBurstOuterCnt.msb) {
         //  rH2dFifoPopReady := True
@@ -1193,33 +1213,53 @@ case class LcvBusSdramCtrl(
         //  h2dFifo.io.pop.payload
         //)
         rState := State.SEND_WRITE_0
+        rChipBurstWithoutBusBurstCnt.head := (
+          (
+            rTempAddr.head(
+              myAlignedColumnSliceRangeLo._1
+              downto myAlignedColumnSliceRangeLo._2
+            ).resize(
+              rChipBurstWithoutBusBurstCnt.head.getWidth
+            ) //- 2
+          ).asSInt
+        )
+        rChipBurstWithoutBusBurstCnt.last := (
+          (
+            rTempAddr.head(
+              myAlignedColumnSliceRangeLo._1
+              downto myAlignedColumnSliceRangeLo._2
+            ).resize(
+              rChipBurstWithoutBusBurstCnt.last.getWidth
+            ) + 1 //- 3
+          ).asSInt
+        )
       }
-      rChipBurstWithoutBusBurstCnt.head := (
-        (
-          rTempAddr.head(
-            myAlignedColumnSliceRangeLo._1
-            downto myAlignedColumnSliceRangeLo._2
-          ).resize(
-            rChipBurstWithoutBusBurstCnt.head.getWidth
-          ) //- 2
-        ).asSInt
-      )
-      rChipBurstWithoutBusBurstCnt.last := (
-        (
-          rTempAddr.head(
-            myAlignedColumnSliceRangeLo._1
-            downto myAlignedColumnSliceRangeLo._2
-          ).resize(
-            rChipBurstWithoutBusBurstCnt.last.getWidth
-          ) + 1 //- 3
-        ).asSInt
-      )
+      //rChipBurstWithoutBusBurstCnt.head := (
+      //  (
+      //    rTempAddr.head(
+      //      myAlignedColumnSliceRangeLo._1
+      //      downto myAlignedColumnSliceRangeLo._2
+      //    ).resize(
+      //      rChipBurstWithoutBusBurstCnt.head.getWidth
+      //    ) //- 2
+      //  ).asSInt
+      //)
+      //rChipBurstWithoutBusBurstCnt.last := (
+      //  (
+      //    rTempAddr.head(
+      //      myAlignedColumnSliceRangeLo._1
+      //      downto myAlignedColumnSliceRangeLo._2
+      //    ).resize(
+      //      rChipBurstWithoutBusBurstCnt.last.getWidth
+      //    ) + 1 //- 3
+      //  ).asSInt
+      //)
     }
     is (State.SEND_READ_0) {
       rH2dFifoPopReady := False
       io.sdram.sendCmdRead(
         bank=rTempAddr.head(myBankSliceRange),
-        column=rTempAddr.head(myColumnSliceRange),
+        column=rTempAddr.last(myColumnSliceRange),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         firstRead=true,
@@ -1248,7 +1288,7 @@ case class LcvBusSdramCtrl(
     is (State.SEND_READ_N) {
       io.sdram.sendCmdRead(
         bank=rTempAddr.head(myBankSliceRange),
-        column=rTempAddr.head(myColumnSliceRange),
+        column=rTempAddr.last(myColumnSliceRange),
         autoPrecharge=True,
         someDqTriState=rDqTriState,
         firstRead=false,
@@ -1256,59 +1296,86 @@ case class LcvBusSdramCtrl(
       rD2hFifoPushValid := False
       val nextD2hValid = Bool()
       nextD2hValid := False
+
       when (!rRdCasLatencyCnt.msb) {
         rRdCasLatencyCnt := rRdCasLatencyCnt - 1
-        when (rRdCasLatencyCnt(0) === False) {
-          when (rHaveBurst) {
-            nextD2hValid := (
-              //rRdCasLatencyCnt.asUInt <= cfg.busCfg.maxBurstSizeMinus1 * 2
-              rRdCasLatencyCnt.asUInt <= cfg.burstLen - 1//* 2
-            )
-            when (nextD2hValid && !rD2hSendData.burstFirst) {
-              rD2hSendData.burstCnt := rD2hSendData.burstCnt - 1
-            }
-          } otherwise {
-            nextD2hValid := (
-              rRdCasLatencyCnt.asUInt === (
-                //cfg.busCfg.maxBurstSizeMinus1 * 2
-                cfg.burstLen - 2 //- 1
+        when (rHaveBurst) {
+          when (rRdCasLatencyCnt(0) === False) {
+            //when (rHaveBurst) {
+              nextD2hValid := (
+                //rRdCasLatencyCnt.asUInt <= cfg.busCfg.maxBurstSizeMinus1 * 2
+                rRdCasLatencyCnt.asUInt <= cfg.burstLen - 1//* 2
               )
-              //fell(rChipBurstWithoutBusBurstCnt.last.orR)
+              when (nextD2hValid && !rD2hSendData.burstFirst) {
+                rD2hSendData.burstCnt := rD2hSendData.burstCnt - 1
+              }
+            //} otherwise {
+            //  nextD2hValid := (
+            //    rRdCasLatencyCnt.asUInt === (
+            //      //cfg.busCfg.maxBurstSizeMinus1 * 2
+            //      cfg.burstLen - 2 //- 1
+            //    )
+            //    //fell(rChipBurstWithoutBusBurstCnt.last.orR)
+            //  )
+            //}
+            rD2hFifoPushValid := (
+              //rRdCasLatencyCnt.asUInt < cfg.burstLen
+              //rRdCasLatencyCnt.asUInt <= cfg.busCfg.maxBurstSizeMinus1 * 2//+ 1
+              nextD2hValid
             )
+            rD2hSendData.data(31 downto 16) := (
+              RegNext(
+                //rDqTriState.read
+                io.sdram.dq,
+                //init=io.sdram.dq.getZero,
+              )
+            )
+          } elsewhen (rRdCasLatencyCnt(0) === True) {
+            when (rD2hFifoPushValid) {
+              rD2hSendData.burstFirst := False
+            }
+            rD2hSendData.data(15 downto 0) := (
+              //rDqTriState.read
+
+              RegNext(
+                //rDqTriState.read
+                io.sdram.dq,
+                //init=io.sdram.dq.getZero,
+              )
+            )
+          }
+          when (
+            rRdCasLatencyCnt === 0
+            && rBusBurstOuterCnt.msb
+          ) {
+            rD2hSendData.burstLast := True
+          }
+        } otherwise { // when (!rHaveBurst)
+          switch (
+            fell(rChipBurstWithoutBusBurstCnt.head.orR)
+            ## fell(rChipBurstWithoutBusBurstCnt.last.orR)
+          ) {
+            is (B"10") {
+              rD2hSendData.data(31 downto 16) := (
+                RegNext(io.sdram.dq)
+              )
+            }
+            is (B"01") {
+              rD2hSendData.data(15 downto 0) := (
+                RegNext(io.sdram.dq)
+              )
+              nextD2hValid := True
+            }
+            default {
+            }
           }
           rD2hFifoPushValid := (
             //rRdCasLatencyCnt.asUInt < cfg.burstLen
             //rRdCasLatencyCnt.asUInt <= cfg.busCfg.maxBurstSizeMinus1 * 2//+ 1
             nextD2hValid
           )
-          rD2hSendData.data(31 downto 16) := (
-            RegNext(
-              //rDqTriState.read
-              io.sdram.dq,
-              //init=io.sdram.dq.getZero,
-            )
-          )
-        } elsewhen (rRdCasLatencyCnt(0) === True) {
-          when (rD2hFifoPushValid) {
-            rD2hSendData.burstFirst := False
-          }
-          rD2hSendData.data(15 downto 0) := (
-            //rDqTriState.read
-
-            RegNext(
-              //rDqTriState.read
-              io.sdram.dq,
-              //init=io.sdram.dq.getZero,
-            )
-          )
         }
-        when (
-          rRdCasLatencyCnt === 0
-          && rBusBurstOuterCnt.msb
-        ) {
-          rD2hSendData.burstLast := True
-        }
-      } otherwise {
+      } otherwise { // when (rRdCasLatencyCnt.msb)
         rD2hFifoPushValid := False
         rState := State.READ_POST_NOPS
       }
