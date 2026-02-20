@@ -1427,8 +1427,8 @@ case class LcvBusSdramCtrl(
 case class as4c32m16sb(
 ) extends BlackBox {
   val io = new Bundle {
-    //val DQ = inout(Analog(UInt(16 bits))) // 16 bit bidirectional data bus
-    val DQ = slave(TriState(Bits(16 bits)))
+    val DQ = inout(Analog(Bits(16 bits))) // 16 bit bidirectional data bus
+    //val DQ = slave(TriState(Bits(16 bits)))
 	  val A = in(UInt(13 bits)) // 13 bit multiplexed address bus
     val DQML = in(Bool())     // byte mask
     val DQMH = in(Bool())     // byte mask
@@ -1506,11 +1506,11 @@ case class LcvSdramSimDut(
   //mySdram.io.nCAS := mySdramCtrl.io.sdram.nCas
   //mySdram.io.CLK := mySdramCtrl.io.sdram.clk
   //mySdram.io.CKE := mySdramCtrl.io.sdram.cke
-  mySdram.io.DQ <> mySdramCtrlSimDut.io.dq
-  //mySdramCtrlSimDut.io.dq.read := mySdram.io.DQ
-  //when (mySdramCtrlSimDut.io.dq.writeEnable) {
-  //  mySdram.io.DQ := mySdramCtrlSimDut.io.dq.write
-  //}
+  //mySdram.io.DQ <> mySdramCtrlSimDut.io.dq
+  mySdramCtrlSimDut.io.dq.read := mySdram.io.DQ
+  when (mySdramCtrlSimDut.io.dq.writeEnable) {
+    mySdram.io.DQ := mySdramCtrlSimDut.io.dq.write
+  }
   mySdram.io.A := mySdramCtrlSimDut.io.a
   mySdram.io.DQML := mySdramCtrlSimDut.io.dqml
   mySdram.io.DQMH := mySdramCtrlSimDut.io.dqmh
