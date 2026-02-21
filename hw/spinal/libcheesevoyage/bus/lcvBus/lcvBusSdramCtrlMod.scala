@@ -1030,14 +1030,7 @@ case class LcvBusSdramCtrl(
           ////&& rHaveBurst
           //|| rSavedH2dSendData.isWrite
         ) {
-          when (
-            RegNext(
-              next=h2dFifo.io.pop.burstFirst,
-              init=False,
-            )
-          ) {
-            rH2dFifoPopReady := True
-          }
+          rH2dFifoPopReady := True
           //rTempAddr.foreach(item => {
           //  item := (
           //    RegNext(
@@ -1493,11 +1486,11 @@ case class LcvBusSdramCtrl(
       }
       when (rHaveBurst) {
         rH2dFifoPopReady := True
+        rSavedH2dSendData := (
+          //io.bus.h2dBus.payload
+          h2dFifo.io.pop.payload
+        )
       }
-      rSavedH2dSendData := (
-        //io.bus.h2dBus.payload
-        h2dFifo.io.pop.payload
-      )
       when (!rHaveBurst) {
         //rSavedH2dSendData.byteEn := 0x0
         //when (rChipBurstCnt.msb) {
