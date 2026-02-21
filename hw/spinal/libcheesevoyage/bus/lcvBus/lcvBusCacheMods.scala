@@ -2266,7 +2266,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_WRITE) {
       base.doLineWordRamWrite(
-        busAddr=rTempBurstAddr,
+        busAddr=rSavedLoH2dPayload.addr,
         lineWord=Some(rSavedLoH2dPayload.data),
         byteEn=Some(rSavedLoH2dPayload.byteEn),
         setEn=true,
