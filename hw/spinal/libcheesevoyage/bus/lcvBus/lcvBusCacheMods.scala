@@ -1630,6 +1630,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       SEND_LINE_TO_HI_BUS,
       RECV_LINE_FROM_HI_BUS_PIPE_1,
       RECV_LINE_FROM_HI_BUS,
+      RECV_LINE_FROM_HI_BUS_POST_WRITE,
       RECV_LINE_FROM_HI_BUS_POST_4,
       RECV_LINE_FROM_HI_BUS_POST_3,
       RECV_LINE_FROM_HI_BUS_POST_2,
@@ -2239,25 +2240,38 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             )
           }
         }
-        when (tempBurstCntCmpEq && rSavedLoH2dPayload.isWrite) {
-          base.doLineWordRamWrite(
-            busAddr=rTempBurstAddr,
-            lineWord=Some(rSavedLoH2dPayload.data),
-            byteEn=Some(rSavedLoH2dPayload.byteEn),
-            setEn=true,
-          )
-        } otherwise {
+        //when (tempBurstCntCmpEq && rSavedLoH2dPayload.isWrite) {
+        //  //base.doLineWordRamWrite(
+        //  //  busAddr=rTempBurstAddr,
+        //  //  lineWord=Some(rSavedLoH2dPayload.data),
+        //  //  byteEn=Some(rSavedLoH2dPayload.byteEn),
+        //  //  setEn=true,
+        //  //)
+        //} otherwise {
           base.doLineWordRamWrite(
             busAddr=rTempBurstAddr,
             lineWord=Some((io.hiBus.d2hBus.data)),
             byteEn=None,
             setEn=true,
           )
-        }
+        //}
         when ((io.hiBus.d2hBus.burstLast)) {
-          rState := State.RECV_LINE_FROM_HI_BUS_POST_4
+          when (!rSavedLoH2dPayload.isWrite) {
+            rState := State.RECV_LINE_FROM_HI_BUS_POST_4
+          } otherwise {
+            rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
+          }
         }
       }
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_WRITE) {
+      base.doLineWordRamWrite(
+        busAddr=rTempBurstAddr,
+        lineWord=Some(rSavedLoH2dPayload.data),
+        byteEn=Some(rSavedLoH2dPayload.byteEn),
+        setEn=true,
+      )
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_4
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_4) {
       //rState := State.RECV_LINE_FROM_HI_BUS_POST_2
