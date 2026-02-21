@@ -1030,7 +1030,14 @@ case class LcvBusSdramCtrl(
           ////&& rHaveBurst
           //|| rSavedH2dSendData.isWrite
         ) {
-          rH2dFifoPopReady := True
+          when (
+            RegNext(
+              next=h2dFifo.io.pop.burstFirst,
+              init=False,
+            )
+          ) {
+            rH2dFifoPopReady := True
+          }
           //rTempAddr.foreach(item => {
           //  item := (
           //    RegNext(
