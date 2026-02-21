@@ -7,9 +7,6 @@
 //   Copyright (c) 2018 Sorgelig
 //
 // This program is GPL licensed. See COPYING for the full license.
-//
-// FL4SHK NOTE: obtained from here:
-// https://raw.githubusercontent.com/ReverendGumby/Test_V810_MiSTer/refs/heads/main/rtl/tb/as4c32m16sb.sv
 
 // TODO:
 // - Enforce tRCD, tRAS
@@ -42,6 +39,8 @@ localparam CMD_LOAD_MODE       = 3'b000;
 int 			rbl, wbl;
 int             cas_latency;
 int             cas_cnt, rd_cnt, wr_cnt;
+logic           bt; // burst type
+logic [9:0]     bc; // burst counter
 
 logic [3:0] 	cmd;
 logic [1:0]     ba;
@@ -56,9 +55,13 @@ logic           dqloe, dqhoe;
 
 logic [1:0] 	bank;
 logic [12:0]    row;
-logic [9:0]     col;
+logic [9:0]     col, col0;
 
 logic [15:0] 	mem[1<<2][1<<13][1<<10];
+
+task read(input [1:0] bank, input [12:0] row, input [9:0] col, output [15:0] d);
+    d = mem[bank][row][col];
+endtask
 
 task write(input [1:0] bank, input [12:0] row, input [9:0] col, input [15:0] d);
     mem[bank][row][col] = d;
@@ -91,25 +94,37 @@ always @(posedge CLK) if (cke & ~cmd[3]) begin
             // A[6:4] = CAS latency
             cas_latency = int'(a[6:4]);
             wbl = a[9] ? 1 : rbl;
-            // TODO: Burst Type
+            // A[3] = burst type: 0=sequential, 1=interleave
+            bt = a[3];
         end
         CMD_ACTIVE: begin
             row <= a[12:0];
             bank <= ba;
         end
         CMD_READ: begin
-            col <= a[9:0];
+            col0 <= a[9:0];
             bank <= ba;
             cas_cnt <= cas_latency - 2;
             rd_cnt <= rbl;
+            bc <= 0;
         end
         CMD_WRITE: begin
-            col <= a[9:0];
+            col0 <= a[9:0];
             bank <= ba;
             wr_cnt <= wbl;
+            bc <= 0;
         end
         default: ;
     endcase
+end
+
+always @* begin
+logic [9:0] mask;
+    mask = rbl[9:0] - 1'd1;
+    if (bt)                     // interleave
+        col = col0 ^ bc;
+    else                        // sequential
+        col = (col0 & ~mask) | ((col0 + bc) & mask);
 end
 
 assign dout = mem[bank][row][col];
@@ -120,7 +135,7 @@ always @(posedge CLK) if (cke) begin
     end
     else if (rd_cnt != 0) begin
         rd_cnt <= rd_cnt - 1;
-        col <= col + 1'd1;
+        bc <= bc + 1'd1;
     end
 end
 
@@ -133,7 +148,7 @@ always @(posedge CLK) if (cke) begin
             mem[bank][row][col][15:8] <= wr_din[15:8];
         if (~wr_dqm[0])
             mem[bank][row][col][7:0] <= wr_din[7:0];
-        col <= col + 1'd1;
+        bc <= bc + 1'd1;
         wr_cnt <= wr_cnt - 1;
     end
 end
