@@ -1650,7 +1650,26 @@ case class LcvSdramCtrlSimDut(
       ),
     )
   )
-  sdramCtrlTester.io.busVec.head <> mySdramCtrl.io.bus
+  val myDeburster = LcvBusDeburster(
+    cfg=LcvBusDebursterConfig(
+      loBusCfg=cfg.busCfg
+    )
+  )
+  //sdramCtrlTester.io.busVec.head <> mySdramCtrl.io.bus
+  myDeburster.io.loBus << sdramCtrlTester.io.busVec.head
+  //sdramCtrlTester.io.busVec.head <> mySdramCtrl.io.bus
+  //mySdramCtrl.io.bus << myDeburster.io.hiBus
+  myDeburster.io.hiBus.h2dBus.translateInto(mySdramCtrl.io.bus.h2dBus)(
+    dataAssignment=(outp, inp) => {
+      outp.mainNonBurstInfo := inp.mainNonBurstInfo
+      outp.mainBurstInfo := outp.mainBurstInfo.getZero
+    }
+  )
+  mySdramCtrl.io.bus.d2hBus.translateInto(myDeburster.io.hiBus.d2hBus)(
+    dataAssignment=(outp, inp) => {
+      outp.mainNonBurstInfo := inp.mainNonBurstInfo
+    }
+  )
   //--------
 }
 case class LcvSdramSimDut(
