@@ -495,8 +495,10 @@ case class LcvBusSdramIo(
     this._sendCmdBase(U"4'b0011")
     ba := bank
     a := row
-    dqmh := False
-    dqml := False
+    if (!cfg.shortDqmToA12A11) {
+      dqmh := False
+      dqml := False
+    }
   }
   private[libcheesevoyage] def sendCmdPrecharge(
     bank: UInt,
@@ -525,8 +527,10 @@ case class LcvBusSdramIo(
     this._sendCmdBase(U"4'b0000")
     ba := ba.getZero
     a := cfg.mode
-    dqmh := True//False
-    dqml := True//False
+    if (!cfg.shortDqmToA12A11) {
+      dqmh := True//False
+      dqml := True//False
+    }
   }
 }
 
