@@ -2560,6 +2560,7 @@ case class LcvBusNonCoherentDataCacheWithSdramCtrl(
 
 case class LcvBusNonCoherentDataCacheSimDut(
   clkRate: HertzNumber,
+  shortDqmToA12A11: Boolean,
   haveSdram: Boolean,
 ) extends Component {
   //--------
@@ -2572,6 +2573,7 @@ case class LcvBusNonCoherentDataCacheSimDut(
     val myCacheAndTester = LcvBusNonCoherentDataCacheWithSdramCtrl(
       sdramCtrlCfg=LcvBusSdramCtrlConfig(
         clkRate=clkRate,
+        shortDqmToA12A11=shortDqmToA12A11,
         useAltddioOut=false,
       )
     )
@@ -2614,6 +2616,7 @@ object LcvBusNonCoherentDataCacheSim extends App {
       //LcvSdramSimDut(clkRate=clkRate)
       LcvBusNonCoherentDataCacheSimDut(
         clkRate=clkRate,
+        shortDqmToA12A11=false,
         haveSdram=(
           true
           //false
@@ -2672,7 +2675,8 @@ object LcvBusCacheToVerilog extends App {
     //)
     val top = LcvBusNonCoherentDataCacheWithSdramCtrl(
       sdramCtrlCfg=LcvBusSdramCtrlConfig(
-        clkRate=100.0 MHz
+        clkRate=100.0 MHz,
+        shortDqmToA12A11=true,
       )
     )
     top

@@ -97,6 +97,7 @@ case class altddio_out(
 
 case class LcvBusSdramCtrlConfig(
   clkRate: HertzNumber,
+  shortDqmToA12A11: Boolean, // for MiSTer's SDRAM board
   //burstLen: Int=2, // 32-bit
   useAltddioOut: Boolean=true,
   srcWidth: Int=2,
@@ -346,8 +347,27 @@ case class LcvBusSdramIo(
   //  // bidirectional data bus
   val dq = inout(Analog(UInt(cfg.sdramDqWidth bits)))
   val a = out(UInt(cfg.sdramAWidth bits))     // addr bus
-  val dqml = out(Bool())                      // \ two byte masks
-  val dqmh = out(Bool())                      // /
+  val dqmNonShort = (
+    !cfg.shortDqmToA12A11
+  ) generate (
+    out(UInt(2 bits))                      
+  )
+  // dqml, dqmh: two byte masks
+  def dqmh = (
+    if (cfg.shortDqmToA12A11) (
+      a(12)
+    ) else (
+      dqmNonShort(1)
+    )
+  )
+  def dqml = (
+    if (cfg.shortDqmToA12A11) (
+      a(11)
+    ) else (
+      dqmNonShort(0)
+    )
+  )
+
   val ba = out(UInt(cfg.sdramBaWidth bits))   // two banks
   val nCs = out(Bool())                       // a single chip select
   val nWe = out(Bool())                       // write enable
@@ -358,9 +378,19 @@ case class LcvBusSdramIo(
 
   private[libcheesevoyage] def doSetAsReg(
   ): Unit = {
-    a.setAsReg() init(a.getZero)
-    dqml.setAsReg() init(True)
-    dqmh.setAsReg() init(True)
+    a.setAsReg() //init(a.getZero)
+    if (!cfg.shortDqmToA12A11) {
+      dqmNonShort.setAsReg() init(0x3)
+      a.init(a.getZero)
+    } else {
+      a.init(
+       U(
+        12 -> True,
+        11 -> True,
+        default -> False,
+       )
+      )
+    }
     ba.setAsReg() init(ba.getZero)
     nCs.setAsReg() init(False)        // \
     nWe.setAsReg() init(True)         // | start off with a NOP
@@ -1621,12 +1651,14 @@ case class as4c32m16sb(
 //}
 case class LcvSdramCtrlSimDut(
   clkRate: HertzNumber,
+  shortDqmToA12A11: Boolean,
   useAltddioOut: Boolean,
 ) extends Component {
   //--------
   //val io = LcvSdramCtrlSimDutIo(clkRate=clkRate)
   val cfg = LcvBusSdramCtrlConfig(
     clkRate=clkRate,
+    shortDqmToA12A11=shortDqmToA12A11,
     useAltddioOut=useAltddioOut,
   )
   val io = LcvBusSdramIo(cfg=cfg)
@@ -1674,6 +1706,7 @@ case class LcvSdramCtrlSimDut(
 }
 case class LcvSdramSimDut(
   clkRate: HertzNumber,
+  shortDqmToA12A11: Boolean,
 ) extends Component {
   //--------
   val io = new Bundle {
@@ -1681,6 +1714,7 @@ case class LcvSdramSimDut(
   //--------
   val mySdramCtrlSimDut = LcvSdramCtrlSimDut(
     clkRate=clkRate,
+    shortDqmToA12A11=shortDqmToA12A11,
     useAltddioOut=false,
   )
   //--------
@@ -1719,7 +1753,10 @@ object LcvSdramSim extends App {
     .withConfig(config=simSpinalConfig)
     .withFstWave
     .compile(
-      LcvSdramSimDut(clkRate=clkRate)
+      LcvSdramSimDut(
+        clkRate=clkRate,
+        shortDqmToA12A11=false,
+      )
     )
     .doSim { dut =>
       dut.clockDomain.forkStimulus(period=10)
@@ -1747,7 +1784,8 @@ object LcvBusSdramCtrlToVerilog extends App {
   LcvBusSdramCtrlConfig.spinal.generateVerilog{
     val top = LcvBusSdramCtrl(
       cfg=LcvBusSdramCtrlConfig(
-        clkRate=(100.0 MHz)
+        clkRate=(100.0 MHz),
+        shortDqmToA12A11=false,
       )
     )
     top
