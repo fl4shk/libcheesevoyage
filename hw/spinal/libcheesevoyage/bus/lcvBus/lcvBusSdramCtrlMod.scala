@@ -385,6 +385,7 @@ case class LcvBusSdramIo(
     } else {
       a.init(
        U(
+        a.getWidth bits,
         12 -> True,
         11 -> True,
         default -> False,
