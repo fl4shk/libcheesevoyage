@@ -487,6 +487,7 @@ case class LcvVgaCtrlIo(
   val en = in Bool()
   //val inp = in(LcvVgaCtrlInp(rgbConfig=rgbConfig))
   //val outp = out(LcvVgaCtrlOutp(rgbConfig=rgbConfig))
+  val fifoFlush = in(Bool())
   val push = slave Stream(Rgb(rgbConfig))
   val phys = out(LcvVgaPhys(rgbConfig=rgbConfig))
   val misc = out(LcvVgaCtrlMiscIo(
@@ -619,6 +620,7 @@ case class LcvVgaCtrl(
     forFMax=true,
   )
   fifo.io.push << io.push
+  fifo.io.flush := io.fifoFlush
   val myFifoPopReady = Bool() //Reg(Bool(), init=False)
   //myFifoPopReady := False
   fifo.io.pop.ready := myFifoPopReady
