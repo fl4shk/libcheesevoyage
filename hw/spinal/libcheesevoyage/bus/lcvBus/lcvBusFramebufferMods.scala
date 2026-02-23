@@ -693,7 +693,7 @@ case class LcvBusFramebufferCtrl(
               //bits
               //myLineBufArr.head.io.rdAddrPipe.addr.getWidth
               myDblLineBuf.io.rdAddrPipe.addr.getWidth - 1
-              + cnt2dShift.x
+              //+ cnt2dShift.x
               bits
             ))
             init(0x0)
@@ -704,7 +704,7 @@ case class LcvBusFramebufferCtrl(
               //bits
               //myLineBufArr.head.io.rdAddrPipe.addr.getWidth
               myDblLineBuf.io.rdAddrPipe.addr.getWidth - 1
-              + cnt2dShift.x
+              //+ cnt2dShift.x
               bits
             ))
             init(0x0)
@@ -744,7 +744,8 @@ case class LcvBusFramebufferCtrl(
         rMyLineBufArrIdxVec.head,
         rRdLineBufAddrCnt.head(
           rRdLineBufAddrCnt.head.high
-          downto cnt2dShift.x //0//cnt2dShift.x
+          downto 0
+          //downto cnt2dShift.x //0//cnt2dShift.x
         )
       ).asUInt
     )
@@ -826,7 +827,10 @@ case class LcvBusFramebufferCtrl(
         rRdLineBufAddrCnt.head
         //< (myVideoCfg.someSize2d.x << cnt2dShift.x) - 1
         < (
-          (myVideoCfg.someSize2d.x / rgbBusRatio) - 1
+          //(myVideoCfg.someSize2d.x / rgbBusRatio) - 1
+          (
+            myVideoCfg.someSize2d.x / rgbBusRatio
+          ) - 1
         )
       )
     ) {
@@ -862,7 +866,7 @@ case class LcvBusFramebufferCtrl(
         rRdLineBufAddrCnt.last
         < (
           (
-            myVideoCfg.someSize2d.x << cnt2dShift.x
+            myVideoCfg.someSize2d.x //<< cnt2dShift.x
           )
           / rgbBusRatio
         ) - 1
@@ -890,7 +894,9 @@ case class LcvBusFramebufferCtrl(
       }
     }
     val rMyPopVecIdx = (
-      Reg(UInt(cnt2dShift.x + log2Up(rgbBusRatio) bits))
+      Reg(UInt(
+        cnt2dShift.x + log2Up(rgbBusRatio) bits
+      ))
       init(0x0)
     )
 
