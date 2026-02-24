@@ -1178,10 +1178,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   ) {
     val
       INIT,
-      INIT_POST_3,
-      INIT_POST_2,
-      INIT_POST_1,
-      INIT_POST,
+      //INIT_POST_3,
+      //INIT_POST_2,
+      //INIT_POST_1,
+      //INIT_POST,
       IDLE,
       LOAD_HIT_LO_BUS_STALL,
       //LOAD_HIT,
@@ -1322,22 +1322,28 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
 
   switch (rState) {
     is (State.INIT) {
-      when (!base.rFifoThingDoInit) {
-        rState := State.INIT_POST_3
+      when (  
+        //!base.rFifoThingDoInit
+        base.myFinishedLineAttrsInit
+      ) {
+        rState := (
+          //State.INIT_POST_3
+          State.IDLE
+        )
       }
     }
-    is (State.INIT_POST_3) {
-      rState := State.INIT_POST_2
-    }
-    is (State.INIT_POST_2) {
-      rState := State.INIT_POST_1
-    }
-    is (State.INIT_POST_1) {
-      rState := State.INIT_POST
-    }
-    is (State.INIT_POST) {
-      rState := State.IDLE
-    }
+    //is (State.INIT_POST_3) {
+    //  rState := State.INIT_POST_2
+    //}
+    //is (State.INIT_POST_2) {
+    //  rState := State.INIT_POST_1
+    //}
+    //is (State.INIT_POST_1) {
+    //  rState := State.INIT_POST
+    //}
+    //is (State.INIT_POST) {
+    //  rState := State.IDLE
+    //}
     is (State.IDLE) {
       //base.myFifoThingDoStall.foreach(_ := False)
       base.myFifoThingDoStall := False
@@ -1820,22 +1826,28 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   doIgnoreInvalidFifoThingPopCnt()
   switch (rState) {
     is (State.INIT) {
-      when (!base.rFifoThingDoInit) {
-        rState := State.INIT_POST_3
+      when (
+        //!base.rFifoThingDoInit
+        base.myFinishedLineAttrsInit
+      ) {
+        rState := (
+          //State.INIT_POST_3
+          State.IDLE
+        )
       }
     }
-    is (State.INIT_POST_3) {
-      rState := State.INIT_POST_2
-    }
-    is (State.INIT_POST_2) {
-      rState := State.INIT_POST_1
-    }
-    is (State.INIT_POST_1) {
-      rState := State.INIT_POST
-    }
-    is (State.INIT_POST) {
-      rState := State.IDLE
-    }
+    //is (State.INIT_POST_3) {
+    //  rState := State.INIT_POST_2
+    //}
+    //is (State.INIT_POST_2) {
+    //  rState := State.INIT_POST_1
+    //}
+    //is (State.INIT_POST_1) {
+    //  rState := State.INIT_POST
+    //}
+    //is (State.INIT_POST) {
+    //  rState := State.IDLE
+    //}
     is (State.IDLE) {
       //base.myFifoThingDoStall.foreach(_ := False)
       base.myFifoThingDoStall := False
