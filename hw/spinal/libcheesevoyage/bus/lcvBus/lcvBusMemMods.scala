@@ -66,7 +66,9 @@ private[libcheesevoyage] case class LcvBusMemImpl(
 
   val myH2dDoStallFifoThing = LcvBusDoStallFifoThing(
     busCfg=busCfg,
+    includeDoInit=false,
   )
+  //myH2dDoStallFifoThing.io.doInit := False
   //myH2dDoStallFifoThing.io.push << io.bus.h2dBus
   io.bus.h2dBus.translateInto(
     myH2dDoStallFifoThing.io.push
@@ -360,6 +362,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     )
   ) {
     val
+      INIT,
       IDLE,
       LOAD_NON_BURST_DO_STALL_PIPE_2,
       LOAD_NON_BURST_DO_STALL_PIPE_1,
@@ -386,7 +389,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   }
   val rState = (
     Reg(State())
-    init(State.IDLE)
+    init(State.INIT)
   )
 
   def doPopH2dFifo(): Unit = {
@@ -399,6 +402,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
         (
           //rState === State.RECV_LINE_FROM_HI_BUS_POST
           rState =/= State.IDLE
+          && rState =/= State.INIT
         ),
         init=False
       ),
@@ -522,6 +526,9 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   )
 
   switch (rState) {
+    is (State.INIT) {
+      rState := State.IDLE
+    }
     is (State.IDLE) {
       doIgnoreInvalidFifoThingPopCnt()
       myFifoThingDoStall := False

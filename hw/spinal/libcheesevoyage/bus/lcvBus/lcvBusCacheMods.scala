@@ -139,7 +139,8 @@ case class LcvBusDoStallFifoThingPayload[
 
 case class LcvBusDoStallFifoThingIo(
   //cfg: LcvBusCacheBusPairConfig
-  busCfg: LcvBusConfig
+  busCfg: LcvBusConfig,
+  includeDoInit: Boolean=true,
 ) extends Bundle {
   val push = slave(Stream(
     //LcvBusH2dPayload(cfg=cfg.loBusCfg)
@@ -173,11 +174,17 @@ case class LcvBusDoStallFifoThingIo(
   //def doStallCacheMiss = doStall.head
   //def doStallNotYetD2hFire = doStall.last
   val doStall = in(Bool())
+  val doInit = (
+    includeDoInit
+  ) generate (
+    in(Bool())
+  )
 }
 
 case class LcvBusDoStallFifoThing(
   //cfg: LcvBusCacheBusPairConfig
   busCfg: LcvBusConfig,
+  includeDoInit: Boolean=true,
 ) extends Component {
   val io = LcvBusDoStallFifoThingIo(busCfg=busCfg)
 
@@ -318,6 +325,7 @@ case class LcvBusDoStallFifoThing(
 
   object State extends SpinalEnum(defaultEncoding=binaryOneHot) {
     val
+      INIT,
       IDLE,
       //POST_NOT_YET_D2H_FIRE,
       //POST_CACHE_MISS_PRE,
@@ -326,12 +334,25 @@ case class LcvBusDoStallFifoThing(
   }
   val rState = (
     Reg(State())
-    init(State.IDLE)
+    init(
+      if (includeDoInit) (
+        State.INIT
+      ) else (
+        State.IDLE
+      )
+    )
   )
 
   //mainFifo.io.push << io.push //pushForkMain
   //io.pop << mainFifo.io.pop
   switch (rState) {
+    is (State.INIT) {
+      if (includeDoInit) {
+        when (!io.doInit) {
+          rState := State.IDLE
+        }
+      }
+    }
     is (State.IDLE) {
       when (
         //!io.doStallCacheMiss && !io.doStallNotYetD2hFire
@@ -618,6 +639,8 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
     RegNext(myFifoThingDoStall, init=False)
   )
   loH2dDoStallFifoThing.io.doStall := myFifoThingDoStall
+  val rFifoThingDoInit = Reg(Bool(), init=True)
+  loH2dDoStallFifoThing.io.doInit := rFifoThingDoInit
   //rFifoThingCacheMiss := False
 
 
@@ -1051,6 +1074,21 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   //  )
   //)
   //--------
+  val rLineAttrsInitCnt = (
+    Reg(UInt(lineAttrsRam.io.wrAddr.getWidth + 1 bits))
+    init(0x0)
+  )
+  val myFinishedLineAttrsInit = rLineAttrsInitCnt.msb
+  when (!myFinishedLineAttrsInit) {
+    lineAttrsRam.io.wrAddr := (
+      rLineAttrsInitCnt(lineAttrsRam.io.wrAddr.high downto 0)
+    )
+    lineAttrsRam.io.wrData := lineAttrsRam.io.wrData.getZero
+    lineAttrsRam.io.wrEn := True
+    rLineAttrsInitCnt := rLineAttrsInitCnt + 1
+  } otherwise {
+    rFifoThingDoInit := False
+  }
 }
 
 private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
@@ -1139,6 +1177,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     )
   ) {
     val
+      INIT,
+      INIT_POST_3,
+      INIT_POST_2,
+      INIT_POST_1,
+      INIT_POST,
       IDLE,
       LOAD_HIT_LO_BUS_STALL,
       //LOAD_HIT,
@@ -1166,7 +1209,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
 
   val rState = (
     Reg(State())
-    init(State.IDLE)
+    init(State.INIT)
   )
   //when (
   //  //(RegNext(rState) init(State.IDLE)) === State.IDLE
@@ -1278,6 +1321,23 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   //doIgnoreInvalidFifoThingPopCnt()
 
   switch (rState) {
+    is (State.INIT) {
+      when (!base.rFifoThingDoInit) {
+        rState := State.INIT_POST_3
+      }
+    }
+    is (State.INIT_POST_3) {
+      rState := State.INIT_POST_2
+    }
+    is (State.INIT_POST_2) {
+      rState := State.INIT_POST_1
+    }
+    is (State.INIT_POST_1) {
+      rState := State.INIT_POST
+    }
+    is (State.INIT_POST) {
+      rState := State.IDLE
+    }
     is (State.IDLE) {
       //base.myFifoThingDoStall.foreach(_ := False)
       base.myFifoThingDoStall := False
@@ -1617,6 +1677,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     )
   ) {
     val
+      INIT,
+      INIT_POST_3,
+      INIT_POST_2,
+      INIT_POST_1,
+      INIT_POST,
       IDLE,
       LOAD_HIT_DO_STALL_PIPE_2,
       LOAD_HIT_DO_STALL_PIPE_1,
@@ -1643,7 +1708,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
 
   val rState = (
     Reg(State())
-    init(State.IDLE)
+    init(State.INIT)
   )
 
   //when (rose(rState === State.STORE_HIT)) {
@@ -1754,6 +1819,23 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   }
   doIgnoreInvalidFifoThingPopCnt()
   switch (rState) {
+    is (State.INIT) {
+      when (!base.rFifoThingDoInit) {
+        rState := State.INIT_POST_3
+      }
+    }
+    is (State.INIT_POST_3) {
+      rState := State.INIT_POST_2
+    }
+    is (State.INIT_POST_2) {
+      rState := State.INIT_POST_1
+    }
+    is (State.INIT_POST_1) {
+      rState := State.INIT_POST
+    }
+    is (State.INIT_POST) {
+      rState := State.IDLE
+    }
     is (State.IDLE) {
       //base.myFifoThingDoStall.foreach(_ := False)
       base.myFifoThingDoStall := False
