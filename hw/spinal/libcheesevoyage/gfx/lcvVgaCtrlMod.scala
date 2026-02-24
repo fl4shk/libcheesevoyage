@@ -613,17 +613,21 @@ case class LcvVgaCtrl(
   //  depth=fifoDepth,
   //  arrRamStyle=fifoArrRamStyle,
   //)
-  val fifo = StreamFifo(
-    dataType=Rgb(rgbConfig),
-    depth=fifoDepth,
-    latency=0,
-    forFMax=true,
-  )
-  fifo.io.push << io.push
-  fifo.io.flush := io.fifoFlush
-  val myFifoPopReady = Bool() //Reg(Bool(), init=False)
+
+  //val fifo = StreamFifo(
+  //  dataType=Rgb(rgbConfig),
+  //  depth=fifoDepth,
+  //  latency=0,
+  //  forFMax=true,
+  //)
+  //fifo.io.push << io.push
+  //fifo.io.flush := io.fifoFlush
+  val myPushReady = Bool() //Reg(Bool(), init=False)
   //myFifoPopReady := False
-  fifo.io.pop.ready := myFifoPopReady
+  //fifo.io.pop.ready := myFifoPopReady
+  io.push.ready := myPushReady
+
+
   io.phys.setAsReg() init(io.phys.getZero)
 
   // Implement the clock enable
@@ -714,7 +718,7 @@ case class LcvVgaCtrl(
   io.misc.hpipeS := rHState
   io.misc.vpipeS := rVState
   //io.misc.visib := False
-  myFifoPopReady := False
+  myPushReady := False
   //def doPopFifoEtc(): Unit = {
   //}
   switch (
@@ -763,9 +767,9 @@ case class LcvVgaCtrl(
         rHCntBack >= htiming.back - 1
         && rVState === LcvVgaState.visib
       ) {
-        io.phys.col := fifo.io.pop.payload //io.phys.col
+        io.phys.col := io.push.payload//fifo.io.pop.payload //io.phys.col
         //when (rose(io.misc.pixelEn)) {
-          myFifoPopReady := True
+          myPushReady := True
         //}
         //io.misc.visib := False
       }
@@ -789,9 +793,9 @@ case class LcvVgaCtrl(
         rHCntVisib < htiming.visib - 1
         && rVState === LcvVgaState.visib
       ) {
-        io.phys.col := fifo.io.pop.payload //io.phys.col
+        io.phys.col := io.push.payload//fifo.io.pop.payload //io.phys.col
         //when (rose(io.misc.pixelEn)) {
-          myFifoPopReady := True
+          myPushReady := True
         //}
         //io.misc.visib := False
       }
