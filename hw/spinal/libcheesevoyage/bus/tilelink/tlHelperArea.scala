@@ -1045,7 +1045,7 @@
 //      def pipeMemWordType() = Flow(tilelink.ChannelA(p=p))
 //      def pipeMemModStageCnt = 1 // Tentative!
 //      //def sendPipeMemModType() = (
-//      //  SamplePipeMemRmwModType[Flow[tilelink.ChannelA], Bool](
+//      //  SamplePipeRegFileModType[Flow[tilelink.ChannelA], Bool](
 //      //    wordType=sendPipeMemWordType(),
 //      //    wordCount=sendPipeMemDepth,
 //      //    hazardCmpType=Bool(),
@@ -1089,13 +1089,13 @@
 //        val send = mkSendPipePayloadExtras()
 //        val recv = mkRecvPipePayloadExtras()
 //        val myExt = mkExt()
-//        def setPipeMemRmwExt(
+//        def setPipeRegFileExt(
 //          inpExt: PipeRegFilePayloadExt[Flow[tilelink.ChannelA], Bool],
 //          memArrIdx: Int,
 //        ): Unit = {
 //          myExt := inpExt
 //        }
-//        def getPipeMemRmwExt(
+//        def getPipeRegFileExt(
 //          outpExt: PipeRegFilePayloadExt[Flow[tilelink.ChannelA], Bool],
 //          memArrIdx: Int,
 //        ): Unit = {
@@ -1127,7 +1127,7 @@
 //        PipeRegFile[
 //          Flow[tilelink.ChannelA],
 //          Bool,
-//          //SamplePipeMemRmwModType[Flow[tilelink.ChannelA], Bool],
+//          //SamplePipeRegFileModType[Flow[tilelink.ChannelA], Bool],
 //          PipePayload,
 //          PipeRegFileDualRdTypeDisabled[Flow[tilelink.ChannelA], Bool],
 //        ](
@@ -1410,7 +1410,7 @@
 //      //    PipeRegFile[
 //      //      Flow[tilelink.ChannelA],
 //      //      Bool,
-//      //      //SamplePipeMemRmwModType[Flow[tilelink.ChannelA], Bool],
+//      //      //SamplePipeRegFileModType[Flow[tilelink.ChannelA], Bool],
 //      //      PipePayload,
 //      //      PipeRegFileDualRdTypeDisabled[Flow[tilelink.ChannelA], Bool],
 //      //    ](
@@ -1488,7 +1488,7 @@
 //      //  def pipeMemWordType() = Flow(tilelink.ChannelD(p=p))
 //      //  def pipeMemModStageCnt = 1 // Tentative!
 //      //  def pipeMemModType() = (
-//      //    SamplePipeMemRmwModType[Flow[tilelink.ChannelD], Bool](
+//      //    SamplePipeRegFileModType[Flow[tilelink.ChannelD], Bool](
 //      //      wordType=pipeMemWordType(),
 //      //      wordCount=pipeMemDepth,
 //      //      hazardCmpType=Bool(),
@@ -1500,7 +1500,7 @@
 //      //      PipeRegFile[
 //      //        Flow[tilelink.ChannelD],
 //      //        Bool,
-//      //        SamplePipeMemRmwModType[Flow[tilelink.ChannelD], Bool],
+//      //        SamplePipeRegFileModType[Flow[tilelink.ChannelD], Bool],
 //      //        PipeRegFileDualRdTypeDisabled[Flow[tilelink.ChannelD], Bool],
 //      //      ](
 //      //        wordType=pipeMemWordType(),

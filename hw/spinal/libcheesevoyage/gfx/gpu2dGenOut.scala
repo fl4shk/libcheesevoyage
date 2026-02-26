@@ -425,7 +425,7 @@ object Gpu2dSimDutToVerilog extends App {
   //    //true
   //    false
   //  ),
-  //  dbgPipeMemRmw=(
+  //  dbgPipeRegFile=(
   //    //true
   //    false
   //  ),
@@ -442,7 +442,7 @@ object Gpu2dSimDutToVerilog extends App {
         //true
         false
       ),
-      dbgPipeMemRmw=(
+      dbgPipeRegFile=(
         //true
         false
       ),
@@ -459,7 +459,7 @@ object Gpu2dToVerilog extends App {
       //gpu2d.setName("Gpu2dInnards")
       val io = Gpu2dIo(
         cfg=Gpu2dSimDutParams.gpu2dParams,
-        dbgPipeMemRmw=false,
+        dbgPipeRegFile=false,
       )
       //io.notSVIFthisLevel()
       //io.notSVIF()
@@ -482,7 +482,7 @@ object Gpu2dSimDutToVhdl extends App {
       //true
       false
     ),
-    dbgPipeMemRmw=false,
+    dbgPipeRegFile=false,
   ))
   //val report = SpinalVhdl(new Gpu2dTo())
   //report.printPruned()
@@ -558,14 +558,14 @@ object Gpu2dInterfaceTestToVerilog extends App {
     //--------
     val myExt = mkTestExt(wordType=wordType())
     //--------
-    /*override*/ def setPipeMemRmwExt(
+    /*override*/ def setPipeRegFileExt(
       inpExt: PipeRegFilePayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
     ): Unit = {
       myExt := inpExt
     }
-    /*override*/ def getPipeMemRmwExt(
+    /*override*/ def getPipeRegFileExt(
       outpExt: PipeRegFilePayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
@@ -573,12 +573,12 @@ object Gpu2dInterfaceTestToVerilog extends App {
       outpExt := myExt
     }
     //--------
-    /*override*/ def formalSetPipeMemRmwFwd(
+    /*override*/ def formalSetPipeRegFileFwd(
       outpFwd: PipeRegFileFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
     }
-    /*override*/ def formalGetPipeMemRmwFwd(
+    /*override*/ def formalGetPipeRegFileFwd(
       inpFwd: PipeRegFileFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
@@ -598,14 +598,14 @@ object Gpu2dInterfaceTestToVerilog extends App {
     //--------
     val myExt = Vec.fill(vecSize)(mkTestExt(wordType=wordType()))
     //--------
-    /*override*/ def setPipeMemRmwExt(
+    /*override*/ def setPipeRegFileExt(
       inpExt: PipeRegFilePayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
     ): Unit = {
       myExt(ydx) := inpExt
     }
-    /*override*/ def getPipeMemRmwExt(
+    /*override*/ def getPipeRegFileExt(
       outpExt: PipeRegFilePayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
@@ -613,12 +613,12 @@ object Gpu2dInterfaceTestToVerilog extends App {
       outpExt := myExt(ydx)
     }
     //--------
-    /*override*/ def formalSetPipeMemRmwFwd(
+    /*override*/ def formalSetPipeRegFileFwd(
       outpFwd: PipeRegFileFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
     }
-    /*override*/ def formalGetPipeMemRmwFwd(
+    /*override*/ def formalGetPipeRegFileFwd(
       inpFwd: PipeRegFileFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {

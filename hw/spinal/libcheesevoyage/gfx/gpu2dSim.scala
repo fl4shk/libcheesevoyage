@@ -26,7 +26,7 @@ case class Gpu2dSimDut(
   ctrlFifoDepth: Int,
   optRawSnesButtons: Boolean=false,
   optUseLcvVgaCtrl: Boolean=false,
-  dbgPipeMemRmw: Boolean=(
+  dbgPipeRegFile: Boolean=(
     //true
     false
   ),
@@ -125,14 +125,14 @@ case class Gpu2dSimDut(
   //  rgbConfig=rgbConfig,
   //  timingsWidth=myVgaTimingsWidth,
   //)
-  //def dbgPipeMemRmw = (
+  //def dbgPipeRegFile = (
   //  true
   //  //false
   //)
   val gpu2d = Gpu2d(
     cfg=gpu2dCfg,
     inSim=true,
-    dbgPipeMemRmw=dbgPipeMemRmw,
+    dbgPipeRegFile=dbgPipeRegFile,
     vivadoDebug=vivadoDebug,
   )
   //val gpu2dScaleX = Gpu2dScaleX(
@@ -142,7 +142,7 @@ case class Gpu2dSimDut(
     clkRate=clkRate,
     cfg=gpu2dCfg,
     optRawSnesButtons=optRawSnesButtons,
-    dbgPipeMemRmw=dbgPipeMemRmw,
+    dbgPipeRegFile=dbgPipeRegFile,
   )
   if (!optRawSnesButtons) {
     io.snesCtrl <> gpu2dTest.io.snesCtrl
@@ -627,7 +627,7 @@ object Gpu2dSim extends App {
         //true
         false
       ),
-      dbgPipeMemRmw=(
+      dbgPipeRegFile=(
         //true
         false
       ),
@@ -639,7 +639,7 @@ object Gpu2dSim extends App {
       //  gpu2dCfg=Gpu2dSimDutParams.gpu2dCfg,
       //  ctrlFifoDepth=Gpu2dSimDutParams.ctrlFifoDepth,
       //  optRawSnesButtons=true,
-      //  dbgPipeMemRmw=(
+      //  dbgPipeRegFile=(
       //    true
       //    //false
       //  ),

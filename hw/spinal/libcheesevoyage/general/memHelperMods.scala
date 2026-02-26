@@ -754,14 +754,14 @@ case class WrPulseRdPipeRamSdpPipe[
     //)
     val data = cfg.modType()
     val myExt = mkExt()
-    /*override*/ def setPipeMemRmwExt(
+    /*override*/ def setPipeRegFileExt(
       inpExt: PipeRegFilePayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
     ): Unit = {
       myExt := inpExt
     }
-    /*override*/ def getPipeMemRmwExt(
+    /*override*/ def getPipeRegFileExt(
       outpExt: PipeRegFilePayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
@@ -772,13 +772,13 @@ case class WrPulseRdPipeRamSdpPipe[
     //): Option[PipeRegFilePayloadBaseFormalFwdFuncs[WordT, Bool]] = (
     //  None
     //)
-    /*override*/ def formalSetPipeMemRmwFwd(
+    /*override*/ def formalSetPipeRegFileFwd(
       outpFwd: PipeRegFileFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
     }
 
-    /*override*/ def formalGetPipeMemRmwFwd(
+    /*override*/ def formalGetPipeRegFileFwd(
       inpFwd: PipeRegFileFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
@@ -1028,14 +1028,14 @@ extends Component
     //)
     val data = dataType()
     val myExt = mkExt()
-    /*override*/ def setPipeMemRmwExt(
+    /*override*/ def setPipeRegFileExt(
       inpExt: PipeRegFilePayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
     ): Unit = {
       myExt := inpExt
     }
-    /*override*/ def getPipeMemRmwExt(
+    /*override*/ def getPipeRegFileExt(
       outpExt: PipeRegFilePayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
@@ -1046,13 +1046,13 @@ extends Component
     //): Option[PipeRegFilePayloadBaseFormalFwdFuncs[WordT, Bool]] = (
     //  None
     //)
-    /*override*/ def formalSetPipeMemRmwFwd(
+    /*override*/ def formalSetPipeRegFileFwd(
       outpFwd: PipeRegFileFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
     }
 
-    /*override*/ def formalGetPipeMemRmwFwd(
+    /*override*/ def formalGetPipeRegFileFwd(
       inpFwd: PipeRegFileFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
@@ -1574,7 +1574,7 @@ extends Component
   //--------
   //--------
 }
-//case class SimplePipeMemRmwIo[
+//case class SimplePipeRegFileIo[
 //  WordT <: Data,
 //  ModT <: Data,
 //](
@@ -1583,7 +1583,7 @@ extends Component
 //  modType: HardType[ModT],
 //) extends Area {
 //}
-//case class SimplePipeMemRmw[
+//case class SimplePipeRegFile[
 //  WordT <: Data,
 //  ModT <: Data,
 //](

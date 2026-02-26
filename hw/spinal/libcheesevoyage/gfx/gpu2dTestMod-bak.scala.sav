@@ -18,13 +18,13 @@ import scala.math._
 case class Gpu2dTestIo(
   params: Gpu2dParams,
   optRawSnesButtons: Boolean=false,
-  dbgPipeMemRmw: Boolean=false,
+  dbgPipeRegFile: Boolean=false,
 ) extends Bundle {
   //--------
   //val gpuIo = master(Gpu2dIo(params=params))
   val pop = master(Gpu2dPushInp(
     params=params,
-    dbgPipeMemRmw=dbgPipeMemRmw,
+    dbgPipeRegFile=dbgPipeRegFile,
   ))
   val snesCtrl = (!optRawSnesButtons) generate SnesCtrlIo()
   val rawSnesButtons = (optRawSnesButtons) generate (
@@ -39,13 +39,13 @@ case class Gpu2dTest(
   clkRate: HertzNumber,
   params: Gpu2dParams,
   optRawSnesButtons: Boolean=false,
-  dbgPipeMemRmw: Boolean=false,
+  dbgPipeRegFile: Boolean=false,
 ) extends Component {
   //--------
   val io = Gpu2dTestIo(
     params=params,
     optRawSnesButtons=optRawSnesButtons,
-    dbgPipeMemRmw=dbgPipeMemRmw,
+    dbgPipeRegFile=dbgPipeRegFile,
   )
   //def gpuIo = io.gpu2dPush
   //io.ctrlEn := gpuIo.ctrlEn
@@ -891,7 +891,7 @@ case class Gpu2dTest(
     Reg(Bool()) init(True)
   )
 
-  if (dbgPipeMemRmw) {
+  if (dbgPipeRegFile) {
     pop.objTilePush.forceWr := False
     when (
       rObjTileCnt(

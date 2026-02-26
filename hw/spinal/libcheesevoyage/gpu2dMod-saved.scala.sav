@@ -25,7 +25,7 @@ import libcheesevoyage.general.FpgacpuPipeJoin
 import libcheesevoyage.general.FpgacpuRamSimpleDualPort
 import libcheesevoyage.general.PipeRegFile
 import libcheesevoyage.general.PipeRegFileIo
-import libcheesevoyage.general.SamplePipeMemRmwModType
+import libcheesevoyage.general.SamplePipeRegFileModType
 import libcheesevoyage.general.PipeRegFileDualRdTypeDisabled
 import spinal.lib.misc.pipeline._
 
@@ -1844,7 +1844,7 @@ case class Gpu2dIo(
 case class Gpu2d(
   params: Gpu2dParams=DefaultGpu2dParams(),
   inSim: Boolean=false,
-  dbgPipeMemRmw: Boolean=false,
+  dbgPipeRegFile: Boolean=false,
   //noAffineObjs: Boolean=false,
 ) extends Component {
   //--------
@@ -2093,20 +2093,20 @@ case class Gpu2d(
       //  ////} else {
       //  ////  objAffineTilePush
       //  ////}
-      //  if (!dbgPipeMemRmw) {
+      //  if (!dbgPipeRegFile) {
       //    objTilePush
-      //  } else { // if (dbgPipeMemRmw)
-      //    myPipeMemRmw.io.back
+      //  } else { // if (dbgPipeRegFile)
+      //    myPipeRegFile.io.back
       //  }
       //)
-      //if (!dbgPipeMemRmw) {
+      //if (!dbgPipeRegFile) {
       //  tempObjTilePush.ready := True
       //} else {
       //  tempObjTilePush.ready := io.pop.ready
       //}
 
       if (
-        !dbgPipeMemRmw
+        !dbgPipeRegFile
         || idx != 0
         //true
       ) {
@@ -2123,10 +2123,10 @@ case class Gpu2d(
         //}
       } 
       else {
-        val rMyPipeMemRmwCnt = (
+        val rMyPipeRegFileCnt = (
           Reg(UInt(8 bits)) init(0x0)
         )
-          .setName(f"rMyPipeMemRmwCnt_$idx")
+          .setName(f"rMyPipeRegFileCnt_$idx")
         //def wordType() = Gpu2dObjTileStmPayload(
         //  params=params,
         //  isAffine=false,
@@ -2140,15 +2140,15 @@ case class Gpu2d(
           1 << params.objTileSliceMemIdxWidth
         )
         def modStageCnt = 1
-        def modType() = SamplePipeMemRmwModType(
+        def modType() = SamplePipeRegFileModType(
           wordType=wordType(),
           wordCount=wordCount,
           modStageCnt=modStageCnt,
         )
-        val myPipeMemRmw = (
+        val myPipeRegFile = (
           PipeRegFile[
             Gpu2dTileSlice,
-            SamplePipeMemRmwModType[Gpu2dTileSlice],
+            SamplePipeRegFileModType[Gpu2dTileSlice],
             PipeRegFileDualRdTypeDisabled[Gpu2dTileSlice]
           ](
             wordType=wordType(),
@@ -2156,12 +2156,12 @@ case class Gpu2d(
             modType=modType(),
             modStageCnt=modStageCnt,
           )
-            .setName(f"myPipeMemRmw_objTileMemArr_$idx")
+            .setName(f"myPipeRegFile_objTileMemArr_$idx")
         )
-        def front = myPipeMemRmw.io.front
-        def modFront = myPipeMemRmw.io.modFront
-        def modBack = myPipeMemRmw.io.modBack
-        def back = myPipeMemRmw.io.back
+        def front = myPipeRegFile.io.front
+        def modFront = myPipeRegFile.io.modFront
+        def modBack = myPipeRegFile.io.modBack
+        def back = myPipeRegFile.io.back
         objTilePush.translateInto(
           into=front,
         )(

@@ -213,7 +213,7 @@ object Gpu2dTest {
       cfg=cfg,
       isObj=false,
       isAffine=false,
-      doPipeMemRmw=false
+      doPipeRegFile=false
     )
     val rawArrFgCommon = Gpu2dTestGfx.objFgCommonTileArr
     val rawArrFgGrassland = Gpu2dTestGfx.objFgGrasslandTileArr
@@ -462,7 +462,7 @@ object Gpu2dTest {
       cfg=cfg,
       isObj=true,
       isAffine=false,
-      doPipeMemRmw=false
+      doPipeRegFile=false
     )
     val rawArrFgCommon = Gpu2dTestGfx.objFgCommonTileArr
     //val rawArrDbgBlankingFgCommon = (
@@ -499,7 +499,7 @@ object Gpu2dTest {
       cfg=cfg,
       isObj=true,
       isAffine=false,
-      doPipeMemRmw=false
+      doPipeRegFile=false
     )
     val rawArrFgCommon = Gpu2dTestGfx.objFgCommonTileArr
     //val rawArrDbgBlankingFgCommon = (
@@ -611,13 +611,13 @@ case class Gpu2dTestIo(
   //fifoDepth: Int,
   cfg: Gpu2dConfig,
   optRawSnesButtons: Boolean=false,
-  dbgPipeMemRmw: Boolean=false,
+  dbgPipeRegFile: Boolean=false,
 ) extends /*Bundle*/ Bundle with IMasterSlave {
   //--------
   //val gpuIo = master(Gpu2dIo(cfg=cfg))
   val pop = /*master*/(Gpu2dPushInp(
     cfg=cfg,
-    dbgPipeMemRmw=dbgPipeMemRmw,
+    dbgPipeRegFile=dbgPipeRegFile,
   ))
   val gpu2dPopFire = /*in*/ Bool()
   //val vgaPhys = in(LcvVgaPhys(
@@ -673,13 +673,13 @@ case class Gpu2dTest(
   clkRate: HertzNumber,
   cfg: Gpu2dConfig,
   optRawSnesButtons: Boolean=false,
-  dbgPipeMemRmw: Boolean=false,
+  dbgPipeRegFile: Boolean=false,
 ) extends Component {
   //--------
   val io = master(Gpu2dTestIo(
     cfg=cfg,
     optRawSnesButtons=optRawSnesButtons,
-    dbgPipeMemRmw=dbgPipeMemRmw,
+    dbgPipeRegFile=dbgPipeRegFile,
   ))
   //def gpuIo = io.gpu2dPush
   //io.ctrlEn := gpuIo.ctrlEn
@@ -1143,7 +1143,7 @@ case class Gpu2dTest(
   //    cfg=cfg,
   //    isObj=false,
   //    isAffine=false,
-  //    doPipeMemRmw=false
+  //    doPipeRegFile=false
   //  ),
   //  wordCount={
   //    //val myPxsSliceWidth = (
@@ -2186,7 +2186,7 @@ case class Gpu2dTest(
   )
 
   def extraObjTileCntWidth = (
-    if (dbgPipeMemRmw) {
+    if (dbgPipeRegFile) {
       //2
       0
       //2
@@ -2458,7 +2458,7 @@ case class Gpu2dTest(
   //)
   //pop.objTilePush.forceWr := False
 
-  //if (dbgPipeMemRmw) {
+  //if (dbgPipeRegFile) {
   //  pop.objTilePush.forceWr := False
   //  when (
   //    rObjTileCnt(

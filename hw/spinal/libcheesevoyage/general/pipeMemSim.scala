@@ -236,14 +236,14 @@ case class PipeRegFileSimDutModType(
   val myExt = Vec.fill(PipeRegFileSimDut.memArrSize)(
     mkOneExt()
   )
-  override def setPipeMemRmwExt(
+  override def setPipeRegFileExt(
     inpExt: PipeRegFilePayloadExt[UInt, UInt],
     ydx: Int,
     memArrIdx: Int,
   ): Unit = {
     myExt(ydx) := inpExt
   }
-  override def getPipeMemRmwExt(
+  override def getPipeRegFileExt(
     outpExt: PipeRegFilePayloadExt[UInt, UInt],
     ydx: Int,
     memArrIdx: Int,
@@ -274,7 +274,7 @@ case class PipeRegFileSimDutModType(
       cfg=cfg
     )
   )
-  override def formalSetPipeMemRmwFwd(
+  override def formalSetPipeRegFileFwd(
     inpFwd: PipeRegFileFwd[UInt, UInt],
     memArrIdx: Int,
   ): Unit = {
@@ -283,7 +283,7 @@ case class PipeRegFileSimDutModType(
     )
     myFwd := inpFwd
   }
-  override def formalGetPipeMemRmwFwd(
+  override def formalGetPipeRegFileFwd(
     outpFwd: PipeRegFileFwd[UInt, UInt],
     memArrIdx: Int,
   ): Unit = {
@@ -483,7 +483,7 @@ case class PipeRegFileSimDut(
   ////  val 
   ////}
   ////--------
-  //def mkPipeMemRmwSimDutStallHost[
+  //def mkPipeRegFileSimDutStallHost[
   //  HostDataT <: Data,
   //  DevDataT <: Data,
   //](
@@ -516,7 +516,7 @@ case class PipeRegFileSimDut(
   //val psExStallHost = (
   //  PipeRegFileSimDut.haveModOpMul
   //) generate (
-  //  mkPipeMemRmwSimDutStallHost[
+  //  mkPipeRegFileSimDutStallHost[
   //    Bool,
   //    Bool,
   //  ](
@@ -527,7 +527,7 @@ case class PipeRegFileSimDut(
   //  )
   //)
   //val psMemStallHost = (
-  //  mkPipeMemRmwSimDutStallHost[
+  //  mkPipeRegFileSimDutStallHost[
   //    Bool,
   //    Bool,
   //  ](
@@ -540,7 +540,7 @@ case class PipeRegFileSimDut(
   //val pipeMem = PipeRegFile[
   //  UInt,
   //  UInt,
-  //  //SamplePipeMemRmwModType[UInt, UInt],
+  //  //SamplePipeRegFileModType[UInt, UInt],
   //  PipeRegFileSimDutModType,
   //  PipeRegFileDualRdTypeDisabled[UInt, UInt],
   //](

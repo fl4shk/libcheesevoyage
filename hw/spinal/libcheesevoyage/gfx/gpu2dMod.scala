@@ -32,7 +32,7 @@ import libcheesevoyage.general.PipeRegFile
 import libcheesevoyage.general.PipeRegFileConfig
 import libcheesevoyage.general.PipeRegFileIo
 import libcheesevoyage.general.PipeRegFilePayloadExt
-import libcheesevoyage.general.SamplePipeMemRmwModType
+import libcheesevoyage.general.SamplePipeRegFileModType
 import libcheesevoyage.general.PipeRegFileDualRdTypeDisabled
 import libcheesevoyage.general.PipeRegFilePayloadBase
 import libcheesevoyage.general.PipeRegFileFwd
@@ -1063,9 +1063,9 @@ case class Gpu2dRgba(
 
 object Gpu2dTileSlice {
   def myColIdxFracWidth(
-    doPipeMemRmw: Boolean
+    doPipeRegFile: Boolean
   ) = (
-    if (!doPipeMemRmw) (
+    if (!doPipeRegFile) (
       0
     ) else (
       0
@@ -1077,13 +1077,13 @@ object Gpu2dTileSlice {
   def colIdxWidth(
     cfg: Gpu2dConfig,
     isObj: Boolean,
-    doPipeMemRmw: Boolean
+    doPipeRegFile: Boolean
   ) = (
     if (!isObj) (
       cfg.bgPalEntryMemIdxWidth
     ) else (
       cfg.objPalEntryMemIdxWidth
-      + Gpu2dTileSlice.myColIdxFracWidth(doPipeMemRmw=doPipeMemRmw)
+      + Gpu2dTileSlice.myColIdxFracWidth(doPipeRegFile=doPipeRegFile)
     )
   )
   def pxsSliceWidth(
@@ -1125,7 +1125,7 @@ case class Gpu2dTileSlice(
   cfg: Gpu2dConfig,
   isObj: Boolean,
   isAffine: Boolean,
-  doPipeMemRmw: Boolean=false,
+  doPipeRegFile: Boolean=false,
 ) extends Bundle {
   //--------
   //val colIdx = UInt(cfg.palEntryMemIdxWidth bits)
@@ -1133,7 +1133,7 @@ case class Gpu2dTileSlice(
     Gpu2dTileSlice.colIdxWidth(
       cfg=cfg,
       isObj=isObj,
-      doPipeMemRmw=doPipeMemRmw,
+      doPipeRegFile=doPipeRegFile,
     )
   )
   val pxsSliceWidth = (
@@ -1449,7 +1449,7 @@ case class Gpu2dBgTileStmPayload(
 case class Gpu2dObjTileStmPayload(
   cfg: Gpu2dConfig,
   isAffine: Boolean,
-  dbgPipeMemRmw: Boolean,
+  dbgPipeRegFile: Boolean,
 ) extends Bundle {
   //--------
   //val rgb = Rgb(cfg.rgbConfig)
@@ -1466,7 +1466,7 @@ case class Gpu2dObjTileStmPayload(
   val tilePx = (isAffine) generate (
     UInt(cfg.objPalEntryMemIdxWidth bits)
   )
-  val forceWr = (dbgPipeMemRmw) generate (
+  val forceWr = (dbgPipeRegFile) generate (
     Bool()
   )
 
@@ -2155,7 +2155,7 @@ case class Gpu2dPopPayload(
 //}
 case class Gpu2dPushInp(
   cfg: Gpu2dConfig=DefaultGpu2dConfig(),
-  dbgPipeMemRmw: Boolean,
+  dbgPipeRegFile: Boolean,
 ) extends Bundle with IMasterSlave {
   //--------
   val colorMathTilePush = Flow(
@@ -2235,14 +2235,14 @@ case class Gpu2dPushInp(
     Gpu2dObjTileStmPayload(
       cfg=cfg,
       isAffine=false,
-      dbgPipeMemRmw=dbgPipeMemRmw,
+      dbgPipeRegFile=dbgPipeRegFile,
     )
   )
   val objAffineTilePush = Flow(
     Gpu2dObjTileStmPayload(
       cfg=cfg,
       isAffine=true,
-      dbgPipeMemRmw=false,
+      dbgPipeRegFile=false,
     )
   )
   val objAttrsPush = Flow(
@@ -2343,7 +2343,7 @@ case class Gpu2dPushInp(
 }
 case class Gpu2dIo(
   cfg: Gpu2dConfig=DefaultGpu2dConfig(),
-  dbgPipeMemRmw: Boolean,
+  dbgPipeRegFile: Boolean,
 ) extends Bundle with IMasterSlave {
   //--------
   //val en = in Bool()
@@ -2354,7 +2354,7 @@ case class Gpu2dIo(
   //val bgTilePush = slave Stream()
   val push = slave(Gpu2dPushInp(
     cfg=cfg,
-    dbgPipeMemRmw=dbgPipeMemRmw,
+    dbgPipeRegFile=dbgPipeRegFile,
   ))
   def colorMathTilePush = push.colorMathTilePush
   def colorMathEntryPush = push.colorMathEntryPush 
@@ -2423,7 +2423,7 @@ case class Gpu2d(
   cfg: Gpu2dConfig=DefaultGpu2dConfig(),
   inSim: Boolean=false,
   vivadoDebug: Boolean=false,
-  dbgPipeMemRmw: Boolean=false,
+  dbgPipeRegFile: Boolean=false,
   //noAffineObjs: Boolean=false,
 ) extends Component {
   //--------
@@ -2433,7 +2433,7 @@ case class Gpu2d(
   //--------
   val io = master(Gpu2dIo(
     cfg=cfg,
-    dbgPipeMemRmw=dbgPipeMemRmw,
+    dbgPipeRegFile=dbgPipeRegFile,
   ))
   ////io.notSVIF()
   ////--------
@@ -2743,13 +2743,13 @@ case class Gpu2d(
   //    //  ////} else {
   //    //  ////  objAffineTilePush
   //    //  ////}
-  //    //  if (!dbgPipeMemRmw) {
+  //    //  if (!dbgPipeRegFile) {
   //    //    objTilePush
-  //    //  } else { // if (dbgPipeMemRmw)
-  //    //    myPipeMemRmw.io.back
+  //    //  } else { // if (dbgPipeRegFile)
+  //    //    myPipeRegFile.io.back
   //    //  }
   //    //)
-  //    //if (!dbgPipeMemRmw) {
+  //    //if (!dbgPipeRegFile) {
   //    //  tempObjTilePush.ready := True
   //    //} else {
   //    //  tempObjTilePush.ready := io.pop.ready
@@ -2757,7 +2757,7 @@ case class Gpu2d(
 
   //    //--------
   //    // BEGIN: new test code
-  //    //println(f"dbgPipeMemRmw: $dbgPipeMemRmw")
+  //    //println(f"dbgPipeRegFile: $dbgPipeRegFile")
   //    val dbgSeen0x20 = (
   //      objTileMemArr(idx).io.wrEn
   //      && objTileMemArr(idx).io.wrAddr === 0x20
@@ -2765,7 +2765,7 @@ case class Gpu2d(
   //      .setName("dbgSeen0x20")
   //      .addAttribute("keep")
   //    if (
-  //      //!dbgPipeMemRmw
+  //      //!dbgPipeRegFile
   //      //|| idx != 0
   //      true
   //    ) {
@@ -2792,7 +2792,7 @@ case class Gpu2d(
   //    //    cfg=cfg,
   //    //    isObj=true,
   //    //    isAffine=idx != 0,
-  //    //    doPipeMemRmw=true,
+  //    //    doPipeRegFile=true,
   //    //  )
   //    //  def wordCount = (
   //    //    1 << cfg.objTileSliceMemIdxWidth
@@ -2802,15 +2802,15 @@ case class Gpu2d(
   //    //    //1
   //    //    2
   //    //  )
-  //    //  def modType() = SamplePipeMemRmwModType(
+  //    //  def modType() = SamplePipeRegFileModType(
   //    //    wordType=wordType(),
   //    //    wordCount=wordCount,
   //    //    modStageCnt=modStageCnt,
   //    //  )
-  //    //  val myPipeMemRmw = (
+  //    //  val myPipeRegFile = (
   //    //    PipeRegFile[
   //    //      Gpu2dTileSlice,
-  //    //      SamplePipeMemRmwModType[Gpu2dTileSlice],
+  //    //      SamplePipeRegFileModType[Gpu2dTileSlice],
   //    //      PipeRegFileDualRdTypeDisabled[Gpu2dTileSlice]
   //    //    ](
   //    //      wordType=wordType(),
@@ -2824,15 +2824,15 @@ case class Gpu2d(
   //    //      ),
   //    //      //forFmax=false,
   //    //    )
-  //    //      .setName(f"myPipeMemRmw_objTileMemArr_$idx")
+  //    //      .setName(f"myPipeRegFile_objTileMemArr_$idx")
   //    //  )
-  //    //  def front = myPipeMemRmw.io.front
-  //    //  def modFront = myPipeMemRmw.io.modFront
-  //    //  def modBack = myPipeMemRmw.io.modBack
-  //    //  def back = myPipeMemRmw.io.back
+  //    //  def front = myPipeRegFile.io.front
+  //    //  def modFront = myPipeRegFile.io.modFront
+  //    //  def modBack = myPipeRegFile.io.modBack
+  //    //  def back = myPipeRegFile.io.back
   //    //  def myFracWidth = (
   //    //    Gpu2dTileSlice.myColIdxFracWidth(
-  //    //      doPipeMemRmw=true,
+  //    //      doPipeRegFile=true,
   //    //    )
   //    //  )
   //    //  objTilePush.translateInto(
@@ -2873,15 +2873,15 @@ case class Gpu2d(
   //    //  )
 
   //    //  val modFrontStm = Stream(modType())
-  //    //    .setName("dbgPipeMemRmw_modFrontStm")
+  //    //    .setName("dbgPipeRegFile_modFrontStm")
   //    //    .addAttribute("keep")
   //    //  val modBackStm = Stream(modType())
-  //    //    .setName("dbgPipeMemRmw_modBackStm")
+  //    //    .setName("dbgPipeRegFile_modBackStm")
   //    //    .addAttribute("keep")
   //    //  //val didInitMem = Vec.fill(wordCount)(
   //    //  //  Reg(Bool()) init(False)
   //    //  //)
-  //    //  //  .setName("dbgPipeMemRmw_didInitMem")
+  //    //  //  .setName("dbgPipeRegFile_didInitMem")
   //    //  //  //.addAttribute("keep")
   //    //  //def didInitMemElemWidth = 16 + 1
   //    //  def cntMemWordCount = (
@@ -2896,7 +2896,7 @@ case class Gpu2d(
   //    //    ),
   //    //    wordCount=cntMemWordCount,
   //    //  )
-  //    //    .setName("dbgPipeMemRmw_cntMem")
+  //    //    .setName("dbgPipeRegFile_cntMem")
   //    //    .initBigInt(Array.fill(cntMemWordCount)(BigInt(0)).toSeq)
   //    //  val rdCntMemElem = cntMem.readSync(
   //    //    address=modFront.myExt.memAddr(
@@ -2904,11 +2904,11 @@ case class Gpu2d(
   //    //    ),
   //    //    enable=modFront.fire,
   //    //  )
-  //    //    .setName("dbgPipeMemRmw_rdCntMemElem")
+  //    //    .setName("dbgPipeRegFile_rdCntMemElem")
   //    //    .addAttribute("keep")
 
   //    //  val tempCntMemElem = UInt(rdCntMemElem.getWidth bits)
-  //    //    .setName("dbgPipeMemRmw_tempCntMemElem")
+  //    //    .setName("dbgPipeRegFile_tempCntMemElem")
   //    //    .addAttribute("keep")
 
   //    //  tempCntMemElem := (
@@ -2921,12 +2921,12 @@ case class Gpu2d(
   //    //      True
   //    //    }
   //    //  )
-  //    //    .setName("dbgPipeMemRmw_tempCntCond")
+  //    //    .setName("dbgPipeRegFile_tempCntCond")
   //    //    .addAttribute("keep")
   //    //  when (tempCntCond) {
   //    //    //val tempRdCntPlusOne = UInt((cntMemElemWidth + 1) bits)
   //    //    val tempRdCntPlusOne = (Cat(B"1'b0", rdCntMemElem).asUInt + 1)
-  //    //      .setName("dbgPipeMemRmw_tempRdCntPlusOne")
+  //    //      .setName("dbgPipeRegFile_tempRdCntPlusOne")
   //    //      .addAttribute("keep")
   //    //    when (
   //    //      //(rRdCntMemElem + 1).msb
@@ -2953,7 +2953,7 @@ case class Gpu2d(
   //    //    ),
   //    //    wordCount=wordCount,
   //    //  )
-  //    //    .setName("dbgPipeMemRmw_didInitMem")
+  //    //    .setName("dbgPipeRegFile_didInitMem")
   //    //    .initBigInt(Array.fill(wordCount)(BigInt(0)).toSeq)
   //    //  val rDidInitMemRdElem = (
   //    //    //Reg(UInt(3 bits)) init(0x0)
@@ -3026,7 +3026,7 @@ case class Gpu2d(
   //    //        modFrontExt.modMemWord,
   //    //        modFrontExt.rdMemWord,
   //    //      )
-  //    //        .setName("dbgPipeMemRmw_tempMemWord")
+  //    //        .setName("dbgPipeRegFile_tempMemWord")
   //    //        .addAttribute("keep")
   //    //      //val tempMemWord = modFrontExt.modMemWord
   //    //      //val tempMemWord = modFrontExt.modMemWord
@@ -3152,13 +3152,13 @@ case class Gpu2d(
   //    //  modBack <-/< modBackStm
   //    //  //modBack << modBackStm
   //    //  val nextBackReadyCnt = UInt(4 bits)
-  //    //    .setName(f"dbgPipeMemRmw_nextBackReadyCnt_$idx")
+  //    //    .setName(f"dbgPipeRegFile_nextBackReadyCnt_$idx")
   //    //  val rBackReadyCnt = (
   //    //    //RegNextWhen(nextBackReadyCnt, front.fire)
   //    //    //init(nextBackReadyCnt.getZero)
   //    //    RegNext(nextBackReadyCnt) init(nextBackReadyCnt.getZero)
   //    //  )
-  //    //    .setName(f"dbgPipeMemRmw_rBackReadyCnt_$idx")
+  //    //    .setName(f"dbgPipeRegFile_rBackReadyCnt_$idx")
   //    //  nextBackReadyCnt := rBackReadyCnt + 1
   //    //  val myBackReady = !rBackReadyCnt(1)
   //    //  //val myBackReady = True
@@ -3206,7 +3206,7 @@ case class Gpu2d(
   //    //    //jdx <- 0 until Gpu2dTileSlice.colIdxWidth(
   //    //    //  cfg=cfg,
   //    //    //  isObj=true,
-  //    //    //  doPipeMemRmw=true,
+  //    //    //  doPipeRegFile=true,
   //    //    //)
   //    //    jdx <- 0 until myWrData.colIdxVec.size
   //    //  ) {
@@ -6215,7 +6215,7 @@ case class Gpu2d(
   //        )
   //      ),
   //    )
-  //    def setPipeMemRmwExt(
+  //    def setPipeRegFileExt(
   //      inpExt: PipeRegFilePayloadExt[
   //        Vec[ObjSubLineMemEntry],
   //        WrObjPipeSlmRmwHazardCmp,
@@ -6226,7 +6226,7 @@ case class Gpu2d(
   //      subLineMemEntryExt := inpExt
   //      //subLineMemEntryExt.joinIdx := 0
   //    }
-  //    def getPipeMemRmwExt(
+  //    def getPipeRegFileExt(
   //      outpExt: PipeRegFilePayloadExt[
   //        Vec[ObjSubLineMemEntry],
   //        WrObjPipeSlmRmwHazardCmp,
@@ -6236,7 +6236,7 @@ case class Gpu2d(
   //    ): Unit = {
   //      outpExt := subLineMemEntryExt
   //    }
-  //    def formalSetPipeMemRmwFwd(
+  //    def formalSetPipeRegFileFwd(
   //      inpFwd: PipeRegFileFwd[
   //        Vec[ObjSubLineMemEntry],
   //        WrObjPipeSlmRmwHazardCmp,
@@ -6245,7 +6245,7 @@ case class Gpu2d(
   //    ): Unit = {
   //      //subLineMemEntryFwd := inpFwd
   //    }
-  //    def formalGetPipeMemRmwFwd(
+  //    def formalGetPipeRegFileFwd(
   //      outpFwd: PipeRegFileFwd[
   //        Vec[ObjSubLineMemEntry],
   //        WrObjPipeSlmRmwHazardCmp,
