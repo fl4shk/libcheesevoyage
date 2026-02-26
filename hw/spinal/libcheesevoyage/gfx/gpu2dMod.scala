@@ -28,18 +28,18 @@ import libcheesevoyage.general.FpgacpuRamSimpleDualPort
 import libcheesevoyage.general.FpgacpuRamSimpleDualPortConfig
 //import libcheesevoyage.general.PipeMemSimpleDualPort
 //import libcheesevoyage.general.PipeMemSimpleDualPortIo
-import libcheesevoyage.general.PipeMemRmw
-import libcheesevoyage.general.PipeMemRmwConfig
-import libcheesevoyage.general.PipeMemRmwIo
-import libcheesevoyage.general.PipeMemRmwPayloadExt
+import libcheesevoyage.general.PipeRegFile
+import libcheesevoyage.general.PipeRegFileConfig
+import libcheesevoyage.general.PipeRegFileIo
+import libcheesevoyage.general.PipeRegFilePayloadExt
 import libcheesevoyage.general.SamplePipeMemRmwModType
-import libcheesevoyage.general.PipeMemRmwDualRdTypeDisabled
-import libcheesevoyage.general.PipeMemRmwPayloadBase
-import libcheesevoyage.general.PipeMemRmwFwd
+import libcheesevoyage.general.PipeRegFileDualRdTypeDisabled
+import libcheesevoyage.general.PipeRegFilePayloadBase
+import libcheesevoyage.general.PipeRegFileFwd
 //import libcheesevoyage.general.VecIntf
 //import libcheesevoyage.general.VecIntfElem
 //import libcheesevoyage.general.VecIntf
-//import libcheesevoyage.general.PipeMemRmwPayloadBaseFormalFwdFuncs
+//import libcheesevoyage.general.PipeRegFilePayloadBaseFormalFwdFuncs
 import spinal.lib.misc.pipeline._
 
 //import scala.math._
@@ -2808,10 +2808,10 @@ case class Gpu2d(
   //    //    modStageCnt=modStageCnt,
   //    //  )
   //    //  val myPipeMemRmw = (
-  //    //    PipeMemRmw[
+  //    //    PipeRegFile[
   //    //      Gpu2dTileSlice,
   //    //      SamplePipeMemRmwModType[Gpu2dTileSlice],
-  //    //      PipeMemRmwDualRdTypeDisabled[Gpu2dTileSlice]
+  //    //      PipeRegFileDualRdTypeDisabled[Gpu2dTileSlice]
   //    //    ](
   //    //      wordType=wordType(),
   //    //      wordCount=wordCount,
@@ -4244,7 +4244,7 @@ case class Gpu2d(
   //          CombinePipePayload,
   //          Vec[BgSubLineMemEntry]
   //        ]
-  //        //PipeMemRmw[
+  //        //PipeRegFile[
   //        //  Vec[BgSubLineMemEntry],
   //        //  CombinePipePayload,
   //        //  CombinePipePayload,
@@ -4273,11 +4273,11 @@ case class Gpu2d(
   //  //]()
   //  val wrObjSubLineMemArr = new ArrayBuffer[
   //    //FpgacpuRamSimpleDualPort[Vec[ObjSubLineMemEntry]]
-  //    PipeMemRmw[
+  //    PipeRegFile[
   //      Vec[ObjSubLineMemEntry],
   //      WrObjPipeSlmRmwHazardCmp,
   //      WrObjPipePayload,
-  //      PipeMemRmwDualRdTypeDisabled[
+  //      PipeRegFileDualRdTypeDisabled[
   //        Vec[ObjSubLineMemEntry],
   //        WrObjPipeSlmRmwHazardCmp,
   //      ]
@@ -4296,11 +4296,11 @@ case class Gpu2d(
   //  // BEGIN: don't remove this
   //  val wrObjAffineSubLineMemArr = new ArrayBuffer[
   //    //FpgacpuRamSimpleDualPort[Vec[ObjSubLineMemEntry]]
-  //    PipeMemRmw[
+  //    PipeRegFile[
   //      Vec[ObjSubLineMemEntry],
   //      WrObjPipeSlmRmwHazardCmp,
   //      WrObjPipePayload,
-  //      PipeMemRmwDualRdTypeDisabled[
+  //      PipeRegFileDualRdTypeDisabled[
   //        Vec[ObjSubLineMemEntry],
   //        WrObjPipeSlmRmwHazardCmp,
   //      ]
@@ -4677,7 +4677,7 @@ case class Gpu2d(
   //      objSubLineMemInitBigInt += BigInt(0)
   //    }
   //    val wrObjSubLineMemPmCfg = (
-  //      PipeMemRmwConfig[
+  //      PipeRegFileConfig[
   //        Vec[ObjSubLineMemEntry],
   //        WrObjPipeSlmRmwHazardCmp,
   //      ](
@@ -4700,7 +4700,7 @@ case class Gpu2d(
   //        ),
   //        optEnableClear=true,
   //        optModHazardKind=(
-  //          PipeMemRmw.ModHazardKind.Dupl
+  //          PipeRegFile.ModHazardKind.Dupl
   //        ),
   //        vivadoDebug=(
   //          if (idx == 0) (
@@ -4711,29 +4711,29 @@ case class Gpu2d(
   //        ),
   //      )
   //    )
-  //    wrObjSubLineMemArr += PipeMemRmw[
+  //    wrObjSubLineMemArr += PipeRegFile[
   //      Vec[ObjSubLineMemEntry],
   //      WrObjPipeSlmRmwHazardCmp,
   //      WrObjPipePayload,
-  //      PipeMemRmwDualRdTypeDisabled[
+  //      PipeRegFileDualRdTypeDisabled[
   //        Vec[ObjSubLineMemEntry],
   //        WrObjPipeSlmRmwHazardCmp,
   //      ],
   //    ](
   //      cfg=wrObjSubLineMemPmCfg,
   //      modType=WrObjPipePayload(isAffine=false),
-  //      dualRdType=PipeMemRmwDualRdTypeDisabled[
+  //      dualRdType=PipeRegFileDualRdTypeDisabled[
   //        Vec[ObjSubLineMemEntry],
   //        WrObjPipeSlmRmwHazardCmp,
   //      ],
   //    )(
   //      doHazardCmpFunc=Some(
   //        (
-  //          curr: PipeMemRmwPayloadExt[
+  //          curr: PipeRegFilePayloadExt[
   //            Vec[ObjSubLineMemEntry],
   //            WrObjPipeSlmRmwHazardCmp,
   //          ],
-  //          prev: PipeMemRmwPayloadExt[
+  //          prev: PipeRegFilePayloadExt[
   //            Vec[ObjSubLineMemEntry],
   //            WrObjPipeSlmRmwHazardCmp,
   //          ],
@@ -4781,7 +4781,7 @@ case class Gpu2d(
   //        objAffineSubLineMemInitBigInt += BigInt(0)
   //      }
   //      val wrObjAffineSubLineMemPmCfg = (
-  //        PipeMemRmwConfig[
+  //        PipeRegFileConfig[
   //          Vec[ObjSubLineMemEntry],
   //          WrObjPipeSlmRmwHazardCmp,
   //        ](
@@ -4809,7 +4809,7 @@ case class Gpu2d(
   //          ),
   //          optEnableClear=true,
   //          optModHazardKind=(
-  //            PipeMemRmw.ModHazardKind.Dupl
+  //            PipeRegFile.ModHazardKind.Dupl
   //          ),
   //          vivadoDebug=(
   //            if (idx == 0) (
@@ -4820,29 +4820,29 @@ case class Gpu2d(
   //          ),
   //        )
   //      )
-  //      wrObjAffineSubLineMemArr += PipeMemRmw[
+  //      wrObjAffineSubLineMemArr += PipeRegFile[
   //        Vec[ObjSubLineMemEntry],
   //        WrObjPipeSlmRmwHazardCmp,
   //        WrObjPipePayload,
-  //        PipeMemRmwDualRdTypeDisabled[
+  //        PipeRegFileDualRdTypeDisabled[
   //          Vec[ObjSubLineMemEntry],
   //          WrObjPipeSlmRmwHazardCmp,
   //        ],
   //      ](
   //        cfg=wrObjAffineSubLineMemPmCfg,
   //        modType=WrObjPipePayload(isAffine=true),
-  //        dualRdType=PipeMemRmwDualRdTypeDisabled[
+  //        dualRdType=PipeRegFileDualRdTypeDisabled[
   //          Vec[ObjSubLineMemEntry],
   //          WrObjPipeSlmRmwHazardCmp,
   //        ],
   //      )(
   //        doHazardCmpFunc=Some(
   //          (
-  //            curr: PipeMemRmwPayloadExt[
+  //            curr: PipeRegFilePayloadExt[
   //              Vec[ObjSubLineMemEntry],
   //              WrObjPipeSlmRmwHazardCmp,
   //            ],
-  //            prev: PipeMemRmwPayloadExt[
+  //            prev: PipeRegFilePayloadExt[
   //              Vec[ObjSubLineMemEntry],
   //              WrObjPipeSlmRmwHazardCmp,
   //            ],
@@ -6146,7 +6146,7 @@ case class Gpu2d(
   //  case class WrObjPipePayload(
   //    isAffine: Boolean
   //  )
-  //    extends Bundle with PipeMemRmwPayloadBase[
+  //    extends Bundle with PipeRegFilePayloadBase[
   //      Vec[ObjSubLineMemEntry],
   //      WrObjPipeSlmRmwHazardCmp,
   //    ]
@@ -6156,7 +6156,7 @@ case class Gpu2d(
   //    //  !isAffine
   //    //)
   //    val myPmCfg = (
-  //      PipeMemRmwConfig[
+  //      PipeRegFileConfig[
   //        Vec[ObjSubLineMemEntry],
   //        WrObjPipeSlmRmwHazardCmp,
   //      ](
@@ -6198,14 +6198,14 @@ case class Gpu2d(
   //        initBigInt=None,
   //        optEnableClear=true,
   //        optModHazardKind=(
-  //          PipeMemRmw.ModHazardKind.Dupl
+  //          PipeRegFile.ModHazardKind.Dupl
   //        ),
   //        vivadoDebug=(
   //          vivadoDebug
   //        ),
   //      )
   //    )
-  //    val subLineMemEntryExt = PipeMemRmwPayloadExt(
+  //    val subLineMemEntryExt = PipeRegFilePayloadExt(
   //      cfg=myPmCfg,
   //      wordCount=(
   //        if (!isAffine) (
@@ -6216,7 +6216,7 @@ case class Gpu2d(
   //      ),
   //    )
   //    def setPipeMemRmwExt(
-  //      inpExt: PipeMemRmwPayloadExt[
+  //      inpExt: PipeRegFilePayloadExt[
   //        Vec[ObjSubLineMemEntry],
   //        WrObjPipeSlmRmwHazardCmp,
   //      ],
@@ -6227,7 +6227,7 @@ case class Gpu2d(
   //      //subLineMemEntryExt.joinIdx := 0
   //    }
   //    def getPipeMemRmwExt(
-  //      outpExt: PipeMemRmwPayloadExt[
+  //      outpExt: PipeRegFilePayloadExt[
   //        Vec[ObjSubLineMemEntry],
   //        WrObjPipeSlmRmwHazardCmp,
   //      ],
@@ -6237,7 +6237,7 @@ case class Gpu2d(
   //      outpExt := subLineMemEntryExt
   //    }
   //    def formalSetPipeMemRmwFwd(
-  //      inpFwd: PipeMemRmwFwd[
+  //      inpFwd: PipeRegFileFwd[
   //        Vec[ObjSubLineMemEntry],
   //        WrObjPipeSlmRmwHazardCmp,
   //      ],
@@ -6246,7 +6246,7 @@ case class Gpu2d(
   //      //subLineMemEntryFwd := inpFwd
   //    }
   //    def formalGetPipeMemRmwFwd(
-  //      outpFwd: PipeMemRmwFwd[
+  //      outpFwd: PipeRegFileFwd[
   //        Vec[ObjSubLineMemEntry],
   //        WrObjPipeSlmRmwHazardCmp,
   //      ],
@@ -6855,40 +6855,40 @@ case class Gpu2d(
   //      linkArr += dMyWrObj
   //      for (jdx <- 0 until njMyArr.size) {
   //        wrObjSubLineMemArr(jdx).io.midModStages(0)(
-  //          PipeMemRmw.extIdxUp
+  //          PipeRegFile.extIdxUp
   //        ) := (
   //          RegNext(
   //            wrObjSubLineMemArr(jdx).io.midModStages(0)(
-  //              PipeMemRmw.extIdxUp
+  //              PipeRegFile.extIdxUp
   //            )
   //          )
   //          init(
   //            wrObjSubLineMemArr(jdx).io.midModStages(0)(
-  //              PipeMemRmw.extIdxUp
+  //              PipeRegFile.extIdxUp
   //            ).getZero
   //          )
   //        )
   //        when (dMyWrObj.up.isValid) {
   //          wrObjSubLineMemArr(
   //            jdx
-  //          ).io.midModStages(0)(PipeMemRmw.extIdxUp) := (
+  //          ).io.midModStages(0)(PipeRegFile.extIdxUp) := (
   //            dMyWrObj.up(wrObjPipePayloadSlmRmwModFrontInp(
   //              jdx
   //            ))
   //          )
   //        }
   //        wrObjSubLineMemArr(jdx).io.midModStages(0)(
-  //          PipeMemRmw.extIdxSaved
+  //          PipeRegFile.extIdxSaved
   //        ) := (
   //          RegNextWhen(
   //            wrObjSubLineMemArr(
   //              jdx
-  //            ).io.midModStages(0)(PipeMemRmw.extIdxUp),
+  //            ).io.midModStages(0)(PipeRegFile.extIdxUp),
   //            cond=dMyWrObj.up.isFiring,
   //          )
   //          init(
   //            wrObjSubLineMemArr(jdx).io.midModStages(0)(
-  //              PipeMemRmw.extIdxSaved
+  //              PipeRegFile.extIdxSaved
   //            )
   //            .getZero
   //          )
@@ -6926,21 +6926,21 @@ case class Gpu2d(
   //      println(s"idx == modFront + 1: ${idx}")
   //      for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
   //        wrObjSubLineMemArr(jdx).io.midModStages(1)(
-  //          PipeMemRmw.extIdxUp
+  //          PipeRegFile.extIdxUp
   //        ) := (
   //          RegNext(wrObjSubLineMemArr(jdx).io.midModStages(1)(
-  //            PipeMemRmw.extIdxUp
+  //            PipeRegFile.extIdxUp
   //          ))
   //          init(
   //            wrObjSubLineMemArr(jdx).io.midModStages(1)(
-  //              PipeMemRmw.extIdxUp
+  //              PipeRegFile.extIdxUp
   //            )
   //            .getZero
   //          )
   //        )
   //        when (nWrObjArr(idx).isValid) {
   //          wrObjSubLineMemArr(jdx).io.midModStages(1)(
-  //            PipeMemRmw.extIdxUp
+  //            PipeRegFile.extIdxUp
   //          ) := (
   //            nWrObjArr(idx)
   //            (
@@ -6949,11 +6949,11 @@ case class Gpu2d(
   //          )
   //        }
   //        wrObjSubLineMemArr(jdx).io.midModStages(1)(
-  //          PipeMemRmw.extIdxSaved
+  //          PipeRegFile.extIdxSaved
   //        ) := (
   //          RegNextWhen(
   //            wrObjSubLineMemArr(jdx).io.midModStages(1)(
-  //              PipeMemRmw.extIdxUp
+  //              PipeRegFile.extIdxUp
   //            ),
   //            nWrObjArr(idx).isFiring
   //          )
@@ -6994,23 +6994,23 @@ case class Gpu2d(
   //          )
   //        )
   //        wrObjSubLineMemArr(jdx).io.midModStages(2)(
-  //            PipeMemRmw.extIdxUp
+  //            PipeRegFile.extIdxUp
   //        ):= (
   //          RegNext(
   //            wrObjSubLineMemArr(jdx).io.midModStages(2)(
-  //              PipeMemRmw.extIdxUp
+  //              PipeRegFile.extIdxUp
   //            )
   //          )
   //          init(
   //            wrObjSubLineMemArr(jdx).io.midModStages(2)(
-  //              PipeMemRmw.extIdxUp
+  //              PipeRegFile.extIdxUp
   //            )
   //            .getZero
   //          )
   //        )
   //        when (nWrObjArr(idx).isValid) {
   //          wrObjSubLineMemArr(jdx).io.midModStages(2)(
-  //            PipeMemRmw.extIdxUp
+  //            PipeRegFile.extIdxUp
   //          ) := (
   //            nWrObjArr(idx)(
   //              wrObjPipePayloadMain(idx /*+ 1*/)
@@ -7018,11 +7018,11 @@ case class Gpu2d(
   //          )
   //        }
   //        wrObjSubLineMemArr(jdx).io.midModStages(2)(
-  //          PipeMemRmw.extIdxSaved
+  //          PipeRegFile.extIdxSaved
   //        ) := (
   //          RegNextWhen(
   //            wrObjSubLineMemArr(jdx).io.midModStages(2)(
-  //              PipeMemRmw.extIdxUp
+  //              PipeRegFile.extIdxUp
   //            ),
   //            nWrObjArr(idx).isFiring
   //          )
@@ -7308,40 +7308,40 @@ case class Gpu2d(
   //        linkArr += dMyWrObjAffine
   //        for (jdx <- 0 until njMyArr.size) {
   //          wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
-  //            PipeMemRmw.extIdxUp
+  //            PipeRegFile.extIdxUp
   //          ) := (
   //            RegNext(
   //              wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
-  //                PipeMemRmw.extIdxUp
+  //                PipeRegFile.extIdxUp
   //              )
   //            )
   //            init(
   //              wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
-  //                PipeMemRmw.extIdxUp
+  //                PipeRegFile.extIdxUp
   //              ).getZero
   //            )
   //          )
   //          when (dMyWrObjAffine.up.isValid) {
   //            wrObjAffineSubLineMemArr(
   //              jdx
-  //            ).io.midModStages(0)(PipeMemRmw.extIdxUp) := (
+  //            ).io.midModStages(0)(PipeRegFile.extIdxUp) := (
   //              dMyWrObjAffine.up(wrObjAffinePipePayloadSlmRmwModFrontInp(
   //                jdx
   //              ))
   //            )
   //          }
   //          wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
-  //            PipeMemRmw.extIdxSaved
+  //            PipeRegFile.extIdxSaved
   //          ) := (
   //            RegNextWhen(
   //              wrObjAffineSubLineMemArr(
   //                jdx
-  //              ).io.midModStages(0)(PipeMemRmw.extIdxUp),
+  //              ).io.midModStages(0)(PipeRegFile.extIdxUp),
   //              dMyWrObjAffine.up.isFiring
   //            )
   //            init(
   //              wrObjAffineSubLineMemArr(jdx).io.midModStages(0)(
-  //                PipeMemRmw.extIdxSaved
+  //                PipeRegFile.extIdxSaved
   //              )
   //              .getZero
   //            )
@@ -7373,21 +7373,21 @@ case class Gpu2d(
   //        //println(s"idx == modFront + 1: ${idx}")
   //        for (jdx <- 0 until wrObjPipeNumForkOrJoinRenderers) {
   //          wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
-  //            PipeMemRmw.extIdxUp
+  //            PipeRegFile.extIdxUp
   //          ) := (
   //            RegNext(wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
-  //              PipeMemRmw.extIdxUp
+  //              PipeRegFile.extIdxUp
   //            ))
   //            init(
   //              wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
-  //                PipeMemRmw.extIdxUp
+  //                PipeRegFile.extIdxUp
   //              )
   //              .getZero
   //            )
   //          )
   //          when (nWrObjAffineArr(idx).isValid) {
   //            wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
-  //              PipeMemRmw.extIdxUp
+  //              PipeRegFile.extIdxUp
   //            ) := (
   //              nWrObjAffineArr(idx)
   //              (
@@ -7396,11 +7396,11 @@ case class Gpu2d(
   //            )
   //          }
   //          wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
-  //            PipeMemRmw.extIdxSaved
+  //            PipeRegFile.extIdxSaved
   //          ) := (
   //            RegNextWhen(
   //              wrObjAffineSubLineMemArr(jdx).io.midModStages(1)(
-  //                PipeMemRmw.extIdxUp
+  //                PipeRegFile.extIdxUp
   //              ),
   //              nWrObjAffineArr(idx).isFiring
   //            )
@@ -7441,23 +7441,23 @@ case class Gpu2d(
   //            )
   //          )
   //          wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
-  //              PipeMemRmw.extIdxUp
+  //              PipeRegFile.extIdxUp
   //          ):= (
   //            RegNext(
   //              wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
-  //                PipeMemRmw.extIdxUp
+  //                PipeRegFile.extIdxUp
   //              )
   //            )
   //            init(
   //              wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
-  //                PipeMemRmw.extIdxUp
+  //                PipeRegFile.extIdxUp
   //              )
   //              .getZero
   //            )
   //          )
   //          when (nWrObjAffineArr(idx).isValid) {
   //            wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
-  //              PipeMemRmw.extIdxUp
+  //              PipeRegFile.extIdxUp
   //            ) := (
   //              nWrObjAffineArr(idx)(
   //                wrObjAffinePipePayloadMain(idx /*+ 1*/)
@@ -7465,11 +7465,11 @@ case class Gpu2d(
   //            )
   //          }
   //          wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
-  //            PipeMemRmw.extIdxSaved
+  //            PipeRegFile.extIdxSaved
   //          ) := (
   //            RegNextWhen(
   //              wrObjAffineSubLineMemArr(jdx).io.midModStages(2)(
-  //                PipeMemRmw.extIdxUp
+  //                PipeRegFile.extIdxUp
   //              ),
   //              nWrObjAffineArr(idx).isFiring
   //            )

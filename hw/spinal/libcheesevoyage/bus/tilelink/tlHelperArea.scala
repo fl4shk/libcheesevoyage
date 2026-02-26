@@ -1065,7 +1065,7 @@
 //        )
 //      )
 //      def mkExt() = {
-//        val ret = PipeMemRmwPayloadExt(
+//        val ret = PipeRegFilePayloadExt(
 //          wordType=pipeMemWordType(),
 //          wordCount=pipeMemDepth,
 //          hazardCmpType=Bool(),
@@ -1079,7 +1079,7 @@
 //      }
 //      case class PipePayload(
 //      ) extends Bundle
-//        with PipeMemRmwPayloadBase[
+//        with PipeRegFilePayloadBase[
 //          Flow[tilelink.ChannelA], Bool
 //        ]
 //      {
@@ -1090,13 +1090,13 @@
 //        val recv = mkRecvPipePayloadExtras()
 //        val myExt = mkExt()
 //        def setPipeMemRmwExt(
-//          inpExt: PipeMemRmwPayloadExt[Flow[tilelink.ChannelA], Bool],
+//          inpExt: PipeRegFilePayloadExt[Flow[tilelink.ChannelA], Bool],
 //          memArrIdx: Int,
 //        ): Unit = {
 //          myExt := inpExt
 //        }
 //        def getPipeMemRmwExt(
-//          outpExt: PipeMemRmwPayloadExt[Flow[tilelink.ChannelA], Bool],
+//          outpExt: PipeRegFilePayloadExt[Flow[tilelink.ChannelA], Bool],
 //          memArrIdx: Int,
 //        ): Unit = {
 //          outpExt := myExt
@@ -1124,12 +1124,12 @@
 //      //def pipeMemModStageCnt = pipeMemModStageCnt
 //      val pipeMem = { // for keeping track of outstanding transactions
 //        ///*Array.fill(numSendRdWrStages)*/(
-//        PipeMemRmw[
+//        PipeRegFile[
 //          Flow[tilelink.ChannelA],
 //          Bool,
 //          //SamplePipeMemRmwModType[Flow[tilelink.ChannelA], Bool],
 //          PipePayload,
-//          PipeMemRmwDualRdTypeDisabled[Flow[tilelink.ChannelA], Bool],
+//          PipeRegFileDualRdTypeDisabled[Flow[tilelink.ChannelA], Bool],
 //        ](
 //          wordType=pipeMemWordType(),
 //          wordCount=pipeMemDepth,
@@ -1138,7 +1138,7 @@
 //          modStageCnt=pipeMemModStageCnt,
 //          pipeName=tlName + "_HostSend",
 //          linkArr=Some(linkArr),
-//          dualRdType=PipeMemRmwDualRdTypeDisabled[
+//          dualRdType=PipeRegFileDualRdTypeDisabled[
 //            Flow[tilelink.ChannelA], Bool
 //          ](),
 //          optDualRd=false,
@@ -1407,12 +1407,12 @@
 //      //  /*val pipeMemArr = Array.fill(numMemArrs)*/
 //      //  val pipeMem = {
 //      //    ///*Array.fill(numSendRdWrStages)*/(
-//      //    PipeMemRmw[
+//      //    PipeRegFile[
 //      //      Flow[tilelink.ChannelA],
 //      //      Bool,
 //      //      //SamplePipeMemRmwModType[Flow[tilelink.ChannelA], Bool],
 //      //      PipePayload,
-//      //      PipeMemRmwDualRdTypeDisabled[Flow[tilelink.ChannelA], Bool],
+//      //      PipeRegFileDualRdTypeDisabled[Flow[tilelink.ChannelA], Bool],
 //      //    ](
 //      //      wordType=pipeMemWordType(),
 //      //      wordCount=pipeMemDepth,
@@ -1421,7 +1421,7 @@
 //      //      modStageCnt=pipeMemModStageCnt,
 //      //      pipeName=tlName + "_HostSend",
 //      //      linkArr=Some(linkArr),
-//      //      dualRdType=PipeMemRmwDualRdTypeDisabled[
+//      //      dualRdType=PipeRegFileDualRdTypeDisabled[
 //      //        Flow[tilelink.ChannelA], Bool
 //      //      ](),
 //      //      optDualRd=false,
@@ -1497,11 +1497,11 @@
 //      //  )
 //      //  val pipeMem = /*Array.fill(numMemArrs)*/({
 //      //    /*Array.fill(numSendRdWrStages)*/(
-//      //      PipeMemRmw[
+//      //      PipeRegFile[
 //      //        Flow[tilelink.ChannelD],
 //      //        Bool,
 //      //        SamplePipeMemRmwModType[Flow[tilelink.ChannelD], Bool],
-//      //        PipeMemRmwDualRdTypeDisabled[Flow[tilelink.ChannelD], Bool],
+//      //        PipeRegFileDualRdTypeDisabled[Flow[tilelink.ChannelD], Bool],
 //      //      ](
 //      //        wordType=pipeMemWordType(),
 //      //        wordCount=pipeMemDepth,
@@ -1510,7 +1510,7 @@
 //      //        modStageCnt=pipeMemModStageCnt,
 //      //        pipeName="HostSend",
 //      //        linkArr=Some(linkArr),
-//      //        dualRdType=PipeMemRmwDualRdTypeDisabled[
+//      //        dualRdType=PipeRegFileDualRdTypeDisabled[
 //      //          Flow[tilelink.ChannelD], Bool
 //      //        ](),
 //      //        optDualRd=false,

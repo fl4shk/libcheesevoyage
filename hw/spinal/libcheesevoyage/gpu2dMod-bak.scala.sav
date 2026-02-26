@@ -23,10 +23,10 @@ import libcheesevoyage.general.FpgacpuPipeForkBlocking
 //import libcheesevoyage.general.FpgacpuPipeForkEager
 import libcheesevoyage.general.FpgacpuPipeJoin
 import libcheesevoyage.general.FpgacpuRamSimpleDualPort
-import libcheesevoyage.general.PipeMemRmw
-import libcheesevoyage.general.PipeMemRmwIo
+import libcheesevoyage.general.PipeRegFile
+import libcheesevoyage.general.PipeRegFileIo
 import libcheesevoyage.general.SamplePipeMemRmwModType
-import libcheesevoyage.general.PipeMemRmwDualRdTypeDisabled
+import libcheesevoyage.general.PipeRegFileDualRdTypeDisabled
 import spinal.lib.misc.pipeline._
 
 //import scala.math._
@@ -2160,10 +2160,10 @@ case class Gpu2d(
           modStageCnt=modStageCnt,
         )
         val myPipeMemRmw = (
-          PipeMemRmw[
+          PipeRegFile[
             Gpu2dTileSlice,
             SamplePipeMemRmwModType[Gpu2dTileSlice],
-            PipeMemRmwDualRdTypeDisabled[Gpu2dTileSlice]
+            PipeRegFileDualRdTypeDisabled[Gpu2dTileSlice]
           ](
             wordType=wordType(),
             wordCount=wordCount,

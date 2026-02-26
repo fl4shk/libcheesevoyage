@@ -530,7 +530,7 @@ object Gpu2dInterfaceTestToVerilog extends App {
     WordT <: Data
   ](
     wordType: HardType[WordT],
-  ): PipeMemRmwConfig[WordT, Bool] = PipeMemRmwConfig(
+  ): PipeRegFileConfig[WordT, Bool] = PipeRegFileConfig(
     wordType=wordType(),
     wordCountArr=testPmRmwWordCountArr,
     hazardCmpType=Bool(),
@@ -544,7 +544,7 @@ object Gpu2dInterfaceTestToVerilog extends App {
   ](
     wordType: HardType[WordT]
   ) = {
-    val ret = PipeMemRmwPayloadExt(
+    val ret = PipeRegFilePayloadExt(
       cfg=testPmRmwCfg(wordType=wordType()),
       wordCount=testPmRmwWordCountArr(0)
     )
@@ -554,19 +554,19 @@ object Gpu2dInterfaceTestToVerilog extends App {
     WordT <: Data
   ](
     wordType: HardType[WordT],
-  ) extends Bundle with PipeMemRmwPayloadBase[WordT, Bool] {
+  ) extends Bundle with PipeRegFilePayloadBase[WordT, Bool] {
     //--------
     val myExt = mkTestExt(wordType=wordType())
     //--------
     /*override*/ def setPipeMemRmwExt(
-      inpExt: PipeMemRmwPayloadExt[WordT, Bool],
+      inpExt: PipeRegFilePayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
     ): Unit = {
       myExt := inpExt
     }
     /*override*/ def getPipeMemRmwExt(
-      outpExt: PipeMemRmwPayloadExt[WordT, Bool],
+      outpExt: PipeRegFilePayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
     ): Unit = {
@@ -574,12 +574,12 @@ object Gpu2dInterfaceTestToVerilog extends App {
     }
     //--------
     /*override*/ def formalSetPipeMemRmwFwd(
-      outpFwd: PipeMemRmwFwd[WordT, Bool],
+      outpFwd: PipeRegFileFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
     }
     /*override*/ def formalGetPipeMemRmwFwd(
-      inpFwd: PipeMemRmwFwd[WordT, Bool],
+      inpFwd: PipeRegFileFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
     }
@@ -594,19 +594,19 @@ object Gpu2dInterfaceTestToVerilog extends App {
   ](
     wordType: HardType[WordT],
     vecSize: Int,
-  ) extends Bundle with PipeMemRmwPayloadBase[WordT, Bool] {
+  ) extends Bundle with PipeRegFilePayloadBase[WordT, Bool] {
     //--------
     val myExt = Vec.fill(vecSize)(mkTestExt(wordType=wordType()))
     //--------
     /*override*/ def setPipeMemRmwExt(
-      inpExt: PipeMemRmwPayloadExt[WordT, Bool],
+      inpExt: PipeRegFilePayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
     ): Unit = {
       myExt(ydx) := inpExt
     }
     /*override*/ def getPipeMemRmwExt(
-      outpExt: PipeMemRmwPayloadExt[WordT, Bool],
+      outpExt: PipeRegFilePayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
     ): Unit = {
@@ -614,12 +614,12 @@ object Gpu2dInterfaceTestToVerilog extends App {
     }
     //--------
     /*override*/ def formalSetPipeMemRmwFwd(
-      outpFwd: PipeMemRmwFwd[WordT, Bool],
+      outpFwd: PipeRegFileFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
     }
     /*override*/ def formalGetPipeMemRmwFwd(
-      inpFwd: PipeMemRmwFwd[WordT, Bool],
+      inpFwd: PipeRegFileFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
     }

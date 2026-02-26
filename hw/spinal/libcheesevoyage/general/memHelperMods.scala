@@ -668,7 +668,7 @@ case class WrPulseRdPipeRamSdpPipeConfig[
   def modRdPortCnt = 1
   def modStageCnt = 0//1
 
-  val pmCfg = PipeMemRmwConfig[
+  val pmCfg = PipeRegFileConfig[
     WordT,
     Bool,
   ](
@@ -683,7 +683,7 @@ case class WrPulseRdPipeRamSdpPipeConfig[
       true
     ),
     linkArr=(
-      //Some(PipeMemRmw.mkLinkArr()),
+      //Some(PipeRegFile.mkLinkArr()),
       //linkArr
       None
     ),
@@ -693,9 +693,9 @@ case class WrPulseRdPipeRamSdpPipeConfig[
     initBigInt=initBigInt,
     //optEnableModDuplicate=false,
     optModHazardKind=(
-      //PipeMemRmw.ModHazardKind.Dont
-      //PipeMemRmw.ModHazardKind.Dupl
-      PipeMemRmw.ModHazardKind.Fwd
+      //PipeRegFile.ModHazardKind.Dont
+      //PipeRegFile.ModHazardKind.Dupl
+      PipeRegFile.ModHazardKind.Fwd
     ),
     vivadoDebug=false,
     optEnableWrPulse=true,
@@ -741,54 +741,54 @@ case class WrPulseRdPipeRamSdpPipe[
   val io = WrPulseRdPipeRamSdpPipeIo(cfg=cfg)
   //--------
   def mkExt() = {
-    val ret = PipeMemRmwPayloadExt(
+    val ret = PipeRegFilePayloadExt(
       cfg=cfg.pmCfg,
       wordCount=cfg.wordCount,
     )
     ret
   }
   case class PmRmwModType(
-  ) extends Bundle with PipeMemRmwPayloadBase[WordT, Bool] {
+  ) extends Bundle with PipeRegFilePayloadBase[WordT, Bool] {
     //setName(
     //  name=pmRmwModTypeName,
     //)
     val data = cfg.modType()
     val myExt = mkExt()
     /*override*/ def setPipeMemRmwExt(
-      inpExt: PipeMemRmwPayloadExt[WordT, Bool],
+      inpExt: PipeRegFilePayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
     ): Unit = {
       myExt := inpExt
     }
     /*override*/ def getPipeMemRmwExt(
-      outpExt: PipeMemRmwPayloadExt[WordT, Bool],
+      outpExt: PipeRegFilePayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
     ): Unit = {
       outpExt := myExt
     }
     //def optFormalFwdFuncs(
-    //): Option[PipeMemRmwPayloadBaseFormalFwdFuncs[WordT, Bool]] = (
+    //): Option[PipeRegFilePayloadBaseFormalFwdFuncs[WordT, Bool]] = (
     //  None
     //)
     /*override*/ def formalSetPipeMemRmwFwd(
-      outpFwd: PipeMemRmwFwd[WordT, Bool],
+      outpFwd: PipeRegFileFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
     }
 
     /*override*/ def formalGetPipeMemRmwFwd(
-      inpFwd: PipeMemRmwFwd[WordT, Bool],
+      inpFwd: PipeRegFileFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
     }
   }
-  val pipeMem = PipeMemRmw[
+  val pipeMem = PipeRegFile[
     WordT,
     Bool,
     PmRmwModType,
-    PipeMemRmwDualRdTypeDisabled[
+    PipeRegFileDualRdTypeDisabled[
       WordT, Bool,
     ]
   ](
@@ -798,11 +798,11 @@ case class WrPulseRdPipeRamSdpPipe[
     doHazardCmpFunc=None,
     doModInMid0FrontFunc={
       def myFunc(
-        params: PipeMemRmwDoModInMid0FrontFuncParams[
+        params: PipeRegFileDoModInMid0FrontFuncParams[
           WordT,
           Bool,
           PmRmwModType,
-          PipeMemRmwDualRdTypeDisabled[
+          PipeRegFileDualRdTypeDisabled[
             WordT, Bool,
           ]
         ]
@@ -914,7 +914,7 @@ case class WrPulseRdPipeSimpleDualPortMemIo[
 }
 
 //--------
-// TODO: rework this to not use PipeMemRmw's "dual read" stuff as that is
+// TODO: rework this to not use PipeRegFile's "dual read" stuff as that is
 // mostly not a thing any mroe
 case class WrPulseRdPipeSimpleDualPortMem[
   T <: Data,
@@ -963,7 +963,7 @@ extends Component
     unionIdxWidth=unionIdxWidth,
   )
   def addrWidth = io.addrWidth
-  val pmCfg = PipeMemRmwConfig[
+  val pmCfg = PipeRegFileConfig[
     WordT,
     Bool,
     //PmRmwModType,
@@ -979,7 +979,7 @@ extends Component
       false
       //true
     ),
-    //linkArr=Some(PipeMemRmw.mkLinkArr()),
+    //linkArr=Some(PipeRegFile.mkLinkArr()),
     linkArr=linkArr,
     memArrIdx=0,
     //dualRdType=PmRmwModType(),
@@ -987,8 +987,8 @@ extends Component
     initBigInt=initBigInt,
     //optEnableModDuplicate=false,
     optModHazardKind=(
-      PipeMemRmw.ModHazardKind.Dont
-      //PipeMemRmw.ModHazardKind.Dupl
+      PipeRegFile.ModHazardKind.Dont
+      //PipeRegFile.ModHazardKind.Dupl
     ),
     vivadoDebug=vivadoDebug,
     memRamStyleAltera=arrRamStyleAltera,
@@ -999,7 +999,7 @@ extends Component
   def modRdPortCnt = 1
   def modStageCnt = 1
   def mkExt() = {
-    val ret = PipeMemRmwPayloadExt(
+    val ret = PipeRegFilePayloadExt(
       cfg=pmCfg,
       //wordType=wordType(),
       wordCount=wordCount,
@@ -1009,7 +1009,7 @@ extends Component
       //memArrSize=1,
       ////optEnableModDuplicate=false,
       //optModHazardKind=(
-      //  PipeMemRmw.ModHazardKind.Dont
+      //  PipeRegFile.ModHazardKind.Dont
       //),
       ////optReorder=true,
     )
@@ -1022,44 +1022,44 @@ extends Component
   //  io.addAttribute("MARK_DEBUG", "TRUE")
   //}
   case class PmRmwModType(
-  ) extends Bundle with PipeMemRmwPayloadBase[WordT, Bool] {
+  ) extends Bundle with PipeRegFilePayloadBase[WordT, Bool] {
     //setName(
     //  name=pmRmwModTypeName,
     //)
     val data = dataType()
     val myExt = mkExt()
     /*override*/ def setPipeMemRmwExt(
-      inpExt: PipeMemRmwPayloadExt[WordT, Bool],
+      inpExt: PipeRegFilePayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
     ): Unit = {
       myExt := inpExt
     }
     /*override*/ def getPipeMemRmwExt(
-      outpExt: PipeMemRmwPayloadExt[WordT, Bool],
+      outpExt: PipeRegFilePayloadExt[WordT, Bool],
       ydx: Int,
       memArrIdx: Int,
     ): Unit = {
       outpExt := myExt
     }
     //def optFormalFwdFuncs(
-    //): Option[PipeMemRmwPayloadBaseFormalFwdFuncs[WordT, Bool]] = (
+    //): Option[PipeRegFilePayloadBaseFormalFwdFuncs[WordT, Bool]] = (
     //  None
     //)
     /*override*/ def formalSetPipeMemRmwFwd(
-      outpFwd: PipeMemRmwFwd[WordT, Bool],
+      outpFwd: PipeRegFileFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
     }
 
     /*override*/ def formalGetPipeMemRmwFwd(
-      inpFwd: PipeMemRmwFwd[WordT, Bool],
+      inpFwd: PipeRegFileFwd[WordT, Bool],
       memArrIdx: Int,
     ): Unit = {
     }
   }
-  //val linkArr = PipeMemRmw.mkLinkArr()
-  val pipeMem = PipeMemRmw[
+  //val linkArr = PipeRegFile.mkLinkArr()
+  val pipeMem = PipeRegFile[
     WordT,
     Bool,
     PmRmwModType,

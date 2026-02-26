@@ -9,7 +9,7 @@ import scala.math._
 
 import libcheesevoyage.Config
 
-object PipeMemRmwFormal extends App {
+object PipeRegFileFormal extends App {
   //--------
   //--------
   def myProveNumCycles = (
@@ -18,9 +18,9 @@ object PipeMemRmwFormal extends App {
     //15
     //16
   )
-  case class PipeMemRmwFormalDutWithBranches() extends Component {
+  case class PipeRegFileFormalDutWithBranches() extends Component {
     val dut = FormalDut(
-      PipeMemRmwTester(
+      PipeRegFileTester(
         optFormal=true,
       )
     )
@@ -69,12 +69,12 @@ object PipeMemRmwFormal extends App {
     //  front.myExt.memAddr
     //)
     //assume(
-    //  front.op =/= PipeMemRmwSimDut.ModOp.MUL_RA_RB
+    //  front.op =/= PipeRegFileSimDut.ModOp.MUL_RA_RB
     //)
     assume(
       front.op.asBits.asUInt
-      //< PipeMemRmwSimDut.ModOp.MUL_RA_RB.asBits.asUInt
-      < PipeMemRmwSimDut.postMaxModOp.asBits.asUInt
+      //< PipeRegFileSimDut.ModOp.MUL_RA_RB.asBits.asUInt
+      < PipeRegFileSimDut.postMaxModOp.asBits.asUInt
     )
     when (pastValidAfterReset) {
       when (front.fire) {
@@ -182,22 +182,22 @@ object PipeMemRmwFormal extends App {
     //  //20
     //  //15
     //  //16
-    //  PipeMemRmwFormal.myProveNumCycles
+    //  PipeRegFileFormal.myProveNumCycles
     //)
     .withProve(
       //20
       //40
       //10
-      PipeMemRmwFormal.myProveNumCycles
+      PipeRegFileFormal.myProveNumCycles
     )
     .withCover(
-      //PipeMemRmwFormal.myProveNumCycles
+      //PipeRegFileFormal.myProveNumCycles
       //20
       //60
       //20
       15
     )
-    .doVerify(PipeMemRmwFormalDutWithBranches())
+    .doVerify(PipeRegFileFormalDutWithBranches())
   //--------
 }
 

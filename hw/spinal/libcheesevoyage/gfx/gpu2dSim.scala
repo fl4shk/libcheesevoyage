@@ -1,8 +1,8 @@
 package libcheesevoyage.gfx
 import libcheesevoyage._
 
-import libcheesevoyage.general.PipeMemRmw
-import libcheesevoyage.general.PipeMemRmwIo
+import libcheesevoyage.general.PipeRegFile
+import libcheesevoyage.general.PipeRegFileIo
 import libcheesevoyage.general.Vec2
 import libcheesevoyage.general.ElabVec2
 import libcheesevoyage.hwdev.SnesCtrlIo
