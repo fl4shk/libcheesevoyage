@@ -81,6 +81,23 @@ object LcvVgaTimingInfoMap {
         back=33
       ),
     ),
+    // https://tomverbeure.github.io/video_timings_calculator?horiz_pixels=640&vert_pixels=480&refresh_rate=70&margins=false&interlaced=false&bpc=8&color_fmt=rgb444&video_opt=false&custom_hblank=80&custom_vblank=6
+    "640x480@70" -> LcvVgaTimingInfo(
+      pixelClk=25.0 MHz,
+      //pixelClk=24.998 MHz, // CVT-RBv2
+      htiming=LcvVgaTimingHv(
+        visib=640,
+        front=8,
+        sync=32,
+        back=40
+      ),
+      vtiming=LcvVgaTimingHv(
+        visib=480,
+        front=2,
+        sync=8,
+        back=6
+      ),
+    ),
     // This is an XGA VGA signal. It didn't work with my monitor.
     "1024x768@60" -> LcvVgaTimingInfo(
       pixelClk=65.0 MHz,
