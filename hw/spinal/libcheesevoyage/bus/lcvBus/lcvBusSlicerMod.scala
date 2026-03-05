@@ -168,11 +168,17 @@ case class LcvBusSlicer(
       dev.h2dBus.fire
       ## dev.d2hBus.fire
     ) {
-      is (B"10") {
+      is (
+        //B"10"
+        0x2
+      ) {
         // dev.h2dBus.fire, !dev.d2hBus.fire
         rTxnCnt := rTxnCnt + 1
       }
-      is (B"01") {
+      is (
+        //B"01"
+        0x1
+      ) {
         rTxnCnt := rTxnCnt - 1
       }
       default {
@@ -254,8 +260,13 @@ case class LcvBusSlicer(
         //)
         ////B"101"
         ////## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
-        U"1"
-        ## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
+
+        //U"1"
+        //## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
+        (
+          (1 << rSavedH2dAddrSlice.getWidth)
+          | devIdx
+        )
       ) {
         doConnect(devIdx=devIdx)
       }
@@ -315,8 +326,10 @@ case class LcvBusSlicer(
       ) {
         for (devIdx <- 0 until cfg.numDevs) {
           is (
-            B"1'b1"
-            ## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
+            //B"1'b1"
+            //## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
+            (1 << rSavedH2dAddrSlice.getWidth)
+            | devIdx
           ) {
             def dev = io.devVec(devIdx)
             io.host.d2hBus << dev.d2hBus
