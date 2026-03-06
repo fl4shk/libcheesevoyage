@@ -13,12 +13,25 @@ import spinal.lib.misc.pipeline._
 case class LcvBusIrqCtrlConfig(
   busCfg: LcvBusConfig,
   depth: Int,
+  optIrqEnableBusRegInitSeq: Option[Seq[BigInt]]=None,
 ) {
   require(!busCfg.allowBurst)
   //require(busCfg.haveByteEn)
   require(
     depth > 0
   )
+  optIrqEnableBusRegInitSeq match {
+    case Some(myIrqEnableBusRegInitSeq) => {
+      require(
+        myIrqEnableBusRegInitSeq.size == depth,
+        s"need same size: "
+        + s"initSeq.size:${myIrqEnableBusRegInitSeq.size} "
+        + s"!= depth:${depth}"
+      )
+    }
+    case None => {
+    }
+  }
   //require(
   //  depth <= busCfg.dataWidth,
   //  s"for the time being, it is required that "
@@ -137,15 +150,28 @@ case class LcvBusIrqCtrl(
       init(0x0)
     )
   )
-  val rIrqEnableBusRegVec = (
-    Vec.fill(numBusRegsPerKind)(
+  val rIrqEnableBusRegVec = {
+    val temp = Vec.fill(numBusRegsPerKind)(
       Reg(UInt(
         busCfg.dataWidth bits
         //cfg.depth bits
       ))
-      init(0x0)
+      //init(0x0)
     )
-  )
+    cfg.optIrqEnableBusRegInitSeq match {
+      case Some(myIrqEnableBusRegInitSeq) => {
+        for (idx <- 0 until temp.size) {
+          temp(idx).init(myIrqEnableBusRegInitSeq(idx))
+        }
+      }
+      case None => {
+        for (idx <- 0 until temp.size) {
+          temp(idx).init(temp(idx).getZero)
+        }
+      }
+    }
+    temp
+  }
 
   //def myIrqValidBusRegAddr = 0x1 * myBusRegAddrMult
   //val rIrqValidReg = (
