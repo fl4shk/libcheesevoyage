@@ -198,16 +198,29 @@ case class LcvBusIrqCtrl(
     )
   )
 
+  val myTempIrqIdAsBits = cloneOf(rIrqIdBusRegVec.asBits)
+  myTempIrqIdAsBits := myTempIrqIdAsBits.getZero
 
   switch (rState) {
     is (State.IDLE) {
       rSavedH2dPayload := io.bus.h2dBus.payload
 
+      for (idx <- 0 until rIrqEnableBusRegVec.asBits.getWidth) {
+        when (
+          io.srcIrqVec.asBits.asUInt.resize(
+            rIrqIdBusRegVec.asBits.getWidth
+          ).asBits(idx)
+          & rIrqEnableBusRegVec.asBits(idx)
+        ) {
+          myTempIrqIdAsBits(idx) := True
+        }
+      }
       rIrqIdBusRegVec.assignFromBits(
-        io.srcIrqVec.asBits.asUInt.resize(
-          rIrqIdBusRegVec.asBits.getWidth
-        ).asBits
-        & rIrqEnableBusRegVec.asBits
+        //io.srcIrqVec.asBits.asUInt.resize(
+        //  rIrqIdBusRegVec.asBits.getWidth
+        //).asBits
+        //& rIrqEnableBusRegVec.asBits
+        myTempIrqIdAsBits
       )
 
       switch (
