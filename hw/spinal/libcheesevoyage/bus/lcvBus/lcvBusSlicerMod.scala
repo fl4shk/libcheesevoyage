@@ -202,6 +202,18 @@ case class LcvBusSlicer(
   //  )
   //) {
   //}
+
+  val stickyHostH2dAddrSlice = UInt(cfg.mmapCfg.addrSliceWidth bits)
+  stickyHostH2dAddrSlice := (
+    RegNext(
+      stickyHostH2dAddrSlice,
+      init=stickyHostH2dAddrSlice.getZero
+    )
+  )
+  when (io.host.h2dBus.valid) {
+    stickyHostH2dAddrSlice := io.host.h2dBus.addr(cfg.addrSliceRange)
+  }
+
   when (
     rState === State.MAIN
     && io.host.h2dBus.valid
@@ -217,11 +229,13 @@ case class LcvBusSlicer(
     rState := State.CHANGED_ADDR_SLICE_WAIT_REMAINING_D2H_RESPONSES
   }
 
+
   switch (
     (
       rState === State.MAIN
       //&& io.host.h2dBus.valid
-      && (rSavedH2dAddrSlice === io.host.h2dBus.addr(cfg.addrSliceRange))
+      //&& (rSavedH2dAddrSlice === io.host.h2dBus.addr(cfg.addrSliceRange))
+      && (rSavedH2dAddrSlice === stickyHostH2dAddrSlice)
     )
     //## (
     //  //rState === State.MAIN
