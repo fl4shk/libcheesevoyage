@@ -5126,7 +5126,7 @@ extends Area {
       } else {
         upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
         when (!up.isValid) {
-          upExt(0)(ydx)(extIdxSingle).fwdCanDoIt.foreach(item => {
+          upExt(1)(ydx)(extIdxUp).fwdCanDoIt.foreach(item => {
             item := False
           })
         }
