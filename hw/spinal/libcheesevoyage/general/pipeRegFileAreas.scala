@@ -285,6 +285,11 @@ case class PipeRegFilePayloadExtMainNonMemAddrMost[
       Bool()
     )
   )
+  val extraLastBackMmwValid = (
+    Vec.fill(cfg.modMemWordValidSize)(
+      Bool()
+    )
+  )
   val rdMemWord = Vec.fill(modRdPortCnt)(wordType())
   val joinIdx = UInt(log2Up(cfg.numForkJoin) bits)
   val fwdCanDoIt = Vec.fill(
@@ -427,6 +432,7 @@ case class PipeRegFilePayloadExt[
   def modMemWord = main.modMemWord
   def otherModMemWord = main.nonMemAddrMost.otherModMemWord
   def modMemWordValid = main.nonMemAddrMost.modMemWordValid
+  def extraLastBackMmwValid = main.nonMemAddrMost.extraLastBackMmwValid
   def rdMemWord = main.nonMemAddrMost.rdMemWord
   def fwdCanDoIt = main.nonMemAddrMost.fwdCanDoIt
   def joinIdx = main.nonMemAddrMost.joinIdx
@@ -5135,6 +5141,12 @@ extends Area {
         //    })
         //  //}
         //}
+        for (idx <- 0 until cfg.modMemWordValidSize) {
+          upExt(1)(ydx)(extIdxUp).modMemWordValid(idx) := (
+            upExt(0)(ydx)(extIdxSingle).modMemWordValid(idx)
+            && upExt(0)(ydx)(extIdxSingle).extraLastBackMmwValid(idx)
+          )
+        }
       }
       if (optModHazardKind != PipeRegFile.ModHazardKind.Fwd) {
         for (extIdx <- 0 until extIdxLim) {
