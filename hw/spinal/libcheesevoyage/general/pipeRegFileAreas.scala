@@ -285,19 +285,19 @@ case class PipeRegFilePayloadExtMainNonMemAddrMost[
       Bool()
     )
   )
-  val extraLastBackMmwValid = (
-    Vec.fill(cfg.modMemWordValidSize)(
-      Bool()
-    )
-  )
+  //val extraLastBackMmwValid = (
+  //  Vec.fill(cfg.modMemWordValidSize)(
+  //    Bool()
+  //  )
+  //)
   val rdMemWord = Vec.fill(modRdPortCnt)(wordType())
   val joinIdx = UInt(log2Up(cfg.numForkJoin) bits)
   val fwdCanDoIt = Vec.fill(modRdPortCnt)(
     Bool()
   )
-  val extraLastBackFwdCanDoIt = Vec.fill(modRdPortCnt)(
-    Bool()
-  )
+  //val extraLastBackFwdCanDoIt = Vec.fill(modRdPortCnt)(
+  //  Bool()
+  //)
   // hazard for when an address is already in the pipeline 
   val hazardId = (
     optModHazardKind == PipeRegFile.ModHazardKind.Dupl
@@ -433,12 +433,12 @@ case class PipeRegFilePayloadExt[
   def modMemWord = main.modMemWord
   def otherModMemWord = main.nonMemAddrMost.otherModMemWord
   def modMemWordValid = main.nonMemAddrMost.modMemWordValid
-  def extraLastBackMmwValid = main.nonMemAddrMost.extraLastBackMmwValid
+  //def extraLastBackMmwValid = main.nonMemAddrMost.extraLastBackMmwValid
   def rdMemWord = main.nonMemAddrMost.rdMemWord
   def fwdCanDoIt = main.nonMemAddrMost.fwdCanDoIt
-  def extraLastBackFwdCanDoIt = (
-    main.nonMemAddrMost.extraLastBackFwdCanDoIt
-  )
+  //def extraLastBackFwdCanDoIt = (
+  //  main.nonMemAddrMost.extraLastBackFwdCanDoIt
+  //)
   def joinIdx = main.nonMemAddrMost.joinIdx
   //def reqReorderCommit = main.nonMemAddrMost.reqReorderCommit
   //def didReorderCommit = main.nonMemAddrMost.didReorderCommit
@@ -5145,20 +5145,20 @@ extends Area {
         //    })
         //  //}
         //}
-        for (idx <- 0 until cfg.modMemWordValidSize) {
-          upExt(1)(ydx)(extIdxUp).modMemWordValid(idx).allowOverride
-          upExt(1)(ydx)(extIdxUp).modMemWordValid(idx) := (
-            upExt(0)(ydx)(extIdxSingle).modMemWordValid(idx)
-            && upExt(0)(ydx)(extIdxSingle).extraLastBackMmwValid(idx)
-          )
-        }
-        for (idx <- 0 until cfg.modRdPortCnt) {
-          upExt(1)(ydx)(extIdxUp).fwdCanDoIt(idx).allowOverride
-          upExt(1)(ydx)(extIdxUp).fwdCanDoIt(idx) := (
-            upExt(0)(ydx)(extIdxSingle).fwdCanDoIt(idx)
-            && upExt(0)(ydx)(extIdxSingle).extraLastBackFwdCanDoIt(idx)
-          )
-        }
+        //for (idx <- 0 until cfg.modMemWordValidSize) {
+        //  upExt(1)(ydx)(extIdxUp).modMemWordValid(idx).allowOverride
+        //  upExt(1)(ydx)(extIdxUp).modMemWordValid(idx) := (
+        //    upExt(0)(ydx)(extIdxSingle).modMemWordValid(idx)
+        //    && upExt(0)(ydx)(extIdxSingle).extraLastBackMmwValid(idx)
+        //  )
+        //}
+        //for (idx <- 0 until cfg.modRdPortCnt) {
+        //  upExt(1)(ydx)(extIdxUp).fwdCanDoIt(idx).allowOverride
+        //  upExt(1)(ydx)(extIdxUp).fwdCanDoIt(idx) := (
+        //    upExt(0)(ydx)(extIdxSingle).fwdCanDoIt(idx)
+        //    && upExt(0)(ydx)(extIdxSingle).extraLastBackFwdCanDoIt(idx)
+        //  )
+        //}
       }
       if (optModHazardKind != PipeRegFile.ModHazardKind.Fwd) {
         for (extIdx <- 0 until extIdxLim) {
