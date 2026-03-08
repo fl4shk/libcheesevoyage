@@ -500,6 +500,15 @@ trait PipeRegFilePayloadBase[
   //}
 }
 object PipeRegFile {
+  object FwdState extends SpinalEnum(
+    defaultEncoding=binaryOneHot
+  ) {
+    val
+      WAIT_FIRST_UP_VALID,
+      WAIT_DATA,
+      WAIT_UP_FIRE
+      = newElement();
+  }
   def modMemWordValidSize: Int = 4
   def extMainSize = 2
   def addrWidth(
@@ -756,6 +765,16 @@ case class PipeRegFileFwd[
     )
   )
   //--------
+
+  val myFwdState = (
+    Vec.fill(memArrSize)(
+      Vec.fill(modRdPortCnt)(
+        Vec.fill(numMyUpExtDel2 + 1)(
+          PipeRegFile.FwdState()
+        )
+      )
+    )
+  )
 }
 
 case class PipeRegFileDoFwdArea[
@@ -788,15 +807,7 @@ case class PipeRegFileDoFwdArea[
   def extIdxSingle = (
     PipeRegFile.extIdxSingle
   )
-  object FwdState extends SpinalEnum(
-    defaultEncoding=binaryOneHot
-  ) {
-    val
-      WAIT_FIRST_UP_VALID,
-      WAIT_DATA,
-      WAIT_UP_FIRE
-      = newElement();
-  }
+  import PipeRegFile.FwdState
   val rFwdState = {
     val temp = Reg(
       Vec.fill(fwd.memArrSize)(
@@ -822,6 +833,7 @@ case class PipeRegFileDoFwdArea[
     )
     temp
   }
+  fwd.myFwdState := rFwdState
   for (ydx <- 0 until fwd.memArrSize) {
     for (zdx <- 0 until fwd.modRdPortCnt) {
       val firstFwdRdMemWord: (Boolean, WordT) = (
@@ -5739,6 +5751,7 @@ case class StmFwdPipeRegFileDoFwdArea[
       WAIT_UP_FIRE
       = newElement();
   }
+
   val rFwdState = {
     val temp = Reg(
       Vec.fill(cfg.memArrSize)(
