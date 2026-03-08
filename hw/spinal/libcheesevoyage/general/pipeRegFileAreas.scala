@@ -5126,9 +5126,14 @@ extends Area {
       } else {
         upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
         when (!up.isValid) {
-          upExt(1)(ydx)(extIdxUp).fwdCanDoIt.foreach(item => {
-            item := False
-          })
+          //upExt(1)(ydx)(extIdxUp).fwdCanDoIt.foreach(item => {
+          //  item := False
+          //})
+          //for (extIdx <- 0 until extIdxLim) {
+            upExt(1)(ydx)(extIdxUp).modMemWordValid.foreach(item => {
+              item := False
+            })
+          //}
         }
       }
       if (optModHazardKind != PipeRegFile.ModHazardKind.Fwd) {
