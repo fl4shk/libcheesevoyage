@@ -852,14 +852,19 @@ case class WrPulseRdPipeRamSdpPipe[
   pipeMem.io.modFront(pipeMem.io.modBackPayload) := (
     pipeMem.io.modFront(pipeMem.mod.front.outpPipePayload)
   )
-  val fModFrontToModBack = ForkLink(
+  //val fModFrontToModBack = ForkLink(
+  //  up=pipeMem.io.modFront,
+  //  downs=List(
+  //    pipeMem.io.modBack,
+  //    pipeMem.io.modBackFwd,
+  //  ),
+  //)
+  //pipeMem.myLinkArr += fModFrontToModBack
+  def dModFrontToModBack = DirectLink(
     up=pipeMem.io.modFront,
-    downs=List(
-      pipeMem.io.modBack,
-      pipeMem.io.modBackFwd,
-    ),
+    down=pipeMem.io.modBack,
   )
-  pipeMem.myLinkArr += fModFrontToModBack
+  pipeMem.myLinkArr += dModFrontToModBack
   pipeMem.io.back.driveTo(io.rdDataPipe)(
     con=(outp, node) => {
       //rdDataPipePayload := node(pipeMem.io.backPayload).myExt.modMemWord

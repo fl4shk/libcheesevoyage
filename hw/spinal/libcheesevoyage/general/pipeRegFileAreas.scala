@@ -1066,11 +1066,11 @@ case class PipeRegFileIo[
   )
   val modBack = Node() //new ArrayBuffer[Node]()
 
-  val modBackFwd = (
-    optModHazardKind == PipeRegFile.ModHazardKind.Fwd
-  ) generate (
-    Node()
-  )
+  //val modBackFwd = (
+  //  optModHazardKind == PipeRegFile.ModHazardKind.Fwd
+  //) generate (
+  //  Node()
+  //)
   val modBackPayload = (
     Payload(modType())
     .setName(s"${pipeName}_io_modBackPayload")
@@ -1158,7 +1158,7 @@ case class PipeRegFileDoModInPreMid0FrontFuncParams[
   ModT <: PipeRegFilePayloadBase[WordT, HazardCmpT],
   DualRdT <: PipeRegFilePayloadBase[WordT, HazardCmpT],
 ](
-  pipeMemIo: PipeRegFileIo[
+  pipeRegFileIo: PipeRegFileIo[
     WordT,
     HazardCmpT,
     ModT,
@@ -1177,7 +1177,7 @@ case class PipeRegFileDoModInMid0FrontFuncParams[
 ](
   //inp: PipeRegFilePayloadExt[WordT, HazardCmpT],
   //outp: PipeRegFilePayloadExt[WordT, HazardCmpT],
-  pipeMemIo: PipeRegFileIo[
+  pipeRegFileIo: PipeRegFileIo[
     WordT,
     HazardCmpT,
     ModT,
@@ -1207,7 +1207,6 @@ case class PipeRegFileDoModInMid0FrontFuncParams[
 ) {
 }
 
-
 case class PipeRegFileDoModInBackEtcFuncParams[
   WordT <: Data,
   HazardCmpT <: Data,
@@ -1216,7 +1215,7 @@ case class PipeRegFileDoModInBackEtcFuncParams[
 ](
   //inp: PipeRegFilePayloadExt[WordT, HazardCmpT],
   //outp: PipeRegFilePayloadExt[WordT, HazardCmpT],
-  pipeMemIo: PipeRegFileIo[
+  pipeRegFileIo: PipeRegFileIo[
     WordT,
     HazardCmpT,
     ModT,
@@ -2637,18 +2636,18 @@ extends Area {
           //)
         )
       )
-      val cBackFwd = (
-        optModHazardKind == PipeRegFile.ModHazardKind.Fwd
-      ) generate (
-        CtrlLink(
-          up=io.modBackFwd,
-          down=Node()
-        )
-      )
-      if (optModHazardKind == PipeRegFile.ModHazardKind.Fwd) {
-        myLinkArr += cBackFwd
-        cBackFwd.down.ready := True
-      }
+      //val cBackFwd = (
+      //  optModHazardKind == PipeRegFile.ModHazardKind.Fwd
+      //) generate (
+      //  CtrlLink(
+      //    up=io.modBackFwd,
+      //    down=Node()
+      //  )
+      //)
+      //if (optModHazardKind == PipeRegFile.ModHazardKind.Fwd) {
+      //  myLinkArr += cBackFwd
+      //  cBackFwd.down.ready := True
+      //}
 
       val dIoModBack = DirectLink(
         up=io.modBack,
@@ -3550,7 +3549,7 @@ extends Area {
           myDoModInPreMid0FrontAreaArr += (
             myDoModInPreMid0FrontFunc(
               PipeRegFileDoModInPreMid0FrontFuncParams(
-                pipeMemIo=io,
+                pipeRegFileIo=io,
                 outp=tempUpMod(2),
                 inp=tempUpMod(1),
                 cPreMid0Front=cPreMid0Front,
@@ -4122,7 +4121,7 @@ extends Area {
           myDoModInMid0FrontAreaArr += (
             myDoModInMid0FrontFunc(
               PipeRegFileDoModInMid0FrontFuncParams(
-                pipeMemIo=io,
+                pipeRegFileIo=io,
                 nextPrevTxnWasHazardVec=nextPrevTxnWasHazardVec,
                 rPrevTxnWasHazardVec=rPrevTxnWasHazardVec,
                 rPrevTxnWasHazardAny=rPrevTxnWasHazardAny,
@@ -4609,7 +4608,8 @@ extends Area {
     ).setName(s"${pipeName}_cBackArea_upFwd")
     //--------
     val upExt = Vec.fill(
-      2
+      //2
+      3
       //1
     )(
       mkExt(
@@ -4684,95 +4684,6 @@ extends Area {
         }
       }
     }
-    //if (myHaveFormalFwd) {
-    //  when (pastValidAfterReset) {
-    //    //when (
-    //    //  
-    //    //  && !RegNextWhen(
-    //    //    next=True,
-    //    //    cond=up.isValid,
-    //    //    init=False,
-    //    //  )
-    //    //) {
-    //    //  assert(
-    //    //  )
-    //    //}
-    //    when (
-    //      !RegNextWhen(
-    //        next=True,
-    //        cond=up.isFiring,
-    //        init=False,
-    //      )
-    //    ) {
-    //      when (!up.isValid) {
-    //        for (ydx <- 0 until memArrSize) {
-    //          assert(
-    //            upExt(1)(ydx)(extIdxUp).main
-    //            === upExt(1)(ydx)(extIdxUp).main.getZero
-    //          )
-    //        }
-    //        assert(
-    //          upFwd(extIdxUp)
-    //          === upFwd(extIdxUp).getZero
-    //        )
-    //      }
-    //      for (ydx <- 0 until memArrSize) {
-    //        assert(
-    //          upExt(1)(ydx)(extIdxSaved).main
-    //          === upExt(1)(ydx)(extIdxSaved).main.getZero
-    //        )
-    //      }
-    //      assert(
-    //        upFwd(extIdxSaved)
-    //        === upFwd(extIdxSaved).getZero
-    //      )
-    //    } 
-    //    //when (!past(up.isValid) init(False)) {
-    //    //  assert(
-    //    //    upFwd
-    //    //  )
-    //    //}
-    //    //when (
-    //    //  !up.isValid
-    //    //  && !past(up.isValid)
-    //    //) {
-    //    //  for (ydx <- 0 until memArrSize) {
-    //    //    assert(
-    //    //      stable(upExt(1)(ydx)(extIdxUp).main)
-    //    //    )
-    //    //    assert(
-    //    //      stable(upExt(1)(ydx)(extIdxSaved).main)
-    //    //    )
-    //    //  }
-    //    //  assert(
-    //    //    stable(upFwd(extIdxUp))
-    //    //  )
-    //    //  assert(
-    //    //    stable(upFwd(extIdxSaved))
-    //    //  )
-    //    //}
-    //    when (
-    //      past(up.isFiring) init(False)
-    //    ) {
-    //      for (ydx <- 0 until memArrSize) {
-    //        assert(
-    //          upExt(1)(ydx)(extIdxSaved)
-    //          === (
-    //            past(upExt(1)(ydx)(extIdxUp))
-    //            init(upExt(1)(ydx)(extIdxUp).getZero)
-    //          )
-    //        )
-    //      }
-    //      assert(
-    //        upFwd(extIdxSaved)
-    //        === (
-    //          past(upFwd(extIdxUp))
-    //          init(upFwd(extIdxUp).getZero)
-    //        )
-    //      )
-    //    }
-    //  }
-    //}
     //--------
     def tempMyUpExtDelPenLast = (
       myUpExtDel(
@@ -4798,7 +4709,10 @@ extends Area {
     //if (
     //  optModHazardKind != PipeRegFile.ModHazardKind.Fwd
     //) {
-      tempMyUpExtDelPenLast := upExt(1)
+      tempMyUpExtDelPenLast := upExt(
+        //1
+        2
+      )
     //}
     if (
       //myUpExtDel.size - 2 >= 0
@@ -4843,9 +4757,16 @@ extends Area {
           tempUpMod(1) := tempUpMod(0)
         //}
         tempUpMod(1).allowOverride
+        tempUpMod(2) := tempUpMod(1)
+        tempUpMod(2).allowOverride
       }
       tempUpMod(1).setPipeRegFileExt(
         inpExt=upExt(1)(ydx)(extIdxUp),
+        ydx=ydx,
+        memArrIdx=memArrIdx,
+      )
+      tempUpMod(2).getPipeRegFileExt(
+        outpExt=upExt(2)(ydx)(extIdxUp),
         ydx=ydx,
         memArrIdx=memArrIdx,
       )
@@ -5092,6 +5013,23 @@ extends Area {
       data=myWriteData(0),
       enable=myWriteEnable,
     )
+    //--------
+    val myDoModInBackEtcArea = doModInBackEtcFunc match {
+      case Some(doModInBackEtcFunc) => {
+        doModInBackEtcFunc(
+          PipeRegFileDoModInBackEtcFuncParams(
+            pipeRegFileIo=io,
+            outp=tempUpMod(2),
+            inp=tempUpMod(1),
+            cBackEtc=cBack,
+          )
+        )
+      }
+      case None => {
+        new Area {
+        }
+      }
+    }
     //--------
   }
   //val cPreLastBackExtraFwd = (
