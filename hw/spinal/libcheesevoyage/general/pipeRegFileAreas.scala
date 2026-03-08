@@ -765,16 +765,21 @@ case class PipeRegFileFwd[
     )
   )
   //--------
-
-  val myFwdState = (
-    Vec.fill(memArrSize)(
-      Vec.fill(modRdPortCnt)(
-        Vec.fill(numMyUpExtDel2 + 1)(
-          PipeRegFile.FwdState()
-        )
-      )
-    )
-  )
+  //val myStallFwdDstPipeStageVec = (
+  //  // when we should to stall
+  //  Vec.fill(numMyUpExtDel2 + 1)(
+  //    Bool()
+  //  )
+  //)
+  //val myFwdState = (
+  //  Vec.fill(memArrSize)(
+  //    Vec.fill(modRdPortCnt)(
+  //      Vec.fill(numMyUpExtDel2 + 1)(
+  //        PipeRegFile.FwdState()
+  //      )
+  //    )
+  //  )
+  //)
 }
 
 case class PipeRegFileDoFwdArea[
@@ -833,7 +838,7 @@ case class PipeRegFileDoFwdArea[
     )
     temp
   }
-  fwd.myFwdState := rFwdState
+  //fwd.myFwdState := rFwdState
   for (ydx <- 0 until fwd.memArrSize) {
     for (zdx <- 0 until fwd.modRdPortCnt) {
       val firstFwdRdMemWord: (Boolean, WordT) = (
