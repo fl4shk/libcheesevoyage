@@ -5142,6 +5142,7 @@ extends Area {
         //  //}
         //}
         for (idx <- 0 until cfg.modMemWordValidSize) {
+          upExt(1)(ydx)(extIdxUp).modMemWordValid(idx).allowOverride
           upExt(1)(ydx)(extIdxUp).modMemWordValid(idx) := (
             upExt(0)(ydx)(extIdxSingle).modMemWordValid(idx)
             && upExt(0)(ydx)(extIdxSingle).extraLastBackMmwValid(idx)
