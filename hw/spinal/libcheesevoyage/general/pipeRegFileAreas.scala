@@ -1206,6 +1206,28 @@ case class PipeRegFileDoModInMid0FrontFuncParams[
   myFwd: PipeRegFileFwd[WordT, HazardCmpT],
 ) {
 }
+
+
+case class PipeRegFileDoModInBackEtcFuncParams[
+  WordT <: Data,
+  HazardCmpT <: Data,
+  ModT <: PipeRegFilePayloadBase[WordT, HazardCmpT],
+  DualRdT <: PipeRegFilePayloadBase[WordT, HazardCmpT],
+](
+  //inp: PipeRegFilePayloadExt[WordT, HazardCmpT],
+  //outp: PipeRegFilePayloadExt[WordT, HazardCmpT],
+  pipeMemIo: PipeRegFileIo[
+    WordT,
+    HazardCmpT,
+    ModT,
+    DualRdT,
+  ],
+  outp: ModT,                           // tempUpMod(2),
+  inp: ModT,                            // tempUpMod(1),
+  cBackEtc: CtrlLink,                 
+) {
+}
+
 // A Read-Modify-Write pipelined BRAM (or LUTRAM)
 case class PipeRegFile[
   WordT <: Data,
@@ -1264,6 +1286,27 @@ case class PipeRegFile[
       ],
     ) => Area
   ]=None,
+  //--------
+  doModInBackEtcFunc: Option[
+    (
+      PipeRegFileDoModInBackEtcFuncParams[
+        WordT,
+        HazardCmpT,
+        ModT,
+        DualRdT,
+      ]
+    ) => Area
+  ]=None,
+  //doModInBackFwdFunc: Option[
+  //  (
+  //    PipeRegFileDoModInBackEtcFuncParams[
+  //      WordT,
+  //      HazardCmpT,
+  //      ModT,
+  //      DualRdT,
+  //    ]
+  //  ) => Area
+  //]=None,
   //--------
   reorderFtable: Option[PipeRegFileReorderFtable[WordT]]=None,
   //setReorderBusyFunc: Option[
@@ -4303,258 +4346,258 @@ extends Area {
       //--------
     }
   }
-  val cBackFwdArea = (
-    optModHazardKind == PipeRegFile.ModHazardKind.Fwd
-  ) generate {
-    val cBackFwd = mod.back.cBackFwd
-    new cBackFwd.Area {
-      val upFwd = Vec.fill(
-        //2
-        extIdxLim
-        //1
-      )(
-        mkFwd(
-          //myVivadoDebug=true
-        )
-      ).setName(s"${pipeName}_cBackFwdArea_upFwd")
-      //--------
-      val upExt = Vec.fill(
-        2
-        //1
-      )(
-        mkExt(
-          //myVivadoDebug=true
-        )
-      ).setName(s"${pipeName}_cBackFwdArea_upExt")
-      //--------
-      val tempUpMod = Vec.fill(3)(
-        //Vec.fill(extIdxLim)(
-        //Vec.fill(memArrSize)(
-          modType()
-        //)
-        //)
-      ).setName(s"${pipeName}_cBackFwdArea_tempUpMod")
-      //--------
-      for (ydx <- 0 until memArrSize) {
-        for (extIdx <- 0 until extIdxLim) {
-          //--------
-          upExt(1)(ydx)(extIdx) := (
-            RegNext(
-              next=upExt(1)(ydx)(extIdx),
-              init=upExt(1)(ydx)(extIdx).getZero,
-            )
-          )
-          upExt(1)(ydx)(extIdx).allowOverride
-          //--------
-          //--------
-        }
-        if (ydx == 0) {
-          upFwd(extIdxUp) := (
-            RegNext(
-              next=upFwd(extIdxUp),
-              init=upFwd(extIdxUp).getZero,
-            )
-          )
-          upFwd(extIdxUp).allowOverride
-          upFwd(extIdxSaved) := (
-            RegNextWhen(
-              next=upFwd(extIdxUp),
-              cond=up.isFiring,
-              init=upFwd(extIdxSaved).getZero,
-            )
-          )
-        }
-        //upExt(1)(ydx)(extIdxUp) := (
-        //  RegNext(
-        //    next=upExt(1)(ydx)(extIdxUp),
-        //    init=upExt(1)(ydx)(extIdxUp).getZero,
-        //  )
-        //)
-        //when (
-        //  up.isValid
-        //  //up.isFiring
-        //  //True
-        //) {
-          upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
-        //}
-        if (ydx == 0) {
-          if (myHaveFormalFwd) {
-            tempUpMod(0).formalGetPipeRegFileFwd(
-              outpFwd=upFwd(extIdxUp),
-              memArrIdx=memArrIdx,
-            )
-          }
-        }
-        //--------
-        upExt(1)(ydx)(extIdxSaved) := (
-          RegNextWhen(
-            next=upExt(1)(ydx)(extIdxUp),
-            cond=up.isFiring,
-            init=upExt(1)(ydx)(extIdxSaved).getZero,
-          )
-        )
-        upExt(1)(ydx)(extIdxUp).valid.foreach(current => {
-          current := up.isValid
-        })
-        upExt(1)(ydx)(extIdxUp).ready := up.isReady
-        upExt(1)(ydx)(extIdxUp).fire := up.isFiring
-        if (cfg.optModHazardKind != PipeRegFile.ModHazardKind.Fwd) {
-          for (kdx <- 0 until upExt(1)(ydx)(extIdxUp).valid.size) {
-            when (
-              !upExt(1)(ydx)(extIdxUp).modMemWordValid(kdx)
-            ) {
-              upExt(1)(ydx)(extIdxUp).valid(kdx) := False
-            }
-          }
-        } else {
-        }
-      }
-      //--------
-      def tempMyUpExtDelPenLast = (
-        myUpExtDel(
-          myUpExtDel.size
-          - (
-            if (optIncludePreMid0Front) (
-              3
-            ) else (
-              2
-            )
-            //if (optModHazardKind != PipeRegFile.ModHazardKind.Fwd) (
-            //  2
-            //) else (
-            //  2//1
-            //)
-          )
-        )
-        //myUpExtDel(myUpExtDel.size - 2)
-        //myUpExtDel.last
-      )
-      if (
-        optModHazardKind == PipeRegFile.ModHazardKind.Fwd
-      ) {
-        tempMyUpExtDelPenLast := upExt(1)
-      }
-      for (ydx <- 0 until memArrSize) {
-        if (ydx == 0) {
-          tempUpMod(0).allowOverride
-          tempUpMod(0) := up(mod.back.pipePayload)
-        }
-        tempUpMod(0).getPipeRegFileExt(
-          outpExt=upExt(0)(ydx)(extIdxSingle),
-          ydx=ydx,
-          memArrIdx=memArrIdx,
-        )
-        if (ydx == 0) {
-          //tempUpMod(1) := RegNextWhen(
-          //  next=tempUpMod(0),
-          //  cond=up.isValid,
-          //  init=tempUpMod(1).getZero,
-          //)
-          //when (up.isValid) {
-            tempUpMod(1) := tempUpMod(0)
-          //}
-          tempUpMod(1).allowOverride
-        }
-        //when (up.isValid) {
-          tempUpMod(1).setPipeRegFileExt(
-            inpExt=upExt(1)(ydx)(extIdxUp),
-            ydx=ydx,
-            memArrIdx=memArrIdx,
-          )
-        //}
-        //if (cfg.optModHazardKind == PipeRegFile.ModHazardKind.Fwd) {
-        //  when (
-        //    !up.isValid
-        //  ) {
-        //    upExt(1)(ydx)(extIdxUp).modMemWordValid.foreach(_ := False)
-        //  }
-        //}
-      }
-      for (ydx <- 0 until memArrSize) {
-        for (zdx <- 0 until modRdPortCnt) {
-          mod.back.myWriteData(1)(ydx)(zdx).assignFromBits(
-            //upExt(0)(ydx).modMemWord
-            if (optEnableWrPulse) (
-              //Mux[WordT](
-              //  io.clear.fire,
-              //  wordType().getZero,
-              //  upExt(0)(ydx)(extIdxSingle).modMemWord,
-              //).asBits
-              Mux[WordT](
-                io.wrPulse.fire,
-                io.wrPulse.modMemWord,
-                upExt(0)(ydx)(extIdxSingle).modMemWord,
-              ).asBits
-            ) else if (
-              //cfg.optModHazardKind == PipeRegFile.ModHazardKind.Fwd
-              cfg.optIncludeOtherMmw
-            ) (
-              //Mux[WordT](
-              //  upExt(0)(ydx)(extIdxSingle).fwdCanDoIt(
-              //    PipeRegFile.modWrIdx
-              //  ),
-              //  upExt(0)(ydx)(extIdxSingle).modMemWord,
-              //  upExt(0)(ydx)(extIdxSingle).otherModMemWord,
-              //)
-              (
-                upExt(0)(ydx)(extIdxSingle).modMemWord.asBits
-                | upExt(0)(ydx)(extIdxSingle).otherModMemWord.asBits
-              )
-            ) else (
-              upExt(0)(ydx)(extIdxSingle).modMemWord.asBits
-            )
-          )
-        }
-      }
-      val myWriteAddr = mod.back.myWriteAddr
-      for (ydx <- 0 until memArrSize) {
-        for (zdx <- 0 until modRdPortCnt) {
-          if (optEnableWrPulse) {
-            when (
-              //io.clear.fire
-              io.wrPulse.fire
-            ) {
-              myWriteAddr(1)(ydx)(zdx) := (
-                //io.clear.payload
-                io.wrPulse.addr
-              )
-            } otherwise { // when (!io.clear.fire)
-              myWriteAddr(1)(ydx)(zdx) := (
-                upExt(0)(ydx)(extIdxSingle).memAddrAlt(
-                  //PipeRegFile.modWrIdx
-                  zdx
-                ).resized
-              )
-            }
-          } else { // if (!optEnableWrPulse)
-            myWriteAddr(1)(ydx)(zdx) := (
-              upExt(0)(ydx)(extIdxSingle).memAddrAlt(
-                //PipeRegFile.modWrIdx
-                zdx
-              ).resized
-            )
-          }
-        }
-        //myWriteAddr(ydx) := (
-        //  if (optEnableWrPulse) (
-        //    Mux[UInt](
-        //      io.clear.fire,
-        //      io.clear.payload,
-        //      upExt(0)(ydx)(extIdxSingle).memAddr(PipeRegFile.modWrIdx)(
-        //        PipeRegFile.addrWidth(wordCount=wordCountArr(ydx)) - 1
-        //        downto 0
-        //      ),
-        //    )
-        //  ) else (
-        //    upExt(0)(ydx)(extIdxSingle).memAddr(PipeRegFile.modWrIdx)(
-        //      PipeRegFile.addrWidth(wordCount=wordCountArr(ydx)) - 1
-        //      downto 0
-        //    )
-        //  )
-        //)
-      }
-    }
-  }
+  //val cBackFwdArea = (
+  //  optModHazardKind == PipeRegFile.ModHazardKind.Fwd
+  //) generate {
+  //  val cBackFwd = mod.back.cBackFwd
+  //  new cBackFwd.Area {
+  //    val upFwd = Vec.fill(
+  //      //2
+  //      extIdxLim
+  //      //1
+  //    )(
+  //      mkFwd(
+  //        //myVivadoDebug=true
+  //      )
+  //    ).setName(s"${pipeName}_cBackFwdArea_upFwd")
+  //    //--------
+  //    val upExt = Vec.fill(
+  //      2
+  //      //1
+  //    )(
+  //      mkExt(
+  //        //myVivadoDebug=true
+  //      )
+  //    ).setName(s"${pipeName}_cBackFwdArea_upExt")
+  //    //--------
+  //    val tempUpMod = Vec.fill(3)(
+  //      //Vec.fill(extIdxLim)(
+  //      //Vec.fill(memArrSize)(
+  //        modType()
+  //      //)
+  //      //)
+  //    ).setName(s"${pipeName}_cBackFwdArea_tempUpMod")
+  //    //--------
+  //    for (ydx <- 0 until memArrSize) {
+  //      for (extIdx <- 0 until extIdxLim) {
+  //        //--------
+  //        upExt(1)(ydx)(extIdx) := (
+  //          RegNext(
+  //            next=upExt(1)(ydx)(extIdx),
+  //            init=upExt(1)(ydx)(extIdx).getZero,
+  //          )
+  //        )
+  //        upExt(1)(ydx)(extIdx).allowOverride
+  //        //--------
+  //        //--------
+  //      }
+  //      if (ydx == 0) {
+  //        upFwd(extIdxUp) := (
+  //          RegNext(
+  //            next=upFwd(extIdxUp),
+  //            init=upFwd(extIdxUp).getZero,
+  //          )
+  //        )
+  //        upFwd(extIdxUp).allowOverride
+  //        upFwd(extIdxSaved) := (
+  //          RegNextWhen(
+  //            next=upFwd(extIdxUp),
+  //            cond=up.isFiring,
+  //            init=upFwd(extIdxSaved).getZero,
+  //          )
+  //        )
+  //      }
+  //      //upExt(1)(ydx)(extIdxUp) := (
+  //      //  RegNext(
+  //      //    next=upExt(1)(ydx)(extIdxUp),
+  //      //    init=upExt(1)(ydx)(extIdxUp).getZero,
+  //      //  )
+  //      //)
+  //      //when (
+  //      //  up.isValid
+  //      //  //up.isFiring
+  //      //  //True
+  //      //) {
+  //        upExt(1)(ydx)(extIdxUp) := upExt(0)(ydx)(extIdxSingle)
+  //      //}
+  //      if (ydx == 0) {
+  //        if (myHaveFormalFwd) {
+  //          tempUpMod(0).formalGetPipeRegFileFwd(
+  //            outpFwd=upFwd(extIdxUp),
+  //            memArrIdx=memArrIdx,
+  //          )
+  //        }
+  //      }
+  //      //--------
+  //      upExt(1)(ydx)(extIdxSaved) := (
+  //        RegNextWhen(
+  //          next=upExt(1)(ydx)(extIdxUp),
+  //          cond=up.isFiring,
+  //          init=upExt(1)(ydx)(extIdxSaved).getZero,
+  //        )
+  //      )
+  //      upExt(1)(ydx)(extIdxUp).valid.foreach(current => {
+  //        current := up.isValid
+  //      })
+  //      upExt(1)(ydx)(extIdxUp).ready := up.isReady
+  //      upExt(1)(ydx)(extIdxUp).fire := up.isFiring
+  //      if (cfg.optModHazardKind != PipeRegFile.ModHazardKind.Fwd) {
+  //        for (kdx <- 0 until upExt(1)(ydx)(extIdxUp).valid.size) {
+  //          when (
+  //            !upExt(1)(ydx)(extIdxUp).modMemWordValid(kdx)
+  //          ) {
+  //            upExt(1)(ydx)(extIdxUp).valid(kdx) := False
+  //          }
+  //        }
+  //      } else {
+  //      }
+  //    }
+  //    //--------
+  //    def tempMyUpExtDelPenLast = (
+  //      myUpExtDel(
+  //        myUpExtDel.size
+  //        - (
+  //          if (optIncludePreMid0Front) (
+  //            3
+  //          ) else (
+  //            2
+  //          )
+  //          //if (optModHazardKind != PipeRegFile.ModHazardKind.Fwd) (
+  //          //  2
+  //          //) else (
+  //          //  2//1
+  //          //)
+  //        )
+  //      )
+  //      //myUpExtDel(myUpExtDel.size - 2)
+  //      //myUpExtDel.last
+  //    )
+  //    if (
+  //      optModHazardKind == PipeRegFile.ModHazardKind.Fwd
+  //    ) {
+  //      tempMyUpExtDelPenLast := upExt(1)
+  //    }
+  //    for (ydx <- 0 until memArrSize) {
+  //      if (ydx == 0) {
+  //        tempUpMod(0).allowOverride
+  //        tempUpMod(0) := up(mod.back.pipePayload)
+  //      }
+  //      tempUpMod(0).getPipeRegFileExt(
+  //        outpExt=upExt(0)(ydx)(extIdxSingle),
+  //        ydx=ydx,
+  //        memArrIdx=memArrIdx,
+  //      )
+  //      if (ydx == 0) {
+  //        //tempUpMod(1) := RegNextWhen(
+  //        //  next=tempUpMod(0),
+  //        //  cond=up.isValid,
+  //        //  init=tempUpMod(1).getZero,
+  //        //)
+  //        //when (up.isValid) {
+  //          tempUpMod(1) := tempUpMod(0)
+  //        //}
+  //        tempUpMod(1).allowOverride
+  //      }
+  //      //when (up.isValid) {
+  //        tempUpMod(1).setPipeRegFileExt(
+  //          inpExt=upExt(1)(ydx)(extIdxUp),
+  //          ydx=ydx,
+  //          memArrIdx=memArrIdx,
+  //        )
+  //      //}
+  //      //if (cfg.optModHazardKind == PipeRegFile.ModHazardKind.Fwd) {
+  //      //  when (
+  //      //    !up.isValid
+  //      //  ) {
+  //      //    upExt(1)(ydx)(extIdxUp).modMemWordValid.foreach(_ := False)
+  //      //  }
+  //      //}
+  //    }
+  //    for (ydx <- 0 until memArrSize) {
+  //      for (zdx <- 0 until modRdPortCnt) {
+  //        mod.back.myWriteData(1)(ydx)(zdx).assignFromBits(
+  //          //upExt(0)(ydx).modMemWord
+  //          if (optEnableWrPulse) (
+  //            //Mux[WordT](
+  //            //  io.clear.fire,
+  //            //  wordType().getZero,
+  //            //  upExt(0)(ydx)(extIdxSingle).modMemWord,
+  //            //).asBits
+  //            Mux[WordT](
+  //              io.wrPulse.fire,
+  //              io.wrPulse.modMemWord,
+  //              upExt(0)(ydx)(extIdxSingle).modMemWord,
+  //            ).asBits
+  //          ) else if (
+  //            //cfg.optModHazardKind == PipeRegFile.ModHazardKind.Fwd
+  //            cfg.optIncludeOtherMmw
+  //          ) (
+  //            //Mux[WordT](
+  //            //  upExt(0)(ydx)(extIdxSingle).fwdCanDoIt(
+  //            //    PipeRegFile.modWrIdx
+  //            //  ),
+  //            //  upExt(0)(ydx)(extIdxSingle).modMemWord,
+  //            //  upExt(0)(ydx)(extIdxSingle).otherModMemWord,
+  //            //)
+  //            (
+  //              upExt(0)(ydx)(extIdxSingle).modMemWord.asBits
+  //              | upExt(0)(ydx)(extIdxSingle).otherModMemWord.asBits
+  //            )
+  //          ) else (
+  //            upExt(0)(ydx)(extIdxSingle).modMemWord.asBits
+  //          )
+  //        )
+  //      }
+  //    }
+  //    val myWriteAddr = mod.back.myWriteAddr
+  //    for (ydx <- 0 until memArrSize) {
+  //      for (zdx <- 0 until modRdPortCnt) {
+  //        if (optEnableWrPulse) {
+  //          when (
+  //            //io.clear.fire
+  //            io.wrPulse.fire
+  //          ) {
+  //            myWriteAddr(1)(ydx)(zdx) := (
+  //              //io.clear.payload
+  //              io.wrPulse.addr
+  //            )
+  //          } otherwise { // when (!io.clear.fire)
+  //            myWriteAddr(1)(ydx)(zdx) := (
+  //              upExt(0)(ydx)(extIdxSingle).memAddrAlt(
+  //                //PipeRegFile.modWrIdx
+  //                zdx
+  //              ).resized
+  //            )
+  //          }
+  //        } else { // if (!optEnableWrPulse)
+  //          myWriteAddr(1)(ydx)(zdx) := (
+  //            upExt(0)(ydx)(extIdxSingle).memAddrAlt(
+  //              //PipeRegFile.modWrIdx
+  //              zdx
+  //            ).resized
+  //          )
+  //        }
+  //      }
+  //      //myWriteAddr(ydx) := (
+  //      //  if (optEnableWrPulse) (
+  //      //    Mux[UInt](
+  //      //      io.clear.fire,
+  //      //      io.clear.payload,
+  //      //      upExt(0)(ydx)(extIdxSingle).memAddr(PipeRegFile.modWrIdx)(
+  //      //        PipeRegFile.addrWidth(wordCount=wordCountArr(ydx)) - 1
+  //      //        downto 0
+  //      //      ),
+  //      //    )
+  //      //  ) else (
+  //      //    upExt(0)(ydx)(extIdxSingle).memAddr(PipeRegFile.modWrIdx)(
+  //      //      PipeRegFile.addrWidth(wordCount=wordCountArr(ydx)) - 1
+  //      //      downto 0
+  //      //    )
+  //      //  )
+  //      //)
+  //    }
+  //  }
+  //}
   val cBack = mod.back.cBack
   val cBackArea = new cBack.Area {
     val upFwd = Vec.fill(
@@ -4641,95 +4684,95 @@ extends Area {
         }
       }
     }
-    if (myHaveFormalFwd) {
-      when (pastValidAfterReset) {
-        //when (
-        //  
-        //  && !RegNextWhen(
-        //    next=True,
-        //    cond=up.isValid,
-        //    init=False,
-        //  )
-        //) {
-        //  assert(
-        //  )
-        //}
-        when (
-          !RegNextWhen(
-            next=True,
-            cond=up.isFiring,
-            init=False,
-          )
-        ) {
-          when (!up.isValid) {
-            for (ydx <- 0 until memArrSize) {
-              assert(
-                upExt(1)(ydx)(extIdxUp).main
-                === upExt(1)(ydx)(extIdxUp).main.getZero
-              )
-            }
-            assert(
-              upFwd(extIdxUp)
-              === upFwd(extIdxUp).getZero
-            )
-          }
-          for (ydx <- 0 until memArrSize) {
-            assert(
-              upExt(1)(ydx)(extIdxSaved).main
-              === upExt(1)(ydx)(extIdxSaved).main.getZero
-            )
-          }
-          assert(
-            upFwd(extIdxSaved)
-            === upFwd(extIdxSaved).getZero
-          )
-        } 
-        //when (!past(up.isValid) init(False)) {
-        //  assert(
-        //    upFwd
-        //  )
-        //}
-        //when (
-        //  !up.isValid
-        //  && !past(up.isValid)
-        //) {
-        //  for (ydx <- 0 until memArrSize) {
-        //    assert(
-        //      stable(upExt(1)(ydx)(extIdxUp).main)
-        //    )
-        //    assert(
-        //      stable(upExt(1)(ydx)(extIdxSaved).main)
-        //    )
-        //  }
-        //  assert(
-        //    stable(upFwd(extIdxUp))
-        //  )
-        //  assert(
-        //    stable(upFwd(extIdxSaved))
-        //  )
-        //}
-        when (
-          past(up.isFiring) init(False)
-        ) {
-          for (ydx <- 0 until memArrSize) {
-            assert(
-              upExt(1)(ydx)(extIdxSaved)
-              === (
-                past(upExt(1)(ydx)(extIdxUp))
-                init(upExt(1)(ydx)(extIdxUp).getZero)
-              )
-            )
-          }
-          assert(
-            upFwd(extIdxSaved)
-            === (
-              past(upFwd(extIdxUp))
-              init(upFwd(extIdxUp).getZero)
-            )
-          )
-        }
-      }
-    }
+    //if (myHaveFormalFwd) {
+    //  when (pastValidAfterReset) {
+    //    //when (
+    //    //  
+    //    //  && !RegNextWhen(
+    //    //    next=True,
+    //    //    cond=up.isValid,
+    //    //    init=False,
+    //    //  )
+    //    //) {
+    //    //  assert(
+    //    //  )
+    //    //}
+    //    when (
+    //      !RegNextWhen(
+    //        next=True,
+    //        cond=up.isFiring,
+    //        init=False,
+    //      )
+    //    ) {
+    //      when (!up.isValid) {
+    //        for (ydx <- 0 until memArrSize) {
+    //          assert(
+    //            upExt(1)(ydx)(extIdxUp).main
+    //            === upExt(1)(ydx)(extIdxUp).main.getZero
+    //          )
+    //        }
+    //        assert(
+    //          upFwd(extIdxUp)
+    //          === upFwd(extIdxUp).getZero
+    //        )
+    //      }
+    //      for (ydx <- 0 until memArrSize) {
+    //        assert(
+    //          upExt(1)(ydx)(extIdxSaved).main
+    //          === upExt(1)(ydx)(extIdxSaved).main.getZero
+    //        )
+    //      }
+    //      assert(
+    //        upFwd(extIdxSaved)
+    //        === upFwd(extIdxSaved).getZero
+    //      )
+    //    } 
+    //    //when (!past(up.isValid) init(False)) {
+    //    //  assert(
+    //    //    upFwd
+    //    //  )
+    //    //}
+    //    //when (
+    //    //  !up.isValid
+    //    //  && !past(up.isValid)
+    //    //) {
+    //    //  for (ydx <- 0 until memArrSize) {
+    //    //    assert(
+    //    //      stable(upExt(1)(ydx)(extIdxUp).main)
+    //    //    )
+    //    //    assert(
+    //    //      stable(upExt(1)(ydx)(extIdxSaved).main)
+    //    //    )
+    //    //  }
+    //    //  assert(
+    //    //    stable(upFwd(extIdxUp))
+    //    //  )
+    //    //  assert(
+    //    //    stable(upFwd(extIdxSaved))
+    //    //  )
+    //    //}
+    //    when (
+    //      past(up.isFiring) init(False)
+    //    ) {
+    //      for (ydx <- 0 until memArrSize) {
+    //        assert(
+    //          upExt(1)(ydx)(extIdxSaved)
+    //          === (
+    //            past(upExt(1)(ydx)(extIdxUp))
+    //            init(upExt(1)(ydx)(extIdxUp).getZero)
+    //          )
+    //        )
+    //      }
+    //      assert(
+    //        upFwd(extIdxSaved)
+    //        === (
+    //          past(upFwd(extIdxUp))
+    //          init(upFwd(extIdxUp).getZero)
+    //        )
+    //      )
+    //    }
+    //  }
+    //}
     //--------
     def tempMyUpExtDelPenLast = (
       myUpExtDel(
@@ -4752,11 +4795,11 @@ extends Area {
       //myUpExtDel(myUpExtDel.size - 2)
       //myUpExtDel.last
     )
-    if (
-      optModHazardKind != PipeRegFile.ModHazardKind.Fwd
-    ) {
+    //if (
+    //  optModHazardKind != PipeRegFile.ModHazardKind.Fwd
+    //) {
       tempMyUpExtDelPenLast := upExt(1)
-    }
+    //}
     if (
       //myUpExtDel.size - 2 >= 0
       true
