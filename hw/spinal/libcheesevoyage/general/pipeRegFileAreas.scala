@@ -4877,7 +4877,7 @@ extends Area {
             Mux[WordT](
               io.wrPulse.fire,
               io.wrPulse.modMemWord,
-              upExt(0)(ydx)(extIdxSingle).modMemWord,
+              upExt(2)(ydx)(extIdxSingle).modMemWord,
             ).asBits
           ) else if (
             //cfg.optModHazardKind == PipeRegFile.ModHazardKind.Fwd
@@ -4889,11 +4889,11 @@ extends Area {
             //  upExt(0)(ydx)(extIdxSingle).otherModMemWord,
             //)
             (
-              upExt(0)(ydx)(extIdxSingle).modMemWord.asBits
-              | upExt(0)(ydx)(extIdxSingle).otherModMemWord.asBits
+              upExt(2)(ydx)(extIdxSingle).modMemWord.asBits
+              | upExt(2)(ydx)(extIdxSingle).otherModMemWord.asBits
             )
           ) else (
-            upExt(0)(ydx)(extIdxSingle).modMemWord.asBits
+            upExt(2)(ydx)(extIdxSingle).modMemWord.asBits
           )
         )
       }
@@ -4921,7 +4921,7 @@ extends Area {
           Vec[Bool](
             (
               dbgDoWrite(ydx)
-              && upExt(1)(ydx)(extIdxUp).modMemWordValid.last
+              && upExt(2)(ydx)(extIdxUp).modMemWordValid.last
             ),
             (
               if (optEnableWrPulse) (
