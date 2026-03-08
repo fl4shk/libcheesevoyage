@@ -292,9 +292,10 @@ case class PipeRegFilePayloadExtMainNonMemAddrMost[
   )
   val rdMemWord = Vec.fill(modRdPortCnt)(wordType())
   val joinIdx = UInt(log2Up(cfg.numForkJoin) bits)
-  val fwdCanDoIt = Vec.fill(
-    modRdPortCnt
-  )(
+  val fwdCanDoIt = Vec.fill(modRdPortCnt)(
+    Bool()
+  )
+  val extraLastBackFwdCanDoIt = Vec.fill(modRdPortCnt)(
     Bool()
   )
   // hazard for when an address is already in the pipeline 
@@ -435,6 +436,9 @@ case class PipeRegFilePayloadExt[
   def extraLastBackMmwValid = main.nonMemAddrMost.extraLastBackMmwValid
   def rdMemWord = main.nonMemAddrMost.rdMemWord
   def fwdCanDoIt = main.nonMemAddrMost.fwdCanDoIt
+  def extraLastBackFwdCanDoIt = (
+    main.nonMemAddrMost.extraLastBackFwdCanDoIt
+  )
   def joinIdx = main.nonMemAddrMost.joinIdx
   //def reqReorderCommit = main.nonMemAddrMost.reqReorderCommit
   //def didReorderCommit = main.nonMemAddrMost.didReorderCommit
@@ -5146,6 +5150,13 @@ extends Area {
           upExt(1)(ydx)(extIdxUp).modMemWordValid(idx) := (
             upExt(0)(ydx)(extIdxSingle).modMemWordValid(idx)
             && upExt(0)(ydx)(extIdxSingle).extraLastBackMmwValid(idx)
+          )
+        }
+        for (idx <- 0 until cfg.modRdPortCnt) {
+          upExt(1)(ydx)(extIdxUp).fwdCanDoIt(idx).allowOverride
+          upExt(1)(ydx)(extIdxUp).fwdCanDoIt(idx) := (
+            upExt(0)(ydx)(extIdxSingle).fwdCanDoIt(idx)
+            && upExt(0)(ydx)(extIdxSingle).extraLastBackFwdCanDoIt(idx)
           )
         }
       }
