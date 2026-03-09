@@ -32,11 +32,11 @@ case class LcvBusIrqCtrlConfig(
     case None => {
     }
   }
-  //require(
-  //  depth <= busCfg.dataWidth,
-  //  s"for the time being, it is required that "
-  //  + s"depth:${depth} <= busCfg.dataWidth:${busCfg.dataWidth}"
-  //)
+  require(
+    depth <= busCfg.dataWidth,
+    s"for the time being, it is required that "
+    + s"depth:${depth} <= busCfg.dataWidth:${busCfg.dataWidth}"
+  )
   def myBusRegAddrMult = busCfg.byteEnWidth
   def numBusRegsPerKind = (
     ceil(depth.toDouble / busCfg.dataWidth.toDouble).toInt
@@ -357,6 +357,10 @@ case class LcvBusIrqCtrl(
             // need to clear this bus register upon it being read!
             rIrqIdBusRegVec(idx) := 0x0
             myTempIrqIdAsBits := 0x0
+
+            io.dstIrq.nextValid := (
+              False
+            )
           }
         }
         for (idx <- 0 until numBusRegsPerKind) {
