@@ -368,8 +368,9 @@ case class LcvBusDoStallFifoThing(
         )
         ## io.doStall
       ) {
-        is (M"0-") {
-          // any situation where prev state was *not* State.POST_DO_STALL
+        is (M"00") {
+          // prev state was *not* State.POST_DO_STALL,
+          // !io.doStall
           doApplyMainFifo(
             func=(mainFifo) => {
               mainFifo.io.push << io.push //pushForkMain
