@@ -1311,14 +1311,62 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   //    init=False,
   //  ).last
   //)
-  //def doIgnoreInvalidFifoThingPopCnt(
-  //): Unit = {
-  //  when (myFullTempIgnoreDupCntCond) {
-  //    //loH2dPopStm.ready := True
-  //    base.myLoH2dPopThrowArea.myLoH2dThrowCond := True
-  //  }
-  //}
-  //doIgnoreInvalidFifoThingPopCnt()
+  val myFullTempIgnoreDupCntCond = (
+    //(
+    //  base.myFifoThingDoStall.head
+    //  //|| base.myFifoThingDoStall.last
+    //)
+    //&& 
+    base.loH2dDoStallFifoThing.io.pop.valid
+    && (
+      base.loH2dDoStallFifoThing.io.pop.cnt.asSInt
+      =/= (
+        RegNextWhen(
+          //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
+          (myLoD2hStm.cnt + 1).asSInt,
+          cond=myLoD2hStm.fire,
+          //cond=base.loH2dDoStallFifoThing.io.pop.fire,
+          ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
+        )
+        init(-2)
+      )
+    )
+    //&& (
+    //  base.loH2dDoStallFifoThing.io.pop.src.asSInt
+    //  =/= (
+    //    RegNextWhen(
+    //      //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
+    //      (myLoD2hStm.src - 1).asSInt,
+    //      cond=myLoD2hStm.fire,
+    //      //cond=base.loH2dDoStallFifoThing.io.pop.fire,
+    //      ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
+    //    )
+    //    init(-2)
+    //  )
+    //)
+
+    && (
+      myTempIgnoreDupCntCond
+      //&& RegNext(myTempIgnoreDupCntCond, init=False)
+    )
+    && History[Bool](
+      that=True,
+      when=(
+        //loH2dPopStm.fire
+        myLoD2hStm.fire
+      ),
+      length=2,
+      init=False,
+    ).last
+  )
+  def doIgnoreInvalidFifoThingPopCnt(
+  ): Unit = {
+    when (myFullTempIgnoreDupCntCond) {
+      //loH2dPopStm.ready := True
+      base.myLoH2dPopThrowArea.myLoH2dThrowCond := True
+    }
+  }
+  doIgnoreInvalidFifoThingPopCnt()
 
   switch (rState) {
     is (State.INIT) {
