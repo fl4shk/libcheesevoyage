@@ -391,6 +391,13 @@ case class LcvBusDoStallFifoThing(
           )
           // This should make `subFifo` act like a circular FIFO that we
           // keep only the most recent contents of
+          when (subFifo.io.push.fire) {
+            when (!rFifoCntSub(0).msb) {
+              rFifoCntSub(0) := rFifoCntSub(0) - 1
+            } otherwise {
+              subFifo.io.pop.ready := True
+            }
+          }
         }
         is (B"01") {
           // prev state was *not* State.POST_DO_STALL,
@@ -405,13 +412,13 @@ case class LcvBusDoStallFifoThing(
             }
           )
           subFifo.io.pop.ready := False
-          when (subFifo.io.push.fire) {
-            when (!rFifoCntSub(0).msb) {
-              rFifoCntSub(0) := rFifoCntSub(0) - 1
-            } otherwise {
-              subFifo.io.pop.ready := True
-            }
-          }
+          //when (subFifo.io.push.fire) {
+          //  when (!rFifoCntSub(0).msb) {
+          //    rFifoCntSub(0) := rFifoCntSub(0) - 1
+          //  } otherwise {
+          //    subFifo.io.pop.ready := True
+          //  }
+          //}
 
           rState := State.POST_DO_STALL
         }
