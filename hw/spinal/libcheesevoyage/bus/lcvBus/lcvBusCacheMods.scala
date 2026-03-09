@@ -368,7 +368,7 @@ case class LcvBusDoStallFifoThing(
         )
         ## io.doStall
       ) {
-        is (M"00") {
+        is (M"-0") {
           // prev state was *not* State.POST_DO_STALL,
           // !io.doStall
           doApplyMainFifo(
@@ -434,13 +434,13 @@ case class LcvBusDoStallFifoThing(
           )
           rState := State.POST_DO_STALL
           subFifo.io.pop.ready := False
-          when (subFifo.io.push.fire) {
-            when (!rFifoCntSub(0).msb) {
-              rFifoCntSub(0) := rFifoCntSub(0) - 1
-            } otherwise {
-              subFifo.io.pop.ready := True
-            }
-          }
+          //when (subFifo.io.push.fire) {
+          //  when (!rFifoCntSub(0).msb) {
+          //    rFifoCntSub(0) := rFifoCntSub(0) - 1
+          //  } otherwise {
+          //    subFifo.io.pop.ready := True
+          //  }
+          //}
       //}
         }
       }
