@@ -225,7 +225,12 @@ case class LcvBusIrqCtrl(
   )
 
   val myTempIrqIdAsBits = cloneOf(rIrqIdBusRegVec.asBits)
-  myTempIrqIdAsBits := myTempIrqIdAsBits.getZero
+  myTempIrqIdAsBits := (
+    RegNext(
+      myTempIrqIdAsBits,
+      init=myTempIrqIdAsBits.getZero
+    )
+  )
 
   switch (rState) {
     is (State.IDLE) {
@@ -239,6 +244,13 @@ case class LcvBusIrqCtrl(
           & rIrqEnableBusRegVec.asBits(idx)
         ) {
           myTempIrqIdAsBits(idx) := True
+          //rIrqIdBusRegVec.assignFromBits(
+          //  //io.srcIrqVec.asBits.asUInt.resize(
+          //  //  rIrqIdBusRegVec.asBits.getWidth
+          //  //).asBits
+          //  //& rIrqEnableBusRegVec.asBits
+          //  myTempIrqIdAsBits
+          //)
         }
       }
       rIrqIdBusRegVec.assignFromBits(
@@ -309,6 +321,7 @@ case class LcvBusIrqCtrl(
 
             // need to clear this bus register upon it being read!
             rIrqIdBusRegVec(idx) := 0x0
+            myTempIrqIdAsBits := 0x0
           }
         }
         for (idx <- 0 until numBusRegsPerKind) {
