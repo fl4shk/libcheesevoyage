@@ -329,7 +329,8 @@ case class LcvBusDoStallFifoThing(
       IDLE,
       //POST_NOT_YET_D2H_FIRE,
       //POST_CACHE_MISS_PRE,
-      POST_DO_STALL
+      POST_DO_STALL//,
+      //POST_DO_STALL_CHECK_DUAL_STALL
       = newElement();
   }
   val rState = (
@@ -343,6 +344,10 @@ case class LcvBusDoStallFifoThing(
     )
   )
 
+  val rSavedSubFifoPopPayload = (
+    Reg(cloneOf(subFifo.io.pop.payload))
+    init(subFifo.io.pop.payload.getZero)
+  )
   //mainFifo.io.push << io.push //pushForkMain
   //io.pop << mainFifo.io.pop
   switch (rState) {
@@ -354,77 +359,158 @@ case class LcvBusDoStallFifoThing(
       }
     }
     is (State.IDLE) {
-      when (
-        //!io.doStallCacheMiss && !io.doStallNotYetD2hFire
-        !io.doStall
+      switch (
+        //RegNext(rState === State.POST_DO_STALL)
+        RegNext(
+          // check for prev state being State.POST_DO_STALL
+          rState.asBits(2),
+          init=False
+        )
+        ## io.doStall
       ) {
-        doApplyMainFifo(
-          func=(mainFifo) => {
-            mainFifo.io.push << io.push //pushForkMain
-            myPopStm << mainFifo.io.pop
-          }
-        )
+        is (M"0-") {
+          // any situation where prev state was *not* State.POST_DO_STALL
+          doApplyMainFifo(
+            func=(mainFifo) => {
+              mainFifo.io.push << io.push //pushForkMain
+              myPopStm << mainFifo.io.pop
+            }
+          )
 
-        //subFifo.io.push << pushForkSub
+          //subFifo.io.push << pushForkSub
 
-        subFifo.io.push.valid := (
-          io.push.fire
-          //io.push.valid
-          //io.pop.fire
-        )
-        subFifo.io.push.payload := (
-          io.push.payload
-          //io.pop.payload
-        )
-        // This should make `subFifo` act like a circular FIFO that we
-        // keep only the most recent contents of
-      } 
-      .otherwise 
-      //.elsewhen (
-      //  rFifoCntSub(0).msb
-      //) 
-      {
-        //subFifo.io.push << io.push
-        //when (io.doStallCacheMiss) {
+          subFifo.io.push.valid := (
+            io.push.fire
+            //io.push.valid
+            //io.pop.fire
+          )
+          subFifo.io.push.payload := (
+            io.push.payload
+            //io.pop.payload
+          )
+          // This should make `subFifo` act like a circular FIFO that we
+          // keep only the most recent contents of
+        }
+        is (B"01") {
+          // prev state was *not* State.POST_DO_STALL,
+          // io.doStall
+
           io.push.ready := False
           myPopStm.valid := False
           doApplyMainFifo(
             func=(mainFifo) => {
               mainFifo.io.push.valid := False
               mainFifo.io.pop.ready := False
-
-              //--------
-              // BEGIN: old code, potentially working for icache?
-              //mainFifo.io.push << io.push //pushForkMain
-              // END: old code, potentially working for icache?
-
-              //io.pop << mainFifo.io.pop
             }
           )
-          //subFifo.io.pop.ready := False
-          //subFifo.io.push.valid := False
-          //subFifo.io.push << io.push
-
-          //when (io.doStallCacheMiss) {
-          //  rState := State.POST_CACHE_MISS_PRE
-          //} otherwise {
-            //rState := State.POST_NOT_YET_D2H_FIRE
-            rState := State.POST_DO_STALL
-          //}
-          //rCurrMainFifo(0) := !rCurrMainFifo(0)
-          //rWhichMainFifo := rWhichMainFifo + 1
-        //}
-      }
-      subFifo.io.pop.ready := False
-      //when (!io.doStallCacheMiss && !io.doStallNotYetD2hFire) {
-        when (subFifo.io.push.fire) {
-          when (!rFifoCntSub(0).msb) {
-            rFifoCntSub(0) := rFifoCntSub(0) - 1
-          } otherwise {
-            subFifo.io.pop.ready := True
+          subFifo.io.pop.ready := False
+          when (subFifo.io.push.fire) {
+            when (!rFifoCntSub(0).msb) {
+              rFifoCntSub(0) := rFifoCntSub(0) - 1
+            } otherwise {
+              subFifo.io.pop.ready := True
+            }
           }
+
+          rState := State.POST_DO_STALL
         }
+        default {
+          // prev state *was* State.POST_DO_STALL,
+          // io.doStall
+
+          subFifo.io.push.valid := True
+          subFifo.io.push.payload := (
+            rSavedSubFifoPopPayload
+          )
+
+          io.push.ready := False
+          myPopStm.valid := False
+          doApplyMainFifo(
+            func=(mainFifo) => {
+              mainFifo.io.push.valid := False
+              mainFifo.io.pop.ready := False
+            }
+          )
+          rState := State.POST_DO_STALL
+          subFifo.io.pop.ready := False
+          when (subFifo.io.push.fire) {
+            when (!rFifoCntSub(0).msb) {
+              rFifoCntSub(0) := rFifoCntSub(0) - 1
+            } otherwise {
+              subFifo.io.pop.ready := True
+            }
+          }
       //}
+        }
+      }
+      //when (
+      //  //!io.doStallCacheMiss && !io.doStallNotYetD2hFire
+      //  !io.doStall
+      //) {
+      //  doApplyMainFifo(
+      //    func=(mainFifo) => {
+      //      mainFifo.io.push << io.push //pushForkMain
+      //      myPopStm << mainFifo.io.pop
+      //    }
+      //  )
+
+      //  //subFifo.io.push << pushForkSub
+
+      //  subFifo.io.push.valid := (
+      //    io.push.fire
+      //    //io.push.valid
+      //    //io.pop.fire
+      //  )
+      //  subFifo.io.push.payload := (
+      //    io.push.payload
+      //    //io.pop.payload
+      //  )
+      //  // This should make `subFifo` act like a circular FIFO that we
+      //  // keep only the most recent contents of
+      //} 
+      //.otherwise 
+      //{
+      //  //subFifo.io.push << io.push
+      //  //when (io.doStallCacheMiss) {
+      //    io.push.ready := False
+      //    myPopStm.valid := False
+      //    doApplyMainFifo(
+      //      func=(mainFifo) => {
+      //        mainFifo.io.push.valid := False
+      //        mainFifo.io.pop.ready := False
+
+      //        //--------
+      //        // BEGIN: old code, potentially working for icache?
+      //        //mainFifo.io.push << io.push //pushForkMain
+      //        // END: old code, potentially working for icache?
+
+      //        //io.pop << mainFifo.io.pop
+      //      }
+      //    )
+      //    //subFifo.io.pop.ready := False
+      //    //subFifo.io.push.valid := False
+      //    //subFifo.io.push << io.push
+
+      //    //when (io.doStallCacheMiss) {
+      //    //  rState := State.POST_CACHE_MISS_PRE
+      //    //} otherwise {
+      //      //rState := State.POST_NOT_YET_D2H_FIRE
+      //      rState := State.POST_DO_STALL
+      //    //}
+      //    //rCurrMainFifo(0) := !rCurrMainFifo(0)
+      //    //rWhichMainFifo := rWhichMainFifo + 1
+      //  //}
+      //}
+      //subFifo.io.pop.ready := False
+      ////when (!io.doStallCacheMiss && !io.doStallNotYetD2hFire) {
+      //  when (subFifo.io.push.fire) {
+      //    when (!rFifoCntSub(0).msb) {
+      //      rFifoCntSub(0) := rFifoCntSub(0) - 1
+      //    } otherwise {
+      //      subFifo.io.pop.ready := True
+      //    }
+      //  }
+      ////}
     }
     //is (State.POST_NOT_YET_D2H_FIRE) {
     //}
@@ -475,6 +561,9 @@ case class LcvBusDoStallFifoThing(
       //  }
       //)
       myPopStm << subFifo.io.pop
+
+      // we only need the last pop payload (I think...)
+      rSavedSubFifoPopPayload := subFifo.io.pop.payload 
 
       when (
         !subFifo.io.pop.valid
@@ -1311,62 +1400,14 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   //    init=False,
   //  ).last
   //)
-  val myFullTempIgnoreDupCntCond = (
-    //(
-    //  base.myFifoThingDoStall.head
-    //  //|| base.myFifoThingDoStall.last
-    //)
-    //&& 
-    base.loH2dDoStallFifoThing.io.pop.valid
-    && (
-      base.loH2dDoStallFifoThing.io.pop.cnt.asSInt
-      =/= (
-        RegNextWhen(
-          //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
-          (myLoD2hStm.cnt + 1).asSInt,
-          cond=myLoD2hStm.fire,
-          //cond=base.loH2dDoStallFifoThing.io.pop.fire,
-          ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
-        )
-        init(-2)
-      )
-    )
-    //&& (
-    //  base.loH2dDoStallFifoThing.io.pop.src.asSInt
-    //  =/= (
-    //    RegNextWhen(
-    //      //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
-    //      (myLoD2hStm.src - 1).asSInt,
-    //      cond=myLoD2hStm.fire,
-    //      //cond=base.loH2dDoStallFifoThing.io.pop.fire,
-    //      ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
-    //    )
-    //    init(-2)
-    //  )
-    //)
-
-    && (
-      myTempIgnoreDupCntCond
-      //&& RegNext(myTempIgnoreDupCntCond, init=False)
-    )
-    && History[Bool](
-      that=True,
-      when=(
-        //loH2dPopStm.fire
-        myLoD2hStm.fire
-      ),
-      length=2,
-      init=False,
-    ).last
-  )
-  def doIgnoreInvalidFifoThingPopCnt(
-  ): Unit = {
-    when (myFullTempIgnoreDupCntCond) {
-      //loH2dPopStm.ready := True
-      base.myLoH2dPopThrowArea.myLoH2dThrowCond := True
-    }
-  }
-  doIgnoreInvalidFifoThingPopCnt()
+  //def doIgnoreInvalidFifoThingPopCnt(
+  //): Unit = {
+  //  when (myFullTempIgnoreDupCntCond) {
+  //    //loH2dPopStm.ready := True
+  //    base.myLoH2dPopThrowArea.myLoH2dThrowCond := True
+  //  }
+  //}
+  //doIgnoreInvalidFifoThingPopCnt()
 
   switch (rState) {
     is (State.INIT) {
