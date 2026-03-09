@@ -232,7 +232,13 @@ case class LcvBusIrqCtrl(
     }
 
     is (DstIrqState.WAIT_DST_IRQ_READY) {
-      when (io.dstIrq.ready) {
+      when (
+        RegNext(
+          !io.dstIrq.nextValid,
+          init=False
+        )
+        || io.dstIrq.ready
+      ) {
         io.dstIrq.nextValid := False
         rDstIrqState := DstIrqState.IDLE
       }
