@@ -100,13 +100,13 @@ case class LcvBusIrqCtrlIo(
   //--------
   val bus = slave(LcvBusIo(cfg=cfg.busCfg))
   //--------
-  //val dstIrq = master(
-  //  new LcvStallIo[Bool, Bool](
-  //    sendPayloadType=None,
-  //    recvPayloadType=None,
-  //  )
-  //)
-  val dstIrq = out(Bool())
+  val dstIrq = master(
+    new LcvStallIo[Bool, Bool](
+      sendPayloadType=None,
+      recvPayloadType=None,
+    )
+  )
+  //val dstIrq = out(Bool())
   //--------
   //val srcIrqVec = Vec.fill(cfg.depth)(
   //  slave(
@@ -197,12 +197,47 @@ case class LcvBusIrqCtrl(
   )
   io.bus.d2hBus.valid := False
 
-  io.dstIrq.setAsReg() init(False)
-  io.dstIrq := (
-    // this acts as a check for `=/= 0x0`,
-    // i.e. it is a check for *any* 1 bit
-    rIrqIdBusRegVec.asBits.orR
+  object DstIrqState
+  extends SpinalEnum(defaultEncoding=binaryOneHot) {
+    val
+      IDLE,
+      WAIT_DST_IRQ_READY
+      = newElement();
+  }
+  val rDstIrqState = (
+    Reg(DstIrqState())
+    init(DstIrqState.IDLE)
   )
+  //io.dstIrq.nextValid.setAsReg() init(False)
+  io.dstIrq.nextValid := (
+    RegNext(
+      io.dstIrq.nextValid,
+      init=io.dstIrq.nextValid.getZero
+    )
+  )
+
+  switch (rDstIrqState) {
+    is (DstIrqState.IDLE) {
+      val tempOrReduce = (
+        // this acts as a check for `=/= 0x0`,
+        // i.e. it is a check for *any* 1 bit
+        rIrqIdBusRegVec.asBits.orR
+      )
+      io.dstIrq.nextValid := (
+        tempOrReduce
+      )
+      when (tempOrReduce) {
+        rDstIrqState := DstIrqState.WAIT_DST_IRQ_READY
+      }
+    }
+
+    is (DstIrqState.WAIT_DST_IRQ_READY) {
+      when (io.dstIrq.ready) {
+        io.dstIrq.nextValid := False
+        rDstIrqState := DstIrqState.IDLE
+      }
+    }
+  }
 
   //--------
   object State
