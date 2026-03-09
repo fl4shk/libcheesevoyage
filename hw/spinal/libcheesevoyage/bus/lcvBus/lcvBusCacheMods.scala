@@ -571,7 +571,9 @@ case class LcvBusDoStallFifoThing(
       myPopStm << subFifo.io.pop
 
       // we only need the last pop payload (I think...)
-      rSavedSubFifoPopPayload := subFifo.io.pop.payload 
+      when (subFifo.io.pop.valid) {
+        rSavedSubFifoPopPayload := subFifo.io.pop.payload 
+      }
 
       when (
         !subFifo.io.pop.valid
