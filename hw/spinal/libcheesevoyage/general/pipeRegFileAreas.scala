@@ -4759,6 +4759,8 @@ extends Area {
         tempUpMod(1).allowOverride
         tempUpMod(2) := tempUpMod(1)
         tempUpMod(2).allowOverride
+        cBack.bypass(mod.back.pipePayload) := tempUpMod(2)
+        //up(mod.back.pipePayload) := tempUpMod(2)
       }
       tempUpMod(1).setPipeRegFileExt(
         inpExt=upExt(1)(ydx)(extIdxUp),
@@ -4825,7 +4827,7 @@ extends Area {
             )
           } otherwise { // when (!io.clear.fire)
             myWriteAddr(0)(ydx)(zdx) := (
-              upExt(0)(ydx)(extIdxSingle).memAddrAlt(
+              upExt(2)(ydx)(extIdxSingle).memAddrAlt(
                 //PipeRegFile.modWrIdx
                 zdx
               ).resized
@@ -4833,7 +4835,7 @@ extends Area {
           }
         } else { // if (!optEnableWrPulse)
           myWriteAddr(0)(ydx)(zdx) := (
-            upExt(0)(ydx)(extIdxSingle).memAddrAlt(
+            upExt(2)(ydx)(extIdxSingle).memAddrAlt(
               //PipeRegFile.modWrIdx
               zdx
             ).resized
@@ -4984,7 +4986,7 @@ extends Area {
           true
         ) {
           mod.back.rTempWord(ydx) := (
-            upExt(0)(ydx)(extIdxSingle).modMemWord
+            upExt(2)(ydx)(extIdxSingle).modMemWord
           )
           dbgDoWrite(ydx) := True
         }
