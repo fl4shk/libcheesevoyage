@@ -260,6 +260,7 @@ case class FpgacpuRamSimpleDualPortConfig[
   arrRamStyleAltera: String="M10K",
   arrRamStyleXilinx: String="block",
   arrRwAddrCollisionXilinx: String="",
+  doAsyncRead: Boolean=false,
   //optDblRdReg: Boolean=false,
 ) {
 }
@@ -406,9 +407,19 @@ case class FpgacpuRamSimpleDualPortImpl[
       //    enable=RegNext(io.rdEn),
       //  )
       //) else (
-        arr.readSync(
-          address=io.rdAddr,
-          enable=io.rdEn,
+        if (!cfg.doAsyncRead) (
+          arr.readSync(
+            address=io.rdAddr,
+            enable=io.rdEn,
+          )
+        ) else (
+          Mux[UInt](
+            io.rdEn,
+            arr.readAsync(
+              address=io.rdAddr
+            ).asBits.asUInt,
+            RegNext(io.rdData.asBits.asUInt)
+          )
         )
       //)
     )

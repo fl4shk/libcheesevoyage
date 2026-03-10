@@ -388,6 +388,7 @@ case class RamSimpleDualPortConfig[
   arrRamStyleAltera: String="M10K",
   arrRamStyleXilinx: String="block",
   arrRwAddrCollisionXilinx: String="",
+  doAsyncRead: Boolean=false,
   //doFwdDel1: Boolean=false,
 ) {
 }
@@ -438,6 +439,7 @@ case class RamSimpleDualPort[
   def arrRamStyleAltera = cfg.arrRamStyleAltera
   def arrRamStyleXilinx = cfg.arrRamStyleXilinx
   def arrRwAddrCollisionXilinx = cfg.arrRwAddrCollisionXilinx
+  def doAsyncRead = cfg.doAsyncRead
 
   val io = RamSimpleDualPortIo(
     //wordType=wordType(),
@@ -453,6 +455,7 @@ case class RamSimpleDualPort[
       arrRamStyleAltera=arrRamStyleAltera,
       arrRamStyleXilinx=arrRamStyleXilinx,
       arrRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
+      doAsyncRead=doAsyncRead,
     )
   )
   myRam.io.wrEn := io.ramIo.wrEn
