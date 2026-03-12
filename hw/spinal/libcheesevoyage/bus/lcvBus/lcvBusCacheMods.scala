@@ -1514,7 +1514,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
           when (!myLoD2hStm.fire) {
             //base.myFifoThingDoStall.last := True
             base.myFifoThingDoStall := True
-            loH2dPopStm.ready := False
+            //loH2dPopStm.ready := False
+            //loH2dPopStm.ready := (
+            //  
+            //)
             //base.myFifoThingDoStall := True
             rState := State.LOAD_HIT_LO_BUS_STALL
           }
@@ -1560,9 +1563,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       //--------
     }
     is (State.LOAD_HIT_LO_BUS_STALL) {
-      when (rose(rState === State.LOAD_HIT_LO_BUS_STALL)) {
-        loH2dPopStm.ready := True
-      }
+      //when (rose(rState === State.LOAD_HIT_LO_BUS_STALL)) {
+      //  loH2dPopStm.ready := True
+      //}
       myLoD2hStm.valid := True
       when (myLoD2hStm.fire) {
         //base.myFifoThingDoStall.last := False
