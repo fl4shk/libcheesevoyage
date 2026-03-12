@@ -1903,10 +1903,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       wrLineAttrs.tag := (
         rSavedLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
       )
-      wrLineAttrs.dirty := (
-        // if it's a store, this line should be marked dirty!
-        rSavedLoH2dPayload.isWrite
-      )
+      //wrLineAttrs.dirty := (
+      //  // if it's a store, this line should be marked dirty!
+      //  rSavedLoH2dPayload.isWrite
+      //)
       base.doLineAttrsRamWrite(
         busAddr=rSavedLoH2dPayload.addr,
         setEn=true,
