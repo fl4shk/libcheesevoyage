@@ -789,7 +789,13 @@ case class LcvBusMem(
   }
 }
 
-case class LcvBusMemSlowWhenBurst(
+// `LcvBusMemSlowUnlessBurst` should probably be rewritten!
+// This module doesn't play well with `libsnowhouse`'s `io.lcvIbus`
+// *at least* (maybe it doesn't work well with `libsnowhouse`'s
+// `io.lcvDbus` either?).
+// Perhaps that is a design flaw in `libsnowhouse`, or perhaps it is a flaw
+// with the implementation of `LcvBus`?
+case class LcvBusMemSlowUnlessBurst(
   cfg: LcvBusMemConfig,
 ) extends Component {
   //--------
