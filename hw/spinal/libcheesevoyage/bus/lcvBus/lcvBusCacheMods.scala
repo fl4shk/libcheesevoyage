@@ -1356,7 +1356,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         ),
         init=False
       ),
-      True//False
+      False//True//False
     )
   )
   val myFullTempIgnoreDupCntCond = (
@@ -2719,7 +2719,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         ),
         init=False
       ),
-      True//False
+      False//True//False
     )
   )
   val myFullTempIgnoreDupCntCond = (
