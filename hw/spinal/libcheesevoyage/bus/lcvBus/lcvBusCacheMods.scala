@@ -1356,8 +1356,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         ),
         init=False
       ),
-      rState =/= State.LOAD_HIT_DO_STALL_POST,
-      //True//False
+      //rState =/= State.LOAD_HIT_DO_STALL_POST,
+      True//False
     )
   )
   val myFullTempIgnoreDupCntCond = (
@@ -2720,8 +2720,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         ),
         init=False
       ),
-      rState =/= State.LOAD_HIT_DO_STALL_POST,
-      //True//False
+      //rState =/= State.LOAD_HIT_DO_STALL_POST,
+      True//False
     )
   )
   val myFullTempIgnoreDupCntCond = (
