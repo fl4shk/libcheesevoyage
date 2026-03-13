@@ -62,6 +62,7 @@ case class LcvBusMainConfig(
   srcWidth: Int, //Option[Int],
   haveByteEn: Boolean,
   keepByteSize: Boolean,
+  //d2hErrorWidth: Int=1,
 ) {
   def mkCopyWithByteEn(
     optKeepByteSize: Option[Boolean]=None,
@@ -322,6 +323,7 @@ case class LcvBusConfig(
   //  }
   //)
   def srcWidth = mainCfg.srcWidth
+  //def d2hErrorWidth = mainCfg.d2hErrorWidth
 
   def byteEnWidth: Int = (dataWidth / 8).toInt
   def byteSizeWidth: Int = log2Up(log2Up(byteEnWidth) + 1)
@@ -685,6 +687,7 @@ case class LcvBusD2hPayloadMainNonBurstInfoShared(
 ) extends Bundle {
   val data = UInt(cfg.dataWidth bits)
   val src = UInt(cfg.srcWidth bits)
+  //val error = UInt(cfg.d2hErrorWidth bits)
 }
 case class LcvBusD2hPayloadMainNonBurstInfoByteSizeEtc(
   cfg: LcvBusConfig,
