@@ -374,10 +374,10 @@ case class LcvBusDoStallFifoThing(
     )
   )
 
-  //val rSavedSubFifoPopPayload = (
-  //  Reg(cloneOf(subFifo.io.pop.payload))
-  //  init(subFifo.io.pop.payload.getZero)
-  //)
+  val rSavedSubFifoPopPayload = (
+    Reg(cloneOf(subFifoArr(0).io.pop.payload))
+    init(subFifoArr(0).io.pop.payload.getZero)
+  )
   //mainFifo.io.push << myPushStm //pushForkMain
   //io.pop << mainFifo.io.pop
   switch (rState) {
@@ -391,17 +391,16 @@ case class LcvBusDoStallFifoThing(
     is (State.IDLE) {
       switch (
         //RegNext(rState === State.POST_DO_STALL)
-        //RegNext(
-        //  // check for prev state being State.POST_DO_STALL
-        //  rState.asBits(2),
-        //  init=False
-        //)
-        //## 
-        io.doStall
+        RegNext(
+          // check for prev state being State.POST_DO_STALL
+          (rState.asBits(2) || rState.asBits(3)),
+          init=False
+        )
+        ## io.doStall
       ) {
         is (
-          //M"-0"
-          False
+          M"-0"
+          //False
         ) {
           // prev state was *not* State.POST_DO_STALL,
           // !io.doStall
@@ -438,8 +437,8 @@ case class LcvBusDoStallFifoThing(
           }
         }
         is (
-          //B"01"
-          True
+          B"01"
+          //True
         ) {
           // prev state was *not* State.POST_DO_STALL,
           // io.doStall
@@ -465,33 +464,34 @@ case class LcvBusDoStallFifoThing(
 
           rState := State.POST_DO_STALL_0
         }
-        //default {
-        //  // prev state *was* State.POST_DO_STALL,
-        //  // io.doStall
+        default {
+          // prev state *was* State.POST_DO_STALL,
+          // io.doStall
 
-        //  subFifo.io.push.valid := True
-        //  subFifo.io.push.payload := (
-        //    rSavedSubFifoPopPayload
-        //  )
+          subFifoArr(0).io.push.valid := True
+          subFifoArr(0).io.push.payload := (
+            rSavedSubFifoPopPayload
+          )
+          subFifoArr(0).io.pop.ready := False
 
-        //  myPushStm.ready := False
-        //  myPopStm.valid := False
-        //  doApplyMainFifo(
-        //    func=(mainFifo) => {
-        //      mainFifo.io.push.valid := False
-        //      mainFifo.io.pop.ready := False
-        //    }
-        //  )
-        //  rState := State.POST_DO_STALL
-        //  subFifo.io.pop.ready := False
-        //  //when (subFifo.io.push.fire) {
-        //  //  when (!rFifoCntSub(0).msb) {
-        //  //    rFifoCntSub(0) := rFifoCntSub(0) - 1
-        //  //  } otherwise {
-        //  //    subFifo.io.pop.ready := True
-        //  //  }
-        //  //}
-      ////}
+          myPushStm.ready := False
+          myPopStm.valid := False
+          doApplyMainFifo(
+            func=(mainFifo) => {
+              mainFifo.io.push.valid := False
+              mainFifo.io.pop.ready := False
+            }
+          )
+          rState := State.POST_DO_STALL_0
+
+          //when (subFifo.io.push.fire) {
+          //  when (!rFifoCntSub(0).msb) {
+          //    rFifoCntSub(0) := rFifoCntSub(0) - 1
+          //  } otherwise {
+          //    subFifo.io.pop.ready := True
+          //  }
+          //}
+        }
         //}
       }
       //when (
@@ -615,9 +615,9 @@ case class LcvBusDoStallFifoThing(
       myPopStm << subFifoArr(0).io.pop
 
       // we only need the last pop payload (I think...)
-      //when (subFifo.io.pop.valid) {
-      //  rSavedSubFifoPopPayload := subFifo.io.pop.payload 
-      //}
+      when (subFifoArr(0).io.pop.valid) {
+        rSavedSubFifoPopPayload := subFifoArr(0).io.pop.payload 
+      }
 
       //switch (
       //  subFifo.io.pop.valid
@@ -648,6 +648,10 @@ case class LcvBusDoStallFifoThing(
         subFifoArr(0).io.flush := True
       }
       myPopStm << subFifoArr(1).io.pop
+      // we only need the last pop payload (I think...)
+      when (subFifoArr(1).io.pop.valid) {
+        rSavedSubFifoPopPayload := subFifoArr(1).io.pop.payload 
+      }
       when (
         !subFifoArr(1).io.pop.valid
         && !io.doStall
