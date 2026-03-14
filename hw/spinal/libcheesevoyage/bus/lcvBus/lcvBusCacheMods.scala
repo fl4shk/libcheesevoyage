@@ -46,6 +46,7 @@ case class LcvBusCacheBusPairConfig(
   mainCfg: LcvBusMainConfig,
   loBusCacheCfg: LcvBusCacheConfig,
   hiBusCacheCfg: Option[LcvBusCacheConfig],
+  optFormal: Boolean=false,
 ) {
   //require(!mainCfg.allowBurst)
   loBusCacheCfg.kind match {
@@ -193,6 +194,7 @@ case class LcvBusDoStallFifoThing(
   //cfg: LcvBusCacheBusPairConfig
   busCfg: LcvBusConfig,
   includeDoInit: Boolean=true,
+  optFormal: Boolean=false,
 ) extends Component {
   val io = LcvBusDoStallFifoThingIo(busCfg=busCfg)
 
@@ -352,7 +354,15 @@ case class LcvBusDoStallFifoThing(
   //)
 
 
-  object State extends SpinalEnum(defaultEncoding=binaryOneHot) {
+  object State extends SpinalEnum(
+    defaultEncoding=(
+      if (!optFormal) (
+        binaryOneHot
+      ) else (
+        binarySequential
+      )
+    )
+  ) {
     val
       INIT,
       IDLE,
@@ -393,7 +403,12 @@ case class LcvBusDoStallFifoThing(
         //RegNext(rState === State.POST_DO_STALL)
         RegNext(
           // check for prev state being State.POST_DO_STALL
-          (rState.asBits(2) || rState.asBits(3)),
+          if (!optFormal) (
+            (rState.asBits(2) || rState.asBits(3))
+          ) else (
+            rState === State.POST_DO_STALL_0
+            || rState === State.POST_DO_STALL_1
+          ),
           init=False
         )
         ## io.doStall
@@ -765,7 +780,10 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   //    forFMax=true,
   //  )
   //)
-  val loH2dDoStallFifoThing = LcvBusDoStallFifoThing(busCfg=cfg.loBusCfg)
+  val loH2dDoStallFifoThing = LcvBusDoStallFifoThing(
+    busCfg=cfg.loBusCfg,
+    optFormal=cfg.optFormal,
+  )
   //loH2dDoStallFifoThing.io.push << io.loBus.h2dBus
   io.loBus.h2dBus.translateInto(
     loH2dDoStallFifoThing.io.push
@@ -1276,6 +1294,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   //--------
   def loBusCfg = cfg.loBusCfg
   def hiBusCfg = cfg.hiBusCfg
+  def optFormal = cfg.optFormal
   //--------
   require(
     //hiBusCfg.maxBurstSizeMinus1 == (64 / 4) - 1,
@@ -1349,35 +1368,34 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   //--------
   object State extends SpinalEnum(
     defaultEncoding=(
-      //binarySequential
-      binaryOneHot
+      if (!optFormal) (
+        binaryOneHot
+      ) else (
+        binarySequential
+      )
     )
   ) {
     val
-      INIT,
-      INIT_POST_3,
-      INIT_POST_2,
-      INIT_POST_1,
-      INIT_POST,
-      IDLE,
-      LOAD_HIT_DO_STALL_PIPE_2,
-      LOAD_HIT_DO_STALL_PIPE_1,
-      LOAD_HIT_DO_STALL,
-      LOAD_HIT_DO_STALL_POST,
+      INIT,                               // 0
+      IDLE,                               // 1
+      LOAD_HIT_DO_STALL_PIPE_2,           // 2
+      LOAD_HIT_DO_STALL_PIPE_1,           // 3
+      LOAD_HIT_DO_STALL,                  // 4
+      LOAD_HIT_DO_STALL_POST,             // 5
       //STORE_HIT_DO_STALL_PIPE_1,
       //STORE_HIT_DO_STALL,
       //SEND_LINE_TO_HI_BUS_PIPE_3,
       //SEND_LINE_TO_HI_BUS_PIPE_2,
       //SEND_LINE_TO_HI_BUS_PIPE_1,
       //SEND_LINE_TO_HI_BUS,
-      RECV_LINE_FROM_HI_BUS_PIPE_1,
-      RECV_LINE_FROM_HI_BUS,
-      RECV_LINE_FROM_HI_BUS_POST_WRITE,
-      RECV_LINE_FROM_HI_BUS_POST_4,
-      RECV_LINE_FROM_HI_BUS_POST_3,
-      RECV_LINE_FROM_HI_BUS_POST_2,
-      RECV_LINE_FROM_HI_BUS_POST_1,
-      RECV_LINE_FROM_HI_BUS_POST
+      RECV_LINE_FROM_HI_BUS_PIPE_1,       // 6
+      RECV_LINE_FROM_HI_BUS,              // 7
+      //RECV_LINE_FROM_HI_BUS_POST_WRITE,   // 8
+      RECV_LINE_FROM_HI_BUS_POST_4,       // 9 - 1 = 8
+      RECV_LINE_FROM_HI_BUS_POST_3,       // 10 - 1 = 9
+      RECV_LINE_FROM_HI_BUS_POST_2,       // 11 - 1 = 10
+      RECV_LINE_FROM_HI_BUS_POST_1,       // 12 - 1 = 11
+      RECV_LINE_FROM_HI_BUS_POST          // 13 - 1 = 12
       //NON_CACHED_BUS_ACCESS,
         // this will probably be covered with an `LcvBusSlicer`
       = newElement();
@@ -1521,6 +1539,15 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     //  rState := State.IDLE
     //}
     is (State.IDLE) {
+      if (optFormal) {
+        when (pastValidAfterReset) {
+          when (past(rState === State.INIT)) {
+            assert(
+              !base.haveHit
+            )
+          }
+        }
+      }
       //base.myFifoThingDoStall.foreach(_ := False)
       base.myFifoThingDoStall := False
       //--------
@@ -2025,23 +2052,23 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
           )
         //}
         when ((io.hiBus.d2hBus.burstLast)) {
-          when (!rSavedLoH2dPayload.isWrite) {
+          //when (!rSavedLoH2dPayload.isWrite) {
             rState := State.RECV_LINE_FROM_HI_BUS_POST_4
-          } otherwise {
-            rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
-          }
+          //} otherwise {
+          //  rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
+          //}
         }
       }
     }
-    is (State.RECV_LINE_FROM_HI_BUS_POST_WRITE) {
-      base.doLineWordRamWrite(
-        busAddr=rSavedLoH2dPayload.addr,
-        lineWord=Some(rSavedLoH2dPayload.data),
-        byteEn=Some(rSavedLoH2dPayload.byteEn),
-        setEn=true,
-      )
-      rState := State.RECV_LINE_FROM_HI_BUS_POST_4
-    }
+    //is (State.RECV_LINE_FROM_HI_BUS_POST_WRITE) {
+    //  base.doLineWordRamWrite(
+    //    busAddr=rSavedLoH2dPayload.addr,
+    //    lineWord=Some(rSavedLoH2dPayload.data),
+    //    byteEn=Some(rSavedLoH2dPayload.byteEn),
+    //    setEn=true,
+    //  )
+    //  rState := State.RECV_LINE_FROM_HI_BUS_POST_4
+    //}
     is (State.RECV_LINE_FROM_HI_BUS_POST_4) {
       //rState := State.RECV_LINE_FROM_HI_BUS_POST_2
       //base.myFifoThingDoStall.head := False
@@ -2719,10 +2746,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   ) {
     val
       INIT,
-      INIT_POST_3,
-      INIT_POST_2,
-      INIT_POST_1,
-      INIT_POST,
+      //INIT_POST_3,
+      //INIT_POST_2,
+      //INIT_POST_1,
+      //INIT_POST,
       IDLE,
       LOAD_HIT_DO_STALL_PIPE_2,
       LOAD_HIT_DO_STALL_PIPE_1,
@@ -3813,4 +3840,344 @@ object LcvBusCacheToVerilog extends App {
     //)
     top
   }
+}
+
+object LcvBusCacheFormal extends App {
+  def myProveNumCycles = (
+    10
+    //16
+    //18
+    //64
+    //32
+    //28
+    //16
+    //128
+    //256
+    //24
+    //20
+  )
+  val myInstrCacheDepthWords = (
+    (64 * 2 / (32 / 8)), // 2 cache lines
+  )
+  val myMemDepthWords = (
+    myInstrCacheDepthWords * 2
+  )
+  val myInstrCacheCfg = (
+    LcvBusCacheBusPairConfig(
+      mainCfg=LcvBusMainConfig(
+        dataWidth=32,
+        addrWidth=32,
+        allowBurst=false,
+        burstAlwaysMaxSize=false,
+        srcWidth=5,
+        haveByteEn=false,
+        keepByteSize=false,
+      ),
+      loBusCacheCfg=LcvBusCacheConfig(
+        kind=LcvCacheKind.I,
+        lineSizeBytes=64,
+        depthWords=myInstrCacheDepthWords,
+        numCpus=1,
+      ),
+      hiBusCacheCfg=(
+        //Some(LcvBusCacheConfig(
+        //  kind=LcvCacheKind.Shared,
+        //  lineSizeBytes=64,
+        //  depthWords=2048,
+        //  numCpus=2,
+        //))
+        None
+      ),
+      optFormal=true,
+    )
+  )
+  val myInstrMemCfg = (
+    LcvBusMemConfig(
+      busCfg=myInstrCacheCfg.hiBusCfg,
+      depth=myMemDepthWords,
+      initBigInt={
+        val tempArr = new ArrayBuffer[BigInt]()
+        for (idx <- 0 until myMemDepthWords) {
+          tempArr += BigInt(idx)
+        }
+        Some(tempArr)
+        //Some(
+        //  Array.fill(myInstrCacheCfg.loBusCacheCfg.depthWords)(
+        //    BigInt(0)
+        //  )
+        //)
+      }
+    )
+  )
+  case class MyInstrCacheTempDut() extends Component {
+    val io = slave(LcvBusIo(cfg=myInstrCacheCfg.loBusCfg))
+    val icache = LcvBusCache(cfg=myInstrCacheCfg)
+    io <> icache.io.loBus
+    val myMem = LcvBusMem(
+      cfg=myInstrMemCfg
+    )
+    icache.io.hiBus <> myMem.io.bus
+    //io <> myMem.io.bus
+  }
+  case class LcvBusNonCoherentInstrCacheFormalDut() extends Component {
+    val dut = FormalDut(
+      MyInstrCacheTempDut()
+    )
+    def myH2dStm = dut.io.h2dBus
+    def myD2hStm = dut.io.d2hBus
+    //--------
+    assumeInitial(clockDomain.isResetActive)
+    //myH2dStm.formalAssumesSlave(payloadInvariance=true)
+    //myD2hStm.formalAssertsMaster(payloadInvariance=true)
+    //myH2dStm.formalAssertsMaster(payloadInvariance=true)
+    //myD2hStm.formalAssumesSlave(payloadInvariance=true)
+
+    anyseq(
+      myH2dStm.valid
+    )
+    //anyseq(
+    //  myH2dStm.addr(log2Up(64) - 1 + 2 downto 2)
+    //)
+    //anyseq(
+    //  myH2dStm.src
+    //)
+    anyseq(
+      myH2dStm.payload
+    )
+    anyseq(
+      myD2hStm.ready
+    )
+    //--------
+    //anyseq(
+    //  myH2dStm.addr
+    //)
+    assumeInitial(
+      myH2dStm.payload === myH2dStm.payload.getZero
+    )
+    //myH2dStm.data := 0x0
+    //myH2dStm.addr(myH2dStm.addr.high downto log2Up(64) - 1 + 2) := 0x0
+    //myH2dStm.addr(1 downto 0) := 0x0
+    //myH2dStm.byteSize := log2Up(32 / 8)
+    //myH2dStm.isWrite := False
+
+
+    assume(myH2dStm.data === 0x0)
+    assume(
+      //myH2dStm.addr(myH2dStm.addr.high downto log2Up(64) - 1 + 2) === 0x0
+      //myH2dStm.addr(myH2dStm.addr.high downto log2Up(32) - 1 + 2) === 0x0
+      myH2dStm.addr(myH2dStm.addr.high downto log2Up(64) - 1 + 2) === 0x0
+    )
+    assume(myH2dStm.addr(1 downto 0) === 0x0)
+    assume(myH2dStm.byteSize === log2Up(32 / 8))
+    assume(myH2dStm.isWrite === False)
+    //assume(
+    //  !myH2dStm.isWrite
+    //)
+    //assume(
+    //  myH2dStm.data === 0x0
+    //)
+    //assume(
+    //  
+    //)
+    //assume(
+    //  !myH2dStm.isWrite
+    //)
+    //assume(
+    //  myH2dStm.data === 0x0
+    //)
+    //assumeInitial(
+    //  myH2dStm.src === 0x0
+    //)
+
+    //when (
+    //  RegNext(
+    //    myH2dStm.fire,
+    //    init=False
+    //  )
+    //) {
+    //}
+
+    //when (
+    //  RegNextWhen(
+    //    True,
+    //    cond=myH2dStm.fire,
+    //    init=False
+    //  )
+    //) {
+    //  assume(
+    //    myH2dStm.src
+    //    === RegNextWhen(
+    //      myH2dStm.src + 1,
+    //      cond=myH2dStm.fire,
+    //      init=myH2dStm.src.getZero
+    //    )
+    //  )
+    //}
+    val rH2dFireCnt = (
+      Reg(UInt(4 bits))
+      init(0x0)
+    )
+    val rD2hFireCnt = (
+      Reg(UInt(4 bits))
+      init(0x0)
+    )
+    assumeInitial(
+      rH2dFireCnt === 0x0
+    )
+    assumeInitial(
+      rD2hFireCnt === 0x0
+    )
+    val mySavedD2hSrc = cloneOf(myD2hStm.src)
+    mySavedD2hSrc := 0x0
+    assumeInitial(
+      mySavedD2hSrc === 0x0
+    )
+    when (pastValidAfterReset) {
+      myH2dStm.src := past(myH2dStm.src)
+      when (myH2dStm.fire) {
+        //assume(
+        //  myH2dStm.src === past(myH2dStm.src) + 1
+        //)
+        //assume(
+        //  rH2dFireCnt === past(rH2dFireCnt) + 1
+        //)
+        myH2dStm.src := past(myH2dStm.src) + 1
+        rH2dFireCnt := rH2dFireCnt + 1
+      } otherwise {
+        //assert(
+        //  stable(myH2dStm.src)
+        //)
+        //assume(
+        //  stable(rH2dFireCnt)
+        //)
+      }
+      when (past(myH2dStm.fire)) {
+        //assert(
+        //  myH2dStm.src
+        //)
+        assert(
+          rH2dFireCnt === past(rH2dFireCnt) + 1
+        )
+      } otherwise {
+      }
+
+      when (myD2hStm.fire) {
+        //assume(
+        //  rD2hFireCnt === past(rD2hFireCnt) + 1
+        //)
+        rD2hFireCnt := rD2hFireCnt + 1
+      } otherwise {
+        //assume(
+        //  stable(rD2hFireCnt)
+        //)
+      }
+      when (past(myD2hStm.fire)) {
+        assert(
+          rD2hFireCnt === past(rD2hFireCnt) + 1
+        )
+      }
+
+      mySavedD2hSrc := past(mySavedD2hSrc)
+      when (
+        //past(
+        myD2hStm.fire
+        //)
+        //&& past(rH2dFireCnt > 3)
+        //&& past(rD2hFireCnt > 3)
+      ) {
+        mySavedD2hSrc := myD2hStm.src //past(myD2hStm.src)
+        //assume(
+        //  mySavedD2hSrc === past(myD2hStm.src)
+        //)
+      } otherwise {
+        assert(
+          mySavedD2hSrc === past(mySavedD2hSrc)
+        )
+        //assume(
+        //  stable(mySavedD2hSrc)
+        //)
+      }
+
+      when (
+        myD2hStm.fire
+        && rH2dFireCnt > 4
+        && rD2hFireCnt > 4
+        //&& History(
+        //  that=True,
+        //  when=(
+        //    myH2dStm.fire
+        //    && pastValidAfterReset
+        //  ),
+        //  length=3,
+        //  init=False,
+        //).last
+        //&& History(
+        //  that=True,
+        //  when=(
+        //    myD2hStm.fire
+        //    && pastValidAfterReset
+        //  ),
+        //  length=3,
+        //  init=False,
+        //).last
+      ) {
+        assert(
+          //myD2hStm.src === past(myD2hStm.src) + 1
+          myD2hStm.src === mySavedD2hSrc + 1
+        )
+        //cover(
+        //  myD2hStm.src === 1//0//3
+        //)
+      }
+    }
+
+    //assume(
+    //  
+    //)
+
+    //anyseq(
+    //  dut.io.hiBus.h2dBus.ready
+    //)
+    //anyseq(
+    //  dut.io.hiBus.d2hBus.valid
+    //)
+    //anyseq(
+    //  dut.io.hiBus.d2hBus.payload
+    //)
+    //anyseq(
+    //  dut
+    //)
+  }
+  new SpinalFormalConfig(
+    _spinalConfig=SpinalConfig(
+      defaultConfigForClockDomains=ClockDomainConfig(
+        resetActiveLevel=HIGH,
+        resetKind=SYNC,
+      ),
+      formalAsserts=true,
+    ),
+    _keepDebugInfo=true,
+  )
+    //.withBMC(
+    //  //20
+    //  //15
+    //  //16
+    //  LcvBusCacheFormal.myProveNumCycles
+    //)
+    .withProve(
+      //20
+      //40
+      //10
+      LcvBusCacheFormal.myProveNumCycles
+    )
+    //.withCover(
+    //  //PipeRegFileFormal.myProveNumCycles
+    //  //20
+    //  //60
+    //  //20
+    //  //15
+    //  LcvBusCacheFormal.myProveNumCycles
+    //)
+    .doVerify(LcvBusNonCoherentInstrCacheFormalDut())
+  //--------
 }
