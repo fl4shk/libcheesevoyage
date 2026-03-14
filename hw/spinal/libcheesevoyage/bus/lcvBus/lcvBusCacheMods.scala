@@ -202,17 +202,25 @@ case class LcvBusDoStallFifoThing(
   def fifoDepthSub = 4//8//4//5//4//5 //fifoDepthMain 4
 
   def mkMainFifo() = (
-    StreamFifo(
+    new StreamFifo(
       dataType=LcvBusDoStallFifoThingPayload(
         LcvBusH2dPayload(cfg=busCfg),
         //optByteEnWidth=None,
       ),
       depth=fifoDepthMain,
-      latency=(
-        0
-        //2
-      ),
+      withAsyncRead=true,
+      withBypass=true,
+      //latency=(
+      //  0
+      //  //2
+      //),
       forFMax=true,
+      useVec=optFormal,
+      initPayload=Some(
+        LcvBusDoStallFifoThingPayload(
+          LcvBusH2dPayload(cfg=busCfg),
+        ).getZero
+      )
     )
   )
   //val mainFifo = mkMainFifo()
@@ -220,19 +228,118 @@ case class LcvBusDoStallFifoThing(
     mkMainFifo()
   )
   val subFifoArr = Array.fill(2)(
-    StreamFifo(
+    new StreamFifo(
       dataType=LcvBusDoStallFifoThingPayload(
         LcvBusH2dPayload(cfg=busCfg),
         //optByteEnWidth=None,
       ),
       depth=fifoDepthSub,
-      latency=(
-        0
-        //2
-      ),
+      withAsyncRead=true,
+      withBypass=true,
+      //latency=(
+      //  0
+      //  //2
+      //),
       forFMax=true,
+      useVec=optFormal,
+      initPayload=Some(
+        LcvBusDoStallFifoThingPayload(
+          LcvBusH2dPayload(cfg=busCfg),
+        ).getZero
+      )
     )
   )
+  val myFormalArea = (
+    optFormal
+  ) generate (new Area {
+    when (pastValidAfterReset) {
+      //when (!stable(someSrcVec(myIdx))) {
+      //  ret := (
+      //    someSrcVec(myIdx) === 0x0
+      //    || someSrcVec(myIdx) === past(someSrcVec(myIdx)) + 1
+      //  )
+      //} otherwise {
+      //  //ret := True
+      //}
+    } otherwise {
+      //ret := True
+    }
+
+    //var myIdx: Int = 0
+    //val myMainFifoSrcVec = Vec.fill(fifoDepthMain)(
+    //  UInt(busCfg.srcWidth bits)
+    //)
+    //val mySubFifoSrcVec = Vec.fill(
+    //  subFifoArr.size
+    //)(
+    //  Vec.fill(fifoDepthSub)(
+    //    UInt(busCfg.srcWidth bits)
+    //  )
+    //)
+    //def myFunc(
+    //  someSrcVec: Vec[UInt],
+    //  payload: LcvBusDoStallFifoThingPayload[LcvBusH2dPayload],
+    //): Bool = {
+    //  someSrcVec(myIdx) := payload.busPayload.src
+    //  val ret = Bool()
+    //  when (pastValidAfterReset) {
+    //    when (!stable(someSrcVec(myIdx))) {
+    //      ret := (
+    //        someSrcVec(myIdx) === 0x0
+    //        || someSrcVec(myIdx) === past(someSrcVec(myIdx)) + 1
+    //      )
+    //    } otherwise {
+    //      ret := True
+    //    }
+    //  } otherwise {
+    //    ret := True
+    //  }
+    //  myIdx += 1
+    //  ret
+    //}
+    ////mainFifoArr(0).formalCheckRam(
+    ////  (payload) => {
+    ////    myFunc(
+    ////      someSrcVec=myMainFifoSrcVec,
+    ////      payload=payload
+    ////    )
+    ////    //val ret = Bool()
+    ////    //myMainFifoSrcVec(myIdx) := 
+    ////    //if (myIdx > 0) {
+    ////    //} else {
+    ////    //  ret := True
+    ////    //}
+    ////    //myIdx += 1
+    ////    //ret
+    ////  }
+    ////).foreach(item => assert(item))
+    //myIdx = 0
+    ////subFifoArr(0).formalCheckRam(
+    ////  (payload) => {
+    ////    myFunc(
+    ////      someSrcVec=mySubFifoSrcVec(0),
+    ////      payload=payload
+    ////    )
+    ////  }
+    ////)
+    //myIdx = 0
+    ////subFifoArr(1).formalCheckRam(
+    ////  (payload) => {
+    ////    myFunc(
+    ////      someSrcVec=mySubFifoSrcVec(1),
+    ////      payload=payload
+    ////    )
+    ////  }
+    ////)
+    ////def myFunc(
+    ////  
+    ////): Bool = {
+    ////}
+    ////mainFifoArr.foreach(mainFifo => {
+    ////  mainFifo.formalCheck
+    ////})
+    ////mainFifoArr(0).formalCheckRam
+  })
 
   //def fifoCntSubMax = fifoDepthSub - 2 //- 3//- 2 //- 1 //- 2 
   def fifoCntSubMax = fifoDepthSub - 3//2//3//4//- 4//3 //1 //fifoDepthSub //- 2 //- 3//- 2 //- 1 //- 2 
@@ -242,6 +349,12 @@ case class LcvBusDoStallFifoThing(
       init(fifoCntSubMax)
     )
   )
+  if (optFormal) {
+    assert(
+      rFifoCntSub(0) >= -1
+      && rFifoCntSub(0) <= fifoCntSubMax
+    )
+  }
 
   //val rWhichMainFifo = Reg(UInt(1 bits), U"1'd0")
 
@@ -401,15 +514,16 @@ case class LcvBusDoStallFifoThing(
     is (State.IDLE) {
       switch (
         //RegNext(rState === State.POST_DO_STALL)
-        RegNext(
+        //RegNext
+        (
           // check for prev state being State.POST_DO_STALL
           if (!optFormal) (
-            (rState.asBits(2) || rState.asBits(3))
+            (past(rState.asBits(2)) || past(rState.asBits(3)))
           ) else (
-            rState === State.POST_DO_STALL_0
-            || rState === State.POST_DO_STALL_1
+            past(rState === State.POST_DO_STALL_0)
+            || past(rState === State.POST_DO_STALL_1)
           ),
-          init=False
+          //init=False
         )
         ## io.doStall
       ) {
@@ -482,6 +596,16 @@ case class LcvBusDoStallFifoThing(
         default {
           // prev state *was* State.POST_DO_STALL,
           // io.doStall
+          //if (optFormal) {
+          //  when (pastValidAfterReset) {
+          //    assert(
+          //      past(!subFifoArr(0).io.pop.valid)
+          //    )
+          //    assert(
+          //      past(!subFifoArr(1).io.pop.valid)
+          //    )
+          //  }
+          //}
 
           subFifoArr(0).io.push.valid := True
           subFifoArr(0).io.push.payload := (
@@ -651,6 +775,9 @@ case class LcvBusDoStallFifoThing(
         && !io.doStall
       ) {
         rState := State.IDLE
+        when (!rose(io.doStall)) {
+          subFifoArr(1).io.flush := True
+        }
       }
       // END: old, mostly working code!
       when (rose(io.doStall)) {
@@ -895,6 +1022,33 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
       myLoH2dPopThrowArea.myTempLoH2dPopStm
     )
   )
+  //if (cfg.optFormal) {
+  //  when (pastValidAfterReset) {
+  //    when (
+  //      past(myTempLoH2dPopStm.fire)
+  //      && myTempLoH2dPopStm.valid
+  //    ) {
+  //      assert(
+  //        //myTempLoH2dPopStm.busPayload.src === 0x0
+  //        //|| 
+  //        //(
+  //        //  myTempLoH2dPopStm.busPayload.src
+  //        //  === past(myTempLoH2dPopStm.busPayload.src)
+  //        //)
+  //        //|| 
+  //        (
+  //          myTempLoH2dPopStm.busPayload.src
+  //          === past(myTempLoH2dPopStm.busPayload.src) + 1
+  //        )
+  //        //|| (
+  //        //  myTempLoH2dPopStm.busPayload.src
+  //        //  === past(myTempLoH2dPopStm.busPayload.src) - 1
+  //        //)
+  //        //|| myD2hStm.src === past(myD2hStm.src) - 1
+  //      )
+  //    }
+  //  }
+  //}
 
   val rLoH2dPayload = (
     RegNextWhen(
@@ -1391,11 +1545,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       RECV_LINE_FROM_HI_BUS_PIPE_1,       // 6
       RECV_LINE_FROM_HI_BUS,              // 7
       //RECV_LINE_FROM_HI_BUS_POST_WRITE,   // 8
-      RECV_LINE_FROM_HI_BUS_POST_4,       // 9 - 1 = 8
-      RECV_LINE_FROM_HI_BUS_POST_3,       // 10 - 1 = 9
-      RECV_LINE_FROM_HI_BUS_POST_2,       // 11 - 1 = 10
-      RECV_LINE_FROM_HI_BUS_POST_1,       // 12 - 1 = 11
-      RECV_LINE_FROM_HI_BUS_POST          // 13 - 1 = 12
+      RECV_LINE_FROM_HI_BUS_POST_4,       // 8
+      RECV_LINE_FROM_HI_BUS_POST_3,       // 9
+      RECV_LINE_FROM_HI_BUS_POST_2,       // 10
+      RECV_LINE_FROM_HI_BUS_POST_1,       // 11
+      RECV_LINE_FROM_HI_BUS_POST          // 12
       //NON_CACHED_BUS_ACCESS,
         // this will probably be covered with an `LcvBusSlicer`
       = newElement();
@@ -3842,7 +3996,13 @@ object LcvBusCacheToVerilog extends App {
   }
 }
 
-object LcvBusCacheFormal extends App {
+//object LcvBusCacheVerifySim extends App {
+//}
+object LcvBusCacheFormal_Dup extends App {
+  def myBmcNumCycles = (
+    //48
+    70
+  )
   def myProveNumCycles = (
     10
     //16
@@ -3891,40 +4051,47 @@ object LcvBusCacheFormal extends App {
       optFormal=true,
     )
   )
-  val myInstrMemCfg = (
-    LcvBusMemConfig(
-      busCfg=myInstrCacheCfg.hiBusCfg,
-      depth=myMemDepthWords,
-      initBigInt={
-        val tempArr = new ArrayBuffer[BigInt]()
-        for (idx <- 0 until myMemDepthWords) {
-          tempArr += BigInt(idx)
-        }
-        Some(tempArr)
-        //Some(
-        //  Array.fill(myInstrCacheCfg.loBusCacheCfg.depthWords)(
-        //    BigInt(0)
-        //  )
-        //)
-      }
-    )
-  )
+  //val myInstrMemCfg = (
+  //  LcvBusMemConfig(
+  //    busCfg=myInstrCacheCfg.hiBusCfg,
+  //    depth=myMemDepthWords,
+  //    initBigInt={
+  //      val tempArr = new ArrayBuffer[BigInt]()
+  //      for (idx <- 0 until myMemDepthWords) {
+  //        tempArr += BigInt(idx)
+  //      }
+  //      Some(tempArr)
+  //      //Some(
+  //      //  Array.fill(myInstrCacheCfg.loBusCacheCfg.depthWords)(
+  //      //    BigInt(0)
+  //      //  )
+  //      //)
+  //    }
+  //  )
+  //)
   case class MyInstrCacheTempDut() extends Component {
-    val io = slave(LcvBusIo(cfg=myInstrCacheCfg.loBusCfg))
+    //val io = slave(LcvBusIo(cfg=myInstrCacheCfg.loBusCfg))
+    val io = LcvBusCacheIo(cfg=myInstrCacheCfg)
     val icache = LcvBusCache(cfg=myInstrCacheCfg)
-    io <> icache.io.loBus
-    val myMem = LcvBusMem(
-      cfg=myInstrMemCfg
-    )
-    icache.io.hiBus <> myMem.io.bus
+    io <> icache.io
+    //io <> icache.io.loBus
+    //val myMem = LcvBusMem(
+    //  cfg=myInstrMemCfg
+    //)
+    //icache.io.hiBus <> myMem.io.bus
     //io <> myMem.io.bus
   }
-  case class LcvBusNonCoherentInstrCacheFormalDut() extends Component {
+  case class LcvBusNonCoherentInstrCacheFormalDut_Dup() extends Component {
     val dut = FormalDut(
       MyInstrCacheTempDut()
     )
-    def myH2dStm = dut.io.h2dBus
-    def myD2hStm = dut.io.d2hBus
+    def myH2dStm = dut.io.loBus.h2dBus
+    def myD2hStm = dut.io.loBus.d2hBus
+
+    anyseq(dut.io.hiBus.h2dBus.ready)
+    anyseq(dut.io.hiBus.d2hBus.valid)
+    anyseq(dut.io.hiBus.d2hBus.payload)
+
     //--------
     assumeInitial(clockDomain.isResetActive)
     //myH2dStm.formalAssumesSlave(payloadInvariance=true)
@@ -4013,26 +4180,46 @@ object LcvBusCacheFormal extends App {
     //    )
     //  )
     //}
-    val rH2dFireCnt = (
-      Reg(UInt(4 bits))
-      init(0x0)
-    )
-    val rD2hFireCnt = (
-      Reg(UInt(4 bits))
-      init(0x0)
-    )
-    assumeInitial(
-      rH2dFireCnt === 0x0
-    )
-    assumeInitial(
-      rD2hFireCnt === 0x0
-    )
-    val mySavedD2hSrc = cloneOf(myD2hStm.src)
-    mySavedD2hSrc := 0x0
-    assumeInitial(
-      mySavedD2hSrc === 0x0
-    )
+    //val rH2dFireCnt = (
+    //  Reg(UInt(4 bits))
+    //  init(0x0)
+    //)
+    //val rD2hFireCnt = (
+    //  Reg(UInt(4 bits))
+    //  init(0x0)
+    //)
+    //assumeInitial(
+    //  rH2dFireCnt === 0x0
+    //)
+    //assumeInitial(
+    //  rD2hFireCnt === 0x0
+    //)
+    //val rMySavedD2hSrc = (
+    //  Reg(
+    //    cloneOf(myD2hStm.src),
+    //    //init=myD2hStm.src.getZero
+    //  )
+    //)
+    //////rMySavedD2hSrc := 0x0
+    //assumeInitial(
+    //  rMySavedD2hSrc === 0x0
+    //)
     when (pastValidAfterReset) {
+      //assert(
+      //  rMySavedD2hSrc === 0x0
+      //  || rMySavedD2hSrc === past(rMySavedD2hSrc)
+      //  || rMySavedD2hSrc === past(rMySavedD2hSrc) + 1
+      //  //|| rMySavedD2hSrc === past(rMySavedD2hSrc) - 1
+      //)
+      when (past(myD2hStm.fire)) {
+        assert(
+          myD2hStm.src === 0x0
+          || myD2hStm.src === past(myD2hStm.src)
+          || myD2hStm.src === past(myD2hStm.src) + 1
+          || myD2hStm.src === past(myD2hStm.src) - 1
+        )
+      }
+
       myH2dStm.src := past(myH2dStm.src)
       when (myH2dStm.fire) {
         //assume(
@@ -4042,7 +4229,7 @@ object LcvBusCacheFormal extends App {
         //  rH2dFireCnt === past(rH2dFireCnt) + 1
         //)
         myH2dStm.src := past(myH2dStm.src) + 1
-        rH2dFireCnt := rH2dFireCnt + 1
+        //rH2dFireCnt := rH2dFireCnt + 1
       } otherwise {
         //assert(
         //  stable(myH2dStm.src)
@@ -4051,84 +4238,90 @@ object LcvBusCacheFormal extends App {
         //  stable(rH2dFireCnt)
         //)
       }
-      when (past(myH2dStm.fire)) {
-        //assert(
-        //  myH2dStm.src
-        //)
-        assert(
-          rH2dFireCnt === past(rH2dFireCnt) + 1
-        )
-      } otherwise {
-      }
+      //when (past(myH2dStm.fire)) {
+      //  //assert(
+      //  //  myH2dStm.src
+      //  //)
+      //  assert(
+      //    rH2dFireCnt === past(rH2dFireCnt) + 1
+      //  )
+      //} otherwise {
+      //}
 
-      when (myD2hStm.fire) {
-        //assume(
-        //  rD2hFireCnt === past(rD2hFireCnt) + 1
-        //)
-        rD2hFireCnt := rD2hFireCnt + 1
-      } otherwise {
-        //assume(
-        //  stable(rD2hFireCnt)
-        //)
-      }
-      when (past(myD2hStm.fire)) {
-        assert(
-          rD2hFireCnt === past(rD2hFireCnt) + 1
-        )
-      }
+      //when (myD2hStm.fire) {
+      //  //assume(
+      //  //  rD2hFireCnt === past(rD2hFireCnt) + 1
+      //  //)
+      //  rD2hFireCnt := rD2hFireCnt + 1
+      //} otherwise {
+      //  //assume(
+      //  //  stable(rD2hFireCnt)
+      //  //)
+      //}
+      //when (past(myD2hStm.fire)) {
+      //  assert(
+      //    rD2hFireCnt === past(rD2hFireCnt) + 1
+      //  )
+      //}
 
-      mySavedD2hSrc := past(mySavedD2hSrc)
-      when (
-        //past(
-        myD2hStm.fire
-        //)
-        //&& past(rH2dFireCnt > 3)
-        //&& past(rD2hFireCnt > 3)
-      ) {
-        mySavedD2hSrc := myD2hStm.src //past(myD2hStm.src)
-        //assume(
-        //  mySavedD2hSrc === past(myD2hStm.src)
-        //)
-      } otherwise {
-        assert(
-          mySavedD2hSrc === past(mySavedD2hSrc)
-        )
-        //assume(
-        //  stable(mySavedD2hSrc)
-        //)
-      }
+      ////rMySavedD2hSrc := past(rMySavedD2hSrc)
+      //when (
+      //  //past(
+      //  myD2hStm.fire
+      //  //)
+      //  //&& past(rH2dFireCnt > 3)
+      //  //&& past(rD2hFireCnt > 3)
+      //) {
+      //  rMySavedD2hSrc := myD2hStm.src //past(myD2hStm.src)
+      //  //assume(
+      //  //  mySavedD2hSrc === past(myD2hStm.src)
+      //  //)
+      //} otherwise {
+      //  //assert(
+      //  //  rMySavedD2hSrc === past(rMySavedD2hSrc)
+      //  //)
+      //  //assume(
+      //  //  stable(mySavedD2hSrc)
+      //  //)
+      //}
 
-      when (
-        myD2hStm.fire
-        && rH2dFireCnt > 4
-        && rD2hFireCnt > 4
-        //&& History(
-        //  that=True,
-        //  when=(
-        //    myH2dStm.fire
-        //    && pastValidAfterReset
-        //  ),
-        //  length=3,
-        //  init=False,
-        //).last
-        //&& History(
-        //  that=True,
-        //  when=(
-        //    myD2hStm.fire
-        //    && pastValidAfterReset
-        //  ),
-        //  length=3,
-        //  init=False,
-        //).last
-      ) {
-        assert(
-          //myD2hStm.src === past(myD2hStm.src) + 1
-          myD2hStm.src === mySavedD2hSrc + 1
-        )
-        //cover(
-        //  myD2hStm.src === 1//0//3
-        //)
-      }
+      //when (
+      //  past(
+      //    myD2hStm.fire)
+      //  //&& !stable(rMySavedD2hSrc)
+      //  //&& rH2dFireCnt > 4
+      //  //&& rD2hFireCnt > 4
+      //  //&& History(
+      //  //  that=True,
+      //  //  when=(
+      //  //    myH2dStm.fire
+      //  //    && pastValidAfterReset
+      //  //  ),
+      //  //  length=3,
+      //  //  init=False,
+      //  //).last
+      //  //&& History(
+      //  //  that=True,
+      //  //  when=(
+      //  //    myD2hStm.fire
+      //  //    && pastValidAfterReset
+      //  //  ),
+      //  //  length=3,
+      //  //  init=False,
+      //  //).last
+      //) {
+      //  assert(
+      //    myD2hStm.src === past(myD2hStm.src) + 1
+      //  )
+      //  //cover(
+      //  //  myD2hStm.src === 1//0//3
+      //  //)
+      //}
+      //when (!past(myD2hStm.fire)) {
+      //  assert(
+      //    stable(myD2hStm.src)
+      //  )
+      //}
     }
 
     //assume(
@@ -4158,26 +4351,26 @@ object LcvBusCacheFormal extends App {
     ),
     _keepDebugInfo=true,
   )
-    //.withBMC(
-    //  //20
-    //  //15
-    //  //16
-    //  LcvBusCacheFormal.myProveNumCycles
-    //)
-    .withProve(
+    .withBMC(
       //20
-      //40
-      //10
-      LcvBusCacheFormal.myProveNumCycles
+      //15
+      //16
+      myBmcNumCycles
     )
+    //.withProve(
+    //  //20
+    //  //40
+    //  //10
+    //  myProveNumCycles
+    //)
     //.withCover(
     //  //PipeRegFileFormal.myProveNumCycles
     //  //20
     //  //60
     //  //20
     //  //15
-    //  LcvBusCacheFormal.myProveNumCycles
+    //  myProveNumCycles
     //)
-    .doVerify(LcvBusNonCoherentInstrCacheFormalDut())
+    .doVerify(LcvBusNonCoherentInstrCacheFormalDut_Dup())
   //--------
 }
