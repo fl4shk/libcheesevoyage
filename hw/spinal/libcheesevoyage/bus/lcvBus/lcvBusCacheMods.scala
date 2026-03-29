@@ -1133,6 +1133,12 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
 
   //val temp
   val myTempHaveHitCmpEqLeft = rdLineAttrs.tag
+  val rSavedRdLineAttrsTag = (
+    Reg(
+      cloneOf(rdLineAttrs.tag),
+      init=rdLineAttrs.tag.getZero,
+    )
+  )
   val myTempHaveHitCmpEqRight = (
     //Mux[UInt](useDel2, rDel2LoBusAddrTag, rLoBusAddrTag)
     //rLoBusAddrTag
@@ -1148,6 +1154,19 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
       )
       init(0x0)
     )
+    //(
+    //  RegNext(
+    //    RegNextWhen(
+    //      (
+    //        loH2dPopStm.busPayload.addr(loBusCacheCfg.tagRange)
+    //        //myTempLoH2dPopStm.addr(loBusCacheCfg.tagRange)
+    //      ),
+    //      cond=loH2dPopStm.fire,
+    //    )
+    //    init(0x0)
+    //  )
+    //  init(0x0)
+    //)
     //RegNext(
     //  RegNext(rSavedLoBusAddrTag, init=rSavedLoBusAddrTag.getZero),
     //  init=rSavedLoBusAddrTag.getZero,
@@ -3121,6 +3140,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         myLoD2hPayload.src := rDel2LoH2dPayload.src
         base.myLoD2hStm.cnt := base.rDel2LoH2dPayload.cnt
       }
+      base.rSavedRdLineAttrsTag := rdLineAttrs.tag
 
       switch (
         RegNext(
@@ -3426,7 +3446,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       rHiH2dPayload.addr := (
         Cat(
           False,
-          RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
+          // FINALLY found it, the problem I was seeing in DOOM!
+          //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
+          base.rSavedRdLineAttrsTag,
           base.rSavedLoBusAddrSet,
           U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
         ).asUInt
