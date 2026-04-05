@@ -292,66 +292,129 @@ case class LcvBusD2hShiftedDataEtcStreamAdapter(
 //}
 
 
-//case class LcvBusByteEnAdapterConfig(
-//  loBusCfg: LcvBusConfig,
-//) {
-//  require(!loBusCfg.haveByteEn)
-//  val hiBusCfg = LcvBusConfig(
-//    mainCfg=(
-//      loBusCfg.mainCfg.mkCopyWithByteEn()
-//      //if (!loBusCfg.haveByteEn) (
-//      //  loBusCfg.mainCfg.mkCopyWithByteEn()
-//      //) else (
-//      //  loBusCfg.mainCfg.mkCopyWithoutByteEn()
-//      //)
-//    ),
-//    cacheCfg=loBusCfg.cacheCfg
-//  )
-//}
-//
-//case class LcvBusByteEnAdapterIo(
-//  cfg: LcvBusByteEnAdapterConfig
-//) extends Bundle {
-//  //val loBus = slave(LcvBusIo(cfg=cfg.loBusCfg))
-//  //val hiBus = master(LcvBusIo(cfg=cfg.hiBusCfg))
-//  val loH2dBus = slave(Stream(LcvBusH2dPayload(cfg=cfg.loBusCfg)))
-//  val hiH2dBus = master(Stream(LcvBusH2dPayload(cfg=cfg.hiBusCfg)))
-//}
-//
-////private[libcheesevoyage] case class LcvBusByteEnToNonByteEnAdapter(
-////  cfg: LcvBusByteEnAdapterConfig
-////) extends Component {
-////  //--------
-////  val io = LcvBusByteEnAdapterIo(cfg=cfg)
-////  //--------
-////}
-//
-////private[libcheesevoyage] case class LcvBusNonByteEnToByteEnAdapter(
-////  cfg: LcvBusByteEnAdapterConfig
-////) extends Component {
-////  //--------
-////  val io = LcvBusByteEnAdapterIo(cfg=cfg)
-////  //--------
-////}
-//
-//case class LcvBusNonBurstByteEnAdapter(
+case class LcvBusByteEnAdapterConfig(
+  loBusCfg: LcvBusConfig,
+) {
+  require(!loBusCfg.haveByteEn)
+  require(!loBusCfg.allowBurst)
+  val hiBusCfg = LcvBusConfig(
+    mainCfg=(
+      loBusCfg.mainCfg.mkCopyWithByteEn()
+      //if (!loBusCfg.haveByteEn) (
+      //  loBusCfg.mainCfg.mkCopyWithByteEn()
+      //) else (
+      //  loBusCfg.mainCfg.mkCopyWithoutByteEn()
+      //)
+    ),
+    cacheCfg=loBusCfg.cacheCfg
+  )
+}
+
+case class LcvBusByteEnAdapterIo(
+  cfg: LcvBusByteEnAdapterConfig
+) extends Bundle {
+  val loBus = slave(LcvBusIo(cfg=cfg.loBusCfg))
+  val hiBus = master(LcvBusIo(cfg=cfg.hiBusCfg))
+  //val loH2dBus = slave(Stream(LcvBusH2dPayload(cfg=cfg.loBusCfg)))
+  //val hiH2dBus = master(Stream(LcvBusH2dPayload(cfg=cfg.hiBusCfg)))
+}
+
+//private[libcheesevoyage] case class LcvBusByteEnToNonByteEnAdapter(
 //  cfg: LcvBusByteEnAdapterConfig
 //) extends Component {
 //  //--------
 //  val io = LcvBusByteEnAdapterIo(cfg=cfg)
 //  //--------
+//}
+
+//private[libcheesevoyage] case class LcvBusNonByteEnToByteEnAdapter(
+//  cfg: LcvBusByteEnAdapterConfig
+//) extends Component {
+//  //--------
+//  val io = LcvBusByteEnAdapterIo(cfg=cfg)
+//  //--------
+//}
+
+
+//// This module is slow in terms of clock cycles.
+//// This module is mainly useful for debugging purposes.
+//case class LcvBusSlowWithNoBurstingByteEnAdapter(
+//  cfg: LcvBusByteEnAdapterConfig
+//) extends Component {
+//  //--------
+//  val io = LcvBusByteEnAdapterIo(cfg=cfg)
+//  //--------
+//  //--------
+//  def myLoH2dStm = io.loBus.h2dBus
+//  def myLoD2hStm = io.loBus.d2hBus
+//  def myHiH2dStm = io.hiBus.h2dBus
+//  def myHiD2hStm = io.hiBus.d2hBus
+//
+//  myLoH2dStm.ready := False
+//  myLoD2hStm.valid := False
+//  myLoD2hStm.payload := myLoD2hStm.payload.getZero
+//
+//  //io.outpChar.setAsReg() init(io.outpChar.getZero)
+//  //io.outpChar := io.outpChar.getZero
+//  //io.outpChar.simPublic()
+//
+//  myHiH2dStm.valid := False
+//  myHiH2dStm.payload := myHiH2dStm.payload.getZero
+//
+//  //--------
 //  object State
-//  extends SpinalEnum(defaultEncoding=binaryOneHot) {
+//  extends SpinalEnum(defaultEncoding=binarySequential) {
 //    val
-//      IDLE_OR_HAVE_FULL_WORD,
-//      SMALL_READ_WAIT_LO_H2D_FIRE,
+//      IDLE,
+//      LO_BUS_RD,
+//      LO_BUS_WR
 //      = newElement();
 //  }
 //  val rState = (
 //    Reg(State())
-//    init(State.IDLE_OR_HAVE_FULL_WORD)
+//    init(State.IDLE)
 //  )
+//
+//  val rSavedH2dPayload = (
+//    Reg(
+//      cloneOf(myLoH2dStm.payload),
+//      init=myLoH2dStm.payload.getZero
+//    )
+//  )
+//
 //  switch (rState) {
-//    when 
+//    is (State.IDLE) {
+//      rSavedH2dPayload := myLoH2dStm.payload
+//
+//      switch (
+//        myLoH2dStm.valid
+//        ## myLoH2dStm.isWrite
+//      ) {
+//        is (B"10") {
+//          myLoH2dStm.ready := True
+//          rState := State.LO_BUS_RD
+//        }
+//        is (B"11") {
+//          myLoH2dStm.ready := True
+//          rState := State.LO_BUS_WR
+//        }
+//        default {
+//        }
+//      }
+//    }
+//    is (State.LO_BUS_RD) {
+//      myLoD2hStm.valid := True
+//      myLoD2hStm.src := rSavedH2dPayload.src
+//      when (myLoD2hStm.fire) {
+//        rState := State.IDLE
+//      }
+//    }
+//    is (State.LO_BUS_WR) {
+//      myLoD2hStm.valid := True
+//      myLoD2hStm.src := rSavedH2dPayload.src
+//      when (myLoD2hStm.fire) {
+//        rState := State.IDLE
+//      }
+//    }
 //  }
 //}
