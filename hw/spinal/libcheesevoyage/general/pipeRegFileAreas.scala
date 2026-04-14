@@ -888,7 +888,7 @@ case class PipeRegFileDoFwdArea[
                 kdx <= forFmaxStageMax
                 //kdx <= 1
                 //false
-                || kdx == fwd.numMyUpExtDel2
+                //|| kdx == fwd.numMyUpExtDel2
               ) {
                 fwd.myFwdStateData(ydx)(zdx)(kdx) := (
                   fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
