@@ -1623,6 +1623,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       RegNext(
         (
           rState === State.RECV_LINE_FROM_HI_BUS_POST
+          || rState === State.LOAD_HIT_DO_STALL_POST
+          //|| rState === State.STORE_HIT_DO_STALL
           //rState =/= State.IDLE
         ),
         init=False
@@ -2997,6 +2999,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         (
           rState === State.RECV_LINE_FROM_HI_BUS_POST
           //rState =/= State.IDLE
+          || rState === State.LOAD_HIT_DO_STALL_POST
+          || rState === State.STORE_HIT_DO_STALL
         ),
         init=False
       ),
