@@ -882,6 +882,13 @@ case class PipeRegFileDoFwdArea[
             fwd.myFwdStateData(ydx)(zdx)(tempMyFindFirstUp_1)
           )
           for (kdx <- 0 until fwd.numMyUpExtDel2 + 1) {
+            val myFindFirstValid = (
+              fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+                extIdxUp
+              )(
+                kdx
+              ).payload.valid
+            )
             //if (kdx < fwd.numMyUpExtDel2 /*- 1*/) {
               if (
                 //kdx == 0
@@ -912,6 +919,7 @@ case class PipeRegFileDoFwdArea[
                   //fwd.myUpIsValid
                   //&&
                   rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
+                  && myFindFirstValid
                 ) {
                   //tempMyFwdData := myFwdDataUp
                   fwd.myFwdStateData(ydx)(zdx)(kdx) := (
@@ -926,11 +934,12 @@ case class PipeRegFileDoFwdArea[
               when (
                 fwd.myUpIsValid
                 //&& rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
-                && fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
-                  extIdxUp
-                )(
-                  kdx
-                ).payload.valid
+                //&& fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+                //  extIdxUp
+                //)(
+                //  kdx
+                //).payload.valid
+                && myFindFirstValid
               ) {
                 //rFwdStateValid(ydx)(zdx)(kdx) := True
                 rFwdState(ydx)(zdx)(kdx) := FwdState.WAIT_UP_FIRE
@@ -1937,15 +1946,15 @@ extends Area {
                   currMemAddr(0)
                   //currMemAddr === prevMemAddr
                 )
-                && (
-                  prev.modMemWordValid(
-                    if (zdx < prev.modMemWordValid.size) (
-                      zdx
-                    ) else (
-                      prev.modMemWordValid.size - 1
-                    )
-                  )
-                )
+                //&& (
+                //  prev.modMemWordValid(
+                //    if (zdx < prev.modMemWordValid.size) (
+                //      zdx
+                //    ) else (
+                //      prev.modMemWordValid.size - 1
+                //    )
+                //  )
+                //)
               )
               //else (
               //  cfg.optFwdHaveZeroReg match {
