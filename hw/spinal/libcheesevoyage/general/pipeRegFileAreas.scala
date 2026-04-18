@@ -1921,52 +1921,53 @@ extends Area {
               //forFwd
               cfg.optModHazardKind == PipeRegFile.ModHazardKind.Fwd
             ) (
-              if (idx == 0) (
-                currMemAddr(0)
-                //&& (
-                //  prev.modMemWordValid(
-                //    if (zdx < prev.modMemWordValid.size) (
-                //      zdx
-                //    ) else (
-                //      prev.modMemWordValid.size - 1
-                //    )
-                //  )
-                //)
-              ) else (
-                (
+              (
+                if (idx == 0 || idx == 1) (
                   currMemAddr(0)
-                  //currMemAddr === prevMemAddr
+                  //&& (
+                  //  prev.modMemWordValid(
+                  //    if (zdx < prev.modMemWordValid.size) (
+                  //      zdx
+                  //    ) else (
+                  //      prev.modMemWordValid.size - 1
+                  //    )
+                  //  )
+                  //)
+                ) else (
+                  (
+                    currMemAddr(0)
+                    //currMemAddr === prevMemAddr
+                  )
+                  && (
+                    prev.modMemWordValid(
+                      if (zdx < prev.modMemWordValid.size) (
+                        zdx
+                      ) else (
+                        prev.modMemWordValid.size - 1
+                      )
+                    )
+                  )
                 )
-                //&& (
-                //  prev.modMemWordValid(
-                //    if (zdx < prev.modMemWordValid.size) (
-                //      zdx
-                //    ) else (
-                //      prev.modMemWordValid.size - 1
-                //    )
-                //  )
+                //else (
+                //  cfg.optFwdHaveZeroReg match {
+                //    case Some(myZeroRegIdx) => {
+                //      currMemAddr === prevMemAddr
+                //    }
+                //    case None => {
+                //      (
+                //        currMemAddr === prevMemAddr
+                //      ) && (
+                //        prev.modMemWordValid(
+                //          if (zdx < prev.modMemWordValid.size) (
+                //            zdx
+                //          ) else (
+                //            prev.modMemWordValid.size - 1
+                //          )
+                //        )
+                //      )
+                //    }
+                //  }
                 //)
-              )
-              //else (
-              //  cfg.optFwdHaveZeroReg match {
-              //    case Some(myZeroRegIdx) => {
-              //      currMemAddr === prevMemAddr
-              //    }
-              //    case None => {
-              //      (
-              //        currMemAddr === prevMemAddr
-              //      ) && (
-              //        prev.modMemWordValid(
-              //          if (zdx < prev.modMemWordValid.size) (
-              //            zdx
-              //          ) else (
-              //            prev.modMemWordValid.size - 1
-              //          )
-              //        )
-              //      )
-              //    }
-              //  }
-              //)
             ) else (
               (
                 if (!isPostDelay) (
