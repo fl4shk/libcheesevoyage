@@ -1455,6 +1455,7 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
     )
     lineAttrsRam.io.wrData := lineAttrsRam.io.wrData.getZero
     lineAttrsRam.io.wrEn := True
+    lineAttrsRam.io.rdEn := False
     rLineAttrsInitCnt := rLineAttrsInitCnt + 1
   } otherwise {
     rFifoThingDoInit := False
