@@ -1445,7 +1445,7 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   //)
   //--------
   val rLineAttrsInitCnt = (
-    Reg(UInt(lineAttrsRam.io.wrAddr.getWidth + 1 + 2 bits))
+    Reg(UInt(lineAttrsRam.io.wrAddr.getWidth + 1 /*+ 2*/ bits))
     init(0x0)
   )
   val myFinishedLineAttrsInit = rLineAttrsInitCnt.msb
