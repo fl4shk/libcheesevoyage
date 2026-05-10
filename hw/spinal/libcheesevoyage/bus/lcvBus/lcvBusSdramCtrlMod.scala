@@ -397,8 +397,8 @@ case class LcvBusSdramIo(
     nRas.setAsReg() init(True)        // |
     nCas.setAsReg() init(True)        // / 
     cke.setAsReg() init(
-      //False
-      True
+      False
+      //True
     )
     //clk.setAsReg() init(clk.getZero)
   }
@@ -946,9 +946,9 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdNop(inPwrOnSeq=true)
       when (!rPwrOnInitCnt(0).msb) {
         rPwrOnInitCnt(0) := rPwrOnInitCnt(0) - 1
-        io.sdram.cke := True//False
-        //io.sdram.dqml := True
-        //io.sdram.dqmh := True
+        io.sdram.cke := False//True//False
+        io.sdram.dqml := True
+        io.sdram.dqmh := True
       } otherwise {
         rState := State.PWR_ON_CNT_DO_CKE_HI
       }
