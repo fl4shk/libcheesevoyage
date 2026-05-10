@@ -101,6 +101,7 @@ case class LcvBusSdramCtrlConfig(
   //burstLen: Int=2, // 32-bit
   useAltddioOut: Boolean=true,
   srcWidth: Int=2,
+  //includeInitIo: Boolean=true,  // for MiSTer's framework
 ) {
   //--------
   // idea for later: change these to *parameters* of
@@ -336,9 +337,7 @@ case class LcvBusSdramCtrlConfig(
       (6.75 us) * clkRate
     )
   }
-
 }
-
 
 case class LcvBusSdramIo(
   cfg: LcvBusSdramCtrlConfig,
@@ -397,7 +396,10 @@ case class LcvBusSdramIo(
     nWe.setAsReg() init(True)         // | start off with a NOP
     nRas.setAsReg() init(True)        // |
     nCas.setAsReg() init(True)        // / 
-    cke.setAsReg() init(False)
+    cke.setAsReg() init(
+      //False
+      True
+    )
     //clk.setAsReg() init(clk.getZero)
   }
 
@@ -413,12 +415,12 @@ case class LcvBusSdramIo(
     nCas := cmdBase(1)
     nWe := cmdBase(0)
   }
-  private[libcheesevoyage] def sendCmdInhibit(
-  ): Unit = {
-    nCs := True
-    dqmh := False
-    dqml := False
-  }
+  //private[libcheesevoyage] def sendCmdInhibit(
+  //): Unit = {
+  //  nCs := True
+  //  dqmh := False
+  //  dqml := False
+  //}
   private[libcheesevoyage] def sendCmdNop(
     inPostFirstBurstElem: Boolean=false,
     optSomeDqTriState: Option[TriState[UInt]]=None,
@@ -944,7 +946,7 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdNop(inPwrOnSeq=true)
       when (!rPwrOnInitCnt(0).msb) {
         rPwrOnInitCnt(0) := rPwrOnInitCnt(0) - 1
-        io.sdram.cke := False
+        io.sdram.cke := True//False
         //io.sdram.dqml := True
         //io.sdram.dqmh := True
       } otherwise {
@@ -1631,6 +1633,7 @@ case class LcvBusSdramCtrl(
   }
   //--------
 }
+
 case class as4c32m16sb(
 ) extends BlackBox {
   val io = new Bundle {
@@ -1641,13 +1644,66 @@ case class as4c32m16sb(
     val BA = in(UInt(2 bits)) // two banks
     val nCS = in(Bool()) // a single chip select
     val nWE = in(Bool()) // write enable
-    val nRAS = in(Bool())// row address select
+    val nRAS = in(Bool()) // row address select
     val nCAS = in(Bool()) // columns address select
     val CLK = in(Bool())
     val CKE = in(Bool())
   }
   noIoPrefix()
   addRTLPath("./hw/verilog/as4c32m16sb.sv")
+}
+
+case class MisterSdram128ForSim(
+) extends Component {
+  val io = new Bundle {
+    val DQ = inout(Analog(UInt(16 bits))) // 16 bit bidirectional data bus
+	  val A = in(UInt(13 bits)) // 13 bit multiplexed address bus
+    val DQML = in(Bool())     // byte mask
+    val DQMH = in(Bool())     // byte mask
+    val BA = in(UInt(2 bits)) // two banks
+    val nCS = in(Bool()) // a single chip select
+    val nWE = in(Bool()) // write enable
+    val nRAS = in(Bool()) // row address select
+    val nCAS = in(Bool()) // columns address select
+    val CLK = in(Bool())
+    val CKE = in(Bool())
+  }
+  val sdramChipArr = Array.fill(2)(as4c32m16sb())
+  sdramChipArr.foreach(chip => {
+    chip.io.nCS := True
+  })
+  for (idx <- 0 until sdramChipArr.size) {
+    val chip = sdramChipArr(idx)
+    //val otherChip = sdramChipArr((idx + 1) % sdramChipArr.size)
+    chip.io.DQ <> io.DQ
+	  chip.io.A := io.A
+    chip.io.DQML := io.DQML
+    chip.io.DQMH := io.DQMH
+    chip.io.BA := io.BA
+    //chip.io.nCS := io.nCS
+    chip.io.nWE := io.nWE
+    chip.io.nRAS := io.nRAS
+    chip.io.nCAS := io.nCAS
+    chip.io.CLK := io.CLK
+    chip.io.CKE := io.CKE
+
+    if (idx == 0) {
+      chip.io.nCS := True
+      when (!io.nCS) {
+        chip.io.nCS := False
+      }
+    } else if (idx == 1) {
+      chip.io.nCS := True
+      when (io.nCS) {
+        chip.io.nCS := False
+      }
+    } else {
+      require(
+        false,
+        "Eek!"
+      )
+    }
+  }
 }
 
 //case class LcvSdramCtrlSimDutIo(
