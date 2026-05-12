@@ -1445,20 +1445,23 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   //)
   //--------
   val rLineAttrsInitCnt = (
-    Reg(UInt(lineAttrsRam.io.wrAddr.getWidth + 1 /*+ 2*/ bits))
+    Reg(UInt(lineAttrsRam.io.wrAddr.getWidth + 2 /*1*/ /*+ 2*/ bits))
     init(0x0)
   )
   val myFinishedLineAttrsInit = rLineAttrsInitCnt.msb
-  when (!myFinishedLineAttrsInit) {
-    lineAttrsRam.io.wrAddr := (
-      rLineAttrsInitCnt(lineAttrsRam.io.wrAddr.high downto 0)
-    )
-    lineAttrsRam.io.wrData := lineAttrsRam.io.wrData.getZero
-    lineAttrsRam.io.wrEn := True
-    lineAttrsRam.io.rdEn := False
-    rLineAttrsInitCnt := rLineAttrsInitCnt + 1
-  } otherwise {
-    rFifoThingDoInit := False
+  def mkCacheInitArea (
+  ): Area = new Area {
+    when (!myFinishedLineAttrsInit) {
+      lineAttrsRam.io.wrAddr := (
+        rLineAttrsInitCnt(lineAttrsRam.io.wrAddr.high downto 0)
+      )
+      lineAttrsRam.io.wrData := lineAttrsRam.io.wrData.getZero
+      lineAttrsRam.io.wrEn := True
+      lineAttrsRam.io.rdEn := False
+      rLineAttrsInitCnt := rLineAttrsInitCnt + 1
+    } otherwise {
+      rFifoThingDoInit := False
+    }
   }
 }
 
@@ -2328,6 +2331,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   }
   //--------
   wrLineAttrs.valid := True
+  val myInitArea = base.mkCacheInitArea()
 }
 //private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
 //  cfg: LcvBusCacheBusPairConfig,
@@ -3694,6 +3698,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   }
   //--------
   wrLineAttrs.valid := True
+  val myInitArea = base.mkCacheInitArea()
 }
 private[libcheesevoyage] case class LcvBusCoherentInstrCache(
   cfg: LcvBusCacheBusPairConfig,

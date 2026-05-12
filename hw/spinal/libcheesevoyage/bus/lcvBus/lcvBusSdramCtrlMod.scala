@@ -101,7 +101,7 @@ case class LcvBusSdramCtrlConfig(
   //burstLen: Int=2, // 32-bit
   useAltddioOut: Boolean=true,
   srcWidth: Int=2,
-  //includeInitIo: Boolean=true,  // for MiSTer's framework
+  //includeIoInitStm: Boolean=true,  // for MiSTer's framework
 ) {
   //--------
   // idea for later: change these to *parameters* of
@@ -536,9 +536,21 @@ case class LcvBusSdramIo(
   }
 }
 
+//case class LcvBusSdramCtrlIoInitStmPayload(
+//  cfg: LcvBusSdramCtrlConfig,
+//) extends Bundle {
+//  val addr = UInt(27 bits)
+//  val data = UInt(16 bits)
+//  val active = Bool()  
+//}
 case class LcvBusSdramCtrlIo(
   cfg: LcvBusSdramCtrlConfig,
 ) extends Bundle {
+  //val initStm = (
+  //  cfg.includeIoInitStm
+  //) generate (
+  //  slave(Stream(LcvBusSdramCtrlIoInitStmPayload(cfg=cfg)))
+  //)
   val bus = slave(LcvBusIo(cfg=cfg.busCfg))
   val sdram = LcvBusSdramIo(cfg=cfg)
 }
@@ -947,8 +959,8 @@ case class LcvBusSdramCtrl(
       when (!rPwrOnInitCnt(0).msb) {
         rPwrOnInitCnt(0) := rPwrOnInitCnt(0) - 1
         io.sdram.cke := False//True//False
-        io.sdram.dqml := True
-        io.sdram.dqmh := True
+        //io.sdram.dqml := True
+        //io.sdram.dqmh := True
       } otherwise {
         rState := State.PWR_ON_CNT_DO_CKE_HI
       }
