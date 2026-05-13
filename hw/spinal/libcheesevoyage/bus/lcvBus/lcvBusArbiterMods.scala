@@ -32,6 +32,13 @@ case class LcvBusArbiterIo(
   ) generate (
     in(Bool())
   )
+  val softReset = 
+  //(
+  //  cfg.kind == LcvBusArbiterKind.Priority
+  //) generate 
+  (
+    in(Bool())
+  )
   val hostVec = (
     Vec[LcvBusIo]{
       val tempArr = new ArrayBuffer[LcvBusIo]()
@@ -238,38 +245,45 @@ case class LcvBusArbiter(
         //rSeenHostH2dFireEtc.foreach(_ := False)
         switch (
           //RegNext(
-            host.h2dBus.valid
+            io.softReset
+            ## host.h2dBus.valid
             ## host.h2dBus.burstFirst
             ## host.h2dBus.isWrite
           //)
           //init(0x0)
         ) {
-          is (M"10-") {
+          is (M"010-") {
             // either read or write, but *NOT* a burst
             rAllowBurstState := AllowBurstState.NON_BURST
             //io.dev.h2dBus << host.h2dBus 
             ////host.d2hBus << io.dev.d2hBus
             //maybeSetSeenHostH2dFireEtc(0)
           }
-          is (M"110") {
+          is (M"0110") {
             // read burst
             rAllowBurstState := AllowBurstState.READ_BURST
             //io.dev.h2dBus << host.h2dBus 
             ////host.d2hBus << io.dev.d2hBus
             //maybeSetSeenHostH2dFireEtc(1)
           }
-          is (M"111") {
+          is (M"0111") {
             // write burst
             rAllowBurstState := AllowBurstState.WRITE_BURST
             //io.dev.h2dBus << host.h2dBus 
             ////host.d2hBus << io.dev.d2hBus
             //maybeSetSeenHostH2dFireEtc(2)
           }
+          is (M"1---") {
+            // soft reset
+            nextHostIdx := 0x0
+          }
           default {
             // the current host is not requesting a transaction
             doCalcHostIdx(None)
           }
         }
+        //when (io.softReset) {
+        //}
       }
       is (AllowBurstState.NON_BURST) {
         when (!rSeenHostH2dFireEtc(0)) {
