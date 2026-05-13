@@ -569,7 +569,10 @@ case class LcvBusSdramCtrl(
   val rSavedSoftResetCnt = (
     //Reg(Bool(), init=False)
     Reg(UInt(mySavedSoftResetCntWidth bits))
-    init(mySavedSoftResetCntInit)
+    init(
+      //mySavedSoftResetCntInit
+      0x0
+    )
   )
   when (io.softReset) {
     //rSavedSoftReset := True
