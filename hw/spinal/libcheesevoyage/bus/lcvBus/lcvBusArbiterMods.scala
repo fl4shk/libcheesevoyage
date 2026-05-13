@@ -233,6 +233,11 @@ case class LcvBusArbiter(
       WRITE_BURST
       = newElement();
   }
+  val rSoftResetState = Reg(Bool(), init=False)
+  when (io.softReset) {
+    rSoftResetState := True
+  }
+
   val myAllowBurstArea = (
     cfg.busCfg.allowBurst
   ) generate (new Area {
@@ -245,7 +250,7 @@ case class LcvBusArbiter(
         //rSeenHostH2dFireEtc.foreach(_ := False)
         switch (
           //RegNext(
-            io.softReset
+            (io.softReset || rSoftResetState)
             ## host.h2dBus.valid
             ## host.h2dBus.burstFirst
             ## host.h2dBus.isWrite
@@ -274,6 +279,7 @@ case class LcvBusArbiter(
             //maybeSetSeenHostH2dFireEtc(2)
           }
           is (M"1---") {
+            rSoftResetState := False
             // soft reset
             nextHostIdx := 0x0
           }
