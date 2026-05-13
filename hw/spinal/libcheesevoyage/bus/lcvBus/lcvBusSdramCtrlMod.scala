@@ -551,6 +551,7 @@ case class LcvBusSdramCtrlIo(
   //) generate (
   //  slave(Stream(LcvBusSdramCtrlIoInitStmPayload(cfg=cfg)))
   //)
+  val softReset = in(Bool())
   val bus = slave(LcvBusIo(cfg=cfg.busCfg))
   val sdram = LcvBusSdramIo(cfg=cfg)
 }
@@ -559,6 +560,22 @@ case class LcvBusSdramCtrl(
 ) extends Component {
   //--------
   val io = LcvBusSdramCtrlIo(cfg=cfg)
+
+  def mySavedSoftResetCntWidth = 4//5
+  def mySavedSoftResetCntInit = (
+    //1
+    (1 << mySavedSoftResetCntWidth) - 1
+  )
+  val rSavedSoftResetCnt = (
+    //Reg(Bool(), init=False)
+    Reg(UInt(mySavedSoftResetCntWidth bits))
+    init(mySavedSoftResetCntInit)
+  )
+  when (io.softReset) {
+    //rSavedSoftReset := True
+    rSavedSoftResetCnt := mySavedSoftResetCntInit
+  }
+
   //io.bus.h2dBus.ready.setAsReg() init(False)
   //io.bus.h2dBus.ready := False
   val rSavedH2dSendData = (
@@ -636,6 +653,7 @@ case class LcvBusSdramCtrl(
       //false
     ),
   )
+  h2dFifo.io.flush := rSavedSoftResetCnt.orR //False
   h2dFifo.io.push.valid := (
     io.bus.h2dBus.valid
     //&& io.bus.h2dBus.payload.isWrite
@@ -663,6 +681,7 @@ case class LcvBusSdramCtrl(
       //false
     ),
   )
+  d2hFifo.io.flush := rSavedSoftResetCnt.orR //False
   d2hFifo.io.push.valid := rD2hFifoPushValid
   d2hFifo.io.push.payload := rD2hSendData
 
@@ -1044,10 +1063,19 @@ case class LcvBusSdramCtrl(
         rNeedRfshCnt := cfg.Cycles.tREFIthresh.toInt
         rState := State.SEND_RFSH
       } elsewhen (
+        //rSavedSoftReset
+        rSavedSoftResetCnt.orR
+      ) {
+        //rSavedSoftReset := False
+        rSavedSoftResetCnt := rSavedSoftResetCnt - 1
+        rBusBurstOuterCnt := -1
+        //h2dFifo.io.flush := True
+        //d2hFifo.io.flush := True
+      } elsewhen (
         // wait for the d2hFifo to be emptied so that any urst is
         // guaranteed to be completed
         RegNext(
-          next=(
+          (
             d2hFifo.io.occupancy === 0
             //&& h2dFifo.io.availability === 0
 
@@ -1064,7 +1092,7 @@ case class LcvBusSdramCtrl(
           init=False
         ) || (
           RegNext(
-            next=(!rBusBurstOuterCnt.msb),
+            !rBusBurstOuterCnt.msb,
             init=False
           )
         )
@@ -1074,20 +1102,8 @@ case class LcvBusSdramCtrl(
 
         rStartBusBurst := False
 
-        when (
-          rBusBurstOuterCnt.msb
-          ////&& rHaveBurst
-          //|| rSavedH2dSendData.isWrite
-        ) {
+        when (rBusBurstOuterCnt.msb) {
           rH2dFifoPopReady := True
-          //rTempAddr.foreach(item => {
-          //  item := (
-          //    RegNext(
-          //      next=h2dFifo.io.pop.addr,
-          //      init=h2dFifo.io.pop.addr.getZero,
-          //    ),
-          //  )
-          //})
           rTempAddr.head := (
             RegNext(
               next=h2dFifo.io.pop.addr,
@@ -1101,34 +1117,25 @@ case class LcvBusSdramCtrl(
           ) := (
             RegNext(
               h2dFifo.io.pop.addr(
-                //rTempAddr.last.high
-                //downto log2Up(cfg.burstLen) + 1 - 1
                 rTempAddr.last.high
-                //downto log2Up(cfg.burstLen) + 1 - 1
                 downto myAlignedColumnSliceRangeHi._2
               ),
-              //init=h2dFifo.io.pop.addr.getZero,
             )
             init(0x0)
           )
           rSavedH2dSendData := (
-            //io.bus.h2dBus.payload
             RegNext(
-              next=h2dFifo.io.pop.payload,
+              h2dFifo.io.pop.payload,
               init=h2dFifo.io.pop.payload.getZero,
             ),
           )
           rHaveBurst := (
-            //rSavedH2dSendData.burstFirst
             RegNext(
-              next=h2dFifo.io.pop.burstFirst,
+              h2dFifo.io.pop.burstFirst,
               init=False,
             )
           )
         } otherwise {
-          //rTempAddr.last := (
-          //  rTempAddr.last + ((cfg.burstLen / 2) * 4)
-          //)
           rTempAddr.last(
             myAlignedColumnSliceRangeHi._1
             downto myAlignedColumnSliceRangeHi._2
@@ -1143,13 +1150,9 @@ case class LcvBusSdramCtrl(
           rBusBurstOuterCnt.msb
           && (
             RegNext(
-              next=(
-                h2dFifo.io.pop.burstFirst
-                //|| !h2dFifo.io.pop.isWrite
-              ),
+              h2dFifo.io.pop.burstFirst,
               init=False,
             )
-            //|| !rSavedH2dSendData.isWrite
           )
         ) {
           rBusBurstOuterCnt := (
