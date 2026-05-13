@@ -551,7 +551,7 @@ case class LcvBusSdramCtrlIo(
   //) generate (
   //  slave(Stream(LcvBusSdramCtrlIoInitStmPayload(cfg=cfg)))
   //)
-  val softReset = in(Bool())
+  //val softReset = in(Bool())
   val bus = slave(LcvBusIo(cfg=cfg.busCfg))
   val sdram = LcvBusSdramIo(cfg=cfg)
 }
@@ -561,23 +561,23 @@ case class LcvBusSdramCtrl(
   //--------
   val io = LcvBusSdramCtrlIo(cfg=cfg)
 
-  def mySavedSoftResetCntWidth = 4//5
-  def mySavedSoftResetCntInit = (
-    //1
-    (1 << mySavedSoftResetCntWidth) - 1
-  )
-  val rSavedSoftResetCnt = (
-    //Reg(Bool(), init=False)
-    Reg(UInt(mySavedSoftResetCntWidth bits))
-    init(
-      //mySavedSoftResetCntInit
-      0x0
-    )
-  )
-  when (io.softReset) {
-    //rSavedSoftReset := True
-    rSavedSoftResetCnt := mySavedSoftResetCntInit
-  }
+  //def mySavedSoftResetCntWidth = 4//5
+  //def mySavedSoftResetCntInit = (
+  //  //1
+  //  (1 << mySavedSoftResetCntWidth) - 1
+  //)
+  //val rSavedSoftResetCnt = (
+  //  //Reg(Bool(), init=False)
+  //  Reg(UInt(mySavedSoftResetCntWidth bits))
+  //  init(
+  //    //mySavedSoftResetCntInit
+  //    0x0
+  //  )
+  //)
+  //when (io.softReset) {
+  //  //rSavedSoftReset := True
+  //  rSavedSoftResetCnt := mySavedSoftResetCntInit
+  //}
 
   //io.bus.h2dBus.ready.setAsReg() init(False)
   //io.bus.h2dBus.ready := False
@@ -656,7 +656,7 @@ case class LcvBusSdramCtrl(
       //false
     ),
   )
-  h2dFifo.io.flush := rSavedSoftResetCnt.orR //False
+  h2dFifo.io.flush := False//rSavedSoftResetCnt.orR //False
   h2dFifo.io.push.valid := (
     io.bus.h2dBus.valid
     //&& io.bus.h2dBus.payload.isWrite
@@ -684,7 +684,7 @@ case class LcvBusSdramCtrl(
       //false
     ),
   )
-  d2hFifo.io.flush := rSavedSoftResetCnt.orR //False
+  d2hFifo.io.flush := False//rSavedSoftResetCnt.orR //False
   d2hFifo.io.push.valid := rD2hFifoPushValid
   d2hFifo.io.push.payload := rD2hSendData
 
@@ -1065,16 +1065,18 @@ case class LcvBusSdramCtrl(
       when (rNeedRfshCnt.msb) {
         rNeedRfshCnt := cfg.Cycles.tREFIthresh.toInt
         rState := State.SEND_RFSH
-      } elsewhen (
-        //rSavedSoftReset
-        rSavedSoftResetCnt.orR
-      ) {
-        //rSavedSoftReset := False
-        rSavedSoftResetCnt := rSavedSoftResetCnt - 1
-        rBusBurstOuterCnt := -1
-        //h2dFifo.io.flush := True
-        //d2hFifo.io.flush := True
-      } elsewhen (
+      } 
+      //elsewhen (
+      //  //rSavedSoftReset
+      //  rSavedSoftResetCnt.orR
+      //) {
+      //  //rSavedSoftReset := False
+      //  rSavedSoftResetCnt := rSavedSoftResetCnt - 1
+      //  rBusBurstOuterCnt := -1
+      //  //h2dFifo.io.flush := True
+      //  //d2hFifo.io.flush := True
+      //}
+      .elsewhen (
         // wait for the d2hFifo to be emptied so that any urst is
         // guaranteed to be completed
         RegNext(
