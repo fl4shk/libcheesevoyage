@@ -68,21 +68,21 @@ case class LcvBusDevSoftReset(
       Reg(Bool(), init=False)
     )
   )
-  val rSeenDevH2dFireEtc = (
-    Vec.fill(3)(
-      Reg(Bool(), init=False)
-    )
-  )
-  val rSeenHostD2hFireEtc = (
-    Vec.fill(3)(
-      Reg(Bool(), init=False)
-    )
-  )
-  val rSeenDevD2hFireEtc = (
-    Vec.fill(3)(
-      Reg(Bool(), init=False)
-    )
-  )
+  //val rSeenDevH2dFireEtc = (
+  //  Vec.fill(3)(
+  //    Reg(Bool(), init=False)
+  //  )
+  //)
+  //val rSeenHostD2hFireEtc = (
+  //  Vec.fill(3)(
+  //    Reg(Bool(), init=False)
+  //  )
+  //)
+  //val rSeenDevD2hFireEtc = (
+  //  Vec.fill(3)(
+  //    Reg(Bool(), init=False)
+  //  )
+  //)
 
   //def maybeSetSeenHostH2dFireEtc(
   //  idx: Int
@@ -242,7 +242,8 @@ case class LcvBusDevSoftReset(
         when (
           io.dev.h2dBus.fire
           //&& rWrBurstCnt.orR
-          && !(rWrBurstCnt - 1).orR
+          //&& !(rWrBurstCnt - 1).orR
+          && !rWrBurstCnt.orR
         ) {
           rSeenHostH2dFireEtc(2) := True
         }
