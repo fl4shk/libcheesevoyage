@@ -12,6 +12,7 @@ sealed trait LcvBusArbiterKind
 object LcvBusArbiterKind {
   case object Priority extends LcvBusArbiterKind
   case object RoundRobin extends LcvBusArbiterKind
+  //case object ClzRoundRobin extends LcvBusArbiterKind
 }
 
 case class LcvBusArbiterConfig(
@@ -32,16 +33,19 @@ case class LcvBusArbiterIo(
   ) generate (
     in(Bool())
   )
-  val forceHost = 
+  //val softReset = (
+  //  in(Bool())
+  //)
+  //val forceHost = 
+  ////(
+  ////  cfg.kind == LcvBusArbiterKind.Priority
+  ////) generate 
   //(
-  //  cfg.kind == LcvBusArbiterKind.Priority
-  //) generate 
-  (
-    //in(Bool())
-    slave(Flow(
-      UInt(log2Up(cfg.numHosts) bits)
-    ))
-  )
+  //  //in(Bool())
+  //  slave(Flow(
+  //    UInt(log2Up(cfg.numHosts) bits)
+  //  ))
+  //)
   val hostVec = (
     Vec[LcvBusIo]{
       val tempArr = new ArrayBuffer[LcvBusIo]()
@@ -236,18 +240,18 @@ case class LcvBusArbiter(
       WRITE_BURST
       = newElement();
   }
-  val rSavedForceHost = {
-    val temp = Reg(cloneOf(io.forceHost))
-    temp.init(temp.getZero)
-    temp
-  }
+  //val rSavedForceHost = {
+  //  val temp = Reg(cloneOf(io.forceHost))
+  //  temp.init(temp.getZero)
+  //  temp
+  //}
   //val rSoftResetState = Reg(Bool(), init=False)
   //when (io.softReset) {
   //  rSoftResetState := True
   //}
-  when (io.forceHost.fire) {
-    rSavedForceHost := io.forceHost
-  }
+  //when (io.forceHost.fire) {
+  //  rSavedForceHost := io.forceHost
+  //}
 
   val myAllowBurstArea = (
     cfg.busCfg.allowBurst
@@ -263,46 +267,47 @@ case class LcvBusArbiter(
           //RegNext(
             //(io.softReset || rSoftResetState)
             //(io.forceHost.fire || rForceHostState.fire)
-            io.forceHost.fire
-            ## rSavedForceHost.fire
-            ## host.h2dBus.valid
+            //io.forceHost.fire
+            //## rSavedForceHost.fire
+            //## 
+            host.h2dBus.valid
             ## host.h2dBus.burstFirst
             ## host.h2dBus.isWrite
           //)
           //init(0x0)
         ) {
-          is (M"0010-") {
+          is (
+            //M"0010-"
+            M"10-"
+          ) {
             // either read or write, but *NOT* a burst
             rAllowBurstState := AllowBurstState.NON_BURST
-            //io.dev.h2dBus << host.h2dBus 
-            ////host.d2hBus << io.dev.d2hBus
-            //maybeSetSeenHostH2dFireEtc(0)
           }
-          is (M"00110") {
+          is (
+            //M"00110"
+            M"110"
+          ) {
             // read burst
             rAllowBurstState := AllowBurstState.READ_BURST
-            //io.dev.h2dBus << host.h2dBus 
-            ////host.d2hBus << io.dev.d2hBus
-            //maybeSetSeenHostH2dFireEtc(1)
           }
-          is (M"00111") {
+          is (
+            //M"00111"
+            M"111"
+          ) {
             // write burst
             rAllowBurstState := AllowBurstState.WRITE_BURST
-            //io.dev.h2dBus << host.h2dBus 
-            ////host.d2hBus << io.dev.d2hBus
-            //maybeSetSeenHostH2dFireEtc(2)
           }
-          is (M"1----") {
-            //// soft reset
-            ////rSoftResetState := False
-            // forced host: non-saved
-            nextHostIdx := io.forceHost.payload//0x0
-            rSavedForceHost.valid := False
-          }
-          is (M"01---") {
-            nextHostIdx := rSavedForceHost.payload
-            rSavedForceHost.valid := False
-          }
+          //is (M"1----") {
+          //  //// soft reset
+          //  ////rSoftResetState := False
+          //  // forced host: non-saved
+          //  nextHostIdx := io.forceHost.payload//0x0
+          //  rSavedForceHost.valid := False
+          //}
+          //is (M"01---") {
+          //  nextHostIdx := rSavedForceHost.payload
+          //  rSavedForceHost.valid := False
+          //}
           default {
             // the current host is not requesting a transaction
             doCalcHostIdx(None)

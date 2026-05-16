@@ -101,6 +101,7 @@ case class LcvBusSdramCtrlConfig(
   //burstLen: Int=2, // 32-bit
   useAltddioOut: Boolean=true,
   srcWidth: Int=2,
+  //busCfgAllowBurst: Boolean=false,
   //includeIoInitStm: Boolean=true,  // for MiSTer's framework
 ) {
   //--------
@@ -132,7 +133,10 @@ case class LcvBusSdramCtrlConfig(
       //  //true
       //  false
       //),
-      allowBurst=true,
+      allowBurst=(
+        true
+        //busCfgAllowBurst
+      ),
       burstAlwaysMaxSize=(
         true
       ),
@@ -162,7 +166,13 @@ case class LcvBusSdramCtrlConfig(
   val altddioOutCfg: AltddioOutConfig = AltddioOutConfig() 
   //--------
 
-  def burstLen = 8
+  def burstLen = (
+    if (busCfgAllowBurst) (
+      8
+    ) else (
+      2
+    )
+  )
   //def burstLen = 4
   //def burstLen = 2
   //def burstLen = 1
@@ -558,6 +568,9 @@ case class LcvBusSdramCtrlIo(
 case class LcvBusSdramCtrl(
   cfg: LcvBusSdramCtrlConfig,
 ) extends Component {
+  require(
+    cfg.busCfg.allowBurst
+  )
   //--------
   val io = LcvBusSdramCtrlIo(cfg=cfg)
 
@@ -1653,6 +1666,232 @@ case class LcvBusSdramCtrl(
   }
   //--------
 }
+//private[libcheesevoyage] case class LcvBusSdramCtrlDisallowBusBursts(
+//  cfg: LcvBusSdramCtrlConfig
+//) extends Component {
+//  //--------
+//  require(
+//    !cfg.busCfg.allowBurst
+//  )
+//  //--------
+//  val io = LcvBusSdramCtrlIo(cfg=cfg)
+//  //--------
+//  def myBankSliceRange = (
+//    25 downto 24
+//    //2 downto 1
+//  )
+//  def myRowSliceRange = (
+//    23 downto 11
+//    //25 downto 13
+//  )
+//  def myColumnSliceRange = (
+//    10 downto 1
+//    //12 downto 3
+//  )
+//  def myAlignedColumnSliceRangeHi = (
+//    10, log2Up(cfg.burstLen) + 1
+//  )
+//  def myAlignedColumnSliceRangeLo = (
+//    log2Up(cfg.burstLen) + 1 - 1, 1
+//  )
+//  //--------
+//  // Power up Sequence:
+//  //  1. Power must be applied to V_DD and V_DDQ (simultaneously) when
+//  //    A. `io.sdram.cke === False`
+//  //    B. `io.sdram.dqmh === True`
+//  //    C. `io.sdram.dqml === True`
+//  //    D. All input signals are held "NOP" state.
+//  //  2. Start clock and maintain stable condition for minimum 200 us,
+//  //    then bring `io.sdram.cke === True` and, it is recommended that
+//  //    `io.sdram.dqmh === True` and `io.sdram.dqml === True`
+//  //    to ensure that DQ output is in high impedance.
+//  //  3. All banks must be precharged.
+//  //    A. I should be able to do that with
+//  //      `io.sdram.sendCmdPrecharge(bank=dontcare, prechargeAll=True)`
+//  //  4. Mode Register Set command must be asserted to initialize the Mode
+//  //    register.
+//  //  5. A minimum of 2 Auto-Refresh dummy cycles must be required to
+//  //    stabilize the internal circuitry of the device.
+//  //    A. NOTE: The Auto Refresh command can be issued before or after the
+//  //      Mode Register Set command.
+//  //--------
+//  //--------
+//  //--------
+//  //  12. AutoRefresh command:
+//  //    A. The AutoRefresh command must be performed 
+//  //      8192 times within 64 ms.
+//  //    B. The time required to complete the auto refresh operation is
+//  //      specified by `tRC(min.)`
+//  //    C. To provide the AutoRefresh command, all banks need to be in the 
+//  //      idle state and the device must NOT be in power down mode
+//  //      (`io.sdram.cke === True`).
+//  //    D. This command must be followed by NOPs until the auto-refresh
+//  //      operation is completed.
+//  //    E. The precharge time requirement, `tRP(min)`, must be met before
+//  //      successive auto refresh operations are performed.
+//  //--------
+//  //  * `tCK`, Clock Cycle time (min.), is 7 ns for me
+//  //--------
+//  //  * at 100 MHz, we have 100e6 cycles / s
+//  //    * then we have (x e-9 s) * (100e6 cycles / s) = No. of cycles we
+//  //    need to wait for given a time constant
+//  //--------
+//  io.sdram.doSetAsReg()
+//  //--------
+//  val rDqTriState = {
+//    val temp = Reg(TriState(UInt(cfg.sdramDqWidth bits)))
+//    temp.init(temp.getZero)
+//    temp
+//  }
+//  rDqTriState.writeEnable := False
+//  when (rDqTriState.writeEnable) {
+//    io.sdram.dq := rDqTriState.write
+//  } otherwise {
+//    //rDqTriState.read := io.sdram.dq
+//  }
+//  //--------
+//  def myPwrOnCntNumCycles = (
+//    ((200 us) * cfg.clkRate) + 10 // 10 extra cycles for good measure 
+//  )
+//  def myPwrOnCntNumCyclesHalf = (
+//    (myPwrOnCntNumCycles / 2).toInt
+//  )
+//  val rPwrOnInitCnt = (
+//    Vec[UInt](List[UInt](
+//      (
+//        Reg(UInt((log2Up(myPwrOnCntNumCyclesHalf.toInt) + 3) bits))
+//        init(myPwrOnCntNumCyclesHalf.toInt)
+//      ),
+//      (
+//        Reg(UInt((log2Up(myPwrOnCntNumCycles.toInt) + 3) bits))
+//        init(myPwrOnCntNumCycles.toInt)
+//      ),
+//    ))
+//    //Vec.fill(2)(
+//    //)
+//  )
+//  val rPwrOnRpCnt = (
+//    //Vec.fill(2)(
+//      Reg(UInt((log2Up(cfg.Cycles.tRP._1.get.toInt) + 3) bits))
+//      init(cfg.Cycles.tRP._1.get.toInt)
+//    //)
+//  )
+//  val rPwrOnRfcCnt = (
+//    Vec.fill(2)(
+//      Reg(UInt((log2Up(cfg.Cycles.tRFC._1.get.toInt) + 3) bits))
+//      init(cfg.Cycles.tRFC._1.get.toInt)
+//    )
+//  )
+//  val rPwrOnMrdCnt = (
+//    Reg(UInt((log2Up(cfg.Cycles.tMRD._1.get.toInt) + 3) bits))
+//    init(cfg.Cycles.tMRD._1.get.toInt)
+//  )
+//  //--------
+//  val rNeedRfshCnt = (
+//    Reg(SInt((log2Up(cfg.Cycles.tREFIthresh.toInt) + 3) bits))
+//    init(
+//      //cfg.Cycles.tREFIthresh.toInt
+//      -1
+//    )
+//  )
+//  when (!rNeedRfshCnt.msb) {
+//    rNeedRfshCnt := rNeedRfshCnt - 1
+//  }
+//  val rRfshNopWaitCnt = (
+//    Reg(UInt((log2Up(cfg.Cycles.tRFC._1.get.toInt) + 3) bits))
+//    init(cfg.Cycles.tRFC._1.get.toInt)
+//  )
+//  val rActiveNopWaitCnt = (
+//    Reg(UInt((log2Up(cfg.Cycles.tRCD._1.get.toInt) + 3) bits))
+//    init(cfg.Cycles.tRCD._1.get.toInt)
+//  )
+//  def myRdNopWaitCntNumCycles = (
+//    1
+//    //// this is with auto-precharge
+//    //(
+//    //  (cfg.burstLen /*- 1*/)
+//    //  + cfg.Cycles.tRP._1.get
+//    //).toInt + 1
+//  )
+//  val rRdNopWaitCnt = (
+//    Reg(UInt((log2Up(myRdNopWaitCntNumCycles.toInt) + 3) bits))
+//    init(myRdNopWaitCntNumCycles.toInt)
+//  )
+//  def myWrNopWaitCntNumCycles = (
+//    1
+//    //// this is with auto-precharge
+//    //(
+//    //  (cfg.burstLen - 1)
+//    //  + cfg.Cycles.tWR._1.get
+//    //  + cfg.Cycles.tRP._1.get
+//    //).toInt + 1
+//  )
+//  val rWrNopWaitCnt = (
+//    Reg(UInt((log2Up(myWrNopWaitCntNumCycles.toInt) + 3) bits))
+//    init(myWrNopWaitCntNumCycles.toInt)
+//  )
+//
+//  def myRdCasLatencyCntNumCycles = (
+//    cfg.casLatency._2
+//    + cfg.burstLen
+//    + 1
+//    //+ 1
+//  )
+//  val rRdCasLatencyCnt = (
+//    Reg(SInt((log2Up(myRdCasLatencyCntNumCycles) + 3) bits))
+//    init(
+//      myRdCasLatencyCntNumCycles - 1
+//      //cfg.casLatency._2 - 1
+//      //- 1
+//    )
+//  )
+//  //--------
+//  val sdramclkDdr = (cfg.useAltddioOut) generate (
+//    altddio_out(
+//      cfg=cfg.altddioOutCfg
+//    )
+//  )
+//  if (cfg.useAltddioOut) {
+//    sdramclkDdr.io.datain_h := 0x0
+//    sdramclkDdr.io.datain_l := 0x1
+//    sdramclkDdr.io.outclock := ClockDomain.current.readClockWire
+//    io.sdram.clk := sdramclkDdr.io.dataout.lsb
+//    sdramclkDdr.io.aclr := False
+//    sdramclkDdr.io.aset := False
+//    sdramclkDdr.io.oe := True
+//    sdramclkDdr.io.outclocken := True
+//    sdramclkDdr.io.sclr := False
+//    sdramclkDdr.io.sset := False
+//  } else {
+//    io.sdram.clk := ClockDomain.current.readClockWire
+//  }
+//  //--------
+//}
+
+//case class LcvBusSdramCtrl(
+//  cfg: LcvBusSdramCtrlConfig
+//) extends Component {
+//  //--------
+//  val io = LcvBusSdramCtrlIo(cfg=cfg)
+//  //--------
+//  val mySdramCtrlAllowBusBursts = (
+//    cfg.busCfg.allowBurst
+//  ) generate (
+//    LcvBusSdramCtrlAllowBusBursts(cfg=cfg)
+//  )
+//
+//  val mySdramCtrlDisallowBusBursts = (
+//    !cfg.busCfg.allowBurst
+//  ) generate (
+//    LcvBusSdramCtrlDisallowBusBursts(cfg=cfg)
+//  )
+//
+//  if (cfg.busCfg.allowBurst) {
+//    io <> mySdramCtrlAllowBusBursts.io
+//  } else { // if (!cfg.busCfg.allowBurst)
+//    io <> mySdramCtrlDisallowBusBursts.io
+//  }
+//}
 
 case class as4c32m16sb(
 ) extends BlackBox {

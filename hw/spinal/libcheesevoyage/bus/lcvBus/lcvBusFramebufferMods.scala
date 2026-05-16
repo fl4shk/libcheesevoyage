@@ -120,14 +120,6 @@ case class LcvBusFramebufferCtrl(
   def rgbBusRatio = (busCfg.dataWidth / rgbUpWidth).toInt
   def myBusBurstSizeMaxMult = cfg.myBusBurstSizeMax * rgbBusRatio
 
-  //val myD2hShiftedDataStmAdapter = (
-  //  rgbBusRatio > 1
-  //) generate (
-  //  LcvBusD2hShiftedDataEtcStreamAdapter(
-  //    cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(busCfg=cfg.busCfg)
-  //  )
-  //)
-
   val myVideoCfg = LcvVideoDblLineBufWithCalcPosConfig(
     rgbCfg=rgbCfg,
     someSize2d=ElabVec2[Int](
@@ -135,17 +127,7 @@ case class LcvBusFramebufferCtrl(
       y=(fbSize2d.y * (if (cfg.dblBuf) (2) else (1))),
     ),
     cnt2dShift=cfg.cnt2dShift,
-    //cnt2dShiftOne=cfg.cnt2dShiftOne
   )
-  //val myVideoCfg = LcvVideoDblLineBufWithCalcPosConfig(
-  //  rgbCfg=rgbCfg,
-  //  someSize2d=ElabVec2[Int](
-  //    x=fbSize2d.x,
-  //    y=(fbSize2d.y * (if (cfg.dblBuf) (2) else (1))),
-  //  ),
-  //  cnt2dShift=cfg.cnt2dShift,
-  //  //cnt2dShiftOne=cfg.cnt2dShiftOne
-  //)
 
   require(
     busCfg.allowBurst
@@ -167,48 +149,6 @@ case class LcvBusFramebufferCtrl(
     cloneOf(io.bus.h2dBus)
   )
 
-  //val calcPosStmAdapterArr = Array.fill(
-  //  //2 // maybe add this back when there's a line buffer?
-  //  1
-  //)(
-  //  LcvVideoCalcPosStreamAdapter(
-  //    someSize2d=(
-  //      //someSize2d
-  //      myVideoCfg.myCalcPosSize2d
-  //    )
-  //  )
-  //)
-  //val myInfoPopStm = Vec.fill(calcPosStmAdapterArr.size)(
-  //  cloneOf(calcPosStmAdapterArr.head.io.infoPop)
-  //)
-  //val myH2dRawCnt2d = calcPosStmAdapterArr.head.io.infoPop.pos
-  //val myH2dNextCnt2d = calcPosStmAdapterArr.head.io.infoPop.nextPos
-  //val myCnt2dRange = (
-  //  ElabVec2(
-  //    x=(myH2dRawCnt2d.x.high downto cnt2dShift.x),
-  //    y=(myH2dRawCnt2d.y.high downto cnt2dShift.y),
-  //  )
-  //  //ElabVec2(
-  //  //  x=(rH2dRawCnt2d.x.high downto cnt2dShift.x),
-  //  //  y=(rH2dRawCnt2d.y.high downto cnt2dShift.y),
-  //  //)
-  //)
-  //val myH2dMainCnt = ElabDualTypeVec2(
-  //  x=myH2dRawCnt2d.x(myCnt2dRange.x),
-  //  y=myH2dRawCnt2d.y(myCnt2dRange.y),
-  //)
-  //val myH2dMainNextCnt = ElabDualTypeVec2(
-  //  x=myH2dNextCnt2d.x(myCnt2dRange.x),
-  //  y=myH2dNextCnt2d.y(myCnt2dRange.y),
-  //)
-  ////val rH2dMainCnt = ElabDualTypeVec2(
-  ////  x=rH2dRawCnt2d.x(myCnt2dRange.x),
-  ////  y=rH2dRawCnt2d.y(myCnt2dRange.y),
-  ////)
-  //for (idx <- 0 until calcPosStmAdapterArr.size) {
-  //  myInfoPopStm(idx) <-/< calcPosStmAdapterArr(idx).io.infoPop
-  //}
-
   myH2dStm.head.valid := True
   io.bus.h2dBus << myH2dStm.last
   val myH2dThrowCond = Bool()
@@ -225,10 +165,9 @@ case class LcvBusFramebufferCtrl(
     Reg(Bool(), init=False)
   )
   if (cnt2dShift.y > 0) {
-    //myH2dThrowCond := False
     myH2dThrowCond := rMyFinishedFetchingLine
   }
-  myH2dStm(1) <-/< myH2dMaybeThrownStm //myH2dStm.head
+  myH2dStm(1) <-/< myH2dMaybeThrownStm
   myH2dStm(1).translateInto(myH2dStm.last)(
     dataAssignment=(outp, inp) => {
       outp := inp
@@ -236,86 +175,39 @@ case class LcvBusFramebufferCtrl(
       outp.addr(cfg.fbMmapCfg.addrSliceRange) := (
         cfg.fbMmapCfg.addrSliceValUInt
       )
-      //outp.addr(
-      //)
     }
   )
 
   val rFbRowCnt = (
     Reg(UInt(
-      (
-        log2Up(
-          (
-            myVideoCfg.someSize2d.x
-            // / rgbBusRatio
-          ) 
-          + 1
-        )
-        + 1
-      )
-      bits
+      (log2Up((myVideoCfg.someSize2d.x) + 1) + 1) bits
     ))
     init(0x0)
   )
   val rFbAddrCnt = (
     Reg(UInt(
       log2Up(
-        (
-          (
-            myVideoCfg.someSize2d.y * myVideoCfg.someSize2d.x
-            // / rgbBusRatio
-          ) //<< (cnt2dShift.x + cnt2dShift.y)
-          + 1
-        )
-        + 1
+        ((myVideoCfg.someSize2d.y * myVideoCfg.someSize2d.x) + 1) + 1
       ) bits
     ))
     init(0x0)
   )
-  when (
-    myH2dMaybeThrownStm.fire
-    //&& !rMyFinishedFetchingLine
-  ) {
+  when (myH2dMaybeThrownStm.fire) {
     when (
       rFbRowCnt < (
         myVideoCfg.someSize2d.x
-        //- 1
-        //- cfg.myBusBurstSizeMax
         - myBusBurstSizeMaxMult
       )
     ) {
       rFbRowCnt := (
-        rFbRowCnt
-        //+ 1
-        //+ cfg.myBusBurstSizeMax
-        + myBusBurstSizeMaxMult
+        rFbRowCnt + myBusBurstSizeMaxMult
       )
     } otherwise {
       rMyFinishedFetchingLine := True
       rFbRowCnt := 0x0
     }
   }
-  when (
-    //myH2dStm.head.fire
-    //myH2dMaybeThrownStm.fire
-    myH2dMaybeThrownStm.fire
-  ) {
-    //when (
-    //  rFbRowCnt < (
-    //    myVideoCfg.someSize2d.x
-    //    //- 1
-    //    - cfg.myBusBurstSizeMax
-    //  )
-    //) {
-    //  rFbRowCnt := (
-    //    rFbRowCnt
-    //    //+ 1
-    //    + cfg.myBusBurstSizeMax
-    //  )
-    //} otherwise {
-    //  rMyFinishedFetchingLine := True
-    //  rFbRowCnt := 0x0
-    //}
+  when (myH2dMaybeThrownStm.fire) {
     when (
       rFbAddrCnt
       < (
@@ -323,18 +215,13 @@ case class LcvBusFramebufferCtrl(
           (
             myVideoCfg.someSize2d.y * myVideoCfg.someSize2d.x
             / rgbBusRatio
-          ) //<< (cnt2dShift.x + cnt2dShift.y)
+          )
         )
-        //- 1
         - cfg.myBusBurstSizeMax
-        //- myBusBurstSizeMaxMult
       )
     ) {
       rFbAddrCnt := (
-        rFbAddrCnt
-        //+ 1
-        + cfg.myBusBurstSizeMax
-        // + myBusBurstSizeMaxMult
+        rFbAddrCnt + cfg.myBusBurstSizeMax
       )
     } otherwise {
       rFbAddrCnt := 0x0
@@ -344,56 +231,20 @@ case class LcvBusFramebufferCtrl(
     outp: LcvBusH2dPayload,
     inp: Data,
   ): Unit = {
-    //myH2dStm.head.valid := (
-    //  True // temporary!
-    //)
-    //outp.addr := (
-    //  Cat(
-    //    //(rCnt2d.head.y(myCnt2dRange.y) * fbSize2d.x)
-    //    //+ rCnt2d.head.x(myCnt2dRange.x)
-    //    myHistH2dAddrMult.last,
-    //    //U(s"${log2Up(busCfg.dataWidth / 8)}'d0"),
-    //    //U(s"${log2Up(Rgb(rgbCfg).asBits.getWidth / 8)}'d0"),
-    //    U(s"${log2Up(rgbUpWidth / 8)}'d0"),
-    //  ).asUInt.resize(myH2dStm.head.addr.getWidth)
-    //  //Cat(
-    //  //  cfg.fbMmapCfg.addrSliceValUInt,
-    //  //  rCnt.x,
-    //  //  U(s"${busCfg.dataWidth / 8}'d0"),
-    //  //).asUInt.resize(myH2dStm.head.addr.getWidth)
-    //)
-    //when (myH2dStm.head.fire) {
-    //}
     outp.addr := (
       Cat(
-        rFbAddrCnt(
-          rFbAddrCnt.high
-          downto 0 //cnt2dShift.x + cnt2dShift.y
-          //downto log2Up(rgbBusRatio)
-        ),
-        //U(s"${log2Up(rgbUpWidth / 8)}'d0"),
-        U(
-          s"${log2Up(busCfg.dataWidth / 8)}'d0"
-        )
+        rFbAddrCnt(rFbAddrCnt.high downto 0),
+        U(s"${log2Up(busCfg.dataWidth / 8)}'d0")
       ).asUInt.resize(outp.addr.getWidth)
     )
-    outp.src := (
-      0x0
-      //Cat(
-      //  rMyFinishedFetchingLine
-      //).asUInt.resize(outp.src.getWidth)
-    )
+    outp.src := 0x0
     outp.data := 0x0
-    outp.byteSize := (
-      log2Up(busCfg.dataWidth / 8)
-      //log2Up(Rgb(rgbCfg).asBits.getWidth / 8)
-      //log2Up(rgbUpWidth / 8)
-    )
+    outp.byteSize := log2Up(busCfg.dataWidth / 8)
     outp.isWrite := False
 
     if (busCfg.allowBurst) {
-      outp.burstFirst := True//False//True
-      outp.burstCnt := busCfg.maxBurstSizeMinus1//0x0//
+      outp.burstFirst := True
+      outp.burstCnt := busCfg.maxBurstSizeMinus1
       outp.burstLast := False
     }
   }
@@ -402,103 +253,22 @@ case class LcvBusFramebufferCtrl(
     inp=null,
   )
 
-  //myInfoPopStm.head.translateInto(myH2dStm.head)(
-  //  dataAssignment=myDataAssignmentH2d
-  //)
   //--------
   val myPushStm = (
-    //Stream(Rgb(rgbCfg))
     Stream(UInt(busCfg.dataWidth bits))
   )
-  //myPushStm.ready := True
-  val myD2hStm = Vec.fill(
-    //2
-    //if (rgbBusRatio == 1) (
-      2
-    //) else (
-    //  //3
-    //  4
-    //)
-  )(
+  val myD2hStm = Vec.fill(2)(
     cloneOf(io.bus.d2hBus)
   )
   myD2hStm.head <-/< io.bus.d2hBus
-  //myD2hStm.last <-/< myD2hStm.head.repeat(
-  //  times=(
-  //    (1 << cnt2dShift.x) //- 1
-  //  )
-  //)._1
-  //val rMyD2hCnt = (
-  //  rgbBusRatio > 1
-  //) generate (
-  //  Reg(UInt(log2Up(rgbBusRatio) bits))
-  //  init(0x0)
-  //)
-  //if (rgbBusRatio == 1) {
     myD2hStm.last <-/< myD2hStm.head
-  //} else {
-  //  myD2hStm(1) <-/< myD2hStm.head.repeat(
-  //    times=rgbBusRatio
-  //  )._1
-  //  myD2hStm(1).translateInto(myD2hShiftedDataStmAdapter.io.loD2hBus)(
-  //    dataAssignment=(outp, inp) => {
-  //      outp.data := inp.data
-  //      //outp.src := inp.src
-  //      outp.byteSize := log2Up(rgbUpWidth / 8)
-  //      outp.addrLo := 0x0
-  //      outp.addrLo.allowOverride
-  //      outp.addrLo(
-  //        outp.addrLo.high
-  //        downto rMyD2hCnt.getWidth
-  //      ) := rMyD2hCnt
-  //    }
-  //  )
-  //  when (myD2hStm(1).fire) {
-  //    rMyD2hCnt := rMyD2hCnt + 1
-  //  }
-  //  myD2hShiftedDataStmAdapter.io.hiD2hBus.translateInto(myD2hStm(2))(
-  //    dataAssignment=(outp, inp) => {
-  //      outp.data := inp.data
-  //    }
-  //  )
-  //  myD2hStm.last <-/< myD2hStm(2)
-  //}
 
-  myD2hStm.last.translateInto(
-    //io.pop
-    myPushStm
-  )(
+  myD2hStm.last.translateInto(myPushStm)(
     dataAssignment=(outp, inp) => {
       outp.assignFromBits(inp.data.asBits.resize(outp.asBits.getWidth))
     }
   )
   //--------
-  //val myNonLineDoublingArea = (
-  //  cnt2dShift.y == 0
-  //) generate (new Area {
-  //  val myTempPopStm = (
-  //    cloneOf(io.pop)
-  //    //myPushStm
-  //  )
-  //  if (cnt2dShift.x == 0) {
-  //    io.pop << myTempPopStm
-  //  } else {
-  //    io.pop <-/< myTempPopStm.repeat(
-  //      times=(
-  //        (1 << cnt2dShift.x) //- 1
-  //        //* rgbBusRatio
-  //      )
-  //    )._1
-  //  }
-  //})
-
-  //val myLineDuplArea = (
-  //  cnt2dShift.y == 1
-  //) generate (new Area {
-  //  val myDblLineBufArr = (
-  //  )
-  //})
-
   object MyLineDuplState
   extends SpinalEnum(defaultEncoding=binaryOneHot) {
     val
@@ -539,7 +309,6 @@ case class LcvBusFramebufferCtrl(
     val myLineBufMemCfg = WrPulseRdPipeRamSdpPipeConfig(
       modType=(
         Vec.fill(rgbBusRatio)(Rgb(rgbCfg))
-        //
       ),
       wordType=(
         Vec.fill(rgbBusRatio)(Rgb(rgbCfg))
@@ -565,54 +334,20 @@ case class LcvBusFramebufferCtrl(
     val rMyLineBufArrIdxVec = {
       val temp = Vec.fill(myLineBufArrSize)(
         Reg(UInt(log2Up(myLineBufArrSize) bits))
-        //init(0x0)
       )
       for (idx <- 0 until temp.size) {
-        //temp(idx).init(idx)
         temp(idx).init(temp(idx).getZero)
       }
-      //temp.init(temp.getZero)
       temp
     }
 
     val myDblLineBuf = (
-      //Array.fill(myLineBufArrSize)(
-        WrPulseRdPipeRamSdpPipe(cfg=myLineBufMemCfg)
-      //)
+      WrPulseRdPipeRamSdpPipe(cfg=myLineBufMemCfg)
     )
-    //myLineBufArr.foreach(item => {
-    //  item.io.wrPulse := item.io.wrPulse.getZero
-    //  item.io.rdAddrPipe.valid := False
-    //  item.io.rdAddrPipe.payload := item.io.rdAddrPipe.payload.getZero
-    //  item.io.rdDataPipe.ready := False
-    //})
 
-    //myDblLineBuf.io.wrPulse := myDblLineBuf.io.wrPulse.getZero
-    //myDblLineBuf.io.rdAddrPipe.valid := False
-    //myDblLineBuf.io.rdAddrPipe.payload := (
-    //  myDblLineBuf.io.rdAddrPipe.payload.getZero
-    //)
-    //myDblLineBuf.io.rdDataPipe.ready := False
-
-    //val rMyPopState = (
-    //  Reg(MyPopState())
-    //  init(MyPopState.USE_D2H_BUS)
-    //)
-    //val myWrPulse = Vec.fill(myLineBufArrSize)(
-    //  cloneOf(myLineBufArr.head.io.wrPulse)
-    //)
     val myWrPulse = (
-      //cloneOf(myLineBufArr.head.io.wrPulse)
       cloneOf(myDblLineBuf.io.wrPulse)
     )
-    //myDblLineBuf.io.wrPulse <-< myWrPulse
-    //switch (rMyLineBufArrIdxVec.last) {
-    //  for (idx <- 0 until myLineBufArrSize) {
-    //    is (idx) {
-    //      myLineBufArr(idx).io.wrPulse <-< myWrPulse
-    //    }
-    //  }
-    //}
 
     myDblLineBuf.io.wrPulse <-< myWrPulse
 
@@ -626,31 +361,16 @@ case class LcvBusFramebufferCtrl(
     )
     val rSeenWrPulseFinish = Reg(Bool(), init=False)
     val myMaybeReptPushStm = cloneOf(myPushStm)
-    //myMaybeReptPushStm.valid := False
-    //myMaybeReptPushStm.payload := myMaybeReptPushStm.payload.getZero
-    //myMaybeReptPushStm.ready := False
-    //myMaybeReptPushStm := myMaybeReptPushStm.getZero
     myMaybeReptPushStm <-/< myPushStm
-    myMaybeReptPushStm.ready := (
-      //!rSeenWrPulseFinish
-      //False
-      True
-    )
+    myMaybeReptPushStm.ready := True
 
     myWrPulse.valid := (
       if (cnt2dShift.x == 0) (
         myMaybeReptPushStm.fire
       ) else (
         myMaybeReptPushStm.fire
-        //&& (
-        //  rWrLineBufAddrCnt(
-        //    cnt2dShift.x - 1 downto 0
-        //  )
-        //  === 0x0
-        //)
       )
     )
-    //myWrPulse.data := myMaybeReptPushStm.payload //myPushStm.payload
     for (idx <- 0 until myWrPulse.data.size) {
       myWrPulse.data(idx).assignFromBits(
         myMaybeReptPushStm.payload(
@@ -662,24 +382,13 @@ case class LcvBusFramebufferCtrl(
     val mySeenRdPipeFinishRstVal = (
       (1 << cnt2dShift.y) - 1//2//1//2
     )
-    //println(
-    //  s"mySeenRdPipeFinishRstVal:${mySeenRdPipeFinishRstVal}"
-    //)
     val rSeenRdAddrPipeFinish = (
-      //Reg(Bool(), init=False)
       Reg(UInt((cnt2dShift.y + 2) bits))
-      init(
-        //0x0
-        //(1 << cnt2dShift.y) - 1
-        mySeenRdPipeFinishRstVal
-      )
+      init(mySeenRdPipeFinishRstVal)
     )
     val rSeenRdDataPipeFinish = (
-      //Reg(Bool(), init=False)
       Reg(UInt((cnt2dShift.y + 2) bits))
       init(
-        //0x0
-        //(1 << cnt2dShift.y) - 1
         mySeenRdPipeFinishRstVal
       )
     )
@@ -689,22 +398,14 @@ case class LcvBusFramebufferCtrl(
         List[UInt](
           (
             Reg(UInt(
-              //myWrPulse.addr.getWidth //- 1 
-              //bits
-              //myLineBufArr.head.io.rdAddrPipe.addr.getWidth
               myDblLineBuf.io.rdAddrPipe.addr.getWidth - 1
-              //+ cnt2dShift.x
               bits
             ))
             init(0x0)
           ),
           (
             Reg(UInt(
-              //myWrPulse.addr.getWidth //- 1 
-              //bits
-              //myLineBufArr.head.io.rdAddrPipe.addr.getWidth
               myDblLineBuf.io.rdAddrPipe.addr.getWidth - 1
-              //+ cnt2dShift.x
               bits
             ))
             init(0x0)
@@ -713,11 +414,9 @@ case class LcvBusFramebufferCtrl(
       )
     )
     val myRdAddrPipeStm = (
-      //cloneOf(myLineBufArr.head.io.rdAddrPipe)
       cloneOf(myDblLineBuf.io.rdAddrPipe)
     )
     val myRdDataPipeStm = (
-      //cloneOf(myLineBufArr.head.io.rdDataPipe)
       cloneOf(myDblLineBuf.io.rdDataPipe)
     )
 
@@ -726,18 +425,13 @@ case class LcvBusFramebufferCtrl(
     )
     myMaybeReptRdDataPipeStm := myMaybeReptRdDataPipeStm.getZero
 
-    //myRdAddrPipeStm.valid := False
     myRdAddrPipeStm.valid := (
-      //rRdLineBufAddrCnt.head
-      ////< (myVideoCfg.someSize2d.x << cnt2dShift.x) - 1
-      //< myVideoCfg.someSize2d.x  - 1
       !rSeenRdAddrPipeFinish.msb
       && (
         rState === MyLineDuplState.MAIN
       )
     )
     myRdAddrPipeStm.payload := myRdAddrPipeStm.payload.getZero
-    //myRdAddrPipeStm.ready := False
     myRdAddrPipeStm.addr.allowOverride
     myRdAddrPipeStm.addr := (
       Cat(
@@ -745,60 +439,31 @@ case class LcvBusFramebufferCtrl(
         rRdLineBufAddrCnt.head(
           rRdLineBufAddrCnt.head.high
           downto 0
-          //downto cnt2dShift.x //0//cnt2dShift.x
         )
       ).asUInt
     )
-    //myRdDataPipeStm := myRdDataPipeStm.getZero
-
-    //switch (rMyLineBufArrIdxVec.head) {
-    //  for (idx <- 0 until myLineBufArrSize) {
-    //    is (idx) {
-    //      //myLineBufArr(idx).io.wrPulse <-< myWrPulse
-    //      myLineBufArr(idx).io.rdAddrPipe <-/< myRdAddrPipeStm
-    //      myRdDataPipeStm <-/< myLineBufArr(idx).io.rdDataPipe
-    //    }
-    //  }
-    //}
     myDblLineBuf.io.rdAddrPipe <-/< myRdAddrPipeStm
     myRdDataPipeStm <-/< myDblLineBuf.io.rdDataPipe
-    myRdDataPipeStm.ready := (
-      //True
-      False
-    )
+    myRdDataPipeStm.ready := False
 
     io.pop.valid := False
     io.pop.payload := RegNext(io.pop.payload, init=io.pop.payload.getZero)
 
-    //val myStickyD2hSrc = cloneOf(myD2hStm.last.src)
-    //myStickyD2hSrc := RegNext(myStickyD2hSrc, init=myStickyD2hSrc.getZero)
-
-    //when (myD2hStm.last.valid) {
-    //  myStickyD2hSrc := myD2hStm.last.src
-    //}
-
     myWrPulse.addr := (
       Cat(
-        //myStickyD2hSrc,
         rMyLineBufArrIdxVec.last,
         rWrLineBufAddrCnt(
           rWrLineBufAddrCnt.high - 1
-          downto 0//cnt2dShift.x
+          downto 0
         ),
       ).asUInt
     )
     switch (
-      //myPushStm.fire
       rSeenWrPulseFinish
       ## myMaybeReptPushStm.fire
       ## (
         rWrLineBufAddrCnt
-        < ((
-          (
-            myVideoCfg.someSize2d.x //<< cnt2dShift.x
-          )
-          / rgbBusRatio
-        ) - 1 )
+        < (myVideoCfg.someSize2d.x / rgbBusRatio) - 1 
       )
     ) {
       is (M"011") {
@@ -807,8 +472,6 @@ case class LcvBusFramebufferCtrl(
       }
       is (M"010") {
         // fire, !(rWrLineBufAddrCnt < width)
-        //rWrLineBufAddrCnt := 0x0
-        //rMyPopState := MyPopState.READ_LINE_BUF
         rSeenWrPulseFinish := True
       }
       default {
@@ -816,22 +479,11 @@ case class LcvBusFramebufferCtrl(
     }
 
     switch (
-      //myPushStm.fire
-      //myDblLineBuf.io.rdAddrPipe.fire
-      //rSeenRdAddrPipeFinish
-
-      //(rSeenRdAddrPipeFinish < (1 << cnt2dShift.y) - 1)
       rSeenRdAddrPipeFinish.msb
       ## myRdAddrPipeStm.fire
       ## (
         rRdLineBufAddrCnt.head
-        //< (myVideoCfg.someSize2d.x << cnt2dShift.x) - 1
-        < (
-          //(myVideoCfg.someSize2d.x / rgbBusRatio) - 1
-          (
-            myVideoCfg.someSize2d.x / rgbBusRatio
-          ) - 1
-        )
+        < (myVideoCfg.someSize2d.x / rgbBusRatio) - 1
       )
     ) {
       is (M"011") {
@@ -840,14 +492,8 @@ case class LcvBusFramebufferCtrl(
       }
       is (M"010") {
         // fire, !(rRdLineBufAddrCnt < width)
-        //rRdLineBufAddrCnt := 0x0
-        //rMyPopState := MyPopState.READ_LINE_BUF
-        //rRdLineBufAddrCnt.head := rRdLineBufAddrCnt.head + 1
         rSeenRdAddrPipeFinish := rSeenRdAddrPipeFinish - 1
-        when (
-          !(rSeenRdAddrPipeFinish - 1).msb
-          //!rSeenRdAddrPipeFinish.orR
-        ) {
+        when (!(rSeenRdAddrPipeFinish - 1).msb) {
           rRdLineBufAddrCnt.head := 0x0
         }
       }
@@ -856,20 +502,11 @@ case class LcvBusFramebufferCtrl(
     }
 
     switch (
-      //myPushStm.fire
-      //myDblLineBuf.io.rdDataPipe.fire
-      //myRdDataPipeStm.fire
-      //(rSeenRdDataPipeFinish < (1 << cnt2dShift.y) - 1)
       rSeenRdDataPipeFinish.msb
       ## myMaybeReptRdDataPipeStm.head.fire
       ## (
         rRdLineBufAddrCnt.last
-        < (
-          (
-            myVideoCfg.someSize2d.x //<< cnt2dShift.x
-          )
-          / rgbBusRatio
-        ) - 1
+        < (myVideoCfg.someSize2d.x / rgbBusRatio) - 1
       )
     ) {
       is (M"011") {
@@ -878,14 +515,9 @@ case class LcvBusFramebufferCtrl(
       }
       is (M"010") {
         // fire, !(rRdLineBufAddrCnt < width)
-        //rRdLineBufAddrCnt := 0x0
-        //rMyPopState := MyPopState.READ_LINE_BUF
-        //rRdLineBufAddrCnt.last := rRdLineBufAddrCnt.last + 1
-        //rSeenRdDataPipeFinish := True
         rSeenRdDataPipeFinish := rSeenRdDataPipeFinish - 1
         when (
           !(rSeenRdDataPipeFinish - 1).msb
-          //!rSeenRdDataPipeFinish.orR
         ) {
           rRdLineBufAddrCnt.last := 0x0
         }
@@ -900,145 +532,54 @@ case class LcvBusFramebufferCtrl(
       init(0x0)
     )
 
-    //when (
-    //  rSeenWrPulseFinish
-    //  && (rSeenRdAddrPipeFinish - 1).msb
-    //  //&& !rSeenRdAddrPipeFinish.orR
-    //) {
-    //  rMyFinishedFetchingLine := False
-    //}
-    //when (
-    //  !rSeenWrPulseFinish
-    //) {
-    //  True
-    //}
-
-    //val rDidFirstIter = Reg(Bool(), init=False)
-    //when (
-    //  //rSeenWrPulseFinish
-    //  rMyFinishedFetchingLine
-    //) {
-    //  rDidFirstIter := True
-    //}
-
     switch (rState) {
       is (MyLineDuplState.FIRST_FETCH) {
-        when (
-          rSeenWrPulseFinish
-          //&& (
-          //  rSeenRdAddrPipeFinish.msb
-          //  //=== (1 << cnt2dShift.y) - 1
-          //)
-          //&& rSeenRdDataPipeFinish.msb
-        ) {
+        when (rSeenWrPulseFinish) {
           rState := MyLineDuplState.MAIN
 
           rSeenWrPulseFinish := False
-          //rSeenRdAddrPipeFinish := (
-          //  //False
-          //  mySeenRdPipeFinishRstVal
-          //)
-          //rSeenRdDataPipeFinish := (
-          //  //False
-          //  mySeenRdPipeFinishRstVal
-          //)
           rWrLineBufAddrCnt := 0x0
-          //rRdLineBufAddrCnt.foreach(item => {
-          //  item := 0
-          //})
-          //rMyPopState := MyPopState.USE_D2H_BUS
           rMyFinishedFetchingLine := False
           rMyLineBufArrIdxVec.last := (
             rMyLineBufArrIdxVec.last + 1
           )
-          //rMyLineBufArrIdxVec.foreach(item => {
-          //  item := item + 1
-          //})
-          //rDidFirstIter := True
         }
       }
       is (MyLineDuplState.MAIN) {
         when (
           rSeenWrPulseFinish
-          && (
-            rSeenRdAddrPipeFinish.msb
-            //=== (1 << cnt2dShift.y) - 1
-          )
+          && rSeenRdAddrPipeFinish.msb
           && rSeenRdDataPipeFinish.msb
         ) {
           rSeenWrPulseFinish := False
-          rSeenRdAddrPipeFinish := (
-            //False
-            mySeenRdPipeFinishRstVal
-          )
-          rSeenRdDataPipeFinish := (
-            //False
-            mySeenRdPipeFinishRstVal
-          )
+          rSeenRdAddrPipeFinish := mySeenRdPipeFinishRstVal
+          rSeenRdDataPipeFinish := mySeenRdPipeFinishRstVal
           rWrLineBufAddrCnt := 0x0
           rRdLineBufAddrCnt.foreach(item => {
             item := 0
           })
-          //rMyPopState := MyPopState.USE_D2H_BUS
           rMyFinishedFetchingLine := False
           rMyLineBufArrIdxVec.foreach(item => {
             item := item + 1
           })
-          //rDidFirstIter := True
         } otherwise {
           if (cnt2dShift.x == 0) {
-            ////io.pop <-/< myRdDataPipeStm
-            //myMaybeReptRdDataPipeStm << myRdDataPipeStm
-            //io.pop << myMaybeReptRdDataPipeStm
             require(
               false,
               "not yet implemented"
             )
           } else {
-            //io.pop <-/< myRdDataPipeStm.repeat(
-            //  times=(
-            //    (1 << cnt2dShift.x) //- 1
-            //  )
-            //)._1
             myMaybeReptRdDataPipeStm.head <-/< myRdDataPipeStm.repeat(
-              times=(
-                (1 << cnt2dShift.x) //- 1
-                * rgbBusRatio
-              )
+              times=((1 << cnt2dShift.x) * rgbBusRatio)
             )._1
-            //io.pop << myMaybeReptRdDataPipeStm
-            //println(
-            //  "debug start:"
-            //)
-            //println(
-            //  (
-            //    rMyPopVecIdx.high
-            //    downto rMyPopVecIdx.getWidth - cnt2dShift.x
-            //  )
-            //)
-            //println(
-            //  rMyPopVecIdx.getWidth
-            //)
-            //println(
-            //  rgbBusRatio
-            //)
-            //println(
-            //  log2Up(rgbBusRatio)
-            //)
-            //println(
-            //  "debug end:"
-            //)
             myMaybeReptRdDataPipeStm.last <-/< (
               myMaybeReptRdDataPipeStm.head
-              //.throwWhen(
-              //  !rDidFirstIter
-              //)
             )
             myMaybeReptRdDataPipeStm.last.translateInto(io.pop)(
               dataAssignment=(outp, inp) => {
                 outp := inp(rMyPopVecIdx(
                   rMyPopVecIdx.high
-                  downto rMyPopVecIdx.getWidth - log2Up(rgbBusRatio) //cnt2dShift.x
+                  downto rMyPopVecIdx.getWidth - log2Up(rgbBusRatio)
                 ))
               }
             )
@@ -1050,334 +591,7 @@ case class LcvBusFramebufferCtrl(
       }
     }
   })
-  //object MyPopState
-  //extends SpinalEnum(defaultEncoding=binaryOneHot) {
-  //  val
-  //    USE_D2H_BUS,
-  //    READ_LINE_BUF
-  //    = newElement();
-  //}
-  //val myLineDoublingArea = (
-  //  cnt2dShift.y == 1
-  //) generate (new Area {
-  //  //myPushStm.ready := True
-  //  val myDblLineBuf = (
-  //    //Array.fill(rgbBusRatio)(
-  //      WrPulseRdPipeRamSdpPipe(
-  //        cfg=myVideoCfg.myMemCfg
-  //      )
-  //    //)
-  //  )
-  //  val myWrPulse = cloneOf(myDblLineBuf.io.wrPulse)
-  //  myDblLineBuf.io.wrPulse <-< myWrPulse
-  //  val rWrLineBufAddrCnt = (
-  //    Reg(UInt(
-  //      myWrPulse.addr.getWidth //- 1 
-  //      + cnt2dShift.x
-  //      bits
-  //    ))
-  //    init(0x0)
-  //  )
-  //  val myMaybeReptPushStm = cloneOf(myPushStm)
-  //  //myMaybeReptPushStm.valid := False
-  //  //myMaybeReptPushStm.payload := myMaybeReptPushStm.payload.getZero
-  //  //myMaybeReptPushStm.ready := False
-  //  myMaybeReptPushStm := myMaybeReptPushStm.getZero
-
-  //  myWrPulse.valid := (
-  //    if (cnt2dShift.x == 0) (
-  //      myMaybeReptPushStm.fire
-  //    ) else (
-  //      myMaybeReptPushStm.fire
-  //      //&& (
-  //      //  rWrLineBufAddrCnt(
-  //      //    cnt2dShift.x - 1 downto 0
-  //      //  )
-  //      //  === 0x0
-  //      //)
-  //    )
-  //  )
-  //  myWrPulse.data := myMaybeReptPushStm.payload //myPushStm.payload
-
-  //  val rRdLineBufAddrCnt = (
-  //    Vec[UInt](
-  //      List[UInt](
-  //        (
-  //          Reg(UInt(
-  //            //myWrPulse.addr.getWidth //- 1 
-  //            //bits
-  //            myDblLineBuf.io.rdAddrPipe.addr.getWidth
-  //            //+ cnt2dShift.x
-  //            bits
-  //          ))
-  //          init(0x0)
-  //        ),
-  //        (
-  //          Reg(UInt(
-  //            //myWrPulse.addr.getWidth //- 1 
-  //            //bits
-  //            myDblLineBuf.io.rdAddrPipe.addr.getWidth
-  //            + cnt2dShift.x
-  //            bits
-  //          ))
-  //          init(0x0)
-  //        )
-  //      )
-  //    )
-  //  )
-  //  val myRdAddrPipeStm = cloneOf(myDblLineBuf.io.rdAddrPipe)
-  //  val myRdDataPipeStm = cloneOf(myDblLineBuf.io.rdDataPipe)
-
-  //  val myMaybeReptRdDataPipeStm = cloneOf(myRdDataPipeStm)
-  //  myMaybeReptRdDataPipeStm := myMaybeReptRdDataPipeStm.getZero
-
-  //  myRdAddrPipeStm.valid := False
-  //  myRdAddrPipeStm.payload := (
-  //    //RegNext(
-  //    //  myRdAddrPipeStm.payload,
-  //    //  init=myRdAddrPipeStm.payload.getZero
-  //    //)
-  //    myRdAddrPipeStm.payload.getZero.getZero
-  //  )
-  //  myRdAddrPipeStm.addr.allowOverride
-  //  myRdAddrPipeStm.addr := (
-  //    rRdLineBufAddrCnt.head(
-  //      rRdLineBufAddrCnt.head.high
-  //      downto 0//cnt2dShift.x
-  //    )
-  //  )
-
-  //  myDblLineBuf.io.rdAddrPipe <-/< myRdAddrPipeStm
-  //  myRdDataPipeStm <-/< myDblLineBuf.io.rdDataPipe
-
-  //  io.pop.valid := False
-  //  io.pop.payload := RegNext(io.pop.payload, init=io.pop.payload.getZero)
-
-  //  //val myStickyD2hSrc = cloneOf(myD2hStm.last.src)
-  //  //myStickyD2hSrc := RegNext(myStickyD2hSrc, init=myStickyD2hSrc.getZero)
-
-  //  //when (myD2hStm.last.valid) {
-  //  //  myStickyD2hSrc := myD2hStm.last.src
-  //  //}
-  //  val rSeenRdAddrPipeFinish = Reg(Bool(), init=False)
-  //  val rSeenRdDataPipeFinish = Reg(Bool(), init=False)
-
-  //  myWrPulse.addr := (
-  //    //Cat(
-  //      //myStickyD2hSrc,
-  //      rWrLineBufAddrCnt(
-  //        rWrLineBufAddrCnt.high
-  //        downto cnt2dShift.x
-  //      ),
-  //    //).asUInt
-  //  )
-  //  val rMyPopState = (
-  //    Reg(MyPopState())
-  //    init(MyPopState.USE_D2H_BUS)
-  //  )
-  //  switch (rMyPopState) {
-  //    is (MyPopState.USE_D2H_BUS) {
-  //      //io.pop <-/< myPushStm
-  //      myRdDataPipeStm.ready := False
-  //      if (cnt2dShift.x == 0) {
-  //        //io.pop <-/< myPushStm
-  //        myMaybeReptPushStm << myPushStm
-  //        io.pop << myMaybeReptPushStm
-  //      } else {
-  //        //io.pop <-/< myPushStm.repeat(
-  //        //  times=(
-  //        //    (1 << cnt2dShift.x) //- 1
-  //        //  )
-  //        //)._1
-  //        myMaybeReptPushStm << myPushStm.repeat(
-  //          times=(
-  //            (1 << cnt2dShift.x) //- 1
-  //            //* rgbBusRatio
-  //          )
-  //        )._1
-  //        io.pop << myMaybeReptPushStm
-  //      }
-
-  //      switch (
-  //        //myPushStm.fire
-  //        myMaybeReptPushStm.fire
-  //        ## (
-  //          rWrLineBufAddrCnt
-  //          < ((myVideoCfg.someSize2d.x << cnt2dShift.x) - 1)
-  //        )
-  //      ) {
-  //        is (M"11") {
-  //          // fire, rWrLineBufAddrCnt < width
-  //          rWrLineBufAddrCnt := rWrLineBufAddrCnt + 1
-  //        }
-  //        is (M"10") {
-  //          // fire, !(rWrLineBufAddrCnt < width)
-  //          rWrLineBufAddrCnt := 0x0
-  //          rMyPopState := MyPopState.READ_LINE_BUF
-  //        }
-  //        default {
-  //        }
-  //      }
-  //      //when (
-  //      //  //myD2hStm.last.fire
-  //      //  myPushStm.fire
-  //      //  //myPushStm.valid
-  //      //  //myWrPulse.fire
-  //      //  //io.pop.fire
-  //      //) {
-  //      //  when (rWrLineBufAddrCnt < myVideoCfg.someSize2d.x - 1) {
-  //      //    rWrLineBufAddrCnt := rWrLineBufAddrCnt + 1
-  //      //  } otherwise {
-  //      //    rWrLineBufAddrCnt := 0x0
-  //      //    rMyPopState := MyPopState.READ_LINE_BUF
-  //      //  }
-  //      //}
-  //    }
-  //    is (MyPopState.READ_LINE_BUF) {
-  //      //io.pop <-/< myRdDataPipeStm
-  //      myRdDataPipeStm.ready := False
-  //      myPushStm.ready := False
-  //      myRdAddrPipeStm.valid := (
-  //        //rRdLineBufAddrCnt.head
-  //        ////< (myVideoCfg.someSize2d.x << cnt2dShift.x) - 1
-  //        //< myVideoCfg.someSize2d.x  - 1
-  //        !rSeenRdAddrPipeFinish
-  //      )
-
-  //      switch (
-  //        //myPushStm.fire
-  //        //myDblLineBuf.io.rdAddrPipe.fire
-  //        myRdAddrPipeStm.fire
-  //        ## (
-  //          rRdLineBufAddrCnt.head
-  //          //< (myVideoCfg.someSize2d.x << cnt2dShift.x) - 1
-  //          < myVideoCfg.someSize2d.x - 1
-  //        )
-  //      ) {
-  //        is (M"11") {
-  //          // fire, rRdLineBufAddrCnt.head < width
-  //          rRdLineBufAddrCnt.head := rRdLineBufAddrCnt.head + 1
-  //        }
-  //        is (M"10") {
-  //          // fire, !(rRdLineBufAddrCnt < width)
-  //          //rRdLineBufAddrCnt := 0x0
-  //          //rMyPopState := MyPopState.READ_LINE_BUF
-  //          //rRdLineBufAddrCnt.head := rRdLineBufAddrCnt.head + 1
-  //          rSeenRdAddrPipeFinish := True
-  //        }
-  //        default {
-  //        }
-  //      }
-
-  //      switch (
-  //        //myPushStm.fire
-  //        //myDblLineBuf.io.rdDataPipe.fire
-  //        //myRdDataPipeStm.fire
-  //        myMaybeReptRdDataPipeStm.fire
-  //        ## (
-  //          rRdLineBufAddrCnt.last
-  //          < (myVideoCfg.someSize2d.x << cnt2dShift.x) - 1
-  //        )
-  //      ) {
-  //        is (M"11") {
-  //          // fire, rRdLineBufAddrCnt.last < width
-  //          rRdLineBufAddrCnt.last := rRdLineBufAddrCnt.last + 1
-  //        }
-  //        is (M"10") {
-  //          // fire, !(rRdLineBufAddrCnt < width)
-  //          //rRdLineBufAddrCnt := 0x0
-  //          //rMyPopState := MyPopState.READ_LINE_BUF
-  //          //rRdLineBufAddrCnt.last := rRdLineBufAddrCnt.last + 1
-  //          rSeenRdDataPipeFinish := True
-  //        }
-  //        default {
-  //        }
-  //      }
-  //      when (rSeenRdAddrPipeFinish && rSeenRdDataPipeFinish) {
-  //        rSeenRdAddrPipeFinish := False
-  //        rSeenRdDataPipeFinish := False
-  //        rRdLineBufAddrCnt.foreach(item => {
-  //          item := 0
-  //        })
-  //        rMyPopState := MyPopState.USE_D2H_BUS
-  //        rMyFinishedFetchingLine := False
-  //      } otherwise {
-  //        if (cnt2dShift.x == 0) {
-  //          //io.pop <-/< myRdDataPipeStm
-  //          myMaybeReptRdDataPipeStm << myRdDataPipeStm
-  //          io.pop << myMaybeReptRdDataPipeStm
-  //        } else {
-  //          //io.pop <-/< myRdDataPipeStm.repeat(
-  //          //  times=(
-  //          //    (1 << cnt2dShift.x) //- 1
-  //          //  )
-  //          //)._1
-  //          myMaybeReptRdDataPipeStm << myRdDataPipeStm.repeat(
-  //            times=(
-  //              (1 << cnt2dShift.x) //- 1
-  //            )
-  //          )._1
-  //          io.pop << myMaybeReptRdDataPipeStm
-  //        }
-
-  //      }
-  //    }
-  //  }
-  //})
-
-  //val myForkStmVec = StreamFork(
-  //  input=(
-  //    //io.push
-  //    myPushStm
-  //  ),
-  //  portCount=2,
-  //  synchronous=(
-  //    //true
-  //    false
-  //  ),
-  //)
-
-  ////myForkStmVec.head.ready := True
-  ////calcPosStmAdapterArr.last.io.infoPop.ready := (
-  ////  //io.push.fire
-  ////  myForkStmVec.last.fire
-  ////)
-
-  //myWrPulse.valid := (
-  //  //io.push.valid
-  //  //io.push.fire
-  //  myForkStmVec.head.valid
-  //)
-  //myWrPulse.data := (
-  //  //io.push.payload
-  //  myForkStmVec.head.payload
-  //)
-  ////println(
-  ////  s"test: "
-  ////  + s"${someSize2d} ${log2Up(someSize2d.x)} "
-  ////  + s"${myDblLineBuf.cfg.wordCount} "
-  ////  + s"${calcPos.io.info.pos.x.getWidth} "
-  ////  + s"${calcPos.io.info.pos.x.getWidth - cnt2dShift.x} "
-  ////  + s"${calcPos.io.info.pos.y.getWidth} "
-  ////  + s"${myDblLineBuf.io.wrPulse.addr.getWidth}"
-  ////)
-  //myWrPulse.addr := (
-  //  Cat(
-  //    //calcPosStmAdapterArr.last.io.infoPop.pos.y(cnt2dShift.y),
-  //    //(!rMyFinishedFetchingLine),
-  //    //rMyFinishedFetchingLine,
-  //    myInfoPopStm.last.pos.y(cnt2dShift.y),
-  //    myInfoPopStm.last.pos.x(
-  //      //calcPos.io.info.pos.x.high
-  //      //log2Up(someSize2d.x) + cnt2dShift.x - 1
-  //      log2Up(fbSize2d.x) + cnt2dShift.x - 1
-  //      downto cnt2dShift.x
-  //    ),
-  //  ).asUInt//.resize(myWrPulseStm.addr.getWidth)
-  //)
-  //myDblLineBuf.io.wrPulse <-< myWrPulse
   //--------
-
 }
 
 //case class LcvBusFramebufferCtrlWithDblLineBuf(
