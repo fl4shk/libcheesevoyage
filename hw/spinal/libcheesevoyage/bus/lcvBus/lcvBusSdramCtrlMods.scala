@@ -167,11 +167,11 @@ case class LcvBusSdramCtrlConfig(
   //--------
 
   def burstLen = (
-    if (busCfgAllowBurst) (
+    //if (busCfgAllowBurst) (
       8
-    ) else (
-      2
-    )
+    //) else (
+    //  2
+    //)
   )
   //def burstLen = 4
   //def burstLen = 2
