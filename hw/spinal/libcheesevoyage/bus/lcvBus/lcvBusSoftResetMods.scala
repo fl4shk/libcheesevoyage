@@ -17,11 +17,12 @@ case class LcvBusDevSoftResetIo(
   cfg: LcvBusDevSoftResetConfig
 ) extends Bundle {
   val softReset = in(Bool())
+  val softResetDone = out(Bool())
 
-  val host = slave(LcvBusIo(
+  val loBus = slave(LcvBusIo(
     cfg=cfg.busCfg
   ))
-  val dev = master(LcvBusIo(
+  val hiBus = master(LcvBusIo(
     cfg=cfg.busCfg
   ))
 }
@@ -37,29 +38,24 @@ case class LcvBusDevSoftReset(
   //--------
   def doBlockBusTxn(
   ): Unit = {
-    io.host.h2dBus.ready := False
-    io.host.d2hBus.valid := False
-    io.host.d2hBus.payload := io.host.d2hBus.payload.getZero
+    io.loBus.h2dBus.ready := False
+    io.loBus.d2hBus.valid := False
+    io.loBus.d2hBus.payload := io.loBus.d2hBus.payload.getZero
 
-    io.dev.h2dBus.valid := False
-    io.dev.h2dBus.payload := io.dev.h2dBus.payload.getZero
-    io.dev.d2hBus.ready := False
+    io.hiBus.h2dBus.valid := False
+    io.hiBus.h2dBus.payload := io.hiBus.h2dBus.payload.getZero
+    io.hiBus.d2hBus.ready := False
   }
   doBlockBusTxn()
   //--------
   object AllowBurstState
   extends SpinalEnum(defaultEncoding=binarySequential) {
     val
-      //MAIN,
       IDLE,
-      //SOFT_RESET_NON_BURST,
-      //SOFT_RESET_READ_BURST,
-      //SOFT_RESET_WRITE_BURST
       NON_BURST,
       READ_BURST,
       WRITE_BURST,
-      SOFT_RESET_NON_BURST//,
-      //SOFT_RESET_READ_BURST,
+      SOFT_RESET_NON_BURST,
       = newElement();
   }
 
@@ -75,44 +71,14 @@ case class LcvBusDevSoftReset(
   )
   val rSavedIsWrite = Reg(Bool(), init=False)
 
-  //def maybeSetSeenHostH2dFireEtc(
-  //  idx: Int
-  //): Unit = {
-  //  if (idx == 0) {
-  //    when (
-  //      !io.softReset
-  //      && io.host.h2dBus.valid
-  //      && io.host.h2dBus.ready
-  //    ) {
-  //      rSeenBusH2dFireEtc(idx) := True
-  //    }
-  //  } else if (idx == 1) {
-  //    when (
-  //      !io.softReset
-  //      && io.host.h2dBus.valid
-  //      && io.host.h2dBus.ready
-  //    ) {
-  //      rSeenBusH2dFireEtc(idx) := True
-  //    }
-  //  } else if (idx == 2) {
-  //    when (
-  //      !io.softReset
-  //      && io.host.h2dBus.valid
-  //      && io.host.h2dBus.ready
-  //      && io.host.h2dBus.burstLast
-  //    ) {
-  //      rSeenBusH2dFireEtc(idx) := True
-  //    }
-  //  } else {
-  //    require(false)
-  //  }
-  //}
   val rSavedSoftReset = (
     Reg(Bool(), init=False)
   )
   when (io.softReset) {
     rSavedSoftReset := True
   }
+  val rSoftResetDone = Reg(Bool(), init=False)
+  io.softResetDone := rSoftResetDone
 
   val myAllowBurstArea = (
     cfg.busCfg.allowBurst
@@ -132,17 +98,18 @@ case class LcvBusDevSoftReset(
 
     switch (rAllowBurstState) {
       is (AllowBurstState.IDLE) {
-        rRdBurstCnt := io.host.h2dBus.burstCnt
-        rWrBurstCnt := io.host.h2dBus.burstCnt
+        rRdBurstCnt := io.loBus.h2dBus.burstCnt
+        rWrBurstCnt := io.loBus.h2dBus.burstCnt
         rSavedSoftReset := False
+        rSoftResetDone := False
 
-        rSavedIsWrite := io.host.h2dBus.isWrite
+        rSavedIsWrite := io.loBus.h2dBus.isWrite
 
         switch (
           io.softReset
-          ## io.host.h2dBus.valid
-          ## io.host.h2dBus.burstFirst
-          ## io.host.h2dBus.isWrite
+          ## io.loBus.h2dBus.valid
+          ## io.loBus.h2dBus.burstFirst
+          ## io.loBus.h2dBus.isWrite
         ) {
           is (M"010-") {
             // no soft reset, non-burst
@@ -162,23 +129,23 @@ case class LcvBusDevSoftReset(
         }
       }
       is (AllowBurstState.NON_BURST) {
-        when (io.dev.h2dBus.fire) {
+        when (io.hiBus.h2dBus.fire) {
           rSeenBusH2dFireEtc(0) := True
         }
-        when (io.dev.d2hBus.fire) {
+        when (io.hiBus.d2hBus.fire) {
           rSeenBusD2hFireEtc(0) := True
         }
         when (!rSavedSoftReset) {
           when (!rSeenBusH2dFireEtc(0)) {
-            io.dev.h2dBus << io.host.h2dBus
+            io.hiBus.h2dBus << io.loBus.h2dBus
           }
           when (!rSeenBusD2hFireEtc(0)) {
-            io.host.d2hBus << io.dev.d2hBus
+            io.loBus.d2hBus << io.hiBus.d2hBus
           }
         } otherwise { // when (rSavedSoftReset)
-          io.dev.h2dBus.valid := !rSeenBusH2dFireEtc(0)
-          io.dev.h2dBus.isWrite := rSavedIsWrite
-          io.dev.d2hBus.ready := (
+          io.hiBus.h2dBus.valid := !rSeenBusH2dFireEtc(0)
+          io.hiBus.h2dBus.isWrite := rSavedIsWrite
+          io.hiBus.d2hBus.ready := (
             //rSeenBusH2dFireEtc(0)
             !rSeenBusD2hFireEtc(0)
           )
@@ -191,33 +158,32 @@ case class LcvBusDevSoftReset(
           rAllowBurstState := AllowBurstState.IDLE
           rSeenBusH2dFireEtc(0) := False
           rSeenBusD2hFireEtc(0) := False
+          rSoftResetDone := True
         }
       }
       is (AllowBurstState.READ_BURST) {
-
-        when (io.dev.h2dBus.fire) {
+        when (io.hiBus.h2dBus.fire) {
           rSeenBusH2dFireEtc(1) := True
         }
         when (
-          io.dev.d2hBus.fire
-          && io.dev.d2hBus.burstLast
+          io.hiBus.d2hBus.fire
+          && io.hiBus.d2hBus.burstLast
         ) {
           rSeenBusD2hFireEtc(1) := True
         }
         when (!rSavedSoftReset) {
           when (!rSeenBusH2dFireEtc(1)) {
-            io.dev.h2dBus << io.host.h2dBus
+            io.hiBus.h2dBus << io.loBus.h2dBus
           }
           when (!rSeenBusD2hFireEtc(1)) {
-            io.host.d2hBus << io.dev.d2hBus
+            io.loBus.d2hBus << io.hiBus.d2hBus
           }
         } otherwise { // when (rSavedSoftReset)
-          io.dev.h2dBus.valid := !rSeenBusH2dFireEtc(1)
-          io.dev.h2dBus.burstFirst := !rSeenBusH2dFireEtc(1)
-          io.dev.h2dBus.burstCnt := rRdBurstCnt
-          io.dev.d2hBus.ready := (
+          io.hiBus.h2dBus.valid := !rSeenBusH2dFireEtc(1)
+          io.hiBus.h2dBus.burstFirst := !rSeenBusH2dFireEtc(1)
+          io.hiBus.h2dBus.burstCnt := rRdBurstCnt
+          io.hiBus.d2hBus.ready := (
             !rSeenBusD2hFireEtc(1)
-            //&& io.dev.d2hBus.burstLast
           )
         }
 
@@ -228,48 +194,48 @@ case class LcvBusDevSoftReset(
           rAllowBurstState := AllowBurstState.IDLE
           rSeenBusH2dFireEtc(1) := False
           rSeenBusD2hFireEtc(1) := False
+          rSoftResetDone := True
         }
       }
       is (AllowBurstState.WRITE_BURST) {
-        when (io.dev.h2dBus.fire) {
+        when (io.hiBus.h2dBus.fire) {
           rSeenBusH2dFireEtc(3) := True
         }
         when (
-          io.dev.h2dBus.fire
+          io.hiBus.h2dBus.fire
           && rWrBurstCnt.orR
         ) {
           rWrBurstCnt := rWrBurstCnt - 1
         }
         when (
-          io.dev.h2dBus.fire
+          io.hiBus.h2dBus.fire
           && !rWrBurstCnt.orR
         ) {
           rSeenBusH2dFireEtc(2) := True
         }
-        when (io.dev.d2hBus.fire) {
+        when (io.hiBus.d2hBus.fire) {
           rSeenBusD2hFireEtc(2) := True
         }
 
         when (!rSavedSoftReset) {
           when (!rSeenBusH2dFireEtc(2)) {
-            io.dev.h2dBus << io.host.h2dBus
+            io.hiBus.h2dBus << io.loBus.h2dBus
           }
           when (!rSeenBusD2hFireEtc(2)) {
-            io.host.d2hBus << io.dev.d2hBus
+            io.loBus.d2hBus << io.hiBus.d2hBus
           }
         } otherwise { // when (rSavedSoftReset)
-          io.dev.h2dBus.valid := !rSeenBusH2dFireEtc(2)
-          io.dev.h2dBus.isWrite := True
+          io.hiBus.h2dBus.valid := !rSeenBusH2dFireEtc(2)
+          io.hiBus.h2dBus.isWrite := True
 
-          io.dev.h2dBus.burstCnt := rWrBurstCnt
-          io.dev.h2dBus.burstFirst := (
+          io.hiBus.h2dBus.burstCnt := rWrBurstCnt
+          io.hiBus.h2dBus.burstFirst := (
             //rWrBurstCnt === maxBurstSizeMinus1
             !rSeenBusH2dFireEtc(2)
           )
-          io.dev.h2dBus.burstLast := !rWrBurstCnt.orR
-          io.dev.d2hBus.ready := (
+          io.hiBus.h2dBus.burstLast := !rWrBurstCnt.orR
+          io.hiBus.d2hBus.ready := (
             !rSeenBusD2hFireEtc(2)
-            //&& io.dev.h2dBus.burstLast
           )
         }
         when (
@@ -280,6 +246,7 @@ case class LcvBusDevSoftReset(
           rSeenBusH2dFireEtc(2) := False
           rSeenBusH2dFireEtc(3) := False
           rSeenBusD2hFireEtc(2) := False
+          rSoftResetDone := True
         }
       }
     }
