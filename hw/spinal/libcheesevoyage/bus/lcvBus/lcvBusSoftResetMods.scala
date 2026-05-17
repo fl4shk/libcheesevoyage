@@ -217,7 +217,7 @@ case class LcvBusDevSoftReset(
           io.dev.h2dBus.burstCnt := rRdBurstCnt
           io.dev.d2hBus.ready := (
             !rSeenBusD2hFireEtc(1)
-            && io.dev.d2hBus.burstLast
+            //&& io.dev.d2hBus.burstLast
           )
         }
 
