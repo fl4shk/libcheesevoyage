@@ -54,8 +54,8 @@ case class LcvBusDevSoftReset(
       IDLE,
       NON_BURST,
       READ_BURST,
-      WRITE_BURST,
-      SOFT_RESET_NON_BURST,
+      WRITE_BURST//,
+      //SOFT_RESET_NON_BURST,
       = newElement();
   }
 
