@@ -335,6 +335,195 @@ case class LcvBusByteEnAdapterIo(
 //  //--------
 //}
 
+case class LcvBusSlowNonBurstingByteEnAdapter(
+  cfg: LcvBusByteEnAdapterConfig
+) extends Component {
+  val io = LcvBusByteEnAdapterIo(cfg=cfg)
+
+  def myLoH2dStm = io.loBus.h2dBus
+  def myLoD2hStm = io.loBus.d2hBus
+  def myHiH2dStm = io.hiBus.h2dBus
+  def myHiD2hStm = io.hiBus.d2hBus
+
+  myLoH2dStm.ready := False
+  myLoD2hStm.valid := False
+  myLoD2hStm.payload := myLoD2hStm.payload.getZero
+  myHiD2hStm.ready := False
+  myHiH2dStm.valid := False
+  myHiH2dStm.payload := myHiH2dStm.payload.getZero
+
+  object State
+  extends SpinalEnum(defaultEncoding=binarySequential) {
+    val
+      IDLE,
+      //LO_BUS_RD,
+      //LO_BUS_WR
+      WAIT_FINISH
+      = newElement();
+  }
+
+  val rState = (
+    Reg(State())
+    init(State.IDLE)
+  )
+
+  val rSavedLoH2dPayload = (
+    Reg(cloneOf(myLoH2dStm.payload))
+    init(myLoH2dStm.payload.getZero)
+  )
+  //val rSavedHiH2dPayload = (
+  //  Reg(cloneOf(myHiH2dStm.payload))
+  //  init(myHiH2dStm.payload.getZero)
+  //)
+
+  val myH2dStmAdapter = LcvBusH2dShiftedDataEtcStreamAdapter(
+    cfg=LcvBusH2dShiftedDataEtcStreamAdapterConfig(
+      loBusCfg=cfg.loBusCfg
+    )
+  )
+  val myD2hStmAdapter = LcvBusD2hShiftedDataEtcStreamAdapter(
+    cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(
+      busCfg=cfg.loBusCfg
+    )
+  )
+  myH2dStmAdapter.io.loH2dBus.valid := False
+  myH2dStmAdapter.io.loH2dBus.payload := (
+    myH2dStmAdapter.io.loH2dBus.payload.getZero
+  )
+  myH2dStmAdapter.io.hiH2dBus.ready := False
+  myD2hStmAdapter.io.loD2hBus.valid := False
+  myD2hStmAdapter.io.loD2hBus.payload := (
+    myD2hStmAdapter.io.loD2hBus.payload.getZero
+  )
+  myD2hStmAdapter.io.hiD2hBus.ready := False
+
+  switch (rState) {
+    is (State.IDLE) {
+      rSavedLoH2dPayload := myLoH2dStm.payload
+      //rSavedHiH2dPayload := myHiH2dStm.payload
+      myH2dStmAdapter.io.loH2dBus << myLoH2dStm
+      myHiH2dStm << myH2dStmAdapter.io.hiH2dBus
+      when (myLoH2dStm.fire) {
+        rState := State.WAIT_FINISH
+      }
+      //switch (
+      //  myLoH2dStm.valid
+      //  //myLoH2dStm.fire
+      //  ## myLoH2dStm.isWrite
+      //) {
+      //  is (B"10") {
+      //    //myLoH2dStm.ready := True
+      //    rState := State.LO_BUS_RD
+      //  }
+      //  is (B"11") {
+      //    //myLoH2dStm.ready := True
+      //    rState := State.LO_BUS_WR
+      //  }
+      //  default {
+      //  }
+      //}
+      //when (myLoH2dStm.valid) {
+      //  myLoH2dStm.ready := True
+      //  when (!myLoH2dStm.isWrite) {
+      //    rState := State.LO_BUS_RD
+      //  } otherwise {
+      //    rState := State.LO_BUS_WR
+      //  }
+      //}
+    }
+    //is (State.LO_BUS_RD) {
+    //}
+    //is (State.LO_BUS_WR) {
+    //  myH2dStmAdapter.io.loH2dBus
+    //}
+    is (State.WAIT_FINISH) {
+      //myD2hStmAdapter.io.loD2hBus << myHiD2hStm
+      myHiD2hStm.translateInto(myD2hStmAdapter.io.loD2hBus)(
+        dataAssignment=(outp, inp) => {
+          outp.mainNonBurstInfo.infoShared := (
+            inp.mainNonBurstInfo.infoShared
+          )
+          outp.mainNonBurstInfo.infoByteSizeEtc.byteSize := (
+            rSavedLoH2dPayload.mainNonBurstInfo.infoByteSizeEtc.byteSize
+          )
+          outp.mainNonBurstInfo.infoByteSizeEtc.addrLo := (
+            rSavedLoH2dPayload.addr(
+              cfg.loBusCfg.byteSizeWidth - 1 downto 0
+            )
+          )
+        }
+      )
+      myLoD2hStm << myD2hStmAdapter.io.hiD2hBus
+      when (myLoD2hStm.fire) {
+        rState := State.IDLE
+      }
+    }
+  }
+}
+
+object LcvBusSlowNonBurstingByteEnAdapterSpinalConfig {
+  def spinal = SpinalConfig(
+    targetDirectory="hw/gen",
+    defaultConfigForClockDomains=ClockDomainConfig(
+      resetActiveLevel=HIGH,
+      resetKind=BOOT,
+    )
+  )
+}
+object LcvBusSlowNonBurstingByteEnAdapterToVerilog extends App {
+  LcvBusSlowNonBurstingByteEnAdapterSpinalConfig.spinal.generateVerilog{
+    val top = LcvBusSlowNonBurstingByteEnAdapter(
+      cfg=LcvBusByteEnAdapterConfig(
+        loBusCfg=LcvBusConfig(
+          mainCfg=LcvBusMainConfig(
+            dataWidth=32,
+            addrWidth=32,
+            allowBurst=false,
+            burstAlwaysMaxSize=false,
+            srcWidth=1,
+            haveByteEn=false,
+            keepByteSize=false,
+          )
+        )
+      )
+    )
+    //val top = LcvBusCache(
+    //  cfg=LcvBusCacheBusPairConfig(
+    //    mainCfg=LcvBusMainConfig(
+    //      dataWidth=32,
+    //      addrWidth=32,
+    //      allowBurst=false,
+    //      burstAlwaysMaxSize=false,
+    //      srcWidth=1,
+    //      haveByteEn=false,
+    //      keepByteSize=false,
+    //    ),
+    //    loBusCacheCfg=LcvBusCacheConfig(
+    //      kind=LcvCacheKind.D,
+    //      lineSizeBytes=64,
+    //      depthWords=1024,
+    //      numCpus=1,
+    //    ),
+    //    hiBusCacheCfg=(
+    //      //Some(LcvBusCacheConfig(
+    //      //  kind=LcvCacheKind.Shared,
+    //      //  lineSizeBytes=64,
+    //      //  depthWords=2048,
+    //      //  numCpus=2,
+    //      //))
+    //      None
+    //    )
+    //  )
+    //)
+    //val top = LcvBusNonCoherentDataCacheWithSdramCtrl(
+    //  sdramCtrlCfg=LcvBusSdramCtrlConfig(
+    //    clkRate=100.0 MHz,
+    //    shortDqmToA12A11=true,
+    //  )
+    //)
+    top
+  }
+}
 
 //// This module is slow in terms of clock cycles.
 //// This module is mainly useful for debugging purposes.

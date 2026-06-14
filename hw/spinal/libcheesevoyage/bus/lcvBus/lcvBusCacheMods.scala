@@ -4030,7 +4030,7 @@ object LcvBusCacheToVerilog extends App {
 
 //object LcvBusCacheVerifySim extends App {
 //}
-object LcvBusCacheFormal_Dup extends App {
+object LcvBusCacheFormal_Dup_Asdf extends App {
   def myBmcNumCycles = (
     //48
     70
@@ -4113,7 +4113,8 @@ object LcvBusCacheFormal_Dup extends App {
     //icache.io.hiBus <> myMem.io.bus
     //io <> myMem.io.bus
   }
-  case class LcvBusNonCoherentInstrCacheFormalDut_Dup() extends Component {
+  case class LcvBusNonCoherentInstrCacheFormalDut_Dup_Asdf(
+  ) extends Component {
     val dut = FormalDut(
       MyInstrCacheTempDut()
     )
@@ -4122,8 +4123,11 @@ object LcvBusCacheFormal_Dup extends App {
 
     anyseq(dut.io.hiBus.h2dBus.ready)
     anyseq(dut.io.hiBus.d2hBus.valid)
-    anyseq(dut.io.hiBus.d2hBus.payload)
-
+    //anyseq(dut.io.hiBus.d2hBus.payload)
+    //anyconst(dut.io.hiBus.d2hBus.src)
+    dut.io.hiBus.d2hBus.src := 0x0
+    anyseq(dut.io.hiBus.d2hBus.data)
+    anyseq(dut.io.hiBus.d2hBus.mainBurstInfo)
     //--------
     assumeInitial(clockDomain.isResetActive)
     //myH2dStm.formalAssumesSlave(payloadInvariance=true)
@@ -4249,6 +4253,15 @@ object LcvBusCacheFormal_Dup extends App {
           || myD2hStm.src === past(myD2hStm.src)
           || myD2hStm.src === past(myD2hStm.src) + 1
           || myD2hStm.src === past(myD2hStm.src) - 1
+        )
+        cover(
+          myD2hStm.src === 0x0
+        )
+        cover(
+          myD2hStm.src === past(myD2hStm.src)
+        )
+        cover(
+          myD2hStm.src === past(myD2hStm.src) + 1
         )
       }
 
@@ -4395,14 +4408,15 @@ object LcvBusCacheFormal_Dup extends App {
     //  //10
     //  myProveNumCycles
     //)
-    //.withCover(
-    //  //PipeRegFileFormal.myProveNumCycles
-    //  //20
-    //  //60
-    //  //20
-    //  //15
-    //  myProveNumCycles
-    //)
-    .doVerify(LcvBusNonCoherentInstrCacheFormalDut_Dup())
+    .withCover(
+      //PipeRegFileFormal.myProveNumCycles
+      //20
+      //60
+      //20
+      //15
+      //myProveNumCycles
+      myBmcNumCycles
+    )
+    .doVerify(LcvBusNonCoherentInstrCacheFormalDut_Dup_Asdf())
   //--------
 }
