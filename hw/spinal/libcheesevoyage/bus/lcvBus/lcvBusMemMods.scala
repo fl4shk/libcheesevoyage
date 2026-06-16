@@ -409,91 +409,114 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       True//False
     )
   )
-  val myOtherFullTempIgnoreDupCntCond = (
-    myH2dDoStallFifoThing.io.pop.valid
-    //myH2dDoStallFifoThing.io.pop.fire
-    && (
-      myH2dDoStallFifoThing.io.pop.cnt.asSInt
-      =/= (
-        RegNextWhen(
-          (myH2dDoStallFifoThing.io.pop.cnt + 1).asSInt,
-          //(myD2hPushStm.cnt + 1).asSInt,
-          cond=(
-            //myD2hPushStm.fire
-            myH2dDoStallFifoThing.io.pop.fire
-            //&& !myH2dPopThrowArea.myH2dThrowCond
-          ),
-          //cond=base.loH2dDoStallFifoThing.io.pop.fire,
-          ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
-        )
-        init(-2)
-      )
-    )
-  )
-  val myFullTempIgnoreDupCntCond = (
-    //(
-    //  base.myFifoThingDoStall.head
-    //  //|| base.myFifoThingDoStall.last
-    //)
-    //&& 
-    myH2dDoStallFifoThing.io.pop.valid
-    //myH2dDoStallFifoThing.io.pop.fire
-    && (
-      myH2dDoStallFifoThing.io.pop.cnt.asSInt
-      =/= (
-        RegNextWhen(
-          (myH2dDoStallFifoThing.io.pop.cnt + 1).asSInt,
-          //(myD2hPushStm.cnt + 1).asSInt,
-          cond=(
-            //myD2hPushStm.fire
-            myH2dDoStallFifoThing.io.pop.fire
-            //&& !myH2dPopThrowArea.myH2dThrowCond
-            && !myOtherFullTempIgnoreDupCntCond
-          ),
-          //cond=base.loH2dDoStallFifoThing.io.pop.fire,
-          ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
-        )
-        init(-2)
-      )
-    )
-    //&& (
-    //  base.loH2dDoStallFifoThing.io.pop.src.asSInt
-    //  =/= (
-    //    RegNextWhen(
-    //      //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
-    //      (myLoD2hStm.src - 1).asSInt,
-    //      cond=myLoD2hStm.fire,
-    //      //cond=base.loH2dDoStallFifoThing.io.pop.fire,
-    //      ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
-    //    )
-    //    init(-2)
-    //  )
-    //)
 
-    //&& (
-    //  myTempIgnoreDupCntCond
-    //  //&& RegNext(myTempIgnoreDupCntCond, init=False)
-    //)
-    && History[Bool](
-      that=True,
-      when=(
-        myH2dPopStm.fire
-        //myD2hPushStm.fire
-        //myH2dDoStallFifoThing.io.pop.fire
-        //&& !myH2dPopThrowArea.myH2dThrowCond
-      ),
-      length=(
-        //2
-        //4
-        //3
-        5
-      ),
-      init=False,
-    ).last
+  //val myOtherFullTempIgnoreDupCntCond = (
+  //  myH2dDoStallFifoThing.io.pop.valid
+  //  //myH2dDoStallFifoThing.io.pop.fire
+  //  && (
+  //    myH2dDoStallFifoThing.io.pop.cnt.asSInt
+  //    =/= (
+  //      RegNextWhen(
+  //        (myH2dDoStallFifoThing.io.pop.cnt + 1).asSInt,
+  //        //(myD2hPushStm.cnt + 1).asSInt,
+  //        cond=(
+  //          //myD2hPushStm.fire
+  //          myH2dDoStallFifoThing.io.pop.fire
+  //          //&& !myH2dPopThrowArea.myH2dThrowCond
+  //        ),
+  //        //cond=base.loH2dDoStallFifoThing.io.pop.fire,
+  //        ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
+  //      )
+  //      init(-2)
+  //    )
+  //  )
+  //)
+
+  ////val rSavedD2hFifoPushCircBuf = Vec.fill(2)(
+  ////  Reg(cloneOf(myH2dDoStallFifoThing.io.pop.payload))
+  ////  init(myH2dDoStallFifoThing.io.pop.payload.getZero)
+  ////)
+
+  //val myFullTempIgnoreDupCntCond = (
+  //  //(
+  //  //  base.myFifoThingDoStall.head
+  //  //  //|| base.myFifoThingDoStall.last
+  //  //)
+  //  //&& 
+  //  myH2dDoStallFifoThing.io.pop.valid
+  //  //myH2dDoStallFifoThing.io.pop.fire
+
+  //  && (
+  //    myH2dDoStallFifoThing.io.pop.cnt.asSInt
+  //    =/= (
+  //      RegNextWhen(
+  //        (myH2dDoStallFifoThing.io.pop.cnt + 1).asSInt,
+  //        //(myD2hPushStm.cnt + 1).asSInt,
+  //        cond=(
+  //          //myD2hPushStm.fire
+  //          myH2dDoStallFifoThing.io.pop.fire
+  //          //&& !myH2dPopThrowArea.myH2dThrowCond
+  //          && !myOtherFullTempIgnoreDupCntCond
+  //        ),
+  //        //cond=base.loH2dDoStallFifoThing.io.pop.fire,
+  //        ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
+  //      )
+  //      init(-2)
+  //    )
+  //  )
+  //  //&& (
+  //  //  base.loH2dDoStallFifoThing.io.pop.src.asSInt
+  //  //  =/= (
+  //  //    RegNextWhen(
+  //  //      //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
+  //  //      (myLoD2hStm.src - 1).asSInt,
+  //  //      cond=myLoD2hStm.fire,
+  //  //      //cond=base.loH2dDoStallFifoThing.io.pop.fire,
+  //  //      ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
+  //  //    )
+  //  //    init(-2)
+  //  //  )
+  //  //)
+
+  //  //&& (
+  //  //  myTempIgnoreDupCntCond
+  //  //  //&& RegNext(myTempIgnoreDupCntCond, init=False)
+  //  //)
+  //  && History[Bool](
+  //    that=True,
+  //    when=(
+  //      myH2dPopStm.fire
+  //      //myD2hPushStm.fire
+  //      //myH2dDoStallFifoThing.io.pop.fire
+  //      //&& !myH2dPopThrowArea.myH2dThrowCond
+  //    ),
+  //    length=(
+  //      //2
+  //      //4
+  //      //3
+  //      5
+  //    ),
+  //    init=False,
+  //  ).last
+  //)
+
+  val myDoStallD2hThrowThing = (
+    LcvBusDoStallD2hThrowThing(busCfg=cfg.busCfg)
   )
+
+  myDoStallD2hThrowThing.io.push.valid := (
+    myH2dDoStallFifoThing.io.pop.valid
+  )
+  myDoStallD2hThrowThing.io.push.payload := (
+    myH2dDoStallFifoThing.io.pop.cnt
+  )
+
   def doIgnoreInvalidFifoThingPopCnt(
   ): Unit = {
-    when (myFullTempIgnoreDupCntCond) {
+    when (
+      //myFullTempIgnoreDupCntCond
+      myDoStallD2hThrowThing.io.myThrowCondMain
+    ) {
       //loH2dPopStm.ready := True
       myH2dPopThrowArea.myH2dThrowCond := True
     }

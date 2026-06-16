@@ -122,7 +122,7 @@ case class LcvBusDoStallFifoThingPayload[
   //optByteEnWidth: Option[Int],
   //cfg: LcvBusCacheBusPairConfig,
 ) extends Bundle {
-  def myCntWidth = 2
+  def myCntWidth = LcvBusDoStallFifoThing.myCntWidth
   val cnt = UInt(myCntWidth bits)
   //val byteEn = (
   //  optByteEnWidth != None
@@ -136,6 +136,25 @@ case class LcvBusDoStallFifoThingPayload[
   //def byteEn = h2dPayload.byteEn
   //def isWrite = h2dPayload.isWrite
   //def src = h2dPayload.src
+}
+
+object LcvBusDoStallFifoThing {
+  def myCntWidth = 2
+  def fifoDepthMain = 2//8//2//8
+  def fifoDepthSub = 4//8//4//5//4//5 //fifoDepthMain 4
+
+  def mkFifoPopCfg(
+    busCfg: LcvBusConfig,
+  ) = (
+    if (!busCfg.haveByteEn) (
+      LcvBusConfig(
+        mainCfg=busCfg.mainCfg.mkCopyWithByteEn(Some(true)),
+        cacheCfg=busCfg.cacheCfg,
+      )
+    ) else (
+      busCfg
+    )
+  )
 }
 
 case class LcvBusDoStallFifoThingIo(
@@ -158,14 +177,15 @@ case class LcvBusDoStallFifoThingIo(
   //  )
   //))
   val myPopCfg = (
-    if (!busCfg.haveByteEn) (
-      LcvBusConfig(
-        mainCfg=busCfg.mainCfg.mkCopyWithByteEn(Some(true)),
-        cacheCfg=busCfg.cacheCfg,
-      )
-    ) else (
-      busCfg
-    )
+    LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=busCfg)
+    //if (!busCfg.haveByteEn) (
+    //  LcvBusConfig(
+    //    mainCfg=busCfg.mainCfg.mkCopyWithByteEn(Some(true)),
+    //    cacheCfg=busCfg.cacheCfg,
+    //  )
+    //) else (
+    //  busCfg
+    //)
   )
   val pop = master(Stream(
     //LcvBusH2dPayload(cfg=cfg.loBusCfg)
@@ -198,8 +218,8 @@ case class LcvBusDoStallFifoThing(
 ) extends Component {
   val io = LcvBusDoStallFifoThingIo(busCfg=busCfg)
 
-  def fifoDepthMain = 2//8//2//8
-  def fifoDepthSub = 4//8//4//5//4//5 //fifoDepthMain 4
+  def fifoDepthMain = LcvBusDoStallFifoThing.fifoDepthMain //2//8//2//8
+  def fifoDepthSub = LcvBusDoStallFifoThing.fifoDepthSub //4//8//4//5//4//5 //fifoDepthMain 4
 
   def mkMainFifo() = (
     new StreamFifo(
@@ -802,6 +822,116 @@ case class LcvBusDoStallFifoThing(
       }
     }
   }
+}
+
+case class LcvBusDoStallD2hThrowThingIo(
+  busCfg: LcvBusConfig,
+) extends Bundle {
+  //val myFifoPopCfg = (
+  //  LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=busCfg)
+  //)
+
+  val push = slave(Flow(
+    //LcvBusDoStallFifoThingPayload(
+    //  LcvBusH2dPayload(cfg=myFifoPopCfg),
+    //)
+    UInt(LcvBusDoStallFifoThing.myCntWidth bits)
+  ))
+  //val clear = in(
+  //  Vec.fill(LcvBusDoStallFifoThing.fifoDepthMain)(
+  //    UInt(LcvBusDoStallFifoThing.myCntWidth bits)
+  //  )
+  //)
+
+  val myThrowCondMain = out(Bool())
+}
+
+case class LcvBusDoStallD2hThrowThing(
+  busCfg: LcvBusConfig,
+) extends Component {
+  //--------
+  val io = LcvBusDoStallD2hThrowThingIo(busCfg=busCfg)
+  //--------
+  val rSavedIoPushD2hThrowVec = (
+    Vec.fill(LcvBusDoStallFifoThing.fifoDepthMain)(
+      Reg(cloneOf(io.push))
+      init(io.push.getZero)
+    )
+  )
+
+  switch (
+    io.push.fire
+    ## rSavedIoPushD2hThrowVec.head.fire
+    ## rSavedIoPushD2hThrowVec.last.fire
+  ) {
+    is (M"10-") {
+      rSavedIoPushD2hThrowVec.head := io.push
+    }
+    is (M"110") {
+      rSavedIoPushD2hThrowVec.last := io.push
+    }
+    default {
+    }
+  }
+
+  //val tempFindFirst = rSavedIoPushD2hThrowVec.sFindFirst(
+  //  io.push.fire
+  //  && (
+  //    io.push.payload === _.payload
+  //  )
+  //)
+  val tempElemFoundBasicVec = Vec[Bool](
+    (
+      rSavedIoPushD2hThrowVec.head.fire
+      && io.push.payload === rSavedIoPushD2hThrowVec.head.payload
+    ),
+    (
+      rSavedIoPushD2hThrowVec.last.fire
+      && io.push.payload === rSavedIoPushD2hThrowVec.last.payload
+    )
+  )
+
+  val tempElemFoundFullVec = Vec[Bool](
+    io.push.fire && tempElemFoundBasicVec.head,
+    io.push.fire && tempElemFoundBasicVec.last,
+  )
+
+  val tempElemFoundAny = (
+    io.push.fire
+    && tempElemFoundBasicVec.orR
+  )
+  val tempElemIdx = UInt(log2Up(rSavedIoPushD2hThrowVec.size) bits)
+  tempElemIdx := (
+    Cat(
+      io.push.payload === rSavedIoPushD2hThrowVec.last.payload
+    ).asUInt
+  )
+
+  io.myThrowCondMain := tempElemFoundAny
+
+  //when (tempElemFound) {
+  //}
+  //switch (
+  //  //io.push.fire
+  //  //## 
+  //  tempElemFound
+  //  ## tempElemIdx
+  //) {
+  //  is (B"10") {
+  //  }
+  //  is (B"11") {
+  //  }
+  //  default {
+  //  }
+  //}
+  //when (io.push.fire) {
+  //  //when (!rSavedIoPushD2hThrowVec.head.fire) {
+  //  //} elsewhen (!rSavedIoPushD2hThrowVec.last.fire) {
+  //  //}
+  //  //for (idx <- 0 until LcvBusDoStallFifoThing.fifoDepthMain) {
+  //  //}
+  //}
+  //--------
 }
 
 case class LcvBusCacheIo(
