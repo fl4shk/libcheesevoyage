@@ -912,6 +912,12 @@ case class LcvBusDoStallD2hThrowThing(
 
   //when (tempElemFound) {
   //}
+
+  val rPrevRewriteIdx = (
+    Reg(UInt(log2Up(rSavedIoPushD2hThrowVec.size) bits))
+    init(0x0)
+  )
+
   switch (
     io.push.fire
     ## tempElemFoundBasicVec.head
@@ -919,7 +925,11 @@ case class LcvBusDoStallD2hThrowThing(
     //## tempElemIdx
   ) {
     is (B"100") {
-      rSavedIoPushD2hThrowVec.head := io.push
+      when (rPrevRewriteIdx.lsb) {
+        rSavedIoPushD2hThrowVec.head := io.push
+      } otherwise {
+        rSavedIoPushD2hThrowVec.last := io.push
+      }
     }
     is (M"11-") {
       rSavedIoPushD2hThrowVec.last := io.push
