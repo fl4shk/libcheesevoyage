@@ -364,6 +364,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     val
       INIT,
       IDLE,
+      LOAD_NON_BURST_DO_STALL_PIPE_3,
       LOAD_NON_BURST_DO_STALL_PIPE_2,
       LOAD_NON_BURST_DO_STALL_PIPE_1,
       LOAD_NON_BURST_DO_STALL,
@@ -673,7 +674,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
           ) {
             myH2dPopStm.ready := False
             myFifoThingDoStall := True
-            rState := State.LOAD_NON_BURST_DO_STALL_PIPE_2
+            rState := State.LOAD_NON_BURST_DO_STALL_PIPE_3
           }
         }
         is (
@@ -713,6 +714,12 @@ private[libcheesevoyage] case class LcvBusMemImpl(
         default {
         }
       }
+    }
+    is (State.LOAD_NON_BURST_DO_STALL_PIPE_3) {
+      rState := State.LOAD_NON_BURST_DO_STALL_PIPE_2
+      myD2hPushStm.valid := False
+      //myLoD2hStm.valid := False
+      myH2dPopStm.ready := False
     }
     is (State.LOAD_NON_BURST_DO_STALL_PIPE_2) {
       rState := State.LOAD_NON_BURST_DO_STALL_PIPE_1
