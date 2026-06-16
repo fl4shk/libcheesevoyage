@@ -1419,7 +1419,7 @@ extends Area {
             that=upExtElem(ydx)(extIdxUp).memAddr.last,
             // `length=numMyUpExtDel2 + 1` because `History` includes the
             // current value of `that`.
-            // This might not be relevant any more?
+            // The above might not be relevant any more?
             length=2,//mod.front.myUpExtDel2.size + 1, 
             when=upIsFiring,
             init=upExtElem(ydx)(extIdxUp).memAddr.last.getZero,
@@ -1496,10 +1496,22 @@ extends Area {
                 //)
                 tempMemAddrFwdCmp(jdx) := (
                   (
+                    //upExtElem(ydx)(extIdxUp).memAddr(
+                    //  zdx
+                    //) === (
+                    //  myHistMemAddr(idx)
+                    //)
                     upExtElem(ydx)(extIdxUp).memAddr(
                       zdx
                     ) === (
-                      myHistMemAddr(idx)
+                      //myHistMemAddr(idx)
+                      // `idx - 1` is because we want the stage *before*
+                      // the one we're actually interested in.
+                      if (idx == mod.front.myUpExtDel2.size) (
+                        tempMyUpExtDel.memAddrFwdMmw(zdx).last
+                      ) else (
+                        tempMyUpExtDel.memAddrFwdMmw(zdx)(idx)
+                      )
                     )
                   )
                   && (
