@@ -505,17 +505,36 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   )
 
   myDoStallD2hThrowThing.io.push.valid := (
-    myH2dDoStallFifoThing.io.pop.fire
+    myH2dDoStallFifoThing.io.pop.valid
   )
   myDoStallD2hThrowThing.io.push.payload := (
     myH2dDoStallFifoThing.io.pop.cnt
   )
 
+  val myFullTempIgnoreDupCntCond = (
+    myDoStallD2hThrowThing.io.myThrowCondMain
+    && History[Bool](
+      that=True,
+      when=(
+        myH2dPopStm.fire
+        //myD2hPushStm.fire
+        //myH2dDoStallFifoThing.io.pop.fire
+        //&& !myH2dPopThrowArea.myH2dThrowCond
+      ),
+      length=(
+        //2
+        //4
+        //3
+        5
+      ),
+      init=False,
+    ).last
+  )
+
   def doIgnoreInvalidFifoThingPopCnt(
   ): Unit = {
     when (
-      //myFullTempIgnoreDupCntCond
-      myDoStallD2hThrowThing.io.myThrowCondMain
+      myFullTempIgnoreDupCntCond
     ) {
       //loH2dPopStm.ready := True
       myH2dPopThrowArea.myH2dThrowCond := True
