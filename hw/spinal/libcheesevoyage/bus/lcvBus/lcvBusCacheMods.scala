@@ -923,9 +923,11 @@ case class LcvBusDoStallD2hThrowThing(
     }
     is (M"11-") {
       rSavedIoPushD2hThrowVec.last := io.push
+      rSavedIoPushD2hThrowVec.head.valid := False
     }
     is (B"101") {
       rSavedIoPushD2hThrowVec.head := io.push
+      rSavedIoPushD2hThrowVec.last.valid := False
     }
     default {
     }
