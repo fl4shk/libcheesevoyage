@@ -927,8 +927,10 @@ case class LcvBusDoStallD2hThrowThing(
     is (B"100") {
       when (rPrevRewriteIdx.lsb) {
         rSavedIoPushD2hThrowVec.head := io.push
+        rPrevRewriteIdx.lsb := False
       } otherwise {
         rSavedIoPushD2hThrowVec.last := io.push
+        rPrevRewriteIdx.lsb := True
       }
     }
     is (M"11-") {
