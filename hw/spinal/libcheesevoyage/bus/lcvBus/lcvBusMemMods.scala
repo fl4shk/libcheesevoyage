@@ -567,6 +567,8 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       init=False
     )
   )
+  val myTempUpdateSavedH2dPayloadCond = Bool()
+  myTempUpdateSavedH2dPayloadCond := True
 
   switch (rState) {
     is (State.INIT) {
@@ -594,6 +596,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
         //  init=False
         //)
         rMyTempDoSaveCond
+        && myTempUpdateSavedH2dPayloadCond
       ) {
         rSavedH2dPayload := (
           rH2dPayload
@@ -675,6 +678,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
             myH2dPopStm.ready := False
             myFifoThingDoStall := True
             rState := State.LOAD_NON_BURST_DO_STALL_PIPE_3
+            myTempUpdateSavedH2dPayloadCond := False
           }
         }
         is (
@@ -699,6 +703,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
             myH2dPopStm.ready := False
             myFifoThingDoStall := True
             rState := State.STORE_NON_BURST_DO_STALL_PIPE_1
+            myTempUpdateSavedH2dPayloadCond := False
           }
         }
         //is (M"110") {
@@ -720,14 +725,19 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       myD2hPushStm.valid := False
       //myLoD2hStm.valid := False
       myH2dPopStm.ready := False
-      rSavedH2dPayload := (
-        rH2dPayload
-        //rDel2H2dPayload
-        //RegNext(
-        //  rDel2H2dPayload,
-        //  init=rDel2H2dPayload.getZero
-        //)
-      )
+      //rSavedH2dPayload := (
+      //  //myH2dPopStm.payload
+      //  RegNextWhen(
+      //    rH2dPayload,
+      //    cond=myH2dPopStm.fire,
+      //    init=rH2dPayload.getZero,
+      //  )
+      //  //rDel2H2dPayload
+      //  //RegNext(
+      //  //  rDel2H2dPayload,
+      //  //  init=rDel2H2dPayload.getZero
+      //  //)
+      //)
     }
     is (State.LOAD_NON_BURST_DO_STALL_PIPE_2) {
       rState := State.LOAD_NON_BURST_DO_STALL_PIPE_1
