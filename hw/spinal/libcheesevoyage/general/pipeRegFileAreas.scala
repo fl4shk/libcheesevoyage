@@ -1460,7 +1460,7 @@ extends Area {
         upExtElem(ydx)(extIdxUp).memAddrFwd(zdx).foreach(current => {
           current := upExtElem(ydx)(extIdxUp).memAddr(zdx)
         })
-        for (idx <- 0 until mod.front.myUpExtDel.size + 1) {
+        for (idx <- 0 until mod.front.myUpExtDel2.size + 1) {
           //println(
           //  f"myHistMemAddr debug: ${zdx} ${idx} ${idx - 1} "
           //  + f"${mod.front.myUpExtDel2.size}"
@@ -1517,16 +1517,17 @@ extends Area {
                   && (
                     myZeroRegCond
                   )
+                  && (
+                    tempMyUpExtDel.modMemWordValid({
+                      if (idx < tempMyUpExtDel.modMemWordValid.size) (
+                        idx
+                      ) else (
+                        tempMyUpExtDel.modMemWordValid.size - 1 
+                      )
+                    })
+                  )
                   //&& (
-                  //  //tempMyUpExtDel.modMemWordValid({
-                  //  //  if (
-                  //  //    idx < tempMyUpExtDel.modMemWordValid.size
-                  //  //  ) (
-                  //  //    idx
-                  //  //  ) else (
-                  //  //    tempMyUpExtDel.modMemWordValid.size - 1 
-                  //  //  )
-                  //  //})
+                  //  tempMyUpExtDel.modMemWordValid.head
                   //)
                   && (
                     tempMyUpExtDel.fwdCanDoIt(
@@ -1553,7 +1554,7 @@ extends Area {
                       //myHistMemAddr(idx)
                       // `idx - 1` is because we want the stage *before*
                       // the one we're actually interested in.
-                      if (idx == mod.front.myUpExtDel.size) (
+                      if (idx == mod.front.myUpExtDel2.size) (
                         tempMyUpExtDel.memAddrFwdMmw(zdx).last
                       ) else (
                         tempMyUpExtDel.memAddrFwdMmw(zdx)(idx)
