@@ -859,20 +859,21 @@ case class LcvBusDoStallD2hThrowThing(
     )
   )
 
-  switch (
-    io.push.fire
-    ## rSavedIoPushD2hThrowVec.head.fire
-    ## rSavedIoPushD2hThrowVec.last.fire
-  ) {
-    is (M"10-") {
-      rSavedIoPushD2hThrowVec.head := io.push
-    }
-    is (M"110") {
-      rSavedIoPushD2hThrowVec.last := io.push
-    }
-    default {
-    }
-  }
+  //switch (
+  //  io.push.fire
+  //  ## rSavedIoPushD2hThrowVec.head.fire
+  //  ## rSavedIoPushD2hThrowVec.last.fire
+  //) {
+  //  // this switch statement is for initializing  
+  //  is (M"10-") {
+  //    rSavedIoPushD2hThrowVec.head := io.push
+  //  }
+  //  is (M"110") {
+  //    rSavedIoPushD2hThrowVec.last := io.push
+  //  }
+  //  default {
+  //  }
+  //}
 
   //val tempFindFirst = rSavedIoPushD2hThrowVec.sFindFirst(
   //  io.push.fire
@@ -911,19 +912,24 @@ case class LcvBusDoStallD2hThrowThing(
 
   //when (tempElemFound) {
   //}
-  //switch (
-  //  //io.push.fire
-  //  //## 
-  //  tempElemFound
-  //  ## tempElemIdx
-  //) {
-  //  is (B"10") {
-  //  }
-  //  is (B"11") {
-  //  }
-  //  default {
-  //  }
-  //}
+  switch (
+    io.push.fire
+    ## tempElemFoundBasicVec.head
+    ## tempElemFoundBasicVec.last
+    //## tempElemIdx
+  ) {
+    is (B"100") {
+      rSavedIoPushD2hThrowVec.head := io.push
+    }
+    is (M"11-") {
+      rSavedIoPushD2hThrowVec.last := io.push
+    }
+    is (B"101") {
+      rSavedIoPushD2hThrowVec.head := io.push
+    }
+    default {
+    }
+  }
   //when (io.push.fire) {
   //  //when (!rSavedIoPushD2hThrowVec.head.fire) {
   //  //} elsewhen (!rSavedIoPushD2hThrowVec.last.fire) {
