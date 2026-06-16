@@ -1031,6 +1031,14 @@ case class PipeRegFileIo[
   //  ))
   //)
 
+  //val fwdNeedFirstPostMid0Front = (
+  //  optModHazardKind == PipeRegFile.ModHazardKind.Fwd
+  //) generate (
+  //  Vec.fill(modRdPortCnt)(
+  //    Bool()
+  //  )
+  //)
+
   // the commit head
   val reorderCommitHead = (optReorder) generate (
     //Reg(UInt(PipeRegFile.addrWidth(wordCount=wordCountMax) bits)) init(0x0)
@@ -1420,7 +1428,7 @@ extends Area {
             // `length=numMyUpExtDel2 + 1` because `History` includes the
             // current value of `that`.
             // The above might not be relevant any more?
-            length=2,//mod.front.myUpExtDel2.size + 1, 
+            length=2,//3,//2,//mod.front.myUpExtDel2.size + 1, 
             when=upIsFiring,
             init=upExtElem(ydx)(extIdxUp).memAddr.last.getZero,
           )
@@ -1517,15 +1525,15 @@ extends Area {
                   && (
                     myZeroRegCond
                   )
-                  //&& (
-                  //  tempMyUpExtDel.modMemWordValid({
-                  //    if (idx < tempMyUpExtDel.modMemWordValid.size) (
-                  //      idx
-                  //    ) else (
-                  //      tempMyUpExtDel.modMemWordValid.size - 1 
-                  //    )
-                  //  })
-                  //)
+                  && (
+                    tempMyUpExtDel.modMemWordValid({
+                      if (idx < tempMyUpExtDel.modMemWordValid.size) (
+                        idx
+                      ) else (
+                        tempMyUpExtDel.modMemWordValid.size - 1 
+                      )
+                    })
+                  )
                   //&& (
                   //  tempMyUpExtDel.modMemWordValid.head
                   //)
