@@ -569,14 +569,13 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   )
   val myTempUpdateSavedH2dPayloadCond = Bool()
   myTempUpdateSavedH2dPayloadCond := True
-  doIgnoreInvalidFifoThingPopCnt()
 
   switch (rState) {
     is (State.INIT) {
       rState := State.IDLE
     }
     is (State.IDLE) {
-      //doIgnoreInvalidFifoThingPopCnt()
+      doIgnoreInvalidFifoThingPopCnt()
       myFifoThingDoStall := False
       myD2hPushStm.valid := False
       doPopH2dFifo()
