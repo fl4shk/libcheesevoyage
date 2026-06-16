@@ -505,7 +505,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   )
 
   myDoStallD2hThrowThing.io.push.valid := (
-    myH2dDoStallFifoThing.io.pop.valid
+    myH2dDoStallFifoThing.io.pop.fire
   )
   myDoStallD2hThrowThing.io.push.payload := (
     myH2dDoStallFifoThing.io.pop.cnt
