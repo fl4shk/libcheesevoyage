@@ -514,22 +514,22 @@ private[libcheesevoyage] case class LcvBusMemImpl(
 
   val myFullTempIgnoreDupCntCond = (
     myDoStallD2hThrowThing.io.myThrowCondMain
-    && History[Bool](
-      that=True,
-      when=(
-        myH2dPopStm.fire
-        //myD2hPushStm.fire
-        //myH2dDoStallFifoThing.io.pop.fire
-        //&& !myH2dPopThrowArea.myH2dThrowCond
-      ),
-      length=(
-        //2
-        //4
-        //3
-        5
-      ),
-      init=False,
-    ).last
+    //&& History[Bool](
+    //  that=True,
+    //  when=(
+    //    myH2dPopStm.fire
+    //    //myD2hPushStm.fire
+    //    //myH2dDoStallFifoThing.io.pop.fire
+    //    //&& !myH2dPopThrowArea.myH2dThrowCond
+    //  ),
+    //  length=(
+    //    //2
+    //    //4
+    //    //3
+    //    5
+    //  ),
+    //  init=False,
+    //).last
   )
 
   def doIgnoreInvalidFifoThingPopCnt(
