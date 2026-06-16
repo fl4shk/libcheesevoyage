@@ -720,6 +720,14 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       myD2hPushStm.valid := False
       //myLoD2hStm.valid := False
       myH2dPopStm.ready := False
+      rSavedH2dPayload := (
+        rH2dPayload
+        //rDel2H2dPayload
+        //RegNext(
+        //  rDel2H2dPayload,
+        //  init=rDel2H2dPayload.getZero
+        //)
+      )
     }
     is (State.LOAD_NON_BURST_DO_STALL_PIPE_2) {
       rState := State.LOAD_NON_BURST_DO_STALL_PIPE_1
