@@ -61,6 +61,11 @@ case class LcvBusCacheBusPairConfig(
     mainCfg=mainCfg,
     cacheCfg=Some(loBusCacheCfg),
   )
+  val myFifoThingLoBusCfg = LcvBusConfig(
+    mainCfg=mainCfg.mkCopyWithTxnCnt(LcvBusDoStallFifoThing.myCntWidth),
+    cacheCfg=Some(loBusCacheCfg),
+  )
+
   val hiBusCfg = LcvBusConfig(
     mainCfg=mainCfg.mkCopyWithAllowingBurst().mkCopyWithByteEn(None),
     cacheCfg=hiBusCacheCfg,
@@ -123,7 +128,7 @@ case class LcvBusDoStallFifoThingPayload[
   //cfg: LcvBusCacheBusPairConfig,
 ) extends Bundle {
   def myCntWidth = LcvBusDoStallFifoThing.myCntWidth
-  val cnt = UInt(myCntWidth bits)
+  //val cnt = UInt(myCntWidth bits)
   //val byteEn = (
   //  optByteEnWidth != None
   //) generate (
@@ -162,6 +167,13 @@ case class LcvBusDoStallFifoThingIo(
   busCfg: LcvBusConfig,
   includeDoInit: Boolean=true,
 ) extends Bundle {
+  require(
+    busCfg.optTxnCntWidth != None
+  )
+  require(
+    busCfg.optTxnCntWidth.get == LcvBusDoStallFifoThing.myCntWidth
+  )
+
   val push = slave(Stream(
     //LcvBusH2dPayload(cfg=cfg.loBusCfg)
     LcvBusDoStallFifoThingPayload(
@@ -466,7 +478,9 @@ case class LcvBusDoStallFifoThing(
     )(
       dataAssignment=(outp, inp) => {
         outp.busPayload := inp
-        outp.cnt := myPopStm.cnt
+        outp.busPayload.txnCnt.allowOverride
+        outp.busPayload.txnCnt := myPopStm.busPayload.txnCnt
+        //outp.cnt := myPopStm.cnt
       }
     )
   } else {
@@ -1058,7 +1072,7 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   //  )
   //)
   val loH2dDoStallFifoThing = LcvBusDoStallFifoThing(
-    busCfg=cfg.loBusCfg,
+    busCfg=cfg.myFifoThingLoBusCfg,
     optFormal=cfg.optFormal,
   )
   //loH2dDoStallFifoThing.io.push << io.loBus.h2dBus
@@ -1066,16 +1080,17 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
     loH2dDoStallFifoThing.io.push
   )(
     dataAssignment=(outp, inp) => {
-      outp.cnt := (
+      //outp.busPayload := inp
+      outp.busPayload.mainNonBurstInfo := inp.mainNonBurstInfo
+      outp.busPayload.txnCnt := (
         (
           RegNextWhen(
-            (outp.cnt.asSInt + 1),
+            (outp.busPayload.txnCnt.asSInt + 1),
             cond=loH2dDoStallFifoThing.io.push.fire,
           )
           init(-2)
         ).asUInt
       )
-      outp.busPayload := inp
     }
   )
   //loH2dDoStallFifoThing.io.push << 
@@ -1252,12 +1267,13 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   val myLoD2hStm = Stream(
     LcvBusDoStallFifoThingPayload(
       LcvBusD2hPayload(
-        cfg=cfg.loBusCfg,
+        cfg=cfg.myFifoThingLoBusCfg,
         includeByteSizeEtc=(!cfg.loBusCfg.haveByteEn)
       ),
       //optByteEnWidth=None,
     )
   )
+  myLoD2hStm.busPayload.txnCnt.allowOverride
   myLoD2hStm.translateInto(
     if (cfg.loBusCfg.haveByteEn) (
       io.loBus.d2hBus
@@ -1795,11 +1811,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     //&& 
     base.loH2dDoStallFifoThing.io.pop.valid
     && (
-      base.loH2dDoStallFifoThing.io.pop.cnt.asSInt
+      base.loH2dDoStallFifoThing.io.pop.busPayload.txnCnt.asSInt
       =/= (
         RegNextWhen(
           //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
-          (myLoD2hStm.cnt + 1).asSInt,
+          (myLoD2hStm.busPayload.txnCnt + 1).asSInt,
           cond=myLoD2hStm.fire,
           //cond=base.loH2dDoStallFifoThing.io.pop.fire,
           ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
@@ -1930,7 +1946,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       ) {
         rSavedLoH2dPayload := rDel2LoH2dPayload
         myLoD2hPayload.src := rDel2LoH2dPayload.src
-        base.myLoD2hStm.cnt := base.rDel2LoH2dPayload.cnt
+        base.myLoD2hStm.busPayload.txnCnt := (
+          base.rDel2LoH2dPayload.busPayload.txnCnt
+        )
       }
 
       switch (
@@ -3171,11 +3189,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     //&& 
     base.loH2dDoStallFifoThing.io.pop.valid
     && (
-      base.loH2dDoStallFifoThing.io.pop.cnt.asSInt
+      base.loH2dDoStallFifoThing.io.pop.busPayload.txnCnt.asSInt
       =/= (
         RegNextWhen(
           //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
-          (myLoD2hStm.cnt + 1).asSInt,
+          (myLoD2hStm.busPayload.txnCnt + 1).asSInt,
           cond=myLoD2hStm.fire,
           //cond=base.loH2dDoStallFifoThing.io.pop.fire,
           ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
@@ -3297,7 +3315,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       ) {
         rSavedLoH2dPayload := rDel2LoH2dPayload
         myLoD2hPayload.src := rDel2LoH2dPayload.src
-        base.myLoD2hStm.cnt := base.rDel2LoH2dPayload.cnt
+        base.myLoD2hStm.busPayload.txnCnt := (
+          base.rDel2LoH2dPayload.busPayload.txnCnt
+        )
       }
       base.rSavedRdLineAttrsTag := rdLineAttrs.tag
 
@@ -3955,6 +3975,7 @@ object LcvBusNonCoherentDataCacheWithSdramCtrl {
         srcWidth=2,
         haveByteEn=false,
         keepByteSize=false,
+        //optTxnCntWidth=Some(LcvBusDoStallFifoThing.myCntWidth)
       ),
       loBusCacheCfg=LcvBusCacheConfig(
         kind=LcvCacheKind.D,
@@ -4150,9 +4171,10 @@ object LcvBusCacheToVerilog extends App {
           srcWidth=1,
           haveByteEn=false,
           keepByteSize=false,
+          //optTxnCntWidth=Some(LcvBusDoStallFifoThing.myCntWidth)
         ),
         loBusCacheCfg=LcvBusCacheConfig(
-          kind=LcvCacheKind.D,
+          kind=LcvCacheKind.I,
           lineSizeBytes=64,
           depthWords=1024,
           numCpus=1,
@@ -4214,6 +4236,7 @@ object LcvBusCacheFormal_Dup_Asdf extends App {
         srcWidth=5,
         haveByteEn=false,
         keepByteSize=false,
+        //optTxnCntWidth=Some(LcvBusDoStallFifoThing.myCntWidth)
       ),
       loBusCacheCfg=LcvBusCacheConfig(
         kind=LcvCacheKind.I,

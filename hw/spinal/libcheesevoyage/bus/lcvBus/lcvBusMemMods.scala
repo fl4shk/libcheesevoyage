@@ -74,10 +74,10 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     myH2dDoStallFifoThing.io.push
   )(
     dataAssignment=(outp, inp) => {
-      outp.cnt := (
+      outp.busPayload.txnCnt := (
         (
           RegNextWhen(
-            (outp.cnt.asSInt + 1),
+            (outp.busPayload.txnCnt.asSInt + 1),
             cond=myH2dDoStallFifoThing.io.push.fire,
           )
           init(-2)
@@ -509,7 +509,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     myH2dDoStallFifoThing.io.pop.valid
   )
   myDoStallD2hThrowThing.io.push.payload := (
-    myH2dDoStallFifoThing.io.pop.cnt
+    myH2dDoStallFifoThing.io.pop.busPayload.txnCnt
   )
 
   val myFullTempIgnoreDupCntCond = (
@@ -631,9 +631,9 @@ private[libcheesevoyage] case class LcvBusMemImpl(
             )
           )
         }
-        myD2hPushStm.cnt := (
+        myD2hPushStm.busPayload.txnCnt := (
           //RegNext(
-            rDel2H2dPayload.cnt//,
+            rDel2H2dPayload.busPayload.txnCnt//,
             //rH2dPayload.cnt
           //  init=rDel2H2dPayload.cnt.getZero,
           //)

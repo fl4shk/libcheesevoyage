@@ -217,6 +217,9 @@ case class LcvBusH2dShiftedDataEtcStreamAdapter(
       if (outp.cacheInfo != null) {
         outp.cacheInfo := inp.cacheInfo
       }
+      if (outp.txnCnt != null) {
+        outp.txnCnt := inp.txnCnt
+      }
     }
   )
 }
@@ -276,6 +279,9 @@ case class LcvBusD2hShiftedDataEtcStreamAdapter(
       }
       if (outp.cacheInfo != null) {
         outp.cacheInfo := inp.cacheInfo
+      }
+      if (outp.txnCnt != null) {
+        outp.txnCnt := inp.txnCnt
       }
     }
   )

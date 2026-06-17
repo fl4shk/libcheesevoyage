@@ -63,7 +63,22 @@ case class LcvBusMainConfig(
   haveByteEn: Boolean,
   keepByteSize: Boolean,
   //d2hErrorWidth: Int=1,
+  optTxnCntWidth: Option[Int]=None,
 ) {
+  def mkCopyWithTxnCnt(
+    txnCntWidth: Int,
+  ): LcvBusMainConfig = (
+    LcvBusMainConfig(
+      dataWidth=this.dataWidth,
+      addrWidth=this.addrWidth,
+      allowBurst=this.allowBurst,
+      burstAlwaysMaxSize=this.burstAlwaysMaxSize,
+      srcWidth=this.srcWidth,
+      haveByteEn=this.haveByteEn,
+      keepByteSize=this.keepByteSize,
+      optTxnCntWidth=Some(txnCntWidth),
+    )
+  )
   def mkCopyWithByteEn(
     optKeepByteSize: Option[Boolean]=None,
   ): LcvBusMainConfig = (
@@ -84,6 +99,7 @@ case class LcvBusMainConfig(
           }
         }
       ),
+      optTxnCntWidth=this.optTxnCntWidth,
     )
   )
   def mkCopyWithoutByteEn(
@@ -106,6 +122,7 @@ case class LcvBusMainConfig(
           }
         }
       ),
+      optTxnCntWidth=this.optTxnCntWidth,
     )
   )
   def mkCopyWithAllowingBurst(): LcvBusMainConfig = (
@@ -117,6 +134,7 @@ case class LcvBusMainConfig(
       srcWidth=this.srcWidth,
       haveByteEn=this.haveByteEn,
       keepByteSize=this.keepByteSize,
+      optTxnCntWidth=this.optTxnCntWidth,
     )
   )
   def mkCopyWithoutAllowingBurst(): LcvBusMainConfig = (
@@ -128,6 +146,7 @@ case class LcvBusMainConfig(
       srcWidth=this.srcWidth,
       haveByteEn=this.haveByteEn,
       keepByteSize=this.keepByteSize,
+      optTxnCntWidth=this.optTxnCntWidth,
     )
   )
 
@@ -257,6 +276,7 @@ case class LcvBusConfig(
   )
   def haveByteEn = mainCfg.haveByteEn
   def keepByteSize = mainCfg.keepByteSize
+  def optTxnCntWidth = mainCfg.optTxnCntWidth
 
   def burstAddr(
     someAddr: UInt,
@@ -679,6 +699,9 @@ case class LcvBusH2dPayload(
   def cacheLineDirty = cacheInfo.lineDirty
   //def cacheMsg = cacheInfo.msg
   //--------
+  val txnCnt = (cfg.optTxnCntWidth != None) generate (
+    UInt(cfg.optTxnCntWidth.get bits)
+  )
   //--------
 }
 
@@ -778,6 +801,10 @@ case class LcvBusD2hPayload(
   def cacheLineValid = cacheInfo.lineValid
   def cacheLineDirty = cacheInfo.lineDirty
   //def cacheMsg = cacheInfo.msg
+  //--------
+  val txnCnt = (cfg.optTxnCntWidth != None) generate (
+    UInt(cfg.optTxnCntWidth.get bits)
+  )
   //--------
 }
 
