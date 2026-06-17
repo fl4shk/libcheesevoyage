@@ -897,17 +897,27 @@ case class PipeRegFileDoFwdArea[
                 //false
                 || kdx == fwd.numMyUpExtDel2
               ) {
-                fwd.myFwdStateData(ydx)(zdx)(kdx) := (
-                  RegNext(
-                    fwd.myFwdStateData(ydx)(zdx)(kdx),
-                    init=fwd.myFwdStateData(ydx)(zdx)(kdx).getZero
+                if (kdx != fwd.numMyUpExtDel2) {
+                  fwd.myFwdStateData(ydx)(zdx)(kdx) := (
+                    RegNext(
+                      fwd.myFwdStateData(ydx)(zdx)(kdx),
+                      init=fwd.myFwdStateData(ydx)(zdx)(kdx).getZero
+                    )
                   )
-                )
-                when (
-                  //fwd.myUpIsValid
-                  //&& 
-                  myFindFirstValid
-                ) {
+                  when (
+                    //fwd.myUpIsValid
+                    //&& 
+                    myFindFirstValid
+                  ) {
+                    fwd.myFwdStateData(ydx)(zdx)(kdx) := (
+                      fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+                        extIdxUp
+                      )(
+                        kdx
+                      ).payload.payload
+                    )
+                  }
+                } else {
                   fwd.myFwdStateData(ydx)(zdx)(kdx) := (
                     fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
                       extIdxUp
