@@ -52,7 +52,7 @@ case class LcvBusMemConfig(
 case class LcvBusMemIo(
   cfg: LcvBusMemConfig,
 ) extends Bundle {
-  val bus = slave(LcvBusIo(cfg=cfg.busCfg))
+  val bus = slave(LcvBusIo(cfg=cfg.myBusCfg))
 }
 
 private[libcheesevoyage] case class LcvBusMemImpl(
