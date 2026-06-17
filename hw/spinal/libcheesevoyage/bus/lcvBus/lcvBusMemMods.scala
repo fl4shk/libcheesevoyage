@@ -25,6 +25,12 @@ case class LcvBusMemConfig(
   arrRwAddrCollisionXilinx: String="",
   busD2hFifoLatency: Int=2,
 ) {
+  val myFifoThingLoBusCfg = LcvBusConfig(
+    mainCfg=busCfg.mainCfg.mkCopyWithTxnCnt(
+      LcvBusDoStallFifoThing.myCntWidth
+    ),
+    cacheCfg=busCfg.cacheCfg,
+  )
   val ramCfg = RamSdpPipeConfig(
     wordType=Bits(busCfg.dataWidth bits),
     depth=depth,
@@ -51,6 +57,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
 ) extends Component {
   //--------
   def busCfg = cfg.busCfg
+  def myFifoThingLoBusCfg = cfg.myFifoThingLoBusCfg
   //require(!busCfg.allowBurst)
   //--------
   val io = LcvBusMemIo(cfg=cfg)
@@ -65,7 +72,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   ram.io.wrEn := False
 
   val myH2dDoStallFifoThing = LcvBusDoStallFifoThing(
-    busCfg=busCfg,
+    busCfg=myFifoThingLoBusCfg,
     includeDoInit=false,
   )
   //myH2dDoStallFifoThing.io.doInit := False
@@ -74,6 +81,8 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     myH2dDoStallFifoThing.io.push
   )(
     dataAssignment=(outp, inp) => {
+      outp.busPayload := inp
+      outp.busPayload.txnCnt.allowOverride
       outp.busPayload.txnCnt := (
         (
           RegNextWhen(
@@ -83,7 +92,6 @@ private[libcheesevoyage] case class LcvBusMemImpl(
           init(-2)
         ).asUInt
       )
-      outp.busPayload := inp
     }
   )
   //myH2dDoStallFifoThing.io.push << 
