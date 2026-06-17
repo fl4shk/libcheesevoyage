@@ -193,7 +193,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   ) generate (
     LcvBusD2hShiftedDataEtcStreamAdapter(
       cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(
-        busCfg=cfg.busCfg
+        busCfg=cfg.myBusCfg
       )
     )
   )
@@ -226,7 +226,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
           //  ),
           //  cacheCfg=io.bus.d2hBus.payload.cfg.cacheCfg
           //)
-          cfg.busCfg
+          cfg.myBusCfg
         )
       )
     ),
