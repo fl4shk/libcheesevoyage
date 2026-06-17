@@ -234,7 +234,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
         myD2hPushStm.busPayload.txnCnt.asSInt,
         cond=myD2hPushStm.fire,
       )
-      init(-2)
+      init(1)
     )
   )
   myD2hMaybeThrownPushStm.translateInto(
