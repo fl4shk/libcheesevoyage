@@ -1609,6 +1609,7 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   //    forFMax=true,
   //  )
   //)
+
   //--------
   val rLineAttrsInitCnt = (
     Reg(UInt(lineAttrsRam.io.wrAddr.getWidth + 2 /*1*/ /*+ 2*/ bits))

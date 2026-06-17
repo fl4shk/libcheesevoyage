@@ -895,15 +895,27 @@ case class PipeRegFileDoFwdArea[
                 kdx <= forFmaxStageMax
                 //kdx <= 1
                 //false
-                //|| kdx == fwd.numMyUpExtDel2
+                || kdx == fwd.numMyUpExtDel2
               ) {
                 fwd.myFwdStateData(ydx)(zdx)(kdx) := (
-                  fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
-                    extIdxUp
-                  )(
-                    kdx
-                  ).payload.payload
+                  RegNext(
+                    fwd.myFwdStateData(ydx)(zdx)(kdx),
+                    init=fwd.myFwdStateData(ydx)(zdx)(kdx).getZero
+                  )
                 )
+                when (
+                  //fwd.myUpIsValid
+                  //&& 
+                  myFindFirstValid
+                ) {
+                  fwd.myFwdStateData(ydx)(zdx)(kdx) := (
+                    fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+                      extIdxUp
+                    )(
+                      kdx
+                    ).payload.payload
+                  )
+                }
               } else {
                 //println(
                 //  //s"find me: kdx != 0: ${kdx} ${fwd.numMyUpExtDel2}"
