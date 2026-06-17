@@ -226,7 +226,18 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       outp.mainNonBurstInfo := inp.mainNonBurstInfo
     }
   )
-  myD2hPushStm.translateInto(
+  val myD2hMaybeThrownPushStm = cloneOf(myD2hPushStm)
+  myD2hMaybeThrownPushStm << myD2hPushStm.throwWhen(
+    myD2hPushStm.busPayload.txnCnt.asSInt
+    === (
+      RegNextWhen(
+        myD2hPushStm.busPayload.txnCnt.asSInt,
+        cond=myD2hPushStm.fire,
+      )
+      init(-2)
+    )
+  )
+  myD2hMaybeThrownPushStm.translateInto(
     if (cfg.myFifoThingLoBusCfg.haveByteEn) (
       //io.bus.d2hBus
       myD2hFifo.io.push
