@@ -25,14 +25,18 @@ case class LcvBusMemConfig(
   arrRwAddrCollisionXilinx: String="",
   busD2hFifoLatency: Int=2,
 ) {
-  val myFifoThingLoBusCfg = LcvBusConfig(
-    mainCfg=busCfg.mainCfg.mkCopyWithTxnCnt(
-      LcvBusDoStallFifoThing.myCntWidth
-    ),
+  val myBusCfg = LcvBusConfig(
+    mainCfg=busCfg.mainCfg.mkCopyWithoutAllowingBurst(),
     cacheCfg=busCfg.cacheCfg,
   )
+  val myFifoThingLoBusCfg = LcvBusConfig(
+    mainCfg=myBusCfg.mainCfg.mkCopyWithTxnCnt(
+      LcvBusDoStallFifoThing.myCntWidth
+    ),
+    cacheCfg=myBusCfg.cacheCfg,
+  )
   val ramCfg = RamSdpPipeConfig(
-    wordType=Bits(busCfg.dataWidth bits),
+    wordType=Bits(myBusCfg.dataWidth bits),
     depth=depth,
     optIncludeWrByteEn=true,
     init=init,
@@ -56,9 +60,9 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   //io: LcvBusMemIo
 ) extends Component {
   //--------
-  def busCfg = cfg.busCfg
+  def myBusCfg = cfg.myBusCfg
   def myFifoThingLoBusCfg = cfg.myFifoThingLoBusCfg
-  //require(!busCfg.allowBurst)
+  //require(!myBusCfg.allowBurst)
   //--------
   val io = LcvBusMemIo(cfg=cfg)
   //--------
@@ -66,7 +70,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     cfg=cfg.ramCfg
   )
   //--------
-  val rdLineWord = UInt(busCfg.dataWidth bits)
+  val rdLineWord = UInt(myBusCfg.dataWidth bits)
   rdLineWord := ram.io.rdData.asUInt
 
   ram.io.wrEn := False
@@ -176,7 +180,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   def rSavedBusAddr = rSavedH2dPayload.busPayload.addr
 
   val myD2hShiftedDataStmAdapter = (
-    !cfg.busCfg.haveByteEn
+    !cfg.myBusCfg.haveByteEn
   ) generate (
     LcvBusD2hShiftedDataEtcStreamAdapter(
       cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(
@@ -198,7 +202,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
 
   //val myD2hPushStm = Stream(
   //  LcvBusDoStallFifoThingPayload(
-  //    LcvBusD2hPayload(cfg=busCfg),
+  //    LcvBusD2hPayload(cfg=myBusCfg),
   //  )
   //)
   val myD2hFifo = StreamFifo(
