@@ -81,7 +81,8 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     myH2dDoStallFifoThing.io.push
   )(
     dataAssignment=(outp, inp) => {
-      outp.busPayload := inp
+      //outp.busPayload := inp
+      outp.busPayload.mainNonBurstInfo := inp.mainNonBurstInfo
       outp.busPayload.txnCnt.allowOverride
       outp.busPayload.txnCnt := (
         (
@@ -203,7 +204,15 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   val myD2hFifo = StreamFifo(
     dataType=(
       //cloneOf(io.bus.d2hBus.payload)
-      cloneOf(myD2hPushStm.busPayload)
+      //cloneOf(myD2hPushStm.busPayload)
+      LcvBusD2hPayload(
+        cfg=LcvBusConfig(
+          mainCfg=io.bus.d2hBus.payload.cfg.mainCfg.mkCopyWithTxnCnt(
+            cfg.myFifoThingLoBusCfg.optTxnCntWidth.get
+          ),
+          cacheCfg=io.bus.d2hBus.payload.cfg.cacheCfg
+        )
+      )
     ),
     depth=(
       myFifoThingLoBusCfg.maxBurstSizeMinus1 + 1
