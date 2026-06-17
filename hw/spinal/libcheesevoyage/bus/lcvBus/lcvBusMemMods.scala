@@ -51,8 +51,17 @@ case class LcvBusMemConfig(
 
 case class LcvBusMemIo(
   cfg: LcvBusMemConfig,
+  private[libcheesevoyage] useMyBusCfg: Boolean=false
 ) extends Bundle {
-  val bus = slave(LcvBusIo(cfg=cfg.myBusCfg))
+  val bus = slave(
+    LcvBusIo(cfg=(
+      if (!useMyBusCfg) (
+        cfg.busCfg
+      ) else (
+        cfg.myBusCfg
+      )
+    ))
+  )
 }
 
 private[libcheesevoyage] case class LcvBusMemImpl(
@@ -64,7 +73,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   def myFifoThingLoBusCfg = cfg.myFifoThingLoBusCfg
   //require(!myBusCfg.allowBurst)
   //--------
-  val io = LcvBusMemIo(cfg=cfg)
+  val io = LcvBusMemIo(cfg=cfg, useMyBusCfg=true)
   //--------
   val ram = RamSdpPipe(
     cfg=cfg.ramCfg
@@ -862,7 +871,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
 case class LcvBusMem(
   cfg: LcvBusMemConfig
 ) extends Component {
-  val io = LcvBusMemIo(cfg=cfg)
+  val io = LcvBusMemIo(cfg=cfg, useMyBusCfg=false)
   val myMemImpl = LcvBusMemImpl(cfg=cfg)
   val myDeburster = (
     cfg.busCfg.allowBurst
