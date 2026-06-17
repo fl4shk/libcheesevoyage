@@ -838,33 +838,21 @@ case class LcvBusDoStallFifoThing(
   }
 }
 
-case class LcvBusDoStallD2hThrowThingIo(
+case class LcvBusDoStallH2dThrowThingIo(
   busCfg: LcvBusConfig,
 ) extends Bundle {
-  //val myFifoPopCfg = (
-  //  LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=busCfg)
-  //)
-
   val push = slave(Flow(
-    //LcvBusDoStallFifoThingPayload(
-    //  LcvBusH2dPayload(cfg=myFifoPopCfg),
-    //)
     UInt(LcvBusDoStallFifoThing.myCntWidth bits)
   ))
-  //val clear = in(
-  //  Vec.fill(LcvBusDoStallFifoThing.fifoDepthMain)(
-  //    UInt(LcvBusDoStallFifoThing.myCntWidth bits)
-  //  )
-  //)
 
   val myThrowCondMain = out(Bool())
 }
 
-case class LcvBusDoStallD2hThrowThing(
+case class LcvBusDoStallH2dThrowThing(
   busCfg: LcvBusConfig,
 ) extends Component {
   //--------
-  val io = LcvBusDoStallD2hThrowThingIo(busCfg=busCfg)
+  val io = LcvBusDoStallH2dThrowThingIo(busCfg=busCfg)
   //--------
   val rSavedIoPushD2hThrowVec = (
     Vec.fill(LcvBusDoStallFifoThing.fifoDepthMain)(
@@ -873,28 +861,6 @@ case class LcvBusDoStallD2hThrowThing(
     )
   )
 
-  //switch (
-  //  io.push.fire
-  //  ## rSavedIoPushD2hThrowVec.head.fire
-  //  ## rSavedIoPushD2hThrowVec.last.fire
-  //) {
-  //  // this switch statement is for initializing  
-  //  is (M"10-") {
-  //    rSavedIoPushD2hThrowVec.head := io.push
-  //  }
-  //  is (M"110") {
-  //    rSavedIoPushD2hThrowVec.last := io.push
-  //  }
-  //  default {
-  //  }
-  //}
-
-  //val tempFindFirst = rSavedIoPushD2hThrowVec.sFindFirst(
-  //  io.push.fire
-  //  && (
-  //    io.push.payload === _.payload
-  //  )
-  //)
   val tempElemFoundBasicVec = Vec[Bool](
     (
       rSavedIoPushD2hThrowVec.head.fire
@@ -924,9 +890,6 @@ case class LcvBusDoStallD2hThrowThing(
 
   io.myThrowCondMain := tempElemFoundAny
 
-  //when (tempElemFound) {
-  //}
-
   val rPrevRewriteIdx = (
     Reg(UInt(log2Up(rSavedIoPushD2hThrowVec.size) bits))
     init(0x0)
@@ -936,7 +899,6 @@ case class LcvBusDoStallD2hThrowThing(
     io.push.fire
     ## tempElemFoundBasicVec.head
     ## tempElemFoundBasicVec.last
-    //## tempElemIdx
   ) {
     is (B"100") {
       when (rPrevRewriteIdx.lsb) {
@@ -958,13 +920,6 @@ case class LcvBusDoStallD2hThrowThing(
     default {
     }
   }
-  //when (io.push.fire) {
-  //  //when (!rSavedIoPushD2hThrowVec.head.fire) {
-  //  //} elsewhen (!rSavedIoPushD2hThrowVec.last.fire) {
-  //  //}
-  //  //for (idx <- 0 until LcvBusDoStallFifoThing.fifoDepthMain) {
-  //  //}
-  //}
   //--------
 }
 
@@ -1177,6 +1132,37 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
     loH2dPopStm << myTempLoH2dPopStm
   })
 
+  val myDoStallLoH2dThrowThing = (
+    LcvBusDoStallH2dThrowThing(busCfg=cfg.myFifoThingLoBusCfg)
+  )
+
+  myDoStallLoH2dThrowThing.io.push.valid := (
+    loH2dDoStallFifoThing.io.pop.valid
+  )
+  myDoStallLoH2dThrowThing.io.push.payload := (
+    loH2dDoStallFifoThing.io.pop.busPayload.txnCnt
+  )
+
+  val myFullTempIgnoreDupCntCond = (
+    myDoStallLoH2dThrowThing.io.myThrowCondMain
+    //&& History[Bool](
+    //  that=True,
+    //  when=(
+    //    loH2dPopStm.fire
+    //    //loD2hPushStm.fire
+    //    //loH2dDoStallFifoThing.io.pop.fire
+    //    //&& !myLoH2dPopThrowArea.myLoH2dThrowCond
+    //  ),
+    //  length=(
+    //    //2
+    //    //4
+    //    //3
+    //    5
+    //  ),
+    //  init=False,
+    //).last
+  )
+
   loH2dPopStm.ready := False
 
   //loH2dPopStm.ready := False
@@ -1274,7 +1260,20 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
     )
   )
   myLoD2hStm.busPayload.txnCnt.allowOverride
-  myLoD2hStm.translateInto(
+
+  val myLoD2hMaybeThrownStm = cloneOf(myLoD2hStm)
+  myLoD2hMaybeThrownStm << myLoD2hStm.throwWhen(
+    myLoD2hStm.busPayload.txnCnt.asSInt
+    === (
+      RegNextWhen(
+        myLoD2hStm.busPayload.txnCnt.asSInt,
+        cond=myLoD2hStm.fire,
+      )
+      init(1)
+    )
+  )
+
+  myLoD2hMaybeThrownStm.translateInto(
     if (cfg.loBusCfg.haveByteEn) (
       io.loBus.d2hBus
     ) else (
@@ -1282,7 +1281,8 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
     )
   )(
     dataAssignment=(outp, inp) => {
-      outp := inp.busPayload
+      //outp := inp.busPayload
+      outp.mainNonBurstInfo := inp.busPayload.mainNonBurstInfo
     }
   )
   if (!cfg.loBusCfg.haveByteEn) {
@@ -1788,78 +1788,78 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   //    init=False
   //  )
   //)
-  val myTempIgnoreDupCntCond = (
-    Mux[Bool](
-      rState === State.IDLE,
-      RegNext(
-        (
-          rState === State.RECV_LINE_FROM_HI_BUS_POST
-          || rState === State.LOAD_HIT_DO_STALL_POST
-          //|| rState === State.STORE_HIT_DO_STALL
-          //rState =/= State.IDLE
-        ),
-        init=False
-      ),
-      //rState =/= State.LOAD_HIT_DO_STALL_POST,
-      True//False
-    )
-  )
-  val myFullTempIgnoreDupCntCond = (
-    //(
-    //  base.myFifoThingDoStall.head
-    //  //|| base.myFifoThingDoStall.last
-    //)
-    //&& 
-    base.loH2dDoStallFifoThing.io.pop.valid
-    && (
-      base.loH2dDoStallFifoThing.io.pop.busPayload.txnCnt.asSInt
-      =/= (
-        RegNextWhen(
-          //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
-          (myLoD2hStm.busPayload.txnCnt + 1).asSInt,
-          cond=myLoD2hStm.fire,
-          //cond=base.loH2dDoStallFifoThing.io.pop.fire,
-          ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
-        )
-        init(-2)
-      )
-    )
-    //&& (
-    //  base.loH2dDoStallFifoThing.io.pop.src.asSInt
-    //  =/= (
-    //    RegNextWhen(
-    //      //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
-    //      (myLoD2hStm.src - 1).asSInt,
-    //      cond=myLoD2hStm.fire,
-    //      //cond=base.loH2dDoStallFifoThing.io.pop.fire,
-    //      ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
-    //    )
-    //    init(-2)
-    //  )
-    //)
+  //val myTempIgnoreDupCntCond = (
+  //  Mux[Bool](
+  //    rState === State.IDLE,
+  //    RegNext(
+  //      (
+  //        rState === State.RECV_LINE_FROM_HI_BUS_POST
+  //        || rState === State.LOAD_HIT_DO_STALL_POST
+  //        //|| rState === State.STORE_HIT_DO_STALL
+  //        //rState =/= State.IDLE
+  //      ),
+  //      init=False
+  //    ),
+  //    //rState =/= State.LOAD_HIT_DO_STALL_POST,
+  //    True//False
+  //  )
+  //)
+  //val myFullTempIgnoreDupCntCond = (
+  //  //(
+  //  //  base.myFifoThingDoStall.head
+  //  //  //|| base.myFifoThingDoStall.last
+  //  //)
+  //  //&& 
+  //  base.loH2dDoStallFifoThing.io.pop.valid
+  //  && (
+  //    base.loH2dDoStallFifoThing.io.pop.busPayload.txnCnt.asSInt
+  //    =/= (
+  //      RegNextWhen(
+  //        //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
+  //        (myLoD2hStm.busPayload.txnCnt + 1).asSInt,
+  //        cond=myLoD2hStm.fire,
+  //        //cond=base.loH2dDoStallFifoThing.io.pop.fire,
+  //        ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
+  //      )
+  //      init(-2)
+  //    )
+  //  )
+  //  //&& (
+  //  //  base.loH2dDoStallFifoThing.io.pop.src.asSInt
+  //  //  =/= (
+  //  //    RegNextWhen(
+  //  //      //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
+  //  //      (myLoD2hStm.src - 1).asSInt,
+  //  //      cond=myLoD2hStm.fire,
+  //  //      //cond=base.loH2dDoStallFifoThing.io.pop.fire,
+  //  //      ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
+  //  //    )
+  //  //    init(-2)
+  //  //  )
+  //  //)
 
-    && (
-      myTempIgnoreDupCntCond
-      //&& RegNext(myTempIgnoreDupCntCond, init=False)
-    )
-    && History[Bool](
-      that=True,
-      when=(
-        //loH2dPopStm.fire
-        myLoD2hStm.fire
-      ),
-      length=2,
-      init=False,
-    ).last
-  )
+  //  && (
+  //    myTempIgnoreDupCntCond
+  //    //&& RegNext(myTempIgnoreDupCntCond, init=False)
+  //  )
+  //  && History[Bool](
+  //    that=True,
+  //    when=(
+  //      //loH2dPopStm.fire
+  //      myLoD2hStm.fire
+  //    ),
+  //    length=2,
+  //    init=False,
+  //  ).last
+  //)
   def doIgnoreInvalidFifoThingPopCnt(
   ): Unit = {
-    when (myFullTempIgnoreDupCntCond) {
+    when (base.myFullTempIgnoreDupCntCond) {
       //loH2dPopStm.ready := True
       base.myLoH2dPopThrowArea.myLoH2dThrowCond := True
     }
   }
-  doIgnoreInvalidFifoThingPopCnt()
+  //doIgnoreInvalidFifoThingPopCnt()
   switch (rState) {
     is (State.INIT) {
       when (
@@ -1911,6 +1911,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
 
       rHiH2dBurstCnt.foreach(item => item := 0x0)
       rHiD2hBurstCnt := 0x0
+
+      doIgnoreInvalidFifoThingPopCnt()
       doPopLoH2dFifo()
       //--------
       //when (
@@ -3237,7 +3239,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       base.myLoH2dPopThrowArea.myLoH2dThrowCond := True
     }
   }
-  doIgnoreInvalidFifoThingPopCnt()
+  //doIgnoreInvalidFifoThingPopCnt()
   switch (rState) {
     is (State.INIT) {
       when (
@@ -3280,6 +3282,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
 
       rHiH2dBurstCnt.foreach(item => item := 0x0)
       rHiD2hBurstCnt := 0x0
+
+      doIgnoreInvalidFifoThingPopCnt()
       doPopLoH2dFifo()
       //--------
       //when (

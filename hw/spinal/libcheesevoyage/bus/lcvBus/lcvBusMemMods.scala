@@ -193,7 +193,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   ) generate (
     LcvBusD2hShiftedDataEtcStreamAdapter(
       cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(
-        busCfg=cfg.myFifoThingLoBusCfg
+        busCfg=cfg.busCfg
       )
     )
   )
@@ -219,11 +219,14 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       //cloneOf(io.bus.d2hBus.payload)
       //cloneOf(myD2hPushStm.busPayload)
       LcvBusD2hPayload(
-        cfg=LcvBusConfig(
-          mainCfg=io.bus.d2hBus.payload.cfg.mainCfg.mkCopyWithTxnCnt(
-            cfg.myFifoThingLoBusCfg.optTxnCntWidth.get
-          ),
-          cacheCfg=io.bus.d2hBus.payload.cfg.cacheCfg
+        cfg=(
+          //LcvBusConfig(
+          //  mainCfg=io.bus.d2hBus.payload.cfg.mainCfg.mkCopyWithTxnCnt(
+          //    cfg.myFifoThingLoBusCfg.optTxnCntWidth.get
+          //  ),
+          //  cacheCfg=io.bus.d2hBus.payload.cfg.cacheCfg
+          //)
+          cfg.busCfg
         )
       )
     ),
@@ -259,7 +262,8 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     )
   )(
     dataAssignment=(outp, inp) => {
-      outp := inp.busPayload
+      //outp := inp.busPayload
+      outp.mainNonBurstInfo := inp.busPayload.mainNonBurstInfo
     }
   )
 
@@ -550,19 +554,19 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   //  ).last
   //)
 
-  val myDoStallD2hThrowThing = (
-    LcvBusDoStallD2hThrowThing(busCfg=cfg.myFifoThingLoBusCfg)
+  val myDoStallH2dThrowThing = (
+    LcvBusDoStallH2dThrowThing(busCfg=cfg.myFifoThingLoBusCfg)
   )
 
-  myDoStallD2hThrowThing.io.push.valid := (
+  myDoStallH2dThrowThing.io.push.valid := (
     myH2dDoStallFifoThing.io.pop.valid
   )
-  myDoStallD2hThrowThing.io.push.payload := (
+  myDoStallH2dThrowThing.io.push.payload := (
     myH2dDoStallFifoThing.io.pop.busPayload.txnCnt
   )
 
   val myFullTempIgnoreDupCntCond = (
-    myDoStallD2hThrowThing.io.myThrowCondMain
+    myDoStallH2dThrowThing.io.myThrowCondMain
     //&& History[Bool](
     //  that=True,
     //  when=(
@@ -583,9 +587,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
 
   def doIgnoreInvalidFifoThingPopCnt(
   ): Unit = {
-    when (
-      myFullTempIgnoreDupCntCond
-    ) {
+    when (myFullTempIgnoreDupCntCond) {
       //loH2dPopStm.ready := True
       myH2dPopThrowArea.myH2dThrowCond := True
     }
@@ -624,9 +626,9 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       rState := State.IDLE
     }
     is (State.IDLE) {
-      doIgnoreInvalidFifoThingPopCnt()
       myFifoThingDoStall := False
       myD2hPushStm.valid := False
+      doIgnoreInvalidFifoThingPopCnt()
       doPopH2dFifo()
 
       //rSavedH2dPayload := rDel2H2dPayload
