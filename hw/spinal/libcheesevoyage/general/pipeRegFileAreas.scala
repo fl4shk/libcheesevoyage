@@ -899,7 +899,8 @@ case class PipeRegFileDoFwdArea[
               ) {
                 if (
                   kdx != 0
-                  || kdx != fwd.numMyUpExtDel2
+                  && kdx != 1
+                  && kdx != fwd.numMyUpExtDel2
                 ) {
                   fwd.myFwdStateData(ydx)(zdx)(kdx) := (
                     RegNext(
