@@ -892,7 +892,27 @@ case class LcvBusMem(
       }
     )
   } else {
-    io.bus <> myMemImpl.io.bus
+    //io.bus <> myMemImpl.io.bus
+
+    io.bus.h2dBus.translateInto(
+      myMemImpl.io.bus.h2dBus
+    )(
+      dataAssignment=(
+        outp, inp
+      ) => {
+        outp.mainNonBurstInfo := inp.mainNonBurstInfo
+        outp.mainBurstInfo := outp.mainBurstInfo.getZero
+      }
+    )
+    myMemImpl.io.bus.d2hBus.translateInto(
+      io.bus.d2hBus
+    )(
+      dataAssignment=(
+        outp, inp
+      ) => {
+        outp.mainNonBurstInfo := inp.mainNonBurstInfo
+      }
+    )
   }
 }
 
