@@ -1807,78 +1807,82 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   //    init=False
   //  )
   //)
-  //val myTempIgnoreDupCntCond = (
-  //  Mux[Bool](
-  //    rState === State.IDLE,
-  //    RegNext(
-  //      (
-  //        rState === State.RECV_LINE_FROM_HI_BUS_POST
-  //        || rState === State.LOAD_HIT_DO_STALL_POST
-  //        //|| rState === State.STORE_HIT_DO_STALL
-  //        //rState =/= State.IDLE
-  //      ),
-  //      init=False
-  //    ),
-  //    //rState =/= State.LOAD_HIT_DO_STALL_POST,
-  //    True//False
-  //  )
-  //)
-  //val myFullTempIgnoreDupCntCond = (
-  //  //(
-  //  //  base.myFifoThingDoStall.head
-  //  //  //|| base.myFifoThingDoStall.last
-  //  //)
-  //  //&& 
-  //  base.loH2dDoStallFifoThing.io.pop.valid
-  //  && (
-  //    base.loH2dDoStallFifoThing.io.pop.busPayload.txnCnt.asSInt
-  //    =/= (
-  //      RegNextWhen(
-  //        //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
-  //        (myLoD2hStm.busPayload.txnCnt + 1).asSInt,
-  //        cond=myLoD2hStm.fire,
-  //        //cond=base.loH2dDoStallFifoThing.io.pop.fire,
-  //        ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
-  //      )
-  //      init(-2)
-  //    )
-  //  )
-  //  //&& (
-  //  //  base.loH2dDoStallFifoThing.io.pop.src.asSInt
-  //  //  =/= (
-  //  //    RegNextWhen(
-  //  //      //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
-  //  //      (myLoD2hStm.src - 1).asSInt,
-  //  //      cond=myLoD2hStm.fire,
-  //  //      //cond=base.loH2dDoStallFifoThing.io.pop.fire,
-  //  //      ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
-  //  //    )
-  //  //    init(-2)
-  //  //  )
-  //  //)
 
-  //  && (
-  //    myTempIgnoreDupCntCond
-  //    //&& RegNext(myTempIgnoreDupCntCond, init=False)
-  //  )
-  //  && History[Bool](
-  //    that=True,
-  //    when=(
-  //      //loH2dPopStm.fire
-  //      myLoD2hStm.fire
-  //    ),
-  //    length=2,
-  //    init=False,
-  //  ).last
-  //)
+  val myTempIgnoreDupCntCond = (
+    Mux[Bool](
+      rState === State.IDLE,
+      RegNext(
+        (
+          rState === State.RECV_LINE_FROM_HI_BUS_POST
+          || rState === State.LOAD_HIT_DO_STALL_POST
+          //|| rState === State.STORE_HIT_DO_STALL
+          //rState =/= State.IDLE
+        ),
+        init=False
+      ),
+      //rState =/= State.LOAD_HIT_DO_STALL_POST,
+      True//False
+    )
+  )
+  val myFullTempIgnoreDupCntCond = (
+    //(
+    //  base.myFifoThingDoStall.head
+    //  //|| base.myFifoThingDoStall.last
+    //)
+    //&& 
+    base.loH2dDoStallFifoThing.io.pop.valid
+    && (
+      base.loH2dDoStallFifoThing.io.pop.busPayload.txnCnt.asSInt
+      =/= (
+        RegNextWhen(
+          //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
+          (myLoD2hStm.busPayload.txnCnt + 1).asSInt,
+          cond=myLoD2hStm.fire,
+          //cond=base.loH2dDoStallFifoThing.io.pop.fire,
+          ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
+        )
+        init(-2)
+      )
+    )
+    //&& (
+    //  base.loH2dDoStallFifoThing.io.pop.src.asSInt
+    //  =/= (
+    //    RegNextWhen(
+    //      //(base.loH2dDoStallFifoThing.io.pop.src + 1).asSInt,
+    //      (myLoD2hStm.src - 1).asSInt,
+    //      cond=myLoD2hStm.fire,
+    //      //cond=base.loH2dDoStallFifoThing.io.pop.fire,
+    //      ////init=base.loH2dDoStallFifoThing.io.pop.src.getZero,
+    //    )
+    //    init(-2)
+    //  )
+    //)
+
+    && (
+      myTempIgnoreDupCntCond
+      //&& RegNext(myTempIgnoreDupCntCond, init=False)
+    )
+    && History[Bool](
+      that=True,
+      when=(
+        //loH2dPopStm.fire
+        myLoD2hStm.fire
+      ),
+      length=2,
+      init=False,
+    ).last
+  )
   def doIgnoreInvalidFifoThingPopCnt(
   ): Unit = {
-    when (base.myFullTempIgnoreDupCntCond) {
+    when (myFullTempIgnoreDupCntCond) {
       //loH2dPopStm.ready := True
       base.myLoH2dPopThrowArea.myLoH2dThrowCond := True
     }
   }
   doIgnoreInvalidFifoThingPopCnt()
+
+  val myTempUpdateSavedLoH2dPayloadCond = Bool()
+  myTempUpdateSavedLoH2dPayloadCond := True
   switch (rState) {
     is (State.INIT) {
       when (
@@ -2104,6 +2108,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
               State.LOAD_HIT_DO_STALL_PIPE_2
               //State.LOAD_HIT_DO_STALL_PIPE_1
             )
+            myTempUpdateSavedLoH2dPayloadCond := False
           }
         }
         //is (
