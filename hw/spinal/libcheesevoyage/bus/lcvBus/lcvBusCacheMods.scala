@@ -1881,8 +1881,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   }
   doIgnoreInvalidFifoThingPopCnt()
 
-  val myTempUpdateSavedLoH2dPayloadCond = Bool()
-  myTempUpdateSavedLoH2dPayloadCond := True
+  //val myTempUpdateSavedLoH2dPayloadCond = Bool()
+  //myTempUpdateSavedLoH2dPayloadCond := True
   switch (rState) {
     is (State.INIT) {
       when (
@@ -1969,7 +1969,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
           next=lineAttrsRam.io.rdEn,
           init=False,
         )
-        && myTempUpdateSavedLoH2dPayloadCond
+        //&& myTempUpdateSavedLoH2dPayloadCond
       ) {
         rSavedLoH2dPayload := rDel2LoH2dPayload
         myLoD2hPayload.src := rDel2LoH2dPayload.src
@@ -2109,7 +2109,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
               State.LOAD_HIT_DO_STALL_PIPE_2
               //State.LOAD_HIT_DO_STALL_PIPE_1
             )
-            myTempUpdateSavedLoH2dPayloadCond := False
+            //myTempUpdateSavedLoH2dPayloadCond := False
           }
         }
         //is (
@@ -3271,8 +3271,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     }
   }
   doIgnoreInvalidFifoThingPopCnt()
-  val myTempUpdateSavedLoH2dPayloadCond = Bool()
-  myTempUpdateSavedLoH2dPayloadCond := True
+  //val myTempUpdateSavedLoH2dPayloadCond = Bool()
+  //myTempUpdateSavedLoH2dPayloadCond := True
   switch (rState) {
     is (State.INIT) {
       when (
@@ -3350,7 +3350,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           next=lineAttrsRam.io.rdEn,
           init=False,
         )
-        && myTempUpdateSavedLoH2dPayloadCond
+        //&& myTempUpdateSavedLoH2dPayloadCond
       ) {
         rSavedLoH2dPayload := rDel2LoH2dPayload
         myLoD2hPayload.src := rDel2LoH2dPayload.src
@@ -3489,7 +3489,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
               State.LOAD_HIT_DO_STALL_PIPE_2
               //State.LOAD_HIT_DO_STALL_PIPE_1
             )
-            myTempUpdateSavedLoH2dPayloadCond := False
+            //myTempUpdateSavedLoH2dPayloadCond := False
           }
         }
         is (
@@ -3517,7 +3517,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             loH2dPopStm.ready := False
             //myLoD2hStm.valid := False
             rState := State.STORE_HIT_DO_STALL_PIPE_1
-            myTempUpdateSavedLoH2dPayloadCond := False
+            //myTempUpdateSavedLoH2dPayloadCond := False
           }
           //rState := State.STORE_HIT
           //loH2dPopStm.ready := (
