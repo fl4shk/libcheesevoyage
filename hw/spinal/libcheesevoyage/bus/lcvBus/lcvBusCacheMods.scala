@@ -1859,7 +1859,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       base.myLoH2dPopThrowArea.myLoH2dThrowCond := True
     }
   }
-  //doIgnoreInvalidFifoThingPopCnt()
+  doIgnoreInvalidFifoThingPopCnt()
   switch (rState) {
     is (State.INIT) {
       when (
@@ -1912,7 +1912,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       rHiH2dBurstCnt.foreach(item => item := 0x0)
       rHiD2hBurstCnt := 0x0
 
-      doIgnoreInvalidFifoThingPopCnt()
+      //doIgnoreInvalidFifoThingPopCnt()
       doPopLoH2dFifo()
       //--------
       //when (
@@ -3239,7 +3239,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       base.myLoH2dPopThrowArea.myLoH2dThrowCond := True
     }
   }
-  //doIgnoreInvalidFifoThingPopCnt()
+  doIgnoreInvalidFifoThingPopCnt()
   switch (rState) {
     is (State.INIT) {
       when (
@@ -3283,7 +3283,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       rHiH2dBurstCnt.foreach(item => item := 0x0)
       rHiD2hBurstCnt := 0x0
 
-      doIgnoreInvalidFifoThingPopCnt()
+      //doIgnoreInvalidFifoThingPopCnt()
       doPopLoH2dFifo()
       //--------
       //when (
