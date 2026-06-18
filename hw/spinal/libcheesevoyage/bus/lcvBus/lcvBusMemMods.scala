@@ -29,7 +29,7 @@ case class LcvBusMemConfig(
     mainCfg=busCfg.mainCfg.mkCopyWithoutAllowingBurst(),
     cacheCfg=busCfg.cacheCfg,
   )
-  val myFifoThingLoBusCfg = LcvBusConfig(
+  val myFifoThingBusCfg = LcvBusConfig(
     mainCfg=myBusCfg.mainCfg.mkCopyWithTxnCnt(
       LcvBusDoStallFifoThing.myCntWidth
     ),
@@ -70,7 +70,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
 ) extends Component {
   //--------
   def myBusCfg = cfg.myBusCfg
-  def myFifoThingLoBusCfg = cfg.myFifoThingLoBusCfg
+  def myFifoThingBusCfg = cfg.myFifoThingBusCfg
   //require(!myBusCfg.allowBurst)
   //--------
   val io = LcvBusMemIo(cfg=cfg, useMyBusCfg=true)
@@ -85,7 +85,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   ram.io.wrEn := False
 
   val myH2dDoStallFifoThing = LcvBusDoStallFifoThing(
-    busCfg=myFifoThingLoBusCfg,
+    busCfg=myFifoThingBusCfg,
     includeDoInit=false,
   )
   //myH2dDoStallFifoThing.io.doInit := False
@@ -200,8 +200,8 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   val myD2hPushStm = Stream(
     LcvBusDoStallFifoThingPayload(
       LcvBusD2hPayload(
-        cfg=cfg.myFifoThingLoBusCfg,
-        includeByteSizeEtc=(!cfg.myFifoThingLoBusCfg.haveByteEn),
+        cfg=cfg.myFifoThingBusCfg,
+        includeByteSizeEtc=(!cfg.myFifoThingBusCfg.haveByteEn),
       ),
       //optByteEnWidth=None,
     )
@@ -231,7 +231,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       )
     ),
     depth=(
-      myFifoThingLoBusCfg.maxBurstSizeMinus1 + 1
+      myFifoThingBusCfg.maxBurstSizeMinus1 + 1
     ),
     latency=cfg.busD2hFifoLatency,
     forFMax=true,
@@ -254,7 +254,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     )
   )
   myD2hMaybeThrownPushStm.translateInto(
-    if (cfg.myFifoThingLoBusCfg.haveByteEn) (
+    if (cfg.myFifoThingBusCfg.haveByteEn) (
       //io.bus.d2hBus
       myD2hFifo.io.push
     ) else (
@@ -267,7 +267,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     }
   )
 
-  if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+  if (!cfg.myFifoThingBusCfg.haveByteEn) {
     //myD2hShiftedDataStmAdapter.io.byteSize := (
     //  rDel2H2dPayload.busPayload.byteSize
     //)
@@ -291,7 +291,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   //)
 
 
-  def myRamAddrRshift = log2Up(myFifoThingLoBusCfg.dataWidth / 8)
+  def myRamAddrRshift = log2Up(myFifoThingBusCfg.dataWidth / 8)
   def doRamReadSync(
     busAddr: UInt,
     setEn: Int=0,
@@ -555,7 +555,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   //)
 
   val myDoStallH2dThrowThing = (
-    LcvBusDoStallH2dThrowThing(busCfg=cfg.myFifoThingLoBusCfg)
+    LcvBusDoStallH2dThrowThing(busCfg=cfg.myFifoThingBusCfg)
   )
 
   myDoStallH2dThrowThing.io.push.valid := (
@@ -672,13 +672,13 @@ private[libcheesevoyage] case class LcvBusMemImpl(
           //  init=rDel2H2dPayload.busPayload.src.getZero
           //)
         )
-        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+        if (!cfg.myFifoThingBusCfg.haveByteEn) {
           myD2hPushStm.busPayload.byteSize := (
             rDel2H2dPayload.busPayload.byteSize
           )
           myD2hPushStm.busPayload.addrLo := (
             rDel2H2dPayload.busPayload.addr(
-              cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
+              cfg.myFifoThingBusCfg.byteSizeWidth - 1 downto 0
             )
           )
         }
@@ -708,13 +708,13 @@ private[libcheesevoyage] case class LcvBusMemImpl(
           myH2dPopStm.ready := True
           myD2hPushStm.valid := True
           myD2hPushStm.busPayload.data := rdLineWord
-          if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+          if (!cfg.myFifoThingBusCfg.haveByteEn) {
             myD2hPushStm.busPayload.byteSize := (
               rDel2H2dPayload.busPayload.byteSize
             )
             myD2hPushStm.busPayload.addrLo := (
               rDel2H2dPayload.busPayload.addr(
-                cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
+                cfg.myFifoThingBusCfg.byteSizeWidth - 1 downto 0
               )
             )
           }
@@ -739,13 +739,13 @@ private[libcheesevoyage] case class LcvBusMemImpl(
           // non-burst, store
           ram.io.wrEn := True
           myD2hPushStm.valid := True
-          if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+          if (!cfg.myFifoThingBusCfg.haveByteEn) {
             myD2hPushStm.busPayload.byteSize := (
               rDel2H2dPayload.busPayload.byteSize
             )
             myD2hPushStm.busPayload.addrLo := (
               rDel2H2dPayload.busPayload.addr(
-                cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
+                cfg.myFifoThingBusCfg.byteSizeWidth - 1 downto 0
               )
             )
           }
@@ -814,13 +814,13 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       ram.io.rdEn := False
       myH2dPopStm.ready := False
       myD2hPushStm.busPayload.data := rdLineWord
-      if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+      if (!cfg.myFifoThingBusCfg.haveByteEn) {
         myD2hPushStm.busPayload.byteSize := (
           rSavedH2dPayload.busPayload.byteSize
         )
         myD2hPushStm.busPayload.addrLo := (
           rSavedH2dPayload.busPayload.addr(
-            cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
+            cfg.myFifoThingBusCfg.byteSizeWidth - 1 downto 0
           )
         )
       }
