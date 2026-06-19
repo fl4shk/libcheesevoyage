@@ -3126,6 +3126,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
           rDel2LoH2dPayload.busPayload.txnCnt
         )
       }
+      rSavedRdLineAttrsTag := rdLineAttrs.tag
 
       switch (
         RegNext(
@@ -4119,6 +4120,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           rDel2LoH2dPayload.busPayload.txnCnt
         )
       }
+      rSavedRdLineAttrsTag := rdLineAttrs.tag
 
       switch (
         RegNext(
