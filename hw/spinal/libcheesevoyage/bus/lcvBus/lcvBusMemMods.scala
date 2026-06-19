@@ -449,20 +449,20 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   def doPopH2dFifo(): Unit = {
     myH2dPopStm.ready := True
   }
-  val myTempIgnoreDupCntCond = (
-    Mux[Bool](
-      rState === State.IDLE,
-      RegNext(
-        (
-          //rState === State.RECV_LINE_FROM_HI_BUS_POST
-          rState =/= State.IDLE
-          && rState =/= State.INIT
-        ),
-        init=False
-      ),
-      True//False
-    )
-  )
+  //val myTempIgnoreDupCntCond = (
+  //  Mux[Bool](
+  //    rState === State.IDLE,
+  //    RegNext(
+  //      (
+  //        //rState === State.RECV_LINE_FROM_HI_BUS_POST
+  //        rState =/= State.IDLE
+  //        && rState =/= State.INIT
+  //      ),
+  //      init=False
+  //    ),
+  //    True//False
+  //  )
+  //)
 
   //val myOtherFullTempIgnoreDupCntCond = (
   //  myH2dDoStallFifoThing.io.pop.valid
