@@ -3118,7 +3118,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       RegNext(myLoH2dPopPayload.addr(loBusCacheCfg.tagRange))
       init(0x0)
     )
-    init(myLoH2dPopPayload.addr.getZero),
+    init(0x0),
   )
   val tempHaveHitCmpEq = (
     myTempHaveHitCmpEqLeft
@@ -4111,7 +4111,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       RegNext(myLoH2dPopPayload.addr(loBusCacheCfg.tagRange))
       init(0x0)
     )
-    init(myLoH2dPopPayload.addr.getZero),
+    init(0x0),
   )
   val tempHaveHitCmpEq = (
     myTempHaveHitCmpEqLeft
