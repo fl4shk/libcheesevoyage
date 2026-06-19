@@ -2830,7 +2830,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   //myLoH2dDoStallFifoThing.io.doStall := myFifoThingDoStall
   val myLoH2dPopStm = (
     //cloneOf(myLoH2dDoStallFifoThing.io.pop)
-    cloneOf(io.loBus.h2dBus)
+    //cloneOf(io.loBus.h2dBus)
+    Stream(LcvBusH2dPayload(
+      cfg=LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=loBusCfg)
+    ))
   )
   def myLoH2dPopPayload = myLoH2dPopStm//.busPayload
   myLoH2dPopStm.ready := False
