@@ -855,7 +855,7 @@ case class LcvBusDoStallH2dThrowThing(
   //--------
   val io = LcvBusDoStallH2dThrowThingIo(busCfg=busCfg)
   //--------
-  val rSavedIoPushD2hThrowVec = (
+  val rSavedIoPushH2dThrowVec = (
     Vec.fill(LcvBusDoStallFifoThing.fifoDepthMain)(
       Reg(cloneOf(io.push))
       init(io.push.getZero)
@@ -864,12 +864,12 @@ case class LcvBusDoStallH2dThrowThing(
 
   val tempElemFoundBasicVec = Vec[Bool](
     (
-      rSavedIoPushD2hThrowVec.head.fire
-      && io.push.payload === rSavedIoPushD2hThrowVec.head.payload
+      rSavedIoPushH2dThrowVec.head.fire
+      && io.push.payload === rSavedIoPushH2dThrowVec.head.payload
     ),
     (
-      rSavedIoPushD2hThrowVec.last.fire
-      && io.push.payload === rSavedIoPushD2hThrowVec.last.payload
+      rSavedIoPushH2dThrowVec.last.fire
+      && io.push.payload === rSavedIoPushH2dThrowVec.last.payload
     )
   )
 
@@ -882,17 +882,17 @@ case class LcvBusDoStallH2dThrowThing(
     io.push.fire
     && tempElemFoundBasicVec.orR
   )
-  val tempElemIdx = UInt(log2Up(rSavedIoPushD2hThrowVec.size) bits)
+  val tempElemIdx = UInt(log2Up(rSavedIoPushH2dThrowVec.size) bits)
   tempElemIdx := (
     Cat(
-      io.push.payload === rSavedIoPushD2hThrowVec.last.payload
+      io.push.payload === rSavedIoPushH2dThrowVec.last.payload
     ).asUInt
   )
 
   io.myThrowCondMain := tempElemFoundAny
 
   val rPrevRewriteIdx = (
-    Reg(UInt(log2Up(rSavedIoPushD2hThrowVec.size) bits))
+    Reg(UInt(log2Up(rSavedIoPushH2dThrowVec.size) bits))
     init(0x0)
   )
 
@@ -903,26 +903,27 @@ case class LcvBusDoStallH2dThrowThing(
   ) {
     is (B"100") {
       when (rPrevRewriteIdx.lsb) {
-        rSavedIoPushD2hThrowVec.head := io.push
+        rSavedIoPushH2dThrowVec.head := io.push
         rPrevRewriteIdx.lsb := False
       } otherwise {
-        rSavedIoPushD2hThrowVec.last := io.push
+        rSavedIoPushH2dThrowVec.last := io.push
         rPrevRewriteIdx.lsb := True
       }
     }
     is (M"11-") {
-      rSavedIoPushD2hThrowVec.last := io.push
-      rSavedIoPushD2hThrowVec.head.valid := False
+      rSavedIoPushH2dThrowVec.last := io.push
+      rSavedIoPushH2dThrowVec.head.valid := False
     }
     is (B"101") {
-      rSavedIoPushD2hThrowVec.head := io.push
-      rSavedIoPushD2hThrowVec.last.valid := False
+      rSavedIoPushH2dThrowVec.head := io.push
+      rSavedIoPushH2dThrowVec.last.valid := False
     }
     default {
     }
   }
   //--------
 }
+
 
 case class LcvBusCacheIo(
   //loBusCfg: LcvBusConfig,
@@ -2535,6 +2536,209 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
 //  val myInitArea = base.mkCacheInitArea()
 //}
 
+//private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
+//  cfg: LcvBusCacheBusPairConfig,
+//) extends Component {
+//  //--------
+//  def loBusCfg = cfg.loBusCfg
+//  def hiBusCfg = cfg.hiBusCfg
+//  def optFormal = cfg.optFormal
+//
+//  def loBusCacheCfg = cfg.loBusCacheCfg
+//  def myLineWordRamAddrRshift = loBusCacheCfg.myLineWordRamAddrRshift
+//  def myLineAttrsRamAddrRshift = loBusCacheCfg.myLineAttrsRamAddrRshift
+//  def wordWidth = loBusCacheCfg.wordWidth
+//  def depthWords = loBusCacheCfg.depthWords
+//  def depthLines = loBusCacheCfg.depthLines
+//  //--------
+//  require(
+//    //hiBusCfg.maxBurstSizeMinus1 == (64 / 4) - 1,
+//    //cfg.loBusCacheCfg.lineSizeBytes == 64,
+//    cfg.loBusCacheCfg.lineSizeBytes == loBusCfg.burstCntMaxNumBytes,
+//    s"(Perhaps only temporarily), "
+//    + s"we need the number of bytes per cache line to be "
+//    + s"${loBusCfg.burstCntMaxNumBytes}. "
+//    + s"This permits an easier-to-implement design "
+//    + s"for `io.hiBus` bursting."
+//  )
+//  //--------
+//  val io = LcvBusCacheIo(cfg=cfg)
+//  //--------
+//  val lineWordRamCfg = RamSdpPipeConfig(
+//    wordType=UInt(wordWidth bits),
+//    depth=depthWords,
+//    optIncludeWrByteEn=true,
+//    initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
+//    arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
+//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineWordMemRamStyleXilinx,
+//  )
+//  val lineWordRam = RamSdpPipe(cfg=lineWordRamCfg)
+//  val lineAttrsRamCfg = RamSdpPipeConfig(
+//    wordType=LcvBusCacheLineAttrs(cfg=loBusCfg),
+//    depth=depthLines,
+//    optIncludeWrByteEn=false,
+//    initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
+//    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
+//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
+//  )
+//  val lineAttrsRam = RamSdpPipe(cfg=lineAttrsRamCfg)
+//
+//  val rdLineWord = UInt(wordWidth bits)
+//  rdLineWord := lineWordRam.io.rdData
+//
+//  val rdLineAttrs = LcvBusCacheLineAttrs(cfg=loBusCfg)
+//  rdLineAttrs := lineAttrsRam.io.rdData
+//
+//  val wrLineAttrs = LcvBusCacheLineAttrs(cfg=loBusCfg)
+//  wrLineAttrs := RegNext(wrLineAttrs, init=wrLineAttrs.getZero)
+//  wrLineAttrs.allowOverride
+//
+//  lineWordRam.io.rdEn := True
+//  lineAttrsRam.io.rdEn := True
+//
+//  lineWordRam.io.wrEn := False
+//  lineAttrsRam.io.wrEn := False
+//  //--------
+//  def doLineWordRamReadSync(
+//    busAddr: UInt,
+//    setEn: Int=0,
+//  ): Unit = {
+//    if (setEn == 1) {
+//      lineWordRam.io.rdEn := True
+//    } else if (setEn == 2) {
+//      require(false)
+//      //lineWordRam.io.rdEn := (
+//      //  RegNext(
+//      //    next=(
+//      //      //myLoH2dPopStm.valid
+//      //      myLoH2dPopStm.fire
+//      //    ),
+//      //    init=False,
+//      //  )
+//      //)
+//    } 
+//    lineWordRam.io.rdAddr := {
+//      //println(
+//      //  s"test info: busAddr("
+//      //  + s"${busAddr.high} downto ${myLineWordRamAddrRshift}"
+//      //  + s")"
+//      //)
+//      (
+//        (
+//          busAddr(busAddr.high downto myLineWordRamAddrRshift)
+//        )
+//        .resize(lineWordRam.io.rdAddr.getWidth)
+//      )
+//    }
+//  }
+//  def doLineAttrsRamReadSync(
+//    busAddr: UInt,
+//    setEn: Int=0,
+//  ): Unit = {
+//    if (setEn == 1) {
+//      lineAttrsRam.io.rdEn := True
+//    } else if (setEn == 2) {
+//      require(false)
+//      //lineAttrsRam.io.rdEn := (
+//      //  RegNext(
+//      //    next=(
+//      //      //myLoH2dPopStm.valid
+//      //      myLoH2dPopStm.fire
+//      //    ),
+//      //    init=False,
+//      //  )
+//      //)
+//    } 
+//    lineAttrsRam.io.rdAddr := {
+//      //println(
+//      //  s"test info: busAddr("
+//      //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
+//      //  + s")"
+//      //)
+//      (
+//        (
+//          busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
+//        )
+//        .resize(lineAttrsRam.io.rdAddr.getWidth)
+//      )
+//    }
+//  }
+//  def doLineWordRamWrite(
+//    busAddr: UInt,
+//    lineWord: UInt,
+//    byteEn: Option[UInt],
+//    setEn: Boolean=true,
+//  ): Unit = {
+//    if (setEn) {
+//      lineWordRam.io.wrEn := True
+//    }
+//    lineWordRam.io.wrAddr := (
+//      (busAddr(busAddr.high downto myLineWordRamAddrRshift))
+//      .resize(lineWordRam.io.wrAddr.getWidth)
+//    )
+//    lineWordRam.io.wrData := lineWord
+//    byteEn match {
+//      case Some(byteEn) => {
+//        lineWordRam.io.wrByteEn := byteEn.asBits
+//      }
+//      case None => {
+//        lineWordRam.io.wrByteEn := (
+//          B(lineWordRam.io.wrByteEn.getWidth bits, default -> True)
+//        )
+//      }
+//    }
+//  }
+//  def doLineAttrsRamWrite(
+//    busAddr: UInt,
+//    lineAttrs: LcvBusCacheLineAttrs,
+//    setEn: Boolean=true,
+//  ): Unit = {
+//    if (setEn) {
+//      lineAttrsRam.io.wrEn := True
+//    }
+//    lineAttrsRam.io.wrAddr := (
+//      (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
+//      .resize(lineAttrsRam.io.wrAddr.getWidth)
+//    )
+//    lineAttrsRam.io.wrData := lineAttrs
+//  }
+//  //--------
+//  val myTempHaveHitCmpEqLeft = rdLineAttrs.tag
+//  val myTempHaveHitCmpEqRight = (
+//    //RegNext(
+//    //  RegNext(
+//    //    myLoH2dPopPayload.addr, init=myLoH2dPopPayload.addr.getZero
+//    //  ),
+//    //  init=myLoH2dPopPayload.addr.getZero,
+//    //)
+//  )
+//  val tempHaveHitCmpEq = (
+//    myTempHaveHitCmpEqLeft
+//    === myTempHaveHitCmpEqRight
+//  )
+//  val haveHit = (
+//    rdLineAttrs.fire
+//    && tempHaveHitCmpEq
+//  )
+//  val rSavedRdLineAttrsTag = (
+//    Reg(
+//      cloneOf(rdLineAttrs.tag),
+//      init=rdLineAttrs.tag.getZero,
+//    )
+//  )
+//
+//  val rHiH2dBurstCnt = (
+//    Vec.fill(2)(
+//      Reg(UInt(loBusCfg.burstCntWidth bits))
+//      init(0x0)
+//    )
+//  )
+//  val rHiD2hBurstCnt = (
+//    Reg(UInt(loBusCfg.burstCntWidth bits))
+//    init(0x0)
+//  )
+//}
+
 private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   cfg: LcvBusCacheBusPairConfig,
 ) extends Component {
@@ -2910,12 +3114,15 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
 
   val myTempHaveHitCmpEqLeft = rdLineAttrs.tag
   val myTempHaveHitCmpEqRight = (
-    //RegNext(
+    RegNext(
       RegNext(
-        myLoH2dPopPayload.addr, init=myLoH2dPopPayload.addr.getZero
-      ),
-    //  init=myLoH2dPopPayload.addr.getZero,
-    //)
+        myLoH2dPopPayload.addr(
+          (loBusCacheCfg.tagRange)
+        )
+        init(0x0)
+      )
+    )
+    init(myLoH2dPopPayload.addr.getZero),
   )
   val tempHaveHitCmpEq = (
     myTempHaveHitCmpEqLeft
@@ -3904,12 +4111,15 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
 
   val myTempHaveHitCmpEqLeft = rdLineAttrs.tag
   val myTempHaveHitCmpEqRight = (
-    //RegNext(
+    RegNext(
       RegNext(
-        myLoH2dPopPayload.addr, init=myLoH2dPopPayload.addr.getZero
-      ),
-    //  init=myLoH2dPopPayload.addr.getZero,
-    //)
+        myLoH2dPopPayload.addr(
+          (loBusCacheCfg.tagRange)
+        )
+        init(0x0)
+      )
+    )
+    init(myLoH2dPopPayload.addr.getZero),
   )
   val tempHaveHitCmpEq = (
     myTempHaveHitCmpEqLeft
