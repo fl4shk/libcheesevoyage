@@ -2832,7 +2832,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     //cloneOf(myLoH2dDoStallFifoThing.io.pop)
     //cloneOf(io.loBus.h2dBus)
     Stream(LcvBusH2dPayload(
-      cfg=LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=loBusCfg)
+      cfg=LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=myFifoThingLoBusCfg)
     ))
   )
   def myLoH2dPopPayload = myLoH2dPopStm//.busPayload
