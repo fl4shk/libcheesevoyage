@@ -3198,6 +3198,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   )
   myDoStallLoH2dThrowThing.io.push.valid := (
     myLoH2dDoStallFifoThing.io.pop.valid
+    //&& rState === State.IDLE
+    && rState.asBits(1)
   )
   myDoStallLoH2dThrowThing.io.push.payload := (
     myLoH2dDoStallFifoThing.io.pop.busPayload.txnCnt
@@ -4191,6 +4193,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   )
   myDoStallLoH2dThrowThing.io.push.valid := (
     myLoH2dDoStallFifoThing.io.pop.valid
+    //&& rState === State.IDLE
+    && rState.asBits(1)
   )
   myDoStallLoH2dThrowThing.io.push.payload := (
     myLoH2dDoStallFifoThing.io.pop.busPayload.txnCnt
