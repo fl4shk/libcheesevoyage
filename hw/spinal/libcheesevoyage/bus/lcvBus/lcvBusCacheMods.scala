@@ -2833,7 +2833,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     !loBusCfg.haveByteEn
   ) generate (LcvBusH2dShiftedDataEtcStreamAdapter(
     cfg=LcvBusH2dShiftedDataEtcStreamAdapterConfig(
-      loBusCfg=loBusCfg,
+      loBusCfg=myFifoThingLoBusCfg,
     )
   ))
 
