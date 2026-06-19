@@ -2828,6 +2828,15 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   //  RegNext(myFifoThingDoStall, init=myFifoThingDoStall.getZero)
   //)
   //myLoH2dDoStallFifoThing.io.doStall := myFifoThingDoStall
+
+  val myH2dToWrByteEnStmAdapter = (
+    !loBusCfg.haveByteEn
+  ) generate (LcvBusH2dShiftedDataEtcStreamAdapter(
+    cfg=LcvBusH2dShiftedDataEtcStreamAdapterConfig(
+      loBusCfg=loBusCfg,
+    )
+  ))
+
   val myLoH2dPopStm = (
     //cloneOf(myLoH2dDoStallFifoThing.io.pop)
     //cloneOf(io.loBus.h2dBus)
@@ -2835,7 +2844,15 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       cfg=LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=myFifoThingLoBusCfg)
     ))
   )
-  io.loBus.h2dBus.translateInto(myLoH2dPopStm)(
+  def myLoH2dPopPayload = myLoH2dPopStm//.busPayload
+
+  io.loBus.h2dBus.translateInto(
+    if (!loBusCfg.haveByteEn) (
+      myH2dToWrByteEnStmAdapter.io.loH2dBus
+    ) else (
+      myLoH2dPopStm
+    )
+  )(
     dataAssignment=(outp, inp) => {
       //outp := inp
       outp.mainNonBurstInfo := inp.mainNonBurstInfo
@@ -2844,14 +2861,26 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         (
           RegNextWhen(
             (outp.txnCnt.asSInt + 1),
-            cond=myLoH2dPopStm.fire,
+            cond=io.loBus.h2dBus.fire,
           )
           init(-2)
         ).asUInt
       )
     }
   )
-  def myLoH2dPopPayload = myLoH2dPopStm//.busPayload
+
+  if (!loBusCfg.haveByteEn) {
+    myH2dToWrByteEnStmAdapter.io.hiH2dBus.translateInto(
+      myLoH2dPopStm
+    )(
+      dataAssignment=(outp, inp) => {
+        outp := inp
+        outp.txnCnt.allowOverride
+        outp.txnCnt := myH2dToWrByteEnStmAdapter.io.loH2dBus.txnCnt
+      }
+    )
+  }
+
   myLoH2dPopStm.ready := False
 
   //val myLoH2dPopThrowArea = new Area {
