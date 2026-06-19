@@ -2835,6 +2835,22 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       cfg=LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=myFifoThingLoBusCfg)
     ))
   )
+  io.loBus.h2dBus.translateInto(myLoH2dPopStm)(
+    dataAssignment=(outp, inp) => {
+      //outp := inp
+      outp.mainNonBurstInfo := inp.mainNonBurstInfo
+      outp.txnCnt.allowOverride
+      outp.txnCnt := (
+        (
+          RegNextWhen(
+            (outp.txnCnt.asSInt + 1),
+            cond=myLoH2dPopStm.fire,
+          )
+          init(-2)
+        ).asUInt
+      )
+    }
+  )
   def myLoH2dPopPayload = myLoH2dPopStm//.busPayload
   myLoH2dPopStm.ready := False
 
