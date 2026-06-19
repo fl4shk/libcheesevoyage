@@ -3133,11 +3133,15 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
           init=False
         )
         ## haveHit
-        ## rdLineAttrs.dirty
-        ## rDel2LoH2dPayload.busPayload.isWrite
+        //## rdLineAttrs.dirty
+        //## rDel2LoH2dPayload.busPayload.isWrite
       ) {
-        is (M"100-") {
-          // cache miss, and line isn't dirty
+        is (
+          //M"100-"
+          M"10"
+        ) {
+          //// cache miss, and line isn't dirty
+          // cache miss
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
           myFifoThingDoStall := True
           myLoH2dPopStm.ready := (
@@ -3146,24 +3150,25 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
           )
         }
 
-        is (
-          M"101-"
-        ) {
-          // cache miss, and line is dirty
-          rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
-          myFifoThingDoStall := True
-          myLoH2dPopStm.ready := (
-            //True
-            False
-          )
-        }
+        //is (
+        //  M"101-"
+        //) {
+        //  // cache miss, and line is dirty
+        //  rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
+        //  myFifoThingDoStall := True
+        //  myLoH2dPopStm.ready := (
+        //    //True
+        //    False
+        //  )
+        //}
 
         is (
           //M"100"
           //M"101"
-          M"11-0"
+          //M"11-0"
+          M"11"
         ) {
-          // load, cache hit, don't care if line is dirty
+          // load, cache hit
           myLoH2dPopStm.ready := True
           myLoD2hPushStm.valid := True
           myLoD2hPushStm.busPayload.data := rdLineWord
@@ -3191,32 +3196,32 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
             myTempUpdateSavedLoH2dPayloadCond := False
           }
         }
-        is (
-          //M"101"
-          //M"111"
-          M"11-1"
-        ) {
-          // store, cache hit, don't care if line is dirty
-          lineWordRam.io.wrEn := True
-          myLoD2hPushStm.valid := True
-          if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-            myLoD2hPushStm.busPayload.byteSize := (
-              rDel2LoH2dPayload.busPayload.byteSize
-            )
-            myLoD2hPushStm.busPayload.addrLo := (
-              rDel2LoH2dPayload.busPayload.addr(
-                cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
-              )
-            )
-          }
+        //is (
+        //  //M"101"
+        //  //M"111"
+        //  M"11-1"
+        //) {
+        //  // store, cache hit, don't care if line is dirty
+        //  lineWordRam.io.wrEn := True
+        //  myLoD2hPushStm.valid := True
+        //  if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+        //    myLoD2hPushStm.busPayload.byteSize := (
+        //      rDel2LoH2dPayload.busPayload.byteSize
+        //    )
+        //    myLoD2hPushStm.busPayload.addrLo := (
+        //      rDel2LoH2dPayload.busPayload.addr(
+        //        cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
+        //      )
+        //    )
+        //  }
 
-          when (!myLoD2hPushStm.ready) {
-            myLoH2dPopStm.ready := False
-            myFifoThingDoStall := True
-            rState := State.STORE_HIT_DO_STALL_PIPE_1
-            myTempUpdateSavedLoH2dPayloadCond := False
-          }
-        }
+        //  when (!myLoD2hPushStm.ready) {
+        //    myLoH2dPopStm.ready := False
+        //    myFifoThingDoStall := True
+        //    rState := State.STORE_HIT_DO_STALL_PIPE_1
+        //    myTempUpdateSavedLoH2dPayloadCond := False
+        //  }
+        //}
         default {
         }
       }
@@ -3415,10 +3420,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       wrLineAttrs.tag := (
         rSavedLoH2dPayload.busPayload.addr(cfg.loBusCacheCfg.tagRange)
       )
-      wrLineAttrs.dirty := (
-        // if it's a store, this line should be marked dirty!
-        rSavedLoH2dPayload.busPayload.isWrite
-      )
+      //wrLineAttrs.dirty := (
+      //  // if it's a store, this line should be marked dirty!
+      //  rSavedLoH2dPayload.busPayload.isWrite
+      //)
       doLineAttrsRamWrite(
         busAddr=rSavedLoH2dPayload.busPayload.addr,
         lineAttrs=wrLineAttrs,
