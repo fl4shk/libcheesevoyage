@@ -2910,12 +2910,12 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
 
   val myTempHaveHitCmpEqLeft = rdLineAttrs.tag
   val myTempHaveHitCmpEqRight = (
-    RegNext(
+    //RegNext(
       RegNext(
         myLoH2dPopPayload.addr, init=myLoH2dPopPayload.addr.getZero
       ),
-      init=myLoH2dPopPayload.addr.getZero,
-    )
+    //  init=myLoH2dPopPayload.addr.getZero,
+    //)
   )
   val tempHaveHitCmpEq = (
     myTempHaveHitCmpEqLeft
@@ -3904,12 +3904,12 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
 
   val myTempHaveHitCmpEqLeft = rdLineAttrs.tag
   val myTempHaveHitCmpEqRight = (
-    RegNext(
+    //RegNext(
       RegNext(
         myLoH2dPopPayload.addr, init=myLoH2dPopPayload.addr.getZero
       ),
-      init=myLoH2dPopPayload.addr.getZero,
-    )
+    //  init=myLoH2dPopPayload.addr.getZero,
+    //)
   )
   val tempHaveHitCmpEq = (
     myTempHaveHitCmpEqLeft
