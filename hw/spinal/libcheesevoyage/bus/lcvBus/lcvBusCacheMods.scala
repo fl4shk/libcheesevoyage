@@ -1139,7 +1139,10 @@ case class LcvBusDoStallH2dReptThing(
       }
     }
     is (State.IN_STALL) {
-      when (!io.doStall) {
+      when (
+        //!io.doStall
+        !goToNextStateCond
+      ) {
         when (
           //!rCnt.lsb
           !rCnt(1 downto 0).orR
