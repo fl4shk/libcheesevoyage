@@ -1246,11 +1246,11 @@ case class LcvBusDoStallH2dReptThing(
   )
   myTempFoundTxnFinish.head := (
     io.finishTxn.fire
-    && nextSavedLoH2dPopInfoVec.head.txnCnt === io.finishTxn.payload
+    && rSavedLoH2dPopInfoVec.head.txnCnt === io.finishTxn.payload
   )
   myTempFoundTxnFinish.last := (
     io.finishTxn.fire
-    && nextSavedLoH2dPopInfoVec.last.txnCnt === io.finishTxn.payload
+    && rSavedLoH2dPopInfoVec.last.txnCnt === io.finishTxn.payload
   )
 
   val rSavedTempFoundTxnFinish = Vec.fill(
