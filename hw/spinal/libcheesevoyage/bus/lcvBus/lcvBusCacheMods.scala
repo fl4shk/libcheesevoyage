@@ -1157,7 +1157,7 @@ case class LcvBusDoStallH2dReptThing(
       //}
 
       when (!io.doStall) {
-        when (rCnt.lsb) {
+        when (!rCnt.lsb) {
           io.pop << myFifo.io.pop
           when (io.pop.fire) {
             rCnt := rCnt - 1
