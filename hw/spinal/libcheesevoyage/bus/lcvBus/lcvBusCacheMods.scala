@@ -1046,14 +1046,19 @@ case class LcvBusDoStallH2dReptThing(
           rSavedLoH2dPopInfoVec.last.payload := io.push.payload
           //rSavedLoH2dPopInfoVec.head.valid := False
           //rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
-          rPrevRewriteIdx.lsb := False
+          rPrevRewriteIdx.lsb := (
+            //False
+            True
+          )
         }
         is (B"101") {
           rSavedLoH2dPopInfoVec.head.valid := True
           rSavedLoH2dPopInfoVec.head.payload := io.push.payload
           //rSavedLoH2dPopInfoVec.last.valid := False
           //rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
-          rPrevRewriteIdx.lsb := True
+          rPrevRewriteIdx.lsb := ( //True
+            False
+          )
         }
         is (B"111") {
           when (rPrevRewriteIdx.lsb) {
@@ -1086,16 +1091,16 @@ case class LcvBusDoStallH2dReptThing(
       //rCnt := mySum
       rCnt(rCnt.high downto 2) := mySum
       rCnt(1) := (
-        //True
-        False
+        True
+        //False
       )
       rCnt(0) := (
         //!(
         //  rSavedLoH2dPopInfoVec.head.valid
         //  && rSavedLoH2dPopInfoVec.last.valid
         //)
-        //True
-        False
+        True
+        //False
       )
       rSum := mySum
 
