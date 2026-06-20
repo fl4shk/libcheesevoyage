@@ -1086,14 +1086,16 @@ case class LcvBusDoStallH2dReptThing(
       //rCnt := mySum
       rCnt(rCnt.high downto 2) := mySum
       rCnt(1) := (
-        True
+        //True
+        False
       )
       rCnt(0) := (
         //!(
         //  rSavedLoH2dPopInfoVec.head.valid
         //  && rSavedLoH2dPopInfoVec.last.valid
         //)
-        True
+        //True
+        False
       )
       rSum := mySum
 
