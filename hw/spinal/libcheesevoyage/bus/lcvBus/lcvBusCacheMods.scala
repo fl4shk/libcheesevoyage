@@ -992,6 +992,8 @@ case class LcvBusDoStallH2dReptThing(
       0x0
     )
   )
+  nextPrevRewriteIdx := rPrevRewriteIdx
+
   val myFifo = (
     StreamFifo(
       dataType=cloneOf(io.push.payload),
