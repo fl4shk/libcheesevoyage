@@ -1129,7 +1129,7 @@ case class LcvBusDoStallH2dReptThing(
     }
     is (State.IN_STALL) {
       //rPrevRewriteIdx.lsb := False
-      when (!goToNextStateCond) {
+      when (!io.doStall) {
         when (!rCnt.lsb) {
           io.pop << myFifo.io.pop
           when (io.pop.fire) {
@@ -1146,7 +1146,7 @@ case class LcvBusDoStallH2dReptThing(
           rSavedLoH2dPopInfoVec.last.ready := False
           rState := State.MAIN
         }
-      } otherwise {
+      } elsewhen (fell(io.doStall)) {
         rState := State.MAYBE_FILL_FIFO
       }
 
