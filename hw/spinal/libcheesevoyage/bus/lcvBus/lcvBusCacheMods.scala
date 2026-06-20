@@ -1037,17 +1037,30 @@ case class LcvBusDoStallH2dReptThing(
             rPrevRewriteIdx.lsb := True
           }
         }
-        is (M"11-") {
+        is (B"110") {
           rSavedLoH2dPopInfoVec.last.valid := True
           rSavedLoH2dPopInfoVec.last.payload := io.push.payload
           //rSavedLoH2dPopInfoVec.head.valid := False
-          rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
+          //rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
+          rPrevRewriteIdx.lsb := False
         }
         is (B"101") {
           rSavedLoH2dPopInfoVec.head.valid := True
           rSavedLoH2dPopInfoVec.head.payload := io.push.payload
           //rSavedLoH2dPopInfoVec.last.valid := False
-          rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
+          //rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
+          rPrevRewriteIdx.lsb := True
+        }
+        is (B"111") {
+          when (rPrevRewriteIdx.lsb) {
+            rSavedLoH2dPopInfoVec.head.valid := True
+            rSavedLoH2dPopInfoVec.head.payload := io.push.payload
+            rPrevRewriteIdx.lsb := False
+          } otherwise {
+            rSavedLoH2dPopInfoVec.last.valid := True
+            rSavedLoH2dPopInfoVec.last.payload := io.push.payload
+            rPrevRewriteIdx.lsb := True
+          }
         }
         default {
         }
