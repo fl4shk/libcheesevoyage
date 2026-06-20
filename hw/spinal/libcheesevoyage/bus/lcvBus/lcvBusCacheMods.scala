@@ -1312,12 +1312,12 @@ case class LcvBusDoStallH2dReptThing(
           // starting with the request in slot 1
           //rSavedLoH2dPopInfoVec.head.ready := False
           //rSavedLoH2dPopInfoVec.last.ready := False
-          rState := State.DO_REPEAT_BOTH_0_THEN_1
+          rState := State.DO_REPEAT_BOTH_1_THEN_0
         }
         is (M"1111") {
           // we need to repeat both the first and second h2d requests,
           // starting with the request in slot 0
-          rState := State.DO_REPEAT_BOTH_1_THEN_0
+          rState := State.DO_REPEAT_BOTH_0_THEN_1
         }
         is (M"110-") {
           // we need to repeat the second h2d request (`head`)
