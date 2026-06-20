@@ -1019,7 +1019,7 @@ case class LcvBusDoStallH2dReptThing(
         rState := State.MAYBE_FILL_FIFO
       }
 
-      io.pop << io.push.throwWhen(goToNextStateCond)
+      io.pop << io.push.haltWhen(goToNextStateCond)
 
       switch (
         io.push.fire
