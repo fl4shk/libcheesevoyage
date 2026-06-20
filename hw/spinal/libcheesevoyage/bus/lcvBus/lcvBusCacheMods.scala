@@ -1065,42 +1065,6 @@ case class LcvBusDoStallH2dReptThing(
         default {
         }
       }
-      //when (io.pop.fire) {
-      //}
-      //myFifo
-      //switch (
-      //  io.pop.fire
-      //  //## io.push.fire
-      //  ## rose(io.doStall)
-      //  ## rSavedLoH2dPopInfoVec.head.fire
-      //  ## rSavedLoH2dPopInfoVec.last.fire
-      //  ## rPrevRewriteIdx.lsb
-      //) {
-      //  is (M"1-00-") {
-      //    // io.pop.fire, !saved0, !saved1, don't care rPrevRewriteIdx
-      //  }
-      //  is (M"1-10-") {
-      //    // io.pop.fire, saved0, !saved1, don't care rPrevRewriteIdx
-      //  }
-      //  is (M"1-01-") {
-      //    // io.pop.fire, !saved0, saved1, don't care rPrevRewriteIdx
-      //  }
-      //  is (M"1-110") {
-      //    // io.pop.fire, saved0, saved1, !rPrevRewriteIdx
-      //  }
-      //  is (M"1-111") {
-      //    // io.pop.fire, saved0, saved1, rPrevRewriteIdx
-      //  }
-      //  default {
-      //    // rose(io.doStall)
-      //    //rPrevRewriteIdx
-      //  }
-      //  //is (M"01---") {
-      //  //}
-      //  //when (rPrevRewriteIdx.lsb) {
-      //  //} otherwise {
-      //  //}
-      //}
     }
     is (State.MAYBE_FILL_FIFO) {
       switch (
@@ -1137,22 +1101,6 @@ case class LcvBusDoStallH2dReptThing(
           rState := State.IN_STALL
         }
       }
-      //when (rPrevRewriteIdx.lsb) {
-      //  when (tempElemFoundBasicVec.head){
-      //  }
-      //} otherwise { // when (!rPrevRewriteIdx.lsb)
-      //}
-      //switch (
-      //  rPrevRewriteIdx.lsb
-      //  ## tempElemFoundBasicVec.head
-      //  ## tempElemFoundBasicVec.last
-      //) {
-      //  is (M"01-") {
-      //    // !rPrevRewriteIdx, 
-      //    // tempElemFoundBasicVec.head
-      //    // tempElemFoundBasicVec.last
-      //  }
-      //}
     }
     is (State.IN_STALL) {
       rPrevRewriteIdx.lsb := False
@@ -3721,7 +3669,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
             || !myLoD2hPushStm.ready
           ) {
             mySelLoH2dPopStm.ready := False
-            myFifoThingDoStall := True
+            //myFifoThingDoStall := True
             rState := State.LOAD_HIT_DO_STALL_PIPE_3
             myTempUpdateSavedLoH2dPayloadCond := False
           }
@@ -4802,7 +4750,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             || !myLoD2hPushStm.ready
           ) {
             mySelLoH2dPopStm.ready := False
-            myFifoThingDoStall := True
+            //myFifoThingDoStall := True
             rState := State.LOAD_HIT_DO_STALL_PIPE_3
             myTempUpdateSavedLoH2dPayloadCond := False
           }
@@ -4829,7 +4777,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
 
           when (!myLoD2hPushStm.ready) {
             mySelLoH2dPopStm.ready := False
-            myFifoThingDoStall := True
+            //myFifoThingDoStall := True
             rState := State.STORE_HIT_DO_STALL_PIPE_1
             myTempUpdateSavedLoH2dPayloadCond := False
           }
