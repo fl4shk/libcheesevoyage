@@ -1321,7 +1321,7 @@ case class LcvBusDoStallH2dReptThing(
       io.pop.payload := rSavedLoH2dPopInfoVec.head.payload
       when (io.pop.fire) {
         rSavedLoH2dPopInfoVec.head.valid := False
-        rPrevRewriteIdx.lsb := False//True
+        //rPrevRewriteIdx.lsb := False//True
         rState := State.MAIN
       }
     }
@@ -1330,7 +1330,7 @@ case class LcvBusDoStallH2dReptThing(
       io.pop.payload := rSavedLoH2dPopInfoVec.last.payload
       when (io.pop.fire) {
         rSavedLoH2dPopInfoVec.last.valid := False
-        rPrevRewriteIdx.lsb := False//True
+        //rPrevRewriteIdx.lsb := False//True
         rState := State.MAIN
       }
     }
