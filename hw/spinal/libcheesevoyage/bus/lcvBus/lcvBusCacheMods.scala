@@ -3581,6 +3581,12 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         rSavedLoH2dPayload := rLoH2dPayload
       }
       when (
+        rMyTempDoSaveCond
+      ) {
+        rSavedLoH2dPayload.byteSize := rLoH2dPayload.byteSize
+      }
+
+      when (
         RegNext(
           RegNext(mySelLoH2dPopStm.fire, init=False),
           init=False
@@ -4660,6 +4666,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         && myTempUpdateSavedLoH2dPayloadCond
       ) {
         rSavedLoH2dPayload := rLoH2dPayload
+      }
+      when (
+        rMyTempDoSaveCond
+      ) {
+        rSavedLoH2dPayload.byteSize := rLoH2dPayload.byteSize
       }
       when (
         RegNext(
