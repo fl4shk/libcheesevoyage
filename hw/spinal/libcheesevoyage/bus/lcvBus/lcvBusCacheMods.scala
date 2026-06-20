@@ -1078,10 +1078,10 @@ case class LcvBusDoStallH2dReptThing(
     is (State.MAYBE_FILL_FIFO) {
       val mySum = UInt(rCnt.getWidth - 1 bits)
       mySum := (
-        Cat(rSavedLoH2dPopInfoVec.head.ready).asUInt.resize(
+        Cat(rSavedLoH2dPopInfoVec.head.valid).asUInt.resize(
           mySum.getWidth bits
         )
-        + Cat(rSavedLoH2dPopInfoVec.last.ready).asUInt.resize(
+        + Cat(rSavedLoH2dPopInfoVec.last.valid).asUInt.resize(
           mySum.getWidth bits
         )
       )
