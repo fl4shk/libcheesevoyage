@@ -4659,7 +4659,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       lineWordRam.io.rdEn := False
 
       when (!myLoD2hFifo.io.pop.valid) {
-        myFifoThingDoStall := False
+        //myFifoThingDoStall := False
         rState := State.IDLE
       }
     }
@@ -5746,7 +5746,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       //myFifoThingDoStall := False
 
       when (!myLoD2hFifo.io.pop.valid) {
-        myFifoThingDoStall := False
+        //myFifoThingDoStall := False
         rState := State.IDLE
       }
     }
