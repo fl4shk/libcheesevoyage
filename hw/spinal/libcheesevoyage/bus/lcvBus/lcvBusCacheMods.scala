@@ -1173,7 +1173,7 @@ case class LcvBusDoStallH2dReptThing(
           rSavedLoH2dPopInfoVec.last.ready := False
           rState := State.MAIN
         }
-      } otherwise {
+      } elsewhen (fell(io.doStall)) {
         rSavedLoH2dPopInfoVec.head.ready := False
         rSavedLoH2dPopInfoVec.last.ready := False
         rState := State.MAYBE_FILL_FIFO
