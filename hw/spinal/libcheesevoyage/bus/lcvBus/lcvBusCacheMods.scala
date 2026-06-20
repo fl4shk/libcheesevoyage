@@ -3069,32 +3069,41 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     init(State.INIT)
   )
   //--------
+  val myLoH2dPopBusCfg = (
+    LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=myFifoThingLoBusCfg)
+  )
+  val myLoH2dReptThing = LcvBusDoStallH2dReptThing(
+    busCfg=myLoH2dPopBusCfg
+  )
+
   //val myLoH2dDoStallFifoThing = LcvBusDoStallFifoThing(
   //  busCfg=myFifoThingLoBusCfg,
   //  includeDoInit=false,
   //)
-  //io.loBus.h2dBus.translateInto(
-  //  myLoH2dDoStallFifoThing.io.push
-  //)(
-  //  dataAssignment=(outp, inp) => {
-  //    //outp.busPayload := inp
-  //    outp.busPayload.mainNonBurstInfo := inp.mainNonBurstInfo
-  //    outp.busPayload.txnCnt.allowOverride
-  //    outp.busPayload.txnCnt := (
-  //      (
-  //        RegNextWhen(
-  //          (outp.busPayload.txnCnt.asSInt + 1),
-  //          cond=myLoH2dDoStallFifoThing.io.push.fire,
-  //        )
-  //        init(-2)
-  //      ).asUInt
-  //    )
-  //  }
-  //)
+  io.loBus.h2dBus.translateInto(
+    //myLoH2dDoStallFifoThing.io.push
+    myLoH2dReptThing.io.push
+  )(
+    dataAssignment=(outp, inp) => {
+      //outp.busPayload := inp
+      outp.busPayload.mainNonBurstInfo := inp.mainNonBurstInfo
+      outp.busPayload.txnCnt.allowOverride
+      outp.busPayload.txnCnt := (
+        (
+          RegNextWhen(
+            (outp.busPayload.txnCnt.asSInt + 1),
+            cond=myLoH2dDoStallFifoThing.io.push.fire,
+          )
+          init(-2)
+        ).asUInt
+      )
+    }
+  )
   val myFifoThingDoStall = Bool()
   myFifoThingDoStall := (
     RegNext(myFifoThingDoStall, init=myFifoThingDoStall.getZero)
   )
+  myLoH2dReptThing.io.doStall := myFifoThingDoStall
   //val rSeenMyFifoThingDoStallCnt = (
   //  Reg(UInt(log2Up(LcvBusDoStallFifoThing.fifoDepthMain + 1) + 1 bits))
   //  init(0x0)
@@ -3109,18 +3118,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     )
   ))
 
-  val myLoH2dPopBusCfg = (
-    LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=myFifoThingLoBusCfg)
-  )
-
   val myMainLoH2dPopStm = (
     Stream(LcvBusH2dPayload(
       cfg=myLoH2dPopBusCfg
     ))
-  )
-
-  val myLoH2dReptThing = LcvBusDoStallH2dReptThing(
-    busCfg=myLoH2dPopBusCfg
   )
 
   val mySelLoH2dPopStm = (
