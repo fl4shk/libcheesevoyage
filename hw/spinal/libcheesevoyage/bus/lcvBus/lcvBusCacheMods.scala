@@ -3080,25 +3080,25 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   //  busCfg=myFifoThingLoBusCfg,
   //  includeDoInit=false,
   //)
-  io.loBus.h2dBus.translateInto(
-    //myLoH2dDoStallFifoThing.io.push
-    myLoH2dReptThing.io.push
-  )(
-    dataAssignment=(outp, inp) => {
-      //outp.busPayload := inp
-      outp.mainNonBurstInfo := inp.mainNonBurstInfo
-      outp.txnCnt.allowOverride
-      outp.txnCnt := (
-        (
-          RegNextWhen(
-            (outp.txnCnt.asSInt + 1),
-            cond=myLoH2dReptThing.io.push.fire,
-          )
-          init(-2)
-        ).asUInt
-      )
-    }
-  )
+  //io.loBus.h2dBus.translateInto(
+  //  //myLoH2dDoStallFifoThing.io.push
+  //  myLoH2dReptThing.io.push
+  //)(
+  //  dataAssignment=(outp, inp) => {
+  //    //outp.busPayload := inp
+  //    outp.mainNonBurstInfo := inp.mainNonBurstInfo
+  //    outp.txnCnt.allowOverride
+  //    outp.txnCnt := (
+  //      (
+  //        RegNextWhen(
+  //          (outp.txnCnt.asSInt + 1),
+  //          cond=myLoH2dReptThing.io.push.fire,
+  //        )
+  //        init(-2)
+  //      ).asUInt
+  //    )
+  //  }
+  //)
   val myFifoThingDoStall = Bool()
   myFifoThingDoStall := (
     RegNext(myFifoThingDoStall, init=myFifoThingDoStall.getZero)
@@ -3137,86 +3137,6 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   //val mySelLoH2dPop
   def mySelLoH2dPopPayload = mySelLoH2dPopStm.payload//.busPayload
 
-  //val rSavedLoH2dPopInfoVec = {
-  //  val temp = Reg(
-  //    Vec.fill(LcvBusDoStallFifoThing.fifoDepthMain)(
-  //      Stream(cloneOf(myMainLoH2dPopStm.payload))
-  //    )
-  //  )
-  //  temp.foreach(item => item.init(item.getZero))
-  //  temp
-  //}
-
-  //val mySavedLoH2dPopStmVec = (
-  //  Vec.fill(LcvBusDoStallFifoThing.fifoDepthMain)(
-  //    cloneOf(myMainLoH2dPopStm)
-  //  )
-  //)
-  //for (idx <- 0 until LcvBusDoStallFifoThing.fifoDepthMain) {
-  //  mySavedLoH2dPopStmVec(idx).valid := (
-  //    rSavedLoH2dPopInfoVec(idx).valid
-  //    && !rSavedLoH2dPopInfoVec(idx).ready
-  //    && myFifoThingDoStall
-  //  )
-  //  mySavedLoH2dPopStmVec(idx).payload := (
-  //    rSavedLoH2dPopInfoVec(idx).payload
-  //  )
-  //  if (idx == 0) {
-  //  } else if (idx == 1) {
-  //  } else {
-  //    require(
-  //      false,
-  //      "eek!"
-  //    )
-  //  }
-  //  when (mySavedLoH2dPopStmVec(idx).fire) {
-  //    rSavedLoH2dPopInfoVec(idx).ready := True
-  //  }
-  //}
-
-
-
-
-  //switch (
-  //  myFifoThingDoStall
-  //  ## rSavedLoH2dPopInfoVec.head.valid
-  //  ## rSavedLoH2dPopInfoVec.last.valid
-  //) {
-  //  is (M"00-") {
-  //  }
-  //  is (M"010") {
-  //  }
-  //}
-
-  //when (
-  //  !rSavedLoH2dPopInfoVec.head.valid
-  //) {
-  //}
-  //when (
-  //) {
-  //}
-  //when (
-  //  rSavedLoH2dPopInfoVec.head.fire 
-  //  //&& rSavedLoH2dPopInfoVec.last.fire 
-  //) {
-  //}
-
-  //val myCondHistLoH2dPop = Bool()
-  //val myHistLoH2dPop = (
-  //  History[LcvBusH2dPayload](
-  //    that=myLoH2dPopStm.payload,
-  //    when=myCondHistLoH2dPop,
-  //    length=LcvBusDoStallFifoThing.fifoDepthMain + 1, // up to 3
-  //    init=myLoH2dPopStm.payload.getZero,
-  //  )
-  //)
-
-  //myCondHistLoH2dPop := (
-  //  myLoH2dPopStm.fire
-  //  && rState.asBits(1) // i.e. rState === State.IDLE, but maybe faster 
-  //)
-
-
   io.loBus.h2dBus.translateInto(
     if (!loBusCfg.haveByteEn) (
       myH2dToWrByteEnStmAdapter.io.loH2dBus
@@ -3252,7 +3172,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     )
   }
 
-  myMainLoH2dPopStm.ready := !myFifoThingDoStall
+  //myMainLoH2dPopStm.ready := !myFifoThingDoStall
+  myLoH2dReptThing.io.push << myMainLoH2dPopStm
   mySelLoH2dPopStm.ready := False
 
   //val myLoH2dPopThrowArea = new Area {
