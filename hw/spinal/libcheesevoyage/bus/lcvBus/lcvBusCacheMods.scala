@@ -1105,9 +1105,75 @@ case class LcvBusDoStallH2dReptThing(
     is (State.IN_STALL) {
       rPrevRewriteIdx.lsb := False
       io.pop << myFifo.io.pop
-      when (!myFifo.io.pop.valid) {
-        rState := State.MAIN
+
+      switch (
+        io.pop.fire
+        ## tempElemFoundBasicVec.head
+        ## tempElemFoundBasicVec.last
+      ) {
+        is (B"100") {
+          when (rPrevRewriteIdx.lsb) {
+            rSavedLoH2dPopInfoVec.head.valid := True
+            rSavedLoH2dPopInfoVec.head.payload := io.pop.payload
+            rPrevRewriteIdx.lsb := False
+          } otherwise {
+            rSavedLoH2dPopInfoVec.last.valid := True
+            rSavedLoH2dPopInfoVec.last.payload := io.pop.payload
+            rPrevRewriteIdx.lsb := True
+          }
+        }
+        is (B"110") {
+          rSavedLoH2dPopInfoVec.last.valid := True
+          rSavedLoH2dPopInfoVec.last.payload := io.pop.payload
+          //rSavedLoH2dPopInfoVec.head.valid := False
+          //rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
+          rPrevRewriteIdx.lsb := False
+        }
+        is (B"101") {
+          rSavedLoH2dPopInfoVec.head.valid := True
+          rSavedLoH2dPopInfoVec.head.payload := io.pop.payload
+          //rSavedLoH2dPopInfoVec.last.valid := False
+          //rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
+          rPrevRewriteIdx.lsb := True
+        }
+        is (B"111") {
+          when (rPrevRewriteIdx.lsb) {
+            rSavedLoH2dPopInfoVec.head.valid := True
+            rSavedLoH2dPopInfoVec.head.payload := io.pop.payload
+            rPrevRewriteIdx.lsb := False
+          } otherwise {
+            rSavedLoH2dPopInfoVec.last.valid := True
+            rSavedLoH2dPopInfoVec.last.payload := io.pop.payload
+            rPrevRewriteIdx.lsb := True
+          }
+        }
+        default {
+        }
       }
+
+      switch (
+        goToNextStateCond
+        ## myFifo.io.pop.valid
+      ) {
+        is (B"00") {
+          rState := State.MAIN
+        }
+        is (B"10") {
+          rState := State.MAYBE_FILL_FIFO
+        }
+        is (B"11") {
+        }
+        //is (B"01")
+        default {
+        }
+        //is (B"01") {
+        //}
+      }
+      //when (
+      //  !myFifo.io.pop.valid
+      //) {
+      //  rState := State.MAIN
+      //}
     }
   }
 
