@@ -1418,12 +1418,12 @@ case class LcvBusDoStallH2dReptThing(
             rSavedLoH2dPopInfoVec.last.ready := False
           }
           is (M"01") {
-            // we need to repeat the second h2d request (`head`)
-            rSavedLoH2dPopInfoVec.head.ready := False
-          }
-          is (M"00") {
             // we need to repeat the second h2d request (`last`)
             rSavedLoH2dPopInfoVec.last.ready := False
+          }
+          is (M"00") {
+            // we need to repeat the second h2d request (`head`)
+            rSavedLoH2dPopInfoVec.head.ready := False
           }
         }
 
