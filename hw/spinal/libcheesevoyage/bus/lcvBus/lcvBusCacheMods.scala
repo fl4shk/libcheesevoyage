@@ -971,7 +971,7 @@ case class LcvBusDoStallH2dReptThing(
 
   val rPrevRewriteIdx = (
     Reg(UInt(log2Up(rSavedLoH2dPopInfoVec.size) bits))
-    init(0x0)
+    init(0x1)
   )
   val myFifo = (
     StreamFifo(
