@@ -1219,7 +1219,7 @@ case class LcvBusDoStallH2dReptThing(
       when (!myFifo.io.pop.valid)  {
         io.pop << io.push.haltWhen(goToNextStateCond)
       } otherwise {
-        io.pop << myFifo.io.pop
+        io.pop << myFifo.io.pop.haltWhen(goToNextStateCond)
       }
 
       //rSavedLoH2dPopInfoVec.head.ready := False
