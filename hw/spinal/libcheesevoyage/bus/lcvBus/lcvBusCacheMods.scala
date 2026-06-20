@@ -999,16 +999,6 @@ case class LcvBusDoStallH2dReptThing(
   )
 
   val goToNextStateCond = rose(io.doStall)
-  //val rSavedGoToNextStateCond = Reg(Bool(), init=False)
-  //when (goToNextStateCond) {
-  //  rSavedGoToNextStateCond := True
-  //}
-
-  //val stickyGoToNextStateCond = (
-  //  goToNextStateCond
-  //  || rSavedGoToNextStateCond
-  //)
-
   switch (rState) {
     is (State.MAIN) {
       //switch (
@@ -1026,7 +1016,6 @@ case class LcvBusDoStallH2dReptThing(
       //}
 
       when (goToNextStateCond) {
-        //rSavedGoToNextStateCond := False
         rState := State.MAYBE_FILL_FIFO
       }
 
@@ -1090,16 +1079,12 @@ case class LcvBusDoStallH2dReptThing(
           myFifo.io.push.valid := True
           myFifo.io.push.payload := rSavedLoH2dPopInfoVec.head.payload
           rSavedLoH2dPopInfoVec.head.valid := False
-
-          //rPrevRewriteIdx.lsb := False
           rState := State.IN_STALL
         }
         is (M"-01") {
           myFifo.io.push.valid := True
           myFifo.io.push.payload := rSavedLoH2dPopInfoVec.last.payload
           rSavedLoH2dPopInfoVec.last.valid := False
-
-          //rPrevRewriteIdx.lsb := False
           rState := State.IN_STALL
         }
         is (M"111") {
@@ -1113,88 +1098,14 @@ case class LcvBusDoStallH2dReptThing(
           rSavedLoH2dPopInfoVec.last.valid := False
         }
         default {
-          //rPrevRewriteIdx.lsb := False
           rState := State.IN_STALL
         }
       }
     }
     is (State.IN_STALL) {
-      //when (rose(rState === State.IN_STALL)) {
-      //  rPrevRewriteIdx.lsb := False
-      //}
       rPrevRewriteIdx.lsb := False
       io.pop << myFifo.io.pop
-
-      //switch (
-      //  io.pop.fire
-      //  ## tempElemFoundBasicVec.head
-      //  ## tempElemFoundBasicVec.last
-      //) {
-      //  is (B"100") {
-      //    when (rPrevRewriteIdx.lsb) {
-      //      rSavedLoH2dPopInfoVec.head.valid := True
-      //      rSavedLoH2dPopInfoVec.head.payload := io.pop.payload
-      //      rPrevRewriteIdx.lsb := False
-      //    } otherwise {
-      //      rSavedLoH2dPopInfoVec.last.valid := True
-      //      rSavedLoH2dPopInfoVec.last.payload := io.pop.payload
-      //      rPrevRewriteIdx.lsb := True
-      //    }
-      //  }
-      //  is (B"110") {
-      //    rSavedLoH2dPopInfoVec.last.valid := True
-      //    rSavedLoH2dPopInfoVec.last.payload := io.pop.payload
-      //    //rSavedLoH2dPopInfoVec.head.valid := False
-      //    //rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
-      //    rPrevRewriteIdx.lsb := False
-      //  }
-      //  is (B"101") {
-      //    rSavedLoH2dPopInfoVec.head.valid := True
-      //    rSavedLoH2dPopInfoVec.head.payload := io.pop.payload
-      //    //rSavedLoH2dPopInfoVec.last.valid := False
-      //    //rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
-      //    rPrevRewriteIdx.lsb := True
-      //  }
-      //  is (B"111") {
-      //    when (rPrevRewriteIdx.lsb) {
-      //      rSavedLoH2dPopInfoVec.head.valid := True
-      //      rSavedLoH2dPopInfoVec.head.payload := io.pop.payload
-      //      rPrevRewriteIdx.lsb := False
-      //    } otherwise {
-      //      rSavedLoH2dPopInfoVec.last.valid := True
-      //      rSavedLoH2dPopInfoVec.last.payload := io.pop.payload
-      //      rPrevRewriteIdx.lsb := True
-      //    }
-      //  }
-      //  default {
-      //  }
-      //}
-
-      //switch (
-      //  //goToNextStateCond
-      //  stickyGoToNextStateCond
-      //  ## myFifo.io.pop.valid
-      //) {
-      //  is (B"00") {
-      //    rSavedGoToNextStateCond := False
-      //    rState := State.MAIN
-      //    rPrevRewriteIdx.lsb := False
-      //  }
-      //  is (B"10") {
-      //    rSavedGoToNextStateCond := False
-      //    rState := State.MAYBE_FILL_FIFO
-      //  }
-      //  is (B"11") {
-      //  }
-      //  //is (B"01")
-      //  default {
-      //  }
-      //  //is (B"01") {
-      //  //}
-      //}
-      when (
-        !myFifo.io.pop.valid
-      ) {
+      when (!myFifo.io.pop.valid) {
         rState := State.MAIN
       }
     }
