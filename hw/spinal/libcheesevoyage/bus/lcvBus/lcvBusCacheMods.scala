@@ -1040,12 +1040,12 @@ case class LcvBusDoStallH2dReptThing(
         is (M"11-") {
           rSavedLoH2dPopInfoVec.last.valid := True
           rSavedLoH2dPopInfoVec.last.payload := io.push.payload
-          rSavedLoH2dPopInfoVec.head.valid := False
+          //rSavedLoH2dPopInfoVec.head.valid := False
         }
         is (B"101") {
           rSavedLoH2dPopInfoVec.head.valid := True
           rSavedLoH2dPopInfoVec.head.payload := io.push.payload
-          rSavedLoH2dPopInfoVec.last.valid := False
+          //rSavedLoH2dPopInfoVec.last.valid := False
         }
         default {
         }
