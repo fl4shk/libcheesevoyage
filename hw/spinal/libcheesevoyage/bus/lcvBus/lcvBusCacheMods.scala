@@ -972,7 +972,10 @@ case class LcvBusDoStallH2dReptThing(
 
   val rPrevRewriteIdx = (
     Reg(UInt(log2Up(rSavedLoH2dPopInfoVec.size) bits))
-    init(0x1)
+    init(
+      //0x1
+      0x0
+    )
   )
   val myFifo = (
     StreamFifo(
@@ -1287,16 +1290,16 @@ case class LcvBusDoStallH2dReptThing(
         ## rSavedLoH2dPopInfoVec.last.valid
         ## rPrevRewriteIdx.lsb
       ) {
-        is (M"1110") {
+        is (M"1111") {
           // we need to repeat both the first and second h2d requests,
-          // starting with the request in slot 0
+          // starting with the request in slot 1
           //rSavedLoH2dPopInfoVec.head.ready := False
           //rSavedLoH2dPopInfoVec.last.ready := False
           rState := State.DO_REPEAT_BOTH_0_THEN_1
         }
-        is (M"1111") {
+        is (M"1110") {
           // we need to repeat both the first and second h2d requests,
-          // starting with the request in slot 1
+          // starting with the request in slot 0
           rState := State.DO_REPEAT_BOTH_1_THEN_0
         }
         is (M"110-") {
@@ -1318,7 +1321,7 @@ case class LcvBusDoStallH2dReptThing(
       io.pop.payload := rSavedLoH2dPopInfoVec.head.payload
       when (io.pop.fire) {
         rSavedLoH2dPopInfoVec.head.valid := False
-        rPrevRewriteIdx.lsb := True
+        rPrevRewriteIdx.lsb := False//True
         rState := State.MAIN
       }
     }
@@ -1327,7 +1330,7 @@ case class LcvBusDoStallH2dReptThing(
       io.pop.payload := rSavedLoH2dPopInfoVec.last.payload
       when (io.pop.fire) {
         rSavedLoH2dPopInfoVec.last.valid := False
-        rPrevRewriteIdx.lsb := True
+        rPrevRewriteIdx.lsb := False//True
         rState := State.MAIN
       }
     }
