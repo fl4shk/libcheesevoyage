@@ -1025,6 +1025,8 @@ case class LcvBusDoStallH2dReptThing(
 
       io.pop << io.push.haltWhen(goToNextStateCond)
 
+      rSavedLoH2dPopInfoVec.head.ready := False
+      rSavedLoH2dPopInfoVec.last.ready := False
       switch (
         io.push.fire
         ## rSavedLoH2dPopInfoVec.head.valid
@@ -1056,7 +1058,8 @@ case class LcvBusDoStallH2dReptThing(
           rSavedLoH2dPopInfoVec.head.payload := io.push.payload
           //rSavedLoH2dPopInfoVec.last.valid := False
           //rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
-          rPrevRewriteIdx.lsb := ( //True
+          rPrevRewriteIdx.lsb := (
+            //True
             False
           )
         }
