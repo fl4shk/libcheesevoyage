@@ -3086,13 +3086,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   )(
     dataAssignment=(outp, inp) => {
       //outp.busPayload := inp
-      outp.busPayload.mainNonBurstInfo := inp.mainNonBurstInfo
-      outp.busPayload.txnCnt.allowOverride
-      outp.busPayload.txnCnt := (
+      outp.mainNonBurstInfo := inp.mainNonBurstInfo
+      outp.txnCnt.allowOverride
+      outp.txnCnt := (
         (
           RegNextWhen(
-            (outp.busPayload.txnCnt.asSInt + 1),
-            cond=myLoH2dDoStallFifoThing.io.push.fire,
+            (outp.txnCnt.asSInt + 1),
+            cond=myLoH2dReptThing.io.push.fire,
           )
           init(-2)
         ).asUInt
