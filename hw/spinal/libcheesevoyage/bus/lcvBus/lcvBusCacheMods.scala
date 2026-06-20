@@ -1041,11 +1041,13 @@ case class LcvBusDoStallH2dReptThing(
           rSavedLoH2dPopInfoVec.last.valid := True
           rSavedLoH2dPopInfoVec.last.payload := io.push.payload
           //rSavedLoH2dPopInfoVec.head.valid := False
+          rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
         }
         is (B"101") {
           rSavedLoH2dPopInfoVec.head.valid := True
           rSavedLoH2dPopInfoVec.head.payload := io.push.payload
           //rSavedLoH2dPopInfoVec.last.valid := False
+          rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
         }
         default {
         }
