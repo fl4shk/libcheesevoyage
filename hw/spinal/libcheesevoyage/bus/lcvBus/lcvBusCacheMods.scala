@@ -930,6 +930,11 @@ case class LcvBusDoStallH2dReptThingIo(
   val push = slave(Stream(
     LcvBusH2dPayload(cfg=busCfg)
   ))
+
+  val finishTxn = slave(
+    Flow(UInt(busCfg.optTxnCntWidth.get bits))
+  )
+
   val pop = master(Stream(
     LcvBusH2dPayload(cfg=busCfg)
   ))
@@ -1234,6 +1239,46 @@ case class LcvBusDoStallH2dReptThing(
   //  }
   //}
 
+  val myTempFoundTxnFinish = Vec.fill(
+    LcvBusDoStallFifoThing.fifoDepthMain
+  )(
+    Bool()
+  )
+  myTempFoundTxnFinish.head := (
+    io.finishTxn.fire
+    && rSavedLoH2dPopInfoVec.head.txnCnt === io.finishTxn.payload
+  )
+  myTempFoundTxnFinish.last := (
+    io.finishTxn.fire
+    && rSavedLoH2dPopInfoVec.last.txnCnt === io.finishTxn.payload
+  )
+
+  val rSavedTempFoundTxnFinish = Vec.fill(
+    LcvBusDoStallFifoThing.fifoDepthMain
+  )(
+    Reg(Bool(), init=False)
+  )
+  when (myTempFoundTxnFinish.head) {
+    rSavedTempFoundTxnFinish.head := True
+  }
+  when (myTempFoundTxnFinish.last) {
+    rSavedTempFoundTxnFinish.last := True
+  }
+
+  val stickyTempFoundTxnFinish = Vec.fill(
+    LcvBusDoStallFifoThing.fifoDepthMain
+  )(
+    Bool()
+  )
+  stickyTempFoundTxnFinish.head := (
+    myTempFoundTxnFinish.head
+    || rSavedTempFoundTxnFinish.head
+  )
+  stickyTempFoundTxnFinish.last := (
+    myTempFoundTxnFinish.last
+    || rSavedTempFoundTxnFinish.last
+  )
+
   switch (rState) {
     is (State.MAIN) {
       io.pop << io.push.haltWhen(goToNextStateCond)
@@ -1303,9 +1348,9 @@ case class LcvBusDoStallH2dReptThing(
       switch (
         //rCnt(2)
         goToNextStateCond
-        ## nextSavedLoH2dPopInfoVec.head.valid
-        ## nextSavedLoH2dPopInfoVec.last.valid
-        ## nextPrevRewriteIdx.lsb
+        ## rSavedLoH2dPopInfoVec.head.valid
+        ## rSavedLoH2dPopInfoVec.last.valid
+        ## rPrevRewriteIdx.lsb
       ) {
         is (M"1110") {
           // we need to repeat both the first and second h2d requests,
@@ -1334,36 +1379,52 @@ case class LcvBusDoStallH2dReptThing(
       }
     }
     is (State.DO_REPEAT_JUST_0) {
-      io.pop.valid := True
+      io.pop.valid := !stickyTempFoundTxnFinish.head
       io.pop.payload := rSavedLoH2dPopInfoVec.head.payload
-      when (io.pop.fire) {
+      when (
+        io.pop.fire
+        || stickyTempFoundTxnFinish.head
+      ) {
         nextSavedLoH2dPopInfoVec.head.valid := False
+        rSavedTempFoundTxnFinish.head := False
         //rPrevRewriteIdx.lsb := False//True
         rState := State.MAIN
       }
     }
     is (State.DO_REPEAT_JUST_1) {
-      io.pop.valid := True
+      io.pop.valid := !stickyTempFoundTxnFinish.last
       io.pop.payload := rSavedLoH2dPopInfoVec.last.payload
-      when (io.pop.fire) {
+      when (
+        io.pop.fire
+        || stickyTempFoundTxnFinish.last
+      ) {
         nextSavedLoH2dPopInfoVec.last.valid := False
+        rSavedTempFoundTxnFinish.last := False
         //rPrevRewriteIdx.lsb := False//True
         rState := State.MAIN
       }
     }
     is (State.DO_REPEAT_BOTH_0_THEN_1) {
-      io.pop.valid := True
+      io.pop.valid := !stickyTempFoundTxnFinish.head
       io.pop.payload := rSavedLoH2dPopInfoVec.head.payload
-      when (io.pop.fire) {
+      when (
+        io.pop.fire
+        || stickyTempFoundTxnFinish.head
+      ) {
         nextSavedLoH2dPopInfoVec.head.valid := False
+        rSavedTempFoundTxnFinish.head := False
         rState := State.DO_REPEAT_JUST_1
       }
     }
     is (State.DO_REPEAT_BOTH_1_THEN_0) {
-      io.pop.valid := True
+      io.pop.valid := !stickyTempFoundTxnFinish.last
       io.pop.payload := rSavedLoH2dPopInfoVec.last.payload
-      when (io.pop.fire) {
+      when (
+        io.pop.fire
+        || stickyTempFoundTxnFinish.last
+      ) {
         nextSavedLoH2dPopInfoVec.last.valid := False
+        rSavedTempFoundTxnFinish.last := False
         rState := State.DO_REPEAT_JUST_0
       }
     }
@@ -3846,7 +3907,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       RECV_LINE_FROM_HI_BUS_POST_1,
       RECV_LINE_FROM_HI_BUS_POST,
 
-      WAIT_D2H_FIFO_PUSH_READY
+      WAIT_D2H_FIFO_EMPTY
 
       = newElement();
   }
@@ -4015,6 +4076,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   )
 
   myLoD2hPushStm.valid := False
+  myLoH2dReptThing.io.finishTxn.valid := myLoD2hPushStm.fire
+  myLoH2dReptThing.io.finishTxn.payload := (
+    myLoD2hPushStm.busPayload.txnCnt
+  )
 
   val myLoD2hFifo = StreamFifo(
     dataType=LcvBusD2hPayload(cfg=cfg.loBusCfg),
@@ -4586,7 +4651,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       lineAttrsRam.io.rdEn := False
       lineWordRam.io.rdEn := False
 
-      rState := State.WAIT_D2H_FIFO_PUSH_READY
+      rState := State.WAIT_D2H_FIFO_EMPTY
     }
     is (State.STORE_HIT_DO_STALL_PIPE_1) {
       myLoD2hPushStm.valid := False
@@ -4602,7 +4667,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       mySelLoH2dPopStm.ready := False
       myLoD2hPushStm.valid := True
       when (myLoD2hPushStm.ready) {
-        rState := State.WAIT_D2H_FIFO_PUSH_READY
+        rState := State.WAIT_D2H_FIFO_EMPTY
       }
     }
     is (State.SEND_LINE_TO_HI_BUS_PIPE_3) {
@@ -4825,16 +4890,16 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       lineWordRam.io.rdEn := False
       rState := (
         //State.IDLE
-        State.WAIT_D2H_FIFO_PUSH_READY
+        State.WAIT_D2H_FIFO_EMPTY
       )
     }
-    is (State.WAIT_D2H_FIFO_PUSH_READY) {
+    is (State.WAIT_D2H_FIFO_EMPTY) {
       lineAttrsRam.io.rdEn := False
       lineWordRam.io.rdEn := False
 
       when (  
-        //!myLoD2hFifo.io.pop.valid
-        myLoD2hFifo.io.push.ready
+        !myLoD2hFifo.io.pop.valid
+        //myLoD2hFifo.io.push.ready
       ) {
         //myFifoThingDoStall := False
         rState := State.IDLE
@@ -4936,7 +5001,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       RECV_LINE_FROM_HI_BUS_POST_1,
       RECV_LINE_FROM_HI_BUS_POST,
 
-      WAIT_D2H_FIFO_PUSH_READY
+      WAIT_D2H_FIFO_EMPTY
 
       = newElement();
   }
@@ -5105,6 +5170,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   )
 
   myLoD2hPushStm.valid := False
+  myLoH2dReptThing.io.finishTxn.valid := myLoD2hPushStm.fire
+  myLoH2dReptThing.io.finishTxn.payload := (
+    myLoD2hPushStm.busPayload.txnCnt
+  )
 
   val myLoD2hFifo = StreamFifo(
     dataType=LcvBusD2hPayload(cfg=cfg.loBusCfg),
@@ -5675,7 +5744,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       lineAttrsRam.io.rdEn := False
       lineWordRam.io.rdEn := False
 
-      rState := State.WAIT_D2H_FIFO_PUSH_READY
+      rState := State.WAIT_D2H_FIFO_EMPTY
     }
     is (State.STORE_HIT_DO_STALL_PIPE_1) {
       myLoD2hPushStm.valid := False
@@ -5691,7 +5760,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       mySelLoH2dPopStm.ready := False
       myLoD2hPushStm.valid := True
       when (myLoD2hPushStm.ready) {
-        rState := State.WAIT_D2H_FIFO_PUSH_READY
+        rState := State.WAIT_D2H_FIFO_EMPTY
       }
     }
     is (State.SEND_LINE_TO_HI_BUS_PIPE_3) {
@@ -5914,17 +5983,17 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       lineWordRam.io.rdEn := False
       rState := (
         //State.IDLE
-        State.WAIT_D2H_FIFO_PUSH_READY
+        State.WAIT_D2H_FIFO_EMPTY
       )
     }
-    is (State.WAIT_D2H_FIFO_PUSH_READY) {
+    is (State.WAIT_D2H_FIFO_EMPTY) {
       lineAttrsRam.io.rdEn := False
       lineWordRam.io.rdEn := False
       //myFifoThingDoStall := False
 
       when (
-        //!myLoD2hFifo.io.pop.valid
-        myLoD2hFifo.io.push.ready
+        !myLoD2hFifo.io.pop.valid
+        //myLoD2hFifo.io.push.ready
       ) {
         //myFifoThingDoStall := False
         rState := State.IDLE
