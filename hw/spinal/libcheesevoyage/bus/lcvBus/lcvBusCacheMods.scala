@@ -948,15 +948,26 @@ case class LcvBusDoStallH2dReptThing(
   io.pop.valid := False
   io.pop.payload := io.pop.payload.getZero
 
-  val rSavedLoH2dPopInfoVec = {
-    val temp = Reg(
-      Vec.fill(LcvBusDoStallFifoThing.fifoDepthMain)(
-        //Stream(cloneOf(io.push.payload))
-        Flow(cloneOf(io.push.payload))
-      )
+  val nextSavedLoH2dPopInfoVec = {
+    val temp = (
+      //Reg(
+        Vec.fill(LcvBusDoStallFifoThing.fifoDepthMain)(
+          //Stream(cloneOf(io.push.payload))
+          Flow(cloneOf(io.push.payload))
+        )
+      //)
     )
+    //temp.foreach(item => item.init(item.getZero))
+    //temp.foreach(item => item := RegNext(item, init=item.getZero))
+    temp
+  }
+  val rSavedLoH2dPopInfoVec = {
+    val temp = RegNext(nextSavedLoH2dPopInfoVec)
     temp.foreach(item => item.init(item.getZero))
     temp
+  }
+  for (idx <- 0 until LcvBusDoStallFifoThing.fifoDepthMain) {
+    nextSavedLoH2dPopInfoVec(idx) := rSavedLoH2dPopInfoVec(idx)
   }
 
   //val tempElemFoundBasicVec = Vec[Bool](
@@ -970,8 +981,12 @@ case class LcvBusDoStallH2dReptThing(
   //  )
   //)
 
+  val nextPrevRewriteIdx = (
+    UInt(log2Up(rSavedLoH2dPopInfoVec.size) bits)
+  )
   val rPrevRewriteIdx = (
-    Reg(UInt(log2Up(rSavedLoH2dPopInfoVec.size) bits))
+    //Reg()
+    RegNext(nextPrevRewriteIdx)
     init(
       //0x1
       0x0
@@ -1240,44 +1255,44 @@ case class LcvBusDoStallH2dReptThing(
       ) {
         is (B"100") {
           when (rPrevRewriteIdx.lsb) {
-            rSavedLoH2dPopInfoVec.head.valid := True
-            rSavedLoH2dPopInfoVec.head.payload := io.pop.payload
-            rPrevRewriteIdx.lsb := False
+            nextSavedLoH2dPopInfoVec.head.valid := True
+            nextSavedLoH2dPopInfoVec.head.payload := io.pop.payload
+            nextPrevRewriteIdx.lsb := False
           } otherwise {
-            rSavedLoH2dPopInfoVec.last.valid := True
-            rSavedLoH2dPopInfoVec.last.payload := io.pop.payload
-            rPrevRewriteIdx.lsb := True
+            nextSavedLoH2dPopInfoVec.last.valid := True
+            nextSavedLoH2dPopInfoVec.last.payload := io.pop.payload
+            nextPrevRewriteIdx.lsb := True
           }
         }
         is (B"110") {
-          rSavedLoH2dPopInfoVec.last.valid := True
-          rSavedLoH2dPopInfoVec.last.payload := io.pop.payload
+          nextSavedLoH2dPopInfoVec.last.valid := True
+          nextSavedLoH2dPopInfoVec.last.payload := io.pop.payload
           //rSavedLoH2dPopInfoVec.head.valid := False
           //rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
-          rPrevRewriteIdx.lsb := (
+          nextPrevRewriteIdx.lsb := (
             //False
             True
           )
         }
         is (B"101") {
-          rSavedLoH2dPopInfoVec.head.valid := True
-          rSavedLoH2dPopInfoVec.head.payload := io.pop.payload
+          nextSavedLoH2dPopInfoVec.head.valid := True
+          nextSavedLoH2dPopInfoVec.head.payload := io.pop.payload
           //rSavedLoH2dPopInfoVec.last.valid := False
           //rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
-          rPrevRewriteIdx.lsb := (
+          nextPrevRewriteIdx.lsb := (
             //True
             False
           )
         }
         is (B"111") {
           when (rPrevRewriteIdx.lsb) {
-            rSavedLoH2dPopInfoVec.head.valid := True
-            rSavedLoH2dPopInfoVec.head.payload := io.pop.payload
-            rPrevRewriteIdx.lsb := False
+            nextSavedLoH2dPopInfoVec.head.valid := True
+            nextSavedLoH2dPopInfoVec.head.payload := io.pop.payload
+            nextPrevRewriteIdx.lsb := False
           } otherwise {
-            rSavedLoH2dPopInfoVec.last.valid := True
-            rSavedLoH2dPopInfoVec.last.payload := io.pop.payload
-            rPrevRewriteIdx.lsb := True
+            nextSavedLoH2dPopInfoVec.last.valid := True
+            nextSavedLoH2dPopInfoVec.last.payload := io.pop.payload
+            nextPrevRewriteIdx.lsb := True
           }
         }
         default {
@@ -1286,9 +1301,9 @@ case class LcvBusDoStallH2dReptThing(
       switch (
         //rCnt(2)
         goToNextStateCond
-        ## rSavedLoH2dPopInfoVec.head.valid
-        ## rSavedLoH2dPopInfoVec.last.valid
-        ## rPrevRewriteIdx.lsb
+        ## nextSavedLoH2dPopInfoVec.head.valid
+        ## nextSavedLoH2dPopInfoVec.last.valid
+        ## nextPrevRewriteIdx.lsb
       ) {
         is (M"1110") {
           // we need to repeat both the first and second h2d requests,
@@ -1320,7 +1335,7 @@ case class LcvBusDoStallH2dReptThing(
       io.pop.valid := True
       io.pop.payload := rSavedLoH2dPopInfoVec.head.payload
       when (io.pop.fire) {
-        rSavedLoH2dPopInfoVec.head.valid := False
+        nextSavedLoH2dPopInfoVec.head.valid := False
         //rPrevRewriteIdx.lsb := False//True
         rState := State.MAIN
       }
@@ -1329,7 +1344,7 @@ case class LcvBusDoStallH2dReptThing(
       io.pop.valid := True
       io.pop.payload := rSavedLoH2dPopInfoVec.last.payload
       when (io.pop.fire) {
-        rSavedLoH2dPopInfoVec.last.valid := False
+        nextSavedLoH2dPopInfoVec.last.valid := False
         //rPrevRewriteIdx.lsb := False//True
         rState := State.MAIN
       }
@@ -1338,7 +1353,7 @@ case class LcvBusDoStallH2dReptThing(
       io.pop.valid := True
       io.pop.payload := rSavedLoH2dPopInfoVec.head.payload
       when (io.pop.fire) {
-        rSavedLoH2dPopInfoVec.head.valid := False
+        nextSavedLoH2dPopInfoVec.head.valid := False
         rState := State.DO_REPEAT_JUST_1
       }
     }
@@ -1346,7 +1361,7 @@ case class LcvBusDoStallH2dReptThing(
       io.pop.valid := True
       io.pop.payload := rSavedLoH2dPopInfoVec.last.payload
       when (io.pop.fire) {
-        rSavedLoH2dPopInfoVec.last.valid := False
+        nextSavedLoH2dPopInfoVec.last.valid := False
         rState := State.DO_REPEAT_JUST_0
       }
     }
