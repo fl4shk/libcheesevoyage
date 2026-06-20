@@ -1004,26 +1004,21 @@ case class LcvBusDoStallH2dReptThing(
   //  goToNextStateCond
   //  || rSavedGoToNextStateCond
   //)
+  def myCntWidth = (
+    //log2Up(LcvBusDoStallFifoThing.fifoDepthMain + 1) + 1
+    //3
+    4
+  )
   val rCnt = (
-    Reg(UInt(3 bits)) init(0x0)
+    Reg(UInt(myCntWidth bits)) init(0x0)
+  )
+
+  val rSum = (
+    Reg(UInt(myCntWidth - 2 bits)) init(0x0)
   )
 
   switch (rState) {
     is (State.MAIN) {
-      //switch (
-      //  goToNextStateCond
-      //  ## tempElemFoundBasicVec.head
-      //  ## tempElemFoundBasicVec.last
-      //) {
-      //  is (B"100") {
-      //    rState := State.IN_STALL
-      //  }
-      //  //is (M"11-") 
-      //  default {
-      //    rState := State.MAYBE_FILL_FIFO
-      //  }
-      //}
-
       when (goToNextStateCond) {
         rState := State.MAYBE_FILL_FIFO
       }
@@ -1076,7 +1071,10 @@ case class LcvBusDoStallH2dReptThing(
       }
     }
     is (State.MAYBE_FILL_FIFO) {
-      val mySum = UInt(rCnt.getWidth - 1 bits)
+      val mySum = UInt(
+        //rCnt.getWidth - 1
+        rSum.getWidth bits
+      )
       mySum := (
         Cat(rSavedLoH2dPopInfoVec.head.valid).asUInt.resize(
           mySum.getWidth bits
@@ -1085,7 +1083,11 @@ case class LcvBusDoStallH2dReptThing(
           mySum.getWidth bits
         )
       )
-      rCnt(rCnt.high downto 1) := mySum
+      //rCnt := mySum
+      rCnt(rCnt.high downto 2) := mySum
+      rCnt(1) := (
+        True
+      )
       rCnt(0) := (
         //!(
         //  rSavedLoH2dPopInfoVec.head.valid
@@ -1093,6 +1095,7 @@ case class LcvBusDoStallH2dReptThing(
         //)
         True
       )
+      rSum := mySum
 
       switch (
         rPrevRewriteIdx.lsb
@@ -1130,10 +1133,270 @@ case class LcvBusDoStallH2dReptThing(
         }
         default {
           rState := State.IN_STALL
+          //rPrevRewriteIdx.lsb := False
+          //rState := State.MAIN
         }
       }
     }
     is (State.IN_STALL) {
+      when (!io.doStall) {
+        when (
+          //!rCnt.lsb
+          !rCnt(1 downto 0).orR
+        ) {
+          io.pop << myFifo.io.pop
+
+          when (myFifo.io.pop.fire) {
+            rCnt := rCnt - 1
+          }
+        } elsewhen (rCnt.orR) {
+          rCnt := rCnt - 1
+        }
+
+        when (!rCnt.orR) {
+          rPrevRewriteIdx.lsb := False
+
+          rSavedLoH2dPopInfoVec.head.valid := False
+          rSavedLoH2dPopInfoVec.head.ready := False
+
+          rSavedLoH2dPopInfoVec.last.valid := False
+          rSavedLoH2dPopInfoVec.last.ready := False
+
+          rState := State.MAIN
+        }
+
+        switch (
+          myFifo.io.pop.fire
+          ## rPrevRewriteIdx.lsb
+          ## rSavedLoH2dPopInfoVec.head.ready
+          ## rSavedLoH2dPopInfoVec.last.ready
+        ) {
+          is (M"1-10") {
+            rSavedLoH2dPopInfoVec.head.ready := False
+          }
+          is (M"1-01") {
+            rSavedLoH2dPopInfoVec.last.ready := False
+          }
+          is (M"1111") {
+            rSavedLoH2dPopInfoVec.head.ready := False
+          }
+          is (M"1011") {
+            rSavedLoH2dPopInfoVec.last.ready := False
+          }
+          default {
+            //rState := State.IN_STALL
+          }
+        }
+      } otherwise {
+        //when (rCnt(1) === True) {
+        //} otherwise {
+        //}
+
+        //--------
+        //when (rCnt(2)) {
+        //  // we need to repeat both the first and second h2d requests
+        //  rSavedLoH2dPopInfoVec.head.ready := False
+        //  rSavedLoH2dPopInfoVec.last.ready := False
+        //} otherwise {
+        //  // we need to repeat only the second h2d request
+        //}
+        //--------
+        rState := State.MAYBE_FILL_FIFO
+
+        switch (
+          rCnt(2)
+          ## rPrevRewriteIdx.lsb
+        ) {
+          is (M"1-") {
+            // we need to repeat both the first and second h2d requests
+            rSavedLoH2dPopInfoVec.head.ready := False
+            rSavedLoH2dPopInfoVec.last.ready := False
+          }
+          is (M"01") {
+            // we need to repeat the second h2d request (`head`)
+            rSavedLoH2dPopInfoVec.head.ready 
+          }
+          is (M"00") {
+            // we need to repeat the second h2d request (`last`)
+            rSavedLoH2dPopInfoVec.head.ready 
+          }
+        }
+
+        //when (rCnt(2)) {
+        //} otherwise {
+        //}
+
+
+        // when we have `rSum.lsb === True`, we always have `rSum === 1`
+        // when we have `rSum.lsb === False`, we always have `rSum === 2`
+        //switch (
+        //  myFifo.io.pop.valid
+        //  ## rSum.lsb
+        //  ## rPrevRewriteIdx.lsb
+        //  ## rSavedLoH2dPopInfoVec.head.fire
+        //  ## rSavedLoH2dPopInfoVec.last.fire
+        //) {
+        //  //is (M"0-10") {
+        //  //  // rSum === 1
+        //  //  //
+        //  //}
+        //}
+        //when (
+        //  myFifo.io.pop.valid
+        //) {
+        //}
+
+        //rState := State.MAYBE_FILL_FIFO
+
+        //switch (
+        //  //myFifo.io.pop.fire
+        //  //## 
+        //  rPrevRewriteIdx.lsb
+        //  ## rSavedLoH2dPopInfoVec.head.ready
+        //  ## rSavedLoH2dPopInfoVec.last.ready
+        //) {
+        //  is (M"1-10") {
+        //    rSavedLoH2dPopInfoVec.head.ready := False
+        //  }
+        //  is (M"1-01") {
+        //    rSavedLoH2dPopInfoVec.last.ready := False
+        //  }
+        //  is (M"1111") {
+        //    rSavedLoH2dPopInfoVec.head.ready := False
+        //  }
+        //  is (M"1011") {
+        //    rSavedLoH2dPopInfoVec.last.ready := False
+        //  }
+        //  default {
+        //    //rState := State.IN_STALL
+        //  }
+        //}
+
+
+        //val myCurrSavedLoH2dPopInfo = rSavedLoH2dPopInfoVec(
+        //  Cat(!rPrevRewriteIdx.lsb).asUInt
+        //)
+        //val myPrevSavedLoH2dPopInfo = rSavedLoH2dPopInfoVec(
+        //  Cat(rPrevRewriteIdx.lsb).asUInt
+        //)
+
+        //// when we have `rSum.lsb === True`, we always have `rSum === 1`
+        //// when we have `rSum.lsb === False`, we always have `rSum === 2`
+        ////switch (
+        ////  myFifo.io.pop.valid
+        ////  ## myFifo.io.occupancy
+        ////  //## rSum.lsb
+        ////) {
+        ////  is (M"00") {
+        ////    // rSum === 2
+        ////  }
+        ////  is (B"01") {
+        ////    // rSum === 1
+        ////  }
+        ////  is (B"10") {
+        ////    // rCnt === 
+        ////    // rSum === 2
+        ////  }
+        ////  is (B"11") {
+        ////  }
+        ////}
+
+        //when (
+        //  myPrevSavedLoH2dPopInfo.ready
+        //) {
+        //}
+
+        //switch (
+        //  rPrevRewriteIdx.lsb
+        //  ## rSavedLoH2dPopInfoVec.head.valid
+        //  ## rSavedLoH2dPopInfoVec.head.ready
+        //  ## rSavedLoH2dPopInfoVec.last.valid
+        //  ## rSavedLoH2dPopInfoVec.last.ready
+        //) {
+        //  is (M"-00") {
+        //  }
+        //  is (M"-10") {
+        //  }
+        //  is (M"-01") {
+        //  }
+        //  is (M"011") {
+        //  }
+        //  is (M"111") {
+        //  }
+        //}
+
+        //switch (
+        //  //rPrevRewriteIdx.lsb
+        //  rSum
+        //  ## rSavedLoH2dPopInfoVec.head.valid
+        //  ## rSavedLoH2dPopInfoVec.last.valid
+        //) {
+        //  //is (M"-00") {
+        //  //  rState := State.IN_STALL
+        //  //}
+        //  is (M"-10") {
+        //    myCurrSavedLoH2dPopInfo
+        //    //myFifo.io.push.valid := True
+        //    //myFifo.io.push.payload := rSavedLoH2dPopInfoVec.head.payload
+        //    ////rSavedLoH2dPopInfoVec.head.valid := False
+        //    //rSavedLoH2dPopInfoVec.head.ready := True
+        //    //rState := State.IN_STALL
+        //  }
+        //  is (M"-01") {
+        //    //myFifo.io.push.valid := True
+        //    //myFifo.io.push.payload := rSavedLoH2dPopInfoVec.last.payload
+        //    ////rSavedLoH2dPopInfoVec.last.valid := False
+        //    //rSavedLoH2dPopInfoVec.last.ready := True
+        //    //rState := State.IN_STALL
+        //  }
+        //  is (M"111") {
+        //    //myFifo.io.push.valid := True
+        //    //myFifo.io.push.payload := rSavedLoH2dPopInfoVec.head.payload
+        //    ////rSavedLoH2dPopInfoVec.head.valid := False
+        //    //rSavedLoH2dPopInfoVec.head.ready := True
+        //  }
+        //  is (M"011") {
+        //    //myFifo.io.push.valid := True
+        //    //myFifo.io.push.payload := rSavedLoH2dPopInfoVec.last.payload
+        //    ////rSavedLoH2dPopInfoVec.last.valid := False
+        //    //rSavedLoH2dPopInfoVec.last.ready := True
+        //  }
+        //  default {
+        //    //rState := State.IN_STALL
+        //    ////rPrevRewriteIdx.lsb := False
+        //    ////rState := State.MAIN
+        //  }
+        //}
+
+        //switch (
+        //  myFifo.io.pop.valid
+        //  ## rPrevRewriteIdx.lsb
+        //  ## rSavedLoH2dPopInfoVec.head.fire
+        //  ## rSavedLoH2dPopInfoVec.last.fire
+        //) {
+        //  is (M"1-10") {
+        //    //rSavedLoH2dPopInfoVec.head.ready := False
+        //  }
+        //  is (M"1-01") {
+        //    //rSavedLoH2dPopInfoVec.last.ready := False
+        //  }
+        //  is (M"1111") {
+        //    // We have `rPrevRewriteIdx.lsb === True`,
+        //    // so that means the *first* element is `head`
+
+        //    //rSavedLoH2dPopInfoVec.head.ready := False
+        //  }
+        //  is (M"1011") {
+        //    // We have `rPrevRewriteIdx.lsb === False`
+        //    // so that means the *first* element is `last`
+
+        //    //rSavedLoH2dPopInfoVec.last.ready := False
+        //  }
+        //  default {
+        //    //rState := State.IN_STALL
+        //  }
+        //}
+      }
       //rPrevRewriteIdx.lsb := False
       //when (!io.doStall) {
       //  when (rCnt.lsb) {
@@ -1156,38 +1419,39 @@ case class LcvBusDoStallH2dReptThing(
       //  rState := State.MAYBE_FILL_FIFO
       //}
 
-      when (!io.doStall) {
-        when (!rCnt.lsb) {
-          io.pop << myFifo.io.pop
-          when (io.pop.fire) {
-            rCnt := rCnt - 1
-          }
-        } elsewhen (rCnt.orR) {
-          rCnt := rCnt - 1
-        }
-        when (!rCnt.orR) {
-          rPrevRewriteIdx.lsb := False
-          rSavedLoH2dPopInfoVec.head.valid := False
-          rSavedLoH2dPopInfoVec.head.ready := False
-          rSavedLoH2dPopInfoVec.last.valid := False
-          rSavedLoH2dPopInfoVec.last.ready := False
-          rState := State.MAIN
-        }
-      } elsewhen (fell(io.doStall)) {
-        rSavedLoH2dPopInfoVec.head.ready := False
-        rSavedLoH2dPopInfoVec.last.ready := False
-        rState := State.MAYBE_FILL_FIFO
-        //when (!rCnt.orR) {
-        //  rPrevRewriteIdx.lsb := False
-        //  rSavedLoH2dPopInfoVec.head.valid := False
-        //  rSavedLoH2dPopInfoVec.head.ready := False
-        //  rSavedLoH2dPopInfoVec.last.valid := False
-        //  rSavedLoH2dPopInfoVec.last.ready := False
-        //  rState := State.MAIN
-        //} otherwise {
-        //  rState := State.MAYBE_FILL_FIFO
-        //}
-      }
+      //when (!io.doStall) {
+      //  when (!rCnt.lsb) {
+      //    io.pop << myFifo.io.pop
+      //    when (io.pop.fire) {
+      //      rCnt := rCnt - 1
+      //    }
+      //  } elsewhen (rCnt.orR) {
+      //    rCnt := rCnt - 1
+      //  }
+      //  when (!rCnt.orR) {
+      //    rPrevRewriteIdx.lsb := False
+      //    rSavedLoH2dPopInfoVec.head.valid := False
+      //    rSavedLoH2dPopInfoVec.head.ready := False
+      //    rSavedLoH2dPopInfoVec.last.valid := False
+      //    rSavedLoH2dPopInfoVec.last.ready := False
+      //    rState := State.MAIN
+      //  }
+      //} elsewhen (fell(io.doStall)) {
+      //  rSavedLoH2dPopInfoVec.head.ready := False
+      //  rSavedLoH2dPopInfoVec.last.ready := False
+      //  rState := State.MAYBE_FILL_FIFO
+      //  //when (!rCnt.orR) {
+      //  //  rPrevRewriteIdx.lsb := False
+      //  //  rSavedLoH2dPopInfoVec.head.valid := False
+      //  //  rSavedLoH2dPopInfoVec.head.ready := False
+      //  //  rSavedLoH2dPopInfoVec.last.valid := False
+      //  //  rSavedLoH2dPopInfoVec.last.ready := False
+      //  //  rState := State.MAIN
+      //  //} otherwise {
+      //  //  rState := State.MAYBE_FILL_FIFO
+      //  //}
+      //}
+
 
       //when (!rCnt.orR) {
       //  when (io.doStall) {
@@ -4173,9 +4437,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     is (State.WAIT_D2H_FIFO_EMPTY) {
       lineAttrsRam.io.rdEn := False
       lineWordRam.io.rdEn := False
-      //myFifoThingDoStall := False
 
       when (!myLoD2hFifo.io.pop.valid) {
+        myFifoThingDoStall := False
         rState := State.IDLE
       }
     }
@@ -5262,6 +5526,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       //myFifoThingDoStall := False
 
       when (!myLoD2hFifo.io.pop.valid) {
+        myFifoThingDoStall := False
         rState := State.IDLE
       }
     }
