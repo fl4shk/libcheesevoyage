@@ -3846,7 +3846,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       RECV_LINE_FROM_HI_BUS_POST_1,
       RECV_LINE_FROM_HI_BUS_POST,
 
-      WAIT_D2H_FIFO_EMPTY
+      WAIT_D2H_FIFO_PUSH_READY
 
       = newElement();
   }
@@ -4586,7 +4586,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       lineAttrsRam.io.rdEn := False
       lineWordRam.io.rdEn := False
 
-      rState := State.WAIT_D2H_FIFO_EMPTY
+      rState := State.WAIT_D2H_FIFO_PUSH_READY
     }
     is (State.STORE_HIT_DO_STALL_PIPE_1) {
       myLoD2hPushStm.valid := False
@@ -4602,7 +4602,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       mySelLoH2dPopStm.ready := False
       myLoD2hPushStm.valid := True
       when (myLoD2hPushStm.ready) {
-        rState := State.WAIT_D2H_FIFO_EMPTY
+        rState := State.WAIT_D2H_FIFO_PUSH_READY
       }
     }
     is (State.SEND_LINE_TO_HI_BUS_PIPE_3) {
@@ -4825,14 +4825,17 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       lineWordRam.io.rdEn := False
       rState := (
         //State.IDLE
-        State.WAIT_D2H_FIFO_EMPTY
+        State.WAIT_D2H_FIFO_PUSH_READY
       )
     }
-    is (State.WAIT_D2H_FIFO_EMPTY) {
+    is (State.WAIT_D2H_FIFO_PUSH_READY) {
       lineAttrsRam.io.rdEn := False
       lineWordRam.io.rdEn := False
 
-      when (!myLoD2hFifo.io.pop.valid) {
+      when (  
+        //!myLoD2hFifo.io.pop.valid
+        myLoD2hFifo.io.push.ready
+      ) {
         //myFifoThingDoStall := False
         rState := State.IDLE
       }
@@ -4933,7 +4936,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       RECV_LINE_FROM_HI_BUS_POST_1,
       RECV_LINE_FROM_HI_BUS_POST,
 
-      WAIT_D2H_FIFO_EMPTY
+      WAIT_D2H_FIFO_PUSH_READY
 
       = newElement();
   }
@@ -5672,7 +5675,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       lineAttrsRam.io.rdEn := False
       lineWordRam.io.rdEn := False
 
-      rState := State.WAIT_D2H_FIFO_EMPTY
+      rState := State.WAIT_D2H_FIFO_PUSH_READY
     }
     is (State.STORE_HIT_DO_STALL_PIPE_1) {
       myLoD2hPushStm.valid := False
@@ -5688,7 +5691,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       mySelLoH2dPopStm.ready := False
       myLoD2hPushStm.valid := True
       when (myLoD2hPushStm.ready) {
-        rState := State.WAIT_D2H_FIFO_EMPTY
+        rState := State.WAIT_D2H_FIFO_PUSH_READY
       }
     }
     is (State.SEND_LINE_TO_HI_BUS_PIPE_3) {
@@ -5911,15 +5914,18 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       lineWordRam.io.rdEn := False
       rState := (
         //State.IDLE
-        State.WAIT_D2H_FIFO_EMPTY
+        State.WAIT_D2H_FIFO_PUSH_READY
       )
     }
-    is (State.WAIT_D2H_FIFO_EMPTY) {
+    is (State.WAIT_D2H_FIFO_PUSH_READY) {
       lineAttrsRam.io.rdEn := False
       lineWordRam.io.rdEn := False
       //myFifoThingDoStall := False
 
-      when (!myLoD2hFifo.io.pop.valid) {
+      when (
+        //!myLoD2hFifo.io.pop.valid
+        myLoD2hFifo.io.push.ready
+      ) {
         //myFifoThingDoStall := False
         rState := State.IDLE
       }
