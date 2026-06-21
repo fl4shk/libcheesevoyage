@@ -1236,16 +1236,26 @@ case class LcvBusDoStallH2dReptThing(
       switch (
         RegNext(myFinishTxnFindFirst0._1)
         ## RegNext(myFinishTxnFindFirst1._1)
+        ## rSavedLoH2dPopInfoVec.head.fire
+        ## rSavedLoH2dPopInfoVec.last.fire
       ) {
-        is (M"10") {
+        is (M"10-0") {
+          rSavedLoH2dPopInfoVec.head.valid := False
+          rState := State.MAIN
+        }
+        is (M"10-1") {
           rSavedLoH2dPopInfoVec.head.valid := False
           rState := State.IN_STALL_0
         }
-        is (M"01") {
+        is (M"010-") {
+          rSavedLoH2dPopInfoVec.last.valid := False
+          rState := State.MAIN
+        }
+        is (M"011-") {
           rSavedLoH2dPopInfoVec.last.valid := False
           rState := State.IN_STALL_0
         }
-        is (M"11") {
+        is (M"11--") {
           rSavedLoH2dPopInfoVec.head.valid := False
           rSavedLoH2dPopInfoVec.last.valid := False
           rState := State.MAIN
