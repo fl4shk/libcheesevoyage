@@ -950,8 +950,8 @@ case class LcvBusDoStallH2dReptThing(
   val io = LcvBusDoStallH2dReptThingIo(busCfg=busCfg)
   //--------
   io.push.ready := False
-  io.pop.valid := False
-  io.pop.payload := io.pop.payload.getZero
+  //io.pop.valid := False
+  //io.pop.payload := io.pop.payload.getZero
 
   //val nextSavedLoH2dPopInfoVec = {
   //  val temp = (
@@ -1048,6 +1048,8 @@ case class LcvBusDoStallH2dReptThing(
   //val rTempCond = Reg(Bool(), init=False)
 
   val myPopStm = cloneOf(io.pop)
+  myPopStm.valid := False
+  myPopStm.payload := io.pop.payload.getZero
 
   //val myPopDoThrowCondMain = Vec[Bool](
   //  //myPopStm.valid
