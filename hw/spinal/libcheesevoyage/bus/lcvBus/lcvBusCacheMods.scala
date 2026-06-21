@@ -1130,14 +1130,14 @@ case class LcvBusDoStallH2dReptThing(
           // "FIFO"'s first-in element is `1` (`last`)
           io.pop.payload := rSavedLoH2dPopInfoVec.last.payload
           rSavedLoH2dPopInfoVec.last.valid := False
-          rPrevRewriteIdx.lsb := True
+          //rPrevRewriteIdx.lsb := True
         }
         is (M"1111") {
           // the previously-written index was `False`, which means the
           // "FIFO"'s first-in element is `0` (`head`)
           io.pop.payload := rSavedLoH2dPopInfoVec.head.payload
           rSavedLoH2dPopInfoVec.head.valid := False
-          rPrevRewriteIdx.lsb := False
+          //rPrevRewriteIdx.lsb := False
         }
         //is (M"10") {
         //  io.pop.payload := rSavedLoH2dPopInfo
