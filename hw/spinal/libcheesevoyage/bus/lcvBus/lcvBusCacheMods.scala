@@ -1033,7 +1033,8 @@ case class LcvBusDoStallH2dReptThing(
       CHECK_IF_TXN_FINISHED_1,
       IN_STALL_0,
       IN_STALL_1,
-      IN_STALL_2
+      IN_STALL_2,
+      IN_STALL_3
       = newElement()
   }
   val rState = (
@@ -1396,6 +1397,9 @@ case class LcvBusDoStallH2dReptThing(
       }
     }
     is (State.IN_STALL_2) {
+      rState := State.IN_STALL_3
+    }
+    is (State.IN_STALL_3) {
       switch (
         RegNext(
           RegNext(io.pop.fire, init=False),
