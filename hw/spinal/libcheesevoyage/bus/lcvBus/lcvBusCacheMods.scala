@@ -4899,6 +4899,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         //  RegNext(mySelLoH2dPopStm.fire, init=False),
         //  init=False
         //)
+        && myTempUpdateSavedLoH2dPayloadCond
       ) {
         myLoD2hPushStm.busPayload.src := (
           rDel2LoH2dPayload.src
