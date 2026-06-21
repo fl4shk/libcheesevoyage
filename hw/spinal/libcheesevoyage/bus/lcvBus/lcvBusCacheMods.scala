@@ -931,9 +931,9 @@ case class LcvBusDoStallH2dReptThingIo(
     LcvBusH2dPayload(cfg=busCfg)
   ))
 
-  //val finishTxn = slave(
-  //  Flow(UInt(busCfg.optTxnCntWidth.get bits))
-  //)
+  val finishTxn = slave(
+    Flow(UInt(busCfg.optTxnCntWidth.get bits))
+  )
 
   val pop = master(Stream(
     LcvBusH2dPayload(cfg=busCfg)
@@ -1046,9 +1046,89 @@ case class LcvBusDoStallH2dReptThing(
   //  init(0x0)
   //)
   //val rTempCond = Reg(Bool(), init=False)
+
+  val myPopStm = cloneOf(io.pop)
+
+  //val myPopDoThrowCondMain = Vec[Bool](
+  //  //myPopStm.valid
+  //  //&& 
+  //  (
+  //    stickyTempTxnCnt.head.fire
+  //    && (
+  //      myPopStm.txnCnt === stickyTempTxnCnt.head.payload
+  //    )
+  //  ),
+  //  (
+  //    stickyTempTxnCnt.last.fire
+  //    && (
+  //      myPopStm.txnCnt === stickyTempTxnCnt.last.payload
+  //    )
+  //  ),
+  //)
+  val myHistFinishTxn = (
+    History[Flow[UInt]](
+      that=io.finishTxn,
+      when=io.finishTxn.fire,
+      length=(LcvBusDoStallFifoThing.fifoDepthMain + 1),
+      init=io.finishTxn.getZero,
+    )
+  )
+
+  val myPopDoThrowCond = Bool()
+  myPopDoThrowCond := (
+    myPopStm.valid
+    && (
+      (
+        io.finishTxn.fire
+        && (
+          myPopStm.txnCnt
+          === io.finishTxn.payload
+        )
+      )
+      || (
+        myHistFinishTxn(1).fire
+        && (
+          myPopStm.txnCnt
+          === myHistFinishTxn(1).payload
+        )
+      )
+      || (
+        myHistFinishTxn(2).fire
+        && (
+          myPopStm.txnCnt
+          === myHistFinishTxn(2).payload
+        )
+      )
+    )
+  )
+
+  io.pop << myPopStm.throwWhen(
+    //myPopStm.valid
+    //&& myPopStm
+    myPopDoThrowCond
+  )
+
+  //when (
+  //  myPopStm.ready
+  //  && myPopDoThrowCond
+  //) {
+  //  
+  //}
+
   switch (rState) {
     is (State.MAIN) {
       //rTempCond := False
+
+      //switch (
+      //  RegNext(
+      //    RegNext(myPopStm.fire, init=False),
+      //    init=False
+      //  )
+      //  ## goToNextStateCond
+      //) {
+      //  is (M"10") {
+      //  }
+      //}
 
       when (goToNextStateCond) {
         rState := (
@@ -1057,7 +1137,7 @@ case class LcvBusDoStallH2dReptThing(
         )
       }
 
-      io.pop << io.push.haltWhen(goToNextStateCond)
+      myPopStm << io.push.haltWhen(goToNextStateCond)
 
       switch (
         io.push.fire
@@ -1113,9 +1193,9 @@ case class LcvBusDoStallH2dReptThing(
       }
     }
     is (State.IN_STALL_0) {
-      io.pop.valid := True
+      myPopStm.valid := True
 
-      when (io.pop.ready) {
+      when (myPopStm.ready) {
         //rState := (
         //  //State.MAIN
         //  State.IN_STALL_1
@@ -1124,19 +1204,19 @@ case class LcvBusDoStallH2dReptThing(
       }
 
       switch (
-        io.pop.ready
+        myPopStm.ready
         ## rPrevRewriteIdx
         ## rSavedLoH2dPopInfoVec.head.fire
         ## rSavedLoH2dPopInfoVec.last.fire
       ) {
         is (M"1-10") {
-          io.pop.payload := rSavedLoH2dPopInfoVec.head.payload
+          myPopStm.payload := rSavedLoH2dPopInfoVec.head.payload
           rSavedLoH2dPopInfoVec.head.valid := False
           //rPrevRewriteIdx.lsb := False
           rState := State.MAIN
         }
         is (M"1-01") {
-          io.pop.payload := rSavedLoH2dPopInfoVec.last.payload
+          myPopStm.payload := rSavedLoH2dPopInfoVec.last.payload
           rSavedLoH2dPopInfoVec.last.valid := False
           //rPrevRewriteIdx.lsb := False
           rState := State.MAIN
@@ -1144,7 +1224,7 @@ case class LcvBusDoStallH2dReptThing(
         is (M"1011") {
           // the previously-written index was `True`, which means the
           // "FIFO"'s first-in element is `1` (`last`)
-          io.pop.payload := rSavedLoH2dPopInfoVec.last.payload
+          myPopStm.payload := rSavedLoH2dPopInfoVec.last.payload
           rSavedLoH2dPopInfoVec.last.valid := False
           //rPrevRewriteIdx.lsb := True
           rState := State.IN_STALL_1
@@ -1152,7 +1232,7 @@ case class LcvBusDoStallH2dReptThing(
         is (M"1111") {
           // the previously-written index was `False`, which means the
           // "FIFO"'s first-in element is `0` (`head`)
-          io.pop.payload := rSavedLoH2dPopInfoVec.head.payload
+          myPopStm.payload := rSavedLoH2dPopInfoVec.head.payload
           rSavedLoH2dPopInfoVec.head.valid := False
           //rPrevRewriteIdx.lsb := False
           rState := State.IN_STALL_1
@@ -1165,42 +1245,42 @@ case class LcvBusDoStallH2dReptThing(
       //)
     }
     is (State.IN_STALL_1) {
-      io.pop.valid := True
-      //io.pop << io.push.haltWhen(goToNextStateCond)
+      myPopStm.valid := True
+      //myPopStm << io.push.haltWhen(goToNextStateCond)
 
       //when (goToNextStateCond) {
       //}
-      when (io.pop.ready) {
+      when (myPopStm.ready) {
         rState := State.IN_STALL_2
       }
 
       switch (
-        io.pop.ready
+        myPopStm.ready
         ## rPrevRewriteIdx
         ## rSavedLoH2dPopInfoVec.head.fire
         ## rSavedLoH2dPopInfoVec.last.fire
       ) {
         is (M"1-10") {
-          io.pop.payload := rSavedLoH2dPopInfoVec.head.payload
+          myPopStm.payload := rSavedLoH2dPopInfoVec.head.payload
           //rSavedLoH2dPopInfoVec.head.valid := False
           //rPrevRewriteIdx.lsb := False
         }
         is (M"1-01") {
-          io.pop.payload := rSavedLoH2dPopInfoVec.last.payload
+          myPopStm.payload := rSavedLoH2dPopInfoVec.last.payload
           //rSavedLoH2dPopInfoVec.last.valid := False
           //rPrevRewriteIdx.lsb := False
         }
         is (M"1011") {
           // the previously-written index was `True`, which means the
           // "FIFO"'s first-in element is `1` (`last`)
-          io.pop.payload := rSavedLoH2dPopInfoVec.last.payload
+          myPopStm.payload := rSavedLoH2dPopInfoVec.last.payload
           //rSavedLoH2dPopInfoVec.last.valid := False
           //rPrevRewriteIdx.lsb := True
         }
         is (M"1111") {
           // the previously-written index was `False`, which means the
           // "FIFO"'s first-in element is `0` (`head`)
-          io.pop.payload := rSavedLoH2dPopInfoVec.head.payload
+          myPopStm.payload := rSavedLoH2dPopInfoVec.head.payload
           //rSavedLoH2dPopInfoVec.head.valid := False
           //rPrevRewriteIdx.lsb := False
         }
@@ -4295,10 +4375,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   )
 
   myLoD2hPushStm.valid := False
-  //myLoH2dReptThing.io.finishTxn.valid := myLoD2hPushStm.fire
-  //myLoH2dReptThing.io.finishTxn.payload := (
-  //  myLoD2hPushStm.busPayload.txnCnt
-  //)
+  myLoH2dReptThing.io.finishTxn.valid := myLoD2hPushStm.fire
+  myLoH2dReptThing.io.finishTxn.payload := (
+    myLoD2hPushStm.busPayload.txnCnt
+  )
 
   val myLoD2hFifo = StreamFifo(
     dataType=LcvBusD2hPayload(cfg=cfg.loBusCfg),
@@ -5389,10 +5469,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   )
 
   myLoD2hPushStm.valid := False
-  //myLoH2dReptThing.io.finishTxn.valid := myLoD2hPushStm.fire
-  //myLoH2dReptThing.io.finishTxn.payload := (
-  //  myLoD2hPushStm.busPayload.txnCnt
-  //)
+  myLoH2dReptThing.io.finishTxn.valid := myLoD2hPushStm.fire
+  myLoH2dReptThing.io.finishTxn.payload := (
+    myLoD2hPushStm.busPayload.txnCnt
+  )
 
   val myLoD2hFifo = StreamFifo(
     dataType=LcvBusD2hPayload(cfg=cfg.loBusCfg),
