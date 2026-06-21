@@ -1029,7 +1029,9 @@ case class LcvBusDoStallH2dReptThing(
       //DO_REPEAT_BOTH_0_THEN_1,
       //DO_REPEAT_BOTH_1_THEN_0
       //MAYBE_FILL_FIFO,
-      IN_STALL
+      IN_STALL_0,
+      IN_STALL_1,
+      IN_STALL_2
       = newElement()
   }
   val rState = (
@@ -1038,12 +1040,20 @@ case class LcvBusDoStallH2dReptThing(
   )
 
   val goToNextStateCond = rose(io.doStall)
+  //def myTempCntWidth = 3
+  //val rTempCnt = (
+  //  Reg(UInt(myTempCntWidth bits))
+  //  init(0x0)
+  //)
+  //val rTempCond = Reg(Bool(), init=False)
   switch (rState) {
     is (State.MAIN) {
+      //rTempCond := False
+
       when (goToNextStateCond) {
         rState := (
           //State.MAYBE_FILL_FIFO
-          State.IN_STALL
+          State.IN_STALL_0
         )
       }
 
@@ -1102,11 +1112,14 @@ case class LcvBusDoStallH2dReptThing(
         }
       }
     }
-    is (State.IN_STALL) {
+    is (State.IN_STALL_0) {
       io.pop.valid := True
 
       when (io.pop.ready) {
-        rState := State.MAIN
+        //rState := (
+        //  //State.MAIN
+        //  State.IN_STALL_1
+        //)
         rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
       }
 
@@ -1120,11 +1133,13 @@ case class LcvBusDoStallH2dReptThing(
           io.pop.payload := rSavedLoH2dPopInfoVec.head.payload
           rSavedLoH2dPopInfoVec.head.valid := False
           //rPrevRewriteIdx.lsb := False
+          rState := State.MAIN
         }
         is (M"1-01") {
           io.pop.payload := rSavedLoH2dPopInfoVec.last.payload
           rSavedLoH2dPopInfoVec.last.valid := False
           //rPrevRewriteIdx.lsb := False
+          rState := State.MAIN
         }
         is (M"1011") {
           // the previously-written index was `True`, which means the
@@ -1132,6 +1147,7 @@ case class LcvBusDoStallH2dReptThing(
           io.pop.payload := rSavedLoH2dPopInfoVec.last.payload
           rSavedLoH2dPopInfoVec.last.valid := False
           //rPrevRewriteIdx.lsb := True
+          rState := State.IN_STALL_1
         }
         is (M"1111") {
           // the previously-written index was `False`, which means the
@@ -1139,18 +1155,74 @@ case class LcvBusDoStallH2dReptThing(
           io.pop.payload := rSavedLoH2dPopInfoVec.head.payload
           rSavedLoH2dPopInfoVec.head.valid := False
           //rPrevRewriteIdx.lsb := False
+          rState := State.IN_STALL_1
         }
-        //is (M"10") {
-        //  io.pop.payload := rSavedLoH2dPopInfo
-        //}
-        //is (M"11") {
-        //}
         default {
         }
       }
       //switch (
       //  
       //)
+    }
+    is (State.IN_STALL_1) {
+      io.pop.valid := True
+      //io.pop << io.push.haltWhen(goToNextStateCond)
+
+      //when (goToNextStateCond) {
+      //}
+      when (io.pop.ready) {
+        rState := State.IN_STALL_2
+      }
+
+      switch (
+        io.pop.ready
+        ## rPrevRewriteIdx
+        ## rSavedLoH2dPopInfoVec.head.fire
+        ## rSavedLoH2dPopInfoVec.last.fire
+      ) {
+        is (M"1-10") {
+          io.pop.payload := rSavedLoH2dPopInfoVec.head.payload
+          //rSavedLoH2dPopInfoVec.head.valid := False
+          //rPrevRewriteIdx.lsb := False
+        }
+        is (M"1-01") {
+          io.pop.payload := rSavedLoH2dPopInfoVec.last.payload
+          //rSavedLoH2dPopInfoVec.last.valid := False
+          //rPrevRewriteIdx.lsb := False
+        }
+        is (M"1011") {
+          // the previously-written index was `True`, which means the
+          // "FIFO"'s first-in element is `1` (`last`)
+          io.pop.payload := rSavedLoH2dPopInfoVec.last.payload
+          //rSavedLoH2dPopInfoVec.last.valid := False
+          //rPrevRewriteIdx.lsb := True
+        }
+        is (M"1111") {
+          // the previously-written index was `False`, which means the
+          // "FIFO"'s first-in element is `0` (`head`)
+          io.pop.payload := rSavedLoH2dPopInfoVec.head.payload
+          //rSavedLoH2dPopInfoVec.head.valid := False
+          //rPrevRewriteIdx.lsb := False
+        }
+        default {
+        }
+      }
+    }
+    is (State.IN_STALL_2) {
+      switch (
+        RegNext(
+          RegNext(io.pop.fire, init=False),
+          init=False
+        )
+        && goToNextStateCond
+      ) {
+        is (M"10") {
+          rState := State.MAIN
+        }
+        is (M"11") {
+          rState := State.IN_STALL_0
+        }
+      }
     }
   }
 
