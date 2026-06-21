@@ -1214,13 +1214,15 @@ case class LcvBusDoStallH2dReptThing(
           RegNext(io.pop.fire, init=False),
           init=False
         )
-        && goToNextStateCond
+        ## goToNextStateCond
       ) {
         is (M"10") {
           rState := State.MAIN
         }
         is (M"11") {
           rState := State.IN_STALL_0
+        }
+        default {
         }
       }
     }
