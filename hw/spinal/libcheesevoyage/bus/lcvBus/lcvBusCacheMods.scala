@@ -4800,15 +4800,17 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   //}
 
   val rMyTempDoSaveCond = (
-    RegNext(
+    Vec.fill(4)(
       RegNext(
-        (
-          mySelLoH2dPopStm.fire
-          //&& !myFullTempIgnoreDupCntCond
+        RegNext(
+          (
+            mySelLoH2dPopStm.fire
+            //&& !myFullTempIgnoreDupCntCond
+          ),
+          init=False
         ),
         init=False
-      ),
-      init=False
+      )
     )
   )
   val rHadAnyRamWritePastTwoCycles = Vec.fill(2)(
@@ -4820,8 +4822,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       init=False
     )
   )
-  val myTempUpdateSavedLoH2dPayloadCond = Bool()
-  myTempUpdateSavedLoH2dPayloadCond := True
+  //val myTempUpdateSavedLoH2dPayloadCond = Bool()
+  //myTempUpdateSavedLoH2dPayloadCond := True
 
   //--------
   val rHadLoH2dFinish = Reg(Bool(), init=False)
@@ -4871,22 +4873,31 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       doPopLoH2dFifo()
 
       when (
-        rMyTempDoSaveCond
-        && myTempUpdateSavedLoH2dPayloadCond
+        rMyTempDoSaveCond(0)
+        ////&& myTempUpdateSavedLoH2dPayloadCond
+        //RegNext(
+        //  RegNext(mySelLoH2dPopStm.fire, init=False),
+        //  init=False
+        //)
       ) {
         rSavedLoH2dPayload := rLoH2dPayload
       }
       when (
-        rMyTempDoSaveCond
+        rMyTempDoSaveCond(1)
+        //RegNext(
+        //  RegNext(mySelLoH2dPopStm.fire, init=False),
+        //  init=False
+        //)
       ) {
         rSavedLoH2dPayload.byteSize := rLoH2dPayload.byteSize
       }
 
       when (
-        RegNext(
-          RegNext(mySelLoH2dPopStm.fire, init=False),
-          init=False
-        )
+        rMyTempDoSaveCond(2)
+        //RegNext(
+        //  RegNext(mySelLoH2dPopStm.fire, init=False),
+        //  init=False
+        //)
       ) {
         myLoD2hPushStm.busPayload.src := (
           rDel2LoH2dPayload.src
@@ -4908,10 +4919,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       rSavedRdLineAttrsTag := rdLineAttrs.tag
 
       switch (
-        RegNext(
-          RegNext(mySelLoH2dPopStm.fire, init=False),
-          init=False
-        )
+        rMyTempDoSaveCond(3)
+        //RegNext(
+        //  RegNext(mySelLoH2dPopStm.fire, init=False),
+        //  init=False
+        //)
         ## haveHit
         //## rdLineAttrs.dirty
         //## rDel2LoH2dPayload.busPayload.isWrite
@@ -4973,7 +4985,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
             mySelLoH2dPopStm.ready := False
             myFifoThingDoStall := True
             rState := State.LOAD_HIT_DO_STALL_PIPE_3
-            myTempUpdateSavedLoH2dPayloadCond := False
+            //myTempUpdateSavedLoH2dPayloadCond := False
           }
         }
         //is (
@@ -5902,15 +5914,17 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   //}
 
   val rMyTempDoSaveCond = (
-    RegNext(
+    Vec.fill(4)(
       RegNext(
-        (
-          mySelLoH2dPopStm.fire
-          //&& !myFullTempIgnoreDupCntCond
+        RegNext(
+          (
+            mySelLoH2dPopStm.fire
+            //&& !myFullTempIgnoreDupCntCond
+          ),
+          init=False
         ),
         init=False
-      ),
-      init=False
+      )
     )
   )
   val rHadAnyRamWritePastTwoCycles = Vec.fill(2)(
@@ -5922,8 +5936,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       init=False
     )
   )
-  val myTempUpdateSavedLoH2dPayloadCond = Bool()
-  myTempUpdateSavedLoH2dPayloadCond := True
+  //val myTempUpdateSavedLoH2dPayloadCond = Bool()
+  //myTempUpdateSavedLoH2dPayloadCond := True
 
   //--------
   val rHadLoH2dFinish = Reg(Bool(), init=False)
@@ -5973,21 +5987,30 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       doPopLoH2dFifo()
 
       when (
-        rMyTempDoSaveCond
-        && myTempUpdateSavedLoH2dPayloadCond
+        rMyTempDoSaveCond(0)
+        ////&& myTempUpdateSavedLoH2dPayloadCond
+        //&& RegNext(
+        //  RegNext(mySelLoH2dPopStm.fire, init=False),
+        //  init=False
+        //)
       ) {
         rSavedLoH2dPayload := rLoH2dPayload
       }
       when (
-        rMyTempDoSaveCond
+        rMyTempDoSaveCond(1)
+        //&& RegNext(
+        //  RegNext(mySelLoH2dPopStm.fire, init=False),
+        //  init=False
+        //)
       ) {
         rSavedLoH2dPayload.byteSize := rLoH2dPayload.byteSize
       }
       when (
-        RegNext(
-          RegNext(mySelLoH2dPopStm.fire, init=False),
-          init=False
-        )
+        rMyTempDoSaveCond(2)
+        //RegNext(
+        //  RegNext(mySelLoH2dPopStm.fire, init=False),
+        //  init=False
+        //)
       ) {
         myLoD2hPushStm.busPayload.src := (
           rDel2LoH2dPayload.src
@@ -6009,10 +6032,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       rSavedRdLineAttrsTag := rdLineAttrs.tag
 
       switch (
-        RegNext(
-          RegNext(mySelLoH2dPopStm.fire, init=False),
-          init=False
-        )
+        rMyTempDoSaveCond(3)
+        //RegNext(
+        //  RegNext(mySelLoH2dPopStm.fire, init=False),
+        //  init=False
+        //)
         ## haveHit
         ## rdLineAttrs.dirty
         ## rDel2LoH2dPayload.isWrite
@@ -6074,7 +6098,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             mySelLoH2dPopStm.ready := False
             myFifoThingDoStall := True
             rState := State.LOAD_HIT_DO_STALL_PIPE_3
-            myTempUpdateSavedLoH2dPayloadCond := False
+            //myTempUpdateSavedLoH2dPayloadCond := False
           }
         }
         is (
@@ -6106,7 +6130,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             mySelLoH2dPopStm.ready := False
             myFifoThingDoStall := True
             rState := State.STORE_HIT_DO_STALL_PIPE_1
-            myTempUpdateSavedLoH2dPayloadCond := False
+            //myTempUpdateSavedLoH2dPayloadCond := False
           } otherwise {
           }
         }
