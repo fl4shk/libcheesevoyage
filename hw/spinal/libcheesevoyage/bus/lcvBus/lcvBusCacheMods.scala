@@ -4931,7 +4931,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
             || !myLoD2hPushStm.ready
           ) {
             mySelLoH2dPopStm.ready := False
-            //myFifoThingDoStall := True
+            myFifoThingDoStall := True
             rState := State.LOAD_HIT_DO_STALL_PIPE_3
             myTempUpdateSavedLoH2dPayloadCond := False
           }
@@ -6024,7 +6024,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             || !myLoD2hPushStm.ready
           ) {
             mySelLoH2dPopStm.ready := False
-            //myFifoThingDoStall := True
+            myFifoThingDoStall := True
             rState := State.LOAD_HIT_DO_STALL_PIPE_3
             myTempUpdateSavedLoH2dPayloadCond := False
           }
@@ -6051,7 +6051,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
 
           when (!myLoD2hPushStm.ready) {
             mySelLoH2dPopStm.ready := False
-            //myFifoThingDoStall := True
+            myFifoThingDoStall := True
             rState := State.STORE_HIT_DO_STALL_PIPE_1
             myTempUpdateSavedLoH2dPayloadCond := False
           }
