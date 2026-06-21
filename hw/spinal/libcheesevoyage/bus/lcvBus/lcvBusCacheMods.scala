@@ -939,6 +939,7 @@ case class LcvBusDoStallH2dReptThingIo(
     LcvBusH2dPayload(cfg=busCfg)
   ))
   val doStall = in(Bool())
+  //val haveHit = in(Bool())
 
   //val myThrowCondMain = out(Bool())
 }
@@ -1154,6 +1155,7 @@ case class LcvBusDoStallH2dReptThing(
   //) {
   //  
   //}
+
   io.pop << myPopStm
 
   switch (rState) {
@@ -4311,7 +4313,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       //SEND_LINE_TO_HI_BUS,
       RECV_LINE_FROM_HI_BUS_PIPE_1,
       RECV_LINE_FROM_HI_BUS,
-      RECV_LINE_FROM_HI_BUS_POST_WRITE,
+      //RECV_LINE_FROM_HI_BUS_POST_WRITE,
       RECV_LINE_FROM_HI_BUS_POST_4,
       RECV_LINE_FROM_HI_BUS_POST_3,
       RECV_LINE_FROM_HI_BUS_POST_2,
@@ -5286,34 +5288,37 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
           setEn=true,
         )
         when ((io.hiBus.d2hBus.burstLast)) {
-          when (!rSavedLoH2dPayload.isWrite) {
+          //when (!rSavedLoH2dPayload.isWrite) {
             rState := State.RECV_LINE_FROM_HI_BUS_POST_4
-          } otherwise {
-            rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
-          }
+          //} otherwise {
+          //  rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
+          //}
         }
       }
     }
-    is (State.RECV_LINE_FROM_HI_BUS_POST_WRITE) {
-      lineAttrsRam.io.rdEn := False
-      lineWordRam.io.rdEn := False
-      doLineWordRamWrite(
-        busAddr=rSavedLoH2dPayload.addr,
-        lineWord=rSavedLoH2dPayload.data,
-        byteEn=Some(rSavedLoH2dPayload.byteEn),
-        setEn=true,
-      )
-      rState := State.RECV_LINE_FROM_HI_BUS_POST_4
-    }
+    //is (State.RECV_LINE_FROM_HI_BUS_POST_WRITE) {
+    //  lineAttrsRam.io.rdEn := False
+    //  lineWordRam.io.rdEn := False
+    //  doLineWordRamWrite(
+    //    busAddr=rSavedLoH2dPayload.addr,
+    //    lineWord=rSavedLoH2dPayload.data,
+    //    byteEn=Some(rSavedLoH2dPayload.byteEn),
+    //    setEn=true,
+    //  )
+    //  rState := State.RECV_LINE_FROM_HI_BUS_POST_4
+    //}
     is (State.RECV_LINE_FROM_HI_BUS_POST_4) {
       lineAttrsRam.io.rdEn := False
       lineWordRam.io.rdEn := False
+      doLineWordRamReadSync(
+        busAddr=rSavedLoH2dPayload.addr,
+        setEn=0,
+      )
       rState := State.RECV_LINE_FROM_HI_BUS_POST_3
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_3) {
       lineAttrsRam.io.rdEn := False
-      lineWordRam.io.rdEn := False
-      myLoD2hPushStm.valid := False
+      lineWordRam.io.rdEn := True
       rState := State.RECV_LINE_FROM_HI_BUS_POST_2
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_2) {
@@ -5324,7 +5329,26 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     is (State.RECV_LINE_FROM_HI_BUS_POST_1) {
       lineAttrsRam.io.rdEn := False
       lineWordRam.io.rdEn := False
-      rState := State.RECV_LINE_FROM_HI_BUS_POST
+      //rState := State.RECV_LINE_FROM_HI_BUS_POST
+
+      myLoD2hPushStm.valid := True
+
+      myLoD2hPushStm.busPayload.src := (
+        //RegNext
+        (
+          rSavedLoH2dPayload.src//,
+          //init=rSavedLoH2dPayload.src.getZero
+        )
+      )
+      myLoD2hPushStm.busPayload.data := RegNext(
+        //lineWordRam.io.rdData
+        rdLineWord
+        //myLoD2hPushStm.busPayload.data//,
+        //init=
+      )
+      when (myLoD2hPushStm.ready) {
+        rState := State.RECV_LINE_FROM_HI_BUS_POST
+      }
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST) {
       lineAttrsRam.io.rdEn := False
@@ -6449,12 +6473,15 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     is (State.RECV_LINE_FROM_HI_BUS_POST_4) {
       lineAttrsRam.io.rdEn := False
       lineWordRam.io.rdEn := False
+      doLineWordRamReadSync(
+        busAddr=rSavedLoH2dPayload.addr,
+        setEn=0,
+      )
       rState := State.RECV_LINE_FROM_HI_BUS_POST_3
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_3) {
       lineAttrsRam.io.rdEn := False
-      lineWordRam.io.rdEn := False
-      myLoD2hPushStm.valid := False
+      lineWordRam.io.rdEn := True
       rState := State.RECV_LINE_FROM_HI_BUS_POST_2
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_2) {
@@ -6465,7 +6492,26 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     is (State.RECV_LINE_FROM_HI_BUS_POST_1) {
       lineAttrsRam.io.rdEn := False
       lineWordRam.io.rdEn := False
-      rState := State.RECV_LINE_FROM_HI_BUS_POST
+      //rState := State.RECV_LINE_FROM_HI_BUS_POST
+
+      myLoD2hPushStm.valid := True
+
+      myLoD2hPushStm.busPayload.src := (
+        //RegNext
+        (
+          rSavedLoH2dPayload.src//,
+          //init=rSavedLoH2dPayload.src.getZero
+        )
+      )
+      myLoD2hPushStm.busPayload.data := RegNext(
+        //lineWordRam.io.rdData
+        rdLineWord
+        //myLoD2hPushStm.busPayload.data//,
+        //init=
+      )
+      when (myLoD2hPushStm.ready) {
+        rState := State.RECV_LINE_FROM_HI_BUS_POST
+      }
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST) {
       lineAttrsRam.io.rdEn := False
@@ -6478,9 +6524,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     is (State.WAIT_D2H_FIFO_EMPTY) {
       lineAttrsRam.io.rdEn := False
       lineWordRam.io.rdEn := False
-      //myFifoThingDoStall := False
 
-      when (
+      when (  
         !myLoD2hFifo.io.pop.valid
         //myLoD2hFifo.io.push.ready
       ) {
