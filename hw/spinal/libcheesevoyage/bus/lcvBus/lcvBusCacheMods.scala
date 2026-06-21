@@ -1075,11 +1075,18 @@ case class LcvBusDoStallH2dReptThing(
       that=io.finishTxn,
       when=io.finishTxn.fire,
       length=(
-        LcvBusDoStallFifoThing.fifoDepthMain //+ 1
+        LcvBusDoStallFifoThing.fifoDepthMain + 1
       ),
       init=io.finishTxn.getZero,
     )
   )
+  //val rSortOfHistFinishTxn = (
+  //  Vec.fill(
+  //    LcvBusDoStallFifoThing.fifoDepthMain + 1
+  //  )(
+  //    Reg(cloneOf(io.finishTxn))
+  //  )
+  //)
   val myFinishTxnFindFirst0 = (
     myHistFinishTxn.sFindFirst(
       item => (
@@ -1235,6 +1242,9 @@ case class LcvBusDoStallH2dReptThing(
       //}
     }
     is (State.CHECK_IF_TXN_FINISHED_1) {
+      for (idx <- 0 until myHistFinishTxn.size) {
+        myHistFinishTxn(idx).valid := False
+      }
       switch (
         RegNext(myFinishTxnFindFirst0._1)
         ## RegNext(myFinishTxnFindFirst1._1)
@@ -1242,22 +1252,40 @@ case class LcvBusDoStallH2dReptThing(
         ## rSavedLoH2dPopInfoVec.last.fire
       ) {
         is (M"10-0") {
+          //myHistFinishTxn(RegNext(myFinishTxnFindFirst0._2)).valid := (
+          //  False
+          //)
           rSavedLoH2dPopInfoVec.head.valid := False
           rState := State.MAIN
         }
         is (M"10-1") {
+          //myHistFinishTxn(RegNext(myFinishTxnFindFirst0._2)).valid := (
+          //  False
+          //)
           rSavedLoH2dPopInfoVec.head.valid := False
           rState := State.IN_STALL_0
         }
         is (M"010-") {
+          //myHistFinishTxn(RegNext(myFinishTxnFindFirst1._2)).valid := (
+          //  False
+          //)
           rSavedLoH2dPopInfoVec.last.valid := False
           rState := State.MAIN
         }
         is (M"011-") {
+          //myHistFinishTxn(RegNext(myFinishTxnFindFirst1._2)).valid := (
+          //  False
+          //)
           rSavedLoH2dPopInfoVec.last.valid := False
           rState := State.IN_STALL_0
         }
         is (M"11--") {
+          //myHistFinishTxn(RegNext(myFinishTxnFindFirst0._2)).valid := (
+          //  False
+          //)
+          //myHistFinishTxn(RegNext(myFinishTxnFindFirst1._2)).valid := (
+          //  False
+          //)
           rSavedLoH2dPopInfoVec.head.valid := False
           rSavedLoH2dPopInfoVec.last.valid := False
           rState := State.MAIN
