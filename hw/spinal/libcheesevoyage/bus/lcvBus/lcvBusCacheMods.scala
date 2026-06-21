@@ -1029,6 +1029,8 @@ case class LcvBusDoStallH2dReptThing(
       //DO_REPEAT_BOTH_0_THEN_1,
       //DO_REPEAT_BOTH_1_THEN_0
       //MAYBE_FILL_FIFO,
+      CHECK_IF_TXN_FINISHED_0,
+      CHECK_IF_TXN_FINISHED_1,
       IN_STALL_0,
       IN_STALL_1,
       IN_STALL_2
@@ -1068,14 +1070,38 @@ case class LcvBusDoStallH2dReptThing(
   //  ),
   //)
 
-  //val myHistFinishTxn = (
-  //  History[Flow[UInt]](
-  //    that=io.finishTxn,
-  //    when=io.finishTxn.fire,
-  //    length=(LcvBusDoStallFifoThing.fifoDepthMain + 1),
-  //    init=io.finishTxn.getZero,
-  //  )
-  //)
+  val myHistFinishTxn = (
+    History[Flow[UInt]](
+      that=io.finishTxn,
+      when=io.finishTxn.fire,
+      length=(LcvBusDoStallFifoThing.fifoDepthMain + 1),
+      init=io.finishTxn.getZero,
+    )
+  )
+  val myFinishTxnFindFirst0 = (
+    myHistFinishTxn.sFindFirst(
+      item => (
+        rSavedLoH2dPopInfoVec.head.fire
+        && item.fire
+        && (
+          rSavedLoH2dPopInfoVec.head.txnCnt
+          === item.payload
+        )
+      )
+    )
+  )
+  val myFinishTxnFindFirst1 = (
+    myHistFinishTxn.sFindFirst(
+      item => (
+        rSavedLoH2dPopInfoVec.last.fire
+        && item.fire
+        && (
+          rSavedLoH2dPopInfoVec.last.txnCnt
+          === item.payload
+        )
+      )
+    )
+  )
 
   //val myPopDoThrowCond = Bool()
   //myPopDoThrowCond := (
@@ -1138,7 +1164,8 @@ case class LcvBusDoStallH2dReptThing(
       when (goToNextStateCond) {
         rState := (
           //State.MAYBE_FILL_FIFO
-          State.IN_STALL_0
+          //State.IN_STALL_0
+          State.CHECK_IF_TXN_FINISHED_0
         )
       }
 
@@ -1196,6 +1223,41 @@ case class LcvBusDoStallH2dReptThing(
         default {
         }
       }
+    }
+    is (State.CHECK_IF_TXN_FINISHED_0) {
+      rState := (
+        //State.IN_STALL_0
+        State.CHECK_IF_TXN_FINISHED_1
+      )
+      //for (idx <- 0 until rSavedLoH2dPopInfoVec.size) {
+      //}
+    }
+    is (State.CHECK_IF_TXN_FINISHED_1) {
+      switch (
+        RegNext(myFinishTxnFindFirst0._1)
+        ## RegNext(myFinishTxnFindFirst1._1)
+      ) {
+        is (M"10") {
+          rSavedLoH2dPopInfoVec.head.valid := False
+          rState := State.IN_STALL_0
+        }
+        is (M"01") {
+          rSavedLoH2dPopInfoVec.last.valid := False
+          rState := State.IN_STALL_0
+        }
+        is (M"11") {
+          rSavedLoH2dPopInfoVec.head.valid := False
+          rSavedLoH2dPopInfoVec.last.valid := False
+          rState := State.MAIN
+        }
+        default {
+          rState := State.IN_STALL_0
+        }
+      }
+      //when (RegNext(myFinishTxnFindFirst0._1)) {
+      //}
+      //when (RegNext(myFinishTxnFindFirst1._1)) {
+      //}
     }
     is (State.IN_STALL_0) {
       myPopStm.valid := True
@@ -1323,7 +1385,8 @@ case class LcvBusDoStallH2dReptThing(
         //  // "FIFO"'s first-in element is `0` (`head`)
         //}
         is (M"11--") {
-          rState := State.IN_STALL_0
+          //rState := State.IN_STALL_0
+          rState := State.CHECK_IF_TXN_FINISHED_0
         }
         default {
         }
