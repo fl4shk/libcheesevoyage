@@ -6052,8 +6052,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           //M"111"
           M"11-1"
         ) {
-          // store, cache hit, don't care if line is dirty
+          // store, cache hit, don't care if line is currently dirty
           lineWordRam.io.wrEn := True
+          lineAttrsRam.io.wrEn := True
+          wrLineAttrs.dirty := True
+
           //mySelLoH2dPopStm.ready := True
           myLoD2hPushStm.valid := True
           if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
@@ -6072,6 +6075,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             myFifoThingDoStall := True
             rState := State.STORE_HIT_DO_STALL_PIPE_1
             myTempUpdateSavedLoH2dPayloadCond := False
+          } otherwise {
           }
         }
         default {
