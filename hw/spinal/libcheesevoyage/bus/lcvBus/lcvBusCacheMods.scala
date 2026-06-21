@@ -1215,11 +1215,29 @@ case class LcvBusDoStallH2dReptThing(
           init=False
         )
         ## goToNextStateCond
+        //## rPrevRewriteIdx
+        ## rSavedLoH2dPopInfoVec.head.fire
+        ## rSavedLoH2dPopInfoVec.last.fire
       ) {
-        is (M"10") {
+        is (M"1010") {
           rState := State.MAIN
+          rSavedLoH2dPopInfoVec.head.valid := False
+          rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
         }
-        is (M"11") {
+        is (M"1001") {
+          rState := State.MAIN
+          rSavedLoH2dPopInfoVec.last.valid := False
+          rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
+        }
+        //is (M"10011") {
+        //  // the previously-written index was `True`, which means the
+        //  // "FIFO"'s first-in element is `1` (`last`)
+        //}
+        //is (M"10111") {
+        //  // the previously-written index was `False`, which means the
+        //  // "FIFO"'s first-in element is `0` (`head`)
+        //}
+        is (M"11--") {
           rState := State.IN_STALL_0
         }
         default {
