@@ -4822,8 +4822,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       init=False
     )
   )
-  //val myTempUpdateSavedLoH2dPayloadCond = Bool()
-  //myTempUpdateSavedLoH2dPayloadCond := True
+  val myTempUpdateSavedLoH2dPayloadCond = Bool()
+  myTempUpdateSavedLoH2dPayloadCond := True
 
   //--------
   val rHadLoH2dFinish = Reg(Bool(), init=False)
@@ -4874,7 +4874,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
 
       when (
         rMyTempDoSaveCond(0)
-        ////&& myTempUpdateSavedLoH2dPayloadCond
+        && myTempUpdateSavedLoH2dPayloadCond
         //RegNext(
         //  RegNext(mySelLoH2dPopStm.fire, init=False),
         //  init=False
@@ -4884,6 +4884,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       }
       when (
         rMyTempDoSaveCond(1)
+        && myTempUpdateSavedLoH2dPayloadCond
         //RegNext(
         //  RegNext(mySelLoH2dPopStm.fire, init=False),
         //  init=False
@@ -4940,6 +4941,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
             //True
             False
           )
+          myTempUpdateSavedLoH2dPayloadCond := False
         }
 
         //is (
@@ -4952,6 +4954,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         //    //True
         //    False
         //  )
+        //  myTempUpdateSavedLoH2dPayloadCond := False
         //}
 
         is (
@@ -4985,7 +4988,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
             mySelLoH2dPopStm.ready := False
             myFifoThingDoStall := True
             rState := State.LOAD_HIT_DO_STALL_PIPE_3
-            //myTempUpdateSavedLoH2dPayloadCond := False
+            myTempUpdateSavedLoH2dPayloadCond := False
           }
         }
         //is (
@@ -5936,8 +5939,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       init=False
     )
   )
-  //val myTempUpdateSavedLoH2dPayloadCond = Bool()
-  //myTempUpdateSavedLoH2dPayloadCond := True
+  val myTempUpdateSavedLoH2dPayloadCond = Bool()
+  myTempUpdateSavedLoH2dPayloadCond := True
 
   //--------
   val rHadLoH2dFinish = Reg(Bool(), init=False)
@@ -5988,7 +5991,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
 
       when (
         rMyTempDoSaveCond(0)
-        ////&& myTempUpdateSavedLoH2dPayloadCond
+        && myTempUpdateSavedLoH2dPayloadCond
         //&& RegNext(
         //  RegNext(mySelLoH2dPopStm.fire, init=False),
         //  init=False
@@ -5998,6 +6001,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       }
       when (
         rMyTempDoSaveCond(1)
+        && myTempUpdateSavedLoH2dPayloadCond
         //&& RegNext(
         //  RegNext(mySelLoH2dPopStm.fire, init=False),
         //  init=False
@@ -6007,6 +6011,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       }
       when (
         rMyTempDoSaveCond(2)
+        && myTempUpdateSavedLoH2dPayloadCond
         //RegNext(
         //  RegNext(mySelLoH2dPopStm.fire, init=False),
         //  init=False
@@ -6053,6 +6058,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             //True
             False
           )
+          myTempUpdateSavedLoH2dPayloadCond := False
         }
 
         is (
@@ -6065,6 +6071,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             //True
             False
           )
+          myTempUpdateSavedLoH2dPayloadCond := False
         }
 
         is (
@@ -6098,7 +6105,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             mySelLoH2dPopStm.ready := False
             myFifoThingDoStall := True
             rState := State.LOAD_HIT_DO_STALL_PIPE_3
-            //myTempUpdateSavedLoH2dPayloadCond := False
+            myTempUpdateSavedLoH2dPayloadCond := False
           }
         }
         is (
@@ -6130,7 +6137,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             mySelLoH2dPopStm.ready := False
             myFifoThingDoStall := True
             rState := State.STORE_HIT_DO_STALL_PIPE_1
-            //myTempUpdateSavedLoH2dPayloadCond := False
+            myTempUpdateSavedLoH2dPayloadCond := False
           } otherwise {
           }
         }
