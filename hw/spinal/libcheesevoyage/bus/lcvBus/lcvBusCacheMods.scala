@@ -1078,8 +1078,9 @@ case class LcvBusDoStallH2dReptThing(
 
   val myPopDoThrowCond = Bool()
   myPopDoThrowCond := (
-    myPopStm.valid
-    && (
+    //myPopStm.valid
+    //&& 
+    (
       (
         io.finishTxn.fire
         && (
