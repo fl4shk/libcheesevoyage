@@ -1067,49 +1067,50 @@ case class LcvBusDoStallH2dReptThing(
   //    )
   //  ),
   //)
-  val myHistFinishTxn = (
-    History[Flow[UInt]](
-      that=io.finishTxn,
-      when=io.finishTxn.fire,
-      length=(LcvBusDoStallFifoThing.fifoDepthMain + 1),
-      init=io.finishTxn.getZero,
-    )
-  )
 
-  val myPopDoThrowCond = Bool()
-  myPopDoThrowCond := (
-    //myPopStm.valid
-    //&& 
-    (
-      (
-        io.finishTxn.fire
-        && (
-          myPopStm.txnCnt
-          === io.finishTxn.payload
-        )
-      )
-      || (
-        myHistFinishTxn(1).fire
-        && (
-          myPopStm.txnCnt
-          === myHistFinishTxn(1).payload
-        )
-      )
-      || (
-        myHistFinishTxn(2).fire
-        && (
-          myPopStm.txnCnt
-          === myHistFinishTxn(2).payload
-        )
-      )
-    )
-  )
+  //val myHistFinishTxn = (
+  //  History[Flow[UInt]](
+  //    that=io.finishTxn,
+  //    when=io.finishTxn.fire,
+  //    length=(LcvBusDoStallFifoThing.fifoDepthMain + 1),
+  //    init=io.finishTxn.getZero,
+  //  )
+  //)
 
-  io.pop << myPopStm.throwWhen(
-    //myPopStm.valid
-    //&& myPopStm
-    myPopDoThrowCond
-  )
+  //val myPopDoThrowCond = Bool()
+  //myPopDoThrowCond := (
+  //  //myPopStm.valid
+  //  //&& 
+  //  (
+  //    (
+  //      io.finishTxn.fire
+  //      && (
+  //        myPopStm.txnCnt
+  //        === io.finishTxn.payload
+  //      )
+  //    )
+  //    || (
+  //      myHistFinishTxn(1).fire
+  //      && (
+  //        myPopStm.txnCnt
+  //        === myHistFinishTxn(1).payload
+  //      )
+  //    )
+  //    || (
+  //      myHistFinishTxn(2).fire
+  //      && (
+  //        myPopStm.txnCnt
+  //        === myHistFinishTxn(2).payload
+  //      )
+  //    )
+  //  )
+  //)
+
+  //io.pop << myPopStm.throwWhen(
+  //  //myPopStm.valid
+  //  //&& myPopStm
+  //  myPopDoThrowCond
+  //)
 
   //when (
   //  myPopStm.ready
@@ -1117,6 +1118,7 @@ case class LcvBusDoStallH2dReptThing(
   //) {
   //  
   //}
+  io.pop << myPopStm
 
   switch (rState) {
     is (State.MAIN) {
