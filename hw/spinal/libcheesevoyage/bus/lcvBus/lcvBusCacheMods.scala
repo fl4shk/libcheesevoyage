@@ -1074,7 +1074,9 @@ case class LcvBusDoStallH2dReptThing(
     History[Flow[UInt]](
       that=io.finishTxn,
       when=io.finishTxn.fire,
-      length=(LcvBusDoStallFifoThing.fifoDepthMain + 1),
+      length=(
+        LcvBusDoStallFifoThing.fifoDepthMain //+ 1
+      ),
       init=io.finishTxn.getZero,
     )
   )
