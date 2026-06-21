@@ -6055,6 +6055,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           // store, cache hit, don't care if line is currently dirty
           lineWordRam.io.wrEn := True
           lineAttrsRam.io.wrEn := True
+
+          wrLineAttrs := rdLineAttrs
           wrLineAttrs.dirty := True
 
           //mySelLoH2dPopStm.ready := True
