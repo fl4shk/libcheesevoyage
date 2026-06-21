@@ -1107,6 +1107,7 @@ case class LcvBusDoStallH2dReptThing(
 
       when (io.pop.ready) {
         rState := State.MAIN
+        rPrevRewriteIdx.lsb := !rPrevRewriteIdx.lsb
       }
 
       switch (
@@ -1118,12 +1119,12 @@ case class LcvBusDoStallH2dReptThing(
         is (M"1-10") {
           io.pop.payload := rSavedLoH2dPopInfoVec.head.payload
           rSavedLoH2dPopInfoVec.head.valid := False
-          rPrevRewriteIdx.lsb := False
+          //rPrevRewriteIdx.lsb := False
         }
         is (M"1-01") {
           io.pop.payload := rSavedLoH2dPopInfoVec.last.payload
           rSavedLoH2dPopInfoVec.last.valid := False
-          rPrevRewriteIdx.lsb := False
+          //rPrevRewriteIdx.lsb := False
         }
         is (M"1011") {
           // the previously-written index was `True`, which means the
