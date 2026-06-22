@@ -994,7 +994,7 @@ case class LcvBusDoStallH2dReptThing(
     ) {
       rSavedLoH2dPopInfoVec.head.valid := True
       rSavedLoH2dPopInfoVec.head.payload := io.push.payload
-      io.push.ready := True
+      //io.push.ready := True
     } otherwise {
       io.pop << io.push
     }
