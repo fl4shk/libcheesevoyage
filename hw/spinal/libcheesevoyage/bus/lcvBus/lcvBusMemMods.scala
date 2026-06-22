@@ -71,7 +71,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   cfg: LcvBusMemConfig,
 ) extends Component {
   //--------
-  def busCfg = cfg.busCfg
+  //def busCfg = cfg.busCfg
   def myBusCfg = cfg.myBusCfg
 
   def myFifoThingBusCfg = cfg.myFifoThingBusCfg
@@ -154,7 +154,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   //myH2dDoStallFifoThing.io.doStall := myFifoThingDoStall
 
   val myH2dToWrByteEnStmAdapter = (
-    !busCfg.haveByteEn
+    !myBusCfg.haveByteEn
   ) generate (LcvBusH2dShiftedDataEtcStreamAdapter(
     cfg=LcvBusH2dShiftedDataEtcStreamAdapterConfig(
       loBusCfg=myFifoThingBusCfg,
@@ -181,7 +181,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   def mySelH2dPopPayload = mySelH2dPopStm.payload//.busPayload
 
   io.bus.h2dBus.translateInto(
-    if (!busCfg.haveByteEn) (
+    if (!myBusCfg.haveByteEn) (
       myH2dToWrByteEnStmAdapter.io.loH2dBus
     ) else (
       myMainH2dPopStm
@@ -203,7 +203,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
     }
   )
 
-  if (!busCfg.haveByteEn) {
+  if (!myBusCfg.haveByteEn) {
     myH2dToWrByteEnStmAdapter.io.hiH2dBus.translateInto(
       myMainH2dPopStm
     )(
@@ -252,11 +252,11 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   def rSavedBusAddr = rSavedH2dPayload.addr
 
   val myD2hShiftedDataStmAdapter = (
-    !cfg.busCfg.haveByteEn
+    !myBusCfg.haveByteEn
   ) generate (
     LcvBusD2hShiftedDataEtcStreamAdapter(
       cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(
-        busCfg=cfg.busCfg
+        busCfg=myBusCfg
       )
     )
   )
@@ -276,7 +276,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   //)
 
   val myD2hFifo = StreamFifo(
-    dataType=LcvBusD2hPayload(cfg=cfg.busCfg),
+    dataType=LcvBusD2hPayload(cfg=myBusCfg),
     depth=(myFifoThingBusCfg.maxBurstSizeMinus1 + 1),
     latency=cfg.busD2hFifoLatency,
     forFMax=true,
