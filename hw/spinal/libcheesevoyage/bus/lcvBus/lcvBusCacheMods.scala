@@ -994,6 +994,7 @@ case class LcvBusDoStallH2dReptThing(
     ) {
       rSavedLoH2dPopInfoVec.head.valid := True
       rSavedLoH2dPopInfoVec.head.payload := io.push.payload
+      io.push.ready := True
     } otherwise {
       io.pop << io.push
     }
@@ -4928,7 +4929,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       myFifoThingDoStall := False
       myLoD2hPushStm.valid := False
       //doIgnoreInvalidFifoThingPopCnt()
-      //doPopLoH2dFifo()
+      doPopLoH2dFifo()
 
       when (
         rMyTempDoSaveCond(0)
@@ -5055,7 +5056,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
             rState := State.LOAD_HIT_DO_STALL_PIPE_3
             //myTempUpdateSavedLoH2dPayloadCond := False
           } otherwise {
-            doPopLoH2dFifo()
+            //doPopLoH2dFifo()
           }
         }
         //is (
@@ -5084,7 +5085,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         //    rState := State.STORE_HIT_DO_STALL_PIPE_1
         //    //myTempUpdateSavedLoH2dPayloadCond := False
         //  } otherwise {
-        //    doPopLoH2dFifo()
+        //    //doPopLoH2dFifo()
         //  }
         //}
         default {
@@ -6083,7 +6084,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       myFifoThingDoStall := False
       myLoD2hPushStm.valid := False
       //doIgnoreInvalidFifoThingPopCnt()
-      //doPopLoH2dFifo()
+      doPopLoH2dFifo()
 
       when (
         rMyTempDoSaveCond(0)
@@ -6210,7 +6211,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             rState := State.LOAD_HIT_DO_STALL_PIPE_3
             //myTempUpdateSavedLoH2dPayloadCond := False
           } otherwise {
-            doPopLoH2dFifo()
+            //doPopLoH2dFifo()
           }
         }
         is (
@@ -6244,7 +6245,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             rState := State.STORE_HIT_DO_STALL_PIPE_1
             //myTempUpdateSavedLoH2dPayloadCond := False
           } otherwise {
-            doPopLoH2dFifo()
+            //doPopLoH2dFifo()
           }
         }
         default {
