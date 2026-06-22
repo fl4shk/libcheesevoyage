@@ -440,7 +440,7 @@ case class LcvBusDoStallFifoThing(
   //) generate (CalcLcvBusH2dWrShiftedDataAndByteEnIo(
   //  io.myPopCfg=io.myPopCfg
   //))
-  val myH2dToWrByteEnStmAdapter = (
+  val myLoH2dToWrByteEnStmAdapter = (
     !busCfg.haveByteEn
   ) generate (LcvBusH2dShiftedDataEtcStreamAdapter(
     cfg=LcvBusH2dShiftedDataEtcStreamAdapterConfig(
@@ -469,12 +469,12 @@ case class LcvBusDoStallFifoThing(
   myPopStm.valid := False
   myPopStm.payload := myPopStm.payload.getZero
   if (!busCfg.haveByteEn) {
-    myPopStm.translateInto(myH2dToWrByteEnStmAdapter.io.loH2dBus)(
+    myPopStm.translateInto(myLoH2dToWrByteEnStmAdapter.io.loH2dBus)(
       dataAssignment=(outp, inp) => {
         outp := inp.busPayload
       }
     )
-    myH2dToWrByteEnStmAdapter.io.hiH2dBus.translateInto(
+    myLoH2dToWrByteEnStmAdapter.io.hiH2dBus.translateInto(
       myAlmostFinalPopStm
     )(
       dataAssignment=(outp, inp) => {
@@ -2640,14 +2640,14 @@ private[libcheesevoyage] case class LcvBusCacheBaseArea(
   )
   //val myLoH2dForkStm = StreamFork(
   //)
-  //val myH2dToWrByteEnStmAdapter = (
+  //val myLoH2dToWrByteEnStmAdapter = (
   //  LcvBusH2dToWrByteEnStreamAdapter(
   //    cfg=LcvBusH2dToWrByteEnStreamAdapterConfig(
   //      loBusCfg=loBusCfg,
   //    )
   //  )
   //)
-  //myH2dToWrByteEnStmAdapter.io.loH2dBus << loH2dDoStallFifoThing.io.pop
+  //myLoH2dToWrByteEnStmAdapter.io.loH2dBus << loH2dDoStallFifoThing.io.pop
 
   val myLoH2dPopNoThrowArea = (
     !optIncludeLoH2dPopThrow
@@ -4421,7 +4421,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   //)
   //myLoH2dDoStallFifoThing.io.doStall := myFifoThingDoStall
 
-  val myH2dToWrByteEnStmAdapter = (
+  val myLoH2dToWrByteEnStmAdapter = (
     !loBusCfg.haveByteEn
   ) generate (LcvBusH2dShiftedDataEtcStreamAdapter(
     cfg=LcvBusH2dShiftedDataEtcStreamAdapterConfig(
@@ -4450,7 +4450,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
 
   io.loBus.h2dBus.translateInto(
     if (!loBusCfg.haveByteEn) (
-      myH2dToWrByteEnStmAdapter.io.loH2dBus
+      myLoH2dToWrByteEnStmAdapter.io.loH2dBus
     ) else (
       myMainLoH2dPopStm
     )
@@ -4472,13 +4472,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   )
 
   if (!loBusCfg.haveByteEn) {
-    myH2dToWrByteEnStmAdapter.io.hiH2dBus.translateInto(
+    myLoH2dToWrByteEnStmAdapter.io.hiH2dBus.translateInto(
       myMainLoH2dPopStm
     )(
       dataAssignment=(outp, inp) => {
         outp := inp
         outp.txnCnt.allowOverride
-        outp.txnCnt := myH2dToWrByteEnStmAdapter.io.loH2dBus.txnCnt
+        outp.txnCnt := myLoH2dToWrByteEnStmAdapter.io.loH2dBus.txnCnt
       }
     )
   }
@@ -5567,7 +5567,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   //)
   //myLoH2dDoStallFifoThing.io.doStall := myFifoThingDoStall
 
-  val myH2dToWrByteEnStmAdapter = (
+  val myLoH2dToWrByteEnStmAdapter = (
     !loBusCfg.haveByteEn
   ) generate (LcvBusH2dShiftedDataEtcStreamAdapter(
     cfg=LcvBusH2dShiftedDataEtcStreamAdapterConfig(
@@ -5596,7 +5596,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
 
   io.loBus.h2dBus.translateInto(
     if (!loBusCfg.haveByteEn) (
-      myH2dToWrByteEnStmAdapter.io.loH2dBus
+      myLoH2dToWrByteEnStmAdapter.io.loH2dBus
     ) else (
       myMainLoH2dPopStm
     )
@@ -5618,13 +5618,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   )
 
   if (!loBusCfg.haveByteEn) {
-    myH2dToWrByteEnStmAdapter.io.hiH2dBus.translateInto(
+    myLoH2dToWrByteEnStmAdapter.io.hiH2dBus.translateInto(
       myMainLoH2dPopStm
     )(
       dataAssignment=(outp, inp) => {
         outp := inp
         outp.txnCnt.allowOverride
-        outp.txnCnt := myH2dToWrByteEnStmAdapter.io.loH2dBus.txnCnt
+        outp.txnCnt := myLoH2dToWrByteEnStmAdapter.io.loH2dBus.txnCnt
       }
     )
   }
