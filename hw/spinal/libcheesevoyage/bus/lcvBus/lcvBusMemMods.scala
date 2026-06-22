@@ -491,7 +491,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
       myFifoThingDoStall := False
       myD2hPushStm.valid := False
       //doIgnoreInvalidFifoThingPopCnt()
-      doPopH2dFifo()
+      //doPopH2dFifo()
 
       when (
         rMyTempDoSaveCond(0)
@@ -618,6 +618,8 @@ private[libcheesevoyage] case class LcvBusMemImpl(
             myFifoThingDoStall := True
             rState := State.LOAD_HIT_DO_STALL_PIPE_3
             //myTempUpdateSavedH2dPayloadCond := False
+          } otherwise {
+            doPopH2dFifo()
           }
         }
         is (
@@ -648,6 +650,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
             rState := State.STORE_HIT_DO_STALL_PIPE_1
             //myTempUpdateSavedH2dPayloadCond := False
           } otherwise {
+            doPopH2dFifo()
           }
         }
         default {

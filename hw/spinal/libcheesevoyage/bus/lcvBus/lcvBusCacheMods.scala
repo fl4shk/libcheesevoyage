@@ -4926,7 +4926,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       myFifoThingDoStall := False
       myLoD2hPushStm.valid := False
       //doIgnoreInvalidFifoThingPopCnt()
-      doPopLoH2dFifo()
+      //doPopLoH2dFifo()
 
       when (
         rMyTempDoSaveCond(0)
@@ -5052,6 +5052,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
             myFifoThingDoStall := True
             rState := State.LOAD_HIT_DO_STALL_PIPE_3
             //myTempUpdateSavedLoH2dPayloadCond := False
+          } otherwise {
+            doPopLoH2dFifo()
           }
         }
         //is (
@@ -5079,6 +5081,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         //    myFifoThingDoStall := True
         //    rState := State.STORE_HIT_DO_STALL_PIPE_1
         //    //myTempUpdateSavedLoH2dPayloadCond := False
+        //  } otherwise {
+        //    doPopLoH2dFifo()
         //  }
         //}
         default {
@@ -6077,7 +6081,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       myFifoThingDoStall := False
       myLoD2hPushStm.valid := False
       //doIgnoreInvalidFifoThingPopCnt()
-      doPopLoH2dFifo()
+      //doPopLoH2dFifo()
 
       when (
         rMyTempDoSaveCond(0)
@@ -6150,6 +6154,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           // cache miss
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
           myFifoThingDoStall := True
+          //doPopLoH2dFifo()
           mySelLoH2dPopStm.ready := (
             //True
             False
@@ -6202,6 +6207,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             myFifoThingDoStall := True
             rState := State.LOAD_HIT_DO_STALL_PIPE_3
             //myTempUpdateSavedLoH2dPayloadCond := False
+          } otherwise {
+            doPopLoH2dFifo()
           }
         }
         is (
@@ -6235,6 +6242,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             rState := State.STORE_HIT_DO_STALL_PIPE_1
             //myTempUpdateSavedLoH2dPayloadCond := False
           } otherwise {
+            doPopLoH2dFifo()
           }
         }
         default {
