@@ -506,18 +506,20 @@ private[libcheesevoyage] case class LcvBusMemImpl(
           rDel2H2dPayload
         )
       }
-      when (
-        rMyTempDoSaveCond(1)
-        //&& myTempUpdateSavedH2dPayloadCond
-        //&& RegNext(
-        //  RegNext(mySelH2dPopStm.fire, init=False),
-        //  init=False
-        //)
-      ) {
-        rSavedH2dPayload.byteSize := (
-          //rH2dPayload.byteSize
-          rDel2H2dPayload.byteSize
-        )
+      if (rSavedH2dPayload.byteSize != null) {
+        when (
+          rMyTempDoSaveCond(1)
+          //&& myTempUpdateSavedH2dPayloadCond
+          //&& RegNext(
+          //  RegNext(mySelH2dPopStm.fire, init=False),
+          //  init=False
+          //)
+        ) {
+          rSavedH2dPayload.byteSize := (
+            //rH2dPayload.byteSize
+            rDel2H2dPayload.byteSize
+          )
+        }
       }
       when (
         rMyTempDoSaveCond(2)
