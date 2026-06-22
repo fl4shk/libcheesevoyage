@@ -890,48 +890,48 @@ case class PipeRegFileDoFwdArea[
               ).payload.valid
             )
             //if (kdx < fwd.numMyUpExtDel2 /*- 1*/) {
-              if (
-                //kdx == 0
-                kdx <= forFmaxStageMax
-                //kdx <= 1
-                //false
-                || kdx == fwd.numMyUpExtDel2
-              ) {
-                if (
-                  //kdx != 0
-                  //&& kdx != 1
-                  //&& kdx != fwd.numMyUpExtDel2
-                  true
-                ) {
-                  fwd.myFwdStateData(ydx)(zdx)(kdx) := (
-                    RegNext(
-                      fwd.myFwdStateData(ydx)(zdx)(kdx),
-                      init=fwd.myFwdStateData(ydx)(zdx)(kdx).getZero
-                    )
-                  )
-                  when (
-                    //fwd.myUpIsValid
-                    //&& 
-                    myFindFirstValid
-                  ) {
-                    fwd.myFwdStateData(ydx)(zdx)(kdx) := (
-                      fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
-                        extIdxUp
-                      )(
-                        kdx
-                      ).payload.payload
-                    )
-                  }
-                } else {
-                  fwd.myFwdStateData(ydx)(zdx)(kdx) := (
-                    fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
-                      extIdxUp
-                    )(
-                      kdx
-                    ).payload.payload
-                  )
-                }
-              } else {
+              //if (
+              //  //kdx == 0
+              //  kdx <= forFmaxStageMax
+              //  //kdx <= 1
+              //  //false
+              //  || kdx == fwd.numMyUpExtDel2
+              //) {
+              //  if (
+              //    //kdx != 0
+              //    //&& kdx != 1
+              //    //&& kdx != fwd.numMyUpExtDel2
+              //    true
+              //  ) {
+              //    fwd.myFwdStateData(ydx)(zdx)(kdx) := (
+              //      RegNext(
+              //        fwd.myFwdStateData(ydx)(zdx)(kdx),
+              //        init=fwd.myFwdStateData(ydx)(zdx)(kdx).getZero
+              //      )
+              //    )
+              //    when (
+              //      //fwd.myUpIsValid
+              //      //&& 
+              //      myFindFirstValid
+              //    ) {
+              //      fwd.myFwdStateData(ydx)(zdx)(kdx) := (
+              //        fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+              //          extIdxUp
+              //        )(
+              //          kdx
+              //        ).payload.payload
+              //      )
+              //    }
+              //  } else {
+              //    fwd.myFwdStateData(ydx)(zdx)(kdx) := (
+              //      fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+              //        extIdxUp
+              //      )(
+              //        kdx
+              //      ).payload.payload
+              //    )
+              //  }
+              //} else {
                 //println(
                 //  //s"find me: kdx != 0: ${kdx} ${fwd.numMyUpExtDel2}"
                 //  s"find me: ${kdx} ${fwd.numMyUpExtDel2}"
@@ -957,7 +957,7 @@ case class PipeRegFileDoFwdArea[
                     ).payload.payload
                   )
                 }
-              }
+              //}
               when (
                 fwd.myUpIsValid
                 //&& rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
