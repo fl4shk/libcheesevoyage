@@ -5390,12 +5390,16 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
           //init=rSavedLoH2dPayload.src.getZero
         )
       )
-      myLoD2hPushStm.busPayload.data := RegNext(
-        //lineWordRam.io.rdData
-        rdLineWord
-        //myLoD2hPushStm.busPayload.data//,
-        //init=
-      )
+      when (RegNext(
+        rose(rState === State.RECV_LINE_FROM_HI_BUS_POST_2)
+      )) {
+        myLoD2hPushStm.busPayload.data := RegNext(
+          //lineWordRam.io.rdData
+          rdLineWord
+          //myLoD2hPushStm.busPayload.data//,
+          //init=
+        )
+      }
       when (myLoD2hPushStm.ready) {
         rState := State.RECV_LINE_FROM_HI_BUS_POST
       }
@@ -5510,6 +5514,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       RECV_LINE_FROM_HI_BUS_PIPE_1,
       RECV_LINE_FROM_HI_BUS,
       RECV_LINE_FROM_HI_BUS_POST_WRITE,
+      RECV_LINE_FROM_HI_BUS_POST_5,
       RECV_LINE_FROM_HI_BUS_POST_4,
       RECV_LINE_FROM_HI_BUS_POST_3,
       RECV_LINE_FROM_HI_BUS_POST_2,
@@ -6502,7 +6507,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         )
         when ((io.hiBus.d2hBus.burstLast)) {
           when (!rSavedLoH2dPayload.isWrite) {
-            rState := State.RECV_LINE_FROM_HI_BUS_POST_4
+            rState := State.RECV_LINE_FROM_HI_BUS_POST_5
           } otherwise {
             rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
           }
@@ -6518,6 +6523,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         byteEn=Some(rSavedLoH2dPayload.byteEn),
         setEn=true,
       )
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_5
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_5) {
+      lineWordRam.io.rdEn := False
+      lineAttrsRam.io.rdEn := False
       rState := State.RECV_LINE_FROM_HI_BUS_POST_4
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_4) {
@@ -6553,6 +6563,18 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           //init=rSavedLoH2dPayload.src.getZero
         )
       )
+
+      when (RegNext(
+        rose(rState === State.RECV_LINE_FROM_HI_BUS_POST_2)
+      )) {
+        myLoD2hPushStm.busPayload.data := RegNext(
+          //lineWordRam.io.rdData
+          rdLineWord
+          //myLoD2hPushStm.busPayload.data//,
+          //init=
+        )
+      }
+
       myLoD2hPushStm.busPayload.data := RegNext(
         //lineWordRam.io.rdData
         rdLineWord
