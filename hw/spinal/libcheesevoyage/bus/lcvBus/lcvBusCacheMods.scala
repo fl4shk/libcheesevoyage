@@ -987,7 +987,7 @@ case class LcvBusDoStallH2dReptThing(
   }
 
   when (!rSavedLoH2dPopInfoVec.head.fire) {
-    //io.pop << io.push
+    io.pop << io.push
     when (
       io.push.valid
       && rose(io.doStall)
@@ -995,9 +995,10 @@ case class LcvBusDoStallH2dReptThing(
       rSavedLoH2dPopInfoVec.head.valid := True
       rSavedLoH2dPopInfoVec.head.payload := io.push.payload
       //io.push.ready := True
-    } otherwise {
-      io.pop << io.push
     }
+    //otherwise {
+    //  io.pop << io.push
+    //}
   } otherwise {
     //val myFinishCond = (
     //)
