@@ -506,7 +506,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
           rDel2H2dPayload
         )
       }
-      if (rSavedH2dPayload.byteSize != null) {
+      if (rSavedH2dPayload.mainNonBurstInfo.infoByteSizeEtc != null) {
         when (
           rMyTempDoSaveCond(1)
           //&& myTempUpdateSavedH2dPayloadCond
