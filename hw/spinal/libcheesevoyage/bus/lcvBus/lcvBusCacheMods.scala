@@ -6575,12 +6575,6 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         )
       }
 
-      myLoD2hPushStm.busPayload.data := RegNext(
-        //lineWordRam.io.rdData
-        rdLineWord
-        //myLoD2hPushStm.busPayload.data//,
-        //init=
-      )
       when (myLoD2hPushStm.ready) {
         rState := State.RECV_LINE_FROM_HI_BUS_POST
       }
