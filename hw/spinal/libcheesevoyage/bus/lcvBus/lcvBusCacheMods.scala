@@ -6364,7 +6364,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
               // FINALLY found it, the problem I was seeing in DOOM!
               //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
               rSavedRdLineAttrsTag,
-              rSavedLoBusAddrSet,
+              rSavedLoBusAddrSet.getZero,
               U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
             ).asUInt
           ),
@@ -6386,7 +6386,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
                 // FINALLY found it, the problem I was seeing in DOOM!
                 //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
                 rSavedRdLineAttrsTag,
-                rSavedLoBusAddrSet,
+                rSavedLoBusAddrSet.getZero,
                 U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
               ).asUInt
             ),
@@ -6402,7 +6402,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           // FINALLY found it, the problem I was seeing in DOOM!
           //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
           rSavedRdLineAttrsTag,
-          rSavedLoBusAddrSet,
+          rSavedLoBusAddrSet.getZero,
           U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
         ).asUInt
       )
@@ -6418,7 +6418,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
               // FINALLY found it, the problem I was seeing in DOOM!
               //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
               rSavedRdLineAttrsTag,
-              rSavedLoBusAddrSet,
+              rSavedLoBusAddrSet.getZero,
               U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
             ).asUInt
           ),
@@ -6446,7 +6446,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
               // FINALLY found it, the problem I was seeing in DOOM!
               //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
               rSavedRdLineAttrsTag,
-              rSavedLoBusAddrSet,
+              rSavedLoBusAddrSet.getZero,
               U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
             ).asUInt
           ),
