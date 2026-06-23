@@ -6046,6 +6046,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       init=False
     )
   )
+  //val rHadLineAttrsRamWritePastTwoCycles = Vec.fill(2)(
+  //  RegNext(
+  //    lineAttrsRam.io.wrEn
+  //    || RegNext(lineAttrsRam.io.wrEn, init=False),
+  //    init=False
+  //  )
+  //)
   //val myTempUpdateSavedLoH2dPayloadCond = Bool()
   //myTempUpdateSavedLoH2dPayloadCond := True
 
@@ -6157,14 +6164,26 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         //  init=False
         //)
         ## haveHit
-        ## rdLineAttrs.dirty
+        ## (
+          rdLineAttrs.dirty
+          || (
+            //rdLine
+            RegNext(
+              (
+                wrLineAttrs.dirty
+                && lineAttrsRam.io.wrEn
+              ),
+              init=False
+            )
+          )
+        )
         ## rDel2LoH2dPayload.isWrite
       ) {
         is (
           M"100-"
           //M"10"
         ) {
-          //// cache miss, and line isn't dirty
+          //// cache miss, and know for sure that line isn't dirty
           // cache miss
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
           myFifoThingDoStall := True
