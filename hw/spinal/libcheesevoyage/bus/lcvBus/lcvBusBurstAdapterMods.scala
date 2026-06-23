@@ -11,7 +11,8 @@ import spinal.lib.misc.pipeline._
 case class LcvBusDebursterConfig(
   //mainCfg: LcvBusMainConfig,
   //cacheCfg: Option[LcvBusCacheConfig],
-  loBusCfg: LcvBusConfig
+  loBusCfg: LcvBusConfig,
+  maxNumOutstandingTxns: Int=8,
 ) {
   require(loBusCfg.mainCfg.allowBurst)
 
@@ -46,6 +47,7 @@ case class LcvBusDeburster(
   extends SpinalEnum(defaultEncoding=binaryOneHot) {
     val
       IDLE_OR_NON_BURST,
+      START_BURST_WAIT_REMAINING_NON_BURST_D2H_RESPONSES,
       READ_BURST_WAIT_LO_H2D_FIRE,
       READ_BURST_PIPE_1,
       READ_BURST,
@@ -152,6 +154,69 @@ case class LcvBusDeburster(
   //  )
   //)
 
+  val rTxnCnt = (
+    Reg(UInt(log2Up(cfg.maxNumOutstandingTxns + 1) bits))
+    init(0x0)
+  )
+
+  def doConnect(
+    //devIdx: Int,
+  ): Unit = {
+    //val dev.h2dBus = io.devVec(devIdx).h2dBus
+    def dev = io.hiBus
+    io.hiBus.h2dBus << io.loBus.h2dBus
+
+    //val dev.d2hBus = io.devVec(devIdx).d2hBus
+    io.loBus.d2hBus << io.hiBus.d2hBus
+
+    // at this point, we can just check `io.hiBus.h2dBus.ready` to
+    // determine if an h2d bus request is being sent
+    // because we know that `io.host.h2dBus.valid === True`
+    // from the outer-`switch`.
+
+    // this math here gets rid of the `switch` statement and produces
+    // identical results to the `switch` statement.
+    // I am not sure this is actually that great of an option but it
+    // might be???
+    //rTxnCnt := (
+    //    rTxnCnt 
+    //    + U(
+    //      io.hiBus.h2dBus.ready
+    //    )
+    //    - U(
+    //      io.hiBus.d2hBus.fire
+    //    )
+    //  )
+
+    switch (
+      //io.hiBus.h2dBus.ready
+      io.hiBus.h2dBus.fire
+      ## io.hiBus.d2hBus.fire
+    ) {
+      is (
+        //B"10"
+        0x2
+      ) {
+        // dev.h2dBus.fire, !dev.d2hBus.fire
+        rTxnCnt := rTxnCnt + 1
+      }
+      is (
+        //B"01"
+        0x1
+      ) {
+        rTxnCnt := rTxnCnt - 1
+      }
+      default {
+      }
+    }
+
+    //when (
+    //  io.host.h2dBus.ready
+    //  =/= dev.d2hBus.fire 
+    //) {
+    //}
+  }
+
   switch (rState) {
     is (State.IDLE_OR_NON_BURST) {
       //rSavedRdBurstCnt.foreach(item => {
@@ -168,35 +233,58 @@ case class LcvBusDeburster(
       //  item := io.loBus.h2dBus.burstCnt.resize(item.getWidth) - 1
       //  //0x0
       //})
-      when (!io.loBus.h2dBus.burstFirst) {
-        io.loBus.h2dBus.translateInto(io.hiBus.h2dBus)(
-          dataAssignment=myNonBurstH2dDataAssignmentFunc
-        )
-        io.hiBus.d2hBus.translateInto(io.loBus.d2hBus)(
-          dataAssignment=myNonBurstD2hDataAssignmentFunc
-        )
+
+
+      when (
+        !io.loBus.h2dBus.valid
+        || !io.loBus.h2dBus.burstFirst
+      ) {
+        doConnect()
+        //io.loBus.h2dBus.translateInto(io.hiBus.h2dBus)(
+        //  dataAssignment=myNonBurstH2dDataAssignmentFunc
+        //)
+        //io.hiBus.d2hBus.translateInto(io.loBus.d2hBus)(
+        //  dataAssignment=myNonBurstD2hDataAssignmentFunc
+        //)
+      } otherwise {
       }
+
+      when (
+        io.loBus.h2dBus.valid
+        && io.loBus.h2dBus.burstFirst
+      ) {
+        rState := State.START_BURST_WAIT_REMAINING_NON_BURST_D2H_RESPONSES
+      }
+    }
+    is (State.START_BURST_WAIT_REMAINING_NON_BURST_D2H_RESPONSES) {
       switch (
         io.loBus.h2dBus.valid
         ## io.loBus.h2dBus.burstFirst
         ## io.loBus.h2dBus.isWrite
+        ## rTxnCnt.orR
       ) {
         //is (M"10-") {
         //  io.hiBus << io.loBus
         //}
-        is (M"110") {
+        is (M"1100") {
           // io.loBus.h2dBus.valid, burstFirst, !isWrite
           rState := State.READ_BURST_WAIT_LO_H2D_FIRE
         }
-        is (M"111") {
+        is (M"1110") {
           // io.loBus.h2dBus.valid, burstFirst, isWrite
           rState := State.WRITE_BURST_WAIT_FIRST_LO_H2D_FIRE
+        }
+        is (M"---1") {
+          io.loBus.d2hBus << io.hiBus.d2hBus
         }
         default {
           //io.hiBus << io.loBus
           //doTranslateH2d()
           //doTranslateD2h()
         }
+      }
+      when (io.loBus.d2hBus.fire) {
+        rTxnCnt := rTxnCnt - 1
       }
     }
     is (State.READ_BURST_WAIT_LO_H2D_FIRE) {

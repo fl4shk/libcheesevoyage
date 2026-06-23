@@ -332,7 +332,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
           ),
           init=False,
         )
-        && !myFifoThingDoStall
+        //&& !myFifoThingDoStall
       )
     } 
     ram.io.rdAddr := {
