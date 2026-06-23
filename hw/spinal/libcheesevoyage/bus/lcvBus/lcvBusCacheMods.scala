@@ -6170,8 +6170,15 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             //rdLine
             RegNext(
               (
-                wrLineAttrs.dirty
-                && lineAttrsRam.io.wrEn
+                (
+                  wrLineAttrs.dirty
+                  && lineAttrsRam.io.wrEn
+                )
+                || RegNext(
+                  wrLineAttrs.dirty
+                  && lineAttrsRam.io.wrEn,
+                  init=False
+                )
               ),
               init=False
             )
