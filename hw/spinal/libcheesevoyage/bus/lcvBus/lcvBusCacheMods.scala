@@ -5767,6 +5767,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           ),
           init=False,
         )
+        && !myFifoThingDoStall
       )
     } 
     lineWordRam.io.rdAddr := {
@@ -5798,6 +5799,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           ),
           init=False,
         )
+        && !myFifoThingDoStall
       )
     } 
     lineAttrsRam.io.rdAddr := {
