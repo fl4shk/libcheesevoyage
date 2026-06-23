@@ -6128,6 +6128,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           //rLoH2dPayload.byteSize
           rDel2LoH2dPayload.byteSize
         )
+        rSavedRdLineAttrsTag := rdLineAttrs.tag
       }
       when (
         rMyTempDoSaveCond(2)
@@ -6155,7 +6156,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         )
         //rSavedRdLineAttrsTag := rdLineAttrs.tag
       }
-      rSavedRdLineAttrsTag := rdLineAttrs.tag
+      //rSavedRdLineAttrsTag := rdLineAttrs.tag
 
       switch (
         rMyTempDoSaveCond(3)
@@ -6190,7 +6191,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           M"100-"
           //M"10"
         ) {
-          //// cache miss, and know for sure that line isn't dirty
+          //// cache miss, and know for sure that the line isn't dirty
           // cache miss
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
           myFifoThingDoStall := True
@@ -6205,7 +6206,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         is (
           M"101-"
         ) {
-          // cache miss, and line is dirty
+          // cache miss, and the line is dirty
           rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
           myFifoThingDoStall := True
           mySelLoH2dPopStm.ready := (
@@ -6407,6 +6408,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     is (State.SEND_LINE_TO_HI_BUS_PIPE_2) {
       rState := State.SEND_LINE_TO_HI_BUS_PIPE_1
       lineAttrsRam.io.rdEn := False
+
       doLineWordRamReadSync(
         busAddr=(
           hiBusCfg.burstAddr(
