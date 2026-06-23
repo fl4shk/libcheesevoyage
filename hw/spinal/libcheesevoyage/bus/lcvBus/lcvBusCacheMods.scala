@@ -4797,12 +4797,12 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     && tempHaveHitCmpEq
   )
 
-  val rSavedRdLineAttrsTag = (
-    Reg(
-      cloneOf(rdLineAttrs.tag),
-      init=rdLineAttrs.tag.getZero,
-    )
-  )
+  //val rSavedRdLineAttrsTag = (
+  //  Reg(
+  //    cloneOf(rdLineAttrs.tag),
+  //    init=rdLineAttrs.tag.getZero,
+  //  )
+  //)
 
   val rHiH2dBurstCnt = (
     Vec.fill(2)(
@@ -4985,7 +4985,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         myLoD2hPushStm.busPayload.txnCnt := (
           rDel2LoH2dPayload.txnCnt
         )
-        rSavedRdLineAttrsTag := rdLineAttrs.tag
+        //rSavedRdLineAttrsTag := rdLineAttrs.tag
       }
       //rSavedRdLineAttrsTag := rdLineAttrs.tag
 
@@ -6146,9 +6146,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         myLoD2hPushStm.busPayload.txnCnt := (
           rDel2LoH2dPayload.txnCnt
         )
-        rSavedRdLineAttrsTag := rdLineAttrs.tag
+        //rSavedRdLineAttrsTag := rdLineAttrs.tag
       }
-      //rSavedRdLineAttrsTag := rdLineAttrs.tag
+      rSavedRdLineAttrsTag := rdLineAttrs.tag
 
       switch (
         rMyTempDoSaveCond(3)
