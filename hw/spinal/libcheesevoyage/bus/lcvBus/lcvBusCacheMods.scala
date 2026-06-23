@@ -6451,7 +6451,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             ).asUInt
           ),
           someBurstCnt=rHiH2dBurstCnt(0),
-          incrBurstCnt=true,
+          incrBurstCnt=false,
         ),
         setEn=1,
       )
