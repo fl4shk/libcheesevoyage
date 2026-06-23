@@ -163,11 +163,17 @@ case class LcvBusDeburster(
     //devIdx: Int,
   ): Unit = {
     //val dev.h2dBus = io.devVec(devIdx).h2dBus
-    def dev = io.hiBus
-    io.hiBus.h2dBus << io.loBus.h2dBus
+    ////def dev = io.hiBus
+    //io.hiBus.h2dBus << io.loBus.h2dBus
 
-    //val dev.d2hBus = io.devVec(devIdx).d2hBus
-    io.loBus.d2hBus << io.hiBus.d2hBus
+    ////val dev.d2hBus = io.devVec(devIdx).d2hBus
+    //io.loBus.d2hBus << io.hiBus.d2hBus
+    io.loBus.h2dBus.translateInto(io.hiBus.h2dBus)(
+      dataAssignment=myNonBurstH2dDataAssignmentFunc
+    )
+    io.hiBus.d2hBus.translateInto(io.loBus.d2hBus)(
+      dataAssignment=myNonBurstD2hDataAssignmentFunc
+    )
 
     // at this point, we can just check `io.hiBus.h2dBus.ready` to
     // determine if an h2d bus request is being sent
@@ -275,7 +281,11 @@ case class LcvBusDeburster(
           rState := State.WRITE_BURST_WAIT_FIRST_LO_H2D_FIRE
         }
         is (M"---1") {
-          io.loBus.d2hBus << io.hiBus.d2hBus
+          //io.loBus.d2hBus << io.hiBus.d2hBus
+
+          io.hiBus.d2hBus.translateInto(io.loBus.d2hBus)(
+            dataAssignment=myNonBurstD2hDataAssignmentFunc
+          )
         }
         default {
           //io.hiBus << io.loBus
