@@ -4605,6 +4605,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
           ),
           init=False,
         )
+        && !myFifoThingDoStall
       )
     } 
     lineWordRam.io.rdAddr := {
@@ -4636,6 +4637,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
           ),
           init=False,
         )
+        && !myFifoThingDoStall
       )
     } 
     lineAttrsRam.io.rdAddr := {
@@ -4983,8 +4985,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         myLoD2hPushStm.busPayload.txnCnt := (
           rDel2LoH2dPayload.txnCnt
         )
+        rSavedRdLineAttrsTag := rdLineAttrs.tag
       }
-      rSavedRdLineAttrsTag := rdLineAttrs.tag
+      //rSavedRdLineAttrsTag := rdLineAttrs.tag
 
       switch (
         rMyTempDoSaveCond(3)
@@ -5742,6 +5745,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   )
 
   if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+    //println(
+    //  s"NOTE: "
+    //  + s"myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus"
+    //)
     myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus
   }
 
@@ -6137,8 +6144,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         myLoD2hPushStm.busPayload.txnCnt := (
           rDel2LoH2dPayload.txnCnt
         )
+        rSavedRdLineAttrsTag := rdLineAttrs.tag
       }
-      rSavedRdLineAttrsTag := rdLineAttrs.tag
+      //rSavedRdLineAttrsTag := rdLineAttrs.tag
 
       switch (
         rMyTempDoSaveCond(3)
