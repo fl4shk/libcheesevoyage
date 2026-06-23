@@ -6357,7 +6357,17 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       rState := State.SEND_LINE_TO_HI_BUS_PIPE_2
       lineAttrsRam.io.rdEn := False
       doLineWordRamReadSync(
-        busAddr=rSavedLoH2dPayload.burstAddr(
+        busAddr=hiBusCfg.burstAddr(
+          someAddr=(
+            Cat(
+              False,
+              // FINALLY found it, the problem I was seeing in DOOM!
+              //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
+              rSavedRdLineAttrsTag,
+              rSavedLoBusAddrSet,
+              U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
+            ).asUInt
+          ),
           someBurstCnt=rHiH2dBurstCnt(0),
           incrBurstCnt=true,
         ),
@@ -6368,9 +6378,21 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       rState := State.SEND_LINE_TO_HI_BUS_PIPE_1
       lineAttrsRam.io.rdEn := False
       doLineWordRamReadSync(
-        busAddr=rSavedLoH2dPayload.burstAddr(
-          someBurstCnt=rHiH2dBurstCnt(0),
-          incrBurstCnt=true,
+        busAddr=(
+          hiBusCfg.burstAddr(
+            someAddr=(
+              Cat(
+                False,
+                // FINALLY found it, the problem I was seeing in DOOM!
+                //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
+                rSavedRdLineAttrsTag,
+                rSavedLoBusAddrSet,
+                U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
+              ).asUInt
+            ),
+            someBurstCnt=rHiH2dBurstCnt(0),
+            incrBurstCnt=true,
+          )
         ),
         setEn=1,
       )
@@ -6389,7 +6411,17 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       rState := State.SEND_LINE_TO_HI_BUS
       lineAttrsRam.io.rdEn := False
       doLineWordRamReadSync(
-        busAddr=rSavedLoH2dPayload.burstAddr(
+        busAddr=hiBusCfg.burstAddr(
+          someAddr=(
+            Cat(
+              False,
+              // FINALLY found it, the problem I was seeing in DOOM!
+              //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
+              rSavedRdLineAttrsTag,
+              rSavedLoBusAddrSet,
+              U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
+            ).asUInt
+          ),
           someBurstCnt=rHiH2dBurstCnt(0),
           incrBurstCnt=true,
         ),
@@ -6407,9 +6439,19 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     is (State.SEND_LINE_TO_HI_BUS) {
       lineAttrsRam.io.rdEn := False
       doLineWordRamReadSync(
-        busAddr=rSavedLoH2dPayload.burstAddr(
+        busAddr=hiBusCfg.burstAddr(
+          someAddr=(
+            Cat(
+              False,
+              // FINALLY found it, the problem I was seeing in DOOM!
+              //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
+              rSavedRdLineAttrsTag,
+              rSavedLoBusAddrSet,
+              U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
+            ).asUInt
+          ),
           someBurstCnt=rHiH2dBurstCnt(0),
-          incrBurstCnt=false,
+          incrBurstCnt=true,
         ),
         setEn=1,
       )
