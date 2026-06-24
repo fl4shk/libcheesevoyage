@@ -988,17 +988,28 @@ case class LcvBusDoStallH2dReptThing(
 
   when (!rSavedLoH2dPopInfoVec.head.fire) {
     io.pop << io.push
+
+    //when (
+    //  io.push.valid
+    //  && rose(io.doStall)
+    //) {
+    //  rSavedLoH2dPopInfoVec.head.valid := True
+    //  rSavedLoH2dPopInfoVec.head.payload := (
+    //    io.push.payload
+    //  )
+    //  //io.push.ready := True
+    //}
+
     when (
-      io.push.valid
+      RegNext(io.push.fire, init=False)
       && rose(io.doStall)
     ) {
       rSavedLoH2dPopInfoVec.head.valid := True
-      rSavedLoH2dPopInfoVec.head.payload := io.push.payload
+      rSavedLoH2dPopInfoVec.head.payload := (
+        RegNext(io.push.payload, init=io.push.payload.getZero)
+      )
       //io.push.ready := True
     }
-    //otherwise {
-    //  io.pop << io.push
-    //}
   } otherwise {
     //val myFinishCond = (
     //)
@@ -5508,31 +5519,31 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     )
   ) {
     val
-      INIT,
-      IDLE,
-      LOAD_HIT_DO_STALL_PIPE_3,
-      LOAD_HIT_DO_STALL_PIPE_2,
-      LOAD_HIT_DO_STALL_PIPE_1,
-      LOAD_HIT_DO_STALL,
-      LOAD_HIT_DO_STALL_POST,
-      STORE_HIT_DO_STALL_PIPE_1,
-      STORE_HIT_DO_STALL,
+      INIT,                               // 0x000001
+      IDLE,                               // 0x000002
+      LOAD_HIT_DO_STALL_PIPE_3,           // 0x000004
+      LOAD_HIT_DO_STALL_PIPE_2,           // 0x000008
+      LOAD_HIT_DO_STALL_PIPE_1,           // 0x000010
+      LOAD_HIT_DO_STALL,                  // 0x000020
+      LOAD_HIT_DO_STALL_POST,             // 0x000040
+      STORE_HIT_DO_STALL_PIPE_1,          // 0x000080
+      STORE_HIT_DO_STALL,                 // 0x000100
 
-      SEND_LINE_TO_HI_BUS_PIPE_3,
-      SEND_LINE_TO_HI_BUS_PIPE_2,
-      SEND_LINE_TO_HI_BUS_PIPE_1,
-      SEND_LINE_TO_HI_BUS,
-      RECV_LINE_FROM_HI_BUS_PIPE_1,
-      RECV_LINE_FROM_HI_BUS,
-      RECV_LINE_FROM_HI_BUS_POST_WRITE,
-      RECV_LINE_FROM_HI_BUS_POST_5,
-      RECV_LINE_FROM_HI_BUS_POST_4,
-      RECV_LINE_FROM_HI_BUS_POST_3,
-      RECV_LINE_FROM_HI_BUS_POST_2,
-      RECV_LINE_FROM_HI_BUS_POST_1,
-      RECV_LINE_FROM_HI_BUS_POST,
+      SEND_LINE_TO_HI_BUS_PIPE_3,         // 0x000200
+      SEND_LINE_TO_HI_BUS_PIPE_2,         // 0x000400
+      SEND_LINE_TO_HI_BUS_PIPE_1,         // 0x000800
+      SEND_LINE_TO_HI_BUS,                // 0x001000
+      RECV_LINE_FROM_HI_BUS_PIPE_1,       // 0x002000
+      RECV_LINE_FROM_HI_BUS,              // 0x004000
+      RECV_LINE_FROM_HI_BUS_POST_WRITE,   // 0x008000
+      RECV_LINE_FROM_HI_BUS_POST_5,       // 0x010000
+      RECV_LINE_FROM_HI_BUS_POST_4,       // 0x020000
+      RECV_LINE_FROM_HI_BUS_POST_3,       // 0x040000
+      RECV_LINE_FROM_HI_BUS_POST_2,       // 0x080000
+      RECV_LINE_FROM_HI_BUS_POST_1,       // 0x100000
+      RECV_LINE_FROM_HI_BUS_POST,         // 0x200000
 
-      WAIT_D2H_FIFO_EMPTY
+      WAIT_D2H_FIFO_EMPTY                 // 0x400000
 
       = newElement();
   }
