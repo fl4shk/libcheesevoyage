@@ -900,7 +900,7 @@ case class PipeRegFileDoFwdArea[
                 if (
                   kdx != 0
                   && kdx != 1
-                  //&& kdx != fwd.numMyUpExtDel2
+                  && kdx != fwd.numMyUpExtDel2
                   //true
                   //false
                 ) {
