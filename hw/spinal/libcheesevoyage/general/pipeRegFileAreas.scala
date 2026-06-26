@@ -899,8 +899,8 @@ case class PipeRegFileDoFwdArea[
               //) {
                 if (
                   kdx != 0
-                  && kdx != 1
-                  && kdx != fwd.numMyUpExtDel2
+                  //&& kdx != 1
+                  //&& kdx != fwd.numMyUpExtDel2
                   //true
                   //false
                 ) {
@@ -936,7 +936,8 @@ case class PipeRegFileDoFwdArea[
                   when (
                     //fwd.myUpIsValid
                     //&&
-                    rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
+                    //rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
+                    rFwdState(ydx)(zdx)(kdx).asBits(1)
                     && myFindFirstValid
                   ) {
                     //tempMyFwdData := myFwdDataUp
@@ -986,14 +987,15 @@ case class PipeRegFileDoFwdArea[
               //  }
               ////}
               when (
-                fwd.myUpIsValid
-                //&& rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
-                //&& fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
-                //  extIdxUp
-                //)(
-                //  kdx
-                //).payload.valid
-                && myFindFirstValid
+                //fwd.myUpIsValid
+                ////&& rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
+                ////&& fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+                ////  extIdxUp
+                ////)(
+                ////  kdx
+                ////).payload.valid
+                //&& 
+                myFindFirstValid
               ) {
                 //rFwdStateValid(ydx)(zdx)(kdx) := True
                 rFwdState(ydx)(zdx)(kdx) := FwdState.WAIT_UP_FIRE
