@@ -934,8 +934,8 @@ case class PipeRegFileDoFwdArea[
                     )
                   )
                   when (
-                    //fwd.myUpIsValid
-                    //&&
+                    fwd.myUpIsValid
+                    &&
                     //rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
                     rFwdState(ydx)(zdx)(kdx).asBits(1) //=== FwdState.WAIT_DATA
                     && myFindFirstValid
