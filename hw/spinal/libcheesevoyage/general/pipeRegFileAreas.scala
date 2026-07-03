@@ -901,8 +901,8 @@ case class PipeRegFileDoFwdArea[
                 if (
                   //kdx != 0
                   //&& kdx != 1
-                  kdx != fwd.numMyUpExtDel2
-                  //true
+                  //&& kdx != fwd.numMyUpExtDel2
+                  true
                   //false
                 ) {
                   //fwd.myFwdStateData(ydx)(zdx)(kdx) := (
@@ -938,8 +938,12 @@ case class PipeRegFileDoFwdArea[
                     //fwd.myUpIsValid
                     //&&
                     //rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
-                    rFwdState(ydx)(zdx)(kdx).asBits(1) //=== FwdState.WAIT_DATA
-                    && myFindFirstValid
+                    if (kdx != fwd.numMyUpExtDel2) (
+                      rFwdState(ydx)(zdx)(kdx).asBits(1) //=== FwdState.WAIT_DATA
+                      && myFindFirstValid
+                    ) else (
+                      rFwdState(ydx)(zdx)(kdx).asBits(1) //=== FwdState.WAIT_DATA
+                    )
                   ) {
                     //tempMyFwdData := myFwdDataUp
                     fwd.myFwdStateData(ydx)(zdx)(kdx) := (
