@@ -902,8 +902,8 @@ case class PipeRegFileDoFwdArea[
                   //kdx != 0
                   //&& kdx != 1
                   //&& kdx != fwd.numMyUpExtDel2
-                  //true
-                  false
+                  true
+                  //false
                 ) {
                   //fwd.myFwdStateData(ydx)(zdx)(kdx) := (
                   //  RegNext(
@@ -935,8 +935,8 @@ case class PipeRegFileDoFwdArea[
                     )
                   )
                   when (
-                    fwd.myUpIsValid
-                    &&
+                    //fwd.myUpIsValid
+                    //&&
                     //rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
                     rFwdState(ydx)(zdx)(kdx).asBits(1) //=== FwdState.WAIT_DATA
                     && myFindFirstValid
@@ -2039,12 +2039,12 @@ extends Area {
                     right=prevMemAddr,
                     cmpEqIo=null
                   )._1
-                  && prev.modMemWordValid(
-                    0
-                    //zdx
-                    //3
-                  )
-                  && prev.fwdCanDoIt(zdx)
+                  //&& prev.modMemWordValid(
+                  //  0
+                  //  //zdx
+                  //  //3
+                  //)
+                  //&& prev.fwdCanDoIt(zdx)
                 )
                 //&& (
                 //  prev.modMemWordValid(
@@ -2144,7 +2144,8 @@ extends Area {
           //if (idx == 0) (
           //  True
           //  //False
-          //) else (
+          //) else 
+          (
             prev.modMemWordValid(
               if (zdx < prev.modMemWordValid.size) (
                 zdx
@@ -2152,7 +2153,8 @@ extends Area {
                 prev.modMemWordValid.size - 1
               )
             )
-          //)
+            //&& prev.fwdCanDoIt(zdx)
+          )
         }
         ret.payload.payload := (
           prev.modMemWord
