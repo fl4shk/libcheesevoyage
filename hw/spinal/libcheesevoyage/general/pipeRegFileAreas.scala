@@ -71,7 +71,7 @@ case class PipeRegFileConfig[
   optFwdHaveZeroReg: Option[Int]=Some(0x0),
   fwdForFmaxStageMax: Int=0x0,
   optEnableWrPulse: Boolean=false,
-  memRamStyleAltera: String="MLAB",
+  memRamStyleAltera: String="no_rw_check, MLAB",
   memRamStyleXilinx: String="auto",
   memRwAddrCollisionXilinx: String="",
   vivadoDebug: Boolean=false,
