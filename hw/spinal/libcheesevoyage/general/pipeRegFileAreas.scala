@@ -943,6 +943,8 @@ case class PipeRegFileDoFwdArea[
                       && myFindFirstValid
                     ) else (
                       rFwdState(ydx)(zdx)(kdx).asBits(1) //=== FwdState.WAIT_DATA
+                      //myFindFirstValid
+                      && fwd.myUpIsValid
                     )
                   ) {
                     //tempMyFwdData := myFwdDataUp
