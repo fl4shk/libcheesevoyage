@@ -8,6 +8,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.math._
 
 import libcheesevoyage.Config
+import libcheesevoyage.math._
 //--------
 //case class PipeHazardHandlerIo[
 //  T <: Data,
@@ -901,8 +902,8 @@ case class PipeRegFileDoFwdArea[
                   //kdx != 0
                   //&& kdx != 1
                   //&& kdx != fwd.numMyUpExtDel2
-                  true
-                  //false
+                  //true
+                  false
                 ) {
                   //fwd.myFwdStateData(ydx)(zdx)(kdx) := (
                   //  RegNext(
@@ -935,9 +936,9 @@ case class PipeRegFileDoFwdArea[
                   )
                   when (
                     fwd.myUpIsValid
-                    //&&
-                    ////rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
-                    //rFwdState(ydx)(zdx)(kdx).asBits(1) //=== FwdState.WAIT_DATA
+                    &&
+                    //rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
+                    rFwdState(ydx)(zdx)(kdx).asBits(1) //=== FwdState.WAIT_DATA
                     && myFindFirstValid
                   ) {
                     //tempMyFwdData := myFwdDataUp
@@ -986,34 +987,33 @@ case class PipeRegFileDoFwdArea[
               //    )
               //  }
               ////}
-
-              //when (
-              //  fwd.myUpIsValid
-              //  //&& rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
-              //  //&& fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
-              //  //  extIdxUp
-              //  //)(
-              //  //  kdx
-              //  //).payload.valid
-              //  && myFindFirstValid
-              //) {
-              //  //rFwdStateValid(ydx)(zdx)(kdx) := True
-              //  rFwdState(ydx)(zdx)(kdx) := FwdState.WAIT_UP_FIRE
-              //  //fwd.myFwdStateData(ydx)(zdx)(kdx) := (
-              //  //  fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
-              //  //    extIdxUp
-              //  //  )(
-              //  //    kdx
-              //  //  ).payload.payload
-              //  //)
-              //}
-              //when (
-              //  fwd.myUpIsFiring
-              //  //&& rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_UP_FIRE
-              //) {
-              //  //rFwdStateValid(ydx)(zdx)(kdx) := False
-              //  rFwdState(ydx)(zdx)(kdx) := FwdState.WAIT_DATA
-              //}
+              when (
+                fwd.myUpIsValid
+                //&& rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
+                //&& fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+                //  extIdxUp
+                //)(
+                //  kdx
+                //).payload.valid
+                && myFindFirstValid
+              ) {
+                //rFwdStateValid(ydx)(zdx)(kdx) := True
+                rFwdState(ydx)(zdx)(kdx) := FwdState.WAIT_UP_FIRE
+                //fwd.myFwdStateData(ydx)(zdx)(kdx) := (
+                //  fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+                //    extIdxUp
+                //  )(
+                //    kdx
+                //  ).payload.payload
+                //)
+              }
+              when (
+                fwd.myUpIsFiring
+                //&& rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_UP_FIRE
+              ) {
+                //rFwdStateValid(ydx)(zdx)(kdx) := False
+                rFwdState(ydx)(zdx)(kdx) := FwdState.WAIT_DATA
+              }
 
             //} else {
             //  fwd.myFwdStateData(ydx)(zdx)(kdx) := (
@@ -2017,7 +2017,10 @@ extends Area {
               //forFwd
               cfg.optModHazardKind == PipeRegFile.ModHazardKind.Fwd
             ) (
-              if (idx == 0 || idx == 1) (
+              if (
+                idx == 0
+                //|| idx == 1
+              ) (
                 currMemAddr(0)
                 //&& (
                 //  prev.modMemWordValid(
@@ -2030,8 +2033,18 @@ extends Area {
                 //)
               ) else (
                 (
-                  currMemAddr(0)
-                  //currMemAddr === prevMemAddr
+                  //currMemAddr(0)
+                  LcvFastCmpEq(
+                    left=currMemAddr,
+                    right=prevMemAddr,
+                    cmpEqIo=null
+                  )._1
+                  && prev.modMemWordValid(
+                    0
+                    //zdx
+                    //3
+                  )
+                  && prev.fwdCanDoIt(zdx)
                 )
                 //&& (
                 //  prev.modMemWordValid(
@@ -4115,14 +4128,14 @@ extends Area {
                     mod.front.findFirstFunc(
                       currMemAddr=(
                         //if (idx == 0) (
-                          upExt(1)(ydx)(extIdx).memAddrFwdCmp(zdx)(idx)
+                        //  upExt(1)(ydx)(extIdx).memAddrFwdCmp(zdx)(idx)
                         //) else (
-                        //  upExt(1)(ydx)(extIdx).memAddrFwd(zdx)(idx)(
-                        //    PipeRegFile.addrWidth(
-                        //      wordCount=wordCountArr(ydx)
-                        //    ) - 1
-                        //    downto 0
-                        //  )
+                          upExt(1)(ydx)(extIdx).memAddrFwdMmw(zdx)(idx)(
+                            PipeRegFile.addrWidth(
+                              wordCount=wordCountArr(ydx)
+                            ) - 1
+                            downto 0
+                          )
                         //)
                       ),
                       prevMemAddr=(
