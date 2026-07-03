@@ -935,9 +935,9 @@ case class PipeRegFileDoFwdArea[
                   )
                   when (
                     fwd.myUpIsValid
-                    &&
-                    //rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
-                    rFwdState(ydx)(zdx)(kdx).asBits(1) //=== FwdState.WAIT_DATA
+                    //&&
+                    ////rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
+                    //rFwdState(ydx)(zdx)(kdx).asBits(1) //=== FwdState.WAIT_DATA
                     && myFindFirstValid
                   ) {
                     //tempMyFwdData := myFwdDataUp
@@ -986,33 +986,34 @@ case class PipeRegFileDoFwdArea[
               //    )
               //  }
               ////}
-              when (
-                fwd.myUpIsValid
-                //&& rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
-                //&& fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
-                //  extIdxUp
-                //)(
-                //  kdx
-                //).payload.valid
-                && myFindFirstValid
-              ) {
-                //rFwdStateValid(ydx)(zdx)(kdx) := True
-                rFwdState(ydx)(zdx)(kdx) := FwdState.WAIT_UP_FIRE
-                //fwd.myFwdStateData(ydx)(zdx)(kdx) := (
-                //  fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
-                //    extIdxUp
-                //  )(
-                //    kdx
-                //  ).payload.payload
-                //)
-              }
-              when (
-                fwd.myUpIsFiring
-                //&& rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_UP_FIRE
-              ) {
-                //rFwdStateValid(ydx)(zdx)(kdx) := False
-                rFwdState(ydx)(zdx)(kdx) := FwdState.WAIT_DATA
-              }
+
+              //when (
+              //  fwd.myUpIsValid
+              //  //&& rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_DATA
+              //  //&& fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+              //  //  extIdxUp
+              //  //)(
+              //  //  kdx
+              //  //).payload.valid
+              //  && myFindFirstValid
+              //) {
+              //  //rFwdStateValid(ydx)(zdx)(kdx) := True
+              //  rFwdState(ydx)(zdx)(kdx) := FwdState.WAIT_UP_FIRE
+              //  //fwd.myFwdStateData(ydx)(zdx)(kdx) := (
+              //  //  fwd.myUpExtDel2FindFirstVec(fjIdx)(ydx)(zdx)(
+              //  //    extIdxUp
+              //  //  )(
+              //  //    kdx
+              //  //  ).payload.payload
+              //  //)
+              //}
+              //when (
+              //  fwd.myUpIsFiring
+              //  //&& rFwdState(ydx)(zdx)(kdx) === FwdState.WAIT_UP_FIRE
+              //) {
+              //  //rFwdStateValid(ydx)(zdx)(kdx) := False
+              //  rFwdState(ydx)(zdx)(kdx) := FwdState.WAIT_DATA
+              //}
 
             //} else {
             //  fwd.myFwdStateData(ydx)(zdx)(kdx) := (
