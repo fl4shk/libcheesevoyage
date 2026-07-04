@@ -66,7 +66,9 @@ case class PipeRegFileConfig[
   init: Option[Seq[Seq[WordT]]]=None,
   initBigInt: Option[Seq[Seq[BigInt]]]=None,
   optIncludeOtherMmw: Boolean=false,
-  optModHazardKind: PipeRegFile.ModHazardKind=PipeRegFile.ModHazardKind.Dupl,
+  optModHazardKind: PipeRegFile.ModHazardKind=(
+    PipeRegFile.ModHazardKind.Dupl
+  ),
   //optFwdUseMmwValidLaterStages: Boolean=false,
   optFwdHaveZeroReg: Option[Int]=Some(0x0),
   fwdForFmaxStageMax: Int=0x0,
