@@ -135,11 +135,14 @@ case class LcvBusSlicer(
   //}
 
   def doConnect(
+    connH2dBus: Boolean,
     devIdx: Int,
   ): Unit = {
     //val dev.h2dBus = io.devVec(devIdx).h2dBus
     def dev = io.devVec(devIdx)
-    dev.h2dBus << io.host.h2dBus
+    if (connH2dBus) {
+      dev.h2dBus << io.host.h2dBus
+    }
 
     //val dev.d2hBus = io.devVec(devIdx).d2hBus
     io.host.d2hBus << dev.d2hBus
@@ -203,27 +206,41 @@ case class LcvBusSlicer(
   //) {
   //}
 
-  val stickyHostH2dAddrSlice = UInt(cfg.mmapCfg.addrSliceWidth bits)
-  stickyHostH2dAddrSlice := (
-    RegNext(
-      stickyHostH2dAddrSlice,
-      init=stickyHostH2dAddrSlice.getZero
-    )
+  //val stickyHostH2dAddrSlice = UInt(cfg.mmapCfg.addrSliceWidth bits)
+  //stickyHostH2dAddrSlice := (
+  //  RegNext(
+  //    stickyHostH2dAddrSlice,
+  //    init=stickyHostH2dAddrSlice.getZero
+  //  )
+  //)
+  //when (io.host.h2dBus.valid) {
+  //  stickyHostH2dAddrSlice := io.host.h2dBus.addr(cfg.addrSliceRange)
+  //}
+  val rPrevHostH2dAddrSlice = (
+    Reg(UInt(cfg.mmapCfg.addrSliceWidth bits))
+    init(0x0)
   )
-  when (io.host.h2dBus.valid) {
-    stickyHostH2dAddrSlice := io.host.h2dBus.addr(cfg.addrSliceRange)
+  //rPrevHostH2dAddrSlice := (
+  //  RegNext(
+  //    rPrevHostH2dAddrSlice,
+  //    init=rPrevHostH2dAddrSlice.getZero
+  //  )
+  //)
+  when (io.host.h2dBus.fire) {
+    rPrevHostH2dAddrSlice := io.host.h2dBus.addr(cfg.addrSliceRange)
   }
 
   when (
     rState === State.MAIN
-    && io.host.h2dBus.valid
+    //&& io.host.h2dBus.valid
     //&& !LcvFastCmpEq(
     //  rSavedH2dAddrSlice,
     //  io.host.h2dBus.addr(cfg.addrSliceRange),
     //)
     && (
       rSavedH2dAddrSlice
-      =/= io.host.h2dBus.addr(cfg.addrSliceRange)
+      //=/= io.host.h2dBus.addr(cfg.addrSliceRange)
+      =/= rPrevHostH2dAddrSlice
     )
   ) {
     rState := State.CHANGED_ADDR_SLICE_WAIT_REMAINING_D2H_RESPONSES
@@ -235,8 +252,10 @@ case class LcvBusSlicer(
       rState === State.MAIN
       //&& io.host.h2dBus.valid
       //&& (rSavedH2dAddrSlice === io.host.h2dBus.addr(cfg.addrSliceRange))
-      && (rSavedH2dAddrSlice === stickyHostH2dAddrSlice)
+      //&& (rSavedH2dAddrSlice === stickyHostH2dAddrSlice)
+      //&& (rSavedH2dAddrSlice === rPrevHostH2dAddrSlice)
     )
+    ## (rSavedH2dAddrSlice === rPrevHostH2dAddrSlice)
     //## (
     //  //rState === State.MAIN
     //  //&& 
@@ -278,11 +297,21 @@ case class LcvBusSlicer(
         //U"1"
         //## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
         (
-          (1 << rSavedH2dAddrSlice.getWidth)
+          (1 << (rSavedH2dAddrSlice.getWidth + 1))
+          | (1 << (rSavedH2dAddrSlice.getWidth + 0))
           | devIdx
         )
       ) {
-        doConnect(devIdx=devIdx)
+        doConnect(connH2dBus=true, devIdx=devIdx)
+      }
+      is (
+        (
+          (1 << (rSavedH2dAddrSlice.getWidth + 1))
+          | (0 << (rSavedH2dAddrSlice.getWidth + 0))
+          | devIdx
+        )
+      ) {
+        doConnect(connH2dBus=false, devIdx=devIdx)
       }
       //is (
       //  B"111"
