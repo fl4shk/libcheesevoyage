@@ -5529,9 +5529,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       STORE_HIT_DO_STALL_PIPE_1,
       STORE_HIT_DO_STALL,
 
-      SEND_LINE_TO_HI_BUS_PIPE_6,
-      SEND_LINE_TO_HI_BUS_PIPE_5,
-      SEND_LINE_TO_HI_BUS_PIPE_4,
+      MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2,
+      MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1,
+      MAYBE_DIRTY_RE_READ_ATTRS,
       SEND_LINE_TO_HI_BUS_PIPE_3,
       SEND_LINE_TO_HI_BUS_PIPE_2,
       SEND_LINE_TO_HI_BUS_PIPE_1,
@@ -6282,8 +6282,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         is (
           M"101-"
         ) {
-          // cache miss, and the line is dirty
-          rState := State.SEND_LINE_TO_HI_BUS_PIPE_6
+          // cache miss, and the line is *possibly* dirty
+          rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
           myFifoThingDoStall := True
           mySelLoH2dPopStm.ready := (
             //True
@@ -6456,8 +6456,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         rState := State.WAIT_D2H_FIFO_EMPTY
       }
     }
-    is (State.SEND_LINE_TO_HI_BUS_PIPE_6) {
-      rState := State.SEND_LINE_TO_HI_BUS_PIPE_5
+    is (State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2) {
+      rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1
       lineAttrsRam.io.rdEn := False
       doLineAttrsRamReadSync(
         busAddr=rSavedLoH2dPayload.addr,
@@ -6465,12 +6465,16 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       )
       //lineAttrsRam.io.addr := rSavedLoH2dPayload
     }
-    is (State.SEND_LINE_TO_HI_BUS_PIPE_5) {
-      rState := State.SEND_LINE_TO_HI_BUS_PIPE_4
+    is (State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1) {
+      rState := State.MAYBE_DIRTY_RE_READ_ATTRS
       lineAttrsRam.io.rdEn := True
     }
-    is (State.SEND_LINE_TO_HI_BUS_PIPE_4) {
-      rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
+    is (State.MAYBE_DIRTY_RE_READ_ATTRS) {
+      when (rdLineAttrs.fire) {
+        rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
+      } otherwise {
+        rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+      }
       lineAttrsRam.io.rdEn := False
       rSavedRdLineAttrsTag := rdLineAttrs.tag
     }
