@@ -5519,31 +5519,34 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     )
   ) {
     val
-      INIT,                               // 0x000001
-      IDLE,                               // 0x000002
-      LOAD_HIT_DO_STALL_PIPE_3,           // 0x000004
-      LOAD_HIT_DO_STALL_PIPE_2,           // 0x000008
-      LOAD_HIT_DO_STALL_PIPE_1,           // 0x000010
-      LOAD_HIT_DO_STALL,                  // 0x000020
-      LOAD_HIT_DO_STALL_POST,             // 0x000040
-      STORE_HIT_DO_STALL_PIPE_1,          // 0x000080
-      STORE_HIT_DO_STALL,                 // 0x000100
+      INIT,
+      IDLE,
+      LOAD_HIT_DO_STALL_PIPE_3,
+      LOAD_HIT_DO_STALL_PIPE_2,
+      LOAD_HIT_DO_STALL_PIPE_1,
+      LOAD_HIT_DO_STALL,
+      LOAD_HIT_DO_STALL_POST,
+      STORE_HIT_DO_STALL_PIPE_1,
+      STORE_HIT_DO_STALL,
 
-      SEND_LINE_TO_HI_BUS_PIPE_3,         // 0x000200
-      SEND_LINE_TO_HI_BUS_PIPE_2,         // 0x000400
-      SEND_LINE_TO_HI_BUS_PIPE_1,         // 0x000800
-      SEND_LINE_TO_HI_BUS,                // 0x001000
-      RECV_LINE_FROM_HI_BUS_PIPE_1,       // 0x002000
-      RECV_LINE_FROM_HI_BUS,              // 0x004000
-      RECV_LINE_FROM_HI_BUS_POST_WRITE,   // 0x008000
-      RECV_LINE_FROM_HI_BUS_POST_5,       // 0x010000
-      RECV_LINE_FROM_HI_BUS_POST_4,       // 0x020000
-      RECV_LINE_FROM_HI_BUS_POST_3,       // 0x040000
-      RECV_LINE_FROM_HI_BUS_POST_2,       // 0x080000
-      RECV_LINE_FROM_HI_BUS_POST_1,       // 0x100000
-      RECV_LINE_FROM_HI_BUS_POST,         // 0x200000
+      SEND_LINE_TO_HI_BUS_PIPE_6,
+      SEND_LINE_TO_HI_BUS_PIPE_5,
+      SEND_LINE_TO_HI_BUS_PIPE_4,
+      SEND_LINE_TO_HI_BUS_PIPE_3,
+      SEND_LINE_TO_HI_BUS_PIPE_2,
+      SEND_LINE_TO_HI_BUS_PIPE_1,
+      SEND_LINE_TO_HI_BUS,
+      RECV_LINE_FROM_HI_BUS_PIPE_1,
+      RECV_LINE_FROM_HI_BUS,
+      RECV_LINE_FROM_HI_BUS_POST_WRITE,
+      RECV_LINE_FROM_HI_BUS_POST_5,
+      RECV_LINE_FROM_HI_BUS_POST_4,
+      RECV_LINE_FROM_HI_BUS_POST_3,
+      RECV_LINE_FROM_HI_BUS_POST_2,
+      RECV_LINE_FROM_HI_BUS_POST_1,
+      RECV_LINE_FROM_HI_BUS_POST,
 
-      WAIT_D2H_FIFO_EMPTY                 // 0x400000
+      WAIT_D2H_FIFO_EMPTY
 
       = newElement();
   }
@@ -6139,47 +6142,47 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           //rLoH2dPayload.byteSize
           rDel2LoH2dPayload.byteSize
         )
-        switch (
-          //rdLineAttrs.dirty
-          //## 
-          RegNext(
-            wrLineAttrs.dirty
-            && lineAttrsRam.io.wrEn,
-            init=False
-          )
-          ## RegNext(
-            RegNext(
-              (
-                wrLineAttrs.dirty
-                && lineAttrsRam.io.wrEn
-              ),
-              init=False
-            ),
-            init=False
-          )
-        ) {
-          //is (M"1--") {
-          //}
-          is (M"1-") {
-            rSavedRdLineAttrsTag := (
-              RegNext(
-                wrLineAttrs.tag
-              )
-            )
-          }
-          is (M"01") {
-            rSavedRdLineAttrsTag := (
-              RegNext(
-                RegNext(
-                  wrLineAttrs.tag
-                )
-              )
-            )
-          }
-          default {
-            rSavedRdLineAttrsTag := rdLineAttrs.tag
-          }
-        }
+        //switch (
+        //  //rdLineAttrs.dirty
+        //  //## 
+        //  RegNext(
+        //    wrLineAttrs.dirty
+        //    && lineAttrsRam.io.wrEn,
+        //    init=False
+        //  )
+        //  ## RegNext(
+        //    RegNext(
+        //      (
+        //        wrLineAttrs.dirty
+        //        && lineAttrsRam.io.wrEn
+        //      ),
+        //      init=False
+        //    ),
+        //    init=False
+        //  )
+        //) {
+        //  //is (M"1--") {
+        //  //}
+        //  is (M"1-") {
+        //    rSavedRdLineAttrsTag := (
+        //      RegNext(
+        //        wrLineAttrs.tag
+        //      )
+        //    )
+        //  }
+        //  is (M"01") {
+        //    rSavedRdLineAttrsTag := (
+        //      RegNext(
+        //        RegNext(
+        //          wrLineAttrs.tag
+        //        )
+        //      )
+        //    )
+        //  }
+        //  default {
+        //    rSavedRdLineAttrsTag := rdLineAttrs.tag
+        //  }
+        //}
         //when (
         //  rdLineAttrs.dirty
         //  || (
@@ -6200,6 +6203,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         //    )
         //  )
         //)
+        //rSavedRdLineAttrsTag := rdLineAttrs.tag
         //rSavedRdLineAttrsTag := rdLineAttrs.tag
       }
       when (
@@ -6279,7 +6283,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           M"101-"
         ) {
           // cache miss, and the line is dirty
-          rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
+          rState := State.SEND_LINE_TO_HI_BUS_PIPE_6
           myFifoThingDoStall := True
           mySelLoH2dPopStm.ready := (
             //True
@@ -6451,6 +6455,24 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       when (myLoD2hPushStm.ready) {
         rState := State.WAIT_D2H_FIFO_EMPTY
       }
+    }
+    is (State.SEND_LINE_TO_HI_BUS_PIPE_6) {
+      rState := State.SEND_LINE_TO_HI_BUS_PIPE_5
+      lineAttrsRam.io.rdEn := False
+      doLineAttrsRamReadSync(
+        busAddr=rSavedLoH2dPayload.addr,
+        setEn=0
+      )
+      //lineAttrsRam.io.addr := rSavedLoH2dPayload
+    }
+    is (State.SEND_LINE_TO_HI_BUS_PIPE_5) {
+      rState := State.SEND_LINE_TO_HI_BUS_PIPE_4
+      lineAttrsRam.io.rdEn := True
+    }
+    is (State.SEND_LINE_TO_HI_BUS_PIPE_4) {
+      rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
+      lineAttrsRam.io.rdEn := False
+      rSavedRdLineAttrsTag := rdLineAttrs.tag
     }
     is (State.SEND_LINE_TO_HI_BUS_PIPE_3) {
       rState := State.SEND_LINE_TO_HI_BUS_PIPE_2
