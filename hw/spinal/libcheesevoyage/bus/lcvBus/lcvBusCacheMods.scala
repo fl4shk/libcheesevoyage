@@ -6057,13 +6057,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       init=False
     )
   )
-  //val rHadLineAttrsRamWritePastTwoCycles = Vec.fill(2)(
-  //  RegNext(
-  //    lineAttrsRam.io.wrEn
-  //    || RegNext(lineAttrsRam.io.wrEn, init=False),
-  //    init=False
-  //  )
-  //)
+  val rHadLineAttrsRamWritePastTwoCycles = Vec.fill(2)(
+    RegNext(
+      lineAttrsRam.io.wrEn
+      || RegNext(lineAttrsRam.io.wrEn, init=False),
+      init=False
+    )
+  )
   //val myTempUpdateSavedLoH2dPayloadCond = Bool()
   //myTempUpdateSavedLoH2dPayloadCond := True
 
@@ -6139,7 +6139,68 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           //rLoH2dPayload.byteSize
           rDel2LoH2dPayload.byteSize
         )
-        rSavedRdLineAttrsTag := rdLineAttrs.tag
+        switch (
+          //rdLineAttrs.dirty
+          //## 
+          RegNext(
+            wrLineAttrs.dirty
+            && lineAttrsRam.io.wrEn,
+            init=False
+          )
+          ## RegNext(
+            RegNext(
+              (
+                wrLineAttrs.dirty
+                && lineAttrsRam.io.wrEn
+              ),
+              init=False
+            ),
+            init=False
+          )
+        ) {
+          //is (M"1--") {
+          //}
+          is (M"1-") {
+            rSavedRdLineAttrsTag := (
+              RegNext(
+                wrLineAttrs.tag
+              )
+            )
+          }
+          is (M"01") {
+            rSavedRdLineAttrsTag := (
+              RegNext(
+                RegNext(
+                  wrLineAttrs.tag
+                )
+              )
+            )
+          }
+          default {
+            rSavedRdLineAttrsTag := rdLineAttrs.tag
+          }
+        }
+        //when (
+        //  rdLineAttrs.dirty
+        //  || (
+        //    //rdLine
+        //    RegNext(
+        //      (
+        //        (
+        //          wrLineAttrs.dirty
+        //          && lineAttrsRam.io.wrEn
+        //        )
+        //        || RegNext(
+        //          wrLineAttrs.dirty
+        //          && lineAttrsRam.io.wrEn,
+        //          init=False
+        //        )
+        //      ),
+        //      init=False
+        //    )
+        //  )
+        //)
+        //rSavedRdLineAttrsTag := rdLineAttrs.tag
       }
       when (
         rMyTempDoSaveCond(2)
