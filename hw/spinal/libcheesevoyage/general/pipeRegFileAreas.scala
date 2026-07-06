@@ -2040,7 +2040,7 @@ extends Area {
                 //    )
                 //  )
                 //)
-                && prev.fwdCanDoIt(zdx)
+                //&& prev.fwdCanDoIt(zdx)
               ) else (
                 (
                   //currMemAddr(0)
@@ -2054,7 +2054,7 @@ extends Area {
                   //  //zdx
                   //  //3
                   //)
-                  && prev.fwdCanDoIt(zdx)
+                  //&& prev.fwdCanDoIt(zdx)
                 )
                 //&& (
                 //  prev.modMemWordValid(
