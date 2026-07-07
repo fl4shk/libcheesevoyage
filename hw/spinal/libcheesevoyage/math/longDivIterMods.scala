@@ -191,13 +191,13 @@ case class LongUdivIter(
       //  ((("-" * (gtVecWidth - (idx + 1)))) + "0" + ("-" * idx))
       //))
       is (MaskedLiteral(
-        //(("-" * (gtVecWidth - (idx + 1)))) + "0" + ("-" * idx)
-        //(("1" * (gtVecWidth - (idx + 1)))) + "0" + ("-" * idx)
-        if (idx + 1 < gtVecWidth) (
-          (("-" * (gtVecWidth - (idx + 2)))) + "1" + "0" + ("-" * idx)
-        ) else (
-          (("-" * (gtVecWidth - (idx + 2)))) + "0" + ("-" * idx)
-        )
+        (("-" * (gtVecWidth - (idx + 1)))) + "0" + ("-" * idx)
+        ////(("1" * (gtVecWidth - (idx + 1)))) + "0" + ("-" * idx)
+        //if (idx + 1 < gtVecWidth) (
+        //  (("-" * (gtVecWidth - (idx + 2)))) + "1" + "0" + ("-" * idx)
+        //) else (
+        //  (("-" * (gtVecWidth - (idx + 2)))) + "0" + ("-" * idx)
+        //)
       ))
       {
         //io.quotDigit := idx
