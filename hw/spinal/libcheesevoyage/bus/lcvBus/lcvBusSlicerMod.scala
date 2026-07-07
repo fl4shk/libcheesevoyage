@@ -257,13 +257,13 @@ case class LcvBusSlicer(
           rState === State.MAIN
           //&& io.host.h2dBus.valid
           //&& (rSavedH2dAddrSlice === io.host.h2dBus.addr(cfg.addrSliceRange))
-          //&& (rSavedH2dAddrSlice === stickyHostH2dAddrSlice)
+          && (rSavedH2dAddrSlice === stickyHostH2dAddrSlice)
           //&& (rSavedH2dAddrSlice === rPrevHostH2dAddrSlice)
         ) else (
           rState === State.MAIN
           //&& io.host.h2dBus.valid
           //&& (rSavedH2dAddrSlice === io.host.h2dBus.addr(cfg.addrSliceRange))
-          && (rSavedH2dAddrSlice === stickyHostH2dAddrSlice)
+          //&& (rSavedH2dAddrSlice === stickyHostH2dAddrSlice)
           //&& (rSavedH2dAddrSlice === rPrevHostH2dAddrSlice)
         )
       )
