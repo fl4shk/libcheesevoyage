@@ -27,16 +27,15 @@ case class LongDivIo(cfg: LongDivConfig) extends Bundle {
 }
 
 case class LongDivMultiCycleMultiChunk(
-  //io: LongDivIo,
+  io: LongDivIo,
   cfg: LongDivConfig,
-) extends Component {
-  val io = LongDivIo(cfg=cfg)
+) extends Area {
+  //val io = LongDivIo(cfg=cfg)
   if (cfg.formal) {
   }
   def inp = io.inp
   def outp = io.outp
   val udivIter = LongUdivIter(cfg=cfg)
-
   //--------
   def itdIn = udivIter.io.itdIn
   def chunkStart = udivIter.io.chunkStart
@@ -340,8 +339,8 @@ case class LongDivMultiCycle(
   outp.ready.setAsReg
   outp.ready.init(False)
   //:= RegNext(next=outp.ready, init=outp.ready.getZero)
-  outp.quot.allowOverride
-  outp.rema.allowOverride
+  //outp.quot.allowOverride
+  //outp.rema.allowOverride
 
   outp.quot := RegNext(next=outp.quot, init=outp.quot.getZero)
   outp.rema := RegNext(next=outp.rema, init=outp.rema.getZero)
@@ -729,10 +728,10 @@ case class LongDivMultiCycle(
     chunkWidth > 1
   ) generate (new Area {
     val myDivmod = LongDivMultiCycleMultiChunk(
-      //io=io,
+      io=io,
       cfg=cfg,
     )
-    myDivmod.io <> io
+    //myDivmod.io <> io
   })
 }
 
