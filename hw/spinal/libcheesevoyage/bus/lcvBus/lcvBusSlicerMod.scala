@@ -135,56 +135,57 @@ case class LcvBusSlicer(
   //}
 
   def doConnect(
-    connH2dBus: Boolean,
+    //connH2dBus: Boolean,
+    whichBusIsH2d: Boolean,
     devIdx: Int,
   ): Unit = {
     //val dev.h2dBus = io.devVec(devIdx).h2dBus
     def dev = io.devVec(devIdx)
-    if (connH2dBus) {
+    if (whichBusIsH2d) {
       dev.h2dBus << io.host.h2dBus
-    }
+    } else {
+      //val dev.d2hBus = io.devVec(devIdx).d2hBus
+      io.host.d2hBus << dev.d2hBus
 
-    //val dev.d2hBus = io.devVec(devIdx).d2hBus
-    io.host.d2hBus << dev.d2hBus
+      // at this point, we can just check `dev.h2dBus.ready` to
+      // determine if an h2d bus request is being sent
+      // because we know that `io.host.h2dBus.valid === True`
+      // from the outer-`switch`.
 
-    // at this point, we can just check `dev.h2dBus.ready` to
-    // determine if an h2d bus request is being sent
-    // because we know that `io.host.h2dBus.valid === True`
-    // from the outer-`switch`.
+      // this math here gets rid of the `switch` statement and produces
+      // identical results to the `switch` statement.
+      // I am not sure this is actually that great of an option but it
+      // might be???
+      //rTxnCnt := (
+      //    rTxnCnt 
+      //    + U(
+      //      dev.h2dBus.ready
+      //    )
+      //    - U(
+      //      dev.d2hBus.fire
+      //    )
+      //  )
 
-    // this math here gets rid of the `switch` statement and produces
-    // identical results to the `switch` statement.
-    // I am not sure this is actually that great of an option but it
-    // might be???
-    //rTxnCnt := (
-    //    rTxnCnt 
-    //    + U(
-    //      dev.h2dBus.ready
-    //    )
-    //    - U(
-    //      dev.d2hBus.fire
-    //    )
-    //  )
-
-    switch (
-      //dev.h2dBus.ready
-      dev.h2dBus.fire
-      ## dev.d2hBus.fire
-    ) {
-      is (
-        //B"10"
-        0x2
+      switch (
+        //dev.h2dBus.ready
+        dev.h2dBus.fire
+        ## dev.d2hBus.fire
       ) {
-        // dev.h2dBus.fire, !dev.d2hBus.fire
-        rTxnCnt := rTxnCnt + 1
-      }
-      is (
-        //B"01"
-        0x1
-      ) {
-        rTxnCnt := rTxnCnt - 1
-      }
-      default {
+        is (
+          //B"10"
+          0x2
+        ) {
+          // dev.h2dBus.fire, !dev.d2hBus.fire
+          rTxnCnt := rTxnCnt + 1
+        }
+        is (
+          //B"01"
+          0x1
+        ) {
+          rTxnCnt := rTxnCnt - 1
+        }
+        default {
+        }
       }
     }
 
@@ -206,145 +207,164 @@ case class LcvBusSlicer(
   //) {
   //}
 
-  //val stickyHostH2dAddrSlice = UInt(cfg.mmapCfg.addrSliceWidth bits)
-  //stickyHostH2dAddrSlice := (
-  //  RegNext(
-  //    stickyHostH2dAddrSlice,
-  //    init=stickyHostH2dAddrSlice.getZero
-  //  )
-  //)
-  //when (io.host.h2dBus.valid) {
-  //  stickyHostH2dAddrSlice := io.host.h2dBus.addr(cfg.addrSliceRange)
-  //}
-  val rPrevHostH2dAddrSlice = (
-    Reg(UInt(cfg.mmapCfg.addrSliceWidth bits))
-    init(0x0)
+  val stickyHostH2dAddrSlice = UInt(cfg.mmapCfg.addrSliceWidth bits)
+  stickyHostH2dAddrSlice := (
+    RegNext(
+      stickyHostH2dAddrSlice,
+      init=stickyHostH2dAddrSlice.getZero
+    )
   )
+  when (io.host.h2dBus.valid) {
+    stickyHostH2dAddrSlice := io.host.h2dBus.addr(cfg.addrSliceRange)
+  }
+  //val rPrevHostH2dAddrSlice = (
+  //  Reg(UInt(cfg.mmapCfg.addrSliceWidth bits))
+  //  init(0x0)
+  //)
   //rPrevHostH2dAddrSlice := (
   //  RegNext(
   //    rPrevHostH2dAddrSlice,
   //    init=rPrevHostH2dAddrSlice.getZero
   //  )
   //)
-  when (io.host.h2dBus.fire) {
-    rPrevHostH2dAddrSlice := io.host.h2dBus.addr(cfg.addrSliceRange)
-  }
+  //when (io.host.h2dBus.fire) {
+  //  rPrevHostH2dAddrSlice := io.host.h2dBus.addr(cfg.addrSliceRange)
+  //}
 
   when (
     rState === State.MAIN
-    //&& io.host.h2dBus.valid
+    && io.host.h2dBus.valid
     //&& !LcvFastCmpEq(
     //  rSavedH2dAddrSlice,
     //  io.host.h2dBus.addr(cfg.addrSliceRange),
     //)
     && (
       rSavedH2dAddrSlice
-      //=/= io.host.h2dBus.addr(cfg.addrSliceRange)
-      =/= rPrevHostH2dAddrSlice
+      =/= io.host.h2dBus.addr(cfg.addrSliceRange)
+      //=/= rPrevHostH2dAddrSlice
     )
   ) {
     rState := State.CHANGED_ADDR_SLICE_WAIT_REMAINING_D2H_RESPONSES
   }
 
 
-  switch (
-    (
-      rState === State.MAIN
-      //&& io.host.h2dBus.valid
-      //&& (rSavedH2dAddrSlice === io.host.h2dBus.addr(cfg.addrSliceRange))
-      //&& (rSavedH2dAddrSlice === stickyHostH2dAddrSlice)
-      //&& (rSavedH2dAddrSlice === rPrevHostH2dAddrSlice)
-    )
-    ## (rSavedH2dAddrSlice === rPrevHostH2dAddrSlice)
-    //## (
-    //  //rState === State.MAIN
-    //  //&& 
-    //  //!io.host.h2dBus.valid
-    //  io.host.h2dBus.valid
-    //)
-    //## (rSavedH2dAddrSlice === io.host.h2dBus.addr(cfg.addrSliceRange))
-    ## rSavedH2dAddrSlice
-  ) {
-    for (devIdx <- 0 until cfg.numDevs) {
-      is (
-        //M"11"
-        //new MaskedLiteral(
-        //  //str={
-        //  //  var temp: String = "11"
-        //  //  for (idx <- 0 until rSavedH2dAddrSlice.getWidth) {
-        //  //    temp += "-"
-        //  //  }
-        //  //  temp
-        //  //}
-        //  value=(
-        //    BigInt(
-        //      0x5 << rSavedH2dAddrSlice.getWidth
-        //    )
-        //    + BigInt(devIdx)
-        //  ),
-        //  careAbout=(
-        //  ),
-        //  width=(
-        //    1       // rState comparison
-        //    + 1     // io.host.h2dBus.valid
-        //    + 1     // addr slice comparison
-        //    + rSavedH2dAddrSlice.getWidth
-        //  )
-        //)
-        ////B"101"
-        ////## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
+  def outerDoConnect(
+    whichBusIsH2d: Boolean
+  ): Unit = {
+    switch (
+      (
+        if (whichBusIsH2d) (
+          rState === State.MAIN
+          //&& io.host.h2dBus.valid
+          //&& (rSavedH2dAddrSlice === io.host.h2dBus.addr(cfg.addrSliceRange))
+          //&& (rSavedH2dAddrSlice === stickyHostH2dAddrSlice)
+          //&& (rSavedH2dAddrSlice === rPrevHostH2dAddrSlice)
+        ) else (
+          rState === State.MAIN
+          //&& io.host.h2dBus.valid
+          //&& (rSavedH2dAddrSlice === io.host.h2dBus.addr(cfg.addrSliceRange))
+          && (rSavedH2dAddrSlice === stickyHostH2dAddrSlice)
+          //&& (rSavedH2dAddrSlice === rPrevHostH2dAddrSlice)
+        )
+      )
+      //## (rSavedH2dAddrSlice === rPrevHostH2dAddrSlice)
+      //## (
+      //  //rState === State.MAIN
+      //  //&& 
+      //  //!io.host.h2dBus.valid
+      //  io.host.h2dBus.valid
+      //)
+      //## (rSavedH2dAddrSlice === io.host.h2dBus.addr(cfg.addrSliceRange))
+      ## rSavedH2dAddrSlice
+    ) {
+      for (devIdx <- 0 until cfg.numDevs) {
+        is (
+          //M"11"
+          //new MaskedLiteral(
+          //  //str={
+          //  //  var temp: String = "11"
+          //  //  for (idx <- 0 until rSavedH2dAddrSlice.getWidth) {
+          //  //    temp += "-"
+          //  //  }
+          //  //  temp
+          //  //}
+          //  value=(
+          //    BigInt(
+          //      0x5 << rSavedH2dAddrSlice.getWidth
+          //    )
+          //    + BigInt(devIdx)
+          //  ),
+          //  careAbout=(
+          //  ),
+          //  width=(
+          //    1       // rState comparison
+          //    + 1     // io.host.h2dBus.valid
+          //    + 1     // addr slice comparison
+          //    + rSavedH2dAddrSlice.getWidth
+          //  )
+          //)
+          ////B"101"
+          ////## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
 
-        //U"1"
-        //## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
-        (
-          (1 << (rSavedH2dAddrSlice.getWidth + 1))
-          | (1 << (rSavedH2dAddrSlice.getWidth + 0))
-          | devIdx
-        )
-      ) {
-        doConnect(connH2dBus=true, devIdx=devIdx)
-      }
-      is (
-        (
-          (1 << (rSavedH2dAddrSlice.getWidth + 1))
-          | (0 << (rSavedH2dAddrSlice.getWidth + 0))
-          | devIdx
-        )
-      ) {
-        doConnect(connH2dBus=false, devIdx=devIdx)
+          //U"1"
+          //## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
+          (
+            //(1 << (rSavedH2dAddrSlice.getWidth + 1))
+            //| 
+            (1 << (rSavedH2dAddrSlice.getWidth + 0))
+            | devIdx
+          )
+        ) {
+          doConnect(
+            //connH2dBus=true,
+            whichBusIsH2d=whichBusIsH2d,
+            devIdx=devIdx
+          )
+        }
+        //is (
+        //  (
+        //    (1 << (rSavedH2dAddrSlice.getWidth + 1))
+        //    | (0 << (rSavedH2dAddrSlice.getWidth + 0))
+        //    | devIdx
+        //  )
+        //) {
+        //  doConnect(connH2dBus=false, devIdx=devIdx)
+        //}
+        //is (
+        //  B"111"
+        //  ## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
+        //) {
+        //  doConnect(devIdx=devIdx)
+        //}
+        //is (
+        //  B"100"
+        //  ## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
+        //) {
+        //  doConnect(devIdx=devIdx)
+        //}
       }
       //is (
-      //  B"111"
-      //  ## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
+      //  //M"110"
+      //  MaskedLiteral(
+      //    str={
+      //      var temp: String = "110"
+      //      for (idx <- 0 until rSavedH2dAddrSlice.getWidth) {
+      //        temp += "-"
+      //      }
+      //      temp
+      //    }
+      //  )
       //) {
-      //  doConnect(devIdx=devIdx)
+      //  //when (io.host.h2dBus.valid) {
+      //    rState := State.CHANGED_ADDR_SLICE_WAIT_REMAINING_D2H_RESPONSES
+      //  //}
       //}
-      //is (
-      //  B"100"
-      //  ## U(s"${rSavedH2dAddrSlice.getWidth}'d${devIdx}")
-      //) {
-      //  doConnect(devIdx=devIdx)
-      //}
-    }
-    //is (
-    //  //M"110"
-    //  MaskedLiteral(
-    //    str={
-    //      var temp: String = "110"
-    //      for (idx <- 0 until rSavedH2dAddrSlice.getWidth) {
-    //        temp += "-"
-    //      }
-    //      temp
-    //    }
-    //  )
-    //) {
-    //  //when (io.host.h2dBus.valid) {
-    //    rState := State.CHANGED_ADDR_SLICE_WAIT_REMAINING_D2H_RESPONSES
-    //  //}
-    //}
-    default {
+      default {
+      }
     }
   }
+  outerDoConnect(whichBusIsH2d=true)
+  outerDoConnect(whichBusIsH2d=false)
 
   switch (rState) {
     is (State.START_NEW_ADDR_SLICE) {
