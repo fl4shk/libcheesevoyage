@@ -177,7 +177,7 @@ case class LongDivMultiCycleMultiChunkArea(
     //RegNext(rCnt(0)).asUInt.resized
     rCnt(0).asUInt.resized
   )
-  itdIn.tempDenom := rTempDenom
+  //itdIn.tempDenom := rTempDenom
   itdIn.tempRema := rTempRema(0)
   //udivIter.io.chunkStart := rCnt(0)
 
@@ -189,7 +189,9 @@ case class LongDivMultiCycleMultiChunkArea(
         }))
         rTempRema.foreach(item => item := 0x0)
         rInpSigned := inp.signed
-        rTempNumer.assignFromBits(inp.numer.asBits)
+        rTempNumer.assignFromBits(inp.numer.resize(
+          rTempNumer.asBits.getWidth
+        ).asBits)
         rTempDenom := inp.denom.resized
         rState := State.CAPTURE_INPUTS_PIPE_2
         outp.ready := False
@@ -335,8 +337,8 @@ case class LongDivMultiCycleMultiChunkArea(
     }
     is (State.YIELD_RESULT) {
       outp.ready := True
-      outp.quot := rTempQuot(1).asBits.asUInt
-      outp.rema := rTempRema(1)
+      outp.quot := rTempQuot(1).asBits.asUInt.resize(outp.quot.getWidth)
+      outp.rema := rTempRema(1).resize(outp.rema.getWidth)
       rState := State.IDLE
     }
   }

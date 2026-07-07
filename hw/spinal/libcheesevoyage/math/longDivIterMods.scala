@@ -75,7 +75,7 @@ case class LongUdivIterDataFormal(cfg: LongDivConfig) extends Bundle {
 case class LongUdivIterData(cfg: LongDivConfig) extends Bundle {
   //val tempNumer = cfg.buildTempShape()
   val tempNumerChunk = UInt(cfg.chunkWidth bits)
-  val tempDenom = UInt(cfg.denomWidth bits)
+  //val tempDenom = UInt(cfg.denomWidth bits)
   //val tempQuot = cfg.buildTempShape()
   val tempRema = cfg.buildTempShape()
   val denomMultLut = Vec.fill(cfg.dmlSize())(
@@ -267,7 +267,7 @@ case class LongUdivIter(
   //--------
   //itdOut.tempNumer := itdIn.tempNumer
   itdOut.tempNumerChunk := itdIn.tempNumerChunk
-  itdOut.tempDenom := itdIn.tempDenom
+  //itdOut.tempDenom := itdIn.tempDenom
   //itdOut.tempRema := (
   //  io.shiftInRema
   //  - itdIn.denomMultLut(io.quotDigit)
