@@ -183,7 +183,7 @@ case class LongUdivIter(
   val gtVecWidth: Int = io.gtVec.getWidth
   switch (io.gtVec) {
     for (revIdx <- 0 until gtVecWidth) {
-      val idx = gtVecWidth - revIdx + 1
+      val idx = gtVecWidth - revIdx - 1
       //is (U(
       //  ("1" * (gtVecWidth - (idx + 1))) + ("0" * (idx + 1))
       //)) 
