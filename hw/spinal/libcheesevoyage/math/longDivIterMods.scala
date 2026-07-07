@@ -170,9 +170,9 @@ case class LongUdivIter(
   for (idx <- 0 until cfg.radix) {
     io.gtVec(idx) := (
       //itdIn.denomMultLut(idx) > io.shiftInRema
-      !(
-        Cat(False, itdIn.denomMultLut(idx)).asUInt
-        - Cat(False, io.shiftInRema).asUInt
+      (
+        Cat(False, io.shiftInRema).asUInt
+        - Cat(False, itdIn.denomMultLut(idx)).asUInt
       ).msb
     )
   }
