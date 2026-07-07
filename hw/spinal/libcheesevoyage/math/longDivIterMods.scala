@@ -182,7 +182,8 @@ case class LongUdivIter(
   // This implements binary search.
   val gtVecWidth: Int = io.gtVec.getWidth
   switch (io.gtVec) {
-    for (idx <- 0 until gtVecWidth) {
+    for (revIdx <- 0 until gtVecWidth) {
+      val idx = gtVecWidth - revIdx + 1
       //is (U(
       //  ("1" * (gtVecWidth - (idx + 1))) + ("0" * (idx + 1))
       //)) 
