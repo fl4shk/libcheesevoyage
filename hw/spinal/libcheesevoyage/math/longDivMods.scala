@@ -29,7 +29,7 @@ case class LongDivIo(cfg: LongDivConfig) extends Bundle {
 case class LongDivMultiCycleMultiChunk(
   //io: LongDivIo,
   cfg: LongDivConfig,
-) extends Area {
+) extends Component {
   val io = LongDivIo(cfg=cfg)
   if (cfg.formal) {
   }
