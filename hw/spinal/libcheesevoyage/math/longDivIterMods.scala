@@ -169,11 +169,11 @@ case class LongUdivIter(
   // comparisons given the existence of hard carry chains in FPGAs.
   for (idx <- 0 until cfg.radix) {
     io.gtVec(idx) := (
-      //itdIn.denomMultLut(idx) > io.shiftInRema
-      (
-        Cat(False, io.shiftInRema).asUInt
-        - Cat(False, itdIn.denomMultLut(idx)).asUInt
-      ).msb
+      itdIn.denomMultLut(idx) > io.shiftInRema
+      //(
+      //  Cat(False, io.shiftInRema).asUInt
+      //  - Cat(False, itdIn.denomMultLut(idx)).asUInt
+      //).msb
     )
   }
 
