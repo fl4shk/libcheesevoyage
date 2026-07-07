@@ -105,16 +105,16 @@ case class LongDivMultiCycleMultiChunkArea(
   //})
 
   //val myCmpGeValid = Bool()
-  val nextTempRema = Vec.fill(1)(
-    UInt(
-      (
-        rTempRema(0).getWidth 
-        //+ log2Up(rTempNumer.size)
-        + 1
-      )
-      bits
-    )
-  )
+  //val nextTempRema = Vec.fill(1)(
+  //  UInt(
+  //    (
+  //      rTempRema(0).getWidth 
+  //      //+ log2Up(rTempNumer.size)
+  //      + 1
+  //    )
+  //    bits
+  //  )
+  //)
   //val mySubDel1 = LcvSubDel1(
   //  wordWidth=cfg.tempShapeWidth
   //)
@@ -174,11 +174,12 @@ case class LongDivMultiCycleMultiChunkArea(
   //itdIn.tempQuot := 0x0
   //itdIn.tempNumer := rTempNumer.asBits.asUInt
   itdIn.tempNumerChunk := rTempNumer(
-    RegNext(rCnt(0)).asUInt.resized
+    //RegNext(rCnt(0)).asUInt.resized
+    rCnt(0).asUInt.resized
   )
   itdIn.tempDenom := rTempDenom
   itdIn.tempRema := rTempRema(0)
-  udivIter.io.chunkStart := rCnt(0)
+  //udivIter.io.chunkStart := rCnt(0)
 
   switch (rState) {
     is (State.IDLE) {
@@ -265,28 +266,35 @@ case class LongDivMultiCycleMultiChunkArea(
       //  ),
       //).asUInt
       //--------
-      when (
-        RegNext(
-          !rCnt(0).msb, init=False
-        )
-      ) {
-        rTempRema(0) := (
-          itdOut.tempRema
-        )
-      }
+      //when (
+      //  RegNext(
+      //    !rCnt(0).msb, init=False
+      //  )
+      //) {
+      //  rTempRema(0) := (
+      //    itdOut.tempRema
+      //  )
+      //}
 
       when (
-        RegNext(
-          RegNext(rCnt(0).msb, init=False)
-        )
+        //RegNext(
+        //  RegNext(
+            rCnt(0).msb//, init=False
+        //  )
+        //)
       ) {
         rState := State.YIELD_RESULT_PIPE_2
         //myCmpGeValid := False
       } otherwise {
         rTempQuot(0)(
-          RegNext(RegNext(rCnt(0))).asUInt.resized
+          //RegNext(RegNext(rCnt(0))).asUInt.resized
+          //RegNext(rCnt(0)).asUInt.resized
+          rCnt(0).asUInt.resized
         ) := (
           udivIter.io.quotDigit
+        )
+        rTempRema(0) := (
+          itdOut.tempRema
         )
         //rTempRema(0) := (
         //  nextTempRema(0)(

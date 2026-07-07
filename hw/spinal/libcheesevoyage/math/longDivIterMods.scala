@@ -115,7 +115,7 @@ case class LongUdivIterIo(cfg: LongDivConfig) extends Bundle {
 
   val itdIn = in(LongUdivIterData(cfg=cfg))
 
-  val chunkStart = in(cfg.buildChunkStartShape())
+  //val chunkStart = in(cfg.buildChunkStartShape())
   //--------
   // Outputs
   val itdOut = out(LongUdivIterData(cfg=cfg))
@@ -135,7 +135,7 @@ case class LongUdivIter(
   cfg: LongDivConfig
 ) extends Component {
   val io = LongUdivIterIo(cfg=cfg)
-  io.quotDigit.setAsReg() //init(io.quotDigit.getZero)
+  //io.quotDigit.setAsReg() //init(io.quotDigit.getZero)
 
   def itdIn = io.itdIn
   def itdOut = io.itdOut
@@ -150,15 +150,18 @@ case class LongUdivIter(
   ////    //cfg.chunkWidth bits
   ////  )(io.chunkStart.asUInt)
   ////)
-  val chunkStartSliceIdx = UInt(log2Up(cfg.numChunks()) bits)
-  chunkStartSliceIdx := io.chunkStart.asUInt(
-    log2Up(cfg.numChunks()) - 1 downto 0
-  )
+  //val chunkStartSliceIdx = UInt(log2Up(cfg.numChunks()) bits)
+  //chunkStartSliceIdx := io.chunkStart.asUInt(
+  //  log2Up(cfg.numChunks()) - 1 downto 0
+  //)
 
   //val tempNumerInSlices = (
   //  itdIn.tempNumer.subdivideIn(cfg.numChunks() slices)
   //)
   //tempNumerInSlices.addAttribute("keep")
+
+  //val myDenomMultElem = cloneOf(io.itdIn.denomMultLut.head)
+
   io.shiftInRema.assignFromBits(Cat(
     itdIn.tempRema(cfg.tempTWidth() - cfg.chunkWidth - 1 downto 0),
     //tempNumerInSlices(
@@ -202,10 +205,21 @@ case class LongUdivIter(
       {
         //io.quotDigit := idx
         io.quotDigit := idx
+        //myDenomMultElem := io.itdIn.denomMultLut(idx)
+        itdOut.tempRema := (
+          io.shiftInRema
+          - itdIn.denomMultLut(idx)
+        )(itdOut.tempRema.bitsRange)
       }
     }
     default {
       io.quotDigit := 0
+      //myDenomMultElem := io.itdIn.denomMultLut(0)
+
+      itdOut.tempRema := (
+        io.shiftInRema
+        - itdIn.denomMultLut(0)
+      )(itdOut.tempRema.bitsRange)
     }
 
     //// Here is an example of the expanded form of this `switch ()`
@@ -254,12 +268,12 @@ case class LongUdivIter(
   //itdOut.tempNumer := itdIn.tempNumer
   itdOut.tempNumerChunk := itdIn.tempNumerChunk
   itdOut.tempDenom := itdIn.tempDenom
-  itdOut.tempRema := (
-    io.shiftInRema
-    - itdIn.denomMultLut(io.quotDigit)
-    //- itdIn.denomMultLut.as_value().word_select
-    //	(io.quotDigit, io.chunkWidth())
-  )(itdOut.tempRema.bitsRange)
+  //itdOut.tempRema := (
+  //  io.shiftInRema
+  //  - itdIn.denomMultLut(io.quotDigit)
+  //  //- itdIn.denomMultLut.as_value().word_select
+  //  //	(io.quotDigit, io.chunkWidth())
+  //)(itdOut.tempRema.bitsRange)
   //--------
   itdOut.denomMultLut := itdIn.denomMultLut
   //--------

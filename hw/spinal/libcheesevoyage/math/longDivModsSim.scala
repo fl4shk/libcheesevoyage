@@ -101,7 +101,7 @@ object LongDivMultiCycleSim extends App {
   //def clkRate = 25 MHz
   def mainWidth = 4
   def denomWidth = 4
-  def chunkWidth = 1
+  def chunkWidth = 2//1
   //val simSpinalConfig = SpinalConfig(
   //  //defaultClockDomainFrequency=FixedFrequency(100 MHz)
   //  defaultClockDomainFrequency=FixedFrequency(clkRate)
