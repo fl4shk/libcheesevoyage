@@ -73,9 +73,10 @@ case class LongUdivIterDataFormal(cfg: LongDivConfig) extends Bundle {
   //}
 }
 case class LongUdivIterData(cfg: LongDivConfig) extends Bundle {
-  val tempNumer = cfg.buildTempShape()
+  //val tempNumer = cfg.buildTempShape()
+  val tempNumerChunk = UInt(cfg.chunkWidth bits)
   val tempDenom = UInt(cfg.denomWidth bits)
-  var tempQuot = cfg.buildTempShape()
+  //val tempQuot = cfg.buildTempShape()
   val tempRema = cfg.buildTempShape()
   val denomMultLut = Vec.fill(cfg.dmlSize())(
     UInt(cfg.dmlElemWidth() bits)
@@ -134,6 +135,7 @@ case class LongUdivIter(
   cfg: LongDivConfig
 ) extends Component {
   val io = LongUdivIterIo(cfg=cfg)
+  io.quotDigit.setAsReg() //init(io.quotDigit.getZero)
 
   def itdIn = io.itdIn
   def itdOut = io.itdOut
@@ -153,15 +155,16 @@ case class LongUdivIter(
     log2Up(cfg.numChunks()) - 1 downto 0
   )
 
-  val tempNumerInSlices = (
-    itdIn.tempNumer.subdivideIn(cfg.numChunks() slices)
-  )
-  tempNumerInSlices.addAttribute("keep")
+  //val tempNumerInSlices = (
+  //  itdIn.tempNumer.subdivideIn(cfg.numChunks() slices)
+  //)
+  //tempNumerInSlices.addAttribute("keep")
   io.shiftInRema.assignFromBits(Cat(
     itdIn.tempRema(cfg.tempTWidth() - cfg.chunkWidth - 1 downto 0),
-    tempNumerInSlices(
-      chunkStartSliceIdx
-    ),
+    //tempNumerInSlices(
+    //  chunkStartSliceIdx
+    //),
+    itdIn.tempNumerChunk
   ))
   // Compare every element of the computed `denom * digit` array to
   // `shiftInRema`, computing `gtVec`.
@@ -182,23 +185,20 @@ case class LongUdivIter(
   // This implements binary search.
   val gtVecWidth: Int = io.gtVec.getWidth
   switch (io.gtVec) {
-    for (revIdx <- 0 until gtVecWidth) {
-      val idx = gtVecWidth - revIdx - 1
-      //is (U(
-      //  ("1" * (gtVecWidth - (idx + 1))) + ("0" * (idx + 1))
-      //)) 
-      //is (M(
-      //  ((("-" * (gtVecWidth - (idx + 1)))) + "0" + ("-" * idx))
+    for (idx <- 0 until gtVecWidth) {
+      //val idx = gtVecWidth - revIdx - 1
+      is (U(
+        ("1" * (gtVecWidth - (idx + 1))) + ("0" * (idx + 1))
+      )) 
+      //is (MaskedLiteral(
+      //  (("-" * (gtVecWidth - (idx + 1)))) + "0" + ("-" * idx)
+      //  ////(("1" * (gtVecWidth - (idx + 1)))) + "0" + ("-" * idx)
+      //  //if (idx + 1 < gtVecWidth) (
+      //  //  (("-" * (gtVecWidth - (idx + 2)))) + "1" + "0" + ("-" * idx)
+      //  //) else (
+      //  //  (("-" * (gtVecWidth - (idx + 2)))) + "0" + ("-" * idx)
+      //  //)
       //))
-      is (MaskedLiteral(
-        (("-" * (gtVecWidth - (idx + 1)))) + "0" + ("-" * idx)
-        ////(("1" * (gtVecWidth - (idx + 1)))) + "0" + ("-" * idx)
-        //if (idx + 1 < gtVecWidth) (
-        //  (("-" * (gtVecWidth - (idx + 2)))) + "1" + "0" + ("-" * idx)
-        //) else (
-        //  (("-" * (gtVecWidth - (idx + 2)))) + "0" + ("-" * idx)
-        //)
-      ))
       {
         //io.quotDigit := idx
         io.quotDigit := idx
@@ -225,35 +225,34 @@ case class LongUdivIter(
     //  io.quotDigit := 0
     //}
   }
-  //val myQuotDigitPrioMux = LcvPriorityMux(
-  //  data=io
-  //)
-  //io.quotDigit := LcvPriorityMux(
-  //  data=io.gtVec,
-  //  select=
-  //)
 
-  // Drive `itdOut.tempQuot`
-  itdOut.tempQuot := itdIn.tempQuot
-  switch (chunkStartSliceIdx) {
-    for (idx <- 0 until cfg.numChunks()) {
-      is (idx) {
-        val tempRange = (
-          ((idx + 1) * cfg.chunkWidth) - 1 downto idx * cfg.chunkWidth
-        )
-        itdOut.tempQuot(
-          tempRange
-        ) := (
-          //chunkStartSliceIdx
-          //itdIn.tempQuot(tempRange)
-          io.quotDigit
-        )
-      }
-    }
-  }
+  //// Drive `itdOut.tempQuot`
+  //itdOut.tempQuot := itdIn.tempQuot
+  //switch (
+  //  RegNext(
+  //    chunkStartSliceIdx,
+  //    //init=chunkStartSliceIdx.getZero
+  //  )
+  //) {
+  //  for (idx <- 0 until cfg.numChunks()) {
+  //    is (idx) {
+  //      val tempRange = (
+  //        ((idx + 1) * cfg.chunkWidth) - 1 downto idx * cfg.chunkWidth
+  //      )
+  //      itdOut.tempQuot(
+  //        tempRange
+  //      ) := (
+  //        //chunkStartSliceIdx
+  //        //itdIn.tempQuot(tempRange)
+  //        io.quotDigit
+  //      )
+  //    }
+  //  }
+  //}
   //itdOut.tempQuot.assignFromBits(tempQuotVec.asBits)
   //--------
-  itdOut.tempNumer := itdIn.tempNumer
+  //itdOut.tempNumer := itdIn.tempNumer
+  itdOut.tempNumerChunk := itdIn.tempNumerChunk
   itdOut.tempDenom := itdIn.tempDenom
   itdOut.tempRema := (
     io.shiftInRema
