@@ -8,17 +8,50 @@ import scala.collection.mutable.ArrayBuffer
 
 object LcvPriorityMux {
   def apply(
-    data: Vec[UInt],
+    data: UInt,
     select: UInt,
-  ): UInt = (
+  ): UInt = {
     //Verilog: ((~data ^ select) + data) >> $bits(select)
     // returns msb data[i] bit that have select[i] == 1.
     //  if none select bits are high then returns 0
-    (
-      ((~data.asBits.asUInt ^ select) + data.asBits.asUInt)
-      >> select.getWidth
-    )
+    //((~data ^ select) + data) >> select.getWidth
+    val temp = ((~data ^ select) + data)
+    temp(temp.high downto select.getWidth)
+  }
+  def apply(
+    data: Vec[UInt],
+    select: UInt,
+  ): UInt = (
+    apply(data=data.asBits.asUInt, select=select)
   )
+// >>> def pmux(data, sel):
+// ...     return (((data ^ 0xf) ^ sel) + data) >> 4
+// ...     
+// >>> for data in range(4):
+// ...     for sel in range(4):
+// ...         print(bin(data), bin(sel), bin(pmux(data=data, sel=sel)))
+// ...     print()
+// ...     
+// 0b0 0b0 0b0
+// 0b0 0b1 0b0
+// 0b0 0b10 0b0
+// 0b0 0b11 0b0
+// 
+// 0b1 0b0 0b0
+// 0b1 0b1 0b1
+// 0b1 0b10 0b0
+// 0b1 0b11 0b0
+// 
+// 0b10 0b0 0b0
+// 0b10 0b1 0b0
+// 0b10 0b10 0b1
+// 0b10 0b11 0b1
+// 
+// 0b11 0b0 0b0
+// 0b11 0b1 0b1
+// 0b11 0b10 0b1
+// 0b11 0b11 0b1
+
 }
 object LcvSFindFirstElem {
   def apply[

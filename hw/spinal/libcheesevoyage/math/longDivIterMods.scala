@@ -130,56 +130,50 @@ case class LongUdivIterIo(cfg: LongDivConfig) extends Bundle {
   //--------
 }
 
-case class LongUdivIter(cfg: LongDivConfig) extends Component {
+case class LongUdivIter(
+  cfg: LongDivConfig
+) extends Component {
   val io = LongUdivIterIo(cfg=cfg)
 
   def itdIn = io.itdIn
   def itdOut = io.itdOut
-  //val tempNumerVec = Vec(UInt(cfg.chunkWidth bits), cfg.numChunks())
 
-  //val siRemaTempNumer = itdIn.tempNumer.asBits
-  //val siRemaTempRema = itdIn.tempRema.asBits
-  val bcNumChunks: BitCount = cfg.numChunks() bits
+  //val bcNumChunks: BitCount = cfg.numChunks() bits
 
-  // Shift in the current chunk of `itd_in.temp_numer`
-  //val tempNumerInSlices = (
-  //  itdIn.tempNumer.subdivideIn(
-  //    cfg.numChunks() slices
-  //    //cfg.numChunks() bits
-  //    //cfg.chunkWidth bits
-  //  )(io.chunkStart.asUInt)
-  //)
+  //// Shift in the current chunk of `itd_in.temp_numer`
+  ////val tempNumerInSlices = (
+  ////  itdIn.tempNumer.subdivideIn(
+  ////    cfg.numChunks() slices
+  ////    //cfg.numChunks() bits
+  ////    //cfg.chunkWidth bits
+  ////  )(io.chunkStart.asUInt)
+  ////)
   val chunkStartSliceIdx = UInt(log2Up(cfg.numChunks()) bits)
   chunkStartSliceIdx := io.chunkStart.asUInt(
     log2Up(cfg.numChunks()) - 1 downto 0
   )
-  //chunkStartSliceIdx.addAttribute("keep")
 
   val tempNumerInSlices = (
-    //itdIn.tempNumer(
-    //  io.chunkStart.asUInt * cfg.chunkWidth,
-    //  cfg.chunkWidth bits
-    //)
     itdIn.tempNumer.subdivideIn(cfg.numChunks() slices)
-    //itdIn.tempNumer.subdivideIn(cfg.chunkWidth bits)
   )
   tempNumerInSlices.addAttribute("keep")
   io.shiftInRema.assignFromBits(Cat(
-    //tempNumerInSlices(io.chunkStart.asUInt),
     itdIn.tempRema(cfg.tempTWidth() - cfg.chunkWidth - 1 downto 0),
     tempNumerInSlices(
-      //io.chunkStart.asUInt(log2Up(cfg.numChunks()) - 1 downto 0)
       chunkStartSliceIdx
     ),
-  )//(io.shiftInRema.bitsRange)
-  )
+  ))
   // Compare every element of the computed `denom * digit` array to
   // `shiftInRema`, computing `gtVec`.
   // This creates perhaps a single LUT delay for the greater-than
   // comparisons given the existence of hard carry chains in FPGAs.
-  for (idx <- 0 to cfg.radix - 1) {
+  for (idx <- 0 until cfg.radix) {
     io.gtVec(idx) := (
-      itdIn.denomMultLut(idx) > io.shiftInRema
+      //itdIn.denomMultLut(idx) > io.shiftInRema
+      !(
+        Cat(False, itdIn.denomMultLut(idx)).asUInt
+        - Cat(False, io.shiftInRema).asUInt
+      ).msb
     )
   }
 
@@ -188,10 +182,17 @@ case class LongUdivIter(cfg: LongDivConfig) extends Component {
   // This implements binary search.
   val gtVecWidth: Int = io.gtVec.getWidth
   switch (io.gtVec) {
-    for (idx <- 0 to gtVecWidth - 1) {
-      is (U(
-        ("1" * (gtVecWidth - (idx + 1))) + ("0" * (idx + 1))
-      )) {
+    for (idx <- 0 until gtVecWidth) {
+      //is (U(
+      //  ("1" * (gtVecWidth - (idx + 1))) + ("0" * (idx + 1))
+      //)) 
+      //is (M(
+      //  ((("-" * (gtVecWidth - (idx + 1)))) + "0" + ("-" * idx))
+      //))
+      is (MaskedLiteral(
+        (("-" * (gtVecWidth - (idx + 1)))) + "0" + ("-" * idx)
+      ))
+      {
         //io.quotDigit := idx
         io.quotDigit := idx
       }
@@ -217,30 +218,15 @@ case class LongUdivIter(cfg: LongDivConfig) extends Component {
     //  io.quotDigit := 0
     //}
   }
+  //val myQuotDigitPrioMux = LcvPriorityMux(
+  //  data=io
+  //)
+  //io.quotDigit := LcvPriorityMux(
+  //  data=io.gtVec,
+  //  select=
+  //)
 
   // Drive `itdOut.tempQuot`
-  //val tempQuotVec = Vec.fill(cfg.numChunks())(UInt(cfg.chunkWidth bits))
-  ////val tempQuotInSlices = itdIn.tempQuot.subdivideIn(
-  ////  cfg.numChunks() slices
-  ////)
-  ////tempQuotVec.assignFromBits(itdIn.tempQuot.asBits)
-  ////tempQuotVec.addAttribute("keep")
-  ////tempQuotVec(
-  ////  //io.chunkStart.asUInt(log2Up(cfg.numChunks) - 1 downto 0)
-  ////  chunkStartSliceIdx
-  ////).assignFromBits(io.quotDigit.asBits)
-
-  //////itdOut.tempQuot := itdIn.tempQuot
-  //////for (idx <- 0 to cfg.numChunks() - 1) {
-  //////  when (IntToUInt(idx) === chunkStartSliceIdx) {
-  //////    tempQuotVec(idx) := io.quotDigit
-  //////  } otherwise {
-  //////    //tempQuotVec(idx) := itdIn.tempQuot(
-  //////    //  chunkStartSliceIdx * cfg.chunkWidth, cfg.chunkWidth bits
-  //////    //)
-  //////    tempQuotVec(idx) := tempQuotInSlices(chunkStartSliceIdx)
-  //////  }
-  //////}
   itdOut.tempQuot := itdIn.tempQuot
   switch (chunkStartSliceIdx) {
     for (idx <- 0 until cfg.numChunks()) {
@@ -271,208 +257,6 @@ case class LongUdivIter(cfg: LongDivConfig) extends Component {
   //--------
   itdOut.denomMultLut := itdIn.denomMultLut
   //--------
-  //if (cfg.pipelined)
-  //if (
-  //  //itdOut.tag != null
-  //  cfg.pipelined
-  //) {
-  //  itdOut.tag := itdIn.tag
-  //}
-  ////--------
-  //if (
-  //  //itdOut.formal != null
-  //  cfg.formal
-  //) {
-  //  //println("have cfg.formal")
-  //  //--------
-  //  itdOut.formal := itdIn.formal
-  //  //val formalNumerIn = itdIn.formal.formalNumer
-  //  //val formalDenomIn = itdIn.formal.formalDenom
-  //  val skipCond = (
-  //    //(formalDenomIn === 0)
-  //    (itdIn.tempDenom === 0)
-  //    | (io.chunkStart < 0)
-  //    //| (io.chunkStart >= cfg.numChunks())
-  //  )
-  //  assume(
-  //    itdIn.tempDenom =/= 0
-  //  )
-  //  //val skipCondOfwdMvp = 1
-  //  val skipCondOfwdMvp = Bool()
-  //  //domain = m.d.sync
-  //  //if constants.PIPELINED():
-  //  //  if constants.USE_PIPE_SKID_BUF():
-  //  //    skipCondOfwdMvp = io.ofwdMvp
-  //  //    domain = m.d.comb
-  //  if (cfg.pipelined && cfg.usePipeSkidBuf) {
-  //    skipCondOfwdMvp := io.ofwdMvp
-  //  } else {
-  //    skipCondOfwdMvp := True
-  //  }
-  //  val fullSkipCond = skipCond | skipCondOfwdMvp
-
-  //  val oracleQuotIn = itdIn.formal.oracleQuot
-  //  val oracleRemaIn = itdIn.formal.oracleRema
-  //  val oracleQuotInSliced = oracleQuotIn.subdivideIn(
-  //    cfg.numChunks() slices
-  //  )
-  //  //oracleQuotInSliced.addAttribute("keep")
-  //  //oracleQuotInSliced.assignFromBits(oracleQuotIn.asBits)
-
-  //  //val formalDenomMultLutIn = itdIn.formal.formalDenomMultLut
-
-  //  //val formalNumerOut = itdOut.formal.formalNumer
-  //  //val formalDenomOut = itdOut.formal.formalDenom
-
-  //  val oracleQuotOut = itdOut.formal.oracleQuot
-  //  val oracleRemaOut = itdOut.formal.oracleRema
-
-  //  ////val formalDenomMultLutOut = itdOut.formal.formalDenomMultLut
-  //  ////--------
-  //  ////m.d.comb += (
-  //  ////	//assume(formalDenomIn =/= 0),
-  //  ////	//assume(formalDenomOut =/= 0),
-  //  ////	assume(~skipCond),
-  //  ////)
-  //  ////assume(~skipCond)
-  //  ////assume(~skipCond)
-  //  ////--------
-  //  ////assume(itdIn.tempNumer === itdIn.tempNumer)
-  //  //assert(
-  //  //  //skipCond
-  //  //  //| (!skipCondOfwdMvp)
-  //  //    //skipCondOfwdMvp
-  //  //  //& 
-  //  //  //fullSkipCond
-  //  //  //| (
-  //  //    oracleQuotIn === (itdIn.tempNumer / itdIn.tempDenom)
-  //  //  //)
-  //  //)
-  //  //assert(
-  //  //  //skipCond
-  //  //  //fullSkipCond
-  //  //  //| (
-  //  //    //(!skipCondOfwdMvp)
-  //  //    //& 
-  //  //    //|
-  //  //    (
-  //  //      oracleRemaIn === (itdIn.tempNumer % itdIn.tempDenom)
-  //  //    )
-  //  //  //)
-  //  //)
-  //  ////--------
-
-  //  //for (idx <- 0 to cfg.radix - 1) {
-  //  //  //assume(
-  //  //  //  skipCond
-  //  //  //  | (
-  //  //  //    skipCondOfwdMvp
-  //  //  //    & (
-  //  //  //      //itdIn.shape().formal_dml_elem(
-  //  //  //      //  itdIn, i, FORMAL
-  //  //  //      //) === (itdIn.tempDenom * i)
-  //  //  //      formalDenomMultLutIn(idx) === itdIn.tempDenom * idx
-  //  //  //    )
-  //  //  //  )
-  //  //  //)
-  //  //  assert(
-  //  //    //skipCond
-  //  //    //fullSkipCond
-  //  //    //| (
-  //  //      //(!skipCondOfwdMvp)
-  //  //      //& 
-  //  //      //| 
-  //  //      (
-  //  //        itdIn.denomMultLut(idx) === itdIn.tempDenom * idx
-  //  //      )
-  //  //    //)
-  //  //  )
-  //  //}
-  //  ////when (clockDomain.isResetActive) {
-  //  ////  //assumeInitial(
-  //  ////  //  itdIn === itdIn.getZero
-  //  ////  //)
-  //  ////} 
-  //  when (!clockDomain.isResetActive) {
-  //    //--------
-  //    //--------
-  //    //itdOut.tempNumer := itdIn.tempNumer
-  //    //itdOut.tempDenom := itdIn.tempDenom
-
-  //    oracleQuotOut := oracleQuotIn
-  //    oracleRemaOut := oracleRemaIn
-
-  //    //val oracleQuotInSliceInd = io.chunkStart.asUInt(
-  //    //  log2Up(cfg.numChunks()) - 1 downto 0
-  //    //)
-  //    //--------
-  //    //itdOut.formal.formalDenomMultLut := formalDenomMultLutIn
-  //    //--------
-  //    //when (itdIn.tempDenom =/= 0) {
-  //    //  assert(
-  //    //    //skipCond
-  //    //    //fullSkipCond
-  //    //    //| (
-  //    //      //skipCondOfwdMvp
-  //    //      //(!skipCondOfwdMvp)
-  //    //      //& 
-  //    //      //| 
-  //    //      (
-  //    //        io.quotDigit
-  //    //        === oracleQuotInSliced(
-  //    //          //io.chunkStart.asUInt(
-  //    //          //  log2Up(cfg.numChunks) - 1 downto 0
-  //    //          //)
-  //    //          chunkStartSliceIdx
-  //    //        )
-  //    //        //=== oracleQuotIn(io.chunkStart.asUInt, cfg.chunkWidth bits)
-  //    //        //=== oracleQuotIn(
-  //    //        //  io.chunkStart.asUInt * cfg.chunkWidth,
-  //    //        //  cfg.chunkWidth bits
-  //    //        //)
-  //    //        //=== oracleQuotIn.word_select
-  //    //        //	(io.chunkStart, io.CHUNK_WIDTH())
-  //    //      )
-  //    //    //)
-  //    //  )
-  //    //}
-  //    ////--------
-
-  //    //// If we are the last pipeline stage (or if we are
-  //    //// multi-cycle and computing the last chunk of quotient and
-  //    //// final remainder), check to see if our answer is correct  
-  //    //when (io.chunkStart <= 0x0) {
-  //    //  when (itdIn.tempDenom =/= 0) {
-  //    //    assert(
-  //    //      //skipCond
-  //    //      //fullSkipCond
-  //    //      //| (
-  //    //        //skipCondOfwdMvp
-  //    //        //(!skipCondOfwdMvp)
-  //    //        //& 
-  //    //        //| 
-  //    //        (itdOut.tempQuot === (itdIn.tempNumer / itdIn.tempDenom))
-  //    //      //)
-  //    //    )
-  //    //    assert(
-  //    //      //skipCond
-  //    //      //fullSkipCond
-  //    //      //| (
-  //    //        //skipCondOfwdMvp
-  //    //        //(!skipCondOfwdMvp)
-  //    //        //& 
-  //    //        //| 
-  //    //        (itdOut.tempRema === (itdIn.tempNumer % itdIn.tempDenom))
-  //    //      //)
-  //    //    )
-  //    //  }
-  //    //  //--------
-  //    //}
-  //    ////--------
-  //  }
-  //  //--------
-  ////--------
-  //}
 }
 
 //case class LongUdivIterSyncIo(cfg: LongDivConfig) extends Bundle {
