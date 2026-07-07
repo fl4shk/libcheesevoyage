@@ -340,6 +340,9 @@ case class LongDivMultiCycle(
   outp.ready.setAsReg
   outp.ready.init(False)
   //:= RegNext(next=outp.ready, init=outp.ready.getZero)
+  outp.quot.allowOverride
+  outp.rema.allowOverride
+
   outp.quot := RegNext(next=outp.quot, init=outp.quot.getZero)
   outp.rema := RegNext(next=outp.rema, init=outp.rema.getZero)
   //outp.quot.setAsReg
