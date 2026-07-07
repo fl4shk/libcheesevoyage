@@ -169,11 +169,11 @@ case class LongUdivIter(
   // comparisons given the existence of hard carry chains in FPGAs.
   for (idx <- 0 until cfg.radix) {
     io.gtVec(idx) := (
-      itdIn.denomMultLut(idx) > io.shiftInRema
-      //(
-      //  Cat(False, io.shiftInRema).asUInt
-      //  - Cat(False, itdIn.denomMultLut(idx)).asUInt
-      //).msb
+      //itdIn.denomMultLut(idx) > io.shiftInRema
+      (
+        Cat(False, io.shiftInRema).asUInt
+        - Cat(False, itdIn.denomMultLut(idx)).asUInt
+      ).msb
     )
   }
 
@@ -183,15 +183,15 @@ case class LongUdivIter(
   val gtVecWidth: Int = io.gtVec.getWidth
   switch (io.gtVec) {
     for (idx <- 0 until gtVecWidth) {
-      is (U(
-        ("1" * (gtVecWidth - (idx + 1))) + ("0" * (idx + 1))
-      )) 
+      //is (U(
+      //  ("1" * (gtVecWidth - (idx + 1))) + ("0" * (idx + 1))
+      //)) 
       //is (M(
       //  ((("-" * (gtVecWidth - (idx + 1)))) + "0" + ("-" * idx))
       //))
-      //is (MaskedLiteral(
-      //  (("-" * (gtVecWidth - (idx + 1)))) + "0" + ("-" * idx)
-      //))
+      is (MaskedLiteral(
+        (("-" * (gtVecWidth - (idx + 1)))) + "0" + ("-" * idx)
+      ))
       {
         //io.quotDigit := idx
         io.quotDigit := idx
