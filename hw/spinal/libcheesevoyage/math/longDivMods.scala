@@ -26,16 +26,16 @@ case class LongDivIo(cfg: LongDivConfig) extends Bundle {
   val outp = out(LongDivOutp(cfg=cfg))
 }
 
-case class LongDivMultiCycleMultiChunk(
+case class LongDivMultiCycleMultiChunkArea(
   io: LongDivIo,
   cfg: LongDivConfig,
 ) extends Area {
-  //val io = LongDivIo(cfg=cfg)
   if (cfg.formal) {
   }
   def inp = io.inp
   def outp = io.outp
   val udivIter = LongUdivIter(cfg=cfg)
+
   //--------
   def itdIn = udivIter.io.itdIn
   def chunkStart = udivIter.io.chunkStart
@@ -145,128 +145,128 @@ case class LongDivMultiCycleMultiChunk(
           denomMultLut(idx) := (tempDenom * idx).resized
         }
       }
-      //if (cfg.formal) {
-      //  when (pastValidAfterReset) {
-      //    cover(past(rState) === State.RUNNING)
-      //    when (past(rState) === State.RUNNING) {
-      //      assert(outp.ready)
-      //      when (
-      //        //past(tempNumer) =/= 0x0
-      //        //&& 
-      //        past(tempDenom) =/= 0x0
-      //      ) {
-      //        when (!rInpSigned) {
-      //          cover(
-      //            outp.quot
-      //            === (past(tempNumer) / past(tempDenom)).resized
-      //          )
-      //          cover(
-      //            outp.rema
-      //            === (past(tempNumer) % past(tempDenom)).resized
-      //          )
-      //          assert(
-      //            outp.quot
-      //            === (past(tempNumer) / past(tempDenom)).resized
-      //          )
-      //          assert(
-      //            outp.rema
-      //            === (past(tempNumer) % past(tempDenom)).resized
-      //          )
-      //        } otherwise {
-      //          //cover(
-      //          //  outp.quot.asSInt
-      //          //  === (
-      //          //    past(tempNumer.asSInt) / past(tempDenom.asSInt)
-      //          //  ).resized
-      //          //)
-      //          //cover(
-      //          //  outp.rema.asSInt
-      //          //  === (
-      //          //    past(tempNumer.asSInt) % past(tempDenom.asSInt)
-      //          //  ).resized
-      //          //)
-      //          val myTempNumer = (
-      //            Mux[SInt](
-      //              past(rNumerWasSgnLtz),
-      //              past((~tempNumer) + 1).asSInt,
-      //              past(tempNumer).asSInt,
-      //            )
-      //          )
-      //          val myTempDenom = (
-      //            Mux[SInt](
-      //              past(rDenomWasSgnLtz),
-      //              past((~tempDenom) + 1).asSInt,
-      //              past(tempDenom.asSInt),
-      //            )
-      //          )
-      //          assert(
-      //            Mux[UInt](
-      //              (past(rNumerWasSgnLtz) =/= past(rDenomWasSgnLtz)),
-      //              ((~past((itdOut.tempQuot))) + 1),
-      //              past(itdOut.tempQuot),
-      //            )(cfg.mainWidth - 1 downto 0)
-      //            //outp.quot.asSInt.resized
-      //            === (
-      //              (myTempNumer / myTempDenom).asUInt
-      //              (cfg.mainWidth - 1 downto 0)
-      //            )
-      //          )
-      //          assert(
-      //            //outp.rema.asSInt.resized
-      //            //past(rTempRema)
-      //            Mux[UInt](
-      //              past(rNumerWasSgnLtz),
-      //              ((~past((itdOut.tempRema))) + 1),
-      //              past(itdOut.tempRema),
-      //            )(cfg.mainWidth - 1 downto 0)
-      //            === (
-      //              (myTempNumer % myTempDenom).asUInt
-      //              (cfg.mainWidth - 1 downto 0)
-      //            )
-      //          )
-      //          //when (rNumerWasSgnLtz =/= rDenomWasSgnLtz) {
-      //          //  //outp.quot := ((~myTempQuot) + 1).resized
-      //          //} otherwise {
-      //          //  //assert(
-      //          //  //  outp.quot
-      //          //  //)
-      //          //}
-      //          //when (rNumerWasSgnLtz) {
-      //          //  // This is C's rule for signed remainder
-      //          //  //outp.rema := ((~myTempRema) + 1).resized
-      //          //}
-      //          //assert(
-      //          //  outp.quot.asSInt
-      //          //  === (
-      //          //    past(tempNumer.asSInt) / past(tempDenom.asSInt)
-      //          //  ).resized
-      //          //)
-      //          //assert(
-      //          //  outp.rema.asSInt
-      //          //  === (
-      //          //    past(tempNumer.asSInt) % past(tempDenom.asSInt)
-      //          //  ).resized
-      //          //)
-      //        }
-      //      }
-      //    }
-      //  }
-      //}
+      if (cfg.formal) {
+        when (pastValidAfterReset) {
+          cover(past(rState) === State.RUNNING)
+          when (past(rState) === State.RUNNING) {
+            assert(outp.ready)
+            when (
+              //past(tempNumer) =/= 0x0
+              //&& 
+              past(tempDenom) =/= 0x0
+            ) {
+              when (!rInpSigned) {
+                cover(
+                  outp.quot
+                  === (past(tempNumer) / past(tempDenom)).resized
+                )
+                cover(
+                  outp.rema
+                  === (past(tempNumer) % past(tempDenom)).resized
+                )
+                assert(
+                  outp.quot
+                  === (past(tempNumer) / past(tempDenom)).resized
+                )
+                assert(
+                  outp.rema
+                  === (past(tempNumer) % past(tempDenom)).resized
+                )
+              } otherwise {
+                //cover(
+                //  outp.quot.asSInt
+                //  === (
+                //    past(tempNumer.asSInt) / past(tempDenom.asSInt)
+                //  ).resized
+                //)
+                //cover(
+                //  outp.rema.asSInt
+                //  === (
+                //    past(tempNumer.asSInt) % past(tempDenom.asSInt)
+                //  ).resized
+                //)
+                val myTempNumer = (
+                  Mux[SInt](
+                    past(rNumerWasSgnLtz),
+                    past((~tempNumer) + 1).asSInt,
+                    past(tempNumer).asSInt,
+                  )
+                )
+                val myTempDenom = (
+                  Mux[SInt](
+                    past(rDenomWasSgnLtz),
+                    past((~tempDenom) + 1).asSInt,
+                    past(tempDenom.asSInt),
+                  )
+                )
+                assert(
+                  Mux[UInt](
+                    (past(rNumerWasSgnLtz) =/= past(rDenomWasSgnLtz)),
+                    ((~past((itdOut.tempQuot))) + 1),
+                    past(itdOut.tempQuot),
+                  )(cfg.mainWidth - 1 downto 0)
+                  //outp.quot.asSInt.resized
+                  === (
+                    (myTempNumer / myTempDenom).asUInt
+                    (cfg.mainWidth - 1 downto 0)
+                  )
+                )
+                assert(
+                  //outp.rema.asSInt.resized
+                  //past(rTempRema)
+                  Mux[UInt](
+                    past(rNumerWasSgnLtz),
+                    ((~past((itdOut.tempRema))) + 1),
+                    past(itdOut.tempRema),
+                  )(cfg.mainWidth - 1 downto 0)
+                  === (
+                    (myTempNumer % myTempDenom).asUInt
+                    (cfg.mainWidth - 1 downto 0)
+                  )
+                )
+                //when (rNumerWasSgnLtz =/= rDenomWasSgnLtz) {
+                //  //outp.quot := ((~myTempQuot) + 1).resized
+                //} otherwise {
+                //  //assert(
+                //  //  outp.quot
+                //  //)
+                //}
+                //when (rNumerWasSgnLtz) {
+                //  // This is C's rule for signed remainder
+                //  //outp.rema := ((~myTempRema) + 1).resized
+                //}
+                //assert(
+                //  outp.quot.asSInt
+                //  === (
+                //    past(tempNumer.asSInt) / past(tempDenom.asSInt)
+                //  ).resized
+                //)
+                //assert(
+                //  outp.rema.asSInt
+                //  === (
+                //    past(tempNumer.asSInt) % past(tempDenom.asSInt)
+                //  ).resized
+                //)
+              }
+            }
+          }
+        }
+      }
     }
     is (State.RUNNING) {
-      //if (cfg.formal) {
-      //  when (pastValidAfterReset) {
-      //    assume(stable(tempNumer))
-      //    assume(stable(tempDenom))
-      //    //assume(stable(inp.signed))
-      //    //when (stable(rState)) {
-      //      for (idx <- 0 until cfg.dmlSize()) {
-      //        //assert(stable(rDenomMultLut(idx)))
-      //        assert(denomMultLut(idx) === (tempDenom * idx).resized)
-      //      }
-      //    //}
-      //  }
-      //}
+      if (cfg.formal) {
+        when (pastValidAfterReset) {
+          assume(stable(tempNumer))
+          assume(stable(tempDenom))
+          //assume(stable(inp.signed))
+          //when (stable(rState)) {
+            for (idx <- 0 until cfg.dmlSize()) {
+              //assert(stable(rDenomMultLut(idx)))
+              assert(denomMultLut(idx) === (tempDenom * idx).resized)
+            }
+          //}
+        }
+      }
       //when (inp.valid) {
         when (chunkStart > 0) {
           rTempQuot := itdOut.tempQuot
@@ -294,25 +294,6 @@ case class LongDivMultiCycleMultiChunk(
     }
   }
 }
-//case class LongDivMultiCycleMultiChunk(
-//  //io: LongDivIo,
-//  cfg: LongDivConfig,
-//) extends Component {
-//  //--------
-//  val io = LongDivIo(cfg=cfg)
-//  //object State
-//  //extends SpinalEnum(defaultEncoding=binaryOneHot) {
-//  //  val
-//  //    IDLE,
-//  //    CAPTURE_INPUTS_PIPE_1,
-//  //    RUNNING,
-//  //    YIELD_RESULT_PIPE_2,
-//  //    YIELD_RESULT_PIPE_1,
-//  //    YIELD_RESULT
-//  //    = newElement();
-//  //}
-//  //--------
-//}
 case class LongDivMultiCycle(
   //cfg: LongDivParams
   mainWidth: Int,
@@ -339,9 +320,6 @@ case class LongDivMultiCycle(
   outp.ready.setAsReg
   outp.ready.init(False)
   //:= RegNext(next=outp.ready, init=outp.ready.getZero)
-  //outp.quot.allowOverride
-  //outp.rema.allowOverride
-
   outp.quot := RegNext(next=outp.quot, init=outp.quot.getZero)
   outp.rema := RegNext(next=outp.rema, init=outp.rema.getZero)
   //outp.quot.setAsReg
@@ -383,6 +361,18 @@ case class LongDivMultiCycle(
         cfg.buildTempShape() //init(0x0)
       )
     )
+    //rTempRema(0) := (
+    //  RegNext(
+    //    next=rTempRema(0),
+    //    init=rTempRema(0).getZero,
+    //  )
+    //)
+    //rTempRema(1).setAsReg() init(0x0)
+    //val rTempRema = Reg(
+    //  Vec.fill(cfg.tempShapeWidth)(
+    //    Bool()
+    //  )
+    //)
     for (idx <- 0 until cfg.tempShapeWidth) {
       rTempNumer(idx).init(rTempNumer(idx).getZero)
       //rTempDenom(idx).init(rTempDenom(idx).getZero)
@@ -446,6 +436,7 @@ case class LongDivMultiCycle(
         bits
       )
     )
+    //nextTempRema.foreach(item => item := 0x0)
     val mySubDel1 = LcvSubDel1(
       wordWidth=cfg.tempShapeWidth
     )
@@ -453,13 +444,18 @@ case class LongDivMultiCycle(
       nextTempRema(0).asSInt.resize(mySubDel1.io.inp.a.getWidth)
     )
     mySubDel1.io.inp.b := (
+      //~rTempDenom.asSInt
       rTempDenom.asSInt
     )
+    //mySubDel1.io.inp.carry := (
+    //  True
+    //)
+    //myAddDel1.io.outp.sum_carry
     object State
     extends SpinalEnum(defaultEncoding=binaryOneHot) {
       val
         IDLE,
-        CAPTURE_INPUTS_PIPE_1,
+        CAPTURE_INPUTS_PIPE,
         RUNNING,
         YIELD_RESULT_PIPE_2,
         YIELD_RESULT_PIPE_1,
@@ -485,16 +481,68 @@ case class LongDivMultiCycle(
     )
     val tempRemaMux = (
       Mux[UInt](
-        mySubDel1.io.outp.sum_carry.msb,
+        //!myCmpGeValid,
+        //(rState =/= State.RUNNING) || (!mySubDel1.io.outp.sum_carry.msb),
+        (
+          //(RegNext(rState) =/= State.RUNNING)
+          //rState =/= State.RUNNING
+          //|| 
+          mySubDel1.io.outp.sum_carry.msb
+        ),
+        //myCmpGeValid,
         RegNext(
           next=nextTempRema(0),
           init=nextTempRema(0).getZero,
         )(rTempRema(0).bitsRange),
+        //(
+        //  RegNext(
+        //    next=nextTempRema(1),
+        //    init=nextTempRema(1).getZero,
+        //  )(rTempRema(0).bitsRange) - (
+        //    rTempDenom
+        //  )
+        //)
         mySubDel1.io.outp.sum_carry(
           cfg.tempShapeWidth - 1 downto 0
         ).asUInt,
       )
     )
+    //when (!rCnt(0).msb) {
+    //  nextTempRema(0) := Cat(
+    //    tempRemaMux,
+    //    rTempNumer(
+    //      //RegNext(rCnt(0), init=rCnt(0).getZero)
+    //      //(rCnt(0) + 1)
+    //      rCnt(0)
+    //      .asUInt.resized
+    //    ),
+    //  ).asUInt//(nextTempRema(0).bitsRange)
+    //}
+    //when (!RegNext(next=rCnt(0).msb, init=False)) {
+    //  rTempRema(0) := (
+    //    nextTempRema(1)(
+    //      nextTempRema(1).high downto 1//log2Up(rTempNumer.size)
+    //    )
+    //  )
+    //  when (myCmpGeValid) {
+    //    rTempQuot(0)(
+    //      RegNext(rCnt(0), init=rCnt(0).getZero)
+    //      //rCnt(0)
+    //      .asUInt.resized
+    //    ) := True
+    //  }
+    //}
+    //nextTempRema(1) := nextTempRema(0)
+    //rCmpGeValid := False
+    //nextTempRema(0) := Cat(
+    //  tempRemaMux,
+    //  rTempNumer(
+    //    //RegNext(rCnt(0), init=rCnt(0).getZero)
+    //    //(rCnt(0) + 1)
+    //    rCnt(0)
+    //    .asUInt.resized
+    //  ),
+    //).asUInt//(nextTempRema(0).bitsRange)
 
     switch (rState) {
       is (State.IDLE) {
@@ -509,7 +557,7 @@ case class LongDivMultiCycle(
           rTempNumer.assignFromBits(inp.numer.asBits)
           rTempDenom := inp.denom.resized
           //rTempDenom.assignFromBits(inp.denom.asBits)
-          rState := State.CAPTURE_INPUTS_PIPE_1
+          rState := State.CAPTURE_INPUTS_PIPE
           outp.ready := False
         }
         rCnt(0) := (
@@ -520,7 +568,7 @@ case class LongDivMultiCycle(
           rTempNumer.size - 2
         )
       }
-      is (State.CAPTURE_INPUTS_PIPE_1) {
+      is (State.CAPTURE_INPUTS_PIPE) {
         rTempQuot.foreach(item => item.foreach(myQuotBit => {
           myQuotBit := False
         }))
@@ -726,13 +774,12 @@ case class LongDivMultiCycle(
 
   val multiChunkWidthArea = (
     chunkWidth > 1
-  ) generate (new Area {
-    val myDivmod = LongDivMultiCycleMultiChunk(
+  ) generate (
+    LongDivMultiCycleMultiChunkArea(
       io=io,
       cfg=cfg,
     )
-    //myDivmod.io <> io
-  })
+  )
 }
 
 //case class LongDivMultiCycle(
@@ -972,7 +1019,7 @@ case class LongDivMultiCycle(
 //    //    //itdIn.tempDenom := loc.tempDenomReg
 //    //    //itdIn.tempQuot := 0x0
 //    //    //itdIn.tempRema := 0x0
-//    //    for (idx <- 0 until cfg.dmlSize()) {
+//    //    for (idx <- 0 to cfg.dmlSize() - 1) {
 //    //      loc.rDenomMultLut(idx) := (loc.tempDenom * idx).resized
 //    //    }
 //    //    //--------
@@ -1125,7 +1172,7 @@ case class LongDivMultiCycle(
 //    //    //    //    * i
 //    //    //    //  ))
 //    //    //    //  for i in range(cfg.dmlSize())
-//    //    //    for (idx <- 0 until cfg.dmlSize()) {
+//    //    //    for (idx <- 0 to cfg.dmlSize() - 1) {
 //    //    //      assert(
 //    //    //        itdIn.denomMultLut(idx)
 //    //    //        === (
@@ -1171,7 +1218,7 @@ case class LongDivMultiCycle(
 //    //)){ 
 //    //}
 //    val m = new ArrayBuffer[LongUdivIterSync]()
-//    for (idx <- 0 until numPstages) {
+//    for (idx <- 0 to numPstages - 1) {
 //      m += new LongUdivIterSync(
 //        cfg=cfg,
 //        chunkStartVal=(numPstages - 1) - idx
@@ -1243,7 +1290,7 @@ case class LongDivMultiCycle(
 //  val ifwdMvp = ArrayBuffer[Bool]()
 //  val ofwdMvp = ArrayBuffer[Bool]()
 //
-//  for (idx <- 0 until loc.m.size) {
+//  for (idx <- 0 to loc.m.size - 1) {
 //    itsIo += loc.m(idx).io
 //    //itsIo.last.sbIo
 //    //itsFormal += itsIo(idx).formal
@@ -1292,7 +1339,7 @@ case class LongDivMultiCycle(
 //  } else { // if (usePipeSkidBuf)
 //    PipeSkidBufIo.connectParallel(
 //      sbIoList=(
-//        for (idx <- 0 until itsIo.size)
+//        for (idx <- 0 to itsIo.size - 1)
 //          yield itsIo(idx).sbIo
 //      ).toList,
 //      tieFirstIfwdValid=true,
@@ -1364,7 +1411,7 @@ case class LongDivMultiCycle(
 //    loc.tCombPrev.tempBusRema,
 //  )
 //  //--------
-//  for (idx <- 0 until loc.m.size) {
+//  for (idx <- 0 to loc.m.size - 1) {
 //    when (ofwdMove(idx)) {
 //      loc.tSync.numerWasLez(idx + 1) := loc.tSync.numerWasLez(idx)
 //      loc.tSync.denomWasLez(idx + 1) := loc.tSync.denomWasLez(idx)
@@ -1383,7 +1430,7 @@ case class LongDivMultiCycle(
 //      loc.rItdIn0.tag := inp.tag
 //    }
 //  }
-//  for (idx <- 0 until cfg.dmlSize()) {
+//  for (idx <- 0 to cfg.dmlSize() - 1) {
 //    loc.rItdIn0.denomMultLut(idx) := (loc.tSync.tempDenom * idx).resized
 //  }
 //  outp.quot := loc.tComb.tempBusQuot
