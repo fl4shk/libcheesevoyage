@@ -424,10 +424,11 @@ case class LongUdivIter(
         io.quotDigit := 0
         //myDenomMultElem := io.itdIn.denomMultLut(0)
 
-        itdOut.tempRema := (
-          io.shiftInRema
-          - itdIn.denomMultLut(0)
-        )(itdOut.tempRema.bitsRange)
+        itdOut.tempRema := 0x0
+        //itdOut.tempRema := (
+        //  io.shiftInRema
+        //  - itdIn.denomMultLut(0)
+        //)(itdOut.tempRema.bitsRange)
       }
 
       //// Here is an example of the expanded form of this `switch ()`
