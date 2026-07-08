@@ -234,7 +234,7 @@ case class LongUdivIter(
     itdIn.tempNumerChunk
   ))
 
-  val gtVecWidth: Int = cfg.radix //io.cmpVec.getWidth
+  val cmpVecWidth: Int = cfg.radix //io.cmpVec.getWidth
 
   // Compare every element of the computed `denom * digit` array to
   // `shiftInRema`, computing `cmpVec`.
@@ -242,21 +242,25 @@ case class LongUdivIter(
   // comparisons given the existence of hard carry chains in FPGAs.
   for (idx <- 0 until cfg.radix) {
     val tempIdx = (
-      //if (gtVecWidth <= 8) (
+      //if (cmpVecWidth <= 8) (
       //  cfg.radix - idx - 1
       //) else (
         idx
       //)
     )
     io.cmpVec(idx) := (
-      itdIn.denomMultLut(tempIdx) > io.shiftInRema
+      if (cmpVecWidth <= 8) (
+        itdIn.denomMultLut(tempIdx) <= io.shiftInRema
+      ) else (
+        itdIn.denomMultLut(tempIdx) > io.shiftInRema
+      )
       //itdIn.denomMultLut(tempIdx) <= io.shiftInRema
       //(
       //  Cat(False, io.shiftInRema).asUInt
       //  - Cat(False, itdIn.denomMultLut(idx)).asUInt
       //).msb
     )
-    //if (gtVecWidth <= 8) {
+    //if (cmpVecWidth <= 8) {
     //  io.cmpVec(1)(idx) := (
     //    (
     //      Cat(False, io.shiftInRema).asUInt
@@ -268,7 +272,7 @@ case class LongUdivIter(
   }
 
   val mySmallRadixGtArea = (
-    gtVecWidth <= 8
+    cmpVecWidth <= 8
   ) generate (new Area {
     //val myMask = (~io.cmpVec) & ~((~io.cmpVec) - 1)
     val myPrioEnc = LcvPrioEncoder8To3()
@@ -278,28 +282,28 @@ case class LongUdivIter(
     //io.quotDigit := myPrioEnc.io.outp(io.quotDigit.bitsRange)
     for (idx <- 0 until io.quotDigit.getWidth) {
       io.quotDigit(idx) := (
-        myPrioEnc.io.outp(idx) & ~io.cmpVec.lsb
+        myPrioEnc.io.outp(idx) //& ~io.cmpVec.lsb
       )
     }
     //myPrioEnc.io.inp(1 downto 0) := io.cmpVec(1 downto 0)
-    for (idx <- 0 until gtVecWidth) {
+    for (idx <- 0 until cmpVecWidth) {
       //val revIdx = (
-      //  //gtVecWidth - idx - 1
+      //  //cmpVecWidth - idx - 1
       //  myPrioEnc.io.inp.getWidth - idx - 1
       //)
       val tempIdx = idx//revIdx//idx//revIdx
-      myPrioEnc.io.inp(tempIdx) := ~io.cmpVec(idx)
-      //myPrioEnc.io.inp(tempIdx) := io.cmpVec(idx)
+      //myPrioEnc.io.inp(tempIdx) := ~io.cmpVec(idx)
+      myPrioEnc.io.inp(tempIdx) := io.cmpVec(idx)
     }
-    //if (gtVecWidth == 2) {
+    //if (cmpVecWidth == 2) {
     //} else 
-    //if (gtVecWidth == 4) {
+    //if (cmpVecWidth == 4) {
     //  //myPrioEnc.io.inp(1 downto 0) := io.cmpVec(7 downto 6)
     //  //myPrioEnc.io.inp(3 downto 2) := io.cmpVec(5 downto 4)
     //  //myPrioEnc.io.inp(7 downto 4) := io.cmpVec(3 downto 0)
     //  //myPrioEnc.io.inp(7 downto 4) := io.cmpVec(3 downto 0)
     //  myPrioEnc.io.inp(3 downto 0) := ~io.cmpVec
-    //} else { // if (gtVecWidth == 8)
+    //} else { // if (cmpVecWidth == 8)
     //  //myPrioEnc.io.inp(1 downto 0) := io.cmpVec(7 downto 6)
     //  //myPrioEnc.io.inp(3 downto 2) := io.cmpVec(5 downto 4)
     //  //myPrioEnc.io.inp(7 downto 4) := io.cmpVec(3 downto 0)
@@ -312,24 +316,24 @@ case class LongUdivIter(
   })
 
   val myBigRadixGtArea = (
-    gtVecWidth > 8
+    cmpVecWidth > 8
   ) generate (new Area {
     // Find the current quotient digit with something resembling a
     // priority encoder.
     // This implements binary search.
     switch (io.cmpVec) {
-      for (idx <- 0 until gtVecWidth) {
-        //val idx = gtVecWidth - revIdx - 1
+      for (idx <- 0 until cmpVecWidth) {
+        //val idx = cmpVecWidth - revIdx - 1
         is (U(
-          ("1" * (gtVecWidth - (idx + 1))) + ("0" * (idx + 1))
+          ("1" * (cmpVecWidth - (idx + 1))) + ("0" * (idx + 1))
         )) 
         //is (MaskedLiteral(
-        //  (("-" * (gtVecWidth - (idx + 1)))) + "0" + ("-" * idx)
-        //  ////(("1" * (gtVecWidth - (idx + 1)))) + "0" + ("-" * idx)
-        //  //if (idx + 1 < gtVecWidth) (
-        //  //  (("-" * (gtVecWidth - (idx + 2)))) + "1" + "0" + ("-" * idx)
+        //  (("-" * (cmpVecWidth - (idx + 1)))) + "0" + ("-" * idx)
+        //  ////(("1" * (cmpVecWidth - (idx + 1)))) + "0" + ("-" * idx)
+        //  //if (idx + 1 < cmpVecWidth) (
+        //  //  (("-" * (cmpVecWidth - (idx + 2)))) + "1" + "0" + ("-" * idx)
         //  //) else (
-        //  //  (("-" * (gtVecWidth - (idx + 2)))) + "0" + ("-" * idx)
+        //  //  (("-" * (cmpVecWidth - (idx + 2)))) + "0" + ("-" * idx)
         //  //)
         //))
         {
