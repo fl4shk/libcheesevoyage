@@ -5212,8 +5212,6 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   //println(
   //  s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
   //)
-  myFifoThingDoStall := False
-  myLoD2hPushStm.valid := False
 
   switch (
     tempToSwitch
@@ -5235,6 +5233,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         wrLineFifoIdx := rdLineFifoIdx + 1
         lineFifoIdxRam.io.wrEn := True
       }
+
+      //myFifoThingDoStall := False
+      myLoD2hPushStm.valid := False
 
       myFifoThingDoStall := True
       //doPopLoH2dFifo()
@@ -5285,6 +5286,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
           "1" + myRamIdxMask
         )
       ) {
+        myFifoThingDoStall := False
+        //myLoD2hPushStm.valid := False
         if (myCondHaveLineFifoIdxRam) {
           rSavedRamIdx := ramIdx
         }
@@ -6826,8 +6829,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
   )
 
-  myFifoThingDoStall := False
-  myLoD2hPushStm.valid := False
+  //myFifoThingDoStall := False
+  //myLoD2hPushStm.valid := False
   switch (
     tempToSwitch
   ) {
@@ -6841,6 +6844,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       //// cache miss, and know for sure that the line isn't dirty
       // cache miss
       rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+
+      //myFifoThingDoStall := False
+      myLoD2hPushStm.valid := False
+
 
       if (myCondHaveLineFifoIdxRam) {
         rSavedRamIdx := rdLineFifoIdx
@@ -6865,6 +6872,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     ) {
       // cache miss, and the line is *possibly* dirty
       rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+
+      //myFifoThingDoStall := False
+      myLoD2hPushStm.valid := False
 
       if (myCondHaveLineFifoIdxRam) {
         rSavedRamIdx := rdLineFifoIdx
@@ -6896,6 +6906,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           "1-0" + myRamIdxMask
         )
       ) {
+        myFifoThingDoStall := False
+        //myLoD2hPushStm.valid := False
+
         if (myCondHaveLineFifoIdxRam) {
           rSavedRamIdx := ramIdx
         }
@@ -6938,6 +6951,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           "1-1" + myRamIdxMask
         )
       ) {
+
+        myFifoThingDoStall := False
+        //myLoD2hPushStm.valid := False
+
         if (myCondHaveLineFifoIdxRam) {
           rSavedRamIdx := ramIdx
         }
@@ -6973,8 +6990,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       }
     }
     default {
-      //myFifoThingDoStall := False
-      //myLoD2hPushStm.valid := False
+      myFifoThingDoStall := False
+      myLoD2hPushStm.valid := False
     }
   }
 
