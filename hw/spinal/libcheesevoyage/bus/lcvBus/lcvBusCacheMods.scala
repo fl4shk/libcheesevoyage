@@ -7003,7 +7003,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       }
     }
     is (MaskedLiteral(
-      "1" + "0" + "-" + ("-" * numWays)
+      "10--" + ("-" * numWays)
     )) {
       doPopLoH2dFifo()
       myFifoThingDoStall := False
