@@ -4987,7 +4987,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     init(0x0),
   )
   val tempHaveHitCmpEq = Vec.fill(numWays)(Bool())
-  val haveHit = Vec.fill(numWays)(Bool())
+  val haveHit = Vec.fill(numWays)(
+    Bool()
+  )
   for (ramIdx <- 0 until numWays) {
     tempHaveHitCmpEq(ramIdx) := (
       myTempHaveHitCmpEqLeft(ramIdx)
@@ -5209,6 +5211,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     )
     ## rDel2LoH2dPayload.isWrite
     ## haveHit
+  )
+  println(
+    s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
   )
 
   switch (
