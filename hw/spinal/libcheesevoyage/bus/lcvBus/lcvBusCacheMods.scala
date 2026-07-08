@@ -6838,9 +6838,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     ## rDel2LoH2dPayload.isWrite
     ## haveHit
   )
-  //println(
-  //  s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
-  //)
+  println(
+    s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
+  )
 
   //myFifoThingDoStall := False
   //myLoD2hPushStm.valid := False
