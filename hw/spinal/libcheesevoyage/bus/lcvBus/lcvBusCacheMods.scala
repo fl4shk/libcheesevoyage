@@ -5176,7 +5176,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     //((rState === State.IDLE) && rMyTempDoSaveCond(3))
     //((rState === State.IDLE)
     rState.asBits(1)
-    ## rMyTempDoSaveCond(3))
+    ## rMyTempDoSaveCond(3)
     //RegNext(
     //  RegNext(mySelLoH2dPopStm.fire, init=False),
     //  init=False
