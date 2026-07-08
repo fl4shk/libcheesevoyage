@@ -248,9 +248,9 @@ case class LongUdivIter(
       someTempNumerChunk,
     ).asUInt(io.shiftInRema.bitsRange)
   }
-  //io.shiftInRema := mkShiftInRema(
-  //  itdIn.tempNumer(chunkStartSliceIdx)
-  //)
+  io.shiftInRema := mkShiftInRema(
+    itdIn.tempNumer(chunkStartSliceIdx)
+  )
   //io.shiftInRema.assignFromBits(Cat(
   //  itdIn.tempRema(cfg.tempTWidth() - cfg.chunkWidth - 1 downto 0),
   //  //tempNumerInSlices(
@@ -266,14 +266,14 @@ case class LongUdivIter(
   // This creates perhaps a single LUT delay for the greater-than
   // comparisons given the existence of hard carry chains in FPGAs.
 
-  io.cmpVec.allowOverride
-  itdOut.tempRema.allowOverride
-  io.cmpVec := 0x0
-  itdOut.tempRema := 0x0
+  //io.cmpVec.allowOverride
+  //itdOut.tempRema.allowOverride
+  //io.cmpVec := 0x0
+  //itdOut.tempRema := 0x0
 
-  switch (chunkStartSliceIdx) {
-    for (chunkIdx <- 0 until cfg.numChunks) {
-      is (chunkIdx) {
+  //switch (chunkStartSliceIdx) {
+  //  for (chunkIdx <- 0 until cfg.numChunks) {
+  //    is (chunkIdx) {
         for (idx <- 0 until cfg.radix) {
           val tempIdx = idx
           io.cmpVec(idx) := (
@@ -282,18 +282,24 @@ case class LongUdivIter(
             //) else (
               //itdIn.denomMultLut(tempIdx) > io.shiftInRema
               itdIn.denomMultLut(tempIdx)
-              > mkShiftInRema(itdIn.tempNumer(chunkIdx))
+              //> mkShiftInRema(itdIn.tempNumer(chunkIdx))
+              > io.shiftInRema
             //)
           )
-          itdOut.tempRema := (
-            //io.shiftInRema
-            mkShiftInRema(itdIn.tempNumer(chunkIdx))
-            - itdIn.denomMultLut(0)
-          )(itdOut.tempRema.bitsRange)
+          //itdOut.tempRema := (
+          //  io.shiftInRema
+          //  //mkShiftInRema(itdIn.tempNumer(chunkIdx))
+          //  - itdIn.denomMultLut(0)
+          //)(itdOut.tempRema.bitsRange)
         }
-      }
-    }
-  }
+  //    }
+  //  }
+  //}
+  itdOut.tempRema := (
+    io.shiftInRema
+    //mkShiftInRema(itdIn.tempNumer(chunkIdx))
+    - itdIn.denomMultLut(0)
+  )(itdOut.tempRema.bitsRange)
 
   //val mySmallRadixGtArea = (
   //  cmpVecWidth <= 8
@@ -353,19 +359,20 @@ case class LongUdivIter(
 
     io.quotDigit := 0
     switch (
-      (
-        chunkStartSliceIdx
-        ## io.cmpVec
-      ).asUInt
+      //(
+        //chunkStartSliceIdx
+        //## 
+        io.cmpVec
+      //).asUInt
     ) {
-      val loopBounds = (
-        //cfg.numChunks + cmpVecWidth
-        chunkStartSliceIdx.getWidth + cmpVecWidth
-      )
+      //val loopBounds = (
+      //  //cfg.numChunks + cmpVecWidth
+      //  chunkStartSliceIdx.getWidth + cmpVecWidth
+      //)
       //println(
       //  s"loopBounds:${loopBounds}"
       //)
-      for (chunkIdx <- 0 until cfg.numChunks) {
+      //for (chunkIdx <- 0 until cfg.numChunks) {
         for (
           //kdx <- 0 until loopBounds
           cmpIdx <- 0 until cmpVecWidth
@@ -380,15 +387,16 @@ case class LongUdivIter(
           //  s"chunkIdx:${chunkIdx}  cmpIdx:${cmpIdx}"
           //)
           is (
-            U(
-              s"${loopBounds}'d${chunkIdx << cmpVecWidth}"
-            )
-            | (
+            //U(
+            //  s"${loopBounds}'d${chunkIdx << cmpVecWidth}"
+            //)
+            //| (
               U(
                 ("1" * (cmpVecWidth - (cmpIdx + 1)))
                 + ("0" * (cmpIdx + 1))
-              ).resize(loopBounds)
-            )
+              )
+            //  .resize(loopBounds)
+            //)
           ) 
           //is (MaskedLiteral(
           //  (("-" * (cmpVecWidth - (idx + 1)))) + "0" + ("-" * idx)
@@ -404,13 +412,13 @@ case class LongUdivIter(
             io.quotDigit := cmpIdx
             //myDenomMultElem := io.itdIn.denomMultLut(idx)
             itdOut.tempRema := (
-              //io.shiftInRema
-              mkShiftInRema(itdIn.tempNumer(chunkIdx))
+              io.shiftInRema
+              //mkShiftInRema(itdIn.tempNumer(chunkIdx))
               - itdIn.denomMultLut(cmpIdx)
             )(itdOut.tempRema.bitsRange)
           }
         }
-      }
+      //}
       default {
         //io.quotDigit := 0
         //myDenomMultElem := io.itdIn.denomMultLut(0)
