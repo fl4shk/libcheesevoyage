@@ -5361,6 +5361,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       }
     }
     default {
+      myFifoThingDoStall := False
+      myLoD2hPushStm.valid := False
     }
   }
 
@@ -5369,8 +5371,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       rState := State.IDLE
     }
     is (State.IDLE) {
-      myFifoThingDoStall := False
-      myLoD2hPushStm.valid := False
+      //myFifoThingDoStall := False
+      //myLoD2hPushStm.valid := False
       //doIgnoreInvalidFifoThingPopCnt()
       doPopLoH2dFifo()
 
