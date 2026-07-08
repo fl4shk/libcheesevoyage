@@ -73,8 +73,13 @@ case class LongUdivIterDataFormal(cfg: LongDivConfig) extends Bundle {
   //}
 }
 case class LongUdivIterData(cfg: LongDivConfig) extends Bundle {
+  val tempNumer = (
+    Vec.fill(cfg.numChunks)(
+      UInt(cfg.chunkWidth bits)
+    )
+  )
   //val tempNumer = cfg.buildTempShape()
-  val tempNumerChunk = UInt(cfg.chunkWidth bits)
+  //val tempNumerChunk = UInt(cfg.chunkWidth bits)
   //val tempDenom = UInt(cfg.denomWidth bits)
   //val tempQuot = cfg.buildTempShape()
   val tempRema = cfg.buildTempShape()
@@ -115,7 +120,7 @@ case class LongUdivIterIo(cfg: LongDivConfig) extends Bundle {
 
   val itdIn = in(LongUdivIterData(cfg=cfg))
 
-  //val chunkStart = in(cfg.buildChunkStartShape())
+  val chunkStart = in(cfg.buildChunkStartShape())
   //--------
   // Outputs
   val itdOut = out(LongUdivIterData(cfg=cfg))
@@ -214,10 +219,15 @@ case class LongUdivIter(
   ////    //cfg.chunkWidth bits
   ////  )(io.chunkStart.asUInt)
   ////)
-  //val chunkStartSliceIdx = UInt(log2Up(cfg.numChunks()) bits)
-  //chunkStartSliceIdx := io.chunkStart.asUInt(
-  //  log2Up(cfg.numChunks()) - 1 downto 0
-  //)
+  val chunkStartSliceIdx = UInt(log2Up(cfg.numChunks()) bits)
+  chunkStartSliceIdx := io.chunkStart.asUInt(
+    log2Up(cfg.numChunks()) - 1 downto 0
+  )
+
+  println(
+    s"numChunks:${cfg.numChunks()} "
+    + s"chunkStartSliceIdx.getWidth:${chunkStartSliceIdx.getWidth}"
+  )
 
   //val tempNumerInSlices = (
   //  itdIn.tempNumer.subdivideIn(cfg.numChunks() slices)
@@ -226,13 +236,28 @@ case class LongUdivIter(
 
   //val myDenomMultElem = cloneOf(io.itdIn.denomMultLut.head)
 
-  io.shiftInRema.assignFromBits(Cat(
-    itdIn.tempRema(cfg.tempTWidth() - cfg.chunkWidth - 1 downto 0),
-    //tempNumerInSlices(
-    //  chunkStartSliceIdx
-    //),
-    itdIn.tempNumerChunk
-  ))
+  def mkShiftInRema(
+    someTempNumerChunk: UInt,
+  ) = {
+    Cat(
+      itdIn.tempRema(cfg.tempTWidth() - cfg.chunkWidth - 1 downto 0),
+      //tempNumerInSlices(
+      //  chunkStartSliceIdx
+      //),
+      //itdIn.tempNumerChunk
+      someTempNumerChunk,
+    ).asUInt
+  }
+  //io.shiftInRema := mkShiftInRema(
+  //  itdIn.tempNumer(chunkStartSliceIdx)
+  //)
+  //io.shiftInRema.assignFromBits(Cat(
+  //  itdIn.tempRema(cfg.tempTWidth() - cfg.chunkWidth - 1 downto 0),
+  //  //tempNumerInSlices(
+  //  //  chunkStartSliceIdx
+  //  //),
+  //  itdIn.tempNumerChunk
+  //))
 
   val cmpVecWidth: Int = cfg.radix //io.cmpVec.getWidth
 
@@ -240,120 +265,154 @@ case class LongUdivIter(
   // `shiftInRema`, computing `cmpVec`.
   // This creates perhaps a single LUT delay for the greater-than
   // comparisons given the existence of hard carry chains in FPGAs.
-  for (idx <- 0 until cfg.radix) {
-    val tempIdx = (
-      //if (cmpVecWidth <= 8) (
-      //  cfg.radix - idx - 1
-      //) else (
-        idx
-      //)
-    )
-    io.cmpVec(idx) := (
-      if (cmpVecWidth <= 8) (
-        itdIn.denomMultLut(tempIdx) <= io.shiftInRema
-      ) else (
-        itdIn.denomMultLut(tempIdx) > io.shiftInRema
-      )
-      //itdIn.denomMultLut(tempIdx) <= io.shiftInRema
-      //(
-      //  Cat(False, io.shiftInRema).asUInt
-      //  - Cat(False, itdIn.denomMultLut(idx)).asUInt
-      //).msb
-    )
-    //if (cmpVecWidth <= 8) {
-    //  io.cmpVec(1)(idx) := (
-    //    (
-    //      Cat(False, io.shiftInRema).asUInt
-    //      - Cat(False, itdIn.denomMultLut(idx)).asUInt
-    //      //- 1
-    //    ).msb
-    //  )
-    //}
-  }
 
-  val mySmallRadixGtArea = (
-    cmpVecWidth <= 8
-  ) generate (new Area {
-    //val myMask = (~io.cmpVec) & ~((~io.cmpVec) - 1)
-    val myPrioEnc = LcvPrioEncoder8To3()
-    myPrioEnc.io.inp := 0x0
-    myPrioEnc.io.inp.allowOverride
+  itdOut.tempRema.allowOverride
 
-    //io.quotDigit := myPrioEnc.io.outp(io.quotDigit.bitsRange)
-    for (idx <- 0 until io.quotDigit.getWidth) {
-      io.quotDigit(idx) := (
-        myPrioEnc.io.outp(idx) //& ~io.cmpVec.lsb
-      )
-    }
-    //myPrioEnc.io.inp(1 downto 0) := io.cmpVec(1 downto 0)
-    for (idx <- 0 until cmpVecWidth) {
-      //val revIdx = (
-      //  //cmpVecWidth - idx - 1
-      //  myPrioEnc.io.inp.getWidth - idx - 1
-      //)
-      val tempIdx = idx//revIdx//idx//revIdx
-      //myPrioEnc.io.inp(tempIdx) := ~io.cmpVec(idx)
-      myPrioEnc.io.inp(tempIdx) := io.cmpVec(idx)
-    }
-    //if (cmpVecWidth == 2) {
-    //} else 
-    //if (cmpVecWidth == 4) {
-    //  //myPrioEnc.io.inp(1 downto 0) := io.cmpVec(7 downto 6)
-    //  //myPrioEnc.io.inp(3 downto 2) := io.cmpVec(5 downto 4)
-    //  //myPrioEnc.io.inp(7 downto 4) := io.cmpVec(3 downto 0)
-    //  //myPrioEnc.io.inp(7 downto 4) := io.cmpVec(3 downto 0)
-    //  myPrioEnc.io.inp(3 downto 0) := ~io.cmpVec
-    //} else { // if (cmpVecWidth == 8)
-    //  //myPrioEnc.io.inp(1 downto 0) := io.cmpVec(7 downto 6)
-    //  //myPrioEnc.io.inp(3 downto 2) := io.cmpVec(5 downto 4)
-    //  //myPrioEnc.io.inp(7 downto 4) := io.cmpVec(3 downto 0)
-    //  myPrioEnc.io.inp := ~io.cmpVec
-    //}
-    itdOut.tempRema := (
-      io.shiftInRema
-      - itdIn.denomMultLut(io.quotDigit)
-    )(itdOut.tempRema.bitsRange)
-  })
-
-  val myBigRadixGtArea = (
-    cmpVecWidth > 8
-  ) generate (new Area {
-    // Find the current quotient digit with something resembling a
-    // priority encoder.
-    // This implements binary search.
-    switch (io.cmpVec) {
-      for (idx <- 0 until cmpVecWidth) {
-        //val idx = cmpVecWidth - revIdx - 1
-        is (U(
-          ("1" * (cmpVecWidth - (idx + 1))) + ("0" * (idx + 1))
-        )) 
-        //is (MaskedLiteral(
-        //  (("-" * (cmpVecWidth - (idx + 1)))) + "0" + ("-" * idx)
-        //  ////(("1" * (cmpVecWidth - (idx + 1)))) + "0" + ("-" * idx)
-        //  //if (idx + 1 < cmpVecWidth) (
-        //  //  (("-" * (cmpVecWidth - (idx + 2)))) + "1" + "0" + ("-" * idx)
-        //  //) else (
-        //  //  (("-" * (cmpVecWidth - (idx + 2)))) + "0" + ("-" * idx)
-        //  //)
-        //))
-        {
-          //io.quotDigit := idx
-          io.quotDigit := idx
-          //myDenomMultElem := io.itdIn.denomMultLut(idx)
+  switch (chunkStartSliceIdx) {
+    for (chunkIdx <- 0 until cfg.numChunks) {
+      is (chunkIdx) {
+        for (idx <- 0 until cfg.radix) {
+          val tempIdx = idx
+          io.cmpVec(idx) := (
+            //if (cmpVecWidth <= 8) (
+            //  itdIn.denomMultLut(tempIdx) <= io.shiftInRema
+            //) else (
+              //itdIn.denomMultLut(tempIdx) > io.shiftInRema
+              itdIn.denomMultLut(tempIdx)
+              > mkShiftInRema(itdIn.tempNumer(chunkIdx))
+            //)
+          )
           itdOut.tempRema := (
-            io.shiftInRema
-            - itdIn.denomMultLut(idx)
+            //io.shiftInRema
+            mkShiftInRema(itdIn.tempNumer(chunkIdx))
+            - itdIn.denomMultLut(0)
           )(itdOut.tempRema.bitsRange)
         }
       }
+    }
+  }
+
+  //val mySmallRadixGtArea = (
+  //  cmpVecWidth <= 8
+  //) generate (new Area {
+  //  //val myMask = (~io.cmpVec) & ~((~io.cmpVec) - 1)
+  //  val myPrioEnc = LcvPrioEncoder8To3()
+  //  myPrioEnc.io.inp := 0x0
+  //  myPrioEnc.io.inp.allowOverride
+
+  //  //io.quotDigit := myPrioEnc.io.outp(io.quotDigit.bitsRange)
+  //  for (idx <- 0 until io.quotDigit.getWidth) {
+  //    io.quotDigit(idx) := (
+  //      myPrioEnc.io.outp(idx) //& ~io.cmpVec.lsb
+  //    )
+  //  }
+  //  //myPrioEnc.io.inp(1 downto 0) := io.cmpVec(1 downto 0)
+  //  for (idx <- 0 until cmpVecWidth) {
+  //    //val revIdx = (
+  //    //  //cmpVecWidth - idx - 1
+  //    //  myPrioEnc.io.inp.getWidth - idx - 1
+  //    //)
+  //    val tempIdx = idx//revIdx//idx//revIdx
+  //    //myPrioEnc.io.inp(tempIdx) := ~io.cmpVec(idx)
+  //    myPrioEnc.io.inp(tempIdx) := io.cmpVec(idx)
+  //  }
+  //  //if (cmpVecWidth == 2) {
+  //  //} else 
+  //  //if (cmpVecWidth == 4) {
+  //  //  //myPrioEnc.io.inp(1 downto 0) := io.cmpVec(7 downto 6)
+  //  //  //myPrioEnc.io.inp(3 downto 2) := io.cmpVec(5 downto 4)
+  //  //  //myPrioEnc.io.inp(7 downto 4) := io.cmpVec(3 downto 0)
+  //  //  //myPrioEnc.io.inp(7 downto 4) := io.cmpVec(3 downto 0)
+  //  //  myPrioEnc.io.inp(3 downto 0) := ~io.cmpVec
+  //  //} else { // if (cmpVecWidth == 8)
+  //  //  //myPrioEnc.io.inp(1 downto 0) := io.cmpVec(7 downto 6)
+  //  //  //myPrioEnc.io.inp(3 downto 2) := io.cmpVec(5 downto 4)
+  //  //  //myPrioEnc.io.inp(7 downto 4) := io.cmpVec(3 downto 0)
+  //  //  myPrioEnc.io.inp := ~io.cmpVec
+  //  //}
+  //  itdOut.tempRema := (
+  //    io.shiftInRema
+  //    - itdIn.denomMultLut(io.quotDigit)
+  //  )(itdOut.tempRema.bitsRange)
+  //})
+
+  //val myBigRadixGtArea = (
+  //  cmpVecWidth > 8
+  //) generate (new Area {
+    // Find the current quotient digit with something resembling a
+    // priority encoder.
+    // This implements binary search.
+
+    //itdOut.tempRema := (
+    //  io.shiftInRema
+    //  - itdIn.denomMultLut(0)
+    //)
+
+    io.quotDigit := 0
+    switch (
+      (
+        chunkStartSliceIdx
+        ## io.cmpVec
+      ).asUInt
+    ) {
+      val loopBounds = (
+        //(1 << chunkStartSliceIdx.getWidth) + cmpVecWidth
+        chunkStartSliceIdx.getWidth + cmpVecWidth
+      )
+      println(
+        s"loopBounds:${loopBounds}"
+      )
+      for (chunkIdx <- 0 until (1 << chunkStartSliceIdx.getWidth)) {
+        for (
+          //kdx <- 0 until loopBounds
+          cmpIdx <- 0 until cmpVecWidth
+        ) {
+          //val idx = cmpVecWidth - revIdx - 1
+          //val chunkIdx = (kdx >> cmpVecWidth) //<< cmpVecWidth
+          //val cmpIdx = kdx & (cmpVecWidth - 1) //((1 << cmpVecWidth) - 1)
+          //println(
+          //  s"kdx:${kdx}    chunkIdx:${chunkIdx}  cmpIdx:${cmpIdx}"
+          //)
+          is (
+            U(
+              s"${loopBounds}'d${chunkIdx << cmpVecWidth}"
+            )
+            | (
+              U(
+                ("1" * (cmpVecWidth - (cmpIdx + 1)))
+                + ("0" * (cmpIdx + 1))
+              ).resize(loopBounds)
+            )
+          ) 
+          //is (MaskedLiteral(
+          //  (("-" * (cmpVecWidth - (idx + 1)))) + "0" + ("-" * idx)
+          //  ////(("1" * (cmpVecWidth - (idx + 1)))) + "0" + ("-" * idx)
+          //  //if (idx + 1 < cmpVecWidth) (
+          //  //  (("-" * (cmpVecWidth - (idx + 2)))) + "1" + "0" + ("-" * idx)
+          //  //) else (
+          //  //  (("-" * (cmpVecWidth - (idx + 2)))) + "0" + ("-" * idx)
+          //  //)
+          //))
+          {
+            //io.quotDigit := idx
+            io.quotDigit := cmpIdx
+            //myDenomMultElem := io.itdIn.denomMultLut(idx)
+            itdOut.tempRema := (
+              //io.shiftInRema
+              mkShiftInRema(itdIn.tempNumer(chunkIdx))
+              - itdIn.denomMultLut(cmpIdx)
+            )(itdOut.tempRema.bitsRange)
+          }
+        }
+      }
       default {
-        io.quotDigit := 0
+        //io.quotDigit := 0
         //myDenomMultElem := io.itdIn.denomMultLut(0)
 
-        itdOut.tempRema := (
-          io.shiftInRema
-          - itdIn.denomMultLut(0)
-        )(itdOut.tempRema.bitsRange)
+        //itdOut.tempRema := (
+        //  io.shiftInRema
+        //  - itdIn.denomMultLut(0)
+        //)(itdOut.tempRema.bitsRange)
       }
 
       //// Here is an example of the expanded form of this `switch ()`
@@ -373,7 +432,7 @@ case class LongUdivIter(
       //  io.quotDigit := 0
       //}
     }
-  })
+  //})
 
   //// Drive `itdOut.tempQuot`
   //itdOut.tempQuot := itdIn.tempQuot
@@ -401,7 +460,7 @@ case class LongUdivIter(
   //itdOut.tempQuot.assignFromBits(tempQuotVec.asBits)
   //--------
   //itdOut.tempNumer := itdIn.tempNumer
-  itdOut.tempNumerChunk := itdIn.tempNumerChunk
+  //itdOut.tempNumerChunk := itdIn.tempNumerChunk
   //itdOut.tempDenom := itdIn.tempDenom
   //itdOut.tempRema := (
   //  io.shiftInRema

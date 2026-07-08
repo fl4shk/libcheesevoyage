@@ -173,13 +173,14 @@ case class LongDivMultiCycleMultiChunkArea(
   }
   //itdIn.tempQuot := 0x0
   //itdIn.tempNumer := rTempNumer.asBits.asUInt
-  itdIn.tempNumerChunk := rTempNumer(
-    //RegNext(rCnt(0)).asUInt.resized
-    rCnt(0).asUInt.resized
-  )
+  itdIn.tempNumer := rTempNumer
+  //itdIn.tempNumerChunk := rTempNumer(
+  //  //RegNext(rCnt(0)).asUInt.resized
+  //  rCnt(0).asUInt.resized
+  //)
   //itdIn.tempDenom := rTempDenom
   itdIn.tempRema := rTempRema(0)
-  //udivIter.io.chunkStart := rCnt(0)
+  udivIter.io.chunkStart := rCnt(0)
 
   switch (rState) {
     is (State.IDLE) {
