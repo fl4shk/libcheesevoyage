@@ -5286,6 +5286,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
           "1" + myRamIdxMask
         )
       ) {
+        doPopLoH2dFifo()
         myFifoThingDoStall := False
         //myLoD2hPushStm.valid := False
         if (myCondHaveLineFifoIdxRam) {
@@ -5366,6 +5367,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       //}
     }
     default {
+      doPopLoH2dFifo()
       myFifoThingDoStall := False
       myLoD2hPushStm.valid := False
     }
@@ -5379,7 +5381,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       //myFifoThingDoStall := False
       //myLoD2hPushStm.valid := False
       //doIgnoreInvalidFifoThingPopCnt()
-      doPopLoH2dFifo()
+      //doPopLoH2dFifo()
 
       when (
         rMyTempDoSaveCond(0)
@@ -6825,9 +6827,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     ## rDel2LoH2dPayload.isWrite
     ## haveHit
   )
-  println(
-    s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
-  )
+  //println(
+  //  s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
+  //)
 
   //myFifoThingDoStall := False
   //myLoD2hPushStm.valid := False
@@ -6906,6 +6908,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           "1-0" + myRamIdxMask
         )
       ) {
+        doPopLoH2dFifo()
         myFifoThingDoStall := False
         //myLoD2hPushStm.valid := False
 
@@ -6951,7 +6954,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           "1-1" + myRamIdxMask
         )
       ) {
-
+        doPopLoH2dFifo()
         myFifoThingDoStall := False
         //myLoD2hPushStm.valid := False
 
@@ -6990,6 +6993,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       }
     }
     default {
+      doPopLoH2dFifo()
       myFifoThingDoStall := False
       myLoD2hPushStm.valid := False
     }
