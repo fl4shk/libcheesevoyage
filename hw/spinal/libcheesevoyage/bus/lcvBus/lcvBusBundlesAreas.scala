@@ -164,6 +164,7 @@ case class LcvBusCacheConfig(
   lineSizeBytes: Int,
   depthWords: Int, // this is in number of words
   numCpus: Int,
+  numWays: Int=2,
   lineWordMemRamStyleAltera: String=(
     //"MLAB"
     //"no_rw_check, M10K"
@@ -189,6 +190,9 @@ case class LcvBusCacheConfig(
   //private[libcheesevoyage] var busCfg: LcvBusConfig=null,
   private[libcheesevoyage] var busMainCfg: LcvBusMainConfig=null
 ) {
+  require(
+    numWays > 0
+  )
   //private[libcheesevoyage] var busMainCfg: LcvBusMainConfig = 
   def seqlockWidth = 32
   def seqlockGlobalCntWidth = 41
