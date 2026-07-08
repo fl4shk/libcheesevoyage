@@ -5209,9 +5209,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     //## rDel2LoH2dPayload.isWrite
     ## haveHit
   )
-  println(
-    s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
-  )
+  //println(
+  //  s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
+  //)
+  myFifoThingDoStall := False
+  myLoD2hPushStm.valid := False
 
   switch (
     tempToSwitch
@@ -6824,6 +6826,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
   )
 
+  myFifoThingDoStall := False
+  myLoD2hPushStm.valid := False
   switch (
     tempToSwitch
   ) {
@@ -6969,8 +6973,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       }
     }
     default {
-      myFifoThingDoStall := False
-      myLoD2hPushStm.valid := False
+      //myFifoThingDoStall := False
+      //myLoD2hPushStm.valid := False
     }
   }
 
