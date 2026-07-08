@@ -5150,17 +5150,17 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   io.hiBus.h2dBus <-/< hiH2dFifo.io.pop
 
       
-// >>> for idx in range(width):
-// ...     print(idx, (("0" * (width - idx - 1))) + "1" + ("-" * (idx - 1)))
+// >>> for ramIdx in range(numWays):
+// ...     print(ramIdx, (("0" * (numWays - ramIdx - 1))) + "1" + ("-" * ramIdx))
 // ...     
 // 0 0001
-// 1 001
-// 2 01-
-// 3 1--
+// 1 001-
+// 2 01--
+// 3 1---
   def calcRamIdxMask(ramIdx: Int): String = (
     (("0" * (numWays - ramIdx - 1)))
     + "1"
-    + ("-" * (ramIdx - 1))
+    + ("-" * ramIdx)
   )
 
   val rSavedRamIdx = (
