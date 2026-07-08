@@ -5174,7 +5174,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
 
   val tempToSwitch = (
     //((rState === State.IDLE) && rMyTempDoSaveCond(3))
-    ((rState === State.IDLE)
+    //((rState === State.IDLE)
+    rState.asBits(1)
     ## rMyTempDoSaveCond(3))
     //RegNext(
     //  RegNext(mySelLoH2dPopStm.fire, init=False),
@@ -6801,7 +6802,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   //)
 
   val tempToSwitch = (
-    (rState === State.IDLE)
+    //(rState === State.IDLE)
+    rState.asBits(1)
     ## rMyTempDoSaveCond(3)
     //RegNext(
     //  RegNext(mySelLoH2dPopStm.fire, init=False),
