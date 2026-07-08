@@ -295,11 +295,12 @@ case class LongUdivIter(
   //    }
   //  }
   //}
-  itdOut.tempRema := (
-    io.shiftInRema
-    //mkShiftInRema(itdIn.tempNumer(chunkIdx))
-    - itdIn.denomMultLut(0)
-  )(itdOut.tempRema.bitsRange)
+
+  //itdOut.tempRema := (
+  //  io.shiftInRema
+  //  //mkShiftInRema(itdIn.tempNumer(chunkIdx))
+  //  - itdIn.denomMultLut(0)
+  //)(itdOut.tempRema.bitsRange)
 
   //val mySmallRadixGtArea = (
   //  cmpVecWidth <= 8
@@ -357,7 +358,7 @@ case class LongUdivIter(
     //  - itdIn.denomMultLut(0)
     //)
 
-    io.quotDigit := 0
+    //io.quotDigit := 0
     switch (
       //(
         //chunkStartSliceIdx
@@ -420,13 +421,13 @@ case class LongUdivIter(
         }
       //}
       default {
-        //io.quotDigit := 0
+        io.quotDigit := 0
         //myDenomMultElem := io.itdIn.denomMultLut(0)
 
-        //itdOut.tempRema := (
-        //  io.shiftInRema
-        //  - itdIn.denomMultLut(0)
-        //)(itdOut.tempRema.bitsRange)
+        itdOut.tempRema := (
+          io.shiftInRema
+          - itdIn.denomMultLut(0)
+        )(itdOut.tempRema.bitsRange)
       }
 
       //// Here is an example of the expanded form of this `switch ()`
