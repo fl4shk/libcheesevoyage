@@ -5173,7 +5173,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   //)
 
   val tempToSwitch = (
-    ((rState === State.IDLE) && rMyTempDoSaveCond(3))
+    //((rState === State.IDLE) && rMyTempDoSaveCond(3))
+    ((rState === State.IDLE)
+    ## rMyTempDoSaveCond(3))
     //RegNext(
     //  RegNext(mySelLoH2dPopStm.fire, init=False),
     //  init=False
@@ -5220,7 +5222,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       //M"10-0"
       MaskedLiteral(
         //"10-" + ("0" * numWays)
-        "1" + ("0" * numWays)
+        //"1" + ("0" * numWays)
+        "11" + ("0" * numWays)
       )
       //M"10"
     ) {
@@ -5283,7 +5286,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         //M"1-01"
         MaskedLiteral(
           //"1-01"
-          "1" + myRamIdxMask
+          "11" + myRamIdxMask
         )
       ) {
         doPopLoH2dFifo()
@@ -5365,6 +5368,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       //    //doPopLoH2dFifo()
       //  }
       //}
+    }
+    is (MaskedLiteral(
+      "1" + "0" + ("-" * numWays)
+    )) {
+      doPopLoH2dFifo()
+      myFifoThingDoStall := False
+      myLoD2hPushStm.valid := False
     }
     default {
       //doPopLoH2dFifo()
@@ -6791,7 +6801,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   //)
 
   val tempToSwitch = (
-    ((rState === State.IDLE) && rMyTempDoSaveCond(3))
+    (rState === State.IDLE)
+    ## rMyTempDoSaveCond(3)
     //RegNext(
     //  RegNext(mySelLoH2dPopStm.fire, init=False),
     //  init=False
@@ -6839,7 +6850,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     is (
       //M"10-0"
       MaskedLiteral(
-        "10-" + ("0" * numWays)
+        "110-" + ("0" * numWays)
       )
       //M"10"
     ) {
@@ -6849,7 +6860,6 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
 
       //myFifoThingDoStall := False
       myLoD2hPushStm.valid := False
-
 
       if (myCondHaveLineFifoIdxRam) {
         rSavedRamIdx := rdLineFifoIdx
@@ -6869,7 +6879,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     is (
       //M"11-0"
       MaskedLiteral(
-        "11-" + ("0" * numWays)
+        "111-" + ("0" * numWays)
       )
     ) {
       // cache miss, and the line is *possibly* dirty
@@ -6905,11 +6915,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         //M"1-01"
         MaskedLiteral(
           //"1-01"
-          "1-0" + myRamIdxMask
+          "11-0" + myRamIdxMask
         )
       ) {
         doPopLoH2dFifo()
-        myFifoThingDoStall := False
+        //myFifoThingDoStall := False
         //myLoD2hPushStm.valid := False
 
         if (myCondHaveLineFifoIdxRam) {
@@ -6951,11 +6961,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         //M"11-1"
         //M"1-11"
         MaskedLiteral(
-          "1-1" + myRamIdxMask
+          "11-1" + myRamIdxMask
         )
       ) {
         doPopLoH2dFifo()
-        myFifoThingDoStall := False
+        //myFifoThingDoStall := False
         //myLoD2hPushStm.valid := False
 
         if (myCondHaveLineFifoIdxRam) {
@@ -6992,6 +7002,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         }
       }
     }
+    is (MaskedLiteral(
+      "1" + "0" + ("-" * numWays)
+    )) {
+      doPopLoH2dFifo()
+      myFifoThingDoStall := False
+      myLoD2hPushStm.valid := False
+    }
     default {
       //doPopLoH2dFifo()
       //myFifoThingDoStall := False
@@ -7007,7 +7024,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       //myFifoThingDoStall := False
       //myLoD2hPushStm.valid := False
       //doIgnoreInvalidFifoThingPopCnt()
-      doPopLoH2dFifo()
+      //doPopLoH2dFifo()
 
       when (
         rMyTempDoSaveCond(0)
