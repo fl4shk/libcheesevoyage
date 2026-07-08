@@ -5367,9 +5367,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       //}
     }
     default {
-      doPopLoH2dFifo()
-      myFifoThingDoStall := False
-      myLoD2hPushStm.valid := False
+      //doPopLoH2dFifo()
+      //myFifoThingDoStall := False
+      //myLoD2hPushStm.valid := False
     }
   }
 
@@ -6993,9 +6993,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       }
     }
     default {
-      doPopLoH2dFifo()
-      myFifoThingDoStall := False
-      myLoD2hPushStm.valid := False
+      //doPopLoH2dFifo()
+      //myFifoThingDoStall := False
+      //myLoD2hPushStm.valid := False
     }
   }
 
