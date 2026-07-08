@@ -118,21 +118,23 @@ case class LongUdivIterIo(cfg: LongDivConfig) extends Bundle {
   //  cfg.formal && cfg.pipelined && cfg.usePipeSkidBuf
   //) generate in port Bool()
 
-  val itdIn = in(LongUdivIterData(cfg=cfg))
+  val itdIn = /*in*/(
+    LongUdivIterData(cfg=cfg)
+  )
 
-  val chunkStart = in(cfg.buildChunkStartShape())
+  val chunkStart = /*in*/(cfg.buildChunkStartShape())
   //--------
   // Outputs
-  val itdOut = out(LongUdivIterData(cfg=cfg))
+  val itdOut = /*out*/(LongUdivIterData(cfg=cfg))
 
   // Current quotient digit
-  val quotDigit = out(UInt(cfg.chunkWidth bits))
+  val quotDigit = /*out*/(UInt(cfg.chunkWidth bits))
 
   // Remainder with the current chunk of `itdIn.tempNumer` shifted in
-  val shiftInRema = out(cfg.buildTempShape())
+  val shiftInRema = /*out*/(cfg.buildTempShape())
 
   // The vector of greater than comparison values
-  val cmpVec = out(
+  val cmpVec = /*out*/(
     //Vec.fill(2)(
       UInt(cfg.radix() bits)
     //)
@@ -202,7 +204,7 @@ case class LcvPrioEncoder8To3(
 
 case class LongUdivIter(
   cfg: LongDivConfig
-) extends Component {
+) extends Area {
   val io = LongUdivIterIo(cfg=cfg)
   //io.quotDigit.setAsReg() //init(io.quotDigit.getZero)
 
