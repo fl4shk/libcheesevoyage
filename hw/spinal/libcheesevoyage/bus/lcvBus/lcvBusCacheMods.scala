@@ -5269,6 +5269,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     }
     for (ramIdx <- 0 until numWays) {
       val myRamIdxMask = calcRamIdxMask(ramIdx=ramIdx)
+      println(
+        s"ramIdx:${ramIdx} myRamIdxMask:${myRamIdxMask}"
+      )
       is (
         //M"100"
         //M"101"
