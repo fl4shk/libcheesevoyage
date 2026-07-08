@@ -5173,7 +5173,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   //  )
   //)
 
-  switch (
+  val tempToSwitch = (
     ((rState === State.IDLE) && rMyTempDoSaveCond(3))
     //RegNext(
     //  RegNext(mySelLoH2dPopStm.fire, init=False),
@@ -5209,6 +5209,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     )
     ## rDel2LoH2dPayload.isWrite
     ## haveHit
+  )
+
+  switch (
+    tempToSwitch
   ) {
     is (
       //M"10-0"
