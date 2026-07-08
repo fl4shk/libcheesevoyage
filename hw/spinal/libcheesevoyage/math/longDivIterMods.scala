@@ -224,10 +224,10 @@ case class LongUdivIter(
     log2Up(cfg.numChunks()) - 1 downto 0
   )
 
-  println(
-    s"numChunks:${cfg.numChunks()} "
-    + s"chunkStartSliceIdx.getWidth:${chunkStartSliceIdx.getWidth}"
-  )
+  //println(
+  //  s"numChunks:${cfg.numChunks()} "
+  //  + s"chunkStartSliceIdx.getWidth:${chunkStartSliceIdx.getWidth}"
+  //)
 
   //val tempNumerInSlices = (
   //  itdIn.tempNumer.subdivideIn(cfg.numChunks() slices)
@@ -246,7 +246,7 @@ case class LongUdivIter(
       //),
       //itdIn.tempNumerChunk
       someTempNumerChunk,
-    ).asUInt
+    ).asUInt(io.shiftInRema.bitsRange)
   }
   //io.shiftInRema := mkShiftInRema(
   //  itdIn.tempNumer(chunkStartSliceIdx)
@@ -266,7 +266,10 @@ case class LongUdivIter(
   // This creates perhaps a single LUT delay for the greater-than
   // comparisons given the existence of hard carry chains in FPGAs.
 
+  io.cmpVec.allowOverride
   itdOut.tempRema.allowOverride
+  io.cmpVec := 0x0
+  itdOut.tempRema := 0x0
 
   switch (chunkStartSliceIdx) {
     for (chunkIdx <- 0 until cfg.numChunks) {
@@ -356,13 +359,13 @@ case class LongUdivIter(
       ).asUInt
     ) {
       val loopBounds = (
-        //(1 << chunkStartSliceIdx.getWidth) + cmpVecWidth
+        //cfg.numChunks + cmpVecWidth
         chunkStartSliceIdx.getWidth + cmpVecWidth
       )
-      println(
-        s"loopBounds:${loopBounds}"
-      )
-      for (chunkIdx <- 0 until (1 << chunkStartSliceIdx.getWidth)) {
+      //println(
+      //  s"loopBounds:${loopBounds}"
+      //)
+      for (chunkIdx <- 0 until cfg.numChunks) {
         for (
           //kdx <- 0 until loopBounds
           cmpIdx <- 0 until cmpVecWidth
@@ -372,6 +375,9 @@ case class LongUdivIter(
           //val cmpIdx = kdx & (cmpVecWidth - 1) //((1 << cmpVecWidth) - 1)
           //println(
           //  s"kdx:${kdx}    chunkIdx:${chunkIdx}  cmpIdx:${cmpIdx}"
+          //)
+          //println(
+          //  s"chunkIdx:${chunkIdx}  cmpIdx:${cmpIdx}"
           //)
           is (
             U(
