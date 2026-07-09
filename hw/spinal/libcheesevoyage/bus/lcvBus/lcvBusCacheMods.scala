@@ -4949,25 +4949,27 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     )
   }
 
-  doLineFifoIdxRamReadSync(
-    busAddr=mySelLoH2dPopPayload.addr,
-    setEn=2,
-  )
-  doLineFifoIdxRamWrite(
-    busAddr=(
-      RegNext(
+  if (myCondHaveLineFifoIdxRam) {
+    doLineFifoIdxRamReadSync(
+      busAddr=mySelLoH2dPopPayload.addr,
+      setEn=2,
+    )
+    doLineFifoIdxRamWrite(
+      busAddr=(
         RegNext(
-          mySelLoH2dPopPayload.addr,
-          init=mySelLoH2dPopPayload.addr.getZero
-        ),
-        init=mySelLoH2dPopPayload.addr.getZero,
-      )
-    ),
-    lineFifoIdx=(
-      wrLineFifoIdx
-    ),
-    setEn=false,
-  )
+          RegNext(
+            mySelLoH2dPopPayload.addr,
+            init=mySelLoH2dPopPayload.addr.getZero
+          ),
+          init=mySelLoH2dPopPayload.addr.getZero,
+        )
+      ),
+      lineFifoIdx=(
+        wrLineFifoIdx
+      ),
+      setEn=false,
+    )
+  }
   //--------
   myLoD2hPushStm.payload := (
     RegNext(myLoD2hPushStm.payload, init=myLoD2hPushStm.payload.getZero)
@@ -6578,25 +6580,27 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     )
   }
 
-  doLineFifoIdxRamReadSync(
-    busAddr=mySelLoH2dPopPayload.addr,
-    setEn=2,
-  )
-  doLineFifoIdxRamWrite(
-    busAddr=(
-      RegNext(
+  if (myCondHaveLineFifoIdxRam) {
+    doLineFifoIdxRamReadSync(
+      busAddr=mySelLoH2dPopPayload.addr,
+      setEn=2,
+    )
+    doLineFifoIdxRamWrite(
+      busAddr=(
         RegNext(
-          mySelLoH2dPopPayload.addr,
-          init=mySelLoH2dPopPayload.addr.getZero
-        ),
-        init=mySelLoH2dPopPayload.addr.getZero,
-      )
-    ),
-    lineFifoIdx=(
-      wrLineFifoIdx
-    ),
-    setEn=false,
-  )
+          RegNext(
+            mySelLoH2dPopPayload.addr,
+            init=mySelLoH2dPopPayload.addr.getZero
+          ),
+          init=mySelLoH2dPopPayload.addr.getZero,
+        )
+      ),
+      lineFifoIdx=(
+        wrLineFifoIdx
+      ),
+      setEn=false,
+    )
+  }
   //--------
   myLoD2hPushStm.payload := (
     RegNext(myLoD2hPushStm.payload, init=myLoD2hPushStm.payload.getZero)
