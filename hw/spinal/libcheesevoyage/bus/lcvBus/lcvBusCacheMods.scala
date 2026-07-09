@@ -51,7 +51,7 @@ case class LcvBusCacheBusPairConfig(
 ) {
   //require(!mainCfg.allowBurst)
   val myRamOptWrHistLength = 3
-  val myRamOptWrHistLengthPlusAddend = myRamOptWrHistLength + 3//2
+  val myRamOptWrHistLengthPlusAddend = myRamOptWrHistLength + 1//3//2
   loBusCacheCfg.kind match {
     case LcvCacheKind.Shared => {
       require(mainCfg.allowBurst)
@@ -6201,7 +6201,6 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     lineFifoIdxRam.io.wrEn := False
   }
 
-
   //--------
   object State extends SpinalEnum(
     defaultEncoding=(
@@ -6230,6 +6229,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       RECV_LINE_FROM_HI_BUS_PIPE_1,
       RECV_LINE_FROM_HI_BUS,
       RECV_LINE_FROM_HI_BUS_POST_WRITE,
+      RECV_LINE_FROM_HI_BUS_POST_7,
+      RECV_LINE_FROM_HI_BUS_POST_6,
       RECV_LINE_FROM_HI_BUS_POST_5,
       RECV_LINE_FROM_HI_BUS_POST_4,
       RECV_LINE_FROM_HI_BUS_POST_3,
@@ -7691,7 +7692,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         }
         when ((io.hiBus.d2hBus.burstLast)) {
           when (!rSavedLoH2dPayload.isWrite) {
-            rState := State.RECV_LINE_FROM_HI_BUS_POST_5
+            rState := State.RECV_LINE_FROM_HI_BUS_POST_7
           } otherwise {
             rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
           }
@@ -7730,6 +7731,16 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           setEn=myArgSetEn,
         )
       }
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_7
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_7) {
+      lineWordRam.foreach(item => item.io.rdEn := False)
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_6
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_6) {
+      lineWordRam.foreach(item => item.io.rdEn := False)
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
       rState := State.RECV_LINE_FROM_HI_BUS_POST_5
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_5) {
