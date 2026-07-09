@@ -51,6 +51,7 @@ case class LcvBusCacheBusPairConfig(
 ) {
   //require(!mainCfg.allowBurst)
   val myRamOptWrHistLength = 3
+  val myRamOptWrHistLengthPlusAddend = myRamOptWrHistLength + 2
   loBusCacheCfg.kind match {
     case LcvCacheKind.Shared => {
       require(mainCfg.allowBurst)
@@ -5117,7 +5118,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         //  init=myTempHaveCurrRamWrite.getZero
         //)
       ),
-      length=cfg.myRamOptWrHistLength + 2,//1,//2,
+      length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
       init=myTempHaveCurrRamWrite.getZero
     )
   )
@@ -6825,7 +6826,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         //  init=myTempHaveCurrRamWrite.getZero
         //)
       ),
-      length=cfg.myRamOptWrHistLength + 2,//1,//2,
+      length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
       init=myTempHaveCurrRamWrite.getZero
     )
   )
@@ -6920,6 +6921,17 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   //  )
   //)
 
+  val myHistWrLineAttrsDirty = (
+    History[Bool](
+      that=(
+        wrLineAttrs.dirty
+        && Vec(lineAttrsRam.map(item => item.io.wrEn)).orR
+      ),
+      length=cfg.myRamOptWrHistLengthPlusAddend,
+      init=False,
+    )
+  )
+
   val tempToSwitch = (
     //(rState === State.IDLE)
     rState.asBits(1)
@@ -6937,23 +6949,27 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       || (
         //rdLine
         RegNext(
-          (
-            (
-              wrLineAttrs.dirty
-              && (
-                Vec(lineAttrsRam.map(item => item.io.wrEn)).orR
-              )
-            )
-            || RegNext(
-              wrLineAttrs.dirty
-              && (
-                Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
-              ),
-              init=False
-            )
-          ),
-          init=False
+          myHistWrLineAttrsDirty.orR,
+          init=False,
         )
+        //RegNext(
+        //  (
+        //    (
+        //      wrLineAttrs.dirty
+        //      && (
+        //        Vec(lineAttrsRam.map(item => item.io.wrEn)).orR
+        //      )
+        //    )
+        //    || RegNext(
+        //      wrLineAttrs.dirty
+        //      && (
+        //        Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
+        //      ),
+        //      init=False
+        //    )
+        //  ),
+        //  init=False
+        //)
       )
     )
     ## rDel2LoH2dPayload.isWrite
