@@ -1075,7 +1075,10 @@ case class LcvBusSdramCtrl(
       io.sdram.dqml := False
       io.sdram.dqmh := False
       rH2dFifoPopReady := False
-      when (rNeedRfshCnt.msb) {
+      when (
+        rNeedRfshCnt.msb
+        && rBusBurstOuterCnt.msb // wait for bus bursts to finish
+      ) {
         rNeedRfshCnt := cfg.Cycles.tREFIthresh.toInt
         rState := State.SEND_RFSH
       } 
@@ -1094,26 +1097,24 @@ case class LcvBusSdramCtrl(
         // guaranteed to be completed
         RegNext(
           (
-            d2hFifo.io.occupancy === 0
-            //&& h2dFifo.io.availability === 0
+            (
+              d2hFifo.io.occupancy === 0
+              //&& h2dFifo.io.availability === 0
 
-            && h2dFifo.io.pop.valid
-            && (
-              !h2dFifo.io.pop.isWrite
-              //!rSavedH2dSendData.isWrite
-              //|| h2dFifo.io.availability === 0
-              || h2dFifo.io.occupancy === cfg.busCfg.maxBurstSizeMinus1 + 1
-              || !h2dFifo.io.pop.burstFirst
+              && h2dFifo.io.pop.valid
+              && (
+                !h2dFifo.io.pop.isWrite
+                || (
+                  h2dFifo.io.occupancy
+                  === cfg.busCfg.maxBurstSizeMinus1 + 1
+                )
+                || !h2dFifo.io.pop.burstFirst
+              )
             )
-            //&& h2dFifo.io.occupancy === cfg.busCfg.maxBurstSizeMinus1 + 1
+            || !rBusBurstOuterCnt.msb,
           ),
           init=False
-        ) || (
-          RegNext(
-            !rBusBurstOuterCnt.msb,
-            init=False
-          )
-        )
+        ) 
       ) {
         //io.bus.h2dBus.ready := True
         //h2dFifo.io.pop.ready := True
@@ -1181,8 +1182,10 @@ case class LcvBusSdramCtrl(
         }
         when (!rBusBurstOuterCnt.msb) {
           rBusBurstOuterCnt := rBusBurstOuterCnt - 1
+          rState := State.PRE_READ_WRITE
+        } otherwise {
+          rState := State.SEND_ACTIVE
         }
-        rState := State.SEND_ACTIVE
       }
     }
     is (State.SEND_RFSH) {
@@ -1338,7 +1341,10 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdRead(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
-        autoPrecharge=True,
+        autoPrecharge=(
+          //True
+          rBusBurstOuterCnt.msb
+        ),
         someDqTriState=rDqTriState,
         firstRead=true,
       )
@@ -1480,7 +1486,10 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
-        autoPrecharge=True,
+        autoPrecharge=(
+          //True
+          rBusBurstOuterCnt.msb
+        ),
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(15 downto 0),
         wrByteEn=(
