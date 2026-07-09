@@ -5114,7 +5114,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         //  init=myTempHaveCurrRamWrite.getZero
         //)
       ),
-      length=cfg.myRamOptWrHistLength + 1,//2,
+      length=cfg.myRamOptWrHistLength + 2,//1,//2,
       init=myTempHaveCurrRamWrite.getZero
     )
   )
@@ -6822,7 +6822,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         //  init=myTempHaveCurrRamWrite.getZero
         //)
       ),
-      length=cfg.myRamOptWrHistLength + 1,//2,
+      length=cfg.myRamOptWrHistLength + 2,//1,//2,
       init=myTempHaveCurrRamWrite.getZero
     )
   )
