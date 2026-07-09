@@ -15,6 +15,7 @@ case class RamSdpPipeConfig[
   wordType: HardType[WordT],
   depth: Int,
   optIncludeWrByteEn: Boolean=false,
+  optWrHistLength: Int=1,
   init: Option[Seq[WordT]]=None,
   initBigInt: Option[Seq[BigInt]]=None,
   arrRamStyleAltera: String="M10K",
@@ -149,19 +150,46 @@ case class RamSdpPipeImpl[
     }
   }
 
-  arr.write(
-    address=io.wrAddr,
-    data={
-      val tempWrData = wordType()
-      tempWrData.assignFromBits(
-        io.wrDataBits.asBits
-      )
+  val myHistIoWrAddr = History(
+    that=io.wrAddr,
+    length=cfg.optWrHistLength,
+    init=io.wrAddr.getZero,
+  )
+  val tempWrData = wordType()
+  tempWrData.assignFromBits(
+    io.wrDataBits.asBits
+  )
+  //tempWrData
+  val myHistIoWrData = History(
+    that=(
+      //io.wrAddr
       tempWrData
-    },
-    enable=io.wrEn,
+    ),
+    length=cfg.optWrHistLength,
+    init=tempWrData.getZero,
+  )
+  val myHistIoWrEn = History(
+    that=io.wrEn,
+    length=cfg.optWrHistLength,
+    init=io.wrEn.getZero,
+  )
+  val myHistIoWrByteEn = (
+    optIncludeWrByteEn
+  ) generate (
+    History(
+      that=io.wrByteEn,
+      length=cfg.optWrHistLength,
+      init=io.wrByteEn.getZero,
+    )
+  )
+
+  arr.write(
+    address=myHistIoWrAddr.last,
+    data=myHistIoWrData.last,
+    enable=myHistIoWrEn.last,
     mask=(
       if (optIncludeWrByteEn) (
-        io.wrByteEn
+        myHistIoWrByteEn.last
       ) else (
         null.asInstanceOf[Bits]
       )
