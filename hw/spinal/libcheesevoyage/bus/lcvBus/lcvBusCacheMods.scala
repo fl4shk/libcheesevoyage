@@ -5830,17 +5830,31 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       //  // if it's a store, this line should be marked dirty!
       //  rSavedLoH2dPayload.isWrite
       //)
-      switch (rSavedRamIdx) {
-        for (ramIdx <- 0 until numWays) {
-          is (ramIdx) {
-            doLineAttrsRamWrite(
-              ramIdx=ramIdx,
-              busAddr=rSavedLoH2dPayload.addr,
-              lineAttrs=wrLineAttrs,
-              setEn=true,
-            )
+
+      def myArgBusAddr = rSavedLoH2dPayload.addr
+      def myArgWrLineAttrs = wrLineAttrs
+      def myArgSetEn = true
+
+      if (myCondHaveLineFifoIdxRam) {
+        switch (rSavedRamIdx) {
+          for (ramIdx <- 0 until numWays) {
+            is (ramIdx) {
+              doLineAttrsRamWrite(
+                ramIdx=ramIdx,
+                busAddr=myArgBusAddr,
+                lineAttrs=myArgWrLineAttrs,
+                setEn=myArgSetEn,
+              )
+            }
           }
         }
+      } else {
+        doLineAttrsRamWrite(
+          ramIdx=0,
+          busAddr=myArgBusAddr,
+          lineAttrs=myArgWrLineAttrs,
+          setEn=myArgSetEn,
+        )
       }
     }
     is (State.RECV_LINE_FROM_HI_BUS) {
@@ -5877,18 +5891,34 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
             incrBurstCnt=false,
           )
         )
-        switch (rSavedRamIdx) {
-          for (ramIdx <- 0 until numWays) {
-            is (ramIdx) {
-              doLineWordRamWrite(
-                ramIdx=ramIdx,
-                busAddr=rTempBurstAddr,
-                lineWord=(io.hiBus.d2hBus.data),
-                byteEn=None,
-                setEn=true,
-              )
+
+        def myArgBusAddr = rTempBurstAddr
+        def myArgLineWord = io.hiBus.d2hBus.data
+        def myArgByteEn = None
+        def myArgSetEn = true
+
+        if (myCondHaveLineFifoIdxRam) {
+          switch (rSavedRamIdx) {
+            for (ramIdx <- 0 until numWays) {
+              is (ramIdx) {
+                doLineWordRamWrite(
+                  ramIdx=ramIdx,
+                  busAddr=myArgBusAddr,
+                  lineWord=myArgLineWord,
+                  byteEn=myArgByteEn,
+                  setEn=myArgSetEn,
+                )
+              }
             }
           }
+        } else {
+          doLineWordRamWrite(
+            ramIdx=0,
+            busAddr=myArgBusAddr,
+            lineWord=myArgLineWord,
+            byteEn=myArgByteEn,
+            setEn=myArgSetEn,
+          )
         }
         when ((io.hiBus.d2hBus.burstLast)) {
           when (!rSavedLoH2dPayload.isWrite) {
@@ -5902,18 +5932,33 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     is (State.RECV_LINE_FROM_HI_BUS_POST_WRITE) {
       lineAttrsRam.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
-      switch (rSavedRamIdx) {
-        for (ramIdx <- 0 until numWays) {
-          is (ramIdx) {
-            doLineWordRamWrite(
-              ramIdx=ramIdx,
-              busAddr=rSavedLoH2dPayload.addr,
-              lineWord=rSavedLoH2dPayload.data,
-              byteEn=Some(rSavedLoH2dPayload.byteEn),
-              setEn=true,
-            )
+      def myArgBusAddr = rSavedLoH2dPayload.addr
+      def myArgLineWord = rSavedLoH2dPayload.data
+      def myArgByteEn = Some(rSavedLoH2dPayload.byteEn)
+      def myArgSetEn = true
+
+      if (myCondHaveLineFifoIdxRam) {
+        switch (rSavedRamIdx) {
+          for (ramIdx <- 0 until numWays) {
+            is (ramIdx) {
+              doLineWordRamWrite(
+                ramIdx=ramIdx,
+                busAddr=myArgBusAddr,
+                lineWord=myArgLineWord,
+                byteEn=myArgByteEn,
+                setEn=myArgSetEn,
+              )
+            }
           }
         }
+      } else {
+        doLineWordRamWrite(
+          ramIdx=0,
+          busAddr=myArgBusAddr,
+          lineWord=myArgLineWord,
+          byteEn=myArgByteEn,
+          setEn=myArgSetEn,
+        )
       }
       rState := State.RECV_LINE_FROM_HI_BUS_POST_5
     }
@@ -7473,17 +7518,31 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         // if it's a store, this line should be marked dirty!
         rSavedLoH2dPayload.isWrite
       )
-      switch (rSavedRamIdx) {
-        for (ramIdx <- 0 until numWays) {
-          is (ramIdx) {
-            doLineAttrsRamWrite(
-              ramIdx=ramIdx,
-              busAddr=rSavedLoH2dPayload.addr,
-              lineAttrs=wrLineAttrs,
-              setEn=true,
-            )
+
+      def myArgBusAddr = rSavedLoH2dPayload.addr
+      def myArgWrLineAttrs = wrLineAttrs
+      def myArgSetEn = true
+
+      if (myCondHaveLineFifoIdxRam) {
+        switch (rSavedRamIdx) {
+          for (ramIdx <- 0 until numWays) {
+            is (ramIdx) {
+              doLineAttrsRamWrite(
+                ramIdx=ramIdx,
+                busAddr=myArgBusAddr,
+                lineAttrs=myArgWrLineAttrs,
+                setEn=myArgSetEn,
+              )
+            }
           }
         }
+      } else {
+        doLineAttrsRamWrite(
+          ramIdx=0,
+          busAddr=myArgBusAddr,
+          lineAttrs=myArgWrLineAttrs,
+          setEn=myArgSetEn,
+        )
       }
     }
     is (State.RECV_LINE_FROM_HI_BUS) {
@@ -7520,18 +7579,34 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
             incrBurstCnt=false,
           )
         )
-        switch (rSavedRamIdx) {
-          for (ramIdx <- 0 until numWays) {
-            is (ramIdx) {
-              doLineWordRamWrite(
-                ramIdx=ramIdx,
-                busAddr=rTempBurstAddr,
-                lineWord=(io.hiBus.d2hBus.data),
-                byteEn=None,
-                setEn=true,
-              )
+
+        def myArgBusAddr = rTempBurstAddr
+        def myArgLineWord = io.hiBus.d2hBus.data
+        def myArgByteEn = None
+        def myArgSetEn = true
+
+        if (myCondHaveLineFifoIdxRam) {
+          switch (rSavedRamIdx) {
+            for (ramIdx <- 0 until numWays) {
+              is (ramIdx) {
+                doLineWordRamWrite(
+                  ramIdx=ramIdx,
+                  busAddr=myArgBusAddr,
+                  lineWord=myArgLineWord,
+                  byteEn=myArgByteEn,
+                  setEn=myArgSetEn,
+                )
+              }
             }
           }
+        } else {
+          doLineWordRamWrite(
+            ramIdx=0,
+            busAddr=myArgBusAddr,
+            lineWord=myArgLineWord,
+            byteEn=myArgByteEn,
+            setEn=myArgSetEn,
+          )
         }
         when ((io.hiBus.d2hBus.burstLast)) {
           when (!rSavedLoH2dPayload.isWrite) {
@@ -7545,18 +7620,34 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     is (State.RECV_LINE_FROM_HI_BUS_POST_WRITE) {
       lineAttrsRam.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
-      switch (rSavedRamIdx) {
-        for (ramIdx <- 0 until numWays) {
-          is (ramIdx) {
-            doLineWordRamWrite(
-              ramIdx=ramIdx,
-              busAddr=rSavedLoH2dPayload.addr,
-              lineWord=rSavedLoH2dPayload.data,
-              byteEn=Some(rSavedLoH2dPayload.byteEn),
-              setEn=true,
-            )
+
+      def myArgBusAddr = rSavedLoH2dPayload.addr
+      def myArgLineWord = rSavedLoH2dPayload.data
+      def myArgByteEn = Some(rSavedLoH2dPayload.byteEn)
+      def myArgSetEn = true
+
+      if (myCondHaveLineFifoIdxRam) {
+        switch (rSavedRamIdx) {
+          for (ramIdx <- 0 until numWays) {
+            is (ramIdx) {
+              doLineWordRamWrite(
+                ramIdx=ramIdx,
+                busAddr=myArgBusAddr,
+                lineWord=myArgLineWord,
+                byteEn=myArgByteEn,
+                setEn=myArgSetEn,
+              )
+            }
           }
         }
+      } else {
+        doLineWordRamWrite(
+          ramIdx=0,
+          busAddr=myArgBusAddr,
+          lineWord=myArgLineWord,
+          byteEn=myArgByteEn,
+          setEn=myArgSetEn,
+        )
       }
       rState := State.RECV_LINE_FROM_HI_BUS_POST_5
     }
