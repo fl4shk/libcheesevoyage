@@ -5549,11 +5549,18 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       mySelLoH2dPopStm.ready := False
     }
     is (State.LOAD_HIT_DO_STALL) {
+      val myRdLineWord = (
+        if (myCondHaveLineFifoIdxRam) (
+          rdLineWord(rSavedRamIdx)
+        ) else (
+          rdLineWord.head
+        )
+      )
       lineAttrsRam.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
 
       mySelLoH2dPopStm.ready := False
-      myLoD2hPushStm.busPayload.data := rdLineWord(rSavedRamIdx)
+      myLoD2hPushStm.busPayload.data := myRdLineWord
       if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
         myLoD2hPushStm.busPayload.byteSize := (
           rSavedLoH2dPayload.byteSize
@@ -7185,11 +7192,18 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       mySelLoH2dPopStm.ready := False
     }
     is (State.LOAD_HIT_DO_STALL) {
+      val myRdLineWord = (
+        if (myCondHaveLineFifoIdxRam) (
+          rdLineWord(rSavedRamIdx)
+        ) else (
+          rdLineWord.head
+        )
+      )
       lineAttrsRam.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
 
       mySelLoH2dPopStm.ready := False
-      myLoD2hPushStm.busPayload.data := rdLineWord(rSavedRamIdx)
+      myLoD2hPushStm.busPayload.data := myRdLineWord
       if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
         myLoD2hPushStm.busPayload.byteSize := (
           rSavedLoH2dPayload.byteSize
