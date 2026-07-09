@@ -965,6 +965,7 @@ case class LcvBusSdramCtrl(
       SEND_ACTIVE,
       ACTIVE_POST_NOPS,
       PRE_READ_WRITE,
+      MID_BURST_PRE_READ_WRITE,
       SEND_READ_0,
       SEND_READ_N,
       READ_POST_NOPS,
@@ -1077,7 +1078,7 @@ case class LcvBusSdramCtrl(
       rH2dFifoPopReady := False
       when (
         rNeedRfshCnt.msb
-        && rBusBurstOuterCnt.msb // wait for bus bursts to finish
+        //&& rBusBurstOuterCnt.msb // wait for bus bursts to finish
       ) {
         rNeedRfshCnt := cfg.Cycles.tREFIthresh.toInt
         rState := State.SEND_RFSH
@@ -1111,7 +1112,7 @@ case class LcvBusSdramCtrl(
                 || !h2dFifo.io.pop.burstFirst
               )
             )
-            || !rBusBurstOuterCnt.msb,
+            //|| !rBusBurstOuterCnt.msb,
           ),
           init=False
         ) 
@@ -1121,7 +1122,20 @@ case class LcvBusSdramCtrl(
 
         rStartBusBurst := False
 
-        when (rBusBurstOuterCnt.msb) {
+        rSavedH2dSendData := (
+          RegNext(
+            h2dFifo.io.pop.payload,
+            init=h2dFifo.io.pop.payload.getZero,
+          ),
+        )
+        rHaveBurst := (
+          RegNext(
+            h2dFifo.io.pop.burstFirst,
+            init=False,
+          )
+        )
+
+        //when (rBusBurstOuterCnt.msb) {
           rH2dFifoPopReady := True
           rTempAddr.head := (
             RegNext(
@@ -1142,29 +1156,29 @@ case class LcvBusSdramCtrl(
             )
             init(0x0)
           )
-          rSavedH2dSendData := (
-            RegNext(
-              h2dFifo.io.pop.payload,
-              init=h2dFifo.io.pop.payload.getZero,
-            ),
-          )
-          rHaveBurst := (
-            RegNext(
-              h2dFifo.io.pop.burstFirst,
-              init=False,
-            )
-          )
-        } otherwise {
-          rTempAddr.last(
-            myAlignedColumnSliceRangeHi._1
-            downto myAlignedColumnSliceRangeHi._2
-          ) := (
-            rTempAddr.last(
-              myAlignedColumnSliceRangeHi._1
-              downto myAlignedColumnSliceRangeHi._2
-            ) + 1
-          )
-        }
+          //rSavedH2dSendData := (
+          //  RegNext(
+          //    h2dFifo.io.pop.payload,
+          //    init=h2dFifo.io.pop.payload.getZero,
+          //  ),
+          //)
+          //rHaveBurst := (
+          //  RegNext(
+          //    h2dFifo.io.pop.burstFirst,
+          //    init=False,
+          //  )
+          //)
+        //} otherwise {
+        //  rTempAddr.last(
+        //    myAlignedColumnSliceRangeHi._1
+        //    downto myAlignedColumnSliceRangeHi._2
+        //  ) := (
+        //    rTempAddr.last(
+        //      myAlignedColumnSliceRangeHi._1
+        //      downto myAlignedColumnSliceRangeHi._2
+        //    ) + 1
+        //  )
+        //}
         when (
           rBusBurstOuterCnt.msb
           && (
@@ -1182,10 +1196,11 @@ case class LcvBusSdramCtrl(
         }
         when (!rBusBurstOuterCnt.msb) {
           rBusBurstOuterCnt := rBusBurstOuterCnt - 1
-          rState := State.PRE_READ_WRITE
+          //rState := State.PRE_READ_WRITE
         } otherwise {
-          rState := State.SEND_ACTIVE
+          //rState := State.SEND_ACTIVE
         }
+        rState := State.SEND_ACTIVE
       }
     }
     is (State.SEND_RFSH) {
@@ -1336,6 +1351,74 @@ case class LcvBusSdramCtrl(
       //  ).asSInt
       //)
     }
+    is (State.MID_BURST_PRE_READ_WRITE) {
+      io.sdram.sendCmdNop()
+      rStartBusBurst := False
+      when (!rBusBurstOuterCnt.msb) {
+        rBusBurstOuterCnt := rBusBurstOuterCnt - 1
+      }
+      when (!rSavedH2dSendData.isWrite) {
+        rState := State.SEND_READ_0
+        rChipBurstWithoutBusBurstCnt.head := (
+          (
+            rTempAddr.head(
+              myAlignedColumnSliceRangeLo._1
+              downto myAlignedColumnSliceRangeLo._2
+            ).resize(
+              rChipBurstWithoutBusBurstCnt.head.getWidth
+            ) + (
+              cfg.casLatency._2 //- 2
+              + 2 //1
+            )
+          ).asSInt
+        )
+        rChipBurstWithoutBusBurstCnt.last := (
+          (
+            rTempAddr.head(
+              myAlignedColumnSliceRangeLo._1
+              downto myAlignedColumnSliceRangeLo._2
+            ).resize(
+              rChipBurstWithoutBusBurstCnt.last.getWidth
+            ) + (
+              cfg.casLatency._2
+              + 3 //2
+              //+ 1
+              //- 3
+            )
+          ).asSInt
+        )
+      } otherwise {
+        //when (!rBusBurstOuterCnt.msb) {
+        //  rH2dFifoPopReady := True
+        //}
+        //rH2dFifoPopReady := True
+        //rSavedH2dSendData := (
+        //  //io.bus.h2dBus.payload
+        //  h2dFifo.io.pop.payload
+        //)
+        rState := State.SEND_WRITE_0
+        rChipBurstWithoutBusBurstCnt.head := (
+          (
+            rTempAddr.head(
+              myAlignedColumnSliceRangeLo._1
+              downto myAlignedColumnSliceRangeLo._2
+            ).resize(
+              rChipBurstWithoutBusBurstCnt.head.getWidth
+            ) //- 2
+          ).asSInt
+        )
+        rChipBurstWithoutBusBurstCnt.last := (
+          (
+            rTempAddr.head(
+              myAlignedColumnSliceRangeLo._1
+              downto myAlignedColumnSliceRangeLo._2
+            ).resize(
+              rChipBurstWithoutBusBurstCnt.last.getWidth
+            ) + 1 //- 3
+          ).asSInt
+        )
+      }
+    }
     is (State.SEND_READ_0) {
       rH2dFifoPopReady := False
       io.sdram.sendCmdRead(
@@ -1468,7 +1551,21 @@ case class LcvBusSdramCtrl(
       }
       when (rRdCasLatencyCnt.msb && rRdNopWaitCnt.msb) {
         rD2hFifoPushValid := False
-        rState := State.IDLE
+
+        rTempAddr.last(
+          myAlignedColumnSliceRangeHi._1
+          downto myAlignedColumnSliceRangeHi._2
+        ) := (
+          rTempAddr.last(
+            myAlignedColumnSliceRangeHi._1
+            downto myAlignedColumnSliceRangeHi._2
+          ) + 1
+        )
+        when (!rBusBurstOuterCnt.msb) {
+          rState := State.MID_BURST_PRE_READ_WRITE
+        } otherwise {
+          rState := State.IDLE
+        }
       }
     }
     is (State.READ_POST_NOPS) {
@@ -1479,7 +1576,21 @@ case class LcvBusSdramCtrl(
         rRdNopWaitCnt := rRdNopWaitCnt - 1
       }
       when (rRdNopWaitCnt.msb) {
-        rState := State.IDLE
+        //rState := State.IDLE
+        rTempAddr.last(
+          myAlignedColumnSliceRangeHi._1
+          downto myAlignedColumnSliceRangeHi._2
+        ) := (
+          rTempAddr.last(
+            myAlignedColumnSliceRangeHi._1
+            downto myAlignedColumnSliceRangeHi._2
+          ) + 1
+        )
+        when (!rBusBurstOuterCnt.msb) {
+          rState := State.MID_BURST_PRE_READ_WRITE
+        } otherwise {
+          rState := State.IDLE
+        }
       }
     }
     is (State.SEND_WRITE_0) {
@@ -1636,7 +1747,21 @@ case class LcvBusSdramCtrl(
       when (!rWrNopWaitCnt.msb) {
         rWrNopWaitCnt := rWrNopWaitCnt - 1
       } elsewhen (!rD2hFifoPushValid) {
-        rState := State.IDLE
+        //rState := State.IDLE
+        rTempAddr.last(
+          myAlignedColumnSliceRangeHi._1
+          downto myAlignedColumnSliceRangeHi._2
+        ) := (
+          rTempAddr.last(
+            myAlignedColumnSliceRangeHi._1
+            downto myAlignedColumnSliceRangeHi._2
+          ) + 1
+        )
+        when (!rBusBurstOuterCnt.msb) {
+          rState := State.MID_BURST_PRE_READ_WRITE
+        } otherwise {
+          rState := State.IDLE
+        }
       }
     }
   }
