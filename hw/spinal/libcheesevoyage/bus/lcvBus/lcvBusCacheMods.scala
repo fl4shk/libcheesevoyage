@@ -4401,7 +4401,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   val lineWordRamCfg = RamSdpPipeConfig(
     wordType=UInt(wordWidth bits),
     depth=depthWords,
-    optIncludeWrByteEn=true,
+    optIncludeWrByteEn=false,
     optWrHistLength=cfg.myRamOptWrHistLength,
     initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
     arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
