@@ -5085,22 +5085,56 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       )
     )
   )
-  val rHadAnyRamWritePastTwoCycles = Vec.fill(2)(
-    RegNext(
-      (
-        Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-        || RegNext(
-          Vec(lineWordRam.map(item => item.io.wrEn)).orR,
-          init=False
-        )
-        || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-        || RegNext(
-          Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
-          init=False
-        )
+  //val rHadAnyRamWritePastTwoCycles = Vec.fill(2)(
+  //  RegNext(
+  //    (
+  //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
+  //      || RegNext(
+  //        Vec(lineWordRam.map(item => item.io.wrEn)).orR,
+  //        init=False
+  //      )
+  //      || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
+  //      || RegNext(
+  //        Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
+  //        init=False
+  //      )
+  //    ),
+  //    init=False
+  //  )
+  //)
+  val myTempHaveCurrRamWrite = (
+    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
+    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
+  )
+  val myHistHadAnyRamWrite = Array.fill(2)(
+    History[Bool](
+      that=(
+        //RegNext(
+          myTempHaveCurrRamWrite//,
+        //  init=myTempHaveCurrRamWrite.getZero
+        //)
       ),
-      init=False
+      length=cfg.myRamOptWrHistLength + 1,//2,
+      init=myTempHaveCurrRamWrite.getZero
     )
+  )
+  val myHadAnyRecentRamWrite = Vec[Bool](
+    myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
+    //RegNext(
+    //  (
+    //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
+    //    || RegNext(
+    //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR,
+    //      init=False
+    //    )
+    //    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
+    //    || RegNext(
+    //      Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR,
+    //      init=False
+    //    )
+    //  ),
+    //  init=False
+    //)
   )
   //val rHadLineAttrsRamWritePastTwoCycles = Vec.fill(2)(
   //  RegNext(
@@ -5314,11 +5348,15 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
           )
         }
 
-        when (rHadAnyRamWritePastTwoCycles.head) {
+        when (
+          //rHadAnyRamWritePastTwoCycles.head
+          myHadAnyRecentRamWrite.head
+        ) {
           myLoD2hPushStm.valid := False
         }
         when (
-          rHadAnyRamWritePastTwoCycles.last
+          //rHadAnyRamWritePastTwoCycles.last
+          myHadAnyRecentRamWrite.last
           || !myLoD2hPushStm.ready
         ) {
           mySelLoH2dPopStm.ready := False
