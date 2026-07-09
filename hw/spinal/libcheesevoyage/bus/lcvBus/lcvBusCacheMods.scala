@@ -50,6 +50,7 @@ case class LcvBusCacheBusPairConfig(
   optFormal: Boolean=false,
 ) {
   //require(!mainCfg.allowBurst)
+  val myRamOptWrHistLength = 3
   loBusCacheCfg.kind match {
     case LcvCacheKind.Shared => {
       require(mainCfg.allowBurst)
@@ -6083,6 +6084,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     wordType=UInt(wordWidth bits),
     depth=depthWords,
     optIncludeWrByteEn=true,
+    optWrHistLength=cfg.myRamOptWrHistLength,
     initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
     arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
     arrRamStyleXilinx=cfg.loBusCacheCfg.lineWordMemRamStyleXilinx,
@@ -6094,6 +6096,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     wordType=LcvBusCacheLineAttrs(cfg=loBusCfg),
     depth=depthLines,
     optIncludeWrByteEn=false,
+    optWrHistLength=cfg.myRamOptWrHistLength,
     initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
     arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
     arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
@@ -6123,6 +6126,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     wordType=UInt(log2Up(numWays) bits),
     depth=depthLines,
     optIncludeWrByteEn=false,
+    optWrHistLength=cfg.myRamOptWrHistLength,
     initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
     arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
     arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
@@ -6767,22 +6771,40 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       )
     )
   )
-  val rHadAnyRamWritePastTwoCycles = Vec.fill(2)(
-    RegNext(
-      (
-        Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-        || RegNext(
-          Vec(lineWordRam.map(item => item.io.wrEn)).orR,
-          init=False
-        )
-        || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-        || RegNext(
-          Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
-          init=False
-        )
+
+  val myTempHaveCurrRamWrite = (
+    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
+    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
+  )
+  val myHistHadAnyRamWrite = Array.fill(2)(
+    History[Bool](
+      that=(
+        //RegNext(
+          myTempHaveCurrRamWrite//,
+        //  init=myTempHaveCurrRamWrite.getZero
+        //)
       ),
-      init=False
+      length=cfg.myRamOptWrHistLength + 1,//2,
+      init=myTempHaveCurrRamWrite.getZero
     )
+  )
+  val myHadAnyRecentRamWrite = Vec[Bool](
+    myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
+    //RegNext(
+    //  (
+    //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
+    //    || RegNext(
+    //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR,
+    //      init=False
+    //    )
+    //    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
+    //    || RegNext(
+    //      Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR,
+    //      init=False
+    //    )
+    //  ),
+    //  init=False
+    //)
   )
   //val rHadLineAttrsRamWritePastTwoCycles = Vec.fill(2)(
   //  RegNext(
@@ -6998,11 +7020,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           )
         }
 
-        when (rHadAnyRamWritePastTwoCycles.head) {
+        when (
+          myHadAnyRecentRamWrite.head
+        ) {
           myLoD2hPushStm.valid := False
         }
         when (
-          rHadAnyRamWritePastTwoCycles.last
+          myHadAnyRecentRamWrite.last
           || !myLoD2hPushStm.ready
         ) {
           mySelLoH2dPopStm.ready := False
