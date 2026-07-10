@@ -50,7 +50,7 @@ case class LcvBusCacheBusPairConfig(
   optFormal: Boolean=false,
 ) {
   //require(!mainCfg.allowBurst)
-  val myRamOptWrHistLength = 3
+  val myRamOptWrHistLength = 1//2//3
   val myRamOptWrHistLengthPlusAddend = myRamOptWrHistLength + 1//3//2
   loBusCacheCfg.kind match {
     case LcvCacheKind.Shared => {
