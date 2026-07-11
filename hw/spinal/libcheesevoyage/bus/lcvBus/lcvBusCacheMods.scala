@@ -2488,6 +2488,7 @@ case class LcvBusCacheIo(
 ) extends Bundle {
   val loBus = slave(LcvBusIo(cfg=cfg.loBusCfg))
   val hiBus = master(LcvBusIo(cfg=cfg.hiBusCfg))
+  val mmioHiBus = master(LcvBusIo(cfg=cfg.loBusCfg))
 }
 
 //case class LcvBusCacheRdLineFifoPayload(
@@ -7000,7 +7001,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
 
   //myFifoThingDoStall := False
   //myLoD2hPushStm.valid := False
-  val rSeenNonCachedHiBusH2dFire = Reg(Bool(), init=False)
+  val rSeenMmioHiBusH2dFire = Reg(Bool(), init=False)
   //val rSeenNonCachedLoBusD2hFire = Reg(Bool(), init=False)
 
   switch (
@@ -7169,7 +7170,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       myLoD2hPushStm.valid := False
       mySelLoH2dPopStm.ready := False
       myFifoThingDoStall := True
-      rSeenNonCachedHiBusH2dFire := False
+      rSeenMmioHiBusH2dFire := False
       //rSeenNonCachedHiBusD2hFire := False
       rState := State.NON_CACHED_BUS_ACCESS
     }
@@ -7315,16 +7316,16 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       //rSavedRdLineAttrsTag := rdLineAttrs.tag
     }
     is (State.NON_CACHED_BUS_ACCESS) {
-      io.hiBus.h2dBus.valid := !rSeenNonCachedHiBusH2dFire
-      //io.hiBus.d2hBus.ready := rSeenNonCachedHiBusH2dFire
+      io.mmioHiBus.h2dBus.valid := !rSeenMmioHiBusH2dFire
+      //io.mmioHiBus.d2hBus.ready := rSeenNonCachedHiBusH2dFire
 
-      when (io.hiBus.h2dBus.ready) {
-        rSeenNonCachedHiBusH2dFire := True
+      when (io.mmioHiBus.h2dBus.ready) {
+        rSeenMmioHiBusH2dFire := True
       }
-      io.hiBus.h2dBus.payload.mainNonBurstInfo := (
+      io.mmioHiBus.h2dBus.payload.mainNonBurstInfo := (
         rSavedLoH2dPayload.mainNonBurstInfo
       )
-      io.hiBus.d2hBus.translateInto(myLoD2hPushStm)(
+      io.mmioHiBus.d2hBus.translateInto(myLoD2hPushStm)(
         dataAssignment=(outp, inp) => {
           outp.busPayload.mainNonBurstInfo.infoShared := (
             inp.mainNonBurstInfo.infoShared
