@@ -7340,20 +7340,20 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         }
       )
       myLoD2hPushStm.busPayload.src := (
-        rDel2LoH2dPayload.src
+        rSavedLoH2dPayload.src
       )
       if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
         myLoD2hPushStm.busPayload.byteSize := (
-          rDel2LoH2dPayload.byteSize
+          rSavedLoH2dPayload.byteSize
         )
         myLoD2hPushStm.busPayload.addrLo := (
-          rDel2LoH2dPayload.addr(
+          rSavedLoH2dPayload.addr(
             cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
           )
         )
       }
       myLoD2hPushStm.busPayload.txnCnt := (
-        rDel2LoH2dPayload.txnCnt
+        rSavedLoH2dPayload.txnCnt
       )
       when (myLoD2hPushStm.fire) {
         rState := State.IDLE
