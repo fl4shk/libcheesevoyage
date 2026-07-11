@@ -2488,7 +2488,11 @@ case class LcvBusCacheIo(
 ) extends Bundle {
   val loBus = slave(LcvBusIo(cfg=cfg.loBusCfg))
   val hiBus = master(LcvBusIo(cfg=cfg.hiBusCfg))
-  val mmioHiBus = master(LcvBusIo(cfg=cfg.loBusCfg))
+  val mmioHiBus = (
+    cfg.loBusCacheCfg.kind == LcvCacheKind.D
+  ) generate (
+    master(LcvBusIo(cfg=cfg.loBusCfg))
+  )
 }
 
 //case class LcvBusCacheRdLineFifoPayload(
@@ -6134,6 +6138,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   )
   //--------
   val io = LcvBusCacheIo(cfg=cfg)
+  io.mmioHiBus.h2dBus.valid := False
+  io.mmioHiBus.h2dBus.payload := io.mmioHiBus.h2dBus.payload.getZero
+  io.mmioHiBus.d2hBus.ready := False
   //--------
   val lineWordRamCfg = RamSdpPipeConfig(
     wordType=UInt(wordWidth bits),
