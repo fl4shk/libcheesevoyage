@@ -6141,6 +6141,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   io.mmioHiBus.h2dBus.valid := False
   io.mmioHiBus.h2dBus.payload := io.mmioHiBus.h2dBus.payload.getZero
   io.mmioHiBus.d2hBus.ready := False
+  io.mmioHiBus.h2dBus.addr.allowOverride
   //--------
   val lineWordRamCfg = RamSdpPipeConfig(
     wordType=UInt(wordWidth bits),
@@ -7332,6 +7333,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       io.mmioHiBus.h2dBus.payload.mainNonBurstInfo := (
         rSavedLoH2dPayload.mainNonBurstInfo
       )
+      io.mmioHiBus.h2dBus.addr.msb := False
       io.mmioHiBus.d2hBus.translateInto(myLoD2hPushStm)(
         dataAssignment=(outp, inp) => {
           outp.busPayload.mainNonBurstInfo.infoShared := (
