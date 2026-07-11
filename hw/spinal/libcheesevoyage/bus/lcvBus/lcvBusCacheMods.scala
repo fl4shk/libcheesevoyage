@@ -7340,21 +7340,24 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           outp.busPayload.mainNonBurstInfo.infoShared := (
             inp.mainNonBurstInfo.infoShared
           )
+          outp.busPayload.mainNonBurstInfo.infoByteSizeEtc := (
+            inp.mainNonBurstInfo.infoByteSizeEtc
+          )
         }
       )
       //myLoD2hPushStm.busPayload.src := (
       //  rSavedLoH2dPayload.src
       //)
-      if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-        myLoD2hPushStm.busPayload.byteSize := (
-          rSavedLoH2dPayload.byteSize
-        )
-        myLoD2hPushStm.busPayload.addrLo := (
-          rSavedLoH2dPayload.addr(
-            cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
-          )
-        )
-      }
+      //if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+      //  myLoD2hPushStm.busPayload.byteSize := (
+      //    rSavedLoH2dPayload.byteSize
+      //  )
+      //  myLoD2hPushStm.busPayload.addrLo := (
+      //    rSavedLoH2dPayload.addr(
+      //      cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
+      //    )
+      //  )
+      ////}
       myLoD2hPushStm.busPayload.txnCnt := (
         rSavedLoH2dPayload.txnCnt
       )
