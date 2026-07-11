@@ -7334,34 +7334,44 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         rSavedLoH2dPayload.mainNonBurstInfo
       )
       io.mmioHiBus.h2dBus.addr.msb := False
-      io.mmioHiBus.d2hBus.translateInto(myLoD2hPushStm)(
-        dataAssignment=(outp, inp) => {
-          //outp.busPayload := inp
-          outp.busPayload.mainNonBurstInfo.infoShared := (
-            inp.mainNonBurstInfo.infoShared
-          )
-          outp.busPayload.mainNonBurstInfo.infoByteSizeEtc := (
-            inp.mainNonBurstInfo.infoByteSizeEtc
-          )
-        }
-      )
-      //myLoD2hPushStm.busPayload.src := (
-      //  rSavedLoH2dPayload.src
-      //)
-      //if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-      //  myLoD2hPushStm.busPayload.byteSize := (
-      //    rSavedLoH2dPayload.byteSize
-      //  )
-      //  myLoD2hPushStm.busPayload.addrLo := (
-      //    rSavedLoH2dPayload.addr(
-      //      cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
+      //io.mmioHiBus.d2hBus.translateInto(
+      //  myLoD2hPushStm
+      //)(
+      //  dataAssignment=(outp, inp) => {
+      //    //outp.busPayload := inp
+      //    outp.busPayload.mainNonBurstInfo.infoShared := (
+      //      inp.mainNonBurstInfo.infoShared
       //    )
-      //  )
-      ////}
-      myLoD2hPushStm.busPayload.txnCnt := (
-        rSavedLoH2dPayload.txnCnt
-      )
-      when (myLoD2hPushStm.fire) {
+      //    if (
+      //      outp.busPayload.mainNonBurstInfo.infoByteSizeEtc != null
+      //    ) {
+      //      outp.busPayload.mainNonBurstInfo.infoByteSizeEtc := (
+      //        inp.mainNonBurstInfo.infoByteSizeEtc
+      //      )
+      //    }
+      //  }
+      //)
+      ////myLoD2hPushStm.busPayload.src := (
+      ////  rSavedLoH2dPayload.src
+      ////)
+      ////if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+      ////  myLoD2hPushStm.busPayload.byteSize := (
+      ////    rSavedLoH2dPayload.byteSize
+      ////  )
+      ////  myLoD2hPushStm.busPayload.addrLo := (
+      ////    rSavedLoH2dPayload.addr(
+      ////      cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
+      ////    )
+      ////  )
+      //////}
+      //myLoD2hPushStm.busPayload.txnCnt := (
+      //  rSavedLoH2dPayload.txnCnt
+      //)
+      io.loBus.d2hBus << io.mmioHiBus.d2hBus
+      when (
+        //myLoD2hPushStm.fire
+        io.loBus.d2hBus.fire
+      ) {
         rState := State.IDLE
       }
     }
