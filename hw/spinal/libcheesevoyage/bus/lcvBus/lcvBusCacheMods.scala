@@ -7342,9 +7342,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           )
         }
       )
-      myLoD2hPushStm.busPayload.src := (
-        rSavedLoH2dPayload.src
-      )
+      //myLoD2hPushStm.busPayload.src := (
+      //  rSavedLoH2dPayload.src
+      //)
       if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
         myLoD2hPushStm.busPayload.byteSize := (
           rSavedLoH2dPayload.byteSize
