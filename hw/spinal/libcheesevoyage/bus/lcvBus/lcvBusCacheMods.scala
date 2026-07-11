@@ -6223,6 +6223,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     val
       INIT,
       IDLE,
+
+      //LOAD_NON_CACHED,
+      //STORE_NON_CACHED,
+      NON_CACHED_BUS_ACCESS,
+
       LOAD_HIT_DO_STALL_PIPE_3,
       LOAD_HIT_DO_STALL_PIPE_2,
       LOAD_HIT_DO_STALL_PIPE_1,
@@ -6948,6 +6953,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   val tempToSwitch = (
     //(rState === State.IDLE)
     rState.asBits(1)
+    ## rDel2LoH2dPayload.addr.msb
     ## rMyTempDoSaveCond(3)
     //RegNext(
     //  RegNext(mySelLoH2dPopStm.fire, init=False),
@@ -6994,13 +7000,16 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
 
   //myFifoThingDoStall := False
   //myLoD2hPushStm.valid := False
+  val rSeenNonCachedHiBusH2dFire = Reg(Bool(), init=False)
+  //val rSeenNonCachedLoBusD2hFire = Reg(Bool(), init=False)
+
   switch (
     tempToSwitch
   ) {
     is (
       //M"10-0"
       MaskedLiteral(
-        "110-" + ("0" * numWays)
+        "1010-" + ("0" * numWays)
       )
       //M"10"
     ) {
@@ -7029,7 +7038,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     is (
       //M"11-0"
       MaskedLiteral(
-        "111-" + ("0" * numWays)
+        "1011-" + ("0" * numWays)
       )
     ) {
       // cache miss, and the line is *possibly* dirty
@@ -7065,7 +7074,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         //M"1-01"
         MaskedLiteral(
           //"1-01"
-          "11-0" + myRamIdxMask
+          "101-0" + myRamIdxMask
         )
       ) {
         doPopLoH2dFifo()
@@ -7113,7 +7122,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         //M"11-1"
         //M"1-11"
         MaskedLiteral(
-          "11-1" + myRamIdxMask
+          "101-1" + myRamIdxMask
         )
       ) {
         doPopLoH2dFifo()
@@ -7155,7 +7164,17 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       }
     }
     is (MaskedLiteral(
-      "10--" + ("-" * numWays)
+      "111--" + ("-" * numWays)
+    )) {
+      myLoD2hPushStm.valid := False
+      mySelLoH2dPopStm.ready := False
+      myFifoThingDoStall := True
+      rSeenNonCachedHiBusH2dFire := False
+      //rSeenNonCachedHiBusD2hFire := False
+      rState := State.NON_CACHED_BUS_ACCESS
+    }
+    is (MaskedLiteral(
+      "1-0--" + ("-" * numWays)
     )) {
       doPopLoH2dFifo()
       myFifoThingDoStall := False
@@ -7294,7 +7313,27 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         //rSavedRdLineAttrsTag := rdLineAttrs.tag
       }
       //rSavedRdLineAttrsTag := rdLineAttrs.tag
+    }
+    is (State.NON_CACHED_BUS_ACCESS) {
+      io.hiBus.h2dBus.valid := !rSeenNonCachedHiBusH2dFire
+      //io.hiBus.d2hBus.ready := rSeenNonCachedHiBusH2dFire
 
+      when (io.hiBus.h2dBus.ready) {
+        rSeenNonCachedHiBusH2dFire := True
+      }
+      io.hiBus.h2dBus.payload.mainNonBurstInfo := (
+        rSavedLoH2dPayload.mainNonBurstInfo
+      )
+      io.hiBus.d2hBus.translateInto(myLoD2hPushStm)(
+        dataAssignment=(outp, inp) => {
+          outp.busPayload.mainNonBurstInfo.infoShared := (
+            inp.mainNonBurstInfo.infoShared
+          )
+        }
+      )
+      when (myLoD2hPushStm.fire) {
+        rState := State.IDLE
+      }
     }
     is (State.LOAD_HIT_DO_STALL_PIPE_3) {
       rState := State.LOAD_HIT_DO_STALL_PIPE_2
