@@ -7336,7 +7336,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       io.mmioHiBus.h2dBus.addr.msb := False
       io.mmioHiBus.d2hBus.translateInto(myLoD2hPushStm)(
         dataAssignment=(outp, inp) => {
-          outp.busPayload := inp
+          //outp.busPayload := inp
+          outp.busPayload.mainNonBurstInfo.infoShared := (
+            inp.mainNonBurstInfo.infoShared
+          )
         }
       )
       myLoD2hPushStm.busPayload.src := (
