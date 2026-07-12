@@ -919,217 +919,217 @@ case class WrPulseRdPipeRamSdpPipe[
 }
 
 
-case class WrPulseRdPipeRamSdpPipeOldConfig[
-  ModT <: Data,
-  WordT <: Data,
-](
-  modType: HardType[ModT],
-  wordType: HardType[WordT],
-  wordCount: Int,
-  pipeName: String,
-  setWordFunc: (
-    ModT,     // pass through pipeline payload (output)
-    ModT,     // pass through pipeline payload (input)
-    WordT,    // data read from the RAM
-  ) => Unit,
-  initBigInt: Option[Seq[Seq[BigInt]]]=None,
-  arrRamStyleAltera: String="M10K",
-  arrRamStyleXilinx: String="block",
-  arrRwAddrCollisionXilinx: String="",
-) {
-  def addrWidth = log2Up(wordCount)
-  def modRdPortCnt = 1
-  def modStageCnt = 0//1
-
-  val pmCfg = PipeRegFileConfig[
-    WordT,
-    Bool,
-  ](
-    wordType=wordType(),
-    wordCountArr=Array.fill(1)(wordCount).toSeq,
-    hazardCmpType=Bool(),
-    modRdPortCnt=modRdPortCnt,
-    modStageCnt=modStageCnt,
-    pipeName=pipeName,
-    optIncludePreMid0Front=(
-      //false
-      true
-    ),
-    linkArr=(
-      //Some(PipeRegFile.mkLinkArr()),
-      //linkArr
-      None
-    ),
-    memArrIdx=0,
-    //dualRdType=PmRmwModType(),
-    optDualRd=false,
-    initBigInt=initBigInt,
-    //optEnableModDuplicate=false,
-    optModHazardKind=(
-      //PipeRegFile.ModHazardKind.Dont
-      //PipeRegFile.ModHazardKind.Dupl
-      PipeRegFile.ModHazardKind.Fwd
-    ),
-    vivadoDebug=false,
-    optEnableWrPulse=true,
-    memRamStyleAltera=arrRamStyleAltera,
-    memRamStyleXilinx=arrRamStyleXilinx,
-    memRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
-    optIncludeModFrontStageLink=false,
-    optIncludeModFrontS2MLink=false,
-  )
-}
-
-case class WrPulseRdPipeRamSdpPipeOld[
-  ModT <: Data,
-  WordT <: Data,
-](
-  cfg: WrPulseRdPipeRamSdpPipeOldConfig[ModT, WordT],
-) extends Component {
-  //--------
-  val io = WrPulseRdPipeRamSdpPipeIo(cfg=cfg)
-  //--------
-  def mkExt() = {
-    val ret = PipeRegFilePayloadExt(
-      cfg=cfg.pmCfg,
-      wordCount=cfg.wordCount,
-    )
-    ret
-  }
-  case class PmRmwModType(
-  ) extends Bundle with PipeRegFilePayloadBase[WordT, Bool] {
-    //setName(
-    //  name=pmRmwModTypeName,
-    //)
-    val data = cfg.modType()
-    val myExt = mkExt()
-    /*override*/ def setPipeRegFileExt(
-      inpExt: PipeRegFilePayloadExt[WordT, Bool],
-      ydx: Int,
-      memArrIdx: Int,
-    ): Unit = {
-      myExt := inpExt
-    }
-    /*override*/ def getPipeRegFileExt(
-      outpExt: PipeRegFilePayloadExt[WordT, Bool],
-      ydx: Int,
-      memArrIdx: Int,
-    ): Unit = {
-      outpExt := myExt
-    }
-    //def optFormalFwdFuncs(
-    //): Option[PipeRegFilePayloadBaseFormalFwdFuncs[WordT, Bool]] = (
-    //  None
-    //)
-    /*override*/ def formalSetPipeRegFileFwd(
-      outpFwd: PipeRegFileFwd[WordT, Bool],
-      memArrIdx: Int,
-    ): Unit = {
-    }
-
-    /*override*/ def formalGetPipeRegFileFwd(
-      inpFwd: PipeRegFileFwd[WordT, Bool],
-      memArrIdx: Int,
-    ): Unit = {
-    }
-  }
-  val pipeMem = PipeRegFile[
-    WordT,
-    Bool,
-    PmRmwModType,
-    PipeRegFileDualRdTypeDisabled[
-      WordT, Bool,
-    ]
-  ](
-    cfg=cfg.pmCfg,
-    modType=PmRmwModType(),
-  )(
-    doHazardCmpFunc=None,
-    doModInMid0FrontFunc={
-      def myFunc(
-        params: PipeRegFileDoModInMid0FrontFuncParams[
-          WordT,
-          Bool,
-          PmRmwModType,
-          PipeRegFileDualRdTypeDisabled[
-            WordT, Bool,
-          ]
-        ]
-      ): Area = new Area {
-        when (params.cMid0Front.up.isValid) {
-          params.outp := params.inp
-        }
-        params.outp.myExt.modMemWord := params.getMyRdMemWordFunc(0, 0)
-        params.outp.myExt.fwdCanDoIt.foreach(item => {
-          item := False
-        })
-        params.outp.myExt.modMemWordValid.foreach(mmwValidItem => {
-          mmwValidItem := False
-        })
-      }
-      Some(myFunc)
-      //None
-    }
-  )
-  pipeMem.io.front.driveFrom(io.rdAddrPipe)(
-    con=(node, inp) => {
-      def rdAddrPayload = node(pipeMem.io.frontPayload)
-      rdAddrPayload := rdAddrPayload.getZero
-      rdAddrPayload.allowOverride
-      //rdAddrPayload.data := io.rdAddrPipe
-      rdAddrPayload.myExt.memAddr.head := inp.addr
-      //rdAddrPayload.myExt.memAddrFwdMmw.head.foreach(item => {
-      //  item := inp.addr
-      //})
-      rdAddrPayload.myExt.rdMemWord.foreach(rdMemWord => {
-        rdMemWord := rdMemWord.getZero
-      })
-      rdAddrPayload.data := inp.data
-
-      //rdAddrPayload.myExt.rdMemWord.last := (
-      //  rdAddrPipePayload.data
-      //)
-      //rdAddrPayload.myExt.modMemWord := rdAddrPipePayload.data //rdAddrPayload.myExt.rdMemWord
-
-    }
-  )
-  val sMid0FrontToModFront = StageLink(
-    up=pipeMem.mod.front.cMid0Front.head.down,
-    down=pipeMem.io.modFront,
-  )
-  pipeMem.myLinkArr += sMid0FrontToModFront
-  pipeMem.io.modFront(pipeMem.io.modBackPayload) := (
-    pipeMem.io.modFront(pipeMem.mod.front.outpPipePayload)
-  )
-  //val fModFrontToModBack = ForkLink(
-  //  up=pipeMem.io.modFront,
-  //  downs=List(
-  //    pipeMem.io.modBack,
-  //    pipeMem.io.modBackFwd,
-  //  ),
-  //)
-  //pipeMem.myLinkArr += fModFrontToModBack
-  def dModFrontToModBack = DirectLink(
-    up=pipeMem.io.modFront,
-    down=pipeMem.io.modBack,
-  )
-  pipeMem.myLinkArr += dModFrontToModBack
-  pipeMem.io.back.driveTo(io.rdDataPipe)(
-    con=(outp, node) => {
-      //rdDataPipePayload := node(pipeMem.io.backPayload).myExt.modMemWord
-      cfg.setWordFunc(
-        outp,
-        node(pipeMem.io.backPayload).data,
-        node(pipeMem.io.backPayload).myExt.rdMemWord.last,
-      )
-    }
-  )
-  pipeMem.io.wrPulse.valid := io.wrPulse.valid
-  pipeMem.io.wrPulse.addr := io.wrPulse.addr
-  pipeMem.io.wrPulse.modMemWord := io.wrPulse.data
-  Builder(pipeMem.myLinkArr.toSeq)
-  //--------
-}
+//case class WrPulseRdPipeRamSdpPipeOldConfig[
+//  ModT <: Data,
+//  WordT <: Data,
+//](
+//  modType: HardType[ModT],
+//  wordType: HardType[WordT],
+//  wordCount: Int,
+//  pipeName: String,
+//  setWordFunc: (
+//    ModT,     // pass through pipeline payload (output)
+//    ModT,     // pass through pipeline payload (input)
+//    WordT,    // data read from the RAM
+//  ) => Unit,
+//  initBigInt: Option[Seq[Seq[BigInt]]]=None,
+//  arrRamStyleAltera: String="M10K",
+//  arrRamStyleXilinx: String="block",
+//  arrRwAddrCollisionXilinx: String="",
+//) {
+//  def addrWidth = log2Up(wordCount)
+//  def modRdPortCnt = 1
+//  def modStageCnt = 0//1
+//
+//  val pmCfg = PipeRegFileConfig[
+//    WordT,
+//    Bool,
+//  ](
+//    wordType=wordType(),
+//    wordCountArr=Array.fill(1)(wordCount).toSeq,
+//    hazardCmpType=Bool(),
+//    modRdPortCnt=modRdPortCnt,
+//    modStageCnt=modStageCnt,
+//    pipeName=pipeName,
+//    optIncludePreMid0Front=(
+//      //false
+//      true
+//    ),
+//    linkArr=(
+//      //Some(PipeRegFile.mkLinkArr()),
+//      //linkArr
+//      None
+//    ),
+//    memArrIdx=0,
+//    //dualRdType=PmRmwModType(),
+//    optDualRd=false,
+//    initBigInt=initBigInt,
+//    //optEnableModDuplicate=false,
+//    optModHazardKind=(
+//      //PipeRegFile.ModHazardKind.Dont
+//      //PipeRegFile.ModHazardKind.Dupl
+//      PipeRegFile.ModHazardKind.Fwd
+//    ),
+//    vivadoDebug=false,
+//    optEnableWrPulse=true,
+//    memRamStyleAltera=arrRamStyleAltera,
+//    memRamStyleXilinx=arrRamStyleXilinx,
+//    memRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
+//    optIncludeModFrontStageLink=false,
+//    optIncludeModFrontS2MLink=false,
+//  )
+//}
+//
+//case class WrPulseRdPipeRamSdpPipeOld[
+//  ModT <: Data,
+//  WordT <: Data,
+//](
+//  cfg: WrPulseRdPipeRamSdpPipeOldConfig[ModT, WordT],
+//) extends Component {
+//  //--------
+//  val io = WrPulseRdPipeRamSdpPipeIo(cfg=cfg)
+//  //--------
+//  def mkExt() = {
+//    val ret = PipeRegFilePayloadExt(
+//      cfg=cfg.pmCfg,
+//      wordCount=cfg.wordCount,
+//    )
+//    ret
+//  }
+//  case class PmRmwModType(
+//  ) extends Bundle with PipeRegFilePayloadBase[WordT, Bool] {
+//    //setName(
+//    //  name=pmRmwModTypeName,
+//    //)
+//    val data = cfg.modType()
+//    val myExt = mkExt()
+//    /*override*/ def setPipeRegFileExt(
+//      inpExt: PipeRegFilePayloadExt[WordT, Bool],
+//      ydx: Int,
+//      memArrIdx: Int,
+//    ): Unit = {
+//      myExt := inpExt
+//    }
+//    /*override*/ def getPipeRegFileExt(
+//      outpExt: PipeRegFilePayloadExt[WordT, Bool],
+//      ydx: Int,
+//      memArrIdx: Int,
+//    ): Unit = {
+//      outpExt := myExt
+//    }
+//    //def optFormalFwdFuncs(
+//    //): Option[PipeRegFilePayloadBaseFormalFwdFuncs[WordT, Bool]] = (
+//    //  None
+//    //)
+//    /*override*/ def formalSetPipeRegFileFwd(
+//      outpFwd: PipeRegFileFwd[WordT, Bool],
+//      memArrIdx: Int,
+//    ): Unit = {
+//    }
+//
+//    /*override*/ def formalGetPipeRegFileFwd(
+//      inpFwd: PipeRegFileFwd[WordT, Bool],
+//      memArrIdx: Int,
+//    ): Unit = {
+//    }
+//  }
+//  val pipeMem = PipeRegFile[
+//    WordT,
+//    Bool,
+//    PmRmwModType,
+//    PipeRegFileDualRdTypeDisabled[
+//      WordT, Bool,
+//    ]
+//  ](
+//    cfg=cfg.pmCfg,
+//    modType=PmRmwModType(),
+//  )(
+//    doHazardCmpFunc=None,
+//    doModInMid0FrontFunc={
+//      def myFunc(
+//        params: PipeRegFileDoModInMid0FrontFuncParams[
+//          WordT,
+//          Bool,
+//          PmRmwModType,
+//          PipeRegFileDualRdTypeDisabled[
+//            WordT, Bool,
+//          ]
+//        ]
+//      ): Area = new Area {
+//        when (params.cMid0Front.up.isValid) {
+//          params.outp := params.inp
+//        }
+//        params.outp.myExt.modMemWord := params.getMyRdMemWordFunc(0, 0)
+//        params.outp.myExt.fwdCanDoIt.foreach(item => {
+//          item := False
+//        })
+//        params.outp.myExt.modMemWordValid.foreach(mmwValidItem => {
+//          mmwValidItem := False
+//        })
+//      }
+//      Some(myFunc)
+//      //None
+//    }
+//  )
+//  pipeMem.io.front.driveFrom(io.rdAddrPipe)(
+//    con=(node, inp) => {
+//      def rdAddrPayload = node(pipeMem.io.frontPayload)
+//      rdAddrPayload := rdAddrPayload.getZero
+//      rdAddrPayload.allowOverride
+//      //rdAddrPayload.data := io.rdAddrPipe
+//      rdAddrPayload.myExt.memAddr.head := inp.addr
+//      //rdAddrPayload.myExt.memAddrFwdMmw.head.foreach(item => {
+//      //  item := inp.addr
+//      //})
+//      rdAddrPayload.myExt.rdMemWord.foreach(rdMemWord => {
+//        rdMemWord := rdMemWord.getZero
+//      })
+//      rdAddrPayload.data := inp.data
+//
+//      //rdAddrPayload.myExt.rdMemWord.last := (
+//      //  rdAddrPipePayload.data
+//      //)
+//      //rdAddrPayload.myExt.modMemWord := rdAddrPipePayload.data //rdAddrPayload.myExt.rdMemWord
+//
+//    }
+//  )
+//  val sMid0FrontToModFront = StageLink(
+//    up=pipeMem.mod.front.cMid0Front.head.down,
+//    down=pipeMem.io.modFront,
+//  )
+//  pipeMem.myLinkArr += sMid0FrontToModFront
+//  pipeMem.io.modFront(pipeMem.io.modBackPayload) := (
+//    pipeMem.io.modFront(pipeMem.mod.front.outpPipePayload)
+//  )
+//  //val fModFrontToModBack = ForkLink(
+//  //  up=pipeMem.io.modFront,
+//  //  downs=List(
+//  //    pipeMem.io.modBack,
+//  //    pipeMem.io.modBackFwd,
+//  //  ),
+//  //)
+//  //pipeMem.myLinkArr += fModFrontToModBack
+//  def dModFrontToModBack = DirectLink(
+//    up=pipeMem.io.modFront,
+//    down=pipeMem.io.modBack,
+//  )
+//  pipeMem.myLinkArr += dModFrontToModBack
+//  pipeMem.io.back.driveTo(io.rdDataPipe)(
+//    con=(outp, node) => {
+//      //rdDataPipePayload := node(pipeMem.io.backPayload).myExt.modMemWord
+//      cfg.setWordFunc(
+//        outp,
+//        node(pipeMem.io.backPayload).data,
+//        node(pipeMem.io.backPayload).myExt.rdMemWord.last,
+//      )
+//    }
+//  )
+//  pipeMem.io.wrPulse.valid := io.wrPulse.valid
+//  pipeMem.io.wrPulse.addr := io.wrPulse.addr
+//  pipeMem.io.wrPulse.modMemWord := io.wrPulse.data
+//  Builder(pipeMem.myLinkArr.toSeq)
+//  //--------
+//}
 
 case class WrPulseRdPipeSimpleDualPortMemIo[
   T <: Data,
