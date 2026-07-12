@@ -4894,7 +4894,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   )
   val myLoH2dReptThing = LcvBusDoStallH2dReptThing(
     busCfg=myLoH2dPopBusCfg,
-    optIncludeSavedData=true,
+    optIncludeSavedData=(
+      !loBusCfg.haveByteEn
+    ),
   )
 
   //val myLoH2dDoStallFifoThing = LcvBusDoStallFifoThing(
@@ -5000,7 +5002,12 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   )(
     dataAssignment=(outp, inp) => {
       outp.busPayload := inp
-      outp.savedData := inp.data
+      if (!loBusCfg.haveByteEn) {
+        outp.savedData := (
+          //inp.data
+          io.loBus.h2dBus.data
+        )
+      }
     }
   )
   mySelLoH2dPopStm.ready := False
@@ -5962,7 +5969,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         rSavedLoH2dPayload.mainNonBurstInfo
       )
       io.mmioHiBus.h2dBus.addr.msb := False
-      io.mmioHiBus.h2dBus.data := rSavedLoH2dPayload.savedData
+      if (!loBusCfg.haveByteEn) {
+        io.mmioHiBus.h2dBus.data := rSavedLoH2dPayload.savedData
+      }
       //io.mmioHiBus.d2hBus.translateInto(
       //  myLoD2hPushStm
       //)(
