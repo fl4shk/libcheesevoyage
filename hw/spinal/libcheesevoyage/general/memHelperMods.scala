@@ -873,16 +873,25 @@ case class WrPulseRdPipeRamSdpPipe[
       temp
     }
   )
-  //val sBack = StageLink(
-  //  up=cBack.down,
-  //  down={
-  //    val temp = Node()
-  //    temp.setName("sBack_down")
-  //    temp
-  //  }
-  //)
+  val sBack = StageLink(
+    up=cBack.down,
+    down={
+      val temp = Node()
+      temp.setName("sBack_down")
+      temp
+    }
+  )
+  val s2mBack = S2MLink(
+    up=sBack.down,
+    down={
+      val temp = Node()
+      temp.setName("s2mBack_down")
+      temp
+    }
+  )
   myLinkArr += cBack
-  //myLinkArr += sBack
+  myLinkArr += sBack
+  myLinkArr += s2mBack
 
   val cBackArea = new cBack.Area {
     up(outpPayload) := up(mainPayload)
@@ -910,7 +919,7 @@ case class WrPulseRdPipeRamSdpPipe[
     up(outpPayload).rdMemWord := myFifo.io.pop.payload
   }
 
-  cBack.down.driveTo(io.rdDataPipe)(
+  s2mBack.down.driveTo(io.rdDataPipe)(
     con=(outp, node) => {
       cfg.setWordFunc(
         outp,
