@@ -216,7 +216,14 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   }
 
   //myMainH2dPopStm.ready := !myFifoThingDoStall
-  myH2dReptThing.io.push << myMainH2dPopStm
+  //myH2dReptThing.io.push << myMainH2dPopStm
+  myMainH2dPopStm.translateInto(
+    myH2dReptThing.io.push
+  )(
+    dataAssignment=(outp, inp) => {
+      outp.busPayload := inp
+    }
+  )
   mySelH2dPopStm.ready := False
 
   //val myH2dPopThrowArea = new Area {
