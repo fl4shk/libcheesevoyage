@@ -5581,7 +5581,6 @@ extends Area {
   //--------
 }
 
-
 case class StmFwdPipeRegFileConfig[
   WordT <: Data,
 ](
