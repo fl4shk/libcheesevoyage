@@ -774,6 +774,7 @@ case class WrPulseRdPipeRamSdpPipe[
   }
 
   val mainPayload = Payload(MainPayload())
+  val outpPayload = Payload(MainPayload())
 
   val myFifo = StreamFifo(
     dataType=cfg.wordType(),
@@ -884,6 +885,8 @@ case class WrPulseRdPipeRamSdpPipe[
   //myLinkArr += sBack
 
   val cBackArea = new cBack.Area {
+    up(outpPayload) := up(mainPayload)
+
     val rSaveMemRdDataState = Reg(Bool(), init=False)
     myFifo.io.push.payload := (
       Mux(
@@ -902,15 +905,17 @@ case class WrPulseRdPipeRamSdpPipe[
       myFifo.io.pop.ready := True
       rSaveMemRdDataState := False
     }
-    bypass(mainPayload).rdMemWord := myFifo.io.pop.payload
+    //bypass(mainPayload).rdMemWord := myFifo.io.pop.payload
+    up(outpPayload).rdMemWord.allowOverride
+    up(outpPayload).rdMemWord := myFifo.io.pop.payload
   }
 
   cBack.down.driveTo(io.rdDataPipe)(
     con=(outp, node) => {
       cfg.setWordFunc(
         outp,
-        node(mainPayload).myInpPayload.data,
-        node(mainPayload).rdMemWord,
+        node(outpPayload).myInpPayload.data,
+        node(outpPayload).rdMemWord,
       )
     }
   )
