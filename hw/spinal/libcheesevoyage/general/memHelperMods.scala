@@ -774,6 +774,7 @@ case class WrPulseRdPipeRamSdpPipe[
   }
 
   val mainPayload = Payload(MainPayload())
+  val outpPayload = MainPayload()
 
   val myFifo = StreamFifo(
     dataType=cfg.wordType(),
@@ -902,7 +903,14 @@ case class WrPulseRdPipeRamSdpPipe[
       myFifo.io.pop.ready := True
       rSaveMemRdDataState := False
     }
-    bypass(mainPayload).rdMemWord := myFifo.io.pop.payload
+    //bypass(mainPayload).rdMemWord := myFifo.io.pop.payload
+    //outpPayload := RegNext(outpPayload, init=outpPayload.getZero)
+    //when (up.isValid) {
+      outpPayload := up(mainPayload)
+    //}
+    outpPayload.rdMemWord.allowOverride
+    outpPayload.rdMemWord := myFifo.io.pop.payload
+    bypass(mainPayload) := outpPayload
   }
 
   cBack.down.driveTo(io.rdDataPipe)(
