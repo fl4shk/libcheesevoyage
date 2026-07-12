@@ -881,17 +881,43 @@ case class WrPulseRdPipeRamSdpPipe[
       temp
     }
   )
-  val s2mBack = S2MLink(
-    up=sBack.down,
-    down={
-      val temp = Node()
-      temp.setName("s2mBack_down")
-      temp
-    }
-  )
+  //val s2mBack = S2MLink(
+  //  up=sBack.down,
+  //  down={
+  //    val temp = Node()
+  //    temp.setName("s2mBack_down")
+  //    temp
+  //  }
+  //)
   myLinkArr += cBack
   myLinkArr += sBack
-  myLinkArr += s2mBack
+  val sLastBackArr = new ArrayBuffer[StageLink]()
+  for (idx <- 0 until 2) {
+    if (idx == 0) {
+      sLastBackArr += StageLink(
+        up=sBack.down,
+        down={
+          val temp = Node()
+          temp.setName(s"sLastBackArr_${idx}_down")
+          temp
+        },
+      )
+    } else {
+      sLastBackArr += StageLink(
+        up=sLastBackArr(idx - 1).down,
+        down={
+          val temp = Node()
+          temp.setName(s"sLastBackArr_${idx}_down")
+          temp
+        },
+      )
+    }
+  }
+  myLinkArr ++= sLastBackArr
+  //StageLink(
+  //  c
+  //)
+  //myLinkArr += s2mBack
 
   val cBackArea = new cBack.Area {
     up(outpPayload) := up(mainPayload)
@@ -919,7 +945,7 @@ case class WrPulseRdPipeRamSdpPipe[
     up(outpPayload).rdMemWord := myFifo.io.pop.payload
   }
 
-  s2mBack.down.driveTo(io.rdDataPipe)(
+  sLastBackArr.last.down.driveTo(io.rdDataPipe)(
     con=(outp, node) => {
       cfg.setWordFunc(
         outp,
