@@ -1053,17 +1053,23 @@ case class WrPulseRdPipeRamSdpPipe[
       rSaveMemRdDataState := False
     }
     //bypass(mainPayload).rdMemWord := myFifo.io.pop.payload
-    up(outpPayload).rdMemWord.allowOverride
-    up(outpPayload).rdMemWord := myFifo.io.pop.payload
+    //up(outpPayload).rdMemWord.allowOverride
+    //up(outpPayload).rdMemWord := myFifo.io.pop.payload
+    cfg.setWordFunc(
+      up(outpPayload).myInpPayload.data, //outp,
+      up(mainPayload).myInpPayload.data, //node(outpPayload).myInpPayload.data,
+      myFifo.io.pop.payload, //node(outpPayload).rdMemWord,
+    )
   }
 
   s2mLastBackArr.last.down.driveTo(io.rdDataPipe)(
     con=(outp, node) => {
-      cfg.setWordFunc(
-        outp,
-        node(outpPayload).myInpPayload.data,
-        node(outpPayload).rdMemWord,
-      )
+      outp := node(outpPayload).myInpPayload.data
+      //cfg.setWordFunc(
+      //  outp,
+      //  node(outpPayload).myInpPayload.data,
+      //  node(outpPayload).rdMemWord,
+      //)
     }
   )
   //--------
