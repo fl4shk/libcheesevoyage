@@ -1032,7 +1032,7 @@ case class WrPulseRdPipeRamSdpPipe[
   //)
 
   val cBackArea = new cBack.Area {
-    up(outpPayload) := up(mainPayload)
+    //up(outpPayload) := up(mainPayload)
 
     val rSaveMemRdDataState = Reg(Bool(), init=False)
     myFifo.io.push.payload := (
