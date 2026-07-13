@@ -4800,8 +4800,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   wrLineAttrs := RegNext(wrLineAttrs, init=wrLineAttrs.getZero)
   wrLineAttrs.allowOverride
 
-  val lineFifoIdxRamCfg = RamSdpPipeConfig(
-    wordType=UInt(log2Up(numWays) bits),
+  val lineBitPlruRamCfg = RamSdpPipeConfig(
+    wordType=UInt(
+      //log2Up(numWays) bits
+      numWays bits
+    ),
     depth=depthLines,
     optIncludeWrByteEn=false,
     optWrHistLength=cfg.myRamOptWrHistLength,
@@ -4810,31 +4813,36 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
   )
 
-  val myCondHaveLineFifoIdxRam = (
+  val myCondHaveLineBitPlruRam = (
     numWays > 1
   )
-  val lineFifoIdxRam = (
-    myCondHaveLineFifoIdxRam
+  val lineBitPlruRam = (
+    myCondHaveLineBitPlruRam
   ) generate (
-    RamSdpPipe(cfg=lineFifoIdxRamCfg)
+    RamSdpPipe(cfg=lineBitPlruRamCfg)
   )
 
-  val rdLineFifoIdx = (
-    myCondHaveLineFifoIdxRam
+  val rdLineBitPlru = (
+    myCondHaveLineBitPlruRam
   ) generate (
-    UInt(log2Up(numWays) bits)
+    UInt(
+      //log2Up(numWays) bits
+      numWays bits
+    )
   )
-  val wrLineFifoIdx = (
-    myCondHaveLineFifoIdxRam
+  val wrLineBitPlru = (
+    myCondHaveLineBitPlruRam
   ) generate (
-    UInt(log2Up(numWays) bits)
+    UInt(
+      //log2Up(numWays) bits
+      numWays bits
+    )
   )
 
-  if (myCondHaveLineFifoIdxRam) {
-    rdLineFifoIdx := lineFifoIdxRam.io.rdData
-    wrLineFifoIdx := RegNext(wrLineFifoIdx, init=wrLineFifoIdx.getZero)
-    //wrLineFifoIdx.allowOverride
-    lineFifoIdxRam.io.wrEn := False
+  if (myCondHaveLineBitPlruRam) {
+    rdLineBitPlru := lineBitPlruRam.io.rdData
+    wrLineBitPlru := RegNext(wrLineBitPlru, init=wrLineBitPlru.getZero)
+    lineBitPlruRam.io.wrEn := False
   }
 
   //--------
@@ -5187,14 +5195,14 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       }
     })
   }
-  def doLineFifoIdxRamReadSync(
+  def doLineBitPlruRamReadSync(
     busAddr: UInt,
     setEn: Int=0,
   ): Unit = {
     if (setEn == 1) {
-      lineFifoIdxRam.io.rdEn := True
+      lineBitPlruRam.io.rdEn := True
     } else if (setEn == 2) {
-      lineFifoIdxRam.io.rdEn := (
+      lineBitPlruRam.io.rdEn := (
         RegNext(
           next=(
             //mySelLoH2dPopStm.valid
@@ -5205,7 +5213,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         //&& !myFifoThingDoStall
       )
     } 
-    lineFifoIdxRam.io.rdAddr := {
+    lineBitPlruRam.io.rdAddr := {
       //println(
       //  s"test info: busAddr("
       //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
@@ -5215,7 +5223,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         (
           busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
         )
-        .resize(lineFifoIdxRam.io.rdAddr.getWidth)
+        .resize(lineBitPlruRam.io.rdAddr.getWidth)
       )
     }
   }
@@ -5263,20 +5271,19 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     )
     lineAttrsRam(ramIdx).io.wrData := lineAttrs
   }
-  def doLineFifoIdxRamWrite(
+  def doLineBitPlruRamWrite(
     busAddr: UInt,
-    //lineAttrs: LcvBusCacheLineFifoIdx,
-    lineFifoIdx: UInt,
+    lineBitPlru: UInt,
     setEn: Boolean=true,
   ): Unit = {
     if (setEn) {
-      lineFifoIdxRam.io.wrEn := True
+      lineBitPlruRam.io.wrEn := True
     }
-    lineFifoIdxRam.io.wrAddr := (
+    lineBitPlruRam.io.wrAddr := (
       (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
-      .resize(lineFifoIdxRam.io.wrAddr.getWidth)
+      .resize(lineBitPlruRam.io.wrAddr.getWidth)
     )
-    lineFifoIdxRam.io.wrData := lineFifoIdx
+    lineBitPlruRam.io.wrData := lineBitPlru
   }
 
   doLineWordRamReadSync(
@@ -5340,12 +5347,12 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     )
   }
 
-  if (myCondHaveLineFifoIdxRam) {
-    doLineFifoIdxRamReadSync(
+  if (myCondHaveLineBitPlruRam) {
+    doLineBitPlruRamReadSync(
       busAddr=mySelLoH2dPopPayload.addr,
       setEn=2,
     )
-    doLineFifoIdxRamWrite(
+    doLineBitPlruRamWrite(
       busAddr=(
         RegNext(
           RegNext(
@@ -5355,8 +5362,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           init=mySelLoH2dPopPayload.addr.getZero,
         )
       ),
-      lineFifoIdx=(
-        wrLineFifoIdx
+      lineBitPlru=(
+        wrLineBitPlru
       ),
       setEn=false,
     )
@@ -5565,14 +5572,27 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
 // 1 001-
 // 2 01--
 // 3 1---
-  def calcRamIdxMask(ramIdx: Int): String = (
+  def calcHitRamIdxMask(ramIdx: Int): String = (
     (("0" * (numWays - ramIdx - 1)))
     + "1"
     + ("-" * ramIdx)
   )
 
+// >>> for ramIdx in range(numWays):
+// ...     print(ramIdx, (("1" * (numWays - ramIdx - 1))) + "0" + ("-" * ramIdx))
+// ...     
+// 0 1110
+// 1 110-
+// 2 10--
+// 3 0---
+  def calcMissRamIdxMask(ramIdx: Int): String = (
+    (("1" * (numWays - ramIdx - 1)))
+    + "0"
+    + ("-" * ramIdx)
+  )
+
   val rSavedRamIdx = (
-    myCondHaveLineFifoIdxRam
+    myCondHaveLineBitPlruRam
   ) generate (
     Reg(UInt(log2Up(numWays) bits))
     init(0x0)
@@ -5654,6 +5674,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       //M"10-0"
       MaskedLiteral(
         "1010-" + ("0" * numWays)
+        //+ (
+        //  if (myCondHaveLineBitPlruRam) (
+        //  ) else (
+        //  )
+        //)
       )
       //M"10"
     ) {
@@ -5664,10 +5689,22 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       //myFifoThingDoStall := False
       myLoD2hPushStm.valid := False
 
-      if (myCondHaveLineFifoIdxRam) {
-        rSavedRamIdx := rdLineFifoIdx
-        wrLineFifoIdx := rdLineFifoIdx + 1
-        lineFifoIdxRam.io.wrEn := True
+      if (myCondHaveLineBitPlruRam) {
+        //rSavedRamIdx := rdLineBitPlru
+        //wrLineBitPlru := rdLineBitPlru + 1
+        wrLineBitPlru := rdLineBitPlru
+        lineBitPlruRam.io.wrEn := True
+        switch (rdLineBitPlru) {
+          for (ramIdx <- 0 until numWays) {
+            val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
+            is (MaskedLiteral(myRamIdxMask)) {
+              wrLineBitPlru(ramIdx) := True
+              rSavedRamIdx := ramIdx
+            }
+            default {
+            }
+          }
+        }
       }
 
       myFifoThingDoStall := True
@@ -5691,10 +5728,27 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       //myFifoThingDoStall := False
       myLoD2hPushStm.valid := False
 
-      if (myCondHaveLineFifoIdxRam) {
-        rSavedRamIdx := rdLineFifoIdx
-        wrLineFifoIdx := rdLineFifoIdx + 1
-        lineFifoIdxRam.io.wrEn := True
+      //if (myCondHaveLineBitPlruRam) {
+      //  rSavedRamIdx := rdLineBitPlru
+      //  wrLineBitPlru := rdLineBitPlru + 1
+      //  lineBitPlruRam.io.wrEn := True
+      //}
+      if (myCondHaveLineBitPlruRam) {
+        //rSavedRamIdx := rdLineBitPlru
+        //wrLineBitPlru := rdLineBitPlru + 1
+        wrLineBitPlru := rdLineBitPlru
+        lineBitPlruRam.io.wrEn := True
+        switch (rdLineBitPlru) {
+          for (ramIdx <- 0 until numWays) {
+            val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
+            is (MaskedLiteral(myRamIdxMask)) {
+              wrLineBitPlru(ramIdx) := True
+              rSavedRamIdx := ramIdx
+            }
+            default {
+            }
+          }
+        }
       }
 
       myFifoThingDoStall := True
@@ -5705,7 +5759,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       //myTempUpdateSavedLoH2dPayloadCond := False
     }
     for (ramIdx <- 0 until numWays) {
-      val myRamIdxMask = calcRamIdxMask(ramIdx=ramIdx)
+      val myRamIdxMask = calcHitRamIdxMask(ramIdx=ramIdx)
       println(
         s"ramIdx:${ramIdx} myRamIdxMask:${myRamIdxMask}"
       )
@@ -5725,8 +5779,17 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         //myFifoThingDoStall := False
         //myLoD2hPushStm.valid := False
 
-        if (myCondHaveLineFifoIdxRam) {
+        if (myCondHaveLineBitPlruRam) {
           rSavedRamIdx := ramIdx
+          val tempLineBitPlru = cloneOf(rdLineBitPlru)
+          tempLineBitPlru.allowOverride
+          tempLineBitPlru := rdLineBitPlru
+          tempLineBitPlru(ramIdx) := True
+          when (tempLineBitPlru.andR) {
+            wrLineBitPlru := 1 << ramIdx
+          } otherwise {
+            wrLineBitPlru := tempLineBitPlru
+          }
         }
         // load, cache hit
         //mySelLoH2dPopStm.ready := True
@@ -5773,8 +5836,17 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         //myFifoThingDoStall := False
         //myLoD2hPushStm.valid := False
 
-        if (myCondHaveLineFifoIdxRam) {
+        if (myCondHaveLineBitPlruRam) {
           rSavedRamIdx := ramIdx
+          val tempLineBitPlru = cloneOf(rdLineBitPlru)
+          tempLineBitPlru.allowOverride
+          tempLineBitPlru := rdLineBitPlru
+          tempLineBitPlru(ramIdx) := True
+          when (tempLineBitPlru.andR) {
+            wrLineBitPlru := 1 << ramIdx
+          } otherwise {
+            wrLineBitPlru := tempLineBitPlru
+          }
         }
 
         // store, cache hit, don't care if line is currently dirty
@@ -6049,7 +6121,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     }
     is (State.LOAD_HIT_DO_STALL) {
       val myRdLineWord = (
-        if (myCondHaveLineFifoIdxRam) (
+        if (myCondHaveLineBitPlruRam) (
           rdLineWord(rSavedRamIdx)
         ) else (
           rdLineWord.head
@@ -6125,7 +6197,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     }
     is (State.MAYBE_DIRTY_RE_READ_ATTRS) {
       val myRdLineAttrs = (
-        if (myCondHaveLineFifoIdxRam) (
+        if (myCondHaveLineBitPlruRam) (
           rdLineAttrs(rSavedRamIdx)
         ) else (
           rdLineAttrs.head
@@ -6201,7 +6273,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     }
     is (State.SEND_LINE_TO_HI_BUS_PIPE_1) {
       val myRdLineWord = (
-        if (myCondHaveLineFifoIdxRam) (
+        if (myCondHaveLineBitPlruRam) (
           rdLineWord(rSavedRamIdx)
         ) else (
           rdLineWord.head
@@ -6237,7 +6309,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     }
     is (State.SEND_LINE_TO_HI_BUS) {
       val myRdLineWord = (
-        if (myCondHaveLineFifoIdxRam) (
+        if (myCondHaveLineBitPlruRam) (
           rdLineWord(rSavedRamIdx)
         ) else (
           rdLineWord.head
@@ -6334,7 +6406,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       def myArgWrLineAttrs = wrLineAttrs
       def myArgSetEn = true
 
-      if (myCondHaveLineFifoIdxRam) {
+      if (myCondHaveLineBitPlruRam) {
         switch (rSavedRamIdx) {
           for (ramIdx <- 0 until numWays) {
             is (ramIdx) {
@@ -6396,7 +6468,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         def myArgByteEn = None
         def myArgSetEn = true
 
-        if (myCondHaveLineFifoIdxRam) {
+        if (myCondHaveLineBitPlruRam) {
           switch (rSavedRamIdx) {
             for (ramIdx <- 0 until numWays) {
               is (ramIdx) {
@@ -6437,7 +6509,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       def myArgByteEn = Some(rSavedLoH2dPayload.byteEn)
       def myArgSetEn = true
 
-      if (myCondHaveLineFifoIdxRam) {
+      if (myCondHaveLineBitPlruRam) {
         switch (rSavedRamIdx) {
           for (ramIdx <- 0 until numWays) {
             is (ramIdx) {
@@ -6498,7 +6570,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_1) {
       val myRdLineWord = (
-        if (myCondHaveLineFifoIdxRam) (
+        if (myCondHaveLineBitPlruRam) (
           rdLineWord(rSavedRamIdx)
         ) else (
           rdLineWord.head
