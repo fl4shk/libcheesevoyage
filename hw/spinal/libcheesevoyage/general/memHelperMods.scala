@@ -9,6 +9,8 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 import scala.math._
 
+import libcheesevoyage.math._
+
 case class RamSdpPipeConfig[
   WordT <: Data
 ](
@@ -260,14 +262,23 @@ case class RamSdpPipe[
   io.rdData.assignFromBits(ram.io.rdDataBits)
 }
 
-case class RamSdpPipeReadFifoThingConfig[
-  WordT <: Data
-](
-  ramCfg: RamSdpPipeConfig[WordT],
-  //fifoDepthMain: Int=8,
-  //fifoDepthSub: Int,
-) {
-}
+
+//case class RamSdpPipeWithFwd[
+//  WordT <: Data
+//](
+//  cfg: RamSdpPipeConfig[WordT]
+//) extends Component {
+//  val io = RamSdpPipeIo(cfg=cfg)
+//}
+
+//case class RamSdpPipeReadFifoThingConfig[
+//  WordT <: Data
+//](
+//  ramCfg: RamSdpPipeConfig[WordT],
+//  //fifoDepthMain: Int=8,
+//  //fifoDepthSub: Int,
+//) {
+//}
 
 //case class RamSdpPipeReadFifoThingPayload[
 //  WordT <: Data
@@ -691,6 +702,7 @@ case class WrPulseRdPipeRamSdpPipeConfig[
     ModT,     // pass through pipeline payload (input)
     WordT,    // data read from the RAM
   ) => Unit,
+  optWrHistLength: Int=1,
   initBigInt: Option[Seq[Seq[BigInt]]]=None,
   arrRamStyleAltera: String="M10K",
   arrRamStyleXilinx: String="block",
@@ -740,6 +752,7 @@ case class WrPulseRdPipeRamSdpPipe[
     RamSdpPipeConfig(
       wordType=cfg.wordType(),
       depth=cfg.wordCount,
+      optWrHistLength=cfg.optWrHistLength,
       init=None,
       initBigInt=(
         cfg.initBigInt match {
@@ -795,32 +808,117 @@ case class WrPulseRdPipeRamSdpPipe[
   myLinkArr += cFront
   myLinkArr += sFront
 
+  case class MyFwdInfo(
+  ) extends Bundle {
+    val valid = Bool()
+    val data = cfg.wordType()
+    val addr = UInt(log2Up(cfg.wordCount) bits)
+  }
+
   cFront.up.driveFrom(
     io.rdAddrPipe
   )(
     con=(node, myInpPayload) => {
       node(mainPayload).myInpPayload := myInpPayload
-      when (
-        ram.io.wrEn
-        && myInpPayload.addr === ram.io.wrAddr
-      ) {
-        node(mainPayload).fwdValid := True
-        node(mainPayload).rdMemWord := ram.io.wrData
-      } elsewhen (
-        RegNext(
-          (
-            ram.io.wrEn
-            && myInpPayload.addr === ram.io.wrAddr
-          ),
-          init=False
+
+      val myHistFwdInfo = {
+        //val temp = Flow(
+        //  //cfg.wordType()
+        //  UInt(log2Up(cfg.wordCount) bits)
+        //)
+        //temp.valid := (
+        //  ram.io.wrEn
+        //  //&& myInpPayload.addr === ram.io.wrAddr
+        //)
+        //temp.payload := (
+        //  //ram.io.wrData
+        //  ram.io.wrAddr
+        //)
+        val temp = MyFwdInfo()
+        temp.valid := ram.io.wrEn
+        temp.data := ram.io.wrData
+        temp.addr := ram.io.wrAddr
+        History(
+          that=temp,
+          length=(cfg.optWrHistLength + 2),
+          init=temp.getZero
         )
-      ) {
-        node(mainPayload).fwdValid := True
-        node(mainPayload).rdMemWord := RegNext(ram.io.wrData)
-      } otherwise {
-        node(mainPayload).fwdValid := False
-        node(mainPayload).rdMemWord := node(mainPayload).rdMemWord.getZero
       }
+      //val myHistForFwdData = (
+      //  History(
+      //    that=(
+      //      ram.io.wrData
+      //    ),
+      //    length=(
+      //      cfg.optWrHistLength + 2,
+      //    ),
+      //    init=False
+      //  )
+      //)
+      val myTempHistFwdValid = UInt(myHistFwdInfo.size bits)
+
+      for (idx <- 0 until myTempHistFwdValid.getWidth) {
+        myTempHistFwdValid(idx) := (
+          myHistFwdInfo(idx).valid
+          && (
+            LcvFastCmpEq(
+              left=myInpPayload.addr,
+              right=myHistFwdInfo(idx).addr,
+              cmpEqIo=null,
+            )._1
+          )
+        )
+      }
+
+// >>> for idx in range(size):
+// ...     print(idx, (("0" * (size - idx - 1))) + "1" + ("-" * idx))
+// ...     
+// 0 0001
+// 1 001-
+// 2 01--
+// 3 1---
+      switch (myTempHistFwdValid) {
+        for (idx <- 0 until myTempHistFwdValid.getWidth) {
+          is (MaskedLiteral(
+            (("0" * (myTempHistFwdValid.getWidth - idx - 1)))
+            + "1"
+            + ("-" * idx)
+          )) {
+            node(mainPayload).fwdValid := True
+            node(mainPayload).rdMemWord := (
+              myHistFwdInfo(idx).data
+            )
+          }
+        }
+        default {
+          node(mainPayload).fwdValid := False
+          node(mainPayload).rdMemWord := (
+            node(mainPayload).rdMemWord.getZero
+          )
+        }
+      }
+
+      //when (
+      //  ram.io.wrEn
+      //  && myInpPayload.addr === ram.io.wrAddr
+      //) {
+      //  node(mainPayload).fwdValid := True
+      //  node(mainPayload).rdMemWord := ram.io.wrData
+      //} elsewhen (
+      //  RegNext(
+      //    (
+      //      ram.io.wrEn
+      //      && myInpPayload.addr === ram.io.wrAddr
+      //    ),
+      //    init=False
+      //  )
+      //) {
+      //  node(mainPayload).fwdValid := True
+      //  node(mainPayload).rdMemWord := RegNext(ram.io.wrData)
+      //} otherwise {
+      //  node(mainPayload).fwdValid := False
+      //  node(mainPayload).rdMemWord := node(mainPayload).rdMemWord.getZero
+      //}
     }
   )
   val cFrontArea = new cFront.Area {
