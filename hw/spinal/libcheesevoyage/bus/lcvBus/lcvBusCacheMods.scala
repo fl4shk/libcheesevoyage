@@ -3108,6 +3108,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     val
       INIT,
       IDLE,
+      LOAD_HIT_DO_STALL_PIPE_4,
       LOAD_HIT_DO_STALL_PIPE_3,
       LOAD_HIT_DO_STALL_PIPE_2,
       LOAD_HIT_DO_STALL_PIPE_1,
@@ -4023,7 +4024,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         ) {
           mySelLoH2dPopStm.ready := False
           myFifoThingDoStall := True
-          rState := State.LOAD_HIT_DO_STALL_PIPE_3
+          rState := (
+            //State.LOAD_HIT_DO_STALL_PIPE_3
+            State.LOAD_HIT_DO_STALL_PIPE_4
+          )
           //myTempUpdateSavedLoH2dPayloadCond := False
         } otherwise {
           //doPopLoH2dFifo()
@@ -4172,8 +4176,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       //rSavedRdLineAttrsTag := rdLineAttrs.tag
 
     }
-    is (State.LOAD_HIT_DO_STALL_PIPE_3) {
-      rState := State.LOAD_HIT_DO_STALL_PIPE_2
+    is (State.LOAD_HIT_DO_STALL_PIPE_4) {
+      rState := State.LOAD_HIT_DO_STALL_PIPE_3
       lineAttrsRam.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
       myLoD2hPushStm.valid := False
@@ -4187,8 +4191,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       //  )
       //)
     }
-    is (State.LOAD_HIT_DO_STALL_PIPE_2) {
-      rState := State.LOAD_HIT_DO_STALL_PIPE_1
+    is (State.LOAD_HIT_DO_STALL_PIPE_3) {
+      rState := State.LOAD_HIT_DO_STALL_PIPE_2
       myLoD2hPushStm.valid := False
       mySelLoH2dPopStm.ready := False
       lineAttrsRam.foreach(item => item.io.rdEn := False)
@@ -4199,19 +4203,26 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         setEn=0,
       )
     }
-    is (State.LOAD_HIT_DO_STALL_PIPE_1) {
-      rState := State.LOAD_HIT_DO_STALL
+    is (State.LOAD_HIT_DO_STALL_PIPE_2) {
+      rState := State.LOAD_HIT_DO_STALL_PIPE_1
       lineAttrsRam.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := True)
       myLoD2hPushStm.valid := False
       mySelLoH2dPopStm.ready := False
     }
+    is (State.LOAD_HIT_DO_STALL_PIPE_1) {
+      rState := State.LOAD_HIT_DO_STALL
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.rdEn := False)
+    }
     is (State.LOAD_HIT_DO_STALL) {
       val myRdLineWord = (
-        if (myCondHaveLineBitPlruRam) (
-          rdLineWord(rSavedRamIdx)
-        ) else (
-          rdLineWord.head
+        RegNext(
+          if (myCondHaveLineBitPlruRam) (
+            rdLineWord(rSavedRamIdx)
+          ) else (
+            rdLineWord.head
+          )
         )
       )
       lineAttrsRam.foreach(item => item.io.rdEn := False)
@@ -4854,6 +4865,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       //STORE_NON_CACHED,
       NON_CACHED_BUS_ACCESS,
 
+      LOAD_HIT_DO_STALL_PIPE_4,
       LOAD_HIT_DO_STALL_PIPE_3,
       LOAD_HIT_DO_STALL_PIPE_2,
       LOAD_HIT_DO_STALL_PIPE_1,
@@ -5811,7 +5823,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         ) {
           mySelLoH2dPopStm.ready := False
           myFifoThingDoStall := True
-          rState := State.LOAD_HIT_DO_STALL_PIPE_3
+          rState := (
+            //State.LOAD_HIT_DO_STALL_PIPE_3
+            State.LOAD_HIT_DO_STALL_PIPE_4
+          )
           //myTempUpdateSavedLoH2dPayloadCond := False
         } otherwise {
           //doPopLoH2dFifo()
@@ -6079,8 +6094,8 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         rState := State.IDLE
       }
     }
-    is (State.LOAD_HIT_DO_STALL_PIPE_3) {
-      rState := State.LOAD_HIT_DO_STALL_PIPE_2
+    is (State.LOAD_HIT_DO_STALL_PIPE_4) {
+      rState := State.LOAD_HIT_DO_STALL_PIPE_3
       lineAttrsRam.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
       myLoD2hPushStm.valid := False
@@ -6093,9 +6108,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       //    init=rDel2LoH2dPayload.txnCnt.getZero
       //  )
       //)
+      doLineWordRamReadSync(
+        busAddr=rSavedLoH2dPayload.addr,
+        setEn=0,
+      )
     }
-    is (State.LOAD_HIT_DO_STALL_PIPE_2) {
-      rState := State.LOAD_HIT_DO_STALL_PIPE_1
+    is (State.LOAD_HIT_DO_STALL_PIPE_3) {
+      rState := State.LOAD_HIT_DO_STALL_PIPE_2
       myLoD2hPushStm.valid := False
       mySelLoH2dPopStm.ready := False
       lineAttrsRam.foreach(item => item.io.rdEn := False)
@@ -6106,19 +6125,26 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         setEn=0,
       )
     }
-    is (State.LOAD_HIT_DO_STALL_PIPE_1) {
-      rState := State.LOAD_HIT_DO_STALL
+    is (State.LOAD_HIT_DO_STALL_PIPE_2) {
+      rState := State.LOAD_HIT_DO_STALL_PIPE_1
       lineAttrsRam.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := True)
       myLoD2hPushStm.valid := False
       mySelLoH2dPopStm.ready := False
     }
+    is (State.LOAD_HIT_DO_STALL_PIPE_1) {
+      rState := State.LOAD_HIT_DO_STALL
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.rdEn := False)
+    }
     is (State.LOAD_HIT_DO_STALL) {
       val myRdLineWord = (
-        if (myCondHaveLineBitPlruRam) (
-          rdLineWord(rSavedRamIdx)
-        ) else (
-          rdLineWord.head
+        RegNext(
+          if (myCondHaveLineBitPlruRam) (
+            rdLineWord(rSavedRamIdx)
+          ) else (
+            rdLineWord.head
+          )
         )
       )
       lineAttrsRam.foreach(item => item.io.rdEn := False)
