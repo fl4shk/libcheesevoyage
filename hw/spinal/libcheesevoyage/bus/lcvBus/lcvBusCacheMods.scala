@@ -3052,7 +3052,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   wrLineAttrs.allowOverride
 
   val lineBitPlruRamCfg = RamSdpPipeConfig(
-    wordType=UInt(log2Up(numWays) bits),
+    wordType=UInt(
+      //log2Up(numWays) bits
+      numWays bits
+    ),
     depth=depthLines,
     optIncludeWrByteEn=false,
     optWrHistLength=cfg.myRamOptWrHistLength,
@@ -3073,12 +3076,18 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   val rdLineBitPlru = (
     myCondHaveLineBitPlruRam
   ) generate (
-    UInt(log2Up(numWays) bits)
+    UInt(
+      //log2Up(numWays) bits
+      numWays bits
+    )
   )
   val wrLineBitPlru = (
     myCondHaveLineBitPlruRam
   ) generate (
-    UInt(log2Up(numWays) bits)
+    UInt(
+      //log2Up(numWays) bits
+      numWays bits
+    )
   )
 
   if (myCondHaveLineBitPlruRam) {
