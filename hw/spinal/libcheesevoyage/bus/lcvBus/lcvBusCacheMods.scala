@@ -5623,7 +5623,9 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
   val tempToSwitch = (
     //(rState === State.IDLE)
     rState.asBits(1)
-    ## rDel2LoH2dPayload.addr.msb
+    ## rDel2LoH2dPayload.addr(
+      loBusCacheCfg.addrWidth - 1
+    )
     ## rMyTempDoSaveCond(3)
     //RegNext(
     //  RegNext(mySelLoH2dPopStm.fire, init=False),
@@ -6049,7 +6051,11 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       io.mmioHiBus.h2dBus.payload.mainNonBurstInfo := (
         rSavedLoH2dPayload.mainNonBurstInfo
       )
-      io.mmioHiBus.h2dBus.addr.msb := False
+      io.mmioHiBus.h2dBus.addr(
+        loBusCacheCfg.addrWidth - 1
+      ) := (
+        False
+      )
       if (!loBusCfg.haveByteEn) {
         io.mmioHiBus.h2dBus.data := rSavedLoH2dPayload.savedData
       }
