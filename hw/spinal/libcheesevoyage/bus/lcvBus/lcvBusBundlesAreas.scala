@@ -187,6 +187,9 @@ case class LcvBusCacheConfig(
     "block"
     //"ultra"
   ),
+  optMainAddrWidth: Option[Int]=(
+    None
+  ),
   //private[libcheesevoyage] var busCfg: LcvBusConfig=null,
   private[libcheesevoyage] var busMainCfg: LcvBusMainConfig=null
 ) {
@@ -200,7 +203,17 @@ case class LcvBusCacheConfig(
   //def busMesiCfg = busCfg.mesiCfg
 
   def wordWidth = busMainCfg.dataWidth
-  def addrWidth = busMainCfg.addrWidth
+  def addrWidth = (
+    //busMainCfg.addrWidth
+    optMainAddrWidth match {
+      case Some(mainAddrWidth) => {
+        mainAddrWidth
+      }
+      case None => {
+        busMainCfg.addrWidth
+      }
+    }
+  )
   def coherent: Boolean = (numCpus > 1)
   def myLineWordRamAddrRshift = log2Up(wordSizeBytes)
   def myLineAttrsRamAddrRshift = log2Up(lineSizeBytes)
@@ -209,14 +222,16 @@ case class LcvBusCacheConfig(
     require(numCpus >= 1)
 
     require(
-      addrWidth == (1 << log2Up(addrWidth)),
-      s"addrWidth: need power of two: "
-      + s"${addrWidth} != ${(1 << log2Up(addrWidth))}"
+      busMainCfg.addrWidth == (1 << log2Up(busMainCfg.addrWidth)),
+      s"busMainCfg.addrWidth: need power of two: "
+      + s"${busMainCfg.addrWidth} "
+      + s"!= ${(1 << log2Up(busMainCfg.addrWidth))}"
     )
     require(
-      addrWidth == (addrWidth / 8).toInt * 8,
-      s"addrWidth: need multiple of 8: "
-      + s"${addrWidth} != ${(addrWidth / 8).toInt * 8}"
+      busMainCfg.addrWidth == (busMainCfg.addrWidth / 8).toInt * 8,
+      s"busMainCfg.addrWidth: need multiple of 8: "
+      + s"${busMainCfg.addrWidth} "
+      + s"!= ${(busMainCfg.addrWidth / 8).toInt * 8}"
     )
     require(
       wordWidth == (1 << log2Up(wordWidth)),
