@@ -702,6 +702,7 @@ case class WrPulseRdPipeRamSdpPipeConfig[
     ModT,     // pass through pipeline payload (input)
     WordT,    // data read from the RAM
   ) => Unit,
+  optExtraRdPipeStages: Int=2,
   optWrHistLength: Int=1,
   initBigInt: Option[Seq[Seq[BigInt]]]=None,
   arrRamStyleAltera: String="M10K",
@@ -994,7 +995,7 @@ case class WrPulseRdPipeRamSdpPipe[
   val sLastBackArr = new ArrayBuffer[StageLink]()
   val s2mLastBackArr = new ArrayBuffer[S2MLink]()
   for (
-    idx <- 0 until 2//1//2
+    idx <- 0 until cfg.optExtraRdPipeStages//2//1//2
   ) {
     if (idx == 0) {
       sLastBackArr += StageLink(
@@ -1027,8 +1028,10 @@ case class WrPulseRdPipeRamSdpPipe[
       },
     )
   }
-  myLinkArr ++= sLastBackArr
-  myLinkArr ++= s2mLastBackArr
+  if (cfg.optExtraRdPipeStages > 0) {
+    myLinkArr ++= sLastBackArr
+    myLinkArr ++= s2mLastBackArr
+  }
   //StageLink(
   //  c
   //)
@@ -1064,7 +1067,14 @@ case class WrPulseRdPipeRamSdpPipe[
     )
   }
 
-  s2mLastBackArr.last.down.driveTo(io.rdDataPipe)(
+  val myActualFinalS2mLink = (
+    if (cfg.optExtraRdPipeStages > 0) (
+      s2mLastBackArr.last
+    ) else (
+      s2mBack
+    )
+  )
+  myActualFinalS2mLink.down.driveTo(io.rdDataPipe)(
     con=(outp, node) => {
       outp := node(outpPayload).myInpPayload.data
       //cfg.setWordFunc(
