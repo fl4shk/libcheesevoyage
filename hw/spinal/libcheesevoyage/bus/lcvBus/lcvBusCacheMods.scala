@@ -6282,13 +6282,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       )
       rHiH2dPayload.addr := (
         Cat(
-          False,
+          //False,
           // FINALLY found it, the problem I was seeing in DOOM!
           //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
           rSavedRdLineAttrsTag,
           rSavedLoBusAddrSet,
           U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-        ).asUInt
+        ).asUInt.resize(rHiH2dPayload.addr.getWidth)
       )
     }
     is (State.SEND_LINE_TO_HI_BUS_PIPE_1) {
