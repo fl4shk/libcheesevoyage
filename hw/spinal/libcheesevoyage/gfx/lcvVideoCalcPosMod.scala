@@ -2,7 +2,7 @@ package libcheesevoyage.gfx
 
 import scala.collection.mutable._
 
-import libcheesevoyage.general.WrPulseRdPipeRamSdpPipeConfig
+import libcheesevoyage.general.WrPulseRdPipeRamConfig
 import libcheesevoyage.general.WrPulseRdPipeRamSdpPipe
 import libcheesevoyage.general.DualTypeNumVec2
 import libcheesevoyage.general.Vec2
@@ -342,11 +342,11 @@ case class LcvVideoDblLineBufWithCalcPosConfig(
     //* 2
     someSize2d.x
   )
-  val myMemCfg = WrPulseRdPipeRamSdpPipeConfig(
+  val myMemCfg = WrPulseRdPipeRamConfig(
     modType=Rgb(rgbCfg),
     wordType=Rgb(rgbCfg),
     wordCount=myMemWordCnt,
-    pipeName="LcvVideoDblLineBufWithCalcPos",
+    //pipeName="LcvVideoDblLineBufWithCalcPos",
     initBigInt={
       val tempArr = new ArrayBuffer[BigInt]()
       for (idx <- 0 until myMemWordCnt) {

@@ -306,7 +306,7 @@ case class LcvBusFramebufferCtrl(
       (1 << log2Up(myVideoCfg.someSize2d.x / rgbBusRatio))
       * 2
     )
-    val myLineBufMemCfg = WrPulseRdPipeRamSdpPipeConfig(
+    val myLineBufMemCfg = WrPulseRdPipeRamConfig(
       modType=(
         Vec.fill(rgbBusRatio)(Rgb(rgbCfg))
       ),
@@ -314,7 +314,7 @@ case class LcvBusFramebufferCtrl(
         Vec.fill(rgbBusRatio)(Rgb(rgbCfg))
       ),
       wordCount=myLineBufMemWordCnt,
-      pipeName="LcvVideoDblLineBufWithCalcPos",
+      //pipeName="LcvVideoDblLineBufWithCalcPos",
       initBigInt={
         val tempArr = new ArrayBuffer[BigInt]()
         for (idx <- 0 until myLineBufMemWordCnt) {

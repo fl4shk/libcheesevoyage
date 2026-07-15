@@ -689,21 +689,22 @@ case class PipeSimpleDualPortMemDrivePayload[
 //  val data = dataType()
 //}
 
-case class WrPulseRdPipeRamSdpPipeConfig[
+case class WrPulseRdPipeRamConfig[
   ModT <: Data,
   WordT <: Data,
 ](
   modType: HardType[ModT],
   wordType: HardType[WordT],
   wordCount: Int,
-  pipeName: String,
+  //pipeName: String,
   setWordFunc: (
     ModT,     // pass through pipeline payload (output)
     ModT,     // pass through pipeline payload (input)
     WordT,    // data read from the RAM
     Bool,     // upIsFiring
   ) => Unit,
-  optExtraRdPipeStages: Int=2,
+  //optRdLatency: Int,
+  optRdLatency: Int=2,
   optWrHistLength: Int=1,
   initBigInt: Option[Seq[Seq[BigInt]]]=None,
   arrRamStyleAltera: String="M10K",
@@ -713,13 +714,20 @@ case class WrPulseRdPipeRamSdpPipeConfig[
   def addrWidth = log2Up(wordCount)
   def modRdPortCnt = 1
   def modStageCnt = 0//1
+
+  require(
+    optRdLatency >= 0
+  )
+  require(
+    optWrHistLength >= 1
+  )
 }
 
-case class WrPulseRdPipeRamSdpPipeIo[
+case class WrPulseRdPipeRamIo[
   ModT <: Data,
   WordT <: Data,
 ](
-  cfg: WrPulseRdPipeRamSdpPipeConfig[ModT, WordT],
+  cfg: WrPulseRdPipeRamConfig[ModT, WordT],
 ) extends Bundle {
   val wrPulse = slave Flow(
     PipeSimpleDualPortMemDrivePayload(
@@ -740,22 +748,45 @@ case class WrPulseRdPipeRamSdpPipeIo[
   )
 }
 
-case class WrPulseRdPipeRamSimpleDualPort[
+case class WrPulseRdPipeRam[
   ModT <: Data,
   WordT <: Data,
 ](
-  cfg: WrPulseRdPipeRamSdpPipeConfig[ModT, WordT],
+  cfg: WrPulseRdPipeRamConfig[ModT, WordT],
+) extends Component {
+  val io = WrPulseRdPipeRamIo(cfg=cfg)
+
+  val myRamSdpArea = (
+    cfg.optRdLatency <= 1
+  ) generate (new Area {
+    val ram = WrPulseRdPipeRamSimpleDualPort(cfg=cfg)
+    io <> ram.io
+  })
+
+  val myRamSdpPipeArea = (
+    cfg.optRdLatency >= 2
+  ) generate (new Area {
+    val ram = WrPulseRdPipeRamSdpPipe(cfg=cfg)
+    io <> ram.io
+  })
+}
+
+private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
+  ModT <: Data,
+  WordT <: Data,
+](
+  cfg: WrPulseRdPipeRamConfig[ModT, WordT],
 ) extends Component {
   //--------
   require(
     cfg.optWrHistLength == 1
   )
   require(
-    cfg.optExtraRdPipeStages <= 0,
-    s"With `cfg.optExtraRdPipeStages` > 0, "
+    cfg.optRdLatency <= 1,
+    s"With `cfg.optExtraRdPipeStages` > 1, "
     + s"it makes more sense to use `WrPulseRdPipeRamSdpPipe`!"
   )
-  val io = WrPulseRdPipeRamSdpPipeIo(cfg=cfg)
+  val io = WrPulseRdPipeRamIo(cfg=cfg)
   val myLinkArr = PipeHelper.mkLinkArr()
   //--------
   val ram = RamSimpleDualPort(
@@ -776,12 +807,31 @@ case class WrPulseRdPipeRamSimpleDualPort[
       arrRamStyleAltera=cfg.arrRamStyleAltera,
       arrRamStyleXilinx=cfg.arrRamStyleXilinx,
       arrRwAddrCollisionXilinx=cfg.arrRwAddrCollisionXilinx,
+      doAsyncRead=(
+        cfg.optRdLatency == 0
+      )
     )
   )
   //--------
-  ram.io.ramIo.wrEn := io.wrPulse.fire
-  ram.io.ramIo.wrAddr := io.wrPulse.addr
-  ram.io.ramIo.wrData := io.wrPulse.data
+  val myHistWrPulse = (
+    History(
+      that=io.wrPulse,
+      length=cfg.optWrHistLength,
+      init=io.wrPulse.getZero,
+    )
+  )
+  ram.io.ramIo.wrEn := (
+    //io.wrPulse.fire
+    myHistWrPulse.last.fire
+  )
+  ram.io.ramIo.wrAddr := (
+    //io.wrPulse.addr
+    myHistWrPulse.last.addr
+  )
+  ram.io.ramIo.wrData := (
+    //io.wrPulse.data
+    myHistWrPulse.last.data
+  )
   //--------
   //ram.io.ramIo.rdEn := False
   //--------
@@ -797,28 +847,43 @@ case class WrPulseRdPipeRamSimpleDualPort[
     //val data = 
   }
 
-  val mainPayload = Payload(MainPayload())
-  //val outpPayload = Payload(MainPayload())
-  val outpPayload = MainPayload()
-
-  val myFifo = StreamFifo(
-    dataType=cfg.wordType(),
-    depth=1,
-    latency=0,
-    forFMax=true,
+  val mainPayload = (
+    cfg.optRdLatency >= 1
+  ) generate (
+    Payload(MainPayload())
   )
+  //val outpPayload = Payload(MainPayload())
+  val inpPayload = (
+    cfg.optRdLatency == 0
+  ) generate (
+    MainPayload()
+  )
+  val outpPayload = MainPayload()
+  outpPayload.allowOverride
+
+  //val myFifo = StreamFifo(
+  //  dataType=cfg.wordType(),
+  //  depth=1,
+  //  latency=0,
+  //  forFMax=true,
+  //)
 
   val cFront = CtrlLink()
-  val sFront = StageLink(
+  val sFront = (
+    cfg.optRdLatency >= 1
+  ) generate (StageLink(
     up=cFront.down,
     down={
       val temp = Node()
       temp.setName("sFront_down")
       temp
     }
-  )
+  ))
   myLinkArr += cFront
-  myLinkArr += sFront
+
+  if (cfg.optRdLatency >= 1) {
+    myLinkArr += sFront
+  }
 
   case class MyFwdInfo(
   ) extends Bundle {
@@ -831,7 +896,11 @@ case class WrPulseRdPipeRamSimpleDualPort[
     io.rdAddrPipe
   )(
     con=(node, myInpPayload) => {
-      node(mainPayload).myInpPayload := myInpPayload
+      if (cfg.optRdLatency == 0) {
+        inpPayload.myInpPayload := myInpPayload
+      } else {
+        node(mainPayload).myInpPayload := myInpPayload
+      }
 
       val myHistFwdInfo = {
         val temp = MyFwdInfo()
@@ -886,17 +955,31 @@ case class WrPulseRdPipeRamSimpleDualPort[
             val size = myTempHistFwdValid.getWidth
             ("-" * (size - idx - 1) + "1" + ("0" * idx))
           })) {
-            node(mainPayload).fwdValid := True
-            node(mainPayload).rdMemWord := (
-              myHistFwdInfo(idx).data
-            )
+            if (cfg.optRdLatency == 0) {
+              inpPayload.fwdValid := True
+              inpPayload.rdMemWord := (
+                myHistFwdInfo(idx).data
+              )
+            } else {
+              node(mainPayload).fwdValid := True
+              node(mainPayload).rdMemWord := (
+                myHistFwdInfo(idx).data
+              )
+            }
           }
         }
         default {
-          node(mainPayload).fwdValid := False
-          node(mainPayload).rdMemWord := (
-            node(mainPayload).rdMemWord.getZero
-          )
+          if (cfg.optRdLatency == 0) {
+            inpPayload.fwdValid := False
+            inpPayload.rdMemWord := (
+              inpPayload.rdMemWord.getZero
+            )
+          } else {
+            node(mainPayload).fwdValid := False
+            node(mainPayload).rdMemWord := (
+              node(mainPayload).rdMemWord.getZero
+            )
+          }
         }
       }
 
@@ -935,7 +1018,26 @@ case class WrPulseRdPipeRamSimpleDualPort[
     ) {
       ram.io.ramIo.rdAddr := up(mainPayload).myInpPayload.addr
     }
-    myFifo.io.push.valid := RegNext(up.isFiring, init=False)
+    if (cfg.optRdLatency == 0) {
+      cfg.setWordFunc(
+        //up(outpPayload).myInpPayload.data, //outp,
+        outpPayload.myInpPayload.data, // outp,
+        inpPayload.myInpPayload.data, // inp
+        //up(mainPayload).myInpPayload.data, //node(outpPayload).myInpPayload.data,
+        (
+          //myFifo.io.pop.payload, //node(outpPayload).rdMemWord,
+          Mux(
+            outpPayload.fwdValid,
+            outpPayload.rdMemWord,
+            ram.io.ramIo.rdData,
+          )
+        ),
+        up.isFiring,
+      )
+    } else if (cfg.optRdLatency > 1) {
+      require(false)
+    }
+    //myFifo.io.push.valid := RegNext(up.isFiring, init=False)
   }
   //--------
   //// We need two cycles to read from a `RamSdpPipe`
@@ -962,16 +1064,20 @@ case class WrPulseRdPipeRamSimpleDualPort[
   //  myFifo.io.push.valid := RegNext(up.isFiring, init=False)
   //}
   //--------
-  val cBack = CtrlLink(
-    up=(
-      sFront.down
-      //sMid.down
-    ),
-    down={
-      val temp = Node()
-      temp.setName("cBack_down")
-      temp
-    }
+  val cBack = (
+    cfg.optRdLatency >= 1
+  ) generate (
+    CtrlLink(
+      up=(
+        sFront.down
+        //sMid.down
+      ),
+      down={
+        val temp = Node()
+        temp.setName("cBack_down")
+        temp
+      }
+    )
   )
   //val sBack = StageLink(
   //  up=cBack.down,
@@ -989,7 +1095,10 @@ case class WrPulseRdPipeRamSimpleDualPort[
   //    temp
   //  }
   //)
-  myLinkArr += cBack
+
+  if (cfg.optRdLatency >= 1) {
+    myLinkArr += cBack
+  }
   //myLinkArr += sBack
   //myLinkArr += s2mBack
 
@@ -1037,29 +1146,33 @@ case class WrPulseRdPipeRamSimpleDualPort[
   //  c
   //)
 
-  val cBackArea = new cBack.Area {
-    //up(outpPayload) := up(mainPayload)
-    outpPayload := up(mainPayload)
-    outpPayload.allowOverride
+  val cBackArea = (
+    cfg.optRdLatency >= 1
+  ) generate (new cBack.Area {
 
-    val rSaveMemRdDataState = Reg(Bool(), init=False)
-    myFifo.io.push.payload := (
-      Mux(
-        outpPayload.fwdValid,
-        outpPayload.rdMemWord,
-        ram.io.ramIo.rdData,
-      )
-    )
-    myFifo.io.pop.ready := False
-    when (myFifo.io.pop.valid) {
-      when (!rSaveMemRdDataState) {
-        rSaveMemRdDataState := True
-      }
-    }
-    when (up.isFiring) {
-      myFifo.io.pop.ready := True
-      rSaveMemRdDataState := False
-    }
+    ////up(outpPayload) := up(mainPayload)
+    outpPayload := up(mainPayload)
+    //outpPayload.allowOverride
+
+    //val rSaveMemRdDataState = Reg(Bool(), init=False)
+    //myFifo.io.push.payload := (
+    //  Mux(
+    //    outpPayload.fwdValid,
+    //    outpPayload.rdMemWord,
+    //    ram.io.ramIo.rdData,
+    //  )
+    //)
+    //myFifo.io.pop.ready := False
+    //when (myFifo.io.pop.valid) {
+    //  when (!rSaveMemRdDataState) {
+    //    rSaveMemRdDataState := True
+    //  }
+    //}
+    //when (up.isFiring) {
+    //  myFifo.io.pop.ready := True
+    //  rSaveMemRdDataState := False
+    //}
+
     //bypass(mainPayload).rdMemWord := myFifo.io.pop.payload
     //up(outpPayload).rdMemWord.allowOverride
     //up(outpPayload).rdMemWord := myFifo.io.pop.payload
@@ -1067,10 +1180,17 @@ case class WrPulseRdPipeRamSimpleDualPort[
       //up(outpPayload).myInpPayload.data, //outp,
       outpPayload.myInpPayload.data, //outp,
       up(mainPayload).myInpPayload.data, //node(outpPayload).myInpPayload.data,
-      myFifo.io.pop.payload, //node(outpPayload).rdMemWord,
+      (
+        //myFifo.io.pop.payload, //node(outpPayload).rdMemWord,
+        Mux(
+          outpPayload.fwdValid,
+          outpPayload.rdMemWord,
+          ram.io.ramIo.rdData,
+        )
+      ),
       up.isFiring,
     )
-  }
+  })
 
   val myActualFinalLink = (
     //if (cfg.optExtraRdPipeStages > 0) (
@@ -1079,7 +1199,11 @@ case class WrPulseRdPipeRamSimpleDualPort[
     //  s2mBack
     //)
     //sBack
-    cBack
+    if (cfg.optRdLatency == 0) (
+      cFront
+    ) else (
+      cBack
+    )
   )
   myActualFinalLink.down.driveTo(io.rdDataPipe)(
     con=(outp, node) => {
@@ -1099,13 +1223,13 @@ case class WrPulseRdPipeRamSimpleDualPort[
   //--------
 }
 
-case class WrPulseRdPipeRamSdpPipe[
+private[libcheesevoyage] case class WrPulseRdPipeRamSdpPipe[
   ModT <: Data,
   WordT <: Data,
 ](
-  cfg: WrPulseRdPipeRamSdpPipeConfig[ModT, WordT],
+  cfg: WrPulseRdPipeRamConfig[ModT, WordT],
 ) extends Component {
-  val io = WrPulseRdPipeRamSdpPipeIo(cfg=cfg)
+  val io = WrPulseRdPipeRamIo(cfg=cfg)
   val myLinkArr = PipeHelper.mkLinkArr()
 
   val ramCfg = (
@@ -1356,7 +1480,7 @@ case class WrPulseRdPipeRamSdpPipe[
   val sLastBackArr = new ArrayBuffer[StageLink]()
   val s2mLastBackArr = new ArrayBuffer[S2MLink]()
   for (
-    idx <- 0 until cfg.optExtraRdPipeStages//2//1//2
+    idx <- 0 until cfg.optRdLatency//2//1//2
   ) {
     if (idx == 0) {
       sLastBackArr += StageLink(
@@ -1389,7 +1513,7 @@ case class WrPulseRdPipeRamSdpPipe[
       },
     )
   }
-  if (cfg.optExtraRdPipeStages > 0) {
+  if (cfg.optRdLatency > 0) {
     myLinkArr ++= sLastBackArr
     myLinkArr ++= s2mLastBackArr
   }
@@ -1430,7 +1554,7 @@ case class WrPulseRdPipeRamSdpPipe[
   }
 
   val myActualFinalS2mLink = (
-    if (cfg.optExtraRdPipeStages > 0) (
+    if (cfg.optRdLatency > 0) (
       s2mLastBackArr.last
     ) else (
       s2mBack
