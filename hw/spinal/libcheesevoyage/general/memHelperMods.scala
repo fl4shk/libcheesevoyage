@@ -1487,7 +1487,7 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSdpPipe[
   val sLastBackArr = new ArrayBuffer[StageLink]()
   val s2mLastBackArr = new ArrayBuffer[S2MLink]()
   for (
-    idx <- 0 until cfg.optRdLatency//2//1//2
+    idx <- 0 until cfg.optRdLatency - 2//2//1//2
   ) {
     if (idx == 0) {
       sLastBackArr += StageLink(
@@ -1520,7 +1520,7 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSdpPipe[
       },
     )
   }
-  if (cfg.optRdLatency > 0) {
+  if (cfg.optRdLatency > 2) {
     myLinkArr ++= sLastBackArr
     myLinkArr ++= s2mLastBackArr
   }
@@ -1561,7 +1561,7 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSdpPipe[
   }
 
   val myActualFinalS2mLink = (
-    if (cfg.optRdLatency > 0) (
+    if (cfg.optRdLatency > 2) (
       s2mLastBackArr.last
     ) else (
       s2mBack
