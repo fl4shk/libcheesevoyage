@@ -783,7 +783,7 @@ case class WrPulseRdPipeRamSimpleDualPort[
   ram.io.ramIo.wrAddr := io.wrPulse.addr
   ram.io.ramIo.wrData := io.wrPulse.data
   //--------
-  ram.io.ramIo.rdEn := False
+  //ram.io.ramIo.rdEn := False
   //--------
   //ram.io.rdEn := True
   //ram.io.rdAddr := (
