@@ -712,7 +712,6 @@ case class WrPulseRdPipeRamSdpPipeConfig[
   def addrWidth = log2Up(wordCount)
   def modRdPortCnt = 1
   def modStageCnt = 0//1
-
 }
 
 case class WrPulseRdPipeRamSdpPipeIo[
@@ -872,19 +871,21 @@ case class WrPulseRdPipeRamSdpPipe[
       }
 
 // >>> for idx in range(size):
-// ...     print(idx, (("0" * (size - idx - 1))) + "1" + ("-" * idx))
+// ...     print(idx, ("-" * (size - idx - 1) + "1" + ("0" * idx)))
 // ...     
-// 0 0001
-// 1 001-
-// 2 01--
-// 3 1---
+// 0 ---1
+// 1 --10
+// 2 -100
+// 3 1000
       switch (myTempHistFwdValid) {
         for (idx <- 0 until myTempHistFwdValid.getWidth) {
-          is (MaskedLiteral(
-            (("0" * (myTempHistFwdValid.getWidth - idx - 1)))
-            + "1"
-            + ("-" * idx)
-          )) {
+          is (MaskedLiteral({
+            //(("0" * (myTempHistFwdValid.getWidth - idx - 1)))
+            //+ "1"
+            //+ ("-" * idx)
+            val size = myTempHistFwdValid.getWidth
+            ("-" * (size - idx - 1) + "1" + ("0" * idx))
+          })) {
             node(mainPayload).fwdValid := True
             node(mainPayload).rdMemWord := (
               myHistFwdInfo(idx).data
