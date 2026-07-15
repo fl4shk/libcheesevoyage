@@ -973,14 +973,14 @@ case class WrPulseRdPipeRamSimpleDualPort[
       temp
     }
   )
-  val sBack = StageLink(
-    up=cBack.down,
-    down={
-      val temp = Node()
-      temp.setName("sBack_down")
-      temp
-    }
-  )
+  //val sBack = StageLink(
+  //  up=cBack.down,
+  //  down={
+  //    val temp = Node()
+  //    temp.setName("sBack_down")
+  //    temp
+  //  }
+  //)
   //val s2mBack = S2MLink(
   //  up=sBack.down,
   //  down={
@@ -1039,12 +1039,14 @@ case class WrPulseRdPipeRamSimpleDualPort[
 
   val cBackArea = new cBack.Area {
     //up(outpPayload) := up(mainPayload)
+    outpPayload := up(mainPayload)
+    outpPayload.allowOverride
 
     val rSaveMemRdDataState = Reg(Bool(), init=False)
     myFifo.io.push.payload := (
       Mux(
-        up(mainPayload).fwdValid,
-        up(mainPayload).rdMemWord,
+        outpPayload.fwdValid,
+        outpPayload.rdMemWord,
         ram.io.ramIo.rdData,
       )
     )
