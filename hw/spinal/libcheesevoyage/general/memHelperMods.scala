@@ -756,7 +756,7 @@ case class WrPulseRdPipeRam[
 ) extends Component {
   val io = WrPulseRdPipeRamIo(cfg=cfg)
 
-  val myRamSdpArea = (
+  val myRamSimpleDualPortArea = (
     cfg.optRdLatency <= 1
   ) generate (new Area {
     val ram = WrPulseRdPipeRamSimpleDualPort(cfg=cfg)
@@ -1007,6 +1007,9 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
     }
   )
   val cFrontArea = new cFront.Area {
+    if (cfg.optRdLatency == 0) {
+      outpPayload := inpPayload
+    }
     ram.io.ramIo.rdEn := True
     ram.io.ramIo.rdAddr := (
       RegNext(ram.io.ramIo.rdAddr, init=ram.io.ramIo.rdAddr.getZero)
