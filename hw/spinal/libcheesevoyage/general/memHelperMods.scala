@@ -1016,7 +1016,13 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
       //&& 
       down.isReady
     ) {
-      ram.io.ramIo.rdAddr := up(mainPayload).myInpPayload.addr
+      ram.io.ramIo.rdAddr := (
+        if (cfg.optRdLatency == 0) (
+          inpPayload.myInpPayload.addr
+        ) else (
+          up(mainPayload).myInpPayload.addr
+        )
+      )
     }
     if (cfg.optRdLatency == 0) {
       cfg.setWordFunc(
