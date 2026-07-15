@@ -1197,7 +1197,7 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
     )
   })
 
-  val myActualFinalLink = (
+  val myActualFinalLinkDown: Node = (
     //if (cfg.optExtraRdPipeStages > 0) (
     //  s2mLastBackArr.last
     //) else (
@@ -1206,12 +1206,13 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
     //sBack
     if (cfg.optRdLatency == 0) (
       //cFront
-      sFront
+      sFront.down
     ) else (
-      cBack
+      cBack.down
     )
   )
-  myActualFinalLink.down.driveTo(io.rdDataPipe)(
+
+  myActualFinalLinkDown.driveTo(io.rdDataPipe)(
     con=(outp, node) => {
       outp := (
         //node(outpPayload).myInpPayload.data
