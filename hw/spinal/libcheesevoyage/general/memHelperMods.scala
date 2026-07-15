@@ -798,7 +798,8 @@ case class WrPulseRdPipeRamSimpleDualPort[
   }
 
   val mainPayload = Payload(MainPayload())
-  val outpPayload = Payload(MainPayload())
+  //val outpPayload = Payload(MainPayload())
+  val outpPayload = MainPayload()
 
   val myFifo = StreamFifo(
     dataType=cfg.wordType(),
@@ -1061,7 +1062,8 @@ case class WrPulseRdPipeRamSimpleDualPort[
     //up(outpPayload).rdMemWord.allowOverride
     //up(outpPayload).rdMemWord := myFifo.io.pop.payload
     cfg.setWordFunc(
-      up(outpPayload).myInpPayload.data, //outp,
+      //up(outpPayload).myInpPayload.data, //outp,
+      outpPayload.myInpPayload.data, //outp,
       up(mainPayload).myInpPayload.data, //node(outpPayload).myInpPayload.data,
       myFifo.io.pop.payload, //node(outpPayload).rdMemWord,
       up.isFiring,
@@ -1079,7 +1081,10 @@ case class WrPulseRdPipeRamSimpleDualPort[
   )
   myActualFinalLink.down.driveTo(io.rdDataPipe)(
     con=(outp, node) => {
-      outp := node(outpPayload).myInpPayload.data
+      outp := (
+        //node(outpPayload).myInpPayload.data
+        outpPayload.myInpPayload.data
+      )
       //cfg.setWordFunc(
       //  outp,
       //  node(outpPayload).myInpPayload.data,
