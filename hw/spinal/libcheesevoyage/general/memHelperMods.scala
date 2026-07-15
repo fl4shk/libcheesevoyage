@@ -888,6 +888,95 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
     val addr = UInt(log2Up(cfg.wordCount) bits)
   }
 
+  case class MyDoFwdArea(
+    someInp: MainPayload,
+    someOutp: MainPayload,
+  ) extends Area {
+    val myHistFwdInfo = {
+      val temp = MyFwdInfo()
+      temp.valid := ram.io.ramIo.wrEn
+      temp.data := ram.io.ramIo.wrData
+      temp.addr := ram.io.ramIo.wrAddr
+      History(
+        that=temp,
+        length=(
+          cfg.optWrHistLength
+          + (
+            if (cfg.optRdLatency == 0) (
+              1
+            ) else (
+              2
+            )
+          )
+          //+ 2
+        ),
+        init=temp.getZero
+      )
+    }
+    val myTempHistFwdValid = UInt(myHistFwdInfo.size bits)
+
+    for (idx <- 0 until myTempHistFwdValid.getWidth) {
+      myTempHistFwdValid(idx) := (
+        myHistFwdInfo(idx).valid
+        && (
+          LcvFastCmpEq(
+            left=someInp.myInpPayload.addr,
+            right=myHistFwdInfo(idx).addr,
+            cmpEqIo=null,
+          )._1
+        )
+      )
+    }
+
+// >>> for idx in range(size):
+// ...     print(idx, ("-" * (size - idx - 1) + "1" + ("0" * idx)))
+// ...     
+// 0 ---1
+// 1 --10
+// 2 -100
+// 3 1000
+    switch (myTempHistFwdValid) {
+      for (idx <- 0 until myTempHistFwdValid.getWidth) {
+        is (MaskedLiteral({
+          //(("0" * (myTempHistFwdValid.getWidth - idx - 1)))
+          //+ "1"
+          //+ ("-" * idx)
+          val size = myTempHistFwdValid.getWidth
+          ("-" * (size - idx - 1) + "1" + ("0" * idx))
+        })) {
+          someOutp.fwdValid := True
+          someOutp.rdMemWord := myHistFwdInfo(idx).data
+          //if (cfg.optRdLatency == 0) {
+          //  inpPayload.fwdValid := True
+          //  inpPayload.rdMemWord := (
+          //    myHistFwdInfo(idx).data
+          //  )
+          //} else {
+          //  node(mainPayload).fwdValid := True
+          //  node(mainPayload).rdMemWord := (
+          //    myHistFwdInfo(idx).data
+          //  )
+          //}
+        }
+      }
+      default {
+        someOutp.fwdValid := False
+        someOutp.rdMemWord := someInp.rdMemWord.getZero
+        //if (cfg.optRdLatency == 0) {
+        //  inpPayload.fwdValid := False
+        //  inpPayload.rdMemWord := (
+        //    inpPayload.rdMemWord.getZero
+        //  )
+        //} else {
+        //  node(mainPayload).fwdValid := False
+        //  node(mainPayload).rdMemWord := (
+        //    node(mainPayload).rdMemWord.getZero
+        //  )
+        //}
+      }
+    }
+  }
+
   cFront.up.driveFrom(
     io.rdAddrPipe
   )(
@@ -897,97 +986,14 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
       } else {
         node(mainPayload).myInpPayload := myInpPayload
       }
-
-      val myHistFwdInfo = {
-        val temp = MyFwdInfo()
-        temp.valid := ram.io.ramIo.wrEn
-        temp.data := ram.io.ramIo.wrData
-        temp.addr := ram.io.ramIo.wrAddr
-        History(
-          that=temp,
-          length=(
-            cfg.optWrHistLength
-            + (
-              if (cfg.optRdLatency == 0) (
-                1
-              ) else (
-                2
-              )
-            )
-            //+ 2
-          ),
-          init=temp.getZero
+      val myAsyncReadFwdArea = (
+        cfg.optRdLatency == 0
+      ) generate (
+        MyDoFwdArea(
+          someInp=inpPayload,
+          someOutp=outpPayload,
         )
-      }
-      //val myHistForFwdData = (
-      //  History(
-      //    that=(
-      //      ram.io.wrData
-      //    ),
-      //    length=(
-      //      cfg.optWrHistLength + 2,
-      //    ),
-      //    init=False
-      //  )
-      //)
-      val myTempHistFwdValid = UInt(myHistFwdInfo.size bits)
-
-      for (idx <- 0 until myTempHistFwdValid.getWidth) {
-        myTempHistFwdValid(idx) := (
-          myHistFwdInfo(idx).valid
-          && (
-            LcvFastCmpEq(
-              left=myInpPayload.addr,
-              right=myHistFwdInfo(idx).addr,
-              cmpEqIo=null,
-            )._1
-          )
-        )
-      }
-
-// >>> for idx in range(size):
-// ...     print(idx, ("-" * (size - idx - 1) + "1" + ("0" * idx)))
-// ...     
-// 0 ---1
-// 1 --10
-// 2 -100
-// 3 1000
-      switch (myTempHistFwdValid) {
-        for (idx <- 0 until myTempHistFwdValid.getWidth) {
-          is (MaskedLiteral({
-            //(("0" * (myTempHistFwdValid.getWidth - idx - 1)))
-            //+ "1"
-            //+ ("-" * idx)
-            val size = myTempHistFwdValid.getWidth
-            ("-" * (size - idx - 1) + "1" + ("0" * idx))
-          })) {
-            if (cfg.optRdLatency == 0) {
-              inpPayload.fwdValid := True
-              inpPayload.rdMemWord := (
-                myHistFwdInfo(idx).data
-              )
-            } else {
-              node(mainPayload).fwdValid := True
-              node(mainPayload).rdMemWord := (
-                myHistFwdInfo(idx).data
-              )
-            }
-          }
-        }
-        default {
-          if (cfg.optRdLatency == 0) {
-            inpPayload.fwdValid := False
-            inpPayload.rdMemWord := (
-              inpPayload.rdMemWord.getZero
-            )
-          } else {
-            node(mainPayload).fwdValid := False
-            node(mainPayload).rdMemWord := (
-              node(mainPayload).rdMemWord.getZero
-            )
-          }
-        }
-      }
+      )
 
       //when (
       //  ram.io.wrEn
@@ -1167,6 +1173,12 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
 
     ////up(outpPayload) := up(mainPayload)
     outpPayload := up(mainPayload)
+    val myDoFwdArea =  (
+      MyDoFwdArea(
+        someInp=up(mainPayload),
+        someOutp=outpPayload,
+      )
+    )
     //outpPayload.allowOverride
 
     //val rSaveMemRdDataState = Reg(Bool(), init=False)
