@@ -905,7 +905,11 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
         temp.addr := ram.io.ramIo.wrAddr
         History(
           that=temp,
-          length=(cfg.optWrHistLength + 2),
+          length=(
+            cfg.optWrHistLength
+            + 3
+            //+ 2
+          ),
           init=temp.getZero
         )
       }
@@ -1331,7 +1335,11 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSdpPipe[
         temp.addr := ram.io.wrAddr
         History(
           that=temp,
-          length=(cfg.optWrHistLength + 2),
+          length=(
+            cfg.optWrHistLength
+            + 3
+            //+ 2
+          ),
           init=temp.getZero
         )
       }
