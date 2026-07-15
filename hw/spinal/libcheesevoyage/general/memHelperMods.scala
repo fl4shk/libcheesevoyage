@@ -989,7 +989,7 @@ case class WrPulseRdPipeRamSimpleDualPort[
   //  }
   //)
   myLinkArr += cBack
-  myLinkArr += sBack
+  //myLinkArr += sBack
   //myLinkArr += s2mBack
 
   //val sLastBackArr = new ArrayBuffer[StageLink]()
@@ -1074,7 +1074,8 @@ case class WrPulseRdPipeRamSimpleDualPort[
     //) else (
     //  s2mBack
     //)
-    sBack
+    //sBack
+    cBack
   )
   myActualFinalLink.down.driveTo(io.rdDataPipe)(
     con=(outp, node) => {
