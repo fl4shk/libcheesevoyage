@@ -358,6 +358,7 @@ case class LcvVideoDblLineBufWithCalcPosConfig(
       outp: Rgb,
       inp: Rgb,
       rdMemWord: Rgb,
+      upIsFiring: Bool,
     ) => {
       outp := rdMemWord
     }

@@ -701,6 +701,7 @@ case class WrPulseRdPipeRamSdpPipeConfig[
     ModT,     // pass through pipeline payload (output)
     ModT,     // pass through pipeline payload (input)
     WordT,    // data read from the RAM
+    Bool,     // upIsFiring
   ) => Unit,
   optExtraRdPipeStages: Int=2,
   optWrHistLength: Int=1,
@@ -1063,6 +1064,7 @@ case class WrPulseRdPipeRamSimpleDualPort[
       up(outpPayload).myInpPayload.data, //outp,
       up(mainPayload).myInpPayload.data, //node(outpPayload).myInpPayload.data,
       myFifo.io.pop.payload, //node(outpPayload).rdMemWord,
+      up.isFiring,
     )
   }
 
@@ -1415,6 +1417,7 @@ case class WrPulseRdPipeRamSdpPipe[
       up(outpPayload).myInpPayload.data, //outp,
       up(mainPayload).myInpPayload.data, //node(outpPayload).myInpPayload.data,
       myFifo.io.pop.payload, //node(outpPayload).rdMemWord,
+      up.isFiring,
     )
   }
 
