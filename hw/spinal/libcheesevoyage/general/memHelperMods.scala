@@ -907,7 +907,13 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
           that=temp,
           length=(
             cfg.optWrHistLength
-            + 3
+            + (
+              if (cfg.optRdLatency == 0) (
+                1
+              ) else (
+                2
+              )
+            )
             //+ 2
           ),
           init=temp.getZero
@@ -1337,8 +1343,8 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSdpPipe[
           that=temp,
           length=(
             cfg.optWrHistLength
-            + 3
             //+ 2
+            + cfg.optRdLatency
           ),
           init=temp.getZero
         )
