@@ -984,6 +984,8 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
       if (cfg.optRdLatency == 0) {
         inpPayload.myInpPayload := myInpPayload
       } else {
+        node(mainPayload) := node(mainPayload).getZero
+        node(mainPayload).myInpPayload.allowOverride
         node(mainPayload).myInpPayload := myInpPayload
       }
       val myAsyncReadFwdArea = (
