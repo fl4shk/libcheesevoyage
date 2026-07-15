@@ -869,21 +869,17 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
   //)
 
   val cFront = CtrlLink()
-  val sFront = (
-    cfg.optRdLatency >= 1
-  ) generate (StageLink(
+  val sFront = StageLink(
     up=cFront.down,
     down={
       val temp = Node()
       temp.setName("sFront_down")
       temp
     }
-  ))
+  )
   myLinkArr += cFront
 
-  if (cfg.optRdLatency >= 1) {
-    myLinkArr += sFront
-  }
+  myLinkArr += sFront
 
   case class MyFwdInfo(
   ) extends Bundle {
@@ -1209,7 +1205,8 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
     //)
     //sBack
     if (cfg.optRdLatency == 0) (
-      cFront
+      //cFront
+      sFront
     ) else (
       cBack
     )
