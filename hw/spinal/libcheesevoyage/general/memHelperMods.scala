@@ -841,7 +841,7 @@ case class WrPulseRdPipeRamSdpPipe[
         temp.addr := ram.io.wrAddr
         History(
           that=temp,
-          length=(cfg.optWrHistLength + 2),
+          length=(cfg.optWrHistLength + 4/*2*/),
           init=temp.getZero
         )
       }
