@@ -359,6 +359,7 @@ case class LcvVideoDblLineBufWithCalcPosConfig(
       inp: Rgb,
       rdMemWord: Rgb,
       upIsFiring: Bool,
+      myExternalInpCond: Bool,
     ) => {
       outp := rdMemWord
     }

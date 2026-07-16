@@ -327,6 +327,7 @@ case class LcvBusFramebufferCtrl(
         inp: Vec[Rgb],
         rdMemWord: Vec[Rgb],
         upIsFiring: Bool,
+        myExternalInpCond: Bool,
       ) => {
         outp := rdMemWord
       }
