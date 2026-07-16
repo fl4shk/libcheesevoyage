@@ -167,8 +167,8 @@ case class LcvBusCacheConfig(
   numWays: Int=2,
   lineWordMemRamStyleAltera: String=(
     //"MLAB"
-    //"no_rw_check, M10K"
-    "M10K"
+    "no_rw_check, M10K"
+    //"M10K"
   ),
   lineWordMemRamStyleXilinx: String=(
     //"auto"
@@ -178,17 +178,24 @@ case class LcvBusCacheConfig(
   ),
   lineAttrsMemRamStyleAltera: String=(
     //"MLAB"
+    "no_rw_check, MLAB"
     //"no_rw_check, M10K"
-    "M10K"
+    //"M10K"
   ),
   lineAttrsMemRamStyleXilinx: String=(
     //"auto"
-    //"distributed"
-    "block"
+    "distributed"
+    //"block"
     //"ultra"
   ),
   optMainAddrWidth: Option[Int]=(
     None
+  ),
+  //optImplRamOptRdExtraLatency: Int=(
+  //  0
+  //),
+  optImplRamOptWrHistLength: Int=(
+    2//1//2//1//2//3
   ),
   //private[libcheesevoyage] var busCfg: LcvBusConfig=null,
   private[libcheesevoyage] var busMainCfg: LcvBusMainConfig=null

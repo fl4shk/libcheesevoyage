@@ -47,10 +47,14 @@ case class LcvBusCacheBusPairConfig(
   loBusCacheCfg: LcvBusCacheConfig,
   hiBusCacheCfg: Option[LcvBusCacheConfig],
   busD2hFifoLatency: Int=0,
+  //myRamOptWrHistLength: Int=(
+  //  1//2//1//2//3
+  //),
   optFormal: Boolean=false,
 ) {
   //require(!mainCfg.allowBurst)
-  val myRamOptWrHistLength = 1//2//1//2//3
+  //val myRamOptRdExtraLatency = loBusCacheCfg.optImplRamOptRdExtraLatency
+  val myRamOptWrHistLength = loBusCacheCfg.optImplRamOptWrHistLength
   val myRamOptWrHistLengthPlusAddend = myRamOptWrHistLength + 1//3//2
   loBusCacheCfg.kind match {
     case LcvCacheKind.Shared => {
