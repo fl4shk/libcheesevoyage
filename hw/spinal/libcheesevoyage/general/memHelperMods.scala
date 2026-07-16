@@ -1042,7 +1042,7 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
         )
       )
     }
-    //if (cfg.optRdLatency == 0) {
+    if (cfg.optRdLatency == 0) {
       cfg.setWordFunc(
         //up(outpPayload).myInpPayload.data, //outp,
         outpPayload.myInpPayload.data, // outp,
@@ -1060,9 +1060,9 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
         up.isFiring,
         io.myExternalInpCond,
       )
-    //} else if (cfg.optRdLatency > 1) {
-    //  require(false)
-    //}
+    } else if (cfg.optRdLatency > 1) {
+      require(false)
+    }
     //myFifo.io.push.valid := RegNext(up.isFiring, init=False)
   }
   //--------
