@@ -4,6 +4,7 @@ import scala.collection.mutable._
 
 import libcheesevoyage.general.WrPulseRdPipeRamConfig
 import libcheesevoyage.general.WrPulseRdPipeRamSdpPipe
+import libcheesevoyage.general.PipeSimpleDualPortMemDrivePayload
 import libcheesevoyage.general.DualTypeNumVec2
 import libcheesevoyage.general.Vec2
 import libcheesevoyage.general.MkVec2
@@ -360,6 +361,9 @@ case class LcvVideoDblLineBufWithCalcPosConfig(
       rdMemWord: Rgb,
       upIsFiring: Bool,
       myExternalInpCond: Bool,
+      wrPulse: Flow[
+        PipeSimpleDualPortMemDrivePayload[Rgb]
+      ],
     ) => {
       outp := rdMemWord
     }

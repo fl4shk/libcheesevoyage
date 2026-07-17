@@ -328,6 +328,11 @@ case class LcvBusFramebufferCtrl(
         rdMemWord: Vec[Rgb],
         upIsFiring: Bool,
         myExternalInpCond: Bool,
+        wrPulse: Flow[
+          PipeSimpleDualPortMemDrivePayload[
+            Vec[Rgb]
+          ]
+        ],
       ) => {
         outp := rdMemWord
       }

@@ -703,6 +703,11 @@ case class WrPulseRdPipeRamConfig[
     WordT,    // data read from the RAM
     Bool,     // upIsFiring
     Bool,     // io.myExternalInpCond
+    Flow[     // io.wrPulse
+      PipeSimpleDualPortMemDrivePayload[
+        WordT
+      ]
+    ],
   ) => Unit,
   //optRdLatency: Int,
   optRdLatency: Int=2,
@@ -1059,6 +1064,7 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
         ),
         up.isFiring,
         io.myExternalInpCond,
+        io.wrPulse,
       )
     } else if (cfg.optRdLatency > 1) {
       require(false)
@@ -1223,6 +1229,7 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
       ),
       up.isFiring,
       io.myExternalInpCond,
+      io.wrPulse,
     )
   })
 
@@ -1590,7 +1597,8 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSdpPipe[
       up(mainPayload).myInpPayload.data, //node(outpPayload).myInpPayload.data,
       myFifo.io.pop.payload, //node(outpPayload).rdMemWord,
       up.isFiring,
-      io.myExternalInpCond
+      io.myExternalInpCond,
+      io.wrPulse,
     )
   }
 
