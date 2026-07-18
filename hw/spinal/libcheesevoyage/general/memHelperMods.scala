@@ -689,6 +689,7 @@ case class PipeSimpleDualPortMemDrivePayload[
 //  val data = dataType()
 //}
 
+
 case class WrPulseRdPipeRamConfig[
   ModT <: Data,
   WordT <: Data,
@@ -712,6 +713,7 @@ case class WrPulseRdPipeRamConfig[
   //optRdLatency: Int,
   optRdLatency: Int=2,
   optWrHistLength: Int=1,
+  //optRename: Boolean=false,
   initBigInt: Option[Seq[Seq[BigInt]]]=None,
   arrRamStyleAltera: String="M10K",
   arrRamStyleXilinx: String="block",
@@ -765,6 +767,7 @@ case class WrPulseRdPipeRam[
 
   val myRamSimpleDualPortArea = (
     cfg.optRdLatency <= 1
+    //&& !cfg.optRename
   ) generate (new Area {
     val ram = WrPulseRdPipeRamSimpleDualPort(cfg=cfg)
     io <> ram.io
@@ -772,11 +775,30 @@ case class WrPulseRdPipeRam[
 
   val myRamSdpPipeArea = (
     cfg.optRdLatency >= 2
+    //&& !cfg.optRename
   ) generate (new Area {
     val ram = WrPulseRdPipeRamSdpPipe(cfg=cfg)
     io <> ram.io
   })
 }
+
+//private[libcheesevoyage] case class WrPulseRdPipeRamWithRenaming[
+//  ModT <: Data,
+//  WordT <: Data,
+//](
+//  cfg: WrPulseRdPipeRamConfig[ModT, WordT],
+//) extends Component {
+//  //--------
+//  require(
+//    cfg.optRename
+//  )
+//  require(
+//    cfg.optWrHistLength == 1
+//  )
+//  require(
+//    cfg.optRdLatency == 2
+//  )
+//}
 
 private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
   ModT <: Data,
@@ -785,6 +807,9 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
   cfg: WrPulseRdPipeRamConfig[ModT, WordT],
 ) extends Component {
   //--------
+  //require(
+  //  !cfg.optRename
+  //)
   require(
     cfg.optWrHistLength == 1
   )
@@ -1272,6 +1297,9 @@ private[libcheesevoyage] case class WrPulseRdPipeRamSdpPipe[
 ](
   cfg: WrPulseRdPipeRamConfig[ModT, WordT],
 ) extends Component {
+  //require(
+  //  !cfg.optRename
+  //)
   val io = WrPulseRdPipeRamIo(cfg=cfg)
   val myLinkArr = PipeHelper.mkLinkArr()
 
