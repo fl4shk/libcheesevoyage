@@ -714,6 +714,13 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
   cfg: LcvBusFramebufferConfig
 ) extends Component {
   def rgbCfg = cfg.rgbCfg
+  def rgbUpWidth = 1 << log2Up(Rgb(c=rgbCfg).asBits.getWidth)
+  def rgbBusRatio = (busCfg.dataWidth / rgbUpWidth).toInt
+
+  require(
+    rgbBusRatio == 1
+  )
+
   def busCfg = cfg.busCfg
   def fbSize2d = cfg.fbSize2d
   def cnt2dShift = cfg.cnt2dShift
@@ -762,7 +769,9 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
 
   val myPalMem = LcvBusMem(
     cfg=LcvBusMemConfig(
-      busCfg=cfg.busCfg,
+      busCfg=(
+        cfg.busCfg
+      ),
       depth=cfg.optPalDepth,
       initBigInt=Some(
         Array.fill(cfg.optPalDepth)(
@@ -785,6 +794,9 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
     palIdxPop.payload.resize(
       myPalMem.io.nonBusRamRdAddr.getWidth
     )
+    //palIdxPop.payload(
+    //  myPalMem.io.nonBusRamRdAddr.getWidth
+    //)
   )
   val myColFifo = StreamFifo(
     dataType=(
@@ -796,10 +808,6 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
     forFMax=true,
   )
   io.pop <-/< myColFifo.io.pop
-
-  //myPalMem.io.nonBusRamRdEn := (
-  //  myColFifo.io.occupancy < myColFifo.depth - 2 - 1
-  //)
 
   palIdxPop.ready := (
     myColFifo.io.occupancy < myColFifo.depth - 4//3
@@ -814,7 +822,6 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
   myColFifo.io.push.payload.assignFromBits(
     myPalMem.io.nonBusRamRdData.asBits
   )
-
 
   val myH2dStm = Vec.fill(3)(
     cloneOf(io.bus.h2dBus)
