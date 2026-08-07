@@ -162,7 +162,7 @@ case class LcvBusFramebufferCtrl(
   })
 
   val myPalArea = (
-    cfg.optPalIdxWidth == None
+    cfg.optPalIdxWidth != None
   ) generate (new Area {
     val myFbCtrl = LcvBusFramebufferCtrlPal(cfg=cfg)
     io <> myFbCtrl.io
