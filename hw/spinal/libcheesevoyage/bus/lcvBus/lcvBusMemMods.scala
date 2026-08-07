@@ -812,6 +812,11 @@ case class LcvBusMem(
 ) extends Component {
   val io = LcvBusMemIo(cfg=cfg, useMyBusCfg=false)
   val myMemImpl = LcvBusMemImpl(cfg=cfg)
+  if (cfg.optHaveNonBusRdPort) {
+    myMemImpl.io.nonBusRamRdEn := io.nonBusRamRdEn
+    myMemImpl.io.nonBusRamRdAddr := io.nonBusRamRdAddr
+    io.nonBusRamRdData := myMemImpl.io.nonBusRamRdData
+  }
   val myDeburster = (
     cfg.busCfg.allowBurst
   ) generate (LcvBusDeburster(cfg=LcvBusDebursterConfig(
