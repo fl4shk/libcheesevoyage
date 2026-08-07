@@ -118,6 +118,9 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   if (cfg.optHaveNonBusRdPort) {
     nonBusDuplRam.io.wrEn := ram.io.wrEn
     nonBusDuplRam.io.wrAddr := ram.io.wrAddr
+    if (ram.io.wrByteEn != null) {
+      nonBusDuplRam.io.wrByteEn := ram.io.wrByteEn
+    }
     nonBusDuplRam.io.wrData := ram.io.wrData
     nonBusDuplRam.io.rdEn := io.nonBusRamRdEn
     nonBusDuplRam.io.rdAddr := io.nonBusRamRdAddr
