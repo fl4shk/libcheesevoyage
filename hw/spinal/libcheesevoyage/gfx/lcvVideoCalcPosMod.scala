@@ -361,9 +361,9 @@ case class LcvVideoDblLineBufWithCalcPosConfig(
       rdMemWord: Rgb,
       upIsFiring: Bool,
       myExternalInpCond: Bool,
-      wrPulse: Flow[
+      wrPulseVec: Vec[Flow[
         PipeSimpleDualPortMemDrivePayload[Rgb]
-      ],
+      ]],
     ) => {
       outp := rdMemWord
     }

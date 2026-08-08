@@ -1012,11 +1012,11 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
         rdMemWord: Vec[UInt],
         upIsFiring: Bool,
         myExternalInpCond: Bool,
-        wrPulse: Flow[
+        wrPulseVec: Vec[Flow[
           PipeSimpleDualPortMemDrivePayload[
             Vec[UInt]
           ]
-        ],
+        ]],
       ) => {
         outp := rdMemWord
       }
@@ -1506,11 +1506,11 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlNonPal(
         rdMemWord: Vec[Rgb],
         upIsFiring: Bool,
         myExternalInpCond: Bool,
-        wrPulse: Flow[
+        wrPulseVec: Vec[Flow[
           PipeSimpleDualPortMemDrivePayload[
             Vec[Rgb]
           ]
-        ],
+        ]],
       ) => {
         outp := rdMemWord
       }
