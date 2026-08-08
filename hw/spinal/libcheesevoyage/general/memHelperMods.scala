@@ -811,14 +811,14 @@ case class DualWrPulseRdPipeRam[
   //  )
   //)
   mem.write(
-    address=io.wrPulse.addr,
-    data=io.wrPulse.data,
-    enable=io.wrPulse.fire
-  )
-  mem.write(
     address=io.otherWrPulse.addr,
     data=io.otherWrPulse.data,
     enable=io.otherWrPulse.fire
+  )
+  mem.write(
+    address=io.wrPulse.addr,
+    data=io.wrPulse.data,
+    enable=io.wrPulse.fire
   )
   //ram.io.ramIo.wrEn := (
   //  //io.wrPulse.fire
