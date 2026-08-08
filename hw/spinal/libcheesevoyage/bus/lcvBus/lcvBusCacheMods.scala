@@ -5941,7 +5941,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           rDel2LoH2dPayload
         )
       }
-      if (rSavedLoH2dPayload.byteSize != null) {
+      if (rSavedLoH2dPayload.mainNonBurstInfo.infoByteSizeEtc != null) {
         when (
           rMyTempDoSaveCond(1)
           //&& myTempUpdateSavedLoH2dPayloadCond
