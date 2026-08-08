@@ -736,6 +736,7 @@ case class WrPulseRdPipeRamIo[
   WordT <: Data,
 ](
   cfg: WrPulseRdPipeRamConfig[ModT, WordT],
+  optDualWr: Boolean=false,
 ) extends Bundle {
   val wrPulse = slave Flow(
     PipeSimpleDualPortMemDrivePayload(
@@ -743,6 +744,18 @@ case class WrPulseRdPipeRamIo[
       wordCount=cfg.wordCount,
     )
   )
+
+  val otherWrPulse = (
+    optDualWr
+  ) generate (
+    slave Flow(
+      PipeSimpleDualPortMemDrivePayload(
+        dataType=cfg.wordType(),
+        wordCount=cfg.wordCount,
+      )
+    )
+  )
+
   //val rdAddrPipe = Stream(UInt(addrWidth bits))
   val rdAddrPipe = slave Stream(
     PipeSimpleDualPortMemDrivePayload(
@@ -755,6 +768,246 @@ case class WrPulseRdPipeRamIo[
     cfg.modType()
   )
   val myExternalInpCond = in(Bool())
+}
+
+case class DualWrPulseRdPipeRam[
+  ModT <: Data,
+  WordT <: Data,
+](
+  cfg: WrPulseRdPipeRamConfig[ModT, WordT],
+) extends Component {
+  //--------
+  val io = WrPulseRdPipeRamIo(
+    cfg=cfg,
+    optDualWr=true
+  )
+  //--------
+  require(
+    cfg.optRdLatency <= 1
+  )
+  //--------
+  val mem = {
+    val temp = Mem(
+      wordType=cfg.wordType(),
+      wordCount=cfg.wordCount,
+    )
+    if (cfg.initBigInt != None) {
+      temp.initBigInt(
+        cfg.initBigInt.get(0)
+      )
+    }
+    temp
+  }
+  //--------
+  require(cfg.optWrHistLength == 1)
+  require(cfg.optRdLatency <= 1)
+  val myLinkArr = PipeHelper.mkLinkArr()
+  //--------
+  //val myHistWrPulse = (
+  //  History(
+  //    that=io.wrPulse,
+  //    length=cfg.optWrHistLength,
+  //    init=io.wrPulse.getZero,
+  //  )
+  //)
+  mem.write(
+    address=io.wrPulse.addr,
+    data=io.wrPulse.data,
+    enable=io.wrPulse.fire
+  )
+  mem.write(
+    address=io.otherWrPulse.addr,
+    data=io.otherWrPulse.data,
+    enable=io.otherWrPulse.fire
+  )
+  //ram.io.ramIo.wrEn := (
+  //  //io.wrPulse.fire
+  //  myHistWrPulse.last.fire
+  //)
+  //ram.io.ramIo.wrAddr := (
+  //  //io.wrPulse.addr
+  //  myHistWrPulse.last.addr
+  //)
+  //ram.io.ramIo.wrData := (
+  //  //io.wrPulse.data
+  //  myHistWrPulse.last.data
+  //)
+  //--------
+  //ram.io.ramIo.rdEn := False
+  //--------
+  case class MainPayload(
+  ) extends Bundle {
+    val myInpPayload = cloneOf(io.rdAddrPipe.payload)
+    val rdMemWord = cfg.wordType()
+    //val fwdValid = Bool()
+    //val data = 
+  }
+
+  val mainPayload = (
+    cfg.optRdLatency >= 1
+  ) generate (
+    Payload(MainPayload())
+  )
+  //val outpPayload = Payload(MainPayload())
+  val inpPayload = (
+    cfg.optRdLatency == 0
+  ) generate (
+    MainPayload()
+  )
+  val outpPayload = MainPayload()
+  outpPayload.allowOverride
+
+  val cFront = CtrlLink()
+  val sFront = StageLink(
+    up=cFront.down,
+    down={
+      val temp = Node()
+      temp.setName("sFront_down")
+      temp
+    }
+  )
+  myLinkArr += cFront
+  myLinkArr += sFront
+
+  cFront.up.driveFrom(
+    io.rdAddrPipe
+  )(
+    con=(node, myInpPayload) => {
+      if (cfg.optRdLatency == 0) {
+        inpPayload.myInpPayload := myInpPayload
+      } else {
+        node(mainPayload) := node(mainPayload).getZero
+        node(mainPayload).myInpPayload.allowOverride
+        node(mainPayload).myInpPayload := myInpPayload
+      }
+    }
+  )
+  val cFrontArea = new cFront.Area {
+    if (cfg.optRdLatency == 0) {
+      outpPayload := inpPayload
+    }
+    //ram.io.ramIo.rdEn := True
+    //ram.io.ramIo.rdAddr := (
+    //  RegNext(ram.io.ramIo.rdAddr, init=ram.io.ramIo.rdAddr.getZero)
+    //)
+
+    val tempRdAddr = (
+      if (cfg.optRdLatency == 0) (
+        inpPayload.myInpPayload.addr
+      ) else (
+        up(mainPayload).myInpPayload.addr
+      )
+    )
+    val tempRdMemWord = cloneOf(mem.readAsync(address=tempRdAddr.getZero))
+
+    //if (cfg.optRdLatency == 0) (
+    //  mem.readAsync(
+    //    address=inpPayload.myInpPayload.addr
+    //  )
+    //) else (
+    //  mem.readSync(
+    //  )
+    //)
+    if (cfg.optRdLatency == 0) {
+      tempRdMemWord := RegNext(tempRdMemWord)
+      when (down.isReady) {
+        tempRdMemWord := (
+          mem.readAsync(
+            address=tempRdAddr
+          )
+        )
+      }
+    } else {
+      tempRdMemWord := mem.readSync(
+        address=tempRdAddr,
+        enable=down.isReady
+      )
+    }
+    //when (
+    //  //up.isValid
+    //  //&& 
+    //  down.isReady
+    //) {
+    //  ram.io.ramIo.rdAddr := (
+    //    if (cfg.optRdLatency == 0) (
+    //      inpPayload.myInpPayload.addr
+    //    ) else (
+    //      up(mainPayload).myInpPayload.addr
+    //    )
+    //  )
+    //}
+    if (cfg.optRdLatency == 0) {
+      cfg.setWordFunc(
+        outpPayload.myInpPayload.data, // outp,
+        inpPayload.myInpPayload.data, // inp
+        (
+          //ram.io.ramIo.rdData
+          tempRdMemWord
+        ),
+        up.isFiring,
+        io.myExternalInpCond,
+        io.wrPulse,
+      )
+    } else if (cfg.optRdLatency > 1) {
+      require(false)
+    }
+  }
+  //--------
+  val cBack = (
+    cfg.optRdLatency >= 1
+  ) generate (
+    CtrlLink(
+      up=(
+        sFront.down
+        //sMid.down
+      ),
+      down={
+        val temp = Node()
+        temp.setName("cBack_down")
+        temp
+      }
+    )
+  )
+  if (cfg.optRdLatency >= 1) {
+    myLinkArr += cBack
+  }
+
+  val cBackArea = (
+    cfg.optRdLatency >= 1
+  ) generate (new cBack.Area {
+
+    outpPayload := up(mainPayload)
+    cfg.setWordFunc(
+      outpPayload.myInpPayload.data,
+      up(mainPayload).myInpPayload.data,
+      (
+        //ram.io.ramIo.rdData
+        cFrontArea.tempRdMemWord
+      ),
+      up.isFiring,
+      io.myExternalInpCond,
+      io.wrPulse,
+    )
+  })
+
+  val myActualFinalLinkDown: Node = (
+    if (cfg.optRdLatency == 0) (
+      sFront.down
+    ) else (
+      cBack.down
+    )
+  )
+
+  myActualFinalLinkDown.driveTo(io.rdDataPipe)(
+    con=(outp, node) => {
+      outp := (
+        outpPayload.myInpPayload.data
+      )
+    }
+  )
+  //--------
+  Builder(myLinkArr.toSeq)
+  //--------
 }
 
 case class WrPulseRdPipeRam[
