@@ -5941,81 +5941,83 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           rDel2LoH2dPayload
         )
       }
-      when (
-        rMyTempDoSaveCond(1)
-        //&& myTempUpdateSavedLoH2dPayloadCond
-        //&& RegNext(
-        //  RegNext(mySelLoH2dPopStm.fire, init=False),
-        //  init=False
-        //)
-      ) {
-        rSavedLoH2dPayload.byteSize := (
-          //rLoH2dPayload.byteSize
-          rDel2LoH2dPayload.byteSize
-        )
-        //switch (
-        //  //rdLineAttrs.dirty
-        //  //## 
-        //  RegNext(
-        //    wrLineAttrs.dirty
-        //    && lineAttrsRam.io.wrEn,
-        //    init=False
-        //  )
-        //  ## RegNext(
-        //    RegNext(
-        //      (
-        //        wrLineAttrs.dirty
-        //        && lineAttrsRam.io.wrEn
-        //      ),
-        //      init=False
-        //    ),
-        //    init=False
-        //  )
-        //) {
-        //  //is (M"1--") {
-        //  //}
-        //  is (M"1-") {
-        //    rSavedRdLineAttrsTag := (
-        //      RegNext(
-        //        wrLineAttrs.tag
-        //      )
-        //    )
-        //  }
-        //  is (M"01") {
-        //    rSavedRdLineAttrsTag := (
-        //      RegNext(
-        //        RegNext(
-        //          wrLineAttrs.tag
-        //        )
-        //      )
-        //    )
-        //  }
-        //  default {
-        //    rSavedRdLineAttrsTag := rdLineAttrs.tag
-        //  }
-        //}
-        //when (
-        //  rdLineAttrs.dirty
-        //  || (
-        //    //rdLine
-        //    RegNext(
-        //      (
-        //        (
-        //          wrLineAttrs.dirty
-        //          && lineAttrsRam.io.wrEn
-        //        )
-        //        || RegNext(
-        //          wrLineAttrs.dirty
-        //          && lineAttrsRam.io.wrEn,
-        //          init=False
-        //        )
-        //      ),
-        //      init=False
-        //    )
-        //  )
-        //)
-        //rSavedRdLineAttrsTag := rdLineAttrs.tag
-        //rSavedRdLineAttrsTag := rdLineAttrs.tag
+      if (rSavedLoH2dPayload.byteSize != null) {
+        when (
+          rMyTempDoSaveCond(1)
+          //&& myTempUpdateSavedLoH2dPayloadCond
+          //&& RegNext(
+          //  RegNext(mySelLoH2dPopStm.fire, init=False),
+          //  init=False
+          //)
+        ) {
+          rSavedLoH2dPayload.byteSize := (
+            //rLoH2dPayload.byteSize
+            rDel2LoH2dPayload.byteSize
+          )
+          //switch (
+          //  //rdLineAttrs.dirty
+          //  //## 
+          //  RegNext(
+          //    wrLineAttrs.dirty
+          //    && lineAttrsRam.io.wrEn,
+          //    init=False
+          //  )
+          //  ## RegNext(
+          //    RegNext(
+          //      (
+          //        wrLineAttrs.dirty
+          //        && lineAttrsRam.io.wrEn
+          //      ),
+          //      init=False
+          //    ),
+          //    init=False
+          //  )
+          //) {
+          //  //is (M"1--") {
+          //  //}
+          //  is (M"1-") {
+          //    rSavedRdLineAttrsTag := (
+          //      RegNext(
+          //        wrLineAttrs.tag
+          //      )
+          //    )
+          //  }
+          //  is (M"01") {
+          //    rSavedRdLineAttrsTag := (
+          //      RegNext(
+          //        RegNext(
+          //          wrLineAttrs.tag
+          //        )
+          //      )
+          //    )
+          //  }
+          //  default {
+          //    rSavedRdLineAttrsTag := rdLineAttrs.tag
+          //  }
+          //}
+          //when (
+          //  rdLineAttrs.dirty
+          //  || (
+          //    //rdLine
+          //    RegNext(
+          //      (
+          //        (
+          //          wrLineAttrs.dirty
+          //          && lineAttrsRam.io.wrEn
+          //        )
+          //        || RegNext(
+          //          wrLineAttrs.dirty
+          //          && lineAttrsRam.io.wrEn,
+          //          init=False
+          //        )
+          //      ),
+          //      init=False
+          //    )
+          //  )
+          //)
+          //rSavedRdLineAttrsTag := rdLineAttrs.tag
+          //rSavedRdLineAttrsTag := rdLineAttrs.tag
+        }
       }
       when (
         rMyTempDoSaveCond(2)
