@@ -26,7 +26,6 @@ case class LcvBusDebursterConfig(
   )
 }
 
-
 case class LcvBusDebursterIo(
   cfg: LcvBusDebursterConfig
 ) extends Bundle {

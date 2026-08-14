@@ -65,6 +65,20 @@ case class LcvBusMainConfig(
   //d2hErrorWidth: Int=1,
   optTxnCntWidth: Option[Int]=None,
 ) {
+  def mkCopyWithNewDataWidth(
+    dataWidth: Int,
+  ): LcvBusMainConfig = (
+    LcvBusMainConfig(
+      dataWidth=dataWidth,
+      addrWidth=this.addrWidth,
+      allowBurst=this.allowBurst,
+      burstAlwaysMaxSize=this.burstAlwaysMaxSize,
+      srcWidth=this.srcWidth,
+      haveByteEn=this.haveByteEn,
+      keepByteSize=this.keepByteSize,
+      optTxnCntWidth=this.optTxnCntWidth,
+    )
+  )
   def mkCopyWithTxnCnt(
     txnCntWidth: Int,
   ): LcvBusMainConfig = (
@@ -228,6 +242,18 @@ case class LcvBusCacheConfig(
   private[libcheesevoyage] def doRequires() {
     require(numCpus >= 1)
 
+    require(
+      busMainCfg.dataWidth == (1 << log2Up(busMainCfg.dataWidth)),
+      s"busMainCfg.dataWidth: need power of two: "
+      + s"${busMainCfg.dataWidth} "
+      + s"!= ${(1 << log2Up(busMainCfg.dataWidth))}"
+    )
+    require(
+      busMainCfg.dataWidth == (busMainCfg.dataWidth / 8).toInt * 8,
+      s"busMainCfg.dataWidth: need multiple of 8: "
+      + s"${busMainCfg.dataWidth} "
+      + s"!= ${(busMainCfg.dataWidth / 8).toInt * 8}"
+    )
     require(
       busMainCfg.addrWidth == (1 << log2Up(busMainCfg.addrWidth)),
       s"busMainCfg.addrWidth: need power of two: "
