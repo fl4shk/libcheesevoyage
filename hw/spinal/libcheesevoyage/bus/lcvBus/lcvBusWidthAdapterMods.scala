@@ -147,6 +147,10 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
             outp := inp
             outp.data.allowOverride
             outp.data := RegNext(outp.data)
+
+            outp.burstCnt.allowOverride
+            outp.burstCnt := rLoD2hBurstCnt
+
             switch (rLoD2hBurstCnt.lsb) {
               is (True) {
                 outp.data(
