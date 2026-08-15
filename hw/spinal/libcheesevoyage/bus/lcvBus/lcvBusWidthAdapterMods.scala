@@ -133,7 +133,7 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
           //(Cat(False, io.loBus.h2dBus.burstCnt).asUInt + 1),
           (
             io.loBus.h2dBus.burstCnt.resize(rSavedHiH2dBurstCnt.getWidth)
-            + 1
+            //+ 1
           ),
           True,
         ).asUInt.resize(rSavedHiH2dBurstCnt.getWidth)
