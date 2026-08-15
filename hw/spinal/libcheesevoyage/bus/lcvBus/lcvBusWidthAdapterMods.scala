@@ -155,19 +155,21 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
       }
       when (io.hiBus.h2dBus.ready) {
         rSeenHiH2dFire := True
-        val myMaybeReptD2hStm = Vec.fill(2)(
-          Stream(cloneOf(hiD2hFifo.io.pop.payload))
-        )
-        myMaybeReptD2hStm.head << hiD2hFifo.io.pop
-        myMaybeReptD2hStm.last <-/< myMaybeReptD2hStm.head.repeat(
-          times=(myDataWidthRatio)
-        )._1
+        //val myMaybeReptD2hStm = Vec.fill(2)(
+        //  Stream(cloneOf(hiD2hFifo.io.pop.payload))
+        //)
+        //myMaybeReptD2hStm.head << hiD2hFifo.io.pop
+        ////myMaybeReptD2hStm.last <-/< myMaybeReptD2hStm.head.repeat(
+        ////  times=(myDataWidthRatio)
+        ////)._1
+        //myMaybeReptD2hStm.last <-/< myMaybeReptD2hStm.head
 
         val myTempMaybeThrownD2hStmVec = Vec.fill(2)(
           cloneOf(io.loBus.d2hBus)
         )
 
-        myMaybeReptD2hStm.last.translateInto(
+        //myMaybeReptD2hStm.last
+        hiD2hFifo.io.pop.translateInto(
           //io.loBus.d2hBus
           myTempMaybeThrownD2hStmVec.head
         )(
