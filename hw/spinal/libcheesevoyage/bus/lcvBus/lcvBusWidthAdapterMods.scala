@@ -124,6 +124,14 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
   switch (rState) {
     is (State.IDLE) {
       rSavedLoH2dPayload := io.loBus.h2dBus.payload
+      rSavedLoH2dPayload.burstCnt.allowOverride
+      rSavedLoH2dPayload.burstCnt := (
+        Cat(
+          (io.loBus.h2dBus.burstCnt + 1),
+          True,
+        ).asUInt
+      )
+
       io.loBus.h2dBus.ready := True
       rSeenHiH2dFire := False
       rLoD2hBurstCnt := (1 << cfg.loBusCfg.burstCntWidth) - 1
@@ -137,7 +145,11 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
       io.hiBus.h2dBus.burstFirst := rSavedLoH2dPayload.burstFirst
       io.hiBus.h2dBus.burstLast := rSavedLoH2dPayload.burstLast
       io.hiBus.h2dBus.burstCnt := (
-        rSavedLoH2dPayload.burstCnt << log2Up(myDataWidthRatio)
+        rSavedLoH2dPayload.burstCnt
+        //(
+        //  (rSavedLoH2dPayload.burstCnt + 1) << log2Up(myDataWidthRatio)
+        //)
+        //- 1
       )
       io.hiBus.h2dBus.isWrite := False
       io.hiBus.h2dBus.data := 0x0
