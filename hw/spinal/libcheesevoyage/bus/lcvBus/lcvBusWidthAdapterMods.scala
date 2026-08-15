@@ -140,10 +140,10 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
       io.hiBus.h2dBus.data := 0x0
       io.hiBus.h2dBus.addr := rSavedLoH2dPayload.addr
       io.hiBus.h2dBus.src := rSavedLoH2dPayload.src
-      if (io.hiBus.h2dBus.byteEn != null) {
+      if (io.hiBus.h2dBus.mainNonBurstInfo.infoByteEn != null) {
         io.hiBus.h2dBus.byteEn := rSavedLoH2dPayload.byteEn
       }
-      if (io.hiBus.h2dBus.byteSize != null) {
+      if (io.hiBus.h2dBus.mainNonBurstInfo.infoByteSizeEtc != null) {
         io.hiBus.h2dBus.byteSize := rSavedLoH2dPayload.byteSize
       }
 
