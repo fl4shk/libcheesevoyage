@@ -3311,7 +3311,10 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     LcvBusDoStallFifoThingPayload(
       LcvBusD2hPayload(
         cfg=myFifoThingLoBusCfg,
-        includeByteSizeEtc=(!myFifoThingLoBusCfg.haveByteEn),
+        includeByteSizeEtc=(
+          //!myFifoThingLoBusCfg.haveByteEn
+          true
+        ),
       ),
     )
   )
