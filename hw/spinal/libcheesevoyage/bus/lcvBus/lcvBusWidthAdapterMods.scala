@@ -192,7 +192,7 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
           }
         )
         when (io.loBus.d2hBus.fire) {
-          rLoD2hBurstCnt := rLoD2hBurstCnt
+          rLoD2hBurstCnt := rLoD2hBurstCnt - 1
         }
 
         io.loBus.d2hBus.burstCnt := rLoD2hBurstCnt
