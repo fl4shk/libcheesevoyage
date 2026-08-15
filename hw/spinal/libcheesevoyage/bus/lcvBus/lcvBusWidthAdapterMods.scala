@@ -206,7 +206,10 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
           }
         )
 
-        when (myMaybeReptD2hStm.last.fire) {
+        when (
+          //myMaybeReptD2hStm.last.fire
+          hiD2hFifo.io.pop.fire
+        ) {
           rHiD2hBurstCnt := rHiD2hBurstCnt - 1
         }
 
