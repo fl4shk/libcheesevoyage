@@ -593,7 +593,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
           )
           myD2hPushStm.busPayload.addrLo := (
             rDel2H2dPayload.addr(
-              cfg.myFifoThingBusCfg.byteSizeWidth - 1 downto 0
+              cfg.myFifoThingBusCfg.addrLoWidth - 1 downto 0
             )
           )
         }
@@ -657,7 +657,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
             )
             myD2hPushStm.busPayload.addrLo := (
               rDel2H2dPayload.addr(
-                cfg.myFifoThingBusCfg.byteSizeWidth - 1 downto 0
+                cfg.myFifoThingBusCfg.addrLoWidth - 1 downto 0
               )
             )
           }
@@ -695,7 +695,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
             )
             myD2hPushStm.busPayload.addrLo := (
               rDel2H2dPayload.addr(
-                cfg.myFifoThingBusCfg.byteSizeWidth - 1 downto 0
+                cfg.myFifoThingBusCfg.addrLoWidth - 1 downto 0
               )
             )
           }
@@ -755,7 +755,7 @@ private[libcheesevoyage] case class LcvBusMemImpl(
         )
         myD2hPushStm.busPayload.addrLo := (
           rSavedH2dPayload.addr(
-            cfg.myFifoThingBusCfg.byteSizeWidth - 1 downto 0
+            cfg.myFifoThingBusCfg.addrLoWidth - 1 downto 0
           )
         )
       }
@@ -1114,7 +1114,7 @@ case class LcvBusMemSlowUnlessBurst(
               rD2hPayload.addrLo := myH2dStm.burstAddr(
                 rRdBurstCnt(1).asUInt.getZero,
                 incrBurstCnt=false,
-              )(busCfg.byteSizeWidth - 1 downto 0)
+              )(busCfg.addrLoWidth - 1 downto 0)
             }
           }
           //rD2hPayload.burstFirst := False
@@ -1163,7 +1163,7 @@ case class LcvBusMemSlowUnlessBurst(
         if (!busCfg.haveByteEn) {
           rD2hPayload.byteSize := myH2dStm.byteSize
           rD2hPayload.addrLo := myH2dStm.addr(
-            busCfg.byteSizeWidth - 1 downto 0
+            busCfg.addrLoWidth - 1 downto 0
           )
         }
         rH2dReady := False
@@ -1217,7 +1217,7 @@ case class LcvBusMemSlowUnlessBurst(
         rD2hPayload.addrLo := rSavedH2dPayload.burstAddr(
           rRdBurstCnt(1).asUInt,
           incrBurstCnt=false,
-        )(busCfg.byteSizeWidth - 1 downto 0)
+        )(busCfg.addrLoWidth - 1 downto 0)
       }
     }
     is (State.READ_BURST) {
@@ -1240,7 +1240,7 @@ case class LcvBusMemSlowUnlessBurst(
         rD2hPayload.addrLo := rSavedH2dPayload.burstAddr(
           rRdBurstCnt(1).asUInt,
           incrBurstCnt=false,
-        )(busCfg.byteSizeWidth - 1 downto 0)
+        )(busCfg.addrLoWidth - 1 downto 0)
       }
 
       when (rD2hPayload.burstFirst) {

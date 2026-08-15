@@ -16,7 +16,7 @@ case class CalcLcvBusShiftedDataEtcIo(
   //--------
   //val h2dPayload = in(LcvBusH2dPayload(cfg=busCfg))
   //val addr = in(UInt(busCfg.addrWidth bits))
-  val addrLo = in(UInt(busCfg.byteSizeWidth bits))
+  val addrLo = in(UInt(busCfg.addrLoWidth bits))
   val data = in(UInt(busCfg.dataWidth bits))
   val byteSize = in(UInt(busCfg.byteSizeWidth bits))
 
@@ -49,17 +49,23 @@ case class CalcLcvBusShiftedDataEtc(
       //## io.addr(busCfg.byteSizeWidth - 1 downto 0)
       ## io.addrLo
     ) {
-      for (idx <- 0 until (1 << (busCfg.byteSizeWidth * 2))) {
-        val myAddrLo = idx & ((1 << busCfg.byteSizeWidth) - 1)
+      for (
+        //idx <- 0 until (1 << (busCfg.byteSizeWidth * 2))
+        idx <- 0 until (1 << (busCfg.byteSizeWidth + busCfg.addrLoWidth))
+      ) {
+        val myAddrLo = (
+          //idx & ((1 << busCfg.byteSizeWidth) - 1)
+          idx & ((1 << busCfg.addrLoWidth) - 1)
+        )
         // myAddrLo represents the low bits of the address 
         val myByteSize = (
           (
             idx
             & (
               ((1 << busCfg.byteSizeWidth) - 1)
-              << busCfg.byteSizeWidth
+              << busCfg.addrLoWidth//busCfg.byteSizeWidth
             )
-          ) >> busCfg.byteSizeWidth
+          ) >> busCfg.addrLoWidth//busCfg.byteSizeWidth
         )
         // myByteSize represents the value of `byteSize + 1`
         val tempByteSizeMask = (
@@ -97,8 +103,14 @@ case class CalcLcvBusShiftedDataEtc(
       //io.addr(busCfg.byteSizeWidth - 1 downto 0)
       io.addrLo
     ) {
-      for (idx <- 0 until (1 << busCfg.byteSizeWidth)) {
-        val myAddrLo = idx & ((1 << busCfg.byteSizeWidth) - 1)
+      for (
+        //idx <- 0 until (1 << busCfg.byteSizeWidth)
+        idx <- 0 until (1 << busCfg.addrLoWidth)
+      ) {
+        val myAddrLo = (
+          //idx & ((1 << busCfg.byteSizeWidth) - 1)
+          idx & ((1 << busCfg.addrLoWidth) - 1)
+        )
         // myAddrLo represents the low bits of the address 
         is (idx) {
           io.shiftedData := Cat(
@@ -119,8 +131,15 @@ case class CalcLcvBusShiftedDataEtc(
       io.byteSize
       ## io.addrLo
     ) {
-      for (idx <- 0 until (1 << (busCfg.byteSizeWidth * 2))) {
-        val myAddrLo = idx & ((1 << busCfg.byteSizeWidth) - 1)
+      for (
+        //idx <- 0 until (1 << (busCfg.byteSizeWidth * 2))
+        idx <- 0 until (1 << (busCfg.byteSizeWidth + busCfg.addrLoWidth))
+      ) {
+        val myAddrLo = (
+          //idx & ((1 << busCfg.byteSizeWidth) - 1)
+          //idx & ((1 << busCfg.byteSizeWidth) - 1)
+          idx & ((1 << busCfg.addrLoWidth) - 1)
+        )
         // myAddrLo represents the low bits of the address 
 
         val myByteSize = (
@@ -128,9 +147,9 @@ case class CalcLcvBusShiftedDataEtc(
             idx
             & (
               ((1 << busCfg.byteSizeWidth) - 1)
-              << busCfg.byteSizeWidth
+              << busCfg.addrLoWidth//busCfg.byteSizeWidth
             )
-          ) >> busCfg.byteSizeWidth
+          ) >> busCfg.addrLoWidth//busCfg.byteSizeWidth
         )
         // myByteSize represents the value of `num bytes + 1`
 
@@ -196,7 +215,8 @@ case class LcvBusH2dShiftedDataEtcStreamAdapter(
     dataAssignment=(outp, inp) => {
       //myCalc.io.h2dPayload := inp
       myCalc.io.addrLo := inp.addr(
-        cfg.loBusCfg.byteSizeWidth - 1 downto 0
+        //cfg.loBusCfg.byteSizeWidth - 1 downto 0
+        cfg.loBusCfg.addrLoWidth - 1 downto 0
       )
       myCalc.io.data := inp.data
       myCalc.io.byteSize := inp.byteSize
@@ -454,7 +474,8 @@ case class LcvBusSlowNonBurstingByteEnAdapter(
           )
           outp.mainNonBurstInfo.infoByteSizeEtc.addrLo := (
             rSavedLoH2dPayload.addr(
-              cfg.loBusCfg.byteSizeWidth - 1 downto 0
+              //cfg.loBusCfg.byteSizeWidth - 1 downto 0
+              cfg.loBusCfg.addrLoWidth - 1 downto 0
             )
           )
         }

@@ -400,13 +400,15 @@ case class LcvBusConfig(
 
   def byteEnWidth: Int = (dataWidth / 8).toInt
   def byteSizeWidth: Int = log2Up(log2Up(byteEnWidth) + 1)
-  println(
-    s"testificate: ${byteSizeWidth} "
-    + s"${log2Up(log2Up(64 / 8) + 1)}"
-  )
-    //2
-    // this allows up to a 64-bit value in a single transaction since
-    // this is the `log2` of the number of bytes
+  def addrLoWidth: Int = log2Up(byteEnWidth)
+
+  //println(
+  //  s"testificate: ${byteSizeWidth} "
+  //  + s"${log2Up(log2Up(64 / 8) + 1)}"
+  //)
+  //  //2
+  //  // this allows up to a 64-bit value in a single transaction since
+  //  // this is the `log2` of the number of bytes
 
   def addrByteWidth: Int = (addrWidth / 8).toInt
   require(
@@ -780,7 +782,10 @@ case class LcvBusD2hPayloadMainNonBurstInfoByteSizeEtc(
   val byteSize = UInt(cfg.byteSizeWidth bits)
 
   // the low `cfg.byteSizeWidth` bits of the address being accessed.
-  val addrLo = UInt(cfg.byteSizeWidth bits)
+  val addrLo = UInt(
+    //cfg.byteSizeWidth bits
+    cfg.addrLoWidth bits
+  )
 
   //val haveFullWord = Bool()
 }

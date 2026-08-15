@@ -3311,10 +3311,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
     LcvBusDoStallFifoThingPayload(
       LcvBusD2hPayload(
         cfg=myFifoThingLoBusCfg,
-        includeByteSizeEtc=(
-          //!myFifoThingLoBusCfg.haveByteEn
-          true
-        ),
+        includeByteSizeEtc=(!myFifoThingLoBusCfg.haveByteEn),
       ),
     )
   )
@@ -4007,16 +4004,16 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         //mySelLoH2dPopStm.ready := True
         myLoD2hPushStm.valid := True
         myLoD2hPushStm.busPayload.data := rdLineWord(ramIdx)
-        //if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
           myLoD2hPushStm.busPayload.byteSize := (
             rDel2LoH2dPayload.byteSize
           )
           myLoD2hPushStm.busPayload.addrLo := (
             rDel2LoH2dPayload.addr(
-              cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
+              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
             )
           )
-        //}
+        }
 
         when (
           //rHadAnyRamWritePastTwoCycles.head
@@ -4165,18 +4162,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         myLoD2hPushStm.busPayload.src := (
           rDel2LoH2dPayload.src
         )
-        if (
-          //!cfg.myFifoThingLoBusCfg.haveByteEn
-          //cfg.myFifoThingLoBusCfg.
-          myLoD2hPushStm.busPayload.mainNonBurstInfo.infoByteSizeEtc
-          != null
-        ) {
+        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
           myLoD2hPushStm.busPayload.byteSize := (
             rDel2LoH2dPayload.byteSize
           )
           myLoD2hPushStm.busPayload.addrLo := (
             rDel2LoH2dPayload.addr(
-              cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
+              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
             )
           )
         }
@@ -4242,16 +4234,13 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
 
       mySelLoH2dPopStm.ready := False
       myLoD2hPushStm.busPayload.data := myRdLineWord
-      if (
-        //!cfg.myFifoThingLoBusCfg.haveByteEn
-        myLoD2hPushStm.busPayload.mainNonBurstInfo.infoByteSizeEtc != null
-      ) {
+      if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
         myLoD2hPushStm.busPayload.byteSize := (
           rSavedLoH2dPayload.byteSize
         )
         myLoD2hPushStm.busPayload.addrLo := (
           rSavedLoH2dPayload.addr(
-            cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
+            cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
           )
         )
       }
@@ -4560,15 +4549,12 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
         )
         when (tempBurstCntCmpEq) {
           myLoD2hPayload.data := (io.hiBus.d2hBus.data)
-          if (
-            //!loBusCfg.haveByteEn
-            myLoD2hPayload.mainNonBurstInfo.infoByteSizeEtc != null
-          ) {
+          if (!loBusCfg.haveByteEn) {
             myLoD2hPayload.byteSize := (
               rSavedLoH2dPayload.byteSize
             )
             myLoD2hPayload.addrLo := rSavedLoH2dPayload.addr(
-              loBusCfg.byteSizeWidth - 1 downto 0
+              loBusCfg.addrLoWidth - 1 downto 0
             )
           }
         }
@@ -5827,7 +5813,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           )
           myLoD2hPushStm.busPayload.addrLo := (
             rDel2LoH2dPayload.addr(
-              cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
+              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
             )
           )
         }
@@ -5893,7 +5879,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           )
           myLoD2hPushStm.busPayload.addrLo := (
             rDel2LoH2dPayload.addr(
-              cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
+              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
             )
           )
         }
@@ -6050,7 +6036,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
           )
           myLoD2hPushStm.busPayload.addrLo := (
             rDel2LoH2dPayload.addr(
-              cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
+              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
             )
           )
         }
@@ -6105,7 +6091,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       ////  )
       ////  myLoD2hPushStm.busPayload.addrLo := (
       ////    rSavedLoH2dPayload.addr(
-      ////      cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
+      ////      cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
       ////    )
       ////  )
       //////}
@@ -6184,7 +6170,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
         )
         myLoD2hPushStm.busPayload.addrLo := (
           rSavedLoH2dPayload.addr(
-            cfg.myFifoThingLoBusCfg.byteSizeWidth - 1 downto 0
+            cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
           )
         )
       }
@@ -6498,7 +6484,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
               rSavedLoH2dPayload.byteSize
             )
             myLoD2hPayload.addrLo := rSavedLoH2dPayload.addr(
-              loBusCfg.byteSizeWidth - 1 downto 0
+              loBusCfg.addrLoWidth - 1 downto 0
             )
           }
         }
