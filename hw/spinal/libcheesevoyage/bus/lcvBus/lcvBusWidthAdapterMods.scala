@@ -76,7 +76,7 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
     RegNext(io.loBus.d2hBus.data)
   )
 
-  io.hiBus.d2hBus.ready := False
+  //io.hiBus.d2hBus.ready := False
   io.hiBus.h2dBus.valid := False
   io.hiBus.h2dBus.payload := (
     io.hiBus.h2dBus.payload.getZero
@@ -116,6 +116,7 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
     )
   )
   hiD2hFifo.io.push << io.hiBus.d2hBus
+  hiD2hFifo.io.pop.ready := False
   val rSeenHiH2dFire = Reg(Bool())
   val rLoD2hBurstCnt = Reg(UInt(cfg.loBusCfg.burstCntWidth bits))
 
