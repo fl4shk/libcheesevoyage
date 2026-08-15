@@ -212,7 +212,7 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
           }
 
           switch (rHiD2hBurstCnt.lsb) {
-            is (False) {
+            is (True) {
               outp.data(
                 cfg.hiBusCfg.dataWidth - 1
                 downto 0
@@ -220,7 +220,7 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
                 inp.data
               )
             }
-            is (True) {
+            is (False) {
               outp.data(
                 cfg.loBusCfg.dataWidth - 1
                 downto cfg.hiBusCfg.dataWidth
