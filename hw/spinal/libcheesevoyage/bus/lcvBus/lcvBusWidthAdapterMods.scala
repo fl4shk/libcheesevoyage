@@ -213,22 +213,31 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
             rHiD2hBurstCnt.lsb
           )
         )
-        io.loBus.d2hBus << myTempMaybeThrownD2hStmVec.last
+        //io.loBus.d2hBus << myTempMaybeThrownD2hStmVec.last
+        myTempMaybeThrownD2hStmVec.last.translateInto(io.loBus.d2hBus)(
+          dataAssignment=(outp, inp) => {
+            outp := inp
+            outp.mainBurstInfo.allowOverride
+            outp.burstFirst := rLoD2hBurstCnt.andR
+            outp.burstLast := !rLoD2hBurstCnt.orR
+            outp.burstCnt := rLoD2hBurstCnt
+          }
+        )
 
         when (io.loBus.d2hBus.fire) {
           rLoD2hBurstCnt := rLoD2hBurstCnt - 1
         }
 
-        io.loBus.d2hBus.burstCnt := rLoD2hBurstCnt
+        //io.loBus.d2hBus.burstCnt := rLoD2hBurstCnt
 
-        io.loBus.d2hBus.burstFirst := (
-          io.loBus.d2hBus.valid
-          && rLoD2hBurstCnt.andR
-        )
-        io.loBus.d2hBus.burstLast := (
-          io.loBus.d2hBus.valid
-          && !rLoD2hBurstCnt.orR
-        )
+        //io.loBus.d2hBus.burstFirst := (
+        //  io.loBus.d2hBus.valid
+        //  && rLoD2hBurstCnt.andR
+        //)
+        //io.loBus.d2hBus.burstLast := (
+        //  io.loBus.d2hBus.valid
+        //  && !rLoD2hBurstCnt.orR
+        //)
 
         when (
           io.loBus.d2hBus.fire
