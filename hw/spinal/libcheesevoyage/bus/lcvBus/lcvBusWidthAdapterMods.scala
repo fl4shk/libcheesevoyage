@@ -131,6 +131,22 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
       }
     }
     is (State.READ_BURST) {
+      io.hiBus.h2dBus.burstFirst := rSavedLoH2dPayload.burstFirst
+      io.hiBus.h2dBus.burstLast := rSavedLoH2dPayload.burstLast
+      io.hiBus.h2dBus.burstCnt := (
+        rSavedLoH2dPayload.burstCnt << log2Up(myDataWidthRatio)
+      )
+      io.hiBus.h2dBus.isWrite := False
+      io.hiBus.h2dBus.data := 0x0
+      io.hiBus.h2dBus.addr := rSavedLoH2dPayload.addr
+      io.hiBus.h2dBus.src := rSavedLoH2dPayload.src
+      if (io.hiBus.h2dBus.byteEn != null) {
+        io.hiBus.h2dBus.byteEn := rSavedLoH2dPayload.byteEn
+      }
+      if (io.hiBus.h2dBus.byteSize != null) {
+        io.hiBus.h2dBus.byteSize := rSavedLoH2dPayload.byteSize
+      }
+
       when (!rSeenHiH2dFire) {
         io.hiBus.h2dBus.valid := True
       }
