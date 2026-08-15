@@ -129,14 +129,19 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
     is (State.IDLE) {
       rSavedLoH2dPayload := io.loBus.h2dBus.payload
       rSavedHiH2dBurstCnt := (
-        Cat(
-          //(Cat(False, io.loBus.h2dBus.burstCnt).asUInt + 1),
-          (
-            io.loBus.h2dBus.burstCnt.resize(rSavedHiH2dBurstCnt.getWidth)
-            //+ 1
-          ),
-          True,
-        ).asUInt.resize(rSavedHiH2dBurstCnt.getWidth)
+        //Cat(
+        //  //(Cat(False, io.loBus.h2dBus.burstCnt).asUInt + 1),
+        //  (
+        //    io.loBus.h2dBus.burstCnt.resize(rSavedHiH2dBurstCnt.getWidth)
+        //    //+ 1
+        //  ),
+        //  True,
+        //).asUInt.resize(rSavedHiH2dBurstCnt.getWidth)
+
+        (
+          (io.loBus.h2dBus.burstCnt + 1) << log2Up(myDataWidthRatio)
+        )
+        - 1
       )
 
       io.loBus.h2dBus.ready := True
