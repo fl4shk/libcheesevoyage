@@ -155,101 +155,101 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
       }
       when (io.hiBus.h2dBus.ready) {
         rSeenHiH2dFire := True
-        //val myMaybeReptD2hStm = Vec.fill(2)(
-        //  Stream(cloneOf(hiD2hFifo.io.pop.payload))
-        //)
-        //myMaybeReptD2hStm.head << hiD2hFifo.io.pop
-        ////myMaybeReptD2hStm.last <-/< myMaybeReptD2hStm.head.repeat(
-        ////  times=(myDataWidthRatio)
-        ////)._1
-        //myMaybeReptD2hStm.last <-/< myMaybeReptD2hStm.head
+      }
+      //val myMaybeReptD2hStm = Vec.fill(2)(
+      //  Stream(cloneOf(hiD2hFifo.io.pop.payload))
+      //)
+      //myMaybeReptD2hStm.head << hiD2hFifo.io.pop
+      ////myMaybeReptD2hStm.last <-/< myMaybeReptD2hStm.head.repeat(
+      ////  times=(myDataWidthRatio)
+      ////)._1
+      //myMaybeReptD2hStm.last <-/< myMaybeReptD2hStm.head
 
-        val myTempMaybeThrownD2hStmVec = Vec.fill(2)(
-          cloneOf(io.loBus.d2hBus)
-        )
+      val myTempMaybeThrownD2hStmVec = Vec.fill(2)(
+        cloneOf(io.loBus.d2hBus)
+      )
 
-        //myMaybeReptD2hStm.last
-        hiD2hFifo.io.pop.translateInto(
-          //io.loBus.d2hBus
-          myTempMaybeThrownD2hStmVec.head
-        )(
-          dataAssignment=(outp, inp) => {
-            //outp.mainNonBurstInfo := inp.mainNonBurstInfo
-            outp.mainBurstInfo := outp.mainBurstInfo.getZero
-            outp.src := inp.src
-            outp.data.allowOverride
-            outp.data := RegNext(outp.data)
-            if (outp.mainNonBurstInfo.infoByteSizeEtc != null) {
-              outp.mainNonBurstInfo.infoByteSizeEtc := (
-                inp.mainNonBurstInfo.infoByteSizeEtc
+      //myMaybeReptD2hStm.last
+      hiD2hFifo.io.pop.translateInto(
+        //io.loBus.d2hBus
+        myTempMaybeThrownD2hStmVec.head
+      )(
+        dataAssignment=(outp, inp) => {
+          //outp.mainNonBurstInfo := inp.mainNonBurstInfo
+          outp.mainBurstInfo := outp.mainBurstInfo.getZero
+          outp.src := inp.src
+          outp.data.allowOverride
+          outp.data := RegNext(outp.data)
+          if (outp.mainNonBurstInfo.infoByteSizeEtc != null) {
+            outp.mainNonBurstInfo.infoByteSizeEtc := (
+              inp.mainNonBurstInfo.infoByteSizeEtc
+            )
+          }
+
+          switch (rHiD2hBurstCnt.lsb) {
+            is (True) {
+              outp.data(
+                cfg.hiBusCfg.dataWidth - 1
+                downto 0
+              ) := (
+                inp.data
               )
             }
-
-            switch (rHiD2hBurstCnt.lsb) {
-              is (True) {
-                outp.data(
-                  cfg.hiBusCfg.dataWidth - 1
-                  downto 0
-                ) := (
-                  inp.data
-                )
-              }
-              is (False) {
-                outp.data(
-                  cfg.loBusCfg.dataWidth - 1
-                  downto cfg.hiBusCfg.dataWidth
-                ) := (
-                  inp.data
-                )
-              }
+            is (False) {
+              outp.data(
+                cfg.loBusCfg.dataWidth - 1
+                downto cfg.hiBusCfg.dataWidth
+              ) := (
+                inp.data
+              )
             }
           }
-        )
-
-        when (
-          //myMaybeReptD2hStm.last.fire
-          hiD2hFifo.io.pop.fire
-        ) {
-          rHiD2hBurstCnt := rHiD2hBurstCnt - 1
         }
+      )
 
-        myTempMaybeThrownD2hStmVec.last <-/< (
-          myTempMaybeThrownD2hStmVec.head.throwWhen(
-            !rHiD2hBurstCnt.lsb
-          )
+      when (
+        //myMaybeReptD2hStm.last.fire
+        hiD2hFifo.io.pop.fire
+      ) {
+        rHiD2hBurstCnt := rHiD2hBurstCnt - 1
+      }
+
+      myTempMaybeThrownD2hStmVec.last <-/< (
+        myTempMaybeThrownD2hStmVec.head.throwWhen(
+          rHiD2hBurstCnt.lsb
         )
-        //io.loBus.d2hBus << myTempMaybeThrownD2hStmVec.last
-        myTempMaybeThrownD2hStmVec.last.translateInto(io.loBus.d2hBus)(
-          dataAssignment=(outp, inp) => {
-            outp := inp
-            outp.mainBurstInfo.allowOverride
-            outp.burstFirst := rLoD2hBurstCnt.andR
-            outp.burstLast := !rLoD2hBurstCnt.orR
-            outp.burstCnt := rLoD2hBurstCnt
-          }
-        )
-
-        when (io.loBus.d2hBus.fire) {
-          rLoD2hBurstCnt := rLoD2hBurstCnt - 1
+      )
+      //io.loBus.d2hBus << myTempMaybeThrownD2hStmVec.last
+      myTempMaybeThrownD2hStmVec.last.translateInto(io.loBus.d2hBus)(
+        dataAssignment=(outp, inp) => {
+          outp := inp
+          outp.mainBurstInfo.allowOverride
+          outp.burstFirst := rLoD2hBurstCnt.andR
+          outp.burstLast := !rLoD2hBurstCnt.orR
+          outp.burstCnt := rLoD2hBurstCnt
         }
+      )
 
-        //io.loBus.d2hBus.burstCnt := rLoD2hBurstCnt
+      when (io.loBus.d2hBus.fire) {
+        rLoD2hBurstCnt := rLoD2hBurstCnt - 1
+      }
 
-        //io.loBus.d2hBus.burstFirst := (
-        //  io.loBus.d2hBus.valid
-        //  && rLoD2hBurstCnt.andR
-        //)
-        //io.loBus.d2hBus.burstLast := (
-        //  io.loBus.d2hBus.valid
-        //  && !rLoD2hBurstCnt.orR
-        //)
+      //io.loBus.d2hBus.burstCnt := rLoD2hBurstCnt
 
-        when (
-          io.loBus.d2hBus.fire
-          && !rLoD2hBurstCnt.orR
-        ) {
-          rState := State.IDLE
-        }
+      //io.loBus.d2hBus.burstFirst := (
+      //  io.loBus.d2hBus.valid
+      //  && rLoD2hBurstCnt.andR
+      //)
+      //io.loBus.d2hBus.burstLast := (
+      //  io.loBus.d2hBus.valid
+      //  && !rLoD2hBurstCnt.orR
+      //)
+
+      when (
+        io.loBus.d2hBus.fire
+        && !rLoD2hBurstCnt.orR
+      ) {
+        rState := State.IDLE
       }
     }
   }
