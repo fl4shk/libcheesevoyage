@@ -173,6 +173,7 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
         )(
           dataAssignment=(outp, inp) => {
             //outp.mainNonBurstInfo := inp.mainNonBurstInfo
+            outp.mainBurstInfo := outp.mainBurstInfo.getZero
             outp.src := inp.src
             outp.data.allowOverride
             outp.data := RegNext(outp.data)
