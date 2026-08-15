@@ -215,7 +215,7 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
 
         myTempMaybeThrownD2hStmVec.last <-/< (
           myTempMaybeThrownD2hStmVec.head.throwWhen(
-            !rHiD2hBurstCnt.lsb
+            rHiD2hBurstCnt.lsb
           )
         )
         //io.loBus.d2hBus << myTempMaybeThrownD2hStmVec.last
