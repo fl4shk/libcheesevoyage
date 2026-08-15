@@ -102,6 +102,10 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
     Reg(cloneOf(io.loBus.h2dBus.payload))
     init(io.loBus.h2dBus.payload.getZero)
   )
+  val rSavedHiH2dBurstCnt = (
+    Reg(cloneOf(io.hiBus.h2dBus.burstCnt))
+    init(io.hiBus.h2dBus.burstCnt.getZero)
+  )
 
   val hiD2hFifo = (
     StreamFifo(
@@ -124,8 +128,7 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
   switch (rState) {
     is (State.IDLE) {
       rSavedLoH2dPayload := io.loBus.h2dBus.payload
-      rSavedLoH2dPayload.burstCnt.allowOverride
-      rSavedLoH2dPayload.burstCnt := (
+      rSavedHiH2dBurstCnt := (
         Cat(
           (io.loBus.h2dBus.burstCnt + 1),
           True,
@@ -145,7 +148,8 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
       io.hiBus.h2dBus.burstFirst := rSavedLoH2dPayload.burstFirst
       io.hiBus.h2dBus.burstLast := rSavedLoH2dPayload.burstLast
       io.hiBus.h2dBus.burstCnt := (
-        rSavedLoH2dPayload.burstCnt
+        rSavedHiH2dBurstCnt
+        //rSavedLoH2dPayload.burstCnt
         //(
         //  (rSavedLoH2dPayload.burstCnt + 1) << log2Up(myDataWidthRatio)
         //)
