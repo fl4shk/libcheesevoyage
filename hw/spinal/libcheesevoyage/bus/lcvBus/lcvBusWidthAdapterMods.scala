@@ -119,6 +119,7 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
   hiD2hFifo.io.pop.ready := False
   val rSeenHiH2dFire = Reg(Bool())
   val rLoD2hBurstCnt = Reg(UInt(cfg.loBusCfg.burstCntWidth bits))
+  val rHiD2hBurstCnt = Reg(UInt(cfg.hiBusCfg.burstCntWidth bits))
 
   switch (rState) {
     is (State.IDLE) {
@@ -126,6 +127,8 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
       io.loBus.h2dBus.ready := True
       rSeenHiH2dFire := False
       rLoD2hBurstCnt := (1 << cfg.loBusCfg.burstCntWidth) - 1
+      rHiD2hBurstCnt := (1 << cfg.hiBusCfg.burstCntWidth) - 1
+
       when (io.loBus.h2dBus.valid) {
         rState := State.READ_BURST
       }
@@ -155,11 +158,19 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
         val myMaybeReptD2hStm = Vec.fill(2)(
           Stream(cloneOf(hiD2hFifo.io.pop.payload))
         )
-        myMaybeReptD2hStm.head <-/< hiD2hFifo.io.pop
+        myMaybeReptD2hStm.head << hiD2hFifo.io.pop
         myMaybeReptD2hStm.last <-/< myMaybeReptD2hStm.head.repeat(
           times=(myDataWidthRatio)
         )._1
-        myMaybeReptD2hStm.last.translateInto(io.loBus.d2hBus)(
+
+        val myTempMaybeThrownD2hStmVec = Vec.fill(2)(
+          cloneOf(io.loBus.d2hBus)
+        )
+
+        myMaybeReptD2hStm.last.translateInto(
+          //io.loBus.d2hBus
+          myTempMaybeThrownD2hStmVec.head
+        )(
           dataAssignment=(outp, inp) => {
             //outp.mainNonBurstInfo := inp.mainNonBurstInfo
             outp.src := inp.src
@@ -171,7 +182,7 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
               )
             }
 
-            switch (rLoD2hBurstCnt.lsb) {
+            switch (rHiD2hBurstCnt.lsb) {
               is (True) {
                 outp.data(
                   cfg.hiBusCfg.dataWidth - 1
@@ -191,6 +202,18 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
             }
           }
         )
+
+        when (myMaybeReptD2hStm.last.fire) {
+          rHiD2hBurstCnt := rHiD2hBurstCnt - 1
+        }
+
+        myTempMaybeThrownD2hStmVec.last <-/< (
+          myTempMaybeThrownD2hStmVec.head.throwWhen(
+            rHiD2hBurstCnt.lsb
+          )
+        )
+        io.loBus.d2hBus << myTempMaybeThrownD2hStmVec.last
+
         when (io.loBus.d2hBus.fire) {
           rLoD2hBurstCnt := rLoD2hBurstCnt - 1
         }
