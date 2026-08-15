@@ -144,9 +144,15 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
         )._1
         myMaybeReptD2hStm.last.translateInto(io.loBus.d2hBus)(
           dataAssignment=(outp, inp) => {
-            outp.mainNonBurstInfo := inp.mainNonBurstInfo
+            //outp.mainNonBurstInfo := inp.mainNonBurstInfo
+            outp.src := inp.src
             outp.data.allowOverride
             outp.data := RegNext(outp.data)
+            if (outp.mainNonBurstInfo.infoByteSizeEtc != null) {
+              outp.mainNonBurstInfo.infoByteSizeEtc := (
+                inp.mainNonBurstInfo.infoByteSizeEtc
+              )
+            }
 
             switch (rLoD2hBurstCnt.lsb) {
               is (True) {
