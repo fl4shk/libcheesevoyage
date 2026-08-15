@@ -130,7 +130,7 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
       rSavedLoH2dPayload := io.loBus.h2dBus.payload
       rSavedHiH2dBurstCnt := (
         Cat(
-          (io.loBus.h2dBus.burstCnt + 1),
+          (Cat(False, io.loBus.h2dBus.burstCnt).asUInt + 1),
           True,
         ).asUInt
       )
