@@ -719,6 +719,7 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
 
   require(
     rgbBusRatio == 1
+    || rgbBusRatio == 2
   )
 
   def busCfg = cfg.busCfg
@@ -772,7 +773,9 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
       busCfg=(
         cfg.busCfg
       ),
-      depth=cfg.optPalDepth,
+      depth=(
+        (cfg.optPalDepth / rgbBusRatio).toInt
+      ),
       initBigInt=Some(
         Array.fill(cfg.optPalDepth)(
           BigInt(0)
@@ -819,9 +822,34 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
     )
   )
 
-  myColFifo.io.push.payload.assignFromBits(
-    myPalMem.io.nonBusRamRdData.asBits
-  )
+  if (rgbBusRatio == 1) {
+    myColFifo.io.push.payload.assignFromBits(
+      myPalMem.io.nonBusRamRdData.asBits
+    )
+  } else {
+    myColFifo.io.push.payload.assignFromBits(
+      Mux(
+        myPalMem.io.nonBusRamRdAddr.lsb,
+        myPalMem.io.nonBusRamRdData(
+          myPalMem.io.nonBusRamRdData.high
+          downto (myPalMem.io.nonBusRamRdData.getWidth >> 1)
+        ).asBits,
+        myPalMem.io.nonBusRamRdData(
+          (myPalMem.io.nonBusRamRdData.getWidth >> 1) - 1
+          downto 0
+        ).asBits,
+      )
+    )
+    //switch (myPalMem.io.nonBusRamRdAddr.lsb) {
+    //  is (False) {
+    //    myColFifo.io.push.payload.assignFromBits(
+    //      myPalMem.io.nonBusRamRdData.asBits
+    //    )
+    //  }
+    //  is (True) {
+    //  }
+    //}
+  }
 
   val myH2dStm = Vec.fill(3)(
     cloneOf(io.bus.h2dBus)
