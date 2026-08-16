@@ -308,20 +308,24 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
           outp.addr := inp.addr
           switch (rHiBurstCnt.lsb) {
             is (True) {
-              outp.byteEn := inp.byteEn(
-                outp.byteEn.getWidth - 1
-                downto 0
-              )
+              if (outp.mainNonBurstInfo.infoByteEn != null) {
+                outp.byteEn := inp.byteEn(
+                  outp.byteEn.getWidth - 1
+                  downto 0
+                )
+              }
               outp.data := inp.data(
                 cfg.hiBusCfg.dataWidth - 1
                 downto 0
               )
             }
             is (False) {
-              outp.byteEn := inp.byteEn(
-                inp.byteEn.getWidth - 1
-                downto outp.byteEn.getWidth
-              )
+              if (outp.mainNonBurstInfo.infoByteEn != null) {
+                outp.byteEn := inp.byteEn(
+                  inp.byteEn.getWidth - 1
+                  downto outp.byteEn.getWidth
+                )
+              }
               outp.data := inp.data(
                 cfg.loBusCfg.dataWidth - 1
                 downto cfg.hiBusCfg.dataWidth
@@ -329,9 +333,9 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
             }
           }
           outp.src := inp.src
-          if (outp.mainNonBurstInfo.infoByteEn != null) {
-            outp.byteEn := inp.byteEn//0x0//rSavedLoH2dPayload.byteEn
-          }
+          //if (outp.mainNonBurstInfo.infoByteEn != null) {
+          //  outp.byteEn := inp.byteEn//0x0//rSavedLoH2dPayload.byteEn
+          //}
           if (outp.mainNonBurstInfo.infoByteSizeEtc != null) {
             outp.byteSize := inp.byteSize//rSavedLoH2dPayload.byteSize
           }
