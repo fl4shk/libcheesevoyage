@@ -71,7 +71,7 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
     RegNext(io.loBus.d2hBus.data)
   )
 
-  //io.hiBus.d2hBus.ready := False
+  io.hiBus.d2hBus.ready := False
   io.hiBus.h2dBus.valid := False
   io.hiBus.h2dBus.payload := (
     io.hiBus.h2dBus.payload.getZero
