@@ -308,12 +308,20 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
           outp.addr := inp.addr
           switch (rHiBurstCnt.lsb) {
             is (True) {
+              outp.byteEn := inp.byteEn(
+                outp.byteEn.getWidth - 1
+                downto 0
+              )
               outp.data := inp.data(
                 cfg.hiBusCfg.dataWidth - 1
                 downto 0
               )
             }
             is (False) {
+              outp.byteEn := inp.byteEn(
+                inp.byteEn.getWidth - 1
+                downto outp.byteEn.getWidth
+              )
               outp.data := inp.data(
                 cfg.loBusCfg.dataWidth - 1
                 downto cfg.hiBusCfg.dataWidth
