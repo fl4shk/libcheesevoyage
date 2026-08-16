@@ -45,12 +45,7 @@ case class LcvBusDataWidthAdapterIo(
   //--------
 }
 
-// for instruction caches and other things that are read-only
-// later,
-// perhaps it would be wise to copy/modify this module's contents
-// to another module to support write bursts
-// and/or non-burst bus transactions
-case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
+case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
   cfg: LcvBusDataWidthAdapterConfig
 ) extends Component {
   //--------
@@ -88,8 +83,8 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
       IDLE,
       //READ_NON_BURST,
       //WRITE_NON_BURST,
-      READ_BURST
-      //WRITE_BURST
+      READ_BURST,
+      WRITE_BURST
       //START_HI_READ_BURST,
       = newElement()
   }
@@ -107,6 +102,23 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
     init(io.hiBus.h2dBus.burstCnt.getZero)
   )
 
+  val hiH2dFifo = (
+    StreamFifo(
+      dataType=cloneOf(io.hiBus.h2dBus.payload),
+      depth=(
+        1 << cfg.hiBusCfg.burstCntWidth
+      ),
+      latency=(
+        2
+      ),
+      forFMax=true,
+    )
+  )
+  //io.hiBus.h2dBus << hiH2dFifo.io.pop
+  hiH2dFifo.io.push.valid := False
+  hiH2dFifo.io.push.payload := hiH2dFifo.io.push.payload.getZero
+  hiH2dFifo.io.pop.ready := False
+
   val hiD2hFifo = (
     StreamFifo(
       dataType=cloneOf(io.hiBus.d2hBus.payload),
@@ -119,51 +131,63 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
       forFMax=true,
     )
   )
-  hiD2hFifo.io.push << io.hiBus.d2hBus
+
+  //hiD2hFifo.io.push << io.hiBus.d2hBus
+  hiD2hFifo.io.push.valid := False
+  hiD2hFifo.io.push.payload := hiD2hFifo.io.push.payload.getZero
   hiD2hFifo.io.pop.ready := False
+
+  val rSeenLoH2dFire = Reg(Bool())
+  val rSeenLoD2hFire = Reg(Bool())
   val rSeenHiH2dFire = Reg(Bool())
-  val rLoD2hBurstCnt = Reg(UInt(cfg.loBusCfg.burstCntWidth bits))
-  val rHiD2hBurstCnt = Reg(UInt(cfg.hiBusCfg.burstCntWidth bits))
+  val rSeenHiD2hFire = Reg(Bool())
+
+  val rLoBurstCnt = Reg(UInt(cfg.loBusCfg.burstCntWidth bits))
+  val rHiBurstCnt = Reg(UInt(cfg.hiBusCfg.burstCntWidth bits))
 
   switch (rState) {
     is (State.IDLE) {
       rSavedLoH2dPayload := io.loBus.h2dBus.payload
       rSavedHiH2dBurstCnt := (
-        //Cat(
-        //  //(Cat(False, io.loBus.h2dBus.burstCnt).asUInt + 1),
-        //  (
-        //    io.loBus.h2dBus.burstCnt.resize(rSavedHiH2dBurstCnt.getWidth)
-        //    //+ 1
-        //  ),
-        //  True,
-        //).asUInt.resize(rSavedHiH2dBurstCnt.getWidth)
-
         (
           (io.loBus.h2dBus.burstCnt + 1) << log2Up(myDataWidthRatio)
         )
         - 1
       )
 
-      io.loBus.h2dBus.ready := True
+      rSeenLoH2dFire := False
+      rSeenLoD2hFire := False
       rSeenHiH2dFire := False
-      rLoD2hBurstCnt := (1 << cfg.loBusCfg.burstCntWidth) - 1
-      rHiD2hBurstCnt := (1 << cfg.hiBusCfg.burstCntWidth) - 1
+      rSeenHiD2hFire := False
+      rLoBurstCnt := (1 << cfg.loBusCfg.burstCntWidth) - 1
+      rHiBurstCnt := (1 << cfg.hiBusCfg.burstCntWidth) - 1
 
-      when (io.loBus.h2dBus.valid) {
-        rState := State.READ_BURST
+      //when (
+      //  io.loBus.h2dBus.valid
+      //) {
+      //  rState := State.READ_BURST
+      //}
+      switch (
+        io.loBus.h2dBus.valid
+        ## io.loBus.h2dBus.isWrite
+      ) {
+        is (M"10") {
+          io.loBus.h2dBus.ready := True
+          rState := State.READ_BURST
+        }
+        is (M"11") {
+          rState := State.WRITE_BURST
+        }
+        default {
+        }
       }
     }
+
     is (State.READ_BURST) {
+      hiD2hFifo.io.push << io.hiBus.d2hBus
       io.hiBus.h2dBus.burstFirst := rSavedLoH2dPayload.burstFirst
       io.hiBus.h2dBus.burstLast := rSavedLoH2dPayload.burstLast
-      io.hiBus.h2dBus.burstCnt := (
-        rSavedHiH2dBurstCnt
-        //rSavedLoH2dPayload.burstCnt
-        //(
-        //  (rSavedLoH2dPayload.burstCnt + 1) << log2Up(myDataWidthRatio)
-        //)
-        //- 1
-      )
+      io.hiBus.h2dBus.burstCnt := rSavedHiH2dBurstCnt
       io.hiBus.h2dBus.isWrite := False
       io.hiBus.h2dBus.data := 0x0
       io.hiBus.h2dBus.addr := rSavedLoH2dPayload.addr
@@ -181,26 +205,15 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
       when (io.hiBus.h2dBus.ready) {
         rSeenHiH2dFire := True
       }
-      //val myMaybeReptD2hStm = Vec.fill(2)(
-      //  Stream(cloneOf(hiD2hFifo.io.pop.payload))
-      //)
-      //myMaybeReptD2hStm.head << hiD2hFifo.io.pop
-      ////myMaybeReptD2hStm.last <-/< myMaybeReptD2hStm.head.repeat(
-      ////  times=(myDataWidthRatio)
-      ////)._1
-      //myMaybeReptD2hStm.last <-/< myMaybeReptD2hStm.head
 
       val myTempMaybeThrownD2hStmVec = Vec.fill(2)(
         cloneOf(io.loBus.d2hBus)
       )
 
-      //myMaybeReptD2hStm.last
       hiD2hFifo.io.pop.translateInto(
-        //io.loBus.d2hBus
         myTempMaybeThrownD2hStmVec.head
       )(
         dataAssignment=(outp, inp) => {
-          //outp.mainNonBurstInfo := inp.mainNonBurstInfo
           outp.mainBurstInfo := outp.mainBurstInfo.getZero
           outp.src := inp.src
           outp.data.allowOverride
@@ -211,7 +224,7 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
             )
           }
 
-          switch (rHiD2hBurstCnt.lsb) {
+          switch (rHiBurstCnt.lsb) {
             is (True) {
               outp.data(
                 cfg.hiBusCfg.dataWidth - 1
@@ -232,47 +245,119 @@ case class LcvBusSimpleReadBurstOnlyDataWidthAdapter(
         }
       )
 
-      when (
-        //myMaybeReptD2hStm.last.fire
-        hiD2hFifo.io.pop.fire
-      ) {
-        rHiD2hBurstCnt := rHiD2hBurstCnt - 1
+      when (hiD2hFifo.io.pop.fire) {
+        rHiBurstCnt := rHiBurstCnt - 1
       }
 
       myTempMaybeThrownD2hStmVec.last <-/< (
         myTempMaybeThrownD2hStmVec.head.throwWhen(
-          rHiD2hBurstCnt.lsb
+          rHiBurstCnt.lsb
         )
       )
-      //io.loBus.d2hBus << myTempMaybeThrownD2hStmVec.last
       myTempMaybeThrownD2hStmVec.last.translateInto(io.loBus.d2hBus)(
         dataAssignment=(outp, inp) => {
           outp := inp
           outp.mainBurstInfo.allowOverride
-          outp.burstFirst := rLoD2hBurstCnt.andR
-          outp.burstLast := !rLoD2hBurstCnt.orR
-          outp.burstCnt := rLoD2hBurstCnt
+          outp.burstFirst := rLoBurstCnt.andR
+          outp.burstLast := !rLoBurstCnt.orR
+          outp.burstCnt := rLoBurstCnt
         }
       )
 
       when (io.loBus.d2hBus.fire) {
-        rLoD2hBurstCnt := rLoD2hBurstCnt - 1
+        rLoBurstCnt := rLoBurstCnt - 1
       }
-
-      //io.loBus.d2hBus.burstCnt := rLoD2hBurstCnt
-
-      //io.loBus.d2hBus.burstFirst := (
-      //  io.loBus.d2hBus.valid
-      //  && rLoD2hBurstCnt.andR
-      //)
-      //io.loBus.d2hBus.burstLast := (
-      //  io.loBus.d2hBus.valid
-      //  && !rLoD2hBurstCnt.orR
-      //)
 
       when (
         io.loBus.d2hBus.fire
-        && !rLoD2hBurstCnt.orR
+        && !rLoBurstCnt.orR
+      ) {
+        rState := State.IDLE
+      }
+    }
+
+    is (State.WRITE_BURST) {
+      io.hiBus.h2dBus << hiH2dFifo.io.pop
+
+      val myPushStmVec = Vec.fill(2)(
+        cloneOf(io.loBus.h2dBus)
+      )
+
+      //hiH2dFifo.io.push <-/< myPushStmVec.last
+      myPushStmVec.head <-/< io.loBus.h2dBus.haltWhen(
+        //rSeenHiH2dFire
+        rSeenLoH2dFire
+        && rLoBurstCnt.andR
+      )
+      when (io.loBus.h2dBus.fire) {
+        rSeenLoH2dFire := True
+        rLoBurstCnt := rLoBurstCnt - 1
+      }
+
+      myPushStmVec.last <-/< myPushStmVec.head.repeat(
+        times=myDataWidthRatio
+      )._1
+      myPushStmVec.last.translateInto(
+        hiH2dFifo.io.push
+      )(
+        dataAssignment=(outp, inp) => {
+          outp.burstFirst := !rSeenHiH2dFire
+          outp.burstLast := !rHiBurstCnt.orR
+          outp.burstCnt := rSavedHiH2dBurstCnt
+          outp.isWrite := True
+          outp.addr := inp.addr
+          switch (rHiBurstCnt.lsb) {
+            is (True) {
+              outp.data := inp.data(
+                cfg.hiBusCfg.dataWidth - 1
+                downto 0
+              )
+            }
+            is (False) {
+              outp.data := inp.data(
+                cfg.loBusCfg.dataWidth - 1
+                downto cfg.hiBusCfg.dataWidth
+              )
+            }
+          }
+          outp.src := inp.src
+          if (outp.mainNonBurstInfo.infoByteEn != null) {
+            outp.byteEn := inp.byteEn//0x0//rSavedLoH2dPayload.byteEn
+          }
+          if (outp.mainNonBurstInfo.infoByteSizeEtc != null) {
+            outp.byteSize := inp.byteSize//rSavedLoH2dPayload.byteSize
+          }
+        }
+      )
+
+      when (
+        !rSeenHiH2dFire
+        && hiH2dFifo.io.push.fire
+      ) {
+        rSeenHiH2dFire := True
+      }
+
+      when (hiH2dFifo.io.push.fire) {
+        rHiBurstCnt := rHiBurstCnt - 1
+      }
+
+      //when (
+      //  !rSeenLoD2hFire
+      //) {
+      //}
+      io.loBus.d2hBus << io.hiBus.d2hBus
+
+      when (io.loBus.d2hBus.fire) {
+        rSeenLoD2hFire := True
+      }
+
+      when (
+        //io.loBus.d2hBus.fire
+        //&& !rLoBurstCnt.orR
+        rSeenLoD2hFire
+        //&& rSeenHiH2dFire
+        && !hiH2dFifo.io.pop.valid
+        && rHiBurstCnt.andR
       ) {
         rState := State.IDLE
       }
