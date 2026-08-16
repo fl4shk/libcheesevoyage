@@ -357,7 +357,16 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
       //  !rSeenLoD2hFire
       //) {
       //}
-      io.loBus.d2hBus << io.hiBus.d2hBus
+      //io.loBus.d2hBus << io.hiBus.d2hBus
+      io.hiBus.d2hBus.translateInto(io.loBus.d2hBus)(
+        dataAssignment=(outp, inp) => {
+          outp.burstFirst := inp.burstFirst
+          outp.burstLast := inp.burstLast
+          outp.burstCnt := 0x0
+          outp.data := 0x0
+          outp.src := inp.src
+        }
+      )
 
       when (io.loBus.d2hBus.fire) {
         rSeenLoD2hFire := True
