@@ -767,6 +767,7 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
       )
     )
   )
+  val myPalMemDepth = (cfg.optPalDepth / rgbBusRatio).toInt
 
   val myPalMem = LcvBusMem(
     cfg=LcvBusMemConfig(
@@ -774,10 +775,10 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
         cfg.busCfg
       ),
       depth=(
-        (cfg.optPalDepth / rgbBusRatio).toInt
+        myPalMemDepth
       ),
       initBigInt=Some(
-        Array.fill(cfg.optPalDepth)(
+        Array.fill(myPalMemDepth)(
           BigInt(0)
         )
       ),
