@@ -794,14 +794,29 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
     //)
     RegNext(palIdxPop.fire)
   )
-  myPalMem.io.nonBusRamRdAddr := (
-    palIdxPop.payload.resize(
-      myPalMem.io.nonBusRamRdAddr.getWidth
+  if (rgbBusRatio == 1) {
+    myPalMem.io.nonBusRamRdAddr := (
+      palIdxPop.payload.resize(
+        myPalMem.io.nonBusRamRdAddr.getWidth
+      )
+      //palIdxPop.payload(
+      //  myPalMem.io.nonBusRamRdAddr.getWidth
+      //)
     )
-    //palIdxPop.payload(
-    //  myPalMem.io.nonBusRamRdAddr.getWidth
-    //)
-  )
+  } else {
+    myPalMem.io.nonBusRamRdAddr := (
+      palIdxPop.payload(
+        myPalMem.io.nonBusRamRdAddr.high + 1
+        downto 1
+      )
+      //palIdxPop.payload.resize(
+      //  myPalMem.io.nonBusRamRdAddr.getWidth
+      //)
+      //palIdxPop.payload(
+      //  myPalMem.io.nonBusRamRdAddr.getWidth
+      //)
+    )
+  }
   val myColFifo = StreamFifo(
     dataType=(
       Rgb(rgbCfg)
