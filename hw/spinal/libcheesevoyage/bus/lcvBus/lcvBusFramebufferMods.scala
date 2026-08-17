@@ -846,17 +846,13 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
     myColFifo.io.push.payload.assignFromBits(
       Mux(
         myPalMem.io.nonBusRamRdAddr.lsb,
-        //myPalMem.io.nonBusRamRdData(
-        //  myPalMem.io.nonBusRamRdData.high
-        //  downto (myPalMem.io.nonBusRamRdData.getWidth >> 1)
-        //).asBits,
-        myPalMem.io.nonBusRamRdData(
-          (myPalMem.io.nonBusRamRdData.getWidth >> 1) - 1
-          downto 0
-        ).asBits,
         myPalMem.io.nonBusRamRdData(
           myPalMem.io.nonBusRamRdData.high
           downto (myPalMem.io.nonBusRamRdData.getWidth >> 1)
+        ).asBits,
+        myPalMem.io.nonBusRamRdData(
+          (myPalMem.io.nonBusRamRdData.getWidth >> 1) - 1
+          downto 0
         ).asBits,
       )
     )
