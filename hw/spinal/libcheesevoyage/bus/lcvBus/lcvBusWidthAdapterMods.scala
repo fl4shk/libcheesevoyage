@@ -295,7 +295,7 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
       }
 
       myPushStmVec.last <-/< myPushStmVec.head.repeat(
-        times=1//myDataWidthRatio
+        times=myDataWidthRatio
       )._1
       myPushStmVec.last.translateInto(
         hiH2dFifo.io.push
