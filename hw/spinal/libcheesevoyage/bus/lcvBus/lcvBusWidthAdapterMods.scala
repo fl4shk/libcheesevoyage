@@ -126,7 +126,8 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
         1 << cfg.hiBusCfg.burstCntWidth
       ),
       latency=(
-        2
+        //2
+        1
       ),
       forFMax=true,
     )
