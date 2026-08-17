@@ -859,7 +859,13 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
         //  ),
         //  init=False
         //),
-        palIdxPop.payload.lsb,
+        //palIdxPop.payload.lsb,
+        RegNextWhen(
+          RegNext(
+            palIdxPop.payload.lsb,
+          ),
+          cond=myPalMem.io.nonBusRamRdEn,
+        ),
         myPalMem.io.nonBusRamRdData(
           myPalMem.io.nonBusRamRdData.high
           downto (myPalMem.io.nonBusRamRdData.getWidth >> 1)
