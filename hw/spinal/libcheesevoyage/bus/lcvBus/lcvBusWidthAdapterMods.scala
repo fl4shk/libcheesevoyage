@@ -284,7 +284,7 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
       )
 
       //hiH2dFifo.io.push <-/< myPushStmVec.last
-      myPushStmVec.head <-/< io.loBus.h2dBus.haltWhen(
+      myPushStmVec.head << io.loBus.h2dBus.haltWhen(
         //rSeenHiH2dFire
         rSeenLoH2dFire
         && rLoBurstCnt.andR
@@ -294,7 +294,7 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
         rLoBurstCnt := rLoBurstCnt - 1
       }
 
-      myPushStmVec.last <-/< myPushStmVec.head.repeat(
+      myPushStmVec.last << myPushStmVec.head.repeat(
         times=myDataWidthRatio
       )._1
       myPushStmVec.last.translateInto(
