@@ -689,6 +689,1571 @@ case class PipeSimpleDualPortMemDrivePayload[
 //  val data = dataType()
 //}
 
+case class LcvSimpleReorderBufConfig[
+  WordT <: Data,
+](
+  wordType: HardType[WordT],
+  reorderBufIdxWidth: Int,
+  wrAutoIncr: Boolean=true,
+) {
+  val depth = (1 << reorderBufIdxWidth)
+  //def myPushType() = (
+  //  PipeSimpleDualPortMemDrivePayload(
+  //    dataType=modType(),
+  //    wordCount=depth,
+  //  )
+  //)
+}
+
+case class LcvSimpleReorderBufPushPayload[
+  WordT <: Data
+](
+  cfg: LcvSimpleReorderBufConfig[WordT]
+) extends Bundle {
+  val reorderBufIdx = UInt(cfg.reorderBufIdxWidth bits)
+  val myWord = cfg.wordType()
+}
+
+case class LcvSimpleReorderBufIo[
+  WordT <: Data,
+](
+  //cfg: WrPulseRdPipeRamConfig[WordT]
+  cfg: LcvSimpleReorderBufConfig[WordT]
+) extends Bundle {
+  val push = slave(Stream(
+    //PipeSimpleDualPortMemDrivePayload(
+    //  dataType=cfg.wordType(),
+    //  wordCount=cfg.depth,
+    //)
+    //cfg.myPushType()
+    LcvSimpleReorderBufPushPayload(cfg=cfg)
+  ))
+  val pop = master(Stream(
+    cfg.wordType()
+  ))
+  val occupancy = out(
+    UInt(cfg.reorderBufIdxWidth bits)
+  )
+}
+
+case class LcvSimpleReorderBuf[
+  WordT <: Data,
+](
+  cfg: LcvSimpleReorderBufConfig[WordT]
+) extends Component {
+  //--------
+  val io = LcvSimpleReorderBufIo(cfg=cfg)
+  //--------
+  val myRam = (
+    WrPulseRdPipeRam(
+      cfg=WrPulseRdPipeRamConfig(
+        modType=LcvSimpleReorderBufPushPayload(cfg=cfg),
+        wordType=cfg.wordType(),
+        wordCount=cfg.depth,
+        setWordFunc=(
+          outp: LcvSimpleReorderBufPushPayload[WordT],
+          inp: LcvSimpleReorderBufPushPayload[WordT],
+          rdMemWord: WordT,
+          upIsFiring: Bool,
+          myExternalInpCond: Bool,
+          wrPulseVec: Vec[Flow[
+            PipeSimpleDualPortMemDrivePayload[
+              //PipeSimpleDualPortMemDrivePayload[ModT]
+              WordT
+            ]
+          ]],
+        ) => {
+          outp.reorderBufIdx := inp.reorderBufIdx
+          switch (
+            (
+              wrPulseVec.head.fire
+              && wrPulseVec.head.addr === inp.reorderBufIdx
+            )
+            ## (
+              RegNextWhen(
+                wrPulseVec.head.addr,
+                cond=(
+                  wrPulseVec.head.fire
+                ),
+                init=wrPulseVec.head.addr.getZero
+              ) === inp.reorderBufIdx
+            )
+          ) {
+            is (M"1-") {
+              outp.myWord := (
+                wrPulseVec.head.data
+                //myHistWrPulseEtc(0).data.most
+              )
+              //outp.reorderBufIdx := (
+              //  myHistWrPulseEtc(0).addr
+              //)
+            }
+            is (M"01") {
+              //outp.most := (
+              //  //wrPulse.data.most
+              //  //myHistWrPulseEtc(1).data.most
+              //)
+              //outp.reorderBufIdx := (
+              //  myHistWrPulseEtc(1).addr
+              //)
+              outp.myWord := (
+                //myHistWrPulseEtc(1).
+                //RegNextWhen(
+                //  wrPulse.data.most,
+                //  cond=wrPulse.fire,
+                //  init=wrPulse.data.most.getZero
+                //)
+                RegNextWhen(
+                  wrPulseVec.head.data,
+                  cond=(
+                    wrPulseVec.head.fire
+                  ),
+                  init=wrPulseVec.head.data.getZero
+                )
+              )
+            }
+            default {
+              outp.myWord := rdMemWord
+            }
+          }
+        },
+        optRdLatency=(
+          1//0//1
+        ),
+        optWrHistLength=1,
+        initBigInt=Some({
+          val tempArr = new ArrayBuffer[BigInt]()
+          tempArr ++= Array.fill(cfg.depth)(BigInt(0))
+          Array(tempArr).toSeq
+        }),
+        arrRamStyleAltera=(
+          //"no_rw_check, logic"
+          "no_rw_check, MLAB"
+          //"MLAB"
+        ),
+        arrRamStyleXilinx=(
+          "auto"
+          //"block"
+          //"distributed"
+        ),
+      ),
+    )
+  )
+
+  val myRdAddr = cloneOf(myRam.io.rdAddrPipe.addr)
+
+  val myAssertValidCond = myRam.io.wrPulse.fire
+  myRam.io.myExternalInpCond := True
+
+  val rValidVec = Vec.fill(cfg.depth)(
+    Reg(Bool(), init=False)
+  )
+
+  val myOccupancy = (
+    CountOne(rValidVec.asBits.asUInt)
+  )
+  io.occupancy := (
+    RegNext(myOccupancy, init=myOccupancy.getZero)
+  )
+
+  switch (io.push.reorderBufIdx) {
+    for (idx <- 0 until (1 << io.push.reorderBufIdx.getWidth)) {
+      is (idx) {
+        io.push.ready := (
+          !rValidVec(idx)
+        )
+      }
+    }
+  }
+  myRam.io.wrPulse.valid := io.push.fire
+  myRam.io.wrPulse.addr := io.push.reorderBufIdx
+  myRam.io.wrPulse.data := io.push.myWord
+  when (myAssertValidCond) {
+    rValidVec(myRam.io.wrPulse.addr) := True
+  }
+
+  myRdAddr := (
+    RegNext(myRdAddr)
+    init(
+      //0x1
+      0x0
+    )
+  )
+  when (
+    RegNext(
+      myRam.io.rdAddrPipe.fire,
+      init=False
+    )
+  ) {
+    myRdAddr := (
+      (
+        RegNext(myRdAddr)
+        init(
+          //0x1
+          0x0
+        )
+      ) + 1
+    )
+  }
+  myRam.io.rdAddrPipe.valid := rValidVec(myRdAddr)
+  myRam.io.rdAddrPipe.data := myRam.io.rdAddrPipe.data.getZero
+  myRam.io.rdAddrPipe.data.reorderBufIdx.allowOverride
+  myRam.io.rdAddrPipe.data.reorderBufIdx := myRdAddr
+  myRam.io.rdAddrPipe.addr := myRdAddr
+
+  //io.pop << myRam.io.rdDataPipe
+  myRam.io.rdDataPipe.translateInto(io.pop)(
+    dataAssignment=(outp, inp) => {
+      outp := inp.myWord
+    }
+  )
+}
+
+
+//case class SnowHouseForFmaxPsWbReorderBuf(
+//  cfg: SnowHouseConfig
+//) extends Component {
+//  require(
+//    cfg.optScoreboard
+//  )
+//  //--------
+//  val io = SnowHouseForFmaxPsWbReorderBufIo(cfg=cfg)
+//  //--------
+//  val myReorderBufSize = (
+//    1 << (
+//      cfg.optScoreboardReorderBufWidth
+//      /// cfg.optScoreboardReorderBufArrSize
+//    ).toInt
+//  )
+//  val myEarlyCommitInnerSize = (
+//    6
+//    //4
+//    //2
+//  )
+//  //val myEarlyCommitOuterSize = (
+//  //  (myReorderBufSize / myEarlyCommitInnerSize).toInt
+//  //)
+//  //val myOccupancySubAmount = (
+//  //  //8
+//  //  //4
+//  //  6
+//  //)
+//  //val myFifo = (
+//  //  StreamFifo(
+//  //    dataType=SnowHouseForFmaxPsWbReorderBufPayload(cfg=cfg),
+//  //    depth=myReorderBufSize,
+//  //    latency=0,
+//  //    forFMax=true,
+//  //  )
+//  //)
+//
+//  val myRam = (
+//    WrPulseRdPipeRam(
+//      cfg=WrPulseRdPipeRamConfig(
+//        modType=SnowHouseForFmaxPsWbReorderBufPayload(
+//          cfg=cfg,
+//          optIncludeBufIdx=true,
+//        ),
+//        wordType=SnowHouseForFmaxPsWbReorderBufPayload(
+//          cfg=cfg,
+//          optIncludeBufIdx=false
+//        ),
+//        wordCount=myReorderBufSize,
+//        setWordFunc=(
+//          outp: SnowHouseForFmaxPsWbReorderBufPayload,
+//          inp: SnowHouseForFmaxPsWbReorderBufPayload,
+//          rdMemWord: SnowHouseForFmaxPsWbReorderBufPayload,
+//          upIsFiring: Bool,
+//          myExternalInpCond: Bool,
+//          wrPulseVec: Vec[Flow[
+//            PipeSimpleDualPortMemDrivePayload[
+//              SnowHouseForFmaxPsWbReorderBufPayload
+//            ]
+//          ]],
+//        ) => {
+//          outp.reorderBufIdx := inp.reorderBufIdx
+//          //outp.most := rdMemWord.most
+//          //val myTempWrPulse = (
+//          //  cloneOf(wrPulse)
+//          //)
+//          //myTempWrPulse.valid := (
+//          //  wrPulse.fire
+//          //  //&& myExternalInpCond
+//          //)
+//          //myTempWrPulse.payload := wrPulse.payload
+//
+//          //val myHistWrPulseEtc = (
+//          //  History(
+//          //    that=myTempWrPulse,
+//          //    when=(
+//          //      myTempWrPulse.fire
+//          //      //&& wrPulse.addr === inp.reorderBufIdx
+//          //    ),
+//          //    length=(
+//          //      2
+//          //      //1
+//          //    ),
+//          //    init=myTempWrPulse.getZero
+//          //  )
+//          //)
+//          switch (
+//            (
+//              wrPulseVec.head.fire
+//              //&& (
+//              //  rMyShouldIgnoreInstrState.asBits(0)
+//              //  || (
+//              //    rMyShouldIgnoreInstrState.asBits(1)
+//              //    && !io.push.myPsIdBubble
+//              //  )
+//              //)
+//              && myExternalInpCond
+//              && wrPulseVec.head.addr === inp.reorderBufIdx
+//            )
+//            ## (
+//              RegNextWhen(
+//                wrPulseVec.head.addr,
+//                cond=(
+//                  wrPulseVec.head.fire
+//                  && myExternalInpCond
+//                ),
+//                init=wrPulseVec.head.addr.getZero
+//              ) === inp.reorderBufIdx
+//              //&& myExternalInpCond
+//            )
+//
+//            //myHistWrPulseEtc.reverse.asBits
+//            //myHistWrPulseEtc(0).fire
+//            //## myHistWrPulseEtc(1).fire
+//          ) {
+//            is (M"1-") {
+//              outp.most := (
+//                wrPulseVec.head.data.most
+//                //myHistWrPulseEtc(0).data.most
+//              )
+//              //outp.reorderBufIdx := (
+//              //  myHistWrPulseEtc(0).addr
+//              //)
+//            }
+//            is (M"01") {
+//              //outp.most := (
+//              //  //wrPulse.data.most
+//              //  //myHistWrPulseEtc(1).data.most
+//              //)
+//              //outp.reorderBufIdx := (
+//              //  myHistWrPulseEtc(1).addr
+//              //)
+//              outp.most := (
+//                //myHistWrPulseEtc(1).
+//                //RegNextWhen(
+//                //  wrPulse.data.most,
+//                //  cond=wrPulse.fire,
+//                //  init=wrPulse.data.most.getZero
+//                //)
+//                RegNextWhen(
+//                  wrPulseVec.head.data.most,
+//                  cond=(
+//                    wrPulseVec.head.fire
+//                    && myExternalInpCond
+//                  ),
+//                  init=wrPulseVec.head.data.most.getZero
+//                )
+//              )
+//            }
+//            default {
+//              //outp.reorderBufIdx := inp.reorderBufIdx
+//              outp.most := rdMemWord.most
+//            }
+//          }
+//          //when (
+//          //  wrPulse.fire
+//          //  && wrPulse.addr === inp.reorderBufIdx
+//          //) {
+//          //  outp.most := wrPulse.data.most
+//          //} 
+//          //.elsewhen (
+//          //  RegNextWhen(
+//          //    wrPulse.addr,
+//          //    cond=wrPulse.fire,
+//          //    init=wrPulse.addr.getZero
+//          //  ) === inp.reorderBufIdx
+//          //) {
+//          //  outp.most := (
+//          //    RegNextWhen(
+//          //    wrPulse.data.most,
+//          //      cond=wrPulse.fire,
+//          //      init=wrPulse.data.most.getZero
+//          //    )
+//          //  )
+//          //} 
+//          //.otherwise {
+//          //  outp.most := rdMemWord.most
+//          //}
+//        },
+//        optRdLatency=(
+//          1//0//1
+//        ),
+//        optWrHistLength=1,
+//        initBigInt=Some({
+//          val tempArr = new ArrayBuffer[BigInt]()
+//          tempArr ++= Array.fill(myReorderBufSize)(BigInt(0))
+//          Array(tempArr).toSeq
+//        }),
+//        arrRamStyleAltera=(
+//          //"no_rw_check, logic"
+//          "no_rw_check, MLAB"
+//          //"MLAB"
+//        ),
+//        arrRamStyleXilinx=(
+//          "auto"
+//          //"block"
+//          //"distributed"
+//        ),
+//      ),
+//    )
+//  )
+//
+//  //object MyShouldIgnoreInstrState
+//  //extends SpinalEnum(defaultEncoding=binaryOneHot) {
+//  //  val
+//  //    IDLE,
+//  //    FLUSH//,
+//  //    //CLEAR_VALID_VEC_ETC,
+//  //    //SET_TO_REORDER_BUF_IDX_ETC
+//  //    = newElement()
+//  //}
+//  //val nextMyShouldIgnoreInstrState = MyShouldIgnoreInstrState()//Bool()
+//  //val rMyShouldIgnoreInstrState = (
+//  //  //Reg(Bool(), init=False)
+//  //  RegNext(
+//  //    nextMyShouldIgnoreInstrState,
+//  //    //init=False
+//  //  )
+//  //  init(MyShouldIgnoreInstrState.IDLE)
+//  //)
+//  //nextMyShouldIgnoreInstrState := rMyShouldIgnoreInstrState
+//
+//  val myRdAddr = cloneOf(myRam.io.rdAddrPipe.addr)
+//
+//  //val myAssertValidCondMost = (
+//  //  rMyShouldIgnoreInstrState.asBits(0)
+//  //  || (
+//  //    rMyShouldIgnoreInstrState.asBits(1)
+//  //    //&& !io.push.myPsIdBubble // is this needed anywhere?
+//  //  )
+//  //)
+//  val myAssertValidCond = (
+//    myRam.io.wrPulse.fire
+//    //&& myAssertValidCondMost
+//  )
+//  myRam.io.myExternalInpCond := (
+//    True
+//    //myAssertValidCondMost
+//    ////True
+//    //(
+//    //  rMyShouldIgnoreInstrState.asBits(0)
+//    //  || (
+//    //    rMyShouldIgnoreInstrState.asBits(1)
+//    //    && !io.push.myPsIdBubble
+//    //  )
+//    //)
+//    ////&& 
+//    ////(
+//    ////  !io.push.myPsIdBubble
+//    ////)
+//  )
+//
+//  //myFifo.io.push << io.push
+//  //myFifo.io.pop.ready := False
+//  val rFlushCnt = (
+//    Reg(UInt(cfg.optScoreboardReorderBufWidth + 1 bits))
+//    init(myReorderBufSize - 1)
+//  )
+//  val rSeenFullFlush = rFlushCnt.msb
+//
+//  val rValidVec = Vec.fill(myReorderBufSize)(
+//    Reg(Bool(), init=False)
+//  )
+//  //val myEarlyCommitValidVec = Vec.fill(
+//  //  myEarlyCommitOuterSize
+//  //)(
+//  //  UInt(myEarlyCommitInnerSize bits)
+//  //)
+//  //myEarlyCommitValidVec.assignFromBits(rValidVec.asBits)
+//
+//  //val rEarlyCommitVec = Vec.fill(
+//  //  myEarlyCommitOuterSize
+//  //)(
+//  //  Vec.fill(myEarlyCommitInnerSize)(
+//  //    Reg(Bool(), init=False)
+//  //  )
+//  //  //Reg(UInt(myEarlyCommitInnerSize bits))
+//  //  //init(0x0)
+//  //)
+//  val myEarlyCommitValidVec = cloneOf(rValidVec)
+//  myEarlyCommitValidVec.assignFromBits(rValidVec.asBits)
+//  val rEarlyCommitVec = Vec.fill(myReorderBufSize)(
+//    Reg(Bool(), init=False)
+//  )
+//
+//  val myRdEarlyCommitInnerIdx = (
+//    myRdAddr(
+//      log2Up(myEarlyCommitInnerSize) - 1 downto 0
+//    )
+//  )
+//  val myRdEarlyCommitOuterIdx = (
+//    myRdAddr(
+//      myRdAddr.high downto log2Up(myEarlyCommitInnerSize)
+//    )
+//  )
+//  val myWrEarlyCommitInnerIdx = (
+//    //myRdAddr(
+//    //  log2Up(myEarlyCommitInnerSize) - 1 downto 0
+//    //)
+//    myRam.io.wrPulse.addr(
+//      log2Up(myEarlyCommitInnerSize) - 1 downto 0
+//    )
+//  )
+//  val myWrEarlyCommitOuterIdx = (
+//    myRam.io.wrPulse.addr(
+//      myRam.io.wrPulse.addr.high downto log2Up(myEarlyCommitInnerSize)
+//    )
+//  )
+//
+//  val myOccupancy = (
+//    //Reg(UInt(log2Up(myReorderBufSize) + 1 bits))
+//    //init(0x0)
+//    CountOne(rValidVec.asBits.asUInt)
+//  )
+//  io.occupancy := (
+//    RegNext(myOccupancy)
+//  )
+//  //val rAttemptPushVec = Vec.fill(myReorderBufSize)(
+//  //  Reg(Bool(), init=False)
+//  //)
+//
+//  //val rPushState = Reg(Bool(), init=False)
+//
+//  //switch (rPushState) {
+//  //  is (False) {
+//  //    when (
+//  //      io.push.valid
+//  //      && rValidVec(io.push.reorderBufIdx)
+//  //    ) {
+//  //      rPushState := True
+//  //      io.push.ready := False
+//  //    } otherwise {
+//  //      io.push.ready := True
+//  //    }
+//  //  }
+//  //  is (True) {
+//  //    when (
+//  //      io.push.valid
+//  //      && !rValidVec(io.push.reorderBufIdx)
+//  //    ) {
+//  //      rPushState := False
+//  //      io.push.ready := True
+//  //    } otherwise {
+//  //      io.push.ready := False
+//  //    }
+//  //  }
+//  //}
+//
+//  //val myPushStm = cloneOf(io.push)
+//
+//  //when (!rMyShouldIgnoreInstrState) {
+//  //  myRdAddr := (
+//  //    RegNextWhen(
+//  //      (myRdAddr + 1),
+//  //      cond=(
+//  //        myRam.io.rdAddrPipe.fire
+//  //        //|| 
+//  //      ),
+//  //      //init=myRdAddr.getZero,
+//  //    )
+//  //    init(0x1)
+//  //    //init(0x0)
+//  //  )
+//  //} otherwise {
+//  //  when (rOccupancy.orR) {
+//  //    myRdAddr := (
+//  //      RegNext(
+//  //        myRdAddr,
+//  //        init=myRdAddr.getZero
+//  //      ) + 1
+//  //    )
+//  //  } otherwise {
+//  //    myRdAddr := (
+//  //      io.push.reorderBufIdx
+//  //    )
+//  //  }
+//  //}
+//
+//  //val myMaxValShouldIgnoreInstrCnt = 4//3//4//3//4
+//  //val rMyShouldIgnoreInstrCnt = (
+//  //  Reg(UInt(log2Up(myMaxValShouldIgnoreInstrCnt + 1) + 1 bits))
+//  //  init(0x0)
+//  //)
+//  //when (
+//  //  io.push.fire
+//  //  && io.push.myShouldIgnoreInstr
+//  //  && rMyShouldIgnoreInstrCnt < myMaxValShouldIgnoreInstrCnt
+//  //) {
+//  //  rMyShouldIgnoreInstrCnt := rMyShouldIgnoreInstrCnt + 1
+//  //}
+//  //when (
+//  //  io.push.fire
+//  //  && !io.push.myShouldIgnoreInstr
+//  //) {
+//  //  rMyShouldIgnoreInstrCnt := 0x0
+//  //}
+//  //io.inFlushEtc.setAsReg() init(False)
+//  io.inFlushEtc := False
+//
+//  //myRdAddr := (
+//  //  RegNext(myRdAddr)
+//  //  init(
+//  //    0x1
+//  //    //0x0
+//  //  )
+//  //)
+//
+//  //when (
+//  //  RegNext(
+//  //    myRam.io.rdAddrPipe.fire,
+//  //    init=False
+//  //  )
+//  //) {
+//  //  myRdAddr := (
+//  //    (
+//  //      RegNext(myRdAddr)
+//  //      init(
+//  //        0x1
+//  //        //0x0
+//  //      )
+//  //    ) + 1
+//  //  )
+//  //}
+//
+//
+//  io.psIdCanIssue := True
+//
+//  switch (io.push.reorderBufIdx) {
+//    for (idx <- 0 until (1 << io.push.reorderBufIdx.getWidth)) {
+//      is (idx) {
+//        io.push.ready := (
+//          !rValidVec(idx)
+//        )
+//      }
+//    }
+//  }
+//
+//  myRam.io.wrPulse.valid := (
+//    io.push.fire//fire//valid//fire//valid//valid//fire
+//    //&& !io.push.myShouldIgnoreInstr
+//    //&& !rValidVec(io.push.reorderBufIdx)
+//    //&& io.push.myWbPayload.instrCnt.shouldIgnoreInstr.head
+//  )
+//  myRam.io.wrPulse.addr := io.push.reorderBufIdx
+//  //.resize(
+//  //  log2Up(rValidVec.size) bits
+//  //)
+//
+//  myRam.io.wrPulse.data.most := io.push.most
+//
+//  //when (
+//  //  io.push.fire
+//  //  && (
+//  //    io.push.myShouldIgnoreInstr
+//  //    || io.push.myPsIdBubble
+//  //  )
+//  //  //&& rMyShouldIgnoreInstrCnt >= myMaxValShouldIgnoreInstrCnt
+//  //  //&& io.push.opIsMemAccess
+//  //) {
+//  //  myRam.io.wrPulse.data.commit.myNonFwdValid := False//True
+//  //  myRam.io.wrPulse.data.commit.myFwdValid := False//True
+//  //  //myRam.io.wrPulse.data.commit.myGprIdx.valid := False//True
+//  //}
+//
+//  when (
+//    //&& !io.push.myShouldIgnoreInstr
+//    myAssertValidCond
+//  ) {
+//    rValidVec(myRam.io.wrPulse.addr) := True
+//  }
+//
+//  switch (
+//    (
+//      myAssertValidCond
+//      && io.push.commit.opIsFwd
+//    )
+//    ## myWrEarlyCommitOuterIdx
+//    ## myWrEarlyCommitInnerIdx
+//  ) {
+//    for (jdx <- 0 until (1 << myWrEarlyCommitOuterIdx.getWidth)) {
+//      for (
+//        idx <- 0 until (1 << myWrEarlyCommitInnerIdx.getWidth)
+//      ) {
+//        is (
+//          (1 << log2Up(myReorderBufSize))
+//          | (jdx << myWrEarlyCommitInnerIdx.getWidth)
+//          | (idx)
+//        ) {
+//          //rEarlyCommitVec(jdx)(idx) := True
+//          rEarlyCommitVec(
+//            (jdx << myWrEarlyCommitInnerIdx.getWidth) + idx
+//          ) := (
+//            True
+//          )
+//        }
+//      }
+//    }
+//    default {
+//    }
+//  }
+//
+//  //when (
+//  //  io.push.valid//fire
+//  //  //&& !rValidVec(io.push.reorderBufIdx) // check for 
+//  //  && io.push.myWbPayload.instrCnt.shouldIgnoreInstr.head
+//  //) {
+//  //  myRam.io.wrPulse.data.regFileWrite.addr := 0x0
+//  //  myRam.io.wrPulse.data.regFileWrite.data := 0x0
+//  //}
+//
+//  //--------
+//  // BEGIN: old, single-commit-per-cycle code
+//  //when (
+//  //  myRam.io.rdAddrPipe.fire
+//  //  //myRam.io.rdDataPipe.fire//valid//fire
+//  //) {
+//  //  rValidVec(
+//  //    myRam.io.rdAddrPipe.addr
+//  //    //myRam.io.rdDataPipe.reorderBufIdx
+//  //  ) := False
+//  //}
+//  // END: old, single-commit-per-cycle code
+//  //--------
+//
+//  //switch (
+//  //  (
+//  //    myAssertValidCond
+//  //    && io.push.commit.opIsFwd
+//  //  )
+//  //  ## myRdEarlyCommitOuterIdx
+//  //  ## myRdEarlyCommitInnerIdx
+//  //) {
+//  //  for (jdx <- 0 until (1 << myRdEarlyCommitOuterIdx.getWidth)) {
+//  //    for (
+//  //      idx <- 0 until (1 << myRdEarlyCommitInnerIdx.getWidth)
+//  //    ) {
+//  //      is (
+//  //        (1 << log2Up(myReorderBufSize))
+//  //        | (jdx << myWrEarlyCommitInnerIdx.getWidth)
+//  //        | (idx)
+//  //      ) {
+//  //        rEarlyCommitVec(jdx)(idx) := True
+//  //      }
+//  //    }
+//  //  }
+//  //  default {
+//  //  }
+//  //}
+//
+//  myRdAddr := (
+//    RegNext(myRdAddr)
+//    init(
+//      //0x1
+//      0x0
+//    )
+//  )
+//
+//  //when (
+//  //  RegNext(
+//  //    myRam.io.rdAddrPipe.fire,
+//  //    init=False
+//  //  )
+//  //) {
+//  //  myRdAddr := (
+//  //    (
+//  //      RegNext(myRdAddr)
+//  //      init(
+//  //        0x1
+//  //        //0x0
+//  //      )
+//  //    ) + 1
+//  //  )
+//  //}
+//  //val rSavedMyRdAddr = (
+//  //  Reg(cloneOf(myRdAddr))
+//  //  init(0x1)
+//  //)
+//
+//  val mySwitchIdxRdAddr = 0
+//  val mySwitchIdxValidVecEtc = 1
+//  //val mySwitchIdxEarlyCommitVec = 2
+//  val mySwitchIdxLim = 2//3
+//  for (mySwitchIdx <- 0 until mySwitchIdxLim) {
+//    //val myTempOccupancyCond = (
+//    //  myOccupancy > myReorderBufSize - 8//6
+//    //)
+//    switch (
+//      (
+//        if (mySwitchIdx == mySwitchIdxRdAddr) (
+//          //(
+//          //  //io.occupancy < (myReorderBufSize - 6)
+//          //  //myOcupancy < (myReorderBufSize - 6)
+//          //  RegNext(
+//          //    myTempOccupancyCond,
+//          //    init=False
+//          //  )
+//          //)
+//          //## 
+//          RegNext(
+//            myRam.io.rdAddrPipe.fire,
+//            init=False
+//          )
+//          ## RegNext(myRdEarlyCommitOuterIdx)
+//          ## RegNext(myRdEarlyCommitInnerIdx)
+//        ) else ( //if (mySwitchIdx == mySwitchIdxValidVecEtc)
+//          //myTempOccupancyCond
+//          //## 
+//          myRam.io.rdAddrPipe.fire
+//          ## myRdEarlyCommitOuterIdx
+//          ## myRdEarlyCommitInnerIdx
+//        )
+//        //else (
+//        //  myRam.io.rdAddrPipe.fire
+//        //  ## myRdEarlyCommitOuterIdx
+//        //  //## myRdEarlyCommitInnerIdx
+//        //)
+//      )
+//    ) {
+//      for (jdx <- 0 until (1 << myRdEarlyCommitOuterIdx.getWidth)) {
+//        val myValidVecBaseJdx = (
+//          jdx << myRdEarlyCommitInnerIdx.getWidth
+//        )
+//        for (idx <- 0 until (1 << myRdEarlyCommitInnerIdx.getWidth)) {
+//          def doIncr(
+//            myIncrAmount: Int
+//          ): Unit = {
+//            require(
+//              mySwitchIdx == mySwitchIdxRdAddr
+//            )
+//            myRdAddr := (
+//              (
+//                RegNext(myRdAddr)
+//                //init(0x1)
+//                init(0x0)
+//              ) + (
+//                myIncrAmount
+//              )
+//            )
+//          }
+//          def mkIncrIdx(
+//            myIncrAmount: Int
+//          ): Int = {
+//            (myValidVecBaseJdx + idx + myIncrAmount) % myReorderBufSize
+//          }
+//          is (
+//            //(1 << myRdEarlyCommitOuterIdx.getWidth)
+//            //| (jdx)
+//            //(1 << (log2Up(myReorderBufSize) + 1))
+//            //| 
+//            (1 << log2Up(myReorderBufSize))
+//            | (jdx << myWrEarlyCommitInnerIdx.getWidth)
+//            | (idx)
+//          ) {
+//            //println(
+//            //  s"jdx:${jdx} idx:${idx} "
+//            //  + s"${myRdEarlyCommitOuterIdx.getWidth} "
+//            //  + s"${myRdEarlyCommitInnerIdx.getWidth} "
+//            //)
+//
+//            //--------
+//            val myTempValid = {
+//              val temp = (
+//                (
+//                  myEarlyCommitValidVec.asBits.asUInt.rotateRight(
+//                    mkIncrIdx(0)
+//                  )
+//                )(
+//                  myEarlyCommitInnerSize - 1 downto 0
+//                )
+//              )
+//              if (mySwitchIdx == mySwitchIdxRdAddr) (
+//                RegNext(
+//                  temp,
+//                  init=temp.getZero
+//                )
+//              ) else (
+//                temp
+//              )
+//            }
+//            val myTempEarlyCommit = {
+//              val temp = (
+//                (
+//                  rEarlyCommitVec.asBits.asUInt.rotateRight(
+//                    //myValidVecBaseJdx + idx
+//                    mkIncrIdx(0)
+//                  )
+//                )(
+//                  myEarlyCommitInnerSize - 1 downto 0
+//                )
+//              )
+//              if (mySwitchIdx == mySwitchIdxRdAddr) (
+//                RegNext(
+//                  temp,
+//                  init=temp.getZero
+//                )
+//              ) else (
+//                temp
+//              )
+//            }
+//            //println(
+//            //  s"DEBUG: "
+//            //  + s"${myTempValid.getWidth} "
+//            //  + s"${myTempEarlyCommit.getWidth}"
+//            //)
+//
+//            switch (
+//              //myTempValid(idx)
+//              myTempValid.lsb
+//              //## myTempEarlyCommit(idx)
+//              ## (myTempValid & myTempEarlyCommit)
+//            ) {
+//              is (M"-----01") {
+//                if (mySwitchIdx == mySwitchIdxRdAddr) {
+//                  doIncr(1)
+//                } else {
+//                  //rEarlyCommitVec(jdx)(idx) := False
+//                  //rValidVec(myValidVecBaseJdx + idx) := False
+//                  rEarlyCommitVec(mkIncrIdx(0)) := False
+//                  rValidVec(mkIncrIdx(0)) := False
+//                }
+//              }
+//              is (M"----011") {
+//                if (mySwitchIdx == mySwitchIdxRdAddr) {
+//                  doIncr(2)
+//                } else {
+//                  //rEarlyCommitVec(jdx)(idx) := False
+//                  //rEarlyCommitVec(jdx)(idx + 1) := False
+//                  //rValidVec(myValidVecBaseJdx + idx) := False
+//                  //rValidVec(myValidVecBaseJdx + idx + 1) := False
+//                  rEarlyCommitVec(mkIncrIdx(0)) := False
+//                  rEarlyCommitVec(mkIncrIdx(1)) := False
+//                  rValidVec(mkIncrIdx(0)) := False
+//                  rValidVec(mkIncrIdx(1)) := False
+//                }
+//              }
+//              is (M"---0111") {
+//                if (mySwitchIdx == mySwitchIdxRdAddr) {
+//                  doIncr(3)
+//                } else {
+//                  //rEarlyCommitVec(jdx)(idx) := False
+//                  //rEarlyCommitVec(jdx)(idx + 1) := False
+//                  //rEarlyCommitVec(jdx)(idx + 2) := False
+//                  //rValidVec(myValidVecBaseJdx + idx) := False
+//                  //rValidVec(myValidVecBaseJdx + idx + 1) := False
+//                  //rValidVec(myValidVecBaseJdx + idx + 2) := False
+//                  rEarlyCommitVec(mkIncrIdx(0)) := False
+//                  rEarlyCommitVec(mkIncrIdx(1)) := False
+//                  rEarlyCommitVec(mkIncrIdx(2)) := False
+//                  rValidVec(mkIncrIdx(0)) := False
+//                  rValidVec(mkIncrIdx(1)) := False
+//                  rValidVec(mkIncrIdx(2)) := False
+//                }
+//              }
+//              is (M"--01111") {
+//                if (mySwitchIdx == mySwitchIdxRdAddr) {
+//                  doIncr(4)
+//                } else {
+//                  //rEarlyCommitVec(jdx)(idx) := False
+//                  //rEarlyCommitVec(jdx)(idx + 1) := False
+//                  //rEarlyCommitVec(jdx)(idx + 2) := False
+//                  //rEarlyCommitVec(jdx)(idx + 3) := False
+//                  //rValidVec(myValidVecBaseJdx + idx) := False
+//                  //rValidVec(myValidVecBaseJdx + idx + 1) := False
+//                  //rValidVec(myValidVecBaseJdx + idx + 2) := False
+//                  //rValidVec(myValidVecBaseJdx + idx + 3) := False
+//                  rEarlyCommitVec(mkIncrIdx(0)) := False
+//                  rEarlyCommitVec(mkIncrIdx(1)) := False
+//                  rEarlyCommitVec(mkIncrIdx(2)) := False
+//                  rEarlyCommitVec(mkIncrIdx(3)) := False
+//                  rValidVec(mkIncrIdx(0)) := False
+//                  rValidVec(mkIncrIdx(1)) := False
+//                  rValidVec(mkIncrIdx(2)) := False
+//                  rValidVec(mkIncrIdx(3)) := False
+//                }
+//              }
+//              is (M"-011111") {
+//                if (mySwitchIdx == mySwitchIdxRdAddr) {
+//                  doIncr(5)
+//                } else {
+//                  //rEarlyCommitVec(jdx)(idx) := False
+//                  //rEarlyCommitVec(jdx)(idx + 1) := False
+//                  //rEarlyCommitVec(jdx)(idx + 2) := False
+//                  //rEarlyCommitVec(jdx)(idx + 3) := False
+//                  //rValidVec(myValidVecBaseJdx + idx) := False
+//                  //rValidVec(myValidVecBaseJdx + idx + 1) := False
+//                  //rValidVec(myValidVecBaseJdx + idx + 2) := False
+//                  //rValidVec(myValidVecBaseJdx + idx + 3) := False
+//                  rEarlyCommitVec(mkIncrIdx(0)) := False
+//                  rEarlyCommitVec(mkIncrIdx(1)) := False
+//                  rEarlyCommitVec(mkIncrIdx(2)) := False
+//                  rEarlyCommitVec(mkIncrIdx(3)) := False
+//                  rEarlyCommitVec(mkIncrIdx(4)) := False
+//                  rValidVec(mkIncrIdx(0)) := False
+//                  rValidVec(mkIncrIdx(1)) := False
+//                  rValidVec(mkIncrIdx(2)) := False
+//                  rValidVec(mkIncrIdx(3)) := False
+//                  rValidVec(mkIncrIdx(4)) := False
+//                }
+//              }
+//              is (M"-111111") {
+//                if (mySwitchIdx == mySwitchIdxRdAddr) {
+//                  doIncr(6)
+//                } else {
+//                  //rEarlyCommitVec(jdx)(idx) := False
+//                  //rEarlyCommitVec(jdx)(idx + 1) := False
+//                  //rEarlyCommitVec(jdx)(idx + 2) := False
+//                  //rEarlyCommitVec(jdx)(idx + 3) := False
+//                  //rValidVec(myValidVecBaseJdx + idx) := False
+//                  //rValidVec(myValidVecBaseJdx + idx + 1) := False
+//                  //rValidVec(myValidVecBaseJdx + idx + 2) := False
+//                  //rValidVec(myValidVecBaseJdx + idx + 3) := False
+//                  rEarlyCommitVec(mkIncrIdx(0)) := False
+//                  rEarlyCommitVec(mkIncrIdx(1)) := False
+//                  rEarlyCommitVec(mkIncrIdx(2)) := False
+//                  rEarlyCommitVec(mkIncrIdx(3)) := False
+//                  rEarlyCommitVec(mkIncrIdx(4)) := False
+//                  rEarlyCommitVec(mkIncrIdx(5)) := False
+//                  rValidVec(mkIncrIdx(0)) := False
+//                  rValidVec(mkIncrIdx(1)) := False
+//                  rValidVec(mkIncrIdx(2)) := False
+//                  rValidVec(mkIncrIdx(3)) := False
+//                  rValidVec(mkIncrIdx(4)) := False
+//                  rValidVec(mkIncrIdx(5)) := False
+//                }
+//              }
+//              is (M"1-----0") {
+//                if (mySwitchIdx == mySwitchIdxRdAddr) {
+//                  doIncr(1)
+//                } else {
+//                  //rEarlyCommitVec(jdx)(idx) := False
+//                  //rValidVec(myValidVecBaseJdx + idx) := False
+//                  rEarlyCommitVec(mkIncrIdx(0)) := False
+//                  rValidVec(mkIncrIdx(0)) := False
+//                }
+//              }
+//              default {
+//              }
+//            }
+//            //--------
+//            // BEGIN: old, potentially-lower IPC version
+//            //if (idx == 0) {
+//            //  //switch ({
+//            //  //  val myTempToSwitch = (
+//            //  //    myEarlyCommitValidVec(jdx).asBits.asUInt
+//            //  //    ## rEarlyCommitVec(jdx).asBits.asUInt
+//            //  //  )
+//            //  //  if (mySwitchIdx == mySwitchIdxRdAddr) (
+//            //  //    RegNext(
+//            //  //      myTempToSwitch,
+//            //  //      init=myTempToSwitch.getZero
+//            //  //    )
+//            //  //  ) else (
+//            //  //    myTempToSwitch
+//            //  //  )
+//            //  //}) {
+//            //  //  for (
+//            //  //    kdx <- 0 until myEarlyCommitValidVec(jdx).getWidth
+//            //  //  ) {
+//            //  //    for (
+//            //  //      ldx <- 0 until rEarlyCommitVec(jdx).size
+//            //  //    ) {
+//            //  //      is (
+//            //  //        (kdx << rEarlyCommitVec(jdx).size)
+//            //  //        | (ldx)
+//            //  //      ) {
+//            //  //      }
+//            //  //    }
+//            //  //  }
+//            //  //}
+//
+//            //  //when (
+//            //  //  
+//            //  //) {
+//            //  //}
+//            //  switch (
+//            //    myTempValid(idx)
+//            //    //## myTempEarlyCommit(idx)
+//            //    ## (myTempValid & myTempEarlyCommit)
+//            //  ) {
+//            //    is (M"---01") {
+//            //      if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //        doIncr(1)
+//            //      } else {
+//            //        rEarlyCommitVec(jdx)(idx) := False
+//            //        rValidVec(myValidVecBaseJdx + idx) := False
+//            //      }
+//            //    }
+//            //    is (M"--011") {
+//            //      if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //        doIncr(2)
+//            //      } else {
+//            //        rEarlyCommitVec(jdx)(idx) := False
+//            //        rEarlyCommitVec(jdx)(idx + 1) := False
+//            //        rValidVec(myValidVecBaseJdx + idx) := False
+//            //        rValidVec(myValidVecBaseJdx + idx + 1) := False
+//            //      }
+//            //    }
+//            //    is (M"-0111") {
+//            //      if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //        doIncr(3)
+//            //      } else {
+//            //        rEarlyCommitVec(jdx)(idx) := False
+//            //        rEarlyCommitVec(jdx)(idx + 1) := False
+//            //        rEarlyCommitVec(jdx)(idx + 2) := False
+//            //        rValidVec(myValidVecBaseJdx + idx) := False
+//            //        rValidVec(myValidVecBaseJdx + idx + 1) := False
+//            //        rValidVec(myValidVecBaseJdx + idx + 2) := False
+//            //      }
+//            //    }
+//            //    is (M"-1111") {
+//            //      if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //        doIncr(4)
+//            //      } else {
+//            //        rEarlyCommitVec(jdx)(idx) := False
+//            //        rEarlyCommitVec(jdx)(idx + 1) := False
+//            //        rEarlyCommitVec(jdx)(idx + 2) := False
+//            //        rEarlyCommitVec(jdx)(idx + 3) := False
+//            //        rValidVec(myValidVecBaseJdx + idx) := False
+//            //        rValidVec(myValidVecBaseJdx + idx + 1) := False
+//            //        rValidVec(myValidVecBaseJdx + idx + 2) := False
+//            //        rValidVec(myValidVecBaseJdx + idx + 3) := False
+//            //      }
+//            //    }
+//            //    is (M"1---0") {
+//            //      if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //        doIncr(1)
+//            //      } else {
+//            //        rEarlyCommitVec(jdx)(idx) := False
+//            //        rValidVec(myValidVecBaseJdx + idx) := False
+//            //      }
+//            //    }
+//            //    default {
+//            //    }
+//            //  }
+//
+//            //  //when (myTempValid(idx)) {
+//            //  //  if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //  //    doIncr(1)
+//            //  //  } else {
+//            //  //    rEarlyCommitVec(jdx)(idx) := False
+//            //  //    rValidVec(myValidVecBaseJdx + idx) := False
+//            //  //  }
+//            //  //}
+//            //} else if (idx == 1) {
+//            //  //switch (
+//            //  //) {
+//            //  //}
+//            //  switch (
+//            //    myTempValid(idx)
+//            //    //(myTempValid(idx) && !myTempEarlyCommit(idx))
+//            //    ## (
+//            //      myTempValid(idx + 2 downto idx)
+//            //      & myTempEarlyCommit(idx + 2 downto idx)
+//            //    )
+//            //  ) {
+//            //    is (M"--01") {
+//            //      if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //        doIncr(1)
+//            //      } else {
+//            //        rEarlyCommitVec(jdx)(idx) := False
+//            //        rValidVec(myValidVecBaseJdx + idx) := False
+//            //      }
+//            //    }
+//            //    is (M"-011") {
+//            //      if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //        doIncr(2)
+//            //      } else {
+//            //        rEarlyCommitVec(jdx)(idx) := False
+//            //        rEarlyCommitVec(jdx)(idx + 1) := False
+//            //        rValidVec(myValidVecBaseJdx + idx) := False
+//            //        rValidVec(myValidVecBaseJdx + idx + 1) := False
+//            //      }
+//            //    }
+//            //    is (M"-111") {
+//            //      if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //        doIncr(3)
+//            //      } else {
+//            //        rEarlyCommitVec(jdx)(idx) := False
+//            //        rEarlyCommitVec(jdx)(idx + 1) := False
+//            //        rEarlyCommitVec(jdx)(idx + 2) := False
+//            //        rValidVec(myValidVecBaseJdx + idx) := False
+//            //        rValidVec(myValidVecBaseJdx + idx + 1) := False
+//            //        rValidVec(myValidVecBaseJdx + idx + 2) := False
+//            //      }
+//            //    }
+//            //    is (M"1--0") {
+//            //      if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //        doIncr(1)
+//            //      } else {
+//            //        rEarlyCommitVec(jdx)(idx) := False
+//            //        rValidVec(myValidVecBaseJdx + idx) := False
+//            //      }
+//            //    }
+//            //    default {
+//            //    }
+//            //  }
+//            //  //when (myTempValid(idx)) {
+//            //  //  if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //  //    doIncr(1)
+//            //  //  } else {
+//            //  //    rEarlyCommitVec(jdx)(idx) := False
+//            //  //    rValidVec(myValidVecBaseJdx + idx) := False
+//            //  //  }
+//            //  //}
+//            //} else if (idx == 2) {
+//            //  //when (myTempValid(idx)) {
+//            //  //  if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //  //    doIncr(1)
+//            //  //  } else {
+//            //  //    rEarlyCommitVec(jdx)(idx) := False
+//            //  //    rValidVec(myValidVecBaseJdx + idx) := False
+//            //  //  }
+//            //  //}
+//            //  //switch (
+//            //  //  myTempValid(idx + 1 downto idx)
+//            //  //  ## myTempEarlyCommit(idx + 1 downto idx)
+//            //  //) {
+//            //  //  is (M"01--") {
+//            //  //    if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //  //      doIncr(1)
+//            //  //    } else {
+//            //  //      rEarlyCommitVec(jdx)(idx) := False
+//            //  //      rValidVec(myValidVecBaseJdx + idx) := False
+//            //  //    }
+//            //  //  }
+//            //  //  is (M"11-0") {
+//            //  //    if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //  //      doIncr(1)
+//            //  //    } else {
+//            //  //      rEarlyCommitVec(jdx)(idx) := False
+//            //  //      rValidVec(myValidVecBaseJdx + idx) := False
+//            //  //    }
+//            //  //  }
+//            //  //  is (M"1101") {
+//            //  //    if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //  //      doIncr(1)
+//            //  //    } else {
+//            //  //      rEarlyCommitVec(jdx)(idx) := False
+//            //  //      rValidVec(myValidVecBaseJdx + idx) := False
+//            //  //    }
+//            //  //  }
+//            //  //  is (M"1111") {
+//            //  //    if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //  //      doIncr(2)
+//            //  //    } else {
+//            //  //      rEarlyCommitVec(jdx)(idx) := False
+//            //  //      rEarlyCommitVec(jdx)(idx + 1) := False
+//            //  //      rValidVec(myValidVecBaseJdx + idx) := False
+//            //  //      rValidVec(myValidVecBaseJdx + idx + 1) := False
+//            //  //    }
+//            //  //  }
+//            //  //  default {
+//            //  //  }
+//            //  //}
+//            //  switch (
+//            //    myTempValid(idx)
+//            //    //(myTempValid(idx) && !myTempEarlyCommit(idx))
+//            //    ## (
+//            //      myTempValid(idx + 1 downto idx)
+//            //      & myTempEarlyCommit(idx + 1 downto idx)
+//            //    )
+//            //  ) {
+//            //    is (M"-01") {
+//            //      if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //        doIncr(1)
+//            //      } else {
+//            //        rEarlyCommitVec(jdx)(idx) := False
+//            //        rValidVec(myValidVecBaseJdx + idx) := False
+//            //      }
+//            //    }
+//            //    is (M"-11") {
+//            //      if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //        doIncr(2)
+//            //      } else {
+//            //        rEarlyCommitVec(jdx)(idx) := False
+//            //        rEarlyCommitVec(jdx)(idx + 1) := False
+//            //        rValidVec(myValidVecBaseJdx + idx) := False
+//            //        rValidVec(myValidVecBaseJdx + idx + 1) := False
+//            //      }
+//            //    }
+//            //    is (M"1-0") {
+//            //      if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //        doIncr(1)
+//            //      } else {
+//            //        rEarlyCommitVec(jdx)(idx) := False
+//            //        rValidVec(myValidVecBaseJdx + idx) := False
+//            //      }
+//            //    }
+//            //    default {
+//            //    }
+//            //  }
+//            //} else if (idx == 3) {
+//            //  when (myTempValid(idx)) {
+//            //    if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //      doIncr(1)
+//            //    } else {
+//            //      rEarlyCommitVec(jdx)(idx) := False
+//            //      rValidVec(myValidVecBaseJdx + idx) := False
+//            //    }
+//            //  }
+//            //} else {
+//            //  require(false)
+//            //}
+//            // END: old, potentially-lower IPC version
+//            //--------
+//            // BEGIN: max idx == 2
+//            //if (idx == 0) {
+//            //  switch ({
+//            //    val myTempToSwitch = (
+//            //      myEarlyCommitValidVec(jdx).asBits.asUInt
+//            //      ## rEarlyCommitVec(jdx).asBits.asUInt
+//            //    )
+//            //    if (mySwitchIdx == mySwitchIdxRdAddr) (
+//            //      RegNext/*When*/(
+//            //        myTempToSwitch,
+//            //        //cond=myRam.io.rdAddrPipe.fire,
+//            //        init=myTempToSwitch.getZero
+//            //      )
+//            //    ) else (
+//            //      myTempToSwitch
+//            //    )
+//            //  }) {
+//            //    is (M"01--") {
+//            //      if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //        doIncr(1)
+//            //      } else {
+//            //        rEarlyCommitVec(jdx)(idx) := False
+//            //        rValidVec(myValidVecBaseJdx) := False
+//            //      }
+//            //    }
+//            //    is (M"11-0") {
+//            //      if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //        doIncr(1)
+//            //      } else {
+//            //        rEarlyCommitVec(jdx)(idx) := False
+//            //        rValidVec(myValidVecBaseJdx + idx) := False
+//            //      }
+//            //    }
+//            //    is (M"1101") {
+//            //      if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //        doIncr(1)
+//            //      } else {
+//            //        rEarlyCommitVec(jdx)(idx) := False
+//            //        rValidVec(myValidVecBaseJdx + idx) := False
+//            //      }
+//            //    }
+//            //    is (M"1111") {
+//            //      if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //        doIncr(2)
+//            //      } else {
+//            //        rEarlyCommitVec(jdx)(idx) := False
+//            //        rEarlyCommitVec(jdx)(idx + 1) := False
+//            //        rValidVec(myValidVecBaseJdx) := False
+//            //        rValidVec(myValidVecBaseJdx + 1) := False
+//            //      }
+//            //    }
+//            //    //is (M"1111") {
+//            //    //  doIncr(2)
+//            //    //}
+//            //    //is (M"00--")
+//            //    //is (M"10--")
+//            //    default {
+//            //    }
+//            //  }
+//            //} else if (idx == 1) {
+//            //  when ({
+//            //    //myEarlyCommitValidVec(jdx)(idx)
+//            //    val temp = (
+//            //      rValidVec(myValidVecBaseJdx + idx)
+//            //    )
+//            //    if (mySwitchIdx == mySwitchIdxRdAddr) (
+//            //      RegNext/*When*/(
+//            //        temp,
+//            //        //cond=myRam.io.rdAddrPipe.fire,
+//            //        init=temp.getZero
+//            //      )
+//            //    ) else (
+//            //      temp
+//            //    )
+//            //  }) {
+//            //    if (mySwitchIdx == mySwitchIdxRdAddr) {
+//            //      doIncr(1)
+//            //    } else {
+//            //      rEarlyCommitVec(jdx)(idx) := False
+//            //      rValidVec(myValidVecBaseJdx + idx) := False
+//            //    }
+//            //  }
+//            //  //switch (
+//            //  //  myEarlyCommitValidVec(jdx)(idx)
+//            //  //  ## rEarlyCommitVec(jdx)(idx)
+//            //  //) {
+//            //  //  is (M"10") {
+//            //  //    doIncr(1)
+//            //  //  }
+//            //  //  is (M"11") {
+//            //  //  }
+//            //  //  default {
+//            //  //  }
+//            //  //}
+//            //} else {
+//            //  require(
+//            //    false
+//            //  )
+//            //}
+//            // END: max idx == 2
+//            //--------
+//            //switch (
+//            //  myEarlyCommitValidVec(jdx).asBits.asUInt
+//            //  ## rEarlyCommitVec(jdx).asBits.asUInt
+//            //  //Bitscan(~rEarlyCommitVec(jdx))
+//            //) {
+//            //  //is (M"00--")
+//            //  default {
+//            //  }
+//            //}
+//          }
+//          //is (
+//          //  //(1 << (log2Up(myReorderBufSize) + 1))
+//          //  //|
+//          //  (1 << log2Up(myReorderBufSize))
+//          //  | (jdx << myWrEarlyCommitInnerIdx.getWidth)
+//          //  | (idx)
+//          //) {
+//          //  if (mySwitchIdx == mySwitchIdxRdAddr) {
+//          //    doIncr(1)
+//          //  } else {
+//          //    rEarlyCommitVec(jdx)(idx) := False
+//          //    rValidVec(myValidVecBaseJdx + idx) := False
+//          //  }
+//          //}
+//        }
+//      }
+//      default {
+//        //when (
+//        //  myRam.io.rdAddrPipe.fire
+//        //  //myRam.io.rdDataPipe.fire//valid//fire
+//        //) {
+//        //  rValidVec(
+//        //    myRam.io.rdAddrPipe.addr
+//        //    //myRam.io.rdDataPipe.reorderBufIdx
+//        //  ) := False
+//        //  rEarlyCommitVec(
+//        //    myRam.io.rdAddrPipe.addr
+//        //  ) := False
+//        //}
+//      }
+//    }
+//  }
+//
+//
+//  //switch (
+//  //  (
+//  //    myRam.io.wrPulse.fire
+//  //    //&& !io.push.myPsIdBubble
+//  //    //&& (
+//  //    //  rMyShouldIgnoreInstrState.asBits(0)
+//  //    //  || (
+//  //    //    rMyShouldIgnoreInstrState.asBits(1)
+//  //    //    && !io.push.myPsIdBubble
+//  //    //  )
+//  //    //)
+//  //    //&& !rOccupancy.andR
+//  //  )
+//  //  ## (
+//  //    myRam.io.rdAddrPipe.fire
+//  //    //&& rOccupancy.orR
+//  //  )
+//  //) {
+//  //  is (M"10") {
+//  //    myOccupancy := myOccupancy + 1
+//  //  }
+//  //  is (M"01") {
+//  //    myOccupancy := myOccupancy - 1
+//  //  }
+//  //  default {
+//  //  }
+//  //}
+//
+//
+////  switch (
+////    rMyPsExSetPcState
+////    ## Bitscan(~rValidVec.reverse.asBits.asUInt)
+////  ) {
+////    is (
+////      MaskedLiteral(
+////        "0" + ("-" * rValidVec.size)
+////      )
+////    ) {
+////    }
+////
+////// >>> for idx in range(size):
+////// ...     print(idx, ("-" * (size - idx - 1) + "1" + ("0" * idx)))
+////// ...     
+////// 0 ---1
+////// 1 --10
+////// 2 -100
+////// 3 1000
+////    for (idx <- 0 until rValidVec.size) {
+////      is (
+////        MaskedLiteral(
+////          "1"
+////          + ("-" * (rValidVec.size - idx - 1) + "1" + ("0" * idx))
+////        )
+////      ) {
+////      }
+////    }
+////
+////    default {
+////    }
+////  }
+//
+//
+//
+//  myRam.io.rdAddrPipe.valid := (
+//    rValidVec(
+//      myRdAddr
+//    )
+//  )
+//  myRam.io.rdAddrPipe.data := myRam.io.rdAddrPipe.data.getZero
+//  myRam.io.rdAddrPipe.data.reorderBufIdx.allowOverride
+//  myRam.io.rdAddrPipe.data.reorderBufIdx := myRdAddr
+//  myRam.io.rdAddrPipe.addr := myRdAddr
+//  
+//  //myTempPushStm.last.translateInto(myRam.io.rdAddrPipe)(
+//  //  dataAssignment=(outp, inp) => {
+//  //    //outp.data.most := inp.most
+//  //    //outp.data.most := outp
+//  //    outp.addr := (
+//  //      //inp.reorderBufIdx
+//  //      //RegNextWhen(
+//  //      //  (outp.addr + 1),
+//  //      //  cond=myRam.io.rdAddrPipe.fire,
+//  //      //  init=outp.addr.getZero,
+//  //      //)
+//  //      myRdAddr
+//  //    )
+//  //    //when (myRam.io.rdAddrPipe.fire) {
+//  //    //  rValidVec(outp.addr) := False
+//  //    //}
+//  //  }
+//  //)
+//
+//  io.pop << myRam.io.rdDataPipe
+//}
 
 case class WrPulseRdPipeRamConfig[
   ModT <: Data,
@@ -1009,6 +2574,7 @@ case class DualWrPulseRdPipeRam[
   Builder(myLinkArr.toSeq)
   //--------
 }
+
 
 case class WrPulseRdPipeRam[
   ModT <: Data,
