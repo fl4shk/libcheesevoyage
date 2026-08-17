@@ -852,14 +852,14 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
         //  )
         //),
         //RegNext(
-          RegNextWhen(
-            palIdxPop.payload.lsb,
-            cond=palIdxPop.fire,
-            init=False,
-          ),
+        //  RegNextWhen(
+        //    palIdxPop.payload.lsb,
+        //    cond=palIdxPop.fire,
+        //    init=False,
+        //  ),
         //  init=False
         //),
-        //palIdxPop.payload.lsb,
+        palIdxPop.payload.lsb,
         myPalMem.io.nonBusRamRdData(
           myPalMem.io.nonBusRamRdData.high
           downto (myPalMem.io.nonBusRamRdData.getWidth >> 1)
