@@ -154,12 +154,12 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
   hiD2hFifo.io.push.payload := hiD2hFifo.io.push.payload.getZero
   hiD2hFifo.io.pop.ready := False
 
-  val rSeenLoH2dFire = Reg(Bool())
+  //val rSeenLoH2dFire = Reg(Bool())
   val rSeenLoD2hFire = Reg(Bool())
   val rSeenHiH2dFire = Reg(Bool())
   val rSeenHiD2hFire = Reg(Bool())
 
-  val rLoBurstCnt = Reg(UInt(cfg.loBusCfg.burstCntWidth bits))
+  val rRdLoBurstCnt = Reg(UInt(cfg.loBusCfg.burstCntWidth bits))
   val rHiBurstCnt = Reg(UInt(cfg.hiBusCfg.burstCntWidth bits))
 
   switch (rState) {
@@ -172,11 +172,11 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
         - 1
       )
 
-      rSeenLoH2dFire := False
+      //rSeenLoH2dFire := False
       rSeenLoD2hFire := False
       rSeenHiH2dFire := False
       rSeenHiD2hFire := False
-      rLoBurstCnt := (1 << cfg.loBusCfg.burstCntWidth) - 1
+      rRdLoBurstCnt := (1 << cfg.loBusCfg.burstCntWidth) - 1
       rHiBurstCnt := (1 << cfg.hiBusCfg.burstCntWidth) - 1
 
       //when (
@@ -275,19 +275,19 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
         dataAssignment=(outp, inp) => {
           outp := inp
           outp.mainBurstInfo.allowOverride
-          outp.burstFirst := rLoBurstCnt.andR
-          outp.burstLast := !rLoBurstCnt.orR
-          outp.burstCnt := rLoBurstCnt
+          outp.burstFirst := rRdLoBurstCnt.andR
+          outp.burstLast := !rRdLoBurstCnt.orR
+          outp.burstCnt := rRdLoBurstCnt
         }
       )
 
       when (io.loBus.d2hBus.fire) {
-        rLoBurstCnt := rLoBurstCnt - 1
+        rRdLoBurstCnt := rRdLoBurstCnt - 1
       }
 
       when (
         io.loBus.d2hBus.fire
-        && !rLoBurstCnt.orR
+        && !rRdLoBurstCnt.orR
       ) {
         rState := State.IDLE
       }
@@ -295,6 +295,8 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
 
     is (State.WRITE_BURST) {
       io.hiBus.h2dBus << hiH2dFifo.io.pop
+      //loH2dFifo.io.push << io.loBus.h2dBus
+
       val myWrPushStmVec = Vec.fill(2)(
         cloneOf(io.loBus.h2dBus)
       )
@@ -305,12 +307,12 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
       //  rSeenLoH2dFire
       //  && rLoBurstCnt.andR
       //)
-
       myWrPushStmVec.head << io.loBus.h2dBus
-      when (io.loBus.h2dBus.fire) {
-        rSeenLoH2dFire := True
-        rLoBurstCnt := rLoBurstCnt - 1
-      }
+
+      //when (io.loBus.h2dBus.fire) {
+      //  rSeenLoH2dFire := True
+      //  //rLoBurstCnt := rLoBurstCnt - 1
+      //}
 
       myWrPushStmVec.last << myWrPushStmVec.head.repeat(
         times=myDataWidthRatio
@@ -339,7 +341,8 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
             )
           )
           outp.addr(cfg.loBusCfg.addrLoWidth - 1) := (
-            !rHiBurstCnt.lsb
+            //!rHiBurstCnt.lsb
+            rHiBurstCnt.lsb
           )
           //if (cfg.hiBusCfg.addrLoWidth > 1) {
           //  outp.addr(cfg.hiBusCfg.addrLoWidth - 2 downto 0) := 0x0
