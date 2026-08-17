@@ -732,7 +732,7 @@ case class LcvSimpleReorderBufIo[
     cfg.wordType()
   ))
   val occupancy = out(
-    UInt(cfg.reorderBufIdxWidth bits)
+    UInt((cfg.reorderBufIdxWidth + 1) bits)
   )
 }
 
@@ -923,7 +923,7 @@ case class LcvSimpleStreamFifoIo[
     cfg.wordType()
   ))
   val occupancy = out(
-    UInt(cfg.reorderBufIdxWidth bits)
+    UInt((cfg.reorderBufIdxWidth + 1) bits)
   )
 }
 case class LcvSimpleStreamFifo[
