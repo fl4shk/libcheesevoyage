@@ -312,15 +312,15 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
 
           outp.addr(
             outp.addr.high
-            downto cfg.hiBusCfg.addrLoWidth //rHiBurstCnt.getWidth
+            downto cfg.loBusCfg.addrLoWidth //rHiBurstCnt.getWidth
           ) := (
             inp.addr(
               outp.addr.high
-              downto cfg.hiBusCfg.addrLoWidth //rHiBurstCnt.getWidth
+              downto cfg.loBusCfg.addrLoWidth //rHiBurstCnt.getWidth
             )
           )
-          outp.addr(cfg.hiBusCfg.addrLoWidth - 1) := (
-            rHiBurstCnt.lsb
+          outp.addr(cfg.loBusCfg.addrLoWidth - 1) := (
+            !rHiBurstCnt.lsb
           )
           //if (cfg.hiBusCfg.addrLoWidth > 1) {
           //  outp.addr(cfg.hiBusCfg.addrLoWidth - 2 downto 0) := 0x0
