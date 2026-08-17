@@ -719,7 +719,7 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
 
   require(
     rgbBusRatio == 1
-    || rgbBusRatio == 2
+    //|| rgbBusRatio == 2
   )
 
   def busCfg = cfg.busCfg
