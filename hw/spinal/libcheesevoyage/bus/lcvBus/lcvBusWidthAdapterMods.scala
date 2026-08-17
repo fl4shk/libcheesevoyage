@@ -121,27 +121,27 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
   //loH2dFifo.io.push.payload := loH2dFifo.io.push.payload.getZero
   //loH2dFifo.io.pop.ready := False
 
-  //val hiH2dFifo = (
-  //  StreamFifo(
-  //    dataType=cloneOf(io.hiBus.h2dBus.payload),
-  //    depth=(
-  //      1 << cfg.hiBusCfg.burstCntWidth
-  //    ),
-  //    latency=(
-  //      //2
-  //      1
-  //    ),
-  //    forFMax=true,
-  //  )
-  //)
-  val hiH2dFifo = LcvSimpleStreamFifo(
-    cfg=LcvSimpleReorderBufConfig(
-      wordType=cloneOf(io.hiBus.h2dBus.payload),
-      reorderBufIdxWidth=(
-        log2Up(1 << cfg.hiBusCfg.burstCntWidth)
+  val hiH2dFifo = (
+    StreamFifo(
+      dataType=cloneOf(io.hiBus.h2dBus.payload),
+      depth=(
+        1 << cfg.hiBusCfg.burstCntWidth
       ),
+      latency=(
+        2
+        //1
+      ),
+      forFMax=true,
     )
   )
+  //val hiH2dFifo = LcvSimpleStreamFifo(
+  //  cfg=LcvSimpleReorderBufConfig(
+  //    wordType=cloneOf(io.hiBus.h2dBus.payload),
+  //    reorderBufIdxWidth=(
+  //      log2Up(1 << cfg.hiBusCfg.burstCntWidth)
+  //    ),
+  //  )
+  //)
   //io.hiBus.h2dBus << hiH2dFifo.io.pop
   hiH2dFifo.io.push.valid := False
   hiH2dFifo.io.push.payload := hiH2dFifo.io.push.payload.getZero
