@@ -845,10 +845,15 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
   } else {
     myColFifo.io.push.payload.assignFromBits(
       Mux(
+        //RegNext(
+        //  RegNextWhen(
+        //    palIdxPop.payload.lsb,
+        //    cond=myPalMem.io.nonBusRamRdEn,
+        //  )
+        //),
         RegNext(
-          RegNextWhen(
+          RegNext(
             palIdxPop.payload.lsb,
-            cond=myPalMem.io.nonBusRamRdEn,
           )
         ),
         //palIdxPop.payload.lsb,
