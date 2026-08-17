@@ -162,10 +162,6 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
   val rLoBurstCnt = Reg(UInt(cfg.loBusCfg.burstCntWidth bits))
   val rHiBurstCnt = Reg(UInt(cfg.hiBusCfg.burstCntWidth bits))
 
-  val myWrPushStmVec = Vec.fill(2)(
-    cloneOf(io.loBus.h2dBus)
-  )
-
   switch (rState) {
     is (State.IDLE) {
       rSavedLoH2dPayload := io.loBus.h2dBus.payload
@@ -299,6 +295,9 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
 
     is (State.WRITE_BURST) {
       io.hiBus.h2dBus << hiH2dFifo.io.pop
+      val myWrPushStmVec = Vec.fill(2)(
+        cloneOf(io.loBus.h2dBus)
+      )
 
       //hiH2dFifo.io.push <-/< myPushStmVec.last
       //myWrPushStmVec.head << io.loBus.h2dBus.haltWhen(
@@ -306,6 +305,7 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
       //  rSeenLoH2dFire
       //  && rLoBurstCnt.andR
       //)
+
       myWrPushStmVec.head << io.loBus.h2dBus
       when (io.loBus.h2dBus.fire) {
         rSeenLoH2dFire := True
