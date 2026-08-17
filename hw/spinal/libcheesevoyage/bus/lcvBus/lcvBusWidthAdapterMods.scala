@@ -295,7 +295,7 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
       }
 
       myPushStmVec.last <-/< myPushStmVec.head.repeat(
-        times=myDataWidthRatio
+        times=1//myDataWidthRatio
       )._1
       myPushStmVec.last.translateInto(
         hiH2dFifo.io.push
@@ -305,7 +305,27 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
           outp.burstLast := !rHiBurstCnt.orR
           outp.burstCnt := rSavedHiH2dBurstCnt
           outp.isWrite := True
-          outp.addr := inp.addr
+          //outp.addr := inp.addr
+          //outp.addr := inp.addr(
+          //  outp.addr
+          //)
+
+          outp.addr(
+            outp.addr.high
+            downto cfg.hiBusCfg.addrLoWidth //rHiBurstCnt.getWidth
+          ) := (
+            inp.addr(
+              inp.addr.high
+              downto cfg.loBusCfg.addrLoWidth //rHiBurstCnt.getWidth
+            )
+          )
+          outp.addr(cfg.hiBusCfg.addrLoWidth - 1) := (
+            rHiBurstCnt.lsb
+          )
+          //if (cfg.hiBusCfg.addrLoWidth > 1) {
+          //  outp.addr(cfg.hiBusCfg.addrLoWidth - 2 downto 0) := 0x0
+          //}
+
           switch (rHiBurstCnt.lsb) {
             is (True) {
               if (outp.mainNonBurstInfo.infoByteEn != null) {
@@ -314,6 +334,9 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
                   downto 0
                 )
               }
+              //inp.addr
+              //outp.addr := rSavedLoH2dPayload.burstAddr(
+              //)
               outp.data := inp.data(
                 cfg.hiBusCfg.dataWidth - 1
                 downto 0
