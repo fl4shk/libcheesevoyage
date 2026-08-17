@@ -902,6 +902,10 @@ case class LcvSimpleReorderBuf[
   myRam.io.rdAddrPipe.data.reorderBufIdx := myRdAddr
   myRam.io.rdAddrPipe.addr := myRdAddr
 
+  when (myRam.io.rdAddrPipe.fire) {
+    rValidVec(myRdAddr) := False
+  }
+
   //io.pop << myRam.io.rdDataPipe
   myRam.io.rdDataPipe.translateInto(io.pop)(
     dataAssignment=(outp, inp) => {
