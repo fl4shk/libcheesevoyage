@@ -102,6 +102,23 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
     init(io.hiBus.h2dBus.burstCnt.getZero)
   )
 
+  //val loH2dFifo = (
+  //  StreamFifo(
+  //    dataType=cloneOf(io.loBus.h2dBus.payload),
+  //    depth=(
+  //      1 << cfg.loBusCfg.burstCntWidth
+  //    ),
+  //    latency=(
+  //      2
+  //    ),
+  //    forFMax=true,
+  //  )
+  //)
+  ////io.loBus.h2dBus << loH2dFifo.io.pop
+  //loH2dFifo.io.push.valid := False
+  //loH2dFifo.io.push.payload := loH2dFifo.io.push.payload.getZero
+  //loH2dFifo.io.pop.ready := False
+
   val hiH2dFifo = (
     StreamFifo(
       dataType=cloneOf(io.hiBus.h2dBus.payload),
@@ -144,6 +161,10 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
 
   val rLoBurstCnt = Reg(UInt(cfg.loBusCfg.burstCntWidth bits))
   val rHiBurstCnt = Reg(UInt(cfg.hiBusCfg.burstCntWidth bits))
+
+  val myWrPushStmVec = Vec.fill(2)(
+    cloneOf(io.loBus.h2dBus)
+  )
 
   switch (rState) {
     is (State.IDLE) {
@@ -279,25 +300,23 @@ case class LcvBusSimpleBurstOnlyDataWidthDownAdapter(
     is (State.WRITE_BURST) {
       io.hiBus.h2dBus << hiH2dFifo.io.pop
 
-      val myPushStmVec = Vec.fill(2)(
-        cloneOf(io.loBus.h2dBus)
-      )
-
       //hiH2dFifo.io.push <-/< myPushStmVec.last
-      myPushStmVec.head << io.loBus.h2dBus.haltWhen(
-        //rSeenHiH2dFire
-        rSeenLoH2dFire
-        && rLoBurstCnt.andR
-      )
+      //myWrPushStmVec.head << io.loBus.h2dBus.haltWhen(
+      //  //rSeenHiH2dFire
+      //  rSeenLoH2dFire
+      //  && rLoBurstCnt.andR
+      //)
+      myWrPushStmVec.head << io.loBus.h2dBus
       when (io.loBus.h2dBus.fire) {
         rSeenLoH2dFire := True
         rLoBurstCnt := rLoBurstCnt - 1
       }
 
-      myPushStmVec.last << myPushStmVec.head.repeat(
+      myWrPushStmVec.last << myWrPushStmVec.head.repeat(
         times=myDataWidthRatio
       )._1
-      myPushStmVec.last.translateInto(
+
+      myWrPushStmVec.last.translateInto(
         hiH2dFifo.io.push
       )(
         dataAssignment=(outp, inp) => {
