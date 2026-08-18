@@ -23,9 +23,13 @@ case class LcvBusFramebufferConfig(
   //vgaTimingInfo: LcvVgaTimingInfo,
   fbSize2d: ElabVec2[Int],
   dblBuf: Boolean,
+  optDblBufAddrSliceVal: Option[Int],
+  //dblBufMmapCfg: Option[LcvBusMemMapConfig],
+
   cnt2dShift: ElabVec2[Int],
   //cnt2dShiftOne: ElabVec2[Boolean], // for line/pixel doubling
 ) {
+  //val dblBuf = (dblBufMmapCfg != None)
   //val cnt2dShift = ElabVec2[Int](
   //  x=(if (cnt2dShiftOne.x) (1) else (0)),
   //  y=(if (cnt2dShiftOne.y) (1) else (0)),
@@ -75,11 +79,12 @@ case class LcvBusFramebufferConfig(
   )
   def busCfg = fbMmapCfg.busCfg
   //def fbSize2d = vgaTimingInfo.fbSize2d
+  val myFbSize2dDblBufFactor = (
+    if (dblBuf && (optDblBufAddrSliceVal == None)) (2) else (1)
+  )
   val myFbSize2dMult = (
     fbSize2d.x * fbSize2d.y
-    * (
-      if (dblBuf) (2) else (1)
-    )
+    * myFbSize2dDblBufFactor
   )
 
   //val myFbCntOverflow = myFbSize2dMult
@@ -737,7 +742,12 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
     rgbCfg=rgbCfg,
     someSize2d=ElabVec2[Int](
       x=fbSize2d.x,
-      y=(fbSize2d.y * (if (cfg.dblBuf) (2) else (1))),
+      y=(
+        //(fbSize2d.y * (if (cfg.dblBuf) (2) else (1)))
+        //fbSize2d.y
+        //fbSize2d.y * (if (cfg.dblBuf) (2) else (1))
+        fbSize2d.y * cfg.myFbSize2dDblBufFactor
+      ),
     ),
     cnt2dShift=cfg.cnt2dShift,
   )
@@ -909,18 +919,39 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
   if (cnt2dShift.y > 0) {
     myH2dThrowCond := rMyFinishedFetchingLine
   }
+
+  val rMyH2dAddrSliceVal = (
+    cfg.dblBuf
+    && (cfg.optDblBufAddrSliceVal != None)
+  ) generate {
+    val temp = Reg(Flow(UInt(cfg.fbMmapCfg.addrSliceWidth bits)))
+    temp.valid.init(False)
+    temp.payload.init(cfg.fbMmapCfg.addrSliceValUInt)
+    temp
+  }
+
   myH2dStm(1) <-/< myH2dMaybeThrownStm
   myH2dStm(1).translateInto(myH2dStm.last)(
     dataAssignment=(outp, inp) => {
       outp := inp
       outp.addr.allowOverride
-      outp.addr(cfg.fbMmapCfg.addrSliceRange) := (
-        cfg.fbMmapCfg.addrSliceValUInt
-      )
+      if (
+        cfg.dblBuf
+        && (cfg.optDblBufAddrSliceVal != None)
+      ) {
+        outp.addr(cfg.fbMmapCfg.addrSliceRange) := (
+          //cfg.fbMmapCfg.addrSliceValUInt
+          rMyH2dAddrSliceVal.payload
+        )
+      } else {
+        outp.addr(cfg.fbMmapCfg.addrSliceRange) := (
+          cfg.fbMmapCfg.addrSliceValUInt
+        )
+      }
     }
   )
 
-  val rFbRowCnt = (
+  val rFbColCnt = (
     Reg(UInt(
       (log2Up((myVideoCfg.someSize2d.x) + 1) + 1) bits
     ))
@@ -936,21 +967,21 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
   )
   when (myH2dMaybeThrownStm.fire) {
     when (
-      rFbRowCnt < (
+      rFbColCnt < (
         myVideoCfg.someSize2d.x
         - myBusBurstSizeMaxMult
       )
     ) {
-      rFbRowCnt := (
-        rFbRowCnt + myBusBurstSizeMaxMult
+      rFbColCnt := (
+        rFbColCnt + myBusBurstSizeMaxMult
       )
     } otherwise {
       rMyFinishedFetchingLine := True
-      rFbRowCnt := 0x0
+      rFbColCnt := 0x0
     }
   }
   when (myH2dMaybeThrownStm.fire) {
-    when (
+    val tempCond = (
       rFbAddrCnt
       < (
         (
@@ -961,12 +992,36 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
         )
         - cfg.myBusBurstSizeMax
       )
-    ) {
+    )
+    when (tempCond) {
       rFbAddrCnt := (
         rFbAddrCnt + cfg.myBusBurstSizeMax
       )
     } otherwise {
+      rMyH2dAddrSliceVal.valid := !rMyH2dAddrSliceVal.fire
       rFbAddrCnt := 0x0
+    }
+    if (
+      cfg.dblBuf
+      && (cfg.optDblBufAddrSliceVal != None)
+    ) {
+      switch (
+        tempCond
+        ## rMyH2dAddrSliceVal.fire
+      ) {
+        is (M"00") {
+          rMyH2dAddrSliceVal.payload := (
+            cfg.optDblBufAddrSliceVal.get
+          )
+        }
+        is (M"01") {
+          rMyH2dAddrSliceVal.payload := (
+            cfg.fbMmapCfg.addrSliceValUInt
+          )
+        }
+        default {
+        }
+      }
     }
   }
   def myDataAssignmentH2d(
@@ -1366,7 +1421,14 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlNonPal(
     rgbCfg=rgbCfg,
     someSize2d=ElabVec2[Int](
       x=fbSize2d.x,
-      y=(fbSize2d.y * (if (cfg.dblBuf) (2) else (1))),
+      y=(
+        //fbSize2d.y * (if (cfg.dblBuf) (2) else (1))
+        //(fbSize2d.y * (if (
+        //  cfg.dblBuf
+        //) (2) else (1)))
+        fbSize2d.y * cfg.myFbSize2dDblBufFactor
+        //fbSize2d.y
+      ),
     ),
     cnt2dShift=cfg.cnt2dShift,
   )
@@ -1409,18 +1471,39 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlNonPal(
   if (cnt2dShift.y > 0) {
     myH2dThrowCond := rMyFinishedFetchingLine
   }
+
+  val rMyH2dAddrSliceVal = (
+    cfg.dblBuf
+    && (cfg.optDblBufAddrSliceVal != None)
+  ) generate {
+    val temp = Reg(Flow(UInt(cfg.fbMmapCfg.addrSliceWidth bits)))
+    temp.valid.init(False)
+    temp.payload.init(cfg.fbMmapCfg.addrSliceValUInt)
+    temp
+  }
+
   myH2dStm(1) <-/< myH2dMaybeThrownStm
   myH2dStm(1).translateInto(myH2dStm.last)(
     dataAssignment=(outp, inp) => {
       outp := inp
       outp.addr.allowOverride
-      outp.addr(cfg.fbMmapCfg.addrSliceRange) := (
-        cfg.fbMmapCfg.addrSliceValUInt
-      )
+      if (
+        cfg.dblBuf
+        && (cfg.optDblBufAddrSliceVal != None)
+      ) {
+        outp.addr(cfg.fbMmapCfg.addrSliceRange) := (
+          //cfg.fbMmapCfg.addrSliceValUInt
+          rMyH2dAddrSliceVal.payload
+        )
+      } else {
+        outp.addr(cfg.fbMmapCfg.addrSliceRange) := (
+          cfg.fbMmapCfg.addrSliceValUInt
+        )
+      }
     }
   )
 
-  val rFbRowCnt = (
+  val rFbColCnt = (
     Reg(UInt(
       (log2Up((myVideoCfg.someSize2d.x) + 1) + 1) bits
     ))
@@ -1436,21 +1519,21 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlNonPal(
   )
   when (myH2dMaybeThrownStm.fire) {
     when (
-      rFbRowCnt < (
+      rFbColCnt < (
         myVideoCfg.someSize2d.x
         - myBusBurstSizeMaxMult
       )
     ) {
-      rFbRowCnt := (
-        rFbRowCnt + myBusBurstSizeMaxMult
+      rFbColCnt := (
+        rFbColCnt + myBusBurstSizeMaxMult
       )
     } otherwise {
       rMyFinishedFetchingLine := True
-      rFbRowCnt := 0x0
+      rFbColCnt := 0x0
     }
   }
   when (myH2dMaybeThrownStm.fire) {
-    when (
+    val tempCond = (
       rFbAddrCnt
       < (
         (
@@ -1461,12 +1544,35 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlNonPal(
         )
         - cfg.myBusBurstSizeMax
       )
-    ) {
+    )
+    when (tempCond) {
       rFbAddrCnt := (
         rFbAddrCnt + cfg.myBusBurstSizeMax
       )
     } otherwise {
       rFbAddrCnt := 0x0
+    }
+    if (
+      cfg.dblBuf
+      && (cfg.optDblBufAddrSliceVal != None)
+    ) {
+      switch (
+        tempCond
+        ## rMyH2dAddrSliceVal.fire
+      ) {
+        is (M"00") {
+          rMyH2dAddrSliceVal.payload := (
+            cfg.optDblBufAddrSliceVal.get
+          )
+        }
+        is (M"01") {
+          rMyH2dAddrSliceVal.payload := (
+            cfg.fbMmapCfg.addrSliceValUInt
+          )
+        }
+        default {
+        }
+      }
     }
   }
   def myDataAssignmentH2d(
