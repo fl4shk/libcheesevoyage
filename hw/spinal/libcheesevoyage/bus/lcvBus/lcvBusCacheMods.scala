@@ -6246,6 +6246,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
     is (State.SEND_LINE_TO_HI_BUS_PIPE_3) {
       rState := State.SEND_LINE_TO_HI_BUS_PIPE_2
       lineAttrsRam.foreach(item => item.io.rdEn := False)
+      rHiH2dPayload.burstLast := False
 
       val myTempAddr = (
         Cat(
