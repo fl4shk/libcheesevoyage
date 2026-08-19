@@ -998,7 +998,12 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
         rFbAddrCnt + cfg.myBusBurstSizeMax
       )
     } otherwise {
-      rMyH2dAddrSliceVal.valid := !rMyH2dAddrSliceVal.fire
+      if (
+        cfg.dblBuf
+        && (cfg.optDblBufAddrSliceVal != None)
+      ) {
+        rMyH2dAddrSliceVal.valid := !rMyH2dAddrSliceVal.fire
+      }
       rFbAddrCnt := 0x0
     }
     if (
@@ -1550,6 +1555,12 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlNonPal(
         rFbAddrCnt + cfg.myBusBurstSizeMax
       )
     } otherwise {
+      if (
+        cfg.dblBuf
+        && (cfg.optDblBufAddrSliceVal != None)
+      ) {
+        rMyH2dAddrSliceVal.valid := !rMyH2dAddrSliceVal.fire
+      }
       rFbAddrCnt := 0x0
     }
     if (
