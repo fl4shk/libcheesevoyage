@@ -507,21 +507,29 @@ private[libcheesevoyage] case class LcvBusSlicerAllowBursts(
     whichBusIsH2d: Boolean,
     isBurst: Boolean,
   ): Unit = {
-    switch (
+    switch ({
+      val tempStateBitIdx = (
+        if (!isBurst) (1) else (2)
+      )
+      val myTempStateBit = rState.asBits(tempStateBitIdx)
       //stickyHostH2dBurstFirst
       //## 
       (
-        if (whichBusIsH2d) (
-          //rState === State.MAIN
-          rState.asBits(1)
-          && (rSavedH2dAddrSlice === stickyHostH2dAddrSlice)
-        ) else (
-          //rState === State.MAIN
-          rState.asBits(1)
+        (
+          if (whichBusIsH2d) (
+            //rState === State.MAIN
+            //rState.asBits(1)
+            myTempStateBit
+            && (rSavedH2dAddrSlice === stickyHostH2dAddrSlice)
+          ) else (
+            //rState === State.MAIN
+            //rState.asBits(1)
+            myTempStateBit
+          )
         )
+        ## rSavedH2dAddrSlice
       )
-      ## rSavedH2dAddrSlice
-    ) {
+    }) {
       for (devIdx <- 0 until cfg.numDevs) {
         is (
           (
