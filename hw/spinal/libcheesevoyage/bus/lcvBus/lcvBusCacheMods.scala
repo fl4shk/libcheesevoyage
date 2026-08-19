@@ -4481,7 +4481,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
       rHadHiD2hFinish := False
 
       rHiH2dPayload.burstFirst := True
-      rHiH2dPayload.burstLast := False
+      rHiH2dPayload.burstLast := True//False
       rHiH2dPayload.burstCnt := hiBusCfg.maxBurstSizeMinus1
 
       rHiH2dPayload.isWrite := False
@@ -6411,7 +6411,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
       rHadHiD2hFinish := False
 
       rHiH2dPayload.burstFirst := True
-      rHiH2dPayload.burstLast := False
+      rHiH2dPayload.burstLast := True//False
       rHiH2dPayload.burstCnt := hiBusCfg.maxBurstSizeMinus1
 
       rHiH2dPayload.isWrite := False

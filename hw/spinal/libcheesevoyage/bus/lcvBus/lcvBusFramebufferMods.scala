@@ -1047,7 +1047,7 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
     if (busCfg.allowBurst) {
       outp.burstFirst := True
       outp.burstCnt := busCfg.maxBurstSizeMinus1
-      outp.burstLast := False
+      outp.burstLast := True//False
     }
   }
   myDataAssignmentH2d(
@@ -1604,7 +1604,7 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlNonPal(
     if (busCfg.allowBurst) {
       outp.burstFirst := True
       outp.burstCnt := busCfg.maxBurstSizeMinus1
-      outp.burstLast := False
+      outp.burstLast := True//False
     }
   }
   myDataAssignmentH2d(
