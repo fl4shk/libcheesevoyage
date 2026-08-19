@@ -446,7 +446,7 @@ private[libcheesevoyage] case class LcvBusSlicerAllowBursts(
     } else {
       when (
         dev.d2hBus.fire
-        && dev.h2dBus.burstLast
+        && dev.d2hBus.burstLast
       ) {
         rSeenD2hLastFire := True
       }
@@ -501,6 +501,8 @@ private[libcheesevoyage] case class LcvBusSlicerAllowBursts(
     && rSeenD2hLastFire
   ) {
     rState := State.START_NEW_ADDR_SLICE_ETC
+    rSeenH2dLastFire := False
+    rSeenD2hLastFire := False
   }
 
   def outerDoConnect(
