@@ -986,7 +986,7 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
     io.csrLoBus != null
   ) generate {
     val temp = Vec.fill(2)(
-      Reg(UInt(log2Up(2) bits))
+      Reg(UInt(1 bits))
     )
     for (idx <- 0 until temp.size) {
       temp.init(idx)
