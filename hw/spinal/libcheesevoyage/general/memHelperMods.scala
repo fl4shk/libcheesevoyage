@@ -1006,35 +1006,35 @@ case class WrPulseRdPipeRamIo[
   cfg: WrPulseRdPipeRamConfig[ModT, WordT],
   optDualWr: Boolean=false,
 ) extends Bundle {
-  val wrPulse = slave Flow(
+  val wrPulse = slave(Flow(
     PipeSimpleDualPortMemDrivePayload(
       dataType=cfg.wordType(),
       wordCount=cfg.wordCount,
     )
-  )
+  ))
 
   val otherWrPulse = (
     optDualWr
   ) generate (
-    slave Flow(
+    slave(Flow(
       PipeSimpleDualPortMemDrivePayload(
         dataType=cfg.wordType(),
         wordCount=cfg.wordCount,
       )
-    )
+    ))
   )
 
   //val rdAddrPipe = Stream(UInt(addrWidth bits))
-  val rdAddrPipe = slave Stream(
+  val rdAddrPipe = slave(Stream(
     PipeSimpleDualPortMemDrivePayload(
       dataType=cfg.modType(),
       wordCount=cfg.wordCount,
     )
-  )
-  val rdDataPipe = master Stream(
+  ))
+  val rdDataPipe = master(Stream(
     //wordType()
     cfg.modType()
-  )
+  ))
   val myExternalInpCond = in(Bool())
 }
 
@@ -1290,19 +1290,67 @@ case class WrPulseRdPipeRam[
   val myRamSimpleDualPortArea = (
     cfg.optRdLatency <= 1
     //&& !cfg.optRename
-  ) generate (new Area {
+  ) generate new Area {
     val ram = WrPulseRdPipeRamSimpleDualPort(cfg=cfg)
     io <> ram.io
-  })
+  }
 
   val myRamSdpPipeArea = (
     cfg.optRdLatency >= 2
     //&& !cfg.optRename
-  ) generate (new Area {
+  ) generate new Area {
     val ram = WrPulseRdPipeRamSdpPipe(cfg=cfg)
     io <> ram.io
-  })
+  }
 }
+
+//case class WrPulseRdPipeFifoIo[
+//  ModT <: Data,
+//  WordT <: Data,
+//](
+//  cfg: WrPulseRdPipeRamConfig[ModT, WordT],
+//) extends Bundle {
+//  val wrPulse = (
+//    slave(Flow(
+//      cfg.wordType()
+//    ))
+//  )
+//  val rdDataPipe = (
+//    master(Stream(
+//      //wordType()
+//      cfg.modType()
+//    ))
+//  )
+//}
+//
+//case class WrPulseRdPipeFifo[
+//  ModT <: Data,
+//  WordT <: Data,
+//](
+//  cfg: WrPulseRdPipeRamConfig[ModT, WordT],
+//) extends Component {
+//  //--------
+//  val io = WrPulseRdPipeFifoIo(cfg=cfg)
+//  //--------
+//  val myRam = WrPulseRdPipeRam(cfg=cfg)
+//  myRam.io.wrPulse.valid := io.wrPulse.fire
+//  myRam.io.wrPulse.data := io.wrPulse.payload
+//  myRam.io.wrPulse.addr := (
+//    (
+//      RegNextWhen(
+//        (myRam.io.wrPulse.addr + 1),//.asSInt,
+//        cond=myRam.io.wrPulse.fire,
+//      )
+//      init(
+//        //-1
+//        0x0
+//      )
+//    )//.asUInt
+//  )
+//  myRam.io.rdAddrP
+//
+//  //--------
+//}
 
 //private[libcheesevoyage] case class WrPulseRdPipeRamWithRenaming[
 //  ModT <: Data,
@@ -2400,26 +2448,26 @@ case class WrPulseRdPipeSimpleDualPortMemIo[
   val unionIdx = in UInt(unionIdxWidth bits)
   //--------
   def addrWidth = log2Up(wordCount)
-  val wrPulse = slave Flow(
+  val wrPulse = slave(Flow(
     PipeSimpleDualPortMemDrivePayload(
       //wordType=wordType(),
       //dataType=dataType,
       dataType=wordType(),
       wordCount=wordCount,
     )
-  )
+  ))
   //val rdAddrPipe = Stream(UInt(addrWidth bits))
-  val rdAddrPipe = slave Stream(
+  val rdAddrPipe = slave(Stream(
     PipeSimpleDualPortMemDrivePayload(
       //wordType=wordType(),
       dataType=dataType(),
       wordCount=wordCount,
     )
-  )
-  val rdDataPipe = master Stream(
+  ))
+  val rdDataPipe = master(Stream(
     //wordType()
     dataType()
-  )
+  ))
   //--------
 }
 

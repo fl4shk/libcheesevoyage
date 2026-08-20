@@ -9,6 +9,8 @@ import spinal.lib._
 import spinal.lib.misc.pipeline._
 
 
+import libcheesevoyage.general.WrPulseRdPipeRam
+import libcheesevoyage.general.PipeSimpleDualPortMemDrivePayload
 import libcheesevoyage.general.RamSdpPipeConfig
 import libcheesevoyage.general.RamSdpPipeIo
 import libcheesevoyage.general.RamSdpPipe
@@ -24,13 +26,17 @@ case class LcvBusMemConfig(
   arrRamStyleXilinx: String="block",
   arrRwAddrCollisionXilinx: String="",
   busD2hFifoLatency: Int=2,
-  optHaveNonBusRdPort: Boolean=false,
+  optHaveExtraRamRdPort: Boolean=false,
+  //optHaveExtraRamRdPipePorts: Boolean=false,
 ) {
-  if (optHaveNonBusRdPort) {
+  if (
+    optHaveExtraRamRdPort
+    //|| optHaveExtraRamRdPipePorts
+  ) {
     require(
       depth <= 256,
       s"a depth greater than 256 was deemed too big for "
-      + s"`optHaveNonBusRdPort`!"
+      + s"`optHaveExtraRamRdPort`!"
     )
   }
 
@@ -75,18 +81,18 @@ case class LcvBusMemIo(
     ))
   )
 
-  val nonBusRamRdEn = (
-    cfg.optHaveNonBusRdPort
+  val extraRamRdEn = (
+    cfg.optHaveExtraRamRdPort
   ) generate (
     in(Bool())
   )
-  val nonBusRamRdAddr = (
-    cfg.optHaveNonBusRdPort
+  val extraRamRdAddr = (
+    cfg.optHaveExtraRamRdPort
   ) generate (
     in(UInt(log2Up(cfg.depth) bits))
   )
-  val nonBusRamRdData = (
-    cfg.optHaveNonBusRdPort
+  val extraRamRdData = (
+    cfg.optHaveExtraRamRdPort
   ) generate (
     // NOTE:
     // it looks like we don't *have* to use `cfg.myBusCfg`,
@@ -96,6 +102,24 @@ case class LcvBusMemIo(
     // `cfg.myBusCfg.dataWidth`
     out(UInt(cfg.busCfg.dataWidth bits))
   )
+
+  //val rdAddrPipe = (
+  //  cfg.optHaveExtraRamRdPipePorts
+  //) generate (
+  //  slave(Stream(
+  //    PipeSimpleDualPortMemDrivePayload(
+  //      dataType=UInt(cfg.busCfg.dataWidth bits),
+  //      wordCount=cfg.depth,
+  //    )
+  //  ))
+  //)
+  //val rdDataPipe = (
+  //  cfg.optHaveExtraRamRdPipePorts
+  //) generate (
+  //  master(Stream(
+  //    UInt(cfg.busCfg.dataWidth bits)
+  //  ))
+  //)
 }
 
 private[libcheesevoyage] case class LcvBusMemImpl(
@@ -111,20 +135,20 @@ private[libcheesevoyage] case class LcvBusMemImpl(
   //--------
   val ram = RamSdpPipe(cfg=cfg.ramCfg)
   val nonBusDuplRam = (
-    cfg.optHaveNonBusRdPort
+    cfg.optHaveExtraRamRdPort
   ) generate (
     RamSdpPipe(cfg=cfg.ramCfg)
   )
-  if (cfg.optHaveNonBusRdPort) {
+  if (cfg.optHaveExtraRamRdPort) {
     nonBusDuplRam.io.wrEn := ram.io.wrEn
     nonBusDuplRam.io.wrAddr := ram.io.wrAddr
     if (ram.io.wrByteEn != null) {
       nonBusDuplRam.io.wrByteEn := ram.io.wrByteEn
     }
     nonBusDuplRam.io.wrData := ram.io.wrData
-    nonBusDuplRam.io.rdEn := io.nonBusRamRdEn
-    nonBusDuplRam.io.rdAddr := io.nonBusRamRdAddr
-    io.nonBusRamRdData := nonBusDuplRam.io.rdData.asUInt
+    nonBusDuplRam.io.rdEn := io.extraRamRdEn
+    nonBusDuplRam.io.rdAddr := io.extraRamRdAddr
+    io.extraRamRdData := nonBusDuplRam.io.rdData.asUInt
   }
 
   val rdLineWord = cloneOf(ram.io.rdData.asUInt)
@@ -815,10 +839,10 @@ case class LcvBusMem(
 ) extends Component {
   val io = LcvBusMemIo(cfg=cfg, useMyBusCfg=false)
   val myMemImpl = LcvBusMemImpl(cfg=cfg)
-  if (cfg.optHaveNonBusRdPort) {
-    myMemImpl.io.nonBusRamRdEn := io.nonBusRamRdEn
-    myMemImpl.io.nonBusRamRdAddr := io.nonBusRamRdAddr
-    io.nonBusRamRdData := myMemImpl.io.nonBusRamRdData
+  if (cfg.optHaveExtraRamRdPort) {
+    myMemImpl.io.extraRamRdEn := io.extraRamRdEn
+    myMemImpl.io.extraRamRdAddr := io.extraRamRdAddr
+    io.extraRamRdData := myMemImpl.io.extraRamRdData
   }
   val myDeburster = (
     cfg.busCfg.allowBurst
