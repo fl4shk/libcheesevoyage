@@ -894,6 +894,11 @@ case class LcvBusFramebufferCtrlIo(
   val pop = (
     master(Stream(Rgb(c=cfg.rgbCfg)))
   )
+  val fbPageIdx = (
+    csrLoBus != null
+  ) generate (
+    out(Bool())
+  )
   //val palIdxPop = (
   //  cfg.optPalIdxWidth != None
   //) generate (
@@ -992,6 +997,9 @@ private[libcheesevoyage] case class LcvBusFramebufferCtrlPal(
       temp(idx).init(idx)
     }
     temp
+  }
+  if (io.csrLoBus != null) {
+    io.fbPageIdx := rFbBusPageIdxVec.head.lsb
   }
   //--------
 
