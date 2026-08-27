@@ -177,7 +177,7 @@ case class LcvBusCacheConfig(
   kind: LcvCacheKind,
   lineSizeBytes: Int,
   depthWords: Int, // this is in number of words
-  numCpus: Int,
+  //numCpus: Int,
   numWays: Int=2,
   lineWordMemRamStyleAltera: String=(
     //"MLAB"
@@ -235,12 +235,12 @@ case class LcvBusCacheConfig(
       }
     }
   )
-  def coherent: Boolean = (numCpus > 1)
+  //def coherent: Boolean = (numCpus > 1)
   def myLineWordRamAddrRshift = log2Up(wordSizeBytes)
   def myLineAttrsRamAddrRshift = log2Up(lineSizeBytes)
 
   private[libcheesevoyage] def doRequires() {
-    require(numCpus >= 1)
+    //require(numCpus >= 1)
 
     require(
       busMainCfg.dataWidth == (1 << log2Up(busMainCfg.dataWidth)),
@@ -538,35 +538,35 @@ case class LcvBusMemMapConfig(
   )
 }
 
-case class LcvBusCacheSeqlock(
-  cfg: LcvBusConfig,
-) extends Bundle {
-  require(
-    cfg.cacheCfg != None
-  )
-  require(
-    cfg.cacheCfg.get.coherent
-  )
-
-  val data = UInt(cfg.cacheCfg.get.seqlockWidth bits)
-
-  def isLocked(): Bool = data.lsb
-
-  def lock(
-    prev: UInt=data
-  ): Unit = {
-    // if not passing in `prev` at the call site,
-    // make sure to `setAsReg()`, etc.
-    data := prev | 0x1
-  }
-  def unlock(
-    prev: UInt=data
-  ): Unit = {
-    // if not passing in `prev` at the call site,
-    // make sure to `setAsReg()`, etc.
-    data := prev + 1
-  }
-}
+//case class LcvBusCacheSeqlock(
+//  cfg: LcvBusConfig,
+//) extends Bundle {
+//  require(
+//    cfg.cacheCfg != None
+//  )
+//  require(
+//    cfg.cacheCfg.get.coherent
+//  )
+//
+//  val data = UInt(cfg.cacheCfg.get.seqlockWidth bits)
+//
+//  def isLocked(): Bool = data.lsb
+//
+//  def lock(
+//    prev: UInt=data
+//  ): Unit = {
+//    // if not passing in `prev` at the call site,
+//    // make sure to `setAsReg()`, etc.
+//    data := prev | 0x1
+//  }
+//  def unlock(
+//    prev: UInt=data
+//  ): Unit = {
+//    // if not passing in `prev` at the call site,
+//    // make sure to `setAsReg()`, etc.
+//    data := prev + 1
+//  }
+//}
 
 //object LcvBusH2dCacheMsg //LcvBusH2dDataCacheMsg
 //extends SpinalEnum(defaultEncoding=binarySequential) {
@@ -683,16 +683,16 @@ case class LcvBusH2dPayloadMainBurstInfo(
   val burstLast = Bool()
 }
 
-case class LcvBusH2dPayloadCacheInfo(
-  cfg: LcvBusConfig,
-) extends Bundle {
-  val seqlock = LcvBusCacheSeqlock(cfg=cfg)
-  //val cacheFirst = Bool()       // starting cache-related operations
-  val cacheLast = Bool()        // ending cache-related operations
-  val lineValid = Bool()
-  val lineDirty = Bool()
-  //val msg = LcvBusH2dCacheMsg()
-}
+//case class LcvBusH2dPayloadCacheInfo(
+//  cfg: LcvBusConfig,
+//) extends Bundle {
+//  val seqlock = LcvBusCacheSeqlock(cfg=cfg)
+//  //val cacheFirst = Bool()       // starting cache-related operations
+//  val cacheLast = Bool()        // ending cache-related operations
+//  val lineValid = Bool()
+//  val lineDirty = Bool()
+//  //val msg = LcvBusH2dCacheMsg()
+//}
 
 case class LcvBusH2dPayload(
   cfg: LcvBusConfig,
@@ -741,18 +741,18 @@ case class LcvBusH2dPayload(
   }
   //def selfBurstAddr() = this.burstAddr(someBurstCnt=burstCnt)
   //--------
-  val cacheInfo = (
-    cfg.cacheCfg != None
-    && cfg.cacheCfg.get.coherent
-  ) generate (
-    LcvBusH2dPayloadCacheInfo(cfg=cfg)
-  )
-  def cacheSeqlock = cacheInfo.seqlock
-  //def cacheFirst = cacheInfo.cacheFirst
-  def cacheLast = cacheInfo.cacheLast
-  def cacheLineValid = cacheInfo.lineValid
-  def cacheLineDirty = cacheInfo.lineDirty
-  //def cacheMsg = cacheInfo.msg
+  //val cacheInfo = (
+  //  cfg.cacheCfg != None
+  //  && cfg.cacheCfg.get.coherent
+  //) generate (
+  //  LcvBusH2dPayloadCacheInfo(cfg=cfg)
+  //)
+  //def cacheSeqlock = cacheInfo.seqlock
+  ////def cacheFirst = cacheInfo.cacheFirst
+  //def cacheLast = cacheInfo.cacheLast
+  //def cacheLineValid = cacheInfo.lineValid
+  //def cacheLineDirty = cacheInfo.lineDirty
+  ////def cacheMsg = cacheInfo.msg
   //--------
   val txnCnt = (cfg.optTxnCntWidth != None) generate (
     UInt(cfg.optTxnCntWidth.get bits)
@@ -815,16 +815,16 @@ case class LcvBusD2hPayloadMainBurstInfo(
   val burstLast = Bool()
 }
 
-case class LcvBusD2hPayloadCacheInfo(
-  cfg: LcvBusConfig,
-) extends Bundle {
-  val seqlock = LcvBusCacheSeqlock(cfg=cfg)
-  //val cacheFirst = Bool()       // starting cache-related operations
-  val cacheLast = Bool()        // ending cache-related operations
-  val lineValid = Bool()
-  val lineDirty = Bool()
-  //val msg = LcvBusH2dCacheMsg()
-}
+//case class LcvBusD2hPayloadCacheInfo(
+//  cfg: LcvBusConfig,
+//) extends Bundle {
+//  val seqlock = LcvBusCacheSeqlock(cfg=cfg)
+//  //val cacheFirst = Bool()       // starting cache-related operations
+//  val cacheLast = Bool()        // ending cache-related operations
+//  val lineValid = Bool()
+//  val lineDirty = Bool()
+//  //val msg = LcvBusH2dCacheMsg()
+//}
 
 case class LcvBusD2hPayload(
   cfg: LcvBusConfig,
@@ -847,18 +847,18 @@ case class LcvBusD2hPayload(
   def burstFirst = mainBurstInfo.burstFirst
   def burstLast = mainBurstInfo.burstLast
   //--------
-  val cacheInfo = (
-    cfg.cacheCfg != None
-    && cfg.cacheCfg.get.coherent
-  ) generate (
-    LcvBusD2hPayloadCacheInfo(cfg=cfg)
-  )
-  def cacheSeqlock = cacheInfo.seqlock
-  //def cacheFirst = cacheInfo.cacheFirst
-  def cacheLast = cacheInfo.cacheLast
-  def cacheLineValid = cacheInfo.lineValid
-  def cacheLineDirty = cacheInfo.lineDirty
-  //def cacheMsg = cacheInfo.msg
+  //val cacheInfo = (
+  //  cfg.cacheCfg != None
+  //  && cfg.cacheCfg.get.coherent
+  //) generate (
+  //  LcvBusD2hPayloadCacheInfo(cfg=cfg)
+  //)
+  //def cacheSeqlock = cacheInfo.seqlock
+  ////def cacheFirst = cacheInfo.cacheFirst
+  //def cacheLast = cacheInfo.cacheLast
+  //def cacheLineValid = cacheInfo.lineValid
+  //def cacheLineDirty = cacheInfo.lineDirty
+  ////def cacheMsg = cacheInfo.msg
   //--------
   val txnCnt = (cfg.optTxnCntWidth != None) generate (
     UInt(cfg.optTxnCntWidth.get bits)

@@ -18,11 +18,11 @@ case class LcvBusXbarConfig(
 ) {
   val busCfg = mmapCfg.busCfg
   val numDevs = mmapCfg.addrSliceSize
-  if (busCfg.cacheCfg != None) {
-    require(
-      numHosts == busCfg.cacheCfg.get.numCpus
-    )
-  }
+  //if (busCfg.cacheCfg != None) {
+  //  require(
+  //    numHosts == busCfg.cacheCfg.get.numCpus
+  //  )
+  //}
 }
 
 case class LcvBusXbarIo(

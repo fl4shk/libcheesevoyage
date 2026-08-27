@@ -177,14 +177,15 @@ case class LcvBusDeviceRamTesterConfig(
   testDataRamStyleXilinx: String="block",
 ) {
   def busVecSize = (
-    busCfg.cacheCfg match {
-      case Some(cacheCfg) => (
-        cacheCfg.numCpus
-      )
-      case None => (
-        1
-      )
-    }
+    1
+    //busCfg.cacheCfg match {
+    //  case Some(cacheCfg) => (
+    //    cacheCfg.numCpus
+    //  )
+    //  case None => (
+    //    1
+    //  )
+    //}
   )
 }
 
@@ -205,13 +206,13 @@ private[libcheesevoyage] case class LcvBusDeviceRamTesterNonCoherent(
 ) extends Component {
   //--------
   def busCfg = cfg.busCfg
-  busCfg.cacheCfg match {
-    case Some(cacheCfg) => {
-      require(!cacheCfg.coherent)
-    }
-    case None => {
-    }
-  }
+  //busCfg.cacheCfg match {
+  //  case Some(cacheCfg) => {
+  //    require(!cacheCfg.coherent)
+  //  }
+  //  case None => {
+  //  }
+  //}
   //--------
   val io = master(LcvBusIo(cfg=busCfg))
   //val io = LcvBusDeviceRamTesterIo(cfg=cfg)
@@ -1417,11 +1418,12 @@ case class LcvBusDeviceRamTester(
   def busCfg = cfg.busCfg
   val io = LcvBusDeviceRamTesterIo(cfg=cfg)
   val nonCoherentInnerTesterArea = (
-    (
-      busCfg.cacheCfg == None
-      || !busCfg.cacheCfg.get.coherent
-    )
-    && !cfg.kind._isCoherent
+    //(
+    //  busCfg.cacheCfg == None
+    //  || !busCfg.cacheCfg.get.coherent
+    //)
+    //&& 
+    !cfg.kind._isCoherent
   ) generate (new Area {
     val nonCoherentInnerTester = LcvBusDeviceRamTesterNonCoherent(cfg=cfg)
     nonCoherentInnerTester.io <> io.busVec.head
