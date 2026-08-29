@@ -418,31 +418,6 @@ private[libcheesevoyage] case class LcvBusSlicerAllowBursts(
         rSeenH2dLastFire := True
       }
       dev.h2dBus << io.host.h2dBus.haltWhen(rSeenH2dLastFire)
-      //when (!rSeenH2dLastFire) {
-      //  dev.h2dBus << io.host.h2dBus
-      //}
-      //when (rSeenH2dLastFire)
-      //switch (
-      //  rSavedIsWrite
-      //  ## rSeenH2dLastFire
-      //  ## io.host.h2dBus.burstLast
-      //) {
-      //  is (M"00") {
-      //    // read burst, didn't have last h2d fire yet
-      //    dev.h2dBus << io.host.h2dBus
-      //  }
-      //  is (M"01") {
-      //    // read burst, had last h2d fire
-      //  }
-      //  is (M"10") {
-      //    // write burst, didn't have last h2d fire yet
-      //    dev.h2dBus << io.host.h2dBus
-      //  }
-      //  is (M"11") {
-      //    // write burst, had last h2d fire
-      //    dev.h2dBus << io.host.h2dBus
-      //  }
-      //}
     } else {
       when (
         dev.d2hBus.fire
@@ -450,30 +425,12 @@ private[libcheesevoyage] case class LcvBusSlicerAllowBursts(
       ) {
         rSeenD2hLastFire := True
       }
-      //when (!rSeenD2hLastFire) {
-      //  io.host.d2hBus << dev.d2hBus
-      //}
       io.host.d2hBus << dev.d2hBus.haltWhen(rSeenD2hLastFire)
-      //switch (
-      //  rSavedIsWrite
-      //  ## rSeenD2hLastFire
-      //  //## dev.h2dBus.fire
-      //  //## dev.d2hBus.fire
-      //) {
-      //  is (M"10") {
-      //  }
-      //  is (M"11") {
-      //  }
-      //  is (M"00") {
-      //  }
-      //  is (M"01") {
-      //  }
-      //}
     }
   }
 
   when (
-    //rState === State.MAIN
+    //rState === State.MAIN_NON_BURST
     rState.asBits(1)
     && io.host.h2dBus.valid
     //&& !LcvFastCmpEq(
@@ -496,6 +453,7 @@ private[libcheesevoyage] case class LcvBusSlicerAllowBursts(
   }
 
   when (
+    //rState === State.MAIN_BURST
     rState.asBits(2)
     && rSeenH2dLastFire
     && rSeenD2hLastFire

@@ -29,12 +29,12 @@ case class LcvBusArbiterConfig(
 case class LcvBusArbiterIo(
   cfg: LcvBusArbiterConfig
 ) extends Bundle {
-  val en = (
-    cfg.kind == LcvBusArbiterKind.Priority
-    && cfg.busCfg.allowBurst
-  ) generate (
-    in(Bool())
-  )
+  //val en = (
+  //  cfg.kind == LcvBusArbiterKind.Priority
+  //  && cfg.busCfg.allowBurst
+  //) generate (
+  //  in(Bool())
+  //)
   //val softReset = (
   //  in(Bool())
   //)
@@ -151,15 +151,15 @@ case class LcvBusArbiter(
     RegNext(nextHostIdx, init=nextHostIdx.getZero)
   )
   if (cfg.kind == LcvBusArbiterKind.Priority) {
-    if (cfg.busCfg.allowBurst) {
-      when (io.en) {
-        nextHostIdx := rHostIdx
-      } otherwise {
-        nextHostIdx := 0x0
-      }
-    } else {
+    //if (cfg.busCfg.allowBurst) {
+    //  when (io.en) {
+    //    nextHostIdx := rHostIdx
+    //  } otherwise {
+    //    nextHostIdx := 0x0
+    //  }
+    //} else {
       nextHostIdx := rHostIdx
-    }
+    //}
   } else {
     nextHostIdx := rHostIdx
   }
@@ -226,8 +226,9 @@ case class LcvBusArbiter(
     cfg.kind match {
       case LcvBusArbiterKind.Priority => {
         when (
-          io.en
-          && myPriorityFindFirst._1
+          //io.en
+          //&& 
+          myPriorityFindFirst._1
         ) {
           nextHostIdx := myPriorityFindFirst._2
         } otherwise {
@@ -248,7 +249,7 @@ case class LcvBusArbiter(
     }
   }
 
-  object AllowBurstState
+  object AllowBurstNonPrioState
   extends SpinalEnum(defaultEncoding=binarySequential) {
     val
       IDLE,
@@ -261,9 +262,10 @@ case class LcvBusArbiter(
   //when (io.softReset) {
   //  rSoftResetState := True
   //}
-  val myAllowBurstArea = (
+  val myAllowBurstNonPriorityArea = (
     cfg.busCfg.allowBurst
-  ) generate (new Area {
+    && cfg.kind != LcvBusArbiterKind.Priority
+  ) generate new Area {
     val rSavedForceHost = {
       val temp = Reg(cloneOf(io.forceHost))
       temp.init(temp.getZero)
@@ -273,12 +275,12 @@ case class LcvBusArbiter(
       rSavedForceHost := io.forceHost
     }
 
-    val rAllowBurstState = (
-      Reg(AllowBurstState())
-      init(AllowBurstState.IDLE)
+    val rState = (
+      Reg(AllowBurstNonPrioState())
+      init(AllowBurstNonPrioState.IDLE)
     )
-    switch (rAllowBurstState) {
-      is (AllowBurstState.IDLE) {
+    switch (rState) {
+      is (AllowBurstNonPrioState.IDLE) {
         //rSeenHostH2dFireEtc.foreach(_ := False)
         switch (
           //RegNext(
@@ -297,21 +299,21 @@ case class LcvBusArbiter(
             //M"10-"
           ) {
             // either read or write, but *NOT* a burst
-            rAllowBurstState := AllowBurstState.NON_BURST
+            rState := AllowBurstNonPrioState.NON_BURST
           }
           is (
             M"00110"
             //M"110"
           ) {
             // read burst
-            rAllowBurstState := AllowBurstState.READ_BURST
+            rState := AllowBurstNonPrioState.READ_BURST
           }
           is (
             M"00111"
             //M"111"
           ) {
             // write burst
-            rAllowBurstState := AllowBurstState.WRITE_BURST
+            rState := AllowBurstNonPrioState.WRITE_BURST
           }
           is (M"1----") {
             //// soft reset
@@ -333,7 +335,7 @@ case class LcvBusArbiter(
         //when (io.softReset) {
         //}
       }
-      is (AllowBurstState.NON_BURST) {
+      is (AllowBurstNonPrioState.NON_BURST) {
         when (!rSeenHostH2dFireEtc(0)) {
           io.dev.h2dBus << host.h2dBus 
           maybeSetSeenHostH2dFireEtc(0)
@@ -351,11 +353,11 @@ case class LcvBusArbiter(
           && host.d2hBus.valid
           && host.d2hBus.ready
         ) {
-          rAllowBurstState := AllowBurstState.IDLE
+          rState := AllowBurstNonPrioState.IDLE
           doCalcHostIdx(Some(0))
         }
       }
-      is (AllowBurstState.READ_BURST) {
+      is (AllowBurstNonPrioState.READ_BURST) {
         when (!rSeenHostH2dFireEtc(1)) {
           io.dev.h2dBus << host.h2dBus 
           maybeSetSeenHostH2dFireEtc(1)
@@ -377,11 +379,11 @@ case class LcvBusArbiter(
           //&& RegNext(host.d2hBus.burstLast, init=False)
           && host.d2hBus.burstLast
         ) {
-          rAllowBurstState := AllowBurstState.IDLE
+          rState := AllowBurstNonPrioState.IDLE
           doCalcHostIdx(Some(1))
         }
       }
-      is (AllowBurstState.WRITE_BURST) {
+      is (AllowBurstNonPrioState.WRITE_BURST) {
         when (!rSeenHostH2dFireEtc(2)) {
           io.dev.h2dBus << host.h2dBus 
           maybeSetSeenHostH2dFireEtc(2)
@@ -403,46 +405,59 @@ case class LcvBusArbiter(
           && host.d2hBus.ready
           //&& RegNext(host.d2hBus.burstLast, init=False)
         ) {
-          rAllowBurstState := AllowBurstState.IDLE
+          rState := AllowBurstNonPrioState.IDLE
           doCalcHostIdx(Some(2))
         }
       }
     }
-  })
+  }
 
-  object NoBurstsPrioState
+  object AllowBurstPrioState
   extends SpinalEnum(defaultEncoding=binaryOneHot) {
     val
-      START_NEW_HOST_IDX,
-      MAIN,
-      CHANGED_HOST_IDX_WAIT_REMAINING_D2H_RESPONSES
+      START_NEW_HOST_IDX_ETC,
+      MAIN_NON_BURST,
+      MAIN_BURST,
+      CHANGED_HOST_IDX_ETC_WAIT_REMAINING_D2H_RESPONSES
       = newElement();
   }
-  val myNoBurstsPriorityArea = (
-    !cfg.busCfg.allowBurst
+  val myAllowBurstPriorityArea = (
+    cfg.busCfg.allowBurst
     && cfg.kind == LcvBusArbiterKind.Priority
-  ) generate (new Area {
-    val rSavedHostIdx = (
-      Reg(cloneOf(nextHostIdx))
-      init(nextHostIdx.getZero)
+  ) generate new Area {
+    val rState = (
+      Reg(AllowBurstPrioState())
+      init(AllowBurstPrioState.START_NEW_HOST_IDX_ETC)
     )
+
+    val rSavedHostIdx = (
+      Reg(UInt(log2Up(cfg.numHosts) bits))
+      init(0x0)
+    )
+
     val rTxnCnt = (
       Reg(UInt(log2Up(cfg.noBurstsMaxNumOutstandingTxns + 1) bits))
       init(0x0)
     )
 
-    def doConnect(
+    //val rSavedIsWrite = Reg(Bool())
+    val rSeenH2dLastFire = Reg(Bool())
+    val rSeenD2hLastFire = Reg(Bool())
+
+    def doConnectNonBurst(
       whichBusIsH2d: Boolean,
       hostIdx: Int,
     ): Unit = {
+      //val dev.h2dBus = io.devVec(hostIdx).h2dBus
       def host = io.hostVec(hostIdx)
-
       if (whichBusIsH2d) {
-        //host.d2hBus << io.dev.d2hBus
-
         io.dev.h2dBus << host.h2dBus
+      } else {
+        //io.host.d2hBus << dev.d2hBus
+        host.d2hBus << io.dev.d2hBus
 
         switch (
+          //dev.h2dBus.ready
           host.h2dBus.fire
           ## host.d2hBus.fire
         ) {
@@ -462,176 +477,440 @@ case class LcvBusArbiter(
           default {
           }
         }
-      } else {
-        host.d2hBus << io.dev.d2hBus
-        //host.d2hBus << io.dev.d2hBus
+      }
+    }
+    def doConnectBurst(
+      whichBusIsH2d: Boolean,
+      hostIdx: Int,
+    ): Unit = {
+      def host = io.hostVec(hostIdx)
 
-        //switch (
-        //  io.dev.h2dBus.fire
-        //  ## io.dev.d2hBus.fire
-        //) {
-        //  is (
-        //    //B"10"
-        //    0x2
-        //  ) {
-        //    // dev.h2dBus.fire, !dev.d2hBus.fire
-        //    rTxnCnt := rTxnCnt + 1
-        //  }
-        //  is (
-        //    //B"01"
-        //    0x1
-        //  ) {
-        //    rTxnCnt := rTxnCnt - 1
-        //  }
-        //  default {
-        //  }
-        //}
+      if (whichBusIsH2d) {
+        when (
+          host.h2dBus.fire
+          && host.h2dBus.burstLast
+        ) {
+          rSeenH2dLastFire := True
+        }
+        io.dev.h2dBus << host.h2dBus.haltWhen(rSeenH2dLastFire)
+      } else {
+        when (
+          io.dev.d2hBus.fire
+          && io.dev.d2hBus.burstLast
+        ) {
+          rSeenD2hLastFire := True
+        }
+        host.d2hBus << io.dev.d2hBus.haltWhen(rSeenD2hLastFire)
       }
     }
 
-    //val stickyHostIdx = cloneOf(nextHostIdx)
-    //stickyHostIdx := (
-    //  RegNext(
-    //    stickyHostIdx,
-    //    init=stickyHostIdx.getZero
-    //  )
-    //)
-    //when (io.host.h2dBus.valid) {
-    //  stickyHostIdx := io.host.h2dBus.addr(cfg.addrSliceRange)
-    //}
-
-
-    val rState = (
-      Reg(NoBurstsPrioState())
-      init(NoBurstsPrioState.START_NEW_HOST_IDX)
-    )
-
     when (
-      //rState === State.MAIN
+      //rState === AllowBurstPrioState.MAIN_NON_BURST
       rState.asBits(1)
+      //&& io.host.h2dBus.valid
+      //&& (
+      //  (
+      //    rSavedH2dAddrSlice
+      //    =/= io.host.h2dBus.addr(cfg.addrSliceRange)
+      //  )
+      //)
       && (
-        //nextHostIdx
         myPriorityFindFirst._1
         && (
           myPriorityFindFirst._2
           =/= rSavedHostIdx
         )
       )
-      //&& (
-      //  Vec(
-      //    io.hostVec.map(item => item.h2dBus.valid)
-      //  ).orR
-      //)
-      //&& io.host.h2dBus.valid
-      //&& (
-      //  //rSavedHostIdx
-      //  //=/= rHostIdx//io.host.h2dBus.addr(cfg.addrSliceRange)
-      //  //=/= rPrevHostH2dAddrSlice
-      //)
     ) {
       rState := (
-        NoBurstsPrioState.CHANGED_HOST_IDX_WAIT_REMAINING_D2H_RESPONSES
+        AllowBurstPrioState
+        .CHANGED_HOST_IDX_ETC_WAIT_REMAINING_D2H_RESPONSES
       )
     }
-
+    when (
+      //rState === AllowBurstPrioState.MAIN_BURST
+      rState.asBits(2)
+      && rSeenH2dLastFire
+      && rSeenD2hLastFire
+    ) {
+      rState := AllowBurstPrioState.START_NEW_HOST_IDX_ETC
+      rSeenH2dLastFire := False
+      rSeenD2hLastFire := False
+    }
 
     def outerDoConnect(
-      whichBusIsH2d: Boolean
+      whichBusIsH2d: Boolean,
+      isBurst: Boolean,
     ): Unit = {
-      switch (
-        (
-          if (whichBusIsH2d) (
-            //rState === State.MAIN
-            rState.asBits(1)
-            //&& (rSavedH2dAddrSlice === stickyHostH2dAddrSlice)
-            //&& (nextHostIdx === rSavedHostIdx)
-            && myPriorityFindFirst._1
-            && (
-              myPriorityFindFirst._2
-              === rSavedHostIdx
-            )
-          ) else (
-            //rState === State.MAIN
-            rState.asBits(1)
-          )
+      switch ({
+        val tempStateBitIdx = (
+          if (!isBurst) (1) else (2)
         )
-        ## rSavedHostIdx//rSavedH2dAddrSlice
-      ) {
+        val myTempStateBit = rState.asBits(tempStateBitIdx)
+        //stickyHostH2dBurstFirst
+        //## 
+        (
+          (
+            if (whichBusIsH2d) (
+              //rState === State.MAIN
+              //rState.asBits(1)
+              myTempStateBit
+              //&& (rSavedH2dAddrSlice === stickyHostH2dAddrSlice)
+              && (
+                myPriorityFindFirst._1
+                && (
+                  myPriorityFindFirst._2
+                  =/= rSavedHostIdx
+                )
+              )
+            ) else (
+              //rState === State.MAIN
+              //rState.asBits(1)
+              myTempStateBit
+            )
+          )
+          ## rSavedHostIdx//rSavedH2dAddrSlice
+        )
+      }) {
         for (hostIdx <- 0 until cfg.numHosts) {
           is (
             (
+              //(1 << (rSavedH2dAddrSlice.getWidth + 0))
               (1 << (rSavedHostIdx.getWidth + 0))
               | hostIdx
             )
           ) {
-            doConnect(
-              whichBusIsH2d=whichBusIsH2d,
-              hostIdx=hostIdx
-            )
+            if (!isBurst) {
+              doConnectNonBurst(
+                whichBusIsH2d=whichBusIsH2d,
+                hostIdx=hostIdx
+              )
+            } else { // if (isBurst)
+              doConnectBurst(
+                whichBusIsH2d=whichBusIsH2d,
+                hostIdx=hostIdx
+              )
+            }
           }
         }
         default {
         }
       }
     }
-    outerDoConnect(whichBusIsH2d=true)
-    outerDoConnect(whichBusIsH2d=false)
 
-    when (
-      //rState === NoBurstsPrioState.START_NEW_HOST_IDX
-      rState.asBits(0)
-      && myPriorityFindFirst._1
+    outerDoConnect(whichBusIsH2d=true, isBurst=false)
+    outerDoConnect(whichBusIsH2d=false, isBurst=false)
+    outerDoConnect(whichBusIsH2d=true, isBurst=true)
+    outerDoConnect(whichBusIsH2d=false, isBurst=true)
+    switch (
+      // rState === AllowBurstPrioState.START_NEW_HOST_IDX_ETC
+      (
+        rState.asBits(0)
+        && myPriorityFindFirst._1
+      )
+      ## myPriorityFindFirst._2
     ) {
-      rSavedHostIdx := myPriorityFindFirst._2
-      rState := NoBurstsPrioState.MAIN
+      for (hostIdx <- 0 until cfg.numHosts) {
+        is (
+          (1 << myPriorityFindFirst._2.getWidth)
+          | hostIdx
+        ) {
+          def host = io.hostVec(hostIdx)
+          when (!host.h2dBus.burstFirst) {
+            rState := AllowBurstPrioState.MAIN_NON_BURST
+          } otherwise {
+            rState := AllowBurstPrioState.MAIN_BURST
+          }
+        }
+      }
     }
 
     switch (rState) {
-      is (NoBurstsPrioState.START_NEW_HOST_IDX) {
-        //when (myPriorityFindFirst._1) {
-        //  rSavedHostIdx := myPriorityFindFirst._2
-        //  rState := NoBurstsPrioState.MAIN
+      is (AllowBurstPrioState.START_NEW_HOST_IDX_ETC) {
+        //when (io.host.h2dBus.valid) {
+        //  rSavedH2dAddrSlice := io.host.h2dBus.addr(cfg.addrSliceRange)
         //}
-        ////doCalcHostIdx(None)
+        //switch (
+        //  io.host.h2dBus.valid
+        //  ## io.host.h2dBus.burstFirst
+        //) {
+        //  is (M"10") {
+        //    rState := AllowBurstPrioState.MAIN_NON_BURST
+        //  }
+        //  is (M"11") {
+        //    rState := AllowBurstPrioState.MAIN_BURST
+        //  }
+        //}
+        //rSavedIsWrite := io.host.h2dBus.isWrite
+        rSeenH2dLastFire := False
+        rSeenD2hLastFire := False
       }
-      is (NoBurstsPrioState.MAIN) {
+      is (AllowBurstPrioState.MAIN_NON_BURST) {
+      }
+      is (AllowBurstPrioState.MAIN_BURST) {
       }
       is (
-        NoBurstsPrioState.CHANGED_HOST_IDX_WAIT_REMAINING_D2H_RESPONSES
+        AllowBurstPrioState
+        .CHANGED_HOST_IDX_ETC_WAIT_REMAINING_D2H_RESPONSES
       ) {
+        //def dev = io.devVec(rSavedH2dAddrSlice)
         switch (
           //(rTxnCnt > 0)
           rTxnCnt.orR // same as `rTxn =/= 0`
           //rTxnCnt
-          ## rSavedHostIdx
+          ## rSavedHostIdx//rSavedH2dAddrSlice
         ) {
           for (hostIdx <- 0 until cfg.numHosts) {
             is (
               //B"1'b1"
               //## U(s"${rSavedH2dAddrSlice.getWidth}'d${hostIdx}")
+              //(1 << rSavedH2dAddrSlice.getWidth)
               (1 << rSavedHostIdx.getWidth)
               | hostIdx
             ) {
               //def dev = io.devVec(hostIdx)
               def host = io.hostVec(hostIdx)
               host.d2hBus << io.dev.d2hBus
-              when (host.d2hBus.fire) {
+              when (io.dev.d2hBus.fire) {
                 rTxnCnt := rTxnCnt - 1
               }
             }
           }
           default {
-            rState := NoBurstsPrioState.START_NEW_HOST_IDX
+            rState := AllowBurstPrioState.START_NEW_HOST_IDX_ETC
           }
         }
+        //when (rTxnCnt === 0) {
+        //}
       }
     }
-  })
 
-  val myNoBurstsNonPriorityArea = (
+  }
+
+  //object NoBurstsPrioState
+  //extends SpinalEnum(defaultEncoding=binaryOneHot) {
+  //  val
+  //    START_NEW_HOST_IDX_ETC,
+  //    MAIN,
+  //    CHANGED_HOST_IDX_ETC_WAIT_REMAINING_D2H_RESPONSES
+  //    = newElement();
+  //}
+  //val myNoBurstsPriorityArea = (
+  //  !cfg.busCfg.allowBurst
+  //  && cfg.kind == LcvBusArbiterKind.Priority
+  //) generate new Area {
+  //  val rSavedHostIdx = (
+  //    Reg(cloneOf(nextHostIdx))
+  //    init(nextHostIdx.getZero)
+  //  )
+  //  val rTxnCnt = (
+  //    Reg(UInt(log2Up(cfg.noBurstsMaxNumOutstandingTxns + 1) bits))
+  //    init(0x0)
+  //  )
+
+  //  def doConnect(
+  //    whichBusIsH2d: Boolean,
+  //    hostIdx: Int,
+  //  ): Unit = {
+  //    def host = io.hostVec(hostIdx)
+
+  //    if (whichBusIsH2d) {
+  //      //host.d2hBus << io.dev.d2hBus
+
+  //      io.dev.h2dBus << host.h2dBus
+
+  //      switch (
+  //        host.h2dBus.fire
+  //        ## host.d2hBus.fire
+  //      ) {
+  //        is (
+  //          //B"10"
+  //          0x2
+  //        ) {
+  //          // dev.h2dBus.fire, !dev.d2hBus.fire
+  //          rTxnCnt := rTxnCnt + 1
+  //        }
+  //        is (
+  //          //B"01"
+  //          0x1
+  //        ) {
+  //          rTxnCnt := rTxnCnt - 1
+  //        }
+  //        default {
+  //        }
+  //      }
+  //    } else {
+  //      host.d2hBus << io.dev.d2hBus
+  //      //host.d2hBus << io.dev.d2hBus
+
+  //      //switch (
+  //      //  io.dev.h2dBus.fire
+  //      //  ## io.dev.d2hBus.fire
+  //      //) {
+  //      //  is (
+  //      //    //B"10"
+  //      //    0x2
+  //      //  ) {
+  //      //    // dev.h2dBus.fire, !dev.d2hBus.fire
+  //      //    rTxnCnt := rTxnCnt + 1
+  //      //  }
+  //      //  is (
+  //      //    //B"01"
+  //      //    0x1
+  //      //  ) {
+  //      //    rTxnCnt := rTxnCnt - 1
+  //      //  }
+  //      //  default {
+  //      //  }
+  //      //}
+  //    }
+  //  }
+
+  //  //val stickyHostIdx = cloneOf(nextHostIdx)
+  //  //stickyHostIdx := (
+  //  //  RegNext(
+  //  //    stickyHostIdx,
+  //  //    init=stickyHostIdx.getZero
+  //  //  )
+  //  //)
+  //  //when (io.host.h2dBus.valid) {
+  //  //  stickyHostIdx := io.host.h2dBus.addr(cfg.addrSliceRange)
+  //  //}
+
+
+  //  val rState = (
+  //    Reg(NoBurstsPrioState())
+  //    init(NoBurstsPrioState.START_NEW_HOST_IDX_ETC)
+  //  )
+
+  //  when (
+  //    //rState === State.MAIN
+  //    rState.asBits(1)
+  //    && (
+  //      //nextHostIdx
+  //      myPriorityFindFirst._1
+  //      && (
+  //        myPriorityFindFirst._2
+  //        =/= rSavedHostIdx
+  //      )
+  //    )
+  //    //&& (
+  //    //  Vec(
+  //    //    io.hostVec.map(item => item.h2dBus.valid)
+  //    //  ).orR
+  //    //)
+  //    //&& io.host.h2dBus.valid
+  //    //&& (
+  //    //  //rSavedHostIdx
+  //    //  //=/= rHostIdx//io.host.h2dBus.addr(cfg.addrSliceRange)
+  //    //  //=/= rPrevHostH2dAddrSlice
+  //    //)
+  //  ) {
+  //    rState := (
+  //      NoBurstsPrioState
+  //      .CHANGED_HOST_IDX_ETC_WAIT_REMAINING_D2H_RESPONSES
+  //    )
+  //  }
+
+
+  //  def outerDoConnect(
+  //    whichBusIsH2d: Boolean
+  //  ): Unit = {
+  //    switch (
+  //      (
+  //        if (whichBusIsH2d) (
+  //          //rState === State.MAIN
+  //          rState.asBits(1)
+  //          //&& (rSavedH2dAddrSlice === stickyHostH2dAddrSlice)
+  //          //&& (nextHostIdx === rSavedHostIdx)
+  //          && myPriorityFindFirst._1
+  //          && (
+  //            myPriorityFindFirst._2
+  //            === rSavedHostIdx
+  //          )
+  //        ) else (
+  //          //rState === State.MAIN
+  //          rState.asBits(1)
+  //        )
+  //      )
+  //      ## rSavedHostIdx//rSavedH2dAddrSlice
+  //    ) {
+  //      for (hostIdx <- 0 until cfg.numHosts) {
+  //        is (
+  //          (
+  //            (1 << (rSavedHostIdx.getWidth + 0))
+  //            | hostIdx
+  //          )
+  //        ) {
+  //          doConnect(
+  //            whichBusIsH2d=whichBusIsH2d,
+  //            hostIdx=hostIdx
+  //          )
+  //        }
+  //      }
+  //      default {
+  //      }
+  //    }
+  //  }
+  //  outerDoConnect(whichBusIsH2d=true)
+  //  outerDoConnect(whichBusIsH2d=false)
+
+  //  when (
+  //    //rState === NoBurstsPrioState.START_NEW_HOST_IDX_ETC
+  //    rState.asBits(0)
+  //    && myPriorityFindFirst._1
+  //  ) {
+  //    rSavedHostIdx := myPriorityFindFirst._2
+  //    rState := NoBurstsPrioState.MAIN
+  //  }
+
+  //  switch (rState) {
+  //    is (NoBurstsPrioState.START_NEW_HOST_IDX_ETC) {
+  //      //when (myPriorityFindFirst._1) {
+  //      //  rSavedHostIdx := myPriorityFindFirst._2
+  //      //  rState := NoBurstsPrioState.MAIN
+  //      //}
+  //      ////doCalcHostIdx(None)
+  //    }
+  //    is (NoBurstsPrioState.MAIN) {
+  //    }
+  //    is (
+  //      NoBurstsPrioState
+  //      .CHANGED_HOST_IDX_ETC_WAIT_REMAINING_D2H_RESPONSES
+  //    ) {
+  //      switch (
+  //        //(rTxnCnt > 0)
+  //        rTxnCnt.orR // same as `rTxn =/= 0`
+  //        //rTxnCnt
+  //        ## rSavedHostIdx
+  //      ) {
+  //        for (hostIdx <- 0 until cfg.numHosts) {
+  //          is (
+  //            //B"1'b1"
+  //            //## U(s"${rSavedH2dAddrSlice.getWidth}'d${hostIdx}")
+  //            (1 << rSavedHostIdx.getWidth)
+  //            | hostIdx
+  //          ) {
+  //            //def dev = io.devVec(hostIdx)
+  //            def host = io.hostVec(hostIdx)
+  //            host.d2hBus << io.dev.d2hBus
+  //            when (host.d2hBus.fire) {
+  //              rTxnCnt := rTxnCnt - 1
+  //            }
+  //          }
+  //        }
+  //        default {
+  //          rState := NoBurstsPrioState.START_NEW_HOST_IDX_ETC
+  //        }
+  //      }
+  //    }
+  //  }
+  //}
+
+  val myNoBurstsArea = (
     !cfg.busCfg.allowBurst
-    && cfg.kind != LcvBusArbiterKind.Priority
-  ) generate (new Area {
+    //&& cfg.kind != LcvBusArbiterKind.Priority
+  ) generate new Area {
     //--------
     switch (
       Cat(host.h2dBus.valid).asBits
@@ -670,7 +949,7 @@ case class LcvBusArbiter(
       }
     }
     //--------
-  })
+  }
 }
 
 //private[libcheesevoyage] case class LcvBusArbiterRoundRobin(
