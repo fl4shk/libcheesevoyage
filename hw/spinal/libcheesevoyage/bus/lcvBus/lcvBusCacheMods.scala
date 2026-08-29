@@ -45,7 +45,7 @@ case class LcvBusCacheLineAttrs(
 case class LcvBusCacheBusPairConfig(
   mainCfg: LcvBusMainConfig,
   loBusCacheCfg: LcvBusCacheConfig,
-  hiBusCacheCfg: Option[LcvBusCacheConfig],
+  //hiBusCacheCfg: Option[LcvBusCacheConfig],
   busD2hFifoLatency: Int=0,
   //myRamOptWrHistLength: Int=(
   //  1//2//1//2//3
@@ -75,8 +75,9 @@ case class LcvBusCacheBusPairConfig(
 
   val hiBusCfg = LcvBusConfig(
     mainCfg=mainCfg.mkCopyWithAllowingBurst().mkCopyWithByteEn(None),
-    cacheCfg=hiBusCacheCfg,
+    cacheCfg=None,//hiBusCacheCfg,
   )
+
   //hiBusCacheCfg match {
   //  case Some(hiBusCacheCfg) => {
   //    loBusCacheCfg.kind match {
@@ -1823,7 +1824,7 @@ case class LcvBusCacheIo(
 //  }
 //}
 
-//private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
+//private[libcheesevoyage] case class LcvBusInstrCache(
 //  cfg: LcvBusCacheBusPairConfig,
 //) extends Component {
 //  //--------
@@ -2981,7 +2982,7 @@ case class LcvBusCacheIo(
 //  }
 //  wrLineAttrs.valid := True
 //}
-private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
+private[libcheesevoyage] case class LcvBusInstrCache(
   cfg: LcvBusCacheBusPairConfig,
 ) extends Component {
   //--------
@@ -4730,7 +4731,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
   wrLineAttrs.valid := True
 }
 
-private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
+private[libcheesevoyage] case class LcvBusDataCache(
   cfg: LcvBusCacheBusPairConfig,
 ) extends Component {
   //--------
@@ -6664,7 +6665,7 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
 
 
 
-//private[libcheesevoyage] case class LcvBusNonCoherentInstrCache(
+//private[libcheesevoyage] case class LcvBusInstrCache(
 //  cfg: LcvBusCacheBusPairConfig,
 //) extends Component {
 //  //--------
@@ -7160,19 +7161,19 @@ private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
 //}
 
 
-// `LcvBusNonCoherentDataCache` is mostly exists for the purposes of
+// `LcvBusDataCache` is mostly exists for the purposes of
 // developing the use of `LcvBus` for `libsnowhouse`'s `SnowHouse` module
 // (i.e. for communication between the `SnowHouse` module and the `LcvBus`
 // bus).
 //
-// `LcvBusNonCoherentDataCache` may also be useful
+// `LcvBusDataCache` may also be useful
 // for something like a fixed-function GPU's texture cache, perhaps.
 // However, even in that case, it might make more sense to have several
 // texture caches, perhaps such as one per tiled renderer, which brings us
 // back to *maybe* needing coherent caches, though I'm not 100% certain
 // about that since textures are to be loaded into the GPU RAM by the CPU.
-// Thus maybe `LcvBusNonCoherentDataCache` has a use after all?
-//private[libcheesevoyage] case class LcvBusNonCoherentDataCache(
+// Thus maybe `LcvBusDataCache` has a use after all?
+//private[libcheesevoyage] case class LcvBusDataCache(
 //  cfg: LcvBusCacheBusPairConfig,
 //) extends Component {
 //  //--------
@@ -8111,13 +8112,13 @@ case class LcvBusCache(
     //cfg.haveNonCoherentInstrCache
     cfg.loBusCacheCfg.kind == LcvCacheKind.I
   ) generate (
-    LcvBusNonCoherentInstrCache(cfg=cfg)
+    LcvBusInstrCache(cfg=cfg)
   )
   val dataCache = (
     //cfg.haveNonCoherentDataCache
     cfg.loBusCacheCfg.kind == LcvCacheKind.D
   ) generate (
-    LcvBusNonCoherentDataCache(cfg=cfg)
+    LcvBusDataCache(cfg=cfg)
   )
   //val coherentInstrCache = (
   //  cfg.haveCoherentInstrCache
@@ -8160,6 +8161,112 @@ case class LcvBusCache(
   //--------
 }
 
+case class LcvBusDirectoryConfig(
+  subCfg: LcvBusCacheBusPairConfig,
+  numLoCaches: Int,
+) {
+  require(numLoCaches >= 2)
+  def loBusCfg = subCfg.loBusCfg
+  def loBusCacheCfg = subCfg.loBusCacheCfg
+  def hiBusCfg = subCfg.hiBusCfg
+}
+
+case class LcvBusDirectoryIo(
+  cfg: LcvBusDirectoryConfig,
+) extends Bundle {
+  // requests by a CPU to access an L1 cache
+  // are forwarded *to* the central directory.
+  val cpuFwdH2dBusVec = Vec.fill(cfg.numLoCaches)(
+    //LcvBusIo(cfg=cfg.loBusCfg)
+    Stream(
+      LcvBusH2dPayload(cfg=cfg.loBusCfg)
+    )
+  )
+  for (cpuFwdH2dBus <- cpuFwdH2dBusVec.view) {
+    slave(cpuFwdH2dBus)
+  }
+
+  // requests by a CPU to access a cache line that is
+  // in any other L1 cache are forwarded *by* the central directory to the
+  // other L1 caches.
+  val dirFwdBusVec = Vec.fill(cfg.numLoCaches)(
+    LcvBusIo(cfg=cfg.loBusCfg)
+    //Stream(
+    //  LcvBusH2dPayload(cfg=cfg.loBusCfg)
+    //)
+  )
+  for (dirFwdBus <- dirFwdBusVec.view) {
+    master(dirFwdBus)
+  }
+
+  // An arbitrated port so as to (greatly!) reduce the amount of area
+  // taken up by the directory's logic that handles replacing chunks of an
+  // evicted cache line.
+  // It's probably best to stick an `LcvBusArbiter` (perhaps in round robin
+  // mode...) as the direct connection to this port.
+  val lcHiBus = (
+    slave(LcvBusIo(
+      cfg=cfg.hiBusCfg
+    ))
+  )
+
+  // the `hiBus` of the directory, which goes straight to RAM
+  // (or maybe to a (larger) L2 cache in front of RAM?)
+  val dirHiBus = (
+    master(LcvBusIo(
+      cfg=cfg.hiBusCfg
+    ))
+  )
+}
+
+case class LcvBusDirectoryAttrs(
+  cfg: LcvBusDirectoryConfig,
+) extends Bundle {
+  //val lcIdxVec = Vec.fill(
+  //  cfg.numLoCaches
+  //)(
+  //  Bool()
+  //)
+
+  val dirtyVec = UInt(cfg.numLoCaches bits)
+}
+
+case class LcvBusDirectory(
+  cfg: LcvBusDirectoryConfig,
+) extends Bundle {
+  //--------
+  def numWays = cfg.loBusCacheCfg.numWays
+
+  def loBusCfg = cfg.loBusCfg
+  def hiBusCfg = cfg.hiBusCfg
+  //def optFormal = cfg.optFormal
+
+  def loBusCacheCfg = cfg.loBusCacheCfg
+  def myLineWordRamAddrRshift = loBusCacheCfg.myLineWordRamAddrRshift
+  def myLineAttrsRamAddrRshift = loBusCacheCfg.myLineAttrsRamAddrRshift
+  def wordWidth = loBusCacheCfg.wordWidth
+  def depthWords = loBusCacheCfg.depthWords
+  def depthLines = loBusCacheCfg.depthLines
+
+  def myFifoThingLoBusCfg = cfg.subCfg.myFifoThingLoBusCfg
+  //--------
+  val io = LcvBusDirectoryIo(cfg=cfg)
+  //--------
+  val attrsRamCfg = RamSdpPipeConfig(
+    wordType=LcvBusDirectoryAttrs(cfg=cfg),
+    depth=depthLines,
+    optIncludeWrByteEn=false,
+    optWrHistLength=(
+      //cfg.loBusCacheCfg.myRamOptWrHistLength
+      1
+    ),
+    initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
+    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
+    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
+  )
+  //--------
+}
+
 object LcvBusNonCoherentDataCacheWithSdramCtrl {
   val cacheCfg = (
     LcvBusCacheBusPairConfig(
@@ -8179,15 +8286,15 @@ object LcvBusNonCoherentDataCacheWithSdramCtrl {
         depthWords=1024,
         //numCpus=1,
       ),
-      hiBusCacheCfg=(
-        //Some(LcvBusCacheConfig(
-        //  kind=LcvCacheKind.Shared,
-        //  lineSizeBytes=64,
-        //  depthWords=2048,
-        //  numCpus=2,
-        //))
-        None
-      )
+      //hiBusCacheCfg=(
+      //  //Some(LcvBusCacheConfig(
+      //  //  kind=LcvCacheKind.Shared,
+      //  //  lineSizeBytes=64,
+      //  //  depthWords=2048,
+      //  //  numCpus=2,
+      //  //))
+      //  None
+      //)
     )
   )
 }
@@ -8375,15 +8482,15 @@ object LcvBusCacheToVerilog extends App {
           depthWords=1024,
           //numCpus=1,
         ),
-        hiBusCacheCfg=(
-          //Some(LcvBusCacheConfig(
-          //  kind=LcvCacheKind.Shared,
-          //  lineSizeBytes=64,
-          //  depthWords=2048,
-          //  numCpus=2,
-          //))
-          None
-        )
+        //hiBusCacheCfg=(
+        //  //Some(LcvBusCacheConfig(
+        //  //  kind=LcvCacheKind.Shared,
+        //  //  lineSizeBytes=64,
+        //  //  depthWords=2048,
+        //  //  numCpus=2,
+        //  //))
+        //  None
+        //)
       )
     )
     //val top = LcvBusNonCoherentDataCacheWithSdramCtrl(
@@ -8440,15 +8547,15 @@ object LcvBusCacheFormal_Dup_Asdf extends App {
         depthWords=myInstrCacheDepthWords,
         //numCpus=1,
       ),
-      hiBusCacheCfg=(
-        //Some(LcvBusCacheConfig(
-        //  kind=LcvCacheKind.Shared,
-        //  lineSizeBytes=64,
-        //  depthWords=2048,
-        //  numCpus=2,
-        //))
-        None
-      ),
+      //hiBusCacheCfg=(
+      //  //Some(LcvBusCacheConfig(
+      //  //  kind=LcvCacheKind.Shared,
+      //  //  lineSizeBytes=64,
+      //  //  depthWords=2048,
+      //  //  numCpus=2,
+      //  //))
+      //  None
+      //),
       optFormal=true,
     )
   )
