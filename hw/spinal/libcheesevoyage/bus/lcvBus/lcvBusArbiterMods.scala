@@ -151,10 +151,14 @@ case class LcvBusArbiter(
     RegNext(nextHostIdx, init=nextHostIdx.getZero)
   )
   if (cfg.kind == LcvBusArbiterKind.Priority) {
-    when (io.en) {
+    if (cfg.busCfg.allowBurst) {
+      when (io.en) {
+        nextHostIdx := rHostIdx
+      } otherwise {
+        nextHostIdx := 0x0
+      }
+    } else {
       nextHostIdx := rHostIdx
-    } otherwise {
-      nextHostIdx := 0x0
     }
   } else {
     nextHostIdx := rHostIdx
