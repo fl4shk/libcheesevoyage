@@ -554,15 +554,25 @@ case class LcvBusArbiter(
             if (whichBusIsH2d) (
               //rState === State.MAIN
               //rState.asBits(1)
-              myTempStateBit
-              //&& (rSavedH2dAddrSlice === stickyHostH2dAddrSlice)
-              && (
-                myPriorityFindFirst._1
+              //if (!isBurst) (
+                myTempStateBit
+                //&& (rSavedH2dAddrSlice === stickyHostH2dAddrSlice)
                 && (
-                  myPriorityFindFirst._2
-                  === rSavedHostIdx
+                  //myPriorityFindFirst._1
+                  //&& (
+                  //  //myPriorityFindFirst._2
+                  //  //=== rSavedHostIdx
+                  //  myCurrHostValidVec(
+                  //    rSavedHostIdx
+                  //  )
+                  //)
+                  myCurrHostValidVec(
+                    rSavedHostIdx
+                  )
                 )
-              )
+              //) else (
+              //  myTempStateBit
+              //)
             ) else (
               //rState === State.MAIN
               //rState.asBits(1)
