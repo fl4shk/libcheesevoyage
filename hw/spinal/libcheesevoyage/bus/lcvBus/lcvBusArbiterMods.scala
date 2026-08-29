@@ -616,6 +616,7 @@ case class LcvBusArbiter(
           | hostIdx
         ) {
           def host = io.hostVec(hostIdx)
+          rSavedHostIdx := hostIdx
           when (!host.h2dBus.burstFirst) {
             rState := AllowBurstPrioState.MAIN_NON_BURST
           } otherwise {
