@@ -560,7 +560,7 @@ case class LcvBusArbiter(
                 myPriorityFindFirst._1
                 && (
                   myPriorityFindFirst._2
-                  =/= rSavedHostIdx
+                  === rSavedHostIdx
                 )
               )
             ) else (
