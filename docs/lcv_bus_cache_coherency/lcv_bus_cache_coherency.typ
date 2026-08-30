@@ -51,7 +51,6 @@
 //
 //#dict
 
-
 - This cache coherency protocol is based on a distributed collection of L1
   caches that all can be both read from or written to.
   - For the purposes of this document, it seems easier to rely on having
