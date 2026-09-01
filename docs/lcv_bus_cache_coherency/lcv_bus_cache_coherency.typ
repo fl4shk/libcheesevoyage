@@ -119,7 +119,7 @@
         (or to the cache line that shares that address I guess, maybe?)
         will clear the reservation's bit.
   - About `sc` instructions:
-    - Upon success, a `sc` instruction will be forwarded via the normal
+    - Upon success, an `sc` instruction will be forwarded via the normal
       write-forwarding mechanism that is used for plain store instructions.
   - `LcvBus` needs to be modified to have the following optional signals
     for when atomics are supported by a particular instance of the bus.
