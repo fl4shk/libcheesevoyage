@@ -17,10 +17,7 @@ case class LcvUartCtrlConfig(
   wordWidth: Int=8,
 ) {
   //val numStopBits = 1
-
-  val clkParam = (1 ns) * ((1.0 Hz) / clkRate)
-  val bitParam = (1 ns) * ((1.0 Hz) / bitRate)
-  val cyclesPerBit = (bitParam / clkParam).toInt
+  val cyclesPerBit = (clkRate / bitRate).toInt
   val cntWidth = 1 + log2Up(cyclesPerBit)
 }
 
@@ -151,13 +148,13 @@ case class LcvUartCtrlTx(
     init(0x0)
   )
 
+  val myCyclesCntRstVal = (
+    cfg.cyclesPerBit - 2//1
+  )
   val rCyclesCnt = (
     Reg(UInt(cfg.cntWidth bits))
-    init(cfg.cyclesPerBit - 1)
+    init(myCyclesCntRstVal)
   )
-  //val myCyclesCntRstVal = (
-  //  cfg.cyclesPerBit - 1
-  //)
 
   val rNextBitIsStop = Reg(Bool(), init=False)
   val rSeenTxFinish = Reg(Bool(), init=False)
@@ -177,7 +174,8 @@ case class LcvUartCtrlTx(
     rCyclesCnt := (
       //(1 << cfg.cntWidth) - 1
       //0x0
-      cfg.cyclesPerBit - 1
+      //cfg.cyclesPerBit - 1
+      myCyclesCntRstVal
     )
 
     rNextBitIsStop := False
@@ -207,7 +205,8 @@ case class LcvUartCtrlTx(
       io.tx := rSavedPushWord.payload(rBitCnt)
       rCyclesCnt := (
         //0x0
-        cfg.cyclesPerBit - 1
+        //cfg.cyclesPerBit - 1
+        myCyclesCntRstVal
       )
     }
     is (
@@ -220,7 +219,8 @@ case class LcvUartCtrlTx(
       rSeenTxFinish := True
       rCyclesCnt := (
         //0x0
-        cfg.cyclesPerBit - 1
+        //cfg.cyclesPerBit - 1
+        myCyclesCntRstVal
       )
     }
     is (
@@ -230,7 +230,8 @@ case class LcvUartCtrlTx(
       rSavedPushWord.valid := False
       rCyclesCnt := (
         //0x0
-        cfg.cyclesPerBit - 1
+        //cfg.cyclesPerBit - 1
+        myCyclesCntRstVal
       )
     }
     is (
