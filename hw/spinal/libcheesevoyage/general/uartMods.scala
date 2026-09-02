@@ -101,7 +101,7 @@ case class LcvUartCtrlTx(
     ))
   )
   val rBitCnt = (
-    Reg(UInt(cfg.wordWidth bits))
+    Reg(UInt(log2Up(cfg.wordWidth) bits))
     init(0x0)
   )
 
