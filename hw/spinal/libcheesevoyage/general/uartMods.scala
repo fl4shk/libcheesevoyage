@@ -152,8 +152,12 @@ case class LcvUartCtrlTx(
 
   val rCyclesCnt = (
     Reg(UInt(cfg.cntWidth bits))
-    init(0x0)
+    init(cfg.cyclesPerBit - 1)
   )
+  //val myCyclesCntRstVal = (
+  //  cfg.cyclesPerBit - 1
+  //)
+
   val rNextBitIsStop = Reg(Bool(), init=False)
   val rSeenTxFinish = Reg(Bool(), init=False)
 
@@ -163,6 +167,7 @@ case class LcvUartCtrlTx(
     && rDidInit
     && RegNext(io.cts, init=False)
   )
+
   when (io.push.fire) {
     rSavedPushWord.valid := True
     rSavedPushWord.payload := io.push.payload
@@ -170,7 +175,8 @@ case class LcvUartCtrlTx(
     rBitCnt := 0x0
     rCyclesCnt := (
       //(1 << cfg.cntWidth) - 1
-      0x0
+      //0x0
+      cfg.cyclesPerBit - 1
     )
 
     rNextBitIsStop := False
@@ -198,7 +204,10 @@ case class LcvUartCtrlTx(
       // changing from either a start bit or a word bit to the next word bit
       rBitCnt := rBitCnt + 1
       io.tx := rSavedPushWord.payload(rBitCnt)
-      rCyclesCnt := 0x0
+      rCyclesCnt := (
+        //0x0
+        cfg.cyclesPerBit - 1
+      )
     }
     is (
       //M"111"
@@ -208,14 +217,20 @@ case class LcvUartCtrlTx(
       rBitCnt := rBitCnt + 1
       io.tx := True // the `stop` bit is `True`
       rSeenTxFinish := True
-      rCyclesCnt := 0x0
+      rCyclesCnt := (
+        //0x0
+        cfg.cyclesPerBit - 1
+      )
     }
     is (
       M"1111"
     ) {
       // done transmitting a stop bit
       rSavedPushWord.valid := False
-      rCyclesCnt := 0x0
+      rCyclesCnt := (
+        //0x0
+        cfg.cyclesPerBit - 1
+      )
     }
     is (
       //M"10--"
@@ -223,7 +238,7 @@ case class LcvUartCtrlTx(
     ) {
       // in-progress of sending a bit of any sort, i.e. not switching to a
       // new bit index.
-      rCyclesCnt := rCyclesCnt + 1
+      rCyclesCnt := rCyclesCnt - 1
     }
 
     default {
