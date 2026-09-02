@@ -174,7 +174,7 @@ case class LcvUartCtrlTx(
   io.push.ready := (
     !rSavedPushWord.fire
     && rDidInit
-    && RegNext(io.cts, init=False)
+    //&& RegNext(io.cts, init=False)
   )
 
   when (io.push.fire) {
