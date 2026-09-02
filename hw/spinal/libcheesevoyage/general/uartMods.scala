@@ -16,6 +16,10 @@ case class LcvUartCtrlConfig(
   bitRate: HertzNumber=115200 Hz, // bits / sec
   wordWidth: Int=8,
   numStopBits: Int=2,
+  dtrActiveLvl: Boolean=false,
+  dsrActiveLvl: Boolean=false,
+  rtsActiveLvl: Boolean=false,
+  ctsActiveLvl: Boolean=false,
 ) {
   //val numStopBits = 1
   require(
@@ -113,16 +117,33 @@ case class LcvUartCtrlTx(
   val io = master(
     LcvUartCtrlIo(cfg=cfg)
   )
+
+  val myCts = (
+    if (cfg.ctsActiveLvl) (
+      //True
+      io.cts
+    ) else (
+      //False
+      !io.cts
+    )
+  )
   //--------
   val rTx = Reg(Bool(), init=True)
   //io.tx.setAsReg() init(True)
   //io.tx 
-  io.dtr.setAsReg() init(False)
-  io.rts.setAsReg() init(False)
-  io.dtr := True
-  io.rts := True // TODO: implement support for RX
+  io.dtr.setAsReg() init(
+    //False
+    !Bool(cfg.dtrActiveLvl)
+  )
+  io.rts.setAsReg() init(
+    //False
+    !Bool(cfg.rtsActiveLvl)
+  )
+  io.dtr := Bool(cfg.dtrActiveLvl)//True
+  io.rts := Bool(cfg.rtsActiveLvl) //True // TODO: implement support for RX
   //--------
   val rDidInit = Reg(Bool(), init=False)
+
 
   when (
     //RegNextWhen(
@@ -133,14 +154,14 @@ case class LcvUartCtrlTx(
     //  init=False
     //)
     //RegNext(io.dsr, init=False)
-    RegNext(io.cts, init=False)
+    RegNext(myCts, init=False)
   ) {
     rDidInit := True
   }
   when (
     //rDidInit
     //&&
-    RegNext(!io.cts, init=False)
+    RegNext(!myCts, init=False)
   ) {
     rDidInit := False
   }
