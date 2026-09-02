@@ -198,6 +198,7 @@ case class LcvUartCtrlTx(
       // changing from either a start bit or a word bit to the next word bit
       rBitCnt := rBitCnt + 1
       io.tx := rSavedPushWord.payload(rBitCnt)
+      rCyclesCnt := 0x0
     }
     is (
       //M"111"
@@ -207,12 +208,14 @@ case class LcvUartCtrlTx(
       rBitCnt := rBitCnt + 1
       io.tx := True // the `stop` bit is `True`
       rSeenTxFinish := True
+      rCyclesCnt := 0x0
     }
     is (
       M"1111"
     ) {
       // done transmitting a stop bit
       rSavedPushWord.valid := False
+      rCyclesCnt := 0x0
     }
     is (
       //M"10--"
