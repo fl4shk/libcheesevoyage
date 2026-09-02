@@ -114,7 +114,8 @@ case class LcvUartCtrlTx(
   )
   //--------
   io.tx.setAsReg() init(True)
-  //io.dtr.setAsReg() init(True)
+  io.dtr.setAsReg() init(False)
+  io.rts.setAsReg() init(False)
   io.dtr := True
   io.rts := True // TODO: implement support for RX
   //--------
