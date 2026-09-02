@@ -187,7 +187,7 @@ case class LcvUartCtrlTx(
     rNextBitIsStop := False
     rStopBitCnt := cfg.numStopBits - 1
     //rSeenTxFinish := False
-    io.tx := False // the `start` bit is `False`
+    rTx := False // the `start` bit is `False`
   }
 
   when (
