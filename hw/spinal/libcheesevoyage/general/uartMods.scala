@@ -15,8 +15,12 @@ case class LcvUartCtrlConfig(
   clkRate: HertzNumber, // 
   bitRate: HertzNumber=115200 Hz, // bits / sec
   wordWidth: Int=8,
+  numStopBits: Int=2,
 ) {
   //val numStopBits = 1
+  require(
+    numStopBits >= 1
+  )
   val cyclesPerBit = (clkRate / bitRate).toInt
   val cntWidth = 1 + log2Up(cyclesPerBit)
 }
@@ -126,7 +130,8 @@ case class LcvUartCtrlTx(
     //  ),
     //  init=False
     //)
-    RegNext(io.dsr, init=False)
+    //RegNext(io.dsr, init=False)
+    RegNext(io.cts, init=False)
   ) {
     rDidInit := True
   }
@@ -147,6 +152,10 @@ case class LcvUartCtrlTx(
     Reg(UInt(log2Up(cfg.wordWidth) bits))
     init(0x0)
   )
+  val rStopBitCnt = (
+    Reg(UInt(log2Up(cfg.numStopBits) + 1 bits))
+    init(cfg.numStopBits - 1)
+  )
 
   val myCyclesCntRstVal = (
     cfg.cyclesPerBit - 2//1
@@ -157,7 +166,7 @@ case class LcvUartCtrlTx(
   )
 
   val rNextBitIsStop = Reg(Bool(), init=False)
-  val rSeenTxFinish = Reg(Bool(), init=False)
+  //val rSeenTxFinish = Reg(Bool(), init=False)
 
 
   io.push.ready := (
@@ -171,16 +180,12 @@ case class LcvUartCtrlTx(
     rSavedPushWord.payload := io.push.payload
 
     rBitCnt := 0x0
-    rCyclesCnt := (
-      //(1 << cfg.cntWidth) - 1
-      //0x0
-      //cfg.cyclesPerBit - 1
-      myCyclesCntRstVal
-    )
+    rCyclesCnt := myCyclesCntRstVal
 
     rNextBitIsStop := False
-    rSeenTxFinish := False
-    io.tx := False // `start` bit is `False`
+    rStopBitCnt := cfg.numStopBits - 1
+    //rSeenTxFinish := False
+    io.tx := False // the `start` bit is `False`
   }
 
   when (
@@ -194,45 +199,38 @@ case class LcvUartCtrlTx(
     (rDidInit && rSavedPushWord.fire)
     ## rCyclesCnt.msb
     ## rNextBitIsStop
-    ## rSeenTxFinish
+    ## rStopBitCnt.msb//rSeenTxFinish
   ) {
     is (
       //M"110"
       M"1100"
     ) {
-      // changing from either a start bit or a word bit to the next word bit
+      // changing from either a start bit or a word bit
+      // to the next word bit
       rBitCnt := rBitCnt + 1
       io.tx := rSavedPushWord.payload(rBitCnt)
-      rCyclesCnt := (
-        //0x0
-        //cfg.cyclesPerBit - 1
-        myCyclesCntRstVal
-      )
+      rCyclesCnt := myCyclesCntRstVal
     }
     is (
       //M"111"
       M"1110"
     ) {
-      // changing to a stop bit
-      rBitCnt := rBitCnt + 1
-      io.tx := True // the `stop` bit is `True`
-      rSeenTxFinish := True
-      rCyclesCnt := (
-        //0x0
-        //cfg.cyclesPerBit - 1
-        myCyclesCntRstVal
+      // the next bit is stop bit
+      rBitCnt := (
+        0x0
+        //rBitCnt + 1
       )
+      io.tx := True // all `stop` bits have a value of `True`
+      //rSeenTxFinish := True
+      rCyclesCnt := myCyclesCntRstVal
+      rStopBitCnt := rStopBitCnt - 1
     }
     is (
       M"1111"
     ) {
-      // done transmitting a stop bit
+      // We're done transmitting the last stop bit.
       rSavedPushWord.valid := False
-      rCyclesCnt := (
-        //0x0
-        //cfg.cyclesPerBit - 1
-        myCyclesCntRstVal
-      )
+      rCyclesCnt := myCyclesCntRstVal
     }
     is (
       //M"10--"
