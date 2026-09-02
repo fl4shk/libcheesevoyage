@@ -114,7 +114,9 @@ case class LcvUartCtrlTx(
     LcvUartCtrlIo(cfg=cfg)
   )
   //--------
-  io.tx.setAsReg() init(True)
+  val rTx = Reg(Bool(), init=True)
+  //io.tx.setAsReg() init(True)
+  //io.tx 
   io.dtr.setAsReg() init(False)
   io.rts.setAsReg() init(False)
   io.dtr := True
@@ -195,6 +197,12 @@ case class LcvUartCtrlTx(
     rNextBitIsStop := True
   }
 
+  io.tx := Mux(
+    (rDidInit && rSavedPushWord.fire),
+    rTx,
+    True,
+  )
+
   switch (
     (rDidInit && rSavedPushWord.fire)
     ## rCyclesCnt.msb
@@ -208,7 +216,7 @@ case class LcvUartCtrlTx(
       // changing from either a start bit or a word bit
       // to the next word bit
       rBitCnt := rBitCnt + 1
-      io.tx := rSavedPushWord.payload(rBitCnt)
+      rTx := rSavedPushWord.payload(rBitCnt)
       rCyclesCnt := myCyclesCntRstVal
     }
     is (
@@ -220,7 +228,7 @@ case class LcvUartCtrlTx(
         0x0
         //rBitCnt + 1
       )
-      io.tx := True // all `stop` bits have a value of `True`
+      rTx := True // all `stop` bits have a value of `True`
       //rSeenTxFinish := True
       rCyclesCnt := myCyclesCntRstVal
       rStopBitCnt := rStopBitCnt - 1
