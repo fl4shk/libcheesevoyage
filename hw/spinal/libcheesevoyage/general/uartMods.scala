@@ -24,11 +24,17 @@ case class LcvUartCtrlConfig(
   val cntWidth = 1 + log2Up(cyclesPerBit)
 }
 
-case class LcvUartCtrlTxMostIo(
+case class LcvUartIo(
   cfg: LcvUartCtrlConfig
 ) extends Bundle with IMasterSlave {
   val tx = in(Bool())
-    // the payload line (the serialized data word and start/stop bits)
+    // the TX payload line
+    // (includes the serialized data word and start/stop bits)
+
+  //val rx = out(Bool())
+  //  // TODO
+  //  // the RX payload line
+  //  // (includes the serialized data word and start/stop bits)
 
   val dtr = in(Bool())
     // Data Terminal Ready
@@ -57,6 +63,7 @@ case class LcvUartCtrlTxMostIo(
 
   def asMaster(): Unit = {
     out(tx)
+    //in(rx)
     out(dtr)
     in(dsr)
     out(rts)
@@ -64,26 +71,37 @@ case class LcvUartCtrlTxMostIo(
     //in(dcd)
   }
 }
-case class LcvUartCtrlTxIo(
+case class LcvUartCtrlIo(
   cfg: LcvUartCtrlConfig,
 ) extends Bundle with IMasterSlave {
-  val most = slave(
-    LcvUartCtrlTxMostIo(cfg=cfg)
+  val uartIo = slave(
+    LcvUartIo(cfg=cfg)
   )
-  def tx = most.tx
-  def dtr = most.dtr
-  def dsr = most.dsr
-  def rts = most.rts
-  def cts = most.cts
+  def tx = uartIo.tx
+
+  // TODO:
+  //def rx = uartIo.rx
+
+  def dtr = uartIo.dtr
+  def dsr = uartIo.dsr
+  def rts = uartIo.rts
+  def cts = uartIo.cts
 
   val push = master(
     // what data do we send?
     Stream(UInt(cfg.wordWidth bits))
   )
 
+  //val pop = slave(
+  //  // TODO:
+  //  // output interface for received data.
+  //  Stream(UInt(cfg.wordWidth bits))
+  //)
+
   def asMaster(): Unit = {
-    master(most)
+    master(uartIo)
     slave(push)
+    //master(pop)
   }
 }
 
@@ -92,9 +110,36 @@ case class LcvUartCtrlTx(
 ) extends Component {
   //--------
   val io = master(
-    LcvUartCtrlTxIo(cfg=cfg)
+    LcvUartCtrlIo(cfg=cfg)
   )
   //--------
+  io.tx.setAsReg() init(True)
+  //io.dtr.setAsReg() init(True)
+  io.dtr := True
+  io.rts := True // TODO: implement support for RX
+  //--------
+  val rDidInit = Reg(Bool(), init=False)
+
+  when (
+    //RegNextWhen(
+    //  True,
+    //  cond=(
+    //    RegNext(io.dsr, init=False)
+    //  ),
+    //  init=False
+    //)
+    RegNext(io.dsr, init=False)
+  ) {
+    rDidInit := True
+  }
+  when (
+    //rDidInit
+    //&&
+    RegNext(!io.cts, init=False)
+  ) {
+    rDidInit := False
+  }
+
   val rSavedPushWord = (
     Reg(Flow(
       UInt(cfg.wordWidth bits)
@@ -112,9 +157,12 @@ case class LcvUartCtrlTx(
   val rNextBitIsStop = Reg(Bool(), init=False)
   val rSeenTxFinish = Reg(Bool(), init=False)
 
-  io.tx.setAsReg() init(True)
 
-  io.push.ready := !rSavedPushWord.fire
+  io.push.ready := (
+    !rSavedPushWord.fire
+    && rDidInit
+    && RegNext(io.cts, init=False)
+  )
   when (io.push.fire) {
     rSavedPushWord.valid := True
     rSavedPushWord.payload := io.push.payload
@@ -138,7 +186,7 @@ case class LcvUartCtrlTx(
   }
 
   switch (
-    rSavedPushWord.fire
+    (rDidInit && rSavedPushWord.fire)
     ## rCyclesCnt.msb
     ## rNextBitIsStop
     ## rSeenTxFinish
