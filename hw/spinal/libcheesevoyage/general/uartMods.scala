@@ -131,16 +131,18 @@ case class LcvUartCtrlTx(
   val rTx = Reg(Bool(), init=True)
   //io.tx.setAsReg() init(True)
   //io.tx 
-  io.dtr.setAsReg() init(
-    //False
-    !Bool(cfg.dtrActiveLvl)
-  )
-  io.rts.setAsReg() init(
-    //False
-    !Bool(cfg.rtsActiveLvl)
-  )
-  io.dtr := Bool(cfg.dtrActiveLvl)//True
-  io.rts := Bool(cfg.rtsActiveLvl) //True // TODO: implement support for RX
+  //io.dtr.setAsReg() init(
+  //  //False
+  //  !Bool(cfg.dtrActiveLvl)
+  //)
+  //io.rts.setAsReg() init(
+  //  //False
+  //  !Bool(cfg.rtsActiveLvl)
+  //)
+  //io.dtr := Bool(cfg.dtrActiveLvl)//True
+  //io.rts := Bool(cfg.rtsActiveLvl) //True // TODO: implement support for RX
+  io.dtr := Bool(cfg.dtrActiveLvl)
+  io.rts := Bool(cfg.rtsActiveLvl) // TODO: implement support for RX
   //--------
   val rDidInit = Reg(Bool(), init=False)
 
@@ -195,6 +197,7 @@ case class LcvUartCtrlTx(
   io.push.ready := (
     !rSavedPushWord.fire
     && rDidInit
+    && RegNext(myCts, init=False)
     //&& RegNext(io.cts, init=False)
   )
 
@@ -219,7 +222,7 @@ case class LcvUartCtrlTx(
   }
 
   io.tx := Mux(
-    (rDidInit && rSavedPushWord.fire),
+    (rDidInit && rSavedPushWord.fire && RegNext(myCts, init=False)),
     rTx,
     True,
   )
