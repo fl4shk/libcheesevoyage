@@ -196,6 +196,7 @@ case class LcvUartCtrlTx(
   io.push.ready := (
     !rSavedPushWord.fire
     && rDidInit
+    && rCyclesCnt.msb
     && RegNext(myCts, init=False)
     //&& RegNext(io.cts, init=False)
   )
