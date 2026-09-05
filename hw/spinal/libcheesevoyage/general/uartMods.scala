@@ -146,7 +146,6 @@ case class LcvUartCtrlTx(
   //--------
   val rDidInit = Reg(Bool(), init=False)
 
-
   when (
     //RegNextWhen(
     //  True,
@@ -206,7 +205,7 @@ case class LcvUartCtrlTx(
     rSavedPushWord.payload := io.push.payload
 
     rBitCnt := 0x0
-    rCyclesCnt := myCyclesCntRstVal
+    //rCyclesCnt := myCyclesCntRstVal
 
     rNextBitIsStop := False
     rStopBitCnt := cfg.numStopBits - 1
@@ -264,13 +263,21 @@ case class LcvUartCtrlTx(
       rSavedPushWord.valid := False
       rCyclesCnt := myCyclesCntRstVal
     }
+
     is (
       //M"10--"
-      M"10--"
+      //M"10--"
+      M"-0--"
     ) {
       // in-progress of sending a bit of any sort, i.e. not switching to a
       // new bit index.
       rCyclesCnt := rCyclesCnt - 1
+    }
+
+    is (
+      M"01--"
+    ) {
+      rCyclesCnt := myCyclesCntRstVal
     }
 
     default {
