@@ -261,7 +261,22 @@ case class LcvUartCtrlTx(
       M"1111"
     ) {
       // We're done transmitting the last stop bit.
-      rSavedPushWord.valid := False
+      when (!io.push.valid) {
+        rSavedPushWord.valid := False
+
+        //io.push.ready := (
+        //  !rSavedPushWord.fire
+        //  && rDidInit
+        //  && rCyclesCnt.msb
+        //  && RegNext(myCts, init=False)
+        //  //&& RegNext(io.cts, init=False)
+        //)
+      } otherwise {
+        io.push.ready := (
+          rDidInit
+          && RegNext(myCts, init=False)
+        )
+      }
       rCyclesCnt := myCyclesCntRstVal
     }
 
