@@ -915,6 +915,10 @@ case class LcvOooRdSlidingBuf[
         ) {
           rCurr.valid := False
         }
+
+        if (idx == 0) {
+          io.push.ready := curr.fire
+        }
       } else {
         when (io.pop(idx).fire) {
           //rPopVec(idx + 1).valid := False
