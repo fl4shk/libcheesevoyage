@@ -847,8 +847,8 @@ case class LcvOooRdSlidingBuf[
     //  !myValidVec.orR // any 
     //) {
     //}
-    for (revIdx <- 0 until cfg.depth) {
-      def idx = cfg.depth - 1 - revIdx
+    for (idx <- 0 until cfg.depth) {
+      //def idx = cfg.depth - 1 - revIdx
       myValidVec(idx) := (
         //rPopVec(idx + 1).fire
         rPopVec(idx).fire
