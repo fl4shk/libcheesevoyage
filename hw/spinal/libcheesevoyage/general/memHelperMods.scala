@@ -838,11 +838,6 @@ case class LcvOooRdSlidingBuf[
       !rPopVec.head.fire
     )
 
-    when (io.push.fire) {
-      rPopVec.head.valid := True
-      rPopVec.head.payload := io.push.payload
-    }
-
     //when (
     //  !myValidVec.orR // any 
     //) {
@@ -931,6 +926,10 @@ case class LcvOooRdSlidingBuf[
       //) {
       //  // check for full
       //}
+    }
+    when (io.push.fire) {
+      rPopVec.head.valid := True
+      rPopVec.head.payload := io.push.payload
     }
 
     //val myValidVec = Vec(rPopVec.map(item => item.fire))
