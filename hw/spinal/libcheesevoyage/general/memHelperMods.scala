@@ -842,6 +842,10 @@ case class LcvOooRdSlidingBuf[
     //  !myValidVec.orR // any 
     //) {
     //}
+    when (io.pop.last.fire) {
+      //rPopVec(idx + 1).valid := False
+      rPopVec.last.valid := False
+    }
     for (idx <- 0 until cfg.depth) {
       //def idx = cfg.depth - 1 - revIdx
       myValidVec(idx) := (
@@ -918,10 +922,10 @@ case class LcvOooRdSlidingBuf[
           )
         }
       } else {
-        when (io.pop(idx).fire) {
-          //rPopVec(idx + 1).valid := False
-          rPopVec(idx).valid := False
-        }
+        //when (io.pop(idx).fire) {
+        //  //rPopVec(idx + 1).valid := False
+        //  rPopVec(idx).valid := False
+        //}
       }
       //switch (
       //  !myValidVec.andR
