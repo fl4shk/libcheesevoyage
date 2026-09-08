@@ -866,42 +866,49 @@ case class LcvOooRdSlidingBuf[
           rPopVec(idx + 1)
         )
 
-        switch (
-          next.valid
-          ## next.ready
-          ## curr.valid
-          ## curr.ready
+        //switch (
+        //  next.valid
+        //  ## next.ready
+        //  ## curr.valid
+        //  ## curr.ready
+        //) {
+        //  is (M"1110") {
+        //    // next.fire
+        //    // curr.valid && !curr.ready
+
+        //    // in this case, we can slide the newer word so that it
+        //    // gets seen as an older one afterwards...
+        //    // This is because `rNext` is currently being emptied!
+        //    rNext := rCurr
+        //    rCurr.valid := False
+        //  }
+        //  is (M"--11") {
+        //    // any case of `curr.fire` 
+        //    rCurr.valid := False
+        //  }
+        //  is (
+        //    //M"0-10"
+        //    M"0--0"
+        //  ) {
+        //    // !next.valid 
+        //    // !curr.ready
+
+        //    // in this case I think we can *also* slide the newer word
+        //    // over because `rNext` is empty, and actually, maybe `rCurr`
+        //    // is empty as well?
+        //    // If `rCurr` *is* empty, then we're just
+        //    // copying an empty slot to another empty slot!
+        //    rNext := rCurr
+        //  }
+        //  default {
+        //  }
+        //}
+        when (
+          !next.valid
+          && curr.valid
+          && !curr.ready
         ) {
-          is (M"1110") {
-            // next.fire
-            // curr.valid && !curr.ready
-
-            // in this case, we can slide the newer word so that it
-            // gets seen as an older one afterwards...
-            // This is because `rNext` is currently being emptied!
-            rNext := rCurr
-            rCurr.valid := False
-          }
-          is (M"--11") {
-            // any case of `curr.fire` 
-            rCurr.valid := False
-          }
-          is (
-            //M"0-10"
-            M"0--0"
-          ) {
-            // !next.valid 
-            // !curr.ready
-
-            // in this case I think we can *also* slide the newer word
-            // over because `rNext` is empty, and actually, maybe `rCurr`
-            // is empty as well?
-            // If `rCurr` *is* empty, then we're just
-            // copying an empty slot to another empty slot!
-            rNext := rCurr
-          }
-          default {
-          }
+          rNext := rCurr
         }
       } else {
         when (io.pop(idx).fire) {
