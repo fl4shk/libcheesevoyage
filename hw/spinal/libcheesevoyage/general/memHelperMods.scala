@@ -833,10 +833,10 @@ case class LcvOooRdSlidingBuf[
         Bool()
       )
     )
-    io.push.ready := (
-      //!myValidVec.andR
-      !rPopVec.head.fire
-    )
+    //io.push.ready := (
+    //  //!myValidVec.andR
+    //  !rPopVec.head.fire
+    //)
 
     //when (
     //  !myValidVec.orR // any 
@@ -912,7 +912,10 @@ case class LcvOooRdSlidingBuf[
         }
 
         if (idx == 0) {
-          io.push.ready := curr.fire
+          io.push.ready := (
+            curr.fire
+            || !rPopVec.head.fire
+          )
         }
       } else {
         when (io.pop(idx).fire) {
