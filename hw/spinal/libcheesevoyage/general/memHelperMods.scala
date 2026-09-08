@@ -689,6 +689,58 @@ case class PipeSimpleDualPortMemDrivePayload[
 //  val data = dataType()
 //}
 
+case class LcvSlidingBufConfig[
+  WordT <: Data
+](
+  wordType: HardType[WordT],
+  depth: Int,
+) {
+}
+
+case class LcvSlidingBufIo[
+  WordT <: Data
+](
+  cfg: LcvSlidingBufConfig[WordT],
+) extends Bundle {
+  val push = (
+    slave(Flow(
+      cfg.wordType()
+    ))
+  )
+
+  val pop = (
+    master(Flow(
+      Vec.fill(cfg.depth)(
+        cfg.wordType()
+      )
+    ))
+  )
+}
+
+case class LcvSlidingBuf[
+  WordT <: Data
+](
+  cfg: LcvSlidingBufConfig[WordT],
+) extends Component {
+  val io = LcvSlidingBufIo(cfg=cfg)
+
+  io.pop.payload.foreach(item => item.setAsReg() init(item.getZero))
+
+  val rValidVec = Vec.fill(cfg.depth)(
+    Reg(Bool(), init=False)
+  )
+  io.pop.valid := rValidVec.last
+
+  when (io.push.fire) {
+    rValidVec.head := True
+    io.pop.payload.head := io.push.payload
+    for (idx <- 1 until cfg.depth) {
+      rValidVec(idx) := rValidVec(idx - 1)
+      io.pop.payload(idx) := io.pop.payload(idx - 1)
+    }
+  }
+}
+
 case class LcvSimpleReorderBufConfig[
   WordT <: Data,
 ](
