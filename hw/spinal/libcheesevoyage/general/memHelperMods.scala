@@ -903,7 +903,10 @@ case class LcvOooRdSlidingBuf[
         //  }
         //}
         when (
-          next.fire
+          (
+            next.fire
+            && !curr.fire
+          )
           || (
             !next.valid
             //&& curr.valid
@@ -911,6 +914,7 @@ case class LcvOooRdSlidingBuf[
           )
         ) {
           rNext := rCurr
+          rCurr.valid := False
         }
         when (
           curr.fire
