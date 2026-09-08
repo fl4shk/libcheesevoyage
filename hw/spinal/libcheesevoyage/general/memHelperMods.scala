@@ -768,12 +768,10 @@ case class LcvOooRdSlidingBufIo[
   )
 
   val pop = (
-    out(
-      Vec.fill(cfg.depth)(
-        // `valid && ready` here indicates that we can put a new element
-        // in this `io.pop` element
-        Stream(cfg.wordType())
-      )
+    Vec.fill(cfg.depth)(
+      // `valid && ready` here indicates that we can put a new element
+      // in this `io.pop` element
+      Stream(cfg.wordType())
     )
   )
 
