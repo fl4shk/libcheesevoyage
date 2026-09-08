@@ -910,6 +910,12 @@ case class LcvOooRdSlidingBuf[
         ) {
           rNext := rCurr
         }
+
+        when (
+          curr.fire
+        ) {
+          rCurr.valid := False
+        }
       } else {
         when (io.pop(idx).fire) {
           //rPopVec(idx + 1).valid := False
