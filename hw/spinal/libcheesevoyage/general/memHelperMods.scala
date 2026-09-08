@@ -741,6 +741,199 @@ case class LcvSlidingBuf[
   }
 }
 
+case class LcvOooRdSlidingBufConfig[
+  WordT <: Data
+](
+  wordType: HardType[WordT],
+  depth: Int,
+  //loLatency: Boolean=true,
+) {
+  require(
+    depth >= 1,
+    s"depth:${depth} must be >= 1,"
+    + s"or otherwise you probably don't need this module"
+  )
+  val fullDepth = depth + 1
+}
+
+case class LcvOooRdSlidingBufIo[
+  WordT <: Data
+](
+  cfg: LcvOooRdSlidingBufConfig[WordT],
+) extends Bundle {
+  val push = (
+    slave(Stream(
+      cfg.wordType()
+    ))
+  )
+
+  val pop = (
+    out(
+      Vec.fill(cfg.depth)(
+        // `valid && ready` here indicates that we can put a new element
+        // in this `io.pop` element
+        Stream(cfg.wordType())
+      )
+    )
+  )
+
+  for (idx <- 0 until cfg.depth) {
+    master(pop(idx))
+  }
+}
+
+case class LcvOooRdSlidingBuf[
+  WordT <: Data
+](
+  cfg: LcvOooRdSlidingBufConfig[WordT],
+) extends Component {
+  // FL4SHK NOTE: this is a module I'm calling an
+  // "Out-of-Order-Reads Buffer", which I'm intending on using
+  // in libsnowhouse to allow buffering multiple instructions for the
+  // purposes of dispatching instructions out-of-order!
+
+  val io = LcvOooRdSlidingBufIo(cfg=cfg)
+
+  val rPopVec = (
+    Vec.fill(cfg.fullDepth)({
+      val temp = Reg(Flow(cfg.wordType()))
+      temp.init(temp.getZero)
+      temp
+    })
+  )
+
+  for (idx <- 0 until cfg.depth) {
+    io.pop(idx).valid := rPopVec(idx + 1).fire
+    io.pop(idx).payload := rPopVec(idx + 1).payload
+  }
+ 
+//  def bitscan(
+//    x: UInt
+//  ): UInt = (
+//    //x & ~(x - 1)
+//
+//    x & (-x.asSInt).asUInt
+//  )
+//
+//// >>> for idx in range(size):
+//// ...     print(idx, ("-" * (size - idx - 1) + "1" + ("0" * idx)))
+//// ...     
+//// 0 ---1
+//// 1 --10
+//// 2 -100
+//// 3 1000
+
+
+  val myArea = new Area {
+    val myValidVec = (
+      Vec.fill(cfg.depth)(
+        Bool()
+      )
+    )
+    io.push.ready := (
+      //!myValidVec.andR
+      !rPopVec.head.fire
+    )
+
+    when (io.push.fire) {
+      rPopVec.head.valid := True
+      rPopVec.head.payload := io.push.payload
+    }
+
+    //when (
+    //  !myValidVec.orR // any 
+    //) {
+    //}
+    for (idx <- 0 until cfg.depth) {
+      //def idx = cfg.depth - 1 - revIdx
+      myValidVec(idx) := rPopVec(idx + 1).fire
+
+      if (idx < cfg.depth - 1) {
+        def curr = io.pop(idx)
+        def next = io.pop(idx + 1)
+        def rCurr = rPopVec(idx + 1)
+        def rNext = rPopVec(idx + 2)
+
+        switch (
+          next.valid
+          ## next.ready
+          ## curr.valid
+          ## curr.ready
+        ) {
+          is (M"1110") {
+            // next.fire
+            // curr.valid && !curr.ready
+
+            // in this case, we can slide the newer word so that it
+            // gets seen as an older one afterwards...
+            // This is because `rNext` is currently being emptied!
+            rNext := rCurr
+            rCurr.valid := False
+          }
+          is (M"--11") {
+            // any case of `curr.fire` 
+            rCurr.valid := False
+          }
+          is (
+            //M"0-10"
+            M"0--0"
+          ) {
+            // !next.valid 
+            // !curr.ready
+
+            // in this case I think we can *also* slide the newer word
+            // over because `rNext` is empty, and actually, maybe `rCurr`
+            // is empty as well?
+            // If `rCurr` *is* empty, then we're just
+            // copying an empty slot to another empty slot!
+            rNext := rCurr
+          }
+          default {
+          }
+        }
+      } else {
+        when (io.pop(idx).fire) {
+          rPopVec(idx + 1).valid := False
+        }
+      }
+      //switch (
+      //  !myValidVec.andR
+      //  ## 
+      //) {
+      //  // check for full
+      //}
+    }
+
+    //val myValidVec = Vec(rPopVec.map(item => item.fire))
+    //io.push.ready := !myValidVec.andR
+
+    //switch (
+    //  bitscan(~myValidVec.asBits.asUInt)
+    //) {
+    //  val size = myValidVec.size
+    //  for (idx <- 0 until size) {
+    //    is (MaskedLiteral(
+    //      ("-" * (size - idx - 1) + "1" + ("0" * idx))
+    //    )) {
+    //    }
+    //  }
+    //}
+  }
+
+  //val myHiLatencyArea = (
+  //  !cfg.loLatency
+  //) generate new Area {
+  //  require(
+  //    false,
+  //    "Not yet implemented",
+  //  )
+  //  //val myValidVec = Vec(rPopVec.map(item => item.fire))
+  //  //io.push.ready := !myValidVec.andR
+  //  //val rPushIdx = 
+  //}
+}
+
+
 case class LcvSimpleReorderBufConfig[
   WordT <: Data,
 ](
