@@ -753,7 +753,7 @@ case class LcvOooRdSlidingBufConfig[
     s"depth:${depth} must be >= 1,"
     + s"or otherwise you probably don't need this module"
   )
-  val fullDepth = depth + 1
+  //val fullDepth = depth + 1
 }
 
 case class LcvOooRdSlidingBufIo[
@@ -793,7 +793,10 @@ case class LcvOooRdSlidingBuf[
   val io = LcvOooRdSlidingBufIo(cfg=cfg)
 
   val rPopVec = (
-    Vec.fill(cfg.fullDepth)({
+    Vec.fill(
+      //cfg.fullDepth
+      cfg.depth
+    )({
       val temp = Reg(Flow(cfg.wordType()))
       temp.init(temp.getZero)
       temp
@@ -801,8 +804,10 @@ case class LcvOooRdSlidingBuf[
   )
 
   for (idx <- 0 until cfg.depth) {
-    io.pop(idx).valid := rPopVec(idx + 1).fire
-    io.pop(idx).payload := rPopVec(idx + 1).payload
+    io.pop(idx).valid := rPopVec(idx).fire
+    io.pop(idx).payload := rPopVec(idx).payload
+    //io.pop(idx).valid := rPopVec(idx + 1).fire
+    //io.pop(idx).payload := rPopVec(idx + 1).payload
   }
  
 //  def bitscan(
@@ -842,15 +847,24 @@ case class LcvOooRdSlidingBuf[
     //  !myValidVec.orR // any 
     //) {
     //}
-    for (idx <- 0 until cfg.depth) {
-      //def idx = cfg.depth - 1 - revIdx
-      myValidVec(idx) := rPopVec(idx + 1).fire
+    for (revIdx <- 0 until cfg.depth) {
+      def idx = cfg.depth - 1 - revIdx
+      myValidVec(idx) := (
+        //rPopVec(idx + 1).fire
+        rPopVec(idx).fire
+      )
 
       if (idx < cfg.depth - 1) {
         def curr = io.pop(idx)
         def next = io.pop(idx + 1)
-        def rCurr = rPopVec(idx + 1)
-        def rNext = rPopVec(idx + 2)
+        def rCurr = (
+          //rPopVec(idx + 1)
+          rPopVec(idx)
+        )
+        def rNext = (
+          //rPopVec(idx + 2)
+          rPopVec(idx + 1)
+        )
 
         switch (
           next.valid
@@ -891,7 +905,8 @@ case class LcvOooRdSlidingBuf[
         }
       } else {
         when (io.pop(idx).fire) {
-          rPopVec(idx + 1).valid := False
+          //rPopVec(idx + 1).valid := False
+          rPopVec(idx).valid := False
         }
       }
       //switch (
