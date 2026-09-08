@@ -905,12 +905,11 @@ case class LcvOooRdSlidingBuf[
         //}
         when (
           !next.valid
-          && curr.valid
+          //&& curr.valid
           && !curr.ready
         ) {
           rNext := rCurr
         }
-
         when (
           curr.fire
         ) {
