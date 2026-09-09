@@ -789,6 +789,20 @@ case class LcvOooRdSlidingBuf[
   // "Out-of-Order-Reads Buffer", which I'm intending on using
   // in libsnowhouse to allow buffering multiple instructions for the
   // purposes of dispatching instructions out-of-order!
+  //
+  // This is similar to the concept of a queue with multiple read ports
+  //
+  // Here are some details about the functionality of this module:
+  // * `valid && ready` for a particular Element indicates that that Element is being emptied/obtained (i.e. by the external module)
+  // * "Element A" indicates `io.pop(idx)`
+  // * "Element B" indicates `io.pop(idx + 1)`
+  // * every cycle
+  // (except for the last Element which just stays put until
+  // it's "emptied"),
+  // if Element A has a value in it, and Element B *is*
+  // empty, and Element A is *not* being emptied, then Element B will
+  // obtain Element A's contents, and Element B will be marked as being
+  // "filled".
 
   val io = LcvOooRdSlidingBufIo(cfg=cfg)
 
