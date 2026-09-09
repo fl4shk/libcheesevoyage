@@ -746,7 +746,7 @@ case class LcvOooRdSlidingBufConfig[
 ](
   wordType: HardType[WordT],
   depth: Int,
-  //loLatency: Boolean=true,
+  //shiftOnlyWhenPushFire: Boolean=false,
 ) {
   require(
     depth >= 1,
@@ -806,8 +806,6 @@ case class LcvOooRdSlidingBuf[
   for (idx <- 0 until cfg.depth) {
     io.pop(idx).valid := rPopVec(idx).fire
     io.pop(idx).payload := rPopVec(idx).payload
-    //io.pop(idx).valid := rPopVec(idx + 1).fire
-    //io.pop(idx).payload := rPopVec(idx + 1).payload
   }
  
 //  def bitscan(
@@ -833,98 +831,35 @@ case class LcvOooRdSlidingBuf[
         Bool()
       )
     )
-    //io.push.ready := (
-    //  //!myValidVec.andR
-    //  !rPopVec.head.fire
-    //)
-
-    //when (
-    //  !myValidVec.orR // any 
-    //) {
-    //}
     when (io.pop.last.fire) {
-      //rPopVec(idx + 1).valid := False
       rPopVec.last.valid := False
     }
     for (idx <- 0 until cfg.depth) {
       //def idx = cfg.depth - 1 - revIdx
       myValidVec(idx) := (
-        //rPopVec(idx + 1).fire
         rPopVec(idx).fire
       )
 
       if (idx < cfg.depth - 1) {
         def curr = io.pop(idx)
         def next = io.pop(idx + 1)
-        def rCurr = (
-          //rPopVec(idx + 1)
-          rPopVec(idx)
-        )
-        def rNext = (
-          //rPopVec(idx + 2)
-          rPopVec(idx + 1)
-        )
+        def rCurr = rPopVec(idx)
+        def rNext = rPopVec(idx + 1)
 
-        //switch (
-        //  next.valid
-        //  ## next.ready
-        //  ## curr.valid
-        //  ## curr.ready
-        //) {
-        //  is (M"1110") {
-        //    // next.fire
-        //    // curr.valid && !curr.ready
-
-        //    // in this case, we can slide the newer word so that it
-        //    // gets seen as an older one afterwards...
-        //    // This is because `rNext` is currently being emptied!
-        //    rNext := rCurr
-        //    rCurr.valid := False
-        //  }
-        //  is (M"--11") {
-        //    // any case of `curr.fire` 
-        //    rCurr.valid := False
-        //  }
-        //  is (
-        //    //M"0-10"
-        //    M"0--0"
-        //  ) {
-        //    // !next.valid 
-        //    // !curr.ready
-
-        //    // in this case I think we can *also* slide the newer word
-        //    // over because `rNext` is empty, and actually, maybe `rCurr`
-        //    // is empty as well?
-        //    // If `rCurr` *is* empty, then we're just
-        //    // copying an empty slot to another empty slot!
-        //    rNext := rCurr
-        //  }
-        //  default {
-        //  }
-        //}
-        when (
+        val mySharedCond = (
           (
-            (
-              next.fire
-              || !next.valid
-            )
-            && !curr.fire
+            next.fire
+            || !next.valid
           )
-          //|| (
-          //  !next.valid
-          //  && !curr.fire
-          //)
-          //|| (
-          //  !next.valid
-          //  //&& curr.valid
-          //  && !curr.ready
-          //)
-        ) {
+          && !curr.fire
+        )
+
+        when (mySharedCond) {
           rNext := rCurr
-          rCurr.valid := False
         }
         when (
-          curr.fire
+          mySharedCond
+          || curr.fire
         ) {
           rCurr.valid := False
         }
@@ -935,51 +870,13 @@ case class LcvOooRdSlidingBuf[
             || !rPopVec.head.fire
           )
         }
-      } else {
-        //when (io.pop(idx).fire) {
-        //  //rPopVec(idx + 1).valid := False
-        //  rPopVec(idx).valid := False
-        //}
       }
-      //switch (
-      //  !myValidVec.andR
-      //  ## 
-      //) {
-      //  // check for full
-      //}
     }
     when (io.push.fire) {
       rPopVec.head.valid := True
       rPopVec.head.payload := io.push.payload
     }
-
-    //val myValidVec = Vec(rPopVec.map(item => item.fire))
-    //io.push.ready := !myValidVec.andR
-
-    //switch (
-    //  bitscan(~myValidVec.asBits.asUInt)
-    //) {
-    //  val size = myValidVec.size
-    //  for (idx <- 0 until size) {
-    //    is (MaskedLiteral(
-    //      ("-" * (size - idx - 1) + "1" + ("0" * idx))
-    //    )) {
-    //    }
-    //  }
-    //}
   }
-
-  //val myHiLatencyArea = (
-  //  !cfg.loLatency
-  //) generate new Area {
-  //  require(
-  //    false,
-  //    "Not yet implemented",
-  //  )
-  //  //val myValidVec = Vec(rPopVec.map(item => item.fire))
-  //  //io.push.ready := !myValidVec.andR
-  //  //val rPushIdx = 
-  //}
 }
 
 
