@@ -880,7 +880,8 @@ case class LcvOooRdSlidingBuf[
 
         if (idx == 0) {
           io.push.ready := (
-            curr.fire
+            mySharedCond
+            || curr.fire
             || !rPopVec.head.fire
           )
         }
