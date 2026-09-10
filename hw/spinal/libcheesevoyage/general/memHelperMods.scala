@@ -868,14 +868,14 @@ case class LcvOooRdSlidingBuf[
           && !curr.fire
         )
 
-        when (mySharedCond) {
-          rNext := rCurr
-        }
         when (
           mySharedCond
           || curr.fire
         ) {
           rCurr.valid := False
+        }
+        when (mySharedCond) {
+          rNext := rCurr
         }
 
         if (idx == 0) {
