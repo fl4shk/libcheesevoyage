@@ -848,8 +848,8 @@ case class LcvOooRdSlidingBuf[
     when (io.pop.last.fire) {
       rPopVec.last.valid := False
     }
-    for (idx <- 0 until cfg.depth) {
-      //def idx = cfg.depth - 1 - revIdx
+    for (revIdx <- 0 until cfg.depth) {
+      def idx = cfg.depth - 1 - revIdx
       myValidVec(idx) := (
         rPopVec(idx).fire
       )
