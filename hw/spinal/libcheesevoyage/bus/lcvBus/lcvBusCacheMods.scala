@@ -224,10 +224,10 @@ case class LcvBusCachePrefetcher(
     rSavedHaveHit.addr := (
       io.haveHit.addr + cfg.innerCfg.loBusCacheCfg.lineSizeBytes
     )
-    if (cfg.numLinesAhead >= 2) {
+    //if (cfg.numLinesAhead >= 2) {
       rPrefetchH2dCnt := cfg.numLinesAhead - 1//2//1
       rPrefetchD2hCnt := cfg.numLinesAhead - 1//2
-    }
+    //}
   }
 
   //when (
