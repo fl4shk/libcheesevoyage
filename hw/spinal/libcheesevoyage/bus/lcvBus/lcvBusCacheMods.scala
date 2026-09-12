@@ -201,12 +201,19 @@ case class LcvBusCachePrefetcher(
     Reg(UInt(myCpuTxnCntWidth bits))
     init(0x0)
   )
+  val rSeenCpuRealH2dTxn = Reg(Bool(), init=False)
+
+  when (io.loBus.h2dBus.fire) {
+    rSeenCpuRealH2dTxn := True
+  }
 
   when (
     !rSavedHaveHit.fire
     && io.haveHit.fire
     && !io.haveHit.haveHitAtAll
+    && rSeenCpuRealH2dTxn
   ) {
+    rSeenCpuRealH2dTxn := False
     rSavedHaveHit.valid := True
     rSavedHaveHit.payload := io.haveHit.payload
     rSavedHaveHit.addr := (
