@@ -274,7 +274,7 @@ case class LcvBusCachePrefetcher(
     && !rSavedHaveHit.haveHitAtAll
     && !rCpuRealTxnCnt.orR
     //&& io.hiBus.h2dBus.fire
-    && !rPrefetchH2dCnt.orR
+    && rPrefetchH2dCnt.msb //!rPrefetchH2dCnt.orR
     && io.hiBus.d2hBus.fire
     && !rPrefetchD2hCnt.orR
   ) {
