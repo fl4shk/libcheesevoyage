@@ -190,11 +190,11 @@ case class LcvBusCachePrefetcher(
   io.hiBus.d2hBus.ready := False
 
   val rPrefetchH2dCnt = (
-    Reg(SInt(log2Up(cfg.numLinesAhead) + 1 bits))
+    Reg(SInt(log2Up(cfg.numLinesAhead).max(1) + 1 bits))
     init(-1)
   )
   val rPrefetchD2hCnt = (
-    Reg(SInt(log2Up(cfg.numLinesAhead) + 1 bits))
+    Reg(SInt(log2Up(cfg.numLinesAhead).max(1) + 1 bits))
     init(-1)
   )
 
