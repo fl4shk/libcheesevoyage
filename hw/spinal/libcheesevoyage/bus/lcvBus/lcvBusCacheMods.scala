@@ -4918,10 +4918,6 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
   cfg: LcvBusCacheBusPairConfig,
 ) extends Component {
   //--------
-  require(
-    !cfg.supportPrefetch
-  )
-  //--------
   def numWays = cfg.loBusCacheCfg.numWays
 
   def loBusCfg = cfg.loBusCfg
