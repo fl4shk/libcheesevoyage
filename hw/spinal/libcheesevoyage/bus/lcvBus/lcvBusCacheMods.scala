@@ -51,7 +51,8 @@ case class LcvBusCacheBusPairConfig(
   //),
   prefetchNumLinesAhead: Option[Int]=(
     //false
-    Some(4)
+    //Some(4)
+    None
   ),
   optFormal: Boolean=false,
 ) {
