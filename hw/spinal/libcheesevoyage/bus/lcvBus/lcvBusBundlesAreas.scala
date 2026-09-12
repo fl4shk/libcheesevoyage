@@ -239,7 +239,7 @@ case class LcvBusCacheConfig(
   def myLineWordRamSingleWordAddrRshift = log2Up(wordSizeBytes)
   def myLineWordRamFullLineAddrRshift = log2Up(lineSizeBytes)
   def myLineWordRamArrFromBusAddrRange = (
-    myLineWordRamFullLineAddrRshift,
+    myLineWordRamFullLineAddrRshift - 1,
     myLineWordRamSingleWordAddrRshift,
   )
   def myLineAttrsRamAddrRshift = log2Up(lineSizeBytes)
