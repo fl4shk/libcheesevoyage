@@ -5248,6 +5248,9 @@ private[libcheesevoyage] case class LcvBusInstrCache(
   for (ramIdx <- 0 until numWays) {
     for (wordIdx <- 0 until lineSizeWords) {
       val myRam = lineWordRam(ramIdx)(wordIdx)
+      myRam.io.wrEn.allowOverride
+      myRam.io.wrAddr.allowOverride
+      myRam.io.wrData.allowOverride
       myRam.io.wrEn := False
       myRam.io.wrAddr := 0x0
       myRam.io.wrData := 0x0
