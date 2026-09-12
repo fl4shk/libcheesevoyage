@@ -6313,6 +6313,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheNonWide(
   //--------
   val io = LcvBusCacheIo(cfg=cfg)
   val icache = LcvBusInstrCacheMain(cfg=cfg)
+  io <> icache.io
   ////--------
   //val mySupportPrefetchArea = (
   //  cfg.supportPrefetch
@@ -11276,7 +11277,9 @@ case class LcvBusCache(
   cfg: LcvBusCacheBusPairConfig,
 ) extends Component {
   //--------
-  val io = LcvBusCacheIo(cfg=cfg)
+  val io = LcvBusCacheIo(
+    cfg=cfg
+  )
   //--------
   val instrCache = (
     //cfg.haveNonCoherentInstrCache
