@@ -254,6 +254,17 @@ case class LcvBusCachePrefetcher(
       rSavedHaveHit.addr + cfg.innerCfg.loBusCacheCfg.lineSizeBytes
     )
   }
+
+  when (
+    rSavedHaveHit.fire
+    && !rSavedHaveHit.haveHitAtAll
+    && !rCpuRealTxnCnt.orR
+    && io.hiBus.h2dBus.fire
+    && !rPrefetchH2dCnt.orR
+  ) {
+    rSavedHaveHit.valid := False
+  }
+
   when (
     rSavedHaveHit.fire
     && !rSavedHaveHit.haveHitAtAll
