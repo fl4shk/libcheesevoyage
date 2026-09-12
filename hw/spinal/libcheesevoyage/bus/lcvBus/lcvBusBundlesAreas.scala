@@ -236,7 +236,12 @@ case class LcvBusCacheConfig(
     }
   )
   //def coherent: Boolean = (numCpus > 1)
-  def myLineWordRamAddrRshift = log2Up(wordSizeBytes)
+  def myLineWordRamSingleWordAddrRshift = log2Up(wordSizeBytes)
+  def myLineWordRamFullLineAddrRshift = log2Up(lineSizeBytes)
+  def myLineWordRamArrFromBusAddrRange = (
+    myLineWordRamFullLineAddrRshift,
+    myLineWordRamSingleWordAddrRshift,
+  )
   def myLineAttrsRamAddrRshift = log2Up(lineSizeBytes)
 
   private[libcheesevoyage] def doRequires() {
