@@ -331,6 +331,26 @@ case class LcvBusConfig(
   def keepByteSize = mainCfg.keepByteSize
   def optTxnCntWidth = mainCfg.optTxnCntWidth
 
+  def prefetchAddrIncrStartIdx = burstCntWidth + log2Up(dataWidth / 8)
+
+  def prefetchAddr(
+    someAddr: UInt,
+  ) = {
+    val temp = (
+      someAddr(
+        someAddr.high
+        downto prefetchAddrIncrStartIdx
+      )
+    )
+
+    (
+      Cat(
+        temp,
+        U(s"${prefetchAddrIncrStartIdx}'d0")
+      ),
+      temp
+    )
+  }
   def burstAddr(
     someAddr: UInt,
     someBurstCnt: UInt,
@@ -718,6 +738,12 @@ case class LcvBusH2dPayload(
   //def atLastBurstAddr(
   //  someBurstCnt: UInt
   //)
+  def prefetchAddr(
+  ) = {
+    cfg.prefetchAddr(
+      someAddr=addr,
+    )
+  }
   def burstAddr(
     someBurstCnt: UInt,
     incrBurstCnt: Boolean,
