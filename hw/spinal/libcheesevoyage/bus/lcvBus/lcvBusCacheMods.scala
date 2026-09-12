@@ -5244,6 +5244,15 @@ private[libcheesevoyage] case class LcvBusInstrCache(
       )
     }
   }
+
+  for (ramIdx <- 0 until numWays) {
+    for (wordIdx <- 0 until lineSizeWords) {
+      val myRam = lineWordRam(ramIdx)(wordIdx)
+      myRam.io.wrEn := False
+      myRam.io.wrAddr := 0x0
+      myRam.io.wrData := 0x0
+    }
+  }
   def doLineWordRamWrite(
     ramIdx: Int,
     busAddr: UInt,
@@ -5254,9 +5263,9 @@ private[libcheesevoyage] case class LcvBusInstrCache(
     switch (busAddr(
       myLineWordRamArrFromBusAddrRange 
     )) {
-      for (idx <- 0 until lineSizeWords) {
-        is (idx) {
-          val myRam = lineWordRam(ramIdx)(idx)
+      for (wordIdx <- 0 until lineSizeWords) {
+        is (wordIdx) {
+          val myRam = lineWordRam(ramIdx)(wordIdx)
           if (setEn) {
             myRam.io.wrEn := True
           }
