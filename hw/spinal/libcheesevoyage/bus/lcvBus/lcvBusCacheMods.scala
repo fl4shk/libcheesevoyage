@@ -195,7 +195,7 @@ case class LcvBusCachePrefetcher(
     init(-1)
   )
 
-  def myCpuTxnCntWidth = 4//5//4
+  def myCpuTxnCntWidth = 5//4//5//4
 
   val rCpuRealTxnCnt = (
     Reg(UInt(myCpuTxnCntWidth bits))
