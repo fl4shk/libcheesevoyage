@@ -136,6 +136,9 @@ case class LcvBusCachePrefetcherConfig(
   require(
     innerCfg.supportPrefetch
   )
+  require(
+    numLinesAhead >= 1
+  )
   def cacheCfg = innerCfg.loBusCacheCfg
   def busCfg = innerCfg.loBusCfg
 }
@@ -195,6 +198,8 @@ case class LcvBusCachePrefetcher(
     init(-1)
   )
 
+  // 4 was determined to be too low for a 32-bit dataWidth...
+  // `rCpuRealTxnCnt` overflowed sometimes in that case!
   def myCpuTxnCntWidth = 5//4//5//4
 
   val rCpuRealTxnCnt = (
@@ -219,8 +224,10 @@ case class LcvBusCachePrefetcher(
     rSavedHaveHit.addr := (
       io.haveHit.addr + cfg.innerCfg.loBusCacheCfg.lineSizeBytes
     )
-    rPrefetchH2dCnt := cfg.numLinesAhead - 2//1
-    rPrefetchD2hCnt := cfg.numLinesAhead - 2
+    if (cfg.numLinesAhead >= 2) {
+      rPrefetchH2dCnt := cfg.numLinesAhead - 1//2//1
+      rPrefetchD2hCnt := cfg.numLinesAhead - 1//2
+    }
   }
 
   //when (
@@ -267,7 +274,7 @@ case class LcvBusCachePrefetcher(
     && !rSavedHaveHit.haveHitAtAll
     && !rCpuRealTxnCnt.orR
     //&& io.hiBus.h2dBus.fire
-    && rPrefetchH2dCnt.msb //!rPrefetchH2dCnt.orR
+    && !rPrefetchH2dCnt.orR
     && io.hiBus.d2hBus.fire
     && !rPrefetchD2hCnt.orR
   ) {
