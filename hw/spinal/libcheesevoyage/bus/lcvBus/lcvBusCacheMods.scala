@@ -5105,27 +5105,26 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
     )
   ) {
     val
-      INIT,
-      IDLE,
-      LOAD_HIT_DO_STALL_PIPE_4,
-      LOAD_HIT_DO_STALL_PIPE_3,
-      LOAD_HIT_DO_STALL_PIPE_2,
-      LOAD_HIT_DO_STALL_PIPE_1,
-      LOAD_HIT_DO_STALL,
-      LOAD_HIT_DO_STALL_POST,
+      INIT,                               // 0
+      IDLE,                               // 1
+      LOAD_HIT_DO_STALL_PIPE_4,           // 2
+      LOAD_HIT_DO_STALL_PIPE_3,           // 3
+      LOAD_HIT_DO_STALL_PIPE_2,           // 4
+      LOAD_HIT_DO_STALL_PIPE_1,           // 5
+      LOAD_HIT_DO_STALL,                  // 6
+      LOAD_HIT_DO_STALL_POST,             // 7
 
-      WAIT_HI_STATE_IDLE,
-      WAIT_HI_STATE_IDLE_POST_7,
-      WAIT_HI_STATE_IDLE_POST_6,
-      WAIT_HI_STATE_IDLE_POST_5,
-      WAIT_HI_STATE_IDLE_POST_4,
-      WAIT_HI_STATE_IDLE_POST_3,
-      WAIT_HI_STATE_IDLE_POST_2,
-      WAIT_HI_STATE_IDLE_POST_1,
-      WAIT_HI_STATE_IDLE_POST,
+      WAIT_HI_STATE_MCHN_READY,           // 8
+      WAIT_HI_STATE_MCHN_READY_POST_7,    // 9
+      WAIT_HI_STATE_MCHN_READY_POST_6,    // 10
+      WAIT_HI_STATE_MCHN_READY_POST_5,    // 11
+      WAIT_HI_STATE_MCHN_READY_POST_4,    // 12
+      WAIT_HI_STATE_MCHN_READY_POST_3,    // 13
+      WAIT_HI_STATE_MCHN_READY_POST_2,    // 14
+      WAIT_HI_STATE_MCHN_READY_POST_1,    // 15
+      WAIT_HI_STATE_MCHN_READY_POST,      // 16
 
-
-      WAIT_D2H_FIFO_EMPTY
+      WAIT_D2H_FIFO_EMPTY                 // 17
       = newElement();
   }
 
@@ -6109,7 +6108,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       ) {
         if (myVecIdx == 0) {
           // cache miss
-          rLoState := LoState.WAIT_HI_STATE_IDLE
+          rLoState := LoState.WAIT_HI_STATE_MCHN_READY
 
           if (myCondHaveLineBitPlruRam) {
             doWriteBitPlruRamDuringMiss(
@@ -6306,47 +6305,55 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
 
       rLoState := LoState.WAIT_D2H_FIFO_EMPTY
     }
-    is (LoState.WAIT_HI_STATE_IDLE) {
-      when (rHiState === HiState.IDLE) {
-        rLoState := LoState.WAIT_HI_STATE_IDLE_POST_7
-        rSavedRamIdx := rSavedPrefetchRamIdx
+    is (LoState.WAIT_HI_STATE_MCHN_READY) {
+      when (
+        //--------
+        //rHiState === HiState.IDLE
+        //--------
+        //rHiState === HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
+        rHiState.asBits(4)
+      ) {
+        rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_7
+        if (myCondHaveLineBitPlruRam) {
+          rSavedRamIdx := rSavedPrefetchRamIdx
+        }
       }
     }
-    is (LoState.WAIT_HI_STATE_IDLE_POST_7) {
+    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_7) {
       lineWordRam.foreach(item => item.io.rdEn := False)
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      rLoState := LoState.WAIT_HI_STATE_IDLE_POST_6
+      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_6
     }
-    is (LoState.WAIT_HI_STATE_IDLE_POST_6) {
+    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_6) {
       lineWordRam.foreach(item => item.io.rdEn := False)
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      rLoState := LoState.WAIT_HI_STATE_IDLE_POST_5
+      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_5
     }
-    is (LoState.WAIT_HI_STATE_IDLE_POST_5) {
+    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_5) {
       lineWordRam.foreach(item => item.io.rdEn := False)
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      rLoState := LoState.WAIT_HI_STATE_IDLE_POST_4
+      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_4
     }
-    is (LoState.WAIT_HI_STATE_IDLE_POST_4) {
+    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_4) {
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
       doLineWordRamReadSync(
         busAddr=rSavedLoH2dPayload.addr,
         setEn=0,
       )
-      rLoState := LoState.WAIT_HI_STATE_IDLE_POST_3
+      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_3
     }
-    is (LoState.WAIT_HI_STATE_IDLE_POST_3) {
+    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_3) {
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := True)
-      rLoState := LoState.WAIT_HI_STATE_IDLE_POST_2
+      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_2
     }
-    is (LoState.WAIT_HI_STATE_IDLE_POST_2) {
+    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_2) {
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
-      rLoState := LoState.WAIT_HI_STATE_IDLE_POST_1
+      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_1
     }
-    is (LoState.WAIT_HI_STATE_IDLE_POST_1) {
+    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_1) {
       val myRdLineWord = (
         if (myCondHaveLineBitPlruRam) (
           rdLineWord(rSavedRamIdx)
@@ -6356,7 +6363,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       )
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
-      //rState := State.WAIT_HI_STATE_IDLE_POST
+      //rState := State.WAIT_HI_STATE_MCHN_READY_POST
 
       myLoD2hPushStm.valid := True
       myLoD2hPushStm.busPayload.src := rSavedLoH2dPayload.src
@@ -6371,7 +6378,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       }
 
       when (RegNext(
-        rose(rLoState === LoState.WAIT_HI_STATE_IDLE_POST_2)
+        rose(rLoState === LoState.WAIT_HI_STATE_MCHN_READY_POST_2)
       )) {
         myLoD2hPushStm.busPayload.data := RegNext(
           myRdLineWord
@@ -6379,10 +6386,10 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       }
 
       when (myLoD2hPushStm.ready) {
-        rLoState := LoState.WAIT_HI_STATE_IDLE_POST
+        rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST
       }
     }
-    is (LoState.WAIT_HI_STATE_IDLE_POST) {
+    is (LoState.WAIT_HI_STATE_MCHN_READY_POST) {
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
       rLoState := LoState.WAIT_D2H_FIFO_EMPTY
@@ -6407,8 +6414,26 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       //}
       switch (
         //myPrefetchHaveHit.fire
-        tempToSwitchNonHaveHitVec.head.andR
-        ## haveHit.head.orR //myPrefetchHaveHit.haveHitAtAll
+        (
+          RegNextWhen(
+            tempToSwitchNonHaveHitVec.head.andR,
+            cond=rLoState.asBits(1), // rLoState === LoState.IDLE
+            init=False
+          )
+          //&& (
+          //  rLoState.asBits(1)
+          //  // || rLoState === LoState.WAIT_HI_STATE_MCHN_READY
+          //  || rLoState.asBits(8)
+          //)
+        )
+        ## (
+          //myPrefetchHaveHit.haveHitAtAll
+          RegNextWhen(
+            haveHit.head.orR,
+            cond=rLoState.asBits(1), // rLoState === LoState.IDLE
+            init=False
+          )
+        )
         ## rPrefetchCnt.msb
       ) {
         is (
