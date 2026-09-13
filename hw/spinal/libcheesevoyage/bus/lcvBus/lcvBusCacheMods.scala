@@ -6329,6 +6329,9 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       when (rHiState.asBits(0)) {
         rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_6
+        if (myCondHaveLineBitPlruRam) {
+          rSavedRamIdx := rSavedPrefetchRamIdx
+        }
       }
     }
     is (LoState.WAIT_HI_STATE_MCHN_READY_POST_6) {
