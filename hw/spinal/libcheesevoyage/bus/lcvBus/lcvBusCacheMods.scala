@@ -5417,16 +5417,14 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
   )
   for (outerRamIdx <- 0 until 2) {
     for (ramIdx <- 0 until numWays) {
-      if (outerRamIdx == 0) {
-        tempHaveHitCmpEq(outerRamIdx)(ramIdx) := (
-          myTempHaveHitCmpEqLeft(outerRamIdx)(ramIdx)
-          === myTempHaveHitCmpEqRight(outerRamIdx)(ramIdx)
-        )
-        haveHit(outerRamIdx)(ramIdx) := (
-          rdLineAttrs(outerRamIdx)(ramIdx).fire
-          && tempHaveHitCmpEq(outerRamIdx)(ramIdx)
-        )
-      }
+      tempHaveHitCmpEq(outerRamIdx)(ramIdx) := (
+        myTempHaveHitCmpEqLeft(outerRamIdx)(ramIdx)
+        === myTempHaveHitCmpEqRight(outerRamIdx)(ramIdx)
+      )
+      haveHit(outerRamIdx)(ramIdx) := (
+        rdLineAttrs(outerRamIdx)(ramIdx).fire
+        && tempHaveHitCmpEq(outerRamIdx)(ramIdx)
+      )
     }
   }
 
