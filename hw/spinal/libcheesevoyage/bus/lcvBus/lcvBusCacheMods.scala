@@ -5798,6 +5798,11 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       busAddr=mySelLoH2dPopPayload.addr,
       setEn=2,
     )
+    doLineBitPlruRamReadSync(
+      outerRamIdx=1,
+      busAddr=rSavedPrefetchLoH2dPayload.addr,
+      setEn=2,
+    )
     doLineBitPlruRamWrite(
       busAddr=(
         RegNext(
