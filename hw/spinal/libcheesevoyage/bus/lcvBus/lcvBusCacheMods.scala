@@ -5145,9 +5145,10 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       RECV_LINE_FROM_HI_BUS_PIPE_3,   // 2
       RECV_LINE_FROM_HI_BUS_PIPE_2,   // 3
       RECV_LINE_FROM_HI_BUS_PIPE_1,   // 4
-      RECV_LINE_FROM_HI_BUS
+      RECV_LINE_FROM_HI_BUS           // 5
       = newElement();
   }
+
   val rHiState = (
     Reg(HiState())
     init(HiState.IDLE)
@@ -6357,10 +6358,16 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       //rState := State.WAIT_HI_STATE_IDLE_POST
 
       myLoD2hPushStm.valid := True
+      myLoD2hPushStm.busPayload.src := rSavedLoH2dPayload.src
 
-      myLoD2hPushStm.busPayload.src := (
-        rSavedLoH2dPayload.src
-      )
+      if (!loBusCfg.haveByteEn) {
+        myLoD2hPayload.byteSize := rSavedLoH2dPayload.byteSize
+        myLoD2hPayload.addrLo := (
+          rSavedLoH2dPayload.addr(
+            loBusCfg.addrLoWidth - 1 downto 0
+          )
+        )
+      }
 
       when (RegNext(
         rose(rLoState === LoState.WAIT_HI_STATE_IDLE_POST_2)
@@ -6529,24 +6536,24 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       when (io.hiBus.d2hBus.fire) {
         rHiD2hBurstCnt := rHiD2hBurstCnt + 1
 
-        val tempBurstCntCmpEq = (
-          rHiD2hBurstCnt
-          === rSavedPrefetchLoH2dPayload.addr(
-            rHiD2hBurstCnt.high + log2Up(hiBusCfg.dataWidth / 8)
-            downto log2Up(hiBusCfg.dataWidth / 8)
-          )
-        )
-        when (tempBurstCntCmpEq) {
-          myLoD2hPayload.data := (io.hiBus.d2hBus.data)
-          if (!loBusCfg.haveByteEn) {
-            myLoD2hPayload.byteSize := (
-              rSavedPrefetchLoH2dPayload.byteSize
-            )
-            myLoD2hPayload.addrLo := rSavedPrefetchLoH2dPayload.addr(
-              loBusCfg.addrLoWidth - 1 downto 0
-            )
-          }
-        }
+        //val tempBurstCntCmpEq = (
+        //  rHiD2hBurstCnt
+        //  === rSavedPrefetchLoH2dPayload.addr(
+        //    rHiD2hBurstCnt.high + log2Up(hiBusCfg.dataWidth / 8)
+        //    downto log2Up(hiBusCfg.dataWidth / 8)
+        //  )
+        //)
+        //when (tempBurstCntCmpEq) {
+        //  myLoD2hPayload.data := (io.hiBus.d2hBus.data)
+        //  if (!loBusCfg.haveByteEn) {
+        //    myLoD2hPayload.byteSize := (
+        //      rSavedPrefetchLoH2dPayload.byteSize
+        //    )
+        //    myLoD2hPayload.addrLo := rSavedPrefetchLoH2dPayload.addr(
+        //      loBusCfg.addrLoWidth - 1 downto 0
+        //    )
+        //  }
+        //}
         val rTempBurstAddr = (
           rSavedPrefetchLoH2dPayload.burstAddr(
             someBurstCnt=rHiD2hBurstCnt,
