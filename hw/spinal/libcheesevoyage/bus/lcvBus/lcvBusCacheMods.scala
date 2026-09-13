@@ -6094,7 +6094,13 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
 
   for (myVecIdx <- 0 until 2) { 
     switch (tempToSwitchVec(myVecIdx)) {
-      is (MaskedLiteral("11" + ("0" * numWays))) {
+      is (
+        if (myVecIdx == 0) (
+          MaskedLiteral("11" + ("0" * numWays))
+        ) else (
+          MaskedLiteral("1" + ("0" * numWays))
+        )
+      ) {
         if (myVecIdx == 0) {
           // cache miss
           rLoState := LoState.WAIT_HI_STATE_IDLE
@@ -6125,7 +6131,13 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
         //println(
         //  s"ramIdx:${ramIdx} myRamIdxMask:${myRamIdxMask}"
         //)
-        is (MaskedLiteral("11" + myRamIdxMask)) {
+        is (
+          if (myVecIdx == 0) (
+            MaskedLiteral("11" + myRamIdxMask)
+          ) else (
+            MaskedLiteral("1" + myRamIdxMask)
+          )
+        ) {
           if (myVecIdx == 0) {
             doPopLoH2dFifo()
             myFifoThingDoStall := False
