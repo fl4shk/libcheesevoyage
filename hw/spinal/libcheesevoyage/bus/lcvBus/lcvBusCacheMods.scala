@@ -6121,6 +6121,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
           myFifoThingDoStall := True
           mySelLoH2dPopStm.ready := False
         } else if (myVecIdx == 1) {
+          rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
           if (myCondHaveLineBitPlruRam) {
             doWriteBitPlruRamDuringMiss(
               someRdLineBitPlru=rdPrefetchLineBitPlru,
@@ -6181,8 +6182,11 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
               rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_4
             }
           } else if (myVecIdx == 1) {
+            // if we had a cache hit for an attempted prefetch,
+            // we should stop prefetching there!
+            rHiState := HiState.IDLE
             if (myCondHaveLineBitPlruRam) {
-              rSavedPrefetchRamIdx := ramIdx
+              //rSavedPrefetchRamIdx := ramIdx
               doWriteBitPlruRamDuringHit(
                 someRdLineBitPlru=rdPrefetchLineBitPlru,
                 ramIdx=ramIdx,
@@ -6309,14 +6313,15 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       when (
         //--------
         //rHiState === HiState.IDLE
+        rHiState.asBits(0)
         //--------
         //rHiState === HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
-        rHiState.asBits(4)
+        //rHiState.asBits(4)
       ) {
         rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_7
-        if (myCondHaveLineBitPlruRam) {
-          rSavedRamIdx := rSavedPrefetchRamIdx
-        }
+        //if (myCondHaveLineBitPlruRam) {
+        //  rSavedRamIdx := rSavedPrefetchRamIdx
+        //}
       }
     }
     is (LoState.WAIT_HI_STATE_MCHN_READY_POST_7) {
@@ -6405,6 +6410,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
   }
 
   // Implement line-ahead prefetching
+  val rSavedHaveHit = Reg(Bool(), init=False)
   switch (rHiState) {
     is (HiState.IDLE) {
       //when (
@@ -6415,23 +6421,37 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       switch (
         //myPrefetchHaveHit.fire
         (
-          RegNextWhen(
-            tempToSwitchNonHaveHitVec.head.andR,
-            cond=rLoState.asBits(1), // rLoState === LoState.IDLE
-            init=False
+          //tempToSwitchNonHaveHitVec.head.andR
+          //|| 
+          (
+            RegNextWhen(
+              //tempToSwitchNonHaveHitVec.head.andR,
+              // we can skip the `.andR` here because of the
+              // `cond=rLoState.asBits(1)` argument to this `RegNextWhen`
+              tempToSwitchNonHaveHitVec.head(1),
+              cond=rLoState.asBits(1), // rLoState === LoState.IDLE
+              init=False
+            )
+            //&& (
+            //  // rLoState === LoState.WAIT_HI_STATE_MCHN_READY
+            //  rLoState.asBits(8)
+            //)
           )
-          //&& (
-          //  rLoState.asBits(1)
-          //  // || rLoState === LoState.WAIT_HI_STATE_MCHN_READY
-          //  || rLoState.asBits(8)
-          //)
         )
         ## (
           //myPrefetchHaveHit.haveHitAtAll
-          RegNextWhen(
-            haveHit.head.orR,
-            cond=rLoState.asBits(1), // rLoState === LoState.IDLE
-            init=False
+          //haveHit.head.orR
+          //|| 
+          (
+            RegNextWhen(
+              haveHit.head.orR,
+              cond=rLoState.asBits(1), // rLoState === LoState.IDLE
+              init=False
+            )
+            //&& (
+            //  // rLoState === LoState.WAIT_HI_STATE_MCHN_READY
+            //  rLoState.asBits(8)
+            //)
           )
         )
         ## rPrefetchCnt.msb
@@ -6444,10 +6464,8 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
           // and we're not currently prefetching!
           rSavedPrefetchLoH2dPayload := rDel2LoH2dPayload
           rPrefetchCnt := cfg.prefetchNumLinesAhead.get - 1
-          rHiState := (
-            //HiState.RECV_LINE_FROM_HI_BUS
-            HiState.RECV_LINE_FROM_HI_BUS_PIPE_4
-          )
+          rSavedHaveHit := True
+          rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_4
         }
         is (
           //M"110"
@@ -6460,10 +6478,8 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
             + cfg.loBusCacheCfg.lineSizeBytes
           )
           rPrefetchCnt := rPrefetchCnt - 1
-          rHiState := (
-            //HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
-            HiState.RECV_LINE_FROM_HI_BUS_PIPE_4
-          )
+          rSavedHaveHit := False
+          rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_4
         }
         //is (
         //  M"0-0"
@@ -6500,14 +6516,14 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
     is (HiState.RECV_LINE_FROM_HI_BUS_PIPE_2) {
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
       lineBitPlruRam.last.io.rdEn := False
-      rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
+      //rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
     }
     is (HiState.RECV_LINE_FROM_HI_BUS_PIPE_1) {
       rHadHiH2dFinish := False
       rHadHiD2hFinish := False
 
       rHiH2dPayload.burstFirst := True
-      rHiH2dPayload.burstLast := True//False
+      rHiH2dPayload.burstLast := True
       rHiH2dPayload.burstCnt := hiBusCfg.maxBurstSizeMinus1
 
       rHiH2dPayload.isWrite := False
