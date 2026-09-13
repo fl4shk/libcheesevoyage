@@ -6327,7 +6327,9 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
     is (LoState.WAIT_HI_STATE_MCHN_READY_POST_7) {
       lineWordRam.foreach(item => item.io.rdEn := False)
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_6
+      when (rHiState.asBits(0)) {
+        rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_6
+      }
     }
     is (LoState.WAIT_HI_STATE_MCHN_READY_POST_6) {
       lineWordRam.foreach(item => item.io.rdEn := False)
