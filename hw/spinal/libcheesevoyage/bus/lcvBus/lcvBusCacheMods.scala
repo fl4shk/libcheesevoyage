@@ -5386,6 +5386,115 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
     //)
     myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus
   }
+  val myTempHaveHitCmpEqLeft = (
+    Vec[Vec[UInt]](
+      rdLineAttrs.map(
+        outerItem => Vec[UInt](outerItem.map(item => item.tag))
+      )
+    )
+  )
+  val myTempHaveHitCmpEqRight = Vec[Vec[UInt]](
+    Vec.fill(numWays)(
+      RegNext(
+        RegNext(mySelLoH2dPopPayload.addr(loBusCacheCfg.tagRange))
+        init(0x0)
+      )
+      init(0x0),
+    ),
+    Vec.fill(numWays)(
+      UInt(
+        mySelLoH2dPopPayload.addr(loBusCacheCfg.tagRange).getWidth bits
+      )
+    )
+  )
+  val tempHaveHitCmpEq = Vec.fill(2)(
+    Vec.fill(numWays)(Bool())
+  )
+  val haveHit = Vec.fill(2)(
+    Vec.fill(numWays)(
+      Bool()
+    )
+  )
+  for (outerRamIdx <- 0 until 2) {
+    for (ramIdx <- 0 until numWays) {
+      if (outerRamIdx == 0) {
+        tempHaveHitCmpEq(outerRamIdx)(ramIdx) := (
+          myTempHaveHitCmpEqLeft(outerRamIdx)(ramIdx)
+          === myTempHaveHitCmpEqRight(outerRamIdx)(ramIdx)
+        )
+        haveHit(outerRamIdx)(ramIdx) := (
+          rdLineAttrs(outerRamIdx)(ramIdx).fire
+          && tempHaveHitCmpEq(outerRamIdx)(ramIdx)
+        )
+      }
+    }
+  }
+
+  val rMyTempDoSaveCond = (
+    Vec.fill(4)(
+      RegNext(
+        RegNext(
+          (
+            mySelLoH2dPopStm.fire
+            //&& !myFullTempIgnoreDupCntCond
+          ),
+          init=False
+        ),
+        init=False
+      )
+    )
+  )
+
+  val tempToSwitchNonHaveHit = (
+    //((rState === State.IDLE) && rMyTempDoSaveCond(3))
+    //((rState === State.IDLE)
+    rLoState.asBits(1)
+    ## rMyTempDoSaveCond(3)
+    //## rDel2LoH2dPayload.isWrite
+  )
+  val tempToSwitch = (
+    tempToSwitchNonHaveHit
+    ## haveHit.head
+  )
+  //println(
+  //  s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
+  //)
+  val myPrefetchHaveHit = (
+    Flow(
+      LcvBusCachePrefetcherHaveHitPayload(cfg=cfg)
+    )
+  )
+  //val rSavedPrefetchHaveHit = {
+  //  val temp = Reg(
+  //    Flow(
+  //      LcvBusCachePrefetcherHaveHitPayload(cfg=cfg)
+  //    )
+  //  )
+  //  temp.init(temp.getZero)
+  //  temp
+  //}
+  myPrefetchHaveHit.valid := tempToSwitchNonHaveHit.andR
+  myPrefetchHaveHit.haveHitAtAll := haveHit.last.orR
+  myPrefetchHaveHit.loH2dPayload := rDel2LoH2dPayload.busPayload
+
+  val rSavedPrefetchLoH2dPayload = (
+    Reg(cloneOf(rDel2LoH2dPayload))
+    init(rDel2LoH2dPayload.getZero)
+  )
+  val rSavedPrefetchRamIdx = (
+    myCondHaveLineBitPlruRam
+  ) generate (
+    Reg(UInt(log2Up(numWays) bits))
+    init(0x0)
+  )
+
+  //myPrefetchHaveHit.cnt := cfg.prefetchNumLinesAhead.get - 1
+
+  val rPrefetchCnt = (
+    Reg(SInt(log2Up(cfg.prefetchNumLinesAhead.get).max(1) + 1 bits))
+    init(-1)
+  )
+
 
   def convBusAddrToLineIdx[
     WordT <: Data
@@ -5662,49 +5771,6 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
     RegNext(myLoD2hPushStm.payload, init=myLoD2hPushStm.payload.getZero)
   )
 
-  val myTempHaveHitCmpEqLeft = (
-    Vec[Vec[UInt]](
-      rdLineAttrs.map(
-        outerItem => Vec[UInt](outerItem.map(item => item.tag))
-      )
-    )
-  )
-  val myTempHaveHitCmpEqRight = Vec[Vec[UInt]](
-    Vec.fill(numWays)(
-      RegNext(
-        RegNext(mySelLoH2dPopPayload.addr(loBusCacheCfg.tagRange))
-        init(0x0)
-      )
-      init(0x0),
-    ),
-    Vec.fill(numWays)(
-      UInt(
-        mySelLoH2dPopPayload.addr(loBusCacheCfg.tagRange).getWidth bits
-      )
-    )
-  )
-  val tempHaveHitCmpEq = Vec.fill(2)(
-    Vec.fill(numWays)(Bool())
-  )
-  val haveHit = Vec.fill(2)(
-    Vec.fill(numWays)(
-      Bool()
-    )
-  )
-  for (outerRamIdx <- 0 until 2) {
-    for (ramIdx <- 0 until numWays) {
-      if (outerRamIdx == 0) {
-        tempHaveHitCmpEq(outerRamIdx)(ramIdx) := (
-          myTempHaveHitCmpEqLeft(outerRamIdx)(ramIdx)
-          === myTempHaveHitCmpEqRight(outerRamIdx)(ramIdx)
-        )
-        haveHit(outerRamIdx)(ramIdx) := (
-          rdLineAttrs(outerRamIdx)(ramIdx).fire
-          && tempHaveHitCmpEq(outerRamIdx)(ramIdx)
-        )
-      }
-    }
-  }
   //val haveHit = (
   //  rdLineAttrs.fire
   //  && tempHaveHitCmpEq
@@ -5776,20 +5842,6 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
   //  }
   //}
 
-  val rMyTempDoSaveCond = (
-    Vec.fill(4)(
-      RegNext(
-        RegNext(
-          (
-            mySelLoH2dPopStm.fire
-            //&& !myFullTempIgnoreDupCntCond
-          ),
-          init=False
-        ),
-        init=False
-      )
-    )
-  )
   //val rHadAnyRamWritePastTwoCycles = Vec.fill(2)(
   //  RegNext(
   //    (
@@ -5903,56 +5955,6 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
   //    that=rSavedRamIdx,
   //  )
   //)
-
-  val tempToSwitchNonHaveHit = (
-    //((rState === State.IDLE) && rMyTempDoSaveCond(3))
-    //((rState === State.IDLE)
-    rLoState.asBits(1)
-    ## rMyTempDoSaveCond(3)
-    //## rDel2LoH2dPayload.isWrite
-  )
-  val tempToSwitch = (
-    tempToSwitchNonHaveHit
-    ## haveHit.head
-  )
-  //println(
-  //  s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
-  //)
-  val myPrefetchHaveHit = (
-    Flow(
-      LcvBusCachePrefetcherHaveHitPayload(cfg=cfg)
-    )
-  )
-  //val rSavedPrefetchHaveHit = {
-  //  val temp = Reg(
-  //    Flow(
-  //      LcvBusCachePrefetcherHaveHitPayload(cfg=cfg)
-  //    )
-  //  )
-  //  temp.init(temp.getZero)
-  //  temp
-  //}
-  myPrefetchHaveHit.valid := tempToSwitchNonHaveHit.andR
-  myPrefetchHaveHit.haveHitAtAll := haveHit.last.orR
-  myPrefetchHaveHit.loH2dPayload := rDel2LoH2dPayload.busPayload
-
-  val rSavedPrefetchLoH2dPayload = (
-    Reg(cloneOf(rDel2LoH2dPayload))
-    init(rDel2LoH2dPayload.getZero)
-  )
-  val rSavedPrefetchRamIdx = (
-    myCondHaveLineBitPlruRam
-  ) generate (
-    Reg(UInt(log2Up(numWays) bits))
-    init(0x0)
-  )
-
-  //myPrefetchHaveHit.cnt := cfg.prefetchNumLinesAhead.get - 1
-
-  val rPrefetchCnt = (
-    Reg(SInt(log2Up(cfg.prefetchNumLinesAhead.get).max(1) + 1 bits))
-    init(-1)
-  )
 
   //rSavedPrefetchHaveHit.addr.allowOverride
 
