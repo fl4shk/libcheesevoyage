@@ -6555,35 +6555,35 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
         rHiState := HiState.RECV_LINE_FROM_HI_BUS
       }
 
-      wrLineAttrs.tag := (
-        rSavedPrefetchLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
-      )
+      //wrLineAttrs.tag := (
+      //  rSavedPrefetchLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
+      //)
 
-      def myArgBusAddr = rSavedPrefetchLoH2dPayload.addr
-      def myArgWrLineAttrs = wrLineAttrs
-      def myArgSetEn = true
+      //def myArgBusAddr = rSavedPrefetchLoH2dPayload.addr
+      //def myArgWrLineAttrs = wrLineAttrs
+      //def myArgSetEn = true
 
-      if (myCondHaveLineBitPlruRam) {
-        switch (rSavedPrefetchRamIdx) {
-          for (ramIdx <- 0 until numWays) {
-            is (ramIdx) {
-              doLineAttrsRamWrite(
-                ramIdx=ramIdx,
-                busAddr=myArgBusAddr,
-                lineAttrs=myArgWrLineAttrs,
-                setEn=myArgSetEn,
-              )
-            }
-          }
-        }
-      } else {
-        doLineAttrsRamWrite(
-          ramIdx=0,
-          busAddr=myArgBusAddr,
-          lineAttrs=myArgWrLineAttrs,
-          setEn=myArgSetEn,
-        )
-      }
+      //if (myCondHaveLineBitPlruRam) {
+      //  switch (rSavedPrefetchRamIdx) {
+      //    for (ramIdx <- 0 until numWays) {
+      //      is (ramIdx) {
+      //        doLineAttrsRamWrite(
+      //          ramIdx=ramIdx,
+      //          busAddr=myArgBusAddr,
+      //          lineAttrs=myArgWrLineAttrs,
+      //          setEn=myArgSetEn,
+      //        )
+      //      }
+      //    }
+      //  }
+      //} else {
+      //  doLineAttrsRamWrite(
+      //    ramIdx=0,
+      //    busAddr=myArgBusAddr,
+      //    lineAttrs=myArgWrLineAttrs,
+      //    setEn=myArgSetEn,
+      //  )
+      //}
     }
     is (HiState.RECV_LINE_FROM_HI_BUS) {
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
@@ -6648,15 +6648,51 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
             setEn=myArgSetEn,
           )
         }
-        when (io.hiBus.d2hBus.burstLast) {
-          rHiState := HiState.IDLE
-        }
+        //when (io.hiBus.d2hBus.burstLast) {
+        //  rHiState := HiState.IDLE
+        //}
         //when (
         //  io.hiBus.d2hBus.burstLast
         //  && rSavedPrefetchHaveHit.fire
         //) {
         //  rSavedPrefetchHaveHit.valid := False
         //}
+      }
+      when (
+        io.hiBus.d2hBus.fire
+        && io.hiBus.d2hBus.burstLast
+      ) {
+        rHiState := HiState.IDLE
+        
+        wrLineAttrs.tag := (
+          rSavedPrefetchLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
+        )
+
+        def myArgBusAddr = rSavedPrefetchLoH2dPayload.addr
+        def myArgWrLineAttrs = wrLineAttrs
+        def myArgSetEn = true
+
+        if (myCondHaveLineBitPlruRam) {
+          switch (rSavedPrefetchRamIdx) {
+            for (ramIdx <- 0 until numWays) {
+              is (ramIdx) {
+                doLineAttrsRamWrite(
+                  ramIdx=ramIdx,
+                  busAddr=myArgBusAddr,
+                  lineAttrs=myArgWrLineAttrs,
+                  setEn=myArgSetEn,
+                )
+              }
+            }
+          }
+        } else {
+          doLineAttrsRamWrite(
+            ramIdx=0,
+            busAddr=myArgBusAddr,
+            lineAttrs=myArgWrLineAttrs,
+            setEn=myArgSetEn,
+          )
+        }
       }
     }
   }
