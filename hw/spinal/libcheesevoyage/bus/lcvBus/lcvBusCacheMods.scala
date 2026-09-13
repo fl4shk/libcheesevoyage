@@ -6096,19 +6096,13 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
     }
     is (LoState.IDLE) {
       when (rMyTempDoSaveCond(0)) {
-        rSavedLoH2dPayload := (
-          rDel2LoH2dPayload
-        )
+        rSavedLoH2dPayload := rDel2LoH2dPayload
       }
       when (rMyTempDoSaveCond(1)) {
-        rSavedLoH2dPayload.byteSize := (
-          rDel2LoH2dPayload.byteSize
-        )
+        rSavedLoH2dPayload.byteSize := rDel2LoH2dPayload.byteSize
       }
       when (rMyTempDoSaveCond(2)) {
-        myLoD2hPushStm.busPayload.src := (
-          rDel2LoH2dPayload.src
-        )
+        myLoD2hPushStm.busPayload.src := rDel2LoH2dPayload.src
         if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
           myLoD2hPushStm.busPayload.byteSize := (
             rDel2LoH2dPayload.byteSize
@@ -6123,7 +6117,6 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
           rDel2LoH2dPayload.txnCnt
         )
       }
-
     }
     is (LoState.LOAD_HIT_DO_STALL_PIPE_4) {
       rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_3
