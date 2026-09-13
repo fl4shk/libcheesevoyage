@@ -6457,7 +6457,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
     is (HiState.RECV_LINE_FROM_HI_BUS_PIPE_4) {
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
       lineBitPlruRam.last.io.rdEn := False
-      rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_4
+      rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_3
     }
     is (HiState.RECV_LINE_FROM_HI_BUS_PIPE_3) {
       lineAttrsRam.last.foreach(item => item.io.rdEn := True)
