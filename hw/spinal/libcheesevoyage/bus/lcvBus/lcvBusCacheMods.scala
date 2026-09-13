@@ -6021,6 +6021,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
   def doWriteBitPlruRamDuringMiss(
     //ramIdx: Int
     someRdLineBitPlru: UInt,
+    someSavedRamIdx: UInt,
     busAddr: Option[UInt]=None,
   ): Unit = {
     require(
@@ -6052,7 +6053,8 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
           if (busAddr != None) {
             wrLineBitPlru(ramIdx) := True
           }
-          rSavedRamIdx := ramIdx
+          //rSavedRamIdx := ramIdx
+          someSavedRamIdx := ramIdx
         }
         default {
         }
@@ -6113,6 +6115,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
           if (myCondHaveLineBitPlruRam) {
             doWriteBitPlruRamDuringMiss(
               someRdLineBitPlru=rdLineBitPlru,
+              someSavedRamIdx=rSavedRamIdx,
               busAddr=None,
             )
           }
@@ -6125,6 +6128,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
           if (myCondHaveLineBitPlruRam) {
             doWriteBitPlruRamDuringMiss(
               someRdLineBitPlru=rdPrefetchLineBitPlru,
+              someSavedRamIdx=rSavedPrefetchRamIdx,
               busAddr=Some(rSavedPrefetchLoH2dPayload.addr),
             )
           }
