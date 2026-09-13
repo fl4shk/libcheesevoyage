@@ -6307,7 +6307,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
     }
     is (LoState.WAIT_HI_STATE_IDLE) {
       when (rHiState === HiState.IDLE) {
-        rLoState := LoState.IDLE
+        rLoState := LoState.WAIT_HI_STATE_IDLE_POST_7
       }
     }
     is (LoState.WAIT_HI_STATE_IDLE_POST_7) {
