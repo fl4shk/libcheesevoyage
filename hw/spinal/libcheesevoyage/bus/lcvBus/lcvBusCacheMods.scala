@@ -6411,7 +6411,10 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
           // and we're not currently prefetching!
           rSavedPrefetchLoH2dPayload := rDel2LoH2dPayload
           rPrefetchCnt := cfg.prefetchNumLinesAhead.get - 1
-          rHiState := HiState.RECV_LINE_FROM_HI_BUS
+          rHiState := (
+            //HiState.RECV_LINE_FROM_HI_BUS
+            HiState.RECV_LINE_FROM_HI_BUS_PIPE_4
+          )
         }
         is (
           //M"110"
@@ -6452,10 +6455,19 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       //}
     }
     is (HiState.RECV_LINE_FROM_HI_BUS_PIPE_4) {
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineBitPlruRam.last.io.rdEn := False
+      rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_4
     }
     is (HiState.RECV_LINE_FROM_HI_BUS_PIPE_3) {
+      lineAttrsRam.last.foreach(item => item.io.rdEn := True)
+      lineBitPlruRam.last.io.rdEn := True
+      rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_2
     }
     is (HiState.RECV_LINE_FROM_HI_BUS_PIPE_2) {
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineBitPlruRam.last.io.rdEn := False
+      rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
     }
     is (HiState.RECV_LINE_FROM_HI_BUS_PIPE_1) {
       rHadHiH2dFinish := False
