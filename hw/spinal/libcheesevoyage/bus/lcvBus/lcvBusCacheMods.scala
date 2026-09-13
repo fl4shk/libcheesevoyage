@@ -6521,7 +6521,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
     }
     is (HiState.RECV_LINE_FROM_HI_BUS) {
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.rdEn := False)
+      //lineWordRam.foreach(item => item.io.rdEn := False)
       rHiH2dValid := False
       when (io.hiBus.d2hBus.valid) {
         rHiD2hReady := True
