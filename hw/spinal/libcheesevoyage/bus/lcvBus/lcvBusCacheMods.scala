@@ -5177,6 +5177,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
   //    RECV_LINE_FROM_HI_BUS           // 5
   //    = newElement();
   //}
+
   object HiState {
     val IDLE = 0
     val RECV_LINE_FROM_HI_BUS_PIPE_4 = 1
@@ -5527,7 +5528,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
     (
       //(rHiState === HiState.RECV_LINE_FROM_HI_BUS_PIPE_2)
       Cat(
-        rHiState.asBits(3)
+        rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS_PIPE_2)
       )
     )
   )
@@ -6311,7 +6312,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
     is (LoState.LOAD_HIT_DO_STALL_PIPE_4) {
       when (
         //rHiState === HiState.IDLE
-        rHiState.asBits(0)
+        rHiState.asBits(HiState.IDLE)
       ) {
         rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_3
       }
@@ -6392,10 +6393,10 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       when (
         //--------
         //rHiState === HiState.IDLE
-        rHiState.asBits(0)
+        rHiState.asBits(HiState.IDLE)
         //--------
         //rHiState === HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
-        //rHiState.asBits(4)
+        //rHiState.asBits(RECV_LINE_FROM_HI_BUS_PIPE_1)
       ) {
         rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_7
         //if (myCondHaveLineBitPlruRam) {
@@ -6406,7 +6407,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
     is (LoState.WAIT_HI_STATE_MCHN_READY_POST_7) {
       lineWordRam.foreach(item => item.io.rdEn := False)
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      when (rHiState.asBits(0)) {
+      when (rHiState.asBits(HiState.IDLE)) {
         rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_6
         if (myCondHaveLineBitPlruRam) {
           rSavedRamIdx := rSavedPrefetchRamIdx
