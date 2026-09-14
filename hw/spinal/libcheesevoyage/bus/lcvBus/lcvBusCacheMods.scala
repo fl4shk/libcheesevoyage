@@ -6464,7 +6464,10 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
           //|| 
           //rSavedNeedLineWordReadAgain
           //&& 
-          tempToSwitchNonHaveHitVec.head.andR
+          RegNext(
+            tempToSwitchNonHaveHitVec.head.andR,
+            init=False
+          )
           //(
           //  RegNextWhen(
           //    //tempToSwitchNonHaveHitVec.head.andR,
@@ -6485,7 +6488,10 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
           //haveHit.head.orR
           //rSavedHaveHit
           ////|| 
-          haveHit.head.orR
+          RegNext(
+            haveHit.head.orR,
+            init=False
+          )
           //(
           //  !rSavedNeedLineWordReadAgain
           //  && RegNextWhen(
@@ -6508,7 +6514,10 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
           // CPU's most request is a cache miss,
           // and we're not currently prefetching!
           rSavedPrefetchLoH2dPayload := (
-            rDel2LoH2dPayload
+            RegNext(
+              rDel2LoH2dPayload,
+              init=rDel2LoH2dPayload.getZero,
+            )
             //RegNextWhen(
             //  rDel2LoH2dPayload,
             //  cond=rLoState.asBits(1), // rLoState === LoState.IDLE
