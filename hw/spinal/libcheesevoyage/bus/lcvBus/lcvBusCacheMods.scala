@@ -5101,100 +5101,100 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
 
 
   //--------
-  //object LoState extends SpinalEnum(
-  //  defaultEncoding=(
-  //    //binarySequential
-  //    binaryOneHot
-  //  )
-  //) {
-  //  val
-  //    INIT,                               // 0
-  //    IDLE,                               // 1
-  //    LOAD_HIT_DO_STALL_PIPE_4,           // 2
-  //    LOAD_HIT_DO_STALL_PIPE_3,           // 3
-  //    LOAD_HIT_DO_STALL_PIPE_2,           // 4
-  //    LOAD_HIT_DO_STALL_PIPE_1,           // 5
-  //    LOAD_HIT_DO_STALL,                  // 6
-  //    LOAD_HIT_DO_STALL_POST,             // 7
+  object LoState extends SpinalEnum(
+    defaultEncoding=(
+      //binarySequential
+      binaryOneHot
+    )
+  ) {
+    val
+      INIT,                               // 0
+      IDLE,                               // 1
+      LOAD_HIT_DO_STALL_PIPE_4,           // 2
+      LOAD_HIT_DO_STALL_PIPE_3,           // 3
+      LOAD_HIT_DO_STALL_PIPE_2,           // 4
+      LOAD_HIT_DO_STALL_PIPE_1,           // 5
+      LOAD_HIT_DO_STALL,                  // 6
+      LOAD_HIT_DO_STALL_POST,             // 7
 
-  //    WAIT_HI_STATE_MCHN_READY,           // 8
-  //    WAIT_HI_STATE_MCHN_READY_POST_7,    // 9
-  //    WAIT_HI_STATE_MCHN_READY_POST_6,    // 10
-  //    WAIT_HI_STATE_MCHN_READY_POST_5,    // 11
-  //    WAIT_HI_STATE_MCHN_READY_POST_4,    // 12
-  //    WAIT_HI_STATE_MCHN_READY_POST_3,    // 13
-  //    WAIT_HI_STATE_MCHN_READY_POST_2,    // 14
-  //    WAIT_HI_STATE_MCHN_READY_POST_1,    // 15
-  //    WAIT_HI_STATE_MCHN_READY_POST,      // 16
+      WAIT_HI_STATE_MCHN_READY,           // 8
+      WAIT_HI_STATE_MCHN_READY_POST_7,    // 9
+      WAIT_HI_STATE_MCHN_READY_POST_6,    // 10
+      WAIT_HI_STATE_MCHN_READY_POST_5,    // 11
+      WAIT_HI_STATE_MCHN_READY_POST_4,    // 12
+      WAIT_HI_STATE_MCHN_READY_POST_3,    // 13
+      WAIT_HI_STATE_MCHN_READY_POST_2,    // 14
+      WAIT_HI_STATE_MCHN_READY_POST_1,    // 15
+      WAIT_HI_STATE_MCHN_READY_POST,      // 16
 
-  //    WAIT_D2H_FIFO_EMPTY                 // 17
-  //    = newElement();
-  //}
-
-  object LoState {
-    val INIT = 0
-    val IDLE = 1
-    val LOAD_HIT_DO_STALL_PIPE_4 = 2
-    val LOAD_HIT_DO_STALL_PIPE_3 = 3
-    val LOAD_HIT_DO_STALL_PIPE_2 = 4
-    val LOAD_HIT_DO_STALL_PIPE_1 = 5
-    val LOAD_HIT_DO_STALL = 6
-    val LOAD_HIT_DO_STALL_POST = 7
-
-    val WAIT_HI_STATE_MCHN_READY = 8
-    val WAIT_HI_STATE_MCHN_READY_POST_7 = 9
-    val WAIT_HI_STATE_MCHN_READY_POST_6 = 10
-    val WAIT_HI_STATE_MCHN_READY_POST_5 = 11
-    val WAIT_HI_STATE_MCHN_READY_POST_4 = 12
-    val WAIT_HI_STATE_MCHN_READY_POST_3 = 13
-    val WAIT_HI_STATE_MCHN_READY_POST_2 = 14
-    val WAIT_HI_STATE_MCHN_READY_POST_1 = 15
-    val WAIT_HI_STATE_MCHN_READY_POST = 16
-
-    val WAIT_D2H_FIFO_EMPTY = 17
-
-    val LIM_LO_STATE = 18
-
-    def apply(
-    ): UInt = {
-      UInt(LIM_LO_STATE bits)
-    }
+      WAIT_D2H_FIFO_EMPTY                 // 17
+      = newElement();
   }
+
+  //object LoState {
+  //  val INIT = 0
+  //  val IDLE = 1
+  //  val LOAD_HIT_DO_STALL_PIPE_4 = 2
+  //  val LOAD_HIT_DO_STALL_PIPE_3 = 3
+  //  val LOAD_HIT_DO_STALL_PIPE_2 = 4
+  //  val LOAD_HIT_DO_STALL_PIPE_1 = 5
+  //  val LOAD_HIT_DO_STALL = 6
+  //  val LOAD_HIT_DO_STALL_POST = 7
+
+  //  val WAIT_HI_STATE_MCHN_READY = 8
+  //  val WAIT_HI_STATE_MCHN_READY_POST_7 = 9
+  //  val WAIT_HI_STATE_MCHN_READY_POST_6 = 10
+  //  val WAIT_HI_STATE_MCHN_READY_POST_5 = 11
+  //  val WAIT_HI_STATE_MCHN_READY_POST_4 = 12
+  //  val WAIT_HI_STATE_MCHN_READY_POST_3 = 13
+  //  val WAIT_HI_STATE_MCHN_READY_POST_2 = 14
+  //  val WAIT_HI_STATE_MCHN_READY_POST_1 = 15
+  //  val WAIT_HI_STATE_MCHN_READY_POST = 16
+
+  //  val WAIT_D2H_FIFO_EMPTY = 17
+
+  //  val LIM_LO_STATE = 18
+
+  //  def apply(
+  //  ): UInt = {
+  //    UInt(LIM_LO_STATE bits)
+  //  }
+  //}
 
   val rLoState = (
     Reg(LoState())
     init(LoState.INIT)
   )
 
-  //object HiState extends SpinalEnum(
-  //  defaultEncoding=(
-  //    binaryOneHot
-  //  )
-  //) {
-  //  val
-  //    IDLE,                           // 0
-  //    RECV_LINE_FROM_HI_BUS_PIPE_4,   // 1
-  //    RECV_LINE_FROM_HI_BUS_PIPE_3,   // 2
-  //    RECV_LINE_FROM_HI_BUS_PIPE_2,   // 3
-  //    RECV_LINE_FROM_HI_BUS_PIPE_1,   // 4
-  //    RECV_LINE_FROM_HI_BUS           // 5
-  //    = newElement();
-  //}
-
-  object HiState {
-    val IDLE = 0
-    val RECV_LINE_FROM_HI_BUS_PIPE_4 = 1
-    val RECV_LINE_FROM_HI_BUS_PIPE_3 = 2
-    val RECV_LINE_FROM_HI_BUS_PIPE_2 = 3
-    val RECV_LINE_FROM_HI_BUS_PIPE_1 = 4
-    val RECV_LINE_FROM_HI_BUS = 5
-    val LIM_HI_STATE = 6
-
-    def apply(
-    ): UInt = {
-      UInt(LIM_HI_STATE bits)
-    }
+  object HiState extends SpinalEnum(
+    defaultEncoding=(
+      binaryOneHot
+    )
+  ) {
+    val
+      IDLE,                           // 0
+      RECV_LINE_FROM_HI_BUS_PIPE_4,   // 1
+      RECV_LINE_FROM_HI_BUS_PIPE_3,   // 2
+      RECV_LINE_FROM_HI_BUS_PIPE_2,   // 3
+      RECV_LINE_FROM_HI_BUS_PIPE_1,   // 4
+      RECV_LINE_FROM_HI_BUS           // 5
+      = newElement();
   }
+
+  //object HiState {
+  //  val IDLE = 0
+  //  val RECV_LINE_FROM_HI_BUS_PIPE_4 = 1
+  //  val RECV_LINE_FROM_HI_BUS_PIPE_3 = 2
+  //  val RECV_LINE_FROM_HI_BUS_PIPE_2 = 3
+  //  val RECV_LINE_FROM_HI_BUS_PIPE_1 = 4
+  //  val RECV_LINE_FROM_HI_BUS = 5
+  //  val LIM_HI_STATE = 6
+
+  //  def apply(
+  //  ): UInt = {
+  //    UInt(LIM_HI_STATE bits)
+  //  }
+  //}
 
   val rHiState = (
     Reg(HiState())
@@ -5524,14 +5524,14 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
     (
       //((rState === State.IDLE) && rMyTempDoSaveCond(3))
       //((rState === State.IDLE)
-      rLoState.asBits(LoState.IDLE)
+      rLoState.asBits(LoState.IDLE.position)
       ## rMyTempDoSaveCond(3)
       //## rDel2LoH2dPayload.isWrite
     ),
     (
       //(rHiState === HiState.RECV_LINE_FROM_HI_BUS_PIPE_2)
       Cat(
-        rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS_PIPE_2)
+        rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS_PIPE_2.position)
       )
     )
   )
@@ -6315,7 +6315,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
     is (LoState.LOAD_HIT_DO_STALL_PIPE_4) {
       when (
         //rHiState === HiState.IDLE
-        rHiState.asBits(HiState.IDLE)
+        rHiState.asBits(HiState.IDLE.position)
       ) {
         rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_3
       }
@@ -6396,7 +6396,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       when (
         //--------
         //rHiState === HiState.IDLE
-        rHiState.asBits(HiState.IDLE)
+        rHiState.asBits(HiState.IDLE.position)
         //--------
         //rHiState === HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
         //rHiState.asBits(RECV_LINE_FROM_HI_BUS_PIPE_1)
@@ -6410,7 +6410,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
     is (LoState.WAIT_HI_STATE_MCHN_READY_POST_7) {
       lineWordRam.foreach(item => item.io.rdEn := False)
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      when (rHiState.asBits(HiState.IDLE)) {
+      when (rHiState.asBits(HiState.IDLE.position)) {
         rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_6
         if (myCondHaveLineBitPlruRam) {
           rSavedRamIdx := rSavedPrefetchRamIdx
@@ -6504,16 +6504,17 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       switch (
         (
           (
-            rLoState.asBits(LoState.IDLE)
-            || rLoState.asBits(LoState.WAIT_HI_STATE_MCHN_READY)
+            rLoState.asBits(LoState.IDLE.position)
+            || rLoState.asBits(LoState.WAIT_HI_STATE_MCHN_READY.position)
           )
           && (
             RegNextWhen(
               //tempToSwitchNonHaveHitVec.head.andR,
               // we can skip the `.andR` here because of the
-              // `cond=rLoState.asBits(LoState.IDLE)` argument to this `RegNextWhen`
+              // `cond=rLoState.asBits(LoState.IDLE.position)`
+              // argument to this `RegNextWhen`
               tempToSwitchNonHaveHitVec.head(1),
-              cond=rLoState.asBits(LoState.IDLE),
+              cond=rLoState.asBits(LoState.IDLE.position),
               init=False
             )
           )
@@ -6521,7 +6522,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
         ## (
           RegNextWhen(
             haveHit.head.orR,
-            cond=rLoState.asBits(LoState.IDLE),
+            cond=rLoState.asBits(LoState.IDLE.position),
             init=False
           )
         )
@@ -6537,7 +6538,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
             //rDel2LoH2dPayload
             RegNextWhen(
               rDel2LoH2dPayload,
-              cond=rLoState.asBits(LoState.IDLE),
+              cond=rLoState.asBits(LoState.IDLE.position),
               init=rDel2LoH2dPayload.getZero
             )
           )
@@ -9798,91 +9799,91 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
   }
 
   //--------
-  //object LoState extends SpinalEnum(
-  //  defaultEncoding=(
-  //    //binarySequential
-  //    binaryOneHot
-  //  )
-  //) {
-  //  val
-  //    INIT,
-  //    IDLE,
+  object LoState extends SpinalEnum(
+    defaultEncoding=(
+      //binarySequential
+      binaryOneHot
+    )
+  ) {
+    val
+      INIT,
+      IDLE,
 
-  //    //LOAD_NON_CACHED,
-  //    //STORE_NON_CACHED,
-  //    NON_CACHED_BUS_ACCESS,
+      //LOAD_NON_CACHED,
+      //STORE_NON_CACHED,
+      NON_CACHED_BUS_ACCESS,
 
-  //    LOAD_HIT_DO_STALL_PIPE_4,
-  //    LOAD_HIT_DO_STALL_PIPE_3,
-  //    LOAD_HIT_DO_STALL_PIPE_2,
-  //    LOAD_HIT_DO_STALL_PIPE_1,
-  //    LOAD_HIT_DO_STALL,
-  //    LOAD_HIT_DO_STALL_POST,
-  //    STORE_HIT_DO_STALL_PIPE_1,
-  //    STORE_HIT_DO_STALL,
+      LOAD_HIT_DO_STALL_PIPE_4,
+      LOAD_HIT_DO_STALL_PIPE_3,
+      LOAD_HIT_DO_STALL_PIPE_2,
+      LOAD_HIT_DO_STALL_PIPE_1,
+      LOAD_HIT_DO_STALL,
+      LOAD_HIT_DO_STALL_POST,
+      STORE_HIT_DO_STALL_PIPE_1,
+      STORE_HIT_DO_STALL,
 
-  //    MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2,
-  //    MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1,
-  //    MAYBE_DIRTY_RE_READ_ATTRS,
-  //    SEND_LINE_TO_HI_BUS_PIPE_3,
-  //    SEND_LINE_TO_HI_BUS_PIPE_2,
-  //    SEND_LINE_TO_HI_BUS_PIPE_1,
-  //    SEND_LINE_TO_HI_BUS,
-  //    RECV_LINE_FROM_HI_BUS_PIPE_1,
-  //    RECV_LINE_FROM_HI_BUS,
-  //    RECV_LINE_FROM_HI_BUS_POST_WRITE,
-  //    RECV_LINE_FROM_HI_BUS_POST_7,
-  //    RECV_LINE_FROM_HI_BUS_POST_6,
-  //    RECV_LINE_FROM_HI_BUS_POST_5,
-  //    RECV_LINE_FROM_HI_BUS_POST_4,
-  //    RECV_LINE_FROM_HI_BUS_POST_3,
-  //    RECV_LINE_FROM_HI_BUS_POST_2,
-  //    RECV_LINE_FROM_HI_BUS_POST_1,
-  //    RECV_LINE_FROM_HI_BUS_POST//,
+      MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2,
+      MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1,
+      MAYBE_DIRTY_RE_READ_ATTRS,
+      SEND_LINE_TO_HI_BUS_PIPE_3,
+      SEND_LINE_TO_HI_BUS_PIPE_2,
+      SEND_LINE_TO_HI_BUS_PIPE_1,
+      SEND_LINE_TO_HI_BUS,
+      RECV_LINE_FROM_HI_BUS_PIPE_1,
+      RECV_LINE_FROM_HI_BUS,
+      RECV_LINE_FROM_HI_BUS_POST_WRITE,
+      RECV_LINE_FROM_HI_BUS_POST_7,
+      RECV_LINE_FROM_HI_BUS_POST_6,
+      RECV_LINE_FROM_HI_BUS_POST_5,
+      RECV_LINE_FROM_HI_BUS_POST_4,
+      RECV_LINE_FROM_HI_BUS_POST_3,
+      RECV_LINE_FROM_HI_BUS_POST_2,
+      RECV_LINE_FROM_HI_BUS_POST_1,
+      RECV_LINE_FROM_HI_BUS_POST//,
 
-  //    //WAIT_D2H_FIFO_EMPTY
+      //WAIT_D2H_FIFO_EMPTY
 
-  //    = newElement();
-  //}
-
-  object LoState {
-    val INIT = 0
-    val IDLE = 1
-    val NON_CACHED_BUS_ACCESS = 2
-    val LOAD_HIT_DO_STALL_PIPE_4 = 3
-    val LOAD_HIT_DO_STALL_PIPE_3 = 4
-    val LOAD_HIT_DO_STALL_PIPE_2 = 5
-    val LOAD_HIT_DO_STALL_PIPE_1 = 6
-    val LOAD_HIT_DO_STALL = 7
-    val LOAD_HIT_DO_STALL_POST = 8
-    val STORE_HIT_DO_STALL_PIPE_1 = 9
-    val STORE_HIT_DO_STALL = 10
-    val MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2 = 11
-    val MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1 = 12
-    val MAYBE_DIRTY_RE_READ_ATTRS = 13
-    val SEND_LINE_TO_HI_BUS_PIPE_3 = 14
-    val SEND_LINE_TO_HI_BUS_PIPE_2 = 15
-    val SEND_LINE_TO_HI_BUS_PIPE_1 = 16
-    val SEND_LINE_TO_HI_BUS = 17
-    val RECV_LINE_FROM_HI_BUS_PIPE_1 = 18
-    val RECV_LINE_FROM_HI_BUS = 19
-    val RECV_LINE_FROM_HI_BUS_POST_WRITE = 20
-    val RECV_LINE_FROM_HI_BUS_POST_7 = 21
-    val RECV_LINE_FROM_HI_BUS_POST_6 = 22
-    val RECV_LINE_FROM_HI_BUS_POST_5 = 23
-    val RECV_LINE_FROM_HI_BUS_POST_4 = 24
-    val RECV_LINE_FROM_HI_BUS_POST_3 = 25
-    val RECV_LINE_FROM_HI_BUS_POST_2 = 26
-    val RECV_LINE_FROM_HI_BUS_POST_1 = 27
-    val RECV_LINE_FROM_HI_BUS_POST  = 28
-
-    val LIM_LO_STATE = 29
-
-    def apply(
-    ): UInt = {
-      UInt(LIM_LO_STATE bits)
-    }
+      = newElement();
   }
+
+  //object LoState {
+  //  val INIT = 0
+  //  val IDLE = 1
+  //  val NON_CACHED_BUS_ACCESS = 2
+  //  val LOAD_HIT_DO_STALL_PIPE_4 = 3
+  //  val LOAD_HIT_DO_STALL_PIPE_3 = 4
+  //  val LOAD_HIT_DO_STALL_PIPE_2 = 5
+  //  val LOAD_HIT_DO_STALL_PIPE_1 = 6
+  //  val LOAD_HIT_DO_STALL = 7
+  //  val LOAD_HIT_DO_STALL_POST = 8
+  //  val STORE_HIT_DO_STALL_PIPE_1 = 9
+  //  val STORE_HIT_DO_STALL = 10
+  //  val MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2 = 11
+  //  val MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1 = 12
+  //  val MAYBE_DIRTY_RE_READ_ATTRS = 13
+  //  val SEND_LINE_TO_HI_BUS_PIPE_3 = 14
+  //  val SEND_LINE_TO_HI_BUS_PIPE_2 = 15
+  //  val SEND_LINE_TO_HI_BUS_PIPE_1 = 16
+  //  val SEND_LINE_TO_HI_BUS = 17
+  //  val RECV_LINE_FROM_HI_BUS_PIPE_1 = 18
+  //  val RECV_LINE_FROM_HI_BUS = 19
+  //  val RECV_LINE_FROM_HI_BUS_POST_WRITE = 20
+  //  val RECV_LINE_FROM_HI_BUS_POST_7 = 21
+  //  val RECV_LINE_FROM_HI_BUS_POST_6 = 22
+  //  val RECV_LINE_FROM_HI_BUS_POST_5 = 23
+  //  val RECV_LINE_FROM_HI_BUS_POST_4 = 24
+  //  val RECV_LINE_FROM_HI_BUS_POST_3 = 25
+  //  val RECV_LINE_FROM_HI_BUS_POST_2 = 26
+  //  val RECV_LINE_FROM_HI_BUS_POST_1 = 27
+  //  val RECV_LINE_FROM_HI_BUS_POST  = 28
+
+  //  val LIM_LO_STATE = 29
+
+  //  def apply(
+  //  ): UInt = {
+  //    UInt(LIM_LO_STATE bits)
+  //  }
+  //}
 
   val rLoState = (
     Reg(LoState())
@@ -10610,7 +10611,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
 
   val tempToSwitch = (
     //(rState === State.IDLE)
-    rLoState.asBits(LoState.IDLE)
+    rLoState.asBits(LoState.IDLE.position)
     ## rDel2LoH2dPayload.addr(
       loBusCacheCfg.addrWidth - 1
     )
