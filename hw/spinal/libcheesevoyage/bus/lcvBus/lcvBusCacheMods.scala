@@ -9895,7 +9895,7 @@ private[libcheesevoyage] case class LcvBusDataCache(
       RECV_LINE_FROM_HI_BUS_POST_1,
       RECV_LINE_FROM_HI_BUS_POST,
 
-      WAIT_D2H_FIFO_EMPTY
+      //WAIT_D2H_FIFO_EMPTY
 
       = newElement();
   }
@@ -11205,7 +11205,10 @@ private[libcheesevoyage] case class LcvBusDataCache(
       lineAttrsRam.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
 
-      rState := State.WAIT_D2H_FIFO_EMPTY
+      rState := (
+        //State.WAIT_D2H_FIFO_EMPTY
+        State.IDLE
+      )
     }
     is (State.STORE_HIT_DO_STALL_PIPE_1) {
       myLoD2hPushStm.valid := False
@@ -11231,7 +11234,10 @@ private[libcheesevoyage] case class LcvBusDataCache(
       //myLoH2dReptThing.io.finishTxn.valid := False
       myLoD2hPushStm.valid := True
       when (myLoD2hPushStm.ready) {
-        rState := State.WAIT_D2H_FIFO_EMPTY
+        rState := (
+          //State.WAIT_D2H_FIFO_EMPTY
+          State.IDLE
+        )
       }
     }
     is (State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2) {
@@ -11662,22 +11668,22 @@ private[libcheesevoyage] case class LcvBusDataCache(
       lineAttrsRam.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
       rState := (
-        //State.IDLE
-        State.WAIT_D2H_FIFO_EMPTY
+        State.IDLE
+        //State.WAIT_D2H_FIFO_EMPTY
       )
     }
-    is (State.WAIT_D2H_FIFO_EMPTY) {
-      lineAttrsRam.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.rdEn := False)
+    //is (State.WAIT_D2H_FIFO_EMPTY) {
+    //  lineAttrsRam.foreach(item => item.io.rdEn := False)
+    //  lineWordRam.foreach(item => item.io.rdEn := False)
 
-      when (  
-        !myLoD2hFifo.io.pop.valid
-        //myLoD2hFifo.io.push.ready
-      ) {
-        //myFifoThingDoStall := False
-        rState := State.IDLE
-      }
-    }
+    //  when (  
+    //    !myLoD2hFifo.io.pop.valid
+    //    //myLoD2hFifo.io.push.ready
+    //  ) {
+    //    //myFifoThingDoStall := False
+    //    rState := State.IDLE
+    //  }
+    //}
   }
   wrLineAttrs.valid := True
 }
