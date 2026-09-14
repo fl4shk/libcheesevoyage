@@ -6486,8 +6486,9 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
           //rSavedHaveHit
           ////|| 
           (
-            !rSavedNeedLineWordReadAgain
-            && RegNextWhen(
+            //!rSavedNeedLineWordReadAgain
+            //&& 
+            RegNextWhen(
               haveHit.head.orR,
               cond=rLoState.asBits(1), // rLoState === LoState.IDLE
               init=False
