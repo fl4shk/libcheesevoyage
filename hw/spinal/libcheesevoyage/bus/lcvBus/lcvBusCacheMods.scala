@@ -6508,12 +6508,12 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
           // CPU's most request is a cache miss,
           // and we're not currently prefetching!
           rSavedPrefetchLoH2dPayload := (
-            //rDel2LoH2dPayload
-            RegNextWhen(
-              rDel2LoH2dPayload,
-              cond=rLoState.asBits(1), // rLoState === LoState.IDLE
-              init=rDel2LoH2dPayload.getZero
-            )
+            rDel2LoH2dPayload
+            //RegNextWhen(
+            //  rDel2LoH2dPayload,
+            //  cond=rLoState.asBits(1), // rLoState === LoState.IDLE
+            //  init=rDel2LoH2dPayload.getZero
+            //)
           )
           rPrefetchCnt := cfg.prefetchNumLinesAhead.get - 1
           //rSavedHaveHit := False
