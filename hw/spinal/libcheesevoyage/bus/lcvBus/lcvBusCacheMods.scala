@@ -769,7 +769,10 @@ case class LcvBusDoStallFifoThing(
         (
           // check for prev state being State.POST_DO_STALL
           if (!optFormal) (
-            (past(rState.asBits(2)) || past(rState.asBits(3)))
+            (
+              past(rState.asBits(State.POST_DO_STALL_0.position))
+              || past(rState.asBits(State.POST_DO_STALL_1.position))
+            )
           ) else (
             past(rState === State.POST_DO_STALL_0)
             || past(rState === State.POST_DO_STALL_1)
@@ -9031,7 +9034,7 @@ case class LcvBusInstrCacheWide(
   val tempToSwitch = (
     //((rState === State.IDLE) && rMyTempDoSaveCond(3))
     //((rState === State.IDLE)
-    rState.asBits(1)
+    rState.asBits(State.IDLE.position)
     ## rMyTempDoSaveCond(3)
     //RegNext(
     //  RegNext(mySelLoH2dPopStm.fire, init=False),
@@ -12594,7 +12597,7 @@ private[libcheesevoyage] case class LcvBusDataCacheNoPrefetch(
 
   val tempToSwitch = (
     //(rState === State.IDLE)
-    rState.asBits(1)
+    rState.asBits(State.IDLE.position)
     ## rDel2LoH2dPayload.addr(
       loBusCacheCfg.addrWidth - 1
     )
