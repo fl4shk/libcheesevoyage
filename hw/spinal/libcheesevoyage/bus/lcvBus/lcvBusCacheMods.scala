@@ -6449,7 +6449,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
   }
 
   // Implement line-ahead prefetching
-  val rSavedHaveHit = Reg(Bool(), init=False)
+  //val rSavedHaveHit = Reg(Bool(), init=False)
   switch (rHiState) {
     is (HiState.IDLE) {
       //when (
@@ -6464,46 +6464,39 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
           //|| 
           //rSavedNeedLineWordReadAgain
           //&& 
-          RegNext(
-            tempToSwitchNonHaveHitVec.head.andR,
-            init=False
+          rLoState.asBits(1)
+          && (
+            RegNextWhen(
+              //tempToSwitchNonHaveHitVec.head.andR,
+              // we can skip the `.andR` here because of the
+              // `cond=rLoState.asBits(1)` argument to this `RegNextWhen`
+              tempToSwitchNonHaveHitVec.head(1),
+              cond=rLoState.asBits(1), // rLoState === LoState.IDLE
+              init=False
+            )
+            //&& (
+            //  // rLoState === LoState.WAIT_HI_STATE_MCHN_READY
+            //  rLoState.asBits(8)
+            //)
           )
-          //(
-          //  RegNextWhen(
-          //    //tempToSwitchNonHaveHitVec.head.andR,
-          //    // we can skip the `.andR` here because of the
-          //    // `cond=rLoState.asBits(1)` argument to this `RegNextWhen`
-          //    tempToSwitchNonHaveHitVec.head(1),
-          //    cond=rLoState.asBits(1), // rLoState === LoState.IDLE
-          //    init=False
-          //  )
-          //  //&& (
-          //  //  // rLoState === LoState.WAIT_HI_STATE_MCHN_READY
-          //  //  rLoState.asBits(8)
-          //  //)
-          //)
         )
         ## (
           //myPrefetchHaveHit.haveHitAtAll
           //haveHit.head.orR
           //rSavedHaveHit
           ////|| 
-          RegNext(
-            haveHit.head.orR,
-            init=False
+          (
+            !rSavedNeedLineWordReadAgain
+            && RegNextWhen(
+              haveHit.head.orR,
+              cond=rLoState.asBits(1), // rLoState === LoState.IDLE
+              init=False
+            )
+            //&& (
+            //  // rLoState === LoState.WAIT_HI_STATE_MCHN_READY
+            //  rLoState.asBits(8)
+            //)
           )
-          //(
-          //  !rSavedNeedLineWordReadAgain
-          //  && RegNextWhen(
-          //    haveHit.head.orR,
-          //    cond=rLoState.asBits(1), // rLoState === LoState.IDLE
-          //    init=False
-          //  )
-          //  //&& (
-          //  //  // rLoState === LoState.WAIT_HI_STATE_MCHN_READY
-          //  //  rLoState.asBits(8)
-          //  //)
-          //)
         )
         ## rPrefetchCnt.msb
       ) {
@@ -6514,15 +6507,12 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
           // CPU's most request is a cache miss,
           // and we're not currently prefetching!
           rSavedPrefetchLoH2dPayload := (
-            RegNext(
+            //rDel2LoH2dPayload
+            RegNextWhen(
               rDel2LoH2dPayload,
-              init=rDel2LoH2dPayload.getZero,
+              cond=rLoState.asBits(1), // rLoState === LoState.IDLE
+              init=rDel2LoH2dPayload.getZero
             )
-            //RegNextWhen(
-            //  rDel2LoH2dPayload,
-            //  cond=rLoState.asBits(1), // rLoState === LoState.IDLE
-            //  init=rDel2LoH2dPayload.getZero
-            //)
           )
           rPrefetchCnt := cfg.prefetchNumLinesAhead.get - 1
           //rSavedHaveHit := False
