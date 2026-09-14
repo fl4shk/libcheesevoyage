@@ -9893,7 +9893,7 @@ private[libcheesevoyage] case class LcvBusDataCache(
       RECV_LINE_FROM_HI_BUS_POST_3,
       RECV_LINE_FROM_HI_BUS_POST_2,
       RECV_LINE_FROM_HI_BUS_POST_1,
-      RECV_LINE_FROM_HI_BUS_POST,
+      RECV_LINE_FROM_HI_BUS_POST//,
 
       //WAIT_D2H_FIFO_EMPTY
 
