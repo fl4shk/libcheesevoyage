@@ -6464,7 +6464,10 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
           //|| 
           //rSavedNeedLineWordReadAgain
           //&& 
-          rLoState.asBits(1)
+          (
+            rLoState.asBits(1)
+            || rLoState.asBits(8)
+          )
           && (
             RegNextWhen(
               //tempToSwitchNonHaveHitVec.head.andR,
