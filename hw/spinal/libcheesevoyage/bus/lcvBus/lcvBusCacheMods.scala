@@ -5924,7 +5924,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       Vec[Bool](lineAttrsRam.head.map(item => item.io.wrEn)).orR
     )
   )
-  val myHistHadAnyRamWrite = Array.fill(3)(
+  val myHistHadAnyRamWrite = Array.fill(4)(
     History[Bool](
       that=myTempHaveCurrRamWrite,
       length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
@@ -6185,7 +6185,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
             rSavedNeedLineWordReadAgain := myHadAnyRecentRamWrite(1)
 
             when (
-              myHadAnyRecentRamWrite.last
+              myHadAnyRecentRamWrite(2)
               || !myLoD2hPushStm.ready
             ) {
               mySelLoH2dPopStm.ready := False
@@ -6314,6 +6314,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       lineWordRam.foreach(item => item.io.rdEn := False)
 
       mySelLoH2dPopStm.ready := False
+      //myLoD2hPushStm.busPayload.data := myRdLineWord
       when (rSavedNeedLineWordReadAgain) {
         myLoD2hPushStm.busPayload.data := myRdLineWord
         rSavedNeedLineWordReadAgain := False
@@ -10082,6 +10083,8 @@ private[libcheesevoyage] case class LcvBusDataCache(
     )
   )
 
+  val rSavedNeedLineWordReadAgain = Reg(Bool(), init=False)
+
   myLoD2hPushStm.valid := False
   //myLoH2dReptThing.io.finishTxn.valid := myLoD2hPushStm.fire
   //myLoH2dReptThing.io.finishTxn.payload := (
@@ -10494,7 +10497,7 @@ private[libcheesevoyage] case class LcvBusDataCache(
     Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
     || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
   )
-  val myHistHadAnyRamWrite = Array.fill(2)(
+  val myHistHadAnyRamWrite = Array.fill(4)(
     History[Bool](
       that=(
         //RegNext(
@@ -10803,7 +10806,7 @@ private[libcheesevoyage] case class LcvBusDataCache(
         }
         // load, cache hit
         //mySelLoH2dPopStm.ready := True
-        myLoD2hPushStm.valid := True
+        //myLoD2hPushStm.valid := True
         myLoD2hPushStm.busPayload.data := rdLineWord(ramIdx)
         if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
           myLoD2hPushStm.busPayload.byteSize := (
@@ -10816,24 +10819,38 @@ private[libcheesevoyage] case class LcvBusDataCache(
           )
         }
 
+        myLoD2hPushStm.valid := !myHadAnyRecentRamWrite.head//False
+        //when (
+        //  myHadAnyRecentRamWrite.head
+        //) {
+        //  myLoD2hPushStm.valid := False
+        //}
+        rSavedNeedLineWordReadAgain := myHadAnyRecentRamWrite(1)
+
         when (
-          myHadAnyRecentRamWrite.head
-        ) {
-          myLoD2hPushStm.valid := False
-        }
-        when (
-          myHadAnyRecentRamWrite.last
+          myHadAnyRecentRamWrite(2)
           || !myLoD2hPushStm.ready
         ) {
           mySelLoH2dPopStm.ready := False
           myFifoThingDoStall := True
-          rState := (
-            //State.LOAD_HIT_DO_STALL_PIPE_3
-            State.LOAD_HIT_DO_STALL_PIPE_4
-          )
+          //rState := (
+          //  //State.LOAD_HIT_DO_STALL_PIPE_3
+          //  State.LOAD_HIT_DO_STALL_PIPE_4
+          //)
           //myTempUpdateSavedLoH2dPayloadCond := False
-        } otherwise {
-          //doPopLoH2dFifo()
+        }
+        switch (
+          myHadAnyRecentRamWrite.last
+          ## myLoD2hPushStm.ready
+        ) {
+          is (M"1-") {
+            rState := State.LOAD_HIT_DO_STALL_PIPE_4
+          }
+          is (M"00") {
+            rState := State.LOAD_HIT_DO_STALL
+          }
+          default {
+          }
         }
       }
       is (
@@ -11162,7 +11179,11 @@ private[libcheesevoyage] case class LcvBusDataCache(
       lineWordRam.foreach(item => item.io.rdEn := False)
 
       mySelLoH2dPopStm.ready := False
-      myLoD2hPushStm.busPayload.data := myRdLineWord
+      //myLoD2hPushStm.busPayload.data := myRdLineWord
+      when (rSavedNeedLineWordReadAgain) {
+        myLoD2hPushStm.busPayload.data := myRdLineWord
+        rSavedNeedLineWordReadAgain := False
+      }
       if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
         myLoD2hPushStm.busPayload.byteSize := (
           rSavedLoH2dPayload.byteSize
