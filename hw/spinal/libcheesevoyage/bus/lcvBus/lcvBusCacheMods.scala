@@ -9983,7 +9983,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
   )(
     dataAssignment=(outp, inp) => {
       outp.busPayload := inp
-      //outp.savedData := inp.data
+      outp.savedData := inp.data
     }
   )
   mySelLoH2dPopStm.ready := False
