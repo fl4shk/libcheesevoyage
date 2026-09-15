@@ -9688,7 +9688,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
   val lineWordRamCfg = RamSdpPipeConfig(
     wordType=UInt(wordWidth bits),
     depth=depthWords,
-    optIncludeWrByteEn=false,
+    optIncludeWrByteEn=true,
     optWrHistLength=cfg.myRamOptWrHistLength,
     initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
     arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
