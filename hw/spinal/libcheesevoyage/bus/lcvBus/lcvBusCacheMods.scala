@@ -11216,9 +11216,6 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       lineWordRam.foreach(item => item.io.rdEn := False)
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
 
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.rdEn := False)
-
       def myArgBusAddr = rSavedLoH2dPayload.addr
       def myArgLineWord = rSavedLoH2dPayload.data
       def myArgByteEn = Some(rSavedLoH2dPayload.byteEn)
