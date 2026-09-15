@@ -11667,7 +11667,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
                   ramIdx=ramIdx,
                   busAddr=myArgBusAddr,
                   lineWord=myArgLineWord,
-                  //byteEn=myArgByteEn,
+                  byteEn=myArgByteEn,
                   setEn=myArgSetEn,
                 )
               }
@@ -11678,7 +11678,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             ramIdx=0,
             busAddr=myArgBusAddr,
             lineWord=myArgLineWord,
-            //byteEn=myArgByteEn,
+            byteEn=myArgByteEn,
             setEn=myArgSetEn,
           )
         }
