@@ -10214,14 +10214,16 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
   )
 
   val myHistWrLineAttrsDirty = (
-    History[Bool](
-      that=(
-        wrLineAttrs.dirty
-        && Vec(lineAttrsRam.head.map(item => item.io.wrEn)).orR
-      ),
-      length=cfg.myRamOptWrHistLengthPlusAddend,
-      init=False,
-    )
+    lineAttrsRam.map(outerItem => {
+      History[Bool](
+        that=(
+          wrLineAttrs.dirty
+          && Vec(outerItem.map(item => item.io.wrEn)).orR
+        ),
+        length=cfg.myRamOptWrHistLengthPlusAddend,
+        init=False,
+      )
+    })
   )
 
   val tempToSwitchNonHaveHitVec = Vec[Bits](
@@ -10246,7 +10248,22 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         (rdLineAttrs.head.map(item => item.dirty).orR)
         || (
           RegNext(
-            myHistWrLineAttrsDirty.orR,
+            myHistWrLineAttrsDirty.head.orR,
+            init=False,
+          )
+        )
+      )
+      ## rDel2LoH2dPayload.isWrite
+    ),
+    (
+      rHiState.asBits(HiState.READ_ATTRS.position)
+      ## rDel2LoH2dPayload.addr(loBusCacheCfg.addrWidth - 1)
+      //## rMyTempDoSaveCond(3)
+      ## (
+        (rdLineAttrs.last.map(item => item.dirty).orR)
+        || (
+          RegNext(
+            myHistWrLineAttrsDirty.last.orR,
             init=False,
           )
         )
