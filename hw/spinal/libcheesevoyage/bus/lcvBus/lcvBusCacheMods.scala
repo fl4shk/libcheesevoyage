@@ -10249,38 +10249,38 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
   }
 
   def doLineWordRamReadSync(
+    ramIdx: Int,
     busAddr: UInt,
     setEn: Int=0,
   ): Unit = {
-    lineWordRam.foreach(item => {
-      if (setEn == 1) {
-        item.io.rdEn := True
-      } else if (setEn == 2) {
-        item.io.rdEn := (
-          RegNext(
-            next=(
-              //mySelLoH2dPopStm.valid
-              mySelLoH2dPopStm.fire
-            ),
-            init=False,
-          )
-          //&& !myFifoThingDoStall
+    val item = lineWordRam(ramIdx)
+    if (setEn == 1) {
+      item.io.rdEn := True
+    } else if (setEn == 2) {
+      item.io.rdEn := (
+        RegNext(
+          next=(
+            //mySelLoH2dPopStm.valid
+            mySelLoH2dPopStm.fire
+          ),
+          init=False,
         )
-      } 
-      item.io.rdAddr := {
-        //println(
-        //  s"test info: busAddr("
-        //  + s"${busAddr.high} downto ${myLineWordRamAddrRshift}"
-        //  + s")"
-        //)
+        //&& !myFifoThingDoStall
+      )
+    } 
+    item.io.rdAddr := {
+      //println(
+      //  s"test info: busAddr("
+      //  + s"${busAddr.high} downto ${myLineWordRamAddrRshift}"
+      //  + s")"
+      //)
+      (
         (
-          (
-            busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift)
-          )
-          .resize(item.io.rdAddr.getWidth)
+          busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift)
         )
-      }
-    })
+        .resize(item.io.rdAddr.getWidth)
+      )
+    }
   }
   def doLineAttrsRamReadSync(
     outerRamIdx: Int,
@@ -10432,10 +10432,13 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     })
   }
 
-  doLineWordRamReadSync(
-    busAddr=mySelLoH2dPopPayload.addr,
-    setEn=2,
-  )
+  for (ramIdx <- 0 until numWays) {
+    doLineWordRamReadSync(
+      ramIdx=ramIdx,
+      busAddr=mySelLoH2dPopPayload.addr,
+      setEn=2,
+    )
+  }
   for (ramIdx <- 0 until numWays) {
     doLineWordRamWrite(
       ramIdx=ramIdx,
@@ -11311,10 +11314,17 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
 
-      doLineWordRamReadSync(
-        busAddr=rSavedLoH2dPayload.addr,
-        setEn=0,
-      )
+      switch (rSavedRamIdx) {
+        for (ramIdx <- 0 until numWays) {
+          is (ramIdx) {
+            doLineWordRamReadSync(
+              ramIdx=ramIdx,
+              busAddr=rSavedLoH2dPayload.addr,
+              setEn=0,
+            )
+          }
+        }
+      }
     }
     is (LoState.LOAD_HIT_DO_STALL_PIPE_2) {
       rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_1
@@ -11552,10 +11562,17 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     is (LoState.WAIT_HI_STATE_MCHN_READY_POST_4) {
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
-      doLineWordRamReadSync(
-        busAddr=rSavedLoH2dPayload.addr,
-        setEn=0,
-      )
+      switch (rSavedRamIdx) {
+        for (ramIdx <- 0 until numWays) {
+          is (ramIdx) {
+            doLineWordRamReadSync(
+              ramIdx=ramIdx,
+              busAddr=rSavedLoH2dPayload.addr,
+              setEn=0,
+            )
+          }
+        }
+      }
       rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_3
     }
     is (LoState.WAIT_HI_STATE_MCHN_READY_POST_3) {
@@ -11775,38 +11792,52 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       println(
         s"Here is myTempAddr.getWidth: ${myTempAddr.getWidth}"
       )
-      doLineWordRamReadSync(
-        busAddr=hiBusCfg.burstAddr(
-          someAddr=myTempAddr,
-          someBurstCnt=rHiH2dBurstCnt(0),
-          incrBurstCnt=true,
-        ),
-        setEn=0,
-      )
+      switch (rSavedPrefetchRamIdx) {
+        for (ramIdx <- 0 until numWays) {
+          is (ramIdx) {
+            doLineWordRamReadSync(
+              ramIdx=ramIdx,
+              busAddr=hiBusCfg.burstAddr(
+                someAddr=myTempAddr,
+                someBurstCnt=rHiH2dBurstCnt(0),
+                incrBurstCnt=true,
+              ),
+              setEn=0,
+            )
+          }
+        }
+      }
     }
     is (HiState.SEND_LINE_TO_HI_BUS_PIPE_2) {
       rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_1
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
 
-      doLineWordRamReadSync(
-        busAddr=(
-          hiBusCfg.burstAddr(
-            someAddr=(
-              Cat(
-                False,
-                // FINALLY found it, the problem I was seeing in DOOM!
-                //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
-                rSavedPrefetchRdLineAttrsTag,
-                rSavedPrefetchLoBusAddrSet,
-                U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-              ).asUInt
-            ),
-            someBurstCnt=rHiH2dBurstCnt(0),
-            incrBurstCnt=true,
-          )
-        ),
-        setEn=1,
-      )
+      switch (rSavedPrefetchRamIdx) {
+        for (ramIdx <- 0 until numWays) {
+          is (ramIdx) {
+            doLineWordRamReadSync(
+              ramIdx=ramIdx,
+              busAddr=(
+                hiBusCfg.burstAddr(
+                  someAddr=(
+                    Cat(
+                      False,
+                      // FINALLY found it, the problem I was seeing in DOOM!
+                      //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
+                      rSavedPrefetchRdLineAttrsTag,
+                      rSavedPrefetchLoBusAddrSet,
+                      U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
+                    ).asUInt
+                  ),
+                  someBurstCnt=rHiH2dBurstCnt(0),
+                  incrBurstCnt=true,
+                )
+              ),
+              setEn=1,
+            )
+          }
+        }
+      }
       rHiH2dPayload.addr := (
         Cat(
           //False,
@@ -11828,23 +11859,30 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       )
       rHiState := HiState.SEND_LINE_TO_HI_BUS
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-      doLineWordRamReadSync(
-        busAddr=hiBusCfg.burstAddr(
-          someAddr=(
-            Cat(
-              False,
-              // FINALLY found it, the problem I was seeing in DOOM!
-              //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
-              rSavedPrefetchRdLineAttrsTag,
-              rSavedPrefetchLoBusAddrSet,
-              U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-            ).asUInt
-          ),
-          someBurstCnt=rHiH2dBurstCnt(0),
-          incrBurstCnt=true,
-        ),
-        setEn=1,
-      )
+      switch (rSavedPrefetchRamIdx) {
+        for (ramIdx <- 0 until numWays) {
+          is (ramIdx) {
+            doLineWordRamReadSync(
+              ramIdx=ramIdx,
+              busAddr=hiBusCfg.burstAddr(
+                someAddr=(
+                  Cat(
+                    False,
+                    // FINALLY found it, the problem I was seeing in DOOM!
+                    //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
+                    rSavedPrefetchRdLineAttrsTag,
+                    rSavedPrefetchLoBusAddrSet,
+                    U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
+                  ).asUInt
+                ),
+                someBurstCnt=rHiH2dBurstCnt(0),
+                incrBurstCnt=true,
+              ),
+              setEn=1,
+            )
+          }
+        }
+      }
       rHiH2dValid := True
       rHiH2dPayload.addr := rHiH2dPayload.burstAddr(
         someBurstCnt=rHiH2dBurstCnt(1),
@@ -11863,23 +11901,30 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         )
       )
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-      doLineWordRamReadSync(
-        busAddr=hiBusCfg.burstAddr(
-          someAddr=(
-            Cat(
-              False,
-              // FINALLY found it, the problem I was seeing in DOOM!
-              //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
-              rSavedPrefetchRdLineAttrsTag,
-              rSavedPrefetchLoBusAddrSet,
-              U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-            ).asUInt
-          ),
-          someBurstCnt=rHiH2dBurstCnt(0),
-          incrBurstCnt=false,
-        ),
-        setEn=1,
-      )
+      switch (rSavedPrefetchRamIdx) {
+        for (ramIdx <- 0 until numWays) {
+          is (ramIdx) {
+            doLineWordRamReadSync(
+              ramIdx=ramIdx,
+              busAddr=hiBusCfg.burstAddr(
+                someAddr=(
+                  Cat(
+                    False,
+                    // FINALLY found it, the problem I was seeing in DOOM!
+                    //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
+                    rSavedPrefetchRdLineAttrsTag,
+                    rSavedPrefetchLoBusAddrSet,
+                    U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
+                  ).asUInt
+                ),
+                someBurstCnt=rHiH2dBurstCnt(0),
+                incrBurstCnt=false,
+              ),
+              setEn=1,
+            )
+          }
+        }
+      }
       rHiH2dPayload.burstFirst := False
 
       when (rHiH2dBurstCnt(0).orR) {
