@@ -11182,7 +11182,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
                 myFifoThingDoStall := True
                 rLoState := LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1
               }
-              is (M"01") {
+              is (M"00") {
                 mySelLoH2dPopStm.ready := False
                 myFifoThingDoStall := True
                 rLoState := LoState.STORE_HIT_DO_STALL_PIPE_1
