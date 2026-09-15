@@ -11105,13 +11105,13 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     }
     is (LoState.LOAD_HIT_DO_STALL_PIPE_1) {
       val myRdLineWord = (
-        RegNext(
+        //RegNext(
           if (myCondHaveLineBitPlruRam) (
             rdLineWord(rSavedRamIdx)
           ) else (
             rdLineWord.head
           )
-        )
+        //)
       )
       when (rSavedNeedLineWordReadAgain) {
         myLoD2hPushStm.busPayload.data := myRdLineWord
@@ -11140,7 +11140,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       //  myLoD2hPushStm.busPayload.data := myRdLineWord
       //  rSavedNeedLineWordReadAgain := False
       //}
-      myLoD2hPushStm.busPayload
+      //myLoD2hPushStm.busPayload
       if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
         myLoD2hPushStm.busPayload.byteSize := (
           rSavedLoH2dPayload.byteSize
