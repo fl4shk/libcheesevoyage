@@ -9825,6 +9825,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       STORE_HIT_DO_STALL,
 
       WAIT_HI_STATE_MCHN_READY,
+      WAIT_HI_STATE_MCHN_READY_POST_WRITE,
       WAIT_HI_STATE_MCHN_READY_POST_7,
       WAIT_HI_STATE_MCHN_READY_POST_6,
       WAIT_HI_STATE_MCHN_READY_POST_5,
@@ -10362,7 +10363,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     ramIdx: Int,
     busAddr: UInt,
     lineWord: UInt,
-    //byteEn: Option[UInt],
+    byteEn: Option[UInt],
     setEn: Boolean=true,
   ): Unit = {
     if (setEn) {
@@ -10373,19 +10374,19 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       .resize(lineWordRam(ramIdx).io.wrAddr.getWidth)
     )
     lineWordRam(ramIdx).io.wrData := lineWord
-    //byteEn match {
-    //  case Some(byteEn) => {
-    //    lineWordRam(ramIdx).io.wrByteEn := byteEn.asBits
-    //  }
-    //  case None => {
-    //    lineWordRam(ramIdx).io.wrByteEn := (
-    //      B(
-    //        lineWordRam(ramIdx).io.wrByteEn.getWidth bits,
-    //        default -> True
-    //      )
-    //    )
-    //  }
-    //}
+    byteEn match {
+      case Some(byteEn) => {
+        lineWordRam(ramIdx).io.wrByteEn := byteEn.asBits
+      }
+      case None => {
+        lineWordRam(ramIdx).io.wrByteEn := (
+          B(
+            lineWordRam(ramIdx).io.wrByteEn.getWidth bits,
+            default -> True
+          )
+        )
+      }
+    }
   }
   def doLineAttrsRamWrite(
     ramIdx: Int,
@@ -10455,15 +10456,15 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           init=mySelLoH2dPopPayload.data.getZero,
         )
       ),
-      //byteEn=Some(
-      //  RegNext(
-      //    RegNext(
-      //      mySelLoH2dPopPayload.byteEn,
-      //      init=mySelLoH2dPopPayload.byteEn.getZero
-      //    ),
-      //    init=mySelLoH2dPopPayload.byteEn.getZero,
-      //  ),
-      //),
+      byteEn=Some(
+        RegNext(
+          RegNext(
+            mySelLoH2dPopPayload.byteEn,
+            init=mySelLoH2dPopPayload.byteEn.getZero
+          ),
+          init=mySelLoH2dPopPayload.byteEn.getZero,
+        ),
+      ),
       setEn=false,
     )
   }
@@ -10830,9 +10831,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           myFifoThingDoStall := True
           mySelLoH2dPopStm.ready := False
         } else if (myVecIdx == 1) {
-          when (
-            rdLineAttrs.last(rSavedPrefetchRamIdx).fire
-          ) {
+          when (rdLineAttrs.last(rSavedPrefetchRamIdx).fire) {
             rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_3
           } otherwise {
             rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
@@ -11193,19 +11192,59 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       }
     }
     is (LoState.WAIT_HI_STATE_MCHN_READY) {
-      when (
+      switch (
         //--------
         //rHiState === HiState.IDLE
         rHiState.asBits(HiState.IDLE.position)
+        ## rSavedLoH2dPayload.isWrite
         //--------
         //rHiState === HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
         //rHiState.asBits(RECV_LINE_FROM_HI_BUS_PIPE_1)
       ) {
-        rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_7
+        is (M"10") {
+          rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_7
+        }
+        is (M"11") {
+          rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_WRITE
+        }
         //if (myCondHaveLineBitPlruRam) {
         //  rSavedRamIdx := rSavedPrefetchRamIdx
         //}
       }
+    }
+    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_WRITE) {
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.rdEn := False)
+
+      def myArgBusAddr = rSavedLoH2dPayload.addr
+      def myArgLineWord = rSavedLoH2dPayload.data
+      def myArgByteEn = Some(rSavedLoH2dPayload.byteEn)
+      def myArgSetEn = true
+
+      if (myCondHaveLineBitPlruRam) {
+        switch (rSavedRamIdx) {
+          for (ramIdx <- 0 until numWays) {
+            is (ramIdx) {
+              doLineWordRamWrite(
+                ramIdx=ramIdx,
+                busAddr=myArgBusAddr,
+                lineWord=myArgLineWord,
+                byteEn=myArgByteEn,
+                setEn=myArgSetEn,
+              )
+            }
+          }
+        }
+      } else {
+        doLineWordRamWrite(
+          ramIdx=0,
+          busAddr=myArgBusAddr,
+          lineWord=myArgLineWord,
+          byteEn=myArgByteEn,
+          setEn=myArgSetEn,
+        )
+      }
+      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_7
     }
     is (LoState.WAIT_HI_STATE_MCHN_READY_POST_7) {
       lineWordRam.foreach(item => item.io.rdEn := False)
