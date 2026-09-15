@@ -10831,43 +10831,63 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     ),
     (
       if (!myCondHaveLineBitPlruRam) (
-        rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
-        || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
-        || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
-        || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
-        || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
-        || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
-        //&& (
-        //  rDel2LoH2dPayload.burstAddr(
-        //    someBurstCnt=rHiD2hBurstCnt.getZero,
-        //    incrBurstCnt=false,
-        //  )
-        //  === rSavedPrefetchLoH2dPayload.burstAddr(
-        //    someBurstCnt=rHiD2hBurstCnt.getZero,
-        //    incrBurstCnt=false,
-        //  )
-        //)
+        (
+          rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
+          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
+          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
+          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
+          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
+          || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
+        )
+        && (
+          rDel2LoH2dPayload.addr(
+            rDel2LoH2dPayload.addr.high
+            downto (
+              rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
+            )
+          )
+          === rSavedPrefetchLoH2dPayload.addr(
+            rSavedPrefetchLoH2dPayload.addr.high
+            downto (
+              rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
+            )
+          )
+        )
       ) else (
-        rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
-        || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
-        || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
-        || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
-        || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
-        || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
+        (
+          rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
+          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
+          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
+          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
+          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
+          || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
+        )
         && (
           rSavedPrefetchRamIdx
           === myCurrRamIdx
         )
-        //&& (
-        //  rDel2LoH2dPayload.burstAddr(
-        //    someBurstCnt=rHiD2hBurstCnt.getZero,
-        //    incrBurstCnt=false,
-        //  )
-        //  === rSavedPrefetchLoH2dPayload.burstAddr(
-        //    someBurstCnt=rHiD2hBurstCnt.getZero,
-        //    incrBurstCnt=false,
-        //  )
-        //)
+        && (
+          //rDel2LoH2dPayload.burstAddr(
+          //  someBurstCnt=rHiD2hBurstCnt.getZero,
+          //  incrBurstCnt=false,
+          //)
+          //=== rSavedPrefetchLoH2dPayload.burstAddr(
+          //  someBurstCnt=rHiD2hBurstCnt.getZero,
+          //  incrBurstCnt=false,
+          //)
+          rDel2LoH2dPayload.addr(
+            rDel2LoH2dPayload.addr.high
+            downto (
+              rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
+            )
+          )
+          === rSavedPrefetchLoH2dPayload.addr(
+            rSavedPrefetchLoH2dPayload.addr.high
+            downto (
+              rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
+            )
+          )
+        )
       )
     ),
     //(
@@ -10938,6 +10958,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     //  //)
     //)
   )
+
+  val rPrefetchStallNotReady = Reg(Bool(), init=False)
+
   for (myVecIdx <- 0 until numLoHi) {
     switch (tempToSwitchVec(myVecIdx)) {
       is (
@@ -11021,8 +11044,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
 
             myLoD2hPushStm.valid := (
               //!myHadAnyRecentRamWrite.head//False
-              !prefetchStallVec.head
-              && !myHadAnyRecentRamWrite.head//False
+              //!prefetchStallVec.head
+              //&& 
+              !myHadAnyRecentRamWrite.head//False
             )
             //when (myHadAnyRecentRamWrite.head) {
             //  myLoD2hPushStm.valid := False
@@ -11030,13 +11054,15 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             //  rSavedNeedLineWordReadAgain := False
             //}
             rSavedNeedLineWordReadAgain := (
-              prefetchStallVec.head
-              || myHadAnyRecentRamWrite(1)
+              //prefetchStallVec.head
+              //|| 
+              myHadAnyRecentRamWrite(1)
             )
 
             when (
-              prefetchStallVec.head
-              || myHadAnyRecentRamWrite(2)
+              //prefetchStallVec.head
+              //|| 
+              myHadAnyRecentRamWrite(2)
               || !myLoD2hPushStm.ready
             ) {
               mySelLoH2dPopStm.ready := False
@@ -11045,8 +11071,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
 
             switch (
               (
-                prefetchStallVec.head
-                || myHadAnyRecentRamWrite.last
+                //prefetchStallVec.head
+                //|| 
+                myHadAnyRecentRamWrite.last
               )
               ## myLoD2hPushStm.ready
             ) {
@@ -11345,13 +11372,42 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       )
     }
     is (LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1) {
-      // TODO: determine if this would have negative effects for
       myLoD2hPushStm.valid := False
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
       mySelLoH2dPopStm.ready := False
 
-      when (rHiState.asBits(HiState.IDLE.position)) {
+      // What if the cache line we're trying to write to to evicted by
+      // the prefetcher???
+      switch (
+        (
+          //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
+          //&& 
+          fell(rPrefetchStallNotReady)
+        )
+        ## rSavedRamIdx
+      ) {
+        for (ramIdx <- 0 until numWays) {
+          is (
+            (1 << rSavedRamIdx.getWidth)
+            | ramIdx
+          ) {
+            doLineWordRamWrite(
+              ramIdx=ramIdx,
+              busAddr=rSavedLoH2dPayload.addr,
+              lineWord=rSavedLoH2dPayload.data,
+              byteEn=Some(rSavedLoH2dPayload.byteEn),
+              setEn=true,
+            )
+          }
+        }
+      }
+
+      when (
+        //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
+        //&& 
+        fell(rPrefetchStallNotReady)
+      ) {
         rLoState := LoState.STORE_HIT_DO_STALL
       }
     }
@@ -11579,28 +11635,37 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       switch (
         (
           (
-            rLoState.asBits(LoState.IDLE.position)
-            || rLoState.asBits(LoState.WAIT_HI_STATE_MCHN_READY.position)
+            (
+              rLoState.asBits(LoState.IDLE.position)
+              || rLoState.asBits(
+                LoState.WAIT_HI_STATE_MCHN_READY.position
+              )
+            )
+            && (
+              RegNextWhen(
+                //tempToSwitchNonHaveHitVec.head.andR,
+                // we can skip the `.andR` here because of the
+                // `cond=rLoState.asBits(LoState.IDLE.position)`
+                // argument to this `RegNextWhen`
+                //tempToSwitchNonHaveHitVec.head(
+                //  //1
+                //  0
+                //)
+                {
+                  val temp = tempToSwitchNonHaveHitVec.head
+                  (
+                    temp(2)     // rMyTempDoSaveCond(3)
+                    ## !temp(0) // not MMIO
+                  ).andR
+                },
+                cond=rLoState.asBits(LoState.IDLE.position),
+                init=False
+              )
+            )
           )
-          && (
-            RegNextWhen(
-              //tempToSwitchNonHaveHitVec.head.andR,
-              // we can skip the `.andR` here because of the
-              // `cond=rLoState.asBits(LoState.IDLE.position)`
-              // argument to this `RegNextWhen`
-              //tempToSwitchNonHaveHitVec.head(
-              //  //1
-              //  0
-              //)
-              {
-                val temp = tempToSwitchNonHaveHitVec.head
-                (
-                  temp(2)     // rMyTempDoSaveCond(3)
-                  ## !temp(0) // not MMIO
-                ).andR
-              },
-              cond=rLoState.asBits(LoState.IDLE.position),
-              init=False
+          || (
+            rLoState.asBits(
+              LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1.position
             )
           )
         )
@@ -11610,14 +11675,20 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             cond=rLoState.asBits(LoState.IDLE.position),
             init=False
           )
+          && !rLoState.asBits(
+            LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1.position
+          )
         )
         ## rPrefetchCnt.msb
       ) {
         is (
           M"10-"
+          //M"100-"
           //M"101"
         ) {
-          // CPU's most recent request is a cache miss,
+          // CPU's most recent request is a cache miss
+          // (or maybe there was a store hit
+          // that potentially had its destination cache line evicted!)
           // so we start new prefetching!
           rSavedPrefetchLoH2dPayload := (
             //rDel2LoH2dPayload
@@ -11629,12 +11700,15 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           )
           rPrefetchCnt := cfg.prefetchNumLinesAhead.get - 1
           rHiState := HiState.READ_ATTRS_PIPE_2
+          rPrefetchStallNotReady := True
         }
         is (
           //M"110"
           M"110"
+          //M"1100"
         ) {
-          // CPU's most recent request is a cache hit,
+          // CPU's most recent request is a cache hit that we definitely
+          // didn't evict,
           // and we've not fetched too many lines yet!
           rSavedPrefetchLoH2dPayload.addr := (
             rSavedPrefetchLoH2dPayload.addr
@@ -11645,6 +11719,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         }
         default {
         }
+      }
+      when (rPrefetchStallNotReady) {
+        rPrefetchStallNotReady := False
       }
     }
     is (HiState.READ_ATTRS_PIPE_2) {
