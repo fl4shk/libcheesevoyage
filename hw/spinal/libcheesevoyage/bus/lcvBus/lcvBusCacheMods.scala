@@ -10820,9 +10820,27 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
   val prefetchStallVec = Vec[Bool](
     (
       if (!myCondHaveLineBitPlruRam) (
-        rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
+        //rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
+        (
+          //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
+          //|| 
+          rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
+          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
+          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
+          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
+          || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
+        )
       ) else (
-        rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
+        //rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
+        (
+          //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
+          //|| 
+          rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
+          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
+          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
+          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
+          || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
+        )
         && (
           rSavedPrefetchRamIdx
           === myCurrRamIdx
@@ -11048,9 +11066,8 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
 
             myLoD2hPushStm.valid := (
               //!myHadAnyRecentRamWrite.head//False
-              //!prefetchStallVec.head
-              //&& 
-              !myHadAnyRecentRamWrite.head//False
+              !prefetchStallVec.head
+              && !myHadAnyRecentRamWrite.head//False
             )
             //when (myHadAnyRecentRamWrite.head) {
             //  myLoD2hPushStm.valid := False
@@ -11058,15 +11075,13 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             //  rSavedNeedLineWordReadAgain := False
             //}
             rSavedNeedLineWordReadAgain := (
-              //prefetchStallVec.head
-              //|| 
-              myHadAnyRecentRamWrite(1)
+              prefetchStallVec.head
+              || myHadAnyRecentRamWrite(1)
             )
 
             when (
-              //prefetchStallVec.head
-              //|| 
-              myHadAnyRecentRamWrite(2)
+              prefetchStallVec.head
+              || myHadAnyRecentRamWrite(2)
               || !myLoD2hPushStm.ready
             ) {
               mySelLoH2dPopStm.ready := False
@@ -11075,9 +11090,8 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
 
             switch (
               (
-                //prefetchStallVec.head
-                //|| 
-                myHadAnyRecentRamWrite.last
+                prefetchStallVec.head
+                || myHadAnyRecentRamWrite.last
               )
               ## myLoD2hPushStm.ready
             ) {
