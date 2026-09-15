@@ -10922,8 +10922,8 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             require(false)
           }
         }
-        is (MaskedLiteral("1110" + myRamIdxMask)) {
-          if (myVecIdx == 0) {
+        if (myVecIdx == 0) {
+          is (MaskedLiteral("1110" + myRamIdxMask)) {
             doPopLoH2dFifo()
             //myFifoThingDoStall := False
             //myLoD2hPushStm.valid := False
@@ -10977,19 +10977,20 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             } otherwise {
               //doPopLoH2dFifo()
             }
-          } else if (myVecIdx == 1) {
-            // if we had a cache hit for an attempted prefetch,
-            // we should stop prefetching there!
-            rHiState := HiState.IDLE
-            if (myCondHaveLineBitPlruRam) {
-              //rSavedPrefetchRamIdx := ramIdx
-              doWriteBitPlruRamDuringHit(
-                someRdLineBitPlru=rdPrefetchLineBitPlru,
-                ramIdx=ramIdx,
-                busAddr=Some(rSavedPrefetchLoH2dPayload.addr),
-              )
-            }
-          }
+          } 
+          //else if (myVecIdx == 1) {
+          //  // if we had a cache hit for an attempted prefetch,
+          //  // we should stop prefetching there!
+          //  rHiState := HiState.IDLE
+          //  if (myCondHaveLineBitPlruRam) {
+          //    //rSavedPrefetchRamIdx := ramIdx
+          //    doWriteBitPlruRamDuringHit(
+          //      someRdLineBitPlru=rdPrefetchLineBitPlru,
+          //      ramIdx=ramIdx,
+          //      busAddr=Some(rSavedPrefetchLoH2dPayload.addr),
+          //    )
+          //  }
+          //}
         }
       }
       if (myVecIdx == 0) {
