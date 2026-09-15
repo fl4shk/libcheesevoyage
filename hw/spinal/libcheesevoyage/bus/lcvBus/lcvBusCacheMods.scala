@@ -9872,7 +9872,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=myFifoThingLoBusCfg)
   )
   val myLoH2dReptThing = LcvBusDoStallH2dReptThing(
-    busCfg=myLoH2dPopBusCfg
+    busCfg=myLoH2dPopBusCfg,
+    optIncludeSavedData=(
+      !loBusCfg.haveByteEn
+    ),
   )
 
   //val myLoH2dDoStallFifoThing = LcvBusDoStallFifoThing(
@@ -13377,11 +13380,11 @@ private[libcheesevoyage] case class LcvBusDataCacheNonWide(
 ) extends Component {
   //--------
   val io = LcvBusCacheIo(cfg=cfg)
-  val icache = (
+  val dcache = (
     LcvBusDataCacheMain(cfg=cfg)
     //LcvBusDataCacheNoPrefetch(cfg=cfg)
   )
-  io <> icache.io
+  io <> dcache.io
   ////--------
   //val mySupportPrefetchArea = (
   //  cfg.havePrefetch
