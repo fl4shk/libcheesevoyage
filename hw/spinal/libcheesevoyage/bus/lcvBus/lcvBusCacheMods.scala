@@ -10839,20 +10839,22 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
           || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
         )
-        && (
-          rDel2LoH2dPayload.addr(
-            rDel2LoH2dPayload.addr.high
-            downto (
-              rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
-            )
-          )
-          === rSavedPrefetchLoH2dPayload.addr(
-            rSavedPrefetchLoH2dPayload.addr.high
-            downto (
-              rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
-            )
-          )
-        )
+        //&& (
+        //  // add this back if a true dual port RAM ends up being used
+        //  // for the cache line words!
+        //  rDel2LoH2dPayload.addr(
+        //    rDel2LoH2dPayload.addr.high
+        //    downto (
+        //      rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
+        //    )
+        //  )
+        //  === rSavedPrefetchLoH2dPayload.addr(
+        //    rSavedPrefetchLoH2dPayload.addr.high
+        //    downto (
+        //      rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
+        //    )
+        //  )
+        //)
       ) else (
         (
           rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
@@ -10866,28 +10868,30 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           rSavedPrefetchRamIdx
           === myCurrRamIdx
         )
-        && (
-          //rDel2LoH2dPayload.burstAddr(
-          //  someBurstCnt=rHiD2hBurstCnt.getZero,
-          //  incrBurstCnt=false,
-          //)
-          //=== rSavedPrefetchLoH2dPayload.burstAddr(
-          //  someBurstCnt=rHiD2hBurstCnt.getZero,
-          //  incrBurstCnt=false,
-          //)
-          rDel2LoH2dPayload.addr(
-            rDel2LoH2dPayload.addr.high
-            downto (
-              rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
-            )
-          )
-          === rSavedPrefetchLoH2dPayload.addr(
-            rSavedPrefetchLoH2dPayload.addr.high
-            downto (
-              rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
-            )
-          )
-        )
+        //&& (
+        //  //rDel2LoH2dPayload.burstAddr(
+        //  //  someBurstCnt=rHiD2hBurstCnt.getZero,
+        //  //  incrBurstCnt=false,
+        //  //)
+        //  //=== rSavedPrefetchLoH2dPayload.burstAddr(
+        //  //  someBurstCnt=rHiD2hBurstCnt.getZero,
+        //  //  incrBurstCnt=false,
+        //  //)
+        //  // add this back if a true dual port RAM ends up being used
+        //  // for the cache line words!
+        //  rDel2LoH2dPayload.addr(
+        //    rDel2LoH2dPayload.addr.high
+        //    downto (
+        //      rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
+        //    )
+        //  )
+        //  === rSavedPrefetchLoH2dPayload.addr(
+        //    rSavedPrefetchLoH2dPayload.addr.high
+        //    downto (
+        //      rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
+        //    )
+        //  )
+        //)
       )
     ),
     //(
