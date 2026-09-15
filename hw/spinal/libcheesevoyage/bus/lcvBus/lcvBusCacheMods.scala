@@ -5031,15 +5031,15 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
   val rdLineWord = Vec.fill(numWays)(
     UInt(wordWidth bits)
   )
-  val myRdLineAttrsArr = Array.fill(numLoHi)(
+  val rdLineAttrs = Array.fill(numLoHi)(
     Vec.fill(numWays)(
       LcvBusCacheLineAttrs(cfg=loBusCfg)
     )
   )
   for (idx <- 0 until numWays) {
     rdLineWord(idx) := lineWordRam(idx).io.rdData
-    for (jdx <- 0 until myRdLineAttrsArr.size) {
-      myRdLineAttrsArr(jdx)(idx) := lineAttrsRam(jdx)(idx).io.rdData
+    for (jdx <- 0 until rdLineAttrs.size) {
+      rdLineAttrs(jdx)(idx) := lineAttrsRam(jdx)(idx).io.rdData
     }
     lineWordRam(idx).io.wrEn := False
     lineAttrsRam.foreach(item => item(idx).io.wrEn := False)
@@ -5073,16 +5073,26 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
     )
   )
 
-  val rdLineBitPlru = (
+  val myRdLineBitPlruVec = (
     myCondHaveLineBitPlruRam
   ) generate (
-    UInt(numWays bits)
+    Vec.fill(numLoHi)(
+      UInt(numWays bits)
+    )
   )
-  val rdPrefetchLineBitPlru = (
-    myCondHaveLineBitPlruRam
-  ) generate (
-    UInt(numWays bits)
-  )
+  //val rdLineBitPlru = (
+  //  myCondHaveLineBitPlruRam
+  //) generate (
+  //  UInt(numWays bits)
+  //)
+  //val rdPrefetchLineBitPlru = (
+  //  myCondHaveLineBitPlruRam
+  //) generate (
+  //  UInt(numWays bits)
+  //)
+  def rdLineBitPlru = myRdLineBitPlruVec.head
+  def rdPrefetchLineBitPlru = myRdLineBitPlruVec.last
+
   val wrLineBitPlru = (
     myCondHaveLineBitPlruRam
   ) generate (
@@ -5093,14 +5103,20 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
   )
 
   if (myCondHaveLineBitPlruRam) {
-    rdLineBitPlru := lineBitPlruRam.head.io.rdData
-    rdPrefetchLineBitPlru := lineBitPlruRam.last.io.rdData
+    lineBitPlruRam.zipWithIndex.foreach({
+      case (myBpRam, idx) => {
+        myRdLineBitPlruVec(idx) := myBpRam.io.rdData
+        myBpRam.io.wrEn := False
+      }
+    })
+    //rdLineBitPlru := lineBitPlruRam.head.io.rdData
+    //rdPrefetchLineBitPlru := lineBitPlruRam.last.io.rdData
 
     wrLineBitPlru := RegNext(wrLineBitPlru, init=wrLineBitPlru.getZero)
     //wrLineBitPlru.allowOverride
-    lineBitPlruRam.foreach(_.io.wrEn := False)
-  }
 
+    //lineBitPlruRam.foreach(_.io.wrEn := False)
+  }
 
   //--------
   object LoState extends SpinalEnum(
@@ -5443,7 +5459,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
   }
   val myTempHaveHitCmpEqLeft = (
     Vec[Vec[UInt]](
-      myRdLineAttrsArr.map(
+      rdLineAttrs.map(
         outerItem => Vec[UInt](outerItem.map(item => item.tag))
       )
     )
@@ -5496,7 +5512,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
         === myTempHaveHitCmpEqRight(outerRamIdx)(ramIdx)
       )
       haveHit(outerRamIdx)(ramIdx) := (
-        myRdLineAttrsArr(outerRamIdx)(ramIdx).fire
+        rdLineAttrs(outerRamIdx)(ramIdx).fire
         && tempHaveHitCmpEq(outerRamIdx)(ramIdx)
       )
       if (outerRamIdx == 1) {
