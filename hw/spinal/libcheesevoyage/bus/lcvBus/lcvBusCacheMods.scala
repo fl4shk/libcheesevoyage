@@ -10830,7 +10830,14 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           myFifoThingDoStall := True
           mySelLoH2dPopStm.ready := False
         } else if (myVecIdx == 1) {
-          rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_3
+          when (
+            rdLineAttrs.last(rSavedPrefetchRamIdx).fire
+          ) {
+            rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_3
+          } otherwise {
+            rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
+          }
+
           if (myCondHaveLineBitPlruRam) {
             doWriteBitPlruRamDuringMiss(
               someRdLineBitPlru=rdPrefetchLineBitPlru,
