@@ -10827,7 +10827,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           myFifoThingDoStall := True
           mySelLoH2dPopStm.ready := False
         } else if (myVecIdx == 1) {
-          rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
+          rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_3
           if (myCondHaveLineBitPlruRam) {
             doWriteBitPlruRamDuringMiss(
               someRdLineBitPlru=rdPrefetchLineBitPlru,
@@ -10993,10 +10993,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         }
       }
       if (myVecIdx == 0) {
-        is (MaskedLiteral(
-          "11-1" + ("-" * numWays)
-        )) {
-          
+        is (MaskedLiteral("11-1" + ("-" * numWays))) {
           myLoD2hPushStm.valid := False
           mySelLoH2dPopStm.ready := False
           myFifoThingDoStall := True
@@ -11004,9 +11001,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           //rSeenNonCachedHiBusD2hFire := False
           rLoState := LoState.NON_CACHED_BUS_ACCESS
         }
-        is (MaskedLiteral(
-          "10--" + ("-" * numWays)
-        )) {
+        is (MaskedLiteral("10--" + ("-" * numWays))) {
           doPopLoH2dFifo()
           myFifoThingDoStall := False
           myLoD2hPushStm.valid := False
@@ -11099,11 +11094,6 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       mySelLoH2dPopStm.ready := False
     }
     is (LoState.LOAD_HIT_DO_STALL_PIPE_1) {
-      rLoState := LoState.LOAD_HIT_DO_STALL
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.rdEn := False)
-    }
-    is (LoState.LOAD_HIT_DO_STALL) {
       val myRdLineWord = (
         RegNext(
           if (myCondHaveLineBitPlruRam) (
@@ -11113,15 +11103,34 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           )
         )
       )
+      when (rSavedNeedLineWordReadAgain) {
+        myLoD2hPushStm.busPayload.data := myRdLineWord
+        rSavedNeedLineWordReadAgain := False
+      }
+      rLoState := LoState.LOAD_HIT_DO_STALL
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.rdEn := False)
+    }
+    is (LoState.LOAD_HIT_DO_STALL) {
+      //val myRdLineWord = (
+      //  RegNext(
+      //    if (myCondHaveLineBitPlruRam) (
+      //      rdLineWord(rSavedRamIdx)
+      //    ) else (
+      //      rdLineWord.head
+      //    )
+      //  )
+      //)
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
 
       mySelLoH2dPopStm.ready := False
       //myLoD2hPushStm.busPayload.data := myRdLineWord
-      when (rSavedNeedLineWordReadAgain) {
-        myLoD2hPushStm.busPayload.data := myRdLineWord
-        rSavedNeedLineWordReadAgain := False
-      }
+      //when (rSavedNeedLineWordReadAgain) {
+      //  myLoD2hPushStm.busPayload.data := myRdLineWord
+      //  rSavedNeedLineWordReadAgain := False
+      //}
+      myLoD2hPushStm.busPayload
       if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
         myLoD2hPushStm.busPayload.byteSize := (
           rSavedLoH2dPayload.byteSize
@@ -11149,6 +11158,28 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         //LoState.WAIT_D2H_FIFO_EMPTY
         LoState.IDLE
       )
+    }
+    is (LoState.STORE_HIT_DO_STALL_PIPE_1) {
+      myLoD2hPushStm.valid := False
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.rdEn := False)
+      mySelLoH2dPopStm.ready := False
+
+      rLoState := LoState.STORE_HIT_DO_STALL
+    }
+    is (LoState.STORE_HIT_DO_STALL) {
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.rdEn := False)
+
+      mySelLoH2dPopStm.ready := False
+      //myLoH2dReptThing.io.finishTxn.valid := False
+      myLoD2hPushStm.valid := True
+      when (myLoD2hPushStm.ready) {
+        rLoState := (
+          //LoState.WAIT_D2H_FIFO_EMPTY
+          LoState.IDLE
+        )
+      }
     }
     is (LoState.WAIT_HI_STATE_MCHN_READY) {
       when (
