@@ -11333,10 +11333,17 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
               // we can skip the `.andR` here because of the
               // `cond=rLoState.asBits(LoState.IDLE.position)`
               // argument to this `RegNextWhen`
-              tempToSwitchNonHaveHitVec.head(
-                //1
-                0
-              ),
+              //tempToSwitchNonHaveHitVec.head(
+              //  //1
+              //  0
+              //)
+              {
+                val temp = tempToSwitchNonHaveHitVec.head
+                (
+                  temp(2)     // rMyTempDoSaveCond(3)
+                  ## !temp(0) // not MMIO
+                ).andR
+              },
               cond=rLoState.asBits(LoState.IDLE.position),
               init=False
             )
