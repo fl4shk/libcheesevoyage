@@ -11931,9 +11931,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         // an OR reduce checks for non-zero
         rHiH2dBurstCnt(0) := rHiH2dBurstCnt(0) + 1
       }
-      when (RegNext(!rHiH2dBurstCnt(0).orR, init=False)) {
-        lineWordRam.foreach(item => item.io.rdEn := False)
-      }
+      //when (RegNext(!rHiH2dBurstCnt(0).orR, init=False)) {
+      //  lineWordRam.foreach(item => item.io.rdEn := False)
+      //}
       rHiH2dPayload.addr := rHiH2dPayload.burstAddr(
         someBurstCnt=rHiH2dBurstCnt(1),
         incrBurstCnt=false,
