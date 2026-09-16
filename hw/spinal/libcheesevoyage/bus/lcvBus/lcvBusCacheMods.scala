@@ -10434,11 +10434,11 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     val myRamIo = lineWordRam(ramIdx).io.vec(vecIdx)
     if (setEn) {
       myRamIo.wrEn := True
+      myRamIo.addr := (
+        (busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift))
+        .resize(myRamIo.addr.getWidth)
+      )
     }
-    myRamIo.addr := (
-      (busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift))
-      .resize(myRamIo.addr.getWidth)
-    )
     myRamIo.wrData := lineWord.asBits
     byteEn match {
       case Some(byteEn) => {
