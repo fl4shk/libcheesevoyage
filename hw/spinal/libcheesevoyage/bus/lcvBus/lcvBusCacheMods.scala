@@ -10438,6 +10438,13 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         (busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift))
         .resize(myRamIo.addr.getWidth)
       )
+    } else {
+      when (myRamIo.wrEn) {
+        myRamIo.addr := (
+          (busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift))
+          .resize(myRamIo.addr.getWidth)
+        )
+      }
     }
     myRamIo.wrData := lineWord.asBits
     byteEn match {
