@@ -10539,10 +10539,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       setEn=false,
     )
   }
-  lineWordRam.map(item => {
-    //item.io.vec.map(_.wrEn := False)
-    item.io.vec.last.wrEn := False
-  })
+  //lineWordRam.map(item => {
+  //  //item.io.vec.map(_.wrEn := False)
+  //  item.io.vec.last.wrEn := False
+  //})
 
   doLineAttrsRamReadSync(
     outerRamIdx=0,
