@@ -138,9 +138,14 @@ case class RamTdpPipe(
       val myDataOutFromRd = (
         /*Reg*/(
           //Bits(item.rdData.getWidth bits)
-          Bits(item.rdData.getWidth bits)
+          //Bits(item.rdData.getWidth bits)
+          Vec.fill(bytesPerWord)(
+            Bits(byteWidth bits)
+          )
         )
       )
+
+      item.rdData.setAsReg() init(item.rdData.getZero)
 
       memArr.zipWithIndex.foreach{
         case(mem, memIdx) => {
@@ -152,12 +157,16 @@ case class RamTdpPipe(
             data=item.wrData(myDataRange),
             enable=(item.wrEn && item.wrByteEn(memIdx)),
           )
-          myDataOutFromRd(myDataRange) := (
+          myDataOutFromRd(memIdx) := (
             mem.readSync(
               address=item.rdAddr,
               //enable=item.rdEn,
             ).asBits
           )
+
+          when (item.rdEn) {
+            item.rdData(myDataRange) := myDataOutFromRd(memIdx)
+          }
         }
       }
 
@@ -181,18 +190,8 @@ case class RamTdpPipe(
       //  ).asBits
       //)
 
-      item.rdData.setAsReg() init(item.rdData.getZero)
-      when (item.rdEn) {
-        item.rdData := myDataOutFromRd
-      }
     }
   }}
-
-  val myPortBArea = new ClockingArea(
-    clockDomain=ClockDomain.current
-  ) {
-  }
-
 }
 
 object RamTdpPipeTestSpinalConfig {
