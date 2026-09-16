@@ -10823,6 +10823,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     someRdLineBitPlru: UInt,
     someSavedRamIdx: UInt,
     busAddr: Option[UInt]=None,
+    isHiState: Boolean,
   ): Unit = {
     require(
       myCondHaveLineBitPlruRam
@@ -10855,6 +10856,11 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           }
           //rSavedRamIdx := ramIdx
           someSavedRamIdx := ramIdx
+          if (isHiState) {
+            rSavedPrefetchRdLineAttrsTag := (
+              rdLineAttrs.last(ramIdx).tag
+            )
+          }
         }
         default {
         }
@@ -11085,6 +11091,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
               someRdLineBitPlru=rdLineBitPlru,
               someSavedRamIdx=rSavedRamIdx,
               busAddr=None,
+              isHiState=false,
             )
           }
 
@@ -11092,17 +11099,29 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           myFifoThingDoStall := True
           mySelLoH2dPopStm.ready := False
         } else if (myVecIdx == 1) {
-          when (rdLineAttrs.last(rSavedPrefetchRamIdx).fire) {
+          //when (rdLineAttrs.last(rSavedPrefetchRamIdx).fire) {
+          //  rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_3
+          //} otherwise {
+          //  rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
+          //}
+          when (Vec(rdLineAttrs.last.map(_.fire)).orR) {
+            // TODO: handle the `dirty` flag
             rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_3
           } otherwise {
             rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
           }
+          //when (rdLineAttrs.last(rSavedPrefetchRamIdx).fire) {
+          //  rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_3
+          //} otherwise {
+          //  rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
+          //}
 
           if (myCondHaveLineBitPlruRam) {
             doWriteBitPlruRamDuringMiss(
               someRdLineBitPlru=rdPrefetchLineBitPlru,
               someSavedRamIdx=rSavedPrefetchRamIdx,
               busAddr=Some(rSavedPrefetchLoH2dPayload.addr),
+              isHiState=true,
             )
           }
         } else {
