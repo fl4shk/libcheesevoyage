@@ -11,6 +11,191 @@ import scala.math._
 
 import libcheesevoyage.math._
 
+
+// True Dual Port RAM without support for `initBigInt`
+case class RamTdpPipeConfig(
+  bytesPerWord: Int,
+  depth: Int,
+  optIncludeWrByteEn: Boolean=false,
+  opt9BitBytes: Boolean=false,
+  optWrHistLength: Int=1,
+  //initBigInt: Option[Seq[BigInt]]=None,
+  arrRamStyleAltera: String="no_rw_check, M10K",
+  arrRamStyleXilinx: String="block",
+  arrRwAddrCollisionXilinx: String="",
+) {
+  require(
+    bytesPerWord >= 1
+  )
+  require(
+    depth >= 1
+  )
+  val byteWidth = (
+    if (!opt9BitBytes) (8) else (9)
+  )
+  val wordWidth = (
+    byteWidth * bytesPerWord
+  )
+}
+
+case class RamTdpPipeIoElem(
+  cfg: RamTdpPipeConfig,
+) extends Bundle {
+  val wrEn = in(Bool())
+  val wrAddr = in(UInt(log2Up(cfg.depth) bits))
+  val wrByteEn = (
+    cfg.optIncludeWrByteEn
+  ) generate (
+    in(Bits(cfg.bytesPerWord bits))
+  )
+  val wrData = in(Bits(cfg.wordWidth bits))
+
+  val rdEn = in(Bool())
+  val rdAddr = in(UInt(cfg.depth bits))
+  val rdData = out(Bits(cfg.wordWidth bits))
+}
+
+case class RamTdpPipeIo(
+  cfg: RamTdpPipeConfig
+) extends Bundle {
+  //val a = RamTdpPipeIoElem(cfg=cfg)
+  //val b = RamTdpPipeIoElem(cfg=cfg)
+  val vec = Vec.fill(2)(
+    RamTdpPipeIoElem(cfg=cfg)
+  )
+}
+
+case class RamTdpPipe(
+  cfg: RamTdpPipeConfig
+) extends Component {
+  val io = RamTdpPipeIo(cfg=cfg)
+
+  //def wordType = cfg.wordType
+  def byteWidth = cfg.byteWidth
+  def bytesPerWord = cfg.bytesPerWord
+  def wordWidth = cfg.wordWidth
+  def depth = cfg.depth
+  def optIncludeWrByteEn = cfg.optIncludeWrByteEn
+
+  //def init = cfg.init
+  //def initBigInt = cfg.initBigInt
+  def arrRamStyleAltera = cfg.arrRamStyleAltera
+  def arrRamStyleXilinx = cfg.arrRamStyleXilinx
+  def arrRwAddrCollisionXilinx = cfg.arrRwAddrCollisionXilinx
+
+  val memArr = Array.fill(bytesPerWord)(
+    Mem(
+      wordType=Bits(byteWidth bits),
+      wordCount=depth,
+    )
+      .addAttribute("ramstyle", arrRamStyleAltera)
+      .addAttribute("ram_style", arrRamStyleXilinx)
+      .addAttribute("rw_addr_collision", arrRwAddrCollisionXilinx)
+  )
+
+  val myPortAreaArr = io.vec.zipWithIndex.map{case (item, vecIdx) => {
+    new ClockingArea(
+      clockDomain=ClockDomain.current
+    ) {
+      if (vecIdx == 0) {
+        setName("myPortAArea")
+      } else if (vecIdx == 1) {
+        setName("myPortBArea")
+      } else {
+        require(false)
+      }
+      val myHistIoWrAddr = History(
+        that=item.wrAddr,
+        length=cfg.optWrHistLength,
+        init=item.wrAddr.getZero,
+      )
+      val tempWrData = Bits(wordWidth bits)
+      tempWrData.assignFromBits(
+        item.wrData.asBits
+      )
+      //tempWrData
+      val myHistIoWrData = History(
+        that=(
+          //item.wrAddr
+          tempWrData
+        ),
+        length=cfg.optWrHistLength,
+        init=tempWrData.getZero,
+      )
+      val myHistIoWrEn = History(
+        that=item.wrEn,
+        length=cfg.optWrHistLength,
+        init=item.wrEn.getZero,
+      )
+      val myHistIoWrByteEn = (
+        optIncludeWrByteEn
+      ) generate (
+        History(
+          that=item.wrByteEn,
+          length=cfg.optWrHistLength,
+          init=item.wrByteEn.getZero,
+        )
+      )
+      val myDataOutFromRd = (
+        /*Reg*/(
+          //Bits(item.rdData.getWidth bits)
+          Bits(item.rdData.getWidth bits)
+        )
+      )
+
+      memArr.zipWithIndex.foreach{
+        case(mem, memIdx) => {
+          val myDataRange = (
+            ((memIdx + 1) * byteWidth - 1 downto memIdx * byteWidth)
+          )
+          mem.write(
+            address=item.wrAddr,
+            data=item.wrData(myDataRange),
+            enable=(item.wrEn && item.wrByteEn(memIdx)),
+          )
+          myDataOutFromRd(myDataRange) := (
+            mem.readSync(
+              address=item.rdAddr,
+              //enable=item.rdEn,
+            ).asBits
+          )
+        }
+      }
+
+      //arr.write(
+      //  address=myHistIoWrAddr.last,
+      //  data=myHistIoWrData.last,
+      //  enable=myHistIoWrEn.last,
+      //  mask=(
+      //    if (optIncludeWrByteEn) (
+      //      myHistIoWrByteEn.last
+      //    ) else (
+      //      null.asInstanceOf[Bits]
+      //    )
+      //  )
+      //)
+
+      //myDataOutFromRd := (
+      //  arr.readSync(
+      //    address=item.rdAddr,
+      //    //enable=item.rdEn,
+      //  ).asBits
+      //)
+
+      item.rdData.setAsReg() init(item.rdData.getZero)
+      when (item.rdEn) {
+        item.rdData := myDataOutFromRd
+      }
+    }
+  }}
+
+  val myPortBArea = new ClockingArea(
+    clockDomain=ClockDomain.current
+  ) {
+  }
+
+}
+
 case class RamSdpPipeConfig[
   WordT <: Data
 ](
@@ -431,6 +616,7 @@ case class RamSimpleDualPortConfig[
   //doFwdDel1: Boolean=false,
 ) {
 }
+
 case class RamSimpleDualPortIo[
   WordT <: Data
 ](
