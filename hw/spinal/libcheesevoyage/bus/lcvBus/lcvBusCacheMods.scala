@@ -10818,6 +10818,25 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
   //  rSavedPrefetchHaveHit.valid := True
   //  rSavedPrefetchHaveHit.payload := myPrefetchHaveHit.payload
   //}
+
+  def rSavedPrefetchLoBusAddr = rSavedPrefetchLoH2dPayload.addr
+  val rSavedPrefetchLoBusAddrSet = (
+    cloneOf(
+      rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
+    )
+  )
+  rSavedPrefetchLoBusAddrSet := (
+    rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
+  )
+  val rSavedPrefetchRdLineAttrsTag = (
+    //Vec.fill(numWays)(
+      Reg(
+        cloneOf(rdLineAttrs.head.head.tag),
+        init=rdLineAttrs.head.head.tag.getZero,
+      )
+    //)
+  )
+
   def doWriteBitPlruRamDuringMiss(
     //ramIdx: Int
     someRdLineBitPlru: UInt,
@@ -11789,23 +11808,6 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
   //val rSavedHaveHit = Reg(Bool(), init=False)
 
   
-  def rSavedPrefetchLoBusAddr = rSavedPrefetchLoH2dPayload.addr
-  val rSavedPrefetchLoBusAddrSet = (
-    cloneOf(
-      rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
-    )
-  )
-  rSavedPrefetchLoBusAddrSet := (
-    rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
-  )
-  val rSavedPrefetchRdLineAttrsTag = (
-    //Vec.fill(numWays)(
-      Reg(
-        cloneOf(rdLineAttrs.head.head.tag),
-        init=rdLineAttrs.head.head.tag.getZero,
-      )
-    //)
-  )
   switch (rHiState) {
     is (HiState.IDLE) {
       switch (
