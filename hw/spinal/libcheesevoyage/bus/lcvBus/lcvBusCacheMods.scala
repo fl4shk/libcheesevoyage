@@ -10297,6 +10297,18 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     .resize(someRam.io.rdAddr.getWidth)
   }
 
+  lineWordRam.foreach(_.io.vec.zipWithIndex.foreach{
+    case (item, idx) => {
+      item.addr.allowOverride
+      if (idx == 1) {
+        item.rdEn := False
+        item.addr := 0x0
+        item.wrData := 0x0
+        item.wrByteEn := 0x0
+      }
+    }
+  })
+
   def doLineWordRamReadSync(
     vecIdx: Int,
     ramIdx: Int,
@@ -10318,7 +10330,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         //&& rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
         //&& !myFifoThingDoStall
       )
-    } 
+    }
     myRamIo.addr := {
       //println(
       //  s"test info: busAddr("
@@ -10527,7 +10539,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       setEn=false,
     )
   }
-  lineWordRam.map(item => item.io.vec.map(_.wrEn := False))
+  lineWordRam.map(item => {
+    //item.io.vec.map(_.wrEn := False)
+    item.io.vec.last.wrEn := False
+  })
 
   doLineAttrsRamReadSync(
     outerRamIdx=0,
