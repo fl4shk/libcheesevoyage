@@ -13814,7 +13814,7 @@ private[libcheesevoyage] case class LcvBusDataCacheNonWide(
   //}
 }
 
-private[libcheesevoyage] case class LcvBusDataCacheNoPrefetch(
+case class LcvBusDataCacheNoPrefetch(
   cfg: LcvBusCacheBusPairConfig,
 ) extends Component {
   //--------
