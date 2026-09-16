@@ -158,10 +158,15 @@ case class RamTdpPipe(
             enable=(item.wrEn && item.wrByteEn(memIdx)),
           )
           myDataOutFromRd(memIdx) := (
-            mem.readSync(
-              address=item.rdAddr,
-              //enable=item.rdEn,
-            ).asBits
+            //mem.readSync(
+            //  address=item.rdAddr,
+            //  //enable=item.rdEn,
+            //).asBits
+            RegNext(
+              mem.readAsync(
+                address=item.rdAddr,
+              ).asBits
+            )
           )
 
           when (item.rdEn) {
