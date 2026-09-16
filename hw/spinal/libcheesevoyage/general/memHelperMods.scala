@@ -51,7 +51,7 @@ case class RamTdpPipeIoElem(
   val wrData = in(Bits(cfg.wordWidth bits))
 
   val rdEn = in(Bool())
-  val rdAddr = in(UInt(cfg.depth bits))
+  val rdAddr = in(UInt(log2Up(cfg.depth) bits))
   val rdData = out(Bits(cfg.wordWidth bits))
 }
 
@@ -113,7 +113,6 @@ case class RamTdpPipe(
       tempWrData.assignFromBits(
         item.wrData.asBits
       )
-      //tempWrData
       val myHistIoWrData = History(
         that=(
           //item.wrAddr
@@ -194,6 +193,40 @@ case class RamTdpPipe(
   ) {
   }
 
+}
+
+object RamTdpPipeTestSpinalConfig {
+  def spinal = SpinalConfig(
+    targetDirectory="hw/gen",
+    defaultConfigForClockDomains=ClockDomainConfig(
+      resetActiveLevel=HIGH,
+      resetKind=BOOT,
+    )
+  )
+}
+
+object RamTdpPipeTestToVerilog extends App {
+  RamTdpPipeTestSpinalConfig.spinal.generateVerilog{
+    val top = RamTdpPipe(
+      cfg=RamTdpPipeConfig(
+        bytesPerWord=2,
+        depth=1024,
+        optIncludeWrByteEn=true,
+        opt9BitBytes=false,
+        optWrHistLength=1,
+        arrRamStyleAltera="no_rw_check, M10K",
+        arrRamStyleXilinx="block",
+        arrRwAddrCollisionXilinx="",
+      )
+    )
+    //val top = LcvBusNonCoherentDataCacheWithSdramCtrl(
+    //  sdramCtrlCfg=LcvBusSdramCtrlConfig(
+    //    clkRate=100.0 MHz,
+    //    shortDqmToA12A11=true,
+    //  )
+    //)
+    top
+  }
 }
 
 case class RamSdpPipeConfig[
