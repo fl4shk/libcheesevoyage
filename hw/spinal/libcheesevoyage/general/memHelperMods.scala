@@ -18,7 +18,7 @@ case class RamTdpPipeConfig(
   depth: Int,
   optIncludeWrByteEn: Boolean=false,
   opt9BitBytes: Boolean=false,
-  optWrHistLength: Int=1,
+  //optWrHistLength: Int=1,
   //initBigInt: Option[Seq[BigInt]]=None,
   arrRamStyleAltera: String="no_rw_check, M10K",
   arrRamStyleXilinx: String="block",
@@ -42,7 +42,9 @@ case class RamTdpPipeIoElem(
   cfg: RamTdpPipeConfig,
 ) extends Bundle {
   val wrEn = in(Bool())
-  val wrAddr = in(UInt(log2Up(cfg.depth) bits))
+  val addr = in(UInt(log2Up(cfg.depth) bits))
+
+  //val wrAddr = in(UInt(log2Up(cfg.depth) bits))
   val wrByteEn = (
     cfg.optIncludeWrByteEn
   ) generate (
@@ -51,7 +53,7 @@ case class RamTdpPipeIoElem(
   val wrData = in(Bits(cfg.wordWidth bits))
 
   val rdEn = in(Bool())
-  val rdAddr = in(UInt(log2Up(cfg.depth) bits))
+  //val rdAddr = in(UInt(log2Up(cfg.depth) bits))
   val rdData = out(Bits(cfg.wordWidth bits))
 }
 
@@ -104,44 +106,12 @@ case class RamTdpPipe(
       } else {
         require(false)
       }
-      val myHistIoWrAddr = History(
-        that=item.wrAddr,
-        length=cfg.optWrHistLength,
-        init=item.wrAddr.getZero,
-      )
-      val tempWrData = Bits(wordWidth bits)
-      tempWrData.assignFromBits(
-        item.wrData.asBits
-      )
-      val myHistIoWrData = History(
-        that=(
-          //item.wrAddr
-          tempWrData
-        ),
-        length=cfg.optWrHistLength,
-        init=tempWrData.getZero,
-      )
-      val myHistIoWrEn = History(
-        that=item.wrEn,
-        length=cfg.optWrHistLength,
-        init=item.wrEn.getZero,
-      )
-      val myHistIoWrByteEn = (
-        optIncludeWrByteEn
-      ) generate (
-        History(
-          that=item.wrByteEn,
-          length=cfg.optWrHistLength,
-          init=item.wrByteEn.getZero,
-        )
-      )
+
       val myDataOutFromRd = (
-        /*Reg*/(
-          //Bits(item.rdData.getWidth bits)
-          //Bits(item.rdData.getWidth bits)
-          Vec.fill(bytesPerWord)(
-            Bits(byteWidth bits)
-          )
+        //Bits(item.rdData.getWidth bits)
+        //Bits(item.rdData.getWidth bits)
+        Vec.fill(bytesPerWord)(
+          Bits(byteWidth bits)
         )
       )
 
@@ -153,20 +123,29 @@ case class RamTdpPipe(
             ((memIdx + 1) * byteWidth - 1 downto memIdx * byteWidth)
           )
           mem.write(
-            address=item.wrAddr,
+            address=item.addr,
             data=item.wrData(myDataRange),
-            enable=(item.wrEn && item.wrByteEn(memIdx)),
+            enable=(
+              if (optIncludeWrByteEn) (
+                item.wrEn && item.wrByteEn(memIdx)
+              ) else (
+                item.wrEn
+              )
+            ),
           )
           myDataOutFromRd(memIdx) := (
-            //mem.readSync(
-            //  address=item.rdAddr,
-            //  //enable=item.rdEn,
-            //).asBits
-            RegNext(
-              mem.readAsync(
-                address=item.rdAddr,
-              ).asBits
-            )
+            mem.readSync(
+              address=item.addr,
+              enable=(
+                //item.rdEn
+                !item.wrEn
+              ),
+            ).asBits
+            //RegNext(
+            //  mem.readAsync(
+            //    address=item.rdAddr,
+            //  ).asBits
+            //)
           )
 
           when (item.rdEn) {
@@ -217,7 +196,7 @@ object RamTdpPipeTestToVerilog extends App {
         depth=1024,
         optIncludeWrByteEn=true,
         opt9BitBytes=false,
-        optWrHistLength=1,
+        //optWrHistLength=1,
         arrRamStyleAltera="no_rw_check, M10K",
         arrRamStyleXilinx="block",
         arrRwAddrCollisionXilinx="",
