@@ -12011,7 +12011,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     is (HiState.SEND_LINE_TO_HI_BUS_PIPE_1) {
       val myRdLineWord = (
         if (myCondHaveLineBitPlruRam) (
-          rdPrefetchLineWord(rSavedRamIdx)
+          rdPrefetchLineWord(rSavedPrefetchRamIdx)
         ) else (
           rdPrefetchLineWord.head
         )
@@ -12055,7 +12055,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     is (HiState.SEND_LINE_TO_HI_BUS) {
       val myRdLineWord = (
         if (myCondHaveLineBitPlruRam) (
-          rdPrefetchLineWord(rSavedRamIdx)
+          rdPrefetchLineWord(rSavedPrefetchRamIdx)
         ) else (
           rdPrefetchLineWord.head
         )
