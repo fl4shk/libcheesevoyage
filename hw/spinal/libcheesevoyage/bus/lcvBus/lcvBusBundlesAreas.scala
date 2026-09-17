@@ -308,7 +308,8 @@ case class LcvBusCacheConfig(
     //index bits = log2(lines)
     //offset bits = log2(words per line)
     //(assuming your addresses are word-based ofc) (edited)
-    addrWidth - log2Up(depthLines) - log2Up(lineSizeWords) - 1
+    //addrWidth - log2Up(depthLines) - log2Up(lineSizeWords) - 1
+    addrWidth - log2Up(depthLines) - log2Up(lineSizeBytes) - 1
   )
   def tagRange = addrWidth - 2 downto (addrWidth - 1 - tagWidth)
   def nonCachedRange = addrWidth - 1 downto addrWidth - 1
