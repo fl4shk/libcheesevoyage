@@ -10932,98 +10932,127 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
 
   val prefetchStallVec = Vec[Bool](
     (
-      if (!myCondHaveLineBitPlruRam) (
-        //rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
-        (
-          //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
-          //|| 
-          rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
-          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
-          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
-          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
-          || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
-        )
-      ) else (
-        //rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
-        (
-          //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
-          //|| 
-          rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
-          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
-          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
-          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
-          || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
-        )
-        && (
-          rSavedPrefetchRamIdx
-          === myCurrRamIdx
+      //if (!myCondHaveLineBitPlruRam) (
+      //  //rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
+      //  (
+      //    //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
+      //    //|| 
+      //    rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
+      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
+      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
+      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
+      //    || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
+      //  )
+      //) else (
+      //  //rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
+      //  (
+      //    //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
+      //    //|| 
+      //    rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
+      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
+      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
+      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
+      //    || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
+      //  )
+      //  && (
+      //    rSavedPrefetchRamIdx
+      //    === myCurrRamIdx
+      //  )
+      //)
+      //False
+      RegNext(
+        rLoH2dPayload.addr(loBusCacheCfg.tagRange)
+        === RegNextWhen(
+          rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange),
+          cond=(
+            !rHiState.asBits(HiState.IDLE.position)
+          ),
         )
       )
     ),
     (
-      if (!myCondHaveLineBitPlruRam) (
-        (
-          rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
-          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
-          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
-          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
-          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
-          || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
-        )
-        //&& (
-        //  // add this back if a true dual port RAM ends up being used
-        //  // for the cache line words!
+      RegNext(
+        //RegNextWhen(
         //  rDel2LoH2dPayload.addr(
-        //    rDel2LoH2dPayload.addr.high
-        //    downto (
-        //      rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
-        //    )
-        //  )
-        //  === rSavedPrefetchLoH2dPayload.addr(
-        //    rSavedPrefetchLoH2dPayload.addr.high
-        //    downto (
-        //      rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
-        //    )
+        //    loBusCacheCfg.tagRange
+        //  ),
+        //  cond=(
+        //    rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
+        //    || rLoState.asBits(LoState.IDLE_STORE_MODE.position)
         //  )
         //)
-      ) else (
-        (
-          rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
-          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
-          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
-          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
-          || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
-          || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
+        rLoH2dPayload.addr(loBusCacheCfg.tagRange)
+        === RegNextWhen(
+          rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange),
+          cond=(
+            !rHiState.asBits(HiState.IDLE.position)
+          ),
         )
-        && (
-          rSavedPrefetchRamIdx
-          === myCurrRamIdx
-        )
-        //&& (
-        //  //rDel2LoH2dPayload.burstAddr(
-        //  //  someBurstCnt=rHiD2hBurstCnt.getZero,
-        //  //  incrBurstCnt=false,
-        //  //)
-        //  //=== rSavedPrefetchLoH2dPayload.burstAddr(
-        //  //  someBurstCnt=rHiD2hBurstCnt.getZero,
-        //  //  incrBurstCnt=false,
-        //  //)
-        //  // add this back if a true dual port RAM ends up being used
-        //  // for the cache line words!
-        //  rDel2LoH2dPayload.addr(
-        //    rDel2LoH2dPayload.addr.high
-        //    downto (
-        //      rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
-        //    )
-        //  )
-        //  === rSavedPrefetchLoH2dPayload.addr(
-        //    rSavedPrefetchLoH2dPayload.addr.high
-        //    downto (
-        //      rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
-        //    )
-        //  )
-        //)
       )
+      //|| rHiState.asBits(HiState.IDLE.position)
+      //if (!myCondHaveLineBitPlruRam) (
+      //  (
+      //    rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
+      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
+      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
+      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
+      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
+      //    || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
+      //  )
+      //  //&& (
+      //  //  // add this back if a true dual port RAM ends up being used
+      //  //  // for the cache line words!
+      //  //  rDel2LoH2dPayload.addr(
+      //  //    rDel2LoH2dPayload.addr.high
+      //  //    downto (
+      //  //      rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
+      //  //    )
+      //  //  )
+      //  //  === rSavedPrefetchLoH2dPayload.addr(
+      //  //    rSavedPrefetchLoH2dPayload.addr.high
+      //  //    downto (
+      //  //      rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
+      //  //    )
+      //  //  )
+      //  //)
+      //) else (
+      //  (
+      //    rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
+      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
+      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
+      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
+      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
+      //    || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
+      //  )
+      //  && (
+      //    rSavedPrefetchRamIdx
+      //    === myCurrRamIdx
+      //  )
+      //  //&& (
+      //  //  //rDel2LoH2dPayload.burstAddr(
+      //  //  //  someBurstCnt=rHiD2hBurstCnt.getZero,
+      //  //  //  incrBurstCnt=false,
+      //  //  //)
+      //  //  //=== rSavedPrefetchLoH2dPayload.burstAddr(
+      //  //  //  someBurstCnt=rHiD2hBurstCnt.getZero,
+      //  //  //  incrBurstCnt=false,
+      //  //  //)
+      //  //  // add this back if a true dual port RAM ends up being used
+      //  //  // for the cache line words!
+      //  //  rDel2LoH2dPayload.addr(
+      //  //    rDel2LoH2dPayload.addr.high
+      //  //    downto (
+      //  //      rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
+      //  //    )
+      //  //  )
+      //  //  === rSavedPrefetchLoH2dPayload.addr(
+      //  //    rSavedPrefetchLoH2dPayload.addr.high
+      //  //    downto (
+      //  //      rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
+      //  //    )
+      //  //  )
+      //  //)
+      //)
     ),
     //(
     //  if (!myCondHaveLineBitPlruRam) (
