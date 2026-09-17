@@ -313,7 +313,7 @@ case class LcvBusCacheConfig(
   )
   def tagRange = addrWidth - 2 downto (addrWidth - 1 - tagWidth)
   def nonCachedRange = addrWidth - 1 downto addrWidth - 1
-  def setWidth = addrWidth - tagWidth - 1
+  def fullSetWidth = addrWidth - tagWidth - 1
   def mySetRangeHi = addrWidth - 1 - tagWidth - 1
   def mySetRangeLo = log2Up(lineSizeBytes)
   def setRange = mySetRangeHi downto mySetRangeLo
@@ -403,7 +403,7 @@ case class LcvBusConfig(
         + s"  tagWidth:${cacheCfg.tagWidth}\n"
         + s"  tagRange:${cacheCfg.tagRange}\n"
         + s"  nonCachedRange:${cacheCfg.nonCachedRange}\n"
-        + s"  setWidth:${cacheCfg.setWidth}\n"
+        + s"  fullSetWidth:${cacheCfg.fullSetWidth}\n"
         + s"  setRange:${cacheCfg.setRange}\n"
       )
     }

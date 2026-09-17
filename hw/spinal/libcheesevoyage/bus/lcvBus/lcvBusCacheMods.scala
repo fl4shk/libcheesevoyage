@@ -9882,6 +9882,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       READ_ATTRS_PIPE_2,
       READ_ATTRS_PIPE_1,
       READ_ATTRS,
+      READ_ATTRS_POST,
       SEND_LINE_TO_HI_BUS_PIPE_3,
       SEND_LINE_TO_HI_BUS_PIPE_2,
       SEND_LINE_TO_HI_BUS_PIPE_1,
@@ -10829,7 +10830,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
   )
   val rSavedPrefetchRdLineAttrsTag = (
-    //Vec.fill(numWays)(
+    //Vec.fill(
+    //  //numWays
+    //  numLoHi
+    //)(
       Reg(
         cloneOf(rdLineAttrs.head.head.tag),
         init=rdLineAttrs.head.head.tag.getZero,
@@ -10875,11 +10879,11 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           }
           //rSavedRamIdx := ramIdx
           someSavedRamIdx := ramIdx
-          if (isHiState) {
-            rSavedPrefetchRdLineAttrsTag := (
-              rdLineAttrs.last(ramIdx).tag
-            )
-          }
+          //if (isHiState) {
+          //  rSavedPrefetchRdLineAttrsTag := (
+          //    rdLineAttrs.last(ramIdx).tag
+          //  )
+          //}
         }
         default {
         }
@@ -11123,17 +11127,21 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           //} otherwise {
           //  rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
           //}
-          when (Vec(rdLineAttrs.last.map(_.fire)).orR) {
-            // TODO: handle the `dirty` flag
-            rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_3
-          } otherwise {
-            rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
-          }
           //when (rdLineAttrs.last(rSavedPrefetchRamIdx).fire) {
           //  rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_3
           //} otherwise {
           //  rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
           //}
+
+          //when (
+          //  Vec(rdLineAttrs.last.map(_.fire)).andR
+          //) {
+          //  // TODO: handle the `dirty` flag
+          //  rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_3
+          //} otherwise {
+          //  rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
+          //}
+          rHiState := HiState.READ_ATTRS_POST
 
           if (myCondHaveLineBitPlruRam) {
             doWriteBitPlruRamDuringMiss(
@@ -11142,6 +11150,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
               busAddr=Some(rSavedPrefetchLoH2dPayload.addr),
               isHiState=true,
             )
+          } else {
           }
         } else {
           require(false)
@@ -11930,6 +11939,20 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
       lineBitPlruRam.last.io.rdEn := False
       //rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
+    }
+    is (HiState.READ_ATTRS_POST) {
+      when (RegNext(rdLineAttrs.last)(rSavedPrefetchRamIdx).fire) {
+        // TODO: handle the `dirty` flag
+        rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_3
+      } otherwise {
+        rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
+      }
+      rSavedPrefetchRdLineAttrsTag := (
+        RegNext(rdLineAttrs.last)(rSavedPrefetchRamIdx).tag
+      )
+      //rSavedPrefetchRdLineAttrsTag.last := (
+      //  
+      //)
     }
     is (HiState.SEND_LINE_TO_HI_BUS_PIPE_3) {
       rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_2
