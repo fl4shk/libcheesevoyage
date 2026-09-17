@@ -315,7 +315,7 @@ case class LcvBusCacheConfig(
   def nonCachedRange = addrWidth - 1 downto addrWidth - 1
   def setWidth = addrWidth - tagWidth - 1
   def mySetRangeHi = addrWidth - 1 - tagWidth - 1
-  def mySetRangeLo = log2Up(lineSizeBytes)
+  def mySetRangeLo = log2Up(lineSizeBytes)//log2Up(lineSizeWords) //
   def setRange = mySetRangeHi downto mySetRangeLo
 }
 
