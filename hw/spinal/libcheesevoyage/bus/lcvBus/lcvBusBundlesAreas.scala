@@ -176,7 +176,7 @@ case class LcvBusCacheConfig(
   //isIcache: Boolean,
   kind: LcvCacheKind,
   lineSizeBytes: Int,
-  depthWords: Int, // this is in number of words
+  depthWords: Int, // this is in number of words per way
   //numCpus: Int,
   numWays: Int=2,
   lineWordMemRamStyleAltera: String=(
@@ -309,13 +309,13 @@ case class LcvBusCacheConfig(
     //offset bits = log2(words per line)
     //(assuming your addresses are word-based ofc) (edited)
     //addrWidth - log2Up(depthLines) - log2Up(lineSizeWords) - 1
-    addrWidth - log2Up(depthLines) - log2Up(lineSizeBytes) - 1
+    addrWidth - log2Up(depthBytes) - 1
   )
   def tagRange = addrWidth - 2 downto (addrWidth - 1 - tagWidth)
   def nonCachedRange = addrWidth - 1 downto addrWidth - 1
   def setWidth = addrWidth - tagWidth - 1
   def mySetRangeHi = addrWidth - 1 - tagWidth - 1
-  def mySetRangeLo = log2Up(lineSizeBytes)//log2Up(lineSizeWords) //
+  def mySetRangeLo = log2Up(lineSizeBytes)
   def setRange = mySetRangeHi downto mySetRangeLo
 }
 
