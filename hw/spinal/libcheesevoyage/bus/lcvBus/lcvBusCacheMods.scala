@@ -9879,6 +9879,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
   ) {
     val
       IDLE,
+      READ_ATTRS_PIPE_3,
       READ_ATTRS_PIPE_2,
       READ_ATTRS_PIPE_1,
       READ_ATTRS,
@@ -11333,10 +11334,16 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             )
             //--------
             // TODO: dirty flag
-            //lineAttrsRam.foreach(item => item(ramIdx).io.wrEn := True)
+            lineAttrsRam.foreach(item => {
+              item(ramIdx).io.wrEn := (
+                //True
+                !prefetchStallVec(1)
+                && rLoState.asBits(LoState.IDLE_STORE_MODE.position)
+              )
+            })
 
-            //wrLineAttrs := rdLineAttrs.head(ramIdx)
-            //wrLineAttrs.dirty := True
+            wrLineAttrs := rdLineAttrs.head(ramIdx)
+            wrLineAttrs.dirty := True
             //--------
             //mySelLoH2dPopStm.ready := True
             myLoD2hPushStm.valid := (
@@ -11609,6 +11616,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
       mySelLoH2dPopStm.ready := False
 
+      wrLineAttrs := RegNext(wrLineAttrs)
+      wrLineAttrs.dirty := True
+
       // What if the cache line we're trying to write to to evicted by
       // the prefetcher???
       switch (
@@ -11624,6 +11634,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             (1 << rSavedRamIdx.getWidth)
             | ramIdx
           ) {
+            lineAttrsRam.foreach(item => {
+              item(ramIdx).io.wrEn := True
+            })
             doLineWordRamWrite(
               vecIdx=0,
               ramIdx=ramIdx,
@@ -11941,7 +11954,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             )
           )
           rPrefetchCnt := cfg.prefetchNumLinesAhead.get - 1
-          rHiState := HiState.READ_ATTRS_PIPE_2
+          rHiState := (
+            //HiState.READ_ATTRS_PIPE_2
+            HiState.READ_ATTRS_PIPE_3
+          )
           rPrefetchStallNotReady := True
         }
         is (
@@ -11957,7 +11973,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             + cfg.loBusCacheCfg.lineSizeBytes
           )
           rPrefetchCnt := rPrefetchCnt - 1
-          rHiState := HiState.READ_ATTRS_PIPE_2
+          rHiState := (
+            //HiState.READ_ATTRS_PIPE_2
+            HiState.READ_ATTRS_PIPE_3
+          )
         }
         default {
         }
@@ -11965,6 +11984,11 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       when (rPrefetchStallNotReady) {
         rPrefetchStallNotReady := False
       }
+    }
+    is (HiState.READ_ATTRS_PIPE_3) {
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineBitPlruRam.last.io.rdEn := False
+      rHiState := HiState.READ_ATTRS_PIPE_2
     }
     is (HiState.READ_ATTRS_PIPE_2) {
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
@@ -11982,14 +12006,20 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       //rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
     }
     is (HiState.READ_ATTRS_POST) {
-      when (RegNext(rdLineAttrs.last)(rSavedPrefetchRamIdx).fire) {
+      val myPrevRdAttrs = (
+        RegNext(rdLineAttrs.last)(rSavedPrefetchRamIdx)
+      )
+      when (
+        myPrevRdAttrs.fire
+        && myPrevRdAttrs.dirty
+      ) {
         // TODO: handle the `dirty` flag
         rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_3
       } otherwise {
         rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
       }
       rSavedPrefetchRdLineAttrsTag := (
-        RegNext(rdLineAttrs.last)(rSavedPrefetchRamIdx).tag
+        myPrevRdAttrs.tag
       )
       //rSavedPrefetchRdLineAttrsTag.last := (
       //  
