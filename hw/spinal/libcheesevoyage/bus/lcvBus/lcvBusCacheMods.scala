@@ -11289,7 +11289,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             //}
             rHiState := HiState.IDLE
             if (myCondHaveLineBitPlruRam) {
-              //rSavedPrefetchRamIdx := ramIdx
+              rSavedPrefetchRamIdx := ramIdx
               doWriteBitPlruRamDuringHit(
                 someRdLineBitPlru=rdPrefetchLineBitPlru,
                 ramIdx=ramIdx,
