@@ -11003,8 +11003,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         //    ),
         //  )
         //)
-      ) && (
-        !(
+      )
+      || (
+        (
           //io.hiBus.d2hBus.valid
           //&& 
           io.hiBus.d2hBus.burstLast
@@ -11047,8 +11048,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         //    ),
         //  )
         //)
-      ) && (
-        !(
+      ) 
+      || (
+        (
           //io.hiBus.d2hBus.valid
           //&& 
           io.hiBus.d2hBus.burstLast
