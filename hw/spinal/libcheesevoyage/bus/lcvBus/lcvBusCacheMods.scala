@@ -11395,7 +11395,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
                 //|| rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
               )
               ## (
-                myLoD2hPushStm.ready
+                !myLoD2hPushStm.ready
                 || rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
               )
             ) {
@@ -11404,7 +11404,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
                 myFifoThingDoStall := True
                 rLoState := LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1
               }
-              is (M"00") {
+              is (M"01") {
                 mySelLoH2dPopStm.ready := False
                 myFifoThingDoStall := True
                 rLoState := LoState.STORE_HIT_DO_STALL_PIPE_1
