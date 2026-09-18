@@ -11345,7 +11345,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             lineWordRam(ramIdx).io.vec(0).wrEn := (
               //True
               !prefetchStallVec(1)
-              && rLoState.asBits(LoState.IDLE_STORE_MODE.position)
+              //&& rLoState.asBits(LoState.IDLE_STORE_MODE.position)
             )
             //--------
             // TODO: dirty flag
@@ -11353,7 +11353,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
               item(ramIdx).io.wrEn := (
                 //True
                 !prefetchStallVec(1)
-                && rLoState.asBits(LoState.IDLE_STORE_MODE.position)
+                //&& rLoState.asBits(LoState.IDLE_STORE_MODE.position)
               )
             })
 
