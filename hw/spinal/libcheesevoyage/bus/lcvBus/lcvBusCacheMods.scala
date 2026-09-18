@@ -11626,7 +11626,8 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       wrLineAttrs.dirty := True
 
       rSavedRamIdx := (
-        RegNext(rSavedPrefetchRamIdx)
+        //RegNext(rSavedPrefetchRamIdx)
+        rSavedPrefetchRamIdx
       )
 
       // What if the cache line we're trying to write to to evicted by
