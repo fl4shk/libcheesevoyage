@@ -10967,15 +10967,19 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           rLoH2dPayload.addr(loBusCacheCfg.tagRange)
           === rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange)
         )
-        || (
-          rLoH2dPayload.addr(loBusCacheCfg.tagRange)
-          === RegNextWhen(
-            rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange),
-            cond=(
-              !rHiState.asBits(HiState.IDLE.position)
-            ),
-          )
+        && (
+          rLoH2dPayload.addr(loBusCacheCfg.setRange)
+          === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
         )
+        //|| (
+        //  rLoH2dPayload.addr(loBusCacheCfg.tagRange)
+        //  === RegNextWhen(
+        //    rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange),
+        //    cond=(
+        //      !rHiState.asBits(HiState.IDLE.position)
+        //    ),
+        //  )
+        //)
       )
     ),
     (
@@ -10993,15 +10997,19 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           rLoH2dPayload.addr(loBusCacheCfg.tagRange)
           === rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange)
         )
-        || (
-          rLoH2dPayload.addr(loBusCacheCfg.tagRange)
-          === RegNextWhen(
-            rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange),
-            cond=(
-              !rHiState.asBits(HiState.IDLE.position)
-            ),
-          )
+        && (
+          rLoH2dPayload.addr(loBusCacheCfg.setRange)
+          === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
         )
+        //|| (
+        //  rLoH2dPayload.addr(loBusCacheCfg.tagRange)
+        //  === RegNextWhen(
+        //    rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange),
+        //    cond=(
+        //      !rHiState.asBits(HiState.IDLE.position)
+        //    ),
+        //  )
+        //)
       )
       //|| rHiState.asBits(HiState.IDLE.position)
       //if (!myCondHaveLineBitPlruRam) (
