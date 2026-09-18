@@ -11639,9 +11639,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           fell(rPrefetchStallNotReady)
         )
         ## (
-          RegNext(
+          //RegNext(
             rSavedPrefetchRamIdx
-          )
+          //)
           //rSavedRamIdx
         )
       ) {
