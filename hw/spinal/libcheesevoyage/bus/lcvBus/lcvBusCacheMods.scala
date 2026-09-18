@@ -10989,7 +10989,6 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           rLoH2dPayload.addr(loBusCacheCfg.setRange)
           === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
         )
-
         //&& (
         //  rLoH2dPayload.addr(loBusCacheCfg.setRange)
         //  === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
@@ -11004,7 +11003,13 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         //    ),
         //  )
         //)
+      ) && (
+        !(
+          io.hiBus.d2hBus.valid
+          && io.hiBus.d2hBus.burstLast
+        )
       )
+
     ),
     (
       RegNext(
@@ -11041,6 +11046,11 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         //    ),
         //  )
         //)
+      ) && (
+        !(
+          io.hiBus.d2hBus.valid
+          && io.hiBus.d2hBus.burstLast
+        )
       )
       //|| rHiState.asBits(HiState.IDLE.position)
       //if (!myCondHaveLineBitPlruRam) (

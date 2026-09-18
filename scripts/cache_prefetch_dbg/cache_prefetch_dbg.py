@@ -15,8 +15,9 @@ for x in [
     #0x47fdc,
     #0x47fbc,
     #0x47f7c
-    0x4b2ab8,
-    0xfffd70
+    #0x4b2ab8,
+    #0xfffd70
+    0xfffd74
 ]:
     print(
         hex(x),
