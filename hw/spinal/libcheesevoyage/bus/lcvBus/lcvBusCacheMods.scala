@@ -11392,9 +11392,12 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             switch (
               (
                 prefetchStallVec(1)
+                //|| rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
+              )
+              ## (
+                myLoD2hPushStm.ready
                 || rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
               )
-              ## myLoD2hPushStm.ready
             ) {
               is (M"1-") {
                 mySelLoH2dPopStm.ready := False
