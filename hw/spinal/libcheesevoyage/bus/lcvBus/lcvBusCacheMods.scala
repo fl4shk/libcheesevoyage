@@ -11668,6 +11668,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           ) {
             lineAttrsRam.foreach(item => {
               item(ramIdx).io.wrEn := True
+              item(ramIdx).io.wrAddr := convBusAddrToLineIdx(
+                someRam=item(ramIdx),
+                busAddr=rSavedLoH2dPayload.addr,
+              )
             })
             doLineWordRamWrite(
               vecIdx=0,
