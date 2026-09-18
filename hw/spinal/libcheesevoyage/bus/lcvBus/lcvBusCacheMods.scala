@@ -10290,6 +10290,14 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
   //  item.loH2dPayload := rDel2LoH2dPayload.busPayload
   //})
 
+  def convBusAddrToWordIdx(
+    someRam: RamTdpPipe,
+    busAddr: UInt
+  ): UInt = {
+    (busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift))
+    .resize(someRam.io.vec(0).addr.getWidth)
+  }
+
   def convBusAddrToLineIdx[
     WordT <: Data
   ](
@@ -10963,14 +10971,29 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       //)
       //False
       RegNext(
-        (
-          rLoH2dPayload.addr(loBusCacheCfg.tagRange)
-          === rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange)
+        convBusAddrToWordIdx(
+          someRam=lineWordRam.head,
+          busAddr=rLoH2dPayload.addr,
         )
-        && (
-          rLoH2dPayload.addr(loBusCacheCfg.setRange)
-          === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
+        === convBusAddrToWordIdx(
+          someRam=lineWordRam.head,
+          busAddr=rSavedPrefetchLoBusAddr
         )
+
+        //(
+        //  rLoH2dPayload.addr(loBusCacheCfg.tagRange)
+        //  === rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange)
+        //)
+        //&& (
+        //  rLoH2dPayload.addr(loBusCacheCfg.setRange)
+        //  === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
+        //)
+
+        //&& (
+        //  rLoH2dPayload.addr(loBusCacheCfg.setRange)
+        //  === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
+        //)
+
         //|| (
         //  rLoH2dPayload.addr(loBusCacheCfg.tagRange)
         //  === RegNextWhen(
@@ -10984,23 +11007,29 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     ),
     (
       RegNext(
-        //RegNextWhen(
-        //  rDel2LoH2dPayload.addr(
-        //    loBusCacheCfg.tagRange
-        //  ),
-        //  cond=(
-        //    rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
-        //    || rLoState.asBits(LoState.IDLE_STORE_MODE.position)
-        //  )
+        convBusAddrToWordIdx(
+          someRam=lineWordRam.head,
+          busAddr=rLoH2dPayload.addr,
+        )
+        === convBusAddrToWordIdx(
+          someRam=lineWordRam.head,
+          busAddr=rSavedPrefetchLoBusAddr
+        )
+
+        //(
+        //  rLoH2dPayload.addr(loBusCacheCfg.tagRange)
+        //  === rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange)
         //)
-        (
-          rLoH2dPayload.addr(loBusCacheCfg.tagRange)
-          === rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange)
-        )
-        && (
-          rLoH2dPayload.addr(loBusCacheCfg.setRange)
-          === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
-        )
+        //&& (
+        //  rLoH2dPayload.addr(loBusCacheCfg.setRange)
+        //  === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
+        //)
+
+        //&& (
+        //  rLoH2dPayload.addr(loBusCacheCfg.setRange)
+        //  === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
+        //)
+
         //|| (
         //  rLoH2dPayload.addr(loBusCacheCfg.tagRange)
         //  === RegNextWhen(
