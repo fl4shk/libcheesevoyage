@@ -10961,12 +10961,18 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       //)
       //False
       RegNext(
-        rLoH2dPayload.addr(loBusCacheCfg.tagRange)
-        === RegNextWhen(
-          rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange),
-          cond=(
-            !rHiState.asBits(HiState.IDLE.position)
-          ),
+        (
+          rLoH2dPayload.addr(loBusCacheCfg.tagRange)
+          === rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange)
+        )
+        || (
+          rLoH2dPayload.addr(loBusCacheCfg.tagRange)
+          === RegNextWhen(
+            rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange),
+            cond=(
+              !rHiState.asBits(HiState.IDLE.position)
+            ),
+          )
         )
       )
     ),
@@ -10981,12 +10987,18 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         //    || rLoState.asBits(LoState.IDLE_STORE_MODE.position)
         //  )
         //)
-        rLoH2dPayload.addr(loBusCacheCfg.tagRange)
-        === RegNextWhen(
-          rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange),
-          cond=(
-            !rHiState.asBits(HiState.IDLE.position)
-          ),
+        (
+          rLoH2dPayload.addr(loBusCacheCfg.tagRange)
+          === rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange)
+        )
+        || (
+          rLoH2dPayload.addr(loBusCacheCfg.tagRange)
+          === RegNextWhen(
+            rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange),
+            cond=(
+              !rHiState.asBits(HiState.IDLE.position)
+            ),
+          )
         )
       )
       //|| rHiState.asBits(HiState.IDLE.position)
