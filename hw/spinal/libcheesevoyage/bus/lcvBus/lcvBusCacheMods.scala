@@ -10971,23 +10971,24 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       //)
       //False
       RegNext(
-        convBusAddrToWordIdx(
-          someRam=lineWordRam.head,
-          busAddr=rLoH2dPayload.addr,
-        )
-        === convBusAddrToWordIdx(
-          someRam=lineWordRam.head,
-          busAddr=rSavedPrefetchLoBusAddr
-        )
+        //convBusAddrToWordIdx(
+        //  someRam=lineWordRam.head,
+        //  busAddr=rLoH2dPayload.addr,
+        //)
+        //=== convBusAddrToWordIdx(
+        //  someRam=lineWordRam.head,
+        //  busAddr=rSavedPrefetchLoBusAddr
+        //)
 
         //(
         //  rLoH2dPayload.addr(loBusCacheCfg.tagRange)
         //  === rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange)
         //)
-        //&& (
-        //  rLoH2dPayload.addr(loBusCacheCfg.setRange)
-        //  === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
-        //)
+        //&& 
+        (
+          rLoH2dPayload.addr(loBusCacheCfg.setRange)
+          === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
+        )
 
         //&& (
         //  rLoH2dPayload.addr(loBusCacheCfg.setRange)
@@ -11007,23 +11008,24 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     ),
     (
       RegNext(
-        convBusAddrToWordIdx(
-          someRam=lineWordRam.head,
-          busAddr=rLoH2dPayload.addr,
-        )
-        === convBusAddrToWordIdx(
-          someRam=lineWordRam.head,
-          busAddr=rSavedPrefetchLoBusAddr
-        )
+        //convBusAddrToWordIdx(
+        //  someRam=lineWordRam.head,
+        //  busAddr=rLoH2dPayload.addr,
+        //)
+        //=== convBusAddrToWordIdx(
+        //  someRam=lineWordRam.head,
+        //  busAddr=rSavedPrefetchLoBusAddr
+        //)
 
         //(
         //  rLoH2dPayload.addr(loBusCacheCfg.tagRange)
         //  === rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange)
         //)
-        //&& (
-        //  rLoH2dPayload.addr(loBusCacheCfg.setRange)
-        //  === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
-        //)
+        //&& 
+        (
+          rLoH2dPayload.addr(loBusCacheCfg.setRange)
+          === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
+        )
 
         //&& (
         //  rLoH2dPayload.addr(loBusCacheCfg.setRange)
