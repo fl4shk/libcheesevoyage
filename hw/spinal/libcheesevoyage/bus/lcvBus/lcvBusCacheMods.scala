@@ -12307,6 +12307,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       ) {
         rHiState := HiState.IDLE
         
+        wrLineAttrs.dirty := False
         wrLineAttrs.tag := (
           rSavedPrefetchLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
         )
