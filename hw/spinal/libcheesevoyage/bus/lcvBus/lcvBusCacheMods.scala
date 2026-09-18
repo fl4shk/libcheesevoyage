@@ -9752,6 +9752,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
   }
 
   val wrLineAttrs = LcvBusCacheLineAttrs(cfg=loBusCfg)
+  val rSavedWrLineAttrs = Reg(cloneOf(wrLineAttrs))
   wrLineAttrs := RegNext(wrLineAttrs, init=wrLineAttrs.getZero)
   wrLineAttrs.allowOverride
 
@@ -11350,6 +11351,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
 
             wrLineAttrs := rdLineAttrs.head(ramIdx)
             wrLineAttrs.dirty := True
+            rSavedWrLineAttrs := wrLineAttrs
             //--------
             //mySelLoH2dPopStm.ready := True
             myLoD2hPushStm.valid := (
@@ -11622,7 +11624,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
       mySelLoH2dPopStm.ready := False
 
-      wrLineAttrs.tag := RegNext(wrLineAttrs).tag
+      wrLineAttrs.tag := rSavedWrLineAttrs.tag//RegNext(wrLineAttrs).tag
       wrLineAttrs.dirty := True
 
       rSavedRamIdx := (
