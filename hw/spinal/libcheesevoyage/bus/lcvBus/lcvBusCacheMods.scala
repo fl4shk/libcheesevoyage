@@ -11281,6 +11281,12 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           } else if (myVecIdx == 1) {
             // if we had a cache hit for an attempted prefetch,
             // we should stop prefetching there!
+            //when (
+            //  rLoState.asBits(
+            //    LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1.position
+            //  )
+            //) {
+            //}
             rHiState := HiState.IDLE
             if (myCondHaveLineBitPlruRam) {
               //rSavedPrefetchRamIdx := ramIdx
@@ -11616,8 +11622,12 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
       mySelLoH2dPopStm.ready := False
 
-      wrLineAttrs := RegNext(wrLineAttrs)
+      wrLineAttrs.tag := RegNext(wrLineAttrs).tag
       wrLineAttrs.dirty := True
+
+      rSavedRamIdx := (
+        RegNext(rSavedPrefetchRamIdx)
+      )
 
       // What if the cache line we're trying to write to to evicted by
       // the prefetcher???
@@ -11627,11 +11637,19 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           //&& 
           fell(rPrefetchStallNotReady)
         )
-        ## rSavedRamIdx
+        ## (
+          RegNext(
+            rSavedPrefetchRamIdx
+          )
+          //rSavedRamIdx
+        )
       ) {
         for (ramIdx <- 0 until numWays) {
           is (
-            (1 << rSavedRamIdx.getWidth)
+            (
+              //1 << rSavedRamIdx.getWidth
+              1 << rSavedPrefetchRamIdx.getWidth
+            )
             | ramIdx
           ) {
             lineAttrsRam.foreach(item => {
