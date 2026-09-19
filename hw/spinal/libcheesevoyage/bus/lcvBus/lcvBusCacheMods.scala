@@ -12039,7 +12039,12 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             //HiState.READ_ATTRS_PIPE_2
             HiState.READ_ATTRS_PIPE_3
           )
-          rPrefetchStallNotReady := True
+          rPrefetchStallNotReady := (
+            //True
+            rLoState.asBits(
+              LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1.position
+            )
+          )
         }
         is (
           //M"110"
