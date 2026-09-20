@@ -11398,7 +11398,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
               is (M"01-") {
                 rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_4
               }
-              is (M"00") {
+              is (M"000") {
                 rLoState := LoState.LOAD_HIT_DO_STALL
               }
               default {
