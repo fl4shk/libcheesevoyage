@@ -55,7 +55,7 @@ case class LcvBusCacheBusPairConfig(
     None
   ),
   optFormal: Boolean=false,
-  dbg: Boolean=false,
+  dbg: Boolean=true,
 ) {
   val havePrefetch = (prefetchNumLinesAhead != None)
   if (havePrefetch) {
