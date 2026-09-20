@@ -12223,7 +12223,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           //  someBurstCnt=rHiH2dBurstCnt(0),
           //  incrBurstCnt=false,
           //)
-          myTempAddr
+          myTempAddr.resize(io.dbgInfo.missSend.addr.getWidth)
         )
         io.dbgInfo.missSend.ramIdx := rSavedPrefetchRamIdx
       }
