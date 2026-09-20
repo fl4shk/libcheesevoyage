@@ -9887,6 +9887,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
 
       NON_CACHED_BUS_ACCESS,
 
+      LOAD_HIT_DO_STALL_PREFETCH_PIPE_4,
       LOAD_HIT_DO_STALL_PIPE_4,
       LOAD_HIT_DO_STALL_PIPE_3,
       LOAD_HIT_DO_STALL_PIPE_2,
@@ -11384,14 +11385,17 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             }
 
             switch (
-              (
-                prefetchStallVec.head
-                || myHadAnyRecentRamWrite.last
+              prefetchStallVec.head
+              ## (
+                myHadAnyRecentRamWrite.last
                 || rLoState.asBits(LoState.IDLE_STORE_MODE.position)
               )
               ## myLoD2hPushStm.ready
             ) {
-              is (M"1-") {
+              is (M"1--") {
+                rLoState := LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4
+              }
+              is (M"01-") {
                 rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_4
               }
               is (M"00") {
@@ -11642,6 +11646,28 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           //LoState.IDLE
           LoState.IDLE_LOAD_MODE
         )
+      }
+    }
+    is (LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4) {
+      myLoD2hPushStm.valid := False
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+      mySelLoH2dPopStm.ready := False
+
+      //wrLineAttrs.tag := rSavedWrLineAttrs.tag//RegNext(wrLineAttrs).tag
+      //wrLineAttrs.dirty := True
+
+      rSavedRamIdx := (
+        //RegNext(rSavedPrefetchRamIdx)
+        rSavedPrefetchRamIdx
+      )
+
+      when (
+        //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
+        //&& 
+        fell(rPrefetchStallNotReady)
+      ) {
+        rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_3
       }
     }
     is (LoState.LOAD_HIT_DO_STALL_PIPE_4) {
@@ -12069,6 +12095,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           )
           || (
             rLoState.asBits(
+              LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4.position
+            )
+            || rLoState.asBits(
               LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1.position
             )
           )
@@ -12082,6 +12111,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
               || rLoState.asBits(LoState.IDLE_STORE_MODE.position)
             ),
             init=False
+          )
+          && !rLoState.asBits(
+            LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4.position
           )
           && !rLoState.asBits(
             LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1.position
@@ -12118,6 +12150,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           rPrefetchStallNotReady := (
             //True
             rLoState.asBits(
+              LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4.position
+            )
+            || rLoState.asBits(
               LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1.position
             )
           )
