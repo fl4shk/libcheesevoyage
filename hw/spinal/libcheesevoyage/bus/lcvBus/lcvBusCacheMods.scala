@@ -12188,21 +12188,6 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       //)
     }
     is (HiState.SEND_LINE_TO_HI_BUS_PIPE_3) {
-      if (io.dbgInfo != null) {
-        io.dbgInfo.missSend.cnt := (
-          io.dbgInfo.missSend.cnt + 1
-        )
-        io.dbgInfo.missSend.isWrite := True
-
-        io.dbgInfo.missSend.addr := (
-          rSavedPrefetchLoH2dPayload.addr
-        )
-        io.dbgInfo.missSend.ramIdx := rSavedPrefetchRamIdx
-      }
-      rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_2
-      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-      rHiH2dPayload.burstLast := False
-
       val myTempAddr = (
         Cat(
           False,
@@ -12216,6 +12201,36 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       println(
         s"Here is myTempAddr.getWidth: ${myTempAddr.getWidth}"
       )
+      if (io.dbgInfo != null) {
+        io.dbgInfo.missSend.cnt := (
+          io.dbgInfo.missSend.cnt + 1
+        )
+        io.dbgInfo.missSend.isWrite := True
+
+        io.dbgInfo.missSend.addr := (
+          //rSavedPrefetchLoH2dPayload.addr
+          //hiBusCfg.burstAddr(
+          //  someAddr=(
+          //    Cat(
+          //      False,
+          //      // FINALLY found it, the problem I was seeing in DOOM!
+          //      //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
+          //      rSavedPrefetchRdLineAttrsTag,
+          //      rSavedPrefetchLoBusAddrSet,
+          //      U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
+          //    ).asUInt
+          //  ),
+          //  someBurstCnt=rHiH2dBurstCnt(0),
+          //  incrBurstCnt=false,
+          //)
+          myTempAddr
+        )
+        io.dbgInfo.missSend.ramIdx := rSavedPrefetchRamIdx
+      }
+      rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_2
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      rHiH2dPayload.burstLast := False
+
       switch (rSavedPrefetchRamIdx) {
         for (ramIdx <- 0 until numWays) {
           is (ramIdx) {
