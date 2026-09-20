@@ -17,7 +17,12 @@ for x in [
     #0x47f7c
     #0x4b2ab8,
     #0xfffd70
-    0xfffd74
+    #0xfffd74
+    #0x4b2d00
+    #0x4b2d40,
+    #0x4b2d80,
+    0x4b3080,
+    0x100ac5c,
 ]:
     print(
         hex(x),

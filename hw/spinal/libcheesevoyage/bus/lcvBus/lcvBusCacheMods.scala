@@ -55,6 +55,7 @@ case class LcvBusCacheBusPairConfig(
     None
   ),
   optFormal: Boolean=false,
+  dbg: Boolean=false,
 ) {
   val havePrefetch = (prefetchNumLinesAhead != None)
   if (havePrefetch) {
@@ -1304,11 +1305,48 @@ case class LcvBusDoStallH2dReptThing(
 
 
 
+case class LcvBusCacheDbgInfoMain(
+  cfg: LcvBusCacheBusPairConfig,
+) extends Bundle {
+  require(
+    cfg.dbg
+  )
+
+  //val valid = Bool()
+  //def fire = valid
+  val cnt = UInt(cfg.loBusCfg.dataWidth bits)
+  val addr = UInt(cfg.loBusCfg.addrWidth bits)
+  val isWrite = Bool()
+  //val tag = UInt(cfg.loBusCacheCfg.tagWidth bits)
+  //val fullSet = UInt(cfg.loBusCacheCfg.fullSetWidth bits)
+  val ramIdx = UInt(cfg.loBusCacheCfg.numWays bits)
+}
+
+case class LcvBusCacheDbgInfo(
+  cfg: LcvBusCacheBusPairConfig,
+) extends Bundle {
+  require(
+    cfg.dbg
+  )
+  val hit = Vec.fill(2)(
+    LcvBusCacheDbgInfoMain(cfg=cfg)
+  )
+  val missSend = LcvBusCacheDbgInfoMain(cfg=cfg)
+  val missRecv = LcvBusCacheDbgInfoMain(cfg=cfg)
+}
+
 case class LcvBusCacheIo(
   //loBusCfg: LcvBusConfig,
   //hiBusCfg: LcvBusConfig,
-  cfg: LcvBusCacheBusPairConfig
+  cfg: LcvBusCacheBusPairConfig,
+  //dbg: Boolean=false,
 ) extends Bundle {
+  if (cfg.dbg) {
+    require(
+      cfg.havePrefetch
+    )
+  }
+
   val loBus = slave(LcvBusIo(cfg=cfg.loBusCfg))
   val hiBus = master(LcvBusIo(cfg=cfg.hiBusCfg))
 
@@ -1327,6 +1365,16 @@ case class LcvBusCacheIo(
     cfg.loBusCacheCfg.kind == LcvCacheKind.D
   ) generate (
     master(LcvBusIo(cfg=cfg.loBusCfg))
+  )
+
+  val dbgInfo = (
+    cfg.dbg
+    && cfg.havePrefetch
+    && cfg.loBusCacheCfg.kind == LcvCacheKind.D
+  ) generate (
+    out(
+      LcvBusCacheDbgInfo(cfg=cfg)
+    )
   )
 }
 
@@ -10151,6 +10199,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       Bool()
     )
   )
+  if (cfg.dbg) {
+    io.dbgInfo.setAsReg() init(io.dbgInfo.getZero)
+  }
 
   val rSavedPrefetchLoH2dPayload = (
     Reg(cloneOf(rDel2LoH2dPayload))
@@ -11264,6 +11315,23 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             MaskedLiteral("1" + myRamIdxMask)
           )
         ) {
+          if (io.dbgInfo != null) {
+            io.dbgInfo.hit(myVecIdx).cnt := (
+              io.dbgInfo.hit(myVecIdx).cnt + 1
+            )
+            io.dbgInfo.hit(myVecIdx).isWrite := False
+
+            if (myVecIdx == 0) {
+              io.dbgInfo.hit(myVecIdx).addr := (
+                rDel2LoH2dPayload.addr
+              )
+            } else {
+              io.dbgInfo.hit(myVecIdx).addr := (
+                rSavedPrefetchLoH2dPayload.addr
+              )
+            }
+            io.dbgInfo.hit(myVecIdx).ramIdx := ramIdx
+          }
           if (myVecIdx == 0) {
             doPopLoH2dFifo()
             myFifoThingDoStall := False
@@ -11355,6 +11423,14 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           }
         }
         if (myVecIdx == 0) {
+          if (io.dbgInfo != null) {
+            io.dbgInfo.hit(myVecIdx).cnt := (
+              io.dbgInfo.hit(myVecIdx).cnt + 1
+            )
+            io.dbgInfo.hit(myVecIdx).isWrite := True
+            io.dbgInfo.hit(myVecIdx).addr := rDel2LoH2dPayload.addr
+            io.dbgInfo.hit(myVecIdx).ramIdx := ramIdx
+          }
           is (MaskedLiteral("1110" + myRamIdxMask)) {
             doPopLoH2dFifo()
             //myFifoThingDoStall := False
@@ -12112,6 +12188,17 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       //)
     }
     is (HiState.SEND_LINE_TO_HI_BUS_PIPE_3) {
+      if (io.dbgInfo != null) {
+        io.dbgInfo.missSend.cnt := (
+          io.dbgInfo.missSend.cnt + 1
+        )
+        io.dbgInfo.missSend.isWrite := True
+
+        io.dbgInfo.missSend.addr := (
+          rSavedPrefetchLoH2dPayload.addr
+        )
+        io.dbgInfo.missSend.ramIdx := rSavedPrefetchRamIdx
+      }
       rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_2
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
       rHiH2dPayload.burstLast := False
@@ -12308,6 +12395,17 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       }
     }
     is (HiState.RECV_LINE_FROM_HI_BUS_PIPE_1) {
+      if (io.dbgInfo != null) {
+        io.dbgInfo.missRecv.cnt := (
+          io.dbgInfo.missRecv.cnt + 1
+        )
+        io.dbgInfo.missRecv.isWrite := False
+
+        io.dbgInfo.missRecv.addr := (
+          rSavedPrefetchLoH2dPayload.addr
+        )
+        io.dbgInfo.missRecv.ramIdx := rSavedPrefetchRamIdx
+      }
       rHadHiH2dFinish := False
       rHadHiD2hFinish := False
 
