@@ -21,8 +21,9 @@ for x in [
     #0x4b2d00
     #0x4b2d40,
     #0x4b2d80,
-    0x4b3080,
-    0x100ac5c,
+    #0x4b3080,
+    #0x100ac5c,
+    0x3fad00
 ]:
     print(
         hex(x),
