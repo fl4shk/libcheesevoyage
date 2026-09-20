@@ -1319,7 +1319,7 @@ case class LcvBusCacheDbgInfoMain(
   val isWrite = Bool()
   //val tag = UInt(cfg.loBusCacheCfg.tagWidth bits)
   //val fullSet = UInt(cfg.loBusCacheCfg.fullSetWidth bits)
-  val ramIdx = UInt(cfg.loBusCacheCfg.numWays bits)
+  val ramIdx = UInt(log2Up(cfg.loBusCacheCfg.numWays) bits)
 }
 
 case class LcvBusCacheDbgInfo(
