@@ -11423,15 +11423,15 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           }
         }
         if (myVecIdx == 0) {
-          if (io.dbgInfo != null) {
-            io.dbgInfo.hit(myVecIdx).cnt := (
-              io.dbgInfo.hit(myVecIdx).cnt + 1
-            )
-            io.dbgInfo.hit(myVecIdx).isWrite := True
-            io.dbgInfo.hit(myVecIdx).addr := rDel2LoH2dPayload.addr
-            io.dbgInfo.hit(myVecIdx).ramIdx := ramIdx
-          }
           is (MaskedLiteral("1110" + myRamIdxMask)) {
+            if (io.dbgInfo != null) {
+              io.dbgInfo.hit(myVecIdx).cnt := (
+                io.dbgInfo.hit(myVecIdx).cnt + 1
+              )
+              io.dbgInfo.hit(myVecIdx).isWrite := True
+              io.dbgInfo.hit(myVecIdx).addr := rDel2LoH2dPayload.addr
+              io.dbgInfo.hit(myVecIdx).ramIdx := ramIdx
+            }
             doPopLoH2dFifo()
             //myFifoThingDoStall := False
             //myLoD2hPushStm.valid := False
