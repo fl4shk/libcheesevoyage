@@ -9885,6 +9885,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       IDLE_LOAD_MODE,
       IDLE_STORE_MODE,
 
+      NON_CACHED_BUS_ACCESS_WAIT_LO_D2H_FIFO_EMPTY,
       NON_CACHED_BUS_ACCESS,
 
       LOAD_HIT_DO_STALL_PREFETCH_PIPE_4,
@@ -11558,7 +11559,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           myFifoThingDoStall := True
           rSeenMmioHiBusH2dFire := False
           //rSeenNonCachedHiBusD2hFire := False
-          rLoState := LoState.NON_CACHED_BUS_ACCESS
+          rLoState := (
+            LoState.NON_CACHED_BUS_ACCESS_WAIT_LO_D2H_FIFO_EMPTY
+          )
         }
         is (MaskedLiteral("10--" + ("-" * numWays))) {
           doPopLoH2dFifo()
@@ -11621,6 +11624,20 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         myLoD2hPushStm.busPayload.txnCnt := (
           rDel2LoH2dPayload.txnCnt
         )
+      }
+    }
+    is (LoState.NON_CACHED_BUS_ACCESS_WAIT_LO_D2H_FIFO_EMPTY) {
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+
+      when (
+        History(
+          that=(!myLoD2hFifo.io.pop.valid),
+          length=cfg.busD2hFifoLatency,
+          init=False,
+        ).last
+      ) {
+        rLoState := LoState.NON_CACHED_BUS_ACCESS
       }
     }
     is (LoState.NON_CACHED_BUS_ACCESS) {
