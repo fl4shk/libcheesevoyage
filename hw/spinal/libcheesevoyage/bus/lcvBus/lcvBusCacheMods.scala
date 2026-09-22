@@ -11633,7 +11633,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       when (
         History(
           that=(!myLoD2hFifo.io.pop.valid),
-          length=cfg.busD2hFifoLatency,
+          length=(cfg.busD2hFifoLatency + 1),
           init=False,
         ).last
       ) {
