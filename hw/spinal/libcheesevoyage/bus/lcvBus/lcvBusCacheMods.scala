@@ -14496,9 +14496,9 @@ case class LcvBusDataCacheNoPrefetch(
       RECV_LINE_FROM_HI_BUS_POST_3,
       RECV_LINE_FROM_HI_BUS_POST_2,
       RECV_LINE_FROM_HI_BUS_POST_1,
-      RECV_LINE_FROM_HI_BUS_POST//,
+      RECV_LINE_FROM_HI_BUS_POST,
 
-      //WAIT_D2H_FIFO_EMPTY
+      WAIT_D2H_FIFO_EMPTY
 
       = newElement();
   }
@@ -15797,8 +15797,8 @@ case class LcvBusDataCacheNoPrefetch(
       lineWordRam.foreach(item => item.io.rdEn := False)
 
       rState := (
-        //State.WAIT_D2H_FIFO_EMPTY
-        State.IDLE
+        State.WAIT_D2H_FIFO_EMPTY
+        //State.IDLE
       )
     }
     is (State.STORE_HIT_DO_STALL_PIPE_1) {
@@ -15826,8 +15826,8 @@ case class LcvBusDataCacheNoPrefetch(
       myLoD2hPushStm.valid := True
       when (myLoD2hPushStm.ready) {
         rState := (
-          //State.WAIT_D2H_FIFO_EMPTY
-          State.IDLE
+          State.WAIT_D2H_FIFO_EMPTY
+          //State.IDLE
         )
       }
     }
@@ -16259,22 +16259,27 @@ case class LcvBusDataCacheNoPrefetch(
       lineAttrsRam.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
       rState := (
-        State.IDLE
-        //State.WAIT_D2H_FIFO_EMPTY
+        //State.IDLE
+        State.WAIT_D2H_FIFO_EMPTY
       )
     }
-    //is (State.WAIT_D2H_FIFO_EMPTY) {
-    //  lineAttrsRam.foreach(item => item.io.rdEn := False)
-    //  lineWordRam.foreach(item => item.io.rdEn := False)
+    is (State.WAIT_D2H_FIFO_EMPTY) {
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.rdEn := False)
 
-    //  when (  
-    //    !myLoD2hFifo.io.pop.valid
-    //    //myLoD2hFifo.io.push.ready
-    //  ) {
-    //    //myFifoThingDoStall := False
-    //    rState := State.IDLE
-    //  }
-    //}
+      when (  
+        //!myLoD2hFifo.io.pop.valid
+        //myLoD2hFifo.io.push.ready
+        History(
+          that=(!myLoD2hFifo.io.pop.valid),
+          length=(cfg.busD2hFifoLatency + 1),
+          init=False,
+        ).last
+      ) {
+        //myFifoThingDoStall := False
+        rState := State.IDLE
+      }
+    }
   }
   wrLineAttrs.valid := True
 }
