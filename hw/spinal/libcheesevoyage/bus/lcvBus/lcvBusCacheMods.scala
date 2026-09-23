@@ -5191,9 +5191,9 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       WAIT_HI_STATE_MCHN_READY_POST_3,
       WAIT_HI_STATE_MCHN_READY_POST_2,
       WAIT_HI_STATE_MCHN_READY_POST_1,
-      WAIT_HI_STATE_MCHN_READY_POST//,
+      WAIT_HI_STATE_MCHN_READY_POST,
 
-      //WAIT_D2H_FIFO_EMPTY
+      WAIT_D2H_FIFO_EMPTY
       = newElement();
   }
 
@@ -6394,8 +6394,8 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       lineWordRam.foreach(item => item.io.rdEn := False)
 
       rLoState := (
-        //LoState.WAIT_D2H_FIFO_EMPTY
-        LoState.IDLE
+        LoState.WAIT_D2H_FIFO_EMPTY
+        //LoState.IDLE
       )
     }
     is (LoState.WAIT_HI_STATE_MCHN_READY) {
@@ -6497,18 +6497,18 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
       rLoState := (
-        //LoState.WAIT_D2H_FIFO_EMPTY
-        LoState.IDLE
+        LoState.WAIT_D2H_FIFO_EMPTY
+        //LoState.IDLE
       )
     }
-    //is (LoState.WAIT_D2H_FIFO_EMPTY) {
-    //  lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-    //  lineWordRam.foreach(item => item.io.rdEn := False)
+    is (LoState.WAIT_D2H_FIFO_EMPTY) {
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.rdEn := False)
 
-    //  when (!myLoD2hFifo.io.pop.valid) {
-    //    rLoState := LoState.IDLE
-    //  }
-    //}
+      when (!myLoD2hFifo.io.pop.valid) {
+        rLoState := LoState.IDLE
+      }
+    }
   }
 
   // Implement line-ahead prefetching
@@ -9908,9 +9908,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       WAIT_HI_STATE_MCHN_READY_POST_3,
       WAIT_HI_STATE_MCHN_READY_POST_2,
       WAIT_HI_STATE_MCHN_READY_POST_1,
-      WAIT_HI_STATE_MCHN_READY_POST//,
+      WAIT_HI_STATE_MCHN_READY_POST,
 
-      //WAIT_D2H_FIFO_EMPTY
+      WAIT_D2H_FIFO_EMPTY
       = newElement();
   }
 
@@ -11788,9 +11788,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
 
       rLoState := (
-        //LoState.WAIT_D2H_FIFO_EMPTY
+        LoState.WAIT_D2H_FIFO_EMPTY
         //LoState.IDLE
-        LoState.IDLE_LOAD_MODE
+        //LoState.IDLE_LOAD_MODE
       )
     }
     is (LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1) {
@@ -11874,9 +11874,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       myLoD2hPushStm.valid := True
       when (myLoD2hPushStm.ready) {
         rLoState := (
-          //LoState.WAIT_D2H_FIFO_EMPTY
+          LoState.WAIT_D2H_FIFO_EMPTY
           //LoState.IDLE
-          LoState.IDLE_STORE_MODE
+          //LoState.IDLE_STORE_MODE
         )
       }
     }
@@ -12052,19 +12052,19 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
       rLoState := (
-        //LoState.WAIT_D2H_FIFO_EMPTY
+        LoState.WAIT_D2H_FIFO_EMPTY
         //LoState.IDLE
-        LoState.IDLE_LOAD_MODE
+        //LoState.IDLE_LOAD_MODE
       )
     }
-    //is (LoState.WAIT_D2H_FIFO_EMPTY) {
-    //  lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-    //  lineWordRam.foreach(item => item.io.rdEn := False)
+    is (LoState.WAIT_D2H_FIFO_EMPTY) {
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
 
-    //  when (!myLoD2hFifo.io.pop.valid) {
-    //    rLoState := LoState.IDLE
-    //  }
-    //}
+      when (!myLoD2hFifo.io.pop.valid) {
+        rLoState := LoState.IDLE_LOAD_MODE
+      }
+    }
   }
 
   // Implement line-ahead prefetching
