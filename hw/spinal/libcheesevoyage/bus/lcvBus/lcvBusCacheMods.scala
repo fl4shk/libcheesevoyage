@@ -14467,6 +14467,7 @@ case class LcvBusDataCacheNoPrefetch(
 
       //LOAD_NON_CACHED,
       //STORE_NON_CACHED,
+      NON_CACHED_BUS_ACCESS_WAIT_LO_D2H_FIFO_EMPTY,
       NON_CACHED_BUS_ACCESS,
 
       LOAD_HIT_DO_STALL_PIPE_4,
@@ -15491,7 +15492,10 @@ case class LcvBusDataCacheNoPrefetch(
       myFifoThingDoStall := True
       rSeenMmioHiBusH2dFire := False
       //rSeenNonCachedHiBusD2hFire := False
-      rState := State.NON_CACHED_BUS_ACCESS
+      rState := (
+        State.NON_CACHED_BUS_ACCESS_WAIT_LO_D2H_FIFO_EMPTY
+        //State.NON_CACHED_BUS_ACCESS
+      )
     }
     is (MaskedLiteral(
       "1-0--" + ("-" * numWays)
@@ -15635,6 +15639,20 @@ case class LcvBusDataCacheNoPrefetch(
         //rSavedRdLineAttrsTag := rdLineAttrs.tag
       }
       //rSavedRdLineAttrsTag := rdLineAttrs.tag
+    }
+    is (State.NON_CACHED_BUS_ACCESS_WAIT_LO_D2H_FIFO_EMPTY) {
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.rdEn := False)
+
+      when (
+        History(
+          that=(!myLoD2hFifo.io.pop.valid),
+          length=(cfg.busD2hFifoLatency + 1),
+          init=False,
+        ).last
+      ) {
+        rState := State.NON_CACHED_BUS_ACCESS
+      }
     }
     is (State.NON_CACHED_BUS_ACCESS) {
       io.mmioHiBus.h2dBus.valid := !rSeenMmioHiBusH2dFire
