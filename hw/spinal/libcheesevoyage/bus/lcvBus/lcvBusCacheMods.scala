@@ -1370,7 +1370,7 @@ case class LcvBusCacheIo(
   val dbgInfo = (
     cfg.dbg
     && cfg.havePrefetch
-    && cfg.loBusCacheCfg.kind == LcvCacheKind.D
+    //&& cfg.loBusCacheCfg.kind == LcvCacheKind.D
   ) generate (
     out(
       LcvBusCacheDbgInfo(cfg=cfg)
