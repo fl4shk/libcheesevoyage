@@ -23,9 +23,12 @@ for x in [
     #0x4b2d80,
     #0x4b3080,
     #0x100ac5c,
-    0x3fad00
+    #0x3fad00
+    0x7150
 ]:
     print(
-        hex(x),
-        hex(addr_to_word_idx(x)), hex(addr_to_set(x)), hex(addr_to_tag(x))
+        f"{hex(x)} "
+        + f"wordIdx:{hex(addr_to_word_idx(x))} "
+        + f"set:{hex(addr_to_set(x))} " 
+        + f"tag:{hex(addr_to_tag(x))}"
     )
