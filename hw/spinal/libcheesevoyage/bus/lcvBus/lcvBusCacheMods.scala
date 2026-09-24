@@ -11916,6 +11916,12 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           rSavedRamIdx := rSavedPrefetchRamIdx
         }
       }
+      wrLineAttrs.tag := (
+        //rSavedWrLineAttrs.tag//RegNext(wrLineAttrs).tag
+        rSavedLoH2dPayload.addr(loBusCacheCfg.tagRange)
+      )
+      wrLineAttrs.dirty := True
+
       switch (
         rHiState.asBits(HiState.IDLE.position)
         ## rSavedPrefetchRamIdx
@@ -11937,6 +11943,14 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         ) {
           for (ramIdx <- 0 until numWays) {
             is (ramIdx) {
+              lineAttrsRam.foreach(item => {
+                item(ramIdx).io.wrEn := True
+                item(ramIdx).io.wrAddr := convBusAddrToLineIdx(
+                  someRam=item(ramIdx),
+                  busAddr=rSavedLoH2dPayload.addr,
+                )
+                item(ramIdx).io.wrData := wrLineAttrs
+              })
               doLineWordRamWrite(
                 vecIdx=0,
                 ramIdx=ramIdx,
@@ -11949,6 +11963,14 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           }
         }
       } else {
+        lineAttrsRam.foreach(item => {
+          item.head.io.wrEn := True
+          item.head.io.wrAddr := convBusAddrToLineIdx(
+            someRam=item.head,
+            busAddr=rSavedLoH2dPayload.addr,
+          )
+          item.head.io.wrData := wrLineAttrs
+        })
         doLineWordRamWrite(
           vecIdx=0,
           ramIdx=0,
