@@ -5047,11 +5047,11 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
   )
   //--------
   val io = LcvBusCacheIo(cfg=cfg)
-  io.mmioHiBus.h2dBus.valid := False
-  io.mmioHiBus.h2dBus.payload := io.mmioHiBus.h2dBus.payload.getZero
-  io.mmioHiBus.d2hBus.ready := False
-  io.mmioHiBus.h2dBus.addr.allowOverride
-  io.mmioHiBus.h2dBus.data.allowOverride
+  //io.mmioHiBus.h2dBus.valid := False
+  //io.mmioHiBus.h2dBus.payload := io.mmioHiBus.h2dBus.payload.getZero
+  //io.mmioHiBus.d2hBus.ready := False
+  //io.mmioHiBus.h2dBus.addr.allowOverride
+  //io.mmioHiBus.h2dBus.data.allowOverride
   //--------
   def numLoHi = 2
   //--------
