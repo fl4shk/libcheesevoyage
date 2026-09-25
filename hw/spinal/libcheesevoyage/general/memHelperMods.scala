@@ -951,9 +951,10 @@ case class LcvOooRdSlidingBufConfig[
   shiftEveryCycle: Boolean=true,
   optDataAssignment: Option[
     (
-      WordT,
-      WordT,
-      Int,
+      WordT,              // outp
+      WordT,              // inp
+      Int,                // idx
+      Vec[Stream[WordT]], // io.pop
     ) => Unit
   ]=None,
 ) {
@@ -1066,6 +1067,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
                 rNext.payload,
                 rCurr.payload,
                 idx,
+                io.pop,
               )
             }
             case None => {
