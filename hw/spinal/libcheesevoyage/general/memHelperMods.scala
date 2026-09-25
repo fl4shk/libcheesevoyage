@@ -948,7 +948,7 @@ case class LcvOooRdSlidingBufConfig[
 ](
   wordType: HardType[WordT],
   depth: Int,
-  //shiftOnlyWhenPushFire: Boolean=false,
+  shiftEveryCycle: Boolean=true,
 ) {
   require(
     depth >= 1,
@@ -982,10 +982,10 @@ case class LcvOooRdSlidingBufIo[
   }
 }
 
-case class LcvOooRdSlidingBuf[
+private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
   WordT <: Data
 ](
-  cfg: LcvOooRdSlidingBufConfig[WordT],
+  cfg: LcvOooRdSlidingBufConfig[WordT]
 ) extends Component {
   // FL4SHK NOTE: this is a module I'm calling an
   // "Out-of-Order-Reads Buffer", which I'm intending on using
@@ -1005,9 +1005,9 @@ case class LcvOooRdSlidingBuf[
   // empty, and Element A is *not* being emptied, then Element B will
   // obtain Element A's contents, and Element B will be marked as being
   // "filled".
-
+  //--------
   val io = LcvOooRdSlidingBufIo(cfg=cfg)
-
+  //--------
   val rPopVec = (
     Vec.fill(
       //cfg.fullDepth
@@ -1024,37 +1024,12 @@ case class LcvOooRdSlidingBuf[
     io.pop(idx).payload := rPopVec(idx).payload
   }
  
-//  def bitscan(
-//    x: UInt
-//  ): UInt = (
-//    //x & ~(x - 1)
-//
-//    x & (-x.asSInt).asUInt
-//  )
-//
-//// >>> for idx in range(size):
-//// ...     print(idx, ("-" * (size - idx - 1) + "1" + ("0" * idx)))
-//// ...     
-//// 0 ---1
-//// 1 --10
-//// 2 -100
-//// 3 1000
-
-
   val myArea = new Area {
-    val myValidVec = (
-      Vec.fill(cfg.depth)(
-        Bool()
-      )
-    )
     when (io.pop.last.fire) {
       rPopVec.last.valid := False
     }
     for (revIdx <- 0 until cfg.depth) {
       def idx = cfg.depth - 1 - revIdx
-      myValidVec(idx) := (
-        rPopVec(idx).fire
-      )
 
       if (idx < cfg.depth - 1) {
         def curr = io.pop(idx)
@@ -1093,6 +1068,107 @@ case class LcvOooRdSlidingBuf[
       rPopVec.head.valid := True
       rPopVec.head.payload := io.push.payload
     }
+  }
+  //--------
+}
+
+private[libcheesevoyage] case class LcvOooRdSlidingBufShiftWhenPush[
+  WordT <: Data
+](
+  cfg: LcvOooRdSlidingBufConfig[WordT]
+) extends Component {
+  //--------
+  val io = LcvOooRdSlidingBufIo(cfg=cfg)
+  //--------
+  val rPopVec = (
+    Vec.fill(
+      //cfg.fullDepth
+      cfg.depth
+    )({
+      val temp = Reg(Flow(cfg.wordType()))
+      temp.init(temp.getZero)
+      temp
+    })
+  )
+
+  for (idx <- 0 until cfg.depth) {
+    io.pop(idx).valid := rPopVec(idx).fire
+    io.pop(idx).payload := rPopVec(idx).payload
+  }
+ 
+  val myArea = new Area {
+    when (io.pop.last.fire) {
+      rPopVec.last.valid := False
+    }
+    for (revIdx <- 0 until cfg.depth) {
+      def idx = cfg.depth - 1 - revIdx
+
+      if (idx < cfg.depth - 1) {
+        def curr = io.pop(idx)
+        def next = io.pop(idx + 1)
+        def rCurr = rPopVec(idx)
+        def rNext = rPopVec(idx + 1)
+
+        val mySharedCond = (
+          (
+            next.fire
+            || !next.valid
+          )
+          && !curr.fire
+        )
+
+        when (
+          io.push.fire
+          && (
+            mySharedCond
+            || curr.fire
+          )
+        ) {
+          rCurr.valid := False
+        }
+        when (
+          io.push.fire
+          && mySharedCond
+        ) {
+          rNext := rCurr
+        }
+
+        if (idx == 0) {
+          io.push.ready := (
+            mySharedCond
+            || curr.fire
+            || !rPopVec.head.fire
+          )
+        }
+      }
+    }
+    when (io.push.fire) {
+      rPopVec.head.valid := True
+      rPopVec.head.payload := io.push.payload
+    }
+  }
+  //--------
+}
+
+case class LcvOooRdSlidingBuf[
+  WordT <: Data
+](
+  cfg: LcvOooRdSlidingBufConfig[WordT],
+) extends Component {
+  val io = LcvOooRdSlidingBufIo(cfg=cfg)
+
+  val myShiftEveryCycleArea = (
+    cfg.shiftEveryCycle
+  ) generate new Area {
+    val impl = LcvOooRdSlidingBufShiftEveryCycle(cfg=cfg)
+    impl.io <> io
+  }
+
+  val myShiftWhenPushArea = (
+    !cfg.shiftEveryCycle
+  ) generate new Area {
+    val impl = LcvOooRdSlidingBufShiftWhenPush(cfg=cfg)
+    impl.io <> io
   }
 }
 
