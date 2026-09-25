@@ -953,6 +953,7 @@ case class LcvOooRdSlidingBufConfig[
     (
       WordT,
       WordT,
+      Int,
     ) => Unit
   ]=None,
 ) {
@@ -1064,6 +1065,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
               dataAssignment(
                 rNext.payload,
                 rCurr.payload,
+                idx,
               )
             }
             case None => {
