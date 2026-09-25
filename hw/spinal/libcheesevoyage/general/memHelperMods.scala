@@ -949,6 +949,12 @@ case class LcvOooRdSlidingBufConfig[
   wordType: HardType[WordT],
   depth: Int,
   shiftEveryCycle: Boolean=true,
+  optDataAssignment: Option[
+    (
+      WordT,
+      WordT,
+    ) => Unit
+  ]=None,
 ) {
   require(
     depth >= 1,
@@ -1052,7 +1058,18 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
           rCurr.valid := False
         }
         when (mySharedCond) {
-          rNext := rCurr
+          cfg.optDataAssignment match {
+            case Some(dataAssignment) => {
+              rNext.valid := rCurr.valid
+              dataAssignment(
+                rNext.payload,
+                rCurr.payload,
+              )
+            }
+            case None => {
+              rNext := rCurr
+            }
+          }
         }
 
         if (idx == 0) {
@@ -1072,83 +1089,83 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
   //--------
 }
 
-private[libcheesevoyage] case class LcvOooRdSlidingBufShiftWhenPush[
-  WordT <: Data
-](
-  cfg: LcvOooRdSlidingBufConfig[WordT]
-) extends Component {
-  //--------
-  val io = LcvOooRdSlidingBufIo(cfg=cfg)
-  //--------
-  val rPopVec = (
-    Vec.fill(
-      //cfg.fullDepth
-      cfg.depth
-    )({
-      val temp = Reg(Flow(cfg.wordType()))
-      temp.init(temp.getZero)
-      temp
-    })
-  )
-
-  for (idx <- 0 until cfg.depth) {
-    io.pop(idx).valid := rPopVec(idx).fire
-    io.pop(idx).payload := rPopVec(idx).payload
-  }
- 
-  val myArea = new Area {
-    when (io.pop.last.fire) {
-      rPopVec.last.valid := False
-    }
-    for (revIdx <- 0 until cfg.depth) {
-      def idx = cfg.depth - 1 - revIdx
-
-      if (idx < cfg.depth - 1) {
-        def curr = io.pop(idx)
-        def next = io.pop(idx + 1)
-        def rCurr = rPopVec(idx)
-        def rNext = rPopVec(idx + 1)
-
-        val mySharedCond = (
-          (
-            next.fire
-            || !next.valid
-          )
-          && !curr.fire
-        )
-
-        when (
-          io.push.fire
-          && (
-            mySharedCond
-            || curr.fire
-          )
-        ) {
-          rCurr.valid := False
-        }
-        when (
-          io.push.fire
-          && mySharedCond
-        ) {
-          rNext := rCurr
-        }
-
-        if (idx == 0) {
-          io.push.ready := (
-            mySharedCond
-            || curr.fire
-            || !rPopVec.head.fire
-          )
-        }
-      }
-    }
-    when (io.push.fire) {
-      rPopVec.head.valid := True
-      rPopVec.head.payload := io.push.payload
-    }
-  }
-  //--------
-}
+//private[libcheesevoyage] case class LcvOooRdSlidingBufShiftWhenPush[
+//  WordT <: Data
+//](
+//  cfg: LcvOooRdSlidingBufConfig[WordT]
+//) extends Component {
+//  //--------
+//  val io = LcvOooRdSlidingBufIo(cfg=cfg)
+//  //--------
+//  val rPopVec = (
+//    Vec.fill(
+//      //cfg.fullDepth
+//      cfg.depth
+//    )({
+//      val temp = Reg(Flow(cfg.wordType()))
+//      temp.init(temp.getZero)
+//      temp
+//    })
+//  )
+//
+//  for (idx <- 0 until cfg.depth) {
+//    io.pop(idx).valid := rPopVec(idx).fire
+//    io.pop(idx).payload := rPopVec(idx).payload
+//  }
+// 
+//  val myArea = new Area {
+//    when (io.pop.last.fire) {
+//      rPopVec.last.valid := False
+//    }
+//    for (revIdx <- 0 until cfg.depth) {
+//      def idx = cfg.depth - 1 - revIdx
+//
+//      if (idx < cfg.depth - 1) {
+//        def curr = io.pop(idx)
+//        def next = io.pop(idx + 1)
+//        def rCurr = rPopVec(idx)
+//        def rNext = rPopVec(idx + 1)
+//
+//        val mySharedCond = (
+//          (
+//            next.fire
+//            || !next.valid
+//          )
+//          && !curr.fire
+//        )
+//
+//        when (
+//          io.push.fire
+//          && (
+//            mySharedCond
+//            || curr.fire
+//          )
+//        ) {
+//          rCurr.valid := False
+//        }
+//        when (
+//          io.push.fire
+//          && mySharedCond
+//        ) {
+//          rNext := rCurr
+//        }
+//
+//        if (idx == 0) {
+//          io.push.ready := (
+//            mySharedCond
+//            || curr.fire
+//            || !rPopVec.head.fire
+//          )
+//        }
+//      }
+//    }
+//    when (io.push.fire) {
+//      rPopVec.head.valid := True
+//      rPopVec.head.payload := io.push.payload
+//    }
+//  }
+//  //--------
+//}
 
 case class LcvOooRdSlidingBuf[
   WordT <: Data
@@ -1167,8 +1184,12 @@ case class LcvOooRdSlidingBuf[
   val myShiftWhenPushArea = (
     !cfg.shiftEveryCycle
   ) generate new Area {
-    val impl = LcvOooRdSlidingBufShiftWhenPush(cfg=cfg)
-    impl.io <> io
+    require(
+      false,
+      "not yet implemented"
+    )
+    //val impl = LcvOooRdSlidingBufShiftWhenPush(cfg=cfg)
+    //impl.io <> io
   }
 }
 
