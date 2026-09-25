@@ -13876,7 +13876,13 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
         is (MaskedLiteral(myRamIdxMask)) {
           if (busAddr != None) {
-            wrLineBitPlru(ramIdx) := True
+            wrLineBitPlru(ramIdx) := (
+              if (!isHiState) (
+                True
+              ) else (
+                False // implement tagged prefetch
+              )
+            )
           }
           //rSavedRamIdx := ramIdx
           someSavedRamIdx := ramIdx
@@ -14355,11 +14361,14 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             rHiState := HiState.IDLE
             if (myCondHaveLineBitPlruRam) {
               rSavedPrefetchRamIdx := ramIdx
-              doWriteBitPlruRamDuringHit(
-                someRdLineBitPlru=rdPrefetchLineBitPlru,
-                ramIdx=ramIdx,
-                busAddr=Some(rSavedPrefetchLoH2dPayload.addr),
-              )
+
+              // implement tagged prefetch
+              // (i.e. don't change call this function!)
+              //doWriteBitPlruRamDuringHit(
+              //  someRdLineBitPlru=rdPrefetchLineBitPlru,
+              //  ramIdx=ramIdx,
+              //  busAddr=Some(rSavedPrefetchLoH2dPayload.addr),
+              //)
             }
           } else {
             require(false)
