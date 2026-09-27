@@ -15030,9 +15030,20 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
 
-      when (!myLoD2hFifo.io.pop.valid) {
-        rLoState := LoState.IDLE_LOAD_MODE
+      switch (
+        myLoD2hFifo.io.pop.valid
+        ## rSavedLoH2dPayload.isWrite
+      ) {
+        is (M"00") {
+          rLoState := LoState.IDLE_LOAD_MODE
+        }
+        is (M"01") {
+          rLoState := LoState.IDLE_STORE_MODE
+        }
       }
+      //when (!myLoD2hFifo.io.pop.valid) {
+      //  rLoState := LoState.IDLE_LOAD_MODE
+      //}
     }
   }
 
