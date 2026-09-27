@@ -12848,7 +12848,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       WAIT_HI_STATE_MCHN_READY_POST_1,
       WAIT_HI_STATE_MCHN_READY_POST,
 
-      WAIT_D2H_FIFO_EMPTY
+      WAIT_D2H_FIFO_PUSH_READY
       = newElement();
   }
 
@@ -14735,7 +14735,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
 
       rLoState := (
-        LoState.WAIT_D2H_FIFO_EMPTY
+        LoState.WAIT_D2H_FIFO_PUSH_READY
         //LoState.IDLE
         //LoState.IDLE_LOAD_MODE
       )
@@ -14821,7 +14821,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       myLoD2hPushStm.valid := True
       when (myLoD2hPushStm.ready) {
         rLoState := (
-          LoState.WAIT_D2H_FIFO_EMPTY
+          LoState.WAIT_D2H_FIFO_PUSH_READY
           //LoState.IDLE
           //LoState.IDLE_STORE_MODE
         )
@@ -15021,23 +15021,23 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
       rLoState := (
-        LoState.WAIT_D2H_FIFO_EMPTY
+        LoState.WAIT_D2H_FIFO_PUSH_READY
         //LoState.IDLE
         //LoState.IDLE_LOAD_MODE
       )
     }
-    is (LoState.WAIT_D2H_FIFO_EMPTY) {
+    is (LoState.WAIT_D2H_FIFO_PUSH_READY) {
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
 
       switch (
-        myLoD2hFifo.io.pop.valid
+        myLoD2hFifo.io.push.ready
         ## rSavedLoH2dPayload.isWrite
       ) {
-        is (M"00") {
+        is (M"10") {
           rLoState := LoState.IDLE_LOAD_MODE
         }
-        is (M"01") {
+        is (M"11") {
           rLoState := LoState.IDLE_STORE_MODE
         }
       }
