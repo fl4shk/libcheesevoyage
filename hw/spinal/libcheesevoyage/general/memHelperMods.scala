@@ -1186,7 +1186,8 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         myCond0 := (
           //io.push.valid
           if (idx == 0) (
-            tempCond
+            io.push.valid
+            && tempCond
           ) else (
             rPopVec.head.fire
             && tempCond
