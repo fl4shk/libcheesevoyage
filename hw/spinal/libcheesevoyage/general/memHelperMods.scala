@@ -1163,7 +1163,8 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         def myCond1 = myCond1Vec(idx)
 
         myCond0 := (
-          (
+          io.push.valid
+          && (
             (
               if (idx < cfg.fullDepth - 2) (
                 next.fire
@@ -1247,16 +1248,19 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
           //  )
           //  && rCurr.valid
           //)
-          if (
-            //idx > 1
-            //true
-            idx < cfg.fullDepth - 2
-          ) (
-            //myCond0Vec(idx - 1)
-            myCond0
-            //|| myCond0Vec(idx + 1)
-          ) else (
-            myCond0
+          io.push.valid
+          && (
+            if (
+              //idx > 1
+              //true
+              idx < cfg.fullDepth - 2
+            ) (
+              //myCond0Vec(idx - 1)
+              myCond0
+              //|| myCond0Vec(idx + 1)
+            ) else (
+              myCond0
+            )
           )
           //|| myCond1
         ) {
