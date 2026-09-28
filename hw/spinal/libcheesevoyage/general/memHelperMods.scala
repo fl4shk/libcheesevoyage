@@ -1167,6 +1167,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             mySharedCond
             || curr.fire
             || !rCurr.fire
+            || mySharedCondVec(1)
           )
           when (io.push.fire) {
             rPopVec.head.valid := True
