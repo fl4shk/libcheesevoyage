@@ -1254,7 +1254,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
           ) (
             //myCond0Vec(idx - 1)
             myCond0
-            || myCond0Vec(idx + 1)
+            //|| myCond0Vec(idx + 1)
           ) else (
             myCond0
           )
