@@ -1167,6 +1167,10 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             (
               next.fire
               || !next.valid
+              || (
+                next.valid 
+                && !next.ready
+              )
             )
             //&& !curr.fire
             //&& curr.valid
@@ -1177,6 +1181,10 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         myCond1 := (
           next.fire
           || !next.valid
+          //|| (
+          //  next.valid 
+          //  && !next.ready
+          //)
         )
         //myCond1 := (
         //  RegNext(
