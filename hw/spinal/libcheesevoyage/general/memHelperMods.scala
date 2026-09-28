@@ -1158,9 +1158,20 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             rCurr.valid := False
           }
         } else {
+          def wndLast = myPopStmVec(idx + 2)
+          def rWndLast = rPopVec(idx + 2)
+
           when (
             next.fire
             || !next.valid
+            || (
+              (
+                wndLast.fire
+                || !wndLast.valid
+              )
+              && next.valid
+              && !next.ready
+            )
           ) {
             cfg.optDataAssignment match {
               case Some(dataAssignment) => {
