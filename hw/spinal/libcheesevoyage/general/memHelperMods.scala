@@ -1148,12 +1148,6 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
       def idx = cfg.fullDepth - 1 - revIdx
 
       if (idx < cfg.fullDepth - 1) {
-        if (idx == 0) {
-          when (io.push.fire) {
-            rPopVec(idx).valid := True
-            rPopVec(idx).payload := io.push.payload
-          }
-        }
         def curr = myPopStmVec(idx)
         def next = myPopStmVec(idx + 1)
         def rCurr = rPopVec(idx)
@@ -1191,6 +1185,10 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             || curr.fire
             || !curr.valid
           )
+          when (io.push.fire) {
+            rPopVec(idx).valid := True
+            rPopVec(idx).payload := io.push.payload
+          }
         }
       }
     }
