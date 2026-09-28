@@ -1045,13 +1045,6 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         def rCurr = rPopVec(idx)
         def rNext = rPopVec(idx + 1)
 
-        if (idx == 0) {
-          when (io.push.fire) {
-            rPopVec.head.valid := True
-            rPopVec.head.payload := io.push.payload
-          }
-        }
-
         val mySharedCond = (
           (
             next.fire
@@ -1088,9 +1081,14 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             mySharedCond
             || curr.fire
             || !rPopVec.head.fire
+            || RegNext(io.push.fire, init=False)
           )
         }
       }
+    }
+    when (io.push.fire) {
+      rPopVec.head.valid := True
+      rPopVec.head.payload := io.push.payload
     }
   }
   //--------
