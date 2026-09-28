@@ -1174,6 +1174,10 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             && !curr.ready
           )
         )
+        myCond1 := (
+          next.fire
+          || !next.valid
+        )
         //myCond1 := (
         //  RegNext(
         //    myCond0,
@@ -1278,7 +1282,8 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             (
               //myCond0Vec.head
               //|| myCond0
-              !myCond0Vec.andR
+              //!myCond0Vec.andR
+              myCond1Vec.orR
             )
             || !rPopVec.head.valid
           )
