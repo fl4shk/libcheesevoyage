@@ -1096,8 +1096,8 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         def rCurr = rPopVec(idx)
         def rNext = rPopVec(idx + 1)
 
-        val mySharedCond = (
-        )
+        //val mySharedCond = (
+        //)
 
         when (
           (
@@ -1122,37 +1122,43 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             }
           }
           rCurr.valid := False
-        } elsewhen (
-          curr.fire
-        ) {
-          rCurr.valid := False
         }
-
+        if (idx == 0) {
+          when (io.push.fire) {
+            rCurr.valid := True
+            rCurr.payload := io.push.payload
+          }
+        }
         if (idx == 0) {
           io.push.ready := (
             //mySharedCond
             //|| curr.fire
             //|| !rPopVec.head.fire
             //|| RegNext(io.push.fire, init=False)
+
             !rPopVec.head.fire
-            || (
-              RegNext(
-                (io.push.fire),
-                init=False
-              )
-              || (
-                curr.fire
-                || (
-                  (
-                    next.fire
-                    || !next.valid
-                  )
-                  && curr.valid
-                  && !curr.ready
-                )
-              )
-            )
+            //|| (
+            //  RegNext(
+            //    (io.push.fire),
+            //    init=False
+            //  )
+            //  || (
+            //    curr.fire
+            //    || (
+            //      (
+            //        next.fire
+            //        || !next.valid
+            //      )
+            //      && curr.valid
+            //      && !curr.ready
+            //    )
+            //  )
+            //)
           )
+        } else {
+          when (curr.fire) {
+            rCurr.valid := False
+          }
         }
       }
     }
@@ -1170,10 +1176,10 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
     //  }
     //}
 
-    when (io.push.fire) {
-      rPopVec.head.valid := True
-      rPopVec.head.payload := io.push.payload
-    }
+    //when (io.push.fire) {
+    //  rPopVec.head.valid := True
+    //  rPopVec.head.payload := io.push.payload
+    //}
   }
   //--------
 }
