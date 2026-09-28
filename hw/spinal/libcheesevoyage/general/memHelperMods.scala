@@ -1141,7 +1141,14 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
           rCurr.valid := False
         }
 
-        when (mySharedCond) {
+        when (
+          if (idx < cfg.fullDepth - 2) (
+            mySharedCond
+            || mySharedCondVec(idx + 1) 
+          ) else (
+            mySharedCond
+          )
+        ) {
           //rNext.valid := True
           cfg.optDataAssignment match {
             case Some(dataAssignment) => {
