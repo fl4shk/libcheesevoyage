@@ -1036,13 +1036,17 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
   }
 
   for (idx <- 0 until cfg.fullDepth) {
-    if (idx == 0) {
-      myPopStmVec(idx).valid := False
-      myPopStmVec(idx).ready := False
-      myPopStmVec(idx).payload := myPopStmVec(idx).payload.getZero
-    } else {
+    //if (idx == 0) {
+    //  myPopStmVec(idx).valid := False
+    //  myPopStmVec(idx).ready := False
+    //  myPopStmVec(idx).payload := myPopStmVec(idx).payload.getZero
+    //} else 
+    //{
       myPopStmVec(idx).valid := rPopVec(idx).fire
       myPopStmVec(idx).payload := rPopVec(idx).payload
+    //}
+    if (idx == 0) {
+      myPopStmVec(idx).ready := False
     }
   }
 
