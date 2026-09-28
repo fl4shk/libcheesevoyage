@@ -1230,7 +1230,16 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
           //  )
           //  && rCurr.valid
           //)
-          myCond0
+          if (
+            //idx > 1
+            true
+          ) (
+            //myCond0Vec(idx - 1)
+            myCond0
+            || myCond0Vec(idx + 1)
+          ) else (
+            myCond0
+          )
           //|| myCond1
         ) {
           //rNext := rCurr
