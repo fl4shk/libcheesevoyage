@@ -1140,7 +1140,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
                 (io.push.fire),
                 init=False
               )
-              && (
+              || (
                 curr.fire
                 || (
                   (
