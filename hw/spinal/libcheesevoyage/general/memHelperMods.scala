@@ -1153,6 +1153,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
                 rNext := rCurr
               }
             }
+            rCurr.valid := False
           }
         }
         ////if (idx == 0) {
