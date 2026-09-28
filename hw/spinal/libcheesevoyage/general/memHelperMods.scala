@@ -1098,12 +1098,12 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
 
         //val mySharedCond = (
         //)
-        if (idx == 0) {
-          when (io.push.fire) {
-            rCurr.valid := True
-            rCurr.payload := io.push.payload
-          }
-        }
+        //if (idx == 0) {
+        //  when (io.push.fire) {
+        //    rCurr.valid := True
+        //    rCurr.payload := io.push.payload
+        //  }
+        //}
 
         when (
           (
@@ -1183,6 +1183,12 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         } else {
           when (curr.fire) {
             rCurr.valid := False
+          }
+        }
+        if (idx == 0) {
+          when (io.push.fire) {
+            rCurr.valid := True
+            rCurr.payload := io.push.payload
           }
         }
       }
