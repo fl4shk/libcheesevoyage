@@ -1179,13 +1179,15 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             RegNext(
               (
                 next.fire
-                || !next.valid
+                //|| !next.valid
+                //curr.fire
+                //|| !curr.valid
               ),
               init=False
             )
-            //&& rCurr.valid
-            && curr.valid
-            && !curr.ready
+            ////&& rCurr.valid
+            //&& curr.valid
+            //&& !curr.ready
           )
         )
 
