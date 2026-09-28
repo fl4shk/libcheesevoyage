@@ -1174,27 +1174,27 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             && !curr.ready
           )
         )
-        myCond1 := (
-          RegNext(
-            myCond0,
-            init=False
-          )
-          && curr.valid
-          //(
-          //  RegNext(
-          //    (
-          //      //next.fire
-          //      //|| !next.valid
-          //      curr.fire
-          //      || !curr.valid
-          //    ),
-          //    init=False
-          //  )
-          //  //&& rCurr.valid
-          //  //&& curr.valid
-          //  //&& !curr.ready
-          //)
-        )
+        //myCond1 := (
+        //  RegNext(
+        //    myCond0,
+        //    init=False
+        //  )
+        //  && curr.valid
+        //  //(
+        //  //  RegNext(
+        //  //    (
+        //  //      //next.fire
+        //  //      //|| !next.valid
+        //  //      curr.fire
+        //  //      || !curr.valid
+        //  //    ),
+        //  //    init=False
+        //  //  )
+        //  //  //&& rCurr.valid
+        //  //  //&& curr.valid
+        //  //  //&& !curr.ready
+        //  //)
+        //)
 
         //when (
         //  (
@@ -1231,7 +1231,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
           //  && rCurr.valid
           //)
           myCond0
-          || myCond1
+          //|| myCond1
         ) {
           //rNext := rCurr
           doDataAssignment(idx=idx)
@@ -1263,7 +1263,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             //|| curr.fire
             //|| !curr.valid
             myCond0
-            || myCond1
+            //|| myCond1
             || !rPopVec.head.valid
           )
         }
