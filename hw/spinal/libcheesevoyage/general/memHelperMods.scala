@@ -1028,8 +1028,13 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
   )
 
   for (idx <- 0 until cfg.depth) {
-    io.pop(idx).valid := rPopVec(idx).fire
-    io.pop(idx).payload := rPopVec(idx).payload
+    if (idx == 0) {
+      io.pop(idx).valid := False
+      io.pop(idx).payload := io.pop(idx).payload.getZero
+    } else {
+      io.pop(idx).valid := rPopVec(idx).fire
+      io.pop(idx).payload := rPopVec(idx).payload
+    }
   }
  
   val myArea = new Area {
@@ -1174,25 +1179,30 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             //|| !rPopVec.head.fire
             //|| RegNext(io.push.fire, init=False)
 
+            //!rCurr.fire
+            //|| (
+            //  //RegNext(
+            //  //  io.push.fire,
+            //  //  init=False
+            //  //)
+            //  //&& 
+            //  (
+            //    curr.fire
+            //    || !curr.valid
+            //    || (
+            //      (
+            //        next.fire
+            //        || !next.valid
+            //      )
+            //      && curr.valid
+            //      && !curr.ready
+            //    )
+            //  )
+            //)
             !rCurr.fire
             || (
-              //RegNext(
-              //  io.push.fire,
-              //  init=False
-              //)
-              //&& 
-              (
-                curr.fire
-                || !curr.valid
-                || (
-                  (
-                    next.fire
-                    || !next.valid
-                  )
-                  && curr.valid
-                  && !curr.ready
-                )
-              )
+              next.fire
+              || !next.valid
             )
             //|| (
             //  RegNext(
