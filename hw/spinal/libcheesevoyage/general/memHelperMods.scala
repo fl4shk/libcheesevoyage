@@ -1059,6 +1059,30 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
   //    io.pop(idx).payload := rPopVec(idx).payload
   //  }
   //}
+
+  def doDataAssignment(
+    idx: Int,
+  ): Unit = {
+    def curr = myPopStmVec(idx)
+    def next = myPopStmVec(idx + 1)
+    def rCurr = rPopVec(idx)
+    def rNext = rPopVec(idx + 1)
+
+    cfg.optDataAssignment match {
+      case Some(dataAssignment) => {
+        rNext.valid := rCurr.valid
+        dataAssignment(
+          rNext.payload,
+          rCurr.payload,
+          idx,
+          myPopStmVec,
+        )
+      }
+      case None => {
+        rNext := rCurr
+      }
+    }
+  }
  
   val myArea = new Area {
     when (myPopStmVec.last.fire) {
@@ -1114,127 +1138,51 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
     //    }
     //  }
     //}
-    val mySharedCondVec = Vec.fill(cfg.fullDepth)(
-      Bool()
-    )
+
+    //val mySharedCondVec = Vec.fill(cfg.fullDepth)(
+    //  Bool()
+    //)
+    //val myOtherCondVec = cloneOf(mySharedCondVec)
 
     for (revIdx <- 0 until cfg.fullDepth) {
       def idx = cfg.fullDepth - 1 - revIdx
 
-      mySharedCondVec(idx) := (
-        //(
-        //  next.fire
-        //  || !next.valid
-        //)
-        (
-          myPopStmVec(idx).fire
-          || !myPopStmVec(idx).valid
-          || (
-            myPopStmVec(idx).valid
-            && !myPopStmVec(idx).ready
-          )
-        )
-      )
       if (idx < cfg.fullDepth - 1) {
         def curr = myPopStmVec(idx)
         def next = myPopStmVec(idx + 1)
         def rCurr = rPopVec(idx)
         def rNext = rPopVec(idx + 1)
 
-        def mySharedCond = mySharedCondVec(idx + 1)
-
-        when (
-          (
-            mySharedCond
-            //&& !curr.fire
-            && curr.valid
-            && !curr.ready
-          )
-          || curr.fire
-        ) {
-          rCurr.valid := False
-        }
-
-        when (
-          //if (idx < cfg.fullDepth - 2) (
-          //  (
-          //    mySharedCond
-          //    && !curr.fire
-          //  )
-          //  //|| (
-          //  //  mySharedCondVec(idx + 1)
-          //  //  && next.fire
-          //  //)
-          //) else (
-          //  mySharedCond
-          //  && !curr.fire
-          //)
-
-          if (idx < cfg.fullDepth - 2) (
-            (
-              mySharedCond
-              && curr.valid
-              && !curr.ready
-            )
-            || curr.fire
-            || !rCurr.fire
-            || (
-              mySharedCondVec(2)
-              && next.valid
-              //&& next.fire
-            )
-          ) else (
-            //mySharedCond
+        //if (idx < cfg.fullDepth - 2) {
+        //  rNext := rCurr
+        //} else {
+          when (
             (
               next.fire
               || !next.valid
             )
-            //&& !curr.fire
-            && curr.valid
-            && !curr.ready
-          )
-        ) {
-          //rNext.valid := True
-          cfg.optDataAssignment match {
-            case Some(dataAssignment) => {
-              rNext.valid := rCurr.valid
-              dataAssignment(
-                rNext.payload,
-                rCurr.payload,
-                idx,
-                myPopStmVec,
-              )
-            }
-            case None => {
-              rNext := rCurr
-              //rNext.payload := rCurr.payload
-            }
+            || curr.fire
+          ) {
+            rCurr.valid := False
           }
 
-          //rCurr.valid := False
-        }
+          when (
+            next.fire
+            || !next.valid
+          ) {
+            //rNext := rCurr
+            doDataAssignment(idx=idx)
+            //rCurr.valid := False
+          }
+        //}
 
         if (idx == 0) {
           io.push.ready := (
             (
-              mySharedCond
-              && curr.valid
-              && !curr.ready
+              next.fire
+              || !next.valid
             )
-            //(
-            //  (
-            //    next.fire
-            //    || !next.valid
-            //  )
-            //  && curr.valid
-            //)
-            || curr.fire
-            || !rCurr.fire
-            || (
-              mySharedCondVec(2)
-              && next.valid
-              //&& next.fire
-            )
+            || !rCurr.valid
           )
           when (io.push.fire) {
             rPopVec(idx).valid := True
@@ -1243,6 +1191,132 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         }
       }
     }
+
+    //for (revIdx <- 0 until cfg.fullDepth) {
+    //  def idx = cfg.fullDepth - 1 - revIdx
+
+    //  //mySharedCondVec(idx) := (
+    //  //  //(
+    //  //  //  next.fire
+    //  //  //  || !next.valid
+    //  //  //)
+    //  //  (
+    //  //    myPopStmVec(idx).fire
+    //  //    || !myPopStmVec(idx).valid
+    //  //    //|| (
+    //  //    //  myPopStmVec(idx).valid
+    //  //    //  && !myPopStmVec(idx).ready
+    //  //    //)
+    //  //  )
+    //  //)
+    //  //if (idx < cfg.fullDepth - 1) {
+    //  //  def curr = myPopStmVec(idx)
+    //  //  def next = myPopStmVec(idx + 1)
+    //  //  def rCurr = rPopVec(idx)
+    //  //  def rNext = rPopVec(idx + 1)
+
+    //  //  def mySharedCond = mySharedCondVec(idx + 1)
+
+    //  //  when (
+    //  //    (
+    //  //      mySharedCond
+    //  //      //&& !curr.fire
+    //  //      && curr.valid
+    //  //      && !curr.ready
+    //  //    )
+    //  //    || curr.fire
+    //  //  ) {
+    //  //    rCurr.valid := False
+    //  //  }
+
+    //  //  when (
+    //  //    //if (idx < cfg.fullDepth - 2) (
+    //  //    //  (
+    //  //    //    mySharedCond
+    //  //    //    && !curr.fire
+    //  //    //  )
+    //  //    //  //|| (
+    //  //    //  //  mySharedCondVec(idx + 1)
+    //  //    //  //  && next.fire
+    //  //    //  //)
+    //  //    //) else (
+    //  //    //  mySharedCond
+    //  //    //  && !curr.fire
+    //  //    //)
+
+    //  //    if (idx < cfg.fullDepth - 2) (
+    //  //      (
+    //  //        mySharedCond
+    //  //        && curr.valid
+    //  //        && !curr.ready
+    //  //      )
+    //  //      || curr.fire
+    //  //      || !rCurr.fire
+    //  //      || (
+    //  //        mySharedCondVec(2)
+    //  //        && next.valid
+    //  //        //&& next.fire
+    //  //      )
+    //  //    ) else (
+    //  //      //mySharedCond
+    //  //      (
+    //  //        next.fire
+    //  //        || !next.valid
+    //  //      )
+    //  //      //&& !curr.fire
+    //  //      && curr.valid
+    //  //      && !curr.ready
+    //  //    )
+    //  //  ) {
+    //  //    //rNext.valid := True
+    //  //    cfg.optDataAssignment match {
+    //  //      case Some(dataAssignment) => {
+    //  //        rNext.valid := rCurr.valid
+    //  //        dataAssignment(
+    //  //          rNext.payload,
+    //  //          rCurr.payload,
+    //  //          idx,
+    //  //          myPopStmVec,
+    //  //        )
+    //  //      }
+    //  //      case None => {
+    //  //        rNext := rCurr
+    //  //        //rNext.payload := rCurr.payload
+    //  //      }
+    //  //    }
+
+    //  //    //rCurr.valid := False
+    //  //  }
+
+    //  //  if (idx == 0) {
+    //  //    io.push.ready := (
+    //  //      (
+    //  //        mySharedCond
+    //  //        && curr.valid
+    //  //        && !curr.ready
+    //  //      )
+    //  //      //(
+    //  //      //  (
+    //  //      //    next.fire
+    //  //      //    || !next.valid
+    //  //      //  )
+    //  //      //  && curr.valid
+    //  //      //)
+    //  //      || curr.fire
+    //  //      || !rCurr.fire
+    //  //      || (
+    //  //        mySharedCondVec(2)
+    //  //        && next.valid
+    //  //        //&& next.fire
+    //  //      )
+    //  //    )
+    //  //    when (io.push.fire) {
+    //  //      rPopVec(idx).valid := True
+    //  //      rPopVec(idx).payload := io.push.payload
+    //  //    }
+    //  //  }
+    //  //}
+    //}
 
     //for (revIdx <- 0 until cfg.fullDepth) {
     //  def idx = cfg.fullDepth - 1 - revIdx
