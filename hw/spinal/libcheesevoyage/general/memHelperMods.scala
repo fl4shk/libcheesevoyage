@@ -1163,7 +1163,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         def myCond1 = myCond1Vec(idx)
 
         myCond0 := (
-          io.push.valid
+          io.push.fire
           && (
             (
               if (idx < cfg.fullDepth - 2) (
