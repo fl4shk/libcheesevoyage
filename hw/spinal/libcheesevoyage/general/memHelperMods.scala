@@ -1184,7 +1184,11 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
               //&& next.fire
             )
           ) else (
-            mySharedCond
+            //mySharedCond
+            (
+              next.fire
+              || !next.valid
+            )
             //&& !curr.fire
             && curr.valid
             && !curr.ready
