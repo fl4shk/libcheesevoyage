@@ -1177,6 +1177,12 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         //}
 
         if (idx == 0) {
+          when (io.push.fire) {
+            rPopVec(idx).valid := True
+            rPopVec(idx).payload := io.push.payload
+          }
+        }
+        if (idx == 1) {
           io.push.ready := (
             (
               next.fire
@@ -1184,11 +1190,8 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             )
             || curr.fire
             || !curr.valid
+            || !rPopVec.head.valid
           )
-          when (io.push.fire) {
-            rPopVec(idx).valid := True
-            rPopVec(idx).payload := io.push.payload
-          }
         }
       }
     }
