@@ -1255,7 +1255,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             rPopVec(idx).payload := io.push.payload
           }
         }
-        if (idx == 1) {
+        if (idx == 0) {
           io.push.ready := (
             //(
             //  next.fire
