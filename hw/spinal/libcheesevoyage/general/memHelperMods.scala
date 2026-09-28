@@ -1129,6 +1129,10 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         (
           myPopStmVec(idx).fire
           || !myPopStmVec(idx).valid
+          || (
+            myPopStmVec(idx).valid
+            && !myPopStmVec(idx).ready
+          )
         )
       )
       if (idx < cfg.fullDepth - 1) {
