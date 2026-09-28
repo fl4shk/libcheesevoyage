@@ -1157,6 +1157,15 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         //  rNext := rCurr
         //} else {
           when (
+            next.fire
+            || !next.valid
+          ) {
+            //rNext := rCurr
+            doDataAssignment(idx=idx)
+            //rCurr.valid := False
+          }
+
+          when (
             (
               next.fire
               || !next.valid
@@ -1164,15 +1173,6 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             || curr.fire
           ) {
             rCurr.valid := False
-          }
-
-          when (
-            next.fire
-            || !next.valid
-          ) {
-            //rNext := rCurr
-            doDataAssignment(idx=idx)
-            //rCurr.valid := False
           }
         //}
 
