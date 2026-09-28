@@ -1208,6 +1208,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         //if (idx > 0) {
           when (
             myCond0
+            || curr.fire
             //|| myCond1
           ) {
             rCurr.valid := False
