@@ -1135,6 +1135,25 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             rCurr.valid := False
           }
         } else {
+          when (
+            next.fire
+            || !next.valid
+          ) {
+            cfg.optDataAssignment match {
+              case Some(dataAssignment) => {
+                rNext.valid := rCurr.valid
+                dataAssignment(
+                  rNext.payload,
+                  rCurr.payload,
+                  idx,
+                  io.pop,
+                )
+              }
+              case None => {
+                rNext := rCurr
+              }
+            }
+          }
         }
         ////if (idx == 0) {
         ////  when (io.push.fire) {
