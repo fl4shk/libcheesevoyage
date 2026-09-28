@@ -1702,7 +1702,10 @@ object LcvOooRdSlidingBufTestToVerilog extends App {
     val top = LcvOooRdSlidingBuf(
       cfg=LcvOooRdSlidingBufConfig(
         wordType=UInt(32 bits),
-        depth=5,
+        depth=(
+          //5
+          2
+        ),
         shiftEveryCycle=true,
         optDataAssignment=Some(
           (
