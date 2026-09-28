@@ -1159,7 +1159,9 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
           //)
 
           mySharedCond
-          && !curr.fire
+          //&& !curr.fire
+          && curr.valid
+          && !curr.ready
         ) {
           //rNext.valid := True
           cfg.optDataAssignment match {
@@ -1183,10 +1185,14 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
 
         if (idx == 0) {
           io.push.ready := (
+            //(
+            //  mySharedCond
+            //  && curr.valid
+            //  && !curr.ready
+            //)
             (
-              mySharedCond
+              next.fire
               && curr.valid
-              && !curr.ready
             )
             || curr.fire
             || !rCurr.fire
