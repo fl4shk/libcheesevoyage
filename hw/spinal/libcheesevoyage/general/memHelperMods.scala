@@ -1137,6 +1137,16 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             //|| RegNext(io.push.fire, init=False)
 
             !rPopVec.head.fire
+            || (
+              RegNext(
+                io.push.fire,
+                init=False
+              )
+              && (
+                curr.fire
+                || !curr.valid
+              )
+            )
             //|| (
             //  RegNext(
             //    (io.push.fire),
