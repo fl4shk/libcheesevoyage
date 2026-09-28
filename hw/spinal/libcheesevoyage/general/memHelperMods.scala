@@ -1151,6 +1151,14 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
               && (
                 curr.fire
                 || !curr.valid
+                || (
+                  (
+                    next.fire
+                    || !next.valid
+                  )
+                  && curr.valid
+                  && !curr.ready
+                )
               )
             )
             //|| (
