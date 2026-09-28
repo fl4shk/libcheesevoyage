@@ -1232,7 +1232,8 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
           //)
           if (
             //idx > 1
-            true
+            //true
+            idx < cfg.fullDepth - 2
           ) (
             //myCond0Vec(idx - 1)
             myCond0
