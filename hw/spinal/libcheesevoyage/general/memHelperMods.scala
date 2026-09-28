@@ -1144,7 +1144,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         when (
           if (idx < cfg.fullDepth - 2) (
             mySharedCond
-            || mySharedCondVec(idx + 1) 
+            || mySharedCondVec(idx + 1)
           ) else (
             mySharedCond
           )
