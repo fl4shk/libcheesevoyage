@@ -1129,15 +1129,14 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             next.fire
             || !next.valid
           )
-          ////&& curr.valid
-          ////&& !curr.ready
-          //&& !curr.fire
         )
 
         when (
           (
             mySharedCond
-            && !curr.fire
+            //&& !curr.fire
+            && curr.valid
+            && !curr.ready
           )
           || curr.fire
         ) {
@@ -1145,19 +1144,22 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         }
 
         when (
-          if (idx < cfg.fullDepth - 2) (
-            (
-              mySharedCond
-              && !curr.fire
-            )
-            //|| (
-            //  mySharedCondVec(idx + 1)
-            //  && next.fire
-            //)
-          ) else (
-            mySharedCond
-            && !curr.fire
-          )
+          //if (idx < cfg.fullDepth - 2) (
+          //  (
+          //    mySharedCond
+          //    && !curr.fire
+          //  )
+          //  //|| (
+          //  //  mySharedCondVec(idx + 1)
+          //  //  && next.fire
+          //  //)
+          //) else (
+          //  mySharedCond
+          //  && !curr.fire
+          //)
+
+          mySharedCond
+          && !curr.fire
         ) {
           //rNext.valid := True
           cfg.optDataAssignment match {
@@ -1181,7 +1183,11 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
 
         if (idx == 0) {
           io.push.ready := (
-            mySharedCond
+            (
+              mySharedCond
+              && curr.valid
+              && !curr.ready
+            )
             || curr.fire
             || !rCurr.fire
             //|| (
@@ -1190,8 +1196,8 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             //)
           )
           when (io.push.fire) {
-            rPopVec.head.valid := True
-            rPopVec.head.payload := io.push.payload
+            rPopVec(idx).valid := True
+            rPopVec(idx).payload := io.push.payload
           }
         }
       }
