@@ -1165,11 +1165,16 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         myCond0 := (
           (
             (
-              next.fire
-              || !next.valid
-              || (
-                next.valid 
-                && !next.ready
+              if (idx < cfg.fullDepth - 2) (
+                next.fire
+                || !next.valid
+                || (
+                  next.valid 
+                  && !next.ready
+                )
+              ) else (
+                next.fire
+                || !next.valid
               )
             )
             //&& !curr.fire
