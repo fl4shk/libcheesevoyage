@@ -963,6 +963,7 @@ case class LcvOooRdSlidingBufConfig[
     s"depth:${depth} must be >= 1,"
     + s"or otherwise you probably don't need this module"
   )
+  val fullDepth = depth + 1
   //val fullDepth = depth + 1
 }
 
@@ -1018,35 +1019,52 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
   //--------
   val rPopVec = (
     Vec.fill(
-      //cfg.fullDepth
-      cfg.depth
+      cfg.fullDepth
+      //cfg.depth
     )({
       val temp = Reg(Flow(cfg.wordType()))
       temp.init(temp.getZero)
       temp
     })
   )
+  val myPopStmVec = Vec.fill(cfg.fullDepth)(
+    Stream(cfg.wordType())
+  )
 
   for (idx <- 0 until cfg.depth) {
+    io.pop(idx) << myPopStmVec(idx + 1)
+  }
+
+  for (idx <- 0 until cfg.fullDepth) {
     if (idx == 0) {
-      io.pop(idx).valid := False
-      io.pop(idx).payload := io.pop(idx).payload.getZero
+      myPopStmVec(idx).valid := False
+      myPopStmVec(idx).payload := myPopStmVec(idx).payload.getZero
     } else {
-      io.pop(idx).valid := rPopVec(idx).fire
-      io.pop(idx).payload := rPopVec(idx).payload
+      myPopStmVec(idx).valid := rPopVec(idx).fire
+      myPopStmVec(idx).payload := rPopVec(idx).payload
     }
   }
+
+  //for (idx <- 0 until cfg.depth) {
+  //  if (idx == 0) {
+  //    io.pop(idx).valid := False
+  //    io.pop(idx).payload := io.pop(idx).payload.getZero
+  //  } else {
+  //    io.pop(idx).valid := rPopVec(idx).fire
+  //    io.pop(idx).payload := rPopVec(idx).payload
+  //  }
+  //}
  
   val myArea = new Area {
-    when (io.pop.last.fire) {
+    when (myPopStmVec.last.fire) {
       rPopVec.last.valid := False
     }
     //for (revIdx <- 0 until cfg.depth) {
     //  def idx = cfg.depth - 1 - revIdx
 
     //  if (idx < cfg.depth - 1) {
-    //    def curr = io.pop(idx)
-    //    def next = io.pop(idx + 1)
+    //    def curr = myPopStmVec(idx)
+    //    def next = myPopStmVec(idx + 1)
     //    def rCurr = rPopVec(idx)
     //    def rNext = rPopVec(idx + 1)
 
@@ -1072,7 +1090,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
     //            rNext.payload,
     //            rCurr.payload,
     //            idx,
-    //            io.pop,
+    //            myPopStmVec,
     //          )
     //        }
     //        case None => {
@@ -1092,12 +1110,12 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
     //  }
     //}
 
-    for (revIdx <- 0 until cfg.depth) {
-      def idx = cfg.depth - 1 - revIdx
+    for (revIdx <- 0 until cfg.fullDepth) {
+      def idx = cfg.fullDepth - 1 - revIdx
 
-      if (idx < cfg.depth - 1) {
-        def curr = io.pop(idx)
-        def next = io.pop(idx + 1)
+      if (idx < cfg.fullDepth - 1) {
+        def curr = myPopStmVec(idx)
+        def next = myPopStmVec(idx + 1)
         def rCurr = rPopVec(idx)
         def rNext = rPopVec(idx + 1)
 
@@ -1129,7 +1147,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
                   rNext.payload,
                   rCurr.payload,
                   idx,
-                  io.pop,
+                  myPopStmVec,
                 )
               }
               case None => {
@@ -1151,7 +1169,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
                   rNext.payload,
                   rCurr.payload,
                   idx,
-                  io.pop,
+                  myPopStmVec,
                 )
               }
               case None => {
@@ -1167,7 +1185,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         ////    rCurr.payload := io.push.payload
         ////  }
         ////}
-        ////if (idx < cfg.depth - 2) {
+        ////if (idx < cfg.fullDepth - 2) {
         ////  when (
         ////  ) {
         ////  }
@@ -1237,8 +1255,8 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
     }
 
     //for (idx <- 0 until cfg.depth - 1) {
-    //  def curr = io.pop(idx)
-    //  def next = io.pop(idx + 1)
+    //  def curr = myPopStmVec(idx)
+    //  def next = myPopStmVec(idx + 1)
     //  def rCurr = rPopVec(idx)
     //  def rNext = rPopVec(idx + 1)
 
