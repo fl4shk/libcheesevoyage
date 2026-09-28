@@ -1191,6 +1191,9 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         ////  }
         ////}
         if (idx == 0) {
+          def wndLast = myPopStmVec(idx + 2)
+          def rWndLast = rPopVec(idx + 2)
+
           io.push.ready := (
             //mySharedCond
             //|| curr.fire
@@ -1217,10 +1220,19 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             //    )
             //  )
             //)
+
             !rCurr.fire
             || (
               next.fire
               || !next.valid
+            )
+            || (
+              (
+                wndLast.fire
+                || !wndLast.valid
+              )
+              && next.valid
+              && !next.ready
             )
             //|| (
             //  RegNext(
