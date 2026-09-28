@@ -1096,45 +1096,57 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         def rCurr = rPopVec(idx)
         def rNext = rPopVec(idx + 1)
 
-        //val mySharedCond = (
-        //)
-        //if (idx == 0) {
-        //  when (io.push.fire) {
-        //    rCurr.valid := True
-        //    rCurr.payload := io.push.payload
-        //  }
-        //}
+        ////val mySharedCond = (
+        ////)
+        ////if (idx == 0) {
+        ////  when (io.push.fire) {
+        ////    rCurr.valid := True
+        ////    rCurr.payload := io.push.payload
+        ////  }
+        ////}
 
-        when (
-          (
-            next.fire
-            || !next.valid
-          )
-          && curr.valid
-          && !curr.ready
-        ) {
-          cfg.optDataAssignment match {
-            case Some(dataAssignment) => {
-              rNext.valid := rCurr.valid
-              dataAssignment(
-                rNext.payload,
-                rCurr.payload,
-                idx,
-                io.pop,
-              )
+        if (idx > 0) {
+          when (
+            (
+              next.fire
+              || !next.valid
+            )
+            //&& curr.valid
+            //&& !curr.ready
+            && curr.valid
+            && !curr.ready
+          ) {
+            rNext.valid := True
+            cfg.optDataAssignment match {
+              case Some(dataAssignment) => {
+                //rNext.valid := rCurr.valid
+                dataAssignment(
+                  rNext.payload,
+                  rCurr.payload,
+                  idx,
+                  io.pop,
+                )
+              }
+              case None => {
+                //rNext := rCurr
+                rNext.payload := rCurr.payload
+              }
             }
-            case None => {
-              rNext := rCurr
-            }
+            rCurr.valid := False
           }
-          rCurr.valid := False
+        } else {
         }
-        //if (idx == 0) {
-        //  when (io.push.fire) {
-        //    rCurr.valid := True
-        //    rCurr.payload := io.push.payload
-        //  }
-        //}
+        ////if (idx == 0) {
+        ////  when (io.push.fire) {
+        ////    rCurr.valid := True
+        ////    rCurr.payload := io.push.payload
+        ////  }
+        ////}
+        ////if (idx < cfg.depth - 2) {
+        ////  when (
+        ////  ) {
+        ////  }
+        ////}
         if (idx == 0) {
           io.push.ready := (
             //mySharedCond
@@ -1142,7 +1154,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             //|| !rPopVec.head.fire
             //|| RegNext(io.push.fire, init=False)
 
-            !rPopVec.head.fire
+            !rCurr.fire
             || (
               //RegNext(
               //  io.push.fire,
