@@ -1161,8 +1161,10 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
 
         def myCond0 = myCond0Vec(idx)
         def myCond1 = myCond1Vec(idx)
-        val tempCond = (
-          (
+
+        myCond0 := (
+          io.push.valid
+          && (
             (
               if (idx < cfg.fullDepth - 2) (
                 next.fire
@@ -1180,17 +1182,6 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             //&& curr.valid
             && curr.valid
             && !curr.ready
-          )
-        )
-
-        myCond0 := (
-          //io.push.valid
-          if (idx == 0) (
-            io.push.valid
-            && tempCond
-          ) else (
-            rPopVec.head.fire
-            && tempCond
           )
         )
         myCond1 := (
