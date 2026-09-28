@@ -1193,24 +1193,25 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
 
         if (idx == 0) {
           io.push.ready := (
-            //(
-            //  mySharedCond
-            //  && curr.valid
-            //  && !curr.ready
-            //)
             (
-              (
-                next.fire
-                || !next.valid
-              )
+              mySharedCond
               && curr.valid
+              && !curr.ready
             )
+            //(
+            //  (
+            //    next.fire
+            //    || !next.valid
+            //  )
+            //  && curr.valid
+            //)
             || curr.fire
             || !rCurr.fire
-            //|| (
-            //  mySharedCondVec(1)
-            //  //&& next.fire
-            //)
+            || (
+              mySharedCondVec(2)
+              && next.valid
+              //&& next.fire
+            )
           )
           when (io.push.fire) {
             rPopVec(idx).valid := True
