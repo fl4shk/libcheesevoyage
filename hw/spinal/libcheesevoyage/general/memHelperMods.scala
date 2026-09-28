@@ -1175,81 +1175,77 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
           )
         )
         myCond1 := (
-          (
-            RegNext(
-              (
-                next.fire
-                //|| !next.valid
-                //curr.fire
-                //|| !curr.valid
-              ),
-              init=False
-            )
-            ////&& rCurr.valid
-            //&& curr.valid
-            //&& !curr.ready
+          RegNext(
+            myCond0,
+            init=False
           )
+          && curr.valid
+          //(
+          //  RegNext(
+          //    (
+          //      //next.fire
+          //      //|| !next.valid
+          //      curr.fire
+          //      || !curr.valid
+          //    ),
+          //    init=False
+          //  )
+          //  //&& rCurr.valid
+          //  //&& curr.valid
+          //  //&& !curr.ready
+          //)
         )
 
-        if (
-          //idx < cfg.fullDepth - 2
-          //idx > 0
-          false
+        //when (
+        //  (
+        //    next.fire
+        //    || !next.valid
+        //  )
+        //  || curr.fire
+        //) {
+        //  rCurr.valid := False
+        //}
+        //if (idx > 0) {
+          when (
+            myCond0
+            //|| myCond1
+          ) {
+            rCurr.valid := False
+          }
+        //}
+
+        when (
+          //(
+          //  next.fire
+          //  || !next.valid
+          //)
+          //|| (
+          //  RegNext(
+          //    (
+          //      next.fire
+          //      || !next.valid
+          //    ),
+          //    init=False
+          //  )
+          //  && rCurr.valid
+          //)
+          myCond0
+          || myCond1
         ) {
           //rNext := rCurr
-        } else {
-
-          //when (
-          //  (
-          //    next.fire
-          //    || !next.valid
-          //  )
-          //  || curr.fire
-          //) {
-          //  rCurr.valid := False
-          //}
-          if (idx > 0) {
-            when (
-              myCond0
-              //|| myCond1
-            ) {
-              rCurr.valid := False
-            }
-          }
-
-          when (
-            //(
-            //  next.fire
-            //  || !next.valid
-            //)
-            //|| (
-            //  RegNext(
-            //    (
-            //      next.fire
-            //      || !next.valid
-            //    ),
-            //    init=False
-            //  )
-            //  && rCurr.valid
-            //)
-            myCond0
-            || myCond1
-          ) {
-            //rNext := rCurr
-            doDataAssignment(idx=idx)
-            //rCurr.valid := False
-          }
-
-          //when (
-          //  (
-          //    next.fire
-          //    || !next.valid
-          //  )
-          //  || curr.fire
-          //) {
-          //  rCurr.valid := False
-          //}
+          doDataAssignment(idx=idx)
+          //rCurr.valid := False
         }
+
+        //when (
+        //  (
+        //    next.fire
+        //    || !next.valid
+        //  )
+        //  || curr.fire
+        //) {
+        //  rCurr.valid := False
+        //}
 
         if (idx == 0) {
           when (io.push.fire) {
