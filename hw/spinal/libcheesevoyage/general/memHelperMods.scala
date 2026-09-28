@@ -1110,7 +1110,9 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
     //    }
     //  }
     //}
-
+    val mySharedCondVec = Vec.fill(cfg.depth)(
+      Bool()
+    )
 
     for (revIdx <- 0 until cfg.fullDepth) {
       def idx = cfg.fullDepth - 1 - revIdx
@@ -1121,7 +1123,8 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         def rCurr = rPopVec(idx)
         def rNext = rPopVec(idx + 1)
 
-        val mySharedCond = (
+        def mySharedCond = mySharedCondVec(idx)
+        mySharedCond := (
           (
             next.fire
             || !next.valid
