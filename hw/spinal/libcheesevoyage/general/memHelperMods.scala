@@ -1266,7 +1266,8 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             //myCond0
             //|| myCond1
             (
-              myCond0
+              myCond0Vec.head
+              || myCond0
             )
             || !rPopVec.head.valid
           )
