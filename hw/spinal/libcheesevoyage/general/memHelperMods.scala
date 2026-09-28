@@ -1129,13 +1129,16 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             next.fire
             || !next.valid
           )
-          //&& curr.valid
-          //&& !curr.ready
-          && !curr.fire
+          ////&& curr.valid
+          ////&& !curr.ready
+          //&& !curr.fire
         )
 
         when (
-          mySharedCond
+          (
+            mySharedCond
+            && !curr.fire
+          )
           || curr.fire
         ) {
           rCurr.valid := False
@@ -1143,13 +1146,17 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
 
         when (
           if (idx < cfg.fullDepth - 2) (
-            mySharedCond
-            || (
-              mySharedCondVec(idx + 1)
-              && next.fire
+            (
+              mySharedCond
+              && !curr.fire
             )
+            //|| (
+            //  mySharedCondVec(idx + 1)
+            //  && next.fire
+            //)
           ) else (
             mySharedCond
+            && !curr.fire
           )
         ) {
           //rNext.valid := True
@@ -1177,10 +1184,10 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             mySharedCond
             || curr.fire
             || !rCurr.fire
-            || (
-              mySharedCondVec(1)
-              && next.fire
-            )
+            //|| (
+            //  mySharedCondVec(1)
+            //  //&& next.fire
+            //)
           )
           when (io.push.fire) {
             rPopVec.head.valid := True
