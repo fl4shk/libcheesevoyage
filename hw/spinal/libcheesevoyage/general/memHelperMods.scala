@@ -1036,6 +1036,57 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
     when (io.pop.last.fire) {
       rPopVec.last.valid := False
     }
+    //for (revIdx <- 0 until cfg.depth) {
+    //  def idx = cfg.depth - 1 - revIdx
+
+    //  if (idx < cfg.depth - 1) {
+    //    def curr = io.pop(idx)
+    //    def next = io.pop(idx + 1)
+    //    def rCurr = rPopVec(idx)
+    //    def rNext = rPopVec(idx + 1)
+
+    //    val mySharedCond = (
+    //      (
+    //        next.fire
+    //        || !next.valid
+    //      )
+    //      && !curr.fire
+    //    )
+
+    //    when (
+    //      mySharedCond
+    //      || curr.fire
+    //    ) {
+    //      rCurr.valid := False
+    //    }
+    //    when (mySharedCond) {
+    //      cfg.optDataAssignment match {
+    //        case Some(dataAssignment) => {
+    //          rNext.valid := rCurr.valid
+    //          dataAssignment(
+    //            rNext.payload,
+    //            rCurr.payload,
+    //            idx,
+    //            io.pop,
+    //          )
+    //        }
+    //        case None => {
+    //          rNext := rCurr
+    //        }
+    //      }
+    //    }
+
+    //    if (idx == 0) {
+    //      io.push.ready := (
+    //        mySharedCond
+    //        || curr.fire
+    //        || !rPopVec.head.fire
+    //        || RegNext(io.push.fire, init=False)
+    //      )
+    //    }
+    //  }
+    //}
+
     for (revIdx <- 0 until cfg.depth) {
       def idx = cfg.depth - 1 - revIdx
 
@@ -1046,20 +1097,16 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         def rNext = rPopVec(idx + 1)
 
         val mySharedCond = (
+        )
+
+        when (
           (
             next.fire
             || !next.valid
           )
-          && !curr.fire
-        )
-
-        when (
-          mySharedCond
-          || curr.fire
+          && curr.valid
+          && !curr.ready
         ) {
-          rCurr.valid := False
-        }
-        when (mySharedCond) {
           cfg.optDataAssignment match {
             case Some(dataAssignment) => {
               rNext.valid := rCurr.valid
@@ -1074,18 +1121,55 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
               rNext := rCurr
             }
           }
+          rCurr.valid := False
+        } elsewhen (
+          curr.fire
+        ) {
+          rCurr.valid := False
         }
 
         if (idx == 0) {
           io.push.ready := (
-            mySharedCond
-            || curr.fire
-            || !rPopVec.head.fire
-            || RegNext(io.push.fire, init=False)
+            //mySharedCond
+            //|| curr.fire
+            //|| !rPopVec.head.fire
+            //|| RegNext(io.push.fire, init=False)
+            !rPopVec.head.fire
+            || (
+              RegNext(
+                (io.push.fire),
+                init=False
+              )
+              && (
+                curr.fire
+                || (
+                  (
+                    next.fire
+                    || !next.valid
+                  )
+                  && curr.valid
+                  && !curr.ready
+                )
+              )
+            )
           )
         }
       }
     }
+
+    //for (idx <- 0 until cfg.depth - 1) {
+    //  def curr = io.pop(idx)
+    //  def next = io.pop(idx + 1)
+    //  def rCurr = rPopVec(idx)
+    //  def rNext = rPopVec(idx + 1)
+
+    //  when (
+    //    next.fire
+    //    && curr.valid
+    //  ) {
+    //  }
+    //}
+
     when (io.push.fire) {
       rPopVec.head.valid := True
       rPopVec.head.payload := io.push.payload
@@ -1195,6 +1279,45 @@ case class LcvOooRdSlidingBuf[
     )
     //val impl = LcvOooRdSlidingBufShiftWhenPush(cfg=cfg)
     //impl.io <> io
+  }
+}
+
+object LcvOooRdSlidingBufTestSpinalConfig {
+  def spinal = SpinalConfig(
+    targetDirectory="hw/gen",
+    defaultConfigForClockDomains=ClockDomainConfig(
+      resetActiveLevel=HIGH,
+      resetKind=BOOT,
+    )
+  )
+}
+
+object LcvOooRdSlidingBufTestToVerilog extends App {
+  LcvOooRdSlidingBufTestSpinalConfig.spinal.generateVerilog{
+    val top = LcvOooRdSlidingBuf(
+      cfg=LcvOooRdSlidingBufConfig(
+        wordType=UInt(32 bits),
+        depth=5,
+        shiftEveryCycle=true,
+        optDataAssignment=Some(
+          (
+            outp: UInt,                   // outp
+            inp: UInt,                    // inp
+            idx: Int,                     // idx
+            myPopStm: Vec[Stream[UInt]],  // io.pop
+          ) => {
+            outp := inp
+          }
+        )
+      )
+    )
+    //val top = LcvBusNonCoherentDataCacheWithSdramCtrl(
+    //  sdramCtrlCfg=LcvBusSdramCtrlConfig(
+    //    clkRate=100.0 MHz,
+    //    shortDqmToA12A11=true,
+    //  )
+    //)
+    top
   }
 }
 
