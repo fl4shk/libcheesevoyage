@@ -1203,8 +1203,10 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
           //  //)
           //)
           myShiftCondVec(idx) := (
+            //myPartialShiftCondVec(idx)
+            //|| myShiftCondVec(idx + 1)
             myPartialShiftCondVec(idx)
-            || myShiftCondVec(idx + 1)
+            && myShiftCondVec(idx + 1)
             
             //(
             //  myPartialShiftCondVec(idx + 1)
