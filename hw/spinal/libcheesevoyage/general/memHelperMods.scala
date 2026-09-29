@@ -1185,10 +1185,10 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
           myPartialShiftCondVec(idx) := (
             next.fire
             || !next.valid
-            || (
-              next.valid
-              && !next.ready
-            )
+            //|| (
+            //  next.valid
+            //  && !next.ready
+            //)
           )
           myShiftCondVec(idx) := (
             myPartialShiftCondVec(idx + 1)
