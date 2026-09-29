@@ -1152,6 +1152,12 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
     val myCond1Vec = Vec.fill(cfg.depth)(
       Bool()
     )
+    val myShiftCondVec = Vec.fill(cfg.depth)(
+      Bool()
+    )
+    val myPartialShiftCondVec = Vec.fill(cfg.depth)(
+      Bool()
+    )
 
     for (revIdx <- 0 until cfg.fullDepth) {
       def idx = cfg.fullDepth - 1 - revIdx
@@ -1165,25 +1171,81 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         def myCond0 = myCond0Vec(idx)
         def myCond1 = myCond1Vec(idx)
 
+        if (idx == cfg.fullDepth - 2) {
+          myPartialShiftCondVec(idx) := (
+            next.fire
+            || !next.valid
+          )
+          myShiftCondVec(idx) := (
+            myPartialShiftCondVec(idx)
+            && curr.valid
+            && !curr.ready
+          )
+        } else {
+          myPartialShiftCondVec(idx) := (
+            next.fire
+            || !next.valid
+            || (
+              next.valid
+              && !next.ready
+            )
+          )
+          myShiftCondVec(idx) := (
+            myPartialShiftCondVec(idx + 1)
+            && myPartialShiftCondVec(idx)
+            && curr.valid
+            && !curr.ready
+          )
+          //myShiftCondVec(idx) := (
+          //  myShiftCondVec(idx + 1)
+          //  || (
+          //  )
+          //)
+        }
+
         myCond0 := (
           //io.push.valid
           io.en
           && (
-            (
-              if (idx < cfg.fullDepth - 2) (
-                next.fire
-                || !next.valid
-                || (
-                  next.valid 
-                  && !next.ready
-                )
-              ) else (
-                next.fire
-                || !next.valid
-              )
-            )
-            //&& !curr.fire
+            //(
+            //  if (idx < cfg.fullDepth - 2) (
+            //    next.fire
+            //    || !next.valid
+            //    || (
+            //      next.valid 
+            //      && !next.ready
+            //    )
+            //  ) else (
+            //    next.fire
+            //    || !next.valid
+            //  )
+            //)
+            ////&& !curr.fire
+            ////&& curr.valid
             //&& curr.valid
+            //&& !curr.ready
+            //(
+            //)
+            //(
+            //)
+            //(
+            //  if (idx < cfg.fullDepth - 3) {
+            //    (
+            //      next.fire
+            //    )
+            //  } else if (idx < cfg.fullDepth - 2) (
+            //    next.fire
+            //    || !next.valid
+            //    || (
+            //      next.valid 
+            //      && !next.ready
+            //    )
+            //  ) else (
+            //    next.fire
+            //    || !next.valid
+            //  )
+            //)
+            myShiftCondVec(idx)
             && curr.valid
             && !curr.ready
           )
