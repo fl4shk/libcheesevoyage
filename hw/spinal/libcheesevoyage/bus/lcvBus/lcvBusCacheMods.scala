@@ -12856,10 +12856,19 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
   //  Reg(Bool(), init=False)
   //)
 
-  val rLoState = (
-    Reg(LoState())
-    init(LoState.INIT)
+  val rLoStateVec = (
+    Vec.fill(2)(
+      Reg(LoState())
+      init(LoState.INIT)
+    )
   )
+  def setLoState(
+    nextLoState: LoState.C
+  ): Unit = {
+    rLoStateVec.foreach(item => {
+      item := nextLoState
+    })
+  }
 
   object HiState extends SpinalEnum(
     defaultEncoding=(
@@ -13200,8 +13209,8 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       //((rState === State.IDLE)
       (
         //rLoState.asBits(LoState.IDLE.position)
-        rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
-        || rLoState.asBits(LoState.IDLE_STORE_MODE.position)
+        rLoStateVec(1).asBits(LoState.IDLE_LOAD_MODE.position)
+        || rLoStateVec(1).asBits(LoState.IDLE_STORE_MODE.position)
       )
       ## rMyTempDoSaveCond(3)
       ## rDel2LoH2dPayload.isWrite
@@ -14200,7 +14209,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       ) {
         if (myVecIdx == 0) {
           // cache miss
-          rLoState := LoState.WAIT_HI_STATE_MCHN_READY
+          setLoState(LoState.WAIT_HI_STATE_MCHN_READY)
 
           if (myCondHaveLineBitPlruRam) {
             doWriteBitPlruRamDuringMiss(
@@ -14311,18 +14320,18 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             myLoD2hPushStm.valid := (
               !prefetchStallVec.head
               && !myHadAnyRecentRamWrite.head//False
-              && rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
+              && rLoStateVec(1).asBits(LoState.IDLE_LOAD_MODE.position)
             )
             rSavedNeedLineWordReadAgain := (
               prefetchStallVec.head
               || myHadAnyRecentRamWrite(1)
-              || rLoState.asBits(LoState.IDLE_STORE_MODE.position)
+              || rLoStateVec(1).asBits(LoState.IDLE_STORE_MODE.position)
             )
 
             when (
               prefetchStallVec.head
               || myHadAnyRecentRamWrite(2)
-              || rLoState.asBits(LoState.IDLE_STORE_MODE.position)
+              || rLoStateVec(1).asBits(LoState.IDLE_STORE_MODE.position)
               || !myLoD2hPushStm.ready
             ) {
               mySelLoH2dPopStm.ready := False
@@ -14333,18 +14342,20 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
               prefetchStallVec.head
               ## (
                 myHadAnyRecentRamWrite.last
-                || rLoState.asBits(LoState.IDLE_STORE_MODE.position)
+                || rLoStateVec(1).asBits(
+                  LoState.IDLE_STORE_MODE.position
+                )
               )
               ## myLoD2hPushStm.ready
             ) {
               is (M"1--") {
-                rLoState := LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4
+                setLoState(LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4)
               }
               is (M"01-") {
-                rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_4
+                setLoState(LoState.LOAD_HIT_DO_STALL_PIPE_4)
               }
               is (M"000") {
-                rLoState := LoState.LOAD_HIT_DO_STALL
+                setLoState(LoState.LOAD_HIT_DO_STALL)
               }
               default {
               }
@@ -14353,7 +14364,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             // if we had a cache hit for an attempted prefetch,
             // we should stop prefetching there!
             //when (
-            //  rLoState.asBits(
+            //  rLoStateVec(1).asBits(
             //    LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1.position
             //  )
             //) {
@@ -14438,7 +14449,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             myLoD2hPushStm.valid := (
               //True
               !prefetchStallVec(1)
-              && rLoState.asBits(LoState.IDLE_STORE_MODE.position)
+              && rLoStateVec(1).asBits(LoState.IDLE_STORE_MODE.position)
             )
             if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
               myLoD2hPushStm.busPayload.byteSize := (
@@ -14457,7 +14468,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             //) {
             //  mySelLoH2dPopStm.ready := False
             //  myFifoThingDoStall := True
-            //  rLoState := LoState.STORE_HIT_DO_STALL_PIPE_1
+            //  setLoState(LoState.STORE_HIT_DO_STALL_PIPE_1
             //  //myTempUpdateSavedLoH2dPayloadCond := False
             //} otherwise {
             //  //doPopLoH2dFifo()
@@ -14469,18 +14480,18 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
               )
               ## (
                 !myLoD2hPushStm.ready
-                || rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
+                || rLoStateVec(1).asBits(LoState.IDLE_LOAD_MODE.position)
               )
             ) {
               is (M"1-") {
                 mySelLoH2dPopStm.ready := False
                 myFifoThingDoStall := True
-                rLoState := LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1
+                setLoState(LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1)
               }
               is (M"01") {
                 mySelLoH2dPopStm.ready := False
                 myFifoThingDoStall := True
-                rLoState := LoState.STORE_HIT_DO_STALL_PIPE_1
+                setLoState(LoState.STORE_HIT_DO_STALL_PIPE_1)
               }
             }
           } 
@@ -14506,7 +14517,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           myFifoThingDoStall := True
           rSeenMmioHiBusH2dFire := False
           //rSeenNonCachedHiBusD2hFire := False
-          rLoState := (
+          setLoState(
             LoState.NON_CACHED_BUS_ACCESS_WAIT_LO_D2H_FIFO_EMPTY
           )
         }
@@ -14521,9 +14532,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     }
   }
 
-  switch (rLoState) {
+  switch (rLoStateVec.head) {
     is (LoState.INIT) {
-      rLoState := LoState.IDLE_LOAD_MODE
+      setLoState(LoState.IDLE_LOAD_MODE)
     }
     is (LoState.IDLE_LOAD_MODE) {
       when (rMyTempDoSaveCond(0)) {
@@ -14584,7 +14595,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           init=False,
         ).last
       ) {
-        rLoState := LoState.NON_CACHED_BUS_ACCESS
+        setLoState(LoState.NON_CACHED_BUS_ACCESS)
       }
     }
     is (LoState.NON_CACHED_BUS_ACCESS) {
@@ -14606,7 +14617,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       }
       io.loBus.d2hBus <-/< io.mmioHiBus.d2hBus
       when (io.loBus.d2hBus.fire) {
-        rLoState := (
+        setLoState(
           //LoState.IDLE
           LoState.IDLE_LOAD_MODE
         )
@@ -14631,7 +14642,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         //&& 
         fell(rPrefetchStallNotReady)
       ) {
-        rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_3
+        setLoState(LoState.LOAD_HIT_DO_STALL_PIPE_3)
       }
     }
     is (LoState.LOAD_HIT_DO_STALL_PIPE_4) {
@@ -14639,7 +14650,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         //rHiState === HiState.IDLE
         rHiState.asBits(HiState.IDLE.position)
       ) {
-        rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_3
+        setLoState(LoState.LOAD_HIT_DO_STALL_PIPE_3)
       }
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
@@ -14647,7 +14658,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       mySelLoH2dPopStm.ready := False
     }
     is (LoState.LOAD_HIT_DO_STALL_PIPE_3) {
-      rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_2
+      setLoState(LoState.LOAD_HIT_DO_STALL_PIPE_2)
       myLoD2hPushStm.valid := False
       mySelLoH2dPopStm.ready := False
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
@@ -14667,7 +14678,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       }
     }
     is (LoState.LOAD_HIT_DO_STALL_PIPE_2) {
-      rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_1
+      setLoState(LoState.LOAD_HIT_DO_STALL_PIPE_1)
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec(0).rdEn := True)
       myLoD2hPushStm.valid := False
@@ -14687,7 +14698,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         myLoD2hPushStm.busPayload.data := myRdLineWord
         rSavedNeedLineWordReadAgain := False
       }
-      rLoState := LoState.LOAD_HIT_DO_STALL
+      setLoState(LoState.LOAD_HIT_DO_STALL)
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
     }
@@ -14725,7 +14736,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       //myLoH2dReptThing.io.finishTxn.valid := False
       when (myLoD2hPushStm.fire) {
         //myFifoThingDoStall := False
-        rLoState := LoState.LOAD_HIT_DO_STALL_POST
+        setLoState(LoState.LOAD_HIT_DO_STALL_POST)
       }
     }
     is (LoState.LOAD_HIT_DO_STALL_POST) {
@@ -14734,7 +14745,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
 
-      rLoState := (
+      setLoState(
         LoState.WAIT_D2H_FIFO_PUSH_READY
         //LoState.IDLE
         //LoState.IDLE_LOAD_MODE
@@ -14801,7 +14812,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         //&& 
         fell(rPrefetchStallNotReady)
       ) {
-        rLoState := LoState.STORE_HIT_DO_STALL
+        setLoState(LoState.STORE_HIT_DO_STALL)
       }
     }
     is (LoState.STORE_HIT_DO_STALL_PIPE_1) {
@@ -14810,7 +14821,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
       mySelLoH2dPopStm.ready := False
 
-      rLoState := LoState.STORE_HIT_DO_STALL
+      setLoState(LoState.STORE_HIT_DO_STALL)
     }
     is (LoState.STORE_HIT_DO_STALL) {
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
@@ -14820,7 +14831,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       //myLoH2dReptThing.io.finishTxn.valid := False
       myLoD2hPushStm.valid := True
       when (myLoD2hPushStm.ready) {
-        rLoState := (
+        setLoState(
           LoState.WAIT_D2H_FIFO_PUSH_READY
           //LoState.IDLE
           //LoState.IDLE_STORE_MODE
@@ -14838,10 +14849,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         //rHiState.asBits(RECV_LINE_FROM_HI_BUS_PIPE_1)
       ) {
         is (M"10") {
-          rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_7_READ
+          setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_7_READ)
         }
         is (M"11") {
-          rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_7_WRITE
+          setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_7_WRITE)
         }
         //if (myCondHaveLineBitPlruRam) {
         //  rSavedRamIdx := rSavedPrefetchRamIdx
@@ -14858,7 +14869,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       def myArgSetEn = false//true
 
       when (rHiState.asBits(HiState.IDLE.position)) {
-        rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_6
+        setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_6)
         if (myCondHaveLineBitPlruRam) {
           rSavedRamIdx := rSavedPrefetchRamIdx
         }
@@ -14927,13 +14938,13 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           setEn=myArgSetEn,
         )
       }
-      //rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_7
+      //setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_7)
     }
     is (LoState.WAIT_HI_STATE_MCHN_READY_POST_7_READ) {
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       when (rHiState.asBits(HiState.IDLE.position)) {
-        rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_6
+        setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_6)
         if (myCondHaveLineBitPlruRam) {
           rSavedRamIdx := rSavedPrefetchRamIdx
         }
@@ -14942,12 +14953,12 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     is (LoState.WAIT_HI_STATE_MCHN_READY_POST_6) {
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_5
+      setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_5)
     }
     is (LoState.WAIT_HI_STATE_MCHN_READY_POST_5) {
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_4
+      setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_4)
     }
     is (LoState.WAIT_HI_STATE_MCHN_READY_POST_4) {
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
@@ -14964,17 +14975,17 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           }
         }
       }
-      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_3
+      setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_3)
     }
     is (LoState.WAIT_HI_STATE_MCHN_READY_POST_3) {
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec(0).rdEn := True)
-      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_2
+      setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_2)
     }
     is (LoState.WAIT_HI_STATE_MCHN_READY_POST_2) {
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_1
+      setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_1)
     }
     is (LoState.WAIT_HI_STATE_MCHN_READY_POST_1) {
       val myRdLineWord = (
@@ -15003,7 +15014,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       when (RegNext(
         //rose(rLoState === LoState.WAIT_HI_STATE_MCHN_READY_POST_2)
         rose(
-          rLoState.asBits(
+          rLoStateVec.head.asBits(
             LoState.WAIT_HI_STATE_MCHN_READY_POST_2.position
           )
         )
@@ -15014,13 +15025,13 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       }
 
       when (myLoD2hPushStm.ready) {
-        rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST
+        setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST)
       }
     }
     is (LoState.WAIT_HI_STATE_MCHN_READY_POST) {
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-      rLoState := (
+      setLoState(
         LoState.WAIT_D2H_FIFO_PUSH_READY
         //LoState.IDLE
         //LoState.IDLE_LOAD_MODE
@@ -15035,14 +15046,14 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         ## rSavedLoH2dPayload.isWrite
       ) {
         is (M"10") {
-          rLoState := LoState.IDLE_LOAD_MODE
+          setLoState(LoState.IDLE_LOAD_MODE)
         }
         is (M"11") {
-          rLoState := LoState.IDLE_STORE_MODE
+          setLoState(LoState.IDLE_STORE_MODE)
         }
       }
       //when (!myLoD2hFifo.io.pop.valid) {
-      //  rLoState := LoState.IDLE_LOAD_MODE
+      //  setLoState(LoState.IDLE_LOAD_MODE)
       //}
     }
   }
@@ -15058,9 +15069,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           (
             (
               //rLoState.asBits(LoState.IDLE.position)
-              rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
-              || rLoState.asBits(LoState.IDLE_STORE_MODE.position)
-              || rLoState.asBits(
+              rLoStateVec(1).asBits(LoState.IDLE_LOAD_MODE.position)
+              || rLoStateVec(1).asBits(LoState.IDLE_STORE_MODE.position)
+              || rLoStateVec(1).asBits(
                 LoState.WAIT_HI_STATE_MCHN_READY.position
               )
             )
@@ -15082,19 +15093,23 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
                   ).andR
                 },
                 cond=(
-                  //rLoState.asBits(LoState.IDLE.position)
-                  rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
-                  || rLoState.asBits(LoState.IDLE_STORE_MODE.position)
+                  //rLoStateVec(1).asBits(LoState.IDLE.position)
+                  rLoStateVec(1).asBits(
+                    LoState.IDLE_LOAD_MODE.position
+                  )
+                  || rLoStateVec(1).asBits(
+                    LoState.IDLE_STORE_MODE.position
+                  )
                 ),
                 init=False
               )
             )
           )
           || (
-            rLoState.asBits(
+            rLoStateVec(1).asBits(
               LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4.position
             )
-            || rLoState.asBits(
+            || rLoStateVec(1).asBits(
               LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1.position
             )
           )
@@ -15104,15 +15119,15 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             haveHit.head.orR,
             cond=(
               //rLoState.asBits(LoState.IDLE.position)
-              rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
-              || rLoState.asBits(LoState.IDLE_STORE_MODE.position)
+              rLoStateVec(1).asBits(LoState.IDLE_LOAD_MODE.position)
+              || rLoStateVec(1).asBits(LoState.IDLE_STORE_MODE.position)
             ),
             init=False
           )
-          && !rLoState.asBits(
+          && !rLoStateVec(1).asBits(
             LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4.position
           )
-          && !rLoState.asBits(
+          && !rLoStateVec(1).asBits(
             LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1.position
           )
         )
@@ -15133,8 +15148,12 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
               rDel2LoH2dPayload,
               cond=(
                 //rLoState.asBits(LoState.IDLE.position)
-                rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
-                || rLoState.asBits(LoState.IDLE_STORE_MODE.position)
+                rLoStateVec(1).asBits(
+                  LoState.IDLE_LOAD_MODE.position
+                )
+                || rLoStateVec(1).asBits(
+                  LoState.IDLE_STORE_MODE.position
+                )
               ),
               init=rDel2LoH2dPayload.getZero
             )
@@ -15146,10 +15165,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           )
           rPrefetchStallNotReady := (
             //True
-            rLoState.asBits(
+            rLoStateVec(1).asBits(
               LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4.position
             )
-            || rLoState.asBits(
+            || rLoStateVec(1).asBits(
               LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1.position
             )
           )
@@ -15540,7 +15559,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         
         //wrLineAttrs.dirty := False
         wrLineAttrs.dirty := (
-          rLoState.asBits(
+          rLoStateVec.head.asBits(
             LoState.WAIT_HI_STATE_MCHN_READY_POST_7_WRITE.position
           )
         )
