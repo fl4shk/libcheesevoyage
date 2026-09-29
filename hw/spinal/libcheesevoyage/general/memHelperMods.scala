@@ -1171,32 +1171,47 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
         def myCond0 = myCond0Vec(idx)
         def myCond1 = myCond1Vec(idx)
 
-        if (idx == cfg.fullDepth - 2) {
-          myPartialShiftCondVec(idx) := (
+        myPartialShiftCondVec(idx) := (
+          (
             next.fire
             || !next.valid
           )
+          && curr.valid
+          && !curr.ready
+        )
+        if (idx == cfg.fullDepth - 2) {
+          //myPartialShiftCondVec(idx) := (
+          //  (
+          //    next.fire
+          //    || !next.valid
+          //  )
+          //  && curr.valid
+          //  && !curr.ready
+          //)
           myShiftCondVec(idx) := (
             myPartialShiftCondVec(idx)
-            && curr.valid
-            && !curr.ready
+            //&& curr.valid
+            //&& !curr.ready
           )
         } else {
-          myPartialShiftCondVec(idx) := (
-            next.fire
-            || !next.valid
-            //|| (
-            //  next.valid
-            //  && !next.ready
-            //)
-          )
+          //myPartialShiftCondVec(idx) := (
+          //  next.fire
+          //  || !next.valid
+          //  //|| (
+          //  //  next.valid
+          //  //  && !next.ready
+          //  //)
+          //)
           myShiftCondVec(idx) := (
-            (
-              myPartialShiftCondVec(idx + 1)
-              || myPartialShiftCondVec(idx)
-            )
-            && curr.valid
-            && !curr.ready
+            myPartialShiftCondVec(idx)
+            || myShiftCondVec(idx + 1)
+            
+            //(
+            //  myPartialShiftCondVec(idx + 1)
+            //  || myPartialShiftCondVec(idx)
+            //)
+            //&& curr.valid
+            //&& !curr.ready
           )
           //myShiftCondVec(idx) := (
           //  myShiftCondVec(idx + 1)
