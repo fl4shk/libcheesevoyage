@@ -1191,8 +1191,10 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             //)
           )
           myShiftCondVec(idx) := (
-            myPartialShiftCondVec(idx + 1)
-            && myPartialShiftCondVec(idx)
+            (
+              myPartialShiftCondVec(idx + 1)
+              || myPartialShiftCondVec(idx)
+            )
             && curr.valid
             && !curr.ready
           )
@@ -1809,8 +1811,8 @@ object LcvOooRdSlidingBufTestToVerilog extends App {
       cfg=LcvOooRdSlidingBufConfig(
         wordType=UInt(32 bits),
         depth=(
-          //5
-          2
+          5
+          //2
         ),
         shiftEveryCycle=true,
         optDataAssignment=Some(
