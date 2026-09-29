@@ -1176,8 +1176,9 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             next.fire
             || !next.valid
           )
-          && curr.valid
-          && !curr.ready
+          //&& curr.valid
+          //&& !curr.ready
+          && !curr.fire
         )
         if (idx == cfg.fullDepth - 2) {
           //myPartialShiftCondVec(idx) := (
@@ -1203,10 +1204,10 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
           //  //)
           //)
           myShiftCondVec(idx) := (
-            //myPartialShiftCondVec(idx)
-            //|| myShiftCondVec(idx + 1)
             myPartialShiftCondVec(idx)
-            && myShiftCondVec(idx + 1)
+            || myShiftCondVec(idx + 1)
+            //myPartialShiftCondVec(idx)
+            //&& myShiftCondVec(idx + 1)
             
             //(
             //  myPartialShiftCondVec(idx + 1)
