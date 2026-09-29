@@ -972,9 +972,9 @@ case class LcvOooRdSlidingBufIo[
 ](
   cfg: LcvOooRdSlidingBufConfig[WordT],
 ) extends Bundle {
-  val en = (
-    in(Bool())
-  )
+  //val en = (
+  //  in(Bool())
+  //)
   val push = (
     slave(Stream(
       cfg.wordType()
@@ -1222,8 +1222,9 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
 
         myCond0 := (
           //io.push.valid
-          io.en
-          && (
+          //io.en
+          //&& 
+          (
             //(
             //  if (idx < cfg.fullDepth - 2) (
             //    next.fire
