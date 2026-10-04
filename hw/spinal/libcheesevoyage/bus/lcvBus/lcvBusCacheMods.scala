@@ -15034,7 +15034,15 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         default {
         }
       }
-      when (rPrefetchStallNotReady) {
+      when (
+        rPrefetchStallNotReady
+        && (
+          rose(rHiState.asBits(HiState.IDLE.position))
+          && RegNext(
+            !rHiState.asBits(HiState.READ_ATTRS_PIPE_3.position),
+          )
+        )
+      ) {
         rPrefetchStallNotReady := False
       }
     }
