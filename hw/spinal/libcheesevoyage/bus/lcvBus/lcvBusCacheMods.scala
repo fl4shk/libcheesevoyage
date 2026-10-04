@@ -13016,7 +13016,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
   )(
     dataAssignment=(outp, inp) => {
       outp.busPayload := inp
-      outp.savedData := inp.data
+      outp.savedData := (
+        io.loBus.h2dBus.data
+        //inp.data
+      )
     }
   )
   mySelLoH2dPopStm.ready := False
@@ -13717,6 +13720,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
   //    init=False
   //  )
   //)
+
   val myTempHaveCurrRamWrite = (
     Vec[Bool](
       //lineWordRam.map(item => item.io.wrEn)
