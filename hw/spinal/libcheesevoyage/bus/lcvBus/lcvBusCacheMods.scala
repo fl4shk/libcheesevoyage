@@ -5385,7 +5385,10 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
   )(
     dataAssignment=(outp, inp) => {
       outp.busPayload := inp
-      outp.savedData := inp.data
+      outp.savedData := (
+        io.loBus.h2dBus.data
+        //inp.data
+      )
     }
   )
   mySelLoH2dPopStm.ready := False
@@ -17502,8 +17505,8 @@ case class LcvBusDataCacheNoPrefetch(
       outp.busPayload := inp
       if (!loBusCfg.haveByteEn) {
         outp.savedData := (
-          //inp.data
           io.loBus.h2dBus.data
+          //inp.data
         )
       }
     }
