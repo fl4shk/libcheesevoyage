@@ -14030,7 +14030,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       //  )
       //))).orR
 
-      tempVec.asBits.orR
+      RegNext(
+        tempVec.asBits.orR,
+        init=False
+      )
 
       //RegNext(
       //  tempVec.orR,
