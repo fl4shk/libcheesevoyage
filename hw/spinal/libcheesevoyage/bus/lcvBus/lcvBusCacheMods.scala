@@ -12890,7 +12890,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       SEND_LINE_TO_HI_BUS_PIPE_1,
       SEND_LINE_TO_HI_BUS,
       RECV_LINE_FROM_HI_BUS_PIPE_1,
-      RECV_LINE_FROM_HI_BUS
+      RECV_LINE_FROM_HI_BUS,
+      RECV_LINE_FROM_HI_BUS_POST_2,
+      RECV_LINE_FROM_HI_BUS_POST_1,
+      RECV_LINE_FROM_HI_BUS_POST
       = newElement();
   }
 
@@ -15407,7 +15410,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         io.hiBus.d2hBus.fire
         && io.hiBus.d2hBus.burstLast
       ) {
-        rHiState := HiState.IDLE
+        rHiState := (
+          //HiState.IDLE
+          HiState.RECV_LINE_FROM_HI_BUS_POST_2
+        )
         
         //wrLineAttrs.dirty := False
         wrLineAttrs.dirty := (
@@ -15445,6 +15451,21 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           )
         }
       }
+    }
+    is (HiState.RECV_LINE_FROM_HI_BUS_POST_2) {
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineBitPlruRam.last.io.rdEn := False
+      rHiState := HiState.RECV_LINE_FROM_HI_BUS_POST_1
+    }
+    is (HiState.RECV_LINE_FROM_HI_BUS_POST_1) {
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineBitPlruRam.last.io.rdEn := False
+      rHiState := HiState.RECV_LINE_FROM_HI_BUS_POST
+    }
+    is (HiState.RECV_LINE_FROM_HI_BUS_POST) {
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineBitPlruRam.last.io.rdEn := False
+      rHiState := HiState.IDLE
     }
   }
   wrLineAttrs.valid := True
