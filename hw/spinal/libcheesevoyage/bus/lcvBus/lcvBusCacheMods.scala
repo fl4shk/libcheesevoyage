@@ -12633,6 +12633,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
   require(
     cfg.havePrefetch
   )
+  require(
+    cfg.myRamOptWrHistLength == 2
+  )
   //--------
   def numWays = cfg.loBusCacheCfg.numWays
 
@@ -13948,67 +13951,11 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
 
   val prefetchStallVec = Vec[Bool](
     (
-      //if (!myCondHaveLineBitPlruRam) (
-      //  //rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
-      //  (
-      //    //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
-      //    //|| 
-      //    rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
-      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
-      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
-      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
-      //    || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
-      //  )
-      //) else (
-      //  //rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
-      //  (
-      //    //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
-      //    //|| 
-      //    rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
-      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
-      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
-      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
-      //    || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
-      //  )
-      //  && (
-      //    rSavedPrefetchRamIdx
-      //    === myCurrRamIdx
-      //  )
-      //)
-      //False
       RegNext(
-        //convBusAddrToWordIdx(
-        //  someRam=lineWordRam.head,
-        //  busAddr=rLoH2dPayload.addr,
-        //)
-        //=== convBusAddrToWordIdx(
-        //  someRam=lineWordRam.head,
-        //  busAddr=rSavedPrefetchLoBusAddr
-        //)
-
-        //(
-        //  rLoH2dPayload.addr(loBusCacheCfg.tagRange)
-        //  === rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange)
-        //)
-        //&& 
         (
           rLoH2dPayload.addr(loBusCacheCfg.setRange)
           === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
         )
-        //&& (
-        //  rLoH2dPayload.addr(loBusCacheCfg.setRange)
-        //  === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
-        //)
-
-        //|| (
-        //  rLoH2dPayload.addr(loBusCacheCfg.tagRange)
-        //  === RegNextWhen(
-        //    rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange),
-        //    cond=(
-        //      !rHiState.asBits(HiState.IDLE.position)
-        //    ),
-        //  )
-        //)
       )
       || (
         (
@@ -14017,183 +13964,76 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           io.hiBus.d2hBus.burstLast
         )
       )
-
     ),
     (
       RegNext(
-        //convBusAddrToWordIdx(
-        //  someRam=lineWordRam.head,
-        //  busAddr=rLoH2dPayload.addr,
-        //)
-        //=== convBusAddrToWordIdx(
-        //  someRam=lineWordRam.head,
-        //  busAddr=rSavedPrefetchLoBusAddr
-        //)
-
-        //(
-        //  rLoH2dPayload.addr(loBusCacheCfg.tagRange)
-        //  === rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange)
-        //)
-        //&& 
         (
           rLoH2dPayload.addr(loBusCacheCfg.setRange)
           === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
         )
-
-        //&& (
-        //  rLoH2dPayload.addr(loBusCacheCfg.setRange)
-        //  === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
-        //)
-
-        //|| (
-        //  rLoH2dPayload.addr(loBusCacheCfg.tagRange)
-        //  === RegNextWhen(
-        //    rSavedPrefetchLoBusAddr(loBusCacheCfg.tagRange),
-        //    cond=(
-        //      !rHiState.asBits(HiState.IDLE.position)
-        //    ),
-        //  )
-        //)
       ) 
       || (
         (
-          //io.hiBus.d2hBus.valid
-          //&& 
           io.hiBus.d2hBus.burstLast
         )
       )
-      //|| rHiState.asBits(HiState.IDLE.position)
-      //if (!myCondHaveLineBitPlruRam) (
-      //  (
-      //    rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
-      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
-      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
-      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
-      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
-      //    || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
-      //  )
-      //  //&& (
-      //  //  // add this back if a true dual port RAM ends up being used
-      //  //  // for the cache line words!
-      //  //  rDel2LoH2dPayload.addr(
-      //  //    rDel2LoH2dPayload.addr.high
-      //  //    downto (
-      //  //      rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
-      //  //    )
-      //  //  )
-      //  //  === rSavedPrefetchLoH2dPayload.addr(
-      //  //    rSavedPrefetchLoH2dPayload.addr.high
-      //  //    downto (
-      //  //      rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
-      //  //    )
-      //  //  )
-      //  //)
-      //) else (
-      //  (
-      //    rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
-      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
-      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
-      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
-      //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
-      //    || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
-      //  )
-      //  && (
-      //    rSavedPrefetchRamIdx
-      //    === myCurrRamIdx
-      //  )
-      //  //&& (
-      //  //  //rDel2LoH2dPayload.burstAddr(
-      //  //  //  someBurstCnt=rHiD2hBurstCnt.getZero,
-      //  //  //  incrBurstCnt=false,
-      //  //  //)
-      //  //  //=== rSavedPrefetchLoH2dPayload.burstAddr(
-      //  //  //  someBurstCnt=rHiD2hBurstCnt.getZero,
-      //  //  //  incrBurstCnt=false,
-      //  //  //)
-      //  //  // add this back if a true dual port RAM ends up being used
-      //  //  // for the cache line words!
-      //  //  rDel2LoH2dPayload.addr(
-      //  //    rDel2LoH2dPayload.addr.high
-      //  //    downto (
-      //  //      rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
-      //  //    )
-      //  //  )
-      //  //  === rSavedPrefetchLoH2dPayload.addr(
-      //  //    rSavedPrefetchLoH2dPayload.addr.high
-      //  //    downto (
-      //  //      rHiD2hBurstCnt.getWidth + log2Up(loBusCfg.dataWidth / 8)
-      //  //    )
-      //  //  )
-      //  //)
-      //)
     ),
     //(
-    //  if (!myCondHaveLineBitPlruRam) (
-    //    //!rHiState.asBits(HiState.IDLE.position)
-    //    rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
-    //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
-    //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
-    //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
-    //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
-    //    || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
-    //    //&& (
-    //    //  rDel2LoH2dPayload.burstAddr(
-    //    //    someBurstCnt=rHiD2hBurstCnt.getZero,
-    //    //    incrBurstCnt=false,
-    //    //  )
-    //    //  === rSavedPrefetchLoH2dPayload.burstAddr(
-    //    //    someBurstCnt=rHiD2hBurstCnt.getZero,
-    //    //    incrBurstCnt=false,
-    //    //  )
-    //    //)
-    //  ) else (
-    //    rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
-    //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_3.position)
-    //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_2.position)
-    //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS_PIPE_1.position)
-    //    || rHiState.asBits(HiState.SEND_LINE_TO_HI_BUS.position)
-    //    || rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS.position)
-    //    && (
-    //      rSavedPrefetchRamIdx
-    //      === rSavedRamIdx
-    //    )
-    //    //&& (
-    //    //  rDel2LoH2dPayload.burstAddr(
-    //    //    someBurstCnt=rHiD2hBurstCnt.getZero,
-    //    //    incrBurstCnt=false,
-    //    //  )
-    //    //  === rSavedPrefetchLoH2dPayload.burstAddr(
-    //    //    someBurstCnt=rHiD2hBurstCnt.getZero,
-    //    //    incrBurstCnt=false,
-    //    //  )
-    //    //)
-    //  )
-    //  //if (!myCondHaveLineBitPlruRam) (
-    //  //  !rHiState.asBits(HiState.IDLE.position)
-    //  //  && (
-    //  //    rSavedLoH2dPayload.burstAddr(
-    //  //      someBurstCnt=rHiD2hBurstCnt.getZero,
-    //  //      incrBurstCnt=false,
-    //  //    )
-    //  //    === rSavedPrefetchLoH2dPayload.burstAddr(
-    //  //      someBurstCnt=rHiD2hBurstCnt.getZero,
-    //  //      incrBurstCnt=false,
-    //  //    )
-    //  //  )
-    //  //) else (
-    //  //  !rHiState.asBits(HiState.IDLE.position)
-    //  //  && (
-    //  //    rSavedLoH2dPayload.burstAddr(
-    //  //      someBurstCnt=rHiD2hBurstCnt.getZero,
-    //  //      incrBurstCnt=false,
-    //  //    )
-    //  //    === rSavedPrefetchLoH2dPayload.burstAddr(
-    //  //      someBurstCnt=rHiD2hBurstCnt.getZero,
-    //  //      incrBurstCnt=false,
-    //  //    )
-    //  //  )
-    //  //)
+    //  RegNext(rLoH2dPayload.addr(loBusCacheCfg.setRange))
+    //  === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
     //)
+    {
+      val tempVec = Vec.fill(lineAttrsRam.last.size)(
+        Vec.fill(cfg.myRamOptWrHistLengthPlusAddend)(
+          Bool()
+        )
+      )
+      val tempHistWrEn = Vec(
+        lineAttrsRam.last.map(item => (
+          History[Bool](
+            that=item.io.wrEn,
+            length=cfg.myRamOptWrHistLengthPlusAddend,
+            init=item.io.wrEn.getZero
+          )
+        ))
+      )
+      val tempHistWrAddr = Vec(
+        lineAttrsRam.last.map(item => (
+          History[UInt](
+            that=item.io.wrAddr,
+            length=cfg.myRamOptWrHistLengthPlusAddend,
+            init=item.io.wrAddr.getZero
+          )
+        ))
+      )
+      for (ramIdx <- 0 until lineAttrsRam.last.size) {
+        for (histIdx <- 0 until cfg.myRamOptWrHistLengthPlusAddend) {
+          tempVec(ramIdx)(histIdx) := (
+            tempHistWrEn(ramIdx)(histIdx)
+            && (
+              tempHistWrAddr(ramIdx)(histIdx)
+              === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
+            )
+          )
+        }
+      }
+
+
+      //Vec[Bool](lineAttrsRam.last.map(item => (
+      //  item.io.wrEn
+      //  && (
+      //    item.io.wrAddr
+      //    === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
+      //  )
+      //))).orR
+
+      tempVec.asBits.orR
+
+      //RegNext(
+      //  tempVec.orR,
+      //  init=False
+      //)
+    }
   )
 
   val rPrefetchStallNotReady = Reg(Bool(), init=False)
@@ -15201,7 +15041,11 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     is (HiState.READ_ATTRS_PIPE_3) {
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
       lineBitPlruRam.last.io.rdEn := False
-      rHiState := HiState.READ_ATTRS_PIPE_2
+      when (prefetchStallVec.last) {
+        rHiState := HiState.IDLE
+      } otherwise {
+        rHiState := HiState.READ_ATTRS_PIPE_2
+      }
     }
     is (HiState.READ_ATTRS_PIPE_2) {
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
