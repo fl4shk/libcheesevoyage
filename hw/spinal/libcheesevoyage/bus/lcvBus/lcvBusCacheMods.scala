@@ -14018,11 +14018,20 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         Vec[Bool](lineWordRam.map(item => (
           (
             //item.io.vec.last.wrEn
-            //&& 
-            item.io.vec.last.rdEn
-            && RegNext(
-              item.io.vec.head.addr
-              === item.io.vec.last.addr
+            //&&
+            (
+              item.io.vec.last.rdEn
+              && RegNext(
+                item.io.vec.head.addr
+                === item.io.vec.last.addr
+              )
+            )
+            || (
+              item.io.vec.last.wrEn
+              && (
+                item.io.vec.head.addr
+                === item.io.vec.last.addr
+              )
             )
           )
         ))).orR
