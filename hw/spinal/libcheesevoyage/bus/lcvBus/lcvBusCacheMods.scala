@@ -6174,6 +6174,15 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       busAddr=rLoH2dPayload.addr
     )
   )
+  val myTempRamWriteHazardLineIdx = (
+    convBusAddrToLineIdx(
+      // `someRam` is only used to check
+      // `someRam.io.rdAddr.getWidth`,
+      // so it doesn't matter which one we use
+      someRam=lineAttrsRam.head.head,
+      busAddr=rLoH2dPayload.addr
+    )
+  )
   val myHaveCurrRamWriteHazardOther = (
     Vec[Bool](
       Vec[Bool](lineWordRam.map(item => (
@@ -6215,7 +6224,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
         outerItem.view.zipWithIndex.map{
           case (item, idx) => (
             tempHistLineAttrsWrEn(jdx)(idx)
-            && (item === myTempRamWriteHazardWordIdx)
+            && (item === myTempRamWriteHazardLineIdx)
           )
         }
       )
@@ -13983,6 +13992,15 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       busAddr=rLoH2dPayload.addr
     )
   )
+  val myTempRamWriteHazardLineIdx = (
+    convBusAddrToLineIdx(
+      // `someRam` is only used to check
+      // `someRam.io.rdAddr.getWidth`,
+      // so it doesn't matter which one we use
+      someRam=lineAttrsRam.head.head,
+      busAddr=rLoH2dPayload.addr
+    )
+  )
   val myHaveCurrRamWriteHazardOther = (
     Vec[Bool](
       Vec[Bool](lineWordRam.map(item => (
@@ -14024,7 +14042,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         outerItem.view.zipWithIndex.map{
           case (item, idx) => (
             tempHistLineAttrsWrEn(jdx)(idx)
-            && (item === myTempRamWriteHazardWordIdx)
+            && (item === myTempRamWriteHazardLineIdx)
           )
         }
       )
