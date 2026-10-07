@@ -4021,24 +4021,24 @@ case class LcvBusCacheIo(
 //  //    init=False
 //  //  )
 //  //)
-//  val myTempHaveCurrRamWrite = (
+//  val myHaveCurrRamWriteConflict = (
 //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
 //    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
 //  )
-//  val myHistHadAnyRamWrite = Array.fill(2)(
+//  val myHistHadRamWriteConflict = Array.fill(2)(
 //    History[Bool](
 //      that=(
 //        //RegNext(
-//          myTempHaveCurrRamWrite//,
-//        //  init=myTempHaveCurrRamWrite.getZero
+//          myHaveCurrRamWriteConflict//,
+//        //  init=myHaveCurrRamWriteConflict.getZero
 //        //)
 //      ),
 //      length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-//      init=myTempHaveCurrRamWrite.getZero
+//      init=myHaveCurrRamWriteConflict.getZero
 //    )
 //  )
-//  val myHadAnyRecentRamWrite = Vec[Bool](
-//    myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
+//  val myHadRecentRamWriteConflict = Vec[Bool](
+//    myHistHadRamWriteConflict.map(item => RegNext(item.orR, init=False))
 //    //RegNext(
 //    //  (
 //    //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
@@ -4298,13 +4298,13 @@ case class LcvBusCacheIo(
 //
 //        when (
 //          //rHadAnyRamWritePastTwoCycles.head
-//          myHadAnyRecentRamWrite.head
+//          myHadRecentRamWriteConflict.head
 //        ) {
 //          myLoD2hPushStm.valid := False
 //        }
 //        when (
 //          //rHadAnyRamWritePastTwoCycles.last
-//          myHadAnyRecentRamWrite.last
+//          myHadRecentRamWriteConflict.last
 //          || !myLoD2hPushStm.ready
 //        ) {
 //          mySelLoH2dPopStm.ready := False
@@ -6089,10 +6089,17 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
   //    init=False
   //  )
   //)
-  val myTempHaveCurrRamWrite = (
+  val myHaveCurrRamWriteConflict = (
     Vec[Bool](
       //lineWordRam.map(item => item.io.wrEn)
-      lineWordRam.map(item => item.io.vec.map(_.wrEn).orR)
+      //lineWordRam.map(item => item.io.vec.map(_.wrEn).orR)
+      Vec[Bool](lineWordRam.map(item => (
+        item.io.vec.last.wrEn
+        && (
+          item.io.vec.head.addr
+          === item.io.vec.last.addr
+        )
+      ))).orR
     ).orR
     || (
       //Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
@@ -6102,15 +6109,15 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       Vec[Bool](lineAttrsRam.head.map(item => item.io.wrEn)).orR
     )
   )
-  val myHistHadAnyRamWrite = Array.fill(4)(
+  val myHistHadRamWriteConflict = Array.fill(4)(
     History[Bool](
-      that=myTempHaveCurrRamWrite,
+      that=myHaveCurrRamWriteConflict,
       length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-      init=myTempHaveCurrRamWrite.getZero
+      init=myHaveCurrRamWriteConflict.getZero
     )
   )
-  val myHadAnyRecentRamWrite = Vec[Bool](
-    myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
+  val myTempHadRecentRamWrite = Vec[Bool](
+    myHistHadRamWriteConflict.map(item => RegNext(item.orR, init=False))
   )
 
   //--------
@@ -6691,18 +6698,18 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
 
             myLoD2hPushStm.valid := (
               !prefetchStallVec.head
-              && !myHadAnyRecentRamWrite.head//False
+              && !myTempHadRecentRamWrite.head//False
               //&& rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
             )
             rSavedNeedLineWordReadAgain := (
               prefetchStallVec.head
-              || myHadAnyRecentRamWrite(1)
+              || myTempHadRecentRamWrite(1)
               //|| rLoState.asBits(LoState.IDLE_STORE_MODE.position)
             )
 
             when (
               prefetchStallVec.head
-              || myHadAnyRecentRamWrite(2)
+              || myTempHadRecentRamWrite(2)
               //|| rLoState.asBits(LoState.IDLE_STORE_MODE.position)
               || !myLoD2hPushStm.ready
             ) {
@@ -6713,7 +6720,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
             switch (
               prefetchStallVec.head
               ## (
-                myHadAnyRecentRamWrite.last
+                myTempHadRecentRamWrite.last
                 //|| rLoState.asBits(LoState.IDLE_STORE_MODE.position)
               )
               ## myLoD2hPushStm.ready
@@ -8909,7 +8916,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
 //  //    init=False
 //  //  )
 //  //)
-//  val myTempHaveCurrRamWrite = (
+//  val myHaveCurrRamWriteConflict = (
 //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
 //    || (
 //      //Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
@@ -8919,15 +8926,15 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
 //      Vec[Bool](lineAttrsRam.head.map(item => item.io.wrEn)).orR
 //    )
 //  )
-//  val myHistHadAnyRamWrite = Array.fill(4)(
+//  val myHistHadRamWriteConflict = Array.fill(4)(
 //    History[Bool](
-//      that=myTempHaveCurrRamWrite,
+//      that=myHaveCurrRamWriteConflict,
 //      length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-//      init=myTempHaveCurrRamWrite.getZero
+//      init=myHaveCurrRamWriteConflict.getZero
 //    )
 //  )
-//  val myHadAnyRecentRamWrite = Vec[Bool](
-//    myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
+//  val myHadRecentRamWriteConflict = Vec[Bool](
+//    myHistHadRamWriteConflict.map(item => RegNext(item.orR, init=False))
 //  )
 //
 //  //--------
@@ -9171,16 +9178,16 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
 //              )
 //            }
 //
-//            myLoD2hPushStm.valid := !myHadAnyRecentRamWrite.head//False
-//            //when (myHadAnyRecentRamWrite.head) {
+//            myLoD2hPushStm.valid := !myHadRecentRamWriteConflict.head//False
+//            //when (myHadRecentRamWriteConflict.head) {
 //            //  myLoD2hPushStm.valid := False
 //            //} otherwise {
 //            //  rSavedNeedLineWordReadAgain := False
 //            //}
-//            rSavedNeedLineWordReadAgain := myHadAnyRecentRamWrite(1)
+//            rSavedNeedLineWordReadAgain := myHadRecentRamWriteConflict(1)
 //
 //            when (
-//              myHadAnyRecentRamWrite(2)
+//              myHadRecentRamWriteConflict(2)
 //              || !myLoD2hPushStm.ready
 //            ) {
 //              mySelLoH2dPopStm.ready := False
@@ -9188,7 +9195,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
 //            }
 //
 //            switch (
-//              myHadAnyRecentRamWrite.last
+//              myHadRecentRamWriteConflict.last
 //              ## myLoD2hPushStm.ready
 //            ) {
 //              is (M"1-") {
@@ -10409,24 +10416,24 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
 //  //    init=False
 //  //  )
 //  //)
-//  val myTempHaveCurrRamWrite = (
+//  val myHaveCurrRamWriteConflict = (
 //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
 //    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
 //  )
-//  val myHistHadAnyRamWrite = Array.fill(2)(
+//  val myHistHadRamWriteConflict = Array.fill(2)(
 //    History[Bool](
 //      that=(
 //        //RegNext(
-//          myTempHaveCurrRamWrite//,
-//        //  init=myTempHaveCurrRamWrite.getZero
+//          myHaveCurrRamWriteConflict//,
+//        //  init=myHaveCurrRamWriteConflict.getZero
 //        //)
 //      ),
 //      length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-//      init=myTempHaveCurrRamWrite.getZero
+//      init=myHaveCurrRamWriteConflict.getZero
 //    )
 //  )
-//  val myHadAnyRecentRamWrite = Vec[Bool](
-//    myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
+//  val myHadRecentRamWriteConflict = Vec[Bool](
+//    myHistHadRamWriteConflict.map(item => RegNext(item.orR, init=False))
 //    //RegNext(
 //    //  (
 //    //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
@@ -10639,13 +10646,13 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
 //
 //        when (
 //          //rHadAnyRamWritePastTwoCycles.head
-//          myHadAnyRecentRamWrite.head
+//          myHadRecentRamWriteConflict.head
 //        ) {
 //          myLoD2hPushStm.valid := False
 //        }
 //        when (
 //          //rHadAnyRamWritePastTwoCycles.last
-//          myHadAnyRecentRamWrite.last
+//          myHadRecentRamWriteConflict.last
 //          || !myLoD2hPushStm.ready
 //        ) {
 //          mySelLoH2dPopStm.ready := False
@@ -11866,26 +11873,29 @@ case class LcvBusInstrCacheWide(
   //    init=False
   //  )
   //)
-  val myTempHaveCurrRamWrite = (
+  val myHaveCurrRamWriteConflict = (
     Vec[Bool](lineWordRam.map(outerItem => (
-      Vec[Bool](outerItem.map(item => item.io.wrEn)).orR
+      Vec[Bool](outerItem.map(item => (
+        item.io.wrEn
+        && item.io.wrAddr === item.io.rdAddr
+      ))).orR
     ))).orR
     || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
   )
-  val myHistHadAnyRamWrite = Array.fill(2)(
+  val myHistHadRamWriteConflict = Array.fill(2)(
     History[Bool](
       that=(
         //RegNext(
-          myTempHaveCurrRamWrite//,
-        //  init=myTempHaveCurrRamWrite.getZero
+          myHaveCurrRamWriteConflict//,
+        //  init=myHaveCurrRamWriteConflict.getZero
         //)
       ),
       length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-      init=myTempHaveCurrRamWrite.getZero
+      init=myHaveCurrRamWriteConflict.getZero
     )
   )
-  val myHadAnyRecentRamWrite = Vec[Bool](
-    myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
+  val myHadRecentRamWriteConflict = Vec[Bool](
+    myHistHadRamWriteConflict.map(item => RegNext(item.orR, init=False))
     //RegNext(
     //  (
     //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
@@ -12155,13 +12165,13 @@ case class LcvBusInstrCacheWide(
 
         when (
           //rHadAnyRamWritePastTwoCycles.head
-          myHadAnyRecentRamWrite.head
+          myHadRecentRamWriteConflict.head
         ) {
           myLoD2hPushStm.valid := False
         }
         when (
           //rHadAnyRamWritePastTwoCycles.last
-          myHadAnyRecentRamWrite.last
+          myHadRecentRamWriteConflict.last
           || !myLoD2hPushStm.ready
         ) {
           mySelLoH2dPopStm.ready := False
@@ -13727,10 +13737,31 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
   //  )
   //)
 
-  val myTempHaveCurrRamWrite = (
+  //val myHaveCurrRamWriteConflict = (
+  //  Vec[Bool](
+  //    //lineWordRam.map(item => item.io.wrEn)
+  //    lineWordRam.map(item => item.io.vec.map(_.wrEn).orR)
+  //  ).orR
+  //  || (
+  //    //Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
+
+  //    // we treat this as being only one write port,
+  //    // so we only need to check one of them..
+  //    Vec[Bool](lineAttrsRam.head.map(item => item.io.wrEn)).orR
+  //  )
+  //)
+
+  val myHaveCurrRamWriteConflict = (
     Vec[Bool](
       //lineWordRam.map(item => item.io.wrEn)
-      lineWordRam.map(item => item.io.vec.map(_.wrEn).orR)
+      //lineWordRam.map(item => item.io.vec.map(_.wrEn).orR)
+      Vec[Bool](lineWordRam.map(item => (
+        item.io.vec.last.wrEn
+        && (
+          item.io.vec.head.addr
+          === item.io.vec.last.addr
+        )
+      ))).orR
     ).orR
     || (
       //Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
@@ -13740,15 +13771,15 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       Vec[Bool](lineAttrsRam.head.map(item => item.io.wrEn)).orR
     )
   )
-  val myHistHadAnyRamWrite = Array.fill(4)(
+  val myHistHadRamWriteConflict = Array.fill(4)(
     History[Bool](
-      that=myTempHaveCurrRamWrite,
+      that=myHaveCurrRamWriteConflict,
       length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-      init=myTempHaveCurrRamWrite.getZero
+      init=myHaveCurrRamWriteConflict.getZero
     )
   )
-  val myHadAnyRecentRamWrite = Vec[Bool](
-    myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
+  val myHadRecentRamWriteConflict = Vec[Bool](
+    myHistHadRamWriteConflict.map(item => RegNext(item.orR, init=False))
   )
 
   //--------
@@ -14175,18 +14206,18 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
 
             myLoD2hPushStm.valid := (
               !prefetchStallVec.head
-              && !myHadAnyRecentRamWrite.head//False
+              && !myHadRecentRamWriteConflict.head//False
               && rLoStateVec(1).asBits(LoState.IDLE_LOAD_MODE.position)
             )
             rSavedNeedLineWordReadAgain := (
               prefetchStallVec.head
-              || myHadAnyRecentRamWrite(1)
+              || myHadRecentRamWriteConflict(1)
               || rLoStateVec(1).asBits(LoState.IDLE_STORE_MODE.position)
             )
 
             when (
               prefetchStallVec.head
-              || myHadAnyRecentRamWrite(2)
+              || myHadRecentRamWriteConflict(2)
               || rLoStateVec(1).asBits(LoState.IDLE_STORE_MODE.position)
               || !myLoD2hPushStm.ready
             ) {
@@ -14197,7 +14228,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             switch (
               prefetchStallVec.head
               ## (
-                myHadAnyRecentRamWrite.last
+                myHadRecentRamWriteConflict.last
                 || rLoStateVec(1).asBits(
                   LoState.IDLE_STORE_MODE.position
                 )
@@ -16465,7 +16496,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
 //  //    init=False
 //  //  )
 //  //)
-//  val myTempHaveCurrRamWrite = (
+//  val myHaveCurrRamWriteConflict = (
 //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
 //    || (
 //      //Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
@@ -16475,15 +16506,15 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
 //      Vec[Bool](lineAttrsRam.head.map(item => item.io.wrEn)).orR
 //    )
 //  )
-//  val myHistHadAnyRamWrite = Array.fill(4)(
+//  val myHistHadRamWriteConflict = Array.fill(4)(
 //    History[Bool](
-//      that=myTempHaveCurrRamWrite,
+//      that=myHaveCurrRamWriteConflict,
 //      length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-//      init=myTempHaveCurrRamWrite.getZero
+//      init=myHaveCurrRamWriteConflict.getZero
 //    )
 //  )
-//  val myHadAnyRecentRamWrite = Vec[Bool](
-//    myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
+//  val myHadRecentRamWriteConflict = Vec[Bool](
+//    myHistHadRamWriteConflict.map(item => RegNext(item.orR, init=False))
 //  )
 //
 //  //--------
@@ -16727,16 +16758,16 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
 //              )
 //            }
 //
-//            myLoD2hPushStm.valid := !myHadAnyRecentRamWrite.head//False
-//            //when (myHadAnyRecentRamWrite.head) {
+//            myLoD2hPushStm.valid := !myHadRecentRamWriteConflict.head//False
+//            //when (myHadRecentRamWriteConflict.head) {
 //            //  myLoD2hPushStm.valid := False
 //            //} otherwise {
 //            //  rSavedNeedLineWordReadAgain := False
 //            //}
-//            rSavedNeedLineWordReadAgain := myHadAnyRecentRamWrite(1)
+//            rSavedNeedLineWordReadAgain := myHadRecentRamWriteConflict(1)
 //
 //            when (
-//              myHadAnyRecentRamWrite(2)
+//              myHadRecentRamWriteConflict(2)
 //              || !myLoD2hPushStm.ready
 //            ) {
 //              mySelLoH2dPopStm.ready := False
@@ -16744,7 +16775,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
 //            }
 //
 //            switch (
-//              myHadAnyRecentRamWrite.last
+//              myHadRecentRamWriteConflict.last
 //              ## myLoD2hPushStm.ready
 //            ) {
 //              is (M"1-") {
@@ -17981,24 +18012,28 @@ case class LcvBusDataCacheNoPrefetch(
     )
   )
 
-  val myTempHaveCurrRamWrite = (
-    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
+  val myHaveCurrRamWriteConflict = (
+    Vec[Bool](lineWordRam.map(item => (
+      item.io.wrEn
+      //&& item.io.rdEn
+      && item.io.wrAddr === item.io.rdAddr
+    ))).orR
     || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
   )
-  val myHistHadAnyRamWrite = Array.fill(4)(
+  val myHistHadRamWriteConflict = Array.fill(4)(
     History[Bool](
       that=(
         //RegNext(
-          myTempHaveCurrRamWrite//,
-        //  init=myTempHaveCurrRamWrite.getZero
+          myHaveCurrRamWriteConflict//,
+        //  init=myHaveCurrRamWriteConflict.getZero
         //)
       ),
       length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-      init=myTempHaveCurrRamWrite.getZero
+      init=myHaveCurrRamWriteConflict.getZero
     )
   )
-  val myHadAnyRecentRamWrite = Vec[Bool](
-    myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
+  val myHadRecentRamWriteConflict = Vec[Bool](
+    myHistHadRamWriteConflict.map(item => RegNext(item.orR, init=False))
     //RegNext(
     //  (
     //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
@@ -18278,16 +18313,16 @@ case class LcvBusDataCacheNoPrefetch(
           )
         }
 
-        myLoD2hPushStm.valid := !myHadAnyRecentRamWrite.head//False
+        myLoD2hPushStm.valid := !myHadRecentRamWriteConflict.head//False
         //when (
-        //  myHadAnyRecentRamWrite.head
+        //  myHadRecentRamWriteConflict.head
         //) {
         //  myLoD2hPushStm.valid := False
         //}
-        rSavedNeedLineWordReadAgain := myHadAnyRecentRamWrite(1)
+        rSavedNeedLineWordReadAgain := myHadRecentRamWriteConflict(1)
 
         when (
-          myHadAnyRecentRamWrite(2)
+          myHadRecentRamWriteConflict(2)
           || !myLoD2hPushStm.ready
         ) {
           mySelLoH2dPopStm.ready := False
@@ -18299,7 +18334,7 @@ case class LcvBusDataCacheNoPrefetch(
           //myTempUpdateSavedLoH2dPayloadCond := False
         }
         switch (
-          myHadAnyRecentRamWrite.last
+          myHadRecentRamWriteConflict.last
           ## myLoD2hPushStm.ready
         ) {
           is (M"1-") {
