@@ -7415,7 +7415,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
 
       when (
         //!myLoD2hFifo.io.pop.valid
-        !myLoD2hFifo.io.push.ready
+        myLoD2hFifo.io.push.ready
       ) {
         rLoState := LoState.IDLE_LOAD_MODE
       }
