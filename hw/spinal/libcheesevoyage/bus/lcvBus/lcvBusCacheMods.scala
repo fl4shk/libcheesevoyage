@@ -5232,7 +5232,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       WAIT_HI_STATE_MCHN_READY_POST_1,
       WAIT_HI_STATE_MCHN_READY_POST,
 
-      WAIT_D2H_FIFO_EMPTY
+      WAIT_D2H_FIFO_PUSH_READY
       = newElement();
   }
 
@@ -7113,7 +7113,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
 
       rLoState := (
-        LoState.WAIT_D2H_FIFO_EMPTY
+        LoState.WAIT_D2H_FIFO_PUSH_READY
         //LoState.IDLE
         //LoState.IDLE_LOAD_MODE
       )
@@ -7404,16 +7404,19 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
       rLoState := (
-        LoState.WAIT_D2H_FIFO_EMPTY
+        LoState.WAIT_D2H_FIFO_PUSH_READY
         //LoState.IDLE
         //LoState.IDLE_LOAD_MODE
       )
     }
-    is (LoState.WAIT_D2H_FIFO_EMPTY) {
+    is (LoState.WAIT_D2H_FIFO_PUSH_READY) {
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
 
-      when (!myLoD2hFifo.io.pop.valid) {
+      when (
+        //!myLoD2hFifo.io.pop.valid
+        !myLoD2hFifo.io.push.ready
+      ) {
         rLoState := LoState.IDLE_LOAD_MODE
       }
     }
