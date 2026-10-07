@@ -6187,9 +6187,8 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
     Vec[Bool](
       Vec[Bool](lineWordRam.map(item => (
         (
-          //item.io.vec.last.wrEn
-          //&& 
-          (
+          item.io.vec.last.wrEn
+          && (
             item.io.vec.head.addr
             === item.io.vec.last.addr
           )
@@ -14003,18 +14002,32 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     )
   )
   val myHaveCurrRamWriteHazardOther = (
-    Vec[Bool](
-      Vec[Bool](lineWordRam.map(item => (
-        (
-          //item.io.vec.last.wrEn
-          //&& 
+    Vec(
+      Vec[Bool](
+        Vec[Bool](lineWordRam.map(item => (
           (
-            item.io.vec.head.addr
-            === item.io.vec.last.addr
+            item.io.vec.last.wrEn
+            && (
+              item.io.vec.head.addr
+              === item.io.vec.last.addr
+            )
           )
-        )
-      ))).orR
-    ).orR
+        ))).orR
+      ).orR,
+      Vec[Bool](
+        Vec[Bool](lineWordRam.map(item => (
+          (
+            //item.io.vec.last.wrEn
+            //&& 
+            item.io.vec.last.rdEn
+            && RegNext(
+              item.io.vec.head.addr
+              === item.io.vec.last.addr
+            )
+          )
+        ))).orR
+      ).orR
+    )
   )
   def myRamWriteHazardArrSize = 4
   val myArrHadLineWordRamWriteHazard = Array.fill(
@@ -14051,29 +14064,53 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     })
   )
 
-  val myHistHadRamWriteHazardOther = Array.fill(
+  val myHistHadRamWriteHazardOtherLoad = Array.fill(
     myRamWriteHazardArrSize
   )(
     History[Bool](
-      that=myHaveCurrRamWriteHazardOther,
+      that=myHaveCurrRamWriteHazardOther.head,
       length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-      init=myHaveCurrRamWriteHazardOther.getZero
+      init=myHaveCurrRamWriteHazardOther.head.getZero
     )
   )
-  val myHadRecentRamWriteHazard = Vec[Bool](
+  val myHistHadRamWriteHazardOtherStore = Array.fill(
+    myRamWriteHazardArrSize
+  )(
+    History[Bool](
+      that=myHaveCurrRamWriteHazardOther.last,
+      length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
+      init=myHaveCurrRamWriteHazardOther.last.getZero
+    )
+  )
+  val myHadRecentRamWriteHazardLoad = Vec[Bool](
     myArrHadLineWordRamWriteHazard.zipWithIndex.map{
       case (item, idx) => (
         RegNext(
           (
             myArrHadLineWordRamWriteHazard(idx).asBits.orR
             || myArrHadLineAttrsRamWriteHazard(idx).asBits.orR
-            || myHistHadRamWriteHazardOther(idx).orR
+            || myHistHadRamWriteHazardOtherLoad(idx).orR
           ),
           init=False
         )
       )
     }
   )
+  val myHadRecentRamWriteHazardStore = Vec[Bool](
+    myArrHadLineWordRamWriteHazard.zipWithIndex.map{
+      case (item, idx) => (
+        RegNext(
+          (
+            myArrHadLineWordRamWriteHazard(idx).asBits.orR
+            || myArrHadLineAttrsRamWriteHazard(idx).asBits.orR
+            || myHistHadRamWriteHazardOtherLoad(idx).orR
+          ),
+          init=False
+        )
+      )
+    }
+  )
+
   val myHadRecentRamWriteHazardSplitVec = Vec[Vec[Bool]](
     myArrHadLineWordRamWriteHazard.zipWithIndex.map{
       case (outerItem, jdx) => Vec(outerItem.zipWithIndex.map{
@@ -14082,7 +14119,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             (
               myArrHadLineWordRamWriteHazard(jdx)(idx).asBits.orR
               || myArrHadLineAttrsRamWriteHazard(jdx).asBits.orR
-              || myHistHadRamWriteHazardOther(jdx).orR
+              || myHistHadRamWriteHazardOtherStore(jdx).orR
             ),
             init=False
           )
@@ -14516,20 +14553,20 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             myLoD2hPushStm.valid := (
               //!prefetchStallVec.head
               //&& 
-              !myHadRecentRamWriteHazard.head//False
+              !myHadRecentRamWriteHazardLoad.head//False
               && rLoStateVec(1).asBits(LoState.IDLE_LOAD_MODE.position)
             )
             rSavedNeedLineWordReadAgain := (
               //prefetchStallVec.head
               //|| 
-              myHadRecentRamWriteHazard(1)
+              myHadRecentRamWriteHazardLoad(1)
               || rLoStateVec(1).asBits(LoState.IDLE_STORE_MODE.position)
             )
 
             when (
               //prefetchStallVec.head
               //|| 
-              myHadRecentRamWriteHazard(2)
+              myHadRecentRamWriteHazardLoad(2)
               || rLoStateVec(1).asBits(LoState.IDLE_STORE_MODE.position)
               || !myLoD2hPushStm.ready
             ) {
@@ -14541,7 +14578,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
               //prefetchStallVec.head
               //## 
               (
-                myHadRecentRamWriteHazard.last
+                myHadRecentRamWriteHazardLoad.last
                 || rLoStateVec(1).asBits(
                   LoState.IDLE_STORE_MODE.position
                 )
@@ -14635,9 +14672,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             lineWordRam(ramIdx).io.vec(0).wrEn := (
               //True
               !(
-                prefetchStallVec(1)
-                //&& myHadRecentRamWriteHazard.last
-                && myHadRecentRamWriteHazardSplitVec.last.last
+                //prefetchStallVec(1)
+                //&& 
+                myHadRecentRamWriteHazardStore.last
+                //&& myHadRecentRamWriteHazardSplitVec.last.last
               )
               //&& rLoState.asBits(LoState.IDLE_STORE_MODE.position)
             )
@@ -14647,9 +14685,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
               item(ramIdx).io.wrEn := (
                 //True
                 !(
-                  prefetchStallVec(1)
-                  //&& myHadRecentRamWriteHazard.last
-                  && myHadRecentRamWriteHazardSplitVec.last.last
+                  //prefetchStallVec(1)
+                  ////&& myHadRecentRamWriteHazard.last
+                  //&& myHadRecentRamWriteHazardSplitVec.last.last
+                  myHadRecentRamWriteHazardStore.last
                 )
                 //!myHadRecentRamWriteHazard.last
                 //&& rLoState.asBits(LoState.IDLE_STORE_MODE.position)
@@ -14664,9 +14703,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             myLoD2hPushStm.valid := (
               //True
               !(
-                prefetchStallVec(1)
-                //&& myHadRecentRamWriteHazard.last
-                && myHadRecentRamWriteHazardSplitVec.last.last
+                //prefetchStallVec(1)
+                ////&& myHadRecentRamWriteHazard.last
+                //&& myHadRecentRamWriteHazardSplitVec.last.last
+                myHadRecentRamWriteHazardStore.last
               )
               && rLoStateVec(1).asBits(LoState.IDLE_STORE_MODE.position)
             )
@@ -14694,12 +14734,13 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             //}
             switch (
               (
-                prefetchStallVec(1)
-                //&& myHadRecentRamWriteHazard.last
-                && myHadRecentRamWriteHazardSplitVec.last.last
-                //|| rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
+                //prefetchStallVec(1)
+                ////&& myHadRecentRamWriteHazard.last
+                //&& myHadRecentRamWriteHazardSplitVec.last.last
+                ////|| rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
 
-                //!myHadRecentRamWriteHazard.last
+                ////!myHadRecentRamWriteHazard.last
+                myHadRecentRamWriteHazardStore.last
               )
               ## (
                 !myLoD2hPushStm.ready
