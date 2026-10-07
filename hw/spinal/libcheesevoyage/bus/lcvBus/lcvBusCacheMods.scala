@@ -6697,19 +6697,22 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
             }
 
             myLoD2hPushStm.valid := (
-              !prefetchStallVec.head
-              && !myTempHadRecentRamWrite.head//False
+              //!prefetchStallVec.head
+              //&& 
+              !myTempHadRecentRamWrite.head//False
               //&& rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
             )
             rSavedNeedLineWordReadAgain := (
-              prefetchStallVec.head
-              || myTempHadRecentRamWrite(1)
+              //prefetchStallVec.head
+              //|| 
+              myTempHadRecentRamWrite(1)
               //|| rLoState.asBits(LoState.IDLE_STORE_MODE.position)
             )
 
             when (
-              prefetchStallVec.head
-              || myTempHadRecentRamWrite(2)
+              //prefetchStallVec.head
+              //|| 
+              myTempHadRecentRamWrite(2)
               //|| rLoState.asBits(LoState.IDLE_STORE_MODE.position)
               || !myLoD2hPushStm.ready
             ) {
@@ -6718,20 +6721,27 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
             }
 
             switch (
-              prefetchStallVec.head
-              ## (
+              //prefetchStallVec.head
+              //## 
+              (
                 myTempHadRecentRamWrite.last
                 //|| rLoState.asBits(LoState.IDLE_STORE_MODE.position)
               )
               ## myLoD2hPushStm.ready
             ) {
-              is (M"1--") {
-                rLoState := LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4
-              }
-              is (M"01-") {
+              //is (M"1--") {
+              //  rLoState := LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4
+              //}
+              is (
+                //M"01-"
+                M"1-"
+                ) {
                 rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_4
               }
-              is (M"000") {
+              is (
+                //M"000"
+                M"00"
+              ) {
                 rLoState := LoState.LOAD_HIT_DO_STALL
               }
               default {
