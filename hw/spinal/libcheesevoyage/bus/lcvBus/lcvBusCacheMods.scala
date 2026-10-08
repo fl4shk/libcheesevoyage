@@ -14437,7 +14437,17 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             myFindFirstArr.head._1
           )
           temp.head.payload := (
-            myLineWordRamWrInfoMapArr.head(myFindFirstArr.head._2).payload
+            myLineWordRamWrInfoMapArr.head(
+              myFindFirstArr.head._2
+            ).payload
+          )
+          temp.last.valid := (
+            myFindFirstArr.head._1
+          )
+          temp.last.payload := (
+            myLineWordRamWrInfoMapArr.last(
+              myFindFirstArr.last._2
+            ).payload
           )
           temp
         },
@@ -14461,7 +14471,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           LcvOrR(
             Vec(myWordIdx.zipWithIndex.map{
               case (_, idx) => (
-                item(idx).fire
+                RegNext(item(idx).fire)
                 && (
                   myWordIdx(idx)
                   === RegNext(
