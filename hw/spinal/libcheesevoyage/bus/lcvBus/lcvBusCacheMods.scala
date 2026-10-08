@@ -14402,10 +14402,12 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     //myLoStateRecvStallCondVec.head
     //|| 
     (
-      History[Flow[UInt]](
+      History[Vec[Flow[UInt]]](
         that={
-          val temp = Flow(cloneOf(lineWordRam.head.io.vec.head.addr))
-          val myLineWordRamWrInfoMap = (
+          val temp = Vec.fill(numLoHi)(
+            Flow(cloneOf(lineWordRam.head.io.vec.head.addr))
+          )
+          val myLineWordRamWrInfoMapArr = Array(
             Vec(lineWordRam.map(
               item => {
                 val temp = Flow(cloneOf(item.io.vec.head.addr))
@@ -14413,50 +14415,92 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
                 temp.payload := item.io.vec.head.addr
                 temp
               }
+            )),
+            Vec(lineWordRam.map(
+              item => {
+                val temp = Flow(cloneOf(item.io.vec.last.addr))
+                temp.valid := item.io.vec.last.wrEn
+                temp.payload := item.io.vec.last.addr
+                temp
+              }
             ))
           )
-          val myFindFirst = (
-            myLineWordRamWrInfoMap.sFindFirst(
+          val myFindFirstArr = Array(
+            myLineWordRamWrInfoMapArr.head.sFindFirst(
+              item => item.fire
+            ),
+            myLineWordRamWrInfoMapArr.last.sFindFirst(
               item => item.fire
             )
           )
-          temp.valid := (
-            myFindFirst._1
+          temp.head.valid := (
+            myFindFirstArr.head._1
           )
-          temp.payload := (
-            myLineWordRamWrInfoMap(myFindFirst._2).payload
+          temp.head.payload := (
+            myLineWordRamWrInfoMapArr.head(myFindFirstArr.head._2).payload
           )
           temp
         },
         length=cfg.myRamOptWrHistLengthPlusAddend,
         init={
-          val temp = Flow(cloneOf(lineWordRam.head.io.vec.head.addr))
+          val temp = Vec.fill(numLoHi)(
+            Flow(cloneOf(lineWordRam.head.io.vec.head.addr))
+          )
           temp.getZero
         }
       ).sFindFirst(
         item => {
-          val temp = (
+          val myWordIdx = Vec.fill(numLoHi)(
             RegNext(
               convBusAddrToWordIdx(
                 someRam=lineWordRam.head,
                 busAddr=rLoH2dPayload.addr,
               )
-            ) === (
-              // per-`lineWordRam.io.vec` element,
-              // `lineWordRam` is used in this module to either read
-              // *or* write, *but not both* in the same cycle!
-              // We can thus use `RegNext(item.payload)` here, I think!
-              RegNext(
-                item.payload//.head
+            )
+          )
+          LcvOrR(
+            Vec(myWordIdx.zipWithIndex.map{
+              case (_, idx) => (
+                item(idx).fire
+                && (
+                  myWordIdx(idx)
+                  === RegNext(
+                    item(idx).payload
+                  )
+                )
               )
-            )
+            })
           )
-          (
-            RegNext(item.fire)
-            && (
-              temp
-            )
-          )
+          //val temp = Array(
+          //  (
+          //    myWordIdx.head
+          //    === (
+          //      // per-`lineWordRam.io.vec` element,
+          //      // `lineWordRam` is used in this module to either read
+          //      // *or* write, *but not both* in the same cycle!
+          //      // We can thus use `RegNext(item.payload)` here, I think!
+          //      RegNext(
+          //        item.head.payload//.head
+          //      )
+          //    )
+          //  ),
+          //  myWordIdx.last
+          //   === (
+          //    // per-`lineWordRam.io.vec` element,
+          //    // `lineWordRam` is used in this module to either read
+          //    // *or* write, *but not both* in the same cycle!
+          //    // We can thus use `RegNext(item.payload)` here, I think!
+          //    RegNext(
+          //      item.last.payload//.head
+          //    )
+          //  )
+          //)
+          //(
+          //  RegNext(item.head.fire)
+          //  && (
+          //    temp
+          //  )
+          //)
         }
       )._1
     )
