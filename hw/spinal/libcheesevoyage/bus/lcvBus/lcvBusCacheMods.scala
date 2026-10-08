@@ -14506,7 +14506,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       myLoStateLoadStallCond1FindFirst._1,
     )
   }
-  val myLoStateLoadStallAddrVec = {
+  val myLoStateLoadStallHistIdxVec = {
     Vec(
       myLoStateLoadStallCond0FindFirst._2,
       myLoStateLoadStallCond1FindFirst._2,
@@ -14654,6 +14654,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
               //&& !myHadAnyRecentRamWrite.head//False
               && rLoStateVec(1).asBits(LoState.IDLE_LOAD_MODE.position)
             )
+
             rSavedNeedLineWordReadAgain := (
               myLoStateLoadStallCondVec.head
               //|| myHadAnyRecentRamWrite(1)
@@ -15555,6 +15556,29 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         rHiState.asBits(HiState.IDLE.position)
       ) {
         setLoState(LoState.LOAD_HIT_DO_STALL_PIPE_3)
+      }
+      when (
+        //rHiState === HiState.IDLE
+        (
+          rose(rHiState.asBits(HiState.IDLE.position))
+          && RegNext(
+            rHiState.asBits(HiState.RECV_LINE_FROM_HI_BUS_POST.position)
+          )
+        )
+        //rHiState.asBits(HiState.IDLE.position)
+        && rSavedNeedLineWordReadAgain
+        && (
+          rSavedLoH2dPayload.addr(loBusCacheCfg.setRange)
+          === rSavedPrefetchLoH2dPayload.addr(loBusCacheCfg.setRange)
+          //RegNextWhen(
+          //  rSavedPrefetchLoH2dPayload.addr(loBusCacheCfg.setRange),
+          //  cond=rHiState.asBits(
+          //    HiState.RECV_LINE_FROM_HI_BUS
+          //  )
+          //).orR
+        )
+      ) {
+        rSavedNeedLineWordReadAgain := False
       }
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
