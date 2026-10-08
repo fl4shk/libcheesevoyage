@@ -14707,7 +14707,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             //}
             rHiState := HiState.IDLE
             if (myCondHaveLineBitPlruRam) {
-              //rSavedPrefetchRamIdx := ramIdx
+              rSavedPrefetchRamIdx := ramIdx
 
               // implement tagged prefetch
               // (i.e. don't change call this function!)
