@@ -339,24 +339,37 @@ case class LcvBusConfig(
 
   def prefetchAddrIncrStartIdx = burstCntWidth + log2Up(dataWidth / 8)
 
-  def prefetchAddr(
+  //def prefetchAddr(
+  //  someAddr: UInt,
+  //) = {
+  //  val temp = (
+  //    someAddr(
+  //      someAddr.high
+  //      downto prefetchAddrIncrStartIdx
+  //    )
+  //  )
+
+  //  (
+  //    Cat(
+  //      temp,
+  //      U(s"${prefetchAddrIncrStartIdx}'d0")
+  //    ),
+  //    temp
+  //  )
+  //}
+  def addrToBurstCnt(
     someAddr: UInt,
-  ) = {
-    val temp = (
-      someAddr(
-        someAddr.high
-        downto prefetchAddrIncrStartIdx
-      )
+  ): UInt = {
+    require(
+      someAddr.getWidth >= log2Up(burstCntMaxNumBytes)
     )
 
-    (
-      Cat(
-        temp,
-        U(s"${prefetchAddrIncrStartIdx}'d0")
-      ),
-      temp
+    someAddr(
+      log2Up(burstCntMaxNumBytes) - 1
+      downto log2Up(dataWidth / 8)
     )
   }
+
   def burstAddr(
     someAddr: UInt,
     someBurstCnt: UInt,
@@ -744,10 +757,15 @@ case class LcvBusH2dPayload(
   //def atLastBurstAddr(
   //  someBurstCnt: UInt
   //)
-  def prefetchAddr(
-  ) = {
-    cfg.prefetchAddr(
-      someAddr=addr,
+  //def prefetchAddr(
+  //) = {
+  //  cfg.prefetchAddr(
+  //    someAddr=addr,
+  //  )
+  //}
+  def addrToBurstCnt() = {
+    cfg.addrToBurstCnt(
+      someAddr=addr
     )
   }
   def burstAddr(
