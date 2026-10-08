@@ -14656,8 +14656,8 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             )
             rSavedNeedLineWordReadAgain := (
               myLoStateLoadStallCondVec.head
-              ////|| myHadAnyRecentRamWrite(1)
-              //|| rLoStateVec(1).asBits(LoState.IDLE_STORE_MODE.position)
+              //|| myHadAnyRecentRamWrite(1)
+              || rLoStateVec(1).asBits(LoState.IDLE_STORE_MODE.position)
             )
 
             when (
