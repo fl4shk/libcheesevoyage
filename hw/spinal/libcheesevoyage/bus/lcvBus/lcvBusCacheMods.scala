@@ -14398,123 +14398,120 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
   //  //)
   //)
 
-  val myLoStateLoadStallCond = (
-    //myLoStateRecvStallCondVec.head
-    //|| 
-    (
-      History[Vec[Flow[UInt]]](
-        that={
-          val temp = Vec.fill(numLoHi)(
-            Flow(cloneOf(lineWordRam.head.io.vec.head.addr))
+  val myHistLoStateLoadStallCond = (
+    History[Vec[Flow[UInt]]](
+      that={
+        val temp = Vec.fill(numLoHi)(
+          Flow(cloneOf(lineWordRam.head.io.vec.head.addr))
+        )
+        val myLineWordRamWrInfoMapArr = Array(
+          Vec(lineWordRam.map(
+            item => {
+              val temp = Flow(cloneOf(item.io.vec.head.addr))
+              temp.valid := item.io.vec.head.wrEn
+              temp.payload := item.io.vec.head.addr
+              temp
+            }
+          )),
+          Vec(lineWordRam.map(
+            item => {
+              val temp = Flow(cloneOf(item.io.vec.last.addr))
+              temp.valid := item.io.vec.last.wrEn
+              temp.payload := item.io.vec.last.addr
+              temp
+            }
+          ))
+        )
+        val myFindFirstArr = Array(
+          myLineWordRamWrInfoMapArr.head.sFindFirst(
+            item => item.fire
+          ),
+          myLineWordRamWrInfoMapArr.last.sFindFirst(
+            item => item.fire
           )
-          val myLineWordRamWrInfoMapArr = Array(
-            Vec(lineWordRam.map(
-              item => {
-                val temp = Flow(cloneOf(item.io.vec.head.addr))
-                temp.valid := item.io.vec.head.wrEn
-                temp.payload := item.io.vec.head.addr
-                temp
-              }
-            )),
-            Vec(lineWordRam.map(
-              item => {
-                val temp = Flow(cloneOf(item.io.vec.last.addr))
-                temp.valid := item.io.vec.last.wrEn
-                temp.payload := item.io.vec.last.addr
-                temp
-              }
-            ))
-          )
-          val myFindFirstArr = Array(
-            myLineWordRamWrInfoMapArr.head.sFindFirst(
-              item => item.fire
-            ),
-            myLineWordRamWrInfoMapArr.last.sFindFirst(
-              item => item.fire
-            )
-          )
-          temp.head.valid := (
-            myFindFirstArr.head._1
-          )
-          temp.head.payload := (
-            myLineWordRamWrInfoMapArr.head(
-              myFindFirstArr.head._2
-            ).payload
-          )
-          temp.last.valid := (
-            myFindFirstArr.head._1
-          )
-          temp.last.payload := (
-            myLineWordRamWrInfoMapArr.last(
-              myFindFirstArr.last._2
-            ).payload
-          )
-          temp
-        },
-        length=cfg.myRamOptWrHistLengthPlusAddend,
-        init={
-          val temp = Vec.fill(numLoHi)(
-            Flow(cloneOf(lineWordRam.head.io.vec.head.addr))
-          )
-          temp.getZero
-        }
-      ).sFindFirst(
-        item => {
-          val myWordIdx = Vec.fill(numLoHi)(
-            RegNext(
-              convBusAddrToWordIdx(
-                someRam=lineWordRam.head,
-                busAddr=rLoH2dPayload.addr,
-              )
-            )
-          )
-          //LcvOrR(
-            Vec(myWordIdx.zipWithIndex.map{
-              case (_, idx) => (
-                RegNext(item(idx).fire)
-                && (
-                  myWordIdx(idx)
-                  === RegNext(
-                    item(idx).payload
-                  )
-                )
-              )
-            }).head
-          //)
-          //val temp = Array(
-          //  (
-          //    myWordIdx.head
-          //    === (
-          //      // per-`lineWordRam.io.vec` element,
-          //      // `lineWordRam` is used in this module to either read
-          //      // *or* write, *but not both* in the same cycle!
-          //      // We can thus use `RegNext(item.payload)` here, I think!
-          //      RegNext(
-          //        item.head.payload//.head
-          //      )
-          //    )
-          //  ),
-          //  myWordIdx.last
-          //   === (
-          //    // per-`lineWordRam.io.vec` element,
-          //    // `lineWordRam` is used in this module to either read
-          //    // *or* write, *but not both* in the same cycle!
-          //    // We can thus use `RegNext(item.payload)` here, I think!
-          //    RegNext(
-          //      item.last.payload//.head
-          //    )
-          //  )
-          //)
-          //(
-          //  RegNext(item.head.fire)
-          //  && (
-          //    temp
-          //  )
-          //)
-        }
-      )._1
+        )
+        temp.head.valid := (
+          myFindFirstArr.head._1
+        )
+        temp.head.payload := (
+          myLineWordRamWrInfoMapArr.head(
+            myFindFirstArr.head._2
+          ).payload
+        )
+        temp.last.valid := (
+          myFindFirstArr.head._1
+        )
+        temp.last.payload := (
+          myLineWordRamWrInfoMapArr.last(
+            myFindFirstArr.last._2
+          ).payload
+        )
+        temp
+      },
+      length=cfg.myRamOptWrHistLengthPlusAddend,
+      init={
+        val temp = Vec.fill(numLoHi)(
+          Flow(cloneOf(lineWordRam.head.io.vec.head.addr))
+        )
+        temp.getZero
+      }
     )
   )
+
+  val myLoStateLoadStallCondWordIdx = (
+    Vec.fill(numLoHi)(
+      RegNext(
+        convBusAddrToWordIdx(
+          someRam=lineWordRam.head,
+          busAddr=rLoH2dPayload.addr,
+        )
+      )
+    )
+  )
+
+  val myLoStateLoadStallCond0FindFirst = {
+    val myWordIdx = myLoStateLoadStallCondWordIdx
+    myHistLoStateLoadStallCond.sFindFirst(
+      item => {
+        //LcvOrR
+        (
+          RegNext(item.head.fire)
+          && (
+            myWordIdx.head
+            === RegNext(item.head.payload)
+          )
+        )
+      }
+    )
+  }
+  val myLoStateLoadStallCond1FindFirst = {
+    val myWordIdx = myLoStateLoadStallCondWordIdx
+    myHistLoStateLoadStallCond.sFindFirst(
+      item => {
+        //LcvOrR
+        (
+          RegNext(item.last.fire)
+          && (
+            myWordIdx.last
+            === RegNext(item.last.payload)
+          )
+        )
+      }
+    )
+  }
+
+  val myLoStateLoadStallCondVec = {
+    Vec(
+      myLoStateLoadStallCond0FindFirst._1,
+      myLoStateLoadStallCond1FindFirst._1,
+    )
+  }
+  val myLoStateLoadStallAddrVec = {
+    Vec(
+      myLoStateLoadStallCond0FindFirst._2,
+      myLoStateLoadStallCond1FindFirst._2,
+    )
+  }
 
   val myLoStateStoreStallCond = (
     LcvOrR(History[Bool](
@@ -14653,18 +14650,18 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             }
 
             myLoD2hPushStm.valid := (
-              !myLoStateLoadStallCond
+              !myLoStateLoadStallCondVec.head
               //&& !myHadAnyRecentRamWrite.head//False
               && rLoStateVec(1).asBits(LoState.IDLE_LOAD_MODE.position)
             )
             rSavedNeedLineWordReadAgain := (
-              myLoStateLoadStallCond
-              //|| myHadAnyRecentRamWrite(1)
-              || rLoStateVec(1).asBits(LoState.IDLE_STORE_MODE.position)
+              myLoStateLoadStallCondVec.head
+              ////|| myHadAnyRecentRamWrite(1)
+              //|| rLoStateVec(1).asBits(LoState.IDLE_STORE_MODE.position)
             )
 
             when (
-              myLoStateLoadStallCond
+              myLoStateLoadStallCondVec.head
               //|| myHadAnyRecentRamWrite(2)
               || rLoStateVec(1).asBits(LoState.IDLE_STORE_MODE.position)
               || !myLoD2hPushStm.ready
@@ -14674,7 +14671,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             }
 
             switch (
-              myLoStateLoadStallCond
+              myLoStateLoadStallCondVec.head
               ## (
                 //myHadAnyRecentRamWrite.last
                 //|| 
