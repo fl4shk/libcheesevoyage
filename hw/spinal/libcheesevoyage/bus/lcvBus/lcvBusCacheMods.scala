@@ -14468,7 +14468,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
               )
             )
           )
-          LcvOrR(
+          //LcvOrR(
             Vec(myWordIdx.zipWithIndex.map{
               case (_, idx) => (
                 RegNext(item(idx).fire)
@@ -14479,8 +14479,8 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
                   )
                 )
               )
-            })
-          )
+            }).head
+          //)
           //val temp = Array(
           //  (
           //    myWordIdx.head
