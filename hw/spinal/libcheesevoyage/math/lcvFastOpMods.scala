@@ -6,6 +6,29 @@ import spinal.lib._
 import spinal.core.sim._
 import scala.collection.mutable.ArrayBuffer
 
+object LcvOrR {
+  def apply(
+    data: Data,
+  ): Bool = {
+    val tempVec = Vec.fill(data.asBits.getWidth)(
+      Bool()
+    )
+    tempVec.assignFromBits(data.asBits)
+    tempVec.reduceBalancedTree(_ || _)
+  }
+}
+object LcvAndR {
+  def apply(
+    data: Data,
+  ): Bool = {
+    val tempVec = Vec.fill(data.asBits.getWidth)(
+      Bool()
+    )
+    tempVec.assignFromBits(data.asBits)
+    tempVec.reduceBalancedTree(_ && _)
+  }
+}
+
 object LcvPriorityMux {
   def apply(
     data: UInt,
