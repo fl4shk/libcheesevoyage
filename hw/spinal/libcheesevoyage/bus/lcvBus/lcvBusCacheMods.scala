@@ -15537,10 +15537,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       //wrLineAttrs.tag := rSavedWrLineAttrs.tag//RegNext(wrLineAttrs).tag
       //wrLineAttrs.dirty := True
 
-      //rSavedRamIdx := (
-      //  //RegNext(rSavedPrefetchRamIdx)
-      //  rSavedPrefetchRamIdx
-      //)
+      rSavedRamIdx := (
+        //RegNext(rSavedPrefetchRamIdx)
+        rSavedPrefetchRamIdx
+      )
 
       when (
         //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
@@ -15688,10 +15688,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       wrLineAttrs.head.tag := rSavedWrLineAttrs.tag//RegNext(wrLineAttrs).tag
       wrLineAttrs.head.dirty := True
 
-      //rSavedRamIdx := (
-      //  //RegNext(rSavedPrefetchRamIdx)
-      //  rSavedPrefetchRamIdx
-      //)
+      rSavedRamIdx := (
+        //RegNext(rSavedPrefetchRamIdx)
+        rSavedPrefetchRamIdx
+      )
 
       // What if the cache line we're trying to write to to evicted by
       // the prefetcher???
@@ -15703,8 +15703,8 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         )
         ## (
           //RegNext(
-            //rSavedPrefetchRamIdx
-            rSavedRamIdx
+            rSavedPrefetchRamIdx
+            //rSavedRamIdx
           //)
           //rSavedRamIdx
         )
@@ -15712,8 +15712,8 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         for (ramIdx <- 0 until numWays) {
           is (
             (
-              1 << rSavedRamIdx.getWidth
-              //1 << rSavedPrefetchRamIdx.getWidth
+              //1 << rSavedRamIdx.getWidth
+              1 << rSavedPrefetchRamIdx.getWidth
             )
             | ramIdx
           ) {
