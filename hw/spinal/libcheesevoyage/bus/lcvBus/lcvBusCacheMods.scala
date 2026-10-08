@@ -14775,6 +14775,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
                 !myLoStateStoreStallCond
                 //&& rLoState.asBits(LoState.IDLE_STORE_MODE.position)
               )
+              item(ramIdx).io.wrData := wrLineAttrs.head
             })
 
             wrLineAttrs.head := rdLineAttrs.head(ramIdx)
