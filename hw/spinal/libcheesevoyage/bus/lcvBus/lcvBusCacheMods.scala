@@ -14452,7 +14452,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             )
           )
           (
-            item.fire
+            RegNext(item.fire)
             && (
               temp
             )
