@@ -14409,7 +14409,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             myFindFirst._1
           )
           temp.payload := (
-            myFindFirst._2
+            myLineWordRamWrInfoMap(myFindFirst._2).payload
           )
           temp
         },
