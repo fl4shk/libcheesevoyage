@@ -14813,532 +14813,6 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     }
   }
 
-  switch (rLoStateVec.head) {
-    is (LoState.INIT) {
-      setLoState(LoState.IDLE_LOAD_MODE)
-    }
-    is (LoState.IDLE_LOAD_MODE) {
-      when (rMyTempDoSaveCond(0)) {
-        rSavedLoH2dPayload := rDel2LoH2dPayload
-      }
-      when (rMyTempDoSaveCond(1)) {
-        rSavedLoH2dPayload.byteSize := rDel2LoH2dPayload.byteSize
-      }
-      when (rMyTempDoSaveCond(2)) {
-        myLoD2hPushStm.busPayload.src := rDel2LoH2dPayload.src
-        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-          myLoD2hPushStm.busPayload.byteSize := (
-            rDel2LoH2dPayload.byteSize
-          )
-          myLoD2hPushStm.busPayload.addrLo := (
-            rDel2LoH2dPayload.addr(
-              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-            )
-          )
-        }
-        myLoD2hPushStm.busPayload.txnCnt := (
-          rDel2LoH2dPayload.txnCnt
-        )
-      }
-    }
-    is (LoState.IDLE_STORE_MODE) {
-      when (rMyTempDoSaveCond(0)) {
-        rSavedLoH2dPayload := rDel2LoH2dPayload
-      }
-      when (rMyTempDoSaveCond(1)) {
-        rSavedLoH2dPayload.byteSize := rDel2LoH2dPayload.byteSize
-      }
-      when (rMyTempDoSaveCond(2)) {
-        myLoD2hPushStm.busPayload.src := rDel2LoH2dPayload.src
-        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-          myLoD2hPushStm.busPayload.byteSize := (
-            rDel2LoH2dPayload.byteSize
-          )
-          myLoD2hPushStm.busPayload.addrLo := (
-            rDel2LoH2dPayload.addr(
-              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-            )
-          )
-        }
-        myLoD2hPushStm.busPayload.txnCnt := (
-          rDel2LoH2dPayload.txnCnt
-        )
-      }
-    }
-    is (LoState.NON_CACHED_BUS_ACCESS_WAIT_LO_D2H_FIFO_EMPTY) {
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-
-      when (
-        History(
-          that=(!myLoD2hFifo.io.pop.valid),
-          length=(cfg.busD2hFifoLatency + 1),
-          init=False,
-        ).last
-      ) {
-        setLoState(LoState.NON_CACHED_BUS_ACCESS)
-      }
-    }
-    is (LoState.NON_CACHED_BUS_ACCESS) {
-      io.mmioHiBus.h2dBus.valid := !rSeenMmioHiBusH2dFire
-
-      when (io.mmioHiBus.h2dBus.ready) {
-        rSeenMmioHiBusH2dFire := True
-      }
-      io.mmioHiBus.h2dBus.payload.mainNonBurstInfo := (
-        rSavedLoH2dPayload.mainNonBurstInfo
-      )
-      io.mmioHiBus.h2dBus.addr(
-        loBusCacheCfg.addrWidth - 1
-      ) := (
-        False
-      )
-      if (!loBusCfg.haveByteEn) {
-        io.mmioHiBus.h2dBus.data := rSavedLoH2dPayload.savedData
-      }
-      io.loBus.d2hBus <-/< io.mmioHiBus.d2hBus
-      when (io.loBus.d2hBus.fire) {
-        setLoState(
-          //LoState.IDLE
-          LoState.IDLE_LOAD_MODE
-        )
-      }
-    }
-    is (LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4) {
-      myLoD2hPushStm.valid := False
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-      mySelLoH2dPopStm.ready := False
-
-      //wrLineAttrs.tag := rSavedWrLineAttrs.tag//RegNext(wrLineAttrs).tag
-      //wrLineAttrs.dirty := True
-
-      rSavedRamIdx := (
-        //RegNext(rSavedPrefetchRamIdx)
-        rSavedPrefetchRamIdx
-      )
-
-      when (
-        //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
-        //&& 
-        fell(rPrefetchStallNotReady)
-      ) {
-        setLoState(LoState.LOAD_HIT_DO_STALL_PIPE_3)
-      }
-    }
-    is (LoState.LOAD_HIT_DO_STALL_PIPE_4) {
-      when (
-        //rHiState === HiState.IDLE
-        rHiState.asBits(HiState.IDLE.position)
-      ) {
-        setLoState(LoState.LOAD_HIT_DO_STALL_PIPE_3)
-      }
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-      myLoD2hPushStm.valid := False
-      mySelLoH2dPopStm.ready := False
-    }
-    is (LoState.LOAD_HIT_DO_STALL_PIPE_3) {
-      setLoState(LoState.LOAD_HIT_DO_STALL_PIPE_2)
-      myLoD2hPushStm.valid := False
-      mySelLoH2dPopStm.ready := False
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-
-      switch (rSavedRamIdx) {
-        for (ramIdx <- 0 until numWays) {
-          is (ramIdx) {
-            doLineWordRamReadSync(
-              vecIdx=0,
-              ramIdx=ramIdx,
-              busAddr=rSavedLoH2dPayload.addr,
-              setEn=0,
-            )
-          }
-        }
-      }
-    }
-    is (LoState.LOAD_HIT_DO_STALL_PIPE_2) {
-      setLoState(LoState.LOAD_HIT_DO_STALL_PIPE_1)
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := True)
-      myLoD2hPushStm.valid := False
-      mySelLoH2dPopStm.ready := False
-    }
-    is (LoState.LOAD_HIT_DO_STALL_PIPE_1) {
-      val myRdLineWord = (
-        //RegNext(
-          if (myCondHaveLineBitPlruRam) (
-            rdLineWord(rSavedRamIdx)
-          ) else (
-            rdLineWord.head
-          )
-        //)
-      )
-      when (rSavedNeedLineWordReadAgain) {
-        myLoD2hPushStm.busPayload.data := myRdLineWord
-        rSavedNeedLineWordReadAgain := False
-      }
-      setLoState(LoState.LOAD_HIT_DO_STALL)
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-    }
-    is (LoState.LOAD_HIT_DO_STALL) {
-      //val myRdLineWord = (
-      //  RegNext(
-      //    if (myCondHaveLineBitPlruRam) (
-      //      rdLineWord(rSavedRamIdx)
-      //    ) else (
-      //      rdLineWord.head
-      //    )
-      //  )
-      //)
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-
-      mySelLoH2dPopStm.ready := False
-      //myLoD2hPushStm.busPayload.data := myRdLineWord
-      //when (rSavedNeedLineWordReadAgain) {
-      //  myLoD2hPushStm.busPayload.data := myRdLineWord
-      //  rSavedNeedLineWordReadAgain := False
-      //}
-      //myLoD2hPushStm.busPayload
-      if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-        myLoD2hPushStm.busPayload.byteSize := (
-          rSavedLoH2dPayload.byteSize
-        )
-        myLoD2hPushStm.busPayload.addrLo := (
-          rSavedLoH2dPayload.addr(
-            cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-          )
-        )
-      }
-      myLoD2hPushStm.valid := True
-      //myLoH2dReptThing.io.finishTxn.valid := False
-      when (myLoD2hPushStm.fire) {
-        //myFifoThingDoStall := False
-        setLoState(LoState.LOAD_HIT_DO_STALL_POST)
-      }
-    }
-    is (LoState.LOAD_HIT_DO_STALL_POST) {
-      //rSavedNeedLineWordReadAgain := False
-
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-
-      setLoState(
-        LoState.WAIT_D2H_FIFO_PUSH_READY
-        //LoState.IDLE
-        //LoState.IDLE_LOAD_MODE
-      )
-    }
-    is (LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1) {
-      myLoD2hPushStm.valid := False
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-      mySelLoH2dPopStm.ready := False
-
-      wrLineAttrs.tag := rSavedWrLineAttrs.tag//RegNext(wrLineAttrs).tag
-      wrLineAttrs.dirty := True
-
-      rSavedRamIdx := (
-        //RegNext(rSavedPrefetchRamIdx)
-        rSavedPrefetchRamIdx
-      )
-
-      // What if the cache line we're trying to write to to evicted by
-      // the prefetcher???
-      switch (
-        (
-          //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
-          //&& 
-          fell(rPrefetchStallNotReady)
-        )
-        ## (
-          //RegNext(
-            rSavedPrefetchRamIdx
-          //)
-          //rSavedRamIdx
-        )
-      ) {
-        for (ramIdx <- 0 until numWays) {
-          is (
-            (
-              //1 << rSavedRamIdx.getWidth
-              1 << rSavedPrefetchRamIdx.getWidth
-            )
-            | ramIdx
-          ) {
-            lineAttrsRam.foreach(item => {
-              item(ramIdx).io.wrEn := True
-              item(ramIdx).io.wrAddr := convBusAddrToLineIdx(
-                someRam=item(ramIdx),
-                busAddr=rSavedLoH2dPayload.addr,
-              )
-            })
-            doLineWordRamWrite(
-              vecIdx=0,
-              ramIdx=ramIdx,
-              busAddr=rSavedLoH2dPayload.addr,
-              lineWord=rSavedLoH2dPayload.data,
-              byteEn=Some(rSavedLoH2dPayload.byteEn),
-              setEn=true,
-            )
-          }
-        }
-      }
-
-      when (
-        //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
-        //&& 
-        fell(rPrefetchStallNotReady)
-      ) {
-        setLoState(LoState.STORE_HIT_DO_STALL)
-      }
-    }
-    is (LoState.STORE_HIT_DO_STALL_PIPE_1) {
-      myLoD2hPushStm.valid := False
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-      mySelLoH2dPopStm.ready := False
-
-      setLoState(LoState.STORE_HIT_DO_STALL)
-    }
-    is (LoState.STORE_HIT_DO_STALL) {
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-
-      mySelLoH2dPopStm.ready := False
-      //myLoH2dReptThing.io.finishTxn.valid := False
-      myLoD2hPushStm.valid := True
-      when (myLoD2hPushStm.ready) {
-        setLoState(
-          LoState.WAIT_D2H_FIFO_PUSH_READY
-          //LoState.IDLE
-          //LoState.IDLE_STORE_MODE
-        )
-      }
-    }
-    is (LoState.WAIT_HI_STATE_MCHN_READY) {
-      switch (
-        //--------
-        //rHiState === HiState.IDLE
-        rHiState.asBits(HiState.IDLE.position)
-        ## rSavedLoH2dPayload.isWrite
-        //--------
-        //rHiState === HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
-        //rHiState.asBits(RECV_LINE_FROM_HI_BUS_PIPE_1)
-      ) {
-        is (M"10") {
-          setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_7_READ)
-        }
-        is (M"11") {
-          setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_7_WRITE)
-        }
-        //if (myCondHaveLineBitPlruRam) {
-        //  rSavedRamIdx := rSavedPrefetchRamIdx
-        //}
-      }
-    }
-    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_7_WRITE) {
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-
-      def myArgBusAddr = rSavedLoH2dPayload.addr
-      def myArgLineWord = rSavedLoH2dPayload.data
-      def myArgByteEn = Some(rSavedLoH2dPayload.byteEn)
-      def myArgSetEn = false//true
-
-      when (rHiState.asBits(HiState.IDLE.position)) {
-        setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_6)
-        if (myCondHaveLineBitPlruRam) {
-          rSavedRamIdx := rSavedPrefetchRamIdx
-        }
-      }
-      wrLineAttrs.tag := (
-        //rSavedWrLineAttrs.tag//RegNext(wrLineAttrs).tag
-        rSavedLoH2dPayload.addr(loBusCacheCfg.tagRange)
-      )
-      wrLineAttrs.dirty := True
-
-      switch (
-        rHiState.asBits(HiState.IDLE.position)
-        ## rSavedPrefetchRamIdx
-      ) {
-        for (ramIdx <- 0 until numWays) {
-          is (
-            (1 << rSavedPrefetchRamIdx.getWidth)
-            | ramIdx
-          ) {
-            lineWordRam(ramIdx).io.vec(0).wrEn := True
-            lineAttrsRam.foreach(item => {
-              item(ramIdx).io.wrEn := True
-              item(ramIdx).io.wrAddr := convBusAddrToLineIdx(
-                someRam=item(ramIdx),
-                busAddr=rSavedLoH2dPayload.addr,
-              )
-              item(ramIdx).io.wrData := wrLineAttrs
-            })
-          }
-        }
-      }
-
-      if (myCondHaveLineBitPlruRam) {
-        switch (
-          //rSavedRamIdx
-          rSavedPrefetchRamIdx
-        ) {
-          for (ramIdx <- 0 until numWays) {
-            is (ramIdx) {
-              doLineWordRamWrite(
-                vecIdx=0,
-                ramIdx=ramIdx,
-                busAddr=myArgBusAddr,
-                lineWord=myArgLineWord,
-                byteEn=myArgByteEn,
-                setEn=myArgSetEn,
-              )
-            }
-          }
-        }
-      } else {
-        //lineAttrsRam.foreach(item => {
-        //  item.head.io.wrEn := True
-        //  item.head.io.wrAddr := convBusAddrToLineIdx(
-        //    someRam=item.head,
-        //    busAddr=rSavedLoH2dPayload.addr,
-        //  )
-        //  item.head.io.wrData := wrLineAttrs
-        //})
-        doLineWordRamWrite(
-          vecIdx=0,
-          ramIdx=0,
-          busAddr=myArgBusAddr,
-          lineWord=myArgLineWord,
-          byteEn=myArgByteEn,
-          setEn=myArgSetEn,
-        )
-      }
-      //setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_7)
-    }
-    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_7_READ) {
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      when (rHiState.asBits(HiState.IDLE.position)) {
-        setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_6)
-        if (myCondHaveLineBitPlruRam) {
-          rSavedRamIdx := rSavedPrefetchRamIdx
-        }
-      }
-    }
-    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_6) {
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_5)
-    }
-    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_5) {
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_4)
-    }
-    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_4) {
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-      switch (rSavedRamIdx) {
-        for (ramIdx <- 0 until numWays) {
-          is (ramIdx) {
-            doLineWordRamReadSync(
-              vecIdx=0,
-              ramIdx=ramIdx,
-              busAddr=rSavedLoH2dPayload.addr,
-              setEn=0,
-            )
-          }
-        }
-      }
-      setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_3)
-    }
-    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_3) {
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := True)
-      setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_2)
-    }
-    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_2) {
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-      setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_1)
-    }
-    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_1) {
-      val myRdLineWord = (
-        if (myCondHaveLineBitPlruRam) (
-          rdLineWord(rSavedRamIdx)
-        ) else (
-          rdLineWord.head
-        )
-      )
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-      //rState := State.WAIT_HI_STATE_MCHN_READY_POST
-
-      myLoD2hPushStm.valid := True
-      myLoD2hPushStm.busPayload.src := rSavedLoH2dPayload.src
-
-      if (!loBusCfg.haveByteEn) {
-        myLoD2hPayload.byteSize := rSavedLoH2dPayload.byteSize
-        myLoD2hPayload.addrLo := (
-          rSavedLoH2dPayload.addr(
-            loBusCfg.addrLoWidth - 1 downto 0
-          )
-        )
-      }
-
-      when (RegNext(
-        //rose(rLoState === LoState.WAIT_HI_STATE_MCHN_READY_POST_2)
-        rose(
-          rLoStateVec.head.asBits(
-            LoState.WAIT_HI_STATE_MCHN_READY_POST_2.position
-          )
-        )
-      )) {
-        myLoD2hPushStm.busPayload.data := RegNext(
-          myRdLineWord
-        )
-      }
-
-      when (myLoD2hPushStm.ready) {
-        setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST)
-      }
-    }
-    is (LoState.WAIT_HI_STATE_MCHN_READY_POST) {
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-      setLoState(
-        LoState.WAIT_D2H_FIFO_PUSH_READY
-        //LoState.IDLE
-        //LoState.IDLE_LOAD_MODE
-      )
-    }
-    is (LoState.WAIT_D2H_FIFO_PUSH_READY) {
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-
-      switch (
-        myLoD2hFifo.io.push.ready
-        ## rSavedLoH2dPayload.isWrite
-      ) {
-        is (M"10") {
-          setLoState(LoState.IDLE_LOAD_MODE)
-        }
-        is (M"11") {
-          setLoState(LoState.IDLE_STORE_MODE)
-        }
-      }
-      //when (!myLoD2hFifo.io.pop.valid) {
-      //  setLoState(LoState.IDLE_LOAD_MODE)
-      //}
-    }
-  }
-
   switch (rHiState) {
     is (HiState.IDLE) {
       switch (
@@ -15905,6 +15379,532 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
       lineBitPlruRam.last.io.rdEn := False
       rHiState := HiState.IDLE
+    }
+  }
+
+  switch (rLoStateVec.head) {
+    is (LoState.INIT) {
+      setLoState(LoState.IDLE_LOAD_MODE)
+    }
+    is (LoState.IDLE_LOAD_MODE) {
+      when (rMyTempDoSaveCond(0)) {
+        rSavedLoH2dPayload := rDel2LoH2dPayload
+      }
+      when (rMyTempDoSaveCond(1)) {
+        rSavedLoH2dPayload.byteSize := rDel2LoH2dPayload.byteSize
+      }
+      when (rMyTempDoSaveCond(2)) {
+        myLoD2hPushStm.busPayload.src := rDel2LoH2dPayload.src
+        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+          myLoD2hPushStm.busPayload.byteSize := (
+            rDel2LoH2dPayload.byteSize
+          )
+          myLoD2hPushStm.busPayload.addrLo := (
+            rDel2LoH2dPayload.addr(
+              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
+            )
+          )
+        }
+        myLoD2hPushStm.busPayload.txnCnt := (
+          rDel2LoH2dPayload.txnCnt
+        )
+      }
+    }
+    is (LoState.IDLE_STORE_MODE) {
+      when (rMyTempDoSaveCond(0)) {
+        rSavedLoH2dPayload := rDel2LoH2dPayload
+      }
+      when (rMyTempDoSaveCond(1)) {
+        rSavedLoH2dPayload.byteSize := rDel2LoH2dPayload.byteSize
+      }
+      when (rMyTempDoSaveCond(2)) {
+        myLoD2hPushStm.busPayload.src := rDel2LoH2dPayload.src
+        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+          myLoD2hPushStm.busPayload.byteSize := (
+            rDel2LoH2dPayload.byteSize
+          )
+          myLoD2hPushStm.busPayload.addrLo := (
+            rDel2LoH2dPayload.addr(
+              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
+            )
+          )
+        }
+        myLoD2hPushStm.busPayload.txnCnt := (
+          rDel2LoH2dPayload.txnCnt
+        )
+      }
+    }
+    is (LoState.NON_CACHED_BUS_ACCESS_WAIT_LO_D2H_FIFO_EMPTY) {
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+
+      when (
+        History(
+          that=(!myLoD2hFifo.io.pop.valid),
+          length=(cfg.busD2hFifoLatency + 1),
+          init=False,
+        ).last
+      ) {
+        setLoState(LoState.NON_CACHED_BUS_ACCESS)
+      }
+    }
+    is (LoState.NON_CACHED_BUS_ACCESS) {
+      io.mmioHiBus.h2dBus.valid := !rSeenMmioHiBusH2dFire
+
+      when (io.mmioHiBus.h2dBus.ready) {
+        rSeenMmioHiBusH2dFire := True
+      }
+      io.mmioHiBus.h2dBus.payload.mainNonBurstInfo := (
+        rSavedLoH2dPayload.mainNonBurstInfo
+      )
+      io.mmioHiBus.h2dBus.addr(
+        loBusCacheCfg.addrWidth - 1
+      ) := (
+        False
+      )
+      if (!loBusCfg.haveByteEn) {
+        io.mmioHiBus.h2dBus.data := rSavedLoH2dPayload.savedData
+      }
+      io.loBus.d2hBus <-/< io.mmioHiBus.d2hBus
+      when (io.loBus.d2hBus.fire) {
+        setLoState(
+          //LoState.IDLE
+          LoState.IDLE_LOAD_MODE
+        )
+      }
+    }
+    is (LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4) {
+      myLoD2hPushStm.valid := False
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+      mySelLoH2dPopStm.ready := False
+
+      //wrLineAttrs.tag := rSavedWrLineAttrs.tag//RegNext(wrLineAttrs).tag
+      //wrLineAttrs.dirty := True
+
+      rSavedRamIdx := (
+        //RegNext(rSavedPrefetchRamIdx)
+        rSavedPrefetchRamIdx
+      )
+
+      when (
+        //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
+        //&& 
+        fell(rPrefetchStallNotReady)
+      ) {
+        setLoState(LoState.LOAD_HIT_DO_STALL_PIPE_3)
+      }
+    }
+    is (LoState.LOAD_HIT_DO_STALL_PIPE_4) {
+      when (
+        //rHiState === HiState.IDLE
+        rHiState.asBits(HiState.IDLE.position)
+      ) {
+        setLoState(LoState.LOAD_HIT_DO_STALL_PIPE_3)
+      }
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+      myLoD2hPushStm.valid := False
+      mySelLoH2dPopStm.ready := False
+    }
+    is (LoState.LOAD_HIT_DO_STALL_PIPE_3) {
+      setLoState(LoState.LOAD_HIT_DO_STALL_PIPE_2)
+      myLoD2hPushStm.valid := False
+      mySelLoH2dPopStm.ready := False
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+
+      switch (rSavedRamIdx) {
+        for (ramIdx <- 0 until numWays) {
+          is (ramIdx) {
+            doLineWordRamReadSync(
+              vecIdx=0,
+              ramIdx=ramIdx,
+              busAddr=rSavedLoH2dPayload.addr,
+              setEn=0,
+            )
+          }
+        }
+      }
+    }
+    is (LoState.LOAD_HIT_DO_STALL_PIPE_2) {
+      setLoState(LoState.LOAD_HIT_DO_STALL_PIPE_1)
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := True)
+      myLoD2hPushStm.valid := False
+      mySelLoH2dPopStm.ready := False
+    }
+    is (LoState.LOAD_HIT_DO_STALL_PIPE_1) {
+      val myRdLineWord = (
+        //RegNext(
+          if (myCondHaveLineBitPlruRam) (
+            rdLineWord(rSavedRamIdx)
+          ) else (
+            rdLineWord.head
+          )
+        //)
+      )
+      when (rSavedNeedLineWordReadAgain) {
+        myLoD2hPushStm.busPayload.data := myRdLineWord
+        rSavedNeedLineWordReadAgain := False
+      }
+      setLoState(LoState.LOAD_HIT_DO_STALL)
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+    }
+    is (LoState.LOAD_HIT_DO_STALL) {
+      //val myRdLineWord = (
+      //  RegNext(
+      //    if (myCondHaveLineBitPlruRam) (
+      //      rdLineWord(rSavedRamIdx)
+      //    ) else (
+      //      rdLineWord.head
+      //    )
+      //  )
+      //)
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+
+      mySelLoH2dPopStm.ready := False
+      //myLoD2hPushStm.busPayload.data := myRdLineWord
+      //when (rSavedNeedLineWordReadAgain) {
+      //  myLoD2hPushStm.busPayload.data := myRdLineWord
+      //  rSavedNeedLineWordReadAgain := False
+      //}
+      //myLoD2hPushStm.busPayload
+      if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+        myLoD2hPushStm.busPayload.byteSize := (
+          rSavedLoH2dPayload.byteSize
+        )
+        myLoD2hPushStm.busPayload.addrLo := (
+          rSavedLoH2dPayload.addr(
+            cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
+          )
+        )
+      }
+      myLoD2hPushStm.valid := True
+      //myLoH2dReptThing.io.finishTxn.valid := False
+      when (myLoD2hPushStm.fire) {
+        //myFifoThingDoStall := False
+        setLoState(LoState.LOAD_HIT_DO_STALL_POST)
+      }
+    }
+    is (LoState.LOAD_HIT_DO_STALL_POST) {
+      //rSavedNeedLineWordReadAgain := False
+
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+
+      setLoState(
+        LoState.WAIT_D2H_FIFO_PUSH_READY
+        //LoState.IDLE
+        //LoState.IDLE_LOAD_MODE
+      )
+    }
+    is (LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1) {
+      myLoD2hPushStm.valid := False
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+      mySelLoH2dPopStm.ready := False
+
+      wrLineAttrs.tag := rSavedWrLineAttrs.tag//RegNext(wrLineAttrs).tag
+      wrLineAttrs.dirty := True
+
+      rSavedRamIdx := (
+        //RegNext(rSavedPrefetchRamIdx)
+        rSavedPrefetchRamIdx
+      )
+
+      // What if the cache line we're trying to write to to evicted by
+      // the prefetcher???
+      switch (
+        (
+          //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
+          //&& 
+          fell(rPrefetchStallNotReady)
+        )
+        ## (
+          //RegNext(
+            rSavedPrefetchRamIdx
+          //)
+          //rSavedRamIdx
+        )
+      ) {
+        for (ramIdx <- 0 until numWays) {
+          is (
+            (
+              //1 << rSavedRamIdx.getWidth
+              1 << rSavedPrefetchRamIdx.getWidth
+            )
+            | ramIdx
+          ) {
+            lineAttrsRam.foreach(item => {
+              item(ramIdx).io.wrEn := True
+              item(ramIdx).io.wrAddr := convBusAddrToLineIdx(
+                someRam=item(ramIdx),
+                busAddr=rSavedLoH2dPayload.addr,
+              )
+            })
+            doLineWordRamWrite(
+              vecIdx=0,
+              ramIdx=ramIdx,
+              busAddr=rSavedLoH2dPayload.addr,
+              lineWord=rSavedLoH2dPayload.data,
+              byteEn=Some(rSavedLoH2dPayload.byteEn),
+              setEn=true,
+            )
+          }
+        }
+      }
+
+      when (
+        //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
+        //&& 
+        fell(rPrefetchStallNotReady)
+      ) {
+        setLoState(LoState.STORE_HIT_DO_STALL)
+      }
+    }
+    is (LoState.STORE_HIT_DO_STALL_PIPE_1) {
+      myLoD2hPushStm.valid := False
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+      mySelLoH2dPopStm.ready := False
+
+      setLoState(LoState.STORE_HIT_DO_STALL)
+    }
+    is (LoState.STORE_HIT_DO_STALL) {
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+
+      mySelLoH2dPopStm.ready := False
+      //myLoH2dReptThing.io.finishTxn.valid := False
+      myLoD2hPushStm.valid := True
+      when (myLoD2hPushStm.ready) {
+        setLoState(
+          LoState.WAIT_D2H_FIFO_PUSH_READY
+          //LoState.IDLE
+          //LoState.IDLE_STORE_MODE
+        )
+      }
+    }
+    is (LoState.WAIT_HI_STATE_MCHN_READY) {
+      switch (
+        //--------
+        //rHiState === HiState.IDLE
+        rHiState.asBits(HiState.IDLE.position)
+        ## rSavedLoH2dPayload.isWrite
+        //--------
+        //rHiState === HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
+        //rHiState.asBits(RECV_LINE_FROM_HI_BUS_PIPE_1)
+      ) {
+        is (M"10") {
+          setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_7_READ)
+        }
+        is (M"11") {
+          setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_7_WRITE)
+        }
+        //if (myCondHaveLineBitPlruRam) {
+        //  rSavedRamIdx := rSavedPrefetchRamIdx
+        //}
+      }
+    }
+    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_7_WRITE) {
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+
+      def myArgBusAddr = rSavedLoH2dPayload.addr
+      def myArgLineWord = rSavedLoH2dPayload.data
+      def myArgByteEn = Some(rSavedLoH2dPayload.byteEn)
+      def myArgSetEn = false//true
+
+      when (rHiState.asBits(HiState.IDLE.position)) {
+        setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_6)
+        if (myCondHaveLineBitPlruRam) {
+          rSavedRamIdx := rSavedPrefetchRamIdx
+        }
+      }
+      wrLineAttrs.tag := (
+        //rSavedWrLineAttrs.tag//RegNext(wrLineAttrs).tag
+        rSavedLoH2dPayload.addr(loBusCacheCfg.tagRange)
+      )
+      wrLineAttrs.dirty := True
+
+      switch (
+        rHiState.asBits(HiState.IDLE.position)
+        ## rSavedPrefetchRamIdx
+      ) {
+        for (ramIdx <- 0 until numWays) {
+          is (
+            (1 << rSavedPrefetchRamIdx.getWidth)
+            | ramIdx
+          ) {
+            lineWordRam(ramIdx).io.vec(0).wrEn := True
+            lineAttrsRam.foreach(item => {
+              item(ramIdx).io.wrEn := True
+              item(ramIdx).io.wrAddr := convBusAddrToLineIdx(
+                someRam=item(ramIdx),
+                busAddr=rSavedLoH2dPayload.addr,
+              )
+              item(ramIdx).io.wrData := wrLineAttrs
+            })
+          }
+        }
+      }
+
+      if (myCondHaveLineBitPlruRam) {
+        switch (
+          //rSavedRamIdx
+          rSavedPrefetchRamIdx
+        ) {
+          for (ramIdx <- 0 until numWays) {
+            is (ramIdx) {
+              doLineWordRamWrite(
+                vecIdx=0,
+                ramIdx=ramIdx,
+                busAddr=myArgBusAddr,
+                lineWord=myArgLineWord,
+                byteEn=myArgByteEn,
+                setEn=myArgSetEn,
+              )
+            }
+          }
+        }
+      } else {
+        //lineAttrsRam.foreach(item => {
+        //  item.head.io.wrEn := True
+        //  item.head.io.wrAddr := convBusAddrToLineIdx(
+        //    someRam=item.head,
+        //    busAddr=rSavedLoH2dPayload.addr,
+        //  )
+        //  item.head.io.wrData := wrLineAttrs
+        //})
+        doLineWordRamWrite(
+          vecIdx=0,
+          ramIdx=0,
+          busAddr=myArgBusAddr,
+          lineWord=myArgLineWord,
+          byteEn=myArgByteEn,
+          setEn=myArgSetEn,
+        )
+      }
+      //setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_7)
+    }
+    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_7_READ) {
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      when (rHiState.asBits(HiState.IDLE.position)) {
+        setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_6)
+        if (myCondHaveLineBitPlruRam) {
+          rSavedRamIdx := rSavedPrefetchRamIdx
+        }
+      }
+    }
+    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_6) {
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_5)
+    }
+    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_5) {
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_4)
+    }
+    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_4) {
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+      switch (rSavedRamIdx) {
+        for (ramIdx <- 0 until numWays) {
+          is (ramIdx) {
+            doLineWordRamReadSync(
+              vecIdx=0,
+              ramIdx=ramIdx,
+              busAddr=rSavedLoH2dPayload.addr,
+              setEn=0,
+            )
+          }
+        }
+      }
+      setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_3)
+    }
+    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_3) {
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := True)
+      setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_2)
+    }
+    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_2) {
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+      setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST_1)
+    }
+    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_1) {
+      val myRdLineWord = (
+        if (myCondHaveLineBitPlruRam) (
+          rdLineWord(rSavedRamIdx)
+        ) else (
+          rdLineWord.head
+        )
+      )
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+      //rState := State.WAIT_HI_STATE_MCHN_READY_POST
+
+      myLoD2hPushStm.valid := True
+      myLoD2hPushStm.busPayload.src := rSavedLoH2dPayload.src
+
+      if (!loBusCfg.haveByteEn) {
+        myLoD2hPayload.byteSize := rSavedLoH2dPayload.byteSize
+        myLoD2hPayload.addrLo := (
+          rSavedLoH2dPayload.addr(
+            loBusCfg.addrLoWidth - 1 downto 0
+          )
+        )
+      }
+
+      when (RegNext(
+        //rose(rLoState === LoState.WAIT_HI_STATE_MCHN_READY_POST_2)
+        rose(
+          rLoStateVec.head.asBits(
+            LoState.WAIT_HI_STATE_MCHN_READY_POST_2.position
+          )
+        )
+      )) {
+        myLoD2hPushStm.busPayload.data := RegNext(
+          myRdLineWord
+        )
+      }
+
+      when (myLoD2hPushStm.ready) {
+        setLoState(LoState.WAIT_HI_STATE_MCHN_READY_POST)
+      }
+    }
+    is (LoState.WAIT_HI_STATE_MCHN_READY_POST) {
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+      setLoState(
+        LoState.WAIT_D2H_FIFO_PUSH_READY
+        //LoState.IDLE
+        //LoState.IDLE_LOAD_MODE
+      )
+    }
+    is (LoState.WAIT_D2H_FIFO_PUSH_READY) {
+      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+
+      switch (
+        myLoD2hFifo.io.push.ready
+        ## rSavedLoH2dPayload.isWrite
+      ) {
+        is (M"10") {
+          setLoState(LoState.IDLE_LOAD_MODE)
+        }
+        is (M"11") {
+          setLoState(LoState.IDLE_STORE_MODE)
+        }
+      }
+      //when (!myLoD2hFifo.io.pop.valid) {
+      //  setLoState(LoState.IDLE_LOAD_MODE)
+      //}
     }
   }
 
