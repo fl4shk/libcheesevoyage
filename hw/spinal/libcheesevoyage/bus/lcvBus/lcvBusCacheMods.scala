@@ -12725,8 +12725,10 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
     lineAttrsRam.foreach(item => item(idx).io.wrEn := False)
   }
 
-  val wrLineAttrs = LcvBusCacheLineAttrs(cfg=loBusCfg)
-  val rSavedWrLineAttrs = Reg(cloneOf(wrLineAttrs))
+  val wrLineAttrs = Vec.fill(numLoHi)(
+    LcvBusCacheLineAttrs(cfg=loBusCfg)
+  )
+  val rSavedWrLineAttrs = Reg(cloneOf(wrLineAttrs.head))
   wrLineAttrs := RegNext(wrLineAttrs, init=wrLineAttrs.getZero)
   wrLineAttrs.allowOverride
 
@@ -13579,7 +13581,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         )
       ),
       lineAttrs=(
-        wrLineAttrs
+        wrLineAttrs.last
       ),
       setEn=false,
     )
@@ -14721,8 +14723,8 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
               )
             })
 
-            wrLineAttrs := rdLineAttrs.head(ramIdx)
-            wrLineAttrs.dirty := True
+            wrLineAttrs.head := rdLineAttrs.head(ramIdx)
+            wrLineAttrs.head.dirty := True
             rSavedWrLineAttrs := rdLineAttrs.head(ramIdx)
             //rSavedWrLineAttrs.dirty := True
             //--------
@@ -15329,17 +15331,17 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
         )
         
         //wrLineAttrs.dirty := False
-        wrLineAttrs.dirty := (
+        wrLineAttrs.last.dirty := (
           rLoStateVec.head.asBits(
             LoState.WAIT_HI_STATE_MCHN_READY_POST_7_WRITE.position
           )
         )
-        wrLineAttrs.tag := (
+        wrLineAttrs.last.tag := (
           rSavedPrefetchLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
         )
 
         def myArgBusAddr = rSavedPrefetchLoH2dPayload.addr
-        def myArgWrLineAttrs = wrLineAttrs
+        def myArgWrLineAttrs = wrLineAttrs.last
         def myArgSetEn = true
 
         if (myCondHaveLineBitPlruRam) {
@@ -15607,8 +15609,8 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
       mySelLoH2dPopStm.ready := False
 
-      wrLineAttrs.tag := rSavedWrLineAttrs.tag//RegNext(wrLineAttrs).tag
-      wrLineAttrs.dirty := True
+      wrLineAttrs.head.tag := rSavedWrLineAttrs.tag//RegNext(wrLineAttrs).tag
+      wrLineAttrs.head.dirty := True
 
       rSavedRamIdx := (
         //RegNext(rSavedPrefetchRamIdx)
@@ -15724,11 +15726,11 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
           rSavedRamIdx := rSavedPrefetchRamIdx
         }
       }
-      wrLineAttrs.tag := (
+      wrLineAttrs.head.tag := (
         //rSavedWrLineAttrs.tag//RegNext(wrLineAttrs).tag
         rSavedLoH2dPayload.addr(loBusCacheCfg.tagRange)
       )
-      wrLineAttrs.dirty := True
+      wrLineAttrs.head.dirty := True
 
       switch (
         rHiState.asBits(HiState.IDLE.position)
@@ -15746,7 +15748,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
                 someRam=item(ramIdx),
                 busAddr=rSavedLoH2dPayload.addr,
               )
-              item(ramIdx).io.wrData := wrLineAttrs
+              item(ramIdx).io.wrData := wrLineAttrs.head
             })
           }
         }
@@ -15912,7 +15914,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
   //val rSavedHaveHit = Reg(Bool(), init=False)
 
   
-  wrLineAttrs.valid := True
+  wrLineAttrs.foreach(_.valid := True)
 }
 
 //private[libcheesevoyage] case class LcvBusDataCacheMain(
