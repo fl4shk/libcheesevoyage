@@ -6506,13 +6506,13 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
                   )
                 )
               )
-              || (
-                (
-                  //io.hiBus.d2hBus.valid
-                  //&& 
-                  io.hiBus.d2hBus.burstLast
-                )
-              )
+              //|| (
+              //  (
+              //    //io.hiBus.d2hBus.valid
+              //    //&& 
+              //    io.hiBus.d2hBus.burstLast
+              //  )
+              //)
             )
           )._1
         )
