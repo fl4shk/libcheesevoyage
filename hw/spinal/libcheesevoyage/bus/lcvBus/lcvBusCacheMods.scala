@@ -14724,7 +14724,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
             wrLineAttrs := rdLineAttrs.head(ramIdx)
             wrLineAttrs.dirty := True
             rSavedWrLineAttrs := rdLineAttrs.head(ramIdx)
-            rSavedWrLineAttrs.dirty := True
+            //rSavedWrLineAttrs.dirty := True
             //--------
             //mySelLoH2dPopStm.ready := True
             myLoD2hPushStm.valid := (
