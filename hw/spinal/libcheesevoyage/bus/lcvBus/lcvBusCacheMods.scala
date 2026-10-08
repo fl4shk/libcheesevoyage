@@ -14390,10 +14390,26 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
       History[Flow[UInt]](
         that={
           val temp = Flow(cloneOf(lineWordRam.head.io.vec.head.addr))
-          temp.valid := (
+          val myLineWordRamWrInfoMap = (
             Vec(lineWordRam.map(
-              item => item.io.vec.head.wrEn
-            )).orR
+              item => {
+                val temp = Flow(cloneOf(item.io.vec.head.addr))
+                temp.valid := item.io.vec.head.wrEn
+                temp.payload := item.io.vec.head.addr
+                temp
+              }
+            ))
+          )
+          val myFindFirst = (
+            myLineWordRamWrInfoMap.sFindFirst(
+              item => item.fire
+            )
+          )
+          temp.valid := (
+            myFindFirst._1
+          )
+          temp.payload := (
+            myFindFirst._2
           )
           temp
         },
@@ -14414,7 +14430,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
               // per-`lineWordRam.io.vec` element,
               // `lineWordRam` is used in this module to either read
               // *or* write, *but not both* in the same cycle!
-              // We can thus use `RegNext(...)` here, I think!
+              // We can thus use `RegNext(item.payload)` here, I think!
               RegNext(
                 item.payload//.head
               )
