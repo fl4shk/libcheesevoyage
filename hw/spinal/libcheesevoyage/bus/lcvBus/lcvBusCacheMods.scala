@@ -15701,6 +15701,7 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
                 someRam=item(ramIdx),
                 busAddr=rSavedLoH2dPayload.addr,
               )
+              item(ramIdx).io.wrData := wrLineAttrs.head
             })
             doLineWordRamWrite(
               vecIdx=0,
