@@ -6496,12 +6496,21 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
             }
           ).sFindFirst(
             item => (
-              item.fire
-              && (
-                RegNext(
-                  rLoH2dPayload.busPayload.addrToBurstCnt()
-                ) === (
-                  item.payload
+              (
+                item.fire
+                && (
+                  RegNext(
+                    rLoH2dPayload.busPayload.addrToBurstCnt()
+                  ) === (
+                    item.payload
+                  )
+                )
+              )
+              || (
+                (
+                  //io.hiBus.d2hBus.valid
+                  //&& 
+                  io.hiBus.d2hBus.burstLast
                 )
               )
             )
@@ -6511,13 +6520,13 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
         //  rLoH2dPayload.addr(
         //)
       )
-      || (
-        (
-          //io.hiBus.d2hBus.valid
-          //&& 
-          io.hiBus.d2hBus.burstLast
-        )
-      )
+      //|| (
+      //  (
+      //    //io.hiBus.d2hBus.valid
+      //    //&& 
+      //    io.hiBus.d2hBus.burstLast
+      //  )
+      //)
     ),
     //(
     //  RegNext(
