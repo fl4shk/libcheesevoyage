@@ -18495,39 +18495,151 @@ case class LcvBusDataCacheNoPrefetch(
     )
   )
 
-  val myTempHaveCurrRamWrite = (
-    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-  )
-  val myHistHadAnyRamWrite = Array.fill(4)(
-    History[Bool](
-      that=(
-        //RegNext(
-          myTempHaveCurrRamWrite//,
-        //  init=myTempHaveCurrRamWrite.getZero
-        //)
-      ),
-      length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-      init=myTempHaveCurrRamWrite.getZero
+  //val myTempHaveCurrRamWrite = (
+  //  Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
+  //  || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
+  //)
+  //val myHistHadAnyRamWrite = Array.fill(4)(
+  //  History[Bool](
+  //    that=(
+  //      //RegNext(
+  //        myTempHaveCurrRamWrite//,
+  //      //  init=myTempHaveCurrRamWrite.getZero
+  //      //)
+  //    ),
+  //    length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
+  //    init=myTempHaveCurrRamWrite.getZero
+  //  )
+  //)
+
+  def convBusAddrToWordIdx[
+    WordT <: Data
+  ](
+    someRam: RamSdpPipe[WordT],
+    busAddr: UInt
+  ): UInt = {
+    (busAddr(busAddr.high downto myLineWordRamAddrRshift))
+    .resize(someRam.io.rdAddr.getWidth)
+  }
+
+  def convBusAddrToLineIdx[
+    WordT <: Data
+  ](
+    someRam: RamSdpPipe[WordT],
+    busAddr: UInt
+  ): UInt = {
+    (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
+    .resize(someRam.io.rdAddr.getWidth)
+  }
+
+  val myHistHazardCheckLineWordIdx = (
+    History(
+      that={
+        val temp = Vec.fill(numWays)(
+          Flow(cloneOf(lineWordRam.head.io.rdAddr))
+        )
+        for (idx <- 0 until numWays) {
+          temp(idx).valid := lineWordRam(idx).io.wrEn
+          temp(idx).payload := lineWordRam(idx).io.wrAddr
+        }
+        temp
+      },
+      length=cfg.myRamOptWrHistLengthPlusAddend,
+      init={
+        val temp = Vec.fill(numWays)(
+          Flow(cloneOf(lineWordRam.head.io.rdAddr))
+        )
+        temp.getZero
+      }
     )
   )
-  val myHadAnyRecentRamWrite = Vec[Bool](
-    myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
-    //RegNext(
-    //  (
-    //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-    //    || RegNext(
-    //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR,
-    //      init=False
-    //    )
-    //    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-    //    || RegNext(
-    //      Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR,
-    //      init=False
-    //    )
-    //  ),
-    //  init=False
-    //)
+  val myHistHazardCheckLineAttrsIdx = (
+    History(
+      that={
+        val temp = Vec.fill(numWays)(
+          Flow(cloneOf(lineAttrsRam.head.io.rdAddr))
+        )
+        for (idx <- 0 until numWays) {
+          temp(idx).valid := lineAttrsRam(idx).io.wrEn
+          temp(idx).payload := lineAttrsRam(idx).io.wrAddr
+        }
+        temp
+      },
+      length=cfg.myRamOptWrHistLengthPlusAddend,
+      init={
+        val temp = Vec.fill(numWays)(
+          Flow(cloneOf(lineAttrsRam.head.io.rdAddr))
+        )
+        temp.getZero
+      }
+    )
+  )
+  val myHazardCheckMergedVec = {
+    Vec.fill(2)(
+      Vec.fill(cfg.myRamOptWrHistLengthPlusAddend)(
+        Vec.fill(numWays)(
+          Bool()
+        )
+      )
+    )
+  }
+  for (kdx <- 0 until myHazardCheckMergedVec.size) {
+    for (jdx <- 0 until cfg.myRamOptWrHistLengthPlusAddend) {
+      for (idx <- 0 until numWays) {
+        myHazardCheckMergedVec(kdx)(jdx)(idx) := {
+          val temp = (
+            if (kdx == 0) {
+              myHistHazardCheckLineWordIdx(jdx)(idx)
+            } else {
+              myHistHazardCheckLineAttrsIdx(jdx)(idx)
+            }
+          )
+          (
+            temp.fire
+            && (
+              temp.payload
+              === (
+                if (kdx == 0) (
+                  convBusAddrToWordIdx(
+                    someRam=lineWordRam(idx),
+                    busAddr=rLoH2dPayload.addr,
+                  )
+                ) else (
+                  convBusAddrToLineIdx(
+                    someRam=lineAttrsRam(idx),
+                    busAddr=rLoH2dPayload.addr,
+                  )
+                )
+              )
+            )
+          )
+        }
+      }
+    }
+  }
+
+  val myHadRecentRamWriteHazard = Vec[Bool](
+    RegNext(
+      LcvOrR(
+        myHazardCheckMergedVec
+      )
+    )
+    //myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
+    ////RegNext(
+    ////  (
+    ////    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
+    ////    || RegNext(
+    ////      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR,
+    ////      init=False
+    ////    )
+    ////    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
+    ////    || RegNext(
+    ////      Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR,
+    ////      init=False
+    ////    )
+    ////  ),
+    ////  init=False
+    ////)
   )
   //val rHadLineAttrsRamWritePastTwoCycles = Vec.fill(2)(
   //  RegNext(
@@ -18792,16 +18904,16 @@ case class LcvBusDataCacheNoPrefetch(
           )
         }
 
-        myLoD2hPushStm.valid := !myHadAnyRecentRamWrite.head//False
+        myLoD2hPushStm.valid := !myHadRecentRamWriteHazard.head//False
         //when (
         //  myHadAnyRecentRamWrite.head
         //) {
         //  myLoD2hPushStm.valid := False
         //}
-        rSavedNeedLineWordReadAgain := myHadAnyRecentRamWrite(1)
+        rSavedNeedLineWordReadAgain := myHadRecentRamWriteHazard(1)
 
         when (
-          myHadAnyRecentRamWrite(2)
+          myHadRecentRamWriteHazard(2)
           || !myLoD2hPushStm.ready
         ) {
           mySelLoH2dPopStm.ready := False
@@ -18813,7 +18925,7 @@ case class LcvBusDataCacheNoPrefetch(
           //myTempUpdateSavedLoH2dPayloadCond := False
         }
         switch (
-          myHadAnyRecentRamWrite.last
+          myHadRecentRamWriteHazard.last
           ## myLoD2hPushStm.ready
         ) {
           is (M"1-") {
