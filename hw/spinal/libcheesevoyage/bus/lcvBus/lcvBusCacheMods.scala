@@ -7082,7 +7082,10 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       //myLoH2dReptThing.io.finishTxn.valid := False
       when (myLoD2hPushStm.fire) {
         //myFifoThingDoStall := False
-        rLoState := LoState.LOAD_HIT_DO_STALL_POST
+        rLoState := (
+          //LoState.LOAD_HIT_DO_STALL_POST
+          LoState.IDLE_LOAD_MODE
+        )
       }
     }
     is (LoState.LOAD_HIT_DO_STALL_POST) {
