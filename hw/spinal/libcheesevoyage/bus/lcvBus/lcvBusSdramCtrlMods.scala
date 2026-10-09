@@ -963,36 +963,36 @@ case class LcvBusSdramCtrl(
 
   object State extends SpinalEnum(defaultEncoding=binarySequential) {
     val
-      PWR_ON_INIT,
-      PWR_ON_CNT_DO_CKE_HI,
+      PWR_ON_INIT,                    // 0
+      PWR_ON_CNT_DO_CKE_HI,           // 1
 
-      PWR_ON_SEND_PRECHARGE_ALL,
-      PWR_ON_WAIT_T_RP, // send NOPs
+      PWR_ON_SEND_PRECHARGE_ALL,      // 2
+      PWR_ON_WAIT_T_RP,               // 3; send NOPs
 
-      PWR_ON_SEND_AUTO_REFRESH_0,
-      PWR_ON_WAIT_T_RFC_0, // send NOPs or CMD INHIBITs
+      PWR_ON_SEND_AUTO_REFRESH_0,     // 4
+      PWR_ON_WAIT_T_RFC_0,            // 5; send NOPs or CMD INHIBITs
 
-      PWR_ON_SEND_AUTO_REFRESH_1,
-      PWR_ON_WAIT_T_RFC_1, // send NOPs or CMD INHIBITs
+      PWR_ON_SEND_AUTO_REFRESH_1,     // 6
+      PWR_ON_WAIT_T_RFC_1,            // 7; send NOPs or CMD INHIBITs
 
-      PWR_ON_LOAD_MODE_REGISTER,
-      PWR_ON_WAIT_T_MRD,   // send NOPs
+      PWR_ON_LOAD_MODE_REGISTER,      // 8
+      PWR_ON_WAIT_T_MRD,              // 9; send NOPs
 
-      IDLE,
-      SEND_RFSH,
-      RFSH_POST_NOPS,
+      IDLE,                           // 10
+      SEND_RFSH,                      // 11
+      RFSH_POST_NOPS,                 // 12
 
-      SEND_ACTIVE,
-      ACTIVE_POST_NOPS,
-      PRE_READ_WRITE,
-      MID_BURST_PRE_READ_WRITE,
-      SEND_READ_0,
-      SEND_READ_N,
-      READ_POST_NOPS,
-      SEND_WRITE_0,
-      SEND_WRITE_HI_N,
-      SEND_WRITE_LO_N,
-      WRITE_POST_NOPS
+      SEND_ACTIVE,                    // 13
+      ACTIVE_POST_NOPS,               // 14
+      PRE_READ_WRITE,                 // 15
+      MID_BURST_PRE_READ_WRITE,       // 16
+      SEND_READ_0,                    // 17
+      SEND_READ_N,                    // 18
+      READ_POST_NOPS,                 // 19
+      SEND_WRITE_0,                   // 20
+      SEND_WRITE_HI_N,                // 21
+      SEND_WRITE_LO_N,                // 22
+      WRITE_POST_NOPS                 // 23
 
       = newElement();
   }
@@ -1690,6 +1690,7 @@ case class LcvBusSdramCtrl(
         && d2hFifo.io.push.ready
       ) {
         rD2hFifoPushValid := False
+        rD2hSendData.burstLast := False
       }
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
@@ -1759,6 +1760,7 @@ case class LcvBusSdramCtrl(
         && d2hFifo.io.push.ready
       ) {
         rD2hFifoPushValid := False
+        rD2hSendData.burstLast := False
       }
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
@@ -1809,6 +1811,7 @@ case class LcvBusSdramCtrl(
         && d2hFifo.io.push.ready
       ) {
         rD2hFifoPushValid := False
+        rD2hSendData.burstLast := False
       }
 
       when (!rWrNopWaitCnt.msb) {
