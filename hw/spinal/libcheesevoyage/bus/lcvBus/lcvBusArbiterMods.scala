@@ -508,8 +508,8 @@ case class LcvBusArbiter(
         ) {
           rSeenD2hLastFire := True
         }
-        //host.d2hBus << io.dev.d2hBus.haltWhen(rSeenD2hLastFire)
-        host.d2hBus << io.dev.d2hBus//.haltWhen(rSeenD2hLastFire)
+        host.d2hBus << io.dev.d2hBus.haltWhen(rSeenD2hLastFire)
+        //host.d2hBus << io.dev.d2hBus//.haltWhen(rSeenD2hLastFire)
       }
     }
 
