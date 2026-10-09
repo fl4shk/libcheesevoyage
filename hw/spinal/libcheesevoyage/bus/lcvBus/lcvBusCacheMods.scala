@@ -18967,7 +18967,10 @@ case class LcvBusDataCacheNoPrefetch(
 
         // store, cache hit, don't care if line is currently dirty
         lineWordRam(ramIdx).io.wrEn := True
-        lineAttrsRam(ramIdx).io.wrEn := True
+        lineAttrsRam(ramIdx).io.wrEn := (
+          //True
+          !rdLineAttrs(ramIdx).dirty
+        )
 
         wrLineAttrs := rdLineAttrs(ramIdx)
         wrLineAttrs.dirty := True
