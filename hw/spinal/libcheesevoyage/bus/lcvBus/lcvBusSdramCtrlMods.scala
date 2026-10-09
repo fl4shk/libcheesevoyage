@@ -704,27 +704,29 @@ case class LcvBusSdramCtrl(
   d2hFifo.io.push.valid := rD2hFifoPushValid
   d2hFifo.io.push.payload := rD2hSendData
 
-  io.bus.d2hBus.valid := (
-    d2hFifo.io.pop.valid
-    //|| rD2hWriteValid
-  )
-  io.bus.d2hBus.payload := (
-    d2hFifo.io.pop.payload
-  )
-  io.bus.d2hBus.burstLast.allowOverride
-  io.bus.d2hBus.burstLast := (
-    d2hFifo.io.pop.burstLast
-    //|| (
-    //  rD2hWriteValid
-    //  && rSavedHaveBurst
-    //)
-  )
-  //when (
-  //  rD2hWriteValid
-  //) {
-  //  io.bus.d2hBus.
-  //}
-  d2hFifo.io.pop.ready := io.bus.d2hBus.ready
+  io.bus.d2hBus << d2hFifo.io.pop
+
+  //io.bus.d2hBus.valid := (
+  //  d2hFifo.io.pop.valid
+  //  //|| rD2hWriteValid
+  //)
+  //io.bus.d2hBus.payload := (
+  //  d2hFifo.io.pop.payload
+  //)
+  //io.bus.d2hBus.burstLast.allowOverride
+  //io.bus.d2hBus.burstLast := (
+  //  d2hFifo.io.pop.burstLast
+  //  //|| (
+  //  //  rD2hWriteValid
+  //  //  && rSavedHaveBurst
+  //  //)
+  //)
+  ////when (
+  ////  rD2hWriteValid
+  ////) {
+  ////  io.bus.d2hBus.
+  ////}
+  //d2hFifo.io.pop.ready := io.bus.d2hBus.ready
 
   //--------
   // Power up Sequence:
