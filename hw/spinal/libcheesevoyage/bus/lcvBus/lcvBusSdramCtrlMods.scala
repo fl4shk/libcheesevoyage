@@ -1793,19 +1793,25 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdNop(
         optSomeDqTriState=Some(rDqTriState)
       )
+      //when (
+      //  //rD2hFifoPushValid
+      //  rD2hWriteValid
+      //  //&& io.bus.d2hBus.ready
+      //  && d2hFifo.io.push.ready
+      //) {
+      //  rD2hWriteValid := False
+      //}
+
       when (
-        //rD2hFifoPushValid
-        rD2hWriteValid
-        //&& io.bus.d2hBus.ready
+        rD2hFifoPushValid
         && d2hFifo.io.push.ready
       ) {
-        rD2hWriteValid := False
+        rD2hFifoPushValid := False
       }
+
       when (!rWrNopWaitCnt.msb) {
         rWrNopWaitCnt := rWrNopWaitCnt - 1
-      } 
-      //elsewhen (!rD2hFifoPushValid) 
-      .otherwise {
+      } elsewhen (!rD2hFifoPushValid) {
         //rState := State.IDLE
         rTempAddr.last(
           myAlignedColumnSliceRangeHi._1
