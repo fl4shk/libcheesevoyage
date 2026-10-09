@@ -18601,12 +18601,12 @@ case class LcvBusDataCacheNoPrefetch(
               === (
                 if (kdx == 0) (
                   convBusAddrToWordIdx(
-                    someRam=lineWordRam(idx),
+                    someRam=lineWordRam.head,
                     busAddr=rLoH2dPayload.addr,
                   )
                 ) else (
                   convBusAddrToLineIdx(
-                    someRam=lineAttrsRam(idx),
+                    someRam=lineAttrsRam.head,
                     busAddr=rLoH2dPayload.addr,
                   )
                 )
@@ -18618,7 +18618,7 @@ case class LcvBusDataCacheNoPrefetch(
     }
   }
 
-  val myHadRecentRamWriteHazard = Vec[Bool](
+  val myHadRecentRamWriteHazard = Vec.fill(4)(
     RegNext(
       LcvOrR(
         myHazardCheckMergedVec
