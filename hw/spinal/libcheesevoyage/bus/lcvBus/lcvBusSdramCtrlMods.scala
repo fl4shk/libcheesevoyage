@@ -1173,9 +1173,10 @@ case class LcvBusSdramCtrl(
         //when (rBusBurstOuterCnt.msb) {
           rH2dFifoPopReady := (
             //True
-            RegNext(
-              !h2dFifo.io.pop.burstFirst
-            )
+            //RegNext(
+            //  !h2dFifo.io.pop.burstFirst
+            //)
+            False
           )
           rTempAddr.head := (
             RegNext(
