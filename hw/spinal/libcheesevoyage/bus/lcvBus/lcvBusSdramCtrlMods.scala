@@ -711,7 +711,10 @@ case class LcvBusSdramCtrl(
   io.bus.d2hBus.burstLast.allowOverride
   io.bus.d2hBus.burstLast := (
     d2hFifo.io.pop.burstLast
-    || rD2hWriteValid
+    || (
+      rD2hWriteValid
+      && rHaveBurst
+    )
   )
   //when (
   //  rD2hWriteValid
@@ -1112,15 +1115,23 @@ case class LcvBusSdramCtrl(
           (
             (
               //d2hFifo.io.occupancy === 0
-              d2hFifo.io.availability >= 4 // this is tuned to burst size!
+
+              // this is tuned to be 1/4 LcvBus mux burst size,
+              // which is our chosen chip burst size !
+              d2hFifo.io.availability >= 4
+
               //&& h2dFifo.io.availability === 0
 
               && h2dFifo.io.pop.valid
               && (
                 !h2dFifo.io.pop.isWrite
                 || (
-                  h2dFifo.io.occupancy
-                  === cfg.busCfg.maxBurstSizeMinus1 + 1
+                  //h2dFifo.io.occupancy
+                  //=== cfg.busCfg.maxBurstSizeMinus1 + 1
+
+                  h2dFifo.io.availability >= 4 
+                  // this is tuned to be 1/4 LcvBus mux burst size,
+                  // which is our chosen chip burst size!
                 )
                 || !h2dFifo.io.pop.burstFirst
               )
