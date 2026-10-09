@@ -611,6 +611,9 @@ case class LcvBusSdramCtrl(
   val rHaveBurst = (
     Reg(Bool(), init=False)
   )
+  val rSavedHaveBurst = (
+    Reg(Bool(), init=False)
+  )
   def myBankSliceRange = (
     25 downto 24
     //2 downto 1
@@ -703,7 +706,7 @@ case class LcvBusSdramCtrl(
 
   io.bus.d2hBus.valid := (
     d2hFifo.io.pop.valid
-    || rD2hWriteValid
+    //|| rD2hWriteValid
   )
   io.bus.d2hBus.payload := (
     d2hFifo.io.pop.payload
@@ -711,10 +714,10 @@ case class LcvBusSdramCtrl(
   io.bus.d2hBus.burstLast.allowOverride
   io.bus.d2hBus.burstLast := (
     d2hFifo.io.pop.burstLast
-    || (
-      rD2hWriteValid
-      && rHaveBurst
-    )
+    //|| (
+    //  rD2hWriteValid
+    //  && rSavedHaveBurst
+    //)
   )
   //when (
   //  rD2hWriteValid
@@ -1158,6 +1161,14 @@ case class LcvBusSdramCtrl(
             init=False,
           )
         )
+        when (
+          RegNext(
+            h2dFifo.io.pop.burstFirst,
+            init=False,
+          )
+        ) {
+          rSavedHaveBurst := True
+        }
 
         //when (rBusBurstOuterCnt.msb) {
           rH2dFifoPopReady := True
@@ -1618,6 +1629,10 @@ case class LcvBusSdramCtrl(
       }
     }
     is (State.SEND_WRITE_0) {
+      rD2hFifoPushValid := True
+      rD2hSendData.src := rSavedH2dSendData.src
+      rD2hSendData.burstLast := True
+
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
@@ -1662,6 +1677,12 @@ case class LcvBusSdramCtrl(
       rTempBurstLast := False
     }
     is (State.SEND_WRITE_HI_N) {
+      when (
+        rD2hFifoPushValid
+        && d2hFifo.io.push.ready
+      ) {
+        rD2hFifoPushValid := False
+      }
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
@@ -1725,6 +1746,12 @@ case class LcvBusSdramCtrl(
       //}
     }
     is (State.SEND_WRITE_LO_N) {
+      when (
+        rD2hFifoPushValid
+        && d2hFifo.io.push.ready
+      ) {
+        rD2hFifoPushValid := False
+      }
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
