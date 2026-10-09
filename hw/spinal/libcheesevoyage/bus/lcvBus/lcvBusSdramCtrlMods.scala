@@ -1637,10 +1637,6 @@ case class LcvBusSdramCtrl(
       }
     }
     is (State.SEND_WRITE_0) {
-      rD2hFifoPushValid := True
-      rD2hSendData.src := rSavedH2dSendData.src
-      rD2hSendData.burstLast := True
-
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
@@ -1692,6 +1688,7 @@ case class LcvBusSdramCtrl(
         rD2hFifoPushValid := False
         rD2hSendData.burstLast := False
       }
+
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
@@ -1722,7 +1719,9 @@ case class LcvBusSdramCtrl(
       ) {
         rState := State.WRITE_POST_NOPS
         when (rBusBurstOuterCnt.msb) {
-          rD2hWriteValid := True
+          //rD2hWriteValid := True
+          rD2hFifoPushValid := True
+          rD2hSendData.burstLast := False
         }
         rH2dFifoPopReady := False
       } otherwise {
