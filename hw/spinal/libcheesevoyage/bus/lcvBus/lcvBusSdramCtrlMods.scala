@@ -1803,7 +1803,9 @@ case class LcvBusSdramCtrl(
       }
       when (!rWrNopWaitCnt.msb) {
         rWrNopWaitCnt := rWrNopWaitCnt - 1
-      } elsewhen (!rD2hFifoPushValid) {
+      } 
+      //elsewhen (!rD2hFifoPushValid) 
+      .otherwise {
         //rState := State.IDLE
         rTempAddr.last(
           myAlignedColumnSliceRangeHi._1
