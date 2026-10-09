@@ -1721,7 +1721,7 @@ case class LcvBusSdramCtrl(
         when (rBusBurstOuterCnt.msb) {
           //rD2hWriteValid := True
           rD2hFifoPushValid := True
-          rD2hSendData.burstLast := False
+          rD2hSendData.burstLast := True
         }
         rH2dFifoPopReady := False
       } otherwise {
