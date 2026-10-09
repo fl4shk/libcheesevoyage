@@ -7061,7 +7061,10 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
 
-      mySelLoH2dPopStm.ready := False
+      mySelLoH2dPopStm.ready := (
+        //False
+        myLoD2hPushStm.fire
+      )
       //myLoD2hPushStm.busPayload.data := myRdLineWord
       //when (rSavedNeedLineWordReadAgain) {
       //  myLoD2hPushStm.busPayload.data := myRdLineWord
