@@ -500,8 +500,9 @@ case class LcvBusArbiter(
         when (
           io.dev.d2hBus.fire
           && (
-            rSavedIsWrite
-            || io.dev.d2hBus.burstLast
+            //rSavedIsWrite
+            //|| 
+            io.dev.d2hBus.burstLast
           )
         ) {
           rSeenD2hLastFire := True

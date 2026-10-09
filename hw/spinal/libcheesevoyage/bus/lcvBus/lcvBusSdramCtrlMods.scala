@@ -705,7 +705,19 @@ case class LcvBusSdramCtrl(
     d2hFifo.io.pop.valid
     || rD2hWriteValid
   )
-  io.bus.d2hBus.payload := d2hFifo.io.pop.payload
+  io.bus.d2hBus.payload := (
+    d2hFifo.io.pop.payload
+  )
+  io.bus.d2hBus.burstLast.allowOverride
+  io.bus.d2hBus.burstLast := (
+    d2hFifo.io.pop.burstLast
+    || rD2hWriteValid
+  )
+  //when (
+  //  rD2hWriteValid
+  //) {
+  //  io.bus.d2hBus.
+  //}
   d2hFifo.io.pop.ready := io.bus.d2hBus.ready
 
   //--------
