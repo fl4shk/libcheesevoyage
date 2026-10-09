@@ -1111,7 +1111,8 @@ case class LcvBusSdramCtrl(
         RegNext(
           (
             (
-              d2hFifo.io.occupancy === 0
+              //d2hFifo.io.occupancy === 0
+              d2hFifo.io.availability >= 4 // this is tuned to burst size!
               //&& h2dFifo.io.availability === 0
 
               && h2dFifo.io.pop.valid
