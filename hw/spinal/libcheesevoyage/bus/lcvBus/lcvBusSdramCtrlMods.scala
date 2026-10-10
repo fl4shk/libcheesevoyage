@@ -1099,15 +1099,24 @@ case class LcvBusSdramCtrl(
         RegNext(
           (
             (
-              d2hFifo.io.occupancy === 0
+              //d2hFifo.io.occupancy === 0
+
+              // this is tuned to be 1/4 LcvBus mux burst size,
+              // which is our chosen chip burst size !
+              d2hFifo.io.availability >= 4
+
               //&& h2dFifo.io.availability === 0
 
               && h2dFifo.io.pop.valid
               && (
                 !h2dFifo.io.pop.isWrite
                 || (
-                  h2dFifo.io.occupancy
-                  === cfg.busCfg.maxBurstSizeMinus1 + 1
+                  //h2dFifo.io.occupancy
+                  //=== cfg.busCfg.maxBurstSizeMinus1 + 1
+
+                  h2dFifo.io.occupancy >= 4 
+                  // this is tuned to be 1/4 LcvBus mux burst size,
+                  // which is our chosen chip burst size!
                 )
                 || !h2dFifo.io.pop.burstFirst
               )
@@ -1746,7 +1755,9 @@ case class LcvBusSdramCtrl(
       }
       when (!rWrNopWaitCnt.msb) {
         rWrNopWaitCnt := rWrNopWaitCnt - 1
-      } elsewhen (!rD2hFifoPushValid) {
+      } 
+      //elsewhen (!rD2hFifoPushValid) 
+      .otherwise {
         //rState := State.IDLE
         rTempAddr.last(
           myAlignedColumnSliceRangeHi._1
@@ -1765,7 +1776,6 @@ case class LcvBusSdramCtrl(
       }
     }
   }
-
 
 
   //--------
