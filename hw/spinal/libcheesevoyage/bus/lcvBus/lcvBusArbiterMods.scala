@@ -430,6 +430,12 @@ case class LcvBusArbiter(
       init(AllowBurstPrioState.START_NEW_HOST_IDX_ETC)
     )
 
+    val rSavedH2dSendData = {
+      val temp = Reg(LcvBusH2dPayload(cfg=cfg.busCfg))
+      temp.init(temp.getZero)
+      temp
+    }
+
     val rSavedHostIdx = (
       Reg(UInt(log2Up(cfg.numHosts) bits))
       init(0x0)
@@ -496,7 +502,10 @@ case class LcvBusArbiter(
       } else {
         when (
           io.dev.d2hBus.fire
-          && io.dev.d2hBus.burstLast
+          && (
+            rSavedH2dSendData.isWrite
+            || io.dev.d2hBus.burstLast
+          )
         ) {
           rSeenD2hLastFire := True
         }
@@ -506,7 +515,10 @@ case class LcvBusArbiter(
 
     when (
       //rState === AllowBurstPrioState.MAIN_NON_BURST
-      rState.asBits(1)
+      rState.asBits(
+        //1
+        AllowBurstPrioState.MAIN_NON_BURST.position
+      )
       //&& io.host.h2dBus.valid
       //&& (
       //  (
@@ -529,7 +541,10 @@ case class LcvBusArbiter(
     }
     when (
       //rState === AllowBurstPrioState.MAIN_BURST
-      rState.asBits(2)
+      rState.asBits(
+        //2
+        AllowBurstPrioState.MAIN_BURST.position
+      )
       && rSeenH2dLastFire
       && rSeenD2hLastFire
     ) {
@@ -544,7 +559,13 @@ case class LcvBusArbiter(
     ): Unit = {
       switch ({
         val tempStateBitIdx = (
-          if (!isBurst) (1) else (2)
+          if (!isBurst) (
+            //1
+            AllowBurstPrioState.MAIN_NON_BURST.position
+          ) else (
+            //2
+            AllowBurstPrioState.MAIN_BURST.position
+          )
         )
         val myTempStateBit = rState.asBits(tempStateBitIdx)
         //stickyHostH2dBurstFirst
@@ -615,7 +636,10 @@ case class LcvBusArbiter(
     switch (
       // rState === AllowBurstPrioState.START_NEW_HOST_IDX_ETC
       (
-        rState.asBits(0)
+        rState.asBits(
+          //0
+          AllowBurstPrioState.START_NEW_HOST_IDX_ETC.position
+        )
         && myPriorityFindFirst._1
       )
       ## myPriorityFindFirst._2
@@ -627,6 +651,7 @@ case class LcvBusArbiter(
         ) {
           def host = io.hostVec(hostIdx)
           rSavedHostIdx := hostIdx
+          rSavedH2dSendData := host.h2dBus.payload
           when (!host.h2dBus.burstFirst) {
             rState := AllowBurstPrioState.MAIN_NON_BURST
           } otherwise {
