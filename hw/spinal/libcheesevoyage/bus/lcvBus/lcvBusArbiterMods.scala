@@ -509,7 +509,20 @@ case class LcvBusArbiter(
         ) {
           rSeenD2hLastFire := True
         }
-        host.d2hBus << io.dev.d2hBus.haltWhen(rSeenD2hLastFire)
+        val myTempD2hStm = io.dev.d2hBus.haltWhen(rSeenD2hLastFire)
+
+        myTempD2hStm.translateInto(
+          host.d2hBus
+        )(
+          dataAssignment=(outp, inp) => {
+            outp := inp
+            outp.burstLast.allowOverride
+            outp.burstLast := (
+              rSavedH2dSendData.isWrite
+              || myTempD2hStm.burstLast
+            )
+          }
+        )
       }
     }
 
