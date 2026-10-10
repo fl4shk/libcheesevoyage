@@ -838,17 +838,27 @@ case class LcvBusSdramCtrl(
     Reg(UInt((log2Up(myRdNopWaitCntNumCycles.toInt) + 3) bits))
     init(myRdNopWaitCntNumCycles.toInt)
   )
-  def myWrNopWaitCntNumCycles = (
+  def myWrNopWaitCntNumCyclesMax = (
     // this is with auto-precharge
     (
-      (cfg.burstLen - 1)
-      + cfg.Cycles.tWR._1.get
+      //(cfg.burstLen - 1)
+      //+ 
+      cfg.Cycles.tWR._1.get
       + cfg.Cycles.tRP._1.get
     ).toInt + 1
   )
+  def myWrNopWaitCntNumCyclesMin = (
+    // this is with auto-precharge
+    (
+      //(cfg.burstLen - 1)
+      //+ 
+      cfg.Cycles.tWR._1.get
+      //+ cfg.Cycles.tRP._1.get
+    ).toInt + 1
+  )
   val rWrNopWaitCnt = (
-    Reg(UInt((log2Up(myWrNopWaitCntNumCycles.toInt) + 3) bits))
-    init(myWrNopWaitCntNumCycles.toInt)
+    Reg(UInt((log2Up(myWrNopWaitCntNumCyclesMax.toInt) + 3) bits))
+    init(myWrNopWaitCntNumCyclesMax.toInt)
   )
 
   def myRdCasLatencyCntNumCycles = (
@@ -1626,7 +1636,16 @@ case class LcvBusSdramCtrl(
         ),
         firstWrite=true,
       )
-      rWrNopWaitCnt := myWrNopWaitCntNumCycles
+
+      when (
+        rHaveBurst
+        && !rBusBurstOuterCnt.msb
+      ) {
+        rWrNopWaitCnt := myWrNopWaitCntNumCyclesMin
+      } otherwise {
+        rWrNopWaitCnt := myWrNopWaitCntNumCyclesMax
+      }
+
       rState := State.SEND_WRITE_HI_N
       rChipBurstCnt := (
         //cfg.burstLen - 6//- 4 //- 2
@@ -1776,7 +1795,6 @@ case class LcvBusSdramCtrl(
       }
     }
   }
-
 
   //--------
   //.datain_h(1'b0),
