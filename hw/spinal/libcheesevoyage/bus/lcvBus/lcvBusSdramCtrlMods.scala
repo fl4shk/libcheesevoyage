@@ -830,7 +830,8 @@ case class LcvBusSdramCtrl(
   def myRdNopWaitCntNumCycles = (
     // this is with auto-precharge
     (
-      (cfg.burstLen /*- 1*/)
+      //(cfg.burstLen /*- 1*/)
+      1
       + cfg.Cycles.tRP._1.get
     ).toInt + 1
   )
