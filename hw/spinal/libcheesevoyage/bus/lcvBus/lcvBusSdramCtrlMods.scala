@@ -1374,25 +1374,25 @@ case class LcvBusSdramCtrl(
     is (State.MID_BURST_PRE_READ_WRITE) {
       io.sdram.sendCmdNop()
       rStartBusBurst := False
-      when (
-        RegNext(
-          (
-            // this is tuned to be 1/4 LcvBus mux burst size,
-            // which is our chosen chip burst size !
-            d2hFifo.io.availability >= 4
-            && (
-              !rSavedH2dSendData.isWrite
-              || (
-                h2dFifo.io.pop.valid
-                // this is tuned to be 1/4 LcvBus mux burst size,
-                // which is our chosen chip burst size !
-                && h2dFifo.io.occupancy >= 4
-              )
-            )
-          ),
-          init=False
-        )
-      ) {
+      //when (
+      //  RegNext(
+      //    (
+      //      // this is tuned to be 1/4 LcvBus mux burst size,
+      //      // which is our chosen chip burst size !
+      //      d2hFifo.io.availability >= 4
+      //      && (
+      //        !rSavedH2dSendData.isWrite
+      //        || (
+      //          h2dFifo.io.pop.valid
+      //          // this is tuned to be 1/4 LcvBus mux burst size,
+      //          // which is our chosen chip burst size !
+      //          && h2dFifo.io.occupancy >= 4
+      //        )
+      //      )
+      //    ),
+      //    init=False
+      //  )
+      //) {
         when (!rBusBurstOuterCnt.msb) {
           rBusBurstOuterCnt := rBusBurstOuterCnt - 1
         }
@@ -1457,7 +1457,7 @@ case class LcvBusSdramCtrl(
             ).asSInt
           )
         }
-      }
+      //}
     }
     is (State.SEND_READ_0) {
       rH2dFifoPopReady := False
