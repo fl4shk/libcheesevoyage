@@ -435,9 +435,6 @@ case class LcvBusArbiter(
       init(0x0)
     )
 
-    val rSavedIsWrite = Reg(Bool(), init=False)
-
-
     val rTxnCnt = (
       Reg(UInt(log2Up(cfg.noBurstsMaxNumOutstandingTxns + 1) bits))
       init(0x0)
@@ -495,30 +492,21 @@ case class LcvBusArbiter(
         ) {
           rSeenH2dLastFire := True
         }
-
         io.dev.h2dBus << host.h2dBus.haltWhen(rSeenH2dLastFire)
       } else {
         when (
           io.dev.d2hBus.fire
-          && (
-            //rSavedIsWrite
-            //|| 
-            io.dev.d2hBus.burstLast
-          )
+          && io.dev.d2hBus.burstLast
         ) {
           rSeenD2hLastFire := True
         }
         host.d2hBus << io.dev.d2hBus.haltWhen(rSeenD2hLastFire)
-        //host.d2hBus << io.dev.d2hBus//.haltWhen(rSeenD2hLastFire)
       }
     }
 
     when (
       //rState === AllowBurstPrioState.MAIN_NON_BURST
-      rState.asBits(
-        //1
-        AllowBurstPrioState.MAIN_NON_BURST.position
-      )
+      rState.asBits(1)
       //&& io.host.h2dBus.valid
       //&& (
       //  (
@@ -541,15 +529,11 @@ case class LcvBusArbiter(
     }
     when (
       //rState === AllowBurstPrioState.MAIN_BURST
-      rState.asBits(
-        //2
-        AllowBurstPrioState.MAIN_BURST.position
-      )
+      rState.asBits(2)
       && rSeenH2dLastFire
       && rSeenD2hLastFire
     ) {
       rState := AllowBurstPrioState.START_NEW_HOST_IDX_ETC
-      rSavedIsWrite := False
       rSeenH2dLastFire := False
       rSeenD2hLastFire := False
     }
@@ -560,13 +544,7 @@ case class LcvBusArbiter(
     ): Unit = {
       switch ({
         val tempStateBitIdx = (
-          if (!isBurst) (
-            //1
-            AllowBurstPrioState.MAIN_NON_BURST.position
-          ) else (
-            //2
-            AllowBurstPrioState.MAIN_BURST.position
-          )
+          if (!isBurst) (1) else (2)
         )
         val myTempStateBit = rState.asBits(tempStateBitIdx)
         //stickyHostH2dBurstFirst
@@ -637,10 +615,7 @@ case class LcvBusArbiter(
     switch (
       // rState === AllowBurstPrioState.START_NEW_HOST_IDX_ETC
       (
-        rState.asBits(
-          //0
-          AllowBurstPrioState.START_NEW_HOST_IDX_ETC.position
-        )
+        rState.asBits(0)
         && myPriorityFindFirst._1
       )
       ## myPriorityFindFirst._2
@@ -652,7 +627,6 @@ case class LcvBusArbiter(
         ) {
           def host = io.hostVec(hostIdx)
           rSavedHostIdx := hostIdx
-          rSavedIsWrite := host.h2dBus.isWrite
           when (!host.h2dBus.burstFirst) {
             rState := AllowBurstPrioState.MAIN_NON_BURST
           } otherwise {
