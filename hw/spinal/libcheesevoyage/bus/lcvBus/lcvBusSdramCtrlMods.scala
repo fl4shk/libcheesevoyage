@@ -1309,7 +1309,7 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
         prechargeAll=True,
-        inPwrOnSeq=true,
+        inPwrOnSeq=false,
       )
       rState := State.RFSH_PRECHARGE_ALL_POST_NOPS
     }
@@ -1339,7 +1339,7 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
         prechargeAll=True,
-        inPwrOnSeq=true,
+        inPwrOnSeq=false,
       )
       rH2dFifoPopReady := False
       rState := State.PRECHARGE_ALL_POST_NOPS
