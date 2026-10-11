@@ -23,6 +23,7 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 package libcheesevoyage.bus.lcvBus
+import libcheesevoyage.math._
 
 import spinal.core._
 import spinal.core.sim._
@@ -612,12 +613,13 @@ case class LcvBusSdramCtrl(
     Reg(Bool(), init=False)
   )
   def myBankSliceRange = (
-    25 downto 24
+    //25 downto 24
+    12 downto 11
     //2 downto 1
   )
   def myRowSliceRange = (
-    23 downto 11
-    //25 downto 13
+    //23 downto 11
+    25 downto 13
   )
   def myColumnSliceRange = (
     10 downto 1
@@ -629,6 +631,36 @@ case class LcvBusSdramCtrl(
   def myAlignedColumnSliceRangeLo = (
     log2Up(cfg.burstLen) + 1 - 1, 1
   )
+
+  def myNumBanks = 4
+  val rSavedRowVec = Vec.fill(myNumBanks)({
+    val temp = Reg(Flow(UInt(13 bits)))
+    temp.init(temp.getZero)
+    temp
+  })
+
+  def myNeedPrechargeCntMaxVal = (
+    // 85% of the maximum time is used as a tolerance so as to be safe!
+    // maybe we could go up to 90% or something?
+    (cfg.Cycles.tRAS._2.get * 0.85).toInt
+  )
+  val rNeedPrechargeCnt = (
+    Reg(SInt(log2Up(myNeedPrechargeCntMaxVal) + 3 bits))
+    init(-1)
+  )
+  //val rPrechargeRequest = Reg(Bool(), init=False)
+  when (
+    //!rPrechargeRequest
+    //&& 
+    !rNeedPrechargeCnt.msb
+  ) {
+    rNeedPrechargeCnt := rNeedPrechargeCnt - 1
+  } otherwise {
+    //rPrechargeRequest := True
+    //rSavedRowVec.foreach(item => {
+    //  item.valid := False
+    //})
+  }
 
   //def myD2hNextValid = (
   //  io.bus.d2hBus.valid
@@ -827,12 +859,16 @@ case class LcvBusSdramCtrl(
     Reg(UInt((log2Up(cfg.Cycles.tRCD._1.get.toInt) + 3) bits))
     init(cfg.Cycles.tRCD._1.get.toInt)
   )
+  val rPrechargeNopWaitCnt = (
+    Reg(UInt((log2Up(cfg.Cycles.tRP._1.get.toInt) + 3) bits))
+    init(cfg.Cycles.tRP._1.get.toInt)
+  )
   def myRdNopWaitCntNumCycles = (
     // this is with auto-precharge
     (
       //(cfg.burstLen /*- 1*/)
       1
-      + cfg.Cycles.tRP._1.get
+      //+ cfg.Cycles.tRP._1.get
     ).toInt + 1
   )
   val rRdNopWaitCnt = (
@@ -845,7 +881,7 @@ case class LcvBusSdramCtrl(
       //(cfg.burstLen - 1)
       //+ 
       cfg.Cycles.tWR._1.get
-      + cfg.Cycles.tRP._1.get
+      //+ cfg.Cycles.tRP._1.get
     ).toInt + 1
   )
   def myWrNopWaitCntNumCyclesMin = (
@@ -970,20 +1006,24 @@ case class LcvBusSdramCtrl(
       /* 9 */ PWR_ON_WAIT_T_MRD,   // send NOPs
 
       /* 10 */ IDLE,
-      /* 11 */ SEND_RFSH,
-      /* 12 */ RFSH_POST_NOPS,
+      /* 11 */ SEND_RFSH_PRECHARGE_ALL,
+      /* 12 */ RFSH_PRECHARGE_ALL_POST_NOPS,
+      /* 13 */ SEND_RFSH_MAIN,
+      /* 14 */ RFSH_MAIN_POST_NOPS,
 
-      /* 13 */ SEND_ACTIVE,
-      /* 14 */ ACTIVE_POST_NOPS,
-      /* 15 */ PRE_READ_WRITE,
-      /* 16 */ MID_BURST_PRE_READ_WRITE,
-      /* 17 */ SEND_READ_0,
-      /* 18 */ SEND_READ_N,
-      /* 19 */ READ_POST_NOPS,
-      /* 20 */ SEND_WRITE_0,
-      /* 21 */ SEND_WRITE_HI_N,
-      /* 22 */ SEND_WRITE_LO_N,
-      /* 23 */ WRITE_POST_NOPS
+      /* 15 */ SEND_PRECHARGE_ALL,
+      /* 16 */ PRECHARGE_ALL_POST_NOPS,
+      /* 17 */ SEND_ACTIVE,
+      /* 18 */ ACTIVE_POST_NOPS,
+      /* 19 */ PRE_READ_WRITE,
+      /* 20 */ MID_BURST_PRE_READ_WRITE,
+      /* 21 */ SEND_READ_0,
+      /* 22 */ SEND_READ_N,
+      /* 23 */ READ_POST_NOPS,
+      /* 24 */ SEND_WRITE_0,
+      /* 25 */ SEND_WRITE_HI_N,
+      /* 26 */ SEND_WRITE_LO_N,
+      /* 27 */ WRITE_POST_NOPS
 
       = newElement();
   }
@@ -1092,7 +1132,8 @@ case class LcvBusSdramCtrl(
         //&& rBusBurstOuterCnt.msb // wait for bus bursts to finish
       ) {
         rNeedRfshCnt := cfg.Cycles.tREFIthresh.toInt
-        rState := State.SEND_RFSH
+        //rState := State.SEND_RFSH
+        rState := State.SEND_RFSH_PRECHARGE_ALL
       } 
       //elsewhen (
       //  //rSavedSoftReset
@@ -1220,14 +1261,70 @@ case class LcvBusSdramCtrl(
         } otherwise {
           //rState := State.SEND_ACTIVE
         }
-        rState := State.SEND_ACTIVE
+
+        val tempBank = (
+          RegNext(h2dFifo.io.pop.addr(myBankSliceRange))
+          init(0x0)
+        )
+        val tempRow = (
+          RegNext(h2dFifo.io.pop.addr(myRowSliceRange))
+          init(0x0)
+        )
+
+        //when (
+        //  LcvOrR(Vec(rSavedRowVec.map(_.fire)))
+        //) {
+        //}
+        when (
+          //rPrechargeRequest
+          rNeedPrechargeCnt.msb
+          || !(
+            rSavedRowVec(tempBank).fire
+            && (
+              tempRow 
+              === rSavedRowVec(tempBank).payload
+            )
+          )
+        ) {
+          rSavedRowVec.foreach(item => {
+            item.valid := False
+          })
+          rSavedRowVec(tempBank).payload := tempRow
+
+          when (
+            rSavedRowVec(tempBank).fire
+          ) {
+            rState := State.SEND_PRECHARGE_ALL
+          } otherwise {
+            rState := State.SEND_ACTIVE
+          }
+        } otherwise {
+          rState := State.PRE_READ_WRITE
+        }
       }
     }
-    is (State.SEND_RFSH) {
-      io.sdram.sendCmdAutoRefresh()
-      rState := State.RFSH_POST_NOPS
+    is (State.SEND_RFSH_PRECHARGE_ALL) {
+      io.sdram.sendCmdPrecharge(
+        bank=io.sdram.ba.getZero,
+        prechargeAll=True,
+        inPwrOnSeq=true,
+      )
+      rState := State.RFSH_PRECHARGE_ALL_POST_NOPS
     }
-    is (State.RFSH_POST_NOPS) {
+    is (State.RFSH_PRECHARGE_ALL_POST_NOPS) {
+      io.sdram.sendCmdNop()
+      when (!rPrechargeNopWaitCnt.msb) {
+        rPrechargeNopWaitCnt := rPrechargeNopWaitCnt - 1
+      } otherwise {
+        rPrechargeNopWaitCnt := cfg.Cycles.tRP._1.get.toInt
+        rState := State.SEND_RFSH_MAIN
+      }
+    }
+    is (State.SEND_RFSH_MAIN) {
+      io.sdram.sendCmdAutoRefresh()
+      rState := State.RFSH_MAIN_POST_NOPS
+    }
+    is (State.RFSH_MAIN_POST_NOPS) {
       io.sdram.sendCmdNop()
       when (!rRfshNopWaitCnt.msb) {
         rRfshNopWaitCnt := rRfshNopWaitCnt - 1
@@ -1236,8 +1333,35 @@ case class LcvBusSdramCtrl(
         rRfshNopWaitCnt := cfg.Cycles.tRFC._1.get.toInt
       }
     }
+    is (State.SEND_PRECHARGE_ALL) {
+      io.sdram.sendCmdPrecharge(
+        bank=io.sdram.ba.getZero,
+        prechargeAll=True,
+        inPwrOnSeq=true,
+      )
+      rH2dFifoPopReady := False
+      rState := State.PRECHARGE_ALL_POST_NOPS
+    }
+    is (State.PRECHARGE_ALL_POST_NOPS) {
+      rH2dFifoPopReady := False
+      io.sdram.sendCmdNop()
+
+      when (!rPrechargeNopWaitCnt.msb) {
+        rPrechargeNopWaitCnt := rPrechargeNopWaitCnt - 1
+      } otherwise {
+        rPrechargeNopWaitCnt := cfg.Cycles.tRP._1.get.toInt
+        rState := State.SEND_ACTIVE
+      }
+    }
     is (State.SEND_ACTIVE) {
       rH2dFifoPopReady := False
+
+      rNeedPrechargeCnt := myNeedPrechargeCntMaxVal
+
+      val tempBank = rSavedH2dSendData.addr(myBankSliceRange)
+      rSavedRowVec(tempBank).valid := True
+
+
       io.sdram.sendCmdActive(
         bank=rTempAddr.head(myBankSliceRange),
         row=rTempAddr.head(myRowSliceRange),
@@ -1446,7 +1570,8 @@ case class LcvBusSdramCtrl(
         column=rTempAddr.last(myColumnSliceRange),
         autoPrecharge=(
           //True
-          rBusBurstOuterCnt.msb
+          //rBusBurstOuterCnt.msb
+          False
         ),
         someDqTriState=rDqTriState,
         firstRead=true,
@@ -1539,8 +1664,8 @@ case class LcvBusSdramCtrl(
           }
         } otherwise { // when (!rHaveBurst)
           switch (
-            fell(rChipBurstWithoutBusBurstCnt.head.orR)
-            ## fell(rChipBurstWithoutBusBurstCnt.last.orR)
+            fell(LcvOrR(rChipBurstWithoutBusBurstCnt.head))
+            ## fell(LcvOrR(rChipBurstWithoutBusBurstCnt.last))
           ) {
             is (B"10") {
               rD2hSendData.data(15 downto 0) := (
@@ -1619,7 +1744,8 @@ case class LcvBusSdramCtrl(
         column=rTempAddr.last(myColumnSliceRange),
         autoPrecharge=(
           //True
-          rBusBurstOuterCnt.msb
+          //rBusBurstOuterCnt.msb
+          False
         ),
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(15 downto 0),
@@ -1628,8 +1754,8 @@ case class LcvBusSdramCtrl(
           Mux[UInt](
             (
               rHaveBurst
-              || fell(rChipBurstWithoutBusBurstCnt.head.orR)
-              || fell(rChipBurstWithoutBusBurstCnt.last.orR)
+              || fell(LcvOrR(rChipBurstWithoutBusBurstCnt.head))
+              || fell(LcvOrR(rChipBurstWithoutBusBurstCnt.last))
             ),
             rSavedH2dSendData.byteEn(1 downto 0),
             U"2'b00",
@@ -1678,8 +1804,8 @@ case class LcvBusSdramCtrl(
           Mux[UInt](
             (
               rHaveBurst
-              || fell(rChipBurstWithoutBusBurstCnt.head.orR)
-              || fell(rChipBurstWithoutBusBurstCnt.last.orR)
+              || fell(LcvOrR(rChipBurstWithoutBusBurstCnt.head))
+              || fell(LcvOrR(rChipBurstWithoutBusBurstCnt.last))
             ),
             rSavedH2dSendData.byteEn(3 downto 2),
             U"2'b00",
@@ -1740,8 +1866,8 @@ case class LcvBusSdramCtrl(
           Mux[UInt](
             (
               rHaveBurst
-              || fell(rChipBurstWithoutBusBurstCnt.head.orR)
-              || fell(rChipBurstWithoutBusBurstCnt.last.orR)
+              || fell(LcvOrR(rChipBurstWithoutBusBurstCnt.head))
+              || fell(LcvOrR(rChipBurstWithoutBusBurstCnt.last))
             ),
             rSavedH2dSendData.byteEn(1 downto 0),
             U"2'b00",
