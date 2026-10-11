@@ -849,7 +849,7 @@ case class LcvBusSdramCtrl(
     ).toInt + 1
   )
   def myWrNopWaitCntNumCyclesMin = (
-    // this is with auto-precharge
+    // this is *without* auto-precharge
     (
       //(cfg.burstLen - 1)
       //+ 
