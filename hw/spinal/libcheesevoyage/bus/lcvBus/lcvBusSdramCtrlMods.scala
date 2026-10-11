@@ -880,8 +880,9 @@ case class LcvBusSdramCtrl(
     (
       //(cfg.burstLen - 1)
       //+ 
-      cfg.Cycles.tWR._1.get
+      //cfg.Cycles.tWR._1.get
       //+ cfg.Cycles.tRP._1.get
+      1
     ).toInt + 1
   )
   def myWrNopWaitCntNumCyclesMin = (
@@ -889,8 +890,9 @@ case class LcvBusSdramCtrl(
     (
       //(cfg.burstLen - 1)
       //+ 
-      cfg.Cycles.tWR._1.get
+      //cfg.Cycles.tWR._1.get
       //+ cfg.Cycles.tRP._1.get
+      1
     ).toInt + 1
   )
   val rWrNopWaitCnt = (
