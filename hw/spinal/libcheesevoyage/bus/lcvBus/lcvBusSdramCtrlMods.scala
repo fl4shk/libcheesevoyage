@@ -1043,6 +1043,7 @@ case class LcvBusSdramCtrl(
       )
     )
   )
+
   switch (rState) {
     is (State.PWR_ON_INIT) {
       io.sdram.sendCmdNop(inPwrOnSeq=true)
@@ -1130,9 +1131,11 @@ case class LcvBusSdramCtrl(
       io.sdram.dqml := False
       io.sdram.dqmh := False
       rH2dFifoPopReady := False
+
       when (
         rNeedRfshCnt.msb
         //&& rBusBurstOuterCnt.msb // wait for bus bursts to finish
+        || rNeedPrechargeCnt.msb
       ) {
         rSavedRowVec.foreach(item => {
           item.valid := False
@@ -1157,11 +1160,11 @@ case class LcvBusSdramCtrl(
         RegNext(
           (
             (
-              d2hFifo.io.occupancy === 0
+              //d2hFifo.io.occupancy === 0
 
               // this is tuned to be 1/4 LcvBus mux burst size,
               // which is our chosen chip burst size !
-              //d2hFifo.io.availability >= 4
+              d2hFifo.io.availability >= 4
 
               //&& h2dFifo.io.availability === 0
 
@@ -1169,14 +1172,17 @@ case class LcvBusSdramCtrl(
               && (
                 !h2dFifo.io.pop.isWrite
                 || (
-                  h2dFifo.io.occupancy
-                  === cfg.busCfg.maxBurstSizeMinus1 + 1
+                  //h2dFifo.io.occupancy
+                  //=== cfg.busCfg.maxBurstSizeMinus1 + 1
 
-                  //h2dFifo.io.occupancy >= 4 
+                  h2dFifo.io.occupancy >= 4 
                   // this is tuned to be 1/4 LcvBus mux burst size,
                   // which is our chosen chip burst size!
                 )
-                || !h2dFifo.io.pop.burstFirst
+                || (
+                  !h2dFifo.io.pop.burstFirst
+                  && rBusBurstOuterCnt.msb
+                )
               )
             )
             //|| !rBusBurstOuterCnt.msb,
@@ -1187,85 +1193,88 @@ case class LcvBusSdramCtrl(
         //io.bus.h2dBus.ready := True
         //h2dFifo.io.pop.ready := True
 
-        rStartBusBurst := False
+        when (!rBusBurstOuterCnt.msb) {
+          rStartBusBurst := False
 
-        rSavedH2dSendData := (
-          RegNext(
-            h2dFifo.io.pop.payload,
-            init=h2dFifo.io.pop.payload.getZero,
-          ),
-        )
-        rHaveBurst := (
-          RegNext(
-            h2dFifo.io.pop.burstFirst,
-            init=False,
-          )
-        )
-
-        //when (rBusBurstOuterCnt.msb) {
-          rH2dFifoPopReady := True
-          rTempAddr.head := (
+          rSavedH2dSendData := (
             RegNext(
-              next=h2dFifo.io.pop.addr,
-              init=h2dFifo.io.pop.addr.getZero,
+              h2dFifo.io.pop.payload,
+              init=h2dFifo.io.pop.payload.getZero,
             ),
           )
-          rTempAddr.last(
-            rTempAddr.last.high
-            //downto log2Up(cfg.burstLen) + 1 - 1
-            downto myAlignedColumnSliceRangeHi._2
-          ) := (
-            RegNext(
-              h2dFifo.io.pop.addr(
-                rTempAddr.last.high
-                downto myAlignedColumnSliceRangeHi._2
-              ),
-            )
-            init(0x0)
-          )
-          //rSavedH2dSendData := (
-          //  RegNext(
-          //    h2dFifo.io.pop.payload,
-          //    init=h2dFifo.io.pop.payload.getZero,
-          //  ),
-          //)
-          //rHaveBurst := (
-          //  RegNext(
-          //    h2dFifo.io.pop.burstFirst,
-          //    init=False,
-          //  )
-          //)
-        //} otherwise {
-        //  rTempAddr.last(
-        //    myAlignedColumnSliceRangeHi._1
-        //    downto myAlignedColumnSliceRangeHi._2
-        //  ) := (
-        //    rTempAddr.last(
-        //      myAlignedColumnSliceRangeHi._1
-        //      downto myAlignedColumnSliceRangeHi._2
-        //    ) + 1
-        //  )
-        //}
-        when (
-          rBusBurstOuterCnt.msb
-          && (
+          rHaveBurst := (
             RegNext(
               h2dFifo.io.pop.burstFirst,
               init=False,
             )
           )
-        ) {
-          rBusBurstOuterCnt := (
-            //cfg.busCfg.maxBurstSizeMinus1
-            (1 << cfg.sdramBaWidth) - 2
-          )
-          rStartBusBurst := True
-        }
-        when (!rBusBurstOuterCnt.msb) {
-          rBusBurstOuterCnt := rBusBurstOuterCnt - 1
-          //rState := State.PRE_READ_WRITE
-        } otherwise {
-          //rState := State.SEND_ACTIVE
+
+          //when (rBusBurstOuterCnt.msb) {
+            rH2dFifoPopReady := True
+            rTempAddr.head := (
+              RegNext(
+                next=h2dFifo.io.pop.addr,
+                init=h2dFifo.io.pop.addr.getZero,
+              ),
+            )
+            rTempAddr.last(
+              rTempAddr.last.high
+              //downto log2Up(cfg.burstLen) + 1 - 1
+              downto myAlignedColumnSliceRangeHi._2
+            ) := (
+              RegNext(
+                h2dFifo.io.pop.addr(
+                  rTempAddr.last.high
+                  downto myAlignedColumnSliceRangeHi._2
+                ),
+              )
+              init(0x0)
+            )
+            //rSavedH2dSendData := (
+            //  RegNext(
+            //    h2dFifo.io.pop.payload,
+            //    init=h2dFifo.io.pop.payload.getZero,
+            //  ),
+            //)
+            //rHaveBurst := (
+            //  RegNext(
+            //    h2dFifo.io.pop.burstFirst,
+            //    init=False,
+            //  )
+            //)
+          //} otherwise {
+          //  rTempAddr.last(
+          //    myAlignedColumnSliceRangeHi._1
+          //    downto myAlignedColumnSliceRangeHi._2
+          //  ) := (
+          //    rTempAddr.last(
+          //      myAlignedColumnSliceRangeHi._1
+          //      downto myAlignedColumnSliceRangeHi._2
+          //    ) + 1
+          //  )
+          //}
+
+          //when (
+          //  rBusBurstOuterCnt.msb
+          //  && (
+          //    RegNext(
+          //      h2dFifo.io.pop.burstFirst,
+          //      init=False,
+          //    )
+          //  )
+          //) {
+          //  rBusBurstOuterCnt := (
+          //    //cfg.busCfg.maxBurstSizeMinus1
+          //    (1 << cfg.sdramBaWidth) - 2
+          //  )
+          //  rStartBusBurst := True
+          //}
+          //when (!rBusBurstOuterCnt.msb) {
+          //  rBusBurstOuterCnt := rBusBurstOuterCnt - 1
+          //  //rState := State.PRE_READ_WRITE
+          //} otherwise {
+          //  //rState := State.SEND_ACTIVE
+          //}
         }
 
         val tempBank = (
@@ -1283,8 +1292,9 @@ case class LcvBusSdramCtrl(
         //}
         when (
           //rPrechargeRequest
-          rNeedPrechargeCnt.msb
-          || !(
+          //rNeedPrechargeCnt.msb
+          //|| 
+          !(
             rSavedRowVec(tempBank).fire
             && (
               tempRow 
@@ -1305,7 +1315,11 @@ case class LcvBusSdramCtrl(
             rState := State.SEND_ACTIVE
           }
         } otherwise {
-          rState := State.PRE_READ_WRITE
+          when (!rBusBurstOuterCnt.msb) {
+            rState := State.MID_BURST_PRE_READ_WRITE
+          } otherwise {
+            rState := State.PRE_READ_WRITE
+          }
         }
       }
     }
@@ -1324,6 +1338,17 @@ case class LcvBusSdramCtrl(
       } otherwise {
         rPrechargeNopWaitCnt := cfg.Cycles.tRP._1.get.toInt
         rState := State.SEND_RFSH_MAIN
+      }
+      switch (
+        rPrechargeNopWaitCnt.msb
+        ## rNeedRfshCnt.msb
+      ) {
+        is (M"10") {
+          rState := State.IDLE
+        }
+        is (M"11") {
+          rState := State.SEND_RFSH_MAIN
+        }
       }
     }
     is (State.SEND_RFSH_MAIN) {
