@@ -911,7 +911,7 @@ case class LcvBusSdramCtrl(
     cfg.casLatency._2
     + cfg.burstLen
     + 1
-    + 1
+    //+ 1
   )
   val rRdCasLatencyCnt = (
     Reg(SInt((log2Up(myRdCasLatencyCntNumCycles) + 3) bits))
@@ -1745,11 +1745,11 @@ case class LcvBusSdramCtrl(
             downto myAlignedColumnSliceRangeHi._2
           ) + 1
         )
-        when (!rBusBurstOuterCnt.msb) {
-          rState := State.MID_BURST_PRE_READ_WRITE
-        } otherwise {
+        //when (!rBusBurstOuterCnt.msb) {
+        //  rState := State.MID_BURST_PRE_READ_WRITE
+        //} otherwise {
           rState := State.IDLE
-        }
+        //}
       }
     }
     is (State.READ_POST_NOPS) {
@@ -1770,11 +1770,11 @@ case class LcvBusSdramCtrl(
             downto myAlignedColumnSliceRangeHi._2
           ) + 1
         )
-        when (!rBusBurstOuterCnt.msb) {
-          rState := State.MID_BURST_PRE_READ_WRITE
-        } otherwise {
+        //when (!rBusBurstOuterCnt.msb) {
+        //  rState := State.MID_BURST_PRE_READ_WRITE
+        //} otherwise {
           rState := State.IDLE
-        }
+        //}
       }
     }
     is (State.SEND_WRITE_0) {
@@ -1953,11 +1953,11 @@ case class LcvBusSdramCtrl(
             downto myAlignedColumnSliceRangeHi._2
           ) + 1
         )
-        when (!rBusBurstOuterCnt.msb) {
-          rState := State.MID_BURST_PRE_READ_WRITE
-        } otherwise {
+        //when (!rBusBurstOuterCnt.msb) {
+        //  rState := State.MID_BURST_PRE_READ_WRITE
+        //} otherwise {
           rState := State.IDLE
-        }
+        //}
       }
     }
   }
