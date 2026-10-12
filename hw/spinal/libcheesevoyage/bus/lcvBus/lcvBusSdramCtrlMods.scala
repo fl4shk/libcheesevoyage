@@ -1444,7 +1444,11 @@ case class LcvBusSdramCtrl(
         rActiveNopWaitCnt := rActiveNopWaitCnt - 1
       } otherwise {
         rActiveNopWaitCnt := cfg.Cycles.tRCD._1.get.toInt
-        rState := State.PRE_READ_WRITE
+        when (!rBusBurstOuterCnt.msb) {
+          rState := State.MID_BURST_PRE_READ_WRITE
+        } otherwise {
+          rState := State.PRE_READ_WRITE
+        }
         //rH2dFifoPopReady := (
         //  False
         //  //True
