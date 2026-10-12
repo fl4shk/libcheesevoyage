@@ -1147,6 +1147,7 @@ case class LcvBusSdramCtrl(
         rSavedRowVec.foreach(item => {
           item.valid := False
         })
+        rStartBusBurst := False
         rNeedRfshCnt := cfg.Cycles.tREFIthresh.toInt
         //rState := State.SEND_RFSH
         rState := State.SEND_RFSH_PRECHARGE_ALL
