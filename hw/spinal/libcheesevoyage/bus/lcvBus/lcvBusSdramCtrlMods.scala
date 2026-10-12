@@ -1134,6 +1134,9 @@ case class LcvBusSdramCtrl(
         rNeedRfshCnt.msb
         //&& rBusBurstOuterCnt.msb // wait for bus bursts to finish
       ) {
+        rSavedRowVec.foreach(item => {
+          item.valid := False
+        })
         rNeedRfshCnt := cfg.Cycles.tREFIthresh.toInt
         //rState := State.SEND_RFSH
         rState := State.SEND_RFSH_PRECHARGE_ALL
