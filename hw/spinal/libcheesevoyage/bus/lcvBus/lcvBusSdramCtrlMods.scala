@@ -911,7 +911,7 @@ case class LcvBusSdramCtrl(
     cfg.casLatency._2
     + cfg.burstLen
     + 1
-    + 1
+    //+ 1
   )
   val rRdCasLatencyCnt = (
     Reg(SInt((log2Up(myRdCasLatencyCntNumCycles) + 3) bits))
