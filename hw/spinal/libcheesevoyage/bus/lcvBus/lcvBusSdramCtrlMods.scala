@@ -1175,22 +1175,47 @@ case class LcvBusSdramCtrl(
 
               //&& h2dFifo.io.availability === 0
 
-              && h2dFifo.io.pop.valid
-              && (
-                !h2dFifo.io.pop.isWrite
-                || (
-                  //h2dFifo.io.occupancy
-                  //=== cfg.busCfg.maxBurstSizeMinus1 + 1
 
-                  h2dFifo.io.occupancy >= 4 
-                  // this is tuned to be 1/4 LcvBus mux burst size,
-                  // which is our chosen chip burst size!
+              && (
+                (
+                  h2dFifo.io.pop.valid
+                  && (
+                    !h2dFifo.io.pop.isWrite
+                    || (
+                      //h2dFifo.io.occupancy
+                      //=== cfg.busCfg.maxBurstSizeMinus1 + 1
+
+                      h2dFifo.io.occupancy >= 4 
+                      // this is tuned to be 1/4 LcvBus mux burst size,
+                      // which is our chosen chip burst size!
+                    )
+                    || (
+                      !h2dFifo.io.pop.burstFirst
+                    )
+                  )
                 )
                 || (
-                  !h2dFifo.io.pop.burstFirst
-                  || !rBusBurstOuterCnt.msb
+                  !rBusBurstOuterCnt.msb
+                  && !rSavedH2dSendData.isWrite
                 )
               )
+
+              //&& h2dFifo.io.pop.valid
+              //&& (
+              //  !h2dFifo.io.pop.isWrite
+              //  || (
+              //    //h2dFifo.io.occupancy
+              //    //=== cfg.busCfg.maxBurstSizeMinus1 + 1
+
+              //    h2dFifo.io.occupancy >= 4 
+              //    // this is tuned to be 1/4 LcvBus mux burst size,
+              //    // which is our chosen chip burst size!
+              //  )
+              //  || (
+              //    !h2dFifo.io.pop.burstFirst
+              //    || !rBusBurstOuterCnt.msb
+              //  )
+              //)
             )
             //|| !rBusBurstOuterCnt.msb,
           ),
