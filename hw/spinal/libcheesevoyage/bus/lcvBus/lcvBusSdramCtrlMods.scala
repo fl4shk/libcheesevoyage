@@ -1167,11 +1167,27 @@ case class LcvBusSdramCtrl(
         RegNext(
           (
             (
-              //d2hFifo.io.occupancy === 0
+              (
+                (
+                  d2hFifo.io.occupancy === 0
+                  && h2dFifo.io.pop.valid
+                  && !h2dFifo.io.pop.burstFirst
+                )
 
-              // this is tuned to be 1/4 LcvBus mux burst size,
-              // which is our chosen chip burst size !
-              d2hFifo.io.availability >= 4
+                // this is tuned to be 1/4 LcvBus mux burst size,
+                // which is our chosen chip burst size !
+                || (
+                  d2hFifo.io.availability >= 4
+                  && (
+                    (
+                      h2dFifo.io.pop.valid
+                      && h2dFifo.io.pop.burstFirst
+                    ) || (
+                      !rBusBurstOuterCnt.msb
+                    )
+                  )
+                )
+              ) 
 
               //&& h2dFifo.io.availability === 0
 
