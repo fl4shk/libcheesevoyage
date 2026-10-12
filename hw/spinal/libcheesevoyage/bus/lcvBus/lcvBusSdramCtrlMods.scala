@@ -644,26 +644,29 @@ case class LcvBusSdramCtrl(
     // maybe we could go up to 90% or something?
     (cfg.Cycles.tRAS._2.get * 0.85).toInt
   )
-  val rNeedPrechargeCnt = (
-    Reg(SInt(log2Up(myNeedPrechargeCntMaxVal) + 3 bits))
-    init(-1)
-  )
-  val rPrechargeRequest = Reg(Bool(), init=False)
-  when (
-    //!rPrechargeRequest
-    //&& 
-    !rNeedPrechargeCnt.msb
-  ) {
-    rNeedPrechargeCnt := rNeedPrechargeCnt - 1
-  } otherwise {
-    //rPrechargeRequest := True
-    //rSavedRowVec.foreach(item => {
-    //  item.valid := False
-    //})
-  }
-  when (rose(rNeedPrechargeCnt.msb)) {
-    rPrechargeRequest := True
-  }
+
+  //val rNeedPrechargeCnt = (
+  //  Reg(SInt(log2Up(myNeedPrechargeCntMaxVal) + 3 bits))
+  //  init(-1)
+  //)
+
+  //val rPrechargeRequest = Reg(Bool(), init=False)
+  //when (
+  //  //!rPrechargeRequest
+  //  //&& 
+  //  !rNeedPrechargeCnt.msb
+  //) {
+  //  rNeedPrechargeCnt := rNeedPrechargeCnt - 1
+  //} otherwise {
+  //  //rPrechargeRequest := True
+  //  //rSavedRowVec.foreach(item => {
+  //  //  item.valid := False
+  //  //})
+  //}
+
+  //when (rose(rNeedPrechargeCnt.msb)) {
+  //  rPrechargeRequest := True
+  //}
 
   //def myD2hNextValid = (
   //  io.bus.d2hBus.valid
@@ -1139,7 +1142,7 @@ case class LcvBusSdramCtrl(
         rNeedRfshCnt.msb
         //&& rBusBurstOuterCnt.msb // wait for bus bursts to finish
         //|| rNeedPrechargeCnt.msb
-        || rPrechargeRequest
+        //|| rPrechargeRequest
       ) {
         rSavedRowVec.foreach(item => {
           item.valid := False
@@ -1197,7 +1200,7 @@ case class LcvBusSdramCtrl(
         //io.bus.h2dBus.ready := True
         //h2dFifo.io.pop.ready := True
 
-        when (!rBusBurstOuterCnt.msb) {
+        when (rBusBurstOuterCnt.msb) {
           rStartBusBurst := False
 
           rSavedH2dSendData := (
@@ -1328,7 +1331,7 @@ case class LcvBusSdramCtrl(
       }
     }
     is (State.SEND_RFSH_PRECHARGE_ALL) {
-      rPrechargeRequest := False
+      //rPrechargeRequest := False
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
         prechargeAll=True,
@@ -1344,17 +1347,17 @@ case class LcvBusSdramCtrl(
         rPrechargeNopWaitCnt := cfg.Cycles.tRP._1.get.toInt
         rState := State.SEND_RFSH_MAIN
       }
-      switch (
-        rPrechargeNopWaitCnt.msb
-        ## rNeedRfshCnt.msb
-      ) {
-        is (M"10") {
-          rState := State.IDLE
-        }
-        is (M"11") {
-          rState := State.SEND_RFSH_MAIN
-        }
-      }
+      //switch (
+      //  rPrechargeNopWaitCnt.msb
+      //  ## rNeedRfshCnt.msb
+      //) {
+      //  is (M"10") {
+      //    rState := State.IDLE
+      //  }
+      //  is (M"11") {
+      //    rState := State.SEND_RFSH_MAIN
+      //  }
+      //}
     }
     is (State.SEND_RFSH_MAIN) {
       io.sdram.sendCmdAutoRefresh()
@@ -1370,7 +1373,7 @@ case class LcvBusSdramCtrl(
       }
     }
     is (State.SEND_PRECHARGE_ALL) {
-      rPrechargeRequest := False
+      //rPrechargeRequest := False
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
         prechargeAll=True,
@@ -1393,7 +1396,7 @@ case class LcvBusSdramCtrl(
     is (State.SEND_ACTIVE) {
       rH2dFifoPopReady := False
 
-      rNeedPrechargeCnt := myNeedPrechargeCntMaxVal
+      //rNeedPrechargeCnt := myNeedPrechargeCntMaxVal
 
       val tempBank = rSavedH2dSendData.addr(myBankSliceRange)
       rSavedRowVec(tempBank).valid := True
