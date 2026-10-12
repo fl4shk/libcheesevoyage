@@ -648,7 +648,7 @@ case class LcvBusSdramCtrl(
     Reg(SInt(log2Up(myNeedPrechargeCntMaxVal) + 3 bits))
     init(-1)
   )
-  //val rPrechargeRequest = Reg(Bool(), init=False)
+  val rPrechargeRequest = Reg(Bool(), init=False)
   when (
     //!rPrechargeRequest
     //&& 
@@ -660,6 +660,9 @@ case class LcvBusSdramCtrl(
     //rSavedRowVec.foreach(item => {
     //  item.valid := False
     //})
+  }
+  when (rose(rNeedPrechargeCnt.msb)) {
+    rPrechargeRequest := True
   }
 
   //def myD2hNextValid = (
@@ -1135,7 +1138,8 @@ case class LcvBusSdramCtrl(
       when (
         rNeedRfshCnt.msb
         //&& rBusBurstOuterCnt.msb // wait for bus bursts to finish
-        || rNeedPrechargeCnt.msb
+        //|| rNeedPrechargeCnt.msb
+        || rPrechargeRequest
       ) {
         rSavedRowVec.foreach(item => {
           item.valid := False
@@ -1324,6 +1328,7 @@ case class LcvBusSdramCtrl(
       }
     }
     is (State.SEND_RFSH_PRECHARGE_ALL) {
+      rPrechargeRequest := False
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
         prechargeAll=True,
@@ -1365,6 +1370,7 @@ case class LcvBusSdramCtrl(
       }
     }
     is (State.SEND_PRECHARGE_ALL) {
+      rPrechargeRequest := False
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
         prechargeAll=True,
