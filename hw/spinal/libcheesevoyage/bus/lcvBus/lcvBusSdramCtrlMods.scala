@@ -1167,27 +1167,11 @@ case class LcvBusSdramCtrl(
         RegNext(
           (
             (
-              (
-                (
-                  d2hFifo.io.occupancy === 0
-                  && h2dFifo.io.pop.valid
-                  && !h2dFifo.io.pop.burstFirst
-                )
+              //d2hFifo.io.occupancy === 0
 
-                // this is tuned to be 1/4 LcvBus mux burst size,
-                // which is our chosen chip burst size !
-                || (
-                  d2hFifo.io.availability >= 4
-                  && (
-                    (
-                      h2dFifo.io.pop.valid
-                      && h2dFifo.io.pop.burstFirst
-                    ) || (
-                      !rBusBurstOuterCnt.msb
-                    )
-                  )
-                )
-              ) 
+              // this is tuned to be 1/4 LcvBus mux burst size,
+              // which is our chosen chip burst size !
+              d2hFifo.io.availability >= 4
 
               //&& h2dFifo.io.availability === 0
 
@@ -1460,7 +1444,7 @@ case class LcvBusSdramCtrl(
         rActiveNopWaitCnt := rActiveNopWaitCnt - 1
       } otherwise {
         rActiveNopWaitCnt := cfg.Cycles.tRCD._1.get.toInt
-        when (!rBusBurstOuterCnt.msb) {
+        when (!rStartBusBurst) {
           rState := State.MID_BURST_PRE_READ_WRITE
         } otherwise {
           rState := State.PRE_READ_WRITE
