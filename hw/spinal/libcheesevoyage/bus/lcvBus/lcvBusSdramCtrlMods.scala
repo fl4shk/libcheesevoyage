@@ -805,7 +805,8 @@ case class LcvBusSdramCtrl(
     //rDqTriState.read := io.sdram.dq
   }
   def myPwrOnCntNumCycles = (
-    ((200 us) * cfg.clkRate) + 10 // 10 extra cycles for good measure 
+    //((200 us) * cfg.clkRate) + 10 // 10 extra cycles for good measure 
+    ((400 us) * cfg.clkRate) + 10 // 10 extra cycles for good measure 
   )
   def myPwrOnCntNumCyclesHalf = (
     (myPwrOnCntNumCycles / 2).toInt
@@ -1362,7 +1363,6 @@ case class LcvBusSdramCtrl(
 
       val tempBank = rSavedH2dSendData.addr(myBankSliceRange)
       rSavedRowVec(tempBank).valid := True
-
 
       io.sdram.sendCmdActive(
         bank=rTempAddr.head(myBankSliceRange),
