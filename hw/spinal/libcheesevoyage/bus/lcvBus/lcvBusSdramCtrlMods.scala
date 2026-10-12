@@ -1261,21 +1261,21 @@ case class LcvBusSdramCtrl(
           //  )
           //}
 
-          //when (
-          //  rBusBurstOuterCnt.msb
-          //  && (
-          //    RegNext(
-          //      h2dFifo.io.pop.burstFirst,
-          //      init=False,
-          //    )
-          //  )
-          //) {
-          //  rBusBurstOuterCnt := (
-          //    //cfg.busCfg.maxBurstSizeMinus1
-          //    (1 << cfg.sdramBaWidth) - 2
-          //  )
-          //  rStartBusBurst := True
-          //}
+          when (
+            rBusBurstOuterCnt.msb
+            && (
+              RegNext(
+                h2dFifo.io.pop.burstFirst,
+                init=False,
+              )
+            )
+          ) {
+            rBusBurstOuterCnt := (
+              //cfg.busCfg.maxBurstSizeMinus1
+              (1 << cfg.sdramBaWidth) - 2
+            )
+            rStartBusBurst := True
+          }
           //when (!rBusBurstOuterCnt.msb) {
           //  rBusBurstOuterCnt := rBusBurstOuterCnt - 1
           //  //rState := State.PRE_READ_WRITE
