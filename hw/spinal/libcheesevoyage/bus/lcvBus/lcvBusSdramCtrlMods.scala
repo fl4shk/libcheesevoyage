@@ -1260,29 +1260,29 @@ case class LcvBusSdramCtrl(
           //    ) + 1
           //  )
           //}
-
-          when (
-            rBusBurstOuterCnt.msb
-            && (
-              RegNext(
-                h2dFifo.io.pop.burstFirst,
-                init=False,
-              )
-            )
-          ) {
-            rBusBurstOuterCnt := (
-              //cfg.busCfg.maxBurstSizeMinus1
-              (1 << cfg.sdramBaWidth) - 2
-            )
-            rStartBusBurst := True
-          }
-          //when (!rBusBurstOuterCnt.msb) {
-          //  rBusBurstOuterCnt := rBusBurstOuterCnt - 1
-          //  //rState := State.PRE_READ_WRITE
-          //} otherwise {
-          //  //rState := State.SEND_ACTIVE
-          //}
         }
+
+        when (
+          rBusBurstOuterCnt.msb
+          && (
+            RegNext(
+              h2dFifo.io.pop.burstFirst,
+              init=False,
+            )
+          )
+        ) {
+          rBusBurstOuterCnt := (
+            //cfg.busCfg.maxBurstSizeMinus1
+            (1 << cfg.sdramBaWidth) - 2
+          )
+          rStartBusBurst := True
+        }
+        //when (!rBusBurstOuterCnt.msb) {
+        //  rBusBurstOuterCnt := rBusBurstOuterCnt - 1
+        //  //rState := State.PRE_READ_WRITE
+        //} otherwise {
+        //  //rState := State.SEND_ACTIVE
+        //}
 
         val tempBank = (
           RegNext(h2dFifo.io.pop.addr(myBankSliceRange))
