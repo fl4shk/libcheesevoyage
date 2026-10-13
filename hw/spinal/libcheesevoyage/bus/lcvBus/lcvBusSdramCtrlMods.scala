@@ -191,11 +191,11 @@ case class LcvBusSdramCtrlConfig(
   )
   def accessType = U"1'b0" // 0=sequential, 1=interleaved
   def casLatency = (
-    //if (clkRate < (100.0 MHz)) (
-    //  (U"3'd2", 2, 0)
-    //) else (
+    if (clkRate < (100.0 MHz)) (
+      (U"3'd2", 2, 0)
+    ) else (
       (U"3'd3", 3, 1)
-    //)
+    )
   )
   def opMode = U"2'b00" // only 00 (standard operation) allowed
   //def noWriteBurst = U"1'b1"  // 0=write burst enable, 1=only single acc wr
