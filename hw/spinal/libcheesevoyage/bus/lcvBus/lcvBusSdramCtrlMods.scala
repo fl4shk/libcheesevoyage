@@ -816,12 +816,21 @@ case class LcvBusSdramCtrl(
     //rDqTriState.read := io.sdram.dq
   }
 
-  rD2hSendData.data(15 downto 0) := (
-    //io.sdram.dq
-    rDqTriState.read
-  )
+  //rD2hSendData.data(15 downto 0) := (
+  //  //io.sdram.dq
+  //  rDqTriState.read
+  //)
+  //rD2hSendData.data(31 downto 16) := (
+  //  rD2hSendData.data(15 downto 0)
+  //)
   rD2hSendData.data(31 downto 16) := (
-    rD2hSendData.data(15 downto 0)
+    //io.sdram.dq
+    RegNext(
+      rDqTriState.read
+    )
+  )
+  rD2hSendData.data(15 downto 0) := (
+    rD2hSendData.data(31 downto 16)
   )
 
 
