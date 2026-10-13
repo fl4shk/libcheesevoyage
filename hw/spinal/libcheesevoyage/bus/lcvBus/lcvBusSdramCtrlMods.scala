@@ -1351,6 +1351,7 @@ case class LcvBusSdramCtrl(
 
           cloneOf(h2dFifo.io.pop.addr(myRowSliceRange))
         )
+
         when (
           rBusBurstOuterCnt.msb
         ) {
