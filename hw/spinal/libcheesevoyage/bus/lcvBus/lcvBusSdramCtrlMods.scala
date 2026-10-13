@@ -801,7 +801,8 @@ case class LcvBusSdramCtrl(
   //)
   val rDqTriState = {
     val temp = Reg(TriState(UInt(cfg.sdramDqWidth bits)))
-    temp.init(temp.getZero)
+    //temp.init(temp.getZero)
+    //temp.writeEnable.init(temp.writeEnable.getZero)
     temp
   }
   //rDqTriState.writeEnable.setAsReg() init(rDqTriState.writeEnable.getZero)
