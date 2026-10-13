@@ -1712,7 +1712,7 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdRead(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
-        autoPrecharge=True,
+        autoPrecharge=False,
         someDqTriState=rDqTriState,
         firstRead=false,
       )
@@ -1907,7 +1907,7 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
-        autoPrecharge=True,
+        autoPrecharge=False,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(31 downto 16),
         wrByteEn=(
@@ -1970,7 +1970,7 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
-        autoPrecharge=True,
+        autoPrecharge=False,
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(15 downto 0),
         wrByteEn=(
