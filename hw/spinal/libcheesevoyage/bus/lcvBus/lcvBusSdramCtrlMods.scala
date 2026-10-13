@@ -1382,7 +1382,6 @@ case class LcvBusSdramCtrl(
           rSavedRowVec.foreach(item => {
             item.valid := False
           })
-          rSavedRowVec(tempBank).payload := tempRow
 
           when (
             rSavedRowVec(tempBank).fire
@@ -1469,7 +1468,9 @@ case class LcvBusSdramCtrl(
       //rNeedPrechargeCnt := myNeedPrechargeCntMaxVal
 
       val tempBank = rSavedH2dSendData.addr(myBankSliceRange)
+      val tempRow = rSavedH2dSendData.addr(myRowSliceRange)
       rSavedRowVec(tempBank).valid := True
+      rSavedRowVec(tempBank).payload := tempRow
 
       io.sdram.sendCmdActive(
         bank=rTempAddr.head(myBankSliceRange),
