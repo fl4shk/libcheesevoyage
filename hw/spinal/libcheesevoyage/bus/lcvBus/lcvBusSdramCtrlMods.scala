@@ -1053,14 +1053,13 @@ case class LcvBusSdramCtrl(
       /* 18 */ ACTIVE_POST_NOPS,
       /* 19 */ PRE_READ_WRITE,
       /* 20 */ MID_BURST_PRE_READ_WRITE,
-      /* 21 */ SEND_READ_DQM_POST,
-      /* 22 */ SEND_READ_0,
-      /* 23 */ SEND_READ_N,
-      /* 24 */ READ_POST_NOPS,
-      /* 25 */ SEND_WRITE_0,
-      /* 26 */ SEND_WRITE_HI_N,
-      /* 27 */ SEND_WRITE_LO_N,
-      /* 28 */ WRITE_POST_NOPS
+      /* 21 */ SEND_READ_0,
+      /* 22 */ SEND_READ_N,
+      /* 23 */ READ_POST_NOPS,
+      /* 24 */ SEND_WRITE_0,
+      /* 25 */ SEND_WRITE_HI_N,
+      /* 26 */ SEND_WRITE_LO_N,
+      /* 27 */ WRITE_POST_NOPS
 
       = newElement();
   }
@@ -1515,7 +1514,8 @@ case class LcvBusSdramCtrl(
       //rHaveBurst := rSavedH2dSendData.burstFirst
       when (!rSavedH2dSendData.isWrite) {
         rState := (
-          State.SEND_READ_DQM_POST
+          State.SEND_READ_0
+          //State.SEND_READ_DQM_POST
         )
         rChipBurstWithoutBusBurstCnt.head := (
           (
@@ -1606,8 +1606,8 @@ case class LcvBusSdramCtrl(
       }
       when (!rSavedH2dSendData.isWrite) {
         rState := (
-          //State.SEND_READ_0
-          State.SEND_READ_DQM_POST
+          State.SEND_READ_0
+          //State.SEND_READ_DQM_POST
         )
         rChipBurstWithoutBusBurstCnt.head := (
           (
@@ -1669,11 +1669,11 @@ case class LcvBusSdramCtrl(
         )
       }
     }
-    is (State.SEND_READ_DQM_POST) {
-      rH2dFifoPopReady := False
-      io.sdram.sendCmdNop()
-      rState := State.SEND_READ_0
-    }
+    //is (State.SEND_READ_DQM_POST) {
+    //  rH2dFifoPopReady := False
+    //  io.sdram.sendCmdNop()
+    //  rState := State.SEND_READ_0
+    //}
     is (State.SEND_READ_0) {
       rH2dFifoPopReady := False
       io.sdram.sendCmdRead(
