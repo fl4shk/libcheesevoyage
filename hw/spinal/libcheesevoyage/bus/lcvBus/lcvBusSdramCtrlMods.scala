@@ -1408,7 +1408,7 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
         prechargeAll=True,
-        needAssertDqm=false,
+        needAssertDqm=true,
       )
       rH2dFifoPopReady := False
       rState := State.PRECHARGE_ALL_POST_NOPS
