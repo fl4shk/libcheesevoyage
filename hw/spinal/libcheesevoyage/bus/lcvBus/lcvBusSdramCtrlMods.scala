@@ -1318,6 +1318,17 @@ case class LcvBusSdramCtrl(
           //}
         }
 
+        val tempBank = (
+          cloneOf(h2dFifo.io.pop.addr(myBankSliceRange))
+          //RegNext(h2dFifo.io.pop.addr(myBankSliceRange))
+          //init(0x0)
+        )
+        val tempRow = (
+          //RegNext(h2dFifo.io.pop.addr(myRowSliceRange))
+          //init(0x0)
+
+          cloneOf(h2dFifo.io.pop.addr(myRowSliceRange))
+        )
         when (
           rBusBurstOuterCnt.msb
           && (
@@ -1332,26 +1343,6 @@ case class LcvBusSdramCtrl(
             (1 << cfg.sdramBaWidth) - 2
           )
           rStartBusBurst := True
-        }
-        //when (!rBusBurstOuterCnt.msb) {
-        //  rBusBurstOuterCnt := rBusBurstOuterCnt - 1
-        //  //rState := State.PRE_READ_WRITE
-        //} otherwise {
-        //  //rState := State.SEND_ACTIVE
-        //}
-
-        val tempBank = (
-          cloneOf(h2dFifo.io.pop.addr(myBankSliceRange))
-          //RegNext(h2dFifo.io.pop.addr(myBankSliceRange))
-          //init(0x0)
-        )
-        val tempRow = (
-          //RegNext(h2dFifo.io.pop.addr(myRowSliceRange))
-          //init(0x0)
-
-          cloneOf(h2dFifo.io.pop.addr(myRowSliceRange))
-        )
-        when (rBusBurstOuterCnt.msb) {
           tempBank := (
             RegNext(h2dFifo.io.pop.addr(myBankSliceRange))
           )
@@ -1362,6 +1353,12 @@ case class LcvBusSdramCtrl(
           tempBank := rSavedH2dSendData.addr(myBankSliceRange)
           tempRow := rSavedH2dSendData.addr(myRowSliceRange)
         }
+        //when (!rBusBurstOuterCnt.msb) {
+        //  rBusBurstOuterCnt := rBusBurstOuterCnt - 1
+        //  //rState := State.PRE_READ_WRITE
+        //} otherwise {
+        //  //rState := State.SEND_ACTIVE
+        //}
 
         //when (
         //  LcvOrR(Vec(rSavedRowVec.map(_.fire)))
