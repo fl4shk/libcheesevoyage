@@ -740,18 +740,10 @@ case class LcvBusSdramCtrl(
   d2hFifo.io.push.payload := rD2hSendData
   d2hFifo.io.push.data.allowOverride
   d2hFifo.io.push.data := (
-    RegNext(
+    //RegNext(
       rD2hSendData.data
-    )
+    //)
   )
-  rD2hSendData.data(15 downto 0) := (
-    io.sdram.dq
-  )
-  rD2hSendData.data(31 downto 16) := (
-    rD2hSendData.data(15 downto 0)
-  )
-
-
   io.bus.d2hBus.valid := (
     d2hFifo.io.pop.valid
     || rD2hWriteValid
@@ -821,8 +813,19 @@ case class LcvBusSdramCtrl(
     //io.dq
     io.sdram.dq := rDqTriState.write
   } otherwise {
-    //rDqTriState.read := io.sdram.dq
+    rDqTriState.read := io.sdram.dq
   }
+
+  rD2hSendData.data(15 downto 0) := (
+    //io.sdram.dq
+    rDqTriState.read
+  )
+  rD2hSendData.data(31 downto 16) := (
+    rD2hSendData.data(15 downto 0)
+  )
+
+
+
   def myPwrOnCntNumCycles = (
     ((200 us) * cfg.clkRate) + 10 // 10 extra cycles for good measure 
     //((400 us) * cfg.clkRate) + 10 // 10 extra cycles for good measure 
