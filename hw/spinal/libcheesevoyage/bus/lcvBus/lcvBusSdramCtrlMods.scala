@@ -916,7 +916,7 @@ case class LcvBusSdramCtrl(
   val rRdCasLatencyCnt = (
     Reg(SInt((log2Up(myRdCasLatencyCntNumCycles) + 3) bits))
     init(
-      myRdCasLatencyCntNumCycles - 1
+      myRdCasLatencyCntNumCycles //- 1
       //cfg.casLatency._2 - 1
       //- 1
     )
@@ -1649,7 +1649,7 @@ case class LcvBusSdramCtrl(
       rState := State.SEND_READ_N
       rRdCasLatencyCnt := (
         //cfg.casLatency._2 - 1
-        myRdCasLatencyCntNumCycles - 1
+        myRdCasLatencyCntNumCycles //- 1
       )
       rRdNopWaitCnt := myRdNopWaitCntNumCycles
 
