@@ -1150,7 +1150,7 @@ case class LcvBusSdramCtrl(
 
     is (State.IDLE) {
       io.sdram.sendCmdNop(
-        needAssertDqm=true,
+        needAssertDqm=false,
       )
       //io.sdram.dqml := False
       //io.sdram.dqmh := False
@@ -1379,7 +1379,7 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
         prechargeAll=True,
-        needAssertDqm=true,
+        needAssertDqm=false,
       )
       rState := State.RFSH_PRECHARGE_ALL_POST_NOPS
     }
@@ -1421,7 +1421,7 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
         prechargeAll=True,
-        needAssertDqm=true,
+        needAssertDqm=false,
       )
       rH2dFifoPopReady := False
       rState := State.PRECHARGE_ALL_POST_NOPS
@@ -1475,7 +1475,7 @@ case class LcvBusSdramCtrl(
       }
     }
     is (State.PRE_READ_WRITE) {
-      io.sdram.sendCmdNop(needAssertDqm=true)
+      io.sdram.sendCmdNop(needAssertDqm=false)
 
       rH2dFifoPopReady := False
       //rSavedH2dSendData := (
@@ -1585,7 +1585,7 @@ case class LcvBusSdramCtrl(
       //)
     }
     is (State.MID_BURST_PRE_READ_WRITE) {
-      io.sdram.sendCmdNop(needAssertDqm=true)
+      io.sdram.sendCmdNop(needAssertDqm=false)
 
       rStartBusBurst := False
       when (!rBusBurstOuterCnt.msb) {
