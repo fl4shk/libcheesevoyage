@@ -516,15 +516,15 @@ case class LcvBusSdramIo(
   private[libcheesevoyage] def sendCmdPrecharge(
     bank: UInt,
     prechargeAll: Bool,
-    inPwrOnSeq: Boolean=false,
+    needAssertDqm: Boolean=false,
   ): Unit = {
     this._sendCmdBase(U"4'b0010")
     ba := bank
       // we can do this even when `prechargeAll === True`
       // because `ba` is ignored in that case
     a(10) := prechargeAll
-    dqmh := (if (!inPwrOnSeq) (False) else (True))
-    dqml := (if (!inPwrOnSeq) (False) else (True))
+    dqmh := (if (!needAssertDqm) (False) else (True))
+    dqml := (if (!needAssertDqm) (False) else (True))
   }
   private[libcheesevoyage] def sendCmdAutoRefresh(
     inPwrOnSeq: Boolean=false,
@@ -1082,7 +1082,7 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
         prechargeAll=True,
-        inPwrOnSeq=true,
+        needAssertDqm=true,
       )
       rState := State.PWR_ON_WAIT_T_RP
     }
@@ -1136,8 +1136,11 @@ case class LcvBusSdramCtrl(
     }
 
     is (State.IDLE) {
-      io.sdram.dqml := False
-      io.sdram.dqmh := False
+      io.sdram.sendCmdNop(
+        needAssertDqm=true,
+      )
+      //io.sdram.dqml := False
+      //io.sdram.dqmh := False
       rH2dFifoPopReady := False
 
       when (
@@ -1363,7 +1366,7 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
         prechargeAll=True,
-        inPwrOnSeq=false,
+        needAssertDqm=false,
       )
       rState := State.RFSH_PRECHARGE_ALL_POST_NOPS
     }
@@ -1405,7 +1408,7 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
         prechargeAll=True,
-        inPwrOnSeq=false,
+        needAssertDqm=false,
       )
       rH2dFifoPopReady := False
       rState := State.PRECHARGE_ALL_POST_NOPS
