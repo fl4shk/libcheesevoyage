@@ -808,12 +808,12 @@ case class LcvBusSdramCtrl(
   rDqTriState.writeEnable := (
     False
   )
-  //rDqTriState.read := io.sdram.dq
+  rDqTriState.read := io.sdram.dq
   when (rDqTriState.writeEnable) {
     //io.dq
     io.sdram.dq := rDqTriState.write
   } otherwise {
-    rDqTriState.read := io.sdram.dq
+    //rDqTriState.read := io.sdram.dq
   }
 
   rD2hSendData.data(15 downto 0) := (
