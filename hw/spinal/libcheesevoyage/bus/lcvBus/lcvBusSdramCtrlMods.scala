@@ -1681,7 +1681,10 @@ case class LcvBusSdramCtrl(
       when (!rRdCasLatencyCnt.msb) {
         rRdCasLatencyCnt := rRdCasLatencyCnt - 1
         when (rHaveBurst) {
-          when (rRdCasLatencyCnt(0) === False) {
+          when (
+            //rRdCasLatencyCnt(0) === False
+            rRdCasLatencyCnt(0) === True
+          ) {
             //when (rHaveBurst) {
               nextD2hValid := (
                 //rRdCasLatencyCnt.asUInt <= cfg.busCfg.maxBurstSizeMinus1 * 2
@@ -1711,7 +1714,10 @@ case class LcvBusSdramCtrl(
                 //init=io.sdram.dq.getZero,
               )
             )
-          } elsewhen (rRdCasLatencyCnt(0) === True) {
+          } elsewhen (
+            //rRdCasLatencyCnt(0) === True
+            rRdCasLatencyCnt(0) === False
+          ) {
             when (rD2hFifoPushValid) {
               rD2hSendData.burstFirst := False
             }
