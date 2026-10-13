@@ -1366,12 +1366,12 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
         prechargeAll=True,
-        needAssertDqm=false,
+        needAssertDqm=true,
       )
       rState := State.RFSH_PRECHARGE_ALL_POST_NOPS
     }
     is (State.RFSH_PRECHARGE_ALL_POST_NOPS) {
-      io.sdram.sendCmdNop()
+      io.sdram.sendCmdNop(needAssertDqm=false)
       when (!rPrechargeNopWaitCnt.msb) {
         rPrechargeNopWaitCnt := rPrechargeNopWaitCnt - 1
       } otherwise {
