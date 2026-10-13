@@ -738,6 +738,19 @@ case class LcvBusSdramCtrl(
   d2hFifo.io.flush := False//rSavedSoftResetCnt.orR //False
   d2hFifo.io.push.valid := rD2hFifoPushValid
   d2hFifo.io.push.payload := rD2hSendData
+  d2hFifo.io.push.data.allowOverride
+  d2hFifo.io.push.data := (
+    RegNext(
+      rD2hSendData.data
+    )
+  )
+  rD2hSendData.data(15 downto 0) := (
+    io.sdram.dq
+  )
+  rD2hSendData.data(31 downto 16) := (
+    rD2hSendData.data(15 downto 0)
+  )
+
 
   io.bus.d2hBus.valid := (
     d2hFifo.io.pop.valid
@@ -1720,26 +1733,26 @@ case class LcvBusSdramCtrl(
               //rRdCasLatencyCnt.asUInt <= cfg.busCfg.maxBurstSizeMinus1 * 2//+ 1
               nextD2hValid
             )
-            rD2hSendData.data(31 downto 16) := (
-              RegNext(
-                //rDqTriState.read
-                io.sdram.dq,
-                //init=io.sdram.dq.getZero,
-              )
-            )
+            //rD2hSendData.data(31 downto 16) := (
+            //  RegNext(
+            //    //rDqTriState.read
+            //    io.sdram.dq,
+            //    //init=io.sdram.dq.getZero,
+            //  )
+            //)
           } elsewhen (rRdCasLatencyCnt(0) === True) {
             when (rD2hFifoPushValid) {
               rD2hSendData.burstFirst := False
             }
-            rD2hSendData.data(15 downto 0) := (
-              //rDqTriState.read
+            //rD2hSendData.data(15 downto 0) := (
+            //  //rDqTriState.read
 
-              RegNext(
-                //rDqTriState.read
-                io.sdram.dq,
-                //init=io.sdram.dq.getZero,
-              )
-            )
+            //  RegNext(
+            //    //rDqTriState.read
+            //    io.sdram.dq,
+            //    //init=io.sdram.dq.getZero,
+            //  )
+            //)
           }
           when (
             rRdCasLatencyCnt === 0
@@ -1753,14 +1766,14 @@ case class LcvBusSdramCtrl(
             ## fell(LcvOrR(rChipBurstWithoutBusBurstCnt.last))
           ) {
             is (B"10") {
-              rD2hSendData.data(15 downto 0) := (
-                RegNext(io.sdram.dq)
-              )
+              //rD2hSendData.data(15 downto 0) := (
+              //  RegNext(io.sdram.dq)
+              //)
             }
             is (B"01") {
-              rD2hSendData.data(31 downto 16) := (
-                RegNext(io.sdram.dq)
-              )
+              //rD2hSendData.data(31 downto 16) := (
+              //  RegNext(io.sdram.dq)
+              //)
               nextD2hValid := True
             }
             default {
