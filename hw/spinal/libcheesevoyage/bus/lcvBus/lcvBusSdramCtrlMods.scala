@@ -1462,10 +1462,11 @@ case class LcvBusSdramCtrl(
         //}
         // hopefully this is a correct translation!
         switch (
-          RegNext(rSavedRowVec(tempBank(0)).fire)
+          RegNext(rSavedRowVec(myTempBankMux(0)).fire)
           ## (
-            tempRow(0)
-            === rSavedRowVec(tempBank(0)).payload
+            //tempRow(0)
+            //=== rSavedRowVec(tempBank(0)).payload
+            myTempRowCmpEq
           )
           ## RegNext(rBusBurstOuterCnt.msb)
         ) {
