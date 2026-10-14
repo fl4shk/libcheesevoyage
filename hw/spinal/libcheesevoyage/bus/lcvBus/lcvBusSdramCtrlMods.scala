@@ -1472,7 +1472,7 @@ case class LcvBusSdramCtrl(
           ## (
             //tempRow(0)
             //=== rSavedRowVec(tempBank(0)).payload
-            myTempRowCmpEq
+            rMyTempRowCmpEq
           )
           ## RegNext(
             rBusBurstOuterCnt.msb,
