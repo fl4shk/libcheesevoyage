@@ -346,7 +346,7 @@ case class LcvBusSdramCtrlConfig(
     def tREFIthresh = (
       //(7 us) * clkRate
       //(6.75 us) * clkRate
-      tREFI._1
+      tREFI._1.get
     )
   }
 }
