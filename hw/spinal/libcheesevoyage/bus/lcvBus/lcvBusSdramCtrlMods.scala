@@ -1077,6 +1077,14 @@ case class LcvBusSdramCtrl(
     )
   )
 
+  val tempBank = Vec.fill(2)(
+    cloneOf(h2dFifo.io.pop.addr(myBankSliceRange))
+  )
+  val tempRow = Vec.fill(2)(
+    cloneOf(h2dFifo.io.pop.addr(myRowSliceRange))
+  )
+
+
   switch (rState) {
     is (State.PWR_ON_INIT) {
       io.sdram.sendCmdNop(needAssertDqm=true)
@@ -1340,30 +1348,18 @@ case class LcvBusSdramCtrl(
         //  //rState := State.SEND_ACTIVE
         //}
 
-        val tempBank = (
-          cloneOf(h2dFifo.io.pop.addr(myBankSliceRange))
-          //RegNext(h2dFifo.io.pop.addr(myBankSliceRange))
-          //init(0x0)
-        )
-        val tempRow = (
-          //RegNext(h2dFifo.io.pop.addr(myRowSliceRange))
-          //init(0x0)
-
-          cloneOf(h2dFifo.io.pop.addr(myRowSliceRange))
-        )
-
         when (
           rBusBurstOuterCnt.msb
         ) {
-          tempBank := (
+          tempBank(0) := (
             RegNext(h2dFifo.io.pop.addr(myBankSliceRange))
           )
-          tempRow := (
+          tempRow(0) := (
             RegNext(h2dFifo.io.pop.addr(myRowSliceRange))
           )
         } otherwise {
-          tempBank := rSavedH2dSendData.addr(myBankSliceRange)
-          tempRow := rSavedH2dSendData.addr(myRowSliceRange)
+          tempBank(0) := rSavedH2dSendData.addr(myBankSliceRange)
+          tempRow(0) := rSavedH2dSendData.addr(myRowSliceRange)
         }
 
         //when (
@@ -1375,10 +1371,10 @@ case class LcvBusSdramCtrl(
           //rNeedPrechargeCnt.msb
           //|| 
           !(
-            rSavedRowVec(tempBank).fire
+            rSavedRowVec(tempBank(0)).fire
             && (
-              tempRow 
-              === rSavedRowVec(tempBank).payload
+              tempRow(0)
+              === rSavedRowVec(tempBank(0)).payload
             )
           )
         ) {
@@ -1387,7 +1383,7 @@ case class LcvBusSdramCtrl(
           })
 
           when (
-            rSavedRowVec(tempBank).fire
+            rSavedRowVec(tempBank(0)).fire
           ) {
             rState := State.SEND_PRECHARGE_ALL
           } otherwise {
@@ -1470,10 +1466,10 @@ case class LcvBusSdramCtrl(
 
       //rNeedPrechargeCnt := myNeedPrechargeCntMaxVal
 
-      val tempBank = rSavedH2dSendData.addr(myBankSliceRange)
-      val tempRow = rSavedH2dSendData.addr(myRowSliceRange)
-      rSavedRowVec(tempBank).valid := True
-      rSavedRowVec(tempBank).payload := tempRow
+      tempBank(1) := rSavedH2dSendData.addr(myBankSliceRange)
+      tempRow(1) := rSavedH2dSendData.addr(myRowSliceRange)
+      rSavedRowVec(tempBank(1)).valid := True
+      rSavedRowVec(tempBank(1)).payload := tempRow(1)
 
       io.sdram.sendCmdActive(
         bank=rTempAddr.head(myBankSliceRange),
