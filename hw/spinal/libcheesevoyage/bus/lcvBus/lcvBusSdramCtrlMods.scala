@@ -898,11 +898,11 @@ case class LcvBusSdramCtrl(
     rNeedRfshCnt := rNeedRfshCnt - 1
   }
 
-  when (
-    !rNeedRfshCnt.msb
-    && (rNeedRfshCnt - 1).msb
-  ) {
-  }
+  //when (
+  //  !rNeedRfshCnt.msb
+  //  && (rNeedRfshCnt - 1).msb
+  //) {
+  //}
 
   val rRfshNopWaitCnt = (
     Reg(UInt((log2Up(cfg.Cycles.tRFC._1.get.toInt) + 3) bits))
@@ -933,9 +933,9 @@ case class LcvBusSdramCtrl(
     (
       //(cfg.burstLen - 1)
       //+ 
-      //cfg.Cycles.tWR._1.get
+      cfg.Cycles.tWR._1.get
       //+ cfg.Cycles.tRP._1.get
-      1
+      //1
     ).toInt + 1
   )
   def myWrNopWaitCntNumCyclesMin = (
@@ -943,9 +943,9 @@ case class LcvBusSdramCtrl(
     (
       //(cfg.burstLen - 1)
       //+ 
-      //cfg.Cycles.tWR._1.get
+      cfg.Cycles.tWR._1.get
       //+ cfg.Cycles.tRP._1.get
-      1
+      //1
     ).toInt + 1
   )
   val rWrNopWaitCnt = (
@@ -1943,10 +1943,13 @@ case class LcvBusSdramCtrl(
         rD2hFifoPushValid := False
         rState := State.READ_POST_NOPS
       }
-      when (!rRdNopWaitCnt.msb) {
-        rRdNopWaitCnt := rRdNopWaitCnt - 1
-      }
-      when (rRdCasLatencyCnt.msb && rRdNopWaitCnt.msb) {
+      //when (!rRdNopWaitCnt.msb) {
+      //  rRdNopWaitCnt := rRdNopWaitCnt - 1
+      //}
+      when (
+        //rRdCasLatencyCnt.msb && rRdNopWaitCnt.msb
+        rRdCasLatencyCnt.msb //&& rRdNopWaitCnt.msb
+      ) {
         rD2hFifoPushValid := False
 
         rTempAddr.last(
@@ -1961,7 +1964,8 @@ case class LcvBusSdramCtrl(
         //when (!rBusBurstOuterCnt.msb) {
         //  rState := State.MID_BURST_PRE_READ_WRITE
         //} otherwise {
-          rState := State.IDLE
+          //rState := State.IDLE
+          rState := State.READ_POST_NOPS
         //}
       }
     }
@@ -1974,15 +1978,15 @@ case class LcvBusSdramCtrl(
       }
       when (rRdNopWaitCnt.msb) {
         //rState := State.IDLE
-        rTempAddr.last(
-          myAlignedColumnSliceRangeHi._1
-          downto myAlignedColumnSliceRangeHi._2
-        ) := (
-          rTempAddr.last(
-            myAlignedColumnSliceRangeHi._1
-            downto myAlignedColumnSliceRangeHi._2
-          ) + 1
-        )
+        //rTempAddr.last(
+        //  myAlignedColumnSliceRangeHi._1
+        //  downto myAlignedColumnSliceRangeHi._2
+        //) := (
+        //  rTempAddr.last(
+        //    myAlignedColumnSliceRangeHi._1
+        //    downto myAlignedColumnSliceRangeHi._2
+        //  ) + 1
+        //)
         //when (!rBusBurstOuterCnt.msb) {
         //  rState := State.MID_BURST_PRE_READ_WRITE
         //} otherwise {
@@ -2045,6 +2049,14 @@ case class LcvBusSdramCtrl(
       rTempBurstLast := False
     }
     is (State.SEND_WRITE_HI_N) {
+      when (
+        //rD2hFifoPushValid
+        rD2hWriteValid
+        //&& io.bus.d2hBus.ready
+        && d2hFifo.io.push.ready
+      ) {
+        rD2hWriteValid := False
+      }
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
@@ -2108,6 +2120,14 @@ case class LcvBusSdramCtrl(
       //}
     }
     is (State.SEND_WRITE_LO_N) {
+      when (
+        //rD2hFifoPushValid
+        rD2hWriteValid
+        //&& io.bus.d2hBus.ready
+        && d2hFifo.io.push.ready
+      ) {
+        rD2hWriteValid := False
+      }
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
