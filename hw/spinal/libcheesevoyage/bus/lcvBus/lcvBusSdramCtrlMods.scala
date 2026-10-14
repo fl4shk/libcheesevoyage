@@ -633,6 +633,7 @@ case class LcvBusSdramCtrl(
   )
 
   def myNumBanks = 4
+
   val rSavedRowVec = Vec.fill(myNumBanks)({
     val temp = Reg(Flow(UInt(13 bits)))
     temp.init(temp.getZero)
@@ -1240,8 +1241,13 @@ case class LcvBusSdramCtrl(
                   )
                 )
                 || (
-                  !rBusBurstOuterCnt.msb
-                  && !rSavedH2dSendData.isWrite
+                  RegNext(
+                    (
+                      !rBusBurstOuterCnt.msb
+                      && !rSavedH2dSendData.isWrite
+                    ),
+                    init=False
+                  )
                 )
               )
 
@@ -1354,50 +1360,113 @@ case class LcvBusSdramCtrl(
         //  //rState := State.SEND_ACTIVE
         //}
 
-        when (
-          rBusBurstOuterCnt.msb
-        ) {
-          tempBank(0) := (
-            RegNext(h2dFifo.io.pop.addr(myBankSliceRange))
-          )
-          tempRow(0) := (
-            RegNext(h2dFifo.io.pop.addr(myRowSliceRange))
-          )
-        } otherwise {
-          tempBank(0) := rSavedH2dSendData.addr(myBankSliceRange)
-          tempRow(0) := rSavedH2dSendData.addr(myRowSliceRange)
-        }
+
+        tempBank(0) := (
+          RegNext(Mux(
+            rBusBurstOuterCnt.msb,
+            h2dFifo.io.pop.addr(myBankSliceRange),
+            rSavedH2dSendData.addr(myBankSliceRange)
+          ))
+        )
+        tempRow(0) := (
+          RegNext(Mux(
+            rBusBurstOuterCnt.msb,
+            h2dFifo.io.pop.addr(myRowSliceRange),
+            rSavedH2dSendData.addr(myRowSliceRange)
+          ))
+        )
+
+        //when (
+        //  rBusBurstOuterCnt.msb
+        //) {
+        //  tempBank(0) := (
+        //    RegNext(h2dFifo.io.pop.addr(myBankSliceRange))
+        //  )
+        //  tempRow(0) := (
+        //    RegNext(h2dFifo.io.pop.addr(myRowSliceRange))
+        //  )
+        //} otherwise {
+        //  tempBank(0) := rSavedH2dSendData.addr(myBankSliceRange)
+        //  tempRow(0) := rSavedH2dSendData.addr(myRowSliceRange)
+        //}
 
         //when (
         //  LcvOrR(Vec(rSavedRowVec.map(_.fire)))
         //) {
         //}
-        when (
-          //rPrechargeRequest
-          //rNeedPrechargeCnt.msb
-          //|| 
-          !(
-            rSavedRowVec(tempBank(0)).fire
-            && (
-              tempRow(0)
-              === rSavedRowVec(tempBank(0)).payload
-            )
+
+        //switch (
+        //  tempBank(0)
+        //) {
+        //  for (idx <- 0 until (1 << tempBank(0).getWidth)) {
+        //    is (idx) {
+        //  }
+        //}
+
+        //switch (
+        //  rSavedRowVec(tempBank(0)).fire
+        //  && (
+        //    tempRow(0)
+        //    === rSavedRowVec(tempBank(0)).payload
+        //  )
+        //) {
+        //}
+
+        //--------
+        //when (
+        //  //rPrechargeRequest
+        //  //rNeedPrechargeCnt.msb
+        //  //|| 
+        //  !(
+        //    rSavedRowVec(tempBank(0)).fire
+        //    && (
+        //      tempRow(0)
+        //      === rSavedRowVec(tempBank(0)).payload
+        //    )
+        //  )
+        //) {
+        //  when (
+        //    rSavedRowVec(tempBank(0)).fire
+        //  ) {
+        //    rState := State.SEND_PRECHARGE_ALL
+        //  } otherwise {
+        //    rState := State.SEND_ACTIVE
+        //  }
+        //} otherwise {
+        //  when (!rBusBurstOuterCnt.msb) {
+        //    rState := State.MID_BURST_PRE_READ_WRITE
+        //  } otherwise {
+        //    rState := State.PRE_READ_WRITE
+        //  }
+        //}
+        // hopefully this is a correct translation!
+        switch (
+          rSavedRowVec(tempBank(0)).fire
+          ## (
+            tempRow(0)
+            === rSavedRowVec(tempBank(0)).payload
           )
+          ## RegNext(rBusBurstOuterCnt.msb)
         ) {
-          when (
-            rSavedRowVec(tempBank(0)).fire
-          ) {
-            rState := State.SEND_PRECHARGE_ALL
-          } otherwise {
+          //is (M"00-") {
+          //}
+          //is (M"01-") {
+          //}
+          is (M"0--") {
             rState := State.SEND_ACTIVE
           }
-        } otherwise {
-          when (!rBusBurstOuterCnt.msb) {
+          is (M"10-") {
+            rState := State.SEND_PRECHARGE_ALL
+          }
+          is (M"110") {
             rState := State.MID_BURST_PRE_READ_WRITE
-          } otherwise {
+          }
+          //is (M"111")
+          default {
             rState := State.PRE_READ_WRITE
           }
         }
+        //--------
       }
     }
     is (State.SEND_RFSH_PRECHARGE_ALL) {
