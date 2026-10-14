@@ -1294,6 +1294,11 @@ case class LcvBusSdramCtrl(
       ) {
         //io.bus.h2dBus.ready := True
         //h2dFifo.io.pop.ready := True
+        when (
+          rBusBurstOuterCnt.msb
+        ) {
+          rH2dFifoPopReady := True
+        }
 
         when (
           //RegNext(
@@ -1316,7 +1321,7 @@ case class LcvBusSdramCtrl(
           )
 
           //when (rBusBurstOuterCnt.msb) {
-            rH2dFifoPopReady := True
+            //rH2dFifoPopReady := True
             rTempAddr.head := (
               RegNext(
                 next=h2dFifo.io.pop.addr,
@@ -1362,9 +1367,10 @@ case class LcvBusSdramCtrl(
         }
 
         when (
-          //RegNext(
+          //RegNext
+          (
             rBusBurstOuterCnt.msb
-          //)
+          )
           && (
             RegNext(
               (
@@ -1405,21 +1411,25 @@ case class LcvBusSdramCtrl(
         )
 
         tempBank(0) := (
-          RegNext(myTempBankMux(1))
+          //RegNext(
+            myTempBankMux(1)
+          //)
         )
         tempRow(0) := (
-          RegNext(myTempRowMux(1))
+          //RegNext(
+            myTempRowMux(1)
+          //)
         )
 
-        val rMyTempRowCmpEq = (
-          RegNext(
-            (
-              rSavedRowVec(myTempBankMux(0)).payload
-              === myTempRowMux(0)
-            ),
-            init=False
-          )
-        )
+        //val rMyTempRowCmpEq = (
+        //  RegNext(
+        //    (
+        //      rSavedRowVec(myTempBankMux(0)).payload
+        //      === myTempRowMux(0)
+        //    ),
+        //    init=False
+        //  )
+        //)
 
         //when (
         //  rBusBurstOuterCnt.msb
@@ -1486,18 +1496,20 @@ case class LcvBusSdramCtrl(
         //}
         // hopefully this is a correct translation!
         switch (
-          RegNext(
+          //RegNext
+          (
             rSavedRowVec(myTempBankMux(0)).fire,
-            init=False
+            //init=False
           )
           ## (
-            //tempRow(0)
-            //=== rSavedRowVec(tempBank(0)).payload
-            rMyTempRowCmpEq
+            tempRow(0)
+            === rSavedRowVec(tempBank(0)).payload
+            //rMyTempRowCmpEq
           )
-          ## RegNext(
-            rBusBurstOuterCnt.msb,
-            init=False
+          ## //RegNext
+          (
+            rBusBurstOuterCnt.msb//,
+            //init=False
           )
         ) {
           //is (M"00-") {
@@ -1619,15 +1631,27 @@ case class LcvBusSdramCtrl(
         rActiveNopWaitCnt := rActiveNopWaitCnt - 1
       } otherwise {
         rActiveNopWaitCnt := cfg.Cycles.tRCD._1.get.toInt
-        when (!rStartBusBurst) {
+
+        //when (!rStartBusBurst) {
+        //  rState := State.MID_BURST_PRE_READ_WRITE
+        //} otherwise {
+        //  rState := State.PRE_READ_WRITE
+        //}
+        ////rH2dFifoPopReady := (
+        ////  False
+        ////  //True
+        ////)
+      }
+      switch (
+        rActiveNopWaitCnt.msb
+        ## rStartBusBurst
+      ) {
+        is (M"10") {
           rState := State.MID_BURST_PRE_READ_WRITE
-        } otherwise {
+        }
+        is (M"11") {
           rState := State.PRE_READ_WRITE
         }
-        //rH2dFifoPopReady := (
-        //  False
-        //  //True
-        //)
       }
     }
     is (State.PRE_READ_WRITE) {
