@@ -191,11 +191,11 @@ case class LcvBusSdramCtrlConfig(
   )
   def accessType = U"1'b0" // 0=sequential, 1=interleaved
   def casLatency = (
-    if (clkRate < (100.0 MHz)) (
-      (U"3'd2", 2, 0)
-    ) else (
+    //if (clkRate < (100.0 MHz)) (
+    //  (U"3'd2", 2, 0)
+    //) else (
       (U"3'd3", 3, 1)
-    )
+    //)
   )
   def opMode = U"2'b00" // only 00 (standard operation) allowed
   //def noWriteBurst = U"1'b1"  // 0=write burst enable, 1=only single acc wr
@@ -242,37 +242,43 @@ case class LcvBusSdramCtrlConfig(
   object Cycles {
     def tRC: (Option[BigDecimal], Option[BigDecimal]) = (
       // Row cycle time (same bank)
-      Some((63 ns) * clkRate),
+      //Some((63 ns) * clkRate),
+      Some((60 ns) * clkRate),
       None,
     )
 
     def tRFC: (Option[BigDecimal], Option[BigDecimal]) = (
       // Refresh cycle time
-      Some((63 ns) * clkRate),
+      //Some((63 ns) * clkRate),
+      Some((60 ns) * clkRate),
       None,
     )
 
     def tRCD: (Option[BigDecimal], Option[BigDecimal]) = (
       // RAS# to CAS# delay (same bank)
-      Some((21 ns) * clkRate),
+      //Some((21 ns) * clkRate),
+      Some((18 ns) * clkRate),
       None,
     )
 
     def tRP: (Option[BigDecimal], Option[BigDecimal]) = (
       // Precharge to refresh/row activate command (same bank)
-      Some((21 ns) * clkRate),
+      //Some((21 ns) * clkRate),
+      Some((18 ns) * clkRate),
       None,
     )
 
     def tRRD: (Option[BigDecimal], Option[BigDecimal]) = (
       // Row activate to row activate delay (different banks)
-      Some((14 ns) * clkRate),
+      //Some((14 ns) * clkRate),
+      Some((12 ns) * clkRate),
       None,
     )
 
     def tMRD: (Option[BigDecimal], Option[BigDecimal]) = (
       // Mode register set cycle time
-      Some((14 ns) * clkRate),
+      //Some((14 ns) * clkRate),
+      Some((12 ns) * clkRate),
       None,
     )
 
@@ -284,7 +290,8 @@ case class LcvBusSdramCtrlConfig(
 
     def tWR: (Option[BigDecimal], Option[BigDecimal]) = (
       // Write recovery time
-      Some((14 ns) * clkRate),
+      //Some((14 ns) * clkRate),
+      Some((12 ns) * clkRate),
       None,
     )
 
@@ -298,7 +305,8 @@ case class LcvBusSdramCtrlConfig(
         ),
         (
           // CAS Latency == 3
-          Some((7 ns) * clkRate),
+          //Some((7 ns) * clkRate),
+          Some((6 ns) * clkRate),
           None,
         ),
       )
@@ -326,7 +334,8 @@ case class LcvBusSdramCtrlConfig(
         ),
         (
           // CAS Latency == 3
-          Some((5.4 ns) * clkRate),
+          //Some((5.4 ns) * clkRate),
+          Some((5 ns) * clkRate),
           None,
         ),
       )
@@ -884,9 +893,17 @@ case class LcvBusSdramCtrl(
       -1
     )
   )
+
   when (!rNeedRfshCnt.msb) {
     rNeedRfshCnt := rNeedRfshCnt - 1
   }
+
+  when (
+    !rNeedRfshCnt.msb
+    && (rNeedRfshCnt - 1).msb
+  ) {
+  }
+
   val rRfshNopWaitCnt = (
     Reg(UInt((log2Up(cfg.Cycles.tRFC._1.get.toInt) + 3) bits))
     init(cfg.Cycles.tRFC._1.get.toInt)
