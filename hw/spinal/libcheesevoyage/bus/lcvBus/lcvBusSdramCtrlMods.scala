@@ -345,7 +345,8 @@ case class LcvBusSdramCtrlConfig(
     )
     def tREFIthresh = (
       //(7 us) * clkRate
-      (6.75 us) * clkRate
+      //(6.75 us) * clkRate
+      tREFI._1
     )
   }
 }
@@ -1276,7 +1277,11 @@ case class LcvBusSdramCtrl(
         //io.bus.h2dBus.ready := True
         //h2dFifo.io.pop.ready := True
 
-        when (rBusBurstOuterCnt.msb) {
+        when (
+          RegNext(
+            rBusBurstOuterCnt.msb
+          )
+        ) {
           rStartBusBurst := False
 
           rSavedH2dSendData := (
@@ -1339,7 +1344,9 @@ case class LcvBusSdramCtrl(
         }
 
         when (
-          rBusBurstOuterCnt.msb
+          RegNext(
+            rBusBurstOuterCnt.msb
+          )
           && (
             RegNext(
               h2dFifo.io.pop.burstFirst,
@@ -1361,19 +1368,33 @@ case class LcvBusSdramCtrl(
         //}
 
 
-        tempBank(0) := (
-          RegNext(Mux(
+        val myTempBankMux = Vec.fill(2)(
+          Mux(
             rBusBurstOuterCnt.msb,
             h2dFifo.io.pop.addr(myBankSliceRange),
             rSavedH2dSendData.addr(myBankSliceRange)
-          ))
+          )
         )
-        tempRow(0) := (
-          RegNext(Mux(
+        val myTempRowMux = Vec.fill(2)(
+          Mux(
             rBusBurstOuterCnt.msb,
             h2dFifo.io.pop.addr(myRowSliceRange),
             rSavedH2dSendData.addr(myRowSliceRange)
-          ))
+          )
+        )
+
+        tempBank(0) := (
+          RegNext(myTempBankMux(1))
+        )
+        tempRow(0) := (
+          RegNext(myTempRowMux(1))
+        )
+
+        val myTempRowCmpEq = (
+          RegNext(
+            rSavedRowVec(myTempBankMux(0)).payload
+            === myTempRowMux(0)
+          )
         )
 
         //when (
@@ -1441,7 +1462,7 @@ case class LcvBusSdramCtrl(
         //}
         // hopefully this is a correct translation!
         switch (
-          rSavedRowVec(tempBank(0)).fire
+          RegNext(rSavedRowVec(tempBank(0)).fire)
           ## (
             tempRow(0)
             === rSavedRowVec(tempBank(0)).payload
