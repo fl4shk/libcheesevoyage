@@ -1390,10 +1390,13 @@ case class LcvBusSdramCtrl(
           RegNext(myTempRowMux(1))
         )
 
-        val myTempRowCmpEq = (
+        val rMyTempRowCmpEq = (
           RegNext(
-            rSavedRowVec(myTempBankMux(0)).payload
-            === myTempRowMux(0)
+            (
+              rSavedRowVec(myTempBankMux(0)).payload
+              === myTempRowMux(0)
+            ),
+            init=False
           )
         )
 
@@ -1462,13 +1465,19 @@ case class LcvBusSdramCtrl(
         //}
         // hopefully this is a correct translation!
         switch (
-          RegNext(rSavedRowVec(myTempBankMux(0)).fire)
+          RegNext(
+            rSavedRowVec(myTempBankMux(0)).fire,
+            init=False
+          )
           ## (
             //tempRow(0)
             //=== rSavedRowVec(tempBank(0)).payload
             myTempRowCmpEq
           )
-          ## RegNext(rBusBurstOuterCnt.msb)
+          ## RegNext(
+            rBusBurstOuterCnt.msb,
+            init=False
+          )
         ) {
           //is (M"00-") {
           //}
