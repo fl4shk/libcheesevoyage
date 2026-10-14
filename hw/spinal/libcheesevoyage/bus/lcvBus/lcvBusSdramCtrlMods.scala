@@ -1296,9 +1296,9 @@ case class LcvBusSdramCtrl(
         //h2dFifo.io.pop.ready := True
 
         when (
-          RegNext(
+          //RegNext(
             rBusBurstOuterCnt.msb
-          )
+          //)
         ) {
           rStartBusBurst := False
 
@@ -1362,12 +1362,15 @@ case class LcvBusSdramCtrl(
         }
 
         when (
-          RegNext(
+          //RegNext(
             rBusBurstOuterCnt.msb
-          )
+          //)
           && (
             RegNext(
-              h2dFifo.io.pop.burstFirst,
+              (
+                h2dFifo.io.pop.valid
+                && h2dFifo.io.pop.burstFirst
+              ),
               init=False,
             )
           )
