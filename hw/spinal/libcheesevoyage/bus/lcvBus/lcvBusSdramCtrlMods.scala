@@ -1188,9 +1188,9 @@ case class LcvBusSdramCtrl(
         //|| rNeedPrechargeCnt.msb
         //|| rPrechargeRequest
       ) {
-        rSavedRowVec.foreach(item => {
-          item.valid := False
-        })
+        //rSavedRowVec.foreach(item => {
+        //  item.valid := False
+        //})
         rStartBusBurst := False
         rNeedRfshCnt := cfg.Cycles.tREFIthresh.toInt
         //rState := State.SEND_RFSH
@@ -1384,10 +1384,6 @@ case class LcvBusSdramCtrl(
             )
           )
         ) {
-          rSavedRowVec.foreach(item => {
-            item.valid := False
-          })
-
           when (
             rSavedRowVec(tempBank(0)).fire
           ) {
@@ -1405,6 +1401,9 @@ case class LcvBusSdramCtrl(
       }
     }
     is (State.SEND_RFSH_PRECHARGE_ALL) {
+      rSavedRowVec.foreach(item => {
+        item.valid := False
+      })
       //rPrechargeRequest := False
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
@@ -1447,6 +1446,10 @@ case class LcvBusSdramCtrl(
       }
     }
     is (State.SEND_PRECHARGE_ALL) {
+      rSavedRowVec.foreach(item => {
+        item.valid := False
+      })
+
       //rPrechargeRequest := False
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
