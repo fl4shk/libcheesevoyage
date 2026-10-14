@@ -1083,6 +1083,12 @@ case class LcvBusSdramCtrl(
   val tempRow = Vec.fill(2)(
     cloneOf(h2dFifo.io.pop.addr(myRowSliceRange))
   )
+  tempBank.foreach(item => {
+    item := item.getZero
+  })
+  tempRow.foreach(item => {
+    item := item.getZero
+  })
 
 
   switch (rState) {
