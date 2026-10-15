@@ -1263,7 +1263,11 @@ case class LcvBusSdramCtrl(
                           // this is tuned to be 1/4 LcvBus mux burst size,
                           // which is our chosen chip burst size!
                           && RegNext(
-                            rBusBurstOuterCnt.msb,
+                            (
+                              rBusBurstOuterCnt.msb
+                              || rBusBurstOuterCnt === 1
+                              || rBusBurstOuterCnt === 2
+                            ),
                             init=False
                           )
                         )
