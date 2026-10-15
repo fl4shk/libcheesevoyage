@@ -692,10 +692,10 @@ case class LcvBusSdramCtrl(
     Reg(cloneOf(io.bus.d2hBus.valid))
     init(io.bus.d2hBus.valid.getZero)
   )
-  val rD2hWriteValid = (
-    Reg(cloneOf(io.bus.d2hBus.valid))
-    init(io.bus.d2hBus.valid.getZero)
-  )
+  //val rD2hWriteValid = (
+  //  Reg(cloneOf(io.bus.d2hBus.valid))
+  //  init(io.bus.d2hBus.valid.getZero)
+  //)
   val rD2hSendData = (
     Reg(cloneOf(io.bus.d2hBus.payload))
     init(io.bus.d2hBus.payload.getZero)
@@ -758,7 +758,7 @@ case class LcvBusSdramCtrl(
   )
   io.bus.d2hBus.valid := (
     d2hFifo.io.pop.valid
-    || rD2hWriteValid
+    //|| rD2hWriteValid
   )
   io.bus.d2hBus.payload := d2hFifo.io.pop.payload
   d2hFifo.io.pop.ready := io.bus.d2hBus.ready
@@ -1233,10 +1233,11 @@ case class LcvBusSdramCtrl(
         // guaranteed to be completed
         RegNext(
           (
+            //(
+            //  !rD2hWriteValid
+            //)
+            //&& 
             (
-              !rD2hWriteValid
-            )
-            && (
               //d2hFifo.io.occupancy === 0
 
               // this is tuned to be 1/4 LcvBus mux burst size,
@@ -1261,6 +1262,7 @@ case class LcvBusSdramCtrl(
                     )
                     || (
                       !h2dFifo.io.pop.burstFirst
+                      && rBusBurstOuterCnt.msb
                     )
                   )
                 )
@@ -2085,6 +2087,15 @@ case class LcvBusSdramCtrl(
       rTempBurstLast := False
     }
     is (State.SEND_WRITE_HI_N) {
+      when (
+        rD2hFifoPushValid
+        //rD2hWriteValid
+        //&& io.bus.d2hBus.ready
+        && d2hFifo.io.push.ready
+      ) {
+        //rD2hWriteValid := False
+        rD2hFifoPushValid := False
+      }
       //when (
       //  //rD2hFifoPushValid
       //  rD2hWriteValid
@@ -2124,7 +2135,10 @@ case class LcvBusSdramCtrl(
       ) {
         rState := State.WRITE_POST_NOPS
         when (rBusBurstOuterCnt.msb) {
-          rD2hWriteValid := True
+          //rD2hWriteValid := True
+          rD2hFifoPushValid := True
+          rD2hSendData.burstFirst := True
+          rD2hSendData.burstLast := True
         }
         rH2dFifoPopReady := False
       } otherwise {
@@ -2152,7 +2166,10 @@ case class LcvBusSdramCtrl(
         when (rChipBurstCnt.msb) {
           rSavedH2dSendData.burstLast := True
           rState := State.WRITE_POST_NOPS
-          rD2hWriteValid := True
+          //rD2hWriteValid := True
+          rD2hFifoPushValid := True
+          rD2hSendData.burstFirst := True
+          rD2hSendData.burstLast := True
           //rTempBurstLast := True
         }
       } otherwise { // when (rHaveBurst)
@@ -2163,14 +2180,15 @@ case class LcvBusSdramCtrl(
       //}
     }
     is (State.SEND_WRITE_LO_N) {
-      //when (
-      //  //rD2hFifoPushValid
-      //  rD2hWriteValid
-      //  //&& io.bus.d2hBus.ready
-      //  && d2hFifo.io.push.ready
-      //) {
-      //  rD2hWriteValid := False
-      //}
+      when (
+        rD2hFifoPushValid
+        //rD2hWriteValid
+        //&& io.bus.d2hBus.ready
+        && d2hFifo.io.push.ready
+      ) {
+        //rD2hWriteValid := False
+        rD2hFifoPushValid := False
+      }
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
@@ -2202,6 +2220,16 @@ case class LcvBusSdramCtrl(
       }
     }
     is (State.WRITE_POST_NOPS) {
+      when (
+        rD2hFifoPushValid
+        //rD2hWriteValid
+        //&& io.bus.d2hBus.ready
+        && d2hFifo.io.push.ready
+      ) {
+        //rD2hWriteValid := False
+        rD2hFifoPushValid := False
+      }
+
       rH2dFifoPopReady := False
       io.sdram.sendCmdNop(
         optSomeDqTriState=Some(rDqTriState)
@@ -2209,8 +2237,8 @@ case class LcvBusSdramCtrl(
       when (!rWrNopWaitCnt.msb) {
         rWrNopWaitCnt := rWrNopWaitCnt - 1
       } 
-      //elsewhen (!rD2hFifoPushValid) 
-      .otherwise 
+      .elsewhen (!rD2hFifoPushValid) 
+      //.otherwise 
       {
         //rState := State.IDLE
         rTempAddr.last(
@@ -2230,14 +2258,15 @@ case class LcvBusSdramCtrl(
       }
     }
   }
-  when (
-    //rD2hFifoPushValid
-    rD2hWriteValid
-    //&& io.bus.d2hBus.ready
-    && d2hFifo.io.push.ready
-  ) {
-    rD2hWriteValid := False
-  }
+
+  //when (
+  //  //rD2hFifoPushValid
+  //  rD2hWriteValid
+  //  && io.bus.d2hBus.ready
+  //  //&& d2hFifo.io.push.ready
+  //) {
+  //  rD2hWriteValid := False
+  //}
 
   //--------
   //.datain_h(1'b0),
