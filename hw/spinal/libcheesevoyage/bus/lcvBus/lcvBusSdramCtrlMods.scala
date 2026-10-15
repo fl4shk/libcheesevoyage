@@ -1256,24 +1256,36 @@ case class LcvBusSdramCtrl(
                       //h2dFifo.io.occupancy
                       //=== cfg.busCfg.maxBurstSizeMinus1 + 1
 
-                      h2dFifo.io.occupancy >= 4 
-                      // this is tuned to be 1/4 LcvBus mux burst size,
-                      // which is our chosen chip burst size!
+                      (
+                        h2dFifo.io.occupancy >= 4 
+                        // this is tuned to be 1/4 LcvBus mux burst size,
+                        // which is our chosen chip burst size!
+                      )
+                      || (
+                        h2dFifo.io.occupancy === 3
+                        && RegNext(
+                          !LcvOrR(rBusBurstOuterCnt(1 downto 0)),
+                          init=False
+                        )
+                      )
                     )
                     || (
                       !h2dFifo.io.pop.burstFirst
-                      && rBusBurstOuterCnt.msb
+                      && RegNext(
+                        rBusBurstOuterCnt.msb,
+                        init=False
+                      )
                     )
                   )
                 )
                 || (
-                  //RegNext(
+                  RegNext(
                     (
                       !rBusBurstOuterCnt.msb
                       && !rSavedH2dSendData.isWrite
                     ),
-                  //  init=False
-                  //)
+                    init=False
+                  )
                 )
               )
 
