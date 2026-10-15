@@ -849,8 +849,10 @@ case class LcvBusSdramCtrl(
 
 
   def myPwrOnCntNumCycles = (
-    ((200 us) * cfg.clkRate) + 10 // 10 extra cycles for good measure 
-    //((400 us) * cfg.clkRate) + 10 // 10 extra cycles for good measure 
+    //((200 us) * cfg.clkRate) + 10 // 10 extra cycles for good measure 
+
+    // inputs must be stable for 200 us
+    ((400 us) * cfg.clkRate) + 10 // 10 extra cycles for good measure 
   )
   def myPwrOnCntNumCyclesHalf = (
     (myPwrOnCntNumCycles / 2).toInt
@@ -1260,13 +1262,13 @@ case class LcvBusSdramCtrl(
                   )
                 )
                 || (
-                  RegNext(
+                  //RegNext(
                     (
                       !rBusBurstOuterCnt.msb
                       && !rSavedH2dSendData.isWrite
                     ),
-                    init=False
-                  )
+                  //  init=False
+                  //)
                 )
               )
 
@@ -1534,6 +1536,7 @@ case class LcvBusSdramCtrl(
       }
     }
     is (State.SEND_RFSH_PRECHARGE_ALL) {
+      rH2dFifoPopReady := False
       rSavedRowVec.foreach(item => {
         item.valid := False
       })
@@ -1546,6 +1549,7 @@ case class LcvBusSdramCtrl(
       rState := State.RFSH_PRECHARGE_ALL_POST_NOPS
     }
     is (State.RFSH_PRECHARGE_ALL_POST_NOPS) {
+      rH2dFifoPopReady := False
       io.sdram.sendCmdNop(needAssertDqm=false)
       when (!rPrechargeNopWaitCnt.msb) {
         rPrechargeNopWaitCnt := rPrechargeNopWaitCnt - 1
@@ -1566,10 +1570,12 @@ case class LcvBusSdramCtrl(
       //}
     }
     is (State.SEND_RFSH_MAIN) {
+      rH2dFifoPopReady := False
       io.sdram.sendCmdAutoRefresh()
       rState := State.RFSH_MAIN_POST_NOPS
     }
     is (State.RFSH_MAIN_POST_NOPS) {
+      rH2dFifoPopReady := False
       io.sdram.sendCmdNop()
       when (!rRfshNopWaitCnt.msb) {
         rRfshNopWaitCnt := rRfshNopWaitCnt - 1
@@ -2104,6 +2110,7 @@ case class LcvBusSdramCtrl(
         ),
         firstWrite=false,
       )
+
       when (
         rSavedH2dSendData.burstLast
         || rTempBurstLast
@@ -2120,7 +2127,13 @@ case class LcvBusSdramCtrl(
       } otherwise {
         rState := State.SEND_WRITE_LO_N
       }
-      when (rHaveBurst) {
+      when (
+        rHaveBurst
+        && !(
+          rSavedH2dSendData.burstLast
+          || rTempBurstLast
+        )
+      ) {
         rH2dFifoPopReady := True
         rSavedH2dSendData := (
           //io.bus.h2dBus.payload
