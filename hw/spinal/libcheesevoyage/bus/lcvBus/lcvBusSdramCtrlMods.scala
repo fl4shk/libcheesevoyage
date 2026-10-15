@@ -1233,6 +1233,9 @@ case class LcvBusSdramCtrl(
         // guaranteed to be completed
         RegNext(
           (
+            !rD2hWriteValid
+          )
+          && (
             (
               //d2hFifo.io.occupancy === 0
 
@@ -1292,7 +1295,7 @@ case class LcvBusSdramCtrl(
             //|| !rBusBurstOuterCnt.msb,
           ),
           init=False
-        ) 
+        )
       ) {
         //io.bus.h2dBus.ready := True
         //h2dFifo.io.pop.ready := True
@@ -2082,14 +2085,14 @@ case class LcvBusSdramCtrl(
       rTempBurstLast := False
     }
     is (State.SEND_WRITE_HI_N) {
-      when (
-        //rD2hFifoPushValid
-        rD2hWriteValid
-        //&& io.bus.d2hBus.ready
-        && d2hFifo.io.push.ready
-      ) {
-        rD2hWriteValid := False
-      }
+      //when (
+      //  //rD2hFifoPushValid
+      //  rD2hWriteValid
+      //  //&& io.bus.d2hBus.ready
+      //  && d2hFifo.io.push.ready
+      //) {
+      //  rD2hWriteValid := False
+      //}
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
@@ -2160,14 +2163,14 @@ case class LcvBusSdramCtrl(
       //}
     }
     is (State.SEND_WRITE_LO_N) {
-      when (
-        //rD2hFifoPushValid
-        rD2hWriteValid
-        //&& io.bus.d2hBus.ready
-        && d2hFifo.io.push.ready
-      ) {
-        rD2hWriteValid := False
-      }
+      //when (
+      //  //rD2hFifoPushValid
+      //  rD2hWriteValid
+      //  //&& io.bus.d2hBus.ready
+      //  && d2hFifo.io.push.ready
+      //) {
+      //  rD2hWriteValid := False
+      //}
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
@@ -2203,19 +2206,12 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdNop(
         optSomeDqTriState=Some(rDqTriState)
       )
-      when (
-        //rD2hFifoPushValid
-        rD2hWriteValid
-        //&& io.bus.d2hBus.ready
-        && d2hFifo.io.push.ready
-      ) {
-        rD2hWriteValid := False
-      }
       when (!rWrNopWaitCnt.msb) {
         rWrNopWaitCnt := rWrNopWaitCnt - 1
       } 
       //elsewhen (!rD2hFifoPushValid) 
-      .otherwise {
+      .otherwise 
+      {
         //rState := State.IDLE
         rTempAddr.last(
           myAlignedColumnSliceRangeHi._1
@@ -2233,6 +2229,14 @@ case class LcvBusSdramCtrl(
         //}
       }
     }
+  }
+  when (
+    //rD2hFifoPushValid
+    rD2hWriteValid
+    //&& io.bus.d2hBus.ready
+    && d2hFifo.io.push.ready
+  ) {
+    rD2hWriteValid := False
   }
 
   //--------
