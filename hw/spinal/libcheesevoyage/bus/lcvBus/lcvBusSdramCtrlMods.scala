@@ -1233,10 +1233,10 @@ case class LcvBusSdramCtrl(
         // guaranteed to be completed
         RegNext(
           (
-            !rD2hWriteValid
-          )
-          && (
             (
+              !rD2hWriteValid
+            )
+            && (
               //d2hFifo.io.occupancy === 0
 
               // this is tuned to be 1/4 LcvBus mux burst size,
