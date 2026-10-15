@@ -1252,6 +1252,10 @@ case class LcvBusSdramCtrl(
                     && rBusBurstOuterCnt.msb
                   )
                   || !rBusBurstOuterCnt.msb
+                  || (
+                    h2dFifo.io.pop.burstFirst
+                    && rBusBurstOuterCnt.msb
+                  )
                 )
               )
             )
