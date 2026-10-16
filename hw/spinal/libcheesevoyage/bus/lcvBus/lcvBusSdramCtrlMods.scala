@@ -1039,6 +1039,16 @@ case class LcvBusSdramCtrl(
       )
     )
   )
+  when (
+    rD2hFifoPushValid
+    //rD2hWriteValid
+    //&& io.bus.d2hBus.ready
+    && d2hFifo.io.push.ready
+  ) {
+    //rD2hWriteValid := False
+    rD2hFifoPushValid := False
+  }
+
   switch (rState) {
     is (State.PWR_ON_INIT) {
       io.sdram.sendCmdNop(needAssertDqm=true)
@@ -1156,9 +1166,10 @@ case class LcvBusSdramCtrl(
           (
             //(rState === State.IDLE)
             (rState.asBits(State.IDLE.position))
+            && !rD2hFifoPushValid
             && (
-              //d2hFifo.io.occupancy === 0
-              ////!LcvOrR(d2hFifo.io.occupancy)
+              ////d2hFifo.io.occupancy === 0
+              //!LcvOrR(d2hFifo.io.occupancy)
 
               //// this is tuned to be 1/4 LcvBus mux burst size,
               //// which is our chosen chip burst size !
@@ -1170,8 +1181,9 @@ case class LcvBusSdramCtrl(
               //&& (
               //  !h2dFifo.io.pop.isWrite
               //  || (
-              //    h2dFifo.io.occupancy
-              //    === cfg.busCfg.maxBurstSizeMinus1 + 1
+              //    //h2dFifo.io.occupancy
+              //    //=== cfg.busCfg.maxBurstSizeMinus1 + 1
+              //    !LcvOrR(h2dFifo.io.availability)
 
               //    //h2dFifo.io.occupancy >= 4 
               //    // this is tuned to be 1/4 LcvBus mux burst size,
@@ -1224,7 +1236,7 @@ case class LcvBusSdramCtrl(
                 && h2dFifo.io.pop.isWrite
                 && (
                   !h2dFifo.io.pop.burstFirst
-                  && rBusBurstOuterCnt.msb
+                  //&& rBusBurstOuterCnt.msb
                 )
               )
             )
@@ -1296,8 +1308,9 @@ case class LcvBusSdramCtrl(
         //  )
         //}
         when (
-          rBusBurstOuterCnt.msb
-          && (
+          //rBusBurstOuterCnt.msb
+          //&& 
+          (
             RegNext(
               h2dFifo.io.pop.burstFirst,
               init=False,
@@ -1770,7 +1783,7 @@ case class LcvBusSdramCtrl(
     }
     is (State.READ_POST_NOPS) {
       io.sdram.sendCmdNop()
-      rD2hFifoPushValid := False
+      //rD2hFifoPushValid := False
 
       when (!rRdNopWaitCnt.msb) {
         rRdNopWaitCnt := rRdNopWaitCnt - 1
@@ -1960,23 +1973,23 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdNop(
         optSomeDqTriState=Some(rDqTriState)
       )
-      when (
-        rD2hFifoPushValid
-        //rD2hWriteValid
-        //&& io.bus.d2hBus.ready
-        && d2hFifo.io.push.ready
-      ) {
-        //rD2hWriteValid := False
-        rD2hFifoPushValid := False
-      }
+      //when (
+      //  rD2hFifoPushValid
+      //  //rD2hWriteValid
+      //  //&& io.bus.d2hBus.ready
+      //  && d2hFifo.io.push.ready
+      //) {
+      //  //rD2hWriteValid := False
+      //  rD2hFifoPushValid := False
+      //}
       when (!rWrNopWaitCnt.msb) {
         rWrNopWaitCnt := rWrNopWaitCnt - 1
       } 
-      .elsewhen (
-        !rD2hFifoPushValid
-        //!rD2hWriteValid
-      )
-      //.otherwise 
+      //.elsewhen (
+      //  !rD2hFifoPushValid
+      //  //!rD2hWriteValid
+      //)
+      .otherwise 
       {
         //rState := State.IDLE
         rTempAddr.last(
