@@ -1884,7 +1884,6 @@ case class LcvBusSdramCtrl(
       }
       when (
         rHaveBurst
-        && rSavedH2dSendData.burstLast
       ) {
         rH2dFifoPopReady := True
         rSavedH2dSendData := (
