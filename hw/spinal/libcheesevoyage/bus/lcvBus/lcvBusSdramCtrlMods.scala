@@ -1154,7 +1154,8 @@ case class LcvBusSdramCtrl(
         // guaranteed to be completed
         RegNext(
           (
-            (rState === State.IDLE)
+            //(rState === State.IDLE)
+            (rState.asBits(State.IDLE.position))
             && (
               //d2hFifo.io.occupancy === 0
               ////!LcvOrR(d2hFifo.io.occupancy)
