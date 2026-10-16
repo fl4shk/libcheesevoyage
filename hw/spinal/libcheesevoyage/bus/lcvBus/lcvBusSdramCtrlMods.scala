@@ -908,13 +908,13 @@ case class LcvBusSdramCtrl(
   //  cfg.sdramBaWidth
   //)
   val rBusBurstOuterCnt = (
-    Reg(UInt((
+    Reg(SInt((
       //cfg.sdramBaWidth + 3
-      cfg.sdramBaWidth
+      cfg.sdramBaWidth + 2
     ) bits))
     init(
-      //-1
-      0x3
+      -1
+      //0x3
     )
   )
   val rBusBurstInnerCnt = (
