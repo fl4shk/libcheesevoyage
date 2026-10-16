@@ -436,10 +436,10 @@ case class LcvBusSdramIo(
   private[libcheesevoyage] def sendCmdNop(
     inPostFirstBurstElem: Boolean=false,
     optSomeDqTriState: Option[TriState[UInt]]=None,
-    inPwrOnSeq: Boolean=false
+    needAssertDqm: Boolean=false
   ): Unit = {
     this._sendCmdBase(U"4'b0111")
-    if (!inPwrOnSeq) {
+    if (!needAssertDqm) {
       if (!inPostFirstBurstElem) {
         dqmh := False
         dqml := False
@@ -517,24 +517,24 @@ case class LcvBusSdramIo(
   private[libcheesevoyage] def sendCmdPrecharge(
     bank: UInt,
     prechargeAll: Bool,
-    inPwrOnSeq: Boolean=false,
+    needAssertDqm: Boolean=false,
   ): Unit = {
     this._sendCmdBase(U"4'b0010")
     ba := bank
       // we can do this even when `prechargeAll === True`
       // because `ba` is ignored in that case
     a(10) := prechargeAll
-    dqmh := (if (!inPwrOnSeq) (False) else (True))
-    dqml := (if (!inPwrOnSeq) (False) else (True))
+    dqmh := (if (!needAssertDqm) (False) else (True))
+    dqml := (if (!needAssertDqm) (False) else (True))
   }
   private[libcheesevoyage] def sendCmdAutoRefresh(
-    inPwrOnSeq: Boolean=false,
+    needAssertDqm: Boolean=false,
   ): Unit = {
     this._sendCmdBase(U"4'b0001")
-    //dqmh := inPwrOnSeq//False
-    //dqml := inPwrOnSeq//False
-    dqmh := (if (!inPwrOnSeq) (False) else (True))
-    dqml := (if (!inPwrOnSeq) (False) else (True))
+    //dqmh := needAssertDqm//False
+    //dqml := needAssertDqm//False
+    dqmh := (if (!needAssertDqm) (False) else (True))
+    dqml := (if (!needAssertDqm) (False) else (True))
   }
   private[libcheesevoyage] def sendCmdLoadMode(
   ): Unit = {
@@ -831,6 +831,10 @@ case class LcvBusSdramCtrl(
     Reg(UInt((log2Up(cfg.Cycles.tRFC._1.get.toInt) + 3) bits))
     init(cfg.Cycles.tRFC._1.get.toInt)
   )
+  val rPrechargeAllNopWaitCnt = (
+    Reg(UInt((log2Up(cfg.Cycles.tRP._1.get.toInt) + 3) bits))
+    init(cfg.Cycles.tRP._1.get.toInt)
+  )
   val rActiveNopWaitCnt = (
     Reg(UInt((log2Up(cfg.Cycles.tRCD._1.get.toInt) + 3) bits))
     init(cfg.Cycles.tRCD._1.get.toInt)
@@ -994,9 +998,13 @@ case class LcvBusSdramCtrl(
       PWR_ON_WAIT_T_MRD,   // send NOPs
 
       IDLE,
-      SEND_RFSH,
-      RFSH_POST_NOPS,
+      SEND_RFSH_PRECHARGE_ALL,
+      RFSH_PRECHARGE_ALL_POST_NOPS,
+      SEND_RFSH_MAIN,
+      RFSH_MAIN_POST_NOPS,
 
+      SEND_PRECHARGE_ALL,
+      PRECHARGE_ALL_POST_NOPS,
       SEND_ACTIVE,
       ACTIVE_POST_NOPS,
       PRE_READ_WRITE,
@@ -1026,7 +1034,7 @@ case class LcvBusSdramCtrl(
   )
   switch (rState) {
     is (State.PWR_ON_INIT) {
-      io.sdram.sendCmdNop(inPwrOnSeq=true)
+      io.sdram.sendCmdNop(needAssertDqm=true)
       when (!rPwrOnInitCnt(0).msb) {
         rPwrOnInitCnt(0) := rPwrOnInitCnt(0) - 1
         io.sdram.cke := False//True//False
@@ -1037,7 +1045,7 @@ case class LcvBusSdramCtrl(
       }
     }
     is (State.PWR_ON_CNT_DO_CKE_HI) {
-      io.sdram.sendCmdNop(inPwrOnSeq=true)
+      io.sdram.sendCmdNop(needAssertDqm=true)
       when (!rPwrOnInitCnt(1).msb) {
         rPwrOnInitCnt(1) := rPwrOnInitCnt(1) - 1
         io.sdram.cke := True
@@ -1054,12 +1062,12 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
         prechargeAll=True,
-        inPwrOnSeq=true,
+        needAssertDqm=true,
       )
       rState := State.PWR_ON_WAIT_T_RP
     }
     is (State.PWR_ON_WAIT_T_RP) { // send NOPs
-      io.sdram.sendCmdNop(inPwrOnSeq=true)
+      io.sdram.sendCmdNop(needAssertDqm=true)
       when (!rPwrOnRpCnt.msb) {
         rPwrOnRpCnt := rPwrOnRpCnt - 1
       } otherwise {
@@ -1068,11 +1076,11 @@ case class LcvBusSdramCtrl(
     }
 
     is (State.PWR_ON_SEND_AUTO_REFRESH_0) {
-      io.sdram.sendCmdAutoRefresh(inPwrOnSeq=true)
+      io.sdram.sendCmdAutoRefresh(needAssertDqm=true)
       rState := State.PWR_ON_WAIT_T_RFC_0
     }
     is (State.PWR_ON_WAIT_T_RFC_0) { // send NOPs or CMD INHIBITs
-      io.sdram.sendCmdNop(inPwrOnSeq=true)
+      io.sdram.sendCmdNop(needAssertDqm=true)
       when (!rPwrOnRfcCnt(0).msb) {
         rPwrOnRfcCnt(0) := rPwrOnRfcCnt(0) - 1
       } otherwise {
@@ -1081,11 +1089,11 @@ case class LcvBusSdramCtrl(
     }
 
     is (State.PWR_ON_SEND_AUTO_REFRESH_1) {
-      io.sdram.sendCmdAutoRefresh(inPwrOnSeq=true)
+      io.sdram.sendCmdAutoRefresh(needAssertDqm=true)
       rState := State.PWR_ON_WAIT_T_RFC_1
     }
     is (State.PWR_ON_WAIT_T_RFC_1) { // send NOPs or CMD INHIBITs
-      io.sdram.sendCmdNop(inPwrOnSeq=true)
+      io.sdram.sendCmdNop(needAssertDqm=true)
       when (!rPwrOnRfcCnt(1).msb) {
         rPwrOnRfcCnt(1) := rPwrOnRfcCnt(1) - 1
       } otherwise {
@@ -1098,7 +1106,7 @@ case class LcvBusSdramCtrl(
       rState := State.PWR_ON_WAIT_T_MRD
     }
     is (State.PWR_ON_WAIT_T_MRD) {   // send NOPs
-      io.sdram.sendCmdNop(inPwrOnSeq=true)
+      io.sdram.sendCmdNop(needAssertDqm=true)
       when (!rPwrOnMrdCnt.msb) {
         rPwrOnMrdCnt := rPwrOnMrdCnt - 1
       } otherwise {
@@ -1108,6 +1116,9 @@ case class LcvBusSdramCtrl(
     }
 
     is (State.IDLE) {
+      //io.sdram.sendCmdNop(needAssertDqm=false)
+      // *Any* `rState` prior to `State.IDLE` *should* have sent a NOP!
+      // so we skip updating `io.sdram` here, mostly!
       io.sdram.dqml := False
       io.sdram.dqmh := False
       rH2dFifoPopReady := False
@@ -1116,7 +1127,10 @@ case class LcvBusSdramCtrl(
         //&& rBusBurstOuterCnt.msb // wait for bus bursts to finish
       ) {
         rNeedRfshCnt := cfg.Cycles.tREFIthresh.toInt
-        rState := State.SEND_RFSH
+        rState := (
+          //State.SEND_RFSH
+          State.SEND_RFSH_PRECHARGE_ALL
+        )
       } 
       //elsewhen (
       //  //rSavedSoftReset
@@ -1157,6 +1171,7 @@ case class LcvBusSdramCtrl(
               //  )
               //  || !h2dFifo.io.pop.burstFirst
               //)
+
               (
                 // burst read
                 (
@@ -1288,21 +1303,74 @@ case class LcvBusSdramCtrl(
           )
           rStartBusBurst := True
         }
-        when (!rBusBurstOuterCnt.msb) {
-          rBusBurstOuterCnt := rBusBurstOuterCnt - 1
-          //rState := State.PRE_READ_WRITE
-        } otherwise {
-          //rState := State.SEND_ACTIVE
+
+        //when (!rBusBurstOuterCnt.msb) {
+        //  rBusBurstOuterCnt := rBusBurstOuterCnt - 1
+        //  //rState := State.PRE_READ_WRITE
+        //} otherwise {
+        //  //rState := State.SEND_ACTIVE
+        //}
+
+        val myTempBank = (
+          h2dFifo.io.pop.addr(myBankSliceRange)
+        )
+
+        val myTempRow = (
+          h2dFifo.io.pop.addr(myRowSliceRange)
+        )
+
+        switch (
+          RegNext(rSavedRowVec(myTempBank).fire)
+          ## (
+            RegNext(
+              rSavedRowVec(myTempBank).payload
+              === myTempRow
+            )
+          )
+        ) {
+          is (M"10") {
+            rState := State.SEND_PRECHARGE_ALL
+          }
+          is (M"11") {
+            rState := State.PRE_READ_WRITE
+          }
+          //is (M"0-") 
+          default {
+            rState := State.SEND_ACTIVE
+          }
         }
-        rState := State.SEND_ACTIVE
       }
     }
-    is (State.SEND_RFSH) {
-      io.sdram.sendCmdAutoRefresh()
-      rState := State.RFSH_POST_NOPS
+    is (State.SEND_RFSH_PRECHARGE_ALL) {
+      io.sdram.sendCmdPrecharge(
+        bank=io.sdram.ba.getZero,
+        prechargeAll=True,
+        needAssertDqm=true,
+      )
+      rSavedRowVec.foreach(item => {
+        item.valid := False
+      })
+      rH2dFifoPopReady := False
+      rState := State.RFSH_PRECHARGE_ALL_POST_NOPS
     }
-    is (State.RFSH_POST_NOPS) {
+    is (State.RFSH_PRECHARGE_ALL_POST_NOPS) {
       io.sdram.sendCmdNop()
+      rH2dFifoPopReady := False
+      when (!rPrechargeAllNopWaitCnt.msb) {
+        rPrechargeAllNopWaitCnt := rPrechargeAllNopWaitCnt - 1
+      } otherwise {
+        rState := State.SEND_RFSH_MAIN
+        rPrechargeAllNopWaitCnt := cfg.Cycles.tRP._1.get.toInt
+      }
+    }
+    is (State.SEND_RFSH_MAIN) {
+      io.sdram.sendCmdAutoRefresh()
+      rH2dFifoPopReady := False
+      rState := State.RFSH_MAIN_POST_NOPS
+    }
+    is (State.RFSH_MAIN_POST_NOPS) {
+      io.sdram.sendCmdNop()
+      rH2dFifoPopReady := False
       when (!rRfshNopWaitCnt.msb) {
         rRfshNopWaitCnt := rRfshNopWaitCnt - 1
       } otherwise {
@@ -1310,12 +1378,38 @@ case class LcvBusSdramCtrl(
         rRfshNopWaitCnt := cfg.Cycles.tRFC._1.get.toInt
       }
     }
-    is (State.SEND_ACTIVE) {
+    is (State.SEND_PRECHARGE_ALL) {
+      io.sdram.sendCmdPrecharge(
+        bank=io.sdram.ba.getZero,
+        prechargeAll=True,
+        needAssertDqm=true,
+      )
+      rSavedRowVec.foreach(item => {
+        item.valid := False
+      })
       rH2dFifoPopReady := False
+      rState := State.PRECHARGE_ALL_POST_NOPS
+    }
+    is (State.PRECHARGE_ALL_POST_NOPS) {
+      io.sdram.sendCmdNop()
+      rH2dFifoPopReady := False
+      when (!rPrechargeAllNopWaitCnt.msb) {
+        rPrechargeAllNopWaitCnt := rPrechargeAllNopWaitCnt - 1
+      } otherwise {
+        rState := State.SEND_ACTIVE
+        rPrechargeAllNopWaitCnt := cfg.Cycles.tRP._1.get.toInt
+      }
+    }
+    is (State.SEND_ACTIVE) {
+      rSavedRowVec(rTempAddr.head(myBankSliceRange)).valid := True
+      rSavedRowVec(rTempAddr.head(myBankSliceRange)).payload := (
+        rTempAddr.head(myRowSliceRange)
+      )
       io.sdram.sendCmdActive(
         bank=rTempAddr.head(myBankSliceRange),
         row=rTempAddr.head(myRowSliceRange),
       )
+      rH2dFifoPopReady := False
       rState := State.ACTIVE_POST_NOPS
     }
     is (State.ACTIVE_POST_NOPS) {
@@ -1520,7 +1614,8 @@ case class LcvBusSdramCtrl(
         column=rTempAddr.last(myColumnSliceRange),
         autoPrecharge=(
           //True
-          rBusBurstOuterCnt.msb
+          //rBusBurstOuterCnt.msb
+          False
         ),
         someDqTriState=rDqTriState,
         firstRead=true,
@@ -1550,7 +1645,10 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdRead(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
-        autoPrecharge=True,
+        autoPrecharge=(
+          //True
+          False
+        ),
         someDqTriState=rDqTriState,
         firstRead=false,
       )
@@ -1694,7 +1792,8 @@ case class LcvBusSdramCtrl(
         column=rTempAddr.last(myColumnSliceRange),
         autoPrecharge=(
           //True
-          rBusBurstOuterCnt.msb
+          //rBusBurstOuterCnt.msb
+          False
         ),
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(15 downto 0),
@@ -1745,7 +1844,10 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
-        autoPrecharge=True,
+        autoPrecharge=(
+          False
+          //True
+        ),
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(31 downto 16),
         wrByteEn=(
@@ -1810,7 +1912,10 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
-        autoPrecharge=True,
+        autoPrecharge=(
+          //True
+          False
+        ),
         someDqTriState=rDqTriState,
         wrData=rSavedH2dSendData.data(15 downto 0),
         wrByteEn=(
