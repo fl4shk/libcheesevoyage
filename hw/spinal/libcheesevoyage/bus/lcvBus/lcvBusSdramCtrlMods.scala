@@ -111,6 +111,7 @@ case class LcvBusSdramCtrlConfig(
   def sdramDqWidth: Int = 16
   def sdramAWidth: Int = 13
   def sdramBaWidth: Int = 2
+  def numBanks = (1 << sdramBaWidth)
   def idleCntMax: Int = 5
   val busCfg = LcvBusConfig(
     mainCfg=LcvBusMainConfig(
@@ -613,12 +614,13 @@ case class LcvBusSdramCtrl(
     Reg(Bool(), init=False)
   )
   def myBankSliceRange = (
-    25 downto 24
+    //25 downto 24
     //2 downto 1
+    12 downto 11
   )
   def myRowSliceRange = (
-    23 downto 11
-    //25 downto 13
+    //23 downto 11
+    25 downto 13
   )
   def myColumnSliceRange = (
     10 downto 1
@@ -906,8 +908,14 @@ case class LcvBusSdramCtrl(
   //  cfg.sdramBaWidth
   //)
   val rBusBurstOuterCnt = (
-    Reg(SInt((cfg.sdramBaWidth + 3) bits))
-    init(-1)
+    Reg(UInt((
+      //cfg.sdramBaWidth + 3
+      cfg.sdramBaWidth
+    ) bits))
+    init(
+      //-1
+      0x3
+    )
   )
   val rBusBurstInnerCnt = (
     Reg(SInt((log2Up(cfg.burstLen / 2) + 3) bits))
@@ -922,6 +930,15 @@ case class LcvBusSdramCtrl(
   val rTempBurstLast = (
     Reg(Bool(), init=False)
   )
+
+  val rSavedRowVec = Vec.fill(
+    cfg.numBanks
+  )({
+    val temp = Reg(Flow(cloneOf(rSavedH2dSendData.addr(myRowSliceRange))))
+    temp.valid.init(temp.valid.getZero)
+    // to help with fmax, we don't do `temp.payload.init(...)`
+    temp
+  })
 
   //def STATE_PWR_ON_INIT = 0x0
 
@@ -1110,27 +1127,76 @@ case class LcvBusSdramCtrl(
         // guaranteed to be completed
         RegNext(
           (
-            (
-              d2hFifo.io.occupancy === 0
+            (rState === State.IDLE)
+            && (
+              ////d2hFifo.io.occupancy === 0
+              //!LcvOrR(d2hFifo.io.occupancy)
 
-              // this is tuned to be 1/4 LcvBus mux burst size,
-              // which is our chosen chip burst size !
-              //d2hFifo.io.availability >= 4
+              //// this is tuned to be 1/4 LcvBus mux burst size,
+              //// which is our chosen chip burst size !
+              ////d2hFifo.io.availability >= 4
 
-              //&& h2dFifo.io.availability === 0
+              ////&& h2dFifo.io.availability === 0
 
-              && h2dFifo.io.pop.valid
-              && (
-                !h2dFifo.io.pop.isWrite
-                || (
-                  h2dFifo.io.occupancy
-                  === cfg.busCfg.maxBurstSizeMinus1 + 1
+              //&& h2dFifo.io.pop.valid
+              //&& (
+              //  !h2dFifo.io.pop.isWrite
+              //  || (
+              //    h2dFifo.io.occupancy
+              //    === cfg.busCfg.maxBurstSizeMinus1 + 1
 
-                  //h2dFifo.io.occupancy >= 4 
-                  // this is tuned to be 1/4 LcvBus mux burst size,
-                  // which is our chosen chip burst size!
+              //    //h2dFifo.io.occupancy >= 4 
+              //    // this is tuned to be 1/4 LcvBus mux burst size,
+              //    // which is our chosen chip burst size!
+              //  )
+              //  || !h2dFifo.io.pop.burstFirst
+              //)
+              (
+                // burst read
+                (
+                  // non-zero occupancy: check if FIFO is empty
+                  !LcvOrR(d2hFifo.io.occupancy)
                 )
-                || !h2dFifo.io.pop.burstFirst
+                && h2dFifo.io.pop.valid
+                && !h2dFifo.io.pop.isWrite
+                && h2dFifo.io.pop.burstFirst
+              )
+              || (
+                // non-burst read
+                (
+                  // d2hFifo.io.push.ready: check if FIFO isn't full
+                  d2hFifo.io.push.ready
+                )
+                && h2dFifo.io.pop.valid
+                && !h2dFifo.io.pop.isWrite
+                && !h2dFifo.io.pop.burstFirst
+              )
+              || (
+                // burst write
+                (
+                  // d2hFifo.io.push.ready: check if FIFO isn't full
+                  d2hFifo.io.push.ready
+                )
+                && h2dFifo.io.pop.valid
+                && (
+                  // non-zero availability: check if the FIFO is full
+                  !LcvOrR(h2dFifo.io.availability)
+                )
+                && h2dFifo.io.pop.isWrite
+                && h2dFifo.io.pop.burstFirst
+              )
+              || (
+                // non-burst write
+                (
+                  // d2hFifo.io.push.ready: check if FIFO isn't full
+                  d2hFifo.io.push.ready
+                )
+                && h2dFifo.io.pop.valid
+                && h2dFifo.io.pop.isWrite
+                && (
+                  !h2dFifo.io.pop.burstFirst
+                  && rBusBurstOuterCnt.msb
+                )
               )
             )
             //|| !rBusBurstOuterCnt.msb,
@@ -1211,7 +1277,8 @@ case class LcvBusSdramCtrl(
         ) {
           rBusBurstOuterCnt := (
             //cfg.busCfg.maxBurstSizeMinus1
-            (1 << cfg.sdramBaWidth) - 2
+            //(1 << cfg.sdramBaWidth) - 2
+            cfg.numBanks - 2
           )
           rStartBusBurst := True
         }
