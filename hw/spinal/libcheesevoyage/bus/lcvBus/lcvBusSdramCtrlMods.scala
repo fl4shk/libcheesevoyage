@@ -1786,7 +1786,8 @@ case class LcvBusSdramCtrl(
       }
     }
     is (State.SEND_WRITE_0) {
-      rD2hSendData.burstLast := True
+      rD2hSendData.burstFirst := rHaveBurst
+      rD2hSendData.burstLast := rHaveBurst//True
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
         column=rTempAddr.last(myColumnSliceRange),
