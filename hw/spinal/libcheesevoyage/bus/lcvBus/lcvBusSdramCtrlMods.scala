@@ -1149,76 +1149,76 @@ case class LcvBusSdramCtrl(
           (
             (rState === State.IDLE)
             && (
-              ////d2hFifo.io.occupancy === 0
+              d2hFifo.io.occupancy === 0
               //!LcvOrR(d2hFifo.io.occupancy)
 
-              //// this is tuned to be 1/4 LcvBus mux burst size,
-              //// which is our chosen chip burst size !
-              ////d2hFifo.io.availability >= 4
+              // this is tuned to be 1/4 LcvBus mux burst size,
+              // which is our chosen chip burst size !
+              //d2hFifo.io.availability >= 4
 
-              ////&& h2dFifo.io.availability === 0
+              //&& h2dFifo.io.availability === 0
 
-              //&& h2dFifo.io.pop.valid
-              //&& (
-              //  !h2dFifo.io.pop.isWrite
-              //  || (
-              //    h2dFifo.io.occupancy
-              //    === cfg.busCfg.maxBurstSizeMinus1 + 1
+              && h2dFifo.io.pop.valid
+              && (
+                !h2dFifo.io.pop.isWrite
+                || (
+                  h2dFifo.io.occupancy
+                  === cfg.busCfg.maxBurstSizeMinus1 + 1
 
-              //    //h2dFifo.io.occupancy >= 4 
-              //    // this is tuned to be 1/4 LcvBus mux burst size,
-              //    // which is our chosen chip burst size!
+                  //h2dFifo.io.occupancy >= 4 
+                  // this is tuned to be 1/4 LcvBus mux burst size,
+                  // which is our chosen chip burst size!
+                )
+                || !h2dFifo.io.pop.burstFirst
+              )
+
+              //(
+              //  // burst read
+              //  (
+              //    // non-zero occupancy: check if FIFO is empty
+              //    !LcvOrR(d2hFifo.io.occupancy)
               //  )
-              //  || !h2dFifo.io.pop.burstFirst
+              //  && h2dFifo.io.pop.valid
+              //  && !h2dFifo.io.pop.isWrite
+              //  && h2dFifo.io.pop.burstFirst
               //)
-
-              (
-                // burst read
-                (
-                  // non-zero occupancy: check if FIFO is empty
-                  !LcvOrR(d2hFifo.io.occupancy)
-                )
-                && h2dFifo.io.pop.valid
-                && !h2dFifo.io.pop.isWrite
-                && h2dFifo.io.pop.burstFirst
-              )
-              || (
-                // non-burst read
-                (
-                  // d2hFifo.io.push.ready: check if FIFO isn't full
-                  d2hFifo.io.push.ready
-                )
-                && h2dFifo.io.pop.valid
-                && !h2dFifo.io.pop.isWrite
-                && !h2dFifo.io.pop.burstFirst
-              )
-              || (
-                // burst write
-                (
-                  // d2hFifo.io.push.ready: check if FIFO isn't full
-                  d2hFifo.io.push.ready
-                )
-                && h2dFifo.io.pop.valid
-                && (
-                  // non-zero availability: check if the FIFO is full
-                  !LcvOrR(h2dFifo.io.availability)
-                )
-                && h2dFifo.io.pop.isWrite
-                && h2dFifo.io.pop.burstFirst
-              )
-              || (
-                // non-burst write
-                (
-                  // d2hFifo.io.push.ready: check if FIFO isn't full
-                  d2hFifo.io.push.ready
-                )
-                && h2dFifo.io.pop.valid
-                && h2dFifo.io.pop.isWrite
-                && (
-                  !h2dFifo.io.pop.burstFirst
-                  && rBusBurstOuterCnt.msb
-                )
-              )
+              //|| (
+              //  // non-burst read
+              //  (
+              //    // d2hFifo.io.push.ready: check if FIFO isn't full
+              //    d2hFifo.io.push.ready
+              //  )
+              //  && h2dFifo.io.pop.valid
+              //  && !h2dFifo.io.pop.isWrite
+              //  && !h2dFifo.io.pop.burstFirst
+              //)
+              //|| (
+              //  // burst write
+              //  (
+              //    // d2hFifo.io.push.ready: check if FIFO isn't full
+              //    d2hFifo.io.push.ready
+              //  )
+              //  && h2dFifo.io.pop.valid
+              //  && (
+              //    // non-zero availability: check if the FIFO is full
+              //    !LcvOrR(h2dFifo.io.availability)
+              //  )
+              //  && h2dFifo.io.pop.isWrite
+              //  && h2dFifo.io.pop.burstFirst
+              //)
+              //|| (
+              //  // non-burst write
+              //  (
+              //    // d2hFifo.io.push.ready: check if FIFO isn't full
+              //    d2hFifo.io.push.ready
+              //  )
+              //  && h2dFifo.io.pop.valid
+              //  && h2dFifo.io.pop.isWrite
+              //  && (
+              //    !h2dFifo.io.pop.burstFirst
+              //    && rBusBurstOuterCnt.msb
+              //  )
+              //)
             )
             //|| !rBusBurstOuterCnt.msb,
           ),
