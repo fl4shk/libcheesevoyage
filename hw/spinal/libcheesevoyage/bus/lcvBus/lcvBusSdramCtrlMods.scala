@@ -1146,10 +1146,16 @@ case class LcvBusSdramCtrl(
         //&& rBusBurstOuterCnt.msb // wait for bus bursts to finish
       ) {
         rNeedRfshCnt := cfg.Cycles.tREFIthresh.toInt
-        rState := (
-          //State.SEND_RFSH
-          State.SEND_RFSH_PRECHARGE_ALL
-        )
+        when (
+          !LcvOrR(Vec(rSavedRowVec.map(_.fire)))
+        ) {
+          rState := State.SEND_RFSH_MAIN
+        } otherwise {
+          rState := (
+            //State.SEND_RFSH
+            State.SEND_RFSH_PRECHARGE_ALL
+          )
+        }
       } 
       //elsewhen (
       //  //rSavedSoftReset
