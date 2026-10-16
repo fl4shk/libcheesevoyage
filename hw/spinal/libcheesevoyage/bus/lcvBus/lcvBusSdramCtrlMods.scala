@@ -257,7 +257,7 @@ case class LcvBusSdramCtrlConfig(
     def tRFC: (Option[BigDecimal], Option[BigDecimal]) = (
       // Refresh cycle time
       mkCycles(63 ns),
-      None.asInstanceOf[Option[BigDecimal]],
+      None,
     )
 
     def tRCD: (Option[BigDecimal], Option[BigDecimal]) = (
