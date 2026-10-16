@@ -645,10 +645,10 @@ case class LcvBusSdramCtrl(
     Reg(cloneOf(io.bus.d2hBus.valid))
     init(io.bus.d2hBus.valid.getZero)
   )
-  val rD2hWriteValid = (
-    Reg(cloneOf(io.bus.d2hBus.valid))
-    init(io.bus.d2hBus.valid.getZero)
-  )
+  //val rD2hWriteValid = (
+  //  Reg(cloneOf(io.bus.d2hBus.valid))
+  //  init(io.bus.d2hBus.valid.getZero)
+  //)
   val rD2hSendData = (
     Reg(cloneOf(io.bus.d2hBus.payload))
     init(io.bus.d2hBus.payload.getZero)
@@ -706,12 +706,14 @@ case class LcvBusSdramCtrl(
 
   io.bus.d2hBus.valid := (
     d2hFifo.io.pop.valid
-    || rD2hWriteValid
+    //|| rD2hWriteValid
   )
   io.bus.d2hBus.payload := d2hFifo.io.pop.payload
-  when (rD2hWriteValid) {
-    io.bus.d2hBus.burstLast := True
-  }
+
+  //when (rD2hWriteValid) {
+  //  io.bus.d2hBus.burstLast := True
+  //}
+
   d2hFifo.io.pop.ready := io.bus.d2hBus.ready
 
   //--------
@@ -1770,7 +1772,8 @@ case class LcvBusSdramCtrl(
       ) {
         rState := State.WRITE_POST_NOPS
         when (rBusBurstOuterCnt.msb) {
-          rD2hWriteValid := True
+          //rD2hWriteValid := True
+          rD2hFifoPushValid := True
         }
         rH2dFifoPopReady := False
       } otherwise {
@@ -1792,7 +1795,8 @@ case class LcvBusSdramCtrl(
         when (rChipBurstCnt.msb) {
           rSavedH2dSendData.burstLast := True
           rState := State.WRITE_POST_NOPS
-          rD2hWriteValid := True
+          //rD2hWriteValid := True
+          rD2hFifoPushValid := True
           //rTempBurstLast := True
         }
       } otherwise { // when (rHaveBurst)
@@ -1839,19 +1843,20 @@ case class LcvBusSdramCtrl(
         optSomeDqTriState=Some(rDqTriState)
       )
       when (
-        //rD2hFifoPushValid
-        rD2hWriteValid
-        && io.bus.d2hBus.ready
-        //&& d2hFifo.io.push.ready
+        rD2hFifoPushValid
+        //rD2hWriteValid
+        //&& io.bus.d2hBus.ready
+        && d2hFifo.io.push.ready
       ) {
-        rD2hWriteValid := False
+        //rD2hWriteValid := False
+        rD2hFifoPushValid := False
       }
       when (!rWrNopWaitCnt.msb) {
         rWrNopWaitCnt := rWrNopWaitCnt - 1
       } 
       .elsewhen (
-        //!rD2hFifoPushValid
-        !rD2hWriteValid
+        !rD2hFifoPushValid
+        //!rD2hWriteValid
       )
       //.otherwise 
       {
