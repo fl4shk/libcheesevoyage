@@ -1882,7 +1882,10 @@ case class LcvBusSdramCtrl(
       } otherwise {
         rState := State.SEND_WRITE_LO_N
       }
-      when (rHaveBurst) {
+      when (
+        rHaveBurst
+        && rSavedH2dSendData.burstLast
+      ) {
         rH2dFifoPopReady := True
         rSavedH2dSendData := (
           //io.bus.h2dBus.payload
