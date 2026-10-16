@@ -1351,11 +1351,29 @@ case class LcvBusSdramCtrl(
         )
 
         switch (
-          RegNext(rSavedRowVec(myTempBank).fire)
-          ## (
+          //RegNext(rSavedRowVec(myTempBank).fire)
+          rSavedRowVec(
             RegNext(
-              rSavedRowVec(myTempBank).payload
-              === myTempRow
+              myTempBank,
+              init=myTempBank.getZero
+            )
+          ).fire
+          ## (
+            //RegNext(
+            //  rSavedRowVec(myTempBank).payload
+            //  === myTempRow
+            //)
+            (
+              rSavedRowVec(
+                RegNext(
+                  myTempBank,
+                  init=myTempBank.getZero
+                )
+              ).payload
+              === RegNext(
+                myTempRow,
+                init=myTempRow.getZero
+              )
             )
           )
         ) {
@@ -1432,14 +1450,16 @@ case class LcvBusSdramCtrl(
       }
     }
     is (State.SEND_ACTIVE) {
-      rSavedRowVec(rTempAddr.head(myBankSliceRange)).valid := True
-      rSavedRowVec(rTempAddr.head(myBankSliceRange)).payload := (
-        rTempAddr.head(myRowSliceRange)
-      )
       io.sdram.sendCmdActive(
         bank=rTempAddr.head(myBankSliceRange),
         row=rTempAddr.head(myRowSliceRange),
       )
+
+      rSavedRowVec(rTempAddr.head(myBankSliceRange)).valid := True
+      rSavedRowVec(rTempAddr.head(myBankSliceRange)).payload := (
+        rTempAddr.head(myRowSliceRange)
+      )
+
       rH2dFifoPopReady := False
       rState := State.ACTIVE_POST_NOPS
     }
@@ -1720,7 +1740,10 @@ case class LcvBusSdramCtrl(
                 //init=io.sdram.dq.getZero,
               )
             )
-          } elsewhen (rRdCasLatencyCnt(0) === True) {
+          } elsewhen (
+            //rRdCasLatencyCnt(0) === True
+            !LcvOrR(rRdCasLatencyCnt(0))
+          ) {
             when (rD2hFifoPushValid) {
               rD2hSendData.burstFirst := False
             }
@@ -1735,15 +1758,16 @@ case class LcvBusSdramCtrl(
             )
           }
           when (
-            rRdCasLatencyCnt === 0
+            //rRdCasLatencyCnt === 0
+            !LcvOrR(rRdCasLatencyCnt)
             && rBusBurstOuterCnt.msb
           ) {
             rD2hSendData.burstLast := True
           }
         } otherwise { // when (!rHaveBurst)
           switch (
-            fell(rChipBurstWithoutBusBurstCnt.head.orR)
-            ## fell(rChipBurstWithoutBusBurstCnt.last.orR)
+            fell(LcvOrR(rChipBurstWithoutBusBurstCnt.head))
+            ## fell(LcvOrR(rChipBurstWithoutBusBurstCnt.last))
           ) {
             is (B"10") {
               rD2hSendData.data(15 downto 0) := (
@@ -1817,7 +1841,7 @@ case class LcvBusSdramCtrl(
       }
     }
     is (State.SEND_WRITE_0) {
-      rD2hSendData.burstFirst := rHaveBurst
+      //rD2hSendData.burstFirst := rHaveBurst
       rD2hSendData.burstLast := rHaveBurst//True
       io.sdram.sendCmdWrite(
         bank=rTempAddr.head(myBankSliceRange),
@@ -1834,8 +1858,8 @@ case class LcvBusSdramCtrl(
           Mux[UInt](
             (
               rHaveBurst
-              || fell(rChipBurstWithoutBusBurstCnt.head.orR)
-              || fell(rChipBurstWithoutBusBurstCnt.last.orR)
+              || fell(LcvOrR(rChipBurstWithoutBusBurstCnt.head))
+              || fell(LcvOrR(rChipBurstWithoutBusBurstCnt.last))
             ),
             rSavedH2dSendData.byteEn(1 downto 0),
             U"2'b00",
@@ -1845,8 +1869,8 @@ case class LcvBusSdramCtrl(
       )
 
       when (
-        !rHaveBurst
-        || !rBusBurstOuterCnt.msb
+        rHaveBurst
+        && !rBusBurstOuterCnt.msb
         //|| !LcvOrR(rBusBurstOuterCnt(1 downto 0)) // check for zero
         //&& !rBusBurstOuterCnt.msb
       ) {
@@ -1889,8 +1913,8 @@ case class LcvBusSdramCtrl(
           Mux[UInt](
             (
               rHaveBurst
-              || fell(rChipBurstWithoutBusBurstCnt.head.orR)
-              || fell(rChipBurstWithoutBusBurstCnt.last.orR)
+              || fell(LcvOrR(rChipBurstWithoutBusBurstCnt.head))
+              || fell(LcvOrR(rChipBurstWithoutBusBurstCnt.last))
             ),
             rSavedH2dSendData.byteEn(3 downto 2),
             U"2'b00",
@@ -1958,8 +1982,8 @@ case class LcvBusSdramCtrl(
           Mux[UInt](
             (
               rHaveBurst
-              || fell(rChipBurstWithoutBusBurstCnt.head.orR)
-              || fell(rChipBurstWithoutBusBurstCnt.last.orR)
+              || fell(LcvOrR(rChipBurstWithoutBusBurstCnt.head))
+              || fell(LcvOrR(rChipBurstWithoutBusBurstCnt.last))
             ),
             rSavedH2dSendData.byteEn(1 downto 0),
             U"2'b00",
