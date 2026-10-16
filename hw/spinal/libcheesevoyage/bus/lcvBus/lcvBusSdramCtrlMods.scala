@@ -415,10 +415,11 @@ case class LcvBusSdramIo(
     nWe.setAsReg() init(True)         // | start off with a NOP
     nRas.setAsReg() init(True)        // |
     nCas.setAsReg() init(True)        // / 
-    cke.setAsReg() init(
-      False
-      //True
-    )
+
+    //cke.setAsReg() init(
+    //  False
+    //  //True
+    //)
     //clk.setAsReg() init(clk.getZero)
   }
 
@@ -582,6 +583,7 @@ case class LcvBusSdramCtrl(
   )
   //--------
   val io = LcvBusSdramCtrlIo(cfg=cfg)
+  io.sdram.cke := True
 
   //def mySavedSoftResetCntWidth = 4//5
   //def mySavedSoftResetCntInit = (
@@ -1054,9 +1056,9 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdNop(needAssertDqm=true)
       when (!rPwrOnInitCnt(0).msb) {
         rPwrOnInitCnt(0) := rPwrOnInitCnt(0) - 1
-        io.sdram.cke := False//True//False
-        //io.sdram.dqml := True
-        //io.sdram.dqmh := True
+        //io.sdram.cke := False//True//False
+        io.sdram.dqml := True
+        io.sdram.dqmh := True
       } otherwise {
         rState := State.PWR_ON_CNT_DO_CKE_HI
       }
@@ -1065,7 +1067,7 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdNop(needAssertDqm=true)
       when (!rPwrOnInitCnt(1).msb) {
         rPwrOnInitCnt(1) := rPwrOnInitCnt(1) - 1
-        io.sdram.cke := True
+        //io.sdram.cke := True
         io.sdram.dqml := True
         io.sdram.dqmh := True
       } otherwise {
