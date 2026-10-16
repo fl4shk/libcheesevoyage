@@ -241,51 +241,58 @@ case class LcvBusSdramCtrlConfig(
   //  startupRfshMax - sdramStartupCycles
   //)
   object Cycles {
+    def mkCycles(
+      x: TimeNumber
+    ): Option[BigDecimal] = (
+      Some(
+        (x * clkRate) + 1
+      )
+    )
     def tRC: (Option[BigDecimal], Option[BigDecimal]) = (
       // Row cycle time (same bank)
-      Some((63 ns) * clkRate),
+      mkCycles(63 ns),
       None,
     )
 
     def tRFC: (Option[BigDecimal], Option[BigDecimal]) = (
       // Refresh cycle time
-      Some((63 ns) * clkRate),
-      None,
+      mkCycles(63 ns),
+      None.asInstanceOf[Option[BigDecimal]],
     )
 
     def tRCD: (Option[BigDecimal], Option[BigDecimal]) = (
       // RAS# to CAS# delay (same bank)
-      Some((21 ns) * clkRate),
+      mkCycles(21 ns),
       None,
     )
 
     def tRP: (Option[BigDecimal], Option[BigDecimal]) = (
       // Precharge to refresh/row activate command (same bank)
-      Some((21 ns) * clkRate),
+      mkCycles(21 ns),
       None,
     )
 
     def tRRD: (Option[BigDecimal], Option[BigDecimal]) = (
       // Row activate to row activate delay (different banks)
-      Some((14 ns) * clkRate),
+      mkCycles(14 ns),
       None,
     )
 
     def tMRD: (Option[BigDecimal], Option[BigDecimal]) = (
       // Mode register set cycle time
-      Some((14 ns) * clkRate),
+      mkCycles(14 ns),
       None,
     )
 
     def tRAS: (Option[BigDecimal], Option[BigDecimal]) = (
       // Row activate to precharge time (same bank)
-      Some((42 ns) * clkRate),
-      Some((120e3 ns) * clkRate),
+      mkCycles(42 ns),
+      mkCycles(120e3 ns),
     )
 
     def tWR: (Option[BigDecimal], Option[BigDecimal]) = (
       // Write recovery time
-      Some((14 ns) * clkRate),
+      mkCycles(14 ns),
       None,
     )
 
@@ -294,12 +301,12 @@ case class LcvBusSdramCtrlConfig(
         // Clock cycle time
         (
           // CAS Latency == 2
-          Some((10 ns) * clkRate),
+          mkCycles(10 ns),
           None,
         ),
         (
           // CAS Latency == 3
-          Some((7 ns) * clkRate),
+          mkCycles(7 ns),
           None,
         ),
       )
@@ -307,13 +314,13 @@ case class LcvBusSdramCtrlConfig(
 
     def tCH: (Option[BigDecimal], Option[BigDecimal]) = (
       // Clock high time
-      Some((2.5 ns) * clkRate),
+      mkCycles(2.5 ns),
       None,
     )
 
     def tCL: (Option[BigDecimal], Option[BigDecimal]) = (
       // Clock low time
-      Some((2.5 ns) * clkRate),
+      mkCycles(2.5 ns),
       None,
     )
 
@@ -322,12 +329,12 @@ case class LcvBusSdramCtrlConfig(
         // Access time from CLK (positive edge)
         (
           // CAS Latency == 2
-          Some((6 ns) * clkRate),
+          mkCycles(6 ns),
           None,
         ),
         (
           // CAS Latency == 3
-          Some((5.4 ns) * clkRate),
+          mkCycles(5.4 ns),
           None,
         ),
       )
@@ -335,13 +342,13 @@ case class LcvBusSdramCtrlConfig(
 
     def tOH: (Option[BigDecimal], Option[BigDecimal]) = (
       // Data output hold timae
-      Some((2.5 ns) * clkRate),
+      mkCycles(2.5 ns),
       None,
     )
 
     def tREFI: (Option[BigDecimal], Option[BigDecimal]) = (
       // Average refresh interval time
-      Some((7.8 us) * clkRate),
+      mkCycles(7.8 us),
       None,
     )
     def tREFIthresh = (
