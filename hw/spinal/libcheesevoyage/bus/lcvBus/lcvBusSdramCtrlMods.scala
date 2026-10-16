@@ -709,6 +709,9 @@ case class LcvBusSdramCtrl(
     || rD2hWriteValid
   )
   io.bus.d2hBus.payload := d2hFifo.io.pop.payload
+  when (rD2hWriteValid) {
+    io.bus.d2hBus.burstLast := True
+  }
   d2hFifo.io.pop.ready := io.bus.d2hBus.ready
 
   //--------
@@ -1838,16 +1841,20 @@ case class LcvBusSdramCtrl(
       when (
         //rD2hFifoPushValid
         rD2hWriteValid
-        //&& io.bus.d2hBus.ready
-        && d2hFifo.io.push.ready
+        && io.bus.d2hBus.ready
+        //&& d2hFifo.io.push.ready
       ) {
         rD2hWriteValid := False
       }
       when (!rWrNopWaitCnt.msb) {
         rWrNopWaitCnt := rWrNopWaitCnt - 1
       } 
-      //elsewhen (!rD2hFifoPushValid) 
-      .otherwise {
+      .elsewhen (
+        //!rD2hFifoPushValid
+        !rD2hWriteValid
+      )
+      //.otherwise 
+      {
         //rState := State.IDLE
         rTempAddr.last(
           myAlignedColumnSliceRangeHi._1
