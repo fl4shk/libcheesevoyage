@@ -987,7 +987,7 @@ case class LcvBusSdramCtrl(
   //def STATE_WRITE_POST_NOPS = STATE_SEND_WRITE_N + 1
   //def LIM_STATE = STATE_WRITE_POST_NOPS + 1
 
-  object State extends SpinalEnum(defaultEncoding=binarySequential) {
+  object State extends SpinalEnum(defaultEncoding=binaryOneHot) {
     val
       PWR_ON_INIT,
       PWR_ON_CNT_DO_CKE_HI,
