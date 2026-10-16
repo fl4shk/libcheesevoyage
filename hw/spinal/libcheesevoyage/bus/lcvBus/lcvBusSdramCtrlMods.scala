@@ -1821,8 +1821,10 @@ case class LcvBusSdramCtrl(
       )
 
       when (
-        rHaveBurst
-        && !rBusBurstOuterCnt.msb
+        !rHaveBurst
+        || !rBusBurstOuterCnt.msb
+        //|| !LcvOrR(rBusBurstOuterCnt(1 downto 0)) // check for zero
+        //&& !rBusBurstOuterCnt.msb
       ) {
         rWrNopWaitCnt := myWrNopWaitCntNumCyclesMin
       } otherwise {
