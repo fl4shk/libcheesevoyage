@@ -1345,7 +1345,7 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
         prechargeAll=True,
-        needAssertDqm=true,
+        needAssertDqm=false,
       )
       rSavedRowVec.foreach(item => {
         item.valid := False
@@ -1382,7 +1382,7 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdPrecharge(
         bank=io.sdram.ba.getZero,
         prechargeAll=True,
-        needAssertDqm=true,
+        needAssertDqm=false,
       )
       rSavedRowVec.foreach(item => {
         item.valid := False
