@@ -1162,7 +1162,8 @@ case class LcvBusSdramCtrl(
       .elsewhen (
         // wait for the d2hFifo to be emptied so that any urst is
         // guaranteed to be completed
-        RegNext(
+        d2hFifo.io.push.ready
+        && RegNext(
           (
             //(rState === State.IDLE)
             (rState.asBits(State.IDLE.position))
@@ -1195,7 +1196,7 @@ case class LcvBusSdramCtrl(
               (
                 // burst read
                 (
-                  // non-zero occupancy: check if FIFO is empty
+                  // zero occupancy: check if FIFO is empty
                   !LcvOrR(d2hFifo.io.occupancy)
                 )
                 && h2dFifo.io.pop.valid
@@ -1220,7 +1221,7 @@ case class LcvBusSdramCtrl(
                 )
                 && h2dFifo.io.pop.valid
                 && (
-                  // non-zero availability: check if the FIFO is full
+                  // zero availability: check if the FIFO is full
                   !LcvOrR(h2dFifo.io.availability)
                 )
                 && h2dFifo.io.pop.isWrite
