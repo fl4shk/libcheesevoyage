@@ -583,7 +583,6 @@ case class LcvBusSdramCtrl(
   )
   //--------
   val io = LcvBusSdramCtrlIo(cfg=cfg)
-  io.sdram.cke := True
 
   //def mySavedSoftResetCntWidth = 4//5
   //def mySavedSoftResetCntInit = (
@@ -769,6 +768,7 @@ case class LcvBusSdramCtrl(
   //--------
 
   io.sdram.doSetAsReg()
+  io.sdram.cke := True
 
   //val myDqTriState = (
   //  TriState(UInt(cfg.sdramDqWidth bits))
@@ -1146,6 +1146,7 @@ case class LcvBusSdramCtrl(
         //&& rBusBurstOuterCnt.msb // wait for bus bursts to finish
       ) {
         rNeedRfshCnt := cfg.Cycles.tREFIthresh.toInt
+
         when (
           !LcvOrR(Vec(rSavedRowVec.map(_.fire)))
         ) {
