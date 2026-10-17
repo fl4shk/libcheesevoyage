@@ -112,6 +112,9 @@ case class LcvBusSdramCtrlConfig(
   def sdramAWidth: Int = 13
   def sdramBaWidth: Int = 2
   def numBanks = (1 << sdramBaWidth)
+  def rowWidth = 13
+  def colWidth = 10
+
   def idleCntMax: Int = 5
   val busCfg = LcvBusConfig(
     mainCfg=LcvBusMainConfig(
@@ -950,10 +953,18 @@ case class LcvBusSdramCtrl(
     Reg(Bool(), init=False)
   )
 
-  val rSavedRowVec = Vec.fill(
+  case class BankInfo(
+  ) extends Bundle {
+    val valid = Bool()
+    def fire = valid
+    val row = UInt(cfg.rowWidth bits)
+    val isWrite = Bool()
+  }
+
+  val rSavedBankInfoVec = Vec.fill(
     cfg.numBanks
   )({
-    val temp = Reg(Flow(cloneOf(rSavedH2dSendData.addr(myRowSliceRange))))
+    val temp = Reg(BankInfo())
     temp.valid.init(temp.valid.getZero)
     // to help with fmax, we don't do `temp.payload.init(...)`
     temp
@@ -1148,7 +1159,7 @@ case class LcvBusSdramCtrl(
         rNeedRfshCnt := cfg.Cycles.tREFIthresh.toInt
 
         when (
-          !LcvOrR(Vec(rSavedRowVec.map(_.fire)))
+          !LcvOrR(Vec(rSavedBankInfoVec.map(_.fire)))
         ) {
           rState := State.SEND_RFSH_MAIN
         } otherwise {
@@ -1350,40 +1361,75 @@ case class LcvBusSdramCtrl(
           h2dFifo.io.pop.addr(myRowSliceRange)
         )
 
-        switch (
-          //RegNext(rSavedRowVec(myTempBank).fire)
-          rSavedRowVec(
+        val myTempIsWrite = (
+          h2dFifo.io.pop.isWrite
+        )
+
+        val mySavedBankInfo = (
+          rSavedBankInfoVec(
             RegNext(
               myTempBank,
               init=myTempBank.getZero
             )
-          ).fire
+          )
+        )
+
+        switch (
+          //RegNext(rSavedBankInfoVec(myTempBank).fire)
+          mySavedBankInfo.fire
           ## (
             //RegNext(
-            //  rSavedRowVec(myTempBank).payload
+            //  rSavedBankInfoVec(myTempBank).payload
             //  === myTempRow
             //)
-            (
-              rSavedRowVec(
-                RegNext(
-                  myTempBank,
-                  init=myTempBank.getZero
-                )
-              ).payload
-              === RegNext(
-                myTempRow,
-                init=myTempRow.getZero
-              )
+            //(
+            //  rSavedBankInfoVec(
+            //    RegNext(
+            //      myTempBank,
+            //      init=myTempBank.getZero
+            //    )
+            //  ).row
+            //  === RegNext(
+            //    myTempRow,
+            //    init=myTempRow.getZero
+            //  )
+            //)
+            mySavedBankInfo.row
+            === RegNext(
+              myTempRow,
+              init=myTempRow.getZero
+            )
+            && (
+              mySavedBankInfo.isWrite
+              === RegNext(myTempIsWrite, init=myTempIsWrite.getZero)
             )
           )
+          //## (
+          //  mySavedBankInfo.isWrite
+          //  === RegNext(myTempIsWrite, init=myTempIsWrite.getZero)
+          //)
         ) {
-          is (M"10") {
+          is (
+            M"10"
+            //M"10-"
+          ) {
             rState := State.SEND_PRECHARGE_ALL
           }
-          is (M"11") {
+          //is (
+          //  M"110"
+          //) {
+          //  rState := State.SEND_PRECHARGE_ALL
+          //}
+          is (
+            M"11"
+            //M"111"
+          ) {
             rState := State.PRE_READ_WRITE
           }
-          //is (M"0-") 
+          //is (
+          //  M"0-"
+          //  //M"0--"
+          //)
           default {
             rState := State.SEND_ACTIVE
           }
@@ -1396,7 +1442,7 @@ case class LcvBusSdramCtrl(
         prechargeAll=True,
         needAssertDqm=false,
       )
-      rSavedRowVec.foreach(item => {
+      rSavedBankInfoVec.foreach(item => {
         item.valid := False
       })
       rH2dFifoPopReady := False
@@ -1433,7 +1479,7 @@ case class LcvBusSdramCtrl(
         prechargeAll=True,
         needAssertDqm=false,
       )
-      rSavedRowVec.foreach(item => {
+      rSavedBankInfoVec.foreach(item => {
         item.valid := False
       })
       rH2dFifoPopReady := False
@@ -1455,9 +1501,12 @@ case class LcvBusSdramCtrl(
         row=rTempAddr.head(myRowSliceRange),
       )
 
-      rSavedRowVec(rTempAddr.head(myBankSliceRange)).valid := True
-      rSavedRowVec(rTempAddr.head(myBankSliceRange)).payload := (
+      rSavedBankInfoVec(rTempAddr.head(myBankSliceRange)).valid := True
+      rSavedBankInfoVec(rTempAddr.head(myBankSliceRange)).row := (
         rTempAddr.head(myRowSliceRange)
+      )
+      rSavedBankInfoVec(rTempAddr.head(myBankSliceRange)).isWrite := (
+        rSavedH2dSendData.isWrite
       )
 
       rH2dFifoPopReady := False
