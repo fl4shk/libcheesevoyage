@@ -1023,8 +1023,10 @@ case class LcvBusSdramCtrl(
       SEND_RFSH_MAIN,
       RFSH_MAIN_POST_NOPS,
 
-      SEND_PRECHARGE_ALL,
-      PRECHARGE_ALL_POST_NOPS,
+      //SEND_PRECHARGE_ALL,
+      //PRECHARGE_ALL_POST_NOPS,
+      SEND_BANK_PRECHARGE,
+      BANK_PRECHARGE_POST_NOPS,
       SEND_ACTIVE,
       ACTIVE_POST_NOPS,
       PRE_READ_WRITE,
@@ -1413,7 +1415,10 @@ case class LcvBusSdramCtrl(
             M"10"
             //M"10-"
           ) {
-            rState := State.SEND_PRECHARGE_ALL
+            rState := (
+              //State.SEND_PRECHARGE_ALL
+              State.SEND_BANK_PRECHARGE
+            )
           }
           //is (
           //  M"110"
@@ -1473,19 +1478,48 @@ case class LcvBusSdramCtrl(
         rRfshNopWaitCnt := cfg.Cycles.tRFC._1.get.toInt
       }
     }
-    is (State.SEND_PRECHARGE_ALL) {
+    //is (State.SEND_PRECHARGE_ALL) {
+    //  io.sdram.sendCmdPrecharge(
+    //    bank=io.sdram.ba.getZero,
+    //    prechargeAll=True,
+    //    needAssertDqm=false,
+    //  )
+    //  rSavedBankInfoVec.foreach(item => {
+    //    item.valid := False
+    //  })
+    //  rH2dFifoPopReady := False
+    //  rState := State.PRECHARGE_ALL_POST_NOPS
+    //}
+    //is (State.PRECHARGE_ALL_POST_NOPS) {
+    //  io.sdram.sendCmdNop()
+    //  rH2dFifoPopReady := False
+    //  when (!rPrechargeAllNopWaitCnt.msb) {
+    //    rPrechargeAllNopWaitCnt := rPrechargeAllNopWaitCnt - 1
+    //  } otherwise {
+    //    rState := State.SEND_ACTIVE
+    //    rPrechargeAllNopWaitCnt := cfg.Cycles.tRP._1.get.toInt
+    //  }
+    //}
+    is (State.SEND_BANK_PRECHARGE) {
       io.sdram.sendCmdPrecharge(
-        bank=io.sdram.ba.getZero,
-        prechargeAll=True,
+        bank=(
+          //io.sdram.ba.getZero
+          rTempAddr.head(myBankSliceRange)
+        ),
+        prechargeAll=False,
         needAssertDqm=false,
       )
-      rSavedBankInfoVec.foreach(item => {
-        item.valid := False
-      })
+      //rSavedBankInfoVec.foreach(item => {
+      //  item.valid := False
+      //})
+      rSavedBankInfoVec(
+        rTempAddr.head(myBankSliceRange)
+      ).valid := False
+
       rH2dFifoPopReady := False
-      rState := State.PRECHARGE_ALL_POST_NOPS
+      rState := State.BANK_PRECHARGE_POST_NOPS
     }
-    is (State.PRECHARGE_ALL_POST_NOPS) {
+    is (State.BANK_PRECHARGE_POST_NOPS) {
       io.sdram.sendCmdNop()
       rH2dFifoPopReady := False
       when (!rPrechargeAllNopWaitCnt.msb) {
