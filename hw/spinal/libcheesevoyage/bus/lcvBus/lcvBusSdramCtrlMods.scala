@@ -1741,8 +1741,7 @@ case class LcvBusSdramCtrl(
               )
             )
           } elsewhen (
-            //rRdCasLatencyCnt(0) === True
-            !LcvOrR(rRdCasLatencyCnt(0))
+            rRdCasLatencyCnt(0) === True
           ) {
             when (rD2hFifoPushValid) {
               rD2hSendData.burstFirst := False
