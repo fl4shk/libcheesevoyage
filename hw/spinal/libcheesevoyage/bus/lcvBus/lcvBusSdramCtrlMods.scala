@@ -1002,42 +1002,42 @@ case class LcvBusSdramCtrl(
 
   object State extends SpinalEnum(defaultEncoding=binaryOneHot) {
     val
-      PWR_ON_INIT,
-      PWR_ON_CNT_DO_CKE_HI,
+      /* 1 */ PWR_ON_INIT,
+      /* 2 */ PWR_ON_CNT_DO_CKE_HI,
 
-      PWR_ON_SEND_PRECHARGE_ALL,
-      PWR_ON_WAIT_T_RP, // send NOPs
+      /* 4 */ PWR_ON_SEND_PRECHARGE_ALL,
+      /* 8 */ PWR_ON_WAIT_T_RP, // send NOPs
 
-      PWR_ON_SEND_AUTO_REFRESH_0,
-      PWR_ON_WAIT_T_RFC_0, // send NOPs or CMD INHIBITs
+      /* 10 */ PWR_ON_SEND_AUTO_REFRESH_0,
+      /* 20 */ PWR_ON_WAIT_T_RFC_0, // send NOPs or CMD INHIBITs
 
-      PWR_ON_SEND_AUTO_REFRESH_1,
-      PWR_ON_WAIT_T_RFC_1, // send NOPs or CMD INHIBITs
+      /* 40 */ PWR_ON_SEND_AUTO_REFRESH_1,
+      /* 80 */ PWR_ON_WAIT_T_RFC_1, // send NOPs or CMD INHIBITs
 
-      PWR_ON_LOAD_MODE_REGISTER,
-      PWR_ON_WAIT_T_MRD,   // send NOPs
+      /* 100 */ PWR_ON_LOAD_MODE_REGISTER,
+      /* 200 */ PWR_ON_WAIT_T_MRD,   // send NOPs
 
-      IDLE,
-      SEND_RFSH_PRECHARGE_ALL,
-      RFSH_PRECHARGE_ALL_POST_NOPS,
-      SEND_RFSH_MAIN,
-      RFSH_MAIN_POST_NOPS,
+      /* 400 */ IDLE,
+      /* 800 */ SEND_RFSH_PRECHARGE_ALL,
+      /* 1000 */ RFSH_PRECHARGE_ALL_POST_NOPS,
+      /* 2000 */ SEND_RFSH_MAIN,
+      /* 4000 */ RFSH_MAIN_POST_NOPS,
 
       //SEND_PRECHARGE_ALL,
       //PRECHARGE_ALL_POST_NOPS,
-      SEND_BANK_PRECHARGE,
-      BANK_PRECHARGE_POST_NOPS,
-      SEND_ACTIVE,
-      ACTIVE_POST_NOPS,
-      PRE_READ_WRITE,
-      MID_BURST_PRE_READ_WRITE,
-      SEND_READ_0,
-      SEND_READ_N,
-      READ_POST_NOPS,
-      SEND_WRITE_0,
-      SEND_WRITE_HI_N,
-      SEND_WRITE_LO_N,
-      WRITE_POST_NOPS
+      /* 8000 */ SEND_BANK_PRECHARGE,
+      /* 10000 */ BANK_PRECHARGE_POST_NOPS,
+      /* 20000 */ SEND_ACTIVE,
+      /* 40000 */ ACTIVE_POST_NOPS,
+      /* 80000 */ PRE_READ_WRITE,
+      /* 100000 */ MID_BURST_PRE_READ_WRITE,
+      /* 200000 */ SEND_READ_0,
+      /* 400000 */ SEND_READ_N,
+      /* 800000 */ READ_POST_NOPS,
+      /* 1000000 */ SEND_WRITE_0,
+      /* 2000000 */ SEND_WRITE_HI_N,
+      /* 4000000 */ SEND_WRITE_LO_N,
+      /* 8000000 */ WRITE_POST_NOPS
 
       = newElement();
   }
