@@ -958,7 +958,7 @@ case class LcvBusSdramCtrl(
     val valid = Bool()
     def fire = valid
     val row = UInt(cfg.rowWidth bits)
-    val isWrite = Bool()
+    //val isWrite = Bool()
   }
 
   val rSavedBankInfoVec = Vec.fill(
@@ -1363,9 +1363,9 @@ case class LcvBusSdramCtrl(
           h2dFifo.io.pop.addr(myRowSliceRange)
         )
 
-        val myTempIsWrite = (
-          h2dFifo.io.pop.isWrite
-        )
+        //val myTempIsWrite = (
+        //  h2dFifo.io.pop.isWrite
+        //)
 
         val mySavedBankInfo = (
           rSavedBankInfoVec(
@@ -1401,10 +1401,10 @@ case class LcvBusSdramCtrl(
               myTempRow,
               init=myTempRow.getZero
             )
-            && (
-              mySavedBankInfo.isWrite
-              === RegNext(myTempIsWrite, init=myTempIsWrite.getZero)
-            )
+            //&& (
+            //  mySavedBankInfo.isWrite
+            //  === RegNext(myTempIsWrite, init=myTempIsWrite.getZero)
+            //)
           )
           //## (
           //  mySavedBankInfo.isWrite
@@ -1539,9 +1539,9 @@ case class LcvBusSdramCtrl(
       rSavedBankInfoVec(rTempAddr.head(myBankSliceRange)).row := (
         rTempAddr.head(myRowSliceRange)
       )
-      rSavedBankInfoVec(rTempAddr.head(myBankSliceRange)).isWrite := (
-        rSavedH2dSendData.isWrite
-      )
+      //rSavedBankInfoVec(rTempAddr.head(myBankSliceRange)).isWrite := (
+      //  rSavedH2dSendData.isWrite
+      //)
 
       rH2dFifoPopReady := False
       rState := State.ACTIVE_POST_NOPS
