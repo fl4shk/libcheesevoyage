@@ -5203,36 +5203,36 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
     )
   ) {
     val
-      INIT,
-      IDLE_LOAD_MODE,
+      /* 1 */ INIT,
+      /* 2 */ IDLE_LOAD_MODE,
       //IDLE_STORE_MODE,
 
       //NON_CACHED_BUS_ACCESS_WAIT_LO_D2H_FIFO_EMPTY,
       //NON_CACHED_BUS_ACCESS,
 
-      LOAD_HIT_DO_STALL_PREFETCH_PIPE_4,
+      /* 4 */ LOAD_HIT_DO_STALL_PREFETCH_PIPE_4,
       //LOAD_HIT_DO_STALL_PIPE_4,
-      LOAD_HIT_DO_STALL_PIPE_3,
-      LOAD_HIT_DO_STALL_PIPE_2,
-      LOAD_HIT_DO_STALL_PIPE_1,
-      LOAD_HIT_DO_STALL,
-      LOAD_HIT_DO_STALL_POST,
+      /* 8 */ LOAD_HIT_DO_STALL_PIPE_3,
+      /* 10 */ LOAD_HIT_DO_STALL_PIPE_2,
+      /* 20 */ LOAD_HIT_DO_STALL_PIPE_1,
+      /* 40 */ LOAD_HIT_DO_STALL,
+      /* 80 */ LOAD_HIT_DO_STALL_POST,
       //STORE_HIT_DO_STALL_PREFETCH_PIPE_1,
       //STORE_HIT_DO_STALL_PIPE_1,
       //STORE_HIT_DO_STALL,
 
-      WAIT_HI_STATE_MCHN_READY,
+      /* 100 */ WAIT_HI_STATE_MCHN_READY,
       //WAIT_HI_STATE_MCHN_READY_POST_7_WRITE,
-      WAIT_HI_STATE_MCHN_READY_POST_7_READ,
-      WAIT_HI_STATE_MCHN_READY_POST_6,
-      WAIT_HI_STATE_MCHN_READY_POST_5,
-      WAIT_HI_STATE_MCHN_READY_POST_4,
-      WAIT_HI_STATE_MCHN_READY_POST_3,
-      WAIT_HI_STATE_MCHN_READY_POST_2,
-      WAIT_HI_STATE_MCHN_READY_POST_1,
-      WAIT_HI_STATE_MCHN_READY_POST,
+      /* 200 */ WAIT_HI_STATE_MCHN_READY_POST_7_READ,
+      /* 400 */ WAIT_HI_STATE_MCHN_READY_POST_6,
+      /* 800 */ WAIT_HI_STATE_MCHN_READY_POST_5,
+      /* 1000 */ WAIT_HI_STATE_MCHN_READY_POST_4,
+      /* 2000 */ WAIT_HI_STATE_MCHN_READY_POST_3,
+      /* 4000 */ WAIT_HI_STATE_MCHN_READY_POST_2,
+      /* 8000 */ WAIT_HI_STATE_MCHN_READY_POST_1,
+      /* 10000 */ WAIT_HI_STATE_MCHN_READY_POST,
 
-      WAIT_D2H_FIFO_PUSH_READY
+      /* 20000 */ WAIT_D2H_FIFO_PUSH_READY
       = newElement();
   }
 
@@ -7047,6 +7047,10 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       rLoState := LoState.LOAD_HIT_DO_STALL
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
+      mySelLoH2dPopStm.ready := (
+        False
+        //myLoD2hPushStm.fire
+      )
     }
     is (LoState.LOAD_HIT_DO_STALL) {
       //val myRdLineWord = (
@@ -7062,8 +7066,8 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
       lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
 
       mySelLoH2dPopStm.ready := (
-        //False
-        myLoD2hPushStm.fire
+        False
+        //myLoD2hPushStm.fire
       )
       //myLoD2hPushStm.busPayload.data := myRdLineWord
       //when (rSavedNeedLineWordReadAgain) {
