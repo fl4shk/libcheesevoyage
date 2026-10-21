@@ -1155,6 +1155,7 @@ case class LcvBusSdramCtrl(
       io.sdram.dqml := False
       io.sdram.dqmh := False
       rH2dFifoPopReady := False
+      rInMidBusBurst := False
       when (rNeedRfshCnt.msb) {
         rNeedRfshCnt := cfg.Cycles.tREFIthresh.toInt
 
@@ -1292,7 +1293,6 @@ case class LcvBusSdramCtrl(
         //h2dFifo.io.pop.ready := True
 
         rStartBusBurst := False
-        rInMidBusBurst := False
 
         rSavedH2dSendData := (
           RegNext(
