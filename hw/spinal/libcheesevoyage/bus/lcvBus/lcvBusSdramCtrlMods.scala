@@ -943,9 +943,9 @@ case class LcvBusSdramCtrl(
     Reg(SInt((log2Up(cfg.burstLen / 2) + 3) bits))
     init(-1)
   )
-  val rStartBusBurst = (
-    Reg(Bool(), init=False)
-  )
+  val rStartBusBurst = Reg(Bool(), init=False)
+  val rInMidBusBurst = Reg(Bool(), init=False)
+  //val rLastChipBurst = Reg(Bool(), init=False)
   //val rTempBurstFirst = (
   //  Reg(Bool(), init=False)
   //)
@@ -1030,14 +1030,15 @@ case class LcvBusSdramCtrl(
       /* 20000 */ SEND_ACTIVE,
       /* 40000 */ ACTIVE_POST_NOPS,
       /* 80000 */ PRE_READ_WRITE,
-      /* 100000 */ MID_BURST_PRE_READ_WRITE,
-      /* 200000 */ SEND_READ_0,
-      /* 400000 */ SEND_READ_N,
-      /* 800000 */ READ_POST_NOPS,
-      /* 1000000 */ SEND_WRITE_0,
-      /* 2000000 */ SEND_WRITE_HI_N,
-      /* 4000000 */ SEND_WRITE_LO_N,
-      /* 8000000 */ WRITE_POST_NOPS
+      /* 100000 */ MID_BURST_PRE_READ_WRITE_MAIN_PRE,
+      /* 200000 */ MID_BURST_PRE_READ_WRITE_MAIN,
+      /* 400000 */ SEND_READ_0,
+      /* 800000 */ SEND_READ_N,
+      /* 1000000 */ READ_POST_NOPS,
+      /* 2000000 */ SEND_WRITE_0,
+      /* 4000000 */ SEND_WRITE_HI_N,
+      /* 8000000 */ SEND_WRITE_LO_N,
+      /* 10000000 */ WRITE_POST_NOPS
 
       = newElement();
   }
@@ -1154,10 +1155,7 @@ case class LcvBusSdramCtrl(
       io.sdram.dqml := False
       io.sdram.dqmh := False
       rH2dFifoPopReady := False
-      when (
-        rNeedRfshCnt.msb
-        //&& rBusBurstOuterCnt.msb // wait for bus bursts to finish
-      ) {
+      when (rNeedRfshCnt.msb) {
         rNeedRfshCnt := cfg.Cycles.tREFIthresh.toInt
 
         when (
@@ -1220,8 +1218,18 @@ case class LcvBusSdramCtrl(
               (
                 // burst read
                 (
-                  // zero occupancy: check if FIFO is empty
-                  !LcvOrR(d2hFifo.io.occupancy)
+                  //// zero occupancy: check if FIFO is empty
+                  //!LcvOrR(d2hFifo.io.occupancy)
+
+                  // check if d2hFifo has enough room
+                  //d2hFifo.io.availability >= 4
+
+                  // (potentially faster) equivalent check for >= 4
+                  LcvOrR(
+                    d2hFifo.io.availability(
+                      d2hFifo.io.availability.high downto 2
+                    )
+                  )
                 )
                 && h2dFifo.io.pop.valid
                 && !h2dFifo.io.pop.isWrite
@@ -1245,8 +1253,18 @@ case class LcvBusSdramCtrl(
                 )
                 && h2dFifo.io.pop.valid
                 && (
-                  // zero availability: check if the FIFO is full
-                  !LcvOrR(h2dFifo.io.availability)
+                  //// zero availability: check if the FIFO is full
+                  //!LcvOrR(h2dFifo.io.availability)
+
+                  // check if h2dFifo is full enough 
+                  //h2dFifo.io.occupancy >= 4
+
+                  // (potentially faster) equivalent check for >= 4
+                  LcvOrR(
+                    h2dFifo.io.occupancy(
+                      h2dFifo.io.occupancy.high downto 2
+                    )
+                  )
                 )
                 && h2dFifo.io.pop.isWrite
                 && h2dFifo.io.pop.burstFirst
@@ -1274,6 +1292,7 @@ case class LcvBusSdramCtrl(
         //h2dFifo.io.pop.ready := True
 
         rStartBusBurst := False
+        rInMidBusBurst := False
 
         rSavedH2dSendData := (
           RegNext(
@@ -1476,8 +1495,19 @@ case class LcvBusSdramCtrl(
       when (!rRfshNopWaitCnt.msb) {
         rRfshNopWaitCnt := rRfshNopWaitCnt - 1
       } otherwise {
-        rState := State.IDLE
+        //rState := State.IDLE
         rRfshNopWaitCnt := cfg.Cycles.tRFC._1.get.toInt
+      }
+      switch (
+        rRfshNopWaitCnt.msb
+        ## rInMidBusBurst
+      ) {
+        is (M"10") {
+          rState := State.IDLE
+        }
+        is (M"11") {
+          rState := State.SEND_ACTIVE
+        }
       }
     }
     //is (State.SEND_PRECHARGE_ALL) {
@@ -1551,20 +1581,26 @@ case class LcvBusSdramCtrl(
     is (State.ACTIVE_POST_NOPS) {
       io.sdram.sendCmdNop()
 
-      rH2dFifoPopReady := (
-        False
-        //True
-      )
+      rH2dFifoPopReady := False
 
       when (!rActiveNopWaitCnt.msb) {
         rActiveNopWaitCnt := rActiveNopWaitCnt - 1
       } otherwise {
         rActiveNopWaitCnt := cfg.Cycles.tRCD._1.get.toInt
-        rState := State.PRE_READ_WRITE
-        //rH2dFifoPopReady := (
-        //  False
-        //  //True
-        //)
+        //rState := State.PRE_READ_WRITE
+      }
+      switch (
+        rActiveNopWaitCnt.msb
+        ## rInMidBusBurst
+      ) {
+        is (M"10") {
+          rState := State.PRE_READ_WRITE
+        }
+        is (M"11") {
+          rState := (
+            State.MID_BURST_PRE_READ_WRITE_MAIN_PRE
+          )
+        }
       }
     }
     is (State.PRE_READ_WRITE) {
@@ -1675,12 +1711,108 @@ case class LcvBusSdramCtrl(
       //  ).asSInt
       //)
     }
-    is (State.MID_BURST_PRE_READ_WRITE) {
+    is (State.MID_BURST_PRE_READ_WRITE_MAIN_PRE) {
       io.sdram.sendCmdNop()
+
+      rH2dFifoPopReady := False
+      rInMidBusBurst := True
+
+      //rLastChipBurst := !LcvOrR(rBusBurstOuterCnt) // check for zero
+      when (rNeedRfshCnt.msb) {
+        rNeedRfshCnt := cfg.Cycles.tREFIthresh.toInt
+        rState := State.SEND_RFSH_PRECHARGE_ALL
+      } elsewhen (
+        (
+          (
+            (
+              // burst read
+              d2hFifo.io.push.ready
+              && (
+                // check if d2hFifo has enough room
+                //d2hFifo.io.availability >= 4
+
+                // (potentially faster) equivalent check for >= 4
+                LcvOrR(
+                  d2hFifo.io.availability(
+                    d2hFifo.io.availability.high downto 2
+                  )
+                )
+              )
+              && !rSavedH2dSendData.isWrite
+            )
+            || (
+              // burst write
+              h2dFifo.io.pop.valid
+              && (
+                // check if h2dFifo is full enough 
+                (
+                  //h2dFifo.io.occupancy >= 4
+
+                  // (potentially faster) equivalent check for >= 4
+                  LcvOrR(
+                    h2dFifo.io.occupancy(
+                      h2dFifo.io.occupancy.high downto 2
+                    )
+                  )
+                  // we are guaranteed (at the time of this
+                  // writing) to have an up-to-date version of
+                  // `RegNext(rBusBurstOuterCnt)` in this state!
+
+                  // here we know that we will *NOT* be going to the final
+                  // chip-burst for this bus-burst!
+                  && RegNext(RegNext(
+                    //LcvOrR(rBusBurstOuterCnt - 1)
+                    //rBusBurstOuterCnt(1 downto 0) > 0
+                    rBusBurstOuterCnt(1 downto 0).orR
+                  ))
+                )
+                || (
+                  //h2dFifo.io.occupancy >= 3
+                  (
+                    // (potentially faster (?)) equivalent check for >= 3
+                    LcvOrR(
+                      h2dFifo.io.occupancy(
+                        h2dFifo.io.occupancy.high downto 2
+                      )
+                    )
+                    || LcvAndR(
+                      h2dFifo.io.occupancy(1 downto 0)
+                    )
+                  )
+
+                  // we are guaranteed (at the time of this
+                  // writing) to have an up-to-date version of
+                  // `RegNext(rBusBurstOuterCnt)` in this state!
+
+                  // here we know that we will be going to the final
+                  // chip-burst for this bus-burst!
+
+                  // in this situation, we need *at least three* elements
+                  // in `h2dFifo` because we *already popped the first
+                  // element*
+                  && RegNext(RegNext(
+                    !rBusBurstOuterCnt(1 downto 0).orR
+                  ))
+                )
+              )
+              && rSavedH2dSendData.isWrite
+            )
+          )
+        )
+      ) {
+        rState := State.MID_BURST_PRE_READ_WRITE_MAIN
+      }
+    }
+    is (State.MID_BURST_PRE_READ_WRITE_MAIN) {
+      io.sdram.sendCmdNop()
+
+      rH2dFifoPopReady := False
       rStartBusBurst := False
+
       when (!rBusBurstOuterCnt.msb) {
         rBusBurstOuterCnt := rBusBurstOuterCnt - 1
       }
+
       when (!rSavedH2dSendData.isWrite) {
         rState := State.SEND_READ_0
         rChipBurstWithoutBusBurstCnt.head := (
@@ -1893,7 +2025,7 @@ case class LcvBusSdramCtrl(
           ) + 1
         )
         when (!rBusBurstOuterCnt.msb) {
-          rState := State.MID_BURST_PRE_READ_WRITE
+          rState := State.MID_BURST_PRE_READ_WRITE_MAIN_PRE
         } otherwise {
           rState := State.IDLE
         }
@@ -1918,7 +2050,7 @@ case class LcvBusSdramCtrl(
           ) + 1
         )
         when (!rBusBurstOuterCnt.msb) {
-          rState := State.MID_BURST_PRE_READ_WRITE
+          rState := State.MID_BURST_PRE_READ_WRITE_MAIN_PRE
         } otherwise {
           rState := State.IDLE
         }
@@ -2120,7 +2252,7 @@ case class LcvBusSdramCtrl(
           ) + 1
         )
         when (!rBusBurstOuterCnt.msb) {
-          rState := State.MID_BURST_PRE_READ_WRITE
+          rState := State.MID_BURST_PRE_READ_WRITE_MAIN_PRE
         } otherwise {
           rState := State.IDLE
         }

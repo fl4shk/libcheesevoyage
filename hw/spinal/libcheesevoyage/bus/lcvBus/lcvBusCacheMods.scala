@@ -7067,7 +7067,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheMain(
 
       mySelLoH2dPopStm.ready := (
         False
-        //myLoD2hPushStm.fire
+        //myLoD2hPushStm.fire // NOTE: maybe don't change this back?
       )
       //myLoD2hPushStm.busPayload.data := myRdLineWord
       //when (rSavedNeedLineWordReadAgain) {
