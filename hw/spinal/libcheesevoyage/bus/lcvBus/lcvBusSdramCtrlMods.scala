@@ -793,7 +793,8 @@ case class LcvBusSdramCtrl(
     //rDqTriState.read := io.sdram.dq
   }
   def myPwrOnCntNumCycles = (
-    ((200 us) * cfg.clkRate) + 10 // 10 extra cycles for good measure 
+    //((200 us) * cfg.clkRate) + 10 // 10 extra cycles for good measure 
+    ((400 us) * cfg.clkRate) + 10 // 10 extra cycles for good measure 
   )
   def myPwrOnCntNumCyclesHalf = (
     (myPwrOnCntNumCycles / 2).toInt
@@ -1002,38 +1003,38 @@ case class LcvBusSdramCtrl(
 
   object State extends SpinalEnum(defaultEncoding=binaryOneHot) {
     val
-      /* 1 */ PWR_ON_INIT,
-      /* 2 */ PWR_ON_CNT_DO_CKE_HI,
+      /* 0000001 */ PWR_ON_INIT,
+      /* 0000002 */ PWR_ON_CNT_DO_CKE_HI,
 
-      /* 4 */ PWR_ON_SEND_PRECHARGE_ALL,
-      /* 8 */ PWR_ON_WAIT_T_RP, // send NOPs
+      /* 0000004 */ PWR_ON_SEND_PRECHARGE_ALL,
+      /* 0000008 */ PWR_ON_WAIT_T_RP, // send NOPs
 
-      /* 10 */ PWR_ON_SEND_AUTO_REFRESH_0,
-      /* 20 */ PWR_ON_WAIT_T_RFC_0, // send NOPs or CMD INHIBITs
+      /* 0000010 */ PWR_ON_SEND_AUTO_REFRESH_0,
+      /* 0000020 */ PWR_ON_WAIT_T_RFC_0, // send NOPs or CMD INHIBITs
 
-      /* 40 */ PWR_ON_SEND_AUTO_REFRESH_1,
-      /* 80 */ PWR_ON_WAIT_T_RFC_1, // send NOPs or CMD INHIBITs
+      /* 0000040 */ PWR_ON_SEND_AUTO_REFRESH_1,
+      /* 0000080 */ PWR_ON_WAIT_T_RFC_1, // send NOPs or CMD INHIBITs
 
-      /* 100 */ PWR_ON_LOAD_MODE_REGISTER,
-      /* 200 */ PWR_ON_WAIT_T_MRD,   // send NOPs
+      /* 0000100 */ PWR_ON_LOAD_MODE_REGISTER,
+      /* 0000200 */ PWR_ON_WAIT_T_MRD,   // send NOPs
 
-      /* 400 */ IDLE,
-      /* 800 */ SEND_RFSH_PRECHARGE_ALL,
-      /* 1000 */ RFSH_PRECHARGE_ALL_POST_NOPS,
-      /* 2000 */ SEND_RFSH_MAIN,
-      /* 4000 */ RFSH_MAIN_POST_NOPS,
+      /* 0000400 */ IDLE,
+      /* 0000800 */ SEND_RFSH_PRECHARGE_ALL,
+      /* 0001000 */ RFSH_PRECHARGE_ALL_POST_NOPS,
+      /* 0002000 */ SEND_RFSH_MAIN,
+      /* 0004000 */ RFSH_MAIN_POST_NOPS,
 
       //SEND_PRECHARGE_ALL,
       //PRECHARGE_ALL_POST_NOPS,
-      /* 8000 */ SEND_BANK_PRECHARGE,
-      /* 10000 */ BANK_PRECHARGE_POST_NOPS,
-      /* 20000 */ SEND_ACTIVE,
-      /* 40000 */ ACTIVE_POST_NOPS,
-      /* 80000 */ PRE_READ_WRITE,
-      /* 100000 */ MID_BURST_PRE_READ_WRITE,
-      /* 200000 */ SEND_READ_0,
-      /* 400000 */ SEND_READ_N,
-      /* 800000 */ READ_POST_NOPS,
+      /* 0008000 */ SEND_BANK_PRECHARGE,
+      /* 0010000 */ BANK_PRECHARGE_POST_NOPS,
+      /* 0020000 */ SEND_ACTIVE,
+      /* 0040000 */ ACTIVE_POST_NOPS,
+      /* 0080000 */ PRE_READ_WRITE,
+      /* 0100000 */ MID_BURST_PRE_READ_WRITE,
+      /* 0200000 */ SEND_READ_0,
+      /* 0400000 */ SEND_READ_N,
+      /* 0800000 */ READ_POST_NOPS,
       /* 1000000 */ SEND_WRITE_0,
       /* 2000000 */ SEND_WRITE_HI_N,
       /* 4000000 */ SEND_WRITE_LO_N,
