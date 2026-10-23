@@ -248,7 +248,7 @@ case class LcvBusSdramCtrlConfig(
       x: TimeNumber
     ): Option[BigDecimal] = (
       Some(
-        (x * clkRate) + 2//1
+        (x * clkRate) //+ 2//1
       )
     )
     def tRC: (Option[BigDecimal], Option[BigDecimal]) = (
