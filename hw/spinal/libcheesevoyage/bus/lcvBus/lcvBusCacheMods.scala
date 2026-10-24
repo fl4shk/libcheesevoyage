@@ -18452,12 +18452,12 @@ private[libcheesevoyage] case class LcvBusDataCachePrefetchUponMiss(
   )
   for (ramIdx <- 0 until numWays) {
     prefetchTempHaveHitCmpEq(ramIdx) := (
-      myTempHaveHitCmpEqLeft(ramIdx)
-      === myTempHaveHitCmpEqRight(ramIdx)
+      prefetchMyTempHaveHitCmpEqLeft(ramIdx)
+      === prefetchMyTempHaveHitCmpEqRight(ramIdx)
     )
     prefetchHaveHit(ramIdx) := (
       rdLineAttrs(ramIdx).fire
-      && tempHaveHitCmpEq(ramIdx)
+      && prefetchTempHaveHitCmpEq(ramIdx)
     )
   }
 
@@ -19960,6 +19960,7 @@ private[libcheesevoyage] case class LcvBusDataCachePrefetchUponMiss(
         val tempCond = (
           rPrefetchCnt === cfg.prefetchNumLinesAhead.get - 1
         )
+
         switch (
           io.hiBus.d2hBus.burstLast
           ## tempCond
@@ -20111,6 +20112,7 @@ private[libcheesevoyage] case class LcvBusDataCachePrefetchUponMiss(
         downto loBusCfg.prefetchAddrIncrStartIdx
       )
 
+      rSavedLoH2dPayload.isWrite := False
       rSavedLoH2dPayload.addr(myTempRange) := (
         rSavedLoH2dPayload.addr(myTempRange) + 1
       )
