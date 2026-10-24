@@ -20120,13 +20120,26 @@ private[libcheesevoyage] case class LcvBusDataCachePrefetchUponMiss(
       when (
         !rPrefetchCnt.msb
         && (
-          // this should make us stop prefetching if there's another
+          // This should make us stop prefetching if there's another
           // incoming request to an address we don't know for certain is
           // cached.
           !mySelLoH2dPopStm.valid
           || (
-            mySelLoH2dPopStm.addr(myTempRange)
-            === rSavedLoH2dPayload.addr(myTempRange)
+            RegNext(
+              History(
+                that=rSavedLoH2dPayload.addr(myTempRange),
+                when=(
+                  rState.asBits(
+                    State.RECV_LINE_FROM_HI_BUS_POST.position
+                  )
+                ),
+                length=(cfg.prefetchNumLinesAhead.get - 1),
+                init=(
+                  rSavedLoH2dPayload.addr(myTempRange).getZero
+                )
+              )
+              .sFindFirst(_ === mySelLoH2dPopStm.addr(myTempRange))._1
+            )
           )
         )
       ) {
