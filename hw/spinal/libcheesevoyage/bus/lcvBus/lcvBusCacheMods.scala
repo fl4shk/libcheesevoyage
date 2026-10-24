@@ -17902,9 +17902,9 @@ private[libcheesevoyage] case class LcvBusDataCachePrefetchUponMiss(
       RECV_LINE_FROM_HI_BUS_PIPE_1,
       RECV_LINE_FROM_HI_BUS,
       RECV_LINE_FROM_HI_BUS_POST_WRITE,
-      //RECV_LINE_FROM_HI_BUS_POST_7,
-      //RECV_LINE_FROM_HI_BUS_POST_6,
-      //RECV_LINE_FROM_HI_BUS_POST_5,
+      RECV_LINE_FROM_HI_BUS_POST_7,
+      RECV_LINE_FROM_HI_BUS_POST_6,
+      RECV_LINE_FROM_HI_BUS_POST_5,
       RECV_LINE_FROM_HI_BUS_POST_4,
       RECV_LINE_FROM_HI_BUS_POST_3,
       RECV_LINE_FROM_HI_BUS_POST_2,
@@ -19967,7 +19967,7 @@ private[libcheesevoyage] case class LcvBusDataCachePrefetchUponMiss(
           ## rSavedLoH2dPayload.isWrite
         ) {
           is (M"110") {
-            rState := State.RECV_LINE_FROM_HI_BUS_POST_4 //7
+            rState := State.RECV_LINE_FROM_HI_BUS_POST_7
           }
           is (M"111") {
             rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
@@ -20025,21 +20025,21 @@ private[libcheesevoyage] case class LcvBusDataCachePrefetchUponMiss(
         //State.RECV_LINE_FROM_HI_BUS_POST_4 //7
       )
     }
-    //is (State.RECV_LINE_FROM_HI_BUS_POST_7) {
-    //  lineWordRam.foreach(item => item.io.rdEn := False)
-    //  lineAttrsRam.foreach(item => item.io.rdEn := False)
-    //  rState := State.RECV_LINE_FROM_HI_BUS_POST_6
-    //}
-    //is (State.RECV_LINE_FROM_HI_BUS_POST_6) {
-    //  lineWordRam.foreach(item => item.io.rdEn := False)
-    //  lineAttrsRam.foreach(item => item.io.rdEn := False)
-    //  rState := State.RECV_LINE_FROM_HI_BUS_POST_5
-    //}
-    //is (State.RECV_LINE_FROM_HI_BUS_POST_5) {
-    //  lineWordRam.foreach(item => item.io.rdEn := False)
-    //  lineAttrsRam.foreach(item => item.io.rdEn := False)
-    //  rState := State.RECV_LINE_FROM_HI_BUS_POST_4
-    //}
+    is (State.RECV_LINE_FROM_HI_BUS_POST_7) {
+      lineWordRam.foreach(item => item.io.rdEn := False)
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_6
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_6) {
+      lineWordRam.foreach(item => item.io.rdEn := False)
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_5
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_5) {
+      lineWordRam.foreach(item => item.io.rdEn := False)
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_4
+    }
     is (State.RECV_LINE_FROM_HI_BUS_POST_4) {
       lineAttrsRam.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
