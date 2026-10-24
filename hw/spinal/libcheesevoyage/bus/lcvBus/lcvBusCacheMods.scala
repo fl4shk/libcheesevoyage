@@ -18815,12 +18815,12 @@ private[libcheesevoyage] case class LcvBusDataCachePrefetchUponMiss(
     //## rMyTempDoSaveCond(3)
     ## (
       (rdLineAttrs.map(item => item.dirty).orR)
-      || (
-        RegNext(
-          myHistWrLineAttrsDirty.orR,
-          init=False,
-        )
-      )
+      //|| (
+      //  RegNext(
+      //    myHistWrLineAttrsDirty.orR,
+      //    init=False,
+      //  )
+      //)
     )
     //## rSavedLoH2dPayload.isWrite
     ## prefetchHaveHit
@@ -19120,8 +19120,11 @@ private[libcheesevoyage] case class LcvBusDataCachePrefetchUponMiss(
       //M"11-0"
       MaskedLiteral("11" + ("0" * numWays))
     ) {
-      // cache miss, and the line is *possibly* dirty
-      rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+      // cache miss, and the line is *definitely* dirty
+      rState := (
+        //State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+        State.MAYBE_DIRTY_RE_READ_ATTRS
+      )
 
       myLoD2hPushStm.valid := False
 
@@ -19953,13 +19956,34 @@ private[libcheesevoyage] case class LcvBusDataCachePrefetchUponMiss(
             setEn=myArgSetEn,
           )
         }
-        when ((io.hiBus.d2hBus.burstLast)) {
-          when (!rSavedLoH2dPayload.isWrite) {
+
+        val tempCond = (
+          rPrefetchCnt === cfg.prefetchNumLinesAhead.get - 1
+        )
+        switch (
+          io.hiBus.d2hBus.burstLast
+          ## tempCond
+          ## rSavedLoH2dPayload.isWrite
+        ) {
+          is (M"110") {
             rState := State.RECV_LINE_FROM_HI_BUS_POST_4 //7
-          } otherwise {
+          }
+          is (M"111") {
             rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
           }
+          is (M"10-") {
+            rState := State.RECV_LINE_FROM_HI_BUS_POST
+          }
+          default {
+          }
         }
+        //when ((io.hiBus.d2hBus.burstLast)) {
+        //  //when (!rSavedLoH2dPayload.isWrite) {
+        //  //  rState := State.RECV_LINE_FROM_HI_BUS_POST_4 //7
+        //  //} otherwise {
+        //  //  rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
+        //  //}
+        //}
       }
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_WRITE) {
@@ -19994,7 +20018,11 @@ private[libcheesevoyage] case class LcvBusDataCachePrefetchUponMiss(
           setEn=myArgSetEn,
         )
       }
-      rState := State.RECV_LINE_FROM_HI_BUS_POST_4 //7
+      rState := (
+        // We can skip `..._POST_4` because it's a write
+        State.RECV_LINE_FROM_HI_BUS_POST_1
+        //State.RECV_LINE_FROM_HI_BUS_POST_4 //7
+      )
     }
     //is (State.RECV_LINE_FROM_HI_BUS_POST_7) {
     //  lineWordRam.foreach(item => item.io.rdEn := False)
@@ -20078,16 +20106,28 @@ private[libcheesevoyage] case class LcvBusDataCachePrefetchUponMiss(
       lineAttrsRam.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
 
-      rSavedLoH2dPayload.addr(
+      val myTempRange = (
         loBusCacheCfg.addrWidth - 2
         downto loBusCfg.prefetchAddrIncrStartIdx
-      ) := (
-        rSavedLoH2dPayload.addr(
-          loBusCacheCfg.addrWidth - 2
-          downto loBusCfg.prefetchAddrIncrStartIdx
-        ) + 1
       )
-      when (!rPrefetchCnt.msb) {
+
+      rSavedLoH2dPayload.addr(myTempRange) := (
+        rSavedLoH2dPayload.addr(myTempRange) + 1
+      )
+
+      when (
+        !rPrefetchCnt.msb
+        && (
+          // this should make us stop prefetching if there's another
+          // incoming request to an address we don't know for certain is
+          // cached.
+          !mySelLoH2dPopStm.valid
+          || (
+            mySelLoH2dPopStm.addr(myTempRange)
+            === rSavedLoH2dPayload.addr(myTempRange)
+          )
+        )
+      ) {
         rPrefetchCnt := rPrefetchCnt - 1
         rState := State.PREFETCH_START_PIPE_2
       } otherwise {
@@ -20104,8 +20144,13 @@ private[libcheesevoyage] case class LcvBusDataCachePrefetchUponMiss(
 
       lineAttrsRam.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
+      mySelLoH2dPopStm.ready := False
 
       doLineAttrsRamReadSync(
+        busAddr=rSavedLoH2dPayload.addr,
+        setEn=0
+      )
+      doLineBitPlruRamReadSync(
         busAddr=rSavedLoH2dPayload.addr,
         setEn=0
       )
@@ -20113,11 +20158,17 @@ private[libcheesevoyage] case class LcvBusDataCachePrefetchUponMiss(
     is (State.PREFETCH_START_PIPE_1) {
       rState := State.PREFETCH_START
       lineAttrsRam.foreach(item => item.io.rdEn := True)
-      mySelLoH2dPopStm.ready := False
+      lineWordRam.foreach(item => item.io.rdEn := False)
+      lineBitPlruRam.io.rdEn := True
 
+      mySelLoH2dPopStm.ready := False
     }
     is (State.PREFETCH_START) {
       //mySelLoH2dPopStm.ready := False
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.rdEn := False)
+      lineBitPlruRam.io.rdEn := False
+      mySelLoH2dPopStm.ready := False
     }
 
     is (State.WAIT_D2H_FIFO_EMPTY) {
