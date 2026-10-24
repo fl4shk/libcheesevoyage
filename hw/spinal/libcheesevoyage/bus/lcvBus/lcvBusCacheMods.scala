@@ -18435,11 +18435,11 @@ private[libcheesevoyage] case class LcvBusDataCachePrefetchUponMiss(
     rdLineAttrs.map(item => item.tag)
   )
   val prefetchMyTempHaveHitCmpEqRight = Vec.fill(numWays)(
-    RegNext(
-      RegNext(
+    //RegNext(
+    //  RegNext(
         rSavedLoH2dPayload.addr(loBusCacheCfg.tagRange)
-      )
-    )
+    //  )
+    //)
     //RegNext(
     //  RegNext(mySelLoH2dPopPayload.addr(loBusCacheCfg.tagRange))
     //  init(0x0)
