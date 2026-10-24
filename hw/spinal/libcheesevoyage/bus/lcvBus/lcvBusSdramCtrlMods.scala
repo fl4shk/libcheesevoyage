@@ -851,29 +851,20 @@ case class LcvBusSdramCtrl(
     Reg(UInt((log2Up(cfg.Cycles.tRCD._1.get.toInt) + 3) bits))
     init(cfg.Cycles.tRCD._1.get.toInt)
   )
-  def myRdNopWaitCntNumCycles = (
-    // this is with auto-precharge
-    (
-      (cfg.burstLen /*- 1*/)
-      + 1
-      + cfg.Cycles.tRP._1.get
-    ).toInt + 1
-  )
-  val rRdNopWaitCnt = (
-    Reg(UInt((log2Up(myRdNopWaitCntNumCycles.toInt) + 3) bits))
-    init(myRdNopWaitCntNumCycles.toInt)
-  )
+  //def myRdNopWaitCntNumCycles = (
+  //  // this is with auto-precharge
+  //  (
+  //    (cfg.burstLen /*- 1*/)
+  //    + 1
+  //    + cfg.Cycles.tRP._1.get
+  //  ).toInt + 1
+  //)
+  //val rRdNopWaitCnt = (
+  //  Reg(UInt((log2Up(myRdNopWaitCntNumCycles.toInt) + 3) bits))
+  //  init(myRdNopWaitCntNumCycles.toInt)
+  //)
   def myWrNopWaitCntNumCyclesMax = (
-    // this is with auto-precharge
-    (
-      //(cfg.burstLen - 1)
-      //+ 
-      cfg.Cycles.tWR._1.get
-      + cfg.Cycles.tRP._1.get
-    ).toInt + 1
-  )
-  def myWrNopWaitCntNumCyclesMin = (
-    // this is with auto-precharge
+    //// this is with auto-precharge
     (
       //(cfg.burstLen - 1)
       //+ 
@@ -881,6 +872,15 @@ case class LcvBusSdramCtrl(
       //+ cfg.Cycles.tRP._1.get
     ).toInt + 1
   )
+  //def myWrNopWaitCntNumCyclesMin = (
+  //  // this is with auto-precharge
+  //  (
+  //    //(cfg.burstLen - 1)
+  //    //+ 
+  //    cfg.Cycles.tWR._1.get
+  //    //+ cfg.Cycles.tRP._1.get
+  //  ).toInt + 1
+  //)
   val rWrNopWaitCnt = (
     Reg(UInt((log2Up(myWrNopWaitCntNumCyclesMax.toInt) + 3) bits))
     init(myWrNopWaitCntNumCyclesMax.toInt)
@@ -1762,7 +1762,7 @@ case class LcvBusSdramCtrl(
         //cfg.casLatency._2 - 1
         myRdCasLatencyCntNumCycles - 1
       )
-      rRdNopWaitCnt := myRdNopWaitCntNumCycles
+      //rRdNopWaitCnt := myRdNopWaitCntNumCycles
 
       rD2hFifoPushValid := False//True
       when (rStartBusBurst) {
@@ -1877,10 +1877,12 @@ case class LcvBusSdramCtrl(
         rD2hFifoPushValid := False
         rState := State.READ_POST_NOPS
       }
-      when (!rRdNopWaitCnt.msb) {
-        rRdNopWaitCnt := rRdNopWaitCnt - 1
-      }
-      when (rRdCasLatencyCnt.msb && rRdNopWaitCnt.msb) {
+      //when (!rRdNopWaitCnt.msb) {
+      //  rRdNopWaitCnt := rRdNopWaitCnt - 1
+      //}
+      when (
+        rRdCasLatencyCnt.msb //&& rRdNopWaitCnt.msb
+      ) {
         rD2hFifoPushValid := False
 
         rTempAddr.last(
@@ -1903,10 +1905,10 @@ case class LcvBusSdramCtrl(
       io.sdram.sendCmdNop()
       //rD2hFifoPushValid := False
 
-      when (!rRdNopWaitCnt.msb) {
-        rRdNopWaitCnt := rRdNopWaitCnt - 1
-      }
-      when (rRdNopWaitCnt.msb) {
+      //when (!rRdNopWaitCnt.msb) {
+      //  rRdNopWaitCnt := rRdNopWaitCnt - 1
+      //}
+      //when (rRdNopWaitCnt.msb) {
         //rState := State.IDLE
         rTempAddr.last(
           myAlignedColumnSliceRangeHi._1
@@ -1922,7 +1924,7 @@ case class LcvBusSdramCtrl(
         } otherwise {
           rState := State.IDLE
         }
-      }
+      //}
     }
     is (State.SEND_WRITE_0) {
       //rD2hSendData.burstFirst := rHaveBurst
@@ -1958,7 +1960,9 @@ case class LcvBusSdramCtrl(
         //|| !LcvOrR(rBusBurstOuterCnt(1 downto 0)) // check for zero
         //&& !rBusBurstOuterCnt.msb
       ) {
-        rWrNopWaitCnt := myWrNopWaitCntNumCyclesMin
+        //rWrNopWaitCnt := myWrNopWaitCntNumCyclesMin
+        //rWrNopWaitCnt := U(rWrNopWaitCnt.getWidth bits, default -> True)
+        rWrNopWaitCnt.msb := True
       } otherwise {
         rWrNopWaitCnt := myWrNopWaitCntNumCyclesMax
       }
