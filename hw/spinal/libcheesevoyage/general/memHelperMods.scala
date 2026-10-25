@@ -1941,7 +1941,7 @@ case class LcvLowLatencyReorderBuf[
     for (idx <- 0 until (1 << io.push.reorderBufIdx.getWidth)) {
       is (idx) {
         io.push.ready := (
-          RegNext(!myValidVec(idx), init=False)
+          !myValidVec(idx)
         )
       }
     }
@@ -1953,9 +1953,11 @@ case class LcvLowLatencyReorderBuf[
   )
   val myRdAddr = cloneOf(io.push.reorderBufIdx)
 
-  val myAssertValidCond = io.push.fire
+  val myAssertValidCond = RegNext(io.push.fire, init=False)
   when (myAssertValidCond) {
-    myValidVec(io.push.reorderBufIdx) := True
+    myValidVec(
+      RegNext(io.push.reorderBufIdx)
+    ) := True
   }
 
   when (RegNext(io.pop.fire, init=False)) {
@@ -2010,17 +2012,39 @@ case class LcvLowLatencyReorderBuf[
   //  }
   //)
 
-  io.pop.valid := myValidVec(myRdAddr)
+  val myFwdCondAddrCmpEq = (
+    io.push.reorderBufIdx === myRdAddr
+  )
+  val myFwdCond = (
+    myAssertValidCond
+    && myFwdCondAddrCmpEq
+  )
+
+  io.pop.valid := (
+    myValidVec(myRdAddr)
+    || (
+      myFwdCond
+    )
+  )
 
   io.pop.payload := (
     //io.pop.payload.getZero
     RegNext(io.pop.payload)
   )
 
-  when (io.pop.fire) {
-    io.pop.payload := ram.readAsync(
-      address=myRdAddr
-    )
+  switch (
+    io.pop.fire
+    ## myFwdCondAddrCmpEq
+    //## my
+  ) {
+    is (M"10") {
+      io.pop.payload := ram.readAsync(
+        address=myRdAddr
+      )
+    }
+    is (M"11") {
+      io.pop.payload := io.push.myWord
+    }
   }
 }
 
