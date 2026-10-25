@@ -2016,8 +2016,10 @@ case class LcvLowLatencyReorderBuf[
     io.push.reorderBufIdx === myRdAddr
   )
   val myFwdCond = (
-    myAssertValidCond
+    //myAssertValidCond
+    io.push.valid
     && myFwdCondAddrCmpEq
+    && !myValidVec(myRdAddr)
   )
 
   io.pop.valid := (
@@ -2032,20 +2034,32 @@ case class LcvLowLatencyReorderBuf[
     RegNext(io.pop.payload)
   )
 
-  switch (
-    io.pop.fire
-    ## myFwdCondAddrCmpEq
-    //## my
-  ) {
-    is (M"10") {
-      io.pop.payload := ram.readAsync(
-        address=myRdAddr
-      )
-    }
-    is (M"11") {
-      io.pop.payload := io.push.myWord
-    }
+  when (myFwdCond) {
+    io.pop.payload := io.push.myWord
+  } otherwise {
+    io.pop.payload := ram.readAsync(
+      address=myRdAddr
+    )
   }
+
+  //switch (
+  //  //io.pop.fire
+  //  io.pop.valid
+  //  ## (
+  //    //myFwdCondAddrCmpEq
+  //    myFwdCond
+  //  )
+  //  //## my
+  //) {
+  //  is (M"10") {
+  //    io.pop.payload := ram.readAsync(
+  //      address=myRdAddr
+  //    )
+  //  }
+  //  is (M"11") {
+  //    io.pop.payload := io.push.myWord
+  //  }
+  //}
 }
 
 case class LcvSimpleReorderBufConfig[
