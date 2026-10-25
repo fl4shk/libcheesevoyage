@@ -1941,7 +1941,7 @@ case class LcvLowLatencyReorderBuf[
     for (idx <- 0 until (1 << io.push.reorderBufIdx.getWidth)) {
       is (idx) {
         io.push.ready := (
-          !myValidVec(idx)
+          RegNext(!myValidVec(idx), init=False)
         )
       }
     }
