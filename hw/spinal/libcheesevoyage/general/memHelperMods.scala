@@ -1891,7 +1891,7 @@ case class LcvLowLatencyReorderBuf[
   WordT <: Data
 ](
   cfg: LcvLowLatencyReorderBufConfig[WordT]
-) extends Bundle {
+) extends Component {
   //--------
   val io = LcvLowLatencyReorderBufIo(cfg=cfg)
   //val myLinkArr = PipeHelper.mkLinkArr()
