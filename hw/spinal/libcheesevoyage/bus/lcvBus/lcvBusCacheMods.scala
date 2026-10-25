@@ -20120,7 +20120,8 @@ private[libcheesevoyage] case class LcvBusDataCachePrefetchUponMiss(
       when (
         !rPrefetchCnt.msb
         && (
-          // This should make us stop prefetching if there's another
+          // This should (usually) make us stop prefetching if there's
+          // another
           // incoming request to an address we don't know for certain is
           // cached.
           !mySelLoH2dPopStm.valid

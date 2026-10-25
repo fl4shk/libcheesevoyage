@@ -1854,13 +1854,181 @@ object LcvOooRdSlidingBufTestToVerilog extends App {
   }
 }
 
+case class LcvLowLatencyReorderBufConfig[
+  WordT <: Data,
+](
+  wordType: HardType[WordT],
+  reorderBufIdxWidth: Int,
+) {
+  val depth = (1 << reorderBufIdxWidth)
+}
+case class LcvLowLatencyReorderBufPushPayload[
+  WordT <: Data
+](
+  cfg: LcvLowLatencyReorderBufConfig[WordT]
+) extends Bundle {
+  val reorderBufIdx = UInt(cfg.reorderBufIdxWidth bits)
+  val myWord = cfg.wordType()
+}
+
+case class LcvLowLatencyReorderBufIo[
+  WordT <: Data,
+](
+  cfg: LcvLowLatencyReorderBufConfig[WordT]
+) extends Bundle {
+  val push = slave(Stream(
+    LcvLowLatencyReorderBufPushPayload(cfg=cfg)
+  ))
+  val pop = master(Stream(
+    cfg.wordType()
+  ))
+  val occupancy = out(
+    UInt((cfg.reorderBufIdxWidth + 1) bits)
+  )
+}
+
+case class LcvLowLatencyReorderBuf[
+  WordT <: Data
+](
+  cfg: LcvLowLatencyReorderBufConfig[WordT]
+) extends Bundle {
+  //--------
+  val io = LcvLowLatencyReorderBufIo(cfg=cfg)
+  //val myLinkArr = PipeHelper.mkLinkArr()
+  //--------
+  //val ram = RamSimpleDualPort(
+  //  cfg=RamSimpleDualPortConfig(
+  //    wordType=cfg.wordType(),
+  //    depth=cfg.depth,
+  //    init=None,
+  //    initBigInt=None,
+  //    arrRamStyleAltera=(
+  //      //"no_rw_check, logic"
+  //      "no_rw_check, MLAB"
+  //      //"MLAB"
+  //    ),
+  //    arrRamStyleXilinx="auto",
+  //    arrRwAddrCollisionXilinx="",
+  //    doAsyncRead=(
+  //      //cfg.optRdLatency == 0
+  //      true
+  //    )
+  //  )
+  //)
+  ////--------
+  //ram.io.ramIo.wrEn := io.push.fire
+  //ram.io.ramIo.wrAddr := io.push.reorderBufIdx
+  //ram.io.ramIo.wrData := io.push.myWord
+  ////--------
+  //ram.io.ramIo.rdEn := io.pop.fire
+  //ram.io.ramIo.rdAddr := io.
+  val ram = Mem(
+    wordType=cfg.wordType(),
+    wordCount=cfg.depth,
+  )
+  //--------
+  val myValidVec = Vec.fill(cfg.depth)(
+    Bool()
+  )
+  myValidVec.foreach(item => {
+    item := RegNext(item, init=False)
+  })
+
+  val myOccupancy = CountOne(myValidVec.asBits.asUInt)
+  io.occupancy := myOccupancy
+
+  switch (io.push.reorderBufIdx) {
+    for (idx <- 0 until (1 << io.push.reorderBufIdx.getWidth)) {
+      is (idx) {
+        io.push.ready := (
+          !myValidVec(idx)
+        )
+      }
+    }
+  }
+  ram.write(
+    address=io.push.reorderBufIdx,
+    data=io.push.myWord,
+    enable=io.push.fire,
+  )
+  val myRdAddr = cloneOf(io.push.reorderBufIdx)
+
+  val myAssertValidCond = io.push.fire
+  when (myAssertValidCond) {
+    myValidVec(io.push.reorderBufIdx) := True
+  }
+
+  when (RegNext(io.pop.fire, init=False)) {
+    myValidVec(RegNext(myRdAddr, init=myRdAddr.getZero)) := False
+  }
+
+  //myRam.io.wrPulse.valid := io.push.fire
+  //myRam.io.wrPulse.addr := io.push.reorderBufIdx
+  //myRam.io.wrPulse.data := io.push.myWord
+  //when (myAssertValidCond) {
+  //  rValidVec(myRam.io.wrPulse.addr) := True
+  //}
+
+  myRdAddr := (
+    RegNext(myRdAddr)
+    init(
+      //0x1
+      0x0
+    )
+  )
+  when (
+    RegNext(
+      //myRam.io.rdAddrPipe.fire,
+      io.pop.fire,
+      init=False
+    )
+  ) {
+    myRdAddr := (
+      (
+        RegNext(myRdAddr)
+        init(
+          //0x1
+          0x0
+        )
+      ) + 1
+    )
+  }
+  //myRam.io.rdAddrPipe.valid := rValidVec(myRdAddr)
+  //myRam.io.rdAddrPipe.data := myRam.io.rdAddrPipe.data.getZero
+  //myRam.io.rdAddrPipe.data.reorderBufIdx.allowOverride
+  //myRam.io.rdAddrPipe.data.reorderBufIdx := myRdAddr
+  //myRam.io.rdAddrPipe.addr := myRdAddr
+
+  //when (myRam.io.rdAddrPipe.fire) {
+  //  rValidVec(myRdAddr) := False
+  //}
+
+  ////io.pop << myRam.io.rdDataPipe
+  //myRam.io.rdDataPipe.translateInto(io.pop)(
+  //  dataAssignment=(outp, inp) => {
+  //    outp := inp.myWord
+  //  }
+  //)
+
+  io.pop.valid := myValidVec(myRdAddr)
+
+  io.pop.payload := (
+    //io.pop.payload.getZero
+    RegNext(io.pop.payload)
+  )
+
+  when (io.pop.fire) {
+    io.pop.payload := ram.readAsync(
+      address=myRdAddr
+    )
+  }
+}
 
 case class LcvSimpleReorderBufConfig[
   WordT <: Data,
 ](
   wordType: HardType[WordT],
   reorderBufIdxWidth: Int,
-  //wrAutoIncr: Boolean=true,
 ) {
   val depth = (1 << reorderBufIdxWidth)
   //def myPushType() = (
