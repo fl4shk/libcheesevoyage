@@ -20128,29 +20128,37 @@ private[libcheesevoyage] case class LcvBusDataCachePrefetchUponMiss(
           || (
             RegNext(
               {
-                val tempHist = (
-                  History(
-                    that=rSavedLoH2dPayload.addr(myTempRange),
-                    when=(
-                      rState.asBits(
-                        State.RECV_LINE_FROM_HI_BUS_POST.position
-                      )
-                    ),
-                    length=(cfg.prefetchNumLinesAhead.get - 1),
-                    init=(
-                      rSavedLoH2dPayload.addr(myTempRange).getZero
-                    )
+                val tempHistInp = (
+                  rSavedLoH2dPayload.addr(myTempRange)
+                )
+                val tempCond = (
+                  rState.asBits(
+                    State.RECV_LINE_FROM_HI_BUS_POST.position
                   )
                 )
+                val tempCmpEqRight = (
+                  mySelLoH2dPopStm.addr(myTempRange)
+                )
+
                 if (
                   cfg.prefetchNumLinesAhead.get - 1 > 1
                 ) (
-                  tempHist
+                  History(
+                    that=tempHistInp,
+                    when=tempCond,
+                    length=(cfg.prefetchNumLinesAhead.get - 1),
+                    init=tempHistInp.getZero
+                  )
                   .sFindFirst(
-                    _ === mySelLoH2dPopStm.addr(myTempRange)
+                    _ === tempCmpEqRight
                   )._1
                 ) else (
-                  tempHist.last === mySelLoH2dPopStm.addr(myTempRange)
+                  RegNextWhen(
+                    tempHistInp,
+                    cond=tempCond,
+                    init=tempHistInp.getZero
+                  )
+                   === tempCmpEqRight
                 )
               }
             )
