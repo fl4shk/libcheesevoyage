@@ -1896,36 +1896,36 @@ case class LcvLowLatencyReorderBuf[
   val io = LcvLowLatencyReorderBufIo(cfg=cfg)
   //val myLinkArr = PipeHelper.mkLinkArr()
   //--------
-  //val ram = RamSimpleDualPort(
-  //  cfg=RamSimpleDualPortConfig(
-  //    wordType=cfg.wordType(),
-  //    depth=cfg.depth,
-  //    init=None,
-  //    initBigInt=None,
-  //    arrRamStyleAltera=(
-  //      //"no_rw_check, logic"
-  //      "no_rw_check, MLAB"
-  //      //"MLAB"
-  //    ),
-  //    arrRamStyleXilinx="auto",
-  //    arrRwAddrCollisionXilinx="",
-  //    doAsyncRead=(
-  //      //cfg.optRdLatency == 0
-  //      true
-  //    )
-  //  )
-  //)
-  ////--------
+  val ram = RamSimpleDualPort(
+    cfg=RamSimpleDualPortConfig(
+      wordType=cfg.wordType(),
+      depth=cfg.depth,
+      init=None,
+      initBigInt=None,
+      arrRamStyleAltera=(
+        //"no_rw_check, logic"
+        "no_rw_check, MLAB"
+        //"MLAB"
+      ),
+      arrRamStyleXilinx="auto",
+      arrRwAddrCollisionXilinx="",
+      doAsyncRead=(
+        //cfg.optRdLatency == 0
+        true
+      )
+    )
+  )
+  //--------
   //ram.io.ramIo.wrEn := io.push.fire
   //ram.io.ramIo.wrAddr := io.push.reorderBufIdx
   //ram.io.ramIo.wrData := io.push.myWord
-  ////--------
+  //--------
   //ram.io.ramIo.rdEn := io.pop.fire
   //ram.io.ramIo.rdAddr := io.
-  val ram = Mem(
-    wordType=cfg.wordType(),
-    wordCount=cfg.depth,
-  )
+  //val ram = Mem(
+  //  wordType=cfg.wordType(),
+  //  wordCount=cfg.depth,
+  //)
   //--------
   val myValidVec = Vec.fill(cfg.depth)(
     Bool()
@@ -1946,11 +1946,15 @@ case class LcvLowLatencyReorderBuf[
       }
     }
   }
-  ram.write(
-    address=io.push.reorderBufIdx,
-    data=io.push.myWord,
-    enable=io.push.fire,
-  )
+  ram.io.ramIo.wrAddr := io.push.reorderBufIdx
+  ram.io.ramIo.wrData := io.push.myWord
+  ram.io.ramIo.wrEn := io.push.fire
+
+  //ram.write(
+  //  address=io.push.reorderBufIdx,
+  //  data=io.push.myWord,
+  //  enable=io.push.fire,
+  //)
   val myRdAddr = cloneOf(io.push.reorderBufIdx)
 
   val myAssertValidCond = RegNext(io.push.fire, init=False)
@@ -2034,12 +2038,16 @@ case class LcvLowLatencyReorderBuf[
     RegNext(io.pop.payload)
   )
 
+  ram.io.ramIo.rdAddr := myRdAddr
+  ram.io.ramIo.rdEn := !myFwdCond
+
   when (myFwdCond) {
     io.pop.payload := io.push.myWord
   } otherwise {
-    io.pop.payload := ram.readAsync(
-      address=myRdAddr
-    )
+    //io.pop.payload := ram.readAsync(
+    //  address=myRdAddr
+    //)
+    io.pop.payload := ram.io.ramIo.rdData
   }
 
   //switch (
