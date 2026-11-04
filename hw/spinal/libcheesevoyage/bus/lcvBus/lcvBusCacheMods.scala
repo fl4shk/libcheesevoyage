@@ -21293,10 +21293,19 @@ case class LcvBusDataCacheNoPrefetch(
 // 1 110-
 // 2 10--
 // 3 0---
-  def calcMissRamIdxMask(ramIdx: Int): String = (
-    (("1" * (numWays - ramIdx - 1)))
-    + "0"
-    + ("-" * ramIdx)
+  def calcMissRamIdxMask(
+    ramIdx: Int,
+    isBitscan: Boolean,
+  ): String = (
+    if (!isBitscan) (
+      (("1" * (numWays - ramIdx - 1)))
+      + "0"
+      + ("-" * ramIdx)
+    ) else (
+      ("-" * (numWays - ramIdx - 1))
+      + "1"
+      + ("0" * ramIdx)
+    )
   )
 
   val rSavedRamIdx = (
@@ -21384,7 +21393,10 @@ case class LcvBusDataCacheNoPrefetch(
           //)
         ) {
           for (ramIdx <- 0 until numWays) {
-            val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
+            val myRamIdxMask = calcMissRamIdxMask(
+              ramIdx=ramIdx,
+              isBitscan=false,
+            )
             is (MaskedLiteral(myRamIdxMask)) {
               wrLineBitPlru(ramIdx) := True
               rSavedRamIdx := ramIdx
@@ -21442,7 +21454,10 @@ case class LcvBusDataCacheNoPrefetch(
           //)
         ) {
           for (ramIdx <- 0 until numWays) {
-            val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
+            val myRamIdxMask = calcMissRamIdxMask(
+              ramIdx=ramIdx,
+              isBitscan=true,
+            )
             is (MaskedLiteral(myRamIdxMask)) {
               wrLineBitPlru(ramIdx) := True
               rSavedRamIdx := ramIdx
