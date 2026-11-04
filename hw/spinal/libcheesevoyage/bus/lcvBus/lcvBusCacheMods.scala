@@ -21986,7 +21986,10 @@ case class LcvBusDataCacheNoPrefetch(
           rdLineAttrs.head
         )
       )
-      when (myRdLineAttrs.fire) {
+      when (
+        myRdLineAttrs.fire
+        && myRdLineAttrs.dirty
+      ) {
         rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
       } otherwise {
         rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
