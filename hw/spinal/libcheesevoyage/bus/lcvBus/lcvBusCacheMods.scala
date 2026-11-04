@@ -21299,11 +21299,11 @@ case class LcvBusDataCacheNoPrefetch(
         lineBitPlruRam.io.wrEn := True
         switch (
           rdLineBitPlru
-          & (
-            Vec(
-              rdLineAttrs.map(item => item.dirty)
-            ).asBits.asUInt
-          )
+          //& (
+          //  Vec(
+          //    rdLineAttrs.map(item => item.dirty)
+          //  ).asBits.asUInt
+          //)
         ) {
           for (ramIdx <- 0 until numWays) {
             val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
