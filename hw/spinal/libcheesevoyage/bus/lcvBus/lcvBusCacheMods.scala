@@ -20344,6 +20344,24 @@ case class LcvBusDataCacheNoPrefetch(
       numWays bits
     )
   )
+  val myForDirtyLineBitPlru = (
+    myCondHaveLineBitPlruRam
+  ) generate (
+    UInt(
+      numWays bits
+    )
+  )
+  if (myCondHaveLineBitPlruRam) {
+    for (ramIdx <- 0 until numWays) {
+      myForDirtyLineBitPlru(ramIdx) := (
+        Mux(
+          rdLineAttrs(ramIdx).dirty,
+          True,
+          rdLineBitPlru(ramIdx),
+        )
+      )
+    }
+  }
   val wrLineBitPlru = (
     myCondHaveLineBitPlruRam
   ) generate (
@@ -21349,12 +21367,19 @@ case class LcvBusDataCacheNoPrefetch(
         wrLineBitPlru := rdLineBitPlru
         lineBitPlruRam.io.wrEn := True
         switch (
-          rdLineBitPlru
-          & (
-            Vec(
-              rdLineAttrs.map(item => item.dirty)
-            ).asBits.asUInt
-          )
+          //rdLineBitPlru
+          //& (
+          //  Vec(
+          //    rdLineAttrs.map(item => item.dirty)
+          //  ).asBits.asUInt
+          //)
+          myForDirtyLineBitPlru
+          //Vec(
+          //  rdLineAttrs.zipWithIndex.map{
+          //    case (item, myIdx) => {
+          //    }
+          //  }
+          //)
         ) {
           for (ramIdx <- 0 until numWays) {
             val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
