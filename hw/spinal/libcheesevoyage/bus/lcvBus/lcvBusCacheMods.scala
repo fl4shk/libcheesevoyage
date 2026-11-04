@@ -21297,7 +21297,14 @@ case class LcvBusDataCacheNoPrefetch(
         //wrLineBitPlru := rdLineBitPlru + 1
         wrLineBitPlru := rdLineBitPlru
         lineBitPlruRam.io.wrEn := True
-        switch (rdLineBitPlru) {
+        switch (
+          rdLineBitPlru
+          & (
+            Vec(
+              rdLineAttrs.map(item => item.dirty)
+            ).asBits.asUInt
+          )
+        ) {
           for (ramIdx <- 0 until numWays) {
             val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
             is (MaskedLiteral(myRamIdxMask)) {
@@ -21341,7 +21348,14 @@ case class LcvBusDataCacheNoPrefetch(
         //wrLineBitPlru := rdLineBitPlru + 1
         wrLineBitPlru := rdLineBitPlru
         lineBitPlruRam.io.wrEn := True
-        switch (rdLineBitPlru) {
+        switch (
+          rdLineBitPlru
+          & (
+            Vec(
+              rdLineAttrs.map(item => item.dirty)
+            ).asBits.asUInt
+          )
+        ) {
           for (ramIdx <- 0 until numWays) {
             val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
             is (MaskedLiteral(myRamIdxMask)) {
