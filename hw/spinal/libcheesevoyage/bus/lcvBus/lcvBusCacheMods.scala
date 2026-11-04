@@ -20356,7 +20356,7 @@ case class LcvBusDataCacheNoPrefetch(
       myForDirtyLineBitPlru(ramIdx) := (
         Mux(
           rdLineAttrs(ramIdx).dirty,
-          True,
+          False,
           rdLineBitPlru(ramIdx),
         )
       )
