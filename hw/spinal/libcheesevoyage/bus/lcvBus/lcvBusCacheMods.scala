@@ -14,6 +14,58 @@ import libcheesevoyage.math._
 //case class LcvBusL1DataCacheIo(
 //)
 
+object Bitscan {
+
+// >>> for x in range(8):
+// ...     print(x, bin(x), bin(Bitscan(x)))
+// ...     
+// 0 0b0 0b0
+// 1 0b1 0b1
+// 2 0b10 0b10
+// 3 0b11 0b1
+// 4 0b100 0b100
+// 5 0b101 0b1
+// 6 0b110 0b10
+// 7 0b111 0b1
+
+// >>> for x in range(8):
+// ...     print(x, bin(x), bin(x ^ 0x7), bin(Bitscan(x ^ 0x7)))
+// ...     
+// 0 0b0    0b111   0b1
+// 1 0b1    0b110   0b10
+// 2 0b10   0b101   0b1
+// 3 0b11   0b100   0b100
+// 4 0b100  0b11    0b1
+// 5 0b101  0b10    0b10
+// 6 0b110  0b1     0b1
+// 7 0b111  0b0     0b0
+
+// >>> for idx in range(size):
+// ...     print(idx, ("-" * (size - idx - 1) + "1" + ("0" * idx)))
+// ...     
+// 0 ---1
+// 1 --10
+// 2 -100
+// 3 1000
+
+
+  def apply(
+    x: UInt
+  ): UInt = (
+    //x & ~(x - 1)
+
+    // potentially slightly faster in terms of fmax? Found that this is
+    // equivalent to the formula above (the below one is the version found
+    // in the book "Hacker's Delight"),
+    // but, maybe there's an even better way?
+    // In this case it might make more sense to compile this formula into
+    // a single LUT delay (depending on the size of `x`)
+    // *instead of using a carry chain*
+    x & (-x.asSInt).asUInt
+  )
+}
+
+
 case class LcvBusCacheLineAttrs(
   cfg: LcvBusConfig,
 ) extends Bundle {
@@ -21373,7 +21425,7 @@ case class LcvBusDataCacheNoPrefetch(
           //    rdLineAttrs.map(item => item.dirty)
           //  ).asBits.asUInt
           //)
-          myForDirtyLineBitPlru
+          Bitscan(~myForDirtyLineBitPlru)
           //Vec(
           //  rdLineAttrs.zipWithIndex.map{
           //    case (item, myIdx) => {
