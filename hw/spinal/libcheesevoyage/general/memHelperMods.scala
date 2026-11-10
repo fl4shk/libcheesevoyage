@@ -1146,16 +1146,16 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
     //  Bool()
     //)
     //val myOtherCondVec = cloneOf(mySharedCondVec)
-    val myCond0Vec = Vec.fill(cfg.fullDepth)(
+    val myCond0Vec = Vec.fill(cfg.depth)(
       Bool()
     )
-    val myCond1Vec = Vec.fill(cfg.fullDepth)(
+    val myCond1Vec = Vec.fill(cfg.depth)(
       Bool()
     )
-    val myShiftCondVec = Vec.fill(cfg.fullDepth)(
+    val myShiftCondVec = Vec.fill(cfg.depth)(
       Bool()
     )
-    val myPartialShiftCondVec = Vec.fill(cfg.fullDepth)(
+    val myPartialShiftCondVec = Vec.fill(cfg.depth)(
       Bool()
     )
 
