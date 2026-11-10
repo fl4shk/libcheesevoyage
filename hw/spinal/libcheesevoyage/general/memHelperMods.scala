@@ -1146,23 +1146,23 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
     //  Bool()
     //)
     //val myOtherCondVec = cloneOf(mySharedCondVec)
-    val myCond0Vec = Vec.fill(cfg.depth)(
+    val myCond0Vec = Vec.fill(cfg.fullDepth)(
       Bool()
     )
-    val myCond1Vec = Vec.fill(cfg.depth)(
+    val myCond1Vec = Vec.fill(cfg.fullDepth)(
       Bool()
     )
-    val myShiftCondVec = Vec.fill(cfg.depth)(
+    val myShiftCondVec = Vec.fill(cfg.fullDepth)(
       Bool()
     )
-    val myPartialShiftCondVec = Vec.fill(cfg.depth)(
+    val myPartialShiftCondVec = Vec.fill(cfg.fullDepth)(
       Bool()
     )
 
     for (revIdx <- 0 until cfg.fullDepth) {
       def idx = cfg.fullDepth - 1 - revIdx
 
-      if (idx < cfg.fullDepth - 1) {
+      //if (idx < cfg.fullDepth - 1) {
         def curr = myPopStmVec(idx)
         def next = myPopStmVec(idx + 1)
         def rCurr = rPopVec(idx)
@@ -1320,41 +1320,43 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
           }
         //}
 
-        when (
-          //(
-          //  next.fire
-          //  || !next.valid
-          //)
-          //|| (
-          //  RegNext(
-          //    (
-          //      next.fire
-          //      || !next.valid
-          //    ),
-          //    init=False
-          //  )
-          //  && rCurr.valid
-          //)
-          //io.push.valid
-          //&& 
-          (
-            if (
-              //idx > 1
-              //true
-              idx < cfg.fullDepth - 2
-            ) (
-              //myCond0Vec(idx - 1)
-              myCond0
-              //|| myCond0Vec(idx + 1)
-            ) else (
-              myCond0
+        if (idx > 0) {
+          when (
+            //(
+            //  next.fire
+            //  || !next.valid
+            //)
+            //|| (
+            //  RegNext(
+            //    (
+            //      next.fire
+            //      || !next.valid
+            //    ),
+            //    init=False
+            //  )
+            //  && rCurr.valid
+            //)
+            //io.push.valid
+            //&& 
+            (
+              if (
+                //idx > 1
+                //true
+                idx < cfg.fullDepth - 2
+              ) (
+                //myCond0Vec(idx - 1)
+                myCond0
+                //|| myCond0Vec(idx + 1)
+              ) else (
+                myCond0
+              )
             )
-          )
-          //|| myCond1
-        ) {
-          //rNext := rCurr
-          doDataAssignment(idx=idx)
-          //rCurr.valid := False
+            //|| myCond1
+          ) {
+            //rNext := rCurr
+            doDataAssignment(idx=idx-1)
+            //rCurr.valid := False
+          }
         }
 
         //when (
@@ -1395,7 +1397,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             || !rPopVec.head.valid
           )
         }
-      }
+      //}
     }
 
     //for (revIdx <- 0 until cfg.fullDepth) {
