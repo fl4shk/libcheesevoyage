@@ -1149,7 +1149,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
     val myCond0Vec = Vec.fill(cfg.depth)(
       Bool()
     )
-    val myCond1Vec = Vec.fill(cfg.depth)(
+    val myCond1Vec = Vec.fill(cfg.fullDepth)(
       Bool()
     )
     val myShiftCondVec = Vec.fill(cfg.depth)(
@@ -1268,6 +1268,12 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             && !curr.ready
           )
         )
+        if (idx == cfg.fullDepth - 2) {
+          myCond1Vec.last := (
+            next.fire
+            || !next.valid
+          )
+        }
         myCond1 := (
           //next.fire
           //|| !next.valid
@@ -1320,7 +1326,7 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
           }
         //}
 
-        if (idx > 0) {
+        //if (idx > 0) {
           when (
             //(
             //  next.fire
@@ -1354,10 +1360,10 @@ private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
             //|| myCond1
           ) {
             //rNext := rCurr
-            doDataAssignment(idx=idx-1)
+            doDataAssignment(idx=idx)
             //rCurr.valid := False
           }
-        }
+        //}
 
         //when (
         //  (
