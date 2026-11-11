@@ -1,0 +1,5471 @@
+package libcheesevoyage.general
+
+import spinal.core._
+import spinal.core.sim._
+import spinal.lib._
+import spinal.lib.sim._
+import spinal.lib.misc.pipeline._
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Random
+import scala.math._
+
+import libcheesevoyage.math._
+
+
+// True Dual Port RAM without support for `initBigInt`
+case class RamTdpPipeConfig(
+  bytesPerWord: Int,
+  depth: Int,
+  optIncludeWrByteEn: Boolean=false,
+  opt9BitBytes: Boolean=false,
+  //optWrHistLength: Int=1,
+  //initBigInt: Option[Seq[BigInt]]=None,
+  arrRamStyleAltera: String="no_rw_check, M10K",
+  arrRamStyleXilinx: String="block",
+  arrRwAddrCollisionXilinx: String="",
+) {
+  require(
+    bytesPerWord >= 1
+  )
+  require(
+    depth >= 1
+  )
+  val byteWidth = (
+    if (!opt9BitBytes) (8) else (9)
+  )
+  val wordWidth = (
+    byteWidth * bytesPerWord
+  )
+}
+
+case class RamTdpPipeIoElem(
+  cfg: RamTdpPipeConfig,
+) extends Bundle {
+  val wrEn = in(Bool())
+  val addr = in(UInt(log2Up(cfg.depth) bits))
+
+  //val wrAddr = in(UInt(log2Up(cfg.depth) bits))
+  val wrByteEn = (
+    cfg.optIncludeWrByteEn
+  ) generate (
+    in(Bits(cfg.bytesPerWord bits))
+  )
+  val wrData = in(Bits(cfg.wordWidth bits))
+
+  val rdEn = in(Bool())
+  //val rdAddr = in(UInt(log2Up(cfg.depth) bits))
+  val rdData = out(Bits(cfg.wordWidth bits))
+}
+
+case class RamTdpPipeIo(
+  cfg: RamTdpPipeConfig
+) extends Bundle {
+  //val a = RamTdpPipeIoElem(cfg=cfg)
+  //val b = RamTdpPipeIoElem(cfg=cfg)
+  val vec = Vec.fill(2)(
+    RamTdpPipeIoElem(cfg=cfg)
+  )
+}
+
+case class RamTdpPipe(
+  cfg: RamTdpPipeConfig
+) extends Component {
+  val io = RamTdpPipeIo(cfg=cfg)
+
+  //def wordType = cfg.wordType
+  def byteWidth = cfg.byteWidth
+  def bytesPerWord = cfg.bytesPerWord
+  def wordWidth = cfg.wordWidth
+  def depth = cfg.depth
+  def optIncludeWrByteEn = cfg.optIncludeWrByteEn
+
+  //def init = cfg.init
+  //def initBigInt = cfg.initBigInt
+  def arrRamStyleAltera = cfg.arrRamStyleAltera
+  def arrRamStyleXilinx = cfg.arrRamStyleXilinx
+  def arrRwAddrCollisionXilinx = cfg.arrRwAddrCollisionXilinx
+
+  val memArr = Array.fill(bytesPerWord)(
+    Mem(
+      wordType=Bits(byteWidth bits),
+      wordCount=depth,
+    )
+      .addAttribute("ramstyle", arrRamStyleAltera)
+      .addAttribute("ram_style", arrRamStyleXilinx)
+      .addAttribute("rw_addr_collision", arrRwAddrCollisionXilinx)
+  )
+
+  val myPortAreaArr = io.vec.zipWithIndex.map{case (item, vecIdx) => {
+    new ClockingArea(
+      clockDomain=ClockDomain.current
+    ) {
+      if (vecIdx == 0) {
+        setName("myPortAArea")
+      } else if (vecIdx == 1) {
+        setName("myPortBArea")
+      } else {
+        require(false)
+      }
+
+      val myDataOutFromRd = (
+        //Bits(item.rdData.getWidth bits)
+        //Bits(item.rdData.getWidth bits)
+        Vec.fill(bytesPerWord)(
+          Bits(byteWidth bits)
+        )
+      )
+
+      item.rdData.setAsReg() init(item.rdData.getZero)
+
+      memArr.zipWithIndex.foreach{
+        case(mem, memIdx) => {
+          val myDataRange = (
+            ((memIdx + 1) * byteWidth - 1 downto memIdx * byteWidth)
+          )
+          mem.write(
+            address=item.addr,
+            data=item.wrData(myDataRange),
+            enable=(
+              if (optIncludeWrByteEn) (
+                item.wrEn && item.wrByteEn(memIdx)
+              ) else (
+                item.wrEn
+              )
+            ),
+          )
+          myDataOutFromRd(memIdx) := (
+            mem.readSync(
+              address=item.addr,
+              enable=(
+                //item.rdEn
+                !item.wrEn
+              ),
+            ).asBits
+            //RegNext(
+            //  mem.readAsync(
+            //    address=item.rdAddr,
+            //  ).asBits
+            //)
+          )
+
+          when (item.rdEn) {
+            item.rdData(myDataRange) := myDataOutFromRd(memIdx)
+          }
+        }
+      }
+
+      //arr.write(
+      //  address=myHistIoWrAddr.last,
+      //  data=myHistIoWrData.last,
+      //  enable=myHistIoWrEn.last,
+      //  mask=(
+      //    if (optIncludeWrByteEn) (
+      //      myHistIoWrByteEn.last
+      //    ) else (
+      //      null.asInstanceOf[Bits]
+      //    )
+      //  )
+      //)
+
+      //myDataOutFromRd := (
+      //  arr.readSync(
+      //    address=item.rdAddr,
+      //    //enable=item.rdEn,
+      //  ).asBits
+      //)
+
+    }
+  }}
+}
+
+object RamTdpPipeTestSpinalConfig {
+  def spinal = SpinalConfig(
+    targetDirectory="hw/gen",
+    defaultConfigForClockDomains=ClockDomainConfig(
+      resetActiveLevel=HIGH,
+      resetKind=BOOT,
+    )
+  )
+}
+
+object RamTdpPipeTestToVerilog extends App {
+  RamTdpPipeTestSpinalConfig.spinal.generateVerilog{
+    val top = RamTdpPipe(
+      cfg=RamTdpPipeConfig(
+        bytesPerWord=2,
+        depth=1024,
+        optIncludeWrByteEn=true,
+        opt9BitBytes=false,
+        //optWrHistLength=1,
+        arrRamStyleAltera="no_rw_check, M10K",
+        arrRamStyleXilinx="block",
+        arrRwAddrCollisionXilinx="",
+      )
+    )
+    //val top = LcvBusNonCoherentDataCacheWithSdramCtrl(
+    //  sdramCtrlCfg=LcvBusSdramCtrlConfig(
+    //    clkRate=100.0 MHz,
+    //    shortDqmToA12A11=true,
+    //  )
+    //)
+    top
+  }
+}
+
+case class RamSdpPipeConfig[
+  WordT <: Data
+](
+  wordType: HardType[WordT],
+  depth: Int,
+  optIncludeWrByteEn: Boolean=false,
+  optWrHistLength: Int=1,
+  init: Option[Seq[WordT]]=None,
+  initBigInt: Option[Seq[BigInt]]=None,
+  arrRamStyleAltera: String="M10K",
+  arrRamStyleXilinx: String="block",
+  arrRwAddrCollisionXilinx: String="",
+) {
+}
+
+private[libcheesevoyage] case class RamSdpPipeNonDataIo[
+  WordT <: Data
+](
+  cfg: RamSdpPipeConfig[WordT],
+) extends Bundle /*with IMasterSlave*/ {
+  //--------
+  val wrEn = in(Bool())
+  val wrAddr = in(UInt(log2Up(cfg.depth) bits))
+  val wrByteEn = (
+    cfg.optIncludeWrByteEn
+  ) generate (
+    in(
+      Bits(ceil(cfg.wordType().asBits.getWidth.toDouble / 8).toInt bits)
+    )
+  )
+  //--------
+  //val rdEnReg = in(Bool())
+  //val rdEnForWr = in(Bool())
+  val rdEn = in(Bool())
+  val rdAddr = in(UInt(log2Up(cfg.depth) bits))
+  //--------
+  //def asMaster(): Unit = {
+  //  out(wrEn)
+  //  out(wrAddr)
+  //  if (cfg.optIncludeWrByteEn) {
+  //    out(wrByteEn)
+  //  }
+  //  out(rdEn)
+  //  out(rdAddr)
+  //}
+}
+case class RamSdpPipeIo[
+  WordT <: Data
+](
+  //wordType: HardType[WordT],
+  //depth: Int,
+  //optIncludeWrByteEn: Boolean=false
+  cfg: RamSdpPipeConfig[WordT],
+  useBitsData: Boolean,
+) extends Bundle /*with IMasterSlave*/ {
+  //val wrEnReg = in(Bool())
+  val nonDataIo = RamSdpPipeNonDataIo(cfg=cfg)
+  def wrEn = nonDataIo.wrEn
+  def wrAddr = nonDataIo.wrAddr
+  def wrByteEn = nonDataIo.wrByteEn
+
+  val wrDataBits = (
+    useBitsData
+  ) generate (
+    in(Bits(cfg.wordType().asBits.getWidth bits))
+  )
+  val wrData = (
+    !useBitsData
+  ) generate (
+    in(cfg.wordType())
+  )
+
+  def rdEn = nonDataIo.rdEn
+  def rdAddr = nonDataIo.rdAddr
+  //val rdData = out(Bits(cfg.wordType().asBits.getWidth bits))
+  val rdDataBits = (
+    useBitsData
+  ) generate (
+    out(Bits(cfg.wordType().asBits.getWidth bits))
+  )
+  val rdData = (
+    !useBitsData
+  ) generate (
+    out(cfg.wordType())
+  )
+  //val rdDataFromWrAddr = out(Bits(wordType().asBits.getWidth bits))
+  //def asMaster(): Unit = {
+  //  master(nonDataIo)
+  //  if (useBitsData) {
+  //    out(wrDataBits)
+  //    in(rdDataBits)
+  //  } else {
+  //    out(wrData)
+  //    in(rdData)
+  //  }
+  //}
+}
+case class RamSdpPipeImpl[
+  WordT <: Data
+](
+  cfg: RamSdpPipeConfig[WordT],
+) extends Component {
+  def wordType = cfg.wordType
+  def depth = cfg.depth
+  def optIncludeWrByteEn = cfg.optIncludeWrByteEn
+
+  def init = cfg.init
+  def initBigInt = cfg.initBigInt
+  def arrRamStyleAltera = cfg.arrRamStyleAltera
+  def arrRamStyleXilinx = cfg.arrRamStyleXilinx
+  def arrRwAddrCollisionXilinx = cfg.arrRwAddrCollisionXilinx
+
+  val io = RamSdpPipeIo(
+    cfg=cfg,
+    useBitsData=true,
+  )
+  val arr = Mem(
+    wordType=wordType(),
+    wordCount=depth,
+  )
+    .addAttribute("ramstyle", arrRamStyleAltera)
+    .addAttribute("ram_style", arrRamStyleXilinx)
+    .addAttribute("rw_addr_collision", arrRwAddrCollisionXilinx)
+
+  init match {
+    case Some(_) => {
+      arr.init(init.get)
+      assert(initBigInt == None)
+    }
+    case None => {
+    }
+  }
+  initBigInt match {
+    case Some(_) => {
+      arr.initBigInt(initBigInt.get, allowNegative=true)
+      assert(init == None)
+    }
+    case None => {
+    }
+  }
+
+  val myHistIoWrAddr = History(
+    that=io.wrAddr,
+    length=cfg.optWrHistLength,
+    init=io.wrAddr.getZero,
+  )
+  val tempWrData = wordType()
+  tempWrData.assignFromBits(
+    io.wrDataBits.asBits
+  )
+  //tempWrData
+  val myHistIoWrData = History(
+    that=(
+      //io.wrAddr
+      tempWrData
+    ),
+    length=cfg.optWrHistLength,
+    init=tempWrData.getZero,
+  )
+  val myHistIoWrEn = History(
+    that=io.wrEn,
+    length=cfg.optWrHistLength,
+    init=io.wrEn.getZero,
+  )
+  val myHistIoWrByteEn = (
+    optIncludeWrByteEn
+  ) generate (
+    History(
+      that=io.wrByteEn,
+      length=cfg.optWrHistLength,
+      init=io.wrByteEn.getZero,
+    )
+  )
+
+  arr.write(
+    address=myHistIoWrAddr.last,
+    data=myHistIoWrData.last,
+    enable=myHistIoWrEn.last,
+    mask=(
+      if (optIncludeWrByteEn) (
+        myHistIoWrByteEn.last
+      ) else (
+        null.asInstanceOf[Bits]
+      )
+    )
+  )
+
+  // do1
+  //val myDataOutFromWr = (
+  //  /*Reg*/(
+  //    Bits(io.rdData.getWidth bits)
+  //  )
+  //)
+
+  //myDataOutFromWr := (
+  //  arr.readSync(
+  //    address=io.wrAddr,
+  //  ).asBits
+  //)
+  //io.rdDataFromWrAddr.setAsReg()
+  //when (io.rdEnForWr) {
+  //  io.rdDataFromWrAddr := myDataOutFromWr
+  //}
+
+  // do2
+  val myDataOutFromRd = (
+    /*Reg*/(
+      //Bits(io.rdData.getWidth bits)
+      Bits(io.rdDataBits.getWidth bits)
+    )
+  )
+  myDataOutFromRd := (
+    arr.readSync(
+      address=io.rdAddr,
+      //enable=io.rdEn,
+    ).asBits
+  )
+
+  io.rdDataBits.setAsReg() init(io.rdDataBits.getZero)
+  when (io.rdEn) {
+    io.rdDataBits := myDataOutFromRd
+  }
+
+  //if (optDblRdReg) {
+  //  io.rdData.setAsReg() //init(io.rdData.getZero)
+  //}
+  //io.rdData := {
+  //  val tempRdData = (
+  //      arr.readSync(
+  //        address=io.rdAddr,
+  //        enable=io.rdEn,
+  //      )
+  //  )
+  //  tempRdData.asBits
+  //}
+}
+case class RamSdpPipe[
+  WordT <: Data,
+](
+  cfg: RamSdpPipeConfig[WordT]
+) extends Component {
+  val io = RamSdpPipeIo(
+    cfg=cfg,
+    useBitsData=false,
+  )
+  val ram = RamSdpPipeImpl(cfg=cfg)
+  ram.io.nonDataIo <> io.nonDataIo
+  ram.io.wrDataBits := io.wrData.asBits
+  io.rdData.assignFromBits(ram.io.rdDataBits)
+}
+
+
+//case class RamSdpPipeWithFwd[
+//  WordT <: Data
+//](
+//  cfg: RamSdpPipeConfig[WordT]
+//) extends Component {
+//  val io = RamSdpPipeIo(cfg=cfg)
+//}
+
+//case class RamSdpPipeReadFifoThingConfig[
+//  WordT <: Data
+//](
+//  ramCfg: RamSdpPipeConfig[WordT],
+//  //fifoDepthMain: Int=8,
+//  //fifoDepthSub: Int,
+//) {
+//}
+
+//case class RamSdpPipeReadFifoThingPayload[
+//  WordT <: Data
+//](
+//  cfg: RamSdpPipeReadFifoThingConfig[WordT]
+//) extends Bundle {
+//  val ramIo = RamSdpPipeIo(
+//    cfg=cfg.ramCfg,
+//    useBitsData=false,
+//  )
+//}
+//case class RamSdpPipeReadFifoThingPopPayload[
+//  WordT <: Data
+//](
+//  cfg: RamSdpPipeReadFifoThingConfig[WordT]
+//) extends Bundle {
+//}
+
+//case class RamSdpPipeReadFifoThingIo[
+//  WordT <: Data,
+//](
+//  cfg: RamSdpPipeReadFifoThingConfig[WordT]
+//) extends Bundle {
+//  //--------
+//  val push = slave(Stream(
+//    //UInt(log2Up(cfg.ramCfg.depth) bits)
+//    cfg.ramCfg.wordType()
+//  ))
+//  val pop = master(Stream(
+//    cfg.ramCfg.wordType()
+//    //UInt(log2Up(cfg.ramCfg.depth) bits)
+//  ))
+//  val delay = in(Bool())
+//
+//  //val ramRdEn = out(Bool())
+//  //val ramRdAddr = out(UInt(log2Up(cfg.ramCfg.depth) bits))
+//  //val ramRdData = in(cfg.ramCfg.wordType())
+//  //--------
+//}
+//case class RamSdpPipeReadFifoThing[
+//  WordT <: Data,
+//](
+//  cfg: RamSdpPipeReadFifoThingConfig[WordT]
+//) extends Component {
+//  //--------
+//  val io = RamSdpPipeReadFifoThingIo(cfg=cfg)
+//  //--------
+//  //def fifoDepthMain = cfg.fifoDepthMain
+//  def fifoDepth = (
+//    //cfg.fifoDepth
+//    4
+//  )
+//
+//  //val mainFifo = StreamFifo(
+//  //  dataType=(
+//  //    //UInt(log2Up(cfg.ramCfg.depth) bits)
+//  //    cfg.ramCfg.wordType()
+//  //  ),
+//  //  depth=fifoDepthMain,
+//  //  latency=0,
+//  //  forFMax=true,
+//  //)
+//  val fifo = StreamFifo(
+//    dataType=(
+//      //UInt(log2Up(cfg.ramCfg.depth) bits)
+//      cfg.ramCfg.wordType()
+//    ),
+//    depth=fifoDepth,
+//    latency=0,
+//    forFMax=true,
+//  )
+//
+//  def fifoCntMax = fifoDepth - 2 //- 1 //- 2 
+//  val rFifoCnt = (
+//    Reg(SInt((log2Up(fifoDepth + 1) + 1) bits))
+//    init(fifoCntMax)
+//  )
+//
+//  //mainFifo.io.push.valid := False
+//  //mainFifo.io.push.payload := mainFifo.io.push.payload.getZero
+//  //mainFifo.io.pop.ready := False
+//  //mainFifo.io.flush := False
+//
+//  fifo.io.push.valid := False
+//  fifo.io.push.payload := fifo.io.push.payload.getZero
+//  fifo.io.flush := False
+//  //fifo.io.pop.ready := False
+//
+//  io.push.ready := False
+//
+//  object State extends SpinalEnum(defaultEncoding=binaryOneHot) {
+//    val
+//      IDLE,
+//      POST_DELAY
+//      = newElement();
+//  }
+//  val rState = (
+//    Reg(State())
+//    init(State.IDLE)
+//  )
+//  switch (rState) {
+//    is (State.IDLE) {
+//      //mainFifo.io.push << io.push //pushForkMain
+//      //io.pop << mainFifo.io.pop
+//
+//      fifo.io.push.valid := True
+//      fifo.io.push.payload := io.push.payload
+//      // This should make `fifo` act like a circular FIFO that we
+//      // keep only the most recent contents of
+//      fifo.io.pop.ready := False
+//
+//      when (fifo.io.push.fire) {
+//        when (!rFifoCnt.msb) {
+//          rFifoCnt := rFifoCnt - 1
+//        } otherwise {
+//          fifo.io.pop.ready := True
+//        }
+//      }
+//      when (io.delay) {
+//        rState := State.POST_DELAY
+//      }
+//    }
+//    is (State.POST_DELAY) {
+//      rFifoCnt := fifoCntMax
+//      
+//      //mainFifo.io.flush := True
+//      io.pop << fifo.io.pop
+//      when (
+//        !fifo.io.pop.valid
+//        && !io.delay
+//      ) {
+//        rState := State.IDLE
+//      }
+//    }
+//  }
+//  //--------
+//}
+
+case class RamSimpleDualPortConfig[
+  WordT <: Data
+](
+  wordType: HardType[WordT],
+  depth: Int,
+  init: Option[Seq[WordT]]=None,
+  initBigInt: Option[Seq[BigInt]]=None,
+  arrRamStyleAltera: String="M10K",
+  arrRamStyleXilinx: String="block",
+  arrRwAddrCollisionXilinx: String="",
+  doAsyncRead: Boolean=false,
+  //doFwdDel1: Boolean=false,
+) {
+}
+
+case class RamSimpleDualPortIo[
+  WordT <: Data
+](
+  //wordType: HardType[WordT],
+  //depth: Int,
+  cfg: RamSimpleDualPortConfig[WordT],
+) extends Bundle {
+  //val ramIo = FpgacpuRamSimpleDualPortIo(
+  //  wordWidth=(cfg.wordType().asBits.getWidth),
+  //  addrWidth=log2Up(cfg.depth),
+  //)
+  val ramIo = RamSdpPipeIo(
+    cfg=RamSdpPipeConfig(
+      wordType=cfg.wordType(),
+      depth=cfg.depth,
+      optIncludeWrByteEn=false,
+      init=cfg.init,
+      initBigInt=cfg.initBigInt,
+      arrRamStyleAltera=cfg.arrRamStyleAltera,
+      arrRamStyleXilinx=cfg.arrRamStyleXilinx,
+      arrRwAddrCollisionXilinx=cfg.arrRwAddrCollisionXilinx,
+    ),
+    useBitsData=false,
+  )
+
+  //def setAggWrData(
+  //  aggWrData: WordT
+  //): Unit = {
+  //  ramIo
+  //}
+  //val fwdCondDel1 = out(Bool())
+  //val fwdDataDel1 = out(Bits(wordType().asBits.getWidth bits))
+  //val cmpRdWrAddrEtc = in(Bool())
+}
+case class RamSimpleDualPort[
+  WordT <: Data
+](
+  cfg: RamSimpleDualPortConfig[WordT],
+) extends Component {
+  
+  def wordType = cfg.wordType
+  def depth = cfg.depth
+  def init = cfg.init
+  def initBigInt = cfg.initBigInt
+  def arrRamStyleAltera = cfg.arrRamStyleAltera
+  def arrRamStyleXilinx = cfg.arrRamStyleXilinx
+  def arrRwAddrCollisionXilinx = cfg.arrRwAddrCollisionXilinx
+  def doAsyncRead = cfg.doAsyncRead
+
+  val io = RamSimpleDualPortIo(
+    //wordType=wordType(),
+    //depth=depth,
+    cfg=cfg
+  )
+  val myRam = FpgacpuRamSimpleDualPort(
+    cfg=FpgacpuRamSimpleDualPortConfig(
+      wordType=wordType(),
+      depth=depth,
+      init=init,
+      initBigInt=initBigInt,
+      arrRamStyleAltera=arrRamStyleAltera,
+      arrRamStyleXilinx=arrRamStyleXilinx,
+      arrRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
+      doAsyncRead=doAsyncRead,
+    )
+  )
+  myRam.io.wrEn := io.ramIo.wrEn
+  myRam.io.wrAddr := io.ramIo.wrAddr
+  myRam.io.wrData := io.ramIo.wrData.asBits
+  myRam.io.rdEn := io.ramIo.rdEn
+  myRam.io.rdAddr := io.ramIo.rdAddr
+  io.ramIo.rdData.assignFromBits(myRam.io.rdData)
+}
+
+case class PipeSimpleDualPortMemDrivePayload[
+  //WordT <: Data
+  T <: Data
+](
+  //wordType: HardType[WordT],
+  dataType: HardType[T],
+  wordCount: Int,
+) extends Bundle {
+  def addrWidth = log2Up(wordCount)
+  val addr = UInt(addrWidth bits)
+  val data = dataType()
+  //setName(
+  //  name=(
+  //    s"PipeSimpleDualPortMemDrivePayload_"
+  //    + s"${dataType().getClass.getName}_"
+  //    + s"${wordCount}"
+  //  )
+  //)
+  //setAsSVstruct()
+}
+//case class PipeSimpleDualPortMemIo[
+//  //WordT <: Data
+//  T <: Data
+//](
+//  //wordType: HardType[WordT],
+//  dataType: HardType[T],
+//  depth: Int,
+//  unionIdxWidth: Int=1,
+//) extends Bundle {
+//  //--------
+//  val unionIdx = in UInt(unionIdxWidth bits)
+//  //--------
+//  def addrWidth = log2Up(depth)
+//  val wrPipe = slave Stream(
+//    PipeSimpleDualPortMemDrivePayload(
+//      //wordType=wordType(),
+//      dataType=dataType,
+//      wordCount=depth,
+//    )
+//  )
+//  //val rdAddrPipe = Stream(UInt(addrWidth bits))
+//  val rdAddrPipe = slave Stream(
+//    PipeSimpleDualPortMemDrivePayload(
+//      //wordType=wordType(),
+//      dataType=dataType,
+//      wordCount=depth,
+//    )
+//  )
+//  val rdDataPipe = master Stream(
+//    //wordType()
+//    dataType()
+//  )
+//  //--------
+//}
+//case class PipeSimpleDualPortMem[
+//  T <: Data,
+//  WordT <: Data
+//](
+//  dataType: HardType[T],
+//  wordType: HardType[WordT],
+//  depth: Int,
+//  initBigInt: Option[ArrayBuffer[BigInt]]=None,
+//  //latency: Int=1,
+//  arrRamStyleXilinx: String="block",
+//  arrRwAddrCollisionXilinx: String="",
+//  unionIdxWidth: Int=1,
+//)(
+//  getWordFunc: (
+//    T           // input pipeline payload
+//  ) => WordT,   // 
+//  setWordFunc: (
+//    UInt,   // `io.unionIdx`
+//    T,      // pass through pipeline payload (output)
+//    T,      // pass through pipeline payload (input)
+//    WordT,  // data read from the RAM
+//  ) => Unit,
+//) extends Component {
+//  //object Testificate extends TaggedUnion {
+//  //  val uint = UInt(3 bits)
+//  //  val sint = SInt(3 bits)
+//  //}
+//  //val testificate = dataType() aliasAs(Bits(3 bits))
+//  //val testificate = HardType.union(Bits(3 bits), UInt(3 bits))
+//  //testificate.aliasAs(UInt(3 bits)) := 3
+//  //--------
+//  //assert(latency >= 1)
+//  //--------
+//  val io = PipeSimpleDualPortMemIo(
+//    //wordType=wordType(),
+//    dataType=dataType(),
+//    depth=depth,
+//    unionIdxWidth=unionIdxWidth,
+//  )
+//  def addrWidth = io.addrWidth
+//  //--------
+//  val wrPipeToPulse = FpgacpuPipeToPulse(
+//    dataType=PipeSimpleDualPortMemDrivePayload(
+//      //wordType=wordType(),
+//      dataType=dataType(),
+//      wordCount=depth,
+//    )
+//  )
+//  wrPipeToPulse.io.clear := False
+//  val rdAddrPipeToPulse = FpgacpuPipeToPulse(
+//    //dataType=UInt(addrWidth bits)
+//    dataType=PipeSimpleDualPortMemDrivePayload(
+//      //wordType=wordType(),
+//      dataType=dataType(),
+//      wordCount=depth,
+//    )
+//  )
+//  rdAddrPipeToPulse.io.pipe << io.rdAddrPipe
+//  rdAddrPipeToPulse.io.clear := False
+//  val rdDataPulseToPipe = FpgacpuPulseToPipe(
+//    //dataType=wordType()
+//    dataType=dataType()
+//  )
+//  rdDataPulseToPipe.io.clear := False
+//  rdAddrPipeToPulse.io.moduleReady := rdDataPulseToPipe.io.moduleReady
+//  //--------
+//  val arr = FpgacpuRamSimpleDualPort(
+//    wordType=wordType(),
+//    depth=depth,
+//    initBigInt=initBigInt,
+//    arrRamStyleXilinx=arrRamStyleXilinx,
+//    arrRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
+//  )
+//
+//  arr.io.wrEn := wrPipeToPulse.io.pulse.valid
+//  arr.io.wrAddr := wrPipeToPulse.io.pulse.addr
+//  arr.io.wrData := getWordFunc(wrPipeToPulse.io.pulse.data)
+//
+//  arr.io.rdEn := rdAddrPipeToPulse.io.pulse.valid
+//  arr.io.rdAddr := rdAddrPipeToPulse.io.pulse.payload.addr
+//  //rdDataPulseToPipe.io.pulse.payload := arr.io.rdData
+//  //--------
+//  wrPipeToPulse.io.pipe << io.wrPipe
+//  wrPipeToPulse.io.moduleReady := True
+//  rdAddrPipeToPulse.io.pipe << io.rdAddrPipe
+//
+//  io.rdDataPipe << rdDataPulseToPipe.io.pipe
+//  //--------
+//  //val rRdPulseValidVec = Vec.fill(latency)(Reg(Bool()) init(False))
+//  //val rRdPulsePipePayloadVec = Vec.fill(latency)(
+//  //  Reg(dataType()) init(dataType().getZero)
+//  //)
+//  setWordFunc(
+//    io.unionIdx,
+//    rdDataPulseToPipe.io.pulse.payload,
+//    //rRdPulsePipePayloadVec(latency - 1),
+//    rdAddrPipeToPulse.io.pulse.payload.data,
+//    arr.io.rdData
+//  )
+//  rdDataPulseToPipe.io.pulse.valid := (
+//    //rRdPulseValidVec(latency - 1)
+//    rdAddrPipeToPulse.io.pulse.valid
+//  )
+//  //for (idx <- 0 until latency) {
+//  //  if (idx == 0) {
+//  //    rRdPulsePipePayloadVec(idx) := rdAddrPipeToPulse.io.pulse.data
+//  //    //rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.moduleReady
+//  //    rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.pulse.valid
+//  //  } else {
+//  //    rRdPulsePipePayloadVec(idx) := rRdPulsePipePayloadVec(idx - 1)
+//  //    rRdPulseValidVec(idx) := rRdPulseValidVec(idx - 1)
+//  //  }
+//  //}
+//  //--------
+//  //--------
+//}
+//--------
+//case class RdPipeSimpleDualPortMemDrivePayload[
+//  //WordT <: Data
+//  T <: Data
+//](
+//  //wordType: HardType[WordT],
+//  dataType: HardType[T],
+//  depth: Int,
+//) extends Bundle {
+//  def addrWidth = log2Up(depth)
+//  val addr = UInt(addrWidth bits)
+//  val data = dataType()
+//}
+
+case class LcvSlidingBufConfig[
+  WordT <: Data
+](
+  wordType: HardType[WordT],
+  depth: Int,
+) {
+}
+
+case class LcvSlidingBufIo[
+  WordT <: Data
+](
+  cfg: LcvSlidingBufConfig[WordT],
+) extends Bundle {
+  val push = (
+    slave(Flow(
+      cfg.wordType()
+    ))
+  )
+
+  val pop = (
+    master(Flow(
+      Vec.fill(cfg.depth)(
+        cfg.wordType()
+      )
+    ))
+  )
+}
+
+case class LcvSlidingBuf[
+  WordT <: Data
+](
+  cfg: LcvSlidingBufConfig[WordT],
+) extends Component {
+  val io = LcvSlidingBufIo(cfg=cfg)
+
+  io.pop.payload.foreach(item => item.setAsReg() init(item.getZero))
+
+  val rValidVec = Vec.fill(cfg.depth)(
+    Reg(Bool(), init=False)
+  )
+  io.pop.valid := rValidVec.last
+
+  when (io.push.fire) {
+    rValidVec.head := True
+    io.pop.payload.head := io.push.payload
+    for (idx <- 1 until cfg.depth) {
+      rValidVec(idx) := rValidVec(idx - 1)
+      io.pop.payload(idx) := io.pop.payload(idx - 1)
+    }
+  }
+}
+
+case class LcvOooRdSlidingBufConfig[
+  WordT <: Data
+](
+  wordType: HardType[WordT],
+  depth: Int,
+  shiftEveryCycle: Boolean=true,
+  optDataAssignment: Option[
+    (
+      WordT,              // outp
+      WordT,              // inp
+      Int,                // idx
+      Vec[Stream[WordT]], // io.pop
+    ) => Unit
+  ]=None,
+) {
+  require(
+    depth >= 1,
+    s"depth:${depth} must be >= 1,"
+    + s"or otherwise you probably don't need this module"
+  )
+  val fullDepth = depth + 1
+  //val fullDepth = depth + 1
+}
+
+case class LcvOooRdSlidingBufIo[
+  WordT <: Data
+](
+  cfg: LcvOooRdSlidingBufConfig[WordT],
+) extends Bundle {
+  //val en = (
+  //  in(Bool())
+  //)
+  val push = (
+    slave(Stream(
+      cfg.wordType()
+    ))
+  )
+
+  val pop = (
+    Vec.fill(cfg.depth)(
+      // `valid && ready` here indicates that we can put a new element
+      // in this `io.pop` element
+      Stream(cfg.wordType())
+    )
+  )
+
+  for (idx <- 0 until cfg.depth) {
+    master(pop(idx))
+  }
+}
+
+private[libcheesevoyage] case class LcvOooRdSlidingBufShiftEveryCycle[
+  WordT <: Data
+](
+  cfg: LcvOooRdSlidingBufConfig[WordT]
+) extends Component {
+  // FL4SHK NOTE: this is a module I'm calling an
+  // "Out-of-Order-Reads Buffer", which I'm intending on using
+  // in libsnowhouse to allow buffering multiple instructions for the
+  // purposes of dispatching instructions out-of-order!
+  //
+  // This is similar to the concept of a queue with multiple read ports
+  //
+  // Here are some details about the functionality of this module:
+  // * `valid && ready` for a particular Element indicates that that Element is being emptied/obtained (i.e. by the external module)
+  // * "Element A" indicates `io.pop(idx)`
+  // * "Element B" indicates `io.pop(idx + 1)`
+  // * every cycle
+  // (except for the last Element which just stays put until
+  // it's "emptied"),
+  // if Element A has a value in it, and Element B *is*
+  // empty, and Element A is *not* being emptied, then Element B will
+  // obtain Element A's contents, and Element B will be marked as being
+  // "filled".
+  //--------
+  val io = LcvOooRdSlidingBufIo(cfg=cfg)
+  //--------
+  val rPopVec = (
+    Vec.fill(
+      cfg.fullDepth
+      //cfg.depth
+    )({
+      val temp = Reg(Flow(cfg.wordType()))
+      temp.init(temp.getZero)
+      temp
+    })
+  )
+  val myPopStmVec = Vec.fill(cfg.fullDepth)(
+    Stream(cfg.wordType())
+  )
+
+  for (idx <- 0 until cfg.depth) {
+    io.pop(idx) << myPopStmVec(idx + 1)
+  }
+
+  for (idx <- 0 until cfg.fullDepth) {
+    //if (idx == 0) {
+    //  myPopStmVec(idx).valid := False
+    //  myPopStmVec(idx).ready := False
+    //  myPopStmVec(idx).payload := myPopStmVec(idx).payload.getZero
+    //} else 
+    //{
+      myPopStmVec(idx).valid := rPopVec(idx).fire
+      myPopStmVec(idx).payload := rPopVec(idx).payload
+    //}
+    if (idx == 0) {
+      myPopStmVec(idx).ready := False
+    }
+  }
+
+  //for (idx <- 0 until cfg.depth) {
+  //  if (idx == 0) {
+  //    io.pop(idx).valid := False
+  //    io.pop(idx).payload := io.pop(idx).payload.getZero
+  //  } else {
+  //    io.pop(idx).valid := rPopVec(idx).fire
+  //    io.pop(idx).payload := rPopVec(idx).payload
+  //  }
+  //}
+
+  def doDataAssignment(
+    idx: Int,
+  ): Unit = {
+    def curr = myPopStmVec(idx)
+    def next = myPopStmVec(idx + 1)
+    def rCurr = rPopVec(idx)
+    def rNext = rPopVec(idx + 1)
+
+    cfg.optDataAssignment match {
+      case Some(dataAssignment) => {
+        rNext.valid := rCurr.valid
+        dataAssignment(
+          rNext.payload,
+          rCurr.payload,
+          idx,
+          myPopStmVec,
+        )
+      }
+      case None => {
+        rNext := rCurr
+      }
+    }
+  }
+ 
+  val myArea = new Area {
+    when (myPopStmVec.last.fire) {
+      rPopVec.last.valid := False
+    }
+    //for (revIdx <- 0 until cfg.depth) {
+    //  def idx = cfg.depth - 1 - revIdx
+
+    //  if (idx < cfg.depth - 1) {
+    //    def curr = myPopStmVec(idx)
+    //    def next = myPopStmVec(idx + 1)
+    //    def rCurr = rPopVec(idx)
+    //    def rNext = rPopVec(idx + 1)
+
+    //    val mySharedCond = (
+    //      (
+    //        next.fire
+    //        || !next.valid
+    //      )
+    //      && !curr.fire
+    //    )
+
+    //    when (
+    //      mySharedCond
+    //      || curr.fire
+    //    ) {
+    //      rCurr.valid := False
+    //    }
+    //    when (mySharedCond) {
+    //      cfg.optDataAssignment match {
+    //        case Some(dataAssignment) => {
+    //          rNext.valid := rCurr.valid
+    //          dataAssignment(
+    //            rNext.payload,
+    //            rCurr.payload,
+    //            idx,
+    //            myPopStmVec,
+    //          )
+    //        }
+    //        case None => {
+    //          rNext := rCurr
+    //        }
+    //      }
+    //    }
+
+    //    if (idx == 0) {
+    //      io.push.ready := (
+    //        mySharedCond
+    //        || curr.fire
+    //        || !rPopVec.head.fire
+    //        || RegNext(io.push.fire, init=False)
+    //      )
+    //    }
+    //  }
+    //}
+
+    //val mySharedCondVec = Vec.fill(cfg.fullDepth)(
+    //  Bool()
+    //)
+    //val myOtherCondVec = cloneOf(mySharedCondVec)
+    val myCond0Vec = Vec.fill(cfg.depth)(
+      Bool()
+    )
+    val myCond1Vec = Vec.fill(cfg.depth)(
+      Bool()
+    )
+    val myShiftCondVec = Vec.fill(cfg.depth)(
+      Bool()
+    )
+    val myPartialShiftCondVec = Vec.fill(cfg.depth)(
+      Bool()
+    )
+
+    for (revIdx <- 0 until cfg.fullDepth) {
+      def idx = cfg.fullDepth - 1 - revIdx
+
+      if (idx < cfg.fullDepth - 1) {
+        def curr = myPopStmVec(idx)
+        def next = myPopStmVec(idx + 1)
+        def rCurr = rPopVec(idx)
+        def rNext = rPopVec(idx + 1)
+
+        def myCond0 = myCond0Vec(idx)
+        def myCond1 = myCond1Vec(idx)
+
+        myPartialShiftCondVec(idx) := (
+          (
+            next.fire
+            || !next.valid
+          )
+          && curr.valid
+          && !curr.ready
+        )
+        if (idx == cfg.fullDepth - 2) {
+          //myPartialShiftCondVec(idx) := (
+          //  (
+          //    next.fire
+          //    || !next.valid
+          //  )
+          //  && curr.valid
+          //  && !curr.ready
+          //)
+          myShiftCondVec(idx) := (
+            myPartialShiftCondVec(idx)
+            //&& curr.valid
+            //&& !curr.ready
+          )
+        } else {
+          //myPartialShiftCondVec(idx) := (
+          //  next.fire
+          //  || !next.valid
+          //  //|| (
+          //  //  next.valid
+          //  //  && !next.ready
+          //  //)
+          //)
+          myShiftCondVec(idx) := (
+            myPartialShiftCondVec(idx)
+            || myShiftCondVec(idx + 1)
+            
+            //(
+            //  myPartialShiftCondVec(idx + 1)
+            //  || myPartialShiftCondVec(idx)
+            //)
+            //&& curr.valid
+            //&& !curr.ready
+          )
+          //myShiftCondVec(idx) := (
+          //  myShiftCondVec(idx + 1)
+          //  || (
+          //  )
+          //)
+        }
+
+        myCond0 := (
+          //io.push.valid
+          //io.en
+          //&& 
+          (
+            //(
+            //  if (idx < cfg.fullDepth - 2) (
+            //    next.fire
+            //    || !next.valid
+            //    || (
+            //      next.valid 
+            //      && !next.ready
+            //    )
+            //  ) else (
+            //    next.fire
+            //    || !next.valid
+            //  )
+            //)
+            ////&& !curr.fire
+            ////&& curr.valid
+            //&& curr.valid
+            //&& !curr.ready
+            //(
+            //)
+            //(
+            //)
+            //(
+            //  if (idx < cfg.fullDepth - 3) {
+            //    (
+            //      next.fire
+            //    )
+            //  } else if (idx < cfg.fullDepth - 2) (
+            //    next.fire
+            //    || !next.valid
+            //    || (
+            //      next.valid 
+            //      && !next.ready
+            //    )
+            //  ) else (
+            //    next.fire
+            //    || !next.valid
+            //  )
+            //)
+            myShiftCondVec(idx)
+            && curr.valid
+            && !curr.ready
+          )
+        )
+        myCond1 := (
+          next.fire
+          || !next.valid
+          //curr.fire
+          //|| !curr.valid
+
+          //|| (
+          //  next.valid 
+          //  && !next.ready
+          //)
+        )
+        //myCond1 := (
+        //  RegNext(
+        //    myCond0,
+        //    init=False
+        //  )
+        //  && curr.valid
+        //  //(
+        //  //  RegNext(
+        //  //    (
+        //  //      //next.fire
+        //  //      //|| !next.valid
+        //  //      curr.fire
+        //  //      || !curr.valid
+        //  //    ),
+        //  //    init=False
+        //  //  )
+        //  //  //&& rCurr.valid
+        //  //  //&& curr.valid
+        //  //  //&& !curr.ready
+        //  //)
+        //)
+
+        //when (
+        //  (
+        //    next.fire
+        //    || !next.valid
+        //  )
+        //  || curr.fire
+        //) {
+        //  rCurr.valid := False
+        //}
+        //if (idx > 0) {
+          when (
+            myCond0
+            || curr.fire
+            //|| myCond1
+          ) {
+            rCurr.valid := False
+          }
+        //}
+
+        when (
+          //(
+          //  next.fire
+          //  || !next.valid
+          //)
+          //|| (
+          //  RegNext(
+          //    (
+          //      next.fire
+          //      || !next.valid
+          //    ),
+          //    init=False
+          //  )
+          //  && rCurr.valid
+          //)
+          //io.push.valid
+          //&& 
+          (
+            if (
+              //idx > 1
+              //true
+              idx < cfg.fullDepth - 2
+            ) (
+              //myCond0Vec(idx - 1)
+              myCond0
+              //|| myCond0Vec(idx + 1)
+            ) else (
+              myCond0
+            )
+          )
+          //|| myCond1
+        ) {
+          //rNext := rCurr
+          doDataAssignment(idx=idx)
+          //rCurr.valid := False
+        }
+
+        //when (
+        //  (
+        //    next.fire
+        //    || !next.valid
+        //  )
+        //  || curr.fire
+        //) {
+        //  rCurr.valid := False
+        //}
+
+        if (idx == 0) {
+          when (io.push.fire) {
+            rPopVec(idx).valid := True
+            rPopVec(idx).payload := io.push.payload
+          }
+        }
+        if (idx == 1) {
+          io.push.ready := (
+            //(
+            //  next.fire
+            //  || !next.valid
+            //)
+            //|| curr.fire
+            //|| !curr.valid
+
+            //myCond0
+            //|| myCond1
+            (
+              //myCond0Vec.head
+              //|| myCond0
+              //!myCond0Vec.andR
+              //!myCond1Vec.andR
+              //!LcvAndR(myCond1Vec)
+              LcvOrR(myCond1Vec)
+              //myCond1Vec.orR
+            )
+            || !rPopVec.head.valid
+          )
+        }
+      }
+    }
+
+    //for (revIdx <- 0 until cfg.fullDepth) {
+    //  def idx = cfg.fullDepth - 1 - revIdx
+
+    //  //mySharedCondVec(idx) := (
+    //  //  //(
+    //  //  //  next.fire
+    //  //  //  || !next.valid
+    //  //  //)
+    //  //  (
+    //  //    myPopStmVec(idx).fire
+    //  //    || !myPopStmVec(idx).valid
+    //  //    //|| (
+    //  //    //  myPopStmVec(idx).valid
+    //  //    //  && !myPopStmVec(idx).ready
+    //  //    //)
+    //  //  )
+    //  //)
+    //  //if (idx < cfg.fullDepth - 1) {
+    //  //  def curr = myPopStmVec(idx)
+    //  //  def next = myPopStmVec(idx + 1)
+    //  //  def rCurr = rPopVec(idx)
+    //  //  def rNext = rPopVec(idx + 1)
+
+    //  //  def mySharedCond = mySharedCondVec(idx + 1)
+
+    //  //  when (
+    //  //    (
+    //  //      mySharedCond
+    //  //      //&& !curr.fire
+    //  //      && curr.valid
+    //  //      && !curr.ready
+    //  //    )
+    //  //    || curr.fire
+    //  //  ) {
+    //  //    rCurr.valid := False
+    //  //  }
+
+    //  //  when (
+    //  //    //if (idx < cfg.fullDepth - 2) (
+    //  //    //  (
+    //  //    //    mySharedCond
+    //  //    //    && !curr.fire
+    //  //    //  )
+    //  //    //  //|| (
+    //  //    //  //  mySharedCondVec(idx + 1)
+    //  //    //  //  && next.fire
+    //  //    //  //)
+    //  //    //) else (
+    //  //    //  mySharedCond
+    //  //    //  && !curr.fire
+    //  //    //)
+
+    //  //    if (idx < cfg.fullDepth - 2) (
+    //  //      (
+    //  //        mySharedCond
+    //  //        && curr.valid
+    //  //        && !curr.ready
+    //  //      )
+    //  //      || curr.fire
+    //  //      || !rCurr.fire
+    //  //      || (
+    //  //        mySharedCondVec(2)
+    //  //        && next.valid
+    //  //        //&& next.fire
+    //  //      )
+    //  //    ) else (
+    //  //      //mySharedCond
+    //  //      (
+    //  //        next.fire
+    //  //        || !next.valid
+    //  //      )
+    //  //      //&& !curr.fire
+    //  //      && curr.valid
+    //  //      && !curr.ready
+    //  //    )
+    //  //  ) {
+    //  //    //rNext.valid := True
+    //  //    cfg.optDataAssignment match {
+    //  //      case Some(dataAssignment) => {
+    //  //        rNext.valid := rCurr.valid
+    //  //        dataAssignment(
+    //  //          rNext.payload,
+    //  //          rCurr.payload,
+    //  //          idx,
+    //  //          myPopStmVec,
+    //  //        )
+    //  //      }
+    //  //      case None => {
+    //  //        rNext := rCurr
+    //  //        //rNext.payload := rCurr.payload
+    //  //      }
+    //  //    }
+
+    //  //    //rCurr.valid := False
+    //  //  }
+
+    //  //  if (idx == 0) {
+    //  //    io.push.ready := (
+    //  //      (
+    //  //        mySharedCond
+    //  //        && curr.valid
+    //  //        && !curr.ready
+    //  //      )
+    //  //      //(
+    //  //      //  (
+    //  //      //    next.fire
+    //  //      //    || !next.valid
+    //  //      //  )
+    //  //      //  && curr.valid
+    //  //      //)
+    //  //      || curr.fire
+    //  //      || !rCurr.fire
+    //  //      || (
+    //  //        mySharedCondVec(2)
+    //  //        && next.valid
+    //  //        //&& next.fire
+    //  //      )
+    //  //    )
+    //  //    when (io.push.fire) {
+    //  //      rPopVec(idx).valid := True
+    //  //      rPopVec(idx).payload := io.push.payload
+    //  //    }
+    //  //  }
+    //  //}
+    //}
+
+    //for (revIdx <- 0 until cfg.fullDepth) {
+    //  def idx = cfg.fullDepth - 1 - revIdx
+
+    //  if (idx < cfg.fullDepth - 1) {
+    //    def curr = myPopStmVec(idx)
+    //    def next = myPopStmVec(idx + 1)
+    //    def rCurr = rPopVec(idx)
+    //    def rNext = rPopVec(idx + 1)
+
+    //    ////val mySharedCond = (
+    //    ////)
+    //    ////if (idx == 0) {
+    //    ////  when (io.push.fire) {
+    //    ////    rCurr.valid := True
+    //    ////    rCurr.payload := io.push.payload
+    //    ////  }
+    //    ////}
+
+    //    if (idx > 0) {
+    //      when (
+    //        (
+    //          next.fire
+    //          || !next.valid
+    //        )
+    //        //&& curr.valid
+    //        //&& !curr.ready
+    //        && curr.valid
+    //        && !curr.ready
+    //      ) {
+    //        rNext.valid := True
+    //        cfg.optDataAssignment match {
+    //          case Some(dataAssignment) => {
+    //            //rNext.valid := rCurr.valid
+    //            dataAssignment(
+    //              rNext.payload,
+    //              rCurr.payload,
+    //              idx,
+    //              myPopStmVec,
+    //            )
+    //          }
+    //          case None => {
+    //            //rNext := rCurr
+    //            rNext.payload := rCurr.payload
+    //          }
+    //        }
+    //        rCurr.valid := False
+    //      }
+    //    } else {
+    //      def wndLast = myPopStmVec(idx + 2)
+    //      def rWndLast = rPopVec(idx + 2)
+
+    //      when (
+    //        next.fire
+    //        || !next.valid
+    //        || (
+    //          (
+    //            wndLast.fire
+    //            || !wndLast.valid
+    //          )
+    //          && next.valid
+    //          && !next.ready
+    //        )
+    //      ) {
+    //        cfg.optDataAssignment match {
+    //          case Some(dataAssignment) => {
+    //            rNext.valid := rCurr.valid
+    //            dataAssignment(
+    //              rNext.payload,
+    //              rCurr.payload,
+    //              idx,
+    //              myPopStmVec,
+    //            )
+    //          }
+    //          case None => {
+    //            rNext := rCurr
+    //          }
+    //        }
+    //        rCurr.valid := False
+    //      }
+    //    }
+    //    ////if (idx == 0) {
+    //    ////  when (io.push.fire) {
+    //    ////    rCurr.valid := True
+    //    ////    rCurr.payload := io.push.payload
+    //    ////  }
+    //    ////}
+    //    ////if (idx < cfg.fullDepth - 2) {
+    //    ////  when (
+    //    ////  ) {
+    //    ////  }
+    //    ////}
+    //    if (idx == 0) {
+    //      def wndLast = myPopStmVec(idx + 2)
+    //      def rWndLast = rPopVec(idx + 2)
+
+    //      io.push.ready := (
+    //        //mySharedCond
+    //        //|| curr.fire
+    //        //|| !rPopVec.head.fire
+    //        //|| RegNext(io.push.fire, init=False)
+
+    //        //!rCurr.fire
+    //        //|| (
+    //        //  //RegNext(
+    //        //  //  io.push.fire,
+    //        //  //  init=False
+    //        //  //)
+    //        //  //&& 
+    //        //  (
+    //        //    curr.fire
+    //        //    || !curr.valid
+    //        //    || (
+    //        //      (
+    //        //        next.fire
+    //        //        || !next.valid
+    //        //      )
+    //        //      && curr.valid
+    //        //      && !curr.ready
+    //        //    )
+    //        //  )
+    //        //)
+
+    //        !rCurr.fire
+    //        || (
+    //          next.fire
+    //          || !next.valid
+    //        )
+    //        || (
+    //          (
+    //            wndLast.fire
+    //            || !wndLast.valid
+    //          )
+    //          && next.valid
+    //          && !next.ready
+    //        )
+    //        //|| (
+    //        //  RegNext(
+    //        //    (io.push.fire),
+    //        //    init=False
+    //        //  )
+    //        //  || (
+    //        //    curr.fire
+    //        //    || (
+    //        //      (
+    //        //        next.fire
+    //        //        || !next.valid
+    //        //      )
+    //        //      && curr.valid
+    //        //      && !curr.ready
+    //        //    )
+    //        //  )
+    //        //)
+    //      )
+    //    } else {
+    //      when (curr.fire) {
+    //        rCurr.valid := False
+    //      }
+    //    }
+    //    if (idx == 0) {
+    //      when (io.push.fire) {
+    //        rCurr.valid := True
+    //        rCurr.payload := io.push.payload
+    //      }
+    //    }
+    //  }
+    //}
+
+    //for (idx <- 0 until cfg.depth - 1) {
+    //  def curr = myPopStmVec(idx)
+    //  def next = myPopStmVec(idx + 1)
+    //  def rCurr = rPopVec(idx)
+    //  def rNext = rPopVec(idx + 1)
+
+    //  when (
+    //    next.fire
+    //    && curr.valid
+    //  ) {
+    //  }
+    //}
+
+    //when (io.push.fire) {
+    //  rPopVec.head.valid := True
+    //  rPopVec.head.payload := io.push.payload
+    //}
+  }
+  //--------
+}
+
+//private[libcheesevoyage] case class LcvOooRdSlidingBufShiftWhenPush[
+//  WordT <: Data
+//](
+//  cfg: LcvOooRdSlidingBufConfig[WordT]
+//) extends Component {
+//  //--------
+//  val io = LcvOooRdSlidingBufIo(cfg=cfg)
+//  //--------
+//  val rPopVec = (
+//    Vec.fill(
+//      //cfg.fullDepth
+//      cfg.depth
+//    )({
+//      val temp = Reg(Flow(cfg.wordType()))
+//      temp.init(temp.getZero)
+//      temp
+//    })
+//  )
+//
+//  for (idx <- 0 until cfg.depth) {
+//    io.pop(idx).valid := rPopVec(idx).fire
+//    io.pop(idx).payload := rPopVec(idx).payload
+//  }
+// 
+//  val myArea = new Area {
+//    when (io.pop.last.fire) {
+//      rPopVec.last.valid := False
+//    }
+//    for (revIdx <- 0 until cfg.depth) {
+//      def idx = cfg.depth - 1 - revIdx
+//
+//      if (idx < cfg.depth - 1) {
+//        def curr = io.pop(idx)
+//        def next = io.pop(idx + 1)
+//        def rCurr = rPopVec(idx)
+//        def rNext = rPopVec(idx + 1)
+//
+//        val mySharedCond = (
+//          (
+//            next.fire
+//            || !next.valid
+//          )
+//          && !curr.fire
+//        )
+//
+//        when (
+//          io.push.fire
+//          && (
+//            mySharedCond
+//            || curr.fire
+//          )
+//        ) {
+//          rCurr.valid := False
+//        }
+//        when (
+//          io.push.fire
+//          && mySharedCond
+//        ) {
+//          rNext := rCurr
+//        }
+//
+//        if (idx == 0) {
+//          io.push.ready := (
+//            mySharedCond
+//            || curr.fire
+//            || !rPopVec.head.fire
+//          )
+//        }
+//      }
+//    }
+//    when (io.push.fire) {
+//      rPopVec.head.valid := True
+//      rPopVec.head.payload := io.push.payload
+//    }
+//  }
+//  //--------
+//}
+
+case class LcvOooRdSlidingBuf[
+  WordT <: Data
+](
+  cfg: LcvOooRdSlidingBufConfig[WordT],
+) extends Component {
+  val io = LcvOooRdSlidingBufIo(cfg=cfg)
+
+  val myShiftEveryCycleArea = (
+    cfg.shiftEveryCycle
+  ) generate new Area {
+    val impl = LcvOooRdSlidingBufShiftEveryCycle(cfg=cfg)
+    impl.io <> io
+  }
+
+  val myShiftWhenPushArea = (
+    !cfg.shiftEveryCycle
+  ) generate new Area {
+    require(
+      false,
+      "not yet implemented"
+    )
+    //val impl = LcvOooRdSlidingBufShiftWhenPush(cfg=cfg)
+    //impl.io <> io
+  }
+}
+
+object LcvOooRdSlidingBufTestSpinalConfig {
+  def spinal = SpinalConfig(
+    targetDirectory="hw/gen",
+    defaultConfigForClockDomains=ClockDomainConfig(
+      resetActiveLevel=HIGH,
+      resetKind=BOOT,
+    )
+  )
+}
+
+object LcvOooRdSlidingBufTestToVerilog extends App {
+  LcvOooRdSlidingBufTestSpinalConfig.spinal.generateVerilog{
+    val top = LcvOooRdSlidingBuf(
+      cfg=LcvOooRdSlidingBufConfig(
+        wordType=UInt(32 bits),
+        depth=(
+          5
+          //2
+        ),
+        shiftEveryCycle=true,
+        optDataAssignment=Some(
+          (
+            outp: UInt,                   // outp
+            inp: UInt,                    // inp
+            idx: Int,                     // idx
+            myPopStm: Vec[Stream[UInt]],  // io.pop
+          ) => {
+            outp := inp
+          }
+        )
+      )
+    )
+    //val top = LcvBusNonCoherentDataCacheWithSdramCtrl(
+    //  sdramCtrlCfg=LcvBusSdramCtrlConfig(
+    //    clkRate=100.0 MHz,
+    //    shortDqmToA12A11=true,
+    //  )
+    //)
+    top
+  }
+}
+
+case class LcvLowLatencyReorderBufConfig[
+  WordT <: Data,
+](
+  wordType: HardType[WordT],
+  //reorderBufIdxWidth: Int,
+  outerReorderBufIdxWidth: Int,
+  innerReorderBufIdxWidth: Int,
+) {
+  require(
+    outerReorderBufIdxWidth >= 1
+  )
+  require(
+    innerReorderBufIdxWidth >= 1
+  )
+  val reorderBufIdxWidth = (
+    outerReorderBufIdxWidth
+    * innerReorderBufIdxWidth
+  )
+  val outerDepth = (1 << outerReorderBufIdxWidth)
+  val innerDepth = (1 << outerReorderBufIdxWidth)
+
+  //def vecWordType() = (
+  //  Vec.fill(innerDepth)(
+  //    wordType()
+  //  )
+  //)
+
+  val depth = (1 << reorderBufIdxWidth)
+  //def myPushType() = (
+  //  PipeSimpleDualPortMemDrivePayload(
+  //    dataType=modType(),
+  //    wordCount=depth,
+  //  )
+  //)
+}
+case class LcvLowLatencyReorderBufPushPayload[
+  WordT <: Data
+](
+  cfg: LcvLowLatencyReorderBufConfig[WordT]
+) extends Bundle {
+  //val reorderBufIdx = UInt(cfg.reorderBufIdxWidth bits)
+  //val innerReorderBufIdx = UInt(cfg.innerReorderBufIdxWidth bits)
+  val outerReorderBufIdx = UInt(cfg.outerReorderBufIdxWidth bits)
+  val myWord = cfg.wordType()
+}
+
+case class LcvLowLatencyReorderBufIo[
+  WordT <: Data,
+](
+  cfg: LcvLowLatencyReorderBufConfig[WordT]
+) extends Bundle {
+  //val push = slave(Stream(
+  //  LcvLowLatencyReorderBufPushPayload(cfg=cfg)
+  //))
+  //val pop = master(Stream(
+  //  cfg.wordType()
+  //))
+
+  val push = Vec.fill(
+    //cfg.outerDepth
+    cfg.innerDepth
+  )(
+    Stream(
+      LcvLowLatencyReorderBufPushPayload(cfg=cfg)
+    )
+  )
+  //val pop = Vec.fill(
+  //  cfg.outerDepth
+  //)(
+  //  Stream(
+  //    cfg.wordType()
+  //  )
+  //)
+  val pop = Stream(
+    Vec.fill(cfg.outerDepth)(
+      cfg.wordType()
+    )
+  )
+
+  for (innerIdx <- 0 until cfg.innerDepth) {
+    slave(push(innerIdx))
+    //master(pop(innerIdx))
+  }
+
+  val occupancy = out(
+    UInt((cfg.reorderBufIdxWidth + 1) bits)
+  )
+}
+
+case class LcvLowLatencyReorderBuf[
+  WordT <: Data
+](
+  cfg: LcvLowLatencyReorderBufConfig[WordT]
+) extends Component {
+  //--------
+  val io = LcvLowLatencyReorderBufIo(cfg=cfg)
+  //val myLinkArr = PipeHelper.mkLinkArr()
+  //--------
+  //val ram = RamSimpleDualPort(
+  //  cfg=RamSimpleDualPortConfig(
+  //    wordType=cfg.wordType(),
+  //    depth=cfg.depth,
+  //    init=None,
+  //    initBigInt=None,
+  //    arrRamStyleAltera=(
+  //      //"no_rw_check, logic"
+  //      "no_rw_check, MLAB"
+  //      //"MLAB"
+  //    ),
+  //    arrRamStyleXilinx="auto",
+  //    arrRwAddrCollisionXilinx="",
+  //    doAsyncRead=(
+  //      //cfg.optRdLatency == 0
+  //      true
+  //    )
+  //  )
+  //)
+  //--------
+  //ram.io.ramIo.wrEn := io.push.fire
+  //ram.io.ramIo.wrAddr := io.push.reorderBufIdx
+  //ram.io.ramIo.wrData := io.push.myWord
+  //--------
+  //ram.io.ramIo.rdEn := io.pop.fire
+  //ram.io.ramIo.rdAddr := io.
+  val ram = Mem(
+    wordType=cfg.wordType(),
+    wordCount=cfg.depth,
+  )
+  //--------
+  val myValidVec = Vec.fill(cfg.outerDepth)(
+    Vec.fill(cfg.innerDepth)(
+      Bool()
+    )
+  )
+  myValidVec.foreach(outerItem => {
+    outerItem.foreach(
+      item => {
+        item := RegNext(item, init=False)
+      }
+    )
+  })
+
+  val myOccupancy = CountOne(myValidVec.asBits.asUInt)
+  io.occupancy := myOccupancy
+
+  //switch (io.push.reorderBufIdx) {
+  //  for (idx <- 0 until (1 << io.push.reorderBufIdx.getWidth)) {
+  //    is (idx) {
+  //      io.push.ready := (
+  //        !myValidVec(
+  //          io.push.reorderBufIdx
+  //        )
+  //        //!myValidVec(
+  //        //  (idx >> cfg.innerReorderBufIdxWidth)
+  //        //  % cfg.outerReorderBufIdxWidth
+  //        //)(
+  //        //  idx % cfg.innerReorderBufIdxWidth
+  //        //)
+  //      )
+  //    }
+  //  }
+  //}
+
+  //for (outerIdx <- 0 until cfg.outerDepth) {
+  //  switch (io.push(outerIdx).innerReorderBufIdx) {
+  //    for (innerIdx <- 0 until cfg.innerDepth) {
+  //      is (innerIdx) {
+  //        io.push(outerIdx).ready := (
+  //          !myValidVec(
+  //            outerIdx
+  //          )(
+  //            io.push(outerIdx).innerReorderBufIdx
+  //          )
+  //        )
+  //      }
+  //    }
+  //  }
+  //}
+
+  for (innerIdx <- 0 until cfg.innerDepth) {
+    switch (io.push(innerIdx).outerReorderBufIdx) {
+      for (outerIdx <- 0 until cfg.outerDepth) {
+        is (outerIdx) {
+          io.push(innerIdx).ready := (
+            !myValidVec(
+              outerIdx
+            )(
+              innerIdx
+            )
+          )
+        }
+      }
+    }
+  }
+
+  //val myRdAddr = cloneOf(io.push.reorderBufIdx)
+  //val myRdAddr = UInt(cfg.reorderBufIdxWidth bits)
+  val myRdAddr = cloneOf(io.push.head.outerReorderBufIdx)
+
+  val myAssertValidCond = Vec(
+    io.push.map{item => {
+      RegNext(item.fire, init=False)
+    }}
+  )
+  //when (myAssertValidCond) {
+  //  myValidVec(
+  //    RegNext(io.push.reorderBufIdx)
+  //  ) := True
+  //}
+
+  //--------
+  //for (outerIdx <- 0 until cfg.outerDepth) {
+  //  when (myAssertValidCond(outerIdx)) {
+  //    myValidVec(
+  //      outerIdx
+  //    )(
+  //      RegNext(io.push(outerIdx).innerReorderBufIdx)
+  //    ) := (
+  //      True
+  //    )
+  //  }
+  //}
+
+  for (innerIdx <- 0 until cfg.innerDepth) {
+    when (myAssertValidCond(innerIdx)) {
+      myValidVec(
+        RegNext(io.push(innerIdx).outerReorderBufIdx)
+      )(
+        innerIdx
+      ) := (
+        True
+      )
+    }
+  }
+  //--------
+
+  //when (RegNext(io.pop.fire, init=False)) {
+  //  myValidVec(RegNext(myRdAddr, init=myRdAddr.getZero)) := False
+  //}
+
+  for (innerIdx <- 0 until cfg.innerDepth) {
+    when (RegNext(io.pop.fire, init=False)) {
+      //myValidVec(RegNext(myRdAddr, init=myRdAddr.getZero)) := False
+      myValidVec(RegNext(myRdAddr, init=myRdAddr.getZero)).foreach(
+        item => {
+          item := False
+        }
+      )
+    }
+  }
+
+  //myRam.io.wrPulse.valid := io.push.fire
+  //myRam.io.wrPulse.addr := io.push.reorderBufIdx
+  //myRam.io.wrPulse.data := io.push.myWord
+  //when (myAssertValidCond) {
+  //  rValidVec(myRam.io.wrPulse.addr) := True
+  //}
+
+  myRdAddr := (
+    RegNext(myRdAddr)
+    init(
+      //0x1
+      0x0
+    )
+  )
+  when (
+    RegNext(
+      //myRam.io.rdAddrPipe.fire,
+      io.pop.fire,
+      init=False
+    )
+  ) {
+    myRdAddr := (
+      (
+        RegNext(myRdAddr)
+        init(
+          //0x1
+          0x0
+        )
+      ) + 1
+    )
+  }
+
+  
+  //--------
+  val myFwdCondAddrCmpEq = (
+    //io.push.reorderBufIdx === myRdAddr
+  )
+  val myFwdCond = (
+    //myAssertValidCond
+    io.push.valid
+    && myFwdCondAddrCmpEq
+    && !myValidVec(myRdAddr)
+  )
+
+  io.pop.valid := (
+    LcvAndR(myValidVec(myRdAddr))
+    || (
+      myFwdCond
+    )
+  )
+
+  io.pop.payload := (
+    //io.pop.payload.getZero
+    RegNext(io.pop.payload)
+  )
+
+  ram.io.ramIo.rdAddr := myRdAddr
+  ram.io.ramIo.rdEn := !myFwdCond
+
+  when (myFwdCond) {
+    io.pop.payload := io.push.myWord
+  } otherwise {
+    //io.pop.payload := ram.readAsync(
+    //  address=myRdAddr
+    //)
+    io.pop.payload := ram.io.ramIo.rdData
+  }
+  //--------
+}
+
+case class LcvSimpleReorderBufConfig[
+  WordT <: Data,
+](
+  wordType: HardType[WordT],
+  reorderBufIdxWidth: Int,
+) {
+  val depth = (1 << reorderBufIdxWidth)
+  //def myPushType() = (
+  //  PipeSimpleDualPortMemDrivePayload(
+  //    dataType=modType(),
+  //    wordCount=depth,
+  //  )
+  //)
+}
+
+case class LcvSimpleReorderBufPushPayload[
+  WordT <: Data
+](
+  cfg: LcvSimpleReorderBufConfig[WordT]
+) extends Bundle {
+  val reorderBufIdx = UInt(cfg.reorderBufIdxWidth bits)
+  val myWord = cfg.wordType()
+}
+
+case class LcvSimpleReorderBufIo[
+  WordT <: Data,
+](
+  //cfg: WrPulseRdPipeRamConfig[WordT]
+  cfg: LcvSimpleReorderBufConfig[WordT]
+) extends Bundle {
+  val push = slave(Stream(
+    //PipeSimpleDualPortMemDrivePayload(
+    //  dataType=cfg.wordType(),
+    //  wordCount=cfg.depth,
+    //)
+    //cfg.myPushType()
+    LcvSimpleReorderBufPushPayload(cfg=cfg)
+  ))
+  val pop = master(Stream(
+    cfg.wordType()
+  ))
+  val occupancy = out(
+    UInt((cfg.reorderBufIdxWidth + 1) bits)
+  )
+}
+
+case class LcvSimpleReorderBuf[
+  WordT <: Data,
+](
+  cfg: LcvSimpleReorderBufConfig[WordT]
+) extends Component {
+  //--------
+  val io = LcvSimpleReorderBufIo(cfg=cfg)
+  //--------
+  val myRam = (
+    WrPulseRdPipeRam(
+      cfg=WrPulseRdPipeRamConfig(
+        modType=LcvSimpleReorderBufPushPayload(cfg=cfg),
+        wordType=cfg.wordType(),
+        wordCount=cfg.depth,
+        setWordFunc=(
+          outp: LcvSimpleReorderBufPushPayload[WordT],
+          inp: LcvSimpleReorderBufPushPayload[WordT],
+          rdMemWord: WordT,
+          upIsFiring: Bool,
+          myExternalInpCond: Bool,
+          wrPulseVec: Vec[Flow[
+            PipeSimpleDualPortMemDrivePayload[
+              //PipeSimpleDualPortMemDrivePayload[ModT]
+              WordT
+            ]
+          ]],
+        ) => {
+          outp.reorderBufIdx := inp.reorderBufIdx
+          switch (
+            (
+              wrPulseVec.head.fire
+              && wrPulseVec.head.addr === inp.reorderBufIdx
+            )
+            ## (
+              RegNextWhen(
+                wrPulseVec.head.addr,
+                cond=(
+                  wrPulseVec.head.fire
+                ),
+                init=wrPulseVec.head.addr.getZero
+              ) === inp.reorderBufIdx
+            )
+          ) {
+            is (M"1-") {
+              outp.myWord := (
+                wrPulseVec.head.data
+                //myHistWrPulseEtc(0).data.most
+              )
+              //outp.reorderBufIdx := (
+              //  myHistWrPulseEtc(0).addr
+              //)
+            }
+            is (M"01") {
+              //outp.most := (
+              //  //wrPulse.data.most
+              //  //myHistWrPulseEtc(1).data.most
+              //)
+              //outp.reorderBufIdx := (
+              //  myHistWrPulseEtc(1).addr
+              //)
+              outp.myWord := (
+                //myHistWrPulseEtc(1).
+                //RegNextWhen(
+                //  wrPulse.data.most,
+                //  cond=wrPulse.fire,
+                //  init=wrPulse.data.most.getZero
+                //)
+                RegNextWhen(
+                  wrPulseVec.head.data,
+                  cond=(
+                    wrPulseVec.head.fire
+                  ),
+                  init=wrPulseVec.head.data.getZero
+                )
+              )
+            }
+            default {
+              outp.myWord := rdMemWord
+            }
+          }
+        },
+        optRdLatency=(
+          1//0//1
+        ),
+        optWrHistLength=1,
+        initBigInt=Some({
+          val tempArr = new ArrayBuffer[BigInt]()
+          tempArr ++= Array.fill(cfg.depth)(BigInt(0))
+          Array(tempArr).toSeq
+        }),
+        arrRamStyleAltera=(
+          //"no_rw_check, logic"
+          "no_rw_check, MLAB"
+          //"MLAB"
+        ),
+        arrRamStyleXilinx=(
+          "auto"
+          //"block"
+          //"distributed"
+        ),
+      ),
+    )
+  )
+
+  val myRdAddr = cloneOf(myRam.io.rdAddrPipe.addr)
+
+  val myAssertValidCond = myRam.io.wrPulse.fire
+  myRam.io.myExternalInpCond := True
+
+  val rValidVec = Vec.fill(cfg.depth)(
+    Reg(Bool(), init=False)
+  )
+
+  val myOccupancy = (
+    CountOne(rValidVec.asBits.asUInt)
+  )
+  io.occupancy := (
+    //RegNext(myOccupancy, init=myOccupancy.getZero)
+    myOccupancy
+  )
+
+  switch (io.push.reorderBufIdx) {
+    for (idx <- 0 until (1 << io.push.reorderBufIdx.getWidth)) {
+      is (idx) {
+        io.push.ready := (
+          !rValidVec(idx)
+        )
+      }
+    }
+  }
+  myRam.io.wrPulse.valid := io.push.fire
+  myRam.io.wrPulse.addr := io.push.reorderBufIdx
+  myRam.io.wrPulse.data := io.push.myWord
+  when (myAssertValidCond) {
+    rValidVec(myRam.io.wrPulse.addr) := True
+  }
+
+  myRdAddr := (
+    RegNext(myRdAddr)
+    init(
+      //0x1
+      0x0
+    )
+  )
+  when (
+    RegNext(
+      myRam.io.rdAddrPipe.fire,
+      init=False
+    )
+  ) {
+    myRdAddr := (
+      (
+        RegNext(myRdAddr)
+        init(
+          //0x1
+          0x0
+        )
+      ) + 1
+    )
+  }
+  myRam.io.rdAddrPipe.valid := rValidVec(myRdAddr)
+  myRam.io.rdAddrPipe.data := myRam.io.rdAddrPipe.data.getZero
+  myRam.io.rdAddrPipe.data.reorderBufIdx.allowOverride
+  myRam.io.rdAddrPipe.data.reorderBufIdx := myRdAddr
+  myRam.io.rdAddrPipe.addr := myRdAddr
+
+  when (myRam.io.rdAddrPipe.fire) {
+    rValidVec(myRdAddr) := False
+  }
+
+  //io.pop << myRam.io.rdDataPipe
+  myRam.io.rdDataPipe.translateInto(io.pop)(
+    dataAssignment=(outp, inp) => {
+      outp := inp.myWord
+    }
+  )
+}
+
+
+case class LcvSimpleStreamFifoIo[
+  WordT <: Data
+](
+  cfg: LcvSimpleReorderBufConfig[WordT]
+) extends Bundle {
+  val push = slave(Stream(
+    cfg.wordType()
+  ))
+  val pop = master(Stream(
+    cfg.wordType()
+  ))
+  val occupancy = out(
+    UInt((cfg.reorderBufIdxWidth + 1) bits)
+  )
+}
+case class LcvSimpleStreamFifo[
+  WordT <: Data
+](
+  cfg: LcvSimpleReorderBufConfig[WordT]
+) extends Component {
+  val io = LcvSimpleStreamFifoIo(cfg=cfg)
+  val myReorderBuf = LcvSimpleReorderBuf(cfg=cfg)
+  io.push.translateInto(myReorderBuf.io.push)(
+    dataAssignment=(outp, inp) => {
+      outp.myWord := inp
+      outp.reorderBufIdx := (
+        (
+          RegNextWhen(
+            (outp.reorderBufIdx + 1),//.asSInt,
+            cond=myReorderBuf.io.push.fire,
+          )
+          init(
+            //-1
+            0x0
+          )
+        )//.asUInt
+      )
+    }
+  )
+  io.pop << myReorderBuf.io.pop
+  io.occupancy <> myReorderBuf.io.occupancy
+}
+
+case class WrPulseRdPipeRamConfig[
+  ModT <: Data,
+  WordT <: Data,
+](
+  modType: HardType[ModT],
+  wordType: HardType[WordT],
+  wordCount: Int,
+  //pipeName: String,
+  setWordFunc: (
+    ModT,     // pass through pipeline payload (output)
+    ModT,     // pass through pipeline payload (input)
+    WordT,    // data read from the RAM
+    Bool,     // upIsFiring
+    Bool,     // io.myExternalInpCond
+    Vec[Flow[     // io.wrPulse, etc.
+      PipeSimpleDualPortMemDrivePayload[
+        WordT
+      ]
+    ]],
+  ) => Unit,
+  //optRdLatency: Int,
+  optRdLatency: Int=2,
+  optWrHistLength: Int=1,
+  //optRename: Boolean=false,
+  initBigInt: Option[Seq[Seq[BigInt]]]=None,
+  arrRamStyleAltera: String="M10K",
+  arrRamStyleXilinx: String="block",
+  arrRwAddrCollisionXilinx: String="",
+) {
+  def addrWidth = log2Up(wordCount)
+  def modRdPortCnt = 1
+  def modStageCnt = 0//1
+
+  require(
+    optRdLatency >= 0
+  )
+  require(
+    optWrHistLength >= 1
+  )
+}
+
+case class WrPulseRdPipeRamIo[
+  ModT <: Data,
+  WordT <: Data,
+](
+  cfg: WrPulseRdPipeRamConfig[ModT, WordT],
+  optDualWr: Boolean=false,
+) extends Bundle {
+  val wrPulse = slave(Flow(
+    PipeSimpleDualPortMemDrivePayload(
+      dataType=cfg.wordType(),
+      wordCount=cfg.wordCount,
+    )
+  ))
+
+  val otherWrPulse = (
+    optDualWr
+  ) generate (
+    slave(Flow(
+      PipeSimpleDualPortMemDrivePayload(
+        dataType=cfg.wordType(),
+        wordCount=cfg.wordCount,
+      )
+    ))
+  )
+
+  //val rdAddrPipe = Stream(UInt(addrWidth bits))
+  val rdAddrPipe = slave(Stream(
+    PipeSimpleDualPortMemDrivePayload(
+      dataType=cfg.modType(),
+      wordCount=cfg.wordCount,
+    )
+  ))
+  val rdDataPipe = master(Stream(
+    //wordType()
+    cfg.modType()
+  ))
+  val myExternalInpCond = in(Bool())
+}
+
+case class DualWrPulseRdPipeRam[
+  ModT <: Data,
+  WordT <: Data,
+](
+  cfg: WrPulseRdPipeRamConfig[ModT, WordT],
+) extends Component {
+  //--------
+  val io = WrPulseRdPipeRamIo(
+    cfg=cfg,
+    optDualWr=true
+  )
+  //--------
+  require(
+    cfg.optRdLatency <= 1
+  )
+  //--------
+  val mem = {
+    val temp = Mem(
+      wordType=cfg.wordType(),
+      wordCount=cfg.wordCount,
+    )
+    if (cfg.initBigInt != None) {
+      temp.initBigInt(
+        cfg.initBigInt.get(0)
+      )
+    }
+    temp
+  }
+  //--------
+  require(cfg.optWrHistLength == 1)
+  require(cfg.optRdLatency <= 1)
+  val myLinkArr = PipeHelper.mkLinkArr()
+  //--------
+  //val myHistWrPulse = (
+  //  History(
+  //    that=io.wrPulse,
+  //    length=cfg.optWrHistLength,
+  //    init=io.wrPulse.getZero,
+  //  )
+  //)
+  mem.write(
+    address=io.otherWrPulse.addr,
+    data=io.otherWrPulse.data,
+    enable=io.otherWrPulse.fire
+  )
+  mem.write(
+    address=io.wrPulse.addr,
+    data=io.wrPulse.data,
+    enable=io.wrPulse.fire
+  )
+  //ram.io.ramIo.wrEn := (
+  //  //io.wrPulse.fire
+  //  myHistWrPulse.last.fire
+  //)
+  //ram.io.ramIo.wrAddr := (
+  //  //io.wrPulse.addr
+  //  myHistWrPulse.last.addr
+  //)
+  //ram.io.ramIo.wrData := (
+  //  //io.wrPulse.data
+  //  myHistWrPulse.last.data
+  //)
+  //--------
+  //ram.io.ramIo.rdEn := False
+  //--------
+  case class MainPayload(
+  ) extends Bundle {
+    val myInpPayload = cloneOf(io.rdAddrPipe.payload)
+    val rdMemWord = cfg.wordType()
+    //val fwdValid = Bool()
+    //val data = 
+  }
+
+  val mainPayload = (
+    cfg.optRdLatency >= 1
+  ) generate (
+    Payload(MainPayload())
+  )
+  //val outpPayload = Payload(MainPayload())
+  val inpPayload = (
+    cfg.optRdLatency == 0
+  ) generate (
+    MainPayload()
+  )
+  val outpPayload = MainPayload()
+  outpPayload.allowOverride
+
+  val cFront = CtrlLink()
+  val sFront = StageLink(
+    up=cFront.down,
+    down={
+      val temp = Node()
+      temp.setName("sFront_down")
+      temp
+    }
+  )
+  myLinkArr += cFront
+  myLinkArr += sFront
+
+  cFront.up.driveFrom(
+    io.rdAddrPipe
+  )(
+    con=(node, myInpPayload) => {
+      if (cfg.optRdLatency == 0) {
+        inpPayload.myInpPayload := myInpPayload
+      } else {
+        node(mainPayload) := node(mainPayload).getZero
+        node(mainPayload).myInpPayload.allowOverride
+        node(mainPayload).myInpPayload := myInpPayload
+      }
+    }
+  )
+  val cFrontArea = new cFront.Area {
+    if (cfg.optRdLatency == 0) {
+      outpPayload := inpPayload
+    }
+    //ram.io.ramIo.rdEn := True
+    //ram.io.ramIo.rdAddr := (
+    //  RegNext(ram.io.ramIo.rdAddr, init=ram.io.ramIo.rdAddr.getZero)
+    //)
+
+    val tempRdAddr = (
+      if (cfg.optRdLatency == 0) (
+        inpPayload.myInpPayload.addr
+      ) else (
+        up(mainPayload).myInpPayload.addr
+      )
+    )
+    val tempRdMemWord = cloneOf(mem.readAsync(address=tempRdAddr.getZero))
+
+    //if (cfg.optRdLatency == 0) (
+    //  mem.readAsync(
+    //    address=inpPayload.myInpPayload.addr
+    //  )
+    //) else (
+    //  mem.readSync(
+    //  )
+    //)
+    if (cfg.optRdLatency == 0) {
+      tempRdMemWord := RegNext(tempRdMemWord)
+      when (down.isReady) {
+        tempRdMemWord := (
+          mem.readAsync(
+            address=tempRdAddr
+          )
+        )
+      }
+    } else {
+      tempRdMemWord := mem.readSync(
+        address=tempRdAddr,
+        enable=down.isReady
+      )
+    }
+    //when (
+    //  //up.isValid
+    //  //&& 
+    //  down.isReady
+    //) {
+    //  ram.io.ramIo.rdAddr := (
+    //    if (cfg.optRdLatency == 0) (
+    //      inpPayload.myInpPayload.addr
+    //    ) else (
+    //      up(mainPayload).myInpPayload.addr
+    //    )
+    //  )
+    //}
+    if (cfg.optRdLatency == 0) {
+      cfg.setWordFunc(
+        outpPayload.myInpPayload.data, // outp,
+        inpPayload.myInpPayload.data, // inp
+        (
+          //ram.io.ramIo.rdData
+          tempRdMemWord
+        ),
+        up.isFiring,
+        io.myExternalInpCond,
+        Vec(io.wrPulse, io.otherWrPulse),
+      )
+    } else if (cfg.optRdLatency > 1) {
+      require(false)
+    }
+  }
+  //--------
+  val cBack = (
+    cfg.optRdLatency >= 1
+  ) generate (
+    CtrlLink(
+      up=(
+        sFront.down
+        //sMid.down
+      ),
+      down={
+        val temp = Node()
+        temp.setName("cBack_down")
+        temp
+      }
+    )
+  )
+  if (cfg.optRdLatency >= 1) {
+    myLinkArr += cBack
+  }
+
+  val cBackArea = (
+    cfg.optRdLatency >= 1
+  ) generate (new cBack.Area {
+
+    outpPayload := up(mainPayload)
+    cfg.setWordFunc(
+      outpPayload.myInpPayload.data,
+      up(mainPayload).myInpPayload.data,
+      (
+        //ram.io.ramIo.rdData
+        cFrontArea.tempRdMemWord
+      ),
+      up.isFiring,
+      io.myExternalInpCond,
+      Vec(io.wrPulse, io.otherWrPulse),
+    )
+  })
+
+  val myActualFinalLinkDown: Node = (
+    if (cfg.optRdLatency == 0) (
+      sFront.down
+    ) else (
+      cBack.down
+    )
+  )
+
+  myActualFinalLinkDown.driveTo(io.rdDataPipe)(
+    con=(outp, node) => {
+      outp := (
+        outpPayload.myInpPayload.data
+      )
+    }
+  )
+  //--------
+  Builder(myLinkArr.toSeq)
+  //--------
+}
+
+
+case class WrPulseRdPipeRam[
+  ModT <: Data,
+  WordT <: Data,
+](
+  cfg: WrPulseRdPipeRamConfig[ModT, WordT],
+) extends Component {
+  val io = WrPulseRdPipeRamIo(cfg=cfg)
+
+  val myRamSimpleDualPortArea = (
+    cfg.optRdLatency <= 1
+    //&& !cfg.optRename
+  ) generate new Area {
+    val ram = WrPulseRdPipeRamSimpleDualPort(cfg=cfg)
+    io <> ram.io
+  }
+
+  val myRamSdpPipeArea = (
+    cfg.optRdLatency >= 2
+    //&& !cfg.optRename
+  ) generate new Area {
+    val ram = WrPulseRdPipeRamSdpPipe(cfg=cfg)
+    io <> ram.io
+  }
+}
+
+//case class WrPulseRdPipeFifoIo[
+//  ModT <: Data,
+//  WordT <: Data,
+//](
+//  cfg: WrPulseRdPipeRamConfig[ModT, WordT],
+//) extends Bundle {
+//  val wrPulse = (
+//    slave(Flow(
+//      cfg.wordType()
+//    ))
+//  )
+//  val rdDataPipe = (
+//    master(Stream(
+//      //wordType()
+//      cfg.modType()
+//    ))
+//  )
+//}
+//
+//case class WrPulseRdPipeFifo[
+//  ModT <: Data,
+//  WordT <: Data,
+//](
+//  cfg: WrPulseRdPipeRamConfig[ModT, WordT],
+//) extends Component {
+//  //--------
+//  val io = WrPulseRdPipeFifoIo(cfg=cfg)
+//  //--------
+//  val myRam = WrPulseRdPipeRam(cfg=cfg)
+//  myRam.io.wrPulse.valid := io.wrPulse.fire
+//  myRam.io.wrPulse.data := io.wrPulse.payload
+//  myRam.io.wrPulse.addr := (
+//    (
+//      RegNextWhen(
+//        (myRam.io.wrPulse.addr + 1),//.asSInt,
+//        cond=myRam.io.wrPulse.fire,
+//      )
+//      init(
+//        //-1
+//        0x0
+//      )
+//    )//.asUInt
+//  )
+//  myRam.io.rdAddrP
+//
+//  //--------
+//}
+
+//private[libcheesevoyage] case class WrPulseRdPipeRamWithRenaming[
+//  ModT <: Data,
+//  WordT <: Data,
+//](
+//  cfg: WrPulseRdPipeRamConfig[ModT, WordT],
+//) extends Component {
+//  //--------
+//  require(
+//    cfg.optRename
+//  )
+//  require(
+//    cfg.optWrHistLength == 1
+//  )
+//  require(
+//    cfg.optRdLatency == 2
+//  )
+//}
+
+private[libcheesevoyage] case class WrPulseRdPipeRamSimpleDualPort[
+  ModT <: Data,
+  WordT <: Data,
+](
+  cfg: WrPulseRdPipeRamConfig[ModT, WordT],
+) extends Component {
+  //--------
+  //require(
+  //  !cfg.optRename
+  //)
+  require(
+    cfg.optWrHistLength == 1
+  )
+  require(
+    cfg.optRdLatency <= 1,
+    s"With `cfg.optExtraRdPipeStages` > 1, "
+    + s"it makes more sense to use `WrPulseRdPipeRamSdpPipe`!"
+  )
+  val io = WrPulseRdPipeRamIo(cfg=cfg)
+  val myLinkArr = PipeHelper.mkLinkArr()
+  //--------
+  val ram = RamSimpleDualPort(
+    cfg=RamSimpleDualPortConfig(
+      wordType=cfg.wordType(),
+      depth=cfg.wordCount,
+      init=None,
+      initBigInt=(
+        cfg.initBigInt match {
+          case Some(initBigInt) => {
+            Some(initBigInt(0))
+          }
+          case None => {
+            None
+          }
+        }
+      ),
+      arrRamStyleAltera=cfg.arrRamStyleAltera,
+      arrRamStyleXilinx=cfg.arrRamStyleXilinx,
+      arrRwAddrCollisionXilinx=cfg.arrRwAddrCollisionXilinx,
+      doAsyncRead=(
+        cfg.optRdLatency == 0
+      )
+    )
+  )
+  //--------
+  val myHistWrPulse = (
+    History(
+      that=io.wrPulse,
+      length=cfg.optWrHistLength,
+      init=io.wrPulse.getZero,
+    )
+  )
+  ram.io.ramIo.wrEn := (
+    //io.wrPulse.fire
+    myHistWrPulse.last.fire
+  )
+  ram.io.ramIo.wrAddr := (
+    //io.wrPulse.addr
+    myHistWrPulse.last.addr
+  )
+  ram.io.ramIo.wrData := (
+    //io.wrPulse.data
+    myHistWrPulse.last.data
+  )
+  //--------
+  //ram.io.ramIo.rdEn := False
+  //--------
+  //ram.io.rdEn := True
+  //ram.io.rdAddr := (
+  //  RegNext(ram.io.rdAddr, init=ram.io.rdAddr.getZero)
+  //)
+  case class MainPayload(
+  ) extends Bundle {
+    val myInpPayload = cloneOf(io.rdAddrPipe.payload)
+    val rdMemWord = cfg.wordType()
+    //val fwdValid = Bool()
+    //val data = 
+  }
+
+  val mainPayload = (
+    cfg.optRdLatency >= 1
+  ) generate (
+    Payload(MainPayload())
+  )
+  //val outpPayload = Payload(MainPayload())
+  val inpPayload = (
+    cfg.optRdLatency == 0
+  ) generate (
+    MainPayload()
+  )
+  val outpPayload = MainPayload()
+  outpPayload.allowOverride
+
+  //val myFifo = StreamFifo(
+  //  dataType=cfg.wordType(),
+  //  depth=1,
+  //  latency=0,
+  //  forFMax=true,
+  //)
+
+  val cFront = CtrlLink()
+  val sFront = StageLink(
+    up=cFront.down,
+    down={
+      val temp = Node()
+      temp.setName("sFront_down")
+      temp
+    }
+  )
+  myLinkArr += cFront
+  myLinkArr += sFront
+
+  //case class MyFwdInfo(
+  //) extends Bundle {
+  //  val valid = Bool()
+  //  val data = cfg.wordType()
+  //  val addr = UInt(log2Up(cfg.wordCount) bits)
+  //}
+
+  //case class MyDoFwdArea(
+  //  someInp: MainPayload,
+  //  someOutp: MainPayload,
+  //) extends Area {
+  //  val myHistFwdInfo = {
+  //    val temp = MyFwdInfo()
+  //    temp.valid := ram.io.ramIo.wrEn
+  //    temp.data := ram.io.ramIo.wrData
+  //    temp.addr := ram.io.ramIo.wrAddr
+  //    History(
+  //      that=temp,
+  //      length=(
+  //        cfg.optWrHistLength
+  //        + (
+  //          if (cfg.optRdLatency == 0) (
+  //            1
+  //          ) else (
+  //            2
+  //          )
+  //        )
+  //        //+ 2
+  //      ),
+  //      init=temp.getZero
+  //    )
+  //  }
+  //  val myTempHistFwdValid = UInt(myHistFwdInfo.size bits)
+
+  //  for (idx <- 0 until myTempHistFwdValid.getWidth) {
+  //    myTempHistFwdValid(idx) := (
+  //      myHistFwdInfo(idx).valid
+  //      && (
+  //        LcvFastCmpEq(
+  //          left=someInp.myInpPayload.addr,
+  //          right=myHistFwdInfo(idx).addr,
+  //          cmpEqIo=null,
+  //        )._1
+  //      )
+  //    )
+  //  }
+
+// >>> for idx in range(size):
+// ...     print(idx, ("-" * (size - idx - 1) + "1" + ("0" * idx)))
+// ...     
+// 0 ---1
+// 1 --10
+// 2 -100
+// 3 1000
+  //  switch (myTempHistFwdValid) {
+  //    for (idx <- 0 until myTempHistFwdValid.getWidth) {
+  //      is (MaskedLiteral({
+  //        //(("0" * (myTempHistFwdValid.getWidth - idx - 1)))
+  //        //+ "1"
+  //        //+ ("-" * idx)
+  //        val size = myTempHistFwdValid.getWidth
+  //        ("-" * (size - idx - 1) + "1" + ("0" * idx))
+  //      })) {
+  //        someOutp.fwdValid := True
+  //        someOutp.rdMemWord := myHistFwdInfo(idx).data
+  //        //if (cfg.optRdLatency == 0) {
+  //        //  inpPayload.fwdValid := True
+  //        //  inpPayload.rdMemWord := (
+  //        //    myHistFwdInfo(idx).data
+  //        //  )
+  //        //} else {
+  //        //  node(mainPayload).fwdValid := True
+  //        //  node(mainPayload).rdMemWord := (
+  //        //    myHistFwdInfo(idx).data
+  //        //  )
+  //        //}
+  //      }
+  //    }
+  //    default {
+  //      someOutp.fwdValid := False
+  //      someOutp.rdMemWord := someInp.rdMemWord.getZero
+  //      //if (cfg.optRdLatency == 0) {
+  //      //  inpPayload.fwdValid := False
+  //      //  inpPayload.rdMemWord := (
+  //      //    inpPayload.rdMemWord.getZero
+  //      //  )
+  //      //} else {
+  //      //  node(mainPayload).fwdValid := False
+  //      //  node(mainPayload).rdMemWord := (
+  //      //    node(mainPayload).rdMemWord.getZero
+  //      //  )
+  //      //}
+  //    }
+  //  }
+  //}
+
+  cFront.up.driveFrom(
+    io.rdAddrPipe
+  )(
+    con=(node, myInpPayload) => {
+      if (cfg.optRdLatency == 0) {
+        inpPayload.myInpPayload := myInpPayload
+      } else {
+        node(mainPayload) := node(mainPayload).getZero
+        node(mainPayload).myInpPayload.allowOverride
+        node(mainPayload).myInpPayload := myInpPayload
+      }
+      //val myAsyncReadFwdArea = (
+      //  cfg.optRdLatency == 0
+      //) generate (
+      //  MyDoFwdArea(
+      //    someInp=inpPayload,
+      //    someOutp=outpPayload,
+      //  )
+      //)
+
+      //when (
+      //  ram.io.wrEn
+      //  && myInpPayload.addr === ram.io.wrAddr
+      //) {
+      //  node(mainPayload).fwdValid := True
+      //  node(mainPayload).rdMemWord := ram.io.wrData
+      //} elsewhen (
+      //  RegNext(
+      //    (
+      //      ram.io.wrEn
+      //      && myInpPayload.addr === ram.io.wrAddr
+      //    ),
+      //    init=False
+      //  )
+      //) {
+      //  node(mainPayload).fwdValid := True
+      //  node(mainPayload).rdMemWord := RegNext(ram.io.wrData)
+      //} otherwise {
+      //  node(mainPayload).fwdValid := False
+      //  node(mainPayload).rdMemWord := node(mainPayload).rdMemWord.getZero
+      //}
+    }
+  )
+  val cFrontArea = new cFront.Area {
+    if (cfg.optRdLatency == 0) {
+      outpPayload := inpPayload
+    }
+    ram.io.ramIo.rdEn := True
+    ram.io.ramIo.rdAddr := (
+      RegNext(ram.io.ramIo.rdAddr, init=ram.io.ramIo.rdAddr.getZero)
+    )
+    when (
+      //up.isValid
+      //&& 
+      down.isReady
+    ) {
+      ram.io.ramIo.rdAddr := (
+        if (cfg.optRdLatency == 0) (
+          inpPayload.myInpPayload.addr
+        ) else (
+          up(mainPayload).myInpPayload.addr
+        )
+      )
+    }
+    if (cfg.optRdLatency == 0) {
+      cfg.setWordFunc(
+        //up(outpPayload).myInpPayload.data, //outp,
+        outpPayload.myInpPayload.data, // outp,
+        inpPayload.myInpPayload.data, // inp
+        //up(mainPayload).myInpPayload.data, //node(outpPayload).myInpPayload.data,
+        (
+          //myFifo.io.pop.payload, //node(outpPayload).rdMemWord,
+          //Mux(
+          //  outpPayload.fwdValid,
+          //  outpPayload.rdMemWord,
+          //  ram.io.ramIo.rdData,
+          //)
+          ram.io.ramIo.rdData
+        ),
+        up.isFiring,
+        io.myExternalInpCond,
+        Vec(io.wrPulse),
+      )
+    } else if (cfg.optRdLatency > 1) {
+      require(false)
+    }
+    //myFifo.io.push.valid := RegNext(up.isFiring, init=False)
+  }
+  //--------
+  //// We need two cycles to read from a `RamSdpPipe`
+  //val cMid = CtrlLink(
+  //  up=sFront.down,
+  //  down={
+  //    val temp = Node()
+  //    temp.setName("cMid_down")
+  //    temp
+  //  }
+  //)
+  //val sMid = StageLink(
+  //  up=cMid.down,
+  //  down={
+  //    val temp = Node()
+  //    temp.setName("sMid_down")
+  //    temp
+  //  }
+  //)
+  //myLinkArr += cMid
+  //myLinkArr += sMid
+
+  //val cMidArea = new cMid.Area {
+  //  myFifo.io.push.valid := RegNext(up.isFiring, init=False)
+  //}
+  //--------
+  val cBack = (
+    cfg.optRdLatency >= 1
+  ) generate (
+    CtrlLink(
+      up=(
+        sFront.down
+        //sMid.down
+      ),
+      down={
+        val temp = Node()
+        temp.setName("cBack_down")
+        temp
+      }
+    )
+  )
+  //val sBack = StageLink(
+  //  up=cBack.down,
+  //  down={
+  //    val temp = Node()
+  //    temp.setName("sBack_down")
+  //    temp
+  //  }
+  //)
+  //val s2mBack = S2MLink(
+  //  up=sBack.down,
+  //  down={
+  //    val temp = Node()
+  //    temp.setName("s2mBack_down")
+  //    temp
+  //  }
+  //)
+
+  if (cfg.optRdLatency >= 1) {
+    myLinkArr += cBack
+  }
+  //myLinkArr += sBack
+  //myLinkArr += s2mBack
+
+  //val sLastBackArr = new ArrayBuffer[StageLink]()
+  //val s2mLastBackArr = new ArrayBuffer[S2MLink]()
+  //for (
+  //  idx <- 0 until cfg.optExtraRdPipeStages//2//1//2
+  //) {
+  //  if (idx == 0) {
+  //    sLastBackArr += StageLink(
+  //      up=(
+  //        //sBack.down
+  //        s2mBack.down
+  //      ),
+  //      down={
+  //        val temp = Node()
+  //        temp.setName(s"sLastBackArr_${idx}_down")
+  //        temp
+  //      },
+  //    )
+  //  } else {
+  //    sLastBackArr += StageLink(
+  //      up=s2mLastBackArr(idx - 1).down,
+  //      down={
+  //        val temp = Node()
+  //        temp.setName(s"sLastBackArr_${idx}_down")
+  //        temp
+  //      },
+  //    )
+  //  }
+  //  s2mLastBackArr += S2MLink(
+  //    up=sLastBackArr.last.down,
+  //    down={
+  //      val temp = Node()
+  //      temp.setName(s"s2mLastBackArr_${idx}_down")
+  //      temp
+  //    },
+  //  )
+  //}
+  //if (cfg.optExtraRdPipeStages > 0) {
+  //  myLinkArr ++= sLastBackArr
+  //  myLinkArr ++= s2mLastBackArr
+  //}
+  //StageLink(
+  //  c
+  //)
+
+  val cBackArea = (
+    cfg.optRdLatency >= 1
+  ) generate (new cBack.Area {
+
+    ////up(outpPayload) := up(mainPayload)
+    outpPayload := up(mainPayload)
+    //val myDoFwdArea =  (
+    //  MyDoFwdArea(
+    //    someInp=up(mainPayload),
+    //    someOutp=outpPayload,
+    //  )
+    //)
+    //outpPayload.allowOverride
+
+    //val rSaveMemRdDataState = Reg(Bool(), init=False)
+    //myFifo.io.push.payload := (
+    //  Mux(
+    //    outpPayload.fwdValid,
+    //    outpPayload.rdMemWord,
+    //    ram.io.ramIo.rdData,
+    //  )
+    //)
+    //myFifo.io.pop.ready := False
+    //when (myFifo.io.pop.valid) {
+    //  when (!rSaveMemRdDataState) {
+    //    rSaveMemRdDataState := True
+    //  }
+    //}
+    //when (up.isFiring) {
+    //  myFifo.io.pop.ready := True
+    //  rSaveMemRdDataState := False
+    //}
+
+    //bypass(mainPayload).rdMemWord := myFifo.io.pop.payload
+    //up(outpPayload).rdMemWord.allowOverride
+    //up(outpPayload).rdMemWord := myFifo.io.pop.payload
+    cfg.setWordFunc(
+      //up(outpPayload).myInpPayload.data, //outp,
+      outpPayload.myInpPayload.data, //outp,
+      up(mainPayload).myInpPayload.data, //node(outpPayload).myInpPayload.data,
+      (
+        //myFifo.io.pop.payload, //node(outpPayload).rdMemWord,
+        //Mux(
+        //  outpPayload.fwdValid,
+        //  outpPayload.rdMemWord,
+        //  ram.io.ramIo.rdData,
+        //)
+        ram.io.ramIo.rdData
+      ),
+      up.isFiring,
+      io.myExternalInpCond,
+      Vec(io.wrPulse),
+    )
+  })
+
+  val myActualFinalLinkDown: Node = (
+    //if (cfg.optExtraRdPipeStages > 0) (
+    //  s2mLastBackArr.last
+    //) else (
+    //  s2mBack
+    //)
+    //sBack
+    if (cfg.optRdLatency == 0) (
+      //cFront
+      sFront.down
+    ) else (
+      cBack.down
+    )
+  )
+
+  myActualFinalLinkDown.driveTo(io.rdDataPipe)(
+    con=(outp, node) => {
+      outp := (
+        //node(outpPayload).myInpPayload.data
+        outpPayload.myInpPayload.data
+      )
+      //cfg.setWordFunc(
+      //  outp,
+      //  node(outpPayload).myInpPayload.data,
+      //  node(outpPayload).rdMemWord,
+      //)
+    }
+  )
+  //--------
+  Builder(myLinkArr.toSeq)
+  //--------
+}
+
+private[libcheesevoyage] case class WrPulseRdPipeRamSdpPipe[
+  ModT <: Data,
+  WordT <: Data,
+](
+  cfg: WrPulseRdPipeRamConfig[ModT, WordT],
+) extends Component {
+  //require(
+  //  !cfg.optRename
+  //)
+  val io = WrPulseRdPipeRamIo(cfg=cfg)
+  val myLinkArr = PipeHelper.mkLinkArr()
+
+  val ramCfg = (
+    RamSdpPipeConfig(
+      wordType=cfg.wordType(),
+      depth=cfg.wordCount,
+      optWrHistLength=cfg.optWrHistLength,
+      init=None,
+      initBigInt=(
+        cfg.initBigInt match {
+          case Some(myInitBigInt) => {
+            Some(myInitBigInt(0))
+          }
+          case None => {
+            None
+          }
+        }
+      ),
+      arrRamStyleAltera=cfg.arrRamStyleAltera,
+      arrRamStyleXilinx=cfg.arrRamStyleXilinx,
+      arrRwAddrCollisionXilinx=cfg.arrRwAddrCollisionXilinx,
+    )
+  )
+  val ram = RamSdpPipe(cfg=ramCfg)
+  ram.io.wrEn := io.wrPulse.fire
+  ram.io.wrAddr := io.wrPulse.addr
+  ram.io.wrData := io.wrPulse.data
+
+  //ram.io.rdEn := True
+  //ram.io.rdAddr := (
+  //  RegNext(ram.io.rdAddr, init=ram.io.rdAddr.getZero)
+  //)
+  case class MainPayload(
+  ) extends Bundle {
+    val myInpPayload = cloneOf(io.rdAddrPipe.payload)
+    val rdMemWord = cfg.wordType()
+    val fwdValid = Bool()
+    //val data = 
+  }
+
+  val mainPayload = Payload(MainPayload())
+  val outpPayload = Payload(MainPayload())
+
+  val myFifo = StreamFifo(
+    dataType=cfg.wordType(),
+    depth=2,
+    latency=0,
+    forFMax=true,
+  )
+
+  val cFront = CtrlLink()
+  val sFront = StageLink(
+    up=cFront.down,
+    down={
+      val temp = Node()
+      temp.setName("sFront_down")
+      temp
+    }
+  )
+  myLinkArr += cFront
+  myLinkArr += sFront
+
+  case class MyFwdInfo(
+  ) extends Bundle {
+    val valid = Bool()
+    val data = cfg.wordType()
+    val addr = UInt(log2Up(cfg.wordCount) bits)
+  }
+
+  cFront.up.driveFrom(
+    io.rdAddrPipe
+  )(
+    con=(node, myInpPayload) => {
+      node(mainPayload).myInpPayload := myInpPayload
+
+      val myHistFwdInfo = {
+        //val temp = Flow(
+        //  //cfg.wordType()
+        //  UInt(log2Up(cfg.wordCount) bits)
+        //)
+        //temp.valid := (
+        //  ram.io.wrEn
+        //  //&& myInpPayload.addr === ram.io.wrAddr
+        //)
+        //temp.payload := (
+        //  //ram.io.wrData
+        //  ram.io.wrAddr
+        //)
+        val temp = MyFwdInfo()
+        temp.valid := ram.io.wrEn
+        temp.data := ram.io.wrData
+        temp.addr := ram.io.wrAddr
+        History(
+          that=temp,
+          length=(
+            cfg.optWrHistLength
+            //+ 2
+            + cfg.optRdLatency
+          ),
+          init=temp.getZero
+        )
+      }
+      //val myHistForFwdData = (
+      //  History(
+      //    that=(
+      //      ram.io.wrData
+      //    ),
+      //    length=(
+      //      cfg.optWrHistLength + 2,
+      //    ),
+      //    init=False
+      //  )
+      //)
+      val myTempHistFwdValid = UInt(myHistFwdInfo.size bits)
+
+      for (idx <- 0 until myTempHistFwdValid.getWidth) {
+        myTempHistFwdValid(idx) := (
+          myHistFwdInfo(idx).valid
+          && (
+            LcvFastCmpEq(
+              left=myInpPayload.addr,
+              right=myHistFwdInfo(idx).addr,
+              cmpEqIo=null,
+            )._1
+          )
+        )
+      }
+
+// >>> for idx in range(size):
+// ...     print(idx, ("-" * (size - idx - 1) + "1" + ("0" * idx)))
+// ...     
+// 0 ---1
+// 1 --10
+// 2 -100
+// 3 1000
+      switch (myTempHistFwdValid) {
+        for (idx <- 0 until myTempHistFwdValid.getWidth) {
+          is (MaskedLiteral({
+            //(("0" * (myTempHistFwdValid.getWidth - idx - 1)))
+            //+ "1"
+            //+ ("-" * idx)
+            val size = myTempHistFwdValid.getWidth
+            ("-" * (size - idx - 1) + "1" + ("0" * idx))
+          })) {
+            node(mainPayload).fwdValid := True
+            node(mainPayload).rdMemWord := (
+              myHistFwdInfo(idx).data
+            )
+          }
+        }
+        default {
+          node(mainPayload).fwdValid := False
+          node(mainPayload).rdMemWord := (
+            node(mainPayload).rdMemWord.getZero
+          )
+        }
+      }
+
+      //when (
+      //  ram.io.wrEn
+      //  && myInpPayload.addr === ram.io.wrAddr
+      //) {
+      //  node(mainPayload).fwdValid := True
+      //  node(mainPayload).rdMemWord := ram.io.wrData
+      //} elsewhen (
+      //  RegNext(
+      //    (
+      //      ram.io.wrEn
+      //      && myInpPayload.addr === ram.io.wrAddr
+      //    ),
+      //    init=False
+      //  )
+      //) {
+      //  node(mainPayload).fwdValid := True
+      //  node(mainPayload).rdMemWord := RegNext(ram.io.wrData)
+      //} otherwise {
+      //  node(mainPayload).fwdValid := False
+      //  node(mainPayload).rdMemWord := node(mainPayload).rdMemWord.getZero
+      //}
+    }
+  )
+  val cFrontArea = new cFront.Area {
+    ram.io.rdEn := True
+    ram.io.rdAddr := (
+      RegNext(ram.io.rdAddr, init=ram.io.rdAddr.getZero)
+    )
+    when (
+      //up.isValid
+      //&& 
+      down.isReady
+    ) {
+      ram.io.rdAddr := up(mainPayload).myInpPayload.addr
+    }
+  }
+  //--------
+
+  // We need two cycles to read from a `RamSdpPipe`
+  val cMid = CtrlLink(
+    up=sFront.down,
+    down={
+      val temp = Node()
+      temp.setName("cMid_down")
+      temp
+    }
+  )
+  val sMid = StageLink(
+    up=cMid.down,
+    down={
+      val temp = Node()
+      temp.setName("sMid_down")
+      temp
+    }
+  )
+  myLinkArr += cMid
+  myLinkArr += sMid
+
+  val cMidArea = new cMid.Area {
+    myFifo.io.push.valid := RegNext(up.isFiring, init=False)
+  }
+  //--------
+  val cBack = CtrlLink(
+    up=(
+      //sFront.down
+      sMid.down
+    ),
+    down={
+      val temp = Node()
+      temp.setName("cBack_down")
+      temp
+    }
+  )
+  val sBack = StageLink(
+    up=cBack.down,
+    down={
+      val temp = Node()
+      temp.setName("sBack_down")
+      temp
+    }
+  )
+  val s2mBack = S2MLink(
+    up=sBack.down,
+    down={
+      val temp = Node()
+      temp.setName("s2mBack_down")
+      temp
+    }
+  )
+  myLinkArr += cBack
+  myLinkArr += sBack
+  myLinkArr += s2mBack
+
+  val sLastBackArr = new ArrayBuffer[StageLink]()
+  val s2mLastBackArr = new ArrayBuffer[S2MLink]()
+  for (
+    idx <- 0 until cfg.optRdLatency - 2//2//1//2
+  ) {
+    if (idx == 0) {
+      sLastBackArr += StageLink(
+        up=(
+          //sBack.down
+          s2mBack.down
+        ),
+        down={
+          val temp = Node()
+          temp.setName(s"sLastBackArr_${idx}_down")
+          temp
+        },
+      )
+    } else {
+      sLastBackArr += StageLink(
+        up=s2mLastBackArr(idx - 1).down,
+        down={
+          val temp = Node()
+          temp.setName(s"sLastBackArr_${idx}_down")
+          temp
+        },
+      )
+    }
+    s2mLastBackArr += S2MLink(
+      up=sLastBackArr.last.down,
+      down={
+        val temp = Node()
+        temp.setName(s"s2mLastBackArr_${idx}_down")
+        temp
+      },
+    )
+  }
+  if (cfg.optRdLatency > 2) {
+    myLinkArr ++= sLastBackArr
+    myLinkArr ++= s2mLastBackArr
+  }
+  //StageLink(
+  //  c
+  //)
+
+  val cBackArea = new cBack.Area {
+    //up(outpPayload) := up(mainPayload)
+
+    val rSaveMemRdDataState = Reg(Bool(), init=False)
+    myFifo.io.push.payload := (
+      Mux(
+        up(mainPayload).fwdValid,
+        up(mainPayload).rdMemWord,
+        ram.io.rdData,
+      )
+    )
+    myFifo.io.pop.ready := False
+    when (myFifo.io.pop.valid) {
+      when (!rSaveMemRdDataState) {
+        rSaveMemRdDataState := True
+      }
+    }
+    when (up.isFiring) {
+      myFifo.io.pop.ready := True
+      rSaveMemRdDataState := False
+    }
+    //bypass(mainPayload).rdMemWord := myFifo.io.pop.payload
+    //up(outpPayload).rdMemWord.allowOverride
+    //up(outpPayload).rdMemWord := myFifo.io.pop.payload
+    cfg.setWordFunc(
+      up(outpPayload).myInpPayload.data, //outp,
+      up(mainPayload).myInpPayload.data, //node(outpPayload).myInpPayload.data,
+      myFifo.io.pop.payload, //node(outpPayload).rdMemWord,
+      up.isFiring,
+      io.myExternalInpCond,
+      Vec(io.wrPulse),
+    )
+  }
+
+  val myActualFinalS2mLink = (
+    if (cfg.optRdLatency > 2) (
+      s2mLastBackArr.last
+    ) else (
+      s2mBack
+    )
+  )
+  myActualFinalS2mLink.down.driveTo(io.rdDataPipe)(
+    con=(outp, node) => {
+      outp := node(outpPayload).myInpPayload.data
+      //cfg.setWordFunc(
+      //  outp,
+      //  node(outpPayload).myInpPayload.data,
+      //  node(outpPayload).rdMemWord,
+      //)
+    }
+  )
+  //--------
+  Builder(myLinkArr.toSeq)
+  //--------
+}
+
+
+//case class WrPulseRdPipeRamSdpPipeOldConfig[
+//  ModT <: Data,
+//  WordT <: Data,
+//](
+//  modType: HardType[ModT],
+//  wordType: HardType[WordT],
+//  wordCount: Int,
+//  pipeName: String,
+//  setWordFunc: (
+//    ModT,     // pass through pipeline payload (output)
+//    ModT,     // pass through pipeline payload (input)
+//    WordT,    // data read from the RAM
+//  ) => Unit,
+//  initBigInt: Option[Seq[Seq[BigInt]]]=None,
+//  arrRamStyleAltera: String="M10K",
+//  arrRamStyleXilinx: String="block",
+//  arrRwAddrCollisionXilinx: String="",
+//) {
+//  def addrWidth = log2Up(wordCount)
+//  def modRdPortCnt = 1
+//  def modStageCnt = 0//1
+//
+//  val pmCfg = PipeRegFileConfig[
+//    WordT,
+//    Bool,
+//  ](
+//    wordType=wordType(),
+//    wordCountArr=Array.fill(1)(wordCount).toSeq,
+//    hazardCmpType=Bool(),
+//    modRdPortCnt=modRdPortCnt,
+//    modStageCnt=modStageCnt,
+//    pipeName=pipeName,
+//    optIncludePreMid0Front=(
+//      //false
+//      true
+//    ),
+//    linkArr=(
+//      //Some(PipeRegFile.mkLinkArr()),
+//      //linkArr
+//      None
+//    ),
+//    memArrIdx=0,
+//    //dualRdType=PmRmwModType(),
+//    optDualRd=false,
+//    initBigInt=initBigInt,
+//    //optEnableModDuplicate=false,
+//    optModHazardKind=(
+//      //PipeRegFile.ModHazardKind.Dont
+//      //PipeRegFile.ModHazardKind.Dupl
+//      PipeRegFile.ModHazardKind.Fwd
+//    ),
+//    vivadoDebug=false,
+//    optEnableWrPulse=true,
+//    memRamStyleAltera=arrRamStyleAltera,
+//    memRamStyleXilinx=arrRamStyleXilinx,
+//    memRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
+//    optIncludeModFrontStageLink=false,
+//    optIncludeModFrontS2MLink=false,
+//  )
+//}
+//
+//case class WrPulseRdPipeRamSdpPipeOld[
+//  ModT <: Data,
+//  WordT <: Data,
+//](
+//  cfg: WrPulseRdPipeRamSdpPipeOldConfig[ModT, WordT],
+//) extends Component {
+//  //--------
+//  val io = WrPulseRdPipeRamSdpPipeIo(cfg=cfg)
+//  //--------
+//  def mkExt() = {
+//    val ret = PipeRegFilePayloadExt(
+//      cfg=cfg.pmCfg,
+//      wordCount=cfg.wordCount,
+//    )
+//    ret
+//  }
+//  case class PmRmwModType(
+//  ) extends Bundle with PipeRegFilePayloadBase[WordT, Bool] {
+//    //setName(
+//    //  name=pmRmwModTypeName,
+//    //)
+//    val data = cfg.modType()
+//    val myExt = mkExt()
+//    /*override*/ def setPipeRegFileExt(
+//      inpExt: PipeRegFilePayloadExt[WordT, Bool],
+//      ydx: Int,
+//      memArrIdx: Int,
+//    ): Unit = {
+//      myExt := inpExt
+//    }
+//    /*override*/ def getPipeRegFileExt(
+//      outpExt: PipeRegFilePayloadExt[WordT, Bool],
+//      ydx: Int,
+//      memArrIdx: Int,
+//    ): Unit = {
+//      outpExt := myExt
+//    }
+//    //def optFormalFwdFuncs(
+//    //): Option[PipeRegFilePayloadBaseFormalFwdFuncs[WordT, Bool]] = (
+//    //  None
+//    //)
+//    /*override*/ def formalSetPipeRegFileFwd(
+//      outpFwd: PipeRegFileFwd[WordT, Bool],
+//      memArrIdx: Int,
+//    ): Unit = {
+//    }
+//
+//    /*override*/ def formalGetPipeRegFileFwd(
+//      inpFwd: PipeRegFileFwd[WordT, Bool],
+//      memArrIdx: Int,
+//    ): Unit = {
+//    }
+//  }
+//  val pipeMem = PipeRegFile[
+//    WordT,
+//    Bool,
+//    PmRmwModType,
+//    PipeRegFileDualRdTypeDisabled[
+//      WordT, Bool,
+//    ]
+//  ](
+//    cfg=cfg.pmCfg,
+//    modType=PmRmwModType(),
+//  )(
+//    doHazardCmpFunc=None,
+//    doModInMid0FrontFunc={
+//      def myFunc(
+//        params: PipeRegFileDoModInMid0FrontFuncParams[
+//          WordT,
+//          Bool,
+//          PmRmwModType,
+//          PipeRegFileDualRdTypeDisabled[
+//            WordT, Bool,
+//          ]
+//        ]
+//      ): Area = new Area {
+//        when (params.cMid0Front.up.isValid) {
+//          params.outp := params.inp
+//        }
+//        params.outp.myExt.modMemWord := params.getMyRdMemWordFunc(0, 0)
+//        params.outp.myExt.fwdCanDoIt.foreach(item => {
+//          item := False
+//        })
+//        params.outp.myExt.modMemWordValid.foreach(mmwValidItem => {
+//          mmwValidItem := False
+//        })
+//      }
+//      Some(myFunc)
+//      //None
+//    }
+//  )
+//  pipeMem.io.front.driveFrom(io.rdAddrPipe)(
+//    con=(node, inp) => {
+//      def rdAddrPayload = node(pipeMem.io.frontPayload)
+//      rdAddrPayload := rdAddrPayload.getZero
+//      rdAddrPayload.allowOverride
+//      //rdAddrPayload.data := io.rdAddrPipe
+//      rdAddrPayload.myExt.memAddr.head := inp.addr
+//      //rdAddrPayload.myExt.memAddrFwdMmw.head.foreach(item => {
+//      //  item := inp.addr
+//      //})
+//      rdAddrPayload.myExt.rdMemWord.foreach(rdMemWord => {
+//        rdMemWord := rdMemWord.getZero
+//      })
+//      rdAddrPayload.data := inp.data
+//
+//      //rdAddrPayload.myExt.rdMemWord.last := (
+//      //  rdAddrPipePayload.data
+//      //)
+//      //rdAddrPayload.myExt.modMemWord := rdAddrPipePayload.data //rdAddrPayload.myExt.rdMemWord
+//
+//    }
+//  )
+//  val sMid0FrontToModFront = StageLink(
+//    up=pipeMem.mod.front.cMid0Front.head.down,
+//    down=pipeMem.io.modFront,
+//  )
+//  pipeMem.myLinkArr += sMid0FrontToModFront
+//  pipeMem.io.modFront(pipeMem.io.modBackPayload) := (
+//    pipeMem.io.modFront(pipeMem.mod.front.outpPipePayload)
+//  )
+//  //val fModFrontToModBack = ForkLink(
+//  //  up=pipeMem.io.modFront,
+//  //  downs=List(
+//  //    pipeMem.io.modBack,
+//  //    pipeMem.io.modBackFwd,
+//  //  ),
+//  //)
+//  //pipeMem.myLinkArr += fModFrontToModBack
+//  def dModFrontToModBack = DirectLink(
+//    up=pipeMem.io.modFront,
+//    down=pipeMem.io.modBack,
+//  )
+//  pipeMem.myLinkArr += dModFrontToModBack
+//  pipeMem.io.back.driveTo(io.rdDataPipe)(
+//    con=(outp, node) => {
+//      //rdDataPipePayload := node(pipeMem.io.backPayload).myExt.modMemWord
+//      cfg.setWordFunc(
+//        outp,
+//        node(pipeMem.io.backPayload).data,
+//        node(pipeMem.io.backPayload).myExt.rdMemWord.last,
+//      )
+//    }
+//  )
+//  pipeMem.io.wrPulse.valid := io.wrPulse.valid
+//  pipeMem.io.wrPulse.addr := io.wrPulse.addr
+//  pipeMem.io.wrPulse.modMemWord := io.wrPulse.data
+//  Builder(pipeMem.myLinkArr.toSeq)
+//  //--------
+//}
+
+case class WrPulseRdPipeSimpleDualPortMemIo[
+  T <: Data,
+  WordT <: Data,
+](
+  dataType: HardType[T],
+  wordType: HardType[WordT],
+  wordCount: Int,
+  unionIdxWidth: Int=1
+) extends Bundle {
+  //--------
+  val unionIdx = in UInt(unionIdxWidth bits)
+  //--------
+  def addrWidth = log2Up(wordCount)
+  val wrPulse = slave(Flow(
+    PipeSimpleDualPortMemDrivePayload(
+      //wordType=wordType(),
+      //dataType=dataType,
+      dataType=wordType(),
+      wordCount=wordCount,
+    )
+  ))
+  //val rdAddrPipe = Stream(UInt(addrWidth bits))
+  val rdAddrPipe = slave(Stream(
+    PipeSimpleDualPortMemDrivePayload(
+      //wordType=wordType(),
+      dataType=dataType(),
+      wordCount=wordCount,
+    )
+  ))
+  val rdDataPipe = master(Stream(
+    //wordType()
+    dataType()
+  ))
+  //--------
+}
+
+//--------
+// TODO: rework this to not use PipeRegFile's "dual read" stuff as that is
+// mostly not a thing any mroe
+case class WrPulseRdPipeSimpleDualPortMem[
+  T <: Data,
+  WordT <: Data
+](
+  dataType: HardType[T],
+  wordType: HardType[WordT],
+  wordCount: Int,
+  pipeName: String,
+  initBigInt: Option[Seq[Seq[BigInt]]]=None,
+  linkArr: Option[ArrayBuffer[Link]]=None,
+  //latency: Int=1,
+  //pmRmwModTypeName: String,
+  arrRamStyleAltera: String="M10K",
+  arrRamStyleXilinx: String="block",
+  arrRwAddrCollisionXilinx: String="",
+  unionIdxWidth: Int=1,
+  vivadoDebug: Boolean=false,
+)(
+  //getWordFunc: (
+  //  T           // input pipeline payload
+  //) => WordT,   // 
+  setWordFunc: (
+    UInt,   // union type indicator
+    T,      // pass through pipeline payload (output)
+    T,      // pass through pipeline payload (input)
+    WordT,  // data read from the RAM
+  ) => Unit,
+) //extends Area 
+extends Component 
+{
+  //object Testificate extends TaggedUnion {
+  //  val uint = UInt(3 bits)
+  //  val sint = SInt(3 bits)
+  //}
+  //val testificate = dataType() aliasAs(Bits(3 bits))
+  //val testificate = HardType.union(Bits(3 bits), UInt(3 bits))
+  //testificate.aliasAs(UInt(3 bits)) := 3
+  //--------
+  //assert(latency >= 1)
+  //--------
+  val io = WrPulseRdPipeSimpleDualPortMemIo(
+    dataType=dataType(),
+    wordType=wordType(),
+    wordCount=wordCount,
+    unionIdxWidth=unionIdxWidth,
+  )
+  def addrWidth = io.addrWidth
+  val pmCfg = PipeRegFileConfig[
+    WordT,
+    Bool,
+    //PmRmwModType,
+    //PmRmwModType,
+  ](
+    wordType=wordType(),
+    wordCountArr=Array.fill(1)(wordCount).toSeq,
+    hazardCmpType=Bool(),
+    modRdPortCnt=modRdPortCnt,
+    modStageCnt=modStageCnt,
+    pipeName=pipeName,
+    optIncludePreMid0Front=(
+      false
+      //true
+    ),
+    //linkArr=Some(PipeRegFile.mkLinkArr()),
+    linkArr=linkArr,
+    memArrIdx=0,
+    //dualRdType=PmRmwModType(),
+    optDualRd=true,
+    initBigInt=initBigInt,
+    //optEnableModDuplicate=false,
+    optModHazardKind=(
+      PipeRegFile.ModHazardKind.Dont
+      //PipeRegFile.ModHazardKind.Dupl
+    ),
+    vivadoDebug=vivadoDebug,
+    memRamStyleAltera=arrRamStyleAltera,
+    memRamStyleXilinx=arrRamStyleXilinx,
+    memRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
+  )
+  //--------
+  def modRdPortCnt = 1
+  def modStageCnt = 1
+  def mkExt() = {
+    val ret = PipeRegFilePayloadExt(
+      cfg=pmCfg,
+      //wordType=wordType(),
+      wordCount=wordCount,
+      //hazardCmpType=Bool(),
+      //modRdPortCnt=modRdPortCnt,
+      //modStageCnt=modStageCnt,
+      //memArrSize=1,
+      ////optEnableModDuplicate=false,
+      //optModHazardKind=(
+      //  PipeRegFile.ModHazardKind.Dont
+      //),
+      ////optReorder=true,
+    )
+    //if (vivadoDebug) {
+    //  ret.addAttribute("MARK_DEBUG", "TRUE")
+    //}
+    ret
+  }
+  //if (vivadoDebug) {
+  //  io.addAttribute("MARK_DEBUG", "TRUE")
+  //}
+  case class PmRmwModType(
+  ) extends Bundle with PipeRegFilePayloadBase[WordT, Bool] {
+    //setName(
+    //  name=pmRmwModTypeName,
+    //)
+    val data = dataType()
+    val myExt = mkExt()
+    /*override*/ def setPipeRegFileExt(
+      inpExt: PipeRegFilePayloadExt[WordT, Bool],
+      ydx: Int,
+      memArrIdx: Int,
+    ): Unit = {
+      myExt := inpExt
+    }
+    /*override*/ def getPipeRegFileExt(
+      outpExt: PipeRegFilePayloadExt[WordT, Bool],
+      ydx: Int,
+      memArrIdx: Int,
+    ): Unit = {
+      outpExt := myExt
+    }
+    //def optFormalFwdFuncs(
+    //): Option[PipeRegFilePayloadBaseFormalFwdFuncs[WordT, Bool]] = (
+    //  None
+    //)
+    /*override*/ def formalSetPipeRegFileFwd(
+      outpFwd: PipeRegFileFwd[WordT, Bool],
+      memArrIdx: Int,
+    ): Unit = {
+    }
+
+    /*override*/ def formalGetPipeRegFileFwd(
+      inpFwd: PipeRegFileFwd[WordT, Bool],
+      memArrIdx: Int,
+    ): Unit = {
+    }
+  }
+  //val linkArr = PipeRegFile.mkLinkArr()
+  val pipeMem = PipeRegFile[
+    WordT,
+    Bool,
+    PmRmwModType,
+    PmRmwModType,
+  ](
+    cfg=pmCfg,
+    modType=PmRmwModType(),
+    dualRdType=PmRmwModType(),
+  )(
+    doHazardCmpFunc=None
+  )
+  //val wrPipe = Stream(cloneOf(io.wrPulse.payload))
+  //val pipeMemModFrontStm = cloneOf(pipeMem.io.modFront)
+  //val pipeMemModBackStm = cloneOf(pipeMem.io.modBack)
+  //pipeMemModFrontStm << pipeMem.io.modFront
+  //pipeMem.io.modBack <-/< pipeMemModBackStm
+  //pipeMemModFrontStm.translateInto(pipeMemModBackStm)(
+  //  dataAssignment
+  //)
+
+  //--------
+  val sMyMod = StageLink(
+    up=pipeMem.io.modFront,
+    down=pipeMem.io.modBack,
+  )
+    .setName("sMyMod")
+  pipeMem.myLinkArr += sMyMod
+  //val cMyMod = CtrlLink(
+  //  up=sMyMod.down,
+  //  down=pipeMem.io.modBack,
+  //)
+  //pipeMem.myLinkArr += cMyMod
+
+  val tempModBackPayload = PmRmwModType()
+  //pipeMem.io.modBack
+  sMyMod.up(pipeMem.io.modBackPayload) := tempModBackPayload
+  tempModBackPayload := (
+    RegNext(tempModBackPayload) init(tempModBackPayload.getZero)
+  )
+  when (pipeMem.io.modFront.isValid) {
+    tempModBackPayload := (
+      pipeMem.io.modFront(pipeMem.io.modFrontAfterPayload)
+    )
+  }
+  //--------
+  //pipeMem.io.modBack <-/< pipeMem.io.modFront
+  val tempWrPulseStm = io.wrPulse.toStream
+  val tempWrPulseStm1 = cloneOf(tempWrPulseStm)
+  tempWrPulseStm1 <-/< tempWrPulseStm
+  pipeMem.io.front.driveFrom(tempWrPulseStm1)(
+  //tempWrPulseStm1.translateInto(pipeMem.io.front)
+    con=(/*wrPipePayload*/ node, wrPulsePayload) => {
+      def wrPipePayload = node(pipeMem.io.frontPayload)
+      wrPipePayload := wrPipePayload.getZero
+      wrPipePayload.allowOverride
+      //wrPipePayload.data := io.wrPulse
+      wrPipePayload.myExt.memAddr.last := (
+        wrPulsePayload.addr
+      )
+      wrPipePayload.myExt.rdMemWord.last := (
+        wrPulsePayload.data
+      )
+      wrPipePayload.myExt.modMemWord := wrPulsePayload.data //wrPipePayload.myExt.rdMemWord
+    }
+  )
+  pipeMem.io.back.ready := True
+  //io.rdAddrPipe.translateInto(pipeMem.io.dualRdFront)
+  val tempRdAddrPipe = cloneOf(io.rdAddrPipe)
+  tempRdAddrPipe << io.rdAddrPipe
+  pipeMem.io.dualRdFront.driveFrom(tempRdAddrPipe)(
+    con=(/*dualRdPipePayload*/node, rdAddrPipePayload) => {
+      def dualRdPipePayload = node(pipeMem.io.dualRdFrontPayload)
+      dualRdPipePayload := dualRdPipePayload.getZero
+      dualRdPipePayload.allowOverride
+      dualRdPipePayload.data := rdAddrPipePayload.data
+      dualRdPipePayload.myExt.memAddr.last := (
+        rdAddrPipePayload.addr
+      )
+    }
+  )
+  //pipeMem.io.dualRdBack.translateInto(io.rdDataPipe)
+  val tempRdDataPipe = cloneOf(io.rdDataPipe)
+  io.rdDataPipe << tempRdDataPipe
+  pipeMem.io.dualRdBack.driveTo(tempRdDataPipe)(
+    con=(rdDataPipePayload, node/*dualRdPipePayload*/) => {
+      def dualRdPipePayload = node(pipeMem.io.dualRdBackPayload)
+      //val rTempWord = (
+      //  Reg(
+      //    cloneOf(dualRdPipePayload)
+      //  )
+      //)
+      setWordFunc(
+        io.unionIdx,
+        rdDataPipePayload,
+        dualRdPipePayload.data,
+        dualRdPipePayload.myExt.rdMemWord.last
+      )
+      //rdDataPipePayload := dualRdPipePayload.myExt.modMemWord
+    }
+  )
+  Builder(pipeMem.myLinkArr.toSeq)
+  //--------
+  //val mem = Mem(
+  //  wordType=wordType(),
+  //  wordCount=wordCount,
+  //)
+  //  .addAttribute("ram_style", arrRamStyleXilinx)
+  //  .addAttribute("rw_addr_collision", arrRwAddrCollisionXilinx)
+  //initBigInt match {
+  //  case Some(myInitBigInt) => {
+  //    mem.initBigInt(myInitBigInt)
+  //  }
+  //  case None => {
+  //  }
+  //}
+  //mem.write(
+  //  address=io.wrPulse.addr,
+  //  data=io.wrPulse.data,
+  //  enable=io.wrPulse.valid,
+  //)
+  ////def pipeWordType() = PipeSimpleDualPortMemDrivePayload(
+  ////  dataType=dataType(),
+  ////  depth=wordCount,
+  ////)
+  //val linkArr = PipeHelper.mkLinkArr()
+  //val read = new Area {
+  //  val myRdMemWord = wordType()
+  //  val pipe = PipeHelper(linkArr=linkArr)
+  //  val cFront = pipe.addStage(
+  //    name="ReadFront"
+  //  )
+  //  val cMid0 = pipe.addStage(
+  //    name="ReadMid0",
+  //    //optIncludeS2M=false,
+  //  )
+  //  val cMid1 = pipe.addStage(
+  //    name="ReadMid1",
+  //    optIncludeS2M=false,
+  //  )
+  //  val cBack = pipe.addStage(
+  //    name="ReadBack",
+  //    //finish=true,
+  //  )
+  //  val cPreLast = pipe.addStage(
+  //    name="PreLast"
+  //  )
+  //  val cLast = pipe.addStage(
+  //    name="ReadLast",
+  //    finish=true,
+  //  )
+  //  val inpPipePayload = Payload(cloneOf(io.rdAddrPipe.payload))
+  //  //val midPipePayload = Payload(cloneOf(io.rdDataPipe.payload))
+  //  val outpPipePayload = Payload(cloneOf(io.rdDataPipe.payload))
+  //  pipe.first.up.driveFrom(io.rdAddrPipe)(
+  //    con=(node, payload) => {
+  //      node(inpPipePayload) := payload
+  //    }
+  //  )
+  //  pipe.last.down.driveTo(io.rdDataPipe)(
+  //    con=(payload, node) => {
+  //      payload := node(outpPipePayload)
+  //    }
+  //  )
+  //  val cReadFrontArea = new cFront.Area {
+  //    myRdMemWord := mem.readSync(
+  //      address=up(inpPipePayload).addr,
+  //      enable=up.isFiring
+  //    )
+  //  }
+  //  val cReadMid0Area = new cMid0.Area {
+  //    val rDoIt = Reg(Bool()) init(False)
+  //    when (
+  //      up.isValid
+  //      && !rDoIt
+  //    ) {
+  //      rDoIt := True
+  //    }
+  //    when (up.isFiring) {
+  //      rDoIt := False
+  //    }
+  //    val tempOutpPayload = cloneOf(io.rdDataPipe.payload)
+  //    setWordFunc(
+  //      io.unionIdx,
+  //      //up(outpPipePayload),
+  //      tempOutpPayload,
+  //      up(inpPipePayload).data,
+  //      Mux[WordT](
+  //        up.isValid && !rDoIt,
+  //        myRdMemWord,
+  //        (RegNext(myRdMemWord) init(myRdMemWord.getZero)),
+  //      )
+  //    )
+  //    up(outpPipePayload) := tempOutpPayload
+  //  }
+  //  //val front = new Area {
+  //  //  val pipe = PipeHelper(linkArr=linkArr)
+  //  //  val outpStm = cloneOf(io.rdDataPipe)
+  //  //  //val inpPipePayload = Payload(pipeWordType())
+  //  //  //val outpPipePayload = Payload(pipeWordType())
+  //  //  val inpPipePayload = Payload(cloneOf(io.rdAddrPipe.payload))
+  //  //  //val midPipePayload = Payload(cloneOf(io.rdDataPipe.payload))
+  //  //  val outpPipePayload = Payload(cloneOf(io.rdDataPipe.payload))
+
+  //  //  val myRdMemWord = wordType()
+  //  //  val cFront = pipe.addStage("Front")
+  //  //  val cLastFront = pipe.addStage(
+  //  //    name="LastFront",
+  //  //    finish=true,
+  //  //  )
+  //  //  //val cBack = pipe.addStage(
+  //  //  //  name="Back",
+  //  //  //  finish=true,
+  //  //  //)
+  //  //  pipe.first.up.driveFrom(io.rdAddrPipe)(
+  //  //    con=(node, payload) => {
+  //  //      node(inpPipePayload) := payload
+  //  //    }
+  //  //  )
+  //  //  pipe.last.down.driveTo(
+  //  //    outpStm
+  //  //    //io.rdDataPipe
+  //  //  )(
+  //  //    con=(payload, node) => {
+  //  //      payload := node(outpPipePayload)
+  //  //    }
+  //  //  )
+  //  //}
+  //  ////val back = new Area {
+  //  ////  val pipe = PipeHelper(linkArr=linkArr)
+  //  ////  val inpStm = cloneOf(io.rdDataPipe)
+  //  ////}
+  //  //val back = new Area {
+  //  //  val pipe = PipeHelper(linkArr=linkArr)
+  //  //  val inpStm = cloneOf(io.rdDataPipe)
+  //  //  //inpStm <-/< front.outpStm
+  //  //  inpStm <-/< front.outpStm
+  //  //  //val inpPipePayload = Payload(pipeWordType())
+  //  //  //val outpPipePayload = Payload(pipeWordType())
+  //  //  val myPipePayload = Payload(cloneOf(io.rdDataPipe.payload))
+  //  //  //val outpPipePayload = Payload(cloneOf(io.rdDataPipe.payload))
+
+  //  //  //val cMid = pipe.addStage("Mid")
+  //  //  val cBack = pipe.addStage("Back")
+  //  //  val cLastBack = pipe.addStage(
+  //  //    name="LastBack",
+  //  //    finish=true
+  //  //  )
+  //  //  pipe.first.up.driveFrom(inpStm)(
+  //  //    con=(node, payload) => {
+  //  //      node(myPipePayload) := payload
+  //  //    }
+  //  //  )
+  //  //  pipe.last.down.driveTo(io.rdDataPipe)(
+  //  //    con=(payload, node) => {
+  //  //      payload := node(myPipePayload)
+  //  //    }
+  //  //  )
+  //  //  //when (cBack.up.isValid) {
+  //  //  //}
+  //  //  //pipe.last.down.driveTo(io.rdDataPipe)(
+  //  //  //  con=(payload, node) => {
+  //  //  //    //payload := node(outpPipePayload)
+  //  //  //    setWordFunc(
+  //  //  //      io.unionIdx,
+  //  //  //      node(outpPipePayload).data,
+  //  //  //      node(inpPipePayload).data,
+  //  //  //      myRdMemWord
+  //  //  //    )
+  //  //  //  }
+  //  //  //)
+  //  //}
+  //  //val myRdMemWord = wordType()
+  //  //val frontStm = cloneOf(io.rdAddrPipe)
+  //  ////val midStm = Vec.fill(2)(cloneOf(io.rdDataPipe))
+  //  //val midFrontStm = cloneOf(io.rdAddrPipe)
+  //  //val midMidStm = cloneOf(io.rdDataPipe)
+  //  //val midBackStm = cloneOf(io.rdDataPipe)
+  //  //val backStm = cloneOf(io.rdDataPipe)
+  //  ////val backStm = cloneOf(io.rdDataPipe)
+  //  //val rDoIt = Reg(Bool()) init(False)
+  //  ////frontStm <-/< io.rdAddrPipe
+  //  //frontStm <-/< io.rdAddrPipe
+  //  //midFrontStm <-/< frontStm
+  //  //midFrontStm.translateInto(midMidStm)(
+  //  //  dataAssignment=(midMidPayload, midFrontPayload) => {
+  //  //    midMidPayload := midFrontPayload.data
+  //  //    //midFrontPayload.allowOverride
+  //  //  }
+  //  //)
+  //  //myRdMemWord := mem.readSync(
+  //  //  address=io.rdAddrPipe.addr,
+  //  //  enable=frontStm.fire,
+  //  //)
+  //  ////myRdMemWord := mem.readAsync(address=frontStm.addr)
+  //  ////myRdMemWord := mem.readAsync(address=midFrontStm.addr)
+  //  ////midFrontStm.translateInto(backStm)(
+  //  ////  dataAssignment=(backPayload, midFrontPayload) => {
+  //  ////    backPayload
+  //  ////  }
+  //  ////)
+  //  //def condStm = (
+  //  //  //midBackStm
+  //  //  //midMidStm
+  //  //  midFrontStm
+  //  //  //io.rdDataPipe
+  //  //)
+  //  ////midBackStm <-/< midMidStm
+  //  ////midBackStm <-/< midFrontStm
+  //  ////midBackStm << midFrontStm
+  //  ////midBackStm <-/< midMidStm
+  //  //midBackStm << midMidStm
+  //  ////midBackStm <-/< midMidStm
+  //  ////backStm << midBackStm
+  //  //backStm.arbitrationFrom(midBackStm)
+  //  //////backStm.payload := midBackStm.payload
+  //  //////backStm << midBackStm
+  //  //////backStm.payload.allowOverride
+  //  ////backStm.valid := midBackStm.valid
+  //  ////midBackStm.ready := backStm.ready
+  //  //setWordFunc(
+  //  //  io.unionIdx,
+  //  //  backStm.payload,
+  //  //  //RegNext(midBackStm.payload),
+  //  //  midBackStm.payload,
+  //  //  myRdMemWord,
+  //  //  //Mux[WordT](
+  //  //  //  condStm.valid && !rDoIt,
+  //  //  //  myRdMemWord,
+  //  //  //  (RegNext(myRdMemWord) init(myRdMemWord.getZero))
+  //  //  //),
+  //  //)
+  //  //when (
+  //  //  condStm.valid
+  //  //  && !rDoIt
+  //  //) {
+  //  //  //setWordFunc(
+  //  //  //  io.unionIdx,
+  //  //  //  backStm.payload,
+  //  //  //  midBackStm.payload,
+  //  //  //  myRdMemWord,
+  //  //  //)
+  //  //  rDoIt := True
+  //  //}
+  //  //when (condStm.fire) {
+  //  //  rDoIt := False
+  //  //}
+  //  ////backStm <-/< backStm
+  //  //io.rdDataPipe <-/< backStm
+  //  ////io.rdDataPipe << backStm
+  //}
+  //--------
+  //val cFront = read.front.cFront
+  //val cFrontArea = new cFront.Area {
+  //  read.front.myRdMemWord := mem.readSync(
+  //    address=up(read.front.inpPipePayload).addr,
+  //    enable=up.isFiring
+  //  )
+  //}
+  //--------
+  //val cLastFront = read.front.cLastFront
+  //val cLastFrontArea = new cLastFront.Area {
+  //  val rSetRdId = Reg(Bool()) init(False)
+  //  //val tempMidPayload = dataType()
+  //  //tempOutpPayload := (
+  //  //  RegNext(tempOutpPayload)
+  //  //  init(tempOutpPayload.getZero)
+  //  //)
+  //  //setWordFunc(
+  //  //  io.unionIdx,
+  //  //  tempMidPayload,
+  //  //  up(read.front.inpPipePayload).data,
+  //  //  //Mux[WordT](
+  //  //  //  up.isValid && !rSetRdId,
+  //  //    //RegNextWhen(
+  //  //      read.front.myRdMemWord,
+  //  //    //  read.front.cBack.up.isFiring,
+  //  //    //)
+  //  //  //  RegNext(read.front.myRdMemWord),
+  //  //  //),
+  //  //)
+  //  //read.front.myRdMemWord
+  //  //when (
+  //  //  up.isValid
+  //  //  && !rSetRdId
+  //  //) {
+  //  //  rSetRdId := True
+  //  //}
+  //  //when (
+  //  //  up.isFiring
+  //  //) {
+  //  //  rSetRdId := False
+  //  //}
+  //  //up(read.front.outpPipePayload) := tempMidPayload
+  //  //up(read.front.midPipePayload) := tempMidPayload
+  //}
+  //--------
+  //val cLastFront = read.front.cLastFront
+  //val cLastFrontArea = new cLastFront.Area {
+  //  val tempOutpPayload = dataType()
+  //  val rDoIt = Reg(Bool()) init(False)
+  //  when (
+  //    up.isValid
+  //    && !rDoIt
+  //  ) {
+  //    rDoIt := True
+  //  }
+  //  when (
+  //    up.isFiring
+  //  ) {
+  //    rDoIt := False
+  //  }
+  //  setWordFunc(
+  //    io.unionIdx,
+  //    tempOutpPayload,
+  //    up(read.front.inpPipePayload).data,
+  //    //up(read.front.myPipeRdMemWord)
+  //    //read.front.myRdMemWord
+  //    Mux[WordT](
+  //      up.isValid && !rDoIt,
+  //      //RegNextWhen(
+  //        read.front.myRdMemWord,
+  //      //  read.front.cLastFront.up.isFiring,
+  //      //)
+  //      RegNext(read.front.myRdMemWord),
+  //    )
+  //  )
+  //  up(read.front.outpPipePayload) := tempOutpPayload
+  //}
+  //--------
+  //Builder(pipeMem.myLinkArr.toSeq)
+  //--------
+  ////val wrPipeToPulse = FpgacpuPipeToPulse(
+  ////  dataType=PipeSimpleDualPortMemDrivePayload(
+  ////    //wordType=wordType(),
+  ////    dataType=dataType(),
+  ////    wordCount=depth,
+  ////  )
+  ////)
+  //val rdAddrPipeToPulse = FpgacpuPipeToPulse(
+  //  //dataType=UInt(addrWidth bits)
+  //  dataType=PipeSimpleDualPortMemDrivePayload(
+  //    //wordType=wordType(),
+  //    dataType=dataType(),
+  //    wordCount=wordCount,
+  //  )
+  //)
+  //rdAddrPipeToPulse.io.pipe << io.rdAddrPipe
+  //rdAddrPipeToPulse.io.clear := False
+  //val rdDataPulseToPipe = FpgacpuPulseToPipe(
+  //  //dataType=wordType()
+  //  dataType=dataType()
+  //)
+  //rdDataPulseToPipe.io.clear := False
+  //rdAddrPipeToPulse.io.moduleReady := rdDataPulseToPipe.io.moduleReady
+  ////--------
+  //val arr = FpgacpuRamSimpleDualPort(
+  //  wordType=wordType(),
+  //  depth=wordCount,
+  //  initBigInt=initBigInt,
+  //  arrRamStyleXilinx=arrRamStyleXilinx,
+  //  arrRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
+  //)
+
+  ////arr.io.wrEn := wrPipeToPulse.io.pulse.valid
+  ////arr.io.wrAddr := wrPipeToPulse.io.pulse.addr
+  ////arr.io.wrData := getWordFunc(wrPipeToPulse.io.pulse.data)
+  ////--------
+  //// BEGIN: debug comment this out; later
+  //arr.io.wrEn := io.wrPulse.valid
+  //// END: debug comment this out; later
+  ////arr.io.wrEn := False
+  //arr.io.wrAddr := io.wrPulse.addr
+  ////arr.io.wrData := getWordFunc(io.wrPulse.data)
+  //arr.io.wrData := io.wrPulse.data
+  ////--------
+  //arr.io.rdEn := rdAddrPipeToPulse.io.pulse.valid
+  //arr.io.rdAddr := rdAddrPipeToPulse.io.pulse.payload.addr
+  ////rdDataPulseToPipe.io.pulse.payload := arr.io.rdData
+  ////--------
+  ////wrPipeToPulse.io.pipe << io.wrPipe
+  ////wrPipeToPulse.io.moduleReady := True
+  ////rdAddrPipeToPulse.io.pipe << io.rdAddrPipe
+
+  //io.rdDataPipe << rdDataPulseToPipe.io.pipe
+  ////--------
+  //def latency = 1
+  //val rRdPulseValidVec = Vec.fill(latency)(Reg(Bool()) init(False))
+  //val rRdPulsePipePayloadVec = Vec.fill(latency)(
+  //  Reg(dataType()) init(dataType().getZero)
+  //)
+  //setWordFunc(
+  //  io.unionIdx,
+  //  rdDataPulseToPipe.io.pulse.payload,
+  //  rRdPulsePipePayloadVec(latency - 1),
+  //  //rdAddrPipeToPulse.io.pulse.payload.data,
+  //  arr.io.rdData
+  //)
+  //rdDataPulseToPipe.io.pulse.valid := (
+  //  rRdPulseValidVec(latency - 1)
+  //  //rdAddrPipeToPulse.io.pulse.valid
+  //)
+  //for (idx <- 0 until latency) {
+  //  if (idx == 0) {
+  //    rRdPulsePipePayloadVec(idx) := rdAddrPipeToPulse.io.pulse.data
+  //    //rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.moduleReady
+  //    rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.pulse.valid
+  //  } else {
+  //    rRdPulsePipePayloadVec(idx) := rRdPulsePipePayloadVec(idx - 1)
+  //    rRdPulseValidVec(idx) := rRdPulseValidVec(idx - 1)
+  //  }
+  //}
+  //--------
+  //--------
+}
+//case class SimplePipeRegFileIo[
+//  WordT <: Data,
+//  ModT <: Data,
+//](
+//  wordType: HardType[WordT],
+//  wordCount: Int,
+//  modType: HardType[ModT],
+//) extends Area {
+//}
+//case class SimplePipeRegFile[
+//  WordT <: Data,
+//  ModT <: Data,
+//](
+//  wordType: HardType[WordT],
+//  wordCount: Int,
+//  modType: HardType[ModT],
+//  pipeName: String,
+//  initBigInt: Option[ArrayBuffer[BigInt]]=None,
+//  linkArr: Option[ArrayBuffer[Link]]=None,
+//  arrRamStyleXilinx: String="block",
+//  arrRwAddrCollisionXilinx: String="",
+//)(
+//  setWordFunc: (
+//    ModT,   // pass-through pipeline outp
+//    ModT,   // pass-through pipeline inp
+//    WordT,  // data read from the RAM
+//  ) => Unit
+//) extends Area {
+//}
+//--------
+case class WrPulseRdPipeSimpleDualPortMemFpgacpu[
+  T <: Data,
+  WordT <: Data
+](
+  dataType: HardType[T],
+  wordType: HardType[WordT],
+  wordCount: Int,
+  pipeName: String,
+  initBigInt: Option[Seq[BigInt]]=None,
+  linkArr: Option[ArrayBuffer[Link]]=None,
+  //latency: Int=1,
+  arrRamStyleAltera: String="M10K",
+  arrRamStyleXilinx: String="block",
+  arrRwAddrCollisionXilinx: String="",
+  unionIdxWidth: Int=1,
+  vivadoDebug: Boolean=false,
+)
+(
+  //getWordFunc: (
+  //  T           // input pipeline payload
+  //) => WordT,   // 
+  setWordFunc: (
+    UInt,   // union type indicator
+    T,      // pass through pipeline payload (output)
+    T,      // pass through pipeline payload (input)
+    WordT,  // data read from the RAM
+  ) => Unit,
+) //extends Area 
+extends Component 
+{
+  //object Testificate extends TaggedUnion {
+  //  val uint = UInt(3 bits)
+  //  val sint = SInt(3 bits)
+  //}
+  //val testificate = dataType() aliasAs(Bits(3 bits))
+  //val testificate = HardType.union(Bits(3 bits), UInt(3 bits))
+  //testificate.aliasAs(UInt(3 bits)) := 3
+  //--------
+  //assert(latency >= 1)
+  //--------
+  val io = WrPulseRdPipeSimpleDualPortMemIo(
+    dataType=dataType(),
+    wordType=wordType(),
+    wordCount=wordCount,
+    unionIdxWidth=unionIdxWidth,
+  )
+  def addrWidth = io.addrWidth
+  //--------
+  //--------
+  //val wrPipeToPulse = FpgacpuPipeToPulse(
+  //  dataType=PipeSimpleDualPortMemDrivePayload(
+  //    //wordType=wordType(),
+  //    dataType=dataType(),
+  //    wordCount=depth,
+  //  )
+  //)
+  val rdAddrPipeToPulse = FpgacpuPipeToPulse(
+    //dataType=UInt(addrWidth bits)
+    dataType=PipeSimpleDualPortMemDrivePayload(
+      //wordType=wordType(),
+      dataType=dataType(),
+      wordCount=wordCount,
+    )
+  )
+  rdAddrPipeToPulse.io.pipe << io.rdAddrPipe
+  rdAddrPipeToPulse.io.clear := False
+  val rdDataPulseToPipe = FpgacpuPulseToPipe(
+    //dataType=wordType()
+    dataType=dataType()
+  )
+  rdDataPulseToPipe.io.clear := False
+  rdAddrPipeToPulse.io.moduleReady := rdDataPulseToPipe.io.moduleReady
+  //--------
+  val mem = FpgacpuRamSimpleDualPort(
+    cfg=FpgacpuRamSimpleDualPortConfig(
+      wordType=wordType(),
+      depth=wordCount,
+      init=None,
+      initBigInt=initBigInt,
+      arrRamStyleAltera=arrRamStyleAltera,
+      arrRamStyleXilinx=arrRamStyleXilinx,
+      arrRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
+    )
+  )
+
+  //arr.io.wrEn := wrPipeToPulse.io.pulse.valid
+  //arr.io.wrAddr := wrPipeToPulse.io.pulse.addr
+  //arr.io.wrData := getWordFunc(wrPipeToPulse.io.pulse.data)
+  //--------
+  // BEGIN: debug comment this out; later
+  mem.io.wrEn := io.wrPulse.valid
+  // END: debug comment this out; later
+  //arr.io.wrEn := False
+  mem.io.wrAddr := io.wrPulse.addr
+  //arr.io.wrData := getWordFunc(io.wrPulse.data)
+  mem.io.wrData.assignFromBits(io.wrPulse.data.asBits)
+  //--------
+  mem.io.rdEn := rdAddrPipeToPulse.io.pulse.valid
+  mem.io.rdAddr := rdAddrPipeToPulse.io.pulse.payload.addr
+  //rdDataPulseToPipe.io.pulse.payload := arr.io.rdData
+  //--------
+  //wrPipeToPulse.io.pipe << io.wrPipe
+  //wrPipeToPulse.io.moduleReady := True
+  //rdAddrPipeToPulse.io.pipe << io.rdAddrPipe
+
+  io.rdDataPipe << rdDataPulseToPipe.io.pipe
+  //--------
+  def latency = 1
+  val rRdPulseValidVec = Vec.fill(latency)(Reg(Bool()) init(False))
+  val rRdPulsePipePayloadVec = Vec.fill(latency)(
+    Reg(dataType()) init(dataType().getZero)
+  )
+  setWordFunc(
+    io.unionIdx,
+    rdDataPulseToPipe.io.pulse.payload,
+    rRdPulsePipePayloadVec(latency - 1),
+    //rdAddrPipeToPulse.io.pulse.payload.data,
+    {
+      val tempRdData = wordType()
+      tempRdData.assignFromBits(mem.io.rdData.asBits)
+      tempRdData
+    }
+  )
+  rdDataPulseToPipe.io.pulse.valid := (
+    rRdPulseValidVec(latency - 1)
+    //rdAddrPipeToPulse.io.pulse.valid
+  )
+  for (idx <- 0 until latency) {
+    if (idx == 0) {
+      rRdPulsePipePayloadVec(idx) := rdAddrPipeToPulse.io.pulse.data
+      //rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.moduleReady
+      rRdPulseValidVec(idx) := rdAddrPipeToPulse.io.pulse.valid
+    } else {
+      rRdPulsePipePayloadVec(idx) := rRdPulsePipePayloadVec(idx - 1)
+      rRdPulseValidVec(idx) := rRdPulseValidVec(idx - 1)
+    }
+  }
+  //--------
+  //--------
+}
+//object WrPulseRdPipeSimpleDualPortMemSim extends App {
+//  def wordWidth = 8
+//  val dataType = HardType(UInt(wordWidth bits))
+//  def depth = 8
+//  SimConfig
+//    //.withConfig(config=simSpinalConfig)
+//    .withVcdWave
+//    .compile {
+//      val dutInitBigInt = new ArrayBuffer
+//      val dut = WrPulseRdPipeSimpleDualPortMem(
+//        dataType=dataType(),
+//        wordType=dataType(),
+//        wordCount=depth,
+//      )(
+//        setWordFunc=(
+//          unionIdx,
+//          oPayload,
+//          iPayload,
+//          iWord,
+//        ) => {
+//          oPayload := iWord
+//        }
+//      )
+//      //dut.mem.impl.arr.simPublic()
+//      dut.mem.simPublic()
+//      //dut.testDut.mem.simPublic()
+//      //dut.testDut.io.data.simPublic()
+//      dut
+//    }
+//    .doSim("blub") { dut =>
+//      for (i <- 0 until depth) {
+//        //dut.arr.impl.arr.setBigInt(i, i)
+//        dut.mem.setBigInt(i, i)
+//      }
+//
+//      val scoreboard = ScoreboardInOrder[Int]()
+//      //dut.io.wrPulse.valid #= false
+//      //StreamDriver(
+//      //  stream
+//      //)(
+//      //  driver={payload =>
+//      //    payload.addr=0,
+//      //    payload.data=0,
+//      //    true
+//      //  }
+//      //)
+//
+//      //StreamValidRandomizer(dut.io.data, dut.clockDomain)
+//      StreamDriver(
+//        stream=dut.io.rdAddrPipe,
+//        clockDomain=dut.clockDomain
+//      )(
+//        driver={payload =>
+//          payload.randomize
+//          true
+//        }
+//      )
+//      StreamReadyRandomizer(dut.io.rdDataPipe, dut.clockDomain)
+//      StreamMonitor(dut.io.rdDataPipe, dut.clockDomain){payload =>
+//        scoreboard.pushRef(payload.toInt)
+//      }
+//      dut.clockDomain.forkStimulus(10)
+//      for (
+//        i <- 0 until 2048 //memSize * 5 //10
+//      ) {
+//        dut.clockDomain.waitSampling(scala.util.Random.nextInt(10))
+//        //dut.io.rdAllowed #= !dut.io.rdAllowed.toBoolean
+//        //dut.clockDomain.waitRisingEdge()
+//        //dut.io.rdAllowed #= true
+//      }
+//      simSuccess()
+//    }
+//}
+//case class DualMem_WrPulseRdPipeSimpleDualPortMemIo[
+//  T <: Data,
+//  WordT0 <: Data,
+//  WordT1 <: Data,
+//](
+//  dataType: HardType[T],
+//  wordType0: HardType[WordT0],
+//  wordType1: HardType[WordT1],
+//  depth: Int,
+//  unionIdxWidth: Int=1
+//) extends Bundle {
+//  //--------
+//  val unionIdx = in UInt(unionIdxWidth bits)
+//  val wrPulse0 = slave Flow(
+//    PipeSimpleDualPortMemDrivePayload(
+//      dataType=wordType0(),
+//      depth=depth,
+//    )
+//  )
+//  val wrPulse1 = slave Flow(
+//    PipeSimpleDualPortMemDrivePayload(
+//      dataType=wordType1(),
+//      depth=depth,
+//    )
+//  )
+//  val rdAddrPipe = slave Stream(
+//    PipeSimpleDualPortMemDrivePayload(
+//      dataType=dataType(),
+//      depth=depth,
+//    )
+//  )
+//  val rdDataPipe = master Stream(dataType())
+//  //--------
+//}
+//case class DualMem_WrPulseRdPipeSimpleDualPortMem[
+//  T <: Data,
+//  WordT0 <: Data,
+//  WordT1 <: Data,
+//](
+//  dataType: HardType[T],
+//  wordType0: HardType[WordT0],
+//  wordType1: HardType[WordT1],
+//  depth: Int,
+//  unionIdxWidth: Int=1
+//) extends Bundle {
+//  //--------
+//  val unionIdx = in UInt(unionIdxWidth bits)
+//  val wrPulse0 = slave Flow(
+//    PipeSimpleDualPortMemDrivePayload(
+//      dataType=wordType0(),
+//      depth=depth,
+//    )
+//  )
+//  val wrPulse1 = slave Flow(
+//    PipeSimpleDualPortMemDrivePayload(
+//      dataType=wordType1(),
+//      depth=depth,
+//    )
+//  )
+//  val rdAddrPipe = slave Stream(
+//    PipeSimpleDualPortMemDrivePayload(
+//      dataType=dataType(),
+//      depth=depth,
+//    )
+//  )
+//  val rdDataPipe = master Stream(dataType())
+//  //--------
+//}
+//case class MultiRdForkBlockingJoin_WrPulseRdPipeSimpleDualPortMemIo[
+//  T <: Data,
+//  WordT <: Data,
+//](
+//  dataType: HardType[T],
+//  wordType: HardType[WordT],
+//  depth: Int,
+//  numRd: Int,
+//  unionIdxWidth: Int=1
+//) extends Bundle {
+//  //--------
+//  assert(numRd >= 1)
+//  //--------
+//  val unionIdx = in(Vec.fill(numRd)(UInt(unionIdxWidth bits)))
+//  //--------
+//  def addrWidth = log2Up(depth)
+//  // All ports besides `wrPulse` are vectorized 
+//  val wrPulse = slave Flow(
+//    PipeSimpleDualPortMemDrivePayload(
+//      //wordType=wordType(),
+//      //dataType=dataType,
+//      dataType=wordType(),
+//      depth=depth,
+//    )
+//  )
+//  //--------
+//  val rdAddrPipeVec = Vec.fill(numRd)(
+//    slave Stream(
+//      PipeSimpleDualPortMemDrivePayload(
+//        //wordType=wordType(),
+//        dataType=dataType(),
+//        depth=depth,
+//      )
+//    )
+//  )
+//  val rdDataPipeVec = Vec.fill(numRd)(master Stream(dataType()))
+//  //--------
+//}
+//case class MultiRdForkBlockingJoin_WrPulseRdPipeSimpleDualPortMem[
+//  T <: Data,
+//  WordT <: Data,
+//](
+//  dataType: HardType[T],
+//  wordType: HardType[WordT],
+//  depth: Int,
+//  numRd: Int,
+//  initBigInt: Option[ArrayBuffer[BigInt]]=None,
+//  latency: Int=1,
+//  arrRamStyleXilinx: String="block",
+//  arrRwAddrCollisionXilinx: String="",
+//  unionIdxWidth: Int=1,
+//)(
+//  //--------
+//  setWordFunc: (
+//    UInt,   // union type indicator
+//    T,      // pass through pipeline payload (output)
+//    T,      // pass through pipeline payload (input)
+//    WordT,  // data read from the RAM
+//  ) => Unit,
+//  //--------
+//) extends Component {
+//  //--------
+//  assert(latency >= 1)
+//  assert(numRd >= 1)
+//  //--------
+//  val io = MultiRdForkBlockingJoin_WrPulseRdPipeSimpleDualPortMemIo(
+//    dataType=dataType(),
+//    wordType=wordType(),
+//    depth=depth,
+//    numRd=numRd,
+//    unionIdxWidth=unionIdxWidth,
+//  )
+//  def addrWidth = io.addrWidth
+//  //--------
+//  val arr = Array.fill(numRd)(
+//    WrPulseRdPipeSimpleDualPortMem(
+//      dataType=dataType(),
+//      wordType=wordType(),
+//      depth=depth,
+//      initBigInt=initBigInt,
+//      latency=latency,
+//      arrRamStyleXilinx=arrRamStyleXilinx,
+//      arrRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
+//      unionIdxWidth=unionIdxWidth,
+//    )(
+//      setWordFunc=setWordFunc,
+//    )
+//  )
+//
+//  val rdAddrFork = FpgacpuPipeForkBlocking(
+//    dataType=dataType(),
+//    oSize=numRd,
+//  )
+//
+//  val rdDataJoin = FpgacpuPipeJoin(
+//    dataType=dataType(),
+//    size=numRd,
+//  )
+//
+//  for (idx <- 0 until numRd) {
+//    rdAddrFork.io.pipeIn
+//  }
+//  //--------
+//}
+//--------
+
+//case class MultiRdPipeSimpleDualPortMem[
+//  T <: Data,
+//  WordT <: Data
+//](
+//  dataType: HardType[T],
+//  wordType: HardType[WordT],
+//  memDepth: Int,
+//  numMems: Int,
+//  initBigInt: Option[ArrayBuffer[BigInt]]=None,
+//  latency: Int=1,
+//  arrRamStyleXilinx: String="block",
+//  arrRwAddrCollisionXilinx: String="",
+//) extends Component {
+//}
+
+//object PipeSimpleDualPortMemSim extends App {
+//}
+
+//case class MultiMemReadSync[
+//  T <: Data
+//](
+//  someMem: Mem[T],
+//  //dataType: HardType[T],
+//  //addrWidth: Int,
+//  numReaders: Int=1,
+//  alwaysEn: Boolean=false,
+//) extends Area {
+//  assert(numReaders > 0)
+//
+//  def addrWidth = log2Up(someMem.wordCount)
+//  def dataType() = someMem.wordType()
+//
+//  val addrVec = Vec.fill(numReaders)(UInt(addrWidth bits))
+//  val dataVec = Vec.fill(numReaders)(dataType())
+//  val enVec = (!alwaysEn) generate Vec.fill(numReaders)(Bool())
+//  //val rdAllowedVec = Vec.fill(numReaders)(Bool())
+//
+//  def readSync(
+//    //addr: UInt,
+//    idx: Int,
+//  ): T = {
+//    //addrVec(idx) := addr
+//    dataVec(idx) := (
+//      if (!alwaysEn) {
+//        someMem.readSync(
+//          address=addrVec(idx),
+//          enable=enVec(idx),
+//        )
+//      } else { // if (alwaysEn)
+//        someMem.readSync(
+//          address=addrVec(idx),
+//        )
+//      }
+//    )
+//    dataVec(idx)
+//  }
+//}
+//case class MultiMemReadSync() extends Component {
+//  val io = new Bundle {
+//    val readAllowed = in port Bool()
+//    val data = master port Stream(Bits(10 bit))
+//  }
+//  val mem = Mem(Bits(10 bit), 128)
+//  val address = Reg(UInt(log2Up(128) bit))
+//
+//  val doRead = io.readAllowed && (!io.data.valid || io.data.ready)
+//  when(doRead) { address := address + 1 }
+//  io.data.payload := mem.readSync(address, enable=doRead)
+//  io.data.valid.setAsReg().clearWhen(io.data.fire).setWhen(doRead)
+//}
+// If the address comes from a stream then you have to stall that stream until you can update the output buffer. When you can (no data on the output or receiver ready,...) do the read and signal ready (if the address stream is valid)
+
+//object MultiMemReadSync extends App {
+//  SimConfig.withVcdWave
+//    .compile {
+//      val dut = MultiMemReadSync()
+//      dut.mem.simPublic()
+//      dut
+//    }
+//    .doSim("blub") { dut =>
+//      for (i <- 0 until 128) { dut.mem.setBigInt(i, i) }
+//      StreamReadyRandomizer(dut.io.data, dut.clockDomain)
+//      dut.clockDomain.forkStimulus(10)
+//      for(i <- 0 until 10) {
+//        dut.clockDomain.waitSampling(scala.util.Random.nextInt(10))
+//        dut.io.readAllowed #= !dut.io.readAllowed.toBoolean
+//      }
+//    }
+//}
+
+// For when `multiRd.addrVec(rdIdx)` is driven non-synchronously but
+// `multiRd.readSync()` is still used
+//case class MemReadSyncIntoPipe[
+//  PipeInPayloadT <: Data,
+//  PipeOutPayloadT <: Data,
+//  MemWordT <: Data,
+//](
+//  pipeIn: Stream[PipeInPayloadT],
+//  pipeOut: Stream[PipeOutPayloadT],
+//  someMem: Mem[MemWordT],
+//  //jdx: Int,
+//)(
+//  getInpAddrFunc: (
+//    PipeInPayloadT
+//  ) => UInt,
+//  getOutpRdDataFunc: (
+//    PipeOutPayloadT
+//  ) => MemWordT,
+//  //getOutpAddrFunc: (
+//  //  PipeOutPayloadT
+//  //) => UInt,
+//) extends Area {
+//
+//  val inpAddr = KeepAttribute(
+//    cloneOf(getInpAddrFunc(pipeIn.payload))
+//  )
+//    //.setName("inpAddr")
+//  val outpRdData = KeepAttribute(
+//    cloneOf(getOutpRdDataFunc(pipeOut.payload))
+//  )
+//    //.setName("outpRdData")
+//  //val outpAddr = KeepAttribute(
+//  //  cloneOf(getOutpAddrFunc(pipeOut.payload))
+//  //)
+//
+//  inpAddr := getInpAddrFunc(pipeIn.payload)
+//  getOutpRdDataFunc(pipeOut.payload) := outpRdData
+//  //getOutpAddrFunc(pipeOut.payload) := inpAddr
+//
+//  val tempRdEn = Bool()
+//
+//  // (!pipeOutRdData.valid || pipeOutRdData.ready)
+//  // same as `!isStall` (through DeMorgan's Theorem)
+//  //tempRdEn := pipeIn.valid && rdAllowed && !pipeOut.isStall 
+//  tempRdEn := pipeIn.valid && !pipeOut.isStall 
+//
+//  // If the address comes from a stream then you have to stall that
+//  // stream until you can update the output buffer. When you can
+//  // (no data on the output or receiver ready,... (!isStall))
+//  // do the read and signal ready (if the address stream is valid)
+//  //tempRdEn := rdAllowed && !pipeOut.isStall 
+//  outpRdData := someMem.readSync(
+//    address=inpAddr,
+//    enable=tempRdEn,
+//  )
+//  pipeOut.valid
+//    .setAsReg()
+//    .clearWhen(pipeOut.fire)
+//    .setWhen(
+//      //En
+//      tempRdEn
+//    )
+//  pipeIn.ready := (
+//    //pipeIn.valid
+//    //&&
+//    tempRdEn
+//  )
+//
+//  //rdEn := tempRdEn
+//
+//  //rdAddr := inpAddr
+//}
+//case class MemReadSyncIntoPipeTestDutIo(
+//  memSize: Int=128,
+//) extends Bundle {
+//  //val rdAllowed = in Bool()
+//  val addr = slave Stream(UInt(log2Up(memSize) bits))
+//  val data = master Stream(UInt(dataWidth bits))
+//  def dataWidth = log2Up(memSize)
+//}
+//case class MemReadSyncIntoPipeTestDut(
+//  memSize: Int=128,
+//) extends Component {
+//  //def dataWidth = log2Up(memSize) + 1
+//  //val io = new Bundle {
+//  //}
+//  val io = MemReadSyncIntoPipeTestDutIo(
+//    memSize=memSize,
+//  )
+//  val mem = Mem(UInt(io.dataWidth bits), memSize)
+//  //val multiRd = MultiMemReadSync(
+//  //  someMem=mem,
+//  //  numReaders=1,
+//  //  alwaysEn=false,
+//  //)
+//  //multiRd.rdAllowedVec(0) := io.rdAllowed
+//  val rdIntoPipe = MemReadSyncIntoPipe(
+//    //--------
+//    pipeIn=io.addr,
+//    pipeOut=io.data,
+//    someMem=mem,
+//    //--------
+//  )(
+//    getInpAddrFunc=(payload => payload),
+//    getOutpRdDataFunc=(payload => payload),
+//  )
+//  //val rdIntoPipe = MemReadSyncIntoPipe(
+//  //  //--------
+//  //  pipeIn=io.addr,
+//  //  inpAddr=io.addr.payload,
+//  //  //--------
+//  //  pipeOut=io.data,
+//  //  outpRdData=io.data.payload,
+//  //  //--------
+//  //  multiRd=multiRd,
+//  //  rdIdx=0,
+//  //  //--------
+//  //)
+//}
+//object MemReadSyncIntoPipeSim extends App {
+//  val simSpinalConfig = SpinalConfig(
+//    defaultClockDomainFrequency=FixedFrequency(100 MHz)
+//  )
+//  def memSize = 128
+//  SimConfig
+//    .withConfig(config=simSpinalConfig)
+//    .withVcdWave
+//    .compile {
+//      val dut = MemReadSyncIntoPipeTestDut(
+//        memSize=memSize,
+//      )
+//      dut.mem.simPublic()
+//      //dut.testDut.mem.simPublic()
+//      //dut.testDut.io.data.simPublic()
+//      dut
+//    }
+//    .doSim("blub") { dut =>
+//      for (i <- 0 until memSize) {
+//        dut.mem.setBigInt(i, i)
+//      }
+//
+//      val scoreboard = ScoreboardInOrder[Int]()
+//
+//      //StreamValidRandomizer(dut.io.data, dut.clockDomain)
+//      StreamDriver(
+//        stream=dut.io.addr,
+//        clockDomain=dut.clockDomain
+//      )(
+//        driver={ payload =>
+//          //if (dut.io.addr.valid.toBoolean && dut.io.addr.ready.toBoolean) {
+//          //  payload.randomize()
+//          //}
+//          //payload := RegNext(payload) + 1
+//          //if (
+//          //  //dut.io.addr.valid.toBoolean && dut.io.addr.ready.toBoolean
+//          //  !dut.io.addr.valid.toBoolean
+//          //  || dut.io.addr.ready.toBoolean
+//          //) {
+//          //  payload #= payload.toInt + 1
+//          //}
+//          payload.randomize
+//          true
+//        }
+//      )
+//      StreamReadyRandomizer(dut.io.data, dut.clockDomain)
+//      StreamMonitor(dut.io.data, dut.clockDomain){payload =>
+//        scoreboard.pushRef(payload.toInt)
+//      }
+//      dut.clockDomain.forkStimulus(10)
+//      for (
+//        i <- 0 until 2048 //memSize * 5 //10
+//      ) {
+//        //dut.clockDomain.waitSampling(scala.util.Random.nextInt(10))
+//        //dut.io.rdAllowed #= !dut.io.rdAllowed.toBoolean
+//        dut.clockDomain.waitRisingEdge()
+//        //dut.io.rdAllowed #= true
+//      }
+//      simSuccess()
+//    }
+//}
+//
+//////object MemReadSyncIntoStreamHaltVecs {
+//////  def checkV2dIndices(
+//////    haltV2d: Vec[MemReadSyncIntoStreamHaltVecs],
+//////    haltV2dJdx: Int,
+//////    haltV2dIdx: Int,
+//////  ): Unit = {
+//////  }
+//////}
+////case class MemReadSyncIntoStreamHaltVecs(
+////  size: Int
+////) extends Bundle {
+////  assert(size > 0)
+////  val pipe = Vec.fill(size)(Bool())
+////  val fifoPush = Vec.fill(size)(Bool())
+////  val fifoPop = Vec.fill(size)(Bool())
+////
+////  //def implReduce(
+////  //  someHaltVec: Vec[Bool]
+////  //): Bool = {
+////  //  someHaltVec.reduceBalancedTree(_ || _)
+////  //}
+////  //def reducePipe(): Bool = implReduce(someHaltVec=pipe)
+////  //def reduceFifoPush(): Bool = implReduce(someHaltVec=fifoPush)
+////  //def reduceFifoPop(): Bool = implReduce(someHaltVec=fifoPop)
+////
+////  //def implReduceV2d(
+////  //  someV2d: Vec[MemReadSyncIntoStreamHaltVecs],
+////  //)(
+////  //  pick
+////  //): Bool  
+////  //def reduceV2dPipe(
+////  //)
+////
+////  def implCheckIdx[
+////    T <: Data
+////  ](
+////    someVec: Vec[T],
+////    idx: Int,
+////  ): Unit = {
+////    assert(idx >= 0 && idx < someVec.size)
+////  }
+////  //def checkV2dIdx[
+////  //  T <: Data
+////  //](
+////  //  v2d: Vec[Vec[T]],
+////  //  outerIdx: Int,
+////  //  innerIdx: Int,
+////  //): Unit = {
+////  //  implCheckIdx(
+////  //    someVec=v2d,
+////  //    idx=outerIdx,
+////  //  )
+////  //  implCheckIdx(
+////  //    someVec=v2d(outerIdx),
+////  //    idx=innerIdx,
+////  //  )
+////  //}
+////  def checkIdx(
+////    idx: Int,
+////  ): Unit = {
+////    //assert(idx >= 0 && idx < size)
+////    implCheckIdx(
+////      someVec=pipe,
+////      idx=idx,
+////    )
+////  }
+////}
+//
+////// For when `multiRd.addrVec(rdIdx)` is driven non-synchronously but
+////// `multiRd.readSync()` is still used
+////case class MemReadSyncIntoStream[
+////  //PipeInPayloadT <: Data,
+////  //PipeOutPayloadT <: Data,
+////  //FifoWordT <: Data,
+////  MemWordT <: Data,
+////](
+////  //pipeIn: Stream[PipeInPayloadT],
+////  //pipeOut: Stream[PipeOutPayloadT],
+////  //fifoWordType: HardType[FifoWordT],
+////  memWordType: HardType[MemWordT],
+////  multiRd: MultiMemReadSync[MemWordT],
+////  rdIdx: Int,
+////  haltVecs: MemReadSyncIntoStreamHaltVecs,
+////  haltIdx: Int,
+////  //haltV2d: Vec[MemReadSyncIntoStreamHaltVecs],
+////  //haltJdx: Int,
+////  //haltIdx: Int,
+////) extends Area {
+////  multiRd.checkIdx(idx=rdIdx)
+////  haltVecs.checkIdx(idx=haltIdx)
+////
+////  //def fifoDepth = (
+////  //  //8
+////  //  3
+////  //)
+////  //def fifoHaltWhenGeAmountCanPop = (
+////  //  //4
+////  //  1
+////  //)
+////  //val fifo = AsyncReadFifo(
+////  //  //dataType=fifoElemT(),
+////  //  dataType=memWordType(),
+////  //  //dataType=fifoWordType(),
+////  //  depth=fifoDepth,
+////  //  arrRamStyleXilinx="auto",
+////  //)
+////
+////  //val myFifoPush = cloneOf(fifo.io.push)
+////  //fifo.io.push << myFifoPush.haltWhen(haltVecs.fifoPush(haltIdx))
+////  //myFifoPush.valid := True
+////
+////  //val myFifoPop = cloneOf(fifo.io.pop)
+////  //myFifoPop << fifo.io.pop.haltWhen(haltVecs.fifoPop(haltIdx))
+////  //myFifoPop.ready := True
+////}
+//
+////case class MemReadSyncParams[
+////  MemWordT <: Data
+////](
+////  wordType: HardType[MemWordT],
+////  wordCount: Int,
+////) extends Bundle {
+////}
+////
+////case class MemReadSyncIntoStreamIo[
+////  PipeInPayloadT <: Data,
+////  PipeOutPayloadT <: Data,
+////  MemWordT <: Data,
+////](
+////  pipeInPayloadType: HardType[PipeInPayloadT],
+////  pipeOutPayloadType: HardType[PipeOutPayloadT],
+////  memWordType: HardType[MemWordT],
+////  //memSize: Int,
+////  //fifoSize: Int,
+////) extends Bundle {
+////  //--------
+////  val pipeIn = master Stream(pipeInPayloadType())
+////  val pipeOut = slave Stream(pipeOutPayloadType())
+////  //val memPop = master Stream(MemWordType()) 
+////  //--------
+////}
+////case class MemReadSyncIntoStream[
+////  PipeInPayloadT <: Data,
+////  PipeOutPayloadT <: Data,
+////  MemWordT <: Data,
+////](
+////  pipeInPayloadType: HardType[PipeInPayloadT],
+////  pipeOutPayloadType: HardType[PipeOutPayloadT],
+////  memWordType: HardType[MemWordT],
+////  //memSize: Int,
+////  //fifoSize: Int,
+////) extends Component {
+////  val io = MemReadSyncIntoStreamIo(
+////    pipeInPayloadType=pipeInPayloadType(),
+////    pipeOutPayloadType=pipeOutPayloadType(),
+////    memWordType=memWordType(),
+////    //memSize=memSize,
+////  )
+////}
