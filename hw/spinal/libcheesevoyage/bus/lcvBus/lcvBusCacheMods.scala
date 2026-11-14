@@ -6763,51 +6763,51 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         && rInHitWithBusStallEtc.last
       )
 
-      when (
-        rMyTempDoSaveCond(0)
-        && mySharedCond
-      ) {
-        rSavedLoH2dPayload := (
-          //rLoH2dPayload
-          rDel2LoH2dPayload
-        )
-      }
-      when (
-        rMyTempDoSaveCond(1)
-        && mySharedCond
-      ) {
-        rSavedLoH2dPayload.byteSize := (
-          //rLoH2dPayload.byteSize
-          rDel2LoH2dPayload.byteSize
-        )
-      }
-      when (
-        rMyTempDoSaveCond(2)
-        //&& myTempUpdateSavedLoH2dPayloadCond
-        //RegNext(
-        //  RegNext(mySelLoH2dPopStm.fire, init=False),
-        //  init=False
-        //)
-        && mySharedCond
-      ) {
-        myLoD2hPushStm.busPayload.src := (
-          rDel2LoH2dPayload.src
-        )
-        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-          myLoD2hPushStm.busPayload.byteSize := (
-            rDel2LoH2dPayload.byteSize
-          )
-          myLoD2hPushStm.busPayload.addrLo := (
-            rDel2LoH2dPayload.addr(
-              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-            )
-          )
-        }
-        myLoD2hPushStm.busPayload.txnCnt := (
-          rDel2LoH2dPayload.txnCnt
-        )
-        //rSavedRdLineAttrsTag := rdLineAttrs.tag
-      }
+      //when (
+      //  rMyTempDoSaveCond(0)
+      //  && mySharedCond
+      //) {
+      //  rSavedLoH2dPayload := (
+      //    //rLoH2dPayload
+      //    rDel2LoH2dPayload
+      //  )
+      //}
+      //when (
+      //  rMyTempDoSaveCond(1)
+      //  && mySharedCond
+      //) {
+      //  rSavedLoH2dPayload.byteSize := (
+      //    //rLoH2dPayload.byteSize
+      //    rDel2LoH2dPayload.byteSize
+      //  )
+      //}
+      //when (
+      //  rMyTempDoSaveCond(2)
+      //  //&& myTempUpdateSavedLoH2dPayloadCond
+      //  //RegNext(
+      //  //  RegNext(mySelLoH2dPopStm.fire, init=False),
+      //  //  init=False
+      //  //)
+      //  && mySharedCond
+      //) {
+      //  myLoD2hPushStm.busPayload.src := (
+      //    rDel2LoH2dPayload.src
+      //  )
+      //  if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+      //    myLoD2hPushStm.busPayload.byteSize := (
+      //      rDel2LoH2dPayload.byteSize
+      //    )
+      //    myLoD2hPushStm.busPayload.addrLo := (
+      //      rDel2LoH2dPayload.addr(
+      //        cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
+      //      )
+      //    )
+      //  }
+      //  myLoD2hPushStm.busPayload.txnCnt := (
+      //    rDel2LoH2dPayload.txnCnt
+      //  )
+      //  //rSavedRdLineAttrsTag := rdLineAttrs.tag
+      //}
 
       when (
         mySharedCond
@@ -6818,7 +6818,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         //  rSavedLoH2dPayload.addr(myTempRange)
         //)
         rSavedLoH2dPayload.addr(myTempRange) := (
-          rSavedLoH2dPayload.addr(myTempRange) - 1
+          //rSavedLoH2dPayload.addr(myTempRange) - 1
+          rPrevPrefetchAddr(myTempRange) - 1
         )
       }
 
@@ -6857,6 +6858,40 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //}
     }
   }
+
+  //when (
+  //  rMyTempDoSaveCond(1)
+  //  && rSavedInPrefetch
+  //) {
+  //  rSavedLoH2dPayload.byteSize := (
+  //    //rLoH2dPayload.byteSize
+  //    rDel2LoH2dPayload.byteSize
+  //  )
+  //}
+
+  when (
+    rMyTempDoSaveCond(2)
+    && rSavedInPrefetch
+  ) {
+    myLoD2hPushStm.busPayload.src := (
+      rDel2LoH2dPayload.src
+    )
+    if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+      myLoD2hPushStm.busPayload.byteSize := (
+        rDel2LoH2dPayload.byteSize
+      )
+      myLoD2hPushStm.busPayload.addrLo := (
+        rDel2LoH2dPayload.addr(
+          cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
+        )
+      )
+    }
+    myLoD2hPushStm.busPayload.txnCnt := (
+      rDel2LoH2dPayload.txnCnt
+    )
+    //rSavedRdLineAttrsTag := rdLineAttrs.tag
+  }
+
   wrLineAttrs.valid := True
 }
 
