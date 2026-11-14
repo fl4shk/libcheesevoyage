@@ -5405,6 +5405,10 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     Reg(cloneOf(rSavedLoH2dPayload.addr))
     init(0x0)
   )
+  val rOtherSavedAddr = (
+    Reg(cloneOf(rSavedLoH2dPayload.addr))
+    init(0x0)
+  )
   def rSavedLoBusAddr = rSavedLoH2dPayload.addr
   def rSavedLoBusAddrSet = rSavedLoBusAddr(loBusCacheCfg.setRange)
 
@@ -6822,9 +6826,12 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         //) := (
         //  rSavedLoH2dPayload.addr(myTempRange)
         //)
-        rSavedLoH2dPayload.addr(myTempRange) := (
-          //rSavedLoH2dPayload.addr(myTempRange) - 1
-          rPrevPrefetchAddr(myTempRange) - 1
+        //rSavedLoH2dPayload.addr(myTempRange) := (
+        //  //rSavedLoH2dPayload.addr(myTempRange) - 1
+        //  rPrevPrefetchAddr(myTempRange) - 1
+        //)
+        rSavedLoH2dPayload.addr := (
+          rOtherSavedAddr
         )
       }
 
@@ -6882,6 +6889,9 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       || rose(myFifoThingDoStall)
     )
   ) {
+    rOtherSavedAddr := (
+      rDel2LoH2dPayload.addr
+    )
     myLoD2hPushStm.busPayload.src := (
       rDel2LoH2dPayload.src
     )
