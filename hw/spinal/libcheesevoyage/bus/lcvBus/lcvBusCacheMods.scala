@@ -6078,7 +6078,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   //  )
   //)
 
-  val rSavedHadAnyHit = Reg(Bool(), init=False)
+  val rSavedInPrefetch = Reg(Bool(), init=False)
   val rInHitWithBusStallEtc = Vec.fill(2)(
     Reg(Bool(), init=False)
   )
@@ -6278,7 +6278,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
             }
             default {
               if (idleIdx == 1) {
-                rSavedHadAnyHit := True
+                rSavedInPrefetch := True
                 rState := (
                   State.PREFETCH_START_PIPE_3
                 )
@@ -6620,7 +6620,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         //}
 
         switch (
-          rSavedHadAnyHit
+          rSavedInPrefetch
           ## (io.hiBus.d2hBus.burstLast)
         ) {
           is (M"01") {
@@ -6720,7 +6720,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         downto loBusCfg.prefetchAddrIncrStartIdx
       )
       when (
-        rSavedHadAnyHit
+        !myLoD2hFifo.io.pop.valid
+        && rSavedInPrefetch
         && rInHitWithBusStallEtc.last
       ) {
         rSavedLoH2dPayload.addr(myTempRange) := (
@@ -6733,7 +6734,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         ## rInHitWithBusStallEtc.last
       ) {
         is (M"00") {
-          rSavedHadAnyHit := False
+          rSavedInPrefetch := False
           //rInHitWithBusStallEtc.foreach(item => item := False)
           rInHitWithBusStallEtc.head := False
 
@@ -6741,7 +6742,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           rState := State.IDLE
         }
         is (M"01") {
-          rSavedHadAnyHit := False
+          rSavedInPrefetch := False
           rInHitWithBusStallEtc.foreach(item => item := False)
 
           //myFifoThingDoStall := False
