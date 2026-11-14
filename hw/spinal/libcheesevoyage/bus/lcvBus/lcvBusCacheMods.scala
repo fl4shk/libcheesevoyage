@@ -6715,10 +6715,17 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
 
+      val myTempRange = (
+        loBusCacheCfg.addrWidth - 2
+        downto loBusCfg.prefetchAddrIncrStartIdx
+      )
       when (
         rSavedHadAnyHit
         && rInHitWithBusStallEtc.last
       ) {
+        rSavedLoH2dPayload.addr(myTempRange) := (
+          rSavedLoH2dPayload.addr(myTempRange) - 1
+        )
       }
 
       switch (  
