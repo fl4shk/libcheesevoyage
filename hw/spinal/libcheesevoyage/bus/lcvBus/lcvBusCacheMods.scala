@@ -6087,7 +6087,10 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   //)
 
   val rSavedInPrefetch = Reg(Bool(), init=False)
-  val rInHitWithBusStallEtc = Vec.fill(2)(
+  val rInHitWithBusStallEtc = Vec.fill(
+    //2
+    1
+  )(
     Reg(Bool(), init=False)
   )
 
@@ -6280,7 +6283,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
               rInHitWithBusStallEtc.head := True
 
               if (idleIdx == 0) {
-                rInHitWithBusStallEtc.last := True
+                //rInHitWithBusStallEtc.last := True
               } else { // if (idleIdx == 1)
                 //rInHitWithBusStallEtc.head := True
                 rState := State.LOAD_HIT_DO_STALL_PIPE_4
@@ -6293,7 +6296,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
               rInHitWithBusStallEtc.head := True
 
               if (idleIdx == 0) {
-                rInHitWithBusStallEtc.last := True
+                //rInHitWithBusStallEtc.last := True
               } else { // if (idleIdx == 1)
                 rState := (
                   State.LOAD_HIT_DO_STALL_PIPE_4
@@ -6769,7 +6772,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       val mySharedCond = (
         !myLoD2hFifo.io.pop.valid
         && rSavedInPrefetch
-        && rInHitWithBusStallEtc.last
+        && rInHitWithBusStallEtc.head//rInHitWithBusStallEtc.last
       )
 
       //when (
@@ -6837,7 +6840,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
 
       switch (  
         myLoD2hFifo.io.pop.valid
-        ## rInHitWithBusStallEtc.last
+        ## rInHitWithBusStallEtc.head//rInHitWithBusStallEtc.last
       ) {
         is (M"00") {
           rSavedInPrefetch := False
@@ -6849,7 +6852,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         }
         is (M"01") {
           rSavedInPrefetch := False
-          rInHitWithBusStallEtc.foreach(item => item := False)
+          //rInHitWithBusStallEtc.foreach(item => item := False)
+          rInHitWithBusStallEtc.head := False
 
           //myFifoThingDoStall := False
           rState := State.LOAD_HIT_DO_STALL_PIPE_4
