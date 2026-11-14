@@ -6298,7 +6298,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
                 )
               }
             }
-            is (M"001") {
+            is (M"011") {
               if (idleIdx == 1) {
                 rSavedInPrefetch := True
                 rState := (
@@ -6760,6 +6760,47 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         rSavedLoH2dPayload.addr(myTempRange) := (
           rSavedLoH2dPayload.addr(myTempRange) - 1
         )
+      }
+
+      when (rMyTempDoSaveCond(0)) {
+        rSavedLoH2dPayload := (
+          //rLoH2dPayload
+          rDel2LoH2dPayload
+        )
+      }
+      when (
+        rMyTempDoSaveCond(1)
+      ) {
+        rSavedLoH2dPayload.byteSize := (
+          //rLoH2dPayload.byteSize
+          rDel2LoH2dPayload.byteSize
+        )
+      }
+      when (
+        rMyTempDoSaveCond(2)
+        //&& myTempUpdateSavedLoH2dPayloadCond
+        //RegNext(
+        //  RegNext(mySelLoH2dPopStm.fire, init=False),
+        //  init=False
+        //)
+      ) {
+        myLoD2hPushStm.busPayload.src := (
+          rDel2LoH2dPayload.src
+        )
+        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+          myLoD2hPushStm.busPayload.byteSize := (
+            rDel2LoH2dPayload.byteSize
+          )
+          myLoD2hPushStm.busPayload.addrLo := (
+            rDel2LoH2dPayload.addr(
+              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
+            )
+          )
+        }
+        myLoD2hPushStm.busPayload.txnCnt := (
+          rDel2LoH2dPayload.txnCnt
+        )
+        //rSavedRdLineAttrsTag := rdLineAttrs.tag
       }
 
       switch (  
