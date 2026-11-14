@@ -6771,7 +6771,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       )
       val mySharedCond = (
         !myLoD2hFifo.io.pop.valid
-        && rSavedInPrefetch
+        //&& rSavedInPrefetch
         && rInHitWithBusStallEtc.head//rInHitWithBusStallEtc.last
       )
 
@@ -6887,7 +6887,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
 
   when (
     rMyTempDoSaveCond(2)
-    && rSavedInPrefetch
+    //&& rSavedInPrefetch
     && (
       !myFifoThingDoStall
       || rose(myFifoThingDoStall)
