@@ -5401,6 +5401,10 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     Reg(cloneOf(rLoH2dPayload))
     init(rLoH2dPayload.getZero)
   )
+  val rPrevPrefetchAddr = (
+    Reg(cloneOf(rSavedLoH2dPayload.addr))
+    init(0x0)
+  )
   def rSavedLoBusAddr = rSavedLoH2dPayload.addr
   def rSavedLoBusAddrSet = rSavedLoBusAddr(loBusCacheCfg.setRange)
 
@@ -6250,13 +6254,22 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
             myLoD2hPushStm.valid := False
           }
 
+          val myTempRange = (
+            loBusCacheCfg.addrWidth - 2
+            downto loBusCfg.prefetchAddrIncrStartIdx
+          )
+
           switch (
             //myHadAnyRecentRamWrite(ramIdx).last
             //myHistHadRamWriteVec.last(ramIdx)
             myRamWriteHazardVec.last(ramIdx)
             ## myLoD2hPushStm.ready
+            ## (
+              rDel2LoH2dPayload.addr(myTempRange)
+              =/= rPrevPrefetchAddr(myTempRange)
+            )
           ) {
-            is (M"1-") {
+            is (M"1--") {
               mySelLoH2dPopStm.ready := False
               myFifoThingDoStall := True
               //rInHitWithBusStallEtc.foreach(item => item := True)
@@ -6269,7 +6282,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
                 rState := State.LOAD_HIT_DO_STALL_PIPE_4
               }
             }
-            is (M"00") {
+            is (M"00-") {
               mySelLoH2dPopStm.ready := False
               myFifoThingDoStall := True
               //rInHitWithBusStallEtc.foreach(item => item := True)
@@ -6285,13 +6298,15 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
                 )
               }
             }
-            default {
+            is (M"--1") {
               if (idleIdx == 1) {
                 rSavedInPrefetch := True
                 rState := (
                   State.PREFETCH_START_PIPE_3
                 )
               }
+            }
+            default {
               //rSavedHadAnyHit := True
               //rInHitWithBusStallEtc := True
               //rState := (
@@ -6637,7 +6652,10 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
             rState := State.RECV_LINE_FROM_HI_BUS_POST_7
           }
           is (M"11") {
-            rState := State.WAIT_D2H_FIFO_EMPTY
+            rState := (
+              State.WAIT_D2H_FIFO_EMPTY
+              //State.IDLE
+            )
           }
         }
       }
@@ -6734,6 +6752,11 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         && rSavedInPrefetch
         && rInHitWithBusStallEtc.last
       ) {
+        rPrevPrefetchAddr(
+          myTempRange
+        ) := (
+          rSavedLoH2dPayload.addr(myTempRange)
+        )
         rSavedLoH2dPayload.addr(myTempRange) := (
           rSavedLoH2dPayload.addr(myTempRange) - 1
         )
