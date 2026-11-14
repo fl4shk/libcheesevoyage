@@ -6515,7 +6515,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         default {
           // optimization: stop prefetching if we had a hit from the
           // attempted prefetch address,
-          rState := State.WAIT_D2H_FIFO_EMPTY
+          //rState := State.WAIT_D2H_FIFO_EMPTY
+          rState := State.IDLE
         }
       }
     }
