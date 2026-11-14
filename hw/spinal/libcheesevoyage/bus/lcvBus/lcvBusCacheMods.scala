@@ -6087,7 +6087,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   //)
 
   val rSavedInPrefetch = Reg(Bool(), init=False)
-  val rSavedInMiss = Reg(Bool(), init=False)
+  val rSavedStallFromIdle = Reg(Bool(), init=False)
   val rInHitWithBusStallEtc = Vec.fill(
     //2
     1
@@ -6109,7 +6109,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //rState.asBits(
       //  State.WAIT_D2H_FIFO_EMPTY.position
       //)
-      rSavedInMiss
+      rSavedStallFromIdle
     )
     ## rMyTempDoSaveCond(3)
     //RegNext(
@@ -6196,7 +6196,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         //True
         False
       )
-      rSavedInMiss := True
+      rSavedStallFromIdle := True
       //myTempUpdateSavedLoH2dPayloadCond := False
     }
 
@@ -6290,6 +6290,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
               } else { // if (idleIdx == 1)
                 //rInHitWithBusStallEtc.head := True
                 rState := State.LOAD_HIT_DO_STALL_PIPE_4
+                rSavedStallFromIdle := True
               }
             }
             is (M"00-") {
@@ -6306,6 +6307,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
                   // TODO: determine if this works!
                   //State.LOAD_HIT_DO_STALL_PIPE_1
                 )
+                rSavedStallFromIdle := True
               }
             }
             is (M"011") {
@@ -6847,7 +6849,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       ) {
         is (M"00") {
           rSavedInPrefetch := False
-          rSavedInMiss := False
+          rSavedStallFromIdle := False
           //rInHitWithBusStallEtc.foreach(item => item := False)
           rInHitWithBusStallEtc.head := False
 
@@ -6856,7 +6858,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         }
         is (M"01") {
           rSavedInPrefetch := False
-          rSavedInMiss := False
+          rSavedStallFromIdle := False
           //rInHitWithBusStallEtc.foreach(item => item := False)
           rInHitWithBusStallEtc.head := False
 
