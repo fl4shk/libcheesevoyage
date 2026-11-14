@@ -6519,12 +6519,14 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         )) {
           // optimization: stop prefetching if we've got a newer,
           // incomplete cache hit
+          rSavedInPrefetch := False
           rState := State.LOAD_HIT_DO_STALL_PIPE_4
         }
         default {
           // optimization: stop prefetching if we had a hit from the
           // attempted prefetch address,
           //rState := State.WAIT_D2H_FIFO_EMPTY
+          rSavedInPrefetch := False
           rState := State.IDLE
         }
       }
