@@ -6298,7 +6298,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
                 )
               }
             }
-            is (M"--1") {
+            is (M"001") {
               if (idleIdx == 1) {
                 rSavedInPrefetch := True
                 rState := (
