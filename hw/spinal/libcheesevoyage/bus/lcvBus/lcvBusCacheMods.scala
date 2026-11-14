@@ -6087,9 +6087,16 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     //((rState === State.IDLE) && rMyTempDoSaveCond(3))
     //((rState === State.IDLE)
     rInHitWithBusStallEtc.head
-    ## rState.asBits(
-      //1
-      State.IDLE.position
+    ## (
+      rState.asBits(
+        //1
+        State.IDLE.position
+      )
+    )
+    ## (
+      rState.asBits(
+        State.WAIT_D2H_FIFO_EMPTY.position
+      )
     )
     ## rMyTempDoSaveCond(3)
     //RegNext(
@@ -6140,7 +6147,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         //"10-" + ("0" * numWays)
         //"1" + ("0" * numWays)
         //"11" + ("0" * numWays)
-        "-11" + ("0" * numWays)
+        //"-11" + ("0" * numWays)
+        "-1-1" + ("0" * numWays)
       )
       //M"10"
     ) {
@@ -6197,6 +6205,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
                 "1"
               )
             )
+            + "0"
             + "1" + myRamIdxMask
           )
         ) {
@@ -6297,7 +6306,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     is (MaskedLiteral(
       //"1" + "0" + ("-" * numWays)
       //"0-" + "0" + ("-" * numWays)
-      "01" + "0" + ("-" * numWays)
+      //"01" + "0" + ("-" * numWays)
+      "01-" + "0" + ("-" * numWays)
     )) {
       doPopLoH2dFifo()
       myFifoThingDoStall := False
