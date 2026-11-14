@@ -6296,7 +6296,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     }
     is (MaskedLiteral(
       //"1" + "0" + ("-" * numWays)
-      "0-" + "0" + ("-" * numWays)
+      //"0-" + "0" + ("-" * numWays)
+      "01" + "0" + ("-" * numWays)
     )) {
       doPopLoH2dFifo()
       myFifoThingDoStall := False
