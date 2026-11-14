@@ -6872,6 +6872,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   when (
     rMyTempDoSaveCond(2)
     && rSavedInPrefetch
+    && !myFifoThingDoStall
   ) {
     myLoD2hPushStm.busPayload.src := (
       rDel2LoH2dPayload.src
