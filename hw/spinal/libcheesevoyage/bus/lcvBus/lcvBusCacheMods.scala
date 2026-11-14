@@ -6489,6 +6489,15 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       lineAttrsRam.last.foreach(item => item.io.rdEn := True)
     }
     is (State.PREFETCH_START) {
+      val myTempRange = (
+        loBusCacheCfg.addrWidth - 2
+        downto loBusCfg.prefetchAddrIncrStartIdx
+      )
+
+      rPrevPrefetchAddr(myTempRange) := (
+        rSavedLoH2dPayload.addr(myTempRange)
+      )
+
       switch (
         rInHitWithBusStallEtc.head
         ## prefetchHaveHit
@@ -6803,11 +6812,11 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       when (
         mySharedCond
       ) {
-        rPrevPrefetchAddr(
-          myTempRange
-        ) := (
-          rSavedLoH2dPayload.addr(myTempRange)
-        )
+        //rPrevPrefetchAddr(
+        //  myTempRange
+        //) := (
+        //  rSavedLoH2dPayload.addr(myTempRange)
+        //)
         rSavedLoH2dPayload.addr(myTempRange) := (
           rSavedLoH2dPayload.addr(myTempRange) - 1
         )
