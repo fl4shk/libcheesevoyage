@@ -6747,22 +6747,16 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         loBusCacheCfg.addrWidth - 2
         downto loBusCfg.prefetchAddrIncrStartIdx
       )
-      when (
+      val mySharedCond = (
         !myLoD2hFifo.io.pop.valid
         && rSavedInPrefetch
         && rInHitWithBusStallEtc.last
-      ) {
-        rPrevPrefetchAddr(
-          myTempRange
-        ) := (
-          rSavedLoH2dPayload.addr(myTempRange)
-        )
-        rSavedLoH2dPayload.addr(myTempRange) := (
-          rSavedLoH2dPayload.addr(myTempRange) - 1
-        )
-      }
+      )
 
-      when (rMyTempDoSaveCond(0)) {
+      when (
+        rMyTempDoSaveCond(0)
+        && mySharedCond
+      ) {
         rSavedLoH2dPayload := (
           //rLoH2dPayload
           rDel2LoH2dPayload
@@ -6770,6 +6764,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       }
       when (
         rMyTempDoSaveCond(1)
+        && mySharedCond
       ) {
         rSavedLoH2dPayload.byteSize := (
           //rLoH2dPayload.byteSize
@@ -6783,6 +6778,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         //  RegNext(mySelLoH2dPopStm.fire, init=False),
         //  init=False
         //)
+        && mySharedCond
       ) {
         myLoD2hPushStm.busPayload.src := (
           rDel2LoH2dPayload.src
@@ -6801,6 +6797,19 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           rDel2LoH2dPayload.txnCnt
         )
         //rSavedRdLineAttrsTag := rdLineAttrs.tag
+      }
+
+      when (
+        mySharedCond
+      ) {
+        rPrevPrefetchAddr(
+          myTempRange
+        ) := (
+          rSavedLoH2dPayload.addr(myTempRange)
+        )
+        rSavedLoH2dPayload.addr(myTempRange) := (
+          rSavedLoH2dPayload.addr(myTempRange) - 1
+        )
       }
 
       switch (  
