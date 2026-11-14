@@ -6494,8 +6494,11 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         downto loBusCfg.prefetchAddrIncrStartIdx
       )
 
-      rPrevPrefetchAddr(myTempRange) := (
-        rSavedLoH2dPayload.addr(myTempRange)
+      //rPrevPrefetchAddr(myTempRange) := (
+      //  rSavedLoH2dPayload.addr(myTempRange)
+      //)
+      rPrevPrefetchAddr := (
+        rSavedLoH2dPayload.addr
       )
 
       switch (
