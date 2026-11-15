@@ -7006,7 +7006,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       !myFifoThingDoStall
       || rose(myFifoThingDoStall)
     )
-    && !rSavedMissLoH2dStm.fire
+    && rSavedMissLoH2dStm.ready
   ) {
     rOtherSavedAddr := (
       rDel2LoH2dPayload.addr
