@@ -6626,7 +6626,10 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     }
     is (State.PREFETCH_CANCEL) {
       when (
-        myFifoThingDoStall
+        //myFifoThingDoStall
+        rInHitWithBusStallEtc.head
+        || rSavedMissLoH2dStm.valid
+        || !myLoD2hPushStm.ready
       ) {
         rState := State.WAIT_D2H_FIFO_EMPTY
       } otherwise {
