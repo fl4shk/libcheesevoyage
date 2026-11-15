@@ -6994,8 +6994,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //M"10--010"
       //M"10--100"
     ) {
-      //myFifoThingDoStall := False
-      //doPopLoH2dFifo()
+      myFifoThingDoStall := False
+      doPopLoH2dFifo()
 
       rSavedInPrefetch := False
 
@@ -7003,7 +7003,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
       //rSavedRamIdx := rSavedMissRamIdx
 
-      rSavedMissLoH2dStm.valid := False
+      //rSavedMissLoH2dStm.valid := False
       //rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
       //rSavedRamIdx := rSavedMissRamIdx
       rSavedLoH2dPayload := rDel2LoH2dPayload
@@ -7015,8 +7015,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //M"10--1-1"
       //M"10--101"
     ) {
-      myFifoThingDoStall := False
-      doPopLoH2dFifo()
+      //myFifoThingDoStall := False
+      //doPopLoH2dFifo()
 
       rSavedInPrefetch := False
 
