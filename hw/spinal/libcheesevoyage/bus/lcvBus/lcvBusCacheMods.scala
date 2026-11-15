@@ -6106,10 +6106,10 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       )
     )
     ## (
-      rState.asBits(
-        State.WAIT_D2H_FIFO_EMPTY.position
-      )
-      //rSavedStallFromIdle
+      //rState.asBits(
+      //  State.WAIT_D2H_FIFO_EMPTY.position
+      //)
+      rSavedStallFromIdle
     )
     ## rMyTempDoSaveCond(3)
     //RegNext(
