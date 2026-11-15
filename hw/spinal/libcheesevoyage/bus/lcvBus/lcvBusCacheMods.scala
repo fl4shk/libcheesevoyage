@@ -6095,7 +6095,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     Reg(Bool(), init=False)
   )
 
-  //val rSavedMissOtherValid = Reg(Bool(), init=False)
+  val rSavedMissOtherValid = Reg(Bool(), init=False)
   val rSavedMissLoH2dStm = {
     val temp = Reg(Stream(cloneOf(rSavedLoH2dPayload)))
     temp.valid.init(False)
@@ -6993,6 +6993,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //rSavedMissLoH2dStm.valid := False
 
       //rSavedMissOtherValid := False
+      rSavedMissOtherValid := False
       rState := State.IDLE
     }
     is (
@@ -7008,7 +7009,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       rSavedMissLoH2dStm.ready := True
       //rSavedMissLoH2dStm.valid := False
 
-      //rSavedMissOtherValid := False
+      rSavedMissOtherValid := False
       rState := State.IDLE
     }
     is (
@@ -7037,6 +7038,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
 
       //rSavedMissOtherValid := True
 
+      rSavedMissOtherValid := True
       rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
     }
     is (
@@ -7060,6 +7062,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       rSavedMissLoH2dStm.valid := False
       //rSavedMissOtherValid := True
 
+      rSavedMissOtherValid := False
       rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
     }
     is (
@@ -7075,7 +7078,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
 
       rSavedMissLoH2dStm.ready := True
       //rSavedMissLoH2dStm.valid := False
-      //rSavedMissOtherValid := False
+      rSavedMissOtherValid := False
 
       rState := State.LOAD_HIT_DO_STALL_PIPE_4
     }
@@ -7091,7 +7094,10 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       !myFifoThingDoStall
       || rose(myFifoThingDoStall)
     )
-    && rSavedMissLoH2dStm.ready
+    && (
+      rSavedMissLoH2dStm.ready
+      || rSavedMissOtherValid
+    )
   ) {
     rOtherSavedAddr := (
       rDel2LoH2dPayload.addr
