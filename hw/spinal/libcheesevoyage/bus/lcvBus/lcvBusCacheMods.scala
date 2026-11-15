@@ -5829,14 +5829,14 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   //  && tempHaveHitCmpEq
   //)
 
-  val rSavedRdLineAttrsTag = (
-    //Vec.fill(numWays)(
-      Reg(
-        cloneOf(rdLineAttrs.head.tag),
-        init=rdLineAttrs.head.tag.getZero,
-      )
-    //)
-  )
+  //val rSavedRdLineAttrsTag = (
+  //  //Vec.fill(numWays)(
+  //    Reg(
+  //      cloneOf(rdLineAttrs.head.tag),
+  //      init=rdLineAttrs.head.tag.getZero,
+  //    )
+  //  //)
+  //)
 
   val rHiH2dBurstCnt = (
     Vec.fill(2)(
@@ -6095,6 +6095,18 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     Reg(Bool(), init=False)
   )
 
+  val rSavedMissLoH2dPayload = {
+    val temp = Reg(Flow(cloneOf(rSavedLoH2dPayload)))
+    temp.init(temp.getZero)
+    temp
+  }
+  val rSavedMissRamIdx = (
+    myCondHaveLineBitPlruRam
+  ) generate (
+    Reg(UInt(log2Up(numWays) bits))
+    init(0x0)
+  )
+
   val tempToSwitch = (
     //((rState === State.IDLE) && rMyTempDoSaveCond(3))
     //((rState === State.IDLE)
@@ -6110,6 +6122,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //  State.WAIT_D2H_FIFO_EMPTY.position
       //)
       rSavedStallFromIdle
+      || rSavedMissLoH2dPayload.fire
     )
     ## rMyTempDoSaveCond(3)
     //RegNext(
@@ -6154,50 +6167,74 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   switch (
     tempToSwitch
   ) {
-    is (
-      //M"10-0"
-      MaskedLiteral(
-        //"10-" + ("0" * numWays)
-        //"1" + ("0" * numWays)
-        //"11" + ("0" * numWays)
-        //"-11" + ("0" * numWays)
-        "-1-1" + ("0" * numWays)
-      )
-      //M"10"
-    ) {
-      //// cache miss, and know for sure that the line isn't dirty
-      // cache miss
-      rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+    for (idleIdx <- 0 until 2) {
+      is (
+        //M"10-0"
+        MaskedLiteral(
+          //"10-" + ("0" * numWays)
+          //"1" + ("0" * numWays)
+          //"11" + ("0" * numWays)
+          //"-11" + ("0" * numWays)
+          //"-1-1" + ("0" * numWays)
+          //"-1-1" + ("0" * numWays)
+          "-"
+          + (
+            if (idleIdx == 0) (
+              "0"
+            ) else (
+              "1" 
+            )
+          )
+          + "-1" + ("0" * numWays)
+        )
+        //M"10"
+      ) {
+        if (idleIdx == 0) {
+          rSavedMissLoH2dPayload.valid := True
+          rSavedMissLoH2dPayload.payload := rDel2LoH2dPayload
+        } else { // if (idleIdx == 1)
+          //// cache miss, and know for sure that the line isn't dirty
+          // cache miss
+          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+        }
 
-      if (myCondHaveLineBitPlruRam) {
-        //rSavedRamIdx := rdLineBitPlru
-        //wrLineBitPlru := rdLineBitPlru + 1
-        wrLineBitPlru := rdLineBitPlru
-        lineBitPlruRam.io.wrEn := True
-        switch (rdLineBitPlru) {
-          for (ramIdx <- 0 until numWays) {
-            val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
-            is (MaskedLiteral(myRamIdxMask)) {
-              wrLineBitPlru(ramIdx) := True
-              rSavedRamIdx := ramIdx
-            }
-            default {
+        if (myCondHaveLineBitPlruRam) {
+          //rSavedRamIdx := rdLineBitPlru
+          //wrLineBitPlru := rdLineBitPlru + 1
+          wrLineBitPlru := rdLineBitPlru
+          lineBitPlruRam.io.wrEn := True
+          switch (rdLineBitPlru) {
+            for (ramIdx <- 0 until numWays) {
+              val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
+              is (MaskedLiteral(myRamIdxMask)) {
+                wrLineBitPlru(ramIdx) := True
+
+                if (idleIdx == 0) {
+                  rSavedMissRamIdx := ramIdx
+                } else { // if (idleIdx == 1)
+                  rSavedRamIdx := ramIdx
+                }
+              }
+              default {
+              }
             }
           }
         }
+
+        if (idleIdx == 1) {
+          //myFifoThingDoStall := False
+          myLoD2hPushStm.valid := False
+
+          myFifoThingDoStall := True
+          //doPopLoH2dFifo()
+          mySelLoH2dPopStm.ready := (
+            //True
+            False
+          )
+          rSavedStallFromIdle := True
+          //myTempUpdateSavedLoH2dPayloadCond := False
+        }
       }
-
-      //myFifoThingDoStall := False
-      myLoD2hPushStm.valid := False
-
-      myFifoThingDoStall := True
-      //doPopLoH2dFifo()
-      mySelLoH2dPopStm.ready := (
-        //True
-        False
-      )
-      rSavedStallFromIdle := True
-      //myTempUpdateSavedLoH2dPayloadCond := False
     }
 
     for (ramIdx <- 0 until numWays) {
@@ -6515,6 +6552,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
 
       switch (
         rInHitWithBusStallEtc.head
+        ## rSavedMissLoH2dPayload.fire
         ## prefetchHaveHit
       ) {
         //for (ramIdx <- 0 until numWays) {
@@ -6525,12 +6563,14 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         //  }
         //}
         is (MaskedLiteral(
-          "0" + ("0" * numWays)
+          "00" + ("0" * numWays)
         )) {
+          // TODO: implement setting `rSavedRamIdx`
+
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
         }
         is (MaskedLiteral(
-          "1" + ("-" * numWays)
+          "10" + ("-" * numWays)
         )) {
           // optimization: stop prefetching if we've got a newer,
           // incomplete cache hit
@@ -6539,6 +6579,16 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
             //State.LOAD_HIT_DO_STALL_PIPE_4
             State.WAIT_D2H_FIFO_EMPTY
           )
+        }
+        is (MaskedLiteral(
+          "-1" + ("-" * numWays)
+        )) {
+          //rSavedMissLoH2dPayload.valid := False
+          rSavedLoH2dPayload := rSavedMissLoH2dPayload.payload
+          rSavedRamIdx := rSavedMissRamIdx
+
+          rSavedInPrefetch := False
+          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
         }
         default {
           // optimization: stop prefetching if we had a hit from the
@@ -6676,7 +6726,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
 
         switch (
           rSavedInPrefetch
-          ## (io.hiBus.d2hBus.burstLast)
+          ## io.hiBus.d2hBus.burstLast
         ) {
           is (M"01") {
             rState := State.RECV_LINE_FROM_HI_BUS_POST_7
@@ -6781,6 +6831,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         !myLoD2hFifo.io.pop.valid
         //&& rSavedInPrefetch
         && rInHitWithBusStallEtc.head//rInHitWithBusStallEtc.last
+        //&& !rSavedMissLoH2dPayload.fire
       )
 
       //when (
@@ -6850,8 +6901,9 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         myLoD2hFifo.io.pop.valid
         ## rInHitWithBusStallEtc.head//rInHitWithBusStallEtc.last
         ## rSavedStallFromIdle
+        ## rSavedMissLoH2dPayload.fire
       ) {
-        is (M"000") {
+        is (M"0000") {
           rSavedInPrefetch := False
           rSavedStallFromIdle := False
           //rInHitWithBusStallEtc.foreach(item => item := False)
@@ -6861,7 +6913,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           rState := State.IDLE
         }
         is (
-          M"0-1"
+          M"0-10"
         ) {
           rSavedInPrefetch := False
           rSavedStallFromIdle := False
@@ -6871,7 +6923,17 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           //myFifoThingDoStall := False
           rState := State.IDLE
         }
-        is (M"010") {
+        is (
+          M"0--1"
+        ) {
+          rSavedInPrefetch := False
+          rSavedMissLoH2dPayload.valid := False
+          rSavedLoH2dPayload := rSavedMissLoH2dPayload.payload
+          rSavedRamIdx := rSavedMissRamIdx
+
+          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+        }
+        is (M"0100") {
           rSavedInPrefetch := False
           rSavedStallFromIdle := False
           //rInHitWithBusStallEtc.foreach(item => item := False)
