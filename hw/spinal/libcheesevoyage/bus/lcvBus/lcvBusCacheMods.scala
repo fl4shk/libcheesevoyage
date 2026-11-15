@@ -6542,6 +6542,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         loBusCacheCfg.addrWidth - 2
         downto loBusCfg.prefetchAddrIncrStartIdx
       )
+      rPrevPrefetchAddr := rSavedLoH2dPayload.addr
       rSavedLoH2dPayload.addr(myTempRange) := (
         rSavedLoH2dPayload.addr(myTempRange) + 1
       )
@@ -6566,9 +6567,9 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //rPrevPrefetchAddr(myTempRange) := (
       //  rSavedLoH2dPayload.addr(myTempRange)
       //)
-      rPrevPrefetchAddr := (
-        rSavedLoH2dPayload.addr
-      )
+      //rPrevPrefetchAddr := (
+      //  rSavedLoH2dPayload.addr
+      //)
 
       switch (
         rInHitWithBusStallEtc.head
