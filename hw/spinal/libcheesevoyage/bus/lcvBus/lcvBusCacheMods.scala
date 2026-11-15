@@ -7108,15 +7108,15 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
 
   when (
     rMyTempDoSaveCond(2)
-    //&& rSavedInPrefetch
+    && !rSavedInPrefetch
     //&& (
     //  !rSavedStallFromIdle
     //  || rose(rSavedStallFromIdle)
     //)
-    //&& (
-    //  !myFifoThingDoStall
-    //  || rose(myFifoThingDoStall)
-    //)
+    && (
+      !myFifoThingDoStall
+      || rose(myFifoThingDoStall)
+    )
     && (
       rSavedMissLoH2dStm.ready
       || rSavedMissOtherValid
