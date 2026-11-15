@@ -6846,8 +6846,9 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       switch (  
         myLoD2hFifo.io.pop.valid
         ## rInHitWithBusStallEtc.head//rInHitWithBusStallEtc.last
+        ## rSavedStallFromIdle
       ) {
-        is (M"00") {
+        is (M"000") {
           rSavedInPrefetch := False
           rSavedStallFromIdle := False
           //rInHitWithBusStallEtc.foreach(item => item := False)
@@ -6856,7 +6857,18 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           //myFifoThingDoStall := False
           rState := State.IDLE
         }
-        is (M"01") {
+        is (
+          M"0-1"
+        ) {
+          rSavedInPrefetch := False
+          rSavedStallFromIdle := False
+          //rInHitWithBusStallEtc.foreach(item => item := False)
+          rInHitWithBusStallEtc.head := False
+
+          //myFifoThingDoStall := False
+          rState := State.IDLE
+        }
+        is (M"010") {
           rSavedInPrefetch := False
           rSavedStallFromIdle := False
           //rInHitWithBusStallEtc.foreach(item => item := False)
@@ -6895,6 +6907,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   when (
     rMyTempDoSaveCond(2)
     //&& rSavedInPrefetch
+    && !rSavedStallFromIdle
     && (
       !myFifoThingDoStall
       || rose(myFifoThingDoStall)
