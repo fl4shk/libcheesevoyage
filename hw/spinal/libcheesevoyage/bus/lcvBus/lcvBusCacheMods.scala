@@ -6177,6 +6177,16 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           //"-11" + ("0" * numWays)
           //"-1-1" + ("0" * numWays)
           //"-1-1" + ("0" * numWays)
+
+          //"-"
+          //+ (
+          //  if (idleIdx == 0) (
+          //    "0"
+          //  ) else (
+          //    "1" 
+          //  )
+          //)
+          //+ "-1" + ("0" * numWays)
           "-"
           + (
             if (idleIdx == 0) (
@@ -6190,8 +6200,10 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         //M"10"
       ) {
         if (idleIdx == 0) {
-          rSavedMissLoH2dPayload.valid := True
-          rSavedMissLoH2dPayload.payload := rDel2LoH2dPayload
+          when (!rSavedMissLoH2dPayload.fire) {
+            rSavedMissLoH2dPayload.valid := True
+            rSavedMissLoH2dPayload.payload := rDel2LoH2dPayload
+          }
         } else { // if (idleIdx == 1)
           //// cache miss, and know for sure that the line isn't dirty
           // cache miss
@@ -6927,7 +6939,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           M"0--1"
         ) {
           myFifoThingDoStall := False
-          doPopLoH2dFifo()
+          //doPopLoH2dFifo()
 
           rSavedInPrefetch := False
           rSavedMissLoH2dPayload.valid := False
