@@ -6200,7 +6200,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
               "1" 
             )
           )
-          + "-11" + ("0" * numWays)
+          //+ "-11" + ("0" * numWays)
+          + "011" + ("0" * numWays)
         )
         //M"10"
       ) {
