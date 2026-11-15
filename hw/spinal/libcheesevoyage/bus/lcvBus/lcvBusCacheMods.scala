@@ -6948,8 +6948,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         is (
           M"0--1"
         ) {
-          myFifoThingDoStall := False
-          doPopLoH2dFifo()
+          //myFifoThingDoStall := False
+          //doPopLoH2dFifo()
 
           rSavedInPrefetch := False
 
@@ -6968,7 +6968,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           //myFifoThingDoStall := False
 
           rSavedMissLoH2dStm.ready := True
-          rSavedMissLoH2dStm.valid := False
+          //rSavedMissLoH2dStm.valid := False
           rState := State.LOAD_HIT_DO_STALL_PIPE_4
         }
         default {
