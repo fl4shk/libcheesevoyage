@@ -6921,8 +6921,12 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         ## rInHitWithBusStallEtc.head//rInHitWithBusStallEtc.last
         ## rSavedStallFromIdle
         ## rSavedMissLoH2dStm.valid
+        ## (
+          rSavedMissLoH2dStm.txnCnt
+          =/= rDel2LoH2dPayload.txnCnt
+        )
       ) {
-        is (M"0000") {
+        is (M"0000-") {
           rSavedInPrefetch := False
           rSavedStallFromIdle := False
           //rInHitWithBusStallEtc.foreach(item => item := False)
@@ -6934,7 +6938,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           rState := State.IDLE
         }
         is (
-          M"0-10"
+          M"0-10-"
         ) {
           rSavedInPrefetch := False
           rSavedStallFromIdle := False
@@ -6946,7 +6950,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           rState := State.IDLE
         }
         is (
-          M"0--1"
+          M"0--10"
         ) {
           //myFifoThingDoStall := False
           //doPopLoH2dFifo()
@@ -6959,7 +6963,21 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
 
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
         }
-        is (M"0100") {
+        is (
+          M"0--11"
+        ) {
+          myFifoThingDoStall := False
+          doPopLoH2dFifo()
+
+          rSavedInPrefetch := False
+
+          rSavedMissLoH2dStm.valid := False
+          rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
+          rSavedRamIdx := rSavedMissRamIdx
+
+          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+        }
+        is (M"0100-") {
           rSavedInPrefetch := False
           rSavedStallFromIdle := False
           //rInHitWithBusStallEtc.foreach(item => item := False)
