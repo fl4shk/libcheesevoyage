@@ -6239,16 +6239,16 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           }
         }
 
-        if (idleIdx == 1) {
-          //myFifoThingDoStall := False
-          myLoD2hPushStm.valid := False
+        //myFifoThingDoStall := False
+        myLoD2hPushStm.valid := False
 
-          myFifoThingDoStall := True
-          //doPopLoH2dFifo()
-          mySelLoH2dPopStm.ready := (
-            //True
-            False
-          )
+        myFifoThingDoStall := True
+        //doPopLoH2dFifo()
+        mySelLoH2dPopStm.ready := (
+          //True
+          False
+        )
+        if (idleIdx == 1) {
           rSavedStallFromIdle := True
           //myTempUpdateSavedLoH2dPayloadCond := False
         }
