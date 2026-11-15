@@ -6625,23 +6625,30 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       }
     }
     is (State.PREFETCH_CANCEL) {
-      switch (
-        rInHitWithBusStallEtc.head
-        ## rSavedMissLoH2dStm.valid
+      when (
+        myFifoThingDoStall
       ) {
-        is (M"1-") {
-          rState := State.WAIT_D2H_FIFO_EMPTY
-        }
-        is (M"01") {
-          rState := (
-            //State.RECV_LINE_FROM_HI_BUS_PIPE_1
-            State.WAIT_D2H_FIFO_EMPTY
-          )
-        }
-        default {
-          rState := State.IDLE
-        }
+        rState := State.WAIT_D2H_FIFO_EMPTY
+      } otherwise {
+        rState := State.IDLE
       }
+      //switch (
+      //  rInHitWithBusStallEtc.head
+      //  ## rSavedMissLoH2dStm.valid
+      //) {
+      //  is (M"1-") {
+      //    rState := State.WAIT_D2H_FIFO_EMPTY
+      //  }
+      //  is (M"01") {
+      //    rState := (
+      //      //State.RECV_LINE_FROM_HI_BUS_PIPE_1
+      //      State.WAIT_D2H_FIFO_EMPTY
+      //    )
+      //  }
+      //  default {
+      //    rState := State.IDLE
+      //  }
+      //}
     }
     is (State.RECV_LINE_FROM_HI_BUS_PIPE_1) {
       rHadHiH2dFinish := False
