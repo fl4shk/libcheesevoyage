@@ -6916,83 +6916,6 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         )
       }
 
-      switch (  
-        myLoD2hFifo.io.pop.valid
-        ## rInHitWithBusStallEtc.head//rInHitWithBusStallEtc.last
-        ## rSavedStallFromIdle
-        ## rSavedMissLoH2dStm.valid
-        ## (
-          rSavedMissLoH2dStm.txnCnt
-          === rDel2LoH2dPayload.txnCnt
-        )
-      ) {
-        is (M"0000-") {
-          rSavedInPrefetch := False
-          rSavedStallFromIdle := False
-          //rInHitWithBusStallEtc.foreach(item => item := False)
-          rInHitWithBusStallEtc.head := False
-
-          //myFifoThingDoStall := False
-          rSavedMissLoH2dStm.ready := True
-
-          rState := State.IDLE
-        }
-        is (
-          M"0-10-"
-        ) {
-          rSavedInPrefetch := False
-          rSavedStallFromIdle := False
-          //rInHitWithBusStallEtc.foreach(item => item := False)
-          rInHitWithBusStallEtc.head := False
-
-          //myFifoThingDoStall := False
-          rSavedMissLoH2dStm.ready := True
-          rState := State.IDLE
-        }
-        is (
-          M"0--10"
-        ) {
-          //myFifoThingDoStall := False
-          //doPopLoH2dFifo()
-
-          rSavedInPrefetch := False
-
-          rSavedMissLoH2dStm.valid := False
-          rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-          rSavedRamIdx := rSavedMissRamIdx
-
-          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-        }
-        is (
-          M"0--11"
-        ) {
-          myFifoThingDoStall := False
-          doPopLoH2dFifo()
-
-          rSavedInPrefetch := False
-
-          rSavedMissLoH2dStm.valid := False
-          //rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-          //rSavedRamIdx := rSavedMissRamIdx
-          rSavedLoH2dPayload := rDel2LoH2dPayload
-
-          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-        }
-        is (M"0100-") {
-          rSavedInPrefetch := False
-          rSavedStallFromIdle := False
-          //rInHitWithBusStallEtc.foreach(item => item := False)
-          rInHitWithBusStallEtc.head := False
-
-          //myFifoThingDoStall := False
-
-          rSavedMissLoH2dStm.ready := True
-          //rSavedMissLoH2dStm.valid := False
-          rState := State.LOAD_HIT_DO_STALL_PIPE_4
-        }
-        default {
-        }
-      }
 
       //when (  
       //  !myLoD2hFifo.io.pop.valid
@@ -7016,6 +6939,115 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   //    rDel2LoH2dPayload.byteSize
   //  )
   //}
+
+  switch (
+    rState.asBits(
+      State.WAIT_D2H_FIFO_EMPTY.position
+    )
+    ## myLoD2hFifo.io.pop.valid
+    ## rInHitWithBusStallEtc.head//rInHitWithBusStallEtc.last
+    ## rSavedStallFromIdle
+    ## rSavedMissLoH2dStm.valid
+    //## RegNextWhen(
+    //  rSavedMissLoH2dStm.valid,
+    //  cond=(
+    //    rState.asBits(
+    //      State.WAIT_D2H_FIFO_EMPTY.position
+    //    )
+    //  ),
+    //  init=False
+    //)
+    ## (
+      rSavedMissLoH2dStm.txnCnt
+      === rDel2LoH2dPayload.txnCnt
+    )
+  ) {
+    is (
+      M"10000-"
+      //M"10000--"
+    ) {
+      rSavedInPrefetch := False
+      rSavedStallFromIdle := False
+      //rInHitWithBusStallEtc.foreach(item => item := False)
+      rInHitWithBusStallEtc.head := False
+
+      //myFifoThingDoStall := False
+      rSavedMissLoH2dStm.ready := True
+
+      rState := State.IDLE
+    }
+    is (
+      M"10-10-"
+      //M"10-10--"
+    ) {
+      rSavedInPrefetch := False
+      rSavedStallFromIdle := False
+      //rInHitWithBusStallEtc.foreach(item => item := False)
+      rInHitWithBusStallEtc.head := False
+
+      //myFifoThingDoStall := False
+      rSavedMissLoH2dStm.ready := True
+      rState := State.IDLE
+    }
+    is (
+      M"10--10"
+      //M"10--010"
+      //M"10--100"
+    ) {
+      //myFifoThingDoStall := False
+      //doPopLoH2dFifo()
+
+      rSavedInPrefetch := False
+
+      //rSavedMissLoH2dStm.valid := False
+      //rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
+      //rSavedRamIdx := rSavedMissRamIdx
+
+      rSavedMissLoH2dStm.valid := False
+      //rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
+      //rSavedRamIdx := rSavedMissRamIdx
+      rSavedLoH2dPayload := rDel2LoH2dPayload
+
+      rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+    }
+    is (
+      M"10--11"
+      //M"10--1-1"
+      //M"10--101"
+    ) {
+      myFifoThingDoStall := False
+      doPopLoH2dFifo()
+
+      rSavedInPrefetch := False
+
+      //rSavedMissLoH2dStm.valid := False
+      ////rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
+      ////rSavedRamIdx := rSavedMissRamIdx
+      //rSavedLoH2dPayload := rDel2LoH2dPayload
+      rSavedMissLoH2dStm.valid := False
+      rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
+      rSavedRamIdx := rSavedMissRamIdx
+
+      rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+    }
+    is (
+      M"10100-"
+      //M"10100--"
+    ) {
+      rSavedInPrefetch := False
+      rSavedStallFromIdle := False
+      //rInHitWithBusStallEtc.foreach(item => item := False)
+      rInHitWithBusStallEtc.head := False
+
+      //myFifoThingDoStall := False
+
+      rSavedMissLoH2dStm.ready := True
+      //rSavedMissLoH2dStm.valid := False
+      rState := State.LOAD_HIT_DO_STALL_PIPE_4
+    }
+    default {
+    }
+  }
 
   when (
     rMyTempDoSaveCond(2)
