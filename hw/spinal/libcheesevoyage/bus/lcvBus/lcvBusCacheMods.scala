@@ -6923,7 +6923,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         ## rSavedMissLoH2dStm.valid
         ## (
           rSavedMissLoH2dStm.txnCnt
-          =/= rDel2LoH2dPayload.txnCnt
+          === rDel2LoH2dPayload.txnCnt
         )
       ) {
         is (M"0000-") {
