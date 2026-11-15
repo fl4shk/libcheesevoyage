@@ -6240,8 +6240,6 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         }
 
         //myFifoThingDoStall := False
-        myLoD2hPushStm.valid := False
-
         myFifoThingDoStall := True
         //doPopLoH2dFifo()
         mySelLoH2dPopStm.ready := (
@@ -6249,6 +6247,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           False
         )
         if (idleIdx == 1) {
+          myLoD2hPushStm.valid := False
+
           rSavedStallFromIdle := True
           //myTempUpdateSavedLoH2dPayloadCond := False
         }
