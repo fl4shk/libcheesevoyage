@@ -6926,6 +6926,9 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         is (
           M"0--1"
         ) {
+          myFifoThingDoStall := False
+          doPopLoH2dFifo()
+
           rSavedInPrefetch := False
           rSavedMissLoH2dPayload.valid := False
           rSavedLoH2dPayload := rSavedMissLoH2dPayload.payload
