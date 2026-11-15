@@ -6591,17 +6591,17 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
 
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
         }
-        is (MaskedLiteral(
-          "10" + ("-" * numWays)
-        )) {
-          // optimization: stop prefetching if we've got a newer,
-          // incomplete cache hit
-          rSavedInPrefetch := False
-          rState := (
-            //State.LOAD_HIT_DO_STALL_PIPE_4
-            State.WAIT_D2H_FIFO_EMPTY
-          )
-        }
+        //is (MaskedLiteral(
+        //  "10" + ("-" * numWays)
+        //)) {
+        //  // optimization: stop prefetching if we've got a newer,
+        //  // incomplete cache hit
+        //  rSavedInPrefetch := False
+        //  rState := (
+        //    //State.LOAD_HIT_DO_STALL_PIPE_4
+        //    State.WAIT_D2H_FIFO_EMPTY
+        //  )
+        //}
         is (MaskedLiteral(
           "-1" + ("-" * numWays)
         )) {
