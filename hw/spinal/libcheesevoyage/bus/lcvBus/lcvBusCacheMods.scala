@@ -6962,10 +6962,22 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     //  ),
     //  init=False
     //)
-    ## (
-      rSavedMissLoH2dStm.txnCnt
-      === rDel2LoH2dPayload.txnCnt
-    )
+    ## {
+      //val myTempRange = (
+      //  loBusCacheCfg.addrWidth - 2
+      //  downto loBusCfg.prefetchAddrIncrStartIdx
+      //)
+      (
+        (
+          rSavedMissLoH2dStm.txnCnt
+          === rDel2LoH2dPayload.txnCnt
+        )
+      )
+    }
+    //## (
+    //  rSavedMissLoH2dStm.addr(cfg.loBusCacheCfg.cachedRangeNonLine)
+    //  === rDel2LoH2dPayload.addr(cfg.loBusCacheCfg.cachedRangeNonLine)
+    //)
   ) {
     is (
       M"10000-"
@@ -7004,8 +7016,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //M"10--010"
       //M"10--100"
     ) {
-      //myFifoThingDoStall := False
-      //doPopLoH2dFifo()
+      myFifoThingDoStall := False
+      doPopLoH2dFifo()
 
       rSavedInPrefetch := False
 
@@ -7018,9 +7030,11 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //rSavedRamIdx := rSavedMissRamIdx
       //rSavedMissLoH2dStm.valid := False
 
-      rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-      rSavedRamIdx := rSavedMissRamIdx
+      rSavedLoH2dPayload := rDel2LoH2dPayload
+      //rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
+      rSavedRamIdx := rSavedMissRamIdx // TODO: fix
       rSavedMissLoH2dStm.valid := False
+
       //rSavedMissOtherValid := True
 
       rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
