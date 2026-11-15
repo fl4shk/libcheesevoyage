@@ -6238,18 +6238,16 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           }
         }
 
-        myFifoThingDoStall := True
-        mySelLoH2dPopStm.ready := (
-          //True
-          False
-        )
-
         if (idleIdx == 1) {
           //myFifoThingDoStall := False
           myLoD2hPushStm.valid := False
 
-          //myFifoThingDoStall := True
+          myFifoThingDoStall := True
           //doPopLoH2dFifo()
+          mySelLoH2dPopStm.ready := (
+            //True
+            False
+          )
           rSavedStallFromIdle := True
           //myTempUpdateSavedLoH2dPayloadCond := False
         }
@@ -6974,8 +6972,9 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           rSavedInPrefetch := False
 
           rSavedMissLoH2dStm.valid := False
-          rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-          rSavedRamIdx := rSavedMissRamIdx
+          //rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
+          //rSavedRamIdx := rSavedMissRamIdx
+          rSavedLoH2dPayload := rDel2LoH2dPayload
 
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
         }
