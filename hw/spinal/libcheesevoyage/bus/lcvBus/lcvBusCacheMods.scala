@@ -6087,7 +6087,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   //)
 
   val rSavedInPrefetch = Reg(Bool(), init=False)
-  val rSavedStallFromIdle = Reg(Bool(), init=False)
+  val rSavedStallFromIdleEtc = Reg(Bool(), init=False)
   val rInHitWithBusStallEtc = Vec.fill(
     //2
     1
@@ -6124,7 +6124,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //rState.asBits(
       //  State.WAIT_D2H_FIFO_EMPTY.position
       //)
-      rSavedStallFromIdle
+      rSavedStallFromIdleEtc
     )
     ## (
       rSavedMissLoH2dStm.ready
@@ -6249,7 +6249,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         if (idleIdx == 1) {
           myLoD2hPushStm.valid := False
 
-          rSavedStallFromIdle := True
+          rSavedStallFromIdleEtc := True
           //myTempUpdateSavedLoH2dPayloadCond := False
         }
       }
@@ -6346,7 +6346,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
               } else { // if (idleIdx == 1)
                 //rInHitWithBusStallEtc.head := True
                 rState := State.LOAD_HIT_DO_STALL_PIPE_4
-                rSavedStallFromIdle := True
+                rSavedStallFromIdleEtc := True
               }
             }
             is (M"00-") {
@@ -6363,7 +6363,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
                   // TODO: determine if this works!
                   //State.LOAD_HIT_DO_STALL_PIPE_1
                 )
-                rSavedStallFromIdle := True
+                rSavedStallFromIdleEtc := True
               }
             }
             is (M"011") {
@@ -6616,10 +6616,9 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           // attempted prefetch address,
           //rState := State.WAIT_D2H_FIFO_EMPTY
           rSavedInPrefetch := False
-          //rState := (
-          //  //State.IDLE
-          //)
+          rSavedStallFromIdleEtc := True
           rState := (
+            //State.IDLE
             //State.LOAD_HIT_DO_STALL_PIPE_4
             State.WAIT_D2H_FIFO_EMPTY
           )
@@ -6954,7 +6953,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     )
     ## myLoD2hFifo.io.pop.valid
     ## rInHitWithBusStallEtc.head//rInHitWithBusStallEtc.last
-    ## rSavedStallFromIdle
+    ## rSavedStallFromIdleEtc
     //## rSavedMissOtherValid
     ## (
       rSavedMissLoH2dStm.valid
@@ -6991,7 +6990,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //M"10000--"
     ) {
       rSavedInPrefetch := False
-      rSavedStallFromIdle := False
+      rSavedStallFromIdleEtc := False
       //rInHitWithBusStallEtc.foreach(item => item := False)
       rInHitWithBusStallEtc.head := False
 
@@ -7008,7 +7007,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //M"10-10--"
     ) {
       rSavedInPrefetch := False
-      rSavedStallFromIdle := False
+      rSavedStallFromIdleEtc := False
       //rInHitWithBusStallEtc.foreach(item => item := False)
       rInHitWithBusStallEtc.head := False
 
@@ -7061,7 +7060,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
       rSavedRamIdx := rSavedMissRamIdx // TODO: fix
       //rSavedMissLoH2dStm.valid := False
-      rSavedStallFromIdle := False
+      rSavedStallFromIdleEtc := False
 
       rSavedMissOtherValid := True
       rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
@@ -7096,7 +7095,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //M"10100--"
     ) {
       rSavedInPrefetch := False
-      rSavedStallFromIdle := False
+      rSavedStallFromIdleEtc := False
       //rInHitWithBusStallEtc.foreach(item => item := False)
       rInHitWithBusStallEtc.head := False
 
