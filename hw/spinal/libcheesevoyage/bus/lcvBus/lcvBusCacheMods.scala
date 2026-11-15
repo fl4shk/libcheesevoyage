@@ -6238,11 +6238,13 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           }
         }
 
+        myFifoThingDoStall := True
+
         if (idleIdx == 1) {
           //myFifoThingDoStall := False
           myLoD2hPushStm.valid := False
 
-          myFifoThingDoStall := True
+          //myFifoThingDoStall := True
           //doPopLoH2dFifo()
           mySelLoH2dPopStm.ready := (
             //True
