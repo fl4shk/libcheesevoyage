@@ -6087,7 +6087,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   //  )
   //)
 
-  val rSavedInPrefetch = Vec.fill(2)(
+  val rSavedInPrefetchVec = Vec.fill(2)(
     Reg(Bool(), init=False)
   )
   val rSavedStallFromIdle = Reg(Bool(), init=False)
@@ -6371,7 +6371,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
             }
             is (M"011") {
               if (idleIdx == 1) {
-                rSavedInPrefetch.foreach(_ := True)
+                rSavedInPrefetchVec.foreach(_ := True)
                 rState := (
                   State.PREFETCH_START_PIPE_3
                 )
@@ -6611,14 +6611,14 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
           rSavedRamIdx := rSavedMissRamIdx
 
-          rSavedInPrefetch.head := False
+          rSavedInPrefetchVec.head := False
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
         }
         default {
           // optimization: stop prefetching if we had a hit from the
           // attempted prefetch address,
           //rState := State.WAIT_D2H_FIFO_EMPTY
-          rSavedInPrefetch.head := False
+          rSavedInPrefetchVec.head := False
           rState := (
             //State.IDLE
             State.PREFETCH_CANCEL
@@ -6781,7 +6781,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         //}
 
         switch (
-          rSavedInPrefetch.head
+          rSavedInPrefetchVec.head
           ## io.hiBus.d2hBus.burstLast
         ) {
           is (M"01") {
@@ -6984,7 +6984,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     ## myLoD2hFifo.io.pop.valid
     ## rInHitWithBusStallEtc.head//rInHitWithBusStallEtc.last
     ## rSavedStallFromIdle
-    ## rSavedInPrefetch.last
+    ## rSavedInPrefetchVec.last
     //## rSavedMissOtherValid
     ## (
       rSavedMissLoH2dStm.valid
@@ -7021,7 +7021,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //M"10000-"
       //M"10000--"
     ) {
-      rSavedInPrefetch.foreach(_ := False)
+      rSavedInPrefetchVec.foreach(_ := False)
       rSavedStallFromIdle := False
       //rInHitWithBusStallEtc.foreach(item => item := False)
       rInHitWithBusStallEtc.head := False
@@ -7039,7 +7039,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       M"10-1-0-"
       //M"10-10--"
     ) {
-      rSavedInPrefetch.foreach(_ := False)
+      rSavedInPrefetchVec.foreach(_ := False)
       rSavedStallFromIdle := False
       //rInHitWithBusStallEtc.foreach(item => item := False)
       rInHitWithBusStallEtc.head := False
@@ -7061,7 +7061,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       myFifoThingDoStall := False
       doPopLoH2dFifo()
 
-      rSavedInPrefetch.foreach(_ := False)
+      rSavedInPrefetchVec.foreach(_ := False)
 
       rSavedLoH2dPayload := rDel2LoH2dPayload
       //rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
@@ -7080,7 +7080,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //M"10--010"
       //M"10--100"
     ) {
-      rSavedInPrefetch.foreach(_ := False)
+      rSavedInPrefetchVec.foreach(_ := False)
 
       //rSavedLoH2dPayload := rDel2LoH2dPayload
       rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
@@ -7098,7 +7098,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //M"10--010"
       //M"10--100"
     ) {
-      rSavedInPrefetch.foreach(_ := False)
+      rSavedInPrefetchVec.foreach(_ := False)
 
       //rSavedLoH2dPayload := rDel2LoH2dPayload
       rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
@@ -7119,7 +7119,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       myFifoThingDoStall := False
       doPopLoH2dFifo()
 
-      rSavedInPrefetch.foreach(_ := False)
+      rSavedInPrefetchVec.foreach(_ := False)
 
       //rSavedMissLoH2dStm.valid := False
       ////rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
@@ -7140,7 +7140,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       M"1010-0-"
       //M"10100--"
     ) {
-      rSavedInPrefetch.foreach(_ := False)
+      rSavedInPrefetchVec.foreach(_ := False)
       rSavedStallFromIdle := False
       //rInHitWithBusStallEtc.foreach(item => item := False)
       rInHitWithBusStallEtc.head := False
