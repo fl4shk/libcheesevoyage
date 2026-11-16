@@ -6618,7 +6618,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           // optimization: stop prefetching if we had a hit from the
           // attempted prefetch address,
           //rState := State.WAIT_D2H_FIFO_EMPTY
-          rSavedInPrefetchVec.head := False
+          //rSavedInPrefetchVec.head := False
+          rSavedInPrefetchVec.foreach(_ := False)
           rState := (
             //State.IDLE
             State.PREFETCH_CANCEL
@@ -6635,7 +6636,6 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       ) {
         rState := State.WAIT_D2H_FIFO_EMPTY
       } otherwise {
-        rSavedInPrefetchVec.last := False
         rState := State.IDLE
       }
       //switch (
