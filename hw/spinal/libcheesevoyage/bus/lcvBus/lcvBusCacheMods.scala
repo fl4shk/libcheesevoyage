@@ -6098,7 +6098,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     Reg(Bool(), init=False)
   )
 
-  val rSavedMissOtherValid = Reg(Bool(), init=False)
+  //val rSavedMissOtherValid = Reg(Bool(), init=False)
   val rSavedMissLoH2dStm = {
     val temp = Reg(Stream(cloneOf(rSavedLoH2dPayload)))
     temp.valid.init(False)
@@ -6984,7 +6984,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     )
     ## myLoD2hFifo.io.pop.valid
     ## rInHitWithBusStallEtc.head//rInHitWithBusStallEtc.last
-    ## rSavedStallFromIdle
+    //## rSavedStallFromIdle
     ## rSavedInPrefetchVec.last
     //## rSavedMissOtherValid
     ## (
@@ -7000,198 +7000,249 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     //  ),
     //  init=False
     //)
-    ## {
-      //val myTempRange = (
-      //  loBusCacheCfg.addrWidth - 2
-      //  downto loBusCfg.prefetchAddrIncrStartIdx
-      //)
+    //## {
+    //  //val myTempRange = (
+    //  //  loBusCacheCfg.addrWidth - 2
+    //  //  downto loBusCfg.prefetchAddrIncrStartIdx
+    //  //)
 
-      //(
-      //  (
-      //    rSavedMissLoH2dStm.txnCnt
-      //    === rDel2LoH2dPayload.txnCnt
-      //  )
-      //)
-      (
-        rSavedMissLoH2dStm.txnCnt
-        =/= RegNextWhen(
-          myLoD2hPushStm.busPayload.txnCnt,
-          cond=myLoD2hPushStm.fire,
-          init=myLoD2hPushStm.busPayload.txnCnt.getZero,
-        )
-      )
-    }
+    //  //(
+    //  //  (
+    //  //    rSavedMissLoH2dStm.txnCnt
+    //  //    === rDel2LoH2dPayload.txnCnt
+    //  //  )
+    //  //)
+    //  (
+    //    rSavedMissLoH2dStm.txnCnt
+    //    =/= RegNextWhen(
+    //      myLoD2hPushStm.busPayload.txnCnt,
+    //      cond=myLoD2hPushStm.fire,
+    //      init=myLoD2hPushStm.busPayload.txnCnt.getZero,
+    //    )
+    //  )
+    //}
     //## (
     //  rSavedMissLoH2dStm.addr(cfg.loBusCacheCfg.cachedRangeNonLine)
     //  === rDel2LoH2dPayload.addr(cfg.loBusCacheCfg.cachedRangeNonLine)
     //)
   ) {
     is (
-      M"1000-0-"
-      //M"10000-"
-      //M"10000--"
+      M"10000"
     ) {
-      rSavedInPrefetchVec.foreach(_ := False)
-      rSavedStallFromIdle := False
-      //rInHitWithBusStallEtc.foreach(item => item := False)
-      rInHitWithBusStallEtc.head := False
-
-      //myFifoThingDoStall := False
-      rSavedMissLoH2dStm.ready := True
       //rSavedMissLoH2dStm.valid := False
-
+      rSavedStallFromIdle := False
+      rSavedMissLoH2dStm.ready := True
       //rSavedMissOtherValid := False
-      rSavedMissOtherValid := False
       rState := State.IDLE
     }
     is (
-      //M"10-10-"
-      M"10-1-0-"
-      //M"10-10--"
+      M"101--"
     ) {
       rSavedInPrefetchVec.foreach(_ := False)
-      rSavedStallFromIdle := False
-      //rInHitWithBusStallEtc.foreach(item => item := False)
-      rInHitWithBusStallEtc.head := False
-
-      //myFifoThingDoStall := False
+      //rSavedStallFromIdle := False
       rSavedMissLoH2dStm.ready := True
-      //rSavedMissLoH2dStm.valid := False
-
-      rSavedMissOtherValid := False
-      rState := State.IDLE
-    }
-    is (
-      //M"10--10"
-      //M"10-010"
-      M"10-0010"
-      //M"10--010"
-      //M"10--100"
-    ) {
-      myFifoThingDoStall := False
-      doPopLoH2dFifo()
-
-      rSavedInPrefetchVec.foreach(_ := False)
-
-      rSavedLoH2dPayload := rDel2LoH2dPayload
-      //rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-      rSavedRamIdx := rSavedMissRamIdx // TODO: fix
-      rSavedMissLoH2dStm.valid := False
-
-      //rSavedMissOtherValid := True
-
-      rSavedMissOtherValid := True
-      rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-    }
-    is (
-      //M"10--10"
-      //M"10-110"
-      M"10-1-10"
-      //M"10--010"
-      //M"10--100"
-    ) {
-      rSavedInPrefetchVec.foreach(_ := False)
-
-      //rSavedLoH2dPayload := rDel2LoH2dPayload
-      rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-      rSavedRamIdx := rSavedMissRamIdx // TODO: fix
-      //rSavedMissLoH2dStm.valid := False
-      rSavedStallFromIdle := False
-
-      rSavedMissOtherValid := True
-      rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-    }
-    is (
-      //M"10--10"
-      //M"10-110"
-      M"10-0110"
-      //M"10--010"
-      //M"10--100"
-    ) {
-      myFifoThingDoStall := False
-      doPopLoH2dFifo()
-
-      rSavedInPrefetchVec.foreach(_ := False)
-
-      rSavedLoH2dPayload := rDel2LoH2dPayload
-      //rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-      //rSavedRamIdx := rSavedMissRamIdx // TODO: fix
-      rSavedMissLoH2dStm.valid := False
-      rSavedStallFromIdle := False
-
-      rSavedMissOtherValid := True
-      rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-    }
-    is (
-      //M"10--11"
-      //M"10--11"
-      M"10--011"
-      //M"10--1-1"
-      //M"10--101"
-    ) {
-      //myFifoThingDoStall := False
-      //doPopLoH2dFifo()
-
-      rSavedInPrefetchVec.foreach(_ := False)
-
-      //rSavedMissLoH2dStm.valid := False
-      ////rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-      ////rSavedRamIdx := rSavedMissRamIdx
-      //rSavedLoH2dPayload := rDel2LoH2dPayload
-      //rSavedLoH2dPayload := rDel2LoH2dPayload
-
-      rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-      rSavedRamIdx := rSavedMissRamIdx
-      rSavedMissLoH2dStm.valid := False
-      //rSavedMissOtherValid := True
-
-      rSavedMissOtherValid := False
-      rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-    }
-    is (
-      //M"10--11"
-      //M"10--11"
-      M"10--111"
-      //M"10--1-1"
-      //M"10--101"
-    ) {
-      //myFifoThingDoStall := False
-      //doPopLoH2dFifo()
-
-      rSavedInPrefetchVec.foreach(_ := False)
-
-      //rSavedMissLoH2dStm.valid := False
-      ////rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-      ////rSavedRamIdx := rSavedMissRamIdx
-      //rSavedLoH2dPayload := rDel2LoH2dPayload
-      //rSavedLoH2dPayload := rDel2LoH2dPayload
-
-      rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-      rSavedRamIdx := rSavedMissRamIdx
-      rSavedMissLoH2dStm.valid := False
-      //rSavedMissOtherValid := True
-
-      rSavedMissOtherValid := False
-      rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-    }
-    is (
-      //M"10100-"
-      M"1010-0-"
-      //M"10100--"
-    ) {
-      rSavedInPrefetchVec.foreach(_ := False)
-      rSavedStallFromIdle := False
-      //rInHitWithBusStallEtc.foreach(item => item := False)
-      rInHitWithBusStallEtc.head := False
-
-      //myFifoThingDoStall := False
-
-      rSavedMissLoH2dStm.ready := True
-      //rSavedMissLoH2dStm.valid := False
-      rSavedMissOtherValid := False
+      //rSavedMissOtherValid := False
 
       rState := State.LOAD_HIT_DO_STALL_PIPE_4
     }
+    is (
+      M"10010"
+    ) {
+      rSavedInPrefetchVec.foreach(_ := False)
+      rSavedStallFromIdle := False
+      rSavedMissLoH2dStm.ready := True
+      //rSavedMissOtherValid := False
+
+      rState := State.IDLE
+    }
+    is (
+      M"100-1"
+    ) {
+      rSavedInPrefetchVec.foreach(_ := False)
+      //rSavedStallFromIdle := False
+      //rSavedMissLoH2dStm.ready := True
+
+      rSavedMissLoH2dStm.valid := False
+      rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
+      rSavedRamIdx := rSavedMissRamIdx
+
+      //rSavedMissOtherValid := False
+      rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+    }
+    //is (
+    //  //M"1000-0-"
+    //  M"100-0-"
+    //  //M"10000-"
+    //  //M"10000--"
+    //) {
+    //  rSavedInPrefetchVec.foreach(_ := False)
+    //  //rSavedStallFromIdle := False
+    //  //rInHitWithBusStallEtc.foreach(item => item := False)
+    //  rInHitWithBusStallEtc.head := False
+
+    //  //myFifoThingDoStall := False
+    //  rSavedMissLoH2dStm.ready := True
+    //  //rSavedMissLoH2dStm.valid := False
+
+    //  //rSavedMissOtherValid := False
+    //  rSavedMissOtherValid := False
+    //  rState := State.IDLE
+    //}
+    //is (
+    //  //M"10-10-"
+    //  //M"10-1-0-"
+    //  M"10--0-"
+    //  //M"10-10--"
+    //) {
+    //  rSavedInPrefetchVec.foreach(_ := False)
+    //  rSavedStallFromIdle := False
+    //  //rInHitWithBusStallEtc.foreach(item => item := False)
+    //  rInHitWithBusStallEtc.head := False
+
+    //  //myFifoThingDoStall := False
+    //  rSavedMissLoH2dStm.ready := True
+    //  //rSavedMissLoH2dStm.valid := False
+
+    //  rSavedMissOtherValid := False
+    //  rState := State.IDLE
+    //}
+    //is (
+    //  //M"10--10"
+    //  //M"10-010"
+    //  //M"10-0010"
+    //  M"10-010"
+    //  //M"10--010"
+    //  //M"10--100"
+    //) {
+    //  myFifoThingDoStall := False
+    //  doPopLoH2dFifo()
+
+    //  rSavedInPrefetchVec.foreach(_ := False)
+
+    //  rSavedLoH2dPayload := rDel2LoH2dPayload
+    //  //rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
+    //  rSavedRamIdx := rSavedMissRamIdx // TODO: fix
+    //  rSavedMissLoH2dStm.valid := False
+
+    //  //rSavedMissOtherValid := True
+
+    //  rSavedMissOtherValid := True
+    //  rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+    //}
+    ////is (
+    ////  //M"10--10"
+    ////  //M"10-110"
+    ////  //M"10-1-10"
+    ////  M"10--10"
+    ////  //M"10--010"
+    ////  //M"10--100"
+    ////) {
+    ////  rSavedInPrefetchVec.foreach(_ := False)
+
+    ////  //rSavedLoH2dPayload := rDel2LoH2dPayload
+    ////  rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
+    ////  rSavedRamIdx := rSavedMissRamIdx // TODO: fix
+    ////  //rSavedMissLoH2dStm.valid := False
+    ////  rSavedStallFromIdle := False
+
+    ////  rSavedMissOtherValid := True
+    ////  rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+    ////}
+    //is (
+    //  //M"10--10"
+    //  //M"10-110"
+    //  //M"10-0110"
+    //  M"10-110"
+    //  //M"10--010"
+    //  //M"10--100"
+    //) {
+    //  myFifoThingDoStall := False
+    //  doPopLoH2dFifo()
+
+    //  rSavedInPrefetchVec.foreach(_ := False)
+
+    //  rSavedLoH2dPayload := rDel2LoH2dPayload
+    //  //rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
+    //  //rSavedRamIdx := rSavedMissRamIdx // TODO: fix
+    //  rSavedMissLoH2dStm.valid := False
+    //  rSavedStallFromIdle := False
+
+    //  rSavedMissOtherValid := True
+    //  rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+    //}
+    //is (
+    //  //M"10--11"
+    //  //M"10--11"
+    //  //M"10--011"
+    //  M"10-011"
+    //  //M"10--1-1"
+    //  //M"10--101"
+    //) {
+    //  //myFifoThingDoStall := False
+    //  //doPopLoH2dFifo()
+
+    //  rSavedInPrefetchVec.foreach(_ := False)
+
+    //  //rSavedMissLoH2dStm.valid := False
+    //  ////rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
+    //  ////rSavedRamIdx := rSavedMissRamIdx
+    //  //rSavedLoH2dPayload := rDel2LoH2dPayload
+    //  //rSavedLoH2dPayload := rDel2LoH2dPayload
+
+    //  rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
+    //  rSavedRamIdx := rSavedMissRamIdx
+    //  rSavedMissLoH2dStm.valid := False
+    //  //rSavedMissOtherValid := True
+
+    //  rSavedMissOtherValid := False
+    //  rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+    //}
+    //is (
+    //  //M"10--11"
+    //  //M"10--11"
+    //  //M"10--111"
+    //  M"10-111"
+    //  //M"10--1-1"
+    //  //M"10--101"
+    //) {
+    //  //myFifoThingDoStall := False
+    //  //doPopLoH2dFifo()
+
+    //  rSavedInPrefetchVec.foreach(_ := False)
+
+    //  //rSavedMissLoH2dStm.valid := False
+    //  ////rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
+    //  ////rSavedRamIdx := rSavedMissRamIdx
+    //  //rSavedLoH2dPayload := rDel2LoH2dPayload
+    //  //rSavedLoH2dPayload := rDel2LoH2dPayload
+
+    //  rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
+    //  rSavedRamIdx := rSavedMissRamIdx
+    //  rSavedMissLoH2dStm.valid := False
+    //  //rSavedMissOtherValid := True
+
+    //  rSavedMissOtherValid := False
+    //  rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+    //}
+    //is (
+    //  //M"10100-"
+    //  //M"1010-0-"
+    //  M"101-0-"
+    //  //M"10100--"
+    //) {
+    //  rSavedInPrefetchVec.foreach(_ := False)
+    //  rSavedStallFromIdle := False
+    //  //rInHitWithBusStallEtc.foreach(item => item := False)
+    //  rInHitWithBusStallEtc.head := False
+
+    //  //myFifoThingDoStall := False
+
+    //  rSavedMissLoH2dStm.ready := True
+    //  //rSavedMissLoH2dStm.valid := False
+    //  rSavedMissOtherValid := False
+
+    //  rState := State.LOAD_HIT_DO_STALL_PIPE_4
+    //}
     default {
     }
   }
@@ -7209,7 +7260,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     )
     && (
       rSavedMissLoH2dStm.ready
-      || rSavedMissOtherValid
+      //|| rSavedMissOtherValid
     )
   ) {
     rOtherSavedAddr := (
