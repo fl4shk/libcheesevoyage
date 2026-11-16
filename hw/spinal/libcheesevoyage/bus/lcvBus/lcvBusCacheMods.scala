@@ -6635,6 +6635,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       ) {
         rState := State.WAIT_D2H_FIFO_EMPTY
       } otherwise {
+        rSavedInPrefetchVec.last := False
         rState := State.IDLE
       }
       //switch (
