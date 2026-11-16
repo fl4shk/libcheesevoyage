@@ -5123,7 +5123,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       wordWidth / 8
     ),
     depth=depthWords,
-    optIncludeWrByteEn=true,
+    optIncludeWrByteEn=false,
     //optWrHistLength=cfg.myRamOptWrHistLength,
     //initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
     arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
@@ -5170,7 +5170,9 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     //lineAttrsRam.last(idx).io.rdAddr := 0x0
 
     //lineWordRam(idx).io.wrEn := False
-    lineWordRam(idx).io.vec.foreach(_.wrEn := False)
+    lineWordRam(idx).io.vec.foreach(item => {
+      item.wrEn := False
+    })
     lineAttrsRam.foreach(item => item(idx).io.wrEn := False)
   }
 
