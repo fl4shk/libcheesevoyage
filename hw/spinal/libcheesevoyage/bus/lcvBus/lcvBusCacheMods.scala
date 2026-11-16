@@ -5104,17 +5104,33 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   //--------
   val io = LcvBusCacheIo(cfg=cfg)
   //--------
-  val lineWordRamCfg = RamSdpPipeConfig(
-    wordType=UInt(wordWidth bits),
+  //val lineWordRamCfg = RamSdpPipeConfig(
+  //  wordType=UInt(wordWidth bits),
+  //  depth=depthWords,
+  //  optIncludeWrByteEn=false,
+  //  optWrHistLength=cfg.myRamOptWrHistLength,
+  //  initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
+  //  arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
+  //  arrRamStyleXilinx=cfg.loBusCacheCfg.lineWordMemRamStyleXilinx,
+  //)
+  //val lineWordRam = Array.fill(numWays)(
+  //  RamSdpPipe(cfg=lineWordRamCfg)
+  //)
+
+  val lineWordRamCfg = RamTdpPipeConfig(
+    //wordType=UInt(wordWidth bits),
+    bytesPerWord=(
+      wordWidth / 8
+    ),
     depth=depthWords,
-    optIncludeWrByteEn=false,
-    optWrHistLength=cfg.myRamOptWrHistLength,
-    initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
+    optIncludeWrByteEn=true,
+    //optWrHistLength=cfg.myRamOptWrHistLength,
+    //initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
     arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
     arrRamStyleXilinx=cfg.loBusCacheCfg.lineWordMemRamStyleXilinx,
   )
   val lineWordRam = Array.fill(numWays)(
-    RamSdpPipe(cfg=lineWordRamCfg)
+    RamTdpPipe(cfg=lineWordRamCfg)
   )
   val lineAttrsRamCfg = RamSdpPipeConfig(
     wordType=LcvBusCacheLineAttrs(cfg=loBusCfg),
@@ -5131,8 +5147,10 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     )
   )
 
-  val rdLineWord = Vec.fill(numWays)(
-    UInt(wordWidth bits)
+  val rdLineWord = Vec.fill(2)(
+    Vec.fill(numWays)(
+      UInt(wordWidth bits)
+    )
   )
   val rdLineAttrs = Vec.fill(numWays)(
     LcvBusCacheLineAttrs(cfg=loBusCfg)
@@ -5143,13 +5161,16 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   )
 
   for (idx <- 0 until numWays) {
-    rdLineWord(idx) := lineWordRam(idx).io.rdData
+    //rdLineWord(idx) := lineWordRam(idx).io.rdData
+    rdLineWord.head(idx) := lineWordRam(idx).io.vec.head.rdData.asUInt
+    rdLineWord.last(idx) := lineWordRam(idx).io.vec.last.rdData.asUInt
     rdLineAttrs(idx) := lineAttrsRam.head(idx).io.rdData
     prefetchRdLineAttrs(idx) := lineAttrsRam.last(idx).io.rdData
     //lineAttrsRam.last(idx).io.rdEn := False
     //lineAttrsRam.last(idx).io.rdAddr := 0x0
 
-    lineWordRam(idx).io.wrEn := False
+    //lineWordRam(idx).io.wrEn := False
+    lineWordRam(idx).io.vec.foreach(_.wrEn := False)
     lineAttrsRam.foreach(item => item(idx).io.wrEn := False)
   }
 
@@ -5484,14 +5505,15 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   }
 
   def doLineWordRamReadSync(
+    vecIdx: Int,
     busAddr: UInt,
     setEn: Int=0,
   ): Unit = {
     lineWordRam.foreach(item => {
       if (setEn == 1) {
-        item.io.rdEn := True
+        item.io.vec(vecIdx).rdEn := True
       } else if (setEn == 2) {
-        item.io.rdEn := (
+        item.io.vec(vecIdx).rdEn := (
           RegNext(
             next=(
               //mySelLoH2dPopStm.valid
@@ -5502,7 +5524,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           //&& !myFifoThingDoStall
         )
       } 
-      item.io.rdAddr := {
+      item.io.vec(vecIdx).addr := {
         //println(
         //  s"test info: busAddr("
         //  + s"${busAddr.high} downto ${myLineWordRamAddrRshift}"
@@ -5510,9 +5532,11 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         //)
         (
           (
-            busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift)
+            busAddr(
+              busAddr.high downto myLineWordRamSingleWordAddrRshift
+            )
           )
-          .resize(item.io.rdAddr.getWidth)
+          .resize(item.io.vec(vecIdx).addr.getWidth)
         )
       }
     })
@@ -5620,6 +5644,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     }
   }
   def doLineWordRamWrite(
+    //vecIdx: Int,
     ramIdx: Int,
     busAddr: UInt,
     lineWord: UInt,
@@ -5627,13 +5652,13 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     setEn: Boolean=true,
   ): Unit = {
     if (setEn) {
-      lineWordRam(ramIdx).io.wrEn := True
+      lineWordRam(ramIdx).io.vec.last.wrEn := True
     }
-    lineWordRam(ramIdx).io.wrAddr := (
+    lineWordRam(ramIdx).io.vec.last.addr := (
       (busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift))
-      .resize(lineWordRam(ramIdx).io.wrAddr.getWidth)
+      .resize(lineWordRam(ramIdx).io.vec.last.addr.getWidth)
     )
-    lineWordRam(ramIdx).io.wrData := lineWord
+    lineWordRam(ramIdx).io.vec.last.wrData := lineWord.asBits
     //byteEn match {
     //  case Some(byteEn) => {
     //    lineWordRam(ramIdx).io.wrByteEn := byteEn.asBits
@@ -5682,6 +5707,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   }
 
   doLineWordRamReadSync(
+    vecIdx=0,
     busAddr=mySelLoH2dPopPayload.addr,
     setEn=2,
   )
@@ -5937,7 +5963,9 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     Vec[Bool](
       lineWordRam.zipWithIndex.map{
         case (item, idx) => (
-          item.io.wrEn
+          //item.io.vec.head.wrEn
+          //|| 
+          item.io.vec.last.wrEn
           || lineAttrsRam.head(idx).io.wrEn
         )
       }
@@ -6302,7 +6330,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           // load, cache hit
           //mySelLoH2dPopStm.ready := True
           myLoD2hPushStm.valid := True
-          myLoD2hPushStm.busPayload.data := rdLineWord(ramIdx)
+          myLoD2hPushStm.busPayload.data := rdLineWord.head(ramIdx)
           if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
             myLoD2hPushStm.busPayload.byteSize := (
               rDel2LoH2dPayload.byteSize
@@ -6462,8 +6490,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     }
     is (State.LOAD_HIT_DO_STALL_PIPE_4) {
       rState := State.LOAD_HIT_DO_STALL_PIPE_3
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.rdEn := False)
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
       myLoD2hPushStm.valid := False
       mySelLoH2dPopStm.ready := False
 
@@ -6479,38 +6507,39 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       rState := State.LOAD_HIT_DO_STALL_PIPE_2
       myLoD2hPushStm.valid := False
       mySelLoH2dPopStm.ready := False
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.rdEn := False)
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
 
       doLineWordRamReadSync(
+        vecIdx=1,
         busAddr=rSavedLoH2dPayload.addr,
         setEn=0,
       )
     }
     is (State.LOAD_HIT_DO_STALL_PIPE_2) {
       rState := State.LOAD_HIT_DO_STALL_PIPE_1
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.rdEn := True)
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec.last.rdEn := True)
       myLoD2hPushStm.valid := False
       mySelLoH2dPopStm.ready := False
     }
     is (State.LOAD_HIT_DO_STALL_PIPE_1) {
       rState := State.LOAD_HIT_DO_STALL
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.rdEn := False)
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
     }
     is (State.LOAD_HIT_DO_STALL) {
       val myRdLineWord = (
         RegNext(
           if (myCondHaveLineBitPlruRam) (
-            rdLineWord(rSavedRamIdx)
+            rdLineWord.last(rSavedRamIdx)
           ) else (
-            rdLineWord.head
+            rdLineWord.last.head
           )
         )
       )
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.rdEn := False)
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
 
       mySelLoH2dPopStm.ready := False
       myLoD2hPushStm.busPayload.data := myRdLineWord
@@ -6532,8 +6561,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       }
     }
     is (State.LOAD_HIT_DO_STALL_POST) {
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.rdEn := False)
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
 
       rInHitWithBusStallEtc.head := False
       rState := State.WAIT_D2H_FIFO_EMPTY
@@ -6712,8 +6741,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       }
     }
     is (State.RECV_LINE_FROM_HI_BUS) {
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.rdEn := False)
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
       rHiH2dValid := False
       when (io.hiBus.d2hBus.valid) {
         rHiD2hReady := True
@@ -6799,49 +6828,71 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       }
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_7) {
-      lineWordRam.foreach(item => item.io.rdEn := False)
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => {
+        item.io.vec.last.rdEn := False
+        item.io.vec.last.wrEn := False
+      })
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
       rState := State.RECV_LINE_FROM_HI_BUS_POST_6
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_6) {
-      lineWordRam.foreach(item => item.io.rdEn := False)
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => {
+        item.io.vec.last.rdEn := False
+        item.io.vec.last.wrEn := False
+      })
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
       rState := State.RECV_LINE_FROM_HI_BUS_POST_5
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_5) {
-      lineWordRam.foreach(item => item.io.rdEn := False)
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => {
+        item.io.vec.last.rdEn := False
+        item.io.vec.last.wrEn := False
+      })
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
       rState := State.RECV_LINE_FROM_HI_BUS_POST_4
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_4) {
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.rdEn := False)
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => {
+        item.io.vec.last.rdEn := False
+        item.io.vec.last.wrEn := False
+      })
       doLineWordRamReadSync(
+        vecIdx=1,
         busAddr=rSavedLoH2dPayload.addr,
         setEn=0,
       )
       rState := State.RECV_LINE_FROM_HI_BUS_POST_3
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_3) {
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.rdEn := True)
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => {
+        item.io.vec.last.rdEn := True
+        item.io.vec.last.wrEn := False
+      })
       rState := State.RECV_LINE_FROM_HI_BUS_POST_2
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_2) {
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.rdEn := False)
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => {
+        item.io.vec.last.rdEn := False
+        item.io.vec.last.wrEn := False
+      })
       rState := State.RECV_LINE_FROM_HI_BUS_POST_1
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_1) {
       val myRdLineWord = (
         if (myCondHaveLineBitPlruRam) (
-          rdLineWord(rSavedRamIdx)
+          rdLineWord.last(rSavedRamIdx)
         ) else (
-          rdLineWord.head
+          rdLineWord.last.head
         )
       )
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.rdEn := False)
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => {
+        item.io.vec.last.rdEn := False
+        item.io.vec.last.wrEn := False
+      })
       //rState := State.RECV_LINE_FROM_HI_BUS_POST
 
       myLoD2hPushStm.valid := True
@@ -6870,21 +6921,28 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       }
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST) {
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.rdEn := False)
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => {
+        item.io.vec.last.rdEn := False
+        item.io.vec.last.wrEn := False
+      })
       rState := (
         //State.IDLE
         State.WAIT_D2H_FIFO_EMPTY
       )
     }
     is (State.WAIT_D2H_FIFO_EMPTY) {
-      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.rdEn := False)
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => {
+        item.io.vec.last.rdEn := False
+        item.io.vec.last.wrEn := False
+      })
 
       val myTempRange = (
         loBusCacheCfg.addrWidth - 2
         downto loBusCfg.prefetchAddrIncrStartIdx
       )
+
       val mySharedCond = (
         !myLoD2hFifo.io.pop.valid
         //&& rSavedInPrefetch
