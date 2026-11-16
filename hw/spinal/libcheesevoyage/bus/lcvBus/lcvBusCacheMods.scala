@@ -7129,8 +7129,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //M"10--1-1"
       //M"10--101"
     ) {
-      myFifoThingDoStall := False
-      doPopLoH2dFifo()
+      //myFifoThingDoStall := False
+      //doPopLoH2dFifo()
 
       rSavedInPrefetchVec.foreach(_ := False)
 
