@@ -6984,9 +6984,9 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     )
     ## myLoD2hFifo.io.pop.valid
     ## rInHitWithBusStallEtc.head//rInHitWithBusStallEtc.last
-    //## rSavedStallFromIdle
-    ## rSavedInPrefetchVec.last
-    //## rSavedMissOtherValid
+    ////## rSavedStallFromIdle
+    //## rSavedInPrefetchVec.last
+    ////## rSavedMissOtherValid
     ## (
       rSavedMissLoH2dStm.valid
       //|| rSavedMissOtherValid
@@ -7027,7 +7027,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     //)
   ) {
     is (
-      M"10000"
+      //M"10000"
+      M"1000"
     ) {
       //rSavedMissLoH2dStm.valid := False
       rSavedStallFromIdle := False
@@ -7036,27 +7037,29 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       rState := State.IDLE
     }
     is (
-      M"101--"
+      //M"101--"
+      M"101-"
     ) {
       rSavedInPrefetchVec.foreach(_ := False)
       //rSavedStallFromIdle := False
-      rSavedMissLoH2dStm.ready := True
+      //rSavedMissLoH2dStm.ready := True
       //rSavedMissOtherValid := False
 
       rState := State.LOAD_HIT_DO_STALL_PIPE_4
     }
-    is (
-      M"10010"
-    ) {
-      rSavedInPrefetchVec.foreach(_ := False)
-      rSavedStallFromIdle := False
-      rSavedMissLoH2dStm.ready := True
-      //rSavedMissOtherValid := False
+    //is (
+    //  M"10010"
+    //) {
+    //  rSavedInPrefetchVec.foreach(_ := False)
+    //  rSavedStallFromIdle := False
+    //  rSavedMissLoH2dStm.ready := True
+    //  //rSavedMissOtherValid := False
 
-      rState := State.IDLE
-    }
+    //  rState := State.IDLE
+    //}
     is (
-      M"100-1"
+      //M"100-1"
+      M"1001"
     ) {
       rSavedInPrefetchVec.foreach(_ := False)
       //rSavedStallFromIdle := False
