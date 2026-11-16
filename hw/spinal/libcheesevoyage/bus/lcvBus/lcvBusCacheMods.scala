@@ -7004,10 +7004,19 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //  loBusCacheCfg.addrWidth - 2
       //  downto loBusCfg.prefetchAddrIncrStartIdx
       //)
+
+      //(
+      //  (
+      //    rSavedMissLoH2dStm.txnCnt
+      //    === rDel2LoH2dPayload.txnCnt
+      //  )
+      //)
       (
-        (
-          rSavedMissLoH2dStm.txnCnt
-          === rDel2LoH2dPayload.txnCnt
+        rSavedMissLoH2dStm.txnCnt
+        === RegNextWhen(
+          myLoD2hPushStm.busPayload.txnCnt,
+          cond=myLoD2hPushStm.fire,
+          init=myLoD2hPushStm.busPayload.txnCnt.getZero,
         )
       )
     }
