@@ -7125,12 +7125,38 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     is (
       //M"10--11"
       //M"10--11"
-      M"10---11"
+      M"10--011"
       //M"10--1-1"
       //M"10--101"
     ) {
       myFifoThingDoStall := False
       doPopLoH2dFifo()
+
+      rSavedInPrefetchVec.foreach(_ := False)
+
+      //rSavedMissLoH2dStm.valid := False
+      ////rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
+      ////rSavedRamIdx := rSavedMissRamIdx
+      //rSavedLoH2dPayload := rDel2LoH2dPayload
+      //rSavedLoH2dPayload := rDel2LoH2dPayload
+
+      rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
+      rSavedRamIdx := rSavedMissRamIdx
+      rSavedMissLoH2dStm.valid := False
+      //rSavedMissOtherValid := True
+
+      rSavedMissOtherValid := False
+      rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+    }
+    is (
+      //M"10--11"
+      //M"10--11"
+      M"10--111"
+      //M"10--1-1"
+      //M"10--101"
+    ) {
+      //myFifoThingDoStall := False
+      //doPopLoH2dFifo()
 
       rSavedInPrefetchVec.foreach(_ := False)
 
