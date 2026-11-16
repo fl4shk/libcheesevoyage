@@ -7132,7 +7132,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       myFifoThingDoStall := False
       doPopLoH2dFifo()
 
-      rSavedInPrefetchVec.foreach(_ := False)
+      //rSavedInPrefetchVec.foreach(_ := False)
 
       //rSavedMissLoH2dStm.valid := False
       ////rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
@@ -7158,7 +7158,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //myFifoThingDoStall := False
       //doPopLoH2dFifo()
 
-      rSavedInPrefetchVec.foreach(_ := False)
+      //rSavedInPrefetchVec.foreach(_ := False)
 
       //rSavedMissLoH2dStm.valid := False
       ////rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
