@@ -7077,6 +7077,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //rSavedInPrefetchVec.foreach(_ := False)
       rSavedStallFromIdle := False
       rSavedMissLoH2dStm.ready := True
+      rSavedMissLoH2dStm.valid := False
       //rSavedMissOtherValid := False
 
       rState := State.IDLE
