@@ -7013,7 +7013,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //)
       (
         rSavedMissLoH2dStm.txnCnt
-        === RegNextWhen(
+        =/= RegNextWhen(
           myLoD2hPushStm.busPayload.txnCnt,
           cond=myLoD2hPushStm.fire,
           init=myLoD2hPushStm.busPayload.txnCnt.getZero,
