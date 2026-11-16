@@ -7042,6 +7042,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //M"101-"
     ) {
       rSavedInPrefetchVec.foreach(_ := False)
+      rInHitWithBusStallEtc.head := False
       //rSavedStallFromIdle := False
       //rSavedMissLoH2dStm.ready := True
       //rSavedMissOtherValid := False
