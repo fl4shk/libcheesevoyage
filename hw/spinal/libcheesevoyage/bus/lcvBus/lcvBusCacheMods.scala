@@ -5170,8 +5170,9 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     //lineAttrsRam.last(idx).io.rdAddr := 0x0
 
     //lineWordRam(idx).io.wrEn := False
+    lineWordRam(idx).io.vec.last.rdEn := False
     lineWordRam(idx).io.vec.foreach(item => {
-      item.rdEn := False
+      //item.rdEn := False
       item.wrEn := False
     })
     lineWordRam(idx).io.vec.head.wrData := 0x0
