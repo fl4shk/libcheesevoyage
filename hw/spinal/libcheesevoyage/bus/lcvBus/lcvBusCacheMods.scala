@@ -6087,7 +6087,9 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   //  )
   //)
 
-  val rSavedInPrefetch = Reg(Bool(), init=False)
+  val rSavedInPrefetch = Vec.fill(2)(
+    Reg(Bool(), init=False)
+  )
   val rSavedStallFromIdle = Reg(Bool(), init=False)
   val rInHitWithBusStallEtc = Vec.fill(
     //2
@@ -6369,7 +6371,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
             }
             is (M"011") {
               if (idleIdx == 1) {
-                rSavedInPrefetch := True
+                rSavedInPrefetch.foreach(_ := True)
                 rState := (
                   State.PREFETCH_START_PIPE_3
                 )
@@ -6609,14 +6611,14 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
           rSavedRamIdx := rSavedMissRamIdx
 
-          rSavedInPrefetch := False
+          rSavedInPrefetch.head := False
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
         }
         default {
           // optimization: stop prefetching if we had a hit from the
           // attempted prefetch address,
           //rState := State.WAIT_D2H_FIFO_EMPTY
-          rSavedInPrefetch := False
+          rSavedInPrefetch.head := False
           rState := (
             //State.IDLE
             State.PREFETCH_CANCEL
@@ -6779,7 +6781,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         //}
 
         switch (
-          rSavedInPrefetch
+          rSavedInPrefetch.head
           ## io.hiBus.d2hBus.burstLast
         ) {
           is (M"01") {
@@ -6982,7 +6984,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     ## myLoD2hFifo.io.pop.valid
     ## rInHitWithBusStallEtc.head//rInHitWithBusStallEtc.last
     ## rSavedStallFromIdle
-    ## rSavedInPrefetch
+    ## rSavedInPrefetch.last
     //## rSavedMissOtherValid
     ## (
       rSavedMissLoH2dStm.valid
@@ -7019,7 +7021,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //M"10000-"
       //M"10000--"
     ) {
-      rSavedInPrefetch := False
+      rSavedInPrefetch.foreach(_ := False)
       rSavedStallFromIdle := False
       //rInHitWithBusStallEtc.foreach(item => item := False)
       rInHitWithBusStallEtc.head := False
@@ -7037,7 +7039,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       M"10-1-0-"
       //M"10-10--"
     ) {
-      rSavedInPrefetch := False
+      rSavedInPrefetch.foreach(_ := False)
       rSavedStallFromIdle := False
       //rInHitWithBusStallEtc.foreach(item => item := False)
       rInHitWithBusStallEtc.head := False
@@ -7059,7 +7061,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       myFifoThingDoStall := False
       doPopLoH2dFifo()
 
-      rSavedInPrefetch := False
+      rSavedInPrefetch.foreach(_ := False)
 
       rSavedLoH2dPayload := rDel2LoH2dPayload
       //rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
@@ -7078,7 +7080,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //M"10--010"
       //M"10--100"
     ) {
-      rSavedInPrefetch := False
+      rSavedInPrefetch.foreach(_ := False)
 
       //rSavedLoH2dPayload := rDel2LoH2dPayload
       rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
@@ -7096,7 +7098,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //M"10--010"
       //M"10--100"
     ) {
-      rSavedInPrefetch := False
+      rSavedInPrefetch.foreach(_ := False)
 
       //rSavedLoH2dPayload := rDel2LoH2dPayload
       rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
@@ -7117,7 +7119,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       myFifoThingDoStall := False
       doPopLoH2dFifo()
 
-      rSavedInPrefetch := False
+      rSavedInPrefetch.foreach(_ := False)
 
       //rSavedMissLoH2dStm.valid := False
       ////rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
@@ -7138,7 +7140,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       M"1010-0-"
       //M"10100--"
     ) {
-      rSavedInPrefetch := False
+      rSavedInPrefetch.foreach(_ := False)
       rSavedStallFromIdle := False
       //rInHitWithBusStallEtc.foreach(item => item := False)
       rInHitWithBusStallEtc.head := False
