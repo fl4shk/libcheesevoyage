@@ -6535,6 +6535,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       lineAttrsRam.head.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.rdEn := False)
 
+      rInHitWithBusStallEtc.head := False
       rState := State.WAIT_D2H_FIFO_EMPTY
     }
     is (State.PREFETCH_START_PIPE_3) {
