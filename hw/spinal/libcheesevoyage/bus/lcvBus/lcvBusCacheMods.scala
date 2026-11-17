@@ -6056,11 +6056,16 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           myHistHadRamWrite(idx)(histIdx)(ramIdx)
           && (
             myHistRamWriteAddr(idx)(histIdx)(ramIdx)
-            === mySelLoH2dPopStm.addr(
-              mySelLoH2dPopStm.addr.high
-              downto myLineAttrsRamAddrRshift
-            ).resize(myHistRamWriteAddr(idx)(histIdx)(ramIdx).getWidth)
-            
+            === 
+              RegNext(
+                mySelLoH2dPopStm.addr(
+                  mySelLoH2dPopStm.addr.high
+                  downto myLineAttrsRamAddrRshift
+                ).resize(
+                  myHistRamWriteAddr(idx)(histIdx)(ramIdx).getWidth
+                )
+              )
+            )
           )
         )
       }
