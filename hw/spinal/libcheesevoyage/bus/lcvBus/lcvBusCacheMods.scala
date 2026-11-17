@@ -7103,8 +7103,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           rState := State.IDLE
         }
         is (
-          //M"010"
-          M"0010"
+          M"010"
+          //M"0010"
         ) {
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
         }
