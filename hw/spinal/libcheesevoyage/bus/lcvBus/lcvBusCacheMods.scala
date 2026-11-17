@@ -5980,12 +5980,12 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     //|| 
     LcvOrR(Vec[Bool](lineAttrsRam.head.map(item => (
       item.io.wrEn
-      && (
-        item.io.wrAddr
-        === mySelLoH2dPopStm.addr(rPrefetchInfo.myTempRange).resize(
-          item.io.wrAddr.getWidth
-        )
-      )
+      //&& (
+      //  item.io.wrAddr
+      //  === mySelLoH2dPopStm.addr(rPrefetchInfo.myTempRange).resize(
+      //    item.io.wrAddr.getWidth
+      //  )
+      //)
     ))))
   )
   val myHistHadAnyRamWrite = Array.fill(2)(
@@ -6769,7 +6769,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     }
     is (State.RECV_LINE_FROM_HI_BUS) {
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.rdEn := False)
+      //lineWordRam.foreach(item => item.io.rdEn := False)
       rHiH2dValid := False
       when (io.hiBus.d2hBus.valid) {
         rHiD2hReady := True
