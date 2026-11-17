@@ -5723,7 +5723,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
 
     val cnt = (
       UInt(
-        log2Up(cfg.prefetchNumLinesAhead.get + 1) + 1 bits
+        log2Up(cfg.prefetchNumLinesAhead.get + 1) + 2 bits
       )
     )
 
@@ -6588,11 +6588,12 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         rSavedStallInfo.fire
         ## rSavedStallInfo.isHit
         ## rPrefetchInfo.cnt.msb
+        ## RegNext(rPrefetchInfo.cnt - 1).msb
         ## haveHit.last
       ) {
         is (MaskedLiteral(
           //"0-" + ("0" * numWays)
-          "0-0" + ("0" * numWays)
+          "0-0-" + ("0" * numWays)
         )) {
           wrLineBitPlru := rdLineBitPlru.last
           //lineBitPlruRam.io.wrEn := True
@@ -6630,7 +6631,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
         }
         is (MaskedLiteral(
-          "10-" + ("-" * numWays)
+          "10--" + ("-" * numWays)
         )) {
           rSavedStallInfo.valid := False
           rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
@@ -6641,7 +6642,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
         }
         is (MaskedLiteral(
-          "11-" + ("-" * numWays)
+          "11--" + ("-" * numWays)
         )) {
           rSavedStallInfo.valid := False
           rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
@@ -6654,7 +6655,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         for (ramIdx <- 0 until numWays) {
           val myRamIdxMask = calcHitRamIdxMask(ramIdx=ramIdx)
           is (MaskedLiteral(
-            "0-0" + myRamIdxMask
+            "0-00" + myRamIdxMask
           )) {
             rPrefetchInfo.cnt := (
               rPrefetchInfo.cnt - 1
