@@ -6344,6 +6344,16 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
                 rState := State.PREFETCH_START_PIPE_3
               }
             }
+            //if (idleIdx == 1) {
+            //  when (
+            //    !(
+            //      myHadAnyRecentRamWrite.last
+            //      || !myLoD2hPushStm.ready
+            //    )
+            //    && 
+            //  ) {
+            //  }
+            //}
           //}
         }
       }
@@ -6639,13 +6649,27 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           //)
           rState := State.LOAD_HIT_DO_STALL_PIPE_4
         }
+        for (ramIdx <- 0 until numWays) {
+          val myRamIdxMask = calcHitRamIdxMask(ramIdx=ramIdx)
+          is (MaskedLiteral(
+            "0-0" + myRamIdxMask
+          )) {
+            rPrefetchInfo.cnt := (
+              cfg.prefetchNumLinesAhead.get - 1
+            )
+            rPrefetchInfo.baseAddr := (
+              rPrefetchInfo.baseAddr + 1
+            )
+            rState := State.PREFETCH_START_PIPE_3
+          }
+        }
         default {
-          rPrefetchInfo.cnt := (
-            cfg.prefetchNumLinesAhead.get - 1
-          )
-          rPrefetchInfo.baseAddr := (
-            rPrefetchInfo.baseAddr + 1
-          )
+          //rPrefetchInfo.cnt := (
+          //  cfg.prefetchNumLinesAhead.get - 1
+          //)
+          //rPrefetchInfo.baseAddr := (
+          //  rPrefetchInfo.baseAddr + 1
+          //)
           rState := (
             State.IDLE
             //State.WAIT_D2H_FIFO_EMPTY
