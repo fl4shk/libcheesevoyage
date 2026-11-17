@@ -6841,8 +6841,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         }
         default {
           rState := (
-            //State.IDLE
-            State.WAIT_D2H_FIFO_EMPTY
+            State.IDLE
+            //State.WAIT_D2H_FIFO_EMPTY
           )
         }
       }
