@@ -6964,7 +6964,18 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       ) {
         //rSavedInPrefetchVec.head := False
         rPrefetchInfo.valid := False
+        rPrefetchInfo.cnt := cfg.prefetchNumLinesAhead.get
       }
+
+      //when (
+      //  !myLoD2hFifo.io.pop.valid
+      //  && rPrefetchInfo.fire
+      //  && !rPrefetchInfo.cnt.msb
+      //) {
+      //  rPrefetchInfo.baseAddr := rPrefetchInfo.baseAddr + 1
+      //  rPrefetchInfo.cnt := rPrefetchInfo.cnt - 1
+      //  rState := State.PREFETCH_START_PIPE_3
+      //}
 
       when (
         !myLoD2hFifo.io.pop.valid
