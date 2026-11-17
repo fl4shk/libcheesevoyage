@@ -5731,10 +5731,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   )
   doLineAttrsRamReadSync(
     outerIdx=1,
-    busAddr=(
-      //rSavedStallInfo.loH2dPayload.addr
-      rSavedLoH2dPayload.addr
-    ),
+    busAddr=rSavedLoH2dPayload.addr,
     setEn=1,
   )
 
