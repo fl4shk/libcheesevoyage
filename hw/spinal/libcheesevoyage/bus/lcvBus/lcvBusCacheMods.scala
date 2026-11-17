@@ -5731,7 +5731,10 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   )
   doLineAttrsRamReadSync(
     outerIdx=1,
-    busAddr=rSavedStallInfo.loH2dPayload.addr,
+    busAddr=(
+      //rSavedStallInfo.loH2dPayload.addr
+      rSavedLoH2dPayload.addr
+    ),
     setEn=1,
   )
 
@@ -6339,6 +6342,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       myLoD2hPushStm.busPayload.txnCnt := (
         rSavedStallInfo.loH2dPayload.txnCnt
       )
+
       when (rSavedStallInfo.isHit) {
         rState := State.LOAD_HIT_DO_STALL_PIPE_4
       } otherwise {
