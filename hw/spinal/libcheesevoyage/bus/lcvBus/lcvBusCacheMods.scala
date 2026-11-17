@@ -6648,7 +6648,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           "10--" + ("-" * numWays)
         )) {
           rSavedStallInfo.valid := False
-          rSavedStallFromIdle := True
+          //rSavedStallFromIdle := True
           rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
           rSavedRamIdx := rSavedStallInfo.ramIdx
           //rPrefetchInfo.cnt := (
@@ -6660,7 +6660,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           "11--" + ("-" * numWays)
         )) {
           rSavedStallInfo.valid := False
-          rSavedStallFromIdle := True
+          //rSavedStallFromIdle := True
           rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
           rSavedRamIdx := rSavedStallInfo.ramIdx
           //rPrefetchInfo.cnt := (
@@ -6838,7 +6838,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
             rState := State.RECV_LINE_FROM_HI_BUS_POST_7
           }
           is (M"11") {
-            rSavedStallFromIdle := False
+            //rSavedStallFromIdle := False
             rState := (
               //State.WAIT_D2H_FIFO_EMPTY
               State.PREFETCH_START_PIPE_3
