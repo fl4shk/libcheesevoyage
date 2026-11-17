@@ -5757,7 +5757,9 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   val rPrefetchInfo = {
     val temp = Reg(PrefetchInfo())
     temp.valid.init(False)
-    temp.cnt.init(cfg.prefetchNumLinesAhead.get - 1)
+    temp.cnt.init(
+      cfg.prefetchNumLinesAhead.get //- 1
+    )
     temp
   }
 
@@ -6655,7 +6657,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
             "0-0" + myRamIdxMask
           )) {
             rPrefetchInfo.cnt := (
-              cfg.prefetchNumLinesAhead.get - 1
+              rPrefetchInfo.cnt - 1
             )
             rPrefetchInfo.baseAddr := (
               rPrefetchInfo.baseAddr + 1
@@ -6664,12 +6666,12 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           }
         }
         default {
-          //rPrefetchInfo.cnt := (
-          //  cfg.prefetchNumLinesAhead.get - 1
-          //)
-          //rPrefetchInfo.baseAddr := (
-          //  rPrefetchInfo.baseAddr + 1
-          //)
+          rPrefetchInfo.cnt := (
+            cfg.prefetchNumLinesAhead.get - 1
+          )
+          rPrefetchInfo.baseAddr := (
+            rPrefetchInfo.baseAddr + 1
+          )
           rState := (
             State.IDLE
             //State.WAIT_D2H_FIFO_EMPTY
@@ -6684,7 +6686,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           rPrefetchInfo.baseAddr + 1
         )
       } otherwise {
-        rPrefetchInfo.cnt := cfg.prefetchNumLinesAhead.get - 1
+        rPrefetchInfo.cnt := cfg.prefetchNumLinesAhead.get //- 1
       }
       rHadHiH2dFinish := False
       rHadHiD2hFinish := False
