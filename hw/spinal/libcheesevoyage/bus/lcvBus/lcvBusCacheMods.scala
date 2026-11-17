@@ -6667,7 +6667,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         }
         default {
           rPrefetchInfo.cnt := (
-            cfg.prefetchNumLinesAhead.get - 1
+            cfg.prefetchNumLinesAhead.get //- 1
           )
           rPrefetchInfo.baseAddr := (
             rPrefetchInfo.baseAddr + 1
