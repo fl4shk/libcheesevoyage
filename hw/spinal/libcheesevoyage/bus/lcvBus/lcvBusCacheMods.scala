@@ -6365,18 +6365,18 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       }
     }
     is (MaskedLiteral(
-      "1" + "0" + "-" + ("-" * numWays)
+      "1" + "0" + "0" + ("-" * numWays)
     )) {
       doPopLoH2dFifo()
       myFifoThingDoStall := False
       myLoD2hPushStm.valid := False
 
-      // TODO: maybe we can start prefetching from this state?
-      when (
-        !rPrefetchInfo.cnt.msb
-      ) {
-        rState := State.PREFETCH_START_PIPE_3
-      }
+      //// TODO: maybe we can start prefetching from this state?
+      //when (
+      //  !rPrefetchInfo.cnt.msb
+      //) {
+      //  rState := State.PREFETCH_START_PIPE_3
+      //}
     }
     is (MaskedLiteral(
       "1" + "1" + "-" + ("-" * numWays)
