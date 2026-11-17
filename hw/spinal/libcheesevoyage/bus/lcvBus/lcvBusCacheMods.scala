@@ -6056,8 +6056,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           myHistHadRamWrite(idx)(histIdx)(ramIdx)
           && (
             myHistRamWriteAddr(idx)(histIdx)(ramIdx)
-            === RegNext(
-              mySelLoH2dPopStm.addr(
+            === (
+              rDel2LoH2dPayload.addr(
                 mySelLoH2dPopStm.addr.high
                 downto myLineAttrsRamAddrRshift
               ).resize(
