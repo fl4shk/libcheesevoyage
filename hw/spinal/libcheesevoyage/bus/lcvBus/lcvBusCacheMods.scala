@@ -6368,9 +6368,11 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       myLoD2hPushStm.valid := False
 
       // TODO: maybe we can start prefetching from this state?
-      //when (
-      //) {
-      //}
+      when (
+        !rPrefetchInfo.cnt.msb
+      ) {
+        rState := State.PREFETCH_START_PIPE_3
+      }
     }
     is (MaskedLiteral(
       "1" + "1" + "-" + ("-" * numWays)
