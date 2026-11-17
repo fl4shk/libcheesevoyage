@@ -6823,7 +6823,10 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           rState := State.LOAD_HIT_DO_STALL_PIPE_4
         }
         default {
-          rState := State.IDLE
+          rState := (
+            //State.IDLE
+            State.WAIT_D2H_FIFO_EMPTY
+          )
         }
       }
     }
