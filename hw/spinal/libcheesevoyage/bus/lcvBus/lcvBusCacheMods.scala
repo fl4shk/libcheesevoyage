@@ -6207,9 +6207,13 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         if (idleIdx == 1) {
           //myFifoThingDoStall := False
           myLoD2hPushStm.valid := False
-          //rPrefetchInfo.cnt := (
-          //  cfg.prefetchNumLinesAhead.get - 1
-          //)
+
+          rPrefetchInfo.baseAddr := (
+            rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange)
+          )
+          rPrefetchInfo.cnt := (
+            cfg.prefetchNumLinesAhead.get //- 1
+          )
         }
 
         myFifoThingDoStall := True
