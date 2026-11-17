@@ -7091,9 +7091,14 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
 
       when (
         !myLoD2hFifo.io.pop.valid
-        && rSavedStallInfo.fire
       ) {
         rSavedInPrefetchVec.head := False
+      }
+
+      when (
+        !myLoD2hFifo.io.pop.valid
+        && rSavedStallInfo.fire
+      ) {
         rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
         rSavedRamIdx := rSavedStallInfo.ramIdx
         rSavedStallInfo.valid := False
@@ -7101,7 +7106,10 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
 
       switch (
         myLoD2hFifo.io.pop.valid
-        ## rSavedStallInfo.fire
+        ## (
+          rSavedStallInfo.fire
+          && !rSavedStallFromIdle
+        )
         ## rSavedStallInfo.isHit
       ) {
         ////myFifoThingDoStall := False
