@@ -6893,24 +6893,24 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       when (io.hiBus.d2hBus.fire) {
         rHiD2hBurstCnt := rHiD2hBurstCnt + 1
 
-        val tempBurstCntCmpEq = (
-          rHiD2hBurstCnt
-          === rSavedLoH2dPayload.addr(
-            rHiD2hBurstCnt.high + log2Up(hiBusCfg.dataWidth / 8)
-            downto log2Up(hiBusCfg.dataWidth / 8)
-          )
-        )
-        when (tempBurstCntCmpEq) {
-          myLoD2hPayload.data := (io.hiBus.d2hBus.data)
-          if (!loBusCfg.haveByteEn) {
-            myLoD2hPayload.byteSize := (
-              rSavedLoH2dPayload.byteSize
-            )
-            myLoD2hPayload.addrLo := rSavedLoH2dPayload.addr(
-              loBusCfg.addrLoWidth - 1 downto 0
-            )
-          }
-        }
+        //val tempBurstCntCmpEq = (
+        //  rHiD2hBurstCnt
+        //  === rSavedLoH2dPayload.addr(
+        //    rHiD2hBurstCnt.high + log2Up(hiBusCfg.dataWidth / 8)
+        //    downto log2Up(hiBusCfg.dataWidth / 8)
+        //  )
+        //)
+        //when (tempBurstCntCmpEq) {
+        //  myLoD2hPayload.data := (io.hiBus.d2hBus.data)
+        //  if (!loBusCfg.haveByteEn) {
+        //    myLoD2hPayload.byteSize := (
+        //      rSavedLoH2dPayload.byteSize
+        //    )
+        //    myLoD2hPayload.addrLo := rSavedLoH2dPayload.addr(
+        //      loBusCfg.addrLoWidth - 1 downto 0
+        //    )
+        //  }
+        //}
         val rTempBurstAddr = (
           rSavedLoH2dPayload.burstAddr(
             someBurstCnt=rHiD2hBurstCnt,
