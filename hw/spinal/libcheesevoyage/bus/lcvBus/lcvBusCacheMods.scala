@@ -6253,6 +6253,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           //mySelLoH2dPopStm.ready := True
           myLoD2hPushStm.valid := True
           myLoD2hPushStm.busPayload.data := rdLineWord(ramIdx)
+          myLoD2hPushStm.busPayload.src := rDel2LoH2dPayload.src
+
           if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
             myLoD2hPushStm.busPayload.byteSize := (
               rDel2LoH2dPayload.byteSize
