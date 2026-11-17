@@ -5232,6 +5232,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //SEND_LINE_TO_HI_BUS_PIPE_2,
       //SEND_LINE_TO_HI_BUS_PIPE_1,
       //SEND_LINE_TO_HI_BUS,
+      PREFETCH_START_PIPE_4,
       PREFETCH_START_PIPE_3,
       PREFETCH_START_PIPE_2,
       PREFETCH_START_PIPE_1,
@@ -6653,6 +6654,34 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
 
       rState := State.WAIT_D2H_FIFO_EMPTY
     }
+    is (State.PREFETCH_START_PIPE_4) {
+      def myArgBusAddr = rSavedLoH2dPayload.addr
+      def myArgWrLineAttrs = wrLineAttrs
+      def myArgSetEn = true
+
+      if (myCondHaveLineBitPlruRam) {
+        switch (rSavedRamIdx) {
+          for (ramIdx <- 0 until numWays) {
+            is (ramIdx) {
+              doLineAttrsRamWrite(
+                ramIdx=ramIdx,
+                busAddr=myArgBusAddr,
+                lineAttrs=myArgWrLineAttrs,
+                setEn=myArgSetEn,
+              )
+            }
+          }
+        }
+      } else {
+        doLineAttrsRamWrite(
+          ramIdx=0,
+          busAddr=myArgBusAddr,
+          lineAttrs=myArgWrLineAttrs,
+          setEn=myArgSetEn,
+        )
+      }
+      rState := State.PREFETCH_START_PIPE_3
+    }
     is (State.PREFETCH_START_PIPE_3) {
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
       rState := State.PREFETCH_START_PIPE_2
@@ -6828,31 +6857,31 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //  rSavedLoH2dPayload.isWrite
       //)
 
-      def myArgBusAddr = rSavedLoH2dPayload.addr
-      def myArgWrLineAttrs = wrLineAttrs
-      def myArgSetEn = true
+      //def myArgBusAddr = rSavedLoH2dPayload.addr
+      //def myArgWrLineAttrs = wrLineAttrs
+      //def myArgSetEn = true
 
-      if (myCondHaveLineBitPlruRam) {
-        switch (rSavedRamIdx) {
-          for (ramIdx <- 0 until numWays) {
-            is (ramIdx) {
-              doLineAttrsRamWrite(
-                ramIdx=ramIdx,
-                busAddr=myArgBusAddr,
-                lineAttrs=myArgWrLineAttrs,
-                setEn=myArgSetEn,
-              )
-            }
-          }
-        }
-      } else {
-        doLineAttrsRamWrite(
-          ramIdx=0,
-          busAddr=myArgBusAddr,
-          lineAttrs=myArgWrLineAttrs,
-          setEn=myArgSetEn,
-        )
-      }
+      //if (myCondHaveLineBitPlruRam) {
+      //  switch (rSavedRamIdx) {
+      //    for (ramIdx <- 0 until numWays) {
+      //      is (ramIdx) {
+      //        doLineAttrsRamWrite(
+      //          ramIdx=ramIdx,
+      //          busAddr=myArgBusAddr,
+      //          lineAttrs=myArgWrLineAttrs,
+      //          setEn=myArgSetEn,
+      //        )
+      //      }
+      //    }
+      //  }
+      //} else {
+      //  doLineAttrsRamWrite(
+      //    ramIdx=0,
+      //    busAddr=myArgBusAddr,
+      //    lineAttrs=myArgWrLineAttrs,
+      //    setEn=myArgSetEn,
+      //  )
+      //}
     }
     is (State.RECV_LINE_FROM_HI_BUS) {
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
@@ -6979,6 +7008,32 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     //  rState := State.RECV_LINE_FROM_HI_BUS_POST_5
     //}
     is (State.RECV_LINE_FROM_HI_BUS_POST_7) {
+      def myArgBusAddr = rSavedLoH2dPayload.addr
+      def myArgWrLineAttrs = wrLineAttrs
+      def myArgSetEn = true
+
+      if (myCondHaveLineBitPlruRam) {
+        switch (rSavedRamIdx) {
+          for (ramIdx <- 0 until numWays) {
+            is (ramIdx) {
+              doLineAttrsRamWrite(
+                ramIdx=ramIdx,
+                busAddr=myArgBusAddr,
+                lineAttrs=myArgWrLineAttrs,
+                setEn=myArgSetEn,
+              )
+            }
+          }
+        }
+      } else {
+        doLineAttrsRamWrite(
+          ramIdx=0,
+          busAddr=myArgBusAddr,
+          lineAttrs=myArgWrLineAttrs,
+          setEn=myArgSetEn,
+        )
+      }
+
       lineWordRam.foreach(item => item.io.rdEn := False)
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
       rState := State.RECV_LINE_FROM_HI_BUS_POST_6
