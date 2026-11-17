@@ -6323,6 +6323,22 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
       rSavedRamIdx := rSavedStallInfo.ramIdx
 
+      myLoD2hPushStm.busPayload.src := (
+        rSavedStallInfo.loH2dPayload.src
+      )
+      if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+        rSavedStallInfo.loH2dPayload.busPayload.byteSize := (
+          rDel2LoH2dPayload.byteSize
+        )
+        myLoD2hPushStm.busPayload.addrLo := (
+          rSavedStallInfo.loH2dPayload.addr(
+            cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
+          )
+        )
+      }
+      myLoD2hPushStm.busPayload.txnCnt := (
+        rSavedStallInfo.loH2dPayload.txnCnt
+      )
       when (rSavedStallInfo.isHit) {
         rState := State.LOAD_HIT_DO_STALL_PIPE_4
       } otherwise {
@@ -6348,6 +6364,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
 
       when (
         rMyTempDoSaveCond(0)
+        && !rSavedStallInfo.fire
       ) {
         rSavedLoH2dPayload := (
           //rLoH2dPayload
@@ -6356,6 +6373,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       }
       when (
         rMyTempDoSaveCond(1)
+        && !rSavedStallInfo.fire
       ) {
         rSavedLoH2dPayload.byteSize := (
           //rLoH2dPayload.byteSize
@@ -6364,6 +6382,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       }
       when (
         rMyTempDoSaveCond(2)
+        && !rSavedStallInfo.fire
         //&& myTempUpdateSavedLoH2dPayloadCond
         //RegNext(
         //  RegNext(mySelLoH2dPopStm.fire, init=False),
