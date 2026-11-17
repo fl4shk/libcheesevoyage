@@ -6305,11 +6305,28 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       }
     }
     is (MaskedLiteral(
-      "1" + "-" + "0" + ("-" * numWays)
+      "1" + "0" + "0" + ("-" * numWays)
     )) {
       doPopLoH2dFifo()
       myFifoThingDoStall := False
       myLoD2hPushStm.valid := False
+    }
+    is (MaskedLiteral(
+      "1" + "1" + "-" + ("-" * numWays)
+    )) {
+      mySelLoH2dPopStm.ready := False
+      myFifoThingDoStall := True
+      myLoD2hPushStm.valid := False
+
+      rSavedStallInfo.valid := False
+      rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
+      rSavedRamIdx := rSavedStallInfo.ramIdx
+
+      when (rSavedStallInfo.isHit) {
+        rState := State.LOAD_HIT_DO_STALL_PIPE_4
+      } otherwise {
+        rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+      }
     }
     default {
       //doPopLoH2dFifo()
