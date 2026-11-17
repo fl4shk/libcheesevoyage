@@ -5705,13 +5705,20 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     temp.init(temp.getZero)
     temp
   }
-  val rPrefetchAddr = {
-    val temp = Reg(
-      cloneOf(rSavedLoH2dPayload.addr(loBusCacheCfg.cachedRangeNonLine))
+  val rSavedInPrefetchVec = (
+    Vec.fill(
+      1
+    )(
+      Reg(Bool(), init=False)
     )
-    temp.init(temp.getZero)
-    temp
-  }
+  )
+  //val rPrefetchAddr = {
+  //  val temp = Reg(
+  //    cloneOf(rSavedLoH2dPayload.addr(loBusCacheCfg.cachedRangeNonLine))
+  //  )
+  //  temp.init(temp.getZero)
+  //  temp
+  //}
 
 
   doLineAttrsRamReadSync(
@@ -6408,6 +6415,9 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
 
       mySelLoH2dPopStm.ready := False
       myLoD2hPushStm.busPayload.data := myRdLineWord
+
+      myLoD2hPushStm.busPayload.src := rSavedLoH2dPayload.src
+
       if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
         myLoD2hPushStm.busPayload.byteSize := (
           rSavedLoH2dPayload.byteSize
@@ -6781,6 +6791,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
               }
             }
           }
+          rSavedInPrefetchVec.head := True
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
         }
         is (MaskedLiteral(
@@ -6921,12 +6932,26 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
             setEn=myArgSetEn,
           )
         }
-        when ((io.hiBus.d2hBus.burstLast)) {
-          //when (!rSavedLoH2dPayload.isWrite) {
+        //when ((io.hiBus.d2hBus.burstLast)) {
+        //  //when (!rSavedLoH2dPayload.isWrite) {
+        //    rState := State.RECV_LINE_FROM_HI_BUS_POST_7
+        //  //} otherwise {
+        //  //  rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
+        //  //}
+        //}
+
+        switch (
+          rSavedInPrefetchVec.head
+          ## io.hiBus.d2hBus.burstLast
+        ) {
+          is (M"01") {
             rState := State.RECV_LINE_FROM_HI_BUS_POST_7
-          //} otherwise {
-          //  rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
-          //}
+          }
+          is (M"11") {
+            rState := State.WAIT_D2H_FIFO_EMPTY
+          }
+          default {
+          }
         }
       }
     }
@@ -7053,6 +7078,17 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //  //myFifoThingDoStall := False
       //  rState := State.IDLE
       //}
+
+      when (
+        !myLoD2hFifo.io.pop.valid
+        && rSavedStallInfo.fire
+      ) {
+        rSavedInPrefetchVec.head := False
+        rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
+        rSavedRamIdx := rSavedStallInfo.ramIdx
+        rSavedStallInfo.valid := False
+      }
+
       switch (
         myLoD2hFifo.io.pop.valid
         ## rSavedStallInfo.fire
@@ -7060,10 +7096,16 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       ) {
         ////myFifoThingDoStall := False
         //rState := State.IDLE
-        is (M"00-") {
+        is (
+          M"00-"
+          //M"000-"
+        ) {
           rState := State.IDLE
         }
-        is (M"010") {
+        is (
+          //M"010"
+          M"0010"
+        ) {
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
         }
         is (M"011") {
