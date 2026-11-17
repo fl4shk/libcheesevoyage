@@ -5766,6 +5766,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       busAddr=rSavedLoH2dPayload.addr,
       setEn=0,
     )
+    lineBitPlruRam.last.io.rdEn := False
     doLineBitPlruRamWrite(
       busAddr=(
         RegNext(
