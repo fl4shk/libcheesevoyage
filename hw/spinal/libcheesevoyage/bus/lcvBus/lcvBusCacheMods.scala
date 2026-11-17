@@ -5978,19 +5978,26 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   val myTempHaveCurrRamWrite = (
     //Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
     //|| 
-    //LcvOrR(Vec[Bool](lineAttrsRam.head.map(item => (
-    //  item.io.wrEn
-    //  //&& (
-    //  //  item.io.wrAddr
-    //  //  === mySelLoH2dPopStm.addr(rPrefetchInfo.myTempRange).resize(
-    //  //    item.io.wrAddr.getWidth
-    //  //  )
-    //  //)
-    //))))
-    False
+    //LcvOrR
+    (
+      Vec[Bool](lineAttrsRam.head.map(item => (
+        item.io.wrEn
+        //&& (
+        //  item.io.wrAddr
+        //  === mySelLoH2dPopStm.addr(rPrefetchInfo.myTempRange).resize(
+        //    item.io.wrAddr.getWidth
+        //  )
+        //)
+      )
+    )))
   )
-  val myHistHadAnyRamWrite = Array.fill(2)(
-    History[Bool](
+  val myTempCurrRamWriteAddr = (
+    Vec[UInt](lineAttrsRam.head.map(item => (
+      item.io.wrAddr
+    )))
+  )
+  val myHistHadRamWrite = Array.fill(2)(
+    History[Vec[Bool]](
       that=(
         //RegNext(
           myTempHaveCurrRamWrite//,
@@ -6001,24 +6008,100 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       init=myTempHaveCurrRamWrite.getZero
     )
   )
-  val myHadAnyRecentRamWrite = Vec[Bool](
-    myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
-    //RegNext(
-    //  (
-    //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-    //    || RegNext(
-    //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR,
-    //      init=False
-    //    )
-    //    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-    //    || RegNext(
-    //      Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR,
-    //      init=False
-    //    )
-    //  ),
-    //  init=False
-    //)
+  val myHistRamWriteAddr = Array.fill(myHistHadRamWrite.size)(
+    History[Vec[UInt]](
+      that=(
+        //RegNext(
+          //myTempHaveCurrRamWrite//,
+          myTempCurrRamWriteAddr
+        //  init=myTempHaveCurrRamWrite.getZero
+        //)
+      ),
+      length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
+      init=myTempCurrRamWriteAddr.getZero
+    )
   )
+  val myRecentHazardToFindFirst = Vec.fill(
+    myHistRamWriteAddr.size
+  )(
+    Vec.fill(numWays)(
+      Vec.fill(cfg.myRamOptWrHistLengthPlusAddend)(
+        //Flow(
+        //  cloneOf(myHistRamWriteAddr.head.head)
+        //)
+        Bool()
+      )
+    )
+  )
+
+  //val myHadAnyRecentHazard = Vec.fill(
+  //  myHistRamWriteAddr.size
+  //)(
+  //)
+
+  //val myHadAnyRecentHazard = Vec[Bool](
+  //  myRecentHazardToFindFirst.sFindFirst(item => {
+  //    
+  //  })
+  //)
+  val myHadAnyRecentHazard = Vec.fill(myRecentHazardToFindFirst.size)(
+    Vec.fill(numWays)(
+      Bool()
+    )
+  )
+  for (idx <- 0 until myRecentHazardToFindFirst.size) {
+    for (ramIdx <- 0 until numWays) {
+      for (histIdx <- 0 until cfg.myRamOptWrHistLengthPlusAddend) {
+        myRecentHazardToFindFirst(idx)(ramIdx)(histIdx) := (
+          myHistHadRamWrite(idx)(histIdx)(ramIdx)
+          && (
+            myHistRamWriteAddr(idx)(histIdx)(ramIdx)
+            === mySelLoH2dPopStm.addr(
+              mySelLoH2dPopStm.addr.high
+              downto myLineAttrsRamAddrRshift
+            ).resize(myHistRamWriteAddr(idx)(histIdx)(ramIdx).getWidth)
+            
+          )
+        )
+      }
+      myHadAnyRecentHazard(idx)(ramIdx) := (
+        myRecentHazardToFindFirst(idx)(ramIdx).sFindFirst(item => {
+          item
+        })._1
+      )
+    }
+  }
+
+  //val myHadAnyRecentHazard = Vec[Bool](
+  //  //myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
+
+  //  myHistHadAnyRamWrite.zipWithIndex.map{
+  //    case (outerItem, outerIdx) => {
+  //      LcvOrR(Vec(outerItem.zipWithIndex.map{
+  //        case (item, idx) => (
+  //          item(idx).head
+  //          && (myHistRamWriteAddr(outerIdx)(idx).head.io.wrAddr === 0)
+  //          //&&  
+  //        )
+  //      })
+  //    }
+  //  }
+  //  //RegNext(
+  //  //  (
+  //  //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
+  //  //    || RegNext(
+  //  //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR,
+  //  //      init=False
+  //  //    )
+  //  //    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
+  //  //    || RegNext(
+  //  //      Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR,
+  //  //      init=False
+  //  //    )
+  //  //  ),
+  //  //  init=False
+  //  //)
+  //)
 
   //val rHadLineAttrsRamWritePastTwoCycles = Vec.fill(2)(
   //  RegNext(
@@ -6329,14 +6412,14 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           //} else { // if (idleIdx == 1)
             when (
               //rHadAnyRamWritePastTwoCycles.head
-              myHadAnyRecentRamWrite.head
+              myHadAnyRecentHazard.head(ramIdx)
             ) {
               myLoD2hPushStm.valid := False
             }
 
             when (
               //rHadAnyRamWritePastTwoCycles.last
-              myHadAnyRecentRamWrite.last
+              myHadAnyRecentHazard.last(ramIdx)
               || !myLoD2hPushStm.ready
             ) {
               mySelLoH2dPopStm.ready := False
