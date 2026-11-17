@@ -6318,6 +6318,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       myFifoThingDoStall := True
       myLoD2hPushStm.valid := False
 
+      rSavedStallFromIdle := True
       rSavedStallInfo.valid := False
       rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
       rSavedRamIdx := rSavedStallInfo.ramIdx
