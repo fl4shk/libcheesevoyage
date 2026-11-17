@@ -6655,6 +6655,10 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           //  cfg.prefetchNumLinesAhead.get - 1
           //)
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+          rPrefetchInfo.valid := False
+          //rPrefetchInfo.cnt := (
+          //  cfg.prefetchNumLinesAhead.get
+          //)
         }
         is (MaskedLiteral(
           "11--" + ("-" * numWays)
@@ -6667,6 +6671,10 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           //  cfg.prefetchNumLinesAhead.get - 1
           //)
           rState := State.LOAD_HIT_DO_STALL_PIPE_4
+          rPrefetchInfo.valid := False
+          //rPrefetchInfo.cnt := (
+          //  cfg.prefetchNumLinesAhead.get
+          //)
         }
         for (ramIdx <- 0 until numWays) {
           val myRamIdxMask = calcHitRamIdxMask(ramIdx=ramIdx)
@@ -6683,6 +6691,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           }
         }
         default {
+          rPrefetchInfo.valid := False
           rPrefetchInfo.cnt := (
             cfg.prefetchNumLinesAhead.get //- 1
           )
