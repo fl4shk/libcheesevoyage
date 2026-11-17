@@ -6966,7 +6966,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
             //rSavedStallFromIdle := False
             rState := (
               //State.WAIT_D2H_FIFO_EMPTY
-              State.PREFETCH_START_PIPE_3
+              //State.PREFETCH_START_PIPE_3
+              State.PREFETCH_START_PIPE_4
             )
           }
           default {
