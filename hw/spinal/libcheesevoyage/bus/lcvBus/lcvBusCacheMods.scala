@@ -5978,8 +5978,17 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   val myTempHaveCurrRamWrite = (
     //Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
     //|| 
-    //LcvOrR(Vec[Bool](lineAttrsRam.head.map(item => item.io.wrEn)))
-    False
+    LcvOrR(Vec[Bool](lineAttrsRam.head.map(item => (
+      item.io.wrEn
+      && (
+        item.io.wrAddr(rPrefetchInfo.myTempRange).resize(
+          item.io.wrAddr.getWidth
+        )
+        === mySelLoH2dPopStm.addr(rPrefetchInfo.myTempRange).resize(
+          item.io.wrAddr.getWidth
+        )
+      )
+    ))))
   )
   val myHistHadAnyRamWrite = Array.fill(2)(
     History[Bool](
