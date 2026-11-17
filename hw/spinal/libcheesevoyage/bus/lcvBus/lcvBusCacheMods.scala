@@ -5723,7 +5723,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
 
     val cnt = (
       UInt(
-        log2Up(cfg.prefetchNumLinesAhead.get) + 1 bits
+        log2Up(cfg.prefetchNumLinesAhead.get + 1) + 1 bits
       )
     )
 
