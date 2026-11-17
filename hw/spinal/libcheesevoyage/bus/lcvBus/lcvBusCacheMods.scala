@@ -6648,6 +6648,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           "10--" + ("-" * numWays)
         )) {
           rSavedStallInfo.valid := False
+          rSavedStallFromIdle := True
           rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
           rSavedRamIdx := rSavedStallInfo.ramIdx
           //rPrefetchInfo.cnt := (
@@ -6659,6 +6660,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           "11--" + ("-" * numWays)
         )) {
           rSavedStallInfo.valid := False
+          rSavedStallFromIdle := True
           rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
           rSavedRamIdx := rSavedStallInfo.ramIdx
           //rPrefetchInfo.cnt := (
