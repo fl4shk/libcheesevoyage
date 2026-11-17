@@ -5981,9 +5981,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     LcvOrR(Vec[Bool](lineAttrsRam.head.map(item => (
       item.io.wrEn
       && (
-        item.io.wrAddr(rPrefetchInfo.myTempRange).resize(
-          item.io.wrAddr.getWidth
-        )
+        item.io.wrAddr
         === mySelLoH2dPopStm.addr(rPrefetchInfo.myTempRange).resize(
           item.io.wrAddr.getWidth
         )
