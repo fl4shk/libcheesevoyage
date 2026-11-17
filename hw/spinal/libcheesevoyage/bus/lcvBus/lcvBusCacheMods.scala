@@ -5705,6 +5705,9 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     temp.init(temp.getZero)
     temp
   }
+  val rSavedStallFromIdle = (
+    Reg(Bool(), init=False)
+  )
   val rSavedInPrefetchVec = (
     Vec.fill(
       1
@@ -5805,7 +5808,8 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //  init(0x0)
       //)
       //init(0x0),
-      rSavedStallInfo.loH2dPayload.addr(loBusCacheCfg.tagRange)
+      //rSavedStallInfo.loH2dPayload.addr(loBusCacheCfg.tagRange)
+      rSavedLoH2dPayload.addr(loBusCacheCfg.tagRange)
     ),
   )
   val tempHaveHitCmpEq = Vec.fill(rdLineAttrs.size)(
@@ -6060,7 +6064,10 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
       //1
       State.IDLE.position
     )
-    ## rSavedStallInfo.fire
+    ## (
+      rSavedStallInfo.fire
+      || rSavedStallFromIdle
+    )
     ## rMyTempDoSaveCond(3)
     //RegNext(
     //  RegNext(mySelLoH2dPopStm.fire, init=False),
@@ -6126,6 +6133,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
         // cache miss
         if (idleIdx == 1) {
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+          rSavedStallFromIdle := True
         }
 
         rSavedStallInfo.valid := True
@@ -6276,6 +6284,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
               mySelLoH2dPopStm.ready := False
               myFifoThingDoStall := True
               if (idleIdx == 1) {
+                rSavedStallFromIdle := True
                 rState := (
                   //State.LOAD_HIT_DO_STALL_PIPE_3
                   State.LOAD_HIT_DO_STALL_PIPE_4
@@ -7101,6 +7110,7 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
           M"00-"
           //M"000-"
         ) {
+          rSavedStallFromIdle := False
           rState := State.IDLE
         }
         is (
