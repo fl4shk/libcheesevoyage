@@ -6081,6 +6081,13 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   //  }
   //}
 
+  val rSavedRamIdx = (
+    myCondHaveLineBitPlruRam
+  ) generate (
+    Reg(UInt(log2Up(numWays) bits))
+    init(0x0)
+  )
+
   val myHadAnyRecentHazard = Vec.fill(
     3
   )(
@@ -6092,20 +6099,29 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   myHadAnyRecentHazard.foreach(outerItem => {
     outerItem.zipWithIndex.foreach{
       case (item, ramIdx) => {
-        item := (
-          rPrefetchInfo.fire
-          && (
-            rPrefetchInfo.baseAddr.resize(
-              lineAttrsRam.head.head.io.wrAddr.getWidth
-            )
-            === (
-              rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange).resize(
+        item := {
+          val temp = (
+            rPrefetchInfo.fire
+            && (
+              rPrefetchInfo.baseAddr.resize(
                 lineAttrsRam.head.head.io.wrAddr.getWidth
+              )
+              === (
+                rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange).resize(
+                  lineAttrsRam.head.head.io.wrAddr.getWidth
+                )
               )
             )
           )
-          && rSavedRamIdx === ramIdx
-        )
+          if (rSavedRamIdx != null) (
+            temp
+            && (
+              rSavedRamIdx === ramIdx
+            )
+          ) else (
+            temp
+          )
+        }
       }
     }
   })
@@ -6215,12 +6231,6 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     + ("-" * ramIdx)
   )
 
-  val rSavedRamIdx = (
-    myCondHaveLineBitPlruRam
-  ) generate (
-    Reg(UInt(log2Up(numWays) bits))
-    init(0x0)
-  )
   //val myHistSavedRamIdx = (
   //  History(
   //    that=rSavedRamIdx,
