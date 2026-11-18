@@ -5687,6 +5687,9 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
     def fire = valid
     val loH2dPayload = cloneOf(rSavedLoH2dPayload)
     val isHit = Bool()
+
+    //val rdLineWord = UInt(wordWidth bits)
+
     //val wrLineBitPlru = (
     //  UInt(
     //    //log2Up(numWays) bits
@@ -5976,64 +5979,65 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   //    init=False
   //  )
   //)
-  val myTempHaveCurrRamWrite = (
-    //Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-    //|| 
-    //LcvOrR
-    (
-      Vec[Bool](lineAttrsRam.head.map(item => (
-        item.io.wrEn
-        //&& (
-        //  item.io.wrAddr
-        //  === mySelLoH2dPopStm.addr(rPrefetchInfo.myTempRange).resize(
-        //    item.io.wrAddr.getWidth
-        //  )
-        //)
-      )
-    )))
-  )
-  val myTempCurrRamWriteAddr = (
-    Vec[UInt](lineAttrsRam.head.map(item => (
-      item.io.wrAddr
-    )))
-  )
-  val myHistHadRamWrite = Array.fill(2)(
-    History[Vec[Bool]](
-      that=(
-        //RegNext(
-          myTempHaveCurrRamWrite//,
-        //  init=myTempHaveCurrRamWrite.getZero
-        //)
-      ),
-      length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-      init=myTempHaveCurrRamWrite.getZero
-    )
-  )
-  val myHistRamWriteAddr = Array.fill(myHistHadRamWrite.size)(
-    History[Vec[UInt]](
-      that=(
-        //RegNext(
-          //myTempHaveCurrRamWrite//,
-          myTempCurrRamWriteAddr
-        //  init=myTempHaveCurrRamWrite.getZero
-        //)
-      ),
-      length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-      init=myTempCurrRamWriteAddr.getZero
-    )
-  )
-  val myRecentHazardToFindFirst = Vec.fill(
-    myHistRamWriteAddr.size
-  )(
-    Vec.fill(numWays)(
-      Vec.fill(cfg.myRamOptWrHistLengthPlusAddend)(
-        //Flow(
-        //  cloneOf(myHistRamWriteAddr.head.head)
-        //)
-        Bool()
-      )
-    )
-  )
+
+  //val myTempHaveCurrRamWrite = (
+  //  //Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
+  //  //|| 
+  //  //LcvOrR
+  //  (
+  //    Vec[Bool](lineAttrsRam.head.map(item => (
+  //      item.io.wrEn
+  //      //&& (
+  //      //  item.io.wrAddr
+  //      //  === mySelLoH2dPopStm.addr(rPrefetchInfo.myTempRange).resize(
+  //      //    item.io.wrAddr.getWidth
+  //      //  )
+  //      //)
+  //    )
+  //  )))
+  //)
+  //val myTempCurrRamWriteAddr = (
+  //  Vec[UInt](lineAttrsRam.head.map(item => (
+  //    item.io.wrAddr
+  //  )))
+  //)
+  //val myHistHadRamWrite = Array.fill(2)(
+  //  History[Vec[Bool]](
+  //    that=(
+  //      //RegNext(
+  //        myTempHaveCurrRamWrite//,
+  //      //  init=myTempHaveCurrRamWrite.getZero
+  //      //)
+  //    ),
+  //    length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
+  //    init=myTempHaveCurrRamWrite.getZero
+  //  )
+  //)
+  //val myHistRamWriteAddr = Array.fill(myHistHadRamWrite.size)(
+  //  History[Vec[UInt]](
+  //    that=(
+  //      //RegNext(
+  //        //myTempHaveCurrRamWrite//,
+  //        myTempCurrRamWriteAddr
+  //      //  init=myTempHaveCurrRamWrite.getZero
+  //      //)
+  //    ),
+  //    length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
+  //    init=myTempCurrRamWriteAddr.getZero
+  //  )
+  //)
+  //val myRecentHazardToFindFirst = Vec.fill(
+  //  myHistRamWriteAddr.size
+  //)(
+  //  Vec.fill(numWays)(
+  //    Vec.fill(cfg.myRamOptWrHistLengthPlusAddend)(
+  //      //Flow(
+  //      //  cloneOf(myHistRamWriteAddr.head.head)
+  //      //)
+  //      Bool()
+  //    )
+  //  )
+  //)
 
   //val myHadAnyRecentHazard = Vec.fill(
   //  myHistRamWriteAddr.size
@@ -6045,36 +6049,66 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
   //    
   //  })
   //)
-  val myHadAnyRecentHazard = Vec.fill(myRecentHazardToFindFirst.size)(
+
+  //val myHadAnyRecentHazard = Vec.fill(myRecentHazardToFindFirst.size)(
+  //  Vec.fill(numWays)(
+  //    Bool()
+  //  )
+  //)
+  //for (idx <- 0 until myRecentHazardToFindFirst.size) {
+  //  for (ramIdx <- 0 until numWays) {
+  //    for (histIdx <- 0 until cfg.myRamOptWrHistLengthPlusAddend) {
+  //      myRecentHazardToFindFirst(idx)(ramIdx)(histIdx) := (
+  //        myHistHadRamWrite(idx)(histIdx)(ramIdx)
+  //        && (
+  //          myHistRamWriteAddr(idx)(histIdx)(ramIdx)
+  //          === (
+  //            rDel2LoH2dPayload.addr(
+  //              mySelLoH2dPopStm.addr.high
+  //              downto myLineAttrsRamAddrRshift
+  //            ).resize(
+  //              myHistRamWriteAddr(idx)(histIdx)(ramIdx).getWidth
+  //            )
+  //          )
+  //        )
+  //      )
+  //    }
+  //    myHadAnyRecentHazard(idx)(ramIdx) := (
+  //      myRecentHazardToFindFirst(idx)(ramIdx).sFindFirst(item => {
+  //        item
+  //      })._1
+  //    )
+  //  }
+  //}
+
+  val myHadAnyRecentHazard = Vec.fill(
+    3
+  )(
     Vec.fill(numWays)(
       Bool()
     )
   )
-  for (idx <- 0 until myRecentHazardToFindFirst.size) {
-    for (ramIdx <- 0 until numWays) {
-      for (histIdx <- 0 until cfg.myRamOptWrHistLengthPlusAddend) {
-        myRecentHazardToFindFirst(idx)(ramIdx)(histIdx) := (
-          myHistHadRamWrite(idx)(histIdx)(ramIdx)
+
+  myHadAnyRecentHazard.foreach(outerItem => {
+    outerItem.zipWithIndex.foreach{
+      case (item, ramIdx) => {
+        item := (
+          rPrefetchInfo.fire
           && (
-            myHistRamWriteAddr(idx)(histIdx)(ramIdx)
+            rPrefetchInfo.baseAddr.resize(
+              lineAttrsRam.head.head.io.wrAddr.getWidth
+            )
             === (
-              rDel2LoH2dPayload.addr(
-                mySelLoH2dPopStm.addr.high
-                downto myLineAttrsRamAddrRshift
-              ).resize(
-                myHistRamWriteAddr(idx)(histIdx)(ramIdx).getWidth
+              rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange).resize(
+                lineAttrsRam.head.head.io.wrAddr.getWidth
               )
             )
           )
+          && rSavedRamIdx === ramIdx
         )
       }
-      myHadAnyRecentHazard(idx)(ramIdx) := (
-        myRecentHazardToFindFirst(idx)(ramIdx).sFindFirst(item => {
-          item
-        })._1
-      )
     }
-  }
+  })
 
   //val myHadAnyRecentHazard = Vec[Bool](
   //  //myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
@@ -6370,7 +6404,10 @@ case class LcvBusInstrCacheWithTaggedPrefetch(
 
           rSavedStallInfo.valid := !myLoD2hPushStm.fire //True
           rSavedStallInfo.loH2dPayload := rDel2LoH2dPayload
-          rSavedStallInfo.isHit := True
+          rSavedStallInfo.isHit := (
+            //True
+            !myHadAnyRecentHazard(1)(ramIdx)
+          )
 
           //myLoD2hPushStm.valid := False
           if (myCondHaveLineBitPlruRam) {
