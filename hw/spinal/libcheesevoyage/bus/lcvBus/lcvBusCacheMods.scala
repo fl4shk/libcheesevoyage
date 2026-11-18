@@ -28078,8 +28078,8 @@ case class LcvBusDataCacheNoPrefetch(
       //  rSavedLoH2dPayload.txnCnt
       //)
 
-      //io.loBus.d2hBus <-/< io.mmioHiBus.d2hBus
-      io.loBus.d2hBus << io.mmioHiBus.d2hBus
+      io.loBus.d2hBus <-/< io.mmioHiBus.d2hBus
+      //io.loBus.d2hBus << io.mmioHiBus.d2hBus
       when (
         //myLoD2hPushStm.fire
         io.loBus.d2hBus.fire
