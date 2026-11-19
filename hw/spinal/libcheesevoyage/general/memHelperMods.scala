@@ -67,10 +67,10 @@ object RamTdpPipe {
   }
 }
 
-object RamTdpPipeConfig {
-  def apply(
-  )
-}
+//object RamTdpPipeConfig {
+//  def apply(
+//  )
+//}
 
 case class RamTdpPipeIo(
   cfg: RamTdpPipeConfig
