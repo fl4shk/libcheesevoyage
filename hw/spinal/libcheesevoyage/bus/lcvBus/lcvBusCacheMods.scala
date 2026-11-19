@@ -7176,13 +7176,14 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
       val myEmptyEnoughCond = (
         //myLoD2hFifo.io.push.ready
         //&& 
-        RegNext(
-          (
-            myLoD2hFifo.io.availability
-            >= (myFifoThingLoBusCfg.maxBurstSizeMinus1 + 1)
-          ),
-          init=False
-        )
+        //RegNext(
+        //  (
+        //    myLoD2hFifo.io.availability
+        //    >= (myFifoThingLoBusCfg.maxBurstSizeMinus1 + 1)
+        //  ),
+        //  init=False
+        //)
+        myLoD2hFifo.io.push.ready
       )
 
       when (
