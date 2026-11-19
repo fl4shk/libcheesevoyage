@@ -57,6 +57,21 @@ case class RamTdpPipeIoElem(
   val rdData = out(Bits(cfg.wordWidth bits))
 }
 
+object RamTdpPipe {
+  def calcElemBytesPerWord(
+    elem: Data,
+  ): Long = {
+    return (
+      ceil(elem.asBits.getWidth.toDouble / 8.toDouble).toLong * 8
+    )
+  }
+}
+
+object RamTdpPipeConfig {
+  def apply(
+  )
+}
+
 case class RamTdpPipeIo(
   cfg: RamTdpPipeConfig
 ) extends Bundle {
