@@ -30658,6 +30658,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
     }
     is (State.LOAD_HIT_DO_STALL) {
+      rIdleModeIsWrite := False
       val myRdLineWord = (
         RegNext(
           if (myCondHaveLineBitPlruRam) (
@@ -30688,6 +30689,8 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       }
       myLoD2hPushStm.valid := True
       //myLoH2dReptThing.io.finishTxn.valid := False
+
+
       when (myLoD2hPushStm.fire) {
         //myFifoThingDoStall := False
         rState := State.LOAD_HIT_DO_STALL_POST
@@ -30701,6 +30704,40 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       rState := State.WAIT_D2H_FIFO_EMPTY_ENOUGH
     }
     is (State.STORE_HIT_DO_STALL_PIPE_1) {
+      switch (rSavedRamIdx) {
+        for (ramIdx <- 0 until numWays) {
+          is (ramIdx) {
+            doLineWordRamWrite(
+              vecIdx=0,
+              ramIdx=ramIdx,
+              busAddr=Some(rSavedLoH2dPayload.addr),
+              lineWord=Some(rSavedLoH2dPayload.data),
+              byteEn=Some(rSavedLoH2dPayload.byteEn),
+              setEn=false
+            )
+            lineAttrsRam.foreach(item => {
+              val busAddr = rSavedLoH2dPayload.addr
+              item(ramIdx).io.wrEn := True
+              item(ramIdx).io.wrAddr := (
+                (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
+                .resize(item(ramIdx).io.wrAddr.getWidth)
+              )
+              item(ramIdx).io.wrData.tag := (
+                rSavedLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
+              )
+              item(ramIdx).io.wrData.dirty := (
+                // if it's a store, this line should be marked dirty!
+                //rSavedLoH2dPayload.isWrite
+                True
+              )
+              item(ramIdx).io.wrData.valid := True
+            })
+          }
+          default {
+          }
+        }
+      }
+
       myLoD2hPushStm.valid := False
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
@@ -30709,6 +30746,8 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       rState := State.STORE_HIT_DO_STALL
     }
     is (State.STORE_HIT_DO_STALL) {
+      rIdleModeIsWrite := True
+
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
 
