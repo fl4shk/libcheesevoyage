@@ -6337,7 +6337,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
         }
 
         rSavedStallInfo.valid := True
-        rSavedStallInfo.inProgress := True
+        rSavedStallInfo.inProgress := False
 
         rSavedStallInfo.loH2dPayload := rDel2LoH2dPayload
         rSavedStallInfo.isHit := False
@@ -6498,7 +6498,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
               mySelLoH2dPopStm.ready := False
               myFifoThingDoStall := True
 
-              rSavedStallInfo.inProgress := True
+              //rSavedStallInfo.inProgress := False
 
               if (idleIdx == 1) {
                 //rSavedStallFromIdle := True
