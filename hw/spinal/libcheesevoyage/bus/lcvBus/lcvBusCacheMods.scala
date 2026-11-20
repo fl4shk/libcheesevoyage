@@ -30713,7 +30713,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
               busAddr=Some(rSavedLoH2dPayload.addr),
               lineWord=Some(rSavedLoH2dPayload.data),
               byteEn=Some(rSavedLoH2dPayload.byteEn),
-              setEn=false
+              setEn=true
             )
             lineAttrsRam.foreach(item => {
               val busAddr = rSavedLoH2dPayload.addr
