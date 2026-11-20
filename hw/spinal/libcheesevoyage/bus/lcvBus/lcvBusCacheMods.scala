@@ -29920,22 +29920,27 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
             rDel2LoH2dPayload.addr
           )
           val temp1 = (
-            myHistLineWordRamWrite.sFindFirst(elem => (
-              elem.fire
-              && (
-                elem.payload
-                === (
-                  (
-                    busAddr(
-                      busAddr.high
-                      downto myLineWordRamSingleWordAddrRshift
+            RegNext(
+              (
+                myHistLineWordRamWrite.sFindFirst(elem => (
+                  elem.fire
+                  && (
+                    elem.payload
+                    === (
+                      (
+                        busAddr(
+                          busAddr.high
+                          downto myLineWordRamSingleWordAddrRshift
+                        )
+                      ).resize(
+                        lineWordRam(ramIdx).io.vec.head.addr.getWidth
+                      )
                     )
-                  ).resize(
-                    lineWordRam(ramIdx).io.vec.head.addr.getWidth
                   )
-                )
-              )
-            ))._1
+                ))._1
+              ),
+              init=False
+            )
           )
 
           if (rSavedRamIdx != null) (
