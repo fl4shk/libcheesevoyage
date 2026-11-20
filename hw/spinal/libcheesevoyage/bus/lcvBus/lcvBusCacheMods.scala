@@ -28879,9 +28879,6 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
     )
   )
   for (idx <- 0 until numWays) {
-    rdLineWord.head(idx) := lineWordRam(idx).io.vec.head.rdData.asUInt
-    rdLineWord.last(idx) := lineWordRam(idx).io.vec.last.rdData.asUInt
-
     rdLineAttrs.head(idx) := lineAttrsRam.head(idx).io.rdData
     rdLineAttrs.last(idx) := lineAttrsRam.last(idx).io.rdData
 
