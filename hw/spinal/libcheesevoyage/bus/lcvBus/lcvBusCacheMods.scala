@@ -5687,6 +5687,9 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
   ) extends Bundle {
     val valid = Bool()
     def fire = valid
+
+    val inProgress = Bool()
+
     val loH2dPayload = cloneOf(rSavedLoH2dPayload)
     val isHit = Bool()
 
@@ -5711,9 +5714,11 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
     temp.init(temp.getZero)
     temp
   }
-  val rSavedStallFromIdle = (
-    Reg(Bool(), init=False)
-  )
+
+  //val rSavedStallFromIdle = (
+  //  Reg(Bool(), init=False)
+  //)
+
   //val rPrefetchAddr = {
   //  val temp = Reg(
   //    cloneOf(rSavedLoH2dPayload.addr(loBusCacheCfg.cachedRangeNonLine))
@@ -6259,8 +6264,9 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
       State.IDLE.position
     )
     ## (
-      rSavedStallInfo.fire
-      || rSavedStallFromIdle
+      //rSavedStallInfo.fire
+      //|| rSavedStallFromIdle
+      rSavedStallInfo.inProgress
     )
     ## rMyTempDoSaveCond(3)
     //RegNext(
@@ -6327,10 +6333,12 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
         // cache miss
         if (idleIdx == 1) {
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-          rSavedStallFromIdle := True
+          //rSavedStallFromIdle := True
         }
 
         rSavedStallInfo.valid := True
+        rSavedStallInfo.inProgress := True
+
         rSavedStallInfo.loH2dPayload := rDel2LoH2dPayload
         rSavedStallInfo.isHit := False
 
@@ -6489,8 +6497,11 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
             ) {
               mySelLoH2dPopStm.ready := False
               myFifoThingDoStall := True
+
+              rSavedStallInfo.inProgress := True
+
               if (idleIdx == 1) {
-                rSavedStallFromIdle := True
+                //rSavedStallFromIdle := True
                 rState := (
                   //State.LOAD_HIT_DO_STALL_PIPE_3
                   State.LOAD_HIT_DO_STALL_PIPE_4
@@ -6542,8 +6553,10 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
       myFifoThingDoStall := True
       myLoD2hPushStm.valid := False
 
-      rSavedStallFromIdle := True
+      //rSavedStallFromIdle := True
       rSavedStallInfo.valid := False
+      rSavedStallInfo.inProgress := True
+
       rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
       rSavedRamIdx := rSavedStallInfo.ramIdx
 
@@ -6776,7 +6789,10 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
     }
     is (State.PREFETCH_START) {
       switch (
-        rSavedStallInfo.fire
+        (
+          rSavedStallInfo.fire
+          //&& !rSavedStallInfo.inProgress
+        )
         ## rSavedStallInfo.isHit
         ## rPrefetchInfo.cnt.msb
         ## RegNext(rPrefetchInfo.cnt - 1).msb
@@ -6825,7 +6841,9 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
           "10--" + ("-" * numWays)
         )) {
           rSavedStallInfo.valid := False
+          rSavedStallInfo.inProgress := True
           //rSavedStallFromIdle := True
+
           rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
           rSavedRamIdx := rSavedStallInfo.ramIdx
           //rPrefetchInfo.cnt := (
@@ -6841,6 +6859,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
           "11--" + ("-" * numWays)
         )) {
           rSavedStallInfo.valid := False
+          rSavedStallInfo.inProgress := True
           //rSavedStallFromIdle := True
           rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
           rSavedRamIdx := rSavedStallInfo.ramIdx
@@ -7221,18 +7240,22 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
         //!myLoD2hFifo.io.pop.valid
         myEmptyEnoughCond
         && rSavedStallInfo.fire
+        && !rSavedStallInfo.inProgress
       ) {
         rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
         rSavedRamIdx := rSavedStallInfo.ramIdx
         rSavedStallInfo.valid := False
+        rSavedStallInfo.inProgress := True
       }
 
       switch (
         //myLoD2hFifo.io.pop.valid
         !myEmptyEnoughCond
         ## (
+          //rSavedStallInfo.fire
+          //&& !rSavedStallFromIdle
           rSavedStallInfo.fire
-          && !rSavedStallFromIdle
+          && !rSavedStallInfo.inProgress
         )
         ## rSavedStallInfo.isHit
       ) {
@@ -7242,7 +7265,8 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
           M"00-"
           //M"000-"
         ) {
-          rSavedStallFromIdle := False
+          //rSavedStallFromIdle := False
+          rSavedStallInfo.inProgress := False
           rState := State.IDLE
         }
         is (
@@ -30454,7 +30478,8 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       }
     }
     is (MaskedLiteral(
-      "-" + "0" + "0" + ("-" * numWays)
+      "1" + "0" + "0" + ("-" * numWays)
+      //"-" + "0" + "0" + ("-" * numWays)
     )) {
       doPopLoH2dFifo()
       myFifoThingDoStall := False
