@@ -30351,6 +30351,11 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
               //  vecIdx=0,
               //  ramIdx=ramIdx,
               //)
+            }
+            when (
+              LcvOrR(myHadAnyRecentHazard.head(ramIdx))
+              && rDel2LoH2dPayload.isWrite
+            ) {
               doLineWordRamWrite(
                 vecIdx=0,
                 ramIdx=ramIdx,
@@ -30387,7 +30392,8 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
                 setEn=false,
               )
               lineWordRam(ramIdx).io.vec.head.wrEn := (
-                rDel2LoH2dPayload.isWrite
+                //rDel2LoH2dPayload.isWrite
+                True
               )
 
               //lineWordRam(ramIdx).io.vec.head.wrEn := True
