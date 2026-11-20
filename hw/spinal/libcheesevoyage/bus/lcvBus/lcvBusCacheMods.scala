@@ -28971,6 +28971,8 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
     val
       INIT,
       IDLE,
+      //IDLE_LOAD_MODE,
+      //IDLE_STORE_MODE,
       LOAD_HIT_DO_STALL_PIPE_4,
       LOAD_HIT_DO_STALL_PIPE_3,
       LOAD_HIT_DO_STALL_PIPE_2,
@@ -30102,6 +30104,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
 
     rState.asBits(
       //1
+      //State.IDLE_LOAD_MODE.position
       State.IDLE.position
     )
     ## (
@@ -30109,41 +30112,12 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       || rSavedStallFromIdle
     )
     ## rMyTempDoSaveCond(3)
-    //RegNext(
-    //  RegNext(mySelLoH2dPopStm.fire, init=False),
-    //  init=False
-    //)
-    //## haveHit.orR
-    //## haveHit
-    //## (
-    //  (
-    //    rdLineAttrs.map(item => item.dirty).orR
-    //  )
-    //  //|| (
-    //  //  //rdLine
-    //  //  RegNext(
-    //  //    (
-    //  //      (
-    //  //        wrLineAttrs.dirty
-    //  //        && (
-    //  //          Vec(lineAttrsRam.map(item => item.io.wrEn)).orR
-    //  //        )
-    //  //      )
-    //  //      || RegNext(
-    //  //        wrLineAttrs.dirty
-    //  //        && (
-    //  //          Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
-    //  //        ),
-    //  //        init=False
-    //  //      )
-    //  //    ),
-    //  //    init=False
-    //  //  )
-    //  //)
-    //)
-    //## rDel2LoH2dPayload.isWrite
     ## haveHit.head
   )
+  val rIdleModeIsWrite = (
+    Reg(Bool(), init=False)
+  )
+
   //println(
   //  s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
   //)
@@ -30335,185 +30309,149 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
             rDel2LoH2dPayload.txnCnt
           )
 
-          //if (idleIdx == 0) {
-          //} else { // if (idleIdx == 1)
-            when (
-              //rHadAnyRamWritePastTwoCycles.head
-              LcvOrR(myHadAnyRecentHazard.head(ramIdx))
-            ) {
-              myLoD2hPushStm.valid := False
-            } otherwise {
-              lineAttrsRam.foreach(item => {
-                val busAddr = rDel2LoH2dPayload.addr
-                item(ramIdx).io.wrEn := True
-                item(ramIdx).io.wrAddr := (
-                  (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
-                  .resize(item(ramIdx).io.wrAddr.getWidth)
-                )
-                item(ramIdx).io.wrData.tag := (
-                  rDel2LoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
-                )
-                item(ramIdx).io.wrData.dirty := (
-                  // if it's a store, this line should be marked dirty!
-                  rDel2LoH2dPayload.isWrite
-                )
-                item(ramIdx).io.wrData.valid := True
-              })
-              //doLineWordRamWrite(
-              //  vecIdx=0,
-              //  ramIdx=ramIdx,
-              //)
-            }
+          when (
+            //rHadAnyRamWritePastTwoCycles.head
+            LcvOrR(myHadAnyRecentHazard.head(ramIdx))
+          ) {
+            myLoD2hPushStm.valid := False
+          } otherwise {
+            //lineAttrsRam.foreach(item => {
+            //  val busAddr = rDel2LoH2dPayload.addr
+            //  item(ramIdx).io.wrEn := True
+            //  item(ramIdx).io.wrAddr := (
+            //    (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
+            //    .resize(item(ramIdx).io.wrAddr.getWidth)
+            //  )
+            //  item(ramIdx).io.wrData.tag := (
+            //    rDel2LoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
+            //  )
+            //  item(ramIdx).io.wrData.dirty := (
+            //    // if it's a store, this line should be marked dirty!
+            //    rDel2LoH2dPayload.isWrite
+            //  )
+            //  item(ramIdx).io.wrData.valid := True
+            //})
+          }
+          doLineWordRamWrite(
+            vecIdx=0,
+            ramIdx=ramIdx,
+            busAddr=None,
+            lineWord=Some(rDel2LoH2dPayload.data),
+            byteEn=Some(rDel2LoH2dPayload.byteEn),
+            setEn=false
+          )
+          when (
+            !LcvOrR(myHadAnyRecentHazard.head(ramIdx))
+            && rDel2LoH2dPayload.isWrite
+            && rIdleModeIsWrite
+          ) {
+            lineAttrsRam.foreach(item => {
+              val busAddr = rDel2LoH2dPayload.addr
+              item(ramIdx).io.wrEn := True
+              item(ramIdx).io.wrAddr := (
+                (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
+                .resize(item(ramIdx).io.wrAddr.getWidth)
+              )
+              item(ramIdx).io.wrData.tag := (
+                rDel2LoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
+              )
+              item(ramIdx).io.wrData.dirty := (
+                // if it's a store, this line should be marked dirty!
+                rDel2LoH2dPayload.isWrite
+              )
+              item(ramIdx).io.wrData.valid := True
+            })
             doLineWordRamWrite(
               vecIdx=0,
               ramIdx=ramIdx,
-              busAddr=(
-                None
+              busAddr=Some(
+                rDel2LoH2dPayload.addr
               ),
-              lineWord=Some(rDel2LoH2dPayload.data),
-              byteEn=Some(rDel2LoH2dPayload.byteEn),
-              setEn=false
+              lineWord=None,
+              byteEn=None,
+              setEn=true
             )
-            when (
-              LcvOrR(myHadAnyRecentHazard.head(ramIdx))
-              && rDel2LoH2dPayload.isWrite
-            ) {
-              //doLineWordRamWrite(
-              //  vecIdx=0,
-              //  ramIdx=ramIdx,
-              //  busAddr=(
-              //    Some(rDel2LoH2dPayload.addr)
-              //    //RegNext(
-              //    //  RegNext(
-              //    //    mySelLoH2dPopPayload.addr,
-              //    //    init=mySelLoH2dPopPayload.addr.getZero
-              //    //  ),
-              //    //  init=mySelLoH2dPopPayload.addr.getZero,
-              //    //)
-              //  ),
-              //  lineWord=(
-              //    rDel2LoH2dPayload.data
-              //    //RegNext(
-              //    //  RegNext(
-              //    //    mySelLoH2dPopPayload.data,
-              //    //    init=mySelLoH2dPopPayload.data.getZero
-              //    //  ),
-              //    //  init=mySelLoH2dPopPayload.data.getZero,
-              //    //)
-              //  ),
-              //  byteEn=Some(
-              //    rDel2LoH2dPayload.byteEn
-              //    //RegNext(
-              //    //  RegNext(
-              //    //    mySelLoH2dPopPayload.byteEn,
-              //    //    init=mySelLoH2dPopPayload.byteEn.getZero
-              //    //  ),
-              //    //  init=mySelLoH2dPopPayload.byteEn.getZero,
-              //    //),
-              //  ),
-              //  setEn=false,
-              //)
-              doLineWordRamWrite(
-                vecIdx=0,
-                ramIdx=ramIdx,
-                busAddr=Some(
-                  rDel2LoH2dPayload.addr
-                ),
-                lineWord=None,
-                byteEn=None,
-                setEn=true
-              )
-              //lineWordRam(ramIdx).io.vec.head.addr := (
-              //  //rDel2LoH2dPayload.isWrite
-              //  True
-              //)
-              //lineWordRam(ramIdx).io.vec.head.wrEn := (
-              //  //rDel2LoH2dPayload.isWrite
-              //  True
-              //)
+          }
 
-              //lineWordRam(ramIdx).io.vec.head.wrEn := True
-              //lineWordRam(ramIdx).io.vec.head.addr := (
-              //  rDel2LoH2dPayload.
-              //)
+          switch (
+            (
+              LcvOrR(myHadAnyRecentHazard.last(ramIdx))
+              || !myLoD2hPushStm.ready
+            )
+            ## rDel2LoH2dPayload.isWrite
+            ## rIdleModeIsWrite
+          ) {
+            is (M"10-") {
+              mySelLoH2dPopStm.ready := False
+              myFifoThingDoStall := True
+              if (idleIdx == 1) {
+                rSavedStallFromIdle := True
 
-              //wrLineAttrs.tag := (
-              //  rDel2LoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
-              //)
-              //wrLineAttrs.dirty := (
-              //  // if it's a store, this line should be marked dirty!
-              //  rDel2LoH2dPayload.isWrite
-              //)
-            }
+                // optimize for multiple loads in a row
+                rIdleModeIsWrite := False
 
-            switch (
-              (
-                LcvOrR(myHadAnyRecentHazard.last(ramIdx))
-                || !myLoD2hPushStm.ready
-              )
-              ## rDel2LoH2dPayload.isWrite
-            ) {
-              is (M"10") {
-                mySelLoH2dPopStm.ready := False
-                myFifoThingDoStall := True
-                if (idleIdx == 1) {
-                  rSavedStallFromIdle := True
-                  rState := State.LOAD_HIT_DO_STALL_PIPE_4
-                }
-              }
-              is (M"11") {
-                mySelLoH2dPopStm.ready := False
-                myFifoThingDoStall := True
-                if (idleIdx == 1) {
-                  rSavedStallFromIdle := True
-                  rState := State.STORE_HIT_DO_STALL_PIPE_1
-                }
-              }
-              default {
-                if (idleIdx == 1) {
-                  rPrefetchInfo.baseAddr := (
-                    rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange)
-                  )
-                  rState := State.PREFETCH_START_PIPE_3
-                }
+                rState := State.LOAD_HIT_DO_STALL_PIPE_4
               }
             }
-            //when (
-            //  //rHadAnyRamWritePastTwoCycles.last
-            //  myHadAnyRecentHazard.last(ramIdx)
-            //  || !myLoD2hPushStm.ready
-            //) {
-            //  mySelLoH2dPopStm.ready := False
-            //  myFifoThingDoStall := True
-            //  if (idleIdx == 1) {
-            //    rSavedStallFromIdle := True
-            //    rState := (
-            //      //State.LOAD_HIT_DO_STALL_PIPE_3
-            //      State.LOAD_HIT_DO_STALL_PIPE_4
-            //    )
-            //  }
-            //  //myTempUpdateSavedLoH2dPayloadCond := False
-            //} otherwise {
-            //  //doPopLoH2dFifo()
-            //  //rSavedStallInfo.valid := False
-            //  if (idleIdx == 1) {
-            //    rPrefetchInfo.baseAddr := (
-            //      rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange)
-            //    )
-            //    rState := State.PREFETCH_START_PIPE_3
-            //  }
-            //}
-            //if (idleIdx == 1) {
-            //  when (
-            //    !(
-            //      myHadAnyRecentRamWrite.last
-            //      || !myLoD2hPushStm.ready
-            //    )
-            //    && 
-            //  ) {
-            //  }
-            //}
-          //}
+            is (M"11-") {
+              mySelLoH2dPopStm.ready := False
+              myFifoThingDoStall := True
+
+              if (idleIdx == 1) {
+                rSavedStallFromIdle := True
+                // optimize for multiple stores in a row
+                rIdleModeIsWrite := True
+
+                rState := State.STORE_HIT_DO_STALL_PIPE_1
+              }
+            }
+            is (M"001") {
+              // in store mode, requested load
+              // mode switch needed
+
+              mySelLoH2dPopStm.ready := False
+              myFifoThingDoStall := True
+
+              if (idleIdx == 1) {
+                rSavedStallFromIdle := True
+                rIdleModeIsWrite := False
+                rState := State.LOAD_HIT_DO_STALL_PIPE_4
+              }
+            }
+            is (M"010") {
+              // in load mode, requested store
+              // mode switch needed
+
+              mySelLoH2dPopStm.ready := False
+              myFifoThingDoStall := True
+
+              if (idleIdx == 1) {
+                rSavedStallFromIdle := True
+                rIdleModeIsWrite := True
+                rState := State.STORE_HIT_DO_STALL_PIPE_1
+              }
+            }
+            is (M"000") {
+              // in load mode, requested load
+              if (idleIdx == 1) {
+                rPrefetchInfo.baseAddr := (
+                  rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange)
+                )
+                rState := State.PREFETCH_START_PIPE_3
+              }
+            }
+
+            //is (M"011")
+            default {
+              // in load mode, requested load
+              if (idleIdx == 1) {
+                rPrefetchInfo.baseAddr := (
+                  rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange)
+                )
+                rState := State.PREFETCH_START_PIPE_3
+              }
+            }
+          }
         }
       }
     }
