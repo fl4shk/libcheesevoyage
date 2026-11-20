@@ -30378,7 +30378,10 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
                   //  init=mySelLoH2dPopPayload.byteEn.getZero,
                   //),
                 ),
-                setEn=true,
+                setEn=false,
+              )
+              lineWordRam(ramIdx).io.vec.head.wrEn := (
+                rDel2LoH2dPayload.isWrite
               )
 
               //lineWordRam(ramIdx).io.vec.head.wrEn := True
