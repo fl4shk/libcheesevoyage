@@ -29340,19 +29340,31 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
   def doLineWordRamWrite(
     vecIdx: Int,
     ramIdx: Int,
-    busAddr: UInt,
-    lineWord: UInt,
+    busAddr: Option[UInt],
+    lineWord: Option[UInt],
     byteEn: Option[UInt],
     setEn: Boolean=true,
   ): Unit = {
     if (setEn) {
       lineWordRam(ramIdx).io.vec(vecIdx).wrEn := True
     }
-    lineWordRam(ramIdx).io.vec(vecIdx).addr := (
-      (busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift))
-      .resize(lineWordRam(ramIdx).io.vec(vecIdx).addr.getWidth)
-    )
-    lineWordRam(ramIdx).io.vec(vecIdx).wrData := lineWord.asBits
+    busAddr match {
+      case Some(busAddr) => {
+        lineWordRam(ramIdx).io.vec(vecIdx).addr := (
+          (busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift))
+          .resize(lineWordRam(ramIdx).io.vec(vecIdx).addr.getWidth)
+        )
+      }
+      case None => {
+      }
+    }
+    lineWord match {
+      case Some(lineWord) => {
+        lineWordRam(ramIdx).io.vec(vecIdx).wrData := lineWord.asBits
+      }
+      case None => {
+      }
+    }
     byteEn match {
       case Some(byteEn) => {
         lineWordRam(ramIdx).io.vec(vecIdx).wrByteEn := byteEn.asBits
@@ -30352,49 +30364,73 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
               //  ramIdx=ramIdx,
               //)
             }
+            doLineWordRamWrite(
+              vecIdx=0,
+              ramIdx=ramIdx,
+              busAddr=(
+                None
+              ),
+              lineWord=Some(rDel2LoH2dPayload.data),
+              byteEn=Some(rDel2LoH2dPayload.byteEn),
+              setEn=false
+            )
             when (
               LcvOrR(myHadAnyRecentHazard.head(ramIdx))
               && rDel2LoH2dPayload.isWrite
             ) {
+              //doLineWordRamWrite(
+              //  vecIdx=0,
+              //  ramIdx=ramIdx,
+              //  busAddr=(
+              //    Some(rDel2LoH2dPayload.addr)
+              //    //RegNext(
+              //    //  RegNext(
+              //    //    mySelLoH2dPopPayload.addr,
+              //    //    init=mySelLoH2dPopPayload.addr.getZero
+              //    //  ),
+              //    //  init=mySelLoH2dPopPayload.addr.getZero,
+              //    //)
+              //  ),
+              //  lineWord=(
+              //    rDel2LoH2dPayload.data
+              //    //RegNext(
+              //    //  RegNext(
+              //    //    mySelLoH2dPopPayload.data,
+              //    //    init=mySelLoH2dPopPayload.data.getZero
+              //    //  ),
+              //    //  init=mySelLoH2dPopPayload.data.getZero,
+              //    //)
+              //  ),
+              //  byteEn=Some(
+              //    rDel2LoH2dPayload.byteEn
+              //    //RegNext(
+              //    //  RegNext(
+              //    //    mySelLoH2dPopPayload.byteEn,
+              //    //    init=mySelLoH2dPopPayload.byteEn.getZero
+              //    //  ),
+              //    //  init=mySelLoH2dPopPayload.byteEn.getZero,
+              //    //),
+              //  ),
+              //  setEn=false,
+              //)
               doLineWordRamWrite(
                 vecIdx=0,
                 ramIdx=ramIdx,
-                busAddr=(
+                busAddr=Some(
                   rDel2LoH2dPayload.addr
-                  //RegNext(
-                  //  RegNext(
-                  //    mySelLoH2dPopPayload.addr,
-                  //    init=mySelLoH2dPopPayload.addr.getZero
-                  //  ),
-                  //  init=mySelLoH2dPopPayload.addr.getZero,
-                  //)
                 ),
-                lineWord=(
-                  rDel2LoH2dPayload.data
-                  //RegNext(
-                  //  RegNext(
-                  //    mySelLoH2dPopPayload.data,
-                  //    init=mySelLoH2dPopPayload.data.getZero
-                  //  ),
-                  //  init=mySelLoH2dPopPayload.data.getZero,
-                  //)
-                ),
-                byteEn=Some(
-                  rDel2LoH2dPayload.byteEn
-                  //RegNext(
-                  //  RegNext(
-                  //    mySelLoH2dPopPayload.byteEn,
-                  //    init=mySelLoH2dPopPayload.byteEn.getZero
-                  //  ),
-                  //  init=mySelLoH2dPopPayload.byteEn.getZero,
-                  //),
-                ),
-                setEn=false,
+                lineWord=None,
+                byteEn=None,
+                setEn=true
               )
-              lineWordRam(ramIdx).io.vec.head.wrEn := (
-                //rDel2LoH2dPayload.isWrite
-                True
-              )
+              //lineWordRam(ramIdx).io.vec.head.addr := (
+              //  //rDel2LoH2dPayload.isWrite
+              //  True
+              //)
+              //lineWordRam(ramIdx).io.vec.head.wrEn := (
+              //  //rDel2LoH2dPayload.isWrite
+              //  True
+              //)
 
               //lineWordRam(ramIdx).io.vec.head.wrEn := True
               //lineWordRam(ramIdx).io.vec.head.addr := (
@@ -31263,8 +31299,8 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
                 doLineWordRamWrite(
                   vecIdx=1,
                   ramIdx=ramIdx,
-                  busAddr=myArgBusAddr,
-                  lineWord=myArgLineWord,
+                  busAddr=Some(myArgBusAddr),
+                  lineWord=Some(myArgLineWord),
                   byteEn=myArgByteEn,
                   setEn=myArgSetEn,
                 )
@@ -31275,8 +31311,8 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           doLineWordRamWrite(
             vecIdx=1,
             ramIdx=0,
-            busAddr=myArgBusAddr,
-            lineWord=myArgLineWord,
+            busAddr=Some(myArgBusAddr),
+            lineWord=Some(myArgLineWord),
             byteEn=myArgByteEn,
             setEn=myArgSetEn,
           )
@@ -31337,8 +31373,8 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
               doLineWordRamWrite(
                 vecIdx=1,
                 ramIdx=ramIdx,
-                busAddr=myArgBusAddr,
-                lineWord=myArgLineWord,
+                busAddr=Some(myArgBusAddr),
+                lineWord=Some(myArgLineWord),
                 byteEn=myArgByteEn,
                 setEn=myArgSetEn,
               )
@@ -31349,8 +31385,8 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
         doLineWordRamWrite(
           vecIdx=1,
           ramIdx=0,
-          busAddr=myArgBusAddr,
-          lineWord=myArgLineWord,
+          busAddr=Some(myArgBusAddr),
+          lineWord=Some(myArgLineWord),
           byteEn=myArgByteEn,
           setEn=myArgSetEn,
         )
