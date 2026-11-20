@@ -5434,7 +5434,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
   val myLoD2hFifo = StreamFifo(
     dataType=LcvBusD2hPayload(cfg=cfg.loBusCfg),
     depth=(
-      (myFifoThingLoBusCfg.maxBurstSizeMinus1 + 1) * 3//2
+      (myFifoThingLoBusCfg.maxBurstSizeMinus1 + 1) //* 3//2
     ),
     latency=cfg.busD2hFifoLatency,
     forFMax=true,
@@ -28818,6 +28818,11 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
   )
   //--------
   val io = LcvBusCacheIo(cfg=cfg)
+  io.mmioHiBus.h2dBus.valid := False
+  io.mmioHiBus.h2dBus.payload := io.mmioHiBus.h2dBus.payload.getZero
+  io.mmioHiBus.d2hBus.ready := False
+  io.mmioHiBus.h2dBus.addr.allowOverride
+  io.mmioHiBus.h2dBus.data.allowOverride
   //--------
   //val lineWordRamCfg = RamSdpPipeConfig(
   //  wordType=UInt(wordWidth bits),
@@ -29174,7 +29179,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
   val myLoD2hFifo = StreamFifo(
     dataType=LcvBusD2hPayload(cfg=cfg.loBusCfg),
     depth=(
-      (myFifoThingLoBusCfg.maxBurstSizeMinus1 + 1) * 3//2
+      (myFifoThingLoBusCfg.maxBurstSizeMinus1 + 1) //* 3//2
     ),
     latency=cfg.busD2hFifoLatency,
     forFMax=true,
@@ -30078,7 +30083,10 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
         //// cache miss, and know for sure that the line isn't dirty
         // cache miss
         if (idleIdx == 1) {
-          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+          rState := (
+            //State.RECV_LINE_FROM_HI_BUS_PIPE_1
+            State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+          )
           rSavedStallFromIdle := True
         }
 
@@ -30234,31 +30242,63 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
               myLoD2hPushStm.valid := False
             }
 
-            when (
-              //rHadAnyRamWritePastTwoCycles.last
-              myHadAnyRecentHazard.last(ramIdx)
-              || !myLoD2hPushStm.ready
+            switch (
+              (
+                !myHadAnyRecentHazard.last(ramIdx)
+                && myLoD2hPushStm.ready
+              )
+              ## rDel2LoH2dPayload.isWrite
             ) {
-              mySelLoH2dPopStm.ready := False
-              myFifoThingDoStall := True
-              if (idleIdx == 1) {
-                rSavedStallFromIdle := True
-                rState := (
-                  //State.LOAD_HIT_DO_STALL_PIPE_3
-                  State.LOAD_HIT_DO_STALL_PIPE_4
-                )
+              is (M"10") {
+                mySelLoH2dPopStm.ready := False
+                myFifoThingDoStall := True
+                if (idleIdx == 1) {
+                  rSavedStallFromIdle := True
+                  rState := State.LOAD_HIT_DO_STALL_PIPE_4
+                }
               }
-              //myTempUpdateSavedLoH2dPayloadCond := False
-            } otherwise {
-              //doPopLoH2dFifo()
-              //rSavedStallInfo.valid := False
-              if (idleIdx == 1) {
-                rPrefetchInfo.baseAddr := (
-                  rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange)
-                )
-                rState := State.PREFETCH_START_PIPE_3
+              is (M"11") {
+                mySelLoH2dPopStm.ready := False
+                myFifoThingDoStall := True
+                if (idleIdx == 1) {
+                  rSavedStallFromIdle := True
+                  rState := State.STORE_HIT_DO_STALL_PIPE_1
+                }
+              }
+              default {
+                if (idleIdx == 1) {
+                  rPrefetchInfo.baseAddr := (
+                    rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange)
+                  )
+                  rState := State.PREFETCH_START_PIPE_3
+                }
               }
             }
+            //when (
+            //  //rHadAnyRamWritePastTwoCycles.last
+            //  myHadAnyRecentHazard.last(ramIdx)
+            //  || !myLoD2hPushStm.ready
+            //) {
+            //  mySelLoH2dPopStm.ready := False
+            //  myFifoThingDoStall := True
+            //  if (idleIdx == 1) {
+            //    rSavedStallFromIdle := True
+            //    rState := (
+            //      //State.LOAD_HIT_DO_STALL_PIPE_3
+            //      State.LOAD_HIT_DO_STALL_PIPE_4
+            //    )
+            //  }
+            //  //myTempUpdateSavedLoH2dPayloadCond := False
+            //} otherwise {
+            //  //doPopLoH2dFifo()
+            //  //rSavedStallInfo.valid := False
+            //  if (idleIdx == 1) {
+            //    rPrefetchInfo.baseAddr := (
+            //      rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange)
+            //    )
+            //    rState := State.PREFETCH_START_PIPE_3
+            //  }
+            //}
             //if (idleIdx == 1) {
             //  when (
             //    !(
@@ -30316,11 +30356,28 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
         rSavedStallInfo.loH2dPayload.txnCnt
       )
 
-      when (rSavedStallInfo.isHit) {
-        rState := State.LOAD_HIT_DO_STALL_PIPE_4
-      } otherwise {
-        rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+      switch (
+        rSavedStallInfo.isHit
+        ## rSavedStallInfo.isWrite
+      ) {
+        is (M"10") {
+          rState := State.LOAD_HIT_DO_STALL_PIPE_4
+        }
+        is (M"11") {
+          rState := State.STORE_HIT_DO_STALL_PIPE_1
+        }
+        default {
+          rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+        }
       }
+      //when (rSavedStallInfo.isHit) {
+      //  rState := State.LOAD_HIT_DO_STALL_PIPE_4
+      //} otherwise {
+      //  rState := (
+      //    //State.RECV_LINE_FROM_HI_BUS_PIPE_1
+      //    State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+      //  )
+      //}
     }
     default {
       //doPopLoH2dFifo()
@@ -30602,7 +30659,11 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           }
           //rSavedInPrefetchVec.head := True
           rPrefetchInfo.valid := True
-          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+          //rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+          rState := (
+            //State.RECV_LINE_FROM_HI_BUS_PIPE_1
+            State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+          )
         }
         is (MaskedLiteral(
           //"10--" + ("-" * numWays)
@@ -30615,7 +30676,10 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           //rPrefetchInfo.cnt := (
           //  cfg.prefetchNumLinesAhead.get - 1
           //)
-          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+          rState := (
+            //State.RECV_LINE_FROM_HI_BUS_PIPE_1
+            State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+          )
           rPrefetchInfo.valid := False
           //rPrefetchInfo.cnt := (
           //  cfg.prefetchNumLinesAhead.get
@@ -30670,6 +30734,39 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           )
         }
       }
+    }
+    is (State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2) {
+      rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      doLineAttrsRamReadSync(
+        outerIdx=1,
+        busAddr=rSavedLoH2dPayload.addr,
+        setEn=0
+      )
+      //lineAttrsRam.io.addr := rSavedLoH2dPayload
+    }
+    is (State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1) {
+      rState := State.MAYBE_DIRTY_RE_READ_ATTRS
+      lineAttrsRam.last.foreach(item => item.io.rdEn := True)
+    }
+    is (State.MAYBE_DIRTY_RE_READ_ATTRS) {
+      val myRdLineAttrs = (
+        if (myCondHaveLineBitPlruRam) (
+          rdLineAttrs.last(rSavedRamIdx)
+        ) else (
+          rdLineAttrs.last.head
+        )
+      )
+      when (
+        myRdLineAttrs.fire
+        && myRdLineAttrs.dirty
+      ) {
+        rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
+      } otherwise {
+        rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+      }
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      rSavedRdLineAttrsTag := myRdLineAttrs.tag
     }
     is (State.SEND_LINE_TO_HI_BUS_PIPE_3) {
       rState := State.SEND_LINE_TO_HI_BUS_PIPE_2
@@ -30870,10 +30967,10 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       wrLineAttrs.tag := (
         rSavedLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
       )
-      //wrLineAttrs.dirty := (
-      //  // if it's a store, this line should be marked dirty!
-      //  rSavedLoH2dPayload.isWrite
-      //)
+      wrLineAttrs.dirty := (
+        // if it's a store, this line should be marked dirty!
+        rSavedLoH2dPayload.isWrite
+      )
 
       //def myArgBusAddr = rSavedLoH2dPayload.addr
       //def myArgWrLineAttrs = wrLineAttrs
@@ -31261,7 +31358,8 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           M"010-"
           //M"0010"
         ) {
-          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+          //rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+          rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
         }
         is (M"0110") {
           rState := State.LOAD_HIT_DO_STALL_PIPE_4
