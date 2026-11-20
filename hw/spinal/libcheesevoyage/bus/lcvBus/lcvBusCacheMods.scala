@@ -29395,40 +29395,40 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
     busAddr=mySelLoH2dPopPayload.addr,
     setEn=2,
   )
-  for (ramIdx <- 0 until numWays) {
-    doLineWordRamWrite(
-      vecIdx=0,
-      ramIdx=ramIdx,
-      busAddr=(
-        RegNext(
-          RegNext(
-            mySelLoH2dPopPayload.addr,
-            init=mySelLoH2dPopPayload.addr.getZero
-          ),
-          init=mySelLoH2dPopPayload.addr.getZero,
-        )
-      ),
-      lineWord=(
-        RegNext(
-          RegNext(
-            mySelLoH2dPopPayload.data,
-            init=mySelLoH2dPopPayload.data.getZero
-          ),
-          init=mySelLoH2dPopPayload.data.getZero,
-        )
-      ),
-      byteEn=Some(
-        RegNext(
-          RegNext(
-            mySelLoH2dPopPayload.byteEn,
-            init=mySelLoH2dPopPayload.byteEn.getZero
-          ),
-          init=mySelLoH2dPopPayload.byteEn.getZero,
-        ),
-      ),
-      setEn=false,
-    )
-  }
+  //for (ramIdx <- 0 until numWays) {
+  //  doLineWordRamWrite(
+  //    vecIdx=0,
+  //    ramIdx=ramIdx,
+  //    busAddr=(
+  //      RegNext(
+  //        RegNext(
+  //          mySelLoH2dPopPayload.addr,
+  //          init=mySelLoH2dPopPayload.addr.getZero
+  //        ),
+  //        init=mySelLoH2dPopPayload.addr.getZero,
+  //      )
+  //    ),
+  //    lineWord=(
+  //      RegNext(
+  //        RegNext(
+  //          mySelLoH2dPopPayload.data,
+  //          init=mySelLoH2dPopPayload.data.getZero
+  //        ),
+  //        init=mySelLoH2dPopPayload.data.getZero,
+  //      )
+  //    ),
+  //    byteEn=Some(
+  //      RegNext(
+  //        RegNext(
+  //          mySelLoH2dPopPayload.byteEn,
+  //          init=mySelLoH2dPopPayload.byteEn.getZero
+  //        ),
+  //        init=mySelLoH2dPopPayload.byteEn.getZero,
+  //      ),
+  //    ),
+  //    setEn=false,
+  //  )
+  //}
 
   case class StallInfo(
   ) extends Bundle {
@@ -29851,38 +29851,92 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
     outerItem.zipWithIndex.foreach{
       case (item, ramIdx) => {
         item := {
-          val temp = (
+          val myHistLineWordRamWrite = (
+            History[Flow[UInt]](
+              that={
+                val temp = ( 
+                  Flow(UInt(
+                    lineWordRam(ramIdx).io.vec.head.addr.getWidth bits
+                  ))
+                )
+                temp.valid := lineWordRam(ramIdx).io.vec.head.wrEn
+                temp.payload := lineWordRam(ramIdx).io.vec.head.addr
+                temp
+              },
+              length=cfg.myRamOptWrHistLengthPlusAddend,
+              init={
+                val temp = ( 
+                  Flow(UInt(
+                    lineWordRam(ramIdx).io.vec.head.addr.getWidth bits
+                  ))
+                )
+                temp.getZero
+              }
+            )
+          )
+
+          val temp0 = (
             (
-              rPrefetchInfo.fire
-              || (
-                // this is for safety,
-                // but it will produce less performance!
-                rState.asBits(
-                  State.PREFETCH_START.position
+              (
+                rPrefetchInfo.fire
+                || (
+                  // this is for safety,
+                  // but it will produce less performance!
+                  rState.asBits(
+                    State.PREFETCH_START.position
+                  )
                 )
               )
-            )
-            && (
-              //rPrefetchInfo.baseAddr.resize(
-              //  lineAttrsRam.head.head.io.wrAddr.getWidth
-              //)
-              rSavedLoH2dPayload.addr(rPrefetchInfo.myTempRange).resize(
-                lineAttrsRam.head.head.io.wrAddr.getWidth
-              )
-              === (
-                rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange).resize(
+              && (
+                //rPrefetchInfo.baseAddr.resize(
+                //  lineAttrsRam.head.head.io.wrAddr.getWidth
+                //)
+                rSavedLoH2dPayload.addr(rPrefetchInfo.myTempRange).resize(
                   lineAttrsRam.head.head.io.wrAddr.getWidth
+                )
+                === (
+                  rDel2LoH2dPayload.addr(
+                    rPrefetchInfo.myTempRange
+                  ).resize(
+                    lineAttrsRam.head.head.io.wrAddr.getWidth
+                  )
                 )
               )
             )
           )
+          val busAddr = (
+            rDel2LoH2dPayload.addr
+          )
+          val temp1 = (
+            myHistLineWordRamWrite.sFindFirst(elem => (
+              elem.fire
+              && (
+                elem.payload
+                === (
+                  (
+                    busAddr(
+                      busAddr.high
+                      downto myLineWordRamSingleWordAddrRshift
+                    )
+                  ).resize(
+                    lineWordRam(ramIdx).io.vec.head.addr.getWidth
+                  )
+                )
+              )
+            ))._1
+          )
+
           if (rSavedRamIdx != null) (
-            temp
-            && (
-              rSavedRamIdx === ramIdx
+            (
+              temp0
+              && (
+                rSavedRamIdx === ramIdx
+              )
             )
+            || temp1
           ) else (
-            temp
+            temp0
+            || temp1
           )
         }
       }
@@ -30240,6 +30294,75 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
               myHadAnyRecentHazard.head(ramIdx)
             ) {
               myLoD2hPushStm.valid := False
+            } otherwise {
+              lineAttrsRam.foreach(item => {
+                val busAddr = rDel2LoH2dPayload.addr
+                item(ramIdx).io.wrEn := True
+                item(ramIdx).io.wrAddr := (
+                  (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
+                  .resize(item(ramIdx).io.wrAddr.getWidth)
+                )
+                item(ramIdx).io.wrData.tag := (
+                  rDel2LoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
+                )
+                item(ramIdx).io.wrData.dirty := (
+                  // if it's a store, this line should be marked dirty!
+                  rDel2LoH2dPayload.isWrite
+                )
+                item(ramIdx).io.wrData.valid := True
+              })
+              //doLineWordRamWrite(
+              //  vecIdx=0,
+              //  ramIdx=ramIdx,
+              //)
+              doLineWordRamWrite(
+                vecIdx=0,
+                ramIdx=ramIdx,
+                busAddr=(
+                  rDel2LoH2dPayload.addr
+                  //RegNext(
+                  //  RegNext(
+                  //    mySelLoH2dPopPayload.addr,
+                  //    init=mySelLoH2dPopPayload.addr.getZero
+                  //  ),
+                  //  init=mySelLoH2dPopPayload.addr.getZero,
+                  //)
+                ),
+                lineWord=(
+                  rDel2LoH2dPayload.data
+                  //RegNext(
+                  //  RegNext(
+                  //    mySelLoH2dPopPayload.data,
+                  //    init=mySelLoH2dPopPayload.data.getZero
+                  //  ),
+                  //  init=mySelLoH2dPopPayload.data.getZero,
+                  //)
+                ),
+                byteEn=Some(
+                  rDel2LoH2dPayload.byteEn
+                  //RegNext(
+                  //  RegNext(
+                  //    mySelLoH2dPopPayload.byteEn,
+                  //    init=mySelLoH2dPopPayload.byteEn.getZero
+                  //  ),
+                  //  init=mySelLoH2dPopPayload.byteEn.getZero,
+                  //),
+                ),
+                setEn=false,
+              )
+
+              //lineWordRam(ramIdx).io.vec.head.wrEn := True
+              //lineWordRam(ramIdx).io.vec.head.addr := (
+              //  rDel2LoH2dPayload.
+              //)
+
+              //wrLineAttrs.tag := (
+              //  rDel2LoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
+              //)
+              //wrLineAttrs.dirty := (
+              //  // if it's a store, this line should be marked dirty!
+              //  rDel2LoH2dPayload.isWrite
+              //)
             }
 
             switch (
