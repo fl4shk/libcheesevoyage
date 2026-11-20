@@ -6522,7 +6522,7 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
       }
     }
     is (MaskedLiteral(
-      "1" + "0" + "0" + ("-" * numWays)
+      "-" + "0" + "0" + ("-" * numWays)
     )) {
       doPopLoH2dFifo()
       myFifoThingDoStall := False
@@ -30454,7 +30454,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       }
     }
     is (MaskedLiteral(
-      "1" + "0" + "0" + ("-" * numWays)
+      "-" + "0" + "0" + ("-" * numWays)
     )) {
       doPopLoH2dFifo()
       myFifoThingDoStall := False
