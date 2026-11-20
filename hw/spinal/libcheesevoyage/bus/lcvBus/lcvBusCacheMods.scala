@@ -30289,9 +30289,12 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
             lineBitPlruRam.foreach(item => item.io.wrEn := True)
           }
 
-          // load, cache hit
+          // cache hit
           //mySelLoH2dPopStm.ready := True
-          myLoD2hPushStm.valid := True
+          myLoD2hPushStm.valid := (
+            //True
+            rDel2LoH2dPayload.isWrite === rIdleModeIsWrite
+          )
           myLoD2hPushStm.busPayload.data := rdLineWord.head(ramIdx)
           myLoD2hPushStm.busPayload.src := rDel2LoH2dPayload.src
 
