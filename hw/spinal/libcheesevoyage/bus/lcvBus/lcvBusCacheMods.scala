@@ -31478,6 +31478,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       //rState := State.RECV_LINE_FROM_HI_BUS_POST
 
       myLoD2hPushStm.valid := True
+
       if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
         myLoD2hPushStm.busPayload.byteSize := (
           rSavedLoH2dPayload.byteSize
