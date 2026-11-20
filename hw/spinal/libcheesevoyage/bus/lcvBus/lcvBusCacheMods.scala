@@ -29920,12 +29920,12 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
             rDel2LoH2dPayload.addr
           )
           val temp1 = (
-            RegNext(
+            //RegNext(
               (
                 myHistLineWordRamWrite.sFindFirst(elem => (
-                  elem.fire
+                  RegNext(elem.fire, init=False)
                   && (
-                    elem.payload
+                    RegNext(elem.payload)
                     === (
                       (
                         busAddr(
@@ -29939,8 +29939,8 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
                   )
                 ))._1
               ),
-              init=False
-            )
+            //  init=False
+            //)
           )
 
           if (rSavedRamIdx != null) (
@@ -30487,10 +30487,10 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
     )) {
       when (
         !RegNext(myFifoThingDoStall)
-        && (
-          rDel2LoH2dPayload.isWrite
-          === rSavedLoH2dPayload.isWrite
-        )
+        //&& (
+        //  rDel2LoH2dPayload.isWrite
+        //  === rSavedLoH2dPayload.isWrite
+        //)
       ) {
         doPopLoH2dFifo()
         myFifoThingDoStall := False
