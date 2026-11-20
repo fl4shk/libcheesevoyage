@@ -28885,8 +28885,23 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
     rdLineAttrs.head(idx) := lineAttrsRam.head(idx).io.rdData
     rdLineAttrs.last(idx) := lineAttrsRam.last(idx).io.rdData
 
-    lineWordRam(idx).io.vec.head.wrEn := False
-    lineWordRam(idx).io.vec.last.wrEn := False
+    def vec = (
+      lineWordRam(idx).io.vec
+    )
+
+    vec(1).rdEn := False
+
+    rdLineWord.head(idx) := vec(0).rdData.asUInt
+    rdLineWord.last(idx) := vec(1).rdData.asUInt
+
+    vec(0).wrByteEn := 0x0
+    vec(1).wrByteEn := 0x0
+    vec(0).wrEn := False
+    vec(1).wrEn := False
+
+    vec(1).addr := 0x0
+    vec(0).wrData := 0x0
+    vec(1).wrData := 0x0
 
     lineAttrsRam.foreach(item => {
       item(idx).io.wrEn := False
