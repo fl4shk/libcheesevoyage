@@ -28868,8 +28868,8 @@ private[libcheesevoyage] case class LcvBusDataCacheWithHistPrefetch(
     rdLineAttrs.head(idx) := lineAttrsRam.head(idx).io.rdData
     rdLineAttrs.last(idx) := lineAttrsRam.last(idx).io.rdData
 
-    lineWordRam(idx).io.head.wrEn := False
-    lineWordRam(idx).io.last.wrEn := False
+    lineWordRam(idx).io.vec.head.wrEn := False
+    lineWordRam(idx).io.vec.last.wrEn := False
 
     lineAttrsRam.foreach(item => {
       item(idx).io.wrEn := False
@@ -29372,11 +29372,13 @@ private[libcheesevoyage] case class LcvBusDataCacheWithHistPrefetch(
   }
 
   doLineWordRamReadSync(
+    vecIdx=0,
     busAddr=mySelLoH2dPopPayload.addr,
     setEn=2,
   )
   for (ramIdx <- 0 until numWays) {
     doLineWordRamWrite(
+      vecIdx=0,
       ramIdx=ramIdx,
       busAddr=(
         RegNext(
