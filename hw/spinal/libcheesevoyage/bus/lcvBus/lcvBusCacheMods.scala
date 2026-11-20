@@ -28843,7 +28843,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       wordWidth / 8
     ),
     depth=depthWords,
-    optIncludeWrByteEn=false,
+    optIncludeWrByteEn=true,
     //optWrHistLength=cfg.myRamOptWrHistLength,
     //initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
     arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
