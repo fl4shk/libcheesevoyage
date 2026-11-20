@@ -30485,7 +30485,13 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       "0" + "0" + "0" + ("-" * numWays)
       //"-" + "0" + "0" + ("-" * numWays)
     )) {
-      when (!RegNext(myFifoThingDoStall)) {
+      when (
+        !RegNext(myFifoThingDoStall)
+        && (
+          rDel2LoH2dPayload.isWrite
+          === rSavedLoH2dPayload.isWrite
+        )
+      ) {
         doPopLoH2dFifo()
         myFifoThingDoStall := False
         myLoD2hPushStm.valid := False
