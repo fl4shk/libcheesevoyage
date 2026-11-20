@@ -30384,8 +30384,8 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
 
             switch (
               (
-                !myHadAnyRecentHazard.last(ramIdx)
-                && myLoD2hPushStm.ready
+                myHadAnyRecentHazard.last(ramIdx)
+                || !myLoD2hPushStm.ready
               )
               ## rDel2LoH2dPayload.isWrite
             ) {
