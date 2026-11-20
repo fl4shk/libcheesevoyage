@@ -29855,7 +29855,9 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
     3
   )(
     Vec.fill(numWays)(
-      Bool()
+      Vec.fill(2)(
+        Bool()
+      )
     )
   )
 
@@ -29944,16 +29946,20 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           )
 
           if (rSavedRamIdx != null) (
-            (
-              temp0
-              && (
-                rSavedRamIdx === ramIdx
-              )
+            Vec(
+              (
+                temp0
+                && (
+                  rSavedRamIdx === ramIdx
+                )
+              ),
+              temp1,
             )
-            || temp1
           ) else (
-            temp0
-            || temp1
+            Vec(
+              temp0,
+              temp1
+            )
           )
         }
       }
@@ -30274,7 +30280,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           rSavedStallInfo.loH2dPayload := rDel2LoH2dPayload
           rSavedStallInfo.isHit := (
             //True
-            !myHadAnyRecentHazard(1)(ramIdx)
+            !myHadAnyRecentHazard(1)(ramIdx).head
           )
 
           //myLoD2hPushStm.valid := False
@@ -30321,7 +30327,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           //} else { // if (idleIdx == 1)
             when (
               //rHadAnyRamWritePastTwoCycles.head
-              myHadAnyRecentHazard.head(ramIdx)
+              LcvOrR(myHadAnyRecentHazard.head(ramIdx))
             ) {
               myLoD2hPushStm.valid := False
             } otherwise {
@@ -30400,7 +30406,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
 
             switch (
               (
-                myHadAnyRecentHazard.last(ramIdx)
+                LcvOrR(myHadAnyRecentHazard.last(ramIdx))
                 || !myLoD2hPushStm.ready
               )
               ## rDel2LoH2dPayload.isWrite
@@ -30937,6 +30943,32 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           rdLineAttrs.last.head
         )
       )
+
+      //switch (
+      //  myRdLineAttrs.fire
+      //  ## myRdLineAttrs.dirty
+      //  ## (
+      //    myRdLineAttrs.tag
+      //    === rSavedLoH2dPayload.addr(loBusCacheCfg.tagRange)
+      //  )
+      //  ## rSavedLoH2dPayload.isWrite
+      //) {
+      //  is (M"100-") {
+      //    rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+      //  }
+      //  is (M"110-") {
+      //    rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
+      //  }
+      //  is (M"1-10") {
+      //    rState := State.SEND_LINE_TO_HI_BUS
+      //  }
+      //  is (M"1-11") {
+      //  }
+      //  //is (M"0---") 
+      //  default {
+      //    rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+      //  }
+      //}
       when (
         myRdLineAttrs.fire
         && myRdLineAttrs.dirty
