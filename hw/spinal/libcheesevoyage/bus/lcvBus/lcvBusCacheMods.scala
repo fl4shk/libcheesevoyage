@@ -24060,7 +24060,6 @@ private[libcheesevoyage] case class LcvBusDataCacheNonWide(
     val dcache = (
       //LcvBusDataCacheMain(cfg=cfg)
       LcvBusDataCacheNoPrefetch(cfg=cfg)
-      //LcvBusDataCacheWithTaggedPrefetch(cfg=cfg)
     )
     io <> dcache.io
   }
@@ -31479,6 +31478,16 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       //rState := State.RECV_LINE_FROM_HI_BUS_POST
 
       myLoD2hPushStm.valid := True
+      if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+        myLoD2hPushStm.busPayload.byteSize := (
+          rSavedLoH2dPayload.byteSize
+        )
+        myLoD2hPushStm.busPayload.addrLo := (
+          rSavedLoH2dPayload.addr(
+            cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
+          )
+        )
+      }
 
       myLoD2hPushStm.busPayload.src := (
         //RegNext
