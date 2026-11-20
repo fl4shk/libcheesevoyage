@@ -30130,6 +30130,19 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
   //  s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
   //)
 
+  //when (
+  //  !rState.asBits(State.IDLE.position)
+  //  && !(
+  //    rSavedStallInfo.fire
+  //    || rSavedStallFromIdle
+  //  )
+  //  && !rMyTempDoSaveCond(3)
+  //  && !RegNext(
+  //  )
+  //) {
+  //  
+  //}
+
   switch (
     tempToSwitch
   ) {
@@ -30460,6 +30473,23 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       doPopLoH2dFifo()
       myFifoThingDoStall := False
       myLoD2hPushStm.valid := False
+
+      //// TODO: maybe we can start prefetching from this state?
+      //when (
+      //  !rPrefetchInfo.cnt.msb
+      //) {
+      //  rState := State.PREFETCH_START_PIPE_3
+      //}
+    }
+    is (MaskedLiteral(
+      "0" + "0" + "0" + ("-" * numWays)
+      //"-" + "0" + "0" + ("-" * numWays)
+    )) {
+      when (!RegNext(myFifoThingDoStall)) {
+        doPopLoH2dFifo()
+        myFifoThingDoStall := False
+        myLoD2hPushStm.valid := False
+      }
 
       //// TODO: maybe we can start prefetching from this state?
       //when (
