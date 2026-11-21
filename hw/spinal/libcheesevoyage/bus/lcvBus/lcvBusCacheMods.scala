@@ -30975,8 +30975,8 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
         //## rSavedLoH2dPayload.isWrite
       ) {
         is (
-          M"100-"
           //M"100-"
+          M"100"
         ) {
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
         }
