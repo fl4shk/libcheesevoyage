@@ -30887,8 +30887,8 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           //)
           rState := (
             //State.RECV_LINE_FROM_HI_BUS_PIPE_1
-            //State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
-            State.PREFETCH_START_POST
+            State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+            //State.PREFETCH_START_POST
           )
           rPrefetchInfo.valid := False
           //rPrefetchInfo.cnt := (
