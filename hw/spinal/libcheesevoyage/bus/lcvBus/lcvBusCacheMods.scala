@@ -1369,6 +1369,7 @@ case class LcvBusCacheDbgInfoMain(
   val cnt = UInt(cfg.loBusCfg.dataWidth bits)
   val addr = UInt(cfg.loBusCfg.addrWidth bits)
   val isWrite = Bool()
+  val isPrefetch = Bool()
   //val tag = UInt(cfg.loBusCacheCfg.tagWidth bits)
   //val fullSet = UInt(cfg.loBusCacheCfg.fullSetWidth bits)
   val ramIdx = UInt(log2Up(cfg.loBusCacheCfg.numWays) bits)
@@ -28817,6 +28818,10 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
   )
   //--------
   val io = LcvBusCacheIo(cfg=cfg)
+  if (io.dbgInfo != null) {
+    io.dbgInfo.setAsReg() init(io.dbgInfo.getZero)
+  }
+
   io.mmioHiBus.h2dBus.valid := False
   io.mmioHiBus.h2dBus.payload := io.mmioHiBus.h2dBus.payload.getZero
   io.mmioHiBus.d2hBus.ready := False
@@ -30394,6 +30399,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
             is (M"10-") {
               mySelLoH2dPopStm.ready := False
               myFifoThingDoStall := True
+
               if (idleIdx == 1) {
                 rSavedStallFromIdle := True
 
@@ -31067,10 +31073,6 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       rSavedRdLineAttrsTag := myRdLineAttrs.tag
     }
     is (State.SEND_LINE_TO_HI_BUS_PIPE_3) {
-      rState := State.SEND_LINE_TO_HI_BUS_PIPE_2
-      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-      rHiH2dPayload.burstLast := False
-
       val myTempAddr = (
         Cat(
           False,
@@ -31081,9 +31083,53 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
         ).asUInt
       )
-      println(
-        s"Here is myTempAddr.getWidth: ${myTempAddr.getWidth}"
-      )
+      if (io.dbgInfo != null) {
+        //println(
+        //  s"Here is myTempAddr.getWidth: ${myTempAddr.getWidth}"
+        //)
+        io.dbgInfo.missSend.cnt := (
+          io.dbgInfo.missSend.cnt + 1
+        )
+        io.dbgInfo.missSend.isWrite := True
+
+        io.dbgInfo.missSend.addr := (
+          //rSavedPrefetchLoH2dPayload.addr
+          //hiBusCfg.burstAddr(
+          //  someAddr=(
+          //    Cat(
+          //      False,
+          //      // FINALLY found it, the problem I was seeing in DOOM!
+          //      //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
+          //      rSavedPrefetchRdLineAttrsTag,
+          //      rSavedPrefetchLoBusAddrSet,
+          //      U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
+          //    ).asUInt
+          //  ),
+          //  someBurstCnt=rHiH2dBurstCnt(0),
+          //  incrBurstCnt=false,
+          //)
+          myTempAddr.resize(io.dbgInfo.missSend.addr.getWidth)
+        )
+        io.dbgInfo.missRecv.isPrefetch := rPrefetchInfo.fire
+        io.dbgInfo.missSend.ramIdx := rSavedRamIdx
+      }
+      rState := State.SEND_LINE_TO_HI_BUS_PIPE_2
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      rHiH2dPayload.burstLast := False
+
+      //val myTempAddr = (
+      //  Cat(
+      //    False,
+      //    // FINALLY found it, the problem I was seeing in DOOM!
+      //    //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
+      //    rSavedRdLineAttrsTag,
+      //    rSavedLoBusAddrSet,
+      //    U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
+      //  ).asUInt
+      //)
+      //println(
+      //  s"Here is myTempAddr.getWidth: ${myTempAddr.getWidth}"
+      //)
       doLineWordRamReadSync(
         vecIdx=1,
         busAddr=hiBusCfg.burstAddr(
@@ -31235,6 +31281,16 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       }
     }
     is (State.RECV_LINE_FROM_HI_BUS_PIPE_1) {
+      if (io.dbgInfo != null) {
+        io.dbgInfo.missRecv.cnt := (
+          io.dbgInfo.missRecv.cnt + 1
+        )
+        io.dbgInfo.missRecv.isWrite := False
+
+        io.dbgInfo.missRecv.addr := rSavedLoH2dPayload.addr
+        io.dbgInfo.missRecv.isPrefetch := rPrefetchInfo.fire
+        io.dbgInfo.missRecv.ramIdx := rSavedRamIdx
+      }
       when (rPrefetchInfo.fire) {
         rPrefetchInfo.cnt := rPrefetchInfo.cnt - 1
         rPrefetchInfo.baseAddr := (
