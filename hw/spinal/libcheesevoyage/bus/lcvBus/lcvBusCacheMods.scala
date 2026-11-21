@@ -29887,15 +29887,15 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
                     lineWordRam(ramIdx).io.vec.head.addr.getWidth bits
                   ))
                 )
-                temp.valid := lineWordRam(ramIdx).io.vec.head.wrEn
-                temp.payload := lineWordRam(ramIdx).io.vec.head.addr
+                temp.valid := lineWordRam(ramIdx).io.vec.last.wrEn
+                temp.payload := lineWordRam(ramIdx).io.vec.last.addr
                 temp
               },
               length=cfg.myRamOptWrHistLengthPlusAddend,
               init={
                 val temp = ( 
                   Flow(UInt(
-                    lineWordRam(ramIdx).io.vec.head.addr.getWidth bits
+                    lineWordRam(ramIdx).io.vec.last.addr.getWidth bits
                   ))
                 )
                 temp.getZero
