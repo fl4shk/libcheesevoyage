@@ -31001,6 +31001,28 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
         )
       )
 
+      switch (
+        rSavedLoH2dPayload.isWrite
+        ## haveHit.last.asBits
+      ) {
+        for (ramIdx <- 0 until numWays) {
+          val myRamIdxMask = calcHitRamIdxMask(ramIdx=ramIdx)
+          is (MaskedLiteral(
+            "0" + myRamIdxMask
+          )) {
+            rState := State.LOAD_HIT_DO_STALL_PIPE_4
+          }
+          is (MaskedLiteral(
+            "1" + myRamIdxMask
+          )) {
+            rState := State.STORE_HIT_DO_STALL_PIPE_1
+          }
+        }
+        default {
+          rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
+        }
+      }
+
       //switch (
       //  myRdLineAttrs.fire
       //  ## myRdLineAttrs.dirty
@@ -31041,34 +31063,58 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       //    rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
       //  }
       //}
-      when (
-        myRdLineAttrs.fire
-        //--------
-        // TODO: DEBUG:
-        // temporarily, remove the check for `myRdLineAttrs.dirty`
-        //--------
-        //&& (
-        //  myRdLineAttrs.dirty
-        //  //|| (
-        //  //  rSavedStallInfo.fire
-        //  //  && rSavedStallInfo.isWrite
-        //  //  && (
-        //  //    rSavedStallInfo.loH2dPayload.addr(
-        //  //      loBusCacheCfg.tagRange
-        //  //    )
-        //  //    === myRdLineAttrs.tag
-        //  //  )
-        //  //  //&& (
-        //  //  //  rSavedStallInfo.loH2dPayload.addr(
-        //  //  //  )
-        //  //  //)
-        //  //)
-        //)
-      ) {
-        rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
-      } otherwise {
-        rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-      }
+
+      //switch (
+      //  myRdLineAttrs.fire
+      //  ## (
+      //    (
+      //      rSavedStallInfo.loH2dPayload.addr(
+      //        loBusCacheCfg.tagRange
+      //      )
+      //      === myRdLineAttrs.tag
+      //    )
+      //    && (
+      //      rSavedStallInfo.loH2dPayload.addr(
+      //        loBusCacheCfg.setRange
+      //      )
+      //      === rSavedLoH2dPayload.addr(
+      //        loBusCacheCfg.setRange
+      //      )
+      //    )
+      //  )
+      //) {
+      //  is (M"10") {
+      //    
+      //  }
+      //}
+      //when (
+      //  myRdLineAttrs.fire
+      //  //--------
+      //  // TODO: DEBUG:
+      //  // temporarily, remove the check for `myRdLineAttrs.dirty`
+      //  //--------
+      //  //&& (
+      //  //  myRdLineAttrs.dirty
+      //  //  //|| (
+      //  //  //  rSavedStallInfo.fire
+      //  //  //  && rSavedStallInfo.isWrite
+      //  //  //  && (
+      //  //  //    rSavedStallInfo.loH2dPayload.addr(
+      //  //  //      loBusCacheCfg.tagRange
+      //  //  //    )
+      //  //  //    === myRdLineAttrs.tag
+      //  //  //  )
+      //  //  //  //&& (
+      //  //  //  //  rSavedStallInfo.loH2dPayload.addr(
+      //  //  //  //  )
+      //  //  //  //)
+      //  //  //)
+      //  //)
+      //) {
+      //  rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
+      //} otherwise {
+      //  rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+      //}
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
       rSavedRdLineAttrsTag := myRdLineAttrs.tag
     }
