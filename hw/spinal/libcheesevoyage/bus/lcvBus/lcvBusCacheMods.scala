@@ -29884,7 +29884,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
               that={
                 val temp = ( 
                   Flow(UInt(
-                    lineWordRam(ramIdx).io.vec.head.addr.getWidth bits
+                    lineWordRam(ramIdx).io.vec.last.addr.getWidth bits
                   ))
                 )
                 temp.valid := lineWordRam(ramIdx).io.vec.last.wrEn
@@ -31030,7 +31030,27 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       //}
       when (
         myRdLineAttrs.fire
-        && myRdLineAttrs.dirty
+        //--------
+        // TODO: DEBUG:
+        // temporarily, remove the check for `myRdLineAttrs.dirty`
+        //--------
+        //&& (
+        //  myRdLineAttrs.dirty
+        //  //|| (
+        //  //  rSavedStallInfo.fire
+        //  //  && rSavedStallInfo.isWrite
+        //  //  && (
+        //  //    rSavedStallInfo.loH2dPayload.addr(
+        //  //      loBusCacheCfg.tagRange
+        //  //    )
+        //  //    === myRdLineAttrs.tag
+        //  //  )
+        //  //  //&& (
+        //  //  //  rSavedStallInfo.loH2dPayload.addr(
+        //  //  //  )
+        //  //  //)
+        //  //)
+        //)
       ) {
         rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
       } otherwise {
