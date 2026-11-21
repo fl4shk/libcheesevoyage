@@ -28986,7 +28986,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       PREFETCH_START_PIPE_2,
       PREFETCH_START_PIPE_1,
       PREFETCH_START,
-      PREFETCH_START_POST,
+      //PREFETCH_START_POST,
 
       MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2,
       MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1,
@@ -30870,8 +30870,8 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           //rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
           rState := (
             //State.RECV_LINE_FROM_HI_BUS_PIPE_1
-            //State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
-            State.PREFETCH_START_POST
+            State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+            //State.PREFETCH_START_POST
           )
         }
         is (MaskedLiteral(
@@ -30945,26 +30945,26 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
         }
       }
     }
-    is (State.PREFETCH_START_POST) {
-      val myRdLineAttrs = (
-        if (myCondHaveLineBitPlruRam) (
-          RegNext(rdLineAttrs.last)(rSavedRamIdx)
-        ) else (
-          RegNext(rdLineAttrs.last.head)
-        )
-      )
+    //is (State.PREFETCH_START_POST) {
+    //  val myRdLineAttrs = (
+    //    if (myCondHaveLineBitPlruRam) (
+    //      RegNext(rdLineAttrs.last)(rSavedRamIdx)
+    //    ) else (
+    //      RegNext(rdLineAttrs.last.head)
+    //    )
+    //  )
 
-      when (
-        myRdLineAttrs.fire
-        && myRdLineAttrs.dirty
-      ) {
-        rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
-      } otherwise {
-        rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-      }
-      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-      rSavedRdLineAttrsTag := myRdLineAttrs.tag
-    }
+    //  when (
+    //    myRdLineAttrs.fire
+    //    && myRdLineAttrs.dirty
+    //  ) {
+    //    rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
+    //  } otherwise {
+    //    rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+    //  }
+    //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+    //  rSavedRdLineAttrsTag := myRdLineAttrs.tag
+    //}
     is (State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2) {
       rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
