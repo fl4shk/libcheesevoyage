@@ -30262,11 +30262,17 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           doPopLoH2dFifo()
           myFifoThingDoStall := False
 
-          rSavedStallInfo.valid := !myLoD2hPushStm.fire //True
+          rSavedStallInfo.valid := (
+            !myLoD2hPushStm.fire //True
+          )
           rSavedStallInfo.loH2dPayload := rDel2LoH2dPayload
           rSavedStallInfo.isHit := (
             //True
-            !myHadAnyRecentHazard(1)(ramIdx).head
+            //!myHadAnyRecentHazard(1)(ramIdx).head
+
+            // TODO: DEBUG: temporarily, disable performance stuff
+            !LcvOrR(myHadAnyRecentHazard(1)(ramIdx))
+            && rDel2LoH2dPayload.isWrite === rIdleModeIsWrite
           )
 
           //myLoD2hPushStm.valid := False
@@ -30315,6 +30321,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           when (
             //rHadAnyRamWritePastTwoCycles.head
             LcvOrR(myHadAnyRecentHazard.head(ramIdx))
+            || rDel2LoH2dPayload.isWrite =/= rIdleModeIsWrite
           ) {
             myLoD2hPushStm.valid := False
           } otherwise {
