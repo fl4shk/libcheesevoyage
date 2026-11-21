@@ -30446,7 +30446,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
 
             //is (M"011")
             default {
-              // in load mode, requested load
+              // in store mode, requested store
               if (idleIdx == 1) {
                 rPrefetchInfo.baseAddr := (
                   rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange)
