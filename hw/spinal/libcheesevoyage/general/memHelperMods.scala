@@ -13,7 +13,7 @@ import libcheesevoyage.math._
 
 
 // True Dual Port RAM without support for `initBigInt`
-case class RamTdpPipeConfig(
+private[libcheesevoyage] case class RamTdpPipeImplConfig(
   bytesPerWord: Int,
   depth: Int,
   optIncludeWrByteEn: Boolean=false,
@@ -38,54 +38,93 @@ case class RamTdpPipeConfig(
   )
 }
 
-case class RamTdpPipeIoElem(
-  cfg: RamTdpPipeConfig,
-) extends Bundle {
-  val wrEn = in(Bool())
-  val addr = in(UInt(log2Up(cfg.depth) bits))
-
-  //val wrAddr = in(UInt(log2Up(cfg.depth) bits))
-  val wrByteEn = (
-    cfg.optIncludeWrByteEn
-  ) generate (
-    in(Bits(cfg.bytesPerWord bits))
-  )
-  val wrData = in(Bits(cfg.wordWidth bits))
-
-  val rdEn = in(Bool())
-  //val rdAddr = in(UInt(log2Up(cfg.depth) bits))
-  val rdData = out(Bits(cfg.wordWidth bits))
-}
-
-object RamTdpPipe {
+private[libcheesevoyage] object RamTdpPipeImplConfig {
   def calcElemBytesPerWord(
     elem: Data,
-  ): Long = {
+  ): Int = {
     return (
-      ceil(elem.asBits.getWidth.toDouble / 8.toDouble).toLong * 8
+      (
+        ceil(elem.asBits.getWidth.toDouble / 8.toDouble).toLong * 8
+      ).toInt
     )
   }
 }
 
-//object RamTdpPipeConfig {
-//  def apply(
-//  )
-//}
+case class RamTdpPipeConfig[
+  WordT <: Data
+](
+  wordType: HardType[WordT],
+  depth: Int,
+  optIncludeWrByteEn: Boolean=false,
+  opt9BitBytes: Boolean=false,
+  //optWrHistLength: Int=1,
+  //initBigInt: Option[Seq[BigInt]]=None,
+  arrRamStyleAltera: String="no_rw_check, M10K",
+  arrRamStyleXilinx: String="block",
+  arrRwAddrCollisionXilinx: String="",
+) {
+  val implCfg = (
+    RamTdpPipeImplConfig(
+      bytesPerWord=RamTdpPipeImplConfig.calcElemBytesPerWord(wordType()),
+      depth=depth,
+      optIncludeWrByteEn=optIncludeWrByteEn,
+      opt9BitBytes=opt9BitBytes,
+      arrRamStyleAltera=arrRamStyleAltera,
+      arrRamStyleXilinx=arrRamStyleXilinx,
+      arrRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
+    )
+  )
+}
 
-case class RamTdpPipeIo(
-  cfg: RamTdpPipeConfig
+case class RamTdpPipeIoElem[
+  WordT <: Data
+](
+  wordType: HardType[WordT],
+  implCfg: RamTdpPipeImplConfig,
+) extends Bundle {
+  val wrEn = in(Bool())
+  val addr = in(UInt(log2Up(implCfg.depth) bits))
+
+  //val wrAddr = in(UInt(log2Up(cfg.depth) bits))
+  val wrByteEn = (
+    implCfg.optIncludeWrByteEn
+  ) generate (
+    in(Bits(implCfg.bytesPerWord bits))
+  )
+  //val wrData = in(Bits(cfg.wordWidth bits))
+  val wrData = in(wordType())
+
+  val rdEn = in(Bool())
+  //val rdAddr = in(UInt(log2Up(cfg.depth) bits))
+  //val rdData = out(Bits(cfg.wordWidth bits))
+  val rdData = out(wordType())
+}
+
+
+case class RamTdpPipeImplIo[
+  WordT <: Data,
+](
+  //cfg: RamTdpPipeConfig[WordT],
+  wordType: HardType[WordT],
+  implCfg: RamTdpPipeImplConfig,
 ) extends Bundle {
   //val a = RamTdpPipeIoElem(cfg=cfg)
   //val b = RamTdpPipeIoElem(cfg=cfg)
   val vec = Vec.fill(2)(
-    RamTdpPipeIoElem(cfg=cfg)
+    RamTdpPipeIoElem(
+      wordType=wordType(),
+      implCfg=implCfg,
+    )
   )
 }
 
-case class RamTdpPipe(
-  cfg: RamTdpPipeConfig
+private[libcheesevoyage] case class RamTdpPipeImpl(
+  cfg: RamTdpPipeImplConfig
 ) extends Component {
-  val io = RamTdpPipeIo(cfg=cfg)
+  val io = RamTdpPipeImplIo(
+    wordType=Bits(cfg.wordWidth bits),
+    implCfg=cfg
+  )
 
   //def wordType = cfg.wordType
   def byteWidth = cfg.byteWidth
@@ -188,12 +227,52 @@ case class RamTdpPipe(
       //    //enable=item.rdEn,
       //  ).asBits
       //)
-
     }
   }}
 }
 
-object RamTdpPipeTestSpinalConfig {
+case class RamTdpPipeIo[
+  WordT <: Data,
+](
+  cfg: RamTdpPipeConfig[WordT],
+) extends Bundle {
+  val vec = Vec.fill(2)(
+    RamTdpPipeIoElem(
+      wordType=cfg.wordType(),
+      implCfg=cfg.implCfg,
+    )
+  )
+}
+
+case class RamTdpPipe[
+  WordT <: Data
+](
+  cfg: RamTdpPipeConfig[WordT],
+) extends Component {
+  val io = RamTdpPipeIo(cfg=cfg)
+  val impl = RamTdpPipeImpl(
+    cfg=cfg.implCfg
+  )
+
+  for (vecIdx <- 0 until io.vec.size) {
+    impl.io.vec(vecIdx).addr := io.vec(vecIdx).addr
+
+    impl.io.vec(vecIdx).rdEn := io.vec(vecIdx).rdEn
+    io.vec(vecIdx).rdData.assignFromBits(
+      impl.io.vec(vecIdx).rdData
+    )
+
+    impl.io.vec(vecIdx).wrEn := io.vec(vecIdx).wrEn
+
+    if (cfg.optIncludeWrByteEn) {
+      impl.io.vec(vecIdx).wrByteEn := io.vec(vecIdx).wrByteEn
+    }
+
+    impl.io.vec(vecIdx).wrData := io.vec(vecIdx).wrData.asBits
+  }
+}
+
+object RamTdpPipeImplTestSpinalConfig {
   def spinal = SpinalConfig(
     targetDirectory="hw/gen",
     defaultConfigForClockDomains=ClockDomainConfig(
@@ -203,10 +282,10 @@ object RamTdpPipeTestSpinalConfig {
   )
 }
 
-object RamTdpPipeTestToVerilog extends App {
-  RamTdpPipeTestSpinalConfig.spinal.generateVerilog{
-    val top = RamTdpPipe(
-      cfg=RamTdpPipeConfig(
+object RamTdpPipeImplTestToVerilog extends App {
+  RamTdpPipeImplTestSpinalConfig.spinal.generateVerilog{
+    val top = RamTdpPipeImpl(
+      cfg=RamTdpPipeImplConfig(
         bytesPerWord=2,
         depth=1024,
         optIncludeWrByteEn=true,

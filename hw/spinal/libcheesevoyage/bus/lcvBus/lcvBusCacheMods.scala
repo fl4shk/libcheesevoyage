@@ -5859,23 +5859,65 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
       rSavedLoH2dPayload.addr(loBusCacheCfg.tagRange)
     ),
   )
-  val tempHaveHitCmpEq = Vec.fill(rdLineAttrs.size)(
-    Vec.fill(numWays)(Bool())
+  //val tempHaveHitCmpEq = Vec.fill(rdLineAttrs.size)(
+  //  Vec.fill(numWays)(Bool())
+  //)
+  //val haveHit = Vec.fill(rdLineAttrs.size)(
+  //  Vec.fill(numWays)(
+  //    Bool()
+  //  )
+  //)
+  //for (outerIdx <- 0 until rdLineAttrs.size) {
+  //  for (ramIdx <- 0 until numWays) {
+  //    tempHaveHitCmpEq(outerIdx)(ramIdx) := (
+  //      myTempHaveHitCmpEqLeft(outerIdx)(ramIdx)
+  //      === myTempHaveHitCmpEqRight(outerIdx)(ramIdx)
+  //    )
+  //    haveHit(outerIdx)(ramIdx) := (
+  //      rdLineAttrs(outerIdx)(ramIdx).fire
+  //      && tempHaveHitCmpEq(outerIdx)(ramIdx)
+  //    )
+  //  }
+  //}
+  val myHaveHitValid = Vec.fill(rdLineAttrs.size)(
+    //Vec.fill(numWays)(
+    //  Bool()
+    //)
+    UInt(numWays bits)
+  )
+  val myHaveHitTagCmpEq = Vec.fill(rdLineAttrs.size)(
+    //Vec.fill(numWays)(
+    //  Bool()
+    //)
+    UInt(numWays bits)
   )
   val haveHit = Vec.fill(rdLineAttrs.size)(
-    Vec.fill(numWays)(
-      Bool()
-    )
+    //Vec.fill(numWays)(
+    //  Bool()
+    //)
+    UInt(numWays bits)
   )
   for (outerIdx <- 0 until rdLineAttrs.size) {
     for (ramIdx <- 0 until numWays) {
-      tempHaveHitCmpEq(outerIdx)(ramIdx) := (
+      //tempHaveHitCmpEq(outerIdx)(ramIdx) := (
+      //  myTempHaveHitCmpEqLeft(outerIdx)(ramIdx)
+      //  === myTempHaveHitCmpEqRight(outerIdx)(ramIdx)
+      //)
+      //haveHit(outerIdx)(ramIdx) := (
+      //  rdLineAttrs(outerIdx)(ramIdx).fire
+      //  && tempHaveHitCmpEq(outerIdx)(ramIdx)
+      //)
+      myHaveHitValid(outerIdx)(ramIdx) := (
+        rdLineAttrs(outerIdx)(ramIdx).fire
+      )
+      myHaveHitTagCmpEq(outerIdx)(ramIdx) := (
+        //tempHaveHitCmpEq(outerIdx)(ramIdx)
         myTempHaveHitCmpEqLeft(outerIdx)(ramIdx)
         === myTempHaveHitCmpEqRight(outerIdx)(ramIdx)
       )
       haveHit(outerIdx)(ramIdx) := (
-        rdLineAttrs(outerIdx)(ramIdx).fire
-        && tempHaveHitCmpEq(outerIdx)(ramIdx)
+        myHaveHitValid(outerIdx)(ramIdx)
+        && myHaveHitTagCmpEq(outerIdx)(ramIdx)
       )
     }
   }
@@ -6814,8 +6856,10 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
                 wrLineBitPlru(ramIdx) := True
                 rSavedRamIdx := ramIdx
               }
-              default {
-              }
+            }
+            default {
+              wrLineBitPlru := 0x1 << 0x0
+              rSavedRamIdx := 0x0
             }
           }
           //rSavedInPrefetchVec.head := True
@@ -28834,9 +28878,10 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
   //)
   val lineWordRamCfg = RamTdpPipeConfig(
     //wordType=UInt(wordWidth bits),
-    bytesPerWord=(
-      wordWidth / 8
-    ),
+    //bytesPerWord=(
+    //  wordWidth / 8
+    //),
+    wordType=UInt(wordWidth bits),
     depth=depthWords,
     optIncludeWrByteEn=true,
     //optWrHistLength=cfg.myRamOptWrHistLength,
@@ -28894,8 +28939,8 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
 
     vec(1).rdEn := False
 
-    rdLineWord.head(idx) := vec.head.rdData.asUInt
-    rdLineWord.last(idx) := vec.last.rdData.asUInt
+    rdLineWord.head(idx) := vec.head.rdData
+    rdLineWord.last(idx) := vec.last.rdData
 
     vec(0).wrByteEn := 0x0
     vec(1).wrByteEn := 0x0
@@ -28931,6 +28976,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
   val myCondHaveLineBitPlruRam = (
     numWays > 1
   )
+
   val lineBitPlruRam = (
     myCondHaveLineBitPlruRam
   ) generate (
@@ -29344,7 +29390,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
     }
     lineWord match {
       case Some(lineWord) => {
-        lineWordRam(ramIdx).io.vec(vecIdx).wrData := lineWord.asBits
+        lineWordRam(ramIdx).io.vec(vecIdx).wrData := lineWord
       }
       case None => {
       }
@@ -29590,31 +29636,52 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       rSavedLoH2dPayload.addr(loBusCacheCfg.tagRange)
     ),
   )
-  val tempHaveHitCmpEq = Vec.fill(rdLineAttrs.size)(
-    Vec.fill(numWays)(Bool())
+  //val tempHaveHitCmpEq = Vec.fill(rdLineAttrs.size)(
+  //  Vec.fill(numWays)(Bool())
+  //)
+  val myHaveHitValid = Vec.fill(rdLineAttrs.size)(
+    //Vec.fill(numWays)(
+    //  Bool()
+    //)
+    UInt(numWays bits)
+  )
+  val myHaveHitTagCmpEq = Vec.fill(rdLineAttrs.size)(
+    //Vec.fill(numWays)(
+    //  Bool()
+    //)
+    UInt(numWays bits)
   )
   val haveHit = Vec.fill(rdLineAttrs.size)(
-    Vec.fill(numWays)(
-      Bool()
-    )
+    //Vec.fill(numWays)(
+    //  Bool()
+    //)
+    UInt(numWays bits)
   )
   for (outerIdx <- 0 until rdLineAttrs.size) {
     for (ramIdx <- 0 until numWays) {
-      tempHaveHitCmpEq(outerIdx)(ramIdx) := (
+      //tempHaveHitCmpEq(outerIdx)(ramIdx) := (
+      //  myTempHaveHitCmpEqLeft(outerIdx)(ramIdx)
+      //  === myTempHaveHitCmpEqRight(outerIdx)(ramIdx)
+      //)
+      //haveHit(outerIdx)(ramIdx) := (
+      //  rdLineAttrs(outerIdx)(ramIdx).fire
+      //  && tempHaveHitCmpEq(outerIdx)(ramIdx)
+      //)
+      myHaveHitValid(outerIdx)(ramIdx) := (
+        rdLineAttrs(outerIdx)(ramIdx).fire
+      )
+      myHaveHitTagCmpEq(outerIdx)(ramIdx) := (
+        //tempHaveHitCmpEq(outerIdx)(ramIdx)
         myTempHaveHitCmpEqLeft(outerIdx)(ramIdx)
         === myTempHaveHitCmpEqRight(outerIdx)(ramIdx)
       )
       haveHit(outerIdx)(ramIdx) := (
-        rdLineAttrs(outerIdx)(ramIdx).fire
-        && tempHaveHitCmpEq(outerIdx)(ramIdx)
+        myHaveHitValid(outerIdx)(ramIdx)
+        && myHaveHitTagCmpEq(outerIdx)(ramIdx)
       )
     }
   }
 
-  //val haveHit = (
-  //  rdLineAttrs.fire
-  //  && tempHaveHitCmpEq
-  //)
 
   val rSavedRdLineAttrsTag = (
     Reg(
@@ -29641,45 +29708,6 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
     mySelLoH2dPopStm.ready := True
   }
 
-  //val myDoStallLoH2dThrowThing = (
-  //  LcvBusDoStallH2dThrowThing(busCfg=cfg.myFifoThingLoBusCfg)
-  //)
-  //myDoStallLoH2dThrowThing.io.push.valid := (
-  //  myLoH2dDoStallFifoThing.io.pop.valid
-  //  //&& rState === State.IDLE
-  //  && rState.asBits(1)
-  //)
-  //myDoStallLoH2dThrowThing.io.push.payload := (
-  //  myLoH2dDoStallFifoThing.io.pop.busPayload.txnCnt
-  //)
-
-  //val myFullTempIgnoreDupCntCond = (
-  //  myDoStallLoH2dThrowThing.io.myThrowCondMain
-  //  //&& History[Bool](
-  //  //  that=True,
-  //  //  when=(
-  //  //    myLoH2dPopStm.fire
-  //  //    //myD2hPushStm.fire
-  //  //    //myLoH2dDoStallFifoThing.io.pop.fire
-  //  //    //&& !myLoH2dPopThrowArea.myLoH2dThrowCond
-  //  //  ),
-  //  //  length=(
-  //  //    //2
-  //  //    //4
-  //  //    //3
-  //  //    5
-  //  //  ),
-  //  //  init=False,
-  //  //).last
-  //)
-
-  //def doIgnoreInvalidFifoThingPopCnt(
-  //): Unit = {
-  //  when (myFullTempIgnoreDupCntCond) {
-  //    myLoH2dPopThrowArea.myLoH2dThrowCond := True
-  //  }
-  //}
-
   val rMyTempDoSaveCond = (
     Vec.fill(4)(
       RegNext(
@@ -29694,124 +29722,6 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       )
     )
   )
-  //val rHadAnyRamWritePastTwoCycles = Vec.fill(2)(
-  //  RegNext(
-  //    (
-  //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-  //      || RegNext(
-  //        Vec(lineWordRam.map(item => item.io.wrEn)).orR,
-  //        init=False
-  //      )
-  //      || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-  //      || RegNext(
-  //        Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
-  //        init=False
-  //      )
-  //    ),
-  //    init=False
-  //  )
-  //)
-
-  //val myTempHaveCurrRamWrite = (
-  //  //Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-  //  //|| 
-  //  //LcvOrR
-  //  (
-  //    Vec[Bool](lineAttrsRam.head.map(item => (
-  //      item.io.wrEn
-  //      //&& (
-  //      //  item.io.wrAddr
-  //      //  === mySelLoH2dPopStm.addr(rPrefetchInfo.myTempRange).resize(
-  //      //    item.io.wrAddr.getWidth
-  //      //  )
-  //      //)
-  //    )
-  //  )))
-  //)
-  //val myTempCurrRamWriteAddr = (
-  //  Vec[UInt](lineAttrsRam.head.map(item => (
-  //    item.io.wrAddr
-  //  )))
-  //)
-  //val myHistHadRamWrite = Array.fill(2)(
-  //  History[Vec[Bool]](
-  //    that=(
-  //      //RegNext(
-  //        myTempHaveCurrRamWrite//,
-  //      //  init=myTempHaveCurrRamWrite.getZero
-  //      //)
-  //    ),
-  //    length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-  //    init=myTempHaveCurrRamWrite.getZero
-  //  )
-  //)
-  //val myHistRamWriteAddr = Array.fill(myHistHadRamWrite.size)(
-  //  History[Vec[UInt]](
-  //    that=(
-  //      //RegNext(
-  //        //myTempHaveCurrRamWrite//,
-  //        myTempCurrRamWriteAddr
-  //      //  init=myTempHaveCurrRamWrite.getZero
-  //      //)
-  //    ),
-  //    length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-  //    init=myTempCurrRamWriteAddr.getZero
-  //  )
-  //)
-  //val myRecentHazardToFindFirst = Vec.fill(
-  //  myHistRamWriteAddr.size
-  //)(
-  //  Vec.fill(numWays)(
-  //    Vec.fill(cfg.myRamOptWrHistLengthPlusAddend)(
-  //      //Flow(
-  //      //  cloneOf(myHistRamWriteAddr.head.head)
-  //      //)
-  //      Bool()
-  //    )
-  //  )
-  //)
-
-  //val myHadAnyRecentHazard = Vec.fill(
-  //  myHistRamWriteAddr.size
-  //)(
-  //)
-
-  //val myHadAnyRecentHazard = Vec[Bool](
-  //  myRecentHazardToFindFirst.sFindFirst(item => {
-  //    
-  //  })
-  //)
-
-  //val myHadAnyRecentHazard = Vec.fill(myRecentHazardToFindFirst.size)(
-  //  Vec.fill(numWays)(
-  //    Bool()
-  //  )
-  //)
-  //for (idx <- 0 until myRecentHazardToFindFirst.size) {
-  //  for (ramIdx <- 0 until numWays) {
-  //    for (histIdx <- 0 until cfg.myRamOptWrHistLengthPlusAddend) {
-  //      myRecentHazardToFindFirst(idx)(ramIdx)(histIdx) := (
-  //        myHistHadRamWrite(idx)(histIdx)(ramIdx)
-  //        && (
-  //          myHistRamWriteAddr(idx)(histIdx)(ramIdx)
-  //          === (
-  //            rDel2LoH2dPayload.addr(
-  //              mySelLoH2dPopStm.addr.high
-  //              downto myLineAttrsRamAddrRshift
-  //            ).resize(
-  //              myHistRamWriteAddr(idx)(histIdx)(ramIdx).getWidth
-  //            )
-  //          )
-  //        )
-  //      )
-  //    }
-  //    myHadAnyRecentHazard(idx)(ramIdx) := (
-  //      myRecentHazardToFindFirst(idx)(ramIdx).sFindFirst(item => {
-  //        item
-  //      })._1
-  //    )
-  //  }
-  //}
 
   val rSavedRamIdx = (
     myCondHaveLineBitPlruRam
@@ -30328,14 +30238,6 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
       myLoD2hPushStm.valid := False
       mySelLoH2dPopStm.ready := False
-
-      //myLoH2dReptThing.io.finishTxn.valid := True
-      //myLoH2dReptThing.io.finishTxn.payload := (
-      //  RegNext(
-      //    rDel2LoH2dPayload.txnCnt,
-      //    init=rDel2LoH2dPayload.txnCnt.getZero
-      //  )
-      //)
     }
     is (State.LOAD_HIT_DO_STALL_PIPE_3) {
       rState := State.LOAD_HIT_DO_STALL_PIPE_2
@@ -30479,13 +30381,6 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
 
           doLineBitPlruRamWrite(
             busAddr=(
-              //RegNext(
-              //  RegNext(
-              //    mySelLoH2dPopPayload.addr,
-              //    init=mySelLoH2dPopPayload.addr.getZero
-              //  ),
-              //  init=mySelLoH2dPopPayload.addr.getZero,
-              //)
               rSavedLoH2dPayload.addr
             ),
             lineBitPlru=(
@@ -30501,45 +30396,36 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
                 wrLineBitPlru(ramIdx) := True
                 rSavedRamIdx := ramIdx
               }
-              default {
-              }
+            }
+            default {
+              wrLineBitPlru := 0x1 << 0x0
+              rSavedRamIdx := 0x0
             }
           }
-          //rSavedInPrefetchVec.head := True
           rPrefetchInfo.valid := True
-          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+          rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
         }
         is (MaskedLiteral(
           "10--" + ("-" * numWays)
         )) {
           rSavedStallInfo.valid := False
-          //rSavedStallFromIdle := True
           rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
           rSavedRamIdx := rSavedStallInfo.ramIdx
-          //rPrefetchInfo.cnt := (
-          //  cfg.prefetchNumLinesAhead.get - 1
-          //)
-          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+
+          rState := (
+            //State.RECV_LINE_FROM_HI_BUS_PIPE_1
+            State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+          )
           rPrefetchInfo.valid := False
-          //rPrefetchInfo.cnt := (
-          //  cfg.prefetchNumLinesAhead.get
-          //)
         }
         is (MaskedLiteral(
           "11--" + ("-" * numWays)
         )) {
           rSavedStallInfo.valid := False
-          //rSavedStallFromIdle := True
           rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
           rSavedRamIdx := rSavedStallInfo.ramIdx
-          //rPrefetchInfo.cnt := (
-          //  cfg.prefetchNumLinesAhead.get - 1
-          //)
           rState := State.LOAD_HIT_DO_STALL_PIPE_4
           rPrefetchInfo.valid := False
-          //rPrefetchInfo.cnt := (
-          //  cfg.prefetchNumLinesAhead.get
-          //)
         }
         for (ramIdx <- 0 until numWays) {
           val myRamIdxMask = calcHitRamIdxMask(ramIdx=ramIdx)
@@ -30565,11 +30451,45 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           )
           rState := (
             State.IDLE
-            //State.WAIT_D2H_FIFO_EMPTY
           )
         }
       }
     }
+    is (State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2) {
+      rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      doLineAttrsRamReadSync(
+        outerIdx=1,
+        busAddr=rSavedLoH2dPayload.addr,
+        setEn=0
+      )
+      //lineAttrsRam.io.addr := rSavedLoH2dPayload
+    }
+    is (State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1) {
+      rState := State.MAYBE_DIRTY_RE_READ_ATTRS
+      lineAttrsRam.last.foreach(item => item.io.rdEn := True)
+    }
+    is (State.MAYBE_DIRTY_RE_READ_ATTRS) {
+      val myRdLineAttrs = (
+        if (myCondHaveLineBitPlruRam) (
+          rdLineAttrs.last(rSavedRamIdx)
+        ) else (
+          rdLineAttrs.last.head
+        )
+      )
+      when (
+        myRdLineAttrs.fire
+        && myRdLineAttrs.dirty
+      ) {
+        rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
+      } otherwise {
+        rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+      }
+
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      rSavedRdLineAttrsTag := myRdLineAttrs.tag
+    }
+
     is (State.SEND_LINE_TO_HI_BUS_PIPE_3) {
       val myTempAddr = (
         Cat(
@@ -30581,10 +30501,8 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
         ).asUInt
       )
+
       if (io.dbgInfo != null) {
-        //println(
-        //  s"Here is myTempAddr.getWidth: ${myTempAddr.getWidth}"
-        //)
         io.dbgInfo.missSend.cnt := (
           io.dbgInfo.missSend.cnt + 1
         )
@@ -30596,23 +30514,11 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
         io.dbgInfo.missRecv.isPrefetch := rPrefetchInfo.fire
         io.dbgInfo.missSend.ramIdx := rSavedRamIdx
       }
+
       rState := State.SEND_LINE_TO_HI_BUS_PIPE_2
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
       rHiH2dPayload.burstLast := False
 
-      //val myTempAddr = (
-      //  Cat(
-      //    False,
-      //    // FINALLY found it, the problem I was seeing in DOOM!
-      //    //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
-      //    rSavedRdLineAttrsTag,
-      //    rSavedLoBusAddrSet,
-      //    U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-      //  ).asUInt
-      //)
-      //println(
-      //  s"Here is myTempAddr.getWidth: ${myTempAddr.getWidth}"
-      //)
       doLineWordRamReadSync(
         vecIdx=1,
         busAddr=hiBusCfg.burstAddr(
@@ -30624,6 +30530,17 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       )
     }
     is (State.SEND_LINE_TO_HI_BUS_PIPE_2) {
+      val myTempAddr = (
+        Cat(
+          False,
+          // FINALLY found it, the problem I was seeing in DOOM!
+          //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
+          rSavedRdLineAttrsTag,
+          rSavedLoBusAddrSet,
+          U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
+        ).asUInt
+      )
+
       rState := State.SEND_LINE_TO_HI_BUS_PIPE_1
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
 
@@ -30631,16 +30548,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
         vecIdx=1,
         busAddr=(
           hiBusCfg.burstAddr(
-            someAddr=(
-              Cat(
-                False,
-                // FINALLY found it, the problem I was seeing in DOOM!
-                //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
-                rSavedRdLineAttrsTag,
-                rSavedLoBusAddrSet,
-                U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-              ).asUInt
-            ),
+            someAddr=myTempAddr,
             someBurstCnt=rHiH2dBurstCnt(0),
             incrBurstCnt=true,
           )
@@ -30648,14 +30556,15 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
         setEn=1,
       )
       rHiH2dPayload.addr := (
-        Cat(
-          //False,
-          // FINALLY found it, the problem I was seeing in DOOM!
-          //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
-          rSavedRdLineAttrsTag,
-          rSavedLoBusAddrSet,
-          U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-        ).asUInt.resize(rHiH2dPayload.addr.getWidth)
+        //Cat(
+        //  //False,
+        //  // FINALLY found it, the problem I was seeing in DOOM!
+        //  //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
+        //  rSavedRdLineAttrsTag,
+        //  rSavedLoBusAddrSet,
+        //  U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
+        //).asUInt.resize(rHiH2dPayload.addr.getWidth)
+        myTempAddr.resize(rHiH2dPayload.addr.getWidth)
       )
     }
     is (State.SEND_LINE_TO_HI_BUS_PIPE_1) {
@@ -30912,9 +30821,12 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
         switch (
           //rSavedInPrefetchVec.head
           rPrefetchInfo.fire
+          ## rSavedLoH2dPayload.isWrite
           ## io.hiBus.d2hBus.burstLast
         ) {
-          is (M"01") {
+          is (
+            M"01"
+          ) {
             rState := State.RECV_LINE_FROM_HI_BUS_POST_7
           }
           is (M"11") {
@@ -31012,6 +30924,17 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           //init=rSavedLoH2dPayload.src.getZero
         )
       )
+
+      if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+        myLoD2hPushStm.busPayload.byteSize := (
+          rSavedLoH2dPayload.byteSize
+        )
+        myLoD2hPushStm.busPayload.addrLo := (
+          rSavedLoH2dPayload.addr(
+            cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
+          )
+        )
+      }
 
       when (RegNext(
         rose(rState === State.RECV_LINE_FROM_HI_BUS_POST_2)
