@@ -44,7 +44,7 @@ private[libcheesevoyage] object RamTdpPipeImplConfig {
   ): Int = {
     return (
       (
-        ceil(elem.asBits.getWidth.toDouble / 8.toDouble).toLong * 8
+        ceil(elem.asBits.getWidth.toDouble / 8.toDouble).toLong //* 8
       ).toInt
     )
   }
@@ -65,7 +65,9 @@ case class RamTdpPipeConfig[
 ) {
   val implCfg = (
     RamTdpPipeImplConfig(
-      bytesPerWord=RamTdpPipeImplConfig.calcElemBytesPerWord(wordType()),
+      bytesPerWord=(
+        RamTdpPipeImplConfig.calcElemBytesPerWord(wordType())
+      ),
       depth=depth,
       optIncludeWrByteEn=optIncludeWrByteEn,
       opt9BitBytes=opt9BitBytes,
