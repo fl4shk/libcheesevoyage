@@ -32302,7 +32302,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
                           downto myLineWordRamSingleWordAddrRshift
                         )
                       ).resize(
-                        lineWordRam(ramIdx).io.vec.head.addr.getWidth
+                        lineWordRam(ramIdx).io.vec.last.addr.getWidth
                       )
                     )
                   )
@@ -32316,6 +32316,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
             Vec(
               (
                 temp0
+                // TODO: DEBUG: lower the IPC
                 //&& (
                 //  rSavedRamIdx === ramIdx
                 //)
@@ -33346,32 +33347,48 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       )
 
       switch (
-        LcvOrR(Vec(rdLineAttrs.last.map(_.fire)))
+        //LcvOrR(Vec(rdLineAttrs.last.map(_.fire)))
+        //## 
+        (
+          myRdLineAttrs.fire
+          && myRdLineAttrs.dirty
+        )
         ## rSavedLoH2dPayload.isWrite
         ## haveHit.last.asBits
       ) {
         for (ramIdx <- 0 until numWays) {
           val myRamIdxMask = calcHitRamIdxMask(ramIdx=ramIdx)
           is (MaskedLiteral(
-            "10" + myRamIdxMask
+            //"10" + myRamIdxMask
+            //"0" + myRamIdxMask
+            "-0" + myRamIdxMask
           )) {
             rState := State.LOAD_HIT_DO_STALL_PIPE_4
             rSavedRamIdx := ramIdx
           }
           is (MaskedLiteral(
-            "11" + myRamIdxMask
+            //"11" + myRamIdxMask
+            //"1" + myRamIdxMask
+            "-1" + myRamIdxMask
           )) {
             rState := State.STORE_HIT_DO_STALL_PIPE_1
             rSavedRamIdx := ramIdx
           }
         }
         is (MaskedLiteral(
-          "0-" + ("-" * numWays)
+          "0-" + ("0" * numWays)
         )) {
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
         }
         default {
-          rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
+          //when (
+          //  myRdLineAttrs.fire
+          //  && myRdLineAttrs.dirty
+          //) {
+            rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
+          //} otherwise {
+          //  rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+          //}
         }
       }
 
