@@ -29984,9 +29984,9 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
             Vec(
               (
                 temp0
-                && (
-                  rSavedRamIdx === ramIdx
-                )
+                //&& (
+                //  rSavedRamIdx === ramIdx
+                //)
               ),
               temp1,
             )
@@ -31048,70 +31048,6 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
         }
       }
 
-      //switch (
-      //  myRdLineAttrs.fire
-      //  ## myRdLineAttrs.dirty
-      //  ## (
-      //    myRdLineAttrs.tag
-      //    === rSavedLoH2dPayload.addr(loBusCacheCfg.tagRange)
-      //  )
-      //  //## rSavedLoH2dPayload.isWrite
-      //) {
-      //  is (
-      //    //M"100-"
-      //    M"100"
-      //  ) {
-      //    rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-      //  }
-      //  is (
-      //    //M"110-"
-      //    M"110"
-      //  ) {
-      //    rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
-      //  }
-      //  is (
-      //    //M"1-1-"
-      //    M"1-1"
-      //  ) {
-      //    rState := State.WAIT_D2H_FIFO_EMPTY_ENOUGH
-      //  }
-      //  //is (M"1-10") {
-      //  //  //rState := State.SEND_LINE_TO_HI_BUS
-      //  //}
-      //  //is (M"1-11") {
-      //  //}
-      //  //is (
-      //  //  //M"0---"
-      //  //  M"0--"
-      //  //)
-      //  default {
-      //    rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-      //  }
-      //}
-
-      //switch (
-      //  myRdLineAttrs.fire
-      //  ## (
-      //    (
-      //      rSavedStallInfo.loH2dPayload.addr(
-      //        loBusCacheCfg.tagRange
-      //      )
-      //      === myRdLineAttrs.tag
-      //    )
-      //    && (
-      //      rSavedStallInfo.loH2dPayload.addr(
-      //        loBusCacheCfg.setRange
-      //      )
-      //      === rSavedLoH2dPayload.addr(
-      //        loBusCacheCfg.setRange
-      //      )
-      //    )
-      //  )
-      //) {
-      //  is (M"10") {
-      //    
-      //  }
-      //}
       //when (
       //  myRdLineAttrs.fire
       //  //--------
