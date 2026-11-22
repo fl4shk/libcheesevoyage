@@ -31002,21 +31002,27 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       )
 
       switch (
-        rSavedLoH2dPayload.isWrite
+        LcvOrR(Vec(rdLineAttrs.last.map(_.fire)))
+        ## rSavedLoH2dPayload.isWrite
         ## haveHit.last.asBits
       ) {
         for (ramIdx <- 0 until numWays) {
           val myRamIdxMask = calcHitRamIdxMask(ramIdx=ramIdx)
           is (MaskedLiteral(
-            "0" + myRamIdxMask
+            "10" + myRamIdxMask
           )) {
             rState := State.LOAD_HIT_DO_STALL_PIPE_4
           }
           is (MaskedLiteral(
-            "1" + myRamIdxMask
+            "11" + myRamIdxMask
           )) {
             rState := State.STORE_HIT_DO_STALL_PIPE_1
           }
+        }
+        is (MaskedLiteral(
+          "0-" + ("-" * numWays)
+        )) {
+          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
         }
         default {
           rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
