@@ -31029,11 +31029,13 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
             "10" + myRamIdxMask
           )) {
             rState := State.LOAD_HIT_DO_STALL_PIPE_4
+            rSavedRamIdx := ramIdx
           }
           is (MaskedLiteral(
             "11" + myRamIdxMask
           )) {
             rState := State.STORE_HIT_DO_STALL_PIPE_1
+            rSavedRamIdx := ramIdx
           }
         }
         is (MaskedLiteral(
