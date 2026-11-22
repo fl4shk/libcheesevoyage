@@ -29911,30 +29911,44 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           val temp0 = (
             (
               (
-                rPrefetchInfo.fire
-                || (
-                  // this is for safety,
-                  // but it will produce less performance!
-                  rState.asBits(
-                    State.PREFETCH_START.position
+                (
+                  rPrefetchInfo.fire
+                  || (
+                    // this is for safety,
+                    // but it will produce less performance!
+                    rState.asBits(
+                      State.PREFETCH_START.position
+                    )
                   )
                 )
-              )
-              && (
-                //rPrefetchInfo.baseAddr.resize(
-                //  lineAttrsRam.head.head.io.wrAddr.getWidth
-                //)
-                rSavedLoH2dPayload.addr(rPrefetchInfo.myTempRange).resize(
-                  lineAttrsRam.head.head.io.wrAddr.getWidth
-                )
-                === (
-                  rDel2LoH2dPayload.addr(
-                    rPrefetchInfo.myTempRange
-                  ).resize(
+                && (
+                  //rPrefetchInfo.baseAddr.resize(
+                  //  lineAttrsRam.head.head.io.wrAddr.getWidth
+                  //)
+                  rSavedLoH2dPayload.addr(rPrefetchInfo.myTempRange).resize(
                     lineAttrsRam.head.head.io.wrAddr.getWidth
                   )
+                  === (
+                    rDel2LoH2dPayload.addr(
+                      rPrefetchInfo.myTempRange
+                    ).resize(
+                      lineAttrsRam.head.head.io.wrAddr.getWidth
+                    )
+                  )
                 )
               )
+              // these bottom two conditions are because of lineAttrsRam's
+              // write port already being in use!
+              //|| (
+              //  rState.asBits(
+              //    State.RECV_LINE_FROM_HI_BUS_POST_WRITE.position
+              //  )
+              //)
+              //|| (
+              //  rState.asBits(
+              //    State.RECV_LINE_FROM_HI_BUS_POST_7.position
+              //  )
+              //)
             )
           )
           val busAddr = (
@@ -29944,9 +29958,11 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
             //RegNext(
               (
                 myHistLineWordRamWrite.sFindFirst(elem => (
-                  RegNext(elem.fire, init=False)
+                  //RegNext(elem.fire, init=False)
+                  elem.fire
                   && (
-                    RegNext(elem.payload)
+                    //RegNext(elem.payload)
+                    elem.payload
                     === (
                       (
                         busAddr(
@@ -30978,6 +30994,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
     //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
     //  rSavedRdLineAttrsTag := myRdLineAttrs.tag
     //}
+
     is (State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2) {
       rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
