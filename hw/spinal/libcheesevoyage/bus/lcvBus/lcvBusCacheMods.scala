@@ -31653,6 +31653,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
     lineWord: Option[UInt],
     byteEn: Option[UInt],
     setEn: Boolean=true,
+    setByteEn: Boolean=true,
   ): Unit = {
     if (setEn) {
       lineWordRam(ramIdx).io.vec(vecIdx).wrEn := True
@@ -31674,17 +31675,19 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       case None => {
       }
     }
-    byteEn match {
-      case Some(byteEn) => {
-        lineWordRam(ramIdx).io.vec(vecIdx).wrByteEn := byteEn.asBits
-      }
-      case None => {
-        lineWordRam(ramIdx).io.vec(vecIdx).wrByteEn := (
-          B(
-            lineWordRam(ramIdx).io.vec(vecIdx).wrByteEn.getWidth bits,
-            default -> True
+    if (setByteEn) {
+      byteEn match {
+        case Some(byteEn) => {
+          lineWordRam(ramIdx).io.vec(vecIdx).wrByteEn := byteEn.asBits
+        }
+        case None => {
+          lineWordRam(ramIdx).io.vec(vecIdx).wrByteEn := (
+            B(
+              lineWordRam(ramIdx).io.vec(vecIdx).wrByteEn.getWidth bits,
+              default -> True
+            )
           )
-        )
+        }
       }
     }
   }
@@ -32688,6 +32691,14 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
             //  item(ramIdx).io.wrData.valid := True
             //})
           }
+          doLineWordRamWrite(
+            vecIdx=0,
+            ramIdx=ramIdx,
+            busAddr=None,
+            lineWord=Some(rDel2LoH2dPayload.data),
+            byteEn=Some(rDel2LoH2dPayload.byteEn),
+            setEn=false
+          )
           when (
             !LcvOrR(myHadAnyRecentHazard.head(ramIdx))
             && rDel2LoH2dPayload.isWrite
@@ -32717,17 +32728,10 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
               ),
               lineWord=None,
               byteEn=None,
-              setEn=true
+              setEn=true,
+              setByteEn=false,
             )
           }
-          doLineWordRamWrite(
-            vecIdx=0,
-            ramIdx=ramIdx,
-            busAddr=None,
-            lineWord=Some(rDel2LoH2dPayload.data),
-            byteEn=Some(rDel2LoH2dPayload.byteEn),
-            setEn=false
-          )
 
           switch (
             (
