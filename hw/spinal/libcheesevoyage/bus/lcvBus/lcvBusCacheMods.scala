@@ -22286,9 +22286,16 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //rSavedLoH2dPayload.addr(
             //  myConvBusAddrToLineWordAddrRange
             //)
-            //RegNext(
-              rHiH2dBurstCnt(0)
-            //)
+            //RegNext(RegNext(
+            //  rHiH2dBurstCnt(0)
+            //))
+            RegNextWhen(
+              RegNext(
+                rHiH2dBurstCnt(0)
+              ),
+              cond=lineWordRam.head.head.io.vec.last.rdEn,
+              init=rHiH2dBurstCnt(0).getZero
+            )
             //RegNext(
             //  rHiH2dPayload.addr(
             //    myConvBusAddrToLineWordAddrRange
@@ -22302,9 +22309,16 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //  myConvBusAddrToLineWordAddrRange
             //)
             //rHiH2dBurstCnt(0)
-            //RegNext(
-              rHiH2dBurstCnt(0)
-            //)
+            //RegNext(RegNext(
+            //  rHiH2dBurstCnt(0)
+            //))
+            RegNextWhen(
+              RegNext(
+                rHiH2dBurstCnt(0)
+              ),
+              cond=lineWordRam.head.head.io.vec.last.rdEn,
+              init=rHiH2dBurstCnt(0).getZero
+            )
             //RegNext(
             //  rHiH2dPayload.addr(
             //    myConvBusAddrToLineWordAddrRange
@@ -22359,9 +22373,16 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //  ) + 2
             //)
             //rHiH2dBurstCnt(1)
-            //RegNext(
-              rHiH2dBurstCnt(0)
-            //)
+            //RegNext(RegNext(
+            //  rHiH2dBurstCnt(0)
+            //))
+            RegNextWhen(
+              RegNext(
+                rHiH2dBurstCnt(0)
+              ),
+              cond=lineWordRam.head.head.io.vec.last.rdEn,
+              init=rHiH2dBurstCnt(0).getZero
+            )
           )
         ) else (
           rdLineWord.last.head(
@@ -22377,9 +22398,13 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //  ) + 2
             //)
             //rHiH2dBurstCnt(1)
-            //RegNext(
-              rHiH2dBurstCnt(0)
-            //)
+            RegNextWhen(
+              RegNext(
+                rHiH2dBurstCnt(0)
+              ),
+              cond=lineWordRam.head.head.io.vec.last.rdEn,
+              init=rHiH2dBurstCnt(0).getZero
+            )
           )
         )
       )
