@@ -20909,9 +20909,11 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
           if (rSavedRamIdx != null) (
             Vec(
               (
-                temp0
-                && (
-                  rSavedRamIdx === ramIdx
+                (
+                  temp0
+                  && (
+                    rSavedRamIdx === ramIdx
+                  )
                 )
                 || LcvOrR(temp1)
               )
