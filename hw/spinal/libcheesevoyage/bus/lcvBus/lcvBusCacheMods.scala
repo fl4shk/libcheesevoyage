@@ -9419,7 +9419,10 @@ case class LcvBusInstrCacheWithTaggedPrefetchWide(
             downto log2Up(hiBusCfg.dataWidth / 8)
           )
         )
-        when (tempBurstCntCmpEq) {
+        when (
+          !rPrefetchInfo.fire
+          && tempBurstCntCmpEq
+        ) {
           myLoD2hPayload.data := (io.hiBus.d2hBus.data)
           //if (!loBusCfg.haveByteEn) {
           //  myLoD2hPayload.byteSize := (
