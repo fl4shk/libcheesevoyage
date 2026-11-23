@@ -21379,18 +21379,25 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
               mySelLoH2dPopStm.ready := False
               myFifoThingDoStall := True
 
-              rIdleModeIsWrite(ramIdx)(
-                rDel2LoH2dPayload.addr(
-                  myConvBusAddrToLineWordAddrRange
-                )
-              ) := (
-                False
-              )
+              //rIdleModeIsWrite(ramIdx)(
+              //  rDel2LoH2dPayload.addr(
+              //    myConvBusAddrToLineWordAddrRange
+              //  )
+              //) := (
+              //  False
+              //)
               if (idleIdx == 1) {
                 rSavedStallFromIdle := True
 
                 // optimize for multiple loads in a row
                 //rIdleModeIsWrite := False
+                rIdleModeIsWrite(ramIdx)(
+                  rDel2LoH2dPayload.addr(
+                    myConvBusAddrToLineWordAddrRange
+                  )
+                ) := (
+                  False
+                )
 
                 rState := State.LOAD_HIT_DO_STALL_PIPE_4
               }
@@ -21399,18 +21406,25 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
               mySelLoH2dPopStm.ready := False
               myFifoThingDoStall := True
 
-              rIdleModeIsWrite(ramIdx)(
-                rDel2LoH2dPayload.addr(
-                  myConvBusAddrToLineWordAddrRange
-                )
-              ) := (
-                True
-              )
+              //rIdleModeIsWrite(ramIdx)(
+              //  rDel2LoH2dPayload.addr(
+              //    myConvBusAddrToLineWordAddrRange
+              //  )
+              //) := (
+              //  True
+              //)
 
               if (idleIdx == 1) {
                 rSavedStallFromIdle := True
                 // optimize for multiple stores in a row
                 //rIdleModeIsWrite := True
+                rIdleModeIsWrite(ramIdx)(
+                  rDel2LoH2dPayload.addr(
+                    myConvBusAddrToLineWordAddrRange
+                  )
+                ) := (
+                  True
+                )
 
                 rState := State.STORE_HIT_DO_STALL_PIPE_1
               }
@@ -21421,17 +21435,24 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
 
               mySelLoH2dPopStm.ready := False
               myFifoThingDoStall := True
-              rIdleModeIsWrite(ramIdx)(
-                rDel2LoH2dPayload.addr(
-                  myConvBusAddrToLineWordAddrRange
-                )
-              ) := (
-                False
-              )
+              //rIdleModeIsWrite(ramIdx)(
+              //  rDel2LoH2dPayload.addr(
+              //    myConvBusAddrToLineWordAddrRange
+              //  )
+              //) := (
+              //  False
+              //)
 
               if (idleIdx == 1) {
                 rSavedStallFromIdle := True
                 //rIdleModeIsWrite := False
+                rIdleModeIsWrite(ramIdx)(
+                  rDel2LoH2dPayload.addr(
+                    myConvBusAddrToLineWordAddrRange
+                  )
+                ) := (
+                  False
+                )
                 rState := State.LOAD_HIT_DO_STALL_PIPE_4
               }
             }
@@ -21442,17 +21463,24 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
               mySelLoH2dPopStm.ready := False
               myFifoThingDoStall := True
 
-              rIdleModeIsWrite(ramIdx)(
-                rDel2LoH2dPayload.addr(
-                  myConvBusAddrToLineWordAddrRange
-                )
-              ) := (
-                True
-              )
+              //rIdleModeIsWrite(ramIdx)(
+              //  rDel2LoH2dPayload.addr(
+              //    myConvBusAddrToLineWordAddrRange
+              //  )
+              //) := (
+              //  True
+              //)
 
               if (idleIdx == 1) {
                 rSavedStallFromIdle := True
                 //rIdleModeIsWrite := True
+                rIdleModeIsWrite(ramIdx)(
+                  rDel2LoH2dPayload.addr(
+                    myConvBusAddrToLineWordAddrRange
+                  )
+                ) := (
+                  True
+                )
 
                 rState := State.STORE_HIT_DO_STALL_PIPE_1
               }
@@ -22763,7 +22791,6 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
       //rState := State.RECV_LINE_FROM_HI_BUS_POST
 
       myLoD2hPushStm.valid := True
-
 
       myLoD2hPushStm.busPayload.src := (
         //RegNext
