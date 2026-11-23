@@ -32265,8 +32265,9 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
                     )
                   )
                   || (
-                    !rDel2LoH2dPayload.isWrite
-                    && (
+                    //!rDel2LoH2dPayload.isWrite
+                    //&& 
+                    (
                       rDel2LoH2dPayload.addr(
                         rPrefetchInfo.myTempRange
                       ).resize(
