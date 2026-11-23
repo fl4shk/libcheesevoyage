@@ -21065,11 +21065,11 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
   )
 
   val rIdleModeIsWrite = (
-    //Vec.fill(numWays)(
+    Vec.fill(numWays)(
       Vec.fill(lineSizeWords)(
         Reg(Bool(), init=False)
       )
-    //)
+    )
   )
 
   //println(
@@ -21228,7 +21228,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             !myHadAnyRecentHazard(1)(ramIdx).orR
             && (
               rDel2LoH2dPayload.isWrite
-              === rIdleModeIsWrite(
+              === rIdleModeIsWrite(ramIdx)(
                 rDel2LoH2dPayload.addr(
                   myConvBusAddrToLineWordAddrRange
                 )
@@ -21262,7 +21262,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //True
             //rDel2LoH2dPayload.isWrite === rIdleModeIsWrite
             rDel2LoH2dPayload.isWrite
-            === rIdleModeIsWrite(
+            === rIdleModeIsWrite(ramIdx)(
               rDel2LoH2dPayload.addr(
                 myConvBusAddrToLineWordAddrRange
               )
@@ -21298,7 +21298,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
               //rDel2LoH2dPayload.isWrite =/= rIdleModeIsWrite
               rDel2LoH2dPayload.isWrite
               =/= (
-                rIdleModeIsWrite(
+                rIdleModeIsWrite(ramIdx)(
                   rDel2LoH2dPayload.addr(
                     myConvBusAddrToLineWordAddrRange
                   )
@@ -21336,7 +21336,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
           when (
             !myHadAnyRecentHazard.head(ramIdx).orR
             && rDel2LoH2dPayload.isWrite
-            && rIdleModeIsWrite(
+            && rIdleModeIsWrite(ramIdx)(
               rDel2LoH2dPayload.addr(
                 myConvBusAddrToLineWordAddrRange
               )
@@ -21378,7 +21378,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             )
             ## rDel2LoH2dPayload.isWrite
             ## (
-              rIdleModeIsWrite(
+              rIdleModeIsWrite(ramIdx)(
                 rDel2LoH2dPayload.addr(
                   myConvBusAddrToLineWordAddrRange
                 )
@@ -21401,7 +21401,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
 
                 // optimize for multiple loads in a row
                 //rIdleModeIsWrite := False
-                rIdleModeIsWrite(
+                rIdleModeIsWrite(ramIdx)(
                   rDel2LoH2dPayload.addr(
                     myConvBusAddrToLineWordAddrRange
                   )
@@ -21428,7 +21428,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                 rSavedStallFromIdle := True
                 // optimize for multiple stores in a row
                 //rIdleModeIsWrite := True
-                rIdleModeIsWrite(
+                rIdleModeIsWrite(ramIdx)(
                   rDel2LoH2dPayload.addr(
                     myConvBusAddrToLineWordAddrRange
                   )
@@ -21456,7 +21456,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
               if (idleIdx == 1) {
                 rSavedStallFromIdle := True
                 //rIdleModeIsWrite := False
-                rIdleModeIsWrite(
+                rIdleModeIsWrite(ramIdx)(
                   rDel2LoH2dPayload.addr(
                     myConvBusAddrToLineWordAddrRange
                   )
@@ -21484,7 +21484,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
               if (idleIdx == 1) {
                 rSavedStallFromIdle := True
                 //rIdleModeIsWrite := True
-                rIdleModeIsWrite(
+                rIdleModeIsWrite(ramIdx)(
                   rDel2LoH2dPayload.addr(
                     myConvBusAddrToLineWordAddrRange
                   )
@@ -21731,14 +21731,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
     }
     is (State.LOAD_HIT_DO_STALL) {
       //rIdleModeIsWrite := False
-      //rIdleModeIsWrite(rSavedRamIdx)(
-      //  rSavedLoH2dPayload.addr(
-      //    myConvBusAddrToLineWordAddrRange
-      //  )
-      //) := (
-      //  rDel2LoH2dPayload.isWrite
-      //)
-      rIdleModeIsWrite(
+      rIdleModeIsWrite(rSavedRamIdx)(
         rSavedLoH2dPayload.addr(
           myConvBusAddrToLineWordAddrRange
         )
@@ -21857,14 +21850,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
     }
     is (State.STORE_HIT_DO_STALL) {
       //rIdleModeIsWrite := True
-      //rIdleModeIsWrite(rSavedRamIdx)(
-      //  rSavedLoH2dPayload.addr(
-      //    myConvBusAddrToLineWordAddrRange
-      //  )
-      //) := (
-      //  rDel2LoH2dPayload.isWrite
-      //)
-      rIdleModeIsWrite(
+      rIdleModeIsWrite(rSavedRamIdx)(
         rSavedLoH2dPayload.addr(
           myConvBusAddrToLineWordAddrRange
         )
