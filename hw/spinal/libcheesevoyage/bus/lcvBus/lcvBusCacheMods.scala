@@ -8414,10 +8414,6 @@ case class LcvBusInstrCacheWithTaggedPrefetchWide(
     Reg(UInt(log2Up(numWays) bits))
     init(0x0)
   )
-  val rSavedRamJdx = (
-    Reg(UInt(log2Up(lineSizeWords) bits))
-    init(0x0)
-  )
 
   val myHadAnyRecentHazard = Vec.fill(
     3
@@ -8431,7 +8427,40 @@ case class LcvBusInstrCacheWithTaggedPrefetchWide(
     outerItem.zipWithIndex.foreach{
       case (item, ramIdx) => {
         item := {
-          val temp = (
+          val myHistLineWordRamWrite = (
+            History[Vec[Flow[UInt]]](
+              that={
+                val temp = ( 
+                  Vec.fill(lineSizeWords)(
+                    Flow(UInt(
+                      lineWordRam.head.head.io.wrAddr.getWidth bits
+                    ))
+                  )
+                )
+                //temp.valid := lineWordRam(ramIdx).io.vec.last.wrEn
+                //temp.payload := lineWordRam(ramIdx).io.vec.last.addr
+                for (jdx <- 0 until lineSizeWords) {
+                  def item = lineWordRam(ramIdx)(jdx)
+                  temp(jdx).valid := item.io.wrEn
+                  temp(jdx).payload := item.io.wrAddr
+                }
+                temp
+              },
+              length=cfg.myRamOptWrHistLengthPlusAddend,
+              init={
+                val temp = ( 
+                  Vec.fill(lineSizeWords)(
+                    Flow(UInt(
+                      lineWordRam.head.head.io.wrAddr.getWidth bits
+                    ))
+                  )
+                )
+                temp.getZero
+              }
+            )
+          )
+
+          val temp0 = (
             (
               rPrefetchInfo.fire
               || (
@@ -8456,13 +8485,58 @@ case class LcvBusInstrCacheWithTaggedPrefetchWide(
               )
             )
           )
+
+          val myTempVec = Vec.fill(lineSizeWords)(
+            Vec.fill(myHistLineWordRamWrite.size)(
+              Flow(UInt(
+                lineWordRam.head.head.io.wrAddr.getWidth bits
+              ))
+            )
+          )
+          for (jdx <- 0 until lineSizeWords) {
+            for (idx <- 0 until myHistLineWordRamWrite.size) {
+              myTempVec(jdx)(idx) := myHistLineWordRamWrite(idx)(jdx)
+            }
+          }
+          val temp1 = (
+            myTempVec(
+              rDel2LoH2dPayload.addr(
+                myConvBusAddrToLineWordAddrRange
+              )
+            ).sFindFirst(item => (
+              item.fire
+              && (
+                item.payload 
+                === (
+                  rDel2LoH2dPayload.addr(
+                    rDel2LoH2dPayload.addr.high
+                    downto myLineAttrsRamAddrRshift
+                  ).resize(item.payload.getWidth)
+                )
+              )
+            ))
+          )
+
+          //val temp1 = (
+          //  myHistLineWordRamWrite.sFindFirst(item => (
+          //    item.fire
+          //    && (
+          //      item.payload
+          //      //=== rDel2LoH2dPayload.addr(
+          //      //  myConvBusAddrToLineWordAddrRange
+          //      //)
+          //    )
+          //  ))
+          //)
           if (rSavedRamIdx != null) (
-            temp
+            temp0
             && (
               rSavedRamIdx === ramIdx
             )
+            && temp1._1
           ) else (
-            temp
+            temp0
+            && temp1._1
           )
         }
       }
