@@ -32181,7 +32181,10 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
     3
   )(
     Vec.fill(numWays)(
-      Vec.fill(2)(
+      Vec.fill(
+        //2
+        1
+      )(
         Bool()
       )
     )
@@ -32626,7 +32629,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
             //!myHadAnyRecentHazard(1)(ramIdx).head
 
             // TODO: DEBUG: temporarily, disable performance stuff
-            !myHadAnyRecentHazard(1)(ramIdx).head//.asBits.orR
+            !myHadAnyRecentHazard(1)(ramIdx).orR
             && rDel2LoH2dPayload.isWrite === rIdleModeIsWrite
           )
 
@@ -32675,7 +32678,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
 
           when (
             //rHadAnyRamWritePastTwoCycles.head
-            myHadAnyRecentHazard.head(ramIdx).head//.asBits.orR
+            myHadAnyRecentHazard.head(ramIdx).orR
             || rDel2LoH2dPayload.isWrite =/= rIdleModeIsWrite
           ) {
             myLoD2hPushStm.valid := False
@@ -32706,7 +32709,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
             setEn=false
           )
           when (
-            !myHadAnyRecentHazard.head(ramIdx).head//.asBits.orR
+            !myHadAnyRecentHazard.head(ramIdx).orR
             && rDel2LoH2dPayload.isWrite
             && rIdleModeIsWrite
           ) {
@@ -32741,7 +32744,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
 
           switch (
             (
-              myHadAnyRecentHazard.last(ramIdx).head//.asBits.orR
+              myHadAnyRecentHazard.last(ramIdx).orR
               || !myLoD2hPushStm.ready
             )
             ## rDel2LoH2dPayload.isWrite
