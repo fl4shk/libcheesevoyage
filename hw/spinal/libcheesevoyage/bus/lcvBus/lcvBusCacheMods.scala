@@ -22250,9 +22250,12 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //rSavedLoH2dPayload.addr(
             //  myConvBusAddrToLineWordAddrRange
             //)
-            RegNext(RegNext(
-              rHiH2dBurstCnt(0)
-            ))
+            //RegNext(
+            //  rHiH2dBurstCnt(0)
+            //)
+            rHiH2dPayload.addr(
+              myConvBusAddrToLineWordAddrRange
+            )
           )
         ) else (
           rdLineWord.last.head(
@@ -22260,9 +22263,12 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //  myConvBusAddrToLineWordAddrRange
             //)
             //rHiH2dBurstCnt(0)
-            RegNext(RegNext(
-              rHiH2dBurstCnt(0)
-            ))
+            //RegNext(
+            //  rHiH2dBurstCnt(0)
+            //)
+            rHiH2dPayload.addr(
+              myConvBusAddrToLineWordAddrRange
+            )
           )
         )
       )
@@ -22302,18 +22308,24 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //rSavedLoH2dPayload.addr(
             //  myConvBusAddrToLineWordAddrRange
             //)
-            RegNext(RegNext(
-              rHiH2dBurstCnt(0)
-            ))
+            //RegNext(
+            //  rHiH2dBurstCnt(0)
+            //)
+            rHiH2dPayload.addr(
+              myConvBusAddrToLineWordAddrRange
+            )
           )
         ) else (
           rdLineWord.last.head(
             //rSavedLoH2dPayload.addr(
             //  myConvBusAddrToLineWordAddrRange
             //)
-            RegNext(RegNext(
-              rHiH2dBurstCnt(0)
-            ))
+            //RegNext(
+            //  rHiH2dBurstCnt(0)
+            //)
+            rHiH2dPayload.addr(
+              myConvBusAddrToLineWordAddrRange
+            )
           )
         )
       )
