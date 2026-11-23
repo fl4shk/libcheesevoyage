@@ -22250,14 +22250,15 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //rSavedLoH2dPayload.addr(
             //  myConvBusAddrToLineWordAddrRange
             //)
-            //RegNext(
-            //  rHiH2dBurstCnt(0)
-            //)
             RegNext(
-              rHiH2dPayload.addr(
-                myConvBusAddrToLineWordAddrRange
-              ) + 2
+              rHiH2dBurstCnt(0)
             )
+            //RegNext(
+            //  rHiH2dPayload.addr(
+            //    myConvBusAddrToLineWordAddrRange
+            //  ) + 2
+            //)
+            //rHiH2dBurstCnt(1)
           )
         ) else (
           rdLineWord.last.head(
@@ -22265,14 +22266,15 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //  myConvBusAddrToLineWordAddrRange
             //)
             //rHiH2dBurstCnt(0)
-            //RegNext(
-            //  rHiH2dBurstCnt(0)
-            //)
             RegNext(
-              rHiH2dPayload.addr(
-                myConvBusAddrToLineWordAddrRange
-              ) + 2
+              rHiH2dBurstCnt(0)
             )
+            //RegNext(
+            //  rHiH2dPayload.addr(
+            //    myConvBusAddrToLineWordAddrRange
+            //  ) + 2
+            //)
+            //rHiH2dBurstCnt(1)
           )
         )
       )
@@ -22315,10 +22317,14 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //RegNext(
             //  rHiH2dBurstCnt(0)
             //)
+            //RegNext(
+            //  rHiH2dPayload.addr(
+            //    myConvBusAddrToLineWordAddrRange
+            //  ) + 2
+            //)
+            //rHiH2dBurstCnt(1)
             RegNext(
-              rHiH2dPayload.addr(
-                myConvBusAddrToLineWordAddrRange
-              ) + 2
+              rHiH2dBurstCnt(0)
             )
           )
         ) else (
@@ -22329,10 +22335,14 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //RegNext(
             //  rHiH2dBurstCnt(0)
             //)
+            //RegNext(
+            //  rHiH2dPayload.addr(
+            //    myConvBusAddrToLineWordAddrRange
+            //  ) + 2
+            //)
+            //rHiH2dBurstCnt(1)
             RegNext(
-              rHiH2dPayload.addr(
-                myConvBusAddrToLineWordAddrRange
-              ) + 2
+              rHiH2dBurstCnt(0)
             )
           )
         )
