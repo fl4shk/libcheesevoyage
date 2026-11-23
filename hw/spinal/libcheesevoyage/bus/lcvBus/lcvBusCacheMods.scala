@@ -5067,7 +5067,8 @@ private[libcheesevoyage] case class LcvBusInstrCacheNoPrefetch(
   wrLineAttrs.valid := True
 }
 
-private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
+private[libcheesevoyage]
+case class LcvBusInstrCacheWithTaggedPrefetchNonWide(
   cfg: LcvBusCacheBusPairConfig,
 ) extends Component {
   //--------
@@ -7307,10075 +7308,2308 @@ private[libcheesevoyage] case class LcvBusInstrCacheWithTaggedPrefetch(
   wrLineAttrs.valid := True
 }
 
-//case class LcvBusInstrCacheWithTaggedPrefetch(
-//  cfg: LcvBusCacheBusPairConfig
-//) extends Component {
-//  //--------
-//  require(
-//    cfg.havePrefetch
-//  )
-//  //--------
-//  def numWays = cfg.loBusCacheCfg.numWays
-//
-//  def loBusCfg = cfg.loBusCfg
-//  def hiBusCfg = cfg.hiBusCfg
-//  def optFormal = cfg.optFormal
-//
-//  def loBusCacheCfg = cfg.loBusCacheCfg
-//  def myLineWordRamSingleWordAddrRshift = (
-//    loBusCacheCfg.myLineWordRamSingleWordAddrRshift
-//  )
-//  def myLineAttrsRamAddrRshift = loBusCacheCfg.myLineAttrsRamAddrRshift
-//  def wordWidth = loBusCacheCfg.wordWidth
-//  def depthWords = loBusCacheCfg.depthWords
-//  def depthLines = loBusCacheCfg.depthLines
-//
-//  def myFifoThingLoBusCfg = cfg.myFifoThingLoBusCfg
-//  //--------
-//  require(
-//    //hiBusCfg.maxBurstSizeMinus1 == (64 / 4) - 1,
-//    //cfg.loBusCacheCfg.lineSizeBytes == 64,
-//    cfg.loBusCacheCfg.lineSizeBytes == loBusCfg.burstCntMaxNumBytes,
-//    s"(Perhaps only temporarily), "
-//    + s"we need the number of bytes per cache line to be "
-//    + s"${loBusCfg.burstCntMaxNumBytes}. "
-//    + s"This permits an easier-to-implement design "
-//    + s"for `io.hiBus` bursting."
-//  )
-//  //--------
-//  val io = LcvBusCacheIo(cfg=cfg)
-//  //--------
-//  //val lineWordRamCfg = RamSdpPipeConfig(
-//  //  wordType=UInt(wordWidth bits),
-//  //  depth=depthWords,
-//  //  optIncludeWrByteEn=false,
-//  //  optWrHistLength=cfg.myRamOptWrHistLength,
-//  //  initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
-//  //  arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
-//  //  arrRamStyleXilinx=cfg.loBusCacheCfg.lineWordMemRamStyleXilinx,
-//  //)
-//  //val lineWordRam = Array.fill(numWays)(
-//  //  RamSdpPipe(cfg=lineWordRamCfg)
-//  //)
-//
-//  val lineWordRamCfg = RamTdpPipeConfig(
-//    //wordType=UInt(wordWidth bits),
-//    bytesPerWord=(
-//      wordWidth / 8
-//    ),
-//    depth=depthWords,
-//    optIncludeWrByteEn=false,
-//    //optWrHistLength=cfg.myRamOptWrHistLength,
-//    //initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
-//    arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
-//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineWordMemRamStyleXilinx,
-//  )
-//  val lineWordRam = Array.fill(numWays)(
-//    RamTdpPipe(cfg=lineWordRamCfg)
-//  )
-//  val lineAttrsRamCfg = RamSdpPipeConfig(
-//    wordType=LcvBusCacheLineAttrs(cfg=loBusCfg),
-//    depth=depthLines,
-//    optIncludeWrByteEn=false,
-//    optWrHistLength=cfg.myRamOptWrHistLength,
-//    initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
-//    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
-//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
-//  )
-//  val lineAttrsRam = Array.fill(2)(
-//    Array.fill(numWays)(
-//      RamSdpPipe(cfg=lineAttrsRamCfg)
-//    )
-//  )
-//
-//  val rdLineWord = Vec.fill(2)(
-//    Vec.fill(numWays)(
-//      UInt(wordWidth bits)
-//    )
-//  )
-//  val rdLineAttrs = Vec.fill(numWays)(
-//    LcvBusCacheLineAttrs(cfg=loBusCfg)
-//  )
-//
-//  val prefetchRdLineAttrs = Vec.fill(numWays)(
-//    LcvBusCacheLineAttrs(cfg=loBusCfg)
-//  )
-//
-//  for (idx <- 0 until numWays) {
-//    //rdLineWord(idx) := lineWordRam(idx).io.rdData
-//    rdLineWord.head(idx) := lineWordRam(idx).io.vec.head.rdData.asUInt
-//    rdLineWord.last(idx) := lineWordRam(idx).io.vec.last.rdData.asUInt
-//    rdLineAttrs(idx) := lineAttrsRam.head(idx).io.rdData
-//    prefetchRdLineAttrs(idx) := lineAttrsRam.last(idx).io.rdData
-//    //lineAttrsRam.last(idx).io.rdEn := False
-//    //lineAttrsRam.last(idx).io.rdAddr := 0x0
-//
-//    //lineWordRam(idx).io.wrEn := False
-//    lineWordRam(idx).io.vec.last.rdEn := False
-//    lineWordRam(idx).io.vec.foreach(item => {
-//      //item.rdEn := False
-//      item.wrEn := False
-//    })
-//    lineWordRam(idx).io.vec.head.wrData := 0x0
-//    lineAttrsRam.foreach(item => item(idx).io.wrEn := False)
-//  }
-//
-//  val wrLineAttrs = LcvBusCacheLineAttrs(cfg=loBusCfg)
-//  wrLineAttrs := RegNext(wrLineAttrs, init=wrLineAttrs.getZero)
-//  wrLineAttrs.allowOverride
-//
-//  val lineBitPlruRamCfg = RamSdpPipeConfig(
-//    wordType=UInt(
-//      //log2Up(numWays) bits
-//      numWays bits
-//    ),
-//    depth=depthLines,
-//    optIncludeWrByteEn=false,
-//    optWrHistLength=cfg.myRamOptWrHistLength,
-//    initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
-//    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
-//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
-//  )
-//
-//  val myCondHaveLineBitPlruRam = (
-//    numWays > 1
-//  )
-//  val lineBitPlruRam = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    RamSdpPipe(cfg=lineBitPlruRamCfg)
-//  )
-//
-//  val rdLineBitPlru = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    UInt(
-//      //log2Up(numWays) bits
-//      numWays bits
-//    )
-//  )
-//  val wrLineBitPlru = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    UInt(
-//      //log2Up(numWays) bits
-//      numWays bits
-//    )
-//  )
-//
-//  if (myCondHaveLineBitPlruRam) {
-//    rdLineBitPlru := lineBitPlruRam.io.rdData
-//    wrLineBitPlru := RegNext(wrLineBitPlru, init=wrLineBitPlru.getZero)
-//    //wrLineBitPlru.allowOverride
-//    lineBitPlruRam.io.wrEn := False
-//  }
-//
-//
-//  //--------
-//  object State extends SpinalEnum(
-//    defaultEncoding=(
-//      //binarySequential
-//      binaryOneHot
-//    )
-//  ) {
-//    val
-//      INIT,
-//      IDLE,
-//      LOAD_HIT_DO_STALL_PIPE_4,
-//      LOAD_HIT_DO_STALL_PIPE_3,
-//      LOAD_HIT_DO_STALL_PIPE_2,
-//      LOAD_HIT_DO_STALL_PIPE_1,
-//      LOAD_HIT_DO_STALL,
-//      LOAD_HIT_DO_STALL_POST,
-//      //STORE_HIT_DO_STALL_PIPE_1,
-//      //STORE_HIT_DO_STALL,
-//
-//      //MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2,
-//      //MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1,
-//      //MAYBE_DIRTY_RE_READ_ATTRS,
-//      //SEND_LINE_TO_HI_BUS_PIPE_3,
-//      //SEND_LINE_TO_HI_BUS_PIPE_2,
-//      //SEND_LINE_TO_HI_BUS_PIPE_1,
-//      //SEND_LINE_TO_HI_BUS,
-//      PREFETCH_START_PIPE_3,
-//      PREFETCH_START_PIPE_2,
-//      PREFETCH_START_PIPE_1,
-//      PREFETCH_START,
-//      PREFETCH_CANCEL,
-//      RECV_LINE_FROM_HI_BUS_PIPE_1,
-//      RECV_LINE_FROM_HI_BUS,
-//      //RECV_LINE_FROM_HI_BUS_POST_WRITE,
-//      //RECV_LINE_FROM_HI_BUS_POST_7,
-//      //RECV_LINE_FROM_HI_BUS_POST_6,
-//      //RECV_LINE_FROM_HI_BUS_POST_5,
-//      //RECV_LINE_FROM_HI_BUS_POST_4,
-//      //RECV_LINE_FROM_HI_BUS_POST_3,
-//      //RECV_LINE_FROM_HI_BUS_POST_2,
-//      //RECV_LINE_FROM_HI_BUS_POST_1,
-//      //RECV_LINE_FROM_HI_BUS_POST,
-//
-//      WAIT_D2H_FIFO_EMPTY
-//
-//      = newElement();
-//  }
-//
-//  val rState = (
-//    Reg(State())
-//    init(State.INIT)
-//  )
-//  //--------
-//  val myLoH2dPopBusCfg = (
-//    LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=myFifoThingLoBusCfg)
-//  )
-//  val myLoH2dReptThing = LcvBusDoStallH2dReptThing(
-//    busCfg=myLoH2dPopBusCfg
-//  )
-//
-//  //val myLoH2dDoStallFifoThing = LcvBusDoStallFifoThing(
-//  //  busCfg=myFifoThingLoBusCfg,
-//  //  includeDoInit=false,
-//  //)
-//  //io.loBus.h2dBus.translateInto(
-//  //  //myLoH2dDoStallFifoThing.io.push
-//  //  myLoH2dReptThing.io.push
-//  //)(
-//  //  dataAssignment=(outp, inp) => {
-//  //    //outp.busPayload := inp
-//  //    outp.mainNonBurstInfo := inp.mainNonBurstInfo
-//  //    outp.txnCnt.allowOverride
-//  //    outp.txnCnt := (
-//  //      (
-//  //        RegNextWhen(
-//  //          (outp.txnCnt.asSInt + 1),
-//  //          cond=myLoH2dReptThing.io.push.fire,
-//  //        )
-//  //        init(-2)
-//  //      ).asUInt
-//  //    )
-//  //  }
-//  //)
-//  val myFifoThingDoStall = Bool()
-//  myFifoThingDoStall := (
-//    RegNext(myFifoThingDoStall, init=myFifoThingDoStall.getZero)
-//  )
-//  myLoH2dReptThing.io.doStall := myFifoThingDoStall
-//  //val rSeenMyFifoThingDoStallCnt = (
-//  //  Reg(UInt(log2Up(LcvBusDoStallFifoThing.fifoDepthMain + 1) + 1 bits))
-//  //  init(0x0)
-//  //)
-//  //myLoH2dDoStallFifoThing.io.doStall := myFifoThingDoStall
-//
-//  val myLoH2dToWrByteEnStmAdapter = (
-//    !loBusCfg.haveByteEn
-//  ) generate (LcvBusH2dShiftedDataEtcStreamAdapter(
-//    cfg=LcvBusH2dShiftedDataEtcStreamAdapterConfig(
-//      loBusCfg=myFifoThingLoBusCfg,
-//    )
-//  ))
-//
-//  val myMainLoH2dPopStm = (
-//    Stream(LcvBusH2dPayload(
-//      cfg=myLoH2dPopBusCfg
-//    ))
-//  )
-//
-//  val mySelLoH2dPopStm = (
-//    //cloneOf(myLoH2dDoStallFifoThing.io.pop)
-//    //cloneOf(io.loBus.h2dBus)
-//    //Stream(LcvBusH2dPayload(
-//    //  cfg=myLoH2dPopBusCfg
-//    //))
-//    //cloneOf(myMainLoH2dPopStm)
-//    cloneOf(myLoH2dReptThing.io.pop)
-//  )
-//  mySelLoH2dPopStm << myLoH2dReptThing.io.pop
-//  //val mySelLoH2dPop
-//  def mySelLoH2dPopPayload = mySelLoH2dPopStm.payload//.busPayload
-//
-//  io.loBus.h2dBus.translateInto(
-//    if (!loBusCfg.haveByteEn) (
-//      myLoH2dToWrByteEnStmAdapter.io.loH2dBus
-//    ) else (
-//      myMainLoH2dPopStm
-//    )
-//  )(
-//    dataAssignment=(outp, inp) => {
-//      //outp := inp
-//      outp.mainNonBurstInfo := inp.mainNonBurstInfo
-//      outp.txnCnt.allowOverride
-//      outp.txnCnt := (
-//        (
-//          RegNextWhen(
-//            (outp.txnCnt.asSInt + 1),
-//            cond=io.loBus.h2dBus.fire,
-//          )
-//          init(-2)
-//        ).asUInt
-//      )
-//    }
-//  )
-//
-//  if (!loBusCfg.haveByteEn) {
-//    myLoH2dToWrByteEnStmAdapter.io.hiH2dBus.translateInto(
-//      myMainLoH2dPopStm
-//    )(
-//      dataAssignment=(outp, inp) => {
-//        outp := inp
-//        outp.txnCnt.allowOverride
-//        outp.txnCnt := myLoH2dToWrByteEnStmAdapter.io.loH2dBus.txnCnt
-//      }
-//    )
-//  }
-//
-//  //myMainLoH2dPopStm.ready := !myFifoThingDoStall
-//  //myLoH2dReptThing.io.push << myMainLoH2dPopStm
-//  myMainLoH2dPopStm.translateInto(
-//    myLoH2dReptThing.io.push
-//  )(
-//    dataAssignment=(outp, inp) => {
-//      outp.busPayload := inp
-//      //outp.savedData := inp.data
-//    }
-//  )
-//  mySelLoH2dPopStm.ready := False
-//
-//  //val myLoH2dPopThrowArea = new Area {
-//  //  val myLoH2dThrowCond = Bool()
-//  //  val myTempLoH2dPopStm = myLoH2dDoStallFifoThing.io.pop.throwWhen(
-//  //    myLoH2dThrowCond
-//  //  )
-//  //  myLoH2dThrowCond := False
-//  //  //myLoH2dPopStm.ready := False
-//  //  myLoH2dPopStm << myTempLoH2dPopStm
-//  //}
-//  val rLoH2dPayload = (
-//    RegNextWhen(
-//      mySelLoH2dPopStm.payload,
-//      cond=mySelLoH2dPopStm.fire,
-//      init=mySelLoH2dPopStm.payload.getZero,
-//    )
-//  )
-//  def rBusAddr = rLoH2dPayload.addr
-//  val rDel2LoH2dPayload = (
-//    RegNext/*When*/(
-//      next=rLoH2dPayload,
-//      //cond=myLoH2dPopStm.fire,
-//      init=rLoH2dPayload.getZero,
-//    )
-//  )
-//  def rDel2BusAddr = rDel2LoH2dPayload.addr
-//
-//  val rSavedLoH2dPayload = (
-//    Reg(cloneOf(rLoH2dPayload))
-//    init(rLoH2dPayload.getZero)
-//  )
-//  val rPrevPrefetchAddr = (
-//    Reg(cloneOf(rSavedLoH2dPayload.addr))
-//    init(0x0)
-//  )
-//  val rOtherSavedAddr = (
-//    Reg(cloneOf(rSavedLoH2dPayload.addr))
-//    init(0x0)
-//  )
-//  def rSavedLoBusAddr = rSavedLoH2dPayload.addr
-//  def rSavedLoBusAddrSet = rSavedLoBusAddr(loBusCacheCfg.setRange)
-//
-//  val myLoD2hShiftedDataStmAdapter = (
-//    !cfg.loBusCfg.haveByteEn
-//  ) generate (
-//    LcvBusD2hShiftedDataEtcStreamAdapter(
-//      cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(
-//        busCfg=cfg.loBusCfg
-//      )
-//    )
-//  )
-//  val myLoD2hPushStm = Stream(
-//    LcvBusDoStallFifoThingPayload(
-//      LcvBusD2hPayload(
-//        cfg=myFifoThingLoBusCfg,
-//        includeByteSizeEtc=(!myFifoThingLoBusCfg.haveByteEn),
-//      ),
-//    )
-//  )
-//
-//  myLoD2hPushStm.valid := False
-//  //myLoH2dReptThing.io.finishTxn.valid := myLoD2hPushStm.fire
-//  //myLoH2dReptThing.io.finishTxn.payload := (
-//  //  myLoD2hPushStm.busPayload.txnCnt
-//  //)
-//
-//  val myLoD2hFifo = StreamFifo(
-//    dataType=LcvBusD2hPayload(cfg=cfg.loBusCfg),
-//    depth=(myFifoThingLoBusCfg.maxBurstSizeMinus1 + 1),
-//    latency=cfg.busD2hFifoLatency,
-//    forFMax=true,
-//  )
-//
-//  myLoD2hFifo.io.pop.translateInto(io.loBus.d2hBus)(
-//    dataAssignment=(outp, inp) => {
-//      outp.mainNonBurstInfo := inp.mainNonBurstInfo
-//    }
-//  )
-//  //val myLoD2hAlmostDonePushStm = cloneOf(myLoD2hPushStm)
-//  //myLoD2hAlmostDonePushStm << myLoD2hPushStm
-//  //myLoD2hAlmostDonePushStm << myLoD2hPushStm.throwWhen(
-//  //  myLoD2hPushStm.busPayload.txnCnt.asSInt
-//  //  === (
-//  //    RegNextWhen(
-//  //      myLoD2hPushStm.busPayload.txnCnt.asSInt,
-//  //      cond=myLoD2hPushStm.fire,
-//  //    )
-//  //    init(1)
-//  //  )
-//  //)
-//
-//  // NOTE: this was previously `myLoD2hAlmostDonePushStm.translateInto`
-//  myLoD2hPushStm.translateInto(
-//    if (cfg.myFifoThingLoBusCfg.haveByteEn) (
-//      myLoD2hFifo.io.push
-//    ) else (
-//      myLoD2hShiftedDataStmAdapter.io.loD2hBus
-//    )
-//  )(
-//    dataAssignment=(outp, inp) => {
-//      outp.mainNonBurstInfo := inp.busPayload.mainNonBurstInfo
-//    }
-//  )
-//
-//  if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//    //println(
-//    //  s"NOTE: "
-//    //  + s"myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus"
-//    //)
-//    myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus
-//  }
-//
-//  def doLineWordRamReadSync(
-//    vecIdx: Int,
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    lineWordRam.foreach(item => {
-//      if (setEn == 1) {
-//        item.io.vec(vecIdx).rdEn := True
-//      } else if (setEn == 2) {
-//        item.io.vec(vecIdx).rdEn := (
-//          RegNext(
-//            next=(
-//              //mySelLoH2dPopStm.valid
-//              mySelLoH2dPopStm.fire
-//            ),
-//            init=False,
-//          )
-//          //&& !myFifoThingDoStall
-//        )
-//      } 
-//      item.io.vec(vecIdx).addr := {
-//        //println(
-//        //  s"test info: busAddr("
-//        //  + s"${busAddr.high} downto ${myLineWordRamAddrRshift}"
-//        //  + s")"
-//        //)
-//        (
-//          (
-//            busAddr(
-//              busAddr.high downto myLineWordRamSingleWordAddrRshift
-//            )
-//          )
-//          .resize(item.io.vec(vecIdx).addr.getWidth)
-//        )
-//      }
-//    })
-//  }
-//  def doLineAttrsRamReadSync(
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    lineAttrsRam.head.foreach(item => {
-//      if (setEn == 1) {
-//        item.io.rdEn := True
-//      } else if (setEn == 2) {
-//        item.io.rdEn := (
-//          RegNext(
-//            next=(
-//              //mySelLoH2dPopStm.valid
-//              mySelLoH2dPopStm.fire
-//            ),
-//            init=False,
-//          )
-//          //&& !myFifoThingDoStall
-//        )
-//      } 
-//      item.io.rdAddr := {
-//        //println(
-//        //  s"test info: busAddr("
-//        //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
-//        //  + s")"
-//        //)
-//        (
-//          (
-//            busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
-//          )
-//          .resize(item.io.rdAddr.getWidth)
-//        )
-//      }
-//    })
-//  }
-//
-//  def doPrefetchLineAttrsRamReadSync(
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    lineAttrsRam.last.foreach(item => {
-//      if (setEn == 1) {
-//        item.io.rdEn := True
-//      } else if (setEn == 2) {
-//        item.io.rdEn := (
-//          RegNext(
-//            next=(
-//              //mySelLoH2dPopStm.valid
-//              mySelLoH2dPopStm.fire
-//            ),
-//            init=False,
-//          )
-//          //&& !myFifoThingDoStall
-//        )
-//      } 
-//      item.io.rdAddr := {
-//        //println(
-//        //  s"test info: busAddr("
-//        //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
-//        //  + s")"
-//        //)
-//        (
-//          (
-//            busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
-//          )
-//          .resize(item.io.rdAddr.getWidth)
-//        )
-//      }
-//    })
-//  }
-//
-//  def doLineBitPlruRamReadSync(
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    if (setEn == 1) {
-//      lineBitPlruRam.io.rdEn := True
-//    } else if (setEn == 2) {
-//      lineBitPlruRam.io.rdEn := (
-//        RegNext(
-//          next=(
-//            //mySelLoH2dPopStm.valid
-//            mySelLoH2dPopStm.fire
-//          ),
-//          init=False,
-//        )
-//        //&& !myFifoThingDoStall
-//      )
-//    } 
-//    lineBitPlruRam.io.rdAddr := {
-//      //println(
-//      //  s"test info: busAddr("
-//      //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
-//      //  + s")"
-//      //)
-//      (
-//        (
-//          busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
-//        )
-//        .resize(lineBitPlruRam.io.rdAddr.getWidth)
-//      )
-//    }
-//  }
-//  def doLineWordRamWrite(
-//    //vecIdx: Int,
-//    ramIdx: Int,
-//    busAddr: UInt,
-//    lineWord: UInt,
-//    //byteEn: Option[UInt],
-//    setEn: Boolean=true,
-//  ): Unit = {
-//    if (setEn) {
-//      lineWordRam(ramIdx).io.vec.last.wrEn := True
-//    }
-//    lineWordRam(ramIdx).io.vec.last.addr := (
-//      (busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift))
-//      .resize(lineWordRam(ramIdx).io.vec.last.addr.getWidth)
-//    )
-//    lineWordRam(ramIdx).io.vec.last.wrData := lineWord.asBits
-//    //byteEn match {
-//    //  case Some(byteEn) => {
-//    //    lineWordRam(ramIdx).io.wrByteEn := byteEn.asBits
-//    //  }
-//    //  case None => {
-//    //    lineWordRam(ramIdx).io.wrByteEn := (
-//    //      B(
-//    //        lineWordRam(ramIdx).io.wrByteEn.getWidth bits,
-//    //        default -> True
-//    //      )
-//    //    )
-//    //  }
-//    //}
-//  }
-//  def doLineAttrsRamWrite(
-//    ramIdx: Int,
-//    busAddr: UInt,
-//    lineAttrs: LcvBusCacheLineAttrs,
-//    setEn: Boolean=true,
-//  ): Unit = {
-//    lineAttrsRam.foreach(myRam => {
-//      if (setEn) {
-//        myRam(ramIdx).io.wrEn := True
-//      }
-//      myRam(ramIdx).io.wrAddr := (
-//        (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
-//        .resize(myRam(ramIdx).io.wrAddr.getWidth)
-//      )
-//      myRam(ramIdx).io.wrData := lineAttrs
-//    })
-//  }
-//  def doLineBitPlruRamWrite(
-//    busAddr: UInt,
-//    //lineAttrs: LcvBusCacheLineBitPlru,
-//    lineBitPlru: UInt,
-//    setEn: Boolean=true,
-//  ): Unit = {
-//    if (setEn) {
-//      lineBitPlruRam.io.wrEn := True
-//    }
-//    lineBitPlruRam.io.wrAddr := (
-//      (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
-//      .resize(lineBitPlruRam.io.wrAddr.getWidth)
-//    )
-//    lineBitPlruRam.io.wrData := lineBitPlru
-//  }
-//
-//  doLineWordRamReadSync(
-//    vecIdx=0,
-//    busAddr=mySelLoH2dPopPayload.addr,
-//    setEn=2,
-//  )
-//  for (ramIdx <- 0 until numWays) {
-//    doLineWordRamWrite(
-//      ramIdx=ramIdx,
-//      busAddr=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.addr,
-//            init=mySelLoH2dPopPayload.addr.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.addr.getZero,
-//        )
-//      ),
-//      lineWord=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.data,
-//            init=mySelLoH2dPopPayload.data.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.data.getZero,
-//        )
-//      ),
-//      //byteEn=Some(
-//      //  RegNext(
-//      //    RegNext(
-//      //      mySelLoH2dPopPayload.byteEn,
-//      //      init=mySelLoH2dPopPayload.byteEn.getZero
-//      //    ),
-//      //    init=mySelLoH2dPopPayload.byteEn.getZero,
-//      //  ),
-//      //),
-//      setEn=false,
-//    )
-//  }
-//
-//  doLineAttrsRamReadSync(
-//    busAddr=mySelLoH2dPopPayload.addr,
-//    setEn=2,
-//  )
-//  doPrefetchLineAttrsRamReadSync(
-//    busAddr=rSavedLoH2dPayload.addr,
-//    setEn=2,
-//  )
-//  for (ramIdx <- 0 until numWays) {
-//    doLineAttrsRamWrite(
-//      ramIdx=ramIdx,
-//      busAddr=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.addr,
-//            init=mySelLoH2dPopPayload.addr.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.addr.getZero,
-//        )
-//      ),
-//      lineAttrs=(
-//        wrLineAttrs
-//      ),
-//      setEn=false,
-//    )
-//  }
-//
-//  if (myCondHaveLineBitPlruRam) {
-//    doLineBitPlruRamReadSync(
-//      busAddr=mySelLoH2dPopPayload.addr,
-//      setEn=2,
-//    )
-//    doLineBitPlruRamWrite(
-//      busAddr=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.addr,
-//            init=mySelLoH2dPopPayload.addr.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.addr.getZero,
-//        )
-//      ),
-//      lineBitPlru=(
-//        wrLineBitPlru
-//      ),
-//      setEn=false,
-//    )
-//  }
-//  //--------
-//  myLoD2hPushStm.payload := (
-//    RegNext(myLoD2hPushStm.payload, init=myLoD2hPushStm.payload.getZero)
-//  )
-//
-//  val myTempHaveHitCmpEqLeft = Vec[UInt](
-//    rdLineAttrs.map(item => item.tag)
-//  )
-//  val myTempHaveHitCmpEqRight = Vec.fill(numWays)(
-//    RegNext(
-//      RegNext(mySelLoH2dPopPayload.addr(loBusCacheCfg.tagRange))
-//      init(0x0)
-//    )
-//    init(0x0),
-//  )
-//  val tempHaveHitCmpEq = Vec.fill(numWays)(Bool())
-//  val haveHit = Vec.fill(numWays)(
-//    Bool()
-//  )
-//  for (ramIdx <- 0 until numWays) {
-//    tempHaveHitCmpEq(ramIdx) := (
-//      myTempHaveHitCmpEqLeft(ramIdx)
-//      === myTempHaveHitCmpEqRight(ramIdx)
-//    )
-//    haveHit(ramIdx) := (
-//      rdLineAttrs(ramIdx).fire
-//      && tempHaveHitCmpEq(ramIdx)
-//    )
-//  }
-//
-//  val myPrefetchTempHaveHitCmpEqLeft = Vec[UInt](
-//    prefetchRdLineAttrs.map(item => item.tag)
-//  )
-//  val myPrefetchTempHaveHitCmpEqRight = Vec.fill(numWays)(
-//    //RegNext(
-//    //  RegNext(
-//        //mySelLoH2dPopPayload.addr(loBusCacheCfg.tagRange)
-//        rSavedLoH2dPayload.addr(loBusCacheCfg.tagRange)
-//    //  )
-//    //  init(0x0)
-//    //)
-//    //init(0x0),
-//  )
-//  val prefetchTempHaveHitCmpEq = Vec.fill(numWays)(Bool())
-//  val prefetchHaveHit = Vec.fill(numWays)(
-//    Bool()
-//  )
-//  for (ramIdx <- 0 until numWays) {
-//    prefetchTempHaveHitCmpEq(ramIdx) := (
-//      myPrefetchTempHaveHitCmpEqLeft(ramIdx)
-//      === myPrefetchTempHaveHitCmpEqRight(ramIdx)
-//    )
-//    prefetchHaveHit(ramIdx) := (
-//      prefetchRdLineAttrs(ramIdx).fire
-//      && prefetchTempHaveHitCmpEq(ramIdx)
-//    )
-//  }
-//
-//  //val haveHit = (
-//  //  rdLineAttrs.fire
-//  //  && tempHaveHitCmpEq
-//  //)
-//
-//  //val rSavedRdLineAttrsTag = (
-//  //  //Vec.fill(numWays)(
-//  //    Reg(
-//  //      cloneOf(rdLineAttrs.head.tag),
-//  //      init=rdLineAttrs.head.tag.getZero,
-//  //    )
-//  //  //)
-//  //)
-//
-//  val rHiH2dBurstCnt = (
-//    Vec.fill(2)(
-//      Reg(UInt(loBusCfg.burstCntWidth bits))
-//      init(0x0)
-//    )
-//  )
-//  val rHiD2hBurstCnt = (
-//    Reg(UInt(loBusCfg.burstCntWidth bits))
-//    init(0x0)
-//  )
-//  //--------
-//  def myLoD2hPayload = myLoD2hPushStm.busPayload
-//  //--------
-//
-//  def doPopLoH2dFifo(): Unit = {
-//    mySelLoH2dPopStm.ready := True
-//  }
-//
-//  //val myDoStallLoH2dThrowThing = (
-//  //  LcvBusDoStallH2dThrowThing(busCfg=cfg.myFifoThingLoBusCfg)
-//  //)
-//  //myDoStallLoH2dThrowThing.io.push.valid := (
-//  //  myLoH2dDoStallFifoThing.io.pop.valid
-//  //  //&& rState === State.IDLE
-//  //  && rState.asBits(1)
-//  //)
-//  //myDoStallLoH2dThrowThing.io.push.payload := (
-//  //  myLoH2dDoStallFifoThing.io.pop.busPayload.txnCnt
-//  //)
-//
-//  //val myFullTempIgnoreDupCntCond = (
-//  //  myDoStallLoH2dThrowThing.io.myThrowCondMain
-//  //  //&& History[Bool](
-//  //  //  that=True,
-//  //  //  when=(
-//  //  //    myLoH2dPopStm.fire
-//  //  //    //myD2hPushStm.fire
-//  //  //    //myLoH2dDoStallFifoThing.io.pop.fire
-//  //  //    //&& !myLoH2dPopThrowArea.myLoH2dThrowCond
-//  //  //  ),
-//  //  //  length=(
-//  //  //    //2
-//  //  //    //4
-//  //  //    //3
-//  //  //    5
-//  //  //  ),
-//  //  //  init=False,
-//  //  //).last
-//  //)
-//
-//  //def doIgnoreInvalidFifoThingPopCnt(
-//  //): Unit = {
-//  //  when (myFullTempIgnoreDupCntCond) {
-//  //    myLoH2dPopThrowArea.myLoH2dThrowCond := True
-//  //  }
-//  //}
-//
-//  val rMyTempDoSaveCond = (
-//    Vec.fill(4)(
-//      RegNext(
-//        RegNext(
-//          (
-//            mySelLoH2dPopStm.fire
-//            //&& !myFullTempIgnoreDupCntCond
-//          ),
-//          init=False
-//        ),
-//        init=False
-//      )
-//    )
-//  )
-//  //val rHadAnyRamWritePastTwoCycles = Vec.fill(2)(
-//  //  RegNext(
-//  //    (
-//  //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-//  //      || RegNext(
-//  //        Vec(lineWordRam.map(item => item.io.wrEn)).orR,
-//  //        init=False
-//  //      )
-//  //      || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-//  //      || RegNext(
-//  //        Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
-//  //        init=False
-//  //      )
-//  //    ),
-//  //    init=False
-//  //  )
-//  //)
-//
-//  //val myTempHaveCurrRamWrite = (
-//  //  LcvOrR(Vec[Bool](lineWordRam.map(item => item.io.wrEn)))
-//  //  || LcvOrR(Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)))
-//  //)
-//
-//  val myTempHaveCurrRamWriteVec = (
-//    Vec[Bool](
-//      lineWordRam.zipWithIndex.map{
-//        case (item, idx) => (
-//          //item.io.vec.head.wrEn
-//          //|| 
-//          item.io.vec.last.wrEn
-//          || lineAttrsRam.head(idx).io.wrEn
-//        )
-//      }
-//    )
-//  )
-//
-//  val myHistHadRamWriteVec = Array.fill(2)(
-//    Vec(
-//      myTempHaveCurrRamWriteVec.map{item => {
-//        History[Bool](
-//          that=(
-//            //RegNext(
-//              //myTempHaveCurrRamWrite//,
-//              item
-//            //  init=myTempHaveCurrRamWrite.getZero
-//            //)
-//          ),
-//          length=cfg.myRamOptWrHistLengthPlusAddend,// + 1,//1,//2,
-//          init=(
-//            //myTempHaveCurrRamWrite.getZero
-//            item
-//          )
-//        )
-//      }}
-//    )
-//  )
-//
-//  val myHadRecentRamWriteVec = Vec[Vec[Bool]](
-//    //myHistHadRamWriteVec.map{item => RegNext(LcvOrR(item), init=False)}
-//    myHistHadRamWriteVec.map{outerItem => {
-//      Vec(outerItem.map{item => RegNext(LcvOrR(item), init=False)})
-//    }}
-//    //RegNext(
-//    //  (
-//    //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-//    //    || RegNext(
-//    //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR,
-//    //      init=False
-//    //    )
-//    //    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-//    //    || RegNext(
-//    //      Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR,
-//    //      init=False
-//    //    )
-//    //  ),
-//    //  init=False
-//    //)
-//  )
-//
-//  val myRamWriteHazardVec = Vec[Vec[Bool]](
-//    myHadRecentRamWriteVec.map{outerItem => {
-//      Vec(outerItem.zipWithIndex.map{
-//        case (item, idx) => (
-//          item
-//          // TODO: try removing the below condition
-//          // (maybe this module will still function properly?)
-//          || myTempHaveCurrRamWriteVec(idx)
-//        )
-//      })
-//    }}
-//  )
-//
-//
-//  //val rHadLineAttrsRamWritePastTwoCycles = Vec.fill(2)(
-//  //  RegNext(
-//  //    lineAttrsRam.io.wrEn
-//  //    || RegNext(lineAttrsRam.io.wrEn, init=False),
-//  //    init=False
-//  //  )
-//  //)
-//  //val myTempUpdateSavedLoH2dPayloadCond = Bool()
-//  //myTempUpdateSavedLoH2dPayloadCond := True
-//
-//  //--------
-//  val rHadLoH2dFinish = Reg(Bool(), init=False)
-//  val rHadLoD2hFinish = Reg(Bool(), init=False)
-//  val rHadHiH2dFinish = Reg(Bool(), init=False)
-//  val rHadHiD2hFinish = Reg(Bool(), init=False)
-//
-//  val hiH2dFifo = (
-//    StreamFifo(
-//      dataType=(
-//        //UInt(loBusCacheCfg.wordWidth bits)
-//        LcvBusH2dPayload(cfg.hiBusCfg)
-//      ),
-//      depth=loBusCacheCfg.lineSizeWords,
-//      latency=2,
-//      forFMax=true,
-//    )
-//  )
-//
-//  val rHiH2dValid = Reg(Bool(), init=False)
-//  val rHiH2dPayload = (
-//    Reg(cloneOf(hiH2dFifo.io.push.payload))
-//    init(hiH2dFifo.io.push.payload.getZero)
-//  )
-//  val rHiD2hReady = Reg(Bool(), init=False)
-//  hiH2dFifo.io.push.valid := rHiH2dValid
-//  hiH2dFifo.io.push.payload := rHiH2dPayload
-//  io.hiBus.d2hBus.ready := rHiD2hReady
-//
-//  rHiH2dPayload.byteEn := (
-//    U(hiBusCfg.byteEnWidth bits, default -> True)
-//  )
-//  //rHiH2dPayload.byteSize := (
-//  //  U(rHiH2dPayload.byteSize.getWidth bits, default -> True)
-//  //)
-//  //rHiH2dPayload.haveFullWord := True
-//  io.hiBus.h2dBus <-/< hiH2dFifo.io.pop
-//
-//      
-//// >>> for ramIdx in range(numWays):
-//// ...     print(ramIdx, (("0" * (numWays - ramIdx - 1))) + "1" + ("-" * ramIdx))
-//// ...     
-//// 0 0001
-//// 1 001-
-//// 2 01--
-//// 3 1---
-//  def calcHitRamIdxMask(ramIdx: Int): String = (
-//    (("0" * (numWays - ramIdx - 1)))
-//    + "1"
-//    + ("-" * ramIdx)
-//  )
-//
-//// >>> for ramIdx in range(numWays):
-//// ...     print(ramIdx, (("1" * (numWays - ramIdx - 1))) + "0" + ("-" * ramIdx))
-//// ...     
-//// 0 1110
-//// 1 110-
-//// 2 10--
-//// 3 0---
-//  def calcMissRamIdxMask(ramIdx: Int): String = (
-//    (("1" * (numWays - ramIdx - 1)))
-//    + "0"
-//    + ("-" * ramIdx)
-//  )
-//
-//  val rSavedRamIdx = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    Reg(UInt(log2Up(numWays) bits))
-//    init(0x0)
-//  )
-//  //val myHistSavedRamIdx = (
-//  //  History(
-//  //    that=rSavedRamIdx,
-//  //  )
-//  //)
-//
-//  val rSavedInPrefetchVec = Vec.fill(2)(
-//    Reg(Bool(), init=False)
-//  )
-//  val rSavedStallFromIdle = Reg(Bool(), init=False)
-//  val rInHitWithBusStallEtc = Vec.fill(
-//    //2
-//    1
-//  )(
-//    Reg(Bool(), init=False)
-//  )
-//
-//  val rSavedMissOtherValid = Reg(Bool(), init=False)
-//  val rSavedMissLoH2dStm = {
-//    val temp = Reg(Stream(cloneOf(rSavedLoH2dPayload)))
-//    temp.valid.init(False)
-//    temp.ready.init(True)
-//    temp.payload.init(temp.payload.getZero)
-//    temp
-//  }
-//  val rSavedMissRamIdx = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    Reg(UInt(log2Up(numWays) bits))
-//    init(0x0)
-//  )
-//
-//  val tempToSwitch = (
-//    //((rState === State.IDLE) && rMyTempDoSaveCond(3))
-//    //((rState === State.IDLE)
-//    rInHitWithBusStallEtc.head
-//    ## (
-//      rState.asBits(
-//        //1
-//        State.IDLE.position
-//      )
-//    )
-//    ## (
-//      //rState.asBits(
-//      //  State.WAIT_D2H_FIFO_EMPTY.position
-//      //)
-//      rSavedStallFromIdle
-//    )
-//    ## (
-//      rSavedMissLoH2dStm.ready
-//    )
-//    ## rMyTempDoSaveCond(3)
-//    //RegNext(
-//    //  RegNext(mySelLoH2dPopStm.fire, init=False),
-//    //  init=False
-//    //)
-//    //## haveHit.orR
-//    //## haveHit
-//    //## (
-//    //  (
-//    //    rdLineAttrs.map(item => item.dirty).orR
-//    //  )
-//    //  //|| (
-//    //  //  //rdLine
-//    //  //  RegNext(
-//    //  //    (
-//    //  //      (
-//    //  //        wrLineAttrs.dirty
-//    //  //        && (
-//    //  //          Vec(lineAttrsRam.map(item => item.io.wrEn)).orR
-//    //  //        )
-//    //  //      )
-//    //  //      || RegNext(
-//    //  //        wrLineAttrs.dirty
-//    //  //        && (
-//    //  //          Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
-//    //  //        ),
-//    //  //        init=False
-//    //  //      )
-//    //  //    ),
-//    //  //    init=False
-//    //  //  )
-//    //  //)
-//    //)
-//    //## rDel2LoH2dPayload.isWrite
-//    ## haveHit
-//  )
-//  //println(
-//  //  s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
-//  //)
-//
-//  switch (
-//    tempToSwitch
-//  ) {
-//    for (idleIdx <- 0 until 2) {
-//      is (
-//        //M"10-0"
-//        MaskedLiteral(
-//          //"10-" + ("0" * numWays)
-//          //"1" + ("0" * numWays)
-//          //"11" + ("0" * numWays)
-//          //"-11" + ("0" * numWays)
-//          //"-1-1" + ("0" * numWays)
-//          //"-1-1" + ("0" * numWays)
-//
-//          //"-"
-//          //+ (
-//          //  if (idleIdx == 0) (
-//          //    "0"
-//          //  ) else (
-//          //    "1" 
-//          //  )
-//          //)
-//          //+ "-1" + ("0" * numWays)
-//          "-"
-//          + (
-//            if (idleIdx == 0) (
-//              "0"
-//            ) else (
-//              "1" 
-//            )
-//          )
-//          + "-11" + ("0" * numWays)
-//        )
-//        //M"10"
-//      ) {
-//        if (idleIdx == 0) {
-//          //when (rSavedMissLoH2dStm.ready) {
-//          rSavedMissLoH2dStm.ready := False
-//          rSavedMissLoH2dStm.valid := True
-//          rSavedMissLoH2dStm.payload := rDel2LoH2dPayload
-//          //}
-//        } else { // if (idleIdx == 1)
-//          //// cache miss, and know for sure that the line isn't dirty
-//          // cache miss
-//          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-//        }
-//
-//        if (myCondHaveLineBitPlruRam) {
-//          //rSavedRamIdx := rdLineBitPlru
-//          //wrLineBitPlru := rdLineBitPlru + 1
-//          wrLineBitPlru := rdLineBitPlru
-//          lineBitPlruRam.io.wrEn := True
-//          switch (rdLineBitPlru) {
-//            for (ramIdx <- 0 until numWays) {
-//              val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
-//              is (MaskedLiteral(myRamIdxMask)) {
-//                wrLineBitPlru(ramIdx) := True
-//
-//                if (idleIdx == 0) {
-//                  rSavedMissRamIdx := ramIdx
-//                } else { // if (idleIdx == 1)
-//                  rSavedRamIdx := ramIdx
-//                }
-//              }
-//              default {
-//              }
-//            }
-//          }
-//        }
-//
-//        //myFifoThingDoStall := False
-//        myFifoThingDoStall := True
-//        //doPopLoH2dFifo()
-//        mySelLoH2dPopStm.ready := (
-//          //True
-//          False
-//        )
-//        if (idleIdx == 1) {
-//          myLoD2hPushStm.valid := False
-//
-//          rSavedStallFromIdle := True
-//          //myTempUpdateSavedLoH2dPayloadCond := False
-//        }
-//      }
-//    }
-//
-//    for (ramIdx <- 0 until numWays) {
-//      val myRamIdxMask = calcHitRamIdxMask(ramIdx=ramIdx)
-//      //println(
-//      //  s"ramIdx:${ramIdx} myRamIdxMask:${myRamIdxMask}"
-//      //)
-//      for (idleIdx <- 0 until 2) {
-//        is (
-//          MaskedLiteral(
-//            //"1-01"
-//            //"11" + myRamIdxMask
-//            //"001" + myRamIdxMask
-//            "0"
-//            + (
-//              if (idleIdx == 0) (
-//                "0"
-//              ) else (
-//                "1"
-//              )
-//            )
-//            + "0"
-//            + "1"
-//            + "1" + myRamIdxMask
-//          )
-//        ) {
-//          doPopLoH2dFifo()
-//          myFifoThingDoStall := False
-//          //myLoD2hPushStm.valid := False
-//          if (myCondHaveLineBitPlruRam) {
-//            rSavedRamIdx := ramIdx
-//            val tempLineBitPlru = cloneOf(rdLineBitPlru)
-//            tempLineBitPlru.allowOverride
-//            tempLineBitPlru := rdLineBitPlru
-//            tempLineBitPlru(ramIdx) := True
-//            when (tempLineBitPlru.andR) {
-//              wrLineBitPlru := 1 << ramIdx
-//            } otherwise {
-//              wrLineBitPlru := tempLineBitPlru
-//            }
-//            lineBitPlruRam.io.wrEn := True
-//          }
-//
-//          // load, cache hit
-//          //mySelLoH2dPopStm.ready := True
-//          myLoD2hPushStm.valid := True
-//          myLoD2hPushStm.busPayload.data := rdLineWord.head(ramIdx)
-//          if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//            myLoD2hPushStm.busPayload.byteSize := (
-//              rDel2LoH2dPayload.byteSize
-//            )
-//            myLoD2hPushStm.busPayload.addrLo := (
-//              rDel2LoH2dPayload.addr(
-//                cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//              )
-//            )
-//          }
-//
-//          when (
-//            //rHadAnyRamWritePastTwoCycles.head
-//            //myHadAnyRecentRamWriteVec(ramIdx).head
-//            //myHadRecentRamWriteVec.head(ramIdx)
-//            myRamWriteHazardVec.head(ramIdx)
-//          ) {
-//            myLoD2hPushStm.valid := False
-//          }
-//
-//          val myTempRange = (
-//            loBusCacheCfg.addrWidth - 2
-//            downto loBusCfg.prefetchAddrIncrStartIdx
-//          )
-//
-//          switch (
-//            //myHadAnyRecentRamWrite(ramIdx).last
-//            //myHistHadRamWriteVec.last(ramIdx)
-//            myRamWriteHazardVec.last(ramIdx)
-//            ## myLoD2hPushStm.ready
-//            ## (
-//              rDel2LoH2dPayload.addr(myTempRange)
-//              =/= rPrevPrefetchAddr(myTempRange)
-//            )
-//          ) {
-//            is (M"1--") {
-//              mySelLoH2dPopStm.ready := False
-//              myFifoThingDoStall := True
-//              //rInHitWithBusStallEtc.foreach(item => item := True)
-//              rInHitWithBusStallEtc.head := True
-//
-//              if (idleIdx == 0) {
-//                //rInHitWithBusStallEtc.last := True
-//              } else { // if (idleIdx == 1)
-//                //rInHitWithBusStallEtc.head := True
-//                rState := State.LOAD_HIT_DO_STALL_PIPE_4
-//                rSavedStallFromIdle := True
-//              }
-//            }
-//            is (M"00-") {
-//              mySelLoH2dPopStm.ready := False
-//              myFifoThingDoStall := True
-//              //rInHitWithBusStallEtc.foreach(item => item := True)
-//              rInHitWithBusStallEtc.head := True
-//
-//              if (idleIdx == 0) {
-//                //rInHitWithBusStallEtc.last := True
-//              } else { // if (idleIdx == 1)
-//                rState := (
-//                  State.LOAD_HIT_DO_STALL_PIPE_4
-//                  // TODO: determine if this works!
-//                  //State.LOAD_HIT_DO_STALL_PIPE_1
-//                )
-//                rSavedStallFromIdle := True
-//              }
-//            }
-//            is (M"011") {
-//              if (idleIdx == 1) {
-//                rSavedInPrefetchVec.foreach(_ := True)
-//                rState := (
-//                  State.PREFETCH_START_PIPE_3
-//                )
-//              }
-//            }
-//            default {
-//              //rSavedHadAnyHit := True
-//              //rInHitWithBusStallEtc := True
-//              //rState := (
-//              //  State.START_PREFETCH_PIPE_2
-//              //  //State.START_PREFETCH_PIPE_1
-//              //)
-//            }
-//          }
-//        }
-//      }
-//    }
-//    is (MaskedLiteral(
-//      //"1" + "0" + ("-" * numWays)
-//      //"0-" + "0" + ("-" * numWays)
-//      //"01" + "0" + ("-" * numWays)
-//      //"01-" + "0" + ("-" * numWays)
-//      "01-1" + "0" + ("-" * numWays)
-//    )) {
-//      doPopLoH2dFifo()
-//      myFifoThingDoStall := False
-//      myLoD2hPushStm.valid := False
-//    }
-//    default {
-//      //doPopLoH2dFifo()
-//      //myFifoThingDoStall := False
-//      //myLoD2hPushStm.valid := False
-//    }
-//  }
-//
-//  switch (rState) {
-//    is (State.INIT) {
-//      rState := State.IDLE
-//    }
-//    is (State.IDLE) {
-//      //myFifoThingDoStall := False
-//      //myLoD2hPushStm.valid := False
-//      //doIgnoreInvalidFifoThingPopCnt()
-//      //doPopLoH2dFifo()
-//
-//      when (rMyTempDoSaveCond(0)) {
-//        rSavedLoH2dPayload := (
-//          //rLoH2dPayload
-//          rDel2LoH2dPayload
-//        )
-//      }
-//      when (
-//        rMyTempDoSaveCond(1)
-//      ) {
-//        rSavedLoH2dPayload.byteSize := (
-//          //rLoH2dPayload.byteSize
-//          rDel2LoH2dPayload.byteSize
-//        )
-//      }
-//      when (
-//        rMyTempDoSaveCond(2)
-//        //&& myTempUpdateSavedLoH2dPayloadCond
-//        //RegNext(
-//        //  RegNext(mySelLoH2dPopStm.fire, init=False),
-//        //  init=False
-//        //)
-//      ) {
-//        myLoD2hPushStm.busPayload.src := (
-//          rDel2LoH2dPayload.src
-//        )
-//        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//          myLoD2hPushStm.busPayload.byteSize := (
-//            rDel2LoH2dPayload.byteSize
-//          )
-//          myLoD2hPushStm.busPayload.addrLo := (
-//            rDel2LoH2dPayload.addr(
-//              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//            )
-//          )
-//        }
-//        myLoD2hPushStm.busPayload.txnCnt := (
-//          rDel2LoH2dPayload.txnCnt
-//        )
-//        //rSavedRdLineAttrsTag := rdLineAttrs.tag
-//      }
-//      //rSavedRdLineAttrsTag := rdLineAttrs.tag
-//
-//    }
-//    is (State.LOAD_HIT_DO_STALL_PIPE_4) {
-//      rState := State.LOAD_HIT_DO_STALL_PIPE_3
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
-//      myLoD2hPushStm.valid := False
-//      mySelLoH2dPopStm.ready := False
-//
-//      //myLoH2dReptThing.io.finishTxn.valid := True
-//      //myLoH2dReptThing.io.finishTxn.payload := (
-//      //  RegNext(
-//      //    rDel2LoH2dPayload.txnCnt,
-//      //    init=rDel2LoH2dPayload.txnCnt.getZero
-//      //  )
-//      //)
-//    }
-//    is (State.LOAD_HIT_DO_STALL_PIPE_3) {
-//      rState := State.LOAD_HIT_DO_STALL_PIPE_2
-//      myLoD2hPushStm.valid := False
-//      mySelLoH2dPopStm.ready := False
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
-//
-//      doLineWordRamReadSync(
-//        vecIdx=1,
-//        busAddr=rSavedLoH2dPayload.addr,
-//        setEn=0,
-//      )
-//    }
-//    is (State.LOAD_HIT_DO_STALL_PIPE_2) {
-//      rState := State.LOAD_HIT_DO_STALL_PIPE_1
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec.last.rdEn := True)
-//      myLoD2hPushStm.valid := False
-//      mySelLoH2dPopStm.ready := False
-//    }
-//    is (State.LOAD_HIT_DO_STALL_PIPE_1) {
-//      rState := State.LOAD_HIT_DO_STALL
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
-//    }
-//    is (State.LOAD_HIT_DO_STALL) {
-//      val myRdLineWord = (
-//        RegNext(
-//          if (myCondHaveLineBitPlruRam) (
-//            rdLineWord.last(rSavedRamIdx)
-//          ) else (
-//            rdLineWord.last.head
-//          )
-//        )
-//      )
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
-//
-//      mySelLoH2dPopStm.ready := False
-//      myLoD2hPushStm.busPayload.data := myRdLineWord
-//      if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//        myLoD2hPushStm.busPayload.byteSize := (
-//          rSavedLoH2dPayload.byteSize
-//        )
-//        myLoD2hPushStm.busPayload.addrLo := (
-//          rSavedLoH2dPayload.addr(
-//            cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//          )
-//        )
-//      }
-//      myLoD2hPushStm.valid := True
-//      //myLoH2dReptThing.io.finishTxn.valid := False
-//      when (myLoD2hPushStm.fire) {
-//        //myFifoThingDoStall := False
-//        rState := State.LOAD_HIT_DO_STALL_POST
-//      }
-//    }
-//    is (State.LOAD_HIT_DO_STALL_POST) {
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
-//
-//      rInHitWithBusStallEtc.head := False
-//      rState := State.WAIT_D2H_FIFO_EMPTY
-//    }
-//    is (State.PREFETCH_START_PIPE_3) {
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//      rState := State.PREFETCH_START_PIPE_2
-//
-//      val myTempRange = (
-//        loBusCacheCfg.addrWidth - 2
-//        downto loBusCfg.prefetchAddrIncrStartIdx
-//      )
-//      rPrevPrefetchAddr := rSavedLoH2dPayload.addr
-//      rSavedLoH2dPayload.addr(myTempRange) := (
-//        rSavedLoH2dPayload.addr(myTempRange) + 1
-//      )
-//    }
-//    is (State.PREFETCH_START_PIPE_2) {
-//      //doPrefetchLineAttrsRamReadSync(
-//      //)
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := True)
-//
-//      rState := State.PREFETCH_START_PIPE_1
-//    }
-//    is (State.PREFETCH_START_PIPE_1) {
-//      rState := State.PREFETCH_START
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := True)
-//    }
-//    is (State.PREFETCH_START) {
-//      val myTempRange = (
-//        loBusCacheCfg.addrWidth - 2
-//        downto loBusCfg.prefetchAddrIncrStartIdx
-//      )
-//
-//      //rPrevPrefetchAddr(myTempRange) := (
-//      //  rSavedLoH2dPayload.addr(myTempRange)
-//      //)
-//      //rPrevPrefetchAddr := (
-//      //  rSavedLoH2dPayload.addr
-//      //)
-//
-//      switch (
-//        rInHitWithBusStallEtc.head
-//        ## rSavedMissLoH2dStm.valid
-//        ## prefetchHaveHit
-//      ) {
-//        //for (ramIdx <- 0 until numWays) {
-//        //  val myRamIdxMask = calcHitRamIdxMask(ramIdx=ramIdx)
-//        //  is (MaskedLiteral(
-//        //    "0" + myRamIdxMask
-//        //  )) {
-//        //  }
-//        //}
-//        is (MaskedLiteral(
-//          "00" + ("0" * numWays)
-//        )) {
-//          // TODO: implement setting `rSavedRamIdx`
-//
-//          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-//        }
-//        //is (MaskedLiteral(
-//        //  "10" + ("-" * numWays)
-//        //)) {
-//        //  // optimization: stop prefetching if we've got a newer,
-//        //  // incomplete cache hit
-//        //  rSavedInPrefetch := False
-//        //  rState := (
-//        //    //State.LOAD_HIT_DO_STALL_PIPE_4
-//        //    State.WAIT_D2H_FIFO_EMPTY
-//        //  )
-//        //}
-//        is (MaskedLiteral(
-//          "-1" + ("-" * numWays)
-//        )) {
-//          //rSavedMissLoH2dPayload.valid := False
-//          rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-//          rSavedRamIdx := rSavedMissRamIdx
-//
-//          rSavedInPrefetchVec.head := False
-//          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-//        }
-//        default {
-//          // optimization: stop prefetching if we had a hit from the
-//          // attempted prefetch address,
-//          //rState := State.WAIT_D2H_FIFO_EMPTY
-//          //rSavedInPrefetchVec.head := False
-//          rSavedInPrefetchVec.foreach(_ := False)
-//          rState := (
-//            //State.IDLE
-//            State.PREFETCH_CANCEL
-//          )
-//        }
-//      }
-//    }
-//    is (State.PREFETCH_CANCEL) {
-//      when (
-//        //myFifoThingDoStall
-//        rInHitWithBusStallEtc.head
-//        || rSavedMissLoH2dStm.valid
-//        || !myLoD2hPushStm.ready
-//      ) {
-//        rState := State.WAIT_D2H_FIFO_EMPTY
-//      } otherwise {
-//        rState := State.IDLE
-//      }
-//      //switch (
-//      //  rInHitWithBusStallEtc.head
-//      //  ## rSavedMissLoH2dStm.valid
-//      //) {
-//      //  is (M"1-") {
-//      //    rState := State.WAIT_D2H_FIFO_EMPTY
-//      //  }
-//      //  is (M"01") {
-//      //    rState := (
-//      //      //State.RECV_LINE_FROM_HI_BUS_PIPE_1
-//      //      State.WAIT_D2H_FIFO_EMPTY
-//      //    )
-//      //  }
-//      //  default {
-//      //    rState := State.IDLE
-//      //  }
-//      //}
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_PIPE_1) {
-//      rHadHiH2dFinish := False
-//      rHadHiD2hFinish := False
-//
-//      rHiH2dPayload.burstFirst := True
-//      rHiH2dPayload.burstLast := True//False
-//      rHiH2dPayload.burstCnt := hiBusCfg.maxBurstSizeMinus1
-//
-//      rHiH2dPayload.isWrite := False
-//      rHiH2dPayload.src := rSavedLoH2dPayload.src
-//      rHiH2dPayload.addr := rSavedLoH2dPayload.burstAddr(
-//        someBurstCnt=rHiH2dBurstCnt(1).getZero,
-//        incrBurstCnt=false
-//      )
-//      rHiD2hBurstCnt := 0x0
-//      when (RegNext(!hiH2dFifo.io.occupancy.orR, init=False)) {
-//        rHiH2dValid := True
-//        rState := State.RECV_LINE_FROM_HI_BUS
-//      }
-//
-//      wrLineAttrs.tag := (
-//        rSavedLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
-//      )
-//      //wrLineAttrs.dirty := (
-//      //  // if it's a store, this line should be marked dirty!
-//      //  rSavedLoH2dPayload.isWrite
-//      //)
-//
-//      def myArgBusAddr = rSavedLoH2dPayload.addr
-//      def myArgWrLineAttrs = wrLineAttrs
-//      def myArgSetEn = true
-//
-//      if (myCondHaveLineBitPlruRam) {
-//        switch (rSavedRamIdx) {
-//          for (ramIdx <- 0 until numWays) {
-//            is (ramIdx) {
-//              doLineAttrsRamWrite(
-//                ramIdx=ramIdx,
-//                busAddr=myArgBusAddr,
-//                lineAttrs=myArgWrLineAttrs,
-//                setEn=myArgSetEn,
-//              )
-//            }
-//          }
-//        }
-//      } else {
-//        doLineAttrsRamWrite(
-//          ramIdx=0,
-//          busAddr=myArgBusAddr,
-//          lineAttrs=myArgWrLineAttrs,
-//          setEn=myArgSetEn,
-//        )
-//      }
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS) {
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
-//      rHiH2dValid := False
-//      when (io.hiBus.d2hBus.valid) {
-//        rHiD2hReady := True
-//      }
-//      when (io.hiBus.d2hBus.fire) {
-//        rHiD2hBurstCnt := rHiD2hBurstCnt + 1
-//
-//        val tempBurstCntCmpEq = (
-//          rHiD2hBurstCnt
-//          === rSavedLoH2dPayload.addr(
-//            rHiD2hBurstCnt.high + log2Up(hiBusCfg.dataWidth / 8)
-//            downto log2Up(hiBusCfg.dataWidth / 8)
-//          )
-//        )
-//        when (tempBurstCntCmpEq) {
-//          myLoD2hPayload.data := (io.hiBus.d2hBus.data)
-//          if (!loBusCfg.haveByteEn) {
-//            myLoD2hPayload.byteSize := (
-//              rSavedLoH2dPayload.byteSize
-//            )
-//            myLoD2hPayload.addrLo := rSavedLoH2dPayload.addr(
-//              loBusCfg.addrLoWidth - 1 downto 0
-//            )
-//          }
-//        }
-//        val rTempBurstAddr = (
-//          rSavedLoH2dPayload.burstAddr(
-//            someBurstCnt=rHiD2hBurstCnt,
-//            incrBurstCnt=false,
-//          )
-//        )
-//
-//        def myArgBusAddr = rTempBurstAddr
-//        def myArgLineWord = io.hiBus.d2hBus.data
-//        def myArgByteEn = None
-//        def myArgSetEn = true
-//
-//        if (myCondHaveLineBitPlruRam) {
-//          switch (rSavedRamIdx) {
-//            for (ramIdx <- 0 until numWays) {
-//              is (ramIdx) {
-//                doLineWordRamWrite(
-//                  ramIdx=ramIdx,
-//                  busAddr=myArgBusAddr,
-//                  lineWord=myArgLineWord,
-//                  //byteEn=myArgByteEn,
-//                  setEn=myArgSetEn,
-//                )
-//              }
-//            }
-//          }
-//        } else {
-//          doLineWordRamWrite(
-//            ramIdx=0,
-//            busAddr=myArgBusAddr,
-//            lineWord=myArgLineWord,
-//            //byteEn=myArgByteEn,
-//            setEn=myArgSetEn,
-//          )
-//        }
-//        when ((io.hiBus.d2hBus.burstLast)) {
-//          //when (!rSavedLoH2dPayload.isWrite) {
-//          //  rState := State.RECV_LINE_FROM_HI_BUS_POST_7
-//          //} otherwise {
-//          //  rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
-//          //}
-//          rState := State.WAIT_D2H_FIFO_EMPTY
-//        }
-//
-//        //switch (
-//        //  rSavedInPrefetchVec.head
-//        //  ## io.hiBus.d2hBus.burstLast
-//        //) {
-//        //  is (M"01") {
-//        //    rState := State.RECV_LINE_FROM_HI_BUS_POST_7
-//        //  }
-//        //  is (M"11") {
-//        //    rState := (
-//        //      State.WAIT_D2H_FIFO_EMPTY
-//        //      //State.IDLE
-//        //    )
-//        //  }
-//        //}
-//      }
-//    }
-//    //is (State.RECV_LINE_FROM_HI_BUS_POST_7) {
-//    //  lineWordRam.foreach(item => {
-//    //    item.io.vec.last.rdEn := False
-//    //    item.io.vec.last.wrEn := False
-//    //  })
-//    //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//    //  rState := State.RECV_LINE_FROM_HI_BUS_POST_6
-//    //}
-//    //is (State.RECV_LINE_FROM_HI_BUS_POST_6) {
-//    //  lineWordRam.foreach(item => {
-//    //    item.io.vec.last.rdEn := False
-//    //    item.io.vec.last.wrEn := False
-//    //  })
-//    //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//    //  rState := State.RECV_LINE_FROM_HI_BUS_POST_5
-//    //}
-//    //is (State.RECV_LINE_FROM_HI_BUS_POST_5) {
-//    //  lineWordRam.foreach(item => {
-//    //    item.io.vec.last.rdEn := False
-//    //    item.io.vec.last.wrEn := False
-//    //  })
-//    //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//    //  rState := State.RECV_LINE_FROM_HI_BUS_POST_4
-//    //}
-//    //is (State.RECV_LINE_FROM_HI_BUS_POST_4) {
-//    //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//    //  lineWordRam.foreach(item => {
-//    //    item.io.vec.last.rdEn := False
-//    //    item.io.vec.last.wrEn := False
-//    //  })
-//    //  doLineWordRamReadSync(
-//    //    vecIdx=1,
-//    //    busAddr=rSavedLoH2dPayload.addr,
-//    //    setEn=0,
-//    //  )
-//    //  rState := State.RECV_LINE_FROM_HI_BUS_POST_3
-//    //}
-//    //is (State.RECV_LINE_FROM_HI_BUS_POST_3) {
-//    //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//    //  lineWordRam.foreach(item => {
-//    //    item.io.vec.last.rdEn := True
-//    //    item.io.vec.last.wrEn := False
-//    //  })
-//    //  rState := State.RECV_LINE_FROM_HI_BUS_POST_2
-//    //}
-//    //is (State.RECV_LINE_FROM_HI_BUS_POST_2) {
-//    //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//    //  lineWordRam.foreach(item => {
-//    //    item.io.vec.last.rdEn := False
-//    //    item.io.vec.last.wrEn := False
-//    //  })
-//    //  rState := State.RECV_LINE_FROM_HI_BUS_POST_1
-//    //}
-//    //is (State.RECV_LINE_FROM_HI_BUS_POST_1) {
-//    //  val myRdLineWord = (
-//    //    if (myCondHaveLineBitPlruRam) (
-//    //      rdLineWord.last(rSavedRamIdx)
-//    //    ) else (
-//    //      rdLineWord.last.head
-//    //    )
-//    //  )
-//    //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//    //  lineWordRam.foreach(item => {
-//    //    item.io.vec.last.rdEn := False
-//    //    item.io.vec.last.wrEn := False
-//    //  })
-//    //  //rState := State.RECV_LINE_FROM_HI_BUS_POST
-//
-//    //  myLoD2hPushStm.valid := True
-//
-//    //  myLoD2hPushStm.busPayload.src := (
-//    //    //RegNext
-//    //    (
-//    //      rSavedLoH2dPayload.src//,
-//    //      //init=rSavedLoH2dPayload.src.getZero
-//    //    )
-//    //  )
-//
-//    //  when (RegNext(
-//    //    rose(rState === State.RECV_LINE_FROM_HI_BUS_POST_2)
-//    //  )) {
-//    //    myLoD2hPushStm.busPayload.data := RegNext(
-//    //      //lineWordRam.io.rdData
-//    //      myRdLineWord
-//    //      //myLoD2hPushStm.busPayload.data//,
-//    //      //init=
-//    //    )
-//    //  }
-//
-//    //  when (myLoD2hPushStm.ready) {
-//    //    rState := State.RECV_LINE_FROM_HI_BUS_POST
-//    //  }
-//    //}
-//    //is (State.RECV_LINE_FROM_HI_BUS_POST) {
-//    //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//    //  lineWordRam.foreach(item => {
-//    //    item.io.vec.last.rdEn := False
-//    //    item.io.vec.last.wrEn := False
-//    //  })
-//    //  rState := (
-//    //    //State.IDLE
-//    //    State.WAIT_D2H_FIFO_EMPTY
-//    //  )
-//    //}
-//    is (State.WAIT_D2H_FIFO_EMPTY) {
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => {
-//        item.io.vec.last.rdEn := False
-//        item.io.vec.last.wrEn := False
-//      })
-//
-//      val myTempRange = (
-//        loBusCacheCfg.addrWidth - 2
-//        downto loBusCfg.prefetchAddrIncrStartIdx
-//      )
-//
-//      val mySharedCond = (
-//        !myLoD2hFifo.io.pop.valid
-//        //&& rSavedInPrefetch
-//        && rInHitWithBusStallEtc.head//rInHitWithBusStallEtc.last
-//        //&& !rSavedMissLoH2dPayload.fire
-//      )
-//
-//      //when (
-//      //  rMyTempDoSaveCond(0)
-//      //  && mySharedCond
-//      //) {
-//      //  rSavedLoH2dPayload := (
-//      //    //rLoH2dPayload
-//      //    rDel2LoH2dPayload
-//      //  )
-//      //}
-//      //when (
-//      //  rMyTempDoSaveCond(1)
-//      //  && mySharedCond
-//      //) {
-//      //  rSavedLoH2dPayload.byteSize := (
-//      //    //rLoH2dPayload.byteSize
-//      //    rDel2LoH2dPayload.byteSize
-//      //  )
-//      //}
-//      //when (
-//      //  rMyTempDoSaveCond(2)
-//      //  //&& myTempUpdateSavedLoH2dPayloadCond
-//      //  //RegNext(
-//      //  //  RegNext(mySelLoH2dPopStm.fire, init=False),
-//      //  //  init=False
-//      //  //)
-//      //  && mySharedCond
-//      //) {
-//      //  myLoD2hPushStm.busPayload.src := (
-//      //    rDel2LoH2dPayload.src
-//      //  )
-//      //  if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//      //    myLoD2hPushStm.busPayload.byteSize := (
-//      //      rDel2LoH2dPayload.byteSize
-//      //    )
-//      //    myLoD2hPushStm.busPayload.addrLo := (
-//      //      rDel2LoH2dPayload.addr(
-//      //        cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//      //      )
-//      //    )
-//      //  }
-//      //  myLoD2hPushStm.busPayload.txnCnt := (
-//      //    rDel2LoH2dPayload.txnCnt
-//      //  )
-//      //  //rSavedRdLineAttrsTag := rdLineAttrs.tag
-//      //}
-//
-//      when (
-//        mySharedCond
-//      ) {
-//        //rPrevPrefetchAddr(
-//        //  myTempRange
-//        //) := (
-//        //  rSavedLoH2dPayload.addr(myTempRange)
-//        //)
-//        //rSavedLoH2dPayload.addr(myTempRange) := (
-//        //  //rSavedLoH2dPayload.addr(myTempRange) - 1
-//        //  rPrevPrefetchAddr(myTempRange) - 1
-//        //)
-//        rSavedLoH2dPayload.addr := (
-//          rOtherSavedAddr
-//        )
-//      }
-//
-//
-//      //when (  
-//      //  !myLoD2hFifo.io.pop.valid
-//      //  //myLoD2hFifo.io.push.ready
-//      //) {
-//      //  rSavedHadAnyHit := False
-//      //  rInHitWithBusStallEtc := False
-//
-//      //  //myFifoThingDoStall := False
-//      //  rState := State.IDLE
-//      //}
-//    }
-//  }
-//
-//  //when (
-//  //  rMyTempDoSaveCond(1)
-//  //  && rSavedInPrefetch
-//  //) {
-//  //  rSavedLoH2dPayload.byteSize := (
-//  //    //rLoH2dPayload.byteSize
-//  //    rDel2LoH2dPayload.byteSize
-//  //  )
-//  //}
-//
-//  switch (
-//    rState.asBits(
-//      State.WAIT_D2H_FIFO_EMPTY.position
-//    )
-//    ## myLoD2hFifo.io.pop.valid
-//    ## rInHitWithBusStallEtc.head//rInHitWithBusStallEtc.last
-//    //## rSavedStallFromIdle
-//    ## rSavedInPrefetchVec.last
-//    ## (
-//      rSavedMissLoH2dStm.valid
-//      //|| rSavedMissOtherValid
-//    )
-//    ## rSavedMissOtherValid
-//    //## RegNextWhen(
-//    //  rSavedMissLoH2dStm.valid,
-//    //  cond=(
-//    //    rState.asBits(
-//    //      State.WAIT_D2H_FIFO_EMPTY.position
-//    //    )
-//    //  ),
-//    //  init=False
-//    //)
-//    //## {
-//    //  //val myTempRange = (
-//    //  //  loBusCacheCfg.addrWidth - 2
-//    //  //  downto loBusCfg.prefetchAddrIncrStartIdx
-//    //  //)
-//
-//    //  //(
-//    //  //  (
-//    //  //    rSavedMissLoH2dStm.txnCnt
-//    //  //    === rDel2LoH2dPayload.txnCnt
-//    //  //  )
-//    //  //)
-//    //  (
-//    //    rSavedMissLoH2dStm.txnCnt
-//    //    =/= RegNextWhen(
-//    //      myLoD2hPushStm.busPayload.txnCnt,
-//    //      cond=myLoD2hPushStm.fire,
-//    //      init=myLoD2hPushStm.busPayload.txnCnt.getZero,
-//    //    )
-//    //  )
-//    //}
-//    //## (
-//    //  rSavedMissLoH2dStm.addr(cfg.loBusCacheCfg.cachedRangeNonLine)
-//    //  === rDel2LoH2dPayload.addr(cfg.loBusCacheCfg.cachedRangeNonLine)
-//    //)
-//  ) {
-//    is (
-//      //M"10000"
-//      //M"1000"
-//      //M"10000"
-//      M"100000"
-//    ) {
-//      //rSavedMissLoH2dStm.valid := False
-//      rSavedStallFromIdle := False
-//      rSavedMissLoH2dStm.ready := True
-//      //rSavedMissOtherValid := False
-//      rState := State.IDLE
-//    }
-//    is (
-//      //M"10000"
-//      //M"1000"
-//      //M"10000"
-//      M"100001"
-//    ) {
-//      //rSavedMissLoH2dStm.valid := False
-//      rSavedStallFromIdle := False
-//      rSavedMissLoH2dStm.ready := True
-//      rSavedMissOtherValid := False
-//      rState := State.IDLE
-//    }
-//    is (
-//      //M"101--"
-//      M"101---"
-//      //M"101-"
-//    ) {
-//      rSavedInPrefetchVec.foreach(_ := False)
-//      rInHitWithBusStallEtc.head := False
-//      //rSavedStallFromIdle := False
-//      //rSavedMissLoH2dStm.ready := True
-//      //rSavedMissOtherValid := False
-//
-//      rState := State.LOAD_HIT_DO_STALL_PIPE_4
-//    }
-//    is (
-//      //M"10010"
-//      M"10010-"
-//    ) {
-//      rSavedInPrefetchVec.foreach(_ := False)
-//      rSavedStallFromIdle := False
-//      rSavedMissLoH2dStm.ready := True
-//      //rSavedMissOtherValid := False
-//
-//      rState := State.IDLE
-//    }
-//    is (
-//      //M"100-1"
-//      //M"10001"
-//      //M"1001"
-//      M"100010"
-//    ) {
-//      //rSavedInPrefetchVec.foreach(_ := False)
-//      ////rSavedStallFromIdle := False
-//      ////rSavedMissLoH2dStm.ready := True
-//
-//      //rSavedMissLoH2dStm.valid := False
-//      //rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-//      //rSavedRamIdx := rSavedMissRamIdx
-//
-//      ////rSavedMissOtherValid := False
-//      //rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-//      //rSavedInPrefetchVec.foreach(_ := False)
-//      rSavedStallFromIdle := False
-//      rSavedMissLoH2dStm.ready := True
-//      rSavedMissLoH2dStm.valid := False
-//      //rSavedMissOtherValid := False
-//
-//      rState := State.IDLE
-//    }
-//    is (
-//      M"100110"
-//    ) {
-//      rSavedInPrefetchVec.foreach(_ := False)
-//      //rSavedStallFromIdle := False
-//      //rSavedMissLoH2dStm.ready := True
-//
-//      rSavedMissLoH2dStm.valid := False
-//      rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-//      rSavedRamIdx := rSavedMissRamIdx
-//
-//      rSavedMissOtherValid := True
-//      rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-//    }
-//    //is (
-//    //  //M"1000-0-"
-//    //  M"100-0-"
-//    //  //M"10000-"
-//    //  //M"10000--"
-//    //) {
-//    //  rSavedInPrefetchVec.foreach(_ := False)
-//    //  //rSavedStallFromIdle := False
-//    //  //rInHitWithBusStallEtc.foreach(item => item := False)
-//    //  rInHitWithBusStallEtc.head := False
-//
-//    //  //myFifoThingDoStall := False
-//    //  rSavedMissLoH2dStm.ready := True
-//    //  //rSavedMissLoH2dStm.valid := False
-//
-//    //  //rSavedMissOtherValid := False
-//    //  rSavedMissOtherValid := False
-//    //  rState := State.IDLE
-//    //}
-//    //is (
-//    //  //M"10-10-"
-//    //  //M"10-1-0-"
-//    //  M"10--0-"
-//    //  //M"10-10--"
-//    //) {
-//    //  rSavedInPrefetchVec.foreach(_ := False)
-//    //  rSavedStallFromIdle := False
-//    //  //rInHitWithBusStallEtc.foreach(item => item := False)
-//    //  rInHitWithBusStallEtc.head := False
-//
-//    //  //myFifoThingDoStall := False
-//    //  rSavedMissLoH2dStm.ready := True
-//    //  //rSavedMissLoH2dStm.valid := False
-//
-//    //  rSavedMissOtherValid := False
-//    //  rState := State.IDLE
-//    //}
-//    //is (
-//    //  //M"10--10"
-//    //  //M"10-010"
-//    //  //M"10-0010"
-//    //  M"10-010"
-//    //  //M"10--010"
-//    //  //M"10--100"
-//    //) {
-//    //  myFifoThingDoStall := False
-//    //  doPopLoH2dFifo()
-//
-//    //  rSavedInPrefetchVec.foreach(_ := False)
-//
-//    //  rSavedLoH2dPayload := rDel2LoH2dPayload
-//    //  //rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-//    //  rSavedRamIdx := rSavedMissRamIdx // TODO: fix
-//    //  rSavedMissLoH2dStm.valid := False
-//
-//    //  //rSavedMissOtherValid := True
-//
-//    //  rSavedMissOtherValid := True
-//    //  rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-//    //}
-//    ////is (
-//    ////  //M"10--10"
-//    ////  //M"10-110"
-//    ////  //M"10-1-10"
-//    ////  M"10--10"
-//    ////  //M"10--010"
-//    ////  //M"10--100"
-//    ////) {
-//    ////  rSavedInPrefetchVec.foreach(_ := False)
-//
-//    ////  //rSavedLoH2dPayload := rDel2LoH2dPayload
-//    ////  rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-//    ////  rSavedRamIdx := rSavedMissRamIdx // TODO: fix
-//    ////  //rSavedMissLoH2dStm.valid := False
-//    ////  rSavedStallFromIdle := False
-//
-//    ////  rSavedMissOtherValid := True
-//    ////  rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-//    ////}
-//    //is (
-//    //  //M"10--10"
-//    //  //M"10-110"
-//    //  //M"10-0110"
-//    //  M"10-110"
-//    //  //M"10--010"
-//    //  //M"10--100"
-//    //) {
-//    //  myFifoThingDoStall := False
-//    //  doPopLoH2dFifo()
-//
-//    //  rSavedInPrefetchVec.foreach(_ := False)
-//
-//    //  rSavedLoH2dPayload := rDel2LoH2dPayload
-//    //  //rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-//    //  //rSavedRamIdx := rSavedMissRamIdx // TODO: fix
-//    //  rSavedMissLoH2dStm.valid := False
-//    //  rSavedStallFromIdle := False
-//
-//    //  rSavedMissOtherValid := True
-//    //  rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-//    //}
-//    //is (
-//    //  //M"10--11"
-//    //  //M"10--11"
-//    //  //M"10--011"
-//    //  M"10-011"
-//    //  //M"10--1-1"
-//    //  //M"10--101"
-//    //) {
-//    //  //myFifoThingDoStall := False
-//    //  //doPopLoH2dFifo()
-//
-//    //  rSavedInPrefetchVec.foreach(_ := False)
-//
-//    //  //rSavedMissLoH2dStm.valid := False
-//    //  ////rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-//    //  ////rSavedRamIdx := rSavedMissRamIdx
-//    //  //rSavedLoH2dPayload := rDel2LoH2dPayload
-//    //  //rSavedLoH2dPayload := rDel2LoH2dPayload
-//
-//    //  rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-//    //  rSavedRamIdx := rSavedMissRamIdx
-//    //  rSavedMissLoH2dStm.valid := False
-//    //  //rSavedMissOtherValid := True
-//
-//    //  rSavedMissOtherValid := False
-//    //  rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-//    //}
-//    //is (
-//    //  //M"10--11"
-//    //  //M"10--11"
-//    //  //M"10--111"
-//    //  M"10-111"
-//    //  //M"10--1-1"
-//    //  //M"10--101"
-//    //) {
-//    //  //myFifoThingDoStall := False
-//    //  //doPopLoH2dFifo()
-//
-//    //  rSavedInPrefetchVec.foreach(_ := False)
-//
-//    //  //rSavedMissLoH2dStm.valid := False
-//    //  ////rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-//    //  ////rSavedRamIdx := rSavedMissRamIdx
-//    //  //rSavedLoH2dPayload := rDel2LoH2dPayload
-//    //  //rSavedLoH2dPayload := rDel2LoH2dPayload
-//
-//    //  rSavedLoH2dPayload := rSavedMissLoH2dStm.payload
-//    //  rSavedRamIdx := rSavedMissRamIdx
-//    //  rSavedMissLoH2dStm.valid := False
-//    //  //rSavedMissOtherValid := True
-//
-//    //  rSavedMissOtherValid := False
-//    //  rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-//    //}
-//    //is (
-//    //  //M"10100-"
-//    //  //M"1010-0-"
-//    //  M"101-0-"
-//    //  //M"10100--"
-//    //) {
-//    //  rSavedInPrefetchVec.foreach(_ := False)
-//    //  rSavedStallFromIdle := False
-//    //  //rInHitWithBusStallEtc.foreach(item => item := False)
-//    //  rInHitWithBusStallEtc.head := False
-//
-//    //  //myFifoThingDoStall := False
-//
-//    //  rSavedMissLoH2dStm.ready := True
-//    //  //rSavedMissLoH2dStm.valid := False
-//    //  rSavedMissOtherValid := False
-//
-//    //  rState := State.LOAD_HIT_DO_STALL_PIPE_4
-//    //}
-//    default {
-//    }
-//  }
-//
-//  when (
-//    rMyTempDoSaveCond(2)
-//    //&& !rSavedInPrefetch
-//    //&& (
-//    //  !rSavedStallFromIdle
-//    //  || rose(rSavedStallFromIdle)
-//    //)
-//    && (
-//      !myFifoThingDoStall
-//      || rose(myFifoThingDoStall)
-//    )
-//    && (
-//      rSavedMissLoH2dStm.ready
-//      //|| rSavedMissOtherValid
-//    )
-//  ) {
-//    rOtherSavedAddr := (
-//      rDel2LoH2dPayload.addr
-//    )
-//    myLoD2hPushStm.busPayload.src := (
-//      rDel2LoH2dPayload.src
-//    )
-//    if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//      myLoD2hPushStm.busPayload.byteSize := (
-//        rDel2LoH2dPayload.byteSize
-//      )
-//      myLoD2hPushStm.busPayload.addrLo := (
-//        rDel2LoH2dPayload.addr(
-//          cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//        )
-//      )
-//    }
-//    myLoD2hPushStm.busPayload.txnCnt := (
-//      rDel2LoH2dPayload.txnCnt
-//    )
-//    //rSavedRdLineAttrsTag := rdLineAttrs.tag
-//  }
-//
-//  wrLineAttrs.valid := True
-//}
+private[libcheesevoyage]
+case class LcvBusInstrCacheWithTaggedPrefetchWide(
+  cfg: LcvBusCacheBusPairConfig,
+) extends Component {
+  //--------
+  require(
+    cfg.havePrefetch
+  )
+  //--------
+  def numWays = cfg.loBusCacheCfg.numWays
 
-//case class LcvBusInstrCacheWithTaggedPrefetch(
-//  cfg: LcvBusCacheBusPairConfig,
-//) extends Component {
-//  //--------
-//  require(
-//    cfg.havePrefetch
-//  )
-//  //--------
-//  def numWays = cfg.loBusCacheCfg.numWays
-//
-//  def loBusCfg = cfg.loBusCfg
-//  def hiBusCfg = cfg.hiBusCfg
-//  def optFormal = cfg.optFormal
-//
-//  def loBusCacheCfg = cfg.loBusCacheCfg
-//  def myLineWordRamSingleWordAddrRshift = (
-//    loBusCacheCfg.myLineWordRamSingleWordAddrRshift
-//  )
-//  def myLineAttrsRamAddrRshift = loBusCacheCfg.myLineAttrsRamAddrRshift
-//  def wordWidth = loBusCacheCfg.wordWidth
-//  def depthWords = loBusCacheCfg.depthWords
-//  def depthLines = loBusCacheCfg.depthLines
-//
-//  def myFifoThingLoBusCfg = cfg.myFifoThingLoBusCfg
-//  //--------
-//  require(
-//    //hiBusCfg.maxBurstSizeMinus1 == (64 / 4) - 1,
-//    //cfg.loBusCacheCfg.lineSizeBytes == 64,
-//    cfg.loBusCacheCfg.lineSizeBytes == loBusCfg.burstCntMaxNumBytes,
-//    s"(Perhaps only temporarily), "
-//    + s"we need the number of bytes per cache line to be "
-//    + s"${loBusCfg.burstCntMaxNumBytes}. "
-//    + s"This permits an easier-to-implement design "
-//    + s"for `io.hiBus` bursting."
-//  )
-//  //--------
-//  val io = LcvBusCacheIo(cfg=cfg)
-//  //--------
-//  val lineWordRamCfg = RamSdpPipeConfig(
-//    wordType=UInt(wordWidth bits),
-//    depth=depthWords,
-//    optIncludeWrByteEn=false,
-//    optWrHistLength=cfg.myRamOptWrHistLength,
-//    initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
-//    arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
-//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineWordMemRamStyleXilinx,
-//  )
-//  val lineWordRam = Array.fill(numWays)(
-//    RamSdpPipe(cfg=lineWordRamCfg)
-//  )
-//  val lineAttrsRamCfg = RamSdpPipeConfig(
-//    wordType=LcvBusCacheLineAttrs(cfg=loBusCfg),
-//    depth=depthLines,
-//    optIncludeWrByteEn=false,
-//    optWrHistLength=cfg.myRamOptWrHistLength,
-//    initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
-//    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
-//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
-//  )
-//  val lineAttrsRam = Array.fill(2)(
-//    Array.fill(numWays)(
-//      RamSdpPipe(cfg=lineAttrsRamCfg)
-//    )
-//  )
-//
-//  val rdLineWord = Vec.fill(numWays)(
-//    UInt(wordWidth bits)
-//  )
-//  val rdLineAttrs = Vec.fill(numWays)(
-//    LcvBusCacheLineAttrs(cfg=loBusCfg)
-//  )
-//  for (idx <- 0 until numWays) {
-//    rdLineWord(idx) := lineWordRam(idx).io.rdData
-//    rdLineAttrs(idx) := lineAttrsRam.head(idx).io.rdData
-//    lineWordRam(idx).io.wrEn := False
-//    lineAttrsRam.foreach(_(idx).io.wrEn := False)
-//  }
-//
-//  val wrLineAttrs = LcvBusCacheLineAttrs(cfg=loBusCfg)
-//  wrLineAttrs := RegNext(wrLineAttrs, init=wrLineAttrs.getZero)
-//  wrLineAttrs.allowOverride
-//
-//  val lineBitPlruRamCfg = RamSdpPipeConfig(
-//    wordType=UInt(
-//      //log2Up(numWays) bits
-//      numWays bits
-//    ),
-//    depth=depthLines,
-//    optIncludeWrByteEn=false,
-//    optWrHistLength=cfg.myRamOptWrHistLength,
-//    initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
-//    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
-//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
-//  )
-//
-//  val myCondHaveLineBitPlruRam = (
-//    numWays > 1
-//  )
-//  val lineBitPlruRam = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    RamSdpPipe(cfg=lineBitPlruRamCfg)
-//  )
-//
-//  val rdLineBitPlru = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    UInt(
-//      //log2Up(numWays) bits
-//      numWays bits
-//    )
-//  )
-//  val wrLineBitPlru = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    UInt(
-//      //log2Up(numWays) bits
-//      numWays bits
-//    )
-//  )
-//
-//  if (myCondHaveLineBitPlruRam) {
-//    rdLineBitPlru := lineBitPlruRam.io.rdData
-//    wrLineBitPlru := RegNext(wrLineBitPlru, init=wrLineBitPlru.getZero)
-//    //wrLineBitPlru.allowOverride
-//    lineBitPlruRam.io.wrEn := False
-//  }
-//
-//
-//  //--------
-//  object State extends SpinalEnum(
-//    defaultEncoding=(
-//      //binarySequential
-//      binaryOneHot
-//    )
-//  ) {
-//    val
-//      INIT,
-//      IDLE,
-//      LOAD_HIT_DO_STALL_PIPE_4,
-//      LOAD_HIT_DO_STALL_PIPE_3,
-//      LOAD_HIT_DO_STALL_PIPE_2,
-//      LOAD_HIT_DO_STALL_PIPE_1,
-//      LOAD_HIT_DO_STALL,
-//      LOAD_HIT_DO_STALL_POST,
-//      //STORE_HIT_DO_STALL_PIPE_1,
-//      //STORE_HIT_DO_STALL,
-//
-//      //MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2,
-//      //MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1,
-//      //MAYBE_DIRTY_RE_READ_ATTRS,
-//      //SEND_LINE_TO_HI_BUS_PIPE_3,
-//      //SEND_LINE_TO_HI_BUS_PIPE_2,
-//      //SEND_LINE_TO_HI_BUS_PIPE_1,
-//      //SEND_LINE_TO_HI_BUS,
-//      START_PREFETCH_PIPE_2,
-//      START_PREFETCH_PIPE_1,
-//      START_PREFETCH,
-//      RECV_LINE_FROM_HI_BUS_PIPE_1,
-//      RECV_LINE_FROM_HI_BUS,
-//      RECV_LINE_FROM_HI_BUS_POST_WRITE,
-//      RECV_LINE_FROM_HI_BUS_POST_7,
-//      RECV_LINE_FROM_HI_BUS_POST_6,
-//      RECV_LINE_FROM_HI_BUS_POST_5,
-//      RECV_LINE_FROM_HI_BUS_POST_4,
-//      RECV_LINE_FROM_HI_BUS_POST_3,
-//      RECV_LINE_FROM_HI_BUS_POST_2,
-//      RECV_LINE_FROM_HI_BUS_POST_1,
-//      RECV_LINE_FROM_HI_BUS_POST,
-//
-//      WAIT_D2H_FIFO_EMPTY
-//
-//      = newElement();
-//  }
-//
-//  val rState = (
-//    Reg(State())
-//    init(State.INIT)
-//  )
-//  //--------
-//  val myLoH2dPopBusCfg = (
-//    LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=myFifoThingLoBusCfg)
-//  )
-//  val myLoH2dReptThing = LcvBusDoStallH2dReptThing(
-//    busCfg=myLoH2dPopBusCfg
-//  )
-//
-//  //val myLoH2dDoStallFifoThing = LcvBusDoStallFifoThing(
-//  //  busCfg=myFifoThingLoBusCfg,
-//  //  includeDoInit=false,
-//  //)
-//  //io.loBus.h2dBus.translateInto(
-//  //  //myLoH2dDoStallFifoThing.io.push
-//  //  myLoH2dReptThing.io.push
-//  //)(
-//  //  dataAssignment=(outp, inp) => {
-//  //    //outp.busPayload := inp
-//  //    outp.mainNonBurstInfo := inp.mainNonBurstInfo
-//  //    outp.txnCnt.allowOverride
-//  //    outp.txnCnt := (
-//  //      (
-//  //        RegNextWhen(
-//  //          (outp.txnCnt.asSInt + 1),
-//  //          cond=myLoH2dReptThing.io.push.fire,
-//  //        )
-//  //        init(-2)
-//  //      ).asUInt
-//  //    )
-//  //  }
-//  //)
-//  val myFifoThingDoStall = Bool()
-//  myFifoThingDoStall := (
-//    RegNext(myFifoThingDoStall, init=myFifoThingDoStall.getZero)
-//  )
-//  myLoH2dReptThing.io.doStall := myFifoThingDoStall
-//  //val rSeenMyFifoThingDoStallCnt = (
-//  //  Reg(UInt(log2Up(LcvBusDoStallFifoThing.fifoDepthMain + 1) + 1 bits))
-//  //  init(0x0)
-//  //)
-//  //myLoH2dDoStallFifoThing.io.doStall := myFifoThingDoStall
-//
-//  val myLoH2dToWrByteEnStmAdapter = (
-//    !loBusCfg.haveByteEn
-//  ) generate (LcvBusH2dShiftedDataEtcStreamAdapter(
-//    cfg=LcvBusH2dShiftedDataEtcStreamAdapterConfig(
-//      loBusCfg=myFifoThingLoBusCfg,
-//    )
-//  ))
-//
-//  val myMainLoH2dPopStm = (
-//    Stream(LcvBusH2dPayload(
-//      cfg=myLoH2dPopBusCfg
-//    ))
-//  )
-//
-//  val mySelLoH2dPopStm = (
-//    //cloneOf(myLoH2dDoStallFifoThing.io.pop)
-//    //cloneOf(io.loBus.h2dBus)
-//    //Stream(LcvBusH2dPayload(
-//    //  cfg=myLoH2dPopBusCfg
-//    //))
-//    //cloneOf(myMainLoH2dPopStm)
-//    cloneOf(myLoH2dReptThing.io.pop)
-//  )
-//  mySelLoH2dPopStm << myLoH2dReptThing.io.pop
-//  //val mySelLoH2dPop
-//  def mySelLoH2dPopPayload = mySelLoH2dPopStm.payload//.busPayload
-//
-//  io.loBus.h2dBus.translateInto(
-//    if (!loBusCfg.haveByteEn) (
-//      myLoH2dToWrByteEnStmAdapter.io.loH2dBus
-//    ) else (
-//      myMainLoH2dPopStm
-//    )
-//  )(
-//    dataAssignment=(outp, inp) => {
-//      //outp := inp
-//      outp.mainNonBurstInfo := inp.mainNonBurstInfo
-//      outp.txnCnt.allowOverride
-//      outp.txnCnt := (
-//        (
-//          RegNextWhen(
-//            (outp.txnCnt.asSInt + 1),
-//            cond=io.loBus.h2dBus.fire,
-//          )
-//          init(-2)
-//        ).asUInt
-//      )
-//    }
-//  )
-//
-//  if (!loBusCfg.haveByteEn) {
-//    myLoH2dToWrByteEnStmAdapter.io.hiH2dBus.translateInto(
-//      myMainLoH2dPopStm
-//    )(
-//      dataAssignment=(outp, inp) => {
-//        outp := inp
-//        outp.txnCnt.allowOverride
-//        outp.txnCnt := myLoH2dToWrByteEnStmAdapter.io.loH2dBus.txnCnt
-//      }
-//    )
-//  }
-//
-//  //myMainLoH2dPopStm.ready := !myFifoThingDoStall
-//  //myLoH2dReptThing.io.push << myMainLoH2dPopStm
-//  myMainLoH2dPopStm.translateInto(
-//    myLoH2dReptThing.io.push
-//  )(
-//    dataAssignment=(outp, inp) => {
-//      outp.busPayload := inp
-//      //outp.savedData := inp.data
-//    }
-//  )
-//  mySelLoH2dPopStm.ready := False
-//
-//  //val myLoH2dPopThrowArea = new Area {
-//  //  val myLoH2dThrowCond = Bool()
-//  //  val myTempLoH2dPopStm = myLoH2dDoStallFifoThing.io.pop.throwWhen(
-//  //    myLoH2dThrowCond
-//  //  )
-//  //  myLoH2dThrowCond := False
-//  //  //myLoH2dPopStm.ready := False
-//  //  myLoH2dPopStm << myTempLoH2dPopStm
-//  //}
-//  val rLoH2dPayload = (
-//    RegNextWhen(
-//      mySelLoH2dPopStm.payload,
-//      cond=mySelLoH2dPopStm.fire,
-//      init=mySelLoH2dPopStm.payload.getZero,
-//    )
-//  )
-//  def rBusAddr = rLoH2dPayload.addr
-//  val rDel2LoH2dPayload = (
-//    RegNext/*When*/(
-//      next=rLoH2dPayload,
-//      //cond=myLoH2dPopStm.fire,
-//      init=rLoH2dPayload.getZero,
-//    )
-//  )
-//  def rDel2BusAddr = rDel2LoH2dPayload.addr
-//
-//  val rSavedLoH2dPayload = (
-//    Reg(cloneOf(rLoH2dPayload))
-//    init(rLoH2dPayload.getZero)
-//  )
-//  def rSavedLoBusAddr = rSavedLoH2dPayload.addr
-//  def rSavedLoBusAddrSet = rSavedLoBusAddr(loBusCacheCfg.setRange)
-//
-//  val myLoD2hShiftedDataStmAdapter = (
-//    !cfg.loBusCfg.haveByteEn
-//  ) generate (
-//    LcvBusD2hShiftedDataEtcStreamAdapter(
-//      cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(
-//        busCfg=cfg.loBusCfg
-//      )
-//    )
-//  )
-//  val myLoD2hPushStm = Stream(
-//    LcvBusDoStallFifoThingPayload(
-//      LcvBusD2hPayload(
-//        cfg=myFifoThingLoBusCfg,
-//        includeByteSizeEtc=(!myFifoThingLoBusCfg.haveByteEn),
-//      ),
-//    )
-//  )
-//
-//  myLoD2hPushStm.valid := False
-//  //myLoH2dReptThing.io.finishTxn.valid := myLoD2hPushStm.fire
-//  //myLoH2dReptThing.io.finishTxn.payload := (
-//  //  myLoD2hPushStm.busPayload.txnCnt
-//  //)
-//
-//  val myLoD2hFifo = StreamFifo(
-//    dataType=LcvBusD2hPayload(cfg=cfg.loBusCfg),
-//    depth=(myFifoThingLoBusCfg.maxBurstSizeMinus1 + 1),
-//    latency=cfg.busD2hFifoLatency,
-//    forFMax=true,
-//  )
-//
-//  myLoD2hFifo.io.pop.translateInto(io.loBus.d2hBus)(
-//    dataAssignment=(outp, inp) => {
-//      outp.mainNonBurstInfo := inp.mainNonBurstInfo
-//    }
-//  )
-//  //val myLoD2hAlmostDonePushStm = cloneOf(myLoD2hPushStm)
-//  //myLoD2hAlmostDonePushStm << myLoD2hPushStm
-//  //myLoD2hAlmostDonePushStm << myLoD2hPushStm.throwWhen(
-//  //  myLoD2hPushStm.busPayload.txnCnt.asSInt
-//  //  === (
-//  //    RegNextWhen(
-//  //      myLoD2hPushStm.busPayload.txnCnt.asSInt,
-//  //      cond=myLoD2hPushStm.fire,
-//  //    )
-//  //    init(1)
-//  //  )
-//  //)
-//
-//  // NOTE: this was previously `myLoD2hAlmostDonePushStm.translateInto`
-//  myLoD2hPushStm.translateInto(
-//    if (cfg.myFifoThingLoBusCfg.haveByteEn) (
-//      myLoD2hFifo.io.push
-//    ) else (
-//      myLoD2hShiftedDataStmAdapter.io.loD2hBus
-//    )
-//  )(
-//    dataAssignment=(outp, inp) => {
-//      outp.mainNonBurstInfo := inp.busPayload.mainNonBurstInfo
-//    }
-//  )
-//
-//  if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//    //println(
-//    //  s"NOTE: "
-//    //  + s"myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus"
-//    //)
-//    myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus
-//  }
-//
-//  def doLineWordRamReadSync(
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    lineWordRam.foreach(item => {
-//      if (setEn == 1) {
-//        item.io.rdEn := True
-//      } else if (setEn == 2) {
-//        item.io.rdEn := (
-//          RegNext(
-//            next=(
-//              //mySelLoH2dPopStm.valid
-//              mySelLoH2dPopStm.fire
-//            ),
-//            init=False,
-//          )
-//          //&& !myFifoThingDoStall
-//        )
-//      } 
-//      item.io.rdAddr := {
-//        //println(
-//        //  s"test info: busAddr("
-//        //  + s"${busAddr.high} downto ${myLineWordRamAddrRshift}"
-//        //  + s")"
-//        //)
-//        (
-//          (
-//            busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift)
-//          )
-//          .resize(item.io.rdAddr.getWidth)
-//        )
-//      }
-//    })
-//  }
-//  def doLineAttrsRamReadSync(
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    lineAttrsRam.head.foreach(item => {
-//      if (setEn == 1) {
-//        item.io.rdEn := True
-//      } else if (setEn == 2) {
-//        item.io.rdEn := (
-//          RegNext(
-//            next=(
-//              //mySelLoH2dPopStm.valid
-//              mySelLoH2dPopStm.fire
-//            ),
-//            init=False,
-//          )
-//          //&& !myFifoThingDoStall
-//        )
-//      } 
-//      item.io.rdAddr := {
-//        //println(
-//        //  s"test info: busAddr("
-//        //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
-//        //  + s")"
-//        //)
-//        (
-//          (
-//            busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
-//          )
-//          .resize(item.io.rdAddr.getWidth)
-//        )
-//      }
-//    })
-//  }
-//  def doLineBitPlruRamReadSync(
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    if (setEn == 1) {
-//      lineBitPlruRam.io.rdEn := True
-//    } else if (setEn == 2) {
-//      lineBitPlruRam.io.rdEn := (
-//        RegNext(
-//          next=(
-//            //mySelLoH2dPopStm.valid
-//            mySelLoH2dPopStm.fire
-//          ),
-//          init=False,
-//        )
-//        //&& !myFifoThingDoStall
-//      )
-//    } 
-//    lineBitPlruRam.io.rdAddr := {
-//      //println(
-//      //  s"test info: busAddr("
-//      //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
-//      //  + s")"
-//      //)
-//      (
-//        (
-//          busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
-//        )
-//        .resize(lineBitPlruRam.io.rdAddr.getWidth)
-//      )
-//    }
-//  }
-//  def doLineWordRamWrite(
-//    ramIdx: Int,
-//    busAddr: UInt,
-//    lineWord: UInt,
-//    //byteEn: Option[UInt],
-//    setEn: Boolean=true,
-//  ): Unit = {
-//    if (setEn) {
-//      lineWordRam(ramIdx).io.wrEn := True
-//    }
-//    lineWordRam(ramIdx).io.wrAddr := (
-//      (busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift))
-//      .resize(lineWordRam(ramIdx).io.wrAddr.getWidth)
-//    )
-//    lineWordRam(ramIdx).io.wrData := lineWord
-//    //byteEn match {
-//    //  case Some(byteEn) => {
-//    //    lineWordRam(ramIdx).io.wrByteEn := byteEn.asBits
-//    //  }
-//    //  case None => {
-//    //    lineWordRam(ramIdx).io.wrByteEn := (
-//    //      B(
-//    //        lineWordRam(ramIdx).io.wrByteEn.getWidth bits,
-//    //        default -> True
-//    //      )
-//    //    )
-//    //  }
-//    //}
-//  }
-//  def doLineAttrsRamWrite(
-//    ramIdx: Int,
-//    busAddr: UInt,
-//    lineAttrs: LcvBusCacheLineAttrs,
-//    setEn: Boolean=true,
-//  ): Unit = {
-//    if (setEn) {
-//      lineAttrsRam.foreach(item => {
-//        item(ramIdx).io.wrEn := True
-//      })
-//    }
-//    lineAttrsRam.foreach(item => {
-//      item(ramIdx).io.wrAddr := (
-//        (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
-//        .resize(lineAttrsRam.head(ramIdx).io.wrAddr.getWidth)
-//      )
-//    })
-//    lineAttrsRam.foreach(item => {
-//      item(ramIdx).io.wrData := lineAttrs
-//    })
-//  }
-//  def doLineBitPlruRamWrite(
-//    busAddr: UInt,
-//    //lineAttrs: LcvBusCacheLineBitPlru,
-//    lineBitPlru: UInt,
-//    setEn: Boolean=true,
-//  ): Unit = {
-//    if (setEn) {
-//      lineBitPlruRam.io.wrEn := True
-//    }
-//    lineBitPlruRam.io.wrAddr := (
-//      (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
-//      .resize(lineBitPlruRam.io.wrAddr.getWidth)
-//    )
-//    lineBitPlruRam.io.wrData := lineBitPlru
-//  }
-//
-//  doLineWordRamReadSync(
-//    busAddr=mySelLoH2dPopPayload.addr,
-//    setEn=2,
-//  )
-//  for (ramIdx <- 0 until numWays) {
-//    doLineWordRamWrite(
-//      ramIdx=ramIdx,
-//      busAddr=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.addr,
-//            init=mySelLoH2dPopPayload.addr.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.addr.getZero,
-//        )
-//      ),
-//      lineWord=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.data,
-//            init=mySelLoH2dPopPayload.data.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.data.getZero,
-//        )
-//      ),
-//      //byteEn=Some(
-//      //  RegNext(
-//      //    RegNext(
-//      //      mySelLoH2dPopPayload.byteEn,
-//      //      init=mySelLoH2dPopPayload.byteEn.getZero
-//      //    ),
-//      //    init=mySelLoH2dPopPayload.byteEn.getZero,
-//      //  ),
-//      //),
-//      setEn=false,
-//    )
-//  }
-//
-//  doLineAttrsRamReadSync(
-//    busAddr=mySelLoH2dPopPayload.addr,
-//    setEn=2,
-//  )
-//  for (ramIdx <- 0 until numWays) {
-//    doLineAttrsRamWrite(
-//      ramIdx=ramIdx,
-//      busAddr=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.addr,
-//            init=mySelLoH2dPopPayload.addr.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.addr.getZero,
-//        )
-//      ),
-//      lineAttrs=(
-//        wrLineAttrs
-//      ),
-//      setEn=false,
-//    )
-//  }
-//
-//  if (myCondHaveLineBitPlruRam) {
-//    doLineBitPlruRamReadSync(
-//      busAddr=mySelLoH2dPopPayload.addr,
-//      setEn=2,
-//    )
-//    doLineBitPlruRamWrite(
-//      busAddr=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.addr,
-//            init=mySelLoH2dPopPayload.addr.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.addr.getZero,
-//        )
-//      ),
-//      lineBitPlru=(
-//        wrLineBitPlru
-//      ),
-//      setEn=false,
-//    )
-//  }
-//  //--------
-//  myLoD2hPushStm.payload := (
-//    RegNext(myLoD2hPushStm.payload, init=myLoD2hPushStm.payload.getZero)
-//  )
-//
-//  val myTempHaveHitCmpEqLeft = Vec[UInt](
-//    rdLineAttrs.map(item => item.tag)
-//  )
-//  val myTempHaveHitCmpEqRight = Vec.fill(numWays)(
-//    RegNext(
-//      RegNext(mySelLoH2dPopPayload.addr(loBusCacheCfg.tagRange))
-//      init(0x0)
-//    )
-//    init(0x0),
-//  )
-//  val tempHaveHitCmpEq = Vec.fill(numWays)(Bool())
-//  val haveHit = Vec.fill(numWays)(
-//    Bool()
-//  )
-//  for (ramIdx <- 0 until numWays) {
-//    tempHaveHitCmpEq(ramIdx) := (
-//      myTempHaveHitCmpEqLeft(ramIdx)
-//      === myTempHaveHitCmpEqRight(ramIdx)
-//    )
-//    haveHit(ramIdx) := (
-//      rdLineAttrs(ramIdx).fire
-//      && tempHaveHitCmpEq(ramIdx)
-//    )
-//  }
-//  //val haveHit = (
-//  //  rdLineAttrs.fire
-//  //  && tempHaveHitCmpEq
-//  //)
-//
-//  val rSavedRdLineAttrsTag = (
-//    //Vec.fill(numWays)(
-//      Reg(
-//        cloneOf(rdLineAttrs.head.tag),
-//        init=rdLineAttrs.head.tag.getZero,
-//      )
-//    //)
-//  )
-//
-//  val rHiH2dBurstCnt = (
-//    Vec.fill(2)(
-//      Reg(UInt(loBusCfg.burstCntWidth bits))
-//      init(0x0)
-//    )
-//  )
-//  val rHiD2hBurstCnt = (
-//    Reg(UInt(loBusCfg.burstCntWidth bits))
-//    init(0x0)
-//  )
-//  //--------
-//  def myLoD2hPayload = myLoD2hPushStm.busPayload
-//  //--------
-//
-//  def doPopLoH2dFifo(): Unit = {
-//    mySelLoH2dPopStm.ready := True
-//  }
-//
-//  //val myDoStallLoH2dThrowThing = (
-//  //  LcvBusDoStallH2dThrowThing(busCfg=cfg.myFifoThingLoBusCfg)
-//  //)
-//  //myDoStallLoH2dThrowThing.io.push.valid := (
-//  //  myLoH2dDoStallFifoThing.io.pop.valid
-//  //  //&& rState === State.IDLE
-//  //  && rState.asBits(1)
-//  //)
-//  //myDoStallLoH2dThrowThing.io.push.payload := (
-//  //  myLoH2dDoStallFifoThing.io.pop.busPayload.txnCnt
-//  //)
-//
-//  //val myFullTempIgnoreDupCntCond = (
-//  //  myDoStallLoH2dThrowThing.io.myThrowCondMain
-//  //  //&& History[Bool](
-//  //  //  that=True,
-//  //  //  when=(
-//  //  //    myLoH2dPopStm.fire
-//  //  //    //myD2hPushStm.fire
-//  //  //    //myLoH2dDoStallFifoThing.io.pop.fire
-//  //  //    //&& !myLoH2dPopThrowArea.myLoH2dThrowCond
-//  //  //  ),
-//  //  //  length=(
-//  //  //    //2
-//  //  //    //4
-//  //  //    //3
-//  //  //    5
-//  //  //  ),
-//  //  //  init=False,
-//  //  //).last
-//  //)
-//
-//  //def doIgnoreInvalidFifoThingPopCnt(
-//  //): Unit = {
-//  //  when (myFullTempIgnoreDupCntCond) {
-//  //    myLoH2dPopThrowArea.myLoH2dThrowCond := True
-//  //  }
-//  //}
-//
-//  val rMyTempDoSaveCond = (
-//    Vec.fill(4)(
-//      RegNext(
-//        RegNext(
-//          (
-//            mySelLoH2dPopStm.fire
-//            //&& !myFullTempIgnoreDupCntCond
-//          ),
-//          init=False
-//        ),
-//        init=False
-//      )
-//    )
-//  )
-//  //val rHadAnyRamWritePastTwoCycles = Vec.fill(2)(
-//  //  RegNext(
-//  //    (
-//  //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-//  //      || RegNext(
-//  //        Vec(lineWordRam.map(item => item.io.wrEn)).orR,
-//  //        init=False
-//  //      )
-//  //      || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-//  //      || RegNext(
-//  //        Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
-//  //        init=False
-//  //      )
-//  //    ),
-//  //    init=False
-//  //  )
-//  //)
-//  val myTempHaveCurrRamWrite = (
-//    LcvOrR(Vec[Bool](lineWordRam.map(item => item.io.wrEn)))
-//    || LcvOrR(Vec[Bool](lineAttrsRam.head.map(item => item.io.wrEn)))
-//  )
-//  val myHistHadAnyRamWrite = Array.fill(2)(
-//    History[Bool](
-//      that=(
-//        //RegNext(
-//          myTempHaveCurrRamWrite//,
-//        //  init=myTempHaveCurrRamWrite.getZero
-//        //)
-//      ),
-//      length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-//      init=myTempHaveCurrRamWrite.getZero
-//    )
-//  )
-//  val myHadAnyRecentRamWrite = Vec[Bool](
-//    myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
-//    //RegNext(
-//    //  (
-//    //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-//    //    || RegNext(
-//    //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR,
-//    //      init=False
-//    //    )
-//    //    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-//    //    || RegNext(
-//    //      Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR,
-//    //      init=False
-//    //    )
-//    //  ),
-//    //  init=False
-//    //)
-//  )
-//  //val rHadLineAttrsRamWritePastTwoCycles = Vec.fill(2)(
-//  //  RegNext(
-//  //    lineAttrsRam.io.wrEn
-//  //    || RegNext(lineAttrsRam.io.wrEn, init=False),
-//  //    init=False
-//  //  )
-//  //)
-//  //val myTempUpdateSavedLoH2dPayloadCond = Bool()
-//  //myTempUpdateSavedLoH2dPayloadCond := True
-//
-//  //--------
-//  val rHadLoH2dFinish = Reg(Bool(), init=False)
-//  val rHadLoD2hFinish = Reg(Bool(), init=False)
-//  val rHadHiH2dFinish = Reg(Bool(), init=False)
-//  val rHadHiD2hFinish = Reg(Bool(), init=False)
-//
-//  val hiH2dFifo = (
-//    StreamFifo(
-//      dataType=(
-//        //UInt(loBusCacheCfg.wordWidth bits)
-//        LcvBusH2dPayload(cfg.hiBusCfg)
-//      ),
-//      depth=loBusCacheCfg.lineSizeWords,
-//      latency=2,
-//      forFMax=true,
-//    )
-//  )
-//
-//  val rHiH2dValid = Reg(Bool(), init=False)
-//  val rHiH2dPayload = (
-//    Reg(cloneOf(hiH2dFifo.io.push.payload))
-//    init(hiH2dFifo.io.push.payload.getZero)
-//  )
-//  val rHiD2hReady = Reg(Bool(), init=False)
-//  hiH2dFifo.io.push.valid := rHiH2dValid
-//  hiH2dFifo.io.push.payload := rHiH2dPayload
-//  io.hiBus.d2hBus.ready := rHiD2hReady
-//
-//  rHiH2dPayload.byteEn := (
-//    U(hiBusCfg.byteEnWidth bits, default -> True)
-//  )
-//  //rHiH2dPayload.byteSize := (
-//  //  U(rHiH2dPayload.byteSize.getWidth bits, default -> True)
-//  //)
-//  //rHiH2dPayload.haveFullWord := True
-//  io.hiBus.h2dBus <-/< hiH2dFifo.io.pop
-//
-//      
-//// >>> for ramIdx in range(numWays):
-//// ...     print(ramIdx, (("0" * (numWays - ramIdx - 1))) + "1" + ("-" * ramIdx))
-//// ...     
-//// 0 0001
-//// 1 001-
-//// 2 01--
-//// 3 1---
-//  def calcHitRamIdxMask(ramIdx: Int): String = (
-//    (("0" * (numWays - ramIdx - 1)))
-//    + "1"
-//    + ("-" * ramIdx)
-//  )
-//
-//// >>> for ramIdx in range(numWays):
-//// ...     print(ramIdx, (("1" * (numWays - ramIdx - 1))) + "0" + ("-" * ramIdx))
-//// ...     
-//// 0 1110
-//// 1 110-
-//// 2 10--
-//// 3 0---
-//  def calcMissRamIdxMask(ramIdx: Int): String = (
-//    (("1" * (numWays - ramIdx - 1)))
-//    + "0"
-//    + ("-" * ramIdx)
-//  )
-//
-//  val rSavedRamIdx = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    Reg(UInt(log2Up(numWays) bits))
-//    init(0x0)
-//  )
-//  //val myHistSavedRamIdx = (
-//  //  History(
-//  //    that=rSavedRamIdx,
-//  //  )
-//  //)
-//
-//  val rSavedHadAnyHit = Reg(Bool(), init=False)
-//  val rInHitWithBusStallEtc = Reg(Bool(), init=False)
-//
-//  val tempToSwitch = (
-//    //((rState === State.IDLE) && rMyTempDoSaveCond(3))
-//    //((rState === State.IDLE)
-//
-//    //rInHitWithBusStallEtc
-//    //## 
-//    rState.asBits(
-//      //1
-//      State.IDLE.position
-//    )
-//    ## rMyTempDoSaveCond(3)
-//    ## haveHit
-//  )
-//  //println(
-//  //  s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
-//  //)
-//
-//  switch (
-//    tempToSwitch
-//  ) {
-//    is (
-//      //M"10-0"
-//      MaskedLiteral(
-//        //"10-" + ("0" * numWays)
-//        //"1" + ("0" * numWays)
-//        "11" + ("0" * numWays)
-//        //"-11" + ("0" * numWays)
-//      )
-//      //M"10"
-//    ) {
-//      //// cache miss, and know for sure that the line isn't dirty
-//      // cache miss
-//      rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-//
-//      if (myCondHaveLineBitPlruRam) {
-//        //rSavedRamIdx := rdLineBitPlru
-//        //wrLineBitPlru := rdLineBitPlru + 1
-//        wrLineBitPlru := rdLineBitPlru
-//        lineBitPlruRam.io.wrEn := True
-//        switch (rdLineBitPlru) {
-//          for (ramIdx <- 0 until numWays) {
-//            val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
-//            is (MaskedLiteral(myRamIdxMask)) {
-//              wrLineBitPlru(ramIdx) := True
-//              rSavedRamIdx := ramIdx
-//            }
-//            default {
-//            }
-//          }
-//        }
-//      }
-//
-//      //myFifoThingDoStall := False
-//      myLoD2hPushStm.valid := False
-//
-//      myFifoThingDoStall := True
-//      //doPopLoH2dFifo()
-//      mySelLoH2dPopStm.ready := (
-//        //True
-//        False
-//      )
-//      //myTempUpdateSavedLoH2dPayloadCond := False
-//    }
-//
-//    for (ramIdx <- 0 until numWays) {
-//      val myRamIdxMask = calcHitRamIdxMask(ramIdx=ramIdx)
-//      //println(
-//      //  s"ramIdx:${ramIdx} myRamIdxMask:${myRamIdxMask}"
-//      //)
-//      is (
-//        MaskedLiteral(
-//          //"1-01"
-//          //"11" + myRamIdxMask
-//          //"11" + myRamIdxMask
-//          //"-1" + myRamIdxMask
-//          //"011" + myRamIdxMask
-//          //"0-1" + myRamIdxMask
-//          "11" + myRamIdxMask
-//        )
-//      ) {
-//        doPopLoH2dFifo()
-//        myFifoThingDoStall := False
-//        //myLoD2hPushStm.valid := False
-//        if (myCondHaveLineBitPlruRam) {
-//          rSavedRamIdx := ramIdx
-//          val tempLineBitPlru = cloneOf(rdLineBitPlru)
-//          tempLineBitPlru.allowOverride
-//          tempLineBitPlru := rdLineBitPlru
-//          tempLineBitPlru(ramIdx) := True
-//          when (tempLineBitPlru.andR) {
-//            wrLineBitPlru := 1 << ramIdx
-//          } otherwise {
-//            wrLineBitPlru := tempLineBitPlru
-//          }
-//          lineBitPlruRam.io.wrEn := True
-//        }
-//        // load, cache hit
-//        //mySelLoH2dPopStm.ready := True
-//        myLoD2hPushStm.valid := True
-//        myLoD2hPushStm.busPayload.data := rdLineWord(ramIdx)
-//
-//        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//          myLoD2hPushStm.busPayload.byteSize := (
-//            rDel2LoH2dPayload.byteSize
-//          )
-//          myLoD2hPushStm.busPayload.addrLo := (
-//            rDel2LoH2dPayload.addr(
-//              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//            )
-//          )
-//        }
-//
-//        when (
-//          //rHadAnyRamWritePastTwoCycles.head
-//          myHadAnyRecentRamWrite.head
-//        ) {
-//          myLoD2hPushStm.valid := False
-//        }
-//
-//        switch (
-//          myHadAnyRecentRamWrite.last
-//          ## myLoD2hPushStm.ready
-//        ) {
-//          is (M"1-") {
-//            mySelLoH2dPopStm.ready := False
-//            myFifoThingDoStall := True
-//            rInHitWithBusStallEtc := True
-//            rState := State.LOAD_HIT_DO_STALL_PIPE_4
-//          }
-//          is (M"00") {
-//            mySelLoH2dPopStm.ready := False
-//            myFifoThingDoStall := True
-//            rInHitWithBusStallEtc := True
-//            rState := (
-//              State.LOAD_HIT_DO_STALL_PIPE_4
-//              // TODO: determine if this works!
-//              //State.LOAD_HIT_DO_STALL_PIPE_1
-//            )
-//          }
-//          default {
-//            //rInHitWithBusStallEtc := True
-//            rState := (
-//              State.START_PREFETCH_PIPE_2
-//              //State.START_PREFETCH_PIPE_1
-//            )
-//          }
-//        }
-//      }
-//    }
-//    is (MaskedLiteral(
-//      "1" + "0" + ("-" * numWays)
-//      //"-1" + "0" + ("-" * numWays)
-//    )) {
-//      doPopLoH2dFifo()
-//      myFifoThingDoStall := False
-//      myLoD2hPushStm.valid := False
-//    }
-//    //is (MaskedLiteral(
-//    //)) {
-//    //  doPopLoH2dFifo()
-//    //  myFifoThingDoStall := False
-//    //}
-//    default {
-//      //doPopLoH2dFifo()
-//      //myFifoThingDoStall := False
-//      //myLoD2hPushStm.valid := False
-//    }
-//  }
-//
-//  switch (rState) {
-//    is (State.INIT) {
-//      rState := State.IDLE
-//    }
-//    is (State.IDLE) {
-//      //myFifoThingDoStall := False
-//      //myLoD2hPushStm.valid := False
-//      //doIgnoreInvalidFifoThingPopCnt()
-//      //doPopLoH2dFifo()
-//
-//      when (
-//        rMyTempDoSaveCond(0)
-//        //&& myTempUpdateSavedLoH2dPayloadCond
-//        //&& RegNext(
-//        //  RegNext(mySelLoH2dPopStm.fire, init=False),
-//        //  init=False
-//        //)
-//      ) {
-//        rSavedLoH2dPayload := (
-//          //rLoH2dPayload
-//          rDel2LoH2dPayload
-//        )
-//      }
-//      when (
-//        rMyTempDoSaveCond(1)
-//        //&& myTempUpdateSavedLoH2dPayloadCond
-//        //&& RegNext(
-//        //  RegNext(mySelLoH2dPopStm.fire, init=False),
-//        //  init=False
-//        //)
-//      ) {
-//        rSavedLoH2dPayload.byteSize := (
-//          //rLoH2dPayload.byteSize
-//          rDel2LoH2dPayload.byteSize
-//        )
-//      }
-//      when (
-//        rMyTempDoSaveCond(2)
-//        //&& myTempUpdateSavedLoH2dPayloadCond
-//        //RegNext(
-//        //  RegNext(mySelLoH2dPopStm.fire, init=False),
-//        //  init=False
-//        //)
-//      ) {
-//        myLoD2hPushStm.busPayload.src := (
-//          rDel2LoH2dPayload.src
-//        )
-//        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//          myLoD2hPushStm.busPayload.byteSize := (
-//            rDel2LoH2dPayload.byteSize
-//          )
-//          myLoD2hPushStm.busPayload.addrLo := (
-//            rDel2LoH2dPayload.addr(
-//              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//            )
-//          )
-//        }
-//        myLoD2hPushStm.busPayload.txnCnt := (
-//          rDel2LoH2dPayload.txnCnt
-//        )
-//        //rSavedRdLineAttrsTag := rdLineAttrs.tag
-//      }
-//      //rSavedRdLineAttrsTag := rdLineAttrs.tag
-//    }
-//    is (State.LOAD_HIT_DO_STALL_PIPE_4) {
-//      rState := State.LOAD_HIT_DO_STALL_PIPE_3
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      myLoD2hPushStm.valid := False
-//      mySelLoH2dPopStm.ready := False
-//
-//      //myLoH2dReptThing.io.finishTxn.valid := True
-//      //myLoH2dReptThing.io.finishTxn.payload := (
-//      //  RegNext(
-//      //    rDel2LoH2dPayload.txnCnt,
-//      //    init=rDel2LoH2dPayload.txnCnt.getZero
-//      //  )
-//      //)
-//    }
-//    is (State.LOAD_HIT_DO_STALL_PIPE_3) {
-//      rState := State.LOAD_HIT_DO_STALL_PIPE_2
-//      myLoD2hPushStm.valid := False
-//      mySelLoH2dPopStm.ready := False
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//
-//      doLineWordRamReadSync(
-//        busAddr=rSavedLoH2dPayload.addr,
-//        setEn=0,
-//      )
-//    }
-//    is (State.LOAD_HIT_DO_STALL_PIPE_2) {
-//      rState := State.LOAD_HIT_DO_STALL_PIPE_1
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := True)
-//      myLoD2hPushStm.valid := False
-//      mySelLoH2dPopStm.ready := False
-//    }
-//    is (State.LOAD_HIT_DO_STALL_PIPE_1) {
-//      rState := State.LOAD_HIT_DO_STALL
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//    }
-//    is (State.LOAD_HIT_DO_STALL) {
-//      val myRdLineWord = (
-//        RegNext(
-//          if (myCondHaveLineBitPlruRam) (
-//            rdLineWord(rSavedRamIdx)
-//          ) else (
-//            rdLineWord.head
-//          )
-//        )
-//      )
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//
-//      mySelLoH2dPopStm.ready := False
-//      myLoD2hPushStm.busPayload.data := myRdLineWord
-//      if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//        myLoD2hPushStm.busPayload.byteSize := (
-//          rSavedLoH2dPayload.byteSize
-//        )
-//        myLoD2hPushStm.busPayload.addrLo := (
-//          rSavedLoH2dPayload.addr(
-//            cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//          )
-//        )
-//      }
-//      myLoD2hPushStm.valid := True
-//      //myLoH2dReptThing.io.finishTxn.valid := False
-//      when (myLoD2hPushStm.fire) {
-//        //myFifoThingDoStall := False
-//        rState := State.LOAD_HIT_DO_STALL_POST
-//      }
-//    }
-//    is (State.LOAD_HIT_DO_STALL_POST) {
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//
-//      rState := State.WAIT_D2H_FIFO_EMPTY
-//    }
-//    //is (State.STORE_HIT_DO_STALL_PIPE_1) {
-//    //  myLoD2hPushStm.valid := False
-//    //  lineAttrsRam.foreach(item => item.io.rdEn := False)
-//    //  lineWordRam.foreach(item => item.io.rdEn := False)
-//    //  mySelLoH2dPopStm.ready := False
-//
-//    //  //myLoH2dReptThing.io.finishTxn.valid := True
-//    //  //myLoH2dReptThing.io.finishTxn.payload := (
-//    //  //  RegNext(
-//    //  //    rDel2LoH2dPayload.txnCnt,
-//    //  //    init=rDel2LoH2dPayload.txnCnt.getZero
-//    //  //  )
-//    //  //)
-//
-//    //  rState := State.STORE_HIT_DO_STALL
-//    //}
-//    //is (State.STORE_HIT_DO_STALL) {
-//    //  lineAttrsRam.foreach(item => item.io.rdEn := False)
-//    //  lineWordRam.foreach(item => item.io.rdEn := False)
-//
-//    //  mySelLoH2dPopStm.ready := False
-//    //  //myLoH2dReptThing.io.finishTxn.valid := False
-//    //  myLoD2hPushStm.valid := True
-//    //  when (myLoD2hPushStm.ready) {
-//    //    rState := State.WAIT_D2H_FIFO_EMPTY
-//    //  }
-//    //}
-//    //is (State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2) {
-//    //  rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1
-//    //  lineAttrsRam.foreach(item => item.io.rdEn := False)
-//    //  doLineAttrsRamReadSync(
-//    //    busAddr=rSavedLoH2dPayload.addr,
-//    //    setEn=0
-//    //  )
-//    //  //lineAttrsRam.io.addr := rSavedLoH2dPayload
-//    //}
-//    //is (State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1) {
-//    //  rState := State.MAYBE_DIRTY_RE_READ_ATTRS
-//    //  lineAttrsRam.foreach(item => item.io.rdEn := True)
-//    //}
-//    //is (State.MAYBE_DIRTY_RE_READ_ATTRS) {
-//    //  val myRdLineAttrs = (
-//    //    if (myCondHaveLineBitPlruRam) (
-//    //      rdLineAttrs(rSavedRamIdx)
-//    //    ) else (
-//    //      rdLineAttrs.head
-//    //    )
-//    //  )
-//    //  when (myRdLineAttrs.fire) {
-//    //    rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
-//    //  } otherwise {
-//    //    rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-//    //  }
-//    //  lineAttrsRam.foreach(item => item.io.rdEn := False)
-//    //  rSavedRdLineAttrsTag := myRdLineAttrs.tag
-//    //}
-//    //is (State.SEND_LINE_TO_HI_BUS_PIPE_3) {
-//    //  rState := State.SEND_LINE_TO_HI_BUS_PIPE_2
-//    //  lineAttrsRam.foreach(item => item.io.rdEn := False)
-//
-//    //  val myTempAddr = (
-//    //    Cat(
-//    //      False,
-//    //      // FINALLY found it, the problem I was seeing in DOOM!
-//    //      //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
-//    //      rSavedRdLineAttrsTag,
-//    //      rSavedLoBusAddrSet,
-//    //      U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-//    //    ).asUInt
-//    //  )
-//    //  println(
-//    //    s"Here is myTempAddr.getWidth: ${myTempAddr.getWidth}"
-//    //  )
-//    //  doLineWordRamReadSync(
-//    //    busAddr=hiBusCfg.burstAddr(
-//    //      someAddr=myTempAddr,
-//    //      someBurstCnt=rHiH2dBurstCnt(0),
-//    //      incrBurstCnt=true,
-//    //    ),
-//    //    setEn=0,
-//    //  )
-//    //}
-//    //is (State.SEND_LINE_TO_HI_BUS_PIPE_2) {
-//    //  rState := State.SEND_LINE_TO_HI_BUS_PIPE_1
-//    //  lineAttrsRam.foreach(item => item.io.rdEn := False)
-//
-//    //  doLineWordRamReadSync(
-//    //    busAddr=(
-//    //      hiBusCfg.burstAddr(
-//    //        someAddr=(
-//    //          Cat(
-//    //            False,
-//    //            // FINALLY found it, the problem I was seeing in DOOM!
-//    //            //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
-//    //            rSavedRdLineAttrsTag,
-//    //            rSavedLoBusAddrSet,
-//    //            U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-//    //          ).asUInt
-//    //        ),
-//    //        someBurstCnt=rHiH2dBurstCnt(0),
-//    //        incrBurstCnt=true,
-//    //      )
-//    //    ),
-//    //    setEn=1,
-//    //  )
-//    //  rHiH2dPayload.addr := (
-//    //    Cat(
-//    //      False,
-//    //      // FINALLY found it, the problem I was seeing in DOOM!
-//    //      //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
-//    //      rSavedRdLineAttrsTag,
-//    //      rSavedLoBusAddrSet,
-//    //      U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-//    //    ).asUInt
-//    //  )
-//    //}
-//    //is (State.SEND_LINE_TO_HI_BUS_PIPE_1) {
-//    //  val myRdLineWord = (
-//    //    if (myCondHaveLineBitPlruRam) (
-//    //      rdLineWord(rSavedRamIdx)
-//    //    ) else (
-//    //      rdLineWord.head
-//    //    )
-//    //  )
-//    //  rState := State.SEND_LINE_TO_HI_BUS
-//    //  lineAttrsRam.foreach(item => item.io.rdEn := False)
-//    //  doLineWordRamReadSync(
-//    //    busAddr=hiBusCfg.burstAddr(
-//    //      someAddr=(
-//    //        Cat(
-//    //          False,
-//    //          // FINALLY found it, the problem I was seeing in DOOM!
-//    //          //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
-//    //          rSavedRdLineAttrsTag,
-//    //          rSavedLoBusAddrSet,
-//    //          U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-//    //        ).asUInt
-//    //      ),
-//    //      someBurstCnt=rHiH2dBurstCnt(0),
-//    //      incrBurstCnt=true,
-//    //    ),
-//    //    setEn=1,
-//    //  )
-//    //  rHiH2dValid := True
-//    //  rHiH2dPayload.addr := rHiH2dPayload.burstAddr(
-//    //    someBurstCnt=rHiH2dBurstCnt(1),
-//    //    incrBurstCnt=true,
-//    //  )
-//    //  rHiH2dPayload.data := myRdLineWord
-//    //  rHiH2dPayload.isWrite := True
-//    //  rHiH2dPayload.src := rSavedLoH2dPayload.src
-//    //}
-//    //is (State.SEND_LINE_TO_HI_BUS) {
-//    //  val myRdLineWord = (
-//    //    if (myCondHaveLineBitPlruRam) (
-//    //      rdLineWord(rSavedRamIdx)
-//    //    ) else (
-//    //      rdLineWord.head
-//    //    )
-//    //  )
-//    //  lineAttrsRam.foreach(item => item.io.rdEn := False)
-//    //  doLineWordRamReadSync(
-//    //    busAddr=hiBusCfg.burstAddr(
-//    //      someAddr=(
-//    //        Cat(
-//    //          False,
-//    //          // FINALLY found it, the problem I was seeing in DOOM!
-//    //          //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
-//    //          rSavedRdLineAttrsTag,
-//    //          rSavedLoBusAddrSet,
-//    //          U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-//    //        ).asUInt
-//    //      ),
-//    //      someBurstCnt=rHiH2dBurstCnt(0),
-//    //      incrBurstCnt=false,
-//    //    ),
-//    //    setEn=1,
-//    //  )
-//    //  rHiH2dPayload.burstFirst := False
-//
-//    //  when (rHiH2dBurstCnt(0).orR) {
-//    //    // an OR reduce checks for non-zero
-//    //    rHiH2dBurstCnt(0) := rHiH2dBurstCnt(0) + 1
-//    //  }
-//    //  when (RegNext(!rHiH2dBurstCnt(0).orR, init=False)) {
-//    //    lineWordRam.foreach(item => item.io.rdEn := False)
-//    //  }
-//    //  rHiH2dPayload.addr := rHiH2dPayload.burstAddr(
-//    //    someBurstCnt=rHiH2dBurstCnt(1),
-//    //    incrBurstCnt=false,
-//    //  )
-//    //  rHiH2dPayload.data := myRdLineWord
-//    //  when (rHiH2dBurstCnt(1).orR) {
-//    //    rHiH2dBurstCnt(1) := rHiH2dBurstCnt(1) + 1
-//    //  }
-//    //  when (
-//    //    RegNext(
-//    //      next=(
-//    //        !rHiH2dBurstCnt(0).orR
-//    //        && (!(rHiH2dBurstCnt(1) + 2).orR)
-//    //      ),
-//    //      init=False
-//    //    )
-//    //  ) {
-//    //    rHiH2dPayload.burstLast := True
-//    //  }
-//    //  when (rHiH2dPayload.burstLast) {
-//    //    rHiH2dValid := False
-//    //    rHadHiH2dFinish := True
-//    //    rHiH2dPayload.burstLast := False
-//    //  }
-//    //  when (io.hiBus.d2hBus.valid) {
-//    //    rHiD2hReady := True
-//    //    rHadHiD2hFinish := True
-//    //  }
-//    //  when (rHadHiH2dFinish && rHadHiD2hFinish) {
-//    //    rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-//    //  }
-//    //}
-//
-//    is (State.START_PREFETCH_PIPE_2) {
-//      rSavedHadAnyHit := True
-//      rState := State.START_PREFETCH_PIPE_1
-//
-//      val myTempRange = (
-//        loBusCacheCfg.addrWidth - 2
-//        downto loBusCfg.prefetchAddrIncrStartIdx
-//      )
-//      rSavedLoH2dPayload.addr(myTempRange) := (
-//        rSavedLoH2dPayload.addr(myTempRange) + 1
-//      )
-//    }
-//    is (State.START_PREFETCH_PIPE_1) {
-//      rSavedHadAnyHit := True
-//      rState := State.START_PREFETCH
-//
-//      val myTempRange = (
-//        loBusCacheCfg.addrWidth - 2
-//        downto loBusCfg.prefetchAddrIncrStartIdx
-//      )
-//      rSavedLoH2dPayload.addr(myTempRange) := (
-//        rSavedLoH2dPayload.addr(myTempRange) + 1
-//      )
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_PIPE_1) {
-//      rHadHiH2dFinish := False
-//      rHadHiD2hFinish := False
-//
-//      rHiH2dPayload.burstFirst := True
-//      rHiH2dPayload.burstLast := True//False
-//      rHiH2dPayload.burstCnt := hiBusCfg.maxBurstSizeMinus1
-//
-//      rHiH2dPayload.isWrite := False
-//      rHiH2dPayload.src := rSavedLoH2dPayload.src
-//      rHiH2dPayload.addr := rSavedLoH2dPayload.burstAddr(
-//        someBurstCnt=rHiH2dBurstCnt(1).getZero,
-//        incrBurstCnt=false
-//      )
-//      rHiD2hBurstCnt := 0x0
-//      when (RegNext(!hiH2dFifo.io.occupancy.orR, init=False)) {
-//        rHiH2dValid := True
-//        rState := State.RECV_LINE_FROM_HI_BUS
-//      }
-//
-//      wrLineAttrs.tag := (
-//        rSavedLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
-//      )
-//      //wrLineAttrs.dirty := (
-//      //  // if it's a store, this line should be marked dirty!
-//      //  rSavedLoH2dPayload.isWrite
-//      //)
-//
-//      def myArgBusAddr = rSavedLoH2dPayload.addr
-//      def myArgWrLineAttrs = wrLineAttrs
-//      def myArgSetEn = true
-//
-//      if (myCondHaveLineBitPlruRam) {
-//        switch (rSavedRamIdx) {
-//          for (ramIdx <- 0 until numWays) {
-//            is (ramIdx) {
-//              doLineAttrsRamWrite(
-//                ramIdx=ramIdx,
-//                busAddr=myArgBusAddr,
-//                lineAttrs=myArgWrLineAttrs,
-//                setEn=myArgSetEn,
-//              )
-//            }
-//          }
-//        }
-//      } else {
-//        doLineAttrsRamWrite(
-//          ramIdx=0,
-//          busAddr=myArgBusAddr,
-//          lineAttrs=myArgWrLineAttrs,
-//          setEn=myArgSetEn,
-//        )
-//      }
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS) {
-//      //lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      //lineWordRam.foreach(item => item.io.rdEn := False)
-//      rHiH2dValid := False
-//      when (io.hiBus.d2hBus.valid) {
-//        rHiD2hReady := True
-//      }
-//      when (io.hiBus.d2hBus.fire) {
-//        rHiD2hBurstCnt := rHiD2hBurstCnt + 1
-//
-//        val tempBurstCntCmpEq = (
-//          rHiD2hBurstCnt
-//          === rSavedLoH2dPayload.addr(
-//            rHiD2hBurstCnt.high + log2Up(hiBusCfg.dataWidth / 8)
-//            downto log2Up(hiBusCfg.dataWidth / 8)
-//          )
-//        )
-//        when (tempBurstCntCmpEq) {
-//          myLoD2hPayload.data := (io.hiBus.d2hBus.data)
-//          if (!loBusCfg.haveByteEn) {
-//            myLoD2hPayload.byteSize := (
-//              rSavedLoH2dPayload.byteSize
-//            )
-//            myLoD2hPayload.addrLo := rSavedLoH2dPayload.addr(
-//              loBusCfg.addrLoWidth - 1 downto 0
-//            )
-//          }
-//        }
-//        val rTempBurstAddr = (
-//          rSavedLoH2dPayload.burstAddr(
-//            someBurstCnt=rHiD2hBurstCnt,
-//            incrBurstCnt=false,
-//          )
-//        )
-//
-//        def myArgBusAddr = rTempBurstAddr
-//        def myArgLineWord = io.hiBus.d2hBus.data
-//        def myArgByteEn = None
-//        def myArgSetEn = true
-//
-//        if (myCondHaveLineBitPlruRam) {
-//          switch (rSavedRamIdx) {
-//            for (ramIdx <- 0 until numWays) {
-//              is (ramIdx) {
-//                doLineWordRamWrite(
-//                  ramIdx=ramIdx,
-//                  busAddr=myArgBusAddr,
-//                  lineWord=myArgLineWord,
-//                  //byteEn=myArgByteEn,
-//                  setEn=myArgSetEn,
-//                )
-//              }
-//            }
-//          }
-//        } else {
-//          doLineWordRamWrite(
-//            ramIdx=0,
-//            busAddr=myArgBusAddr,
-//            lineWord=myArgLineWord,
-//            //byteEn=myArgByteEn,
-//            setEn=myArgSetEn,
-//          )
-//        }
-//        //when ((io.hiBus.d2hBus.burstLast)) {
-//        //  //when (!rSavedLoH2dPayload.isWrite) {
-//        //    rState := State.RECV_LINE_FROM_HI_BUS_POST_7
-//        //  //} otherwise {
-//        //  //  rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
-//        //  //}
-//        //}
-//        switch (
-//          rSavedHadAnyHit
-//          ## (io.hiBus.d2hBus.burstLast)
-//        ) {
-//          is (M"01") {
-//            rState := State.RECV_LINE_FROM_HI_BUS_POST_7
-//          }
-//          is (M"11") {
-//            rState := State.WAIT_D2H_FIFO_EMPTY
-//          }
-//        }
-//      }
-//    }
-//    //is (State.RECV_LINE_FROM_HI_BUS_POST_WRITE) {
-//    //  lineAttrsRam.foreach(item => item.io.rdEn := False)
-//    //  lineWordRam.foreach(item => item.io.rdEn := False)
-//    //  def myArgBusAddr = rSavedLoH2dPayload.addr
-//    //  def myArgLineWord = rSavedLoH2dPayload.data
-//    //  def myArgByteEn = Some(rSavedLoH2dPayload.byteEn)
-//    //  def myArgSetEn = true
-//
-//    //  if (myCondHaveLineBitPlruRam) {
-//    //    switch (rSavedRamIdx) {
-//    //      for (ramIdx <- 0 until numWays) {
-//    //        is (ramIdx) {
-//    //          doLineWordRamWrite(
-//    //            ramIdx=ramIdx,
-//    //            busAddr=myArgBusAddr,
-//    //            lineWord=myArgLineWord,
-//    //            byteEn=myArgByteEn,
-//    //            setEn=myArgSetEn,
-//    //          )
-//    //        }
-//    //      }
-//    //    }
-//    //  } else {
-//    //    doLineWordRamWrite(
-//    //      ramIdx=0,
-//    //      busAddr=myArgBusAddr,
-//    //      lineWord=myArgLineWord,
-//    //      byteEn=myArgByteEn,
-//    //      setEn=myArgSetEn,
-//    //    )
-//    //  }
-//    //  rState := State.RECV_LINE_FROM_HI_BUS_POST_5
-//    //}
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_7) {
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      rState := State.RECV_LINE_FROM_HI_BUS_POST_6
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_6) {
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      rState := State.RECV_LINE_FROM_HI_BUS_POST_5
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_5) {
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      rState := State.RECV_LINE_FROM_HI_BUS_POST_4
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_4) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      doLineWordRamReadSync(
-//        busAddr=rSavedLoH2dPayload.addr,
-//        setEn=0,
-//      )
-//      rState := State.RECV_LINE_FROM_HI_BUS_POST_3
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_3) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := True)
-//      rState := State.RECV_LINE_FROM_HI_BUS_POST_2
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_2) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      rState := State.RECV_LINE_FROM_HI_BUS_POST_1
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_1) {
-//      val myRdLineWord = (
-//        if (myCondHaveLineBitPlruRam) (
-//          rdLineWord(rSavedRamIdx)
-//        ) else (
-//          rdLineWord.head
-//        )
-//      )
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      //rState := State.RECV_LINE_FROM_HI_BUS_POST
-//
-//      myLoD2hPushStm.valid := True
-//
-//      myLoD2hPushStm.busPayload.src := (
-//        //RegNext
-//        (
-//          rSavedLoH2dPayload.src//,
-//          //init=rSavedLoH2dPayload.src.getZero
-//        )
-//      )
-//
-//      when (
-//        RegNext(
-//          rose(rState === State.RECV_LINE_FROM_HI_BUS_POST_2)
-//        )
-//      ) {
-//        myLoD2hPushStm.busPayload.data := RegNext(
-//          //lineWordRam.io.rdData
-//          myRdLineWord
-//          //myLoD2hPushStm.busPayload.data//,
-//          //init=
-//        )
-//      }
-//
-//      when (myLoD2hPushStm.ready) {
-//        rState := State.RECV_LINE_FROM_HI_BUS_POST
-//      }
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      rState := (
-//        //State.IDLE
-//        State.WAIT_D2H_FIFO_EMPTY
-//      )
-//    }
-//    is (State.WAIT_D2H_FIFO_EMPTY) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//
-//      when (  
-//        !myLoD2hFifo.io.pop.valid
-//        //myLoD2hFifo.io.push.ready
-//      ) {
-//        rSavedHadAnyHit := False
-//        rInHitWithBusStallEtc := False
-//        //myFifoThingDoStall := False
-//        rState := State.IDLE
-//      }
-//    }
-//  }
-//  wrLineAttrs.valid := True
-//}
+  def loBusCfg = cfg.loBusCfg
+  def hiBusCfg = cfg.hiBusCfg
+  def optFormal = cfg.optFormal
 
-//private[libcheesevoyage] case class LcvBusInstrCacheMain(
-//  cfg: LcvBusCacheBusPairConfig,
-//) extends Component {
-//  require(
-//    cfg.havePrefetch
-//  )
-//  //--------
-//  def numWays = cfg.loBusCacheCfg.numWays
-//
-//  def loBusCfg = cfg.loBusCfg
-//  def hiBusCfg = cfg.hiBusCfg
-//  def optFormal = cfg.optFormal
-//
-//  def loBusCacheCfg = cfg.loBusCacheCfg
-//  def myLineWordRamSingleWordAddrRshift = (
-//    loBusCacheCfg.myLineWordRamSingleWordAddrRshift
-//  )
-//  def myLineAttrsRamAddrRshift = loBusCacheCfg.myLineAttrsRamAddrRshift
-//  def wordWidth = loBusCacheCfg.wordWidth
-//  def depthWords = loBusCacheCfg.depthWords
-//  def depthLines = loBusCacheCfg.depthLines
-//
-//  def myFifoThingLoBusCfg = cfg.myFifoThingLoBusCfg
-//  //--------
-//  require(
-//    //hiBusCfg.maxBurstSizeMinus1 == (64 / 4) - 1,
-//    //cfg.loBusCacheCfg.lineSizeBytes == 64,
-//    cfg.loBusCacheCfg.lineSizeBytes == loBusCfg.burstCntMaxNumBytes,
-//    s"(Perhaps only temporarily), "
-//    + s"we need the number of bytes per cache line to be "
-//    + s"${loBusCfg.burstCntMaxNumBytes}. "
-//    + s"This permits an easier-to-implement design "
-//    + s"for `io.hiBus` bursting."
-//  )
-//  //--------
-//  val io = LcvBusCacheIo(cfg=cfg)
-//  //io.mmioHiBus.h2dBus.valid := False
-//  //io.mmioHiBus.h2dBus.payload := io.mmioHiBus.h2dBus.payload.getZero
-//  //io.mmioHiBus.d2hBus.ready := False
-//  //io.mmioHiBus.h2dBus.addr.allowOverride
-//  //io.mmioHiBus.h2dBus.data.allowOverride
-//  //--------
-//  def numLoHi = 2
-//  //--------
-//  //val lineWordRamCfg = RamSdpPipeConfig(
-//  //  wordType=UInt(wordWidth bits),
-//  //  depth=depthWords,
-//  //  optIncludeWrByteEn=true,
-//  //  optWrHistLength=cfg.myRamOptWrHistLength,
-//  //  initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
-//  //  arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
-//  //  arrRamStyleXilinx=cfg.loBusCacheCfg.lineWordMemRamStyleXilinx,
-//  //)
-//  //val lineWordRam = Array.fill(numWays)(
-//  //  RamSdpPipe(cfg=lineWordRamCfg)
-//  //)
-//
-//  val lineWordRamCfg = RamTdpPipeConfig(
-//    //wordType=UInt(wordWidth bits),
-//    bytesPerWord=(
-//      wordWidth / 8
-//    ),
-//    depth=depthWords,
-//    optIncludeWrByteEn=true,
-//    //optWrHistLength=cfg.myRamOptWrHistLength,
-//    //initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
-//    arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
-//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineWordMemRamStyleXilinx,
-//  )
-//  val lineWordRam = Array.fill(numWays)(
-//    RamTdpPipe(cfg=lineWordRamCfg)
-//  )
-//  val lineAttrsRamCfg = RamSdpPipeConfig(
-//    wordType=LcvBusCacheLineAttrs(cfg=loBusCfg),
-//    depth=depthLines,
-//    optIncludeWrByteEn=false,
-//    optWrHistLength=cfg.myRamOptWrHistLength,
-//    initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
-//    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
-//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
-//  )
-//  val lineAttrsRam = Array.fill(numLoHi)(
-//    Array.fill(numWays)(
-//      RamSdpPipe(cfg=lineAttrsRamCfg)
-//    )
-//  )
-//
-//  val rdLineWord = Vec.fill(numWays)(
-//    UInt(wordWidth bits)
-//  )
-//  val rdPrefetchLineWord = Vec.fill(numWays)(
-//    UInt(wordWidth bits)
-//  )
-//
-//  val rdLineAttrs = Array.fill(numLoHi)(
-//    Vec.fill(numWays)(
-//      LcvBusCacheLineAttrs(cfg=loBusCfg)
-//    )
-//  )
-//  for (idx <- 0 until numWays) {
-//    //rdLineWord(idx) := lineWordRam(idx).io.rdData
-//    rdLineWord(idx) := lineWordRam(idx).io.vec.head.rdData.asUInt
-//    rdPrefetchLineWord(idx) := lineWordRam(idx).io.vec.last.rdData.asUInt
-//    for (jdx <- 0 until rdLineAttrs.size) {
-//      rdLineAttrs(jdx)(idx) := lineAttrsRam(jdx)(idx).io.rdData
-//    }
-//    lineWordRam(idx).io.vec.foreach(_.wrEn := False)
-//    lineAttrsRam.foreach(item => item(idx).io.wrEn := False)
-//  }
-//
-//  val wrLineAttrs = LcvBusCacheLineAttrs(cfg=loBusCfg)
-//  val rSavedWrLineAttrs = Reg(cloneOf(wrLineAttrs))
-//  wrLineAttrs := RegNext(wrLineAttrs, init=wrLineAttrs.getZero)
-//  wrLineAttrs.allowOverride
-//
-//  val lineBitPlruRamCfg = RamSdpPipeConfig(
-//    wordType=UInt(
-//      //log2Up(numWays) bits
-//      numWays bits
-//    ),
-//    depth=depthLines,
-//    optIncludeWrByteEn=false,
-//    optWrHistLength=cfg.myRamOptWrHistLength,
-//    initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
-//    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
-//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
-//  )
-//
-//  val myCondHaveLineBitPlruRam = (
-//    numWays > 1
-//  )
-//  val lineBitPlruRam = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    Array.fill(numLoHi)(
-//      RamSdpPipe(cfg=lineBitPlruRamCfg)
-//    )
-//  )
-//
-//  val myRdLineBitPlruVec = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    Vec.fill(numLoHi)(
-//      UInt(numWays bits)
-//    )
-//  )
-//  //val rdLineBitPlru = (
-//  //  myCondHaveLineBitPlruRam
-//  //) generate (
-//  //  UInt(numWays bits)
-//  //)
-//  //val rdPrefetchLineBitPlru = (
-//  //  myCondHaveLineBitPlruRam
-//  //) generate (
-//  //  UInt(numWays bits)
-//  //)
-//  def rdLineBitPlru = myRdLineBitPlruVec.head
-//  def rdPrefetchLineBitPlru = myRdLineBitPlruVec.last
-//
-//  val wrLineBitPlru = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    UInt(
-//      //log2Up(numWays) bits
-//      numWays bits
-//    )
-//  )
-//
-//  if (myCondHaveLineBitPlruRam) {
-//    lineBitPlruRam.zipWithIndex.foreach({
-//      case (myBpRam, idx) => {
-//        myRdLineBitPlruVec(idx) := myBpRam.io.rdData
-//        myBpRam.io.wrEn := False
-//      }
-//    })
-//    //rdLineBitPlru := lineBitPlruRam.head.io.rdData
-//    //rdPrefetchLineBitPlru := lineBitPlruRam.last.io.rdData
-//
-//    wrLineBitPlru := RegNext(wrLineBitPlru, init=wrLineBitPlru.getZero)
-//    //wrLineBitPlru.allowOverride
-//
-//    //lineBitPlruRam.foreach(_.io.wrEn := False)
-//  }
-//
-//  //--------
-//  object LoState extends SpinalEnum(
-//    defaultEncoding=(
-//      //binarySequential
-//      binaryOneHot
-//    )
-//  ) {
-//    val
-//      /* 1 */ INIT,
-//      /* 2 */ IDLE_LOAD_MODE,
-//      //IDLE_STORE_MODE,
-//
-//      //NON_CACHED_BUS_ACCESS_WAIT_LO_D2H_FIFO_EMPTY,
-//      //NON_CACHED_BUS_ACCESS,
-//
-//      /* 4 */ LOAD_HIT_DO_STALL_PREFETCH_PIPE_4,
-//      //LOAD_HIT_DO_STALL_PIPE_4,
-//      /* 8 */ LOAD_HIT_DO_STALL_PIPE_3,
-//      /* 10 */ LOAD_HIT_DO_STALL_PIPE_2,
-//      /* 20 */ LOAD_HIT_DO_STALL_PIPE_1,
-//      /* 40 */ LOAD_HIT_DO_STALL,
-//      /* 80 */ LOAD_HIT_DO_STALL_POST,
-//      //STORE_HIT_DO_STALL_PREFETCH_PIPE_1,
-//      //STORE_HIT_DO_STALL_PIPE_1,
-//      //STORE_HIT_DO_STALL,
-//
-//      /* 100 */ WAIT_HI_STATE_MCHN_READY,
-//      //WAIT_HI_STATE_MCHN_READY_POST_7_WRITE,
-//      /* 200 */ WAIT_HI_STATE_MCHN_READY_POST_7_READ,
-//      /* 400 */ WAIT_HI_STATE_MCHN_READY_POST_6,
-//      /* 800 */ WAIT_HI_STATE_MCHN_READY_POST_5,
-//      /* 1000 */ WAIT_HI_STATE_MCHN_READY_POST_4,
-//      /* 2000 */ WAIT_HI_STATE_MCHN_READY_POST_3,
-//      /* 4000 */ WAIT_HI_STATE_MCHN_READY_POST_2,
-//      /* 8000 */ WAIT_HI_STATE_MCHN_READY_POST_1,
-//      /* 10000 */ WAIT_HI_STATE_MCHN_READY_POST,
-//
-//      /* 20000 */ WAIT_D2H_FIFO_PUSH_READY
-//      = newElement();
-//  }
-//
-//  //val rSwitchToOtherLoStateIdle = (
-//  //  Reg(Bool(), init=False)
-//  //)
-//
-//  val rLoState = (
-//    Reg(LoState())
-//    init(LoState.INIT)
-//  )
-//
-//  object HiState extends SpinalEnum(
-//    defaultEncoding=(
-//      binaryOneHot
-//    )
-//  ) {
-//    val
-//      IDLE,
-//      READ_ATTRS_PIPE_3,
-//      READ_ATTRS_PIPE_2,
-//      READ_ATTRS_PIPE_1,
-//      READ_ATTRS,
-//      READ_ATTRS_POST,
-//      //SEND_LINE_TO_HI_BUS_PIPE_3,
-//      //SEND_LINE_TO_HI_BUS_PIPE_2,
-//      //SEND_LINE_TO_HI_BUS_PIPE_1,
-//      //SEND_LINE_TO_HI_BUS,
-//      RECV_LINE_FROM_HI_BUS_PIPE_1,
-//      RECV_LINE_FROM_HI_BUS
-//      = newElement();
-//  }
-//
-//  val rHiState = (
-//    Reg(HiState())
-//    init(HiState.IDLE)
-//  )
-//
-//  //--------
-//  val myLoH2dPopBusCfg = (
-//    LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=myFifoThingLoBusCfg)
-//  )
-//  val myLoH2dReptThing = LcvBusDoStallH2dReptThing(
-//    busCfg=myLoH2dPopBusCfg,
-//    optIncludeSavedData=(
-//      !loBusCfg.haveByteEn
-//    ),
-//  )
-//
-//  //val myLoH2dDoStallFifoThing = LcvBusDoStallFifoThing(
-//  //  busCfg=myFifoThingLoBusCfg,
-//  //  includeDoInit=false,
-//  //)
-//  //io.loBus.h2dBus.translateInto(
-//  //  //myLoH2dDoStallFifoThing.io.push
-//  //  myLoH2dReptThing.io.push
-//  //)(
-//  //  dataAssignment=(outp, inp) => {
-//  //    //outp.busPayload := inp
-//  //    outp.mainNonBurstInfo := inp.mainNonBurstInfo
-//  //    outp.txnCnt.allowOverride
-//  //    outp.txnCnt := (
-//  //      (
-//  //        RegNextWhen(
-//  //          (outp.txnCnt.asSInt + 1),
-//  //          cond=myLoH2dReptThing.io.push.fire,
-//  //        )
-//  //        init(-2)
-//  //      ).asUInt
-//  //    )
-//  //  }
-//  //)
-//  val myFifoThingDoStall = Bool()
-//  myFifoThingDoStall := (
-//    RegNext(myFifoThingDoStall, init=myFifoThingDoStall.getZero)
-//  )
-//  myLoH2dReptThing.io.doStall := myFifoThingDoStall
-//  //val rSeenMyFifoThingDoStallCnt = (
-//  //  Reg(UInt(log2Up(LcvBusDoStallFifoThing.fifoDepthMain + 1) + 1 bits))
-//  //  init(0x0)
-//  //)
-//  //myLoH2dDoStallFifoThing.io.doStall := myFifoThingDoStall
-//
-//  val myLoH2dToWrByteEnStmAdapter = (
-//    !loBusCfg.haveByteEn
-//  ) generate (LcvBusH2dShiftedDataEtcStreamAdapter(
-//    cfg=LcvBusH2dShiftedDataEtcStreamAdapterConfig(
-//      loBusCfg=myFifoThingLoBusCfg,
-//    )
-//  ))
-//
-//  val myMainLoH2dPopStm = (
-//    Stream(LcvBusH2dPayload(
-//      cfg=myLoH2dPopBusCfg
-//    ))
-//  )
-//
-//  val mySelLoH2dPopStm = (
-//    //cloneOf(myLoH2dDoStallFifoThing.io.pop)
-//    //cloneOf(io.loBus.h2dBus)
-//    //Stream(LcvBusH2dPayload(
-//    //  cfg=myLoH2dPopBusCfg
-//    //))
-//    //cloneOf(myMainLoH2dPopStm)
-//    cloneOf(myLoH2dReptThing.io.pop)
-//  )
-//  mySelLoH2dPopStm << myLoH2dReptThing.io.pop
-//  //val mySelLoH2dPop
-//  def mySelLoH2dPopPayload = mySelLoH2dPopStm.payload//.busPayload
-//
-//  io.loBus.h2dBus.translateInto(
-//    if (!loBusCfg.haveByteEn) (
-//      myLoH2dToWrByteEnStmAdapter.io.loH2dBus
-//    ) else (
-//      myMainLoH2dPopStm
-//    )
-//  )(
-//    dataAssignment=(outp, inp) => {
-//      //outp := inp
-//      outp.mainNonBurstInfo := inp.mainNonBurstInfo
-//      outp.txnCnt.allowOverride
-//      outp.txnCnt := (
-//        (
-//          RegNextWhen(
-//            (outp.txnCnt.asSInt + 1),
-//            cond=io.loBus.h2dBus.fire,
-//          )
-//          init(-2)
-//        ).asUInt
-//      )
-//    }
-//  )
-//
-//  if (!loBusCfg.haveByteEn) {
-//    myLoH2dToWrByteEnStmAdapter.io.hiH2dBus.translateInto(
-//      myMainLoH2dPopStm
-//    )(
-//      dataAssignment=(outp, inp) => {
-//        outp := inp
-//        outp.txnCnt.allowOverride
-//        outp.txnCnt := myLoH2dToWrByteEnStmAdapter.io.loH2dBus.txnCnt
-//      }
-//    )
-//  }
-//
-//  //myMainLoH2dPopStm.ready := !myFifoThingDoStall
-//  //myLoH2dReptThing.io.push << myMainLoH2dPopStm
-//  myMainLoH2dPopStm.translateInto(
-//    myLoH2dReptThing.io.push
-//  )(
-//    dataAssignment=(outp, inp) => {
-//      outp.busPayload := inp
-//      outp.savedData := (
-//        io.loBus.h2dBus.data
-//        //inp.data
-//      )
-//    }
-//  )
-//  mySelLoH2dPopStm.ready := False
-//
-//  //val myLoH2dPopThrowArea = new Area {
-//  //  val myLoH2dThrowCond = Bool()
-//  //  val myTempLoH2dPopStm = myLoH2dDoStallFifoThing.io.pop.throwWhen(
-//  //    myLoH2dThrowCond
-//  //  )
-//  //  myLoH2dThrowCond := False
-//  //  //myLoH2dPopStm.ready := False
-//  //  myLoH2dPopStm << myTempLoH2dPopStm
-//  //}
-//  val rLoH2dPayload = (
-//    RegNextWhen(
-//      mySelLoH2dPopStm.payload,
-//      cond=mySelLoH2dPopStm.fire,
-//      init=mySelLoH2dPopStm.payload.getZero,
-//    )
-//  )
-//  def rBusAddr = rLoH2dPayload.addr
-//  val rDel2LoH2dPayload = (
-//    RegNext/*When*/(
-//      next=rLoH2dPayload,
-//      //cond=myLoH2dPopStm.fire,
-//      init=rLoH2dPayload.getZero,
-//    )
-//  )
-//  def rDel2BusAddr = rDel2LoH2dPayload.addr
-//
-//  val rSavedLoH2dPayload = (
-//    Reg(cloneOf(rLoH2dPayload))
-//    init(rLoH2dPayload.getZero)
-//  )
-//  //def rSavedLoBusAddr = rSavedLoH2dPayload.addr
-//  //def rSavedLoBusAddrSet = rSavedLoBusAddr(loBusCacheCfg.setRange)
-//
-//  val myLoD2hShiftedDataStmAdapter = (
-//    !cfg.loBusCfg.haveByteEn
-//  ) generate (
-//    LcvBusD2hShiftedDataEtcStreamAdapter(
-//      cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(
-//        busCfg=cfg.loBusCfg
-//      )
-//    )
-//  )
-//  val myLoD2hPushStm = Stream(
-//    LcvBusDoStallFifoThingPayload(
-//      LcvBusD2hPayload(
-//        cfg=myFifoThingLoBusCfg,
-//        includeByteSizeEtc=(!myFifoThingLoBusCfg.haveByteEn),
-//      ),
-//    )
-//  )
-//
-//  val rSavedNeedLineWordReadAgain = Reg(Bool(), init=False)
-//
-//  myLoD2hPushStm.valid := False
-//  //myLoH2dReptThing.io.finishTxn.valid := myLoD2hPushStm.fire
-//  //myLoH2dReptThing.io.finishTxn.payload := (
-//  //  myLoD2hPushStm.busPayload.txnCnt
-//  //)
-//
-//  val myLoD2hFifo = StreamFifo(
-//    dataType=LcvBusD2hPayload(cfg=cfg.loBusCfg),
-//    depth=(myFifoThingLoBusCfg.maxBurstSizeMinus1 + 1),
-//    latency=cfg.busD2hFifoLatency,
-//    forFMax=true,
-//  )
-//
-//  myLoD2hFifo.io.pop.translateInto(io.loBus.d2hBus)(
-//    dataAssignment=(outp, inp) => {
-//      outp.mainNonBurstInfo := inp.mainNonBurstInfo
-//    }
-//  )
-//  //val myLoD2hAlmostDonePushStm = cloneOf(myLoD2hPushStm)
-//  //myLoD2hAlmostDonePushStm << myLoD2hPushStm
-//  //myLoD2hAlmostDonePushStm << myLoD2hPushStm.throwWhen(
-//  //  myLoD2hPushStm.busPayload.txnCnt.asSInt
-//  //  === (
-//  //    RegNextWhen(
-//  //      myLoD2hPushStm.busPayload.txnCnt.asSInt,
-//  //      cond=myLoD2hPushStm.fire,
-//  //    )
-//  //    init(1)
-//  //  )
-//  //)
-//
-//  // NOTE: this was previously `myLoD2hAlmostDonePushStm.translateInto`
-//  myLoD2hPushStm.translateInto(
-//    if (cfg.myFifoThingLoBusCfg.haveByteEn) (
-//      myLoD2hFifo.io.push
-//    ) else (
-//      myLoD2hShiftedDataStmAdapter.io.loD2hBus
-//    )
-//  )(
-//    dataAssignment=(outp, inp) => {
-//      outp.mainNonBurstInfo := inp.busPayload.mainNonBurstInfo
-//    }
-//  )
-//
-//  if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//    //println(
-//    //  s"NOTE: "
-//    //  + s"myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus"
-//    //)
-//    myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus
-//  }
-//  val myTempHaveHitCmpEqLeft = (
-//    Vec[Vec[UInt]](
-//      rdLineAttrs.map(
-//        outerItem => Vec[UInt](outerItem.map(item => item.tag))
-//      )
-//    )
-//  )
-//  val myTempHaveHitCmpEqRight = Vec[Vec[UInt]](
-//    Vec.fill(numWays)(
-//      RegNext(
-//        RegNext(mySelLoH2dPopPayload.addr(loBusCacheCfg.tagRange))
-//        init(0x0)
-//      )
-//      init(0x0),
-//    ),
-//    Vec.fill(numWays)(
-//      UInt(
-//        mySelLoH2dPopPayload.addr(loBusCacheCfg.tagRange).getWidth bits
-//      )
-//    )
-//  )
-//  val tempHaveHitCmpEq = Vec.fill(numLoHi)(
-//    Vec.fill(numWays)(Bool())
-//  )
-//  val haveHit = Vec.fill(numLoHi)(
-//    Vec.fill(numWays)(
-//      Bool()
-//    )
-//  )
-//  if (cfg.dbg) {
-//    io.dbgInfo.setAsReg() init(io.dbgInfo.getZero)
-//  }
-//
-//  val rSavedPrefetchLoH2dPayload = (
-//    Reg(cloneOf(rDel2LoH2dPayload))
-//    init(rDel2LoH2dPayload.getZero)
-//  )
-//  val rSavedPrefetchRamIdx = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    Reg(UInt(log2Up(numWays) bits))
-//    init(0x0)
-//  )
-//
-//  //myPrefetchHaveHit.cnt := cfg.prefetchNumLinesAhead.get - 1
-//
-//  val rPrefetchCnt = (
-//    Reg(SInt(log2Up(cfg.prefetchNumLinesAhead.get).max(1) + 1 bits))
-//    init(-1)
-//  )
-//
-//  for (outerRamIdx <- 0 until numLoHi) {
-//    for (ramIdx <- 0 until numWays) {
-//      tempHaveHitCmpEq(outerRamIdx)(ramIdx) := (
-//        myTempHaveHitCmpEqLeft(outerRamIdx)(ramIdx)
-//        === myTempHaveHitCmpEqRight(outerRamIdx)(ramIdx)
-//      )
-//      haveHit(outerRamIdx)(ramIdx) := (
-//        rdLineAttrs(outerRamIdx)(ramIdx).fire
-//        && tempHaveHitCmpEq(outerRamIdx)(ramIdx)
-//      )
-//      if (outerRamIdx == 1) {
-//        myTempHaveHitCmpEqRight(outerRamIdx)(ramIdx) := (
-//          rSavedPrefetchLoH2dPayload.addr(loBusCacheCfg.tagRange)
-//        )
-//      }
-//    }
-//  }
-//
-//  val rMyTempDoSaveCond = (
-//    Vec.fill(4)(
-//      RegNext(
-//        RegNext(
-//          (
-//            mySelLoH2dPopStm.fire
-//            //&& !myFullTempIgnoreDupCntCond
-//          ),
-//          init=False
-//        ),
-//        init=False
-//      )
-//    )
-//  )
-//
-//  val tempToSwitchNonHaveHitVec = Vec[Bits](
-//    (
-//      //((rState === State.IDLE) && rMyTempDoSaveCond(3))
-//      //((rState === State.IDLE)
-//      (
-//        //rLoState.asBits(LoState.IDLE.position)
-//        rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
-//        //|| rLoState.asBits(LoState.IDLE_STORE_MODE.position)
-//      )
-//      ## rMyTempDoSaveCond(3)
-//      ## rDel2LoH2dPayload.isWrite
-//      ## (
-//        // mmio
-//        rDel2LoH2dPayload.addr(loBusCacheCfg.addrWidth - 1)
-//      )
-//    ),
-//    (
-//      //(rHiState === HiState.READ_ATTRS)
-//      Cat(
-//        rHiState.asBits(HiState.READ_ATTRS.position)
-//      )
-//    ),
-//    //(
-//    //  rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
-//    //  ## rMyTempDoSaveCond(3)
-//    //  ## rDel2LoH2dPayload.isWrite
-//    //  ## (
-//    //    // mmio
-//    //    rDel2LoH2dPayload.addr(loBusCacheCfg.addrWidth - 1)
-//    //  )
-//    //),
-//    //(
-//    //  rLoState.asBits(LoState.IDLE_STORE_MODE.position)
-//    //  ## rMyTempDoSaveCond(3)
-//    //  ## rDel2LoH2dPayload.isWrite
-//    //  ## (
-//    //    // mmio
-//    //    rDel2LoH2dPayload.addr(loBusCacheCfg.addrWidth - 1)
-//    //  )
-//    //),
-//  )
-//  val tempToSwitchVec = Vec[Bits](
-//    (
-//      tempToSwitchNonHaveHitVec.head
-//      ## haveHit.head
-//    ),
-//    (
-//      tempToSwitchNonHaveHitVec.last
-//      ## haveHit.last
-//    ),
-//  )
-//  //println(
-//  //  s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
-//  //)
-//
-//  //val myPrefetchHaveHitVec = (
-//  //  Vec.fill(2)(
-//  //    //Flow(
-//  //      LcvBusCachePrefetcherHaveHitPayload(cfg=cfg)
-//  //    //)
-//  //  )
-//  //)
-//
-//  //val rSavedPrefetchHaveHit = {
-//  //  val temp = Reg(
-//  //    Flow(
-//  //      LcvBusCachePrefetcherHaveHitPayload(cfg=cfg)
-//  //    )
-//  //  )
-//  //  temp.init(temp.getZero)
-//  //  temp
-//  //}
-//  //myPrefetchHaveHit.valid := tempToSwitchNonHaveHit.andR
-//
-//  //val myPrefetchHaveHit
-//  //myPrefetchHaveHitVec.head.haveHitAtAll := (
-//  //  haveHit.head.orR
-//  //  //haveHit.last.orR
-//  //)
-//  //myPrefetchHaveHitVec.last.haveHitAtAll := (
-//  //  haveHit.last.orR
-//  //  //haveHit.last.orR
-//  //)
-//  //myPrefetchHaveHitVec.foreach(item => {
-//  //  item.loH2dPayload := rDel2LoH2dPayload.busPayload
-//  //})
-//
-//  def convBusAddrToWordIdx(
-//    someRam: RamTdpPipe,
-//    busAddr: UInt
-//  ): UInt = {
-//    (busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift))
-//    .resize(someRam.io.vec(0).addr.getWidth)
-//  }
-//
-//  def convBusAddrToLineIdx[
-//    WordT <: Data
-//  ](
-//    someRam: RamSdpPipe[WordT],
-//    busAddr: UInt
-//  ): UInt = {
-//    (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
-//    .resize(someRam.io.rdAddr.getWidth)
-//  }
-//
-//  lineWordRam.foreach(_.io.vec.zipWithIndex.foreach{
-//    case (item, idx) => {
-//      item.addr.allowOverride
-//      if (idx == 1) {
-//        item.rdEn := False
-//        item.addr := 0x0
-//        item.wrData := 0x0
-//        item.wrByteEn := 0x0
-//      }
-//    }
-//  })
-//
-//  def doLineWordRamReadSync(
-//    vecIdx: Int,
-//    ramIdx: Int,
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    val myRamIo = lineWordRam(ramIdx).io.vec(vecIdx)
-//    if (setEn == 1) {
-//      myRamIo.rdEn := True
-//    } else if (setEn == 2) {
-//      myRamIo.rdEn := (
-//        RegNext(
-//          next=(
-//            //mySelLoH2dPopStm.valid
-//            mySelLoH2dPopStm.fire
-//          ),
-//          init=False,
-//        )
-//        //&& rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
-//        //&& !myFifoThingDoStall
-//      )
-//    }
-//    myRamIo.addr := {
-//      //println(
-//      //  s"test info: busAddr("
-//      //  + s"${busAddr.high} downto ${myLineWordRamAddrRshift}"
-//      //  + s")"
-//      //)
-//      (
-//        (
-//          busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift)
-//        )
-//        .resize(myRamIo.addr.getWidth)
-//      )
-//    }
-//  }
-//  def doLineAttrsRamReadSync(
-//    outerRamIdx: Int,
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    lineAttrsRam(outerRamIdx).foreach(item => {
-//      if (setEn == 1) {
-//        item.io.rdEn := True
-//      } else if (setEn == 2) {
-//        item.io.rdEn := (
-//          RegNext(
-//            next=(
-//              //mySelLoH2dPopStm.valid
-//              mySelLoH2dPopStm.fire
-//            ),
-//            init=False,
-//          )
-//          //&& !myFifoThingDoStall
-//        )
-//      } 
-//      item.io.rdAddr := {
-//        //println(
-//        //  s"test info: busAddr("
-//        //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
-//        //  + s")"
-//        //)
-//
-//        convBusAddrToLineIdx(
-//          someRam=item,
-//          busAddr=busAddr,
-//        )
-//
-//        //(
-//        //  (
-//        //    busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
-//        //  )
-//        //  .resize(item.io.rdAddr.getWidth)
-//        //)
-//      }
-//    })
-//  }
-//  def doLineBitPlruRamReadSync(
-//    outerRamIdx: Int,
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    if (setEn == 1) {
-//      lineBitPlruRam(outerRamIdx).io.rdEn := True
-//    } else if (setEn == 2) {
-//      lineBitPlruRam(outerRamIdx).io.rdEn := (
-//        RegNext(
-//          next=(
-//            //mySelLoH2dPopStm.valid
-//            mySelLoH2dPopStm.fire
-//          ),
-//          init=False,
-//        )
-//        //&& !myFifoThingDoStall
-//      )
-//    } 
-//    lineBitPlruRam(outerRamIdx).io.rdAddr := {
-//      //println(
-//      //  s"test info: busAddr("
-//      //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
-//      //  + s")"
-//      //)
-//      (
-//        //(
-//        //  busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
-//        //)
-//        //.resize(lineBitPlruRam.head.io.rdAddr.getWidth)
-//        convBusAddrToLineIdx(
-//          someRam=lineBitPlruRam(outerRamIdx),
-//          busAddr=busAddr,
-//        )
-//      )
-//    }
-//  }
-//  def doLineWordRamWrite(
-//    vecIdx: Int,
-//    ramIdx: Int,
-//    busAddr: UInt,
-//    lineWord: UInt,
-//    byteEn: Option[UInt],
-//    setEn: Boolean=true,
-//  ): Unit = {
-//    val myRamIo = lineWordRam(ramIdx).io.vec(vecIdx)
-//    if (setEn) {
-//      myRamIo.wrEn := True
-//      myRamIo.addr := (
-//        (busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift))
-//        .resize(myRamIo.addr.getWidth)
-//      )
-//    } else {
-//      when (myRamIo.wrEn) {
-//        myRamIo.addr := (
-//          (busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift))
-//          .resize(myRamIo.addr.getWidth)
-//        )
-//      }
-//    }
-//    myRamIo.wrData := lineWord.asBits
-//    byteEn match {
-//      case Some(byteEn) => {
-//        myRamIo.wrByteEn := byteEn.asBits
-//      }
-//      case None => {
-//        myRamIo.wrByteEn := (
-//          B(
-//            myRamIo.wrByteEn.getWidth bits,
-//            default -> True
-//          )
-//        )
-//      }
-//    }
-//  }
-//  def doLineAttrsRamWrite(
-//    ramIdx: Int,
-//    busAddr: UInt,
-//    lineAttrs: LcvBusCacheLineAttrs,
-//    setEn: Boolean=true,
-//  ): Unit = {
-//    lineAttrsRam.foreach(item => {
-//      if (setEn) {
-//        item(ramIdx).io.wrEn := True
-//      }
-//      item(ramIdx).io.wrAddr := (
-//        //(busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
-//        //.resize(item(ramIdx).io.wrAddr.getWidth)
-//        convBusAddrToLineIdx(
-//          someRam=item(ramIdx),
-//          busAddr=busAddr,
-//        )
-//      )
-//      item(ramIdx).io.wrData := lineAttrs
-//    })
-//  }
-//  def doLineBitPlruRamWrite(
-//    busAddr: UInt,
-//    //lineAttrs: LcvBusCacheLineBitPlru,
-//    lineBitPlru: UInt,
-//    setEn: Boolean=true,
-//  ): Unit = {
-//    lineBitPlruRam.foreach(item => {
-//      if (setEn) {
-//        item.io.wrEn := True
-//      }
-//      item.io.wrAddr := (
-//        //(busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
-//        //.resize(item.io.wrAddr.getWidth)
-//        convBusAddrToLineIdx(
-//          someRam=item,
-//          busAddr=busAddr,
-//        )
-//      )
-//      item.io.wrData := lineBitPlru
-//    })
-//  }
-//
-//  for (ramIdx <- 0 until numWays) {
-//    doLineWordRamReadSync(
-//      vecIdx=0,
-//      ramIdx=ramIdx,
-//      busAddr=mySelLoH2dPopPayload.addr,
-//      setEn=2,
-//    )
-//  }
-//  for (ramIdx <- 0 until numWays) {
-//    doLineWordRamWrite(
-//      vecIdx=0,
-//      ramIdx=ramIdx,
-//      busAddr=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.addr,
-//            init=mySelLoH2dPopPayload.addr.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.addr.getZero,
-//        )
-//      ),
-//      lineWord=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.data,
-//            init=mySelLoH2dPopPayload.data.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.data.getZero,
-//        )
-//      ),
-//      byteEn=Some(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.byteEn,
-//            init=mySelLoH2dPopPayload.byteEn.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.byteEn.getZero,
-//        ),
-//      ),
-//      setEn=false,
-//    )
-//  }
-//  //lineWordRam.map(item => {
-//  //  //item.io.vec.map(_.wrEn := False)
-//  //  item.io.vec.last.wrEn := False
-//  //})
-//
-//  doLineAttrsRamReadSync(
-//    outerRamIdx=0,
-//    busAddr=mySelLoH2dPopPayload.addr,
-//    setEn=2,
-//  )
-//  doLineAttrsRamReadSync(
-//    outerRamIdx=1,
-//    busAddr=rSavedPrefetchLoH2dPayload.addr,
-//    setEn=2,
-//  )
-//  for (ramIdx <- 0 until numWays) {
-//    doLineAttrsRamWrite(
-//      ramIdx=ramIdx,
-//      busAddr=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.addr,
-//            init=mySelLoH2dPopPayload.addr.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.addr.getZero,
-//        )
-//      ),
-//      lineAttrs=(
-//        wrLineAttrs
-//      ),
-//      setEn=false,
-//    )
-//  }
-//
-//  if (myCondHaveLineBitPlruRam) {
-//    doLineBitPlruRamReadSync(
-//      outerRamIdx=0,
-//      busAddr=mySelLoH2dPopPayload.addr,
-//      setEn=2,
-//    )
-//    doLineBitPlruRamReadSync(
-//      outerRamIdx=1,
-//      busAddr=rSavedPrefetchLoH2dPayload.addr,
-//      setEn=2,
-//    )
-//    doLineBitPlruRamWrite(
-//      busAddr=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.addr,
-//            init=mySelLoH2dPopPayload.addr.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.addr.getZero,
-//        )
-//      ),
-//      lineBitPlru=(
-//        wrLineBitPlru
-//      ),
-//      setEn=false,
-//    )
-//  }
-//  //--------
-//  myLoD2hPushStm.payload := (
-//    RegNext(myLoD2hPushStm.payload, init=myLoD2hPushStm.payload.getZero)
-//  )
-//
-//  //val haveHit = (
-//  //  rdLineAttrs.fire
-//  //  && tempHaveHitCmpEq
-//  //)
-//
-//  //val rSavedRdLineAttrsTag = (
-//  //  //Vec.fill(numWays)(
-//  //    Reg(
-//  //      cloneOf(rdLineAttrs.head.head.tag),
-//  //      init=rdLineAttrs.head.head.tag.getZero,
-//  //    )
-//  //  //)
-//  //)
-//
-//  val rHiH2dBurstCnt = (
-//    Vec.fill(2)(
-//      Reg(UInt(loBusCfg.burstCntWidth bits))
-//      init(0x0)
-//    )
-//  )
-//  val rHiD2hBurstCnt = (
-//    Reg(UInt(loBusCfg.burstCntWidth bits))
-//    init(0x0)
-//  )
-//  //--------
-//  def myLoD2hPayload = myLoD2hPushStm.busPayload
-//  //--------
-//
-//  def doPopLoH2dFifo(): Unit = {
-//    mySelLoH2dPopStm.ready := True
-//  }
-//
-//  //val myDoStallLoH2dThrowThing = (
-//  //  LcvBusDoStallH2dThrowThing(busCfg=cfg.myFifoThingLoBusCfg)
-//  //)
-//  //myDoStallLoH2dThrowThing.io.push.valid := (
-//  //  myLoH2dDoStallFifoThing.io.pop.valid
-//  //  //&& rState === State.IDLE
-//  //  && rState.asBits(1)
-//  //)
-//  //myDoStallLoH2dThrowThing.io.push.payload := (
-//  //  myLoH2dDoStallFifoThing.io.pop.busPayload.txnCnt
-//  //)
-//
-//  //val myFullTempIgnoreDupCntCond = (
-//  //  myDoStallLoH2dThrowThing.io.myThrowCondMain
-//  //  //&& History[Bool](
-//  //  //  that=True,
-//  //  //  when=(
-//  //  //    myLoH2dPopStm.fire
-//  //  //    //myD2hPushStm.fire
-//  //  //    //myLoH2dDoStallFifoThing.io.pop.fire
-//  //  //    //&& !myLoH2dPopThrowArea.myLoH2dThrowCond
-//  //  //  ),
-//  //  //  length=(
-//  //  //    //2
-//  //  //    //4
-//  //  //    //3
-//  //  //    5
-//  //  //  ),
-//  //  //  init=False,
-//  //  //).last
-//  //)
-//
-//  //def doIgnoreInvalidFifoThingPopCnt(
-//  //): Unit = {
-//  //  when (myFullTempIgnoreDupCntCond) {
-//  //    myLoH2dPopThrowArea.myLoH2dThrowCond := True
-//  //  }
-//  //}
-//
-//  //val rHadAnyRamWritePastTwoCycles = Vec.fill(2)(
-//  //  RegNext(
-//  //    (
-//  //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-//  //      || RegNext(
-//  //        Vec(lineWordRam.map(item => item.io.wrEn)).orR,
-//  //        init=False
-//  //      )
-//  //      || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-//  //      || RegNext(
-//  //        Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
-//  //        init=False
-//  //      )
-//  //    ),
-//  //    init=False
-//  //  )
-//  //)
-//  //--------
-//  // mostly-working, new hazard-detection stuff!
-//  //val tempHistLineWordWrEn = Vec(
-//  //  lineWordRam.map(outerItem => (
-//  //    Vec(outerItem.io.vec.map(
-//  //      item => (
-//  //        History[Bool](
-//  //          that=item.wrEn,
-//  //          length=cfg.myRamOptWrHistLengthPlusAddend,
-//  //          init=item.wrEn.getZero
-//  //        )
-//  //      )
-//  //    ))
-//  //  ))
-//  //)
-//  //val tempHistLineWordAddr = Vec(
-//  //  lineWordRam.map(outerItem => (
-//  //    Vec(outerItem.io.vec.map(
-//  //      item => (
-//  //        History[UInt](
-//  //          that=item.addr,
-//  //          length=cfg.myRamOptWrHistLengthPlusAddend,
-//  //          init=item.addr.getZero
-//  //        )
-//  //      )
-//  //    ))
-//  //  ))
-//  //)
-//
-//  //val tempHistLineAttrsWrEn = Vec(
-//  //  lineAttrsRam.head.map(item => (
-//  //    History[Bool](
-//  //      that=item.io.wrEn,
-//  //      length=cfg.myRamOptWrHistLengthPlusAddend,
-//  //      init=item.io.wrEn.getZero
-//  //    )
-//  //  ))
-//  //)
-//  //val tempHistLineAttrsWrAddr = Vec(
-//  //  lineAttrsRam.head.map(item => (
-//  //    History[UInt](
-//  //      that=item.io.wrAddr,
-//  //      length=cfg.myRamOptWrHistLengthPlusAddend,
-//  //      init=item.io.wrAddr.getZero
-//  //    )
-//  //  ))
-//  //)
-//  //val myTempRamWriteHazardWordIdx = (
-//  //  convBusAddrToWordIdx(
-//  //    // `someRam` is only used to check
-//  //    // `someRam.io.vec(0).addr.getWidth`,
-//  //    // so it doesn't matter which one we use
-//  //    someRam=lineWordRam.head,
-//  //    busAddr=rLoH2dPayload.addr
-//  //  )
-//  //)
-//  //val myTempRamWriteHazardLineIdx = (
-//  //  convBusAddrToLineIdx(
-//  //    // `someRam` is only used to check
-//  //    // `someRam.io.rdAddr.getWidth`,
-//  //    // so it doesn't matter which one we use
-//  //    someRam=lineAttrsRam.head.head,
-//  //    busAddr=rLoH2dPayload.addr
-//  //  )
-//  //)
-//  //val myHaveCurrRamWriteHazardOther = (
-//  //  Vec[Bool](
-//  //    Vec[Bool](lineWordRam.map(item => (
-//  //      (
-//  //        item.io.vec.last.wrEn
-//  //        && (
-//  //          item.io.vec.head.addr
-//  //          === item.io.vec.last.addr
-//  //        )
-//  //      )
-//  //    ))).orR
-//  //  ).orR
-//  //)
-//  //def myRamWriteHazardArrSize = 4
-//  //val myArrHadLineWordRamWriteHazard = Array.fill(
-//  //  myRamWriteHazardArrSize
-//  //)(
-//  //  Vec(tempHistLineWordAddr.view.zipWithIndex.map{
-//  //    case (outerItem, kdx) => Vec(
-//  //      outerItem.view.zipWithIndex.map{
-//  //        case (middleItem, jdx) => Vec(
-//  //          middleItem.view.zipWithIndex.map{
-//  //            case (item, idx) => (
-//  //              tempHistLineWordWrEn(kdx)(jdx)(idx)
-//  //              && (item === myTempRamWriteHazardWordIdx)
-//  //            )
-//  //          }
-//  //        )
-//  //      }
-//  //    )
-//  //  })
-//  //)
-//
-//  //val myArrHadLineAttrsRamWriteHazard = Array.fill(
-//  //  myRamWriteHazardArrSize
-//  //)(
-//  //  Vec(tempHistLineAttrsWrAddr.view.zipWithIndex.map{
-//  //    case (outerItem, jdx) => Vec(
-//  //      outerItem.view.zipWithIndex.map{
-//  //        case (item, idx) => (
-//  //          tempHistLineAttrsWrEn(jdx)(idx)
-//  //          && (item === myTempRamWriteHazardLineIdx)
-//  //        )
-//  //      }
-//  //    )
-//  //  })
-//  //)
-//
-//  //val myHistHadRamWriteHazardOther = Array.fill(
-//  //  myRamWriteHazardArrSize
-//  //)(
-//  //  History[Bool](
-//  //    that=myHaveCurrRamWriteHazardOther,
-//  //    length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-//  //    init=myHaveCurrRamWriteHazardOther.getZero
-//  //  )
-//  //)
-//  //val myHadRecentRamWriteHazard = Vec[Bool](
-//  //  myArrHadLineWordRamWriteHazard.zipWithIndex.map{
-//  //    case (item, idx) => (
-//  //      RegNext(
-//  //        (
-//  //          myArrHadLineWordRamWriteHazard(idx).asBits.orR
-//  //          || myArrHadLineAttrsRamWriteHazard(idx).asBits.orR
-//  //          || myHistHadRamWriteHazardOther(idx).orR
-//  //        ),
-//  //        init=False
-//  //      )
-//  //    )
-//  //  }
-//  //)
-//
-//  ////val myHadRecentRamWriteHazardSplitVec = Vec[Vec[Bool]](
-//  ////  myArrHadLineWordRamWriteHazard.zipWithIndex.map{
-//  ////    case (outerItem, jdx) => Vec(outerItem.zipWithIndex.map{
-//  ////      case (item, idx) => (
-//  ////        RegNext(
-//  ////          (
-//  ////            myArrHadLineWordRamWriteHazard(jdx)(idx).asBits.orR
-//  ////            || myArrHadLineAttrsRamWriteHazard(jdx).asBits.orR
-//  ////            || myHistHadRamWriteHazardOther(jdx).orR
-//  ////          ),
-//  ////          init=False
-//  ////        )
-//  ////      )
-//  ////    })
-//  ////  }
-//  ////)
-//  //--------
-//  val myTempHaveCurrRamWrite = (
-//    //Vec[Bool](
-//    //  //lineWordRam.map(item => item.io.wrEn)
-//    //  lineWordRam.map(item => item.io.vec.map(_.wrEn).orR)
-//    //).orR
-//    //|| 
-//    (
-//      //Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-//
-//      // we treat this as being only one write port,
-//      // so we only need to check one of them..
-//      LcvOrR(Vec[Bool](lineAttrsRam.head.map(item => item.io.wrEn)))//.orR
-//    )
-//  )
-//  val myHistHadAnyRamWrite = Array.fill(4)(
-//    History[Bool](
-//      that=myTempHaveCurrRamWrite,
-//      length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-//      init=myTempHaveCurrRamWrite.getZero
-//    )
-//  )
-//  val myHadAnyRecentRamWrite = Vec[Bool](
-//    myHistHadAnyRamWrite.map(item => RegNext(LcvOrR(item), init=False))
-//  )
-//
-//  //--------
-//  val rHadLoH2dFinish = Reg(Bool(), init=False)
-//  val rHadLoD2hFinish = Reg(Bool(), init=False)
-//  val rHadHiH2dFinish = Reg(Bool(), init=False)
-//  val rHadHiD2hFinish = Reg(Bool(), init=False)
-//
-//  val hiH2dFifo = (
-//    StreamFifo(
-//      dataType=(
-//        //UInt(loBusCacheCfg.wordWidth bits)
-//        LcvBusH2dPayload(cfg.hiBusCfg)
-//      ),
-//      depth=loBusCacheCfg.lineSizeWords,
-//      latency=2,
-//      forFMax=true,
-//    )
-//  )
-//
-//  val rHiH2dValid = Reg(Bool(), init=False)
-//  val rHiH2dPayload = (
-//    Reg(cloneOf(hiH2dFifo.io.push.payload))
-//    init(hiH2dFifo.io.push.payload.getZero)
-//  )
-//  val rHiD2hReady = Reg(Bool(), init=False)
-//  hiH2dFifo.io.push.valid := rHiH2dValid
-//  hiH2dFifo.io.push.payload := rHiH2dPayload
-//  io.hiBus.d2hBus.ready := rHiD2hReady
-//
-//  rHiH2dPayload.byteEn := (
-//    U(hiBusCfg.byteEnWidth bits, default -> True)
-//  )
-//  //rHiH2dPayload.byteSize := (
-//  //  U(rHiH2dPayload.byteSize.getWidth bits, default -> True)
-//  //)
-//  //rHiH2dPayload.haveFullWord := True
-//  io.hiBus.h2dBus <-/< hiH2dFifo.io.pop
-//
-//      
-//// >>> for ramIdx in range(numWays):
-//// ...     print(ramIdx, (("0" * (numWays - ramIdx - 1))) + "1" + ("-" * ramIdx))
-//// ...     
-//// 0 0001
-//// 1 001-
-//// 2 01--
-//// 3 1---
-//  def calcHitRamIdxMask(ramIdx: Int): String = (
-//    (("0" * (numWays - ramIdx - 1)))
-//    + "1"
-//    + ("-" * ramIdx)
-//  )
-//
-//// >>> for ramIdx in range(numWays):
-//// ...     print(ramIdx, (("1" * (numWays - ramIdx - 1))) + "0" + ("-" * ramIdx))
-//// ...     
-//// 0 1110
-//// 1 110-
-//// 2 10--
-//// 3 0---
-//  def calcMissRamIdxMask(ramIdx: Int): String = (
-//    (("1" * (numWays - ramIdx - 1)))
-//    + "0"
-//    + ("-" * ramIdx)
-//  )
-//
-//  val rSavedRamIdx = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    Reg(UInt(log2Up(numWays) bits))
-//    init(0x0)
-//  )
-//  val myHaveCurrWrite = Bool()
-//  val myCurrRamIdx = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    UInt(log2Up(numWays) bits)
-//  )
-//  myHaveCurrWrite := False
-//  myCurrRamIdx := myCurrRamIdx.getZero
-//
-//  //val myHistSavedRamIdx = (
-//  //  History(
-//  //    that=rSavedRamIdx,
-//  //  )
-//  //)
-//
-//  //rSavedPrefetchHaveHit.addr.allowOverride
-//
-//  //when (
-//  //  myPrefetchHaveHit.fire
-//  //  && !rSavedPrefetchHaveHit.fire
-//  //) {
-//  //  rSavedPrefetchHaveHit.valid := True
-//  //  rSavedPrefetchHaveHit.payload := myPrefetchHaveHit.payload
-//  //}
-//
-//  def rSavedPrefetchLoBusAddr = rSavedPrefetchLoH2dPayload.addr
-//  val rSavedPrefetchLoBusAddrSet = (
-//    cloneOf(
-//      rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
-//    )
-//  )
-//  rSavedPrefetchLoBusAddrSet := (
-//    rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
-//  )
-//  val rSavedPrefetchRdLineAttrsTag = (
-//    //Vec.fill(
-//    //  //numWays
-//    //  numLoHi
-//    //)(
-//      Reg(
-//        cloneOf(rdLineAttrs.head.head.tag),
-//        init=rdLineAttrs.head.head.tag.getZero,
-//      )
-//    //)
-//  )
-//
-//  def doWriteBitPlruRamDuringMiss(
-//    //ramIdx: Int
-//    someRdLineBitPlru: UInt,
-//    someSavedRamIdx: UInt,
-//    busAddr: Option[UInt]=None,
-//    isHiState: Boolean,
-//  ): Unit = {
-//    require(
-//      myCondHaveLineBitPlruRam
-//    )
-//    //rSavedRamIdx := rdLineBitPlru
-//    //wrLineBitPlru := rdLineBitPlru + 1
-//    if (busAddr != None) {
-//      wrLineBitPlru := someRdLineBitPlru//rdLineBitPlru
-//    }
-//    lineBitPlruRam.foreach(item => {
-//      //item.io.wrEn := True
-//      busAddr match {
-//        case Some(myBusAddr) => {
-//          item.io.wrEn := True
-//          item.io.wrAddr := convBusAddrToLineIdx(
-//            someRam=item,
-//            busAddr=myBusAddr,
-//          )
-//        }
-//        case None => {
-//        }
-//      }
-//    })
-//    switch (someRdLineBitPlru) {
-//      for (ramIdx <- 0 until numWays) {
-//        val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
-//        is (MaskedLiteral(myRamIdxMask)) {
-//          if (busAddr != None) {
-//            wrLineBitPlru(ramIdx) := True
-//          }
-//          //rSavedRamIdx := ramIdx
-//          someSavedRamIdx := ramIdx
-//          //if (isHiState) {
-//          //  rSavedPrefetchRdLineAttrsTag := (
-//          //    rdLineAttrs.last(ramIdx).tag
-//          //  )
-//          //}
-//        }
-//        default {
-//        }
-//      }
-//    }
-//  }
-//  def doWriteBitPlruRamDuringHit(
-//    someRdLineBitPlru: UInt,
-//    ramIdx: Int,
-//    busAddr: Option[UInt]=None,
-//  ): Unit = {
-//    require(
-//      myCondHaveLineBitPlruRam
-//    )
-//    val tempLineBitPlru = cloneOf(rdLineBitPlru)
-//    tempLineBitPlru.allowOverride
-//    tempLineBitPlru := someRdLineBitPlru//rdLineBitPlru
-//    tempLineBitPlru(ramIdx) := True
-//    when (LcvAndR(tempLineBitPlru)) {
-//      wrLineBitPlru := 1 << ramIdx
-//    } otherwise {
-//      wrLineBitPlru := tempLineBitPlru
-//    }
-//    lineBitPlruRam.foreach(item => {
-//      // NOTE:
-//      // With the current state of this code,
-//      // `rLoState`'s handling of cache hits can (rarely) have the
-//      // `lineBitPlruRam` write port be overwritten by the prefetcher!
-//      // It will lose a little performance, potentially,
-//      // but hopefully not by that much!
-//      item.io.wrEn := True
-//      busAddr match {
-//        case Some(myBusAddr) => {
-//          item.io.wrAddr := convBusAddrToLineIdx(
-//            someRam=item,
-//            busAddr=myBusAddr,
-//          )
-//        }
-//        case None => {
-//        }
-//      }
-//    })
-//  }
-//
-//  val rSeenMmioHiBusH2dFire = Reg(Bool(), init=False)
-//
-//  val prefetchStallVec = Vec[Bool](
-//    (
-//      (
-//        RegNext(
-//          (
-//            rLoH2dPayload.addr(loBusCacheCfg.setRange)
-//            === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
-//          )
-//        )
-//        && (
-//          History[Flow[UInt]](
-//            that={
-//              val temp = Flow(UInt(hiBusCfg.burstCntWidth bits))
-//              temp.valid := io.hiBus.d2hBus.fire
-//              temp.payload := rHiD2hBurstCnt
-//              temp
-//            },
-//            length=cfg.myRamOptWrHistLengthPlusAddend,
-//            init={
-//              Flow(UInt(hiBusCfg.burstCntWidth bits)).getZero
-//            }
-//          ).sFindFirst(
-//            item => (
-//              (
-//                item.fire
-//                && (
-//                  RegNext(
-//                    rLoH2dPayload.busPayload.addrToBurstCnt()
-//                  ) === (
-//                    item.payload
-//                  )
-//                )
-//              )
-//              //|| (
-//              //  (
-//              //    //io.hiBus.d2hBus.valid
-//              //    //&& 
-//              //    io.hiBus.d2hBus.burstLast
-//              //  )
-//              //)
-//            )
-//          )._1
-//        )
-//        //&& (
-//        //  rLoH2dPayload.addr(
-//        //)
-//      )
-//      //|| (
-//      //  (
-//      //    //io.hiBus.d2hBus.valid
-//      //    //&& 
-//      //    io.hiBus.d2hBus.burstLast
-//      //  )
-//      //)
-//    ),
-//    //(
-//    //  RegNext(
-//    //    (
-//    //      rLoH2dPayload.addr(loBusCacheCfg.setRange)
-//    //      === rSavedPrefetchLoBusAddr(loBusCacheCfg.setRange)
-//    //    )
-//    //  ) 
-//    //  || (
-//    //    io.hiBus.d2hBus.burstLast
-//    //  )
-//    //),
-//  )
-//
-//  val rPrefetchStallNotReady = Reg(Bool(), init=False)
-//
-//  for (myVecIdx <- 0 until numLoHi) {
-//    switch (tempToSwitchVec(myVecIdx)) {
-//      is (
-//        if (myVecIdx == 0) (
-//          MaskedLiteral("11-0" + ("0" * numWays))
-//        ) else (
-//          MaskedLiteral("1" + ("0" * numWays))
-//        )
-//      ) {
-//        if (myVecIdx == 0) {
-//          // cache miss
-//          rLoState := LoState.WAIT_HI_STATE_MCHN_READY
-//
-//          if (myCondHaveLineBitPlruRam) {
-//            doWriteBitPlruRamDuringMiss(
-//              someRdLineBitPlru=rdLineBitPlru,
-//              someSavedRamIdx=rSavedRamIdx,
-//              busAddr=None,
-//              isHiState=false,
-//            )
-//          }
-//
-//          myLoD2hPushStm.valid := False
-//          myFifoThingDoStall := True
-//          mySelLoH2dPopStm.ready := False
-//        } else if (myVecIdx == 1) {
-//          //when (rdLineAttrs.last(rSavedPrefetchRamIdx).fire) {
-//          //  rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_3
-//          //} otherwise {
-//          //  rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
-//          //}
-//          //when (rdLineAttrs.last(rSavedPrefetchRamIdx).fire) {
-//          //  rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_3
-//          //} otherwise {
-//          //  rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
-//          //}
-//
-//          //when (
-//          //  Vec(rdLineAttrs.last.map(_.fire)).andR
-//          //) {
-//          //  // TODO: handle the `dirty` flag
-//          //  rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_3
-//          //} otherwise {
-//          //  rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
-//          //}
-//          rHiState := HiState.READ_ATTRS_POST
-//
-//          if (myCondHaveLineBitPlruRam) {
-//            doWriteBitPlruRamDuringMiss(
-//              someRdLineBitPlru=rdPrefetchLineBitPlru,
-//              someSavedRamIdx=rSavedPrefetchRamIdx,
-//              busAddr=Some(rSavedPrefetchLoH2dPayload.addr),
-//              isHiState=true,
-//            )
-//          } else {
-//          }
-//        } else {
-//          require(false)
-//        }
-//      }
-//      for (ramIdx <- 0 until numWays) {
-//        val myRamIdxMask = calcHitRamIdxMask(ramIdx=ramIdx)
-//        //println(
-//        //  s"ramIdx:${ramIdx} myRamIdxMask:${myRamIdxMask}"
-//        //)
-//        is (
-//          if (myVecIdx == 0) (
-//            MaskedLiteral("1100" + myRamIdxMask)
-//          ) else (
-//            MaskedLiteral("1" + myRamIdxMask)
-//          )
-//        ) {
-//          if (io.dbgInfo != null) {
-//            io.dbgInfo.hit(myVecIdx).cnt := (
-//              io.dbgInfo.hit(myVecIdx).cnt + 1
-//            )
-//            io.dbgInfo.hit(myVecIdx).isWrite := False
-//
-//            if (myVecIdx == 0) {
-//              io.dbgInfo.hit(myVecIdx).addr := (
-//                rDel2LoH2dPayload.addr
-//              )
-//            } else {
-//              io.dbgInfo.hit(myVecIdx).addr := (
-//                rSavedPrefetchLoH2dPayload.addr
-//              )
-//            }
-//            io.dbgInfo.hit(myVecIdx).ramIdx := ramIdx
-//          }
-//          if (myVecIdx == 0) {
-//            doPopLoH2dFifo()
-//            myFifoThingDoStall := False
-//
-//            //rSwitchToOtherLoStateIdle := (
-//            //  rLoState.asBits(LoState.IDLE_STORE_MODE.position)
-//            //)
-//
-//            if (myCondHaveLineBitPlruRam) {
-//              rSavedRamIdx := ramIdx
-//              myCurrRamIdx := ramIdx
-//              doWriteBitPlruRamDuringHit(
-//                someRdLineBitPlru=rdLineBitPlru,
-//                ramIdx=ramIdx,
-//              )
-//            }
-//
-//            // load, cache hit
-//            myLoD2hPushStm.busPayload.data := rdLineWord(ramIdx)
-//            if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//              myLoD2hPushStm.busPayload.byteSize := (
-//                rDel2LoH2dPayload.byteSize
-//              )
-//              myLoD2hPushStm.busPayload.addrLo := (
-//                rDel2LoH2dPayload.addr(
-//                  cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//                )
-//              )
-//            }
-//
-//            myLoD2hPushStm.valid := (
-//              !prefetchStallVec.head
-//              //&& !myHadAnyRecentRamWrite.head//False
-//              ////&& rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
-//            )
-//            rSavedNeedLineWordReadAgain := (
-//              prefetchStallVec.head
-//              //|| myHadAnyRecentRamWrite(1)
-//              ////|| rLoState.asBits(LoState.IDLE_STORE_MODE.position)
-//            )
-//
-//            when (
-//              prefetchStallVec.head
-//              //|| myHadAnyRecentRamWrite(2)
-//              ////|| rLoState.asBits(LoState.IDLE_STORE_MODE.position)
-//              || !myLoD2hPushStm.ready
-//            ) {
-//              mySelLoH2dPopStm.ready := False
-//              myFifoThingDoStall := True
-//            }
-//
-//            switch (
-//              prefetchStallVec.head
-//              //## (
-//              //  myHadAnyRecentRamWrite.last
-//              //  //|| rLoState.asBits(LoState.IDLE_STORE_MODE.position)
-//              //)
-//              ## myLoD2hPushStm.ready
-//            ) {
-//              is (
-//                //M"1--"
-//                M"1-"
-//              ) {
-//                rLoState := LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4
-//              }
-//              //is (M"01-") {
-//              //  rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_4
-//              //}
-//              is (
-//                //M"000"
-//                M"00"
-//              ) {
-//                rLoState := LoState.LOAD_HIT_DO_STALL
-//              }
-//              default {
-//              }
-//            }
-//          } else if (myVecIdx == 1) {
-//            // if we had a cache hit for an attempted prefetch,
-//            // we should stop prefetching there!
-//            //when (
-//            //  rLoState.asBits(
-//            //    LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1.position
-//            //  )
-//            //) {
-//            //}
-//            rHiState := HiState.IDLE
-//            if (myCondHaveLineBitPlruRam) {
-//              rSavedPrefetchRamIdx := ramIdx
-//              doWriteBitPlruRamDuringHit(
-//                someRdLineBitPlru=rdPrefetchLineBitPlru,
-//                ramIdx=ramIdx,
-//                busAddr=Some(rSavedPrefetchLoH2dPayload.addr),
-//              )
-//            }
-//          } else {
-//            require(false)
-//          }
-//        }
-//        if (myVecIdx == 0) {
-//          //is (MaskedLiteral("1110" + myRamIdxMask)) {
-//          //  if (io.dbgInfo != null) {
-//          //    io.dbgInfo.hit(myVecIdx).cnt := (
-//          //      io.dbgInfo.hit(myVecIdx).cnt + 1
-//          //    )
-//          //    io.dbgInfo.hit(myVecIdx).isWrite := True
-//          //    io.dbgInfo.hit(myVecIdx).addr := rDel2LoH2dPayload.addr
-//          //    io.dbgInfo.hit(myVecIdx).ramIdx := ramIdx
-//          //  }
-//          //  doPopLoH2dFifo()
-//          //  //myFifoThingDoStall := False
-//          //  //myLoD2hPushStm.valid := False
-//
-//          //  if (myCondHaveLineBitPlruRam) {
-//          //    rSavedRamIdx := ramIdx
-//
-//          //    myCurrRamIdx := ramIdx
-//
-//          //    //val tempLineBitPlru = cloneOf(rdLineBitPlru)
-//          //    //tempLineBitPlru.allowOverride
-//          //    //tempLineBitPlru := rdLineBitPlru
-//          //    //tempLineBitPlru(ramIdx) := True
-//          //    //when (tempLineBitPlru.andR) {
-//          //    //  wrLineBitPlru := 1 << ramIdx
-//          //    //} otherwise {
-//          //    //  wrLineBitPlru := tempLineBitPlru
-//          //    //}
-//          //    //lineBitPlruRam.io.wrEn := True
-//          //    doWriteBitPlruRamDuringHit(
-//          //      someRdLineBitPlru=rdLineBitPlru,
-//          //      ramIdx=ramIdx,
-//          //    )
-//          //  }
-//
-//          //  // other stores (from misses, for example!)
-//          //  // are supposed to wait!
-//
-//          //  //myHaveCurrWrite := True
-//
-//          //  // store, cache hit, don't care if line is currently dirty
-//          //  lineWordRam(ramIdx).io.vec(0).wrEn := (
-//          //    //True
-//          //    !prefetchStallVec(1)
-//          //    //&& rLoState.asBits(LoState.IDLE_STORE_MODE.position)
-//          //  )
-//          //  //--------
-//          //  // TODO: dirty flag
-//          //  lineAttrsRam.foreach(item => {
-//          //    item(ramIdx).io.wrEn := (
-//          //      //True
-//          //      !prefetchStallVec(1)
-//          //      //&& rLoState.asBits(LoState.IDLE_STORE_MODE.position)
-//          //    )
-//          //  })
-//
-//          //  wrLineAttrs := rdLineAttrs.head(ramIdx)
-//          //  //wrLineAttrs.dirty := True
-//          //  rSavedWrLineAttrs := rdLineAttrs.head(ramIdx)
-//          //  //--------
-//          //  //mySelLoH2dPopStm.ready := True
-//          //  myLoD2hPushStm.valid := (
-//          //    //True
-//          //    !prefetchStallVec(1)
-//          //    && rLoState.asBits(LoState.IDLE_STORE_MODE.position)
-//          //  )
-//          //  if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//          //    myLoD2hPushStm.busPayload.byteSize := (
-//          //      rDel2LoH2dPayload.byteSize
-//          //    )
-//          //    myLoD2hPushStm.busPayload.addrLo := (
-//          //      rDel2LoH2dPayload.addr(
-//          //        cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//          //      )
-//          //    )
-//          //  }
-//
-//          //  //when (
-//          //  //  prefetchStall
-//          //  //  || !myLoD2hPushStm.ready
-//          //  //) {
-//          //  //  mySelLoH2dPopStm.ready := False
-//          //  //  myFifoThingDoStall := True
-//          //  //  rLoState := LoState.STORE_HIT_DO_STALL_PIPE_1
-//          //  //  //myTempUpdateSavedLoH2dPayloadCond := False
-//          //  //} otherwise {
-//          //  //  //doPopLoH2dFifo()
-//          //  //}
-//          //  switch (
-//          //    (
-//          //      prefetchStallVec(1)
-//          //      //|| rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
-//          //    )
-//          //    ## (
-//          //      !myLoD2hPushStm.ready
-//          //      || rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
-//          //    )
-//          //  ) {
-//          //    is (M"1-") {
-//          //      mySelLoH2dPopStm.ready := False
-//          //      myFifoThingDoStall := True
-//          //      rLoState := LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1
-//          //    }
-//          //    is (M"01") {
-//          //      mySelLoH2dPopStm.ready := False
-//          //      myFifoThingDoStall := True
-//          //      rLoState := LoState.STORE_HIT_DO_STALL_PIPE_1
-//          //    }
-//          //  }
-//          //} 
-//          //else if (myVecIdx == 1) {
-//          //  // if we had a cache hit for an attempted prefetch,
-//          //  // we should stop prefetching there!
-//          //  rHiState := HiState.IDLE
-//          //  if (myCondHaveLineBitPlruRam) {
-//          //    //rSavedPrefetchRamIdx := ramIdx
-//          //    doWriteBitPlruRamDuringHit(
-//          //      someRdLineBitPlru=rdPrefetchLineBitPlru,
-//          //      ramIdx=ramIdx,
-//          //      busAddr=Some(rSavedPrefetchLoH2dPayload.addr),
-//          //    )
-//          //  }
-//          //}
-//        }
-//      }
-//      if (myVecIdx == 0) {
-//        //is (MaskedLiteral("11-1" + ("-" * numWays))) {
-//        //  myLoD2hPushStm.valid := False
-//        //  mySelLoH2dPopStm.ready := False
-//        //  myFifoThingDoStall := True
-//        //  rSeenMmioHiBusH2dFire := False
-//        //  //rSeenNonCachedHiBusD2hFire := False
-//        //  rLoState := (
-//        //    LoState.NON_CACHED_BUS_ACCESS_WAIT_LO_D2H_FIFO_EMPTY
-//        //  )
-//        //}
-//        is (MaskedLiteral("10--" + ("-" * numWays))) {
-//          doPopLoH2dFifo()
-//          myFifoThingDoStall := False
-//          myLoD2hPushStm.valid := False
-//        }
-//      }
-//      default {
-//      }
-//    }
-//  }
-//
-//  switch (rLoState) {
-//    is (LoState.INIT) {
-//      rLoState := LoState.IDLE_LOAD_MODE
-//    }
-//    is (LoState.IDLE_LOAD_MODE) {
-//      when (rMyTempDoSaveCond(0)) {
-//        rSavedLoH2dPayload := rDel2LoH2dPayload
-//      }
-//      when (rMyTempDoSaveCond(1)) {
-//        rSavedLoH2dPayload.byteSize := rDel2LoH2dPayload.byteSize
-//      }
-//      when (rMyTempDoSaveCond(2)) {
-//        myLoD2hPushStm.busPayload.src := rDel2LoH2dPayload.src
-//        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//          myLoD2hPushStm.busPayload.byteSize := (
-//            rDel2LoH2dPayload.byteSize
-//          )
-//          myLoD2hPushStm.busPayload.addrLo := (
-//            rDel2LoH2dPayload.addr(
-//              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//            )
-//          )
-//        }
-//        myLoD2hPushStm.busPayload.txnCnt := (
-//          rDel2LoH2dPayload.txnCnt
-//        )
-//      }
-//    }
-//    //is (LoState.IDLE_STORE_MODE) {
-//    //  when (rMyTempDoSaveCond(0)) {
-//    //    rSavedLoH2dPayload := rDel2LoH2dPayload
-//    //  }
-//    //  when (rMyTempDoSaveCond(1)) {
-//    //    rSavedLoH2dPayload.byteSize := rDel2LoH2dPayload.byteSize
-//    //  }
-//    //  when (rMyTempDoSaveCond(2)) {
-//    //    myLoD2hPushStm.busPayload.src := rDel2LoH2dPayload.src
-//    //    if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//    //      myLoD2hPushStm.busPayload.byteSize := (
-//    //        rDel2LoH2dPayload.byteSize
-//    //      )
-//    //      myLoD2hPushStm.busPayload.addrLo := (
-//    //        rDel2LoH2dPayload.addr(
-//    //          cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//    //        )
-//    //      )
-//    //    }
-//    //    myLoD2hPushStm.busPayload.txnCnt := (
-//    //      rDel2LoH2dPayload.txnCnt
-//    //    )
-//    //  }
-//    //}
-//    //is (LoState.NON_CACHED_BUS_ACCESS_WAIT_LO_D2H_FIFO_EMPTY) {
-//    //  lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//    //  lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//
-//    //  when (
-//    //    History(
-//    //      that=(!myLoD2hFifo.io.pop.valid),
-//    //      length=(cfg.busD2hFifoLatency + 1),
-//    //      init=False,
-//    //    ).last
-//    //  ) {
-//    //    rLoState := LoState.NON_CACHED_BUS_ACCESS
-//    //  }
-//    //}
-//    //is (LoState.NON_CACHED_BUS_ACCESS) {
-//    //  io.mmioHiBus.h2dBus.valid := !rSeenMmioHiBusH2dFire
-//
-//    //  when (io.mmioHiBus.h2dBus.ready) {
-//    //    rSeenMmioHiBusH2dFire := True
-//    //  }
-//    //  io.mmioHiBus.h2dBus.payload.mainNonBurstInfo := (
-//    //    rSavedLoH2dPayload.mainNonBurstInfo
-//    //  )
-//    //  io.mmioHiBus.h2dBus.addr(
-//    //    loBusCacheCfg.addrWidth - 1
-//    //  ) := (
-//    //    False
-//    //  )
-//    //  if (!loBusCfg.haveByteEn) {
-//    //    io.mmioHiBus.h2dBus.data := rSavedLoH2dPayload.savedData
-//    //  }
-//    //  io.loBus.d2hBus <-/< io.mmioHiBus.d2hBus
-//    //  when (io.loBus.d2hBus.fire) {
-//    //    rLoState := (
-//    //      //LoState.IDLE
-//    //      LoState.IDLE_LOAD_MODE
-//    //    )
-//    //  }
-//    //}
-//    is (LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4) {
-//      myLoD2hPushStm.valid := False
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//      mySelLoH2dPopStm.ready := False
-//
-//      //wrLineAttrs.tag := rSavedWrLineAttrs.tag//RegNext(wrLineAttrs).tag
-//      //wrLineAttrs.dirty := True
-//
-//      rSavedRamIdx := (
-//        //RegNext(rSavedPrefetchRamIdx)
-//        rSavedPrefetchRamIdx
-//      )
-//
-//      when (
-//        //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
-//        //&& 
-//        fell(rPrefetchStallNotReady)
-//      ) {
-//        rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_3
-//      }
-//    }
-//    //is (LoState.LOAD_HIT_DO_STALL_PIPE_4) {
-//    //  when (
-//    //    //rHiState === HiState.IDLE
-//    //    rHiState.asBits(HiState.IDLE.position)
-//    //  ) {
-//    //    rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_3
-//    //  }
-//    //  lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//    //  lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//    //  myLoD2hPushStm.valid := False
-//    //  mySelLoH2dPopStm.ready := False
-//    //}
-//    is (LoState.LOAD_HIT_DO_STALL_PIPE_3) {
-//      rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_2
-//      myLoD2hPushStm.valid := False
-//      mySelLoH2dPopStm.ready := False
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//
-//      switch (rSavedRamIdx) {
-//        for (ramIdx <- 0 until numWays) {
-//          is (ramIdx) {
-//            doLineWordRamReadSync(
-//              vecIdx=0,
-//              ramIdx=ramIdx,
-//              busAddr=rSavedLoH2dPayload.addr,
-//              setEn=0,
-//            )
-//          }
-//        }
-//      }
-//    }
-//    is (LoState.LOAD_HIT_DO_STALL_PIPE_2) {
-//      rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_1
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec(0).rdEn := True)
-//      myLoD2hPushStm.valid := False
-//      mySelLoH2dPopStm.ready := False
-//    }
-//    is (LoState.LOAD_HIT_DO_STALL_PIPE_1) {
-//      val myRdLineWord = (
-//        //RegNext(
-//          if (myCondHaveLineBitPlruRam) (
-//            rdLineWord(rSavedRamIdx)
-//          ) else (
-//            rdLineWord.head
-//          )
-//        //)
-//      )
-//      when (rSavedNeedLineWordReadAgain) {
-//        myLoD2hPushStm.busPayload.data := myRdLineWord
-//        rSavedNeedLineWordReadAgain := False
-//      }
-//      rLoState := LoState.LOAD_HIT_DO_STALL
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//      mySelLoH2dPopStm.ready := (
-//        False
-//        //myLoD2hPushStm.fire
-//      )
-//    }
-//    is (LoState.LOAD_HIT_DO_STALL) {
-//      //val myRdLineWord = (
-//      //  RegNext(
-//      //    if (myCondHaveLineBitPlruRam) (
-//      //      rdLineWord(rSavedRamIdx)
-//      //    ) else (
-//      //      rdLineWord.head
-//      //    )
-//      //  )
-//      //)
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//
-//      mySelLoH2dPopStm.ready := (
-//        False
-//        //myLoD2hPushStm.fire
-//      )
-//      //myLoD2hPushStm.busPayload.data := myRdLineWord
-//      //when (rSavedNeedLineWordReadAgain) {
-//      //  myLoD2hPushStm.busPayload.data := myRdLineWord
-//      //  rSavedNeedLineWordReadAgain := False
-//      //}
-//      //myLoD2hPushStm.busPayload
-//      if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//        myLoD2hPushStm.busPayload.byteSize := (
-//          rSavedLoH2dPayload.byteSize
-//        )
-//        myLoD2hPushStm.busPayload.addrLo := (
-//          rSavedLoH2dPayload.addr(
-//            cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//          )
-//        )
-//      }
-//      myLoD2hPushStm.valid := True
-//      //myLoH2dReptThing.io.finishTxn.valid := False
-//      when (myLoD2hPushStm.fire) {
-//        //myFifoThingDoStall := False
-//        rLoState := (
-//          //LoState.LOAD_HIT_DO_STALL_POST
-//          LoState.IDLE_LOAD_MODE
-//        )
-//      }
-//    }
-//    is (LoState.LOAD_HIT_DO_STALL_POST) {
-//      //rSavedNeedLineWordReadAgain := False
-//
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//
-//      rLoState := (
-//        LoState.WAIT_D2H_FIFO_PUSH_READY
-//        //LoState.IDLE
-//        //LoState.IDLE_LOAD_MODE
-//      )
-//    }
-//    //is (LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1) {
-//    //  myLoD2hPushStm.valid := False
-//    //  lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//    //  lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//    //  mySelLoH2dPopStm.ready := False
-//
-//    //  wrLineAttrs.tag := rSavedWrLineAttrs.tag//RegNext(wrLineAttrs).tag
-//    //  //wrLineAttrs.dirty := True
-//
-//    //  rSavedRamIdx := (
-//    //    //RegNext(rSavedPrefetchRamIdx)
-//    //    rSavedPrefetchRamIdx
-//    //  )
-//
-//    //  // What if the cache line we're trying to write to to evicted by
-//    //  // the prefetcher???
-//    //  switch (
-//    //    (
-//    //      //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
-//    //      //&& 
-//    //      fell(rPrefetchStallNotReady)
-//    //    )
-//    //    ## (
-//    //      //RegNext(
-//    //        rSavedPrefetchRamIdx
-//    //      //)
-//    //      //rSavedRamIdx
-//    //    )
-//    //  ) {
-//    //    for (ramIdx <- 0 until numWays) {
-//    //      is (
-//    //        (
-//    //          //1 << rSavedRamIdx.getWidth
-//    //          1 << rSavedPrefetchRamIdx.getWidth
-//    //        )
-//    //        | ramIdx
-//    //      ) {
-//    //        lineAttrsRam.foreach(item => {
-//    //          item(ramIdx).io.wrEn := True
-//    //          item(ramIdx).io.wrAddr := convBusAddrToLineIdx(
-//    //            someRam=item(ramIdx),
-//    //            busAddr=rSavedLoH2dPayload.addr,
-//    //          )
-//    //        })
-//    //        doLineWordRamWrite(
-//    //          vecIdx=0,
-//    //          ramIdx=ramIdx,
-//    //          busAddr=rSavedLoH2dPayload.addr,
-//    //          lineWord=rSavedLoH2dPayload.data,
-//    //          byteEn=Some(rSavedLoH2dPayload.byteEn),
-//    //          setEn=true,
-//    //        )
-//    //      }
-//    //    }
-//    //  }
-//
-//    //  when (
-//    //    //rHiState.asBits(HiState.READ_ATTRS_PIPE_2.position)
-//    //    //&& 
-//    //    fell(rPrefetchStallNotReady)
-//    //  ) {
-//    //    rLoState := LoState.STORE_HIT_DO_STALL
-//    //  }
-//    //}
-//    //is (LoState.STORE_HIT_DO_STALL_PIPE_1) {
-//    //  myLoD2hPushStm.valid := False
-//    //  lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//    //  lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//    //  mySelLoH2dPopStm.ready := False
-//
-//    //  rLoState := LoState.STORE_HIT_DO_STALL
-//    //}
-//    //is (LoState.STORE_HIT_DO_STALL) {
-//    //  lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//    //  lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//
-//    //  mySelLoH2dPopStm.ready := False
-//    //  //myLoH2dReptThing.io.finishTxn.valid := False
-//    //  myLoD2hPushStm.valid := True
-//    //  when (myLoD2hPushStm.ready) {
-//    //    rLoState := (
-//    //      LoState.WAIT_D2H_FIFO_EMPTY
-//    //      //LoState.IDLE
-//    //      //LoState.IDLE_STORE_MODE
-//    //    )
-//    //  }
-//    //}
-//    is (LoState.WAIT_HI_STATE_MCHN_READY) {
-//      when (
-//        rHiState.asBits(HiState.IDLE.position)
-//      ) {
-//        rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_7_READ
-//      }
-//      //switch (
-//      //  //--------
-//      //  //rHiState === HiState.IDLE
-//      //  rHiState.asBits(HiState.IDLE.position)
-//      //  ## rSavedLoH2dPayload.isWrite
-//      //  //--------
-//      //  //rHiState === HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
-//      //  //rHiState.asBits(RECV_LINE_FROM_HI_BUS_PIPE_1)
-//      //) {
-//      //  is (M"10") {
-//      //    rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_7_READ
-//      //  }
-//      //  is (M"11") {
-//      //    rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_7_WRITE
-//      //  }
-//      //  //if (myCondHaveLineBitPlruRam) {
-//      //  //  rSavedRamIdx := rSavedPrefetchRamIdx
-//      //  //}
-//      //}
-//    }
-//    //is (LoState.WAIT_HI_STATE_MCHN_READY_POST_7_WRITE) {
-//    //  lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//    //  lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//
-//    //  def myArgBusAddr = rSavedLoH2dPayload.addr
-//    //  def myArgLineWord = rSavedLoH2dPayload.data
-//    //  def myArgByteEn = Some(rSavedLoH2dPayload.byteEn)
-//    //  def myArgSetEn = false//true
-//
-//    //  when (rHiState.asBits(HiState.IDLE.position)) {
-//    //    rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_6
-//    //    if (myCondHaveLineBitPlruRam) {
-//    //      rSavedRamIdx := rSavedPrefetchRamIdx
-//    //    }
-//    //  }
-//    //  wrLineAttrs.tag := (
-//    //    //rSavedWrLineAttrs.tag//RegNext(wrLineAttrs).tag
-//    //    rSavedLoH2dPayload.addr(loBusCacheCfg.tagRange)
-//    //  )
-//    //  //wrLineAttrs.dirty := True
-//
-//    //  switch (
-//    //    rHiState.asBits(HiState.IDLE.position)
-//    //    ## rSavedPrefetchRamIdx
-//    //  ) {
-//    //    for (ramIdx <- 0 until numWays) {
-//    //      is (
-//    //        (1 << rSavedPrefetchRamIdx.getWidth)
-//    //        | ramIdx
-//    //      ) {
-//    //        lineWordRam(ramIdx).io.vec(0).wrEn := True
-//    //        lineAttrsRam.foreach(item => {
-//    //          item(ramIdx).io.wrEn := True
-//    //          item(ramIdx).io.wrAddr := convBusAddrToLineIdx(
-//    //            someRam=item(ramIdx),
-//    //            busAddr=rSavedLoH2dPayload.addr,
-//    //          )
-//    //          item(ramIdx).io.wrData := wrLineAttrs
-//    //        })
-//    //      }
-//    //    }
-//    //  }
-//
-//    //  if (myCondHaveLineBitPlruRam) {
-//    //    switch (
-//    //      //rSavedRamIdx
-//    //      rSavedPrefetchRamIdx
-//    //    ) {
-//    //      for (ramIdx <- 0 until numWays) {
-//    //        is (ramIdx) {
-//    //          doLineWordRamWrite(
-//    //            vecIdx=0,
-//    //            ramIdx=ramIdx,
-//    //            busAddr=myArgBusAddr,
-//    //            lineWord=myArgLineWord,
-//    //            byteEn=myArgByteEn,
-//    //            setEn=myArgSetEn,
-//    //          )
-//    //        }
-//    //      }
-//    //    }
-//    //  } else {
-//    //    //lineAttrsRam.foreach(item => {
-//    //    //  item.head.io.wrEn := True
-//    //    //  item.head.io.wrAddr := convBusAddrToLineIdx(
-//    //    //    someRam=item.head,
-//    //    //    busAddr=rSavedLoH2dPayload.addr,
-//    //    //  )
-//    //    //  item.head.io.wrData := wrLineAttrs
-//    //    //})
-//    //    doLineWordRamWrite(
-//    //      vecIdx=0,
-//    //      ramIdx=0,
-//    //      busAddr=myArgBusAddr,
-//    //      lineWord=myArgLineWord,
-//    //      byteEn=myArgByteEn,
-//    //      setEn=myArgSetEn,
-//    //    )
-//    //  }
-//    //  //rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_7
-//    //}
-//    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_7_READ) {
-//      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      when (rHiState.asBits(HiState.IDLE.position)) {
-//        rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_6
-//        if (myCondHaveLineBitPlruRam) {
-//          rSavedRamIdx := rSavedPrefetchRamIdx
-//        }
-//      }
-//    }
-//    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_6) {
-//      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_5
-//    }
-//    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_5) {
-//      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_4
-//    }
-//    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_4) {
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//      switch (rSavedRamIdx) {
-//        for (ramIdx <- 0 until numWays) {
-//          is (ramIdx) {
-//            doLineWordRamReadSync(
-//              vecIdx=0,
-//              ramIdx=ramIdx,
-//              busAddr=rSavedLoH2dPayload.addr,
-//              setEn=0,
-//            )
-//          }
-//        }
-//      }
-//      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_3
-//    }
-//    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_3) {
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec(0).rdEn := True)
-//      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_2
-//    }
-//    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_2) {
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_1
-//    }
-//    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_1) {
-//      val myRdLineWord = (
-//        if (myCondHaveLineBitPlruRam) (
-//          rdLineWord(rSavedRamIdx)
-//        ) else (
-//          rdLineWord.head
-//        )
-//      )
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//      //rState := State.WAIT_HI_STATE_MCHN_READY_POST
-//
-//      myLoD2hPushStm.valid := True
-//      myLoD2hPushStm.busPayload.src := rSavedLoH2dPayload.src
-//
-//      if (!loBusCfg.haveByteEn) {
-//        myLoD2hPayload.byteSize := rSavedLoH2dPayload.byteSize
-//        myLoD2hPayload.addrLo := (
-//          rSavedLoH2dPayload.addr(
-//            loBusCfg.addrLoWidth - 1 downto 0
-//          )
-//        )
-//      }
-//
-//      when (RegNext(
-//        //rose(rLoState === LoState.WAIT_HI_STATE_MCHN_READY_POST_2)
-//        rose(
-//          rLoState.asBits(
-//            LoState.WAIT_HI_STATE_MCHN_READY_POST_2.position
-//          )
-//        )
-//      )) {
-//        myLoD2hPushStm.busPayload.data := RegNext(
-//          myRdLineWord
-//        )
-//      }
-//
-//      when (myLoD2hPushStm.ready) {
-//        rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST
-//      }
-//    }
-//    is (LoState.WAIT_HI_STATE_MCHN_READY_POST) {
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//      rLoState := (
-//        LoState.WAIT_D2H_FIFO_PUSH_READY
-//        //LoState.IDLE
-//        //LoState.IDLE_LOAD_MODE
-//      )
-//    }
-//    is (LoState.WAIT_D2H_FIFO_PUSH_READY) {
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.vec(0).rdEn := False)
-//
-//      when (
-//        //!myLoD2hFifo.io.pop.valid
-//        myLoD2hFifo.io.push.ready
-//      ) {
-//        rLoState := LoState.IDLE_LOAD_MODE
-//      }
-//    }
-//  }
-//
-//  // Implement line-ahead prefetching
-//  //val rSavedHaveHit = Reg(Bool(), init=False)
-//
-//  
-//  switch (rHiState) {
-//    is (HiState.IDLE) {
-//      switch (
-//        (
-//          (
-//            (
-//              //rLoState.asBits(LoState.IDLE.position)
-//              rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
-//              //|| rLoState.asBits(LoState.IDLE_STORE_MODE.position)
-//              || rLoState.asBits(
-//                LoState.WAIT_HI_STATE_MCHN_READY.position
-//              )
-//            )
-//            && (
-//              RegNextWhen(
-//                //tempToSwitchNonHaveHitVec.head.andR,
-//                // we can skip the `.andR` here because of the
-//                // `cond=rLoState.asBits(LoState.IDLE.position)`
-//                // argument to this `RegNextWhen`
-//                //tempToSwitchNonHaveHitVec.head(
-//                //  //1
-//                //  0
-//                //)
-//                {
-//                  val temp = tempToSwitchNonHaveHitVec.head
-//                  LcvAndR(
-//                    temp(2)     // rMyTempDoSaveCond(3)
-//                    ## !temp(0) // not MMIO
-//                  )
-//                },
-//                cond=(
-//                  //rLoState.asBits(LoState.IDLE.position)
-//                  rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
-//                  //|| rLoState.asBits(LoState.IDLE_STORE_MODE.position)
-//                ),
-//                init=False
-//              )
-//            )
-//          )
-//          || (
-//            rLoState.asBits(
-//              LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4.position
-//            )
-//            //|| rLoState.asBits(
-//            //  LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1.position
-//            //)
-//          )
-//        )
-//        ## (
-//          RegNextWhen(
-//            LcvOrR(haveHit.head),
-//            cond=(
-//              //rLoState.asBits(LoState.IDLE.position)
-//              rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
-//              //|| rLoState.asBits(LoState.IDLE_STORE_MODE.position)
-//            ),
-//            init=False
-//          )
-//          && !rLoState.asBits(
-//            LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4.position
-//          )
-//          //&& !rLoState.asBits(
-//          //  LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1.position
-//          //)
-//        )
-//        ## rPrefetchCnt.msb
-//      ) {
-//        is (
-//          M"10-"
-//          //M"100-"
-//          //M"101"
-//        ) {
-//          // CPU's most recent request is a cache miss
-//          // (or maybe there was a store hit
-//          // that potentially had its destination cache line evicted!)
-//          // so we start new prefetching!
-//          rSavedPrefetchLoH2dPayload := (
-//            //rDel2LoH2dPayload
-//            RegNextWhen(
-//              rDel2LoH2dPayload,
-//              cond=(
-//                //rLoState.asBits(LoState.IDLE.position)
-//                rLoState.asBits(LoState.IDLE_LOAD_MODE.position)
-//                //|| rLoState.asBits(LoState.IDLE_STORE_MODE.position)
-//              ),
-//              init=rDel2LoH2dPayload.getZero
-//            )
-//          )
-//          rPrefetchCnt := cfg.prefetchNumLinesAhead.get - 1
-//          rHiState := (
-//            //HiState.READ_ATTRS_PIPE_2
-//            HiState.READ_ATTRS_PIPE_3
-//          )
-//          rPrefetchStallNotReady := (
-//            //True
-//            rLoState.asBits(
-//              LoState.LOAD_HIT_DO_STALL_PREFETCH_PIPE_4.position
-//            )
-//            //|| rLoState.asBits(
-//            //  LoState.STORE_HIT_DO_STALL_PREFETCH_PIPE_1.position
-//            //)
-//          )
-//        }
-//        is (
-//          //M"110"
-//          M"110"
-//          //M"1100"
-//        ) {
-//          // CPU's most recent request is a cache hit that we definitely
-//          // didn't evict,
-//          // and we've not fetched too many lines yet!
-//          rSavedPrefetchLoH2dPayload.addr := (
-//            rSavedPrefetchLoH2dPayload.addr
-//            + cfg.loBusCacheCfg.lineSizeBytes
-//          )
-//          rPrefetchCnt := rPrefetchCnt - 1
-//          rHiState := (
-//            //HiState.READ_ATTRS_PIPE_2
-//            HiState.READ_ATTRS_PIPE_3
-//          )
-//        }
-//        default {
-//        }
-//      }
-//      when (rPrefetchStallNotReady) {
-//        rPrefetchStallNotReady := False
-//      }
-//    }
-//    is (HiState.READ_ATTRS_PIPE_3) {
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//      lineBitPlruRam.last.io.rdEn := False
-//      rHiState := HiState.READ_ATTRS_PIPE_2
-//    }
-//    is (HiState.READ_ATTRS_PIPE_2) {
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//      lineBitPlruRam.last.io.rdEn := False
-//      rHiState := HiState.READ_ATTRS_PIPE_1
-//    }
-//    is (HiState.READ_ATTRS_PIPE_1) {
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := True)
-//      lineBitPlruRam.last.io.rdEn := True
-//      rHiState := HiState.READ_ATTRS
-//    }
-//    is (HiState.READ_ATTRS) {
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//      lineBitPlruRam.last.io.rdEn := False
-//      //rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
-//    }
-//    is (HiState.READ_ATTRS_POST) {
-//      val myPrevRdAttrs = (
-//        RegNext(rdLineAttrs.last)(rSavedPrefetchRamIdx)
-//      )
-//      //when (
-//      //  myPrevRdAttrs.fire
-//      //  && myPrevRdAttrs.dirty
-//      //) {
-//      //  // TODO: handle the `dirty` flag
-//      //  rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_3
-//      //} otherwise {
-//        rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
-//      //}
-//      rSavedPrefetchRdLineAttrsTag := (
-//        myPrevRdAttrs.tag
-//      )
-//      //rSavedPrefetchRdLineAttrsTag.last := (
-//      //  
-//      //)
-//    }
-//    //is (HiState.SEND_LINE_TO_HI_BUS_PIPE_3) {
-//    //  val myTempAddr = (
-//    //    Cat(
-//    //      False,
-//    //      // FINALLY found it, the problem I was seeing in DOOM!
-//    //      //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
-//    //      rSavedPrefetchRdLineAttrsTag,
-//    //      rSavedPrefetchLoBusAddrSet,
-//    //      U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-//    //    ).asUInt
-//    //  )
-//    //  println(
-//    //    s"Here is myTempAddr.getWidth: ${myTempAddr.getWidth}"
-//    //  )
-//    //  if (io.dbgInfo != null) {
-//    //    io.dbgInfo.missSend.cnt := (
-//    //      io.dbgInfo.missSend.cnt + 1
-//    //    )
-//    //    io.dbgInfo.missSend.isWrite := True
-//
-//    //    io.dbgInfo.missSend.addr := (
-//    //      //rSavedPrefetchLoH2dPayload.addr
-//    //      //hiBusCfg.burstAddr(
-//    //      //  someAddr=(
-//    //      //    Cat(
-//    //      //      False,
-//    //      //      // FINALLY found it, the problem I was seeing in DOOM!
-//    //      //      //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
-//    //      //      rSavedPrefetchRdLineAttrsTag,
-//    //      //      rSavedPrefetchLoBusAddrSet,
-//    //      //      U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-//    //      //    ).asUInt
-//    //      //  ),
-//    //      //  someBurstCnt=rHiH2dBurstCnt(0),
-//    //      //  incrBurstCnt=false,
-//    //      //)
-//    //      myTempAddr.resize(io.dbgInfo.missSend.addr.getWidth)
-//    //    )
-//    //    io.dbgInfo.missSend.ramIdx := rSavedPrefetchRamIdx
-//    //  }
-//    //  rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_2
-//    //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//    //  rHiH2dPayload.burstLast := False
-//
-//    //  switch (rSavedPrefetchRamIdx) {
-//    //    for (ramIdx <- 0 until numWays) {
-//    //      is (ramIdx) {
-//    //        doLineWordRamReadSync(
-//    //          vecIdx=1,
-//    //          ramIdx=ramIdx,
-//    //          busAddr=hiBusCfg.burstAddr(
-//    //            someAddr=myTempAddr,
-//    //            someBurstCnt=rHiH2dBurstCnt(0),
-//    //            incrBurstCnt=true,
-//    //          ),
-//    //          setEn=0,
-//    //        )
-//    //      }
-//    //    }
-//    //  }
-//    //}
-//    //is (HiState.SEND_LINE_TO_HI_BUS_PIPE_2) {
-//    //  rHiState := HiState.SEND_LINE_TO_HI_BUS_PIPE_1
-//    //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//
-//    //  switch (rSavedPrefetchRamIdx) {
-//    //    for (ramIdx <- 0 until numWays) {
-//    //      is (ramIdx) {
-//    //        doLineWordRamReadSync(
-//    //          vecIdx=1,
-//    //          ramIdx=ramIdx,
-//    //          busAddr=(
-//    //            hiBusCfg.burstAddr(
-//    //              someAddr=(
-//    //                Cat(
-//    //                  False,
-//    //                  // FINALLY found it, the problem I was seeing in DOOM!
-//    //                  //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
-//    //                  rSavedPrefetchRdLineAttrsTag,
-//    //                  rSavedPrefetchLoBusAddrSet,
-//    //                  U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-//    //                ).asUInt
-//    //              ),
-//    //              someBurstCnt=rHiH2dBurstCnt(0),
-//    //              incrBurstCnt=true,
-//    //            )
-//    //          ),
-//    //          setEn=1,
-//    //        )
-//    //      }
-//    //    }
-//    //  }
-//    //  rHiH2dPayload.addr := (
-//    //    Cat(
-//    //      //False,
-//    //      // FINALLY found it, the problem I was seeing in DOOM!
-//    //      //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
-//    //      rSavedPrefetchRdLineAttrsTag,
-//    //      rSavedPrefetchLoBusAddrSet,
-//    //      U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-//    //    ).asUInt.resize(rHiH2dPayload.addr.getWidth)
-//    //  )
-//    //}
-//    //is (HiState.SEND_LINE_TO_HI_BUS_PIPE_1) {
-//    //  val myRdLineWord = (
-//    //    if (myCondHaveLineBitPlruRam) (
-//    //      rdPrefetchLineWord(rSavedPrefetchRamIdx)
-//    //    ) else (
-//    //      rdPrefetchLineWord.head
-//    //    )
-//    //  )
-//    //  rHiState := HiState.SEND_LINE_TO_HI_BUS
-//    //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//    //  switch (rSavedPrefetchRamIdx) {
-//    //    for (ramIdx <- 0 until numWays) {
-//    //      is (ramIdx) {
-//    //        doLineWordRamReadSync(
-//    //          vecIdx=1,
-//    //          ramIdx=ramIdx,
-//    //          busAddr=hiBusCfg.burstAddr(
-//    //            someAddr=(
-//    //              Cat(
-//    //                False,
-//    //                // FINALLY found it, the problem I was seeing in DOOM!
-//    //                //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
-//    //                rSavedPrefetchRdLineAttrsTag,
-//    //                rSavedPrefetchLoBusAddrSet,
-//    //                U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-//    //              ).asUInt
-//    //            ),
-//    //            someBurstCnt=rHiH2dBurstCnt(0),
-//    //            incrBurstCnt=true,
-//    //          ),
-//    //          setEn=1,
-//    //        )
-//    //      }
-//    //    }
-//    //  }
-//    //  rHiH2dValid := True
-//    //  rHiH2dPayload.addr := rHiH2dPayload.burstAddr(
-//    //    someBurstCnt=rHiH2dBurstCnt(1),
-//    //    incrBurstCnt=true,
-//    //  )
-//    //  rHiH2dPayload.data := myRdLineWord
-//    //  rHiH2dPayload.isWrite := True
-//    //  rHiH2dPayload.src := rSavedLoH2dPayload.src
-//    //}
-//    //is (HiState.SEND_LINE_TO_HI_BUS) {
-//    //  val myRdLineWord = (
-//    //    if (myCondHaveLineBitPlruRam) (
-//    //      rdPrefetchLineWord(rSavedPrefetchRamIdx)
-//    //    ) else (
-//    //      rdPrefetchLineWord.head
-//    //    )
-//    //  )
-//    //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//    //  switch (rSavedPrefetchRamIdx) {
-//    //    for (ramIdx <- 0 until numWays) {
-//    //      is (ramIdx) {
-//    //        doLineWordRamReadSync(
-//    //          vecIdx=1,
-//    //          ramIdx=ramIdx,
-//    //          busAddr=hiBusCfg.burstAddr(
-//    //            someAddr=(
-//    //              Cat(
-//    //                False,
-//    //                // FINALLY found it, the problem I was seeing in DOOM!
-//    //                //RegNext(rdLineAttrs.tag, init=rdLineAttrs.tag.getZero),
-//    //                rSavedPrefetchRdLineAttrsTag,
-//    //                rSavedPrefetchLoBusAddrSet,
-//    //                U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-//    //              ).asUInt
-//    //            ),
-//    //            someBurstCnt=rHiH2dBurstCnt(0),
-//    //            incrBurstCnt=false,
-//    //          ),
-//    //          setEn=1,
-//    //        )
-//    //      }
-//    //    }
-//    //  }
-//    //  rHiH2dPayload.burstFirst := False
-//
-//    //  when (rHiH2dBurstCnt(0).orR) {
-//    //    // an OR reduce checks for non-zero
-//    //    rHiH2dBurstCnt(0) := rHiH2dBurstCnt(0) + 1
-//    //  }
-//    //  //when (RegNext(!rHiH2dBurstCnt(0).orR, init=False)) {
-//    //  //  lineWordRam.foreach(item => item.io.rdEn := False)
-//    //  //}
-//    //  rHiH2dPayload.addr := rHiH2dPayload.burstAddr(
-//    //    someBurstCnt=rHiH2dBurstCnt(1),
-//    //    incrBurstCnt=false,
-//    //  )
-//    //  rHiH2dPayload.data := myRdLineWord
-//    //  when (rHiH2dBurstCnt(1).orR) {
-//    //    rHiH2dBurstCnt(1) := rHiH2dBurstCnt(1) + 1
-//    //  }
-//    //  when (
-//    //    RegNext(
-//    //      next=(
-//    //        !rHiH2dBurstCnt(0).orR
-//    //        && (!(rHiH2dBurstCnt(1) + 2).orR)
-//    //      ),
-//    //      init=False
-//    //    )
-//    //  ) {
-//    //    rHiH2dPayload.burstLast := True
-//    //  }
-//    //  when (rHiH2dPayload.burstLast) {
-//    //    rHiH2dValid := False
-//    //    rHadHiH2dFinish := True
-//    //    rHiH2dPayload.burstLast := False
-//    //  }
-//    //  when (io.hiBus.d2hBus.valid) {
-//    //    rHiD2hReady := True
-//    //    rHadHiD2hFinish := True
-//    //  }
-//    //  when (rHadHiH2dFinish && rHadHiD2hFinish) {
-//    //    rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
-//    //  }
-//    //}
-//    is (HiState.RECV_LINE_FROM_HI_BUS_PIPE_1) {
-//      if (io.dbgInfo != null) {
-//        io.dbgInfo.missRecv.cnt := (
-//          io.dbgInfo.missRecv.cnt + 1
-//        )
-//        io.dbgInfo.missRecv.isWrite := False
-//
-//        io.dbgInfo.missRecv.addr := (
-//          rSavedPrefetchLoH2dPayload.addr
-//        )
-//        io.dbgInfo.missRecv.ramIdx := rSavedPrefetchRamIdx
-//      }
-//      rHadHiH2dFinish := False
-//      rHadHiD2hFinish := False
-//
-//      rHiH2dPayload.burstFirst := True
-//      rHiH2dPayload.burstLast := True
-//      rHiH2dPayload.burstCnt := hiBusCfg.maxBurstSizeMinus1
-//
-//      rHiH2dPayload.isWrite := False
-//      rHiH2dPayload.src := rSavedPrefetchLoH2dPayload.src
-//      rHiH2dPayload.addr := rSavedPrefetchLoH2dPayload.burstAddr(
-//        someBurstCnt=rHiH2dBurstCnt(1).getZero,
-//        incrBurstCnt=false
-//      )
-//      rHiD2hBurstCnt := 0x0
-//      when (RegNext(!LcvOrR(hiH2dFifo.io.occupancy), init=False)) {
-//        rHiH2dValid := True
-//        rHiState := HiState.RECV_LINE_FROM_HI_BUS
-//      }
-//    }
-//    is (HiState.RECV_LINE_FROM_HI_BUS) {
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//      //lineWordRam.foreach(item => item.io.rdEn := False)
-//      rHiH2dValid := False
-//      when (io.hiBus.d2hBus.valid) {
-//        rHiD2hReady := True
-//      }
-//      when (io.hiBus.d2hBus.fire) {
-//        rHiD2hBurstCnt := rHiD2hBurstCnt + 1
-//
-//        val rTempBurstAddr = (
-//          rSavedPrefetchLoH2dPayload.burstAddr(
-//            someBurstCnt=rHiD2hBurstCnt,
-//            incrBurstCnt=false,
-//          )
-//        )
-//
-//        def myArgBusAddr = rTempBurstAddr
-//        def myArgLineWord = io.hiBus.d2hBus.data
-//        def myArgByteEn = None
-//        def myArgSetEn = true//false//true
-//
-//        if (myCondHaveLineBitPlruRam) {
-//          switch (rSavedPrefetchRamIdx) {
-//            for (ramIdx <- 0 until numWays) {
-//              is (ramIdx) {
-//                doLineWordRamWrite(
-//                  vecIdx=1,
-//                  ramIdx=ramIdx,
-//                  busAddr=myArgBusAddr,
-//                  lineWord=myArgLineWord,
-//                  byteEn=myArgByteEn,
-//                  setEn=myArgSetEn,
-//                )
-//
-//                //lineWordRam(ramIdx).io.wrEn := (
-//                //  !(
-//                //    myHaveCurrWrite
-//                //    //&& myCurrRamIdx.payload === ramIdx
-//                //    && rTempBurstAddr === rDel2LoH2dPayload.addr
-//                //  )
-//                //)
-//              }
-//            }
-//          }
-//        } else {
-//          doLineWordRamWrite(
-//            vecIdx=1,
-//            ramIdx=0,
-//            busAddr=myArgBusAddr,
-//            lineWord=myArgLineWord,
-//            byteEn=myArgByteEn,
-//            setEn=myArgSetEn,
-//          )
-//          //lineWordRam.head.io.wrEn := (
-//          //  !myHaveCurrWrite
-//          //  //rTempBurstAddr
-//          //)
-//        }
-//      }
-//      when (
-//        io.hiBus.d2hBus.fire
-//        && io.hiBus.d2hBus.burstLast
-//      ) {
-//        rHiState := HiState.IDLE
-//        
-//        //wrLineAttrs.dirty := False
-//        //wrLineAttrs.dirty := (
-//        //  rLoState.asBits(
-//        //    LoState.WAIT_HI_STATE_MCHN_READY_POST_7_WRITE.position
-//        //  )
-//        //)
-//        wrLineAttrs.tag := (
-//          rSavedPrefetchLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
-//        )
-//
-//        def myArgBusAddr = rSavedPrefetchLoH2dPayload.addr
-//        def myArgWrLineAttrs = wrLineAttrs
-//        def myArgSetEn = true
-//
-//        if (myCondHaveLineBitPlruRam) {
-//          switch (rSavedPrefetchRamIdx) {
-//            for (ramIdx <- 0 until numWays) {
-//              is (ramIdx) {
-//                doLineAttrsRamWrite(
-//                  ramIdx=ramIdx,
-//                  busAddr=myArgBusAddr,
-//                  lineAttrs=myArgWrLineAttrs,
-//                  setEn=myArgSetEn,
-//                )
-//              }
-//            }
-//          }
-//        } else {
-//          doLineAttrsRamWrite(
-//            ramIdx=0,
-//            busAddr=myArgBusAddr,
-//            lineAttrs=myArgWrLineAttrs,
-//            setEn=myArgSetEn,
-//          )
-//        }
-//      }
-//    }
-//  }
-//  wrLineAttrs.valid := True
-//}
+  def loBusCacheCfg = cfg.loBusCacheCfg
+  def myLineWordRamSingleWordAddrRshift = (
+    //loBusCacheCfg.myLineWordRamSingleWordAddrRshift
+    loBusCacheCfg.myLineWordRamFullLineAddrRshift
+  )
+  def myLineAttrsRamAddrRshift = loBusCacheCfg.myLineAttrsRamAddrRshift
+  def wordWidth = loBusCacheCfg.wordWidth
+  def depthWords = loBusCacheCfg.depthWords
+  def depthLines = loBusCacheCfg.depthLines
+  def lineSizeWords = loBusCacheCfg.lineSizeWords
+  def lineSizeBytes = loBusCacheCfg.lineSizeBytes
+  def myConvBusAddrToLineWordAddrRange = (
+    loBusCacheCfg.myConvBusAddrToLineWordAddrRange
+  )
 
-//private[libcheesevoyage] case class LcvBusInstrCacheMainOldNotWorking(
-//  cfg: LcvBusCacheBusPairConfig,
-//) extends Component {
-//  require(
-//    cfg.havePrefetch
-//  )
-//  //--------
-//  def numWays = cfg.loBusCacheCfg.numWays
-//
-//  def loBusCfg = cfg.loBusCfg
-//  def hiBusCfg = cfg.hiBusCfg
-//  def optFormal = cfg.optFormal
-//
-//  def loBusCacheCfg = cfg.loBusCacheCfg
-//  def myLineWordRamSingleWordAddrRshift = (
-//    loBusCacheCfg.myLineWordRamSingleWordAddrRshift
-//  )
-//  def myLineAttrsRamAddrRshift = loBusCacheCfg.myLineAttrsRamAddrRshift
-//  def wordWidth = loBusCacheCfg.wordWidth
-//  def depthWords = loBusCacheCfg.depthWords
-//  def depthLines = loBusCacheCfg.depthLines
-//
-//  def myFifoThingLoBusCfg = cfg.myFifoThingLoBusCfg
-//  //--------
-//  require(
-//    //hiBusCfg.maxBurstSizeMinus1 == (64 / 4) - 1,
-//    //cfg.loBusCacheCfg.lineSizeBytes == 64,
-//    cfg.loBusCacheCfg.lineSizeBytes == loBusCfg.burstCntMaxNumBytes,
-//    s"(Perhaps only temporarily), "
-//    + s"we need the number of bytes per cache line to be "
-//    + s"${loBusCfg.burstCntMaxNumBytes}. "
-//    + s"This permits an easier-to-implement design "
-//    + s"for `io.hiBus` bursting."
-//  )
-//  //--------
-//  val io = LcvBusCacheIo(cfg=cfg)
-//  //--------
-//  def numLoHi = 2
-//  //--------
-//  val lineWordRamCfg = RamSdpPipeConfig(
-//    wordType=UInt(wordWidth bits),
-//    depth=depthWords,
-//    optIncludeWrByteEn=false,
-//    optWrHistLength=cfg.myRamOptWrHistLength,
-//    initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
-//    arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
-//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineWordMemRamStyleXilinx,
-//  )
-//  val lineWordRam = Array.fill(numWays)(
-//    RamSdpPipe(cfg=lineWordRamCfg)
-//  )
-//  val lineAttrsRamCfg = RamSdpPipeConfig(
-//    wordType=LcvBusCacheLineAttrs(cfg=loBusCfg),
-//    depth=depthLines,
-//    optIncludeWrByteEn=false,
-//    optWrHistLength=cfg.myRamOptWrHistLength,
-//    initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
-//    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
-//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
-//  )
-//  val lineAttrsRam = Array.fill(numLoHi)(
-//    Array.fill(numWays)(
-//      RamSdpPipe(cfg=lineAttrsRamCfg)
-//    )
-//  )
-//
-//  val rdLineWord = Vec.fill(numWays)(
-//    UInt(wordWidth bits)
-//  )
-//  val rdLineAttrs = Array.fill(numLoHi)(
-//    Vec.fill(numWays)(
-//      LcvBusCacheLineAttrs(cfg=loBusCfg)
-//    )
-//  )
-//  for (idx <- 0 until numWays) {
-//    rdLineWord(idx) := lineWordRam(idx).io.rdData
-//    for (jdx <- 0 until rdLineAttrs.size) {
-//      rdLineAttrs(jdx)(idx) := lineAttrsRam(jdx)(idx).io.rdData
-//    }
-//    lineWordRam(idx).io.wrEn := False
-//    lineAttrsRam.foreach(item => item(idx).io.wrEn := False)
-//  }
-//
-//  val wrLineAttrs = LcvBusCacheLineAttrs(cfg=loBusCfg)
-//  wrLineAttrs := RegNext(wrLineAttrs, init=wrLineAttrs.getZero)
-//  wrLineAttrs.allowOverride
-//
-//  val lineBitPlruRamCfg = RamSdpPipeConfig(
-//    wordType=UInt(
-//      //log2Up(numWays) bits
-//      numWays bits
-//    ),
-//    depth=depthLines,
-//    optIncludeWrByteEn=false,
-//    optWrHistLength=cfg.myRamOptWrHistLength,
-//    initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
-//    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
-//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
-//  )
-//
-//  val myCondHaveLineBitPlruRam = (
-//    numWays > 1
-//  )
-//  val lineBitPlruRam = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    Array.fill(numLoHi)(
-//      RamSdpPipe(cfg=lineBitPlruRamCfg)
-//    )
-//  )
-//
-//  val myRdLineBitPlruVec = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    Vec.fill(numLoHi)(
-//      UInt(numWays bits)
-//    )
-//  )
-//  //val rdLineBitPlru = (
-//  //  myCondHaveLineBitPlruRam
-//  //) generate (
-//  //  UInt(numWays bits)
-//  //)
-//  //val rdPrefetchLineBitPlru = (
-//  //  myCondHaveLineBitPlruRam
-//  //) generate (
-//  //  UInt(numWays bits)
-//  //)
-//  def rdLineBitPlru = myRdLineBitPlruVec.head
-//  def rdPrefetchLineBitPlru = myRdLineBitPlruVec.last
-//
-//  val wrLineBitPlru = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    UInt(
-//      //log2Up(numWays) bits
-//      numWays bits
-//    )
-//  )
-//
-//  if (myCondHaveLineBitPlruRam) {
-//    lineBitPlruRam.zipWithIndex.foreach({
-//      case (myBpRam, idx) => {
-//        myRdLineBitPlruVec(idx) := myBpRam.io.rdData
-//        myBpRam.io.wrEn := False
-//      }
-//    })
-//    //rdLineBitPlru := lineBitPlruRam.head.io.rdData
-//    //rdPrefetchLineBitPlru := lineBitPlruRam.last.io.rdData
-//
-//    wrLineBitPlru := RegNext(wrLineBitPlru, init=wrLineBitPlru.getZero)
-//    //wrLineBitPlru.allowOverride
-//
-//    //lineBitPlruRam.foreach(_.io.wrEn := False)
-//  }
-//
-//  //--------
-//  object LoState extends SpinalEnum(
-//    defaultEncoding=(
-//      //binarySequential
-//      binaryOneHot
-//    )
-//  ) {
-//    val
-//      INIT,
-//      IDLE,
-//      LOAD_HIT_DO_STALL_PIPE_4,
-//      LOAD_HIT_DO_STALL_PIPE_3,
-//      LOAD_HIT_DO_STALL_PIPE_2,
-//      LOAD_HIT_DO_STALL_PIPE_1,
-//      LOAD_HIT_DO_STALL,
-//      LOAD_HIT_DO_STALL_POST,
-//
-//      WAIT_HI_STATE_MCHN_READY,
-//      WAIT_HI_STATE_MCHN_READY_POST_7,
-//      WAIT_HI_STATE_MCHN_READY_POST_6,
-//      WAIT_HI_STATE_MCHN_READY_POST_5,
-//      WAIT_HI_STATE_MCHN_READY_POST_4,
-//      WAIT_HI_STATE_MCHN_READY_POST_3,
-//      WAIT_HI_STATE_MCHN_READY_POST_2,
-//      WAIT_HI_STATE_MCHN_READY_POST_1,
-//      WAIT_HI_STATE_MCHN_READY_POST,
-//
-//      WAIT_D2H_FIFO_EMPTY
-//      = newElement();
-//  }
-//
-//  val rLoState = (
-//    Reg(LoState())
-//    init(LoState.INIT)
-//  )
-//
-//  object HiState extends SpinalEnum(
-//    defaultEncoding=(
-//      binaryOneHot
-//    )
-//  ) {
-//    val
-//      IDLE,
-//      READ_ATTRS_PIPE_2,
-//      READ_ATTRS_PIPE_1,
-//      READ_ATTRS,
-//      RECV_LINE_FROM_HI_BUS_PIPE_1,
-//      RECV_LINE_FROM_HI_BUS
-//      = newElement();
-//  }
-//
-//  val rHiState = (
-//    Reg(HiState())
-//    init(HiState.IDLE)
-//  )
-//
-//  //--------
-//  val myLoH2dPopBusCfg = (
-//    LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=myFifoThingLoBusCfg)
-//  )
-//  val myLoH2dReptThing = LcvBusDoStallH2dReptThing(
-//    busCfg=myLoH2dPopBusCfg
-//  )
-//
-//  //val myLoH2dDoStallFifoThing = LcvBusDoStallFifoThing(
-//  //  busCfg=myFifoThingLoBusCfg,
-//  //  includeDoInit=false,
-//  //)
-//  //io.loBus.h2dBus.translateInto(
-//  //  //myLoH2dDoStallFifoThing.io.push
-//  //  myLoH2dReptThing.io.push
-//  //)(
-//  //  dataAssignment=(outp, inp) => {
-//  //    //outp.busPayload := inp
-//  //    outp.mainNonBurstInfo := inp.mainNonBurstInfo
-//  //    outp.txnCnt.allowOverride
-//  //    outp.txnCnt := (
-//  //      (
-//  //        RegNextWhen(
-//  //          (outp.txnCnt.asSInt + 1),
-//  //          cond=myLoH2dReptThing.io.push.fire,
-//  //        )
-//  //        init(-2)
-//  //      ).asUInt
-//  //    )
-//  //  }
-//  //)
-//  val myFifoThingDoStall = Bool()
-//  myFifoThingDoStall := (
-//    RegNext(myFifoThingDoStall, init=myFifoThingDoStall.getZero)
-//  )
-//  myLoH2dReptThing.io.doStall := myFifoThingDoStall
-//  //val rSeenMyFifoThingDoStallCnt = (
-//  //  Reg(UInt(log2Up(LcvBusDoStallFifoThing.fifoDepthMain + 1) + 1 bits))
-//  //  init(0x0)
-//  //)
-//  //myLoH2dDoStallFifoThing.io.doStall := myFifoThingDoStall
-//
-//  val myLoH2dToWrByteEnStmAdapter = (
-//    !loBusCfg.haveByteEn
-//  ) generate (LcvBusH2dShiftedDataEtcStreamAdapter(
-//    cfg=LcvBusH2dShiftedDataEtcStreamAdapterConfig(
-//      loBusCfg=myFifoThingLoBusCfg,
-//    )
-//  ))
-//
-//  val myMainLoH2dPopStm = (
-//    Stream(LcvBusH2dPayload(
-//      cfg=myLoH2dPopBusCfg
-//    ))
-//  )
-//
-//  val mySelLoH2dPopStm = (
-//    //cloneOf(myLoH2dDoStallFifoThing.io.pop)
-//    //cloneOf(io.loBus.h2dBus)
-//    //Stream(LcvBusH2dPayload(
-//    //  cfg=myLoH2dPopBusCfg
-//    //))
-//    //cloneOf(myMainLoH2dPopStm)
-//    cloneOf(myLoH2dReptThing.io.pop)
-//  )
-//  mySelLoH2dPopStm << myLoH2dReptThing.io.pop
-//  //val mySelLoH2dPop
-//  def mySelLoH2dPopPayload = mySelLoH2dPopStm.payload//.busPayload
-//
-//  io.loBus.h2dBus.translateInto(
-//    if (!loBusCfg.haveByteEn) (
-//      myLoH2dToWrByteEnStmAdapter.io.loH2dBus
-//    ) else (
-//      myMainLoH2dPopStm
-//    )
-//  )(
-//    dataAssignment=(outp, inp) => {
-//      //outp := inp
-//      outp.mainNonBurstInfo := inp.mainNonBurstInfo
-//      outp.txnCnt.allowOverride
-//      outp.txnCnt := (
-//        (
-//          RegNextWhen(
-//            (outp.txnCnt.asSInt + 1),
-//            cond=io.loBus.h2dBus.fire,
-//          )
-//          init(-2)
-//        ).asUInt
-//      )
-//    }
-//  )
-//
-//  if (!loBusCfg.haveByteEn) {
-//    myLoH2dToWrByteEnStmAdapter.io.hiH2dBus.translateInto(
-//      myMainLoH2dPopStm
-//    )(
-//      dataAssignment=(outp, inp) => {
-//        outp := inp
-//        outp.txnCnt.allowOverride
-//        outp.txnCnt := myLoH2dToWrByteEnStmAdapter.io.loH2dBus.txnCnt
-//      }
-//    )
-//  }
-//
-//  //myMainLoH2dPopStm.ready := !myFifoThingDoStall
-//  //myLoH2dReptThing.io.push << myMainLoH2dPopStm
-//  myMainLoH2dPopStm.translateInto(
-//    myLoH2dReptThing.io.push
-//  )(
-//    dataAssignment=(outp, inp) => {
-//      outp.busPayload := inp
-//      //outp.savedData := inp.data
-//    }
-//  )
-//  mySelLoH2dPopStm.ready := False
-//
-//  //val myLoH2dPopThrowArea = new Area {
-//  //  val myLoH2dThrowCond = Bool()
-//  //  val myTempLoH2dPopStm = myLoH2dDoStallFifoThing.io.pop.throwWhen(
-//  //    myLoH2dThrowCond
-//  //  )
-//  //  myLoH2dThrowCond := False
-//  //  //myLoH2dPopStm.ready := False
-//  //  myLoH2dPopStm << myTempLoH2dPopStm
-//  //}
-//  val rLoH2dPayload = (
-//    RegNextWhen(
-//      mySelLoH2dPopStm.payload,
-//      cond=mySelLoH2dPopStm.fire,
-//      init=mySelLoH2dPopStm.payload.getZero,
-//    )
-//  )
-//  def rBusAddr = rLoH2dPayload.addr
-//  val rDel2LoH2dPayload = (
-//    RegNext/*When*/(
-//      next=rLoH2dPayload,
-//      //cond=myLoH2dPopStm.fire,
-//      init=rLoH2dPayload.getZero,
-//    )
-//  )
-//  def rDel2BusAddr = rDel2LoH2dPayload.addr
-//
-//  val rSavedLoH2dPayload = (
-//    Reg(cloneOf(rLoH2dPayload))
-//    init(rLoH2dPayload.getZero)
-//  )
-//  def rSavedLoBusAddr = rSavedLoH2dPayload.addr
-//  def rSavedLoBusAddrSet = rSavedLoBusAddr(loBusCacheCfg.setRange)
-//
-//  val myLoD2hShiftedDataStmAdapter = (
-//    !cfg.loBusCfg.haveByteEn
-//  ) generate (
-//    LcvBusD2hShiftedDataEtcStreamAdapter(
-//      cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(
-//        busCfg=cfg.loBusCfg
-//      )
-//    )
-//  )
-//  val myLoD2hPushStm = Stream(
-//    LcvBusDoStallFifoThingPayload(
-//      LcvBusD2hPayload(
-//        cfg=myFifoThingLoBusCfg,
-//        includeByteSizeEtc=(!myFifoThingLoBusCfg.haveByteEn),
-//      ),
-//    )
-//  )
-//
-//  val rSavedNeedLineWordReadAgain = Reg(Bool(), init=False)
-//
-//  myLoD2hPushStm.valid := False
-//  //myLoH2dReptThing.io.finishTxn.valid := myLoD2hPushStm.fire
-//  //myLoH2dReptThing.io.finishTxn.payload := (
-//  //  myLoD2hPushStm.busPayload.txnCnt
-//  //)
-//
-//  val myLoD2hFifo = StreamFifo(
-//    dataType=LcvBusD2hPayload(cfg=cfg.loBusCfg),
-//    depth=(myFifoThingLoBusCfg.maxBurstSizeMinus1 + 1),
-//    latency=cfg.busD2hFifoLatency,
-//    forFMax=true,
-//  )
-//
-//  myLoD2hFifo.io.pop.translateInto(io.loBus.d2hBus)(
-//    dataAssignment=(outp, inp) => {
-//      outp.mainNonBurstInfo := inp.mainNonBurstInfo
-//    }
-//  )
-//  //val myLoD2hAlmostDonePushStm = cloneOf(myLoD2hPushStm)
-//  //myLoD2hAlmostDonePushStm << myLoD2hPushStm
-//  //myLoD2hAlmostDonePushStm << myLoD2hPushStm.throwWhen(
-//  //  myLoD2hPushStm.busPayload.txnCnt.asSInt
-//  //  === (
-//  //    RegNextWhen(
-//  //      myLoD2hPushStm.busPayload.txnCnt.asSInt,
-//  //      cond=myLoD2hPushStm.fire,
-//  //    )
-//  //    init(1)
-//  //  )
-//  //)
-//
-//  // NOTE: this was previously `myLoD2hAlmostDonePushStm.translateInto`
-//  myLoD2hPushStm.translateInto(
-//    if (cfg.myFifoThingLoBusCfg.haveByteEn) (
-//      myLoD2hFifo.io.push
-//    ) else (
-//      myLoD2hShiftedDataStmAdapter.io.loD2hBus
-//    )
-//  )(
-//    dataAssignment=(outp, inp) => {
-//      outp.mainNonBurstInfo := inp.busPayload.mainNonBurstInfo
-//    }
-//  )
-//
-//  if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//    //println(
-//    //  s"NOTE: "
-//    //  + s"myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus"
-//    //)
-//    myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus
-//  }
-//  val myTempHaveHitCmpEqLeft = (
-//    Vec[Vec[UInt]](
-//      rdLineAttrs.map(
-//        outerItem => Vec[UInt](outerItem.map(item => item.tag))
-//      )
-//    )
-//  )
-//  val myTempHaveHitCmpEqRight = Vec[Vec[UInt]](
-//    Vec.fill(numWays)(
-//      RegNext(
-//        RegNext(mySelLoH2dPopPayload.addr(loBusCacheCfg.tagRange))
-//        init(0x0)
-//      )
-//      init(0x0),
-//    ),
-//    Vec.fill(numWays)(
-//      UInt(
-//        mySelLoH2dPopPayload.addr(loBusCacheCfg.tagRange).getWidth bits
-//      )
-//    )
-//  )
-//  val tempHaveHitCmpEq = Vec.fill(numLoHi)(
-//    Vec.fill(numWays)(Bool())
-//  )
-//  val haveHit = Vec.fill(numLoHi)(
-//    Vec.fill(numWays)(
-//      Bool()
-//    )
-//  )
-//
-//  val rSavedPrefetchLoH2dPayload = (
-//    Reg(cloneOf(rDel2LoH2dPayload))
-//    init(rDel2LoH2dPayload.getZero)
-//  )
-//  val rSavedPrefetchRamIdx = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    Reg(UInt(log2Up(numWays) bits))
-//    init(0x0)
-//  )
-//
-//  //myPrefetchHaveHit.cnt := cfg.prefetchNumLinesAhead.get - 1
-//
-//  val rPrefetchCnt = (
-//    Reg(SInt(log2Up(cfg.prefetchNumLinesAhead.get).max(1) + 1 bits))
-//    init(-1)
-//  )
-//
-//  for (outerRamIdx <- 0 until numLoHi) {
-//    for (ramIdx <- 0 until numWays) {
-//      tempHaveHitCmpEq(outerRamIdx)(ramIdx) := (
-//        myTempHaveHitCmpEqLeft(outerRamIdx)(ramIdx)
-//        === myTempHaveHitCmpEqRight(outerRamIdx)(ramIdx)
-//      )
-//      haveHit(outerRamIdx)(ramIdx) := (
-//        rdLineAttrs(outerRamIdx)(ramIdx).fire
-//        && tempHaveHitCmpEq(outerRamIdx)(ramIdx)
-//      )
-//      if (outerRamIdx == 1) {
-//        myTempHaveHitCmpEqRight(outerRamIdx)(ramIdx) := (
-//          rSavedPrefetchLoH2dPayload.addr(loBusCacheCfg.tagRange)
-//        )
-//      }
-//    }
-//  }
-//
-//  val rMyTempDoSaveCond = (
-//    Vec.fill(4)(
-//      RegNext(
-//        RegNext(
-//          (
-//            mySelLoH2dPopStm.fire
-//            //&& !myFullTempIgnoreDupCntCond
-//          ),
-//          init=False
-//        ),
-//        init=False
-//      )
-//    )
-//  )
-//
-//  val tempToSwitchNonHaveHitVec = Vec[Bits](
-//    (
-//      //((rState === State.IDLE) && rMyTempDoSaveCond(3))
-//      //((rState === State.IDLE)
-//      rLoState.asBits(LoState.IDLE.position)
-//      ## rMyTempDoSaveCond(3)
-//      //## rDel2LoH2dPayload.isWrite
-//    ),
-//    (
-//      //(rHiState === HiState.READ_ATTRS)
-//      Cat(
-//        rHiState.asBits(HiState.READ_ATTRS.position)
-//      )
-//    )
-//  )
-//  val tempToSwitchVec = Vec[Bits](
-//    (
-//      tempToSwitchNonHaveHitVec.head
-//      ## haveHit.head
-//    ),
-//    (
-//      tempToSwitchNonHaveHitVec.last
-//      ## haveHit.last
-//    ),
-//  )
-//  //println(
-//  //  s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
-//  //)
-//
-//  //val myPrefetchHaveHitVec = (
-//  //  Vec.fill(2)(
-//  //    //Flow(
-//  //      LcvBusCachePrefetcherHaveHitPayload(cfg=cfg)
-//  //    //)
-//  //  )
-//  //)
-//
-//  //val rSavedPrefetchHaveHit = {
-//  //  val temp = Reg(
-//  //    Flow(
-//  //      LcvBusCachePrefetcherHaveHitPayload(cfg=cfg)
-//  //    )
-//  //  )
-//  //  temp.init(temp.getZero)
-//  //  temp
-//  //}
-//  //myPrefetchHaveHit.valid := tempToSwitchNonHaveHit.andR
-//
-//  //val myPrefetchHaveHit
-//  //myPrefetchHaveHitVec.head.haveHitAtAll := (
-//  //  haveHit.head.orR
-//  //  //haveHit.last.orR
-//  //)
-//  //myPrefetchHaveHitVec.last.haveHitAtAll := (
-//  //  haveHit.last.orR
-//  //  //haveHit.last.orR
-//  //)
-//  //myPrefetchHaveHitVec.foreach(item => {
-//  //  item.loH2dPayload := rDel2LoH2dPayload.busPayload
-//  //})
-//
-//  def convBusAddrToLineIdx[
-//    WordT <: Data
-//  ](
-//    someRam: RamSdpPipe[WordT],
-//    busAddr: UInt
-//  ): UInt = {
-//    (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
-//    .resize(someRam.io.rdAddr.getWidth)
-//  }
-//
-//  def doLineWordRamReadSync(
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    lineWordRam.foreach(item => {
-//      if (setEn == 1) {
-//        item.io.rdEn := True
-//      } else if (setEn == 2) {
-//        item.io.rdEn := (
-//          RegNext(
-//            next=(
-//              //mySelLoH2dPopStm.valid
-//              mySelLoH2dPopStm.fire
-//            ),
-//            init=False,
-//          )
-//          //&& !myFifoThingDoStall
-//        )
-//      } 
-//      item.io.rdAddr := {
-//        //println(
-//        //  s"test info: busAddr("
-//        //  + s"${busAddr.high} downto ${myLineWordRamAddrRshift}"
-//        //  + s")"
-//        //)
-//        (
-//          (
-//            busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift)
-//          )
-//          .resize(item.io.rdAddr.getWidth)
-//        )
-//      }
-//    })
-//  }
-//  def doLineAttrsRamReadSync(
-//    outerRamIdx: Int,
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    lineAttrsRam(outerRamIdx).foreach(item => {
-//      if (setEn == 1) {
-//        item.io.rdEn := True
-//      } else if (setEn == 2) {
-//        item.io.rdEn := (
-//          RegNext(
-//            next=(
-//              //mySelLoH2dPopStm.valid
-//              mySelLoH2dPopStm.fire
-//            ),
-//            init=False,
-//          )
-//          //&& !myFifoThingDoStall
-//        )
-//      } 
-//      item.io.rdAddr := {
-//        //println(
-//        //  s"test info: busAddr("
-//        //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
-//        //  + s")"
-//        //)
-//
-//        convBusAddrToLineIdx(
-//          someRam=item,
-//          busAddr=busAddr,
-//        )
-//
-//        //(
-//        //  (
-//        //    busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
-//        //  )
-//        //  .resize(item.io.rdAddr.getWidth)
-//        //)
-//      }
-//    })
-//  }
-//  def doLineBitPlruRamReadSync(
-//    outerRamIdx: Int,
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    if (setEn == 1) {
-//      lineBitPlruRam(outerRamIdx).io.rdEn := True
-//    } else if (setEn == 2) {
-//      lineBitPlruRam(outerRamIdx).io.rdEn := (
-//        RegNext(
-//          next=(
-//            //mySelLoH2dPopStm.valid
-//            mySelLoH2dPopStm.fire
-//          ),
-//          init=False,
-//        )
-//        //&& !myFifoThingDoStall
-//      )
-//    } 
-//    lineBitPlruRam(outerRamIdx).io.rdAddr := {
-//      //println(
-//      //  s"test info: busAddr("
-//      //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
-//      //  + s")"
-//      //)
-//      (
-//        //(
-//        //  busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
-//        //)
-//        //.resize(lineBitPlruRam.head.io.rdAddr.getWidth)
-//        convBusAddrToLineIdx(
-//          someRam=lineBitPlruRam(outerRamIdx),
-//          busAddr=busAddr,
-//        )
-//      )
-//    }
-//  }
-//  def doLineWordRamWrite(
-//    ramIdx: Int,
-//    busAddr: UInt,
-//    lineWord: UInt,
-//    //byteEn: Option[UInt],
-//    setEn: Boolean=true,
-//  ): Unit = {
-//    if (setEn) {
-//      lineWordRam(ramIdx).io.wrEn := True
-//    }
-//    lineWordRam(ramIdx).io.wrAddr := (
-//      (busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift))
-//      .resize(lineWordRam(ramIdx).io.wrAddr.getWidth)
-//    )
-//    lineWordRam(ramIdx).io.wrData := lineWord
-//    //byteEn match {
-//    //  case Some(byteEn) => {
-//    //    lineWordRam(ramIdx).io.wrByteEn := byteEn.asBits
-//    //  }
-//    //  case None => {
-//    //    lineWordRam(ramIdx).io.wrByteEn := (
-//    //      B(
-//    //        lineWordRam(ramIdx).io.wrByteEn.getWidth bits,
-//    //        default -> True
-//    //      )
-//    //    )
-//    //  }
-//    //}
-//  }
-//  def doLineAttrsRamWrite(
-//    ramIdx: Int,
-//    busAddr: UInt,
-//    lineAttrs: LcvBusCacheLineAttrs,
-//    setEn: Boolean=true,
-//  ): Unit = {
-//    lineAttrsRam.foreach(item => {
-//      if (setEn) {
-//        item(ramIdx).io.wrEn := True
-//      }
-//      item(ramIdx).io.wrAddr := (
-//        //(busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
-//        //.resize(item(ramIdx).io.wrAddr.getWidth)
-//        convBusAddrToLineIdx(
-//          someRam=item(ramIdx),
-//          busAddr=busAddr,
-//        )
-//      )
-//      item(ramIdx).io.wrData := lineAttrs
-//    })
-//  }
-//  def doLineBitPlruRamWrite(
-//    busAddr: UInt,
-//    //lineAttrs: LcvBusCacheLineBitPlru,
-//    lineBitPlru: UInt,
-//    setEn: Boolean=true,
-//  ): Unit = {
-//    lineBitPlruRam.foreach(item => {
-//      if (setEn) {
-//        item.io.wrEn := True
-//      }
-//      item.io.wrAddr := (
-//        //(busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
-//        //.resize(item.io.wrAddr.getWidth)
-//        convBusAddrToLineIdx(
-//          someRam=item,
-//          busAddr=busAddr,
-//        )
-//      )
-//      item.io.wrData := lineBitPlru
-//    })
-//  }
-//
-//  doLineWordRamReadSync(
-//    busAddr=mySelLoH2dPopPayload.addr,
-//    setEn=2,
-//  )
-//  for (ramIdx <- 0 until numWays) {
-//    doLineWordRamWrite(
-//      ramIdx=ramIdx,
-//      busAddr=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.addr,
-//            init=mySelLoH2dPopPayload.addr.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.addr.getZero,
-//        )
-//      ),
-//      lineWord=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.data,
-//            init=mySelLoH2dPopPayload.data.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.data.getZero,
-//        )
-//      ),
-//      //byteEn=Some(
-//      //  RegNext(
-//      //    RegNext(
-//      //      mySelLoH2dPopPayload.byteEn,
-//      //      init=mySelLoH2dPopPayload.byteEn.getZero
-//      //    ),
-//      //    init=mySelLoH2dPopPayload.byteEn.getZero,
-//      //  ),
-//      //),
-//      setEn=false,
-//    )
-//  }
-//
-//  doLineAttrsRamReadSync(
-//    outerRamIdx=0,
-//    busAddr=mySelLoH2dPopPayload.addr,
-//    setEn=2,
-//  )
-//  doLineAttrsRamReadSync(
-//    outerRamIdx=1,
-//    busAddr=rSavedPrefetchLoH2dPayload.addr,
-//    setEn=2,
-//  )
-//  for (ramIdx <- 0 until numWays) {
-//    doLineAttrsRamWrite(
-//      ramIdx=ramIdx,
-//      busAddr=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.addr,
-//            init=mySelLoH2dPopPayload.addr.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.addr.getZero,
-//        )
-//      ),
-//      lineAttrs=(
-//        wrLineAttrs
-//      ),
-//      setEn=false,
-//    )
-//  }
-//
-//  if (myCondHaveLineBitPlruRam) {
-//    doLineBitPlruRamReadSync(
-//      outerRamIdx=0,
-//      busAddr=mySelLoH2dPopPayload.addr,
-//      setEn=2,
-//    )
-//    doLineBitPlruRamReadSync(
-//      outerRamIdx=1,
-//      busAddr=rSavedPrefetchLoH2dPayload.addr,
-//      setEn=2,
-//    )
-//    doLineBitPlruRamWrite(
-//      busAddr=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.addr,
-//            init=mySelLoH2dPopPayload.addr.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.addr.getZero,
-//        )
-//      ),
-//      lineBitPlru=(
-//        wrLineBitPlru
-//      ),
-//      setEn=false,
-//    )
-//  }
-//  //--------
-//  myLoD2hPushStm.payload := (
-//    RegNext(myLoD2hPushStm.payload, init=myLoD2hPushStm.payload.getZero)
-//  )
-//
-//  //val haveHit = (
-//  //  rdLineAttrs.fire
-//  //  && tempHaveHitCmpEq
-//  //)
-//
-//  //val rSavedRdLineAttrsTag = (
-//  //  //Vec.fill(numWays)(
-//  //    Reg(
-//  //      cloneOf(rdLineAttrs.head.head.tag),
-//  //      init=rdLineAttrs.head.head.tag.getZero,
-//  //    )
-//  //  //)
-//  //)
-//
-//  val rHiH2dBurstCnt = (
-//    Vec.fill(2)(
-//      Reg(UInt(loBusCfg.burstCntWidth bits))
-//      init(0x0)
-//    )
-//  )
-//  val rHiD2hBurstCnt = (
-//    Reg(UInt(loBusCfg.burstCntWidth bits))
-//    init(0x0)
-//  )
-//  //--------
-//  def myLoD2hPayload = myLoD2hPushStm.busPayload
-//  //--------
-//
-//  def doPopLoH2dFifo(): Unit = {
-//    mySelLoH2dPopStm.ready := True
-//  }
-//
-//  //val myDoStallLoH2dThrowThing = (
-//  //  LcvBusDoStallH2dThrowThing(busCfg=cfg.myFifoThingLoBusCfg)
-//  //)
-//  //myDoStallLoH2dThrowThing.io.push.valid := (
-//  //  myLoH2dDoStallFifoThing.io.pop.valid
-//  //  //&& rState === State.IDLE
-//  //  && rState.asBits(1)
-//  //)
-//  //myDoStallLoH2dThrowThing.io.push.payload := (
-//  //  myLoH2dDoStallFifoThing.io.pop.busPayload.txnCnt
-//  //)
-//
-//  //val myFullTempIgnoreDupCntCond = (
-//  //  myDoStallLoH2dThrowThing.io.myThrowCondMain
-//  //  //&& History[Bool](
-//  //  //  that=True,
-//  //  //  when=(
-//  //  //    myLoH2dPopStm.fire
-//  //  //    //myD2hPushStm.fire
-//  //  //    //myLoH2dDoStallFifoThing.io.pop.fire
-//  //  //    //&& !myLoH2dPopThrowArea.myLoH2dThrowCond
-//  //  //  ),
-//  //  //  length=(
-//  //  //    //2
-//  //  //    //4
-//  //  //    //3
-//  //  //    5
-//  //  //  ),
-//  //  //  init=False,
-//  //  //).last
-//  //)
-//
-//  //def doIgnoreInvalidFifoThingPopCnt(
-//  //): Unit = {
-//  //  when (myFullTempIgnoreDupCntCond) {
-//  //    myLoH2dPopThrowArea.myLoH2dThrowCond := True
-//  //  }
-//  //}
-//
-//  //val rHadAnyRamWritePastTwoCycles = Vec.fill(2)(
-//  //  RegNext(
-//  //    (
-//  //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-//  //      || RegNext(
-//  //        Vec(lineWordRam.map(item => item.io.wrEn)).orR,
-//  //        init=False
-//  //      )
-//  //      || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-//  //      || RegNext(
-//  //        Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
-//  //        init=False
-//  //      )
-//  //    ),
-//  //    init=False
-//  //  )
-//  //)
-//  val myTempHaveCurrRamWrite = (
-//    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-//    || (
-//      //Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-//
-//      // we treat this as being only one write port,
-//      // so we only need to check one of them..
-//      Vec[Bool](lineAttrsRam.head.map(item => item.io.wrEn)).orR
-//    )
-//  )
-//  val myHistHadAnyRamWrite = Array.fill(4)(
-//    History[Bool](
-//      that=myTempHaveCurrRamWrite,
-//      length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-//      init=myTempHaveCurrRamWrite.getZero
-//    )
-//  )
-//  val myHadAnyRecentRamWrite = Vec[Bool](
-//    myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
-//  )
-//
-//  //--------
-//  val rHadLoH2dFinish = Reg(Bool(), init=False)
-//  val rHadLoD2hFinish = Reg(Bool(), init=False)
-//  val rHadHiH2dFinish = Reg(Bool(), init=False)
-//  val rHadHiD2hFinish = Reg(Bool(), init=False)
-//
-//  val hiH2dFifo = (
-//    StreamFifo(
-//      dataType=(
-//        //UInt(loBusCacheCfg.wordWidth bits)
-//        LcvBusH2dPayload(cfg.hiBusCfg)
-//      ),
-//      depth=loBusCacheCfg.lineSizeWords,
-//      latency=2,
-//      forFMax=true,
-//    )
-//  )
-//
-//  val rHiH2dValid = Reg(Bool(), init=False)
-//  val rHiH2dPayload = (
-//    Reg(cloneOf(hiH2dFifo.io.push.payload))
-//    init(hiH2dFifo.io.push.payload.getZero)
-//  )
-//  val rHiD2hReady = Reg(Bool(), init=False)
-//  hiH2dFifo.io.push.valid := rHiH2dValid
-//  hiH2dFifo.io.push.payload := rHiH2dPayload
-//  io.hiBus.d2hBus.ready := rHiD2hReady
-//
-//  rHiH2dPayload.byteEn := (
-//    U(hiBusCfg.byteEnWidth bits, default -> True)
-//  )
-//  //rHiH2dPayload.byteSize := (
-//  //  U(rHiH2dPayload.byteSize.getWidth bits, default -> True)
-//  //)
-//  //rHiH2dPayload.haveFullWord := True
-//  io.hiBus.h2dBus <-/< hiH2dFifo.io.pop
-//
-//      
-//// >>> for ramIdx in range(numWays):
-//// ...     print(ramIdx, (("0" * (numWays - ramIdx - 1))) + "1" + ("-" * ramIdx))
-//// ...     
-//// 0 0001
-//// 1 001-
-//// 2 01--
-//// 3 1---
-//  def calcHitRamIdxMask(ramIdx: Int): String = (
-//    (("0" * (numWays - ramIdx - 1)))
-//    + "1"
-//    + ("-" * ramIdx)
-//  )
-//
-//// >>> for ramIdx in range(numWays):
-//// ...     print(ramIdx, (("1" * (numWays - ramIdx - 1))) + "0" + ("-" * ramIdx))
-//// ...     
-//// 0 1110
-//// 1 110-
-//// 2 10--
-//// 3 0---
-//  def calcMissRamIdxMask(ramIdx: Int): String = (
-//    (("1" * (numWays - ramIdx - 1)))
-//    + "0"
-//    + ("-" * ramIdx)
-//  )
-//
-//  val rSavedRamIdx = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    Reg(UInt(log2Up(numWays) bits))
-//    init(0x0)
-//  )
-//  //val myHistSavedRamIdx = (
-//  //  History(
-//  //    that=rSavedRamIdx,
-//  //  )
-//  //)
-//
-//  //rSavedPrefetchHaveHit.addr.allowOverride
-//
-//  //when (
-//  //  myPrefetchHaveHit.fire
-//  //  && !rSavedPrefetchHaveHit.fire
-//  //) {
-//  //  rSavedPrefetchHaveHit.valid := True
-//  //  rSavedPrefetchHaveHit.payload := myPrefetchHaveHit.payload
-//  //}
-//  def doWriteBitPlruRamDuringMiss(
-//    //ramIdx: Int
-//    someRdLineBitPlru: UInt,
-//    someSavedRamIdx: UInt,
-//    busAddr: Option[UInt]=None,
-//  ): Unit = {
-//    require(
-//      myCondHaveLineBitPlruRam
-//    )
-//    //rSavedRamIdx := rdLineBitPlru
-//    //wrLineBitPlru := rdLineBitPlru + 1
-//    if (busAddr != None) {
-//      wrLineBitPlru := someRdLineBitPlru//rdLineBitPlru
-//    }
-//    lineBitPlruRam.foreach(item => {
-//      //item.io.wrEn := True
-//      busAddr match {
-//        case Some(myBusAddr) => {
-//          item.io.wrEn := True
-//          item.io.wrAddr := convBusAddrToLineIdx(
-//            someRam=item,
-//            busAddr=myBusAddr,
-//          )
-//        }
-//        case None => {
-//        }
-//      }
-//    })
-//    switch (someRdLineBitPlru) {
-//      for (ramIdx <- 0 until numWays) {
-//        val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
-//        is (MaskedLiteral(myRamIdxMask)) {
-//          if (busAddr != None) {
-//            wrLineBitPlru(ramIdx) := True
-//          }
-//          //rSavedRamIdx := ramIdx
-//          someSavedRamIdx := ramIdx
-//        }
-//        default {
-//        }
-//      }
-//    }
-//  }
-//  def doWriteBitPlruRamDuringHit(
-//    someRdLineBitPlru: UInt,
-//    ramIdx: Int,
-//    busAddr: Option[UInt]=None,
-//  ): Unit = {
-//    require(
-//      myCondHaveLineBitPlruRam
-//    )
-//    val tempLineBitPlru = cloneOf(rdLineBitPlru)
-//    tempLineBitPlru.allowOverride
-//    tempLineBitPlru := someRdLineBitPlru//rdLineBitPlru
-//    tempLineBitPlru(ramIdx) := True
-//    when (tempLineBitPlru.andR) {
-//      wrLineBitPlru := 1 << ramIdx
-//    } otherwise {
-//      wrLineBitPlru := tempLineBitPlru
-//    }
-//    lineBitPlruRam.foreach(item => {
-//      // NOTE:
-//      // With the current state of this code,
-//      // `rLoState`'s handling of cache hits can (rarely) have the
-//      // `lineBitPlruRam` write port be overwritten by the prefetcher!
-//      // It will lose a little performance, potentially,
-//      // but hopefully not by that much!
-//      item.io.wrEn := True
-//      busAddr match {
-//        case Some(myBusAddr) => {
-//          item.io.wrAddr := convBusAddrToLineIdx(
-//            someRam=item,
-//            busAddr=myBusAddr,
-//          )
-//        }
-//        case None => {
-//        }
-//      }
-//    })
-//  }
-//
-//  for (myVecIdx <- 0 until numLoHi) { 
-//    switch (tempToSwitchVec(myVecIdx)) {
-//      is (
-//        if (myVecIdx == 0) (
-//          MaskedLiteral("11" + ("0" * numWays))
-//        ) else (
-//          MaskedLiteral("1" + ("0" * numWays))
-//        )
-//      ) {
-//        if (myVecIdx == 0) {
-//          // cache miss
-//          rLoState := LoState.WAIT_HI_STATE_MCHN_READY
-//
-//          if (myCondHaveLineBitPlruRam) {
-//            doWriteBitPlruRamDuringMiss(
-//              someRdLineBitPlru=rdLineBitPlru,
-//              someSavedRamIdx=rSavedRamIdx,
-//              busAddr=None,
-//            )
-//          }
-//
-//          myLoD2hPushStm.valid := False
-//          myFifoThingDoStall := True
-//          mySelLoH2dPopStm.ready := False
-//        } else if (myVecIdx == 1) {
-//          rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
-//          if (myCondHaveLineBitPlruRam) {
-//            doWriteBitPlruRamDuringMiss(
-//              someRdLineBitPlru=rdPrefetchLineBitPlru,
-//              someSavedRamIdx=rSavedPrefetchRamIdx,
-//              busAddr=Some(rSavedPrefetchLoH2dPayload.addr),
-//            )
-//          }
-//        } else {
-//          require(false)
-//        }
-//      }
-//      for (ramIdx <- 0 until numWays) {
-//        val myRamIdxMask = calcHitRamIdxMask(ramIdx=ramIdx)
-//        //println(
-//        //  s"ramIdx:${ramIdx} myRamIdxMask:${myRamIdxMask}"
-//        //)
-//        is (
-//          if (myVecIdx == 0) (
-//            MaskedLiteral("11" + myRamIdxMask)
-//          ) else (
-//            MaskedLiteral("1" + myRamIdxMask)
-//          )
-//        ) {
-//          if (myVecIdx == 0) {
-//            doPopLoH2dFifo()
-//            myFifoThingDoStall := False
-//
-//            if (myCondHaveLineBitPlruRam) {
-//              rSavedRamIdx := ramIdx
-//              doWriteBitPlruRamDuringHit(
-//                someRdLineBitPlru=rdLineBitPlru,
-//                ramIdx=ramIdx,
-//              )
-//            }
-//
-//            // load, cache hit
-//            //myLoD2hPushStm.valid := True
-//            myLoD2hPushStm.busPayload.data := rdLineWord(ramIdx)
-//            if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//              myLoD2hPushStm.busPayload.byteSize := (
-//                rDel2LoH2dPayload.byteSize
-//              )
-//              myLoD2hPushStm.busPayload.addrLo := (
-//                rDel2LoH2dPayload.addr(
-//                  cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//                )
-//              )
-//            }
-//
-//            myLoD2hPushStm.valid := !myHadAnyRecentRamWrite.head//False
-//            //when (myHadAnyRecentRamWrite.head) {
-//            //  myLoD2hPushStm.valid := False
-//            //} otherwise {
-//            //  rSavedNeedLineWordReadAgain := False
-//            //}
-//            rSavedNeedLineWordReadAgain := myHadAnyRecentRamWrite(1)
-//
-//            when (
-//              myHadAnyRecentRamWrite(2)
-//              || !myLoD2hPushStm.ready
-//            ) {
-//              mySelLoH2dPopStm.ready := False
-//              myFifoThingDoStall := True
-//            }
-//
-//            switch (
-//              myHadAnyRecentRamWrite.last
-//              ## myLoD2hPushStm.ready
-//            ) {
-//              is (M"1-") {
-//                rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_4
-//              }
-//              is (M"00") {
-//                rLoState := LoState.LOAD_HIT_DO_STALL
-//              }
-//              default {
-//              }
-//            }
-//          } else if (myVecIdx == 1) {
-//            // if we had a cache hit for an attempted prefetch,
-//            // we should stop prefetching there!
-//            rHiState := HiState.IDLE
-//            if (myCondHaveLineBitPlruRam) {
-//              //rSavedPrefetchRamIdx := ramIdx
-//              doWriteBitPlruRamDuringHit(
-//                someRdLineBitPlru=rdPrefetchLineBitPlru,
-//                ramIdx=ramIdx,
-//                busAddr=Some(rSavedPrefetchLoH2dPayload.addr),
-//              )
-//            }
-//          } else {
-//            require(false)
-//          }
-//        }
-//      }
-//      if (myVecIdx == 0) {
-//        is (MaskedLiteral(
-//          "1" + "0" + ("-" * numWays)
-//        )) {
-//          doPopLoH2dFifo()
-//          myFifoThingDoStall := False
-//          myLoD2hPushStm.valid := False
-//        }
-//      }
-//      default {
-//      }
-//    }
-//  }
-//
-//  switch (rLoState) {
-//    is (LoState.INIT) {
-//      rLoState := LoState.IDLE
-//    }
-//    is (LoState.IDLE) {
-//      when (rMyTempDoSaveCond(0)) {
-//        rSavedLoH2dPayload := rDel2LoH2dPayload
-//      }
-//      when (rMyTempDoSaveCond(1)) {
-//        rSavedLoH2dPayload.byteSize := rDel2LoH2dPayload.byteSize
-//      }
-//      when (rMyTempDoSaveCond(2)) {
-//        myLoD2hPushStm.busPayload.src := rDel2LoH2dPayload.src
-//        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//          myLoD2hPushStm.busPayload.byteSize := (
-//            rDel2LoH2dPayload.byteSize
-//          )
-//          myLoD2hPushStm.busPayload.addrLo := (
-//            rDel2LoH2dPayload.addr(
-//              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//            )
-//          )
-//        }
-//        myLoD2hPushStm.busPayload.txnCnt := (
-//          rDel2LoH2dPayload.txnCnt
-//        )
-//      }
-//    }
-//    is (LoState.LOAD_HIT_DO_STALL_PIPE_4) {
-//      when (
-//        //rHiState === HiState.IDLE
-//        rHiState.asBits(HiState.IDLE.position)
-//      ) {
-//        rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_3
-//      }
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      myLoD2hPushStm.valid := False
-//      mySelLoH2dPopStm.ready := False
-//    }
-//    is (LoState.LOAD_HIT_DO_STALL_PIPE_3) {
-//      rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_2
-//      myLoD2hPushStm.valid := False
-//      mySelLoH2dPopStm.ready := False
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//
-//      doLineWordRamReadSync(
-//        busAddr=rSavedLoH2dPayload.addr,
-//        setEn=0,
-//      )
-//    }
-//    is (LoState.LOAD_HIT_DO_STALL_PIPE_2) {
-//      rLoState := LoState.LOAD_HIT_DO_STALL_PIPE_1
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := True)
-//      myLoD2hPushStm.valid := False
-//      mySelLoH2dPopStm.ready := False
-//    }
-//    is (LoState.LOAD_HIT_DO_STALL_PIPE_1) {
-//      rLoState := LoState.LOAD_HIT_DO_STALL
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//    }
-//    is (LoState.LOAD_HIT_DO_STALL) {
-//      val myRdLineWord = (
-//        RegNext(
-//          if (myCondHaveLineBitPlruRam) (
-//            rdLineWord(rSavedRamIdx)
-//          ) else (
-//            rdLineWord.head
-//          )
-//        )
-//      )
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//
-//      mySelLoH2dPopStm.ready := False
-//      //myLoD2hPushStm.busPayload.data := myRdLineWord
-//      when (rSavedNeedLineWordReadAgain) {
-//        myLoD2hPushStm.busPayload.data := myRdLineWord
-//        rSavedNeedLineWordReadAgain := False
-//      }
-//      if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//        myLoD2hPushStm.busPayload.byteSize := (
-//          rSavedLoH2dPayload.byteSize
-//        )
-//        myLoD2hPushStm.busPayload.addrLo := (
-//          rSavedLoH2dPayload.addr(
-//            cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//          )
-//        )
-//      }
-//      myLoD2hPushStm.valid := True
-//      //myLoH2dReptThing.io.finishTxn.valid := False
-//      when (myLoD2hPushStm.fire) {
-//        //myFifoThingDoStall := False
-//        rLoState := LoState.LOAD_HIT_DO_STALL_POST
-//      }
-//    }
-//    is (LoState.LOAD_HIT_DO_STALL_POST) {
-//      //rSavedNeedLineWordReadAgain := False
-//
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//
-//      rLoState := (
-//        LoState.WAIT_D2H_FIFO_EMPTY
-//        //LoState.IDLE
-//      )
-//    }
-//    is (LoState.WAIT_HI_STATE_MCHN_READY) {
-//      when (
-//        //--------
-//        //rHiState === HiState.IDLE
-//        rHiState.asBits(HiState.IDLE.position)
-//        //--------
-//        //rHiState === HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
-//        //rHiState.asBits(RECV_LINE_FROM_HI_BUS_PIPE_1)
-//      ) {
-//        rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_7
-//        //if (myCondHaveLineBitPlruRam) {
-//        //  rSavedRamIdx := rSavedPrefetchRamIdx
-//        //}
-//      }
-//    }
-//    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_7) {
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      when (rHiState.asBits(HiState.IDLE.position)) {
-//        rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_6
-//        if (myCondHaveLineBitPlruRam) {
-//          rSavedRamIdx := rSavedPrefetchRamIdx
-//        }
-//      }
-//    }
-//    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_6) {
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_5
-//    }
-//    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_5) {
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_4
-//    }
-//    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_4) {
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      doLineWordRamReadSync(
-//        busAddr=rSavedLoH2dPayload.addr,
-//        setEn=0,
-//      )
-//      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_3
-//    }
-//    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_3) {
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := True)
-//      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_2
-//    }
-//    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_2) {
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST_1
-//    }
-//    is (LoState.WAIT_HI_STATE_MCHN_READY_POST_1) {
-//      val myRdLineWord = (
-//        if (myCondHaveLineBitPlruRam) (
-//          rdLineWord(rSavedRamIdx)
-//        ) else (
-//          rdLineWord.head
-//        )
-//      )
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      //rState := State.WAIT_HI_STATE_MCHN_READY_POST
-//
-//      myLoD2hPushStm.valid := True
-//      myLoD2hPushStm.busPayload.src := rSavedLoH2dPayload.src
-//
-//      if (!loBusCfg.haveByteEn) {
-//        myLoD2hPayload.byteSize := rSavedLoH2dPayload.byteSize
-//        myLoD2hPayload.addrLo := (
-//          rSavedLoH2dPayload.addr(
-//            loBusCfg.addrLoWidth - 1 downto 0
-//          )
-//        )
-//      }
-//
-//      when (RegNext(
-//        //rose(rLoState === LoState.WAIT_HI_STATE_MCHN_READY_POST_2)
-//        rose(
-//          rLoState.asBits(
-//            LoState.WAIT_HI_STATE_MCHN_READY_POST_2.position
-//          )
-//        )
-//      )) {
-//        myLoD2hPushStm.busPayload.data := RegNext(
-//          myRdLineWord
-//        )
-//      }
-//
-//      when (myLoD2hPushStm.ready) {
-//        rLoState := LoState.WAIT_HI_STATE_MCHN_READY_POST
-//      }
-//    }
-//    is (LoState.WAIT_HI_STATE_MCHN_READY_POST) {
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      rLoState := (
-//        LoState.WAIT_D2H_FIFO_EMPTY
-//        //LoState.IDLE
-//      )
-//    }
-//    is (LoState.WAIT_D2H_FIFO_EMPTY) {
-//      lineAttrsRam.head.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//
-//      when (!myLoD2hFifo.io.pop.valid) {
-//        rLoState := LoState.IDLE
-//      }
-//    }
-//  }
-//
-//  // Implement line-ahead prefetching
-//  //val rSavedHaveHit = Reg(Bool(), init=False)
-//  switch (rHiState) {
-//    is (HiState.IDLE) {
-//      switch (
-//        (
-//          (
-//            rLoState.asBits(LoState.IDLE.position)
-//            || rLoState.asBits(LoState.WAIT_HI_STATE_MCHN_READY.position)
-//          )
-//          && (
-//            RegNextWhen(
-//              //tempToSwitchNonHaveHitVec.head.andR,
-//              // we can skip the `.andR` here because of the
-//              // `cond=rLoState.asBits(LoState.IDLE.position)`
-//              // argument to this `RegNextWhen`
-//              tempToSwitchNonHaveHitVec.head(
-//                //1
-//                0
-//              ),
-//              cond=rLoState.asBits(LoState.IDLE.position),
-//              init=False
-//            )
-//          )
-//        )
-//        ## (
-//          RegNextWhen(
-//            haveHit.head.orR,
-//            cond=rLoState.asBits(LoState.IDLE.position),
-//            init=False
-//          )
-//        )
-//        ## rPrefetchCnt.msb
-//      ) {
-//        is (
-//          M"10-"
-//          //M"101"
-//        ) {
-//          // CPU's most recent request is a cache miss,
-//          // so we start new prefetching!
-//          rSavedPrefetchLoH2dPayload := (
-//            //rDel2LoH2dPayload
-//            RegNextWhen(
-//              rDel2LoH2dPayload,
-//              cond=rLoState.asBits(LoState.IDLE.position),
-//              init=rDel2LoH2dPayload.getZero
-//            )
-//          )
-//          rPrefetchCnt := cfg.prefetchNumLinesAhead.get - 1
-//          rHiState := HiState.READ_ATTRS_PIPE_2
-//        }
-//        is (
-//          //M"110"
-//          M"110"
-//        ) {
-//          // CPU's most recent request is a cache hit,
-//          // and we've not fetched too many lines yet!
-//          rSavedPrefetchLoH2dPayload.addr := (
-//            rSavedPrefetchLoH2dPayload.addr
-//            + cfg.loBusCacheCfg.lineSizeBytes
-//          )
-//          rPrefetchCnt := rPrefetchCnt - 1
-//          rHiState := HiState.READ_ATTRS_PIPE_2
-//        }
-//        default {
-//        }
-//      }
-//    }
-//    is (HiState.READ_ATTRS_PIPE_2) {
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//      lineBitPlruRam.last.io.rdEn := False
-//      rHiState := HiState.READ_ATTRS_PIPE_1
-//    }
-//    is (HiState.READ_ATTRS_PIPE_1) {
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := True)
-//      lineBitPlruRam.last.io.rdEn := True
-//      rHiState := HiState.READ_ATTRS
-//    }
-//    is (HiState.READ_ATTRS) {
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//      lineBitPlruRam.last.io.rdEn := False
-//      //rHiState := HiState.RECV_LINE_FROM_HI_BUS_PIPE_1
-//    }
-//    is (HiState.RECV_LINE_FROM_HI_BUS_PIPE_1) {
-//      rHadHiH2dFinish := False
-//      rHadHiD2hFinish := False
-//
-//      rHiH2dPayload.burstFirst := True
-//      rHiH2dPayload.burstLast := True
-//      rHiH2dPayload.burstCnt := hiBusCfg.maxBurstSizeMinus1
-//
-//      rHiH2dPayload.isWrite := False
-//      rHiH2dPayload.src := rSavedPrefetchLoH2dPayload.src
-//      rHiH2dPayload.addr := rSavedPrefetchLoH2dPayload.burstAddr(
-//        someBurstCnt=rHiH2dBurstCnt(1).getZero,
-//        incrBurstCnt=false
-//      )
-//      rHiD2hBurstCnt := 0x0
-//      when (RegNext(!hiH2dFifo.io.occupancy.orR, init=False)) {
-//        rHiH2dValid := True
-//        rHiState := HiState.RECV_LINE_FROM_HI_BUS
-//      }
-//    }
-//    is (HiState.RECV_LINE_FROM_HI_BUS) {
-//      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-//      //lineWordRam.foreach(item => item.io.rdEn := False)
-//      rHiH2dValid := False
-//      when (io.hiBus.d2hBus.valid) {
-//        rHiD2hReady := True
-//      }
-//      when (io.hiBus.d2hBus.fire) {
-//        rHiD2hBurstCnt := rHiD2hBurstCnt + 1
-//
-//        val rTempBurstAddr = (
-//          rSavedPrefetchLoH2dPayload.burstAddr(
-//            someBurstCnt=rHiD2hBurstCnt,
-//            incrBurstCnt=false,
-//          )
-//        )
-//
-//        def myArgBusAddr = rTempBurstAddr
-//        def myArgLineWord = io.hiBus.d2hBus.data
-//        def myArgByteEn = None
-//        def myArgSetEn = true
-//
-//        if (myCondHaveLineBitPlruRam) {
-//          switch (rSavedPrefetchRamIdx) {
-//            for (ramIdx <- 0 until numWays) {
-//              is (ramIdx) {
-//                doLineWordRamWrite(
-//                  ramIdx=ramIdx,
-//                  busAddr=myArgBusAddr,
-//                  lineWord=myArgLineWord,
-//                  //byteEn=myArgByteEn,
-//                  setEn=myArgSetEn,
-//                )
-//              }
-//            }
-//          }
-//        } else {
-//          doLineWordRamWrite(
-//            ramIdx=0,
-//            busAddr=myArgBusAddr,
-//            lineWord=myArgLineWord,
-//            //byteEn=myArgByteEn,
-//            setEn=myArgSetEn,
-//          )
-//        }
-//      }
-//      when (
-//        io.hiBus.d2hBus.fire
-//        && io.hiBus.d2hBus.burstLast
-//      ) {
-//        rHiState := HiState.IDLE
-//        
-//        wrLineAttrs.tag := (
-//          rSavedPrefetchLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
-//        )
-//
-//        def myArgBusAddr = rSavedPrefetchLoH2dPayload.addr
-//        def myArgWrLineAttrs = wrLineAttrs
-//        def myArgSetEn = true
-//
-//        if (myCondHaveLineBitPlruRam) {
-//          switch (rSavedPrefetchRamIdx) {
-//            for (ramIdx <- 0 until numWays) {
-//              is (ramIdx) {
-//                doLineAttrsRamWrite(
-//                  ramIdx=ramIdx,
-//                  busAddr=myArgBusAddr,
-//                  lineAttrs=myArgWrLineAttrs,
-//                  setEn=myArgSetEn,
-//                )
-//              }
-//            }
-//          }
-//        } else {
-//          doLineAttrsRamWrite(
-//            ramIdx=0,
-//            busAddr=myArgBusAddr,
-//            lineAttrs=myArgWrLineAttrs,
-//            setEn=myArgSetEn,
-//          )
-//        }
-//      }
-//    }
-//  }
-//  wrLineAttrs.valid := True
-//}
+  def myFifoThingLoBusCfg = cfg.myFifoThingLoBusCfg
+  //--------
+  require(
+    //hiBusCfg.maxBurstSizeMinus1 == (64 / 4) - 1,
+    //cfg.loBusCacheCfg.lineSizeBytes == 64,
+    cfg.loBusCacheCfg.lineSizeBytes == loBusCfg.burstCntMaxNumBytes,
+    s"(Perhaps only temporarily), "
+    + s"we need the number of bytes per cache line to be "
+    + s"${loBusCfg.burstCntMaxNumBytes}. "
+    + s"This permits an easier-to-implement design "
+    + s"for `io.hiBus` bursting."
+  )
+  //--------
+  val io = LcvBusCacheIo(cfg=cfg)
+  //--------
+  //val lineWordRamCfg = RamSdpPipeConfig(
+  //  wordType=UInt(wordWidth bits),
+  //  depth=depthWords,
+  //  optIncludeWrByteEn=false,
+  //  optWrHistLength=cfg.myRamOptWrHistLength,
+  //  initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
+  //  arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
+  //  arrRamStyleXilinx=cfg.loBusCacheCfg.lineWordMemRamStyleXilinx,
+  //)
+  //val lineWordRam = Array.fill(numWays)(
+  //  RamSdpPipe(cfg=lineWordRamCfg)
+  //)
 
-//private[libcheesevoyage] case class LcvBusInstrCacheMain(
-//  cfg: LcvBusCacheBusPairConfig,
-//) extends Component {
-//  //--------
-//  //require(
-//  //  cfg.havePrefetch
-//  //)
-//  //--------
-//  def numWays = cfg.loBusCacheCfg.numWays
-//
-//  def loBusCfg = cfg.loBusCfg
-//  def hiBusCfg = cfg.hiBusCfg
-//  def optFormal = cfg.optFormal
-//
-//  def loBusCacheCfg = cfg.loBusCacheCfg
-//  def myLineWordRamAddrRshift = (
-//    loBusCacheCfg.myLineWordRamSingleWordAddrRshift
-//  )
-//  def myLineAttrsRamAddrRshift = loBusCacheCfg.myLineAttrsRamAddrRshift
-//  def wordWidth = loBusCacheCfg.wordWidth
-//  def depthWords = loBusCacheCfg.depthWords
-//  def depthLines = loBusCacheCfg.depthLines
-//
-//  def myFifoThingLoBusCfg = cfg.myFifoThingLoBusCfg
-//  //--------
-//  require(
-//    //hiBusCfg.maxBurstSizeMinus1 == (64 / 4) - 1,
-//    //cfg.loBusCacheCfg.lineSizeBytes == 64,
-//    cfg.loBusCacheCfg.lineSizeBytes == loBusCfg.burstCntMaxNumBytes,
-//    s"(Perhaps only temporarily), "
-//    + s"we need the number of bytes per cache line to be "
-//    + s"${loBusCfg.burstCntMaxNumBytes}. "
-//    + s"This permits an easier-to-implement design "
-//    + s"for `io.hiBus` bursting."
-//  )
-//  //--------
-//  val io = LcvBusCacheIo(cfg=cfg)
-//  //--------
-//  val lineWordRamCfg = RamSdpPipeConfig(
-//    wordType=UInt(wordWidth bits),
-//    depth=depthWords,
-//    optIncludeWrByteEn=false,
-//    optWrHistLength=cfg.myRamOptWrHistLength,
-//    initBigInt=Some(Array.fill(depthWords)(BigInt(0))),
-//    arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
-//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineWordMemRamStyleXilinx,
-//  )
-//  val lineWordRam = Array.fill(numWays)(
-//    RamSdpPipe(cfg=lineWordRamCfg)
-//  )
-//  val lineAttrsRamCfg = RamSdpPipeConfig(
-//    wordType=LcvBusCacheLineAttrs(cfg=loBusCfg),
-//    depth=depthLines,
-//    optIncludeWrByteEn=false,
-//    optWrHistLength=cfg.myRamOptWrHistLength,
-//    initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
-//    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
-//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
-//  )
-//  val lineAttrsRam = Array.fill(numWays)(
-//    RamSdpPipe(cfg=lineAttrsRamCfg)
-//  )
-//
-//  val rdLineWord = Vec.fill(numWays)(
-//    UInt(wordWidth bits)
-//  )
-//  val rdLineAttrs = Vec.fill(numWays)(
-//    LcvBusCacheLineAttrs(cfg=loBusCfg)
-//  )
-//  for (idx <- 0 until numWays) {
-//    rdLineWord(idx) := lineWordRam(idx).io.rdData
-//    rdLineAttrs(idx) := lineAttrsRam(idx).io.rdData
-//    lineWordRam(idx).io.wrEn := False
-//    lineAttrsRam(idx).io.wrEn := False
-//  }
-//
-//  val wrLineAttrs = LcvBusCacheLineAttrs(cfg=loBusCfg)
-//  wrLineAttrs := RegNext(wrLineAttrs, init=wrLineAttrs.getZero)
-//  wrLineAttrs.allowOverride
-//
-//  val lineBitPlruRamCfg = RamSdpPipeConfig(
-//    wordType=UInt(
-//      //log2Up(numWays) bits
-//      numWays bits
-//    ),
-//    depth=depthLines,
-//    optIncludeWrByteEn=false,
-//    optWrHistLength=cfg.myRamOptWrHistLength,
-//    initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
-//    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
-//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
-//  )
-//
-//  val myCondHaveLineBitPlruRam = (
-//    numWays > 1
-//  )
-//  val lineBitPlruRam = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    RamSdpPipe(cfg=lineBitPlruRamCfg)
-//  )
-//
-//  val rdLineBitPlru = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    UInt(
-//      //log2Up(numWays) bits
-//      numWays bits
-//    )
-//  )
-//  val wrLineBitPlru = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    UInt(
-//      //log2Up(numWays) bits
-//      numWays bits
-//    )
-//  )
-//
-//  if (myCondHaveLineBitPlruRam) {
-//    rdLineBitPlru := lineBitPlruRam.io.rdData
-//    wrLineBitPlru := RegNext(wrLineBitPlru, init=wrLineBitPlru.getZero)
-//    //wrLineBitPlru.allowOverride
-//    lineBitPlruRam.io.wrEn := False
-//  }
-//
-//
-//  //--------
-//  object State extends SpinalEnum(
-//    defaultEncoding=(
-//      //binarySequential
-//      binaryOneHot
-//    )
-//  ) {
-//    val
-//      INIT,
-//      IDLE,
-//      LOAD_HIT_DO_STALL_PIPE_4,
-//      LOAD_HIT_DO_STALL_PIPE_3,
-//      LOAD_HIT_DO_STALL_PIPE_2,
-//      LOAD_HIT_DO_STALL_PIPE_1,
-//      LOAD_HIT_DO_STALL,
-//      LOAD_HIT_DO_STALL_POST,
-//
-//      RECV_LINE_FROM_HI_BUS_PIPE_1,
-//      RECV_LINE_FROM_HI_BUS,
-//      RECV_LINE_FROM_HI_BUS_POST_WRITE,
-//      RECV_LINE_FROM_HI_BUS_POST_7,
-//      RECV_LINE_FROM_HI_BUS_POST_6,
-//      RECV_LINE_FROM_HI_BUS_POST_5,
-//      RECV_LINE_FROM_HI_BUS_POST_4,
-//      RECV_LINE_FROM_HI_BUS_POST_3,
-//      RECV_LINE_FROM_HI_BUS_POST_2,
-//      RECV_LINE_FROM_HI_BUS_POST_1,
-//      RECV_LINE_FROM_HI_BUS_POST,
-//
-//      WAIT_D2H_FIFO_EMPTY
-//
-//      = newElement();
-//  }
-//
-//  val rState = (
-//    Reg(State())
-//    init(State.INIT)
-//  )
-//  //--------
-//  val myLoH2dPopBusCfg = (
-//    LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=myFifoThingLoBusCfg)
-//  )
-//  val myLoH2dReptThing = LcvBusDoStallH2dReptThing(
-//    busCfg=myLoH2dPopBusCfg
-//  )
-//
-//  val myFifoThingDoStall = Bool()
-//  myFifoThingDoStall := (
-//    RegNext(myFifoThingDoStall, init=myFifoThingDoStall.getZero)
-//  )
-//  myLoH2dReptThing.io.doStall := myFifoThingDoStall
-//
-//  val myLoH2dToWrByteEnStmAdapter = (
-//    !loBusCfg.haveByteEn
-//  ) generate (LcvBusH2dShiftedDataEtcStreamAdapter(
-//    cfg=LcvBusH2dShiftedDataEtcStreamAdapterConfig(
-//      loBusCfg=myFifoThingLoBusCfg,
-//    )
-//  ))
-//
-//  val myMainLoH2dPopStm = (
-//    Stream(LcvBusH2dPayload(
-//      cfg=myLoH2dPopBusCfg
-//    ))
-//  )
-//
-//  //val mySelLoH2dPopStm = (
-//  //  cloneOf(myLoH2dReptThing.io.pop)
-//  //)
-//
-//  val myPrefetchLoH2dPopStm = (
-//    cloneOf(myLoH2dReptThing.io.pop)
-//  )
-//
-//  val mySelLoH2dPopStm = (
-//    //cloneOf(myLoH2dReptThing.io.pop)
-//    StreamArbiterFactory.lowerFirst.onArgs(
-//      myPrefetchLoH2dPopStm,
-//      myLoH2dReptThing.io.pop,
-//    )
-//  )
-//
-//  val rSavedLoH2dPayload = (
-//    Reg(cloneOf(
-//      //rLoH2dPayload
-//      mySelLoH2dPopStm.payload
-//    ))
-//    init(
-//      //rLoH2dPayload.getZero
-//      mySelLoH2dPopStm.payload.getZero
-//    )
-//  )
-//  def rSavedLoBusAddr = rSavedLoH2dPayload.addr
-//  def rSavedLoBusAddrSet = rSavedLoBusAddr(loBusCacheCfg.setRange)
-//
-//  val rPrefetchCnt = {
-//    // prefetch a few extra lines upon a miss!
-//    val temp = Reg(Flow(SInt(log2Up(2) + 1 bits)))
-//    temp.valid.init(False)
-//    temp.payload.init(-1)
-//    temp
-//  }
-//  myPrefetchLoH2dPopStm.valid := rPrefetchCnt.fire//!rPrefetchCnt.msb
-//  myPrefetchLoH2dPopStm.payload.setAsReg()
-//  //:= (
-//  //  //RegNextWhen(
-//  //  //  myLoH2dReptThing.io.pop.payload
-//  //  //)
-//  //  RegNext(
-//  //    myPrefetchLoH2dPopStm.payload,
-//  //    init=myPrefetchLoH2dPopStm.payload.getZero
-//  //  )
-//  //)
-//  when (myPrefetchLoH2dPopStm.fire) {
-//    rPrefetchCnt.payload := rPrefetchCnt.payload - 1
-//    myPrefetchLoH2dPopStm.addr := {
-//      //myPrefetchLoH2dPopStm.busPayload.burstAddr(
-//      //  someBurstCnt=U(s"${loBusCfg.burstCntWidth}'d0"),
-//      //  incrBurstCnt=false,
-//      //) + 1
-//      val myPrefetchAddr = (
-//        myPrefetchLoH2dPopStm.busPayload.prefetchAddr()
-//      )
-//      Cat(
-//        (myPrefetchAddr._2 + 1),
-//        U(s"${cfg.loBusCfg.prefetchAddrIncrStartIdx}'d0"),
-//      ).asUInt
-//    }
-//  }
-//
-//  //switch (
-//  //  myPrefetchLoH2dPopStm.fire
-//  //  ## rPrefetchCnt.msb
-//  //) {
-//  //  is (M"11") {
-//  //  }
-//  //  is (M"10") {
-//  //    myPrefetchLoH2dPopStm.payload := mySelLoH2dPopStm
-//  //  }
-//  //}
-//
-//
-//  //mySelLoH2dPopStm << myLoH2dReptThing.io.pop
-//
-//  //mySelLoH2dPopStm << myLoH2dReptThing.io.pop
-//
-//  //val mySelLoH2dPop
-//  def mySelLoH2dPopPayload = mySelLoH2dPopStm.payload//.busPayload
-//
-//  io.loBus.h2dBus.translateInto(
-//    if (!loBusCfg.haveByteEn) (
-//      myLoH2dToWrByteEnStmAdapter.io.loH2dBus
-//    ) else (
-//      myMainLoH2dPopStm
-//    )
-//  )(
-//    dataAssignment=(outp, inp) => {
-//      //outp := inp
-//      outp.mainNonBurstInfo := inp.mainNonBurstInfo
-//      outp.txnCnt.allowOverride
-//      outp.txnCnt := (
-//        (
-//          RegNextWhen(
-//            (outp.txnCnt.asSInt + 1),
-//            cond=io.loBus.h2dBus.fire,
-//          )
-//          init(-2)
-//        ).asUInt
-//      )
-//    }
-//  )
-//
-//  if (!loBusCfg.haveByteEn) {
-//    myLoH2dToWrByteEnStmAdapter.io.hiH2dBus.translateInto(
-//      myMainLoH2dPopStm
-//    )(
-//      dataAssignment=(outp, inp) => {
-//        outp := inp
-//        outp.txnCnt.allowOverride
-//        outp.txnCnt := myLoH2dToWrByteEnStmAdapter.io.loH2dBus.txnCnt
-//      }
-//    )
-//  }
-//
-//  myMainLoH2dPopStm.translateInto(
-//    myLoH2dReptThing.io.push
-//  )(
-//    dataAssignment=(outp, inp) => {
-//      outp.busPayload := inp
-//    }
-//  )
-//  mySelLoH2dPopStm.ready := False
-//
-//  val rLoH2dPayload = (
-//    RegNextWhen(
-//      mySelLoH2dPopStm.payload,
-//      cond=mySelLoH2dPopStm.fire,
-//      init=mySelLoH2dPopStm.payload.getZero,
-//    )
-//  )
-//  def rBusAddr = rLoH2dPayload.addr
-//  val rDel2LoH2dPayload = (
-//    RegNext/*When*/(
-//      next=rLoH2dPayload,
-//      //cond=myLoH2dPopStm.fire,
-//      init=rLoH2dPayload.getZero,
-//    )
-//  )
-//  def rDel2BusAddr = rDel2LoH2dPayload.addr
-//
-//  val myLoD2hShiftedDataStmAdapter = (
-//    !cfg.loBusCfg.haveByteEn
-//  ) generate (
-//    LcvBusD2hShiftedDataEtcStreamAdapter(
-//      cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(
-//        busCfg=cfg.loBusCfg
-//      )
-//    )
-//  )
-//  val myLoD2hPushStm = Stream(
-//    LcvBusDoStallFifoThingPayload(
-//      LcvBusD2hPayload(
-//        cfg=myFifoThingLoBusCfg,
-//        includeByteSizeEtc=(!myFifoThingLoBusCfg.haveByteEn),
-//      ),
-//    )
-//  )
-//
-//  myLoD2hPushStm.valid := False
-//
-//  val myLoD2hFifo = StreamFifo(
-//    dataType=LcvBusD2hPayload(cfg=cfg.loBusCfg),
-//    depth=(myFifoThingLoBusCfg.maxBurstSizeMinus1 + 1),
-//    latency=cfg.busD2hFifoLatency,
-//    forFMax=true,
-//  )
-//
-//  myLoD2hFifo.io.pop.translateInto(io.loBus.d2hBus)(
-//    dataAssignment=(outp, inp) => {
-//      outp.mainNonBurstInfo := inp.mainNonBurstInfo
-//    }
-//  )
-//
-//  // NOTE: this was previously `myLoD2hAlmostDonePushStm.translateInto`
-//  myLoD2hPushStm.translateInto(
-//    if (cfg.myFifoThingLoBusCfg.haveByteEn) (
-//      myLoD2hFifo.io.push
-//    ) else (
-//      myLoD2hShiftedDataStmAdapter.io.loD2hBus
-//    )
-//  )(
-//    dataAssignment=(outp, inp) => {
-//      outp.mainNonBurstInfo := inp.busPayload.mainNonBurstInfo
-//    }
-//  )
-//
-//  if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//    //println(
-//    //  s"NOTE: "
-//    //  + s"myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus"
-//    //)
-//    myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus
-//  }
-//
-//  def doLineWordRamReadSync(
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    lineWordRam.foreach(item => {
-//      if (setEn == 1) {
-//        item.io.rdEn := True
-//      } else if (setEn == 2) {
-//        item.io.rdEn := (
-//          RegNext(
-//            next=(
-//              //mySelLoH2dPopStm.valid
-//              mySelLoH2dPopStm.fire
-//            ),
-//            init=False,
-//          )
-//          //&& !myFifoThingDoStall
-//        )
-//      } 
-//      item.io.rdAddr := {
-//        //println(
-//        //  s"test info: busAddr("
-//        //  + s"${busAddr.high} downto ${myLineWordRamAddrRshift}"
-//        //  + s")"
-//        //)
-//        (
-//          (
-//            busAddr(busAddr.high downto myLineWordRamAddrRshift)
-//          )
-//          .resize(item.io.rdAddr.getWidth)
-//        )
-//      }
-//    })
-//  }
-//  def doLineAttrsRamReadSync(
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    lineAttrsRam.foreach(item => {
-//      if (setEn == 1) {
-//        item.io.rdEn := True
-//      } else if (setEn == 2) {
-//        item.io.rdEn := (
-//          RegNext(
-//            next=(
-//              //mySelLoH2dPopStm.valid
-//              mySelLoH2dPopStm.fire
-//            ),
-//            init=False,
-//          )
-//          //&& !myFifoThingDoStall
-//        )
-//      } 
-//      item.io.rdAddr := {
-//        //println(
-//        //  s"test info: busAddr("
-//        //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
-//        //  + s")"
-//        //)
-//        (
-//          (
-//            busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
-//          )
-//          .resize(item.io.rdAddr.getWidth)
-//        )
-//      }
-//    })
-//  }
-//  def doLineBitPlruRamReadSync(
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    if (setEn == 1) {
-//      lineBitPlruRam.io.rdEn := True
-//    } else if (setEn == 2) {
-//      lineBitPlruRam.io.rdEn := (
-//        RegNext(
-//          next=(
-//            //mySelLoH2dPopStm.valid
-//            mySelLoH2dPopStm.fire
-//          ),
-//          init=False,
-//        )
-//        //&& !myFifoThingDoStall
-//      )
-//    } 
-//    lineBitPlruRam.io.rdAddr := {
-//      //println(
-//      //  s"test info: busAddr("
-//      //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
-//      //  + s")"
-//      //)
-//      (
-//        (
-//          busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
-//        )
-//        .resize(lineBitPlruRam.io.rdAddr.getWidth)
-//      )
-//    }
-//  }
-//  def doLineWordRamWrite(
-//    ramIdx: Int,
-//    busAddr: UInt,
-//    lineWord: UInt,
-//    //byteEn: Option[UInt],
-//    setEn: Boolean=true,
-//  ): Unit = {
-//    if (setEn) {
-//      lineWordRam(ramIdx).io.wrEn := True
-//    }
-//    lineWordRam(ramIdx).io.wrAddr := (
-//      (busAddr(busAddr.high downto myLineWordRamAddrRshift))
-//      .resize(lineWordRam(ramIdx).io.wrAddr.getWidth)
-//    )
-//    lineWordRam(ramIdx).io.wrData := lineWord
-//    //byteEn match {
-//    //  case Some(byteEn) => {
-//    //    lineWordRam(ramIdx).io.wrByteEn := byteEn.asBits
-//    //  }
-//    //  case None => {
-//    //    lineWordRam(ramIdx).io.wrByteEn := (
-//    //      B(
-//    //        lineWordRam(ramIdx).io.wrByteEn.getWidth bits,
-//    //        default -> True
-//    //      )
-//    //    )
-//    //  }
-//    //}
-//  }
-//  def doLineAttrsRamWrite(
-//    ramIdx: Int,
-//    busAddr: UInt,
-//    lineAttrs: LcvBusCacheLineAttrs,
-//    setEn: Boolean=true,
-//  ): Unit = {
-//    if (setEn) {
-//      lineAttrsRam(ramIdx).io.wrEn := True
-//    }
-//    lineAttrsRam(ramIdx).io.wrAddr := (
-//      (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
-//      .resize(lineAttrsRam(ramIdx).io.wrAddr.getWidth)
-//    )
-//    lineAttrsRam(ramIdx).io.wrData := lineAttrs
-//  }
-//  def doLineBitPlruRamWrite(
-//    busAddr: UInt,
-//    //lineAttrs: LcvBusCacheLineBitPlru,
-//    lineBitPlru: UInt,
-//    setEn: Boolean=true,
-//  ): Unit = {
-//    if (setEn) {
-//      lineBitPlruRam.io.wrEn := True
-//    }
-//    lineBitPlruRam.io.wrAddr := (
-//      (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
-//      .resize(lineBitPlruRam.io.wrAddr.getWidth)
-//    )
-//    lineBitPlruRam.io.wrData := lineBitPlru
-//  }
-//
-//  doLineWordRamReadSync(
-//    busAddr=mySelLoH2dPopPayload.addr,
-//    setEn=2,
-//  )
-//  for (ramIdx <- 0 until numWays) {
-//    doLineWordRamWrite(
-//      ramIdx=ramIdx,
-//      busAddr=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.addr,
-//            init=mySelLoH2dPopPayload.addr.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.addr.getZero,
-//        )
-//      ),
-//      lineWord=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.data,
-//            init=mySelLoH2dPopPayload.data.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.data.getZero,
-//        )
-//      ),
-//      //byteEn=Some(
-//      //  RegNext(
-//      //    RegNext(
-//      //      mySelLoH2dPopPayload.byteEn,
-//      //      init=mySelLoH2dPopPayload.byteEn.getZero
-//      //    ),
-//      //    init=mySelLoH2dPopPayload.byteEn.getZero,
-//      //  ),
-//      //),
-//      setEn=false,
-//    )
-//  }
-//
-//  doLineAttrsRamReadSync(
-//    busAddr=mySelLoH2dPopPayload.addr,
-//    setEn=2,
-//  )
-//  for (ramIdx <- 0 until numWays) {
-//    doLineAttrsRamWrite(
-//      ramIdx=ramIdx,
-//      busAddr=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.addr,
-//            init=mySelLoH2dPopPayload.addr.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.addr.getZero,
-//        )
-//      ),
-//      lineAttrs=(
-//        wrLineAttrs
-//      ),
-//      setEn=false,
-//    )
-//  }
-//
-//  if (myCondHaveLineBitPlruRam) {
-//    doLineBitPlruRamReadSync(
-//      busAddr=mySelLoH2dPopPayload.addr,
-//      setEn=2,
-//    )
-//    doLineBitPlruRamWrite(
-//      busAddr=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.addr,
-//            init=mySelLoH2dPopPayload.addr.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.addr.getZero,
-//        )
-//      ),
-//      lineBitPlru=(
-//        wrLineBitPlru
-//      ),
-//      setEn=false,
-//    )
-//  }
-//  //--------
-//  myLoD2hPushStm.payload := (
-//    RegNext(myLoD2hPushStm.payload, init=myLoD2hPushStm.payload.getZero)
-//  )
-//
-//  val myTempHaveHitCmpEqLeft = Vec[UInt](
-//    rdLineAttrs.map(item => item.tag)
-//  )
-//  val myTempHaveHitCmpEqRight = Vec.fill(numWays)(
-//    RegNext(
-//      RegNext(mySelLoH2dPopPayload.addr(loBusCacheCfg.tagRange))
-//      init(0x0)
-//    )
-//    init(0x0),
-//  )
-//  val tempHaveHitCmpEq = Vec.fill(numWays)(Bool())
-//  val haveHit = Vec.fill(numWays)(
-//    Bool()
-//  )
-//  for (ramIdx <- 0 until numWays) {
-//    tempHaveHitCmpEq(ramIdx) := (
-//      myTempHaveHitCmpEqLeft(ramIdx)
-//      === myTempHaveHitCmpEqRight(ramIdx)
-//    )
-//    haveHit(ramIdx) := (
-//      rdLineAttrs(ramIdx).fire
-//      && tempHaveHitCmpEq(ramIdx)
-//    )
-//  }
-//  //val haveHit = (
-//  //  rdLineAttrs.fire
-//  //  && tempHaveHitCmpEq
-//  //)
-//
-//  val rSavedRdLineAttrsTag = (
-//    //Vec.fill(numWays)(
-//      Reg(
-//        cloneOf(rdLineAttrs.head.tag),
-//        init=rdLineAttrs.head.tag.getZero,
-//      )
-//    //)
-//  )
-//
-//  val rHiH2dBurstCnt = (
-//    Vec.fill(2)(
-//      Reg(UInt(loBusCfg.burstCntWidth bits))
-//      init(0x0)
-//    )
-//  )
-//  val rHiD2hBurstCnt = (
-//    Reg(UInt(loBusCfg.burstCntWidth bits))
-//    init(0x0)
-//  )
-//  //--------
-//  def myLoD2hPayload = myLoD2hPushStm.busPayload
-//  //--------
-//
-//  def doPopLoH2dFifo(): Unit = {
-//    mySelLoH2dPopStm.ready := True
-//  }
-//
-//  //val myDoStallLoH2dThrowThing = (
-//  //  LcvBusDoStallH2dThrowThing(busCfg=cfg.myFifoThingLoBusCfg)
-//  //)
-//  //myDoStallLoH2dThrowThing.io.push.valid := (
-//  //  myLoH2dDoStallFifoThing.io.pop.valid
-//  //  //&& rState === State.IDLE
-//  //  && rState.asBits(1)
-//  //)
-//  //myDoStallLoH2dThrowThing.io.push.payload := (
-//  //  myLoH2dDoStallFifoThing.io.pop.busPayload.txnCnt
-//  //)
-//
-//  //val myFullTempIgnoreDupCntCond = (
-//  //  myDoStallLoH2dThrowThing.io.myThrowCondMain
-//  //  //&& History[Bool](
-//  //  //  that=True,
-//  //  //  when=(
-//  //  //    myLoH2dPopStm.fire
-//  //  //    //myD2hPushStm.fire
-//  //  //    //myLoH2dDoStallFifoThing.io.pop.fire
-//  //  //    //&& !myLoH2dPopThrowArea.myLoH2dThrowCond
-//  //  //  ),
-//  //  //  length=(
-//  //  //    //2
-//  //  //    //4
-//  //  //    //3
-//  //  //    5
-//  //  //  ),
-//  //  //  init=False,
-//  //  //).last
-//  //)
-//
-//  //def doIgnoreInvalidFifoThingPopCnt(
-//  //): Unit = {
-//  //  when (myFullTempIgnoreDupCntCond) {
-//  //    myLoH2dPopThrowArea.myLoH2dThrowCond := True
-//  //  }
-//  //}
-//
-//  val rMyTempDoSaveCond = (
-//    Vec.fill(4)(
-//      RegNext(
-//        RegNext(
-//          (
-//            mySelLoH2dPopStm.fire
-//            //&& !myFullTempIgnoreDupCntCond
-//          ),
-//          init=False
-//        ),
-//        init=False
-//      )
-//    )
-//  )
-//  //val rHadAnyRamWritePastTwoCycles = Vec.fill(2)(
-//  //  RegNext(
-//  //    (
-//  //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-//  //      || RegNext(
-//  //        Vec(lineWordRam.map(item => item.io.wrEn)).orR,
-//  //        init=False
-//  //      )
-//  //      || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-//  //      || RegNext(
-//  //        Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
-//  //        init=False
-//  //      )
-//  //    ),
-//  //    init=False
-//  //  )
-//  //)
-//  val myTempHaveCurrRamWrite = (
-//    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-//    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-//  )
-//  val myHistHadAnyRamWrite = Array.fill(2)(
-//    History[Bool](
-//      that=(
-//        //RegNext(
-//          myTempHaveCurrRamWrite//,
-//        //  init=myTempHaveCurrRamWrite.getZero
-//        //)
-//      ),
-//      length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-//      init=myTempHaveCurrRamWrite.getZero
-//    )
-//  )
-//  val myHadAnyRecentRamWrite = Vec[Bool](
-//    myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
-//    //RegNext(
-//    //  (
-//    //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-//    //    || RegNext(
-//    //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR,
-//    //      init=False
-//    //    )
-//    //    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-//    //    || RegNext(
-//    //      Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR,
-//    //      init=False
-//    //    )
-//    //  ),
-//    //  init=False
-//    //)
-//  )
-//  //val rHadLineAttrsRamWritePastTwoCycles = Vec.fill(2)(
-//  //  RegNext(
-//  //    lineAttrsRam.io.wrEn
-//  //    || RegNext(lineAttrsRam.io.wrEn, init=False),
-//  //    init=False
-//  //  )
-//  //)
-//  //val myTempUpdateSavedLoH2dPayloadCond = Bool()
-//  //myTempUpdateSavedLoH2dPayloadCond := True
-//
-//  //--------
-//  val rHadLoH2dFinish = Reg(Bool(), init=False)
-//  val rHadLoD2hFinish = Reg(Bool(), init=False)
-//  val rHadHiH2dFinish = Reg(Bool(), init=False)
-//  val rHadHiD2hFinish = Reg(Bool(), init=False)
-//
-//  val hiH2dFifo = (
-//    StreamFifo(
-//      dataType=(
-//        //UInt(loBusCacheCfg.wordWidth bits)
-//        LcvBusH2dPayload(cfg.hiBusCfg)
-//      ),
-//      depth=loBusCacheCfg.lineSizeWords,
-//      latency=2,
-//      forFMax=true,
-//    )
-//  )
-//
-//  val rHiH2dValid = Reg(Bool(), init=False)
-//  val rHiH2dPayload = (
-//    Reg(cloneOf(hiH2dFifo.io.push.payload))
-//    init(hiH2dFifo.io.push.payload.getZero)
-//  )
-//  val rHiD2hReady = Reg(Bool(), init=False)
-//  hiH2dFifo.io.push.valid := rHiH2dValid
-//  hiH2dFifo.io.push.payload := rHiH2dPayload
-//  io.hiBus.d2hBus.ready := rHiD2hReady
-//
-//  rHiH2dPayload.byteEn := (
-//    U(hiBusCfg.byteEnWidth bits, default -> True)
-//  )
-//  //rHiH2dPayload.byteSize := (
-//  //  U(rHiH2dPayload.byteSize.getWidth bits, default -> True)
-//  //)
-//  //rHiH2dPayload.haveFullWord := True
-//  io.hiBus.h2dBus <-/< hiH2dFifo.io.pop
-//
-//      
-//// >>> for ramIdx in range(numWays):
-//// ...     print(ramIdx, (("0" * (numWays - ramIdx - 1))) + "1" + ("-" * ramIdx))
-//// ...     
-//// 0 0001
-//// 1 001-
-//// 2 01--
-//// 3 1---
-//  def calcHitRamIdxMask(ramIdx: Int): String = (
-//    (("0" * (numWays - ramIdx - 1)))
-//    + "1"
-//    + ("-" * ramIdx)
-//  )
-//
-//// >>> for ramIdx in range(numWays):
-//// ...     print(ramIdx, (("1" * (numWays - ramIdx - 1))) + "0" + ("-" * ramIdx))
-//// ...     
-//// 0 1110
-//// 1 110-
-//// 2 10--
-//// 3 0---
-//  def calcMissRamIdxMask(ramIdx: Int): String = (
-//    (("1" * (numWays - ramIdx - 1)))
-//    + "0"
-//    + ("-" * ramIdx)
-//  )
-//
-//  val rSavedRamIdx = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    Reg(UInt(log2Up(numWays) bits))
-//    init(0x0)
-//  )
-//  //val myHistSavedRamIdx = (
-//  //  History(
-//  //    that=rSavedRamIdx,
-//  //  )
-//  //)
-//
-//  val tempToSwitchNonHaveHit = (
-//    //((rState === State.IDLE) && rMyTempDoSaveCond(3))
-//    //((rState === State.IDLE)
-//    rState.asBits(1)
-//    ## rMyTempDoSaveCond(3)
-//    //## rDel2LoH2dPayload.isWrite
-//  )
-//  val tempToSwitch = (
-//    tempToSwitchNonHaveHit
-//    ## haveHit
-//  )
-//  //println(
-//  //  s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
-//  //)
-//  if (cfg.havePrefetch) {
-//    io.haveHit.valid := tempToSwitchNonHaveHit.andR
-//    io.haveHit.haveHitAtAll := haveHit.orR
-//    io.haveHit.addr := rDel2LoH2dPayload.addr
-//  }
-//
-//  switch (
-//    tempToSwitch
-//  ) {
-//    is (
-//      //M"10-0"
-//      MaskedLiteral(
-//        //"10-" + ("0" * numWays)
-//        //"1" + ("0" * numWays)
-//        "11" + ("0" * numWays)
-//      )
-//      //M"10"
-//    ) {
-//      //// cache miss, and know for sure that the line isn't dirty
-//      // cache miss
-//      rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-//
-//
-//      if (myCondHaveLineBitPlruRam) {
-//        //rSavedRamIdx := rdLineBitPlru
-//        //wrLineBitPlru := rdLineBitPlru + 1
-//        wrLineBitPlru := rdLineBitPlru
-//        lineBitPlruRam.io.wrEn := True
-//        switch (rdLineBitPlru) {
-//          for (ramIdx <- 0 until numWays) {
-//            val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
-//            is (MaskedLiteral(myRamIdxMask)) {
-//              wrLineBitPlru(ramIdx) := True
-//              rSavedRamIdx := ramIdx
-//            }
-//            default {
-//            }
-//          }
-//        }
-//      }
-//
-//      //myFifoThingDoStall := False
-//      myLoD2hPushStm.valid := False
-//
-//      myFifoThingDoStall := True
-//      //doPopLoH2dFifo()
-//      mySelLoH2dPopStm.ready := (
-//        //True
-//        False
-//      )
-//      //myTempUpdateSavedLoH2dPayloadCond := False
-//    }
-//
-//    for (ramIdx <- 0 until numWays) {
-//      val myRamIdxMask = calcHitRamIdxMask(ramIdx=ramIdx)
-//      //println(
-//      //  s"ramIdx:${ramIdx} myRamIdxMask:${myRamIdxMask}"
-//      //)
-//      is (
-//        MaskedLiteral(
-//          //"1-01"
-//          "11" + myRamIdxMask
-//        )
-//      ) {
-//        doPopLoH2dFifo()
-//        myFifoThingDoStall := False
-//        //myLoD2hPushStm.valid := False
-//        if (myCondHaveLineBitPlruRam) {
-//          rSavedRamIdx := ramIdx
-//          val tempLineBitPlru = cloneOf(rdLineBitPlru)
-//          tempLineBitPlru.allowOverride
-//          tempLineBitPlru := rdLineBitPlru
-//          tempLineBitPlru(ramIdx) := True
-//          when (tempLineBitPlru.andR) {
-//            wrLineBitPlru := 1 << ramIdx
-//          } otherwise {
-//            wrLineBitPlru := tempLineBitPlru
-//          }
-//        }
-//        // load, cache hit
-//        //mySelLoH2dPopStm.ready := True
-//        myLoD2hPushStm.valid := True
-//        myLoD2hPushStm.busPayload.data := rdLineWord(ramIdx)
-//        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//          myLoD2hPushStm.busPayload.byteSize := (
-//            rDel2LoH2dPayload.byteSize
-//          )
-//          myLoD2hPushStm.busPayload.addrLo := (
-//            rDel2LoH2dPayload.addr(
-//              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//            )
-//          )
-//        }
-//
-//        when (
-//          //rHadAnyRamWritePastTwoCycles.head
-//          myHadAnyRecentRamWrite.head
-//        ) {
-//          myLoD2hPushStm.valid := False
-//        }
-//        when (
-//          //rHadAnyRamWritePastTwoCycles.last
-//          myHadAnyRecentRamWrite.last
-//          || !myLoD2hPushStm.ready
-//        ) {
-//          mySelLoH2dPopStm.ready := False
-//          myFifoThingDoStall := True
-//          rState := (
-//            //State.LOAD_HIT_DO_STALL_PIPE_3
-//            State.LOAD_HIT_DO_STALL_PIPE_4
-//          )
-//          //myTempUpdateSavedLoH2dPayloadCond := False
-//        } otherwise {
-//          //doPopLoH2dFifo()
-//        }
-//      }
-//    }
-//    is (MaskedLiteral(
-//      "1" + "0" + ("-" * numWays)
-//    )) {
-//      doPopLoH2dFifo()
-//      myFifoThingDoStall := False
-//      myLoD2hPushStm.valid := False
-//    }
-//    default {
-//      //doPopLoH2dFifo()
-//      //myFifoThingDoStall := False
-//      //myLoD2hPushStm.valid := False
-//    }
-//  }
-//
-//  switch (rState) {
-//    is (State.INIT) {
-//      rState := State.IDLE
-//    }
-//    is (State.IDLE) {
-//      //myFifoThingDoStall := False
-//      //myLoD2hPushStm.valid := False
-//      //doIgnoreInvalidFifoThingPopCnt()
-//      //doPopLoH2dFifo()
-//
-//      when (
-//        rMyTempDoSaveCond(0)
-//        //&& myTempUpdateSavedLoH2dPayloadCond
-//        //&& RegNext(
-//        //  RegNext(mySelLoH2dPopStm.fire, init=False),
-//        //  init=False
-//        //)
-//      ) {
-//        rSavedLoH2dPayload := (
-//          //rLoH2dPayload
-//          rDel2LoH2dPayload
-//        )
-//      }
-//      when (
-//        rMyTempDoSaveCond(1)
-//        //&& myTempUpdateSavedLoH2dPayloadCond
-//        //&& RegNext(
-//        //  RegNext(mySelLoH2dPopStm.fire, init=False),
-//        //  init=False
-//        //)
-//      ) {
-//        rSavedLoH2dPayload.byteSize := (
-//          //rLoH2dPayload.byteSize
-//          rDel2LoH2dPayload.byteSize
-//        )
-//      }
-//      when (
-//        rMyTempDoSaveCond(2)
-//        //&& myTempUpdateSavedLoH2dPayloadCond
-//        //RegNext(
-//        //  RegNext(mySelLoH2dPopStm.fire, init=False),
-//        //  init=False
-//        //)
-//      ) {
-//        myLoD2hPushStm.busPayload.src := (
-//          rDel2LoH2dPayload.src
-//        )
-//        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//          myLoD2hPushStm.busPayload.byteSize := (
-//            rDel2LoH2dPayload.byteSize
-//          )
-//          myLoD2hPushStm.busPayload.addrLo := (
-//            rDel2LoH2dPayload.addr(
-//              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//            )
-//          )
-//        }
-//        myLoD2hPushStm.busPayload.txnCnt := (
-//          rDel2LoH2dPayload.txnCnt
-//        )
-//        //rSavedRdLineAttrsTag := rdLineAttrs.tag
-//      }
-//      //rSavedRdLineAttrsTag := rdLineAttrs.tag
-//
-//    }
-//    is (State.LOAD_HIT_DO_STALL_PIPE_4) {
-//      rState := State.LOAD_HIT_DO_STALL_PIPE_3
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      myLoD2hPushStm.valid := False
-//      mySelLoH2dPopStm.ready := False
-//
-//      //myLoH2dReptThing.io.finishTxn.valid := True
-//      //myLoH2dReptThing.io.finishTxn.payload := (
-//      //  RegNext(
-//      //    rDel2LoH2dPayload.txnCnt,
-//      //    init=rDel2LoH2dPayload.txnCnt.getZero
-//      //  )
-//      //)
-//    }
-//    is (State.LOAD_HIT_DO_STALL_PIPE_3) {
-//      rState := State.LOAD_HIT_DO_STALL_PIPE_2
-//      myLoD2hPushStm.valid := False
-//      mySelLoH2dPopStm.ready := False
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//
-//      doLineWordRamReadSync(
-//        busAddr=rSavedLoH2dPayload.addr,
-//        setEn=0,
-//      )
-//    }
-//    is (State.LOAD_HIT_DO_STALL_PIPE_2) {
-//      rState := State.LOAD_HIT_DO_STALL_PIPE_1
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := True)
-//      myLoD2hPushStm.valid := False
-//      mySelLoH2dPopStm.ready := False
-//    }
-//    is (State.LOAD_HIT_DO_STALL_PIPE_1) {
-//      rState := State.LOAD_HIT_DO_STALL
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//    }
-//    is (State.LOAD_HIT_DO_STALL) {
-//      val myRdLineWord = (
-//        RegNext(
-//          if (myCondHaveLineBitPlruRam) (
-//            rdLineWord(rSavedRamIdx)
-//          ) else (
-//            rdLineWord.head
-//          )
-//        )
-//      )
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//
-//      mySelLoH2dPopStm.ready := False
-//      myLoD2hPushStm.busPayload.data := myRdLineWord
-//      if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//        myLoD2hPushStm.busPayload.byteSize := (
-//          rSavedLoH2dPayload.byteSize
-//        )
-//        myLoD2hPushStm.busPayload.addrLo := (
-//          rSavedLoH2dPayload.addr(
-//            cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//          )
-//        )
-//      }
-//      myLoD2hPushStm.valid := True
-//      //myLoH2dReptThing.io.finishTxn.valid := False
-//      when (myLoD2hPushStm.fire) {
-//        //myFifoThingDoStall := False
-//        rState := State.LOAD_HIT_DO_STALL_POST
-//      }
-//    }
-//    is (State.LOAD_HIT_DO_STALL_POST) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//
-//      rState := State.WAIT_D2H_FIFO_EMPTY
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_PIPE_1) {
-//      rHadHiH2dFinish := False
-//      rHadHiD2hFinish := False
-//
-//      rHiH2dPayload.burstFirst := True
-//      rHiH2dPayload.burstLast := True//False
-//      rHiH2dPayload.burstCnt := hiBusCfg.maxBurstSizeMinus1
-//
-//      rHiH2dPayload.isWrite := False
-//      rHiH2dPayload.src := rSavedLoH2dPayload.src
-//      rHiH2dPayload.addr := rSavedLoH2dPayload.burstAddr(
-//        someBurstCnt=rHiH2dBurstCnt(1).getZero,
-//        incrBurstCnt=false
-//      )
-//      rHiD2hBurstCnt := 0x0
-//      when (RegNext(!hiH2dFifo.io.occupancy.orR, init=False)) {
-//        rHiH2dValid := True
-//        rState := State.RECV_LINE_FROM_HI_BUS
-//      }
-//
-//      wrLineAttrs.tag := (
-//        rSavedLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
-//      )
-//      //wrLineAttrs.dirty := (
-//      //  // if it's a store, this line should be marked dirty!
-//      //  rSavedLoH2dPayload.isWrite
-//      //)
-//
-//      def myArgBusAddr = rSavedLoH2dPayload.addr
-//      def myArgWrLineAttrs = wrLineAttrs
-//      def myArgSetEn = true
-//
-//      if (myCondHaveLineBitPlruRam) {
-//        switch (rSavedRamIdx) {
-//          for (ramIdx <- 0 until numWays) {
-//            is (ramIdx) {
-//              doLineAttrsRamWrite(
-//                ramIdx=ramIdx,
-//                busAddr=myArgBusAddr,
-//                lineAttrs=myArgWrLineAttrs,
-//                setEn=myArgSetEn,
-//              )
-//            }
-//          }
-//        }
-//      } else {
-//        doLineAttrsRamWrite(
-//          ramIdx=0,
-//          busAddr=myArgBusAddr,
-//          lineAttrs=myArgWrLineAttrs,
-//          setEn=myArgSetEn,
-//        )
-//      }
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      rHiH2dValid := False
-//      when (io.hiBus.d2hBus.valid) {
-//        rHiD2hReady := True
-//      }
-//      when (io.hiBus.d2hBus.fire) {
-//        rHiD2hBurstCnt := rHiD2hBurstCnt + 1
-//
-//        val tempBurstCntCmpEq = (
-//          rHiD2hBurstCnt
-//          === rSavedLoH2dPayload.addr(
-//            rHiD2hBurstCnt.high + log2Up(hiBusCfg.dataWidth / 8)
-//            downto log2Up(hiBusCfg.dataWidth / 8)
-//          )
-//        )
-//        when (tempBurstCntCmpEq) {
-//          myLoD2hPayload.data := (io.hiBus.d2hBus.data)
-//          if (!loBusCfg.haveByteEn) {
-//            myLoD2hPayload.byteSize := (
-//              rSavedLoH2dPayload.byteSize
-//            )
-//            myLoD2hPayload.addrLo := rSavedLoH2dPayload.addr(
-//              loBusCfg.addrLoWidth - 1 downto 0
-//            )
-//          }
-//        }
-//        val rTempBurstAddr = (
-//          rSavedLoH2dPayload.burstAddr(
-//            someBurstCnt=rHiD2hBurstCnt,
-//            incrBurstCnt=false,
-//          )
-//        )
-//
-//        def myArgBusAddr = rTempBurstAddr
-//        def myArgLineWord = io.hiBus.d2hBus.data
-//        def myArgByteEn = None
-//        def myArgSetEn = true
-//
-//        if (myCondHaveLineBitPlruRam) {
-//          switch (rSavedRamIdx) {
-//            for (ramIdx <- 0 until numWays) {
-//              is (ramIdx) {
-//                doLineWordRamWrite(
-//                  ramIdx=ramIdx,
-//                  busAddr=myArgBusAddr,
-//                  lineWord=myArgLineWord,
-//                  //byteEn=myArgByteEn,
-//                  setEn=myArgSetEn,
-//                )
-//              }
-//            }
-//          }
-//        } else {
-//          doLineWordRamWrite(
-//            ramIdx=0,
-//            busAddr=myArgBusAddr,
-//            lineWord=myArgLineWord,
-//            //byteEn=myArgByteEn,
-//            setEn=myArgSetEn,
-//          )
-//        }
-//        when ((io.hiBus.d2hBus.burstLast)) {
-//          //when (!rSavedLoH2dPayload.isWrite) {
-//            rState := State.RECV_LINE_FROM_HI_BUS_POST_7
-//          //} otherwise {
-//          //  rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
-//          //}
-//        }
-//      }
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_7) {
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      rState := State.RECV_LINE_FROM_HI_BUS_POST_6
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_6) {
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      rState := State.RECV_LINE_FROM_HI_BUS_POST_5
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_5) {
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      rState := State.RECV_LINE_FROM_HI_BUS_POST_4
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_4) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      doLineWordRamReadSync(
-//        busAddr=rSavedLoH2dPayload.addr,
-//        setEn=0,
-//      )
-//      rState := State.RECV_LINE_FROM_HI_BUS_POST_3
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_3) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := True)
-//      rState := State.RECV_LINE_FROM_HI_BUS_POST_2
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_2) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      rState := State.RECV_LINE_FROM_HI_BUS_POST_1
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_1) {
-//      val myRdLineWord = (
-//        if (myCondHaveLineBitPlruRam) (
-//          rdLineWord(rSavedRamIdx)
-//        ) else (
-//          rdLineWord.head
-//        )
-//      )
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      //rState := State.RECV_LINE_FROM_HI_BUS_POST
-//
-//      myLoD2hPushStm.valid := True
-//
-//      myLoD2hPushStm.busPayload.src := (
-//        //RegNext
-//        (
-//          rSavedLoH2dPayload.src//,
-//          //init=rSavedLoH2dPayload.src.getZero
-//        )
-//      )
-//
-//      when (RegNext(
-//        rose(rState === State.RECV_LINE_FROM_HI_BUS_POST_2)
-//      )) {
-//        myLoD2hPushStm.busPayload.data := RegNext(
-//          //lineWordRam.io.rdData
-//          myRdLineWord
-//          //myLoD2hPushStm.busPayload.data//,
-//          //init=
-//        )
-//      }
-//
-//      when (myLoD2hPushStm.ready) {
-//        rState := State.RECV_LINE_FROM_HI_BUS_POST
-//      }
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//      rState := (
-//        //State.IDLE
-//        State.WAIT_D2H_FIFO_EMPTY
-//      )
-//    }
-//    is (State.WAIT_D2H_FIFO_EMPTY) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.io.rdEn := False)
-//
-//      when (  
-//        !myLoD2hFifo.io.pop.valid
-//        //myLoD2hFifo.io.push.ready
-//      ) {
-//        //myFifoThingDoStall := False
-//        rState := State.IDLE
-//      }
-//    }
-//  }
-//  wrLineAttrs.valid := True
-//}
+  val lineWordRamCfg = RamSdpPipeConfig(
+    wordType=UInt(wordWidth bits),
+    depth=depthLines,
+    optIncludeWrByteEn=false,
+    optWrHistLength=cfg.myRamOptWrHistLength,
+    initBigInt=Some(Array.fill(depthLines)(
+      BigInt(0)
+    )),
+    arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
+    arrRamStyleXilinx=cfg.loBusCacheCfg.lineWordMemRamStyleXilinx,
+  )
+  val lineWordRam = Array.fill(numWays)(
+    Array.fill(lineSizeWords)(
+      RamSdpPipe(cfg=lineWordRamCfg)
+    )
+  )
+  val lineAttrsRamCfg = RamSdpPipeConfig(
+    wordType=LcvBusCacheLineAttrs(cfg=loBusCfg),
+    depth=depthLines,
+    optIncludeWrByteEn=false,
+    optWrHistLength=cfg.myRamOptWrHistLength,
+    initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
+    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
+    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
+  )
+  val lineAttrsRam = Array.fill(2)(
+    Array.fill(numWays)(
+      RamSdpPipe(cfg=lineAttrsRamCfg)
+    )
+  )
 
-private[libcheesevoyage] case class LcvBusInstrCacheNonWide(
+  val rdLineWord = Vec.fill(numWays)(
+    Vec.fill(lineSizeWords)(
+      UInt(wordWidth bits)
+    )
+  )
+  val rdLineAttrs = Vec.fill(lineAttrsRam.size)(
+    Vec.fill(numWays)(
+      LcvBusCacheLineAttrs(cfg=loBusCfg)
+    )
+  )
+  for (idx <- 0 until numWays) {
+    //rdLineWord(idx) := lineWordRam(idx).io.rdData
+    for (jdx <- 0 until lineSizeWords) {
+      rdLineWord(idx)(jdx) := lineWordRam(idx)(jdx).io.rdData
+      lineWordRam(idx)(jdx).io.wrEn := False
+    }
+    rdLineAttrs.head(idx) := lineAttrsRam.head(idx).io.rdData
+    rdLineAttrs.last(idx) := lineAttrsRam.last(idx).io.rdData
+
+    //lineWordRam(idx).io.wrEn := False
+    lineAttrsRam.foreach(item => {
+      item(idx).io.wrEn := False
+    })
+  }
+
+  val wrLineAttrs = LcvBusCacheLineAttrs(cfg=loBusCfg)
+  wrLineAttrs := RegNext(wrLineAttrs, init=wrLineAttrs.getZero)
+  wrLineAttrs.allowOverride
+
+  val lineBitPlruRamCfg = RamSdpPipeConfig(
+    wordType=UInt(
+      //log2Up(numWays) bits
+      numWays bits
+    ),
+    depth=depthLines,
+    optIncludeWrByteEn=false,
+    optWrHistLength=cfg.myRamOptWrHistLength,
+    initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
+    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
+    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
+  )
+
+  val myCondHaveLineBitPlruRam = (
+    numWays > 1
+  )
+  val lineBitPlruRam = (
+    myCondHaveLineBitPlruRam
+  ) generate (
+    Array.fill(rdLineAttrs.size)(
+      RamSdpPipe(cfg=lineBitPlruRamCfg)
+    )
+  )
+
+  val rdLineBitPlru = (
+    myCondHaveLineBitPlruRam
+  ) generate (
+    Vec.fill(rdLineAttrs.size)(
+      UInt(
+        //log2Up(numWays) bits
+        numWays bits
+      )
+    )
+  )
+  val wrLineBitPlru = (
+    myCondHaveLineBitPlruRam
+  ) generate (
+    UInt(
+      //log2Up(numWays) bits
+      numWays bits
+    )
+  )
+
+  if (myCondHaveLineBitPlruRam) {
+    rdLineBitPlru.head := lineBitPlruRam.head.io.rdData
+    rdLineBitPlru.last := lineBitPlruRam.last.io.rdData
+    wrLineBitPlru := RegNext(wrLineBitPlru, init=wrLineBitPlru.getZero)
+    //wrLineBitPlru.allowOverride
+    lineBitPlruRam.foreach(item => item.io.wrEn := False)
+  }
+
+
+  //--------
+  object State extends SpinalEnum(
+    defaultEncoding=(
+      //binarySequential
+      binaryOneHot
+    )
+  ) {
+    val
+      INIT,
+      IDLE,
+      LOAD_HIT_DO_STALL_PIPE_4,
+      LOAD_HIT_DO_STALL_PIPE_3,
+      LOAD_HIT_DO_STALL_PIPE_2,
+      LOAD_HIT_DO_STALL_PIPE_1,
+      LOAD_HIT_DO_STALL,
+      LOAD_HIT_DO_STALL_POST,
+      //STORE_HIT_DO_STALL_PIPE_1,
+      //STORE_HIT_DO_STALL,
+
+      //MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2,
+      //MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1,
+      //MAYBE_DIRTY_RE_READ_ATTRS,
+      //SEND_LINE_TO_HI_BUS_PIPE_3,
+      //SEND_LINE_TO_HI_BUS_PIPE_2,
+      //SEND_LINE_TO_HI_BUS_PIPE_1,
+      //SEND_LINE_TO_HI_BUS,
+      PREFETCH_START_PIPE_4,
+      PREFETCH_START_PIPE_3,
+      PREFETCH_START_PIPE_2,
+      PREFETCH_START_PIPE_1,
+      PREFETCH_START,
+      RECV_LINE_FROM_HI_BUS_PIPE_1,
+      RECV_LINE_FROM_HI_BUS,
+      RECV_LINE_FROM_HI_BUS_POST_WRITE,
+      RECV_LINE_FROM_HI_BUS_POST_7,
+      RECV_LINE_FROM_HI_BUS_POST_6,
+      RECV_LINE_FROM_HI_BUS_POST_5,
+      RECV_LINE_FROM_HI_BUS_POST_4,
+      RECV_LINE_FROM_HI_BUS_POST_3,
+      RECV_LINE_FROM_HI_BUS_POST_2,
+      RECV_LINE_FROM_HI_BUS_POST_1,
+      RECV_LINE_FROM_HI_BUS_POST,
+
+      WAIT_D2H_FIFO_EMPTY_ENOUGH
+
+      = newElement();
+  }
+
+  val rState = (
+    Reg(State())
+    init(State.INIT)
+  )
+  //--------
+  val myLoH2dPopBusCfg = (
+    LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=myFifoThingLoBusCfg)
+  )
+  val myLoH2dReptThing = LcvBusDoStallH2dReptThing(
+    busCfg=myLoH2dPopBusCfg
+  )
+
+  //val myLoH2dDoStallFifoThing = LcvBusDoStallFifoThing(
+  //  busCfg=myFifoThingLoBusCfg,
+  //  includeDoInit=false,
+  //)
+  //io.loBus.h2dBus.translateInto(
+  //  //myLoH2dDoStallFifoThing.io.push
+  //  myLoH2dReptThing.io.push
+  //)(
+  //  dataAssignment=(outp, inp) => {
+  //    //outp.busPayload := inp
+  //    outp.mainNonBurstInfo := inp.mainNonBurstInfo
+  //    outp.txnCnt.allowOverride
+  //    outp.txnCnt := (
+  //      (
+  //        RegNextWhen(
+  //          (outp.txnCnt.asSInt + 1),
+  //          cond=myLoH2dReptThing.io.push.fire,
+  //        )
+  //        init(-2)
+  //      ).asUInt
+  //    )
+  //  }
+  //)
+  val myFifoThingDoStall = Bool()
+  myFifoThingDoStall := (
+    RegNext(myFifoThingDoStall, init=myFifoThingDoStall.getZero)
+  )
+  myLoH2dReptThing.io.doStall := myFifoThingDoStall
+  //val rSeenMyFifoThingDoStallCnt = (
+  //  Reg(UInt(log2Up(LcvBusDoStallFifoThing.fifoDepthMain + 1) + 1 bits))
+  //  init(0x0)
+  //)
+  //myLoH2dDoStallFifoThing.io.doStall := myFifoThingDoStall
+
+  val myLoH2dToWrByteEnStmAdapter = (
+    !loBusCfg.haveByteEn
+  ) generate (LcvBusH2dShiftedDataEtcStreamAdapter(
+    cfg=LcvBusH2dShiftedDataEtcStreamAdapterConfig(
+      loBusCfg=myFifoThingLoBusCfg,
+    )
+  ))
+
+  val myMainLoH2dPopStm = (
+    Stream(LcvBusH2dPayload(
+      cfg=myLoH2dPopBusCfg
+    ))
+  )
+
+  val mySelLoH2dPopStm = (
+    //cloneOf(myLoH2dDoStallFifoThing.io.pop)
+    //cloneOf(io.loBus.h2dBus)
+    //Stream(LcvBusH2dPayload(
+    //  cfg=myLoH2dPopBusCfg
+    //))
+    //cloneOf(myMainLoH2dPopStm)
+    cloneOf(myLoH2dReptThing.io.pop)
+  )
+  mySelLoH2dPopStm << myLoH2dReptThing.io.pop
+  //val mySelLoH2dPop
+  def mySelLoH2dPopPayload = mySelLoH2dPopStm.payload//.busPayload
+
+  io.loBus.h2dBus.translateInto(
+    if (!loBusCfg.haveByteEn) (
+      myLoH2dToWrByteEnStmAdapter.io.loH2dBus
+    ) else (
+      myMainLoH2dPopStm
+    )
+  )(
+    dataAssignment=(outp, inp) => {
+      //outp := inp
+      outp.mainNonBurstInfo := inp.mainNonBurstInfo
+      outp.txnCnt.allowOverride
+      outp.txnCnt := (
+        (
+          RegNextWhen(
+            (outp.txnCnt.asSInt + 1),
+            cond=io.loBus.h2dBus.fire,
+          )
+          init(-2)
+        ).asUInt
+      )
+    }
+  )
+
+  if (!loBusCfg.haveByteEn) {
+    myLoH2dToWrByteEnStmAdapter.io.hiH2dBus.translateInto(
+      myMainLoH2dPopStm
+    )(
+      dataAssignment=(outp, inp) => {
+        outp := inp
+        outp.txnCnt.allowOverride
+        outp.txnCnt := myLoH2dToWrByteEnStmAdapter.io.loH2dBus.txnCnt
+      }
+    )
+  }
+
+  //myMainLoH2dPopStm.ready := !myFifoThingDoStall
+  //myLoH2dReptThing.io.push << myMainLoH2dPopStm
+  myMainLoH2dPopStm.translateInto(
+    myLoH2dReptThing.io.push
+  )(
+    dataAssignment=(outp, inp) => {
+      outp.busPayload := inp
+      //outp.savedData := inp.data
+    }
+  )
+  mySelLoH2dPopStm.ready := False
+
+  //val myLoH2dPopThrowArea = new Area {
+  //  val myLoH2dThrowCond = Bool()
+  //  val myTempLoH2dPopStm = myLoH2dDoStallFifoThing.io.pop.throwWhen(
+  //    myLoH2dThrowCond
+  //  )
+  //  myLoH2dThrowCond := False
+  //  //myLoH2dPopStm.ready := False
+  //  myLoH2dPopStm << myTempLoH2dPopStm
+  //}
+  val rLoH2dPayload = (
+    RegNextWhen(
+      mySelLoH2dPopStm.payload,
+      cond=mySelLoH2dPopStm.fire,
+      init=mySelLoH2dPopStm.payload.getZero,
+    )
+  )
+  def rBusAddr = rLoH2dPayload.addr
+  val rDel2LoH2dPayload = (
+    RegNext/*When*/(
+      next=rLoH2dPayload,
+      //cond=myLoH2dPopStm.fire,
+      init=rLoH2dPayload.getZero,
+    )
+  )
+  def rDel2BusAddr = rDel2LoH2dPayload.addr
+
+  val rSavedLoH2dPayload = (
+    Reg(cloneOf(rLoH2dPayload))
+    init(rLoH2dPayload.getZero)
+  )
+  def rSavedLoBusAddr = rSavedLoH2dPayload.addr
+  def rSavedLoBusAddrSet = rSavedLoBusAddr(loBusCacheCfg.setRange)
+
+  val myLoD2hShiftedDataStmAdapter = (
+    !cfg.loBusCfg.haveByteEn
+  ) generate (
+    LcvBusD2hShiftedDataEtcStreamAdapter(
+      cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(
+        busCfg=cfg.loBusCfg
+      )
+    )
+  )
+  val myLoD2hPushStm = Stream(
+    LcvBusDoStallFifoThingPayload(
+      LcvBusD2hPayload(
+        cfg=myFifoThingLoBusCfg,
+        includeByteSizeEtc=(!myFifoThingLoBusCfg.haveByteEn),
+      ),
+    )
+  )
+
+  myLoD2hPushStm.valid := False
+  //myLoH2dReptThing.io.finishTxn.valid := myLoD2hPushStm.fire
+  //myLoH2dReptThing.io.finishTxn.payload := (
+  //  myLoD2hPushStm.busPayload.txnCnt
+  //)
+
+  val myLoD2hFifo = StreamFifo(
+    dataType=LcvBusD2hPayload(cfg=cfg.loBusCfg),
+    depth=(
+      (myFifoThingLoBusCfg.maxBurstSizeMinus1 + 1) //* 3//2
+    ),
+    latency=cfg.busD2hFifoLatency,
+    forFMax=true,
+  )
+
+  myLoD2hFifo.io.pop.translateInto(io.loBus.d2hBus)(
+    dataAssignment=(outp, inp) => {
+      outp.mainNonBurstInfo := inp.mainNonBurstInfo
+    }
+  )
+  //val myLoD2hAlmostDonePushStm = cloneOf(myLoD2hPushStm)
+  //myLoD2hAlmostDonePushStm << myLoD2hPushStm
+  //myLoD2hAlmostDonePushStm << myLoD2hPushStm.throwWhen(
+  //  myLoD2hPushStm.busPayload.txnCnt.asSInt
+  //  === (
+  //    RegNextWhen(
+  //      myLoD2hPushStm.busPayload.txnCnt.asSInt,
+  //      cond=myLoD2hPushStm.fire,
+  //    )
+  //    init(1)
+  //  )
+  //)
+
+  // NOTE: this was previously `myLoD2hAlmostDonePushStm.translateInto`
+  myLoD2hPushStm.translateInto(
+    if (cfg.myFifoThingLoBusCfg.haveByteEn) (
+      myLoD2hFifo.io.push
+    ) else (
+      myLoD2hShiftedDataStmAdapter.io.loD2hBus
+    )
+  )(
+    dataAssignment=(outp, inp) => {
+      outp.mainNonBurstInfo := inp.busPayload.mainNonBurstInfo
+    }
+  )
+
+  if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+    //println(
+    //  s"NOTE: "
+    //  + s"myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus"
+    //)
+    myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus
+  }
+
+  def doLineWordRamReadSync(
+    busAddr: UInt,
+    setEn: Int=0,
+  ): Unit = {
+    lineWordRam.foreach(outerItem => {
+      outerItem.foreach(item => {
+        if (setEn == 1) {
+          item.io.rdEn := True
+        } else if (setEn == 2) {
+          item.io.rdEn := (
+            RegNext(
+              next=(
+                //mySelLoH2dPopStm.valid
+                mySelLoH2dPopStm.fire
+              ),
+              init=False,
+            )
+            //&& !myFifoThingDoStall
+          )
+        } 
+        item.io.rdAddr := {
+          //println(
+          //  s"test info: busAddr("
+          //  + s"${busAddr.high} downto ${myLineWordRamAddrRshift}"
+          //  + s")"
+          //)
+          (
+            busAddr(
+              busAddr.high downto myLineWordRamSingleWordAddrRshift
+            )
+            .resize(item.io.rdAddr.getWidth)
+          )
+        }
+      })
+    })
+  }
+  def doLineAttrsRamReadSync(
+    outerIdx: Int,
+    busAddr: UInt,
+    setEn: Int=0,
+  ): Unit = {
+    lineAttrsRam(outerIdx).foreach(item => {
+      if (setEn == 1) {
+        item.io.rdEn := True
+      } else if (setEn == 2) {
+        item.io.rdEn := (
+          RegNext(
+            next=(
+              //mySelLoH2dPopStm.valid
+              mySelLoH2dPopStm.fire
+            ),
+            init=False,
+          )
+          //&& !myFifoThingDoStall
+        )
+      } 
+      item.io.rdAddr := {
+        //println(
+        //  s"test info: busAddr("
+        //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
+        //  + s")"
+        //)
+        (
+          (
+            busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
+          )
+          .resize(item.io.rdAddr.getWidth)
+        )
+      }
+    })
+  }
+  def doLineBitPlruRamReadSync(
+    outerIdx: Int,
+    busAddr: UInt,
+    setEn: Int=0,
+  ): Unit = {
+    if (setEn == 1) {
+      lineBitPlruRam(outerIdx).io.rdEn := True
+    } else if (setEn == 2) {
+      lineBitPlruRam(outerIdx).io.rdEn := (
+        RegNext(
+          next=(
+            //mySelLoH2dPopStm.valid
+            mySelLoH2dPopStm.fire
+          ),
+          init=False,
+        )
+        //&& !myFifoThingDoStall
+      )
+    } 
+    lineBitPlruRam(outerIdx).io.rdAddr := {
+      //println(
+      //  s"test info: busAddr("
+      //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
+      //  + s")"
+      //)
+      (
+        (
+          busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
+        )
+        .resize(lineBitPlruRam(outerIdx).io.rdAddr.getWidth)
+      )
+    }
+  }
+  def doLineWordRamWrite(
+    ramIdx: Int,
+    busAddr: UInt,
+    lineWord: UInt,
+    //byteEn: Option[UInt],
+    setEn: Boolean=true,
+  ): Unit = {
+    lineWordRam(ramIdx).foreach(item => {
+      if (setEn) {
+        item.io.wrEn := True
+      }
+      item.io.wrAddr := (
+        (
+          busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift)
+        )
+        .resize(item.io.wrAddr.getWidth)
+      )
+      item.io.wrData := lineWord
+      //byteEn match {
+      //  case Some(byteEn) => {
+      //    item.io.wrByteEn := byteEn.asBits
+      //  }
+      //  case None => {
+      //    item.io.wrByteEn := (
+      //      B(
+      //        item.io.wrByteEn.getWidth bits,
+      //        default -> True
+      //      )
+      //    )
+      //  }
+      //}
+    })
+  }
+  def doLineAttrsRamWrite(
+    ramIdx: Int,
+    busAddr: UInt,
+    lineAttrs: LcvBusCacheLineAttrs,
+    setEn: Boolean=true,
+  ): Unit = {
+    lineAttrsRam.foreach(item => {
+      if (setEn) {
+        item(ramIdx).io.wrEn := True
+      }
+      item(ramIdx).io.wrAddr := (
+        (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
+        .resize(item(ramIdx).io.wrAddr.getWidth)
+      )
+      item(ramIdx).io.wrData := lineAttrs
+    })
+  }
+  def doLineBitPlruRamWrite(
+    busAddr: UInt,
+    //lineAttrs: LcvBusCacheLineBitPlru,
+    lineBitPlru: UInt,
+    setEn: Boolean=true,
+  ): Unit = {
+    lineBitPlruRam.foreach(item => {
+      if (setEn) {
+        item.io.wrEn := True
+      }
+      item.io.wrAddr := (
+        (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
+        .resize(item.io.wrAddr.getWidth)
+      )
+      item.io.wrData := lineBitPlru
+    })
+  }
+
+  doLineWordRamReadSync(
+    busAddr=mySelLoH2dPopPayload.addr,
+    setEn=2,
+  )
+  for (ramIdx <- 0 until numWays) {
+    doLineWordRamWrite(
+      ramIdx=ramIdx,
+      busAddr=(
+        RegNext(
+          RegNext(
+            mySelLoH2dPopPayload.addr,
+            init=mySelLoH2dPopPayload.addr.getZero
+          ),
+          init=mySelLoH2dPopPayload.addr.getZero,
+        )
+      ),
+      lineWord=(
+        RegNext(
+          RegNext(
+            mySelLoH2dPopPayload.data,
+            init=mySelLoH2dPopPayload.data.getZero
+          ),
+          init=mySelLoH2dPopPayload.data.getZero,
+        )
+      ),
+      //byteEn=Some(
+      //  RegNext(
+      //    RegNext(
+      //      mySelLoH2dPopPayload.byteEn,
+      //      init=mySelLoH2dPopPayload.byteEn.getZero
+      //    ),
+      //    init=mySelLoH2dPopPayload.byteEn.getZero,
+      //  ),
+      //),
+      setEn=false,
+    )
+  }
+
+  case class StallInfo(
+  ) extends Bundle {
+    val valid = Bool()
+    def fire = valid
+    val loH2dPayload = cloneOf(rSavedLoH2dPayload)
+    val isHit = Bool()
+
+    //val rdLineWord = UInt(wordWidth bits)
+
+    //val wrLineBitPlru = (
+    //  UInt(
+    //    //log2Up(numWays) bits
+    //    numWays bits
+    //  )
+    //)
+
+    val ramIdx = (
+      myCondHaveLineBitPlruRam
+    ) generate (
+      UInt(log2Up(numWays) bits)
+    )
+  }
+
+  val rSavedStallInfo = {
+    val temp = Reg(StallInfo())
+    temp.init(temp.getZero)
+    temp
+  }
+  val rSavedStallFromIdle = (
+    Reg(Bool(), init=False)
+  )
+  //val rPrefetchAddr = {
+  //  val temp = Reg(
+  //    cloneOf(rSavedLoH2dPayload.addr(loBusCacheCfg.cachedRangeNonLine))
+  //  )
+  //  temp.init(temp.getZero)
+  //  temp
+  //}
+
+  case class PrefetchInfo(
+  ) extends Bundle {
+    val valid = Bool()
+    def fire = valid
+
+    val cnt = (
+      UInt(
+        log2Up(cfg.prefetchNumLinesAhead.get + 1) + 2 bits
+      )
+    )
+
+    val myTempRange = (
+      loBusCacheCfg.addrWidth - 2
+      downto loBusCfg.prefetchAddrIncrStartIdx
+    )
+
+    val baseAddr = (
+      cloneOf(rSavedLoH2dPayload.addr(myTempRange))
+    )
+    def fullAddr = (
+      Cat(
+        baseAddr,
+        U(
+          loBusCfg.prefetchAddrIncrStartIdx bits,
+          default -> False
+        )
+      ).asUInt
+    )
+  }
+
+  //val rSavedInPrefetchVec = (
+  //  Vec.fill(
+  //    1
+  //  )(
+  //    Reg(Bool(), init=False)
+  //  )
+  //)
+
+  val rPrefetchInfo = {
+    val temp = Reg(PrefetchInfo())
+    temp.valid.init(False)
+    temp.cnt.init(
+      cfg.prefetchNumLinesAhead.get //- 1
+    )
+    temp
+  }
+
+
+  doLineAttrsRamReadSync(
+    outerIdx=0,
+    busAddr=mySelLoH2dPopPayload.addr,
+    setEn=2,
+  )
+  doLineAttrsRamReadSync(
+    outerIdx=1,
+    busAddr=rSavedLoH2dPayload.addr,
+    setEn=1,
+  )
+
+  lineAttrsRam.last.foreach(item => {
+    item
+  })
+
+  for (ramIdx <- 0 until numWays) {
+    doLineAttrsRamWrite(
+      ramIdx=ramIdx,
+      busAddr=(
+        RegNext(
+          RegNext(
+            mySelLoH2dPopPayload.addr,
+            init=mySelLoH2dPopPayload.addr.getZero
+          ),
+          init=mySelLoH2dPopPayload.addr.getZero,
+        )
+      ),
+      lineAttrs=(
+        wrLineAttrs
+      ),
+      setEn=false,
+    )
+  }
+
+  if (myCondHaveLineBitPlruRam) {
+    doLineBitPlruRamReadSync(
+      outerIdx=0,
+      busAddr=mySelLoH2dPopPayload.addr,
+      setEn=2,
+    )
+    doLineBitPlruRamReadSync(
+      outerIdx=1,
+      busAddr=rSavedLoH2dPayload.addr,
+      setEn=0,
+    )
+    lineBitPlruRam.last.io.rdEn := False
+    doLineBitPlruRamWrite(
+      busAddr=(
+        RegNext(
+          RegNext(
+            mySelLoH2dPopPayload.addr,
+            init=mySelLoH2dPopPayload.addr.getZero
+          ),
+          init=mySelLoH2dPopPayload.addr.getZero,
+        )
+      ),
+      lineBitPlru=(
+        wrLineBitPlru
+      ),
+      setEn=false,
+    )
+  }
+  //--------
+  myLoD2hPushStm.payload := (
+    RegNext(myLoD2hPushStm.payload, init=myLoD2hPushStm.payload.getZero)
+  )
+
+  val myTempHaveHitCmpEqLeft = Vec[Vec[UInt]](
+    rdLineAttrs.map(outerItem => Vec(outerItem.map(item => item.tag)))
+  )
+  val myTempHaveHitCmpEqRight = Vec(
+    Vec.fill(numWays)(
+      RegNext(
+        RegNext(mySelLoH2dPopPayload.addr(loBusCacheCfg.tagRange))
+        init(0x0)
+      )
+      init(0x0),
+    ),
+    Vec.fill(numWays)(
+      //RegNext(
+      //  RegNext(mySelLoH2dPopPayload.addr(loBusCacheCfg.tagRange))
+      //  init(0x0)
+      //)
+      //init(0x0),
+      //rSavedStallInfo.loH2dPayload.addr(loBusCacheCfg.tagRange)
+      rSavedLoH2dPayload.addr(loBusCacheCfg.tagRange)
+    ),
+  )
+  //val tempHaveHitCmpEq = Vec.fill(rdLineAttrs.size)(
+  //  Vec.fill(numWays)(Bool())
+  //)
+  //val haveHit = Vec.fill(rdLineAttrs.size)(
+  //  Vec.fill(numWays)(
+  //    Bool()
+  //  )
+  //)
+  //for (outerIdx <- 0 until rdLineAttrs.size) {
+  //  for (ramIdx <- 0 until numWays) {
+  //    tempHaveHitCmpEq(outerIdx)(ramIdx) := (
+  //      myTempHaveHitCmpEqLeft(outerIdx)(ramIdx)
+  //      === myTempHaveHitCmpEqRight(outerIdx)(ramIdx)
+  //    )
+  //    haveHit(outerIdx)(ramIdx) := (
+  //      rdLineAttrs(outerIdx)(ramIdx).fire
+  //      && tempHaveHitCmpEq(outerIdx)(ramIdx)
+  //    )
+  //  }
+  //}
+  val myHaveHitValid = Vec.fill(rdLineAttrs.size)(
+    //Vec.fill(numWays)(
+    //  Bool()
+    //)
+    UInt(numWays bits)
+  )
+  val myHaveHitTagCmpEq = Vec.fill(rdLineAttrs.size)(
+    //Vec.fill(numWays)(
+    //  Bool()
+    //)
+    UInt(numWays bits)
+  )
+  val haveHit = Vec.fill(rdLineAttrs.size)(
+    //Vec.fill(numWays)(
+    //  Bool()
+    //)
+    UInt(numWays bits)
+  )
+  for (outerIdx <- 0 until rdLineAttrs.size) {
+    for (ramIdx <- 0 until numWays) {
+      //tempHaveHitCmpEq(outerIdx)(ramIdx) := (
+      //  myTempHaveHitCmpEqLeft(outerIdx)(ramIdx)
+      //  === myTempHaveHitCmpEqRight(outerIdx)(ramIdx)
+      //)
+      //haveHit(outerIdx)(ramIdx) := (
+      //  rdLineAttrs(outerIdx)(ramIdx).fire
+      //  && tempHaveHitCmpEq(outerIdx)(ramIdx)
+      //)
+      myHaveHitValid(outerIdx)(ramIdx) := (
+        rdLineAttrs(outerIdx)(ramIdx).fire
+      )
+      myHaveHitTagCmpEq(outerIdx)(ramIdx) := (
+        //tempHaveHitCmpEq(outerIdx)(ramIdx)
+        myTempHaveHitCmpEqLeft(outerIdx)(ramIdx)
+        === myTempHaveHitCmpEqRight(outerIdx)(ramIdx)
+      )
+      haveHit(outerIdx)(ramIdx) := (
+        myHaveHitValid(outerIdx)(ramIdx)
+        && myHaveHitTagCmpEq(outerIdx)(ramIdx)
+      )
+    }
+  }
+
+  //val haveHit = (
+  //  rdLineAttrs.fire
+  //  && tempHaveHitCmpEq
+  //)
+
+  //val rSavedRdLineAttrsTag = (
+  //  //Vec.fill(numWays)(
+  //    Reg(
+  //      cloneOf(rdLineAttrs.head.head.tag),
+  //      init=rdLineAttrs.head.head.tag.getZero,
+  //    )
+  //  //)
+  //)
+
+  val rHiH2dBurstCnt = (
+    Vec.fill(2)(
+      Reg(UInt(loBusCfg.burstCntWidth bits))
+      init(0x0)
+    )
+  )
+  val rHiD2hBurstCnt = (
+    Reg(UInt(loBusCfg.burstCntWidth bits))
+    init(0x0)
+  )
+  //--------
+  def myLoD2hPayload = myLoD2hPushStm.busPayload
+  //--------
+
+  def doPopLoH2dFifo(): Unit = {
+    mySelLoH2dPopStm.ready := True
+  }
+
+  //val myDoStallLoH2dThrowThing = (
+  //  LcvBusDoStallH2dThrowThing(busCfg=cfg.myFifoThingLoBusCfg)
+  //)
+  //myDoStallLoH2dThrowThing.io.push.valid := (
+  //  myLoH2dDoStallFifoThing.io.pop.valid
+  //  //&& rState === State.IDLE
+  //  && rState.asBits(1)
+  //)
+  //myDoStallLoH2dThrowThing.io.push.payload := (
+  //  myLoH2dDoStallFifoThing.io.pop.busPayload.txnCnt
+  //)
+
+  //val myFullTempIgnoreDupCntCond = (
+  //  myDoStallLoH2dThrowThing.io.myThrowCondMain
+  //  //&& History[Bool](
+  //  //  that=True,
+  //  //  when=(
+  //  //    myLoH2dPopStm.fire
+  //  //    //myD2hPushStm.fire
+  //  //    //myLoH2dDoStallFifoThing.io.pop.fire
+  //  //    //&& !myLoH2dPopThrowArea.myLoH2dThrowCond
+  //  //  ),
+  //  //  length=(
+  //  //    //2
+  //  //    //4
+  //  //    //3
+  //  //    5
+  //  //  ),
+  //  //  init=False,
+  //  //).last
+  //)
+
+  //def doIgnoreInvalidFifoThingPopCnt(
+  //): Unit = {
+  //  when (myFullTempIgnoreDupCntCond) {
+  //    myLoH2dPopThrowArea.myLoH2dThrowCond := True
+  //  }
+  //}
+
+  val rMyTempDoSaveCond = (
+    Vec.fill(4)(
+      RegNext(
+        RegNext(
+          (
+            mySelLoH2dPopStm.fire
+            //&& !myFullTempIgnoreDupCntCond
+          ),
+          init=False
+        ),
+        init=False
+      )
+    )
+  )
+  //val rHadAnyRamWritePastTwoCycles = Vec.fill(2)(
+  //  RegNext(
+  //    (
+  //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
+  //      || RegNext(
+  //        Vec(lineWordRam.map(item => item.io.wrEn)).orR,
+  //        init=False
+  //      )
+  //      || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
+  //      || RegNext(
+  //        Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
+  //        init=False
+  //      )
+  //    ),
+  //    init=False
+  //  )
+  //)
+
+  //val myTempHaveCurrRamWrite = (
+  //  //Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
+  //  //|| 
+  //  //LcvOrR
+  //  (
+  //    Vec[Bool](lineAttrsRam.head.map(item => (
+  //      item.io.wrEn
+  //      //&& (
+  //      //  item.io.wrAddr
+  //      //  === mySelLoH2dPopStm.addr(rPrefetchInfo.myTempRange).resize(
+  //      //    item.io.wrAddr.getWidth
+  //      //  )
+  //      //)
+  //    )
+  //  )))
+  //)
+  //val myTempCurrRamWriteAddr = (
+  //  Vec[UInt](lineAttrsRam.head.map(item => (
+  //    item.io.wrAddr
+  //  )))
+  //)
+  //val myHistHadRamWrite = Array.fill(2)(
+  //  History[Vec[Bool]](
+  //    that=(
+  //      //RegNext(
+  //        myTempHaveCurrRamWrite//,
+  //      //  init=myTempHaveCurrRamWrite.getZero
+  //      //)
+  //    ),
+  //    length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
+  //    init=myTempHaveCurrRamWrite.getZero
+  //  )
+  //)
+  //val myHistRamWriteAddr = Array.fill(myHistHadRamWrite.size)(
+  //  History[Vec[UInt]](
+  //    that=(
+  //      //RegNext(
+  //        //myTempHaveCurrRamWrite//,
+  //        myTempCurrRamWriteAddr
+  //      //  init=myTempHaveCurrRamWrite.getZero
+  //      //)
+  //    ),
+  //    length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
+  //    init=myTempCurrRamWriteAddr.getZero
+  //  )
+  //)
+  //val myRecentHazardToFindFirst = Vec.fill(
+  //  myHistRamWriteAddr.size
+  //)(
+  //  Vec.fill(numWays)(
+  //    Vec.fill(cfg.myRamOptWrHistLengthPlusAddend)(
+  //      //Flow(
+  //      //  cloneOf(myHistRamWriteAddr.head.head)
+  //      //)
+  //      Bool()
+  //    )
+  //  )
+  //)
+
+  //val myHadAnyRecentHazard = Vec.fill(
+  //  myHistRamWriteAddr.size
+  //)(
+  //)
+
+  //val myHadAnyRecentHazard = Vec[Bool](
+  //  myRecentHazardToFindFirst.sFindFirst(item => {
+  //    
+  //  })
+  //)
+
+  //val myHadAnyRecentHazard = Vec.fill(myRecentHazardToFindFirst.size)(
+  //  Vec.fill(numWays)(
+  //    Bool()
+  //  )
+  //)
+  //for (idx <- 0 until myRecentHazardToFindFirst.size) {
+  //  for (ramIdx <- 0 until numWays) {
+  //    for (histIdx <- 0 until cfg.myRamOptWrHistLengthPlusAddend) {
+  //      myRecentHazardToFindFirst(idx)(ramIdx)(histIdx) := (
+  //        myHistHadRamWrite(idx)(histIdx)(ramIdx)
+  //        && (
+  //          myHistRamWriteAddr(idx)(histIdx)(ramIdx)
+  //          === (
+  //            rDel2LoH2dPayload.addr(
+  //              mySelLoH2dPopStm.addr.high
+  //              downto myLineAttrsRamAddrRshift
+  //            ).resize(
+  //              myHistRamWriteAddr(idx)(histIdx)(ramIdx).getWidth
+  //            )
+  //          )
+  //        )
+  //      )
+  //    }
+  //    myHadAnyRecentHazard(idx)(ramIdx) := (
+  //      myRecentHazardToFindFirst(idx)(ramIdx).sFindFirst(item => {
+  //        item
+  //      })._1
+  //    )
+  //  }
+  //}
+
+  val rSavedRamIdx = (
+    myCondHaveLineBitPlruRam
+  ) generate (
+    Reg(UInt(log2Up(numWays) bits))
+    init(0x0)
+  )
+  val rSavedRamJdx = (
+    Reg(UInt(log2Up(lineSizeWords) bits))
+    init(0x0)
+  )
+
+  val myHadAnyRecentHazard = Vec.fill(
+    3
+  )(
+    Vec.fill(numWays)(
+      Bool()
+    )
+  )
+
+  myHadAnyRecentHazard.foreach(outerItem => {
+    outerItem.zipWithIndex.foreach{
+      case (item, ramIdx) => {
+        item := {
+          val temp = (
+            (
+              rPrefetchInfo.fire
+              || (
+                // this is for safety,
+                // but it will produce less performance!
+                rState.asBits(
+                  State.PREFETCH_START.position
+                )
+              )
+            )
+            && (
+              //rPrefetchInfo.baseAddr.resize(
+              //  lineAttrsRam.head.head.io.wrAddr.getWidth
+              //)
+              rSavedLoH2dPayload.addr(rPrefetchInfo.myTempRange).resize(
+                lineAttrsRam.head.head.io.wrAddr.getWidth
+              )
+              === (
+                rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange).resize(
+                  lineAttrsRam.head.head.io.wrAddr.getWidth
+                )
+              )
+            )
+          )
+          if (rSavedRamIdx != null) (
+            temp
+            && (
+              rSavedRamIdx === ramIdx
+            )
+          ) else (
+            temp
+          )
+        }
+      }
+    }
+  })
+
+  //val myHadAnyRecentHazard = Vec[Bool](
+  //  //myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
+
+  //  myHistHadAnyRamWrite.zipWithIndex.map{
+  //    case (outerItem, outerIdx) => {
+  //      LcvOrR(Vec(outerItem.zipWithIndex.map{
+  //        case (item, idx) => (
+  //          item(idx).head
+  //          && (myHistRamWriteAddr(outerIdx)(idx).head.io.wrAddr === 0)
+  //          //&&  
+  //        )
+  //      })
+  //    }
+  //  }
+  //  //RegNext(
+  //  //  (
+  //  //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
+  //  //    || RegNext(
+  //  //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR,
+  //  //      init=False
+  //  //    )
+  //  //    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
+  //  //    || RegNext(
+  //  //      Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR,
+  //  //      init=False
+  //  //    )
+  //  //  ),
+  //  //  init=False
+  //  //)
+  //)
+
+  //val rHadLineAttrsRamWritePastTwoCycles = Vec.fill(2)(
+  //  RegNext(
+  //    lineAttrsRam.io.wrEn
+  //    || RegNext(lineAttrsRam.io.wrEn, init=False),
+  //    init=False
+  //  )
+  //)
+  //val myTempUpdateSavedLoH2dPayloadCond = Bool()
+  //myTempUpdateSavedLoH2dPayloadCond := True
+
+  //--------
+  val rHadLoH2dFinish = Reg(Bool(), init=False)
+  val rHadLoD2hFinish = Reg(Bool(), init=False)
+  val rHadHiH2dFinish = Reg(Bool(), init=False)
+  val rHadHiD2hFinish = Reg(Bool(), init=False)
+
+  val hiH2dFifo = (
+    StreamFifo(
+      dataType=(
+        //UInt(loBusCacheCfg.wordWidth bits)
+        LcvBusH2dPayload(cfg.hiBusCfg)
+      ),
+      depth=loBusCacheCfg.lineSizeWords,
+      latency=2,
+      forFMax=true,
+    )
+  )
+
+  val rHiH2dValid = Reg(Bool(), init=False)
+  val rHiH2dPayload = (
+    Reg(cloneOf(hiH2dFifo.io.push.payload))
+    init(hiH2dFifo.io.push.payload.getZero)
+  )
+  val rHiD2hReady = Reg(Bool(), init=False)
+  hiH2dFifo.io.push.valid := rHiH2dValid
+  hiH2dFifo.io.push.payload := rHiH2dPayload
+  io.hiBus.d2hBus.ready := rHiD2hReady
+
+  rHiH2dPayload.byteEn := (
+    U(hiBusCfg.byteEnWidth bits, default -> True)
+  )
+  //rHiH2dPayload.byteSize := (
+  //  U(rHiH2dPayload.byteSize.getWidth bits, default -> True)
+  //)
+  //rHiH2dPayload.haveFullWord := True
+  io.hiBus.h2dBus <-/< hiH2dFifo.io.pop
+
+      
+// >>> for ramIdx in range(numWays):
+// ...     print(ramIdx, (("0" * (numWays - ramIdx - 1))) + "1" + ("-" * ramIdx))
+// ...     
+// 0 0001
+// 1 001-
+// 2 01--
+// 3 1---
+  def calcHitRamIdxMask(ramIdx: Int): String = (
+    (("0" * (numWays - ramIdx - 1)))
+    + "1"
+    + ("-" * ramIdx)
+  )
+
+// >>> for ramIdx in range(numWays):
+// ...     print(ramIdx, (("1" * (numWays - ramIdx - 1))) + "0" + ("-" * ramIdx))
+// ...     
+// 0 1110
+// 1 110-
+// 2 10--
+// 3 0---
+  def calcMissRamIdxMask(ramIdx: Int): String = (
+    (("1" * (numWays - ramIdx - 1)))
+    + "0"
+    + ("-" * ramIdx)
+  )
+
+  //val myHistSavedRamIdx = (
+  //  History(
+  //    that=rSavedRamIdx,
+  //  )
+  //)
+  val tempToSwitch = (
+    //((rState === State.IDLE) && rMyTempDoSaveCond(3))
+    //((rState === State.IDLE)
+
+    rState.asBits(
+      //1
+      State.IDLE.position
+    )
+    ## (
+      rSavedStallInfo.fire
+      || rSavedStallFromIdle
+    )
+    ## rMyTempDoSaveCond(3)
+    //RegNext(
+    //  RegNext(mySelLoH2dPopStm.fire, init=False),
+    //  init=False
+    //)
+    //## haveHit.orR
+    //## haveHit
+    //## (
+    //  (
+    //    rdLineAttrs.map(item => item.dirty).orR
+    //  )
+    //  //|| (
+    //  //  //rdLine
+    //  //  RegNext(
+    //  //    (
+    //  //      (
+    //  //        wrLineAttrs.dirty
+    //  //        && (
+    //  //          Vec(lineAttrsRam.map(item => item.io.wrEn)).orR
+    //  //        )
+    //  //      )
+    //  //      || RegNext(
+    //  //        wrLineAttrs.dirty
+    //  //        && (
+    //  //          Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
+    //  //        ),
+    //  //        init=False
+    //  //      )
+    //  //    ),
+    //  //    init=False
+    //  //  )
+    //  //)
+    //)
+    //## rDel2LoH2dPayload.isWrite
+    ## haveHit.head
+  )
+  //println(
+  //  s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
+  //)
+
+  switch (
+    tempToSwitch
+  ) {
+    for (idleIdx <- 0 until 2) {
+      is (
+        //M"10-0"
+        MaskedLiteral(
+          //"10-" + ("0" * numWays)
+          //"1" + ("0" * numWays)
+          //"11" + ("0" * numWays)
+          (
+            if (idleIdx == 0) (
+              "0"
+            ) else (
+              "1"
+            )
+          )
+          + "01" + ("0" * numWays)
+        )
+        //M"10"
+      ) {
+        //// cache miss, and know for sure that the line isn't dirty
+        // cache miss
+        if (idleIdx == 1) {
+          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+          rSavedStallFromIdle := True
+        }
+
+        rSavedStallInfo.valid := True
+        rSavedStallInfo.loH2dPayload := rDel2LoH2dPayload
+        rSavedStallInfo.isHit := False
+
+        if (myCondHaveLineBitPlruRam) {
+          //rSavedRamIdx := rdLineBitPlru
+          //wrLineBitPlru := rdLineBitPlru + 1
+
+          wrLineBitPlru := rdLineBitPlru.head
+          lineBitPlruRam.foreach(item => item.io.wrEn := True)
+
+          switch (rdLineBitPlru.head) {
+            for (ramIdx <- 0 until numWays) {
+              val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
+              is (MaskedLiteral(myRamIdxMask)) {
+                wrLineBitPlru(ramIdx) := True
+
+                rSavedStallInfo.ramIdx := ramIdx
+                if (idleIdx == 1) {
+                  rSavedRamIdx := ramIdx
+                }
+              }
+              default {
+              }
+            }
+          }
+        }
+
+        if (idleIdx == 1) {
+          //myFifoThingDoStall := False
+          myLoD2hPushStm.valid := False
+
+          rPrefetchInfo.baseAddr := (
+            rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange)
+          )
+          rPrefetchInfo.cnt := (
+            cfg.prefetchNumLinesAhead.get //- 1
+          )
+        }
+
+        myFifoThingDoStall := True
+        //doPopLoH2dFifo()
+        mySelLoH2dPopStm.ready := (
+          //True
+          False
+        )
+        //myTempUpdateSavedLoH2dPayloadCond := False
+      }
+    }
+
+    //is (
+    //  //M"11-0"
+    //  MaskedLiteral(
+    //    //"11-" + ("0" * numWays)
+    //    "1" + ("0" * numWays)
+    //  )
+    //) {
+    //  // cache miss, and the line is *possibly* dirty
+    //  rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+
+    //  if (myCondHaveLineBitPlruRam) {
+    //    rSavedRamIdx := rdLineBitPlru
+    //    wrLineBitPlru := rdLineBitPlru + 1
+    //    lineBitPlruRam.io.wrEn := True
+    //  }
+
+    //  myFifoThingDoStall := True
+    //  mySelLoH2dPopStm.ready := (
+    //    //True
+    //    False
+    //  )
+    //  //myTempUpdateSavedLoH2dPayloadCond := False
+    //}
+    for (ramIdx <- 0 until numWays) {
+      val myRamIdxMask = calcHitRamIdxMask(ramIdx=ramIdx)
+      //println(
+      //  s"ramIdx:${ramIdx} myRamIdxMask:${myRamIdxMask}"
+      //)
+      for (idleIdx <- 0 until 2) {
+        is (
+          MaskedLiteral(
+            //"1-01"
+            //"11" + myRamIdxMask
+            (
+              if (idleIdx == 0) (
+                "0"
+              ) else (
+                "1"
+              )
+            )
+            + "01" + myRamIdxMask
+          )
+        ) {
+          doPopLoH2dFifo()
+          myFifoThingDoStall := False
+
+          rSavedStallInfo.valid := !myLoD2hPushStm.fire //True
+          rSavedStallInfo.loH2dPayload := rDel2LoH2dPayload
+          rSavedStallInfo.isHit := (
+            //True
+            !myHadAnyRecentHazard(1)(ramIdx)
+          )
+
+          //myLoD2hPushStm.valid := False
+          if (myCondHaveLineBitPlruRam) {
+            val tempLineBitPlru = cloneOf(rdLineBitPlru.head)
+            tempLineBitPlru.allowOverride
+            tempLineBitPlru := rdLineBitPlru.head
+            tempLineBitPlru(ramIdx) := True
+
+            rSavedStallInfo.ramIdx := ramIdx
+            if (idleIdx == 1) {
+              rSavedRamIdx := ramIdx
+            }
+
+            when (LcvAndR(tempLineBitPlru)) {
+              wrLineBitPlru := 1 << ramIdx
+            } otherwise {
+              wrLineBitPlru := tempLineBitPlru
+            }
+            lineBitPlruRam.foreach(item => item.io.wrEn := True)
+          }
+
+          // load, cache hit
+          //mySelLoH2dPopStm.ready := True
+          myLoD2hPushStm.valid := True
+          myLoD2hPushStm.busPayload.data := rdLineWord(ramIdx)(
+            rDel2LoH2dPayload.addr(
+              //log2Up(lineSizeBytes) - 1 downto log2Up(wordWidth / 8)
+              myConvBusAddrToLineWordAddrRange
+            )
+          )
+          myLoD2hPushStm.busPayload.src := rDel2LoH2dPayload.src
+
+          if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+            myLoD2hPushStm.busPayload.byteSize := (
+              rDel2LoH2dPayload.byteSize
+            )
+            myLoD2hPushStm.busPayload.addrLo := (
+              rDel2LoH2dPayload.addr(
+                cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
+              )
+            )
+          }
+          myLoD2hPushStm.busPayload.txnCnt := (
+            rDel2LoH2dPayload.txnCnt
+          )
+
+          //if (idleIdx == 0) {
+          //} else { // if (idleIdx == 1)
+            when (
+              //rHadAnyRamWritePastTwoCycles.head
+              myHadAnyRecentHazard.head(ramIdx)
+            ) {
+              myLoD2hPushStm.valid := False
+            }
+
+            when (
+              //rHadAnyRamWritePastTwoCycles.last
+              myHadAnyRecentHazard.last(ramIdx)
+              || !myLoD2hPushStm.ready
+            ) {
+              mySelLoH2dPopStm.ready := False
+              myFifoThingDoStall := True
+              if (idleIdx == 1) {
+                rSavedStallFromIdle := True
+                rState := (
+                  //State.LOAD_HIT_DO_STALL_PIPE_3
+                  State.LOAD_HIT_DO_STALL_PIPE_4
+                )
+              }
+              //myTempUpdateSavedLoH2dPayloadCond := False
+            } otherwise {
+              //doPopLoH2dFifo()
+              //rSavedStallInfo.valid := False
+              if (idleIdx == 1) {
+                rPrefetchInfo.baseAddr := (
+                  rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange)
+                )
+                rState := State.PREFETCH_START_PIPE_3
+              }
+            }
+            //if (idleIdx == 1) {
+            //  when (
+            //    !(
+            //      myHadAnyRecentRamWrite.last
+            //      || !myLoD2hPushStm.ready
+            //    )
+            //    && 
+            //  ) {
+            //  }
+            //}
+          //}
+        }
+      }
+    }
+    is (MaskedLiteral(
+      "1" + "0" + "0" + ("-" * numWays)
+    )) {
+      doPopLoH2dFifo()
+      myFifoThingDoStall := False
+      myLoD2hPushStm.valid := False
+
+      //// TODO: maybe we can start prefetching from this state?
+      //when (
+      //  !rPrefetchInfo.cnt.msb
+      //) {
+      //  rState := State.PREFETCH_START_PIPE_3
+      //}
+    }
+    is (MaskedLiteral(
+      "1" + "1" + "-" + ("-" * numWays)
+    )) {
+      mySelLoH2dPopStm.ready := False
+      myFifoThingDoStall := True
+      myLoD2hPushStm.valid := False
+
+      rSavedStallFromIdle := True
+      rSavedStallInfo.valid := False
+      rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
+      rSavedRamIdx := rSavedStallInfo.ramIdx
+
+      myLoD2hPushStm.busPayload.src := (
+        rSavedStallInfo.loH2dPayload.src
+      )
+      if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+        rSavedStallInfo.loH2dPayload.busPayload.byteSize := (
+          rDel2LoH2dPayload.byteSize
+        )
+        myLoD2hPushStm.busPayload.addrLo := (
+          rSavedStallInfo.loH2dPayload.addr(
+            cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
+          )
+        )
+      }
+      myLoD2hPushStm.busPayload.txnCnt := (
+        rSavedStallInfo.loH2dPayload.txnCnt
+      )
+
+      when (rSavedStallInfo.isHit) {
+        rState := State.LOAD_HIT_DO_STALL_PIPE_4
+      } otherwise {
+        rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+      }
+    }
+    default {
+      //doPopLoH2dFifo()
+      //myFifoThingDoStall := False
+      //myLoD2hPushStm.valid := False
+    }
+  }
+
+  switch (rState) {
+    is (State.INIT) {
+      rState := State.IDLE
+    }
+    is (State.IDLE) {
+      //myFifoThingDoStall := False
+      //myLoD2hPushStm.valid := False
+      //doIgnoreInvalidFifoThingPopCnt()
+      //doPopLoH2dFifo()
+
+      when (
+        rMyTempDoSaveCond(0)
+        && !rSavedStallInfo.fire
+      ) {
+        rSavedLoH2dPayload := (
+          //rLoH2dPayload
+          rDel2LoH2dPayload
+        )
+      }
+      when (
+        rMyTempDoSaveCond(1)
+        && !rSavedStallInfo.fire
+      ) {
+        rSavedLoH2dPayload.byteSize := (
+          //rLoH2dPayload.byteSize
+          rDel2LoH2dPayload.byteSize
+        )
+      }
+      when (
+        rMyTempDoSaveCond(2)
+        && !rSavedStallInfo.fire
+        //&& myTempUpdateSavedLoH2dPayloadCond
+        //RegNext(
+        //  RegNext(mySelLoH2dPopStm.fire, init=False),
+        //  init=False
+        //)
+      ) {
+        myLoD2hPushStm.busPayload.src := (
+          rDel2LoH2dPayload.src
+        )
+        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+          myLoD2hPushStm.busPayload.byteSize := (
+            rDel2LoH2dPayload.byteSize
+          )
+          myLoD2hPushStm.busPayload.addrLo := (
+            rDel2LoH2dPayload.addr(
+              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
+            )
+          )
+        }
+        myLoD2hPushStm.busPayload.txnCnt := (
+          rDel2LoH2dPayload.txnCnt
+        )
+        //rSavedRdLineAttrsTag := rdLineAttrs.tag
+      }
+      //rSavedRdLineAttrsTag := rdLineAttrs.tag
+
+    }
+    is (State.LOAD_HIT_DO_STALL_PIPE_4) {
+      rState := State.LOAD_HIT_DO_STALL_PIPE_3
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(_.foreach(item => item.io.rdEn := False))
+      myLoD2hPushStm.valid := False
+      mySelLoH2dPopStm.ready := False
+
+      //myLoH2dReptThing.io.finishTxn.valid := True
+      //myLoH2dReptThing.io.finishTxn.payload := (
+      //  RegNext(
+      //    rDel2LoH2dPayload.txnCnt,
+      //    init=rDel2LoH2dPayload.txnCnt.getZero
+      //  )
+      //)
+    }
+    is (State.LOAD_HIT_DO_STALL_PIPE_3) {
+      rState := State.LOAD_HIT_DO_STALL_PIPE_2
+      myLoD2hPushStm.valid := False
+      mySelLoH2dPopStm.ready := False
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(_.foreach(item => item.io.rdEn := False))
+
+      doLineWordRamReadSync(
+        busAddr=rSavedLoH2dPayload.addr,
+        setEn=0,
+      )
+    }
+    is (State.LOAD_HIT_DO_STALL_PIPE_2) {
+      rState := State.LOAD_HIT_DO_STALL_PIPE_1
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(_.foreach(item => item.io.rdEn := True))
+      myLoD2hPushStm.valid := False
+      mySelLoH2dPopStm.ready := False
+    }
+    is (State.LOAD_HIT_DO_STALL_PIPE_1) {
+      rState := State.LOAD_HIT_DO_STALL
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(_.foreach(item => item.io.rdEn := False))
+    }
+    is (State.LOAD_HIT_DO_STALL) {
+      val myRdLineWord = (
+        RegNext(
+          if (myCondHaveLineBitPlruRam) (
+            rdLineWord(rSavedRamIdx)(
+              rSavedLoH2dPayload.addr(
+                myConvBusAddrToLineWordAddrRange
+              )
+            )
+          ) else (
+            rdLineWord.head(
+              rSavedLoH2dPayload.addr(
+                myConvBusAddrToLineWordAddrRange
+              )
+            )
+          )
+        )
+      )
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(_.foreach(item => item.io.rdEn := False))
+
+      mySelLoH2dPopStm.ready := False
+      myLoD2hPushStm.busPayload.data := myRdLineWord
+
+      myLoD2hPushStm.busPayload.src := rSavedLoH2dPayload.src
+
+      if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+        myLoD2hPushStm.busPayload.byteSize := (
+          rSavedLoH2dPayload.byteSize
+        )
+        myLoD2hPushStm.busPayload.addrLo := (
+          rSavedLoH2dPayload.addr(
+            cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
+          )
+        )
+      }
+      myLoD2hPushStm.valid := True
+      //myLoH2dReptThing.io.finishTxn.valid := False
+      when (myLoD2hPushStm.fire) {
+        //myFifoThingDoStall := False
+        rState := State.LOAD_HIT_DO_STALL_POST
+      }
+    }
+    is (State.LOAD_HIT_DO_STALL_POST) {
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(_.foreach(item => item.io.rdEn := False))
+
+      rState := State.WAIT_D2H_FIFO_EMPTY_ENOUGH
+    }
+    is (State.PREFETCH_START_PIPE_4) {
+      def myArgBusAddr = rSavedLoH2dPayload.addr
+      def myArgWrLineAttrs = wrLineAttrs
+      def myArgSetEn = true
+
+      if (myCondHaveLineBitPlruRam) {
+        switch (rSavedRamIdx) {
+          for (ramIdx <- 0 until numWays) {
+            is (ramIdx) {
+              doLineAttrsRamWrite(
+                ramIdx=ramIdx,
+                busAddr=myArgBusAddr,
+                lineAttrs=myArgWrLineAttrs,
+                setEn=myArgSetEn,
+              )
+            }
+          }
+        }
+      } else {
+        doLineAttrsRamWrite(
+          ramIdx=0,
+          busAddr=myArgBusAddr,
+          lineAttrs=myArgWrLineAttrs,
+          setEn=myArgSetEn,
+        )
+      }
+      rState := State.PREFETCH_START_PIPE_3
+    }
+    is (State.PREFETCH_START_PIPE_3) {
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      rState := State.PREFETCH_START_PIPE_2
+
+      val myTempRange = (
+        loBusCacheCfg.addrWidth - 2
+        downto loBusCfg.prefetchAddrIncrStartIdx
+      )
+      //rPrevPrefetchAddr := rSavedLoH2dPayload.addr
+
+      rSavedLoH2dPayload.addr(myTempRange) := (
+        //rSavedLoH2dPayload.addr(myTempRange) + 1
+        rPrefetchInfo.baseAddr + 1
+      )
+      //rPrefetchInfo.baseAddr := (
+      //  rPrefetchInfo.baseAddr + 1
+      //)
+    }
+    is (State.PREFETCH_START_PIPE_2) {
+      //doPrefetchLineAttrsRamReadSync(
+      //)
+      lineAttrsRam.last.foreach(item => item.io.rdEn := True)
+      lineBitPlruRam.last.io.rdEn := False
+
+      rState := State.PREFETCH_START_PIPE_1
+    }
+    is (State.PREFETCH_START_PIPE_1) {
+      rState := State.PREFETCH_START
+      lineAttrsRam.last.foreach(item => item.io.rdEn := True)
+      lineBitPlruRam.last.io.rdEn := True
+    }
+    is (State.PREFETCH_START) {
+      switch (
+        rSavedStallInfo.fire
+        ## rSavedStallInfo.isHit
+        ## rPrefetchInfo.cnt.msb
+        ## RegNext(rPrefetchInfo.cnt - 1).msb
+        ## haveHit.last
+      ) {
+        is (MaskedLiteral(
+          //"0-" + ("0" * numWays)
+          "0-0-" + ("0" * numWays)
+        )) {
+          wrLineBitPlru := rdLineBitPlru.last
+          //lineBitPlruRam.io.wrEn := True
+
+          doLineBitPlruRamWrite(
+            busAddr=(
+              //RegNext(
+              //  RegNext(
+              //    mySelLoH2dPopPayload.addr,
+              //    init=mySelLoH2dPopPayload.addr.getZero
+              //  ),
+              //  init=mySelLoH2dPopPayload.addr.getZero,
+              //)
+              rSavedLoH2dPayload.addr
+            ),
+            lineBitPlru=(
+              wrLineBitPlru
+            ),
+            setEn=true,
+          )
+
+          switch (rdLineBitPlru.last) {
+            for (ramIdx <- 0 until numWays) {
+              val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
+              is (MaskedLiteral(myRamIdxMask)) {
+                wrLineBitPlru(ramIdx) := True
+                rSavedRamIdx := ramIdx
+              }
+            }
+            default {
+              wrLineBitPlru := 0x1 << 0x0
+              rSavedRamIdx := 0x0
+            }
+          }
+          //rSavedInPrefetchVec.head := True
+          rPrefetchInfo.valid := True
+          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+        }
+        is (MaskedLiteral(
+          "10--" + ("-" * numWays)
+        )) {
+          rSavedStallInfo.valid := False
+          //rSavedStallFromIdle := True
+          rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
+          rSavedRamIdx := rSavedStallInfo.ramIdx
+          //rPrefetchInfo.cnt := (
+          //  cfg.prefetchNumLinesAhead.get - 1
+          //)
+          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+          rPrefetchInfo.valid := False
+          //rPrefetchInfo.cnt := (
+          //  cfg.prefetchNumLinesAhead.get
+          //)
+        }
+        is (MaskedLiteral(
+          "11--" + ("-" * numWays)
+        )) {
+          rSavedStallInfo.valid := False
+          //rSavedStallFromIdle := True
+          rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
+          rSavedRamIdx := rSavedStallInfo.ramIdx
+          //rPrefetchInfo.cnt := (
+          //  cfg.prefetchNumLinesAhead.get - 1
+          //)
+          rState := State.LOAD_HIT_DO_STALL_PIPE_4
+          rPrefetchInfo.valid := False
+          //rPrefetchInfo.cnt := (
+          //  cfg.prefetchNumLinesAhead.get
+          //)
+        }
+        for (ramIdx <- 0 until numWays) {
+          val myRamIdxMask = calcHitRamIdxMask(ramIdx=ramIdx)
+          is (MaskedLiteral(
+            "0-00" + myRamIdxMask
+          )) {
+            rPrefetchInfo.cnt := (
+              rPrefetchInfo.cnt - 1
+            )
+            rPrefetchInfo.baseAddr := (
+              rPrefetchInfo.baseAddr + 1
+            )
+            rState := State.PREFETCH_START_PIPE_3
+          }
+        }
+        default {
+          rPrefetchInfo.valid := False
+          rPrefetchInfo.cnt := (
+            cfg.prefetchNumLinesAhead.get //- 1
+          )
+          rPrefetchInfo.baseAddr := (
+            rPrefetchInfo.baseAddr + 1
+          )
+          rState := (
+            State.IDLE
+            //State.WAIT_D2H_FIFO_EMPTY
+          )
+        }
+      }
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_PIPE_1) {
+      when (rPrefetchInfo.fire) {
+        rPrefetchInfo.cnt := rPrefetchInfo.cnt - 1
+        rPrefetchInfo.baseAddr := (
+          rPrefetchInfo.baseAddr + 1
+        )
+      } otherwise {
+        rPrefetchInfo.cnt := cfg.prefetchNumLinesAhead.get //- 1
+      }
+      rHadHiH2dFinish := False
+      rHadHiD2hFinish := False
+
+      rHiH2dPayload.burstFirst := True
+      rHiH2dPayload.burstLast := True//False
+      rHiH2dPayload.burstCnt := hiBusCfg.maxBurstSizeMinus1
+
+      rHiH2dPayload.isWrite := False
+      rHiH2dPayload.src := rSavedLoH2dPayload.src
+      rHiH2dPayload.addr := rSavedLoH2dPayload.burstAddr(
+        someBurstCnt=rHiH2dBurstCnt(1).getZero,
+        incrBurstCnt=false
+      )
+      rHiD2hBurstCnt := 0x0
+      when (RegNext(!hiH2dFifo.io.occupancy.orR, init=False)) {
+        rHiH2dValid := True
+        rState := State.RECV_LINE_FROM_HI_BUS
+      }
+
+      wrLineAttrs.tag := (
+        rSavedLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
+      )
+      //wrLineAttrs.dirty := (
+      //  // if it's a store, this line should be marked dirty!
+      //  rSavedLoH2dPayload.isWrite
+      //)
+
+      //def myArgBusAddr = rSavedLoH2dPayload.addr
+      //def myArgWrLineAttrs = wrLineAttrs
+      //def myArgSetEn = true
+
+      //if (myCondHaveLineBitPlruRam) {
+      //  switch (rSavedRamIdx) {
+      //    for (ramIdx <- 0 until numWays) {
+      //      is (ramIdx) {
+      //        doLineAttrsRamWrite(
+      //          ramIdx=ramIdx,
+      //          busAddr=myArgBusAddr,
+      //          lineAttrs=myArgWrLineAttrs,
+      //          setEn=myArgSetEn,
+      //        )
+      //      }
+      //    }
+      //  }
+      //} else {
+      //  doLineAttrsRamWrite(
+      //    ramIdx=0,
+      //    busAddr=myArgBusAddr,
+      //    lineAttrs=myArgWrLineAttrs,
+      //    setEn=myArgSetEn,
+      //  )
+      //}
+    }
+    is (State.RECV_LINE_FROM_HI_BUS) {
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      //lineWordRam.foreach(item => item.io.rdEn := False)
+      rHiH2dValid := False
+      when (io.hiBus.d2hBus.valid) {
+        rHiD2hReady := True
+      }
+      when (io.hiBus.d2hBus.fire) {
+        rHiD2hBurstCnt := rHiD2hBurstCnt + 1
+
+        //val tempBurstCntCmpEq = (
+        //  rHiD2hBurstCnt
+        //  === rSavedLoH2dPayload.addr(
+        //    rHiD2hBurstCnt.high + log2Up(hiBusCfg.dataWidth / 8)
+        //    downto log2Up(hiBusCfg.dataWidth / 8)
+        //  )
+        //)
+        //when (tempBurstCntCmpEq) {
+        //  myLoD2hPayload.data := (io.hiBus.d2hBus.data)
+        //  if (!loBusCfg.haveByteEn) {
+        //    myLoD2hPayload.byteSize := (
+        //      rSavedLoH2dPayload.byteSize
+        //    )
+        //    myLoD2hPayload.addrLo := rSavedLoH2dPayload.addr(
+        //      loBusCfg.addrLoWidth - 1 downto 0
+        //    )
+        //  }
+        //}
+        val rTempBurstAddr = (
+          rSavedLoH2dPayload.burstAddr(
+            someBurstCnt=rHiD2hBurstCnt,
+            incrBurstCnt=false,
+          )
+        )
+
+        def myArgBusAddr = rTempBurstAddr
+        def myArgLineWord = io.hiBus.d2hBus.data
+        def myArgByteEn = None
+        def myArgSetEn = true
+
+        if (myCondHaveLineBitPlruRam) {
+          switch (rSavedRamIdx) {
+            for (ramIdx <- 0 until numWays) {
+              is (ramIdx) {
+                doLineWordRamWrite(
+                  ramIdx=ramIdx,
+                  busAddr=myArgBusAddr,
+                  lineWord=myArgLineWord,
+                  //byteEn=myArgByteEn,
+                  setEn=myArgSetEn,
+                )
+              }
+            }
+          }
+        } else {
+          doLineWordRamWrite(
+            ramIdx=0,
+            busAddr=myArgBusAddr,
+            lineWord=myArgLineWord,
+            //byteEn=myArgByteEn,
+            setEn=myArgSetEn,
+          )
+        }
+        //when ((io.hiBus.d2hBus.burstLast)) {
+        //  //when (!rSavedLoH2dPayload.isWrite) {
+        //    rState := State.RECV_LINE_FROM_HI_BUS_POST_7
+        //  //} otherwise {
+        //  //  rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
+        //  //}
+        //}
+
+        switch (
+          //rSavedInPrefetchVec.head
+          rPrefetchInfo.fire
+          ## io.hiBus.d2hBus.burstLast
+        ) {
+          is (M"01") {
+            rState := State.RECV_LINE_FROM_HI_BUS_POST_7
+          }
+          is (M"11") {
+            //rSavedStallFromIdle := False
+            rState := (
+              //State.WAIT_D2H_FIFO_EMPTY
+              //State.PREFETCH_START_PIPE_3
+              State.PREFETCH_START_PIPE_4
+            )
+          }
+          default {
+          }
+        }
+      }
+    }
+    //is (State.RECV_LINE_FROM_HI_BUS_POST_WRITE) {
+    //  lineAttrsRam.foreach(item => item.io.rdEn := False)
+    //  lineWordRam.foreach(item => item.io.rdEn := False)
+    //  def myArgBusAddr = rSavedLoH2dPayload.addr
+    //  def myArgLineWord = rSavedLoH2dPayload.data
+    //  def myArgByteEn = Some(rSavedLoH2dPayload.byteEn)
+    //  def myArgSetEn = true
+
+    //  if (myCondHaveLineBitPlruRam) {
+    //    switch (rSavedRamIdx) {
+    //      for (ramIdx <- 0 until numWays) {
+    //        is (ramIdx) {
+    //          doLineWordRamWrite(
+    //            ramIdx=ramIdx,
+    //            busAddr=myArgBusAddr,
+    //            lineWord=myArgLineWord,
+    //            byteEn=myArgByteEn,
+    //            setEn=myArgSetEn,
+    //          )
+    //        }
+    //      }
+    //    }
+    //  } else {
+    //    doLineWordRamWrite(
+    //      ramIdx=0,
+    //      busAddr=myArgBusAddr,
+    //      lineWord=myArgLineWord,
+    //      byteEn=myArgByteEn,
+    //      setEn=myArgSetEn,
+    //    )
+    //  }
+    //  rState := State.RECV_LINE_FROM_HI_BUS_POST_5
+    //}
+    is (State.RECV_LINE_FROM_HI_BUS_POST_7) {
+      def myArgBusAddr = rSavedLoH2dPayload.addr
+      def myArgWrLineAttrs = wrLineAttrs
+      def myArgSetEn = true
+
+      if (myCondHaveLineBitPlruRam) {
+        switch (rSavedRamIdx) {
+          for (ramIdx <- 0 until numWays) {
+            is (ramIdx) {
+              doLineAttrsRamWrite(
+                ramIdx=ramIdx,
+                busAddr=myArgBusAddr,
+                lineAttrs=myArgWrLineAttrs,
+                setEn=myArgSetEn,
+              )
+            }
+          }
+        }
+      } else {
+        doLineAttrsRamWrite(
+          ramIdx=0,
+          busAddr=myArgBusAddr,
+          lineAttrs=myArgWrLineAttrs,
+          setEn=myArgSetEn,
+        )
+      }
+
+      lineWordRam.foreach(_.foreach(item => item.io.rdEn := False))
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_6
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_6) {
+      lineWordRam.foreach(_.foreach(item => item.io.rdEn := False))
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_5
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_5) {
+      lineWordRam.foreach(_.foreach(item => item.io.rdEn := False))
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_4
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_4) {
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(_.foreach(item => item.io.rdEn := False))
+      doLineWordRamReadSync(
+        busAddr=rSavedLoH2dPayload.addr,
+        setEn=0,
+      )
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_3
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_3) {
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(_.foreach(item => item.io.rdEn := True))
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_2
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_2) {
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(_.foreach(item => item.io.rdEn := False))
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_1
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_1) {
+      val myRdLineWord = (
+        if (myCondHaveLineBitPlruRam) (
+          rdLineWord(rSavedRamIdx)(
+            rSavedLoH2dPayload.addr(
+              myConvBusAddrToLineWordAddrRange
+            )
+          )
+        ) else (
+          rdLineWord.head(
+            rSavedLoH2dPayload.addr(
+              myConvBusAddrToLineWordAddrRange
+            )
+          )
+        )
+      )
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(_.foreach(item => item.io.rdEn := False))
+      //rState := State.RECV_LINE_FROM_HI_BUS_POST
+
+      myLoD2hPushStm.valid := True
+
+      myLoD2hPushStm.busPayload.src := (
+        //RegNext
+        (
+          rSavedLoH2dPayload.src//,
+          //init=rSavedLoH2dPayload.src.getZero
+        )
+      )
+
+      when (RegNext(
+        rose(rState === State.RECV_LINE_FROM_HI_BUS_POST_2)
+      )) {
+        myLoD2hPushStm.busPayload.data := RegNext(
+          //lineWordRam.io.rdData
+          myRdLineWord
+          //myLoD2hPushStm.busPayload.data//,
+          //init=
+        )
+      }
+
+      when (myLoD2hPushStm.ready) {
+        rState := State.RECV_LINE_FROM_HI_BUS_POST
+      }
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST) {
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(_.foreach(item => item.io.rdEn := False))
+      rState := (
+        //State.IDLE
+        State.WAIT_D2H_FIFO_EMPTY_ENOUGH
+      )
+    }
+    is (State.WAIT_D2H_FIFO_EMPTY_ENOUGH) {
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(_.foreach(item => item.io.rdEn := False))
+
+      //when (
+      //  !myLoD2hFifo.io.pop.valid
+      //  //myLoD2hFifo.io.push.ready
+      //) {
+      //  //myFifoThingDoStall := False
+      //  rState := State.IDLE
+      //}
+      val myEmptyEnoughCond = (
+        //myLoD2hFifo.io.push.ready
+        //&& 
+        //RegNext(
+        //  (
+        //    myLoD2hFifo.io.availability
+        //    >= (myFifoThingLoBusCfg.maxBurstSizeMinus1 + 1)
+        //  ),
+        //  init=False
+        //)
+        myLoD2hFifo.io.push.ready
+      )
+
+      when (
+        //!myLoD2hFifo.io.pop.valid
+        myEmptyEnoughCond
+      ) {
+        //rSavedInPrefetchVec.head := False
+        rPrefetchInfo.valid := False
+        rPrefetchInfo.cnt := cfg.prefetchNumLinesAhead.get
+      }
+
+      //when (
+      //  !myLoD2hFifo.io.pop.valid
+      //  && rPrefetchInfo.fire
+      //  && !rPrefetchInfo.cnt.msb
+      //) {
+      //  rPrefetchInfo.baseAddr := rPrefetchInfo.baseAddr + 1
+      //  rPrefetchInfo.cnt := rPrefetchInfo.cnt - 1
+      //  rState := State.PREFETCH_START_PIPE_3
+      //}
+
+      when (
+        //!myLoD2hFifo.io.pop.valid
+        myEmptyEnoughCond
+        && rSavedStallInfo.fire
+      ) {
+        rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
+        rSavedRamIdx := rSavedStallInfo.ramIdx
+        rSavedStallInfo.valid := False
+      }
+
+      switch (
+        //myLoD2hFifo.io.pop.valid
+        !myEmptyEnoughCond
+        ## (
+          rSavedStallInfo.fire
+          && !rSavedStallFromIdle
+        )
+        ## rSavedStallInfo.isHit
+      ) {
+        ////myFifoThingDoStall := False
+        //rState := State.IDLE
+        is (
+          M"00-"
+          //M"000-"
+        ) {
+          rSavedStallFromIdle := False
+          rState := State.IDLE
+        }
+        is (
+          M"010"
+          //M"0010"
+        ) {
+          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+        }
+        is (M"011") {
+          rState := State.LOAD_HIT_DO_STALL_PIPE_4
+        }
+        default {
+        }
+      }
+    }
+  }
+  wrLineAttrs.valid := True
+}
+
+private[libcheesevoyage] case class LcvBusInstrCacheMain(
   cfg: LcvBusCacheBusPairConfig
 ) extends Component {
   //--------
@@ -17384,19 +9618,16 @@ private[libcheesevoyage] case class LcvBusInstrCacheNonWide(
     cfg.havePrefetch
   ) generate new Area {
     val icache = (
-      //LcvBusInstrCacheMain(cfg=cfg)
-      //LcvBusInstrCacheNoPrefetch(cfg=cfg)
-      LcvBusInstrCacheWithTaggedPrefetch(cfg=cfg)
+      LcvBusInstrCacheWithTaggedPrefetchWide(cfg=cfg)
     )
     io <> icache.io
   }
+
   val myNoPrefetchArea = (
     !cfg.havePrefetch
   ) generate new Area {
     val icache = (
-      //LcvBusInstrCacheMain(cfg=cfg)
       LcvBusInstrCacheNoPrefetch(cfg=cfg)
-      //LcvBusInstrCacheWithTaggedPrefetch(cfg=cfg)
     )
     io <> icache.io
   }
@@ -17415,1576 +9646,1576 @@ private[libcheesevoyage] case class LcvBusInstrCacheNonWide(
   //}
 }
 
-//case class LcvBusInstrCacheWide(
-//  cfg: LcvBusCacheBusPairConfig,
-//) extends Component {
-//  //--------
-//  def numWays = cfg.loBusCacheCfg.numWays
-//
-//  def loBusCfg = cfg.loBusCfg
-//  def hiBusCfg = cfg.hiBusCfg
-//  def optFormal = cfg.optFormal
-//
-//  def loBusCacheCfg = cfg.loBusCacheCfg
-//  def myLineWordRamAddrRshift = (
-//    loBusCacheCfg.myLineWordRamFullLineAddrRshift
-//  )
-//  def myLineAttrsRamAddrRshift = loBusCacheCfg.myLineAttrsRamAddrRshift
-//  def myLineWordRamArrFromBusAddrRange = (
-//    loBusCacheCfg.myLineWordRamArrFromBusAddrRange._1
-//    downto loBusCacheCfg.myLineWordRamArrFromBusAddrRange._2
-//  )
-//
-//  def wordWidth = loBusCacheCfg.wordWidth
-//  def depthWords = loBusCacheCfg.depthWords
-//  def depthLines = loBusCacheCfg.depthLines
-//  def lineSizeWords = loBusCacheCfg.lineSizeWords
-//
-//  def myFifoThingLoBusCfg = cfg.myFifoThingLoBusCfg
-//  //--------
-//  require(
-//    //hiBusCfg.maxBurstSizeMinus1 == (64 / 4) - 1,
-//    //cfg.loBusCacheCfg.lineSizeBytes == 64,
-//    cfg.loBusCacheCfg.lineSizeBytes == loBusCfg.burstCntMaxNumBytes,
-//    s"(Perhaps only temporarily), "
-//    + s"we need the number of bytes per cache line to be "
-//    + s"${loBusCfg.burstCntMaxNumBytes}. "
-//    + s"This permits an easier-to-implement design "
-//    + s"for `io.hiBus` bursting."
-//  )
-//  //--------
-//  val io = LcvBusCacheIo(cfg=cfg)
-//  //--------
-//  val lineWordRamCfg = RamSdpPipeConfig(
-//    wordType=UInt(wordWidth bits),
-//    depth=(
-//      //depthWords
-//      depthLines
-//    ),
-//    optIncludeWrByteEn=false,
-//    optWrHistLength=cfg.myRamOptWrHistLength,
-//    initBigInt=Some(Array.fill(
-//      //depthWords
-//      depthLines
-//    )(BigInt(0))),
-//    arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
-//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineWordMemRamStyleXilinx,
-//  )
-//  val lineWordRam = Array.fill(numWays)(
-//    Array.fill(
-//      lineSizeWords
-//    )(
-//      RamSdpPipe(cfg=lineWordRamCfg)
-//    )
-//  )
-//  val lineAttrsRamCfg = RamSdpPipeConfig(
-//    wordType=LcvBusCacheLineAttrs(cfg=loBusCfg),
-//    depth=depthLines,
-//    optIncludeWrByteEn=false,
-//    optWrHistLength=cfg.myRamOptWrHistLength,
-//    initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
-//    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
-//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
-//  )
-//  val lineAttrsRam = Array.fill(numWays)(
-//    RamSdpPipe(cfg=lineAttrsRamCfg)
-//  )
-//
-//  val rdLineWord = Vec.fill(numWays)(
-//    Vec.fill(lineSizeWords)(
-//      UInt(wordWidth bits)
-//    )
-//  )
-//  val rdLineAttrs = Vec.fill(numWays)(
-//    LcvBusCacheLineAttrs(cfg=loBusCfg)
-//  )
-//  for (idx <- 0 until numWays) {
-//    for (jdx <- 0 until lineSizeWords) {
-//      rdLineWord(idx)(jdx) := lineWordRam(idx)(jdx).io.rdData
-//      lineWordRam(idx)(jdx).io.wrEn := False
-//    }
-//
-//    rdLineAttrs(idx) := lineAttrsRam(idx).io.rdData
-//    lineAttrsRam(idx).io.wrEn := False
-//  }
-//
-//  val wrLineAttrs = LcvBusCacheLineAttrs(cfg=loBusCfg)
-//  wrLineAttrs := RegNext(wrLineAttrs, init=wrLineAttrs.getZero)
-//  wrLineAttrs.allowOverride
-//
-//  val lineBitPlruRamCfg = RamSdpPipeConfig(
-//    wordType=UInt(
-//      //log2Up(numWays) bits
-//      numWays bits
-//    ),
-//    depth=depthLines,
-//    optIncludeWrByteEn=false,
-//    optWrHistLength=cfg.myRamOptWrHistLength,
-//    initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
-//    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
-//    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
-//  )
-//
-//  val myCondHaveLineBitPlruRam = (
-//    numWays > 1
-//  )
-//  val lineBitPlruRam = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    RamSdpPipe(cfg=lineBitPlruRamCfg)
-//  )
-//
-//  val rdLineBitPlru = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    UInt(
-//      //log2Up(numWays) bits
-//      numWays bits
-//    )
-//  )
-//  val wrLineBitPlru = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    UInt(
-//      //log2Up(numWays) bits
-//      numWays bits
-//    )
-//  )
-//
-//  if (myCondHaveLineBitPlruRam) {
-//    rdLineBitPlru := lineBitPlruRam.io.rdData
-//    wrLineBitPlru := RegNext(wrLineBitPlru, init=wrLineBitPlru.getZero)
-//    //wrLineBitPlru.allowOverride
-//    lineBitPlruRam.io.wrEn := False
-//  }
-//
-//
-//  //--------
-//  object State extends SpinalEnum(
-//    defaultEncoding=(
-//      //binarySequential
-//      binaryOneHot
-//    )
-//  ) {
-//    val
-//      INIT,
-//      IDLE,
-//      LOAD_HIT_DO_STALL_PIPE_4,
-//      LOAD_HIT_DO_STALL_PIPE_3,
-//      LOAD_HIT_DO_STALL_PIPE_2,
-//      LOAD_HIT_DO_STALL_PIPE_1,
-//      LOAD_HIT_DO_STALL,
-//      LOAD_HIT_DO_STALL_POST,
-//      //STORE_HIT_DO_STALL_PIPE_1,
-//      //STORE_HIT_DO_STALL,
-//
-//      //MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2,
-//      //MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1,
-//      //MAYBE_DIRTY_RE_READ_ATTRS,
-//      //SEND_LINE_TO_HI_BUS_PIPE_3,
-//      //SEND_LINE_TO_HI_BUS_PIPE_2,
-//      //SEND_LINE_TO_HI_BUS_PIPE_1,
-//      //SEND_LINE_TO_HI_BUS,
-//      RECV_LINE_FROM_HI_BUS_PIPE_1,
-//      RECV_LINE_FROM_HI_BUS,
-//      RECV_LINE_FROM_HI_BUS_POST_WRITE,
-//      RECV_LINE_FROM_HI_BUS_POST_7,
-//      RECV_LINE_FROM_HI_BUS_POST_6,
-//      RECV_LINE_FROM_HI_BUS_POST_5,
-//      RECV_LINE_FROM_HI_BUS_POST_4,
-//      RECV_LINE_FROM_HI_BUS_POST_3,
-//      RECV_LINE_FROM_HI_BUS_POST_2,
-//      RECV_LINE_FROM_HI_BUS_POST_1,
-//      RECV_LINE_FROM_HI_BUS_POST,
-//
-//      WAIT_D2H_FIFO_EMPTY
-//
-//      = newElement();
-//  }
-//
-//  val rState = (
-//    Reg(State())
-//    init(State.INIT)
-//  )
-//  //--------
-//  val myLoH2dPopBusCfg = (
-//    LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=myFifoThingLoBusCfg)
-//  )
-//  val myLoH2dReptThing = LcvBusDoStallH2dReptThing(
-//    busCfg=myLoH2dPopBusCfg
-//  )
-//
-//  //val myLoH2dDoStallFifoThing = LcvBusDoStallFifoThing(
-//  //  busCfg=myFifoThingLoBusCfg,
-//  //  includeDoInit=false,
-//  //)
-//  //io.loBus.h2dBus.translateInto(
-//  //  //myLoH2dDoStallFifoThing.io.push
-//  //  myLoH2dReptThing.io.push
-//  //)(
-//  //  dataAssignment=(outp, inp) => {
-//  //    //outp.busPayload := inp
-//  //    outp.mainNonBurstInfo := inp.mainNonBurstInfo
-//  //    outp.txnCnt.allowOverride
-//  //    outp.txnCnt := (
-//  //      (
-//  //        RegNextWhen(
-//  //          (outp.txnCnt.asSInt + 1),
-//  //          cond=myLoH2dReptThing.io.push.fire,
-//  //        )
-//  //        init(-2)
-//  //      ).asUInt
-//  //    )
-//  //  }
-//  //)
-//  val myFifoThingDoStall = Bool()
-//  myFifoThingDoStall := (
-//    RegNext(myFifoThingDoStall, init=myFifoThingDoStall.getZero)
-//  )
-//  myLoH2dReptThing.io.doStall := myFifoThingDoStall
-//  //val rSeenMyFifoThingDoStallCnt = (
-//  //  Reg(UInt(log2Up(LcvBusDoStallFifoThing.fifoDepthMain + 1) + 1 bits))
-//  //  init(0x0)
-//  //)
-//  //myLoH2dDoStallFifoThing.io.doStall := myFifoThingDoStall
-//
-//  val myLoH2dToWrByteEnStmAdapter = (
-//    !loBusCfg.haveByteEn
-//  ) generate (LcvBusH2dShiftedDataEtcStreamAdapter(
-//    cfg=LcvBusH2dShiftedDataEtcStreamAdapterConfig(
-//      loBusCfg=myFifoThingLoBusCfg,
-//    )
-//  ))
-//
-//  val myMainLoH2dPopStm = (
-//    Stream(LcvBusH2dPayload(
-//      cfg=myLoH2dPopBusCfg
-//    ))
-//  )
-//
-//  val mySelLoH2dPopStm = (
-//    //cloneOf(myLoH2dDoStallFifoThing.io.pop)
-//    //cloneOf(io.loBus.h2dBus)
-//    //Stream(LcvBusH2dPayload(
-//    //  cfg=myLoH2dPopBusCfg
-//    //))
-//    //cloneOf(myMainLoH2dPopStm)
-//    cloneOf(myLoH2dReptThing.io.pop)
-//  )
-//  mySelLoH2dPopStm << myLoH2dReptThing.io.pop
-//  //val mySelLoH2dPop
-//  def mySelLoH2dPopPayload = mySelLoH2dPopStm.payload//.busPayload
-//
-//  io.loBus.h2dBus.translateInto(
-//    if (!loBusCfg.haveByteEn) (
-//      myLoH2dToWrByteEnStmAdapter.io.loH2dBus
-//    ) else (
-//      myMainLoH2dPopStm
-//    )
-//  )(
-//    dataAssignment=(outp, inp) => {
-//      //outp := inp
-//      outp.mainNonBurstInfo := inp.mainNonBurstInfo
-//      outp.txnCnt.allowOverride
-//      outp.txnCnt := (
-//        (
-//          RegNextWhen(
-//            (outp.txnCnt.asSInt + 1),
-//            cond=io.loBus.h2dBus.fire,
-//          )
-//          init(-2)
-//        ).asUInt
-//      )
-//    }
-//  )
-//
-//  if (!loBusCfg.haveByteEn) {
-//    myLoH2dToWrByteEnStmAdapter.io.hiH2dBus.translateInto(
-//      myMainLoH2dPopStm
-//    )(
-//      dataAssignment=(outp, inp) => {
-//        outp := inp
-//        outp.txnCnt.allowOverride
-//        outp.txnCnt := myLoH2dToWrByteEnStmAdapter.io.loH2dBus.txnCnt
-//      }
-//    )
-//  }
-//
-//  //myMainLoH2dPopStm.ready := !myFifoThingDoStall
-//  //myLoH2dReptThing.io.push << myMainLoH2dPopStm
-//  myMainLoH2dPopStm.translateInto(
-//    myLoH2dReptThing.io.push
-//  )(
-//    dataAssignment=(outp, inp) => {
-//      outp.busPayload := inp
-//      //outp.savedData := inp.data
-//    }
-//  )
-//  mySelLoH2dPopStm.ready := False
-//
-//  //val myLoH2dPopThrowArea = new Area {
-//  //  val myLoH2dThrowCond = Bool()
-//  //  val myTempLoH2dPopStm = myLoH2dDoStallFifoThing.io.pop.throwWhen(
-//  //    myLoH2dThrowCond
-//  //  )
-//  //  myLoH2dThrowCond := False
-//  //  //myLoH2dPopStm.ready := False
-//  //  myLoH2dPopStm << myTempLoH2dPopStm
-//  //}
-//  val rLoH2dPayload = (
-//    RegNextWhen(
-//      mySelLoH2dPopStm.payload,
-//      cond=mySelLoH2dPopStm.fire,
-//      init=mySelLoH2dPopStm.payload.getZero,
-//    )
-//  )
-//  def rBusAddr = rLoH2dPayload.addr
-//  val rDel2LoH2dPayload = (
-//    RegNext/*When*/(
-//      next=rLoH2dPayload,
-//      //cond=myLoH2dPopStm.fire,
-//      init=rLoH2dPayload.getZero,
-//    )
-//  )
-//  def rDel2BusAddr = rDel2LoH2dPayload.addr
-//
-//  val rSavedLoH2dPayload = (
-//    Reg(cloneOf(rLoH2dPayload))
-//    init(rLoH2dPayload.getZero)
-//  )
-//  def rSavedLoBusAddr = rSavedLoH2dPayload.addr
-//  def rSavedLoBusAddrSet = rSavedLoBusAddr(loBusCacheCfg.setRange)
-//
-//  val myLoD2hShiftedDataStmAdapter = (
-//    !cfg.loBusCfg.haveByteEn
-//  ) generate (
-//    LcvBusD2hShiftedDataEtcStreamAdapter(
-//      cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(
-//        busCfg=cfg.loBusCfg
-//      )
-//    )
-//  )
-//  val myLoD2hPushStm = Stream(
-//    LcvBusDoStallFifoThingPayload(
-//      LcvBusD2hPayload(
-//        cfg=myFifoThingLoBusCfg,
-//        includeByteSizeEtc=(!myFifoThingLoBusCfg.haveByteEn),
-//      ),
-//    )
-//  )
-//
-//  myLoD2hPushStm.valid := False
-//  //myLoH2dReptThing.io.finishTxn.valid := myLoD2hPushStm.fire
-//  //myLoH2dReptThing.io.finishTxn.payload := (
-//  //  myLoD2hPushStm.busPayload.txnCnt
-//  //)
-//
-//  val myLoD2hFifo = StreamFifo(
-//    dataType=LcvBusD2hPayload(cfg=cfg.loBusCfg),
-//    depth=(myFifoThingLoBusCfg.maxBurstSizeMinus1 + 1),
-//    latency=cfg.busD2hFifoLatency,
-//    forFMax=true,
-//  )
-//
-//  myLoD2hFifo.io.pop.translateInto(io.loBus.d2hBus)(
-//    dataAssignment=(outp, inp) => {
-//      outp.mainNonBurstInfo := inp.mainNonBurstInfo
-//    }
-//  )
-//  //val myLoD2hAlmostDonePushStm = cloneOf(myLoD2hPushStm)
-//  //myLoD2hAlmostDonePushStm << myLoD2hPushStm
-//  //myLoD2hAlmostDonePushStm << myLoD2hPushStm.throwWhen(
-//  //  myLoD2hPushStm.busPayload.txnCnt.asSInt
-//  //  === (
-//  //    RegNextWhen(
-//  //      myLoD2hPushStm.busPayload.txnCnt.asSInt,
-//  //      cond=myLoD2hPushStm.fire,
-//  //    )
-//  //    init(1)
-//  //  )
-//  //)
-//
-//  // NOTE: this was previously `myLoD2hAlmostDonePushStm.translateInto`
-//  myLoD2hPushStm.translateInto(
-//    if (cfg.myFifoThingLoBusCfg.haveByteEn) (
-//      myLoD2hFifo.io.push
-//    ) else (
-//      myLoD2hShiftedDataStmAdapter.io.loD2hBus
-//    )
-//  )(
-//    dataAssignment=(outp, inp) => {
-//      outp.mainNonBurstInfo := inp.busPayload.mainNonBurstInfo
-//    }
-//  )
-//
-//  if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//    //println(
-//    //  s"NOTE: "
-//    //  + s"myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus"
-//    //)
-//    myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus
-//  }
-//
-//  def doLineWordRamReadSync(
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    lineWordRam.foreach(outerItem => outerItem.foreach(item => {
-//      if (setEn == 1) {
-//        item.io.rdEn := True
-//      } else if (setEn == 2) {
-//        item.io.rdEn := (
-//          RegNext(
-//            next=(
-//              //mySelLoH2dPopStm.valid
-//              mySelLoH2dPopStm.fire
-//            ),
-//            init=False,
-//          )
-//          //&& !myFifoThingDoStall
-//        )
-//      }
-//      item.io.rdAddr := {
-//        //println(
-//        //  s"test info: busAddr("
-//        //  + s"${busAddr.high} downto ${myLineWordRamAddrRshift}"
-//        //  + s")"
-//        //)
-//        (
-//          (
-//            busAddr(busAddr.high downto myLineWordRamAddrRshift)
-//          )
-//          .resize(item.io.rdAddr.getWidth)
-//        )
-//      }
-//    }))
-//  }
-//  def doLineAttrsRamReadSync(
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    lineAttrsRam.foreach(item => {
-//      if (setEn == 1) {
-//        item.io.rdEn := True
-//      } else if (setEn == 2) {
-//        item.io.rdEn := (
-//          RegNext(
-//            next=(
-//              //mySelLoH2dPopStm.valid
-//              mySelLoH2dPopStm.fire
-//            ),
-//            init=False,
-//          )
-//          //&& !myFifoThingDoStall
-//        )
-//      } 
-//      item.io.rdAddr := {
-//        //println(
-//        //  s"test info: busAddr("
-//        //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
-//        //  + s")"
-//        //)
-//        (
-//          (
-//            busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
-//          )
-//          .resize(item.io.rdAddr.getWidth)
-//        )
-//      }
-//    })
-//  }
-//  def doLineBitPlruRamReadSync(
-//    busAddr: UInt,
-//    setEn: Int=0,
-//  ): Unit = {
-//    if (setEn == 1) {
-//      lineBitPlruRam.io.rdEn := True
-//    } else if (setEn == 2) {
-//      lineBitPlruRam.io.rdEn := (
-//        RegNext(
-//          next=(
-//            //mySelLoH2dPopStm.valid
-//            mySelLoH2dPopStm.fire
-//          ),
-//          init=False,
-//        )
-//        //&& !myFifoThingDoStall
-//      )
-//    } 
-//    lineBitPlruRam.io.rdAddr := {
-//      //println(
-//      //  s"test info: busAddr("
-//      //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
-//      //  + s")"
-//      //)
-//      (
-//        (
-//          busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
-//        )
-//        .resize(lineBitPlruRam.io.rdAddr.getWidth)
-//      )
-//    }
-//  }
-//
-//  for (ramIdx <- 0 until numWays) {
-//    for (wordIdx <- 0 until lineSizeWords) {
-//      val myRam = lineWordRam(ramIdx)(wordIdx)
-//      myRam.io.wrEn.allowOverride
-//      myRam.io.wrAddr.allowOverride
-//      myRam.io.wrData.allowOverride
-//      myRam.io.wrEn := False
-//      myRam.io.wrAddr := 0x0
-//      myRam.io.wrData := 0x0
-//    }
-//  }
-//  def doLineWordRamWrite(
-//    ramIdx: Int,
-//    busAddr: UInt,
-//    lineWord: UInt,
-//    //byteEn: Option[UInt],
-//    setEn: Boolean=true,
-//  ): Unit = {
-//    switch (busAddr(
-//      myLineWordRamArrFromBusAddrRange 
-//    )) {
-//      for (wordIdx <- 0 until lineSizeWords) {
-//        is (wordIdx) {
-//          val myRam = lineWordRam(ramIdx)(wordIdx)
-//          if (setEn) {
-//            myRam.io.wrEn := True
-//          }
-//          myRam.io.wrAddr := (
-//            (busAddr(busAddr.high downto myLineWordRamAddrRshift))
-//            .resize(myRam.io.wrAddr.getWidth)
-//          )
-//          myRam.io.wrData := lineWord
-//          //byteEn match {
-//          //  case Some(byteEn) => {
-//          //    myRam.io.wrByteEn := byteEn.asBits
-//          //  }
-//          //  case None => {
-//          //    myRam.io.wrByteEn := (
-//          //      B(
-//          //        myRam.io.wrByteEn.getWidth bits,
-//          //        default -> True
-//          //      )
-//          //    )
-//          //  }
-//          //}
-//        }
-//      }
-//    }
-//  }
-//  def doLineAttrsRamWrite(
-//    ramIdx: Int,
-//    busAddr: UInt,
-//    lineAttrs: LcvBusCacheLineAttrs,
-//    setEn: Boolean=true,
-//  ): Unit = {
-//    if (setEn) {
-//      lineAttrsRam(ramIdx).io.wrEn := True
-//    }
-//    lineAttrsRam(ramIdx).io.wrAddr := (
-//      (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
-//      .resize(lineAttrsRam(ramIdx).io.wrAddr.getWidth)
-//    )
-//    lineAttrsRam(ramIdx).io.wrData := lineAttrs
-//  }
-//  def doLineBitPlruRamWrite(
-//    busAddr: UInt,
-//    //lineAttrs: LcvBusCacheLineBitPlru,
-//    lineBitPlru: UInt,
-//    setEn: Boolean=true,
-//  ): Unit = {
-//    if (setEn) {
-//      lineBitPlruRam.io.wrEn := True
-//    }
-//    lineBitPlruRam.io.wrAddr := (
-//      (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
-//      .resize(lineBitPlruRam.io.wrAddr.getWidth)
-//    )
-//    lineBitPlruRam.io.wrData := lineBitPlru
-//  }
-//
-//  doLineWordRamReadSync(
-//    busAddr=mySelLoH2dPopPayload.addr,
-//    setEn=2,
-//  )
-//  for (ramIdx <- 0 until numWays) {
-//    doLineWordRamWrite(
-//      ramIdx=ramIdx,
-//      busAddr=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.addr,
-//            init=mySelLoH2dPopPayload.addr.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.addr.getZero,
-//        )
-//      ),
-//      lineWord=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.data,
-//            init=mySelLoH2dPopPayload.data.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.data.getZero,
-//        )
-//      ),
-//      //byteEn=Some(
-//      //  RegNext(
-//      //    RegNext(
-//      //      mySelLoH2dPopPayload.byteEn,
-//      //      init=mySelLoH2dPopPayload.byteEn.getZero
-//      //    ),
-//      //    init=mySelLoH2dPopPayload.byteEn.getZero,
-//      //  ),
-//      //),
-//      setEn=false,
-//    )
-//  }
-//
-//  doLineAttrsRamReadSync(
-//    busAddr=mySelLoH2dPopPayload.addr,
-//    setEn=2,
-//  )
-//  for (ramIdx <- 0 until numWays) {
-//    doLineAttrsRamWrite(
-//      ramIdx=ramIdx,
-//      busAddr=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.addr,
-//            init=mySelLoH2dPopPayload.addr.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.addr.getZero,
-//        )
-//      ),
-//      lineAttrs=(
-//        wrLineAttrs
-//      ),
-//      setEn=false,
-//    )
-//  }
-//
-//  if (myCondHaveLineBitPlruRam) {
-//    doLineBitPlruRamReadSync(
-//      busAddr=mySelLoH2dPopPayload.addr,
-//      setEn=2,
-//    )
-//    doLineBitPlruRamWrite(
-//      busAddr=(
-//        RegNext(
-//          RegNext(
-//            mySelLoH2dPopPayload.addr,
-//            init=mySelLoH2dPopPayload.addr.getZero
-//          ),
-//          init=mySelLoH2dPopPayload.addr.getZero,
-//        )
-//      ),
-//      lineBitPlru=(
-//        wrLineBitPlru
-//      ),
-//      setEn=false,
-//    )
-//  }
-//  //--------
-//  myLoD2hPushStm.payload := (
-//    RegNext(myLoD2hPushStm.payload, init=myLoD2hPushStm.payload.getZero)
-//  )
-//
-//  val myTempHaveHitCmpEqLeft = Vec[UInt](
-//    rdLineAttrs.map(item => item.tag)
-//  )
-//  val myTempHaveHitCmpEqRight = Vec.fill(numWays)(
-//    RegNext(
-//      RegNext(mySelLoH2dPopPayload.addr(loBusCacheCfg.tagRange))
-//      init(0x0)
-//    )
-//    init(0x0),
-//  )
-//  val tempHaveHitCmpEq = Vec.fill(numWays)(Bool())
-//  val haveHit = Vec.fill(numWays)(
-//    Bool()
-//  )
-//  for (ramIdx <- 0 until numWays) {
-//    tempHaveHitCmpEq(ramIdx) := (
-//      myTempHaveHitCmpEqLeft(ramIdx)
-//      === myTempHaveHitCmpEqRight(ramIdx)
-//    )
-//    haveHit(ramIdx) := (
-//      rdLineAttrs(ramIdx).fire
-//      && tempHaveHitCmpEq(ramIdx)
-//    )
-//  }
-//  //val haveHit = (
-//  //  rdLineAttrs.fire
-//  //  && tempHaveHitCmpEq
-//  //)
-//
-//  val rSavedRdLineAttrsTag = (
-//    //Vec.fill(numWays)(
-//      Reg(
-//        cloneOf(rdLineAttrs.head.tag),
-//        init=rdLineAttrs.head.tag.getZero,
-//      )
-//    //)
-//  )
-//
-//  val rHiH2dBurstCnt = (
-//    Vec.fill(2)(
-//      Reg(UInt(loBusCfg.burstCntWidth bits))
-//      init(0x0)
-//    )
-//  )
-//  val rHiD2hBurstCnt = (
-//    Reg(UInt(loBusCfg.burstCntWidth bits))
-//    init(0x0)
-//  )
-//  //--------
-//  def myLoD2hPayload = myLoD2hPushStm.busPayload
-//  //--------
-//
-//  def doPopLoH2dFifo(): Unit = {
-//    mySelLoH2dPopStm.ready := True
-//  }
-//
-//  //val myDoStallLoH2dThrowThing = (
-//  //  LcvBusDoStallH2dThrowThing(busCfg=cfg.myFifoThingLoBusCfg)
-//  //)
-//  //myDoStallLoH2dThrowThing.io.push.valid := (
-//  //  myLoH2dDoStallFifoThing.io.pop.valid
-//  //  //&& rState === State.IDLE
-//  //  && rState.asBits(1)
-//  //)
-//  //myDoStallLoH2dThrowThing.io.push.payload := (
-//  //  myLoH2dDoStallFifoThing.io.pop.busPayload.txnCnt
-//  //)
-//
-//  //val myFullTempIgnoreDupCntCond = (
-//  //  myDoStallLoH2dThrowThing.io.myThrowCondMain
-//  //  //&& History[Bool](
-//  //  //  that=True,
-//  //  //  when=(
-//  //  //    myLoH2dPopStm.fire
-//  //  //    //myD2hPushStm.fire
-//  //  //    //myLoH2dDoStallFifoThing.io.pop.fire
-//  //  //    //&& !myLoH2dPopThrowArea.myLoH2dThrowCond
-//  //  //  ),
-//  //  //  length=(
-//  //  //    //2
-//  //  //    //4
-//  //  //    //3
-//  //  //    5
-//  //  //  ),
-//  //  //  init=False,
-//  //  //).last
-//  //)
-//
-//  //def doIgnoreInvalidFifoThingPopCnt(
-//  //): Unit = {
-//  //  when (myFullTempIgnoreDupCntCond) {
-//  //    myLoH2dPopThrowArea.myLoH2dThrowCond := True
-//  //  }
-//  //}
-//
-//  val rMyTempDoSaveCond = (
-//    Vec.fill(4)(
-//      RegNext(
-//        RegNext(
-//          (
-//            mySelLoH2dPopStm.fire
-//            //&& !myFullTempIgnoreDupCntCond
-//          ),
-//          init=False
-//        ),
-//        init=False
-//      )
-//    )
-//  )
-//  //val rHadAnyRamWritePastTwoCycles = Vec.fill(2)(
-//  //  RegNext(
-//  //    (
-//  //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-//  //      || RegNext(
-//  //        Vec(lineWordRam.map(item => item.io.wrEn)).orR,
-//  //        init=False
-//  //      )
-//  //      || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-//  //      || RegNext(
-//  //        Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
-//  //        init=False
-//  //      )
-//  //    ),
-//  //    init=False
-//  //  )
-//  //)
-//  val myTempHaveCurrRamWrite = (
-//    Vec[Bool](lineWordRam.map(outerItem => (
-//      Vec[Bool](outerItem.map(item => item.io.wrEn)).orR
-//    ))).orR
-//    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-//  )
-//  val myHistHadAnyRamWrite = Array.fill(2)(
-//    History[Bool](
-//      that=(
-//        //RegNext(
-//          myTempHaveCurrRamWrite//,
-//        //  init=myTempHaveCurrRamWrite.getZero
-//        //)
-//      ),
-//      length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
-//      init=myTempHaveCurrRamWrite.getZero
-//    )
-//  )
-//  val myHadAnyRecentRamWrite = Vec[Bool](
-//    myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
-//    //RegNext(
-//    //  (
-//    //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
-//    //    || RegNext(
-//    //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR,
-//    //      init=False
-//    //    )
-//    //    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
-//    //    || RegNext(
-//    //      Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR,
-//    //      init=False
-//    //    )
-//    //  ),
-//    //  init=False
-//    //)
-//  )
-//  //val rHadLineAttrsRamWritePastTwoCycles = Vec.fill(2)(
-//  //  RegNext(
-//  //    lineAttrsRam.io.wrEn
-//  //    || RegNext(lineAttrsRam.io.wrEn, init=False),
-//  //    init=False
-//  //  )
-//  //)
-//  //val myTempUpdateSavedLoH2dPayloadCond = Bool()
-//  //myTempUpdateSavedLoH2dPayloadCond := True
-//
-//  //--------
-//  val rHadLoH2dFinish = Reg(Bool(), init=False)
-//  val rHadLoD2hFinish = Reg(Bool(), init=False)
-//  val rHadHiH2dFinish = Reg(Bool(), init=False)
-//  val rHadHiD2hFinish = Reg(Bool(), init=False)
-//
-//  val hiH2dFifo = (
-//    StreamFifo(
-//      dataType=(
-//        //UInt(loBusCacheCfg.wordWidth bits)
-//        LcvBusH2dPayload(cfg.hiBusCfg)
-//      ),
-//      depth=loBusCacheCfg.lineSizeWords,
-//      latency=2,
-//      forFMax=true,
-//    )
-//  )
-//
-//  val rHiH2dValid = Reg(Bool(), init=False)
-//  val rHiH2dPayload = (
-//    Reg(cloneOf(hiH2dFifo.io.push.payload))
-//    init(hiH2dFifo.io.push.payload.getZero)
-//  )
-//  val rHiD2hReady = Reg(Bool(), init=False)
-//  hiH2dFifo.io.push.valid := rHiH2dValid
-//  hiH2dFifo.io.push.payload := rHiH2dPayload
-//  io.hiBus.d2hBus.ready := rHiD2hReady
-//
-//  rHiH2dPayload.byteEn := (
-//    U(hiBusCfg.byteEnWidth bits, default -> True)
-//  )
-//  //rHiH2dPayload.byteSize := (
-//  //  U(rHiH2dPayload.byteSize.getWidth bits, default -> True)
-//  //)
-//  //rHiH2dPayload.haveFullWord := True
-//  io.hiBus.h2dBus <-/< hiH2dFifo.io.pop
-//
-//      
-//// >>> for ramIdx in range(numWays):
-//// ...     print(ramIdx, (("0" * (numWays - ramIdx - 1))) + "1" + ("-" * ramIdx))
-//// ...     
-//// 0 0001
-//// 1 001-
-//// 2 01--
-//// 3 1---
-//  def calcHitRamIdxMask(ramIdx: Int): String = (
-//    (("0" * (numWays - ramIdx - 1)))
-//    + "1"
-//    + ("-" * ramIdx)
-//  )
-//
-//// >>> for ramIdx in range(numWays):
-//// ...     print(ramIdx, (("1" * (numWays - ramIdx - 1))) + "0" + ("-" * ramIdx))
-//// ...     
-//// 0 1110
-//// 1 110-
-//// 2 10--
-//// 3 0---
-//  def calcMissRamIdxMask(ramIdx: Int): String = (
-//    (("1" * (numWays - ramIdx - 1)))
-//    + "0"
-//    + ("-" * ramIdx)
-//  )
-//
-//  val rSavedRamIdx = (
-//    myCondHaveLineBitPlruRam
-//  ) generate (
-//    Reg(UInt(log2Up(numWays) bits))
-//    init(0x0)
-//  )
-//
-//  val rSavedWordIdx = (
-//    Reg(UInt(log2Up(lineSizeWords) bits))
-//    init(0x0)
-//  )
-//  //val myHistSavedRamIdx = (
-//  //  History(
-//  //    that=rSavedRamIdx,
-//  //  )
-//  //)
-//
-//  val tempToSwitch = (
-//    //((rState === State.IDLE) && rMyTempDoSaveCond(3))
-//    //((rState === State.IDLE)
-//    rState.asBits(State.IDLE.position)
-//    ## rMyTempDoSaveCond(3)
-//    //RegNext(
-//    //  RegNext(mySelLoH2dPopStm.fire, init=False),
-//    //  init=False
-//    //)
-//    //## haveHit.orR
-//    //## haveHit
-//    //## (
-//    //  (
-//    //    rdLineAttrs.map(item => item.dirty).orR
-//    //  )
-//    //  //|| (
-//    //  //  //rdLine
-//    //  //  RegNext(
-//    //  //    (
-//    //  //      (
-//    //  //        wrLineAttrs.dirty
-//    //  //        && (
-//    //  //          Vec(lineAttrsRam.map(item => item.io.wrEn)).orR
-//    //  //        )
-//    //  //      )
-//    //  //      || RegNext(
-//    //  //        wrLineAttrs.dirty
-//    //  //        && (
-//    //  //          Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
-//    //  //        ),
-//    //  //        init=False
-//    //  //      )
-//    //  //    ),
-//    //  //    init=False
-//    //  //  )
-//    //  //)
-//    //)
-//    //## rDel2LoH2dPayload.isWrite
-//    ## haveHit
-//  )
-//  //println(
-//  //  s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
-//  //)
-//
-//  switch (
-//    tempToSwitch
-//  ) {
-//    is (
-//      //M"10-0"
-//      MaskedLiteral(
-//        //"10-" + ("0" * numWays)
-//        //"1" + ("0" * numWays)
-//        "11" + ("0" * numWays)
-//      )
-//      //M"10"
-//    ) {
-//      //// cache miss, and know for sure that the line isn't dirty
-//      // cache miss
-//      rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-//
-//      if (myCondHaveLineBitPlruRam) {
-//        //rSavedRamIdx := rdLineBitPlru
-//        //wrLineBitPlru := rdLineBitPlru + 1
-//        wrLineBitPlru := rdLineBitPlru
-//        lineBitPlruRam.io.wrEn := True
-//        switch (rdLineBitPlru) {
-//          for (ramIdx <- 0 until numWays) {
-//            val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
-//            is (MaskedLiteral(myRamIdxMask)) {
-//              wrLineBitPlru(ramIdx) := True
-//              rSavedRamIdx := ramIdx
-//            }
-//            default {
-//            }
-//          }
-//        }
-//      }
-//
-//      //myFifoThingDoStall := False
-//      myLoD2hPushStm.valid := False
-//
-//      myFifoThingDoStall := True
-//      //doPopLoH2dFifo()
-//      mySelLoH2dPopStm.ready := (
-//        //True
-//        False
-//      )
-//      //myTempUpdateSavedLoH2dPayloadCond := False
-//    }
-//
-//    //is (
-//    //  //M"11-0"
-//    //  MaskedLiteral(
-//    //    //"11-" + ("0" * numWays)
-//    //    "1" + ("0" * numWays)
-//    //  )
-//    //) {
-//    //  // cache miss, and the line is *possibly* dirty
-//    //  rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
-//
-//    //  if (myCondHaveLineBitPlruRam) {
-//    //    rSavedRamIdx := rdLineBitPlru
-//    //    wrLineBitPlru := rdLineBitPlru + 1
-//    //    lineBitPlruRam.io.wrEn := True
-//    //  }
-//
-//    //  myFifoThingDoStall := True
-//    //  mySelLoH2dPopStm.ready := (
-//    //    //True
-//    //    False
-//    //  )
-//    //  //myTempUpdateSavedLoH2dPayloadCond := False
-//    //}
-//    for (ramIdx <- 0 until numWays) {
-//      val myRamIdxMask = calcHitRamIdxMask(ramIdx=ramIdx)
-//      //println(
-//      //  s"ramIdx:${ramIdx} myRamIdxMask:${myRamIdxMask}"
-//      //)
-//      is (
-//        MaskedLiteral(
-//          //"1-01"
-//          "11" + myRamIdxMask
-//        )
-//      ) {
-//        doPopLoH2dFifo()
-//        myFifoThingDoStall := False
-//        //myLoD2hPushStm.valid := False
-//        if (myCondHaveLineBitPlruRam) {
-//          rSavedRamIdx := ramIdx
-//          val tempLineBitPlru = cloneOf(rdLineBitPlru)
-//          tempLineBitPlru.allowOverride
-//          tempLineBitPlru := rdLineBitPlru
-//          tempLineBitPlru(ramIdx) := True
-//          when (tempLineBitPlru.andR) {
-//            wrLineBitPlru := 1 << ramIdx
-//          } otherwise {
-//            wrLineBitPlru := tempLineBitPlru
-//          }
-//        }
-//        // load, cache hit
-//        //mySelLoH2dPopStm.ready := True
-//        myLoD2hPushStm.valid := True
-//        myLoD2hPushStm.busPayload.data := (
-//          rdLineWord(ramIdx)(
-//            rDel2LoH2dPayload.addr(
-//              myLineWordRamArrFromBusAddrRange
-//            )
-//          )
-//        )
-//        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//          myLoD2hPushStm.busPayload.byteSize := (
-//            rDel2LoH2dPayload.byteSize
-//          )
-//          myLoD2hPushStm.busPayload.addrLo := (
-//            rDel2LoH2dPayload.addr(
-//              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//            )
-//          )
-//        }
-//
-//        when (
-//          //rHadAnyRamWritePastTwoCycles.head
-//          myHadAnyRecentRamWrite.head
-//        ) {
-//          myLoD2hPushStm.valid := False
-//        }
-//        when (
-//          //rHadAnyRamWritePastTwoCycles.last
-//          myHadAnyRecentRamWrite.last
-//          || !myLoD2hPushStm.ready
-//        ) {
-//          mySelLoH2dPopStm.ready := False
-//          myFifoThingDoStall := True
-//          rState := (
-//            //State.LOAD_HIT_DO_STALL_PIPE_3
-//            State.LOAD_HIT_DO_STALL_PIPE_4
-//          )
-//          //myTempUpdateSavedLoH2dPayloadCond := False
-//        } otherwise {
-//          //doPopLoH2dFifo()
-//        }
-//      }
-//    }
-//    is (MaskedLiteral(
-//      "1" + "0" + ("-" * numWays)
-//    )) {
-//      doPopLoH2dFifo()
-//      myFifoThingDoStall := False
-//      myLoD2hPushStm.valid := False
-//    }
-//    default {
-//      //doPopLoH2dFifo()
-//      //myFifoThingDoStall := False
-//      //myLoD2hPushStm.valid := False
-//    }
-//  }
-//
-//  switch (rState) {
-//    is (State.INIT) {
-//      rState := State.IDLE
-//    }
-//    is (State.IDLE) {
-//      //myFifoThingDoStall := False
-//      //myLoD2hPushStm.valid := False
-//      //doIgnoreInvalidFifoThingPopCnt()
-//      //doPopLoH2dFifo()
-//
-//      when (
-//        rMyTempDoSaveCond(0)
-//        //&& myTempUpdateSavedLoH2dPayloadCond
-//        //&& RegNext(
-//        //  RegNext(mySelLoH2dPopStm.fire, init=False),
-//        //  init=False
-//        //)
-//      ) {
-//        rSavedLoH2dPayload := (
-//          //rLoH2dPayload
-//          rDel2LoH2dPayload
-//        )
-//      }
-//      when (
-//        rMyTempDoSaveCond(1)
-//        //&& myTempUpdateSavedLoH2dPayloadCond
-//        //&& RegNext(
-//        //  RegNext(mySelLoH2dPopStm.fire, init=False),
-//        //  init=False
-//        //)
-//      ) {
-//        rSavedLoH2dPayload.byteSize := (
-//          //rLoH2dPayload.byteSize
-//          rDel2LoH2dPayload.byteSize
-//        )
-//        //switch (
-//        //  //rdLineAttrs.dirty
-//        //  //## 
-//        //  RegNext(
-//        //    wrLineAttrs.dirty
-//        //    && lineAttrsRam.io.wrEn,
-//        //    init=False
-//        //  )
-//        //  ## RegNext(
-//        //    RegNext(
-//        //      (
-//        //        wrLineAttrs.dirty
-//        //        && lineAttrsRam.io.wrEn
-//        //      ),
-//        //      init=False
-//        //    ),
-//        //    init=False
-//        //  )
-//        //) {
-//        //  //is (M"1--") {
-//        //  //}
-//        //  is (M"1-") {
-//        //    rSavedRdLineAttrsTag := (
-//        //      RegNext(
-//        //        wrLineAttrs.tag
-//        //      )
-//        //    )
-//        //  }
-//        //  is (M"01") {
-//        //    rSavedRdLineAttrsTag := (
-//        //      RegNext(
-//        //        RegNext(
-//        //          wrLineAttrs.tag
-//        //        )
-//        //      )
-//        //    )
-//        //  }
-//        //  default {
-//        //    rSavedRdLineAttrsTag := rdLineAttrs.tag
-//        //  }
-//        //}
-//        //when (
-//        //  rdLineAttrs.dirty
-//        //  || (
-//        //    //rdLine
-//        //    RegNext(
-//        //      (
-//        //        (
-//        //          wrLineAttrs.dirty
-//        //          && lineAttrsRam.io.wrEn
-//        //        )
-//        //        || RegNext(
-//        //          wrLineAttrs.dirty
-//        //          && lineAttrsRam.io.wrEn,
-//        //          init=False
-//        //        )
-//        //      ),
-//        //      init=False
-//        //    )
-//        //  )
-//        //)
-//        //rSavedRdLineAttrsTag := rdLineAttrs.tag
-//        //rSavedRdLineAttrsTag := rdLineAttrs.tag
-//      }
-//      when (
-//        rMyTempDoSaveCond(2)
-//        //&& myTempUpdateSavedLoH2dPayloadCond
-//        //RegNext(
-//        //  RegNext(mySelLoH2dPopStm.fire, init=False),
-//        //  init=False
-//        //)
-//      ) {
-//        myLoD2hPushStm.busPayload.src := (
-//          rDel2LoH2dPayload.src
-//        )
-//        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//          myLoD2hPushStm.busPayload.byteSize := (
-//            rDel2LoH2dPayload.byteSize
-//          )
-//          myLoD2hPushStm.busPayload.addrLo := (
-//            rDel2LoH2dPayload.addr(
-//              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//            )
-//          )
-//        }
-//        myLoD2hPushStm.busPayload.txnCnt := (
-//          rDel2LoH2dPayload.txnCnt
-//        )
-//        //rSavedRdLineAttrsTag := rdLineAttrs.tag
-//      }
-//      //rSavedRdLineAttrsTag := rdLineAttrs.tag
-//
-//    }
-//    is (State.LOAD_HIT_DO_STALL_PIPE_4) {
-//      rState := State.LOAD_HIT_DO_STALL_PIPE_3
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
-//      myLoD2hPushStm.valid := False
-//      mySelLoH2dPopStm.ready := False
-//
-//      //myLoH2dReptThing.io.finishTxn.valid := True
-//      //myLoH2dReptThing.io.finishTxn.payload := (
-//      //  RegNext(
-//      //    rDel2LoH2dPayload.txnCnt,
-//      //    init=rDel2LoH2dPayload.txnCnt.getZero
-//      //  )
-//      //)
-//    }
-//    is (State.LOAD_HIT_DO_STALL_PIPE_3) {
-//      rState := State.LOAD_HIT_DO_STALL_PIPE_2
-//      myLoD2hPushStm.valid := False
-//      mySelLoH2dPopStm.ready := False
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
-//
-//      doLineWordRamReadSync(
-//        busAddr=rSavedLoH2dPayload.addr,
-//        setEn=0,
-//      )
-//    }
-//    is (State.LOAD_HIT_DO_STALL_PIPE_2) {
-//      rState := State.LOAD_HIT_DO_STALL_PIPE_1
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.foreach(_.io.rdEn := True))
-//      myLoD2hPushStm.valid := False
-//      mySelLoH2dPopStm.ready := False
-//    }
-//    is (State.LOAD_HIT_DO_STALL_PIPE_1) {
-//      rState := State.LOAD_HIT_DO_STALL
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
-//    }
-//    is (State.LOAD_HIT_DO_STALL) {
-//      val myRdLineWord = (
-//        RegNext(
-//          if (myCondHaveLineBitPlruRam) (
-//            rdLineWord(rSavedRamIdx)(
-//              rSavedLoH2dPayload.addr(
-//                myLineWordRamArrFromBusAddrRange
-//              )
-//            )
-//          ) else (
-//            rdLineWord.head(
-//              rSavedLoH2dPayload.addr(
-//                myLineWordRamArrFromBusAddrRange
-//              )
-//            )
-//          )
-//        )
-//      )
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
-//
-//      mySelLoH2dPopStm.ready := False
-//      myLoD2hPushStm.busPayload.data := myRdLineWord
-//      if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
-//        myLoD2hPushStm.busPayload.byteSize := (
-//          rSavedLoH2dPayload.byteSize
-//        )
-//        myLoD2hPushStm.busPayload.addrLo := (
-//          rSavedLoH2dPayload.addr(
-//            cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
-//          )
-//        )
-//      }
-//      myLoD2hPushStm.valid := True
-//      //myLoH2dReptThing.io.finishTxn.valid := False
-//      when (myLoD2hPushStm.fire) {
-//        //myFifoThingDoStall := False
-//        rState := State.LOAD_HIT_DO_STALL_POST
-//      }
-//    }
-//    is (State.LOAD_HIT_DO_STALL_POST) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
-//
-//      rState := State.WAIT_D2H_FIFO_EMPTY
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_PIPE_1) {
-//      rHadHiH2dFinish := False
-//      rHadHiD2hFinish := False
-//
-//      rHiH2dPayload.burstFirst := True
-//      rHiH2dPayload.burstLast := True//False
-//      rHiH2dPayload.burstCnt := hiBusCfg.maxBurstSizeMinus1
-//
-//      rHiH2dPayload.isWrite := False
-//      rHiH2dPayload.src := rSavedLoH2dPayload.src
-//      rHiH2dPayload.addr := rSavedLoH2dPayload.burstAddr(
-//        someBurstCnt=rHiH2dBurstCnt(1).getZero,
-//        incrBurstCnt=false
-//      )
-//      rHiD2hBurstCnt := 0x0
-//      when (RegNext(!hiH2dFifo.io.occupancy.orR, init=False)) {
-//        rHiH2dValid := True
-//        rState := State.RECV_LINE_FROM_HI_BUS
-//      }
-//
-//      wrLineAttrs.tag := (
-//        rSavedLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
-//      )
-//
-//      def myArgBusAddr = rSavedLoH2dPayload.addr
-//      def myArgWrLineAttrs = wrLineAttrs
-//      def myArgSetEn = true
-//
-//      if (myCondHaveLineBitPlruRam) {
-//        switch (rSavedRamIdx) {
-//          for (ramIdx <- 0 until numWays) {
-//            is (ramIdx) {
-//              doLineAttrsRamWrite(
-//                ramIdx=ramIdx,
-//                busAddr=myArgBusAddr,
-//                lineAttrs=myArgWrLineAttrs,
-//                setEn=myArgSetEn,
-//              )
-//            }
-//          }
-//        }
-//      } else {
-//        doLineAttrsRamWrite(
-//          ramIdx=0,
-//          busAddr=myArgBusAddr,
-//          lineAttrs=myArgWrLineAttrs,
-//          setEn=myArgSetEn,
-//        )
-//      }
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
-//      rHiH2dValid := False
-//      when (io.hiBus.d2hBus.valid) {
-//        rHiD2hReady := True
-//      }
-//      when (io.hiBus.d2hBus.fire) {
-//        rHiD2hBurstCnt := rHiD2hBurstCnt + 1
-//
-//        val tempBurstCntCmpEq = (
-//          rHiD2hBurstCnt
-//          === rSavedLoH2dPayload.addr(
-//            rHiD2hBurstCnt.high + log2Up(hiBusCfg.dataWidth / 8)
-//            downto log2Up(hiBusCfg.dataWidth / 8)
-//          )
-//        )
-//        when (tempBurstCntCmpEq) {
-//          myLoD2hPayload.data := (io.hiBus.d2hBus.data)
-//          if (!loBusCfg.haveByteEn) {
-//            myLoD2hPayload.byteSize := (
-//              rSavedLoH2dPayload.byteSize
-//            )
-//            myLoD2hPayload.addrLo := rSavedLoH2dPayload.addr(
-//              loBusCfg.addrLoWidth - 1 downto 0
-//            )
-//          }
-//        }
-//        val rTempBurstAddr = (
-//          rSavedLoH2dPayload.burstAddr(
-//            someBurstCnt=rHiD2hBurstCnt,
-//            incrBurstCnt=false,
-//          )
-//        )
-//
-//        def myArgBusAddr = rTempBurstAddr
-//        def myArgLineWord = io.hiBus.d2hBus.data
-//        def myArgByteEn = None
-//        def myArgSetEn = true
-//
-//        if (myCondHaveLineBitPlruRam) {
-//          switch (rSavedRamIdx) {
-//            for (ramIdx <- 0 until numWays) {
-//              is (ramIdx) {
-//                doLineWordRamWrite(
-//                  ramIdx=ramIdx,
-//                  busAddr=myArgBusAddr,
-//                  lineWord=myArgLineWord,
-//                  //byteEn=myArgByteEn,
-//                  setEn=myArgSetEn,
-//                )
-//              }
-//            }
-//          }
-//        } else {
-//          doLineWordRamWrite(
-//            ramIdx=0,
-//            busAddr=myArgBusAddr,
-//            lineWord=myArgLineWord,
-//            //byteEn=myArgByteEn,
-//            setEn=myArgSetEn,
-//          )
-//        }
-//        when ((io.hiBus.d2hBus.burstLast)) {
-//          //when (!rSavedLoH2dPayload.isWrite) {
-//            rState := State.RECV_LINE_FROM_HI_BUS_POST_7
-//          //} otherwise {
-//          //  rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
-//          //}
-//        }
-//      }
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_7) {
-//      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      rState := State.RECV_LINE_FROM_HI_BUS_POST_6
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_6) {
-//      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      rState := State.RECV_LINE_FROM_HI_BUS_POST_5
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_5) {
-//      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      rState := State.RECV_LINE_FROM_HI_BUS_POST_4
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_4) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
-//      doLineWordRamReadSync(
-//        busAddr=rSavedLoH2dPayload.addr,
-//        setEn=0,
-//      )
-//      rState := State.RECV_LINE_FROM_HI_BUS_POST_3
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_3) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.foreach(_.io.rdEn := True))
-//      rState := State.RECV_LINE_FROM_HI_BUS_POST_2
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_2) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
-//      rState := State.RECV_LINE_FROM_HI_BUS_POST_1
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST_1) {
-//      val myRdLineWord = (
-//        //if (myCondHaveLineBitPlruRam) (
-//        //  rdLineWord(rSavedRamIdx)
-//        //) else (
-//        //  rdLineWord.head
-//        //)
-//        if (myCondHaveLineBitPlruRam) (
-//          rdLineWord(rSavedRamIdx)(
-//            rSavedLoH2dPayload.addr(
-//              myLineWordRamArrFromBusAddrRange
-//            )
-//          )
-//        ) else (
-//          rdLineWord.head(
-//            rSavedLoH2dPayload.addr(
-//              myLineWordRamArrFromBusAddrRange
-//            )
-//          )
-//        )
-//      )
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
-//      //rState := State.RECV_LINE_FROM_HI_BUS_POST
-//
-//      myLoD2hPushStm.valid := True
-//
-//      myLoD2hPushStm.busPayload.src := (
-//        //RegNext
-//        (
-//          rSavedLoH2dPayload.src//,
-//          //init=rSavedLoH2dPayload.src.getZero
-//        )
-//      )
-//
-//      when (RegNext(
-//        rose(rState === State.RECV_LINE_FROM_HI_BUS_POST_2)
-//      )) {
-//        myLoD2hPushStm.busPayload.data := RegNext(
-//          //lineWordRam.io.rdData
-//          myRdLineWord
-//          //myLoD2hPushStm.busPayload.data//,
-//          //init=
-//        )
-//      }
-//
-//      when (myLoD2hPushStm.ready) {
-//        rState := State.RECV_LINE_FROM_HI_BUS_POST
-//      }
-//    }
-//    is (State.RECV_LINE_FROM_HI_BUS_POST) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
-//      rState := (
-//        //State.IDLE
-//        State.WAIT_D2H_FIFO_EMPTY
-//      )
-//    }
-//    is (State.WAIT_D2H_FIFO_EMPTY) {
-//      lineAttrsRam.foreach(item => item.io.rdEn := False)
-//      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
-//
-//      when (  
-//        !myLoD2hFifo.io.pop.valid
-//        //myLoD2hFifo.io.push.ready
-//      ) {
-//        //myFifoThingDoStall := False
-//        rState := State.IDLE
-//      }
-//    }
-//  }
-//  wrLineAttrs.valid := True
-//}
+private[libcheesevoyage] case class LcvBusInstrCacheWideOld(
+  cfg: LcvBusCacheBusPairConfig,
+) extends Component {
+  //--------
+  def numWays = cfg.loBusCacheCfg.numWays
+
+  def loBusCfg = cfg.loBusCfg
+  def hiBusCfg = cfg.hiBusCfg
+  def optFormal = cfg.optFormal
+
+  def loBusCacheCfg = cfg.loBusCacheCfg
+  def myLineWordRamAddrRshift = (
+    loBusCacheCfg.myLineWordRamFullLineAddrRshift
+  )
+  def myLineAttrsRamAddrRshift = loBusCacheCfg.myLineAttrsRamAddrRshift
+  def myLineWordRamArrFromBusAddrRange = (
+    loBusCacheCfg.myLineWordRamArrFromBusAddrRange._1
+    downto loBusCacheCfg.myLineWordRamArrFromBusAddrRange._2
+  )
+
+  def wordWidth = loBusCacheCfg.wordWidth
+  def depthWords = loBusCacheCfg.depthWords
+  def depthLines = loBusCacheCfg.depthLines
+  def lineSizeWords = loBusCacheCfg.lineSizeWords
+
+  def myFifoThingLoBusCfg = cfg.myFifoThingLoBusCfg
+  //--------
+  require(
+    //hiBusCfg.maxBurstSizeMinus1 == (64 / 4) - 1,
+    //cfg.loBusCacheCfg.lineSizeBytes == 64,
+    cfg.loBusCacheCfg.lineSizeBytes == loBusCfg.burstCntMaxNumBytes,
+    s"(Perhaps only temporarily), "
+    + s"we need the number of bytes per cache line to be "
+    + s"${loBusCfg.burstCntMaxNumBytes}. "
+    + s"This permits an easier-to-implement design "
+    + s"for `io.hiBus` bursting."
+  )
+  //--------
+  val io = LcvBusCacheIo(cfg=cfg)
+  //--------
+  val lineWordRamCfg = RamSdpPipeConfig(
+    wordType=UInt(wordWidth bits),
+    depth=(
+      //depthWords
+      depthLines
+    ),
+    optIncludeWrByteEn=false,
+    optWrHistLength=cfg.myRamOptWrHistLength,
+    initBigInt=Some(Array.fill(
+      //depthWords
+      depthLines
+    )(BigInt(0))),
+    arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
+    arrRamStyleXilinx=cfg.loBusCacheCfg.lineWordMemRamStyleXilinx,
+  )
+  val lineWordRam = Array.fill(numWays)(
+    Array.fill(
+      lineSizeWords
+    )(
+      RamSdpPipe(cfg=lineWordRamCfg)
+    )
+  )
+  val lineAttrsRamCfg = RamSdpPipeConfig(
+    wordType=LcvBusCacheLineAttrs(cfg=loBusCfg),
+    depth=depthLines,
+    optIncludeWrByteEn=false,
+    optWrHistLength=cfg.myRamOptWrHistLength,
+    initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
+    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
+    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
+  )
+  val lineAttrsRam = Array.fill(numWays)(
+    RamSdpPipe(cfg=lineAttrsRamCfg)
+  )
+
+  val rdLineWord = Vec.fill(numWays)(
+    Vec.fill(lineSizeWords)(
+      UInt(wordWidth bits)
+    )
+  )
+  val rdLineAttrs = Vec.fill(numWays)(
+    LcvBusCacheLineAttrs(cfg=loBusCfg)
+  )
+  for (idx <- 0 until numWays) {
+    for (jdx <- 0 until lineSizeWords) {
+      rdLineWord(idx)(jdx) := lineWordRam(idx)(jdx).io.rdData
+      lineWordRam(idx)(jdx).io.wrEn := False
+    }
+
+    rdLineAttrs(idx) := lineAttrsRam(idx).io.rdData
+    lineAttrsRam(idx).io.wrEn := False
+  }
+
+  val wrLineAttrs = LcvBusCacheLineAttrs(cfg=loBusCfg)
+  wrLineAttrs := RegNext(wrLineAttrs, init=wrLineAttrs.getZero)
+  wrLineAttrs.allowOverride
+
+  val lineBitPlruRamCfg = RamSdpPipeConfig(
+    wordType=UInt(
+      //log2Up(numWays) bits
+      numWays bits
+    ),
+    depth=depthLines,
+    optIncludeWrByteEn=false,
+    optWrHistLength=cfg.myRamOptWrHistLength,
+    initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
+    arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
+    arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
+  )
+
+  val myCondHaveLineBitPlruRam = (
+    numWays > 1
+  )
+  val lineBitPlruRam = (
+    myCondHaveLineBitPlruRam
+  ) generate (
+    RamSdpPipe(cfg=lineBitPlruRamCfg)
+  )
+
+  val rdLineBitPlru = (
+    myCondHaveLineBitPlruRam
+  ) generate (
+    UInt(
+      //log2Up(numWays) bits
+      numWays bits
+    )
+  )
+  val wrLineBitPlru = (
+    myCondHaveLineBitPlruRam
+  ) generate (
+    UInt(
+      //log2Up(numWays) bits
+      numWays bits
+    )
+  )
+
+  if (myCondHaveLineBitPlruRam) {
+    rdLineBitPlru := lineBitPlruRam.io.rdData
+    wrLineBitPlru := RegNext(wrLineBitPlru, init=wrLineBitPlru.getZero)
+    //wrLineBitPlru.allowOverride
+    lineBitPlruRam.io.wrEn := False
+  }
+
+
+  //--------
+  object State extends SpinalEnum(
+    defaultEncoding=(
+      //binarySequential
+      binaryOneHot
+    )
+  ) {
+    val
+      INIT,
+      IDLE,
+      LOAD_HIT_DO_STALL_PIPE_4,
+      LOAD_HIT_DO_STALL_PIPE_3,
+      LOAD_HIT_DO_STALL_PIPE_2,
+      LOAD_HIT_DO_STALL_PIPE_1,
+      LOAD_HIT_DO_STALL,
+      LOAD_HIT_DO_STALL_POST,
+      //STORE_HIT_DO_STALL_PIPE_1,
+      //STORE_HIT_DO_STALL,
+
+      //MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2,
+      //MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1,
+      //MAYBE_DIRTY_RE_READ_ATTRS,
+      //SEND_LINE_TO_HI_BUS_PIPE_3,
+      //SEND_LINE_TO_HI_BUS_PIPE_2,
+      //SEND_LINE_TO_HI_BUS_PIPE_1,
+      //SEND_LINE_TO_HI_BUS,
+      RECV_LINE_FROM_HI_BUS_PIPE_1,
+      RECV_LINE_FROM_HI_BUS,
+      RECV_LINE_FROM_HI_BUS_POST_WRITE,
+      RECV_LINE_FROM_HI_BUS_POST_7,
+      RECV_LINE_FROM_HI_BUS_POST_6,
+      RECV_LINE_FROM_HI_BUS_POST_5,
+      RECV_LINE_FROM_HI_BUS_POST_4,
+      RECV_LINE_FROM_HI_BUS_POST_3,
+      RECV_LINE_FROM_HI_BUS_POST_2,
+      RECV_LINE_FROM_HI_BUS_POST_1,
+      RECV_LINE_FROM_HI_BUS_POST,
+
+      WAIT_D2H_FIFO_EMPTY
+
+      = newElement();
+  }
+
+  val rState = (
+    Reg(State())
+    init(State.INIT)
+  )
+  //--------
+  val myLoH2dPopBusCfg = (
+    LcvBusDoStallFifoThing.mkFifoPopCfg(busCfg=myFifoThingLoBusCfg)
+  )
+  val myLoH2dReptThing = LcvBusDoStallH2dReptThing(
+    busCfg=myLoH2dPopBusCfg
+  )
+
+  //val myLoH2dDoStallFifoThing = LcvBusDoStallFifoThing(
+  //  busCfg=myFifoThingLoBusCfg,
+  //  includeDoInit=false,
+  //)
+  //io.loBus.h2dBus.translateInto(
+  //  //myLoH2dDoStallFifoThing.io.push
+  //  myLoH2dReptThing.io.push
+  //)(
+  //  dataAssignment=(outp, inp) => {
+  //    //outp.busPayload := inp
+  //    outp.mainNonBurstInfo := inp.mainNonBurstInfo
+  //    outp.txnCnt.allowOverride
+  //    outp.txnCnt := (
+  //      (
+  //        RegNextWhen(
+  //          (outp.txnCnt.asSInt + 1),
+  //          cond=myLoH2dReptThing.io.push.fire,
+  //        )
+  //        init(-2)
+  //      ).asUInt
+  //    )
+  //  }
+  //)
+  val myFifoThingDoStall = Bool()
+  myFifoThingDoStall := (
+    RegNext(myFifoThingDoStall, init=myFifoThingDoStall.getZero)
+  )
+  myLoH2dReptThing.io.doStall := myFifoThingDoStall
+  //val rSeenMyFifoThingDoStallCnt = (
+  //  Reg(UInt(log2Up(LcvBusDoStallFifoThing.fifoDepthMain + 1) + 1 bits))
+  //  init(0x0)
+  //)
+  //myLoH2dDoStallFifoThing.io.doStall := myFifoThingDoStall
+
+  val myLoH2dToWrByteEnStmAdapter = (
+    !loBusCfg.haveByteEn
+  ) generate (LcvBusH2dShiftedDataEtcStreamAdapter(
+    cfg=LcvBusH2dShiftedDataEtcStreamAdapterConfig(
+      loBusCfg=myFifoThingLoBusCfg,
+    )
+  ))
+
+  val myMainLoH2dPopStm = (
+    Stream(LcvBusH2dPayload(
+      cfg=myLoH2dPopBusCfg
+    ))
+  )
+
+  val mySelLoH2dPopStm = (
+    //cloneOf(myLoH2dDoStallFifoThing.io.pop)
+    //cloneOf(io.loBus.h2dBus)
+    //Stream(LcvBusH2dPayload(
+    //  cfg=myLoH2dPopBusCfg
+    //))
+    //cloneOf(myMainLoH2dPopStm)
+    cloneOf(myLoH2dReptThing.io.pop)
+  )
+  mySelLoH2dPopStm << myLoH2dReptThing.io.pop
+  //val mySelLoH2dPop
+  def mySelLoH2dPopPayload = mySelLoH2dPopStm.payload//.busPayload
+
+  io.loBus.h2dBus.translateInto(
+    if (!loBusCfg.haveByteEn) (
+      myLoH2dToWrByteEnStmAdapter.io.loH2dBus
+    ) else (
+      myMainLoH2dPopStm
+    )
+  )(
+    dataAssignment=(outp, inp) => {
+      //outp := inp
+      outp.mainNonBurstInfo := inp.mainNonBurstInfo
+      outp.txnCnt.allowOverride
+      outp.txnCnt := (
+        (
+          RegNextWhen(
+            (outp.txnCnt.asSInt + 1),
+            cond=io.loBus.h2dBus.fire,
+          )
+          init(-2)
+        ).asUInt
+      )
+    }
+  )
+
+  if (!loBusCfg.haveByteEn) {
+    myLoH2dToWrByteEnStmAdapter.io.hiH2dBus.translateInto(
+      myMainLoH2dPopStm
+    )(
+      dataAssignment=(outp, inp) => {
+        outp := inp
+        outp.txnCnt.allowOverride
+        outp.txnCnt := myLoH2dToWrByteEnStmAdapter.io.loH2dBus.txnCnt
+      }
+    )
+  }
+
+  //myMainLoH2dPopStm.ready := !myFifoThingDoStall
+  //myLoH2dReptThing.io.push << myMainLoH2dPopStm
+  myMainLoH2dPopStm.translateInto(
+    myLoH2dReptThing.io.push
+  )(
+    dataAssignment=(outp, inp) => {
+      outp.busPayload := inp
+      //outp.savedData := inp.data
+    }
+  )
+  mySelLoH2dPopStm.ready := False
+
+  //val myLoH2dPopThrowArea = new Area {
+  //  val myLoH2dThrowCond = Bool()
+  //  val myTempLoH2dPopStm = myLoH2dDoStallFifoThing.io.pop.throwWhen(
+  //    myLoH2dThrowCond
+  //  )
+  //  myLoH2dThrowCond := False
+  //  //myLoH2dPopStm.ready := False
+  //  myLoH2dPopStm << myTempLoH2dPopStm
+  //}
+  val rLoH2dPayload = (
+    RegNextWhen(
+      mySelLoH2dPopStm.payload,
+      cond=mySelLoH2dPopStm.fire,
+      init=mySelLoH2dPopStm.payload.getZero,
+    )
+  )
+  def rBusAddr = rLoH2dPayload.addr
+  val rDel2LoH2dPayload = (
+    RegNext/*When*/(
+      next=rLoH2dPayload,
+      //cond=myLoH2dPopStm.fire,
+      init=rLoH2dPayload.getZero,
+    )
+  )
+  def rDel2BusAddr = rDel2LoH2dPayload.addr
+
+  val rSavedLoH2dPayload = (
+    Reg(cloneOf(rLoH2dPayload))
+    init(rLoH2dPayload.getZero)
+  )
+  def rSavedLoBusAddr = rSavedLoH2dPayload.addr
+  def rSavedLoBusAddrSet = rSavedLoBusAddr(loBusCacheCfg.setRange)
+
+  val myLoD2hShiftedDataStmAdapter = (
+    !cfg.loBusCfg.haveByteEn
+  ) generate (
+    LcvBusD2hShiftedDataEtcStreamAdapter(
+      cfg=LcvBusD2hShiftedDataEtcStreamAdapterConfig(
+        busCfg=cfg.loBusCfg
+      )
+    )
+  )
+  val myLoD2hPushStm = Stream(
+    LcvBusDoStallFifoThingPayload(
+      LcvBusD2hPayload(
+        cfg=myFifoThingLoBusCfg,
+        includeByteSizeEtc=(!myFifoThingLoBusCfg.haveByteEn),
+      ),
+    )
+  )
+
+  myLoD2hPushStm.valid := False
+  //myLoH2dReptThing.io.finishTxn.valid := myLoD2hPushStm.fire
+  //myLoH2dReptThing.io.finishTxn.payload := (
+  //  myLoD2hPushStm.busPayload.txnCnt
+  //)
+
+  val myLoD2hFifo = StreamFifo(
+    dataType=LcvBusD2hPayload(cfg=cfg.loBusCfg),
+    depth=(myFifoThingLoBusCfg.maxBurstSizeMinus1 + 1),
+    latency=cfg.busD2hFifoLatency,
+    forFMax=true,
+  )
+
+  myLoD2hFifo.io.pop.translateInto(io.loBus.d2hBus)(
+    dataAssignment=(outp, inp) => {
+      outp.mainNonBurstInfo := inp.mainNonBurstInfo
+    }
+  )
+  //val myLoD2hAlmostDonePushStm = cloneOf(myLoD2hPushStm)
+  //myLoD2hAlmostDonePushStm << myLoD2hPushStm
+  //myLoD2hAlmostDonePushStm << myLoD2hPushStm.throwWhen(
+  //  myLoD2hPushStm.busPayload.txnCnt.asSInt
+  //  === (
+  //    RegNextWhen(
+  //      myLoD2hPushStm.busPayload.txnCnt.asSInt,
+  //      cond=myLoD2hPushStm.fire,
+  //    )
+  //    init(1)
+  //  )
+  //)
+
+  // NOTE: this was previously `myLoD2hAlmostDonePushStm.translateInto`
+  myLoD2hPushStm.translateInto(
+    if (cfg.myFifoThingLoBusCfg.haveByteEn) (
+      myLoD2hFifo.io.push
+    ) else (
+      myLoD2hShiftedDataStmAdapter.io.loD2hBus
+    )
+  )(
+    dataAssignment=(outp, inp) => {
+      outp.mainNonBurstInfo := inp.busPayload.mainNonBurstInfo
+    }
+  )
+
+  if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+    //println(
+    //  s"NOTE: "
+    //  + s"myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus"
+    //)
+    myLoD2hFifo.io.push << myLoD2hShiftedDataStmAdapter.io.hiD2hBus
+  }
+
+  def doLineWordRamReadSync(
+    busAddr: UInt,
+    setEn: Int=0,
+  ): Unit = {
+    lineWordRam.foreach(outerItem => outerItem.foreach(item => {
+      if (setEn == 1) {
+        item.io.rdEn := True
+      } else if (setEn == 2) {
+        item.io.rdEn := (
+          RegNext(
+            next=(
+              //mySelLoH2dPopStm.valid
+              mySelLoH2dPopStm.fire
+            ),
+            init=False,
+          )
+          //&& !myFifoThingDoStall
+        )
+      }
+      item.io.rdAddr := {
+        //println(
+        //  s"test info: busAddr("
+        //  + s"${busAddr.high} downto ${myLineWordRamAddrRshift}"
+        //  + s")"
+        //)
+        (
+          (
+            busAddr(busAddr.high downto myLineWordRamAddrRshift)
+          )
+          .resize(item.io.rdAddr.getWidth)
+        )
+      }
+    }))
+  }
+  def doLineAttrsRamReadSync(
+    busAddr: UInt,
+    setEn: Int=0,
+  ): Unit = {
+    lineAttrsRam.foreach(item => {
+      if (setEn == 1) {
+        item.io.rdEn := True
+      } else if (setEn == 2) {
+        item.io.rdEn := (
+          RegNext(
+            next=(
+              //mySelLoH2dPopStm.valid
+              mySelLoH2dPopStm.fire
+            ),
+            init=False,
+          )
+          //&& !myFifoThingDoStall
+        )
+      } 
+      item.io.rdAddr := {
+        //println(
+        //  s"test info: busAddr("
+        //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
+        //  + s")"
+        //)
+        (
+          (
+            busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
+          )
+          .resize(item.io.rdAddr.getWidth)
+        )
+      }
+    })
+  }
+  def doLineBitPlruRamReadSync(
+    busAddr: UInt,
+    setEn: Int=0,
+  ): Unit = {
+    if (setEn == 1) {
+      lineBitPlruRam.io.rdEn := True
+    } else if (setEn == 2) {
+      lineBitPlruRam.io.rdEn := (
+        RegNext(
+          next=(
+            //mySelLoH2dPopStm.valid
+            mySelLoH2dPopStm.fire
+          ),
+          init=False,
+        )
+        //&& !myFifoThingDoStall
+      )
+    } 
+    lineBitPlruRam.io.rdAddr := {
+      //println(
+      //  s"test info: busAddr("
+      //  + s"${busAddr.high} downto ${myLineAttrsRamAddrRshift}"
+      //  + s")"
+      //)
+      (
+        (
+          busAddr(busAddr.high downto myLineAttrsRamAddrRshift)
+        )
+        .resize(lineBitPlruRam.io.rdAddr.getWidth)
+      )
+    }
+  }
+
+  for (ramIdx <- 0 until numWays) {
+    for (wordIdx <- 0 until lineSizeWords) {
+      val myRam = lineWordRam(ramIdx)(wordIdx)
+      myRam.io.wrEn.allowOverride
+      myRam.io.wrAddr.allowOverride
+      myRam.io.wrData.allowOverride
+      myRam.io.wrEn := False
+      myRam.io.wrAddr := 0x0
+      myRam.io.wrData := 0x0
+    }
+  }
+  def doLineWordRamWrite(
+    ramIdx: Int,
+    busAddr: UInt,
+    lineWord: UInt,
+    //byteEn: Option[UInt],
+    setEn: Boolean=true,
+  ): Unit = {
+    switch (busAddr(
+      myLineWordRamArrFromBusAddrRange 
+    )) {
+      for (wordIdx <- 0 until lineSizeWords) {
+        is (wordIdx) {
+          val myRam = lineWordRam(ramIdx)(wordIdx)
+          if (setEn) {
+            myRam.io.wrEn := True
+          }
+          myRam.io.wrAddr := (
+            (busAddr(busAddr.high downto myLineWordRamAddrRshift))
+            .resize(myRam.io.wrAddr.getWidth)
+          )
+          myRam.io.wrData := lineWord
+          //byteEn match {
+          //  case Some(byteEn) => {
+          //    myRam.io.wrByteEn := byteEn.asBits
+          //  }
+          //  case None => {
+          //    myRam.io.wrByteEn := (
+          //      B(
+          //        myRam.io.wrByteEn.getWidth bits,
+          //        default -> True
+          //      )
+          //    )
+          //  }
+          //}
+        }
+      }
+    }
+  }
+  def doLineAttrsRamWrite(
+    ramIdx: Int,
+    busAddr: UInt,
+    lineAttrs: LcvBusCacheLineAttrs,
+    setEn: Boolean=true,
+  ): Unit = {
+    if (setEn) {
+      lineAttrsRam(ramIdx).io.wrEn := True
+    }
+    lineAttrsRam(ramIdx).io.wrAddr := (
+      (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
+      .resize(lineAttrsRam(ramIdx).io.wrAddr.getWidth)
+    )
+    lineAttrsRam(ramIdx).io.wrData := lineAttrs
+  }
+  def doLineBitPlruRamWrite(
+    busAddr: UInt,
+    //lineAttrs: LcvBusCacheLineBitPlru,
+    lineBitPlru: UInt,
+    setEn: Boolean=true,
+  ): Unit = {
+    if (setEn) {
+      lineBitPlruRam.io.wrEn := True
+    }
+    lineBitPlruRam.io.wrAddr := (
+      (busAddr(busAddr.high downto myLineAttrsRamAddrRshift))
+      .resize(lineBitPlruRam.io.wrAddr.getWidth)
+    )
+    lineBitPlruRam.io.wrData := lineBitPlru
+  }
+
+  doLineWordRamReadSync(
+    busAddr=mySelLoH2dPopPayload.addr,
+    setEn=2,
+  )
+  for (ramIdx <- 0 until numWays) {
+    doLineWordRamWrite(
+      ramIdx=ramIdx,
+      busAddr=(
+        RegNext(
+          RegNext(
+            mySelLoH2dPopPayload.addr,
+            init=mySelLoH2dPopPayload.addr.getZero
+          ),
+          init=mySelLoH2dPopPayload.addr.getZero,
+        )
+      ),
+      lineWord=(
+        RegNext(
+          RegNext(
+            mySelLoH2dPopPayload.data,
+            init=mySelLoH2dPopPayload.data.getZero
+          ),
+          init=mySelLoH2dPopPayload.data.getZero,
+        )
+      ),
+      //byteEn=Some(
+      //  RegNext(
+      //    RegNext(
+      //      mySelLoH2dPopPayload.byteEn,
+      //      init=mySelLoH2dPopPayload.byteEn.getZero
+      //    ),
+      //    init=mySelLoH2dPopPayload.byteEn.getZero,
+      //  ),
+      //),
+      setEn=false,
+    )
+  }
+
+  doLineAttrsRamReadSync(
+    busAddr=mySelLoH2dPopPayload.addr,
+    setEn=2,
+  )
+  for (ramIdx <- 0 until numWays) {
+    doLineAttrsRamWrite(
+      ramIdx=ramIdx,
+      busAddr=(
+        RegNext(
+          RegNext(
+            mySelLoH2dPopPayload.addr,
+            init=mySelLoH2dPopPayload.addr.getZero
+          ),
+          init=mySelLoH2dPopPayload.addr.getZero,
+        )
+      ),
+      lineAttrs=(
+        wrLineAttrs
+      ),
+      setEn=false,
+    )
+  }
+
+  if (myCondHaveLineBitPlruRam) {
+    doLineBitPlruRamReadSync(
+      busAddr=mySelLoH2dPopPayload.addr,
+      setEn=2,
+    )
+    doLineBitPlruRamWrite(
+      busAddr=(
+        RegNext(
+          RegNext(
+            mySelLoH2dPopPayload.addr,
+            init=mySelLoH2dPopPayload.addr.getZero
+          ),
+          init=mySelLoH2dPopPayload.addr.getZero,
+        )
+      ),
+      lineBitPlru=(
+        wrLineBitPlru
+      ),
+      setEn=false,
+    )
+  }
+  //--------
+  myLoD2hPushStm.payload := (
+    RegNext(myLoD2hPushStm.payload, init=myLoD2hPushStm.payload.getZero)
+  )
+
+  val myTempHaveHitCmpEqLeft = Vec[UInt](
+    rdLineAttrs.map(item => item.tag)
+  )
+  val myTempHaveHitCmpEqRight = Vec.fill(numWays)(
+    RegNext(
+      RegNext(mySelLoH2dPopPayload.addr(loBusCacheCfg.tagRange))
+      init(0x0)
+    )
+    init(0x0),
+  )
+  val tempHaveHitCmpEq = Vec.fill(numWays)(Bool())
+  val haveHit = Vec.fill(numWays)(
+    Bool()
+  )
+  for (ramIdx <- 0 until numWays) {
+    tempHaveHitCmpEq(ramIdx) := (
+      myTempHaveHitCmpEqLeft(ramIdx)
+      === myTempHaveHitCmpEqRight(ramIdx)
+    )
+    haveHit(ramIdx) := (
+      rdLineAttrs(ramIdx).fire
+      && tempHaveHitCmpEq(ramIdx)
+    )
+  }
+  //val haveHit = (
+  //  rdLineAttrs.fire
+  //  && tempHaveHitCmpEq
+  //)
+
+  val rSavedRdLineAttrsTag = (
+    //Vec.fill(numWays)(
+      Reg(
+        cloneOf(rdLineAttrs.head.tag),
+        init=rdLineAttrs.head.tag.getZero,
+      )
+    //)
+  )
+
+  val rHiH2dBurstCnt = (
+    Vec.fill(2)(
+      Reg(UInt(loBusCfg.burstCntWidth bits))
+      init(0x0)
+    )
+  )
+  val rHiD2hBurstCnt = (
+    Reg(UInt(loBusCfg.burstCntWidth bits))
+    init(0x0)
+  )
+  //--------
+  def myLoD2hPayload = myLoD2hPushStm.busPayload
+  //--------
+
+  def doPopLoH2dFifo(): Unit = {
+    mySelLoH2dPopStm.ready := True
+  }
+
+  //val myDoStallLoH2dThrowThing = (
+  //  LcvBusDoStallH2dThrowThing(busCfg=cfg.myFifoThingLoBusCfg)
+  //)
+  //myDoStallLoH2dThrowThing.io.push.valid := (
+  //  myLoH2dDoStallFifoThing.io.pop.valid
+  //  //&& rState === State.IDLE
+  //  && rState.asBits(1)
+  //)
+  //myDoStallLoH2dThrowThing.io.push.payload := (
+  //  myLoH2dDoStallFifoThing.io.pop.busPayload.txnCnt
+  //)
+
+  //val myFullTempIgnoreDupCntCond = (
+  //  myDoStallLoH2dThrowThing.io.myThrowCondMain
+  //  //&& History[Bool](
+  //  //  that=True,
+  //  //  when=(
+  //  //    myLoH2dPopStm.fire
+  //  //    //myD2hPushStm.fire
+  //  //    //myLoH2dDoStallFifoThing.io.pop.fire
+  //  //    //&& !myLoH2dPopThrowArea.myLoH2dThrowCond
+  //  //  ),
+  //  //  length=(
+  //  //    //2
+  //  //    //4
+  //  //    //3
+  //  //    5
+  //  //  ),
+  //  //  init=False,
+  //  //).last
+  //)
+
+  //def doIgnoreInvalidFifoThingPopCnt(
+  //): Unit = {
+  //  when (myFullTempIgnoreDupCntCond) {
+  //    myLoH2dPopThrowArea.myLoH2dThrowCond := True
+  //  }
+  //}
+
+  val rMyTempDoSaveCond = (
+    Vec.fill(4)(
+      RegNext(
+        RegNext(
+          (
+            mySelLoH2dPopStm.fire
+            //&& !myFullTempIgnoreDupCntCond
+          ),
+          init=False
+        ),
+        init=False
+      )
+    )
+  )
+  //val rHadAnyRamWritePastTwoCycles = Vec.fill(2)(
+  //  RegNext(
+  //    (
+  //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
+  //      || RegNext(
+  //        Vec(lineWordRam.map(item => item.io.wrEn)).orR,
+  //        init=False
+  //      )
+  //      || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
+  //      || RegNext(
+  //        Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
+  //        init=False
+  //      )
+  //    ),
+  //    init=False
+  //  )
+  //)
+  val myTempHaveCurrRamWrite = (
+    Vec[Bool](lineWordRam.map(outerItem => (
+      Vec[Bool](outerItem.map(item => item.io.wrEn)).orR
+    ))).orR
+    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
+  )
+  val myHistHadAnyRamWrite = Array.fill(2)(
+    History[Bool](
+      that=(
+        //RegNext(
+          myTempHaveCurrRamWrite//,
+        //  init=myTempHaveCurrRamWrite.getZero
+        //)
+      ),
+      length=cfg.myRamOptWrHistLengthPlusAddend,//1,//2,
+      init=myTempHaveCurrRamWrite.getZero
+    )
+  )
+  val myHadAnyRecentRamWrite = Vec[Bool](
+    myHistHadAnyRamWrite.map(item => RegNext(item.orR, init=False))
+    //RegNext(
+    //  (
+    //    Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR
+    //    || RegNext(
+    //      Vec[Bool](lineWordRam.map(item => item.io.wrEn)).orR,
+    //      init=False
+    //    )
+    //    || Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR
+    //    || RegNext(
+    //      Vec[Bool](lineAttrsRam.map(item => item.io.wrEn)).orR,
+    //      init=False
+    //    )
+    //  ),
+    //  init=False
+    //)
+  )
+  //val rHadLineAttrsRamWritePastTwoCycles = Vec.fill(2)(
+  //  RegNext(
+  //    lineAttrsRam.io.wrEn
+  //    || RegNext(lineAttrsRam.io.wrEn, init=False),
+  //    init=False
+  //  )
+  //)
+  //val myTempUpdateSavedLoH2dPayloadCond = Bool()
+  //myTempUpdateSavedLoH2dPayloadCond := True
+
+  //--------
+  val rHadLoH2dFinish = Reg(Bool(), init=False)
+  val rHadLoD2hFinish = Reg(Bool(), init=False)
+  val rHadHiH2dFinish = Reg(Bool(), init=False)
+  val rHadHiD2hFinish = Reg(Bool(), init=False)
+
+  val hiH2dFifo = (
+    StreamFifo(
+      dataType=(
+        //UInt(loBusCacheCfg.wordWidth bits)
+        LcvBusH2dPayload(cfg.hiBusCfg)
+      ),
+      depth=loBusCacheCfg.lineSizeWords,
+      latency=2,
+      forFMax=true,
+    )
+  )
+
+  val rHiH2dValid = Reg(Bool(), init=False)
+  val rHiH2dPayload = (
+    Reg(cloneOf(hiH2dFifo.io.push.payload))
+    init(hiH2dFifo.io.push.payload.getZero)
+  )
+  val rHiD2hReady = Reg(Bool(), init=False)
+  hiH2dFifo.io.push.valid := rHiH2dValid
+  hiH2dFifo.io.push.payload := rHiH2dPayload
+  io.hiBus.d2hBus.ready := rHiD2hReady
+
+  rHiH2dPayload.byteEn := (
+    U(hiBusCfg.byteEnWidth bits, default -> True)
+  )
+  //rHiH2dPayload.byteSize := (
+  //  U(rHiH2dPayload.byteSize.getWidth bits, default -> True)
+  //)
+  //rHiH2dPayload.haveFullWord := True
+  io.hiBus.h2dBus <-/< hiH2dFifo.io.pop
+
+      
+// >>> for ramIdx in range(numWays):
+// ...     print(ramIdx, (("0" * (numWays - ramIdx - 1))) + "1" + ("-" * ramIdx))
+// ...     
+// 0 0001
+// 1 001-
+// 2 01--
+// 3 1---
+  def calcHitRamIdxMask(ramIdx: Int): String = (
+    (("0" * (numWays - ramIdx - 1)))
+    + "1"
+    + ("-" * ramIdx)
+  )
+
+// >>> for ramIdx in range(numWays):
+// ...     print(ramIdx, (("1" * (numWays - ramIdx - 1))) + "0" + ("-" * ramIdx))
+// ...     
+// 0 1110
+// 1 110-
+// 2 10--
+// 3 0---
+  def calcMissRamIdxMask(ramIdx: Int): String = (
+    (("1" * (numWays - ramIdx - 1)))
+    + "0"
+    + ("-" * ramIdx)
+  )
+
+  val rSavedRamIdx = (
+    myCondHaveLineBitPlruRam
+  ) generate (
+    Reg(UInt(log2Up(numWays) bits))
+    init(0x0)
+  )
+
+  val rSavedWordIdx = (
+    Reg(UInt(log2Up(lineSizeWords) bits))
+    init(0x0)
+  )
+  //val myHistSavedRamIdx = (
+  //  History(
+  //    that=rSavedRamIdx,
+  //  )
+  //)
+
+  val tempToSwitch = (
+    //((rState === State.IDLE) && rMyTempDoSaveCond(3))
+    //((rState === State.IDLE)
+    rState.asBits(State.IDLE.position)
+    ## rMyTempDoSaveCond(3)
+    //RegNext(
+    //  RegNext(mySelLoH2dPopStm.fire, init=False),
+    //  init=False
+    //)
+    //## haveHit.orR
+    //## haveHit
+    //## (
+    //  (
+    //    rdLineAttrs.map(item => item.dirty).orR
+    //  )
+    //  //|| (
+    //  //  //rdLine
+    //  //  RegNext(
+    //  //    (
+    //  //      (
+    //  //        wrLineAttrs.dirty
+    //  //        && (
+    //  //          Vec(lineAttrsRam.map(item => item.io.wrEn)).orR
+    //  //        )
+    //  //      )
+    //  //      || RegNext(
+    //  //        wrLineAttrs.dirty
+    //  //        && (
+    //  //          Vec(lineAttrsRam.map(item => item.io.wrEn)).orR,
+    //  //        ),
+    //  //        init=False
+    //  //      )
+    //  //    ),
+    //  //    init=False
+    //  //  )
+    //  //)
+    //)
+    //## rDel2LoH2dPayload.isWrite
+    ## haveHit
+  )
+  //println(
+  //  s"tempToSwitch.getWidth:${tempToSwitch.getWidth}"
+  //)
+
+  switch (
+    tempToSwitch
+  ) {
+    is (
+      //M"10-0"
+      MaskedLiteral(
+        //"10-" + ("0" * numWays)
+        //"1" + ("0" * numWays)
+        "11" + ("0" * numWays)
+      )
+      //M"10"
+    ) {
+      //// cache miss, and know for sure that the line isn't dirty
+      // cache miss
+      rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+
+      if (myCondHaveLineBitPlruRam) {
+        //rSavedRamIdx := rdLineBitPlru
+        //wrLineBitPlru := rdLineBitPlru + 1
+        wrLineBitPlru := rdLineBitPlru
+        lineBitPlruRam.io.wrEn := True
+        switch (rdLineBitPlru) {
+          for (ramIdx <- 0 until numWays) {
+            val myRamIdxMask = calcMissRamIdxMask(ramIdx=ramIdx)
+            is (MaskedLiteral(myRamIdxMask)) {
+              wrLineBitPlru(ramIdx) := True
+              rSavedRamIdx := ramIdx
+            }
+            default {
+            }
+          }
+        }
+      }
+
+      //myFifoThingDoStall := False
+      myLoD2hPushStm.valid := False
+
+      myFifoThingDoStall := True
+      //doPopLoH2dFifo()
+      mySelLoH2dPopStm.ready := (
+        //True
+        False
+      )
+      //myTempUpdateSavedLoH2dPayloadCond := False
+    }
+
+    //is (
+    //  //M"11-0"
+    //  MaskedLiteral(
+    //    //"11-" + ("0" * numWays)
+    //    "1" + ("0" * numWays)
+    //  )
+    //) {
+    //  // cache miss, and the line is *possibly* dirty
+    //  rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+
+    //  if (myCondHaveLineBitPlruRam) {
+    //    rSavedRamIdx := rdLineBitPlru
+    //    wrLineBitPlru := rdLineBitPlru + 1
+    //    lineBitPlruRam.io.wrEn := True
+    //  }
+
+    //  myFifoThingDoStall := True
+    //  mySelLoH2dPopStm.ready := (
+    //    //True
+    //    False
+    //  )
+    //  //myTempUpdateSavedLoH2dPayloadCond := False
+    //}
+    for (ramIdx <- 0 until numWays) {
+      val myRamIdxMask = calcHitRamIdxMask(ramIdx=ramIdx)
+      //println(
+      //  s"ramIdx:${ramIdx} myRamIdxMask:${myRamIdxMask}"
+      //)
+      is (
+        MaskedLiteral(
+          //"1-01"
+          "11" + myRamIdxMask
+        )
+      ) {
+        doPopLoH2dFifo()
+        myFifoThingDoStall := False
+        //myLoD2hPushStm.valid := False
+        if (myCondHaveLineBitPlruRam) {
+          rSavedRamIdx := ramIdx
+          val tempLineBitPlru = cloneOf(rdLineBitPlru)
+          tempLineBitPlru.allowOverride
+          tempLineBitPlru := rdLineBitPlru
+          tempLineBitPlru(ramIdx) := True
+          when (tempLineBitPlru.andR) {
+            wrLineBitPlru := 1 << ramIdx
+          } otherwise {
+            wrLineBitPlru := tempLineBitPlru
+          }
+        }
+        // load, cache hit
+        //mySelLoH2dPopStm.ready := True
+        myLoD2hPushStm.valid := True
+        myLoD2hPushStm.busPayload.data := (
+          rdLineWord(ramIdx)(
+            rDel2LoH2dPayload.addr(
+              myLineWordRamArrFromBusAddrRange
+            )
+          )
+        )
+        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+          myLoD2hPushStm.busPayload.byteSize := (
+            rDel2LoH2dPayload.byteSize
+          )
+          myLoD2hPushStm.busPayload.addrLo := (
+            rDel2LoH2dPayload.addr(
+              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
+            )
+          )
+        }
+
+        when (
+          //rHadAnyRamWritePastTwoCycles.head
+          myHadAnyRecentRamWrite.head
+        ) {
+          myLoD2hPushStm.valid := False
+        }
+        when (
+          //rHadAnyRamWritePastTwoCycles.last
+          myHadAnyRecentRamWrite.last
+          || !myLoD2hPushStm.ready
+        ) {
+          mySelLoH2dPopStm.ready := False
+          myFifoThingDoStall := True
+          rState := (
+            //State.LOAD_HIT_DO_STALL_PIPE_3
+            State.LOAD_HIT_DO_STALL_PIPE_4
+          )
+          //myTempUpdateSavedLoH2dPayloadCond := False
+        } otherwise {
+          //doPopLoH2dFifo()
+        }
+      }
+    }
+    is (MaskedLiteral(
+      "1" + "0" + ("-" * numWays)
+    )) {
+      doPopLoH2dFifo()
+      myFifoThingDoStall := False
+      myLoD2hPushStm.valid := False
+    }
+    default {
+      //doPopLoH2dFifo()
+      //myFifoThingDoStall := False
+      //myLoD2hPushStm.valid := False
+    }
+  }
+
+  switch (rState) {
+    is (State.INIT) {
+      rState := State.IDLE
+    }
+    is (State.IDLE) {
+      //myFifoThingDoStall := False
+      //myLoD2hPushStm.valid := False
+      //doIgnoreInvalidFifoThingPopCnt()
+      //doPopLoH2dFifo()
+
+      when (
+        rMyTempDoSaveCond(0)
+        //&& myTempUpdateSavedLoH2dPayloadCond
+        //&& RegNext(
+        //  RegNext(mySelLoH2dPopStm.fire, init=False),
+        //  init=False
+        //)
+      ) {
+        rSavedLoH2dPayload := (
+          //rLoH2dPayload
+          rDel2LoH2dPayload
+        )
+      }
+      when (
+        rMyTempDoSaveCond(1)
+        //&& myTempUpdateSavedLoH2dPayloadCond
+        //&& RegNext(
+        //  RegNext(mySelLoH2dPopStm.fire, init=False),
+        //  init=False
+        //)
+      ) {
+        rSavedLoH2dPayload.byteSize := (
+          //rLoH2dPayload.byteSize
+          rDel2LoH2dPayload.byteSize
+        )
+        //switch (
+        //  //rdLineAttrs.dirty
+        //  //## 
+        //  RegNext(
+        //    wrLineAttrs.dirty
+        //    && lineAttrsRam.io.wrEn,
+        //    init=False
+        //  )
+        //  ## RegNext(
+        //    RegNext(
+        //      (
+        //        wrLineAttrs.dirty
+        //        && lineAttrsRam.io.wrEn
+        //      ),
+        //      init=False
+        //    ),
+        //    init=False
+        //  )
+        //) {
+        //  //is (M"1--") {
+        //  //}
+        //  is (M"1-") {
+        //    rSavedRdLineAttrsTag := (
+        //      RegNext(
+        //        wrLineAttrs.tag
+        //      )
+        //    )
+        //  }
+        //  is (M"01") {
+        //    rSavedRdLineAttrsTag := (
+        //      RegNext(
+        //        RegNext(
+        //          wrLineAttrs.tag
+        //        )
+        //      )
+        //    )
+        //  }
+        //  default {
+        //    rSavedRdLineAttrsTag := rdLineAttrs.tag
+        //  }
+        //}
+        //when (
+        //  rdLineAttrs.dirty
+        //  || (
+        //    //rdLine
+        //    RegNext(
+        //      (
+        //        (
+        //          wrLineAttrs.dirty
+        //          && lineAttrsRam.io.wrEn
+        //        )
+        //        || RegNext(
+        //          wrLineAttrs.dirty
+        //          && lineAttrsRam.io.wrEn,
+        //          init=False
+        //        )
+        //      ),
+        //      init=False
+        //    )
+        //  )
+        //)
+        //rSavedRdLineAttrsTag := rdLineAttrs.tag
+        //rSavedRdLineAttrsTag := rdLineAttrs.tag
+      }
+      when (
+        rMyTempDoSaveCond(2)
+        //&& myTempUpdateSavedLoH2dPayloadCond
+        //RegNext(
+        //  RegNext(mySelLoH2dPopStm.fire, init=False),
+        //  init=False
+        //)
+      ) {
+        myLoD2hPushStm.busPayload.src := (
+          rDel2LoH2dPayload.src
+        )
+        if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+          myLoD2hPushStm.busPayload.byteSize := (
+            rDel2LoH2dPayload.byteSize
+          )
+          myLoD2hPushStm.busPayload.addrLo := (
+            rDel2LoH2dPayload.addr(
+              cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
+            )
+          )
+        }
+        myLoD2hPushStm.busPayload.txnCnt := (
+          rDel2LoH2dPayload.txnCnt
+        )
+        //rSavedRdLineAttrsTag := rdLineAttrs.tag
+      }
+      //rSavedRdLineAttrsTag := rdLineAttrs.tag
+
+    }
+    is (State.LOAD_HIT_DO_STALL_PIPE_4) {
+      rState := State.LOAD_HIT_DO_STALL_PIPE_3
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
+      myLoD2hPushStm.valid := False
+      mySelLoH2dPopStm.ready := False
+
+      //myLoH2dReptThing.io.finishTxn.valid := True
+      //myLoH2dReptThing.io.finishTxn.payload := (
+      //  RegNext(
+      //    rDel2LoH2dPayload.txnCnt,
+      //    init=rDel2LoH2dPayload.txnCnt.getZero
+      //  )
+      //)
+    }
+    is (State.LOAD_HIT_DO_STALL_PIPE_3) {
+      rState := State.LOAD_HIT_DO_STALL_PIPE_2
+      myLoD2hPushStm.valid := False
+      mySelLoH2dPopStm.ready := False
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
+
+      doLineWordRamReadSync(
+        busAddr=rSavedLoH2dPayload.addr,
+        setEn=0,
+      )
+    }
+    is (State.LOAD_HIT_DO_STALL_PIPE_2) {
+      rState := State.LOAD_HIT_DO_STALL_PIPE_1
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.foreach(_.io.rdEn := True))
+      myLoD2hPushStm.valid := False
+      mySelLoH2dPopStm.ready := False
+    }
+    is (State.LOAD_HIT_DO_STALL_PIPE_1) {
+      rState := State.LOAD_HIT_DO_STALL
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
+    }
+    is (State.LOAD_HIT_DO_STALL) {
+      val myRdLineWord = (
+        RegNext(
+          if (myCondHaveLineBitPlruRam) (
+            rdLineWord(rSavedRamIdx)(
+              rSavedLoH2dPayload.addr(
+                myLineWordRamArrFromBusAddrRange
+              )
+            )
+          ) else (
+            rdLineWord.head(
+              rSavedLoH2dPayload.addr(
+                myLineWordRamArrFromBusAddrRange
+              )
+            )
+          )
+        )
+      )
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
+
+      mySelLoH2dPopStm.ready := False
+      myLoD2hPushStm.busPayload.data := myRdLineWord
+      if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
+        myLoD2hPushStm.busPayload.byteSize := (
+          rSavedLoH2dPayload.byteSize
+        )
+        myLoD2hPushStm.busPayload.addrLo := (
+          rSavedLoH2dPayload.addr(
+            cfg.myFifoThingLoBusCfg.addrLoWidth - 1 downto 0
+          )
+        )
+      }
+      myLoD2hPushStm.valid := True
+      //myLoH2dReptThing.io.finishTxn.valid := False
+      when (myLoD2hPushStm.fire) {
+        //myFifoThingDoStall := False
+        rState := State.LOAD_HIT_DO_STALL_POST
+      }
+    }
+    is (State.LOAD_HIT_DO_STALL_POST) {
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
+
+      rState := State.WAIT_D2H_FIFO_EMPTY
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_PIPE_1) {
+      rHadHiH2dFinish := False
+      rHadHiD2hFinish := False
+
+      rHiH2dPayload.burstFirst := True
+      rHiH2dPayload.burstLast := True//False
+      rHiH2dPayload.burstCnt := hiBusCfg.maxBurstSizeMinus1
+
+      rHiH2dPayload.isWrite := False
+      rHiH2dPayload.src := rSavedLoH2dPayload.src
+      rHiH2dPayload.addr := rSavedLoH2dPayload.burstAddr(
+        someBurstCnt=rHiH2dBurstCnt(1).getZero,
+        incrBurstCnt=false
+      )
+      rHiD2hBurstCnt := 0x0
+      when (RegNext(!hiH2dFifo.io.occupancy.orR, init=False)) {
+        rHiH2dValid := True
+        rState := State.RECV_LINE_FROM_HI_BUS
+      }
+
+      wrLineAttrs.tag := (
+        rSavedLoH2dPayload.addr(cfg.loBusCacheCfg.tagRange)
+      )
+
+      def myArgBusAddr = rSavedLoH2dPayload.addr
+      def myArgWrLineAttrs = wrLineAttrs
+      def myArgSetEn = true
+
+      if (myCondHaveLineBitPlruRam) {
+        switch (rSavedRamIdx) {
+          for (ramIdx <- 0 until numWays) {
+            is (ramIdx) {
+              doLineAttrsRamWrite(
+                ramIdx=ramIdx,
+                busAddr=myArgBusAddr,
+                lineAttrs=myArgWrLineAttrs,
+                setEn=myArgSetEn,
+              )
+            }
+          }
+        }
+      } else {
+        doLineAttrsRamWrite(
+          ramIdx=0,
+          busAddr=myArgBusAddr,
+          lineAttrs=myArgWrLineAttrs,
+          setEn=myArgSetEn,
+        )
+      }
+    }
+    is (State.RECV_LINE_FROM_HI_BUS) {
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
+      rHiH2dValid := False
+      when (io.hiBus.d2hBus.valid) {
+        rHiD2hReady := True
+      }
+      when (io.hiBus.d2hBus.fire) {
+        rHiD2hBurstCnt := rHiD2hBurstCnt + 1
+
+        val tempBurstCntCmpEq = (
+          rHiD2hBurstCnt
+          === rSavedLoH2dPayload.addr(
+            rHiD2hBurstCnt.high + log2Up(hiBusCfg.dataWidth / 8)
+            downto log2Up(hiBusCfg.dataWidth / 8)
+          )
+        )
+        when (tempBurstCntCmpEq) {
+          myLoD2hPayload.data := (io.hiBus.d2hBus.data)
+          if (!loBusCfg.haveByteEn) {
+            myLoD2hPayload.byteSize := (
+              rSavedLoH2dPayload.byteSize
+            )
+            myLoD2hPayload.addrLo := rSavedLoH2dPayload.addr(
+              loBusCfg.addrLoWidth - 1 downto 0
+            )
+          }
+        }
+        val rTempBurstAddr = (
+          rSavedLoH2dPayload.burstAddr(
+            someBurstCnt=rHiD2hBurstCnt,
+            incrBurstCnt=false,
+          )
+        )
+
+        def myArgBusAddr = rTempBurstAddr
+        def myArgLineWord = io.hiBus.d2hBus.data
+        def myArgByteEn = None
+        def myArgSetEn = true
+
+        if (myCondHaveLineBitPlruRam) {
+          switch (rSavedRamIdx) {
+            for (ramIdx <- 0 until numWays) {
+              is (ramIdx) {
+                doLineWordRamWrite(
+                  ramIdx=ramIdx,
+                  busAddr=myArgBusAddr,
+                  lineWord=myArgLineWord,
+                  //byteEn=myArgByteEn,
+                  setEn=myArgSetEn,
+                )
+              }
+            }
+          }
+        } else {
+          doLineWordRamWrite(
+            ramIdx=0,
+            busAddr=myArgBusAddr,
+            lineWord=myArgLineWord,
+            //byteEn=myArgByteEn,
+            setEn=myArgSetEn,
+          )
+        }
+        when ((io.hiBus.d2hBus.burstLast)) {
+          //when (!rSavedLoH2dPayload.isWrite) {
+            rState := State.RECV_LINE_FROM_HI_BUS_POST_7
+          //} otherwise {
+          //  rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
+          //}
+        }
+      }
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_7) {
+      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_6
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_6) {
+      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_5
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_5) {
+      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_4
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_4) {
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
+      doLineWordRamReadSync(
+        busAddr=rSavedLoH2dPayload.addr,
+        setEn=0,
+      )
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_3
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_3) {
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.foreach(_.io.rdEn := True))
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_2
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_2) {
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
+      rState := State.RECV_LINE_FROM_HI_BUS_POST_1
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST_1) {
+      val myRdLineWord = (
+        //if (myCondHaveLineBitPlruRam) (
+        //  rdLineWord(rSavedRamIdx)
+        //) else (
+        //  rdLineWord.head
+        //)
+        if (myCondHaveLineBitPlruRam) (
+          rdLineWord(rSavedRamIdx)(
+            rSavedLoH2dPayload.addr(
+              myLineWordRamArrFromBusAddrRange
+            )
+          )
+        ) else (
+          rdLineWord.head(
+            rSavedLoH2dPayload.addr(
+              myLineWordRamArrFromBusAddrRange
+            )
+          )
+        )
+      )
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
+      //rState := State.RECV_LINE_FROM_HI_BUS_POST
+
+      myLoD2hPushStm.valid := True
+
+      myLoD2hPushStm.busPayload.src := (
+        //RegNext
+        (
+          rSavedLoH2dPayload.src//,
+          //init=rSavedLoH2dPayload.src.getZero
+        )
+      )
+
+      when (RegNext(
+        rose(rState === State.RECV_LINE_FROM_HI_BUS_POST_2)
+      )) {
+        myLoD2hPushStm.busPayload.data := RegNext(
+          //lineWordRam.io.rdData
+          myRdLineWord
+          //myLoD2hPushStm.busPayload.data//,
+          //init=
+        )
+      }
+
+      when (myLoD2hPushStm.ready) {
+        rState := State.RECV_LINE_FROM_HI_BUS_POST
+      }
+    }
+    is (State.RECV_LINE_FROM_HI_BUS_POST) {
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
+      rState := (
+        //State.IDLE
+        State.WAIT_D2H_FIFO_EMPTY
+      )
+    }
+    is (State.WAIT_D2H_FIFO_EMPTY) {
+      lineAttrsRam.foreach(item => item.io.rdEn := False)
+      lineWordRam.foreach(item => item.foreach(_.io.rdEn := False))
+
+      when (  
+        !myLoD2hFifo.io.pop.valid
+        //myLoD2hFifo.io.push.ready
+      ) {
+        //myFifoThingDoStall := False
+        rState := State.IDLE
+      }
+    }
+  }
+  wrLineAttrs.valid := True
+}
 
 //--------
 // old version:
@@ -38460,7 +30691,7 @@ case class LcvBusCache(
     //cfg.haveNonCoherentInstrCache
     cfg.loBusCacheCfg.kind == LcvCacheKind.I
   ) generate (
-    LcvBusInstrCacheNonWide(cfg=cfg)
+    LcvBusInstrCacheMain(cfg=cfg)
   )
   val dataCache = (
     //cfg.haveNonCoherentDataCache

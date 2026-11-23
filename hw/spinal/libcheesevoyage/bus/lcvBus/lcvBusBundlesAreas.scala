@@ -297,6 +297,10 @@ case class LcvBusCacheConfig(
   def lineSizeWords = (
     lineSizeBytes / wordSizeBytes
   )
+  def myConvBusAddrToLineWordAddrRange = (
+    log2Up(lineSizeBytes) - 1
+    downto log2Up(wordSizeBytes)
+  )
   def depthBytes = depthWords * wordSizeBytes
   def depthLines = (
     // this is the number of cache lines
