@@ -20913,13 +20913,13 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                 && (
                   rSavedRamIdx === ramIdx
                 )
-                && LcvOrR(temp1)
+                || LcvOrR(temp1)
               )
             )
           ) else (
             Vec(
               temp0
-              && LcvOrR(temp1)
+              || LcvOrR(temp1)
             )
           )
         }
