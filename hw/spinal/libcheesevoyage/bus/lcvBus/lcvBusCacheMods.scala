@@ -20909,19 +20909,25 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
           if (rSavedRamIdx != null) (
             Vec(
               (
-                (
+                temp1.head
+                || (
                   temp0
                   && (
                     rSavedRamIdx === ramIdx
                   )
+                  && temp1.last
                 )
-                || LcvOrR(temp1)
               )
             )
           ) else (
             Vec(
-              temp0
-              || LcvOrR(temp1)
+              //temp0
+              //|| LcvOrR(temp1)
+              temp1.head
+              || (
+                temp0
+                && temp1.last
+              )
             )
           )
         }
@@ -22280,9 +22286,9 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //rSavedLoH2dPayload.addr(
             //  myConvBusAddrToLineWordAddrRange
             //)
-            RegNext(
+            //RegNext(
               rHiH2dBurstCnt(0)
-            )
+            //)
             //RegNext(
             //  rHiH2dPayload.addr(
             //    myConvBusAddrToLineWordAddrRange
@@ -22296,9 +22302,9 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //  myConvBusAddrToLineWordAddrRange
             //)
             //rHiH2dBurstCnt(0)
-            RegNext(
+            //RegNext(
               rHiH2dBurstCnt(0)
-            )
+            //)
             //RegNext(
             //  rHiH2dPayload.addr(
             //    myConvBusAddrToLineWordAddrRange
@@ -22353,9 +22359,9 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //  ) + 2
             //)
             //rHiH2dBurstCnt(1)
-            RegNext(
+            //RegNext(
               rHiH2dBurstCnt(0)
-            )
+            //)
           )
         ) else (
           rdLineWord.last.head(
@@ -22371,9 +22377,9 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //  ) + 2
             //)
             //rHiH2dBurstCnt(1)
-            RegNext(
+            //RegNext(
               rHiH2dBurstCnt(0)
-            )
+            //)
           )
         )
       )
