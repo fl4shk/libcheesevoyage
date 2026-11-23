@@ -7862,31 +7862,36 @@ case class LcvBusInstrCacheWithTaggedPrefetchWide(
     //byteEn: Option[UInt],
     setEn: Boolean=true,
   ): Unit = {
-    lineWordRam(ramIdx).foreach(item => {
-      if (setEn) {
-        item.io.wrEn := True
-      }
-      item.io.wrAddr := (
-        (
-          busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift)
+    lineWordRam(ramIdx).zipWithIndex.foreach{
+      case (item, jdx) => {
+        if (setEn) {
+          //item.io.wrEn := True
+          item.io.wrEn := (
+            busAddr(myConvBusAddrToLineWordAddrRange) === jdx
+          )
+        }
+        item.io.wrAddr := (
+          (
+            busAddr(busAddr.high downto myLineWordRamSingleWordAddrRshift)
+          )
+          .resize(item.io.wrAddr.getWidth)
         )
-        .resize(item.io.wrAddr.getWidth)
-      )
-      item.io.wrData := lineWord
-      //byteEn match {
-      //  case Some(byteEn) => {
-      //    item.io.wrByteEn := byteEn.asBits
-      //  }
-      //  case None => {
-      //    item.io.wrByteEn := (
-      //      B(
-      //        item.io.wrByteEn.getWidth bits,
-      //        default -> True
-      //      )
-      //    )
-      //  }
-      //}
-    })
+        item.io.wrData := lineWord
+        //byteEn match {
+        //  case Some(byteEn) => {
+        //    item.io.wrByteEn := byteEn.asBits
+        //  }
+        //  case None => {
+        //    item.io.wrByteEn := (
+        //      B(
+        //        item.io.wrByteEn.getWidth bits,
+        //        default -> True
+        //      )
+        //    )
+        //  }
+        //}
+      }
+    }
   }
   def doLineAttrsRamWrite(
     ramIdx: Int,
