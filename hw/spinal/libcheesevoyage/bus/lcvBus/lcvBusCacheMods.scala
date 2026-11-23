@@ -22247,15 +22247,22 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
       val myRdLineWord = (
         if (myCondHaveLineBitPlruRam) (
           rdLineWord.last(rSavedRamIdx)(
-            rSavedLoH2dPayload.addr(
-              myConvBusAddrToLineWordAddrRange
-            )
+            //rSavedLoH2dPayload.addr(
+            //  myConvBusAddrToLineWordAddrRange
+            //)
+            RegNext(RegNext(
+              rHiH2dBurstCnt(0)
+            ))
           )
         ) else (
           rdLineWord.last.head(
-            rSavedLoH2dPayload.addr(
-              myConvBusAddrToLineWordAddrRange
-            )
+            //rSavedLoH2dPayload.addr(
+            //  myConvBusAddrToLineWordAddrRange
+            //)
+            //rHiH2dBurstCnt(0)
+            RegNext(RegNext(
+              rHiH2dBurstCnt(0)
+            ))
           )
         )
       )
@@ -22292,15 +22299,21 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
       val myRdLineWord = (
         if (myCondHaveLineBitPlruRam) (
           rdLineWord.last(rSavedRamIdx)(
-            rSavedLoH2dPayload.addr(
-              myConvBusAddrToLineWordAddrRange
-            )
+            //rSavedLoH2dPayload.addr(
+            //  myConvBusAddrToLineWordAddrRange
+            //)
+            RegNext(RegNext(
+              rHiH2dBurstCnt(0)
+            ))
           )
         ) else (
           rdLineWord.last.head(
-            rSavedLoH2dPayload.addr(
-              myConvBusAddrToLineWordAddrRange
-            )
+            //rSavedLoH2dPayload.addr(
+            //  myConvBusAddrToLineWordAddrRange
+            //)
+            RegNext(RegNext(
+              rHiH2dBurstCnt(0)
+            ))
           )
         )
       )
