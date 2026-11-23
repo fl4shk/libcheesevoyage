@@ -9652,7 +9652,7 @@ case class LcvBusInstrCacheWithTaggedPrefetchWide(
       //  )
       //}
 
-      when (myLoD2hPushStm.fire) {
+      when (myLoD2hPushStm.ready) {
         rState := State.RECV_LINE_FROM_HI_BUS_POST
       }
     }
@@ -23671,11 +23671,11 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       RECV_LINE_FROM_HI_BUS,
       RECV_LINE_FROM_HI_BUS_POST_WRITE,
       RECV_LINE_FROM_HI_BUS_POST_7,
-      RECV_LINE_FROM_HI_BUS_POST_6,
-      RECV_LINE_FROM_HI_BUS_POST_5,
-      RECV_LINE_FROM_HI_BUS_POST_4,
-      RECV_LINE_FROM_HI_BUS_POST_3,
-      RECV_LINE_FROM_HI_BUS_POST_2,
+      //RECV_LINE_FROM_HI_BUS_POST_6,
+      //RECV_LINE_FROM_HI_BUS_POST_5,
+      //RECV_LINE_FROM_HI_BUS_POST_4,
+      //RECV_LINE_FROM_HI_BUS_POST_3,
+      //RECV_LINE_FROM_HI_BUS_POST_2,
       RECV_LINE_FROM_HI_BUS_POST_1,
       RECV_LINE_FROM_HI_BUS_POST,
 
@@ -26109,6 +26109,29 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
         //    )
         //  }
         //}
+
+        val tempBurstCntCmpEq = (
+          rHiD2hBurstCnt
+          === rSavedLoH2dPayload.addr(
+            rHiD2hBurstCnt.high + log2Up(hiBusCfg.dataWidth / 8)
+            downto log2Up(hiBusCfg.dataWidth / 8)
+          )
+        )
+        when (
+          !rPrefetchInfo.fire
+          && tempBurstCntCmpEq
+        ) {
+          myLoD2hPayload.data := (io.hiBus.d2hBus.data)
+          //if (!loBusCfg.haveByteEn) {
+          //  myLoD2hPayload.byteSize := (
+          //    rSavedLoH2dPayload.byteSize
+          //  )
+          //  myLoD2hPayload.addrLo := rSavedLoH2dPayload.addr(
+          //    loBusCfg.addrLoWidth - 1 downto 0
+          //  )
+          //}
+        }
+
         val rTempBurstAddr = (
           rSavedLoH2dPayload.burstAddr(
             someBurstCnt=rHiD2hBurstCnt,
@@ -26245,7 +26268,10 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
         )
       }
 
-      rState := State.RECV_LINE_FROM_HI_BUS_POST_5
+      rState := (
+        //State.RECV_LINE_FROM_HI_BUS_POST_5
+        State.RECV_LINE_FROM_HI_BUS_POST_1
+      )
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_7) {
       def myArgBusAddr = rSavedLoH2dPayload.addr
@@ -26277,57 +26303,69 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
       //lineWordRam.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-      rState := State.RECV_LINE_FROM_HI_BUS_POST_6
-    }
-    is (State.RECV_LINE_FROM_HI_BUS_POST_6) {
-      //lineWordRam.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
-      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-      rState := State.RECV_LINE_FROM_HI_BUS_POST_5
-    }
-    is (State.RECV_LINE_FROM_HI_BUS_POST_5) {
-      //lineWordRam.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
-      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-      rState := State.RECV_LINE_FROM_HI_BUS_POST_4
-    }
-    is (State.RECV_LINE_FROM_HI_BUS_POST_4) {
-      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-      //lineWordRam.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
-      doLineWordRamReadSync(
-        vecIdx=1,
-        busAddr=rSavedLoH2dPayload.addr,
-        setEn=0,
+      rState := (
+        //State.RECV_LINE_FROM_HI_BUS_POST_6
+        State.RECV_LINE_FROM_HI_BUS_POST_1
       )
-      rState := State.RECV_LINE_FROM_HI_BUS_POST_3
     }
-    is (State.RECV_LINE_FROM_HI_BUS_POST_3) {
-      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-      //lineWordRam.foreach(item => item.io.rdEn := True)
-      lineWordRam.foreach(item => item.io.vec.last.rdEn := True)
-      rState := State.RECV_LINE_FROM_HI_BUS_POST_2
-    }
-    is (State.RECV_LINE_FROM_HI_BUS_POST_2) {
-      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
-      //lineWordRam.foreach(item => item.io.rdEn := False)
-      lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
-      rState := State.RECV_LINE_FROM_HI_BUS_POST_1
-    }
+    //is (State.RECV_LINE_FROM_HI_BUS_POST_6) {
+    //  //lineWordRam.foreach(item => item.io.rdEn := False)
+    //  lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
+    //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+    //  rState := State.RECV_LINE_FROM_HI_BUS_POST_5
+    //}
+    //is (State.RECV_LINE_FROM_HI_BUS_POST_5) {
+    //  //lineWordRam.foreach(item => item.io.rdEn := False)
+    //  lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
+    //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+    //  rState := State.RECV_LINE_FROM_HI_BUS_POST_4
+    //}
+    //is (State.RECV_LINE_FROM_HI_BUS_POST_4) {
+    //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+    //  //lineWordRam.foreach(item => item.io.rdEn := False)
+    //  lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
+    //  doLineWordRamReadSync(
+    //    vecIdx=1,
+    //    busAddr=rSavedLoH2dPayload.addr,
+    //    setEn=0,
+    //  )
+    //  rState := State.RECV_LINE_FROM_HI_BUS_POST_3
+    //}
+    //is (State.RECV_LINE_FROM_HI_BUS_POST_3) {
+    //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+    //  //lineWordRam.foreach(item => item.io.rdEn := True)
+    //  lineWordRam.foreach(item => item.io.vec.last.rdEn := True)
+    //  rState := State.RECV_LINE_FROM_HI_BUS_POST_2
+    //}
+    //is (State.RECV_LINE_FROM_HI_BUS_POST_2) {
+    //  lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+    //  //lineWordRam.foreach(item => item.io.rdEn := False)
+    //  lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
+    //  rState := State.RECV_LINE_FROM_HI_BUS_POST_1
+    //}
     is (State.RECV_LINE_FROM_HI_BUS_POST_1) {
-      val myRdLineWord = (
-        if (myCondHaveLineBitPlruRam) (
-          rdLineWord.last(rSavedRamIdx)
-        ) else (
-          rdLineWord.last.head
-        )
-      )
+      //val myRdLineWord = (
+      //  if (myCondHaveLineBitPlruRam) (
+      //    rdLineWord.last(rSavedRamIdx)
+      //  ) else (
+      //    rdLineWord.last.head
+      //  )
+      //)
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
       //lineWordRam.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(item => item.io.vec.last.rdEn := False)
       //rState := State.RECV_LINE_FROM_HI_BUS_POST
 
       myLoD2hPushStm.valid := True
+
+
+      myLoD2hPushStm.busPayload.src := (
+        //RegNext
+        (
+          rSavedLoH2dPayload.src//,
+          //init=rSavedLoH2dPayload.src.getZero
+        )
+      )
 
       if (!cfg.myFifoThingLoBusCfg.haveByteEn) {
         myLoD2hPushStm.busPayload.byteSize := (
@@ -26340,27 +26378,19 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
         )
       }
 
-      myLoD2hPushStm.busPayload.src := (
-        //RegNext
-        (
-          rSavedLoH2dPayload.src//,
-          //init=rSavedLoH2dPayload.src.getZero
-        )
-      )
-
-      when (RegNext(
-        rose(
-          //rState === State.RECV_LINE_FROM_HI_BUS_POST_2
-          rState.asBits(State.RECV_LINE_FROM_HI_BUS_POST_2.position)
-        )
-      )) {
-        myLoD2hPushStm.busPayload.data := RegNext(
-          //lineWordRam.io.rdData
-          myRdLineWord
-          //myLoD2hPushStm.busPayload.data//,
-          //init=
-        )
-      }
+      //when (RegNext(
+      //  rose(
+      //    //rState === State.RECV_LINE_FROM_HI_BUS_POST_2
+      //    rState.asBits(State.RECV_LINE_FROM_HI_BUS_POST_2.position)
+      //  )
+      //)) {
+      //  myLoD2hPushStm.busPayload.data := RegNext(
+      //    //lineWordRam.io.rdData
+      //    myRdLineWord
+      //    //myLoD2hPushStm.busPayload.data//,
+      //    //init=
+      //  )
+      //}
 
       when (myLoD2hPushStm.ready) {
         rState := State.RECV_LINE_FROM_HI_BUS_POST
