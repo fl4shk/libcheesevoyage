@@ -19615,7 +19615,11 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
 
   val lineWordRamCfg = RamTdpPipeConfig(
     wordType=UInt(wordWidth bits),
-    depth=lineSizeWords,
+    depth=(
+      //lineSizeWords
+      //depthWords
+      depthLines
+    ),
     optIncludeWrByteEn=true,
     arrRamStyleAltera=cfg.loBusCacheCfg.lineWordMemRamStyleAltera,
     arrRamStyleXilinx=cfg.loBusCacheCfg.lineWordMemRamStyleXilinx,
