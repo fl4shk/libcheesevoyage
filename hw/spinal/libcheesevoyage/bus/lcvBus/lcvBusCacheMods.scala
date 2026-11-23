@@ -32200,29 +32200,29 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
     outerItem.zipWithIndex.foreach{
       case (item, ramIdx) => {
         item := {
-          val myHistLineWordRamWrite = (
-            History[Flow[UInt]](
-              that={
-                val temp = ( 
-                  Flow(UInt(
-                    lineWordRam(ramIdx).io.vec.last.addr.getWidth bits
-                  ))
-                )
-                temp.valid := lineWordRam(ramIdx).io.vec.last.wrEn
-                temp.payload := lineWordRam(ramIdx).io.vec.last.addr
-                temp
-              },
-              length=cfg.myRamOptWrHistLengthPlusAddend,
-              init={
-                val temp = ( 
-                  Flow(UInt(
-                    lineWordRam(ramIdx).io.vec.last.addr.getWidth bits
-                  ))
-                )
-                temp.getZero
-              }
-            )
-          )
+          //val myHistLineWordRamWrite = (
+          //  History[Flow[UInt]](
+          //    that={
+          //      val temp = ( 
+          //        Flow(UInt(
+          //          lineWordRam(ramIdx).io.vec.last.addr.getWidth bits
+          //        ))
+          //      )
+          //      temp.valid := lineWordRam(ramIdx).io.vec.last.wrEn
+          //      temp.payload := lineWordRam(ramIdx).io.vec.last.addr
+          //      temp
+          //    },
+          //    length=cfg.myRamOptWrHistLengthPlusAddend,
+          //    init={
+          //      val temp = ( 
+          //        Flow(UInt(
+          //          lineWordRam(ramIdx).io.vec.last.addr.getWidth bits
+          //        ))
+          //      )
+          //      temp.getZero
+          //    }
+          //  )
+          //)
 
           val temp0 = (
             (
@@ -32242,32 +32242,38 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
                   //  lineAttrsRam.head.head.io.wrAddr.getWidth
                   //)
                   (
-                    rDel2LoH2dPayload.addr(
-                      rPrefetchInfo.myTempRange
-                    ).resize(
-                      lineAttrsRam.head.head.io.wrAddr.getWidth
-                    )
-                    === Cat(
-                      False,
-                      rSavedRdLineAttrsTag,
-                      rSavedLoBusAddrSet,
-                      U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
-                    ).asUInt(
-                      rPrefetchInfo.myTempRange
-                    ).resize(
-                      lineAttrsRam.head.head.io.wrAddr.getWidth
+                    rDel2LoH2dPayload.isWrite
+                    && (
+                      rDel2LoH2dPayload.addr(
+                        rPrefetchInfo.myTempRange
+                      ).resize(
+                        lineAttrsRam.head.head.io.wrAddr.getWidth
+                      )
+                      === Cat(
+                        False,
+                        rSavedRdLineAttrsTag,
+                        rSavedLoBusAddrSet,
+                        U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
+                      ).asUInt(
+                        rPrefetchInfo.myTempRange
+                      ).resize(
+                        lineAttrsRam.head.head.io.wrAddr.getWidth
+                      )
                     )
                   )
                   || (
-                    rDel2LoH2dPayload.addr(
-                      rPrefetchInfo.myTempRange
-                    ).resize(
-                      lineAttrsRam.head.head.io.wrAddr.getWidth
-                    )
-                    === rSavedLoH2dPayload.addr(
-                      rPrefetchInfo.myTempRange
-                    ).resize(
-                      lineAttrsRam.head.head.io.wrAddr.getWidth
+                    !rDel2LoH2dPayload.isWrite
+                    && (
+                      rDel2LoH2dPayload.addr(
+                        rPrefetchInfo.myTempRange
+                      ).resize(
+                        lineAttrsRam.head.head.io.wrAddr.getWidth
+                      )
+                      === rSavedLoH2dPayload.addr(
+                        rPrefetchInfo.myTempRange
+                      ).resize(
+                        lineAttrsRam.head.head.io.wrAddr.getWidth
+                      )
                     )
                   )
                 )
@@ -32289,47 +32295,46 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
           val busAddr = (
             rDel2LoH2dPayload.addr
           )
-          val temp1 = (
-            //RegNext(
-              (
-                myHistLineWordRamWrite.sFindFirst(elem => (
-                  //RegNext(elem.fire, init=False)
-                  elem.fire
-                  && (
-                    //RegNext(elem.payload)
-                    elem.payload
-                    === (
-                      (
-                        busAddr(
-                          busAddr.high
-                          downto myLineWordRamSingleWordAddrRshift
-                        )
-                      ).resize(
-                        lineWordRam(ramIdx).io.vec.last.addr.getWidth
-                      )
-                    )
-                  )
-                ))._1
-              ),
-            //  init=False
-            //)
-          )
+          //val temp1 = (
+          //  //RegNext(
+          //    (
+          //      myHistLineWordRamWrite.sFindFirst(elem => (
+          //        //RegNext(elem.fire, init=False)
+          //        elem.fire
+          //        && (
+          //          //RegNext(elem.payload)
+          //          elem.payload
+          //          === (
+          //            (
+          //              busAddr(
+          //                busAddr.high
+          //                downto myLineWordRamSingleWordAddrRshift
+          //              )
+          //            ).resize(
+          //              lineWordRam(ramIdx).io.vec.last.addr.getWidth
+          //            )
+          //          )
+          //        )
+          //      ))._1
+          //    ),
+          //  //  init=False
+          //  //)
+          //)
 
           if (rSavedRamIdx != null) (
             Vec(
               (
                 temp0
-                // TODO: DEBUG: lower the IPC
-                //&& (
-                //  rSavedRamIdx === ramIdx
-                //)
+                && (
+                  rSavedRamIdx === ramIdx
+                )
               ),
-              temp1,
+              //temp1,
             )
           ) else (
             Vec(
               temp0,
-              temp1
+              //temp1
             )
           )
         }
@@ -32463,6 +32468,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
     ## rMyTempDoSaveCond(3)
     ## haveHit.head
   )
+
   val rIdleModeIsWrite = (
     Reg(Bool(), init=False)
   )
@@ -32620,7 +32626,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
             //!myHadAnyRecentHazard(1)(ramIdx).head
 
             // TODO: DEBUG: temporarily, disable performance stuff
-            !LcvOrR(myHadAnyRecentHazard(1)(ramIdx))
+            !myHadAnyRecentHazard(1)(ramIdx).orR
             && rDel2LoH2dPayload.isWrite === rIdleModeIsWrite
           )
 
@@ -32669,7 +32675,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
 
           when (
             //rHadAnyRamWritePastTwoCycles.head
-            LcvOrR(myHadAnyRecentHazard.head(ramIdx))
+            myHadAnyRecentHazard.head(ramIdx).orR
             || rDel2LoH2dPayload.isWrite =/= rIdleModeIsWrite
           ) {
             myLoD2hPushStm.valid := False
@@ -32700,7 +32706,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
             setEn=false
           )
           when (
-            !LcvOrR(myHadAnyRecentHazard.head(ramIdx))
+            !myHadAnyRecentHazard.head(ramIdx).orR
             && rDel2LoH2dPayload.isWrite
             && rIdleModeIsWrite
           ) {
@@ -32735,7 +32741,7 @@ private[libcheesevoyage] case class LcvBusDataCacheWithTaggedPrefetch(
 
           switch (
             (
-              LcvOrR(myHadAnyRecentHazard.last(ramIdx))
+              myHadAnyRecentHazard.last(ramIdx).orR
               || !myLoD2hPushStm.ready
             )
             ## rDel2LoH2dPayload.isWrite
