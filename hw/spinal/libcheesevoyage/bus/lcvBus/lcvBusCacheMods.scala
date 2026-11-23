@@ -18036,11 +18036,11 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
           rSavedStallInfo.loH2dPayload := rDel2LoH2dPayload
 
           rSavedStallInfo.isHit := (
-            //True
+            True
             //!myHadAnyRecentHazard(1)(ramIdx).head
 
             // TODO: DEBUG: temporarily, disable performance stuff
-            !myHadAnyRecentHazard(1)(ramIdx).orR
+            //!myHadAnyRecentHazard(1)(ramIdx).orR
             //&& rDel2LoH2dPayload.isWrite === rIdleModeIsWrite
           )
 
