@@ -21111,7 +21111,11 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                       //  init=False
                       //)
                     ) else (
-                      myHistLineWordRamWrite(idx).last
+                      //myHistLineWordRamWrite(idx).last
+                      RegNext(
+                        myHistLineWordRamWrite(idx).head,
+                        init=myHistLineWordRamWrite(idx).head.getZero
+                      )
                     )
                   )
                 }
