@@ -17616,28 +17616,100 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
     outerItem.zipWithIndex.foreach{
       case (item, ramIdx) => {
         item := {
-          val myHistLineWordRamWrite = (
-            History[Flow[UInt]](
+          //val myHistLineWordRamWrite = (
+          //  History[Flow[UInt]](
+          //    that={
+          //      val temp = ( 
+          //        Flow(UInt(
+          //          lineWordRam(ramIdx).io.vec.last.addr.getWidth bits
+          //        ))
+          //      )
+          //      temp.valid := lineWordRam(ramIdx).io.vec.last.wrEn
+          //      temp.payload := lineWordRam(ramIdx).io.vec.last.addr
+          //      temp
+          //    },
+          //    length=cfg.myRamOptWrHistLengthPlusAddend,
+          //    init={
+          //      val temp = ( 
+          //        Flow(UInt(
+          //          lineWordRam(ramIdx).io.vec.last.addr.getWidth bits
+          //        ))
+          //      )
+          //      temp.getZero
+          //    }
+          //  )
+          //)
+          def tempWidth = (
+            lineWordRam.head.io.vec.head.addr.getWidth
+          )
+          val myHistLineWordRamWrite = {
+            History[Vec[Flow[UInt]]](
               that={
-                val temp = ( 
-                  Flow(UInt(
-                    lineWordRam(ramIdx).io.vec.last.addr.getWidth bits
-                  ))
+                val temp = (
+                  Vec.fill(lineAttrsRam.size)(
+                    Flow(UInt(tempWidth bits))
+                  )
                 )
-                temp.valid := lineWordRam(ramIdx).io.vec.last.wrEn
-                temp.payload := lineWordRam(ramIdx).io.vec.last.addr
+                //temp.valid := lineWordRam(ramIdx).io.vec.last.wrEn
+                //temp.payload := lineWordRam(ramIdx).io.vec.last.addr
+                def item = lineWordRam(ramIdx)
+                temp.head.valid := item.io.vec.head.wrEn
+                temp.head.payload := item.io.vec.head.addr
+                temp.last.valid := item.io.vec.last.wrEn
+                temp.last.payload := item.io.vec.last.addr
                 temp
               },
               length=cfg.myRamOptWrHistLengthPlusAddend,
               init={
                 val temp = ( 
-                  Flow(UInt(
-                    lineWordRam(ramIdx).io.vec.last.addr.getWidth bits
-                  ))
+                  Vec.fill(lineAttrsRam.size)(
+                    Flow(UInt(tempWidth bits))
+                  )
                 )
                 temp.getZero
               }
             )
+          }
+          val myTempVec = (
+            Vec.fill(lineAttrsRam.size)(
+              Vec.fill(myHistLineWordRamWrite.size)(
+                Flow(UInt(tempWidth bits))
+              )
+            )
+          )
+          for (kdx <- 0 until lineAttrsRam.size) {
+            for (idx <- 0 until myHistLineWordRamWrite.size) {
+              myTempVec(kdx)(idx) := (
+                if (kdx == 0) (
+                  RegNext(
+                    myHistLineWordRamWrite(idx).head,
+                    init=myHistLineWordRamWrite(idx).head.getZero
+                  )
+                ) else (
+                  myHistLineWordRamWrite(idx).last
+                )
+              )
+            }
+          }
+          val temp1 = (
+            Vec(myTempVec.map(
+              outerItem => (
+                outerItem.sFindFirst(
+                  item => (
+                    item.fire
+                    && (
+                      item.payload 
+                      === (
+                        rDel2LoH2dPayload.addr(
+                          rDel2LoH2dPayload.addr.high
+                          downto myLineAttrsRamAddrRshift
+                        ).resize(item.payload.getWidth)
+                      )
+                    )
+                  )
+                )._1
+              )
+            ))
           )
 
           val temp0 = (
@@ -17712,40 +17784,43 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
           val busAddr = (
             rDel2LoH2dPayload.addr
           )
-          val temp1 = (
-            //RegNext(
-              (
-                myHistLineWordRamWrite.sFindFirst(elem => (
-                  //RegNext(elem.fire, init=False)
-                  elem.fire
-                  && (
-                    //RegNext(elem.payload)
-                    elem.payload
-                    === (
-                      (
-                        busAddr(
-                          busAddr.high
-                          downto myLineWordRamSingleWordAddrRshift
-                        )
-                      ).resize(
-                        lineWordRam(ramIdx).io.vec.last.addr.getWidth
-                      )
-                    )
-                  )
-                ))._1
-              ),
-            //  init=False
-            //)
-          )
+          //val temp1 = (
+          //  //RegNext(
+          //    (
+          //      myHistLineWordRamWrite.sFindFirst(elem => (
+          //        //RegNext(elem.fire, init=False)
+          //        elem.fire
+          //        && (
+          //          //RegNext(elem.payload)
+          //          elem.payload
+          //          === (
+          //            (
+          //              busAddr(
+          //                busAddr.high
+          //                downto myLineWordRamSingleWordAddrRshift
+          //              )
+          //            ).resize(
+          //              lineWordRam(ramIdx).io.vec.last.addr.getWidth
+          //            )
+          //          )
+          //        )
+          //      ))._1
+          //    ),
+          //  //  init=False
+          //  //)
+          //)
 
           if (rSavedRamIdx != null) (
             Vec(
               (
-                temp0
-                && (
-                  rSavedRamIdx === ramIdx
+                (
+                  temp0
+                  && (
+                    rSavedRamIdx === ramIdx
+                  )
+                  && temp1.last
                 )
-                && temp1
+                || temp1.head
               ),
               //temp1,
             )
@@ -17753,8 +17828,9 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
             Vec(
               (
                 temp0
-                && temp1
-              ),
+                && temp1.last
+              )
+              || temp1.head
               //temp1
             )
           )
