@@ -21167,55 +21167,72 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                 (
                   (
                     (
-                      rPrefetchInfo.fire
-                      || (
-                        // this is for safety,
-                        // but it will produce less performance!
-                        rState.asBits(
-                          State.PREFETCH_START.position
-                        )
+                      // this is for safety,
+                      // but it will produce less performance!
+                      rState.asBits(
+                        State.PREFETCH_START_PIPE_4.position
+                      )
+                      || rState.asBits(
+                        State.PREFETCH_START.position
+                      )
+                      || rState.asBits(
+                        State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
+                        .position
                       )
                     )
-                    && (
-                      //rPrefetchInfo.baseAddr.resize(
-                      //  lineAttrsRam.head.head.io.wrAddr.getWidth
-                      //)
+                    || (
                       (
-                        rDel2LoH2dPayload.isWrite
-                        && (
-                          rDel2LoH2dPayload.addr(
-                            rPrefetchInfo.myTempRange
-                          ).resize(
-                            lineAttrsRam.head.head.io.wrAddr.getWidth
-                          )
-                          === Cat(
-                            False,
-                            rSavedRdLineAttrsTag,
-                            rSavedLoBusAddrSet,
-                            U(
-                              s"${log2Up(loBusCfg.burstCntMaxNumBytes)}"
-                              + s"'d0"
-                            ),
-                          ).asUInt(
-                            rPrefetchInfo.myTempRange
-                          ).resize(
-                            lineAttrsRam.head.head.io.wrAddr.getWidth
+                        rPrefetchInfo.fire
+                        //|| (
+                        //  // this is for safety,
+                        //  // but it will produce less performance!
+                        //  rState.asBits(
+                        //    State.PREFETCH_START.position
+                        //  )
+                        //)
+                      )
+                      && (
+                        //rPrefetchInfo.baseAddr.resize(
+                        //  lineAttrsRam.head.head.io.wrAddr.getWidth
+                        //)
+                        (
+                          //rDel2LoH2dPayload.isWrite
+                          //&& 
+                          (
+                            rDel2LoH2dPayload.addr(
+                              rPrefetchInfo.myTempRange
+                            ).resize(
+                              lineAttrsRam.head.head.io.wrAddr.getWidth
+                            )
+                            === Cat(
+                              False,
+                              rSavedRdLineAttrsTag,
+                              rSavedLoBusAddrSet,
+                              U(
+                                s"${log2Up(loBusCfg.burstCntMaxNumBytes)}"
+                                + s"'d0"
+                              ),
+                            ).asUInt(
+                              rPrefetchInfo.myTempRange
+                            ).resize(
+                              lineAttrsRam.head.head.io.wrAddr.getWidth
+                            )
                           )
                         )
-                      )
-                      || (
-                        //!rDel2LoH2dPayload.isWrite
-                        //&& 
-                        (
-                          rDel2LoH2dPayload.addr(
-                            rPrefetchInfo.myTempRange
-                          ).resize(
-                            lineAttrsRam.head.head.io.wrAddr.getWidth
-                          )
-                          === rSavedLoH2dPayload.addr(
-                            rPrefetchInfo.myTempRange
-                          ).resize(
-                            lineAttrsRam.head.head.io.wrAddr.getWidth
+                        || (
+                          //!rDel2LoH2dPayload.isWrite
+                          //&& 
+                          (
+                            rDel2LoH2dPayload.addr(
+                              rPrefetchInfo.myTempRange
+                            ).resize(
+                              lineAttrsRam.head.head.io.wrAddr.getWidth
+                            )
+                            === rSavedLoH2dPayload.addr(
+                              rPrefetchInfo.myTempRange
+                            ).resize(
+                              lineAttrsRam.head.head.io.wrAddr.getWidth
+                            )
                           )
                         )
                       )
