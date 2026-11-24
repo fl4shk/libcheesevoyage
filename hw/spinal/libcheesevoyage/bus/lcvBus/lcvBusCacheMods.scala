@@ -22333,10 +22333,10 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
       ))
     }
     is (State.LOAD_HIT_DO_STALL) {
-      rIdleModeIsWrite := (
-        //False
-        rDel2LoH2dPayload.isWrite
-      )
+      //rIdleModeIsWrite := (
+      //  //False
+      //  rDel2LoH2dPayload.isWrite
+      //)
       val myRdLineWord = (
         RegNext(
           if (myCondHaveLineBitPlruRam) (
@@ -22473,10 +22473,10 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
       rState := State.STORE_HIT_DO_STALL
     }
     is (State.STORE_HIT_DO_STALL) {
-      rIdleModeIsWrite := (
-        //True
-        rDel2LoH2dPayload.isWrite
-      )
+      //rIdleModeIsWrite := (
+      //  //True
+      //  rDel2LoH2dPayload.isWrite
+      //)
 
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
       lineWordRam.foreach(_.foreach(
