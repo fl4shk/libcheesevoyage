@@ -17656,7 +17656,7 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
                 //temp.head.valid := item.io.vec.head.wrEn
                 //temp.head.payload := item.io.vec.head.addr
 
-                temp.head.valid := mySelLoH2dPopStm.valid
+                temp.head.valid := rMyTempDoSaveCond.head//mySelLoH2dPopStm.valid
                 temp.head.payload := (
                   //mySelLoH2dPopStm.addr(
                   //  mySelLoH2dPopStm.addr.high
