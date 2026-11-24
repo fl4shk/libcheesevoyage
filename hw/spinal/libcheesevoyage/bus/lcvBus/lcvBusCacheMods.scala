@@ -21332,13 +21332,13 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                             )
                           )
                         )
-                        || (
-                          rDel2LoH2dPayload.addr(
-                            myConvBusAddrToLineWordAddrRange
-                          ) === (
-                            rHiH2dBurstCnt(0)
-                          )
-                        )
+                        //|| (
+                        //  rDel2LoH2dPayload.addr(
+                        //    myConvBusAddrToLineWordAddrRange
+                        //  ) === (
+                        //    rHiH2dBurstCnt(0)
+                        //  )
+                        //)
                       )
                     )
                   )
@@ -21356,9 +21356,9 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                   //)
                 )
               )
-              val busAddr = (
-                rDel2LoH2dPayload.addr
-              )
+              //val busAddr = (
+              //  rDel2LoH2dPayload.addr
+              //)
               //val temp1 = (
               //  //RegNext(
               //    (
@@ -21817,7 +21817,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
               )
             ) {
               doLineWordRamWrite(
-                vecIdx=1,
+                vecIdx=0,
                 ramIdx=ramIdx,
                 wordIdx=wordIdx,
                 busAddr=Some(rDel2LoH2dPayload.addr),
@@ -22526,7 +22526,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
               | ramIdx
             ) {
               doLineWordRamWrite(
-                vecIdx=0,
+                vecIdx=1,
                 ramIdx=ramIdx,
                 wordIdx=wordIdx,
                 busAddr=Some(rSavedLoH2dPayload.addr),
