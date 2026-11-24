@@ -18337,7 +18337,7 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
               is (
                 //M"010"
                 MaskedLiteral(
-                  stallKindStr + "10"
+                  "0110"
                 )
               ) {
                 // in load mode, requested store
@@ -18355,7 +18355,7 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
               is (
                 //M"000"
                 MaskedLiteral(
-                  stallKindStr + "00"
+                  "0100"
                 )
               ) {
                 // in load mode, requested load
