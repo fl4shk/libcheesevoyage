@@ -21155,7 +21155,8 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                   length=(
                     //cfg.myRamOptWrHistLengthPlusAddend + //2
                     //4
-                    3
+                    //3
+                    2
                   ),
                   init={
                     val temp = ( 
