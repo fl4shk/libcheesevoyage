@@ -1182,7 +1182,7 @@ case class LcvBusSdramCtrl(
       //  //d2hFifo.io.flush := True
       //}
       .elsewhen (
-        // wait for the d2hFifo to be emptied so that any urst is
+        // wait for the d2hFifo to be emptied so that any burst is
         // guaranteed to be completed
         d2hFifo.io.push.ready
         && h2dFifo.io.pop.valid
