@@ -21013,9 +21013,9 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
               //  )
               //)
               def tempWidth = (
-                //lineWordRam.head.head.io.vec.head.addr.getWidth
+                lineWordRam.head.head.io.vec.head.addr.getWidth
                 //loBusCacheCfg.addrWidth
-                log2Up(lineSizeWords)
+                //log2Up(lineSizeWords)
               )
 
               val myHistLineWordRamWrite = {
@@ -21034,8 +21034,9 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                     def item = lineWordRam(ramIdx)(wordIdx)
                     //temp.head.valid := item.io.vec.head.wrEn
                     //temp.head.payload := item.io.vec.head.addr
-
                     temp.head.valid := (
+                      //!item.io.vec.head.wrEn
+                      //&& 
                       mySelLoH2dPopStm.fire
                       && (
                         mySelLoH2dPopStm.addr(
@@ -21044,18 +21045,41 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                         )
                         === wordIdx
                       )
-                      //rMyTempDoSaveCond.head//mySelLoH2dPopStm.valid
-                      ////item.io.vec.head.wrEn
-                      //&& (
-                      //  rDel2LoH2dPayload.addr(
-                      //    //rDel2LoH2dPayload.addr.high
-                      //    myConvBusAddrToLineWordAddrRange
-                      //  )
-                      //  === wordIdx
-                      //)
+                      //&& mySelLoH2dPopStm
+                      && !mySelLoH2dPopStm.isWrite
+                      //&& item.io.vec.head.addr
+                    )
+                    temp.head.payload := (
+                      item.io.vec.head.addr
                     )
 
-                    temp.head.payload := 0x0
+                    //temp.head.valid := (
+                    //  mySelLoH2dPopStm.fire
+                    //  && (
+                    //    mySelLoH2dPopStm.addr(
+                    //      //rDel2LoH2dPayload.addr.high
+                    //      myConvBusAddrToLineWordAddrRange
+                    //    )
+                    //    === wordIdx
+                    //  )
+                    //  //&& mySelLoH2dPopStm
+                    //  && !mySelLoH2dPopStm.isWrite
+
+                    //  //rMyTempDoSaveCond.head//mySelLoH2dPopStm.valid
+                    //  ////item.io.vec.head.wrEn
+                    //  //&& (
+                    //  //  rDel2LoH2dPayload.addr(
+                    //  //    //rDel2LoH2dPayload.addr.high
+                    //  //    myConvBusAddrToLineWordAddrRange
+                    //  //  )
+                    //  //  === wordIdx
+                    //  //)
+                    //)
+
+                    //temp.head.payload := (
+                    //  mySelLoH2dPopStm.addr
+                    //  //0x0
+                    //)
 
                     //temp.last.valid := (
                     //  
@@ -21151,23 +21175,23 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                 for (idx <- 0 until myHistLineWordRamWrite.size) {
                   myTempVec(jdx)(idx) := (
                     //myHistLineWordRamWrite(idx)(jdx)
-                    if (jdx == 0) (
-                      RegNext(
-                        myHistLineWordRamWrite(idx).head,
-                        init=myHistLineWordRamWrite(idx).head.getZero
-                      )
+                    //if (jdx == 0) (
+                      //RegNext(
+                        myHistLineWordRamWrite(idx).head//,
+                      //  init=myHistLineWordRamWrite(idx).head.getZero
+                      //)
                       //myHistLineWordRamWrite(idx).head
                       //RegNext(
                       //  myHistLineWordRamWrite(idx).head.fire,
                       //  init=False
                       //)
-                    ) else (
-                      //myHistLineWordRamWrite(idx).last
-                      RegNext(
-                        myHistLineWordRamWrite(idx).head,
-                        init=myHistLineWordRamWrite(idx).head.getZero
-                      )
-                    )
+                    //) else (
+                    //  //myHistLineWordRamWrite(idx).last
+                    //  RegNext(
+                    //    myHistLineWordRamWrite(idx).head,
+                    //    init=myHistLineWordRamWrite(idx).head.getZero
+                    //  )
+                    //)
                   )
                 }
               }
@@ -21180,8 +21204,14 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                           item.fire
                           && (
                             rDel2LoH2dPayload.addr(
-                              myConvBusAddrToLineWordAddrRange
-                            ) === wordIdx
+                              //myConvBusAddrToLineWordAddrRange
+                              rDel2LoH2dPayload.addr.high
+                              downto log2Up(lineSizeBytes)
+                            ).resize(item.payload.getWidth)
+                            === (
+                              item.payload
+                            )
+                            //=== wordIdx
                           )
                         //) else ( // if (outerIdx == 1)
                         //  item.fire
@@ -21222,6 +21252,9 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                   )
                 })
               )
+
+              //val temp1 = (
+              //)
 
               val temp0 = (
                 (
@@ -21346,7 +21379,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
               //          )
               //        )
               //      ))._1
-              //    ),
+              //    )
               //  //  init=False
               //  //)
               //)
