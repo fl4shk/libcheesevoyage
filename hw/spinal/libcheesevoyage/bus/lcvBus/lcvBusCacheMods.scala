@@ -17658,10 +17658,14 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
 
                 temp.head.valid := mySelLoH2dPopStm.valid
                 temp.head.payload := (
-                  mySelLoH2dPopStm.addr(
-                    mySelLoH2dPopStm.addr.high
+                  //mySelLoH2dPopStm.addr(
+                  //  mySelLoH2dPopStm.addr.high
+                  //  downto myLineWordRamSingleWordAddrRshift
+                  //).resize(tempWidth)
+                  rDel2LoH2dPayload.addr(
+                    rDel2LoH2dPayload.addr.high
                     downto myLineWordRamSingleWordAddrRshift
-                  )
+                  ).resize(tempWidth)
                 )
                 temp.last.valid := item.io.vec.last.wrEn
                 temp.last.payload := item.io.vec.last.addr
@@ -17669,7 +17673,8 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
               },
               length=(
                 //cfg.myRamOptWrHistLengthPlusAddend + //2
-                4
+                //4
+                3
               ),
               init={
                 val temp = ( 
