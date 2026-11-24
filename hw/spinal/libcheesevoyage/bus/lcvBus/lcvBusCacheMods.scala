@@ -9769,6 +9769,37 @@ case class LcvBusInstrCacheWithTaggedPrefetchWide(
         rSavedStallInfo.valid := False
       }
 
+      //switch (
+      //  //myLoD2hFifo.io.pop.valid
+      //  !myEmptyEnoughCond
+      //  ## (
+      //    rSavedStallInfo.fire
+      //    && !rSavedStallFromIdle
+      //  )
+      //  ## rSavedStallInfo.isHit
+      //) {
+      //  ////myFifoThingDoStall := False
+      //  //rState := State.IDLE
+      //  is (
+      //    M"00-"
+      //    //M"000-"
+      //  ) {
+      //    rSavedStallFromIdle := False
+      //    rState := State.IDLE
+      //  }
+      //  is (
+      //    M"010"
+      //    //M"0010"
+      //  ) {
+      //    rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+      //  }
+      //  is (M"011") {
+      //    rState := State.LOAD_HIT_DO_STALL_PIPE_4
+      //  }
+      //  default {
+      //  }
+      //}
+
       switch (
         //myLoD2hFifo.io.pop.valid
         !myEmptyEnoughCond
@@ -9776,26 +9807,33 @@ case class LcvBusInstrCacheWithTaggedPrefetchWide(
           rSavedStallInfo.fire
           && !rSavedStallFromIdle
         )
-        ## rSavedStallInfo.isHit
+        //## rSavedStallInfo.isHit
+        //## rSavedStallInfo.isWrite
       ) {
         ////myFifoThingDoStall := False
         //rState := State.IDLE
         is (
-          M"00-"
-          //M"000-"
+          M"00"
+          //M"00--"
+          ////M"000-"
         ) {
           rSavedStallFromIdle := False
           rState := State.IDLE
         }
         is (
-          M"010"
-          //M"0010"
+          M"01"
+          //M"010-"
+          ////M"0010"
         ) {
-          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+          //rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+          rState := State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
         }
-        is (M"011") {
-          rState := State.LOAD_HIT_DO_STALL_PIPE_4
-        }
+        //is (M"0110") {
+        //  rState := State.LOAD_HIT_DO_STALL_PIPE_4
+        //}
+        //is (M"0111") {
+        //  rState := State.STORE_HIT_DO_STALL_PIPE_1
+        //}
         default {
         }
       }
@@ -19769,31 +19807,33 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
           rSavedStallInfo.fire
           && !rSavedStallFromIdle
         )
-        ## rSavedStallInfo.isHit
-        ## rSavedStallInfo.isWrite
+        //## rSavedStallInfo.isHit
+        //## rSavedStallInfo.isWrite
       ) {
         ////myFifoThingDoStall := False
         //rState := State.IDLE
         is (
-          M"00--"
-          //M"000-"
+          M"00"
+          //M"00--"
+          ////M"000-"
         ) {
           rSavedStallFromIdle := False
           rState := State.IDLE
         }
         is (
-          M"010-"
-          //M"0010"
+          M"01"
+          //M"010-"
+          ////M"0010"
         ) {
           //rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
           rState := State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
         }
-        is (M"0110") {
-          rState := State.LOAD_HIT_DO_STALL_PIPE_4
-        }
-        is (M"0111") {
-          rState := State.STORE_HIT_DO_STALL_PIPE_1
-        }
+        //is (M"0110") {
+        //  rState := State.LOAD_HIT_DO_STALL_PIPE_4
+        //}
+        //is (M"0111") {
+        //  rState := State.STORE_HIT_DO_STALL_PIPE_1
+        //}
         default {
         }
       }
