@@ -8995,15 +8995,16 @@ case class LcvBusInstrCacheWithTaggedPrefetchWide(
       myLoD2hPushStm.busPayload.txnCnt := (
         rSavedStallInfo.loH2dPayload.txnCnt
       )
+      rState := State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
 
-      when (rSavedStallInfo.isHit) {
-        rState := (
-          //State.LOAD_HIT_DO_STALL_PIPE_4
-          State.LOAD_OTHER_DO_STALL
-        )
-      } otherwise {
-        rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-      }
+      //when (rSavedStallInfo.isHit) {
+      //  rState := (
+      //    //State.LOAD_HIT_DO_STALL_PIPE_4
+      //    State.LOAD_OTHER_DO_STALL
+      //  )
+      //} otherwise {
+      //  rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+      //}
     }
     default {
       //doPopLoH2dFifo()
@@ -18552,51 +18553,52 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
       )
 
       //--------
-      //rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+      rState := State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
       //--------
-      switch (
-        (
-          rSavedStallInfo.isHit
-          && (
-            //if (wordWidth == 256) (
-            //  rSavedStallInfo.loH2dPayload.busPayload.byteSize
-            //  === 0x5
-            //) else if (wordWidth == 128) (
-            //  rSavedStallInfo.loH2dPayload.busPayload.byteSize
-            //  === 0x4
-            //) else if (wordWidth == 64) (
-            //  rSavedStallInfo.loH2dPayload.busPayload.byteSize
-            //  === 0x3
-            //) else if (wordWidth == 32) (
-            //  rSavedStallInfo.loH2dPayload.busPayload.byteSize
-            //  === 0x2
-            //) else if (wordWidth == 16) (
-            //  rSavedStallInfo.loH2dPayload.busPayload.byteSize
-            //  === 0x1
-            //) else { // if (wordWidth == 8)
-            //  require(wordWidth == 8)
-            //}
-            (
-              rSavedStallInfo.loH2dPayload.busPayload.byteSize
-              === log2Up(wordWidth / 8)
-            )
-          )
-        )
-        ## rSavedStallInfo.isWrite
-      ) {
-        is (M"10") {
-          rState := (
-            State.LOAD_HIT_DO_STALL_PIPE_4
-            //State.LOAD_OTHER_DO_STALL
-          )
-        }
-        is (M"11") {
-          rState := State.STORE_HIT_DO_STALL_PIPE_1
-        }
-        default {
-          rState := State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
-        }
-      }
+
+      //switch (
+      //  (
+      //    rSavedStallInfo.isHit
+      //    && (
+      //      //if (wordWidth == 256) (
+      //      //  rSavedStallInfo.loH2dPayload.busPayload.byteSize
+      //      //  === 0x5
+      //      //) else if (wordWidth == 128) (
+      //      //  rSavedStallInfo.loH2dPayload.busPayload.byteSize
+      //      //  === 0x4
+      //      //) else if (wordWidth == 64) (
+      //      //  rSavedStallInfo.loH2dPayload.busPayload.byteSize
+      //      //  === 0x3
+      //      //) else if (wordWidth == 32) (
+      //      //  rSavedStallInfo.loH2dPayload.busPayload.byteSize
+      //      //  === 0x2
+      //      //) else if (wordWidth == 16) (
+      //      //  rSavedStallInfo.loH2dPayload.busPayload.byteSize
+      //      //  === 0x1
+      //      //) else { // if (wordWidth == 8)
+      //      //  require(wordWidth == 8)
+      //      //}
+      //      (
+      //        rSavedStallInfo.loH2dPayload.busPayload.byteSize
+      //        === log2Up(wordWidth / 8)
+      //      )
+      //    )
+      //  )
+      //  ## rSavedStallInfo.isWrite
+      //) {
+      //  is (M"10") {
+      //    rState := (
+      //      State.LOAD_HIT_DO_STALL_PIPE_4
+      //      //State.LOAD_OTHER_DO_STALL
+      //    )
+      //  }
+      //  is (M"11") {
+      //    rState := State.STORE_HIT_DO_STALL_PIPE_1
+      //  }
+      //  default {
+      //    rState := State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
+      //  }
+      //}
     }
     default {
       //doPopLoH2dFifo()
