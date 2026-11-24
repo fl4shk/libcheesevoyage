@@ -17930,9 +17930,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
 //                  && (
 //                    rSavedRamIdx === ramIdx
 //                  )
-//                  && temp1.last
+//                  //&& temp1.last
 //                )
-//                || temp1.head
+//                || LcvOrR(temp1)//.head
 //              ),
 //              //temp1,
 //            )
@@ -17940,9 +17940,9 @@ private[libcheesevoyage] case class LcvBusDataCacheMain(
 //            Vec(
 //              (
 //                temp0
-//                && temp1.last
+//                //&& temp1.last
 //              )
-//              || temp1.head
+//              || LcvOrR(temp1)//.head
 //              //temp1
 //            )
 //          )
@@ -21267,24 +21267,33 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
               if (rSavedRamIdx != null) (
                 Vec(
                   (
+                    //(
+                    //  temp0
+                    //  && (
+                    //    rSavedRamIdx === ramIdx
+                    //  )
+                    //  && temp1.last
+                    //)
+                    //|| temp1.head
                     (
                       temp0
                       && (
                         rSavedRamIdx === ramIdx
                       )
-                      && temp1.last
                     )
-                    || temp1.head
+                    || LcvOrR(temp1)
                   ),
                   //temp1,
                 )
               ) else (
                 Vec(
-                  (
-                    temp0
-                    && temp1.last
-                  )
-                  || temp1.head
+                  //(
+                  //  temp0
+                  //  && temp1.last
+                  //)
+                  //|| temp1.head
+                  temp0
+                  || LcvOrR(temp1)
                   //temp1
                 )
               )
