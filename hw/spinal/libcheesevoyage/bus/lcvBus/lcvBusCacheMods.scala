@@ -21131,8 +21131,9 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                               rDel2LoH2dPayload.addr(
                                 rDel2LoH2dPayload.addr.high
                                 downto (
-                                  loBusCacheCfg
-                                  .myLineWordRamSingleWordAddrRshift
+                                  //loBusCacheCfg
+                                  //.myLineWordRamSingleWordAddrRshift
+                                  myLineWordRamSingleWordAddrRshift
                                 )
                               ).resize(item.payload.getWidth)
                               //rDel2LoH2dPayload.addr(
