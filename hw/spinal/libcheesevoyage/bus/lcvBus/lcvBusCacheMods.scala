@@ -21013,14 +21013,19 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
               //  )
               //)
               def tempWidth = (
-                lineWordRam.head.head.io.vec.head.addr.getWidth
+                //lineWordRam.head.head.io.vec.head.addr.getWidth
                 //loBusCacheCfg.addrWidth
+                log2Up(lineSizeWords)
               )
+
               val myHistLineWordRamWrite = {
                 History[Vec[Flow[UInt]]](
                   that={
                     val temp = (
-                      Vec.fill(lineAttrsRam.size)(
+                      Vec.fill(
+                        //lineAttrsRam.size
+                        1
+                      )(
                         Flow(UInt(tempWidth bits))
                       )
                     )
@@ -21031,16 +21036,43 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                     //temp.head.payload := item.io.vec.head.addr
 
                     temp.head.valid := (
-                      rMyTempDoSaveCond.head//mySelLoH2dPopStm.valid
-                      //item.io.vec.head.wrEn
+                      mySelLoH2dPopStm.fire
                       && (
-                        rDel2LoH2dPayload.addr(
+                        mySelLoH2dPopStm.addr(
                           //rDel2LoH2dPayload.addr.high
                           myConvBusAddrToLineWordAddrRange
                         )
                         === wordIdx
                       )
+                      //rMyTempDoSaveCond.head//mySelLoH2dPopStm.valid
+                      ////item.io.vec.head.wrEn
+                      //&& (
+                      //  rDel2LoH2dPayload.addr(
+                      //    //rDel2LoH2dPayload.addr.high
+                      //    myConvBusAddrToLineWordAddrRange
+                      //  )
+                      //  === wordIdx
+                      //)
                     )
+
+                    temp.head.payload := 0x0
+
+                    //temp.last.valid := (
+                    //  
+                    //)
+
+                    //temp.last.valid := (
+                    //)
+
+
+                    //temp.head.payload := (
+                    //  mySelLoH2dPopStm.addr(
+                    //    mySelLoH2dPopStm.addr(
+                    //      //rDel2LoH2dPayload.addr.high
+                    //      myConvBusAddrToLineWordAddrRange
+                    //    )
+                    //  )
+                    //)
                     //temp.head.payload := item.io.vec.head.addr
 
                     //temp.head.payload := (
@@ -21070,8 +21102,21 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                     //    //myConvBusAddrToLineWordAddrRange
                     //  )//.resize(tempWidth)
                     //)
-                    temp.last.valid := item.io.vec.last.wrEn
-                    temp.last.payload := item.io.vec.last.addr
+                    //temp.last.valid := item.io.vec.last.wrEn
+                    //temp.last.payload := item.io.vec.last.addr
+
+                    //temp.last.valid := (
+                    //  rMyTempDoSaveCond.head//mySelLoH2dPopStm.valid
+                    //  //item.io.vec.head.wrEn
+                    //  && (
+                    //    rDel2LoH2dPayload.addr(
+                    //      //rDel2LoH2dPayload.addr.high
+                    //      myConvBusAddrToLineWordAddrRange
+                    //    )
+                    //    === wordIdx
+                    //  )
+                    //)
+
                     temp
                   },
                   length=(
@@ -21125,42 +21170,47 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                   case (outerItem, outerIdx) => (
                     outerItem.sFindFirst(
                       item => (
-                        if (outerIdx == 0) (
+                        //if (outerIdx == 0) (
                           item.fire
-                        ) else ( // if (outerIdx == 1)
-                          item.fire
-                          && (
-                            item.payload 
-                            === (
-                              rDel2LoH2dPayload.addr(
-                                rDel2LoH2dPayload.addr.high
-                                downto (
-                                  //loBusCacheCfg
-                                  //.myLineWordRamSingleWordAddrRshift
-                                  myLineWordRamSingleWordAddrRshift
-                                )
-                              ).resize(item.payload.getWidth)
-                              //rDel2LoH2dPayload.addr(
-                              //  //rDel2LoH2dPayload.addr.high
-                              //  tempWidth - 1
-                              //  //+ myLineWordRamSingleWordAddrRshift
-                              //  + loBusCacheCfg
-                              //  .myLineWordRamSingleWordAddrRshift
-                              //  downto (
-                              //    //myLineWordRamSingleWordAddrRshift
-                              //    loBusCacheCfg
-                              //    .myLineWordRamSingleWordAddrRshift
-                              //  )
-                              //  //myConvBusAddrToLineWordAddrRange
-                              //).resize(item.payload.getWidth)
-                            )
-                          )
-                          && (
+                          || (
                             rDel2LoH2dPayload.addr(
                               myConvBusAddrToLineWordAddrRange
                             ) === wordIdx
                           )
-                        )
+                        //) else ( // if (outerIdx == 1)
+                        //  item.fire
+                        //  && (
+                        //    item.payload 
+                        //    === (
+                        //      rDel2LoH2dPayload.addr(
+                        //        rDel2LoH2dPayload.addr.high
+                        //        downto (
+                        //          //loBusCacheCfg
+                        //          //.myLineWordRamSingleWordAddrRshift
+                        //          myLineWordRamSingleWordAddrRshift
+                        //        )
+                        //      ).resize(item.payload.getWidth)
+                        //      //rDel2LoH2dPayload.addr(
+                        //      //  //rDel2LoH2dPayload.addr.high
+                        //      //  tempWidth - 1
+                        //      //  //+ myLineWordRamSingleWordAddrRshift
+                        //      //  + loBusCacheCfg
+                        //      //  .myLineWordRamSingleWordAddrRshift
+                        //      //  downto (
+                        //      //    //myLineWordRamSingleWordAddrRshift
+                        //      //    loBusCacheCfg
+                        //      //    .myLineWordRamSingleWordAddrRshift
+                        //      //  )
+                        //      //  //myConvBusAddrToLineWordAddrRange
+                        //      //).resize(item.payload.getWidth)
+                        //    )
+                        //  )
+                        //  && (
+                        //    rDel2LoH2dPayload.addr(
+                        //      myConvBusAddrToLineWordAddrRange
+                        //    ) === wordIdx
+                        //  )
+                        //)
                       )
                     )._1
                   )
@@ -21187,8 +21237,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                       )
                       && rDel2LoH2dPayload.isWrite
                     )
-                    ||
-                    (
+                    || (
                       (
                         rPrefetchInfo.fire
                         //|| (
@@ -21241,6 +21290,13 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                             ).resize(
                               lineAttrsRam.head.head.io.wrAddr.getWidth
                             )
+                          )
+                        )
+                        || (
+                          rDel2LoH2dPayload.addr(
+                            myConvBusAddrToLineWordAddrRange
+                          ) === (
+                            rHiH2dBurstCnt(0)
                           )
                         )
                       )
