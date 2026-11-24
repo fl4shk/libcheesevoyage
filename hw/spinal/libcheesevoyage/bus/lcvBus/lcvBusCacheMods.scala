@@ -17616,29 +17616,29 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
     outerItem.zipWithIndex.foreach{
       case (item, ramIdx) => {
         item := {
-          //val myHistLineWordRamWrite = (
-          //  History[Flow[UInt]](
-          //    that={
-          //      val temp = ( 
-          //        Flow(UInt(
-          //          lineWordRam(ramIdx).io.vec.last.addr.getWidth bits
-          //        ))
-          //      )
-          //      temp.valid := lineWordRam(ramIdx).io.vec.last.wrEn
-          //      temp.payload := lineWordRam(ramIdx).io.vec.last.addr
-          //      temp
-          //    },
-          //    length=cfg.myRamOptWrHistLengthPlusAddend,
-          //    init={
-          //      val temp = ( 
-          //        Flow(UInt(
-          //          lineWordRam(ramIdx).io.vec.last.addr.getWidth bits
-          //        ))
-          //      )
-          //      temp.getZero
-          //    }
-          //  )
-          //)
+          val myHistLineWordRamWrite = (
+            History[Flow[UInt]](
+              that={
+                val temp = ( 
+                  Flow(UInt(
+                    lineWordRam(ramIdx).io.vec.last.addr.getWidth bits
+                  ))
+                )
+                temp.valid := lineWordRam(ramIdx).io.vec.last.wrEn
+                temp.payload := lineWordRam(ramIdx).io.vec.last.addr
+                temp
+              },
+              length=cfg.myRamOptWrHistLengthPlusAddend,
+              init={
+                val temp = ( 
+                  Flow(UInt(
+                    lineWordRam(ramIdx).io.vec.last.addr.getWidth bits
+                  ))
+                )
+                temp.getZero
+              }
+            )
+          )
 
           val temp0 = (
             (
@@ -17712,31 +17712,31 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
           val busAddr = (
             rDel2LoH2dPayload.addr
           )
-          //val temp1 = (
-          //  //RegNext(
-          //    (
-          //      myHistLineWordRamWrite.sFindFirst(elem => (
-          //        //RegNext(elem.fire, init=False)
-          //        elem.fire
-          //        && (
-          //          //RegNext(elem.payload)
-          //          elem.payload
-          //          === (
-          //            (
-          //              busAddr(
-          //                busAddr.high
-          //                downto myLineWordRamSingleWordAddrRshift
-          //              )
-          //            ).resize(
-          //              lineWordRam(ramIdx).io.vec.last.addr.getWidth
-          //            )
-          //          )
-          //        )
-          //      ))._1
-          //    ),
-          //  //  init=False
-          //  //)
-          //)
+          val temp1 = (
+            //RegNext(
+              (
+                myHistLineWordRamWrite.sFindFirst(elem => (
+                  //RegNext(elem.fire, init=False)
+                  elem.fire
+                  && (
+                    //RegNext(elem.payload)
+                    elem.payload
+                    === (
+                      (
+                        busAddr(
+                          busAddr.high
+                          downto myLineWordRamSingleWordAddrRshift
+                        )
+                      ).resize(
+                        lineWordRam(ramIdx).io.vec.last.addr.getWidth
+                      )
+                    )
+                  )
+                ))._1
+              ),
+            //  init=False
+            //)
+          )
 
           if (rSavedRamIdx != null) (
             Vec(
@@ -17745,12 +17745,16 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
                 && (
                   rSavedRamIdx === ramIdx
                 )
+                && temp1
               ),
               //temp1,
             )
           ) else (
             Vec(
-              temp0,
+              (
+                temp0
+                && temp1
+              ),
               //temp1
             )
           )
