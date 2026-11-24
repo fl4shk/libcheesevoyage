@@ -21150,11 +21150,11 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                               //).resize(item.payload.getWidth)
                             )
                           )
-                          //&& (
-                          //  rDel2LoH2dPayload.addr(
-                          //    myConvBusAddrToLineWordAddrRange
-                          //  ) === wordIdx
-                          //)
+                          && (
+                            rDel2LoH2dPayload.addr(
+                              myConvBusAddrToLineWordAddrRange
+                            ) === wordIdx
+                          )
                         )
                       )
                     )._1
