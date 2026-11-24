@@ -21126,7 +21126,10 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                   ),
                   init={
                     val temp = ( 
-                      Vec.fill(lineAttrsRam.size)(
+                      Vec.fill(
+                        //lineAttrsRam.size
+                        1
+                      )(
                         Flow(UInt(tempWidth bits))
                       )
                     )
@@ -21135,13 +21138,16 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                 )
               }
               val myTempVec = (
-                Vec.fill(lineAttrsRam.size)(
+                Vec.fill(
+                  //lineAttrsRam.size
+                  1
+                )(
                   Vec.fill(myHistLineWordRamWrite.size)(
                     Flow(UInt(tempWidth bits))
                   )
                 )
               )
-              for (jdx <- 0 until lineAttrsRam.size) {
+              for (jdx <- 0 until myTempVec.size) {
                 for (idx <- 0 until myHistLineWordRamWrite.size) {
                   myTempVec(jdx)(idx) := (
                     //myHistLineWordRamWrite(idx)(jdx)
