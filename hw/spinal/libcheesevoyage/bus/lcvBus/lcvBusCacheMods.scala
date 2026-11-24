@@ -18302,37 +18302,24 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
                   rState := State.STORE_HIT_DO_STALL_PIPE_1
                 }
               }
-              is (
-                //M"001"
-                MaskedLiteral(
-                  stallKindStr + "01"
-                )
-              ) {
-                // in store mode, requested load
-                // mode switch needed
+            }
+            is (
+              //M"001"
+              MaskedLiteral(
+                "0101"
+              )
+            ) {
+              // in store mode, requested load
+              // mode switch needed
 
-                mySelLoH2dPopStm.ready := False
-                myFifoThingDoStall := True
+              mySelLoH2dPopStm.ready := False
+              myFifoThingDoStall := True
 
-                if (idleIdx == 1) {
-                  rSavedStallFromIdle := True
-                  rIdleModeIsWrite := False
-                  //rState := State.LOAD_HIT_DO_STALL_PIPE_4
+              if (idleIdx == 1) {
+                rSavedStallFromIdle := True
+                rIdleModeIsWrite := False
+                rState := State.LOAD_HIT_DO_STALL_PIPE_4
 
-                  if (stallKind == 0) {
-                    rState := State.LOAD_HIT_DO_STALL_PIPE_4
-                  } else { // if (stallKind == 1)
-                    rState := State.LOAD_OTHER_DO_STALL
-                  }
-
-                  //when (
-                  //  myHadAnyRecentHazard.last(ramIdx).orR
-                  //) {
-                  //  rState := State.LOAD_HIT_DO_STALL_PIPE_4
-                  //} otherwise {
-                  //  rState := State.LOAD_OTHER_DO_STALL
-                  //}
-                }
               }
             }
 
@@ -18369,7 +18356,10 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
               }
             }
 
-            //is (M"011")
+            //is (
+            //  //M"011"
+            //  M"0111"
+            //)
             default {
               // in store mode, requested store
               if (idleIdx == 1) {
