@@ -21039,11 +21039,13 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                       //).resize(tempWidth)
                       rDel2LoH2dPayload.addr(
                         //rDel2LoH2dPayload.addr.high
-                        //downto (
-                        //  //myLineWordRamSingleWordAddrRshift
-                        //  loBusCacheCfg.myLineWordRamSingleWordAddrRshift
-                        //)
-                        myConvBusAddrToLineWordAddrRange
+                        tempWidth - 1
+                        + myLineWordRamSingleWordAddrRshift
+                        downto (
+                          myLineWordRamSingleWordAddrRshift
+                          //loBusCacheCfg.myLineWordRamSingleWordAddrRshift
+                        )
+                        //myConvBusAddrToLineWordAddrRange
                       )//.resize(tempWidth)
                     )
                     temp.last.valid := item.io.vec.last.wrEn
@@ -21099,11 +21101,14 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                           === (
                             rDel2LoH2dPayload.addr(
                               //rDel2LoH2dPayload.addr.high
-                              //downto (
-                              //  loBusCacheCfg
-                              //  .myLineWordRamSingleWordAddrRshift
-                              //)
-                              myConvBusAddrToLineWordAddrRange
+                              tempWidth - 1
+                              + myLineWordRamSingleWordAddrRshift
+                              downto (
+                                myLineWordRamSingleWordAddrRshift
+                                //loBusCacheCfg
+                                //.myLineWordRamSingleWordAddrRshift
+                              )
+                              //myConvBusAddrToLineWordAddrRange
                             )//.resize(item.payload.getWidth)
                           )
                         )
@@ -21142,7 +21147,10 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                             False,
                             rSavedRdLineAttrsTag,
                             rSavedLoBusAddrSet,
-                            U(s"${log2Up(loBusCfg.burstCntMaxNumBytes)}'d0"),
+                            U(
+                              s"${log2Up(loBusCfg.burstCntMaxNumBytes)}"
+                              + s"'d0"
+                            ),
                           ).asUInt(
                             rPrefetchInfo.myTempRange
                           ).resize(
