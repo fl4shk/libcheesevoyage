@@ -18464,8 +18464,8 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
       ) {
         is (M"10") {
           rState := (
-            //State.LOAD_HIT_DO_STALL_PIPE_4
-            State.LOAD_OTHER_DO_STALL
+            State.LOAD_HIT_DO_STALL_PIPE_4
+            //State.LOAD_OTHER_DO_STALL
           )
         }
         is (M"11") {
