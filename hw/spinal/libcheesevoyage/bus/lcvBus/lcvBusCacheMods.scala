@@ -18458,30 +18458,25 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
         rSavedStallInfo.loH2dPayload.txnCnt
       )
 
-      switch (
-        rSavedStallInfo.isHit
-        ## rSavedStallInfo.isWrite
-      ) {
-        is (M"10") {
-          rState := (
-            State.LOAD_HIT_DO_STALL_PIPE_4
-            //State.LOAD_OTHER_DO_STALL
-          )
-        }
-        is (M"11") {
-          rState := State.STORE_HIT_DO_STALL_PIPE_1
-        }
-        default {
-          rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
-        }
-      }
-      //when (rSavedStallInfo.isHit) {
-      //  rState := State.LOAD_HIT_DO_STALL_PIPE_4
-      //} otherwise {
-      //  rState := (
-      //    //State.RECV_LINE_FROM_HI_BUS_PIPE_1
-      //    State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
-      //  )
+      //--------
+      rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+      //--------
+      //switch (
+      //  rSavedStallInfo.isHit
+      //  ## rSavedStallInfo.isWrite
+      //) {
+      //  is (M"10") {
+      //    rState := (
+      //      State.LOAD_HIT_DO_STALL_PIPE_4
+      //      //State.LOAD_OTHER_DO_STALL
+      //    )
+      //  }
+      //  is (M"11") {
+      //    rState := State.STORE_HIT_DO_STALL_PIPE_1
+      //  }
+      //  default {
+      //    rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+      //  }
       //}
     }
     default {
