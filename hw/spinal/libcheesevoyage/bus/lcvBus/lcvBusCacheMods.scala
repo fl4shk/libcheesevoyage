@@ -17653,8 +17653,16 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
                 //temp.valid := lineWordRam(ramIdx).io.vec.last.wrEn
                 //temp.payload := lineWordRam(ramIdx).io.vec.last.addr
                 def item = lineWordRam(ramIdx)
-                temp.head.valid := item.io.vec.head.wrEn
-                temp.head.payload := item.io.vec.head.addr
+                //temp.head.valid := item.io.vec.head.wrEn
+                //temp.head.payload := item.io.vec.head.addr
+
+                temp.head.valid := mySelLoH2dPopStm.valid
+                temp.head.payload := (
+                  mySelLoH2dPopStm.addr(
+                    mySelLoH2dPopStm.addr.high
+                    downto myLineWordRamSingleWordAddrRshift
+                  )
+                )
                 temp.last.valid := item.io.vec.last.wrEn
                 temp.last.payload := item.io.vec.last.addr
                 temp
@@ -17677,14 +17685,16 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
               )
             )
           )
-          for (kdx <- 0 until lineAttrsRam.size) {
+          for (jdx <- 0 until lineAttrsRam.size) {
             for (idx <- 0 until myHistLineWordRamWrite.size) {
-              myTempVec(kdx)(idx) := (
-                if (kdx == 0) (
+              myTempVec(jdx)(idx) := (
+                //myHistLineWordRamWrite(idx)(jdx)
+                if (jdx == 0) (
                   RegNext(
                     myHistLineWordRamWrite(idx).head,
                     init=myHistLineWordRamWrite(idx).head.getZero
                   )
+                  //myHistLineWordRamWrite(idx).head
                 ) else (
                   myHistLineWordRamWrite(idx).last
                 )
@@ -17702,7 +17712,7 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
                       === (
                         rDel2LoH2dPayload.addr(
                           rDel2LoH2dPayload.addr.high
-                          downto myLineAttrsRamAddrRshift
+                          downto myLineWordRamSingleWordAddrRshift
                         ).resize(item.payload.getWidth)
                       )
                     )
