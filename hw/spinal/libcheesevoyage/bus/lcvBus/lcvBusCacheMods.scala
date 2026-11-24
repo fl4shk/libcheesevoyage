@@ -22012,8 +22012,8 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
               is (
                 //M"11-"
                 MaskedLiteral(
-                  stallKindStr + "1-"
-                  //stallKindStr + "1"
+                  //stallKindStr + "1-"
+                  stallKindStr + "1"
                 )
               ) {
                 mySelLoH2dPopStm.ready := False
@@ -22068,7 +22068,8 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             is (
               //M"000"
               MaskedLiteral(
-                "0100"
+                //"0100"
+                "010"
               )
             ) {
               // in load mode, requested load
@@ -22081,8 +22082,8 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             }
 
             //is (
-            //  //M"011"
-            //  M"0111"
+            //  //M"0111"
+            //  M"011"
             //)
             default {
               // in store mode, requested store
