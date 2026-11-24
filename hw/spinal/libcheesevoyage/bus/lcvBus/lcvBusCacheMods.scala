@@ -18257,8 +18257,11 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
               )
               is (
                 //M"10-"
+                //MaskedLiteral(
+                //  stallKindStr + "0-"
+                //)
                 MaskedLiteral(
-                  stallKindStr + "0-"
+                  stallKindStr + "00"
                 )
               ) {
                 mySelLoH2dPopStm.ready := False
@@ -18275,14 +18278,27 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
                   } else { // if (stallKind == 1)
                     rState := State.LOAD_OTHER_DO_STALL
                   }
+                }
+              }
+              is (
+                //M"10-"
+                //MaskedLiteral(
+                //  stallKindStr + "0-"
+                //)
+                MaskedLiteral(
+                  stallKindStr + "01"
+                )
+              ) {
+                mySelLoH2dPopStm.ready := False
+                myFifoThingDoStall := True
 
-                  //when (
-                  //  myHadAnyRecentHazard.last(ramIdx).orR
-                  //) {
-                  //  rState := State.LOAD_HIT_DO_STALL_PIPE_4
-                  //} otherwise {
-                  //  rState := State.LOAD_OTHER_DO_STALL
-                  //}
+                if (idleIdx == 1) {
+                  rSavedStallFromIdle := True
+
+                  // optimize for multiple loads in a row
+                  rIdleModeIsWrite := False
+
+                  rState := State.LOAD_HIT_DO_STALL_PIPE_4
                 }
               }
               is (
@@ -18319,7 +18335,6 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
                 rSavedStallFromIdle := True
                 rIdleModeIsWrite := False
                 rState := State.LOAD_HIT_DO_STALL_PIPE_4
-
               }
             }
 
