@@ -21014,6 +21014,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
               //)
               def tempWidth = (
                 lineWordRam.head.head.io.vec.head.addr.getWidth
+                //loBusCacheCfg.addrWidth
               )
               val myHistLineWordRamWrite = {
                 History[Vec[Flow[UInt]]](
@@ -21031,23 +21032,44 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
 
                     temp.head.valid := (
                       rMyTempDoSaveCond.head//mySelLoH2dPopStm.valid
-                    )
-                    temp.head.payload := (
-                      //mySelLoH2dPopStm.addr(
-                      //  mySelLoH2dPopStm.addr.high
-                      //  downto myLineWordRamSingleWordAddrRshift
-                      //).resize(tempWidth)
-                      rDel2LoH2dPayload.addr(
-                        //rDel2LoH2dPayload.addr.high
-                        tempWidth - 1
-                        + myLineWordRamSingleWordAddrRshift
-                        downto (
-                          myLineWordRamSingleWordAddrRshift
-                          //loBusCacheCfg.myLineWordRamSingleWordAddrRshift
+                      //item.io.vec.head.wrEn
+                      && (
+                        rDel2LoH2dPayload.addr(
+                          //rDel2LoH2dPayload.addr.high
+                          myConvBusAddrToLineWordAddrRange
                         )
-                        //myConvBusAddrToLineWordAddrRange
-                      )//.resize(tempWidth)
+                        === wordIdx
+                      )
                     )
+                    //temp.head.payload := item.io.vec.head.addr
+
+                    //temp.head.payload := (
+                    //  //mySelLoH2dPopStm.addr(
+                    //  //  mySelLoH2dPopStm.addr.high
+                    //  //  downto myLineWordRamSingleWordAddrRshift
+                    //  //).resize(tempWidth)
+                    //  rDel2LoH2dPayload.addr(
+                    //    ////rDel2LoH2dPayload.addr.high
+                    //    //tempWidth - 1
+                    //    //+ myLineWordRamSingleWordAddrRshift
+                    //    //downto (
+                    //    //  myLineWordRamSingleWordAddrRshift
+                    //    //  //loBusCacheCfg.myLineWordRamSingleWordAddrRshift
+                    //    //)
+                    //    ////myConvBusAddrToLineWordAddrRange
+                    //    //rDel2LoH2dPayload.addr.high
+                    //    tempWidth - 1
+                    //    //+ myLineWordRamSingleWordAddrRshift
+                    //    + loBusCacheCfg
+                    //    .myLineWordRamSingleWordAddrRshift
+                    //    downto (
+                    //      //myLineWordRamSingleWordAddrRshift
+                    //      loBusCacheCfg
+                    //      .myLineWordRamSingleWordAddrRshift
+                    //    )
+                    //    //myConvBusAddrToLineWordAddrRange
+                    //  )//.resize(tempWidth)
+                    //)
                     temp.last.valid := item.io.vec.last.wrEn
                     temp.last.payload := item.io.vec.last.addr
                     temp
@@ -21084,6 +21106,10 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                         init=myHistLineWordRamWrite(idx).head.getZero
                       )
                       //myHistLineWordRamWrite(idx).head
+                      //RegNext(
+                      //  myHistLineWordRamWrite(idx).head.fire,
+                      //  init=False
+                      //)
                     ) else (
                       myHistLineWordRamWrite(idx).last
                     )
@@ -21091,31 +21117,49 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                 }
               }
               val temp1 = (
-                Vec(myTempVec.map(
-                  outerItem => (
+                Vec(myTempVec.zipWithIndex.map{
+                  case (outerItem, outerIdx) => (
                     outerItem.sFindFirst(
                       item => (
-                        item.fire
-                        && (
-                          item.payload 
-                          === (
-                            rDel2LoH2dPayload.addr(
-                              //rDel2LoH2dPayload.addr.high
-                              tempWidth - 1
-                              + myLineWordRamSingleWordAddrRshift
-                              downto (
-                                myLineWordRamSingleWordAddrRshift
-                                //loBusCacheCfg
-                                //.myLineWordRamSingleWordAddrRshift
-                              )
-                              //myConvBusAddrToLineWordAddrRange
-                            )//.resize(item.payload.getWidth)
+                        if (outerIdx == 0) (
+                          item.fire
+                        ) else ( // if (outerIdx == 1)
+                          item.fire
+                          && (
+                            item.payload 
+                            === (
+                              rDel2LoH2dPayload.addr(
+                                rDel2LoH2dPayload.addr.high
+                                downto (
+                                  loBusCacheCfg
+                                  .myLineWordRamSingleWordAddrRshift
+                                )
+                              ).resize(item.payload.getWidth)
+                              //rDel2LoH2dPayload.addr(
+                              //  //rDel2LoH2dPayload.addr.high
+                              //  tempWidth - 1
+                              //  //+ myLineWordRamSingleWordAddrRshift
+                              //  + loBusCacheCfg
+                              //  .myLineWordRamSingleWordAddrRshift
+                              //  downto (
+                              //    //myLineWordRamSingleWordAddrRshift
+                              //    loBusCacheCfg
+                              //    .myLineWordRamSingleWordAddrRshift
+                              //  )
+                              //  //myConvBusAddrToLineWordAddrRange
+                              //).resize(item.payload.getWidth)
+                            )
                           )
+                          //&& (
+                          //  rDel2LoH2dPayload.addr(
+                          //    myConvBusAddrToLineWordAddrRange
+                          //  ) === wordIdx
+                          //)
                         )
                       )
                     )._1
                   )
-                ))
+                })
               )
 
               val temp0 = (
