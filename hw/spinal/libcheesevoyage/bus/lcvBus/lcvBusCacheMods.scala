@@ -17667,7 +17667,10 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
                 temp.last.payload := item.io.vec.last.addr
                 temp
               },
-              length=cfg.myRamOptWrHistLengthPlusAddend,
+              length=(
+                //cfg.myRamOptWrHistLengthPlusAddend + //2
+                4
+              ),
               init={
                 val temp = ( 
                   Vec.fill(lineAttrsRam.size)(
