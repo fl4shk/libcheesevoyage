@@ -18334,37 +18334,38 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
                   //}
                 }
               }
-              is (
-                //M"010"
-                MaskedLiteral(
-                  "0110"
-                )
-              ) {
-                // in load mode, requested store
-                // mode switch needed
+            }
 
-                mySelLoH2dPopStm.ready := False
-                myFifoThingDoStall := True
+            is (
+              //M"010"
+              MaskedLiteral(
+                "0110"
+              )
+            ) {
+              // in load mode, requested store
+              // mode switch needed
 
-                if (idleIdx == 1) {
-                  rSavedStallFromIdle := True
-                  rIdleModeIsWrite := True
-                  rState := State.STORE_HIT_DO_STALL_PIPE_1
-                }
+              mySelLoH2dPopStm.ready := False
+              myFifoThingDoStall := True
+
+              if (idleIdx == 1) {
+                rSavedStallFromIdle := True
+                rIdleModeIsWrite := True
+                rState := State.STORE_HIT_DO_STALL_PIPE_1
               }
-              is (
-                //M"000"
-                MaskedLiteral(
-                  "0100"
+            }
+            is (
+              //M"000"
+              MaskedLiteral(
+                "0100"
+              )
+            ) {
+              // in load mode, requested load
+              if (idleIdx == 1) {
+                rPrefetchInfo.baseAddr := (
+                  rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange)
                 )
-              ) {
-                // in load mode, requested load
-                if (idleIdx == 1) {
-                  rPrefetchInfo.baseAddr := (
-                    rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange)
-                  )
-                  rState := State.PREFETCH_START_PIPE_3
-                }
+                rState := State.PREFETCH_START_PIPE_3
               }
             }
 
