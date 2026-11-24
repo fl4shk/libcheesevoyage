@@ -21051,7 +21051,15 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                       //&& item.io.vec.head.addr
                     )
                     temp.head.payload := (
-                      item.io.vec.head.addr
+                      0x0
+                      ////item.io.vec.head.addr
+                      //  mySelLoH2dPopStm.addr(
+                      //    //rDel2LoH2dPayload.addr.high
+                      //    //myConvBusAddrToLineWordAddrRange
+                      //    mySelLoH2dPopStm.addr.high
+                      //  )
+                      //  === wordIdx
+                      //)
                     )
 
                     //temp.head.valid := (
@@ -21203,17 +21211,17 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                       item => (
                         //if (outerIdx == 0) (
                           item.fire
-                          && (
-                            rDel2LoH2dPayload.addr(
-                              //myConvBusAddrToLineWordAddrRange
-                              rDel2LoH2dPayload.addr.high
-                              downto log2Up(lineSizeBytes)
-                            ).resize(item.payload.getWidth)
-                            === (
-                              item.payload
-                            )
-                            //=== wordIdx
-                          )
+                          //&& (
+                          //  rDel2LoH2dPayload.addr(
+                          //    //myConvBusAddrToLineWordAddrRange
+                          //    rDel2LoH2dPayload.addr.high
+                          //    downto log2Up(lineSizeBytes)
+                          //  ).resize(item.payload.getWidth)
+                          //  === (
+                          //    item.payload
+                          //  )
+                          //  //=== wordIdx
+                          //)
                         //) else ( // if (outerIdx == 1)
                         //  item.fire
                         //  && (
