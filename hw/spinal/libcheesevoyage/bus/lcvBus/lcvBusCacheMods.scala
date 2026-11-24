@@ -21212,6 +21212,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                       item => (
                         //if (outerIdx == 0) (
                           item.fire
+                          && rDel2LoH2dPayload.isWrite
                           //&& (
                           //  rDel2LoH2dPayload.addr(
                           //    //myConvBusAddrToLineWordAddrRange
