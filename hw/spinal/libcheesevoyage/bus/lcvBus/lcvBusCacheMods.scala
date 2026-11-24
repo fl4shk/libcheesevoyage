@@ -21037,7 +21037,8 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                     temp.head.valid := (
                       //!item.io.vec.head.wrEn
                       //&& 
-                      mySelLoH2dPopStm.fire
+                      //mySelLoH2dPopStm.fire
+                      mySelLoH2dPopStm.valid
                       && (
                         mySelLoH2dPopStm.addr(
                           //rDel2LoH2dPayload.addr.high
