@@ -21166,31 +21166,34 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
               val temp0 = (
                 (
                   (
-                    //(
-                    //  // this is for safety,
-                    //  // but it will produce less performance!
-                    //  rState.asBits(
-                    //    State.PREFETCH_START_PIPE_4.position
-                    //  )
-                    //  || rState.asBits(
-                    //    State.PREFETCH_START.position
-                    //  )
-                    //  || rState.asBits(
-                    //    State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
-                    //    .position
-                    //  )
-                    //)
-                    //||
+                    (
+                      (
+                        // this is for safety,
+                        // but it will produce less performance!
+                        rState.asBits(
+                          State.PREFETCH_START_PIPE_4.position
+                        )
+                        || rState.asBits(
+                          State.PREFETCH_START.position
+                        )
+                        || rState.asBits(
+                          State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
+                          .position
+                        )
+                      )
+                      && rDel2LoH2dPayload.isWrite
+                    )
+                    ||
                     (
                       (
                         rPrefetchInfo.fire
-                        || (
-                          // this is for safety,
-                          // but it will produce less performance!
-                          rState.asBits(
-                            State.PREFETCH_START.position
-                          )
-                        )
+                        //|| (
+                        //  // this is for safety,
+                        //  // but it will produce less performance!
+                        //  rState.asBits(
+                        //    State.PREFETCH_START.position
+                        //  )
+                        //)
                       )
                       && (
                         //rPrefetchInfo.baseAddr.resize(
