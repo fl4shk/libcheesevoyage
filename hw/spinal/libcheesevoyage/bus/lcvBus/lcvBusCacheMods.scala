@@ -21166,38 +21166,39 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
               val temp0 = (
                 (
                   (
+                    //(
+                    //  // this is for safety,
+                    //  // but it will produce less performance!
+                    //  rState.asBits(
+                    //    State.PREFETCH_START_PIPE_4.position
+                    //  )
+                    //  || rState.asBits(
+                    //    State.PREFETCH_START.position
+                    //  )
+                    //  || rState.asBits(
+                    //    State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
+                    //    .position
+                    //  )
+                    //)
+                    //||
                     (
-                      // this is for safety,
-                      // but it will produce less performance!
-                      rState.asBits(
-                        State.PREFETCH_START_PIPE_4.position
-                      )
-                      || rState.asBits(
-                        State.PREFETCH_START.position
-                      )
-                      || rState.asBits(
-                        State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
-                        .position
-                      )
-                    )
-                    || (
                       (
                         rPrefetchInfo.fire
-                        //|| (
-                        //  // this is for safety,
-                        //  // but it will produce less performance!
-                        //  rState.asBits(
-                        //    State.PREFETCH_START.position
-                        //  )
-                        //)
+                        || (
+                          // this is for safety,
+                          // but it will produce less performance!
+                          rState.asBits(
+                            State.PREFETCH_START.position
+                          )
+                        )
                       )
                       && (
                         //rPrefetchInfo.baseAddr.resize(
                         //  lineAttrsRam.head.head.io.wrAddr.getWidth
                         //)
                         (
-                          //rDel2LoH2dPayload.isWrite
-                          //&& 
+                          rDel2LoH2dPayload.isWrite
+                          && 
                           (
                             rDel2LoH2dPayload.addr(
                               rPrefetchInfo.myTempRange
@@ -23079,7 +23080,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                   | ramIdx
                 ) {
                   doLineWordRamWrite(
-                    vecIdx=0,
+                    vecIdx=1,
                     ramIdx=ramIdx,
                     wordIdx=wordIdx,
                     busAddr=Some(myArgBusAddr),
@@ -23243,7 +23244,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                 | ramIdx
               ) {
                 doLineWordRamWrite(
-                  vecIdx=0,
+                  vecIdx=1,
                   ramIdx=ramIdx,
                   wordIdx=wordIdx,
                   busAddr=Some(myArgBusAddr),
