@@ -16708,9 +16708,9 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
       PREFETCH_START,
       //PREFETCH_START_POST,
 
-      MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2,
-      MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1,
-      MAYBE_DIRTY_RE_READ_ATTRS,
+      MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2,
+      MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_1,
+      MAYBE_HAVE_HAZARD_RE_READ_ATTRS,
 
       SEND_LINE_TO_HI_BUS_PIPE_3,
       SEND_LINE_TO_HI_BUS_PIPE_2,
@@ -18031,7 +18031,7 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
         if (idleIdx == 1) {
           rState := (
             //State.RECV_LINE_FROM_HI_BUS_PIPE_1
-            State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+            State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
           )
           rSavedStallFromIdle := True
         }
@@ -18459,25 +18459,51 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
       )
 
       //--------
-      rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+      //rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
       //--------
-      //switch (
-      //  rSavedStallInfo.isHit
-      //  ## rSavedStallInfo.isWrite
-      //) {
-      //  is (M"10") {
-      //    rState := (
-      //      State.LOAD_HIT_DO_STALL_PIPE_4
-      //      //State.LOAD_OTHER_DO_STALL
-      //    )
-      //  }
-      //  is (M"11") {
-      //    rState := State.STORE_HIT_DO_STALL_PIPE_1
-      //  }
-      //  default {
-      //    rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
-      //  }
-      //}
+      switch (
+        (
+          rSavedStallInfo.isHit
+          && (
+            //if (wordWidth == 256) (
+            //  rSavedStallInfo.loH2dPayload.busPayload.byteSize
+            //  === 0x5
+            //) else if (wordWidth == 128) (
+            //  rSavedStallInfo.loH2dPayload.busPayload.byteSize
+            //  === 0x4
+            //) else if (wordWidth == 64) (
+            //  rSavedStallInfo.loH2dPayload.busPayload.byteSize
+            //  === 0x3
+            //) else if (wordWidth == 32) (
+            //  rSavedStallInfo.loH2dPayload.busPayload.byteSize
+            //  === 0x2
+            //) else if (wordWidth == 16) (
+            //  rSavedStallInfo.loH2dPayload.busPayload.byteSize
+            //  === 0x1
+            //) else { // if (wordWidth == 8)
+            //  require(wordWidth == 8)
+            //}
+            (
+              rSavedStallInfo.loH2dPayload.busPayload.byteSize
+              === log2Up(wordWidth / 8)
+            )
+          )
+        )
+        ## rSavedStallInfo.isWrite
+      ) {
+        is (M"10") {
+          rState := (
+            State.LOAD_HIT_DO_STALL_PIPE_4
+            //State.LOAD_OTHER_DO_STALL
+          )
+        }
+        is (M"11") {
+          rState := State.STORE_HIT_DO_STALL_PIPE_1
+        }
+        default {
+          rState := State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
+        }
+      }
     }
     default {
       //doPopLoH2dFifo()
@@ -18821,7 +18847,7 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
           //rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
           rState := (
             //State.RECV_LINE_FROM_HI_BUS_PIPE_1
-            State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+            State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
             //State.PREFETCH_START_POST
           )
         }
@@ -18838,7 +18864,7 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
           //)
           rState := (
             //State.RECV_LINE_FROM_HI_BUS_PIPE_1
-            State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+            State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
             //State.PREFETCH_START_POST
           )
           rPrefetchInfo.valid := False
@@ -18853,7 +18879,10 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
           rSavedStallInfo.valid := False
           rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
           rSavedRamIdx := rSavedStallInfo.ramIdx
-          rState := State.LOAD_HIT_DO_STALL_PIPE_4
+          rState := (
+            //State.LOAD_HIT_DO_STALL_PIPE_4
+            State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
+          )
           rPrefetchInfo.valid := False
         }
         is (MaskedLiteral(
@@ -18863,7 +18892,10 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
           rSavedStallInfo.valid := False
           rSavedLoH2dPayload := rSavedStallInfo.loH2dPayload
           rSavedRamIdx := rSavedStallInfo.ramIdx
-          rState := State.STORE_HIT_DO_STALL_PIPE_1
+          rState := (
+            //State.STORE_HIT_DO_STALL_PIPE_1
+            State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
+          )
           rPrefetchInfo.valid := False
         }
         for (ramIdx <- 0 until numWays) {
@@ -18917,8 +18949,8 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
     //  rSavedRdLineAttrsTag := myRdLineAttrs.tag
     //}
 
-    is (State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2) {
-      rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1
+    is (State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2) {
+      rState := State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_1
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
       doLineAttrsRamReadSync(
         outerIdx=1,
@@ -18927,11 +18959,11 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
       )
       //lineAttrsRam.io.addr := rSavedLoH2dPayload
     }
-    is (State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_1) {
-      rState := State.MAYBE_DIRTY_RE_READ_ATTRS
+    is (State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_1) {
+      rState := State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS
       lineAttrsRam.last.foreach(item => item.io.rdEn := True)
     }
-    is (State.MAYBE_DIRTY_RE_READ_ATTRS) {
+    is (State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS) {
       val myRdLineAttrs = (
         if (myCondHaveLineBitPlruRam) (
           rdLineAttrs.last(rSavedRamIdx)
@@ -19699,7 +19731,7 @@ case class LcvBusDataCacheWithTaggedPrefetchNonWide(
           //M"0010"
         ) {
           //rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
-          rState := State.MAYBE_DIRTY_RE_READ_ATTRS_PIPE_2
+          rState := State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
         }
         is (M"0110") {
           rState := State.LOAD_HIT_DO_STALL_PIPE_4
