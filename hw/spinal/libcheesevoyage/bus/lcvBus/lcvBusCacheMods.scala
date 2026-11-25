@@ -9549,38 +9549,15 @@ case class LcvBusInstrCacheWithTaggedPrefetchWide(
         //  //}
         //}
 
-        switch (
-          //rSavedInPrefetchVec.head
-          rPrefetchInfo.fire
-          ## io.hiBus.d2hBus.burstLast
-        ) {
-          is (M"01") {
-            rState := State.RECV_LINE_FROM_HI_BUS_POST_7
-          }
-          is (M"11") {
-            //rSavedStallFromIdle := False
-            rState := (
-              //State.WAIT_D2H_FIFO_EMPTY
-              //State.PREFETCH_START_PIPE_3
-              State.PREFETCH_START_PIPE_4
-            )
-          }
-          default {
-          }
-        }
         //switch (
         //  //rSavedInPrefetchVec.head
         //  rPrefetchInfo.fire
-        //  ## (
-        //    rSavedStallInfo.fire
-        //    && !rSavedStallFromIdle
-        //  )
         //  ## io.hiBus.d2hBus.burstLast
         //) {
-        //  is (M"001") {
+        //  is (M"01") {
         //    rState := State.RECV_LINE_FROM_HI_BUS_POST_7
         //  }
-        //  is (M"101") {
+        //  is (M"11") {
         //    //rSavedStallFromIdle := False
         //    rState := (
         //      //State.WAIT_D2H_FIFO_EMPTY
@@ -9588,17 +9565,41 @@ case class LcvBusInstrCacheWithTaggedPrefetchWide(
         //      State.PREFETCH_START_PIPE_4
         //    )
         //  }
-        //  is (M"-11") {
-        //    rState := (
-        //      State.WAIT_D2H_FIFO_EMPTY_ENOUGH
-        //    )
-        //  }
-        //  //is (M"011") {
-        //  //}
-
         //  default {
         //  }
         //}
+        switch (
+          //rSavedInPrefetchVec.head
+          rPrefetchInfo.fire
+          ## (
+            rSavedStallInfo.fire
+            && !rSavedStallFromIdle
+          )
+          ## io.hiBus.d2hBus.burstLast
+        ) {
+          is (M"001") {
+            rState := State.RECV_LINE_FROM_HI_BUS_POST_7
+          }
+          is (M"101") {
+            //rSavedStallFromIdle := False
+            rState := (
+              //State.WAIT_D2H_FIFO_EMPTY
+              //State.PREFETCH_START_PIPE_3
+              State.PREFETCH_START_PIPE_4
+            )
+          }
+          is (M"111") {
+            rState := (
+              State.WAIT_D2H_FIFO_EMPTY_ENOUGH
+            )
+          }
+          is (M"011") {
+            rState := State.RECV_LINE_FROM_HI_BUS_POST_7
+          }
+
+          default {
+          }
+        }
       }
     }
     //is (State.RECV_LINE_FROM_HI_BUS_POST_WRITE) {
