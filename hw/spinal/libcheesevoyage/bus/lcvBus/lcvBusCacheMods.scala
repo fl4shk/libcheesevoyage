@@ -20045,11 +20045,13 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
     )
   )
 
-  val lineAttrsRamCfg = RamSdpPipeConfig(
+  def mkLineAttrsRamCfg(
+    optFwd: Boolean,
+  ) = RamSdpPipeConfig(
     wordType=LcvBusCacheLineAttrs(cfg=loBusCfg),
     depth=depthLines,
     optIncludeWrByteEn=false,
-    optFwd=true,
+    optFwd=optFwd,
     optWrHistLength=(
       cfg.myRamOptWrHistLength
     ),
@@ -20057,11 +20059,20 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
     arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
     arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
   )
-  val lineAttrsRam = Array.fill(2)(
+  val lineAttrsRam = Array(
     Array.fill(numWays)(
-      RamSdpPipe(cfg=lineAttrsRamCfg)
+      RamSdpPipe(cfg=mkLineAttrsRamCfg(optFwd=false))
+    ),
+    Array.fill(numWays)(
+      RamSdpPipe(cfg=mkLineAttrsRamCfg(optFwd=true))
     )
   )
+
+  //val lineAttrsRam = Array.fill(2)(
+  //  Array.fill(numWays)(
+  //    RamSdpPipe(cfg=lineAttrsRamCfg)
+  //  )
+  //)
 
   val rdLineWord = Vec.fill(lineAttrsRam.size)(
     Vec.fill(numWays)(
@@ -20109,14 +20120,16 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
   wrLineAttrs := RegNext(wrLineAttrs, init=wrLineAttrs.getZero)
   wrLineAttrs.allowOverride
 
-  val lineBitPlruRamCfg = RamSdpPipeConfig(
+  def mkLineBitPlruRamCfg(
+    optFwd: Boolean
+  ) = RamSdpPipeConfig(
     wordType=UInt(
       //log2Up(numWays) bits
       numWays bits
     ),
     depth=depthLines,
     optIncludeWrByteEn=false,
-    optFwd=true,
+    optFwd=optFwd,
     optWrHistLength=cfg.myRamOptWrHistLength,
     initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
     arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
@@ -20129,8 +20142,12 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
   val lineBitPlruRam = (
     myCondHaveLineBitPlruRam
   ) generate (
-    Array.fill(rdLineAttrs.size)(
-      RamSdpPipe(cfg=lineBitPlruRamCfg)
+    //Array.fill(rdLineAttrs.size)(
+    //  RamSdpPipe(cfg=lineBitPlruRamCfg)
+    //)
+    Array(
+      RamSdpPipe(cfg=mkLineBitPlruRamCfg(optFwd=false)),
+      RamSdpPipe(cfg=mkLineBitPlruRamCfg(optFwd=true)),
     )
   )
 
