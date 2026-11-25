@@ -8475,13 +8475,18 @@ case class LcvBusInstrCacheWithTaggedPrefetchWide(
               //rPrefetchInfo.baseAddr.resize(
               //  lineAttrsRam.head.head.io.wrAddr.getWidth
               //)
-              rSavedLoH2dPayload.addr(rPrefetchInfo.myTempRange).resize(
-                lineAttrsRam.head.head.io.wrAddr.getWidth
-              )
+              //rSavedLoH2dPayload.addr(rPrefetchInfo.myTempRange).resize(
+              //  lineAttrsRam.head.head.io.wrAddr.getWidth
+              //)
+              //=== (
+              //  rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange).resize(
+              //    lineAttrsRam.head.head.io.wrAddr.getWidth
+              //  )
+              //)
+
+              rSavedLoH2dPayload.addr(rPrefetchInfo.myTempRange)
               === (
-                rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange).resize(
-                  lineAttrsRam.head.head.io.wrAddr.getWidth
-                )
+                rDel2LoH2dPayload.addr(rPrefetchInfo.myTempRange)
               )
             )
           )
@@ -21295,40 +21300,60 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                     //  && rDel2LoH2dPayload.isWrite
                     //)
                     //||
+                    //(
+                    //  rDel2LoH2dPayload.isWrite
+                    //  && (
+                    //    rDel2LoH2dPayload.addr(
+                    //      rDel2LoH2dPayload.addr.high
+                    //      downto myLineAttrsRamAddrRshift
+                    //    ).resize(
+                    //      lineAttrsRam.head.head.io.wrAddr.getWidth
+                    //    )
+                    //    === lineAttrsRam.last(ramIdx).io.rdAddr
+                    //  )
+                    //  //&& (
+                    //  //  rdLineAttrs.head(ramIdx).tag
+                    //  //  =/= rDel2LoH2dPayload.addr(
+                    //  //    loBusCacheCfg.tagRange
+                    //  //  )
+                    //  //)
+                    //  //&& rdLineAttrs.head(
+                    //  //  ramIdx
+                    //  //)
+                    //  && (
+                    //    // this is for safety,
+                    //    // but it will produce less performance!
+                    //    rState.asBits(
+                    //      State.PREFETCH_START_PIPE_4.position
+                    //    )
+                    //    || rState.asBits(
+                    //      State.PREFETCH_START_PIPE_3.position
+                    //    )
+                    //    || rState.asBits(
+                    //      State.PREFETCH_START.position
+                    //    )
+                    //    || rState.asBits(
+                    //      State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
+                    //      .position
+                    //    )
+                    //  )
+                    //)
                     (
-                      rDel2LoH2dPayload.isWrite
-                      && (
-                        rDel2LoH2dPayload.addr(
-                          rDel2LoH2dPayload.addr.high
-                          downto myLineAttrsRamAddrRshift
-                        ).resize(
-                          lineAttrsRam.head.head.io.wrAddr.getWidth
+                        // this is for safety,
+                        // but it will produce less performance!
+                        rState.asBits(
+                          State.PREFETCH_START_PIPE_4.position
                         )
-                        === lineAttrsRam.last(ramIdx).io.rdAddr
-                      )
-                      && (
-                        rdLineAttrs.head(ramIdx).tag
-                        =/= rDel2LoH2dPayload.addr(
-                          loBusCacheCfg.tagRange
+                        || rState.asBits(
+                          State.PREFETCH_START_PIPE_3.position
                         )
-                      )
-                      //&& rdLineAttrs.head(
-                      //  ramIdx
-                      //)
-                      //&& (
-                      //  // this is for safety,
-                      //  // but it will produce less performance!
-                      //  rState.asBits(
-                      //    State.PREFETCH_START_PIPE_4.position
-                      //  )
-                      //  || rState.asBits(
-                      //    State.PREFETCH_START.position
-                      //  )
-                      //  || rState.asBits(
-                      //    State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
-                      //    .position
-                      //  )
-                      //)
+                        || rState.asBits(
+                          State.PREFETCH_START.position
+                        )
+                        || rState.asBits(
+                          State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
+                          .position
+                        )
                     )
                     || (
                       (
@@ -21339,6 +21364,21 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                         //  rState.asBits(
                         //    State.PREFETCH_START.position
                         //  )
+                        //)
+                        // this is for safety,
+                        // but it will produce less performance!
+                        //|| rState.asBits(
+                        //  State.PREFETCH_START_PIPE_4.position
+                        //)
+                        //|| rState.asBits(
+                        //  State.PREFETCH_START_PIPE_3.position
+                        //)
+                        //|| rState.asBits(
+                        //  State.PREFETCH_START.position
+                        //)
+                        //|| rState.asBits(
+                        //  State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
+                        //  .position
                         //)
                       )
                       && (
@@ -21372,8 +21412,8 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                         )
                         || (
                           rPrefetchInfo.inRecv
-                          //!rDel2LoH2dPayload.isWrite
-                          //&& 
+                          ////!rDel2LoH2dPayload.isWrite
+                          ////&& 
                           && (
                             rDel2LoH2dPayload.addr(
                               rPrefetchInfo.myTempRange
@@ -21453,9 +21493,9 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                     //|| temp1.head
                     (
                       temp0
-                      && (
-                        rSavedRamIdx === ramIdx
-                      )
+                      //&& (
+                      //  rSavedRamIdx === ramIdx
+                      //)
                     )
                     || LcvOrR(temp1)
                   ),
