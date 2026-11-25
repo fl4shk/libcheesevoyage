@@ -21304,8 +21304,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                         //)
                         (
                           rDel2LoH2dPayload.isWrite
-                          && 
-                          (
+                          && (
                             rDel2LoH2dPayload.addr(
                               rPrefetchInfo.myTempRange
                             ).resize(
