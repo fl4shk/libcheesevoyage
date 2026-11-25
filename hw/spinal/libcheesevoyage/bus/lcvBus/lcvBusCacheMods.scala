@@ -20600,6 +20600,9 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
       )
     )
 
+    val inSend = Bool()
+    val inRecv = Bool()
+
     val myTempRange = (
       loBusCacheCfg.addrWidth - 2
       downto loBusCfg.prefetchAddrIncrStartIdx
@@ -21305,6 +21308,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                         //)
                         (
                           rDel2LoH2dPayload.isWrite
+                          && rPrefetchInfo.inSend
                           && (
                             rDel2LoH2dPayload.addr(
                               rPrefetchInfo.myTempRange
@@ -21327,9 +21331,10 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                           )
                         )
                         || (
+                          rPrefetchInfo.inRecv
                           //!rDel2LoH2dPayload.isWrite
                           //&& 
-                          (
+                          && (
                             rDel2LoH2dPayload.addr(
                               rPrefetchInfo.myTempRange
                             ).resize(
@@ -22710,6 +22715,8 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
           }
           //rSavedInPrefetchVec.head := True
           rPrefetchInfo.valid := True
+          rPrefetchInfo.inSend := True
+          rPrefetchInfo.inRecv := True
           //rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
           rState := (
             //State.RECV_LINE_FROM_HI_BUS_PIPE_1
@@ -22787,6 +22794,8 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
           rPrefetchInfo.baseAddr := (
             rPrefetchInfo.baseAddr + 1
           )
+          rPrefetchInfo.inSend := False
+          rPrefetchInfo.inRecv := False
           rState := (
             State.IDLE
             //State.WAIT_D2H_FIFO_EMPTY
@@ -22855,6 +22864,9 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //"0" + myRamIdxMask
             "-0" + myRamIdxMask
           )) {
+            rPrefetchInfo.inSend := False
+            rPrefetchInfo.inRecv := False
+
             rState := State.LOAD_HIT_DO_STALL_PIPE_4
             rSavedRamIdx := ramIdx
           }
@@ -22863,6 +22875,9 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //"1" + myRamIdxMask
             "-1" + myRamIdxMask
           )) {
+            rPrefetchInfo.inSend := False
+            rPrefetchInfo.inRecv := False
+
             rState := State.STORE_HIT_DO_STALL_PIPE_1
             rSavedRamIdx := ramIdx
           }
@@ -22870,6 +22885,9 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
         is (MaskedLiteral(
           "0-" + ("0" * numWays)
         )) {
+          rPrefetchInfo.inSend := False
+          rPrefetchInfo.inRecv := rPrefetchInfo.fire
+
           rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
         }
         default {
@@ -22877,6 +22895,9 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
           //  myRdLineAttrs.fire
           //  && myRdLineAttrs.dirty
           //) {
+            rPrefetchInfo.inSend := rPrefetchInfo.fire
+            rPrefetchInfo.inRecv := False
+
             rState := State.SEND_LINE_TO_HI_BUS_PIPE_3
           //} otherwise {
           //  rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
@@ -23155,6 +23176,8 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
       }
       when (rHadHiH2dFinish && rHadHiD2hFinish) {
         rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+        rPrefetchInfo.inSend := False
+        rPrefetchInfo.inRecv := rPrefetchInfo.fire
       }
     }
     is (State.RECV_LINE_FROM_HI_BUS_PIPE_1) {
@@ -23448,17 +23471,26 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //M"01"
             M"001"
           ) {
+            rPrefetchInfo.inSend := False
+            rPrefetchInfo.inRecv := False
+
             rState := State.RECV_LINE_FROM_HI_BUS_POST_7
           }
           is (
             M"011"
           ) {
+            rPrefetchInfo.inSend := False
+            rPrefetchInfo.inRecv := False
+
             rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
           }
           is (
             //M"11"
             M"1-1"
           ) {
+            rPrefetchInfo.inSend := False
+            rPrefetchInfo.inRecv := False
+
             //rSavedStallFromIdle := False
             rState := (
               //State.WAIT_D2H_FIFO_EMPTY
@@ -23745,6 +23777,8 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
       ) {
         //rSavedInPrefetchVec.head := False
         rPrefetchInfo.valid := False
+        rPrefetchInfo.inSend := False
+        rPrefetchInfo.inRecv := False
         rPrefetchInfo.cnt := cfg.prefetchNumLinesAhead.get
       }
 
