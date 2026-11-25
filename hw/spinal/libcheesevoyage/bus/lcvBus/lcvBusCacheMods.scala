@@ -23680,16 +23680,16 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //M"01"
             M"001"
           ) {
-            rPrefetchInfo.inSend := False
-            rPrefetchInfo.inRecv := False
+            //rPrefetchInfo.inSend := False
+            //rPrefetchInfo.inRecv := False
 
             rState := State.RECV_LINE_FROM_HI_BUS_POST_7
           }
           is (
             M"011"
           ) {
-            rPrefetchInfo.inSend := False
-            rPrefetchInfo.inRecv := False
+            //rPrefetchInfo.inSend := False
+            //rPrefetchInfo.inRecv := False
 
             rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
           }
@@ -23697,8 +23697,8 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
             //M"11"
             M"1-1"
           ) {
-            rPrefetchInfo.inSend := False
-            rPrefetchInfo.inRecv := False
+            //rPrefetchInfo.inSend := False
+            //rPrefetchInfo.inRecv := False
 
             //rSavedStallFromIdle := False
             rState := (
