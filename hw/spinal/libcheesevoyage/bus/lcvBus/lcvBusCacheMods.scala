@@ -20147,7 +20147,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
     //)
     Array(
       RamSdpPipe(cfg=mkLineBitPlruRamCfg(optFwd=false)),
-      RamSdpPipe(cfg=mkLineBitPlruRamCfg(optFwd=true)),
+      RamSdpPipe(cfg=mkLineBitPlruRamCfg(optFwd=false)),
     )
   )
 
