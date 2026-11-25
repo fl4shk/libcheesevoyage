@@ -595,7 +595,8 @@ case class RamSdpPipe[
     )
     val tempWrData = cfg.wordType()
     tempWrData.assignFromBits(
-      io.wrDataBits.asBits
+      //io.wrDataBits.asBits
+      io.wrData.asBits
     )
     val myHistIoWrData = History(
       that=(
