@@ -21049,9 +21049,9 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                         )
                         === wordIdx
                       )
-                      //&& mySelLoH2dPopStm
-                      && !mySelLoH2dPopStm.isWrite
-                      //&& item.io.vec.head.addr
+                      ////&& mySelLoH2dPopStm
+                      //&& !mySelLoH2dPopStm.isWrite
+                      ////&& item.io.vec.head.addr
                     )
                     temp.head.payload := (
                       0x0
@@ -21215,18 +21215,22 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                       item => (
                         //if (outerIdx == 0) (
                           item.fire
-                          && rDel2LoH2dPayload.isWrite
-                          //&& (
-                          //  rDel2LoH2dPayload.addr(
-                          //    //myConvBusAddrToLineWordAddrRange
-                          //    rDel2LoH2dPayload.addr.high
-                          //    downto log2Up(lineSizeBytes)
-                          //  ).resize(item.payload.getWidth)
-                          //  === (
-                          //    item.payload
-                          //  )
-                          //  //=== wordIdx
-                          //)
+                          //&& rDel2LoH2dPayload.isWrite
+                          && (
+                            rDel2LoH2dPayload.addr(
+                              myConvBusAddrToLineWordAddrRange
+                            )
+                            === wordIdx
+                            //rDel2LoH2dPayload.addr(
+                            //  //myConvBusAddrToLineWordAddrRange
+                            //  rDel2LoH2dPayload.addr.high
+                            //  downto log2Up(lineSizeBytes)
+                            //).resize(item.payload.getWidth)
+                            //=== (
+                            //  item.payload
+                            //)
+                            //=== wordIdx
+                          )
                         //) else ( // if (outerIdx == 1)
                         //  item.fire
                         //  && (
@@ -21290,8 +21294,20 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                     //  )
                     //  && rDel2LoH2dPayload.isWrite
                     //)
-                    //|| 
+                    //||
                     (
+                      rDel2LoH2dPayload.isWrite
+                      && (
+                        rDel2LoH2dPayload.addr(
+                          rDel2LoH2dPayload.addr.high
+                          downto myLineAttrsRamAddrRshift
+                        ).resize(
+                          lineAttrsRam.head.head.io.wrAddr.getWidth
+                        )
+                        === lineAttrsRam.last(ramIdx).io.rdAddr
+                      )
+                    )
+                    || (
                       (
                         rPrefetchInfo.fire
                         //|| (
@@ -21307,8 +21323,9 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                         //  lineAttrsRam.head.head.io.wrAddr.getWidth
                         //)
                         (
-                          rDel2LoH2dPayload.isWrite
-                          && rPrefetchInfo.inSend
+                          //rDel2LoH2dPayload.isWrite
+                          //&& 
+                          rPrefetchInfo.inSend
                           && (
                             rDel2LoH2dPayload.addr(
                               rPrefetchInfo.myTempRange
