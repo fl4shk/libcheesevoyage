@@ -7521,6 +7521,7 @@ case class LcvBusInstrCacheWithTaggedPrefetchWide(
       RECV_LINE_FROM_HI_BUS_POST_1,
       RECV_LINE_FROM_HI_BUS_POST,
 
+      WAIT_D2H_FIFO_EMPTY_ENOUGH_PIPE_1,
       WAIT_D2H_FIFO_EMPTY_ENOUGH
 
       = newElement();
@@ -9590,7 +9591,8 @@ case class LcvBusInstrCacheWithTaggedPrefetchWide(
           }
           is (M"111") {
             rState := (
-              State.WAIT_D2H_FIFO_EMPTY_ENOUGH
+              //State.WAIT_D2H_FIFO_EMPTY_ENOUGH
+              State.WAIT_D2H_FIFO_EMPTY_ENOUGH_PIPE_1
             )
           }
           is (M"011") {
@@ -9766,6 +9768,38 @@ case class LcvBusInstrCacheWithTaggedPrefetchWide(
         //State.IDLE
         State.WAIT_D2H_FIFO_EMPTY_ENOUGH
       )
+    }
+    is (State.WAIT_D2H_FIFO_EMPTY_ENOUGH_PIPE_1) {
+      def myArgBusAddr = rSavedLoH2dPayload.addr
+      def myArgWrLineAttrs = wrLineAttrs
+      def myArgSetEn = true
+
+      if (myCondHaveLineBitPlruRam) {
+        switch (rSavedRamIdx) {
+          for (ramIdx <- 0 until numWays) {
+            is (ramIdx) {
+              doLineAttrsRamWrite(
+                ramIdx=ramIdx,
+                busAddr=myArgBusAddr,
+                lineAttrs=myArgWrLineAttrs,
+                setEn=myArgSetEn,
+              )
+            }
+          }
+        }
+      } else {
+        doLineAttrsRamWrite(
+          ramIdx=0,
+          busAddr=myArgBusAddr,
+          lineAttrs=myArgWrLineAttrs,
+          setEn=myArgSetEn,
+        )
+      }
+
+      lineWordRam.foreach(_.foreach(item => item.io.rdEn := False))
+      lineAttrsRam.last.foreach(item => item.io.rdEn := False)
+
+      rState := State.WAIT_D2H_FIFO_EMPTY_ENOUGH
     }
     is (State.WAIT_D2H_FIFO_EMPTY_ENOUGH) {
       lineAttrsRam.last.foreach(item => item.io.rdEn := False)
@@ -23616,6 +23650,50 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
           default {
           }
         }
+        //switch (
+        //  //rSavedInPrefetchVec.head
+        //  rPrefetchInfo.fire
+        //  ## (
+        //    rSavedStallInfo.fire
+        //    && !rSavedStallFromIdle
+        //  )
+        //  ## rSavedLoH2dPayload.isWrite
+        //  ## io.hiBus.d2hBus.burstLast
+        //) {
+        //  is (
+        //    //M"01"
+        //    M"001"
+        //  ) {
+        //    rPrefetchInfo.inSend := False
+        //    rPrefetchInfo.inRecv := False
+
+        //    rState := State.RECV_LINE_FROM_HI_BUS_POST_7
+        //  }
+        //  is (
+        //    M"011"
+        //  ) {
+        //    rPrefetchInfo.inSend := False
+        //    rPrefetchInfo.inRecv := False
+
+        //    rState := State.RECV_LINE_FROM_HI_BUS_POST_WRITE
+        //  }
+        //  is (
+        //    //M"11"
+        //    M"1-1"
+        //  ) {
+        //    rPrefetchInfo.inSend := False
+        //    rPrefetchInfo.inRecv := False
+
+        //    //rSavedStallFromIdle := False
+        //    rState := (
+        //      //State.WAIT_D2H_FIFO_EMPTY
+        //      //State.PREFETCH_START_PIPE_3
+        //      State.PREFETCH_START_PIPE_4
+        //    )
+        //  }
+        //  default {
+        //  }
+        //}
       }
     }
     is (State.RECV_LINE_FROM_HI_BUS_POST_WRITE) {
