@@ -9296,7 +9296,10 @@ case class LcvBusInstrCacheWithTaggedPrefetchWide(
           //rPrefetchInfo.cnt := (
           //  cfg.prefetchNumLinesAhead.get - 1
           //)
-          rState := State.RECV_LINE_FROM_HI_BUS_PIPE_1
+          rState := (
+            //State.RECV_LINE_FROM_HI_BUS_PIPE_1
+            State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
+          )
           rPrefetchInfo.valid := False
           //rPrefetchInfo.cnt := (
           //  cfg.prefetchNumLinesAhead.get
