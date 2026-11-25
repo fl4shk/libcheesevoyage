@@ -118,7 +118,7 @@ case class LcvBusCacheBusPairConfig(
   //require(!mainCfg.allowBurst)
   //val myRamOptRdExtraLatency = loBusCacheCfg.optImplRamOptRdExtraLatency
   val myRamOptWrHistLength = loBusCacheCfg.optImplRamOptWrHistLength
-  val myRamOptWrHistLengthPlusAddend = myRamOptWrHistLength + 1//3//2
+  val myRamOptWrHistLengthPlusAddend = myRamOptWrHistLength + 2//1//3//2
   loBusCacheCfg.kind match {
     case LcvCacheKind.Shared => {
       require(mainCfg.allowBurst)
@@ -20049,7 +20049,10 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
     wordType=LcvBusCacheLineAttrs(cfg=loBusCfg),
     depth=depthLines,
     optIncludeWrByteEn=false,
-    optWrHistLength=cfg.myRamOptWrHistLength,
+    optFwd=true,
+    optWrHistLength=(
+      cfg.myRamOptWrHistLength
+    ),
     initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
     arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
     arrRamStyleXilinx=cfg.loBusCacheCfg.lineAttrsMemRamStyleXilinx,
@@ -20113,6 +20116,7 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
     ),
     depth=depthLines,
     optIncludeWrByteEn=false,
+    optFwd=true,
     optWrHistLength=cfg.myRamOptWrHistLength,
     initBigInt=Some(Array.fill(depthLines)(BigInt(0))),
     arrRamStyleAltera=cfg.loBusCacheCfg.lineAttrsMemRamStyleAltera,
@@ -21451,16 +21455,17 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                         rState.asBits(
                           State.PREFETCH_START_PIPE_4.position
                         )
-                        || rState.asBits(
-                          State.PREFETCH_START_PIPE_3.position
-                        )
-                        || rState.asBits(
-                          State.PREFETCH_START.position
-                        )
-                        || rState.asBits(
-                          State.MAYBE_HAVE_HAZARD_DO_RE_READ_PIPE_2
-                          .position
-                        )
+                        && rDel2LoH2dPayload.isWrite
+                        //|| rState.asBits(
+                        //  State.PREFETCH_START_PIPE_3.position
+                        //)
+                        //|| rState.asBits(
+                        //  State.PREFETCH_START.position
+                        //)
+                        //|| rState.asBits(
+                        //  State.MAYBE_HAVE_HAZARD_DO_RE_READ_PIPE_2
+                        //  .position
+                        //)
                     )
                     || (
                       (

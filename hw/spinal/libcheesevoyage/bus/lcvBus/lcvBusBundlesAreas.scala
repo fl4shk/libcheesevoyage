@@ -209,7 +209,8 @@ case class LcvBusCacheConfig(
   //  0
   //),
   optImplRamOptWrHistLength: Int=(
-    2//1//2//1//2//3
+    //2//1//2//1//2//3
+    1//0
   ),
   //private[libcheesevoyage] var busCfg: LcvBusConfig=null,
   private[libcheesevoyage] var busMainCfg: LcvBusMainConfig=null

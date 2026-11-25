@@ -328,6 +328,7 @@ case class RamSdpPipeConfig[
   wordType: HardType[WordT],
   depth: Int,
   optIncludeWrByteEn: Boolean=false,
+  optFwd: Boolean=false,
   optWrHistLength: Int=1,
   init: Option[Seq[WordT]]=None,
   initBigInt: Option[Seq[BigInt]]=None,
@@ -335,6 +336,12 @@ case class RamSdpPipeConfig[
   arrRamStyleXilinx: String="block",
   arrRwAddrCollisionXilinx: String="",
 ) {
+  require(
+    optWrHistLength >= 1
+  )
+  require (
+    !(optFwd && optIncludeWrByteEn)
+  )
 }
 
 private[libcheesevoyage] case class RamSdpPipeNonDataIo[
@@ -570,7 +577,73 @@ case class RamSdpPipe[
   val ram = RamSdpPipeImpl(cfg=cfg)
   ram.io.nonDataIo <> io.nonDataIo
   ram.io.wrDataBits := io.wrData.asBits
-  io.rdData.assignFromBits(ram.io.rdDataBits)
+
+  if (!cfg.optFwd) {
+    io.rdData.assignFromBits(ram.io.rdDataBits)
+  }
+
+  val myOptFwdArea = (
+    cfg.optFwd
+  ) generate new Area {
+    val tempHistLength = (
+      cfg.optWrHistLength + 2
+    )
+    val myHistIoWrAddr = History(
+      that=io.wrAddr,
+      length=tempHistLength,
+      init=io.wrAddr.getZero,
+    )
+    val tempWrData = cfg.wordType()
+    tempWrData.assignFromBits(
+      io.wrDataBits.asBits
+    )
+    val myHistIoWrData = History(
+      that=(
+        //io.wrAddr
+        tempWrData
+      ),
+      length=tempHistLength,
+      init=tempWrData.getZero,
+    )
+    val myHistIoWrEn = History(
+      that=io.wrEn,
+      length=tempHistLength,
+      init=io.wrEn.getZero,
+    )
+    val myFwdToFindFirstVec = (
+      Vec.fill(tempHistLength)(
+        Bool()
+      )
+    )
+
+    for (idx <- 0 until tempHistLength) {
+      myFwdToFindFirstVec(idx) := (
+        myHistIoWrEn(idx)
+        && (
+          myHistIoWrAddr(idx)
+          === RegNext(RegNext(io.rdAddr))
+        )
+        && RegNext(io.rdEn, init=io.rdEn.getZero)
+      )
+    }
+    val myFindFirst = myFwdToFindFirstVec.sFindFirst(_ === True)
+    switch (
+      myFindFirst._1
+      ## myFindFirst._2
+    ) {
+      for (idx <- 0 until tempHistLength) {
+        is (
+          (1 << myFindFirst._2.getWidth) 
+          | idx
+        ) {
+          io.rdData := myHistIoWrData(idx)
+        }
+      }
+      default {
+        io.rdData.assignFromBits(ram.io.rdDataBits)
+      }
+    }
+  }
 }
 
 
