@@ -21306,6 +21306,29 @@ case class LcvBusDataCacheWithTaggedPrefetchWide(
                         )
                         === lineAttrsRam.last(ramIdx).io.rdAddr
                       )
+                      && (
+                        rdLineAttrs.head(ramIdx).tag
+                        =/= rDel2LoH2dPayload.addr(
+                          loBusCacheCfg.tagRange
+                        )
+                      )
+                      //&& rdLineAttrs.head(
+                      //  ramIdx
+                      //)
+                      //&& (
+                      //  // this is for safety,
+                      //  // but it will produce less performance!
+                      //  rState.asBits(
+                      //    State.PREFETCH_START_PIPE_4.position
+                      //  )
+                      //  || rState.asBits(
+                      //    State.PREFETCH_START.position
+                      //  )
+                      //  || rState.asBits(
+                      //    State.MAYBE_HAVE_HAZARD_RE_READ_ATTRS_PIPE_2
+                      //    .position
+                      //  )
+                      //)
                     )
                     || (
                       (
