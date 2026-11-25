@@ -20,6 +20,7 @@ private[libcheesevoyage] case class RamTdpPipeImplConfig(
   opt9BitBytes: Boolean=false,
   //optWrHistLength: Int=1,
   //initBigInt: Option[Seq[BigInt]]=None,
+  initToZero: Boolean=false,
   arrRamStyleAltera: String="no_rw_check, M10K",
   arrRamStyleXilinx: String="block",
   arrRwAddrCollisionXilinx: String="",
@@ -59,6 +60,7 @@ case class RamTdpPipeConfig[
   opt9BitBytes: Boolean=false,
   //optWrHistLength: Int=1,
   //initBigInt: Option[Seq[BigInt]]=None,
+  initToZero: Boolean=false,
   arrRamStyleAltera: String="no_rw_check, M10K",
   arrRamStyleXilinx: String="block",
   arrRwAddrCollisionXilinx: String="",
@@ -71,6 +73,7 @@ case class RamTdpPipeConfig[
       depth=depth,
       optIncludeWrByteEn=optIncludeWrByteEn,
       opt9BitBytes=opt9BitBytes,
+      initToZero=initToZero,
       arrRamStyleAltera=arrRamStyleAltera,
       arrRamStyleXilinx=arrRamStyleXilinx,
       arrRwAddrCollisionXilinx=arrRwAddrCollisionXilinx,
@@ -141,15 +144,26 @@ private[libcheesevoyage] case class RamTdpPipeImpl(
   def arrRamStyleXilinx = cfg.arrRamStyleXilinx
   def arrRwAddrCollisionXilinx = cfg.arrRwAddrCollisionXilinx
 
-  val memArr = Array.fill(bytesPerWord)(
-    Mem(
+  val memArr = Array.fill(bytesPerWord)({
+    val temp = Mem(
       wordType=Bits(byteWidth bits),
       wordCount=depth,
     )
       .addAttribute("ramstyle", arrRamStyleAltera)
       .addAttribute("ram_style", arrRamStyleXilinx)
       .addAttribute("rw_addr_collision", arrRwAddrCollisionXilinx)
-  )
+
+    if (cfg.initToZero) {
+      temp.initBigInt({
+        val myArr = new ArrayBuffer[BigInt]()
+        for (idx <- 0 until depth) {
+          myArr += BigInt(0)
+        }
+        myArr
+      })
+    }
+    temp
+  })
 
   val myPortAreaArr = io.vec.zipWithIndex.map{case (item, vecIdx) => {
     new ClockingArea(
