@@ -9571,7 +9571,10 @@ case class LcvBusInstrCacheWithTaggedPrefetchWide(
         switch (
           //rSavedInPrefetchVec.head
           rPrefetchInfo.fire
-          ## rSavedStallInfo.fire
+          ## (
+            rSavedStallInfo.fire
+            && !rSavedStallFromIdle
+          )
           ## io.hiBus.d2hBus.burstLast
         ) {
           is (M"001") {
@@ -9586,8 +9589,12 @@ case class LcvBusInstrCacheWithTaggedPrefetchWide(
             )
           }
           is (M"-11") {
-            rState := State.WAIT_D2H_FIFO_EMPTY_ENOUGH
+            rState := (
+              State.WAIT_D2H_FIFO_EMPTY_ENOUGH
+            )
           }
+          //is (M"011") {
+          //}
 
           default {
           }
